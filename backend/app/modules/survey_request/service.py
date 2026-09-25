@@ -168,9 +168,11 @@ def create_sr(db: Session, data, user_id: int, user=None, profile=None) -> Surve
                       **header)
     sync_department_ref(db, s)   # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu
     # bao-CR-480: phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng đó (như YCMH).
-    if not s.handler_dept_id:
+    # bao-CR-488: chỉ khi người lập KHÔNG chọn (None); gửi 0 là chủ ý nhờ Thu mua chung, giữ nguyên.
+    if data.handler_dept_id is None:
         from app.modules.purchase_request.service import default_handler_dept_id
         s.handler_dept_id = default_handler_dept_id(db, s.department_id)
+    s.handler_dept_id = int(s.handler_dept_id or 0)
     # Tự điền Trưởng bộ phận theo Department.manager_id (parity với PYC).
     # Phòng chưa gán trưởng thì để rỗng — lúc đọc sẽ tự lấy lại (xem `_out` ở controller).
     if not s.head_of_dept_id and not s.head_of_dept and (s.department_id or s.department):
@@ -492,13 +494,26 @@ def visible_lines_for(db: Session, s, lines, user, profile: dict):
     return [ln for ln in lines if can_process_line(db, ln, profile)]
 
 
-def available_survey_lines(db: Session, supplier_code: str = "", item_group: str = "",
+def normalize_filter_values(value) -> list[str]:
+    """Một chuỗi hay một danh sách chuỗi → danh sách đã bỏ rỗng (bao-CR-487).
+
+    Ô lọc NCC / phân loại nay chọn được NHIỀU; đường gọi cũ (màn Xử lý YCMH, bản v1 chưa
+    đổi) vẫn truyền một chuỗi — hai dạng cùng đi qua đây để phần lọc bên dưới chỉ có một luật.
+    """
+    if value is None:
+        return []
+    items = [value] if isinstance(value, str) else list(value)
+    return [str(v).strip() for v in items if str(v or "").strip()]
+
+
+def available_survey_lines(db: Session, supplier_code: "str | list[str]" = "",
+                           item_group: "str | list[str]" = "",
                            search: str = "", page: int = 1, page_size: int = 8,
                            sort_by: str = "", sort_dir: str = "desc"):
     """Dòng khảo sát SẢN PHẨM đã DUYỆT (line_approve='Đã duyệt') — nguồn để tạo option.
     Dùng cho CHỌN NCC THỦ CÔNG: lọc mở theo nhiều tiêu chí (tùy chọn, KHÔNG giới hạn liên kết YCKS):
-    - supplier_code: theo NCC (tùy chọn).
-    - item_group: theo PHÂN LOẠI của Survey cha (mặc định = phân loại dòng, đổi được).
+    - supplier_code: theo NCC — một mã hoặc NHIỀU mã (bao-CR-487), nhiều mã nghĩa là HOẶC.
+    - item_group: theo PHÂN LOẠI của Survey cha — một hoặc nhiều (mặc định = phân loại dòng, đổi được).
     - search: khớp Tên SP hoặc Mã SP theo NCC (LIKE).
     Cần ít nhất 1 tiêu chí (controller đã chặn rỗng).
     Phân trang phía server (kết quả có thể vài trăm dòng) -> trả (items, total)."""
@@ -508,10 +523,12 @@ def available_survey_lines(db: Session, supplier_code: str = "", item_group: str
          .join(Survey, Survey.id == SurveyProductLine.survey_id)
          .filter(SurveyProductLine.line_approve == "Đã duyệt",
                  Survey.status.notin_(["cancelled"])))
-    if supplier_code:
-        q = q.filter(SurveyProductLine.supplier_code == supplier_code)
-    if item_group:
-        q = q.filter(Survey.item_group == item_group)
+    supplier_codes = normalize_filter_values(supplier_code)
+    item_groups = normalize_filter_values(item_group)
+    if supplier_codes:
+        q = q.filter(SurveyProductLine.supplier_code.in_(supplier_codes))
+    if item_groups:
+        q = q.filter(Survey.item_group.in_(item_groups))
     if (search or "").strip():
         like = f"%{search.strip()}%"
         q = q.filter(or_(SurveyProductLine.product_name.ilike(like),

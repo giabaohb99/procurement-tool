@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import inspect as sa_inspect, select
 from sqlalchemy.orm import Session
 
@@ -89,6 +89,9 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     # tên thì tra danh mục để hiển thị, không ghi đè.
     from app.modules.purchase_request.service import handler_dept_name_of
     base["handler_dept_name"] = handler_dept_name_of(db, s.handler_dept_id)
+    # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
+    from app.core.print_signers import approver_fields
+    base.update(approver_fields(db, s))
     if not (base.get("department") or "").strip() and base.get("department_id"):
         base["department"] = handler_dept_name_of(db, base["department_id"])
     lines = service.lines_of(db, s.id)
@@ -434,6 +437,10 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
     _in_scope(db, sid, user, "approve")
     s = service.set_status(db, sid, "approved", user.id)
+    # bao-CR-490: ghi nhân sự vừa duyệt vào «Trưởng phòng phê duyệt».
+    from app.core.print_signers import stamp_approver
+    stamp_approver(db, s, user.id)
+    db.commit()
     # bao-CR-414: tự gán NSTM theo phân loại (Task 4) — tra theo phòng đang xử lý phiếu; người
     # duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) thì không rơi về bộ "Thu mua chung".
     dept_only = approves_only_in_dept_proc(get_perm_profile(db, user), "survey_request")
@@ -549,6 +556,9 @@ def set_line_assignee_(sid: int, line_id: int, data: dict, background_tasks: Bac
                                             SurveyRequestLine.survey_request_id == sid).first()
     if not ln:
         raise HTTPException(404, "Không tìm thấy dòng")
+    # bao-CR-486: người phụ trách phải thuộc phòng xử lý của phiếu.
+    from app.modules.category_assignee.service import check_assignee_allowed
+    check_assignee_allowed(db, service.get_sr(db, sid), data.get("assignee") or "")
     ln.assignee = (data.get("assignee") or "").strip()
     # Ngày tiếp nhận = ngày NSTM được gán (tự tính); bỏ gán thì xóa
     if ln.assignee and not ln.received_date:
@@ -624,6 +634,17 @@ def _out_process(db: Session, s: SurveyRequest, user=None, profile=None) -> dict
     return base
 
 
+@router.get("/{sid}/assignable-staff")
+def assignable_staff_(sid: int, db: Session = Depends(get_db),
+                      user=Depends(require("survey_request", "read"))):
+    """bao-CR-486 — NSTM chọn được cho YCBG này: đi theo ô «Phòng xử lý» (cùng luật YCMH)."""
+    from app.modules.category_assignee.service import assignable_staff
+    s = _in_scope(db, sid, user, "read")
+    return success({"items": [{"id": e.id, "code": e.code, "full_name": e.full_name,
+                               "department_id": int(e.department_id or 0)}
+                              for e in assignable_staff(db, s)]})
+
+
 @router.get("/{sid}/process")
 def process_view_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
     """Trang *Xử lý khảo sát* (CR-222).
@@ -639,7 +660,9 @@ def process_view_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser
 
 
 @router.get("/{sid}/lines/{line_id}/available-survey-lines")
-def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", item_group: str = "",
+def available_survey_lines_(sid: int, line_id: int,
+                            supplier_code: list[str] = Query(default=[]),
+                            item_group: list[str] = Query(default=[]),
                             search: str = "", page: int = 1, page_size: int = 8,
                             sort_by: str = "", sort_dir: str = "desc",
                             db: Session = Depends(get_db), up=Depends(_purchaser)):
@@ -648,7 +671,11 @@ def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", ite
     ln = service.get_line(db, sid, line_id)
     # Lọc MỞ (chọn NCC thủ công) — KHÔNG giới hạn liên kết YCKS: option có thể đã có khảo sát sẵn.
     # Phân loại mặc định = của dòng (FE gửi sẵn); có thể đổi hoặc để trống. Cần ≥1 tiêu chí.
-    if not (supplier_code or (item_group or "").strip() or (search or "").strip()):
+    # bao-CR-487: `supplier_code` / `item_group` lặp được trên URL (?supplier_code=A&supplier_code=B)
+    # = chọn NHIỀU; gửi một giá trị như cũ vẫn chạy.
+    supplier_code = service.normalize_filter_values(supplier_code)
+    item_group = service.normalize_filter_values(item_group)
+    if not (supplier_code or item_group or (search or "").strip()):
         return success({"items": [], "total": 0})
     rows, total = service.available_survey_lines(
         db, supplier_code=supplier_code, item_group=item_group, search=search,

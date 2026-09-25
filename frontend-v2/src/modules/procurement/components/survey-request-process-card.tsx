@@ -9,6 +9,7 @@ import {
   Plus,
   RefreshCw,
   Trash2,
+  X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -28,7 +29,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
-import { SearchSelect } from '@/shared/ui/search-select'
+import { MultiPicker } from '@/shared/ui/multi-picker'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
@@ -42,6 +43,11 @@ import {
   useSyncProcessOptions,
   useUpdateProcessOption,
 } from '../hooks/use-survey-request-process'
+import {
+  defaultItemGroups,
+  hasAvailableLinesCriteria,
+  isLineGroupOnly,
+} from '../utils/survey-process-filter'
 import type {
   AvailableSurveyLine,
   SurveyProcessLine,
@@ -54,8 +60,6 @@ import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 const AVAILABLE_PAGE_SIZE = 8
 
 /** Giá trị canh gác cho ô chọn NCC "tất cả" — Select của shadcn cấm value rỗng. */
-const ALL_SUPPLIERS = '__all__'
-
 interface SurveyRequestProcessCardProps {
   surveyRequestId: number
   status: string
@@ -525,8 +529,9 @@ function AvailableLinesPicker({
   surveyRequestId: number
   line: SurveyProcessLine
 }) {
-  const [supplierCode, setSupplierCode] = useState(ALL_SUPPLIERS)
-  const [itemGroup, setItemGroup] = useState(line.item_group || '')
+  // bao-CR-487: NCC và phân loại chọn được NHIỀU — trong một ô là HOẶC, hai ô là VÀ.
+  const [supplierCodes, setSupplierCodes] = useState<string[]>([])
+  const [itemGroups, setItemGroups] = useState<string[]>(() => defaultItemGroups(line.item_group))
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -538,14 +543,21 @@ function AvailableLinesPicker({
   const itemGroupsQuery = usePurchaseRequestItemGroups()
   const addMutation = useAddProcessOption(surveyRequestId)
 
-  const effectiveSupplier = supplierCode === ALL_SUPPLIERS ? '' : supplierCode
-  const hasCriteria = !!effectiveSupplier || !!itemGroup || !!debouncedSearch.trim()
+  const hasCriteria = hasAvailableLinesCriteria({ supplierCodes, itemGroups, search: debouncedSearch })
+  // Nút «Bỏ lọc» nhìn theo ô đang gõ, không đợi debounce — bấm là sạch ngay.
+  const filterActive = hasAvailableLinesCriteria({ supplierCodes, itemGroups, search })
+  const clearFilters = () => {
+    setSupplierCodes([])
+    setItemGroups([])
+    setSearch('')
+    setPage(1)
+  }
   const availableQuery = useAvailableSurveyLines(
     surveyRequestId,
     line.id,
     {
-      supplier_code: effectiveSupplier,
-      item_group: itemGroup,
+      supplier_code: supplierCodes,
+      item_group: itemGroups,
       search: debouncedSearch.trim(),
       page,
       page_size: AVAILABLE_PAGE_SIZE,
@@ -684,47 +696,55 @@ function AvailableLinesPicker({
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
-        {/* Danh mục NCC / phân loại dài hàng chục-hàng trăm dòng — Select thường
-            cuộn tay không nổi (khách báo 29/08), dùng SearchSelect gõ tìm được. */}
-        <SearchSelect
-          className="w-64"
-          value={supplierCode}
-          onChange={(value) => {
-            setSupplierCode(value)
-            setPage(1)
-          }}
-          placeholder="Tất cả NCC"
-          searchPlaceholder="Tìm NCC theo mã / tên…"
-          options={[
-            { value: ALL_SUPPLIERS, label: 'Tất cả NCC' },
-            ...(suppliersQuery.data?.items ?? []).map((supplier) => ({
-              value: supplier.code,
+        {/* Danh mục NCC / phân loại dài hàng chục-hàng trăm dòng — Select thường cuộn tay
+            không nổi (khách báo 29/08). bao-CR-487: chọn được NHIỀU, gõ tìm được (MultiPicker
+            như CR-423). MultiPicker tự chiếm trọn thẻ bọc nên bề rộng đặt ở div ngoài. */}
+        <div className="w-64" aria-label="Lọc theo nhà cung cấp">
+          <MultiPicker
+            value={supplierCodes}
+            onChange={(ids) => {
+              setSupplierCodes(ids)
+              setPage(1)
+            }}
+            options={(suppliersQuery.data?.items ?? []).map((supplier) => ({
+              id: supplier.code,
               label: `${supplier.code} — ${supplier.name}`,
-            })),
-          ]}
-        />
+            }))}
+            placeholder="Tất cả NCC"
+            searchPlaceholder="Tìm NCC theo mã / tên…"
+            emptyMessage="Không tìm thấy NCC nào."
+            contentClassName="w-80"
+            summaryInTrigger
+            clearInTrigger
+          />
+        </div>
 
-        <SearchSelect
-          className="w-56"
-          value={itemGroup}
-          onChange={(value) => {
-            setItemGroup(value)
-            setPage(1)
-          }}
-          placeholder="Phân loại..."
-          searchPlaceholder="Tìm phân loại…"
-          options={(itemGroupsQuery.data?.items ?? []).map((group) => ({
-            value: group.name,
-            label: group.name,
-          }))}
-        />
+        <div className="w-56" aria-label="Lọc theo phân loại">
+          <MultiPicker
+            value={itemGroups}
+            onChange={(ids) => {
+              setItemGroups(ids)
+              setPage(1)
+            }}
+            options={(itemGroupsQuery.data?.items ?? []).map((group) => ({
+              id: group.name,
+              label: group.name,
+            }))}
+            placeholder="Tất cả phân loại"
+            searchPlaceholder="Tìm phân loại…"
+            emptyMessage="Không tìm thấy phân loại nào."
+            summaryInTrigger
+            clearInTrigger
+          />
+        </div>
 
-        {itemGroup !== (line.item_group || '') && (
+        {!!line.item_group && !isLineGroupOnly(itemGroups, line.item_group) && (
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={() => {
-              setItemGroup(line.item_group || '')
+              setItemGroups(defaultItemGroups(line.item_group))
               setPage(1)
             }}
           >
@@ -741,6 +761,13 @@ function AvailableLinesPicker({
             setPage(1)
           }}
         />
+
+        {filterActive && (
+          <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
+            <X />
+            Bỏ lọc
+          </Button>
+        )}
       </div>
 
       {!hasCriteria ? (

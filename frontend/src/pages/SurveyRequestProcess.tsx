@@ -125,8 +125,8 @@ interface Supplier {
 
 // Per-line local state for supplier selection + available survey lines
 interface LineState {
-  supplierCode: string
-  filterGroup: string   // phân loại đang lọc (mặc định = phân loại dòng, đổi được)
+  supplierCodes: string[]   // bao-CR-487: chọn NHIỀU NCC — trong một ô là HOẶC, hai ô là VÀ
+  filterGroups: string[]    // phân loại đang lọc (mặc định = [phân loại dòng], đổi được; rỗng = không lọc)
   search: string        // tìm theo mã/tên SP
   availLines: AvailSurveyLine[]   // CHỈ chứa dòng của trang hiện tại (phân trang phía server)
   availTotal: number              // tổng số dòng khớp bộ lọc (cho phân trang)
@@ -138,6 +138,13 @@ interface LineState {
 }
 
 const AVAIL_PAGE_SIZE = 8   // số dòng khảo sát khả dụng mỗi trang
+// bao-CR-487: phân loại của dòng dưới dạng danh sách lọc, và «ô lọc đang đúng bằng phân loại dòng».
+const lineGroupsOf = (lineGroup: string | undefined | null): string[] => (lineGroup ? [lineGroup] : [])
+const isLineGroupOnly = (groups: string[], lineGroup: string | undefined | null) => {
+  const wanted = lineGroupsOf(lineGroup)
+  return groups.length === wanted.length && wanted.every((g) => groups.includes(g))
+}
+
 const SEL_STYLES = {
   control: (b: any) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }),
   menu: (b: any) => ({ ...b, zIndex: 9999 }),
@@ -178,8 +185,8 @@ export default function SurveyRequestProcess() {
       // Reset per-line state, giữ lại bộ lọc + kết quả đã tải (phân loại mặc định = phân loại dòng)
       setLineStates((prev) =>
         (d.lines || []).map((ln, i) => ({
-          supplierCode: prev[i]?.supplierCode || '',
-          filterGroup:  prev[i]?.filterGroup ?? (ln.item_group || ''),
+          supplierCodes: prev[i]?.supplierCodes || [],
+          filterGroups:  prev[i]?.filterGroups ?? lineGroupsOf(ln.item_group),
           search:       prev[i]?.search || '',
           availLines:   prev[i]?.availLines   || [],
           availTotal:   prev[i]?.availTotal   || 0,
@@ -211,19 +218,19 @@ export default function SurveyRequestProcess() {
     if (!data) return
     ;(data.lines || []).forEach((ln, i) => {
       if ((lineStates[i]?.availLines || []).length === 0)
-        fetchAvail(i, ln.id, { filterGroup: ln.item_group || '' })
+        fetchAvail(i, ln.id, { filterGroups: lineGroupsOf(ln.item_group) })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id])
 
   // Tìm dòng khảo sát khả dụng theo bộ lọc (NCC / phân loại / mã-tên SP). patch = phần filter thay đổi.
   // page (0-based): đổi bộ lọc -> về trang 0; bấm phân trang -> giữ bộ lọc, đổi trang. Phân trang phía server.
-  async function fetchAvail(lineIdx: number, lineId: number, patch: Partial<Pick<LineState, 'supplierCode' | 'filterGroup' | 'search'>>, page = 0,
+  async function fetchAvail(lineIdx: number, lineId: number, patch: Partial<Pick<LineState, 'supplierCodes' | 'filterGroups' | 'search'>>, page = 0,
                             sortOverride?: { by: string; dir: 'asc' | 'desc' }) {
     const cur = lineStates[lineIdx] || ({} as LineState)
     const merged = {
-      supplierCode: patch.supplierCode ?? cur.supplierCode ?? '',
-      filterGroup: patch.filterGroup ?? cur.filterGroup ?? '',
+      supplierCodes: patch.supplierCodes ?? cur.supplierCodes ?? [],
+      filterGroups: patch.filterGroups ?? cur.filterGroups ?? [],
       search: patch.search ?? cur.search ?? '',
     }
     // Sort: dùng override (khi bấm tiêu đề cột) hoặc giữ nguyên sort hiện tại của dòng
@@ -233,17 +240,20 @@ export default function SurveyRequestProcess() {
       ? { ...s, ...patch, loading: true, availPage: page, selectedAvailIds: new Set<number>(),
           availSortBy: sortBy, availSortDir: sortDir } : s))
     // Cần ít nhất 1 tiêu chí -> nếu rỗng hết thì xóa kết quả
-    if (!merged.supplierCode && !merged.filterGroup && !merged.search.trim()) {
+    if (!merged.supplierCodes.length && !merged.filterGroups.length && !merged.search.trim()) {
       setLineStates((prev) => prev.map((s, i) => i === lineIdx ? { ...s, availLines: [], availTotal: 0, loading: false } : s))
       return
     }
     try {
       const r = await api.get(`${API}/${id}/lines/${lineId}/available-survey-lines`, {
         params: {
-          supplier_code: merged.supplierCode, item_group: merged.filterGroup, search: merged.search.trim(),
+          supplier_code: merged.supplierCodes, item_group: merged.filterGroups, search: merged.search.trim(),
           page: page + 1, page_size: AVAIL_PAGE_SIZE,
           sort_by: sortBy, sort_dir: sortDir,
         },
+        // bao-CR-487: mảng phải ra `supplier_code=A&supplier_code=B` — axios mặc định gắn `[]` vào tên,
+        // FastAPI không nhận dạng đó.
+        paramsSerializer: { indexes: null },
       })
       const d = r.data.data || {}
       setLineStates((prev) => prev.map((s, i) => i === lineIdx
@@ -402,7 +412,7 @@ export default function SurveyRequestProcess() {
       )}
 
       {lines.map((line, lineIdx) => {
-        const ls = lineStates[lineIdx] || { supplierCode: '', filterGroup: line.item_group || '', search: '', availLines: [], availTotal: 0, loading: false, selectedAvailIds: new Set(), availPage: 0, availSortBy: '', availSortDir: 'desc' as const }
+        const ls = lineStates[lineIdx] || { supplierCodes: [], filterGroups: lineGroupsOf(line.item_group), search: '', availLines: [], availTotal: 0, loading: false, selectedAvailIds: new Set(), availPage: 0, availSortBy: '', availSortDir: 'desc' as const }
         const shortName = line.requirement_detail
           ? (line.requirement_detail.length > 60 ? line.requirement_detail.slice(0, 57) + '...' : line.requirement_detail)
           : line.item_group || `Sản phẩm ${lineIdx + 1}`
@@ -443,42 +453,51 @@ export default function SurveyRequestProcess() {
                 <i className="ti ti-filter" style={{ marginRight: 4 }} />Tìm kết quả khảo sát để thêm option
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ width: 220 }}>
+                {/* bao-CR-487: hai ô chọn NHIỀU (trong một ô là HOẶC, hai ô là VÀ); nút «Bỏ lọc» xóa cả ba ô. */}
+                <div style={{ width: 260 }}>
                   <Select
-                    value={ls.filterGroup ? { value: ls.filterGroup, label: ls.filterGroup } : null}
+                    isMulti
+                    value={groups.filter((g) => ls.filterGroups.includes(g)).map((g) => ({ value: g, label: g }))}
                     options={groups.map((g) => ({ value: g, label: g }))}
-                    onChange={(o: any) => fetchAvail(lineIdx, line.id, { filterGroup: o ? o.value : '' })}
-                    isClearable placeholder="Phân loại..." styles={SEL_STYLES}
+                    onChange={(o: any) => fetchAvail(lineIdx, line.id, { filterGroups: (o || []).map((x: any) => x.value) })}
+                    isClearable placeholder="Phân loại (chọn nhiều)..." styles={SEL_STYLES}
                     menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                   />
                 </div>
-                <div style={{ width: 300 }}>
+                <div style={{ width: 340 }}>
                   <Select
-                    value={supplierOptions.find((o) => o.value === ls.supplierCode) || null}
+                    isMulti
+                    value={supplierOptions.filter((o) => ls.supplierCodes.includes(o.value))}
                     options={supplierOptions}
-                    onChange={(o: any) => fetchAvail(lineIdx, line.id, { supplierCode: o ? o.value : '' })}
-                    isClearable placeholder="Nhà cung cấp (tùy chọn)..." styles={SEL_STYLES}
+                    onChange={(o: any) => fetchAvail(lineIdx, line.id, { supplierCodes: (o || []).map((x: any) => x.value) })}
+                    isClearable placeholder="Nhà cung cấp (chọn nhiều)..." styles={SEL_STYLES}
                     menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                   />
                 </div>
                 <input value={ls.search || ''} onChange={(e) => onSearchChange(lineIdx, line.id, e.target.value)}
                   placeholder="Tìm mã / tên SP..." style={{ width: 220 }} />
-                {ls.filterGroup !== (line.item_group || '') && (
+                {!!line.item_group && !isLineGroupOnly(ls.filterGroups, line.item_group) && (
                   <button className="btn ghost" style={{ height: 34, fontSize: 12, padding: '0 10px' }}
-                    onClick={() => fetchAvail(lineIdx, line.id, { filterGroup: line.item_group || '' })}>
+                    onClick={() => fetchAvail(lineIdx, line.id, { filterGroups: lineGroupsOf(line.item_group) })}>
                     <i className="ti ti-rotate" />Về phân loại dòng
+                  </button>
+                )}
+                {(ls.supplierCodes.length > 0 || ls.filterGroups.length > 0 || (ls.search || '').trim()) && (
+                  <button className="btn ghost" style={{ height: 34, fontSize: 12, padding: '0 10px' }}
+                    onClick={() => fetchAvail(lineIdx, line.id, { supplierCodes: [], filterGroups: [], search: '' })}>
+                    <i className="ti ti-x" />Bỏ lọc
                   </button>
                 )}
               </div>
             </div>)}
 
             {/* Bảng dòng khảo sát khả dụng theo bộ lọc — chỉ dòng mình phụ trách */}
-            {line.can_process && (ls.supplierCode || ls.filterGroup || (ls.search || '').trim() || ls.loading || availShown.length > 0) && (
+            {line.can_process && (ls.supplierCodes.length > 0 || ls.filterGroups.length > 0 || (ls.search || '').trim() || ls.loading || availShown.length > 0) && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                   Kết quả khảo sát đã duyệt
-                  {ls.filterGroup && <> · phân loại <span style={{ color: 'var(--teal)' }}>{ls.filterGroup}</span></>}
-                  {ls.supplierCode && <> · NCC <span style={{ color: 'var(--teal)' }}>{ls.supplierCode}</span></>}
+                  {ls.filterGroups.length > 0 && <> · phân loại <span style={{ color: 'var(--teal)' }}>{ls.filterGroups.join(', ')}</span></>}
+                  {ls.supplierCodes.length > 0 && <> · NCC <span style={{ color: 'var(--teal)' }}>{ls.supplierCodes.join(', ')}</span></>}
                   {ls.availTotal > 0 && <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {ls.availTotal} kết quả</span>}:
                 </div>
                 {ls.loading ? (
