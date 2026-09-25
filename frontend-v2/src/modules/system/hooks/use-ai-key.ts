@@ -33,3 +33,32 @@ export function useRemoveAiKey() {
     },
   })
 }
+
+/** Khóa kết nối MCP cá nhân (ai-CR-063). Khóa thô chỉ nằm trong kết quả mutation, KHÔNG vào cache. */
+export function useMcpKeys() {
+  return useQuery({
+    queryKey: queryKeys.system.mcpKeys(),
+    queryFn: () => agentHubApi.myMcpKeys(),
+  })
+}
+
+export function useCreateMcpKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string; scope: number; days: number }) => agentHubApi.createMcpKey(body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.mcpKeys() })
+    },
+  })
+}
+
+export function useRemoveMcpKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => agentHubApi.removeMcpKey(id),
+    onSuccess: () => {
+      toast.success('Đã gỡ khóa MCP.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.mcpKeys() })
+    },
+  })
+}

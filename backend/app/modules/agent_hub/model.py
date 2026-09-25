@@ -282,3 +282,18 @@ class AgentReminder(Base, AuditMixin):
     due_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True, index=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentMcpKey(Base, AuditMixin):
+    """Khóa kết nối MCP cá nhân (ai-CR-063, M-02): chỉ giữ băm, có hạn, hai mức chỉ đọc / được ghi."""
+
+    __tablename__ = "tab_agent_mcp_key"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    name: Mapped[str] = mapped_column(String(80), default="")
+    token_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    key_hint: Mapped[str] = mapped_column(String(8), default="")
+    scope: Mapped[int] = mapped_column(SmallInteger, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)

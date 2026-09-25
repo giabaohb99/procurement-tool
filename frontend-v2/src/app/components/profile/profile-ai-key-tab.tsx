@@ -1,13 +1,14 @@
-import { KeyRound, Trash2 } from 'lucide-react'
+import { KeyRound, Plug, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-import { useAiKey, useRemoveAiKey, useSetAiKey } from '@/modules/system/hooks/use-ai-key'
+import { useAiKey, useCreateMcpKey, useMcpKeys, useRemoveAiKey, useRemoveMcpKey, useSetAiKey } from '@/modules/system/hooks/use-ai-key'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { SectionHeading } from '@/shared/ui/section-heading'
+import { CopyButton } from '@/shared/ui/copy-button'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDateTime } from '@/shared/utils/format-date'
 
@@ -42,6 +43,7 @@ export function ProfileAiKeyTab() {
 
   return (
     <div className="space-y-4">
+      <McpKeysCard />
       <Card>
         <CardHeader>
           <SectionHeading>Khóa AI của bạn cho bot Telegram</SectionHeading>
@@ -93,5 +95,92 @@ export function ProfileAiKeyTab() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+
+/**
+ * Kết nối MCP (ai-CR-063, M-01/M-02): mỗi người tự tạo khóa để ứng dụng AI của mình (Claude Desktop, Cursor…)
+ * gọi bộ tool ERP dưới đúng quyền của mình. Khóa chỉ hiện MỘT lần lúc tạo; mặc định «chỉ đọc», 90 ngày.
+ */
+function McpKeysCard() {
+  const { data, isLoading } = useMcpKeys()
+  const create = useCreateMcpKey()
+  const remove = useRemoveMcpKey()
+  const [name, setName] = useState('')
+  const [scope, setScope] = useState(0)
+  const issued = create.data
+  const endpoint = data?.endpoint || `${window.location.origin}/api/mcp`
+  const snippet = issued
+    ? JSON.stringify({ mcpServers: { 'dego-erp': { url: endpoint, headers: { Authorization: `Bearer ${issued.key}` } } } }, null, 2)
+    : ''
+
+  async function handleRemove(id: number, label: string) {
+    const ok = await confirm({
+      title: 'Gỡ khóa MCP',
+      message: `Gỡ khóa «${label}»? Ứng dụng đang dùng khóa này sẽ không gọi được ERP nữa.`,
+      confirmLabel: 'Gỡ khóa',
+    })
+    if (ok) remove.mutate(id)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <SectionHeading>Kết nối MCP: dùng AI của bạn với dữ liệu ERP</SectionHeading>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Tạo một khóa, dán vào Claude Desktop / Cursor / ứng dụng hỗ trợ MCP. Ứng dụng đó sẽ tra cứu ERP <b>đúng quyền của bạn</b>.
+          Khóa «được ghi» thêm khả năng soạn nháp và tạo phiếu (luôn hỏi bạn xác nhận bản nháp trước). Đề nghị thanh toán chỉ tạo trên web.
+        </p>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="space-y-1">
+            <Label htmlFor="mcp-key-name">Tên khóa</Label>
+            <Input id="mcp-key-name" className="w-48" placeholder="Claude Desktop máy công ty" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="mcp-key-scope">Mức</Label>
+            <select id="mcp-key-scope" className="h-9 rounded-md border bg-background px-2 text-sm" value={scope} onChange={(e) => setScope(Number(e.target.value))}>
+              <option value={0}>Chỉ đọc</option>
+              <option value={1}>Được ghi</option>
+            </select>
+          </div>
+          <Button type="button" size="sm" onClick={() => create.mutate({ name, scope, days: 90 })} disabled={create.isPending}>
+            <Plug className="mr-1.5 size-4" /> Tạo khóa MCP
+          </Button>
+        </div>
+        {issued?.key && (
+          <div className="space-y-2 rounded-md border p-3">
+            <p className="font-medium">Khóa mới (chỉ hiện một lần, chép ngay):</p>
+            <div className="flex items-center gap-2">
+              <code className="break-all rounded bg-muted px-1.5 py-0.5 text-xs">{issued.key}</code>
+              <CopyButton value={issued.key} label="khóa MCP" />
+            </div>
+            <p className="text-muted-foreground">Cấu hình cho Claude Desktop / Cursor (mục mcpServers):</p>
+            <div className="flex items-start gap-2">
+              <pre className="max-h-40 flex-1 overflow-auto rounded bg-muted p-2 text-xs">{snippet}</pre>
+              <CopyButton value={snippet} label="cấu hình MCP" />
+            </div>
+          </div>
+        )}
+        {isLoading && <Skeleton className="h-10 w-full" />}
+        {!isLoading && (data?.items.length ?? 0) > 0 && (
+          <ul className="divide-y rounded-md border">
+            {data!.items.map((k) => (
+              <li key={k.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
+                <span className="min-w-0 flex-1 font-medium">{k.name} <span className="font-mono text-xs text-muted-foreground">{k.hint}</span></span>
+                <span className="text-xs text-muted-foreground">{k.scope_label} · hết hạn {formatDateTime(k.expires_at)}{k.last_used_at ? ` · dùng lần cuối ${formatDateTime(k.last_used_at)}` : ' · chưa dùng'}</span>
+                <Button type="button" variant="ghost" size="sm" onClick={() => void handleRemove(k.id, k.name)} disabled={remove.isPending}>
+                  <Trash2 className="mr-1 size-4" /> Gỡ
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!isLoading && (data?.items.length ?? 0) === 0 && <p className="text-muted-foreground">Chưa có khóa MCP nào.</p>}
+        <p className="text-xs text-muted-foreground">Đường kết nối: <code>{endpoint}</code>. Hướng dẫn: Trung tâm HDSD → «Kết nối MCP».</p>
+      </CardContent>
+    </Card>
   )
 }

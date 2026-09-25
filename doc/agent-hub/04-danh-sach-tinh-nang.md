@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 24** (25/09/2026): T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 29** (25/09/2026): M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -61,11 +61,11 @@ lõi. Cổng MCP phải nằm trong backend ERP có tên miền thật (dev rồ
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| M-01 | Cổng MCP trên backend ERP (Streamable HTTP) — dùng CHUNG bộ tool với Trợ lý web và Telegram, không viết lại | L | Cần gộp phần bot vào `erp-v2` |
-| M-02 | Khóa kết nối cá nhân lấy ở Trang cá nhân: có hạn, gỡ được, tách chỉ đọc / được ghi, nhật ký từng lượt gọi | M | Tool chạy đúng phạm vi dữ liệu của người đó. Phần khóa Gemini cá nhân cho kênh chat đã kéo lên phase 2 (D-01) |
-| M-03 | Tool chỉ đọc qua MCP: tra số liệu, tình trạng phiếu, báo cáo | M | Bước thử đầu tiên, 1-2 người |
-| M-04 | Tool tạo / gửi duyệt qua MCP, xác nhận hai bước phía server (dùng lại `draft_create`) | M | Đề nghị thanh toán chỉ trên web |
-| M-05 | Tool báo lỗi qua MCP → phiếu hỗ trợ → Đậu Đậu | S | Duyệt / gộp vẫn theo nhóm K |
+| M-01 | **XONG 25/09/2026 (ai-CR-063).** Cổng MCP trên backend ERP (Streamable HTTP) — dùng CHUNG bộ tool với Trợ lý web và Telegram, không viết lại | L | Cần gộp phần bot vào `erp-v2` |
+| M-02 | **XONG 25/09/2026 (ai-CR-063).** Khóa kết nối cá nhân lấy ở Trang cá nhân: có hạn, gỡ được, tách chỉ đọc / được ghi, nhật ký từng lượt gọi | M | Tool chạy đúng phạm vi dữ liệu của người đó. Phần khóa Gemini cá nhân cho kênh chat đã kéo lên phase 2 (D-01) |
+| M-03 | **XONG 25/09/2026 (ai-CR-063).** Tool chỉ đọc qua MCP: tra số liệu, tình trạng phiếu, báo cáo | M | Bước thử đầu tiên, 1-2 người |
+| M-04 | **XONG 25/09/2026 (ai-CR-063).** Tool tạo / gửi duyệt qua MCP, xác nhận hai bước phía server (dùng lại `draft_create`) | M | Đề nghị thanh toán chỉ trên web |
+| M-05 | **XONG 25/09/2026 (ai-CR-063).** Tool báo lỗi qua MCP → phiếu hỗ trợ → Đậu Đậu | S | Duyệt / gộp vẫn theo nhóm K |
 | M-06 | Mỗi người tự nối Google của mình (Drive, Lịch), tool lịch / Drive đọc dữ liệu của chính họ | L | Thay N-03 theo hướng từng người; khóa OAuth lưu mã hóa |
 | M-07 | Trợ lý trên web chạy bằng AI + khóa do từng người chọn (khóa lưu mã hóa, chỉ người đó dùng) | M | Công ty thôi trả tiền model theo lượt. Đại ca chốt 24/09: trên dev, web vẫn dùng khóa công ty; D-01 chỉ cho kênh chat |
 | M-08 | Kênh Zalo OA dùng chung lõi với Telegram | M | Zalo đẩy webhook: dùng tên miền ERP |
@@ -155,8 +155,8 @@ Cỡ là ước THÔ theo ngày công của một người, đo lại sau mỗi 
 | **0** | Đang chạy | Đậu Đậu trên máy đại ca: nhận việc, rà, sửa, kiểm, gộp, deploy dev; đăng nhập bằng mã; tạo + gửi duyệt phiếu từ chat; nghiên cứu; chi phí | — | xong |
 | **1** | Khóa quyền sửa mã | K-01 cấp quyền bằng câu nhắn (cách 3) **xong** · K-04 kiểm cấp trước lệnh nhạy cảm **xong** · K-03 bảo vệ nhánh `main` · K-02 khóa riêng của bot | K-03: đại ca bật trên GitHub; K-02: tạo khóa deploy riêng cho bot | 3–4 ngày |
 | **2 ✔ xong 25/09** | Bot lên ERP dev (nhóm D) | (a) D-01 khóa Gemini cá nhân + D-02 bỏ tài khoản chung · (b) D-03 sổ máy + D-04 runner tách rời + D-05 chia việc · (c) D-06 stack bot trên dev, gộp vào `erp-v2` · bật phiếu hỗ trợ làm nguồn việc (A-06) · D-07 để cuối | **Đã chốt 24/09:** một bot trên dev, ai cũng tự đăng nhập, khóa cá nhân, không lùi khóa công ty. Đại ca làm tay: tạo bot mới ở BotFather, dán token + khóa vào `.env` trên VPS | ~2 tuần (a 3 ngày · b 5 ngày · c 2 ngày) |
-| **3 (đang làm)** | Trợ lý theo từng người trên web | M-07 web chạy khóa cá nhân (nếu đại ca muốn, nay web = khóa công ty) · M-02 khóa kết nối MCP · P-02 trần chi phí theo người · P-01 đẩy thông báo ERP sang Telegram cá nhân · T-10 nhắc việc bằng câu nói · T-07 tin thoại | P-01: đẩy toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» | 2 tuần |
-| **4** | Cổng MCP | M-01 cổng MCP dùng chung bộ tool · M-03 tool đọc · M-04 tool tạo/gửi duyệt có xác nhận · M-05 báo lỗi → Đậu Đậu | Thử với 1–2 người trước; chạy dev rồi prod | 2 tuần |
+| **3 ✔ xong 25/09** (M-07 bỏ theo quyết định web = khóa công ty; M-02 làm ở phase 4) | Trợ lý theo từng người trên web | M-07 web chạy khóa cá nhân (nếu đại ca muốn, nay web = khóa công ty) · M-02 khóa kết nối MCP · P-02 trần chi phí theo người · P-01 đẩy thông báo ERP sang Telegram cá nhân · T-10 nhắc việc bằng câu nói · T-07 tin thoại | P-01: đẩy toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» | 2 tuần |
+| **4 ✔ mã xong 25/09 (ai-CR-063), thử với 1–2 người trên dev** | Cổng MCP | M-01 cổng MCP dùng chung bộ tool · M-03 tool đọc · M-04 tool tạo/gửi duyệt có xác nhận · M-05 báo lỗi → Đậu Đậu | Thử với 1–2 người trước; chạy dev rồi prod | 2 tuần |
 | **5** | Kết nối Google của từng người | M-06 Drive + Lịch riêng từng người → T-08 bản tin sáng, T-09 nhắc trước họp, T-11 tạo lịch bằng câu nói, R-03/R-04 phần Drive | Cá nhân hay Workspace công ty (Q2); đăng ký ứng dụng Google của công ty | 2 tuần |
 | **6** | Nhiều kênh, nhiều bot | M-08 kênh Zalo OA · N-01 nhiều bot một nền · N-04 chi phí theo bot · N-05 cách ly khóa | Tạo bot/OA và đặt tên (Q6) | 1–2 tuần |
 | **7** | Thư ký biên bản họp | T-01 thử một tệp họp thật (M0) → T-02 … T-06, T-12 | Cho ai dùng (Q1), một tệp ghi âm thật (Q5); chỉ làm tiếp khi M0 đạt | 3 tuần |

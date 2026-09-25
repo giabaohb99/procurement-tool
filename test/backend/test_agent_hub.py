@@ -5587,3 +5587,98 @@ def test_tran_luot_ai_moi_ngay_cho_chat_thuong(db, bot, monkeypatch):
     #  Chat đại ca không bị trần.
     service.handle_message(db, _msg("3 đơn mua hàng gần nhất"))
     assert asked == ["3 đơn mua hàng gần nhất"]
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-063: cổng MCP + khóa MCP cá nhân (M-01, M-02, M-03, M-04, M-05)
+# ---------------------------------------------------------------------------
+def test_khoa_mcp_tao_bam_han_go(db):
+    from datetime import datetime as _dt, timedelta as _td
+
+    from app.modules.agent_hub import mcp_keys
+
+    lan = _erp_user(db)
+    row, raw = mcp_keys.create(db, lan.id, name="Claude Desktop", scope=mcp_keys.SCOPE_READ, days=30)
+    assert raw.startswith("dego_mcp_") and row.token_hash != raw and row.key_hint == raw[-4:]
+    assert mcp_keys.authenticate(db, raw) is row and mcp_keys.authenticate(db, "dego_mcp_sai") is None
+    assert mcp_keys.authenticate(db, raw, now=_dt.now() + _td(days=31)) is None      # hết hạn
+    mcp_keys.revoke(db, row)
+    assert mcp_keys.authenticate(db, raw) is None
+    for i in range(mcp_keys.MAX_KEYS):
+        mcp_keys.create(db, lan.id, name=f"k{i}")
+    with pytest.raises(ValueError):
+        mcp_keys.create(db, lan.id, name="thừa")
+
+
+def test_cong_mcp_json_rpc_liet_ke_theo_muc_va_goi_tool_duoi_quyen_chu_khoa(db, monkeypatch):
+    from app.modules.agent_hub import mcp, mcp_keys
+    from app.modules.assistant import tools as tool_registry
+
+    lan = _erp_user(db)
+    rk, _raw_r = mcp_keys.create(db, lan.id, name="đọc", scope=mcp_keys.SCOPE_READ)
+    wk, _raw_w = mcp_keys.create(db, lan.id, name="ghi", scope=mcp_keys.SCOPE_WRITE)
+    init = mcp.handle(db, lan, rk, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
+    assert init["result"]["protocolVersion"] == mcp.PROTOCOL_VERSION and "tools" in init["result"]["capabilities"]
+    assert mcp.handle(db, lan, rk, {"jsonrpc": "2.0", "method": "notifications/initialized"}) is None
+    names_r = {t["name"] for t in mcp.handle(db, lan, rk, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})["result"]["tools"]}
+    names_w = {t["name"] for t in mcp.handle(db, lan, wk, {"jsonrpc": "2.0", "id": 3, "method": "tools/list"})["result"]["tools"]}
+    assert "product_search" in names_r and "report_issue" in names_r
+    assert not any(n.startswith("draft_") for n in names_r) and "confirm_draft" not in names_r and "ticket_create" not in names_r
+    assert {"draft_leave_request", "confirm_draft", "report_issue", "ticket_create"} <= names_w
+    assert "propose_document_update" not in names_w                                # không mở qua MCP
+    #  tools/call chạy run_tool dưới danh tính chủ khóa.
+    seen: list = []
+    monkeypatch.setattr(tool_registry, "run_tool", lambda db_, user, name, args: seen.append((user.id, name, args)) or {"total": 1, "items": ["x"]})
+    out = mcp.handle(db, lan, rk, {"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+                                   "params": {"name": "product_search", "arguments": {"q": "atrazine"}}})
+    assert seen == [(lan.id, "product_search", {"q": "atrazine"})] and out["result"]["isError"] is False
+    assert '"total": 1' in out["result"]["content"][0]["text"]
+    #  Khóa chỉ đọc gọi tool ghi → lỗi nghiệp vụ (isError), không chạy.
+    out = mcp.handle(db, lan, rk, {"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "draft_leave_request", "arguments": {}}})
+    assert out["result"]["isError"] is True and len(seen) == 1
+    out = mcp.handle(db, lan, rk, {"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "confirm_draft", "arguments": {"kind": "leave", "draft": {}}}})
+    assert "chỉ đọc" in out["result"]["content"][0]["text"]
+    assert mcp.handle(db, lan, rk, {"jsonrpc": "2.0", "id": 7, "method": "resources/list"})["error"]["code"] == -32601
+    assert mcp.handle(db, lan, rk, {"nope": 1})["error"]["code"] == -32600
+
+
+def test_cong_mcp_confirm_draft_va_report_issue(db, monkeypatch):
+    from app.modules.agent_hub import draft_create, mcp, mcp_keys
+    from app.modules.ticket.model import Ticket
+
+    lan = _erp_user(db)
+    created: list = []
+    monkeypatch.setattr(draft_create, "create", lambda db_, user, kind, draft: created.append((user.id, kind)) or ("NP0042", 42))
+    monkeypatch.setattr(draft_create, "submit", lambda db_, user, kind, oid: created.append(("submit", kind, oid)))
+    monkeypatch.setattr(draft_create, "created_details", lambda db_, kind, oid: ["Trạng thái: Chờ duyệt"])
+    monkeypatch.setattr(draft_create, "missing_for_submit", lambda kind, draft: "")
+    out = mcp.call_tool(db, lan, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "leave", "draft": {"reason": "x"}, "submit": True})
+    assert out["ok"] and out["code"] == "NP0042" and out["submitted"] and out["link"] == "/hr/leave-requests/42"
+    assert created == [(lan.id, "leave"), ("submit", "leave", 42)]
+    assert "chỉ tạo trên web" in mcp.call_tool(db, lan, mcp_keys.SCOPE_WRITE, "confirm_draft", {"kind": "payment", "draft": {}})["error"]
+    #  Báo lỗi → phiếu hỗ trợ đúng bộ phận của bot (M-05), ai cũng gọi được.
+    monkeypatch.setattr(settings, "AGENT_TICKET_DEPARTMENTS", "Lập trình & IT nội bộ, Khác")
+    out = mcp.call_tool(db, lan, mcp_keys.SCOPE_READ, "report_issue", {"title": "Màn công nợ lọc sai ngày", "detail": "Chọn tháng 9 ra tháng 8.", "screen_url": "/finance/payables"})
+    assert out["ok"] and out["department"] == "Lập trình & IT nội bộ"
+    t = db.query(Ticket).filter_by(code=out["ticket"]).one()
+    assert t.subject == "Màn công nợ lọc sai ngày" and t.department == "Lập trình & IT nội bộ" and t.created_by == lan.id
+
+
+def test_api_khoa_mcp_tu_phuc_vu(db, bot):
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from app.modules.agent_hub import controller
+
+    lan = _erp_user(db)
+    other = _erp_user(db, "khac@dego.vn")
+    me = SimpleNamespace(id=lan.id)
+    made = _json(controller.create_my_mcp_key(controller.McpKeyIn(name="Cursor", scope=1, days=10), user=me, db=db))
+    assert made["key"].startswith("dego_mcp_") and made["scope_label"] == "được ghi"
+    listed = _json(controller.list_my_mcp_keys(user=me, db=db))
+    assert listed["endpoint"].endswith("/api/mcp") and len(listed["items"]) == 1 and "key" not in listed["items"][0]
+    with pytest.raises(HTTPException):
+        controller.remove_my_mcp_key(made["id"], user=SimpleNamespace(id=other.id), db=db)
+    controller.remove_my_mcp_key(made["id"], user=me, db=db)
+    assert _json(controller.list_my_mcp_keys(user=me, db=db))["items"] == []

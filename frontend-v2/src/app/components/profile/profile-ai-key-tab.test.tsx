@@ -15,11 +15,12 @@ import { ProfileAiKeyTab } from './profile-ai-key-tab'
 
 const apiGet = vi.fn()
 const apiPut = vi.fn()
+const apiPost = vi.fn()
 const apiDelete = vi.fn()
 
 vi.mock('@/core/api', () => ({
   apiGet: (...args: unknown[]) => apiGet(...args),
-  apiPost: vi.fn(),
+  apiPost: (...args: unknown[]) => apiPost(...args),
   apiPut: (...args: unknown[]) => apiPut(...args),
   apiPatch: vi.fn(),
   apiDelete: (...args: unknown[]) => apiDelete(...args),
@@ -42,8 +43,12 @@ function renderTab() {
   )
 }
 
-function mockKey(info: Partial<AiKeyInfo> = {}) {
-  apiGet.mockResolvedValue({ provider: 'gemini', has_key: false, hint: '', verified_at: null, ...info })
+function mockKey(info: Partial<AiKeyInfo> = {}, mcp: { endpoint?: string; items?: unknown[] } = {}) {
+  apiGet.mockImplementation((url: string) =>
+    url === '/api/agent-hub/mcp-keys'
+      ? Promise.resolve({ endpoint: 'https://erp.test/api/mcp', items: [], ...mcp })
+      : Promise.resolve({ provider: 'gemini', has_key: false, hint: '', verified_at: null, ...info }),
+  )
 }
 
 describe('ProfileAiKeyTab', () => {
@@ -82,5 +87,33 @@ describe('ProfileAiKeyTab', () => {
     renderTab()
     expect(await screen.findByRole('button', { name: /Lưu khóa/ })).toBeDisabled()
     expect(apiGet).toHaveBeenCalledWith('/api/agent-hub/ai-key')
+  })
+})
+
+describe('ProfileAiKeyTab — khóa MCP (ai-CR-063)', () => {
+  beforeEach(() => {
+    apiGet.mockReset()
+    apiPost.mockReset()
+    apiDelete.mockReset()
+  })
+
+  it('creates an MCP key, shows it once with a ready-to-paste config', async () => {
+    mockKey()
+    apiPost.mockResolvedValue({ id: 3, name: 'Claude', hint: '…abcd', scope: 0, scope_label: 'chỉ đọc', expires_at: null, last_used_at: null, created_at: null, key: 'dego_mcp_xyz' })
+    renderTab()
+    await userEvent.type(await screen.findByLabelText(/Tên khóa/), 'Claude')
+    await userEvent.click(screen.getByRole('button', { name: /Tạo khóa MCP/ }))
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/api/agent-hub/mcp-keys', { name: 'Claude', scope: 0, days: 90 }))
+    expect(await screen.findByText('dego_mcp_xyz')).toBeInTheDocument()
+    expect(screen.getByText(/"url": "https:\/\/erp.test\/api\/mcp"/)).toBeInTheDocument()
+  })
+
+  it('revokes a key through its id', async () => {
+    mockKey({}, { items: [{ id: 7, name: 'Cursor', hint: '…9999', scope: 1, scope_label: 'được ghi', expires_at: null, last_used_at: null, created_at: null }] })
+    apiDelete.mockResolvedValue(null)
+    renderTab()
+    const row = (await screen.findByText('Cursor')).closest('li')!
+    await userEvent.click(row.querySelector('button')!)
+    await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/api/agent-hub/mcp-keys/7'))
   })
 })

@@ -327,6 +327,8 @@ app.include_router(sync_log_router)
 #  HMAC chung khóa (`app/core/sync_signature.py`), xem đầu tệp controller.
 app.include_router(legacy_datxe_router)
 app.include_router(agent_hub_router)
+from app.modules.agent_hub.mcp import router as mcp_router  # noqa: E402 — ai-CR-063 cổng MCP
+app.include_router(mcp_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

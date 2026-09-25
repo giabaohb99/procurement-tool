@@ -8348,3 +8348,27 @@ trần bằng biến cấu hình.
 Kiểm: một bài mới (cùng lượt chạy 231 bài xanh).
 
 Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/service.py
+
+## ai-CR-063 | Cổng MCP và khóa MCP cá nhân
+- status: xong
+- date: 2026-09-25
+Phase 4. Đại ca chốt mỗi người tự chọn ứng dụng AI, hệ thống chỉ cung cấp công cụ qua một cổng nằm
+trong backend ERP.
+
+Đã làm. Một, cổng MCP tại đường API mcp, nói giao thức JSON-RPC theo chuẩn Model Context Protocol,
+dùng chung đúng bộ công cụ mà trợ lý web và bot Telegram đang dùng; mỗi lượt gọi chạy dưới danh
+tính chủ khóa nên hai lớp quyền và nhật ký thao tác giữ nguyên. Hai, khóa MCP cá nhân: tạo ở Trang
+cá nhân, chỉ hiện một lần, có hạn, gỡ được, ghi lần dùng cuối, hai mức chỉ đọc và được ghi; mức
+được ghi có thêm tool tạo phiếu hai bước từ bản nháp và không mở đề nghị thanh toán. Ba, tool báo lỗi
+mở cho mọi khóa: tạo phiếu hỗ trợ gắn bộ phận của bot để bot sửa mã nhặt việc. Bốn, khối «Kết nối
+MCP» trên giao diện với đoạn cấu hình Claude Desktop hay Cursor chép sẵn; tài liệu số 06.
+
+Gộp nhánh dev mới nhất về nhánh bot, migration khóa MCP nối sau migration gộp của Agent 1. Theo luật
+mới đại ca chốt: dev chỉ deploy từ erp-v2, Agent 1 gộp nhánh bot vào erp-v2 rồi deploy.
+
+Kiểm: bốn bài backend mới (cùng bài phạm vi 256 xanh), hai bài giao diện mới, typecheck và lint không lỗi.
+
+Mã nguồn: backend/app/modules/agent_hub/mcp.py · mcp_keys.py · controller.py · model.py · backend/app/main.py ·
+backend/app/modules/employee/service.py · backend/migrations/versions/c9d4a2e6f1b8_* ·
+frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
+modules/system/api/agent-hub-api.ts · doc/agent-hub/06-cong-mcp.md

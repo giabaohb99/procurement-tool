@@ -431,6 +431,8 @@ export const queryKeys = {
     telegramLinks: () => ['system', 'telegram-links'] as const,
     /** Khóa Gemini cá nhân của chính mình (ai-CR-053). */
     aiKey: () => ['system', 'ai-key'] as const,
+    /** Khóa MCP cá nhân (ai-CR-063). */
+    mcpKeys: () => ['system', 'mcp-keys'] as const,
     /** Lịch sử đăng nhập N ngày của MỘT tài khoản (phiên + lần thất bại). */
     loginHistory: (userId: number, days: number) =>
       ['system', 'login-sessions', 'history', userId, days] as const,

@@ -19,7 +19,7 @@ from app.core.response import success
 
 from pydantic import BaseModel
 
-from . import chat_link, coder, telegram, user_keys
+from . import chat_link, coder, mcp_keys, telegram, user_keys
 from .constants import (
     DIRECTION_LABELS,
     RISK_LABELS,
@@ -219,6 +219,39 @@ def set_my_ai_key(body: AiKeyIn, user=Depends(get_current_user), db: Session = D
 def remove_my_ai_key(user=Depends(get_current_user), db: Session = Depends(get_db)):
     user_keys.revoke(db, user.id)
     return success(user_keys.describe(db, user.id), "Đã gỡ khóa Gemini")
+
+
+# ---------------------------------------------------------------------------
+# Khóa kết nối MCP cá nhân (ai-CR-063, M-02) — tự phục vụ; khóa thô chỉ trả đúng một lần lúc tạo.
+# ---------------------------------------------------------------------------
+class McpKeyIn(BaseModel):
+    name: str = ""
+    scope: int = 0
+    days: int = 90
+
+
+@router.get("/mcp-keys")
+def list_my_mcp_keys(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return success({"endpoint": f"{settings.AGENT_ERP_URL.rstrip('/') if settings.AGENT_ERP_URL else ''}/api/mcp",
+                    "items": [mcp_keys.serialize(k) for k in mcp_keys.list_for_user(db, user.id)]})
+
+
+@router.post("/mcp-keys")
+def create_my_mcp_key(body: McpKeyIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        row, raw = mcp_keys.create(db, user.id, name=body.name, scope=body.scope, days=body.days)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    return success({**mcp_keys.serialize(row), "key": raw}, "Đã tạo khóa MCP. Chép ngay: khóa chỉ hiện một lần.")
+
+
+@router.delete("/mcp-keys/{key_id}")
+def remove_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    row = next((k for k in mcp_keys.list_for_user(db, user.id) if k.id == key_id), None)
+    if row is None:
+        raise HTTPException(404, "Không tìm thấy khóa")
+    mcp_keys.revoke(db, row)
+    return success(None, "Đã gỡ khóa MCP")
 
 
 @router.get("/stats")

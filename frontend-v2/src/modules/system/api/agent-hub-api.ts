@@ -135,6 +135,24 @@ export interface AiKeyInfo {
   verified_at: string | null
 }
 
+/** Khóa kết nối MCP cá nhân (ai-CR-063). `key` chỉ có trong kết quả tạo, đúng một lần. */
+export interface McpKeyItem {
+  id: number
+  name: string
+  hint: string
+  scope: number
+  scope_label: string
+  expires_at: string | null
+  last_used_at: string | null
+  created_at: string | null
+  key?: string
+}
+
+export interface McpKeysResult {
+  endpoint: string
+  items: McpKeyItem[]
+}
+
 export const agentHubApi = {
   list: (params: AgentTaskListParams) => apiGet<AgentTaskListResult>('/api/agent-hub/tasks', { params }),
   detail: (id: number) => apiGet<AgentTaskDetail>(`/api/agent-hub/tasks/${id}`),
@@ -150,4 +168,9 @@ export const agentHubApi = {
   myAiKey: () => apiGet<AiKeyInfo>('/api/agent-hub/ai-key'),
   setAiKey: (key: string) => apiPut<AiKeyInfo>('/api/agent-hub/ai-key', { key }),
   removeAiKey: () => apiDelete<AiKeyInfo>('/api/agent-hub/ai-key'),
+
+  /** Khóa MCP cá nhân — tự phục vụ (ai-CR-063). */
+  myMcpKeys: () => apiGet<McpKeysResult>('/api/agent-hub/mcp-keys'),
+  createMcpKey: (body: { name: string; scope: number; days: number }) => apiPost<McpKeyItem>('/api/agent-hub/mcp-keys', body),
+  removeMcpKey: (id: number) => apiDelete<null>(`/api/agent-hub/mcp-keys/${id}`),
 }
