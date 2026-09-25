@@ -8385,6 +8385,7 @@ Kiểm: 91 bài duyệt, điều phối và bản in xanh (4 bài mới).
 
 Mã nguồn: backend/app/modules/purchase_request/service.py · controller.py ·
 test/backend/test_so_thao_tac_mot_dong_duyet_cr485.py
+Cập nhật 25/09/2026: đã commit dac4e3f1, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
 
 ## bao-CR-486 | Ô nhân sự phụ trách chỉ liệt kê người của phòng xử lý, chặn gán người ngoài
 - status: xong
@@ -8408,7 +8409,7 @@ Mã nguồn: backend/app/modules/category_assignee/service.py · purchase_reques
 survey_request/controller.py · frontend-v2 hooks/use-purchase-request.ts ·
 use-survey-request.ts · frontend/src/pages/PurchaseRequestDetail.tsx ·
 test/backend/test_nstm_theo_phong_xu_ly_cr486.py
-
+Cập nhật 25/09/2026: đã commit 9f9934be, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
 
 ## bao-CR-487 | Màn Xử lý khảo sát lọc được nhiều nhà cung cấp, nhiều phân loại và có nút Bỏ lọc
 - status: xong
@@ -8430,6 +8431,7 @@ Mã nguồn: backend/app/modules/survey_request/service.py (normalize_filter_val
 available_survey_lines) · controller.py · frontend-v2 survey-request-process-card.tsx ·
 utils/survey-process-filter.ts · frontend/src/pages/SurveyRequestProcess.tsx ·
 test/backend/test_xu_ly_khao_sat_loc_nhieu_cr487.py
+Cập nhật 25/09/2026: đã commit f3248ba8, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
 
 ## bao-CR-488 | Ô Phòng xử lý ẩn sau ô tick Nhờ phòng khác xử lý khi lập phiếu
 - status: xong
@@ -8454,6 +8456,7 @@ service.py (create_sr) · frontend-v2 utils/handling-dept-display.ts (isHandling
 handlingDeptForCreate) · purchase-request-info-card.tsx · survey-request-info-card.tsx ·
 purchase-request-detail-page.tsx · survey-request-detail-page.tsx · frontend
 PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx · test/backend/test_phong_xu_ly_o_tick_cr488.py
+Cập nhật 25/09/2026: đã commit 4ca3a2f9, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
 
 ## bao-CR-489 | Nút Trả về phòng lập đổi nhãn thành Trả về
 - status: xong
@@ -8466,6 +8469,7 @@ chuột và tiêu đề hộp thoại vẫn nói rõ là trả cả phiếu về
 
 Mã nguồn: frontend-v2 purchase-request-detail-page.tsx · survey-request-detail-page.tsx ·
 frontend PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx
+Cập nhật 25/09/2026: đã commit 4ca3a2f9, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
 
 ## bao-CR-490 | Trường trưởng phòng phê duyệt trên ba chứng từ và nút chọn người ký trên bản in nội bộ
 - status: xong
@@ -8489,6 +8493,8 @@ Mã nguồn: backend/app/core/print_signers.py · migrations/versions/a490b1c2d3
 frontend-v2 utils/print-signer-mode.ts · pages/purchase-request-print-page.tsx ·
 pages/purchase-order-print-page.tsx · frontend/src/pages/PrintPurchaseRequest.tsx ·
 test/backend/test_truong_phong_phe_duyet_cr490.py
+Cập nhật 25/09/2026: đã commit 68609a60, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
+
 ## ai-CR-063 | Cổng MCP và khóa MCP cá nhân
 - status: xong
 - date: 2026-09-25
