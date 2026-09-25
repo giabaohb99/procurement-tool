@@ -314,14 +314,88 @@ def test_xoa_thu_muc_con_con_bi_chan(db, world, roots):
     assert exc.value.status_code == 400
 
 
-def test_xoa_thu_muc_con_van_ban_bi_chan(db, world, roots):
+# ── Xóa thư mục CÒN văn bản (đại ca chốt 25/09/2026 — trước đó chặn cứng) ───
+def _links(db, doc_id):
+    return {(r.folder_id, r.is_primary) for r in
+            db.query(DocumentFolderLink).filter(DocumentFolderLink.document_id == doc_id)}
+
+
+def test_xoa_thu_muc_con_van_ban_chuyen_van_ban_mo_coi_sang_thu_muc_da_chon(db, world, roots):
+    root = roots[world.co["A"]]
+    a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
+    dich = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Đích"), 0)
+    doc = _doc(db, company_id=root.company_id)
+    db.add(DocumentFolderLink(document_id=doc.id, folder_id=a.id, is_primary=True))
+    db.commit()
+    folder_service.delete_folder(db, a, 0, dich)
+    assert db.get(DocFolder, a.id) is None
+    assert db.get(Document, doc.id) is not None          # văn bản KHÔNG bị xóa theo
+    assert _links(db, doc.id) == {(dich.id, True)}
+
+
+def test_xoa_thu_muc_khong_chon_dich_van_ban_mo_coi_ve_thu_muc_phap_nhan(db, world, roots):
+    #  Xóa hàng loạt không hỏi đích — luật «không mồ côi» có sẵn đỡ lấy.
     root = roots[world.co["A"]]
     a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
     doc = _doc(db, company_id=root.company_id)
     db.add(DocumentFolderLink(document_id=doc.id, folder_id=a.id, is_primary=True))
     db.commit()
+    folder_service.delete_folder(db, a, 0)
+    assert _links(db, doc.id) == {(root.id, True)}
+
+
+def test_xoa_thu_muc_van_ban_con_o_noi_khac_chi_bi_go_va_doi_thu_muc_chinh(db, world, roots):
+    root = roots[world.co["A"]]
+    a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
+    b = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="B"), 0)
+    dich = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Đích"), 0)
+    doc = _doc(db, company_id=root.company_id)
+    db.add(DocumentFolderLink(document_id=doc.id, folder_id=a.id, is_primary=True))
+    db.add(DocumentFolderLink(document_id=doc.id, folder_id=b.id, is_primary=False))
+    db.commit()
+    folder_service.delete_folder(db, a, 0, dich)
+    #  KHÔNG bị kéo sang «Đích» — nó vẫn còn chỗ ở, và B lên làm thư mục chính.
+    assert _links(db, doc.id) == {(b.id, True)}
+
+
+def test_xem_truoc_xoa_dem_van_ban_va_van_ban_se_mo_coi(db, world, roots):
+    root = roots[world.co["A"]]
+    a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
+    b = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="B"), 0)
+    chi_o_a = _doc(db, company_id=root.company_id, code="X1")
+    o_ca_hai = _doc(db, company_id=root.company_id, code="X2")
+    db.add(DocumentFolderLink(document_id=chi_o_a.id, folder_id=a.id, is_primary=True))
+    db.add(DocumentFolderLink(document_id=o_ca_hai.id, folder_id=a.id, is_primary=True))
+    db.add(DocumentFolderLink(document_id=o_ca_hai.id, folder_id=b.id, is_primary=False))
+    db.commit()
+    preview = folder_service.delete_preview(db, a)
+    assert preview == {"blocked_reason": "", "document_count": 2, "orphan_count": 1,
+                       "parent_id": root.id}
+
+
+def test_xem_truoc_xoa_bao_ly_do_khi_con_thu_muc_con(db, world, roots):
+    root = roots[world.co["A"]]
+    a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
+    folder_service.create_folder(db, FolderCreate(parent_id=a.id, name="B"), 0)
+    assert "thư mục con" in folder_service.delete_preview(db, a)["blocked_reason"]
+
+
+def test_xoa_thu_muc_khong_cho_chuyen_van_ban_vao_chinh_no(db, world, roots):
+    root = roots[world.co["A"]]
+    a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
     with pytest.raises(HTTPException) as exc:
-        folder_service.delete_folder(db, a, 0)
+        folder_service.delete_folder(db, a, 0, a)
+    assert exc.value.status_code == 400
+    assert db.get(DocFolder, a.id) is not None
+
+
+def test_xoa_thu_muc_khong_cho_chuyen_vao_thu_muc_ngung_dung(db, world, roots):
+    root = roots[world.co["A"]]
+    a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
+    cu = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Cũ"), 0)
+    folder_service.update_folder(db, cu, FolderUpdate(status=int(FolderStatus.ARCHIVED)), 0)
+    with pytest.raises(HTTPException) as exc:
+        folder_service.delete_folder(db, a, 0, cu)
     assert exc.value.status_code == 400
 
 

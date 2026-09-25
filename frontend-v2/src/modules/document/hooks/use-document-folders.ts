@@ -136,10 +136,24 @@ export function useReorderDocFolders() {
   })
 }
 
+/** Số văn bản sẽ bị ảnh hưởng nếu xóa thư mục — chỉ gọi khi hộp xác nhận đang mở. */
+export function useFolderDeletePreview(folderId: number | null) {
+  return useQuery({
+    queryKey: queryKeys.document.folderDeletePreview(folderId ?? 0),
+    queryFn: () => documentFolderApi.deletePreview(folderId as number),
+    enabled: folderId != null && folderId > 0,
+    //  Số đếm phải đúng TẠI LÚC mở hộp — không dùng lại số của lần mở trước.
+    staleTime: 0,
+  })
+}
+
 export function useDeleteDocFolder() {
   const invalidate = useInvalidateFolders()
   return useMutation({
-    mutationFn: (id: number) => documentFolderApi.remove(id),
+    mutationFn: (input: number | { id: number; moveTo?: number }) =>
+      typeof input === 'number'
+        ? documentFolderApi.remove(input)
+        : documentFolderApi.remove(input.id, input.moveTo),
     onSuccess: () => {
       toast.success('Đã xóa thư mục')
       invalidate()

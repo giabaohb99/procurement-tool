@@ -11,6 +11,7 @@ import type {
   FolderAccessGrantInput,
   FolderAccessLevelPatchInput,
   FolderCreateInput,
+  FolderDeletePreview,
   FolderLinkDocumentsInput,
   FolderLinkResult,
   FolderReorderItem,
@@ -50,8 +51,15 @@ export const documentFolderApi = {
   reorder: (items: FolderReorderItem[]) =>
     apiPost<{ changed: number }>(`${DOC_FOLDER_URL}/reorder`, { items }),
 
-  /** Chặn nếu còn thư mục con hoặc còn văn bản (đếm toàn hệ, không theo quyền người xóa). */
-  remove: (id: number) => apiDelete<null>(`${DOC_FOLDER_URL}/${id}`),
+  /**
+   * Xóa thư mục — chặn nếu còn thư mục con; còn văn bản thì KHÔNG chặn (25/09/2026):
+   * văn bản chỉ nằm ở đây chuyển sang `moveTo`, bỏ trống = về thư mục pháp nhân.
+   */
+  remove: (id: number, moveTo?: number) =>
+    apiDelete<null>(`${DOC_FOLDER_URL}/${id}`, moveTo ? { params: { move_to: moveTo } } : undefined),
+
+  /** Đếm văn bản trong thư mục + số văn bản sẽ mồ côi nếu xóa (toàn hệ, không lọc quyền). */
+  deletePreview: (id: number) => apiGet<FolderDeletePreview>(`${DOC_FOLDER_URL}/${id}/delete-preview`),
 
   /** Gắn HÀNG LOẠT văn bản vào một thư mục — `{moved, denied}`, không chặn cả lô vì một dòng lỗi. */
   linkDocuments: (payload: FolderLinkDocumentsInput) =>

@@ -179,18 +179,7 @@ def reorder_siblings(db: Session, items: list[dict], actor: int) -> int:
     return changed
 
 
-def delete_folder(db: Session, folder: DocFolder, actor: int) -> None:
-    """Chặn khi còn thư mục con HOẶC còn văn bản — đếm TOÀN HỆ, không lọc theo
-    quyền của người xóa (luật phải giữ, `plan.md`): người Quản lý thấy 0 văn
-    bản trong thư mục vẫn không được coi là thư mục rỗng.
-
-    Thư mục PHÁP NHÂN xóa được Y HỆT thư mục thường (chủ dự án chốt
-    24/09/2026: gốc chỉ là chỗ chứa mặc định cho văn bản chưa gắn thư mục,
-    không có lý do khắt khe riêng). «Không chuyển được» vẫn đứng nguyên ở
-    `folder_move_service` — gốc là đỉnh của nhánh, không có cha nào để dời
-    vào; đây CHỈ nới khoản xóa. Xóa xong mà có văn bản cần thư mục mặc định
-    của đúng công ty đó thì `folder_link_service._company_root_id` tự tạo lại
-    (lazy get-or-create), không tự mọc lại nếu không ai cần."""
+def _guard_deletable(db: Session, folder: DocFolder) -> None:
     #  Thư mục pháp nhân + thư mục nhóm «Công ty» KHÔNG xóa được (đại ca chốt
     #  24/09/2026 — đảo lại quyết định cho xóa gốc pháp nhân trước đó).
     if folder.kind in (int(FolderKind.COMPANY), int(FolderKind.COMPANY_GROUP)):
@@ -198,15 +187,85 @@ def delete_folder(db: Session, folder: DocFolder, actor: int) -> None:
     if db.query(DocFolder.id).filter(DocFolder.parent_id == folder.id).first():
         raise HTTPException(400, "Thư mục còn thư mục con, không xóa được")
 
+
+def _split_documents(db: Session, folder_id: int) -> tuple[list, list[int]]:
+    """Dòng nối của thư mục + id văn bản sẽ MỒ CÔI (không còn thư mục nào khác)
+    nếu xóa nó. Đếm TOÀN HỆ, không lọc theo quyền người xóa — văn bản người đó
+    không thấy vẫn là văn bản thật cần chỗ ở."""
     from .folder_link_model import DocumentFolderLink
 
-    if db.query(DocumentFolderLink.id).filter(DocumentFolderLink.folder_id == folder.id).first():
-        raise HTTPException(
-            400, "Thư mục còn văn bản, không xóa được. Gỡ hết văn bản hoặc chọn "
-                 "Ngừng dùng thay vì xóa.")
+    links = db.query(DocumentFolderLink).filter(DocumentFolderLink.folder_id == folder_id).all()
+    doc_ids = [row.document_id for row in links]
+    if not doc_ids:
+        return links, []
+    elsewhere = {doc_id for (doc_id,) in db.query(DocumentFolderLink.document_id).filter(
+        DocumentFolderLink.document_id.in_(doc_ids),
+        DocumentFolderLink.folder_id != folder_id).distinct()}
+    return links, [doc_id for doc_id in doc_ids if doc_id not in elsewhere]
+
+
+def delete_preview(db: Session, folder: DocFolder) -> dict:
+    """Hộp xác nhận xóa cần biết trước: có xóa được không, bao nhiêu văn bản
+    đang nằm trong đó, bao nhiêu văn bản sẽ mồ côi (phải chọn nơi lưu mới)."""
+    blocked = ""
+    try:
+        _guard_deletable(db, folder)
+    except HTTPException as exc:
+        blocked = str(exc.detail)
+    links, orphans = _split_documents(db, folder.id)
+    return {"blocked_reason": blocked, "document_count": len(links),
+            "orphan_count": len(orphans), "parent_id": folder.parent_id}
+
+
+def delete_folder(db: Session, folder: DocFolder, actor: int,
+                  move_to: DocFolder | None = None) -> None:
+    """Xóa thư mục, KỂ CẢ khi còn văn bản (đại ca chốt 25/09/2026 — trước đó
+    chặn cứng "còn văn bản không xóa được"). Văn bản thì KHÔNG bị xóa theo:
+
+    - văn bản còn nằm ở thư mục KHÁC → chỉ gỡ khỏi thư mục này; nếu đây là
+      thư mục chính của nó thì thư mục cũ nhất còn lại lên làm chính;
+    - văn bản chỉ nằm ở ĐÂY (sẽ mồ côi) → chuyển sang `move_to` (người xóa
+      chọn ở hộp xác nhận). Không truyền `move_to` (xóa hàng loạt) thì rơi về
+      thư mục pháp nhân qua `ensure_not_orphan` — luật «không mồ côi» có sẵn.
+
+    Vẫn chặn thư mục còn thư mục con: xóa nguyên nhánh là việc khác, không làm
+    lén trong một lần bấm."""
+    from app.modules.document.model import Document
+
+    from . import folder_link_service
+    from .folder_link_model import DocumentFolderLink
+
+    _guard_deletable(db, folder)
+    if move_to is not None and move_to.id == folder.id:
+        raise HTTPException(400, "Chọn một thư mục KHÁC để chuyển văn bản sang")
+    if move_to is not None and move_to.status != int(FolderStatus.ACTIVE):
+        raise HTTPException(400, "Thư mục nhận văn bản đang ngừng dùng")
+
+    links, orphans = _split_documents(db, folder.id)
+    orphan_set = set(orphans)
+    for row in links:
+        if row.document_id in orphan_set:
+            if move_to is not None:
+                db.add(DocumentFolderLink(document_id=row.document_id, folder_id=move_to.id,
+                                          is_primary=True, created_by=actor))
+        elif row.is_primary:
+            nxt = (db.query(DocumentFolderLink)
+                   .filter(DocumentFolderLink.document_id == row.document_id,
+                           DocumentFolderLink.folder_id != folder.id)
+                   .order_by(DocumentFolderLink.id.asc()).first())
+            if nxt:
+                nxt.is_primary = True
+        db.delete(row)
 
     name = folder.name
     folder_id = folder.id
     db.delete(folder)
     db.commit()
-    record(db, actor, AUDIT_ENTITY, folder_id, "delete", f"Xóa thư mục {name}")
+
+    if move_to is None:
+        for doc in db.query(Document).filter(Document.id.in_(orphans)).all() if orphans else []:
+            folder_link_service.ensure_not_orphan(db, doc, actor)
+
+    moved = f", chuyển {len(orphans)} văn bản sang «{move_to.name}»" if move_to and orphans else ""
+    record(db, actor, AUDIT_ENTITY, folder_id, "delete",
+           f"Xóa thư mục {name} ({len(links)} văn bản){moved}")

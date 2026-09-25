@@ -289,6 +289,17 @@ export interface FolderLinkDenied {
 }
 
 /** Kết quả `POST /documents/link|unlink` — `moved` là DANH SÁCH id, không phải số đếm. */
+/** `GET /doc-folders/{id}/delete-preview` — hộp xác nhận xóa đọc trước khi cho bấm. */
+export interface FolderDeletePreview {
+  /** Rỗng = xóa được; có chữ = lý do chặn (thư mục công ty, còn thư mục con). */
+  blocked_reason: string
+  /** Mọi văn bản đang nằm trong thư mục (toàn hệ, không lọc quyền). */
+  document_count: number
+  /** Văn bản CHỈ nằm ở đây — xóa xong sẽ mồ côi nên phải chọn nơi lưu mới. */
+  orphan_count: number
+  parent_id: number
+}
+
 export interface FolderLinkResult {
   moved: number[]
   denied: FolderLinkDenied[]

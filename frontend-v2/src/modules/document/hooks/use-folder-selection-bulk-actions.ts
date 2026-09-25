@@ -82,7 +82,8 @@ export function useFolderSelectionBulkActions({
     const ok = await confirm({
       title: `Xóa ${total} mục đã chọn?`,
       message:
-        'Thư mục CHỈ xóa được khi RỖNG (không còn thư mục con hay văn bản nào). ' +
+        'Thư mục còn thư mục con sẽ không xóa được. Văn bản chỉ nằm trong thư mục bị ' +
+        'xóa sẽ về thư mục pháp nhân của nó (muốn chọn nơi khác thì xóa từng thư mục). ' +
         'Văn bản xóa HẲN khỏi hệ thống — không phục hồi được.' +
         (skippedDocCount > 0
           ? ` ${skippedDocCount} văn bản không đủ quyền xóa sẽ được BỎ QUA.`

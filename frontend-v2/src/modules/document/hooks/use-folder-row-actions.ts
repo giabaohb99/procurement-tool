@@ -1,7 +1,5 @@
 import { useState } from 'react'
 
-import { confirm } from '@/shared/ui/confirm-dialog'
-import { useDeleteDocFolder } from './use-document-folders'
 import type { DocFolderTreeNode } from '../types/document-folder'
 
 /**
@@ -17,15 +15,12 @@ export function useFolderRowActions() {
   const [renameTarget, setRenameTarget] = useState<DocFolderTreeNode | null>(null)
   const [moveTarget, setMoveTarget] = useState<DocFolderTreeNode | null>(null)
   const [shareTargetId, setShareTargetId] = useState<number | null>(null)
-  const deleteFolder = useDeleteDocFolder()
+  //  Thư mục đang mở hộp xóa (`FolderDeleteDialog`) — hộp đếm văn bản và bắt
+  //  chọn nơi lưu mới cho văn bản sẽ mồ côi, không còn là một câu confirm trơn.
+  const [deleteTarget, setDeleteTarget] = useState<DocFolderTreeNode | null>(null)
 
-  async function requestDelete(folder: DocFolderTreeNode) {
-    const ok = await confirm({
-      title: `Xóa thư mục «${folder.name}»?`,
-      message: 'Chỉ xóa được thư mục RỖNG (không còn thư mục con hay văn bản nào).',
-      confirmLabel: 'Xóa',
-    })
-    if (ok) deleteFolder.mutate(folder.id)
+  function requestDelete(folder: DocFolderTreeNode) {
+    setDeleteTarget(folder)
   }
 
   return {
@@ -36,5 +31,7 @@ export function useFolderRowActions() {
     shareTargetId,
     setShareTargetId,
     requestDelete,
+    deleteTarget,
+    setDeleteTarget,
   }
 }

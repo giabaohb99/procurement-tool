@@ -1,3 +1,4 @@
+import { FolderDeleteDialog } from './folder-delete-dialog'
 import { FolderMoveDialog } from './folder-move-dialog'
 import { FolderRenameDialog } from './folder-rename-dialog'
 import { FolderShareDialog } from './folder-share-dialog'
@@ -11,8 +12,8 @@ interface FolderRowActionDialogsProps {
 }
 
 /**
- * Ba hộp thoại DÙNG CHUNG của một dòng thư mục con (đổi tên · chuyển tới… ·
- * chia sẻ) — đi kèm `useFolderRowActions`, dựng MỘT LẦN ở cấp cha
+ * Bốn hộp thoại DÙNG CHUNG của một dòng thư mục con (đổi tên · chuyển tới… ·
+ * chia sẻ · xóa) — đi kèm `useFolderRowActions`, dựng MỘT LẦN ở cấp cha
  * (`folder-child-cards.tsx`/`folder-list-view.tsx`) thay vì mỗi dòng tự mở
  * hộp thoại của riêng nó.
  */
@@ -38,6 +39,10 @@ export function FolderRowActionDialogs({ actions, onNavigateToFolder }: FolderRo
           open
           onOpenChange={(open) => !open && actions.setMoveTarget(null)}
         />
+      )}
+
+      {actions.deleteTarget && (
+        <FolderDeleteDialog folder={actions.deleteTarget} onClose={() => actions.setDeleteTarget(null)} />
       )}
 
       {actions.shareTargetId != null && (

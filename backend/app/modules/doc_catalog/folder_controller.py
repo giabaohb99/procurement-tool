@@ -147,16 +147,36 @@ def reorder_folders(
     return success({"changed": changed}, "Đã sắp lại thứ tự")
 
 
+@router.get("/{folder_id}/delete-preview")
+def delete_folder_preview(
+    folder_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require("doc_folder", "delete")),
+):
+    """Số văn bản trong thư mục + số văn bản sẽ mồ côi nếu xóa — cho hộp xác nhận."""
+    profile = get_perm_profile(db, user)
+    folder = folder_service.get_folder_or_404(db, folder_id)
+    folder_access_service.ensure_level(db, user, folder, MANAGE, profile)
+    return success(folder_service.delete_preview(db, folder))
+
+
 @router.delete("/{folder_id}")
 def delete_folder(
     folder_id: int,
+    move_to: int = Query(0, ge=0, description="Thư mục nhận văn bản sẽ mồ côi; 0 = về thư mục pháp nhân"),
     db: Session = Depends(get_db),
     user=Depends(require("doc_folder", "delete")),
 ):
     profile = get_perm_profile(db, user)
     folder = folder_service.get_folder_or_404(db, folder_id)
     folder_access_service.ensure_level(db, user, folder, MANAGE, profile)
-    folder_service.delete_folder(db, folder, user.id)
+    target = None
+    if move_to:
+        target = folder_service.get_folder_or_404(db, move_to)
+        #  Chuyển văn bản VÀO đâu thì phải có quyền thêm văn bản ở đó — cùng
+        #  mức với gắn văn bản vào thư mục (`/documents/link`).
+        folder_access_service.ensure_level(db, user, target, CONTRIBUTE, profile)
+    folder_service.delete_folder(db, folder, user.id, target)
     return success(None, "Đã xóa thư mục")
 
 

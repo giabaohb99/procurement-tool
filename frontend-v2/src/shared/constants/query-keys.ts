@@ -334,6 +334,7 @@ export const queryKeys = {
       ['document', 'folders', 'tree', includeArchived] as const,
     folderSearch: (q: string) => ['document', 'folders', 'search', q] as const,
     folderDetail: (id: number) => ['document', 'folders', 'detail', id] as const,
+    folderDeletePreview: (id: number) => ['document', 'folders', 'detail', id, 'delete-preview'] as const,
     /** ACL TRỰC TIẾP của một thư mục — tách khỏi `folderDetail` vì khác API (`/access`). */
     folderAccess: (folderId: number) => ['document', 'folders', 'detail', folderId, 'access'] as const,
   },

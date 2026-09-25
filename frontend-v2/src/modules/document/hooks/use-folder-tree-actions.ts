@@ -3,7 +3,6 @@ import { useRef, useState } from 'react'
 import {
   useArchiveDocFolder,
   useCreateDocFolder,
-  useDeleteDocFolder,
   useMoveDocFolder,
   useUpdateDocFolder,
 } from './use-document-folders'
@@ -35,7 +34,6 @@ export function useFolderTreeActions() {
 
   const updateFolder = useUpdateDocFolder()
   const archiveFolder = useArchiveDocFolder()
-  const deleteFolder = useDeleteDocFolder()
   const moveFolder = useMoveDocFolder()
   const createFolder = useCreateDocFolder()
   //  Chặn bấm đúp / Enter-rồi-blur-cùng-lúc (bẫy CR-317): `mutation.isPending`
@@ -151,7 +149,6 @@ export function useFolderTreeActions() {
     deleteTarget,
     setDeleteTarget,
     handleAction,
-    deleteFolder,
     moveFolder,
   }
 }
