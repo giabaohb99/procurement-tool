@@ -2599,6 +2599,8 @@ def test_vitest_chi_chay_thu_muc_vua_dung():
     ]) == ["src/modules/procurement", "src/shared/data-table", "src/core/api"]
     #  Tệp nằm thẳng dưới src/modules (không thuộc phân hệ nào) thì không đẻ ra đường dẫn lạ.
     assert fe_vitest_targets(["frontend-v2/src/modules/index.ts"]) == []
+    #  ai-CR-057: tệp ở src/app/ (Trang cá nhân, components dùng chung của app) cũng có thư mục vitest.
+    assert fe_vitest_targets(["frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx"]) == ["src/app/components"]
 
 
 def test_cong_frontend_typecheck_lint_vitest_theo_dung_thu_tu(monkeypatch, tmp_path):
@@ -5310,3 +5312,278 @@ def test_provider_bot_khong_ep_thinking_budget_0_cho_gemini_3():
     assert "thinkingConfig" not in p._gen_config("gemini-3.5-flash-lite", 100, 0.2, False)
     assert p._gen_config("gemini-3.5-flash-lite", 100, 0.2, True)["thinkingConfig"]["thinkingBudget"] > 0
 
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-057: đường tắt việc nhỏ + gửi lại bản chữ trơn khi Telegram chê HTML
+# ---------------------------------------------------------------------------
+def _triage_one(db, service, monkeypatch, text, *, quick=True, risk=1):
+    row = service.log_message(db, service.DIR_IN, "12345", 9, text)
+    db.commit()
+    monkeypatch.setattr(service.manager, "run_triage", lambda msgs: (
+        {"groups": [{"title": "Đổi chữ ở tab Khóa AI", "summary": text, "risk_level": risk,
+                     "quick": quick, "message_ids": [row.id]}]}, _ket_qua_model()))
+    return row
+
+
+def test_viec_nho_di_duong_tat_khong_ra_soat_tu_duyet_va_bao_mot_dong(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, sent, _ = bot
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
+    monkeypatch.setattr(coder, "dispatch_scan", lambda tid: pytest.fail("việc nhỏ không rà soát riêng"))
+    dispatched: list[int] = []
+    monkeypatch.setattr(coder, "dispatch", lambda tid: dispatched.append(tid))
+    _fake_plan(monkeypatch, service, plan_files=["frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx"], risk_level=1)
+    _triage_one(db, service, monkeypatch, "ở tab Khóa AI đổi chữ Gemini thành AI")
+    assert service.triage_inbox(db, force=True) == 1
+    task = db.query(service.AgentTask).one()
+    assert task.lane == service.LANE_QUICK and task.status == service.ST_CODE and dispatched == [task.id]
+    assert task.approved_by_chat == "bot:duong-tat"
+    assert any("việc nhỏ, em làm luôn" in t for t in sent) and not any("Duyệt" in t and "Sửa lại" in t for t in sent)
+    assert "Đường tắt" in service.task_status_line(db, task)
+
+
+def test_duong_tat_lui_ve_lan_day_du_khi_ke_hoach_khong_nho_hoac_dai_ca_dan_lam_ky(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, sent, _ = bot
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
+    monkeypatch.setattr(coder, "dispatch", lambda tid: pytest.fail("kế hoạch có câu hỏi thì không tự duyệt"))
+    scanned: list[int] = []
+    monkeypatch.setattr(coder, "dispatch_scan", lambda tid: scanned.append(tid))
+    #  (1) chấm nhỏ nhưng kế hoạch hỏi lại → thẻ như thường, làn về đầy đủ.
+    _fake_plan(monkeypatch, service, questions=["Đổi ở cả tiêu đề hộp xác nhận không?"], needs_clarification=True, risk_level=1)
+    _triage_one(db, service, monkeypatch, "ở tab Khóa AI đổi chữ Gemini thành AI")
+    service.triage_inbox(db, force=True)
+    t1 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
+    assert t1.lane == service.LANE_FULL and t1.status == service.ST_NEEDS_INPUT and "đang hỏi lại" in sent[-1]
+    #  (2) «làm kỹ» trong câu → làn đầy đủ ngay từ gom (đi rà soát).
+    _triage_one(db, service, monkeypatch, "ở tab Khóa AI đổi chữ Gemini thành AI, làm kỹ nhé")
+    service.triage_inbox(db, force=True)
+    t2 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
+    assert t2.lane == service.LANE_FULL and scanned == [t2.id]
+    #  (3) model chấm nhỏ nhưng risk 2 → không tắt.
+    _triage_one(db, service, monkeypatch, "sửa công thức tính công nợ", quick=True, risk=2)
+    service.triage_inbox(db, force=True)
+    t3 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
+    assert t3.lane == service.LANE_FULL
+    #  (4) «làm kỹ AI-000x» khi việc còn ở đầu luồng → rà soát.
+    t4 = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_PLAN, lane=service.LANE_QUICK)
+    service.handle_message(db, _msg(f"làm kỹ {t4.code}"))
+    assert t4.lane == service.LANE_FULL and scanned[-1] == t4.id
+
+
+def test_telegram_che_html_thi_gui_lai_ban_chu_tron(monkeypatch):
+    from app.modules.agent_hub import telegram
+
+    calls: list[dict] = []
+
+    def fake_call(method, payload, **kw):
+        calls.append(payload)
+        if "parse_mode" in payload:
+            raise telegram.TelegramError("Telegram sendMessage trả 400: can't parse entities: Unsupported start tag")
+        return {"message_id": 7}
+
+    monkeypatch.setattr(telegram, "_call", fake_call)
+    out = telegram.send_payload({"chat_id": "1", "text": "Nhắn «sửa: <điều cần đổi>» &amp; <b>x</b>", "parse_mode": "HTML"})
+    assert out["message_id"] == 7 and len(calls) == 2
+    assert calls[1]["text"] == "Nhắn «sửa: » & x" and "parse_mode" not in calls[1]
+    #  Lỗi khác (mạng, chat sai) thì không lùi, ném thẳng.
+    monkeypatch.setattr(telegram, "_call", lambda m, p, **kw: (_ for _ in ()).throw(telegram.TelegramError("chat not found")))
+    with pytest.raises(telegram.TelegramError):
+        telegram.send_payload({"chat_id": "1", "text": "x", "parse_mode": "HTML"})
+
+
+def test_model_claude_code_theo_lan(monkeypatch):
+    """ai-CR-058: --model theo làn; biến trống thì không thêm cờ (mặc định của gói)."""
+    from app.modules.agent_hub import coder
+
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL", "")
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL_QUICK", "")
+    assert coder.model_args() == []
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL", "claude-opus-5-5")
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL_QUICK", "claude-opus-5")
+    assert coder.model_args() == ["--model", "claude-opus-5-5"]           # ngoài lượt sửa: làn đầy đủ
+    token = coder._LANE.set(coder.LANE_QUICK)
+    try:
+        assert coder.model_args() == ["--model", "claude-opus-5"]
+    finally:
+        coder._LANE.reset(token)
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-059: chuông ERP -> Telegram của người đã liên kết (P-01)
+# ---------------------------------------------------------------------------
+def _bell(db, user_id, title, body="", link=""):
+    from app.modules.notification.model import Notification
+
+    n = Notification(user_id=user_id, title=title, body=body, link=link, created_by=1)
+    db.add(n)
+    db.commit()
+    return n
+
+
+def test_chuong_cua_toi_nhan_dien_dung_va_lan_dau_khong_do_lich_su(db, bot, monkeypatch):
+    from app.modules.agent_hub import bells, chat_link
+
+    service, _, _ = bot
+    sent = _send_to(monkeypatch, service)
+    assert bells.is_mine("PR0012 — Chờ bạn duyệt", "") and bells.is_mine("Phân công", "Bạn được phân công phụ trách PR0012.")
+    assert bells.is_mine("Nghỉ phép", "Đơn của bạn đã bị trả lại") and not bells.is_mine("PR0012 đã được duyệt", "Đơn hàng đã được duyệt.")
+    lan = _erp_user(db)
+    _bell(db, lan.id, "Chuông cũ — chờ bạn duyệt")                       # có trước khi bật vòng: KHÔNG gửi
+    assert bells.forward_bells(db) == 0 and sent == []
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    assert "Chuông ERP của anh/chị" in sent[-1][1]
+    _bell(db, lan.id, "PR0013 — Chờ bạn duyệt", "Yêu cầu mua hàng PR0013 đang chờ bạn duyệt.", "/purchase-requests/13")
+    _bell(db, lan.id, "PR0014 đã được duyệt", "Thông tin chung.")           # không phải «của tôi» → mặc định bỏ
+    _bell(db, 99999, "Của người khác — chờ bạn duyệt")                    # người không liên kết
+    assert bells.forward_bells(db) == 1
+    assert sent[-1][0] == "777" and "<b>PR0013 — Chờ bạn duyệt</b>" in sent[-1][1] and "Mở trên ERP" in sent[-1][1]
+    assert "/purchase-requests/13" in sent[-1][1]
+    assert bells.forward_bells(db) == 0                                    # con trỏ đã qua, không gửi lại
+
+
+def test_doi_muc_chuong_bang_cau_nhan_va_gop_khi_qua_nhieu(db, bot, monkeypatch):
+    from app.modules.agent_hub import bells, chat_link
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    lan = _erp_user(db)
+    bells.forward_bells(db)                                                # đặt con trỏ
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("chuông tất cả"))
+    assert "tất cả" in sent[-1][1] and chat_link.get_active_link(db, "777").notify_mode == bells.NOTIFY_ALL
+    for i in range(7):
+        _bell(db, lan.id, f"Tin thường {i}", "không phải việc của tôi")
+    n = bells.forward_bells(db)
+    assert n == bells.PER_CHAT + 1 and "và 2 thông báo khác" in sent[-1][1]
+    assert db.query(AgentMessage).filter_by(action=service.ACT_BELL).count() == n
+    service.handle_message(db, _other_msg("tắt chuông"))
+    assert "Đã tắt chuông" in sent[-1][1]
+    _bell(db, lan.id, "Chờ bạn duyệt nè")
+    assert bells.forward_bells(db) == 0
+    service.handle_message(db, _other_msg("bật chuông"))
+    assert "việc của tôi" in sent[-1][1] and chat_link.get_active_link(db, "777").notify_mode == bells.NOTIFY_MINE
+    assert not asked                                                        # câu chuông không đi Trợ lý
+
+
+def test_api_doi_muc_chuong_cua_lien_ket_chinh_minh(db, bot):
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from app.modules.agent_hub import chat_link, controller
+
+    lan = _erp_user(db)
+    other = _erp_user(db, "khac@dego.vn")
+    code, _ = chat_link.issue_code(db, lan.id)
+    chat_link.redeem_code(db, "777", code, "Lan")
+    items = _json(controller.list_my_links(user=SimpleNamespace(id=lan.id), db=db))["items"]
+    assert items[0]["notify_mode"] == 1
+    out = _json(controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=0), user=SimpleNamespace(id=lan.id), db=db))
+    assert out["notify_mode"] == 0
+    with pytest.raises(HTTPException):
+        controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=2), user=SimpleNamespace(id=other.id), db=db)
+    with pytest.raises(HTTPException):
+        controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=9), user=SimpleNamespace(id=lan.id), db=db)
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-060: nhắc việc bằng câu nói (T-10) · ai-CR-061: tin thoại (T-07) · ai-CR-062: trần lượt/ngày (P-02)
+# ---------------------------------------------------------------------------
+def test_nhac_viec_bang_cau_noi_hoi_lai_khi_thieu_gio_va_gui_khi_toi_gio(db, bot, monkeypatch):
+    from datetime import datetime as _dt, timedelta as _td
+
+    from app.modules.agent_hub import chat_link, reminders
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("câu nhắc không đi phân loại"))
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("nhắc anh 2 tiếng nữa gọi nhà cung cấp X"))
+    assert "Được, em nhắc lúc" in sent[-1][1] and "gọi nhà cung cấp X" in sent[-1][1]
+    rows = reminders.open_for_chat(db, "777")
+    assert len(rows) == 1 and rows[0].user_id == lan.id and rows[0].text == "gọi nhà cung cấp X"
+    #  Thiếu giờ → hỏi lại; câu kế là giờ → tạo.
+    service.handle_message(db, _other_msg("nhắc em nộp báo cáo tuần"))
+    assert "lúc mấy giờ" in sent[-1][1]
+    service.handle_message(db, _other_msg("45 phút nữa"))
+    assert "Được, em nhắc lúc" in sent[-1][1] and len(reminders.open_for_chat(db, "777")) == 2
+    service.handle_message(db, _other_msg("nhắc gì"))
+    assert "Lời nhắc đang chờ" in sent[-1][1] and "2. " in sent[-1][1]
+    service.handle_message(db, _other_msg("bỏ nhắc 2"))
+    assert "Đã bỏ lời nhắc" in sent[-1][1] and len(reminders.open_for_chat(db, "777")) == 1
+    #  Tới giờ thì vòng beat gửi đúng chat, một lần.
+    left = reminders.open_for_chat(db, "777")[0]                           # «bỏ nhắc 2» bỏ lời xa nhất (sắp theo giờ)
+    left.due_at = _dt.utcnow() - _td(minutes=1)
+    db.commit()
+    assert reminders.fire_due(db) == 1 and sent[-1][0] == "777" and f"<b>Nhắc:</b> {left.text}" in sent[-1][1]
+    assert reminders.fire_due(db) == 0 and db.query(AgentMessage).filter_by(action=service.ACT_REMINDER).count() == 1
+    assert not asked
+    #  Không cần khóa Gemini.
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "")
+
+
+def test_tin_thoai_chep_thanh_chu_roi_di_nhu_tin_chu(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link
+    from app.modules.agent_hub.model import AgentRun
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    _fake_intent(monkeypatch, service, "hoi")
+    monkeypatch.setattr(service.telegram, "download_file", lambda fid, *, max_bytes: (b"OGG", "voice/x.oga"))
+    monkeypatch.setattr(service.manager, "transcribe", lambda data, mime: (
+        "ba đơn mua hàng gần nhất", ChatResult(text="", provider="agent_gemini", model="x", input_tokens=5, output_tokens=2)))
+    voice = {"chat": {"id": "777", "type": "private"}, "message_id": 8, "voice": {"file_id": "V1", "mime_type": "audio/ogg"},
+             "from": {"first_name": "Lan"}}
+    #  Chat lạ: không chép (không tốn tiền), không trả lời.
+    service.handle_message(db, voice)
+    assert sent == [] and not asked
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, voice)
+    assert any("Em nghe: «ba đơn mua hàng gần nhất»" in t for _c, t in sent)
+    assert asked == ["ba đơn mua hàng gần nhất"]
+    run = db.query(AgentRun).filter_by(stage=service.STAGE_VOICE).one()
+    assert run.owner_id == lan.id and run.input_tokens == 5
+    #  Chưa có khóa → nói rõ, không chép.
+    from app.modules.agent_hub import user_keys
+    user_keys.revoke(db, lan.id)
+    service.handle_message(db, voice)
+    assert "chưa gắn khóa Gemini" in sent[-1][1] and asked == ["ba đơn mua hàng gần nhất"]
+
+
+def test_tran_luot_ai_moi_ngay_cho_chat_thuong(db, bot, monkeypatch):
+    from datetime import datetime as _dt
+
+    from app.modules.agent_hub import chat_link
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    _fake_intent(monkeypatch, service, "hoi")
+    monkeypatch.setattr(settings, "AGENT_USER_DAILY_TURNS", 3)
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    for _ in range(3):
+        db.add(AgentRun(task_id=0, stage=service.STAGE_INTENT, provider="agent_gemini", model="m", status=2,
+                        started_at=_dt.utcnow(), owner_id=lan.id))
+    db.commit()
+    service.handle_message(db, _other_msg("3 đơn mua hàng gần nhất"))
+    assert "chạm trần 3 lượt/ngày" in sent[-1][1] and not asked
+    service.handle_message(db, _other_msg("nhắc anh 15h gọi NCC"))       # không cần AI → vẫn chạy
+    assert "Được, em nhắc lúc" in sent[-1][1]
+    #  Chat đại ca không bị trần.
+    service.handle_message(db, _msg("3 đơn mua hàng gần nhất"))
+    assert asked == ["3 đơn mua hàng gần nhất"]

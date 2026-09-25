@@ -34,13 +34,17 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import chat_link, coder, draft_create, grants, manager, memory, playbook, research, runners, telegram, user_keys
+from . import bells, chat_link, coder, draft_create, grants, manager, memory, playbook, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
     ACT_ANSWER,
     ACT_HEARTBEAT,
     ACT_ASKED,
+    ACT_BELL,
+    ACT_REMIND_WAIT,
+    ACT_REMINDER,
+    ACT_VOICE,
     ACT_COMMAND,
     ACT_DEPLOY_TIME,
     ACT_FILE,
@@ -74,10 +78,15 @@ from .constants import (
     BOT_PERSONA,
     CLOSED_STATUSES,
     DIR_IN,
+    LANE_FULL,
+    NOTIFY_LABELS,
+    LANE_QUICK,
+    QUICK_MAX_FILES,
     DIR_OUT,
     MERGED_BY_BOT,
     NOISE_ACTIONS,
     RISK_HIGH,
+    RISK_LOW,
     RISK_LABELS,
     RISK_MEDIUM,
     RUN_ERROR,
@@ -101,6 +110,7 @@ from .constants import (
     STAGE_REVERT,
     STAGE_RULE,
     STAGE_RESEARCH,
+    STAGE_VOICE,
     STAGE_SCAN,
     STAGE_TRIAGE,
     TASK_STATUS_LABELS,
@@ -171,6 +181,12 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
     #  ai-CR-035: ảnh gửi kèm chú thích thì chú thích là nội dung tin.
     text = (msg.get("text") or msg.get("caption") or "").strip()
     photo_id = _photo_file_id(msg)
+    if not text and not photo_id and _voice_file(msg):
+        #  ai-CR-061: tin thoại → chữ, rồi đi tiếp y như tin chữ. Chỉ chép cho chat đại ca / chat đã đăng nhập.
+        text = _transcribe_voice(db, msg, chat_id)
+        if not text:
+            return
+        msg = {**msg, "text": text}
     if not text and not photo_id:
         return
     if not telegram.is_allowed_chat(chat_id):
@@ -222,6 +238,41 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
 #  Album: các ảnh cùng `media_group_id` tới gần như cùng lúc, chú thích chỉ nằm ở MỘT ảnh. Ảnh
 #  không chú thích thì chờ câu mô tả trong FOLLOW_UP_WINDOW rồi ghép vào câu đó.
 ALBUM_WINDOW = timedelta(minutes=2)
+
+
+def _voice_file(msg: dict) -> tuple[str, str]:
+    """(file_id, mime) của tin thoại hoặc tệp âm thanh; không có thì ("", "")."""
+    v = msg.get("voice") or msg.get("audio") or {}
+    fid = str(v.get("file_id") or "")
+    return (fid, str(v.get("mime_type") or "audio/ogg")) if fid else ("", "")
+
+
+def _transcribe_voice(db: Session, msg: dict, chat_id: str) -> str:
+    """Tải tin thoại, chép thành chữ bằng khóa Gemini của chat (ai-CR-061). Trả chữ; hỏng thì "" (đã nhắn lý do)."""
+    if not telegram.is_allowed_chat(chat_id) and chat_link.get_active_link(db, chat_id) is None:
+        return ""                                   # chat lạ: không tốn tiền chép
+    if not user_keys.active_key():
+        reply(db, chat_id, "Em nghe được tin thoại nhưng chưa chép được vì chat này chưa gắn khóa Gemini. " + user_keys.NO_KEY_HELP)
+        return ""
+    fid, mime = _voice_file(msg)
+    telegram.send_chat_action(chat_id)
+    run = start_run(db, 0, STAGE_VOICE)
+    db.commit()
+    try:
+        data, _remote = telegram.download_file(fid, max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
+        text, result = manager.transcribe(data, mime)
+    except Exception as e:  # noqa: BLE001 — chép hỏng phải thành một câu, không im
+        finish_run(db, run, error=str(e))
+        db.commit()
+        reply(db, chat_id, f"Em không chép được tin thoại này ({telegram.esc(str(e)[:200])}). Đại ca nhắn chữ giúp em.")
+        return ""
+    finish_run(db, run, result=result)
+    db.commit()
+    if not text:
+        reply(db, chat_id, "Em không nghe ra lời nào trong tin thoại. Đại ca nói lại hoặc nhắn chữ giúp em.")
+        return ""
+    reply(db, chat_id, f"Em nghe: «{telegram.esc(text)}»", action=ACT_VOICE)
+    return text
 
 
 def _photo_file_id(msg: dict) -> str:
@@ -325,7 +376,8 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
     reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{telegram.esc(name)}</b> cho chat này"
           + (f" ({telegram.esc(detail)})" if detail else "")
           + f". Hết hạn sau {settings.AGENT_LINK_DAYS} ngày. Cứ nhắn câu hỏi, em trả lời đúng quyền của tài khoản đó. "
-          "Đăng xuất: <code>/dangxuat</code>.")
+          "Chuông ERP của anh/chị (phiếu chờ duyệt, việc được giao) sẽ báo vào đây; nhắn «tắt chuông» để tắt, "
+          "«chuông tất cả» để nhận hết. Đăng xuất: <code>/dangxuat</code>.")
 
 
 # ---------------------------------------------------------------------------
@@ -635,7 +687,10 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     """
     if _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text):
         return
-    if _cost_by_text(db, chat_id, row, text):
+    if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
+            or _reminder_by_text(db, chat_id, row, text):
+        return
+    if _over_daily_cap(db, chat_id, row):
         return
     if not user_keys.active_key():
         #  ai-CR-053: không lùi về khóa công ty. Dấu lệnh để tin không rơi vào INBOX.
@@ -742,6 +797,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
+            or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
             or _word_by_text(db, chat_id, row, text)
@@ -925,6 +981,7 @@ _QUESTION = re.compile(r"\?|được không|(?<!\w)(chưa|nào|sao|đâu)(?!\w)"
 _SCHEDULE_WORDS = re.compile(r"(?<!\w)(lúc|hẹn|nữa|sáng|chiều|tối|mai)(?!\w)|\d{1,2}\s*(h|:|giờ)")
 _COMMANDS = (   # (tên, mẫu) — thứ tự là thứ tự ưu tiên
     ("rule_yes", r"^ghi (sổ|vào sổ)\b"),
+    ("thorough", r"^(làm kỹ|làm đầy đủ|rà kỹ)(?!\w)"),
     ("rule_no", r"^(không ghi|đừng ghi)\b"),
     ("fixgate", r"(?<!\w)sửa cho (xanh|qua)(?!\w)"),
     ("continue", r"(?<!\w)làm tiếp(?!\w)"),
@@ -942,6 +999,7 @@ _OPEN_FOR = {   # thao tác -> trạng thái việc hợp lệ khi đoán việc
     "merge": (ST_REVIEW, ST_PROD), "deploy": (ST_PROD,), "revert": (ST_PROD,), "approve": (ST_PLAN,),
     "replan": (ST_PLAN, ST_NEEDS_INPUT), "continue": (ST_NEEDS_INPUT,), "fixgate": (ST_REVIEW,),
     "done": (ST_REVIEW, ST_PROD), "pr": (ST_REVIEW,), "cancel": None, "detail": None, "status": None,
+    "thorough": (ST_TRIAGE, ST_PLAN, ST_NEEDS_INPUT, ST_CODE, ST_REVIEW),
 }
 
 
@@ -1077,11 +1135,21 @@ def _run_task_command(db: Session, chat_id: str, row: AgentMessage, task: AgentT
     elif action == "replan":
         body = re.split(r"[:：]", text, maxsplit=1)[-1].strip()
         if not body:
-            reply(db, chat_id, "Nhắn «sửa: <điều cần đổi>» để em lập lại kế hoạch.", task_id=task.id)
+            reply(db, chat_id, "Nhắn «sửa: &lt;điều cần đổi&gt;» để em lập lại kế hoạch.", task_id=task.id)
         else:
             _answer_plan(db, chat_id, row, body, task.id)
     elif action == "continue":
         start_continue(db, chat_id, "", task)
+    elif action == "thorough":
+        #  ai-CR-057: đại ca muốn làn đầy đủ. Đang sửa dở thì để chạy xong rồi rà lại kỹ; còn lại rà ngay.
+        task.lane = LANE_FULL
+        if task.status in (ST_TRIAGE, ST_PLAN, ST_NEEDS_INPUT):
+            task.status = ST_TRIAGE
+            db.commit()
+            start_scan(db, task)
+        else:
+            reply(db, chat_id, f"<b>{code}</b> đang ở bước sau rồi; em ghi nhận làm kỹ, lượt sửa tiếp theo đi làn đầy đủ.",
+                  task_id=task.id)
     elif action == "fixgate":
         start_fix_gate(db, chat_id, "", task)
     elif action == "pr":
@@ -1104,6 +1172,8 @@ def task_status_line(db: Session, task: AgentTask) -> str:
     parts = [f"<b>{code}</b> · {esc(task.title)}: <b>{esc(TASK_STATUS_LABELS.get(task.status, '?'))}</b>."]
     if task.branch_name:
         parts.append(f"Nhánh <code>{esc(task.branch_name)}</code>.")
+    if task.lane == LANE_QUICK:
+        parts.append("Đường tắt (việc nhỏ, tự duyệt).")
     if task.runner_id and (rn := db.get(AgentRunner, task.runner_id)) is not None:
         parts.append(f"Máy <b>{esc(rn.name)}</b> ({'đang bật' if runners.is_online(rn) else 'đang tắt'}).")
     merged = coder.merged_sha_for(db, task)
@@ -1186,6 +1256,7 @@ _ACTION_LABELS = {
     "revert": "thu hồi khỏi nhánh nền", "done": "đóng việc", "cancel": "bỏ việc", "continue": "làm tiếp",
     "fixgate": "sửa cho cổng kiểm xanh", "detail": "xem chi tiết", "pr": "mở PR",
     "status": "báo tình trạng", "rule_yes": "ghi vào sổ quyết định", "rule_no": "không ghi sổ",
+    "thorough": "làm kỹ (làn đầy đủ)",
 }
 #  Thao tác đổi mã/nhánh: model nói chắc vẫn phải khớp đúng bước của việc mới được làm ngay.
 _RISKY_ACTIONS = ("merge", "deploy", "revert", "cancel")
@@ -1603,6 +1674,106 @@ def _runner_confirm(db: Session, chat_id: str, row: AgentMessage, pending: Agent
           "Dán hai dòng vào <code>.env</code> của runner trên máy đó rồi bật. Máy tự báo «còn sống» mỗi 30 giây; "
           "hỏi «máy nào đang bật» để kiểm. Muốn máy này deploy dev: «cho máy " + esc(rn.name) + " được deploy».")
     log.info("agent_hub: thêm máy sửa mã %s bởi chat %s", rn.name, chat_id)
+    return True
+
+
+REMIND_WINDOW = timedelta(minutes=10)
+
+
+def _reminder_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«nhắc anh 15h gọi NCC X» · «nhắc gì» · «bỏ nhắc 2» (ai-CR-060). Thiếu giờ thì hỏi lại một câu."""
+    esc = telegram.esc
+    cmd = reminders.parse_command(text)
+    if cmd is not None:
+        row.action = ACT_COMMAND
+        if cmd["op"] == "list":
+            reply(db, chat_id, reminders.listing(db, chat_id))
+        elif cmd["op"] == "cancel_all":
+            rows = reminders.open_for_chat(db, chat_id)
+            for r in rows:
+                reminders.cancel(db, r)
+            reply(db, chat_id, f"Đã bỏ {len(rows)} lời nhắc.")
+        else:
+            rows = reminders.open_for_chat(db, chat_id)
+            if 1 <= cmd["n"] <= len(rows):
+                reminders.cancel(db, rows[cmd["n"] - 1])
+                reply(db, chat_id, f"Đã bỏ lời nhắc «{esc(rows[cmd['n'] - 1].text)}».")
+            else:
+                reply(db, chat_id, "Không có lời nhắc số đó. Xem lại: «nhắc gì».")
+        db.commit()
+        return True
+    #  Câu trả lời giờ cho câu hỏi «lúc mấy giờ?» vừa rồi.
+    pending = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_REMIND_WAIT, AgentMessage.id < row.id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    if pending is not None and row.created_at and pending.created_at and row.created_at - pending.created_at <= REMIND_WINDOW:
+        when = parse_schedule_time(text, now_local())
+        if when is not None:
+            pending.action = ACT_COMMAND
+            row.action = ACT_COMMAND
+            return _create_reminder(db, chat_id, pending.body, when)
+    parsed = reminders.parse(text, now=now_local())
+    if parsed is None:
+        return False
+    row.action = ACT_COMMAND
+    if not parsed["what"]:
+        reply(db, chat_id, "Nhắc việc gì ạ? Nhắn ví dụ «nhắc anh 15h gọi nhà cung cấp X».")
+        db.commit()
+        return True
+    if parsed["when"] is None:
+        reply(db, chat_id, f"Nhắc «{esc(parsed['what'])}» lúc mấy giờ? (ví dụ «15h», «8h sáng mai», «30 phút nữa»)")
+        log_message(db, DIR_OUT, chat_id, 0, parsed["what"], action=ACT_REMIND_WAIT)
+        db.commit()
+        return True
+    return _create_reminder(db, chat_id, parsed["what"], parsed["when"])
+
+
+def _create_reminder(db: Session, chat_id: str, what: str, when_local) -> bool:
+    if len(reminders.open_for_chat(db, chat_id)) >= reminders.MAX_OPEN:
+        reply(db, chat_id, f"Chat này đang có {reminders.MAX_OPEN} lời nhắc chờ, bỏ bớt rồi đặt thêm («nhắc gì»).")
+        db.commit()
+        return True
+    link = chat_link.get_active_link(db, chat_id)
+    reminders.create(db, chat_id, link.user_id if link else 0, what, when_local)
+    reply(db, chat_id, f"Được, em nhắc lúc <b>{fmt_local(to_utc(when_local))}</b>: {telegram.esc(what)}. Xem lại: «nhắc gì».")
+    db.commit()
+    return True
+
+
+def _over_daily_cap(db: Session, chat_id: str, row: AgentMessage) -> bool:
+    """ai-CR-062 (P-02): chat thường quá trần lượt model trong ngày thì dừng, không đốt khóa của họ."""
+    cap = int(settings.AGENT_USER_DAILY_TURNS or 0)
+    owner = user_keys.active_owner()
+    if not cap or not owner or telegram.is_allowed_chat(chat_id):
+        return False
+    since = to_utc(now_local().replace(hour=0, minute=0, second=0, microsecond=0))
+    n = int(db.scalar(select(func.count(AgentRun.id)).where(AgentRun.owner_id == owner, AgentRun.started_at >= since)) or 0)
+    if n < cap:
+        return False
+    row.action = ACT_COMMAND
+    reply(db, chat_id, f"Hôm nay chat này đã dùng {n} lượt AI, chạm trần {cap} lượt/ngày. Mai dùng tiếp; các việc không cần "
+          "AI (xem việc, nhắc việc, chuông) vẫn chạy. Cần nâng trần thì báo đại ca.")
+    db.commit()
+    return True
+
+
+def _bell_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«tắt chuông» · «bật chuông» · «chuông tất cả» — mức chuông ERP chuyển sang chat này (ai-CR-059)."""
+    mode = bells.parse_mode(text)
+    if mode is None:
+        return False
+    row.action = ACT_COMMAND
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None:
+        reply(db, chat_id, "Chat này chưa đăng nhập ERP nên chưa có chuông để đổi. " + _LINK_HELP)
+        db.commit()
+        return True
+    link.notify_mode = mode
+    db.commit()
+    reply(db, chat_id, {0: "Đã tắt chuông ERP ở chat này. Bật lại: «bật chuông».",
+                        1: "Chuông ERP ở chat này: <b>việc của tôi</b> (chờ anh/chị duyệt, giao cho anh/chị, bị trả lại). "
+                           "Muốn nhận hết: «chuông tất cả».",
+                        2: "Chuông ERP ở chat này: <b>tất cả</b>. Thu về: «chuông việc của tôi», tắt: «tắt chuông»."}[mode])
     return True
 
 
@@ -2443,7 +2614,7 @@ def _dispatch_publish(db: Session, chat_id: str, cb_id: str, task: AgentTask) ->
           f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code>, chờ chút.", task_id=task.id)
 
 
-def _dispatch_coder(db: Session, chat_id: str, task: AgentTask) -> None:
+def _dispatch_coder(db: Session, chat_id: str, task: AgentTask, *, quiet: bool = False) -> None:
     """Sau khi Duyệt: giao bậc 2 sửa mã, hoặc NÓI RA vì sao không giao.
 
     Im lặng ở đây là lỗi nặng nhất của cả luồng — đại ca ngồi chờ một lượt sửa mã không
@@ -2474,6 +2645,8 @@ def _dispatch_coder(db: Session, chat_id: str, task: AgentTask) -> None:
               f"Đã duyệt <b>{code}</b> nhưng không giao được cho runner: "
               f"{telegram.esc(str(e)[:300])}. Việc vẫn ở trạm kế hoạch, bấm /gom để thử lại.",
               task_id=task.id)
+        return
+    if quiet:
         return
     reply(db, chat_id,
           f"Đã duyệt <b>{code}</b>, giao bot sửa mã (tối đa "
@@ -3073,9 +3246,36 @@ def _triage_inbox(db: Session, *, force: bool = False) -> int:
         #  lại lời đại ca vừa nhắn rồi bắt bấm thêm một nút — đại ca cần PHƯƠNG ÁN để
         #  duyệt. QĐ-AI-5 chỉ bắt dừng ở PLAN -> CODE nên tự đi tới PLAN là đúng luật.
         #  Từ ai-CR-017: đi qua bước rà soát mã thật trước (runner), runner lập kế hoạch sau.
-        start_scan(db, task)
+        #  ai-CR-057: việc nhỏ đi đường tắt — lập kế hoạch gọn ngay, không rà soát riêng.
+        if task.lane == LANE_QUICK and settings.AGENT_CODER_ENABLED:
+            start_quick(db, task)
+        else:
+            start_scan(db, task)
     db.commit()
     return len(created)
+
+
+def start_quick(db: Session, task: AgentTask) -> None:
+    """Đường tắt (ai-CR-057): báo một dòng rồi lập kế hoạch gọn; kế hoạch gọn thì tự duyệt (xem `_finish_plan`)."""
+    reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+          f"<b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}: việc nhỏ, em làm luôn (1–2 phút). "
+          "Muốn em làm kỹ hơn thì nhắn «làm kỹ " + telegram.esc(task.code) + "».", task_id=task.id)
+    plan_task(db, task)
+
+
+_FORCE_FULL = re.compile(r"(?<!\w)(làm kỹ|làm đầy đủ|kỹ nhé|rà kỹ|cần kế hoạch)(?!\w)")
+_FORCE_QUICK = re.compile(r"(?<!\w)(làm luôn|làm nhanh|sửa luôn|đổi luôn)(?!\w)")
+
+
+def _lane_for(group: dict) -> int:
+    """ai-CR-057: đường tắt khi trạm gom chấm «việc nhỏ» (risk 1) và đại ca không dặn «làm kỹ».
+    Chữ của đại ca thắng model: «làm kỹ» → đầy đủ, «làm luôn» → tắt (vẫn phải risk 1)."""
+    text = str(group.get("summary") or "").lower()
+    if int(group.get("risk_level") or 2) != RISK_LOW or _FORCE_FULL.search(text):
+        return LANE_FULL
+    if _FORCE_QUICK.search(text) or group.get("quick"):
+        return LANE_QUICK
+    return LANE_FULL
 
 
 def _create_task(db: Session, group: dict, by_id: dict) -> AgentTask:
@@ -3086,6 +3286,7 @@ def _create_task(db: Session, group: dict, by_id: dict) -> AgentTask:
         status=ST_TRIAGE,
         summary=group["summary"],
         risk_level=group["risk_level"],
+        lane=_lane_for(group),
     )
     db.add(task)
     db.flush()
@@ -3317,6 +3518,21 @@ def _plan_task(db: Session, task: AgentTask) -> None:
     #  Đây là chỗ thi hành luật đó, không phải câu nhắc gửi cho model.
     task.status = ST_NEEDS_INPUT if needs else ST_PLAN
     db.commit()
+    if task.lane == LANE_QUICK:
+        files = [f for f in (task.plan_files or []) if isinstance(f, str) and f.strip()]
+        small = (not needs and 1 <= len(files) <= QUICK_MAX_FILES and int(task.risk_level or 2) == RISK_LOW
+                 and not coder.approve_gate(task))
+        if small:
+            #  Tự duyệt: không thẻ kế hoạch, không chờ. Kế hoạch vẫn nằm trong sổ («chi tiết AI-000x»).
+            task.approved_by_chat = "bot:duong-tat"
+            task.approved_at = datetime.now()
+            db.commit()
+            _dispatch_coder(db, settings.AGENT_TELEGRAM_CHAT_ID, task, quiet=True)
+            db.commit()
+            return
+        #  Kế hoạch hóa ra không nhỏ (nhiều tệp, có câu hỏi, rủi ro cao): trở về làn đầy đủ, thẻ như thường.
+        task.lane = LANE_FULL
+        db.commit()
     send_plan_card(db, task)
     db.commit()
 
@@ -3515,7 +3731,7 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
     if n_items > 1:
         lines += [f"Gom từ {n_items} tin nhắn."]
     if settings.AGENT_TG_COMPACT:
-        lines += ["", "Nhắn «duyệt» để em sửa mã, «sửa: <điều cần đổi>» để em lập lại kế hoạch, "
+        lines += ["", "Nhắn «duyệt» để em sửa mã, «sửa: &lt;điều cần đổi&gt;» để em lập lại kế hoạch, "
                       "hoặc «bỏ việc này»."]
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id,
           buttons=[("Duyệt", f"ok:{task.id}"), ("Sửa lại", f"fix:{task.id}"),

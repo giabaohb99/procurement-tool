@@ -55,6 +55,8 @@ class AgentTask(Base, AuditMixin):
     questions: Mapped[list] = mapped_column(JSON, default=list)
 
     risk_level: Mapped[int] = mapped_column(SmallInteger, default=RISK_MEDIUM)
+    #  ai-CR-057: 0 = làn đầy đủ, 1 = đường tắt việc nhỏ (không rà soát, tự duyệt kế hoạch gọn).
+    lane: Mapped[int] = mapped_column(SmallInteger, default=0)
 
     #  Bốn cột dưới đây BẬC 1 KHÔNG BAO GIỜ ĐIỀN — bậc 1 dừng ở PLAN. Khai sẵn vì
     #  chúng là cùng một tờ phiếu, thêm cột sau tốn một migration trên bảng đang chạy.
@@ -207,6 +209,8 @@ class AgentChatLink(Base, AuditMixin):
     linked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    #  ai-CR-059: chuông ERP chuyển sang chat này — 0 tắt · 1 việc của tôi (mặc định) · 2 tất cả.
+    notify_mode: Mapped[int] = mapped_column(SmallInteger, default=1)
 
 
 class AgentGrant(Base, AuditMixin):
@@ -265,3 +269,16 @@ class AgentRunner(Base, AuditMixin):
     registered_by_chat: Mapped[str] = mapped_column(String(50), default="")
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentReminder(Base, AuditMixin):
+    """Lời nhắc đặt bằng câu nói (ai-CR-060, T-10): tới `due_at` (UTC) thì bot nhắn lại đúng `chat_id`."""
+
+    __tablename__ = "tab_agent_reminder"
+
+    chat_id: Mapped[str] = mapped_column(String(50), default="", index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    text: Mapped[str] = mapped_column(String(500), default="")
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)

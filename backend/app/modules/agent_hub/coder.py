@@ -34,6 +34,7 @@ Ba ranh giới cố ý, đừng nới khi chưa đọc §E bộ quy tắc (doc/a
 """
 from __future__ import annotations
 
+from contextvars import ContextVar
 import fnmatch
 import hashlib
 import json
@@ -57,6 +58,7 @@ from . import memory, playbook, telegram
 from .timeutil import now_local
 from .constants import (
     BOT_NAME,
+    LANE_QUICK,
     ACT_PATCH_ANSWER,
     RISK_HIGH,
     RUN_ERROR,
@@ -122,12 +124,24 @@ ALLOWED_TOOLS = ",".join([
 ])
 
 
+#  ai-CR-058: làn của việc đang chạy trong tiến trình này (đặt ở đầu `run_code_task`); rà soát/hỏi bản vá
+#  không đặt → làn đầy đủ.
+_LANE: ContextVar[int] = ContextVar("agent_coder_lane", default=0)
+
+
+def model_args() -> list[str]:
+    """`--model` cho `claude -p` theo làn; biến trống thì để Claude Code dùng mặc định của gói."""
+    quick = _LANE.get() == LANE_QUICK
+    model = (settings.AGENT_CODER_MODEL_QUICK if quick else "") or settings.AGENT_CODER_MODEL
+    return ["--model", model] if model else []
+
+
 def allowed_tools(worktree: str) -> str:
     """ALLOWED_TOOLS + một mẫu vitest cho MỖI thư mục phân hệ / khu dùng chung có thật (ai-CR-026).
     Chỉ cho chạy vitest theo đúng một thư mục — không có mẫu nào chạy được cả bộ ~3200 bài."""
     src = Path(worktree) / FE_DIR / "src"
     extra = []
-    for root in ("modules", "shared", "core"):
+    for root in ("modules", "shared", "core", "app"):
         base = src / root
         if base.is_dir():
             extra += [f"Bash(npm --prefix {FE_DIR} run test -- src/{root}/{d.name}:*)"
@@ -501,7 +515,7 @@ def parse_cli_json(stdout: str) -> dict:
 def run_claude_continue(worktree: str, *, session_id: str, timeout: int) -> dict:
     """«Làm tiếp» (ai-CR-023): nối ĐÚNG phiên đã hết lượt, cùng quyền sửa, thêm CONTINUE_MAX_TURNS lượt."""
     cmd = [
-        settings.AGENT_CODER_CMD, "-p",
+        settings.AGENT_CODER_CMD, "-p", *model_args(),
         "--output-format", "json",
         "--permission-mode", "acceptEdits",
         "--allowedTools", allowed_tools(worktree),
@@ -536,7 +550,7 @@ def build_fix_gate_brief(gate: dict) -> str:
 
 def run_claude_fix(worktree: str, brief: str, *, session_id: str, timeout: int) -> dict:
     cmd = [
-        settings.AGENT_CODER_CMD, "-p",
+        settings.AGENT_CODER_CMD, "-p", *model_args(),
         "--output-format", "json",
         "--permission-mode", "acceptEdits",
         "--allowedTools", allowed_tools(worktree),
@@ -564,7 +578,7 @@ def run_claude(worktree: str, brief: str, *, session_id: str, timeout: int,
     """Một lượt `claude -p`. Đề bài đi qua stdin (không lộ ở `ps`). Trả JSON đã bóc.
     `resume=True` (ai-CR-024): đi tiếp phiên có sẵn (phiên rà soát) thay vì mở phiên mới."""
     cmd = [
-        settings.AGENT_CODER_CMD, "-p",
+        settings.AGENT_CODER_CMD, "-p", *model_args(),
         "--output-format", "json",
         "--permission-mode", "acceptEdits",
         "--allowedTools", allowed_tools(worktree),
@@ -680,7 +694,9 @@ FE_TYPECHECK_TIMEOUT = 900
 FE_LINT_TIMEOUT = 300
 FE_VITEST_TIMEOUT = 900
 FE_DEPS_KEEP = 2            # giữ bấy nhiêu bộ thư viện (theo lockfile) trong volume, cũ hơn thì xóa
-_FE_TEST_ROOTS = ("src/modules/", "src/shared/", "src/core/")
+#  ai-CR-057: thêm `src/app/` (components, pages, router…) — AI-0001 sửa `src/app/components/profile/…` mà cổng
+#  kiểm bỏ qua vitest và Claude Code bị từ chối lệnh vì thư mục đó không có trong danh sách.
+_FE_TEST_ROOTS = ("src/modules/", "src/shared/", "src/core/", "src/app/")
 
 
 def _fe_deps_root() -> Path:
@@ -1156,7 +1172,7 @@ def build_question_brief(task: AgentTask, question: str) -> str:
 def run_claude_resume(worktree: str, question: str, *, session_id: str, timeout: int) -> dict:
     """Một lượt `claude -p --resume <phiên>` chỉ đọc. Câu hỏi đi qua stdin như đề bài."""
     cmd = [
-        settings.AGENT_CODER_CMD, "-p",
+        settings.AGENT_CODER_CMD, "-p", *model_args(),
         "--output-format", "json",
         "--allowedTools", ASK_TOOLS,
         "--resume", session_id,
@@ -1344,6 +1360,7 @@ def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: st
 
 
 def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gate: bool = False) -> dict:
+    _LANE.set(int(task.lane or 0))
     """Chạy trọn một lượt sửa mã cho `task` (đang ở ST_CODE). Tự ghi sổ, tự nhắn Telegram.
 
     `resume=True` (ai-CR-023): nối phiên đã hết lượt, trên đúng worktree đang dở, không cắt lại.
@@ -2295,7 +2312,7 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
 def run_claude_scan(worktree: str, brief: str, *, session_id: str, timeout: int) -> dict:
     """Một lượt `claude -p` chỉ đọc (không `acceptEdits`, công cụ chỉ đọc) trên phiên mới."""
     cmd = [
-        settings.AGENT_CODER_CMD, "-p",
+        settings.AGENT_CODER_CMD, "-p", *model_args(),
         "--output-format", "json",
         "--allowedTools", SCAN_TOOLS,
         "--session-id", session_id,

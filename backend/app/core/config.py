@@ -232,7 +232,9 @@ class Settings(BaseSettings):
     # Khoảng lặng trước khi gom: tin nhắn phải nằm yên bấy nhiêu giây mới đem đi
     # phân loại. Không có nó thì mỗi tin một task và bot KHÔNG BAO GIỜ gom được gì —
     # mà "gom được không" lại đúng là câu bậc 1 phải trả lời.
-    AGENT_TRIAGE_DELAY_SEC: int = 90
+    #  ai-CR-057: 90 → 30. Chùm tin vẫn gom chung (tin sau tới trong 30 giây), nhưng một câu lệnh lẻ
+    #  không phải đợi một phút rưỡi mới được đọc.
+    AGENT_TRIAGE_DELAY_SEC: int = 30
     # Trần tin nhắn gom trong MỘT lời gọi Gemini. Vượt thì để lượt sau.
     AGENT_TRIAGE_BATCH: int = 20
     # Email tài khoản ERP mà lệnh `/hoi` chạy DƯỚI QUYỀN người đó.
@@ -250,6 +252,10 @@ class Settings(BaseSettings):
     # Cầu dao riêng của bậc 2. TẮT thì bấm Duyệt chỉ ghi sổ như bậc 1, không giao việc đi đâu.
     AGENT_CODER_ENABLED: bool = False
     AGENT_CODER_CMD: str = "claude"
+    # ai-CR-058: model cho Claude Code theo LÀN (trống = mặc định của gói đăng nhập). Làn đầy đủ (rà soát,
+    # sửa, hỏi bản vá) và làn tắt (việc nhỏ, ai-CR-057). Đại ca chọn 25/09: đầy đủ opus-5-5, việc nhỏ opus-5.
+    AGENT_CODER_MODEL: str = ""
+    AGENT_CODER_MODEL_QUICK: str = ""
     # Số lượt tối đa một phiên `claude -p` được đi (mỗi lượt = một lần gọi model + tool).
     # 80 -> 120 (ai-CR-023): AI-0007 hết 80 lượt khi mới sửa xong một nửa hai màn giao diện.
     AGENT_CODER_MAX_TURNS: int = 120
@@ -322,6 +328,9 @@ class Settings(BaseSettings):
     # trên Telegram vẫn đổi ở BotFather; đây chỉ là chữ trong câu bot nói và trong lời nhắc model.
     AGENT_BOT_NAME: str = "Đậu Đậu"
     # ai-CR-043: tỷ giá TẠM để báo chi phí bot kèm tiền Việt. Chỉ để đọc cho dễ, không phải số kế toán.
+    # ai-CR-062 (P-02): trần lượt gọi model mỗi ngày cho MỘT chat thường (không áp cho chat đại ca).
+    # Khóa Gemini là của từng người, nhưng bot vẫn chặn vòng lặp / spam làm cạn khóa của họ. 0 = không chặn.
+    AGENT_USER_DAILY_TURNS: int = 200
     AGENT_USD_VND: int = 26000
     # ai-CR-049: gốc giao diện ERP chứa phiếu bot tạo (link «Mở phiếu»). Trống = FRONTEND_URL. Stack bot
     # local tạo phiếu vào DB riêng nên phải trỏ giao diện của stack đó (agent-erp, cổng 8084).

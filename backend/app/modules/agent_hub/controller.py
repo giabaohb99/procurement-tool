@@ -145,7 +145,25 @@ def get_task(task_id: int, user=Depends(require(ENTITY, "read")), db: Session = 
 # ---------------------------------------------------------------------------
 def _serialize_link(link) -> dict:
     return {"id": link.id, "chat": chat_link.mask_chat(link.chat_id), "tg_name": link.tg_name,
-            "linked_at": _iso(link.linked_at), "expires_at": _iso(link.expires_at)}
+            "linked_at": _iso(link.linked_at), "expires_at": _iso(link.expires_at),
+            "notify_mode": int(link.notify_mode or 0)}
+
+
+class LinkNotifyIn(BaseModel):
+    notify_mode: int
+
+
+@router.patch("/links/{link_id}")
+def set_link_notify(link_id: int, body: LinkNotifyIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-059: mức chuông ERP chuyển sang chat Telegram này — 0 tắt · 1 việc của tôi · 2 tất cả."""
+    link = next((x for x in chat_link.list_user_links(db, user.id) if x.id == link_id), None)
+    if link is None:
+        raise HTTPException(404, "Không tìm thấy liên kết")
+    if body.notify_mode not in (0, 1, 2):
+        raise HTTPException(400, "Mức chuông không hợp lệ")
+    link.notify_mode = body.notify_mode
+    db.commit()
+    return success(_serialize_link(link), "Đã đổi mức chuông")
 
 
 @router.get("/links")

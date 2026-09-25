@@ -302,8 +302,25 @@ def send(text: str, *, buttons: list[tuple[str, str]] | None = None,
         payload["reply_markup"] = {"inline_keyboard": [[_button(label, data)] for label, data in buttons]}
     if relaying():
         return _relay("sendMessage", payload)
-    result = _call("sendMessage", payload)
-    return int(result.get("message_id") or 0)
+    return int(send_payload(payload).get("message_id") or 0)
+
+
+_TAG = re.compile(r"<[^>]+>")
+
+
+def send_payload(payload: dict) -> dict:
+    """`sendMessage` với một lần lùi: Telegram chê HTML («can't parse entities» — thường do một cặp
+    `<…>` trong chữ của model hay của kế hoạch) thì gửi lại bản chữ trơn, còn hơn im lặng (ai-CR-057:
+    thẻ kế hoạch AI-0001 trên dev mất vì «<điều cần đổi>»)."""
+    try:
+        return _call("sendMessage", payload)
+    except TelegramError as e:
+        if "parse entities" not in str(e):
+            raise
+        plain = dict(payload)
+        plain["text"] = html.unescape(_TAG.sub("", str(payload.get("text") or "")))
+        plain.pop("parse_mode", None)
+        return _call("sendMessage", plain)
 
 
 def send_document(chat_id: str, filename: str, data: bytes, *, caption: str = "",

@@ -8255,6 +8255,105 @@ thoại, cấp bậc mẫu. Quyền: cấp xem cây thư mục cho 28 vai trò c
 pháp nhân, phòng ban hay quyền văn bản; bấm thử bằng một nhân viên thường tạo văn bản
 thành công. Chưa chạy trên dev hay prod.
 Mã nguồn: `backend/scripts/fill_local_employee_profiles.py`.
+## ai-CR-057 | Đường tắt cho việc nhỏ và gửi lại bản chữ trơn khi Telegram chê HTML
+- status: xong
+- date: 2026-09-25
+Lượt thử đầu-cuối đầu tiên trên dev chạy đúng luồng nhưng đại ca thấy việc đổi một dòng chữ mà
+mất năm sáu phút, và thẻ kế hoạch không tới.
+
+Hai việc. Một, đường tắt: trạm gom chấm thêm việc có nhỏ và rõ không; nhỏ thì bỏ bước rà soát
+riêng, lập kế hoạch gọn ngay, kế hoạch tối đa ba tệp và không có câu hỏi thì bot tự duyệt và giao
+máy sửa mã luôn, chỉ báo một dòng; kế hoạch hóa ra không nhỏ thì quay về làn đầy đủ với thẻ như
+thường. Chữ của đại ca thắng máy: «làm kỹ» thì đi làn đầy đủ, «làm luôn» thì đi tắt; lệnh «làm kỹ
+AI-000x» đưa việc về rà soát. Thời gian gom rút từ chín mươi xuống ba mươi giây. Hai, thẻ kế
+hoạch của AI-0001 mất vì trong câu hướng dẫn có cặp ngoặc nhọn chưa thoát, Telegram hiểu là thẻ
+HTML và từ chối; đã thoát, và thêm một lần lùi: Telegram chê HTML thì gửi lại bản chữ trơn, ở cả
+đường gửi thẳng lẫn đường gửi hộ cho máy sửa mã.
+
+Bổ sung: lượt AI-0001 chạy xong cho thấy cổng kiểm giao diện v2 bỏ qua vitest và Claude Code bị từ
+chối lệnh khi tệp nằm ở thư mục app (Trang cá nhân); thêm gốc đó vào danh sách. Bật cờ deploy dev
+trên máy chủ vì máy đại ca đã được phép deploy.
+
+Kiểm: ba bài mới, cả tệp test bot 224 bài xanh; migration đã chạy local.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py · manager.py · telegram.py · tasks.py · coder.py ·
+constants.py · model.py · backend/app/core/config.py · backend/migrations/versions/f7c2e9a1b5d4_* ·
+test/backend/test_agent_hub.py
+
+## ai-CR-058 | Model Claude Code theo làn: việc nhỏ opus-5, việc đầy đủ opus-5-5
+- status: xong
+- date: 2026-09-25
+Đại ca hỏi bot sửa mã đang dùng model nào; trước nay Claude Code chạy mặc định của gói, không chỉ
+định. Đại ca chọn đặt model theo làn: việc nhỏ dùng opus-5, việc khó dùng opus-5-5.
+
+Đã thêm hai biến cấu hình cho máy sửa mã, mọi lượt gọi Claude Code (rà soát, sửa, làm tiếp, sửa cho
+xanh, hỏi về bản vá) nhận thêm tham số model theo làn của việc đang chạy; để trống thì như cũ. Đã
+thử ba tên model trên máy đại ca đều được nhận. Tiện thể sửa cờ deploy trong tệp cấu hình runner
+bị giữ giá trị mẫu, nguyên nhân lệnh «gộp và deploy dev» bị bỏ lần hai.
+
+Kiểm: một bài mới, cả tệp test bot 225 bài xanh. Máy đại ca đã dựng lại với cấu hình mới.
+
+Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/coder.py · .env.runner.example ·
+test/backend/test_agent_hub.py
+
+## ai-CR-059 | Chuông ERP sang Telegram của từng người đã đăng nhập
+- status: xong
+- date: 2026-09-25
+Phase 2 đóng: bot Lạc Lạc chạy trong cụm dev, việc AI-0001 đi trọn vòng từ giao việc tới gộp và
+lên dev bằng máy đại ca. Mở phase 3 bằng việc đầu: chuông ERP sang Telegram cá nhân.
+
+Cách làm: một vòng mỗi phút đọc các dòng chuông mới trong bảng thông báo và gửi cho chat Telegram đã
+liên kết của người nhận, nên mọi nguồn chuông hiện có và sau này đều đi mà không phải móc vào từng
+nơi tạo chuông; lần đầu vòng đứng ở dòng mới nhất để không đổ lịch sử cũ. Mỗi liên kết có một mức:
+tắt, việc của tôi (mặc định, gồm phiếu chờ tôi duyệt, việc giao cho tôi, phiếu bị trả lại, lời
+nhắc), hoặc tất cả; đổi bằng câu nhắn cho bot hoặc ô chọn ở Trang cá nhân. Một lượt gửi tối đa năm
+tin một chat, dư thì gom thành một dòng đếm. Câu chào sau khi đăng nhập nói rõ chuông sẽ báo vào đây.
+
+Kiểm: ba bài backend mới (cả tệp 228 xanh), một bài giao diện mới (5 xanh), typecheck và lint không
+lỗi; migration đã chạy local.
+
+Mã nguồn: backend/app/modules/agent_hub/bells.py · service.py · tasks.py · controller.py · constants.py ·
+model.py · backend/app/core/celery_app.py · backend/migrations/versions/a1c4e7f9b2d6_* ·
+frontend-v2/src/app/components/profile/profile-telegram-tab.tsx · modules/system/hooks/use-telegram-links.ts ·
+modules/system/api/agent-hub-api.ts
+
+## ai-CR-060 | Nhắc việc bằng câu nói
+- status: xong
+- date: 2026-09-25
+Phase 3, việc T-10. Ai đã đăng nhập bot nhắn «nhắc anh 15h gọi nhà cung cấp X» hay «30 phút nữa nhắc
+em nộp báo cáo» là bot ghi một lời nhắc và tới giờ nhắn lại đúng chat đó. Giờ đọc bằng bộ đọc giờ
+sẵn có của hẹn gộp và deploy; thiếu giờ thì bot hỏi lại một câu và câu trả lời kế tiếp là giờ. Hỏi
+«nhắc gì» để xem, «bỏ nhắc 2» hay «bỏ hết nhắc» để bỏ. Vòng nền mỗi phút gửi lời nhắc tới giờ.
+Không tốn lượt model.
+
+Kiểm: một bài mới, cả tệp test bot 231 bài xanh; migration đã chạy local.
+
+Mã nguồn: backend/app/modules/agent_hub/reminders.py · service.py · tasks.py · constants.py · model.py ·
+backend/app/core/celery_app.py · backend/migrations/versions/b7e2f4c9d1a5_*
+
+## ai-CR-061 | Tin thoại chép thành chữ rồi xử lý như tin chữ
+- status: xong
+- date: 2026-09-25
+Phase 3, việc T-07. Gửi tin thoại cho bot là bot tải về, chép thành chữ bằng một lượt Gemini với khóa
+của chính người đó, nhắn lại «Em nghe: …» rồi xử lý câu đó y như gõ chữ: hỏi trợ lý, giao việc, đặt
+lời nhắc. Chat lạ không được chép để không tốn tiền; chưa gắn khóa thì bot nói rõ. Lượt chép ghi sổ
+chi phí theo người.
+
+Kiểm: một bài mới (cùng lượt chạy 231 bài xanh).
+
+Mã nguồn: backend/app/modules/agent_hub/manager.py · service.py · constants.py
+
+## ai-CR-062 | Trần lượt AI mỗi ngày cho chat thường
+- status: xong
+- date: 2026-09-25
+Phase 3, việc P-02. Khóa Gemini là của từng người, nhưng bot vẫn chặn vòng lặp hay gửi dồn làm cạn khóa
+của họ: một chat thường quá hai trăm lượt model trong ngày (đếm theo chủ khóa, mốc nửa đêm giờ Việt
+Nam) thì bot dừng gọi AI và nói rõ; việc không cần AI vẫn chạy; chat của đại ca không bị trần. Đổi
+trần bằng biến cấu hình.
+
+Kiểm: một bài mới (cùng lượt chạy 231 bài xanh).
+
+Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/service.py
 
 ## bao-CR-485..490 | Gom bảy góp ý màn YCBG/YCMH thành năm cụm, chia hai phiên
 - status: dang-lam

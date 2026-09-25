@@ -4,6 +4,7 @@ import type { TelegramLink } from '@/modules/system/api/agent-hub-api'
 import {
   useCreateTelegramLinkCode,
   useRemoveTelegramLink,
+  useSetTelegramNotifyMode,
   useTelegramLinks,
 } from '@/modules/system/hooks/use-telegram-links'
 import { Button } from '@/shared/ui/button'
@@ -26,6 +27,7 @@ export function ProfileTelegramTab() {
   const { data, isLoading, refetch } = useTelegramLinks()
   const createCode = useCreateTelegramLinkCode()
   const remove = useRemoveTelegramLink()
+  const setMode = useSetTelegramNotifyMode()
   const issued = createCode.data
   const links = data?.items ?? []
 
@@ -103,6 +105,21 @@ export function ProfileTelegramTab() {
                 <li key={link.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
                   <span className="min-w-0 flex-1 font-medium">{link.tg_name || 'Telegram'} <span className="font-mono text-xs text-muted-foreground">{link.chat}</span></span>
                   <span className="text-xs text-muted-foreground">Từ {formatDateTime(link.linked_at)} · hết hạn {formatDateTime(link.expires_at)}</span>
+                  {/* ai-CR-059 — chuông ERP chuyển sang chat này */}
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <span className="text-muted-foreground">Chuông:</span>
+                    <select
+                      aria-label={`Chuông ERP cho ${link.tg_name || link.chat}`}
+                      className="h-7 rounded-md border bg-background px-1.5 text-xs"
+                      value={link.notify_mode}
+                      onChange={(e) => setMode.mutate({ id: link.id, notify_mode: Number(e.target.value) })}
+                      disabled={setMode.isPending}
+                    >
+                      <option value={1}>Việc của tôi</option>
+                      <option value={2}>Tất cả</option>
+                      <option value={0}>Tắt</option>
+                    </select>
+                  </label>
                   <Button type="button" variant="ghost" size="sm" onClick={() => void handleRemove(link)} disabled={remove.isPending}>
                     <Unlink className="mr-1 size-4" /> Gỡ
                   </Button>
