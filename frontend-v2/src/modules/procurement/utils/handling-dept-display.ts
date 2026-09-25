@@ -11,6 +11,9 @@ import type { Department } from '@/modules/hr/types/department'
 
 export const SHARED_PURCHASING_LABEL = 'Thu mua chung'
 
+/** bao-CR-488 — nhãn ô tick lúc lập phiếu; tick mới bung ô chọn phòng. */
+export const ASSIGN_OTHER_DEPT_LABEL = 'Nhờ phòng khác xử lý'
+
 /** Câu gợi ý dưới ô — nói bằng việc, không nói bằng cột dữ liệu. */
 export const HANDLING_DEPT_HINT =
   'Phòng sẽ đi mua cho phiếu này. Mặc định là Thu mua chung; phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.'
@@ -29,6 +32,27 @@ export function handlingDeptLabel(
   if (!id) return SHARED_PURCHASING_LABEL
   const name = (handlerDeptName || '').trim() || departments.find((d) => d.id === id)?.name || ''
   return name || `Phòng #${id}`
+}
+
+type HandlingDeptDraft = { handler_dept_id?: number | null; handler_dept_assigned?: boolean }
+
+/**
+ * bao-CR-488 — lúc LẬP phiếu, ô «Phòng xử lý» ẩn sau ô tick «Nhờ phòng khác xử lý». Người dùng
+ * chưa đụng ô tick thì suy từ dữ liệu: bản nháp chép từ phiếu nguồn đã có phòng xử lý (YCBG
+ * tạo từ YCMH) thì coi như đã tick, để không âm thầm rơi mất phòng đó.
+ */
+export function isHandlingDeptAssigned(draft: HandlingDeptDraft): boolean {
+  if (typeof draft.handler_dept_assigned === 'boolean') return draft.handler_dept_assigned
+  return (Number(draft.handler_dept_id) || 0) > 0
+}
+
+/**
+ * Giá trị `handler_dept_id` gửi lên khi TẠO phiếu: không tick → `undefined` (KHÔNG gửi, backend
+ * tự chọn mặc định: nhà máy → chính phòng mình, còn lại → Thu mua chung); tick → số đã chọn,
+ * kể cả `0` = nhờ Thu mua chung — đó là lựa chọn có chủ ý, backend giữ nguyên.
+ */
+export function handlingDeptForCreate(draft: HandlingDeptDraft): number | undefined {
+  return isHandlingDeptAssigned(draft) ? Number(draft.handler_dept_id) || 0 : undefined
 }
 
 /**

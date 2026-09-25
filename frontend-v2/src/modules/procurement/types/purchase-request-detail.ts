@@ -90,6 +90,11 @@ export interface PurchaseRequestDetail {
    */
   handler_dept_id: number
   /**
+   * bao-CR-488 — CHỈ ở giao diện, không có trên API: lúc LẬP phiếu người dùng đã tick «Nhờ phòng
+   * khác xử lý» chưa. Chưa tick thì không gửi `handler_dept_id`, backend tự chọn mặc định.
+   */
+  handler_dept_assigned?: boolean
+  /**
    * bao-CR-480: TÊN phòng xử lý do backend trả kèm (rỗng = thu mua chung) — màn hình
    * không cần quyền đọc danh mục phòng ban mới hiện được tên.
    */
@@ -174,6 +179,16 @@ export interface PurchaseRequestDetail {
    */
   purchasing_head_name: string
   purchasing_head_signature: string
+  /**
+   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và
+   * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên
+   * bản in nội bộ. Phiếu cũ: id 0, tên rỗng.
+   */
+  approver_employee_id?: number
+  approver_employee_name?: string
+  dept_head_employee_id?: number
+  dept_head_name?: string
+  dept_head_signature?: string
   /**
    * bao-CR-419 — MỐC "người yêu cầu đã chốt xong lựa chọn phương án" cho cả phiếu.
    * Rỗng nghĩa là chưa bấm chốt (kể cả khi mọi dòng đã có phương án được tick, vì

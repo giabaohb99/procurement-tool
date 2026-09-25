@@ -18,8 +18,11 @@ export interface PurchaseRequestPayload {
   head_of_dept: string
   /** CR-071 — id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng). */
   head_of_dept_id: number
-  /** bao-CR-414 — id phòng ban được NHỜ xử lý phiếu (0 = không nhờ). */
-  handler_dept_id: number
+  /**
+   * bao-CR-414/488 — id phòng XỬ LÝ phiếu (0 = Thu mua chung). Lúc TẠO mà không gửi thì backend
+   * tự chọn mặc định (nhà máy → chính phòng mình); gửi số — kể cả 0 — là người lập đã chọn.
+   */
+  handler_dept_id?: number
   purpose: string
   request_date: string
   need_date: string
@@ -42,8 +45,24 @@ export interface PurchaseRequestPayload {
  * Nhánh phụ: reject (trả về `rejected` để sửa lại), cancel (`cancelled`),
  * return (trả phiếu đã duyệt về cho người yêu cầu sửa).
  */
+/** Một người chọn được vào ô «NSTM phụ trách» — bao-CR-486. */
+export interface AssignableStaff {
+  id: number
+  code: string
+  full_name: string
+  department_id: number
+}
+
 export const purchaseRequestApi = {
   getById: (id: number) => apiGet<PurchaseRequestDetail>(`${BASE_URL}/${id}`),
+
+  /**
+   * bao-CR-486 — NSTM chọn được cho phiếu này, đi theo ô «Phòng xử lý» (phòng xử lý ≠ 0
+   * → người thu mua của phòng đó; = 0 → người thu mua chung). Backend chặn gán ngoài
+   * danh sách, nên ô chọn PHẢI đọc từ đây thay vì lọc danh mục nhân sự theo tên phòng.
+   */
+  assignableStaff: (id: number) =>
+    apiGet<{ items: AssignableStaff[] }>(`${BASE_URL}/${id}/assignable-staff`),
 
   /**
    * bao-CR-314 — phiếu YCMH của MỘT ĐƠN MUA HÀNG, đã cắt còn đúng dòng hàng của đơn.

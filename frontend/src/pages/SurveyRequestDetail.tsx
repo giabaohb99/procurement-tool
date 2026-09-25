@@ -111,9 +111,11 @@ export default function SurveyRequestDetail() {
     request_date: new Date().toISOString().slice(0, 10),
     note: '', status: 'draft', reject_reason: '', lines: [],
     handler_dept_id: 0,                         // bao-CR-414: phòng ĐƯỢC NHỜ xử lý (0 = không nhờ)
+    handler_dept_assigned: false,               // bao-CR-488: đã tick «Nhờ phòng khác xử lý» lúc lập (chỉ giao diện)
     ...(fromPr ? {
       company_id: fromPr.company_id || 0,
       handler_dept_id: fromPr.handler_dept_id || 0,
+      handler_dept_assigned: !!fromPr.handler_dept_id,   // YCMH nguồn đã có phòng xử lý thì coi như đã tick
       requester: fromPr.requester || '', requester_id: fromPr.requester_id || 0,
       requester_position: fromPr.requester_position || '',
       department: fromPr.department || '', head_of_dept: fromPr.head_of_dept || '',
@@ -125,6 +127,7 @@ export default function SurveyRequestDetail() {
   const [companies, setCompanies]   = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [employees, setEmployees]   = useState<any[]>([])
+  const [assignableStaff, setAssignableStaff] = useState<any[]>([])   // bao-CR-486: NSTM theo phòng xử lý
   const [itemGroups, setItemGroups] = useState<any[]>([])
   const [units, setUnits]           = useState<string[]>([])
   const [logs, setLogs]             = useState<any[]>([])
@@ -151,6 +154,8 @@ export default function SurveyRequestDetail() {
       const r = await api.get(`${API}/${id}`)
       setSv(r.data.data)
       reloadLogs()
+      // bao-CR-486: tải lại mỗi lần nạp phiếu — chuyển phòng xử lý xong là danh sách đổi theo.
+      api.get(`${API}/${id}/assignable-staff`).then((x) => setAssignableStaff(x.data.data.items || [])).catch(() => {})
     } catch (ex: any) {
       const status = ex?.response?.status
       if (status === 403 || status === 404) { setNotFound(true); return }
@@ -210,9 +215,10 @@ export default function SurveyRequestDetail() {
       .map((d) => ({ value: String(d.id), label: d.name })),
   ]
   // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên.
-  // Bổ sung NSTM đã gán ở các dòng (dù không nằm trong ds nhân viên tải về do scope) → luôn hiện đúng tên.
+  // bao-CR-486: danh sách đọc từ API theo ô «Phòng xử lý» (trước đó là CẢ danh mục nhân sự).
+  // Bổ sung NSTM đã gán ở các dòng (dù không còn trong danh sách) → luôn hiện đúng tên.
   const purchaserOptions = (() => {
-    const opts = employees.map((e) => ({ value: e.code, label: e.full_name }))
+    const opts = assignableStaff.map((e: any) => ({ value: e.code, label: e.full_name }))
     for (const l of (sv.lines || [])) {
       if (l.assignee && !opts.some((o) => o.value === l.assignee))
         opts.push({ value: l.assignee, label: l.assignee_name || l.assignee })
@@ -486,7 +492,8 @@ export default function SurveyRequestDetail() {
       purpose:            sv.purpose,
       request_date:       sv.request_date,
       note:               sv.note,
-      handler_dept_id:    Number(sv.handler_dept_id) || 0,   // bao-CR-414
+      // bao-CR-414/488: lúc tạo chưa tick «Nhờ phòng khác xử lý» thì KHÔNG gửi, backend tự chọn mặc định.
+      handler_dept_id:    isNew && !sv.handler_dept_assigned ? undefined : Number(sv.handler_dept_id) || 0,
       lines:              lines,
     }
     try {
@@ -600,7 +607,7 @@ export default function SurveyRequestDetail() {
         )}
         {!isNew && sv.can_return_dept && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} title="Trả cả phiếu về phòng lập tự xử lý" onClick={() => setTransferMode('return')}>
-            <i className="ti ti-corner-up-left" />Trả về phòng lập
+            <i className="ti ti-corner-up-left" />Trả về
           </button>
         )}
 
@@ -791,14 +798,36 @@ export default function SurveyRequestDetail() {
                   phiếu; phòng lập phiếu vẫn thấy như cũ. */}
               <div className="form-row">
                 <label>Phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(phòng sẽ đi mua cho phiếu này)</span></label>
-                <SearchSelect
-                  value={String(sv.handler_dept_id || 0)}
-                  onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
-                  options={handlerDeptOptions}
-                  disabled={!editable}
-                  placeholder="Thu mua chung"
-                  autoSelectSingle={false}
-                />
+                {/* bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick «Nhờ phòng khác xử lý» (cùng luật YCMH). */}
+                {isNew ? (
+                  <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 400 }}>
+                      <input type="checkbox" checked={!!sv.handler_dept_assigned}
+                        onChange={(e) => setSv((p: any) => ({ ...p, handler_dept_assigned: e.target.checked, handler_dept_id: e.target.checked ? p.handler_dept_id : 0 }))} />
+                      Nhờ phòng khác xử lý
+                    </label>
+                    {sv.handler_dept_assigned ? (
+                      <SearchSelect
+                        value={String(sv.handler_dept_id || 0)}
+                        onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
+                        options={handlerDeptOptions}
+                        placeholder="Thu mua chung"
+                        autoSelectSingle={false}
+                      />
+                    ) : (
+                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là Thu mua chung; phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
+                    )}
+                  </>
+                ) : (
+                  <SearchSelect
+                    value={String(sv.handler_dept_id || 0)}
+                    onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
+                    options={handlerDeptOptions}
+                    disabled={!editable}
+                    placeholder="Thu mua chung"
+                    autoSelectSingle={false}
+                  />
+                )}
               </div>
 
               <div className="form-row">
@@ -806,6 +835,13 @@ export default function SurveyRequestDetail() {
                 <input value={sv.head_of_dept || ''} placeholder="Tự động theo phòng ban"
                   disabled title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
               </div>
+              {/* bao-CR-490: ai THỰC bấm Duyệt — hệ thống ghi lúc duyệt, chỉ xem. */}
+              {!!sv.approver_employee_name && (
+                <div className="form-row">
+                  <label>Trưởng phòng phê duyệt</label>
+                  <input value={sv.approver_employee_name} disabled title="Người thực bấm Duyệt phiếu này" />
+                </div>
+              )}
 
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Mục đích khảo sát <span className="req">*</span></label>

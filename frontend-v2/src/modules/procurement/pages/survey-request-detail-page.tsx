@@ -89,6 +89,7 @@ import {
   useSetSurveyLineStatus,
   useSurveyRequest,
   useSurveyRequestAction,
+  useSurveyRequestAssignableStaff,
   useSurveyRequestResult,
   useTransferSurveyRequestDept,
 } from '../hooks/use-survey-request'
@@ -107,6 +108,7 @@ import {
   type SurveyRequestLine,
 } from '../types/survey-request-detail'
 import { isSurveyRequestProcessable } from '../types/survey-request-process'
+import { handlingDeptForCreate } from '../utils/handling-dept-display'
 import { parseAssistantDraft, type AssistantDraft } from '../utils/assistant-draft'
 import { invalidSurveyRequestKeys, validateSurveyRequest } from '../utils/required-fields'
 
@@ -173,6 +175,12 @@ export function SurveyRequestDetailPage() {
 
   const { data: serverData, isLoading, isError } = useSurveyRequest(surveyRequestId)
   const { data: result } = useSurveyRequestResult(surveyRequestId, serverData?.status ?? '')
+  //  bao-CR-486: danh sách NSTM đi theo ô «Phòng xử lý» — chỉ tải cho người xử lý được.
+  //  Gọi ở ĐÂY (trước mọi `return` sớm) — luật hook.
+  const { data: assignableStaff } = useSurveyRequestAssignableStaff(
+    surveyRequestId,
+    can('survey_request', 'process'),
+  )
   // Query dùng chung key với card nên không tốn thêm một lượt tải — ở đây chỉ đọc
   // để chặn đóng phiếu khi còn hồ sơ BẮT BUỘC chưa xong.
   const { data: report } = useSurveyRequestReport(surveyRequestId)
@@ -243,8 +251,13 @@ export function SurveyRequestDetailPage() {
 
   // Hồ sơ nhân sự tải sau, mà chỉ ở đó mới có `department_id` (CR-086) — bù thêm
   // một nhịp cho phiếu mới, để phiếu neo phòng bằng id chứ không bằng tên.
-  const employeesChanged = useHasChanged(employeesData)
-  if (isNew && employeesChanged && draft?.requester_id && !draft.department_id) {
+  //  ⚠️ KHÔNG gác nhịp này bằng `useHasChanged(employeesData)`. Danh mục nhân
+  //  sự thường đã nằm sẵn trong bộ đệm (người dùng vừa đi qua một màn khác đọc
+  //  nó), nên ở lượt render đầu nó có luôn — mà lượt đầu `useHasChanged` trả
+  //  `false`, thành ra nhịp bù không bao giờ chạy và phiếu lại neo phòng bằng
+  //  TÊN, đúng thứ CR-086 sinh ra để tránh (bao-CR-492). Điều kiện
+  //  `!draft.department_id` tự tắt sau lần bù đầu nên không cần mốc so sánh.
+  if (isNew && draft?.requester_id && !draft.department_id) {
     const me = (employeesData?.items ?? []).find((employee) => employee.id === draft.requester_id)
     if (me?.department_id) {
       const departmentId = me.department_id
@@ -361,14 +374,16 @@ export function SurveyRequestDetailPage() {
     !isNew && !!result && hasSurveyResult(status) && (status !== 'processing' || hasAnyOptions)
 
   /**
-   * NSTM chọn được: nhân sự phòng thu mua. Ô hiện TÊN nhưng lưu MÃ nhân sự.
-   * Bổ sung người đã gán ở từng dòng dù họ nằm ngoài phạm vi danh mục tải về —
-   * không thì bảng hiện mã trần thay vì tên.
+   * NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu, không lọc
+   * danh mục nhân sự theo tên phòng nữa (xem `purchase-request-detail-page.tsx`).
+   * Ô hiện TÊN nhưng lưu MÃ nhân sự. Bổ sung người đã gán ở từng dòng dù họ nằm ngoài
+   * danh sách — không thì bảng hiện mã trần thay vì tên.
    */
   const purchasers = (() => {
-    const options = (employeesData?.items ?? [])
-      .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
-      .map((employee) => ({ code: employee.code, name: employee.full_name }))
+    const options = (assignableStaff?.items ?? []).map((staff) => ({
+      code: staff.code,
+      name: staff.full_name,
+    }))
     for (const line of data.lines) {
       if (line.assignee && !options.some((option) => option.code === line.assignee)) {
         options.push({ code: line.assignee, name: line.assignee_name || line.assignee })
@@ -436,7 +451,8 @@ export function SurveyRequestDetailPage() {
         department: loadedDraft.department,
         head_of_dept_id: loadedDraft.head_of_dept_id,
         head_of_dept: loadedDraft.head_of_dept,
-        handler_dept_id: loadedDraft.handler_dept_id || 0,
+        // bao-CR-488: lúc tạo, chưa tick «Nhờ phòng khác xử lý» thì không gửi để backend chọn mặc định.
+        handler_dept_id: isNew ? handlingDeptForCreate(loadedDraft) : loadedDraft.handler_dept_id || 0,
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
         note: loadedDraft.note,
@@ -599,7 +615,7 @@ export function SurveyRequestDetailPage() {
           onClick={() => setTransferMode('return')}
         >
           <CornerUpLeft />
-          Trả về phòng lập
+          Trả về
         </Button>
       )}
 

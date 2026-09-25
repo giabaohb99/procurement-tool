@@ -3,6 +3,7 @@ import type { Department } from '@/modules/hr/types/department'
 import type { Employee } from '@/modules/hr/types/employee'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DatePicker } from '@/shared/ui/date-picker'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -14,10 +15,12 @@ import { formatDateTime } from '@/shared/utils/format-date'
 import { useDeptHeadLookup } from '../hooks/use-survey-request'
 import type { SurveyRequestDetail } from '../types/survey-request-detail'
 import {
+  ASSIGN_OTHER_DEPT_LABEL,
   HANDLING_DEPT_HINT,
   SHARED_PURCHASING_LABEL,
   handlingDeptLabel,
   handlingDeptOptions,
+  isHandlingDeptAssigned,
 } from '../utils/handling-dept-display'
 
 interface SurveyRequestInfoCardProps {
@@ -121,6 +124,7 @@ export function SurveyRequestInfoCard({
   // bao-CR-480: ô «Phòng xử lý» — cùng nhãn / mục chọn với YCMH, luật ở util dùng chung.
   const handlingDeptOptionList = handlingDeptOptions(departments, data.handler_dept_id)
   const handlingDeptText = handlingDeptLabel(data.handler_dept_id, data.handler_dept_name, departments)
+  const handlingDeptAssigned = isHandlingDeptAssigned(data)
 
   //  Ô chọn có ô gõ tìm không nhận `aria-invalid` — tô đỏ viền ô gõ bên trong thay cho
   //  `aria-invalid:border-destructive` của SelectTrigger cũ (QA 29/08).
@@ -255,10 +259,25 @@ export function SurveyRequestInfoCard({
           bao-CR-414 / bao-CR-480 — «Phòng xử lý»: phòng nào sẽ đi mua cho phiếu này, cùng
           luật với YCMH (`0` = Thu mua chung, là một MỤC CHỌN ĐƯỢC).
         */}
-        <div className="space-y-1.5">
-          <Label htmlFor="sr-handler-dept">Phòng xử lý</Label>
-          {editing && departments.length ? (
-            <>
+        {editing && isNew && departments.length ? (
+          /* bao-CR-488: lúc LẬP phiếu ô Phòng xử lý ẩn — hệ thống tự chọn mặc định (nhà máy → chính
+             phòng mình, còn lại → Thu mua chung). Tick «Nhờ phòng khác xử lý» mới bung ô chọn; đã
+             tick thì gửi đúng phòng đã chọn, kể cả Thu mua chung. Màn chi tiết bên dưới giữ như cũ. */
+          <div className="space-y-1.5">
+            <Label htmlFor="sr-handler-dept">Phòng xử lý</Label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={handlingDeptAssigned}
+                onCheckedChange={(checked) =>
+                  onChange({
+                    handler_dept_assigned: checked === true,
+                    handler_dept_id: checked === true ? data.handler_dept_id : 0,
+                  })
+                }
+              />
+              {ASSIGN_OTHER_DEPT_LABEL}
+            </label>
+            {handlingDeptAssigned ? (
               <SearchSelect
                 id="sr-handler-dept"
                 searchInTrigger
@@ -268,12 +287,31 @@ export function SurveyRequestInfoCard({
                 options={handlingDeptOptionList}
                 onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
               />
+            ) : (
               <p className="text-xs text-muted-foreground">{HANDLING_DEPT_HINT}</p>
-            </>
-          ) : (
-            <ReadOnlyValue>{handlingDeptText}</ReadOnlyValue>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <Label htmlFor="sr-handler-dept">Phòng xử lý</Label>
+            {editing && departments.length ? (
+              <>
+                <SearchSelect
+                  id="sr-handler-dept"
+                  searchInTrigger
+                  value={String(data.handler_dept_id || 0)}
+                  placeholder={SHARED_PURCHASING_LABEL}
+                  searchPlaceholder="Gõ để tìm phòng ban…"
+                  options={handlingDeptOptionList}
+                  onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
+                />
+                <p className="text-xs text-muted-foreground">{HANDLING_DEPT_HINT}</p>
+              </>
+            ) : (
+              <ReadOnlyValue>{handlingDeptText}</ReadOnlyValue>
+            )}
+          </div>
+        )}
 
         {/* Trưởng bộ phận: mặc định điền theo phòng của người YC, nhưng người lập
             ĐƯỢC chọn TBP phòng ban khác duyệt hộ (QA 29/08) — danh sách lấy từ
@@ -313,6 +351,14 @@ export function SurveyRequestInfoCard({
             </ReadOnlyValue>
           )}
         </div>
+
+        {/* bao-CR-490: ai THỰC bấm Duyệt ở chặng trưởng phòng — chỉ xem, hệ thống ghi lúc duyệt. */}
+        {!!data.approver_employee_name && (
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground">Trưởng phòng phê duyệt</Label>
+            <ReadOnlyValue>{data.approver_employee_name}</ReadOnlyValue>
+          </div>
+        )}
 
         <div className="space-y-1.5 md:col-span-2">
           <Label>
