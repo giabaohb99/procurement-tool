@@ -79,13 +79,13 @@ SQL
 # (4c) máy đại ca: điền 3 dòng còn trống trong procurement-agent-hub/.env.runner
 #      (AGENT_RUNNER_TOKEN, DB_PASSWORD = <mật khẩu> ở trên, JWT_SECRET = giá trị trong .env.dev trên VPS),
 #      kiểm REDIS_URL cùng số ngăn với REDIS_URL trong .env.dev, rồi:
-docker compose -p agentrunner -f docker-compose.runner.yml up -d --build
+docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml up -d --build
 ```
 
 Sau đó: đại ca mở deverp → Trang cá nhân → «Telegram» lấy mã, nhắn `/dangnhap <mã>` cho bot dev; vào
 «Khóa AI» dán khóa Gemini; nhắn «thêm máy của anh» → lấy `AGENT_RUNNER_TOKEN` dán vào `.env.runner`
 trên máy (đã điền sẵn phần còn lại), điền `DB_NAME` + `DB_PASSWORD` của `agent_runner`, rồi
-`docker compose -p agentrunner -f docker-compose.runner.yml up -d --build`. Stack `agenthub` cũ trên
+`docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml up -d --build`. Stack `agenthub` cũ trên
 máy đại ca tắt đi (`docker compose down`) để không có hai bot.
 
 ## 1. Chuẩn bị MỘT LẦN trên VPS dev (đại ca hoặc người có SSH quản trị)
@@ -172,8 +172,8 @@ Gửi đại ca nội dung tệp `.pub` (KHÔNG gửi tệp không đuôi) để
 git clone git@github.com:giabaohb99/procurement-tool.git
 cd procurement-tool && git checkout erp-v2
 cp .env.runner.example .env.runner        # điền theo chú thích trong tệp
-docker compose -p agentrunner -f docker-compose.runner.yml up -d --build
-docker compose -p agentrunner -f docker-compose.runner.yml logs -f
+docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml up -d --build
+docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml logs -f
 ```
 
 Nhật ký `tunnel` phải thấy dòng `nối …` rồi im (không lặp «đứt»); nhật ký `agent-runner` phải thấy

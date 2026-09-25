@@ -8093,6 +8093,13 @@ khi tên đã có tiền tố. Còn ba việc dính bí mật và nhánh dùng c
 cho làm, giao đại ca chạy tay theo tài liệu số 05 mục 0: đẩy nhánh bot thành erp-v2, tạo tài khoản
 MySQL cho máy sửa mã, nhắn bot đăng ký máy và điền ba dòng còn trống trong tệp cấu hình runner.
 
+Tối cùng ngày đại ca làm xong ba việc đó (mã máy và khóa dev đưa qua tệp, em đưa vào cấu hình rồi
+xóa tệp). Bật máy sửa mã gặp hai trục trặc: cổng SSH trong tệp mẫu là 22 nên chưa được thay bằng
+cổng thật, và compose lấy đường dẫn khóa đường hầm từ tệp .env của thư mục chứ không từ
+.env.runner nên mount nhầm tệp giữ chỗ; sửa bằng cách chạy compose kèm --env-file .env.runner
+(đã ghi vào tài liệu). Kết quả: đường hầm nối lên dev, runner sẵn sàng nghe hàng đợi riêng, sổ
+máy trên dev thấy may-dai-ca đang bật, cờ deploy bật. Còn chạy thử một việc sửa mã đầu-cuối.
+
 Mã nguồn: docker-compose.dev.yml · backend/migrations/versions/e6b1d4f8a2c7_gop_head_bot_va_erp_v2_2509.py ·
 backend/app/seed.py · test/backend/test_pham_vi_khai_du_b07.py · .env.runner.example ·
 doc/agent-hub/05-may-sua-ma.md
