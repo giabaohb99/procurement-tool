@@ -55,10 +55,11 @@ class AgentGeminiProvider(GeminiProvider):
         if thinking:
             cfg["thinkingConfig"] = {"thinkingBudget": THINKING_BUDGET}
             cfg["maxOutputTokens"] = max_tokens + THINKING_BUDGET
-        else:
+        elif not model.startswith("gemini-3"):
             #  Tắt HẲN (ai-CR-022). Lớp dùng chung chỉ gửi 0 cho model nó biết chắc nhận 0, nên với
             #  bí danh flash-latest nó bỏ trống và model vẫn tự nghĩ ~2,5 nghìn token mỗi lượt. Đo
-            #  23/09: model của bot nhận `thinkingBudget: 0`.
+            #  23/09: model của bot nhận `thinkingBudget: 0`. Dòng Gemini 3 thì TRẢ 400 với 0
+            #  (ai-CR-056, dev đặt `gemini-3.5-flash-lite` cho Trợ lý) — với nó để trống như lớp chung.
             cfg["thinkingConfig"] = {"thinkingBudget": 0}
         return cfg
 

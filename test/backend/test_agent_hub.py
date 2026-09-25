@@ -5298,3 +5298,14 @@ def test_may_sua_ma_khong_giu_token_thi_tin_di_vong_qua_worker_va_may_la_bi_tu_c
     #  Không khai tên máy (phase 0/1) → không kiểm gì.
     monkeypatch.setattr(settings, "AGENT_RUNNER_NAME", "")
     assert tasks._runner_guard(db, task, deploy=True) is None and not telegram.relaying()
+
+
+def test_provider_bot_khong_ep_thinking_budget_0_cho_gemini_3():
+    """ai-CR-056: dev đặt gemini-3.5-flash-lite cho Trợ lý; ép thinkingBudget=0 là Gemini trả 400."""
+    from app.modules.agent_hub.manager import AgentGeminiProvider
+
+    p = AgentGeminiProvider()
+    assert p._gen_config("gemini-flash-latest", 100, 0.2, False)["thinkingConfig"] == {"thinkingBudget": 0}
+    assert "thinkingConfig" not in p._gen_config("gemini-3.5-flash-lite", 100, 0.2, False)
+    assert p._gen_config("gemini-3.5-flash-lite", 100, 0.2, True)["thinkingConfig"]["thinkingBudget"] > 0
+
