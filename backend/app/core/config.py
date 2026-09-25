@@ -232,7 +232,9 @@ class Settings(BaseSettings):
     # Khoảng lặng trước khi gom: tin nhắn phải nằm yên bấy nhiêu giây mới đem đi
     # phân loại. Không có nó thì mỗi tin một task và bot KHÔNG BAO GIỜ gom được gì —
     # mà "gom được không" lại đúng là câu bậc 1 phải trả lời.
-    AGENT_TRIAGE_DELAY_SEC: int = 90
+    #  ai-CR-057: 90 → 30. Chùm tin vẫn gom chung (tin sau tới trong 30 giây), nhưng một câu lệnh lẻ
+    #  không phải đợi một phút rưỡi mới được đọc.
+    AGENT_TRIAGE_DELAY_SEC: int = 30
     # Trần tin nhắn gom trong MỘT lời gọi Gemini. Vượt thì để lượt sau.
     AGENT_TRIAGE_BATCH: int = 20
     # Email tài khoản ERP mà lệnh `/hoi` chạy DƯỚI QUYỀN người đó.

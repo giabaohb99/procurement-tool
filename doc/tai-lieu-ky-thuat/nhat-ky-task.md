@@ -8167,3 +8167,24 @@ Kiểm: 20 bài công nợ theo phòng xanh (3 bài mới), 67 bài chi phí và
 
 Mã nguồn: backend/app/modules/payable/service.py · purchase_order/service.py ·
 backend/scripts/backfill_handling_dept.py · test/backend/test_cong_no_theo_phong_xu_ly_cr484.py
+
+## ai-CR-057 | Đường tắt cho việc nhỏ và gửi lại bản chữ trơn khi Telegram chê HTML
+- status: xong
+- date: 2026-09-25
+Lượt thử đầu-cuối đầu tiên trên dev chạy đúng luồng nhưng đại ca thấy việc đổi một dòng chữ mà
+mất năm sáu phút, và thẻ kế hoạch không tới.
+
+Hai việc. Một, đường tắt: trạm gom chấm thêm việc có nhỏ và rõ không; nhỏ thì bỏ bước rà soát
+riêng, lập kế hoạch gọn ngay, kế hoạch tối đa ba tệp và không có câu hỏi thì bot tự duyệt và giao
+máy sửa mã luôn, chỉ báo một dòng; kế hoạch hóa ra không nhỏ thì quay về làn đầy đủ với thẻ như
+thường. Chữ của đại ca thắng máy: «làm kỹ» thì đi làn đầy đủ, «làm luôn» thì đi tắt; lệnh «làm kỹ
+AI-000x» đưa việc về rà soát. Thời gian gom rút từ chín mươi xuống ba mươi giây. Hai, thẻ kế
+hoạch của AI-0001 mất vì trong câu hướng dẫn có cặp ngoặc nhọn chưa thoát, Telegram hiểu là thẻ
+HTML và từ chối; đã thoát, và thêm một lần lùi: Telegram chê HTML thì gửi lại bản chữ trơn, ở cả
+đường gửi thẳng lẫn đường gửi hộ cho máy sửa mã.
+
+Kiểm: ba bài mới, cả tệp test bot 224 bài xanh; migration đã chạy local.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py · manager.py · telegram.py · tasks.py ·
+constants.py · model.py · backend/app/core/config.py · backend/migrations/versions/f7c2e9a1b5d4_* ·
+test/backend/test_agent_hub.py

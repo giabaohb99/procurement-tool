@@ -5310,3 +5310,84 @@ def test_provider_bot_khong_ep_thinking_budget_0_cho_gemini_3():
     assert "thinkingConfig" not in p._gen_config("gemini-3.5-flash-lite", 100, 0.2, False)
     assert p._gen_config("gemini-3.5-flash-lite", 100, 0.2, True)["thinkingConfig"]["thinkingBudget"] > 0
 
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-057: đường tắt việc nhỏ + gửi lại bản chữ trơn khi Telegram chê HTML
+# ---------------------------------------------------------------------------
+def _triage_one(db, service, monkeypatch, text, *, quick=True, risk=1):
+    row = service.log_message(db, service.DIR_IN, "12345", 9, text)
+    db.commit()
+    monkeypatch.setattr(service.manager, "run_triage", lambda msgs: (
+        {"groups": [{"title": "Đổi chữ ở tab Khóa AI", "summary": text, "risk_level": risk,
+                     "quick": quick, "message_ids": [row.id]}]}, _ket_qua_model()))
+    return row
+
+
+def test_viec_nho_di_duong_tat_khong_ra_soat_tu_duyet_va_bao_mot_dong(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, sent, _ = bot
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
+    monkeypatch.setattr(coder, "dispatch_scan", lambda tid: pytest.fail("việc nhỏ không rà soát riêng"))
+    dispatched: list[int] = []
+    monkeypatch.setattr(coder, "dispatch", lambda tid: dispatched.append(tid))
+    _fake_plan(monkeypatch, service, plan_files=["frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx"], risk_level=1)
+    _triage_one(db, service, monkeypatch, "ở tab Khóa AI đổi chữ Gemini thành AI")
+    assert service.triage_inbox(db, force=True) == 1
+    task = db.query(service.AgentTask).one()
+    assert task.lane == service.LANE_QUICK and task.status == service.ST_CODE and dispatched == [task.id]
+    assert task.approved_by_chat == "bot:duong-tat"
+    assert any("việc nhỏ, em làm luôn" in t for t in sent) and not any("Duyệt" in t and "Sửa lại" in t for t in sent)
+    assert "Đường tắt" in service.task_status_line(db, task)
+
+
+def test_duong_tat_lui_ve_lan_day_du_khi_ke_hoach_khong_nho_hoac_dai_ca_dan_lam_ky(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, sent, _ = bot
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
+    monkeypatch.setattr(coder, "dispatch", lambda tid: pytest.fail("kế hoạch có câu hỏi thì không tự duyệt"))
+    scanned: list[int] = []
+    monkeypatch.setattr(coder, "dispatch_scan", lambda tid: scanned.append(tid))
+    #  (1) chấm nhỏ nhưng kế hoạch hỏi lại → thẻ như thường, làn về đầy đủ.
+    _fake_plan(monkeypatch, service, questions=["Đổi ở cả tiêu đề hộp xác nhận không?"], needs_clarification=True, risk_level=1)
+    _triage_one(db, service, monkeypatch, "ở tab Khóa AI đổi chữ Gemini thành AI")
+    service.triage_inbox(db, force=True)
+    t1 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
+    assert t1.lane == service.LANE_FULL and t1.status == service.ST_NEEDS_INPUT and "đang hỏi lại" in sent[-1]
+    #  (2) «làm kỹ» trong câu → làn đầy đủ ngay từ gom (đi rà soát).
+    _triage_one(db, service, monkeypatch, "ở tab Khóa AI đổi chữ Gemini thành AI, làm kỹ nhé")
+    service.triage_inbox(db, force=True)
+    t2 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
+    assert t2.lane == service.LANE_FULL and scanned == [t2.id]
+    #  (3) model chấm nhỏ nhưng risk 2 → không tắt.
+    _triage_one(db, service, monkeypatch, "sửa công thức tính công nợ", quick=True, risk=2)
+    service.triage_inbox(db, force=True)
+    t3 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
+    assert t3.lane == service.LANE_FULL
+    #  (4) «làm kỹ AI-000x» khi việc còn ở đầu luồng → rà soát.
+    t4 = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_PLAN, lane=service.LANE_QUICK)
+    service.handle_message(db, _msg(f"làm kỹ {t4.code}"))
+    assert t4.lane == service.LANE_FULL and scanned[-1] == t4.id
+
+
+def test_telegram_che_html_thi_gui_lai_ban_chu_tron(monkeypatch):
+    from app.modules.agent_hub import telegram
+
+    calls: list[dict] = []
+
+    def fake_call(method, payload, **kw):
+        calls.append(payload)
+        if "parse_mode" in payload:
+            raise telegram.TelegramError("Telegram sendMessage trả 400: can't parse entities: Unsupported start tag")
+        return {"message_id": 7}
+
+    monkeypatch.setattr(telegram, "_call", fake_call)
+    out = telegram.send_payload({"chat_id": "1", "text": "Nhắn «sửa: <điều cần đổi>» &amp; <b>x</b>", "parse_mode": "HTML"})
+    assert out["message_id"] == 7 and len(calls) == 2
+    assert calls[1]["text"] == "Nhắn «sửa: » & x" and "parse_mode" not in calls[1]
+    #  Lỗi khác (mạng, chat sai) thì không lùi, ném thẳng.
+    monkeypatch.setattr(telegram, "_call", lambda m, p, **kw: (_ for _ in ()).throw(telegram.TelegramError("chat not found")))
+    with pytest.raises(telegram.TelegramError):
+        telegram.send_payload({"chat_id": "1", "text": "x", "parse_mode": "HTML"})

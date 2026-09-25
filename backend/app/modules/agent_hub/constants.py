@@ -95,6 +95,13 @@ DIRECTION_LABELS = {
 RISK_LOW = 1
 RISK_MEDIUM = 2
 RISK_HIGH = 3  # Đụng tiền, phân quyền, migration, hoặc nhánh `main` (luật B6)
+
+#  ai-CR-057: LÀN của một việc. Việc nhỏ và rõ (đổi chữ/nhãn/màu/thứ tự trên giao diện, mục tiêu nêu rõ,
+#  risk 1) đi ĐƯỜNG TẮT: không rà soát riêng, không chờ «duyệt» — lập kế hoạch gọn rồi sửa luôn, xong
+#  mới báo một dòng. Việc khác đi làn đầy đủ như trước. Đại ca ép bằng chữ: «làm kỹ» → đầy đủ, «làm luôn» → tắt.
+LANE_FULL = 0
+LANE_QUICK = 1
+QUICK_MAX_FILES = 3
 RISK_LABELS = {
     RISK_LOW: "Thấp",
     RISK_MEDIUM: "Vừa",

@@ -53,7 +53,7 @@ def send_telegram_task(method: str, payload: dict) -> dict:
     if not settings.AGENT_TELEGRAM_BOT_TOKEN:
         return {"status": "skipped", "reason": "worker này cũng không có token"}
     try:
-        result = telegram._call(method, payload)
+        result = telegram.send_payload(payload) if method == "sendMessage" else telegram._call(method, payload)
     except telegram.TelegramError as e:
         log.warning("agent_hub: gửi hộ Telegram hỏng: %s", e)
         return {"status": "error", "reason": str(e)[:300]}

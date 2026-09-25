@@ -124,9 +124,13 @@ Luật:
 5. `risk_level`: 3 nếu việc đụng TIỀN, PHÂN QUYỀN, cấu trúc cơ sở dữ liệu, hoặc nhánh
    `main`; 1 nếu chỉ sửa chữ nghĩa/giao diện; còn lại 2.
 6. Mọi `id` bạn nhận vào phải xuất hiện đúng MỘT lần trong kết quả. Không bịa id mới.
+7. `quick`: true CHỈ KHI việc vừa NHỎ vừa RÕ — đổi một đoạn chữ/nhãn/màu/thứ tự/ẩn hiện một ô trên
+   giao diện, người nhắn nói rõ màn hình và chữ cũ/mới, không cần nghĩ thiết kế, không đụng backend,
+   cơ sở dữ liệu, quyền, tiền, luồng duyệt (risk_level phải là 1). Mơ hồ, nhiều màn, hoặc «sửa lỗi»
+   chưa rõ nguyên nhân → false. Người nhắn ghi «làm kỹ» → false; «làm luôn» / «làm nhanh» → true nếu risk 1.
 
 CHỈ trả JSON, không thêm chữ nào ngoài JSON:
-{"groups": [{"title": "...", "summary": "...", "message_ids": [1,2], "risk_level": 2}]}
+{"groups": [{"title": "...", "summary": "...", "message_ids": [1,2], "risk_level": 2, "quick": false}]}
 """
 
 
@@ -173,6 +177,7 @@ def _clean_groups(groups, valid_ids: set[int]) -> list[dict]:
             "summary": str(g.get("summary") or ""),
             "message_ids": ids,
             "risk_level": _risk(g.get("risk_level")),
+            "quick": bool(g.get("quick")) and _risk(g.get("risk_level")) == 1,
         })
     #  Tin nào model bỏ quên thì gom hết vào MỘT việc "chưa phân loại" — thả lại INBOX
     #  thì lượt sau lại gửi đúng chúng cho model và có thể lại bị quên, quay vòng mãi.

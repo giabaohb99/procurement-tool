@@ -55,6 +55,8 @@ class AgentTask(Base, AuditMixin):
     questions: Mapped[list] = mapped_column(JSON, default=list)
 
     risk_level: Mapped[int] = mapped_column(SmallInteger, default=RISK_MEDIUM)
+    #  ai-CR-057: 0 = làn đầy đủ, 1 = đường tắt việc nhỏ (không rà soát, tự duyệt kế hoạch gọn).
+    lane: Mapped[int] = mapped_column(SmallInteger, default=0)
 
     #  Bốn cột dưới đây BẬC 1 KHÔNG BAO GIỜ ĐIỀN — bậc 1 dừng ở PLAN. Khai sẵn vì
     #  chúng là cùng một tờ phiếu, thêm cột sau tốn một migration trên bảng đang chạy.
