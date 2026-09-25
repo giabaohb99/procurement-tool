@@ -6844,3 +6844,67 @@ Mã nguồn: `frontend-v2/src/modules/document/pages/document-create-page.tsx` �
 `backend/app/modules/document/files_controller.py` ·
 `backend/app/modules/document/attachment_window.py` · khóa cấu hình
 `doc_attachment_view_window_enabled`.
+
+## bao-CR-482 | Quản lý nhóm dự án từ giao diện, ảnh đại diện đi theo người, màn liệt kê bày theo nhóm
+- status: xong
+- date: 2026-09-25
+Đại ca muốn chỉnh nhóm cha «DX» và phân quyền cho người trong nhóm, kéo «Nhật ký hệ thống»
+vào DX, thấy ảnh nhân viên, và thấy nhóm ngay ở màn danh sách. Máy chủ đã có sẵn các cửa
+này từ lúc dựng phân hệ nhưng màn hình chưa mở.
+
+Đã làm: hộp «Quản lý nhóm» (đổi tên, mô tả, lưu trữ, mời và gỡ thành viên kèm vai trò, vai
+trò kế thừa xuống mọi dự án trong nhóm), mở từ menu ba chấm của nhóm ở cây bên trái và từ
+cụm nhóm mới trên màn liệt kê; màn liệt kê có cột Nhóm và xếp dự án theo nhóm; hộp Quản lý
+dự án có ô Nhóm để chuyển dự án vào hoặc ra khỏi nhóm; máy chủ trả kèm ảnh đại diện cho
+thành viên nhóm, thành viên dự án và người phụ trách việc, giao diện hiện ảnh và rơi về chữ
+tắt khi chưa có; tệp đồng bộ sổ tự đặt dự án mới vào nhóm DX. Chưa commit.
+
+Kiểm: 175 bài kiểm máy chủ phân hệ Dự án xanh (5 bài mới); giao diện mới kiểm kiểu 0 lỗi,
+kiểm nếp mã 0 lỗi, 429 bài phân hệ Dự án xanh.
+
+Mã nguồn: backend/app/modules/work/people.py · frontend-v2 group-manage-dialog.tsx ·
+members-panel.tsx · person-avatar.tsx · project-list-page.tsx ·
+backend/scripts/sync_task_journal.py · test/backend/test_du_an_nhom_cr482.py
+
+## bao-CR-483 | Bảng công việc tải theo trang, mỗi cột 40 việc, cuộn tới đáy thì tải thêm
+- status: xong
+- date: 2026-09-25
+Đại ca thấy mở danh sách việc chậm, đoán là gọi hết một lượt và muốn chia trang rồi kéo
+xuống mới tải thêm. Đo trên dev đúng vậy: một dự án 177 việc kéo 545 KB một lượt, gần
+chín phần mười là phần mô tả mà thẻ không vẽ tới, riêng cột Xong có 160 thẻ.
+
+Đã làm: đường API bảng nhận thêm số việc tối đa mỗi cột và chế độ nhẹ không mô tả, cắt
+từng cột theo đúng thứ tự kéo thả, phần dư báo kèm số còn lại và việc kế tiếp chưa tải;
+thêm đường API trang kế của một cột. Giao diện chọn chế độ nhẹ khi xem Bảng hoặc Danh
+sách không tìm chữ, không lọc, sắp theo tay; Gantt, tìm chữ, sắp xếp và bộ lọc vẫn xin
+trọn bộ vì ba việc đó chạy ở trình duyệt. Cuối mỗi cột và mỗi nhóm có đuôi Tải thêm, tự
+tải khi cuộn tới và bấm được; số đếm cột là tổng cả phần chưa tải. Thả thẻ xuống cuối
+cột đang tải dở thì neo trước việc chưa tải đầu tiên để thẻ không biến mất sau khi nạp
+lại. Mọi cập nhật lạc quan vá cả hai bản đệm của bảng. Không có migration. Chưa commit.
+
+Kiểm: 13 bài kiểm máy chủ CR-482 và CR-483 xanh (8 bài mới); giao diện kiểm kiểu 0 lỗi,
+kiểm nếp mã 0 lỗi, 438 bài phân hệ Dự án xanh.
+
+Mã nguồn: backend/app/modules/work/task_service.py · task_controller.py ·
+frontend-v2 utils/board-paging.ts · hooks/board-cache.ts · hooks/use-work-board.ts ·
+components/load-more-tasks.tsx · pages/work-list-page.tsx ·
+test/backend/test_du_an_tai_theo_trang_cr483.py
+
+## bao-CR-484 | Công nợ tính cho phòng xử lý của đơn, không lùi về phòng lập
+- status: xong
+- date: 2026-09-25
+Đại ca chốt câu treo từ CR-480: công nợ tính theo phòng xử lý. Luật cũ gán nợ cho phòng
+được nhờ, không có thì phòng lập đơn; từ CR-480 ô Phòng xử lý để trống nghĩa là thu mua
+chung xử lý, nên giữ luật cũ thì nợ của đơn nhà máy xin mà thu mua chung mua hộ lại bị
+tính cho nhà máy.
+
+Đã làm: thêm hàm lấy phòng tính nợ đọc thẳng ô Phòng xử lý của đơn (trống = thu mua
+chung), ba chỗ sinh nợ khi nhận hàng, vận chuyển và chi phí thu mua dùng hàm này. Hàm tra
+bộ phân công người phụ trách giữ nguyên vì là việc khác. Thêm bước gán lại nợ cũ vào
+script chuyển đổi phòng xử lý, có chạy thử; yêu cầu thanh toán đã lập không đụng. Local
+đã chạy, đổi 2 khoản. Dev và prod chạy script sau khi deploy. Chưa commit.
+
+Kiểm: 20 bài công nợ theo phòng xanh (3 bài mới), 67 bài chi phí và nhận hàng xanh.
+
+Mã nguồn: backend/app/modules/payable/service.py · purchase_order/service.py ·
+backend/scripts/backfill_handling_dept.py · test/backend/test_cong_no_theo_phong_xu_ly_cr484.py

@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.status_codes import PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
 from app.modules.catalog import lead_time
-from app.modules.category_assignee.service import handling_dept_of
 from app.modules.department.service import sync_department_ref
 from app.modules.employee.service import sync_employee_ref
 from app.modules.goods_receipt import service as gr_service
@@ -480,7 +479,7 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
         sup = suppliers.get((row.supplier_code or "").strip())
         pay_service.upsert(
             db, source_type=IMPORT_COST_SOURCE, ref_type=IMPORT_COST_SOURCE, ref_id=row.id,
-            company_id=po.company_id, department_id=handling_dept_of(po),
+            company_id=po.company_id, department_id=pay_service.debt_dept_of(po),
             supplier_code=(row.supplier_code or "").strip(),
             supplier_name=(row.supplier_name or "").strip() or (sup.name if sup else ""),
             po_id=po.id, po_code=po.code, invoice_no=(row.invoice_no or "").strip(),
@@ -1212,7 +1211,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                 amt = recv * base_price
                 pay_service.upsert(
                     db, source_type="goods", ref_id=d.id, company_id=po.company_id,
-                    department_id=handling_dept_of(po),
+                    department_id=pay_service.debt_dept_of(po),
                     supplier_code=po.supplier_code, supplier_name=po.supplier_name,
                     po_id=po.id, po_code=po.code, invoice_no=(d.invoice_no or it.invoice_no or "").strip(),
                     incur_date=d.received_date or po.order_date, amount=amt, vat=amt * vat / 100,
@@ -1226,7 +1225,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                     ship_inv = f"{po.misa_code}-{it.product_code}".strip("-")
                     pay_service.upsert(
                         db, source_type="shipping", ref_id=d.id, company_id=po.company_id,
-                        department_id=handling_dept_of(po),
+                        department_id=pay_service.debt_dept_of(po),
                         supplier_code=d.carrier_code,
                         supplier_name=d.carrier_name or (carrier.name if carrier else ""),
                         po_id=po.id, po_code=po.code, invoice_no=ship_inv,
