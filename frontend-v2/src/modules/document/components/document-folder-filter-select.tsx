@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { useTreeExpansion } from '@/shared/tree/use-tree-expansion'
 import { cn } from '@/shared/utils/cn'
@@ -18,6 +19,14 @@ export const FOLDER_FILTER_ALL = -1
 interface DocumentFolderFilterSelectProps {
   folderId: number
   onFolderIdChange: (id: number) => void
+  /**
+   * «Gồm cả thư mục con» — nằm Ở CHÂN popover chứ không đứng ngoài thanh công
+   * cụ (đại ca chê 25/09/2026: công tắc ngoài thanh trông như đang bật trong
+   * khi ô vẫn là «Tất cả thư mục», mà lúc đó nó chẳng có nghĩa gì). Bỏ trống
+   * = không vẽ dòng này.
+   */
+  includeSubfolders?: boolean
+  onIncludeSubfoldersChange?: (value: boolean) => void
   className?: string
 }
 
@@ -36,6 +45,8 @@ interface DocumentFolderFilterSelectProps {
 export function DocumentFolderFilterSelect({
   folderId,
   onFolderIdChange,
+  includeSubfolders,
+  onIncludeSubfoldersChange,
   className,
 }: DocumentFolderFilterSelectProps) {
   const [open, setOpen] = useState(false)
@@ -89,7 +100,7 @@ export function DocumentFolderFilterSelect({
           aria-expanded={open}
           aria-label="Lọc theo thư mục"
           className={cn(
-            'w-full justify-between font-normal md:w-52',
+            'w-full justify-between font-normal md:w-48',
             folderId === FOLDER_FILTER_ALL && 'text-muted-foreground',
             className,
           )}
@@ -97,6 +108,9 @@ export function DocumentFolderFilterSelect({
           <span className="flex min-w-0 items-center gap-1.5">
             <FolderTree className="size-4 shrink-0" />
             <span className="truncate">{triggerLabel}</span>
+            {selected && includeSubfolders && (
+              <span className="shrink-0 text-xs text-muted-foreground">+ con</span>
+            )}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
@@ -124,6 +138,23 @@ export function DocumentFolderFilterSelect({
           expansion={expansion}
           onPick={pick}
         />
+
+        {onIncludeSubfoldersChange && (
+          <label
+            className={cn(
+              'flex items-center gap-2 border-t px-3 py-2 text-sm',
+              selected ? 'cursor-pointer' : 'text-muted-foreground',
+            )}
+          >
+            <Checkbox
+              checked={Boolean(includeSubfolders)}
+              onCheckedChange={(checked) => onIncludeSubfoldersChange(checked === true)}
+              //  Chưa chọn thư mục nào thì "gồm thư mục con" không có nghĩa gì cả.
+              disabled={!selected}
+            />
+            Gồm cả văn bản trong thư mục con
+          </label>
+        )}
       </PopoverContent>
     </Popover>
   )

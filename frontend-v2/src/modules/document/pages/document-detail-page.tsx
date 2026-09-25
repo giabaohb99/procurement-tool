@@ -353,19 +353,23 @@ export function DocumentDetailPage() {
 
   //  Thẻ «Người duyệt dự kiến» (phase 01, duoc-CR-473) — nằm TRONG tab Phê
   //  duyệt, chỉ khi CÒN NHÁP và chưa có phiên duyệt; gửi duyệt xong thì tab
-  //  đọc phiên thật (`DocumentApprovalTab`) thay vì dự đoán. Gọi hook vô
-  //  điều kiện — nó tự khóa (`enabled`) khi chưa có `doc_type_id`/`company_id`.
-  const approvalPreview = useDocumentApprovalPreview({
-    doc_type_id: record?.doc_type_id ?? 0,
-    company_id: record?.company_id ?? 0,
-    department_id: record?.department_id ?? 0,
-    secrecy_level: record?.secrecy_level ?? 0,
-    urgency: record?.urgency ?? 0,
-    owner_employee_id: record?.owner_employee_id ?? 0,
-    drafter_employee_id: record?.drafter_employee_id ?? 0,
-    signer_employee_id: record?.signer_employee_id ?? 0,
-    source_document_id: record?.source_document_id ?? 0,
-  })
+  //  đọc phiên thật (`DocumentApprovalTab`) thay vì dự đoán. Hook chỉ HỎI khi
+  //  thẻ thật sự hiện (đối số thứ hai) — hỏi thừa lúc đã gửi duyệt thì người
+  //  duyệt phạm vi hẹp ăn 400 cho một thứ không vẽ ra (test UI 25/09/2026).
+  const approvalPreview = useDocumentApprovalPreview(
+    {
+      doc_type_id: record?.doc_type_id ?? 0,
+      company_id: record?.company_id ?? 0,
+      department_id: record?.department_id ?? 0,
+      secrecy_level: record?.secrecy_level ?? 0,
+      urgency: record?.urgency ?? 0,
+      owner_employee_id: record?.owner_employee_id ?? 0,
+      drafter_employee_id: record?.drafter_employee_id ?? 0,
+      signer_employee_id: record?.signer_employee_id ?? 0,
+      source_document_id: record?.source_document_id ?? 0,
+    },
+    Boolean(isDraft) && !approval,
+  )
 
   return (
     // `Tabs` bọc CẢ khung trang để hàng tab nằm cạnh tiêu đề — trang soạn thảo

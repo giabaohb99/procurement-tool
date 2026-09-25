@@ -14,6 +14,8 @@ interface FolderGridViewProps {
   onOpen: (document: DocumentRecord) => void
   onViewDetails: (document: DocumentRecord) => void
   onMoveTo: (document: DocumentRecord) => void
+  /** «Chia sẻ…» — mở hộp quyền truy cập của đúng văn bản đó. */
+  onShare: (document: DocumentRecord) => void
   onRemove: (document: DocumentRecord) => void
   canWrite: boolean
   canDelete: boolean
@@ -38,6 +40,7 @@ export function FolderGridView({
   onOpen,
   onViewDetails,
   onMoveTo,
+  onShare,
   onRemove,
   canWrite,
   canDelete,
@@ -60,6 +63,7 @@ export function FolderGridView({
           menuButtonPlacement="corner"
           onOpen={() => onOpen(document)}
           onMoveTo={() => onMoveTo(document)}
+          onManagePermissions={() => onShare(document)}
           onViewDetails={() => onViewDetails(document)}
           onRemove={() => onRemove(document)}
         >

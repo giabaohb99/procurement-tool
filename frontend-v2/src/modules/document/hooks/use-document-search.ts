@@ -15,6 +15,17 @@ const SEARCH_DEBOUNCE_MS = 400
 export const MIN_QUERY_LENGTH = 2
 
 /**
+ * Câu tìm này có đi đường TÌM TOÀN VĂN không (25/09/2026, đại ca chốt bỏ công
+ * tắc «Tìm cả nội dung» — tìm là tìm luôn cả tên lẫn nội dung). Đủ
+ * `MIN_QUERY_LENGTH` ký tự → `/api/documents/search` (siêu dữ liệu + nội dung
+ * soạn thảo + chữ trong tệp); ngắn hơn / rỗng → danh sách thường, vì chỉ mục
+ * ngram không khớp được câu 1 ký tự và ô trống thì phải hiện đủ danh sách.
+ */
+export function isFullTextQuery(keyword: string): boolean {
+  return keyword.trim().length >= MIN_QUERY_LENGTH
+}
+
+/**
  * TÌM KIẾM TOÀN VĂN văn bản (phase 07, duoc-CR-477) — đọc cả tiêu đề/số hiệu,
  * nội dung soạn thảo, và chữ trong tệp đính kèm.
  *

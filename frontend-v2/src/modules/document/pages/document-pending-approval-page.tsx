@@ -35,8 +35,8 @@ export function DocumentPendingApprovalPage() {
         //  một dòng để mở ra duyệt») thì mũi tên ở mép phải mỗi thẻ đã nói rồi.
         description={
           <span className="max-md:hidden">
-            Bấm vào một dòng để mở văn bản ra đọc rồi duyệt ngay tại đó. Việc đã duyệt nằm phía
-            dưới.
+            Bấm vào một dòng để mở văn bản ra đọc rồi duyệt ngay tại đó. Việc đã duyệt xem ở
+            tab «Đã duyệt».
           </span>
         }
       />

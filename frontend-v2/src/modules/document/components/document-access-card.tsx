@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { cn } from '@/shared/utils/cn'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
-import { useDocumentAccess, useGrantAccess, useRevokeAccess } from '../hooks/use-document-access'
+import { useDocumentAccess } from '../hooks/use-document-access'
+import { useDocumentAccessEditor } from '../hooks/use-document-access-editor'
 import { EFFECT, type DocumentAccess } from '../types/document-access'
 import { DocumentAccessDialog } from './document-access-dialog'
 
@@ -29,8 +30,7 @@ interface DocumentAccessCardProps {
  */
 export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardProps) {
   const { data: rows = [] } = useDocumentAccess(documentId)
-  const grant = useGrantAccess(documentId)
-  const revoke = useRevokeAccess(documentId)
+  const editor = useDocumentAccessEditor(documentId)
   const [dialogOpen, setDialogOpen] = useState(false)
   //  Dòng đang sửa. `grant` ở backend là ghi đè theo (văn bản, đối tượng, chiều)
   //  nên sửa một dòng chính là cấp lại đúng dòng đó với bộ quyền mới — không cần
@@ -138,7 +138,7 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
                     //  tách hai nghĩa mà vẫn đúng từ khách yêu cầu.
                     confirmLabel="Hủy quyền"
                     onConfirm={() =>
-                      revoke.mutate({ accessId: row.id, reason: 'Hủy từ trang văn bản' })
+                      editor.revoke.mutate({ accessId: row.id, reason: 'Hủy từ trang văn bản' })
                     }
                   />
                 )}
@@ -151,11 +151,11 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
       <DocumentAccessDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        pending={grant.isPending}
-        //  Văn bản đã có id nên gửi thẳng lên máy chủ, tuần tự từng dòng. Trang
-        //  TẠO văn bản dùng cùng hộp này nhưng xếp hàng chờ tới lúc tạo xong.
+        pending={editor.grant.isPending}
+        //  Văn bản đã có id nên gửi thẳng lên máy chủ. Trang TẠO văn bản dùng
+        //  cùng hộp này nhưng xếp hàng chờ tới lúc tạo xong.
         onSubmit={async (rows) => {
-          for (const row of rows) await grant.mutateAsync(row.values)
+          await editor.grantAll(rows)
           setDialogOpen(false)
         }}
       />
@@ -164,41 +164,10 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
         <DocumentAccessDialog
           open
           onOpenChange={(open) => !open && setDongDangSua(null)}
-          pending={grant.isPending || revoke.isPending}
-          initial={{
-            subjectLabel: dongDangSua.subject_name,
-            values: {
-              subject_kind: dongDangSua.subject_kind,
-              subject_id: dongDangSua.subject_id,
-              effect: dongDangSua.effect,
-              can_read: true,
-              can_write: dongDangSua.can_write,
-              can_delete: dongDangSua.can_delete,
-              valid_from: dongDangSua.valid_from,
-              valid_to: dongDangSua.valid_to,
-              reason: dongDangSua.reason,
-            },
-          }}
+          pending={editor.pending}
+          initial={editor.toDraft(dongDangSua)}
           onSubmit={async (rows) => {
-            for (const row of rows) await grant.mutateAsync(row.values)
-
-            //  Đổi sang đối tượng khác (hoặc đổi chiều tác động) thì dòng vừa
-            //  ghi là một dòng MỚI — dòng cũ vẫn còn hiệu lực. Không thu hồi nó
-            //  thì người dùng tưởng mình vừa "sửa", trong khi thực tế là vừa
-            //  chia thêm cho một người nữa mà người cũ vẫn giữ nguyên quyền.
-            const unchanged = rows.some(
-              (row) =>
-                row.values.subject_kind === dongDangSua.subject_kind &&
-                row.values.subject_id === dongDangSua.subject_id &&
-                row.values.effect === dongDangSua.effect,
-            )
-            if (!unchanged) {
-              await revoke.mutateAsync({
-                accessId: dongDangSua.id,
-                reason: 'Sửa lại dòng chia quyền',
-              })
-            }
-
+            await editor.saveEdit(dongDangSua, rows)
             setDongDangSua(null)
           }}
         />

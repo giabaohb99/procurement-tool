@@ -5,6 +5,16 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { FolderTreeNewMenu } from './folder-tree-new-menu'
 
+//  Hộp thật có test riêng (`folder-quick-document-dialog.test.tsx`) — ở đây chỉ
+//  kiểm menu mở nó với ĐÚNG thư mục + pháp nhân.
+vi.mock('./folder-quick-document-dialog', () => ({
+  FolderQuickDocumentDialog: (props: { folderId: number; folderCompanyId: number }) => (
+    <div role="dialog">
+      quick {props.folderId}/{props.folderCompanyId}
+    </div>
+  ),
+}))
+
 function renderMenu(props: Partial<Parameters<typeof FolderTreeNewMenu>[0]> = {}) {
   const onCreateFolder = vi.fn()
   render(
@@ -30,7 +40,7 @@ describe('FolderTreeNewMenu', () => {
     await user.click(screen.getByRole('button', { name: 'Mới' }))
     expect(await screen.findByRole('menuitem', { name: 'Thư mục mới' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Văn bản mới tại đây' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Văn bản từ tệp có sẵn' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Tạo nhanh từ tệp' })).not.toBeInTheDocument()
   })
 
   //  Lỗi lead bắt khi test UI 24/09/2026: người CHỈ XEM vẫn thấy nút «+ Mới».
@@ -71,5 +81,13 @@ describe('FolderTreeNewMenu', () => {
     await screen.findByRole('menu')
     await user.keyboard('{Escape}')
     expect(onCreateFolder).not.toHaveBeenCalled()
+  })
+
+  it('«Tạo nhanh từ tệp» opens the quick dialog for the current folder and its company', async () => {
+    const user = userEvent.setup()
+    renderMenu({ folderId: 23, folderCompanyId: 2 })
+    await user.click(screen.getByRole('button', { name: 'Mới' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Tạo nhanh từ tệp' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('quick 23/2')
   })
 })

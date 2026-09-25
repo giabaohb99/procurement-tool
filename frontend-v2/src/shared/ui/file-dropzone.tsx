@@ -9,6 +9,12 @@ interface FileDropzoneProps {
   /** Dòng chữ chính giữa vùng thả. */
   hint?: string
   /**
+   * Dòng chữ NHỎ dưới dòng gợi ý — thường là «định dạng nhận · dung lượng tối
+   * đa», để người dùng biết trước tệp nào sẽ bị từ chối thay vì chọn xong mới
+   * ăn lỗi. Khác `children`: dòng này vẫn nằm trong vùng bấm được.
+   */
+  description?: string
+  /**
    * Khối phụ nằm dưới dòng gợi ý (ví dụ ô chọn mục lưu tệp).
    *
    * Bọc sẵn trong một lớp `data-dropzone-ignore` nên bấm vào đây KHÔNG bật hộp
@@ -34,6 +40,7 @@ interface FileDropzoneProps {
 export function FileDropzone({
   onFiles,
   hint = 'Kéo thả tệp vào đây hoặc bấm để chọn tệp',
+  description,
   children,
   disabled = false,
   busy = false,
@@ -106,6 +113,7 @@ export function FileDropzone({
         <UploadCloud className="size-6 text-primary" />
       )}
       <p className="text-sm text-muted-foreground">{busy ? 'Đang tải tệp lên…' : hint}</p>
+      {description && !busy && <p className="text-xs text-muted-foreground/80">{description}</p>}
 
       {children && (
         <div

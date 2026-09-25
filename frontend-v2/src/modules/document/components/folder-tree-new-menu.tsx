@@ -1,5 +1,5 @@
 import { FilePlus, FileUp, FolderPlus, Plus } from 'lucide-react'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -10,10 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { FolderQuickDocumentDialog } from './folder-quick-document-dialog'
 
 interface FolderTreeNewMenuProps {
   /** Thư mục ĐANG CHỌN ở khung phải — `null` = đang ở GỐC: chỉ «Thư mục mới» (thư mục tự do) còn dùng được, hai mục văn bản cần một thư mục đích. */
   folderId: number | null
+  /** Pháp nhân + tên của thư mục đang chọn — hộp «Tạo nhanh từ tệp» mở sẵn pháp nhân này. */
+  folderCompanyId?: number
+  folderName?: string
   /** Tạo được thư mục ở chỗ đang đứng — trong thư mục: đủ mức trên `folderId`; ở gốc: có `doc_folder.create`. */
   canCreateFolder: boolean
   /** Vai trò có `document.create` — thiếu thì ẩn hai mục «Văn bản …». */
@@ -36,12 +40,16 @@ interface FolderTreeNewMenuProps {
  */
 export function FolderTreeNewMenu({
   folderId,
+  folderCompanyId = 0,
+  folderName,
   canCreateFolder,
   canCreateDocument,
   onCreateFolder,
 }: FolderTreeNewMenuProps) {
   const navigate = useNavigate()
-  const pendingCreateRef = useRef(false)
+  //  Việc chờ chạy SAU khi menu đóng hẳn — xem `onCloseAutoFocus` bên dưới.
+  const pendingActionRef = useRef<'folder' | 'quick-document' | null>(null)
+  const [quickOpen, setQuickOpen] = useState(false)
   //  Tạo văn bản cần một thư mục đích (không tạo ở gốc).
   const canCreateDocumentHere = canCreateDocument && folderId != null
 
@@ -74,16 +82,20 @@ export function FolderTreeNewMenu({
           //  bị kéo ngược, đóng menu xong focus lại về nút «Mới» — gõ không vào
           //  đâu cả (lỗi báo 24/09/2026). Nên chỉ dựng ô SAU KHI menu đã đóng
           //  hẳn, và không trả focus về nút.
-          if (!pendingCreateRef.current) return
+          //  Hộp «Tạo nhanh từ tệp» cũng vậy: mở lúc menu còn giữ focus thì hộp
+          //  thoại bị giành focus ngược.
+          const action = pendingActionRef.current
+          if (!action) return
           event.preventDefault()
-          pendingCreateRef.current = false
-          onCreateFolder()
+          pendingActionRef.current = null
+          if (action === 'folder') onCreateFolder()
+          else setQuickOpen(true)
         }}
       >
         {canCreateFolder && (
           <DropdownMenuItem
             onSelect={() => {
-              pendingCreateRef.current = true
+              pendingActionRef.current = 'folder'
             }}
           >
             <FolderPlus className="size-4" />
@@ -96,13 +108,30 @@ export function FolderTreeNewMenu({
               <FilePlus className="size-4" />
               Văn bản mới tại đây
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={goCreateDocument}>
+            {/*  Trước 25/09/2026 mục này chỉ mở lại trang tạo 3 bước — trùng hẳn
+                 «Văn bản mới tại đây». Nay là hộp rút gọn: tải tệp, năm ô bắt
+                 buộc, phân quyền, tạo luôn (không soạn thảo). */}
+            <DropdownMenuItem
+              onSelect={() => {
+                pendingActionRef.current = 'quick-document'
+              }}
+            >
               <FileUp className="size-4" />
-              Văn bản từ tệp có sẵn
+              Tạo nhanh từ tệp
             </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>
+      {/*  Chỉ dựng khi mở: mỗi lần mở là form mới, mang đúng thư mục lúc đó. */}
+      {quickOpen && folderId != null && (
+        <FolderQuickDocumentDialog
+          open
+          onOpenChange={setQuickOpen}
+          folderId={folderId}
+          folderCompanyId={folderCompanyId}
+          folderName={folderName}
+        />
+      )}
     </DropdownMenu>
   )
 }

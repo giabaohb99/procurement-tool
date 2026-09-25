@@ -221,6 +221,10 @@ export const queryKeys = {
     all: ['document'] as const,
     numberingRuleAll: ['document', 'numbering-rules'] as const,
     numberPreviewAll: ['document', 'number-preview'] as const,
+    /** Văn bản chờ duyệt MỘT BƯỚC (không qua bộ máy duyệt) — nằm dưới `all` để duyệt xong là tự làm mới. */
+    legacyPending: ['document', 'legacy-pending'] as const,
+    /** Lượt TÔI đã duyệt / trả lại theo đường một bước, trong `days` ngày gần nhất. */
+    legacyDecisions: (days: number) => ['document', 'legacy-decisions', days] as const,
     numberingRules: (direction: number) => ['document', 'numbering-rules', direction] as const,
     /**
      * Một quy tắc theo id. Chèn `'detail'` vào giữa là BẮT BUỘC: không có nó thì

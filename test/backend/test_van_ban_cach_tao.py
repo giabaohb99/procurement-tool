@@ -79,3 +79,55 @@ def test_update_without_the_field_leaves_mode_untouched(db, seed):
     service.update_document(db, doc, DocumentUpdate(title="Đổi tiêu đề"), ACTOR)
     db.refresh(doc)
     assert doc.content_mode == CONTENT_MODE_FILES
+
+
+# ── Gửi duyệt văn bản CHỈ GỒM TỆP (lỗi bắt khi test UI 25/09/2026) ─────────────
+#  `submit` từng chỉ hỏi `content_html`, nên mọi văn bản «Tạo, không soạn thảo»
+#  kẹt ở «Nội dung văn bản còn trống» — không gửi duyệt được bằng đường nào.
+
+def _attach(db, entity, entity_id):
+    from app.modules.attachment.model import FileLink
+
+    db.add(FileLink(file_id=1, entity=entity, entity_id=entity_id))
+    db.commit()
+
+
+def test_files_only_document_with_a_file_can_be_submitted(db, seed):
+    doc = _create(db, seed, "SF1", content_mode=CONTENT_MODE_FILES, content_html="")
+    _attach(db, service.ATTACH_ENTITY, doc.current_version_id)
+    service.submit(db, doc, ACTOR)
+    db.refresh(doc)
+    assert doc.status != service.STATUS_DRAFT
+
+
+def test_files_only_document_without_any_file_is_still_blocked(db, seed):
+    from fastapi import HTTPException
+
+    doc = _create(db, seed, "SF2", content_mode=CONTENT_MODE_FILES, content_html="")
+    with pytest.raises(HTTPException) as caught:
+        service.submit(db, doc, ACTOR)
+    assert caught.value.status_code == 400
+    assert "chưa đính kèm tệp" in caught.value.detail
+
+
+def test_a_file_hung_on_another_record_does_not_count(db, seed):
+    """Tệp phải treo đúng PHIÊN BẢN đang trình — trùng số id ở entity khác
+    (hay ở phiên bản khác) mà lọt qua là trình duyệt một cái vỏ rỗng."""
+    from fastapi import HTTPException
+
+    doc = _create(db, seed, "SF3", content_mode=CONTENT_MODE_FILES, content_html="")
+    _attach(db, "purchase_request", doc.current_version_id)
+    _attach(db, service.ATTACH_ENTITY, doc.current_version_id + 999)
+    with pytest.raises(HTTPException):
+        service.submit(db, doc, ACTOR)
+
+
+def test_compose_document_with_a_file_but_no_text_is_still_blocked(db, seed):
+    """Văn bản SOẠN THẢO: tệp chỉ là phụ lục, nội dung chính vẫn phải có."""
+    from fastapi import HTTPException
+
+    doc = _create(db, seed, "SF4", content_mode=CONTENT_MODE_COMPOSE, content_html="")
+    _attach(db, service.ATTACH_ENTITY, doc.current_version_id)
+    with pytest.raises(HTTPException) as caught:
+        service.submit(db, doc, ACTOR)
+    assert "Nội dung văn bản còn trống" in caught.value.detail

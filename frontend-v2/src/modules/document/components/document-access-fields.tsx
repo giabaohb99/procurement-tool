@@ -17,6 +17,8 @@ interface DocumentAccessFieldsProps {
   onChange: (rows: PendingAccess[]) => void
   /** Tên sổ đang chọn ở ô "Vào sổ" phía trên — trống nghĩa là không vào sổ nào. */
   bookName?: string
+  /** Form có ô «Vào sổ» không — hộp «Tạo nhanh từ tệp» không có, đừng bảo người dùng đi chọn một ô không tồn tại. */
+  hasBookField?: boolean
 }
 
 /**
@@ -24,15 +26,20 @@ interface DocumentAccessFieldsProps {
  *
  * Mặc định chỉ là MỘT DÒNG tóm tắt: phần lớn văn bản dùng đúng quyền mặc định
  * (phạm vi vai trò + thành viên sổ), bày sẵn cả bảng ra chỉ làm form dài thêm
- * mà chín trên mười lần không ai đụng tới. Ai cần mới bấm "Phân quyền nâng
- * cao".
+ * mà chín trên mười lần không ai đụng tới. Ai cần mới bấm «Cho phép / chặn
+ * người cụ thể».
  *
  * Khai ngay lúc tạo chứ không để tạo xong rồi vào tab Thông tin sửa: khoảng
  * giữa hai việc đó là lúc văn bản đã tồn tại mà chưa ai chặn — với văn bản mật
  * thì đó đúng là khoảng hở. Các dòng khai ở đây **xếp hàng chờ**, gửi lên máy
  * chủ ngay sau khi văn bản được tạo.
  */
-export function DocumentAccessFields({ rows, onChange, bookName }: DocumentAccessFieldsProps) {
+export function DocumentAccessFields({
+  rows,
+  onChange,
+  bookName,
+  hasBookField = true,
+}: DocumentAccessFieldsProps) {
   const [open, setOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   //  Đang sửa quyền của cụm nào (`EFFECT.allow` / `EFFECT.deny`), `null` = đóng.
@@ -71,7 +78,7 @@ export function DocumentAccessFields({ rows, onChange, bookName }: DocumentAcces
                 và mọi thành viên của sổ <span className="font-medium">{bookName}</span>
               </>
             ) : (
-              <> — chọn ô Vào sổ ở trên thì cả sổ đó đọc được</>
+              hasBookField && <> — chọn ô Vào sổ ở trên thì cả sổ đó đọc được</>
             )}
             .
           </p>
@@ -79,7 +86,7 @@ export function DocumentAccessFields({ rows, onChange, bookName }: DocumentAcces
 
         <Button type="button" variant="outline" size="sm" onClick={() => setOpen(!open)}>
           <ShieldCheck className="size-4" />
-          Phân quyền nâng cao
+          Cho phép / chặn người cụ thể
           <ChevronDown className={cn('size-4 transition-transform', open && 'rotate-180')} />
         </Button>
       </div>

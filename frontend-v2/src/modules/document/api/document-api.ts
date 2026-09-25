@@ -199,8 +199,14 @@ export const documentApi = {
    * Xem trước «Người duyệt dự kiến» — chỉ đọc, không mở phiên duyệt nào
    * (phase 01, duoc-CR-473). Người duyệt thực tế chốt lúc gửi duyệt thật.
    */
+  //  ⚠️ `_silent`: chỉ là thông tin THAM KHẢO. Người duyệt/ban hành phạm vi hẹp
+  //  hơn người soạn (không đọc được phòng chủ trì) ăn 400 ở đây theo chốt M3 —
+  //  trước 25/09/2026 lỗi đó bật toast đỏ đúng lúc họ bấm «Ban hành» thành công.
+  //  Hỏng thì dòng xem trước tự nói, không cần toast.
   previewApproval: (payload: ApprovalPreviewInput) =>
-    apiPost<ApprovalPreviewResult>(`${DOCUMENT_URL}/approval-preview`, payload),
+    apiPost<ApprovalPreviewResult>(`${DOCUMENT_URL}/approval-preview`, payload, {
+      _silent: true,
+    } as never),
 
   /**
    * Tệp đính kèm của MỌI phiên bản — tab «Tệp» (phase 09). Khác

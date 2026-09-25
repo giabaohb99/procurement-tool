@@ -18,21 +18,16 @@ import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Card } from '@/shared/ui/card'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { APPROVAL_INBOX_FILTER_FIELDS } from '../config/approval-inbox-filter-fields'
 import { ApprovalInboxCard } from './approval-inbox-card'
 import {
-  useMyDocumentDecisions,
-  useMyDocumentTasks,
-} from '../hooks/use-my-document-approvals'
+  useLegacyDecisions,
+  useLegacyPendingDocuments,
+} from '../hooks/use-legacy-pending-documents'
+import { useMyDocumentDecisions, useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 import { approvalInboxColumns } from './approval-inbox-columns'
-import { buildInboxRows, INBOX_SCOPE } from './approval-inbox-row'
+import { buildInboxRows, describeInboxEmpty, INBOX_SCOPE } from './approval-inbox-row'
 import { InboxScopeFilter } from './inbox-scope-filter'
 
 /** Khoảng nhìn lại của phần ĐÃ DUYỆT. 30 ngày phủ một chu kỳ làm việc. */
@@ -96,13 +91,22 @@ function ApprovalInboxContent() {
   //  Ba ô lọc nhanh lấy URL làm nguồn sự thật: tải lại trang hay gửi link cho
   //  nhau vẫn ra đúng cái đang xem.
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
-  const [scope, setScope] = useUrlParamState('scope', INBOX_SCOPE.all)
+  //  Mặc định «Cần duyệt» (yêu cầu 25/09/2026): người ta mở màn này để xử lý
+  //  việc đang treo, không phải để đọc lại cái đã ký — việc chờ lẫn giữa cả chục
+  //  dòng đã duyệt là dễ sót. Muốn xem hết thì bấm «Tất cả» (ghi `?scope=all`).
+  const [scope, setScope] = useUrlParamState('scope', INBOX_SCOPE.pending)
   const [rangeDays, setRangeDays] = useUrlParamState('days', DEFAULT_DATE)
 
   const { items: pendingTasks, isLoading: loadingPending } = useMyDocumentTasks()
   const { items: clicked, isLoading: loadingClick } = useMyDocumentDecisions(Number(rangeDays))
 
-  const all = useMemo(() => buildInboxRows(pendingTasks, clicked), [pendingTasks, clicked])
+  const { items: legacyPending, isLoading: loadingLegacy } = useLegacyPendingDocuments()
+  const { items: legacyDone, isLoading: loadingLegacyDone } = useLegacyDecisions(Number(rangeDays))
+
+  const all = useMemo(
+    () => buildInboxRows(pendingTasks, clicked, legacyPending, legacyDone),
+    [pendingTasks, clicked, legacyPending, legacyDone],
+  )
 
   const items = useMemo(() => {
     const needle = debouncedValue.trim().toLowerCase()
@@ -197,15 +201,14 @@ function ApprovalInboxContent() {
           //  khóa là cách duy nhất để bố cục mới thật sự hiện ra.
           storageKey="document.approval-inbox.v2"
           fillHeight
-          isLoading={loadingPending || loadingClick}
+          isLoading={loadingPending || loadingClick || loadingLegacy || loadingLegacyDone}
           onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.entityId))}
-          emptyMessage={
-            //  Phân biệt "không có gì" với "lọc không ra gì": một bên là tin
-            //  mừng, một bên là phải xóa bớt điều kiện.
-            all.length > 0
-              ? 'Không có văn bản nào khớp điều kiện đang lọc.'
-              : 'Không có văn bản nào đang chờ bạn duyệt.'
-          }
+          //  Phân biệt "không có gì" với "lọc không ra gì": một bên là tin
+          //  mừng, một bên là phải xóa bớt điều kiện.
+          emptyMessage={describeInboxEmpty(
+            scope,
+            Boolean(debouncedValue.trim()) || filter.activeCount > 0,
+          )}
           toolbar={
             <>
               {/*  MỘT HÀNG ở khổ hẹp — xem ghi chú dài ở `outgoing-documents-tab`.
@@ -218,7 +221,7 @@ function ApprovalInboxContent() {
                 onChange={setKeyword}
                 placeholder="Tìm số hiệu, tên, bước…"
                 placeholderShort="Tìm số hiệu, tên…"
-                className="md:min-w-56 md:max-w-2xs"
+                className="md:max-w-2xs md:min-w-56"
               />
 
               {/*  ⚠️ **`max-md:order-last max-md:basis-full` — dãy này XUỐNG HÀNG
@@ -242,9 +245,9 @@ function ApprovalInboxContent() {
               <InboxScopeFilter
                 value={scope}
                 onChange={setScope}
-                pendingCount={pendingTasks.length}
+                pendingCount={pendingTasks.length + legacyPending.length}
                 overdueCount={overdueCount}
-                approvedCount={clicked.length}
+                approvedCount={clicked.length + legacyDone.length}
                 className="max-md:order-last max-md:basis-full"
               />
 
@@ -259,9 +262,7 @@ function ApprovalInboxContent() {
                    Nút tự ẩn từ `md` trở lên (`QuickFilterSheet` khai `md:hidden`). */}
               <QuickFilterSheet
                 iconOnly
-                activeCount={
-                  (showRange && rangeDays !== DEFAULT_DATE ? 1 : 0) + filter.activeCount
-                }
+                activeCount={(showRange && rangeDays !== DEFAULT_DATE ? 1 : 0) + filter.activeCount}
                 onClearAll={() => {
                   setRangeDays(DEFAULT_DATE)
                   filter.reset()

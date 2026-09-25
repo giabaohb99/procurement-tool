@@ -61,48 +61,48 @@ describe('buildFolderItemMenuActions — thư mục', () => {
 })
 
 describe('buildFolderItemMenuActions — văn bản', () => {
-  it('không có write/delete: chỉ Mở + Xem chi tiết', () => {
-    const actions = buildFolderItemMenuActions({ kind: 'document' })
-    expect(actions).toEqual([FOLDER_ITEM_MENU_ACTION.open, FOLDER_ITEM_MENU_ACTION.viewDetails])
+  const A = FOLDER_ITEM_MENU_ACTION
+
+  it('không có write/delete: chỉ còn Xem chi tiết', () => {
+    expect(buildFolderItemMenuActions({ kind: 'document' })).toEqual([A.viewDetails])
   })
 
-  it('có write: thêm Chuyển tới…, không có Đổi tên/Phân quyền (chỉ dành cho thư mục)', () => {
-    const actions = buildFolderItemMenuActions({ kind: 'document', canWriteDocument: true })
-    expect(actions).toEqual([
-      FOLDER_ITEM_MENU_ACTION.open,
-      FOLDER_ITEM_MENU_ACTION.moveTo,
-      FOLDER_ITEM_MENU_ACTION.viewDetails,
-    ])
-  })
-
-  it('có delete: thêm Xóa ở cuối', () => {
-    const actions = buildFolderItemMenuActions({ kind: 'document', canDeleteDocument: true })
-    expect(actions).toEqual([
-      FOLDER_ITEM_MENU_ACTION.open,
-      FOLDER_ITEM_MENU_ACTION.viewDetails,
-      FOLDER_ITEM_MENU_ACTION.remove,
-    ])
-  })
-
-  it('đủ cả write lẫn delete: đủ bốn mục hợp lệ với văn bản', () => {
+  //  Đại ca bắt 25/09/2026: «Xem chi tiết» của văn bản chỉ bật khung bên phải,
+  //  tưởng hỏng. Nay nó vào thẳng trang chi tiết, nên «Mở» thành trùng và bị bỏ.
+  it('never offers both «Mở» and «Xem chi tiết» for a document — they would do the same thing', () => {
     const actions = buildFolderItemMenuActions({
       kind: 'document',
       canWriteDocument: true,
       canDeleteDocument: true,
     })
-    expect(actions).toEqual([
-      FOLDER_ITEM_MENU_ACTION.open,
-      FOLDER_ITEM_MENU_ACTION.moveTo,
-      FOLDER_ITEM_MENU_ACTION.viewDetails,
-      FOLDER_ITEM_MENU_ACTION.remove,
+    expect(actions).not.toContain(A.open)
+    expect(actions[0]).toBe(A.viewDetails)
+  })
+
+  it('có write: thêm Chuyển tới… + Chia sẻ…, không có Đổi tên (chỉ dành cho thư mục)', () => {
+    expect(buildFolderItemMenuActions({ kind: 'document', canWriteDocument: true })).toEqual([
+      A.viewDetails,
+      A.moveTo,
+      A.managePermissions,
     ])
   })
 
+  it('có delete: thêm Xóa ở cuối', () => {
+    expect(buildFolderItemMenuActions({ kind: 'document', canDeleteDocument: true })).toEqual([
+      A.viewDetails,
+      A.remove,
+    ])
+  })
+
+  it('đủ cả write lẫn delete: đủ bốn mục hợp lệ với văn bản', () => {
+    expect(
+      buildFolderItemMenuActions({ kind: 'document', canWriteDocument: true, canDeleteDocument: true }),
+    ).toEqual([A.viewDetails, A.moveTo, A.managePermissions, A.remove])
+  })
+
   it('myLevel truyền nhầm vào văn bản (kind=document) không có tác dụng gì — chỉ đọc theo canWrite/canDelete', () => {
-    const actions = buildFolderItemMenuActions({
-      kind: 'document',
-      myLevel: FOLDER_ACCESS_LEVEL.manage,
-    })
-    expect(actions).toEqual([FOLDER_ITEM_MENU_ACTION.open, FOLDER_ITEM_MENU_ACTION.viewDetails])
+    expect(
+      buildFolderItemMenuActions({ kind: 'document', myLevel: FOLDER_ACCESS_LEVEL.manage }),
+    ).toEqual([A.viewDetails])
   })
 })
