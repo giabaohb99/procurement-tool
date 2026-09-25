@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPost, apiPut } from '@/core/api'
 import type { ListParams } from '@/shared/types/api'
 
 /**
@@ -124,6 +124,15 @@ export interface TelegramLinkCode {
   deep_link: string
 }
 
+/** Khóa Gemini CÁ NHÂN của chính mình (ai-CR-053, D-01). Khóa thô chỉ đi VÀO; chỉ 4 ký tự cuối đi ra. */
+export interface AiKeyInfo {
+  provider: string
+  has_key: boolean
+  /** `…9999` — đủ để nhận ra khóa nào, không đủ để dùng. */
+  hint: string
+  verified_at: string | null
+}
+
 export const agentHubApi = {
   list: (params: AgentTaskListParams) => apiGet<AgentTaskListResult>('/api/agent-hub/tasks', { params }),
   detail: (id: number) => apiGet<AgentTaskDetail>(`/api/agent-hub/tasks/${id}`),
@@ -133,4 +142,9 @@ export const agentHubApi = {
   myLinks: () => apiGet<TelegramLinksResult>('/api/agent-hub/links'),
   createLinkCode: () => apiPost<TelegramLinkCode>('/api/agent-hub/links/code', {}),
   removeLink: (id: number) => apiDelete<null>(`/api/agent-hub/links/${id}`),
+
+  /** Khóa Gemini cá nhân — tự phục vụ, chỉ đòi đăng nhập (ai-CR-053). */
+  myAiKey: () => apiGet<AiKeyInfo>('/api/agent-hub/ai-key'),
+  setAiKey: (key: string) => apiPut<AiKeyInfo>('/api/agent-hub/ai-key', { key }),
+  removeAiKey: () => apiDelete<AiKeyInfo>('/api/agent-hub/ai-key'),
 }

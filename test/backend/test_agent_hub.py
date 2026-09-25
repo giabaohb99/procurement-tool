@@ -4092,12 +4092,25 @@ def _other_msg(text: str, chat="777", ctype="private") -> dict:
             "from": {"first_name": "Lan", "last_name": "Nguyễn"}}
 
 
-def _erp_user(db, email="lan@dego.vn", active=True):
+def _give_key(db, user_id: int, raw: str = "AIzaSy-khoa-thu-abcdefghij-0000"):
+    """Gắn khóa Gemini cá nhân KHÔNG qua lượt kiểm mạng (ai-CR-053) — người liên kết không có khóa thì
+    bot chỉ nhắc gắn khóa, không hỏi Trợ lý, nên bài kiểm cũ cần khóa sẵn."""
+    from app.core import app_settings
+    from app.modules.agent_hub.model import AgentUserKey
+
+    db.add(AgentUserKey(user_id=user_id, provider="gemini", key_enc=app_settings.encrypt(raw), key_hint=raw[-4:],
+                        verified_at=datetime.now(), created_by=user_id, updated_by=user_id))
+    db.commit()
+
+
+def _erp_user(db, email="lan@dego.vn", active=True, key=True):
     from app.modules.user.model import User
 
     u = User(email=email, employee_id=0, password_hash="x", is_active=active)
     db.add(u)
     db.commit()
+    if key:
+        _give_key(db, u.id)
     return u
 
 
@@ -4815,6 +4828,7 @@ def _staff(db, full_name="Trần Văn Được", code="DEGO0009", email="duoc@de
     u = User(email=email, employee_id=emp.id, password_hash="x", is_active=True)
     db.add(u)
     db.commit()
+    _give_key(db, u.id)
     return u
 
 
@@ -4949,3 +4963,174 @@ def test_nguoi_cap_gop_dev_gop_duoc_va_dai_ca_nhan_mot_dong_bao(db, bot, monkeyp
     assert merged == [("777", task.code)]
     #  Chat đại ca không cần dòng sổ nào, và không tự gỡ được: sổ trống vẫn đủ cấp.
     assert service._grant_level(db, "12345") == grants.LEVEL_ADMIN and service._grant_level(db, "777") == grants.LEVEL_NONE
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-053: khóa Gemini CÁ NHÂN (D-01) + bỏ tài khoản chung (D-02)
+# ---------------------------------------------------------------------------
+def test_luu_khoa_kiem_voi_gemini_ma_hoa_va_chi_giu_4_ky_tu_cuoi(db, monkeypatch):
+    from app.modules.agent_hub import user_keys
+    from app.modules.agent_hub.model import AgentUserKey
+
+    codes = iter([403, 200, 200])
+    monkeypatch.setattr(user_keys, "_probe", lambda raw: next(codes))
+    lan = _erp_user(db)
+    with pytest.raises(user_keys.InvalidKey):
+        user_keys.set_key(db, lan.id, "AIzaSy-khoa-sai-1234567890")
+    with pytest.raises(user_keys.InvalidKey):
+        user_keys.set_key(db, lan.id, "ngan")                                 # sai dạng, không gọi mạng
+    row = user_keys.set_key(db, lan.id, "AIzaSy-khoa-dung-abcdefgh-9999")
+    assert row.key_hint == "9999" and "AIzaSy" not in row.key_enc and row.verified_at is not None
+    assert user_keys.key_for_user(db, lan.id) == "AIzaSy-khoa-dung-abcdefgh-9999"
+    assert user_keys.describe(db, lan.id) == {"provider": "gemini", "has_key": True, "hint": "…9999",
+                                              "verified_at": row.verified_at.isoformat(timespec="seconds")}
+    user_keys.set_key(db, lan.id, "AIzaSy-khoa-moi-abcdefgh-0001")             # đổi khóa: dòng cũ đóng
+    assert db.query(AgentUserKey).filter_by(user_id=lan.id, revoked_at=None).count() == 1
+    assert user_keys.describe(db, lan.id)["hint"] == "…0001"
+    assert user_keys.revoke(db, lan.id) == 1 and user_keys.describe(db, lan.id)["has_key"] is False
+
+
+def test_nguoi_lien_ket_chua_gan_khoa_thi_bot_khong_goi_gemini_ma_chi_nhac(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link
+
+    service, sent, asked = bot
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "khoa-env-cua-may-bot")
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("không được gọi Gemini khi chưa có khóa"))
+    lan = _erp_user(db, key=False)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("3 đơn mua hàng gần nhất"))
+    assert "chưa gắn khóa Gemini" in sent[-1] and "Khóa AI" in sent[-1] and not asked
+    #  Không cần khóa vẫn làm được: tài khoản, tình trạng việc (K-04) — không dính khóa.
+    service.handle_message(db, _other_msg("/taikhoan"))
+    assert "lan@dego.vn" in sent[-1]
+
+
+def test_nguoi_lien_ket_co_khoa_thi_moi_luot_gemini_di_bang_khoa_cua_ho(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, user_keys
+    from app.modules.agent_hub.model import AgentRun
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, _ = bot
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "khoa-env-cua-may-bot")
+    monkeypatch.setattr(user_keys, "_probe", lambda raw: 200)
+    lan = _erp_user(db)
+    user_keys.set_key(db, lan.id, "AIzaSy-khoa-cua-lan-abcdefgh-1111")
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    seen: dict = {}
+
+    def fake_intent(text, **kw):
+        seen["intent_key"] = service.manager.get_provider()._api_key()
+        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="agent_gemini", model="x",
+                                                          input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(service.manager, "run_intent", fake_intent)
+    service.handle_message(db, _other_msg("3 đơn mua hàng gần nhất"))
+    assert seen["intent_key"] == "AIzaSy-khoa-cua-lan-abcdefgh-1111"
+    run = db.query(AgentRun).filter_by(stage=service.STAGE_INTENT).order_by(AgentRun.id.desc()).first()
+    assert run.owner_id == lan.id                                              # chi phí ghi cho khóa của Lan
+    #  Ngoài ngữ cảnh chat (bài kiểm, script): provider lùi về khóa `.env` như trước.
+    assert service.manager.get_provider()._api_key() == "khoa-env-cua-may-bot"
+    assert service.manager.get_provider().is_configured() is False           # web không bao giờ chọn nhầm nhà này
+    #  «tốn bao nhiêu» của người thường chỉ ra tiền của KHÓA MÌNH.
+    service.handle_message(db, _other_msg("tháng này bot tốn bao nhiêu"))
+    assert "bằng khóa của anh/chị" in sent[-1] and "Claude Code" not in sent[-1]
+
+
+def test_chat_dai_ca_lui_ve_khoa_env_khi_chua_co_khoa_ca_nhan_con_co_thi_dung_khoa_ca_nhan(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, user_keys
+
+    service, sent, asked = bot
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "khoa-env-cua-may-bot")
+    seen: list[str] = []
+
+    def fake_intent(text, **kw):
+        from app.modules.assistant.provider.base import ChatResult
+        seen.append(service.manager.get_provider()._api_key())
+        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="agent_gemini", model="x",
+                                                          input_tokens=0, output_tokens=0)
+
+    monkeypatch.setattr(service.manager, "run_intent", fake_intent)
+    service.handle_message(db, _msg("3 đơn mua hàng gần nhất"))
+    assert seen == ["khoa-env-cua-may-bot"] and asked == ["3 đơn mua hàng gần nhất"]
+    #  Đại ca tự /dangnhap và dán khóa cá nhân → khóa cá nhân thắng; việc nền (gom tin) cũng dùng khóa đó.
+    me = _erp_user(db, "daica@dego.vn")
+    monkeypatch.setattr(user_keys, "_probe", lambda raw: 200)
+    user_keys.set_key(db, me.id, "AIzaSy-khoa-cua-dai-ca-abcdefgh-2222")
+    code, _ = chat_link.issue_code(db, me.id)
+    service.handle_message(db, _msg(f"/dangnhap {code}"))
+    service.handle_message(db, _msg("3 đơn mua hàng gần nhất"))
+    assert seen[-1] == "AIzaSy-khoa-cua-dai-ca-abcdefgh-2222"
+    with user_keys.for_admin(db) as key:
+        assert key == "AIzaSy-khoa-cua-dai-ca-abcdefgh-2222"
+    #  Trên dev: `.env` trống + chưa dán khóa → bot nói thẳng, không gom tin (tin vẫn chờ).
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "")
+    user_keys.revoke(db, me.id)
+    service.handle_message(db, _msg("màn công nợ lọc sai ngày"))
+    assert "chưa gắn khóa Gemini" in sent[-1]
+    monkeypatch.setattr(service.manager, "run_triage", lambda *a, **kw: pytest.fail("không có khóa thì không gom"))
+    assert service.triage_inbox(db, force=True) == 0
+
+
+def test_api_khoa_ai_tu_phuc_vu_va_nghi_viec_thi_khoa_lan_lien_ket_dong_cung_luc(db, bot, monkeypatch):
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from app.modules.agent_hub import chat_link, controller, user_keys
+    from app.modules.employee.model import Employee
+    from app.modules.employee.service import lock_linked_users
+    from app.modules.user.model import User
+
+    monkeypatch.setattr(user_keys, "_probe", lambda raw: 200)
+    emp = Employee(code="DEGO0020", full_name="Lê Thị Lan", department_id=0)
+    db.add(emp)
+    db.flush()
+    lan = User(email="lan2@dego.vn", employee_id=emp.id, password_hash="x", is_active=True)
+    db.add(lan)
+    db.commit()
+    me = SimpleNamespace(id=lan.id)
+    assert _json(controller.get_my_ai_key(user=me, db=db))["has_key"] is False
+    with pytest.raises(HTTPException):
+        controller.set_my_ai_key(controller.AiKeyIn(key="ngan"), user=me, db=db)
+    data = _json(controller.set_my_ai_key(controller.AiKeyIn(key="AIzaSy-khoa-cua-lan-abcdefgh-3333"), user=me, db=db))
+    assert data["has_key"] is True and data["hint"] == "…3333" and "AIzaSy" not in str(data)
+    code, _ = chat_link.issue_code(db, lan.id)
+    assert chat_link.redeem_code(db, "888", code, "Lan") is not None
+    #  Nghỉ việc: khóa + liên kết đóng cùng lúc với phiên (theo CR-400).
+    lock_linked_users(db, emp.id, actor_id=1, reason=6)
+    db.commit()
+    assert user_keys.describe(db, lan.id)["has_key"] is False
+    assert chat_link.get_active_link(db, "888") is None
+    #  Gỡ tay cũng được.
+    user_keys.set_key(db, lan.id, "AIzaSy-khoa-cua-lan-abcdefgh-4444")
+    assert _json(controller.remove_my_ai_key(user=me, db=db))["has_key"] is False
+
+
+def test_tro_ly_trong_chat_di_bang_provider_cua_bot_tuc_khoa_ca_nhan(db, monkeypatch):
+    from app.modules.agent_hub import chat_link, service, user_keys
+    from app.modules.assistant import service as assistant_service
+
+    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: 1)
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setattr(user_keys, "_probe", lambda raw: 200)
+    lan = _erp_user(db)
+    user_keys.set_key(db, lan.id, "AIzaSy-khoa-cua-lan-abcdefgh-5555")
+    code, _ = chat_link.issue_code(db, lan.id)
+    chat_link.redeem_code(db, "777", code, "Lan")
+    seen: dict = {}
+
+    def fake_ask(message, *, db, user, provider=None, history=None, system="", **kw):
+        seen["provider"] = provider
+        seen["key"] = service.manager.get_provider()._api_key()
+        seen["configured"] = service.manager.get_provider().is_configured()
+        return {"text": "ok"}
+
+    monkeypatch.setattr(assistant_service, "ask", fake_ask)
+    with user_keys.for_chat(db, "777"):
+        service.answer_question(db, "777", "3 đơn mua hàng gần nhất")
+    assert seen == {"provider": "agent_gemini", "key": "AIzaSy-khoa-cua-lan-abcdefgh-5555", "configured": True}
+    #  Registry của Trợ lý web biết tên «agent_gemini» (để `ask(provider=...)` tìm được).
+    from app.modules.assistant.provider import get_provider
+    assert get_provider("agent_gemini").name == "agent_gemini"

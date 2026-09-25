@@ -32,7 +32,17 @@ class AgentGeminiProvider(GeminiProvider):
     name = "agent_gemini"
 
     def _api_key(self) -> str:
-        return settings.AGENT_GEMINI_API_KEY
+        #  ai-CR-053: khóa của NGƯỜI đang chat (ngữ cảnh do service mở); ngoài ngữ cảnh mới là khóa `.env`.
+        from . import user_keys
+
+        return user_keys.active_key()
+
+    def is_configured(self) -> bool:
+        #  Chỉ «có khóa» khi đang ở trong ngữ cảnh của bot: đăng ký vào registry của Trợ lý web nhưng
+        #  đường chọn nhà mặc định của web không bao giờ được rơi vào provider này.
+        from . import user_keys
+
+        return user_keys.in_context() and bool(user_keys.active_key())
 
     def _gen_config(self, model: str, max_tokens: int, temperature: float, thinking: bool) -> dict:
         """Có suy nghĩ thì CHẶN TRẦN phần suy nghĩ và cộng nó vào trần đầu ra (ai-CR-021).
@@ -60,6 +70,16 @@ THINKING_BUDGET = 4096
 
 def get_provider() -> AgentGeminiProvider:
     return AgentGeminiProvider()
+
+
+def register_with_assistant() -> None:
+    """Cho Trợ lý AI gọi được bằng `provider="agent_gemini"` — tức bằng khóa cá nhân của người đang chat."""
+    from app.modules.assistant import provider as registry
+
+    registry._REGISTRY.setdefault(AgentGeminiProvider.name, AgentGeminiProvider())
+
+
+register_with_assistant()
 
 
 _FENCE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)

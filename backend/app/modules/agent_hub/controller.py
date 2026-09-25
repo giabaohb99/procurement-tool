@@ -17,7 +17,9 @@ from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import chat_link, coder, telegram
+from pydantic import BaseModel
+
+from . import chat_link, coder, telegram, user_keys
 from .constants import (
     DIRECTION_LABELS,
     RISK_LABELS,
@@ -171,6 +173,34 @@ def remove_link(link_id: int, user=Depends(get_current_user), db: Session = Depe
         raise HTTPException(404, "Không tìm thấy liên kết")
     chat_link.revoke_chat(db, link.chat_id)
     return success(None, "Đã gỡ liên kết Telegram")
+
+
+# ---------------------------------------------------------------------------
+# Khóa Gemini CÁ NHÂN (ai-CR-053, D-01) — cũng tự phục vụ, chỉ đòi đăng nhập. Khóa thô chỉ đi vào
+# (PUT) rồi lưu mã hóa; không cửa nào trả khóa ra, kể cả cho chính chủ — chỉ 4 ký tự cuối.
+# ---------------------------------------------------------------------------
+class AiKeyIn(BaseModel):
+    key: str
+
+
+@router.get("/ai-key")
+def get_my_ai_key(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return success(user_keys.describe(db, user.id))
+
+
+@router.put("/ai-key")
+def set_my_ai_key(body: AiKeyIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        user_keys.set_key(db, user.id, body.key)
+    except user_keys.InvalidKey as e:
+        raise HTTPException(400, str(e)) from e
+    return success(user_keys.describe(db, user.id), "Đã lưu khóa Gemini. Bot Telegram sẽ dùng khóa này cho anh/chị.")
+
+
+@router.delete("/ai-key")
+def remove_my_ai_key(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    user_keys.revoke(db, user.id)
+    return success(user_keys.describe(db, user.id), "Đã gỡ khóa Gemini")
 
 
 @router.get("/stats")

@@ -130,6 +130,8 @@ class AgentRun(Base, AuditMixin):
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
 
     input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    #  ai-CR-053: tài khoản ERP có khóa Gemini đã trả tiền cho lượt này (0 = khóa `.env` của máy bot).
+    owner_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     #  ĐÃ CỘNG token "suy nghĩ" vào đây — Gemini tính giá chúng như output, tách ra
     #  hai cột thì mọi chỗ cộng chi phí đều phải nhớ cộng cả hai, và sẽ có chỗ quên.
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
@@ -221,4 +223,22 @@ class AgentGrant(Base, AuditMixin):
     #  Chat đã cấp (chỉ có thể là chat đại ca) — để sổ trả lời «ai cấp, lúc nào».
     granted_by_chat: Mapped[str] = mapped_column(String(50), default="")
     note: Mapped[str] = mapped_column(String(255), default="")
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentUserKey(Base, AuditMixin):
+    """Khóa Gemini CÁ NHÂN của một tài khoản ERP (ai-CR-053, D-01).
+
+    Dán ở Trang cá nhân → «Khóa AI», lưu mã hóa Fernet (cùng khóa suy từ `JWT_SECRET` như cấu hình hệ
+    thống), chỉ giữ 4 ký tự cuối để người dùng nhận ra. Đổi khóa = đóng dòng cũ (`revoked_at`) + dòng
+    mới; nghỉ việc thì đóng cùng lúc khóa phiên. Bot không bao giờ in khóa thô ra chat hay log.
+    """
+
+    __tablename__ = "tab_agent_user_key"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    provider: Mapped[str] = mapped_column(String(30), default="gemini")
+    key_enc: Mapped[str] = mapped_column(Text, default="")
+    key_hint: Mapped[str] = mapped_column(String(8), default="")
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)

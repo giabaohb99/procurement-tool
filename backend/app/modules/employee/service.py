@@ -319,7 +319,22 @@ def lock_linked_users(db: Session, eid: int, actor_id: int, reason: int) -> list
         u.updated_by = actor_id
         force_relogin(db, u, reason, actor_id, commit=False)
         perm_cache_clear(u.id)
+        _revoke_bot_access(db, u.id)
     return users
+
+
+def _revoke_bot_access(db: Session, user_id: int) -> None:
+    """ai-CR-053: nghỉ việc thì khóa Gemini cá nhân + liên kết Telegram của bot cũng đóng cùng lúc phiên
+    web (không có gì hỏi được bot dưới tên người đã đi). Không commit ở đây — đi chung với người gọi."""
+    from datetime import datetime
+
+    from app.modules.agent_hub.model import AgentChatLink, AgentUserKey
+
+    now = datetime.now()
+    for row in db.query(AgentUserKey).filter(AgentUserKey.user_id == user_id, AgentUserKey.revoked_at.is_(None)):
+        row.revoked_at = now
+    for row in db.query(AgentChatLink).filter(AgentChatLink.user_id == user_id, AgentChatLink.revoked_at.is_(None)):
+        row.revoked_at = now
 
 
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:

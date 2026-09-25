@@ -403,6 +403,8 @@ export const queryKeys = {
     agentStats: (days: number) => ['system', 'agent-tasks', 'stats', days] as const,
     /** Liên kết Telegram của chính mình (ai-CR-038). */
     telegramLinks: () => ['system', 'telegram-links'] as const,
+    /** Khóa Gemini cá nhân của chính mình (ai-CR-053). */
+    aiKey: () => ['system', 'ai-key'] as const,
     /** Lịch sử đăng nhập N ngày của MỘT tài khoản (phiên + lần thất bại). */
     loginHistory: (userId: number, days: number) =>
       ['system', 'login-sessions', 'history', userId, days] as const,

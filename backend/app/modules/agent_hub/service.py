@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import chat_link, coder, draft_create, grants, manager, memory, playbook, research, telegram
+from . import chat_link, coder, draft_create, grants, manager, memory, playbook, research, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -157,7 +157,14 @@ def poll_once(db: Session, *, timeout: int = telegram.POLL_TIMEOUT) -> int:
 
 
 def handle_message(db: Session, msg: dict) -> None:
+    """Mọi tin vào đi qua đây. ai-CR-053: mở ngữ cảnh KHÓA GEMINI của chat (khóa cá nhân của tài khoản đã
+    liên kết; chat đại ca chưa có khóa cá nhân thì khóa `.env`) cho toàn bộ lượt xử lý bên trong."""
     chat_id = str((msg.get("chat") or {}).get("id") or "")
+    with user_keys.for_chat(db, chat_id):
+        _handle_message(db, msg, chat_id)
+
+
+def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
     #  ai-CR-035: ảnh gửi kèm chú thích thì chú thích là nội dung tin.
     text = (msg.get("text") or msg.get("caption") or "").strip()
     photo_id = _photo_file_id(msg)
@@ -358,6 +365,9 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
         reply(db, chat_id, "Đại ca nhắn luôn điều cần tra, ví dụ «tìm hiểu giúp anh thuế nhập khẩu thép "
               "2026» hoặc «có đúng là hóa đơn điện tử phải xuất trong ngày không».")
         return
+    if not user_keys.active_key():
+        reply(db, chat_id, user_keys.NO_KEY_HELP)
+        return
     telegram.send_chat_action(chat_id)
     run = start_run(db, 0, STAGE_RESEARCH)
     db.commit()
@@ -431,7 +441,9 @@ def _cost_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
     task = db.scalar(select(AgentTask).where(AgentTask.code == f"AI-{int(code_m.group(1)):04d}")) if code_m else None
     row.action = ACT_COMMAND
     db.commit()
-    reply(db, chat_id, cost_report(db, task=task))
+    #  ai-CR-053: chat thường chỉ thấy tiền của KHÓA MÌNH; chat đại ca thấy cả bot.
+    owner = 0 if telegram.is_allowed_chat(chat_id) else user_keys.active_owner()
+    reply(db, chat_id, cost_report(db, task=task, owner_id=owner))
     return True
 
 
@@ -440,15 +452,24 @@ def _money(usd: float) -> str:
     return f"${usd:.2f} (≈ {vnd:,.0f} đ)".replace(",", ".")
 
 
-def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | None = None) -> str:
+def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | None = None,
+                owner_id: int = 0) -> str:
     """Báo chi phí ƯỚC của bot: một việc, hoặc hôm nay / 7 ngày / 30 ngày + ba việc tốn nhất.
 
     Tách hai loại tiền: Gemini là tiền THẬT trả theo lượt; Claude Code chạy gói thuê bao nên số của nó
-    chỉ là ước để so, không phát sinh thêm.
+    chỉ là ước để so, không phát sinh thêm. `owner_id` > 0: chỉ các lượt chạy bằng khóa của người đó (ai-CR-053).
     """
     esc = telegram.esc
     now = now or datetime.now()
     rate_note = f"Tỷ giá tạm {settings.AGENT_USD_VND:,} đ/USD.".replace(",", ".")
+    if owner_id:
+        runs = db.scalars(select(AgentRun).where(AgentRun.owner_id == owner_id, AgentRun.started_at >= now - timedelta(days=30))).all()
+        today = to_utc(now_local().replace(hour=0, minute=0, second=0, microsecond=0))
+        lines = ["<b>Chi phí Gemini bằng khóa của anh/chị</b> (tiền thật, ước theo bảng giá)"]
+        for label, since in (("Hôm nay", today), ("7 ngày", now - timedelta(days=7)), ("30 ngày", now - timedelta(days=30))):
+            lines.append(f"{label}: {_money(sum(float(r.cost_usd or 0) for r in runs if r.started_at and r.started_at >= since))}")
+        lines.append(rate_note)
+        return "\n".join(lines)
     if task is not None:
         runs = db.scalars(select(AgentRun).where(AgentRun.task_id == task.id)).all()
         gem = sum(float(r.cost_usd or 0) for r in runs if r.provider != coder.PROVIDER)
@@ -611,6 +632,13 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     """
     if _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text):
         return
+    if _cost_by_text(db, chat_id, row, text):
+        return
+    if not user_keys.active_key():
+        #  ai-CR-053: không lùi về khóa công ty. Dấu lệnh để tin không rơi vào INBOX.
+        row.action = ACT_COMMAND
+        reply(db, chat_id, user_keys.NO_KEY_HELP)
+        return
     run = start_run(db, 0, STAGE_INTENT)
     try:
         data, result = manager.run_intent(text, context=_intent_context(db, chat_id, row.id))
@@ -723,6 +751,11 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     if _is_follow_up(db, chat_id, row):
         row.action = ACT_ASKED
         answer_question(db, chat_id, text, before_id=row.id)
+        return
+    if not user_keys.active_key():
+        #  ai-CR-053: trên dev đại ca cũng dùng khóa cá nhân; chưa dán thì bot nói thẳng, không đoán.
+        row.action = ACT_COMMAND
+        reply(db, chat_id, user_keys.NO_KEY_HELP)
         return
 
     run = start_run(db, 0, STAGE_INTENT)
@@ -2014,6 +2047,11 @@ def _resolve_rule(db: Session, chat_id: str, cb_id: str, action: str, task: Agen
 def handle_callback(db: Session, cb: dict) -> None:
     """Đại ca bấm một nút. `callback_data` dạng `<hành động>:<id task>`."""
     chat_id = str(((cb.get("message") or {}).get("chat") or {}).get("id") or "")
+    with user_keys.for_chat(db, chat_id):
+        _handle_callback(db, cb, chat_id)
+
+
+def _handle_callback(db: Session, cb: dict, chat_id: str) -> None:
     data = str(cb.get("data") or "")
     cb_id = str(cb.get("id") or "")
     if not telegram.is_allowed_chat(chat_id):
@@ -2365,6 +2403,9 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         reply(db, chat_id, _NO_ASSISTANT_USER if telegram.is_allowed_chat(chat_id) else
               "Tài khoản ERP của chat này không còn hoạt động. " + _LINK_HELP)
         return
+    if not user_keys.active_key():
+        reply(db, chat_id, user_keys.NO_KEY_HELP)
+        return
 
     history = _recent_turns(db, chat_id, before_id)
     #  Chốt dấu `hoi` trên tin trước khi giao cho Trợ lý AI: tool bên trong có thể
@@ -2376,7 +2417,8 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     try:
         #  `system` của người gọi chỉ CHÈN THÊM vào cuối, không đè định nghĩa và rào an toàn của
         #  Trợ lý AI; nên web vẫn là «Trợ lý AI», chỉ kênh Telegram mới là Đậu Đậu (ai-CR-016).
-        result = assistant_service.ask(question, db=db, user=user, history=history,
+        #  ai-CR-053: `provider="agent_gemini"` = khóa của NGƯỜI đang chat, không phải khóa công ty của web.
+        result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
                                        system=f"{BOT_PERSONA} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}")
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
@@ -2400,8 +2442,9 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
 
 
 _NO_ASSISTANT_USER = (
-    "Chưa khai <code>AGENT_ASSISTANT_USER</code> (email một tài khoản ERP còn hoạt động) "
-    "nên em không chạy Trợ lý AI được — nó cần biết hỏi dưới quyền ai."
+    "Chat này chưa đăng nhập ERP nên em chưa biết hỏi dưới quyền ai. " + _LINK_HELP
+    + " (Máy chạy bot vẫn khai được <code>AGENT_ASSISTANT_USER</code> làm tài khoản chung cho chat đại ca; "
+    "trên dev để trống — ai-CR-053.)"
 )
 
 
@@ -2799,6 +2842,17 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
 # Vòng gom — INBOX thành task
 # ---------------------------------------------------------------------------
 def triage_inbox(db: Session, *, force: bool = False) -> int:
+    """Gom tin đang chờ thành task (chạy bằng khóa Gemini của đại ca, ai-CR-053). Trả số task vừa tạo."""
+    if user_keys.in_context():
+        return _triage_inbox(db, force=force)
+    with user_keys.for_admin(db) as key:
+        if not key:
+            log.warning("agent_hub: chưa có khóa Gemini của đại ca, chưa gom tin (tin vẫn chờ ở INBOX)")
+            return 0
+        return _triage_inbox(db, force=force)
+
+
+def _triage_inbox(db: Session, *, force: bool = False) -> int:
     """Gom tin đang chờ thành task. Trả số task vừa tạo.
 
     `force=False` (vòng theo lịch) chỉ nhận tin đã nằm yên đủ `AGENT_TRIAGE_DELAY_SEC`.
@@ -3029,6 +3083,15 @@ def next_code(db: Session) -> str:
 # Trạm PLAN
 # ---------------------------------------------------------------------------
 def plan_task(db: Session, task: AgentTask) -> None:
+    """Lập kế hoạch. Gọi từ worker (ngoài ngữ cảnh) thì chạy bằng khóa của đại ca (ai-CR-053)."""
+    if user_keys.in_context():
+        _plan_task(db, task)
+        return
+    with user_keys.for_admin(db):
+        _plan_task(db, task)
+
+
+def _plan_task(db: Session, task: AgentTask) -> None:
     docs = memory.recall(f"{task.title}\n{task.summary}")
     #  Luật 3 của sổ quyết định (ai-CR-015): việc rủi ro cao không được nạp sổ, cấm giả định.
     strict = int(task.risk_level or 0) >= RISK_HIGH
@@ -3431,7 +3494,7 @@ def log_message(db: Session, direction: int, chat_id: str, tg_message_id: int,
 def start_run(db: Session, task_id: int, stage: int) -> AgentRun:
     run = AgentRun(task_id=task_id, stage=stage, provider="agent_gemini",
                    model=settings.AGENT_MANAGER_MODEL, status=RUN_RUNNING,
-                   started_at=datetime.now())
+                   started_at=datetime.now(), owner_id=user_keys.active_owner())
     db.add(run)
     db.flush()
     return run

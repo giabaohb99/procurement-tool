@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckSquare, History, LifeBuoy, MonitorSmartphone, Palette, Send, User } from 'lucide-react'
+import { Bell, CheckSquare, History, KeyRound, LifeBuoy, MonitorSmartphone, Palette, Send, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
+import { ProfileAiKeyTab } from '@/app/components/profile/profile-ai-key-tab'
 import { ProfileDevicesTab } from '@/app/components/profile/profile-devices-tab'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
@@ -72,6 +73,8 @@ export function ProfilePage() {
               ? 'login-history'
               : rawTab === 'telegram'
                 ? 'telegram'
+              : rawTab === 'ai-key'
+                ? 'ai-key'
               : rawTab === 'tickets' && canReadTickets
                 ? 'tickets'
                 : 'info'
@@ -191,6 +194,11 @@ export function ProfilePage() {
                 <Send className="size-4" />
                 <span>Telegram</span>
               </TabsTrigger>
+              {/* ai-CR-053 — khóa Gemini cá nhân cho bot Telegram/Zalo. Không gác quyền. */}
+              <TabsTrigger value="ai-key" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                <KeyRound className="size-4" />
+                <span>Khóa AI</span>
+              </TabsTrigger>
               <TabsTrigger value="appearance" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Palette className="size-4" />
                 <span>Giao diện</span>
@@ -289,6 +297,10 @@ export function ProfilePage() {
 
             <TabsContent value="telegram" className="space-y-4">
               <ProfileTelegramTab />
+            </TabsContent>
+
+            <TabsContent value="ai-key" className="space-y-4">
+              <ProfileAiKeyTab />
             </TabsContent>
 
             <TabsContent value="login-history" className="space-y-4">

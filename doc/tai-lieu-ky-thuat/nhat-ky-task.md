@@ -7780,3 +7780,32 @@ khoản chung trước, rồi sổ máy và runner tách rời, rồi stack bot 
 
 Mã nguồn: doc/agent-hub/04-danh-sach-tinh-nang.md · doc/agent-hub/01-thiet-ke-ky-thuat.md ·
 doc/tai-lieu-ky-thuat/change-log-ai.md
+
+## ai-CR-053 | Khóa Gemini cá nhân cho bot và bỏ tài khoản dùng chung
+- status: xong
+- date: 2026-09-25
+Phase 2 phần (a). Đại ca chốt mỗi người dùng khóa Gemini của chính mình khi chat với bot, khóa
+công ty trên dev chỉ dành cho trợ lý trên web, và ai cũng tự đăng nhập chứ không còn tài khoản
+chung.
+
+Đã làm. Một, thêm bảng lưu khóa cá nhân, mã hóa như cấu hình hệ thống, chỉ giữ bốn ký tự cuối
+để nhận ra; thêm cột chủ khóa vào sổ lượt chạy để tính tiền theo từng người. Hai, tab «Khóa AI»
+ở Trang cá nhân trên giao diện v2: ô nhập dạng mật khẩu, lưu xong xóa trắng, hệ thống gọi thử
+Gemini một lượt không tốn token rồi mới lưu; ba đường API tự phục vụ và không đường nào trả khóa
+ra. Ba, bot mở ngữ cảnh khóa quanh mỗi tin nhắn và mỗi việc nền: lượt đọc ý định, trợ lý ERP,
+nghiên cứu trong chat của ai thì chạy bằng khóa của người đó; gom tin và lập kế hoạch chạy bằng
+khóa của đại ca. Không lùi về khóa công ty: người chưa gắn khóa thì bot chỉ nhắc, nhưng đăng
+nhập, xem tài khoản, xem tình trạng việc, ra lệnh trên việc, xác nhận tạo phiếu vẫn dùng được.
+Bốn, chat đại ca ở máy bot chưa có khóa cá nhân thì vẫn dùng khóa trong tệp cấu hình như cũ, để
+bot local không gián đoạn; lên dev thì biến đó để trống. Năm, nghỉ việc thì khóa và liên kết
+Telegram đóng cùng lúc với phiên đăng nhập. Sáu, câu «tốn bao nhiêu» của người thường chỉ ra
+tiền theo khóa của họ.
+
+Kiểm: sáu bài backend mới, cả tệp test bot 215 bài xanh; ba bài giao diện mới, thư mục profile
+34 bài xanh; typecheck và lint không lỗi. Migration đã chạy ở cơ sở dữ liệu bot local. Trong lúc
+làm, stack bot local bị hạ bởi phiên khác, đã dựng lại.
+
+Mã nguồn: backend/app/modules/agent_hub/user_keys.py · manager.py · service.py · controller.py ·
+model.py · backend/app/modules/employee/service.py · backend/migrations/versions/c4f8b2d6e1a3_* ·
+frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
+modules/system/api/agent-hub-api.ts · app/pages/profile-page.tsx · test/backend/test_agent_hub.py
