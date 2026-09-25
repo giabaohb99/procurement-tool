@@ -44,12 +44,29 @@ class TelegramError(RuntimeError):
 
 
 def is_enabled() -> bool:
-    """Đủ cấu hình để chạy chưa. Thiếu một trong ba thì cả bộ máy nằm im."""
+    """Đủ cấu hình để chạy chưa. Thiếu một trong ba thì cả bộ máy nằm im.
+
+    ai-CR-054: máy sửa mã tách rời KHÔNG giữ token bot — nó có `AGENT_RUNNER_NAME` và gửi tin vòng qua
+    hàng đợi cho worker trên dev gửi hộ (`relaying()`), nên với nó «có token» = «có tên máy».
+    """
     return bool(
         settings.AGENT_HUB_ENABLED
-        and settings.AGENT_TELEGRAM_BOT_TOKEN
+        and (settings.AGENT_TELEGRAM_BOT_TOKEN or relaying())
         and settings.AGENT_TELEGRAM_CHAT_ID
     )
+
+
+def relaying() -> bool:
+    """Tiến trình này là máy sửa mã không có token: mọi tin gửi đi phải đi vòng qua worker của bot."""
+    return bool(settings.AGENT_RUNNER_NAME) and not settings.AGENT_TELEGRAM_BOT_TOKEN
+
+
+def _relay(method: str, payload: dict) -> int:
+    """Đẩy một lượt gọi Bot API sang worker của bot (hàng đợi mặc định). Không chờ kết quả: trả 0."""
+    from app.core.celery_app import celery_app
+
+    celery_app.send_task("agent.send_telegram", kwargs={"method": method, "payload": payload})
+    return 0
 
 
 def is_allowed_chat(chat_id) -> bool:
@@ -249,6 +266,8 @@ def send_chat_action(chat_id: str = "", action: str = "typing") -> None:
     phân loại rồi qua Trợ lý AI mất 5-10 giây, mà không có dấu hiệu nào thì đại ca tưởng
     bot chết. Lỗi ở đây KHÔNG được làm hỏng luồng chính — nó chỉ là cái nhấp nháy.
     """
+    if relaying():
+        return
     try:
         _call("sendChatAction", {
             "chat_id": chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
@@ -281,6 +300,8 @@ def send(text: str, *, buttons: list[tuple[str, str]] | None = None,
     }
     if buttons:
         payload["reply_markup"] = {"inline_keyboard": [[_button(label, data)] for label, data in buttons]}
+    if relaying():
+        return _relay("sendMessage", payload)
     result = _call("sendMessage", payload)
     return int(result.get("message_id") or 0)
 

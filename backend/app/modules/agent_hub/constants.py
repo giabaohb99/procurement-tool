@@ -207,9 +207,14 @@ ACT_GRANT_DONE = "da_cap_quyen"
 ACT_GRANT_DROPPED = "bo_cap_quyen"
 #  Tin người khác (không phải đại ca) ra lệnh trên việc mà không đủ cấp — sổ để đại ca tra lại.
 ACT_DENIED = "tu_choi"
+#  ai-CR-054: thẻ hỏi lại «thêm / tắt máy sửa mã?» của đại ca; `body` = JSON {op, name, owner_user_id, runner_id}.
+ACT_RUNNER_WAIT = "cho_may"
+ACT_RUNNER_DONE = "da_may"
+ACT_RUNNER_DROPPED = "bo_may"
 NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
                  ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED,
-                 ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED)
+                 ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED,
+                 ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED)
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token

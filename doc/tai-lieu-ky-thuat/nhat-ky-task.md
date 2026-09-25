@@ -7809,3 +7809,28 @@ Mã nguồn: backend/app/modules/agent_hub/user_keys.py · manager.py · service
 model.py · backend/app/modules/employee/service.py · backend/migrations/versions/c4f8b2d6e1a3_* ·
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · app/pages/profile-page.tsx · test/backend/test_agent_hub.py
+
+## ai-CR-054 | Sổ máy sửa mã, hàng đợi theo máy và tin Telegram gửi hộ
+- status: xong
+- date: 2026-09-25
+Phase 2 phần (b1). Đại ca muốn thêm được vài máy nữa sửa mã như máy của anh; bot trên dev chỉ xếp
+việc, máy nào bật thì kéo việc về làm.
+
+Đã làm. Một, sổ máy: đại ca nhắn «thêm máy của anh Được», bot hỏi lại, «đúng» thì phát mã máy hiện
+đúng một lần và dặn xóa tin; chủ máy là tài khoản ERP khớp tên; gỡ máy cũng hỏi lại; hỏi «máy nào
+đang bật» là bot liệt kê kèm số việc đang chạy và cờ deploy; mở hay cấm deploy dev cho từng máy
+bằng câu nhắn; chỉ định «AI-0012 cho máy anh Được làm», đang chạy dở thì không giao lại, đổi máy
+thì máy mới làm lại từ kế hoạch. Hai, hàng đợi theo máy: mọi lượt giao runner đi qua một hàm chọn
+máy, mỗi máy một hàng đợi riêng, việc dính máy từ lượt đầu, việc mới về máy đang bật ít việc nhất,
+không máy nào bật thì về máy mặc định hoặc máy liên lạc gần nhất và bot báo đang chờ máy nào; vé
+nằm trong Redis nên máy tắt không mất việc; chưa đăng ký máy nào thì mọi thứ y như trước. Ba, máy
+tự xưng bằng tên và mã máy trong tệp cấu hình, báo còn sống mỗi ba mươi giây; sai mã hoặc đã gỡ
+thì việc bị từ chối và đại ca được báo; máy không có cờ deploy thì không deploy được. Bốn, máy
+sửa mã không giữ token bot: tin gửi Telegram từ máy đi vòng qua worker của bot trên dev.
+
+Kiểm: năm bài mới, cả tệp test bot 220 bài xanh; migration đã chạy ở cơ sở dữ liệu bot local.
+Phần (b2) là gói cài runner tách rời với đường hầm SSH, làm ở việc kế tiếp.
+
+Mã nguồn: backend/app/modules/agent_hub/runners.py · service.py · coder.py · tasks.py · telegram.py ·
+constants.py · model.py · backend/app/core/config.py · backend/migrations/versions/d5a9c3e7f2b4_* ·
+test/backend/test_agent_hub.py

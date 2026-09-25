@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import chat_link, coder, draft_create, grants, manager, memory, playbook, research, telegram, user_keys
+from . import chat_link, coder, draft_create, grants, manager, memory, playbook, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -65,6 +65,9 @@ from .constants import (
     ACT_GRANT_DONE,
     ACT_GRANT_DROPPED,
     ACT_GRANT_WAIT,
+    ACT_RUNNER_DONE,
+    ACT_RUNNER_DROPPED,
+    ACT_RUNNER_WAIT,
     BOT_DRAFT_FACTS,
     BOT_LOGIN_FACTS,
     BOT_NAME,
@@ -103,7 +106,7 @@ from .constants import (
     TASK_STATUS_LABELS,
     estimate_cost_usd,
 )
-from .model import AgentCursor, AgentMessage, AgentRun, AgentTask, AgentTaskItem
+from .model import AgentCursor, AgentMessage, AgentRun, AgentRunner, AgentTask, AgentTaskItem
 
 log = logging.getLogger("app.agent_hub")
 
@@ -738,7 +741,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         return
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
-    if (_grant_by_text(db, chat_id, row, text) or _draft_by_text(db, chat_id, row, text)
+    if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
+            or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
             or _word_by_text(db, chat_id, row, text)
             or _cost_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text)):
@@ -1100,6 +1104,8 @@ def task_status_line(db: Session, task: AgentTask) -> str:
     parts = [f"<b>{code}</b> · {esc(task.title)}: <b>{esc(TASK_STATUS_LABELS.get(task.status, '?'))}</b>."]
     if task.branch_name:
         parts.append(f"Nhánh <code>{esc(task.branch_name)}</code>.")
+    if task.runner_id and (rn := db.get(AgentRunner, task.runner_id)) is not None:
+        parts.append(f"Máy <b>{esc(rn.name)}</b> ({'đang bật' if runners.is_online(rn) else 'đang tắt'}).")
     merged = coder.merged_sha_for(db, task)
     if merged:
         parts.append(f"Đã gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> (<code>{esc(merged[:10])}</code>)"
@@ -1442,6 +1448,162 @@ def _grant_allows(db: Session, chat_id: str, row: AgentMessage, task: AgentTask,
     return False
 
 
+# ---------------------------------------------------------------------------
+# Máy sửa mã (ai-CR-054, D-03 + D-05): đăng ký / gỡ / liệt kê / chỉ định bằng câu nhắn của đại ca
+# ---------------------------------------------------------------------------
+def _runner_wait_note(db: Session, task: AgentTask, chat_id: str = "") -> None:
+    """Việc vừa được đẩy vào hàng đợi của một máy đang TẮT: nói rõ đang chờ máy nào (vé nằm chờ, không mất)."""
+    if not task.runner_id:
+        return
+    rn = db.get(AgentRunner, task.runner_id)
+    if rn is None or runners.is_online(rn):
+        return
+    seen = f" (liên lạc lần cuối {fmt_local(rn.last_seen_at)})" if rn.last_seen_at else " (chưa liên lạc lần nào)"
+    reply(db, chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
+          f"<b>{telegram.esc(task.code)}</b> đang chờ máy <b>{telegram.esc(rn.name)}</b> bật{telegram.esc(seen)}. "
+          "Bật máy là em làm ngay; muốn máy khác làm thì nhắn «" + telegram.esc(task.code) + " cho máy ‹tên› làm».",
+          task_id=task.id)
+
+
+def _runner_listing(db: Session) -> str:
+    rows = runners.active(db)
+    if not rows:
+        return ("Chưa đăng ký máy sửa mã nào: bot và runner đang chạy chung một máy (hàng đợi cũ). Thêm máy: "
+                "«thêm máy của anh Được».")
+    esc = telegram.esc
+    lines = ["<b>Máy sửa mã:</b>"]
+    for r in rows:
+        state = "đang bật" if runners.is_online(r) else ("tắt từ " + fmt_local(r.last_seen_at) if r.last_seen_at else "chưa liên lạc")
+        busy = runners.running_count(db, r.id)
+        lines.append(f"• <b>{esc(runners.describe(db, r))}</b> — {state}, {busy} việc đang chạy, deploy dev: "
+                     f"{'có' if r.can_deploy else 'không'}")
+    return "\n".join(lines)
+
+
+def _runner_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Chat đại ca: «thêm máy của anh Được» → hỏi lại → «đúng» tạo mã máy (hiện MỘT lần); «tắt máy …»;
+    «máy nào đang bật»; «AI-0012 cho máy anh Được làm»; «cho máy … được deploy»."""
+    if not telegram.is_allowed_chat(chat_id):
+        return False
+    low = text.strip().lower()
+    pending = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_RUNNER_WAIT, AgentMessage.id < row.id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    live = pending is not None and not (row.created_at and pending.created_at
+                                        and row.created_at - pending.created_at > GRANT_WINDOW)
+    if live and (_YES.match(low) or _NO.match(low)):
+        return _runner_confirm(db, chat_id, row, pending, yes=bool(_YES.match(low)))
+    parsed = runners.parse(text)
+    if parsed is None:
+        return False
+    row.action = ACT_COMMAND
+    if pending is not None and pending.action == ACT_RUNNER_WAIT:
+        pending.action = ACT_RUNNER_DROPPED
+    esc = telegram.esc
+    op = parsed["op"]
+    if op == "list":
+        reply(db, chat_id, _runner_listing(db))
+        db.commit()
+        return True
+    if op == "add":
+        owner_id, owner_label = 0, ""
+        users = grants.find_users(db, grants.clean_name(parsed["name"]))
+        if len(users) == 1:
+            owner_id, owner_label = users[0].id, describe_user(db, users[0])[0]
+        name = runners.slug("may " + (owner_label.split(" (")[0].split()[-1] if owner_label else parsed["name"]))
+        if runners.by_name(db, name) is not None:
+            reply(db, chat_id, f"Đã có máy tên <b>{esc(name)}</b> rồi. Xem «máy nào đang bật».")
+            db.commit()
+            return True
+        who = f", chủ máy <b>{esc(owner_label)}</b>" if owner_label else " (không gắn chủ máy: em không tìm thấy tài khoản ERP tên đó)"
+        reply(db, chat_id, f"Thêm máy sửa mã <b>{esc(name)}</b>{who}? Máy mới mặc định KHÔNG được deploy dev. "
+              "Nhắn «đúng» để em phát mã máy, «thôi» để bỏ.")
+        log_message(db, DIR_OUT, chat_id, 0, json.dumps({"op": "add", "name": name, "owner_user_id": owner_id,
+                                                         "note": parsed["name"]}), action=ACT_RUNNER_WAIT)
+        db.commit()
+        return True
+    found = runners.find(db, parsed["name"])
+    if not found:
+        reply(db, chat_id, f"Không có máy nào khớp «{esc(parsed['name'])}». Xem «máy nào đang bật».")
+        db.commit()
+        return True
+    if len(found) > 1:
+        reply(db, chat_id, "Có nhiều máy khớp: " + " · ".join(esc(r.name) for r in found) + ". Nhắn đúng tên máy giúp em.")
+        db.commit()
+        return True
+    rn = found[0]
+    if op == "remove":
+        reply(db, chat_id, f"Gỡ máy <b>{esc(rn.name)}</b>? Máy đó bị từ chối ngay ở lượt kế, việc đang dính máy sẽ chờ "
+              "cho tới khi đại ca giao máy khác. Nhắn «đúng» để gỡ, «thôi» để giữ.")
+        log_message(db, DIR_OUT, chat_id, 0, json.dumps({"op": "remove", "runner_id": rn.id}), action=ACT_RUNNER_WAIT)
+        db.commit()
+        return True
+    if op in ("deploy_on", "deploy_off"):
+        rn.can_deploy = op == "deploy_on"
+        db.commit()
+        reply(db, chat_id, f"Máy <b>{esc(rn.name)}</b> {'ĐƯỢC' if rn.can_deploy else 'KHÔNG được'} deploy dev từ giờ.")
+        return True
+    if op == "assign":
+        code_m = _CODE_IN_TEXT.search(parsed["code"])
+        task = db.scalar(select(AgentTask).where(AgentTask.code == f"AI-{int(code_m.group(1)):04d}")) if code_m else None
+        if task is None:
+            reply(db, chat_id, f"Không có việc <b>{esc(parsed['code'].upper())}</b> trong sổ.")
+            db.commit()
+            return True
+        if task.runner_id and task.runner_id != rn.id and runners.running_count(db, task.runner_id):
+            old = db.get(AgentRunner, task.runner_id)
+            reply(db, chat_id, f"<b>{esc(task.code)}</b> đang chạy dở trên máy <b>{esc(old.name if old else '?')}</b>; "
+                  "chờ xong lượt đó rồi giao lại.", task_id=task.id)
+            db.commit()
+            return True
+        moved = bool(task.runner_id and task.runner_id != rn.id)
+        task.runner_id = rn.id
+        db.commit()
+        reply(db, chat_id, f"Từ giờ <b>{esc(task.code)}</b> giao máy <b>{esc(rn.name)}</b>"
+              + (" (bản vá dở trên máy cũ không mang theo, máy mới làm lại từ kế hoạch)." if moved else ".")
+              + ("" if runners.is_online(rn) else " Máy đang tắt, việc sẽ chờ."), task_id=task.id)
+        return True
+    return False
+
+
+def _runner_confirm(db: Session, chat_id: str, row: AgentMessage, pending: AgentMessage, *, yes: bool) -> bool:
+    row.action = ACT_COMMAND
+    try:
+        info = json.loads(pending.body or "{}")
+    except ValueError:
+        info = {}
+    esc = telegram.esc
+    if not yes:
+        pending.action = ACT_RUNNER_DROPPED
+        db.commit()
+        reply(db, chat_id, "Dạ, em không đổi gì ở sổ máy.")
+        return True
+    pending.action = ACT_RUNNER_DONE
+    db.commit()
+    if info.get("op") == "remove":
+        rn = db.get(AgentRunner, int(info.get("runner_id") or 0))
+        if rn is None or rn.revoked_at is not None:
+            reply(db, chat_id, "Máy đó không còn trong sổ.")
+            return True
+        runners.revoke(db, rn)
+        reply(db, chat_id, f"Đã gỡ máy <b>{esc(rn.name)}</b>.")
+        log.info("agent_hub: gỡ máy sửa mã %s bởi chat %s", rn.name, chat_id)
+        return True
+    try:
+        rn, raw = runners.register(db, info.get("name", ""), owner_user_id=int(info.get("owner_user_id") or 0),
+                                   note=str(info.get("note") or ""), by_chat=chat_id)
+    except ValueError as e:
+        reply(db, chat_id, esc(str(e)))
+        return True
+    reply(db, chat_id,
+          f"Đã thêm máy <b>{esc(rn.name)}</b>. Mã máy (hiện MỘT lần, chép xong đại ca XÓA tin này):\n"
+          f"<code>AGENT_RUNNER_NAME={esc(rn.name)}</code>\n<code>AGENT_RUNNER_TOKEN={esc(raw)}</code>\n"
+          "Dán hai dòng vào <code>.env</code> của runner trên máy đó rồi bật. Máy tự báo «còn sống» mỗi 30 giây; "
+          "hỏi «máy nào đang bật» để kiểm. Muốn máy này deploy dev: «cho máy " + esc(rn.name) + " được deploy».")
+    log.info("agent_hub: thêm máy sửa mã %s bởi chat %s", rn.name, chat_id)
+    return True
+
+
 def _notify_admin_action(db: Session, chat_id: str, task: AgentTask, action: str, text: str) -> None:
     """Người khác vừa ra lệnh đổi trạng thái việc: một dòng về chat đại ca (sổ đã có tin gốc)."""
     if telegram.is_allowed_chat(chat_id) or action not in grants.NOTIFY_ACTIONS:
@@ -1721,6 +1883,7 @@ def _dispatch_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask, *, 
     run = _new_deploy_run(db, task, STAGE_DEPLOY, "ngay", approved_by=chat_id, deploy=deploy)
     try:
         coder.dispatch_deploy(task.id, run.id)
+        _runner_wait_note(db, task)
     except Exception as e:  # noqa: BLE001 — broker chết thì đóng lượt, nút bấm lại được
         log.exception("agent_hub: giao việc gộp + deploy hỏng")
         coder._close_run(run, status=RUN_ERROR, error=str(e)[:500])
@@ -1844,6 +2007,7 @@ def _dispatch_revert(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> 
     run = _new_deploy_run(db, task, STAGE_REVERT, "ngay", approved_by=chat_id)
     try:
         coder.dispatch_revert(task.id, run.id)
+        _runner_wait_note(db, task)
     except Exception as e:  # noqa: BLE001
         log.exception("agent_hub: giao việc thu hồi hỏng")
         coder._close_run(run, status=RUN_ERROR, error=str(e)[:500])
@@ -1879,6 +2043,7 @@ def dispatch_due_deploys(db: Session, now: datetime | None = None) -> int:
         run.artifact = {**art, "phase": "dispatched", "dispatched_at": now.isoformat(timespec="minutes")}
         db.commit()
         coder.dispatch_deploy(task.id, run.id)
+        _runner_wait_note(db, task)
         what = _deploy_what(art.get("deploy", True), bool(coder.merged_sha_for(db, task)))
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
               f"Tới giờ hẹn {fmt_local(when, '%H:%M')}: em bắt đầu {what} <b>{telegram.esc(task.code)}</b>.",
@@ -2209,6 +2374,7 @@ def start_fix_gate(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
     task.status = ST_CODE
     db.commit()
     coder.dispatch_fix_gate(task.id)
+    _runner_wait_note(db, task)
     telegram.answer_callback(cb_id, "Em sửa cho xanh")
     reply(db, chat_id, f"Em sửa <b>{telegram.esc(task.code)}</b> cho xanh trong đúng phiên cũ "
           f"(tối đa {coder.FIX_GATE_MAX_TURNS} lượt), xong chạy lại cổng kiểm và gửi thẻ.",
@@ -2226,6 +2392,7 @@ def start_continue(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
     task.status = ST_CODE
     db.commit()
     coder.dispatch_continue(task.id)
+    _runner_wait_note(db, task)
     telegram.answer_callback(cb_id, "Em làm tiếp")
     reply(db, chat_id, f"Em làm tiếp <b>{telegram.esc(task.code)}</b> đúng phiên cũ (thêm tối đa "
           f"{coder.CONTINUE_MAX_TURNS} lượt). Xong em gửi thẻ kết quả.", task_id=task.id)
@@ -2263,6 +2430,7 @@ def _dispatch_publish(db: Session, chat_id: str, cb_id: str, task: AgentTask) ->
         return
     try:
         coder.dispatch_publish(task.id)
+        _runner_wait_note(db, task)
     except Exception as e:  # noqa: BLE001 — broker chết thì nói ra, nút vẫn bấm lại được
         log.exception("agent_hub: giao việc đẩy GitHub hỏng")
         reply(db, chat_id, f"<b>{code}</b>: không giao được cho runner: {telegram.esc(str(e)[:300])}",
@@ -2296,6 +2464,7 @@ def _dispatch_coder(db: Session, chat_id: str, task: AgentTask) -> None:
     db.commit()
     try:
         coder.dispatch(task.id)
+        _runner_wait_note(db, task)
     except Exception as e:  # noqa: BLE001 — broker chết thì trả việc về PLAN, không treo ở CODE
         log.exception("agent_hub: giao việc cho runner hỏng")
         task.status = ST_PLAN
@@ -3168,6 +3337,7 @@ def start_scan(db: Session, task: AgentTask) -> None:
     db.commit()
     try:
         coder.dispatch_scan(task.id)
+        _runner_wait_note(db, task)
     except Exception:  # noqa: BLE001
         log.exception("agent_hub: giao rà soát mã hỏng, lập kế hoạch theo tài liệu")
         task.status = ST_TRIAGE

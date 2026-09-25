@@ -5,6 +5,7 @@ Bộ mã số khai ở `constants.py` (R2/QĐ-11). Không cột trạng thái n�
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     JSON,
     BigInteger,
     DateTime,
@@ -66,6 +67,8 @@ class AgentTask(Base, AuditMixin):
     #  phải id người dùng ERP: bậc 1 không đi qua đăng nhập ERP, và ghi một id người
     #  dùng mà không ai đăng nhập thì đó là một dấu vết giả.
     approved_by_chat: Mapped[str] = mapped_column(String(50), default="")
+    #  ai-CR-054: máy sửa mã đang giữ việc này (dính từ lượt đầu; 0 = hàng đợi cũ / chưa giao).
+    runner_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
 
@@ -241,4 +244,24 @@ class AgentUserKey(Base, AuditMixin):
     key_enc: Mapped[str] = mapped_column(Text, default="")
     key_hint: Mapped[str] = mapped_column(String(8), default="")
     verified_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentRunner(Base, AuditMixin):
+    """Một MÁY SỬA MÃ đã đăng ký (ai-CR-054, D-03): tên máy, chủ máy, mã máy (băm), cờ deploy, nhịp tim.
+
+    Đăng ký/gỡ bằng câu nhắn ở chat đại ca. Mã máy thô chỉ hiện đúng một lần lúc đăng ký; máy ghi vào
+    `.env` runner (`AGENT_RUNNER_NAME` + `AGENT_RUNNER_TOKEN`). Gỡ = `revoked_at`, máy bị từ chối ở lượt kế.
+    """
+
+    __tablename__ = "tab_agent_runner"
+
+    name: Mapped[str] = mapped_column(String(40), index=True)
+    owner_user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), default="")
+    can_deploy: Mapped[bool] = mapped_column(Boolean, default=False)
+    note: Mapped[str] = mapped_column(String(255), default="")
+    version: Mapped[str] = mapped_column(String(50), default="")
+    registered_by_chat: Mapped[str] = mapped_column(String(50), default="")
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)

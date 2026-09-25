@@ -185,11 +185,25 @@ def approve_gate(task: AgentTask) -> str:
     return ""
 
 
+def queue_for(task_id: int) -> str:
+    """Hàng đợi của MÁY giữ việc này (ai-CR-054): dính máy cũ, không thì chọn máy đang bật; sổ máy trống thì
+    hàng đợi cũ `agent_code`. Mở session riêng vì các hàm dispatch không cầm `db`."""
+    from app.core.database import SessionLocal
+
+    from . import runners
+
+    db = SessionLocal()
+    try:
+        return runners.queue_for_task(db, task_id)
+    finally:
+        db.close()
+
+
 def dispatch(task_id: int) -> None:
-    """Đưa việc vào hàng đợi `agent_code`. Import muộn để poller không kéo Celery lúc nạp."""
+    """Đưa việc vào hàng đợi của máy sửa mã. Import muộn để poller không kéo Celery lúc nạp."""
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.code_task", args=[task_id], queue="agent_code")
+    celery_app.send_task("agent.code_task", args=[task_id], queue=queue_for(task_id))
 
 
 # ---------------------------------------------------------------------------
@@ -534,7 +548,7 @@ def run_claude_fix(worktree: str, brief: str, *, session_id: str, timeout: int) 
 def dispatch_fix_gate(task_id: int) -> None:
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.code_task", args=[task_id], kwargs={"fix_gate": True}, queue="agent_code")
+    celery_app.send_task("agent.code_task", args=[task_id], kwargs={"fix_gate": True}, queue=queue_for(task_id))
 
 
 _CONTINUE_BRIEF = (
@@ -1053,7 +1067,7 @@ def dispatch_publish(task_id: int) -> None:
     """Nút «Gửi link PR để anh tự merge» trên thẻ kết quả: việc vào hàng đợi của runner (chỗ có worktree)."""
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.publish_task", args=[task_id], queue="agent_code")
+    celery_app.send_task("agent.publish_task", args=[task_id], queue=queue_for(task_id))
 
 
 def publish_existing(db: Session, task: AgentTask) -> dict:
@@ -1168,7 +1182,7 @@ def dispatch_question(task_id: int, message_id: int) -> None:
     """Câu hỏi về bản vá vào hàng đợi của runner (chỗ có worktree + phiên)."""
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.ask_task", args=[task_id, message_id], queue="agent_code")
+    celery_app.send_task("agent.ask_task", args=[task_id, message_id], queue=queue_for(task_id))
 
 
 def answer_patch_question(db: Session, task: AgentTask, question: str) -> str:
@@ -1300,7 +1314,7 @@ def resumable_session(db: Session, task: AgentTask) -> str:
 def dispatch_continue(task_id: int) -> None:
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.code_task", args=[task_id], kwargs={"resume": True}, queue="agent_code")
+    celery_app.send_task("agent.code_task", args=[task_id], kwargs={"resume": True}, queue=queue_for(task_id))
 
 
 def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: str, session_id: str,
@@ -2138,13 +2152,13 @@ def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[s
 def dispatch_deploy(task_id: int, run_id: int) -> None:
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.deploy_task", args=[task_id, run_id], queue="agent_code")
+    celery_app.send_task("agent.deploy_task", args=[task_id, run_id], queue=queue_for(task_id))
 
 
 def dispatch_revert(task_id: int, run_id: int) -> None:
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.revert_task", args=[task_id, run_id], queue="agent_code")
+    celery_app.send_task("agent.revert_task", args=[task_id, run_id], queue=queue_for(task_id))
 
 
 # ---------------------------------------------------------------------------
@@ -2156,7 +2170,7 @@ def dispatch_revert(task_id: int, run_id: int) -> None:
 def dispatch_cleanup(task_id: int) -> None:
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.cleanup_task", args=[task_id], queue="agent_code")
+    celery_app.send_task("agent.cleanup_task", args=[task_id], queue=queue_for(task_id))
 
 
 def cleanup_task_branch(db: Session, task: AgentTask) -> dict:
@@ -2350,7 +2364,7 @@ def scan_message_for(task: AgentTask) -> str:
 def dispatch_scan(task_id: int) -> None:
     from app.core.celery_app import celery_app
 
-    celery_app.send_task("agent.scan_task", args=[task_id], queue="agent_code")
+    celery_app.send_task("agent.scan_task", args=[task_id], queue=queue_for(task_id))
 
 
 def scan_task(db: Session, task: AgentTask) -> dict:

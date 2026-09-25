@@ -44,6 +44,79 @@ def _off() -> dict | None:
     return None
 
 
+# ---------------------------------------------------------------------------
+# Máy sửa mã tách rời (ai-CR-054)
+# ---------------------------------------------------------------------------
+@celery_app.task(name="agent.send_telegram", acks_late=False)
+def send_telegram_task(method: str, payload: dict) -> dict:
+    """Gửi HỘ một lượt Bot API cho máy sửa mã không giữ token (chạy ở worker của bot)."""
+    if not settings.AGENT_TELEGRAM_BOT_TOKEN:
+        return {"status": "skipped", "reason": "worker này cũng không có token"}
+    try:
+        result = telegram._call(method, payload)
+    except telegram.TelegramError as e:
+        log.warning("agent_hub: gửi hộ Telegram hỏng: %s", e)
+        return {"status": "error", "reason": str(e)[:300]}
+    return {"status": "success", "message_id": int(result.get("message_id") or 0)}
+
+
+def _runner_guard(db, task: AgentTask | None, *, deploy: bool = False) -> dict | None:
+    """Máy tự xưng tên + mã máy TRƯỚC khi làm việc; sai hoặc đã bị gỡ thì trả dict lỗi và KHÔNG làm.
+    Máy chưa đăng ký tên (phase 0/1: bot và runner cùng máy) thì không kiểm."""
+    from . import runners
+
+    if not settings.AGENT_RUNNER_NAME:
+        return None
+    me = runners.authenticate(db, settings.AGENT_RUNNER_NAME, settings.AGENT_RUNNER_TOKEN)
+    if me is None:
+        reason = f"máy «{settings.AGENT_RUNNER_NAME}» không có trong sổ máy hoặc đã bị gỡ"
+    elif deploy and not me.can_deploy:
+        reason = f"máy «{me.name}» không được deploy dev (đại ca nhắn «cho máy {me.name} được deploy» để mở)"
+    else:
+        return None
+    log.warning("agent_hub: từ chối việc: %s", reason)
+    if task is not None:
+        service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+                      f"<b>{telegram.esc(task.code)}</b>: {telegram.esc(reason)}.", task_id=task.id)
+        db.commit()
+    return {"status": "refused", "reason": reason}
+
+
+def _start_heartbeat() -> None:
+    """Máy sửa mã ghi «tôi còn sống» mỗi 30 giây (ai-CR-054). Chỉ chạy khi có tên máy."""
+    import threading
+    import time
+
+    from . import runners
+
+    def loop() -> None:
+        while True:
+            db = SessionLocal()
+            try:
+                if runners.beat(db, settings.AGENT_RUNNER_NAME, settings.AGENT_RUNNER_TOKEN,
+                                version=settings.AGENT_BASE_BRANCH) is None:
+                    log.warning("agent_hub: nhịp tim bị từ chối — máy «%s» chưa đăng ký hoặc đã gỡ",
+                                settings.AGENT_RUNNER_NAME)
+            except Exception:  # noqa: BLE001 — mất DB vài nhịp không được giết vòng
+                log.exception("agent_hub: nhịp tim hỏng")
+            finally:
+                db.close()
+            time.sleep(runners.HEARTBEAT_SEC)
+
+    threading.Thread(target=loop, name="agent-runner-heartbeat", daemon=True).start()
+
+
+try:
+    from celery.signals import worker_ready
+
+    @worker_ready.connect
+    def _on_worker_ready(**_kw) -> None:
+        if settings.AGENT_RUNNER_NAME:
+            _start_heartbeat()
+except ImportError:  # pragma: no cover
+    pass
+
+
 @celery_app.task(name="agent.poll_telegram")
 def poll_telegram_task() -> dict:
     """Kéo tin Telegram. Chạy mỗi 10 giây — CHỈ khi không có `agent-poller` (ai-CR-008).
@@ -131,6 +204,8 @@ def code_task(task_id: int, resume: bool = False, fix_gate: bool = False) -> dic
         if task is None or task.status != ST_CODE:
             return {"status": "skipped",
                     "reason": f"việc {task_id} không ở trạm CODE (đã bỏ hoặc bị giao trùng)"}
+        if (refused := _runner_guard(db, task)) is not None:
+            return refused
         result = coder.run_code_task(db, task, resume=resume, fix_gate=fix_gate)
         db.commit()
         return {"status": "success", **result}
@@ -239,6 +314,10 @@ def _run_deploy_stage(task_id: int, run_id: int, *, stage: int, label: str, fn) 
             coder._close_run(run, status=RUN_ERROR, error="việc đã đóng trước khi chạy")
             db.commit()
             return {"status": "skipped", "reason": f"việc {task_id} đã đóng"}
+        if (refused := _runner_guard(db, task, deploy=True)) is not None:
+            coder._close_run(run, status=RUN_ERROR, error=refused["reason"])
+            db.commit()
+            return refused
         if not settings.AGENT_CODER_ENABLED or not settings.AGENT_DEPLOY_ENABLED:
             coder._close_run(run, status=RUN_ERROR, error="AGENT_CODER_ENABLED/AGENT_DEPLOY_ENABLED tắt")
             service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,

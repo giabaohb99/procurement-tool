@@ -248,6 +248,14 @@ class Settings(BaseSettings):
     # (`/proc/<pid>/environ` chứa khóa Telegram, Gemini, DB). Rỗng, hoặc tiến trình cha không
     # phải root (chạy ngoài Docker), thì không hạ.
     AGENT_RUNNER_USER: str = "runner"
+    # ai-CR-054 (D-03..05): máy sửa mã tách rời. Máy tự xưng bằng tên + mã máy (dòng trong `tab_agent_runner`,
+    # đại ca đăng ký bằng câu nhắn). Trống = phase 0/1: bot và runner cùng máy, hàng đợi cũ `agent_code`.
+    AGENT_RUNNER_NAME: str = ""
+    AGENT_RUNNER_TOKEN: str = ""
+    # Máy «đang bật» = có nhịp tim trong chừng này giây (runner ghi mỗi 30 giây).
+    AGENT_RUNNER_ONLINE_SEC: int = 120
+    # Không máy nào bật thì vé đi vào máy này (thường là máy đại ca); trống = máy liên lạc gần nhất.
+    AGENT_DEFAULT_RUNNER: str = ""
     # Hết giờ thì giết tiến trình, ghi FAILED, nhắn Telegram; không tự thử lại (§8 thiết kế).
     AGENT_RUN_TIMEOUT_SEC: int = 1800
     # Trần số tệp một task được đụng (luật C1). Vượt = dừng, không commit, leo thang.

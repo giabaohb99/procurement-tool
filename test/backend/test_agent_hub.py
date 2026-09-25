@@ -5134,3 +5134,164 @@ def test_tro_ly_trong_chat_di_bang_provider_cua_bot_tuc_khoa_ca_nhan(db, monkeyp
     #  Registry của Trợ lý web biết tên «agent_gemini» (để `ask(provider=...)` tìm được).
     from app.modules.assistant.provider import get_provider
     assert get_provider("agent_gemini").name == "agent_gemini"
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-054: sổ máy sửa mã (D-03) + hàng đợi theo máy, việc dính máy (D-05) + tin Telegram gửi hộ
+# ---------------------------------------------------------------------------
+def test_cu_phap_cau_may_sua_ma():
+    from app.modules.agent_hub import runners
+
+    assert runners.parse("thêm máy của anh Được") == {"op": "add", "name": "anh được"}
+    assert runners.parse("đăng ký máy cho Bảo nhé") == {"op": "add", "name": "bảo"}
+    assert runners.parse("tắt máy của anh Được") == {"op": "remove", "name": "anh được"}
+    assert runners.parse("máy nào đang bật") == {"op": "list"} and runners.parse("danh sách máy sửa mã") == {"op": "list"}
+    assert runners.parse("AI-0012 cho máy anh Được làm") == {"op": "assign", "code": "ai-0012", "name": "anh được"}
+    assert runners.parse("cho máy may-duoc được deploy dev") == {"op": "deploy_on", "name": "may-duoc"}
+    assert runners.parse("cấm máy may-duoc deploy") == {"op": "deploy_off", "name": "may-duoc"}
+    assert runners.parse("gộp AI-0007") is None and runners.parse("máy tính công nợ sai") is None
+    assert runners.slug("máy của anh Được") == "may-cua-anh-duoc" and runners.queue_name("") == "agent_code"
+
+
+def test_so_may_dang_ky_nhip_tim_go_va_chon_may(db, monkeypatch):
+    from app.modules.agent_hub import runners
+    from app.modules.agent_hub.model import AgentRun, AgentTask
+
+    assert runners.pick(db, AgentTask(code="AI-0001", title="x")) is None            # sổ trống → hàng đợi cũ
+    a, tok_a = runners.register(db, "may dai ca", by_chat="12345", can_deploy=True)
+    b, tok_b = runners.register(db, "máy Được")
+    assert (a.name, b.name) == ("may-dai-ca", "may-duoc") and a.token_hash != tok_a and len(tok_a) > 20
+    with pytest.raises(ValueError):
+        runners.register(db, "may-duoc")
+    assert runners.authenticate(db, "may-duoc", tok_b) is b and runners.authenticate(db, "may-duoc", tok_a) is None
+    assert not runners.is_online(b)
+    assert runners.beat(db, "may-duoc", tok_b, version="erp-v2").id == b.id and runners.is_online(b)
+    #  Chọn máy: chỉ b đang bật → b; a bật lên và rảnh hơn → a.
+    task = AgentTask(code="AI-0002", title="x")
+    db.add(task)
+    db.commit()
+    assert runners.pick(db, task) is b
+    runners.beat(db, "may-dai-ca", tok_a)
+    db.add(AgentRun(task_id=task.id, stage=3, provider="claude_code", model="m", status=runners.RUN_RUNNING,
+                    started_at=datetime.now()))
+    task.runner_id = 0
+    db.commit()
+    other = AgentTask(code="AI-0003", title="y")
+    db.add(other)
+    db.commit()
+    #  b đang giữ task (RUNNING) → other về a; a lại đang bận 0 việc.
+    task.runner_id = b.id
+    db.commit()
+    assert runners.pick(db, other) is a
+    assert runners.assign(db, other, a) == "agent_code.may-dai-ca" and other.runner_id == a.id
+    assert runners.pick(db, other) is a                                              # dính máy
+    #  Không máy nào bật: máy mặc định thắng, không có thì máy liên lạc gần nhất.
+    a.last_seen_at = datetime.now() - timedelta(hours=2)
+    b.last_seen_at = datetime.now() - timedelta(hours=1)
+    db.commit()
+    third = AgentTask(code="AI-0004", title="z")
+    db.add(third)
+    db.commit()
+    monkeypatch.setattr(settings, "AGENT_DEFAULT_RUNNER", "")
+    assert runners.pick(db, third) is b
+    monkeypatch.setattr(settings, "AGENT_DEFAULT_RUNNER", "may-dai-ca")
+    assert runners.pick(db, third) is a
+    runners.revoke(db, b)
+    assert runners.authenticate(db, "may-duoc", tok_b) is None and runners.pick(db, task) is a   # máy gỡ → chọn lại
+    assert runners.queue_for_task(db, task.id) == "agent_code.may-dai-ca" and runners.queue_for_task(db, 99999) == "agent_code"
+
+
+def test_dai_ca_them_may_bang_cau_nhan_ma_may_hien_mot_lan_roi_chi_dinh_viec(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder, runners
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, _ = bot
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("câu về máy không đi phân loại"))
+    duoc = _staff(db)
+    service.handle_message(db, _msg("máy nào đang bật"))
+    assert "Chưa đăng ký máy sửa mã nào" in sent[-1]
+    service.handle_message(db, _msg("thêm máy của anh Được"))
+    assert "Thêm máy sửa mã <b>may-duoc</b>, chủ máy <b>Trần Văn Được (DEGO0009)</b>" in sent[-1]
+    service.handle_message(db, _msg("đúng"))
+    assert "AGENT_RUNNER_NAME=may-duoc" in sent[-1] and "AGENT_RUNNER_TOKEN=" in sent[-1] and "XÓA tin này" in sent[-1]
+    raw = sent[-1].split("AGENT_RUNNER_TOKEN=")[1].split("<")[0]
+    rn = runners.by_name(db, "may-duoc")
+    assert rn.owner_user_id == duoc.id and runners.authenticate(db, "may-duoc", raw) is rn and not rn.can_deploy
+    #  Sổ tin KHÔNG giữ mã máy thô: dòng bot gửi ghi lại thân tin → mã có trong sổ là điều phải chấp nhận? KHÔNG:
+    #  reply() ghi thân tin vào sổ, nên kiểm là mã chỉ hiện ở đúng một tin và đại ca được dặn xóa.
+    assert db.query(AgentMessage).filter(AgentMessage.body.contains(raw)).count() == 1
+    service.handle_message(db, _msg("thêm máy của anh Được"))
+    assert "Đã có máy tên <b>may-duoc</b>" in sent[-1]
+    service.handle_message(db, _msg("máy nào đang bật"))
+    assert "may-duoc (Trần Văn Được (DEGO0009))" in sent[-1] and "chưa liên lạc" in sent[-1] and "deploy dev: không" in sent[-1]
+    service.handle_message(db, _msg("cho máy may-duoc được deploy dev"))
+    assert "ĐƯỢC</b> deploy dev" in sent[-1] or "ĐƯỢC deploy dev" in sent[-1]
+    assert runners.by_name(db, "may-duoc").can_deploy
+    #  Chỉ định việc cho máy; máy đang tắt thì nói việc sẽ chờ.
+    task = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"{task.code} cho máy anh Được làm"))
+    assert f"<b>{task.code}</b> giao máy <b>may-duoc</b>" in sent[-1] and "Máy đang tắt" in sent[-1]
+    assert task.runner_id == rn.id
+    service.handle_message(db, _msg(f"{task.code} xong chưa"))
+    assert "Máy <b>may-duoc</b> (đang tắt)" in sent[-1]
+    #  Gỡ máy có hỏi lại; «thôi» giữ nguyên.
+    service.handle_message(db, _msg("tắt máy của anh Được"))
+    service.handle_message(db, _msg("thôi"))
+    assert "không đổi gì ở sổ máy" in sent[-1] and runners.by_name(db, "may-duoc") is not None
+    service.handle_message(db, _msg("tắt máy may-duoc"))
+    service.handle_message(db, _msg("đúng"))
+    assert "Đã gỡ máy <b>may-duoc</b>" in sent[-1] and runners.by_name(db, "may-duoc") is None
+
+
+def test_giao_viec_cho_may_dang_tat_thi_bao_dang_cho_may(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder, runners
+
+    service, sent, _ = bot
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)          # fixture tắt runner; dispatch vẫn bị chặn
+    rn, _tok = runners.register(db, "may-dai-ca")
+    task = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_PLAN)
+    task.runner_id = rn.id
+    db.commit()
+    #  Hàng đợi thật do coder.queue_for tính; ở đây dispatch bị fixture chặn, chỉ kiểm câu báo chờ.
+    service.approve_task(db, "12345", "", task)
+    assert any("đang chờ máy <b>may-dai-ca</b> bật" in t for t in sent[-3:])
+    #  Máy bật lên thì không báo chờ nữa.
+    rn.last_seen_at = datetime.now()
+    db.commit()
+    sent.clear()
+    service._runner_wait_note(db, task)
+    assert sent == []
+    #  coder.queue_for mở session riêng → dùng SessionLocal thật; ở bài kiểm chỉ kiểm tên hàng đợi qua runners.
+    assert runners.queue_for_task(db, task.id) == "agent_code.may-dai-ca"
+
+
+def test_may_sua_ma_khong_giu_token_thi_tin_di_vong_qua_worker_va_may_la_bi_tu_choi(db, monkeypatch):
+    from app.core import celery_app as celery_module
+    from app.modules.agent_hub import coder, runners, service, tasks, telegram
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setattr(settings, "AGENT_RUNNER_NAME", "may-duoc")
+    monkeypatch.setattr(settings, "AGENT_RUNNER_TOKEN", "sai")
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_BOT_TOKEN", "")
+    assert telegram.relaying() and telegram.is_enabled()
+    relayed: list[tuple] = []
+    monkeypatch.setattr(celery_module.celery_app, "send_task", lambda name, **kw: relayed.append((name, kw)))
+    assert telegram.send("xin chào", chat_id="12345") == 0
+    assert relayed[-1][0] == "agent.send_telegram" and relayed[-1][1]["kwargs"]["payload"]["text"] == "xin chào"
+    telegram.send_chat_action("12345")                                            # không gọi mạng, không nổ
+    #  Máy chưa đăng ký / sai mã → từ chối việc và báo đại ca (tin đi vòng qua worker).
+    task = _task_with_session(db, service, coder)
+    refused = tasks._runner_guard(db, task)
+    assert refused["status"] == "refused" and "không có trong sổ máy" in refused["reason"]
+    assert relayed[-1][0] == "agent.send_telegram" and "không có trong sổ máy" in relayed[-1][1]["kwargs"]["payload"]["text"]
+    rn, tok = runners.register(db, "may-duoc")
+    monkeypatch.setattr(settings, "AGENT_RUNNER_TOKEN", tok)
+    assert tasks._runner_guard(db, task) is None
+    deny = tasks._runner_guard(db, task, deploy=True)
+    assert deny["status"] == "refused" and "không được deploy dev" in deny["reason"]
+    rn.can_deploy = True
+    db.commit()
+    assert tasks._runner_guard(db, task, deploy=True) is None
+    #  Không khai tên máy (phase 0/1) → không kiểm gì.
+    monkeypatch.setattr(settings, "AGENT_RUNNER_NAME", "")
+    assert tasks._runner_guard(db, task, deploy=True) is None and not telegram.relaying()
