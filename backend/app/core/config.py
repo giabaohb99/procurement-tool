@@ -318,6 +318,9 @@ class Settings(BaseSettings):
     AGENT_LINK_CODE_MINUTES: int = 10
     # Tên bot (không có @) để trang cá nhân dựng link mở thẳng bot; trống thì chỉ hướng dẫn chữ.
     AGENT_TELEGRAM_BOT_USERNAME: str = ""
+    # ai-CR-056: tên bot TỰ XƯNG theo môi trường (máy đại ca «Đậu Đậu», dev «Lạc Lạc»). Tên hiển thị
+    # trên Telegram vẫn đổi ở BotFather; đây chỉ là chữ trong câu bot nói và trong lời nhắc model.
+    AGENT_BOT_NAME: str = "Đậu Đậu"
     # ai-CR-043: tỷ giá TẠM để báo chi phí bot kèm tiền Việt. Chỉ để đọc cho dễ, không phải số kế toán.
     AGENT_USD_VND: int = 26000
     # ai-CR-049: gốc giao diện ERP chứa phiếu bot tạo (link «Mở phiếu»). Trống = FRONTEND_URL. Stack bot

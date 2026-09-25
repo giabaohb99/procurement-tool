@@ -5146,6 +5146,7 @@ def test_cu_phap_cau_may_sua_ma():
     assert runners.parse("đăng ký máy cho Bảo nhé") == {"op": "add", "name": "bảo"}
     assert runners.parse("tắt máy của anh Được") == {"op": "remove", "name": "anh được"}
     assert runners.parse("máy nào đang bật") == {"op": "list"} and runners.parse("danh sách máy sửa mã") == {"op": "list"}
+    assert runners.parse("máy nào đang bậ") == {"op": "list"} and runners.parse("máy nào online") == {"op": "list"}
     assert runners.parse("AI-0012 cho máy anh Được làm") == {"op": "assign", "code": "ai-0012", "name": "anh được"}
     assert runners.parse("cho máy may-duoc được deploy dev") == {"op": "deploy_on", "name": "may-duoc"}
     assert runners.parse("cấm máy may-duoc deploy") == {"op": "deploy_off", "name": "may-duoc"}
