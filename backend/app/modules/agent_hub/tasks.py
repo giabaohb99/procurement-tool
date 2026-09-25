@@ -456,6 +456,24 @@ def pull_tickets_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.fire_reminders")
+def fire_reminders_task() -> dict:
+    """ai-CR-060 (T-10): lời nhắc tới giờ -> nhắn lại đúng chat, mỗi phút."""
+    if (off := _off()) is not None:
+        return off
+    from . import reminders
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "sent": reminders.fire_due(db)}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: gửi lời nhắc hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.forward_bells")
 def forward_bells_task() -> dict:
     """ai-CR-059 (P-01): chuông ERP mới -> Telegram của người đã liên kết, mỗi phút."""

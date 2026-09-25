@@ -5491,3 +5491,99 @@ def test_api_doi_muc_chuong_cua_lien_ket_chinh_minh(db, bot):
         controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=2), user=SimpleNamespace(id=other.id), db=db)
     with pytest.raises(HTTPException):
         controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=9), user=SimpleNamespace(id=lan.id), db=db)
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-060: nhắc việc bằng câu nói (T-10) · ai-CR-061: tin thoại (T-07) · ai-CR-062: trần lượt/ngày (P-02)
+# ---------------------------------------------------------------------------
+def test_nhac_viec_bang_cau_noi_hoi_lai_khi_thieu_gio_va_gui_khi_toi_gio(db, bot, monkeypatch):
+    from datetime import datetime as _dt, timedelta as _td
+
+    from app.modules.agent_hub import chat_link, reminders
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("câu nhắc không đi phân loại"))
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("nhắc anh 2 tiếng nữa gọi nhà cung cấp X"))
+    assert "Được, em nhắc lúc" in sent[-1][1] and "gọi nhà cung cấp X" in sent[-1][1]
+    rows = reminders.open_for_chat(db, "777")
+    assert len(rows) == 1 and rows[0].user_id == lan.id and rows[0].text == "gọi nhà cung cấp X"
+    #  Thiếu giờ → hỏi lại; câu kế là giờ → tạo.
+    service.handle_message(db, _other_msg("nhắc em nộp báo cáo tuần"))
+    assert "lúc mấy giờ" in sent[-1][1]
+    service.handle_message(db, _other_msg("45 phút nữa"))
+    assert "Được, em nhắc lúc" in sent[-1][1] and len(reminders.open_for_chat(db, "777")) == 2
+    service.handle_message(db, _other_msg("nhắc gì"))
+    assert "Lời nhắc đang chờ" in sent[-1][1] and "2. " in sent[-1][1]
+    service.handle_message(db, _other_msg("bỏ nhắc 2"))
+    assert "Đã bỏ lời nhắc" in sent[-1][1] and len(reminders.open_for_chat(db, "777")) == 1
+    #  Tới giờ thì vòng beat gửi đúng chat, một lần.
+    left = reminders.open_for_chat(db, "777")[0]                           # «bỏ nhắc 2» bỏ lời xa nhất (sắp theo giờ)
+    left.due_at = _dt.utcnow() - _td(minutes=1)
+    db.commit()
+    assert reminders.fire_due(db) == 1 and sent[-1][0] == "777" and f"<b>Nhắc:</b> {left.text}" in sent[-1][1]
+    assert reminders.fire_due(db) == 0 and db.query(AgentMessage).filter_by(action=service.ACT_REMINDER).count() == 1
+    assert not asked
+    #  Không cần khóa Gemini.
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "")
+
+
+def test_tin_thoai_chep_thanh_chu_roi_di_nhu_tin_chu(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link
+    from app.modules.agent_hub.model import AgentRun
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    _fake_intent(monkeypatch, service, "hoi")
+    monkeypatch.setattr(service.telegram, "download_file", lambda fid, *, max_bytes: (b"OGG", "voice/x.oga"))
+    monkeypatch.setattr(service.manager, "transcribe", lambda data, mime: (
+        "ba đơn mua hàng gần nhất", ChatResult(text="", provider="agent_gemini", model="x", input_tokens=5, output_tokens=2)))
+    voice = {"chat": {"id": "777", "type": "private"}, "message_id": 8, "voice": {"file_id": "V1", "mime_type": "audio/ogg"},
+             "from": {"first_name": "Lan"}}
+    #  Chat lạ: không chép (không tốn tiền), không trả lời.
+    service.handle_message(db, voice)
+    assert sent == [] and not asked
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, voice)
+    assert any("Em nghe: «ba đơn mua hàng gần nhất»" in t for _c, t in sent)
+    assert asked == ["ba đơn mua hàng gần nhất"]
+    run = db.query(AgentRun).filter_by(stage=service.STAGE_VOICE).one()
+    assert run.owner_id == lan.id and run.input_tokens == 5
+    #  Chưa có khóa → nói rõ, không chép.
+    from app.modules.agent_hub import user_keys
+    user_keys.revoke(db, lan.id)
+    service.handle_message(db, voice)
+    assert "chưa gắn khóa Gemini" in sent[-1][1] and asked == ["ba đơn mua hàng gần nhất"]
+
+
+def test_tran_luot_ai_moi_ngay_cho_chat_thuong(db, bot, monkeypatch):
+    from datetime import datetime as _dt
+
+    from app.modules.agent_hub import chat_link
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    _fake_intent(monkeypatch, service, "hoi")
+    monkeypatch.setattr(settings, "AGENT_USER_DAILY_TURNS", 3)
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    for _ in range(3):
+        db.add(AgentRun(task_id=0, stage=service.STAGE_INTENT, provider="agent_gemini", model="m", status=2,
+                        started_at=_dt.utcnow(), owner_id=lan.id))
+    db.commit()
+    service.handle_message(db, _other_msg("3 đơn mua hàng gần nhất"))
+    assert "chạm trần 3 lượt/ngày" in sent[-1][1] and not asked
+    service.handle_message(db, _other_msg("nhắc anh 15h gọi NCC"))       # không cần AI → vẫn chạy
+    assert "Được, em nhắc lúc" in sent[-1][1]
+    #  Chat đại ca không bị trần.
+    service.handle_message(db, _msg("3 đơn mua hàng gần nhất"))
+    assert asked == ["3 đơn mua hàng gần nhất"]

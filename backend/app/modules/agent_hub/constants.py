@@ -150,6 +150,8 @@ STAGE_SCAN = 25
 #  Nghiên cứu (ai-CR-044): một lượt tìm web / kiểm chứng / hỏi tài liệu nội bộ. artifact giữ `chat_id`,
 #  `mode`, `question`, `text`, `sources` — để «/word» xuất lại đúng bản của chat đó.
 STAGE_RESEARCH = 26
+#  Chép tin thoại thành chữ (ai-CR-061): một lượt Gemini nghe audio, trả chữ.
+STAGE_VOICE = 27
 #  Nhãn bước cho màn Việc của bot (ai-CR-036).
 STAGE_LABELS = {
     STAGE_TRIAGE: "Gom việc",
@@ -158,6 +160,7 @@ STAGE_LABELS = {
     STAGE_INTENT: "Đọc ý định",
     STAGE_ASK: "Hỏi thêm về bản vá",
     STAGE_DEPLOY: "Gộp / deploy dev",
+    STAGE_VOICE: "Chép tin thoại",
     STAGE_REVERT: "Thu hồi",
     STAGE_RULE: "Đề xuất ghi sổ",
     STAGE_SCAN: "Rà soát mã",
@@ -222,6 +225,11 @@ ACT_GRANT_DROPPED = "bo_cap_quyen"
 ACT_DENIED = "tu_choi"
 #  ai-CR-059: tin bot gửi = một dòng chuông ERP chuyển tiếp (P-01).
 ACT_BELL = "chuong"
+#  ai-CR-060: tin bot gửi = lời nhắc tới giờ (T-10); thẻ hỏi lại «lúc mấy giờ?» giữ nội dung nhắc trong body.
+ACT_REMINDER = "nhac"
+ACT_REMIND_WAIT = "cho_gio_nhac"
+#  ai-CR-061: tin thoại đã chép thành chữ (T-07).
+ACT_VOICE = "thoai"
 #  ai-CR-054: thẻ hỏi lại «thêm / tắt máy sửa mã?» của đại ca; `body` = JSON {op, name, owner_user_id, runner_id}.
 ACT_RUNNER_WAIT = "cho_may"
 ACT_RUNNER_DONE = "da_may"
@@ -229,7 +237,7 @@ ACT_RUNNER_DROPPED = "bo_may"
 NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
                  ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED,
                  ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED,
-                 ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED, ACT_BELL)
+                 ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED, ACT_BELL, ACT_REMINDER, ACT_REMIND_WAIT)
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token

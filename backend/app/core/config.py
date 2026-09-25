@@ -328,6 +328,9 @@ class Settings(BaseSettings):
     # trên Telegram vẫn đổi ở BotFather; đây chỉ là chữ trong câu bot nói và trong lời nhắc model.
     AGENT_BOT_NAME: str = "Đậu Đậu"
     # ai-CR-043: tỷ giá TẠM để báo chi phí bot kèm tiền Việt. Chỉ để đọc cho dễ, không phải số kế toán.
+    # ai-CR-062 (P-02): trần lượt gọi model mỗi ngày cho MỘT chat thường (không áp cho chat đại ca).
+    # Khóa Gemini là của từng người, nhưng bot vẫn chặn vòng lặp / spam làm cạn khóa của họ. 0 = không chặn.
+    AGENT_USER_DAILY_TURNS: int = 200
     AGENT_USD_VND: int = 26000
     # ai-CR-049: gốc giao diện ERP chứa phiếu bot tạo (link «Mở phiếu»). Trống = FRONTEND_URL. Stack bot
     # local tạo phiếu vào DB riêng nên phải trỏ giao diện của stack đó (agent-erp, cổng 8084).

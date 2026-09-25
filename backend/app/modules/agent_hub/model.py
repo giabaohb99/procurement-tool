@@ -269,3 +269,16 @@ class AgentRunner(Base, AuditMixin):
     registered_by_chat: Mapped[str] = mapped_column(String(50), default="")
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentReminder(Base, AuditMixin):
+    """Lời nhắc đặt bằng câu nói (ai-CR-060, T-10): tới `due_at` (UTC) thì bot nhắn lại đúng `chat_id`."""
+
+    __tablename__ = "tab_agent_reminder"
+
+    chat_id: Mapped[str] = mapped_column(String(50), default="", index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    text: Mapped[str] = mapped_column(String(500), default="")
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)

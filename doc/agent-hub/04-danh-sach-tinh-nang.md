@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 21** (25/09/2026): P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 24** (25/09/2026): T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -50,7 +50,7 @@ một token Telegram riêng.
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
 | P-01 | **XONG 25/09/2026 (ai-CR-059).** Đẩy thông báo ERP (chuông) sang Telegram của từng người đã đăng nhập: phiếu chờ họ duyệt, việc giao cho họ | M | Mặc định «việc của tôi», mỗi liên kết tự đổi (tắt / tất cả) bằng câu nhắn hoặc ở Trang cá nhân |
-| P-02 | Trần lượt hỏi / chi phí theo từng người mỗi ngày | S | Để một người không dùng hết hạn mức Gemini của cả công ty |
+| P-02 | **XONG 25/09/2026 (ai-CR-062).** | Trần lượt hỏi / chi phí theo từng người mỗi ngày | S | Để một người không dùng hết hạn mức Gemini của cả công ty |
 
 ## Nhóm M — Trợ lý mở: MCP, AI tự chọn, nhiều kênh (thêm 24/09/2026)
 
@@ -130,10 +130,10 @@ Thứ tự làm phase 2: **(a)** D-01 + D-02 (xong 25/09) → **(b)** D-03 + D-0
 | T-04 | Gỡ băng từng tệp, nối theo thứ tự thời gian | M | |
 | T-05 | Mẫu biên bản là dữ liệu (chính thức · gạch đầu dòng · danh sách việc · đầy đủ theo giờ), chọn mẫu bằng chữ | M | Thêm mẫu không phải sửa mã |
 | T-06 | Xuất Word theo mẫu DEGO lên Drive, gửi bản tóm tắt ngay trong chat kèm link | M | |
-| T-07 | Tin thoại ngắn thành lời nhắc hoặc việc | S | Cần N-02 |
+| T-07 | **XONG 25/09/2026 (ai-CR-061).** | Tin thoại ngắn thành lời nhắc hoặc việc | S | Cần N-02 |
 | T-08 | Bản tin 8h sáng: lịch hôm nay, việc đến hạn, phiếu chờ đại ca duyệt | M | Cần N-03 |
 | T-09 | Nhắc trước mỗi cuộc họp 15 phút | S | Cần N-03 |
-| T-10 | «Nhắc anh 3h gọi nhà cung cấp X»: tạo lời nhắc bằng câu nói | S | Dùng bộ hẹn giờ và phần hiểu giờ sẵn có |
+| T-10 | **XONG 25/09/2026 (ai-CR-060).** | «Nhắc anh 3h gọi nhà cung cấp X»: tạo lời nhắc bằng câu nói | S | Dùng bộ hẹn giờ và phần hiểu giờ sẵn có |
 | T-11 | Tạo lịch Google Calendar bằng câu nói, hỏi lại trước khi tạo | S | Cần N-03 |
 | T-12 | Việc rút ra từ biên bản thành lời nhắc và việc trong phân hệ Công việc của ERP | M | Chỗ hai cụm cộng lại đáng giá nhất |
 

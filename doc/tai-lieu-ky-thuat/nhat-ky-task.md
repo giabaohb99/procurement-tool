@@ -8310,3 +8310,41 @@ Mã nguồn: backend/app/modules/agent_hub/bells.py · service.py · tasks.py ·
 model.py · backend/app/core/celery_app.py · backend/migrations/versions/a1c4e7f9b2d6_* ·
 frontend-v2/src/app/components/profile/profile-telegram-tab.tsx · modules/system/hooks/use-telegram-links.ts ·
 modules/system/api/agent-hub-api.ts
+
+## ai-CR-060 | Nhắc việc bằng câu nói
+- status: xong
+- date: 2026-09-25
+Phase 3, việc T-10. Ai đã đăng nhập bot nhắn «nhắc anh 15h gọi nhà cung cấp X» hay «30 phút nữa nhắc
+em nộp báo cáo» là bot ghi một lời nhắc và tới giờ nhắn lại đúng chat đó. Giờ đọc bằng bộ đọc giờ
+sẵn có của hẹn gộp và deploy; thiếu giờ thì bot hỏi lại một câu và câu trả lời kế tiếp là giờ. Hỏi
+«nhắc gì» để xem, «bỏ nhắc 2» hay «bỏ hết nhắc» để bỏ. Vòng nền mỗi phút gửi lời nhắc tới giờ.
+Không tốn lượt model.
+
+Kiểm: một bài mới, cả tệp test bot 231 bài xanh; migration đã chạy local.
+
+Mã nguồn: backend/app/modules/agent_hub/reminders.py · service.py · tasks.py · constants.py · model.py ·
+backend/app/core/celery_app.py · backend/migrations/versions/b7e2f4c9d1a5_*
+
+## ai-CR-061 | Tin thoại chép thành chữ rồi xử lý như tin chữ
+- status: xong
+- date: 2026-09-25
+Phase 3, việc T-07. Gửi tin thoại cho bot là bot tải về, chép thành chữ bằng một lượt Gemini với khóa
+của chính người đó, nhắn lại «Em nghe: …» rồi xử lý câu đó y như gõ chữ: hỏi trợ lý, giao việc, đặt
+lời nhắc. Chat lạ không được chép để không tốn tiền; chưa gắn khóa thì bot nói rõ. Lượt chép ghi sổ
+chi phí theo người.
+
+Kiểm: một bài mới (cùng lượt chạy 231 bài xanh).
+
+Mã nguồn: backend/app/modules/agent_hub/manager.py · service.py · constants.py
+
+## ai-CR-062 | Trần lượt AI mỗi ngày cho chat thường
+- status: xong
+- date: 2026-09-25
+Phase 3, việc P-02. Khóa Gemini là của từng người, nhưng bot vẫn chặn vòng lặp hay gửi dồn làm cạn khóa
+của họ: một chat thường quá hai trăm lượt model trong ngày (đếm theo chủ khóa, mốc nửa đêm giờ Việt
+Nam) thì bot dừng gọi AI và nói rõ; việc không cần AI vẫn chạy; chat của đại ca không bị trần. Đổi
+trần bằng biến cấu hình.
+
+Kiểm: một bài mới (cùng lượt chạy 231 bài xanh).
+
+Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/service.py
