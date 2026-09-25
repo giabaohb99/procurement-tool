@@ -204,9 +204,11 @@ def _approval_signers(db: Session, pr) -> dict:
     Bước 2 `dispatched` (thu mua điều phối)  -> `dispatcher_*` (người bấm nút, giữ cho
     tương thích) và `purchasing_head_*` = TRƯỞNG PHÒNG của người đó (bao-CR-397) -> ô
     "TP/BP mua hàng". Phòng chưa gán trưởng thì `purchasing_head_*` lùi về người điều phối.
-    Công tắc `pr_dispatch_enabled` TẮT: người duyệt bước 1 cũng ghi `dispatched`, nên ô
-    "TP/BP mua hàng" ra trưởng phòng của NGƯỜI DUYỆT — chấp nhận, vì luồng đó không có
-    thu mua nào chạm vào phiếu.
+    Công tắc `pr_dispatch_enabled` TẮT: từ bao-CR-485 sổ chỉ còn MỘT dòng `approved` (không
+    còn dòng `dispatched` dưới tên người duyệt), nên ở đây lùi: người điều phối = người duyệt
+    → ô "TP/BP mua hàng" ra trưởng phòng của NGƯỜI DUYỆT — chấp nhận như trước, vì luồng đó
+    không có thu mua nào chạm vào phiếu. Phiếu cũ (trước CR-485) vẫn có dòng `dispatched` nên
+    đi đường thường.
     """
     from app.core.audit import resolve_actor, resolve_signature
     from app.modules.audit.model import AuditLog
@@ -226,11 +228,20 @@ def _approval_signers(db: Session, pr) -> dict:
     latest: dict[str, int] = {}
     for action, uid in rows:
         latest.setdefault(action, uid)        # dòng đầu = lần duyệt GẦN NHẤT
+    if ("dispatched" in actions and "dispatched" not in latest and latest.get("approved")
+            and not service.dispatch_enabled()):
+        latest["dispatched"] = latest["approved"]     # bao-CR-485, xem docstring
     for action, key in want:
         uid = latest.get(action)
         if uid:
             out[f"{key}_name"] = resolve_actor(db, uid)
             out[f"{key}_signature"] = resolve_signature(db, uid)
+    # bao-CR-490: có cột «Trưởng phòng phê duyệt» thì ô «TP/BP đề xuất» tra theo NHÂN SỰ đó
+    # (khớp đúng tên in), nhật ký chỉ còn là đường lùi cho phiếu cũ.
+    from app.core.print_signers import person_block
+    stored = person_block(db, int(getattr(pr, "approver_employee_id", 0) or 0))
+    if stored["name"] and pr.status in _AFTER_APPROVE:
+        out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
     dispatcher_uid = latest.get("dispatched")
     if dispatcher_uid:
         head_name, head_sign = _purchasing_head(db, dispatcher_uid)
@@ -331,6 +342,9 @@ def _out(db: Session, pr, user=None) -> dict:
     # bao-CR-480: tên phòng xử lý đi kèm phiếu — màn hình không cần quyền đọc danh mục phòng
     # ban mới hiện được tên (trước đây người thiếu quyền chỉ thấy «Phòng #5»).
     d["handler_dept_name"] = service.handler_dept_name_of(db, pr.handler_dept_id)
+    # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
+    from app.core.print_signers import approver_fields
+    d.update(approver_fields(db, pr))
     # Task 4: NCC 2 cụm. Cụm 'req' (bộ phận đề xuất) MỌI người xem/sửa được — sửa bug người
     # yêu cầu không nhập nổi NCC của chính mình. Cụm 'pur' (khảo sát/thu mua) cần supplier.read
     # để xem, supplier.write để sửa.
@@ -612,6 +626,19 @@ def dept_head_candidates_meta(department: str = "", company_id: int = 0, db: Ses
     Phải khai TRƯỚC `/{pid}` nếu không FastAPI nuốt "meta" thành pid.
     """
     return success({"items": service.dept_head_candidates_by_department(db, department, company_id)})
+
+
+@router.get("/{pid}/assignable-staff")
+def assignable_staff_(pid: int, db: Session = Depends(get_db),
+                      user=Depends(require("purchase_request", "read"))):
+    """bao-CR-486 — NSTM chọn được cho phiếu này: đi theo ô «Phòng xử lý» (xem
+    `category_assignee.service.assignable_staff`). Ô chọn ở màn chi tiết đọc từ đây thay vì lọc
+    danh mục nhân sự theo tên phòng."""
+    from app.modules.category_assignee.service import assignable_staff
+    pr = _in_scope(db, pid, user, "read")
+    return success({"items": [{"id": e.id, "code": e.code, "full_name": e.full_name,
+                               "department_id": int(e.department_id or 0)}
+                              for e in assignable_staff(db, pr)]})
 
 
 @router.get("/{pid}/dept-head-candidates")
@@ -936,19 +963,28 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     if not _in_approve_scope(db, user, pid):
         raise HTTPException(403, "Ngoài phạm vi được phép duyệt")
     # CR-071 — KHÔNG chặn theo `head_of_dept_id`: ô TBP chỉ để lưu + in, luật duyệt giữ như cũ.
-    pr = service.set_status(db, pid, "approved", user.id)
-    if data.assignee_id:
-        pr.assignee_id = data.assignee_id
-        db.commit()
     # CR-034: mặc định KHÔNG tự động phân bổ NSTM ở đây — phiếu dừng ở "Đã duyệt", chờ Quản lý/Admin
     # thu mua duyệt lần 2 (/dispatch). Nếu công tắc `pr_dispatch_enabled` bị TẮT thì chạy luôn bước
     # điều phối ngay tại đây (luồng cũ: duyệt phát là có nhân sự phụ trách).
+    # bao-CR-485: đường công tắc TẮT ghi sổ ĐÚNG MỘT dòng «Duyệt» của trưởng phòng (kèm ghi chú
+    # hệ thống tự phân bổ) — trước đây ghi thêm dòng «Điều phối» dưới tên họ, đọc như thể trưởng
+    # phòng bấm Điều phối, một việc họ không có quyền.
+    auto_dispatch = not service.dispatch_enabled()
+    pr = service.set_status(db, pid, "approved", user.id, audit=not auto_dispatch)
+    # bao-CR-490: ghi nhân sự vừa duyệt vào «Trưởng phòng phê duyệt».
+    from app.core.print_signers import stamp_approver
+    stamp_approver(db, pr, user.id)
+    db.commit()
+    if data.assignee_id:
+        pr.assignee_id = data.assignee_id
+        db.commit()
     n = blank_count = 0
-    if not service.dispatch_enabled():
+    if auto_dispatch:
         # bao-CR-414: người duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) → chỉ dùng bộ
         # phân công riêng của phòng, không rơi về bộ "Thu mua chung".
         dept_only = approves_only_in_dept_proc(get_perm_profile(db, user), "purchase_request")
-        pr, n, blank_count = service.dispatch_pr(db, pid, user.id, allow_global_assignee=not dept_only)
+        pr, n, blank_count = service.dispatch_pr(db, pid, user.id, allow_global_assignee=not dept_only,
+                                                 audit_action="approved")
         _notify_assigned(db, pr, user, background_tasks)
     trigger_notification(
         db=db,
