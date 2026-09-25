@@ -7834,3 +7834,25 @@ Phần (b2) là gói cài runner tách rời với đường hầm SSH, làm ở
 Mã nguồn: backend/app/modules/agent_hub/runners.py · service.py · coder.py · tasks.py · telegram.py ·
 constants.py · model.py · backend/app/core/config.py · backend/migrations/versions/d5a9c3e7f2b4_* ·
 test/backend/test_agent_hub.py
+
+## ai-CR-055 | Gói cài máy sửa mã tách rời: đường hầm SSH, compose riêng, hướng dẫn
+- status: xong
+- date: 2026-09-25
+Phase 2 phần (b2). Sau khi có sổ máy, cần một gói để bất kỳ máy nào cũng cài được runner và nối
+lên dev mà không mang theo khóa của bot hay của đại ca.
+
+Đã làm. Một, tệp compose riêng với hai container dùng chung không gian mạng: container đường hầm
+giữ hai cổng chuyển tiếp lên dev (MySQL và Redis) bằng khóa SSH riêng của máy, đứt thì tự nối lại;
+container runner nghe hàng đợi mang tên máy, kho nguồn lấy thẳng từ GitHub. Hai, tệp mẫu cấu hình
+cho máy: tên và mã máy do bot cấp, thông tin đường hầm, tài khoản cơ sở dữ liệu riêng chỉ đụng các
+bảng của bot, khóa Claude Code và khóa GitHub của chính chủ máy; cố ý không có chỗ cho token
+Telegram, khóa Gemini hay khóa của đại ca. Ba, tài liệu số 05 hướng dẫn ba phần: chuẩn bị một lần
+trên máy chủ dev (cổng chuyển tiếp Redis, tài khoản MySQL cấp quyền theo từng bảng, dòng khóa SSH
+chỉ được mở cổng không được mở shell), cài trên máy, và cách bot chia việc.
+
+Đã kiểm tệp compose hợp lệ, ảnh đường hầm build được, script báo đúng khi thiếu khóa. Rà máy chủ
+dev chỉ đọc: MySQL đã có cổng chuyển tiếp nội bộ, Redis dev chưa có, sẽ thêm khi đưa bot lên dev.
+Chạy thật từ đầu tới cuối chờ phần (c).
+
+Mã nguồn: docker-compose.runner.yml · docker/Dockerfile.tunnel · docker/tunnel.sh ·
+.env.runner.example · .gitignore · doc/agent-hub/05-may-sua-ma.md

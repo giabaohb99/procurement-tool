@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 18** (25/09/2026): D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 19** (25/09/2026): D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -113,12 +113,12 @@ xem tình trạng việc, ra lệnh trên việc vẫn dùng được vì không
 | D-01 | **XONG 25/09/2026 (ai-CR-053).** **Khóa Gemini cá nhân**: Trang cá nhân → tab «Khóa AI» (web, KHÔNG qua chat vì Telegram giữ lịch sử vĩnh viễn), lưu mã hóa, gắn tài khoản ERP; lưu xong gọi thử một lượt nhỏ báo đúng/sai; nghỉ việc thì xóa cùng lúc khóa phiên (theo CR-400); một khóa dùng cho cả Telegram lẫn Zalo; «tháng này tốn bao nhiêu» tính theo khóa từng người | M | Gộp M-02 + M-07 phần kênh chat, kéo từ phase 3 lên phase 2. Web vẫn khóa công ty |
 | D-02 | **XONG 25/09/2026 (ai-CR-053).** **Bỏ tài khoản chung**: `AGENT_ASSISTANT_USER` để trống trên dev, ai cũng `/dangnhap` kể cả đại ca; chưa đăng nhập thì bot chỉ nhắc cách lấy mã, không lỗi | S | Xóa «biến nguy hiểm nhất» của `01` §9 khỏi dev |
 | D-03 | **XONG 25/09/2026 (ai-CR-054).** **Sổ máy sửa mã** `tab_agent_runner`: tên máy, chủ máy (tài khoản ERP), mã máy (băm), lần liên lạc cuối, cờ được deploy dev. Đăng ký bằng câu nhắn ở chat đại ca giống K-01 («thêm máy của anh Được» → bot phát mã máy một lần, dán vào `.env` runner); gỡ «tắt máy của anh Được» → runner bị từ chối ngay, không build lại. «máy nào đang bật» liệt kê | M | Hai sổ, hai câu hỏi: K-01 = ai được RA LỆNH, D-03 = máy nào được LÀM |
-| D-04 | **Runner tách rời**: chạy trên máy bất kỳ có Docker + Claude Code đăng nhập gói của chủ máy + khóa GitHub/SSH riêng của máy; nối lên dev qua đường hầm SSH, kéo việc từ hàng đợi, ghi kết quả bằng tài khoản MySQL riêng. Việc **dính máy** từ lúc bắt đầu tới hết (worktree, phiên Claude Code, «làm tiếp», «hỏi thêm» đều trên máy đó); máy tắt thì việc chờ, bot nói rõ chờ máy nào | L | Thay đường hầm bằng gọi API ERP có khóa riêng để sau (không chạm DB) |
+| D-04 | **XONG gói 25/09/2026 (ai-CR-055, chạy thật chờ D-06; hướng dẫn `05-may-sua-ma.md`).** **Runner tách rời**: chạy trên máy bất kỳ có Docker + Claude Code đăng nhập gói của chủ máy + khóa GitHub/SSH riêng của máy; nối lên dev qua đường hầm SSH, kéo việc từ hàng đợi, ghi kết quả bằng tài khoản MySQL riêng. Việc **dính máy** từ lúc bắt đầu tới hết (worktree, phiên Claude Code, «làm tiếp», «hỏi thêm» đều trên máy đó); máy tắt thì việc chờ, bot nói rõ chờ máy nào | L | Thay đường hầm bằng gọi API ERP có khóa riêng để sau (không chạm DB) |
 | D-05 | **XONG 25/09/2026 (ai-CR-054).** **Chia việc giữa các máy**: việc mới → máy rảnh và đang bật nhận trước; chỉ định bằng «AI-0012 cho máy anh Được làm»; thẻ kết quả ghi máy nào đã làm | S | Deploy dev: chỉ máy đại ca và máy được bật cờ; máy mới mặc định KHÔNG deploy |
 | D-06 | **Stack bot trên dev**: compose riêng cho poller + api + worker + beat cạnh ERP dev, `.env` trên VPS giữ token Telegram của bot dev (bot mới tạo ở BotFather), `AGENT_TELEGRAM_CHAT_ID` = id chat đại ca (chat riêng: id = id người dùng, bot nào cũng vậy) | M | Gộp phần bot vào `erp-v2`; đại ca tự dán khóa, em chỉ soạn mẫu `.env` |
 | D-07 | **Bot dev tự deploy dev** không cần máy sửa mã: bước deploy chạy ngay trên host dev (hook nhỏ trên host, không cấp docker socket cho container bot) | M | Để sau D-04 chạy ổn; trước đó deploy dev vẫn qua máy đại ca |
 
-Thứ tự làm phase 2: **(a)** D-01 + D-02 (xong 25/09) → **(b)** D-03 + D-04 + D-05 → **(c)** D-06. D-07 để cuối.
+Thứ tự làm phase 2: **(a)** D-01 + D-02 (xong 25/09) → **(b)** D-03 + D-04 + D-05 (xong 25/09) → **(c)** D-06. D-07 để cuối.
 
 ## Nhóm T — Thư ký (biên bản họp, lịch, nhắc việc)
 

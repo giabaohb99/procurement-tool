@@ -1,0 +1,12 @@
+# Đường hầm SSH của MÁY SỬA MÃ tách rời (ai-CR-055): một tiến trình `ssh -N -L` giữ hai cổng
+# 127.0.0.1:3306 (MySQL dev) và 127.0.0.1:6379 (Redis dev) trong không gian mạng dùng chung với
+# container agent-runner. Không có gì khác trong ảnh này — không shell trên VPS, không khóa nào
+# ngoài khóa đường hầm mount chỉ đọc.
+FROM alpine:3.20
+
+RUN apk add --no-cache openssh-client
+
+COPY docker/tunnel.sh /tunnel.sh
+RUN chmod +x /tunnel.sh
+
+CMD ["/tunnel.sh"]
