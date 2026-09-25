@@ -149,6 +149,25 @@ def role_level_cap(profile: dict) -> int:
     return int(FolderAccessLevel.VIEW)
 
 
+def _folders_of_shared_documents(db: Session, profile: dict) -> set[int]:
+    """Id thư mục chứa văn bản mà người này được CHO PHÉP đọc đích danh (và
+    không bị cấm đích danh) — một truy vấn, không kể văn bản thấy nhờ phạm vi
+    vai trò (cái đó đã có luật thư mục riêng ở trên)."""
+    from app.modules.document.access_model import EFFECT_ALLOW, EFFECT_DENY
+    from app.modules.document.access_service import _document_ids
+
+    from .folder_link_model import DocumentFolderLink
+
+    allow = _document_ids(profile, "read", EFFECT_ALLOW)
+    if allow is None:
+        return set()
+    query = db.query(DocumentFolderLink.folder_id).filter(DocumentFolderLink.document_id.in_(allow))
+    deny = _document_ids(profile, "read", EFFECT_DENY)
+    if deny is not None:
+        query = query.filter(DocumentFolderLink.document_id.not_in(deny))
+    return {folder_id for (folder_id,) in query.distinct()}
+
+
 def effective_levels(db: Session, user, profile: dict | None = None) -> dict[int, int]:
     """`{folder_id: mức hiệu lực}` — CHỈ những thư mục người này THẤY được
     (mức ≥ `VIEW`). Đây là hàm DUY NHẤT tính luật ở đầu tệp; mọi nơi khác gọi
@@ -186,6 +205,22 @@ def effective_levels(db: Session, user, profile: dict | None = None) -> dict[int
             #  Trần theo vai trò CHỈ hạ mức, không bao giờ làm mất quyền THẤY
             #  (`cap` luôn ≥ Xem) — xem `role_level_cap`.
             result[f.id] = min(level, cap)
+
+    #  Văn bản được CHIA ĐÍCH DANH → thư mục chứa nó (+ tổ tiên) tự hiện mức
+    #  XEM (đại ca chốt 25/09/2026): chia văn bản cho người ngoài phạm vi thư
+    #  mục thì họ phải lần tới được nó trong cây, chỉ là không thấy văn bản
+    #  khác trong đó — danh sách vẫn lọc bằng `visible_condition` như mọi khi.
+    #  SUY RA mỗi lần tính, không ghi dòng quyền thư mục nào: thu hồi chia sẻ
+    #  là thư mục tự biến mất. Thư mục bị CẤM đích danh vẫn giữ cấm.
+    for folder_id in _folders_of_shared_documents(db, profile):
+        f = by_id.get(folder_id)
+        if f is None:
+            continue
+        chain = _ancestor_chain(f)
+        if any(a in deny_folders for a in chain):
+            continue
+        for ancestor in chain:
+            result.setdefault(ancestor, int(FolderAccessLevel.VIEW))
 
     #  Thư mục NHÓM «Công ty» là LỐI VÀO của thư mục pháp nhân — ai thấy ít
     #  nhất MỘT thư mục pháp nhân thì phải thấy nó, không thì thư mục của họ

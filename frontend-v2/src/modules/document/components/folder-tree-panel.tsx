@@ -163,7 +163,12 @@ export function FolderTreePanel({
           folderId={selectedFolderId}
           folderCompanyId={selectedNode?.company_id}
           canCreateFolder={canCreateHere}
-          canCreateDocument={can('document', 'create')}
+          //  Thêm văn bản vào thư mục cần mức Đóng góp — thư mục chỉ hiện vì
+          //  được chia MỘT văn bản (mức Xem, 25/09/2026) thì không tạo được ở đó.
+          canCreateDocument={
+            can('document', 'create') &&
+            (selectedNode?.my_level ?? 0) >= FOLDER_ACCESS_LEVEL.contribute
+          }
           onCreateFolder={createHere}
         />
       </div>
