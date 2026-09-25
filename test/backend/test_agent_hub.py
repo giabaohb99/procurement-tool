@@ -5222,6 +5222,9 @@ def test_dai_ca_them_may_bang_cau_nhan_ma_may_hien_mot_lan_roi_chi_dinh_viec(db,
     assert db.query(AgentMessage).filter(AgentMessage.body.contains(raw)).count() == 1
     service.handle_message(db, _msg("thêm máy của anh Được"))
     assert "Đã có máy tên <b>may-duoc</b>" in sent[-1]
+    service.handle_message(db, _msg("thêm máy may-dai-ca"))                    # tên đã có tiền tố: giữ nguyên
+    assert "Thêm máy sửa mã <b>may-dai-ca</b>" in sent[-1]
+    service.handle_message(db, _msg("thôi"))
     service.handle_message(db, _msg("máy nào đang bật"))
     assert "may-duoc (Trần Văn Được (DEGO0009))" in sent[-1] and "chưa liên lạc" in sent[-1] and "deploy dev: không" in sent[-1]
     service.handle_message(db, _msg("cho máy may-duoc được deploy dev"))

@@ -51,6 +51,37 @@ ssh <vps> 'cd ~/procurement-tool-dev && docker compose --env-file .env.dev -f do
 # 4. Mục 1.2 (tài khoản MySQL agent_runner) + 1.3 (authorized_keys cho may-dai-ca) bên dưới
 ```
 
+**Tình trạng 25/09/2026:** bước 2 và 3 ĐÃ CHẠY (bot Lạc Lạc `@laclacdethuong_bot` sống trên dev, migration
+`e6b1d4f8a2c7`, `redis-dev-forward` 127.0.0.1:16379, dòng `authorized_keys` cho `may-dai-ca` đã thêm). Dev đang
+chạy mã của `origin/agent-hub-bac-1`; bước 1 (đẩy `erp-v2`) và bước 4 (tài khoản MySQL) do đại ca chạy tay —
+bộ lọc quyền của phiên trợ lý không cho đụng bí mật và nhánh dùng chung:
+
+```bash
+# (1) đẩy erp-v2 để lần deploy dev sau của người khác không mất bot
+git -C "D:/New folder/thuthapykien/procurement-agent-hub" push origin agent-hub-bac-1:erp-v2
+# (4a) trên VPS — tài khoản MySQL agent_runner, database dev là procurement_dev; tự đặt <mật khẩu>
+ssh <vps>  # rồi:
+docker exec -i -e MYSQL_PWD="$(grep ^DB_ROOT_PASSWORD= ~/procurement-tool/.env | cut -d= -f2)" procurement-mysql mysql -uroot <<'SQL'
+CREATE USER IF NOT EXISTS 'agent_runner'@'%' IDENTIFIED BY '<mật khẩu>';
+GRANT SELECT, INSERT, UPDATE ON `procurement_dev`.`tab_agent_task` TO 'agent_runner'@'%';
+GRANT SELECT, INSERT, UPDATE ON `procurement_dev`.`tab_agent_task_item` TO 'agent_runner'@'%';
+GRANT SELECT, INSERT, UPDATE ON `procurement_dev`.`tab_agent_run` TO 'agent_runner'@'%';
+GRANT SELECT, INSERT, UPDATE ON `procurement_dev`.`tab_agent_message` TO 'agent_runner'@'%';
+GRANT SELECT, UPDATE ON `procurement_dev`.`tab_agent_runner` TO 'agent_runner'@'%';
+GRANT SELECT ON `procurement_dev`.`tab_agent_grant` TO 'agent_runner'@'%';
+GRANT SELECT ON `procurement_dev`.`tab_agent_chat_link` TO 'agent_runner'@'%';
+GRANT SELECT ON `procurement_dev`.`tab_agent_user_key` TO 'agent_runner'@'%';
+GRANT SELECT ON `procurement_dev`.`tab_setting` TO 'agent_runner'@'%';
+GRANT SELECT ON `procurement_dev`.`alembic_version` TO 'agent_runner'@'%';
+FLUSH PRIVILEGES;
+SQL
+# (4b) nhắn Lạc Lạc: «thêm máy may-dai-ca» → «đúng» → chép AGENT_RUNNER_TOKEN; rồi «cho máy may-dai-ca được deploy»
+# (4c) máy đại ca: điền 3 dòng còn trống trong procurement-agent-hub/.env.runner
+#      (AGENT_RUNNER_TOKEN, DB_PASSWORD = <mật khẩu> ở trên, JWT_SECRET = giá trị trong .env.dev trên VPS),
+#      kiểm REDIS_URL cùng số ngăn với REDIS_URL trong .env.dev, rồi:
+docker compose -p agentrunner -f docker-compose.runner.yml up -d --build
+```
+
 Sau đó: đại ca mở deverp → Trang cá nhân → «Telegram» lấy mã, nhắn `/dangnhap <mã>` cho bot dev; vào
 «Khóa AI» dán khóa Gemini; nhắn «thêm máy của anh» → lấy `AGENT_RUNNER_TOKEN` dán vào `.env.runner`
 trên máy (đã điền sẵn phần còn lại), điền `DB_NAME` + `DB_PASSWORD` của `agent_runner`, rồi

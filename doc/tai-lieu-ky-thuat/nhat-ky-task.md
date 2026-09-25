@@ -8084,10 +8084,14 @@ biết bot kéo tin bằng poller riêng. Bot dùng chung api, celery, redis và
 máy đại ca đã sinh khóa đường hầm riêng và điền sẵn tệp cấu hình runner, chỉ còn mã máy do bot
 cấp và tài khoản cơ sở dữ liệu.
 
-Bốn bước còn lại chạm vào nhánh dev dùng chung và máy chủ: đẩy nhánh bot thành erp-v2, khai biến
-bot vào tệp môi trường dev với token bot mới, dựng lại stack, tạo tài khoản MySQL và dòng khóa
-SSH cho máy đại ca. Bộ lọc quyền của phiên chặn thao tác đẩy nhánh dùng chung nên dừng lại chờ
-đại ca; lệnh từng bước ghi ở tài liệu số 05 mục 0.
+Chiều cùng ngày đại ca tạo bot Lạc Lạc cho dev và cho làm tiếp. Đã khai bot vào tệp môi trường
+dev (token đi từ tệp trên máy thẳng lên máy chủ, không qua màn hình, tệp xóa sau đó), cập nhật mã
+dev từ nhánh bot, dựng lại api, worker, beat, giao diện v2, poller và cổng chuyển tiếp Redis; kiểm
+xong: migration ở đầu chuỗi gộp, chín bảng của bot đã có, poller giữ kết nối, beat đặt lịch việc
+bot, deverp mở được. Thêm dòng khóa SSH chỉ mở cổng cho máy đại ca. Sửa thêm một lỗi đặt tên máy
+khi tên đã có tiền tố. Còn ba việc dính bí mật và nhánh dùng chung mà bộ lọc quyền của phiên không
+cho làm, giao đại ca chạy tay theo tài liệu số 05 mục 0: đẩy nhánh bot thành erp-v2, tạo tài khoản
+MySQL cho máy sửa mã, nhắn bot đăng ký máy và điền ba dòng còn trống trong tệp cấu hình runner.
 
 Mã nguồn: docker-compose.dev.yml · backend/migrations/versions/e6b1d4f8a2c7_gop_head_bot_va_erp_v2_2509.py ·
 backend/app/seed.py · test/backend/test_pham_vi_khai_du_b07.py · .env.runner.example ·

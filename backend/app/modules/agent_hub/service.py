@@ -1510,7 +1510,9 @@ def _runner_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
         users = grants.find_users(db, grants.clean_name(parsed["name"]))
         if len(users) == 1:
             owner_id, owner_label = users[0].id, describe_user(db, users[0])[0]
-        name = runners.slug("may " + (owner_label.split(" (")[0].split()[-1] if owner_label else parsed["name"]))
+        raw_name = owner_label.split(" (")[0].split()[-1] if owner_label else parsed["name"]
+        #  «thêm máy may-dai-ca» giữ nguyên tên đã có tiền tố; «thêm máy của anh Được» → may-duoc.
+        name = runners.slug(raw_name) if runners.slug(raw_name).startswith("may-") else runners.slug("may " + raw_name)
         if runners.by_name(db, name) is not None:
             reply(db, chat_id, f"Đã có máy tên <b>{esc(name)}</b> rồi. Xem «máy nào đang bật».")
             db.commit()
