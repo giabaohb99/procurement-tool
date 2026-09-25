@@ -8289,3 +8289,24 @@ Kiểm: một bài mới, cả tệp test bot 225 bài xanh. Máy đại ca đã
 
 Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/coder.py · .env.runner.example ·
 test/backend/test_agent_hub.py
+
+## ai-CR-059 | Chuông ERP sang Telegram của từng người đã đăng nhập
+- status: xong
+- date: 2026-09-25
+Phase 2 đóng: bot Lạc Lạc chạy trong cụm dev, việc AI-0001 đi trọn vòng từ giao việc tới gộp và
+lên dev bằng máy đại ca. Mở phase 3 bằng việc đầu: chuông ERP sang Telegram cá nhân.
+
+Cách làm: một vòng mỗi phút đọc các dòng chuông mới trong bảng thông báo và gửi cho chat Telegram đã
+liên kết của người nhận, nên mọi nguồn chuông hiện có và sau này đều đi mà không phải móc vào từng
+nơi tạo chuông; lần đầu vòng đứng ở dòng mới nhất để không đổ lịch sử cũ. Mỗi liên kết có một mức:
+tắt, việc của tôi (mặc định, gồm phiếu chờ tôi duyệt, việc giao cho tôi, phiếu bị trả lại, lời
+nhắc), hoặc tất cả; đổi bằng câu nhắn cho bot hoặc ô chọn ở Trang cá nhân. Một lượt gửi tối đa năm
+tin một chat, dư thì gom thành một dòng đếm. Câu chào sau khi đăng nhập nói rõ chuông sẽ báo vào đây.
+
+Kiểm: ba bài backend mới (cả tệp 228 xanh), một bài giao diện mới (5 xanh), typecheck và lint không
+lỗi; migration đã chạy local.
+
+Mã nguồn: backend/app/modules/agent_hub/bells.py · service.py · tasks.py · controller.py · constants.py ·
+model.py · backend/app/core/celery_app.py · backend/migrations/versions/a1c4e7f9b2d6_* ·
+frontend-v2/src/app/components/profile/profile-telegram-tab.tsx · modules/system/hooks/use-telegram-links.ts ·
+modules/system/api/agent-hub-api.ts

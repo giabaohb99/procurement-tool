@@ -5410,3 +5410,84 @@ def test_model_claude_code_theo_lan(monkeypatch):
         assert coder.model_args() == ["--model", "claude-opus-5"]
     finally:
         coder._LANE.reset(token)
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-059: chuông ERP -> Telegram của người đã liên kết (P-01)
+# ---------------------------------------------------------------------------
+def _bell(db, user_id, title, body="", link=""):
+    from app.modules.notification.model import Notification
+
+    n = Notification(user_id=user_id, title=title, body=body, link=link, created_by=1)
+    db.add(n)
+    db.commit()
+    return n
+
+
+def test_chuong_cua_toi_nhan_dien_dung_va_lan_dau_khong_do_lich_su(db, bot, monkeypatch):
+    from app.modules.agent_hub import bells, chat_link
+
+    service, _, _ = bot
+    sent = _send_to(monkeypatch, service)
+    assert bells.is_mine("PR0012 — Chờ bạn duyệt", "") and bells.is_mine("Phân công", "Bạn được phân công phụ trách PR0012.")
+    assert bells.is_mine("Nghỉ phép", "Đơn của bạn đã bị trả lại") and not bells.is_mine("PR0012 đã được duyệt", "Đơn hàng đã được duyệt.")
+    lan = _erp_user(db)
+    _bell(db, lan.id, "Chuông cũ — chờ bạn duyệt")                       # có trước khi bật vòng: KHÔNG gửi
+    assert bells.forward_bells(db) == 0 and sent == []
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    assert "Chuông ERP của anh/chị" in sent[-1][1]
+    _bell(db, lan.id, "PR0013 — Chờ bạn duyệt", "Yêu cầu mua hàng PR0013 đang chờ bạn duyệt.", "/purchase-requests/13")
+    _bell(db, lan.id, "PR0014 đã được duyệt", "Thông tin chung.")           # không phải «của tôi» → mặc định bỏ
+    _bell(db, 99999, "Của người khác — chờ bạn duyệt")                    # người không liên kết
+    assert bells.forward_bells(db) == 1
+    assert sent[-1][0] == "777" and "<b>PR0013 — Chờ bạn duyệt</b>" in sent[-1][1] and "Mở trên ERP" in sent[-1][1]
+    assert "/purchase-requests/13" in sent[-1][1]
+    assert bells.forward_bells(db) == 0                                    # con trỏ đã qua, không gửi lại
+
+
+def test_doi_muc_chuong_bang_cau_nhan_va_gop_khi_qua_nhieu(db, bot, monkeypatch):
+    from app.modules.agent_hub import bells, chat_link
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    lan = _erp_user(db)
+    bells.forward_bells(db)                                                # đặt con trỏ
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("chuông tất cả"))
+    assert "tất cả" in sent[-1][1] and chat_link.get_active_link(db, "777").notify_mode == bells.NOTIFY_ALL
+    for i in range(7):
+        _bell(db, lan.id, f"Tin thường {i}", "không phải việc của tôi")
+    n = bells.forward_bells(db)
+    assert n == bells.PER_CHAT + 1 and "và 2 thông báo khác" in sent[-1][1]
+    assert db.query(AgentMessage).filter_by(action=service.ACT_BELL).count() == n
+    service.handle_message(db, _other_msg("tắt chuông"))
+    assert "Đã tắt chuông" in sent[-1][1]
+    _bell(db, lan.id, "Chờ bạn duyệt nè")
+    assert bells.forward_bells(db) == 0
+    service.handle_message(db, _other_msg("bật chuông"))
+    assert "việc của tôi" in sent[-1][1] and chat_link.get_active_link(db, "777").notify_mode == bells.NOTIFY_MINE
+    assert not asked                                                        # câu chuông không đi Trợ lý
+
+
+def test_api_doi_muc_chuong_cua_lien_ket_chinh_minh(db, bot):
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from app.modules.agent_hub import chat_link, controller
+
+    lan = _erp_user(db)
+    other = _erp_user(db, "khac@dego.vn")
+    code, _ = chat_link.issue_code(db, lan.id)
+    chat_link.redeem_code(db, "777", code, "Lan")
+    items = _json(controller.list_my_links(user=SimpleNamespace(id=lan.id), db=db))["items"]
+    assert items[0]["notify_mode"] == 1
+    out = _json(controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=0), user=SimpleNamespace(id=lan.id), db=db))
+    assert out["notify_mode"] == 0
+    with pytest.raises(HTTPException):
+        controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=2), user=SimpleNamespace(id=other.id), db=db)
+    with pytest.raises(HTTPException):
+        controller.set_link_notify(items[0]["id"], controller.LinkNotifyIn(notify_mode=9), user=SimpleNamespace(id=lan.id), db=db)

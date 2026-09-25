@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 import type { ListParams } from '@/shared/types/api'
 
 /**
@@ -108,6 +108,8 @@ export interface TelegramLink {
   tg_name: string
   linked_at: string | null
   expires_at: string | null
+  /** Chuông ERP chuyển sang chat này: 0 tắt · 1 việc của tôi · 2 tất cả (ai-CR-059). */
+  notify_mode: number
 }
 
 export interface TelegramLinksResult {
@@ -142,6 +144,7 @@ export const agentHubApi = {
   myLinks: () => apiGet<TelegramLinksResult>('/api/agent-hub/links'),
   createLinkCode: () => apiPost<TelegramLinkCode>('/api/agent-hub/links/code', {}),
   removeLink: (id: number) => apiDelete<null>(`/api/agent-hub/links/${id}`),
+  setLinkNotifyMode: (id: number, notify_mode: number) => apiPatch<TelegramLink>(`/api/agent-hub/links/${id}`, { notify_mode }),
 
   /** Khóa Gemini cá nhân — tự phục vụ, chỉ đòi đăng nhập (ai-CR-053). */
   myAiKey: () => apiGet<AiKeyInfo>('/api/agent-hub/ai-key'),

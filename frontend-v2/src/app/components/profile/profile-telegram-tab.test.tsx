@@ -17,12 +17,13 @@ import { ProfileTelegramTab } from './profile-telegram-tab'
 const apiGet = vi.fn()
 const apiPost = vi.fn()
 const apiDelete = vi.fn()
+const apiPatch = vi.fn()
 
 vi.mock('@/core/api', () => ({
   apiGet: (...args: unknown[]) => apiGet(...args),
   apiPost: (...args: unknown[]) => apiPost(...args),
   apiPut: vi.fn(),
-  apiPatch: vi.fn(),
+  apiPatch: (...args: unknown[]) => apiPatch(...args),
   apiDelete: (...args: unknown[]) => apiDelete(...args),
 }))
 
@@ -77,7 +78,7 @@ describe('ProfileTelegramTab', () => {
 
   it('removes a linked chat through its own id', async () => {
     mockLinks({
-      items: [{ id: 9, chat: '…4321', tg_name: 'Lan', linked_at: '2026-09-24T08:00:00', expires_at: '2026-10-24T08:00:00' }],
+      items: [{ id: 9, chat: '…4321', tg_name: 'Lan', linked_at: '2026-09-24T08:00:00', expires_at: '2026-10-24T08:00:00', notify_mode: 1 }],
     })
     apiDelete.mockResolvedValue(null)
     renderTab()
@@ -90,5 +91,24 @@ describe('ProfileTelegramTab', () => {
     renderTab()
     expect(await screen.findByText(/đang tắt/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Lấy mã liên kết/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('ProfileTelegramTab — chuông (ai-CR-059)', () => {
+  beforeEach(() => {
+    apiGet.mockReset()
+    apiPatch.mockReset()
+  })
+
+  it('changes the bell mode of a link through PATCH', async () => {
+    mockLinks({
+      items: [{ id: 9, chat: '…4321', tg_name: 'Lan', linked_at: '2026-09-24T08:00:00', expires_at: '2026-10-24T08:00:00', notify_mode: 1 }],
+    })
+    apiPatch.mockResolvedValue({ id: 9, notify_mode: 2 })
+    renderTab()
+    const select = await screen.findByLabelText(/Chuông ERP cho Lan/)
+    expect(select).toHaveValue('1')
+    await userEvent.selectOptions(select, '2')
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/api/agent-hub/links/9', { notify_mode: 2 }))
   })
 })

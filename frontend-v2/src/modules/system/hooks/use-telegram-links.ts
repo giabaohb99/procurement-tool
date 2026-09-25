@@ -27,3 +27,15 @@ export function useRemoveTelegramLink() {
     },
   })
 }
+
+/** Mức chuông ERP chuyển sang một chat (ai-CR-059). */
+export function useSetTelegramNotifyMode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, notify_mode }: { id: number; notify_mode: number }) => agentHubApi.setLinkNotifyMode(id, notify_mode),
+    onSuccess: () => {
+      toast.success('Đã đổi mức chuông.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.telegramLinks() })
+    },
+  })
+}

@@ -99,6 +99,12 @@ RISK_HIGH = 3  # Đụng tiền, phân quyền, migration, hoặc nhánh `main` 
 #  ai-CR-057: LÀN của một việc. Việc nhỏ và rõ (đổi chữ/nhãn/màu/thứ tự trên giao diện, mục tiêu nêu rõ,
 #  risk 1) đi ĐƯỜNG TẮT: không rà soát riêng, không chờ «duyệt» — lập kế hoạch gọn rồi sửa luôn, xong
 #  mới báo một dòng. Việc khác đi làn đầy đủ như trước. Đại ca ép bằng chữ: «làm kỹ» → đầy đủ, «làm luôn» → tắt.
+#  ai-CR-059: mức chuông ERP chuyển sang Telegram của một liên kết (P-01).
+NOTIFY_OFF = 0
+NOTIFY_MINE = 1     # mặc định: chờ tôi duyệt, giao cho tôi, trả lại cho tôi, nhắc tôi
+NOTIFY_ALL = 2
+NOTIFY_LABELS = {NOTIFY_OFF: "tắt", NOTIFY_MINE: "việc của tôi", NOTIFY_ALL: "tất cả"}
+
 LANE_FULL = 0
 LANE_QUICK = 1
 QUICK_MAX_FILES = 3
@@ -214,6 +220,8 @@ ACT_GRANT_DONE = "da_cap_quyen"
 ACT_GRANT_DROPPED = "bo_cap_quyen"
 #  Tin người khác (không phải đại ca) ra lệnh trên việc mà không đủ cấp — sổ để đại ca tra lại.
 ACT_DENIED = "tu_choi"
+#  ai-CR-059: tin bot gửi = một dòng chuông ERP chuyển tiếp (P-01).
+ACT_BELL = "chuong"
 #  ai-CR-054: thẻ hỏi lại «thêm / tắt máy sửa mã?» của đại ca; `body` = JSON {op, name, owner_user_id, runner_id}.
 ACT_RUNNER_WAIT = "cho_may"
 ACT_RUNNER_DONE = "da_may"
@@ -221,7 +229,7 @@ ACT_RUNNER_DROPPED = "bo_may"
 NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
                  ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED,
                  ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED,
-                 ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED)
+                 ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED, ACT_BELL)
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token

@@ -456,6 +456,26 @@ def pull_tickets_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.forward_bells")
+def forward_bells_task() -> dict:
+    """ai-CR-059 (P-01): chuông ERP mới -> Telegram của người đã liên kết, mỗi phút."""
+    if (off := _off()) is not None:
+        return off
+    if not settings.AGENT_LINK_ENABLED:
+        return {"status": "skipped", "reason": "AGENT_LINK_ENABLED=false"}
+    from . import bells
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "sent": bells.forward_bells(db)}
+    except Exception as e:  # noqa: BLE001 — chuông hỏng không được làm gãy beat
+        db.rollback()
+        log.exception("agent_hub: chuyển chuông sang Telegram hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.heartbeat")
 def heartbeat_task() -> dict:
     """Vòng beat mỗi phút (ai-CR-021): nhắn / cập nhật tin «em vẫn đang làm» cho việc chạy lâu."""

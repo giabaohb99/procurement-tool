@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 19** (25/09/2026): D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 21** (25/09/2026): P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -49,7 +49,7 @@ một token Telegram riêng.
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| P-01 | Đẩy thông báo ERP (chuông) sang Telegram của từng người đã đăng nhập: phiếu chờ họ duyệt, việc giao cho họ | M | Chờ đại ca chọn: toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» |
+| P-01 | **XONG 25/09/2026 (ai-CR-059).** Đẩy thông báo ERP (chuông) sang Telegram của từng người đã đăng nhập: phiếu chờ họ duyệt, việc giao cho họ | M | Mặc định «việc của tôi», mỗi liên kết tự đổi (tắt / tất cả) bằng câu nhắn hoặc ở Trang cá nhân |
 | P-02 | Trần lượt hỏi / chi phí theo từng người mỗi ngày | S | Để một người không dùng hết hạn mức Gemini của cả công ty |
 
 ## Nhóm M — Trợ lý mở: MCP, AI tự chọn, nhiều kênh (thêm 24/09/2026)
@@ -115,7 +115,7 @@ xem tình trạng việc, ra lệnh trên việc vẫn dùng được vì không
 | D-03 | **XONG 25/09/2026 (ai-CR-054).** **Sổ máy sửa mã** `tab_agent_runner`: tên máy, chủ máy (tài khoản ERP), mã máy (băm), lần liên lạc cuối, cờ được deploy dev. Đăng ký bằng câu nhắn ở chat đại ca giống K-01 («thêm máy của anh Được» → bot phát mã máy một lần, dán vào `.env` runner); gỡ «tắt máy của anh Được» → runner bị từ chối ngay, không build lại. «máy nào đang bật» liệt kê | M | Hai sổ, hai câu hỏi: K-01 = ai được RA LỆNH, D-03 = máy nào được LÀM |
 | D-04 | **XONG gói 25/09/2026 (ai-CR-055, chạy thật chờ D-06; hướng dẫn `05-may-sua-ma.md`).** **Runner tách rời**: chạy trên máy bất kỳ có Docker + Claude Code đăng nhập gói của chủ máy + khóa GitHub/SSH riêng của máy; nối lên dev qua đường hầm SSH, kéo việc từ hàng đợi, ghi kết quả bằng tài khoản MySQL riêng. Việc **dính máy** từ lúc bắt đầu tới hết (worktree, phiên Claude Code, «làm tiếp», «hỏi thêm» đều trên máy đó); máy tắt thì việc chờ, bot nói rõ chờ máy nào | L | Thay đường hầm bằng gọi API ERP có khóa riêng để sau (không chạm DB) |
 | D-05 | **XONG 25/09/2026 (ai-CR-054).** **Chia việc giữa các máy**: việc mới → máy rảnh và đang bật nhận trước; chỉ định bằng «AI-0012 cho máy anh Được làm»; thẻ kết quả ghi máy nào đã làm | S | Deploy dev: chỉ máy đại ca và máy được bật cờ; máy mới mặc định KHÔNG deploy |
-| D-06 | **Mã + compose XONG 25/09/2026 (ai-CR-056); triển khai chờ đại ca đẩy `erp-v2` + 4 lệnh ở `05` §0.** **Stack bot trên dev**: compose riêng cho poller + api + worker + beat cạnh ERP dev, `.env` trên VPS giữ token Telegram của bot dev (bot mới tạo ở BotFather), `AGENT_TELEGRAM_CHAT_ID` = id chat đại ca (chat riêng: id = id người dùng, bot nào cũng vậy) | M | Gộp phần bot vào `erp-v2`; đại ca tự dán khóa, em chỉ soạn mẫu `.env` |
+| D-06 | **XONG 25/09/2026 (ai-CR-056): bot Lạc Lạc chạy trong cụm dev, AI-0001 đi trọn vòng gộp + deploy dev từ máy đại ca.** **Stack bot trên dev**: compose riêng cho poller + api + worker + beat cạnh ERP dev, `.env` trên VPS giữ token Telegram của bot dev (bot mới tạo ở BotFather), `AGENT_TELEGRAM_CHAT_ID` = id chat đại ca (chat riêng: id = id người dùng, bot nào cũng vậy) | M | Gộp phần bot vào `erp-v2`; đại ca tự dán khóa, em chỉ soạn mẫu `.env` |
 | D-07 | **Bot dev tự deploy dev** không cần máy sửa mã: bước deploy chạy ngay trên host dev (hook nhỏ trên host, không cấp docker socket cho container bot) | M | Để sau D-04 chạy ổn; trước đó deploy dev vẫn qua máy đại ca |
 
 Thứ tự làm phase 2: **(a)** D-01 + D-02 (xong 25/09) → **(b)** D-03 + D-04 + D-05 (xong 25/09) → **(c)** D-06. D-07 để cuối.
@@ -154,8 +154,8 @@ Cỡ là ước THÔ theo ngày công của một người, đo lại sau mỗi 
 |---|---|---|---|---|
 | **0** | Đang chạy | Đậu Đậu trên máy đại ca: nhận việc, rà, sửa, kiểm, gộp, deploy dev; đăng nhập bằng mã; tạo + gửi duyệt phiếu từ chat; nghiên cứu; chi phí | — | xong |
 | **1** | Khóa quyền sửa mã | K-01 cấp quyền bằng câu nhắn (cách 3) **xong** · K-04 kiểm cấp trước lệnh nhạy cảm **xong** · K-03 bảo vệ nhánh `main` · K-02 khóa riêng của bot | K-03: đại ca bật trên GitHub; K-02: tạo khóa deploy riêng cho bot | 3–4 ngày |
-| **2** | Bot lên ERP dev (nhóm D) | (a) D-01 khóa Gemini cá nhân + D-02 bỏ tài khoản chung · (b) D-03 sổ máy + D-04 runner tách rời + D-05 chia việc · (c) D-06 stack bot trên dev, gộp vào `erp-v2` · bật phiếu hỗ trợ làm nguồn việc (A-06) · D-07 để cuối | **Đã chốt 24/09:** một bot trên dev, ai cũng tự đăng nhập, khóa cá nhân, không lùi khóa công ty. Đại ca làm tay: tạo bot mới ở BotFather, dán token + khóa vào `.env` trên VPS | ~2 tuần (a 3 ngày · b 5 ngày · c 2 ngày) |
-| **3** | Trợ lý theo từng người trên web | M-07 web chạy khóa cá nhân (nếu đại ca muốn, nay web = khóa công ty) · M-02 khóa kết nối MCP · P-02 trần chi phí theo người · P-01 đẩy thông báo ERP sang Telegram cá nhân · T-10 nhắc việc bằng câu nói · T-07 tin thoại | P-01: đẩy toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» | 2 tuần |
+| **2 ✔ xong 25/09** | Bot lên ERP dev (nhóm D) | (a) D-01 khóa Gemini cá nhân + D-02 bỏ tài khoản chung · (b) D-03 sổ máy + D-04 runner tách rời + D-05 chia việc · (c) D-06 stack bot trên dev, gộp vào `erp-v2` · bật phiếu hỗ trợ làm nguồn việc (A-06) · D-07 để cuối | **Đã chốt 24/09:** một bot trên dev, ai cũng tự đăng nhập, khóa cá nhân, không lùi khóa công ty. Đại ca làm tay: tạo bot mới ở BotFather, dán token + khóa vào `.env` trên VPS | ~2 tuần (a 3 ngày · b 5 ngày · c 2 ngày) |
+| **3 (đang làm)** | Trợ lý theo từng người trên web | M-07 web chạy khóa cá nhân (nếu đại ca muốn, nay web = khóa công ty) · M-02 khóa kết nối MCP · P-02 trần chi phí theo người · P-01 đẩy thông báo ERP sang Telegram cá nhân · T-10 nhắc việc bằng câu nói · T-07 tin thoại | P-01: đẩy toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» | 2 tuần |
 | **4** | Cổng MCP | M-01 cổng MCP dùng chung bộ tool · M-03 tool đọc · M-04 tool tạo/gửi duyệt có xác nhận · M-05 báo lỗi → Đậu Đậu | Thử với 1–2 người trước; chạy dev rồi prod | 2 tuần |
 | **5** | Kết nối Google của từng người | M-06 Drive + Lịch riêng từng người → T-08 bản tin sáng, T-09 nhắc trước họp, T-11 tạo lịch bằng câu nói, R-03/R-04 phần Drive | Cá nhân hay Workspace công ty (Q2); đăng ký ứng dụng Google của công ty | 2 tuần |
 | **6** | Nhiều kênh, nhiều bot | M-08 kênh Zalo OA · N-01 nhiều bot một nền · N-04 chi phí theo bot · N-05 cách ly khóa | Tạo bot/OA và đặt tên (Q6) | 1–2 tuần |

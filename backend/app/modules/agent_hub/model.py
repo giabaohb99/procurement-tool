@@ -209,6 +209,8 @@ class AgentChatLink(Base, AuditMixin):
     linked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    #  ai-CR-059: chuông ERP chuyển sang chat này — 0 tắt · 1 việc của tôi (mặc định) · 2 tất cả.
+    notify_mode: Mapped[int] = mapped_column(SmallInteger, default=1)
 
 
 class AgentGrant(Base, AuditMixin):

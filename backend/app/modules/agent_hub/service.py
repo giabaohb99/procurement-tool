@@ -34,13 +34,14 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import chat_link, coder, draft_create, grants, manager, memory, playbook, research, runners, telegram, user_keys
+from . import bells, chat_link, coder, draft_create, grants, manager, memory, playbook, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
     ACT_ANSWER,
     ACT_HEARTBEAT,
     ACT_ASKED,
+    ACT_BELL,
     ACT_COMMAND,
     ACT_DEPLOY_TIME,
     ACT_FILE,
@@ -75,6 +76,7 @@ from .constants import (
     CLOSED_STATUSES,
     DIR_IN,
     LANE_FULL,
+    NOTIFY_LABELS,
     LANE_QUICK,
     QUICK_MAX_FILES,
     DIR_OUT,
@@ -329,7 +331,8 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
     reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{telegram.esc(name)}</b> cho chat này"
           + (f" ({telegram.esc(detail)})" if detail else "")
           + f". Hết hạn sau {settings.AGENT_LINK_DAYS} ngày. Cứ nhắn câu hỏi, em trả lời đúng quyền của tài khoản đó. "
-          "Đăng xuất: <code>/dangxuat</code>.")
+          "Chuông ERP của anh/chị (phiếu chờ duyệt, việc được giao) sẽ báo vào đây; nhắn «tắt chuông» để tắt, "
+          "«chuông tất cả» để nhận hết. Đăng xuất: <code>/dangxuat</code>.")
 
 
 # ---------------------------------------------------------------------------
@@ -639,7 +642,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     """
     if _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text):
         return
-    if _cost_by_text(db, chat_id, row, text):
+    if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text):
         return
     if not user_keys.active_key():
         #  ai-CR-053: không lùi về khóa công ty. Dấu lệnh để tin không rơi vào INBOX.
@@ -746,6 +749,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
+            or _bell_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
             or _word_by_text(db, chat_id, row, text)
@@ -1622,6 +1626,26 @@ def _runner_confirm(db: Session, chat_id: str, row: AgentMessage, pending: Agent
           "Dán hai dòng vào <code>.env</code> của runner trên máy đó rồi bật. Máy tự báo «còn sống» mỗi 30 giây; "
           "hỏi «máy nào đang bật» để kiểm. Muốn máy này deploy dev: «cho máy " + esc(rn.name) + " được deploy».")
     log.info("agent_hub: thêm máy sửa mã %s bởi chat %s", rn.name, chat_id)
+    return True
+
+
+def _bell_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«tắt chuông» · «bật chuông» · «chuông tất cả» — mức chuông ERP chuyển sang chat này (ai-CR-059)."""
+    mode = bells.parse_mode(text)
+    if mode is None:
+        return False
+    row.action = ACT_COMMAND
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None:
+        reply(db, chat_id, "Chat này chưa đăng nhập ERP nên chưa có chuông để đổi. " + _LINK_HELP)
+        db.commit()
+        return True
+    link.notify_mode = mode
+    db.commit()
+    reply(db, chat_id, {0: "Đã tắt chuông ERP ở chat này. Bật lại: «bật chuông».",
+                        1: "Chuông ERP ở chat này: <b>việc của tôi</b> (chờ anh/chị duyệt, giao cho anh/chị, bị trả lại). "
+                           "Muốn nhận hết: «chuông tất cả».",
+                        2: "Chuông ERP ở chat này: <b>tất cả</b>. Thu về: «chuông việc của tôi», tắt: «tắt chuông»."}[mode])
     return True
 
 
