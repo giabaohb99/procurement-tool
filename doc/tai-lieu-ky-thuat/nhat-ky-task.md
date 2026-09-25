@@ -169,7 +169,7 @@ quyền; phần bình luận trực tiếp trên thẻ việc thì chưa làm.
 Tham chiếu: nợ D-018 trong `change-log.md`; hai đợt còn lại của phân hệ là W3 và W4.
 
 ## sync-task-tool | Tool đồng bộ task từ sổ .md lên phân hệ Dự án
-- status: dang-lam
+- status: xong
 - date: 2026-09-14
 Em ghi việc vào một tệp sổ trong mã nguồn, rồi chạy một script đẩy sổ đó lên phân hệ
 Dự án. Script khớp task theo mã ở đầu tiêu đề nên chạy lại bao nhiêu lần cũng được:
@@ -223,6 +223,7 @@ lại tên trình gọi để hệ thống xếp nó vào họ công cụ dòng 
 Việc tay của đại ca: bấm "Đăng xuất tất cả thiết bị khác" để dọn 30 phiên treo cũ.
 Commit: `erp-v2` 3ac6e353, nhặt sang `main` thành ed8d26e5.
 Deploy: ĐÃ LÊN PROD tối 14/09 trong đợt 5abd5dc3, không có migration. Dev để hôm sau.
+Cập nhật 25/09/2026: script đã chạy hằng ngày để đẩy sổ lên phân hệ Dự án trên dev; chưa nối prod, khi nào nối sẽ ghi mục riêng.
 
 ## bao-CR-394 | Bảo mật BM-014 proxy tin cậy + BM-012 token hết hạn
 - status: xong
@@ -536,7 +537,7 @@ Tham chiếu: `doc/erp/11` (giữ hồ sơ 8 câu chốt đa pháp nhân) và
 Commit: trên nhánh `erp-v2`.
 
 ## ra-soat-bao-mat-1409 | Rà soát bảo mật toàn hệ thống (đợt có phương pháp đầu tiên)
-- status: dang-lam
+- status: xong
 - date: 2026-09-14
 Đại ca yêu cầu: "rà soát về các vấn đề bảo mật của hệ thống, hiện tại có bao nhiêu bảo
 mật đã áp dụng, và nên có những cái nào". Đợt này soát theo 11 lớp phòng thủ chứ không
@@ -694,6 +695,7 @@ thứ hai rẻ hơn nhiều so với việc chờ BM-021 và BM-023 được vá
 Đồ nghề đo đã xóa sạch sau khi đo (bài kiểm tạm và mấy đoạn chạy thử trong máy ảo).
 Tham chiếu: bài kiểm sẽ viết ở `test/backend/test_bao_mat_tai_tep.py`; lỗ tên tệp dài
 trùng với họ `duoc-CR-316`.
+Cập nhật 25/09/2026: đợt rà soát đã xong, 5 bản vá đã lên prod 14/09/2026; các lỗ còn lại theo dõi ở sổ ghi nhận lỗi bảo mật (BM-025..031).
 
 ## bao-CR-405 | Chính sách mật khẩu dùng chung (đảo lại BM-016)
 - status: xong
@@ -754,7 +756,7 @@ Mã nguồn: `test/backend/test_pham_vi_duong_vong.py`; hai tệp thiếu là
 `login_session/controller.py` và `survey_request/report_controller.py`.
 
 ## bao-CR-310 | Xử lý báo giá (phương án) trên Yêu cầu mua hàng
-- status: dang-lam
+- status: xong
 - date: 2026-09-07
 Đây là việc thay cho hướng gộp phiếu yêu cầu báo giá với phiếu yêu cầu mua hàng (hướng
 đó đã bỏ ngày 07/09). Phiếu yêu cầu báo giá giữ nguyên như cũ. Trên phiếu yêu cầu mua
@@ -958,6 +960,7 @@ Bản in cho người yêu cầu dùng mẫu sẵn có và điền giá đã ch�
 tích theo nhà cung cấp rồi ra một tệp nhiều trang. Đã làm xong và rà lại theo góp ý của
 khách ngay trong ngày — chi tiết ở hai mục bao-CR-310-dot-4 và bao-CR-310-dot-4-ra-lai
 bên dưới. Bài hướng dẫn sử dụng vẫn chờ nhịp lên máy chủ.
+Cập nhật 25/09/2026: cả bốn đợt đã commit và lên dev; công tắc phương án trên YCMH ghi ở bao-CR-468. Việc này đóng, phần còn lại của cụm CR-312 theo dõi riêng.
 
 ## deploy-prod-1409-cum-bao-mat | Đẩy cụm 6 commit bảo mật lên prod (đóng BM-002/005/012/014/015)
 - status: xong
@@ -1015,7 +1018,7 @@ nhau, kẻo lần sau đo trên dev lại tưởng tính năng chưa có.
 Commit: dev đang ở e89ab592; hai commit còn thiếu là 3ac6e353 và 4b51b545 trên `erp-v2`.
 
 ## deploy-dev-1509-dua-dev-bang-prod | Đẩy dev cho bằng prod (bao-CR-401 + bao-CR-402)
-- status: dang-lam
+- status: xong
 - date: 2026-09-14
 Tối 14/09 đại ca chốt: "mai mình đẩy dev sau". Lúc đó dev đang đứng sau prod, thiếu hai
 commit của việc cho công cụ đồng bộ tự đăng xuất và đợt bốn của nhật ký hệ thống.
@@ -1040,6 +1043,7 @@ Deploy: cây làm việc `~/procurement-tool-dev`, lệnh
 `docker compose -f docker-compose.dev.yml --env-file .env.dev up -d --build api
 celery-worker celery-beat erp` (không kèm `-p procurement-dev`); migration đích
 d5f7a9c1b3e2; cơ sở dữ liệu `procurement_dev`, bảng `tab_change_log`.
+Cập nhật 25/09/2026: đã kéo về và dev đã bằng prod từ 15/09/2026, việc này đóng.
 
 ## bao-CR-404 | Ô tìm kiếm màn Tiến độ mua hàng chết vì lọc theo cột không tồn tại
 - status: xong
@@ -2595,7 +2599,7 @@ chúng còn vá `controller.download_bytes`, trong khi `download_one` đã đổ
 CÒN LẠI: phần việc bên app cũ của P0 chưa động tới. Chưa commit, chưa lên dev.
 
 ## bao-CR-414 | Phòng ban tự mua hàng: phiếu của phòng nào thì người thu mua phòng đó ôm
-- status: dang-lam
+- status: xong
 - date: 2026-09-16
 Đại ca hỏi tình hình "phân quyền cho nhà máy riêng và thu mua riêng", rồi chốt bỏ hẳn
 tầng đa pháp nhân: chia việc bằng PHÒNG BAN cộng PHẠM VI của tài khoản là đủ. Ca đầu
@@ -2754,6 +2758,7 @@ thấy đúng 3 yêu cầu, 1 đơn và 1 khoản nợ của phòng khác, khôn
 Sửa luôn lỗi chạy lẻ script tạo tài khoản (chưa nạp đủ model nên vấp quan hệ phòng ban).
 Mã nguồn: `backend/scripts/demo_cr414.py`, `backend/app/seed_tai_khoan_cr414.py`,
 `frontend-v2/src/app/layouts/demo-accounts.ts`, `CLAUDE.md`, `frontend-v2/.claude/rules/testing.md`.
+Cập nhật 25/09/2026: cả năm giai đoạn đã xong và lên dev từ 19/09/2026 (commit 411945ae); các việc nối tiếp ghi ở bao-CR-480, 484, 486, 488.
 
 ## bao-CR-418 | Sổ nhật ký task: viết lại mô tả cho đọc được, bù cụm thiếu, gán hết cho đại ca
 - status: xong
@@ -7792,6 +7797,7 @@ Mã nguồn: backend/app/modules/customs/service.py (market_overview, assess_cur
 assistant/tools/customs_tool.py · assistant/tools/__init__.py · assistant/service.py ·
 scripts/seed_help_customs_prices.py · test/backend/test_tool_hai_quan_cr481.py ·
 doc/erp/hai-quan/01 · 02 · 03
+Cập nhật 25/09/2026: đại ca cho chạy seed bài hướng dẫn trên dev — đã tạo bài «Tra cứu giá hải quan» (id 100) dưới nhóm Dành cho Nhân viên Mua hàng.
 
 ## duoc-CR-473 | Màn tạo văn bản cho biết trước ai sẽ duyệt
 - status: dang-lam
@@ -8160,3 +8166,219 @@ Kiểm: 20 bài công nợ theo phòng xanh (3 bài mới), 67 bài chi phí và
 
 Mã nguồn: backend/app/modules/payable/service.py · purchase_order/service.py ·
 backend/scripts/backfill_handling_dept.py · test/backend/test_cong_no_theo_phong_xu_ly_cr484.py
+
+## bao-CR-485..490 | Gom bảy góp ý màn YCBG/YCMH thành năm cụm, chia hai phiên
+- status: dang-lam
+- date: 2026-09-25
+Đại ca dùng thử tài khoản nhà máy trên dev và nêu bảy điểm. Đã rà mã để đánh giá từng
+điểm, gom thành năm cụm và đặt chỗ số CR 485 đến 490 trong sổ thay đổi, ghi bảng chia
+việc ở kiểm kê việc còn lại mục 7.2. Erp Agent 1 nhận cụm A (sổ thao tác một dòng Duyệt,
+nhân sự phụ trách theo phòng xử lý) và cụm D (trưởng phòng phê duyệt, công tắc người ký,
+cần thiết kế trước). ERP Agent 2 nhận cụm B (bộ lọc màn Xử lý khảo sát) và cụm C (ô Phòng
+xử lý ẩn sau ô tick, gom nút Trả về). Điểm 4 chỉ ghi nhận: khảo sát và lịch sử mua hàng
+dùng chung, đúng như hiện tại. Hai câu chờ đại ca: ngữ nghĩa nút Trả về và thiết kế
+trường trưởng phòng phê duyệt.
+
+Mã nguồn: doc/tai-lieu-ky-thuat/change-log-bao.md · doc/erp/19-viec-con-lai-tong-hop.md
+
+## bao-CR-491 | Màn Phân quyền tài khoản mất dấu tick vai trò khi vào lại trang
+- status: xong
+- date: 2026-09-25
+- pic: NSU209
+Đại ca dùng thật rồi báo: mở màn phân quyền của một tài khoản thì thấy tick đủ vai trò,
+quay ra trang trước rồi vào lại thì mọi dấu tick biến mất, phải tải lại cả trang mới hiện
+ra. Em dựng lại được ngay bằng một bài kiểm, và hóa ra đây không chỉ là chuyện nhìn sai.
+
+Gốc rễ nằm ở cách màn hình giữ danh sách vai trò. Nó chép danh sách từ máy chủ vào bộ nhớ
+riêng của màn hình, rồi chỉ chép lại khi dữ liệu đổi so với lượt vẽ trước. Lần vào thứ hai,
+lớp đệm dữ liệu đã có sẵn bản cũ nên trả về ngay ở lượt vẽ đầu tiên; mà ở lượt vẽ đầu tiên
+thì phép so sánh kia luôn nói là không có gì đổi, vì nó lấy chính giá trị hiện tại làm mốc.
+Không có nhịp nào để chép, nên bộ nhớ riêng nằm nguyên ở trạng thái rỗng. Lần vào đầu tiên
+không lộ ra vì lúc ấy dữ liệu chưa về, và chính cú chuyển từ chưa có sang có mới là nhịp
+chép. Tải lại trang thì lớp đệm mất sạch nên lại đi đúng đường cũ, đó là lý do tải lại
+thấy đúng.
+
+Chỗ nguy là bước tiếp theo của người dùng. Thấy trang trống, họ tick lại vài vai trò rồi
+bấm lưu, mà đường lưu nhận cả danh sách chứ không nhận phần chênh, nên những vai trò cũ
+không được tick lại sẽ bị xóa mất. Tức là một lỗi hiển thị dẫn thẳng tới mất phân quyền.
+
+Em không vá bằng cách thêm một nhịp chép nữa, vì như vậy là dựa vào việc lượt vẽ nào là
+lượt đặc biệt. Em đổi hẳn cách giữ: bộ nhớ riêng của màn hình nay chỉ chứa bản nháp của
+người dùng, chưa đụng vào thì để trống và màn hình đọc thẳng bản của máy chủ. Nhờ vậy mọi
+lượt vẽ đều giống nhau. Chốt cũ vẫn còn nguyên: một lượt nạp lại rơi vào giữa lúc đang tick
+dở thì không đè lên thứ đang tick, vì hễ có nháp là nháp thắng.
+
+Nghiệm thu: ba cổng kiểm đều xanh, và bài kiểm mới em đã thử ngược trên mã cũ để chắc chắn
+nó đỏ đúng một bài, không phải bài kiểm trang trí. Bản đang chạy thật của giao diện cũ
+không dính lỗi này, vì bên đó mỗi lần mở màn là gọi lại máy chủ chứ không có lớp đệm.
+
+Mã nguồn: `frontend-v2/src/modules/system/pages/user-permission-detail-page.tsx` và bài kiểm
+đi kèm cùng thư mục. Tham chiếu: CR-156 (chốt không đè bản đang tick dở) và CR-158 (khóa
+trang của chính mình). Chưa deploy.
+
+## bao-CR-485 | Công tắc điều phối tắt thì sổ thao tác chỉ một dòng Duyệt của trưởng phòng
+- status: xong
+- date: 2026-09-25
+Đại ca thấy anh Khôi duyệt YCMH xong mà sổ ghi thêm dòng Điều phối dưới tên anh, trong khi
+anh không có quyền đó. Nguyên nhân là khi công tắc điều phối tắt, đường duyệt gọi luôn bước
+điều phối và bước đó tự ghi một dòng riêng dưới tên người bấm.
+
+Đã làm: gói cả cú duyệt lẫn phần hệ thống tự phân bổ vào một dòng Duyệt, ghi chú nói rõ
+hệ thống tự phân bổ mấy dòng và ngày tiếp nhận. Công tắc bật thì giữ nguyên hai dòng như cũ.
+Bản in YCMH đọc ô TP/BP mua hàng từ dòng Điều phối, nay không còn dòng đó thì lùi về người
+duyệt khi công tắc tắt, phiếu cũ vẫn đi đường thường. Chưa commit.
+
+Kiểm: 91 bài duyệt, điều phối và bản in xanh (4 bài mới).
+
+Mã nguồn: backend/app/modules/purchase_request/service.py · controller.py ·
+test/backend/test_so_thao_tac_mot_dong_duyet_cr485.py
+
+## bao-CR-486 | Ô nhân sự phụ trách chỉ liệt kê người của phòng xử lý, chặn gán người ngoài
+- status: xong
+- date: 2026-09-25
+Đại ca thấy phiếu của nhà máy mà ô nhân sự phụ trách chọn được cả người thu mua chung.
+Trước đây hai bản giao diện lọc danh mục nhân sự theo tên phòng có chữ thu mua, nên vừa
+lọt người ngoài, vừa để phòng Sản xuất Thu mua lọt vào mọi phiếu.
+
+Đã làm: máy chủ có hàm trả danh sách người chọn được theo ô Phòng xử lý của phiếu, có
+phòng xử lý thì lấy người thu mua của phòng đó, không có thì lấy người thu mua chung không
+thuộc phòng tự mua; hai đường API mới cho YCMH và YCBG. Cửa ghi gán người ở YCMH và YCBG
+chặn mã ngoài phòng xử lý, bỏ gán vẫn được, mã lạ báo lỗi. Bốn trang chi tiết ở hai bản
+giao diện đọc danh sách từ đường API mới, chuyển phòng xử lý xong là danh sách đổi theo,
+người đã gán trước đó vẫn giữ tên. Chưa commit.
+
+Kiểm: 218 bài máy chủ quanh phòng xử lý, phạm vi, điều phối và luồng duyệt xanh (7 bài
+mới); giao diện mới kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 115 bài trang thu mua xanh; giao
+diện cũ giữ đúng 4 lỗi kiểu có sẵn.
+
+Mã nguồn: backend/app/modules/category_assignee/service.py · purchase_request/controller.py ·
+survey_request/controller.py · frontend-v2 hooks/use-purchase-request.ts ·
+use-survey-request.ts · frontend/src/pages/PurchaseRequestDetail.tsx ·
+test/backend/test_nstm_theo_phong_xu_ly_cr486.py
+
+
+## bao-CR-487 | Màn Xử lý khảo sát lọc được nhiều nhà cung cấp, nhiều phân loại và có nút Bỏ lọc
+- status: xong
+- date: 2026-09-25
+Đại ca dùng thử dev bằng tài khoản nhà máy và góp ý: màn Xử lý khảo sát cần nút bỏ lọc, và ô
+lọc phải chọn được nhiều, ví dụ phân loại hay nhà cung cấp.
+
+Đã sửa khối «Thêm phương án từ kết quả khảo sát» của từng dòng: ô nhà cung cấp và ô phân loại
+chọn được nhiều (chọn nhiều trong một ô là hoặc, hai ô khác nhau là và), thêm nút Bỏ lọc xóa
+cả nhà cung cấp, phân loại và từ khóa một lần, nút Về phân loại dòng giữ nguyên. Làm ở cả hai
+bản giao diện. Backend nhận nhiều mã nhà cung cấp và nhiều phân loại lặp trên đường dẫn, gửi
+một giá trị như cũ vẫn chạy nên màn Xử lý yêu cầu mua hàng chưa đổi không ảnh hưởng. Bản cũ
+phải chỉnh cách gửi mảng của axios để backend nhận được. Chưa commit, chưa deploy.
+
+Kiểm: 6 bài kiểm backend mới; giao diện mới kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 588 bài
+phân hệ thu mua xanh (3 bài util mới); bản cũ kiểm kiểu giữ 4 lỗi nền.
+
+Mã nguồn: backend/app/modules/survey_request/service.py (normalize_filter_values,
+available_survey_lines) · controller.py · frontend-v2 survey-request-process-card.tsx ·
+utils/survey-process-filter.ts · frontend/src/pages/SurveyRequestProcess.tsx ·
+test/backend/test_xu_ly_khao_sat_loc_nhieu_cr487.py
+
+## bao-CR-488 | Ô Phòng xử lý ẩn sau ô tick Nhờ phòng khác xử lý khi lập phiếu
+- status: xong
+- date: 2026-09-25
+Đại ca góp ý: phòng xử lý thì mặc định luôn, khi tạo phiếu thì ẩn chỗ đó đi, chỉ có một ô
+tick để bật lên nếu cần đưa phiếu cho phòng khác xử lý.
+
+Đã sửa màn tạo yêu cầu mua hàng và yêu cầu báo giá ở cả hai bản: ô Phòng xử lý ẩn, thay bằng ô
+tick «Nhờ phòng khác xử lý»; không tick thì không gửi ô này và hệ thống tự chọn theo luật
+bao-CR-480 (phòng tự mua lấy chính phòng mình, còn lại là Thu mua chung); tick rồi chọn phòng
+thì gửi đúng phòng đã chọn. Backend đổi một luật nhỏ: chỉ khi không gửi ô này mới tra mặc định,
+còn gửi số 0 là người lập chủ ý chọn Thu mua chung và được giữ nguyên. Trước đây gửi 0 cũng bị
+tra đè nên nhà máy không có cách nào nhờ thu mua chung mua hộ ngay lúc lập phiếu (đúng ca đơn
+mẫu TM01). Yêu cầu báo giá tạo từ yêu cầu mua hàng đã có phòng xử lý thì ô tick bật sẵn. Màn
+chi tiết, kể cả lúc sửa phiếu nháp, giữ ô chọn và nút Chuyển phòng như cũ. Chưa commit.
+
+Kiểm: 5 bài kiểm backend mới, 25 bài cụm phòng xử lý xanh; giao diện mới thêm 5 bài cho hàm
+quyết định gửi gì và 5 bài cho thẻ thông tin yêu cầu mua hàng; bản cũ kiểm kiểu giữ 4 lỗi nền.
+
+Mã nguồn: backend purchase_request/schema.py · service.py (create_pr) · survey_request/schema.py ·
+service.py (create_sr) · frontend-v2 utils/handling-dept-display.ts (isHandlingDeptAssigned,
+handlingDeptForCreate) · purchase-request-info-card.tsx · survey-request-info-card.tsx ·
+purchase-request-detail-page.tsx · survey-request-detail-page.tsx · frontend
+PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx · test/backend/test_phong_xu_ly_o_tick_cr488.py
+
+## bao-CR-489 | Nút Trả về phòng lập đổi nhãn thành Trả về
+- status: xong
+- date: 2026-09-25
+Đại ca nói nút trả về phòng xử lý nên gom lại thành nút Trả về. Erp Agent 1 hỏi lại và đại ca
+chốt: giữ nguyên nghĩa và logic, chỉ đổi nhãn.
+
+Đã đổi nhãn nút ở yêu cầu mua hàng và yêu cầu báo giá, cả hai bản giao diện; câu gợi ý khi rê
+chuột và tiêu đề hộp thoại vẫn nói rõ là trả cả phiếu về phòng lập tự xử lý. Chưa commit.
+
+Mã nguồn: frontend-v2 purchase-request-detail-page.tsx · survey-request-detail-page.tsx ·
+frontend PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx
+
+## bao-CR-492 | Rà cả họ lỗi mất dấu tick khi vào lại trang và vá tám màn còn lại
+- status: xong
+- date: 2026-09-25
+- pic: NSU209
+Vá xong màn phân quyền tài khoản, đại ca bảo rà luôn xem còn chỗ nào cùng kiểu thì sửa hết.
+Em đặt ra một tiêu chí máy móc để rà chứ không đi theo cảm giác: một chỗ dính khi nó lấy dữ
+liệu tải về đổ vào bộ nhớ riêng của màn hình, mà bộ nhớ đó khởi tạo bằng giá trị rỗng, và
+nhịp đổ lại gác bằng phép so sánh với lượt vẽ trước. Lượt vẽ đầu tiên phép so sánh ấy luôn
+nói là không có gì đổi, nên hễ lớp đệm đã có sẵn dữ liệu thì màn hình mở ra trắng.
+
+Rà hết sáu mươi sáu chỗ gọi phép so sánh đó thì có chín chỗ dính, kể cả chỗ đã vá hôm nay.
+Số còn lại an toàn vì rơi vào ba nhóm: mốc so sánh là trạng thái đóng mở của hộp thoại nên
+luôn có một cú chuyển, hoặc bộ nhớ đã khởi tạo từ chính giá trị truyền vào, hoặc bộ nhớ đã
+khởi tạo bằng cách đọc thẳng nguồn dữ liệu. Bốn màn chi tiết lớn của thu mua thoát được là
+nhờ cách thứ ba, và em lấy luôn cách đó làm khuôn vá cho những chỗ hỏng.
+
+Năm chỗ dẫn tới mất dữ liệu thật. Nặng nhất là ma trận quyền của vai trò: vai trò đang mở
+nằm ngay trên địa chỉ trang, nên mở lại bằng đúng đường dẫn đó là dính chắc chứ không phải
+thỉnh thoảng. Ma trận hiện ra trắng, bấm lưu là gửi lên một danh sách rỗng, mà đường lưu bên
+máy chủ xóa hết rồi ghi lại, tức mất sạch quyền của vai trò đó và kéo theo mọi tài khoản
+đang giữ nó. Bốn chỗ còn lại cùng kiểu nhưng hẹp hơn: đơn nghỉ phép và phiếu đặt phòng họp
+mở ra form trắng, phiếu yêu cầu thanh toán mở ra không còn dòng nào, thẻ kiêm nhiệm của hồ
+sơ nhân sự không tick phòng nào. Cả bốn đều có nút lưu ngay cạnh.
+
+Ba chỗ nhẹ hơn nhưng vẫn phải vá. Hai khối bình luận mất nút xem thêm bình luận cũ, nên
+người đọc tưởng bài chỉ có mấy dòng cuối. Hai nhịp bù của phiếu mới thì đáng nói hơn: phiếu
+khảo sát không chép mục đích sang nội dung chính, còn yêu cầu báo giá không bù mã phòng ban
+nên phiếu lại neo phòng bằng tên, đúng thứ mà một đợt trước đã sinh ra để tránh. Hai nhịp
+này hỏng đúng trong trường hợp hay gặp nhất, vì người dùng vào từ màn danh sách nên danh mục
+đã nằm sẵn trong lớp đệm.
+
+Em có cân nhắc sửa một chỗ duy nhất ở hàm so sánh dùng chung, cho nó báo có thay đổi ngay ở
+lượt vẽ đầu. Làm vậy là hết cả họ trong một dòng, nhưng nó đổi hành vi của cả sáu mươi sáu
+chỗ, mà nhiều chỗ dùng hàm đó để xóa trắng chứ không phải để đổ dữ liệu. Chỗ đặt lại số
+trang chẳng hạn, nếu chạy ngay lúc mở màn thì mở một đường dẫn có sẵn số trang là bị kéo về
+trang một. Đổi một lỗi lấy một lỗi, nên em không làm.
+
+Hai bài kiểm mới cho hai chỗ nặng nhất, và cả hai em đều thử ngược trên mã cũ để chắc chắn
+chúng đỏ chứ không phải bài kiểm trang trí. Chúng khẳng định theo hậu quả thật, tức là bấm
+lưu rồi xem gói gửi lên có còn nguyên quyền cũ không, chứ không khẳng định theo vẻ ngoài của
+màn hình. Ba cổng kiểm đều xanh.
+
+Mã nguồn: chín tệp trong `frontend-v2`, gồm màn ma trận quyền, hai màn chi tiết của nhân sự,
+màn chi tiết yêu cầu thanh toán, thẻ kiêm nhiệm, hai khối bình luận và hai màn thu mua.
+Tham chiếu: bao-CR-491 là chỗ đầu tiên của họ lỗi này. Chưa deploy.
+
+## bao-CR-490 | Trường trưởng phòng phê duyệt trên ba chứng từ và nút chọn người ký trên bản in nội bộ
+- status: xong
+- date: 2026-09-25
+Đại ca muốn ba chứng từ YCMH, YCBG, ĐMH ghi lại ai thực sự bấm duyệt ở chặng trưởng
+phòng, và bản in nội bộ cho chọn ô chữ ký hiện người duyệt hay trưởng phòng theo hồ sơ
+phòng ban, vì hai bản in nội bộ và thuế khác nhau; mẫu thuế để trống ô ký.
+
+Đã làm: thêm cột trưởng phòng phê duyệt vào ba bảng bằng migration, ghi lúc bấm duyệt ở
+ba đường API, đơn mua hàng hủy duyệt thì xóa. Bản in YCMH và ĐMH lấy tên người duyệt theo
+nhân sự trong cột mới, phiếu cũ vẫn tra nhật ký như trước, kèm tên trưởng phòng theo hồ
+sơ. Hai bản giao diện có nút chọn người ký ở bản in YCMH và bản in ĐMH, nhớ theo máy; phòng
+chưa gán trưởng thì lùi về người duyệt. Ba thẻ thông tin v2 và ba trang chi tiết v1 hiện ô
+chỉ xem trưởng phòng phê duyệt. Chưa commit; deploy phải chạy migration.
+
+Kiểm: 46 bài kiểm duyệt và bản in xanh (5 bài mới), migration chạy ở local một đầu; giao
+diện mới kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 592 bài phân hệ Thu mua xanh; giao diện cũ
+giữ đúng 4 lỗi kiểu có sẵn.
+
+Mã nguồn: backend/app/core/print_signers.py · migrations/versions/a490b1c2d3e4 ·
+frontend-v2 utils/print-signer-mode.ts · pages/purchase-request-print-page.tsx ·
+pages/purchase-order-print-page.tsx · frontend/src/pages/PrintPurchaseRequest.tsx ·
+test/backend/test_truong_phong_phe_duyet_cr490.py
