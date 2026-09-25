@@ -44,7 +44,7 @@ export function ProfileAiKeyTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <SectionHeading>Khóa Gemini của bạn cho bot Telegram</SectionHeading>
+          <SectionHeading>Khóa AI của bạn cho bot Telegram</SectionHeading>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p className="text-muted-foreground">
