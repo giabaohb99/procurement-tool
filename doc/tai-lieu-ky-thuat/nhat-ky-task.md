@@ -8071,7 +8071,7 @@ Mã nguồn: docker-compose.runner.yml · docker/Dockerfile.tunnel · docker/tun
 .env.runner.example · .gitignore · doc/agent-hub/05-may-sua-ma.md
 
 ## ai-CR-056 | Đưa Đậu Đậu lên dev: gộp nhánh, compose dev có profile bot, chờ đại ca đẩy và dựng
-- status: đang làm
+- status: dang-lam
 - date: 2026-09-25
 Phase 2 phần (c). Đại ca cho làm hết các phase không cần hỏi và cho thao tác trên máy chủ dev.
 
