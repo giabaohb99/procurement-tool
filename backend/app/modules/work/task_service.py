@@ -36,7 +36,7 @@ from app.modules.work.task_model import WorkSection, WorkTask, WorkTaskAssignee
 SORT_STEP = 1000
 
 
-def _shape(tasks: list[WorkTask], extra: dict) -> list[dict]:
+def _shape(tasks: list[WorkTask], extra: dict, light: bool = False) -> list[dict]:
     out = []
     for t in tasks:
         sub = extra["subtasks"].get(t.id) or {}
@@ -46,8 +46,29 @@ def _shape(tasks: list[WorkTask], extra: dict) -> list[dict]:
             labels=extra["labels"].get(t.id, []),
             subtask_done=sub.get("done", 0), subtask_total=sub.get("total", 0),
             comment_count=extra["comments"].get(t.id, 0),
+            light=light,
         ))
     return out
+
+
+#  bao-CR-483 — trần mặc định mỗi cột khi bảng tải ở chế độ nhẹ. Đủ cao để cột
+#  bình thường không bao giờ phải «Tải thêm», đủ thấp để cột «Xong» 160 việc của
+#  sổ nhật ký không kéo cả bảng chậm theo.
+BOARD_PAGE_SIZE = 40
+BOARD_PAGE_MAX = 200
+
+
+def _root_task_query(db: Session, list_id: int):
+    return (db.query(WorkTask)
+            .filter(WorkTask.list_id == list_id,
+                    WorkTask.parent_id.is_(None),      # việc con không ra kanban (C-05)
+                    WorkTask.deleted_at.is_(None))
+            .order_by(WorkTask.sort_order, WorkTask.id))
+
+
+def _section_key(section_id) -> int:
+    """Khóa gom theo cột; task chưa phân cột (`NULL`) gom về `0`."""
+    return int(section_id or 0)
 
 
 def get_task_or_403(db: Session, actor: Actor, task_id: int, need: int = 4) -> WorkTask:
@@ -64,24 +85,76 @@ def get_task_or_403(db: Session, actor: Actor, task_id: int, need: int = 4) -> W
     return t
 
 
-def board(db: Session, actor: Actor, list_id: int) -> dict:
-    """Payload một phát cho kanban: cột + task cha + mọi thứ vẽ trên thẻ."""
+def board(db: Session, actor: Actor, list_id: int, per_section: int = 0,
+          light: bool = False) -> dict:
+    """Payload một phát cho kanban: cột + task cha + mọi thứ vẽ trên thẻ.
+
+    bao-CR-483 — hai chế độ:
+      · `per_section = 0` (mặc định, ĐẦY ĐỦ): mọi task cha, như trước. Gantt, tìm từ
+        khóa, sắp xếp và bộ lọc điều kiện cần trọn bộ dữ liệu ở trình duyệt.
+      · `per_section > 0` (NHẸ): mỗi cột tối đa chừng ấy task theo đúng thứ tự
+        kanban; phần dư ghi ở `remaining[section_id] = {count, next_task_id}` để
+        giao diện «Tải thêm» qua `section_tasks` và, khi thả thẻ xuống cuối cột
+        đang tải dở, neo thẻ NGAY TRƯỚC `next_task_id` cho nó không biến mất.
+    `light` bỏ `description` (xem `serializer.task_out`).
+    """
     lst = get_list_or_403(db, actor, list_id)
     sections = (db.query(WorkSection).filter(WorkSection.list_id == list_id)
                 .order_by(WorkSection.sort_order, WorkSection.id).all())
-    tasks = (db.query(WorkTask)
-             .filter(WorkTask.list_id == list_id,
-                     WorkTask.parent_id.is_(None),      # việc con không ra kanban (C-05)
-                     WorkTask.deleted_at.is_(None))
-             .order_by(WorkTask.sort_order, WorkTask.id).all())
+    remaining: dict[int, dict] = {}
+    if per_section > 0:
+        per_section = min(per_section, BOARD_PAGE_MAX)
+        #  Chỉ kéo (id, section) của MỌI task cha — nhẹ — rồi cắt từng cột ở đây;
+        #  một query mỗi cột là dự án nhiều cột thành nhiều lượt chạm DB.
+        heads = _root_task_query(db, list_id).with_entities(WorkTask.id, WorkTask.section_id).all()
+        by_section: dict[int, list[int]] = {}
+        for tid, sid in heads:
+            by_section.setdefault(_section_key(sid), []).append(tid)
+        keep: list[int] = []
+        for sid, ids in by_section.items():
+            keep.extend(ids[:per_section])
+            if len(ids) > per_section:
+                remaining[sid] = {"count": len(ids) - per_section, "next_task_id": ids[per_section]}
+        rows = _root_task_query(db, list_id).filter(WorkTask.id.in_(keep)).all() if keep else []
+    else:
+        rows = _root_task_query(db, list_id).all()
     return {
         "list": ser.list_out(lst, effective_role(db, actor.employee_id, list_id)),
         "sections": [ser.section_out(s) for s in sections],
-        "tasks": _shape(tasks, task_enrich.collect(db, tasks)),
+        "tasks": _shape(rows, task_enrich.collect(db, rows), light=light),
         #  Mũi tên phụ thuộc đi CHUNG payload này (B-15): Gantt cần chúng cùng
         #  lúc với các thanh, tách thành lượt gọi thứ hai là biểu đồ vẽ xong rồi
         #  mũi tên mới nhảy vào sau, giật một nhịp.
         "links": [ser.task_link_out(link) for link in links.list_links(db, list_id)],
+        "remaining": remaining,
+        "light": bool(light),
+    }
+
+
+def section_tasks(db: Session, actor: Actor, list_id: int, section_id: int,
+                  offset: int = 0, limit: int = BOARD_PAGE_SIZE, light: bool = True) -> dict:
+    """Trang kế của MỘT cột (bao-CR-483) — `section_id = 0` là «Chưa phân cột».
+
+    Thứ tự y hệt bảng (`sort_order, id`) nên `offset` = số thẻ giao diện đang có
+    của cột đó. Trả `remaining` + `next_task_id` cùng nghĩa với `board`.
+    """
+    get_list_or_403(db, actor, list_id)
+    limit = max(1, min(int(limit or BOARD_PAGE_SIZE), BOARD_PAGE_MAX))
+    offset = max(0, int(offset or 0))
+    q = _root_task_query(db, list_id)
+    if section_id:
+        q = q.filter(WorkTask.section_id == section_id)
+    else:
+        q = q.filter(WorkTask.section_id.is_(None))
+    rows = q.offset(offset).limit(limit + 1).all()
+    nxt = rows[limit:]
+    rows = rows[:limit]
+    total = q.order_by(None).count()
+    left = max(0, total - offset - len(rows))
+    return {
+        "tasks": _shape(rows, task_enrich.collect(db, rows), light=light),
+        "remaining": left,
+        "next_task_id": nxt[0].id if nxt else None,
     }
 
 

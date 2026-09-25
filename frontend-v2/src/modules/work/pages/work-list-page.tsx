@@ -31,6 +31,7 @@ import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { WorkToolbar } from '../components/work-toolbar'
 import {
   useCreateTask,
+  useLoadMoreTasks,
   useMoveSubtask,
   useMoveTask,
   useSetAssignees,
@@ -42,10 +43,13 @@ import {
 import { useCreateTaskLink, useDeleteTaskLink, useUpdateTaskLink } from '../hooks/use-task-links'
 import { useWorkViewState } from '../hooks/use-view-state'
 import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
-import { useUpdateWorkList } from '../hooks/use-work-lists'
+import { useUpdateWorkList, useWorkSidebar } from '../hooks/use-work-lists'
 import type { WorkSection } from '../types/work'
 import { fieldHasOptions, WORK_ROLE, WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
+import { anchorInsideLoaded, boardModeFor, remainingCounts } from '../utils/board-paging'
 import { today } from '../utils/due-date'
+import type { KanbanDropPlace } from '../utils/kanban-drop'
+import { flattenGroups } from '../utils/work-groups'
 import { prepareTasks } from '../utils/filter-tasks'
 import { buildOptionRank, findPriorityField } from '../utils/priority-field'
 import { applyTaskConditions } from '../utils/task-conditions'
@@ -100,7 +104,33 @@ export function WorkListPage() {
 
 function WorkListContent({ listId }: { listId: number }) {
   const { appliedState } = useFilterContext()
-  const { data: board, isLoading, isError } = useWorkBoard(listId)
+
+  //  Khung nhìn / lát cắt / sắp xếp / trường trên thẻ được NHỚ theo từng danh
+  //  sách (§1). Từ khóa tìm thì không nhớ — mở lại màn mà vẫn còn bộ lọc chữ cũ
+  //  thì người dùng tưởng danh sách trống.
+  const [viewState, setViewState] = useWorkViewState(listId)
+  const { view, sort, fields, ganttZoom } = viewState
+  const [keyword, setKeyword] = useState('')
+
+  /*  bao-CR-483: bảng tải THEO TRANG (40 việc/cột, không mô tả) khi không có
+      thao tác nào cần đủ dữ liệu ở trình duyệt; tìm từ khóa / sắp xếp / lọc /
+      Gantt thì xin trọn bộ như cũ. Hai chế độ là hai khóa đệm khác nhau nên
+      chuyển qua lại không đè lên nhau.  */
+  const boardMode = boardModeFor({
+    view,
+    keyword,
+    sort,
+    hasConditions: appliedState.rows.length > 0,
+  })
+  const { data: board, isLoading, isError } = useWorkBoard(listId, boardMode)
+  const loadMore = useLoadMoreTasks(listId)
+  const remainingByColumn = boardMode === 'light' ? remainingCounts(board) : undefined
+  const loadingSectionId = loadMore.isPending ? (loadMore.variables?.sectionId ?? 0) : null
+  const onLoadMore =
+    boardMode === 'light'
+      ? (sectionId: number | null) => loadMore.mutate({ sectionId })
+      : undefined
+
   const { data: labelFields = [] } = useWorkLabelFields(listId)
   const createTask = useCreateTask(listId)
   const updateTask = useUpdateTask(listId)
@@ -108,6 +138,12 @@ function WorkListContent({ listId }: { listId: number }) {
   //  Quản lý dự án — hai lối vào, một đường ghi.
   const updateList = useUpdateWorkList()
   const moveTask = useMoveTask(listId)
+  /*  Thả «xuống cuối cột» khi cột đang tải dở thì neo trước thẻ chưa tải đầu
+      tiên — không thì thẻ rơi xuống phần chưa tải và biến khỏi màn hình ngay
+      khi bảng nạp lại (`anchorInsideLoaded`).  */
+  function moveTaskAnchored(taskId: number, place: KanbanDropPlace) {
+    moveTask.mutate({ taskId, place: anchorInsideLoaded(place, board) })
+  }
   const moveSection = useMoveSection(listId)
   //  Nguồn cho ô «Phụ trách» và trường tùy biến kiểu NGƯỜI sửa ngay trên dòng
   //  danh sách — panel chi tiết cũng nạp đúng query này nên không tốn thêm lượt.
@@ -163,13 +199,6 @@ function WorkListContent({ listId }: { listId: number }) {
     }
   }
 
-  //  Khung nhìn / lát cắt / sắp xếp / trường trên thẻ được NHỚ theo từng danh
-  //  sách (§1). Từ khóa tìm thì không nhớ — mở lại màn mà vẫn còn bộ lọc chữ cũ
-  //  thì người dùng tưởng danh sách trống.
-  const [viewState, setViewState] = useWorkViewState(listId)
-  const { view, sort, fields, ganttZoom } = viewState
-  const [keyword, setKeyword] = useState('')
-
   /*  Việc đang mở panel. Nhận mồi từ `?task=` để link CHUÔNG mở thẳng được một
       việc: chuông trỏ tới `/project/tasks/{id}`, trang đó tra dự án rồi dẫn về
       đây kèm tham số này (xem `TaskRedirectPage`).
@@ -194,6 +223,9 @@ function WorkListContent({ listId }: { listId: number }) {
   const [editingSection, setEditingSection] = useState<WorkSection | null>(null)
 
   const myRole = board?.list.my_role ?? null
+  //  bao-CR-482: ô «Nhóm» trong hộp Quản lý dự án lấy nhóm từ cây bên trái.
+  const { data: sidebar } = useWorkSidebar()
+  const manageGroups = useMemo(() => flattenGroups(sidebar), [sidebar])
   const canEdit = myRole !== null && myRole <= WORK_ROLE.MEMBER && !board?.list.is_archived
   const canManage = myRole !== null && myRole <= WORK_ROLE.ADMIN && !board?.list.is_archived
   //  Đổi tên / mô tả / màu / lưu trữ dự án: backend gác `update_list` bằng
@@ -439,10 +471,13 @@ function WorkListContent({ listId }: { listId: number }) {
             onCreateTask={(sectionId, title) =>
               createTask.mutate({ list_id: listId, title, section_id: sectionId })
             }
-            onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onMoveTask={moveTaskAnchored}
             onMoveSection={(sectionId, beforeSectionId) =>
               moveSection.mutate({ sectionId, beforeSectionId })
             }
+            remaining={remainingByColumn}
+            loadingSectionId={loadingSectionId}
+            onLoadMore={onLoadMore}
             onAddSection={() => {
               setEditingSection(null)
               setSectionDialog('create')
@@ -492,7 +527,7 @@ function WorkListContent({ listId }: { listId: number }) {
             //  Cùng luật với kanban (§3.4): đang sắp theo tiêu chí thì KHÓA kéo,
             //  vì thả xong danh sách tự xếp lại chỗ cũ, nhìn như thao tác bị nuốt.
             dragEnabled={sort === 'manual'}
-            onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onMoveTask={moveTaskAnchored}
             onMoveSubtask={(parentId, subtaskId, beforeTaskId) =>
               moveSubtask.mutate({ parentId, subtaskId, beforeTaskId })
             }
@@ -500,6 +535,9 @@ function WorkListContent({ listId }: { listId: number }) {
               moveSection.mutate({ sectionId, beforeSectionId })
             }
             onAddTask={addTaskFromDraft}
+            remaining={remainingByColumn}
+            loadingSectionId={loadingSectionId}
+            onLoadMore={onLoadMore}
           />
         )}
 
@@ -576,6 +614,7 @@ function WorkListContent({ listId }: { listId: number }) {
         open={manageOpen}
         list={board.list}
         myRole={myRole}
+        groups={manageGroups}
         onClose={() => setManageOpen(false)}
       />
 

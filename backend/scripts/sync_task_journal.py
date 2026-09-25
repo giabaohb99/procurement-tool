@@ -282,19 +282,44 @@ def sync_pic(api: WorkApi, task: dict, entry: JournalEntry,
     print(f"{indent}@ [{entry.key}] giao cho " + ", ".join(entry.pic_codes))
 
 
+#  bao-CR-482: dự án mà sổ tự tạo phải nằm TRONG nhóm cha (mặc định «DX»), không đứng
+#  lẻ — «Nhật ký hệ thống» từng sinh ra ngoài nhóm nên màn liệt kê và cây bên trái
+#  không xếp nó cùng chỗ với các dự án khác. Đặt `WORK_SYNC_GROUP=` (rỗng) để tắt.
+DEFAULT_GROUP_NAME = "DX"
+
+
+def find_group_id(api: WorkApi, name: str) -> int | None:
+    """Id nhóm theo TÊN (nhóm cấp 1 rồi tới nhóm con); không thấy thì `None`."""
+    if not name:
+        return None
+    tree = api.call("GET", "/api/work/groups") or {}
+    stack = list(tree.get("groups") or [])
+    while stack:
+        g = stack.pop(0)
+        if (g.get("name") or "").strip().lower() == name.strip().lower():
+            return int(g["id"])
+        stack.extend(g.get("children") or [])
+    return None
+
+
 def ensure_list(api: WorkApi, name: str, dry: bool) -> int:
     lists = api.call("GET", "/api/work/lists") or []
     for row in lists:
         if row.get("name") == name:
             return int(row["id"])
+    group_name = os.environ.get("WORK_SYNC_GROUP", DEFAULT_GROUP_NAME)
+    group_id = find_group_id(api, group_name)
     if dry:
-        print(f"[dry-run] sẽ tạo dự án '{name}'")
+        print(f"[dry-run] sẽ tạo dự án '{name}'"
+              + (f" trong nhóm '{group_name}'" if group_id else " (đứng ngoài nhóm)"))
         return 0
-    created = api.call("POST", "/api/work/lists",
-                       {"name": name,
-                        "description": "Sổ task đồng bộ từ nhat-ky-task.md — "
-                                       "đừng sửa mô tả task bằng tay."})
-    print(f"+ tạo dự án '{name}' (id {created['id']})")
+    body = {"name": name,
+            "description": "Sổ task đồng bộ từ nhat-ky-task.md — đừng sửa mô tả task bằng tay."}
+    if group_id:
+        body["group_id"] = group_id
+    created = api.call("POST", "/api/work/lists", body)
+    print(f"+ tạo dự án '{name}' (id {created['id']})"
+          + (f" trong nhóm '{group_name}'" if group_id else ""))
     return int(created["id"])
 
 

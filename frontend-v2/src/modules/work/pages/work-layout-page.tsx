@@ -4,8 +4,10 @@ import { Outlet, useMatch } from 'react-router-dom'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
+import { GroupManageDialog } from '../components/group-manage-dialog'
 import { WorkCreateDialog } from '../components/work-create-dialog'
 import { WorkSidebarTree } from '../components/work-sidebar-tree'
+import type { WorkGroupNode } from '../types/work'
 import { useWorkSidebarStore } from '../store/sidebar-store'
 
 /**
@@ -22,6 +24,8 @@ import { useWorkSidebarStore } from '../store/sidebar-store'
 export function WorkLayoutPage() {
   const [dialog, setDialog] = useState<'list' | 'group' | null>(null)
   const [parentGroup, setParentGroup] = useState<number | null>(null)
+  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm (từ menu «…» của cây bên trái).
+  const [manageGroup, setManageGroup] = useState<WorkGroupNode | null>(null)
   const collapsed = useWorkSidebarStore((s) => s.collapsed)
   const toggleSidebar = useWorkSidebarStore((s) => s.toggle)
 
@@ -46,14 +50,15 @@ export function WorkLayoutPage() {
       {!isOverview && !collapsed && !isMobile && (
         <WorkSidebarTree
           onToggleCollapse={toggleSidebar}
-          onCreateGroup={() => {
-            setParentGroup(null)
+          onCreateGroup={(parentId) => {
+            setParentGroup(parentId)
             setDialog('group')
           }}
           onCreateList={(groupId) => {
             setParentGroup(groupId)
             setDialog('list')
           }}
+          onManageGroup={setManageGroup}
         />
       )}
 
@@ -72,6 +77,11 @@ export function WorkLayoutPage() {
         mode={dialog}
         parentGroupId={parentGroup}
         onClose={() => setDialog(null)}
+      />
+      <GroupManageDialog
+        open={manageGroup !== null}
+        group={manageGroup}
+        onClose={() => setManageGroup(null)}
       />
     </div>
   )

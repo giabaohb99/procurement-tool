@@ -5,15 +5,83 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import { workTaskApi } from '../api/work-task-api'
 import type { WorkBoard, WorkTask } from '../types/work'
 import { WORK_TASK_STATUS } from '../types/work'
+import { BOARD_PAGE_SIZE, type BoardMode } from '../utils/board-paging'
 import { applyMove, type KanbanDropPlace } from '../utils/kanban-drop'
 import { applyReorder } from '../utils/subtask-drop'
+import { patchBoards, restoreBoards, snapshotBoards } from './board-cache'
 
-/** Bảng kanban của một list: cột + task cha, một lượt gọi (D-01). */
-export function useWorkBoard(listId?: number) {
+/** Trần `per_section` phía backend — không xin quá số này. */
+const BOARD_PAGE_MAX = 200
+
+/** Số việc đang có trong đệm của mỗi cột (`0` = «Chưa phân cột»). */
+function loadedPerSection(board: WorkBoard | undefined): Map<number, number> {
+  const counts = new Map<number, number>()
+  for (const t of board?.tasks ?? []) {
+    const key = t.section_id ?? 0
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return counts
+}
+
+/**
+ * Bảng kanban của một list: cột + task cha, một lượt gọi (D-01).
+ *
+ * bao-CR-483: hai chế độ, xem `utils/board-paging.ts`. Ở chế độ nhẹ, lần nạp
+ * LẠI (sau khi tick xong, kéo thẻ…) xin đúng bằng số việc đang có trong cột
+ * nhiều nhất chứ không quay về 40: người dùng đã cuộn tải thêm ba trang của cột
+ * «Xong» mà tick một việc là cột co về 40, họ phải cuộn tải lại từ đầu.
+ */
+export function useWorkBoard(listId?: number, mode: BoardMode = 'full') {
+  const queryClient = useQueryClient()
+  const id = listId ?? 0
   return useQuery({
-    queryKey: queryKeys.work.board(listId ?? 0),
-    queryFn: () => workTaskApi.board(listId as number),
+    queryKey: queryKeys.work.boardMode(id, mode),
+    queryFn: () => {
+      if (mode === 'full') return workTaskApi.board(id)
+      const cached = queryClient.getQueryData<WorkBoard>(queryKeys.work.boardMode(id, 'light'))
+      const widest = Math.max(BOARD_PAGE_SIZE, ...loadedPerSection(cached).values())
+      return workTaskApi.board(id, { perSection: Math.min(widest, BOARD_PAGE_MAX), light: true })
+    },
     enabled: typeof listId === 'number' && listId > 0,
+  })
+}
+
+/**
+ * Tải trang kế của MỘT cột ở chế độ nhẹ (bao-CR-483), nối vào đệm bảng.
+ *
+ * Mốc `offset` = số việc của cột ấy đang có trong đệm; máy chủ có thể đã đổi
+ * thứ tự trong lúc đó nên trang về được LỌC TRÙNG theo id trước khi nối — thiếu
+ * một việc thì lần nạp lại kế tiếp bù, còn trùng thì hai thẻ cùng id làm dnd-kit
+ * lẫn lộn ngay.
+ */
+export function useLoadMoreTasks(listId: number) {
+  const queryClient = useQueryClient()
+  const lightKey = queryKeys.work.boardMode(listId, 'light')
+
+  return useMutation({
+    mutationFn: ({ sectionId }: { sectionId: number | null }) => {
+      const key = sectionId ?? 0
+      const loaded = loadedPerSection(queryClient.getQueryData<WorkBoard>(lightKey)).get(key) ?? 0
+      return workTaskApi.sectionTasks(listId, key, loaded, BOARD_PAGE_SIZE)
+    },
+
+    onSuccess: (page, { sectionId }) => {
+      const key = sectionId ?? 0
+      queryClient.setQueryData<WorkBoard>(lightKey, (board) => {
+        if (!board) return board
+        const seen = new Set(board.tasks.map((t) => t.id))
+        const fresh = page.tasks.filter((t) => !seen.has(t.id))
+        const remaining = { ...board.remaining }
+        if (page.remaining > 0) {
+          remaining[key] = { count: page.remaining, next_task_id: page.next_task_id }
+        } else {
+          delete remaining[key]
+        }
+        return { ...board, tasks: [...board.tasks, ...fresh], remaining }
+      })
+    },
+
+    onError: () => toast.error('Không tải thêm được việc, thử lại sau'),
   })
 }
 
@@ -62,18 +130,16 @@ export function useUpdateTask(listId: number) {
 
     onMutate: async ({ id, values }) => {
       await queryClient.cancelQueries({ queryKey: boardKey })
-      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
-      if (snapshot) {
-        queryClient.setQueryData<WorkBoard>(boardKey, {
-          ...snapshot,
-          tasks: snapshot.tasks.map((t) => (t.id === id ? { ...t, ...values } as WorkTask : t)),
-        })
-      }
+      const snapshot = snapshotBoards(queryClient, boardKey)
+      patchBoards(queryClient, boardKey, (board) => ({
+        ...board,
+        tasks: board.tasks.map((t) => (t.id === id ? ({ ...t, ...values } as WorkTask) : t)),
+      }))
       return { snapshot }
     },
 
     onError: (_err, _vars, context) => {
-      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
+      restoreBoards(queryClient, context?.snapshot)
       toast.error('Không lưu được thay đổi, đã trả về như cũ')
     },
 
@@ -99,18 +165,16 @@ export function useMoveTask(listId: number) {
 
     onMutate: async ({ taskId, place }) => {
       await queryClient.cancelQueries({ queryKey: boardKey })
-      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
-      if (snapshot) {
-        queryClient.setQueryData<WorkBoard>(boardKey, {
-          ...snapshot,
-          tasks: applyMove(snapshot.tasks, taskId, place),
-        })
-      }
+      const snapshot = snapshotBoards(queryClient, boardKey)
+      patchBoards(queryClient, boardKey, (board) => ({
+        ...board,
+        tasks: applyMove(board.tasks, taskId, place),
+      }))
       return { snapshot }
     },
 
     onError: (_err, _vars, context) => {
-      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
+      restoreBoards(queryClient, context?.snapshot)
       toast.error('Không chuyển được thẻ, đã trả về như cũ')
     },
 

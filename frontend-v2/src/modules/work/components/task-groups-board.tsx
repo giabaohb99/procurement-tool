@@ -243,6 +243,14 @@ export interface TaskGroupsBoardProps extends TaskRowActions {
   onMoveSubtask: (parentId: number, subtaskId: number, beforeTaskId: number | null) => void
   onMoveSection: (sectionId: number, beforeSectionId: number | null) => void
   onAddTask: (sectionId: number | null, draft: NewTaskDraft) => void
+  /**
+   * bao-CR-483: số việc CHƯA tải của từng nhóm, khóa `section_id` (`0` = «Chưa
+   * phân cột»). Không truyền = đã đủ, không có đuôi «Tải thêm» (Gantt luôn thế).
+   */
+  remaining?: Record<number, number>
+  /** Nhóm đang tải trang kế (`0` = «Chưa phân cột»); `null` = không nhóm nào. */
+  loadingSectionId?: number | null
+  onLoadMore?: (sectionId: number | null) => void
 }
 
 /**
@@ -281,6 +289,9 @@ export function TaskGroupsBoard({
   onMoveSubtask,
   onMoveSection,
   onAddTask,
+  remaining,
+  loadingSectionId = null,
+  onLoadMore,
   ...rowActions
 }: TaskGroupsBoardProps) {
   const [drag, setDrag] = useState<DragState | null>(null)
@@ -422,6 +433,9 @@ export function TaskGroupsBoard({
               rowHeight={rowHeight}
               stickyTitle={stickyTitle}
               onAddTask={onAddTask}
+              remaining={remaining?.[group.sectionId ?? 0] ?? 0}
+              loadingMore={loadingSectionId === (group.sectionId ?? 0)}
+              onLoadMore={onLoadMore ? () => onLoadMore(group.sectionId) : undefined}
               {...rowActions}
             />
           ))}

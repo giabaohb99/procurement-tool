@@ -7,6 +7,7 @@ import type { WorkAssignee, WorkMember } from '../types/work'
 import { WORK_ASSIGNEE_KIND } from '../types/work'
 import { initials, personName } from '../utils/people'
 import { AssigneePickerList } from './assignee-picker-list'
+import { PersonAvatar } from './person-avatar'
 
 interface TaskAssigneePickerProps {
   assignees: WorkAssignee[]
@@ -173,13 +174,14 @@ function CompactFaces({ picked }: { picked: WorkAssignee[] }) {
   return (
     <span className="flex shrink-0 -space-x-1.5">
       {shown.map((a) => (
-        <span
+        //  bao-CR-482: có ảnh thì hiện ảnh, không thì chữ tắt như trước.
+        <PersonAvatar
           key={a.employee_id}
-          title={personName(a.employee_name, a.employee_id)}
+          name={personName(a.employee_name, a.employee_id)}
+          avatar={a.avatar}
+          initials={initials(a.employee_name)}
           className={FACE_CLASS}
-        >
-          {initials(a.employee_name)}
-        </span>
+        />
       ))}
       {extra > 0 && (
         <span

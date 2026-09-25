@@ -21,6 +21,8 @@ export function useListInfoForm(list: WorkList) {
   const [name, setName] = useState(list.name)
   const [description, setDescription] = useState(list.description ?? '')
   const [color, setColor] = useState(list.color ?? '')
+  //  bao-CR-482: nhóm chứa dự án; `0` = đứng ngoài nhóm (backend nhận `group_id: 0`).
+  const [groupId, setGroupId] = useState<number>(list.group_id ?? 0)
   const updateList = useUpdateWorkList()
 
   //  Nạp lại khi mở sang DỰ ÁN KHÁC. Chỉnh state ngay trong lượt dựng (khuôn
@@ -32,20 +34,31 @@ export function useListInfoForm(list: WorkList) {
     setName(list.name)
     setDescription(list.description ?? '')
     setColor(list.color ?? '')
+    setGroupId(list.group_id ?? 0)
   }
 
   const trimmedName = name.trim()
+  const groupChanged = groupId !== (list.group_id ?? 0)
   const isDirty =
     trimmedName !== list.name ||
     description.trim() !== (list.description ?? '') ||
-    color !== (list.color ?? '')
+    color !== (list.color ?? '') ||
+    groupChanged
   const canSave = Boolean(trimmedName) && isDirty && !updateList.isPending
 
   function save() {
     if (!canSave) return
+    //  `group_id` CHỈ gửi khi đổi: backend đòi quyền quản trị trên nhóm đích mỗi
+    //  khi khóa này có mặt, nên gửi lại nhóm cũ là chủ dự án không phải quản trị
+    //  nhóm bị 403 dù chỉ sửa mô tả.
     updateList.mutate({
       id: list.id,
-      values: { name: trimmedName, description: description.trim(), color },
+      values: {
+        name: trimmedName,
+        description: description.trim(),
+        color,
+        ...(groupChanged ? { group_id: groupId } : {}),
+      },
     })
   }
 
@@ -56,6 +69,8 @@ export function useListInfoForm(list: WorkList) {
     setDescription,
     color,
     setColor,
+    groupId,
+    setGroupId,
     trimmedName,
     canSave,
     isPending: updateList.isPending,

@@ -3,13 +3,15 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { workTaskApi } from '../api/work-task-api'
-import type { WorkBoard, WorkTaskLink } from '../types/work'
+import type { WorkTaskLink } from '../types/work'
+import { patchBoards, restoreBoards, snapshotBoards } from './board-cache'
 
 /**
  * Thêm / bỏ MŨI TÊN PHỤ THUỘC trên Gantt (B-15).
  *
  * Không có hook ĐỌC: mũi tên nằm sẵn trong payload `board` (khóa
- * `queryKeys.work.board`), nên cả hai mutation chỉ việc vá đúng khóa đó.
+ * `queryKeys.work.board`), nên cả hai mutation chỉ việc vá đúng khóa đó — vá
+ * MỌI biến thể của nó (`board-cache.ts`, bao-CR-483).
  *
  * Cả hai đều **cập nhật lạc quan**. Với việc thêm thì đây không phải chuyện làm
  * đẹp: máy chủ mất một nhịp mới trả về, mà trong nhịp ấy người dùng vừa buông
@@ -34,30 +36,23 @@ export function useCreateTaskLink(listId: number) {
 
     onMutate: async (values) => {
       await queryClient.cancelQueries({ queryKey: boardKey })
-      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
-      if (snapshot) {
-        const draft: WorkTaskLink = {
-          id: tempId--,
-          list_id: listId,
-          predecessor_id: values.predecessor_id,
-          successor_id: values.successor_id,
-          link_type: values.link_type ?? 1,
-          lag_days: values.lag_days ?? 0,
-        }
-        queryClient.setQueryData<WorkBoard>(boardKey, {
-          ...snapshot,
-          links: [...snapshot.links, draft],
-        })
+      const snapshot = snapshotBoards(queryClient, boardKey)
+      const draft: WorkTaskLink = {
+        id: tempId--,
+        list_id: listId,
+        predecessor_id: values.predecessor_id,
+        successor_id: values.successor_id,
+        link_type: values.link_type ?? 1,
+        lag_days: values.lag_days ?? 0,
       }
+      patchBoards(queryClient, boardKey, (board) => ({ ...board, links: [...board.links, draft] }))
       return { snapshot }
     },
 
     //  Toast lỗi do `@/core/api` bắn ra kèm ĐÚNG câu của máy chủ ("tạo thành
     //  vòng lặp", "đã có phụ thuộc"…) — thêm một toast chung chung ở đây là hai
     //  thông báo chồng nhau, cái mơ hồ che mất cái nói rõ nguyên nhân.
-    onError: (_err, _vars, context) => {
-      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
-    },
+    onError: (_err, _vars, context) => restoreBoards(queryClient, context?.snapshot),
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: boardKey }),
   })
@@ -76,19 +71,15 @@ export function useUpdateTaskLink(listId: number) {
     //  xong nhìn thấy mũi tên đứng yên một nhịp, tưởng bấm hụt.
     onMutate: async ({ linkId, values }) => {
       await queryClient.cancelQueries({ queryKey: boardKey })
-      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
-      if (snapshot) {
-        queryClient.setQueryData<WorkBoard>(boardKey, {
-          ...snapshot,
-          links: snapshot.links.map((l) => (l.id === linkId ? { ...l, ...values } : l)),
-        })
-      }
+      const snapshot = snapshotBoards(queryClient, boardKey)
+      patchBoards(queryClient, boardKey, (board) => ({
+        ...board,
+        links: board.links.map((l) => (l.id === linkId ? { ...l, ...values } : l)),
+      }))
       return { snapshot }
     },
 
-    onError: (_err, _vars, context) => {
-      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
-    },
+    onError: (_err, _vars, context) => restoreBoards(queryClient, context?.snapshot),
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: boardKey }),
   })
@@ -103,18 +94,16 @@ export function useDeleteTaskLink(listId: number) {
 
     onMutate: async (linkId) => {
       await queryClient.cancelQueries({ queryKey: boardKey })
-      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
-      if (snapshot) {
-        queryClient.setQueryData<WorkBoard>(boardKey, {
-          ...snapshot,
-          links: snapshot.links.filter((l) => l.id !== linkId),
-        })
-      }
+      const snapshot = snapshotBoards(queryClient, boardKey)
+      patchBoards(queryClient, boardKey, (board) => ({
+        ...board,
+        links: board.links.filter((l) => l.id !== linkId),
+      }))
       return { snapshot }
     },
 
     onError: (_err, _vars, context) => {
-      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
+      restoreBoards(queryClient, context?.snapshot)
       toast.error('Không xóa được phụ thuộc, đã trả về như cũ')
     },
 

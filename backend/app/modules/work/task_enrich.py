@@ -14,13 +14,10 @@ from app.modules.work.task_model import WorkTask, WorkTaskAssignee
 
 
 def _employee_names(db: Session, ids: list[int]) -> dict[int, dict]:
-    from app.modules.employee.model import Employee
-
-    ids = [i for i in set(ids) if i]
-    if not ids:
-        return {}
-    rows = db.query(Employee).filter(Employee.id.in_(ids)).all()
-    return {e.id: {"name": e.full_name or "", "code": e.code or ""} for e in rows}
+    """`{id: {name, code, avatar}}` — bao-CR-482 gom về `people.employee_info` để
+    người phụ trách trên thẻ việc cũng có ảnh như thành viên dự án."""
+    from app.modules.work.people import employee_info
+    return employee_info(db, ids)
 
 
 def collect(db: Session, tasks: list[WorkTask]) -> dict:
@@ -41,6 +38,7 @@ def collect(db: Session, tasks: list[WorkTask]) -> dict:
         assignees.setdefault(r.task_id, []).append({
             "employee_id": r.employee_id, "kind": int(r.kind),
             "employee_name": info.get("name", ""), "employee_code": info.get("code", ""),
+            "avatar": info.get("avatar", ""),
         })
 
     labels: dict[int, list] = {}

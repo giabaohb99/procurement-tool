@@ -3,14 +3,22 @@ import {
   ChevronRight,
   FolderPlus,
   ListPlus,
+  MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { useWorkSidebar } from '../hooks/use-work-lists'
@@ -20,7 +28,10 @@ import { dotClass } from '../utils/work-colors'
 interface WorkSidebarTreeProps {
   /** Mở hộp thoại tạo — trang cha giữ hộp thoại để cây chỉ lo việc vẽ. */
   onCreateList: (groupId: number | null) => void
-  onCreateGroup: () => void
+  /** `parentId` = tạo NHÓM CON trong nhóm đó (bao-CR-482); `null` = nhóm cấp 1. */
+  onCreateGroup: (parentId: number | null) => void
+  /** Mở hộp Quản lý nhóm (đổi tên · thành viên · lưu trữ) — bao-CR-482. */
+  onManageGroup: (group: WorkGroupNode) => void
   /**
    * Bản HÉ RA khi rê chuột vào mép trái (cây đang ẩn, chưa ghim lại). Lúc ấy nút
    * ở dải tiêu đề đổi nghĩa: không phải «Ẩn» nữa mà là «Ghim» — bấm để cây ở lại
@@ -47,6 +58,7 @@ interface WorkSidebarTreeProps {
 export function WorkSidebarTree({
   onCreateList,
   onCreateGroup,
+  onManageGroup,
   peeking = false,
   onToggleCollapse,
   onNavigate,
@@ -74,7 +86,7 @@ export function WorkSidebarTree({
       <div className="flex items-center justify-between gap-1 border-b px-3 py-2">
         <span className="text-sm font-semibold text-navy">Danh sách dự án</span>
         <div className="flex items-center gap-0.5">
-          <Button variant="ghost" size="icon" title="Nhóm mới" onClick={onCreateGroup}>
+          <Button variant="ghost" size="icon" title="Nhóm mới" onClick={() => onCreateGroup(null)}>
             <FolderPlus className="size-4" />
           </Button>
           <Button
@@ -109,6 +121,8 @@ export function WorkSidebarTree({
             node={g}
             depth={0}
             onCreateList={onCreateList}
+            onCreateGroup={onCreateGroup}
+            onManageGroup={onManageGroup}
             onNavigate={onNavigate}
           />
         ))}
@@ -125,12 +139,23 @@ interface GroupNodeProps {
   node: WorkGroupNode
   depth: number
   onCreateList: (groupId: number | null) => void
+  onCreateGroup: (parentId: number | null) => void
+  onManageGroup: (group: WorkGroupNode) => void
   onNavigate?: () => void
 }
 
-function GroupNode({ node, depth, onCreateList, onNavigate }: GroupNodeProps) {
+function GroupNode({
+  node,
+  depth,
+  onCreateList,
+  onCreateGroup,
+  onManageGroup,
+  onNavigate,
+}: GroupNodeProps) {
   const [mo, setMo] = useState(true)
   const Icon = mo ? ChevronDown : ChevronRight
+  //  Cây chỉ hai cấp (backend chặn cấp 3) — nhóm con không có mục «Thêm nhóm con».
+  const canNest = depth === 0
 
   return (
     <div>
@@ -158,6 +183,37 @@ function GroupNode({ node, depth, onCreateList, onNavigate }: GroupNodeProps) {
         >
           <ListPlus className="size-3.5" />
         </Button>
+        {/*  bao-CR-482: menu của NHÓM — trước đây nhóm tạo xong là không đổi tên,
+            không mời ai, không lưu trữ được từ giao diện dù API đã có. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Thao tác với nhóm"
+              aria-label={`Thao tác với nhóm ${node.name}`}
+              className="size-6 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+            >
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onSelect={() => onManageGroup(node)}>
+              <Settings2 className="size-4" />
+              Quản lý nhóm
+            </DropdownMenuItem>
+            {canNest && (
+              <DropdownMenuItem onSelect={() => onCreateGroup(node.id)}>
+                <FolderPlus className="size-4" />
+                Thêm nhóm con
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onSelect={() => onCreateList(node.id)}>
+              <ListPlus className="size-4" />
+              Thêm danh sách
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {mo && (
@@ -168,6 +224,8 @@ function GroupNode({ node, depth, onCreateList, onNavigate }: GroupNodeProps) {
               node={c}
               depth={depth + 1}
               onCreateList={onCreateList}
+              onCreateGroup={onCreateGroup}
+              onManageGroup={onManageGroup}
               onNavigate={onNavigate}
             />
           ))}

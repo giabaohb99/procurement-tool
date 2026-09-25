@@ -14,6 +14,7 @@ import type { TaskListColumn } from '../utils/list-columns'
 import { ROW_PAD_LEFT } from '../utils/list-metrics'
 import { noDisplacement } from '../utils/list-sorting-strategy'
 import { dotClass } from '../utils/work-colors'
+import { LoadMoreTasks } from './load-more-tasks'
 import { TaskDraftRow, type NewTaskDraft } from './task-draft-row'
 import { TaskListRow, type TaskRowActions } from './task-list-row'
 
@@ -59,6 +60,10 @@ interface TaskListGroupProps extends TaskRowActions {
   stickyTitle?: boolean
   /** Thêm việc vào ĐÚNG cột này — `sectionId` null với nhóm "Chưa phân cột". */
   onAddTask: (sectionId: number | null, draft: NewTaskDraft) => void
+  /** Số việc của nhóm CHƯA tải (bao-CR-483); 0 = đã đủ. */
+  remaining?: number
+  loadingMore?: boolean
+  onLoadMore?: () => void
 }
 
 /**
@@ -66,7 +71,8 @@ interface TaskListGroupProps extends TaskRowActions {
  *
  * Số đếm trên tiêu đề là số việc SAU KHI LỌC, không phải tổng của cột — người
  * dùng đang nhìn bộ lọc nào thì con số phải nói về đúng bộ lọc ấy, chứ hiện
- * tổng thì nó mâu thuẫn ngay với số dòng đếm được bên dưới.
+ * tổng thì nó mâu thuẫn ngay với số dòng đếm được bên dưới. (Ở chế độ nhẹ
+ * không có bộ lọc — bao-CR-483 — nên cộng thêm phần chưa tải là vẫn đúng luật.)
  */
 export function TaskListGroup({
   group,
@@ -88,6 +94,9 @@ export function TaskListGroup({
   rowHeight,
   stickyTitle,
   onAddTask,
+  remaining = 0,
+  loadingMore = false,
+  onLoadMore,
   ...rowActions
 }: TaskListGroupProps) {
 
@@ -187,7 +196,9 @@ export function TaskListGroup({
           />
           <span className={cn('size-2 shrink-0 rounded-full', dotClass(group.color))} />
           <span className="text-sm font-medium">{group.name}</span>
-          <span className="text-xs tabular-nums text-muted-foreground">{group.tasks.length}</span>
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {group.tasks.length + remaining}
+          </span>
         </button>
       </div>
 
@@ -220,6 +231,15 @@ export function TaskListGroup({
               />
             ))}
           </SortableContext>
+
+          {onLoadMore && (
+            <LoadMoreTasks
+              remaining={remaining}
+              loading={loadingMore}
+              onLoadMore={onLoadMore}
+              className="rounded-none border-b border-border/60"
+            />
+          )}
 
           {canEdit && (
             <NewTaskRow

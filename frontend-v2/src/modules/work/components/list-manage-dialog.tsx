@@ -9,6 +9,7 @@ import {
 import { Separator } from '@/shared/ui/separator'
 import { useListInfoForm } from '../hooks/use-list-info-form'
 import { WORK_ROLE, type WorkList } from '../types/work'
+import type { FlatWorkGroup } from '../utils/work-groups'
 import { ListInfoPanel } from './list-info-panel'
 import { ListMembersPanel } from './list-members-panel'
 
@@ -18,6 +19,8 @@ interface ListManageDialogProps {
   /** Vai trò của CHÍNH mình trên dự án — quyết định sửa được gì (04 §3). */
   myRole: number | null
   onClose: () => void
+  /** bao-CR-482: nhóm chọn được cho ô «Nhóm» — màn gọi lấy từ cây bên trái. */
+  groups?: FlatWorkGroup[]
 }
 
 /**
@@ -35,7 +38,7 @@ interface ListManageDialogProps {
  * quyền quản trị (A-02). Khối Thông tin lúc đó chuyển sang dạng chỉ đọc, khối
  * Thành viên bỏ hàng mời và các nút thao tác.
  */
-export function ListManageDialog({ open, list, myRole, onClose }: ListManageDialogProps) {
+export function ListManageDialog({ open, list, myRole, onClose, groups }: ListManageDialogProps) {
   //  Hai NGƯỠNG khác nhau, đúng theo backend — đừng gộp làm một:
   //   · sửa thông tin dự án  → `update_list` gác bằng `CAN_OWN`;
   //   · mời / gỡ / đổi vai trò → `add_member` gác bằng `CAN_MANAGE`.
@@ -55,7 +58,7 @@ export function ListManageDialog({ open, list, myRole, onClose }: ListManageDial
         </DialogHeader>
 
         <div className="space-y-5">
-          <ListInfoPanel list={list} form={form} canEdit={canEditInfo} />
+          <ListInfoPanel list={list} form={form} canEdit={canEditInfo} groups={groups} />
           <Separator />
           <ListMembersPanel open={open} listId={list.id} myRole={myRole} />
         </div>

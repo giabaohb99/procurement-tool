@@ -6,6 +6,8 @@ import { Button } from '@/shared/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/ui/hover-card'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { useWorkSidebarStore } from '../store/sidebar-store'
+import type { WorkGroupNode } from '../types/work'
+import { GroupManageDialog } from './group-manage-dialog'
 import { WorkCreateDialog } from './work-create-dialog'
 import { WorkSidebarTree } from './work-sidebar-tree'
 
@@ -49,6 +51,8 @@ function DesktopPeek() {
   const [open, setOpen] = useState(false)
   const [dialog, setDialog] = useState<'list' | 'group' | null>(null)
   const [parentGroup, setParentGroup] = useState<number | null>(null)
+  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm từ menu «…» của cây.
+  const [manageGroup, setManageGroup] = useState<WorkGroupNode | null>(null)
 
   return (
     <>
@@ -82,15 +86,19 @@ function DesktopPeek() {
                 setOpen(false)
                 toggle()
               }}
-              onCreateGroup={() => {
+              onCreateGroup={(parentId) => {
                 setOpen(false)
-                setParentGroup(null)
+                setParentGroup(parentId)
                 setDialog('group')
               }}
               onCreateList={(groupId) => {
                 setOpen(false)
                 setParentGroup(groupId)
                 setDialog('list')
+              }}
+              onManageGroup={(group) => {
+                setOpen(false)
+                setManageGroup(group)
               }}
             />
           </div>
@@ -101,6 +109,11 @@ function DesktopPeek() {
         mode={dialog}
         parentGroupId={parentGroup}
         onClose={() => setDialog(null)}
+      />
+      <GroupManageDialog
+        open={manageGroup !== null}
+        group={manageGroup}
+        onClose={() => setManageGroup(null)}
       />
     </>
   )
@@ -129,6 +142,8 @@ function MobilePeek() {
   const [open, setOpen] = useState(false)
   const [dialog, setDialog] = useState<'list' | 'group' | null>(null)
   const [parentGroup, setParentGroup] = useState<number | null>(null)
+  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm từ menu «…» của cây.
+  const [manageGroup, setManageGroup] = useState<WorkGroupNode | null>(null)
 
   return (
     <>
@@ -155,15 +170,19 @@ function MobilePeek() {
             peeking
             onNavigate={() => setOpen(false)}
             onToggleCollapse={() => setOpen(false)}
-            onCreateGroup={() => {
+            onCreateGroup={(parentId) => {
               setOpen(false)
-              setParentGroup(null)
+              setParentGroup(parentId)
               setDialog('group')
             }}
             onCreateList={(groupId) => {
               setOpen(false)
               setParentGroup(groupId)
               setDialog('list')
+            }}
+            onManageGroup={(group) => {
+              setOpen(false)
+              setManageGroup(group)
             }}
           />
         </SheetContent>
@@ -173,6 +192,11 @@ function MobilePeek() {
         mode={dialog}
         parentGroupId={parentGroup}
         onClose={() => setDialog(null)}
+      />
+      <GroupManageDialog
+        open={manageGroup !== null}
+        group={manageGroup}
+        onClose={() => setManageGroup(null)}
       />
     </>
   )

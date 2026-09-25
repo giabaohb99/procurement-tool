@@ -6,7 +6,7 @@ Tách khỏi `controller.py` cho mỗi tệp giữ được một chủ đề: b
 Nhắc lại luật sống còn: KHÔNG endpoint nào tự `db.query(WorkTask)`. Mọi đường
 đi qua `task_service`, nơi đã kiểm tư cách thành viên của list chứa task.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -28,10 +28,25 @@ def _actor(db: Session, user):
 
 
 @router.get("/lists/{list_id}/board")
-def get_board(list_id: int, db: Session = Depends(get_db),
+def get_board(list_id: int, per_section: int = Query(0, ge=0, le=tasks.BOARD_PAGE_MAX),
+              light: bool = False, db: Session = Depends(get_db),
               user=Depends(require("work_task", "read"))):
-    """Cột + task cha + mọi thứ vẽ trên thẻ, trong MỘT lượt gọi (D-01)."""
-    return success(tasks.board(db, _actor(db, user), list_id))
+    """Cột + task cha + mọi thứ vẽ trên thẻ, trong MỘT lượt gọi (D-01).
+
+    bao-CR-483: `per_section` > 0 = chế độ nhẹ, mỗi cột tối đa chừng ấy việc, phần
+    dư tải qua `/sections/{id}/tasks`; `light` bỏ phần mô tả. Không truyền = như cũ.
+    """
+    return success(tasks.board(db, _actor(db, user), list_id, per_section=per_section, light=light))
+
+
+@router.get("/lists/{list_id}/sections/{section_id}/tasks")
+def get_section_tasks(list_id: int, section_id: int, offset: int = Query(0, ge=0),
+                      limit: int = Query(tasks.BOARD_PAGE_SIZE, ge=1, le=tasks.BOARD_PAGE_MAX),
+                      light: bool = True, db: Session = Depends(get_db),
+                      user=Depends(require("work_task", "read"))):
+    """Trang kế của một cột — bao-CR-483. `section_id = 0` = «Chưa phân cột»."""
+    return success(tasks.section_tasks(db, _actor(db, user), list_id, section_id,
+                                       offset=offset, limit=limit, light=light))
 
 
 @router.post("/tasks")

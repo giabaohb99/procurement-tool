@@ -1,6 +1,13 @@
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import {
   LIST_DESCRIPTION_MAX,
@@ -9,6 +16,7 @@ import {
 } from '../hooks/use-list-info-form'
 import type { WorkList } from '../types/work'
 import { cn } from '@/shared/utils/cn'
+import { NO_GROUP_LABEL, groupNameOf, type FlatWorkGroup } from '../utils/work-groups'
 import { WorkColorPicker } from './work-color-picker'
 
 interface ListInfoPanelProps {
@@ -22,6 +30,11 @@ interface ListInfoPanelProps {
    * 403 — tệ hơn hẳn việc thấy ngay là mình không sửa được.
    */
   canEdit: boolean
+  /**
+   * bao-CR-482: nhóm chọn được cho ô «Nhóm». Không truyền = màn gọi không có cây
+   * nhóm trong tay → ô chỉ hiện chữ, không đổi được.
+   */
+  groups?: FlatWorkGroup[]
 }
 
 /**
@@ -38,7 +51,8 @@ interface ListInfoPanelProps {
  * năng nhận con trỏ nên không bôi đen, không copy được, lại bị làm mờ nhìn như
  * chữ gợi ý. Dùng `ReadOnlyValue` — xem luật ở CLAUDE.md.
  */
-export function ListInfoPanel({ list, form, canEdit }: ListInfoPanelProps) {
+export function ListInfoPanel({ list, form, canEdit, groups }: ListInfoPanelProps) {
+  const groupLabel = groupNameOf(groups ?? [], list.group_id) || NO_GROUP_LABEL
   if (!canEdit) {
     return (
       <section className="space-y-3">
@@ -46,6 +60,10 @@ export function ListInfoPanel({ list, form, canEdit }: ListInfoPanelProps) {
         <div className="space-y-2">
           <Label>Tên dự án</Label>
           <ReadOnlyValue>{list.name}</ReadOnlyValue>
+        </div>
+        <div className="space-y-2">
+          <Label>Nhóm</Label>
+          <ReadOnlyValue>{groupLabel}</ReadOnlyValue>
         </div>
         <div className="space-y-2">
           <Label>Mô tả</Label>
@@ -92,6 +110,36 @@ export function ListInfoPanel({ list, form, canEdit }: ListInfoPanelProps) {
         <p className="text-xs text-destructive">
           Tên không được để trống — dự án không tên là một dòng trắng trong cây bên trái.
         </p>
+      )}
+
+      {/*  bao-CR-482: chuyển dự án vào / ra khỏi nhóm ngay tại đây. Trước đó nhóm
+           chỉ chọn được lúc tạo — tạo nhầm chỗ là phải tạo lại dự án. Backend đòi
+           quyền QUẢN TRỊ trên nhóm đích; ô chỉ liệt kê nhóm mình là thành viên. */}
+      {groups ? (
+        <div className="space-y-2">
+          <Label htmlFor="work-info-group">Nhóm</Label>
+          <Select
+            value={String(form.groupId)}
+            onValueChange={(value) => form.setGroupId(Number(value) || 0)}
+          >
+            <SelectTrigger id="work-info-group" className="w-full">
+              <SelectValue placeholder={NO_GROUP_LABEL} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">{NO_GROUP_LABEL}</SelectItem>
+              {groups.map((group) => (
+                <SelectItem key={group.id} value={String(group.id)}>
+                  {group.depth > 0 ? `\u21b3 ${group.name}` : group.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label>Nhóm</Label>
+          <ReadOnlyValue>{groupLabel}</ReadOnlyValue>
+        </div>
       )}
 
       <div className="space-y-2">

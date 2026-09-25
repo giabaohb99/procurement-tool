@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { workApi } from '../api/work-api'
-import type { WorkBoard } from '../types/work'
+import { patchBoards, restoreBoards, snapshotBoards } from './board-cache'
 
 /**
  * Cấu hình của một list: thành viên · cột · nhãn tùy biến.
@@ -104,24 +104,20 @@ export function useMoveSection(listId: number) {
 
     onMutate: async ({ sectionId, beforeSectionId }) => {
       await queryClient.cancelQueries({ queryKey: boardKey })
-      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
-      if (snapshot) {
-        const rest = snapshot.sections.filter((s) => s.id !== sectionId)
-        const moved = snapshot.sections.find((s) => s.id === sectionId)
+      const snapshot = snapshotBoards(queryClient, boardKey)
+      patchBoards(queryClient, boardKey, (board) => {
+        const rest = board.sections.filter((s) => s.id !== sectionId)
+        const moved = board.sections.find((s) => s.id === sectionId)
+        if (!moved) return board
         const at = beforeSectionId === null ? -1 : rest.findIndex((s) => s.id === beforeSectionId)
-        if (moved) {
-          const pos = at === -1 ? rest.length : at
-          queryClient.setQueryData<WorkBoard>(boardKey, {
-            ...snapshot,
-            sections: [...rest.slice(0, pos), moved, ...rest.slice(pos)],
-          })
-        }
-      }
+        const pos = at === -1 ? rest.length : at
+        return { ...board, sections: [...rest.slice(0, pos), moved, ...rest.slice(pos)] }
+      })
       return { snapshot }
     },
 
     onError: (_err, _vars, context) => {
-      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
+      restoreBoards(queryClient, context?.snapshot)
       toast.error('Không xếp lại được cột, đã trả về như cũ')
     },
 

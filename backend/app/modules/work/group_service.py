@@ -86,15 +86,15 @@ def list_members(db: Session, actor: Actor, group_id: int) -> list[dict]:
 
 
 def _with_names(db: Session, rows: list) -> list[dict]:
-    """Gắn tên + mã nhân sự vào dòng thành viên — MỘT query cho cả danh sách."""
-    from app.modules.employee.model import Employee
+    """Gắn tên + mã + ảnh nhân sự vào dòng thành viên — hai query cho cả danh sách
+    (bao-CR-482: ảnh đi kèm, xem `people.employee_info`)."""
+    from app.modules.work.people import employee_info
 
-    ids = [r.employee_id for r in rows if r.employee_id]
-    emps = {e.id: e for e in db.query(Employee).filter(Employee.id.in_(ids)).all()} if ids else {}
+    info = employee_info(db, [r.employee_id for r in rows])
     out = []
     for r in rows:
-        e = emps.get(r.employee_id)
-        out.append(ser.member_out(r, e.full_name if e else "", e.code if e else ""))
+        e = info.get(r.employee_id) or {}
+        out.append(ser.member_out(r, e.get("name", ""), e.get("code", ""), e.get("avatar", "")))
     return out
 
 

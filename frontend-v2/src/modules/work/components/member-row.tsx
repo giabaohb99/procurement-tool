@@ -6,6 +6,7 @@ import { WORK_ROLE } from '../types/work'
 import type { WorkMember } from '../types/work'
 import { nameInitials } from '../utils/name-initials'
 import { MemberRoleSelect } from './member-role-select'
+import { PersonAvatar } from './person-avatar'
 
 interface MemberRowProps {
   member: WorkMember
@@ -29,12 +30,12 @@ export function MemberRow({ member, canManage, onChangeRole, onRemove }: MemberR
 
   return (
     <li className="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/40">
-      <span
-        aria-hidden
-        className="grid size-8 shrink-0 place-items-center rounded-full border bg-accent text-xs font-medium text-accent-foreground"
-      >
-        {nameInitials(name)}
-      </span>
+      <PersonAvatar
+        name={name}
+        avatar={member.avatar}
+        initials={nameInitials(name)}
+        className="size-8 text-xs"
+      />
 
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-sm font-medium">{name}</span>

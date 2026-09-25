@@ -37,6 +37,10 @@ interface TaskListViewProps extends TaskRowActions {
   onMoveSubtask: (parentId: number, subtaskId: number, beforeTaskId: number | null) => void
   onMoveSection: (sectionId: number, beforeSectionId: number | null) => void
   onAddTask: (sectionId: number | null, draft: NewTaskDraft) => void
+  /** bao-CR-483 — xem `TaskGroupsBoard.remaining`. */
+  remaining?: Record<number, number>
+  loadingSectionId?: number | null
+  onLoadMore?: (sectionId: number | null) => void
 }
 
 /**
@@ -72,6 +76,9 @@ export function TaskListView({
   onMoveSubtask,
   onMoveSection,
   onAddTask,
+  remaining,
+  loadingSectionId,
+  onLoadMore,
   ...rowActions
 }: TaskListViewProps) {
   const { isCollapsed, toggle } = useCollapsedGroups(listId)
@@ -184,6 +191,9 @@ export function TaskListView({
           onMoveSubtask={onMoveSubtask}
           onMoveSection={onMoveSection}
           onAddTask={onAddTask}
+          remaining={remaining}
+          loadingSectionId={loadingSectionId}
+          onLoadMore={onLoadMore}
           {...rowActions}
         />
       </div>
