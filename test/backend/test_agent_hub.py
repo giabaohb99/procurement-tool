@@ -2599,6 +2599,8 @@ def test_vitest_chi_chay_thu_muc_vua_dung():
     ]) == ["src/modules/procurement", "src/shared/data-table", "src/core/api"]
     #  Tệp nằm thẳng dưới src/modules (không thuộc phân hệ nào) thì không đẻ ra đường dẫn lạ.
     assert fe_vitest_targets(["frontend-v2/src/modules/index.ts"]) == []
+    #  ai-CR-057: tệp ở src/app/ (Trang cá nhân, components dùng chung của app) cũng có thư mục vitest.
+    assert fe_vitest_targets(["frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx"]) == ["src/app/components"]
 
 
 def test_cong_frontend_typecheck_lint_vitest_theo_dung_thu_tu(monkeypatch, tmp_path):

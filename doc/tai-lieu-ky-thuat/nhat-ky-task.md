@@ -8183,8 +8183,12 @@ hoạch của AI-0001 mất vì trong câu hướng dẫn có cặp ngoặc nh�
 HTML và từ chối; đã thoát, và thêm một lần lùi: Telegram chê HTML thì gửi lại bản chữ trơn, ở cả
 đường gửi thẳng lẫn đường gửi hộ cho máy sửa mã.
 
+Bổ sung: lượt AI-0001 chạy xong cho thấy cổng kiểm giao diện v2 bỏ qua vitest và Claude Code bị từ
+chối lệnh khi tệp nằm ở thư mục app (Trang cá nhân); thêm gốc đó vào danh sách. Bật cờ deploy dev
+trên máy chủ vì máy đại ca đã được phép deploy.
+
 Kiểm: ba bài mới, cả tệp test bot 224 bài xanh; migration đã chạy local.
 
-Mã nguồn: backend/app/modules/agent_hub/service.py · manager.py · telegram.py · tasks.py ·
+Mã nguồn: backend/app/modules/agent_hub/service.py · manager.py · telegram.py · tasks.py · coder.py ·
 constants.py · model.py · backend/app/core/config.py · backend/migrations/versions/f7c2e9a1b5d4_* ·
 test/backend/test_agent_hub.py

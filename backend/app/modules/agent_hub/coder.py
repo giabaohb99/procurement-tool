@@ -127,7 +127,7 @@ def allowed_tools(worktree: str) -> str:
     Chỉ cho chạy vitest theo đúng một thư mục — không có mẫu nào chạy được cả bộ ~3200 bài."""
     src = Path(worktree) / FE_DIR / "src"
     extra = []
-    for root in ("modules", "shared", "core"):
+    for root in ("modules", "shared", "core", "app"):
         base = src / root
         if base.is_dir():
             extra += [f"Bash(npm --prefix {FE_DIR} run test -- src/{root}/{d.name}:*)"
@@ -680,7 +680,9 @@ FE_TYPECHECK_TIMEOUT = 900
 FE_LINT_TIMEOUT = 300
 FE_VITEST_TIMEOUT = 900
 FE_DEPS_KEEP = 2            # giữ bấy nhiêu bộ thư viện (theo lockfile) trong volume, cũ hơn thì xóa
-_FE_TEST_ROOTS = ("src/modules/", "src/shared/", "src/core/")
+#  ai-CR-057: thêm `src/app/` (components, pages, router…) — AI-0001 sửa `src/app/components/profile/…` mà cổng
+#  kiểm bỏ qua vitest và Claude Code bị từ chối lệnh vì thư mục đó không có trong danh sách.
+_FE_TEST_ROOTS = ("src/modules/", "src/shared/", "src/core/", "src/app/")
 
 
 def _fe_deps_root() -> Path:
