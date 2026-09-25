@@ -1,0 +1,46 @@
+# Agent Hub — runner bậc 2 (ai-CR-011): worker Celery nghe hàng đợi `agent_code`, cắt
+# worktree git rồi gọi `claude -p` sửa mã, chạy pytest của phần vừa sửa, commit lên nhánh
+# của task. Chi tiết: backend/app/modules/agent_hub/coder.py, doc/agent-hub/01 §7.
+#
+# Cùng gốc python:3.12-slim với Dockerfile.api để pytest trong worktree chạy đúng bộ thư
+# viện của máy chủ. Node lấy từ ảnh chính thức bằng COPY --from (cùng nền Debian bookworm),
+# không tải script cài đặt từ mạng về chạy.
+FROM node:22-bookworm-slim AS node
+
+FROM python:3.12-slim
+
+# git: clone/worktree/commit. ca-certificates: Claude Code gọi API qua HTTPS.
+# openssh-client (ai-CR-014): worker (root) ssh lên VPS deploy dev sau khi đại ca đồng ý gộp;
+# `claude` chạy uid 1000 vẫn gọi được lệnh `ssh` nhưng không có khóa nào đọc được (khóa dưới /root).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && npm install -g @anthropic-ai/claude-code \
+    && npm cache clean --force
+
+# Cùng requirements với máy chủ + pytest để chạy cổng kiểm ngay trong worktree.
+COPY backend/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt pytest
+
+# Người dùng thường chạy git / claude / pytest. Worker Celery chạy root và hạ tiến trình con
+# xuống người dùng này (coder.build_env + AGENT_RUNNER_USER) để tiến trình con không đọc được
+# môi trường của cha — nơi có khóa Telegram / Gemini / DB. Kho nguồn mount chỉ đọc thuộc
+# chủ khác nên phải nới `safe.directory` cho mọi người dùng.
+RUN useradd -m -u 1000 runner \
+    && mkdir -p /worktrees \
+    && chown runner:runner /worktrees \
+    && git config --system safe.directory '*'
+
+# Mã máy chủ: dev thì mount đè chỉ đọc, COPY để chạy được cả khi không mount.
+COPY backend/ /app/
+WORKDIR /app
+
+# Celery không cho chạy root nếu thiếu cờ này. Cố ý chạy root — xem chú thích useradd ở trên.
+ENV C_FORCE_ROOT=1
+
+CMD ["celery", "-A", "app.core.celery_app", "worker", "-l", "info", "-c", "1", "-Q", "agent_code", "-n", "runner@%h"]

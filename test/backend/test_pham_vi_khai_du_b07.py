@@ -177,9 +177,12 @@ def test_du_55_entity():
     thư mục là việc của `folder_tree_service._visible_folder_ids` (phase 04
     thay thân hàm đó), không phải của khuôn một-cột ở đây. Khóa này chỉ gác
     "có được đụng vào màn Quản lý cây thư mục không".
+    69 → 70 ngày 25/09/2026 (gộp erp-v2 vào nhánh bot; đánh số lại): việc của bot Agent Hub (`agent_task`, ai-CR-036) — màn
+    `/system/agent-tasks` chỉ đọc. PUBLIC vì việc của bot không thuộc người hay phòng nào;
+    gác bằng khóa quyền, và nằm trong `_SYS_ENTITIES` nên Quản lý thu mua không tự có.
     """
-    assert len(ENTITIES) == 69
-    assert len(SCOPE_FIELDS) == 69
+    assert len(ENTITIES) == 70
+    assert len(SCOPE_FIELDS) == 70
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

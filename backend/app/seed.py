@@ -249,6 +249,9 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  Ai cần thì gán thêm vai trò `dossier_admin`.
                  "dossier",
                  "audit", "change_log",
+                 #  Việc của bot Agent Hub (ai-CR-036): sổ việc + chi phí model của
+                 #  bot sửa mã — việc của quản trị hệ thống.
+                 "agent_task",
                  #  Thư mục văn bản (rà soát 23/09/2026, code-reviewer C2):
                  #  `doc_folder.write` scope "all" nghĩa là QUẢN LÝ (bỏ qua cả
                  #  ACL cấm — bước 4 của `folder_access_service.effective_levels`)

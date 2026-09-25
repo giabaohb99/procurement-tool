@@ -7,6 +7,7 @@
 Bot KHÔNG chạm hàm nào ngoài allowlist này (tầng 2 của 7 tầng bảo mật).
 """
 import json
+import logging
 
 from app.core.audit import record
 from app.core.config import settings
@@ -33,6 +34,8 @@ from .update_tool import PROPOSE_DOCUMENT_UPDATE_SPEC
 from .account_setup_tool import PROPOSE_ACCOUNT_SETUP_SPEC
 from .customs_tool import (CUSTOMS_BUY_TIMING_SPEC, CUSTOMS_LEGAL_CHECK_SPEC, CUSTOMS_MARKET_SPEC,
                           CUSTOMS_PRICE_STATS_SPEC)
+
+log = logging.getLogger("app.assistant.tools")
 
 
 def _active_specs() -> list:
@@ -107,11 +110,19 @@ def _audit(db, user, name: str, args: dict, result: dict) -> None:
             break
     msg = json.dumps({"args": args, "rows": rows, "denied": result.get("denied", False)},
                      ensure_ascii=False)[:480]
-    # entity_id=0: tool không gắn với một bản ghi cụ thể. Bọc try để audit hỏng không làm sập chat.
+    #  entity_id=0: tool không gắn với một bản ghi cụ thể.
+    #
+    #  Ghi trong SAVEPOINT, KHÔNG `db.rollback()` cả phiên khi hỏng (bao-CR-463). Bản cũ
+    #  rollback nguyên phiên của người gọi: cột `action` chỉ rộng 20 ký tự nên mọi tên
+    #  tool dài (`tool:recent_purchase_orders`) đều bị MySQL từ chối, rồi cú rollback
+    #  đó cuốn theo mọi thứ đang chờ trong phiên — với bot Telegram là con trỏ đọc tin,
+    #  nên cùng một câu hỏi được trả lời bốn lần. Nay hỏng thì chỉ mất đúng dòng audit,
+    #  và phải có một dòng log để không hỏng trong im lặng lần nữa.
     try:
-        record(db, user.id, "assistant", 0, f"tool:{name}", msg)
+        with db.begin_nested():
+            record(db, user.id, "assistant", 0, f"tool:{name}"[:50], msg)
     except Exception:  # noqa: BLE001
-        db.rollback()
+        log.warning("assistant: không ghi được audit tool %s", name, exc_info=True)
 
 
 __all__ = ["tool_defs", "run_tool"]

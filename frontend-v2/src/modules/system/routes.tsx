@@ -126,6 +126,10 @@ export const systemModule: ErpModule = {
       icon: RefreshCcwDot,
       entity: 'sync_log',
     },
+    //  ai-CR-039: mục «Việc của bot Telegram» (ai-CR-036) TẠM ẨN theo ý đại ca 24/09 — muốn xem gì
+    //  thì hỏi thẳng bot trên Telegram. Route + trang bên dưới giữ nguyên; bật lại = thêm lại mục
+    //  { label: 'Việc của bot Telegram', path: appRoutes.system.agentTasks, icon: Bot, entity: 'agent_task' }
+    //  và lối tắt tương ứng ở `config/dashboard-shortcuts.ts`.
     {
       //  duoc-CR-396: dời từ phân hệ Nhân sự sang đây. Khai ai được làm gì là
       //  việc QUẢN TRỊ HỆ THỐNG — màn này gác cả 55 khóa quyền của mọi phân hệ
@@ -216,6 +220,18 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.syncLogs,
       lazy: async () => ({
         Component: (await import('./pages/sync-log-list-page')).SyncLogListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.agentTasks,
+      lazy: async () => ({
+        Component: (await import('./pages/agent-task-list-page')).AgentTaskListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.agentTask(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/agent-task-detail-page')).AgentTaskDetailPage,
       }),
     },
     {

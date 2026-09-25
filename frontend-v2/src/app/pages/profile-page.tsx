@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckSquare, History, LifeBuoy, MonitorSmartphone, Palette, User } from 'lucide-react'
+import { Bell, CheckSquare, History, KeyRound, LifeBuoy, MonitorSmartphone, Palette, Send, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
+import { ProfileAiKeyTab } from '@/app/components/profile/profile-ai-key-tab'
 import { ProfileDevicesTab } from '@/app/components/profile/profile-devices-tab'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
@@ -12,6 +13,7 @@ import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
 import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
+import { ProfileTelegramTab } from '@/app/components/profile/profile-telegram-tab'
 import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
 import { SignatureCard } from '@/app/components/profile/signature-card'
 import { AuditTimeline } from '@/shared/audit'
@@ -69,6 +71,10 @@ export function ProfilePage() {
             ? 'devices'
             : rawTab === 'login-history'
               ? 'login-history'
+              : rawTab === 'telegram'
+                ? 'telegram'
+              : rawTab === 'ai-key'
+                ? 'ai-key'
               : rawTab === 'tickets' && canReadTickets
                 ? 'tickets'
                 : 'info'
@@ -183,6 +189,16 @@ export function ProfilePage() {
                 <History className="size-4" />
                 <span>Lịch sử đăng nhập</span>
               </TabsTrigger>
+              {/* ai-CR-038 — tự đăng nhập ERP trong bot Telegram bằng mã một lần. Không gác quyền. */}
+              <TabsTrigger value="telegram" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                <Send className="size-4" />
+                <span>Telegram</span>
+              </TabsTrigger>
+              {/* ai-CR-053 — khóa Gemini cá nhân cho bot Telegram/Zalo. Không gác quyền. */}
+              <TabsTrigger value="ai-key" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                <KeyRound className="size-4" />
+                <span>Khóa AI</span>
+              </TabsTrigger>
               <TabsTrigger value="appearance" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Palette className="size-4" />
                 <span>Giao diện</span>
@@ -277,6 +293,14 @@ export function ProfilePage() {
 
             <TabsContent value="devices" className="space-y-4">
               <ProfileDevicesTab />
+            </TabsContent>
+
+            <TabsContent value="telegram" className="space-y-4">
+              <ProfileTelegramTab />
+            </TabsContent>
+
+            <TabsContent value="ai-key" className="space-y-4">
+              <ProfileAiKeyTab />
             </TabsContent>
 
             <TabsContent value="login-history" className="space-y-4">

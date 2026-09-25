@@ -60,6 +60,7 @@ celery_app.conf.update(
         "app.modules.document.search_tasks",  # Dựng chỉ mục tìm kiếm toàn văn văn bản (phase 07)
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
+        "app.modules.agent_hub.tasks",      # Agent Hub — kéo tin Telegram, gom việc, nạp kho tài liệu
         "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
@@ -76,6 +77,20 @@ celery_app.conf.update(
     # Worker crash giữa chừng → task quay lại queue, không mất
     task_acks_late=True,
     task_reject_on_worker_lost=True,
+
+    #  Việc sửa mã của Agent Hub (bậc 2, ai-CR-011) đi hàng đợi RIÊNG: chỉ service
+    #  `agent-runner` (có git + node + Claude Code CLI, có volume worktree) nghe `agent_code`;
+    #  `celery-worker` thường nghe hàng đợi mặc định nên không bao giờ nhận nhầm việc này,
+    #  và runner cũng không nhận việc thường.
+    task_routes={
+        "agent.code_task": {"queue": "agent_code"},
+        "agent.publish_task": {"queue": "agent_code"},   # ai-CR-012: đẩy nhánh + mở PR
+        "agent.ask_task": {"queue": "agent_code"},       # ai-CR-013: hỏi thêm về bản vá
+        "agent.scan_task": {"queue": "agent_code"},      # ai-CR-017: rà soát mã trước kế hoạch
+        "agent.deploy_task": {"queue": "agent_code"},    # ai-CR-014: gộp erp-v2 + deploy dev
+        "agent.revert_task": {"queue": "agent_code"},    # ai-CR-014: thu hồi bản gộp
+        "agent.cleanup_task": {"queue": "agent_code"},   # ai-CR-033: dọn nhánh bot khi việc đóng
+    },
 
     # Lịch beat — giờ Hà Nội (enable_utc=False). Sao lưu CSDL: xem _backup_schedule.
     beat_schedule={
@@ -150,6 +165,50 @@ celery_app.conf.update(
         },
     },
 )
+
+#  Agent Hub — chỉ đưa vào lịch khi đã bật, vì hai vòng này thức dậy rất dày và
+#  không có lý do gì để chúng chạy trên máy chưa cấu hình bot.
+if settings.AGENT_HUB_ENABLED:
+    celery_app.conf.beat_schedule.update({
+        "agent-triage-inbox": {
+            "task": "agent.triage_inbox",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
+        #  Hẹn giờ gộp + deploy dev (ai-CR-014): vòng này nhặt dòng sổ STAGE_DEPLOY đã tới giờ
+        #  rồi ném `agent.deploy_task` sang runner. Cố ý KHÔNG dùng `eta` của Celery: việc có eta
+        #  nằm trong bộ nhớ worker, restart runner là mất hẹn mà không ai biết; dòng sổ thì còn.
+        "agent-deploy-due": {
+            "task": "agent.deploy_due",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
+        #  ai-CR-021: việc chạy lâu mà im quá 90 giây thì nhắn «em vẫn đang làm», rồi cập nhật phút.
+        "agent-heartbeat": {
+            "task": "agent.heartbeat",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
+        #  ai-CR-037: phiếu hỗ trợ ERP giao cho bot / mang nhãn bộ phận đã khai -> việc của bot.
+        "agent-pull-tickets": {
+            "task": "agent.pull_tickets",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
+    })
+    #  Vòng kéo tin CHỈ vào lịch khi không có tiến trình `agent-poller` riêng (ai-CR-008):
+    #  poller giữ kết nối chờ tin, còn vòng này hỏi-rồi-về mỗi 10 giây. Hai bên cùng đọc
+    #  một con trỏ là xử trùng một tin, nên cờ `AGENT_LONG_POLL` chọn đúng MỘT bên.
+    if not settings.AGENT_LONG_POLL:
+        celery_app.conf.beat_schedule["agent-poll-telegram"] = {
+            #  10 giây một lượt: Telegram không giữ kết nối chờ (xem `telegram.POLL_TIMEOUT`)
+            #  nên độ trễ đại ca cảm thấy đúng bằng nhịp này.
+            #  `expires` NGẮN HƠN nhịp là chủ ý: worker bận một phút rồi rảnh ra thì sáu
+            #  lượt kéo cũ dồn cục sẽ chạy liền nhau và cùng đọc một con trỏ — thà bỏ đi.
+            "task": "agent.poll_telegram",
+            "schedule": 10.0,
+            "options": {"expires": 8},
+        }
 
 if not settings.POS365_HARD_OFF:
     celery_app.conf.beat_schedule.update({

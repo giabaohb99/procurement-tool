@@ -296,6 +296,8 @@ SCOPE_FIELDS = {
     #  Chốt là ở cửa: khóa `sync_log` chỉ cấp cho quản trị hệ thống.
     "sync_log":         PUBLIC,
     "purchase_cost_type": PUBLIC,   # bao-CR-453 — danh mục dùng chung, không có chủ
+    #  ai-CR-036: việc của bot không thuộc người, phòng hay pháp nhân nào — gác bằng khóa quyền.
+    "agent_task":       PUBLIC,
 }
 
 

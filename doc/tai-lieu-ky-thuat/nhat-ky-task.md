@@ -3175,6 +3175,576 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-050 | Ghi kế hoạch trợ lý mở qua MCP và quyền ra lệnh sửa mã
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca chốt hướng mở trợ lý: mỗi người tự chọn ứng dụng AI và tự gắn khóa của mình, hệ thống chỉ cung cấp
+công cụ qua một cổng MCP trên backend ERP, mỗi người tự nối Google Drive và Lịch của họ, làm trên web trước
+rồi mở rộng ra Telegram và Zalo. Em ghi thành tám mục vào danh sách tính năng, kèm quyết định và rủi ro dữ
+liệu đại ca đã chấp nhận. Phần ai được ra lệnh cho bot sửa mã thì không đưa lên giao diện web: em đề xuất một
+tệp cấu hình trong kho mã liệt kê người và cấp được phép, đổi bằng commit để git lưu vết, cùng khóa GitHub và
+khóa SSH riêng của bot bị giới hạn đúng việc, thay cho khóa của đại ca. Ghi thành bốn mục. Danh sách tính năng
+nay có bốn mươi ba mục. Cùng ngày đại ca chốt cách cấp quyền sửa mã: nhắn cho bot trên Telegram, bot hỏi lại rồi
+ghi sổ, không lên web, không phải build hay khởi động lại. Em sắp lại danh sách thành tám phase, từ khóa quyền sửa
+mã, đưa bot lên dev, trợ lý theo từng người trên web, cổng MCP, Google của từng người, nhiều kênh, tới biên bản
+họp, và thêm mục hướng mở rộng vào thiết kế kỹ thuật.
+
+Mã nguồn: `doc/agent-hub/04-danh-sach-tinh-nang.md` · `change-log-ai.md`.
+
+## ai-CR-049 | Tạo phiếu xong bot trả đủ thông tin và link mở phiếu
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca tạo đơn nghỉ qua bot thì bot chỉ báo mã, link không bấm được, và hỏi chi tiết phiếu thì bot lại soạn
+nháp thêm lần nữa. Link trỏ nhầm sang giao diện ERP thường trong khi phiếu nằm ở cơ sở dữ liệu riêng của bot,
+và Telegram không cho bấm địa chỉ nội bộ. Nay link trỏ đúng giao diện của bot; địa chỉ nội bộ thì bot in
+nguyên đường dẫn để chép, khi chạy trên tên miền thật thì là link bấm được. Tạo hoặc gửi duyệt xong, bot trả
+luôn thông tin đọc lại từ phiếu thật: mã, trạng thái, người nghỉ, ngày và buổi nghỉ, số ngày, loại nghỉ, lý do.
+Hỏi chi tiết, thông tin hay link ngay sau khi tạo thì bot trả phiếu vừa tạo chứ không soạn lại. Cả tệp bài kiểm
+của bot 204/204 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/draft_create.py` (`created_details`) · `service.py` (`_reply_created`, `_doc_link_html`, `_detail_recent`) · `backend/app/core/config.py` (`AGENT_ERP_URL`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-048 | Bản nháp chứng từ chỉ hiện một lần và nói đúng cách tạo
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca thử tạo đơn nghỉ thì Trợ lý vẫn bảo bấm nút mở form, bản nháp hiện hai ba lần, và lý do bị viết không
+dấu. Nguyên nhân là công cụ soạn nháp dặn Trợ lý mời người dùng bấm nút như trên web. Nay khi có bản nháp, bot
+không gửi câu chữ đó nữa mà chỉ gửi một thẻ tóm tắt; soạn lại thì thẻ mới thay thẻ cũ; và khi đang có nháp chờ,
+các câu ngắn như oke tạo đơn nháp đi hay gửi cho anh cái link đều được hiểu là đồng ý tạo, còn câu có ý sửa
+hay đổi vẫn chuyển cho Trợ lý soạn lại. Trợ lý cũng được dặn điền chữ tiếng Việt có dấu khi soạn nháp. Cả tệp
+bài kiểm của bot 202/202 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`answer_question`, `_offer_draft`, `_loose_confirm`, `_draft_by_text`) · `constants.py` (`BOT_DRAFT_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-047 | Tạo và gửi duyệt trong một câu nhắn Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca muốn nhờ bot tạo phiếu xong thì gửi duyệt luôn trong một câu. Nay sau bản tóm tắt, nhắn tạo và gửi
+duyệt là bot tạo rồi gửi duyệt ngay, áp cho đơn nghỉ phép, yêu cầu báo giá và yêu cầu mua hàng; nhắn tạo trước
+rồi gửi duyệt luôn cũng được, và chỉ gửi đúng một lần. Bot gửi duyệt bằng đúng đường của web nên vẫn kiểm quỹ
+phép, trình luồng duyệt, báo trưởng bộ phận và gửi email như bấm trên web. Các ô bắt buộc lúc gửi duyệt mà web
+chỉ kiểm ở giao diện, như kho nhận và ngày cần hàng của yêu cầu mua hàng hay phân loại của yêu cầu báo giá, bot
+cũng tự kiểm, thiếu thì chưa tạo gì và nói rõ thiếu ô nào. Gửi duyệt hỏng sau khi đã tạo thì bot báo phiếu đang
+ở nháp kèm lý do. Cả tệp bài kiểm của bot 199/199 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/draft_create.py` (`submit`, `missing_for_submit`) · `service.py` (`_draft_by_text`, `_submit_and_report`, `_submit_recent`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-046 | Nhờ bot tạo đơn, phiếu ngay trong Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca nhờ bot tạo đơn nghỉ phép thì bot chỉ soạn nháp rồi bảo lên web mở form. Nguyên nhân là các công cụ
+tạo của Trợ lý chỉ trả bản nháp để web mở form điền sẵn, mà Telegram không mở được form. Nay bot gửi bản tóm
+tắt, đại ca nhắn tạo là bot tạo thật đúng như bấm Lưu trên web: kiểm lại quyền của chính tài khoản đang
+dùng, tự điền người lập, phòng, pháp nhân và ngày từ hồ sơ nhân sự, và làm nốt phần web tự làm như ghi nhật
+ký đơn nghỉ hay báo nhóm hỗ trợ khi có phiếu mới. Áp cho đơn nghỉ phép, phiếu hỗ trợ, yêu cầu báo giá và yêu
+cầu mua hàng, tất cả tạo ở trạng thái nháp. Nhắn thôi là bỏ; nhắn tạo lần nữa không tạo trùng; tài khoản chat
+đổi giữa chừng thì không tạo. Riêng đề nghị thanh toán vì dính tiền nên bot không tạo mà gửi link mở form web
+đã điền sẵn. Cả tệp bài kiểm của bot 194/194 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/draft_create.py` (`create`, `summarize`, `payment_link`) · `service.py` (`_offer_draft`, `_draft_by_text`) · `constants.py` (`BOT_DRAFT_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-045 | Nhắn bình thường với Đậu Đậu, không cần gõ lệnh
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca không thích gõ lệnh có dấu gạch chéo. Chat của đại ca vốn đã hiểu câu tự nhiên, nay bịt nốt ba chỗ
+còn bắt gõ lệnh: nhắn xuất Word ngay sau khi vừa tìm hiểu thì bot gửi bản Word luôn, còn câu dài về báo cáo
+nghiệp vụ vẫn chuyển cho Trợ lý ERP; người khác đã đăng nhập bằng mã nhắn tìm hiểu hay hỏi đúng sai một
+thông tin cũng được bot tự hiểu và tra trên mạng, các câu còn lại đi Trợ lý ERP theo quyền của họ; và mọi câu
+hướng dẫn của bot nay nói bằng ví dụ câu thường, lệnh chỉ còn là đường tắt. Riêng đăng nhập vẫn phải nhắn
+lệnh kèm mã vì mã cần gõ đúng. Cả tệp bài kiểm của bot 189/189 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`_word_by_text`, `_route_linked_text`, `_run_command`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-044 | Đậu Đậu tra cứu trên mạng, kiểm chứng thông tin và xuất Word
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca muốn có trợ lý nghiên cứu. Nay nhắn lệnh tìm kèm chủ đề thì bot tìm trên Google và trả bản tóm tắt
+kèm danh sách nguồn bấm được; nhắn lệnh kiểm chứng kèm một nhận định thì bot trả kết luận đúng, sai hoặc
+chưa đủ căn cứ kèm lý do và nguồn; nhắn lệnh tài liệu thì bot trả lời từ tài liệu kỹ thuật của dự án và chỉ
+rõ tệp; nhắn lệnh word thì nhận bản Word của lần tra gần nhất. Câu nói tự nhiên như tìm hiểu giúp anh cũng
+được bot hiểu và chuyển sang tra cứu, còn câu hỏi về dữ liệu trong ERP vẫn đi Trợ lý như cũ. Lượt tìm trên
+mạng không có công cụ nào tác động được hệ thống, nên nội dung trang lạ chỉ được hiện ra chứ không làm gì
+được. Chạy thử thật một lần kiểm chứng ra bốn nguồn, tiền token khoảng bảy phần trăm xu. Người đã đăng nhập
+bằng mã cũng dùng được tìm, kiểm chứng và xuất Word; tài liệu kỹ thuật chỉ dành cho quản trị.
+
+Mã nguồn: `backend/app/modules/agent_hub/research.py` (`search_web`, `answer_from_docs`, `build_docx`) · `service.py` (`run_research`, `export_research_word`, `_research_command`) · `manager.py` (ý định `tra_cuu`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-043 | Hỏi bot chi phí bằng chữ và link đăng nhập một chạm
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Màn xem việc của bot đã ẩn nên đại ca cần hỏi bot về chi phí. Nay nhắn lệnh chi phí hoặc hỏi tự nhiên kiểu
+việc này tốn bao nhiêu, tháng này bot tốn bao nhiêu, bot trả số hôm nay, bảy ngày, ba mươi ngày và ba việc tốn
+nhất, tách rõ tiền Gemini là tiền thật với phần Claude Code chạy gói thuê bao chỉ ước để so, kèm quy ra tiền
+Việt theo tỷ giá tạm. Chữ chi phí của nghiệp vụ ERP như chi phí thu mua không bị hiểu nhầm. Lệnh xem chi tiết
+một việc có thêm dòng chi phí. Tên bot nay tự lấy từ Telegram nên nút mở bot để đăng nhập ở trang cá nhân chạy
+được mà không phải khai thêm.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`cost_report`, `_cost_by_text`) · `telegram.py` (`get_bot_username`) · `controller.py` · `backend/app/core/config.py` (`AGENT_USD_VND`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-042 | Bot cho xem đúng thông tin tài khoản đang đăng nhập
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca đăng nhập được bằng mã nhưng lệnh xem tài khoản chỉ hiện số hiệu «#238» vì tài khoản đó không có
+email, và khi hỏi thông tin tài khoản thì bot lại giảng cách đăng nhập. Nay bot hiện họ tên, mã nhân viên,
+phòng ban và tên đăng nhập của tài khoản ở câu báo đăng nhập thành công, ở lệnh xem tài khoản và trong lời
+dặn cho Trợ lý. Trợ lý được dặn: hỏi thông tin tài khoản thì trả bằng chính thông tin đó, chỉ nói cách đăng
+nhập khi được hỏi cách đổi tài khoản. Cả tệp bài kiểm của bot 179/179 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`describe_user`, `_account_fact`, `show_account`) · `constants.py` (`BOT_LOGIN_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-041 | Bài kiểm của bot không bao giờ gọi mạng thật
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca lo bài kiểm tốn token. Em cài một lưới chặn cho tệp bài kiểm của bot để đo: không có lượt nào gọi
+Gemini, nên bài kiểm không tốn tiền API; nhưng mỗi lần chạy có khoảng một trăm hai mươi lăm lượt gọi thật
+sang Telegram bằng token thật, vì vài hàm gửi tin chưa được giả lập. Nay lưới chặn nằm luôn trong tệp:
+Telegram được trả lời giả tại chỗ, còn bài nào lỡ gọi Gemini, GitHub hay bất kỳ dịch vụ ngoài nào thì bài
+đó đỏ ngay. Chạy cả tệp từ khoảng tám mươi giây còn hai mươi mốt giây. Cả tệp 177/177 xanh.
+
+Mã nguồn: `test/backend/test_agent_hub.py` (`_chan_mang_that`) · `change-log-ai.md`.
+
+## ai-CR-040 | Đậu Đậu nói đúng cách đăng nhập tài khoản trong Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca đăng nhập tài khoản khác trên web rồi hỏi bot, bot trả lời bịa ra chuyện quét mã QR và phiên kết
+nối. Nguyên nhân là Trợ lý không biết cơ chế đăng nhập mới nên tự đoán. Nay mỗi lần hỏi, Trợ lý được dặn
+đúng cơ chế: tài khoản của chat Telegram không đổi theo trang web, muốn đổi thì lấy mã ở tab Telegram của
+trang cá nhân rồi nhắn lệnh đăng nhập kèm mã, không có quét mã và không bao giờ hỏi mật khẩu; kèm luôn chat
+đang dùng tài khoản nào. Thêm lệnh xem tài khoản để trả lời chắc chắn không qua model, và câu trợ giúp liệt
+kê ba lệnh tài khoản. Cả tệp bài kiểm của bot 177/177 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`show_account`, `_account_fact`, `answer_question`) · `constants.py` (`BOT_LOGIN_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-039 | Ẩn màn xem việc của bot Telegram trong ERP v2
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca không cần màn xem việc của bot trong phân hệ Quản trị nữa, muốn biết gì thì hỏi thẳng bot trên
+Telegram. Em gỡ mục menu và lối tắt ở trang tổng quan Quản trị. Trang, đường dẫn, API và khóa quyền vẫn
+giữ nguyên để khi cần chỉ thêm lại hai mục là bật lại được. Tab Telegram ở trang cá nhân vẫn giữ. Kiểm
+tra kiểu, quy tắc mã và bài kiểm phân hệ Quản trị đều xanh.
+
+Mã nguồn: `frontend-v2/src/modules/system/routes.tsx` · `config/dashboard-shortcuts.ts` (+ bài kiểm) · `change-log-ai.md`.
+
+## ai-CR-038 | Mỗi người tự đăng nhập tài khoản ERP ngay trong Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây Trợ lý trên Telegram chỉ chạy dưới một tài khoản ERP khai cứng và chỉ chat của đại ca dùng được. Nay mỗi người vào trang cá nhân trên ERP, mở tab Telegram, lấy một mã sáu số dùng một lần rồi nhắn lệnh đăng nhập kèm mã cho bot trong chat riêng; có khai tên bot thì bấm một link là xong. Từ đó chat của họ hỏi được Trợ lý đúng theo quyền của chính tài khoản họ, trong ba mươi ngày, đăng xuất hoặc đổi tài khoản bằng một lệnh, hoặc gỡ ngay trên trang cá nhân. Bot không bao giờ hỏi mật khẩu trong khung chat, không lưu mã, chặn chat đoán sai mã quá năm lần một giờ và không cho nhóm chat đăng nhập. Người đã đăng nhập chỉ hỏi Trợ lý được, còn nhận việc sửa mã, gộp, deploy vẫn chỉ chat của đại ca làm được. Cả tệp bài kiểm của bot 175/175 xanh, kiểm tra kiểu và bài kiểm giao diện đều xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/chat_link.py` (`issue_code`, `redeem_code`, `get_active_link`, `revoke_chat`) · `service.py` (`_handle_other_chat`, `_login_by_code`, `_logout`, `_assistant_user`) · `controller.py` (`list_my_links`, `create_link_code`, `remove_link`) · `model.py` (`AgentChatLink`) · migration `5c8e2a7d9f14` · `frontend-v2/src/app/components/profile/profile-telegram-tab.tsx` · `change-log-ai.md`.
+
+## ai-CR-037 | Đậu Đậu nhận việc từ phiếu hỗ trợ trong ERP
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây bot chỉ nhận việc qua tin nhắn Telegram của đại ca. Nay phiếu hỗ trợ trong ERP cũng thành việc của bot theo hai cách: nhóm hỗ trợ giao phiếu cho tài khoản ERP của bot, hoặc phiếu mới mang nhãn bộ phận đã khai sẵn. Mỗi phiếu thành một việc riêng với đủ tiêu đề, nội dung, người gửi và trang họ đang đứng, bot nhắn đại ca rồi vào bước rà soát như việc thường. Trên phiếu có dòng trả lời báo đã chuyển cho bot kèm mã việc. Khi việc xong, phiếu chuyển sang đã trả lời kèm lời báo bản sửa đã lên môi trường thử; khi bỏ việc, phiếu trả về hàng chờ của nhóm hỗ trợ. Lúc mới bật, bot không kéo các phiếu cũ vào theo nhãn bộ phận. Hai cửa đều tắt cho tới khi khai trong tệp môi trường. Cả tệp bài kiểm 170/170 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`pull_tickets`, `_task_from_ticket`, `_ticket_note`, `report_to_tickets`) · `tasks.py` (`pull_tickets_task`) · `backend/app/core/config.py` (`AGENT_TICKET_ASSIGNEE`, `AGENT_TICKET_DEPARTMENTS`) · `celery_app.py` · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-036 | Màn xem việc của bot Telegram trong ERP v2
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây muốn xem bot đã nhận việc gì và tốn bao nhiêu thì phải mở Adminer hoặc nhắn lệnh chi tiết trên Telegram. Nay trong phân hệ Quản trị của ERP v2 có màn Việc của bot Telegram: ba thẻ số cho việc đang mở, chi phí model và số lượt gọi trong ba mươi ngày, cùng bảng việc lọc được theo trạng thái và chữ. Bấm vào một việc thì thấy yêu cầu, phần rà soát mã, kế hoạch, các bước đã chạy với thời gian, token và chi phí, và toàn bộ hội thoại Telegram của việc đó. Màn chỉ để xem, mọi thao tác vẫn nhắn qua Telegram. Quyền xem là khóa riêng dành cho quản trị hệ thống. Để đại ca mở được màn này, stack của bot có thêm một giao diện riêng ở cổng 8084, chỉ bật khi cần. Kiểm tra kiểu, quy tắc mã và bài kiểm phân hệ Quản trị đều xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/controller.py` (`list_tasks`, `get_task`, `stats`) · `backend/app/core/{permissions,scoping}.py` · `backend/app/seed.py` · `frontend-v2/src/modules/system/pages/agent-task-{list,detail}-page.tsx` · `docker-compose.agent.yml` (`agent-erp`) · `change-log-ai.md`.
+
+## ai-CR-035 | Đậu Đậu nhận ảnh chụp lỗi gửi kèm yêu cầu sửa
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây bot bỏ qua mọi thứ không phải chữ, nên ảnh chụp màn hình lỗi đại ca gửi đều mất. Nay bot tải ảnh về và lưu vào một ổ riêng của bot. Ảnh có kèm chú thích được coi là một yêu cầu có ảnh. Ảnh gửi không kèm chữ thì bot báo đã nhận và chờ câu mô tả trong mười phút rồi ghép vào, nhiều ảnh cùng một album được gom chung. Khi yêu cầu thành việc, bước rà soát mã và bước sửa mã được đưa danh sách ảnh và dặn mở từng ảnh ra xem trước khi kết luận; runner chỉ được đọc ảnh, không sửa được. Cần thêm một cột vào bảng tin nhắn của bot và đã chạy migration trên cơ sở dữ liệu riêng của bot. Ảnh chưa có hạn tự xóa, tin thoại để cho cụm Thư ký. Cả tệp bài kiểm 162/162 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`handle_message`, `_photo_file_id`, `_save_photo`, `_hold_photo`, `_adopt_pending_photos`, `_create_task`) · `coder.py` (`task_images`, `image_block`, `_with_files_dir`) · `telegram.py` (`download_file`) · `model.py` (`AgentMessage.files`) · migration `9a1f3c5e7b20` · `docker-compose.agent.yml` (volume `agent_files`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-034 | Cổng kiểm cho giao diện bản cũ khi Đậu Đậu sửa frontend
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây bot chỉ kiểm được giao diện v2, việc sửa giao diện bản cũ đi qua mà không được kiểm, trong khi nếp làm là sửa bản cũ trước rồi mới bê sang v2. Nay khi bot đụng tệp của bản cũ, runner chạy kiểm tra kiểu cho cả bản cũ và chỉ báo đỏ khi lỗi nằm trong chính tệp bot vừa sửa; lỗi sẵn có ở tệp khác chỉ được đếm và ghi là có thể là lỗi cũ, không chặn. Thư viện của bản cũ cài một lần rồi dùng lại, và bot tự chạy được lệnh kiểm này trong lúc sửa. Nút sửa cho xanh cũng nhận luôn phần đỏ của bản cũ. Cả tệp bài kiểm 158/158 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`run_fe_v1_gate`, `fe_v1_gate_line`, `v1_files`, `ensure_fe_deps`, `link_fe_deps`, `run_gate`, `_gate_brief`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-033 | Đậu Đậu tự dọn nhánh bot khi việc đóng
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Nhánh bot và worktree của mỗi việc trước đây nằm lại mãi. Nay khi đại ca nhắn xong hoặc bỏ một việc, bot giao runner gỡ worktree, xóa nhánh trong runner và xóa nhánh trên GitHub nếu đã từng đẩy lên. Em chọn dọn lúc việc đóng chứ không lúc gộp, vì sau khi gộp đại ca vẫn còn cần thu hồi hoặc hỏi thêm về bản vá. Bản gộp trên nhánh nền giữ nguyên lịch sử nên xóa nhánh bot không mất gì, và bot chỉ đụng các nhánh bắt đầu bằng bot. Cả tệp bài kiểm 156/156 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`cleanup_task_branch`, `dispatch_cleanup`) · `service.py` (`_schedule_cleanup`) · `tasks.py` (`cleanup_task`) · `backend/app/core/celery_app.py` · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-032 | Thẻ kết quả của Đậu Đậu ghi thời gian từng bước
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca thấy việc AI-0007 mất khoảng ba mươi phút mà không biết chậm ở đâu. Nay thẻ kết quả, thẻ deploy và lệnh xem chi tiết có thêm một dòng thời gian: tổng thời gian từ lúc bot nhận việc, thời gian bot thật sự chạy ở từng bước rà soát, lập kế hoạch, sửa mã, gộp và deploy, và phần còn lại là thời gian nằm chờ đại ca duyệt hoặc chờ runner rảnh. Số lấy từ sổ lượt chạy sẵn có, không thêm bảng. Cả tệp bài kiểm 154/154 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`timing_line`, `fmt_minutes`) · `service.py` (`show_task`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-002 | Dựng bậc 1 của Agent Hub: bot Telegram gom việc, viết bản đề xuất và tra kho tài liệu
+- status: dang-lam
+- date: 2026-09-18
+- pic: NSU209
+Đại ca duyệt bản thiết kế Agent Hub rồi ra lệnh làm bậc 1. Bậc này dựng một con bot quản lý
+nhận việc qua Telegram: đại ca nhắn một câu mô tả việc cần làm, bot gom những tin cùng loại
+lại thành một đầu việc, tóm tắt, rồi tự viết ra một bản đề xuất cách sửa kèm danh sách tệp nó
+định đụng tới và bài kiểm dự kiến. Bản đề xuất in thẳng ra Telegram kèm ba nút Duyệt, Sửa lại,
+Bỏ việc này. **Bậc 1 dừng đúng ở đó — bot chưa được sửa một dòng mã nào của hệ thống.** Mục
+đích của cả bậc này chỉ là trả lời một câu: con bot có đủ khôn để gom việc và viết ra phạm vi
+cụ thể hay không. Nếu nó viết ra toàn thứ chung chung thì dừng dự án ở đây, đỡ được rất nhiều
+công của bậc sau.
+
+Toàn bộ chạy nền trong máy chạy việc nền đang có, không dựng thêm dịch vụ nào, không dựng màn
+hình nào. Muốn xem sổ thì mở Adminer. Cầu dao tổng mặc định tắt, chưa bật thì không một lời
+gọi nào đi ra ngoài.
+
+Năm điểm đáng nhớ của bản dựng này:
+
+- **Bot còn làm cửa hỏi đáp cho Trợ lý AI có sẵn.** Nhắn `/hoi` kèm câu hỏi thì câu đó đi
+  thẳng vào Trợ lý AI và trả lời ngay tại chỗ, không đẻ ra đầu việc nào; nhắn chữ thường mới
+  vào luồng gom việc. Một con bot, hai nhánh, chia bằng chữ đầu dòng, vì đại ca chỉ có một cái
+  điện thoại. Chỗ nguy hiểm đã ghi rõ trong tài liệu: Trợ lý AI lọc dữ liệu theo người đăng
+  nhập mà Telegram thì không có đăng nhập, nên phải chỉ đích danh một tài khoản để chạy dưới
+  quyền người đó, và **tuyệt đối không được khai tài khoản quản trị** — ai nhắn được cho bot
+  sẽ đọc được đúng những gì tài khoản đó đọc được. Để trống là tắt hẳn nhánh này.
+- **Kho tài liệu của bot để riêng, không dùng chung với Trợ lý AI.** Kho của Trợ lý AI chỉ
+  chứa bài hướng dẫn cho người dùng cuối, còn bot cần đọc nhật ký kỹ thuật nội bộ. Trộn chung
+  thì khách hỏi một câu nghiệp vụ lại nhận về một đoạn nhật ký deploy, vì tầng tra cứu hiện
+  không lọc theo nguồn.
+- **Bot chạy bằng một khóa Gemini riêng.** Dùng chung khóa với Trợ lý AI thì bot chạy nền đốt
+  hết hạn mức, Trợ lý AI đang phục vụ người thật chết theo, mà lúc đó không ai biết vì sao.
+- **Kéo tin mỗi mười giây thay vì giữ kết nối treo** như bản thiết kế viết ban đầu. Máy chạy
+  việc nền khai đúng một luồng, giữ một kết nối treo ba mươi giây nghĩa là suốt ba mươi giây
+  đó không việc nền nào khác chạy được, kể cả gửi thư. Đã ghi đính chính vào tài liệu thiết kế
+  kèm lý do và đường nâng cấp.
+- **Nạp kho tài liệu không xóa kho cũ trước nữa.** Kho hiện hơn bốn nghìn đoạn, tức hơn bốn
+  mươi lượt gọi API nhúng nối nhau, và bị chặn hạn mức ở giữa chừng là chuyện bình thường. Nếu
+  xóa trước thì lần hỏng đó để lại một kho đầy ba phần tư, mà hàm tra cứu cố ý không báo lỗi
+  ra ngoài, nên bot vẫn tra, vẫn trả lời, chỉ là thiếu mất một phần tài liệu và không ai thấy.
+  Nay nạp đè lên, chạy lại chỉ vá vào chỗ thiếu, và chỉ dọn rác khi lượt nạp đã đi trọn.
+
+Đã kiểm trên máy: chín bài kiểm mới đều xanh, năm bảng sổ dựng đúng, các phần đều nạp được.
+Còn thiếu bước sinh tệp migration vì ảnh Docker của máy em bị dọn sạch nên phải dựng lại từ
+đầu, lần dựng đầu đứt ở khâu tải gói do chập mạng.
+
+Mã nguồn: phân hệ mới `backend/app/modules/agent_hub/` gồm sáu tệp (sổ dữ liệu, bộ mã số, cầu
+nối Telegram, bộ nhớ tài liệu, bộ gọi Gemini, tầng luồng việc) · bài kiểm
+`test/backend/test_agent_hub.py` · đăng ký việc nền trong `backend/app/core/celery_app.py` ·
+khai báo bảng trong `backend/app/core/all_models.py` · tách nguồn khóa trong
+`backend/app/modules/assistant/provider/gemini.py` · gắn thêm hai thư mục chỉ đọc cho máy chạy
+việc nền trong `docker-compose.yml`.
+Tham chiếu: `doc/agent-hub/01-thiet-ke-ky-thuat.md` và ba quyết định mới QĐ-AI-8, QĐ-AI-9,
+QĐ-AI-10 trong `doc/tai-lieu-ky-thuat/change-log-ai.md`.
+
+### ai-CR-002-chay-thu-local | Trả nợ migration và dựng stack thử ghép vào stack local
+- status: xong
+- date: 2026-09-22
+Đại ca hỏi phần AI nhận việc qua Telegram có tài liệu chưa; tìm ra nó nằm ở nhánh
+`agent-hub-bac-1` chỉ có trên GitHub. Kéo nhánh về worktree riêng `procurement-agent-hub`
+để không đụng cây đang dở của `procurement-tool`. Chuỗi migration của repo gãy khi chạy từ
+cơ sở dữ liệu trống (bước cũ sửa cột `avatar` chưa có), nên thay vì dựng từ đầu thì nhân bản
+`dego-erp` local sang database mới `dego-agent`, đóng dấu alembic về head của nhánh
+(`9f8e7d6c5b4a`; bốn migration mà local đi trước đều chỉ thêm cột/bảng nên vô hại), rồi
+sinh migration `8023c5f8bee4_agent_hub` và cắt tay còn đúng năm bảng `tab_agent_*` vì
+autogenerate nhặt thêm cả trăm dòng lệch chỉ mục/NOT NULL không thuộc việc này.
+
+Stack thử theo ý đại ca là tái dùng Docker đang chạy: tệp `docker-compose.agent.yml` cắm ba
+container mới (api cổng 8010, worker, beat) vào mạng `procurement-tool_default`, dùng chung
+MySQL/Redis/Qdrant. Cách ly nằm ở `.env`: database `dego-agent`, Redis ngăn 1 để hai worker
+không giành việc nhau, `STORAGE_PREFIX=agenthub`, tắt email và đồng bộ đặt xe, không mang
+khóa R2/Firebase sang. Tắt tạm hai container web/help của stack local cho nhẹ máy, giữ erp
+để còn soi giao diện. Chín bài kiểm `test_agent_hub.py` xanh trong container mới.
+
+Còn chờ đại ca: điền `AGENT_TELEGRAM_BOT_TOKEN`, `AGENT_TELEGRAM_CHAT_ID`,
+`AGENT_GEMINI_API_KEY` vào `.env` của worktree, đặt `AGENT_HUB_ENABLED=true`, khởi động lại
+worker + beat rồi nhắn thử cho bot. Chưa commit gì.
+
+Bổ sung cùng ngày: đại ca điền xong ba biến. Bẫy gặp phải: `docker compose restart` KHÔNG đọc lại
+`.env` (biến môi trường đóng băng từ lúc tạo container), nên beat vẫn không phát lịch agent; phải
+`up -d --no-deps --force-recreate api celery-worker celery-beat` (đính chính 22/09 tối: service
+`api` của stack bot đổi tên thành `agent-api` vì trùng bí danh mạng với API thật của stack
+local — mọi lệnh `exec`/`up`/`restart` từ đó gọi `agent-api`). Sau đó vòng kéo tin chạy đều mỗi
+10 giây (`updates: 0`, con trỏ `telegram_offset` đã ghi sổ), vòng gom chạy mỗi phút. Nhánh `/hoi`
+còn tắt vì `AGENT_ASSISTANT_USER` để trống; khi khai thì nó gọi đúng `assistant.service.ask()` có
+mở lớp tool, chạy dưới phạm vi tài khoản đó. Kho `agent_docs` chưa nạp (`agent.reindex_docs`).
+
+Bổ sung lần hai cùng ngày: nạp xong kho tri thức của bot bằng `agent.reindex_docs` chạy trong
+worker (thư mục `doc/` chỉ gắn vào worker) — **47 tệp, 4064 đoạn**, không tệp nào bị bỏ. Kho này
+nằm riêng trong Qdrant tên `agent_docs`, không lẫn với `kb_docs` của Trợ lý AI đang có 305 đoạn
+Hướng dẫn sử dụng, nên trí nhớ đại ca là bản nạp cũ của kho kia.
+
+Bật nhánh `/hoi` bằng `AGENT_ASSISTANT_USER=admin` theo lệnh đại ca — cấu hình so bằng cột thư
+điện tử của tài khoản, mà tài khoản quản trị seed để chính chuỗi `admin` ở cột đó (id 2, còn hiệu
+lực). Mật khẩu KHÔNG cần và không ghi vào đâu: bot chạy dưới đối tượng tài khoản lấy thẳng từ cơ
+sở dữ liệu. Đây là cách làm tạm dưới máy local và ngược với lời dặn của `QĐ-AI-10` (đừng khai tài
+khoản quản trị), vì phạm vi dữ liệu của quản trị là toàn công ty.
+
+Hỏi thử thì lòi ra lỗi thật của Trợ lý AI khi chạy bằng Gemini: Gemini chỉ nhận danh sách giá trị
+`enum` là chuỗi, mà tool tra nghỉ phép khai bộ mã trạng thái bằng số theo luật R2, nên máy chủ của
+Google trả 400 và **hỏng cả lượt hỏi** chứ không riêng tool đó. Vá ở tầng adapter Gemini bằng một
+hàm dọn lược đồ đi đệ quy, giữ kiểu số cho tầng chạy tool và chuyển danh sách giá trị cho phép
+xuống phần mô tả. Ghi thành `bao-CR-462-gemini-enum-so` vì đó là lỗi của phân hệ Trợ lý AI chứ
+không phải của Agent Hub. Sau khi vá, câu «Liệt kê 3 đơn mua hàng mới nhất» gọi đúng tool
+`recent_purchase_orders` và trả lời kèm đường dẫn sang từng đơn.
+
+Đại ca chốt thêm một hướng cho sau này: mỗi người tự đăng nhập tài khoản ERP ngay trong Telegram,
+bot nhớ theo người chat, và có lệnh đổi tài khoản — ghi thành `ai-CR-004-telegram-tu-dang-nhap`,
+trạng thái đề xuất, chưa làm ở bậc 1.
+
+Mã nguồn: `backend/app/modules/assistant/provider/gemini.py` (hàm `_gemini_schema`).
+
+### ai-CR-003-bo-tien-to-lenh + ai-CR-005-gom-xong-ra-thang-ke-hoach
+
+22/09/2026. Đại ca chạy thử rồi phản hồi hai chuyện, cùng một ý: **bot phải linh động như Trợ lý
+AI**, đừng bắt người ta học thủ tục.
+
+Chuyện thứ nhất — *"sao phân biệt bằng /hoi nhỉ, trợ lý AI đâu có mấy cái lệnh này đâu, hỏi là trả
+lời luôn mà"*. Nay mọi tin **không** mở đầu bằng `/` đều đi qua một trạm mới `STAGE_INTENT`: gọi
+Gemini Flash với `temperature=0`, trần 256 token, hỏi đúng một câu «tin này là HỎI hay GIAO VIỆC».
+Ra `hoi` thì trả lời tại chỗ, ra `viec` thì để tin nằm lại sổ chờ vòng gom, ra `mo_ho` thì hỏi lại
+một câu kèm hai nút *Trả lời luôn* / *Ghi thành việc* — thà hỏi một câu còn hơn đoán sai rồi đẻ ra
+một đầu việc ma. Tin mở đầu bằng `/` vẫn chạy như cũ nhưng **không tốn lượt gọi model** nào.
+
+Chỗ then chốt của lần vá này không nằm ở việc phân loại mà ở việc **đóng dấu `action`**: hộp thư
+chờ được định nghĩa là những tin `task_id = 0` **và** `action = ''`, nên tin nào xử lý xong mà
+quên đóng dấu thì vòng gom sau nhặt lại và đẻ ra task. Đó đúng là gốc của ba tấm thẻ rác đại ca
+thấy: `/start` thành AI-0001, một câu hỏi vừa được trả lời xong thành AI-0002 và AI-0003. Nay
+lệnh đóng dấu `lenh`, câu hỏi đã trả lời đóng dấu `hoi`, tin đang chờ bấm nút đóng dấu `cho_y`.
+Ba task rác đã hủy và ba tin gốc đã đóng dấu tay. Phân loại mà hỏng thì coi như giao việc — tin
+nằm lại sổ, không bao giờ bốc hơi.
+
+Chuyện thứ hai — *"nè lập kế hoạch là sao nữa... ngta quan tâm thông tin thôi"*. Bỏ hẳn nút **Lập
+kế hoạch**. Gom xong là chạy thẳng trạm PLAN và gửi **một** thẻ duy nhất: phương án, tệp sẽ đụng,
+kiểm thử, rủi ro, ba nút *Duyệt · Sửa lại · Bỏ*. Tấm thẻ trung gian cũ chỉ nhai lại lời đại ca vừa
+nhắn — hai tiếng chuông cho một việc mà không thêm chữ thông tin nào. Cảnh báo **rủi ro CAO** và
+dòng *Gom từ n tin nhắn* dời sang thẻ kế hoạch để không mất. Việc này **không** phá `QĐ-AI-5`:
+chặng bắt buộc dừng là PLAN → CODE và REVIEW → PROD, chưa bao giờ là TRIAGE → PLAN. Đổi lại mỗi
+việc tốn hai lượt Gemini ngay lúc gom thay vì chờ bấm; trần `AGENT_DAILY_TASK_CAP` giữ nguyên nên
+chi phí vẫn có nóc. Xóa `send_task_card`, giữ nhánh nút `plan:` để mấy thẻ cũ còn nằm trong
+Telegram bấm vẫn chạy.
+
+Kiểm: `test/backend/test_agent_hub.py` từ 9 lên **15 bài**, xanh hết — 5 bài cho nhánh phân loại ý
+định (hỏi không cần tiền tố, giao việc vẫn nằm lại sổ, mập mờ thì hỏi lại, phân loại hỏng thì coi
+như giao việc, lệnh không bao giờ thành việc) và 1 bài canh đúng chuyện thẻ kế hoạch không còn nút
+*Lập kế hoạch*.
+
+BẪY ghi lại cho lần sau: sửa mã xong phải `docker compose ... restart celery-worker`. Worker giữ
+module đã nạp trong bộ nhớ, bind-mount không cứu được — lần vá Gemini em tưởng xong rồi mà đại ca
+vẫn thấy y nguyên lỗi 400 trên Telegram chỉ vì quên bước này.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` · `manager.py` · `constants.py`.
+
+### bao-CR-463-audit-tool-rollback + ai-CR-006-telegram-nhu-tro-ly-ai
+
+22/09/2026. Đại ca hỏi bot Telegram đúng một câu *"3 đơn hàng gần nhất"* mà nhận về bốn tin: hai
+câu trả lời có link sai, rồi hai lỗi hết hạn mức Gemini; chữ trả về in thô `**[X](/y)**`; và chốt
+hướng: **trước mắt bot phải là đúng con Trợ lý AI trên web, chỉ khác chỗ đứng là Telegram.**
+
+Gốc của bốn tin không nằm ở Telegram mà ở **sổ audit của Trợ lý AI**, lỗi có sẵn ở prod. Cột
+`tab_audit_log.action` rộng 20 ký tự, dòng audit tool tên `tool:recent_purchase_orders` dài 27,
+MySQL từ chối; bản cũ của `_audit` bắt lỗi rồi rollback nguyên phiên của người gọi. Với web thì chỉ
+mất im lặng dòng audit của gần hết các tool; với bot thì con trỏ đọc tin, tin vào và dòng sổ gọi
+model đang chờ trong cùng phiên bị xóa theo, lượt kéo sau đọc lại đúng tin cũ, và cứ thế cho tới khi
+Gemini báo 429. Vá ba lớp: ghi audit trong savepoint (hỏng chỉ mất đúng dòng đó, có cảnh báo log),
+nới cột lên 50 kèm migration, và bot tự chốt commit ngay sau khi ghi tin vào và trước khi giao cho
+Trợ lý AI. Tool đơn mua hàng thêm trường `url` — thiếu nó model bịa đường dẫn.
+
+Phần "như Trợ lý AI trên web": Trợ lý trả Markdown, web render bằng thư viện, Telegram thì in thô.
+Nay bot đổi Markdown sang HTML Telegram (đậm, nghiêng, mã, link, gạch đầu dòng, tiêu đề thành đậm,
+bảng thành từng dòng). Telegram không có phông chữ, bảng kẻ ô hay màu — đó là trần của nền tảng.
+Bot cũng nối mạch hội thoại: lấy các cặp hỏi/đáp gần đây của chat đưa vào `ask(history=...)`, sổ
+giữ Markdown gốc để lượt sau model đọc đúng như web. Link tương đối được nối gốc `FRONTEND_URL`,
+tệp `.env` của stack thử khai `http://localhost:8083`.
+
+Kiểm: `test_agent_hub.py` 15 lên **19 bài**, thêm `test_assistant_tool_audit.py` **2 bài**, cả
+`test_assistant_gemini_schema.py` — 25 xanh. Migration `b7c1d2e3f4a5` đã nạp vào DB `dego-agent`
+local, worker đã dựng lại. ⚠️ Migration này nối sau migration agent hub, bê về `main` phải đổi
+`down_revision`. Prod đang tạm dừng deploy nên chỉ ghi nhận: lỗi audit này đang sống ở prod.
+
+BẪY ghi lại: viết mã Python bằng heredoc trong bash làm gãy dấu `\` — chuỗi `\x00` thành byte NUL
+thật trong tệp. Đoạn mã có nhiều dấu thoát thì dùng công cụ sửa tệp, đừng đi qua heredoc.
+
+Mã nguồn: `backend/app/modules/assistant/tools/__init__.py` · `modules/audit/model.py` ·
+`migrations/versions/b7c1d2e3f4a5_audit_action_50.py` · `assistant/tools/catalog.py` ·
+`modules/agent_hub/telegram.py` · `service.py` · `constants.py`.
+
+### ai-CR-007-noi-mach-hoi-thoai
+
+22/09/2026. Đại ca gửi ảnh: hỏi bot *"em có thể tạo đơn nghỉ phép cho anh không"*, Trợ lý AI hỏi
+lại ngày và lý do, đại ca đáp *"cho anh nghỉ vào thứ 6 tuần này, lý do là đi du lịch"*, và bot đẻ
+ra việc sửa mã AI-0004 kèm bốn câu hỏi làm rõ thay vì tạo đơn. Đại ca bảo vá chỗ nối mạch trước
+mọi thứ khác, vì không vá thì mọi công cụ nhiều bước sau này đều gãy ở bước hai.
+
+Gốc có hai nửa. Trạm phân loại ý định chỉ nhìn một câu trơ trọi, nên câu đáp ngắn đọc rời giống
+một lời nhờ; và khi Gemini hết hạn mức (ảnh có lỗi 429) thì trạm rơi về giao việc, tức chính câu
+đáp đó xếp vào hàng chờ gom. Vá ba chốt: bot vừa hỏi lại (câu trả lời gần nhất của Trợ lý AI có
+dấu hỏi, trong mười phút theo đồng hồ DB) thì tin kế đi thẳng Trợ lý AI, không tốn lượt phân
+loại; còn lại vẫn phân loại nhưng đưa kèm lượt hỏi đáp gần nhất, và câu nhắc chia lại ranh: nhờ
+làm nghiệp vụ trên hệ thống (tạo đơn nghỉ phép, lập báo cáo, duyệt) là việc của Trợ lý AI, chỉ
+nhờ sửa phần mềm mới vào sổ việc; phân loại hỏng thì hỏi lại kèm hai nút thay vì âm thầm xếp vào
+hàng chờ. Dấu hỏi là chốt hẹp cố ý: bot trả lời xuôi rồi đại ca báo lỗi màn hình thì đó là việc
+mới, phải phân loại.
+
+Kiểm: `test_agent_hub.py` 19 lên 22 bài (nối thẳng khi bot vừa hỏi; quá mười phút thì phân loại
+lại; trả lời xuôi thì phân loại nhưng có mạch; sửa bài cũ: hỏng thì hỏi lại). Worker stack thử đã
+nạp lại. Việc AI-0004 vẫn mở trong sổ local, chờ đại ca bấm bỏ.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`_is_follow_up`, `_intent_context`,
+`_ask_intent_choice`, `FOLLOW_UP_WINDOW`) · `manager.py` (`run_intent(context=)`,
+`INTENT_SYSTEM`) · `test/backend/test_agent_hub.py` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §9.
+
+### ai-CR-008-bot-cham-poller-rieng
+
+22/09/2026. Đại ca báo bot Telegram *"trả lời lâu dữ lắm, nó bị chậm"* và bảo dọn cho xong
+chỗ chậm trước rồi mới làm tiếp phần nối tool. Đo trên sổ gọi model và sổ tin nhắn: mỗi câu
+mất bốn đến bảy giây ở phía máy chủ (trạm phân loại ý định khoảng ba giây, Trợ lý AI chạy
+tool khoảng bốn giây), nhưng trước đó còn phải chờ không tới mười giây để vòng beat thấy
+tin, và suốt quãng đó Telegram không có một dấu hiệu nào — nên đại ca đọc ra là bot chết.
+
+Vá ba chỗ. Một, tách vòng kéo tin ra tiến trình riêng `agent-poller` (service mới trong tệp
+compose của stack agent) giữ kết nối Telegram hai mươi lăm giây: tin tới là Telegram thả về
+ngay, không còn chờ nhịp mười giây; hỏng thì lùi phiên, nghỉ ba giây rồi kéo tiếp, không tự
+chết; bị tắt thì xong lượt đang kéo mới dừng. Cờ mới `AGENT_LONG_POLL` đặt sẵn trong tệp
+compose cho beat và worker: bật thì vòng kéo trong beat bị bỏ khỏi lịch và việc đó cũng tự
+trả rỗng nếu lịch cũ còn bắn — hai bên cùng đọc một con trỏ là xử trùng một tin. Hai, bot bật
+dòng «đang soạn tin...» ngay khi nhận tin và bật lại trước khi giao cho Trợ lý AI, chat lạ thì
+vẫn im hẳn. Ba, Gemini trả lỗi hết hạn mức kèm số giây phải chờ không quá mười giây thì chờ
+rồi gọi lại đúng một lần; bảo chờ lâu hơn thì báo lỗi ngay như cũ. Lớp này áp cho cả Trợ lý
+AI trên web.
+
+Kiểm: `test_agent_hub.py` từ 22 lên 28 bài, thêm `test_assistant_gemini_429.py` 4 bài, xanh
+hết. Stack thử đã dựng poller và dựng lại beat/worker; log poller báo giữ kết nối 25 giây,
+beat chỉ còn bắn vòng gom mỗi phút. Prod chưa vì đang tạm dừng deploy. Chưa làm: gộp trạm
+phân loại vào lượt gọi Trợ lý AI (bớt thêm khoảng ba giây nhưng cần danh sách tool riêng
+cho bot).
+
+BẪY ghi lại: sửa mã Python của poller xong phải `restart agent-poller` giống worker; đổi cờ
+trong `environment` của compose thì phải `up -d --force-recreate --no-deps`, restart không
+đọc lại.
+
+Mã nguồn: `backend/app/modules/agent_hub/poller.py` · `telegram.py` · `service.py` ·
+`tasks.py` · `core/celery_app.py` · `core/config.py` · `assistant/provider/gemini.py` ·
+`docker-compose.agent.yml` · `test/backend/test_agent_hub.py` ·
+`test/backend/test_assistant_gemini_429.py`.
+
+### ai-CR-009-ket-qua-tool-ra-telegram
+
+22/09/2026. Đại ca hỏi có nối được mấy tool của Trợ lý AI trong quản lý ra bot Telegram để
+dùng lại không. Thực ra từ ai-CR-006 bot đã gọi đúng hàm hỏi đáp của Trợ lý AI nên dùng lại
+nguyên bộ tool rồi; cái thiếu là hai loại kết quả bị rơi dọc đường: tool xuất báo cáo trả
+về một đường tải cần đăng nhập web, bấm trên Telegram là bị từ chối; tool đề xuất sửa phiếu
+trả về mã xác nhận và một ô xác nhận chỉ web mới vẽ được, trên Telegram đại ca chỉ thấy câu
+chữ mà không bấm được gì.
+
+Làm ba việc, không đụng bảng. Một, sau câu trả lời bot rà các khối kết quả tool. Gặp tệp báo
+cáo thì kiểm sở hữu y hệt đường tải trên web (tệp phải do tài khoản bot tạo và nằm đúng thư
+mục báo cáo của trợ lý), rồi tải byte từ kho và gửi thành tệp đính kèm Telegram bằng đường
+multipart, trần 50 MB của Bot API, có bật dòng «đang tải tệp lên»; gửi hỏng thì đưa link tải
+web. Hai, gặp đề xuất sửa phiếu thì dựng thẻ ghi từng ô trước và sau, nói rõ phiếu chưa sửa
+và hạn mười lăm phút, kèm hai nút Xác nhận sửa và Không sửa. Dữ liệu nút của Telegram chỉ
+chịu 64 byte nên mã xác nhận để trong sổ tin nhắn (dòng chiều ra, dấu `de_xuat`, thân là JSON
+khối đề xuất), nút chỉ mang số dòng sổ. Bấm xác nhận thì bot gọi đúng hàm xác nhận của web,
+không mở đường ghi riêng, nên hết hạn hay mất quyền đều nhận câu lỗi của web; xong đóng dấu
+đã sửa hoặc bỏ sửa, bấm lần hai chỉ được câu đã xử rồi. Ba, gặp biểu mẫu nháp thì chỉ báo và
+đưa link trợ lý trên web vì form không dựng được trong chat. Bốn dấu mới là tin chiều ra nên
+không chen vào mạch hội thoại.
+
+Kiểm: `test_agent_hub.py` từ 28 lên 35 bài (gửi tệp đính kèm; tệp của người khác không gửi;
+thẻ đề xuất hai nút, sổ giữ mã, nút không quá 64 byte; xác nhận đi đúng mã và không bấm lại
+được; bấm Không sửa thì không ghi; hết hạn báo lý do và đóng thẻ; gửi tệp đi multipart và
+chặn tệp quá nặng), cả cụm 43 bài xanh. Đã khởi động lại poller và worker stack thử. Prod
+chưa vì đang tạm dừng deploy. Lưu ý: mọi tệp và đề xuất gắn với tài khoản `AGENT_ASSISTANT_USER`
+(local đang là admin), đại ca chưa chốt đổi.
+
+BẪY ghi lại: đoạn Python dài nhiều dấu nháy và gạch chéo ngược đưa qua heredoc bash là gãy
+ngay ở dấu nháy, không ghi được gì; viết bài kiểm bằng công cụ sửa tệp, không qua shell.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`deliver_tool_results`,
+`_send_report_file`, `_send_proposal_card`, `_resolve_proposal`, `_assistant_user`) ·
+`telegram.py` (`send_document`, `_call(files=)`, `MAX_DOCUMENT_BYTES`) · `constants.py`
+(`ACT_FILE`, `ACT_PROPOSAL`, `ACT_PROPOSAL_DONE`, `ACT_PROPOSAL_DROPPED`) ·
+`test/backend/test_agent_hub.py` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §9.
+
+## ai-CR-010 | Đổi tên máy chủ của stack bot vì trùng bí danh mạng làm người dùng bị đá khỏi ERP
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+
+Đại ca báo vào phân hệ Thu mua là bị đá ra màn đăng nhập với câu phiên làm việc đã hết hạn, xóa
+sạch dữ liệu trình duyệt rồi vẫn bị. Đây là lỗi thật, không phải vé cũ còn sót trong trình duyệt.
+
+Gốc nằm ở tên service của stack bot. Stack bot nối vào chung mạng với stack chính để dùng lại cơ
+sở dữ liệu, Redis và kho vector, mà máy chủ của nó cũng tên `api` — trùng đúng tên máy chủ thật.
+Docker luôn cấp cho container một bí danh mạng bằng đúng tên service, trên mọi mạng nó nối vào,
+nên mạng chung có hai container cùng tên và tên miền nội bộ trả về luân phiên hai địa chỉ. Giao
+diện ERP v2 gọi API qua bí danh đó, nên khoảng một nửa số lệnh gọi rơi sang máy chủ bot. Bên đó
+dùng cơ sở dữ liệu riêng, không có phiên đăng nhập của người dùng, nên trả lỗi hết phiên; giao
+diện gọi làm mới vé, cũng hỏng nốt, và đá thẳng ra màn đăng nhập. Lỗi đánh lừa ở chỗ đăng nhập
+vẫn được và vài lệnh đầu vẫn chạy, nên nhìn như lỗi tài khoản.
+
+Đo bằng một vé hợp lệ lấy từ phiên đăng nhập đang sống, hai mươi lượt gọi mỗi đường: gọi thẳng
+máy chủ thật đúng hai mươi trên hai mươi, gọi qua giao diện chỉ đúng chín trên hai mươi, mười
+một lượt còn lại trả lỗi hết phiên.
+
+Bí danh mặc định không gỡ được, chỉ thêm được, nên có hai đường vá. Trước mắt em vá phía tiêu
+dùng bằng một tệp cấu hình cục bộ ở máy làm việc: cấp cho máy chủ thật một bí danh riêng không
+ai tranh và cho giao diện trỏ vào bí danh đó; tệp này nằm trong danh sách bỏ qua của git nên
+không commit. Sau đó đại ca chốt sửa tận gốc, nên em đổi luôn tên máy chủ của stack bot thành
+`agent-api` và bỏ hẳn service trùng tên. Hai tiến trình nền phải ghi đè danh sách chờ vì tệp gốc
+chờ service cũ. Container đổi tên theo, cổng giữ nguyên, lệnh chạy bài kiểm của stack bot đổi
+theo tên mới. Không đụng bảng, không đụng biến môi trường.
+
+Dựng lại xong thì hỏi tên miền nội bộ sáu lần liên tiếp đều ra đúng một địa chỉ của máy chủ thật,
+gọi qua giao diện đúng hai mươi trên hai mươi. Bốn container của stack bot chạy, máy chủ bot trả
+lời ở cổng riêng, vòng kéo tin Telegram sống. Bản chạy thật không dính vì stack bot chỉ chạy ở
+máy làm việc.
+
+Chạy lại cụm bài kiểm của Agent Hub trên container mới: 43 bài xanh.
+
+Ba bài học ghi lại cho lần sau. Ghép stack phụ vào mạng của stack chính thì mọi tên service phải
+độc nhất trên cả hai stack, vì bí danh mặc định là thứ không tắt được. Khởi động lại container
+không đặt lại bí danh mạng — phải dựng lại bằng lệnh dựng, không phải lệnh khởi động lại. Và
+container vừa dựng lại thì mất gói chạy bài kiểm, phải cài lại trong container trước khi chạy,
+giống hệt lệnh đã ghi cho stack gốc.
+
+Mã nguồn: `docker-compose.agent.yml` (service `agent-api`, `depends_on` ghi đè ở `celery-worker`
+và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại tên cũ) ·
+`procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-031 | Danh sách tính năng còn phải làm cho Đậu Đậu và các trợ lý mới
+
 ## bao-CR-426 | Vá ba lỗ im lặng của vòng quét đồng bộ app đặt xe cũ và thêm vòng quét toàn bộ mỗi đêm
 - status: xong
 - date: 2026-09-19
@@ -6370,6 +6940,16 @@ employee-tab-contact.tsx · utils/profile-field-tab.ts
 - date: 2026-09-24
 - pic: NSU209
 
+Đại ca muốn thêm trợ lý ngoài bot sửa mã: biến ghi âm cuộc họp thành biên bản theo mẫu, một thư ký hiểu lịch và
+nhắc việc, và một bot nghiên cứu, tìm tài liệu, kiểm chứng nội dung, mỗi bot một chức năng. Em gom thành một danh
+sách hai mươi chín tính năng chia bốn nhóm: phần còn lại của bot sửa mã, nền chung cho nhiều bot, thư ký, nghiên
+cứu. Danh sách có nguyên tắc chia bot theo quyền để bot đọc web không bao giờ giữ khóa nào, sáu đợt làm theo thứ tự
+và sáu câu chờ đại ca trả lời. Em cũng rà máy: công cụ biên bản họp mới có thiết kế từ cuối tháng tám, chưa có mã.
+
+Mã nguồn: `doc/agent-hub/04-danh-sach-tinh-nang.md` · `doc/agent-hub/README.md` · `change-log-ai.md`.
+
+## ai-CR-030 | Chốt stack bot để lệnh dựng trơn không dựng nhầm bộ ERP thứ hai
+
 Đại ca yêu cầu tạm bỏ nút chốt tạm tính của cả đơn, cho ba cột tiền ba màu khác nhau để thấy
 độ quan trọng của từng cột, bỏ dải bước ba giai đoạn ở đầu thẻ, và hỏi vì sao tỷ giá không sửa
 được trong khi tỷ giá đổi liên tục.
@@ -6450,6 +7030,524 @@ modules/procurement/components (mười thẻ và bảng của ba loại phiếu
 - status: xong
 - date: 2026-09-24
 - pic: NSU209
+
+Sáng 24/09 đại ca gặp lỗi cổng 3306 đã bị chiếm khi dựng container. Các container của bot đã mất, rồi một lần
+dựng trơn trong thư mục của bot, thiếu tên stack và tệp cấu hình riêng, đã dựng nguyên một bộ ERP thứ hai có cả
+MySQL riêng, giành cổng với bộ ERP thật đang chạy. Em gỡ bộ dựng nhầm (giữ dữ liệu), chặn chín service của bộ ERP
+gốc không bao giờ được dựng ở stack bot, và khai tên stack cùng tệp cấu hình ngay trong tệp môi trường của thư mục
+đó, nên từ nay lệnh dựng trơn ở đây tự thành đúng stack bot. Bot đã chạy lại đủ năm service, ERP thật không bị đụng.
+
+Mã nguồn: `docker-compose.agent.yml` (profile `stack-goc`) · `.env` của worktree (`COMPOSE_PROJECT_NAME`,
+`COMPOSE_FILE`, không commit).
+
+## ai-CR-029 | Lệnh gộp của Đậu Đậu chỉ gộp, lên dev phải nói ra
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca nhắn «gộp AI-0007» thì bot gộp vào erp-v2 và deploy dev luôn, trong khi đại ca không hề bảo lên
+dev. Lỗi nằm ở thiết kế cũ gắn cứng hai bước làm một, và câu mời gộp cũng không nói rõ sẽ lên dev. Nay
+«gộp» chỉ gộp vào nhánh nền rồi báo dev chưa deploy; muốn cả hai thì nhắn «gộp và deploy dev»; bản đã gộp
+thì nhắn «deploy dev» để lên dev sau, lúc đó nhánh nền có thêm bản của người khác cũng được miễn còn chứa
+bản gộp này. Hẹn giờ giữ đúng ý gộp hay deploy. Thu hồi một bản chưa từng lên dev thì chỉ gỡ khỏi nhánh
+nền, không deploy lại. Mọi câu mời và nhắc lệnh đều nói rõ là gộp hay deploy. AI-0007 đã lỡ lên dev và
+đang chạy bình thường nên em để nguyên. Cả tệp bài kiểm 152/152 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,service,manager}.py` (`merge_and_deploy`, `send_merge_card`,
+`_require_ancestor`, `revert_and_deploy`, `_run_task_command`, `_dispatch_deploy`, `_DEPLOY_WORDS`) ·
+`test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-028 | Đậu Đậu hiểu ý thao tác theo ngữ cảnh, đại ca chỉ cần nói «đồng ý»
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn bot phân tích ý định từ câu chữ thay vì bắt gõ đúng lệnh, ví dụ chỉ nói «đồng ý» là bot biết
+phải làm gì. Nay bước phân loại tin nhắn sẵn có đọc thêm danh sách việc đang mở và tin bot vừa nhắn, rồi
+nhận ra thêm loại thứ tư là thao tác trên một việc: duyệt, sửa kế hoạch, gộp, thu hồi, xong, bỏ, làm tiếp,
+sửa cho xanh, xem chi tiết, mở yêu cầu gộp, hỏi tình trạng hoặc ghi sổ. Không tốn thêm lượt gọi model.
+Model chắc chắn thì bot làm ngay; riêng gộp, thu hồi và bỏ việc còn phải đúng bước của việc mới làm. Chưa
+chắc thì bot hỏi lại một câu, đại ca đáp «đúng» là bot làm đúng thao tác đã hỏi mà không hỏi model lần hai,
+đáp «không» là thôi. Lệnh gõ đúng mẫu vẫn chạy thẳng như trước. Thử thật với Gemini trên sổ việc hiện
+tại: «đồng ý» được hiểu là gộp AI-0007, câu nhờ gộp kèm giờ được hiểu là hẹn giờ, yêu cầu thêm cột vẫn
+thành việc mới, câu hỏi mơ hồ thì bot hỏi lại. Mỗi lượt tốn khoảng một nghìn sáu trăm token. Cả tệp bài
+kiểm 148/148 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{manager,service,constants}.py` (`run_intent`, `_task_context`,
+`_act_by_intent`, `_confirm_by_text`, `ACT_WAIT_CONFIRM`) · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
+## ai-CR-027 | Đậu Đậu nhắn gọn, bỏ nút dưới tin nhắn, đại ca ra lệnh bằng chữ
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn bot chỉ nói đã sửa logic gì, đã kiểm gì và đánh giá, chi tiết thì hỏi mới nói, và không
+thích chọn nút dưới tin nhắn mà muốn nhắn chữ, ví dụ bảo bot tự gộp bản sửa mới vào erp-v2. Nay thẻ
+kết quả chỉ còn một đoạn tóm tắt do Claude viết cuối lượt sửa, một dòng đã kiểm gì và lệnh có thể nhắn
+tiếp; không còn danh sách tệp, tổng kết dài hay tệp bản vá đính kèm. Mọi tin của bot không còn nút.
+Đại ca ra lệnh bằng chữ: duyệt, sửa kèm điều cần đổi, gộp (kèm giờ thì thành hẹn giờ), thu hồi, xong,
+bỏ việc, làm tiếp, sửa cho xanh, chi tiết, mở yêu cầu gộp trên GitHub, ghi sổ. Để không hiểu nhầm một
+yêu cầu mới có chữ gộp hay bỏ thành lệnh, bot chỉ coi là lệnh khi tin có mã việc, có cụm chỉ vào việc
+như «việc này», «code vừa sửa», hoặc là lệnh trơn vài chữ; câu hỏi thì chỉ trả lời tình trạng; không
+rõ việc nào thì hỏi lại bằng chữ. Nút trên các thẻ cũ vẫn bấm được. Cả tệp bài kiểm 142/142 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{service,coder,telegram}.py` (`route_task_command`,
+`task_status_line`, `send_compact_review_card`, `report_summary`) · `backend/app/core/config.py`
+(`AGENT_TG_COMPACT`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-026 | Bot tự chạy được vitest và có nút sửa cho xanh khi cổng kiểm đỏ
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Lượt làm tiếp của AI-0007 ra cổng kiểm giao diện đỏ ở hai bài kiểm do chính bot viết. Nguyên nhân gốc
+là em khai quyền chạy vitest sai mẫu nên Claude bị chặn cả hai lần tự kiểm, không thấy chỗ sai. Nay
+quyền được khai cho từng thư mục phân hệ có thật, bot chạy được vitest đúng thư mục nhưng vẫn không
+chạy được cả bộ ba nghìn hai trăm bài. Thẻ kết quả khi cổng đỏ có thêm nút sửa cho xanh: bot nối đúng
+phiên vừa sửa, nhận nguyên văn phần đỏ, sửa rồi chạy lại cổng kiểm và commit lại trọn bản vá. Chạy thật
+cho AI-0007 mất chín phút rưỡi, cổng kiểm kiểu dữ liệu, quy tắc mã và vitest phân hệ Tài chính đều
+xanh. Cả tệp bài kiểm 134/134 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,service,tasks}.py` (`allowed_tools`,
+`build_fix_gate_brief`, `run_claude_fix`, `dispatch_fix_gate`) · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
+## ai-CR-025 | Nút bấm trên Telegram bị xử trên dữ liệu cũ nên bot im lặng
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca bấm làm tiếp cho AI-0007 lúc 15:31 mà gần ba mươi phút bot không làm gì cũng không nhắn gì.
+Sổ có ghi lượt bấm, nhưng bộ đọc tin của bot mở một giao dịch cơ sở dữ liệu rồi giữ nguyên nó suốt hai
+mươi lăm giây chờ Telegram và cả lúc xử lý nút bấm. Cơ sở dữ liệu giữ ảnh chụp từ đầu giao dịch, nên
+bot vẫn thấy việc ở trạng thái thất bại chưa có phiên nối tiếp và chỉ hiện một thông báo nhỏ. Lỗi này
+chung cho mọi nút bấm, không riêng nút làm tiếp. Em cho bộ đọc tin đóng giao dịch ngay sau khi đọc con
+trỏ, rồi mới chờ Telegram, nên nút bấm luôn được xử trên dữ liệu mới nhất. Sau khi vá em chạy luôn
+lượt làm tiếp mà đại ca đã bấm. Cả tệp bài kiểm 131/131 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`poll_once`) · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
+## ai-CR-024 | Bước sửa mã đi tiếp phiên rà soát để khỏi đọc lại mã từ đầu
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca thấy sửa một chức năng nhỏ mà bot chạy tới mười hai phút. Nguyên nhân chính là bot đọc mã hai
+lần: bước rà soát đọc hết các tệp liên quan, rồi bước sửa mã mở một phiên Claude mới không nhớ gì và
+đọc lại gần như từ đầu. Nay bước sửa mã đi tiếp đúng phiên rà soát, trên đúng thư mục làm việc mà
+phiên đó đã đọc, nên Claude có sẵn các tệp trong đầu và chỉ việc sửa; lượt rà soát vẫn chỉ được đọc,
+quyền sửa chỉ mở ở lượt sửa. Bot chỉ nối khi lượt rà soát còn mới trong sáu tiếng và thư mục làm việc
+còn sạch; phiên rà soát bị mất thì tự mở phiên mới như trước. Cả tệp bài kiểm 130/130 xanh. Hiệu quả
+thời gian sẽ đo ở việc kế tiếp.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`scan_session_to_reuse`, `run_claude(resume=)`,
+`build_brief(from_scan=)`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-023 | Bot hết lượt khi đang sửa dở thì giữ phần đã làm và có nút làm tiếp
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Lượt sửa mã AI-0007 báo lỗi hết lượt sau khoảng mười hai phút. Đây là trần tám mươi lượt thao tác
+do chính bot đặt để chặn chạy vòng, không phải gói Claude hết hạn mức. Claude đã tiêu phần lớn số
+lượt vào việc đọc thư viện dùng chung và các màn khác, mới sửa xong một nửa (bốn tệp), rồi bị đóng
+thất bại và mất luôn mã phiên nên không nối tiếp được. Nay khi hết lượt, bot giữ nguyên phần đã sửa,
+không commit, đưa việc về trạng thái đang hỏi lại và gửi thẻ cho biết đã sửa bao nhiêu tệp, kèm nút
+làm tiếp. Bấm làm tiếp thì bot nối đúng phiên cũ trên đúng thư mục đang dở, thêm sáu mươi lượt, xong
+thì chạy cổng kiểm, commit và gửi thẻ kết quả như bình thường. Trần mặc định nâng từ tám mươi lên
+một trăm hai mươi, và đề bài dặn đọc thẳng các tệp mà bước rà soát đã chỉ ra. Việc AI-0007 đã được
+gắn lại đúng phiên và có thẻ làm tiếp chờ đại ca bấm. Cả tệp bài kiểm 127/127 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,service,tasks}.py` (`MaxTurnsError`,
+`run_claude_continue`, `resumable_session`, `dispatch_continue`, `_stop_at_max_turns`) ·
+`backend/app/core/config.py` (`AGENT_CODER_MAX_TURNS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-022 | Đậu Đậu nói gọn và bớt tiền Gemini
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca thấy bot trả lời dài và tài khoản Gemini đã tốn gần hai mươi nghìn đồng. Em đo trước khi sửa:
+các lượt trò chuyện và lập kế hoạch của bot cộng lại chỉ khoảng ba nghìn đồng, khoản lớn là hai lần
+em nạp lại toàn bộ kho tài liệu, mỗi lần gửi khoảng ba triệu rưỡi ký tự qua dịch vụ nhúng của Gemini
+dù hầu hết tài liệu không đổi. Cột chi phí trong sổ của bot còn toàn số không vì bảng giá thiếu tên
+thật của model. Em sửa: nạp kho chỉ nhúng lại tệp có thay đổi, lần chạy thật giữ nguyên bốn mươi lăm
+trên bốn mươi tám tệp; lập kế hoạch khi đã có kết quả rà soát thì không bật chế độ suy nghĩ, một lượt
+từ khoảng mười ba nghìn token xuống bốn trăm hai mươi; kế hoạch tối đa năm bước mỗi bước một câu,
+đoạn rà soát tối đa mười hai dòng, thẻ bỏ mục tài liệu đã tra và câu giải thích rủi ro cố định; vá
+lỗi câu hỏi đã được trả lời vẫn bị hỏi lại; và bổ sung bảng giá. Thẻ kế hoạch AI-0007 đã gửi lại bản
+gọn. Phần rà soát và sửa mã chạy bằng gói Claude, không tốn tiền Gemini. Cả tệp bài kiểm 125/125 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{memory,manager,service,coder,constants}.py`
+(`_unchanged`, `_retag`, `AgentGeminiProvider._gen_config`, `THINKING_BUDGET`) ·
+`test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-021 | Đậu Đậu báo đã nhận tin, báo việc đang chạy, và hỏi gọn ở một chỗ
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn gửi việc xong thì có tin nhắn lại ngay, và việc chạy lâu thì cứ khoảng một phút rưỡi có
+một tin cho biết việc vẫn đang chạy. Nay tin nào được xếp là việc cần làm thì Đậu Đậu nhắn ngay câu
+đã nhận, cả chùm tin liên tiếp chỉ một câu. Việc đang rà soát, lập kế hoạch, sửa mã hay gộp lên dev
+mà im quá chín mươi giây thì bot nhắn em vẫn đang làm, rồi sửa lại chính tin đó để cập nhật số phút
+thay vì gửi tin mới, cho khỏi kêu chuông liên tục. Hai loại tin này không làm đứt mạch hẹn giờ gộp
+hay hỏi thêm về bản vá. Khi đại ca chạy thử việc AI-0007 (màn Công nợ và Yêu cầu thanh toán) thì lộ
+ba chỗ và em đã sửa: bot hỏi hai lần, ở đoạn phân tích rồi lại ở thẻ kế hoạch với lời dẫn dài, nay
+chỉ hỏi ở thẻ kế hoạch, câu ngắn và không trùng; lượt lập lại kế hoạch sau khi đại ca trả lời bị cắt
+cụt vì phần suy nghĩ của Gemini ăn hết trần, nay phần suy nghĩ có trần riêng và cụt thì tự thử lại;
+và khi lập kế hoạch hỏng thì việc kẹt không có lối ra, nay câu báo lỗi kèm nút lập lại. Em cũng bỏ
+câu báo dính tiền lặp lại mỗi lần. AI-0007 đã được gỡ kẹt và có thẻ kế hoạch chờ đại ca duyệt. Cả
+tệp bài kiểm 121/121 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{service,coder,manager,tasks,telegram,constants}.py`
+(`ack_task_message`, `heartbeat`, `edit_text`, `assumption_question`, `merge_questions`,
+`AgentGeminiProvider._gen_config`) · `backend/app/core/celery_app.py` · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
+## ai-CR-020 | Lệnh /xem xem lại lịch sử một việc kể cả việc đã bỏ, và giờ bot nói theo giờ Việt Nam
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca bấm bỏ việc AI-0006 rồi hỏi có chỗ nào ghi lại lịch sử của nó không. Sổ của bot có ghi đủ,
+nhưng không có chỗ xem: lệnh liệt kê việc chỉ hiện việc đang mở và nút bỏ chỉ hiện một thông báo
+thoáng qua. Nay có lệnh /xem kèm mã việc, xem được cả việc đã đóng: trạng thái, giờ tạo và giờ đóng,
+ghi chú, nhánh và bản gộp nếu có, bảng các bước đã chạy với giờ, kết quả và thời gian, rồi yêu cầu,
+đoạn rà soát mã và kế hoạch cuối. Telegram không có bảng thật nên bảng dựng bằng chữ đều khổ, giữ
+hẹp cho vừa màn hình điện thoại. Bấm bỏ việc giờ có một dòng xác nhận trong khung chat. Khi làm em
+tìm ra một lỗi có sẵn: máy chạy bot và cơ sở dữ liệu đều theo giờ quốc tế, chậm bảy tiếng, nên hẹn
+giờ gộp «14:30» thực ra chạy lúc 21:30, các mốc giờ bot in ra lệch bảy tiếng, và trần năm việc mỗi
+ngày tính lại lúc bảy giờ sáng. Em đổi mọi chỗ bot đọc và in giờ sang giờ Việt Nam. Chạy thật lệnh
+xem cho AI-0006 gửi lên Telegram được. Cả tệp bài kiểm 114/114 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{service,coder,timeutil}.py` (`show_task`, `_runs_table`,
+`_task_code`, `now_local`, `to_utc`, `fmt_local`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-019 | Runner tự chạy typecheck, lint và vitest cho phần frontend-v2 vừa sửa
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Trước đây bản sửa giao diện v2 của Đậu Đậu qua cổng kiểm mà không có bài kiểm tự động nào. Nay khi
+việc đụng tới frontend-v2, cổng kiểm của runner chạy thêm kiểm kiểu dữ liệu cả cây, kiểm quy tắc
+viết mã trên đúng các tệp vừa sửa, và bộ kiểm giao diện chỉ cho thư mục phân hệ vừa sửa, đúng luật
+đại ca chốt ngày 17/09, không quét cả ba nghìn hai trăm bài. Thư viện Node được cài một lần cho mỗi
+phiên bản tệp khóa thư viện rồi dùng chung, thư mục làm việc của từng việc chỉ gắn liên kết tới đó;
+cài hỏng thì thẻ nói chưa kiểm được chứ không coi là xanh. Claude Code cũng được tự chạy đúng hai
+lệnh kiểm đó trong lúc sửa. Thẻ kết quả và mô tả yêu cầu gộp có dòng riêng cho giao diện v2. Chạy
+thật trên thư mục của việc AI-0006: cài thư viện mười hai giây, cả cổng một trăm lẻ chín giây, xanh,
+thư mục làm việc vẫn sạch. Mục QĐ-04 trong sổ quyết định giữ nguyên vì đại ca chưa quyết đổi. Bốn
+bài kiểm mới, cả tệp 110/110 xanh.
+Cùng ngày đại ca nêu ý tưởng xem thử bản sửa qua link tunnel trên máy local và luật Đậu Đậu được
+vào cơ sở dữ liệu local, còn cơ sở dữ liệu trên máy chủ thì phải hỏi trước; đại ca chốt ghi nhận để
+làm sau, trong lúc chờ vẫn thử bằng cách gộp lên dev như cũ. Em ghi thành mục AN-007 trong phần
+việc còn nợ của sổ thay đổi mảng AI, kèm phương án và bốn câu chờ quyết.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`run_fe_gate`, `ensure_fe_deps`,
+`link_fe_deps`, `fe_vitest_targets`, `fe_gate_line`) · `test/backend/test_agent_hub.py` ·
+`doc/agent-hub/01-thiet-ke-ky-thuat.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-018 | Đậu Đậu so nhánh main khi rà soát và đọc tài liệu chưa commit ở máy
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Sau lượt rà soát AI-0006 bỏ sót bản sửa bao-CR-465 đã có trên main, đại ca chốt hai việc. Thứ nhất,
+runner kéo thêm nhánh main từ GitHub, và đề bài rà soát bắt Đậu Đậu liệt kê những commit có ở main
+mà chưa gộp sang erp-v2 rồi dò trong đó; lỗi nào đã sửa ở main thì phải nói ngay ở kết luận. Thứ
+hai, thư mục tài liệu trên máy đại ca được mount chỉ đọc vào runner để Đậu Đậu đọc cả sổ thay đổi
+và nhật ký chưa commit, và kho tài liệu mà bước lập kế hoạch tra được nạp lại từ thư mục đó thay
+cho bản chép cũ trong nhánh của bot. Trước khi mount em rà thư mục: không có tệp cấu hình bí mật,
+khóa hay bản sao dữ liệu. Đã kiểm thật: runner đọc được mà không ghi được, kho gốc có erp-v2 trùng
+bản mới nhất trên GitHub cùng nhánh main, kho tài liệu nạp lại được 48 tệp và 4569 đoạn. Một điều
+cần biết: thư mục ở máy cũng chưa có bao-CR-465 vì việc đó làm ở thư mục làm việc khác, nên hai
+nguồn bù nhau: phần đã đẩy lên GitHub do bước so main bắt, phần chưa commit do thư mục ở máy bắt.
+Bài kiểm của bot 106/106 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,memory}.py` (`fetch_base`, `local_docs_dir`,
+`build_scan_brief`, `rel_path`) · `backend/app/core/config.py` (`AGENT_MAIN_BRANCH`,
+`AGENT_LOCAL_DOCS_DIR`) · `docker-compose.agent.yml` · `test/backend/test_agent_hub.py` ·
+`doc/agent-hub/01-thiet-ke-ky-thuat.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-017 | Đậu Đậu rà soát mã thật trước khi lập kế hoạch cho mọi việc
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn Đậu Đậu tự rà soát rồi nhắn phân tích như trợ lý đang làm, và chốt mọi việc đều rà
+soát. Nay gom việc xong bot nhắn ngay là đã nhận việc và đang đọc mã, rồi giao runner mở mã thật
+trên nhánh erp-v2 mới nhất cho Claude Code đọc ở chế độ chỉ đọc: tìm đúng màn và tệp, xem đã ai
+sửa chưa ở cả giao diện cũ lẫn mới, chỉ ra nguyên nhân có dẫn chứng, và nêu câu cần đại ca quyết.
+Đoạn phân tích đó nhắn thẳng cho đại ca, sau đó bot lập kế hoạch dựa trên nó; câu nghiệp vụ đại
+ca chưa trả lời thì kế hoạch không tự quyết thay. Rà soát hỏng hay kẹt ở đâu bot vẫn lập kế hoạch
+theo tài liệu như trước, không bỏ rơi việc. Khi làm em tìm ra hai lỗi có sẵn và đã vá: runner lấy
+nhánh erp-v2 từ kho ở máy đại ca đang chậm bảy commit so với GitHub, nay kéo thẳng từ GitHub; và
+bài kiểm của bot đã lỡ gửi một lệnh rà soát thật vào hàng đợi của runner, nay bộ kiểm chặn mọi
+lệnh giao việc thật. Chạy thật trên việc AI-0006 mất khoảng sáu phút rưỡi và tìm đúng gốc lỗi:
+giao diện chỉ gửi tên phòng ban, máy chủ dò lại theo tên và trả rỗng khi hai pháp nhân có phòng
+trùng tên. Tám bài kiểm mới, cả tệp 103/103 xanh.
+Sau đó đại ca báo thẻ kế hoạch in thô dấu nháy và dấu sao; em đổi thân thẻ sang định dạng
+Telegram (chữ đậm, mã) như câu trả lời của Trợ lý AI, cả tệp 104/104 xanh. Đối chiếu lượt rà
+soát AI-0006 với mã thật: các dẫn chứng tệp và dòng đều đúng, nhưng gốc lỗi thật đã được sửa ở
+bao-CR-465 trên main sáng cùng ngày (cuộc đua nạp danh sách ở giao diện cũ, có dữ liệu prod làm
+chứng) và chỉ sang erp-v2 sau lượt rà soát; giả thuyết trùng tên phòng giữa pháp nhân của bot là
+rủi ro phụ có thật chứ không phải nguyên nhân của các phiếu lỗi.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,service,tasks,manager,constants}.py`
+(`fetch_base`, `scan_task`, `parse_scan`, `start_scan`, `resolve_plan_files`, `ST_SCANNING`,
+`STAGE_SCAN`) · `backend/app/core/celery_app.py` · `test/backend/test_agent_hub.py` ·
+`doc/agent-hub/01-thiet-ke-ky-thuat.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-016 | Bot tự xưng Đậu Đậu và tự nhặt lại việc bị kẹt khi lập kế hoạch
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca đặt tên cho bot Telegram là Đậu Đậu. Em sửa lời nhắc để bot tự xưng Đậu Đậu, xưng em và gọi
+đại ca: câu hỏi đi từ Telegram sang Trợ lý AI được chèn thêm lời dặn đó, nên Trợ lý AI trên web vẫn
+giữ tên cũ; lời chào, câu báo lỗi, lời nhắc lập kế hoạch và đề bài sửa mã cũng gọi đúng tên mới.
+Tên hiển thị của tài khoản Telegram thì đại ca đổi trong BotFather. Trong lúc đó đại ca nhắn thử
+một lỗi Yêu cầu mua hàng và bot im ba phút: bot đã gom xong việc AI-0006 và đang lập kế hoạch thì
+em khởi động lại worker để nạp tên mới, lượt lập kế hoạch bị cắt ngang và không có gì nhặt lại
+việc đó. Em lập lại kế hoạch tay cho AI-0006 để thẻ về Telegram, rồi vá hai lớp: vòng chạy mỗi phút
+tự lập lại kế hoạch cho việc nằm ở bước gom quá ba phút (tối đa hai lần hỏng thật), và cho worker
+của bot hai phút để làm xong lượt đang dở trước khi tắt. Ba bài kiểm mới, cả tệp 95/95 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{constants,service,tasks,manager,coder}.py`
+(`BOT_NAME`, `BOT_PERSONA`, `resume_stuck_plans`) · `docker-compose.agent.yml` · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-015 | Sổ quyết định của đại ca để bot tra trước khi hỏi, bớt hỏi xác nhận
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn bot bớt hỏi xác nhận bằng cách ghi những quyết định quen thuộc của đại ca thành một tệp
+để bot dựa vào đó tự đánh giá tình huống, và chốt ba điều: bot chỉ đề xuất ghi, đại ca bấm đồng ý
+mới thành luật; sổ nằm trong kho mã; việc dính tiền, công nợ, phân quyền thì luôn hỏi. Em soạn bản
+đầu của sổ gồm mười một mục gom từ các lần đại ca đã chốt, mỗi mục ghi tình huống, cách bot làm,
+khi nào không áp và nguồn. Bot lập kế hoạch và Claude Code sửa mã giờ đều tra sổ trước: có mục khớp
+thì làm theo và ghi rõ theo mục nào, không có mà có một đường an toàn thì tự chọn và ghi rõ giả
+định; không tái hiện được lỗi hay thiếu dữ liệu thôi là lý do dừng. Việc rủi ro cao thì mã chặn
+cứng: không nạp sổ, mọi giả định thành câu hỏi, và không đề xuất ghi mục nào chạm các chủ đề đó.
+Khi làm em tìm ra một lỗ có sẵn: câu trả lời của đại ca cho câu bot hỏi lại rơi vào hộp chờ và đẻ
+thành việc mới, việc cũ treo mãi. Nay câu trả lời gắn vào đúng việc đó, lập lại kế hoạch ngay không
+cần gõ lệnh gom, kèm nút mở lại cửa trả lời khi trả lời trễ; nút sửa lại kế hoạch đi cùng đường.
+Sau mỗi câu trả lời dùng lại được, bot gửi thẻ hỏi lần sau có tự làm vậy không, bấm ghi thì mục mới
+được nối vào cuối sổ. Tệp tài liệu không còn tính là lệch kế hoạch, còn chính cuốn sổ thì Claude
+Code bị cấm sửa. Thử thật với Gemini: ca báo lỗi không kèm mã phiếu trước đây bị hỏi lại, nay bot
+tự áp mục số một và ra thẳng kế hoạch; lượt thử cũng lộ hai lỗi và em đã vá: trần độ dài trả lời
+cắt cụt kết quả, và bộ lọc chủ đề bắt nhầm cột của bảng giao diện là cột cơ sở dữ liệu. Mười bài
+kiểm mới, cả tệp 92/92 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{playbook,manager,service,coder,constants}.py` ·
+`backend/app/core/config.py` (`AGENT_PLAYBOOK_PATH`) · `docker-compose.agent.yml` · `test/backend/test_agent_hub.py` ·
+`doc/agent-hub/03-so-quyet-dinh.md` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §6/§7/§9 ·
+`doc/agent-hub/02-bo-quy-tac-bot.md` §D · `doc/agent-hub/README.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-014 | Bot gộp vào erp-v2 và deploy thử lên dev VPS chỉ sau khi đại ca đồng ý trên Telegram
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+
+Đại ca trả lời bốn câu chặn của bản đặt chỗ: bot đẩy nhánh riêng rồi hỏi có gộp hay lên dev không,
+đồng ý thì gộp thẳng vào erp-v2, sau đó bảo bỏ thì thu hồi; khóa SSH dùng ngay khóa đang có trên
+máy; "hỏi trước một tiếng" chỉ có nghĩa là hỏi để xác nhận, đồng ý thì chạy ngay hoặc hẹn giờ;
+bảo vệ nhánh trên GitHub giữ nguyên nhưng muốn gộp là phải hỏi ý. Em làm đúng như vậy: thẻ kết quả
+của bot có thêm nút gộp erp-v2 và deploy dev, bấm vào chỉ mở thẻ hỏi kể rõ ba bước sẽ làm cùng số
+tệp, số dòng và kết quả cổng kiểm, kèm ba nút đồng ý chạy ngay, hẹn giờ (nhắn giờ kiểu 14:30, 20h,
+45 phút nữa, 8h sáng mai; vòng beat mỗi phút tới giờ mới giao) và thôi. Bên runner, một lượt gộp
+là cắt lại thư mục làm việc từ nhánh nền, gộp không nén lịch sử, đẩy lên erp-v2 không ép ghi đè,
+rồi vào máy chủ qua SSH bằng script đi qua luồng vào chuẩn: kéo mới, đặt lại cứng về nhánh nền,
+dựng lại đúng những service mà bản gộp đụng tới, chờ đường kiểm sức khỏe của dev trả 200, sau đó
+gửi thẻ có nút thu hồi và nút xong. Thu hồi là thêm một bản đảo ngược bản gộp, đẩy lên rồi deploy
+dev lại, việc về trạng thái đang hỏi lại. Hỏng trước khi đẩy thì việc về chờ duyệt như chưa có gì;
+hỏng sau khi đẩy thì việc ghi rõ mã đã ở nhánh nền nhưng dev chưa lên, có nút deploy lại không gộp
+lần hai. Khóa SSH chỉ khai đường dẫn trong tệp cấu hình, được mount chỉ đọc vào runner, mỗi lượt
+chép ra bản tạm đúng quyền rồi xóa; tiến trình Claude Code không thấy khóa này lẫn khóa GitHub.
+Đã kiểm thật: từ trong runner SSH lên máy chủ đọc được nhánh và mã bản dev; mười bốn bài kiểm mới,
+cả tệp 82/82 xanh. Chưa chạy một lượt gộp thật vì phải có đại ca bấm đồng ý. Sự cố trong phiên:
+khi rà tệp cấu hình để xác nhận các dòng vừa thêm, giá trị khóa GitHub của bot bị in ra bản ghi
+phiên làm việc của trợ lý; kiến nghị đại ca cấp lại khóa đó trên GitHub và tự dán vào tệp cấu hình.
+Ngày 23/09 đại ca chốt thêm: đường mặc định là bot gộp theo lệnh của đại ca, còn khi đại ca muốn
+tự bấm gộp thì bot mới gửi link yêu cầu gộp. Em xếp nút gộp lên đầu thẻ kết quả, đổi tên nút yêu
+cầu gộp thành «Gửi link PR để anh tự merge» và giữ tắt cờ tự mở yêu cầu gộp; bài kiểm 82/82 xanh.
+Việc chạy thử AI-0005 đại ca bảo bỏ qua, em đã đóng thành «Đã bỏ» trong sổ của bot.
+
+Mã nguồn: `backend/app/modules/agent_hub/{constants,coder,service,tasks}.py` ·
+`backend/app/core/{config,celery_app}.py` · `docker/Dockerfile.runner` · `docker/vps_ssh_key.placeholder`
+· `docker-compose.agent.yml` · `.env.example` · `test/backend/test_agent_hub.py` ·
+`doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§9/§10/§11 · `doc/agent-hub/02-bo-quy-tac-bot.md` C10 + §E ·
+`change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-013 | Hỏi thêm về bản vá trên Telegram bằng đúng phiên Claude Code đã sửa việc
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+
+Đại ca bảo làm tiếp phần hỏi thêm. Thẻ kết quả của bot nay có nút «Hỏi thêm về bản vá»; bấm nút
+xong nhắn câu hỏi là bot đưa câu hỏi vào đúng phiên Claude Code đã sửa việc đó, phiên trả lời
+xong bot gửi lại lên Telegram kèm nút hỏi tiếp, nhắn tiếp trong mười phút là hỏi tiếp về cùng bản
+vá. Lượt hỏi chỉ được đọc mã và xem khác biệt, không được sửa tệp hay chạy bài kiểm; câu hỏi thực
+chất là đòi đổi bản vá thì phiên phải nói vậy và bảo đại ca bấm Sửa, để hai đường hỏi và sửa không
+trộn vào nhau. Bấm nút hỏi không làm mất nút mở yêu cầu gộp và nút bỏ việc trên thẻ, vì chúng còn
+phải dùng sau khi hỏi xong. Hỏi hỏng thì bot chỉ nhắn lý do kèm nút hỏi lại, việc không đổi trạng
+thái.
+
+Lúc làm em phát hiện phiên Claude Code của việc AI-0005 không còn: thư mục phiên nằm trong lớp ghi
+của container, và lần dựng lại container để nạp khóa GitHub đã xóa sạch. Em trỏ chỗ cất phiên sang
+volume worktree (thư mục ẩn cạnh các worktree, thuộc người dùng chạy Claude) và kiểm chứng bằng
+một lượt hỏi thật trong runner: tệp phiên nằm đúng trong volume, gọi lại phiên đó nhớ đúng câu
+trước. Việc cũ đã mất phiên thì nút hỏi trả lời bằng tiếng người là phiên không còn, bấm Sửa để bot
+làm lại. Tiện thể sửa luôn lỗi đại ca thấy trên ảnh chụp: tổng kết của bot trên thẻ là Markdown
+nhưng bị gửi thô nên hiện dấu sao và số thứ tự như chữ, nay đổi sang HTML trước khi gửi. Chín bài
+kiểm mới, cả tệp 68 bài xanh. Chưa commit, chưa chạy thật trên một việc mới.
+
+Mã nguồn: `agent_hub/constants.py` (`STAGE_ASK`, `ACT_WAIT_PATCH_Q`, `ACT_PATCH_Q`,
+`ACT_PATCH_ANSWER`) · `coder.py` (`claude_config_dir`, `_run_cli`, `build_question_brief`,
+`run_claude_resume`, `session_id_for`, `dispatch_question`, `answer_patch_question`,
+`send_review_card`) · `service.py` (`_patch_question_target`, `_ask_patch`,
+`_invite_patch_question`) · `tasks.py` (`agent.ask_task`) · `core/celery_app.py` (`task_routes`) ·
+`test/backend/test_agent_hub.py` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§10/§11 ·
+`change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-012 | Bậc 2 giai đoạn 2a: runner đẩy nhánh bot lên GitHub và mở yêu cầu gộp vào erp-v2
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+
+Đại ca tự dán khóa GitHub vào tệp cấu hình của stack bot, nghĩa là điều kiện còn thiếu của giai
+đoạn hai đã có. Em làm phần đầu của giai đoạn đó: sau khi commit trong container, runner đẩy
+nhánh của bot lên GitHub và mở một yêu cầu gộp vào nhánh phát triển, rồi ghi đường dẫn yêu cầu
+gộp vào việc và lên thẻ kết quả. Hỏi đáp về bản vá và công tắc đẩy thẳng dev vẫn để giai đoạn 2b.
+
+Ba quyết định thiết kế. Một, khóa GitHub đi đúng đường của khóa Claude: đọc thẳng từ môi trường
+của tiến trình lúc cần, không khai trong đối tượng cấu hình, và chỉ đi vào tiến trình đẩy git (qua
+biến cấu hình của git, không nằm trên dòng lệnh nên không lộ qua bảng tiến trình) cùng lượt gọi
+API GitHub; tiến trình Claude Code không bao giờ thấy nó. Hai, cờ bật tự đẩy mặc định tắt; tắt
+thì thẻ kết quả có nút «Đẩy GitHub + mở PR» để đẩy tay từng việc, và nút đó cũng là đường đẩy lại
+khi lượt tự đẩy hỏng. Đẩy hỏng không làm hỏng việc, vì commit đã nằm trong container. Ba, đẩy đè
+nhánh bot: chạy lại cùng một việc là cắt lại nhánh từ đầu nên lịch sử khác hẳn, không đè thì không
+đẩy được lần hai; đại ca không sửa tay trên nhánh bot. Nhánh bot sau khi gộp KHÔNG tự xóa (đại ca
+chưa trả lời câu này, em lấy mặc định giữ lại). Mở yêu cầu gộp trùng nhánh thì lấy lại cái đang
+mở thay vì báo lỗi.
+
+Nút đẩy tay chạy trong runner (chỉ nó nhìn thấy thư mục worktree) bằng một việc Celery mới, lấy
+lại danh sách tệp, kết quả cổng kiểm và tổng kết của bot từ lượt chạy gần nhất để mô tả yêu cầu
+gộp giống hệt lượt tự đẩy. Nút bấm Telegram nay nhận cả đường dẫn: là đường dẫn thì thành nút
+liên kết mở trình duyệt, không gọi về bot.
+
+Chạy thật ngay trên nhánh của việc AI-0005 (nợ N-009) còn nằm trong container từ giai đoạn một:
+bấm nút đẩy tay, bảy giây sau có yêu cầu gộp số 95 vào erp-v2, hai tệp, GitHub báo gộp được. Đó là
+lần đầu một bản vá do bot viết đi được tới nơi đại ca duyệt gộp. Tám bài kiểm mới, cả tệp 59 bài
+xanh. Chưa commit.
+
+Mã nguồn: `agent_hub/coder.py` (`github_token`, `push_branch`, `github_request`, `build_pr_body`,
+`open_pull_request`, `publish_branch`, `publish_existing`, `dispatch_publish`; `_git` nhận
+`extra_env`; thẻ kết quả thêm dòng PR + nút) · `service.py` (`_dispatch_publish`, nút `pr:<id>`) ·
+`tasks.py` (`agent.publish_task`) · `telegram.py` (`_button`) · `core/config.py`
+(`AGENT_PR_ENABLED`, `AGENT_GITHUB_REPO`, `AGENT_GITHUB_API_URL`) · `.env.example` ·
+`test/backend/test_agent_hub.py` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§9/§10/§11 ·
+`change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-011 | Bậc 2 giai đoạn 1: bấm Duyệt trên Telegram là bot sửa mã thật bằng Claude Code trong container riêng
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+
+Đại ca chốt làm bậc 2 trước các việc khác, với ba quyết định: bot làm xong thì mở yêu cầu gộp
+để đại ca duyệt, sau này mới mở công tắc đẩy thẳng lên dev và công tắc đó phải bật bằng một thẻ
+xác nhận trên Telegram có đủ thông tin (số lượng mã, từng tệp sửa gì, hỏi thêm được rồi chốt
+tại chỗ); bộ máy chạy mã phải nằm trong Docker; và tài khoản Anthropic trên máy dùng theo gói
+thuê bao, không dùng khóa API. Đợt này em làm giai đoạn một: từ lúc bấm Duyệt cho tới lúc có
+bản vá đã commit trong container và thẻ kết quả kèm tệp khác biệt về Telegram. Đẩy lên GitHub,
+mở yêu cầu gộp, hỏi đáp về bản vá và công tắc đẩy dev để giai đoạn hai.
+
+Đường đi của một việc. Bấm Duyệt thì bot ghi người duyệt và giờ duyệt như cũ; nếu cờ bật mã
+đang tắt thì trả lời thẳng là đang tắt và dừng ở trạm kế hoạch y như bậc một. Cờ bật thì bot
+kiểm hai chốt trước khi giao: kế hoạch không có phạm vi tệp (luật B2) hoặc phạm vi đã chạm tệp
+cấm thì không giao, việc sang trạm cần hỏi thêm. Qua chốt thì việc sang trạm viết mã và được
+ném vào một hàng đợi riêng mà chỉ tiến trình chạy mã nghe. Tiến trình ấy dựng một cây làm việc
+git riêng cho việc đó, nhánh đặt theo mã việc, tách từ nhánh dev của kho chính; kho chính được
+gắn vào chỉ đọc nên không đổi một byte nào. Rồi nó dựng đề bài từ kế hoạch, phạm vi tệp, bài
+kiểm dự kiến, tài liệu Gemini viện dẫn, trích đoạn kho tri thức và bản rút gọn bộ quy tắc, gửi
+đề bài qua luồng vào chuẩn cho công cụ Claude Code chạy không tương tác với danh sách công cụ
+hẹp: đọc và sửa tệp, tìm kiếm, chạy bài kiểm, xem khác biệt git. Không có commit, không có push,
+không có Docker, không có tải tệp từ ngoài. Mỗi việc một phiên mới, mã phiên ghi vào sổ lượt
+chạy để giai đoạn hai nối tiếp được.
+
+Bot làm xong thì tiến trình chạy mã đưa mọi thay đổi vào vùng chờ commit rồi so với phạm vi
+kế hoạch. Chạm tệp cấm, sửa quá hai mươi lăm tệp, hơn ba mươi phần trăm số tệp nằm ngoài kế
+hoạch (bài kiểm không tính), hoặc không sửa gì cả: bỏ hết thay đổi, không commit, việc sang
+trạm cần hỏi thêm và thẻ nói rõ lý do. Còn lại thì chạy các tệp bài kiểm backend vừa bị đụng,
+commit trong container với tên tác giả là bot, việc sang trạm xem lại. Thẻ kết quả ghi số tệp,
+số dòng thêm bớt, số lượt, số phút, chi phí ước tính, từng tệp có đánh dấu tệp ngoài kế hoạch,
+cổng kiểm xanh hay đỏ kèm đuôi nhật ký, và phần tổng kết bốn mục bot viết. Kèm theo là tệp khác
+biệt gửi dạng tài liệu để đọc trọn bản vá trên điện thoại. Mọi thứ ghi vào bảng lượt chạy:
+nhà cung cấp, mô hình, token, chi phí, phiên, tệp, cổng kiểm.
+
+Về bí mật, em làm ba lớp. Tiến trình Celery trong container phải chạy root, nhưng mọi tiến
+trình con là git, Claude Code và pytest đều hạ xuống người dùng thường tên runner. Tiến trình
+Claude Code nhận một môi trường dựng từ đầu chứ không kế thừa của Celery, nên token Telegram,
+khóa Gemini và mật khẩu cơ sở dữ liệu của tiến trình cha không bao giờ xuống tới nó; thứ duy
+nhất nó nhận thêm là khóa đăng nhập thuê bao, còn git và pytest thì không thấy cả khóa đó. Khóa
+ấy lấy bằng lệnh cấp khóa của Claude Code, đại ca tự dán vào tệp môi trường, không qua chat,
+không commit, và cố ý không khai trong lớp cấu hình của ứng dụng để không chỗ nào trong mã tiện
+tay đọc được. Không có khóa API Anthropic, đúng quyết định đã chốt.
+
+Hai điều chưa làm được, ghi thẳng. Compose không có cách khai danh sách tên miền cho phép của
+một container, nên tiến trình chạy mã hiện ra Internet như mọi container khác; em chặn tạm bằng
+cách không cho công cụ tải tệp và giữ cây làm việc không có bí mật nào, và ghi thành rủi ro mở
+trong thiết kế. Cổng kiểm giao diện chưa chạy vì ảnh chạy mã không có Node của ERP và không cầm
+Docker, để giai đoạn ba.
+
+Một sai lệch cố ý so với luật C2 của bộ quy tắc: nhánh bot đặt theo mã việc chứ không theo số
+CR, vì hai tệp change-log đang được nhiều phiên cùng sửa nên bot không cấp số an toàn được.
+
+Kiểm chứng: cụm bài kiểm Agent Hub năm mươi mốt bài xanh, trong đó mười sáu bài mới cho bậc
+hai (chốt trước khi giao, tệp cấm theo cả đường dẫn lẫn tên, lệch kế hoạch, môi trường sạch,
+bóc JSON và lỗi hết hạn khóa, lượt trọn vẹn, lệch thì không commit, không sửa gì thì hỏi lại,
+quá giờ, việc nền bỏ qua trạm sai và đóng hỏng, đề bài, tên nhánh); tám bài Gemini vẫn xanh.
+Ảnh chạy mã dựng xong, worker nghe đúng hàng đợi riêng, thử tạo cây làm việc thật từ kho chính
+trong container ra đúng nhánh gốc và tệp thuộc người dùng runner, thử gọi Claude Code với khóa
+giả ra đúng câu lỗi 401 kèm hướng dẫn cấp lại khóa.
+
+Chạy thật lần đầu chiều 22/09/2026, sau khi đại ca đăng nhập Claude trên máy và tự dán khóa
+vào tệp môi trường. Em chọn nợ N-009 trong sổ thay đổi của ERP làm đề bài: hai đường trả lỗi
+502 của Trợ lý AI đang nhét nguyên câu lỗi thư viện cho người dùng đọc. Việc AI-0005 được tạo
+ở trạm kế hoạch với phạm vi hai tệp, thẻ kế hoạch gửi lên Telegram, rồi bấm Duyệt đi đúng
+đường xử lý nút bấm. Lần bấm đầu rơi vào câu "bot sửa mã đang tắt" vì container API chưa được
+tạo lại sau khi thêm cờ; tạo lại xong bấm lại là việc sang trạm viết mã. Kết quả: bot sửa đúng
+hai tệp trong phạm vi (thêm ghi log và câu lỗi cố định, viết một tệp bài kiểm mới ba ca kể cả
+ca phủ định), không tệp nào ngoài kế hoạch, cổng kiểm của runner xanh ba trên ba, nhánh commit
+trong container, thẻ kết quả và tệp khác biệt về Telegram sau ba phút hai mươi giây, năm mươi
+tư lượt, chi phí ước tính khoảng một đô la rưỡi (tính theo gói thuê bao nên không mất tiền
+thật). Điểm hỏng duy nhất: bot gõ python3 thay vì python nên lệnh chạy bài kiểm bị chặn, nó
+thử lại nhiều lần với cả lệnh Docker chép từ CLAUDE.md rồi giao bản vá kèm câu "chưa chạy được
+bài kiểm" dù cổng kiểm của runner sau đó xanh; hơn nửa số lượt là để thử lại. Em vá ngay: danh
+sách công cụ cho phép nhận cả python3 và lệnh kiểm cú pháp, đề bài nói rõ ở đây không có Docker
+và lệnh bị chặn thì đừng lặp. Bản vá N-009 vẫn nằm trong nhánh bot của runner, chưa đưa sang
+nhánh dev vì đó là giai đoạn hai. Chưa commit.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (mới) · `service.py` (`_dispatch_coder`) ·
+`tasks.py` (`code_task`, hàng đợi `agent_code`) · `constants.py` (`STAGE_CODE`) ·
+`core/config.py` (9 cờ `AGENT_CODER_*` / `AGENT_RUN*`) · `core/celery_app.py` (`task_routes`) ·
+`docker/Dockerfile.runner` (mới) · `docker-compose.agent.yml` (service `agent-runner`, volume
+`agent_worktrees`) · `.env.example` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§9/§10/§11 ·
+`doc/tai-lieu-ky-thuat/change-log-ai.md` · `test/backend/test_agent_hub.py`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
 
 Việc em kiến nghị sau đợt ba màu, đại ca bảo làm tiếp. Trên thẻ Chi phí thu mua, đường quyết
 toán đọc số đã lưu trong hệ thống, nên người dùng gõ số quyết toán rồi bấm chốt ngay mà chưa
@@ -6844,6 +7942,160 @@ Mã nguồn: `frontend-v2/src/modules/document/pages/document-create-page.tsx` �
 `backend/app/modules/document/files_controller.py` ·
 `backend/app/modules/document/attachment_window.py` · khóa cấu hình
 `doc_attachment_view_window_enabled`.
+## ai-CR-051 | Cấp quyền sửa mã bằng câu nhắn của đại ca và kiểm cấp trước mọi lệnh trên việc
+- status: xong
+- date: 2026-09-24
+Đại ca chốt làm lần lượt, phase 1 trước. Phase 1 là khóa quyền sửa mã theo cách ba đã chốt:
+không có màn web, không sửa tệp cấu hình, không build hay khởi động lại, đại ca chỉ nhắn cho bot.
+
+Đã làm hai phần. Một, bảng sổ quyền của bot và cách cấp: đại ca nhắn «cho anh Được quyền gộp
+dev» hoặc «cấp quyền duyệt kế hoạch cho Bảo», bot tìm tài khoản ERP theo họ tên, mã nhân viên,
+tên đăng nhập hoặc tên Telegram, so không dấu, trùng nhiều người thì hỏi rõ, rồi hỏi lại một
+câu và chỉ ghi sổ khi đại ca nhắn «đúng». Gỡ cũng bằng câu nhắn. Hỏi «ai đang được sửa mã» là
+bot liệt kê. Quyền gắn với tài khoản ERP chứ không gắn với chat, nên người đó đăng nhập bot bằng
+máy nào cũng mang theo cấp của mình; cấp trước khi họ đăng nhập cũng được. Có hai cấp: duyệt kế
+hoạch và gộp dev; prod không cấp cho ai; chat của đại ca không cần dòng nào trong sổ.
+
+Hai, kiểm cấp: người đã đăng nhập bot mà có cấp thì ra lệnh trên việc bằng chữ như đại ca,
+nhưng bắt buộc nêu mã việc, vì họ trò chuyện với trợ lý nhiều và một câu «xong rồi» trơn không
+được phép đóng việc nào. Thiếu cấp thì bot từ chối ngay tại chỗ và báo đại ca một dòng kèm sẵn
+câu cấp quyền. Đủ cấp mà lệnh đổi trạng thái việc thì đại ca cũng nhận một dòng báo.
+
+Hai mục còn lại của phase 1 là việc của đại ca trên GitHub và máy chủ: bảo vệ nhánh main và tạo
+khóa riêng cho bot. Chưa commit, chưa lên dev.
+
+Kiểm: năm bài mới, cả tệp test bot 209 bài xanh; migration đã chạy ở cơ sở dữ liệu bot local.
+
+Mã nguồn: backend/app/modules/agent_hub/grants.py · service.py · constants.py · model.py ·
+backend/migrations/versions/b3e7d1a9c5f2_agent_hub_quyen_sua_ma.py · test/backend/test_agent_hub.py ·
+doc/agent-hub/04-danh-sach-tinh-nang.md · doc/tai-lieu-ky-thuat/change-log-ai.md
+
+## ai-CR-052 | Tổng hợp tài liệu kiến trúc phase 2: một bot trên dev, khóa cá nhân, máy sửa mã tách rời
+- status: xong
+- date: 2026-09-24
+Sau khi phase 1 xong phần mã, đại ca chốt cách đưa bot lên dev qua bốn lượt trao đổi, và bảo
+tổng hợp hết vào tài liệu. Việc này chỉ là tài liệu, chưa có mã.
+
+Những điều đã chốt. Một, chỉ có một Đậu Đậu chạy trên server dev, không tách bot local và bot
+dev, vì một token Telegram chỉ cho một tiến trình kéo tin. Hai, ai cũng tự đăng nhập bằng mã, kể
+cả đại ca, không còn tài khoản dùng chung. Ba, mỗi người dán khóa Gemini của mình ở trang cá
+nhân trên web, một khóa dùng cho cả Telegram lẫn Zalo; khóa công ty trên dev chỉ cho trợ lý
+web; không lùi về khóa công ty, người chưa gắn khóa thì bot không trả lời câu hỏi AI nhưng vẫn
+đăng nhập, xem và ra lệnh trên việc được. Bốn, tài khoản đại ca là trường hợp đặc biệt trong
+cấu hình dev, mới có mảng mã nguồn; tới bước sửa mã thì bot gọi xuống máy sửa mã. Năm, máy sửa
+mã tách rời: máy đại ca là máy số một, thêm máy khác bằng câu nhắn, mỗi máy có mã máy và khóa
+riêng, nối lên dev qua đường hầm SSH, việc dính máy đã bắt đầu nó, máy rảnh nhận việc mới,
+deploy dev chỉ máy được bật cờ. Sáu, làm lần lượt, không chạy song song nhiều phase.
+
+Ghi thành nhóm D bảy mục trong danh sách tính năng, cập nhật dòng phase 2 và phase 3, thêm
+điểm bốn và năm vào mục 13 của thiết kế kỹ thuật. Thứ tự làm phase 2: khóa cá nhân và bỏ tài
+khoản chung trước, rồi sổ máy và runner tách rời, rồi stack bot trên dev. Ước lại khoảng hai tuần.
+
+Mã nguồn: doc/agent-hub/04-danh-sach-tinh-nang.md · doc/agent-hub/01-thiet-ke-ky-thuat.md ·
+doc/tai-lieu-ky-thuat/change-log-ai.md
+
+## ai-CR-053 | Khóa Gemini cá nhân cho bot và bỏ tài khoản dùng chung
+- status: xong
+- date: 2026-09-25
+Phase 2 phần (a). Đại ca chốt mỗi người dùng khóa Gemini của chính mình khi chat với bot, khóa
+công ty trên dev chỉ dành cho trợ lý trên web, và ai cũng tự đăng nhập chứ không còn tài khoản
+chung.
+
+Đã làm. Một, thêm bảng lưu khóa cá nhân, mã hóa như cấu hình hệ thống, chỉ giữ bốn ký tự cuối
+để nhận ra; thêm cột chủ khóa vào sổ lượt chạy để tính tiền theo từng người. Hai, tab «Khóa AI»
+ở Trang cá nhân trên giao diện v2: ô nhập dạng mật khẩu, lưu xong xóa trắng, hệ thống gọi thử
+Gemini một lượt không tốn token rồi mới lưu; ba đường API tự phục vụ và không đường nào trả khóa
+ra. Ba, bot mở ngữ cảnh khóa quanh mỗi tin nhắn và mỗi việc nền: lượt đọc ý định, trợ lý ERP,
+nghiên cứu trong chat của ai thì chạy bằng khóa của người đó; gom tin và lập kế hoạch chạy bằng
+khóa của đại ca. Không lùi về khóa công ty: người chưa gắn khóa thì bot chỉ nhắc, nhưng đăng
+nhập, xem tài khoản, xem tình trạng việc, ra lệnh trên việc, xác nhận tạo phiếu vẫn dùng được.
+Bốn, chat đại ca ở máy bot chưa có khóa cá nhân thì vẫn dùng khóa trong tệp cấu hình như cũ, để
+bot local không gián đoạn; lên dev thì biến đó để trống. Năm, nghỉ việc thì khóa và liên kết
+Telegram đóng cùng lúc với phiên đăng nhập. Sáu, câu «tốn bao nhiêu» của người thường chỉ ra
+tiền theo khóa của họ.
+
+Kiểm: sáu bài backend mới, cả tệp test bot 215 bài xanh; ba bài giao diện mới, thư mục profile
+34 bài xanh; typecheck và lint không lỗi. Migration đã chạy ở cơ sở dữ liệu bot local. Trong lúc
+làm, stack bot local bị hạ bởi phiên khác, đã dựng lại.
+
+Mã nguồn: backend/app/modules/agent_hub/user_keys.py · manager.py · service.py · controller.py ·
+model.py · backend/app/modules/employee/service.py · backend/migrations/versions/c4f8b2d6e1a3_* ·
+frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
+modules/system/api/agent-hub-api.ts · app/pages/profile-page.tsx · test/backend/test_agent_hub.py
+
+## ai-CR-054 | Sổ máy sửa mã, hàng đợi theo máy và tin Telegram gửi hộ
+- status: xong
+- date: 2026-09-25
+Phase 2 phần (b1). Đại ca muốn thêm được vài máy nữa sửa mã như máy của anh; bot trên dev chỉ xếp
+việc, máy nào bật thì kéo việc về làm.
+
+Đã làm. Một, sổ máy: đại ca nhắn «thêm máy của anh Được», bot hỏi lại, «đúng» thì phát mã máy hiện
+đúng một lần và dặn xóa tin; chủ máy là tài khoản ERP khớp tên; gỡ máy cũng hỏi lại; hỏi «máy nào
+đang bật» là bot liệt kê kèm số việc đang chạy và cờ deploy; mở hay cấm deploy dev cho từng máy
+bằng câu nhắn; chỉ định «AI-0012 cho máy anh Được làm», đang chạy dở thì không giao lại, đổi máy
+thì máy mới làm lại từ kế hoạch. Hai, hàng đợi theo máy: mọi lượt giao runner đi qua một hàm chọn
+máy, mỗi máy một hàng đợi riêng, việc dính máy từ lượt đầu, việc mới về máy đang bật ít việc nhất,
+không máy nào bật thì về máy mặc định hoặc máy liên lạc gần nhất và bot báo đang chờ máy nào; vé
+nằm trong Redis nên máy tắt không mất việc; chưa đăng ký máy nào thì mọi thứ y như trước. Ba, máy
+tự xưng bằng tên và mã máy trong tệp cấu hình, báo còn sống mỗi ba mươi giây; sai mã hoặc đã gỡ
+thì việc bị từ chối và đại ca được báo; máy không có cờ deploy thì không deploy được. Bốn, máy
+sửa mã không giữ token bot: tin gửi Telegram từ máy đi vòng qua worker của bot trên dev.
+
+Kiểm: năm bài mới, cả tệp test bot 220 bài xanh; migration đã chạy ở cơ sở dữ liệu bot local.
+Phần (b2) là gói cài runner tách rời với đường hầm SSH, làm ở việc kế tiếp.
+
+Mã nguồn: backend/app/modules/agent_hub/runners.py · service.py · coder.py · tasks.py · telegram.py ·
+constants.py · model.py · backend/app/core/config.py · backend/migrations/versions/d5a9c3e7f2b4_* ·
+test/backend/test_agent_hub.py
+
+## ai-CR-055 | Gói cài máy sửa mã tách rời: đường hầm SSH, compose riêng, hướng dẫn
+- status: xong
+- date: 2026-09-25
+Phase 2 phần (b2). Sau khi có sổ máy, cần một gói để bất kỳ máy nào cũng cài được runner và nối
+lên dev mà không mang theo khóa của bot hay của đại ca.
+
+Đã làm. Một, tệp compose riêng với hai container dùng chung không gian mạng: container đường hầm
+giữ hai cổng chuyển tiếp lên dev (MySQL và Redis) bằng khóa SSH riêng của máy, đứt thì tự nối lại;
+container runner nghe hàng đợi mang tên máy, kho nguồn lấy thẳng từ GitHub. Hai, tệp mẫu cấu hình
+cho máy: tên và mã máy do bot cấp, thông tin đường hầm, tài khoản cơ sở dữ liệu riêng chỉ đụng các
+bảng của bot, khóa Claude Code và khóa GitHub của chính chủ máy; cố ý không có chỗ cho token
+Telegram, khóa Gemini hay khóa của đại ca. Ba, tài liệu số 05 hướng dẫn ba phần: chuẩn bị một lần
+trên máy chủ dev (cổng chuyển tiếp Redis, tài khoản MySQL cấp quyền theo từng bảng, dòng khóa SSH
+chỉ được mở cổng không được mở shell), cài trên máy, và cách bot chia việc.
+
+Đã kiểm tệp compose hợp lệ, ảnh đường hầm build được, script báo đúng khi thiếu khóa. Rà máy chủ
+dev chỉ đọc: MySQL đã có cổng chuyển tiếp nội bộ, Redis dev chưa có, sẽ thêm khi đưa bot lên dev.
+Chạy thật từ đầu tới cuối chờ phần (c).
+
+Mã nguồn: docker-compose.runner.yml · docker/Dockerfile.tunnel · docker/tunnel.sh ·
+.env.runner.example · .gitignore · doc/agent-hub/05-may-sua-ma.md
+
+## ai-CR-056 | Đưa Đậu Đậu lên dev: gộp nhánh, compose dev có profile bot, chờ đại ca đẩy và dựng
+- status: dang-lam
+- date: 2026-09-25
+Phase 2 phần (c). Đại ca cho làm hết các phase không cần hỏi và cho thao tác trên máy chủ dev.
+
+Đã làm. Một, gộp nhánh dev mới nhất vào nhánh bot: mười ba commit về thư mục văn bản và phòng xử
+lý; ba chỗ đụng độ là tập entity hệ thống trong seed giữ cả hai khóa mới, bài kiểm phạm vi đếm lại
+bảy mươi entity, và sổ nhật ký giữ cả hai bên; thêm migration gộp hai head. Hai trăm bốn mươi mốt
+bài backend xanh, giao diện v2 không lỗi kiểu. Hai, compose dev thêm hai service dưới profile
+bot: poller giữ kết nối Telegram và cổng chuyển tiếp Redis cho máy sửa mã; worker và beat của dev
+biết bot kéo tin bằng poller riêng. Bot dùng chung api, celery, redis và MySQL của dev. Ba, trên
+máy đại ca đã sinh khóa đường hầm riêng và điền sẵn tệp cấu hình runner, chỉ còn mã máy do bot
+cấp và tài khoản cơ sở dữ liệu.
+
+Chiều cùng ngày đại ca tạo bot Lạc Lạc cho dev và cho làm tiếp. Đã khai bot vào tệp môi trường
+dev (token đi từ tệp trên máy thẳng lên máy chủ, không qua màn hình, tệp xóa sau đó), cập nhật mã
+dev từ nhánh bot, dựng lại api, worker, beat, giao diện v2, poller và cổng chuyển tiếp Redis; kiểm
+xong: migration ở đầu chuỗi gộp, chín bảng của bot đã có, poller giữ kết nối, beat đặt lịch việc
+bot, deverp mở được. Thêm dòng khóa SSH chỉ mở cổng cho máy đại ca. Sửa thêm một lỗi đặt tên máy
+khi tên đã có tiền tố. Còn ba việc dính bí mật và nhánh dùng chung mà bộ lọc quyền của phiên không
+cho làm, giao đại ca chạy tay theo tài liệu số 05 mục 0: đẩy nhánh bot thành erp-v2, tạo tài khoản
+MySQL cho máy sửa mã, nhắn bot đăng ký máy và điền ba dòng còn trống trong tệp cấu hình runner.
+
+Mã nguồn: docker-compose.dev.yml · backend/migrations/versions/e6b1d4f8a2c7_gop_head_bot_va_erp_v2_2509.py ·
+backend/app/seed.py · test/backend/test_pham_vi_khai_du_b07.py · .env.runner.example ·
+doc/agent-hub/05-may-sua-ma.md
 
 ## bao-CR-482 | Quản lý nhóm dự án từ giao diện, ảnh đại diện đi theo người, màn liệt kê bày theo nhóm
 - status: xong

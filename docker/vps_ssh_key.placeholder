@@ -1,0 +1,2 @@
+# Tệp giữ chỗ cho khóa SSH VPS của Agent Hub (ai-CR-014). KHÔNG phải khóa.
+# Khai AGENT_VPS_SSH_KEY_FILE trong .env để compose mount khóa thật vào /root/vps_ssh_key.

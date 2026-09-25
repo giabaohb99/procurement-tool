@@ -1,0 +1,65 @@
+# MÁY SỬA MÃ tách rời (ai-CR-055, D-04 của doc/agent-hub/04) — chạy trên máy đại ca hoặc máy nào
+# đại ca đăng ký («thêm máy của anh Được»). KHÔNG có bot ở đây: bot (poller, worker, beat, api) chạy
+# trên server dev. Máy này chỉ có runner: Claude Code + git + khóa GitHub của máy, nối lên dev qua
+# một ĐƯỜNG HẦM SSH, kéo vé từ hàng đợi `agent_code.<tên máy>` về làm, ghi kết quả ngược lên.
+#
+#   cp .env.runner.example .env.runner   # rồi điền theo doc/agent-hub/05-may-sua-ma.md
+#   docker compose -p agentrunner -f docker-compose.runner.yml up -d --build
+#   docker compose -p agentrunner -f docker-compose.runner.yml logs -f agent-runner
+#
+# Hai container, CHUNG một không gian mạng (network_mode: service:tunnel): `tunnel` mở ssh -L để
+# 127.0.0.1:3306 và 127.0.0.1:6379 trong đó chính là MySQL và Redis của dev; `agent-runner` vì thế
+# khai DB_HOST=127.0.0.1, REDIS_URL=redis://127.0.0.1:6379/... như thể DB nằm ngay trên máy.
+# Đường hầm đứt thì script tự nối lại sau 5 giây; Celery cũng tự nối lại broker.
+#
+# Máy này KHÔNG giữ token Telegram: tin gửi Telegram đi vòng qua worker của bot (ai-CR-054). Khóa
+# duy nhất ở đây là của CHỦ MÁY: khóa SSH đường hầm (chỉ được mở cổng, không mở shell — xem
+# `authorized_keys` ở doc 05), khóa GitHub (PAT của người đó), phiên Claude Code (gói của người đó),
+# và — chỉ máy được đại ca bật cờ deploy — khóa SSH lên VPS để chạy deploy dev.
+services:
+  tunnel:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.tunnel
+    env_file: .env.runner
+    restart: unless-stopped
+    volumes:
+      # Khóa SSH của MÁY cho đường hầm (khai AGENT_TUNNEL_SSH_KEY_FILE trong .env.runner).
+      - type: bind
+        source: ${AGENT_TUNNEL_SSH_KEY_FILE:-./docker/vps_ssh_key.placeholder}
+        target: /root/tunnel_key
+        read_only: true
+    mem_limit: 64m
+
+  agent-runner:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.runner
+    env_file: .env.runner
+    environment:
+      AGENT_LONG_POLL: "true"
+      C_FORCE_ROOT: "1"
+      #  Kho nguồn lấy THẲNG từ GitHub (không có bản clone local như stack agenthub).
+      AGENT_REPO_SOURCE: ${AGENT_REPO_SOURCE:-https://github.com/giabaohb99/procurement-tool.git}
+    network_mode: "service:tunnel"
+    depends_on:
+      - tunnel
+    mem_limit: 3g
+    cpus: 2
+    volumes:
+      - agent_runner_worktrees:/worktrees
+      # Khóa SSH lên VPS để deploy dev — CHỈ máy được đại ca bật cờ deploy mới cần; máy khác để trống.
+      - type: bind
+        source: ${AGENT_VPS_SSH_KEY_FILE:-./docker/vps_ssh_key.placeholder}
+        target: /root/vps_ssh_key
+        read_only: true
+    # Mỗi máy nghe hàng đợi RIÊNG của nó; một việc một lúc.
+    command: >
+      sh -c 'celery -A app.core.celery_app worker -l info -c 1
+      -Q agent_code.$${AGENT_RUNNER_NAME} -n $${AGENT_RUNNER_NAME}@%h'
+    stop_grace_period: 60s
+    restart: unless-stopped
+
+volumes:
+  # Bản clone + worktree từng việc + phiên Claude Code (`/worktrees/.claude`) — sống qua các lần dựng lại.
+  agent_runner_worktrees:

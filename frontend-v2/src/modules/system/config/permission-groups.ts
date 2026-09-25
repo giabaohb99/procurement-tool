@@ -90,7 +90,9 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
       //  Nhật ký & phiên đăng nhập (CR-312). `login_session` trước nay rơi vào
       //  nhóm «Khác» — cùng một mối quan tâm với hai khóa nhật ký, xếp chung.
       //  `sync_log` là sổ đồng bộ với hệ ngoài, cùng họ nhật ký.
-      'login_session', 'audit', 'change_log', 'sync_log'],
+      'login_session', 'audit', 'change_log', 'sync_log',
+      //  Việc của bot Agent Hub (ai-CR-036).
+      'agent_task'],
   },
 ]
 

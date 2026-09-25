@@ -350,6 +350,9 @@ export const appRoutes = {
      * bằng đường này.
      */
     syncLogs: '/system/sync-logs',
+    /** Việc của bot Telegram Đậu Đậu (ai-CR-036) — chỉ đọc, thao tác vẫn qua Telegram. */
+    agentTasks: '/system/agent-tasks',
+    agentTask: (id: number | string) => `/system/agent-tasks/${id}`,
     /** Hộp thư gửi danh nghĩa địa chỉ khác — dùng lúc ban hành văn bản. */
     mailboxes: '/system/mailboxes',
     /** Quản lý nhập dữ liệu — danh sách các lần nạp dữ liệu hàng loạt. */

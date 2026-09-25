@@ -447,6 +447,10 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
             "supplier_name": p.supplier_name,
             "status": p.status,
             "amount": round(totals.get(p.id, 0.0), 2),
+            #  Không có `url` thì model tự bịa `/purchase/orders/16` cho một đơn id 372 —
+            #  system prompt cấm bịa nhưng Gemini vẫn bịa. Cùng khuôn với `_DETAIL_URLS`
+            #  ở approval_tool.py.
+            "url": f"/procurement/purchase-orders/{p.id}",
         }
         for p in pos
     ]

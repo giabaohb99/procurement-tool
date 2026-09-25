@@ -157,6 +157,9 @@ export const ENTITIES = [
   // test_dong_bo_giao_dien_v2.py).
   'customs_price',
   'customs_regulation',
+  //  Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`, chỉ đọc: danh sách việc
+  //  Đậu Đậu đã nhận, từng bước đã chạy, chi phí model. Thao tác trên việc vẫn đi qua Telegram.
+  'agent_task',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

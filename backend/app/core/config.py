@@ -212,6 +212,137 @@ class Settings(BaseSettings):
     # tài xế, không bao giờ phòng ban / công ty / nhân sự / tài khoản (§9.6).
     SYNC_DATXE_AUTO_CREATE: bool = False
 
+    # --- Agent Hub (doc/agent-hub/) ---
+    # Bậc 1: nhận việc qua Telegram, Gemini gom + tóm tắt + đề xuất cách sửa, in ra
+    # Telegram và ghi vào sổ. KHÔNG sửa mã. Mọi cờ mặc định TẮT — chưa bật thì không
+    # một lời gọi nào đi ra ngoài, đúng nếp `legacy_datxe` / `pos365`.
+    AGENT_HUB_ENABLED: bool = False
+    AGENT_TELEGRAM_BOT_TOKEN: str = ""
+    # CHỈ chat_id này được ra lệnh. Rỗng = không ai ra lệnh được (chốt chặn, không
+    # phải "cho tất cả") — xem `telegram.is_allowed_chat`.
+    AGENT_TELEGRAM_CHAT_ID: str = ""
+    # Khóa Gemini RIÊNG của bot (QĐ-AI-7). CỐ Ý không lùi về GEMINI_API_KEY: bot chạy
+    # nền gọi liên tục, đốt hết hạn mức thì Trợ lý AI đang phục vụ người thật chết
+    # theo, mà lúc đó không ai biết vì sao.
+    AGENT_GEMINI_API_KEY: str = ""
+    AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
+    # Trần số task mỗi ngày. Trần này bảo vệ ĐẠI CA chứ không phải bảo vệ máy — hạn
+    # mức dùng chung với người, bot ngốn hết thì người ngồi gõ tay cũng hết lượt.
+    AGENT_DAILY_TASK_CAP: int = 5
+    # Khoảng lặng trước khi gom: tin nhắn phải nằm yên bấy nhiêu giây mới đem đi
+    # phân loại. Không có nó thì mỗi tin một task và bot KHÔNG BAO GIỜ gom được gì —
+    # mà "gom được không" lại đúng là câu bậc 1 phải trả lời.
+    AGENT_TRIAGE_DELAY_SEC: int = 90
+    # Trần tin nhắn gom trong MỘT lời gọi Gemini. Vượt thì để lượt sau.
+    AGENT_TRIAGE_BATCH: int = 20
+    # Email tài khoản ERP mà lệnh `/hoi` chạy DƯỚI QUYỀN người đó.
+    # ⚠️ Trợ lý AI lọc dữ liệu theo người đăng nhập, mà Telegram thì không đăng nhập —
+    # nên phải chỉ đích danh một tài khoản. Để trống = tắt hẳn lệnh `/hoi`. ĐỪNG khai
+    # tài khoản quản trị: ai nhắn được cho bot sẽ đọc được đúng những gì tài khoản này
+    # đọc được. Hàng rào duy nhất còn lại là `AGENT_TELEGRAM_CHAT_ID`.
+    AGENT_ASSISTANT_USER: str = ""
+    # true = tiến trình `agent-poller` riêng đang giữ kết nối chờ tin Telegram (ai-CR-008),
+    # nên vòng beat `agent.poll_telegram` 10 giây PHẢI tắt — hai bên cùng đọc một con trỏ
+    # là xử trùng một tin. Stack thử `docker-compose.agent.yml` đặt cờ này ngay trong
+    # `environment` của celery-beat/celery-worker, không cần khai ở `.env`.
+    AGENT_LONG_POLL: bool = False
+    # --- Bậc 2 (ai-CR-011): bot sửa mã bằng Claude Code CLI trong service `agent-runner` ---
+    # Cầu dao riêng của bậc 2. TẮT thì bấm Duyệt chỉ ghi sổ như bậc 1, không giao việc đi đâu.
+    AGENT_CODER_ENABLED: bool = False
+    AGENT_CODER_CMD: str = "claude"
+    # Số lượt tối đa một phiên `claude -p` được đi (mỗi lượt = một lần gọi model + tool).
+    # 80 -> 120 (ai-CR-023): AI-0007 hết 80 lượt khi mới sửa xong một nửa hai màn giao diện.
+    AGENT_CODER_MAX_TURNS: int = 120
+    # Thư mục chứa worktree của từng task TRONG container runner (volume `agent_worktrees`).
+    AGENT_WORKTREE_ROOT: str = "/worktrees"
+    # Kho git nguồn, mount CHỈ ĐỌC vào runner; runner clone một bản `base` rồi cắt worktree
+    # của từng task từ `origin/<AGENT_BASE_BRANCH>` của bản đó (luật C2).
+    AGENT_REPO_SOURCE: str = "/src-repo"
+    AGENT_BASE_BRANCH: str = "erp-v2"
+    # Tài khoản hệ điều hành chạy `git` / `claude` / `pytest` trong runner. Worker Celery chạy
+    # root, tiến trình con hạ xuống người dùng này để KHÔNG đọc được môi trường của cha
+    # (`/proc/<pid>/environ` chứa khóa Telegram, Gemini, DB). Rỗng, hoặc tiến trình cha không
+    # phải root (chạy ngoài Docker), thì không hạ.
+    AGENT_RUNNER_USER: str = "runner"
+    # ai-CR-054 (D-03..05): máy sửa mã tách rời. Máy tự xưng bằng tên + mã máy (dòng trong `tab_agent_runner`,
+    # đại ca đăng ký bằng câu nhắn). Trống = phase 0/1: bot và runner cùng máy, hàng đợi cũ `agent_code`.
+    AGENT_RUNNER_NAME: str = ""
+    AGENT_RUNNER_TOKEN: str = ""
+    # Máy «đang bật» = có nhịp tim trong chừng này giây (runner ghi mỗi 30 giây).
+    AGENT_RUNNER_ONLINE_SEC: int = 120
+    # Không máy nào bật thì vé đi vào máy này (thường là máy đại ca); trống = máy liên lạc gần nhất.
+    AGENT_DEFAULT_RUNNER: str = ""
+    # Hết giờ thì giết tiến trình, ghi FAILED, nhắn Telegram; không tự thử lại (§8 thiết kế).
+    AGENT_RUN_TIMEOUT_SEC: int = 1800
+    # Trần số tệp một task được đụng (luật C1). Vượt = dừng, không commit, leo thang.
+    AGENT_MAX_FILES_TOUCHED: int = 25
+    # CỐ Ý KHÔNG khai `CLAUDE_CODE_OAUTH_TOKEN` ở đây: `coder.build_env` đọc thẳng `os.environ`
+    # đúng lúc spawn, để khóa không bao giờ nằm trong đối tượng settings (dump/log/`/hoi`).
+    # Cũng không có `AGENT_MAX_CONCURRENT_RUNS`: một việc một lúc do runner chạy `-c 1`.
+    # --- Bậc 2, giai đoạn 2a (ai-CR-012): runner đẩy nhánh lên GitHub + mở PR vào nhánh nền ---
+    # TẮT thì nhánh chỉ nằm trong volume runner như GĐ1; thẻ kết quả có nút «Đẩy GitHub + mở PR»
+    # để đẩy tay từng việc. BẬT thì runner tự đẩy + mở PR ngay sau khi commit.
+    AGENT_PR_ENABLED: bool = False
+    AGENT_GITHUB_REPO: str = "giabaohb99/procurement-tool"
+    AGENT_GITHUB_API_URL: str = "https://api.github.com"
+    # CỐ Ý KHÔNG khai `AGENT_GITHUB_TOKEN` (PAT chi tiết, chỉ Contents + Pull requests của một
+    # kho): `coder.github_token()` đọc thẳng `os.environ` lúc đẩy, và khóa chỉ đi vào tiến trình
+    # `git push` (qua biến GIT_CONFIG_*, không nằm trên dòng lệnh) + lượt gọi API GitHub —
+    # KHÔNG BAO GIỜ vào tiến trình `claude`.
+    # --- Bậc 2, giai đoạn 2b·2 (ai-CR-014): gộp vào nhánh nền + deploy thử lên dev VPS ---
+    # Đại ca chốt 22/09/2026: bot đẩy nhánh của mình xong thì HỎI; đại ca bấm đồng ý (ngay hoặc hẹn
+    # giờ) mới được gộp thẳng vào AGENT_BASE_BRANCH rồi SSH lên VPS deploy dev. TẮT = thẻ kết quả
+    # không có nút gộp, chỉ còn đường PR như GĐ2a.
+    AGENT_DEPLOY_ENABLED: bool = False
+    # Sổ quyết định của đại ca (ai-CR-015): `doc/agent-hub/` mount vào container ở /agent-docs.
+    # Không có tệp thì bot chạy như trước (không tra sổ), không lỗi.
+    AGENT_PLAYBOOK_PATH: str = "/agent-docs/03-so-quyet-dinh.md"
+    # ai-CR-018: nhánh chạy thật, lượt rà soát so với nhánh nền để biết lỗi đã sửa ở đây chưa gộp.
+    AGENT_MAIN_BRANCH: str = "main"
+    # ai-CR-027: đại ca 23/09 — thẻ gọn (logic đã sửa, đã kiểm gì, đánh giá), KHÔNG nút dưới tin nhắn,
+    # ra lệnh bằng chữ («gộp AI-0007», «duyệt», «xong»…), không gửi kèm tệp .diff. false = như cũ.
+    AGENT_TG_COMPACT: bool = True
+    # ai-CR-035: ảnh chụp lỗi đại ca gửi kèm. Poller ghi vào volume `agent_files`, runner đọc
+    # (chỉ đọc) và mở cho Claude Code bằng --add-dir. Trần 20 MB là trần tải về của Bot API.
+    AGENT_FILES_DIR: str = "/agent-files"
+    # ai-CR-037: phiếu hỗ trợ ERP làm nguồn việc. Hai cửa, cửa nào trống là tắt cửa đó:
+    #  - AGENT_TICKET_ASSIGNEE = email tài khoản ERP của bot: nhóm hỗ trợ GIAO phiếu cho tài khoản
+    #    này là bot nhận (cửa chính — có người chủ động chọn);
+    #  - AGENT_TICKET_DEPARTMENTS = danh sách nhãn «Bộ phận / Nhóm», cách nhau dấu phẩy: phiếu MỚI
+    #    mang nhãn đó tự vào hàng việc của bot.
+    AGENT_TICKET_ASSIGNEE: str = ""
+    # ai-CR-038: mỗi người tự đăng nhập ERP trong Telegram bằng mã một lần lấy ở trang cá nhân.
+    # Người đã liên kết chỉ hỏi được Trợ lý AI dưới quyền của chính họ.
+    AGENT_LINK_ENABLED: bool = True
+    AGENT_LINK_DAYS: int = 30
+    AGENT_LINK_CODE_MINUTES: int = 10
+    # Tên bot (không có @) để trang cá nhân dựng link mở thẳng bot; trống thì chỉ hướng dẫn chữ.
+    AGENT_TELEGRAM_BOT_USERNAME: str = ""
+    # ai-CR-043: tỷ giá TẠM để báo chi phí bot kèm tiền Việt. Chỉ để đọc cho dễ, không phải số kế toán.
+    AGENT_USD_VND: int = 26000
+    # ai-CR-049: gốc giao diện ERP chứa phiếu bot tạo (link «Mở phiếu»). Trống = FRONTEND_URL. Stack bot
+    # local tạo phiếu vào DB riêng nên phải trỏ giao diện của stack đó (agent-erp, cổng 8084).
+    AGENT_ERP_URL: str = ""
+    AGENT_TICKET_DEPARTMENTS: str = ""
+    AGENT_FILE_MAX_MB: int = 20
+    # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
+    # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
+    AGENT_LOCAL_DOCS_DIR: str = ""
+    AGENT_VPS_HOST: str = ""
+    AGENT_VPS_PORT: int = 22
+    AGENT_VPS_USER: str = ""
+    # Thư mục kho dev trên VPS và phần đuôi lệnh compose của stack dev (quy trình deploy §C: quên
+    # `-f docker-compose.dev.yml` là devthumua 502).
+    AGENT_VPS_DEV_DIR: str = "~/procurement-tool-dev"
+    AGENT_VPS_DEV_COMPOSE_ARGS: str = "--env-file .env.dev -f docker-compose.dev.yml"
+    # Đường dẫn khóa SSH TRONG container runner. Khóa thật mount chỉ đọc từ máy đại ca
+    # (`AGENT_VPS_SSH_KEY_FILE` trong .env, chỉ compose đọc) vào dưới /root — thư mục 0700 nên tiến
+    # trình `claude` (uid 1000) không với tới; `coder.run_ssh` chép ra bản 0600 tạm rồi xóa.
+    AGENT_VPS_SSH_KEY_PATH: str = "/root/vps_ssh_key"
+    # Sau deploy, chờ địa chỉ này trả 200 rồi mới báo xanh; rỗng = không kiểm.
+    AGENT_DEV_HEALTH_URL: str = "https://devthumua.degoholding.vn/api/health"
+    AGENT_DEV_UI_URL: str = "https://deverp.degoholding.vn"
+
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"
