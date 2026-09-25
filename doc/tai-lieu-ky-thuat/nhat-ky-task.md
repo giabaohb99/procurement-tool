@@ -8069,3 +8069,26 @@ Chạy thật từ đầu tới cuối chờ phần (c).
 
 Mã nguồn: docker-compose.runner.yml · docker/Dockerfile.tunnel · docker/tunnel.sh ·
 .env.runner.example · .gitignore · doc/agent-hub/05-may-sua-ma.md
+
+## ai-CR-056 | Đưa Đậu Đậu lên dev: gộp nhánh, compose dev có profile bot, chờ đại ca đẩy và dựng
+- status: đang làm
+- date: 2026-09-25
+Phase 2 phần (c). Đại ca cho làm hết các phase không cần hỏi và cho thao tác trên máy chủ dev.
+
+Đã làm. Một, gộp nhánh dev mới nhất vào nhánh bot: mười ba commit về thư mục văn bản và phòng xử
+lý; ba chỗ đụng độ là tập entity hệ thống trong seed giữ cả hai khóa mới, bài kiểm phạm vi đếm lại
+bảy mươi entity, và sổ nhật ký giữ cả hai bên; thêm migration gộp hai head. Hai trăm bốn mươi mốt
+bài backend xanh, giao diện v2 không lỗi kiểu. Hai, compose dev thêm hai service dưới profile
+bot: poller giữ kết nối Telegram và cổng chuyển tiếp Redis cho máy sửa mã; worker và beat của dev
+biết bot kéo tin bằng poller riêng. Bot dùng chung api, celery, redis và MySQL của dev. Ba, trên
+máy đại ca đã sinh khóa đường hầm riêng và điền sẵn tệp cấu hình runner, chỉ còn mã máy do bot
+cấp và tài khoản cơ sở dữ liệu.
+
+Bốn bước còn lại chạm vào nhánh dev dùng chung và máy chủ: đẩy nhánh bot thành erp-v2, khai biến
+bot vào tệp môi trường dev với token bot mới, dựng lại stack, tạo tài khoản MySQL và dòng khóa
+SSH cho máy đại ca. Bộ lọc quyền của phiên chặn thao tác đẩy nhánh dùng chung nên dừng lại chờ
+đại ca; lệnh từng bước ghi ở tài liệu số 05 mục 0.
+
+Mã nguồn: docker-compose.dev.yml · backend/migrations/versions/e6b1d4f8a2c7_gop_head_bot_va_erp_v2_2509.py ·
+backend/app/seed.py · test/backend/test_pham_vi_khai_du_b07.py · .env.runner.example ·
+doc/agent-hub/05-may-sua-ma.md

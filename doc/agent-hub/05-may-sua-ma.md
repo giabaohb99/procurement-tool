@@ -15,6 +15,48 @@ Máy tắt thì việc nằm chờ trong hàng đợi, không mất.
                                    ↓ ghi kết quả vào các bảng tab_agent_* bằng tài khoản MySQL riêng
 ```
 
+## 0. Đưa bot lên dev lần đầu (D-06, ai-CR-056) — các lệnh, theo thứ tự
+
+Mã đã sẵn trên nhánh `agent-hub-bac-1` (đã gộp `origin/erp-v2` ngày 25/09/2026, migration gộp head
+`e6b1d4f8a2c7`). Còn lại là bốn bước chạm vào nhánh dev dùng chung và VPS:
+
+```bash
+# 1. Đẩy nhánh bot thành erp-v2 (fast-forward, erp-v2 không có commit nào ngoài nhánh bot)
+git fetch origin && git push origin agent-hub-bac-1:erp-v2
+
+# 2. Trên VPS: lấy mã + khai bot trong .env.dev (token bot DÁN TAY, không gửi qua chat)
+ssh <vps> 'cd ~/procurement-tool-dev && git fetch origin && git reset --hard origin/erp-v2'
+ssh <vps> 'cat >> ~/procurement-tool-dev/.env.dev <<EOF
+# ---- Đậu Đậu trên dev (ai-CR-056) ----
+COMPOSE_PROFILES=bot
+AGENT_HUB_ENABLED=true
+AGENT_TELEGRAM_BOT_TOKEN=<token bot MỚI tạo ở BotFather cho dev>
+AGENT_TELEGRAM_BOT_USERNAME=<tên bot không có @>
+AGENT_TELEGRAM_CHAT_ID=<id chat đại ca, cùng số với máy đại ca>
+AGENT_LINK_ENABLED=true
+AGENT_ERP_URL=https://deverp.degoholding.vn
+AGENT_CODER_ENABLED=true
+AGENT_DEPLOY_ENABLED=false
+AGENT_DEFAULT_RUNNER=may-dai-ca
+AGENT_GEMINI_API_KEY=
+AGENT_ASSISTANT_USER=
+EOF'
+
+# 3. Dựng lại (backend + giao diện v2 đổi; migration chạy trong start.prod.sh của api)
+ssh <vps> 'cd ~/procurement-tool-dev && docker compose --env-file .env.dev -f docker-compose.dev.yml \
+  up -d --build api celery-worker celery-beat erp agent-poller redis-dev-forward'
+ssh <vps> 'cd ~/procurement-tool-dev && docker compose --env-file .env.dev -f docker-compose.dev.yml \
+  exec -T api alembic current'      # phải là e6b1d4f8a2c7
+
+# 4. Mục 1.2 (tài khoản MySQL agent_runner) + 1.3 (authorized_keys cho may-dai-ca) bên dưới
+```
+
+Sau đó: đại ca mở deverp → Trang cá nhân → «Telegram» lấy mã, nhắn `/dangnhap <mã>` cho bot dev; vào
+«Khóa AI» dán khóa Gemini; nhắn «thêm máy của anh» → lấy `AGENT_RUNNER_TOKEN` dán vào `.env.runner`
+trên máy (đã điền sẵn phần còn lại), điền `DB_NAME` + `DB_PASSWORD` của `agent_runner`, rồi
+`docker compose -p agentrunner -f docker-compose.runner.yml up -d --build`. Stack `agenthub` cũ trên
+máy đại ca tắt đi (`docker compose down`) để không có hai bot.
+
 ## 1. Chuẩn bị MỘT LẦN trên VPS dev (đại ca hoặc người có SSH quản trị)
 
 Ba thứ, làm sau khi stack bot đã lên dev (D-06) vì tài khoản MySQL cấp quyền theo TÊN BẢNG.
