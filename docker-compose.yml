@@ -21,6 +21,16 @@ services:
     image: mysql:8.0
     # innodb-buffer-pool-size: MySQL mặc định tự phình bộ đệm theo RAM nhìn thấy được.
     # Bản local chỉ có dữ liệu mẫu nên 256M là thừa dùng.
+    #
+    # KHÔNG có cờ khởi động cho từ dừng FULLTEXT (phase 07 tìm kiếm toàn văn,
+    # duoc-CR-477) — CỐ Ý, để tệp này khớp `docker-compose.production.yml`
+    # (bản đó không tự chạy MySQL, chỉ proxy sang container ngoài, không đặt
+    # được cờ khởi động). `innodb_ft_enable_stopword` có phạm vi SESSION (đã
+    # kiểm tay bằng user `app`, KHÔNG cần quyền SUPER), và chỉ có tác dụng TẠI
+    # THỜI ĐIỂM CREATE/ALTER FULLTEXT INDEX — nên bốn chỉ mục FULLTEXT của
+    # `tab_document_search` tự đặt `SET SESSION innodb_ft_enable_stopword = 0`
+    # ngay trong migration trước khi dựng chỉ mục, không phụ thuộc cấu hình
+    # server. Xem migration `83679db84fd1_duoc_cr477_bo_tu_dung_ngram_van_ban.py`.
     command: >
       --default-authentication-plugin=mysql_native_password
       --innodb-buffer-pool-size=256M

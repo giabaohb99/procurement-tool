@@ -1,5 +1,6 @@
 import {
   CloudCheck,
+  FileText,
   GitBranch,
   HardDrive,
   History,
@@ -70,6 +71,13 @@ const TABS: {
     icon: GitBranch,
     group: 'workflow',
     description: 'Công tắc bật/tắt các bước duyệt dùng chung của hệ thống.',
+  },
+  {
+    value: 'document',
+    label: 'Văn bản',
+    icon: FileText,
+    group: 'document',
+    description: 'Công tắc riêng cho phân hệ Văn thư — hạn xem tệp đính kèm, cảnh báo mở/tải.',
   },
   {
     value: 'email',

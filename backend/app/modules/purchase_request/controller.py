@@ -320,6 +320,17 @@ def _out(db: Session, pr, user=None) -> dict:
     # Rỗng thì lấy theo Department.manager_id hiện tại để HIỂN THỊ (không ghi đè dữ liệu đã lưu).
     if not d.get("head_of_dept") and (pr.department_id or pr.department):
         d["head_of_dept"] = service.find_dept_head(db, pr.department, pr.department_id)
+    # bao-CR-480: ô Phòng ban rỗng thì HIỂN THỊ cho ra tên — có id phòng mà thiếu tên (phiếu
+    # dựng bằng script) thì tra danh mục; không có cả id (lập trước bao-CR-465) thì theo hồ sơ
+    # nhân sự của người yêu cầu. Không ghi đè dữ liệu: lưu / gửi duyệt mới ghi.
+    if not (d.get("department") or "").strip():
+        if d.get("department_id"):
+            d["department"] = service.handler_dept_name_of(db, d["department_id"])
+        else:
+            d["department_id"], d["department"] = service.resolve_employee_department(db, pr.requester_id)
+    # bao-CR-480: tên phòng xử lý đi kèm phiếu — màn hình không cần quyền đọc danh mục phòng
+    # ban mới hiện được tên (trước đây người thiếu quyền chỉ thấy «Phòng #5»).
+    d["handler_dept_name"] = service.handler_dept_name_of(db, pr.handler_dept_id)
     # Task 4: NCC 2 cụm. Cụm 'req' (bộ phận đề xuất) MỌI người xem/sửa được — sửa bug người
     # yêu cầu không nhập nổi NCC của chính mình. Cụm 'pur' (khảo sát/thu mua) cần supplier.read
     # để xem, supplier.write để sửa.

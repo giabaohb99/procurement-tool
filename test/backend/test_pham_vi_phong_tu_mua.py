@@ -4,8 +4,9 @@ Ba bộ phạm vi đã chốt với khách:
   · THU MUA TOÀN QUYỀN — `pur_manager` bậc `all`, không đổi gì.
   · NHÀ MÁY — quản lý thu mua CỦA PHÒNG (bậc `dept_proc`): đúng nhánh `proc` NHƯNG chỉ trong
     phòng mình (phòng lập phiếu HOẶC phòng được nhờ). Phòng khác không thấy.
-  · THU MUA TRỪ NHÀ MÁY — bậc `proc` + ô «Loại trừ phòng ban» = nhà máy: không thấy phiếu
-    nhà máy, TRỪ phiếu nhà máy NHỜ phòng mình xử lý.
+  · THU MUA TRỪ NHÀ MÁY — bậc `proc` + ô «Loại trừ phòng ban» = nhà máy. bao-CR-480 (đại
+    ca chốt 24/09/2026) đổi cột so sánh sang PHÒNG XỬ LÝ: không thấy phiếu nhà máy ĐANG MUA
+    (kể cả phiếu phòng khác nhờ nhà máy), nhưng thấy phiếu nhà máy xin mà thu mua chung mua.
 
 Dựng hai phòng (`Nhà máy` / `Thu mua`) và người xem KHÔNG dính phiếu (không tạo, không yêu
 cầu, không được gán) để chỉ còn nhánh phòng ban quyết định.
@@ -146,15 +147,22 @@ def test_proc_scope_unchanged_when_no_exclude(db, seed, two_departments):
     assert _visible_pr_codes(db, user) == {"PYC-NM", "PYC-TM", "PYC-TM-NHO-NM"}
 
 
-def test_proc_with_department_exclude_hides_that_department_but_keeps_tickets_handed_to_me(
-        db, seed, two_departments):
+def test_proc_with_department_exclude_filters_by_handling_department(db, seed, two_departments):
+    """bao-CR-480 — loại trừ so PHÒNG XỬ LÝ, không so phòng lập.
+
+    Trước CR này bài kiểm mong `{"PYC-TM", "PYC-NM-NHO-TM"}`: phiếu nhà máy xin mà thu mua
+    chung mua (`PYC-NM`, handler = 0) bị GIẤU khỏi quản lý thu mua chung — tức họ không thấy
+    đơn nhân viên mình đang mua — còn phiếu phòng khác nhờ nhà máy mua thì lại thấy.
+    """
     factory_id, purchasing_id = two_departments
-    _add_pr(db, seed, "PYC-NM", factory_id)
+    _add_pr(db, seed, "PYC-NM", factory_id)                                      # nhà máy xin, thu mua chung mua
+    _add_pr(db, seed, "PYC-NM-TU-MUA", factory_id, handler_dept_id=factory_id)   # nhà máy tự mua
     _add_pr(db, seed, "PYC-TM", purchasing_id)
+    _add_pr(db, seed, "PYC-TM-NHO-NM", purchasing_id, handler_dept_id=factory_id)  # nhờ nhà máy mua
     _add_pr(db, seed, "PYC-NM-NHO-TM", factory_id, handler_dept_id=purchasing_id)
     _add_pr(db, seed, "PYC-NM-NHO-KHAC", factory_id, handler_dept_id=999)
     user = _viewer(db, seed, "purchase_request", "proc", purchasing_id, exclude_dept_ids=(factory_id,))
-    assert _visible_pr_codes(db, user) == {"PYC-TM", "PYC-NM-NHO-TM"}
+    assert _visible_pr_codes(db, user) == {"PYC-NM", "PYC-TM", "PYC-NM-NHO-TM", "PYC-NM-NHO-KHAC"}
 
 
 # ── Bậc `dept` — trưởng phòng cũng thấy phiếu được nhờ cho phòng mình ──────────────────

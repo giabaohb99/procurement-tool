@@ -161,6 +161,9 @@ def two_company_data(world):
     po_b = create_purchase_order(
         db, code="PO_B", company_id=co_b, department_id=world.dept["B.hc"],
         department="Phòng Hành chính", supplier_code="NCCB", supplier_name="NCC B",
+        #  bao-CR-480: ô loại trừ phòng ban so PHÒNG XỬ LÝ — B5 cần đơn này do chính
+        #  phòng Hành chính mua thì ô loại trừ «B.hc» mới cắt được nó.
+        handler_dept_id=world.dept["B.hc"],
         nspt="NSPT B", order_date=f"{YEAR}-03-11", created_by=world.actor("b1").user.id)
     po_b_kt = create_purchase_order(
         db, code="PO_B_KT", company_id=co_b, department_id=world.dept["B.kt"],

@@ -273,3 +273,58 @@ describe('DataTable — chu kỳ sắp xếp', () => {
     expect(onSortChange).toHaveBeenCalledWith('updated_at', 'desc')
   })
 })
+
+describe('DataTable — onRowDoubleClick', () => {
+  function buildWithHandlers() {
+    const onRowClick = vi.fn()
+    const onRowDoubleClick = vi.fn()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <DataTable
+          columns={[{ key: 'name', header: 'Tên', cell: (r: Row) => r.name }]}
+          rows={ROWS}
+          getRowId={(r: Row) => r.id}
+          onRowClick={onRowClick}
+          onRowDoubleClick={onRowDoubleClick}
+        />
+      </QueryClientProvider>,
+    )
+    return { onRowClick, onRowDoubleClick }
+  }
+
+  it('bấm đúp gọi CẢ HAI: onRowClick (cú đầu) và onRowDoubleClick — cộng thêm, không thay thế', async () => {
+    const user = userEvent.setup()
+    const { onRowClick, onRowDoubleClick } = buildWithHandlers()
+
+    await user.dblClick(screen.getByText('Nguyễn Văn A'))
+
+    expect(onRowDoubleClick).toHaveBeenCalledTimes(1)
+    expect(onRowClick).toHaveBeenCalled()
+  })
+
+  it('bấm THƯỜNG một lần không gọi onRowDoubleClick', async () => {
+    const user = userEvent.setup()
+    const { onRowClick, onRowDoubleClick } = buildWithHandlers()
+
+    await user.click(screen.getByText('Nguyễn Văn A'))
+
+    expect(onRowClick).toHaveBeenCalledTimes(1)
+    expect(onRowDoubleClick).not.toHaveBeenCalled()
+  })
+
+  it('không khai onRowDoubleClick thì bấm đúp không ném lỗi (mặc định optional)', async () => {
+    const user = userEvent.setup()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <DataTable
+          columns={[{ key: 'name', header: 'Tên', cell: (r: Row) => r.name }]}
+          rows={ROWS}
+          getRowId={(r: Row) => r.id}
+        />
+      </QueryClientProvider>,
+    )
+    await expect(user.dblClick(screen.getByText('Nguyễn Văn A'))).resolves.not.toThrow()
+  })
+})

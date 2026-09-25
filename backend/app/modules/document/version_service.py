@@ -73,6 +73,13 @@ def save_content(db: Session, version: DocumentVersion, data: VersionContentUpda
     version.updated_by = actor
     db.commit()
     db.refresh(version)
+
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (phase 07, duoc-CR-477) — nội dung soạn thảo
+    #  vừa đổi. Tự động lưu chạy theo nhịp gõ nên `reindex()` bỏ qua phần lớn
+    #  lần gọi (băm không đổi vì gõ chưa xong một từ), rẻ.
+    from . import search_index_service
+    search_index_service.queue_reindex(db, version.document_id)
+
     return version
 
 

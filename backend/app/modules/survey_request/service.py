@@ -167,6 +167,10 @@ def create_sr(db: Session, data, user_id: int, user=None, profile=None) -> Surve
     s = SurveyRequest(code=(data.code or _gen_code(db)), status="draft", created_by=user_id, updated_by=user_id,
                       **header)
     sync_department_ref(db, s)   # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu
+    # bao-CR-480: phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng đó (như YCMH).
+    if not s.handler_dept_id:
+        from app.modules.purchase_request.service import default_handler_dept_id
+        s.handler_dept_id = default_handler_dept_id(db, s.department_id)
     # Tự điền Trưởng bộ phận theo Department.manager_id (parity với PYC).
     # Phòng chưa gán trưởng thì để rỗng — lúc đọc sẽ tự lấy lại (xem `_out` ở controller).
     if not s.head_of_dept_id and not s.head_of_dept and (s.department_id or s.department):

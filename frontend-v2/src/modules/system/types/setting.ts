@@ -1,5 +1,13 @@
 /** Nhóm cấu hình do backend gán cho từng trường (`service.py` phía backend). */
-export type SettingGroup = 'workflow' | 'email' | 'storage' | 'ai' | 'sync' | 'pos365' | 'system'
+export type SettingGroup =
+  | 'workflow'
+  | 'document'
+  | 'email'
+  | 'storage'
+  | 'ai'
+  | 'sync'
+  | 'pos365'
+  | 'system'
 
 /** Kiểu ô nhập — quyết định trang vẽ công tắc, ô số, ô chọn hay ô chữ. */
 export type SettingType = 'bool' | 'int' | 'str' | 'select'

@@ -1,8 +1,15 @@
+import { Save } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { Button } from '@/shared/ui/button'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { BookCounterCard } from '../components/book-counter-card'
+import { BookDocumentsTab } from '../components/book-documents-tab'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentBookForm } from '../components/document-book-form'
 import {
@@ -17,9 +24,10 @@ const FORM_ID = 'document-book-form'
 /**
  * Trang MỞ SỔ / SỬA SỔ.
  *
- * Ba khối, xếp theo thứ tự người dùng cần: khai báo sổ → bộ đếm đang tới đâu →
- * văn bản đã vào sổ. Trang thêm mới chỉ có khối đầu: sổ chưa tồn tại thì chưa có
- * số nào để đếm và chưa có văn bản nào để liệt kê.
+ * Sổ đã tồn tại thì có HAI tab: «Thông tin sổ» (form khai báo + bộ đếm đang
+ * tới đâu) và «Văn bản trong sổ» (duoc-CR-474, 23/09/2026). Trang thêm mới chỉ có
+ * form: sổ chưa tồn tại thì chưa có số nào để đếm và chưa có văn bản nào để
+ * liệt kê, nên không có gì để tách tab.
  */
 export function DocumentBookDetailPage() {
   const navigate = useNavigate()
@@ -33,6 +41,7 @@ export function DocumentBookDetailPage() {
   const remove = useDeleteDocumentBook()
 
   const [year, setYear] = useState(new Date().getFullYear())
+  const [tab, setTab] = useUrlParamState('tab', 'info')
 
   const backTo = appRoutes.document.books
 
@@ -54,9 +63,9 @@ export function DocumentBookDetailPage() {
           </span>
         )
       }
-      //  Form dài (đo ở 393px: **1812px**, gấp hơn hai màn hình) mà nút Lưu nằm
-      //  trên đầu — không ghim thì sửa một ô ở giữa xong phải cuộn ngược lên tận
-      //  đỉnh mới lưu được, rồi cuộn xuống lại để sửa ô tiếp theo. Cùng lý do
+      //  Form dài (đo ở 393px: **1812px**, gấp hơn hai màn hình) mà nút Lưu
+      //  nằm trên đầu — không ghim thì sửa một ô ở giữa xong phải cuộn ngược lên
+      //  tận đỉnh mới lưu được, rồi cuộn xuống lại để sửa ô tiếp theo. Cùng lý do
       //  với tab Thông tin của chi tiết Văn bản.
       stickyHeader
       formId={FORM_ID}
@@ -69,30 +78,70 @@ export function DocumentBookDetailPage() {
       onDelete={
         book ? () => remove.mutate(book.id, { onSuccess: () => navigate(backTo) }) : undefined
       }
+      //  ⚠️ Trang thêm mới KHÔNG có tab (`actions` mặc định của `DetailPageShell`
+      //  ăn khớp: một `<form>` duy nhất, luôn ở trong DOM). Trang đã có sổ thì
+      //  tách hai tab bằng Radix `Tabs`, mà Radix HỦY MOUNT `TabsContent` đang
+      //  ẩn — nút Lưu mặc định trỏ `form={FORM_ID}` vẫn đứng ở đầu trang bất kể
+      //  tab nào đang mở, nên đứng ở tab «Văn bản trong sổ» thì `<form>` đã biến
+      //  khỏi DOM và bấm Lưu không làm gì cả, không báo lỗi (cùng bẫy đã ghi ở
+      //  `document-detail-page.tsx`). Tự dựng `actions`, chỉ bày nút Lưu khi
+      //  đang đứng ở tab «info».
+      actions={
+        isCreating ? undefined : (
+          <>
+            <Button variant="outline" onClick={() => navigate(backTo)} className="max-md:hidden">
+              Hủy
+            </Button>
+            {tab === 'info' && (
+              <Button type="submit" form={FORM_ID} className="max-md:flex-1">
+                <Save className="size-4" />
+                Lưu
+              </Button>
+            )}
+          </>
+        )
+      }
     >
-      <DocumentBookForm
-        formId={FORM_ID}
-        book={book}
-        onSubmit={(values) =>
-          save.mutate(
-            { id: book?.id, values },
-            {
-              onSuccess: (saved) => {
-                if (isCreating) {
+      {isCreating ? (
+        <DocumentBookForm
+          formId={FORM_ID}
+          book={book}
+          onSubmit={(values) =>
+            save.mutate(
+              { id: book?.id, values },
+              {
+                onSuccess: (saved) => {
                   navigate(appRoutes.document.bookDetail(saved.id), { replace: true })
-                }
+                },
               },
-            },
-          )
-        }
-      />
+            )
+          }
+        />
+      ) : (
+        <Tabs value={tab} onValueChange={setTab}>
+          <ScrollableTabsList value={tab}>
+            <TabsTrigger value="info" className={TAB_TRIGGER_UNDERLINE}>
+              Thông tin sổ
+            </TabsTrigger>
+            <TabsTrigger value="documents" className={TAB_TRIGGER_UNDERLINE}>
+              Văn bản trong sổ
+            </TabsTrigger>
+          </ScrollableTabsList>
 
-      {/*  KHÔNG còn bảng «Văn bản trong sổ» ở đây (khách bỏ 25/08/2026): tra văn
-           bản theo sổ thì lọc ngay ở màn Văn bản, không cần dựng lại một bảng
-           thứ hai trong trang khai báo sổ. Trang này giờ chỉ còn hai việc — khai
-           sổ và xem bộ đếm. Thành phần cũ nằm trong lịch sử git nếu cần lấy lại. */}
-      {!isCreating && book && (
-        <BookCounterCard bookId={book.id} year={year} onYearChange={setYear} />
+          <TabsContent value="info" className="mt-4 space-y-4">
+            <DocumentBookForm
+              formId={FORM_ID}
+              book={book}
+              onSubmit={(values) => save.mutate({ id: book?.id, values })}
+            />
+
+            {book && <BookCounterCard bookId={book.id} year={year} onYearChange={setYear} />}
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-4">
+            {book && <BookDocumentsTab bookId={book.id} year={year} onYearChange={setYear} />}
+          </TabsContent>
+        </Tabs>
       )}
     </DetailPageShell>
   )

@@ -41,8 +41,7 @@ export const appRoutes = {
     purchaseRequestNew: '/procurement/purchase-requests/new',
     purchaseRequestDetail: (id: number | string) => `/procurement/purchase-requests/${id}`,
     /** bao-CR-310 — màn XỬ LÝ PHƯƠNG ÁN của YCMH: NSTM gắn báo giá, người yêu cầu chốt. */
-    purchaseRequestProcess: (id: number | string) =>
-      `/procurement/purchase-requests/${id}/process`,
+    purchaseRequestProcess: (id: number | string) => `/procurement/purchase-requests/${id}/process`,
     purchaseRequestPrint: (id: number | string) => `/print/purchase-request/${id}`,
     /**
      * bao-CR-310 đợt 4 — bản in THEO NHÀ CUNG CẤP của YCMH: mỗi NCC một trang, khớp
@@ -55,8 +54,7 @@ export const appRoutes = {
     purchaseOrderNew: '/procurement/purchase-orders/new',
     purchaseOrderDetail: (id: number | string) => `/procurement/purchase-orders/${id}`,
     /** Hồ sơ chứng từ cả chuỗi ĐMH → YCMH → phiếu khảo sát → YCBG. */
-    purchaseOrderDocuments: (id: number | string) =>
-      `/procurement/purchase-orders/${id}/documents`,
+    purchaseOrderDocuments: (id: number | string) => `/procurement/purchase-orders/${id}/documents`,
     purchaseOrderPrint: (id: number | string) => `/print/purchase-order/${id}`,
     /**
      * bao-CR-322 — mẫu **Đơn mua hàng** (bản nội bộ / gửi kế toán). Cùng trang in với
@@ -243,7 +241,13 @@ export const appRoutes = {
     /** Danh sách SỔ (mỗi sổ một bộ đếm riêng), không phải danh sách văn bản. */
     books: '/document/books',
     bookNew: '/document/books/new',
-    bookDetail: (id: number | string) => `/document/books/${id}`,
+    /**
+     * Chi tiết một sổ — hai tab «Thông tin sổ» (mặc định, đường dẫn SẠCH) và
+     * «Văn bản trong sổ» (`?tab=documents`, duoc-CR-474). Thẻ sổ ở màn danh sách và
+     * số «đã cấp» ở bộ đếm nhảy thẳng vào tab văn bản bằng `bookDetail(id, 'documents')`.
+     */
+    bookDetail: (id: number | string, tab?: 'documents') =>
+      tab === 'documents' ? `/document/books/${id}?tab=documents` : `/document/books/${id}`,
     /**
      * Thiết lập văn bản - các danh mục nền và thư viện mẫu nằm chung một trang,
      * phân biệt bằng `?tab=`.
@@ -271,6 +275,22 @@ export const appRoutes = {
     /** Mức mật / độ khẩn — danh mục CRUD từ 22/08/2026 (trước đó khai cứng). */
     securityLevelNew: '/document/security-levels/new',
     securityLevelDetail: (id: number | string) => `/document/security-levels/${id}`,
+    /**
+     * QUẢN LÝ CÂY THƯ MỤC (phase 05, duoc-CR-476). Thư mục đang chọn nằm ở
+     * `?folder=<id>` (`'all'` = chưa chọn gì, khung phải hiện lời mời chọn),
+     * KHÔNG phải một segment path — cây là một trang duy nhất, không phải một
+     * trang trên mỗi thư mục.
+     */
+    folders: '/document/folders',
+    folderDetail: (
+      folderId: number | string,
+      params?: { tab?: 'documents' | 'access'; sub?: boolean },
+    ) => {
+      const qs = new URLSearchParams({ folder: String(folderId) })
+      if (params?.tab && params.tab !== 'documents') qs.set('tab', params.tab)
+      if (params?.sub === false) qs.set('sub', '0')
+      return `/document/folders?${qs.toString()}`
+    },
   },
   report: {
     root: '/report',
@@ -315,8 +335,7 @@ export const appRoutes = {
      * Qua `encodeURIComponent` vì `request_id` là chuỗi do backend dựng, không
      * phải số — dán thẳng vào query là để ngỏ cho một ký tự lạ cắt mất tham số.
      */
-    logDetail: (requestId: string) =>
-      `/system/logs?request_id=${encodeURIComponent(requestId)}`,
+    logDetail: (requestId: string) => `/system/logs?request_id=${encodeURIComponent(requestId)}`,
     /** Phiên đăng nhập đang mở toàn hệ — đá phiên / bắt đăng nhập lại (bao-CR-395). */
     sessions: '/system/sessions',
     /**
@@ -392,8 +411,7 @@ export const appRoutes = {
      * chúng chỉ ở đây để `hr/routes.tsx` khai chỗ đón người có dấu trang cũ.
      */
     permissionsLegacy: '/hr/permissions',
-    userPermissionDetailLegacy: (userId: number | string) =>
-      `/hr/permissions/users/${userId}`,
+    userPermissionDetailLegacy: (userId: number | string) => `/hr/permissions/users/${userId}`,
 
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
     //  Nằm trong phân hệ Nhân sự chứ không tách phân hệ riêng: người dùng đi

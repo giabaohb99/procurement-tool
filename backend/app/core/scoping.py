@@ -72,6 +72,15 @@ SCOPE_FIELDS = {
     # — hai thứ khác nhau, người tạo hộ vẫn phải thấy phiếu mình vừa nhập.
     "document":         {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by"},
+    #  Cây thư mục (phase 03, duoc-CR-475) — PUBLIC ở ĐÂY là cố ý và TẠM THỜI.
+    #  `apply_scope`/`get_scoped` không được gọi trên `DocFolder` ở tầng
+    #  `folder_controller.py` (nó không có cột `company_id` filter kiểu
+    #  một-cột thông thường — mọi thư mục con kế thừa pháp nhân từ thư mục gốc
+    #  qua CÂY, không phải qua một điều kiện SQL đơn). Lọc "thấy nhánh pháp
+    #  nhân nào" + ACL từng thư mục nằm ở
+    #  `doc_catalog/folder_tree_service._visible_folder_ids` — phase 04 sẽ thay
+    #  thân hàm đó, KHÔNG sửa dòng PUBLIC này.
+    "doc_folder":       PUBLIC,
 
     # ------------------------------------------------------------------ B-07
     # Từ đây xuống là 27 entity trước kia KHÔNG có mặt trong bảng này. Vắng mặt
@@ -313,14 +322,6 @@ def _dept_match(model, f, dept_ids, dept_names):
     if not cs:
         return None
     return or_(*cs) if len(cs) > 1 else cs[0]
-
-
-def _handler_dept_cond(model, f, dept_ids):
-    """Điều kiện "phiếu được NHỜ cho một trong các phòng này" — bao-CR-414. None = không có."""
-    col_handler = f.get("handler_dept")
-    if not col_handler or not dept_ids:
-        return None
-    return getattr(model, col_handler).in_(list(dept_ids))
 
 
 def approves_only_in_dept_proc(profile: dict, entity: str) -> bool:
@@ -669,9 +670,8 @@ def _explicit_cond(model, entity, scopeconf, profile=None):
     """Điều kiện THU HẸP: include công ty/nhân sự + MỌI loại trừ (AND).
     Riêng 'Phòng ban được xem' (department include) = CỘNG THÊM → xử lý ở apply_scope.
 
-    bao-CR-414: ô "Loại trừ phòng ban" KHÔNG chặn phiếu mà phòng đó NHỜ phòng mình xử lý
-    (`handler_dept_id` là phòng của người xem) — thu mua chung loại trừ nhà máy nhưng nhà máy
-    nhờ thì vẫn thấy. Cần `profile` để biết phòng mình; không có thì loại trừ như cũ."""
+    Chứng từ thu mua (có cột `handler_dept_id`) loại trừ theo PHÒNG XỬ LÝ — bao-CR-480, xem
+    chú thích bên dưới. `profile` giữ trong chữ ký cho tương thích, nhánh hiện tại không cần."""
     f = SCOPE_FIELDS.get(entity) or {}
     cs = []
     for dim, col in (("company", f.get("company")), ("employee", f.get("owner"))):
@@ -694,16 +694,24 @@ def _explicit_cond(model, entity, scopeconf, profile=None):
         if exc:
             cs.append(~column.in_(exc))
     # Phòng ban: include là CỘNG THÊM (xem `_dept_include_cond`), ở đây chỉ còn loại trừ.
-    # Loại trừ CHỈ so cột phòng lập phiếu (không so cột phòng được nhờ): nhờ phòng mình
-    # thì phải thấy, nhờ phòng khác thì phiếu vẫn là của phòng bị loại trừ.
-    f_no_handler = {k: v for k, v in f.items() if k != "handler_dept"}
-    dc = _dept_match(model, f_no_handler, (scopeconf.get("exc") or {}).get("department") or [],
-                     (scopeconf.get("exc") or {}).get("department_name") or [])
-    if dc is not None:
-        my_dept_ids = [x for x in ((profile or {}).get("dept_ids") or []) if x] \
-            or ([profile["dept_id"]] if (profile or {}).get("dept_id") else [])
-        handed_to_me = _handler_dept_cond(model, f, my_dept_ids)
-        cs.append(or_(~dc, handed_to_me) if handed_to_me is not None else ~dc)
+    exc_ids = (scopeconf.get("exc") or {}).get("department") or []
+    exc_names = (scopeconf.get("exc") or {}).get("department_name") or []
+    if f.get("handler_dept"):
+        # bao-CR-480 (đại ca chốt 24/09/2026): với chứng từ thu mua, «Loại trừ phòng ban»
+        # so cột PHÒNG XỬ LÝ (`handler_dept_id`), không so phòng lập phiếu nữa. Bộ thu
+        # mua chung trừ nhà máy vì thế: KHÔNG thấy phiếu nhà máy đang tự mua (kể cả phiếu
+        # phòng khác nhờ nhà máy mua), nhưng THẤY phiếu nhà máy xin mà thu mua chung mua
+        # (`handler_dept_id = 0` = thu mua chung) — tức thấy đúng việc của mình. Trước
+        # đó loại trừ theo phòng lập nên quản lý thu mua chung không thấy đơn nhân viên
+        # mình đang mua cho nhà máy, còn đơn nhà máy mua hộ phòng khác thì lại thấy.
+        # Không có nhánh tên phòng: cột phòng xử lý luôn là id.
+        exc = _parse_int_values(entity, "department", "loai tru", exc_ids)
+        if exc:
+            cs.append(~getattr(model, f["handler_dept"]).in_(exc))
+    else:
+        dc = _dept_match(model, f, exc_ids, exc_names)
+        if dc is not None:
+            cs.append(~dc)
     return and_(*cs) if cs else None
 
 

@@ -89,6 +89,11 @@ export interface PurchaseRequestDetail {
    * thu mua của phòng đó thấy + điều phối được phiếu; backend chép xuống ĐMH/YCBG con.
    */
   handler_dept_id: number
+  /**
+   * bao-CR-480: TÊN phòng xử lý do backend trả kèm (rỗng = thu mua chung) — màn hình
+   * không cần quyền đọc danh mục phòng ban mới hiện được tên.
+   */
+  handler_dept_name?: string
   purpose: string
   /** bao-CR-316: ngày LẬP phiếu — không ai ghi đè nữa, xem `received_date` ngay dưới. */
   request_date: string

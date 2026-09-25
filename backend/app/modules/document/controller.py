@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import get_current_user, get_perm_profile, require
-from app.core.base_controller import apply_filters, pagination
+from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
 from app.core.response import success
 
@@ -66,7 +66,43 @@ FILTERABLE = ["doc_type_id", "company_id", "department_id", "book_id", "status",
               "effective_date", "expire_date", "issue_year", "needs_review",
               #  Hỏi thẳng các BẢN RIÊNG của một bản gốc — đường mà bảng danh
               #  sách dùng khi người dùng bung một dòng ra.
-              "source_document_id"]
+              "source_document_id",
+              #  Lọc theo NĂM VÀO SỔ (khác `issue_year`) — tab «Văn bản trong sổ»
+              #  dùng cùng năm với bộ đếm của sổ (duoc-CR-474, 23/09/2026).
+              "book_year"]
+
+#  Cột được lép SORT ở `?sort=` — whitelist RIÊNG, hẹp hơn mọi cột vật lý của
+#  bảng mà `core.base_controller.apply_sort` cho phép: chỉ bốn cột này có
+#  nghĩa để người dùng sắp theo (duoc-CR-474). Hẹp cố ý — không phải mọi cột nên là
+#  cột sắp xếp công khai (vd `secrecy_level`).
+SORTABLE_COLUMNS = ("id", "book_seq_no", "issued_at", "created_at")
+
+
+def _sort_from_param(sort: str) -> tuple[str, str]:
+    """Tách `sort=-book_seq_no` thành `("book_seq_no", "desc")`.
+
+    Rỗng hoặc tên lạ (kể cả cố tình gõ tên cột khác) → `("", "asc")`, để
+    `apply_sort` bên dưới rơi về mặc định `id desc`. KHÔNG ném lỗi: đây là
+    tham số một chiều (server đọc), sai thì lặng lẽ bỏ qua thay vì chặn cả
+    trang — cùng luật với `FILTERABLE`.
+
+    ⚠️ `sort` không phải lúc nào cũng đã là chuỗi thật lúc chạy tới đây:
+    `list_documents` gọi TRỰC TIẾP (không qua HTTP) từ vài bài kiểm phạm vi
+    (vd `test_pham_vi_van_thu.py`) không truyền tham số này, nên nó vẫn còn
+    nguyên đối tượng `Query(...)` của FastAPI (chỉ được FastAPI phân giải
+    thành chuỗi khi đi qua request thật) — `isinstance` chặn `.strip()` nổ
+    trên đối tượng đó.
+    """
+    if not isinstance(sort, str):
+        sort = ""
+    sort = sort.strip()
+    if not sort:
+        return "", "asc"
+    is_desc = sort.startswith("-")
+    name = sort[1:] if is_desc else sort
+    if name not in SORTABLE_COLUMNS:
+        return "", "asc"
+    return name, ("desc" if is_desc else "asc")
 
 
 def doc_reader(user=Depends(get_current_user)):
@@ -146,6 +182,20 @@ def _list_query(request: Request, db: Session, user, profile: dict,
     if not request.query_params.get("source_document_id"):
         query = hide_private_copies_with_visible_source(query)
 
+    #  LỌC THEO THƯ MỤC (phase 03 cây thư mục) — đọc thẳng `request.query_params`
+    #  thay vì thêm tham số vào `_list_query`/`list_documents`, để không phải
+    #  sửa chữ ký hàm đang có agent khác chỉnh song song (duoc-CR-474).
+    #  Không nằm trong `FILTERABLE`: cần `EXISTS` qua bảng nối + so `path` cho
+    #  cả nhánh, việc mà `apply_filters` (so bằng) không làm được — xem
+    #  `doc_catalog/folder_link_query.py`.
+    folder_id_param = request.query_params.get("folder_id")
+    if folder_id_param and folder_id_param.isdigit():
+        from app.modules.doc_catalog.folder_link_query import folder_documents_condition
+
+        include_sub = request.query_params.get("include_subfolders") in ("1", "true", "True")
+        query = query.filter(
+            folder_documents_condition(db, int(folder_id_param), include_sub, user, profile))
+
     return query, visible
 
 
@@ -158,6 +208,21 @@ def list_documents(
     pg: dict = Depends(pagination),
     db: Session = Depends(get_db),
     user=Depends(require("document", "read")),
+    #  ⚠️ Đặt CUỐI danh sách tham số (không xen giữa `effective_to` và `pg` như
+    #  bản đầu) — giữ đúng THỨ TỰ VỊ TRÍ cũ. `test_pham_vi_van_thu.py` gọi hàm
+    #  này TRỰC TIẾP bằng tham số vị trí (`list_documents(req, "", None, None,
+    #  PAGE, db, user)`), không qua HTTP; chen `sort` vào giữa làm `PAGE` tụt
+    #  vào đúng chỗ `sort` đang chờ và mọi tham số sau đó lệch theo. FastAPI tự
+    #  nó không quan tâm thứ tự (khớp theo tên), chỉ lời gọi trực tiếp kiểu này
+    #  mới bị ảnh hưởng — nhưng đằng nào cũng nên né, rẻ hơn nhiều so với sửa lại
+    #  mọi lời gọi vị trí mỗi lần thêm tham số mới.
+    sort: str = Query(
+        "",
+        description=(
+            "Sắp theo id | book_seq_no | issued_at | created_at, thêm `-` để"
+            " giảm dần (vd `-book_seq_no`). Rỗng hoặc tên lạ → mặc định `id desc`."
+        ),
+    ),
 ):
     profile = get_perm_profile(db, user)
     query, visible = _list_query(request, db, user, profile, q,
@@ -165,11 +230,14 @@ def list_documents(
 
     total = query.count()
     #  Lọc `?book_id=` là đường mà màn SỔ VĂN BẢN dùng để liệt kê văn bản trong
-    #  một quyển; sổ đọc theo số vào sổ tăng dần, khác danh sách chung (mới nhất
-    #  trước) nên để màn đó tự sắp lại nếu cần.
-    items = (query.order_by(Document.id.desc())
+    #  một quyển; mặc định vẫn `id desc` như danh sách chung, tab đó tự gửi
+    #  `sort=-book_seq_no` để đọc theo số vào sổ giảm dần (duoc-CR-474). NULL của
+    #  `book_seq_no` (văn bản chưa vào sổ) luôn xuống CUỐI bất kể chiều sắp.
+    sort_by, sort_dir = _sort_from_param(sort)
+    items = (apply_sort(query, Document, sort_by, sort_dir,
+                        default=Document.id.desc(), nulls_last=("book_seq_no",))
              .offset(pg["offset"]).limit(pg["limit"]).all())
-    rows = serializer.serialize_many(db, items)
+    rows = serializer.serialize_many(db, items, user=user)
 
     #  Đếm trên một truy vấn CHỈ lọc quyền — không kèm bộ lọc/tìm kiếm của
     #  danh sách, nếu không lọc theo trạng thái là số bản riêng tụt theo.
@@ -292,7 +360,7 @@ def export_xlsx(
 
     docs = query.order_by(Document.id.desc()).all()
     check_row_limit(len(docs))
-    rows = ex.build_rows(db, serializer.serialize_many(db, docs))
+    rows = ex.build_rows(db, serializer.serialize_many(db, docs, user=user))
     return xlsx_response(ex.FILE_NAME, pick_columns(ex.COLUMNS, cols), rows,
                          ex.SHEET_TITLE)
 
@@ -327,7 +395,7 @@ def get_document(
     #  định kỳ, xem `service.activate_due_versions`.
     service.activate_due_versions(db, document_id)
     doc = _load(db, document_id, user)
-    return success(serializer.serialize(db, doc))
+    return success(serializer.serialize(db, doc, user=user))
 
 
 @router.post("")
@@ -336,9 +404,9 @@ def create_document(
     db: Session = Depends(get_db),
     user=Depends(require("document", "create")),
 ):
-    doc = service.create_document(db, data, user.id)
+    doc = service.create_document(db, data, user.id, user=user)
     record(db, user.id, "document", doc.id, "create", f"Tạo văn bản {doc.title}")
-    return success(serializer.serialize(db, doc), "Đã tạo văn bản", 201)
+    return success(serializer.serialize(db, doc, user=user), "Đã tạo văn bản", 201)
 
 
 @router.post("/{document_id}/copy")
@@ -355,7 +423,7 @@ def duplicate_document(
     copied = duplicate_service.duplicate(db, source, user.id)
     record(db, user.id, "document", copied.id, "create",
            f"Sao chép từ văn bản #{source.id}: {source.title}")
-    return success(serializer.serialize(db, copied), "Đã tạo bản sao văn bản", 201)
+    return success(serializer.serialize(db, copied, user=user), "Đã tạo bản sao văn bản", 201)
 
 
 @router.patch("/{document_id}")
@@ -366,9 +434,9 @@ def update_document(
     user=Depends(require("document", "write")),
 ):
     doc = _load(db, document_id, user, "write")
-    doc = service.update_document(db, doc, data, user.id)
+    doc = service.update_document(db, doc, data, user.id, user=user)
     record(db, user.id, "document", doc.id, "update")
-    return success(serializer.serialize(db, doc), "Đã cập nhật")
+    return success(serializer.serialize(db, doc, user=user), "Đã cập nhật")
 
 
 @router.patch("/{document_id}/issue-number")
@@ -389,7 +457,7 @@ def update_issue_number(
         "update",
         f"Sửa số hiệu từ {previous} thành {doc.issue_number}. Lý do: {data.reason}",
     )
-    return success(serializer.serialize(db, doc), "Đã cập nhật số hiệu")
+    return success(serializer.serialize(db, doc, user=user), "Đã cập nhật số hiệu")
 
 
 @router.delete("/{document_id}/ban-nhap")
@@ -430,7 +498,7 @@ def submit_document(
     doc = _load(db, document_id, user, "write")
     doc = service.submit(db, doc, user.id)
     record(db, user.id, "document", doc.id, "update", "Gửi duyệt")
-    return success(serializer.serialize(db, doc), "Đã gửi duyệt")
+    return success(serializer.serialize(db, doc, user=user), "Đã gửi duyệt")
 
 
 @router.post("/{document_id}/approve")
@@ -478,7 +546,7 @@ def approve_document(
            f" · {APPLY_MODE_LABELS.get(doc.apply_mode, '')}"
            + (f" · gửi thông báo danh nghĩa {mailbox.email}" if mailbox else "")
            + (" · đăng thông báo lên diễn đàn" if forum_posted else ""))
-    return success(serializer.serialize(db, doc), "Đã duyệt và ban hành")
+    return success(serializer.serialize(db, doc, user=user), "Đã duyệt và ban hành")
 
 
 def _selected_mailbox(db: Session, data, user):
@@ -540,7 +608,7 @@ def reject_document(
     approval_bridge.block_legacy_path(db, doc)
     doc = service.send_back(db, doc, data.reason, user.id)
     record(db, user.id, "document", doc.id, "update", f"Trả về: {data.reason}")
-    return success(serializer.serialize(db, doc), "Đã trả về cho người soạn")
+    return success(serializer.serialize(db, doc, user=user), "Đã trả về cho người soạn")
 
 
 @router.post("/{document_id}/reviewed")
@@ -562,7 +630,7 @@ def confirm_reviewed(
     record(db, user.id, "document", doc.id, "update",
            f"Xác nhận đã rà soát: {data.conclusion}"
            + (f" (dấu cũ: {old_note})" if old_note else ""))
-    return success(serializer.serialize(db, doc), "Đã ghi nhận rà soát xong")
+    return success(serializer.serialize(db, doc, user=user), "Đã ghi nhận rà soát xong")
 
 
 @router.post("/{document_id}/revoke")
@@ -577,7 +645,7 @@ def revoke_document(
     doc = _load(db, document_id, user, "write")
     doc = service.revoke(db, doc, data.reason, user.id)
     record(db, user.id, "document", doc.id, "cancel", f"Bãi bỏ: {data.reason}")
-    return success(serializer.serialize(db, doc), "Đã bãi bỏ văn bản")
+    return success(serializer.serialize(db, doc, user=user), "Đã bãi bỏ văn bản")
 
 
 # ── Phiên bản ────────────────────────────────────────────────────────────────

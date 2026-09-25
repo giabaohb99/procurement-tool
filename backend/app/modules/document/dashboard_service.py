@@ -102,7 +102,7 @@ def overview(db: Session, user, profile, filters: DashboardFilters | None = None
         "priority_matrix": _priority_matrix(db, user, profile, filters),
         "todo": _todo_items(db, user, profile, today, filters),
         "recent": serializer.serialize_many(
-            db, base.order_by(Document.id.desc()).limit(8).all()
+            db, base.order_by(Document.id.desc()).limit(8).all(), user=user
         ),
         "year": today.year,
     }

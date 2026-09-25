@@ -13,10 +13,31 @@ import { documentApi, type DocumentInput, type DocumentListParams } from '../api
  * không được xem.
  */
 
-export function useDocuments(params: DocumentListParams = {}) {
+/**
+ * Tham số riêng cho tab «Văn bản trong sổ» (duoc-CR-474) — sắp theo cột + lọc theo
+ * năm vào sổ. Khai CỤC BỘ ở đây thay vì thêm vào `DocumentListParams` của
+ * `document-api.ts`: tệp đó đang có bản đổi khác chạy song song, và hai
+ * trường này chỉ một hook/một tab dùng nên không đáng kéo vào interface
+ * dùng chung. `documentApi.list` nhận đối tượng rộng hơn khai báo của nó vẫn
+ * hợp lệ (TS không chặn thuộc tính dư trên BIẾN, chỉ chặn trên object literal).
+ */
+export interface DocumentBookSortParams {
+  /** `id | book_seq_no | issued_at | created_at`, thêm `-` = giảm dần. Whitelist ở backend. */
+  sort?: string
+  /** Lọc theo NĂM VÀO SỔ — dùng cùng năm với bộ đếm của sổ, khác `issue_year`. */
+  book_year?: number
+}
+
+export function useDocuments(
+  params: DocumentListParams & Partial<DocumentBookSortParams> = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: queryKeys.document.records(params),
     queryFn: () => documentApi.list(params),
+    //  Mặc định bật — `enabled: false` dùng khi màn đang ở chế độ TÌM TOÀN VĂN
+    //  (`useDocumentSearch`, phase 07) và không cần gọi song song cả hai API.
+    enabled: options.enabled ?? true,
     //  Giữ trang cũ trong lúc nạp trang mới: bảng không nháy trắng mỗi lần đổi
     //  bộ lọc hay sang trang.
     placeholderData: keepPreviousData,
@@ -122,12 +143,15 @@ export function useDocumentPrerequisites(docTypeId: number) {
  * ⚠️ Không chiếm số và có thể lệch nếu có người được cấp số ngay sau đó. Số
  * thật do backend cấp trong cùng giao dịch ghi bản ghi.
  */
-export function useNumberPreview(params: {
-  doc_type_id: number
-  company_id: number
-  department_id?: number | null
-  book_id?: number | null
-}, enabled = true) {
+export function useNumberPreview(
+  params: {
+    doc_type_id: number
+    company_id: number
+    department_id?: number | null
+    book_id?: number | null
+  },
+  enabled = true,
+) {
   return useQuery({
     queryKey: queryKeys.document.numberPreview(params),
     queryFn: () => documentApi.numberPreview(params),
@@ -154,6 +178,23 @@ export function useSaveDocument() {
 
     onSuccess: (_data, variables) => {
       toast.success(variables.id ? 'Đã cập nhật văn bản' : 'Đã tạo văn bản')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
+    },
+  })
+}
+
+/**
+ * Đổi CÁCH TẠO của văn bản (`content_mode`) — nút «Chuyển sang soạn thảo» ở
+ * văn bản tạo bằng «Tạo, không soạn thảo» (24/09/2026). Tệp đính kèm giữ
+ * nguyên; tab «Văn bản» đổi từ trình xem tệp sang trình soạn thảo.
+ */
+export function useSetDocumentContentMode(documentId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (contentMode: number) =>
+      documentApi.update(documentId, { content_mode: contentMode }),
+    onSuccess: () => {
+      toast.success('Đã chuyển sang soạn thảo')
       void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
     },
   })

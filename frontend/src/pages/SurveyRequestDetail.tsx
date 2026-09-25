@@ -201,11 +201,14 @@ export default function SurveyRequestDetail() {
   const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }))
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
   const deptOptions     = departments.map((d) => ({ value: d.name, label: d.name }))
-  // bao-CR-414: ô "Nhờ phòng xử lý" — chỉ bày phòng đang hoạt động, nhưng phòng đã tắt mà phiếu cũ
-  // còn trỏ tới thì giữ lại để không mất nhãn khi mở phiếu (cùng luật với YCMH).
-  const handlerDeptOptions = departments
-    .filter((d) => d.is_active !== false || d.id === Number(sv.handler_dept_id))
-    .map((d) => ({ value: String(d.id), label: d.name }))
+  // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — «Thu mua chung» (0) đứng đầu, rồi phòng đang hoạt
+  // động; phòng đã tắt mà phiếu cũ còn trỏ tới thì giữ lại để không mất nhãn (cùng luật với YCMH).
+  const handlerDeptOptions = [
+    { value: '0', label: 'Thu mua chung' },
+    ...departments
+      .filter((d) => d.is_active !== false || d.id === Number(sv.handler_dept_id))
+      .map((d) => ({ value: String(d.id), label: d.name })),
+  ]
   // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên.
   // Bổ sung NSTM đã gán ở các dòng (dù không nằm trong ds nhân viên tải về do scope) → luôn hiện đúng tên.
   const purchaserOptions = (() => {
@@ -787,13 +790,13 @@ export default function SurveyRequestDetail() {
                   một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
                   phiếu; phòng lập phiếu vẫn thấy như cũ. */}
               <div className="form-row">
-                <label>Nhờ phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(để trống nếu không nhờ)</span></label>
+                <label>Phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(phòng sẽ đi mua cho phiếu này)</span></label>
                 <SearchSelect
-                  value={sv.handler_dept_id ? String(sv.handler_dept_id) : ''}
+                  value={String(sv.handler_dept_id || 0)}
                   onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                   options={handlerDeptOptions}
                   disabled={!editable}
-                  placeholder="Không nhờ — thu mua chung xử lý"
+                  placeholder="Thu mua chung"
                   autoSelectSingle={false}
                 />
               </div>

@@ -30,6 +30,11 @@ from scope_factory import build_world  # noqa: F401 — fixture `world` dùng n�
 #  Bốn dòng `legacy_*` có `department_id = 0` + tên phòng dạng chữ: đó là phiếu
 #  nhập trước CR-086, và là đường lùi `_dept_match` chỉ chạy cho chúng. Bỏ chúng
 #  đi thì A9/B8/B10 mất sạch thứ chúng canh.
+#
+#  bao-CR-480: «Loại trừ phòng ban» trên chứng từ thu mua nay so PHÒNG XỬ LÝ
+#  (`handler_dept_id`). Phiếu mẫu có id phòng thì coi như phòng đó TỰ xử lý
+#  (`handler_dept_id = department_id`); phiếu cũ `department_id = 0` không có
+#  phòng xử lý → thu mua chung (0) → không ô loại trừ nào bắt được nữa (A9).
 
 
 def create_request(db, *, code, company_id, department_id=0, department="", created_by=0):
@@ -38,6 +43,7 @@ def create_request(db, *, code, company_id, department_id=0, department="", crea
 
     row = PurchaseRequest(code=code, company_id=company_id, department_id=department_id,
                           department=department, requester_id=0, status="draft",
+                          handler_dept_id=department_id,   # bao-CR-480: phòng lập tự xử lý
                           created_by=created_by)
     db.add(row)
     db.flush()
@@ -143,7 +149,8 @@ def test_a4_o_loai_tru_phong_ban_cat_dung_phong_do_khoi_pham_vi_cong_ty(world, p
     phiếu chi lộ ra cho đúng nhóm người mà nó sinh ra để chặn.
     """
     a1 = world.grant("a1", "purchase_request", scope="company", exc_dept=["A.mua"])
-    assert a1.sees(model_pr()) == pick(pr_ids, "own", "a2_akt", "legacy_akt")
+    #  bao-CR-480: `legacy_amua` (không id phòng → thu mua chung xử lý) không còn bị cắt.
+    assert a1.sees(model_pr()) == pick(pr_ids, "own", "a2_akt", "legacy_akt", "legacy_amua")
 
 
 def test_a5_o_loai_tru_nhan_su_mat_dung_phieu_nguoi_do_lap(world, pr_ids):
@@ -194,18 +201,19 @@ def test_a8_cung_mot_nguoi_vua_include_vua_exclude_thi_loai_tru_thang(world, pr_
     assert a1.sees(model_pr()) == set()
 
 
-def test_a9_loai_tru_phong_ban_bat_duoc_ca_phieu_cu_khong_co_id_phong(world, pr_ids):
-    """Đường lùi theo TÊN của `_dept_match` phải chạy cho **cả chiều loại trừ**.
+def test_a9_loai_tru_phong_ban_so_phong_xu_ly_nen_phieu_cu_khong_id_phong_khong_bi_cat(world, pr_ids):
+    """bao-CR-480 — chiều loại trừ trên chứng từ thu mua so PHÒNG XỬ LÝ, không so tên.
 
-    Phiếu trước CR-086 mang `department_id = 0`; chỉ khớp bằng id thì mọi phiếu
-    cũ của phòng bị loại trừ vẫn lọt ra — mà phiếu cũ chính là phần dữ liệu đông
-    nhất trên hệ đang chạy. Ca này khẳng định `legacy_akt` (id phòng = 0, tên
-    "Phòng Kế toán") bị cắt, còn `legacy_amua` cùng kiểu nhưng khác tên thì ở lại.
+    Trước CR này đường lùi theo TÊN của `_dept_match` chạy cả cho loại trừ, nên
+    `legacy_akt` (id phòng = 0, tên "Phòng Kế toán") bị cắt. Nay cột so là
+    `handler_dept_id` — luôn là id, không có đường lùi theo tên — và phiếu cũ không
+    id phòng nghĩa là thu mua chung xử lý: ô loại trừ phòng Kế toán không bắt nó.
+    Ai lo phiếu cũ lọt ra: chúng vẫn đi qua phạm vi vai trò + ô công ty như thường.
     """
     a1 = world.grant("a1", "purchase_request", scope="company", exc_dept=["A.kt"])
     seen = a1.sees(model_pr())
-    assert seen == pick(pr_ids, "a3_amua", "legacy_amua")
-    assert pr_ids["legacy_akt"] not in seen, "phiếu cũ department_id=0 vẫn phải bị loại trừ"
+    assert seen == pick(pr_ids, "a3_amua", "legacy_akt", "legacy_amua")
+    assert pr_ids["a2_akt"] not in seen, "phiếu phòng Kế toán tự xử lý phải bị loại trừ"
 
 
 def test_a10_pham_vi_gan_vao_dung_vai_tro_do_khong_lan_sang_vai_tro_khac(world, pr_ids):
@@ -460,7 +468,8 @@ def test_b9_vai_tro_thu_hai_vo_hieu_hoa_loai_tru_cua_vai_tro_thu_nhat(world, pr_
     # đang loại trừ <phòng>, vai trò bạn vừa cấp sẽ mở lại"?
     """
     a1 = world.grant("a1", "purchase_request", scope="company", exc_dept=["A.kt"])
-    assert a1.sees(model_pr()) == pick(pr_ids, "a3_amua", "legacy_amua")
+    #  bao-CR-480: `legacy_akt` (thu mua chung xử lý) không bị cắt, xem A9.
+    assert a1.sees(model_pr()) == pick(pr_ids, "a3_amua", "legacy_akt", "legacy_amua")
 
     a1.grant("purchase_request", scope="dept")
     assert a1.sees(model_pr()) == pick(pr_ids, "own", "a2_akt", "a3_amua",

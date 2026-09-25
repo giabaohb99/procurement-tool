@@ -93,7 +93,7 @@ def applies_to_me(db: Session = Depends(get_db), user=Depends(get_current_user))
                     if access_service.can(db, doc, user, profile, "read")]
 
     return success({"total": len(visible_docs),
-                    "items": serializer.serialize_many(db, visible_docs)})
+                    "items": serializer.serialize_many(db, visible_docs, user=user)})
 
 
 @router.get("/{document_id}/scopes")

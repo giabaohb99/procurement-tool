@@ -57,6 +57,7 @@ celery_app.conf.update(
         "app.modules.system_log.tasks",   # Cảnh báo bất thường (15 phút) + dọn 4 bảng nhật ký quá 16 tháng (bao-CR-448)
         "app.modules.attachment.tasks",   # Dọn tệp đính kèm mồ côi quá 7 ngày (mỗi ngày)
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
+        "app.modules.document.search_tasks",  # Dựng chỉ mục tìm kiếm toàn văn văn bản (phase 07)
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
         "app.modules.agent_hub.tasks",      # Agent Hub — kéo tin Telegram, gom việc, nạp kho tài liệu

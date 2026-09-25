@@ -195,15 +195,33 @@ bằng email (hoặc mã NV) của từng tài khoản.
 |---|---|---|
 | `NM_YC` | lập được Yêu cầu mua hàng; danh sách chỉ có phiếu mình lập | nhà cung cấp, đơn mua hàng |
 | `NM_TP` | phiếu **Đã gửi duyệt** của phòng Dego Organic, nút *Duyệt* | phiếu phòng khác |
-| `NM_MUA` | phiếu **Đã duyệt** trở đi của Dego Organic **đứng tên bất kỳ pháp nhân nào**; nút *Điều phối*; phiếu phòng khác có ô *Nhờ phòng xử lý* = Dego Organic | phiếu đã duyệt của phòng khác; danh sách trống khi chưa có phiếu nào của phòng được duyệt |
+| `NM_MUA` | phiếu **Đã duyệt** trở đi của Dego Organic **đứng tên bất kỳ pháp nhân nào**; nút *Điều phối*; phiếu phòng khác có ô *Phòng xử lý* = Dego Organic | phiếu đã duyệt của phòng khác; danh sách trống khi chưa có phiếu nào của phòng được duyệt |
 | `NM_NV` | dòng đã được gán cho mình | dòng gán người khác |
-| `TM_QL` | mọi phiếu đã duyệt của mọi phòng, **mọi pháp nhân**, **trừ** Dego Organic; phiếu Dego Organic **nhờ** Sản xuất -Thu mua | phiếu Dego Organic thông thường (kể cả gõ thẳng id lên URL: phải ra *Không tìm thấy*) |
+| `TM_QL` | mọi phiếu đã duyệt mà **Thu mua chung đang mua**, **mọi pháp nhân** — kể cả phiếu Dego Organic xin nhưng chọn *Phòng xử lý* = Thu mua chung | phiếu Dego Organic **đang tự mua** (ô *Phòng xử lý* = Dego Organic), kể cả phiếu phòng khác nhờ Dego Organic đi mua (gõ thẳng id lên URL: phải ra *Không tìm thấy*) |
 | `TM_AD` | như `TM_QL`, không có nút duyệt | như `TM_QL` |
 | `TM_NV` | dòng được gán | phiếu chưa gán |
 
-Đường chạy thử ngắn nhất: `NM_YC` lập một phiếu, `NM_TP` duyệt, `NM_MUA` thấy và điều phối,
-`TM_QL` **không** thấy phiếu đó. Rồi `NM_YC` lập phiếu thứ hai chọn *Nhờ phòng xử lý* =
-Sản xuất -Thu mua, `NM_TP` duyệt: lúc này `TM_QL` thấy, `NM_MUA` vẫn thấy.
+Đường chạy thử ngắn nhất: `NM_YC` lập một phiếu — ô *Phòng xử lý* tự hiện Dego Organic —
+`NM_TP` duyệt, `NM_MUA` thấy và điều phối, `TM_QL` **không** thấy phiếu đó. Rồi `NM_YC` lập
+phiếu thứ hai đổi *Phòng xử lý* thành *Thu mua chung*, `NM_TP` duyệt: lúc này `TM_QL` thấy,
+`NM_MUA` vẫn thấy.
+
+### Phiếu lập TRƯỚC khi phòng có bộ máy mua riêng (bao-CR-480)
+
+Ô *Phòng xử lý* chỉ tự điền cho phiếu lập **sau** khi phòng đã có người giữ vai trò *Quản
+lý thu mua phòng*. Phiếu cũ của phòng đang mang *Thu mua chung*, nên `TM_QL` sẽ thấy chúng.
+Ngay sau khi làm xong Bộ A, chạy một lần lệnh chuyển đổi (chạy lại vô hại, có chế độ xem
+thử):
+
+```bash
+docker compose exec -T api python scripts/backfill_handling_dept.py --dry-run
+docker compose exec -T api python scripts/backfill_handling_dept.py
+```
+
+Lệnh gán *Phòng xử lý* = chính phòng đó cho mọi YCMH, YCBG, ĐMH cũ của phòng còn để *Thu mua
+chung*. Phiếu nào phòng thật sự muốn Thu mua chung mua thì mở lại và đổi ô đó sau. Lệnh **cố
+ý không tự chạy lúc khởi động**: phiếu nhà máy đã chủ động chọn *Thu mua chung* sau CR-480
+cũng mang giá trị 0, chạy tự động là lật ngược lựa chọn đó mỗi lần deploy.
 
 ## 7. Bẫy hay gặp
 
@@ -212,13 +230,14 @@ Sản xuất -Thu mua, `NM_TP` duyệt: lúc này `TM_QL` thấy, `NM_MUA` vẫn
 - **Không thấy nút Phạm vi**: chưa bấm *Lưu vai trò*.
 - **Đổi quyền xong vẫn thấy như cũ**: người đó chưa đăng xuất, hoặc chưa qua một phút.
 - **Sửa hồ sơ hoặc quyền của chính mình bị khóa**: cố ý, nhờ quản trị khác.
-- **Hai phòng trùng tên ở hai công ty**: ô loại trừ khớp theo **tên**, sẽ trừ cả hai.
-  Đặt tên phòng khác nhau trước.
+- **Hai phòng trùng tên ở hai công ty**: từ bao-CR-480 ô loại trừ trên YCMH / YCBG / ĐMH
+  khớp theo **phòng xử lý** (mã phòng, không phải tên) nên không còn trừ nhầm; riêng Công nợ
+  và các màn khác vẫn khớp theo phòng ban của dòng. Đặt tên phòng khác nhau cho dễ đọc.
 - **Không thấy phiếu đứng tên pháp nhân khác**: có người đã khai *Chỉ trong công ty* trong
   hộp Phạm vi của vai trò đó. Xóa ô đó. Pháp nhân trong hồ sơ nhân sự **không** phải
   nguyên nhân (từ bao-CR-434 hồ sơ không thu hẹp gì).
 - **Nhờ nhầm sang phòng không có ai giữ vai trò thu mua**: phiếu chỉ còn phòng lập thấy.
-  Sửa lại ô *Nhờ phòng xử lý* khi phiếu còn Nháp / Bị trả lại, hoặc dùng nút
+  Sửa lại ô *Phòng xử lý* khi phiếu còn Nháp / Bị trả lại, hoặc dùng nút
   *Trả về phòng lập* trên phiếu đã duyệt.
 - **Chuyển đi giữa chừng**: nút *Chuyển phòng xử lý* / *Trả về phòng lập* trên chi tiết
   YCMH và YCBG chỉ hiện cho quản lý thu mua của phòng đang giữ phiếu (hoặc quản lý thu mua

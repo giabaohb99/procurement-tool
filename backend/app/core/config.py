@@ -108,6 +108,14 @@ class Settings(BaseSettings):
     #  Bỏ trống = tự suy ra người có quyền đọc văn bản ở phạm vi TOÀN HỆ.
     DOC_FILE_ALERT_RECIPIENTS: str = ""
 
+    # --- Hạn XEM tệp đính kèm văn bản — TẠM TẮT (duoc-CR-478, 23/09/2026) ---
+    # Mặc định TẮT: mọi tệp đính kèm xem/tải được dù đã quá "Xem tệp đính kèm tới ngày" —
+    # cho xem thoải mái trong lúc dồn dữ liệu cũ vào hệ. BẬT thì quay lại luật cũ (chặn ở
+    # `document/attachment_window.py`, ngày đã khai KHÔNG mất khi tắt). Công tắc thật nằm ở
+    # màn "Cấu hình hệ thống" (key `doc_attachment_view_window_enabled`, lưu DB, đổi có hiệu
+    # lực ngay, không cần deploy).
+    DOC_ATTACHMENT_VIEW_WINDOW_ENABLED: bool = False
+
     # --- Sao lưu CSDL ---
     BACKUP_KEEP: int = 30   # số bản backup giữ lại (2 lần/ngày -> ~15 ngày)
     # Prod chạy 2 lần/ngày (01:00 + 13:00). Dev đặt =true để chỉ chạy 1 lần/ngày
@@ -149,6 +157,14 @@ class Settings(BaseSettings):
     # Số chiều vector. Gemini cho cắt chiều (Matryoshka); 768 đủ chính xác mà nhẹ RAM Qdrant.
     # Phải khớp với size collection đã tạo — đổi số này cũng buộc dựng lại collection.
     AI_EMBED_DIM: int = 768
+
+    # --- Tìm kiếm toàn văn văn bản (phase 07, duoc-CR-477) ---
+    # Ép chỉ mục `tab_document_search` dựng LUÔN ĐỒNG BỘ trong request thay vì
+    # xếp hàng Celery. Mặc định TẮT (môi trường chạy thật có celery-worker).
+    # Bài kiểm (`test/backend`) bật cờ này: pytest không có worker tiêu thụ
+    # hàng đợi, và tác vụ nền mở `SessionLocal()` riêng nên không thấy được DB
+    # SQLite trong bộ nhớ của bài kiểm — xem `document/search_index_service.py`.
+    DOCUMENT_SEARCH_INDEX_SYNC: bool = False
 
     # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/) ---
     # Cầu dao an toàn A1: MẶC ĐỊNH BẬT — dev/UAT chạy cả ngày không một call nào ra

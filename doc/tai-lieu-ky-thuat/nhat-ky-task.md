@@ -7700,6 +7700,62 @@ phân hệ Hệ thống xanh.
 Mã nguồn: frontend-v2 setting-page.tsx · setting-history-panel.tsx · setting-log-format.ts ·
 backend/app/modules/setting/service.py · test/backend/test_nhat_ky_cau_hinh_cr462.py
 
+## du-lieu-mau-don-hang-dev | Dựng bộ đơn mẫu trên dev để thử chia nhà máy và chi phí thu mua
+- status: xong
+- date: 2026-09-24
+Đại ca cần vài đơn mẫu trên dev để xem màn đơn hàng có đủ thông tin cho việc chia nhà máy và
+phần chi phí thu mua mới không. Dev trước đó chưa có đơn nào gắn phòng xử lý nhà máy và chưa có
+dòng chi phí thu mua nào. Em dựng bốn bộ yêu cầu mua hàng kèm đơn mua hàng, mã bắt đầu bằng
+DEMO: nhà máy tự mua, phòng khác nhờ nhà máy mua, nhà máy xin nhưng thu mua chung mua hàng
+nhập khẩu, và thu mua mua cho phòng mình đã quyết toán hết chi phí. Quyết toán gọi đúng hàm
+nghiệp vụ nên công nợ và phần chép số sinh ra như khi người dùng bấm.
+
+Kiểm phạm vi bằng tám tài khoản thử nhà máy và thu mua, lộ ra ba chỗ chờ đại ca quyết: quản lý
+thu mua trừ nhà máy không thấy đơn nhà máy xin mà nhân viên của mình đang mua; nhân viên thu mua
+chung thấy công nợ của đơn nhà máy tự mua; màn đơn mua hàng và màn công nợ chưa hiện phòng xử lý.
+
+Deploy: chỉ ghi dữ liệu vào cơ sở dữ liệu dev, không đổi mã. Script chạy lại được, để ở máy.
+
+## bao-CR-480 | Một ô Phòng xử lý cho cả ba chứng từ thu mua, lọc theo ô đó, nhà máy được tự điền
+- status: xong
+- date: 2026-09-24
+Sau khi xem bộ đơn mẫu trên dev, đại ca chốt: bộ thu mua chung trừ nhà máy phải lọc theo
+phòng xử lý; ô «Nhờ phòng xử lý» với chữ «Không nhờ» khó hiểu; màn đơn mua hàng chưa hiện
+phòng xử lý; và ô Bộ phận YC bị trống ở phiếu cũ.
+
+Đã đổi luật loại trừ phòng ban trên yêu cầu mua hàng, yêu cầu báo giá và đơn mua hàng: so
+cột phòng xử lý thay vì phòng lập. Nhờ vậy quản lý thu mua chung thấy đơn nhân viên mình
+đang mua cho nhà máy, và không thấy đơn nhà máy mua hộ phòng khác. Bản chạy thật hiện không
+có dòng loại trừ nào nên đổi luật không ảnh hưởng ai đang dùng.
+
+Phòng có bộ máy mua riêng (có người giữ bậc quản lý thu mua phòng) được coi là phòng tự mua:
+người phòng đó lập phiếu mà không chọn thì hệ thống tự điền phòng của họ, đổi sang thu mua
+chung sau đó là lựa chọn có chủ ý.
+
+Giao diện hai bản: ô đổi tên thành «Phòng xử lý», mục mặc định in «Thu mua chung», có câu
+gợi ý; đơn mua hàng có thêm ô chỉ xem Phòng xử lý; API trả kèm tên phòng nên không còn cảnh
+hiện «Phòng #5». Phiếu cũ rỗng phòng ban thì màn hình hiện theo hồ sơ nhân sự, lưu hoặc gửi
+duyệt mới ghi vào phiếu.
+
+Đại ca soi lại phiếu mẫu NM03 và chỉ ra chỗ hụt: phiếu cũ của nhà máy lập theo luật cũ đang
+mang giá trị «thu mua chung» nên hiện sai và lọt ra ngoài. Em thêm lệnh chuyển đổi phiếu cũ
+(có xem thử trước, chạy lại vô hại) gán phòng xử lý bằng chính phòng lập cho ba loại chứng từ
+của phòng tự mua, đã chạy ở máy; bài hướng dẫn lập bộ tài khoản phòng tự mua ghi thêm bước
+này và đổi cách gọi. Ô Bộ phận YC có mã phòng mà thiếu tên cũng hiện được tên. Chưa commit.
+
+Kiểm: 72 bài phạm vi liên quan xanh (15 bài mới, sửa 4 bài cũ theo luật mới); giao diện mới
+kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 123 bài thành phần xanh; bản cũ kiểm kiểu giữ 4 lỗi nền.
+
+Mã nguồn: backend/app/core/scoping.py · purchase_request/service.py · controller.py ·
+survey_request · purchase_order/controller.py · frontend-v2 handling-dept-display.ts ·
+frontend PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx · PurchaseOrderDetail.tsx ·
+test/backend/test_phong_xu_ly_cr480.py
+Commit: c4cda9b2, gộp origin/erp-v2 ở 10780db5 (một head alembic 0ddb3327bc42).
+Deploy: dev 24/09, dựng lại api, celery-worker, celery-beat, erp, web. Sau deploy chạy script
+chuyển phiếu cũ của phòng tự mua: phòng 5, đổi 1 yêu cầu mua hàng, 2 yêu cầu báo giá
+(YCBG24092601 và YCBG24092602 — phiếu thứ hai lập sau lúc kiểm, cùng người lập, cùng trường
+hợp), 1 đơn mua hàng; rồi dựng lại bốn bộ đơn mẫu để TM01 về «Thu mua chung».
+
 ## bao-CR-481 | Trợ lý AI tra thêm thị trường, pháp lý và trả lời «có nên mua lúc này» theo giá hải quan
 - status: xong
 - date: 2026-09-24
@@ -7720,7 +7776,15 @@ Chạy thử với dữ liệu thật thì thấy tháng 09/2026 của atrazine 
 «giá đang giảm», nên xu hướng và thước đo chỉ tính trên tháng đủ dữ liệu, tháng mới nhất ít
 dòng thì kèm tháng đủ dữ liệu gần nhất làm mốc. Bài hướng dẫn mục «Hỏi trợ lý AI» đã viết lại
 và chạy lại ở local. Số CR ban đầu 480 trùng việc «Phòng xử lý» của phiên khác nên đổi sang
-481. Chưa commit, chưa deploy.
+481.
+
+Đã commit a13e9c60, đẩy lên erp-v2 và deploy dev (dựng lại api, celery-worker, celery-beat);
+kiểm trên dev: trợ lý có 41 tool, số atrazine khớp local. Bài hướng dẫn chưa có trên dev
+(seed hải quan chưa từng chạy ở dev). Cùng ngày gộp erp-v2 vào nhánh bot agent-hub-bac-1
+để bot Telegram có bốn tool: 12 tệp đụng độ giữ cả hai phía, thêm migration gộp hai head,
+nâng DB riêng của bot (dego-agent) — bốn migration đã có sẵn đối tượng nên đánh dấu, ba cái
+còn lại chạy thật. Đã báo phiên bot khởi động lại stack và cấp quyền customs_price cho tài
+khoản bot; nhánh bot chưa push.
 
 Kiểm: 63 bài backend xanh (16 bài mới, bài đếm số tool trợ lý nâng 39 lên 41).
 
@@ -7729,6 +7793,155 @@ assistant/tools/customs_tool.py · assistant/tools/__init__.py · assistant/serv
 scripts/seed_help_customs_prices.py · test/backend/test_tool_hai_quan_cr481.py ·
 doc/erp/hai-quan/01 · 02 · 03
 
+## duoc-CR-473 | Màn tạo văn bản cho biết trước ai sẽ duyệt
+- status: dang-lam
+- date: 2026-09-23
+Đại ca muốn người soạn văn bản biết văn bản của mình sẽ qua tay những ai trước khi bấm gửi
+duyệt. Em đã thêm thẻ «Người duyệt dự kiến» ở màn tạo văn bản và ở chi tiết văn bản khi văn
+bản còn nháp hoặc bị trả lại. Thẻ liệt kê từng chặng duyệt và tên người duyệt, nói rõ khi
+loại văn bản không cần duyệt, khi văn bản chỉ duyệt một bước, khi một chặng còn chờ người
+soạn điền ô chọn người, khi một chặng tự qua vì trùng người đã duyệt, và khi một chặng không
+tìm được ai. Thẻ tự tính lại khi người soạn đổi loại văn bản, pháp nhân, phòng, mức mật hay
+người ký, và luôn ghi rõ đây chỉ là dự kiến, người duyệt thật chốt lúc gửi.
+
+Để con số dự kiến khớp đúng người được giao việc thật, em tách hai bước lọc người duyệt của
+bộ máy duyệt ra thành hàm dùng chung cho cả lúc xem trước lẫn lúc gửi thật. Trợ lý AI dùng
+lại cùng phần mô tả chặng, nên nó hết nói nhầm là phiếu của chính mình cần mình ký.
+
+Kiểm tra: bài kiểm xem trước người duyệt xanh, trong đó có bài so kết quả xem trước với người
+được giao việc thật ở cả hai chặng; bài kiểm của thẻ trên giao diện xanh. Không có migration.
+Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/approval/preview_service.py` ·
+`backend/app/modules/document/approval_preview_controller.py` ·
+`backend/app/modules/approval/instance_service.py` ·
+`frontend-v2/src/modules/document/components/document-approver-preview-card.tsx`.
+
+## duoc-CR-474 | Sổ văn bản có lại bảng văn bản trong sổ
+- status: dang-lam
+- date: 2026-09-23
+Đại ca muốn bấm vào một sổ văn bản là thấy danh sách văn bản trong sổ, rồi bấm vào từng văn
+bản để xem chi tiết. Bảng này từng bị gỡ ngày 25/08/2026 theo CR-175; nay dựng lại theo yêu
+cầu mới. Chi tiết sổ có thêm tab «Văn bản trong sổ»: văn bản có số vào sổ mới nhất nằm trên
+cùng, lọc được theo năm, tìm được theo tên. Bấm vào thẻ sổ ở danh sách sổ hoặc vào con số
+«Đã cấp trong năm» là vào thẳng tab này.
+
+Tab chỉ hiện với người có quyền xem văn bản và chỉ liệt kê văn bản người đó được đọc, đúng
+chốt của đại ca là không mở danh sách văn bản cho thành viên sổ thiếu quyền. Phía máy chủ,
+danh sách văn bản nhận thêm tham số sắp xếp theo một danh sách cột cho phép và bộ lọc theo
+năm của sổ.
+
+Kiểm tra: bài kiểm sắp xếp và lọc năm xanh, kể cả ca gửi tên cột lạ hay chuỗi tiêm SQL; bài
+kiểm của tab trên giao diện xanh. Cột ngày trong bảng tạm dùng ngày hiệu lực vì máy chủ chưa
+trả ngày ban hành. Không có migration. Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/document/controller.py` ·
+`frontend-v2/src/modules/document/components/book-documents-tab.tsx` ·
+`frontend-v2/src/modules/document/pages/document-book-detail-page.tsx`.
+
+## duoc-CR-475 | Nền máy chủ cho cây thư mục văn bản và quyền trên thư mục
+- status: dang-lam
+- date: 2026-09-23
+Để xếp văn bản vào thư mục và tìm lại theo thư mục, em dựng phần nền phía máy chủ: một cây
+thư mục chung cho cả tập đoàn, mỗi pháp nhân một thư mục gốc do hệ thống tự tạo, một văn bản
+nằm được ở nhiều thư mục với một thư mục chính. Văn bản không chọn thư mục thì vào thư mục
+mặc định của loại văn bản, không có thì vào thư mục pháp nhân; gỡ thư mục cuối cùng thì văn
+bản quay về thư mục pháp nhân. Văn bản chưa gắn pháp nhân thì cố ý không vào thư mục nào.
+Migration nạp sẵn thư mục pháp nhân cho các văn bản đang có.
+
+Quyền trên thư mục có ba mức Xem, Đóng góp và Quản lý, cấp được cho người, phòng ban, pháp
+nhân hoặc vai trò, kế thừa xuống thư mục con, và dòng cấm luôn thắng dòng cho. Quyền thư mục
+không cho đọc văn bản: số đếm, danh sách và đường dẫn thư mục của văn bản đều chỉ tính phần
+người xem được đọc. Sau đợt rà soát mã cùng ngày, em vá thêm: lưu thư mục của văn bản không
+còn xóa mất liên kết tới thư mục người sửa không nhìn thấy, gắn thư mục được kiểm trước khi
+ghi văn bản, quyền quản trị thư mục trong dữ liệu mẫu hạ về phạm vi công ty và không còn tự
+rơi vào vai trò Quản lý thu mua, và chặn trường hợp một pháp nhân có hai thư mục gốc.
+
+Khi deploy: trên hệ đang chạy, các vai trò cũ không tự có khóa quyền thư mục mới, phải tick ở
+màn Phân quyền hoặc bật đồng bộ lại dữ liệu mẫu một lần; nên đếm trước số văn bản chưa gắn
+pháp nhân trên dev và prod. Kiểm tra: sáu tệp bài kiểm thư mục và bài canh đủ khóa quyền đều
+xanh theo báo cáo từng đợt. Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/doc_catalog/folder_link_service.py` ·
+`backend/app/modules/doc_catalog/folder_access_service.py` ·
+`backend/app/modules/doc_catalog/folder_controller.py` · `backend/app/core/subject_match.py` ·
+khóa quyền `doc_folder` · migration `e4a1c9d572b6`, `1c035ad17323` và `32b55e9888f6`.
+
+## duoc-CR-476 | Màn Thư mục văn bản kiểu Google Drive, cây kiểu VS Code, chọn thư mục khi tạo văn bản
+- status: dang-lam
+- date: 2026-09-23
+Đại ca muốn có trang quản lý cây thư mục văn bản làm kỹ để phục vụ tìm kiếm, lúc tạo văn
+bản thì chọn được thư mục lưu, và tối cùng ngày chốt thêm là giao diện phải giống Google
+Drive, cây giống VS Code, phân quyền thì chọn được nhiều người một lần. Em đã dựng trang
+«Thư mục văn bản» trong phân hệ Văn bản: bên trái là cây thư mục, mỗi pháp nhân một gốc
+hiện bằng tên ngắn, lọc tên ngay trên cây, tạo và đổi tên thư mục ngay trong dòng, kéo thả
+để đổi thư mục cha hoặc đổi thứ tự. Bên phải là nội dung của thư mục đang chọn, xem dạng
+lưới hoặc danh sách, chọn nhiều bằng Ctrl và Shift như trên máy tính, bấm chuột phải để
+mở menu thao tác, kéo văn bản thả sang thư mục khác.
+
+Phân quyền thư mục nay mở bằng hộp «Chia sẻ»: gõ tìm và chọn một lúc nhiều người, phòng
+ban, pháp nhân hoặc vai trò, chọn mức Xem, Đóng góp hay Quản lý rồi cấp một lần cho cả
+danh sách (tối đa 200 đối tượng), thay vì cấp từng người như bản đầu. Ở màn tạo văn bản có
+thêm ô «Lưu vào thư mục», loại văn bản khai được thư mục mặc định, chi tiết văn bản có thẻ
+thư mục, và màn danh sách Văn bản có thêm cột, bộ lọc theo thư mục cùng thao tác chọn
+nhiều dòng để thêm vào thư mục.
+
+Kiểm tra: kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi và không thêm cảnh báo mới, các bài kiểm của
+phân hệ Văn bản cùng khu cây, bảng và chọn dòng dùng chung đều xanh theo báo cáo từng đợt.
+Chưa bấm tay đủ các kịch bản trên trình duyệt. Mã còn nằm trên máy em, chưa commit, chưa
+deploy. Phần nền phía máy chủ (bảng thư mục và quyền thư mục) ghi ở mục duoc-CR-475.
+Mã nguồn: `frontend-v2/src/modules/document/pages/document-folder-page.tsx` ·
+`frontend-v2/src/modules/document/components/folder-share-dialog.tsx` ·
+`frontend-v2/src/modules/document/components/folder-picker.tsx` ·
+`frontend-v2/src/shared/tree/` ·
+`backend/app/modules/doc_catalog/folder_access_bulk_service.py`.
+
+## duoc-CR-477 | Tìm toàn văn văn bản: tìm cả trong nội dung soạn thảo và tệp đính kèm
+- status: dang-lam
+- date: 2026-09-23
+Trước đây ô tìm của màn Văn bản chỉ dò trên vài cột như tên và số hiệu. Em đã làm thêm
+công tắc «Tìm cả nội dung»: bật lên thì hệ thống tìm cả trong phần soạn thảo và chữ bên
+trong tệp đính kèm (Word, Excel, PDF có lớp chữ, tệp chữ thường), không phân biệt hoa
+thường hay có dấu, hỗ trợ tìm cụm trong ngoặc kép và loại trừ bằng dấu trừ đứng đầu từ.
+Mỗi kết quả kèm một đoạn trích có tô đậm chỗ trúng. PDF dạng ảnh scan thì không đọc được
+chữ, đợt này chưa làm nhận dạng chữ (OCR).
+
+Lúc kiểm tay trên MySQL thật em phát hiện tìm chữ «văn bản» ra rỗng: MySQL mặc định bỏ
+một số từ tiếng Anh ngắn khỏi chỉ mục, và nhiều âm tiết tiếng Việt như «văn», «bản»,
+«toàn», «là» trùng đúng các từ đó. Em sửa bằng cách tắt việc bỏ từ này ngay lúc migration
+dựng lại chỉ mục, cách này chạy được cả trên prod mà không cần quyền quản trị máy chủ cơ
+sở dữ liệu. Vì chỉ mục có thể bị dựng lại âm thầm khi khôi phục bản sao lưu, em thêm vào
+script dựng chỉ mục hai lựa chọn: một để kiểm chỉ mục còn đúng không, một để vá lại.
+
+Kiểm tra: các bài kiểm tìm toàn văn, gập dấu và bài canh từ dừng đều xanh; nhánh MySQL
+thật đã kiểm tay trên máy em. Chưa đo tốc độ ở quy mô khoảng năm mươi nghìn văn bản vì máy
+em chỉ có năm văn bản. Khi deploy phải dựng lại image `api` vì có thêm thư viện đọc PDF,
+rồi chạy script dựng chỉ mục cho văn bản đang có. Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/document/search_service.py` ·
+`backend/app/modules/document/search_index_service.py` ·
+`backend/app/core/text_fold.py` · `backend/scripts/reindex_documents.py` ·
+`frontend-v2/src/modules/document/components/search-snippet.tsx` · migration
+`747c71718181` và `83679db84fd1`.
+
+## duoc-CR-478 | Nút «Tạo, không soạn thảo», tab Tệp của văn bản, và công tắc tạm tắt hạn xem tệp
+- status: dang-lam
+- date: 2026-09-23
+Nhiều văn bản chỉ là tệp có sẵn như bản scan, văn bản đến hay hợp đồng đã ký, không cần
+soạn gì. Em thêm nút «Tạo, không soạn thảo» ở màn tạo văn bản: tạo xong hệ thống mở thẳng
+tab «Tệp» mới của văn bản. Tab này có một tệp thì hiện luôn tệp đó, có nhiều tệp thì hiện
+danh sách, bấm vào một tệp là xem kèm cây tệp theo từng phiên bản ở bên phải. Văn bản
+không có nội dung soạn thảo mà có tệp thì mở ra là vào thẳng tab «Tệp».
+
+Đại ca chốt tạm cho xem tệp thoải mái trong lúc dồn dữ liệu cũ vào hệ thống, nên em thêm
+một công tắc ở màn Cấu hình hệ thống, tab «Văn bản», mặc định tắt. Khi tắt, ngày hạn xem
+tệp đã khai trên từng văn bản vẫn được giữ nguyên nhưng không chặn ai; bật lại là có hiệu
+lực ngay, không cần deploy. Em cũng vá lỗi bấm đúp nút tạo ra hai văn bản.
+
+Kiểm tra: bài kiểm tab Tệp theo phiên bản và bài kiểm hạn xem tệp đều xanh, bài kiểm bấm
+đúp ở màn tạo bắt đúng lỗi cũ khi thử quay lại mã trước. Không có migration. Chưa commit,
+chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/document/pages/document-create-page.tsx` ·
+`frontend-v2/src/modules/document/components/document-files-tab.tsx` ·
+`backend/app/modules/document/files_controller.py` ·
+`backend/app/modules/document/attachment_window.py` · khóa cấu hình
+`doc_attachment_view_window_enabled`.
 ## ai-CR-051 | Cấp quyền sửa mã bằng câu nhắn của đại ca và kiểm cấp trước mọi lệnh trên việc
 - status: xong
 - date: 2026-09-24

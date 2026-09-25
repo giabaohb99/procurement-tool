@@ -30,6 +30,9 @@ REGISTRY = {
     "doc_file_alert_threshold": ("int", "DOC_FILE_ALERT_THRESHOLD"),
     "doc_file_alert_window_min": ("int", "DOC_FILE_ALERT_WINDOW_MIN"),
     "doc_file_alert_recipients": ("str", "DOC_FILE_ALERT_RECIPIENTS"),
+    #  Hạn XEM tệp đính kèm văn bản — TẠM TẮT (duoc-CR-478). Đọc ở MỘT chỗ duy
+    #  nhất: `document/attachment_window.py view_window_expired()`.
+    "doc_attachment_view_window_enabled": ("bool", "DOC_ATTACHMENT_VIEW_WINDOW_ENABLED"),
     #  Cụm Trợ lý AI (bao-CR-429). Khóa API là thứ NGƯỜI DÙNG tự đăng ký lấy về
     #  rồi tự dán vào — bắt họ mở SSH sửa .env là chặn đúng người đáng ra tự làm
     #  được. Model và trần câu hỏi cũng đổi luôn được vì chúng chỉ là lựa chọn

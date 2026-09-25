@@ -32,10 +32,12 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.scoping import scope_condition
+from app.core.subject_match import (EFFECT_ALLOW, EFFECT_DENY, SUBJECT_COMPANY,
+                                    SUBJECT_DEPARTMENT, SUBJECT_EMPLOYEE,
+                                    subject_match_condition, subject_pairs,  # noqa: F401 — re-export, xem chú thích dưới
+                                    still_live_condition)
 
-from .access_model import (EFFECT_ALLOW, EFFECT_DENY, SUBJECT_COMPANY,
-                           SUBJECT_DEPARTMENT, SUBJECT_EMPLOYEE, SUBJECT_ROLE,
-                           DocumentAccess)
+from .access_model import DocumentAccess
 from . import revoke_access
 from .model import Document
 
@@ -51,47 +53,21 @@ ACTION_COLUMN = {
 }
 
 
-def subject_pairs(profile: dict) -> list[tuple[int, int]]:
-    """Người đang đăng nhập ứng với những (loại đối tượng, id) nào.
-
-    Một người khớp nhiều dòng cùng lúc: bản thân họ, phòng của họ, pháp nhân của
-    họ, và từng vai trò họ mang.
-    """
-    pairs: list[tuple[int, int]] = []
-    if profile.get("employee_id"):
-        pairs.append((SUBJECT_EMPLOYEE, profile["employee_id"]))
-    #  KIÊM NHIỆM (CR-167) — chia văn bản cho «phòng Kế toán» thì người kiêm
-    #  nhiệm phòng đó phải nhận, dù phòng CHÍNH của họ là phòng khác. Lùi về
-    #  phòng chính khi hồ sơ quyền chưa có danh sách.
-    for department_id in (profile.get("dept_ids")
-                          or ([profile["dept_id"]] if profile.get("dept_id") else [])):
-        if department_id:
-            pairs.append((SUBJECT_DEPARTMENT, department_id))
-    if profile.get("company_id"):
-        pairs.append((SUBJECT_COMPANY, profile["company_id"]))
-    for grant in profile.get("grants", []):
-        if grant.get("role_id"):
-            pairs.append((SUBJECT_ROLE, grant["role_id"]))
-    return pairs
+#  `subject_pairs`/`_subject_match`/`_live` CHUYỂN sang `core/subject_match.py`
+#  (phase 04, duoc-CR-475, bước 1: "Tách hàm khớp chủ thể; test ACL văn bản cũ
+#  phải xanh nguyên") — `doc_catalog/folder_access_service.py` dùng LẠI đúng
+#  logic đó cho `tab_doc_folder_access`, thay vì chép. Giữ hai hàm mỏng dưới
+#  đây để KHÔNG phải sửa mọi lời gọi `_subject_match(profile)`/`_live(today)`
+#  đang có trong tệp này. `subject_pairs` KHÔNG có lời gọi nội bộ nào trong tệp
+#  này nhưng `test_kiem_nhiem_phong_ban.py` (test cũ, không thuộc phase 04) vẫn
+#  `from app.modules.document.access_service import subject_pairs` — nhập lại
+#  tên đó ở khối import trên để giữ đường nhập cũ, không dựng thêm một hàm.
+def _subject_match(profile: dict):
+    return subject_match_condition(DocumentAccess, profile)
 
 
 def _live(today: date):
-    """Dòng còn hiệu lực: chưa thu hồi và đang trong hạn."""
-    return and_(
-        DocumentAccess.revoked_at.is_(None),
-        or_(DocumentAccess.valid_from.is_(None), DocumentAccess.valid_from <= today),
-        or_(DocumentAccess.valid_to.is_(None), DocumentAccess.valid_to >= today),
-    )
-
-
-def _subject_match(profile: dict):
-    pairs = subject_pairs(profile)
-    if not pairs:
-        return None
-    return or_(*[
-        and_(DocumentAccess.subject_kind == kind, DocumentAccess.subject_id == sid)
-        for kind, sid in pairs
-    ])
+    return still_live_condition(DocumentAccess, today)
 
 
 def _document_ids(profile: dict, action: str, effect: int):

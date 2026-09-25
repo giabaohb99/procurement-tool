@@ -1,5 +1,6 @@
 import type { UseFormReturn } from 'react-hook-form'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -12,14 +13,18 @@ import {
   FormMessage,
 } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
 import { SearchSelect } from '@/shared/ui/search-select'
 import { useDocumentBooks } from '../hooks/use-document-books'
+import { useDocFolderTree } from '../hooks/use-document-folders'
 import { useActiveDocumentTemplates } from '../hooks/use-document-templates'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useNumberPreview } from '../hooks/use-documents'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
+import { FOLDER_STATUS } from '../types/document-folder'
 import { DocumentNumberPreview } from './document-number-preview'
 import { DocumentSuggestionList } from './document-suggestion-list'
+import { FolderPicker } from './folder-picker'
 
 /** Trường của bước "Thông tin chính" — kiểm khi bấm "Tiếp tục" ở trang tạo mới. */
 export const MAIN_INFO_FIELDS = [
@@ -48,6 +53,19 @@ interface DocumentMainInfoFieldsProps {
   /** Chỉ trang tạo mới truyền hai props này để hiện ô chọn nội dung mẫu. */
   templateId?: number | null
   onTemplateChange?: (templateId: number | null) => void
+  /**
+   * Ô «Lưu vào thư mục» (phase 06, duoc-CR-476) — chỉ trang TẠO MỚI truyền
+   * prop này. Trang chi tiết KHÔNG dùng field này: đổi thư mục ở đó đi qua thẻ
+   * riêng `document-folders-card.tsx` (`PUT .../folders`, không khóa theo
+   * trạng thái văn bản), không qua nút "Lưu thông tin" của form này.
+   */
+  folderPicker?: {
+    folderIds: number[]
+    primaryFolderId: number | null
+    /** Người dùng đã tự bấm chọn/gỡ thư mục — đổi loại văn bản sau đó KHÔNG còn tự áp mặc định nữa. */
+    touched: boolean
+    onChange: (folderIds: number[], primaryFolderId: number | null, touched: boolean) => void
+  }
 }
 
 function Required() {
@@ -75,12 +93,23 @@ export function DocumentMainInfoFields({
   excludeId,
   templateId,
   onTemplateChange,
+  folderPicker,
 }: DocumentMainInfoFieldsProps) {
   const documentTypes = useActiveDocumentTypes()
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500 })
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
   const { items: books } = useDocumentBooks()
+  const { can } = usePermission()
+  //  Thiếu `doc_folder.read` (trên prod, D-018) thì tắt luôn ô «Lưu vào thư
+  //  mục» — xem điều kiện tương ứng ở JSX bên dưới (H4, rà soát 23/09/2026).
+  const hasFolderReadAccess = can('doc_folder', 'read')
+  //  Chỉ hỏi mạng khi màn TẠO có ô thư mục VÀ có quyền đọc — `enabled` tránh
+  //  một cuộc gọi `/api/doc-folders/tree` thừa mỗi lần mở tab Thông tin ở màn
+  //  chi tiết, nơi không hề vẽ `FolderPicker`. `FolderPicker` bên dưới tự gọi
+  //  lại hook này (cùng khóa truy vấn) khi nó được vẽ — TanStack Query dùng
+  //  chung cache, không tốn thêm request thật.
+  const { data: allFolders = [] } = useDocFolderTree(false, Boolean(folderPicker) && hasFolderReadAccess)
 
   const docTypeId = form.watch('doc_type_id')
   const companyId = form.watch('company_id')
@@ -119,6 +148,30 @@ export function DocumentMainInfoFields({
     if (picked) form.setValue('secrecy_level', picked.default_secrecy)
     // Mẫu luôn thuộc một loại cụ thể. Đổi loại thì lựa chọn cũ không còn hợp lệ.
     onTemplateChange?.(null)
+
+    //  Thư mục mặc định của loại VỪA CHỌN — chỉ áp khi người dùng CHƯA tự chọn
+    //  thư mục nào (`touched`), và chỉ khi thư mục đó khớp ĐÚNG pháp nhân đang
+    //  chọn + còn đang dùng, đúng luật `folder_link_service.resolve_default`
+    //  ở backend (khớp sai thì để trống — hint tự rơi về thư mục pháp nhân).
+    if (folderPicker && !folderPicker.touched) {
+      const defaultFolderId = picked?.default_folder_id || 0
+      const currentCompanyId = Number(form.getValues('company_id')) || 0
+      const match = allFolders.find(
+        (folder) =>
+          folder.id === defaultFolderId &&
+          folder.company_id === currentCompanyId &&
+          folder.status === FOLDER_STATUS.active,
+      )
+      folderPicker.onChange(match ? [match.id] : [], match ? match.id : null, false)
+    }
+  }
+
+  /** Đổi pháp nhân ban hành → gỡ các thư mục đã chọn (chúng đều thuộc pháp nhân CŨ). */
+  function handleCompanyChange(value: string) {
+    form.setValue('company_id', Number(value), { shouldValidate: true })
+    if (folderPicker && folderPicker.folderIds.length > 0) {
+      folderPicker.onChange([], null, folderPicker.touched)
+    }
   }
 
   return (
@@ -223,7 +276,7 @@ export function DocumentMainInfoFields({
             <FormControl>
               <SearchSelect
                 value={field.value ? String(field.value) : ''}
-                onChange={(value) => field.onChange(Number(value))}
+                onChange={handleCompanyChange}
                 options={(companies?.items ?? []).map((company) => ({
                   value: String(company.id),
                   label: company.name,
@@ -297,6 +350,26 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+
+      {/*  «Lưu vào thư mục» (phase 06, duoc-CR-476) — ngay dưới «Vào sổ». KHÔNG
+           bọc `FormField`/`FormControl`: đây không phải trường của
+           `documentRecordSchema` (tránh `formToPayload` gửi lại `folder_ids` cũ
+           đè lên thay đổi làm ở nơi khác trên màn chi tiết — thư mục có đường
+           ghi RIÊNG, xem ghi chú ở `DocumentMainInfoFieldsProps.folderPicker`). */}
+      {folderPicker && hasFolderReadAccess && (
+        <div className="grid gap-2 sm:col-span-2">
+          <Label>Lưu vào thư mục</Label>
+          <FolderPicker
+            companyId={companyId}
+            folderIds={folderPicker.folderIds}
+            primaryFolderId={folderPicker.primaryFolderId}
+            onChange={(ids, primary) => folderPicker.onChange(ids, primary, true)}
+            showEmptyHint
+            docTypeDefaultFolderId={documentTypes.find((item) => item.id === docTypeId)?.default_folder_id}
+            placeholder="Chọn thư mục (bỏ trống cũng được)…"
+          />
+        </div>
+      )}
 
       {/* Dòng xem trước số hiệu đứng ngay dưới các ô quyết định ra nó. */}
       <DocumentNumberPreview

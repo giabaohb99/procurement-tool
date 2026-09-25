@@ -72,8 +72,10 @@ export interface SurveyRequestDetail {
   department: string
   head_of_dept_id: number
   head_of_dept: string
-  /** bao-CR-414: phòng ĐƯỢC NHỜ xử lý phiếu (0 = không nhờ, thu mua chung xử lý). */
+  /** bao-CR-414: PHÒNG XỬ LÝ phiếu (0 = thu mua chung). */
   handler_dept_id: number
+  /** bao-CR-480: tên phòng xử lý do backend trả kèm (rỗng = thu mua chung). */
+  handler_dept_name?: string
   /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng lập tự xử lý. */
   can_transfer_dept?: boolean
   can_return_dept?: boolean
