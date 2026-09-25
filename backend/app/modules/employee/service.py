@@ -328,7 +328,7 @@ def _revoke_bot_access(db: Session, user_id: int) -> None:
     web (không có gì hỏi được bot dưới tên người đã đi). Không commit ở đây — đi chung với người gọi."""
     from datetime import datetime
 
-    from app.modules.agent_hub.model import AgentChatLink, AgentMcpKey, AgentUserKey
+    from app.modules.agent_hub.model import AgentChatLink, AgentGoogleLink, AgentMcpKey, AgentUserKey
 
     now = datetime.now()
     for row in db.query(AgentUserKey).filter(AgentUserKey.user_id == user_id, AgentUserKey.revoked_at.is_(None)):
@@ -336,6 +336,8 @@ def _revoke_bot_access(db: Session, user_id: int) -> None:
     for row in db.query(AgentChatLink).filter(AgentChatLink.user_id == user_id, AgentChatLink.revoked_at.is_(None)):
         row.revoked_at = now
     for row in db.query(AgentMcpKey).filter(AgentMcpKey.user_id == user_id, AgentMcpKey.revoked_at.is_(None)):
+        row.revoked_at = now
+    for row in db.query(AgentGoogleLink).filter(AgentGoogleLink.user_id == user_id, AgentGoogleLink.revoked_at.is_(None)):
         row.revoked_at = now
 
 

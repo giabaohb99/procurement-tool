@@ -47,7 +47,9 @@ function mockKey(info: Partial<AiKeyInfo> = {}, mcp: { endpoint?: string; items?
   apiGet.mockImplementation((url: string) =>
     url === '/api/agent-hub/mcp-keys'
       ? Promise.resolve({ endpoint: 'https://erp.test/api/mcp', items: [], ...mcp })
-      : Promise.resolve({ provider: 'gemini', has_key: false, hint: '', verified_at: null, ...info }),
+      : url === '/api/agent-hub/google'
+        ? Promise.resolve({ configured: true, linked: false, email: '', linked_at: null })
+        : Promise.resolve({ provider: 'gemini', has_key: false, hint: '', verified_at: null, ...info }),
   )
 }
 
@@ -115,5 +117,23 @@ describe('ProfileAiKeyTab — khóa MCP (ai-CR-063)', () => {
     const row = (await screen.findByText('Cursor')).closest('li')!
     await userEvent.click(row.querySelector('button')!)
     await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/api/agent-hub/mcp-keys/7'))
+  })
+})
+
+describe('ProfileAiKeyTab — Google cá nhân (ai-CR-064)', () => {
+  beforeEach(() => {
+    apiGet.mockReset()
+    apiPost.mockReset()
+  })
+
+  it('asks the backend for the consent URL and navigates there', async () => {
+    mockKey()
+    apiPost.mockResolvedValue({ url: 'https://accounts.google.com/o/oauth2/v2/auth?x=1' })
+    const assign = vi.fn()
+    Object.defineProperty(window, 'location', { value: { ...window.location, assign, origin: 'https://erp.test' }, writable: true })
+    renderTab()
+    await userEvent.click(await screen.findByRole('button', { name: /Nối Google/ }))
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/api/agent-hub/google/authorize', {}))
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?x=1'))
   })
 })

@@ -297,3 +297,17 @@ class AgentMcpKey(Base, AuditMixin):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentGoogleLink(Base, AuditMixin):
+    """Google CÁ NHÂN của một tài khoản ERP (ai-CR-064, M-06): refresh token mã hóa Fernet, dùng cho tool Lịch + Drive."""
+
+    __tablename__ = "tab_agent_google_link"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    email: Mapped[str] = mapped_column(String(255), default="")
+    scopes: Mapped[str] = mapped_column(String(500), default="")
+    refresh_token_enc: Mapped[str] = mapped_column(Text, default="")
+    access_token_enc: Mapped[str] = mapped_column(Text, default="")
+    access_expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)

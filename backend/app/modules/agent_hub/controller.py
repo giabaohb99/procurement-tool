@@ -8,6 +8,7 @@ không thuộc người hay phòng nào).
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
@@ -19,7 +20,7 @@ from app.core.response import success
 
 from pydantic import BaseModel
 
-from . import chat_link, coder, mcp_keys, telegram, user_keys
+from . import chat_link, coder, google_link, mcp_keys, telegram, user_keys
 from .constants import (
     DIRECTION_LABELS,
     RISK_LABELS,
@@ -252,6 +253,44 @@ def remove_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session =
         raise HTTPException(404, "Không tìm thấy khóa")
     mcp_keys.revoke(db, row)
     return success(None, "Đã gỡ khóa MCP")
+
+
+# ---------------------------------------------------------------------------
+# Google cá nhân (ai-CR-064, M-06) — tự phục vụ. Token chỉ nằm trong DB mã hóa, không cửa nào trả ra.
+# ---------------------------------------------------------------------------
+@router.get("/google")
+def my_google(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    return success(google_link.describe(db, user.id))
+
+
+@router.post("/google/authorize")
+def google_authorize(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        return success({"url": google_link.authorize_url(user.id)})
+    except google_link.GoogleError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@router.get("/google/callback")
+def google_callback(code: str = "", state: str = "", error: str = "", db: Session = Depends(get_db)):
+    """Google gọi về sau màn đồng ý (không có Bearer): danh tính lấy từ `state` đã ký."""
+    back = (settings.AGENT_ERP_URL.rstrip("/") if settings.AGENT_ERP_URL else "") + "/me?tab=ai-key"
+    uid = google_link.parse_state(state)
+    if error or not code or not uid:
+        return RedirectResponse(back + "&google=loi", status_code=302)
+    try:
+        google_link.exchange_code(db, uid, code)
+    except google_link.GoogleError:
+        return RedirectResponse(back + "&google=loi", status_code=302)
+    return RedirectResponse(back + "&google=xong", status_code=302)
+
+
+@router.delete("/google")
+def google_disconnect(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    link = google_link.get_link(db, user.id)
+    if link is not None:
+        google_link.revoke(db, link)
+    return success(google_link.describe(db, user.id), "Đã gỡ kết nối Google")
 
 
 @router.get("/stats")

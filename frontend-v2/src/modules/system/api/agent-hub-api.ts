@@ -153,6 +153,14 @@ export interface McpKeysResult {
   items: McpKeyItem[]
 }
 
+/** Kết nối Google cá nhân (ai-CR-064). */
+export interface GoogleLinkInfo {
+  configured: boolean
+  linked: boolean
+  email: string
+  linked_at: string | null
+}
+
 export const agentHubApi = {
   list: (params: AgentTaskListParams) => apiGet<AgentTaskListResult>('/api/agent-hub/tasks', { params }),
   detail: (id: number) => apiGet<AgentTaskDetail>(`/api/agent-hub/tasks/${id}`),
@@ -173,4 +181,9 @@ export const agentHubApi = {
   myMcpKeys: () => apiGet<McpKeysResult>('/api/agent-hub/mcp-keys'),
   createMcpKey: (body: { name: string; scope: number; days: number }) => apiPost<McpKeyItem>('/api/agent-hub/mcp-keys', body),
   removeMcpKey: (id: number) => apiDelete<null>(`/api/agent-hub/mcp-keys/${id}`),
+
+  /** Google cá nhân — Lịch + Drive (ai-CR-064). */
+  myGoogle: () => apiGet<GoogleLinkInfo>('/api/agent-hub/google'),
+  googleAuthorizeUrl: () => apiPost<{ url: string }>('/api/agent-hub/google/authorize', {}),
+  disconnectGoogle: () => apiDelete<GoogleLinkInfo>('/api/agent-hub/google'),
 }
