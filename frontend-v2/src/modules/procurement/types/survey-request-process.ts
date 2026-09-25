@@ -106,8 +106,10 @@ export interface AvailableSurveyLinesResult {
 
 /** Tham số lọc bảng "Kết quả khảo sát đã duyệt" — backend đòi ÍT NHẤT một tiêu chí. */
 export interface AvailableSurveyLinesParams {
-  supplier_code: string
-  item_group: string
+  /** bao-CR-487: NHIỀU mã NCC — rỗng là không lọc theo NCC; nhiều mã trong một ô là HOẶC. */
+  supplier_code: string[]
+  /** bao-CR-487: NHIỀU phân loại — rỗng là không lọc theo phân loại. */
+  item_group: string[]
   search: string
   /** Trang 1-based (khớp backend). */
   page: number

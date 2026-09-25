@@ -78,6 +78,12 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
   // Có/không in ảnh chữ ký (mẫu thường). Bản ký tay vẫn giữ họ tên dưới ô cho đúng
   // "(Ký, ghi rõ họ tên)" — chỉ bỏ ảnh chữ ký số đi.
   const [showSign, setShowSign] = useState(true);
+  // bao-CR-490: ô «TP/BP đề xuất» ký bởi NGƯỜI DUYỆT (cột Trưởng phòng phê duyệt) hay TRƯỞNG PHÒNG
+  // theo hồ sơ phòng ban; nhớ theo máy. Mẫu thuế để trống ô ký nên không đọc tới.
+  const [signerMode, setSignerMode] = useState<'approver' | 'dept_head'>(() => {
+    try { return localStorage.getItem('erp.print.signer-mode') === 'dept_head' ? 'dept_head' : 'approver' } catch { return 'approver' }
+  });
+  const changeSignerMode = (m: 'approver' | 'dept_head') => { setSignerMode(m); try { localStorage.setItem('erp.print.signer-mode', m) } catch { /* chặn localStorage thì thôi */ } };
 
   // Map tên đầy đủ kho -> mã kho (tên viết tắt) để in cột "Nơi giao"
   const whCode = (name: string) =>
@@ -198,6 +204,26 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
         )}
         <span style={{ flex: 1 }} />
         {/* Chỉ mẫu thường mới có chữ ký sẵn để mà tắt/bật — mẫu thuế vốn để trống toàn bộ. */}
+        {!taxMode && (
+          <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
+            {([{ v: 'approver', t: "Ký: người duyệt" }, { v: 'dept_head', t: "Ký: trưởng phòng" }] as const).map((tab) => (
+              <button
+                key={tab.t}
+                onClick={() => changeSignerMode(tab.v)}
+                title={tab.v === 'approver'
+                  ? "Ô TP/BP đề xuất in tên người thực bấm Duyệt"
+                  : "Ô TP/BP đề xuất in tên trưởng phòng theo hồ sơ phòng ban (bao-CR-490)"}
+                style={{
+                  padding: "7px 16px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
+                  background: signerMode === tab.v ? "#00AEEF" : "#fff",
+                  color: signerMode === tab.v ? "#fff" : "#475569",
+                }}
+              >
+                {tab.t}
+              </button>
+            ))}
+          </div>
+        )}
         {!taxMode && (
           <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
             {[{ v: true, t: "Có chữ ký" }, { v: false, t: "Không chữ ký" }].map((tab) => (
@@ -477,7 +503,10 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                   ? {}
                   : {
                       "Người lập": { sign: pr.requester_signature, name: pr.requester },
-                      "TP/BP đề xuất": { sign: pr.approver_signature, name: pr.approver_name },
+                      // bao-CR-490: chọn trưởng phòng mà phòng chưa gán trưởng thì lùi về người duyệt.
+                      "TP/BP đề xuất": signerMode === 'dept_head' && pr.dept_head_name
+                        ? { sign: pr.dept_head_signature, name: pr.dept_head_name }
+                        : { sign: pr.approver_signature, name: pr.approver_name },
                       "TP/BP mua hàng": { sign: pr.purchasing_head_signature, name: pr.purchasing_head_name },
                     };
                 // Chọn "Không chữ ký" -> bỏ ảnh, giữ họ tên để người ký tự ký tay lên trên.

@@ -120,6 +120,14 @@ export interface PurchaseOrderDetail {
   handler_dept_id?: number
   /** bao-CR-480: tên phòng xử lý do backend trả kèm (rỗng = thu mua chung). */
   handler_dept_name?: string
+  /**
+   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và
+   * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên
+   * bản in nội bộ. Phiếu cũ: id 0, tên rỗng.
+   */
+  approver_employee_id?: number
+  approver_employee_name?: string
+  dept_head_name?: string
   /** Nhân sự thu mua phụ trách. */
   nspt: string
   order_date: string

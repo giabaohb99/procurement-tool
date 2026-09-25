@@ -86,6 +86,7 @@ import {
   useOrderProgress,
   usePurchaseRequest,
   usePurchaseRequestAction,
+  usePurchaseRequestAssignableStaff,
   useSavePurchaseRequest,
   useSetUrgent,
   useTransferPurchaseRequestDept,
@@ -98,6 +99,7 @@ import { isPrOptionStageOpen } from '../types/purchase-request-options'
 import { PR_STATUS_LABELS } from '../types/purchase-document'
 import type { PurchaseOrder } from '../types/purchase-document'
 import type { PurchaseOrderItem } from '../types/purchase-order-detail'
+import { handlingDeptForCreate } from '../utils/handling-dept-display'
 import {
   buildPurchaseOrderLines,
   toDraftFromRequest,
@@ -168,6 +170,12 @@ export function PurchaseRequestDetailPage() {
 
   const { data: serverData, isLoading, isError } = usePurchaseRequest(purchaseRequestId)
   const { data: progress } = useOrderProgress(purchaseRequestId)
+  //  bao-CR-486: chỉ người phân bổ được mới cần danh sách NSTM; người yêu cầu không gọi.
+  //  Gọi ở ĐÂY (trước mọi `return` sớm) — luật hook.
+  const { data: assignableStaff } = usePurchaseRequestAssignableStaff(
+    purchaseRequestId,
+    can('purchase_request', 'approve'),
+  )
   // bao-CR-421: hộp xác nhận trước khi gom đơn theo phương án phải nói được phiếu
   // này ĐÃ có đơn mua hàng nào chưa. Gọi đúng truy vấn của thẻ "Chứng từ liên quan"
   // (cùng `queryKey`) nên TanStack Query dùng lại kết quả, không tốn thêm lượt gọi.
@@ -298,17 +306,20 @@ export function PurchaseRequestDetailPage() {
     data.items.length > 0 &&
     data.items.every((item) => ['completed', 'cancelled'].includes(item.line_status))
   /**
-   * NSTM = nhân sự PHÒNG THU MUA; ô chọn hiện TÊN nhưng lưu MÃ nhân viên
-   * (backend nối dòng YCMH với người phụ trách bằng mã).
-   * QA 29/08: bổ sung người đã gán ở từng dòng dù họ nằm ngoài danh mục tải về
-   * (danh sách nhân sự chưa tải xong / tải lỗi / khác phòng) — không thì ô Select
-   * hiện trống như chưa phân công dù DB đã có, cùng bẫy trang Khảo sát từng dính.
+   * NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu (phòng
+   * xử lý ≠ 0 → người thu mua của phòng đó; = 0 → người thu mua chung). Trước đó lọc
+   * danh mục nhân sự theo TÊN phòng có chữ «thu mua», nên phiếu nhà máy vẫn thấy người
+   * thu mua chung. Ô chọn hiện TÊN nhưng lưu MÃ nhân viên.
+   * QA 29/08: bổ sung người đã gán ở từng dòng dù họ nằm ngoài danh sách (gán trước khi
+   * chuyển phòng, hoặc danh sách chưa tải xong) — không thì ô Select hiện trống như chưa
+   * phân công dù DB đã có, cùng bẫy trang Khảo sát từng dính.
    */
   const purchasers = (() => {
     const employees = employeesData?.items ?? []
-    const options = employees
-      .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
-      .map((employee) => ({ code: employee.code, name: employee.full_name }))
+    const options = (assignableStaff?.items ?? []).map((staff) => ({
+      code: staff.code,
+      name: staff.full_name,
+    }))
     for (const item of data.items) {
       if (item.assignee && !options.some((option) => option.code === item.assignee)) {
         const found = employees.find((employee) => employee.code === item.assignee)
@@ -412,7 +423,8 @@ export function PurchaseRequestDetailPage() {
         department: loadedDraft.department,
         head_of_dept: loadedDraft.head_of_dept,
         head_of_dept_id: loadedDraft.head_of_dept_id,
-        handler_dept_id: loadedDraft.handler_dept_id,
+        // bao-CR-488: lúc tạo, chưa tick «Nhờ phòng khác xử lý» thì không gửi để backend chọn mặc định.
+        handler_dept_id: isNew ? handlingDeptForCreate(loadedDraft) : loadedDraft.handler_dept_id,
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
         need_date: loadedDraft.need_date,
@@ -818,7 +830,7 @@ export function PurchaseRequestDetailPage() {
           onClick={() => setTransferMode('return')}
         >
           <CornerUpLeft />
-          Trả về phòng lập
+          Trả về
         </Button>
       )}
       {data.status === 'submitted' && (data.can_approve || canManage) && (
@@ -917,6 +929,7 @@ export function PurchaseRequestDetailPage() {
           <PurchaseRequestInfoCard
             data={loadedDraft}
             editing={editing}
+            isNew={isNew}
             companies={companiesData?.items}
             employees={employeesData?.items}
             departments={departmentsData?.items}

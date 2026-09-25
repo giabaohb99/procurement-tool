@@ -7,6 +7,18 @@ import {
   type PurchaseRequestPayload,
 } from '../api/purchase-request-api'
 
+/**
+ * bao-CR-486 — NSTM chọn được cho phiếu, đi theo ô «Phòng xử lý». `enabled` để trang tắt
+ * khi người xem không có quyền phân bổ (khỏi một lượt gọi thừa cho người yêu cầu).
+ */
+export function usePurchaseRequestAssignableStaff(id: number, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.procurement.purchaseRequestAssignableStaff(id),
+    queryFn: () => purchaseRequestApi.assignableStaff(id),
+    enabled: enabled && id > 0,
+  })
+}
+
 /** Một phiếu YCMH. `id <= 0` (màn tạo mới) thì không gọi API. */
 export function usePurchaseRequest(id: number) {
   return useQuery({

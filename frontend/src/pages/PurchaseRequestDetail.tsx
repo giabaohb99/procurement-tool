@@ -96,6 +96,7 @@ export default function PurchaseRequestDetail() {
   const [pr, setPr] = useState<any>({
     code: '', requester: '', requester_position: '', department: '', head_of_dept: '', head_of_dept_id: 0,
     handler_dept_id: 0,   // bao-CR-414: phòng được NHỜ xử lý phiếu (0 = tự mua / thu mua chung)
+    handler_dept_assigned: false,   // bao-CR-488: lúc lập phiếu đã tick «Nhờ phòng khác xử lý» chưa (chỉ giao diện)
     purpose: '', company_id: 0, request_date: new Date().toISOString().slice(0, 10),
     need_date: '', is_urgent: false, note: '', status: 'draft', items: [],
     show_code_on_print: true, suggested_supplier: '', suggested_supplier_tax_code: '', suggested_supplier_contact: '',
@@ -114,6 +115,7 @@ export default function PurchaseRequestDetail() {
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([])
   const [employees, setEmployees] = useState<any[]>([])
   const [empLoaded, setEmpLoaded] = useState(false)   // bao-CR-376: DS nhân sự đã trả lời xong (kể cả 403/lỗi)
+  const [assignableStaff, setAssignableStaff] = useState<any[]>([])   // bao-CR-486: NSTM theo phòng xử lý
   const [departments, setDepartments] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
@@ -149,6 +151,8 @@ export default function PurchaseRequestDetail() {
       const r = await api.get(`${API}/${id}`)
       setPr(r.data.data)
       savedCodes.current = (r.data.data.items || []).map((it: any) => it.product_code || '')
+      // bao-CR-486: tải lại mỗi lần nạp phiếu — chuyển phòng xử lý xong là danh sách đổi theo.
+      api.get(`${API}/${id}/assignable-staff`).then((x) => setAssignableStaff(x.data.data.items || [])).catch(() => {})
     } catch (ex: any) {
       if ([403, 404].includes(ex?.response?.status)) { setNotFound(true); return }
       throw ex
@@ -257,11 +261,18 @@ export default function PurchaseRequestDetail() {
   const canLineStatus = (it: any) => canAssignPurchaser || canManage || isAssignee(it)
   const canEditNote = (it: any) => editable || canLineStatus(it)
 
-  // NSTM = nhân sự phòng thu mua; hiển thị TÊN, lưu MÃ NV
-  const purDeptIds = departments.filter(d => (d.name || '').toLowerCase().includes('thu mua')).map(d => d.id)
-  const purchaserOptions = employees
-    .filter(e => purDeptIds.includes(e.department_id) || (e.department_name || '').toLowerCase().includes('thu mua'))
-    .map(e => ({ value: e.code, label: e.full_name }))
+  // NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu (phòng xử lý ≠ 0 → người
+  // thu mua của phòng đó; = 0 → người thu mua chung). Trước đó lọc danh mục nhân sự theo TÊN phòng có
+  // chữ «thu mua» nên phiếu nhà máy vẫn thấy người thu mua chung. Hiển thị TÊN, lưu MÃ NV; người đã
+  // gán ở dòng mà nay ngoài danh sách (gán trước khi chuyển phòng) vẫn giữ để không mất nhãn.
+  const purchaserOptions = (() => {
+    const opts = assignableStaff.map((e: any) => ({ value: e.code, label: e.full_name }))
+    for (const it of (pr.items || [])) {
+      if (it.assignee && !opts.some((o) => o.value === it.assignee))
+        opts.push({ value: it.assignee, label: employees.find(e => e.code === it.assignee)?.full_name || it.assignee })
+    }
+    return opts
+  })()
   const empName = (code: string) => employees.find(e => e.code === code)?.full_name || code
   const companyOptions = companies.map(c => ({ value: String(c.id), label: c.name }))
   // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — «Thu mua chung» (0) đứng đầu, rồi mọi phòng đang
@@ -573,7 +584,9 @@ export default function PurchaseRequestDetail() {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept,
       head_of_dept_id: Number(pr.head_of_dept_id) || 0, purpose: pr.purpose,
-      handler_dept_id: Number(pr.handler_dept_id) || 0,
+      // bao-CR-488: lúc tạo mà chưa tick «Nhờ phòng khác xử lý» thì KHÔNG gửi — backend tự chọn mặc định
+      // (nhà máy → chính phòng mình, còn lại → Thu mua chung). Đã tick thì gửi đúng số đã chọn, kể cả 0.
+      handler_dept_id: isNew && !pr.handler_dept_assigned ? undefined : Number(pr.handler_dept_id) || 0,
       request_date: pr.request_date, need_date: earliestNeedDate || pr.need_date || '', is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
       quote_filename: pr.quote_filename, quote_file_url: pr.quote_file_url,
@@ -782,7 +795,7 @@ export default function PurchaseRequestDetail() {
           <button className="btn ghost" title="Đẩy cả phiếu sang phòng khác xử lý" onClick={() => setTransferMode('transfer')}><i className="ti ti-transfer" />Chuyển phòng xử lý</button>
         )}
         {!isNew && pr.can_return_dept && (
-          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} title="Trả cả phiếu về phòng lập tự xử lý" onClick={() => setTransferMode('return')}><i className="ti ti-corner-up-left" />Trả về phòng lập</button>
+          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} title="Trả cả phiếu về phòng lập tự xử lý" onClick={() => setTransferMode('return')}><i className="ti ti-corner-up-left" />Trả về</button>
         )}
         {!isNew && canCreatePO && workableStatuses.includes(pr.status) && hasUnorderedItem && (
           <button className="btn" onClick={createPO}><i className="ti ti-shopping-cart" />Tạo đơn mua hàng</button>
@@ -953,11 +966,31 @@ export default function PurchaseRequestDetail() {
                 <label>Phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(phòng sẽ đi mua cho phiếu này)</span></label>
                 {/* bao-CR-414 / bao-CR-480: «Thu mua chung» (0) là mặc định; nhà máy tự mua thì backend
                     tự điền phòng nhà máy lúc lập phiếu. Chọn phòng thì quản lý thu mua của phòng đó
-                    thấy và điều phối được phiếu; bộ thu mua chung «trừ nhà máy» thì không thấy. */}
-                <SearchSelect value={String(pr.handler_dept_id || 0)}
-                  onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
-                  options={handlerDeptOptions}
-                  disabled={!editable} placeholder="Thu mua chung" autoSelectSingle={false} />
+                    thấy và điều phối được phiếu; bộ thu mua chung «trừ nhà máy» thì không thấy.
+                    bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick «Nhờ phòng khác xử lý» — không tick
+                    thì không gửi, hệ thống tự chọn; tick rồi chọn thì giữ đúng lựa chọn, kể cả Thu mua chung. */}
+                {isNew ? (
+                  <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 400 }}>
+                      <input type="checkbox" checked={!!pr.handler_dept_assigned}
+                        onChange={(e) => setPr((p: any) => ({ ...p, handler_dept_assigned: e.target.checked, handler_dept_id: e.target.checked ? p.handler_dept_id : 0 }))} />
+                      Nhờ phòng khác xử lý
+                    </label>
+                    {pr.handler_dept_assigned ? (
+                      <SearchSelect value={String(pr.handler_dept_id || 0)}
+                        onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
+                        options={handlerDeptOptions}
+                        placeholder="Thu mua chung" autoSelectSingle={false} />
+                    ) : (
+                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là Thu mua chung; phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
+                    )}
+                  </>
+                ) : (
+                  <SearchSelect value={String(pr.handler_dept_id || 0)}
+                    onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
+                    options={handlerDeptOptions}
+                    disabled={!editable} placeholder="Thu mua chung" autoSelectSingle={false} />
+                )}
               </div>
               <div className="form-row">
                 <label>Chức vụ (Nếu có)</label>
@@ -996,6 +1029,13 @@ export default function PurchaseRequestDetail() {
                     title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
                 )}
               </div>
+              {/* bao-CR-490: ai THỰC bấm Duyệt ở chặng trưởng phòng — hệ thống ghi lúc duyệt, chỉ xem. */}
+              {!!pr.approver_employee_name && (
+                <div className="form-row">
+                  <label>Trưởng phòng phê duyệt</label>
+                  <input value={pr.approver_employee_name} disabled title="Người thực bấm Duyệt phiếu này" />
+                </div>
+              )}
               <div className="form-row">
                 <label>Tùy chọn phiếu</label>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', minHeight: 40, flexWrap: 'wrap' }}>

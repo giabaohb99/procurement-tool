@@ -121,6 +121,88 @@ def handling_dept_of(ticket) -> int:
     return int(getattr(ticket, "handler_dept_id", 0) or 0) or int(getattr(ticket, "department_id", 0) or 0)
 
 
+# ── Người phụ trách CHỌN ĐƯỢC theo phòng xử lý (bao-CR-486) ──────────────────────────────
+
+_PURCHASING_SCOPES = ("dept_proc", "proc", "all")
+
+
+def _purchasing_employee_ids(db: Session, scopes: tuple[str, ...]) -> set[int]:
+    """Nhân sự đang hoạt động có tài khoản giữ vai trò thu mua trên YCMH ở các bậc `scopes`.
+
+    Cùng cách suy từ phân quyền với `list_self_purchasing_dept_ids`: ai được cấp bậc thu mua là
+    người làm thu mua, không có ô «phòng thu mua» riêng để hai chỗ lệch nhau."""
+    from app.modules.employee.model import Employee
+    from app.modules.role.model import Permission
+    from app.modules.user.model import User, UserRole
+
+    rows = (db.query(Employee.id)
+            .join(User, User.employee_id == Employee.id)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Permission, Permission.role_id == UserRole.role_id)
+            .filter(Permission.entity == "purchase_request", Permission.scope.in_(scopes),
+                    User.is_active == True, Employee.is_active == True)  # noqa: E712
+            .distinct().all())
+    return {int(r[0]) for r in rows}
+
+
+def assignable_staff(db: Session, ticket) -> list:
+    """Danh sách NSTM chọn được cho MỘT phiếu (YCMH hay YCBG) — đi theo ô «Phòng xử lý».
+
+    Đại ca chốt 25/09/2026: *"nhân sự phụ trách sẽ đi theo phòng xử lý — đơn của nhà máy mà
+    chọn được nhân sự ngoài đó là lỗi"*. Trước đó giao diện lọc theo TÊN phòng có chữ «thu
+    mua», nên nhà máy thấy cả người thu mua chung, còn phòng «Sản xuất -Thu mua» (tên có chữ
+    đó) lại lọt vào danh sách của mọi phiếu.
+
+      · `handler_dept_id` ≠ 0 → người thu mua (bậc dept_proc/proc/all) THUỘC phòng đó;
+      · = 0 (thu mua chung)  → người bậc proc/all KHÔNG thuộc phòng tự mua nào.
+    Trả `Employee` đang hoạt động, xếp theo tên. Người đã gán từ trước mà nay ngoài danh sách
+    thì giao diện tự bổ sung để không mất nhãn — cửa ghi mới chặn (`check_assignee_allowed`).
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.purchase_request.service import list_self_purchasing_dept_ids
+
+    dept = int(getattr(ticket, "handler_dept_id", 0) or 0)
+    if dept:
+        ids = _purchasing_employee_ids(db, _PURCHASING_SCOPES)
+        q = db.query(Employee).filter(Employee.department_id == dept)
+    else:
+        ids = _purchasing_employee_ids(db, ("proc", "all"))
+        self_depts = list_self_purchasing_dept_ids(db)
+        q = db.query(Employee)
+        if self_depts:
+            q = q.filter(~Employee.department_id.in_(self_depts))
+    if not ids:
+        return []
+    return (q.filter(Employee.id.in_(ids), Employee.is_active == True)  # noqa: E712
+            .order_by(Employee.full_name, Employee.id).all())
+
+
+def check_assignee_allowed(db: Session, ticket, code: str) -> None:
+    """Chặn gán NSTM ngoài phòng xử lý (bao-CR-486) — cửa ghi của cả YCMH lẫn YCBG.
+
+    Luật kiểm LỎNG hơn danh sách gợi ý (chỉ so PHÒNG, không đòi vai trò): phiếu có phòng xử lý
+    thì người được gán phải thuộc phòng đó; phiếu thu mua chung thì người đó không được thuộc
+    phòng tự mua. Bỏ gán (mã rỗng) luôn được. Mã lạ → 400 chứ không lặng lẽ ghi chuỗi rác.
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.purchase_request.service import list_self_purchasing_dept_ids
+
+    code = (code or "").strip()
+    if not code:
+        return
+    emp = db.query(Employee).filter(Employee.code == code).first()
+    if not emp:
+        raise HTTPException(400, f"Không thấy nhân sự mã {code}")
+    dept = int(getattr(ticket, "handler_dept_id", 0) or 0)
+    emp_dept = int(emp.department_id or 0)
+    if dept and emp_dept != dept:
+        raise HTTPException(400, f"{emp.full_name} không thuộc phòng xử lý của phiếu — "
+                                 "chỉ gán được người của phòng đang xử lý")
+    if not dept and emp_dept and emp_dept in list_self_purchasing_dept_ids(db):
+        raise HTTPException(400, f"{emp.full_name} thuộc phòng tự mua hàng — phiếu này do thu "
+                                 "mua chung xử lý, chỉ gán được người thu mua chung")
+
+
 def load_configs(db: Session, department_id: int, allow_global: bool = True) -> dict[int, CategoryAssignee]:
     """Bộ phân công áp cho một phòng: dòng riêng của phòng đó trước, phân loại nào phòng chưa
     khai thì rơi về bộ chung (phòng 0) — CHỈ khi `allow_global`.

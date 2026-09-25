@@ -37,7 +37,11 @@ class PRCreate(BaseModel):
     requester_id: int = 0
     requester_position: str = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
-    handler_dept_id: int = 0      # bao-CR-414: phòng ĐƯỢC NHỜ xử lý (0 = không nhờ)
+    # bao-CR-414/480/488: phòng XỬ LÝ phiếu. `None` (không gửi) = để hệ thống chọn mặc định
+    # (phòng tự mua → chính phòng lập, còn lại → 0 Thu mua chung); gửi số — kể cả 0 — là
+    # người lập ĐÃ CHỌN, giữ nguyên. Trước CR-488 gửi 0 cũng bị tra đè, nhà máy không thể
+    # nhờ Thu mua chung ngay lúc lập phiếu.
+    handler_dept_id: int | None = None
     department: str = ""
     head_of_dept: str = ""
     head_of_dept_id: int = 0      # CR-071: id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng)

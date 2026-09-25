@@ -937,7 +937,8 @@ def dispatch_enabled() -> bool:
 
 
 def dispatch_pr(db: Session, pid: int, user_id: int,
-                allow_global_assignee: bool = True) -> tuple[PurchaseRequest, int, int]:
+                allow_global_assignee: bool = True,
+                audit_action: str = "dispatched") -> tuple[PurchaseRequest, int, int]:
     """CR-034 — ĐIỀU PHỐI (duyệt lần 2, phía thu mua).
 
     Trưởng phòng duyệt xong phiếu chỉ dừng ở 'approved' và CHƯA có nhân sự phụ trách.
@@ -949,6 +950,11 @@ def dispatch_pr(db: Session, pid: int, user_id: int,
     thì phòng lập phiếu); phân loại phòng chưa khai riêng thì rơi về bộ "Thu mua chung".
     `allow_global_assignee=False` khi người điều phối chỉ có bậc `dept_proc` (quản lý thu mua
     của phòng tự mua): chỉ dùng bộ riêng của phòng, không đẩy việc sang tay thu mua chung.
+
+    `audit_action` (bao-CR-485): bước này ghi sổ dưới hành động nào. Bấm nút Điều phối thật thì
+    `dispatched` (mặc định). Công tắc điều phối TẮT thì đường duyệt gọi nó với `approved` — cả
+    cú duyệt lẫn phần hệ thống tự phân bổ gói vào MỘT dòng «Duyệt» của trưởng phòng; ghi hai
+    dòng thì người xem sổ tưởng trưởng phòng bấm Điều phối, một việc họ không có quyền.
 
     Trả về (phiếu, số dòng vừa gán tự động, số dòng vẫn chưa có người)."""
     pr = get_pr(db, pid)
@@ -981,8 +987,10 @@ def dispatch_pr(db: Session, pid: int, user_id: int,
     # TẮT (duyệt phát là điều phối luôn) cũng đi qua đây nên không cần móc chỗ khác.
     from . import option_service
     option_service.ensure_option_zero(db, pr)
-    record(db, user_id, ENTITY, pid, "dispatched",
-           f"Điều phối — tự động phân bổ {n} dòng" + (f", còn {blank_count} dòng chưa có người" if blank_count else "")
+    lead = ("Điều phối — tự động phân bổ" if audit_action == "dispatched"
+            else "Hệ thống tự phân bổ (công tắc điều phối tắt)")
+    record(db, user_id, ENTITY, pid, audit_action,
+           f"{lead} {n} dòng" + (f", còn {blank_count} dòng chưa có người" if blank_count else "")
            + (f" · Ngày tiếp nhận {old_base or '(trống)'} -> {new_base}" if old_base != new_base else ""))
     # Mốc gốc dời muộn hơn -> ngày QĐ có hàng dời theo, dòng "cần sớm hơn ngày QĐ" có thể phát
     # sinh mới -> soát lại cờ Đơn gấp (CR-082: chỉ BẬT, không tự tắt).
@@ -998,10 +1006,15 @@ def assign(db: Session, pid: int, data: AssignIn, user_id: int) -> PurchaseReque
         raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không phân bổ được")
     if data.assignee_id:
         pr.assignee_id = data.assignee_id
+    from app.modules.category_assignee.service import check_assignee_allowed
     rows = {i.id: i for i in items_of(db, pid)}
     for it in data.items:
         row = rows.get(it.id)
         if row is not None:
+            # bao-CR-486: người phụ trách phải thuộc phòng xử lý của phiếu — kiểm TRƯỚC khi ghi
+            # dòng nào, một dòng sai là cả lượt phân bổ không ghi (không để nửa chừng).
+            if (it.assignee or "").strip() != (row.assignee or "").strip():
+                check_assignee_allowed(db, pr, it.assignee)
             row.assignee = it.assignee
     pr.updated_by = user_id
     db.commit()
@@ -1210,7 +1223,7 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
         requester_id=data.requester_id,
         requester_position=data.requester_position, department=data.department,
         department_id=data.department_id,
-        handler_dept_id=data.handler_dept_id or 0,   # bao-CR-414
+        handler_dept_id=data.handler_dept_id or 0,   # bao-CR-414 (None → mặc định ở dưới, bao-CR-488)
         head_of_dept=data.head_of_dept, head_of_dept_id=data.head_of_dept_id,
         purpose=data.purpose, request_date=data.request_date,
         need_date=data.need_date, is_urgent=data.is_urgent, vat_rate=data.vat_rate,
@@ -1230,7 +1243,9 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
     # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu (FE cũ chỉ gửi tên → tra ra id).
     sync_department_ref(db, pr)
     # bao-CR-480: phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng đó.
-    if not pr.handler_dept_id:
+    # bao-CR-488: chỉ tra mặc định khi người lập KHÔNG chọn (không gửi ô này). Gửi 0 là chủ ý
+    # «Thu mua chung» — nhà máy nhờ thu mua chung mua hộ — phải giữ.
+    if data.handler_dept_id is None:
         pr.handler_dept_id = default_handler_dept_id(db, pr.department_id)
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
     if not pr.head_of_dept_id and (pr.department_id or pr.department):
@@ -1334,11 +1349,15 @@ def delete_pr(db: Session, pid: int, user_id: int) -> None:
     record(db, user_id, ENTITY, pid, "delete")
 
 
-def set_status(db: Session, pid: int, status: str, user_id: int, message: str = "") -> PurchaseRequest:
+def set_status(db: Session, pid: int, status: str, user_id: int, message: str = "",
+               audit: bool = True) -> PurchaseRequest:
+    """`audit=False` (bao-CR-485): người gọi tự ghi dòng sổ — dùng khi cùng một cú bấm còn
+    kéo theo bước tự động và muốn cả hai gói vào MỘT dòng, không ghi hai dòng."""
     pr = get_pr(db, pid)
     pr.status = status
     pr.updated_by = user_id
     db.commit()
-    record(db, user_id, ENTITY, pid, status, message)
+    if audit:
+        record(db, user_id, ENTITY, pid, status, message)
     db.refresh(pr)
     return pr

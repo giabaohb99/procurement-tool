@@ -2,12 +2,15 @@ import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/for
 import { formatDate } from '@/shared/utils/format-date'
 import { numberToVietnameseWords } from '@/shared/utils/number-to-vietnamese-words'
 import type { PurchaseOrderPrintData } from '../api/purchase-order-api'
+import { pickHeadSigner, type PrintSignerMode } from '../utils/print-signer-mode'
 import { PurchaseOrderPrintSignatureBox } from './purchase-order-print-signature-box'
 
 interface PurchaseOrderPrintGoodsFormProps {
   data: PurchaseOrderPrintData
   /** Tắt thì chỉ bỏ ẢNH chữ ký, họ tên vẫn in để người ký tay biết ký vào ô nào. */
   showSignature?: boolean
+  /** bao-CR-490: ô Trưởng bộ phận ký bởi người duyệt (mặc định) hay trưởng phòng theo hồ sơ. */
+  signerMode?: PrintSignerMode
 }
 
 /**
@@ -19,11 +22,13 @@ interface PurchaseOrderPrintGoodsFormProps {
 export function PurchaseOrderPrintGoodsForm({
   data,
   showSignature = true,
+  signerMode = 'approver',
 }: PurchaseOrderPrintGoodsFormProps) {
   const company = data.company ?? {}
   const supplier = data.supplier ?? {}
   const warehouseNames = data.wh_names ?? {}
   const signers = data.signers
+  const head = pickHeadSigner(signerMode, signers ?? {})
   const total = data.order_total || 0
   const tax = Math.round((total - (data.order_subtotal || 0)) * 100) / 100
   /** "Công nợ 30 ngày" -> 30. Chỉ để điền ô "Số ngày được nợ". */
@@ -178,8 +183,8 @@ export function PurchaseOrderPrintGoodsForm({
           className="flex-1"
           title="Trưởng phòng / Trưởng BP"
           hint="(Ký, họ tên)"
-          name={signers?.approver_name}
-          signature={showSignature ? signers?.approver_signature : ''}
+          name={head.name}
+          signature={showSignature ? head.signature : ''}
         />
       </div>
     </article>

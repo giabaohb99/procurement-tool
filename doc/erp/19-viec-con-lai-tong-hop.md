@@ -205,6 +205,19 @@ không chạy — hợp đồng có giá và điều khoản, cùng loại rò v
 
 **Việc dữ liệu chờ khách:** danh sách người của phòng Dego Organic sẽ giữ vai trò thu mua.
 
+### 7.2 Bảy góp ý màn YCBG/YCMH sau khi dùng thử phòng tự mua (25/09/2026) — chia hai phiên
+
+Đại ca soi dev với tài khoản nhà máy (bao-CR-479) và nêu 7 điểm; gom thành 5 cụm, số CR đặt chỗ ở
+`change-log-bao.md`.
+
+| Cụm | Việc | CR | Ai làm | Ghi chú |
+|---|---|---|---|---|
+| A. Luồng duyệt / điều phối theo phòng xử lý | (1) Sổ thao tác chỉ một dòng «Duyệt» của trưởng phòng khi công tắc điều phối tắt · (2) ô NSTM phụ trách chỉ liệt kê nhân sự của phòng xử lý | bao-CR-485, 486 | Erp Agent 1 | backend + picker v1/v2 |
+| B. Màn Xử lý khảo sát | (3) nút Bỏ lọc + lọc nhiều chọn NCC / phân loại | bao-CR-487 | ERP Agent 2 | v2 trước |
+| C. Ô Phòng xử lý & nút Trả về | (6) màn tạo ẩn ô Phòng xử lý sau ô tick «Nhờ phòng khác xử lý» · (5) gom «Trả về phòng lập» thành «Trả về» | bao-CR-488, 489 | ERP Agent 2 | (5) chờ đại ca nói rõ ngữ nghĩa |
+| D. Trưởng phòng phê duyệt + công tắc người ký | (7) trường «Trưởng phòng phê duyệt» + công tắc người ký trên bản in = người duyệt / trưởng phòng pháp lý | bao-CR-490 | Erp Agent 1 | thiết kế trước, chờ đại ca chốt |
+| E. Ghi nhận, không sửa mã | (4) Khảo sát và Lịch sử mua hàng DÙNG CHUNG giữa thu mua chung và phòng tự mua — đúng như hiện tại (`survey` scope chỉ `owner`, không có chiều phòng); sau này cần ràng buộc thì khai `handler_dept` cho `survey`/lịch sử mua ở `SCOPE_FIELDS` | — | — | ghi nhận 25/09 |
+
 ## 8. Import / Export (`doc/erp/16-quan-ly-import-export-v2.md` §9)
 
 - Đ-13c action `import` + chuẩn hóa export + seed.

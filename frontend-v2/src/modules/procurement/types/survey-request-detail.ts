@@ -72,8 +72,21 @@ export interface SurveyRequestDetail {
   department: string
   head_of_dept_id: number
   head_of_dept: string
+  /**
+   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và
+   * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên
+   * bản in nội bộ. Phiếu cũ: id 0, tên rỗng.
+   */
+  approver_employee_id?: number
+  approver_employee_name?: string
+  dept_head_name?: string
   /** bao-CR-414: PHÒNG XỬ LÝ phiếu (0 = thu mua chung). */
   handler_dept_id: number
+  /**
+   * bao-CR-488 — CHỈ ở giao diện, không có trên API: lúc LẬP phiếu người dùng đã tick «Nhờ phòng
+   * khác xử lý» chưa. Chưa tick thì không gửi `handler_dept_id`, backend tự chọn mặc định.
+   */
+  handler_dept_assigned?: boolean
   /** bao-CR-480: tên phòng xử lý do backend trả kèm (rỗng = thu mua chung). */
   handler_dept_name?: string
   /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng lập tự xử lý. */

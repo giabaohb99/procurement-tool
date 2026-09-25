@@ -149,6 +149,9 @@ export interface PurchaseOrderSigners {
   creator_signature: string
   approver_name: string
   approver_signature: string
+  /** bao-CR-490: trưởng phòng theo hồ sơ phòng ban — ô ký khi người in chọn «Ký: trưởng phòng». */
+  dept_head_name?: string
+  dept_head_signature?: string
 }
 
 export const purchaseOrderApi = {

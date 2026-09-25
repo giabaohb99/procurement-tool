@@ -1,12 +1,15 @@
 import type { PurchaseOrderPrintData } from '../api/purchase-order-api'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { resolvePrintTerms } from '../utils/purchase-order-print-terms'
+import { pickHeadSigner, type PrintSignerMode } from '../utils/print-signer-mode'
 import { PurchaseOrderPrintSignatureBox } from './purchase-order-print-signature-box'
 
 interface PurchaseOrderPrintOrderFormProps {
   data: PurchaseOrderPrintData
   /** Tắt thì chỉ bỏ ẢNH chữ ký, họ tên vẫn in để người ký tay biết ký vào ô nào. */
   showSignature?: boolean
+  /** bao-CR-490: ô Trưởng bộ phận ký bởi người duyệt (mặc định) hay trưởng phòng theo hồ sơ. */
+  signerMode?: PrintSignerMode
 }
 
 /**
@@ -17,11 +20,13 @@ interface PurchaseOrderPrintOrderFormProps {
 export function PurchaseOrderPrintOrderForm({
   data,
   showSignature = true,
+  signerMode = 'approver',
 }: PurchaseOrderPrintOrderFormProps) {
   const company = data.company ?? {}
   const supplier = data.supplier ?? {}
   const warehouse = data.warehouse ?? {}
   const signers = data.signers
+  const head = pickHeadSigner(signerMode, signers ?? {})
   const terms = resolvePrintTerms(data)
 
   return (
@@ -143,8 +148,8 @@ export function PurchaseOrderPrintOrderForm({
         <PurchaseOrderPrintSignatureBox
           className="w-[48%]"
           title="Trưởng bộ phận"
-          name={signers?.approver_name}
-          signature={showSignature ? signers?.approver_signature : ''}
+          name={head.name}
+          signature={showSignature ? head.signature : ''}
         />
         <PurchaseOrderPrintSignatureBox
           className="w-[48%]"

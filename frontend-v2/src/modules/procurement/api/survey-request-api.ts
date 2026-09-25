@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
+import type { AssignableStaff } from './purchase-request-api'
 import type {
   SurveyRequestDetail,
   SurveyRequestLine,
@@ -23,8 +24,8 @@ export interface SurveyRequestPayload {
   department: string
   head_of_dept_id: number
   head_of_dept: string
-  /** bao-CR-414: phòng được nhờ xử lý, 0 = không nhờ. */
-  handler_dept_id: number
+  /** bao-CR-414/488: phòng xử lý (0 = Thu mua chung); lúc TẠO không gửi = backend tự chọn mặc định. */
+  handler_dept_id?: number
   purpose: string
   request_date: string
   note: string
@@ -48,6 +49,10 @@ export interface CreatedPurchaseRequest {
 export const surveyRequestApi = {
   /** Khung NGƯỜI YÊU CẦU: đầu phiếu + dòng, không kèm phương án. */
   getById: (id: number) => apiGet<SurveyRequestDetail>(`${BASE_URL}/${id}`),
+
+  /** bao-CR-486 — NSTM chọn được cho YCBG này, xem `purchaseRequestApi.assignableStaff`. */
+  assignableStaff: (id: number) =>
+    apiGet<{ items: AssignableStaff[] }>(`${BASE_URL}/${id}/assignable-staff`),
 
   /** Khung KẾT QUẢ: kèm phương án đã bỏ danh tính NCC ngay ở backend. */
   getResult: (id: number) => apiGet<SurveyRequestResult>(`${BASE_URL}/${id}/result`),
