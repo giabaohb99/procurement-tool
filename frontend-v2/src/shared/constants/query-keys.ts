@@ -26,6 +26,12 @@ export const queryKeys = {
     purchaseRequestProgress: (id: number) =>
       ['procurement', 'purchase-requests', id, 'order-progress'] as const,
     /**
+     * bao-CR-486 — NSTM chọn được cho phiếu, đi theo ô «Phòng xử lý». Nằm DƯỚI khóa
+     * phiếu để chuyển phòng xử lý (invalidate `purchaseRequest(id)`) kéo danh sách này theo.
+     */
+    purchaseRequestAssignableStaff: (id: number) =>
+      ['procurement', 'purchase-requests', id, 'assignable-staff'] as const,
+    /**
      * bao-CR-314 — phiếu YCMH cắt theo MỘT ĐƠN MUA HÀNG. Khóa gắn với id ĐƠN chứ
      * không gắn id phiếu: cùng một phiếu mở từ hai đơn khác nhau ra hai bản khác nhau.
      */
@@ -67,6 +73,9 @@ export const queryKeys = {
      */
     surveyRequestProcess: (id: number) =>
       ['procurement', 'survey-requests', id, 'process'] as const,
+    /** bao-CR-486 — NSTM chọn được cho YCBG, cùng luật `purchaseRequestAssignableStaff`. */
+    surveyRequestAssignableStaff: (id: number) =>
+      ['procurement', 'survey-requests', id, 'assignable-staff'] as const,
     /** Khối BÁO CÁO THỰC HIỆN của YCBG (`/{id}/report`) — nút · giai đoạn · hồ sơ. */
     surveyRequestReport: (id: number) =>
       ['procurement', 'survey-requests', id, 'report'] as const,

@@ -5,6 +5,15 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import { surveyRequestApi, type SurveyRequestPayload } from '../api/survey-request-api'
 import { hasSurveyResult } from '../types/survey-request-detail'
 
+/** bao-CR-486 — NSTM chọn được cho YCBG, cùng luật `usePurchaseRequestAssignableStaff`. */
+export function useSurveyRequestAssignableStaff(id: number, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.procurement.surveyRequestAssignableStaff(id),
+    queryFn: () => surveyRequestApi.assignableStaff(id),
+    enabled: enabled && id > 0,
+  })
+}
+
 /** Một phiếu YCBG. `id <= 0` (màn tạo mới) thì không gọi API. */
 export function useSurveyRequest(id: number) {
   return useQuery({
