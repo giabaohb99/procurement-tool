@@ -115,3 +115,46 @@ describe('FolderTreeActionsMenu — dưới mức Đóng góp thì KHÔNG có n�
     expect(screen.queryByRole('button', { name: /Thao tác với/ })).not.toBeInTheDocument()
   })
 })
+
+//  26/09/2026: menu dựng LƯỜI — lần bấm đầu là nút trơn, từ lần hai là nút của
+//  Radix. Nuốt mất prop Radix gắn vào nút (ref, onPointerDown…) thì lần hai
+//  bấm không mở được, mà bài kiểm chỉ bấm một lần sẽ không bao giờ thấy.
+describe('FolderTreeActionsMenu — lazy mounting', () => {
+  it('renders no menu until the first click, then opens it on that same click', async () => {
+    const user = userEvent.setup()
+    render(<FolderTreeActionsMenu data={folderNode()} onAction={vi.fn()} />)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Thao tác với Hợp đồng' }))
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+  })
+
+  it('reopens after being closed — the second click goes through the Radix trigger', async () => {
+    const { user } = await openMenu(folderNode())
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Thao tác với Hợp đồng' }))
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+  })
+
+  it('clicking the button does not bubble to the tree row (would select the folder)', async () => {
+    const onRowClick = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <div onClick={onRowClick}>
+        <FolderTreeActionsMenu data={folderNode()} onAction={vi.fn()} />
+      </div>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Thao tác với Hợp đồng' }))
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Thao tác với Hợp đồng' }))
+    expect(onRowClick).not.toHaveBeenCalled()
+  })
+
+  it('runs the chosen action from a menu opened lazily', async () => {
+    const { user, onAction } = await openMenu(folderNode())
+    await user.click(screen.getByRole('menuitem', { name: 'Chia sẻ…' }))
+    expect(onAction).toHaveBeenCalledWith('access')
+  })
+})

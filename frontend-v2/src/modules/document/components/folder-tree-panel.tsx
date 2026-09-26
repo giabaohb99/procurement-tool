@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useDeferredValue, useEffect, useRef } from 'react'
 
 import { TreeView } from '@/shared/tree/tree-view'
 import { Input } from '@/shared/ui/input'
@@ -61,6 +61,12 @@ export function FolderTreePanel({
   const { includeArchived, setIncludeArchived, showDocuments, setShowDocuments } =
     usePersistedTreeDisplayOptions()
   const search = useFolderTreeSearchBox()
+  //  Cây lọc theo bản HOÃN của từ khóa (26/09/2026): ô nhập cập nhật ngay, còn
+  //  lọc + dựng lại cây chạy ở mức ưu tiên thấp, React ngắt được khi người
+  //  dùng gõ tiếp. Cây sâu 100 cấp, phím gõ khớp lần đầu phải mở bung cả trăm
+  //  dòng một lượt (~250-450ms trên bản build thật) — không hoãn thì chữ gõ
+  //  khựng đúng lúc đó.
+  const treeKeyword = useDeferredValue(search.keyword)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -119,7 +125,7 @@ export function FolderTreePanel({
     atRoot ? beginCreateAtRoot() : selectedNode && beginCreate(selectedNode)
   const { visibleTree, leaves, matchedIds, rowsById, effectiveSelectedId } = useFolderTreeNodes({
     rows,
-    keyword: search.keyword,
+    keyword: treeKeyword,
     expandedIds: expansion.expandedIds,
     creatingUnder: actions.creatingUnder,
     selectedFolderId,
@@ -129,11 +135,11 @@ export function FolderTreePanel({
   //  Gõ ra kết quả thì tự MỞ đủ tổ tiên của mọi dòng khớp — không thì người
   //  tìm thấy 0 kết quả dù dữ liệu có, chỉ vì nhánh chứa nó đang gập.
   useEffect(() => {
-    if (!search.keyword.trim() || !rows) return
+    if (!treeKeyword.trim() || !rows) return
     const ancestorIds = ancestorIdsOfMatches(rows, matchedIds)
     if (ancestorIds.length) expansion.expandAncestors(ancestorIds)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy lại khi TỪ KHÓA đổi, không phải mỗi lần expandedIds đổi (mở tay một nhánh không nên bị ghi đè)
-  }, [search.keyword, rows])
+  }, [treeKeyword, rows])
 
   const { handleSelect, handleActivate, handleRowDoubleClick } = useFolderTreeNavigation({
     selectedFolderId,
@@ -218,7 +224,7 @@ export function FolderTreePanel({
       >
         {visibleTree.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-            {search.keyword.trim()
+            {treeKeyword.trim()
               ? 'Không có thư mục nào khớp từ khóa đang tìm.'
               : 'Chưa có thư mục nào.'}
           </p>
@@ -234,12 +240,12 @@ export function FolderTreePanel({
             }
             expandedIds={expansion.expandedIds}
             onToggleExpand={expansion.toggle}
-            highlightIds={search.keyword.trim() ? matchedIds : undefined}
+            highlightIds={treeKeyword.trim() ? matchedIds : undefined}
             {...treeDrag}
             {...buildFolderTreeRowRenderers({
               expansion,
               actions,
-              keyword: search.keyword,
+              keyword: treeKeyword,
               beginCreate,
               canCreateFolder: can('doc_folder', 'create'),
               onSelectFolder,

@@ -182,7 +182,8 @@ describe('FolderTreePanel — đường gióng thụt lề theo cấp', () => {
   it('thư mục cấp 2 (Con của Hợp đồng, depth=2) có đúng 2 đường gióng', () => {
     renderPanel()
     const row = screen.getByRole('treeitem', { name: /Con của Hợp đồng/ })
-    expect(row.querySelectorAll('[data-tree-indent-guide]')).toHaveLength(2)
+    const guide = row.querySelector('[data-tree-indent-guide]')
+    expect(guide?.getAttribute('data-tree-indent-levels')).toBe('2')
   })
 })
 

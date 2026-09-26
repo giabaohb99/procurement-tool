@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, type ComponentProps } from 'react'
 import {
   ArchiveRestore,
   FolderInput,
@@ -40,6 +40,51 @@ interface FolderTreeActionsMenuProps {
  * để tệp đó giữ dưới 200 dòng (đây là phần JSX lớn nhất trong đó).
  */
 export function FolderTreeActionsMenu({ data, onAction }: FolderTreeActionsMenuProps) {
+  //  Dựng LƯỜI (26/09/2026): chưa bấm thì chỉ vẽ một nút trơn, bấm lần đầu
+  //  mới dựng DropdownMenu của Radix (+ `usePermission`) và mở sẵn. Mỗi dòng
+  //  cây một bộ menu dựng trước là phần đắt nhất khi cây bung ra cả trăm dòng
+  //  (gõ tìm trong cây sâu 100 cấp) — trong khi mỗi lần chỉ mở MỘT menu.
+  const [activated, setActivated] = useState(false)
+  //  Không có thao tác nào dùng được thì khỏi vẽ nút — một dấu `⋯` chết không
+  //  làm gì cả chỉ khiến người xem bấm thử rồi nhận một menu rỗng.
+  if (data.my_level < FOLDER_ACCESS_LEVEL.contribute) return null
+  if (activated) return <FolderTreeActionsDropdown data={data} onAction={onAction} />
+  return (
+    <FolderTreeActionsButton
+      label={data.name}
+      onClick={() => setActivated(true)}
+    />
+  )
+}
+
+/**
+ * Nút `⋯`. Nhận và CHUYỂN TIẾP mọi prop (`ref`, `onPointerDown`, `aria-expanded`,
+ * `data-state`…) — `DropdownMenuTrigger asChild` gắn chúng vào đây; nuốt mất
+ * là menu không mở được bằng chuột lẫn bàn phím.
+ */
+function FolderTreeActionsButton({
+  label,
+  onClick,
+  ...rest
+}: ComponentProps<'button'> & { label: string }) {
+  return (
+    <button
+      type="button"
+      aria-label={`Thao tác với ${label}`}
+      title="Thao tác"
+      className="flex size-6 shrink-0 items-center justify-center rounded hover:bg-muted"
+      {...rest}
+      onClick={(event) => {
+        event.stopPropagation()
+        onClick?.(event)
+      }}
+    >
+      <MoreHorizontal className="size-4" />
+    </button>
+  )
+}
+
+function FolderTreeActionsDropdown({ data, onAction }: FolderTreeActionsMenuProps) {
   const pendingInlineEditRef = useRef<'add-child' | 'rename' | null>(null)
   function runInlineEdit(action: 'add-child' | 'rename') {
     pendingInlineEditRef.current = action
@@ -56,22 +101,14 @@ export function FolderTreeActionsMenu({ data, onAction }: FolderTreeActionsMenuP
   //  GIẤU hẳn. `null` = xóa được.
   const deleteDisabledReason = folderDeleteDisabledReason(data)
 
-  //  Không có thao tác nào dùng được thì khỏi vẽ nút — một dấu `⋯` chết không
-  //  làm gì cả chỉ khiến người xem bấm thử rồi nhận một menu rỗng.
   if (!canContribute) return null
 
   return (
-    <DropdownMenu>
+    //  `defaultOpen`: component này chỉ được dựng NGAY SAU cú bấm đầu tiên
+    //  vào nút trơn ở `FolderTreeActionsMenu` — cú bấm đó phải mở menu luôn.
+    <DropdownMenu defaultOpen>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Thao tác với ${data.name}`}
-          title="Thao tác"
-          className="flex size-6 shrink-0 items-center justify-center rounded hover:bg-muted"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <MoreHorizontal className="size-4" />
-        </button>
+        <FolderTreeActionsButton label={data.name} />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"

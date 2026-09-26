@@ -369,12 +369,13 @@ describe('TreeView — kéo thả đổi thứ tự anh em (before/after)', () =
 })
 
 describe('TreeView — đường gióng thụt lề (kiểu VS Code)', () => {
-  it('dòng gốc (depth 0) không có đường gióng, dòng con depth 1 có đúng 1 đường', () => {
+  it('dòng gốc (depth 0) không có đường gióng, dòng con depth 1 kẻ đúng 1 cấp', () => {
     renderTree()
     const root = screen.getByRole('treeitem', { name: 'Tệp B' })
     const child = screen.getByRole('treeitem', { name: 'Tệp A1' })
     expect(root.querySelectorAll('[data-tree-indent-guide]')).toHaveLength(0)
-    expect(child.querySelectorAll('[data-tree-indent-guide]')).toHaveLength(1)
+    const guide = child.querySelector('[data-tree-indent-guide]')
+    expect(guide?.getAttribute('data-tree-indent-levels')).toBe('1')
   })
 })
 
