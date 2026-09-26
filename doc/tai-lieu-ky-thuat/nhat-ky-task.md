@@ -8663,10 +8663,14 @@ utils/customs-saved-filter.ts · test/backend/test_hai_quan_luu_bo_loc_log_dong_
 Cập nhật 26/09/2026 (ERP Agent 2): phần cắm vào bản mới do Erp Agent 1 làm (commit 9a520f4a); em
 làm bản cũ cho hai bản cùng chức năng (đại ca chốt): bộ lọc đã lưu (dùng chung kho với bản mới,
 lưu ở bản này mở ở bản kia đúng), kết cục từng dòng trong Nhật ký lô, cùng phần bản cũ của hai việc
-bao-CR-494/495 là cột và ô lọc Phân loại, dòng gợi ý dưới ô tìm. Chưa commit.
+bao-CR-494/495 là cột và ô lọc Phân loại, dòng gợi ý dưới ô tìm.
 Kiểm: 67 bài kiểm backend xanh; bản cũ kiểm kiểu giữ 4 lỗi nền.
 Mã nguồn: frontend CustomsSavedFilters.tsx (mới) · CustomsHistoryPanel.tsx · CustomsPrices.tsx ·
 customs-shared.ts
+Commit: 06059e8e (bản cũ). Deploy: dev 26/09/2026, dựng lại api, celery, erp, web; migration của
+bao-CR-494 và bao-CR-496 đã chạy. Sau deploy chạy gắn lại nhãn Thành phẩm / Nguyên liệu cho 18.243 dòng
+đang có trên dev (13.425 thành phẩm, 4.818 nguyên liệu) — không chạy thì ô lọc Phân loại ra rỗng. Máy
+local cũng đã chạy.
 
 ## bao-CR-493 | Tra cứu giá hải quan đợt 1: hai cột VND, lọc thêm, lịch sử nạp trên trang, tải lại tệp gốc
 - status: xong
