@@ -8567,6 +8567,7 @@ bản v1 kiểm kiểu còn đúng 4 lỗi nền cũ.
 Mã nguồn: frontend-v2 procurement/utils/return-action.ts · components/return-choice-dialog.tsx ·
 pages/purchase-order-detail-page.tsx · frontend/src/components/ReturnChoiceModal.tsx ·
 backend/scripts/backfill_approver_employee.py
+Commit: 26656067. Deploy: dev 26/09/2026, không migration; script điền lại người duyệt chưa chạy ghi ở dev.
 
 ## bao-CR-497 | Điều kiện bỏ qua bước thu mua duyệt lần 2 cho một nhóm yêu cầu mua hàng
 - status: xong
@@ -8586,3 +8587,4 @@ Kiểm: 168 bài về điều phối, luồng duyệt, cấu hình và phòng t�
 Mã nguồn: backend/app/modules/purchase_request/service.py · controller.py ·
 backend/app/modules/setting/service.py · backend/app/core/app_settings.py ·
 test/backend/test_dieu_kien_bo_qua_dieu_phoi_cr497.py
+Commit: 3c148874. Deploy: dev 26/09/2026, không migration; ô cấu hình đang để trống nên luồng y như cũ.
