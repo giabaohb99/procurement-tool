@@ -34,10 +34,10 @@ export function UserPermissionDetailPage() {
   const navigate = useNavigate()
   const userId = Number(userIdParam)
 
-  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([])
+  // Bản NHÁP của người dùng. `null` = chưa tick gì, khi đó bản máy chủ là bản
+  // đang hiện; tick một cái là nháp sinh ra và thắng cho tới khi lưu xong.
+  const [draftRoleIds, setDraftRoleIds] = useState<number[] | null>(null)
   const [scopeRoleId, setScopeRoleId] = useState<number | null>(null)
-  // Người dùng đã tick/bỏ tick chưa, tính từ lần đồng bộ gần nhất với máy chủ.
-  const [dangTickDo, setDangTickDo] = useState(false)
 
   const { user: currentUser } = useAuth()
   const { data: account, isLoading, isError } = useUserAccount(userId)
@@ -50,22 +50,9 @@ export function UserPermissionDetailPage() {
   //  thấy LUẬT chứ không tick xong rồi ăn 403 và tưởng hệ hỏng (CR-158).
   const isSelf = !!currentUser && currentUser.id === userId
 
-  // Đổi sang tài khoản khác thì mọi thứ tick dở không còn nghĩa gì.
-  if (useHasChanged(userId)) {
-    setDangTickDo(false)
-    setSelectedRoleIds([])
-  }
-
-  // Tài khoản vừa tải về / vừa lưu xong -> đồng bộ lại các vai trò đang tick.
-  //
-  // ⚠️ CHỈ đồng bộ khi người dùng CHƯA tick dở. React Query nạp lại `account`
-  // bất cứ lúc nào (hết hạn 30 giây rồi mount lại, một thao tác khác gọi
-  // `invalidateQueries(['hr'])`, người khác vừa sửa cùng tài khoản...). Bản cũ
-  // đồng bộ theo MỌI lượt nạp lại, nên một lượt nạp rơi vào giữa lúc đang tick
-  // là các ô vừa chọn lặng lẽ quay về bản đã lưu — không báo gì, và cú bấm
-  // «Lưu vai trò» ngay sau đó ghi xuống đúng bản cũ. Người dùng thấy toast
-  // «Đã lưu vai trò» rồi vào lại thì mất quyền vừa chọn (khách báo 25/08/2026).
-  if (useHasChanged(account) && !dangTickDo) setSelectedRoleIds(account?.role_ids ?? [])
+  // Đổi sang tài khoản khác thì mọi thứ tick dở không còn nghĩa gì. Route param
+  // đổi mà component KHÔNG mount lại, nên vẫn cần nhịp này.
+  if (useHasChanged(userId)) setDraftRoleIds(null)
 
   if (isLoading) {
     return (
@@ -90,19 +77,36 @@ export function UserPermissionDetailPage() {
     )
   }
 
-  const toggleRole = (roleId: number) => {
-    setDangTickDo(true)
-    setSelectedRoleIds((current) =>
-      current.includes(roleId)
-        ? current.filter((x) => x !== roleId)
-        : [...current, roleId],
-    )
-  }
+  //  Bản đang hiện = nháp nếu có, không thì bản máy chủ.
+  //
+  //  ⚠️ Đây là chốt của HAI lỗi, đừng quay về kiểu chép `account.role_ids` vào
+  //  state rồi đồng bộ lại theo từng lượt nạp:
+  //
+  //  - Chép vào state rồi đồng bộ theo MỌI lượt nạp lại thì một lượt nạp rơi
+  //    vào giữa lúc đang tick là các ô vừa chọn lặng lẽ quay về bản đã lưu, và
+  //    cú «Lưu vai trò» ngay sau đó ghi xuống đúng bản cũ (khách báo 25/08/2026).
+  //    React Query nạp lại bất cứ lúc nào: hết hạn 30 giây, `invalidateQueries`
+  //    của một thao tác khác, người khác vừa sửa cùng tài khoản.
+  //  - Chép vào state rồi CHỈ đồng bộ khi dữ liệu «đổi» thì hỏng ở lượt mount
+  //    có sẵn bộ đệm: vào trang, quay ra, vào lại — lần này `account` có ngay ở
+  //    lượt render đầu nên không có gì «đổi» cả, state đứng nguyên ở rỗng và
+  //    mọi dấu tick biến mất cho tới khi tải lại trang (đại ca báo 25/09/2026).
+  //
+  //  Đọc thẳng như dưới đây thì không lượt render nào là lượt đặc biệt.
+  const selectedRoleIds = draftRoleIds ?? account.role_ids
 
-  // Lưu xong thì bản của máy chủ mới là bản chuẩn, mở lại đường đồng bộ để lượt
-  // nạp lại ngay sau đó (do `invalidateQueries`) ăn vào state.
+  const toggleRole = (roleId: number) =>
+    setDraftRoleIds((current) => {
+      const base = current ?? account.role_ids
+      return base.includes(roleId)
+        ? base.filter((x) => x !== roleId)
+        : [...base, roleId]
+    })
+
+  // Lưu xong thì bản của máy chủ mới là bản chuẩn — bỏ nháp đi để lượt nạp lại
+  // ngay sau đó (do `invalidateQueries`) hiện ra.
   const saveRoles = () =>
-    assignRoles.mutate(selectedRoleIds, { onSuccess: () => setDangTickDo(false) })
+    assignRoles.mutate(selectedRoleIds, { onSuccess: () => setDraftRoleIds(null) })
 
   const scopeRoleName = roles?.find((role) => role.id === scopeRoleId)?.name ?? ''
   // `undefined` (hệ chưa chạy migration) = vẫn đang nhận — xem `UserAccount.notify_email`.

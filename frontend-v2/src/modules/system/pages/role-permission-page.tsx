@@ -14,7 +14,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { RolePermissionMatrix } from '../components/role-permission-matrix'
-import { toPermissionPayload } from '../utils/permission-matrix-cells'
+import { rowsToMatrix, toPermissionPayload } from '../utils/permission-matrix-cells'
 import { RoleNameInlineEdit } from '../components/role-name-inline-edit'
 import { RoleSidePanel } from '../components/role-side-panel'
 import { UserAccountTable } from '../components/user-account-table'
@@ -40,7 +40,6 @@ export function RolePermissionPage() {
   //  màn Ma trận quyền" biến thành bài tập tự tìm trong danh sách vai trò.
   const [roleParam, setRoleParam] = useUrlParamState('role', '')
   const selectedRoleId = Number(roleParam) || null
-  const [matrix, setMatrix] = useState<Record<string, RolePermissionRow>>({})
 
   const { can } = usePermission()
   const { user } = useAuth()
@@ -53,10 +52,19 @@ export function RolePermissionPage() {
   const deleteRole = useDeleteRole()
   const updateRole = useUpdateRole()
 
+  //  ⚠️ Khởi tạo LẤY LUÔN dữ liệu đang có, đừng đổi về `useState({})`.
+  //  `?role=7` nằm trên URL, nên vào lại trang bằng link đó (hoặc quay ra rồi
+  //  bấm back) là `savedRows` có sẵn trong bộ đệm NGAY ở lượt render đầu — mà ở
+  //  lượt đầu `useHasChanged` luôn trả `false`, nên nhịp dưới không chạy và ma
+  //  trận hiện ra TRẮNG. Bấm «Lưu quyền» lúc đó là gửi danh sách rỗng, mà
+  //  `role/service.set_permissions` xóa hết rồi ghi lại: mất sạch quyền của vai
+  //  trò, kéo theo mọi tài khoản đang giữ nó (bao-CR-492).
+  const [matrix, setMatrix] = useState<Record<string, RolePermissionRow>>(() =>
+    rowsToMatrix(savedRows),
+  )
+
   // Đổi vai trò -> nạp lại ma trận. Khóa theo `entity` để tra nhanh khi tick ô.
-  if (useHasChanged(savedRows)) {
-    setMatrix(Object.fromEntries((savedRows ?? []).map((row) => [row.entity, row])))
-  }
+  if (useHasChanged(savedRows)) setMatrix(rowsToMatrix(savedRows))
 
   const selectedRole = roles?.find((role) => role.id === selectedRoleId) ?? null
 

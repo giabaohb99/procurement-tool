@@ -52,7 +52,11 @@ export function PostComments({ postId, flat = false }: PostCommentsProps) {
   const { toggleLike, remove } = useForumCommentActions(postId)
   const [files, setFiles] = useState<File[]>([])
   const [olderRoots, setOlderRoots] = useState<ForumComment[]>([])
-  const [olderCount, setOlderCount] = useState(0)
+  //  Khởi tạo lấy LUÔN số đang có: mở lại bài (quay ra rồi bấm vào lại) là
+  //  `data` có sẵn trong bộ đệm ngay lượt render đầu, mà lượt đầu
+  //  `useHasChanged` luôn trả `false` — nút «xem thêm bình luận cũ» biến mất
+  //  và người đọc tưởng bài chỉ có mấy dòng cuối (bao-CR-492).
+  const [olderCount, setOlderCount] = useState(() => data?.older_count ?? 0)
 
   if (useHasChanged(data?.older_count)) setOlderCount(data?.older_count ?? 0)
 

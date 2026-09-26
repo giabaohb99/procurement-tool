@@ -239,8 +239,13 @@ export function SurveyDetailPage() {
 
   // Mở từ nút "Tạo phiếu khảo sát" của YCBG: chép Mục đích khảo sát sang Nội dung
   // chính. Phải đợi danh mục YCBG tải xong mới có `purpose`, nên làm ở nhịp riêng.
-  const surveyRequestsChanged = useHasChanged(surveyRequestsData)
-  if (isNew && surveyRequestsChanged && draft?.survey_request_id && !draft.main_content) {
+  //  ⚠️ KHÔNG gác nhịp này bằng `useHasChanged(surveyRequestsData)`. Vào đây từ
+  //  nút «Tạo phiếu khảo sát» của YCBG nghĩa là danh mục YCBG vừa được đọc xong
+  //  và đang nằm trong bộ đệm, nên nó có luôn ở lượt render đầu — mà lượt đầu
+  //  `useHasChanged` trả `false`, thành ra ô Nội dung chính không được chép gì
+  //  cả, đúng trong trường hợp hay gặp nhất (bao-CR-492). Điều kiện
+  //  `!draft.main_content` tự tắt sau lần chép đầu nên không cần mốc so sánh.
+  if (isNew && draft?.survey_request_id && !draft.main_content) {
     const source = (surveyRequestsData?.items ?? []).find(
       (request) => request.id === draft.survey_request_id,
     )

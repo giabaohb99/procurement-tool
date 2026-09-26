@@ -54,12 +54,16 @@ function account(roleIds: number[]) {
   }
 }
 
-function build() {
-  const queryClient = new QueryClient({
+function newQueryClient() {
+  return new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
+}
 
-  render(
+//  Truyền sẵn một `queryClient` khi cần dựng lại trang trên cùng bộ đệm — đó là
+//  cảnh «back ra rồi vào lại», khác hẳn cảnh mở trang lần đầu.
+function build(queryClient = newQueryClient()) {
+  const { unmount } = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={['/system/permissions/users/31']}>
         <Routes>
@@ -69,7 +73,7 @@ function build() {
     </QueryClientProvider>,
   )
 
-  return queryClient
+  return { queryClient, unmount }
 }
 
 beforeEach(() => {
@@ -100,7 +104,7 @@ describe('UserPermissionDetailPage', () => {
         : Promise.resolve(ROLES),
     )
 
-    const queryClient = build()
+    const { queryClient } = build()
     const oDeptHead = await screen.findByRole('checkbox', { name: /Trưởng phòng/ })
 
     await nguoi.click(oDeptHead)
@@ -126,7 +130,7 @@ describe('UserPermissionDetailPage', () => {
         : Promise.resolve(ROLES),
     )
 
-    const queryClient = build()
+    const { queryClient } = build()
     const oAdmin = await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })
     expect(oAdmin).not.toBeChecked()
 
@@ -134,6 +138,29 @@ describe('UserPermissionDetailPage', () => {
     await queryClient.refetchQueries({ queryKey: ['hr', 'users', 31] })
 
     expect(await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })).toBeChecked()
+  })
+
+  it('vào lại trang khi bộ đệm còn nóng thì dấu tick vẫn đúng', async () => {
+    //  Đại ca báo 25/09/2026: mở trang thấy tick đủ, quay ra trang trước rồi vào
+    //  lại thì mọi dấu tick biến mất, phải tải lại cả trang mới hiện ra.
+    //
+    //  Lần vào thứ hai React Query trả dữ liệu từ bộ đệm NGAY ở lượt render đầu.
+    //  Bản cũ chép `account.role_ids` vào state và chỉ chép khi dữ liệu «đổi so
+    //  với lượt render trước», mà ở lượt render ĐẦU TIÊN thì không có gì đổi cả
+    //  — nên state đứng nguyên ở rỗng. Lần vào đầu tiên không lộ vì lúc đó dữ
+    //  liệu chưa có, phải chờ tải xong, và chính cú «chưa có -> có» là nhịp chép.
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/users/31' ? Promise.resolve(account([2])) : Promise.resolve(ROLES),
+    )
+
+    const queryClient = newQueryClient()
+    const lanDau = build(queryClient)
+    expect(await screen.findByRole('checkbox', { name: /Nhân sự/ })).toBeChecked()
+
+    lanDau.unmount()
+    build(queryClient)
+
+    expect(await screen.findByRole('checkbox', { name: /Nhân sự/ })).toBeChecked()
   })
 
   it('trang của CHÍNH MÌNH thì khóa lại — không tự nâng quyền được', async () => {

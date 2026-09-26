@@ -78,6 +78,7 @@ import {
   PAYMENT_SOURCE_LABELS,
   type PaymentMethod,
   type PaymentRequestCreateInput,
+  type PaymentRequest,
   type PaymentRequestLine,
   type PrintTexts,
 } from '../types/payment-request'
@@ -156,6 +157,23 @@ function fromPayable(row: Payable, offsets?: Map<number, number>): EditablePayme
 }
 
 /** Dòng của phiếu đã lưu -> hình dạng dòng sửa được. */
+/**
+ * CR-149: ba ô "Nội dung bản in" ĐIỀN SẴN câu tự động — người dùng sửa thẳng;
+ * xóa trống rồi lưu thì backend nhận "" và bản in rơi về câu tự động.
+ *
+ * Tách ra vì phải dựng ở HAI chỗ giống hệt nhau: lúc khởi tạo state (bộ đệm có
+ * sẵn phiếu ngay lượt render đầu) và lúc dữ liệu về / lưu xong nạp lại.
+ */
+function printTextsOf(req: PaymentRequest | undefined): PrintTexts {
+  if (!req) return {}
+  const auto = autoPrintText(req)
+  return {
+    content: req.print_texts?.content || auto,
+    line_desc: req.print_texts?.line_desc || auto,
+    transfer: req.print_texts?.transfer || auto,
+  }
+}
+
 function fromRequestLine(line: PaymentRequestLine, index: number): EditablePaymentLine {
   return {
     key: line.id ? `pr-line-saved-${line.id}` : `pr-line-new-${index}`,
@@ -575,10 +593,20 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
     },
   )
 
-  const [lines, setLines] = useState<EditablePaymentLine[]>([])
-  const [note, setNote] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
-  const [printTexts, setPrintTexts] = useState<PrintTexts>({})
+  //  ⚠️ Bốn ô dưới đây khởi tạo LẤY LUÔN dữ liệu đang có, đừng đổi về hằng
+  //  rỗng. Vào lại phiếu (quay ra danh sách rồi bấm lại, hay mở link trong thư
+  //  báo việc) là `req` có sẵn trong bộ đệm NGAY ở lượt render đầu, mà lượt đầu
+  //  `useHasChanged` luôn trả `false` — nhịp đổ bên dưới không chạy, phiếu mở ra
+  //  KHÔNG CÓ DÒNG NÀO, và bấm Lưu là ghi đè phiếu thật bằng đúng cái rỗng đó
+  //  (bao-CR-492).
+  const [lines, setLines] = useState<EditablePaymentLine[]>(() =>
+    (req?.lines ?? []).map(fromRequestLine),
+  )
+  const [note, setNote] = useState(() => req?.note ?? '')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    () => req?.payment_method ?? 'transfer',
+  )
+  const [printTexts, setPrintTexts] = useState<PrintTexts>(() => printTextsOf(req))
   const [rejectOpen, setRejectOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
   // CR-268 — hộp "Ghi nhận NCC hoàn tiền" của phiếu trả trước còn treo.
@@ -592,14 +620,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
     setLines((req.lines ?? []).map(fromRequestLine))
     setNote(req.note ?? '')
     setPaymentMethod(req.payment_method ?? 'transfer')
-    // CR-149: ĐIỀN SẴN câu tự động vào 3 ô "Nội dung bản in" — người dùng sửa
-    // thẳng; xóa trống rồi lưu thì backend nhận "" và bản in rơi về câu tự động.
-    const auto = autoPrintText(req)
-    setPrintTexts({
-      content: req.print_texts?.content || auto,
-      line_desc: req.print_texts?.line_desc || auto,
-      transfer: req.print_texts?.transfer || auto,
-    })
+    setPrintTexts(printTextsOf(req))
   }
 
   if (isLoading) {

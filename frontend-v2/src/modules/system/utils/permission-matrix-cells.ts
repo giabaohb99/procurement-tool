@@ -38,6 +38,19 @@ export function emptyRow(entity: string): RolePermissionRow {
 }
 
 /**
+ * Danh sách quyền từ máy chủ -> ma trận tra theo `entity`.
+ *
+ * Tách ra vì màn Phân quyền dựng nó ở HAI chỗ và hai chỗ đó phải giống hệt
+ * nhau: lúc khởi tạo state (bộ đệm có sẵn dữ liệu ngay lượt render đầu) và lúc
+ * đổi vai trò. Lệch một chỗ là ma trận trắng, xem bao-CR-492.
+ */
+export function rowsToMatrix(
+  rows: RolePermissionRow[] | undefined,
+): Record<string, RolePermissionRow> {
+  return Object.fromEntries((rows ?? []).map((row) => [row.entity, row]))
+}
+
+/**
  * Trạng thái ba mức của một tập ô: bật đủ / bật một phần / tắt.
  *
  * ⚠️ Tập RỖNG trả `false`, không phải `true`. Kiểu "mọi phần tử đều bật" của

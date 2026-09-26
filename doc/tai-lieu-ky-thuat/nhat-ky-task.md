@@ -8422,7 +8422,7 @@ chọn được nhiều (chọn nhiều trong một ô là hoặc, hai ô khác 
 cả nhà cung cấp, phân loại và từ khóa một lần, nút Về phân loại dòng giữ nguyên. Làm ở cả hai
 bản giao diện. Backend nhận nhiều mã nhà cung cấp và nhiều phân loại lặp trên đường dẫn, gửi
 một giá trị như cũ vẫn chạy nên màn Xử lý yêu cầu mua hàng chưa đổi không ảnh hưởng. Bản cũ
-phải chỉnh cách gửi mảng của axios để backend nhận được. Chưa commit, chưa deploy.
+phải chỉnh cách gửi mảng của axios để backend nhận được.
 
 Kiểm: 6 bài kiểm backend mới; giao diện mới kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 588 bài
 phân hệ thu mua xanh (3 bài util mới); bản cũ kiểm kiểu giữ 4 lỗi nền.
@@ -8432,6 +8432,7 @@ available_survey_lines) · controller.py · frontend-v2 survey-request-process-c
 utils/survey-process-filter.ts · frontend/src/pages/SurveyRequestProcess.tsx ·
 test/backend/test_xu_ly_khao_sat_loc_nhieu_cr487.py
 Cập nhật 25/09/2026: đã commit f3248ba8, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
+Commit: f3248ba8 (Erp Agent 1 gộp theo lệnh đại ca). Deploy: dev 25/09/2026, bản 257df12a.
 
 ## bao-CR-488 | Ô Phòng xử lý ẩn sau ô tick Nhờ phòng khác xử lý khi lập phiếu
 - status: xong
@@ -8446,7 +8447,7 @@ thì gửi đúng phòng đã chọn. Backend đổi một luật nhỏ: chỉ k
 còn gửi số 0 là người lập chủ ý chọn Thu mua chung và được giữ nguyên. Trước đây gửi 0 cũng bị
 tra đè nên nhà máy không có cách nào nhờ thu mua chung mua hộ ngay lúc lập phiếu (đúng ca đơn
 mẫu TM01). Yêu cầu báo giá tạo từ yêu cầu mua hàng đã có phòng xử lý thì ô tick bật sẵn. Màn
-chi tiết, kể cả lúc sửa phiếu nháp, giữ ô chọn và nút Chuyển phòng như cũ. Chưa commit.
+chi tiết, kể cả lúc sửa phiếu nháp, giữ ô chọn và nút Chuyển phòng như cũ.
 
 Kiểm: 5 bài kiểm backend mới, 25 bài cụm phòng xử lý xanh; giao diện mới thêm 5 bài cho hàm
 quyết định gửi gì và 5 bài cho thẻ thông tin yêu cầu mua hàng; bản cũ kiểm kiểu giữ 4 lỗi nền.
@@ -8457,6 +8458,7 @@ handlingDeptForCreate) · purchase-request-info-card.tsx · survey-request-info-
 purchase-request-detail-page.tsx · survey-request-detail-page.tsx · frontend
 PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx · test/backend/test_phong_xu_ly_o_tick_cr488.py
 Cập nhật 25/09/2026: đã commit 4ca3a2f9, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
+Commit: 4ca3a2f9 (chung với bao-CR-489, Erp Agent 1 gộp theo lệnh đại ca). Deploy: dev 25/09/2026, bản 257df12a.
 
 ## bao-CR-489 | Nút Trả về phòng lập đổi nhãn thành Trả về
 - status: xong
@@ -8465,11 +8467,12 @@ Cập nhật 25/09/2026: đã commit 4ca3a2f9, đẩy lên dev cùng đợt sáu
 chốt: giữ nguyên nghĩa và logic, chỉ đổi nhãn.
 
 Đã đổi nhãn nút ở yêu cầu mua hàng và yêu cầu báo giá, cả hai bản giao diện; câu gợi ý khi rê
-chuột và tiêu đề hộp thoại vẫn nói rõ là trả cả phiếu về phòng lập tự xử lý. Chưa commit.
+chuột và tiêu đề hộp thoại vẫn nói rõ là trả cả phiếu về phòng lập tự xử lý.
 
 Mã nguồn: frontend-v2 purchase-request-detail-page.tsx · survey-request-detail-page.tsx ·
 frontend PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx
 Cập nhật 25/09/2026: đã commit 4ca3a2f9, đẩy lên dev cùng đợt sáu CR (gộp 0eaa38c9 và 257df12a, migration đã chạy trên dev). Đại ca bấm thử trên dev.
+Commit: 4ca3a2f9 (chung với bao-CR-488). Deploy: dev 25/09/2026, bản 257df12a.
 
 ## bao-CR-490 | Trường trưởng phòng phê duyệt trên ba chứng từ và nút chọn người ký trên bản in nội bộ
 - status: xong
@@ -8730,3 +8733,84 @@ Mã nguồn: backend/app/modules/purchase_request/service.py · controller.py ·
 backend/app/modules/setting/service.py · backend/app/core/app_settings.py ·
 test/backend/test_dieu_kien_bo_qua_dieu_phoi_cr497.py
 Commit: 3c148874. Deploy: dev 26/09/2026, không migration; ô cấu hình đang để trống nên luồng y như cũ.
+
+## bao-CR-491 | Màn Phân quyền tài khoản mất dấu tick vai trò khi vào lại trang
+- status: xong
+- date: 2026-09-25
+- pic: NSU209
+Đại ca dùng thật rồi báo: mở màn phân quyền của một tài khoản thì thấy tick đủ vai trò,
+quay ra trang trước rồi vào lại thì mọi dấu tick biến mất, phải tải lại cả trang mới hiện
+ra. Em dựng lại được ngay bằng một bài kiểm, và hóa ra đây không chỉ là chuyện nhìn sai.
+
+Gốc rễ nằm ở cách màn hình giữ danh sách vai trò. Nó chép danh sách từ máy chủ vào bộ nhớ
+riêng của màn hình, rồi chỉ chép lại khi dữ liệu đổi so với lượt vẽ trước. Lần vào thứ hai,
+lớp đệm dữ liệu đã có sẵn bản cũ nên trả về ngay ở lượt vẽ đầu tiên; mà ở lượt vẽ đầu tiên
+thì phép so sánh kia luôn nói là không có gì đổi, vì nó lấy chính giá trị hiện tại làm mốc.
+Không có nhịp nào để chép, nên bộ nhớ riêng nằm nguyên ở trạng thái rỗng. Lần vào đầu tiên
+không lộ ra vì lúc ấy dữ liệu chưa về, và chính cú chuyển từ chưa có sang có mới là nhịp
+chép. Tải lại trang thì lớp đệm mất sạch nên lại đi đúng đường cũ, đó là lý do tải lại
+thấy đúng.
+
+Chỗ nguy là bước tiếp theo của người dùng. Thấy trang trống, họ tick lại vài vai trò rồi
+bấm lưu, mà đường lưu nhận cả danh sách chứ không nhận phần chênh, nên những vai trò cũ
+không được tick lại sẽ bị xóa mất. Tức là một lỗi hiển thị dẫn thẳng tới mất phân quyền.
+
+Em không vá bằng cách thêm một nhịp chép nữa, vì như vậy là dựa vào việc lượt vẽ nào là
+lượt đặc biệt. Em đổi hẳn cách giữ: bộ nhớ riêng của màn hình nay chỉ chứa bản nháp của
+người dùng, chưa đụng vào thì để trống và màn hình đọc thẳng bản của máy chủ. Nhờ vậy mọi
+lượt vẽ đều giống nhau. Chốt cũ vẫn còn nguyên: một lượt nạp lại rơi vào giữa lúc đang tick
+dở thì không đè lên thứ đang tick, vì hễ có nháp là nháp thắng.
+
+Nghiệm thu: ba cổng kiểm đều xanh, và bài kiểm mới em đã thử ngược trên mã cũ để chắc chắn
+nó đỏ đúng một bài, không phải bài kiểm trang trí. Bản đang chạy thật của giao diện cũ
+không dính lỗi này, vì bên đó mỗi lần mở màn là gọi lại máy chủ chứ không có lớp đệm.
+
+Mã nguồn: `frontend-v2/src/modules/system/pages/user-permission-detail-page.tsx` và bài kiểm
+đi kèm cùng thư mục. Tham chiếu: CR-156 (chốt không đè bản đang tick dở) và CR-158 (khóa
+trang của chính mình). Chưa deploy.
+
+## bao-CR-492 | Rà cả họ lỗi mất dấu tick khi vào lại trang và vá tám màn còn lại
+- status: xong
+- date: 2026-09-25
+- pic: NSU209
+Vá xong màn phân quyền tài khoản, đại ca bảo rà luôn xem còn chỗ nào cùng kiểu thì sửa hết.
+Em đặt ra một tiêu chí máy móc để rà chứ không đi theo cảm giác: một chỗ dính khi nó lấy dữ
+liệu tải về đổ vào bộ nhớ riêng của màn hình, mà bộ nhớ đó khởi tạo bằng giá trị rỗng, và
+nhịp đổ lại gác bằng phép so sánh với lượt vẽ trước. Lượt vẽ đầu tiên phép so sánh ấy luôn
+nói là không có gì đổi, nên hễ lớp đệm đã có sẵn dữ liệu thì màn hình mở ra trắng.
+
+Rà hết sáu mươi sáu chỗ gọi phép so sánh đó thì có chín chỗ dính, kể cả chỗ đã vá hôm nay.
+Số còn lại an toàn vì rơi vào ba nhóm: mốc so sánh là trạng thái đóng mở của hộp thoại nên
+luôn có một cú chuyển, hoặc bộ nhớ đã khởi tạo từ chính giá trị truyền vào, hoặc bộ nhớ đã
+khởi tạo bằng cách đọc thẳng nguồn dữ liệu. Bốn màn chi tiết lớn của thu mua thoát được là
+nhờ cách thứ ba, và em lấy luôn cách đó làm khuôn vá cho những chỗ hỏng.
+
+Năm chỗ dẫn tới mất dữ liệu thật. Nặng nhất là ma trận quyền của vai trò: vai trò đang mở
+nằm ngay trên địa chỉ trang, nên mở lại bằng đúng đường dẫn đó là dính chắc chứ không phải
+thỉnh thoảng. Ma trận hiện ra trắng, bấm lưu là gửi lên một danh sách rỗng, mà đường lưu bên
+máy chủ xóa hết rồi ghi lại, tức mất sạch quyền của vai trò đó và kéo theo mọi tài khoản
+đang giữ nó. Bốn chỗ còn lại cùng kiểu nhưng hẹp hơn: đơn nghỉ phép và phiếu đặt phòng họp
+mở ra form trắng, phiếu yêu cầu thanh toán mở ra không còn dòng nào, thẻ kiêm nhiệm của hồ
+sơ nhân sự không tick phòng nào. Cả bốn đều có nút lưu ngay cạnh.
+
+Ba chỗ nhẹ hơn nhưng vẫn phải vá. Hai khối bình luận mất nút xem thêm bình luận cũ, nên
+người đọc tưởng bài chỉ có mấy dòng cuối. Hai nhịp bù của phiếu mới thì đáng nói hơn: phiếu
+khảo sát không chép mục đích sang nội dung chính, còn yêu cầu báo giá không bù mã phòng ban
+nên phiếu lại neo phòng bằng tên, đúng thứ mà một đợt trước đã sinh ra để tránh. Hai nhịp
+này hỏng đúng trong trường hợp hay gặp nhất, vì người dùng vào từ màn danh sách nên danh mục
+đã nằm sẵn trong lớp đệm.
+
+Em có cân nhắc sửa một chỗ duy nhất ở hàm so sánh dùng chung, cho nó báo có thay đổi ngay ở
+lượt vẽ đầu. Làm vậy là hết cả họ trong một dòng, nhưng nó đổi hành vi của cả sáu mươi sáu
+chỗ, mà nhiều chỗ dùng hàm đó để xóa trắng chứ không phải để đổ dữ liệu. Chỗ đặt lại số
+trang chẳng hạn, nếu chạy ngay lúc mở màn thì mở một đường dẫn có sẵn số trang là bị kéo về
+trang một. Đổi một lỗi lấy một lỗi, nên em không làm.
+
+Hai bài kiểm mới cho hai chỗ nặng nhất, và cả hai em đều thử ngược trên mã cũ để chắc chắn
+chúng đỏ chứ không phải bài kiểm trang trí. Chúng khẳng định theo hậu quả thật, tức là bấm
+lưu rồi xem gói gửi lên có còn nguyên quyền cũ không, chứ không khẳng định theo vẻ ngoài của
+màn hình. Ba cổng kiểm đều xanh.
+
+Mã nguồn: chín tệp trong `frontend-v2`, gồm màn ma trận quyền, hai màn chi tiết của nhân sự,
+màn chi tiết yêu cầu thanh toán, thẻ kiêm nhiệm, hai khối bình luận và hai màn thu mua.
+Tham chiếu: bao-CR-491 là chỗ đầu tiên của họ lỗi này. Chưa deploy.

@@ -93,6 +93,11 @@ export function RoomBookingDetailPage() {
   const [searchParams] = useSearchParams()
   const [form, setForm] = useState<RoomBookingFormValues>(() => {
     const base = emptyRoomForm()
+    //  ⚠️ Phiếu đã có trong bộ đệm thì lấy LUÔN ở đây — vào lại trang là
+    //  `booking` có sẵn ngay lượt render đầu, mà lượt đầu `useHasChanged` luôn
+    //  trả `false` nên nhịp đổ bên dưới không chạy và form mở ra TRẮNG
+    //  (bao-CR-492).
+    if (booking) return formValuesOf(booking)
     const roomId = Number(searchParams.get('room_id')) || 0
     const start = searchParams.get('start') || ''
     if (!roomId && !start) return base

@@ -45,6 +45,7 @@ import {
   type CustomsImportBatch,
 } from '../../types/customs'
 import { resolveRevertState } from '../../utils/customs'
+import { CustomsBatchRowsPanel } from './customs-batch-rows-panel'
 import { CustomsBatchStatusBadge } from './customs-batch-status-badge'
 
 const HISTORY_PAGE_SIZE = 20
@@ -296,7 +297,7 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[88dvh] flex-col gap-4 sm:max-w-4xl">
+      <DialogContent className="flex max-h-[92dvh] flex-col gap-4 sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle>
             Nhật ký lô #{batch.id} — {batch.filename}
@@ -307,7 +308,13 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
+          {/* bao-CR-496 — kết cục TỪNG DÒNG của tệp (Thêm mới / Lỗi / Trùng trong lô), đủ mọi dòng. */}
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold">Từng dòng của tệp</h3>
+            <CustomsBatchRowsPanel batchId={batch.id} />
+          </section>
+          <h3 className="text-sm font-semibold">Ghi chú khi đọc tệp</h3>
           <DataTable
             columns={columns}
             rows={data?.items}

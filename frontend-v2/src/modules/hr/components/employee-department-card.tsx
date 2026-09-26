@@ -46,7 +46,14 @@ export function EmployeeDepartmentCard({
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
   const save = useSaveEmployeeDepartments(employeeId)
 
-  const [selection, setSelection] = useState<number[]>([])
+  //  ⚠️ Khởi tạo lấy LUÔN dữ liệu đang có, đừng đổi về `useState([])`. Mở lại
+  //  hồ sơ (quay ra danh sách rồi bấm vào lại) là `data` có sẵn trong bộ đệm
+  //  ngay lượt render đầu, mà lượt đầu `useHasChanged` luôn trả `false` — thẻ
+  //  hiện ra KHÔNG TICK phòng nào, và bấm Lưu là xóa sạch phòng kiêm nhiệm
+  //  thật (bao-CR-492).
+  const [selection, setSelection] = useState<number[]>(
+    () => data?.extra_department_ids ?? [],
+  )
   //  Chỉ đồng bộ khi người dùng CHƯA chọn dở — cùng lỗi đã gặp ở màn Phân quyền
   //  (CR-156): một lượt nạp lại rơi vào giữa lúc đang chọn là mất thứ vừa chọn.
   const [dangChonDo, setDangChonDo] = useState(false)

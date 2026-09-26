@@ -80,6 +80,12 @@ export function LeaveRequestDetailPage() {
   //  form sau khi commit là người dùng gõ dở rồi bị ghi đè nếu trang render lại.
   const [form, setForm] = useState<LeaveFormValues>(() => {
     const empty = emptyLeaveForm()
+    //  ⚠️ Tờ đơn đã có trong bộ đệm thì lấy LUÔN ở đây. Vào lại trang (quay ra
+    //  rồi bấm back, hay mở lại link trong thư báo việc) là `request` có sẵn
+    //  ngay lượt render đầu, mà ở lượt đầu `useHasChanged` luôn trả `false` nên
+    //  nhịp đổ bên dưới không chạy — form mở ra TRẮNG cho một tờ đơn có đủ dữ
+    //  liệu, và bấm Lưu là ghi đè bằng chính khoảng trắng đó (bao-CR-492).
+    if (request) return formValuesOf(request)
     if (requestId !== 0) return empty
     const draft = parseAssistantLeaveDraft(
       (location.state as { assistantDraft?: unknown } | null)?.assistantDraft,

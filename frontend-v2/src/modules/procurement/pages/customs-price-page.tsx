@@ -62,6 +62,7 @@ import { CustomsImportersTab } from '../components/customs/customs-importers-tab
 import { CustomsLegalTab } from '../components/customs/customs-legal-tab'
 import { CustomsLineDetailDialog } from '../components/customs/customs-line-detail-dialog'
 import { CustomsPriceChart } from '../components/customs/customs-price-chart'
+import { CustomsSavedFilterBar } from '../components/customs/customs-saved-filter-bar'
 import { CUSTOMS_LINE_COLUMNS } from '../config/customs-line-columns'
 import { useCustomsSearchExplain } from '../hooks/use-customs-search-explain'
 import {
@@ -83,6 +84,7 @@ import {
   sortRegulationsBySeverity,
   splitNamedIds,
 } from '../utils/customs'
+import { collectFilterParams } from '../utils/customs-saved-filter'
 
 const TABS = [
   { key: 'list', label: 'Danh sách', icon: List },
@@ -331,6 +333,12 @@ export function CustomsPricePage() {
       />
 
       <Card className="gap-3 p-4">
+        {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản (F07); chọn là trang về đúng bộ lọc đó. */}
+        <CustomsSavedFilterBar
+          currentParams={collectFilterParams(searchParams, FILTER_PARAMS)}
+          filterNames={FILTER_PARAMS}
+          onApply={setUrlParams}
+        />
         <div className="flex flex-wrap items-center gap-2">
           <SearchField
             value={keyword}
