@@ -15,6 +15,7 @@ import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
+import ReturnChoiceModal, { resolveReturnAction, type ReturnTarget } from '../components/ReturnChoiceModal'
 import TransferDeptModal from '../components/TransferDeptModal'
 import NotFound from '../components/NotFound'
 import DocumentUploadModal from '../components/DocumentUploadModal'
@@ -128,6 +129,7 @@ export default function PurchaseRequestDetail() {
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
   const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy'|'dispatch', title: string, message: string, confirmText?: string} | null>(null)
   const [transferMode, setTransferMode] = useState<'transfer' | 'return' | null>(null)   // bao-CR-414 GĐ5: hộp chuyển phòng / trả về phòng lập
+  const [returnChoiceOpen, setReturnChoiceOpen] = useState(false)   // bao-CR-498
   const [notFound, setNotFound] = useState(false)
   const [pos, setPos] = useState<any[] | null>(null)   // ĐMH tạo từ phiếu này (cùng mã PYC); null = chưa tải/không quyền → ẩn khối
   const [orderedMap, setOrderedMap] = useState<Record<string, number>>({})   // SL đã đặt theo mã hàng (gộp mọi ĐMH cùng PYC)
@@ -230,6 +232,13 @@ export default function PurchaseRequestDetail() {
   const prLocked = ['cancelled', 'completed', 'done'].includes(pr.status)   // đã từ chối/hoàn thành → khóa thao tác
   const canAssignPurchaser = can('purchase_request', 'approve') && !prLocked   // phân bổ NSTM (chặn khi phiếu đã kết thúc)
   const canManage = can('purchase_request', 'cancel')             // admin/quản lý: hủy/trả/hoàn thành
+  // bao-CR-498: hai đường «Trả về» gộp vào một nút — đường luồng duyệt + đường trả phòng lập (cờ backend).
+  const canReturnToRequester = !isNew && (canManage || pr.can_approve) && !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status)
+  const returnResolution = resolveReturnAction(canReturnToRequester, !isNew && !!pr.can_return_dept)
+  const runReturn = (target: ReturnTarget) => {
+    if (target === 'department') setTransferMode('return')
+    else setPromptAction({ type: 'return', title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):' })
+  }
   // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
   const isPurchaserDept = ((user as any)?.department_name || '').toLowerCase().includes('thu mua')
   const canCreatePO = can('purchase_order', 'create') && (isPurchaserDept || canManage || canAssignPurchaser)
@@ -777,8 +786,14 @@ export default function PurchaseRequestDetail() {
         {!isNew && pr.can_approve && (
           <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
         )}
-        {!isNew && (canManage || pr.can_approve) && !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status) && (
-          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} onClick={() => setPromptAction({ type: 'return', title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):' })}><i className="ti ti-corner-up-left" />Trả về</button>
+        {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự xử lý —
+            bao-CR-414). Cả hai đường cùng mở thì hỏi (ReturnChoiceModal); một đường thì đi thẳng. */}
+        {returnResolution !== null && (
+          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
+            title={returnResolution === 'department' ? 'Trả cả phiếu về phòng lập tự xử lý' : 'Trả về để người yêu cầu sửa & gửi duyệt lại'}
+            onClick={() => (returnResolution === 'choose' ? setReturnChoiceOpen(true) : runReturn(returnResolution))}>
+            <i className="ti ti-corner-up-left" />Trả về
+          </button>
         )}
         {!isNew && pr.can_approve && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setPromptAction({ type: 'cancel', title: 'Từ chối phiếu', message: 'Lý do từ chối (khóa phiếu, không sửa lại được):' })}><i className="ti ti-ban" />Từ chối</button>
@@ -793,9 +808,6 @@ export default function PurchaseRequestDetail() {
             thu mua của phòng ĐANG cầm phiếu (hoặc thu mua toàn quyền). */}
         {!isNew && pr.can_transfer_dept && (
           <button className="btn ghost" title="Đẩy cả phiếu sang phòng khác xử lý" onClick={() => setTransferMode('transfer')}><i className="ti ti-transfer" />Chuyển phòng xử lý</button>
-        )}
-        {!isNew && pr.can_return_dept && (
-          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} title="Trả cả phiếu về phòng lập tự xử lý" onClick={() => setTransferMode('return')}><i className="ti ti-corner-up-left" />Trả về</button>
         )}
         {!isNew && canCreatePO && workableStatuses.includes(pr.status) && hasUnorderedItem && (
           <button className="btn" onClick={createPO}><i className="ti ti-shopping-cart" />Tạo đơn mua hàng</button>
@@ -842,6 +854,7 @@ export default function PurchaseRequestDetail() {
         onCancel={() => setPromptAction(null)}
       />
 
+      <ReturnChoiceModal open={returnChoiceOpen} docLabel="yêu cầu mua hàng" onClose={() => setReturnChoiceOpen(false)} onPick={runReturn} />
       <TransferDeptModal
         open={!!transferMode}
         mode={transferMode || 'transfer'}
@@ -1030,10 +1043,10 @@ export default function PurchaseRequestDetail() {
                 )}
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt ở chặng trưởng phòng — hệ thống ghi lúc duyệt, chỉ xem. */}
-              {!!pr.approver_employee_name && (
+              {!isNew && (
                 <div className="form-row">
                   <label>Trưởng phòng phê duyệt</label>
-                  <input value={pr.approver_employee_name} disabled title="Người thực bấm Duyệt phiếu này" />
+                  <input value={pr.approver_employee_name || 'Chưa ghi nhận'} disabled title="Người thực bấm Duyệt phiếu này (bao-CR-498: trống = chưa duyệt hoặc duyệt trước 25/09/2026)" />
                 </div>
               )}
               <div className="form-row">

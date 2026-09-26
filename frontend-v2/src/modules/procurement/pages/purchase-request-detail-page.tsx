@@ -77,6 +77,7 @@ import { PurchaseRequestChooseCard } from '../components/purchase-request-choose
 import { PurchaseRequestSupplierCard } from '../components/purchase-request-supplier-card'
 import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { PurchaseRequestLinkedDocumentsCard } from '../components/purchase-request-linked-documents-card'
+import { ReturnChoiceDialog } from '../components/return-choice-dialog'
 import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
 import {
   useAssignPurchaser,
@@ -105,6 +106,7 @@ import {
   toDraftFromRequest,
 } from '../utils/purchase-order-draft'
 import { validatePurchaseRequest } from '../utils/required-fields'
+import { resolveReturnAction, type ReturnTarget } from '../utils/return-action'
 import {
   parsePurchaseAssistantDraft,
   type PurchaseAssistantDraft,
@@ -197,6 +199,7 @@ export function PurchaseRequestDetailPage() {
   // bao-CR-414 GĐ5: đẩy cả phiếu sang phòng khác xử lý / trả về phòng lập.
   const transferDept = useTransferPurchaseRequestDept(purchaseRequestId)
   const [transferMode, setTransferMode] = useState<TransferDeptMode | null>(null)
+  const [returnChoiceOpen, setReturnChoiceOpen] = useState(false)   // bao-CR-498
   // bao-CR-310 đợt 4 (rà lại): nút gom theo phương án dời từ thẻ Phương án lên
   // đầu trang, nhập chung một nút "Tạo đơn mua hàng" sổ xuống — 2 nút tạo đơn
   // còn 1. Chặn bấm đúp bằng ref (state React trễ một nhịp, luật duoc-CR-317).
@@ -462,6 +465,24 @@ export function PurchaseRequestDetailPage() {
     if (submitAfterSave) {
       await runAction.mutateAsync({ action: 'submit' })
     }
+  }
+
+  //  bao-CR-498: hai đường «Trả về» gộp vào một nút. Đường luồng duyệt mở theo quyền + trạng
+  //  thái; đường trả phòng lập theo cờ backend `can_return_dept` (bao-CR-414).
+  const canReturnToRequester =
+    (loadedData.can_approve || canManage) &&
+    !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(loadedData.status)
+  const canReturnToDepartment = !isNew && Boolean(loadedData.can_return_dept)
+  const returnResolution = resolveReturnAction(canReturnToRequester, canReturnToDepartment)
+
+  function runReturn(target: ReturnTarget) {
+    if (target === 'department') setTransferMode('return')
+    else void handleAction('return')
+  }
+
+  async function handleReturn() {
+    if (returnResolution === 'choose') setReturnChoiceOpen(true)
+    else if (returnResolution) runReturn(returnResolution)
   }
 
   async function handleAction(action: PurchaseRequestAction) {
@@ -801,9 +822,20 @@ export function PurchaseRequestDetailPage() {
           Sửa
         </Button>
       )}
-      {(data.can_approve || canManage) &&
-        !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(data.status) && (
-        <Button variant="outline" onClick={() => void handleAction('return')}>
+      {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự
+          xử lý — bao-CR-414). Cả hai đường cùng mở thì hỏi; một đường thì đi thẳng. */}
+      {returnResolution !== null && (
+        <Button
+          type="button"
+          variant="outline"
+          className="text-amber-700 hover:text-amber-700"
+          title={
+            returnResolution === 'department'
+              ? 'Trả cả phiếu về phòng lập tự xử lý'
+              : 'Trả về để người lập sửa và gửi duyệt lại'
+          }
+          onClick={() => void handleReturn()}
+        >
           <CornerUpLeft />
           Trả về
         </Button>
@@ -819,18 +851,6 @@ export function PurchaseRequestDetailPage() {
         >
           <ArrowRightLeft />
           Chuyển phòng xử lý
-        </Button>
-      )}
-      {!isNew && data.can_return_dept && (
-        <Button
-          type="button"
-          variant="outline"
-          className="text-amber-700 hover:text-amber-700"
-          title="Trả cả phiếu về phòng lập tự xử lý"
-          onClick={() => setTransferMode('return')}
-        >
-          <CornerUpLeft />
-          Trả về
         </Button>
       )}
       {data.status === 'submitted' && (data.can_approve || canManage) && (
@@ -1148,6 +1168,12 @@ export function PurchaseRequestDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <ReturnChoiceDialog
+        open={returnChoiceOpen}
+        docLabel="yêu cầu mua hàng"
+        onOpenChange={setReturnChoiceOpen}
+        onPick={runReturn}
+      />
       <TransferDeptDialog
         open={transferMode !== null}
         mode={transferMode ?? 'transfer'}

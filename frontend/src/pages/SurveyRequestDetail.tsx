@@ -10,6 +10,7 @@ import SearchSelect from '../components/SearchSelect'
 import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
+import ReturnChoiceModal, { resolveReturnAction, type ReturnTarget } from '../components/ReturnChoiceModal'
 import TransferDeptModal from '../components/TransferDeptModal'
 import FileDropzone from '../components/FileDropzone'
 import Lightbox from '../components/Lightbox'
@@ -261,6 +262,14 @@ export default function SurveyRequestDetail() {
   const [ycmhPopup, setYcmhPopup] = useState<{ label: string; prs: { code: string; id: number; date?: string; status?: string }[] } | null>(null)
   const [showPrModal, setShowPrModal] = useState(false)         // popup DS phiếu YCMH đã sinh
   const [transferMode, setTransferMode] = useState<'transfer' | 'return' | null>(null)   // bao-CR-414 GĐ5
+  const [returnChoiceOpen, setReturnChoiceOpen] = useState(false)   // bao-CR-498
+  const canReturnToRequester = !isNew && sv.status === 'submitted' && can('survey_request', 'approve')
+  const returnResolution = resolveReturnAction(canReturnToRequester, !isNew && !!sv.can_return_dept)
+  const runReturn = async (target: ReturnTarget) => {
+    if (target === 'department') { setTransferMode('return'); return }
+    const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):', confirmText: 'Trả về' })
+    if (r !== null) action('reject', { reason: r })
+  }
 
   // Esc để đóng popup DS phiếu YCMH
   useEffect(() => {
@@ -564,17 +573,6 @@ export default function SurveyRequestDetail() {
             </button>
             <button
               className="btn ghost"
-              style={{ color: '#d97706', borderColor: '#fcd34d' }}
-              title="Trả về để người YC sửa & gửi lại"
-              onClick={async () => {
-                const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):', confirmText: 'Trả về' })
-                if (r !== null) action('reject', { reason: r })
-              }}
-            >
-              <i className="ti ti-corner-up-left" />Trả về
-            </button>
-            <button
-              className="btn ghost"
               style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
               title="Khóa đơn hẳn — không sửa được, phải làm đơn mới"
               onClick={async () => {
@@ -605,8 +603,12 @@ export default function SurveyRequestDetail() {
             <i className="ti ti-transfer" />Chuyển phòng xử lý
           </button>
         )}
-        {!isNew && sv.can_return_dept && (
-          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} title="Trả cả phiếu về phòng lập tự xử lý" onClick={() => setTransferMode('return')}>
+        {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự xử lý —
+            bao-CR-414). Cả hai đường cùng mở thì hỏi (ReturnChoiceModal); một đường thì đi thẳng. */}
+        {returnResolution !== null && (
+          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
+            title={returnResolution === 'department' ? 'Trả cả phiếu về phòng lập tự xử lý' : 'Trả về để người YC sửa & gửi lại'}
+            onClick={() => (returnResolution === 'choose' ? setReturnChoiceOpen(true) : runReturn(returnResolution))}>
             <i className="ti ti-corner-up-left" />Trả về
           </button>
         )}
@@ -653,6 +655,7 @@ export default function SurveyRequestDetail() {
         )}
       </div>
 
+      <ReturnChoiceModal open={returnChoiceOpen} docLabel="yêu cầu báo giá" onClose={() => setReturnChoiceOpen(false)} onPick={(t) => void runReturn(t)} />
       <TransferDeptModal
         open={!!transferMode}
         mode={transferMode || 'transfer'}
@@ -836,10 +839,10 @@ export default function SurveyRequestDetail() {
                   disabled title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt — hệ thống ghi lúc duyệt, chỉ xem. */}
-              {!!sv.approver_employee_name && (
+              {!isNew && (
                 <div className="form-row">
                   <label>Trưởng phòng phê duyệt</label>
-                  <input value={sv.approver_employee_name} disabled title="Người thực bấm Duyệt phiếu này" />
+                  <input value={sv.approver_employee_name || 'Chưa ghi nhận'} disabled title="Người thực bấm Duyệt phiếu này (bao-CR-498: trống = chưa duyệt hoặc duyệt trước 25/09/2026)" />
                 </div>
               )}
 
