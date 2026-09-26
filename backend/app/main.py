@@ -96,6 +96,7 @@ from app.modules.customs.controller import router as customs_router
 from app.modules.customs.kind_controller import (kind_keyword_router as customs_kind_keyword_router,
                                                  router as customs_kind_router,
                                                  search_synonym_router as customs_search_synonym_router)
+from app.modules.customs.saved_filter_controller import router as customs_saved_filter_router
 from app.modules.export_log.controller import router as export_log_router
 from app.modules.backup.controller import router as backup_router
 from app.modules.help_center.controller import router as help_center_router
@@ -292,6 +293,7 @@ app.include_router(customs_regulation_router)
 app.include_router(customs_kind_router)            # bao-CR-494/495
 app.include_router(customs_kind_keyword_router)
 app.include_router(customs_search_synonym_router)
+app.include_router(customs_saved_filter_router)     # bao-CR-496
 app.include_router(export_log_router)
 app.include_router(backup_router)
 app.include_router(help_center_router)

@@ -200,3 +200,22 @@ class CustomsSearchSynonym(Base, AuditMixin):
     synonyms: Mapped[str] = mapped_column(String(1000), default="")
     note: Mapped[str] = mapped_column(String(255), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CustomsSavedFilter(Base, AuditMixin):
+    """Bộ lọc màn Tra cứu giá hải quan do NGƯỜI DÙNG đặt tên và lưu — bao-CR-496 (F07).
+
+    Đại ca chốt 25/09/2026: lưu RIÊNG từng người (`user_id` = TÀI KHOẢN, không phải
+    employee_id — bộ lọc là thói quen làm việc của tài khoản, nhân sự nghỉ thì mất theo);
+    cột `is_shared` có sẵn, mặc định tắt, để sau mở «bộ lọc chung» mà không phải làm lại.
+    `params` giữ NGUYÊN chuỗi tham số URL của trang (`q=…&hs_code=…`), không tách cột:
+    thêm ô lọc mới (product_kind, từ khóa AND/NOT…) là bộ lọc cũ vẫn nạp được, không
+    cần migration. Không lưu localStorage vì đổi máy là mất.
+    """
+    __tablename__ = "tab_customs_saved_filter"
+    __table_args__ = (Index("ix_customs_saved_filter_user", "user_id", "name"),)
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    name: Mapped[str] = mapped_column(String(120), default="")
+    params: Mapped[str] = mapped_column(Text, default="")
+    is_shared: Mapped[bool] = mapped_column(Boolean, default=False)

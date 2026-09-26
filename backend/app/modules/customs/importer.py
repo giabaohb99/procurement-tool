@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from app.modules.import_tool.model import ImportBatch, ImportStatus, LogLevel
 from app.modules.import_tool.service import add_log
 
-from . import reader
+from . import reader, row_log
 from .constants import INSERT_CHUNK, PartyType
 from .ingredient import load_kind_tagger, load_tagger
 from .model import CustomsLine, CustomsParty
@@ -38,6 +38,9 @@ def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
     res = reader.parse(raw, batch.filename or "")
     for row_no, level, message in res.logs:
         add_log(db, batch, SHEET, row_no, level, "customs", message)
+    #  bao-CR-496: mỗi dòng dữ liệu một dòng nhật ký mang kết cục (Thêm mới · Lỗi · Trùng trong
+    #  lô) — ghi ở CẢ chạy thử lẫn ghi thật để người nạp soi được trước khi bấm ghi.
+    row_counts = row_log.write_row_logs(db, batch, res)
 
     rows = res.rows
     date_from = min((r["reg_date"] for r in rows), default=None)
@@ -55,6 +58,7 @@ def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
         "date_to": date_to.isoformat() if date_to else "",
         "date_fixed": sum(r["date_fixed"] for r in rows),
         "date_swap_detected": res.date_swap,
+        "duplicate_rows": row_counts["duplicate"],     # bao-CR-496: trùng trong lô, VẪN ghi
     }, ensure_ascii=False)
 
     if apply and rows:

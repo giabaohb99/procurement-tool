@@ -214,6 +214,9 @@ BB4_CONTROLLER_MIEN_TRU = {
     "customs/kind_controller.py": "bao-CR-494/495: hai danh mục cấu hình của chính màn tra cứu "
                                   "(từ khóa nhãn, từ đồng nghĩa) đi qua make_crud_router + retag/explain "
                                   "— cùng entity PUBLIC customs_price, cổng là require từng route",
+    "customs/saved_filter_controller.py": "bao-CR-496: bộ lọc đã lưu gác bằng user_id = tài khoản đang "
+                                          "gọi (saved_filter_service.get_own → 404 của người khác); nhật ký "
+                                          "dòng của lô thuộc entity PUBLIC customs_price, require từng route",
     "export_log/controller.py": "gác bằng `_guard_view` (can_view_any hoặc setting.read)",
     "comment/controller.py": "gác bằng `service.resolve_doc` — làm CẢ require lẫn apply_scope",
     "document/controller.py": "gác bằng `access_service.ensure_can` (2 tầng) — cụm 05 B",

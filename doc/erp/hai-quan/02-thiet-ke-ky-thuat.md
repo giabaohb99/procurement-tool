@@ -16,6 +16,7 @@ Mọi con số trong tài liệu này **đo trên 5 tệp thật** trong thư m�
 | **1.3** | 23/09/2026 | Thêm §2.2 định nghĩa **tờ khai** và **dòng hàng**; đổi tên bảng lớn `tab_customs_declaration` → **`tab_customs_line`**; đổi "dòng tờ khai" thành "dòng hàng" trong mọi tài liệu | Đại ca hỏi *"định nghĩa một tờ khai là như thế nào"* — đo lại thì mỗi dòng Excel là **một dòng hàng**, không phải một tờ khai, và dữ liệu **không gom lại thành tờ khai được** |
 | **1.4** | 23/09/2026 | **Bỏ lớp đệm `tab_report_snapshot`.** Không còn gì tính sẵn: mọi con số tính lúc mở | Đại ca chốt màn tra cứu **hai thẻ Danh sách / Biểu đồ, biểu đồ chỉ hiện khi đã lọc** — trang tổng quan (thứ duy nhất dùng snapshot) bỏ. Không có task định kỳ nào |
 | **1.5** | 23/09/2026 | Thêm §10: bốn bảng danh mục của HQ4/HQ6 (`tab_customs_ingredient_alias` · `tab_customs_pesticide` · `tab_customs_regulation` · `tab_customs_tariff`), hai cột suy ra trên `tab_customs_line` (`active_ingredient` · `formulation`), script nạp danh mục, bộ nhận hoạt chất ba nguồn, khóa thứ hai `customs_regulation` | Đại ca bảo làm đủ mọi phase một lượt |
+| **1.6** | 25/09/2026 | **bao-CR-496.** (1) Nhật ký **từng dòng** của lô: thêm cột `row_status` (SMALLINT, `ImportRowStatus`: 0 dòng nhật ký thường · 1 Thêm mới · 2 Lỗi · 3 Trùng trong lô) vào **`tab_import_log` có sẵn**, KHÔNG tạo bảng mới — xem §3.1b. (2) Bảng mới `tab_customs_saved_filter` (bộ lọc người dùng đặt tên, riêng từng tài khoản, `is_shared` chừa sẵn) | Chị Mi (F01 ghi chú 25/09, F07); đại ca chốt: không có kết cục «Cập nhật», dòng trùng chỉ đánh dấu không xóa, bộ lọc lưu riêng từng người |
 
 ---
 
@@ -114,6 +115,16 @@ Ba thứ bản 1.1 định lưu riêng thì **suy ra được**, không cần c�
 - **Khoảng ngày của lô** = `MIN/MAX(reg_date)` của các dòng mang `batch_id` đó.
 - **Số dòng đã vá ngày** = đếm `date_fixed = 1` theo `batch_id`. **Không** ghi 7.651 dòng cảnh báo vào `tab_import_log` cho mỗi lần nạp — vá ngày là việc bình thường của khuôn tệp này, không phải bất thường. Nhật ký dòng chỉ dành cho thứ **thật sự lạ** (mã phương tiện lạ, ô số không đọc được).
 - **Lô bị thay** không cần trạng thái riêng: lô mới ghi `deleted_count` + một dòng nhật ký nói đã thay khoảng ngày nào.
+
+### 3.1b Nhật ký TỪNG DÒNG — cột `row_status` trên `tab_import_log` (bản 1.6, bao-CR-496)
+
+Ghi chú 25/09 của chị Mi (F01): sau khi nạp phải xem được **đủ mọi dòng** của tệp kèm kết cục, không chỉ dòng có cảnh báo. Hai cách: thêm cột vào bảng nhật ký chung, hoặc bảng riêng. **Chọn thêm cột `row_status`** (SMALLINT, `ImportRowStatus` — luật R2) vào `tab_import_log`, vì:
+
+- bảng riêng chỉ chép lại `batch_id` · `row_no` · `message` và phải dựng lại phân trang, quyền, hoàn tác — thứ `import_tool` đã có;
+- cột mặc định `0` = *dòng nhật ký thường*, các phân hệ khác dùng `import_tool` **không thấy gì đổi**; chỉ mục `(batch_id, row_status)` để đếm / lọc theo lô;
+- mỗi dòng dữ liệu một dòng nhật ký, ghi bằng **chèn hàng loạt** (`customs/row_log.py`), ở **cả chạy thử lẫn ghi thật** để người nạp soi trước khi bấm ghi.
+
+Ba kết cục, **cố ý không có «Cập nhật»** (đại ca chốt: nguồn không có số tờ khai, không biết dòng nào là dòng cũ): **1 Thêm mới** · **2 Lỗi** (bộ đọc bỏ dòng, hiện chỉ có «không đọc được Ngày đăng ký») · **3 Trùng trong lô** = giống hệt 32 cột *sau chuẩn hóa của bộ đọc* với một dòng đứng trước trong cùng tệp. Dòng trùng **chỉ đánh dấu, vẫn ghi** vào `tab_customs_line` — hai dòng giống hệt có thể là hai lô hàng thật (`01` N-04: tệp mẫu có 806 cặp); luật đếm `created_count` / `skipped_count` của lô giữ nguyên, số dòng trùng ghi thêm vào `sheet_info.duplicate_rows`. Đường đọc: `GET /api/customs/imports/{id}/rows?row_status=` + `/rows/summary` (`saved_filter_controller.py`). Lô nạp **trước** CR-496 không có nhật ký từng dòng — màn hình nói rõ thay vì hiện bảng trống.
 
 **Một lô = một tệp** (`file_id` chỉ trỏ được một tệp). Chọn cả bộ 5 tệp một lần thì sinh 5 lô liền nhau — không sao, vì đo được 5 tệp phủ 5 khoảng ngày **không chồng nhau** (§4.4). Nguy cơ quên một tệp thì xử bằng **dải tháng đã phủ** trên màn hình ([`04`](./04-giao-dien.md)), tháng trống hiện rõ.
 

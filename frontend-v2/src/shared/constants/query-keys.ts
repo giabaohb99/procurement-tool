@@ -31,6 +31,13 @@ export const queryKeys = {
      */
     purchaseRequestAssignableStaff: (id: number) =>
       ['procurement', 'purchase-requests', id, 'assignable-staff'] as const,
+    /** bao-CR-496 — bộ lọc đã lưu của màn Tra cứu giá hải quan (riêng tài khoản đang đăng nhập). */
+    customsSavedFilters: () => ['procurement', 'customs', 'saved-filters'] as const,
+    /** bao-CR-496 — nhật ký TỪNG DÒNG của một lô nạp hải quan; nằm dưới khóa lô để hoàn tác kéo theo. */
+    customsBatchRows: (batchId: number, params?: Record<string, unknown>) =>
+      ['procurement', 'customs', 'batch', batchId, 'rows', params ?? {}] as const,
+    customsBatchRowSummary: (batchId: number) =>
+      ['procurement', 'customs', 'batch', batchId, 'rows', 'summary'] as const,
     /**
      * bao-CR-314 — phiếu YCMH cắt theo MỘT ĐƠN MUA HÀNG. Khóa gắn với id ĐƠN chứ
      * không gắn id phiếu: cùng một phiếu mở từ hai đơn khác nhau ra hai bản khác nhau.

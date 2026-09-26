@@ -8,7 +8,7 @@ riêng `category` (loại lỗi) giữ string vì danh sách còn mở rộng.
 """
 from enum import IntEnum
 
-from sqlalchemy import BigInteger, DateTime, Integer, SmallInteger, String, Text
+from sqlalchemy import BigInteger, DateTime, Index, Integer, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -63,6 +63,28 @@ class LogLevel(IntEnum):
     ERROR = 3
 
 
+class ImportRowStatus(IntEnum):
+    """Kết cục của TỪNG DÒNG DỮ LIỆU trong tệp nạp — bao-CR-496 (luật R2).
+
+    `NONE` = dòng nhật ký thường (cảnh báo / thông báo của lô), không phải dòng dữ liệu.
+    Cố ý KHÔNG có «Cập nhật»: nguồn GTT02 không có số tờ khai nên không dựng được khóa
+    để biết dòng nào là cùng một dòng cũ (02 §3.1). `DUPLICATE` chỉ ĐÁNH DẤU — dòng vẫn
+    ghi vào bảng giá, vì hai dòng giống hệt có thể là hai lô hàng thật.
+    """
+    NONE = 0
+    NEW = 1          # Thêm mới
+    ERROR = 2        # Lỗi — bỏ dòng
+    DUPLICATE = 3    # Trùng với một dòng khác trong CÙNG tệp (vẫn ghi)
+
+
+IMPORT_ROW_STATUS_LABELS = {
+    ImportRowStatus.NONE: "",
+    ImportRowStatus.NEW: "Thêm mới",
+    ImportRowStatus.ERROR: "Lỗi",
+    ImportRowStatus.DUPLICATE: "Trùng trong lô",
+}
+
+
 class ImportBatch(Base, AuditMixin):
     """1 lần import. created_by = người import; created_at = thời điểm upload."""
 
@@ -94,6 +116,8 @@ class ImportLog(Base, AuditMixin):
     """Chi tiết từng dòng có vấn đề (hoặc info) của 1 batch."""
 
     __tablename__ = "tab_import_log"
+    #  bao-CR-496: đếm / lọc theo kết cục từng dòng trong MỘT lô (18.000 dòng một tệp).
+    __table_args__ = (Index("ix_import_log_batch_row_status", "batch_id", "row_status"),)
 
     batch_id: Mapped[int] = mapped_column(BigInteger, index=True)
     sheet: Mapped[str] = mapped_column(String(40), default="")            # vd 3.KS-NCC / 4.KS-SP / 6.TIENDO
@@ -104,6 +128,8 @@ class ImportLog(Base, AuditMixin):
     ref_key: Mapped[str] = mapped_column(String(120), default="")         # Mã yêu cầu / Misa / Số HĐ / NCC
     target_code: Mapped[str] = mapped_column(String(50), default="")      # KS##### / PO##### tạo/cập nhật
     raw: Mapped[str] = mapped_column(Text, default="")                    # JSON vài cột gốc
+    #  bao-CR-496: kết cục từng dòng dữ liệu (ImportRowStatus); 0 = dòng nhật ký thường.
+    row_status: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
 
 
 class ImportChange(Base, AuditMixin):

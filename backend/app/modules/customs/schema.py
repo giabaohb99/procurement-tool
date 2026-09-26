@@ -4,6 +4,7 @@ Mọi cột chữ khai `max_length` khớp ĐÚNG `String(n)` ở `model.py`: th
 dài đi thẳng xuống MySQL và ra lỗi 500 thay vì câu "tối đa n ký tự" (duoc-CR-316).
 Bộ test chạy SQLite, không ép độ dài — nên chốt phải nằm ở đây.
 """
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -176,3 +177,47 @@ class SearchSynonymOut(BaseModel):
     synonyms: str = ""
     note: str = ""
     is_active: bool = True
+
+
+# ── bao-CR-496: bộ lọc đã lưu ─────────────────────────────────────────────────────────────
+#  `name` khai max_length khớp String(120) của model (luật duoc-CR-316: thiếu là 500 thay vì 422).
+#  `params` là chuỗi tham số URL; trần 4000 ký tự để không ai dán cả trang web vào cột Text.
+SAVED_FILTER_PARAMS_MAX = 4000
+
+
+def _clean_filter_name(v: str) -> str:
+    v = " ".join((v or "").split())
+    if not v:
+        raise ValueError("Tên bộ lọc không được để trống")
+    return v
+
+
+class SavedFilterCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    params: str = Field("", max_length=SAVED_FILTER_PARAMS_MAX)
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, v):
+        return _clean_filter_name(v)
+
+
+class SavedFilterUpdate(BaseModel):
+    """Đổi tên và/hoặc ghi đè bộ tham số («Cập nhật» = lưu điều kiện đang áp vào tên cũ)."""
+    name: str | None = Field(None, min_length=1, max_length=120)
+    params: str | None = Field(None, max_length=SAVED_FILTER_PARAMS_MAX)
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, v):
+        return None if v is None else _clean_filter_name(v)
+
+
+class SavedFilterOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str = ""
+    params: str = ""
+    is_shared: bool = False
+    updated_at: datetime | None = None
