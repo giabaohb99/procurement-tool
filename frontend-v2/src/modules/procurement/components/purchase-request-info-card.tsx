@@ -31,6 +31,8 @@ import {
 import { ApproverSelect } from './approver-select'
 
 interface InfoCardProps {
+  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô «Trưởng phòng phê duyệt»). */
+  approverCandidates?: DeptHeadCandidate[]
   data: PurchaseRequestDetail
   editing: boolean
   /** bao-CR-488 — đang LẬP phiếu mới: ô Phòng xử lý ẩn sau ô tick «Nhờ phòng khác xử lý». */
@@ -67,6 +69,7 @@ export function PurchaseRequestInfoCard({
   onUrgentChange,
   companies = [],
   employees = [],
+  approverCandidates = [],
   departments = [],
   deptHeadCandidates = [],
   defaultDeptHead,
@@ -357,7 +360,7 @@ export function PurchaseRequestInfoCard({
           id="pr-approver"
           value={data.approver_employee_id ?? 0}
           name={data.approver_employee_name ?? ''}
-          employees={employees}
+          candidates={approverCandidates}
           editable={editing}
           onChange={onChange}
         />

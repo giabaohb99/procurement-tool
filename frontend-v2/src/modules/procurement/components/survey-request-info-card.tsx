@@ -8,6 +8,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 
+import type { DeptHeadCandidate } from '../types/purchase-request-detail'
 import { ApproverSelect } from './approver-select'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
@@ -26,6 +27,8 @@ import {
 } from '../utils/handling-dept-display'
 
 interface SurveyRequestInfoCardProps {
+  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô «Trưởng phòng phê duyệt»). */
+  approverCandidates?: DeptHeadCandidate[]
   data: SurveyRequestDetail
   editing: boolean
   isNew: boolean
@@ -60,6 +63,7 @@ export function SurveyRequestInfoCard({
   isNew,
   companies = [],
   employees = [],
+  approverCandidates = [],
   departments = [],
   lockRequester = false,
   invalid,
@@ -361,7 +365,7 @@ export function SurveyRequestInfoCard({
           id="sr-approver"
           value={data.approver_employee_id ?? 0}
           name={data.approver_employee_name ?? ''}
-          employees={employees}
+          candidates={approverCandidates}
           editable={editing}
           onChange={onChange}
         />

@@ -609,6 +609,30 @@ def _see_all_items(profile: dict, pr, user) -> bool:
     return False
 
 
+@router.get("/meta/approver-candidates")
+def approver_candidates_meta(department: str = "", department_id: int = 0, company_id: int = 0,
+                             handler_dept_id: int = 0, db: Session = Depends(get_db),
+                             user=Depends(require("purchase_request", "read"))):
+    """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô «Trưởng phòng phê duyệt».
+
+    Khai TRƯỚC `/{pid}` kẻo FastAPI nuốt "meta" thành id.
+    """
+    from app.core.approver_candidates import candidates_for_draft, draft_fields
+    from .model import PurchaseRequest
+    fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
+    return success({"items": candidates_for_draft(db, PurchaseRequest, "purchase_request", fields)})
+
+
+@router.get("/{pid}/approver-candidates")
+def approver_candidates_(pid: int, db: Session = Depends(get_db),
+                         user=Depends(require("purchase_request", "read"))):
+    """bao-CR-499 — người duyệt được ĐÚNG chứng từ này (hỏi apply_scope hành động approve)."""
+    from app.core.approver_candidates import candidates_for_row
+    from .model import PurchaseRequest
+    row = _in_scope(db, pid, user, "read")
+    return success({"items": candidates_for_row(db, PurchaseRequest, "purchase_request", row.id)})
+
+
 @router.get("/meta/dept-head")
 def dept_head(department: str = "", department_id: int = 0, db: Session = Depends(get_db),
               user=Depends(require("purchase_request", "read"))):

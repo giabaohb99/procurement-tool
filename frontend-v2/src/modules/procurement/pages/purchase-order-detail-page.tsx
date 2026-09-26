@@ -73,6 +73,7 @@ import {
   shiftPendingAfterLineRemove,
   type PendingDeliveryFiles,
 } from '../helpers/pending-delivery-files'
+import { useApproverCandidates } from '../hooks/use-approver-candidates'
 import { usePurchaseRequests } from '../hooks/use-purchase-documents'
 import { useUploadDeliveryFiles } from '../hooks/use-purchase-request-support'
 import {
@@ -242,6 +243,21 @@ export function PurchaseOrderDetailPage() {
   const linePendingFiles = useMemo(
     () => (lineIndex === null ? {} : pendingFilesOfLine(pendingFiles, lineIndex)),
     [pendingFiles, lineIndex],
+  )
+
+  //  bao-CR-499: ô «Trưởng phòng phê duyệt» chỉ liệt kê người DUYỆT ĐƯỢC đơn này. Gọi TRƯỚC
+  //  các nhánh return sớm bên dưới (luật hook).
+  const approverSource = draft ?? serverData
+  const { data: approverData } = useApproverCandidates(
+    'purchase-orders',
+    purchaseOrderId,
+    {
+      department: approverSource?.department ?? '',
+      department_id: approverSource?.department_id ?? 0,
+      company_id: approverSource?.company_id ?? 0,
+      handler_dept_id: approverSource?.handler_dept_id ?? 0,
+    },
+    isNew || ['draft', 'rejected'].includes(approverSource?.status ?? ''),
   )
 
   if (!isNew && isLoading) {
@@ -656,6 +672,7 @@ export function PurchaseOrderDetailPage() {
             (supplier) => supplier.supplier_type !== 'transport',
           )}
           employees={employeesData?.items}
+          approverCandidates={approverData?.items}
           canPickNspt={can('purchase_order', 'approve')}
           purchaseRequestId={purchaseRequestId}
           onChange={patch}

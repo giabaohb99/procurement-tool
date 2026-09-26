@@ -74,6 +74,7 @@ import {
 } from '../components/survey-request-lines-table'
 import { SurveyRequestResultCard } from '../components/survey-request-result-card'
 import { ReturnChoiceDialog } from '../components/return-choice-dialog'
+import { useApproverCandidates } from '../hooks/use-approver-candidates'
 import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
 import {
   shiftPendingAfterInsert,
@@ -300,6 +301,21 @@ export function SurveyRequestDetailPage() {
         // Tra hụt thì thôi — ô Trưởng bộ phận để trống như trước.
       })
   }, [prefillDeptId, prefillDeptName, prefillHeadId, lookupDeptHead])
+
+  //  bao-CR-499: ô «Trưởng phòng phê duyệt» chỉ liệt kê người DUYỆT ĐƯỢC phiếu này. Gọi TRƯỚC
+  //  các nhánh return sớm bên dưới (luật hook).
+  const approverSource = draft ?? serverData
+  const { data: approverData } = useApproverCandidates(
+    'survey-requests',
+    surveyRequestId,
+    {
+      department: approverSource?.department ?? '',
+      department_id: approverSource?.department_id ?? 0,
+      company_id: approverSource?.company_id ?? 0,
+      handler_dept_id: approverSource?.handler_dept_id ?? 0,
+    },
+    isNew || ['draft', 'rejected'].includes(approverSource?.status ?? ''),
+  )
 
   if (!isNew && isLoading) {
     return (
@@ -739,6 +755,7 @@ export function SurveyRequestDetailPage() {
           companies={companiesData?.items}
           employees={employeesData?.items}
           departments={departmentsData?.items}
+          approverCandidates={approverData?.items}
           lockRequester={isStaff}
           invalid={invalid}
           onChange={patch}

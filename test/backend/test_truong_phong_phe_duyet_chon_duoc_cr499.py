@@ -136,3 +136,72 @@ def test_po_chosen_approver_is_notified_and_kept_after_unapprove(db, seed, captu
     po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=USER)
     db.refresh(po)
     assert po.approver_employee_id == actual
+
+
+# ── Hướng 1 (đại ca chốt 26/09): danh sách chọn = người DUYỆT ĐƯỢC đúng chứng từ đó ────────────
+
+def _person(db, seed, code, dept_id, active=True):
+    from app.modules.employee.model import Employee
+    emp = Employee(code=code, full_name=f"NV {code}", company_id=seed.company_id, department_id=dept_id,
+                   is_active=True)
+    db.add(emp)
+    db.flush()
+    u = User(email=code, employee_id=emp.id, password_hash="x", is_active=active)
+    db.add(u)
+    db.flush()
+    return emp, u
+
+
+def test_candidates_follow_approve_scope_not_the_callers_view(db, seed, cap_quyen):
+    from app.core.approver_candidates import candidates_for_draft, candidates_for_row, draft_fields
+    dept = _dept(db, seed)
+    other = Department(code="OTHER499", name="Phòng khác", company_id=seed.company_id, is_active=True)
+    db.add(other)
+    db.flush()
+    head, u_head = _person(db, seed, "HEAD499", dept.id)
+    far, u_far = _person(db, seed, "FAR499", other.id)
+    reader, u_reader = _person(db, seed, "READ499", dept.id)
+    gone, u_gone = _person(db, seed, "GONE499", dept.id, active=False)
+    cap_quyen(u_head.id, "purchase_request", scope="dept", read=True, approve=True)
+    cap_quyen(u_far.id, "purchase_request", scope="dept", read=True, approve=True)
+    cap_quyen(u_reader.id, "purchase_request", scope="dept", read=True)
+    cap_quyen(u_gone.id, "purchase_request", scope="dept", read=True, approve=True)
+    db.commit()
+
+    pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
+                                           requester_id=seed.emp_req_id, department=dept.name), seed.u_req_id)
+    ids = {c["employee_id"] for c in candidates_for_row(db, PurchaseRequest, "purchase_request", pr.id)}
+    assert head.id in ids, "trưởng phòng có quyền duyệt phạm vi phòng này"
+    assert far.id not in ids, "duyệt phòng KHÁC thì không duyệt nổi phiếu này"
+    assert reader.id not in ids, "chỉ có quyền xem, không có quyền duyệt"
+    assert gone.id not in ids, "tài khoản đã khóa"
+
+    before = db.query(PurchaseRequest).count()
+    draft = candidates_for_draft(db, PurchaseRequest, "purchase_request",
+                                 draft_fields(db, SimpleNamespace(id=seed.u_req_id), department_id=dept.id))
+    assert {c["employee_id"] for c in draft} == ids, "màn tạo mới ra đúng danh sách như khi sửa"
+    assert db.query(PurchaseRequest).count() == before, "bản ghi tạm không được để lại"
+
+
+def test_system_admin_role_is_not_offered(db, seed, cap_quyen):
+    from app.core.approver_candidates import candidates_for_row
+    from app.modules.role.model import Permission, Role
+    from app.modules.user.model import UserRole
+    dept = _dept(db, seed)
+    boss, u_boss = _person(db, seed, "ADM499", dept.id)
+    role = db.query(Role).filter(Role.code == "admin").first() or Role(code="admin", name="Quản trị")
+    db.add(role)
+    db.flush()
+    db.add(Permission(role_id=role.id, entity="purchase_request", scope="all", can_read=True, can_approve=True))
+    db.add(UserRole(user_id=u_boss.id, role_id=role.id))
+    db.commit()
+    pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
+                                           requester_id=seed.emp_req_id, department=dept.name), seed.u_req_id)
+    ids = {c["employee_id"] for c in candidates_for_row(db, PurchaseRequest, "purchase_request", pr.id)}
+    assert boss.id not in ids, "quản trị hệ thống không phải «trưởng phòng» — không đưa vào ô chọn"
+
+
+def test_endpoints_exist_for_all_three_documents():
+    for ctl, name in ((pr_ctl, "approver_candidates_"), (sr_ctl, "approver_candidates_"),
+                      (po_ctl, "approver_candidates_")):
+        assert hasattr(ctl, name) and hasattr(ctl, "approver_candidates_meta")

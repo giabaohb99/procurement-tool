@@ -116,6 +116,8 @@ export interface PurchaseOrderDetail {
   supplier_code: string
   supplier_name: string
   department: string
+  /** CR-086: phòng ban neo bằng id (backend trả sẵn); bao-CR-499 dùng để tra người duyệt được. */
+  department_id?: number
   /** bao-CR-414: PHÒNG XỬ LÝ đơn (0 = thu mua chung), chép từ YCMH nguồn. */
   handler_dept_id?: number
   /** bao-CR-480: tên phòng xử lý do backend trả kèm (rỗng = thu mua chung). */

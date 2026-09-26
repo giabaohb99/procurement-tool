@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { prBadge } from '../config/cruds'
 import Select from 'react-select'
 import SearchSelect from '../components/SearchSelect'
+import { loadApproverCandidates } from '../components/approverCandidates'
 import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
@@ -128,6 +129,12 @@ export default function SurveyRequestDetail() {
   const [companies, setCompanies]   = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [employees, setEmployees]   = useState<any[]>([])
+  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô «Trưởng phòng phê duyệt» (chỉ nạp khi ô còn chọn được).
+  const [approverCands, setApproverCands] = useState<any[]>([])
+  useEffect(() => {
+    if (!(isNew || ['draft', 'rejected'].includes(sv.status))) { setApproverCands([]); return }
+    loadApproverCandidates(API, isNew ? 0 : Number(id), sv).then(setApproverCands)
+  }, [id, isNew, sv.status, sv.department, sv.department_id, sv.company_id, sv.handler_dept_id])
   const [assignableStaff, setAssignableStaff] = useState<any[]>([])   // bao-CR-486: NSTM theo phòng xử lý
   const [itemGroups, setItemGroups] = useState<any[]>([])
   const [units, setUnits]           = useState<string[]>([])
@@ -844,11 +851,11 @@ export default function SurveyRequestDetail() {
                   đè người THỰC duyệt và khóa. Giữ TÁCH với ô Trưởng bộ phận (đại ca chốt 26/09/2026). */}
               <div className="form-row">
                 <label>Trưởng phòng phê duyệt</label>
-                {editable && employees.length > 0 ? (
+                {editable && approverCands.length > 0 ? (
                   <SearchSelect value={sv.approver_employee_id ? String(sv.approver_employee_id) : ''}
-                    options={employees.map((e: any) => ({ value: String(e.id), label: `${e.code} - ${e.full_name}` }))}
+                    options={approverCands.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
                     placeholder={sv.approver_employee_name || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
-                    onChange={(v) => { const e = employees.find((x: any) => String(x.id) === v); if (e) setSv((s: any) => ({ ...s, approver_employee_id: e.id, approver_employee_name: e.full_name })) }} />
+                    onChange={(v) => { const c = approverCands.find((x: any) => String(x.employee_id) === v); if (c) setSv((s: any) => ({ ...s, approver_employee_id: c.employee_id, approver_employee_name: c.name })) }} />
                 ) : (
                   <input value={sv.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt phiếu này; chưa duyệt thì là người được chọn" />
                 )}

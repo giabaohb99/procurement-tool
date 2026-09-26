@@ -8545,7 +8545,7 @@ frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/
 modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py
 
 ## bao-CR-499 | Ô Trưởng phòng phê duyệt chọn được, báo người được chọn, bản in in người thực duyệt
-- status: dang-lam
+- status: xong
 - date: 2026-09-26
 Đại ca góp ý lại CR-490: ô Trưởng phòng phê duyệt không chỉ để xem mà cho người lập chọn
 luôn, để hệ gửi chuông và mail cho người đó; bản in thì ai thực bấm duyệt in tên người đó,
@@ -8558,7 +8558,13 @@ phê duyệt chọn được trong danh sách nhân sự khi phiếu còn sửa 
 thực duyệt và ô khóa lại. Bản in luôn in tên đang nằm trong ô đó, phiếu chưa duyệt thì in
 người được chọn, phiếu cũ trước ngày 25/09 vẫn lấy theo nhật ký thao tác. Bỏ công tắc Ký
 người duyệt / Ký trưởng phòng ở bản in của cả hai bản. Hủy duyệt đơn mua hàng không còn xóa
-ô này nữa. Không cần migration. Chưa commit.
+ô này nữa. Không cần migration.
+
+Bổ sung cùng ngày theo hướng đại ca chọn: danh sách chọn chỉ gồm những người duyệt được
+đúng chứng từ đó, do hệ thống tính theo luật phạm vi duyệt, không còn phụ thuộc quyền xem
+nhân sự của người lập phiếu, không lẫn người đã nghỉ, không đưa quản trị hệ thống vào. Màn tạo
+mới cũng ra đúng danh sách như khi sửa. Phiếu không có ai duyệt được thì ô nói rõ để đi kiểm
+tra phân quyền phòng ban.
 
 Kiểm: 42 bài kiểm backend xanh trong đó 6 bài mới; giao diện v2 kiểm kiểu 0 lỗi, nếp mã 0
 lỗi, 596 bài thu mua xanh; bản v1 kiểm kiểu còn đúng 4 lỗi nền cũ.

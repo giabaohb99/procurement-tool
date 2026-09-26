@@ -78,6 +78,7 @@ import { PurchaseRequestSupplierCard } from '../components/purchase-request-supp
 import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { PurchaseRequestLinkedDocumentsCard } from '../components/purchase-request-linked-documents-card'
 import { ReturnChoiceDialog } from '../components/return-choice-dialog'
+import { useApproverCandidates } from '../hooks/use-approver-candidates'
 import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
 import {
   useAssignPurchaser,
@@ -222,6 +223,18 @@ export function PurchaseRequestDetailPage() {
     editing,
   )
   const { data: defaultDeptHead } = useDefaultDeptHead(formDepartment, formDepartmentId, editing)
+  //  bao-CR-499: ô «Trưởng phòng phê duyệt» chỉ liệt kê người DUYỆT ĐƯỢC phiếu này.
+  const { data: approverData } = useApproverCandidates(
+    'purchase-requests',
+    isNew ? 0 : purchaseRequestId,
+    {
+      department: formDepartment,
+      department_id: formDepartmentId,
+      company_id: (draft ?? serverData)?.company_id ?? 0,
+      handler_dept_id: (draft ?? serverData)?.handler_dept_id ?? 0,
+    },
+    editing,
+  )
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
   const [reason, setReason] = useState('')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -955,6 +968,7 @@ export function PurchaseRequestDetailPage() {
             employees={employeesData?.items}
             departments={departmentsData?.items}
             deptHeadCandidates={deptHeadData?.items}
+            approverCandidates={approverData?.items}
             defaultDeptHead={defaultDeptHead}
             urgentEditable={!closed && !editing && can('purchase_request', 'write')}
             onUrgentChange={(value) => void setUrgent.mutateAsync(value)}

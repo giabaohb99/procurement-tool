@@ -9,6 +9,7 @@ import { prBadge, poBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
 import SearchSelect from '../components/SearchSelect'
+import { loadApproverCandidates } from '../components/approverCandidates'
 import NumberInput from '../components/NumberInput'
 import { VAT_MAX, VAT_DECIMALS } from '../utils/vat'
 import DateInput from '../components/DateInput'
@@ -115,6 +116,12 @@ export default function PurchaseRequestDetail() {
   const [units, setUnits] = useState<string[]>([])
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([])
   const [employees, setEmployees] = useState<any[]>([])
+  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô «Trưởng phòng phê duyệt» (chỉ nạp khi ô còn chọn được).
+  const [approverCands, setApproverCands] = useState<any[]>([])
+  useEffect(() => {
+    if (!(isNew || ['draft', 'rejected'].includes(pr.status))) { setApproverCands([]); return }
+    loadApproverCandidates(API, isNew ? 0 : Number(id), pr).then(setApproverCands)
+  }, [id, isNew, pr.status, pr.department, pr.department_id, pr.company_id, pr.handler_dept_id])
   const [empLoaded, setEmpLoaded] = useState(false)   // bao-CR-376: DS nhân sự đã trả lời xong (kể cả 403/lỗi)
   const [assignableStaff, setAssignableStaff] = useState<any[]>([])   // bao-CR-486: NSTM theo phòng xử lý
   const [departments, setDepartments] = useState<any[]>([])
@@ -1048,11 +1055,11 @@ export default function PurchaseRequestDetail() {
                   đè người THỰC duyệt và khóa. Giữ TÁCH với ô Trưởng bộ phận (đại ca chốt 26/09/2026). */}
               <div className="form-row">
                 <label>Trưởng phòng phê duyệt</label>
-                {editable && employees.length > 0 ? (
+                {editable && approverCands.length > 0 ? (
                   <SearchSelect value={pr.approver_employee_id ? String(pr.approver_employee_id) : ''}
-                    options={employees.map((e: any) => ({ value: String(e.id), label: `${e.code} - ${e.full_name}` }))}
+                    options={approverCands.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
                     placeholder={pr.approver_employee_name || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
-                    onChange={(v) => { const e = employees.find((x: any) => String(x.id) === v); if (e) setPr((s: any) => ({ ...s, approver_employee_id: e.id, approver_employee_name: e.full_name })) }} />
+                    onChange={(v) => { const c = approverCands.find((x: any) => String(x.employee_id) === v); if (c) setPr((s: any) => ({ ...s, approver_employee_id: c.employee_id, approver_employee_name: c.name })) }} />
                 ) : (
                   <input value={pr.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt phiếu này; chưa duyệt thì là người được chọn" />
                 )}

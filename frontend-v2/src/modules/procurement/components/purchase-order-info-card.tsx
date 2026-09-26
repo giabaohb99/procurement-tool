@@ -14,6 +14,7 @@ import { Label } from '@/shared/ui/label'
 import { NumberInput } from '@/shared/ui/number-input'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 
+import type { DeptHeadCandidate } from '../types/purchase-request-detail'
 import { ApproverSelect } from './approver-select'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
@@ -44,6 +45,8 @@ import { handlingDeptLabel } from '../utils/handling-dept-display'
 const EXCHANGE_RATE_MAX_DECIMALS = 6
 
 interface PurchaseOrderInfoCardProps {
+  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô «Trưởng phòng phê duyệt»). */
+  approverCandidates?: DeptHeadCandidate[]
   data: PurchaseOrderDetail
   /** Đơn chưa chốt + có quyền ghi thì cho sửa phần đầu. */
   editable: boolean
@@ -81,6 +84,7 @@ export function PurchaseOrderInfoCard({
   companies = [],
   suppliers = [],
   employees = [],
+  approverCandidates = [],
   canPickNspt,
   purchaseRequestId,
   onChange,
@@ -277,7 +281,7 @@ export function PurchaseOrderInfoCard({
           id="po-approver"
           value={data.approver_employee_id ?? 0}
           name={data.approver_employee_name ?? ''}
-          employees={employees}
+          candidates={approverCandidates}
           editable={editable}
           onChange={onChange}
         />
