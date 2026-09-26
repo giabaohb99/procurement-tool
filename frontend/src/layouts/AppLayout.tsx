@@ -117,7 +117,7 @@ const NAV_GROUPS: NavGroup[] = [
       {
         // bao-CR-470 — giá nhập khẩu thị trường từ tờ khai hải quan (GTT02)
         to: "/customs-prices",
-        label: "Tra cứu giá hải quan",
+        label: "Tra cứu thị trường",
         icon: "ti-world-search",
         entity: "customs_price",
       },

@@ -105,7 +105,7 @@ export const procurementModule: ErpModule = {
     },
     // bao-CR-470 — Tra cứu giá hải quan, khóa riêng `customs_price`
     {
-      label: 'Tra cứu giá hải quan',
+      label: 'Tra cứu thị trường',
       path: appRoutes.procurement.customsPrices,
       icon: Landmark,
       entity: 'customs_price',
@@ -177,7 +177,7 @@ export const procurementModule: ErpModule = {
     // gắn nhãn Thành phẩm / Nguyên liệu và từ đồng nghĩa tìm kiếm. Dùng chung khóa
     // `customs_price` (cấu hình của chính màn đó, không có màn nghiệp vụ riêng).
     {
-      label: 'Từ khóa nhãn hải quan',
+      label: 'Từ khóa nhãn thị trường',
       path: appRoutes.procurement.customsKindKeywords,
       icon: Tags,
       entity: 'customs_price',
@@ -185,7 +185,7 @@ export const procurementModule: ErpModule = {
       group: 'Cấu hình',
     },
     {
-      label: 'Từ đồng nghĩa hải quan',
+      label: 'Từ đồng nghĩa thị trường',
       path: appRoutes.procurement.customsSearchSynonyms,
       icon: SpellCheck,
       entity: 'customs_price',

@@ -25,7 +25,7 @@ from app.core.database import SessionLocal  # noqa: E402
 from app.modules.help_center.model import HelpArticle  # noqa: E402
 
 STAFF_PARENT_TITLE = "Dành cho Nhân viên Mua hàng"
-ARTICLE_TITLE = "Tra cứu giá hải quan"
+ARTICLE_TITLE = "Tra cứu thị trường"  # bao-CR-500: đổi từ «Tra cứu giá hải quan»
 
 SUMMARY = (
     "Xem giá và lượng nhập khẩu của thị trường theo tờ khai hải quan: lọc theo tên hàng, hoạt "
@@ -35,7 +35,7 @@ SUMMARY = (
 CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <p>Trước khi mua một mặt hàng, người thu mua cần biết <strong>thị trường đang nhập mặt hàng đó về Việt Nam với giá bao nhiêu, lượng bao nhiêu, và tháng nào giá tốt</strong>. Màn <strong>Tra cứu giá hải quan</strong> (menu <em>Mua hàng</em>) trả lời câu đó bằng dữ liệu tờ khai hải quan nhập khẩu do người được giao nạp vào từ tệp Excel.</p>
 <p>Màn này <strong>độc lập</strong>: không nối với danh mục vật tư, tồn kho hay lịch sử mua hàng của công ty. Tìm theo chữ, không theo mã sản phẩm nội bộ.</p>
-<p>Cần quyền <strong>Tra cứu giá hải quan</strong> (xem). Nạp dữ liệu, hoàn tác, xuất Excel là các quyền riêng — không có quyền thì không thấy nút.</p>
+<p>Cần quyền <strong>Tra cứu thị trường</strong> (xem). Nạp dữ liệu, hoàn tác, xuất Excel là các quyền riêng — không có quyền thì không thấy nút.</p>
 
 <h2>II. Một dòng là gì</h2>
 <p>Mỗi dòng trên màn là <strong>một dòng hàng</strong> trên tờ khai, không phải một tờ khai. Một tờ khai có thể gồm nhiều dòng hàng, và tệp dữ liệu không có số tờ khai, nên mọi con số trên màn đều đếm theo <strong>dòng hàng</strong>.</p>

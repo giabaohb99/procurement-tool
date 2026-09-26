@@ -33,7 +33,7 @@ export const CUSTOMS_KIND_KEYWORD_CRUD_CONFIG: CrudConfig<CustomsKindKeyword> = 
   entity: 'customs_price',
   title: 'Từ khóa Thành phẩm / Nguyên liệu',
   description:
-    'Bộ từ khóa để màn Tra cứu giá hải quan tự gắn nhãn từng dòng hàng. Tên hàng chứa từ khóa loại «Nguyên liệu» thì là nguyên liệu kỹ thuật, còn lại là thành phẩm. Sửa xong bấm «Gắn lại nhãn».',
+    'Bộ từ khóa để màn Tra cứu thị trường tự gắn nhãn từng dòng hàng. Tên hàng chứa từ khóa loại «Nguyên liệu» thì là nguyên liệu kỹ thuật, còn lại là thành phẩm. Sửa xong bấm «Gắn lại nhãn».',
   unitLabel: 'từ khóa',
   apiPath: '/api/customs-kind-keywords',
   storageKey: 'procurement.customs-kind-keywords',

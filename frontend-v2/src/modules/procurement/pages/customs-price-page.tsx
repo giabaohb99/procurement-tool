@@ -311,7 +311,7 @@ export function CustomsPricePage() {
   return (
     <PageContainer className="flex flex-col gap-3">
       <PageHeader
-        title="Tra cứu giá hải quan"
+        title="Tra cứu thị trường"
         description="Giá nhập khẩu theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
         actions={
           <>

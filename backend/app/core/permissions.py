@@ -224,7 +224,7 @@ ENTITY_LABELS = {
     "audit": "Nhật ký hệ thống (tra toàn hệ)",
     "change_log": "Nhật ký hệ thống › Giá trị trước/sau",
     "sync_log": "Sổ đồng bộ với hệ ngoài",
-    "customs_price": "Tra cứu giá hải quan",
+    "customs_price": "Tra cứu thị trường",
     "customs_regulation": "Danh mục hóa chất theo văn bản (hải quan)",
     "purchase_cost_type": "Danh mục Loại chi phí thu mua",
     "agent_task": "Trợ lý Telegram › Việc của bot",

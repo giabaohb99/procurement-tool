@@ -198,7 +198,7 @@ export default function CustomsPrices() {
   // (Chặn thật nằm ở backend — mọi đường /api/customs đều require('customs_price', ...).)
   if (!can('customs_price', 'read')) return (
     <div className="card" style={{ padding: 24, color: 'var(--muted)' }}>
-      Tài khoản chưa được cấp quyền <b>Tra cứu giá hải quan</b>. Nhờ quản trị tick quyền này trên vai trò của bạn.
+      Tài khoản chưa được cấp quyền <b>Tra cứu thị trường</b>. Nhờ quản trị tick quyền này trên vai trò của bạn.
     </div>
   )
 
@@ -210,7 +210,7 @@ export default function CustomsPrices() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <h2 className="page-title" style={{ margin: 0, flex: 1 }}>Tra cứu giá hải quan</h2>
+        <h2 className="page-title" style={{ margin: 0, flex: 1 }}>Tra cứu thị trường</h2>
         {can('customs_regulation', 'read') && (
           <Link className="btn ghost" to="/customs-regulations"><i className="ti ti-book" />Danh mục hóa chất</Link>
         )}

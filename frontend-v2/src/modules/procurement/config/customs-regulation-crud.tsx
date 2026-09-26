@@ -29,7 +29,7 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
   entity: 'customs_regulation',
   title: 'Danh mục hóa chất theo văn bản',
   description:
-    'Hóa chất trong NĐ 24/2026, TT 75/2025, TT 01/2026 — nguồn của cảnh báo pháp lý trên màn Tra cứu giá hải quan.',
+    'Hóa chất trong NĐ 24/2026, TT 75/2025, TT 01/2026 — nguồn của cảnh báo pháp lý trên màn Tra cứu thị trường.',
   unitLabel: 'hóa chất',
   apiPath: '/api/customs-regulations',
   storageKey: 'procurement.customs-regulations',
@@ -43,7 +43,7 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
   ],
   getItemName: (row) => row.name,
   deleteWarning:
-    'Xóa khỏi danh mục thì màn Tra cứu giá hải quan thôi cảnh báo cho hóa chất này. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+    'Xóa khỏi danh mục thì màn Tra cứu thị trường thôi cảnh báo cho hóa chất này. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
   chips: (row) => [
     { icon: BookOpen, text: formatRegulationListLabel(row.list_code) },
     ...(row.cas_no ? [{ icon: Hash, text: `CAS ${row.cas_no}`, tone: 'code' as const }] : []),

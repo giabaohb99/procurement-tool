@@ -21,7 +21,7 @@ export const CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG: CrudConfig<CustomsSearchSynonym
   entity: 'customs_price',
   title: 'Từ đồng nghĩa tìm kiếm',
   description:
-    'Các cách viết tương đương của cùng một hoạt chất / tên hàng. Ô tìm trên màn Tra cứu giá hải quan gõ từ nào trong nhóm cũng ra kết quả của cả nhóm. Nồng độ (3,6% · 3.6EC · 36 G/L) hệ tự quy đổi, không cần khai.',
+    'Các cách viết tương đương của cùng một hoạt chất / tên hàng. Ô tìm trên màn Tra cứu thị trường gõ từ nào trong nhóm cũng ra kết quả của cả nhóm. Nồng độ (3,6% · 3.6EC · 36 G/L) hệ tự quy đổi, không cần khai.',
   unitLabel: 'nhóm từ',
   apiPath: '/api/customs-search-synonyms',
   storageKey: 'procurement.customs-search-synonyms',

@@ -8547,6 +8547,24 @@ celery_app.py · backend/app/modules/employee/service.py · backend/migrations/v
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py
 
+## bao-CR-500 | Đổi tên màn Tra cứu giá hải quan thành Tra cứu thị trường
+- status: xong
+- date: 2026-09-26
+Đại ca muốn đổi tên màn tra cứu hải quan thành Tra cứu thị trường. Em đổi ở mọi chỗ người
+dùng nhìn thấy, cả bản cũ lẫn bản mới: menu, tiêu đề màn, câu báo thiếu quyền, tên quyền trên
+màn phân quyền vai trò, mô tả ba danh mục cấu hình của màn, và tiêu đề bài hướng dẫn sử dụng.
+Đại ca chốt đổi luôn hai menu cấu hình thành «Từ khóa nhãn thị trường» và «Từ đồng nghĩa thị
+trường». Danh mục hóa chất theo văn bản giữ chữ hải quan vì nó bám văn bản pháp lý.
+
+Những câu nói về nguồn dữ liệu thì em giữ, ví dụ «Nạp dữ liệu hải quan» hay «Chưa có dữ liệu
+hải quan», vì dữ liệu vẫn lấy từ tờ khai hải quan, đổi đi thì người nạp tệp dễ hiểu nhầm.
+Mã quyền, đường dẫn và tên bảng cũng giữ nguyên nên không có migration, vai trò đang tick
+quyền này không phải tick lại.
+
+Lên dev, bài hướng dẫn em đổi tiêu đề ngay tại chỗ, giữ nguyên số bài, thay vì chạy lại
+bộ nạp bài (bộ nạp xóa bài cũ rồi dựng bài mới). Cổng kiểm: bản mới 623 bài xanh, kiểm kiểu
+sạch; bài kiểm khóa quyền của hải quan 23 bài xanh. Đã lên dev 26/09.
+
 ## bao-CR-499 | Ô Trưởng phòng phê duyệt chọn được, báo người được chọn, bản in in người thực duyệt
 - status: xong
 - date: 2026-09-26
