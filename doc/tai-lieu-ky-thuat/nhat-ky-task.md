@@ -8624,6 +8624,36 @@ Kiểm: cùng bộ 106 bài hải quan xanh.
 Mã nguồn: backend/app/modules/customs/search_service.py · kind_controller.py ·
 frontend-v2 config/customs-search-synonym-crud.tsx
 
+## bao-CR-496 | Lưu bộ lọc riêng từng người và nhật ký từng dòng khi nạp tờ khai hải quan
+- status: dang-lam
+- date: 2026-09-25
+Chị Mi yêu cầu (F07) người dùng đặt tên và lưu lại tổ hợp điều kiện đang lọc để lần sau chọn
+một phát, và (F01 ghi chú 25/09) sau khi nạp tệp phải xem được đủ mọi dòng kèm kết cục. Đại
+ca chốt: bộ lọc lưu riêng từng tài khoản (có sẵn cột dùng chung nhưng tắt), không lưu trên
+máy; kết cục từng dòng chỉ có ba loại Thêm mới, Lỗi, Trùng trong lô, không có Cập nhật vì
+nguồn không có số tờ khai; dòng trùng chỉ đánh dấu, vẫn ghi vào bảng giá. Agent 2 đặt chỗ số
+CR, Erp Agent 1 nhận làm.
+
+Đã làm: bảng bộ lọc đã lưu và bốn đường API xem, lưu, đổi tên hoặc ghi đè, xóa (chỉ của
+chính mình, của người khác coi như không có; trần 50 bộ một người; tên quá dài chặn ở tầng
+kiểm dữ liệu). Cột kết cục thêm vào bảng nhật ký nạp chung, mỗi dòng dữ liệu một dòng nhật
+ký ghi bằng chèn hàng loạt ở cả chạy thử lẫn ghi thật, có đường API liệt kê theo kết cục và
+tổng theo kết cục. Lý do chọn thêm cột thay vì bảng mới ghi ở bản 1.6 của tài liệu thiết kế
+hải quan. Giao diện v2: thanh bộ lọc đã lưu (chọn là màn hình về đúng trạng thái đó, nút Lưu,
+Cập nhật, Xóa) và hộp nhật ký từng dòng có ô đếm theo kết cục bấm để lọc, làm thành tệp mới
+kèm bài kiểm; chưa cắm vào trang chính và thẻ Lịch sử nạp. Ngày 26/09 đại ca chốt gom
+mã nền lên erp-v2 cho sạch cây, phần cắm giao diện và bản v1 giao ERP Agent 2.
+
+Kiểm: 12 bài kiểm backend mới xanh, 80 bài hải quan xanh, bộ bài kiểm dùng nhật ký nạp
+xanh; bài luật bất biến khai thêm hai controller hải quan mới (kind_controller sót từ 494).
+Giao diện: kiểm kiểu 0 lỗi, nếp mã 0 lỗi, 17 bài mới xanh.
+
+
+Mã nguồn: backend/app/modules/customs/row_log.py · saved_filter_service.py ·
+saved_filter_controller.py · import_tool/model.py · migrations/versions/c496a1b2d3e4 ·
+frontend-v2 components/customs/customs-saved-filter-bar.tsx · customs-batch-rows-panel.tsx ·
+utils/customs-saved-filter.ts · test/backend/test_hai_quan_luu_bo_loc_log_dong_cr496.py
+
 ## bao-CR-493 | Tra cứu giá hải quan đợt 1: hai cột VND, lọc thêm, lịch sử nạp trên trang, tải lại tệp gốc
 - status: xong
 - date: 2026-09-25
