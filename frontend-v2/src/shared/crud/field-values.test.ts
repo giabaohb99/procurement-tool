@@ -110,6 +110,32 @@ describe('field-values', () => {
   })
 })
 
+// bao-CR-502: hóa chất không có năm cấm (banned_year = null) bấm Lưu không đổi gì mà vẫn 422,
+// vì `Number(null)` = 0 lọt xuống backend đang chặn năm ngoài 1900–2100.
+describe('toApiPayload — number field declared nullWhenEmpty', () => {
+  const YEAR: CrudFormField[] = [
+    { name: 'banned_year', label: 'Năm bắt đầu cấm', type: 'number', nullWhenEmpty: true },
+    { name: 'sort_order', label: 'Thứ tự', type: 'number' },
+  ]
+
+  it('sends null back when the record came in as null and nobody touched it', () => {
+    expect(toApiPayload(YEAR, { banned_year: null }).banned_year).toBeNull()
+  })
+
+  it('sends null when the user clears the box', () => {
+    expect(toApiPayload(YEAR, { banned_year: '' }).banned_year).toBeNull()
+  })
+
+  it('still converts a typed year, and zero stays zero', () => {
+    expect(toApiPayload(YEAR, { banned_year: '2027' }).banned_year).toBe(2027)
+    expect(toApiPayload(YEAR, { banned_year: 0 }).banned_year).toBe(0)
+  })
+
+  it('leaves number fields that did not opt in on the old null-to-zero path', () => {
+    expect(toApiPayload(YEAR, { sort_order: null }).sort_order).toBe(0)
+  })
+})
+
 describe('withCurrentValue', () => {
   it('bù giá trị cũ ngoài danh sách để ô không hiện trống', () => {
     //  Loại hợp đồng đã bỏ khỏi danh mục thì hợp đồng cũ vẫn phải đọc được nó.

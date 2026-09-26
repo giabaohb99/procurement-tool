@@ -1,7 +1,12 @@
 // bao-CR-496 — bộ lọc đã lưu chỉ mang các Ô LỌC, và chọn nó là màn hình về đúng trạng thái đó.
 import { describe, expect, it } from 'vitest'
 
-import { collectFilterParams, parseFilterParams, sameFilterParams } from './customs-saved-filter'
+import {
+  collectFilterParams,
+  expandMonthToDay,
+  parseFilterParams,
+  sameFilterParams,
+} from './customs-saved-filter'
 
 const NAMES = ['q', 'hs_code', 'origin', 'date_from', 'date_to'] as const
 
@@ -43,6 +48,29 @@ describe('parseFilterParams', () => {
     expect(parseFilterParams('origin=CN&origin=IN', NAMES).origin).toBe('CN,IN')
     expect(parseFilterParams('', NAMES).q).toBeNull()
     expect(parseFilterParams('%%%&&==', NAMES).q).toBeNull()
+  })
+
+  // bao-CR-502: bộ lọc lưu từ bản cũ (lọc theo tháng) mở ở v2 thì ô ngày hiện trống mà bảng vẫn lọc.
+  it('expands a month-only date saved by the old screen into a full day range', () => {
+    const out = parseFilterParams('date_from=2026-01&date_to=2026-02', NAMES)
+    expect(out.date_from).toBe('2026-01-01')
+    expect(out.date_to).toBe('2026-02-28')
+  })
+
+  it('leaves day dates, blanks and garbage untouched', () => {
+    const out = parseFilterParams('date_from=2026-01-15&date_to=2026-13', NAMES)
+    expect(out.date_from).toBe('2026-01-15')
+    expect(out.date_to).toBe('2026-13')
+    expect(parseFilterParams('q=x', NAMES).date_from).toBeNull()
+  })
+})
+
+describe('expandMonthToDay', () => {
+  it('knows leap years and 31-day months at the end edge', () => {
+    expect(expandMonthToDay('2028-02', 'end')).toBe('2028-02-29')
+    expect(expandMonthToDay('2026-12', 'end')).toBe('2026-12-31')
+    expect(expandMonthToDay('2026-04', 'end')).toBe('2026-04-30')
+    expect(expandMonthToDay('2026-12', 'start')).toBe('2026-12-01')
   })
 })
 

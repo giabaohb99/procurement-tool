@@ -34,7 +34,24 @@ export function parseFilterParams(
     const values = saved.getAll(name).filter((v) => v !== '')
     out[name] = values.length ? values.join(',') : null
   }
+  if (out.date_from) out.date_from = expandMonthToDay(out.date_from, 'start')
+  if (out.date_to) out.date_to = expandMonthToDay(out.date_to, 'end')
   return out
+}
+
+/**
+ * bao-CR-502 — bản cũ lọc theo THÁNG tới 26/09/2026 nên bộ lọc lưu từ đó mang «YYYY-MM», mà ô
+ * khoảng ngày chỉ đọc «YYYY-MM-DD»: bảng vẫn lọc (backend hiểu cả hai) nhưng ô trông như trống.
+ * Đổi ra ngày đầu / cuối tháng — cùng khoảng backend vẫn áp, nên kết quả không đổi.
+ */
+export function expandMonthToDay(value: string, edge: 'start' | 'end'): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(value)
+  if (!match) return value
+  const [, year, month] = match
+  if (Number(month) < 1 || Number(month) > 12) return value
+  if (edge === 'start') return `${year}-${month}-01`
+  const lastDay = new Date(Number(year), Number(month), 0).getDate()
+  return `${year}-${month}-${String(lastDay).padStart(2, '0')}`
 }
 
 /** Bộ lọc đã lưu có khớp điều kiện đang áp không — để bày «đang dùng» / «Cập nhật». */

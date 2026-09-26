@@ -65,7 +65,21 @@ export function fromSavedParams(params: string): CustomsFilters {
     const values = saved.getAll(k).filter((v) => v !== '')
     if (values.length) out[k] = values.join(',')
   }
+  out.date_from = monthToDay(out.date_from, 'start')
+  out.date_to = monthToDay(out.date_to, 'end')
   return out
+}
+
+/**
+ * bao-CR-502 — bộ lọc lưu từ bản cũ TRƯỚC khi đổi sang khoảng ngày còn mang «YYYY-MM».
+ * Đổi ra ngày đầu / cuối tháng để ô chọn ngày hiện được; backend hiểu cả hai nên kết quả không đổi.
+ */
+export function monthToDay(value: string, edge: 'start' | 'end'): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(value || '')
+  if (!m || Number(m[2]) < 1 || Number(m[2]) > 12) return value
+  if (edge === 'start') return `${m[1]}-${m[2]}-01`
+  const last = new Date(Number(m[1]), Number(m[2]), 0).getDate()
+  return `${m[1]}-${m[2]}-${String(last).padStart(2, '0')}`
 }
 
 export const sameSavedParams = (a: string, b: string) =>

@@ -121,6 +121,12 @@ export function toApiPayload(
       // Ô trống nghĩa là 0%, không phải "bỏ trường này đi": backend khai `vat`
       // là số bắt buộc nên gửi chuỗi rỗng sẽ 422.
       payload = setPath(payload, field.name, percentInputToRatio(raw === '' ? 0 : raw))
+    } else if (field.type === 'number' && field.nullWhenEmpty && (raw === '' || raw === null)) {
+      //  bao-CR-502: ô số KHAI `nullWhenEmpty` mà đang trống — kể cả khi bản ghi đọc về là `null`
+      //  và người dùng không đụng tới — phải gửi lại `null`. Trước đây `null` rơi xuống nhánh dưới,
+      //  `Number(null)` = 0, và «Năm bắt đầu cấm» (backend chặn 1900–2100) trả 422: MỌI hóa chất
+      //  không có năm cấm đều không sửa được, từ bao-CR-470. Ô không khai giữ nguyên hành vi cũ.
+      payload = setPath(payload, field.name, null)
     } else if (field.type === 'number' && raw !== '') {
       payload = setPath(payload, field.name, Number(raw))
     } else if (field.nullWhenEmpty && raw === '') {

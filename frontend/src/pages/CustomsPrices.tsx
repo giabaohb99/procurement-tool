@@ -7,9 +7,9 @@
 // bao-CR-493 (yêu cầu phòng Thu mua 25/09, bê từ bản v2): thẻ thứ sáu «Lịch sử nạp» thay hộp thoại;
 // hàng «Lọc thêm» sáu ô; doanh nghiệp chọn NHIỀU (chip cộng dồn); hai cột VND ở cuối bảng.
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import Pagination from '../components/Pagination'
 import SearchSelect from '../components/SearchSelect'
@@ -18,6 +18,7 @@ import TableScroll from '../components/TableScroll'
 import TableToolbar from '../components/TableToolbar'
 import { toast } from '../components/toast'
 import CustomsChart from '../components/customs/CustomsChart'
+import CustomsConfigTab from '../components/customs/CustomsConfigTab'
 import CustomsHistoryPanel from '../components/customs/CustomsHistoryPanel'
 import CustomsImportDialog from '../components/customs/CustomsImportDialog'
 import CustomsLineDetail from '../components/customs/CustomsLineDetail'
@@ -37,6 +38,8 @@ const TABS = [
   { key: 'compare', label: 'So sánh', icon: 'ti-arrows-diff' },
   { key: 'legal', label: 'Pháp lý & thuế', icon: 'ti-scale' },
   { key: 'history', label: 'Lịch sử nạp', icon: 'ti-history' },
+  // bao-CR-502 (bê bao-CR-501 bản v2): ba danh mục cấu hình nằm trong thẻ này thay vì màn riêng.
+  { key: 'config', label: 'Cấu hình', icon: 'ti-settings' },
 ]
 
 const pct = (v: any) => (v == null || v === '' ? '' : `${v}%`)
@@ -203,6 +206,12 @@ export default function CustomsPrices() {
   )
 
   const chartReady = hasChartFilter(filters)
+  // bao-CR-502 — thẻ «Cấu hình»: hai danh mục của `customs_price` cần quyền quản lý (tạo / sửa / xóa,
+  // như mục menu danh mục cũ); danh mục hóa chất mở cho ai XEM được nó (như nút cũ trên đầu màn).
+  const canConfigure = can('customs_price', 'create') || can('customs_price', 'write') || can('customs_price', 'delete')
+  const canReadRegulations = can('customs_regulation', 'read')
+  const showConfigTab = canConfigure || canReadRegulations
+  const visibleTabs = TABS.filter((t) => t.key !== 'config' || showConfigTab)
   // Khóa theo bộ lọc: đổi lọc là dựng lại thẻ biểu đồ / xếp hạng với đơn vị mặc định — một lượt gọi API thay vì hai.
   const filterKey = JSON.stringify(toParams(filters))
   const empty = coverage && coverage.total === 0
@@ -211,9 +220,6 @@ export default function CustomsPrices() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <h2 className="page-title" style={{ margin: 0, flex: 1 }}>Tra cứu thị trường</h2>
-        {can('customs_regulation', 'read') && (
-          <Link className="btn ghost" to="/customs-regulations"><i className="ti ti-book" />Danh mục hóa chất</Link>
-        )}
         <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
         {can('customs_price', 'write') && (
           <button className="btn" onClick={() => setImportOpen(true)}><i className="ti ti-upload" />Nạp dữ liệu</button>
@@ -222,6 +228,8 @@ export default function CustomsPrices() {
 
       <CoverageStrip coverage={coverage} ingredient={options?.ingredient_coverage} />
 
+      {/* bao-CR-502 — thẻ «Cấu hình» không dùng bộ lọc dòng hàng: ẩn cả cụm lọc (state giữ nguyên ở trang). */}
+      {tab !== 'config' && (<>
       {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản, chung kho với bản v2. */}
       <CustomsSavedFilters filters={filters} onApply={(next) => { setDraft(next); apply(next) }} />
 
@@ -251,11 +259,12 @@ export default function CustomsPrices() {
           <SearchSelect value={draft.formulation} placeholder="Tất cả" autoSelectSingle={false}
             options={optionList('formulations')} onChange={set('formulation')} />
         </FilterItem>
-        <FilterItem label="Từ tháng" width={140}>
-          <input type="month" value={draft.date_from} onChange={(e) => set('date_from')(e.target.value)} />
-        </FilterItem>
-        <FilterItem label="Đến tháng" width={140}>
-          <input type="month" value={draft.date_to} onChange={(e) => set('date_to')(e.target.value)} />
+        {/* bao-CR-502 — lọc theo NGÀY đăng ký (trước là tháng), khớp bản v2: bộ lọc đã lưu dùng chung một
+             kho, lưu ở v2 ra ngày cụ thể mà ô tháng không hiện được — bảng lọc mà ô trông như trống. */}
+        <FilterItem label="Ngày đăng ký" width={230}>
+          <DateRangePicker block value={{ from: draft.date_from, to: draft.date_to }}
+            onChange={(v) => setDraft((s) => ({ ...s, date_from: v.from, date_to: v.to }))}
+            onApply={(v) => apply({ ...draft, date_from: v.from, date_to: v.to })} />
         </FilterItem>
         <FilterItem label=" " width={110}>
           <button className="btn ghost" type="button" onClick={() => setExtraOpen((o) => !o)}>
@@ -339,9 +348,10 @@ export default function CustomsPrices() {
           {alerts.length > 5 && <div style={{ marginTop: 4 }}>… và {alerts.length - 5} mục khác — xem thẻ Pháp lý & thuế.</div>}
         </div>
       )}
+      </>)}
 
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb', marginBottom: 12 }}>
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ background: 'none', border: 'none', padding: '8px 14px', cursor: 'pointer', fontSize: 14,
               borderBottom: tab === t.key ? '2px solid var(--teal)' : '2px solid transparent',
@@ -400,6 +410,9 @@ export default function CustomsPrices() {
       {tab === 'compare' && <CustomsCompare filters={filters} />}
       {tab === 'legal' && <CustomsLegal filters={filters} alerts={alerts} />}
       {tab === 'history' && <CustomsHistoryPanel onChanged={refreshAll} />}
+      {tab === 'config' && showConfigTab && (
+        <CustomsConfigTab canConfigure={canConfigure} canReadRegulations={canReadRegulations} />
+      )}
 
       {detailId != null && (
         <CustomsLineDetail id={detailId} onClose={() => setDetailId(null)}

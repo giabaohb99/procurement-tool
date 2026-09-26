@@ -8547,6 +8547,36 @@ celery_app.py · backend/app/modules/employee/service.py · backend/migrations/v
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py
 
+## bao-CR-502 | Bản cũ của Tra cứu thị trường theo kịp bản mới: thẻ Cấu hình, lọc theo ngày, và lỗi không lưu được hóa chất
+- status: xong
+- date: 2026-09-26
+Đại ca bảo rà bản cũ của màn Tra cứu thị trường xem còn thiếu gì so với bản mới, rồi làm cả
+hai chỗ thiếu. Phần lớn đã khớp; chỉ lệch hai chỗ.
+
+Chỗ thứ nhất là bản cũ chưa có thẻ Cấu hình. Em dựng thẻ đó cho bản cũ giống hệt bản mới: ba
+khối từ khóa nhãn, từ đồng nghĩa và danh mục hóa chất, mỗi khối có ô tìm, lọc nhanh, phân
+trang, bấm một dòng thì mở hộp sửa, người không có quyền sửa chỉ xem. Nút Danh mục hóa chất
+trên đầu màn và mục menu Hóa chất theo văn bản của bản cũ được gỡ, như bản mới.
+
+Chỗ thứ hai là bản cũ lọc theo tháng, bản mới lọc theo ngày. Bộ lọc đã lưu dùng chung một kho
+nên lưu ở bản mới rồi mở ở bản cũ thì ô tháng trống trơn mà bảng vẫn đang lọc, người dùng
+tưởng không lọc gì. Em đổi bản cũ sang chọn khoảng ngày như bản mới, và cho cả hai bản tự
+đổi bộ lọc cũ còn ghi theo tháng thành ngày đầu và cuối tháng lúc nạp.
+
+Lúc bấm thử bằng tay em bắt được thêm một lỗi có từ khi làm danh mục hóa chất: hóa chất nào
+không có năm cấm thì bấm Lưu ở bản mới luôn bị từ chối, vì lớp biểu mẫu dùng chung đổi ô
+trống thành số 0 trong khi hệ thống chỉ nhận năm từ 1900. Em vá ở lớp dùng chung, chỉ cho
+những ô có khai rõ «để trống thì gửi rỗng», nên các màn khác không bị ảnh hưởng.
+
+Cổng kiểm: bản cũ giữ đúng 4 lỗi kiểu có sẵn; bản mới kiểm kiểu sạch, lint sạch, 699 bài của
+phân hệ thu mua và lớp biểu mẫu dùng chung xanh, trong đó 8 bài mới. Bấm thử trên bản xem thử:
+lưu từ khóa và hóa chất ở bản cũ đều được; hóa chất ở bản mới trước vá bị từ chối, sau vá lưu
+được. Đã lên dev 26/09.
+
+Mã nguồn: frontend/src/components/customs/CustomsConfigTab.tsx · frontend/src/pages/CustomsPrices.tsx ·
+customs-shared.ts · AppLayout.tsx · frontend-v2/src/shared/crud/field-values.ts ·
+modules/procurement/utils/customs-saved-filter.ts
+
 ## bao-CR-501 | Gom ba danh mục cấu hình vào thẻ Cấu hình của màn Tra cứu thị trường
 - status: xong
 - date: 2026-09-26

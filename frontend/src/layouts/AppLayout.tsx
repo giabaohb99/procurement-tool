@@ -199,14 +199,8 @@ const NAV_GROUPS: NavGroup[] = [
         entity: "unit",
         manage: true,
       },
-      {
-        // bao-CR-470 — danh mục pháp lý dùng cho thẻ «Pháp lý & thuế» của Tra cứu giá hải quan
-        to: "/customs-regulations",
-        label: "Hóa chất theo văn bản",
-        icon: "ti-flask",
-        entity: "customs_regulation",
-        manage: true,
-      },
+      // bao-CR-502 — «Hóa chất theo văn bản» đã dời vào thẻ «Cấu hình» của màn Tra cứu thị trường
+      // (như bản v2, bao-CR-501). Đường /customs-regulations vẫn mở được, chỉ bỏ khỏi menu.
       {
         to: "/item-groups",
         label: "Phân loại",
