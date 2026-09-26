@@ -8562,7 +8562,7 @@ giá, khoảng lượng, khoảng tỷ giá. Đại ca thử ở local thấy �
 rộng cột và đổi khóa nhớ bố cục. Đại ca chốt bê luôn sang bản cũ: đã bê đủ bảy mục sang màn Tra cứu
 giá hải quan bản cũ; sáng 26/09 thêm hai nút lọc theo doanh nghiệp / đối tác vào hộp chi tiết dòng
 bản cũ nên bản cũ cũng chọn nhiều đối tác được (đại ca chốt v1 và v2 phải cùng chức năng). Làm trong
-worktree riêng để không đụng cây chung. Chưa commit.
+worktree riêng để không đụng cây chung.
 
 Kiểm: 12 bài kiểm backend mới + 32 bài cũ của phân hệ xanh; giao diện mới kiểm kiểu 0 lỗi, kiểm
 nếp mã 0 lỗi, 596 bài phân hệ thu mua xanh (4 bài util mới); bản cũ kiểm kiểu giữ 4 lỗi nền.
@@ -8573,6 +8573,9 @@ frontend-v2 customs-price-page.tsx · customs-history-panel.tsx · customs-price
 customs-line-detail-dialog.tsx · customs-line-columns.tsx · types/customs.ts · utils/customs.ts ·
 api/customs-api.ts · frontend CustomsPrices.tsx · CustomsChart.tsx · CustomsHistoryPanel.tsx ·
 CustomsLineDetail.tsx · customs-shared.ts · test/backend/test_hai_quan_dot1_cr493.py · doc/erp/hai-quan/01 §11
+Commit: ac3a0b10, gộp origin/erp-v2 ở 164828e3 (chỉ đụng độ hai tệp sổ, giữ cả hai). Deploy: dev
+26/09/2026, dựng lại api, celery-worker, celery-beat, erp, web; không migration.
+
 ## bao-CR-498 | Gộp nút Trả về, gom nút in ở đơn mua hàng v2, ô Trưởng phòng phê duyệt luôn hiện
 - status: xong
 - date: 2026-09-26
