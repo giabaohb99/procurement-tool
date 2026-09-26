@@ -936,6 +936,51 @@ def dispatch_enabled() -> bool:
     return bool(app_settings.get("pr_dispatch_enabled"))
 
 
+def dispatch_context(db: Session, pr: PurchaseRequest) -> dict:
+    """Bối cảnh phiếu cho điều kiện bỏ qua điều phối — bao-CR-497.
+
+    Một dict PHẲNG, đúng khuôn «bối cảnh phiếu» của bộ máy duyệt chung (`approval/condition_service`),
+    để sau này đưa YCMH lên bộ máy đó (P6) thì điều kiện admin đã khai dùng lại nguyên. Thêm trường
+    mới thì thêm ở ĐÂY một chỗ, màn Cấu hình chỉ cần nhắc tên trường.
+    """
+    lines = items_of(db, pr.id)
+    return {
+        "handler_dept_id": int(pr.handler_dept_id or 0),
+        "department_id": int(pr.department_id or 0),
+        "company_id": int(pr.company_id or 0),
+        "requester_id": int(pr.requester_id or 0),
+        "is_urgent": bool(pr.is_urgent),
+        "line_count": len(lines),
+    }
+
+
+def dispatch_skip_rules() -> str:
+    """Chuỗi điều kiện JSON ở màn Cấu hình hệ thống (`pr_dispatch_skip_rules`); rỗng = không có."""
+    from app.core import app_settings
+    return (app_settings.get("pr_dispatch_skip_rules") or "").strip()
+
+
+def skip_dispatch_for(db: Session, pr: PurchaseRequest) -> bool:
+    """Phiếu này có ĐI THẲNG từ duyệt sang điều phối (bỏ bước thu mua duyệt lần 2) không — bao-CR-497.
+
+    Ba tầng, tầng trên thắng:
+      1. Công tắc `pr_dispatch_enabled` TẮT → mọi phiếu bỏ qua (luồng cũ CR-034, giữ nguyên).
+      2. Công tắc BẬT + ô điều kiện RỖNG → không phiếu nào bỏ qua (mặc định, hành vi trước CR-497).
+      3. Công tắc BẬT + có điều kiện → phiếu THỎA điều kiện bỏ qua. Điều kiện gõ sai JSON hay không
+         phải danh sách thì `parse()` trả rỗng và ở đây coi như tầng 2 — một ô cấu hình gõ sai không
+         được phép đổi luồng của cả công ty.
+    Đại ca chốt 25/09/2026: mặc định y như cũ; bật điều kiện lên thì nhà máy tự mua tách khỏi thu
+    mua chung, nhân sự lấy theo bộ phân công riêng của phòng.
+    """
+    if not dispatch_enabled():
+        return True
+    from app.modules.approval.condition_service import matches, parse
+    raw = dispatch_skip_rules()
+    if not parse(raw):
+        return False
+    return matches(raw, dispatch_context(db, pr))
+
+
 def dispatch_pr(db: Session, pid: int, user_id: int,
                 allow_global_assignee: bool = True,
                 audit_action: str = "dispatched") -> tuple[PurchaseRequest, int, int]:

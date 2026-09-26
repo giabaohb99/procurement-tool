@@ -24,6 +24,7 @@ REGISTRY = {
     "r2_bucket": ("str", "R2_BUCKET"),
     "r2_public_url": ("str", "R2_PUBLIC_URL"),
     "pr_dispatch_enabled": ("bool", "PR_DISPATCH_ENABLED"),
+    "pr_dispatch_skip_rules": ("str", "PR_DISPATCH_SKIP_RULES"),   # bao-CR-497
     "pr_options_enabled": ("bool", "PR_OPTIONS_ENABLED"),
     #  Cảnh báo mở/tải tệp đính kèm văn bản — sửa được ngay trên màn Cấu hình
     #  hệ thống, không cần deploy (đúng thứ cần khi đang có nghi vấn rò tài liệu).

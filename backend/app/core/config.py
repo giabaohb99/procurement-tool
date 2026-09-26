@@ -92,6 +92,10 @@ class Settings(BaseSettings):
     # Đây chỉ là giá trị DỰ PHÒNG; công tắc thật nằm ở màn "Cấu hình hệ thống" (key
     # `pr_dispatch_enabled`, lưu DB, đổi có hiệu lực ngay, không cần deploy).
     PR_DISPATCH_ENABLED: bool = True
+    # bao-CR-497: ĐIỀU KIỆN bỏ qua bước điều phối cho MỘT NHÓM phiếu (JSON, cú pháp của bộ máy
+    # duyệt chung). Rỗng = không bỏ qua phiếu nào, luồng y như công tắc trên. Giá trị thật ở màn
+    # Cấu hình hệ thống (key `pr_dispatch_skip_rules`).
+    PR_DISPATCH_SKIP_RULES: str = ""
 
     # --- Cụm PHƯƠNG ÁN (báo giá) trên YCMH — bao-CR-310, công tắc bao-CR-468 ---
     # Gồm hai thứ đi liền nhau: màn XỬ LÝ PHƯƠNG ÁN của NSTM và thẻ CHỌN PHƯƠNG ÁN trên chi
