@@ -969,7 +969,11 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     # bao-CR-485: đường công tắc TẮT ghi sổ ĐÚNG MỘT dòng «Duyệt» của trưởng phòng (kèm ghi chú
     # hệ thống tự phân bổ) — trước đây ghi thêm dòng «Điều phối» dưới tên họ, đọc như thể trưởng
     # phòng bấm Điều phối, một việc họ không có quyền.
-    auto_dispatch = not service.dispatch_enabled()
+    # bao-CR-497: ngoài công tắc chung, phiếu THỎA «điều kiện bỏ qua điều phối» (màn Cấu hình hệ
+    # thống) cũng đi thẳng — để nhà máy tự mua không phải qua thu mua chung trong khi các phòng
+    # khác vẫn hai bước. Ô điều kiện rỗng = hành vi cũ.
+    pr = service.get_pr(db, pid)
+    auto_dispatch = service.skip_dispatch_for(db, pr)
     pr = service.set_status(db, pid, "approved", user.id, audit=not auto_dispatch)
     # bao-CR-490: ghi nhân sự vừa duyệt vào «Trưởng phòng phê duyệt».
     from app.core.print_signers import stamp_approver
@@ -983,6 +987,9 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
         # bao-CR-414: người duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) → chỉ dùng bộ
         # phân công riêng của phòng, không rơi về bộ "Thu mua chung".
         dept_only = approves_only_in_dept_proc(get_perm_profile(db, user), "purchase_request")
+        # bao-CR-497: phiếu bỏ qua điều phối NHỜ điều kiện mà có phòng xử lý riêng thì chỉ dùng bộ
+        # phân công của phòng đó — tách hẳn khỏi thu mua chung là mục đích của việc bỏ qua.
+        dept_only = dept_only or (service.dispatch_enabled() and bool(pr.handler_dept_id))
         pr, n, blank_count = service.dispatch_pr(db, pid, user.id, allow_global_assignee=not dept_only,
                                                  audit_action="approved")
         _notify_assigned(db, pr, user, background_tasks)

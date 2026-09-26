@@ -3,11 +3,14 @@ import { useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
+import { FOLDER_ACCESS_LEVEL } from '../types/document-folder'
 import { FolderQuickDocumentDialog } from './folder-quick-document-dialog'
 
 interface FolderQuickDocumentButtonProps {
   folderId: number
   folderCompanyId: number
+  /** Mức quyền của người xem trên thư mục — dưới Đóng góp thì không thêm được văn bản vào đây. */
+  folderMyLevel: number
 }
 
 /**
@@ -18,10 +21,13 @@ interface FolderQuickDocumentButtonProps {
 export function FolderQuickDocumentButton({
   folderId,
   folderCompanyId,
+  folderMyLevel,
 }: FolderQuickDocumentButtonProps) {
   const { can } = usePermission()
   const [open, setOpen] = useState(false)
-  if (!can('document', 'create')) return null
+  //  Thư mục chỉ ở mức Xem (vd hiện ra vì được chia một văn bản trong đó) thì
+  //  máy chủ sẽ từ chối thêm văn bản — ẩn nút thay vì để bấm rồi ăn lỗi.
+  if (!can('document', 'create') || folderMyLevel < FOLDER_ACCESS_LEVEL.contribute) return null
 
   return (
     <>

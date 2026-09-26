@@ -28,6 +28,14 @@ FIELDS = [
              "tự phân bổ nhân sự (phiếu sang \"Đã điều phối\"). "
              "TẮT: quay về luồng cũ — trưởng bộ phận duyệt là phân bổ nhân sự ngay, bỏ hẳn bước thứ 2. "
              "Đổi lúc nào cũng được, có hiệu lực ngay, không ảnh hưởng phiếu đã xử lý xong."},
+    {"key": "pr_dispatch_skip_rules", "group": "workflow", "type": "str",
+     "label": "Yêu cầu mua hàng: BỎ QUA bước thu mua duyệt lần 2 cho phiếu thỏa điều kiện",
+     "hint": "Chỉ có tác dụng khi công tắc ở trên đang BẬT. Để trống = không bỏ qua phiếu nào. Khai điều kiện JSON "
+             "theo cú pháp bộ máy duyệt, các dòng nối nhau bằng VÀ. Trường dùng được: handler_dept_id (phòng xử lý, "
+             "0 = thu mua chung) · department_id (phòng lập) · company_id · is_urgent · line_count. "
+             "Ví dụ để NHÀ MÁY TỰ MUA không qua thu mua chung: [{\"field\": \"handler_dept_id\", \"op\": \"not_empty\"}]. "
+             "Phiếu thỏa điều kiện thì trưởng bộ phận duyệt xong là hệ thống tự phân bổ nhân sự theo bộ phân công "
+             "RIÊNG của phòng xử lý; phiếu còn lại vẫn chờ thu mua duyệt lần 2. Gõ sai JSON = coi như để trống."},
     {"key": "pr_options_enabled", "group": "workflow", "type": "bool",
      "label": "Yêu cầu mua hàng: bật cụm phương án (báo giá) trên phiếu",
      "hint": "BẬT: nhân sự thu mua có màn \"Xử lý phương án\" để gắn tối đa 5 phương án cho "

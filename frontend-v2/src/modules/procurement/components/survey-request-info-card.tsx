@@ -353,10 +353,12 @@ export function SurveyRequestInfoCard({
         </div>
 
         {/* bao-CR-490: ai THỰC bấm Duyệt ở chặng trưởng phòng — chỉ xem, hệ thống ghi lúc duyệt. */}
-        {!!data.approver_employee_name && (
+        {/* bao-CR-498: luôn hiện khi phiếu đã có mã — trống nghĩa là chưa duyệt, hoặc duyệt trước
+            25/09/2026 (chưa có cột này; chạy scripts/backfill_approver_employee.py để điền lại). */}
+        {data.id > 0 && (
           <div className="space-y-1.5">
             <Label className="text-muted-foreground">Trưởng phòng phê duyệt</Label>
-            <ReadOnlyValue>{data.approver_employee_name}</ReadOnlyValue>
+            <ReadOnlyValue>{data.approver_employee_name || 'Chưa ghi nhận'}</ReadOnlyValue>
           </div>
         )}
 

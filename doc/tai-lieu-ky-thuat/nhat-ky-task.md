@@ -8573,3 +8573,47 @@ frontend-v2 customs-price-page.tsx · customs-history-panel.tsx · customs-price
 customs-line-detail-dialog.tsx · customs-line-columns.tsx · types/customs.ts · utils/customs.ts ·
 api/customs-api.ts · frontend CustomsPrices.tsx · CustomsChart.tsx · CustomsHistoryPanel.tsx ·
 CustomsLineDetail.tsx · customs-shared.ts · test/backend/test_hai_quan_dot1_cr493.py · doc/erp/hai-quan/01 §11
+## bao-CR-498 | Gộp nút Trả về, gom nút in ở đơn mua hàng v2, ô Trưởng phòng phê duyệt luôn hiện
+- status: xong
+- date: 2026-09-26
+Đại ca soi trên dev và local sau đợt bảy góp ý thấy ba lỗi hiển thị: yêu cầu mua hàng có hai
+nút Trả về trùng tên đứng cạnh nhau, đơn mua hàng bản v2 rải năm nút in trong khi bản v1 gom
+một nút, và không thấy ô Trưởng phòng phê duyệt trên phiếu. Đại ca chốt: chỉ một nút Trả về
+và tùy trường hợp mà xử lý, v2 gom nút in như v1, hai bản không được lệch chức năng.
+
+Đã làm ở cả hai bản: một nút Trả về cho yêu cầu mua hàng và yêu cầu báo giá, phiếu chỉ mở một
+đường thì đi thẳng, mở cả hai đường (trả người lập sửa lại hay trả phòng lập tự xử lý) thì hộp
+thoại hỏi trước rồi mới hỏi lý do; đơn mua hàng v2 gom năm bản in vào một nút In thả xuống;
+ô Trưởng phòng phê duyệt luôn hiện khi phiếu đã có mã, trống thì ghi Chưa ghi nhận vì phiếu
+duyệt trước ngày 25/09 chưa có cột này. Viết thêm script điền lại người duyệt cho phiếu cũ từ
+nhật ký thao tác, mới chạy thử trên local (điền được 32 yêu cầu mua hàng, 16 yêu cầu báo giá,
+13 đơn mua hàng; phần còn lại là phiếu nạp từ Excel không có dòng duyệt), chưa ghi, chờ đại ca.
+Chưa commit, làm trong worktree cùng nhánh với bao-CR-497.
+
+Kiểm: giao diện v2 kiểm kiểu 0 lỗi, nếp mã 0 lỗi, 597 bài thu mua xanh trong đó 5 bài mới;
+bản v1 kiểm kiểu còn đúng 4 lỗi nền cũ.
+
+Mã nguồn: frontend-v2 procurement/utils/return-action.ts · components/return-choice-dialog.tsx ·
+pages/purchase-order-detail-page.tsx · frontend/src/components/ReturnChoiceModal.tsx ·
+backend/scripts/backfill_approver_employee.py
+Commit: 26656067. Deploy: dev 26/09/2026, không migration; script điền lại người duyệt chưa chạy ghi ở dev.
+
+## bao-CR-497 | Điều kiện bỏ qua bước thu mua duyệt lần 2 cho một nhóm yêu cầu mua hàng
+- status: xong
+- date: 2026-09-25
+Nhà máy tự mua hàng không muốn qua bước admin thu mua duyệt lần hai, đại ca muốn có chỗ cấu
+hình điều kiện và sau này thêm điều kiện khác vẫn được, nhưng mặc định mọi thứ phải chạy y
+như cũ. Chốt đường A: giữ công tắc chung, thêm ô điều kiện.
+
+Đã làm: ô cấu hình mới ở màn Cấu hình hệ thống, khai điều kiện bằng đúng cú pháp của bộ máy
+duyệt chung nên sau này chuyển yêu cầu mua hàng lên bộ máy đó dùng lại được. Ô rỗng thì
+không đổi gì; khai điều kiện phiếu có phòng xử lý riêng thì phiếu nhà máy duyệt xong là tự
+phân bổ nhân sự theo bộ phân công riêng của phòng, phiếu thu mua chung vẫn chờ bước hai. Gõ
+sai định dạng thì coi như rỗng. Làm trong worktree riêng, chưa commit.
+
+Kiểm: 168 bài về điều phối, luồng duyệt, cấu hình và phòng tự mua xanh (6 bài mới).
+
+Mã nguồn: backend/app/modules/purchase_request/service.py · controller.py ·
+backend/app/modules/setting/service.py · backend/app/core/app_settings.py ·
+test/backend/test_dieu_kien_bo_qua_dieu_phoi_cr497.py
+Commit: 3c148874. Deploy: dev 26/09/2026, không migration; ô cấu hình đang để trống nên luồng y như cũ.

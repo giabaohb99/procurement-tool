@@ -73,6 +73,7 @@ import {
   SurveyRequestLinesTable,
 } from '../components/survey-request-lines-table'
 import { SurveyRequestResultCard } from '../components/survey-request-result-card'
+import { ReturnChoiceDialog } from '../components/return-choice-dialog'
 import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
 import {
   shiftPendingAfterInsert,
@@ -111,6 +112,7 @@ import { isSurveyRequestProcessable } from '../types/survey-request-process'
 import { handlingDeptForCreate } from '../utils/handling-dept-display'
 import { parseAssistantDraft, type AssistantDraft } from '../utils/assistant-draft'
 import { invalidSurveyRequestKeys, validateSurveyRequest } from '../utils/required-fields'
+import { resolveReturnAction, type ReturnTarget } from '../utils/return-action'
 
 /** Tệp đính kèm của DÒNG khảo sát — đầu phiếu YCBG không có khu đính kèm riêng. */
 const LINE_ATTACHMENT_ENTITY = 'survey_request_line'
@@ -199,6 +201,7 @@ export function SurveyRequestDetailPage() {
   // bao-CR-414 GĐ5: đẩy cả phiếu sang phòng khác xử lý / trả về phòng lập.
   const transferDept = useTransferSurveyRequestDept(surveyRequestId)
   const [transferMode, setTransferMode] = useState<TransferDeptMode | null>(null)
+  const [returnChoiceOpen, setReturnChoiceOpen] = useState(false)   // bao-CR-498
 
   const [draft, setDraft] = useState<SurveyRequestDetail | null>(() =>
     isNew ? applyAssistantDraft(createEmptySurveyRequest(user), assistantDraft) : null,
@@ -326,6 +329,25 @@ export function SurveyRequestDetailPage() {
   const data = serverData ?? draft ?? createEmptySurveyRequest(user)
   const loadedDraft = draft ?? data
   const status = data.status
+  //  bao-CR-498: hai đường «Trả về» gộp vào một nút — đường luồng duyệt (người duyệt trả người
+  //  lập sửa lại) và đường trả phòng lập tự xử lý theo cờ backend `can_return_dept` (bao-CR-414).
+  const canReturnToRequester = !isNew && status === 'submitted' && can('survey_request', 'approve')
+  const canReturnToDepartment = !isNew && Boolean(data.can_return_dept)
+  const returnResolution = resolveReturnAction(canReturnToRequester, canReturnToDepartment)
+
+  function runReturn(target: ReturnTarget) {
+    if (target === 'department') {
+      setTransferMode('return')
+      return
+    }
+    setReason('')
+    setReasonFor('reject')
+  }
+
+  function handleReturn() {
+    if (returnResolution === 'choose') setReturnChoiceOpen(true)
+    else if (returnResolution) runReturn(returnResolution)
+  }
 
   /**
    * Người YC = người TẠO phiếu, hoặc người được ghi là "người yêu cầu" trên phiếu.
@@ -553,33 +575,37 @@ export function SurveyRequestDetailPage() {
         </Button>
       )}
 
+      {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự
+          xử lý — bao-CR-414). Cả hai đường cùng mở thì hỏi; một đường thì đi thẳng. */}
+      {returnResolution !== null && (
+        <Button
+          type="button"
+          variant="outline"
+          className="text-warning hover:text-warning"
+          title={
+            returnResolution === 'department'
+              ? 'Trả cả phiếu về phòng lập tự xử lý'
+              : 'Trả về để người yêu cầu sửa và gửi lại'
+          }
+          onClick={handleReturn}
+        >
+          <CornerUpLeft />
+          Trả về
+        </Button>
+      )}
       {!isNew && status === 'submitted' && can('survey_request', 'approve') && (
-        <>
-          <Button
-            variant="outline"
-            className="text-warning hover:text-warning"
-            title="Trả về để người yêu cầu sửa và gửi lại"
-            onClick={() => {
-              setReason('')
-              setReasonFor('reject')
-            }}
-          >
-            <CornerUpLeft />
-            Trả về
-          </Button>
-          <Button
-            variant="outline"
-            className="text-destructive hover:text-destructive"
-            title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
-            onClick={() => {
-              setReason('')
-              setReasonFor('cancel')
-            }}
-          >
-            <Ban />
-            Từ chối
-          </Button>
-        </>
+        <Button
+          variant="outline"
+          className="text-destructive hover:text-destructive"
+          title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
+          onClick={() => {
+            setReason('')
+            setReasonFor('cancel')
+          }}
+        >
+          <Ban />
+          Từ chối
+        </Button>
       )}
 
       {/* Dẫn sang MÀN RIÊNG Xử lý khảo sát như bản v1 — bản gộp thẻ vào
@@ -606,19 +632,6 @@ export function SurveyRequestDetailPage() {
           Chuyển phòng xử lý
         </Button>
       )}
-      {!isNew && data.can_return_dept && (
-        <Button
-          type="button"
-          variant="outline"
-          className="text-amber-700 hover:text-amber-700"
-          title="Trả cả phiếu về phòng lập tự xử lý"
-          onClick={() => setTransferMode('return')}
-        >
-          <CornerUpLeft />
-          Trả về
-        </Button>
-      )}
-
       {/* Chỉ nhân sự thu mua, và chỉ khi phiếu ĐANG XỬ LÝ — đúng lúc đó mới
           biết cần khảo sát cái gì. Mã YCBG đưa sang theo URL để phiếu khảo sát
           mới neo sẵn về phiếu nguồn. */}
@@ -941,6 +954,12 @@ export function SurveyRequestDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <ReturnChoiceDialog
+        open={returnChoiceOpen}
+        docLabel="yêu cầu báo giá"
+        onOpenChange={setReturnChoiceOpen}
+        onPick={runReturn}
+      />
       <TransferDeptDialog
         open={transferMode !== null}
         mode={transferMode ?? 'transfer'}

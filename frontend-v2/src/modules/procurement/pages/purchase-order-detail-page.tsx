@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Ban,
   Check,
+  ChevronDown,
   CircleCheck,
   Copy,
   CornerUpLeft,
@@ -16,6 +17,7 @@ import {
   RotateCcw,
   Save,
   Send,
+  Ship,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -37,6 +39,13 @@ import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { formatMoney } from '@/shared/utils/format-money'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
@@ -397,76 +406,70 @@ export function PurchaseOrderDetailPage() {
    */
   const secondaryActions = (
     <>
+        {/* bao-CR-498: gom mọi bản in vào MỘT nút «In» thả xuống như bản v1 — trước đó năm nút
+            in rời chiếm cả hàng tiêu đề, người dùng phải đọc từng nút để tìm bản cần in. */}
         {!isNew && can('purchase_order', 'print') && (
-          <Button variant="outline" asChild>
-            <Link
-              to={appRoutes.procurement.purchaseOrderPrint(data.id)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Printer />
-              In Đơn đặt hàng
-            </Link>
-          </Button>
-        )}
-
-        {/* bao-CR-322: mẫu nội bộ / gửi kế toán. Cùng trang in với nút trên, vào bằng
-            đường dẫn riêng nên mở ra là đã đúng mẫu, không phải bấm công tắc. */}
-        {!isNew && can('purchase_order', 'print') && (
-          <Button variant="outline" asChild>
-            <Link
-              to={appRoutes.procurement.purchaseOrderGoodsPrint(data.id)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <ReceiptText />
-              In Đơn mua hàng
-            </Link>
-          </Button>
-        )}
-
-        {/* bao-CR-319: đơn nhập khẩu có bản in riêng — nguyên tệ + quy đổi + chi phí lô hàng. */}
-        {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
-          <Button variant="outline" asChild>
-            <Link
-              to={appRoutes.procurement.purchaseOrderImportPrint(data.id)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Printer />
-              In Đơn nhập khẩu
-            </Link>
-          </Button>
-        )}
-
-        {/* bao-CR-357: báo cáo giá vốn của RIÊNG lô hàng này — cùng trang in với tab
-            "Giá vốn nhập khẩu" trong Báo cáo mua hàng, lọc sẵn theo mã đơn. */}
-        {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
-          <Button variant="outline" asChild>
-            <Link
-              to={`${appRoutes.procurement.importLandedCostPrint}?codes=${encodeURIComponent(data.code || '')}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Printer />
-              In Báo cáo giá vốn
-            </Link>
-          </Button>
-        )}
-
-        {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
-            có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
-        {!isNew && can('purchase_order', 'print') && (data.pr_code || '').trim() && (
-          <Button variant="outline" asChild>
-            <Link
-              to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <FileText />
-              In Phiếu yêu cầu
-            </Link>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Printer />
+                In
+                <ChevronDown className="size-4 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem asChild>
+                <Link to={appRoutes.procurement.purchaseOrderPrint(data.id)} target="_blank" rel="noreferrer">
+                  <Printer />
+                  In Đơn đặt hàng
+                </Link>
+              </DropdownMenuItem>
+              {/* bao-CR-322: mẫu nội bộ / gửi kế toán. Cùng trang in với mục trên, vào bằng
+                  đường dẫn riêng nên mở ra là đã đúng mẫu, không phải bấm công tắc. */}
+              <DropdownMenuItem asChild>
+                <Link to={appRoutes.procurement.purchaseOrderGoodsPrint(data.id)} target="_blank" rel="noreferrer">
+                  <ReceiptText />
+                  In Đơn mua hàng
+                </Link>
+              </DropdownMenuItem>
+              {/* bao-CR-319: đơn nhập khẩu có bản in riêng — nguyên tệ + quy đổi + chi phí lô hàng.
+                  bao-CR-357: báo cáo giá vốn của RIÊNG lô hàng này, lọc sẵn theo mã đơn. */}
+              {isImportOrder(data) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={appRoutes.procurement.purchaseOrderImportPrint(data.id)} target="_blank" rel="noreferrer">
+                      <Ship />
+                      In Đơn nhập khẩu
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to={`${appRoutes.procurement.importLandedCostPrint}?codes=${encodeURIComponent(data.code || '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Printer />
+                      In Báo cáo giá vốn
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+              {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
+                  có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
+              {(data.pr_code || '').trim() && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)} target="_blank" rel="noreferrer">
+                      <FileText />
+                      In Phiếu yêu cầu
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/*

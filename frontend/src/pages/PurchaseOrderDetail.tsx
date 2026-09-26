@@ -1221,9 +1221,9 @@ export default function PurchaseOrderDetail() {
                 <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Thu mua chung')} disabled />
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt đơn — hệ thống ghi lúc duyệt, chỉ xem. */}
-              {!!po.approver_employee_name && (
+              {!isNew && (
                 <div className="form-row"><label>Trưởng phòng phê duyệt</label>
-                  <input value={po.approver_employee_name} disabled title="Người thực bấm Duyệt đơn này" />
+                  <input value={po.approver_employee_name || 'Chưa ghi nhận'} disabled title="Người thực bấm Duyệt đơn này (bao-CR-498: trống = chưa duyệt hoặc duyệt trước 25/09/2026)" />
                 </div>
               )}
               <div className="form-row"><label>Hình thức thanh toán NCC</label><SearchSelect value={po.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!headerEditable} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} /></div>
