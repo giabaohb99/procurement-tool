@@ -8645,7 +8645,10 @@ tổng theo kết cục. Lý do chọn thêm cột thay vì bảng mới ghi ở
 hải quan. Giao diện v2: thanh bộ lọc đã lưu (chọn là màn hình về đúng trạng thái đó, nút Lưu,
 Cập nhật, Xóa) và hộp nhật ký từng dòng có ô đếm theo kết cục bấm để lọc, làm thành tệp mới
 kèm bài kiểm; chưa cắm vào trang chính và thẻ Lịch sử nạp. Ngày 26/09 đại ca chốt gom
-mã nền lên erp-v2 cho sạch cây, phần cắm giao diện và bản v1 giao ERP Agent 2.
+mã nền lên erp-v2 cho sạch cây. Cùng ngày gom tiếp phần cắm giao diện do ERP Agent 3 làm dở
+trong cây riêng: thanh bộ lọc đã lưu dưới hàng lọc, hộp Nhật ký lô tách hai thẻ kết quả từng
+dòng và ghi chú lỗi, chốt kiểm lô hải quan dùng chung một bản với 493, và sửa nhật ký cũ chỉ
+trả dòng ghi chú để không ngập hàng nghìn dòng Thêm mới. Còn bản v1 giao ERP Agent 2.
 
 Kiểm: 12 bài kiểm backend mới xanh, 80 bài hải quan xanh, bộ bài kiểm dùng nhật ký nạp
 xanh; bài luật bất biến khai thêm hai controller hải quan mới (kind_controller sót từ 494).

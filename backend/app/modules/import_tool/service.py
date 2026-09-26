@@ -134,7 +134,11 @@ def get_batch(db: Session, bid: int) -> ImportBatch | None:
 
 
 def get_logs(db: Session, batch_id: int, level: int | None, pg: dict):
-    q = db.query(ImportLog).filter(ImportLog.batch_id == batch_id)
+    #  CHỈ dòng nhật ký thường (`row_status = 0`). Từ bao-CR-496, nạp hải quan ghi thêm MỖI dòng
+    #  dữ liệu một dòng kết cục vào cùng bảng này (tệp GTT02 cỡ 18.000 dòng) — không lọc thì
+    #  hộp «Nhật ký lô» và màn Quản lý Import ngập hàng trăm trang «Thêm mới», câu «Không có
+    #  ghi chú nào» không bao giờ hiện nữa. Dòng kết cục có đường riêng: `customs/row_log`.
+    q = db.query(ImportLog).filter(ImportLog.batch_id == batch_id, ImportLog.row_status == 0)
     if level is not None:
         q = q.filter(ImportLog.level == level)
     total = q.count()

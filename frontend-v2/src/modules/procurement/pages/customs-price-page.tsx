@@ -73,6 +73,7 @@ import {
   useCustomsPermissions,
 } from '../hooks/use-customs'
 import type { CustomsFilters, CustomsOptionItem } from '../types/customs'
+import { collectFilterParams } from '../utils/customs-saved-filter'
 import {
   addNamedId,
   buildCustomsParams,
@@ -84,7 +85,6 @@ import {
   sortRegulationsBySeverity,
   splitNamedIds,
 } from '../utils/customs'
-import { collectFilterParams } from '../utils/customs-saved-filter'
 
 const TABS = [
   { key: 'list', label: 'Danh sách', icon: List },
@@ -252,6 +252,9 @@ export function CustomsPricePage() {
 
   const chartReady = hasChartFilter(filters)
   const filtersActive = FILTER_PARAMS.some((name) => Boolean(searchParams.get(name)))
+  //  bao-CR-496: chuỗi ô lọc đang áp, đúng bộ khóa `FILTER_PARAMS` — thứ được lưu thành bộ lọc.
+  //  Thêm ô lọc mới vào `FILTER_PARAMS` là bộ lọc đã lưu tự mang theo, không cần sửa gì thêm.
+  const savedFilterParams = collectFilterParams(searchParams, FILTER_PARAMS)
   //  bao-CR-493: nhiều doanh nghiệp / đối tác — mỗi người một chip, gỡ từng chip được.
   const importerChips = useMemo(() => splitNamedIds(importerId, importerName), [importerId, importerName])
   const partnerChips = useMemo(() => splitNamedIds(partnerId, partnerName), [partnerId, partnerName])
@@ -259,6 +262,14 @@ export function CustomsPricePage() {
   function clearFilters() {
     setKeyword('')
     setUrlParams(Object.fromEntries(FILTER_PARAMS.map((name) => [name, null])))
+  }
+
+  //  bao-CR-496: nạp một bộ lọc đã lưu. Ô tìm `q` có state riêng (gõ xong mới hoãn ghi lên URL),
+  //  nên phải đặt thẳng cả nó — cùng lý do `clearFilters` ngay trên gọi `setKeyword('')`. Chỉ
+  //  đổi URL thì ô tìm vẫn hiện chữ cũ trong khi bảng đã lọc theo chữ mới.
+  function applySavedFilter(next: Record<string, string | null>) {
+    setKeyword(next.q ?? '')
+    setUrlParams(next)
   }
 
   //  Chọn thêm từ thẻ Nhà nhập khẩu / hộp chi tiết dòng: CỘNG DỒN vào bộ lọc, không thay thế.
@@ -333,12 +344,6 @@ export function CustomsPricePage() {
       />
 
       <Card className="gap-3 p-4">
-        {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản (F07); chọn là trang về đúng bộ lọc đó. */}
-        <CustomsSavedFilterBar
-          currentParams={collectFilterParams(searchParams, FILTER_PARAMS)}
-          filterNames={FILTER_PARAMS}
-          onApply={setUrlParams}
-        />
         <div className="flex flex-wrap items-center gap-2">
           <SearchField
             value={keyword}
@@ -425,6 +430,14 @@ export function CustomsPricePage() {
 
         {/* bao-CR-495 — ô tìm hiểu từ CÓ / KHÔNG CÓ, nồng độ, đồng nghĩa: nói cho người dùng biết. */}
         <CustomsSearchHint query={debouncedValue} explain={searchExplain.data} />
+
+        {/* bao-CR-496 — bộ lọc đặt tên, RIÊNG từng tài khoản, lưu ở máy chủ (đổi máy không mất).
+             Hàng riêng chứ không chen vào hàng trên: thanh có tới bốn nút, hàng trên đã bảy ô. */}
+        <CustomsSavedFilterBar
+          currentParams={savedFilterParams}
+          filterNames={FILTER_PARAMS}
+          onApply={applySavedFilter}
+        />
 
         {extraOpen && (
           /* bao-CR-493 — sáu ô theo sheet 4 của yêu cầu phòng Thu mua. Khoảng số nhập chữ, backend

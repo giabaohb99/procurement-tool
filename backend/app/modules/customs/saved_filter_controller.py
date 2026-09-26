@@ -14,10 +14,13 @@ from app.core.auth import require
 from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
-from app.modules.import_tool import service as import_service
-from app.modules.import_tool.model import IMPORT_ROW_STATUS_LABELS, ImportModule, ImportRowStatus
+from app.modules.import_tool.model import IMPORT_ROW_STATUS_LABELS, ImportRowStatus
 
 from . import row_log
+#  Dùng CHUNG chốt «lô này có phải lô hải quan không» với đường tải tệp gốc của bao-CR-493.
+#  Đây là chốt bảo mật (bảng lô là của CẢ công cụ nhập — thiếu nó thì người có quyền hải quan
+#  đọc được từng dòng của lô nhập nhân sự), nên chỉ được có MỘT bản; hai bản chép sẽ lệch nhau.
+from .controller import _get_batch
 from . import saved_filter_service as filters
 from .schema import SavedFilterCreate, SavedFilterOut, SavedFilterUpdate
 
@@ -58,16 +61,9 @@ def delete_saved_filter(fid: int, db: Session = Depends(get_db), user=Depends(re
 
 
 # ── Nhật ký từng dòng của lô ────────────────────────────────────────────────────────────────
-def _get_customs_batch(db: Session, bid: int):
-    b = import_service.get_batch(db, bid)
-    if not b or b.module != ImportModule.CUSTOMS_DECLARATION:
-        raise HTTPException(404, "Không tìm thấy lô nạp dữ liệu hải quan")
-    return b
-
-
 @router.get("/imports/{bid}/rows/summary")
 def batch_row_summary(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    _get_customs_batch(db, bid)
+    _get_batch(db, bid)
     counts = row_log.count_rows(db, bid)
     counts["labels"] = {int(s): IMPORT_ROW_STATUS_LABELS[s] for s in ImportRowStatus if s != ImportRowStatus.NONE}
     return success(counts)
@@ -76,6 +72,6 @@ def batch_row_summary(bid: int, db: Session = Depends(get_db), user=Depends(requ
 @router.get("/imports/{bid}/rows")
 def batch_rows(bid: int, row_status: int | None = Query(None, ge=1, le=3), pg: dict = Depends(pagination),
                db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    _get_customs_batch(db, bid)
+    _get_batch(db, bid)
     total, items = row_log.list_rows(db, bid, row_status, pg)
     return success({"total": total, "items": items, "page": pg["page"], "page_size": pg["page_size"]})

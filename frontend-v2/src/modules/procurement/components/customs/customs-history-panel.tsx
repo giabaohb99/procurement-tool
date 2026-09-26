@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { TONE_CLASS } from '@/shared/ui/status-tone'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { cn } from '@/shared/utils/cn'
@@ -183,12 +184,12 @@ export function CustomsHistoryPanel() {
                   </Button>
                 </IconTooltip>
               )}
-              <IconTooltip label="Nhật ký dòng lỗi / cảnh báo">
+              <IconTooltip label="Nhật ký lô — kết quả từng dòng, lỗi, cảnh báo">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Nhật ký dòng lỗi / cảnh báo"
+                  aria-label="Nhật ký lô — kết quả từng dòng, lỗi, cảnh báo"
                   onClick={() => setLogsOf(b)}
                 >
                   <ListTree className="size-4" />
@@ -308,33 +309,41 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
-          {/* bao-CR-496 — kết cục TỪNG DÒNG của tệp (Thêm mới / Lỗi / Trùng trong lô), đủ mọi dòng. */}
-          <section className="space-y-2">
-            <h3 className="text-sm font-semibold">Từng dòng của tệp</h3>
-            <CustomsBatchRowsPanel batchId={batch.id} />
-          </section>
-          <h3 className="text-sm font-semibold">Ghi chú khi đọc tệp</h3>
-          <DataTable
-            columns={columns}
-            rows={data?.items}
-            getRowId={(x) => x.id}
-            isLoading={isLoading}
-            isError={isError}
-            emptyMessage="Không có ghi chú nào — mọi dòng đọc được bình thường."
-            pagination={{
-              page,
-              pageSize,
-              total: data?.total ?? 0,
-              onPageChange: setPage,
-              onPageSizeChange: (size) => {
-                setPageSize(size)
-                setPage(1)
-              },
-              unitLabel: 'dòng nhật ký',
-            }}
-          />
-        </div>
+        {/* bao-CR-496: hai thẻ chứ không xếp dọc hai bảng — hộp chỉ cao 88% màn hình, xếp dọc thì
+             mỗi bảng còn thấy vài dòng. «Từng dòng» đứng trước: nó trả lời «lô này nạp ra sao»;
+             «Ghi chú» là cảnh báo / lỗi đọc tệp mức lô, y như trước 496. */}
+        <Tabs defaultValue="rows" className="flex min-h-0 flex-1 flex-col gap-3">
+          <TabsList className="self-start">
+            <TabsTrigger value="rows">Kết quả từng dòng</TabsTrigger>
+            <TabsTrigger value="notes">Ghi chú lỗi / cảnh báo</TabsTrigger>
+          </TabsList>
+          <TabsContent value="rows" className="flex min-h-0 flex-1 flex-col">
+            <CustomsBatchRowsPanel batchId={batch.id} className="flex min-h-0 flex-1 flex-col gap-3" />
+          </TabsContent>
+          <TabsContent value="notes" className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <DataTable
+                columns={columns}
+                rows={data?.items}
+                getRowId={(x) => x.id}
+                isLoading={isLoading}
+                isError={isError}
+                emptyMessage="Không có ghi chú nào — mọi dòng đọc được bình thường."
+                pagination={{
+                  page,
+                  pageSize,
+                  total: data?.total ?? 0,
+                  onPageChange: setPage,
+                  onPageSizeChange: (size) => {
+                    setPageSize(size)
+                    setPage(1)
+                  },
+                  unitLabel: 'dòng nhật ký',
+                }}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )

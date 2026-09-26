@@ -97,7 +97,7 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
         ))}
         {counts && counts.total === 0 && (
           <span className="text-xs text-muted-foreground">
-            Lô này nạp trước khi có nhật ký từng dòng — chỉ có ghi chú cảnh báo ở hộp dưới.
+            Lô này nạp trước khi có nhật ký từng dòng — xem thẻ «Ghi chú lỗi / cảnh báo».
           </span>
         )}
       </div>

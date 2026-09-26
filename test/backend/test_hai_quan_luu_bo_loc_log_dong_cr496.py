@@ -21,8 +21,9 @@ from app.modules.customs import saved_filter_service as SF
 from app.modules.customs.constants import COLUMNS
 from app.modules.customs.model import CustomsLine, CustomsSavedFilter
 from app.modules.customs.schema import SavedFilterCreate, SavedFilterUpdate
+from app.modules.import_tool import service as import_service
 from app.modules.import_tool.model import (ImportBatch, ImportLog, ImportMode, ImportModule,
-                                           ImportRowStatus, ImportStatus)
+                                           ImportRowStatus, ImportStatus, LogLevel)
 
 A, B = 11, 22   # hai tài khoản
 
@@ -193,6 +194,32 @@ def test_list_rows_filters_by_status_and_pages_in_file_order(db):
     #  Dòng cảnh báo / thông báo thường của lô (row_status = 0) KHÔNG lẫn vào danh sách dòng.
     plain = db.query(ImportLog).filter(ImportLog.batch_id == b.id, ImportLog.row_status == 0).count()
     assert plain >= 1
+
+
+def test_batch_notes_stay_readable_and_do_not_drown_in_row_statuses(db):
+    """Chiều ngược của bài trên — và là chỗ bài trên không canh.
+
+    Mỗi dòng dữ liệu đẻ một dòng kết cục trong CÙNG bảng `tab_import_log` (tệp GTT02 thật cỡ
+    18.000 dòng). Đường nhật ký cũ (`import_service.get_logs`) phục vụ HAI màn — hộp «Nhật ký
+    lô» của hải quan và màn Quản lý Import chung — và trước khi vá nó không lọc `row_status`:
+    lô sạch vẫn trả về hàng nghìn dòng, câu «Không có ghi chú nào» không bao giờ hiện nữa, và
+    ghi chú lỗi thật nằm giữa hàng trăm trang «Thêm mới».
+    """
+    b = _batch(db)
+    importer.run(db, b, _xlsx([_row(), _row(line_no=2), _row(line_no=3)]), apply=True)
+    assert row_log.count_rows(db, b.id)["total"] == 3
+
+    total, items = import_service.get_logs(db, b.id, None, {"offset": 0, "limit": 500})
+    assert all(i.row_status == 0 for i in items), "dòng kết cục lọt vào nhật ký thường"
+    assert total == len(items) and total < 3, "lô sạch 3 dòng mà nhật ký thường lại có ≥ 3 dòng"
+
+    #  Lỗi thật của một dòng vẫn phải còn trong nhật ký thường — lọc bỏ dòng kết cục chứ không
+    #  lọc bỏ lỗi. Bộ đọc ghi lỗi ngày của dòng 2 thành một dòng nhật ký thường mức ERROR.
+    b2 = _batch(db)
+    importer.run(db, b2, _xlsx([_row(reg_date="không phải ngày"), _row()]), apply=True)
+    _, items2 = import_service.get_logs(db, b2.id, None, {"offset": 0, "limit": 500})
+    assert any(i.row_no == 2 and i.level == LogLevel.ERROR for i in items2)
+    assert all(i.row_status == 0 for i in items2)
 
 
 def test_row_status_enum_has_no_update_state():
