@@ -12,7 +12,6 @@
 // «Lọc thêm» với sáu ô theo sheet 4 (nguyên tệ, giao hàng, lô nguồn, ba khoảng số); doanh
 // nghiệp / đối tác chọn được NHIỀU (chip cộng dồn, id nối dấu phẩy trên URL).
 import {
-  BookOpen,
   ChartLine,
   ChevronDown,
   ChevronUp,
@@ -23,21 +22,22 @@ import {
   History,
   Landmark,
   List,
+  Settings2,
   TriangleAlert,
   Upload,
   X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { DataTable } from '@/shared/data-table'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { cn } from '@/shared/utils/cn'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -56,6 +56,7 @@ import { CustomsSearchHint } from '../components/customs/customs-search-hint'
 import { CustomsCompareTab } from '../components/customs/customs-compare-tab'
 import { CustomsNeedFilterState, CustomsNotice } from '../components/customs/customs-controls'
 import { CustomsCoverageStrip } from '../components/customs/customs-coverage-strip'
+import { CustomsConfigTab } from '../components/customs/customs-config-tab'
 import { CustomsHistoryPanel } from '../components/customs/customs-history-panel'
 import { CustomsImportDialog } from '../components/customs/customs-import-dialog'
 import { CustomsImportersTab } from '../components/customs/customs-importers-tab'
@@ -93,6 +94,9 @@ const TABS = [
   { key: 'compare', label: 'So sánh', icon: GitCompareArrows },
   { key: 'legal', label: 'Pháp lý & thuế', icon: Landmark },
   { key: 'history', label: 'Lịch sử nạp', icon: History },
+  //  bao-CR-501 — ba danh mục cấu hình (từ khóa nhãn, từ đồng nghĩa, hóa chất theo văn bản)
+  //  nằm ở đây thay vì ba màn riêng trên menu. Hiện khi sửa được cấu hình HOẶC xem được hóa chất.
+  { key: 'config', label: 'Cấu hình', icon: Settings2 },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -156,7 +160,9 @@ function toSelectOptions(items: CustomsOptionItem[] | undefined) {
 }
 
 export function CustomsPricePage() {
-  const { canImport, canExport, canReadRegulations } = useCustomsPermissions()
+  const { canImport, canExport, canReadRegulations, canConfigure } = useCustomsPermissions()
+  const showConfigTab = canConfigure || canReadRegulations
+  const visibleTabs = TABS.filter((item) => item.key !== 'config' || showConfigTab)
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam('q')
   const [hsCode, setHsCode] = useUrlParamState('hs_code', '')
   const [origin, setOrigin] = useUrlParamState('origin', '')
@@ -181,7 +187,7 @@ export function CustomsPricePage() {
   const importerName = searchParams.get('importer_name') ?? ''
   const partnerId = searchParams.get('partner_id') ?? ''
   const partnerName = searchParams.get('partner_name') ?? ''
-  const tab: TabKey = TABS.some((item) => item.key === rawTab) ? (rawTab as TabKey) : 'list'
+  const tab: TabKey = visibleTabs.some((item) => item.key === rawTab) ? (rawTab as TabKey) : 'list'
 
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [detailId, setDetailId] = useState<number | null>(null)
@@ -315,14 +321,6 @@ export function CustomsPricePage() {
         description="Giá nhập khẩu theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
         actions={
           <>
-            {canReadRegulations && (
-              <Button asChild variant="outline">
-                <Link to={appRoutes.procurement.customsRegulations}>
-                  <BookOpen className="size-4" />
-                  Danh mục hóa chất
-                </Link>
-              </Button>
-            )}
             <Button type="button" variant="outline" onClick={() => setTab('history')}>
               <History className="size-4" />
               Lịch sử nạp
@@ -343,7 +341,9 @@ export function CustomsPricePage() {
         isLoading={coverage.isLoading}
       />
 
-      <Card className="gap-3 p-4">
+      {/*  bao-CR-501 — thẻ «Cấu hình» không dùng bộ lọc dòng hàng: ẩn thanh lọc (chỉ ẩn, không gỡ,
+           để quay lại thẻ khác vẫn giữ nguyên ô đang gõ). */}
+      <Card className={cn('gap-3 p-4', tab === 'config' && 'hidden')}>
         <div className="flex flex-wrap items-center gap-2">
           <SearchField
             value={keyword}
@@ -501,7 +501,7 @@ export function CustomsPricePage() {
         )}
       </Card>
 
-      {alertItems.length > 0 && (
+      {alertItems.length > 0 && tab !== 'config' && (
         <CustomsNotice tone="danger" icon={<TriangleAlert className="size-4" />}>
           <p className="font-semibold">Lưu ý pháp lý cho «{filters.q}»:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-5">
@@ -534,7 +534,7 @@ export function CustomsPricePage() {
           value={tab}
           className="max-md:w-full max-md:min-w-0 md:max-w-full md:min-w-0 md:overflow-x-auto"
         >
-          {TABS.map((item) => (
+          {visibleTabs.map((item) => (
             <TabsTrigger key={item.key} value={item.key} className={TAB_TRIGGER_UNDERLINE}>
               <item.icon className="size-4" />
               {item.label}
@@ -608,6 +608,12 @@ export function CustomsPricePage() {
         <TabsContent value="history" className="mt-2">
           <CustomsHistoryPanel />
         </TabsContent>
+
+        {showConfigTab && (
+          <TabsContent value="config" className="mt-2">
+            <CustomsConfigTab canConfigure={canConfigure} canReadRegulations={canReadRegulations} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <CustomsLineDetailDialog

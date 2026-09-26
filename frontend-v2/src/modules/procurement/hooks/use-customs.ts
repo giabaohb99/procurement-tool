@@ -7,6 +7,7 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
+import { canManageEntity } from '@/app/router/module-visibility'
 import { usePermission } from '@/core/authorization/use-permission'
 
 import {
@@ -208,5 +209,8 @@ export function useCustomsPermissions() {
     canRevert: can('customs_price', 'delete'),
     canExport: can('customs_price', 'export'),
     canReadRegulations: can('customs_regulation', 'read'),
+    //  bao-CR-501 — thẻ «Cấu hình» (từ khóa nhãn + từ đồng nghĩa): cùng luật hiện mục
+    //  `manage: true` trên menu trước đây — có một trong ba quyền tạo / sửa / xóa.
+    canConfigure: canManageEntity('customs_price', can),
   }
 }

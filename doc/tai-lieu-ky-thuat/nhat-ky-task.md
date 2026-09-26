@@ -8547,6 +8547,33 @@ celery_app.py · backend/app/modules/employee/service.py · backend/migrations/v
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py
 
+## bao-CR-501 | Gom ba danh mục cấu hình vào thẻ Cấu hình của màn Tra cứu thị trường
+- status: xong
+- date: 2026-09-26
+Đại ca hỏi vì sao màn tra cứu lại đẻ ra hai màn riêng trên menu là Từ khóa nhãn và Từ đồng
+nghĩa, rồi chốt không cần màn riêng, chỉ cần một thẻ Cấu hình ngay trong màn tra cứu, vì
+chức năng này càng ít màn hình càng tốt.
+
+Em gỡ hai mục menu cùng hai trang riêng, thêm thẻ Cấu hình ở cuối dãy thẻ. Trong thẻ là hai
+khối xếp dọc, mỗi khối có ô tìm, bảng, nút thêm, bấm một dòng thì mở hộp sửa như cũ. Khối từ
+khóa vẫn có nút Gắn lại nhãn. Thẻ chỉ hiện với người có quyền sửa, người chỉ xem thì không
+thấy, đúng như luật hiện menu trước đây.
+
+Em không bê nguyên màn danh mục dùng chung vào thẻ, vì màn đó ghi ô tìm lên thanh địa chỉ
+trùng tên với ô tìm tên hàng, và bộ lọc nâng cao của nó xóa sạch bộ lọc đang có. Ở thẻ này ô
+tìm và số trang chỉ nằm trong thẻ, nên đi qua đi lại giữa các thẻ bộ lọc tra cứu vẫn giữ
+nguyên. Khi đang ở thẻ Cấu hình thì thanh lọc dòng hàng tạm ẩn cho gọn.
+
+Đại ca bảo gom luôn danh mục hóa chất, nên thẻ có thêm khối thứ ba. Khối này hiện với người
+xem được danh mục hóa chất, kể cả người chỉ có quyền đọc, đúng như nút cũ trên đầu màn. Trang
+chi tiết riêng của hóa chất bỏ đi, bấm một dòng thì xem và sửa trong hộp thoại; người không có
+quyền sửa mở ra chỉ đọc. Mỗi khối có ô lọc nhanh riêng, ví dụ lọc hóa chất theo văn bản.
+Menu Thu mua giờ không còn mục nào của phân hệ tra cứu ngoài chính màn tra cứu.
+
+Cổng kiểm: kiểm kiểu
+sạch, lint các tệp đã sửa sạch, 623 bài bản mới xanh; chạy thử thật trên bản xem thử thấy thẻ
+hiện đúng, sửa được, tìm được, không lỗi. Đã lên dev 26/09.
+
 ## bao-CR-500 | Đổi tên màn Tra cứu giá hải quan thành Tra cứu thị trường
 - status: xong
 - date: 2026-09-26

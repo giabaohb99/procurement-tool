@@ -7,7 +7,6 @@
 // công bố. `list_code` là SỐ (1–4 = NĐ 24/2026 Phụ lục I–IV, 10 = TT 75/2025, 11 = TT 01/2026).
 import { BookOpen, CircleCheck, CircleX, Hash } from 'lucide-react'
 
-import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 import { formatQuantity } from '@/shared/utils/format-money'
@@ -33,8 +32,6 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
   unitLabel: 'hóa chất',
   apiPath: '/api/customs-regulations',
   storageKey: 'procurement.customs-regulations',
-  listRoute: appRoutes.procurement.customsRegulations,
-  detailRoute: (id) => appRoutes.procurement.customsRegulationDetail(id),
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên hóa chất…',
   quickFilters: [

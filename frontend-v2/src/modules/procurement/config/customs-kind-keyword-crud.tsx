@@ -7,7 +7,6 @@
 // ngắn (≤ 4 ký tự) khớp nguyên từ, từ dài khớp chuỗi con — xem `customs/ingredient.py`.
 import { CircleCheck, CircleX, Tag } from 'lucide-react'
 
-import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 
@@ -37,7 +36,6 @@ export const CUSTOMS_KIND_KEYWORD_CRUD_CONFIG: CrudConfig<CustomsKindKeyword> = 
   unitLabel: 'từ khóa',
   apiPath: '/api/customs-kind-keywords',
   storageKey: 'procurement.customs-kind-keywords',
-  listRoute: appRoutes.procurement.customsKindKeywords,
   searchParam: 'keyword',
   searchPlaceholder: 'Tìm từ khóa…',
   quickFilters: [

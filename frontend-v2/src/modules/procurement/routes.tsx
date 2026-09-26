@@ -4,9 +4,6 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileText,
-  FlaskConical,
-  SpellCheck,
-  Tags,
   Landmark,
   LayoutDashboard,
   PackagePlus,
@@ -163,35 +160,9 @@ export const procurementModule: ErpModule = {
       manage: true,
       group: 'Cấu hình',
     },
-    // bao-CR-470 — danh mục hóa chất theo văn bản (nguồn cảnh báo pháp lý của
-    // màn Tra cứu giá hải quan). Màn đó cũng có nút «Danh mục hóa chất» dẫn sang.
-    {
-      label: 'Danh mục hóa chất',
-      path: appRoutes.procurement.customsRegulations,
-      icon: FlaskConical,
-      entity: 'customs_regulation',
-      manage: true,
-      group: 'Cấu hình',
-    },
-    // bao-CR-494 / bao-CR-495 — hai danh mục cấu hình của màn Tra cứu giá hải quan: từ khóa
-    // gắn nhãn Thành phẩm / Nguyên liệu và từ đồng nghĩa tìm kiếm. Dùng chung khóa
-    // `customs_price` (cấu hình của chính màn đó, không có màn nghiệp vụ riêng).
-    {
-      label: 'Từ khóa nhãn thị trường',
-      path: appRoutes.procurement.customsKindKeywords,
-      icon: Tags,
-      entity: 'customs_price',
-      manage: true,
-      group: 'Cấu hình',
-    },
-    {
-      label: 'Từ đồng nghĩa thị trường',
-      path: appRoutes.procurement.customsSearchSynonyms,
-      icon: SpellCheck,
-      entity: 'customs_price',
-      manage: true,
-      group: 'Cấu hình',
-    },
+    // bao-CR-501: ba danh mục của Tra cứu thị trường — hóa chất theo văn bản (bao-CR-470), từ
+    // khóa nhãn + từ đồng nghĩa (bao-CR-494 / 495) — đã dời vào thẻ «Cấu hình» của chính màn
+    // đó, không còn mục menu / màn riêng.
   ],
 
   routes: [
@@ -356,39 +327,11 @@ export const procurementModule: ErpModule = {
         Component: (await import('./pages/po-cost-type-detail-page')).PoCostTypeDetailPage,
       }),
     },
-    // bao-CR-470 — Tra cứu giá hải quan + danh mục hóa chất theo văn bản
+    // bao-CR-470 — Tra cứu thị trường (danh mục hóa chất nằm trong thẻ «Cấu hình», bao-CR-501)
     {
       path: appRoutes.procurement.customsPrices,
       lazy: async () => ({
         Component: (await import('./pages/customs-price-page')).CustomsPricePage,
-      }),
-    },
-    {
-      path: appRoutes.procurement.customsRegulations,
-      lazy: async () => ({
-        Component: (await import('./pages/customs-regulation-list-page'))
-          .CustomsRegulationListPage,
-      }),
-    },
-    {
-      path: appRoutes.procurement.customsRegulationDetail(':id'),
-      lazy: async () => ({
-        Component: (await import('./pages/customs-regulation-detail-page'))
-          .CustomsRegulationDetailPage,
-      }),
-    },
-    {
-      path: appRoutes.procurement.customsKindKeywords,
-      lazy: async () => ({
-        Component: (await import('./pages/customs-kind-keyword-list-page'))
-          .CustomsKindKeywordListPage,
-      }),
-    },
-    {
-      path: appRoutes.procurement.customsSearchSynonyms,
-      lazy: async () => ({
-        Component: (await import('./pages/customs-search-synonym-list-page'))
-          .CustomsSearchSynonymListPage,
       }),
     },
   ],

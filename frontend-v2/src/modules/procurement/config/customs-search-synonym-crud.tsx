@@ -6,7 +6,6 @@
 // Entity dùng chung `customs_price`, đường API `/api/customs-search-synonyms`.
 import { CircleCheck, CircleX } from 'lucide-react'
 
-import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 
@@ -25,7 +24,6 @@ export const CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG: CrudConfig<CustomsSearchSynonym
   unitLabel: 'nhóm từ',
   apiPath: '/api/customs-search-synonyms',
   storageKey: 'procurement.customs-search-synonyms',
-  listRoute: appRoutes.procurement.customsSearchSynonyms,
   searchParam: 'term',
   searchPlaceholder: 'Tìm từ gốc…',
   quickFilters: [{ key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS }],
