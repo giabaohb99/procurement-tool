@@ -16,7 +16,8 @@ FILTERABLE = ["code", "status", "requester", "department", "request_date",
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
 HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position",
                  "department_id", "handler_dept_id", "department",
-                 "head_of_dept_id", "head_of_dept", "purpose", "request_date", "note"]
+                 "head_of_dept_id", "head_of_dept", "purpose", "request_date", "note",
+                 "approver_employee_id"]   # bao-CR-499
 
 
 VN_OFFSET = timedelta(hours=7)   # container chạy giờ UTC — ngày phải quy về giờ Việt Nam

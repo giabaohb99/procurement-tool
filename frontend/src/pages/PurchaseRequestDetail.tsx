@@ -593,6 +593,7 @@ export default function PurchaseRequestDetail() {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept,
       head_of_dept_id: Number(pr.head_of_dept_id) || 0, purpose: pr.purpose,
+      approver_employee_id: Number(pr.approver_employee_id) || 0,   // bao-CR-499
       // bao-CR-488: lúc tạo mà chưa tick «Nhờ phòng khác xử lý» thì KHÔNG gửi — backend tự chọn mặc định
       // (nhà máy → chính phòng mình, còn lại → Thu mua chung). Đã tick thì gửi đúng số đã chọn, kể cả 0.
       handler_dept_id: isNew && !pr.handler_dept_assigned ? undefined : Number(pr.handler_dept_id) || 0,
@@ -1043,12 +1044,19 @@ export default function PurchaseRequestDetail() {
                 )}
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt ở chặng trưởng phòng — hệ thống ghi lúc duyệt, chỉ xem. */}
-              {!isNew && (
-                <div className="form-row">
-                  <label>Trưởng phòng phê duyệt</label>
-                  <input value={pr.approver_employee_name || 'Chưa ghi nhận'} disabled title="Người thực bấm Duyệt phiếu này (bao-CR-498: trống = chưa duyệt hoặc duyệt trước 25/09/2026)" />
-                </div>
-              )}
+              {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
+                  đè người THỰC duyệt và khóa. Giữ TÁCH với ô Trưởng bộ phận (đại ca chốt 26/09/2026). */}
+              <div className="form-row">
+                <label>Trưởng phòng phê duyệt</label>
+                {editable && employees.length > 0 ? (
+                  <SearchSelect value={pr.approver_employee_id ? String(pr.approver_employee_id) : ''}
+                    options={employees.map((e: any) => ({ value: String(e.id), label: `${e.code} - ${e.full_name}` }))}
+                    placeholder={pr.approver_employee_name || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
+                    onChange={(v) => { const e = employees.find((x: any) => String(x.id) === v); if (e) setPr((s: any) => ({ ...s, approver_employee_id: e.id, approver_employee_name: e.full_name })) }} />
+                ) : (
+                  <input value={pr.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt phiếu này; chưa duyệt thì là người được chọn" />
+                )}
+              </div>
               <div className="form-row">
                 <label>Tùy chọn phiếu</label>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', minHeight: 40, flexWrap: 'wrap' }}>

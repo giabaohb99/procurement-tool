@@ -426,6 +426,13 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
                                        User.is_active == True).all()
     if not recips:
         recips = get_department_head_users(db, s.department or "", s.department_id or 0)
+    # bao-CR-499: người được CHỌN ở ô «Trưởng phòng phê duyệt» cũng nhận báo duyệt.
+    if s.approver_employee_id:
+        from app.modules.user.model import User
+        chosen = db.query(User).filter(User.employee_id == s.approver_employee_id,
+                                       User.is_active == True).all()   # noqa: E712
+        seen = {u.id for u in recips}
+        recips = list(recips) + [u for u in chosen if u.id not in seen]
     _notify(db, recips,
             f"{s.code} — Yêu cầu phê duyệt YCBG",
             f"Có yêu cầu báo giá mới ({s.code}) cần bạn duyệt.",

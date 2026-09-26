@@ -4,12 +4,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
-import {
-  PRINT_SIGNER_MODES,
-  readPrintSignerMode,
-  savePrintSignerMode,
-  type PrintSignerMode,
-} from '../utils/print-signer-mode'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
@@ -53,12 +47,6 @@ export function PurchaseOrderPrintPage({ defaultMode = 'order' }: PurchaseOrderP
   const { data, isLoading, isError } = usePurchaseOrderPrintData(purchaseOrderId)
   const [mode, setMode] = useState<PrintMode>(defaultMode)
   const [showSignature, setShowSignature] = useState(true)
-  //  bao-CR-490: ô «Trưởng bộ phận» ký bởi người duyệt hay trưởng phòng theo hồ sơ — nhớ theo máy.
-  const [signerMode, setSignerMode] = useState<PrintSignerMode>(readPrintSignerMode)
-  function changeSignerMode(next: PrintSignerMode) {
-    setSignerMode(next)
-    savePrintSignerMode(next)
-  }
 
   useEffect(() => {
     if (!data?.code) return
@@ -125,20 +113,6 @@ export function PurchaseOrderPrintPage({ defaultMode = 'order' }: PurchaseOrderP
             ))}
           </div>
 
-          {/* bao-CR-490: người ký ô Trưởng bộ phận trên hai mẫu nội bộ. */}
-          <div className="flex gap-1 rounded-lg border bg-white p-1">
-            {PRINT_SIGNER_MODES.map((option) => (
-              <Button
-                key={option.value}
-                size="sm"
-                variant={signerMode === option.value ? 'default' : 'ghost'}
-                onClick={() => changeSignerMode(option.value)}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-
           <div className="flex gap-1 rounded-lg border bg-white p-1">
             {PRINT_MODES.map((option) => (
               <Button
@@ -155,9 +129,9 @@ export function PurchaseOrderPrintPage({ defaultMode = 'order' }: PurchaseOrderP
       </div>
 
       {mode === 'order' ? (
-        <PurchaseOrderPrintOrderForm data={data} showSignature={showSignature} signerMode={signerMode} />
+        <PurchaseOrderPrintOrderForm data={data} showSignature={showSignature} />
       ) : (
-        <PurchaseOrderPrintGoodsForm data={data} showSignature={showSignature} signerMode={signerMode} />
+        <PurchaseOrderPrintGoodsForm data={data} showSignature={showSignature} />
       )}
     </main>
   )

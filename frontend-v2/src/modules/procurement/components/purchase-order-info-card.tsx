@@ -13,6 +13,8 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { NumberInput } from '@/shared/ui/number-input'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+
+import { ApproverSelect } from './approver-select'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
 import {
@@ -269,14 +271,16 @@ export function PurchaseOrderInfoCard({
         </div>
 
         {/* bao-CR-490: ai THỰC bấm Duyệt ở chặng trưởng phòng — chỉ xem, hệ thống ghi lúc duyệt. */}
-        {/* bao-CR-498: luôn hiện khi phiếu đã có mã — trống nghĩa là chưa duyệt, hoặc duyệt trước
-            25/09/2026 (chưa có cột này; chạy scripts/backfill_approver_employee.py để điền lại). */}
-        {data.id > 0 && (
-          <div className="space-y-1.5">
-            <Label className="text-muted-foreground">Trưởng phòng phê duyệt</Label>
-            <ReadOnlyValue>{data.approver_employee_name || 'Chưa ghi nhận'}</ReadOnlyValue>
-          </div>
-        )}
+        {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
+            đè người THỰC duyệt và khóa. Phiếu duyệt trước 25/09/2026 trống — scripts/backfill_approver_employee.py. */}
+        <ApproverSelect
+          id="po-approver"
+          value={data.approver_employee_id ?? 0}
+          name={data.approver_employee_name ?? ''}
+          employees={employees}
+          editable={editable}
+          onChange={onChange}
+        />
 
         {/*
           bao-CR-480 — «Phòng xử lý» chép từ YCMH nguồn, chỉ xem: đơn do nhà máy mua hay do

@@ -18,6 +18,8 @@ export interface PurchaseRequestPayload {
   head_of_dept: string
   /** CR-071 — id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng). */
   head_of_dept_id: number
+  /** bao-CR-499 — người được chọn duyệt (0 = chưa chọn); sau Duyệt backend tự ghi người thực duyệt. */
+  approver_employee_id?: number
   /**
    * bao-CR-414/488 — id phòng XỬ LÝ phiếu (0 = Thu mua chung). Lúc TẠO mà không gửi thì backend
    * tự chọn mặc định (nhà máy → chính phòng mình); gửi số — kể cả 0 — là người lập đã chọn.

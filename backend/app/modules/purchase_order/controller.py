@@ -527,6 +527,13 @@ def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
     out = {"creator_name": resolve_actor(db, po.created_by),
            "creator_signature": resolve_signature(db, po.created_by),
            "approver_name": "", "approver_signature": ""}
+    #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt → in tên đó.
+    from app.core.print_signers import department_head_block, person_block
+    stored = person_block(db, int(po.approver_employee_id or 0))
+    if stored["name"]:
+        out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
+    head = department_head_block(db, int(po.department_id or 0))
+    out["dept_head_name"], out["dept_head_signature"] = head["name"], head["signature"]
     if po.status not in _PO_APPROVED_STATUSES:
         return out
 
@@ -537,14 +544,8 @@ def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
     if row and row[0]:
         out["approver_name"] = resolve_actor(db, row[0])
         out["approver_signature"] = resolve_signature(db, row[0])
-    # bao-CR-490: có cột «Trưởng phòng phê duyệt» thì tra theo NHÂN SỰ (khớp đúng tên in) thay
-    # cho nhật ký; kèm trưởng phòng theo hồ sơ để bản in nội bộ chọn ô ký.
-    from app.core.print_signers import department_head_block, person_block
-    stored = person_block(db, int(po.approver_employee_id or 0))
-    if stored["name"]:
+    if stored["name"]:      # cột thắng nhật ký (bao-CR-490/499)
         out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
-    head = department_head_block(db, int(po.department_id or 0))
-    out["dept_head_name"], out["dept_head_signature"] = head["name"], head["signature"]
     return out
 
 
@@ -697,7 +698,9 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     po = service.set_status(db, pid, "submitted", user.id)
     trigger_notification(db=db, event="po_submitted", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
-                         is_urgent=bool(po.is_urgent), link=f"/purchase-orders/{po.id}")
+                         is_urgent=bool(po.is_urgent), link=f"/purchase-orders/{po.id}",
+                         # bao-CR-499: người được CHỌN ở ô «Trưởng phòng phê duyệt» cũng nhận báo duyệt.
+                         extra_employee_ids=[po.approver_employee_id] if po.approver_employee_id else None)
     return success(_out(db, po), "Đã gửi duyệt")
 
 
@@ -729,7 +732,8 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     if not (data.reason or "").strip():
         raise HTTPException(400, "Vui lòng nhập lý do hủy duyệt")
     po = service.unapprove_po(db, pid, user.id, data.reason.strip())
-    po.approver_employee_id = 0      # bao-CR-490: đơn về Nháp thì chưa ai duyệt nữa
+    # bao-CR-499: KHÔNG xóa cột người duyệt nữa — từ nay nó là «người được chọn / đã duyệt»; về Nháp
+    # thì người vừa duyệt vẫn là người được chọn cho lần gửi duyệt sau, người lập đổi được.
     db.commit()
     return success(_out(db, po), "Đã hủy duyệt — đơn về Nháp")
 

@@ -123,6 +123,7 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
     supplier_name: data.supplier_name,
     department: data.department,
     nspt: data.nspt,
+    approver_employee_id: data.approver_employee_id ?? 0,   // bao-CR-499
     order_date: data.order_date,
     vat_rate: Number(data.vat_rate) || 0,
     payment_terms: data.payment_terms,

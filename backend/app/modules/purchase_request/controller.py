@@ -216,6 +216,12 @@ def _approval_signers(db: Session, pr) -> dict:
     out = {"approver_name": "", "approver_signature": "",
            "dispatcher_name": "", "dispatcher_signature": "",
            "purchasing_head_name": "", "purchasing_head_signature": ""}
+    #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt, người THỰC duyệt
+    #  sau khi duyệt — có tên là in tên đó, kể cả phiếu còn Nháp (đại ca chốt 26/09/2026).
+    from app.core.print_signers import person_block
+    stored = person_block(db, int(getattr(pr, "approver_employee_id", 0) or 0))
+    if stored["name"]:
+        out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
     want = ([("approved", "approver")] if pr.status in _AFTER_APPROVE else []) + \
            ([("dispatched", "dispatcher")] if pr.status in _AFTER_DISPATCH else [])
     if not want:
@@ -236,11 +242,7 @@ def _approval_signers(db: Session, pr) -> dict:
         if uid:
             out[f"{key}_name"] = resolve_actor(db, uid)
             out[f"{key}_signature"] = resolve_signature(db, uid)
-    # bao-CR-490: có cột «Trưởng phòng phê duyệt» thì ô «TP/BP đề xuất» tra theo NHÂN SỰ đó
-    # (khớp đúng tên in), nhật ký chỉ còn là đường lùi cho phiếu cũ.
-    from app.core.print_signers import person_block
-    stored = person_block(db, int(getattr(pr, "approver_employee_id", 0) or 0))
-    if stored["name"] and pr.status in _AFTER_APPROVE:
+    if stored["name"]:      # cột thắng nhật ký (bao-CR-490/499)
         out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
     dispatcher_uid = latest.get("dispatched")
     if dispatcher_uid:
@@ -951,7 +953,8 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         department_id=pr.department_id or 0,
         # bao-CR-474: người được chọn ở ô TBP cũng nhận chuông báo duyệt (ngoài trưởng phòng
         # gán cứng + vai trò dept_head của phòng). Người trong danh sách chọn đều duyệt được.
-        extra_employee_ids=[pr.head_of_dept_id] if pr.head_of_dept_id else None,
+        # bao-CR-499: người được CHỌN ở ô «Trưởng phòng phê duyệt» cũng nhận chuông + mail.
+        extra_employee_ids=[x for x in (pr.head_of_dept_id, pr.approver_employee_id) if x] or None,
     )
     return success(_out(db, pr, user), "Đã gửi duyệt")
 

@@ -781,6 +781,7 @@ export default function PurchaseOrderDetail() {
       misa_code: po.misa_code, pr_code: po.pr_code, survey_code: po.survey_code,
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
       department: po.department, nspt: po.nspt, order_date: po.order_date,
+      approver_employee_id: Number(po.approver_employee_id) || 0,   // bao-CR-499
       vat_rate: Number(po.vat_rate) || 0, payment_terms: po.payment_terms, is_urgent: po.is_urgent, note: po.note,
       // bao-CR-319 — loại đơn + tiền tệ + tờ khai. Thiếu mấy khóa này thì người dùng chọn
       // "Nhập khẩu" trên màn hình xong lưu lại vẫn ra đơn trong nước.
@@ -1221,11 +1222,18 @@ export default function PurchaseOrderDetail() {
                 <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Thu mua chung')} disabled />
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt đơn — hệ thống ghi lúc duyệt, chỉ xem. */}
-              {!isNew && (
-                <div className="form-row"><label>Trưởng phòng phê duyệt</label>
-                  <input value={po.approver_employee_name || 'Chưa ghi nhận'} disabled title="Người thực bấm Duyệt đơn này (bao-CR-498: trống = chưa duyệt hoặc duyệt trước 25/09/2026)" />
-                </div>
-              )}
+              {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
+                  đè người THỰC duyệt và khóa. */}
+              <div className="form-row"><label>Trưởng phòng phê duyệt</label>
+                {headerEditable && employees.length > 0 ? (
+                  <SearchSelect value={po.approver_employee_id ? String(po.approver_employee_id) : ''}
+                    options={employees.map((e: any) => ({ value: String(e.id), label: `${e.code} - ${e.full_name}` }))}
+                    placeholder={po.approver_employee_name || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
+                    onChange={(v) => { const e = employees.find((x: any) => String(x.id) === v); if (e) setPo((s: any) => ({ ...s, approver_employee_id: e.id, approver_employee_name: e.full_name })) }} />
+                ) : (
+                  <input value={po.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt đơn này; chưa duyệt thì là người được chọn" />
+                )}
+              </div>
               <div className="form-row"><label>Hình thức thanh toán NCC</label><SearchSelect value={po.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!headerEditable} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} /></div>
               {/* bao-CR-321 — điều khoản in (mục 2 + mục 5 bản in). Tự chép từ NCC khi chọn, sửa riêng
                   từng đơn lúc còn nháp; khóa sau duyệt như hình thức thanh toán. Trống = mặc định cũ. */}

@@ -104,6 +104,7 @@ class POCreate(BaseModel):
     handler_dept_id: int = 0      # bao-CR-414: phòng ĐƯỢC NHỜ xử lý; 0 = chép từ YCMH nếu có
     department: str = ""
     nspt_id: int = 0              # CR-087: NSPT neo bằng id; bỏ trống thì tra từ `nspt`
+    approver_employee_id: int = 0   # bao-CR-499: người được chọn duyệt; sau Duyệt = người thực duyệt
     nspt: str = ""
     order_date: str = ""
     vat_rate: float = 0.08
@@ -136,6 +137,7 @@ class POUpdate(BaseModel):
     handler_dept_id: int | None = None    # bao-CR-414
     department: str | None = None
     nspt_id: int | None = None            # CR-087
+    approver_employee_id: int | None = None   # bao-CR-499
     nspt: str | None = None
     order_date: str | None = None
     vat_rate: float | None = None

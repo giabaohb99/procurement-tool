@@ -426,6 +426,7 @@ export function PurchaseRequestDetailPage() {
         department: loadedDraft.department,
         head_of_dept: loadedDraft.head_of_dept,
         head_of_dept_id: loadedDraft.head_of_dept_id,
+        approver_employee_id: loadedDraft.approver_employee_id ?? 0,   // bao-CR-499
         // bao-CR-488: lúc tạo, chưa tick «Nhờ phòng khác xử lý» thì không gửi để backend chọn mặc định.
         handler_dept_id: isNew ? handlingDeptForCreate(loadedDraft) : loadedDraft.handler_dept_id,
         purpose: loadedDraft.purpose,

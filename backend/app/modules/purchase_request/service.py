@@ -1270,6 +1270,7 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
         department_id=data.department_id,
         handler_dept_id=data.handler_dept_id or 0,   # bao-CR-414 (None → mặc định ở dưới, bao-CR-488)
         head_of_dept=data.head_of_dept, head_of_dept_id=data.head_of_dept_id,
+        approver_employee_id=int(data.approver_employee_id or 0),   # bao-CR-499
         purpose=data.purpose, request_date=data.request_date,
         need_date=data.need_date, is_urgent=data.is_urgent, vat_rate=data.vat_rate,
         note=data.note, status="draft", created_by=user_id, updated_by=user_id,

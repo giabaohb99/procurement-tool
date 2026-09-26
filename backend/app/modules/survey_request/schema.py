@@ -25,6 +25,7 @@ class _Header(BaseModel):
     handler_dept_id: int | None = None   # bao-CR-414/488: None = hệ thống chọn mặc định; số (kể cả 0) = đã chọn
     department: str = ""
     head_of_dept_id: int = 0      # CR-087: TBP neo bằng id nhân sự; bỏ trống thì lấy theo phòng
+    approver_employee_id: int = 0   # bao-CR-499: người được chọn duyệt; sau Duyệt = người thực duyệt
     head_of_dept: str = ""
     purpose: str = ""
     request_date: str = ""
@@ -45,6 +46,7 @@ class SurveyRequestUpdate(BaseModel):
     handler_dept_id: int | None = None    # bao-CR-414
     department: str | None = None
     head_of_dept_id: int | None = None    # CR-087
+    approver_employee_id: int | None = None   # bao-CR-499
     head_of_dept: str | None = None
     purpose: str | None = None
     request_date: str | None = None

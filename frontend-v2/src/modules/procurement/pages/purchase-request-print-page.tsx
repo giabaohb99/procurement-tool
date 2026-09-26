@@ -23,13 +23,6 @@ import {
   printLineValues,
   printedTotals,
 } from '../utils/purchase-request-print-options'
-import {
-  PRINT_SIGNER_MODES,
-  pickHeadSigner,
-  readPrintSignerMode,
-  savePrintSignerMode,
-  type PrintSignerMode,
-} from '../utils/print-signer-mode'
 import { cn } from '@/shared/utils/cn'
 
 /**
@@ -60,12 +53,6 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
   const [taxMode, setTaxMode] = useState(false)
   const [showSignature, setShowSignature] = useState(true)
-  //  bao-CR-490: ô «TP/BP đề xuất» ký bởi người duyệt hay trưởng phòng theo hồ sơ — nhớ theo máy.
-  const [signerMode, setSignerMode] = useState<PrintSignerMode>(readPrintSignerMode)
-  function changeSignerMode(mode: PrintSignerMode) {
-    setSignerMode(mode)
-    savePrintSignerMode(mode)
-  }
 
   useEffect(() => {
     if (!purchaseRequest?.code) return
@@ -162,22 +149,14 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
 
         <div className="pr-print-toolbar-options">
           {!taxMode && (
-            <>
-              <PrintToggle
-                options={[
-                  { value: true, label: 'Có chữ ký' },
-                  { value: false, label: 'Không chữ ký' },
-                ]}
-                value={showSignature}
-                onChange={setShowSignature}
-              />
-              {/* bao-CR-490: mẫu nội bộ chọn người ký ô TP/BP đề xuất; mẫu thuế để trống ô ký. */}
-              <PrintToggle
-                options={[...PRINT_SIGNER_MODES]}
-                value={signerMode}
-                onChange={changeSignerMode}
-              />
-            </>
+            <PrintToggle
+              options={[
+                { value: true, label: 'Có chữ ký' },
+                { value: false, label: 'Không chữ ký' },
+              ]}
+              value={showSignature}
+              onChange={setShowSignature}
+            />
           )}
           <PrintToggle
             options={[
@@ -197,7 +176,6 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
         warehouseCode={(name) => warehouseCodes.get(name) || name}
         taxMode={taxMode}
         showSignature={showSignature}
-        signerMode={signerMode}
       />
     </main>
   )
@@ -220,7 +198,6 @@ export function PurchaseRequestPrintSheet({
   warehouseCode,
   taxMode,
   showSignature,
-  signerMode = 'approver',
 }: {
   purchaseRequest: PurchaseRequestDetail
   items: PurchaseRequestItem[]
@@ -229,8 +206,6 @@ export function PurchaseRequestPrintSheet({
   warehouseCode: (name: string) => string
   taxMode: boolean
   showSignature: boolean
-  /** bao-CR-490: ô «TP/BP đề xuất» ký bởi ai; bản gửi NCC giữ mặc định người duyệt. */
-  signerMode?: PrintSignerMode
 }) {
   return (
     <article className="pr-print-doc">
@@ -304,7 +279,6 @@ export function PurchaseRequestPrintSheet({
         purchaseRequest={purchaseRequest}
         taxMode={taxMode}
         showSignature={showSignature}
-        signerMode={signerMode}
       />
 
       <p className="pr-print-note">
@@ -464,15 +438,14 @@ export function SignatureSection({
   purchaseRequest,
   taxMode,
   showSignature,
-  signerMode = 'approver',
 }: {
   purchaseRequest: PurchaseRequestDetail
   taxMode: boolean
   showSignature: boolean
-  signerMode?: PrintSignerMode
 }) {
-  //  bao-CR-490: người duyệt (cột «Trưởng phòng phê duyệt») hay trưởng phòng theo hồ sơ.
-  const head = pickHeadSigner(signerMode, purchaseRequest)
+  //  bao-CR-499: ô «TP/BP đề xuất» luôn in tên trong cột «Trưởng phòng phê duyệt» — người THỰC duyệt,
+  //  chưa ai duyệt thì là người được chọn (backend lùi về nhật ký cho phiếu cũ).
+  const head = { name: purchaseRequest.approver_name ?? '', signature: purchaseRequest.approver_signature ?? '' }
   const values: Record<string, { signature: string; name: string }> = taxMode
     ? {}
     : {

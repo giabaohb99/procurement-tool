@@ -8544,6 +8544,28 @@ celery_app.py · backend/app/modules/employee/service.py · backend/migrations/v
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py
 
+## bao-CR-499 | Ô Trưởng phòng phê duyệt chọn được, báo người được chọn, bản in in người thực duyệt
+- status: dang-lam
+- date: 2026-09-26
+Đại ca góp ý lại CR-490: ô Trưởng phòng phê duyệt không chỉ để xem mà cho người lập chọn
+luôn, để hệ gửi chuông và mail cho người đó; bản in thì ai thực bấm duyệt in tên người đó,
+công tắc chọn người ký trên bản in không cần nữa. Đại ca chốt giữ hai ô tách riêng, ô Trưởng
+bộ phận để nguyên, vì sau này có thể bỏ ô người duyệt này.
+
+Đã làm ở cả hai bản cho yêu cầu mua hàng, yêu cầu báo giá và đơn mua hàng: ô Trưởng phòng
+phê duyệt chọn được trong danh sách nhân sự khi phiếu còn sửa được; gửi duyệt thì người
+được chọn nhận chuông và mail cùng với trưởng bộ phận; bấm Duyệt thì hệ ghi đè bằng người
+thực duyệt và ô khóa lại. Bản in luôn in tên đang nằm trong ô đó, phiếu chưa duyệt thì in
+người được chọn, phiếu cũ trước ngày 25/09 vẫn lấy theo nhật ký thao tác. Bỏ công tắc Ký
+người duyệt / Ký trưởng phòng ở bản in của cả hai bản. Hủy duyệt đơn mua hàng không còn xóa
+ô này nữa. Không cần migration. Chưa commit.
+
+Kiểm: 42 bài kiểm backend xanh trong đó 6 bài mới; giao diện v2 kiểm kiểu 0 lỗi, nếp mã 0
+lỗi, 596 bài thu mua xanh; bản v1 kiểm kiểu còn đúng 4 lỗi nền cũ.
+
+Mã nguồn: frontend-v2 procurement/components/approver-select.tsx · purchase-request-print-page.tsx ·
+frontend/src/pages/PrintPurchaseRequest.tsx · backend purchase_request/controller.py ·
+test/backend/test_truong_phong_phe_duyet_chon_duoc_cr499.py
 ## bao-CR-493 | Tra cứu giá hải quan đợt 1: hai cột VND, lọc thêm, lịch sử nạp trên trang, tải lại tệp gốc
 - status: xong
 - date: 2026-09-25

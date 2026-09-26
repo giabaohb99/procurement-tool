@@ -24,6 +24,8 @@ export interface SurveyRequestPayload {
   department: string
   head_of_dept_id: number
   head_of_dept: string
+  /** bao-CR-499 — người được chọn duyệt (0 = chưa chọn). */
+  approver_employee_id?: number
   /** bao-CR-414/488: phòng xử lý (0 = Thu mua chung); lúc TẠO không gửi = backend tự chọn mặc định. */
   handler_dept_id?: number
   purpose: string

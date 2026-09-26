@@ -136,4 +136,5 @@ def test_po_approve_stamps_and_unapprove_clears(db, seed, dept_with_head):
 
     po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=USER)
     db.refresh(po)
-    assert po.approver_employee_id == 0
+    #  bao-CR-499: hủy duyệt KHÔNG xóa cột nữa — nó đồng thời là «người được chọn» cho lần gửi sau.
+    assert po.approver_employee_id == db.get(User, USER.id).employee_id

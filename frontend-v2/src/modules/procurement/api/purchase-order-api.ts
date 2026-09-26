@@ -78,6 +78,8 @@ export interface PurchaseOrderPayload {
   supplier_name: string
   department: string
   nspt: string
+  /** bao-CR-499 — người được chọn duyệt (0 = chưa chọn); sau Duyệt backend tự ghi người thực duyệt. */
+  approver_employee_id?: number
   order_date: string
   vat_rate: number
   payment_terms: string

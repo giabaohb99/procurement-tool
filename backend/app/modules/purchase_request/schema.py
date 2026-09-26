@@ -45,6 +45,9 @@ class PRCreate(BaseModel):
     department: str = ""
     head_of_dept: str = ""
     head_of_dept_id: int = 0      # CR-071: id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng)
+    # bao-CR-499: người ĐƯỢC CHỌN sẽ duyệt (nhận chuông/mail lúc gửi duyệt); bấm Duyệt xong thì cột này
+    # đổi thành người THỰC duyệt (bao-CR-490) — bản in luôn in tên đang nằm trong cột.
+    approver_employee_id: int = 0
     purpose: str = ""
     request_date: str = ""
     need_date: str = ""
@@ -72,6 +75,7 @@ class PRUpdate(BaseModel):
     department: str | None = None
     head_of_dept: str | None = None
     head_of_dept_id: int | None = None    # CR-071
+    approver_employee_id: int | None = None   # bao-CR-499
     purpose: str | None = None
     request_date: str | None = None
     need_date: str | None = None

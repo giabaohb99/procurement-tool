@@ -496,6 +496,7 @@ export default function SurveyRequestDetail() {
       requester:          sv.requester,
       requester_id:       Number(sv.requester_id) || 0,
       requester_position: sv.requester_position,
+      approver_employee_id: Number(sv.approver_employee_id) || 0,   // bao-CR-499
       department:         sv.department,
       head_of_dept:       sv.head_of_dept,
       purpose:            sv.purpose,
@@ -839,12 +840,19 @@ export default function SurveyRequestDetail() {
                   disabled title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt — hệ thống ghi lúc duyệt, chỉ xem. */}
-              {!isNew && (
-                <div className="form-row">
-                  <label>Trưởng phòng phê duyệt</label>
-                  <input value={sv.approver_employee_name || 'Chưa ghi nhận'} disabled title="Người thực bấm Duyệt phiếu này (bao-CR-498: trống = chưa duyệt hoặc duyệt trước 25/09/2026)" />
-                </div>
-              )}
+              {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
+                  đè người THỰC duyệt và khóa. Giữ TÁCH với ô Trưởng bộ phận (đại ca chốt 26/09/2026). */}
+              <div className="form-row">
+                <label>Trưởng phòng phê duyệt</label>
+                {editable && employees.length > 0 ? (
+                  <SearchSelect value={sv.approver_employee_id ? String(sv.approver_employee_id) : ''}
+                    options={employees.map((e: any) => ({ value: String(e.id), label: `${e.code} - ${e.full_name}` }))}
+                    placeholder={sv.approver_employee_name || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
+                    onChange={(v) => { const e = employees.find((x: any) => String(x.id) === v); if (e) setSv((s: any) => ({ ...s, approver_employee_id: e.id, approver_employee_name: e.full_name })) }} />
+                ) : (
+                  <input value={sv.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt phiếu này; chưa duyệt thì là người được chọn" />
+                )}
+              </div>
 
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Mục đích khảo sát <span className="req">*</span></label>
