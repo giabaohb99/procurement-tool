@@ -22,8 +22,9 @@ from app.modules.import_tool.model import ImportBatch, ImportMode, ImportModule,
 
 from . import reader
 from .constants import (COLUMNS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST,
-                        REGULATION_LIST_LABELS, TRANSPORT_LABELS, RegulationList)
+                        PRODUCT_KIND_LABELS, REGULATION_LIST_LABELS, TRANSPORT_LABELS, RegulationList)
 from .model import CustomsLine, CustomsParty, CustomsRegulation, CustomsTariff
+from .search_service import build_keyword_condition
 
 PERIODS = ("month", "quarter", "year")
 PRICE_MODES = ("adjusted", "declared")
@@ -59,16 +60,22 @@ def apply_line_filters(q, f: dict):
     """Bộ lọc dùng CHUNG cho danh sách, biểu đồ, xếp hạng, xuất Excel — bốn nơi một luật.
 
     `q` (từ khóa) khớp CẢ tên hàng lẫn hoạt chất đã gắn: gõ ATRAZINE ra cả dòng ghi tên
-    thương mại mà hoạt chất suy ra được là atrazine (HQ4).
+    thương mại mà hoạt chất suy ra được là atrazine (HQ4). Từ bao-CR-495 hiểu thêm từ KHÔNG CÓ,
+    nồng độ, đồng nghĩa; bao-CR-494 thêm `product_kind`.
 
     bao-CR-493 thêm theo sheet 4 của yêu cầu phòng Thu mua: doanh nghiệp / đối tác chọn NHIỀU
     (HOẶC), nguyên tệ, điều kiện giao hàng, khoảng đơn giá (giá HIỆU LỰC — điều chỉnh nếu có),
     khoảng lượng, khoảng tỷ giá USD, lô nạp nguồn. Khoảng số bỏ trống một đầu thì chỉ chặn một đầu.
     """
-    term = (f.get("q") or "").strip()
-    if term:
-        like = f"%{term}%"
-        q = q.filter(or_(CustomsLine.product_name.ilike(like), CustomsLine.active_ingredient.ilike(like)))
+    #  bao-CR-495: ô tìm hiểu từ CÓ (cách nhau = VÀ) / KHÔNG CÓ (`-từ`, `NOT từ`), quy đổi cách viết
+    #  nồng độ và từ đồng nghĩa; ô trống → không lọc. Luật ở `search_service`, chỉ gắn vào đây.
+    cond = build_keyword_condition(q.session, f.get("q") or "")
+    if cond is not None:
+        q = q.filter(cond)
+    #  bao-CR-494: lọc nhãn Thành phẩm / Nguyên liệu (chọn nhiều, lặp URL hoặc «1,2»).
+    kinds = _id_list(f.get("product_kind"))
+    if kinds:
+        q = q.filter(CustomsLine.product_kind.in_(kinds))
     if f.get("ingredient"):
         q = q.filter(CustomsLine.active_ingredient.ilike(f"%{f['ingredient'].strip()}%"))
     if f.get("hs_code"):
@@ -154,7 +161,10 @@ def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
         d = {"id": ln.id, "batch_id": ln.batch_id, "source_row": ln.source_row,
              "date_fixed": bool(ln.date_fixed), "importer_id": ln.importer_id,
              "partner_id": ln.partner_id, "active_ingredient": ln.active_ingredient,
-             "formulation": ln.formulation}
+             "formulation": ln.formulation,
+             #  bao-CR-494: nhãn Thành phẩm / Nguyên liệu (0 = chưa gắn, chạy lại retag).
+             "product_kind": int(ln.product_kind or 0),
+             "product_kind_label": PRODUCT_KIND_LABELS.get(int(ln.product_kind or 0), "")}
         for key, _ in COLUMNS:
             if key == "importer_tax_code":
                 d[key] = imp.tax_code if imp else ""

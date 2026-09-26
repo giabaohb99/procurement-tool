@@ -35,6 +35,7 @@ export const EMPTY_CUSTOMS_FILTERS: CustomsFilters = {
   qty_max: '',
   rate_min: '',
   rate_max: '',
+  product_kind: '',
 }
 
 /** Câu chặn của thẻ Biểu đồ / Nhà nhập khẩu — khớp `NEED_FILTER_MSG` của backend. */

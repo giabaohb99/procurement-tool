@@ -140,4 +140,11 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
   //  bài kiểm cột giữ đúng thứ tự GTT02 phía trước.
   vnd('price_vnd_flat', 'Giá VND (thuế NK 7%)'),
   vnd('price_vnd_line_tax', 'Giá VND (thuế suất dòng)'),
+  //  bao-CR-494 — nhãn tự gắn theo bộ từ khóa admin sửa được; đứng SAU hai cột VND.
+  {
+    key: 'product_kind',
+    header: 'Phân loại',
+    width: 120,
+    cell: (row) => row.product_kind_label || '—',
+  },
 ]

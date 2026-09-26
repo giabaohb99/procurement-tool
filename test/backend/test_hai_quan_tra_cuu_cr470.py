@@ -91,7 +91,7 @@ def test_gan_lai_toan_bo_sau_khi_doi_danh_muc(db):
     res = retag_all(db)
 
     ln = db.query(CustomsLine).one()
-    assert res == {"total": 1, "tagged": 1}
+    assert res == {"total": 1, "tagged": 1, "technical": 0}   # bao-CR-494: chưa có từ khóa → 0 nguyên liệu
     assert ln.active_ingredient == "ATRAZINE" and ln.formulation == "97%"
 
 

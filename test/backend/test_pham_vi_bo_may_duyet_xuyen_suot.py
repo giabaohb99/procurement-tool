@@ -1250,7 +1250,17 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     #  có chủ sở hữu nên khai PUBLIC; cổng duy nhất là khóa đọc của màn Tra cứu giá.
     "customs_price_stats": "ctx.can(customs_price, read) — dữ liệu hải quan, PUBLIC",
     "customs_buy_timing": "ctx.can(customs_price, read) — dữ liệu hải quan, PUBLIC",
+    "customs_market": "ctx.can(customs_price, read) — dữ liệu hải quan, PUBLIC (bao-CR-481)",
+    "customs_legal_check": "ctx.can(customs_price, read) — tra danh mục pháp lý dùng chung "
+                           "(customs_regulation cũng PUBLIC), không tra dữ liệu của ai (bao-CR-481)",
     # (b) dữ liệu của CHÍNH người hỏi — lọc bằng employee_id/user_id, không phải phạm vi
+    # (b-bis) Google CÁ NHÂN (ai-CR-064): token lấy từ `google_link.get_link(db, ctx.user.id)`
+    #  — kết nối của chính người hỏi; không nối thì tool trả lời «chưa nối Google». Dữ liệu là
+    #  Lịch / Drive của người đó bên Google, không phải bảng nghiệp vụ ERP nên không có phạm vi.
+    "my_calendar_events": "google_link.get_link(user.id) — lịch Google của chính người hỏi",
+    "create_calendar_event": "google_link.get_link(user.id) — ghi vào lịch của chính người hỏi",
+    "drive_search": "google_link.get_link(user.id) — Drive của chính người hỏi",
+    "drive_read": "google_link.get_link(user.id) — Drive của chính người hỏi",
     "my_approval_tasks": "task_service.my_tasks(employee_id) — hộp việc của chính mình",
     "my_requests_status": "lọc theo started_by_employee_id — phiếu chính mình trình",
     "my_tickets": "lọc theo created_by/requester_id + ctx.can(ticket, read)",

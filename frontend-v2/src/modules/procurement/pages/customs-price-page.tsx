@@ -52,6 +52,7 @@ import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 
 import { exportCustomsLines } from '../api/customs-api'
+import { CustomsSearchHint } from '../components/customs/customs-search-hint'
 import { CustomsCompareTab } from '../components/customs/customs-compare-tab'
 import { CustomsNeedFilterState, CustomsNotice } from '../components/customs/customs-controls'
 import { CustomsCoverageStrip } from '../components/customs/customs-coverage-strip'
@@ -62,6 +63,7 @@ import { CustomsLegalTab } from '../components/customs/customs-legal-tab'
 import { CustomsLineDetailDialog } from '../components/customs/customs-line-detail-dialog'
 import { CustomsPriceChart } from '../components/customs/customs-price-chart'
 import { CUSTOMS_LINE_COLUMNS } from '../config/customs-line-columns'
+import { useCustomsSearchExplain } from '../hooks/use-customs-search-explain'
 import {
   useCustomsAlerts,
   useCustomsCoverage,
@@ -98,7 +100,14 @@ type TabKey = (typeof TABS)[number]['key']
  * `-v3` (bao-CR-493): bề rộng cột mới đủ cho tiêu đề + hai cột VND — bản lưu cũ giữ bề rộng cũ
  * nên tiêu đề vẫn cụt, phải đổi khóa để bố cục mới thắng.
  */
-const STORAGE_KEY = 'procurement.customs-lines-v3'
+//  v4: bao-CR-494 thêm cột «Phân loại» — đổi khóa để bố cục cột đã lưu không che mất cột mới.
+/** bao-CR-494 — khớp `ProductKind` backend (1 Thành phẩm · 2 Nguyên liệu). */
+const PRODUCT_KIND_OPTIONS = [
+  { value: '1', label: 'Thành phẩm' },
+  { value: '2', label: 'Nguyên liệu' },
+]
+
+const STORAGE_KEY = 'procurement.customs-lines-v4'
 const DEFAULT_PAGE_SIZE = 50
 /** Tham số lọc trên URL — "Xóa lọc" dọn đúng bộ này, giữ nguyên thẻ đang mở. */
 const FILTER_PARAMS = [
@@ -122,6 +131,7 @@ const FILTER_PARAMS = [
   'qty_max',
   'rate_min',
   'rate_max',
+  'product_kind',
 ] as const
 /** Sáu ô của hàng «Lọc thêm» — có giá trị thì hàng tự mở khi vào trang bằng link. */
 const EXTRA_FILTER_PARAMS = [
@@ -160,6 +170,7 @@ export function CustomsPricePage() {
   const [qtyMax, setQtyMax] = useUrlParamState('qty_max', '')
   const [rateMin, setRateMin] = useUrlParamState('rate_min', '')
   const [rateMax, setRateMax] = useUrlParamState('rate_max', '')
+  const [productKind, setProductKind] = useUrlParamState('product_kind', '')   // bao-CR-494
   const [rawTab, setTab] = useUrlParamState('tab', 'list')
   const [searchParams] = useSearchParams()
   const setUrlParams = useSetUrlParams()
@@ -200,6 +211,7 @@ export function CustomsPricePage() {
       qty_max: qtyMax,
       rate_min: rateMin,
       rate_max: rateMax,
+      product_kind: productKind,
     }),
     [
       debouncedValue,
@@ -220,9 +232,11 @@ export function CustomsPricePage() {
       qtyMax,
       rateMin,
       rateMax,
+      productKind,
     ],
   )
   const filterParams = useMemo(() => buildCustomsParams(filters), [filters])
+  const searchExplain = useCustomsSearchExplain(debouncedValue)   // bao-CR-495
   const [page, setPage] = usePageResetOnFilterChange([JSON.stringify(filterParams)])
 
   const coverage = useCustomsCoverage()
@@ -326,6 +340,17 @@ export function CustomsPricePage() {
             aria-label="Tìm theo tên hàng hoặc hoạt chất"
             className="min-w-56 flex-1 md:max-w-md"
           />
+          {/* bao-CR-494 — nhãn tự gắn Thành phẩm / Nguyên liệu. */}
+          <div className="w-44 max-md:w-full">
+            <SearchSelect
+              value={productKind}
+              onChange={setProductKind}
+              options={PRODUCT_KIND_OPTIONS}
+              placeholder="Thành phẩm + Nguyên liệu"
+              searchPlaceholder="Tìm phân loại…"
+              clearable
+            />
+          </div>
           <div className="w-44 max-md:w-full">
             <SearchSelect
               value={hsCode}
@@ -389,6 +414,9 @@ export function CustomsPricePage() {
             </Button>
           )}
         </div>
+
+        {/* bao-CR-495 — ô tìm hiểu từ CÓ / KHÔNG CÓ, nồng độ, đồng nghĩa: nói cho người dùng biết. */}
+        <CustomsSearchHint query={debouncedValue} explain={searchExplain.data} />
 
         {extraOpen && (
           /* bao-CR-493 — sáu ô theo sheet 4 của yêu cầu phòng Thu mua. Khoảng số nhập chữ, backend

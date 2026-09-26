@@ -111,6 +111,9 @@ BB3_PUBLIC_CO_LY_DO = {
     "customs_regulation": "danh mục hóa chất theo văn bản pháp lý (NĐ 24/2026, TT 75/2025, TT 01/2026), "
                           "dữ liệu pháp lý chung — sửa gác bằng customs_regulation.write",
     "category_assignee": "bảng phân công NSTM theo phân loại, không thuộc pháp nhân nào",
+    "agent_task": "sổ việc + chi phí model của bot Agent Hub (ai-CR-036): việc của QUẢN TRỊ HỆ THỐNG, "
+                  "không thuộc pháp nhân/phòng ban nào — khóa nằm trong _SYS_ENTITIES của seed, "
+                  "giấu thì tắt bằng QUYỀN agent_task.read",
     "doc_type": "danh mục nền Văn thư, tách khóa là để phân quyền theo MÀN HÌNH (CR-157)",
     "doc_template": "cùng lý do CR-157",
     "doc_numbering_rule": "cùng lý do CR-157",
@@ -201,8 +204,16 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 BB4_CONTROLLER_MIEN_TRU = {
     # -- gác bằng hàm tự viết trong thân hàm, grep không thấy --
     "import_tool/controller.py": "gác bằng `_guard` → user_has_permission(..., 'import')",
+    "agent_hub/controller.py": "hai nhóm đường: sổ việc của bot (`agent_task` PUBLIC, require từng route) "
+                               "và các đường CỦA CHÍNH NGƯỜI GỌI — mã nối chat, khóa Gemini, khóa MCP, "
+                               "kết nối Google — đều lọc bằng `user.id` (chat_link.list_user_links, "
+                               "user_keys, mcp_keys.list_for_user, google_link.get_link); quyền SỞ HỮU, "
+                               "không phải phạm vi",
     "customs/controller.py": "customs_price là entity PUBLIC (dữ liệu thị trường bên ngoài, "
                              "bao-CR-470) — cổng là require('customs_price', …) từng route",
+    "customs/kind_controller.py": "bao-CR-494/495: hai danh mục cấu hình của chính màn tra cứu "
+                                  "(từ khóa nhãn, từ đồng nghĩa) đi qua make_crud_router + retag/explain "
+                                  "— cùng entity PUBLIC customs_price, cổng là require từng route",
     "export_log/controller.py": "gác bằng `_guard_view` (can_view_any hoặc setting.read)",
     "comment/controller.py": "gác bằng `service.resolve_doc` — làm CẢ require lẫn apply_scope",
     "document/controller.py": "gác bằng `access_service.ensure_can` (2 tầng) — cụm 05 B",

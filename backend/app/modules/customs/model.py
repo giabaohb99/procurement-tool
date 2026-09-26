@@ -102,6 +102,9 @@ class CustomsLine(Base):
     #  hàm lượng / dạng bào chế ~93%. Danh mục đổi thì chạy lại `retag_all`.
     active_ingredient: Mapped[str] = mapped_column(String(255), default="", index=True)
     formulation: Mapped[str] = mapped_column(String(40), default="")
+    #  bao-CR-494: nhãn THÀNH PHẨM / NGUYÊN LIỆU (`ProductKind`), suy từ tên hàng theo bộ từ
+    #  khóa admin sửa được (`tab_customs_kind_keyword`). Gắn lúc nạp và ở `retag_all`; 0 = chưa gắn.
+    product_kind: Mapped[int] = mapped_column(SmallInteger, default=0, index=True)
 
 
 class CustomsIngredientAlias(Base, AuditMixin):
@@ -165,3 +168,35 @@ class CustomsTariff(Base):
     rate_vat: Mapped[str] = mapped_column(String(20), default="")
     fta_json: Mapped[str] = mapped_column(Text, default="")             # {hiệp định: thuế suất}
     policy: Mapped[str] = mapped_column(Text, default="")              # chính sách quản lý
+
+
+class CustomsKindKeyword(Base, AuditMixin):
+    """Từ khóa nhận diện Thành phẩm / Nguyên liệu — bao-CR-494 (F04 của chị Mi).
+
+    Tên hàng chứa từ khóa loại NGUYÊN LIỆU (TC · TECH · TG · «kỹ thuật» · «nguyên liệu») thì
+    dòng là nguyên liệu kỹ thuật, không khớp gì là thành phẩm. Từ khóa loại THÀNH PHẨM là
+    ngoại lệ thắng ngược (vd tên chứa «TECHNOLOGY» mà muốn giữ thành phẩm). Từ khóa ngắn
+    (≤ 4 ký tự ASCII) khớp NGUYÊN TỪ để `TC` không dính `ATC`; từ khóa dài khớp chuỗi con.
+    Đặt ở bảng để admin cập nhật, không hard-code (yêu cầu phi chức năng «Khả năng bảo trì»).
+    """
+    __tablename__ = "tab_customs_kind_keyword"
+
+    keyword: Mapped[str] = mapped_column(String(100), unique=True)
+    kind: Mapped[int] = mapped_column(SmallInteger, default=2)        # ProductKind
+    note: Mapped[str] = mapped_column(String(255), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CustomsSearchSynonym(Base, AuditMixin):
+    """Từ đồng nghĩa cho ô tìm tên hàng — bao-CR-495 (F02, ghi chú 25/09 của chị Mi).
+
+    Một dòng = một TỪ GỐC + các cách viết tương đương (`synonyms`, ngăn bằng dấu «;»). Gõ từ
+    gốc hay bất kỳ từ nào trong nhóm đều ra kết quả của cả nhóm. Người dùng tự thêm; nhóm
+    quy đổi NỒNG ĐỘ (3,6% ≡ 3.6EC ≡ 36 G/L) thì hệ tự sinh, không phải khai ở đây.
+    """
+    __tablename__ = "tab_customs_search_synonym"
+
+    term: Mapped[str] = mapped_column(String(100), unique=True)
+    synonyms: Mapped[str] = mapped_column(String(1000), default="")
+    note: Mapped[str] = mapped_column(String(255), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)

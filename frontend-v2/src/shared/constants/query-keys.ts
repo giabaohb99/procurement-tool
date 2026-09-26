@@ -38,6 +38,8 @@ export const queryKeys = {
     purchaseRequestOfPurchaseOrder: (purchaseOrderId: number) =>
       ['procurement', 'purchase-orders', purchaseOrderId, 'purchase-request'] as const,
     /** Những người được phép duyệt bước 1 của một phiếu YCMH (CR-071). */
+    /** bao-CR-495 — ô tìm tên hàng hải quan sẽ khớp những cách viết nào. */
+    customsSearchExplain: (q: string) => ['procurement', 'customs', 'search-explain', q] as const,
     purchaseRequestDeptHeads: (id: number) =>
       ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,
     /** bao-CR-499 — người duyệt được một YCMH/YCBG/ĐMH (id = 0: đang lập, tra theo phòng ban). */

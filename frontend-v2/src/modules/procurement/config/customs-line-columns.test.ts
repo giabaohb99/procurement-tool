@@ -52,6 +52,8 @@ describe('CUSTOMS_LINE_COLUMNS', () => {
       //  bao-CR-493 — cùng thứ tự với Excel xuất ra.
       ['price_vnd_flat', 'Giá VND (thuế NK 7%)'],
       ['price_vnd_line_tax', 'Giá VND (thuế suất dòng)'],
+      //  bao-CR-494 — nhãn Thành phẩm / Nguyên liệu, sau hai cột VND.
+      ['product_kind', 'Phân loại'],
     ])
   })
 

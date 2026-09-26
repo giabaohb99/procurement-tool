@@ -8578,6 +8578,52 @@ lỗi, 596 bài thu mua xanh; bản v1 kiểm kiểu còn đúng 4 lỗi nền c
 Mã nguồn: frontend-v2 procurement/components/approver-select.tsx · purchase-request-print-page.tsx ·
 frontend/src/pages/PrintPurchaseRequest.tsx · backend purchase_request/controller.py ·
 test/backend/test_truong_phong_phe_duyet_chon_duoc_cr499.py
+## bao-CR-494 | Nhãn Thành phẩm / Nguyên liệu tự động trên dòng hàng hải quan và bộ từ khóa admin sửa được
+- status: xong
+- date: 2026-09-25
+Chị Mi yêu cầu (F04) hệ tự gắn nhãn Thành phẩm hay Nguyên liệu kỹ thuật cho từng dòng tờ
+khai, có nút lọc theo nhãn và nhóm từ khóa sửa được. Đại ca giao phần này cho Erp Agent 1,
+làm theo bộ từ khóa mặc định rồi admin bổ sung sau.
+
+Đã làm: cột nhãn trên bảng dòng hàng, bảng từ khóa có nạp sẵn sáu từ mặc định, luật gắn
+nhãn (từ ngắn khớp nguyên từ, từ dài khớp chuỗi con, không khớp gì là thành phẩm, từ khóa
+loại thành phẩm là ngoại lệ thắng ngược), gắn lúc nạp và gắn lại cho toàn bộ bằng một đường
+API, màn admin từ khóa ở v2 kèm nút Gắn lại nhãn. Ngày 26/09 đã cắm vào trang tra cứu chính trên nền
+đã có bao-CR-493: cột Phân loại sau hai cột giá VND và ô lọc Phân loại cạnh ô tìm. Làm trong worktree riêng, chưa commit.
+
+Kiểm: 106 bài kiểm hải quan xanh (11 bài mới cho hai CR); giao diện mới kiểm kiểu 0 lỗi,
+kiểm nếp mã 0 lỗi, 59 bài xanh.
+
+Mã nguồn: backend/app/modules/customs/ingredient.py · kind_controller.py ·
+migrations/versions/b494c1d2e3f4 · frontend-v2 config/customs-kind-keyword-crud.tsx ·
+test/backend/test_hai_quan_nhan_va_tim_kiem_cr494_495.py
+
+Kèm cùng đợt: khai lý do cho ba bài kiểm luật phạm vi đang đỏ sẵn trên erp-v2 (sổ việc bot là
+dữ liệu công khai, controller bot gác bằng tài khoản của chính người gọi, sáu tool trợ lý AI hải
+quan và Google, ba lần tra tệp trong controller của bot, xem trước người duyệt văn bản và tải
+lại tệp hải quan gốc của bao-CR-493); tổng lần tra trong controller lên 91. Ba bài xanh 94/94.
+
+## bao-CR-495 | Ô tìm tên hàng hải quan hiểu từ có và không có, quy đổi nồng độ, từ đồng nghĩa
+- status: xong
+- date: 2026-09-25
+Chị Mi yêu cầu (F02) ô tìm tên hàng kết hợp nhiều từ bắt buộc có, loại trừ từ, nhận các
+cách viết nồng độ tương đương, và cho người dùng tự khai từ đồng nghĩa. Đại ca giao cho
+Erp Agent 1.
+
+Đã làm: bộ tách từ khóa (từ cách nhau là bắt buộc có, dấu trừ hay chữ NOT là loại trừ, cụm
+trong ngoặc kép giữ nguyên), quy đổi nồng độ theo luật phần trăm và gam trên lít hơn kém
+mười lần, bảng từ đồng nghĩa người dùng tự thêm cộng bộ từ khóa hoạt chất có sẵn làm đồng
+nghĩa ngầm, hàm dựng điều kiện lọc và đường API giải thích ô tìm, màn admin từ đồng nghĩa ở
+v2. Ngày 26/09 đã cắm vào ô tìm của trang chính: mọi thẻ
+(danh sách, biểu đồ, nhà nhập khẩu, xuất Excel) dùng chung luật tìm mới, dưới ô tìm có dòng
+giải thích đang tìm những cách viết nào. Bài kiểm nghiệm thu của chị Mi
+(Abamectin và 3.6 không TC) đã có. Chưa commit.
+
+Kiểm: cùng bộ 106 bài hải quan xanh.
+
+Mã nguồn: backend/app/modules/customs/search_service.py · kind_controller.py ·
+frontend-v2 config/customs-search-synonym-crud.tsx
+
 ## bao-CR-493 | Tra cứu giá hải quan đợt 1: hai cột VND, lọc thêm, lịch sử nạp trên trang, tải lại tệp gốc
 - status: xong
 - date: 2026-09-25

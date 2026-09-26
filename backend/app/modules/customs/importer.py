@@ -25,7 +25,7 @@ from app.modules.import_tool.service import add_log
 
 from . import reader
 from .constants import INSERT_CHUNK, PartyType
-from .ingredient import load_tagger
+from .ingredient import load_kind_tagger, load_tagger
 from .model import CustomsLine, CustomsParty
 
 SHEET = "GTT02"
@@ -60,12 +60,14 @@ def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
     if apply and rows:
         #  HQ4 — gắn hoạt chất + hàm lượng ngay lúc nạp (danh mục nạp một lần cho cả lô).
         tagger = load_tagger(db)
-        cache: dict[str, tuple[str, str]] = {}
+        kinds = load_kind_tagger(db)          # bao-CR-494: nhãn Thành phẩm / Nguyên liệu
+        cache: dict[str, tuple[str, str, int]] = {}
         for r in rows:
             name = r["product_name"]
             if name not in cache:
-                cache[name] = tagger.tag(name)
-            r["active_ingredient"], r["formulation"] = cache[name]
+                active, form = tagger.tag(name)
+                cache[name] = (active, form, kinds.tag(name))
+            r["active_ingredient"], r["formulation"], r["product_kind"] = cache[name]
         importer_ids = _upsert_parties(db, PartyType.DOMESTIC, rows)
         partner_ids = _upsert_parties(db, PartyType.FOREIGN, rows)
         if replaced:

@@ -28,7 +28,8 @@ from collections import defaultdict
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
-from .model import CustomsIngredientAlias, CustomsLine, CustomsPesticide
+from .constants import ProductKind
+from .model import CustomsIngredientAlias, CustomsKindKeyword, CustomsLine, CustomsPesticide
 
 _FORMULATION = re.compile(
     r"(\d+(?:[.,]\d+)?\s?%"
@@ -141,6 +142,42 @@ class IngredientTagger:
         return active[:255], extract_formulation(product_name)
 
 
+class KindTagger:
+    """Nhãn THÀNH PHẨM / NGUYÊN LIỆU theo bộ từ khóa admin — bao-CR-494 (F04).
+
+    Luật: khớp từ khóa loại THÀNH PHẨM → Thành phẩm (ngoại lệ thắng ngược); khớp từ khóa loại
+    NGUYÊN LIỆU → Nguyên liệu; không khớp gì → Thành phẩm (mặc định của chị Mi). Từ khóa ngắn
+    (≤ 4 ký tự ASCII) khớp NGUYÊN TỪ để `TC` không dính `ATC`/`ETC`; từ dài khớp chuỗi con.
+    So sánh sau khi viết hoa cả hai phía nên «Kỹ Thuật» và «KỸ THUẬT» như nhau.
+    """
+
+    def __init__(self, keywords: list[tuple[str, int]]):
+        self.finished: list[re.Pattern] = []
+        self.technical: list[re.Pattern] = []
+        for keyword, kind in keywords:
+            kw = " ".join((keyword or "").upper().split())
+            if not kw:
+                continue
+            escaped = re.escape(kw)
+            pattern = (re.compile(rf"(?<![A-Z0-9]){escaped}(?![A-Z0-9])")
+                       if kw.isascii() and kw.isalnum() and len(kw) <= 4 else re.compile(escaped))
+            (self.finished if int(kind) == int(ProductKind.FINISHED) else self.technical).append(pattern)
+
+    def tag(self, product_name: str) -> int:
+        up = (product_name or "").upper()
+        if any(p.search(up) for p in self.finished):
+            return int(ProductKind.FINISHED)
+        if any(p.search(up) for p in self.technical):
+            return int(ProductKind.TECHNICAL)
+        return int(ProductKind.FINISHED)
+
+
+def load_kind_tagger(db: Session) -> KindTagger:
+    rows = (db.query(CustomsKindKeyword.keyword, CustomsKindKeyword.kind)
+            .filter(CustomsKindKeyword.is_active == True).all())  # noqa: E712
+    return KindTagger([(k, kind) for k, kind in rows])
+
+
 def load_tagger(db: Session) -> IngredientTagger:
     aliases = [(a.keyword, a.canonical) for a in db.query(CustomsIngredientAlias)]
     pesticides = db.query(CustomsPesticide.trade_key, CustomsPesticide.active_ingredient).all()
@@ -156,8 +193,9 @@ def retag_all(db: Session) -> dict:
     tên gần như không trùng nhau nên gom theo tên cũng chẳng bớt được bao nhiêu câu.
     """
     tagger = load_tagger(db)
+    kinds = load_kind_tagger(db)
     cache: dict[str, tuple[str, str]] = {}
-    tagged = total = 0
+    tagged = total = technical = 0
     batch: list[dict] = []
     #  Đọc hết trước rồi mới ghi: đọc kiểu luồng (`yield_per`) giữ con trỏ mở trên cùng
     #  kết nối, MySQL không cho chạy câu UPDATE xen giữa.
@@ -165,14 +203,17 @@ def retag_all(db: Session) -> dict:
         if name not in cache:
             cache[name] = tagger.tag(name)
         active, form = cache[name]
+        kind = kinds.tag(name)
         total += 1
         tagged += bool(active)
-        batch.append({"line_id": line_id, "active_ingredient": active, "formulation": form})
+        technical += kind == int(ProductKind.TECHNICAL)
+        batch.append({"line_id": line_id, "active_ingredient": active, "formulation": form,
+                      "product_kind": kind})
         if len(batch) >= _RETAG_CHUNK:
             _flush(db, batch)
     _flush(db, batch)
     db.commit()
-    return {"total": total, "tagged": tagged}
+    return {"total": total, "tagged": tagged, "technical": technical}
 
 
 def _flush(db: Session, batch: list[dict]) -> None:
@@ -180,6 +221,7 @@ def _flush(db: Session, batch: list[dict]) -> None:
     if batch:
         stmt = (update(CustomsLine).where(CustomsLine.id == bindparam("line_id"))
                 .values(active_ingredient=bindparam("active_ingredient"),
-                        formulation=bindparam("formulation")))
+                        formulation=bindparam("formulation"),
+                        product_kind=bindparam("product_kind")))
         db.connection().execute(stmt, batch)
         batch.clear()

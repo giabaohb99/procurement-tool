@@ -104,6 +104,9 @@ export const appRoutes = {
     /** bao-CR-470 — danh mục hóa chất theo văn bản (nguồn cảnh báo pháp lý). */
     customsRegulations: '/procurement/customs-regulations',
     customsRegulationDetail: (id: number | string) => `/procurement/customs-regulations/${id}`,
+    /** bao-CR-494 / bao-CR-495 — hai danh mục cấu hình của màn Tra cứu giá hải quan. */
+    customsKindKeywords: '/procurement/customs-kind-keywords',
+    customsSearchSynonyms: '/procurement/customs-search-synonyms',
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»

@@ -26,6 +26,8 @@ export interface CustomsFilters {
   qty_max: string
   rate_min: string
   rate_max: string
+  /** bao-CR-494 — nhãn Thành phẩm (1) / Nguyên liệu (2); nhiều nhãn nối dấu phẩy. Rỗng = không lọc. */
+  product_kind: string
 }
 
 /** Một dòng hàng — đủ 32 cột của tệp gốc + vài trường suy ra. */
@@ -38,6 +40,9 @@ export type CustomsLine = {
   partner_id: number | null
   active_ingredient: string
   formulation: string
+  /** bao-CR-494 — 0 chưa gắn · 1 Thành phẩm · 2 Nguyên liệu (ProductKind backend). */
+  product_kind?: number
+  product_kind_label?: string
   reg_date: string | null
   office_code: string
   line_no: number | null

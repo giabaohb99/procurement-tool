@@ -139,3 +139,30 @@ TEXT_LIMITS = {
 
 #  Chèn dòng hàng theo khối — một lần kết xuất hàng chục nghìn dòng.
 INSERT_CHUNK = 2000
+
+
+# ── bao-CR-494: nhãn THÀNH PHẨM / NGUYÊN LIỆU của từng dòng hàng ─────────────────────────
+class ProductKind(IntEnum):
+    """Lưu SMALLINT theo luật R2. `0` = chưa gắn (dòng nạp trước CR-494, chạy lại `retag_all`)."""
+    UNTAGGED = 0
+    FINISHED = 1     # thành phẩm (EC/SC/SL/WP…) — mặc định khi không khớp từ khóa nào
+    TECHNICAL = 2    # nguyên liệu kỹ thuật (TC/TECH/TG)
+
+
+PRODUCT_KIND_LABELS = {
+    ProductKind.UNTAGGED: "",
+    ProductKind.FINISHED: "Thành phẩm",
+    ProductKind.TECHNICAL: "Nguyên liệu",
+}
+
+#  Bộ từ khóa MẶC ĐỊNH (chị Mi 25/09/2026) — nạp vào `tab_customs_kind_keyword` bằng migration,
+#  admin sửa trên màn hình; mã nguồn không phải nơi cập nhật (yêu cầu phi chức năng «Khả năng
+#  bảo trì»). Tên hàng chứa từ khóa loại NGUYÊN LIỆU → Nguyên liệu, không khớp → Thành phẩm.
+DEFAULT_KIND_KEYWORDS = (
+    ("TC", ProductKind.TECHNICAL, "Thuốc kỹ thuật, vd «ATRAZINE 97% TC»"),
+    ("TECH", ProductKind.TECHNICAL, "Thuốc kỹ thuật, vd «MANCOZEB TECH 86%»"),
+    ("TG", ProductKind.TECHNICAL, "Technical grade"),
+    ("TECHNICAL", ProductKind.TECHNICAL, ""),
+    ("KỸ THUẬT", ProductKind.TECHNICAL, "«Thuốc kỹ thuật …»"),
+    ("NGUYÊN LIỆU", ProductKind.TECHNICAL, "«… nguyên liệu dùng SX thuốc …»"),
+)

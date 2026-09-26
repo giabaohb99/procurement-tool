@@ -89,7 +89,8 @@ def line_filters(q: str = "", ingredient: str = "", hs_code: str = "", formulati
                  currency: str = "", incoterm: str = "",
                  price_min: str = "", price_max: str = "", qty_min: str = "", qty_max: str = "",
                  rate_min: str = "", rate_max: str = "",
-                 date_from: str = "", date_to: str = "") -> dict:
+                 date_from: str = "", date_to: str = "",
+                 product_kind: list[str] = Query(default=[])) -> dict:
     """Bộ lọc dùng chung của mọi cửa đọc — MỘT chỗ khai, bốn nơi dùng.
 
     bao-CR-493: `importer_id` / `partner_id` / `batch_id` nhận LẶP trên URL hoặc «1,2,3»
@@ -100,7 +101,7 @@ def line_filters(q: str = "", ingredient: str = "", hs_code: str = "", formulati
             "batch_id": batch_id, "currency": currency, "incoterm": incoterm,
             "price_min": price_min, "price_max": price_max, "qty_min": qty_min, "qty_max": qty_max,
             "rate_min": rate_min, "rate_max": rate_max,
-            "date_from": date_from, "date_to": date_to}
+            "date_from": date_from, "date_to": date_to, "product_kind": product_kind}
 
 
 @router.get("/lines")

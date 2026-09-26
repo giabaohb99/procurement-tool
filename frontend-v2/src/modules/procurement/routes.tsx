@@ -5,6 +5,8 @@ import {
   ClipboardList,
   FileText,
   FlaskConical,
+  SpellCheck,
+  Tags,
   Landmark,
   LayoutDashboard,
   PackagePlus,
@@ -168,6 +170,25 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.customsRegulations,
       icon: FlaskConical,
       entity: 'customs_regulation',
+      manage: true,
+      group: 'Cấu hình',
+    },
+    // bao-CR-494 / bao-CR-495 — hai danh mục cấu hình của màn Tra cứu giá hải quan: từ khóa
+    // gắn nhãn Thành phẩm / Nguyên liệu và từ đồng nghĩa tìm kiếm. Dùng chung khóa
+    // `customs_price` (cấu hình của chính màn đó, không có màn nghiệp vụ riêng).
+    {
+      label: 'Từ khóa nhãn hải quan',
+      path: appRoutes.procurement.customsKindKeywords,
+      icon: Tags,
+      entity: 'customs_price',
+      manage: true,
+      group: 'Cấu hình',
+    },
+    {
+      label: 'Từ đồng nghĩa hải quan',
+      path: appRoutes.procurement.customsSearchSynonyms,
+      icon: SpellCheck,
+      entity: 'customs_price',
       manage: true,
       group: 'Cấu hình',
     },
@@ -354,6 +375,20 @@ export const procurementModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/customs-regulation-detail-page'))
           .CustomsRegulationDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.customsKindKeywords,
+      lazy: async () => ({
+        Component: (await import('./pages/customs-kind-keyword-list-page'))
+          .CustomsKindKeywordListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.customsSearchSynonyms,
+      lazy: async () => ({
+        Component: (await import('./pages/customs-search-synonym-list-page'))
+          .CustomsSearchSynonymListPage,
       }),
     },
   ],

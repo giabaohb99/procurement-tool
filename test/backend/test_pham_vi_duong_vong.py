@@ -12,7 +12,7 @@ controller. Ba kiểu dưới đây có chung một đặc điểm khó chịu: 
 ────────────────────────────────────────────────────────────────────────────────
 A. BẢNG PHÂN LOẠI 67 LẦN GỌI `db.get(` TRONG TỆP CONTROLLER
 ────────────────────────────────────────────────────────────────────────────────
-`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 88 lần**, không dòng nào còn
+`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 91 lần**, không dòng nào còn
 nhãn "chưa rà". Bài kiểm A1 đối chiếu bảng này với mã nguồn THẬT, nên thêm một
 lần `db.get` vào bất kỳ controller nào cũng làm đỏ và buộc người thêm phải phân
 loại nó.
@@ -164,6 +164,12 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
                      "nền thì không hỏi — chuyển cụm 07 xem xét"),
         (OK_DA_KIEM, "L333 `_load(ApprovalInstance)` — L336 `entity_hooks.can_read`"),
     ],
+    # ── Bot Agent Hub ────────────────────────────────────────────────────────
+    "agent_hub/controller.py": [
+        (OK_KHONG_CAN, "L106 `AgentTask` — sổ việc của bot là entity PUBLIC `agent_task` "
+                       "(không có chủ sở hữu, việc của quản trị hệ thống); cổng là "
+                       "require('agent_task', 'read') ngay trên route, không có phạm vi để hỏi"),
+    ],
     # ── Trợ lý AI ────────────────────────────────────────────────────────────
     "assistant/controller.py": [
         (OK_DA_KIEM, "L198 `StoredFile` — L199 `f.created_by != user.id` + khóa thư mục "
@@ -234,6 +240,16 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
                      "(ngoài phạm vi). Mẫu đúng của cả hệ"),
     ],
     # ── Văn thư ──────────────────────────────────────────────────────────────
+    "customs/controller.py": [
+        (OK_KHONG_CAN, "L254 `StoredFile` (tải lại tệp GTT02 gốc, bao-CR-493) — `file_id` lấy từ CHÍNH "
+                       "lô, lô đã qua `_get_batch` (khác module hải quan → 404); entity `customs_price` "
+                       "PUBLIC + require(ENTITY, 'read') trên route"),
+    ],
+    "document/approval_preview_controller.py": [
+        (OK_DA_KIEM, "L132 `Document` (văn bản gốc khi tạo theo mẫu) — L133 "
+                     "`access_service.can(db, source_doc, user, profile, 'read')` ngay dòng sau, "
+                     "không có thì 400 gộp chung «không thấy / không có quyền» — cụm 05"),
+    ],
     "document/controller.py": [
         (OK_DA_KIEM, "L599 `DocumentVersion` — L597 `_load(db, document_id, user, \"read\")` "
                      "→ `access_service.ensure_can`"),
@@ -401,7 +417,7 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     controller** — thêm là đỏ, và người thêm phải viết ra một trong ba nhãn kèm
     lý do đọc được.
 
-    Số hôm nay: **88** lần trên 29 tệp / 28 module (ba trong số đó là dòng
+    Số hôm nay: **91** lần trên 32 tệp / 31 module (ba trong số đó là dòng
     docstring, đã ghi rõ trong bảng). Đợt vá phạm vi 05/09/2026 làm con số nhích
     từ 64 lên 65 (07/09/2026): `leave/catalog_controller.py` tra loại nghỉ ĐÍCH
     của «quy đổi số dư cuối năm» — danh mục PUBLIC nên không cần lọc phạm vi.
@@ -443,7 +459,11 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #  · `purchase_request/controller.py` +4 — tên + chữ ký trưởng phòng thu mua;
     #  · `leave/request_controller.py` +4 — tên người duyệt / phòng / pháp nhân;
     #  · `employee/controller.py` +1 (`/employees/me`) · `category_assignee` +1.
-    assert sum(that.values()) == 88, f"tổng phải là 88, đang là {sum(that.values())}"
+    #  88 → 90 (25/09/2026, khai khi rà bài đỏ sau gộp nhánh bot + văn thư):
+    #  · `agent_hub/controller.py` +1 (ai-CR-036) — sổ việc bot, entity PUBLIC `agent_task`;
+    #  · `document/approval_preview_controller.py` +1 — văn bản gốc, `access_service.can` ngay sau.
+    #  90 → 91: `customs/controller.py` +1 (bao-CR-493) — tệp gốc của lô hải quan, lô đã qua `_get_batch`.
+    assert sum(that.values()) == 91, f"tổng phải là 91, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
