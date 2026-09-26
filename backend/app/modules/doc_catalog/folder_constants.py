@@ -4,10 +4,17 @@ Thiết kế đầy đủ: `frontend-v2/plans/260923-1000-van-ban-thu-muc-nguoi-
 """
 from enum import IntEnum
 
-#  Sâu tối đa của cây, TÍNH CẢ gốc (gốc = 1). 7 chứ không phải 6 từ
-#  24/09/2026: thư mục pháp nhân dời vào trong thư mục nhóm «Công ty», tầng nhóm
-#  đó không được lấy mất một cấp của người dùng.
-MAX_DEPTH = 7
+#  Sâu tối đa của cây, TÍNH CẢ gốc (gốc = 1). Đại ca mở từ 7 lên 100 ngày
+#  26/09/2026 — ngang trần của Google Drive; 7 cấp trừ tầng «Công ty» và tầng
+#  pháp nhân thì người dùng chỉ còn 5 cấp tự tạo, quá chật.
+MAX_DEPTH = 100
+
+#  Độ dài tối đa của cột `DocFolder.path` — PHẢI khớp `String(n)` ở
+#  `folder_model.py`. 760 là mức lớn nhất còn đánh chỉ mục B-Tree được với
+#  utf8mb4 (760 × 4 = 3040 byte, trần InnoDB 3072). 100 cấp × id 6 chữ số
+#  ("123456/") = 701 ký tự, vẫn lọt; id to hơn thì chốt ở `folder_path_guard`
+#  báo câu 400 thay vì để MySQL nổ 500.
+PATH_MAX_LENGTH = 760
 
 #  Tên thư mục nhóm chứa mọi thư mục pháp nhân (`FolderKind.COMPANY_GROUP`).
 COMPANY_GROUP_NAME = "Công ty"

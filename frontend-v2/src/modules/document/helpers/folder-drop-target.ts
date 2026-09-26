@@ -1,7 +1,11 @@
 import { FOLDER_ACCESS_LEVEL } from '../types/document-folder'
 
-/** Cấp SÂU NHẤT một cây thư mục văn bản được phép chạm tới (chốt phase 05). */
-export const MAX_FOLDER_DEPTH = 7
+/**
+ * Cấp SÂU NHẤT một cây thư mục văn bản được phép chạm tới, tính cả gốc — PHẢI
+ * khớp `MAX_DEPTH` ở `backend/.../doc_catalog/folder_constants.py`. Mở từ 7
+ * lên 100 ngày 26/09/2026 (ngang trần Google Drive).
+ */
+export const MAX_FOLDER_DEPTH = 100
 
 export interface FolderDragSource {
   id: number
@@ -10,7 +14,7 @@ export interface FolderDragSource {
   depth: number
   /**
    * Cấp SÂU NHẤT đang có trong nhánh đang kéo, tính cả chính nó — dùng để
-   * chặn "vượt 6 cấp" SAU KHI chuyển cha, không chỉ xét mỗi bản thân node kéo.
+   * chặn "vượt trần cấp" SAU KHI chuyển cha, không chỉ xét mỗi bản thân node kéo.
    * Bỏ trống = coi nhánh chỉ có một cấp (node kéo không có con).
    */
   deepestDescendantDepth?: number

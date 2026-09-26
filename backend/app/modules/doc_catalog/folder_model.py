@@ -71,8 +71,9 @@ class DocFolder(Base, AuditMixin):
     code: Mapped[str] = mapped_column(String(50), default="")
     description: Mapped[str] = mapped_column(String(500), default="")
     #  Đường dẫn vật hóa `/1/5/9/` — xem ghi chú đầu tệp.
-    path: Mapped[str] = mapped_column(String(255), default="")
-    #  1…6 (`MAX_DEPTH`), tính cả gốc.
+    #  760 = `PATH_MAX_LENGTH` (folder_constants) — sửa một chỗ phải sửa cả hai.
+    path: Mapped[str] = mapped_column(String(760), default="")
+    #  1…`MAX_DEPTH` (100), tính cả gốc.
     depth: Mapped[int] = mapped_column(SmallInteger, default=1)
     sort_order: Mapped[int] = mapped_column(BigInteger, default=0)
     status: Mapped[int] = mapped_column(SmallInteger, default=int(FolderStatus.ACTIVE))

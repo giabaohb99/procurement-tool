@@ -8,7 +8,7 @@ interface TreeIndentGuidesProps {
    * Đơn giản hoá có chủ đích: chỉ đậm đường gióng của CHÍNH dòng đang chọn,
    * không kẻ liền một mạch xuống hết các dòng con cháu cùng nhánh (kiểu VS Code
    * đầy đủ cần biết cả chuỗi tổ tiên của MỌI dòng khác, không đáng công cho một
-   * cây tối đa 6 cấp — xem `MAX_FOLDER_DEPTH`).
+   * cây thư mục văn bản — xem `MAX_FOLDER_DEPTH`).
    */
   bold: boolean
 }

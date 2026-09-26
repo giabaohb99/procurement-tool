@@ -15,7 +15,11 @@ import {
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { buildFolderTree } from '../helpers/build-folder-tree'
-import { deepestDescendantDepth, isValidFolderDropTarget } from '../helpers/folder-drop-target'
+import {
+  deepestDescendantDepth,
+  isValidFolderDropTarget,
+  MAX_FOLDER_DEPTH,
+} from '../helpers/folder-drop-target'
 import { ROOT_PARENT_ID } from '../helpers/insert-temp-tree-node'
 import { useMoveDocFolder } from '../hooks/use-document-folders'
 import { FolderNodeIcon } from './folder-tree-item'
@@ -109,7 +113,7 @@ export function FolderMoveDialog({ open, onOpenChange, folder, rows }: FolderMov
           <DialogTitle>Chuyển «{folderLabel}» tới…</DialogTitle>
           <DialogDescription>
             Chọn thư mục cha mới, hoặc «Gốc cây» để đưa ra ngoài cùng. Thư mục ghi «không hợp lệ» là
-            chính nó, con cháu của nó, vượt 7 cấp, hoặc bạn chưa đủ mức Đóng góp ở đó.
+            chính nó, con cháu của nó, vượt {MAX_FOLDER_DEPTH} cấp, hoặc bạn chưa đủ mức Đóng góp ở đó.
           </DialogDescription>
         </DialogHeader>
 

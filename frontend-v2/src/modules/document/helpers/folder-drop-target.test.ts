@@ -83,7 +83,7 @@ describe('isValidFolderDropTarget', () => {
   it('nhánh kéo có con cháu SÂU HƠN — chặn dựa trên cấp SÂU NHẤT sau khi chuyển, không chỉ cấp của chính node kéo', () => {
     //  LEAF ở cấp 2, nhưng nhánh nó có một cháu ở cấp 4 (sâu hơn 2 cấp). Thả
     //  vào đích cấp d thì cháu đó rơi xuống cấp d+1+2 — tính từ trần
-    //  `MAX_FOLDER_DEPTH` (7 từ 24/09/2026, tầng nhóm «Công ty» chiếm một cấp).
+    //  `MAX_FOLDER_DEPTH`.
     const source: FolderDragSource = { ...LEAF, deepestDescendantDepth: 4 }
     const lastOkDepth = MAX_FOLDER_DEPTH - 3
     const target = { id: 7, path: '/1/7/', depth: lastOkDepth, myLevel: FOLDER_ACCESS_LEVEL.manage }
@@ -213,5 +213,11 @@ describe('reorderSiblingIds', () => {
     const input = [1, 2, 3]
     reorderSiblingIds(input, 1, 3, 'after')
     expect(input).toEqual([1, 2, 3])
+  })
+
+  it('trần cấp khớp backend: 100 cấp tính cả gốc (folder_constants.MAX_DEPTH)', () => {
+    //  Từng là 7 — đại ca mở lên 100 ngày 26/09/2026. Hai bên lệch nhau thì
+    //  giao diện cho thả mà backend trả 400, hoặc ngược lại bôi xám oan.
+    expect(MAX_FOLDER_DEPTH).toBe(100)
   })
 })

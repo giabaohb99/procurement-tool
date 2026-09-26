@@ -168,12 +168,19 @@ def _folders_of_shared_documents(db: Session, profile: dict) -> set[int]:
     return {folder_id for (folder_id,) in query.distinct()}
 
 
-def effective_levels(db: Session, user, profile: dict | None = None) -> dict[int, int]:
+def effective_levels(db: Session, user, profile: dict | None = None,
+                     folders: list[DocFolder] | None = None) -> dict[int, int]:
     """`{folder_id: mức hiệu lực}` — CHỈ những thư mục người này THẤY được
     (mức ≥ `VIEW`). Đây là hàm DUY NHẤT tính luật ở đầu tệp; mọi nơi khác gọi
-    qua đây, không tự suy diễn lại."""
+    qua đây, không tự suy diễn lại.
+
+    `folders` TÙY CHỌN (26/09/2026): người gọi đã nạp sẵn TOÀN BỘ thư mục (vd
+    ô tìm thư mục cần chính các dòng đó để khớp tên + dựng breadcrumb) thì
+    truyền vào để khỏi nạp lại cả bảng lần hai. PHẢI là cả bảng, không lọc —
+    luật kế thừa đọc cả tổ tiên người gọi không thấy."""
     profile = profile or get_perm_profile(db, user)
-    folders = db.query(DocFolder).all()
+    if folders is None:
+        folders = db.query(DocFolder).all()
     if not folders:
         return {}
     by_id = {f.id: f for f in folders}

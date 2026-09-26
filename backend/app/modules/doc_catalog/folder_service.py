@@ -19,7 +19,9 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 
-from .folder_constants import MAX_DEPTH, FOLDER_ACCESS_LEVEL_LABELS, FolderKind, FolderStatus
+from .folder_constants import (
+    MAX_DEPTH, PATH_MAX_LENGTH, FOLDER_ACCESS_LEVEL_LABELS, FolderKind, FolderStatus,
+)
 from .folder_model import DocFolder
 from .folder_naming import ensure_name_unique_among_siblings
 from .folder_schema import FolderCreate, FolderUpdate
@@ -72,6 +74,11 @@ def create_folder(db: Session, data: FolderCreate, actor: int) -> DocFolder:
     db.add(folder)
     db.flush()
     folder.path = f"{parent.path}{folder.id}/"
+    #  Id chỉ có sau `flush` nên độ dài `path` chỉ biết lúc này. Vượt cột thì
+    #  MySQL báo lỗi 500 lúc commit — chặn trước bằng câu 400 dễ hiểu.
+    if len(folder.path) > PATH_MAX_LENGTH:
+        db.rollback()
+        raise HTTPException(400, "Nhánh thư mục này đã quá sâu, không tạo thêm cấp con được")
     db.commit()
     db.refresh(folder)
     record(db, actor, AUDIT_ENTITY, folder.id, "create", f"Tạo thư mục {folder.name}")

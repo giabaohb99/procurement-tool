@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
+import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { documentFolderApi } from '../api/document-folder-api'
 import { FOLDER_STATUS } from '../types/document-folder'
 import type {
@@ -58,11 +59,15 @@ export function useDocFolderTree(includeArchived = false, enabled = true) {
  * thay vì chỉ ẩn kết quả trên giao diện.
  */
 export function useDocFolderSearch(q: string, enabled = true) {
-  const keyword = q.trim()
+  //  Hoãn 250ms (26/09/2026): trước đây mỗi ký tự là một request, mà mỗi
+  //  request backend tính lại quyền trên TOÀN BỘ cây — gõ «hợp đồng» = 8 lượt.
+  const keyword = useDebouncedValue(q.trim(), 250)
   return useQuery({
     queryKey: queryKeys.document.folderSearch(keyword),
     queryFn: () => documentFolderApi.search(keyword),
     enabled: enabled && keyword.length >= 1,
+    //  Gõ lùi về từ khóa cũ thì lấy lại từ bộ nhớ, không hỏi lại backend.
+    staleTime: 30_000,
   })
 }
 

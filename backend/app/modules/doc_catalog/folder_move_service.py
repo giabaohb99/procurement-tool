@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 
-from .folder_constants import MAX_DEPTH, FolderKind, FolderStatus
+from .folder_constants import MAX_DEPTH, PATH_MAX_LENGTH, FolderKind, FolderStatus
 from .folder_free_root_service import grant_owner_manage
 from .folder_model import DocFolder
 from .folder_naming import ensure_name_unique_among_siblings
@@ -76,6 +76,12 @@ def move_folder(db: Session, folder: DocFolder, new_parent_id: int, actor: int,
         raise HTTPException(400, f"Chuyển vào đây vượt quá độ sâu tối đa {MAX_DEPTH} cấp")
 
     new_prefix = f"{parent_path}{folder.id}/"
+    #  `path` dài nhất trong nhánh sau khi thay tiền tố — vượt cột thì câu
+    #  `UPDATE` bên dưới nổ 500 ở MySQL (SQLite của bộ test thì im lặng nhận).
+    longest_path = db.query(func.max(func.length(DocFolder.path))).filter(
+        DocFolder.path.like(f"{old_prefix}%")).scalar() or len(old_prefix)
+    if longest_path - len(old_prefix) + len(new_prefix) > PATH_MAX_LENGTH:
+        raise HTTPException(400, "Chuyển vào đây thì nhánh thư mục quá sâu, hệ thống không lưu được đường dẫn")
     #  Vị trí (1-based) NGAY SAU tiền tố cũ — `SUBSTR` chạy được cả MySQL lẫn
     #  SQLite (bộ test), khác `UPDATE ... CONCAT` viết tay dễ lệch phương ngữ.
     cut_at = len(old_prefix) + 1

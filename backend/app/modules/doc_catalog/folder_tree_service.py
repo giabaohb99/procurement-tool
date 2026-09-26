@@ -261,28 +261,61 @@ def get_detail(db: Session, folder: DocFolder, user) -> dict:
     return folder_access_view_service.annotate_detail(db, user, folder, node)
 
 
+def _search_rank(folded_label: str, folded_kw: str, depth: int) -> tuple[int, int, int]:
+    """Khóa sắp kết quả tìm: trùng hẳn tên → tên BẮT ĐẦU bằng từ khóa → chứa
+    ở giữa; cùng hạng thì thư mục nông (gần gốc) trước, tên ngắn trước. Không
+    sắp thì trần `SEARCH_LIMIT` cắt theo thứ tự DB trả về — thư mục trùng
+    đúng tên có thể bị cắt mất trong khi 50 thư mục chỉ chứa từ khóa lọt vào."""
+    if folded_label == folded_kw:
+        tier = 0
+    elif folded_label.startswith(folded_kw):
+        tier = 1
+    else:
+        tier = 2
+    return tier, depth, len(folded_label)
+
+
 def search_folders(db: Session, user, keyword: str) -> list[dict]:
-    """Tìm theo TÊN, gập dấu — trần `SEARCH_LIMIT`, trả kèm đường dẫn đầy đủ."""
+    """Tìm theo TÊN, gập dấu — trần `SEARCH_LIMIT`, trả kèm đường dẫn đầy đủ.
+
+    Tối ưu 26/09/2026: nạp cả bảng thư mục ĐÚNG MỘT lần và dùng lại cho cả ba
+    việc — tính quyền (`effective_levels(folders=...)`), khớp tên, dựng
+    breadcrumb. Bản cũ nạp cả bảng trong `effective_levels`, rồi hỏi lại
+    `IN (mọi id thấy được)`, rồi `breadcrumb_map` hỏi thêm hai lượt nữa — cây
+    100 cấp thì 50 kết quả kéo theo tới 5000 id tổ tiên trong một câu `IN`.
+    Breadcrumb giữ đúng hành vi cũ: đủ tổ tiên kể cả nút người gọi không thấy.
+    """
+    from .folder_access_service import effective_levels
     from .folder_naming import fold
 
     kw = (keyword or "").strip()
     if not kw:
         return []
 
-    levels = _visible_levels(db, user)
-    query = _filter_visible(db.query(DocFolder), levels, include_archived=False)
-    folders = query.all()
+    all_folders = db.query(DocFolder).all()
+    levels = effective_levels(db, user, folders=all_folders)
+    by_id = {f.id: f for f in all_folders}
     company_names = _company_names(
-        db, {f.company_id for f in folders if f.kind == int(FolderKind.COMPANY)})
+        db, {f.company_id for f in all_folders if f.kind == int(FolderKind.COMPANY)})
 
     folded_kw = fold(kw)
-    matched = [f for f in folders if folded_kw in fold(_label_of(f, company_names))][:SEARCH_LIMIT]
-    crumbs = breadcrumb_map(db, {f.id for f in matched})
+    scored = []
+    for f in all_folders:
+        if f.id not in levels or f.status != int(FolderStatus.ACTIVE):
+            continue
+        folded_label = fold(_label_of(f, company_names))
+        if folded_kw in folded_label:
+            scored.append((_search_rank(folded_label, folded_kw, f.depth), f))
+    scored.sort(key=lambda item: item[0])
 
     results = []
-    for f in matched:
+    for _, f in scored[:SEARCH_LIMIT]:
         label = _label_of(f, company_names)
-        path_crumbs = crumbs.get(f.id, [])
+        path_crumbs = [
+            {"id": node.id, "name": _label_of(node, company_names)}
+            for part in (f.path or "").strip("/").split("/")
+            if part and (node := by_id.get(int(part)))
+        ]
         results.append({
             "id": f.id,
             "name": label,
