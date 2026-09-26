@@ -21,10 +21,11 @@ import CustomsChart from '../components/customs/CustomsChart'
 import CustomsHistoryPanel from '../components/customs/CustomsHistoryPanel'
 import CustomsImportDialog from '../components/customs/CustomsImportDialog'
 import CustomsLineDetail from '../components/customs/CustomsLineDetail'
+import CustomsSavedFilters from '../components/customs/CustomsSavedFilters'
 import { CustomsCompare, CustomsImporters, CustomsLegal } from '../components/customs/CustomsTabs'
 import {
   addNamedId, blobErrorMessage, CustomsFilters, downloadBlob, EMPTY_FILTERS, EXTRA_FILTER_KEYS, fmtDate, fmtQty,
-  fmtUsd, fmtVnd, hasChartFilter, NEED_FILTER_MSG, removeNamedId, splitNamedIds, toParams,
+  fmtUsd, fmtVnd, hasChartFilter, NEED_FILTER_MSG, PRODUCT_KIND_OPTIONS, removeNamedId, splitNamedIds, toParams,
 } from '../components/customs/customs-shared'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
 import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
@@ -83,6 +84,8 @@ const COLS: TableColumn[] = [
   // bao-CR-493 — hai cột VND (giá hiệu lực × tỷ giá USD × thuế), cùng thứ tự với Excel xuất ra.
   { key: 'price_vnd_flat', label: 'Giá VND (thuế NK 7%)', width: 130, align: 'right', cell: (r) => fmtVnd(r.price_vnd_flat) },
   { key: 'price_vnd_line_tax', label: 'Giá VND (thuế suất dòng)', width: 130, align: 'right', cell: (r) => fmtVnd(r.price_vnd_line_tax) },
+  // bao-CR-494 — nhãn tự gắn theo bộ từ khóa admin sửa được; đứng SAU hai cột VND (như bản v2).
+  { key: 'product_kind', label: 'Phân loại', width: 110, cell: (r) => r.product_kind_label || '—' },
 ]
 
 export default function CustomsPrices() {
@@ -117,6 +120,15 @@ export default function CustomsPrices() {
       .finally(() => setLoading(false))
   }, [filters, page, pageSize])
   useEffect(() => { if (tab === 'list') loadLines() }, [tab, loadLines])
+
+  // bao-CR-495 — ô tìm hiểu từ CÓ / KHÔNG CÓ, nồng độ, đồng nghĩa: nói cho người dùng biết đang tìm gì.
+  const [explain, setExplain] = useState<any>(null)
+  useEffect(() => {
+    const q = (filters.q || '').trim()
+    if (!q) { setExplain(null); return }
+    api.get('/api/customs/search/explain', { params: { q }, _silent: true } as any)
+      .then((r) => setExplain(r.data.data)).catch(() => setExplain(null))
+  }, [filters.q])
 
   useEffect(() => {
     if ((filters.q || '').trim().length < 3) { setAlerts([]); return }
@@ -210,6 +222,9 @@ export default function CustomsPrices() {
 
       <CoverageStrip coverage={coverage} ingredient={options?.ingredient_coverage} />
 
+      {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản, chung kho với bản v2. */}
+      <CustomsSavedFilters filters={filters} onApply={(next) => { setDraft(next); apply(next) }} />
+
       <FilterPanel canClear={dirty || Object.values(draft).some((v) => v)} onClear={clearAll}
         extra={<button className="btn" onClick={() => apply()}><i className="ti ti-search" />Tìm</button>}>
         <FilterItem label="Tên hàng / hoạt chất" grow>
@@ -227,6 +242,10 @@ export default function CustomsPrices() {
         <FilterItem label="Đơn vị tính" width={120}>
           <SearchSelect value={draft.unit} placeholder="Tất cả" autoSelectSingle={false}
             options={optionList('units')} onChange={set('unit')} />
+        </FilterItem>
+        <FilterItem label="Phân loại" width={150}>
+          <SearchSelect value={draft.product_kind} placeholder="Thành phẩm + Nguyên liệu" autoSelectSingle={false}
+            options={PRODUCT_KIND_OPTIONS} onChange={set('product_kind')} />
         </FilterItem>
         <FilterItem label="Hàm lượng / dạng" width={150}>
           <SearchSelect value={draft.formulation} placeholder="Tất cả" autoSelectSingle={false}
@@ -280,6 +299,8 @@ export default function CustomsPrices() {
           </>
         )}
       </FilterPanel>
+
+      <SearchHint query={filters.q} explain={explain} />
 
       {(importerChips.length > 0 || partnerChips.length > 0) && (
         <div style={{ marginBottom: 8, fontSize: 13, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -385,6 +406,24 @@ export default function CustomsPrices() {
           onFilterImporter={(id, name) => { pickImporter(id, name); setDetailId(null) }} onFilterPartner={pickPartner} />
       )}
       {importOpen && <CustomsImportDialog onClose={() => setImportOpen(false)} onApplied={refreshAll} />}
+    </div>
+  )
+}
+
+// bao-CR-495 — dòng giải thích dưới ô tìm (bê từ `customs-search-hint.tsx` bản v2).
+function SearchHint({ query, explain }: { query: string; explain: any }) {
+  const join = (m: string[]) => (m.length > 4 ? `${m.slice(0, 4).join(' · ')} · +${m.length - 4}` : m.join(' · '))
+  const style = { fontSize: 12, color: 'var(--muted)', margin: '-4px 0 8px' }
+  if (!query.trim() || !explain) return (
+    <div style={style}>
+      Mẹo: gõ nhiều từ để tìm dòng có ĐỦ các từ đó; thêm dấu trừ trước từ cần loại (vd <code>abamectin 3.6 -TC</code>);
+      nồng độ 3,6% tự khớp 3.6EC và 36 G/L.
+    </div>
+  )
+  return (
+    <div style={style}>
+      {(explain.include || []).map((p: any) => <span key={`i-${p.term}`} style={{ marginRight: 12 }}>Có «{p.term}»: {join(p.matches || [])}</span>)}
+      {(explain.exclude || []).map((p: any) => <span key={`e-${p.term}`} style={{ marginRight: 12, color: '#b91c1c' }}>Không có «{p.term}»: {join(p.matches || [])}</span>)}
     </div>
   )
 }

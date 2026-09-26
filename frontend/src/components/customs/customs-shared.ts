@@ -25,14 +25,52 @@ export type CustomsFilters = {
   qty_max: string
   rate_min: string
   rate_max: string
+  // bao-CR-494 — nhãn tự gắn: '1' Thành phẩm · '2' Nguyên liệu (khớp `ProductKind` backend). Rỗng = cả hai.
+  product_kind: string
 }
 
 export const EMPTY_FILTERS: CustomsFilters = {
   q: '', hs_code: '', origin: '', unit: '', formulation: '', importer_id: '', importer_name: '',
   partner_id: '', partner_name: '', date_from: '', date_to: '',
   currency: '', incoterm: '', batch_id: '', price_min: '', price_max: '', qty_min: '', qty_max: '',
-  rate_min: '', rate_max: '',
+  rate_min: '', rate_max: '', product_kind: '',
 }
+
+/** bao-CR-494 — khớp `ProductKind` backend. */
+export const PRODUCT_KIND_OPTIONS = [
+  { value: '1', label: 'Thành phẩm' },
+  { value: '2', label: 'Nguyên liệu' },
+]
+
+// bao-CR-496 — bộ lọc đã lưu dùng CHUNG kho với bản v2: `params` là chuỗi tham số URL, đúng tên và
+// đúng thứ tự `FILTER_PARAMS` của trang v2. Chỉ những khóa này được ghi / đọc.
+export const SAVED_FILTER_KEYS: (keyof CustomsFilters)[] = [
+  'q', 'hs_code', 'origin', 'unit', 'formulation', 'importer_id', 'importer_name', 'partner_id',
+  'partner_name', 'date_from', 'date_to', 'currency', 'incoterm', 'batch_id', 'price_min', 'price_max',
+  'qty_min', 'qty_max', 'rate_min', 'rate_max', 'product_kind',
+]
+
+/** Bộ lọc đang áp → chuỗi ổn định (bỏ ô trống) để lưu. */
+export function toSavedParams(f: CustomsFilters): string {
+  const out = new URLSearchParams()
+  for (const k of SAVED_FILTER_KEYS) if (f[k]) out.append(k, String(f[k]))
+  return out.toString()
+}
+
+/** Chuỗi đã lưu → bộ lọc ĐẦY ĐỦ (ô không có trong chuỗi về rỗng) — chọn là về đúng trạng thái đó. */
+export function fromSavedParams(params: string): CustomsFilters {
+  const saved = new URLSearchParams(params)
+  const out: CustomsFilters = { ...EMPTY_FILTERS }
+  for (const k of SAVED_FILTER_KEYS) {
+    const values = saved.getAll(k).filter((v) => v !== '')
+    if (values.length) out[k] = values.join(',')
+  }
+  return out
+}
+
+export const sameSavedParams = (a: string, b: string) =>
+  toSavedParams(fromSavedParams(a)) === toSavedParams(fromSavedParams(b))
+
 
 /** Sáu ô của hàng «Lọc thêm» — có giá trị thì hàng tự mở. */
 export const EXTRA_FILTER_KEYS: (keyof CustomsFilters)[] = [

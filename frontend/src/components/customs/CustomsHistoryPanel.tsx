@@ -109,6 +109,60 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
 
 const LEVELS: Record<number, [string, string]> = { 0: ['Thông tin', 'gray'], 1: ['Cảnh báo', 'warn'], 2: ['Cần rà', 'info'], 3: ['Lỗi', 'err'] }
 
+// bao-CR-496 — kết cục từng dòng của tệp, khớp `ImportRowStatus` backend (1 Thêm mới · 2 Lỗi · 3 Trùng trong lô).
+const ROW_STATUS: Record<number, [string, string]> = { 1: ['Thêm mới', 'ok'], 2: ['Lỗi', 'err'], 3: ['Trùng trong lô', 'warn'] }
+
+/** Kết cục TỪNG DÒNG của tệp (bê từ `customs-batch-rows-panel.tsx` bản v2): tổng theo kết cục, bấm để lọc. */
+function BatchRows({ batchId }: { batchId: number }) {
+  const [summary, setSummary] = useState<any>(null)
+  const [status, setStatus] = useState<number | undefined>(undefined)
+  const [rows, setRows] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  useEffect(() => {
+    api.get(`/api/customs/imports/${batchId}/rows/summary`).then((r) => setSummary(r.data.data)).catch(() => setSummary(null))
+  }, [batchId])
+  useEffect(() => {
+    api.get(`/api/customs/imports/${batchId}/rows`, { params: { page, page_size: 50, row_status: status } })
+      .then((r) => { setRows(r.data.data.items); setTotal(r.data.data.total) })
+      .catch(() => { setRows([]); setTotal(0) })
+  }, [batchId, page, status])
+  const chips: [number | undefined, string, number][] = summary ? [
+    [undefined, 'Tất cả', summary.total], [1, 'Thêm mới', summary.new], [2, 'Lỗi', summary.error], [3, 'Trùng trong lô', summary.duplicate],
+  ] : []
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Từng dòng của tệp</div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, fontSize: 12 }}>
+        {chips.map(([v, label, n]) => (
+          <button key={label} type="button" className={status === v ? 'btn' : 'btn ghost'} style={{ padding: '2px 10px' }}
+            onClick={() => { setStatus(v); setPage(1) }}>{label}: {Number(n || 0).toLocaleString('vi-VN')}</button>
+        ))}
+        {summary && summary.total === 0 && (
+          <span style={{ color: 'var(--muted)' }}>Lô này nạp trước khi có nhật ký từng dòng — chỉ có ghi chú ở bảng dưới.</span>
+        )}
+      </div>
+      <div className="table-scroll" style={{ maxHeight: 320 }}><table>
+        <thead><tr><th style={{ width: 70 }}>Dòng</th><th style={{ width: 120 }}>Kết cục</th><th>Tên hàng</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+          {rows.map((x) => (
+            <tr key={x.id}>
+              <td>{x.row_no || '—'}</td>
+              <td><span className={`badge ${ROW_STATUS[x.row_status]?.[1] || 'gray'}`}>{ROW_STATUS[x.row_status]?.[0] || x.row_status_label}</span></td>
+              <td style={{ whiteSpace: 'normal' }}>{x.product_name || '—'}</td>
+              <td style={{ whiteSpace: 'normal' }}>{x.message}</td>
+            </tr>
+          ))}
+          {!rows.length && <tr><td colSpan={4} className="table-empty">{status ? 'Không có dòng nào mang kết cục này.' : 'Lô này chưa có nhật ký từng dòng.'}</td></tr>}
+        </tbody>
+      </table></div>
+      <div className="table-foot">
+        <Pagination page={page} pageSize={50} total={total} hideSize onChange={(p) => setPage(p)} />
+      </div>
+    </div>
+  )
+}
+
 function BatchLogs({ batch, onClose }: { batch: any; onClose: () => void }) {
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
@@ -118,8 +172,10 @@ function BatchLogs({ batch, onClose }: { batch: any; onClose: () => void }) {
       .then((r) => { setRows(r.data.data.items); setTotal(r.data.data.total) })
   }, [batch.id, page])
   return (
-    <CustomsModal title={`Nhật ký lô #${batch.id} — ${batch.filename}`} width={820} onClose={onClose}>
+    <CustomsModal title={`Nhật ký lô #${batch.id} — ${batch.filename}`} width={1000} onClose={onClose}>
       {batch.error_summary && <div style={{ color: '#b91c1c', fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 10 }}>{batch.error_summary.split('\n')[0]}</div>}
+      <BatchRows batchId={batch.id} />
+      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Ghi chú khi đọc tệp</div>
       <div className="table-scroll"><table>
         <thead><tr><th style={{ width: 80 }}>Dòng</th><th style={{ width: 110 }}>Mức</th><th>Nội dung</th></tr></thead>
         <tbody>
