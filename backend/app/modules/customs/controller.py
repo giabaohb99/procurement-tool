@@ -11,12 +11,15 @@ chỉ khác cửa chung ở hai chỗ: nhận `.xls` đời cũ (cửa chung ch�
 và gác bằng khóa riêng.
 """
 import json
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.audit import resolve_actor
 from app.core.auth import require
+from app.core.storage import download_bytes
+from app.modules.attachment.model import StoredFile
 from app.core.base_controller import pagination
 from app.core.crud import make_crud_router
 from app.core.database import get_db
@@ -55,7 +58,7 @@ def _batch_out(db: Session, b: ImportBatch) -> dict:
     except ValueError:
         info = {}
     return {"id": b.id, "mode": b.mode, "status": b.status, "filename": b.filename,
-            "file_size": b.file_size, "total_rows": b.total_rows,
+            "file_size": b.file_size, "has_file": bool(b.file_id), "total_rows": b.total_rows,
             "created_count": b.created_count, "deleted_count": b.deleted_count,
             "skipped_count": b.skipped_count, "warning_count": b.warning_count,
             "error_count": b.error_count, "error_summary": b.error_summary,
@@ -80,11 +83,23 @@ def list_columns(user=Depends(require(ENTITY, "read"))):
 
 
 def line_filters(q: str = "", ingredient: str = "", hs_code: str = "", formulation: str = "",
-                 origin: str = "", unit: str = "", importer_id: int | None = None,
-                 partner_id: int | None = None, date_from: str = "", date_to: str = "") -> dict:
-    """Bộ lọc dùng chung của mọi cửa đọc — MỘT chỗ khai, bốn nơi dùng."""
+                 origin: str = "", unit: str = "",
+                 importer_id: list[str] = Query(default=[]), partner_id: list[str] = Query(default=[]),
+                 batch_id: list[str] = Query(default=[]),
+                 currency: str = "", incoterm: str = "",
+                 price_min: str = "", price_max: str = "", qty_min: str = "", qty_max: str = "",
+                 rate_min: str = "", rate_max: str = "",
+                 date_from: str = "", date_to: str = "") -> dict:
+    """Bộ lọc dùng chung của mọi cửa đọc — MỘT chỗ khai, bốn nơi dùng.
+
+    bao-CR-493: `importer_id` / `partner_id` / `batch_id` nhận LẶP trên URL hoặc «1,2,3»
+    (service tự tách); khoảng số nhận chuỗi để ô bỏ trống không thành 422.
+    """
     return {"q": q, "ingredient": ingredient, "hs_code": hs_code, "formulation": formulation,
             "origin": origin, "unit": unit, "importer_id": importer_id, "partner_id": partner_id,
+            "batch_id": batch_id, "currency": currency, "incoterm": incoterm,
+            "price_min": price_min, "price_max": price_max, "qty_min": qty_min, "qty_max": qty_max,
+            "rate_min": rate_min, "rate_max": rate_max,
             "date_from": date_from, "date_to": date_to}
 
 
@@ -226,6 +241,29 @@ def list_batches(pg: dict = Depends(pagination), db: Session = Depends(get_db),
 @router.get("/imports/{bid}")
 def get_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     return success(_batch_out(db, _get_batch(db, bid)))
+
+
+@router.get("/imports/{bid}/file")
+def download_batch_file(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
+    """Tải lại tệp GTT02 đã nạp (bao-CR-493, đề xuất đại ca 25/09). Lô nạp bằng script (không
+    lưu tệp gốc, `file_id = 0`) thì báo 404 — nút trên màn chỉ hiện khi `has_file`."""
+    b = _get_batch(db, bid)
+    if not b.file_id:
+        raise HTTPException(404, "Lô này không lưu tệp gốc (nạp bằng script)")
+    sf = db.get(StoredFile, b.file_id)
+    if not sf:
+        raise HTTPException(404, "Không tìm thấy tệp đã lưu")
+    try:
+        data = download_bytes(sf.file_key)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(404, "Không đọc được tệp từ kho lưu trữ")
+    #  Tên tệp có dấu tiếng Việt phải mã hóa RFC 5987 — header HTTP chỉ nhận Latin-1, không thì 500.
+    ascii_name = (b.filename or "").encode("ascii", "ignore").decode() or "gtt02.xls"
+    disposition = 'attachment; filename="%s"; filename*=UTF-8\'\'%s' % (ascii_name, quote(b.filename or ascii_name))
+    return Response(content=data, media_type=sf.content_type or "application/octet-stream",
+                    headers={"Content-Disposition": disposition})
 
 
 @router.get("/imports/{bid}/logs")

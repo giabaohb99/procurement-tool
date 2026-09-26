@@ -99,6 +99,15 @@ export function fetchCustomsBatchLogs(id: number, params: Params) {
   return apiGet<CustomsBatchLogList>(`${BASE}/imports/${id}/logs`, { params })
 }
 
+/** bao-CR-493 — tải lại tệp GTT02 gốc của một lô nạp (chỉ lô nạp qua màn hình mới có tệp). */
+export async function downloadCustomsBatchFile(id: number, filename: string) {
+  try {
+    await downloadFile(`${BASE}/imports/${id}/file`, filename || `gtt02-${id}.xls`)
+  } catch (error) {
+    throw new Error(extractErrorMessage(error), { cause: error })
+  }
+}
+
 /**
  * Xuất Excel đúng các dòng đang lọc. Tải bằng `responseType: 'blob'` nên câu lỗi của
  * backend (vd "Kết quả quá 50.000 dòng") cũng về dạng blob — phải đọc lại thành JSON

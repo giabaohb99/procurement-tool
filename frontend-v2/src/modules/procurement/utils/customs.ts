@@ -4,7 +4,7 @@
 // Tách khỏi component để kiểm được bằng test thuần — đây là những chỗ sai âm thầm:
 // gửi nhầm tham số rỗng, vẽ biểu đồ khi chưa lọc, hay nói "chưa có dữ liệu" trong khi
 // thật ra là bộ lọc loại hết.
-import { formatUnitPrice } from '@/shared/utils/format-money'
+import { formatMoney, formatUnitPrice } from '@/shared/utils/format-money'
 
 import {
   CUSTOMS_BATCH_MODE,
@@ -26,6 +26,15 @@ export const EMPTY_CUSTOMS_FILTERS: CustomsFilters = {
   partner_id: '',
   date_from: '',
   date_to: '',
+  currency: '',
+  incoterm: '',
+  batch_id: '',
+  price_min: '',
+  price_max: '',
+  qty_min: '',
+  qty_max: '',
+  rate_min: '',
+  rate_max: '',
 }
 
 /** Câu chặn của thẻ Biểu đồ / Nhà nhập khẩu — khớp `NEED_FILTER_MSG` của backend. */
@@ -134,6 +143,43 @@ export function formatCustomsUnitChip(code: string): string {
  */
 export function formatUsd(value: number | string | null | undefined): string {
   return formatUnitPrice(value) || '—'
+}
+
+/** Cột VND (bao-CR-493): tiền đồng, không lẻ. */
+export function formatVnd(value: number | string | null | undefined): string {
+  return formatMoney(value) || '—'
+}
+
+/**
+ * bao-CR-493 — doanh nghiệp / đối tác chọn NHIỀU nhưng vẫn đi bằng hai tham số URL: `…_id`
+ * là id nối dấu phẩy («12,34»), `…_name` là tên nối dấu «|» cùng thứ tự (tên chỉ để in chip,
+ * không lọc). Hai hàm dưới giữ hai chuỗi này luôn song song với nhau.
+ */
+export interface NamedId {
+  id: string
+  name: string
+}
+
+export function splitNamedIds(ids: string, names: string): NamedId[] {
+  const idList = ids.split(',').map((v) => v.trim()).filter(Boolean)
+  const nameList = names.split('|')
+  return idList.map((id, index) => ({ id, name: (nameList[index] ?? '').trim() }))
+}
+
+export function joinNamedIds(items: NamedId[]): { ids: string; names: string } {
+  return { ids: items.map((item) => item.id).join(','), names: items.map((item) => item.name).join('|') }
+}
+
+/** Thêm một đối tượng vào bộ lọc; đã có rồi thì giữ nguyên (không nhân đôi chip). */
+export function addNamedId(ids: string, names: string, id: number | string, name: string): { ids: string; names: string } {
+  const key = String(id)
+  const items = splitNamedIds(ids, names)
+  if (items.some((item) => item.id === key)) return joinNamedIds(items)
+  return joinNamedIds([...items, { id: key, name: name.replace(/[|,]/g, ' ').trim() }])
+}
+
+export function removeNamedId(ids: string, names: string, id: string): { ids: string; names: string } {
+  return joinNamedIds(splitNamedIds(ids, names).filter((item) => item.id !== id))
 }
 
 /**

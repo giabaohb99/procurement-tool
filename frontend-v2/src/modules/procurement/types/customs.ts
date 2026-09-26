@@ -11,10 +11,21 @@ export interface CustomsFilters {
   origin: string
   unit: string
   formulation: string
+  /** bao-CR-493: nhiều id nối bằng dấu phẩy («12,34») — backend tự tách, nhiều là HOẶC. */
   importer_id: string
   partner_id: string
   date_from: string
   date_to: string
+  /** bao-CR-493 — sáu ô lọc thêm theo sheet 4 của yêu cầu phòng Thu mua. Chuỗi rỗng = không lọc. */
+  currency: string
+  incoterm: string
+  batch_id: string
+  price_min: string
+  price_max: string
+  qty_min: string
+  qty_max: string
+  rate_min: string
+  rate_max: string
 }
 
 /** Một dòng hàng — đủ 32 cột của tệp gốc + vài trường suy ra. */
@@ -42,6 +53,10 @@ export type CustomsLine = {
   price_usd: number | null
   adj_price_usd: number | null
   effective_price_usd: number | null
+  /** bao-CR-493 — giá hiệu lực × tỷ giá USD × 1,07 (thuế NK 7% tạm tính), tròn đồng. */
+  price_vnd_flat: number | null
+  /** bao-CR-493 — giá hiệu lực × tỷ giá USD × (1 + thuế suất XNK của dòng); thiếu thuế suất thì null. */
+  price_vnd_line_tax: number | null
   price_nt: number | null
   adj_price_nt: number | null
   currency: string
@@ -80,6 +95,8 @@ export interface CustomsCoverage {
 export interface CustomsOptionItem {
   value: string
   count: number
+  /** Nhãn hiện thay cho `value` (ô lọc lô nạp: «#12 1.xls»). */
+  label?: string
 }
 
 export interface CustomsOptions {
@@ -88,6 +105,10 @@ export interface CustomsOptions {
   units: CustomsOptionItem[]
   ingredients: CustomsOptionItem[]
   formulations: CustomsOptionItem[]
+  /** bao-CR-493 */
+  currencies?: CustomsOptionItem[]
+  incoterms?: CustomsOptionItem[]
+  batches?: CustomsOptionItem[]
   ingredient_coverage: { total: number; tagged: number; ratio: number | null }
 }
 
@@ -238,6 +259,8 @@ export interface CustomsImportBatch {
   status: number
   filename: string
   file_size: number
+  /** bao-CR-493 — lô nạp qua màn hình có tệp gốc để tải lại; lô nạp bằng script thì không. */
+  has_file?: boolean
   total_rows: number
   created_count: number
   deleted_count: number

@@ -4,6 +4,8 @@
 // Đại ca chốt 23/09/2026: biểu đồ nằm chung màn với danh sách, CHỈ hiện khi đã có bộ lọc
 // (từ khóa hoặc mã HS); không có trang tổng quan riêng, không tính sẵn, không tác vụ định kỳ.
 // Quyền: `customs_price` (đọc / ghi = nạp tệp / xóa = hoàn tác / xuất = Excel).
+// bao-CR-493 (yêu cầu phòng Thu mua 25/09, bê từ bản v2): thẻ thứ sáu «Lịch sử nạp» thay hộp thoại;
+// hàng «Lọc thêm» sáu ô; doanh nghiệp chọn NHIỀU (chip cộng dồn); hai cột VND ở cuối bảng.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
@@ -16,12 +18,13 @@ import TableScroll from '../components/TableScroll'
 import TableToolbar from '../components/TableToolbar'
 import { toast } from '../components/toast'
 import CustomsChart from '../components/customs/CustomsChart'
-import CustomsHistoryDialog from '../components/customs/CustomsHistoryDialog'
+import CustomsHistoryPanel from '../components/customs/CustomsHistoryPanel'
 import CustomsImportDialog from '../components/customs/CustomsImportDialog'
 import CustomsLineDetail from '../components/customs/CustomsLineDetail'
 import { CustomsCompare, CustomsImporters, CustomsLegal } from '../components/customs/CustomsTabs'
 import {
-  CustomsFilters, EMPTY_FILTERS, fmtDate, fmtQty, fmtUsd, hasChartFilter, NEED_FILTER_MSG, toParams,
+  addNamedId, blobErrorMessage, CustomsFilters, downloadBlob, EMPTY_FILTERS, EXTRA_FILTER_KEYS, fmtDate, fmtQty,
+  fmtUsd, fmtVnd, hasChartFilter, NEED_FILTER_MSG, removeNamedId, splitNamedIds, toParams,
 } from '../components/customs/customs-shared'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
 import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
@@ -32,6 +35,7 @@ const TABS = [
   { key: 'importers', label: 'Nhà nhập khẩu', icon: 'ti-building-factory-2', needFilter: true },
   { key: 'compare', label: 'So sánh', icon: 'ti-arrows-diff' },
   { key: 'legal', label: 'Pháp lý & thuế', icon: 'ti-scale' },
+  { key: 'history', label: 'Lịch sử nạp', icon: 'ti-history' },
 ]
 
 const pct = (v: any) => (v == null || v === '' ? '' : `${v}%`)
@@ -76,6 +80,9 @@ const COLS: TableColumn[] = [
   { key: 'import_country', label: 'Nước nhập khẩu', width: 110 },
   { key: 'active_ingredient', label: 'Hoạt chất (suy ra)', width: 160 },
   { key: 'formulation', label: 'Hàm lượng / dạng (suy ra)', width: 130 },
+  // bao-CR-493 — hai cột VND (giá hiệu lực × tỷ giá USD × thuế), cùng thứ tự với Excel xuất ra.
+  { key: 'price_vnd_flat', label: 'Giá VND (thuế NK 7%)', width: 130, align: 'right', cell: (r) => fmtVnd(r.price_vnd_flat) },
+  { key: 'price_vnd_line_tax', label: 'Giá VND (thuế suất dòng)', width: 130, align: 'right', cell: (r) => fmtVnd(r.price_vnd_line_tax) },
 ]
 
 export default function CustomsPrices() {
@@ -92,7 +99,8 @@ export default function CustomsPrices() {
   const [pageSize, setPageSize] = useState(50)
   const [loading, setLoading] = useState(false)
   const [detailId, setDetailId] = useState<number | null>(null)
-  const [dialog, setDialog] = useState<'' | 'import' | 'history'>('')
+  const [importOpen, setImportOpen] = useState(false)
+  const [extraOpen, setExtraOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const table = useTableColumns('customs-lines-full', COLS)
 
@@ -123,11 +131,33 @@ export default function CustomsPrices() {
     setDraft({ ...EMPTY_FILTERS })
     apply({ ...EMPTY_FILTERS })
   }
+  // bao-CR-493: chọn thêm từ thẻ Nhà nhập khẩu là CỘNG DỒN vào bộ lọc, không thay thế.
   function pickImporter(id: number, name: string) {
-    const next = { ...draft, importer_id: String(id), importer_name: name }
+    const merged = addNamedId(filters.importer_id, filters.importer_name, id, name)
+    const next = { ...draft, importer_id: merged.ids, importer_name: merged.names }
     setDraft(next)
     apply(next)
     setTab('list')
+  }
+  function dropImporter(id: string) {
+    const merged = removeNamedId(filters.importer_id, filters.importer_name, id)
+    const next = { ...draft, importer_id: merged.ids, importer_name: merged.names }
+    setDraft(next)
+    apply(next)
+  }
+  function pickPartner(id: number, name: string) {
+    const merged = addNamedId(filters.partner_id, filters.partner_name, id, name)
+    const next = { ...draft, partner_id: merged.ids, partner_name: merged.names }
+    setDraft(next)
+    apply(next)
+    setDetailId(null)
+    setTab('list')
+  }
+  function dropPartner(id: string) {
+    const merged = removeNamedId(filters.partner_id, filters.partner_name, id)
+    const next = { ...draft, partner_id: merged.ids, partner_name: merged.names }
+    setDraft(next)
+    apply(next)
   }
   function refreshAll() {
     loadMeta()
@@ -138,29 +168,19 @@ export default function CustomsPrices() {
     if (exporting) return
     setExporting(true)
     try {
-      const r = await api.get('/api/customs/lines/export', { params: toParams(filters), responseType: 'blob' })
-      const cd = String(r.headers['content-disposition'] || '')
-      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || 'tra-cuu-gia-hai-quan.xlsx'
-      const url = window.URL.createObjectURL(new Blob([r.data]))
-      const a = document.createElement('a')
-      a.href = url
-      a.setAttribute('download', name)
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
+      await downloadBlob(api, '/api/customs/lines/export', 'tra-cuu-gia-hai-quan.xlsx', toParams(filters))
     } catch (e: any) {
-      // responseType blob nên câu lỗi của backend cũng về dạng blob
-      let msg = 'Không xuất được tệp Excel'
-      try { msg = JSON.parse(await e?.response?.data?.text())?.error?.message || msg } catch { /* giữ câu mặc định */ }
-      toast.error(msg)
+      toast.error(await blobErrorMessage(e, 'Không xuất được tệp Excel'))
     } finally {
       setExporting(false)
     }
   }
 
   const set = (k: keyof CustomsFilters) => (v: string) => setDraft((s) => ({ ...s, [k]: v }))
-  const optionList = (key: string) => (options?.[key] || []).map((o: any) => ({ value: o.value, label: `${o.value} (${o.count})` }))
+  const optionList = (key: string) => (options?.[key] || []).map((o: any) => ({ value: o.value, label: `${o.label ?? o.value} (${o.count})` }))
+  const importerChips = useMemo(() => splitNamedIds(filters.importer_id, filters.importer_name), [filters.importer_id, filters.importer_name])
+  const partnerChips = useMemo(() => splitNamedIds(filters.partner_id, filters.partner_name), [filters.partner_id, filters.partner_name])
+  const extraActive = EXTRA_FILTER_KEYS.some((k) => draft[k] || filters[k])
   const dirty = useMemo(() => Object.values(filters).some((v) => v), [filters])
   // Gõ thẳng đường dẫn mà thiếu quyền: nói đúng lý do, đừng để bảng rỗng trông như "không khớp bộ lọc".
   // (Chặn thật nằm ở backend — mọi đường /api/customs đều require('customs_price', ...).)
@@ -182,9 +202,9 @@ export default function CustomsPrices() {
         {can('customs_regulation', 'read') && (
           <Link className="btn ghost" to="/customs-regulations"><i className="ti ti-book" />Danh mục hóa chất</Link>
         )}
-        <button className="btn ghost" onClick={() => setDialog('history')}><i className="ti ti-history" />Lịch sử nạp</button>
+        <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
         {can('customs_price', 'write') && (
-          <button className="btn" onClick={() => setDialog('import')}><i className="ti ti-upload" />Nạp dữ liệu</button>
+          <button className="btn" onClick={() => setImportOpen(true)}><i className="ti ti-upload" />Nạp dữ liệu</button>
         )}
       </div>
 
@@ -218,15 +238,65 @@ export default function CustomsPrices() {
         <FilterItem label="Đến tháng" width={140}>
           <input type="month" value={draft.date_to} onChange={(e) => set('date_to')(e.target.value)} />
         </FilterItem>
+        <FilterItem label=" " width={110}>
+          <button className="btn ghost" type="button" onClick={() => setExtraOpen((o) => !o)}>
+            <i className={`ti ${extraOpen || extraActive ? 'ti-chevron-up' : 'ti-chevron-down'}`} />Lọc thêm
+          </button>
+        </FilterItem>
+        {(extraOpen || extraActive) && (
+          /* bao-CR-493 — sáu ô theo sheet 4 yêu cầu phòng Thu mua. Khoảng số nhập chữ, backend bỏ ô rác;
+             giá so trên GIÁ HIỆU LỰC (điều chỉnh nếu có). */
+          <>
+            <FilterItem label="Nguyên tệ" width={110}>
+              <SearchSelect value={draft.currency} placeholder="Tất cả" autoSelectSingle={false}
+                options={optionList('currencies')} onChange={set('currency')} />
+            </FilterItem>
+            <FilterItem label="Điều kiện giao hàng" width={130}>
+              <SearchSelect value={draft.incoterm} placeholder="Tất cả" autoSelectSingle={false}
+                options={optionList('incoterms')} onChange={set('incoterm')} />
+            </FilterItem>
+            <FilterItem label="Tệp nguồn (lô nạp)" width={200}>
+              <SearchSelect value={draft.batch_id} placeholder="Tất cả" autoSelectSingle={false}
+                options={optionList('batches')} onChange={set('batch_id')} />
+            </FilterItem>
+            <FilterItem label="Đơn giá USD từ – tới" width={190}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input inputMode="decimal" placeholder="từ" value={draft.price_min} onChange={(e) => set('price_min')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+                <input inputMode="decimal" placeholder="tới" value={draft.price_max} onChange={(e) => set('price_max')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+              </div>
+            </FilterItem>
+            <FilterItem label="Lượng từ – tới" width={190}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input inputMode="decimal" placeholder="từ" value={draft.qty_min} onChange={(e) => set('qty_min')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+                <input inputMode="decimal" placeholder="tới" value={draft.qty_max} onChange={(e) => set('qty_max')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+              </div>
+            </FilterItem>
+            <FilterItem label="Tỷ giá USD từ – tới" width={190}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input inputMode="decimal" placeholder="từ" value={draft.rate_min} onChange={(e) => set('rate_min')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+                <input inputMode="decimal" placeholder="tới" value={draft.rate_max} onChange={(e) => set('rate_max')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+              </div>
+            </FilterItem>
+          </>
+        )}
       </FilterPanel>
 
-      {filters.importer_id && (
-        <div style={{ marginBottom: 8, fontSize: 13 }}>
-          <span className="badge info" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            Doanh nghiệp: {filters.importer_name || `#${filters.importer_id}`}
-            <i className="ti ti-x" style={{ cursor: 'pointer' }} title="Bỏ lọc doanh nghiệp"
-              onClick={() => { const n = { ...draft, importer_id: '', importer_name: '' }; setDraft(n); apply(n) }} />
-          </span>
+      {(importerChips.length > 0 || partnerChips.length > 0) && (
+        <div style={{ marginBottom: 8, fontSize: 13, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {importerChips.map((chip) => (
+            <span key={`i-${chip.id}`} className="badge info" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              Doanh nghiệp: {chip.name || `#${chip.id}`}
+              <i className="ti ti-x" style={{ cursor: 'pointer' }} title={`Bỏ lọc doanh nghiệp ${chip.name || chip.id}`}
+                onClick={() => dropImporter(chip.id)} />
+            </span>
+          ))}
+          {partnerChips.map((chip) => (
+            <span key={`p-${chip.id}`} className="badge info" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              Đối tác: {chip.name || `#${chip.id}`}
+              <i className="ti ti-x" style={{ cursor: 'pointer' }} title={`Bỏ lọc đối tác ${chip.name || chip.id}`}
+                onClick={() => dropPartner(chip.id)} />
+            </span>
+          ))}
         </div>
       )}
 
@@ -308,10 +378,13 @@ export default function CustomsPrices() {
       {tab === 'importers' && chartReady && <CustomsImporters key={filterKey} filters={filters} onPickImporter={pickImporter} />}
       {tab === 'compare' && <CustomsCompare filters={filters} />}
       {tab === 'legal' && <CustomsLegal filters={filters} alerts={alerts} />}
+      {tab === 'history' && <CustomsHistoryPanel onChanged={refreshAll} />}
 
-      {detailId != null && <CustomsLineDetail id={detailId} onClose={() => setDetailId(null)} />}
-      {dialog === 'import' && <CustomsImportDialog onClose={() => setDialog('')} onApplied={refreshAll} />}
-      {dialog === 'history' && <CustomsHistoryDialog onClose={() => setDialog('')} onChanged={refreshAll} />}
+      {detailId != null && (
+        <CustomsLineDetail id={detailId} onClose={() => setDetailId(null)}
+          onFilterImporter={(id, name) => { pickImporter(id, name); setDetailId(null) }} onFilterPartner={pickPartner} />
+      )}
+      {importOpen && <CustomsImportDialog onClose={() => setImportOpen(false)} onApplied={refreshAll} />}
     </div>
   )
 }

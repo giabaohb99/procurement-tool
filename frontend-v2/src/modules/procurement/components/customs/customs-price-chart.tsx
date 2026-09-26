@@ -59,10 +59,6 @@ import {
 } from '../../utils/customs'
 import { CustomsNotice, CustomsSegmentedChoice, CustomsUnitChips } from './customs-controls'
 
-const PRICE_MODE_OPTIONS: { value: CustomsPriceMode; label: string }[] = [
-  { value: 'adjusted', label: 'Ưu tiên giá điều chỉnh' },
-  { value: 'declared', label: 'Chỉ giá khai báo' },
-]
 
 const PRICE_COLOR = 'var(--chart-1)'
 const BEST_COLOR = 'var(--success)'
@@ -89,7 +85,9 @@ interface CustomsPriceChartProps {
 
 export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
   const [period, setPeriod] = useState<CustomsPeriod>('month')
-  const [priceMode, setPriceMode] = useState<CustomsPriceMode>('adjusted')
+  //  bao-CR-493: đại ca chốt bỏ hẳn nút chọn giá — biểu đồ luôn vẽ GIÁ ĐIỀU CHỈNH (giá hải quan
+  //  áp lại để tính thuế); ai cần giá khai báo thì thẻ Danh sách vẫn có đủ hai cột.
+  const priceMode: CustomsPriceMode = 'adjusted'
   const [chartUnit, setChartUnit] = useState('')
 
   //  Đổi bộ lọc thì đơn vị cũ có thể không còn trong tập mới — trả về để backend tự
@@ -218,21 +216,17 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      {/* bao-CR-493: Kỳ và Đơn vị nằm chung MỘT thẻ (đề xuất đại ca 25/09) — hai hàng nút rời
+          nhau nhìn như hai việc khác nhau, thật ra đều là cách cắt cùng một biểu đồ. */}
+      <Card className="gap-3 p-4">
         <CustomsSegmentedChoice
           label="Kỳ"
           value={period}
           options={CUSTOMS_PERIOD_OPTIONS}
           onChange={setPeriod}
         />
-        <CustomsSegmentedChoice
-          label="Giá"
-          value={priceMode}
-          options={PRICE_MODE_OPTIONS}
-          onChange={setPriceMode}
-        />
-      </div>
-      <CustomsUnitChips units={data.units} value={data.unit} onChange={setChartUnit} />
+        <CustomsUnitChips units={data.units} value={data.unit} onChange={setChartUnit} />
+      </Card>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <StatCard icon={TrendingDown} label="Thấp nhất" value={formatUsd(kpi.min)} hint={priceUnit} />

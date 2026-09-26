@@ -1,19 +1,24 @@
 // bao-CR-470 — lịch sử các lần nạp dữ liệu hải quan (lô chạy thử + lô ghi thật), nhật ký
 // dòng của từng lô và nút hoàn tác.
 //
+// bao-CR-493: từ hộp thoại thành MỘT THẺ trên trang (thẻ «Lịch sử nạp», yêu cầu F11 của phòng
+// Thu mua) và thêm nút tải lại tệp GTT02 gốc — chỉ lô nạp qua màn hình mới có tệp (`has_file`),
+// lô nạp bằng script thì nút ẩn.
+//
 // Không dùng lại màn `/system/imports`: màn đó gác bằng khóa `import` chung, còn lô hải
 // quan gác bằng khóa RIÊNG `customs_price` (đại ca chốt 23/09/2026) — người thu mua có
 // quyền nạp giá hải quan không nhất thiết có quyền xem mọi lô nạp của hệ thống.
 //
 // Lô đã THAY dòng cũ (deleted_count > 0) không hoàn tác được: dòng cũ đã xóa lúc ghi, hoàn
 // tác chỉ xóa được dòng mới và để lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
-import { ListTree, Undo2 } from 'lucide-react'
+import { Download, ListTree, Undo2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import {
   Dialog,
@@ -27,6 +32,7 @@ import { TONE_CLASS } from '@/shared/ui/status-tone'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { cn } from '@/shared/utils/cn'
 
+import { downloadCustomsBatchFile } from '../../api/customs-api'
 import {
   useCustomsBatches,
   useCustomsBatchLogs,
@@ -56,11 +62,7 @@ function formatRange(batch: CustomsImportBatch): string {
   return batch.date_from ? `${formatDate(batch.date_from)} → ${formatDate(batch.date_to)}` : '—'
 }
 
-interface CustomsHistoryDialogProps {
-  onClose: () => void
-}
-
-export function CustomsHistoryDialog({ onClose }: CustomsHistoryDialogProps) {
+export function CustomsHistoryPanel() {
   const { canRevert } = useCustomsPermissions()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(HISTORY_PAGE_SIZE)
@@ -156,13 +158,30 @@ export function CustomsHistoryDialog({ onClose }: CustomsHistoryDialogProps) {
       {
         key: 'actions',
         header: 'Thao tác',
-        width: 96,
+        width: 130,
         hideable: false,
         stickyRight: true,
         cell: (b) => {
           const revertState = canRevert ? resolveRevertState(b) : 'hidden'
           return (
             <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+              {b.has_file && (
+                <IconTooltip label="Tải lại tệp gốc đã nạp">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Tải lại tệp gốc đã nạp"
+                    onClick={() =>
+                      downloadCustomsBatchFile(b.id, b.filename).catch((error: Error) =>
+                        toast.error(error.message),
+                      )
+                    }
+                  >
+                    <Download className="size-4" />
+                  </Button>
+                </IconTooltip>
+              )}
               <IconTooltip label="Nhật ký dòng lỗi / cảnh báo">
                 <Button
                   type="button"
@@ -206,39 +225,35 @@ export function CustomsHistoryDialog({ onClose }: CustomsHistoryDialogProps) {
   }, [canRevert, revert])
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[92dvh] flex-col gap-4 sm:max-w-6xl">
-        <DialogHeader>
-          <DialogTitle>Lịch sử nạp dữ liệu hải quan</DialogTitle>
-          <DialogDescription>
-            Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Lô đã thay dòng cũ thì không hoàn tác
-            được.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <DataTable
-            columns={columns}
-            rows={data?.items}
-            getRowId={(b) => b.id}
-            isLoading={isLoading}
-            isError={isError}
-            emptyMessage="Chưa nạp lần nào."
-            pagination={{
-              page,
-              pageSize,
-              total: data?.total ?? 0,
-              onPageChange: setPage,
-              onPageSizeChange: (size) => {
-                setPageSize(size)
-                setPage(1)
-              },
-              unitLabel: 'lô',
-            }}
-          />
-        </div>
-        {logsOf && <BatchLogsDialog batch={logsOf} onClose={() => setLogsOf(null)} />}
-      </DialogContent>
-    </Dialog>
+    <Card className="gap-3 p-4">
+      <div>
+        <h2 className="text-base font-semibold">Lịch sử nạp dữ liệu hải quan</h2>
+        <p className="text-sm text-muted-foreground">
+          Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Lô đã thay dòng cũ thì không hoàn tác
+          được; lô nạp qua màn hình tải lại được tệp gốc.
+        </p>
+      </div>
+      <DataTable
+        columns={columns}
+        rows={data?.items}
+        getRowId={(b) => b.id}
+        isLoading={isLoading}
+        isError={isError}
+        emptyMessage="Chưa nạp lần nào."
+        pagination={{
+          page,
+          pageSize,
+          total: data?.total ?? 0,
+          onPageChange: setPage,
+          onPageSizeChange: (size) => {
+            setPageSize(size)
+            setPage(1)
+          },
+          unitLabel: 'lô',
+        }}
+      />
+      {logsOf && <BatchLogsDialog batch={logsOf} onClose={() => setLogsOf(null)} />}
+    </Card>
   )
 }
 

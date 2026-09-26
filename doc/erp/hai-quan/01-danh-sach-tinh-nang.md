@@ -135,3 +135,34 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 - **1.461 doanh nghiệp nhập khẩu** — Syngenta 407 dòng, Ecolab 250, Bayer 212 dẫn đầu.
 - Tên hàng **không bị cắt cụt**: dài 16–200 ký tự, trung bình 165.
 - Tệp `.xls` đời cũ, **cần `xlrd`** (`openpyxl` không đọc được).
+
+## 11. Nhóm Y — Yêu cầu phòng Thu mua 25/09/2026 (FR-PROC-2026-001, chị Mi)
+
+> Tệp «YÊU CẦU TÍNH NĂNG TRA CỨU GIÁ HS CODE-NOTE 250926.xlsx» (22/09, ghi chú 25/09) đối chiếu với bản
+> đang chạy trên dev 25/09/2026. Đại ca chốt cùng ngày: hai cột VND (7% tạm tính + theo thuế suất dòng);
+> bỏ hẳn nút Giá trên biểu đồ; không cần số tờ khai (log từng dòng có Thêm mới / Lỗi / Bỏ qua); lưu bộ lọc
+> riêng từng người nhưng có sẵn cờ dùng chung; Excel định dạng và in báo giá chờ mẫu chị Mi.
+> Đại ca chốt thêm 25/09: **bê cả sang bản cũ (v1)** — Y-01…Y-07 đã có ở cả hai bản. 26/09 đại ca chốt luật chung: **v1 và v2 phải cùng chức năng, cái nào thiếu thì ERP Agent 2 bù**; phần giao diện v1 của Y-08…Y-13 làm sau khi Erp Agent 1 cắm xong v2.
+
+| Mã | Yêu cầu gốc | Nội dung làm | CR | Ai làm | Có sẵn |
+|---|---|---|---|---|---|
+| Y-01 | Sheet 3 cột 15 | Hai cột «Đơn giá quy đổi VND»: giá hiệu lực × tỷ giá USD × 1,07 (thuế NK 7% tạm tính) và × (1 + thuế suất XNK của dòng); có ở bảng, chi tiết dòng, Excel | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-02 | Đề xuất đại ca 2.1 | Bỏ hẳn nút «Giá: điều chỉnh / khai báo» trên biểu đồ — luôn vẽ giá điều chỉnh | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-03 | Đề xuất đại ca 2.2 | Kỳ (tháng / quý / năm) và Đơn vị gom vào MỘT thẻ | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-04 | Đề xuất đại ca 1 | Tải lại tệp GTT02 đã nạp (chỉ lô nạp qua màn hình có tệp gốc; lô nạp bằng script không có) | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-05 | F11 | Lịch sử nạp thành THẺ trên trang thay hộp thoại | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-06 | Sheet 4 mục 4–5 | Doanh nghiệp nhập / đối tác chọn NHIỀU (chip cộng dồn, id nối dấu phẩy) | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-07 | Sheet 4 mục 6–13 | Hàng «Lọc thêm»: nguyên tệ, điều kiện giao hàng, tệp nguồn (lô nạp), khoảng đơn giá (giá hiệu lực), khoảng lượng, khoảng tỷ giá USD | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-08 | F04 | Nhãn tự động Thành phẩm / Nguyên liệu (TC, TECH, TG, «kỹ thuật», «nguyên liệu»; không khớp = Thành phẩm), cột + lọc theo nhãn, bảng từ khóa admin sửa được | bao-CR-494 | Erp Agent 1 | [~] |
+| Y-09 | F02 | Tìm «Có các từ» / «Không có từ» (AND / NOT) trên tên hàng | bao-CR-495 | Erp Agent 1 | [~] |
+| Y-10 | F02 | Quy đổi cách viết nồng độ theo luật mặc định (3,6% ≡ 3.6EC ≡ 36 G/L); ngoại lệ chị Mi bổ sung sau | bao-CR-495 | Erp Agent 1 | [~] |
+| Y-11 | F02 ghi chú 25/09 | Màn từ đồng nghĩa người dùng tự thêm cặp, nạp mồi từ bảng bí danh sẵn có | bao-CR-495 | Erp Agent 1 | [~] |
+| Y-12 | F07 | Lưu bộ lọc RIÊNG từng người (đặt tên, chọn lại một phát); bảng có sẵn cột dùng chung, mặc định tắt | bao-CR-496 | ERP Agent 2 | [ ] |
+| Y-13 | F01 ghi chú 25/09 | Log từng dòng khi nạp: Thêm mới / Lỗi / Bỏ qua vì trùng trong lô (không có «Cập nhật» vì dữ liệu không có số tờ khai) | bao-CR-496 | ERP Agent 2 | [ ] |
+| Y-14 | F06 | Excel theo mẫu công ty: tiêu đề, header màu, wrap, dd/mm/yyyy, phân cách hàng nghìn, tách sheet theo nhóm | NỢ — chờ tệp mẫu chị Mi | — | [ ] |
+| Y-15 | F09 | Trang tra cứu giá: in báo giá, xuất PDF | NỢ — chờ mẫu in chị Mi | — | [ ] |
+| Y-16 | F08 | Biểu đồ theo TUẦN (yêu cầu ghi «tuần hoặc tháng») | chưa cấp số — hỏi lại có cần không | — | [ ] |
+
+**Đã có sẵn từ trước, không làm lại:** F03 lọc nhiều trường · F05 tỷ giá theo dòng · F08 biểu đồ (tháng / quý / năm,
+so sánh nhiều mặt hàng) · F10 phân quyền (`customs_price`) · F01 nạp nhiều tệp, kiểm cột, hoàn tác lô.
+

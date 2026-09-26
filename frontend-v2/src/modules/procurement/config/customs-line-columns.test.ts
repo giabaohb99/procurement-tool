@@ -43,12 +43,15 @@ const EXCEL_COLUMNS: [string, string][] = [
 ]
 
 describe('CUSTOMS_LINE_COLUMNS', () => {
-  it('follows the GTT02 Excel order and headers, then the two derived columns last', () => {
+  it('follows the GTT02 Excel order and headers, then the derived and VND columns last', () => {
     const actual = CUSTOMS_LINE_COLUMNS.map((column) => [column.key, column.header])
     expect(actual).toEqual([
       ...EXCEL_COLUMNS,
       ['active_ingredient', 'Hoạt chất (suy ra)'],
       ['formulation', 'Hàm lượng / dạng (suy ra)'],
+      //  bao-CR-493 — cùng thứ tự với Excel xuất ra.
+      ['price_vnd_flat', 'Giá VND (thuế NK 7%)'],
+      ['price_vnd_line_tax', 'Giá VND (thuế suất dòng)'],
     ])
   })
 

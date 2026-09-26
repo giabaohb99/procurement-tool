@@ -23,7 +23,7 @@ import { cn } from '@/shared/utils/cn'
 
 import { useCustomsLine } from '../../hooks/use-customs'
 import type { CustomsLine } from '../../types/customs'
-import { formatCustomsUnit, formatUsd } from '../../utils/customs'
+import { formatCustomsUnit, formatUsd, formatVnd } from '../../utils/customs'
 
 type FieldFormatter = (line: CustomsLine) => string
 
@@ -88,6 +88,13 @@ const GROUPS: { title: string; fields: DetailField[] }[] = [
       { key: 'currency', label: 'Nguyên tệ', format: (l) => text(l.currency) },
       { key: 'fx_rate', label: 'Tỷ giá nguyên tệ', format: (l) => formatUsd(l.fx_rate) },
       { key: 'usd_rate', label: 'Tỷ giá USD', format: (l) => formatUsd(l.usd_rate) },
+      //  bao-CR-493 — hai cột VND theo yêu cầu phòng Thu mua: 7% tạm tính và theo thuế suất dòng.
+      { key: 'price_vnd_flat', label: 'Đơn giá VND (thuế NK 7%)', format: (l) => formatVnd(l.price_vnd_flat) },
+      {
+        key: 'price_vnd_line_tax',
+        label: 'Đơn giá VND (theo thuế suất XNK)',
+        format: (l) => formatVnd(l.price_vnd_line_tax),
+      },
     ],
   },
   {

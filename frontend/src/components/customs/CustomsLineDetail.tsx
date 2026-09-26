@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
 import CustomsModal from './CustomsModal'
-import { fmtDate, fmtQty, fmtUsd } from './customs-shared'
+import { fmtDate, fmtQty, fmtUsd, fmtVnd } from './customs-shared'
 
 type Field = [string, string, (v: any, row: any) => string]
 
@@ -30,6 +30,8 @@ const GROUPS: { title: string; fields: Field[] }[] = [
     ['price_usd', 'Đơn giá khai báo (USD)', num], ['adj_price_usd', 'Đơn giá điều chỉnh (USD)', num],
     ['price_nt', 'Đơn giá nguyên tệ khai báo', num], ['adj_price_nt', 'Đơn giá nguyên tệ điều chỉnh', num],
     ['currency', 'Nguyên tệ', txt], ['fx_rate', 'Tỷ giá nguyên tệ', num], ['usd_rate', 'Tỷ giá USD', num],
+    // bao-CR-493 — hai cột VND: 7% tạm tính và theo thuế suất XNK của dòng (backend tính sẵn).
+    ['price_vnd_flat', 'Giá VND (thuế NK 7%)', (v) => fmtVnd(v)], ['price_vnd_line_tax', 'Giá VND (thuế suất dòng)', (v) => fmtVnd(v)],
   ] },
   { title: 'Hợp đồng & vận chuyển', fields: [
     ['contract_no', 'Số hợp đồng', txt], ['contract_date', 'Ngày hợp đồng', day],
@@ -44,7 +46,15 @@ const GROUPS: { title: string; fields: Field[] }[] = [
   ] },
 ]
 
-export default function CustomsLineDetail({ id, onClose }: { id: number; onClose: () => void }) {
+type Pick = (id: number, name: string) => void
+
+export default function CustomsLineDetail({ id, onClose, onFilterImporter, onFilterPartner }: {
+  id: number
+  onClose: () => void
+  /** bao-CR-493 — cộng thêm doanh nghiệp / đối tác của dòng này vào bộ lọc (như bản v2). */
+  onFilterImporter?: Pick
+  onFilterPartner?: Pick
+}) {
   const [row, setRow] = useState<any>(null)
   const closeRef = useRef(onClose)
   closeRef.current = onClose
@@ -61,6 +71,20 @@ export default function CustomsLineDetail({ id, onClose }: { id: number; onClose
             Lô nạp #{row.batch_id}, dòng {row.source_row} của tệp gốc.
             {row.date_fixed && <> <span className="badge warn">Đã sửa ngày</span> ngày đăng ký trong tệp bị đảo ngày/tháng, hệ thống đã đọc lại.</>}
           </div>
+          {(onFilterImporter || onFilterPartner) && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              {onFilterImporter && row.importer_id > 0 && (
+                <button className="btn ghost" type="button" onClick={() => onFilterImporter(row.importer_id, row.importer_name)}>
+                  <i className="ti ti-building-factory-2" />Lọc theo doanh nghiệp này
+                </button>
+              )}
+              {onFilterPartner && row.partner_id > 0 && (
+                <button className="btn ghost" type="button" onClick={() => onFilterPartner(row.partner_id, row.partner_name)}>
+                  <i className="ti ti-heart-handshake" />Lọc theo đối tác này
+                </button>
+              )}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
             {GROUPS.map((g) => (
               <div key={g.title} className="card" style={{ padding: '10px 14px' }}>

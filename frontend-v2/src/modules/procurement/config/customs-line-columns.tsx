@@ -14,7 +14,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity } from '@/shared/utils/format-money'
 
 import type { CustomsLine } from '../types/customs'
-import { formatUsd } from '../utils/customs'
+import { formatUsd, formatVnd } from '../utils/customs'
 
 function formatRate(value: number | null): string {
   return value === null || value === undefined ? '' : `${value}%`
@@ -24,9 +24,21 @@ function money(key: keyof CustomsLine, header: string): DataTableColumn<CustomsL
   return {
     key,
     header,
-    width: 130,
+    //  bao-CR-493: bề rộng đủ cho tiêu đề (tiêu đề bảng luôn cắt «…», không xuống dòng) — đại ca 25/09.
+    width: 175,
     align: 'right',
     cell: (row) => <span className="tabular-nums">{formatUsd(row[key] as number | null)}</span>,
+  }
+}
+
+/** bao-CR-493 — hai cột quy đổi VND, backend tính sẵn. */
+function vnd(key: 'price_vnd_flat' | 'price_vnd_line_tax', header: string): DataTableColumn<CustomsLine> {
+  return {
+    key,
+    header,
+    width: 175,
+    align: 'right',
+    cell: (row) => <span className="tabular-nums">{formatVnd(row[key])}</span>,
   }
 }
 
@@ -34,7 +46,7 @@ function rate(key: keyof CustomsLine, header: string): DataTableColumn<CustomsLi
   return {
     key,
     header,
-    width: 100,
+    width: 130,
     align: 'right',
     cell: (row) => <span className="tabular-nums">{formatRate(row[key] as number | null)}</span>,
   }
@@ -97,7 +109,7 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     cell: (row) => <span className="tabular-nums">{formatQuantity(row.quantity)}</span>,
   },
   plain('unit_code', 'Đơn vị tính', 90),
-  plain('origin_country', 'Tên nuớc xuất xứ', 130),
+  plain('origin_country', 'Tên nuớc xuất xứ', 150),
   plain('contract_no', 'Số hợp đồng', 140),
   {
     key: 'contract_date',
@@ -105,11 +117,11 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
     width: 120,
     cell: (row) => formatDate(row.contract_date),
   },
-  plain('incoterm', 'Điều kiện giao hàng', 110),
+  plain('incoterm', 'Điều kiện giao hàng', 155),
   {
     key: 'transport_mode',
     header: 'Phương tiện vận chuyển',
-    width: 150,
+    width: 190,
     cell: (row) => row.transport_label || String(row.transport_mode ?? ''),
   },
   rate('rate_import', 'Thuế suất XNK'),
@@ -121,7 +133,11 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
   money('tax_vat', 'Thuế VAT'),
   money('tax_environment', 'Thuế môi trường'),
   money('tax_safeguard', 'Thuế tự vệ'),
-  plain('import_country', 'Nước nhập khẩu', 120),
+  plain('import_country', 'Nước nhập khẩu', 140),
   plain('active_ingredient', 'Hoạt chất (suy ra)', 160, true),
-  plain('formulation', 'Hàm lượng / dạng (suy ra)', 150),
+  plain('formulation', 'Hàm lượng / dạng (suy ra)', 195),
+  //  bao-CR-493 — hai cột VND đứng SAU hai cột suy ra, cùng thứ tự với tệp Excel xuất ra;
+  //  bài kiểm cột giữ đúng thứ tự GTT02 phía trước.
+  vnd('price_vnd_flat', 'Giá VND (thuế NK 7%)'),
+  vnd('price_vnd_line_tax', 'Giá VND (thuế suất dòng)'),
 ]

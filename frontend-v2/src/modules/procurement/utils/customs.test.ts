@@ -9,6 +9,7 @@ import type {
   CustomsSeriesPoint,
 } from '../types/customs'
 import {
+  addNamedId,
   buildCompareParams,
   buildCustomsParams,
   buildPriceAxis,
@@ -20,8 +21,11 @@ import {
   formatBatchStatus,
   formatCompactQuantity,
   formatThresholdKg,
+  formatVnd,
   regulationSeverity,
+  removeNamedId,
   sortRegulationsBySeverity,
+  splitNamedIds,
   formatCustomsUnit,
   formatCustomsUnitChip,
   formatRegulationListLabel,
@@ -454,5 +458,37 @@ describe('sortRegulationsBySeverity', () => {
 
   it('handles an empty list', () => {
     expect(sortRegulationsBySeverity([])).toEqual([])
+  })
+})
+
+describe('nhiều doanh nghiệp / đối tác trên URL — bao-CR-493', () => {
+  it('keeps ids and names in lock-step and never duplicates a chip', () => {
+    const one = addNamedId('', '', 12, 'Công ty A')
+    expect(one).toEqual({ ids: '12', names: 'Công ty A' })
+    const two = addNamedId(one.ids, one.names, 34, 'Công ty B|C,D')
+    expect(two).toEqual({ ids: '12,34', names: 'Công ty A|Công ty B C D' })
+    expect(addNamedId(two.ids, two.names, '12', 'lại A')).toEqual(two)
+  })
+
+  it('splits back into chips and tolerates a missing name', () => {
+    expect(splitNamedIds('12,34', 'A')).toEqual([
+      { id: '12', name: 'A' },
+      { id: '34', name: '' },
+    ])
+    expect(splitNamedIds('', '')).toEqual([])
+    expect(splitNamedIds(' , 5 ,', '|X')).toEqual([{ id: '5', name: '' }])
+  })
+
+  it('removes one chip without touching the others', () => {
+    expect(removeNamedId('12,34,56', 'A|B|C', '34')).toEqual({ ids: '12,56', names: 'A|C' })
+    expect(removeNamedId('12', 'A', '12')).toEqual({ ids: '', names: '' })
+  })
+})
+
+describe('formatVnd — bao-CR-493', () => {
+  it('prints whole dong with thousands separators and a dash when empty', () => {
+    expect(formatVnd(78285.4)).toBe('78.285')
+    expect(formatVnd(null)).toBe('—')
+    expect(formatVnd(0)).toBe('0')
   })
 })

@@ -78,6 +78,11 @@ FORMULA_CAS = {
 #  tháng 8 "rẻ nhất" chỉ dựa trên 3 dòng, tháng 5 gần ngang giá dựa trên 16 dòng.
 MIN_LINES_FOR_BEST = 5
 
+#  bao-CR-493 — quy đổi VND theo yêu cầu phòng Thu mua (chị Mi, FR-PROC-2026-001 sheet 3):
+#  «Đơn giá quy đổi VND = đơn giá × tỷ giá × 1,07», 7% là thuế nhập khẩu tạm tính. Cột thứ hai
+#  dùng đúng thuế suất XNK của từng dòng (đại ca chốt 25/09/2026: có CẢ HAI cột).
+FLAT_IMPORT_TAX_RATE = 0.07
+
 #  MỘT danh sách 32 cột, đúng thứ tự và đúng tiêu đề của tệp GTT02 — vừa là chỗ
 #  khớp tiêu đề lúc nạp, vừa là nguồn dựng cột trên màn hình (02 §7). Tiêu đề giữ
 #  NGUYÊN VĂN kể cả lỗi chính tả của nguồn («nuớc»); khớp thì so theo chữ đã

@@ -27,7 +27,9 @@ const GREEN = '#16a34a'
 
 export default function CustomsChart({ filters }: { filters: CustomsFilters }) {
   const [period, setPeriod] = useState('month')
-  const [priceMode, setPriceMode] = useState('adjusted')
+  // bao-CR-493: đại ca chốt bỏ hẳn nút chọn giá — biểu đồ luôn vẽ GIÁ ĐIỀU CHỈNH (giá hải quan áp
+  // lại để tính thuế); ai cần giá khai báo thì thẻ Danh sách vẫn có đủ hai cột.
+  const priceMode = 'adjusted'
   const [chartUnit, setChartUnit] = useState('')
   const [data, setData] = useState<any>(null)
   const [err, setErr] = useState('')
@@ -58,17 +60,17 @@ export default function CustomsChart({ filters }: { filters: CustomsFilters }) {
   const years = coverage.years
   return (
     <div>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10, fontSize: 13 }}>
+      {/* bao-CR-493: Kỳ và Đơn vị nằm chung MỘT thẻ (đề xuất đại ca 25/09) — đều là cách cắt cùng một biểu đồ. */}
+      <div className="card" style={{ padding: '10px 14px', marginBottom: 12, fontSize: 13, display: 'flex',
+        flexDirection: 'column', gap: 8 }}>
         <Seg label="Kỳ" value={period} onChange={setPeriod} options={PERIODS} />
-        <Seg label="Giá" value={priceMode} onChange={setPriceMode}
-          options={[{ value: 'adjusted', label: 'Ưu tiên giá điều chỉnh' }, { value: 'declared', label: 'Chỉ giá khai báo' }]} />
-      </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12, fontSize: 13 }}>
-        <span style={{ color: 'var(--muted)' }}>Đơn vị (vẽ từng đơn vị một):</span>
-        {units.map((x: any) => (
-          <button key={x.unit} className={x.unit === unit ? 'btn' : 'btn ghost'} style={{ padding: '3px 10px' }}
-            onClick={() => setChartUnit(x.unit)}>{unitChip(x.unit)} · {x.count} dòng</button>
-        ))}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ color: 'var(--muted)' }}>Đơn vị (vẽ từng đơn vị một):</span>
+          {units.map((x: any) => (
+            <button key={x.unit} className={x.unit === unit ? 'btn' : 'btn ghost'} style={{ padding: '3px 10px' }}
+              onClick={() => setChartUnit(x.unit)}>{unitChip(x.unit)} · {x.count} dòng</button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>

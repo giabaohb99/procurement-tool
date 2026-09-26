@@ -8543,3 +8543,33 @@ model.py · backend/app/modules/assistant/tools/google_tool.py · tools/__init__
 celery_app.py · backend/app/modules/employee/service.py · backend/migrations/versions/d2f7b4a9c6e1_* ·
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py
+
+## bao-CR-493 | Tra cứu giá hải quan đợt 1: hai cột VND, lọc thêm, lịch sử nạp trên trang, tải lại tệp gốc
+- status: xong
+- date: 2026-09-25
+Phòng Thu mua (chị Mi) gửi tệp yêu cầu tính năng tra cứu giá theo mã HS ngày 22/09, ghi chú thêm
+25/09. Em đối chiếu với bản đang chạy, đại ca chốt bốn điểm: hai cột VND, bỏ nút chọn giá trên
+biểu đồ, không cần số tờ khai, lưu bộ lọc riêng từng người; Excel định dạng và in báo giá chờ mẫu.
+Việc chia bốn đợt, đợt hai và ba giao Erp Agent 1 (bao-CR-494, 495).
+
+Đợt một đã làm: hai cột đơn giá quy đổi VND (theo thuế nhập khẩu 7% tạm tính và theo thuế suất
+XNK của chính dòng), tính từ giá hiệu lực nhân tỷ giá USD, có ở bảng, chi tiết dòng và tệp Excel;
+bỏ hẳn nút chọn giá trên biểu đồ, luôn dùng giá điều chỉnh; gom ô Kỳ và Đơn vị vào một thẻ; nút
+tải lại tệp GTT02 gốc của lô nạp (lô nạp bằng script không có tệp thì ẩn nút); lịch sử nạp thành
+thẻ thứ sáu trên trang thay cho hộp thoại; doanh nghiệp và đối tác chọn được nhiều, mỗi người một
+chip gỡ riêng; hàng «Lọc thêm» với sáu ô: nguyên tệ, điều kiện giao hàng, tệp nguồn, khoảng đơn
+giá, khoảng lượng, khoảng tỷ giá. Đại ca thử ở local thấy ổn, góp ý tiêu đề cột bị cắt: đã nới bề
+rộng cột và đổi khóa nhớ bố cục. Đại ca chốt bê luôn sang bản cũ: đã bê đủ bảy mục sang màn Tra cứu
+giá hải quan bản cũ; sáng 26/09 thêm hai nút lọc theo doanh nghiệp / đối tác vào hộp chi tiết dòng
+bản cũ nên bản cũ cũng chọn nhiều đối tác được (đại ca chốt v1 và v2 phải cùng chức năng). Làm trong
+worktree riêng để không đụng cây chung. Chưa commit.
+
+Kiểm: 12 bài kiểm backend mới + 32 bài cũ của phân hệ xanh; giao diện mới kiểm kiểu 0 lỗi, kiểm
+nếp mã 0 lỗi, 596 bài phân hệ thu mua xanh (4 bài util mới); bản cũ kiểm kiểu giữ 4 lỗi nền.
+
+Mã nguồn: backend/app/modules/customs/service.py (compute_vnd_prices, _id_list, apply_line_filters,
+list_options, export_lines_xlsx) · controller.py (line_filters, download_batch_file) · constants.py ·
+frontend-v2 customs-price-page.tsx · customs-history-panel.tsx · customs-price-chart.tsx ·
+customs-line-detail-dialog.tsx · customs-line-columns.tsx · types/customs.ts · utils/customs.ts ·
+api/customs-api.ts · frontend CustomsPrices.tsx · CustomsChart.tsx · CustomsHistoryPanel.tsx ·
+CustomsLineDetail.tsx · customs-shared.ts · test/backend/test_hai_quan_dot1_cr493.py · doc/erp/hai-quan/01 §11

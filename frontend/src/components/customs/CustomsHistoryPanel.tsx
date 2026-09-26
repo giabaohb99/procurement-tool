@@ -1,6 +1,8 @@
 // bao-CR-470 — lịch sử các lần nạp dữ liệu hải quan (lô chạy thử + lô ghi thật) và nút hoàn tác.
 // Lô đã THAY dòng cũ (deleted_count > 0) không hoàn tác được: dòng cũ đã xóa lúc ghi, hoàn tác
 // chỉ xóa được dòng mới và để lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
+// bao-CR-493: từ hộp thoại thành MỘT THẺ trên trang (thẻ «Lịch sử nạp», yêu cầu F11 phòng Thu mua)
+// và thêm nút tải lại tệp GTT02 gốc — chỉ lô nạp qua màn hình có tệp (`has_file`).
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
@@ -9,11 +11,11 @@ import Pagination from '../Pagination'
 import { toast } from '../toast'
 import CustomsModal from './CustomsModal'
 import { StatusBadge } from './CustomsImportDialog'
-import { fmtDate } from './customs-shared'
+import { blobErrorMessage, downloadBlob, fmtDate } from './customs-shared'
 
 const fmtDateTime = (iso?: string) => (iso ? `${fmtDate(iso)} ${iso.slice(11, 16)}` : '—')
 
-export default function CustomsHistoryDialog({ onClose, onChanged }: { onClose: () => void; onChanged: () => void }) {
+export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => void }) {
   const { can } = useAuth()
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
@@ -41,8 +43,20 @@ export default function CustomsHistoryDialog({ onClose, onChanged }: { onClose: 
     } catch { /* interceptor đã báo lỗi */ }
   }
 
+  async function downloadSource(b: any) {
+    try {
+      await downloadBlob(api, `/api/customs/imports/${b.id}/file`, b.filename || `gtt02-${b.id}.xls`)
+    } catch (e: any) {
+      toast.error(await blobErrorMessage(e, 'Không tải được tệp gốc'))
+    }
+  }
+
   return (
-    <CustomsModal title="Lịch sử nạp dữ liệu hải quan" width={1000} onClose={onClose}>
+    <div className="card table-card">
+      <div style={{ padding: '10px 14px 0', fontSize: 13, color: 'var(--muted)' }}>
+        Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Lô đã thay dòng cũ thì không hoàn tác được; lô nạp qua
+        màn hình tải lại được tệp gốc.
+      </div>
       <div className="table-scroll"><table>
         <thead><tr>
           <th>#</th><th>Tệp</th><th>Loại</th><th>Trạng thái</th><th style={{ textAlign: 'right' }}>Dòng hàng</th>
@@ -63,6 +77,11 @@ export default function CustomsHistoryDialog({ onClose, onChanged }: { onClose: 
               <td>{b.created_by_name || '—'}</td>
               <td>{fmtDateTime(b.finished_at || b.created_at)}</td>
               <td style={{ whiteSpace: 'nowrap' }}>
+                {b.has_file && (
+                  <button className="btn ghost" title="Tải lại tệp gốc đã nạp" onClick={() => downloadSource(b)}>
+                    <i className="ti ti-download" />
+                  </button>
+                )}
                 <button className="btn ghost" title="Nhật ký dòng lỗi / cảnh báo" onClick={() => setLogsOf(b)}>
                   <i className="ti ti-list-details" />
                 </button>
@@ -84,7 +103,7 @@ export default function CustomsHistoryDialog({ onClose, onChanged }: { onClose: 
         <Pagination page={page} pageSize={20} total={total} hideSize onChange={(p) => setPage(p)} />
       </div>
       {logsOf && <BatchLogs batch={logsOf} onClose={() => setLogsOf(null)} />}
-    </CustomsModal>
+    </div>
   )
 }
 

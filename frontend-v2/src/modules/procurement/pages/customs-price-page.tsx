@@ -7,9 +7,15 @@
 //
 // Bộ lọc và thẻ đang mở nằm TRÊN ĐƯỜNG DẪN — gửi link cho người khác là họ thấy đúng kết
 // quả đang xem. Thanh lọc dùng chung cho cả năm thẻ, đổi thẻ không mất bộ lọc.
+//
+// bao-CR-493 (yêu cầu phòng Thu mua 25/09): thẻ thứ sáu «Lịch sử nạp» thay hộp thoại; hàng
+// «Lọc thêm» với sáu ô theo sheet 4 (nguyên tệ, giao hàng, lô nguồn, ba khoảng số); doanh
+// nghiệp / đối tác chọn được NHIỀU (chip cộng dồn, id nối dấu phẩy trên URL).
 import {
   BookOpen,
   ChartLine,
+  ChevronDown,
+  ChevronUp,
   Download,
   Factory,
   FilterX,
@@ -36,6 +42,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
@@ -48,7 +55,7 @@ import { exportCustomsLines } from '../api/customs-api'
 import { CustomsCompareTab } from '../components/customs/customs-compare-tab'
 import { CustomsNeedFilterState, CustomsNotice } from '../components/customs/customs-controls'
 import { CustomsCoverageStrip } from '../components/customs/customs-coverage-strip'
-import { CustomsHistoryDialog } from '../components/customs/customs-history-dialog'
+import { CustomsHistoryPanel } from '../components/customs/customs-history-panel'
 import { CustomsImportDialog } from '../components/customs/customs-import-dialog'
 import { CustomsImportersTab } from '../components/customs/customs-importers-tab'
 import { CustomsLegalTab } from '../components/customs/customs-legal-tab'
@@ -64,12 +71,15 @@ import {
 } from '../hooks/use-customs'
 import type { CustomsFilters, CustomsOptionItem } from '../types/customs'
 import {
+  addNamedId,
   buildCustomsParams,
   formatBannedLabel,
   formatThresholdKg,
   hasChartFilter,
+  removeNamedId,
   resolveLinesEmptyMessage,
   sortRegulationsBySeverity,
+  splitNamedIds,
 } from '../utils/customs'
 
 const TABS = [
@@ -78,12 +88,17 @@ const TABS = [
   { key: 'importers', label: 'Nhà nhập khẩu', icon: Factory },
   { key: 'compare', label: 'So sánh', icon: GitCompareArrows },
   { key: 'legal', label: 'Pháp lý & thuế', icon: Landmark },
+  { key: 'history', label: 'Lịch sử nạp', icon: History },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
 
-/** Hậu tố `-v2`: bố cục cũ (ẩn 22 cột) đã lưu trong máy người dùng không được thắng bố cục mới. */
-const STORAGE_KEY = 'procurement.customs-lines-v2'
+/**
+ * Hậu tố `-v2`: bố cục cũ (ẩn 22 cột) đã lưu trong máy người dùng không được thắng bố cục mới.
+ * `-v3` (bao-CR-493): bề rộng cột mới đủ cho tiêu đề + hai cột VND — bản lưu cũ giữ bề rộng cũ
+ * nên tiêu đề vẫn cụt, phải đổi khóa để bố cục mới thắng.
+ */
+const STORAGE_KEY = 'procurement.customs-lines-v3'
 const DEFAULT_PAGE_SIZE = 50
 /** Tham số lọc trên URL — "Xóa lọc" dọn đúng bộ này, giữ nguyên thẻ đang mở. */
 const FILTER_PARAMS = [
@@ -98,10 +113,34 @@ const FILTER_PARAMS = [
   'partner_name',
   'date_from',
   'date_to',
+  'currency',
+  'incoterm',
+  'batch_id',
+  'price_min',
+  'price_max',
+  'qty_min',
+  'qty_max',
+  'rate_min',
+  'rate_max',
+] as const
+/** Sáu ô của hàng «Lọc thêm» — có giá trị thì hàng tự mở khi vào trang bằng link. */
+const EXTRA_FILTER_PARAMS = [
+  'currency',
+  'incoterm',
+  'batch_id',
+  'price_min',
+  'price_max',
+  'qty_min',
+  'qty_max',
+  'rate_min',
+  'rate_max',
 ] as const
 
 function toSelectOptions(items: CustomsOptionItem[] | undefined) {
-  return (items ?? []).map((item) => ({ value: item.value, label: `${item.value} (${item.count})` }))
+  return (items ?? []).map((item) => ({
+    value: item.value,
+    label: `${item.label ?? item.value} (${item.count})`,
+  }))
 }
 
 export function CustomsPricePage() {
@@ -112,6 +151,15 @@ export function CustomsPricePage() {
   const [unit, setUnit] = useUrlParamState('unit', '')
   const [formulation, setFormulation] = useUrlParamState('formulation', '')
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
+  const [currency, setCurrency] = useUrlParamState('currency', '')
+  const [incoterm, setIncoterm] = useUrlParamState('incoterm', '')
+  const [batchId, setBatchId] = useUrlParamState('batch_id', '')
+  const [priceMin, setPriceMin] = useUrlParamState('price_min', '')
+  const [priceMax, setPriceMax] = useUrlParamState('price_max', '')
+  const [qtyMin, setQtyMin] = useUrlParamState('qty_min', '')
+  const [qtyMax, setQtyMax] = useUrlParamState('qty_max', '')
+  const [rateMin, setRateMin] = useUrlParamState('rate_min', '')
+  const [rateMax, setRateMax] = useUrlParamState('rate_max', '')
   const [rawTab, setTab] = useUrlParamState('tab', 'list')
   const [searchParams] = useSearchParams()
   const setUrlParams = useSetUrlParams()
@@ -124,8 +172,11 @@ export function CustomsPricePage() {
 
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [detailId, setDetailId] = useState<number | null>(null)
-  const [dialog, setDialog] = useState<'' | 'import' | 'history'>('')
+  const [importOpen, setImportOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [extraOpen, setExtraOpen] = useState(() =>
+    EXTRA_FILTER_PARAMS.some((name) => Boolean(searchParams.get(name))),
+  )
   const singleFlight = useSingleFlight()
 
   //  Từ khóa lấy bản ĐÃ HOÃN — mỗi phím gõ không bắn một lượt gọi API.
@@ -140,8 +191,36 @@ export function CustomsPricePage() {
       partner_id: partnerId,
       date_from: dateFrom,
       date_to: dateTo,
+      currency,
+      incoterm,
+      batch_id: batchId,
+      price_min: priceMin,
+      price_max: priceMax,
+      qty_min: qtyMin,
+      qty_max: qtyMax,
+      rate_min: rateMin,
+      rate_max: rateMax,
     }),
-    [debouncedValue, hsCode, origin, unit, formulation, importerId, partnerId, dateFrom, dateTo],
+    [
+      debouncedValue,
+      hsCode,
+      origin,
+      unit,
+      formulation,
+      importerId,
+      partnerId,
+      dateFrom,
+      dateTo,
+      currency,
+      incoterm,
+      batchId,
+      priceMin,
+      priceMax,
+      qtyMin,
+      qtyMax,
+      rateMin,
+      rateMax,
+    ],
   )
   const filterParams = useMemo(() => buildCustomsParams(filters), [filters])
   const [page, setPage] = usePageResetOnFilterChange([JSON.stringify(filterParams)])
@@ -157,20 +236,36 @@ export function CustomsPricePage() {
 
   const chartReady = hasChartFilter(filters)
   const filtersActive = FILTER_PARAMS.some((name) => Boolean(searchParams.get(name)))
+  //  bao-CR-493: nhiều doanh nghiệp / đối tác — mỗi người một chip, gỡ từng chip được.
+  const importerChips = useMemo(() => splitNamedIds(importerId, importerName), [importerId, importerName])
+  const partnerChips = useMemo(() => splitNamedIds(partnerId, partnerName), [partnerId, partnerName])
 
   function clearFilters() {
     setKeyword('')
     setUrlParams(Object.fromEntries(FILTER_PARAMS.map((name) => [name, null])))
   }
 
+  //  Chọn thêm từ thẻ Nhà nhập khẩu / hộp chi tiết dòng: CỘNG DỒN vào bộ lọc, không thay thế.
   function filterByImporter(id: number, name: string) {
     setDetailId(null)
-    setUrlParams({ importer_id: String(id), importer_name: name || null, tab: null })
+    const next = addNamedId(importerId, importerName, id, name)
+    setUrlParams({ importer_id: next.ids, importer_name: next.names || null, tab: null })
   }
 
   function filterByPartner(id: number, name: string) {
     setDetailId(null)
-    setUrlParams({ partner_id: String(id), partner_name: name || null, tab: null })
+    const next = addNamedId(partnerId, partnerName, id, name)
+    setUrlParams({ partner_id: next.ids, partner_name: next.names || null, tab: null })
+  }
+
+  function dropImporter(id: string) {
+    const next = removeNamedId(importerId, importerName, id)
+    setUrlParams({ importer_id: next.ids || null, importer_name: next.names || null })
+  }
+
+  function dropPartner(id: string) {
+    const next = removeNamedId(partnerId, partnerName, id)
+    setUrlParams({ partner_id: next.ids || null, partner_name: next.names || null })
   }
 
   function exportExcel() {
@@ -201,12 +296,12 @@ export function CustomsPricePage() {
                 </Link>
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={() => setDialog('history')}>
+            <Button type="button" variant="outline" onClick={() => setTab('history')}>
               <History className="size-4" />
               Lịch sử nạp
             </Button>
             {canImport && (
-              <Button type="button" onClick={() => setDialog('import')}>
+              <Button type="button" onClick={() => setImportOpen(true)}>
                 <Upload className="size-4" />
                 Nạp dữ liệu
               </Button>
@@ -278,6 +373,15 @@ export function CustomsPricePage() {
             placeholder="Ngày đăng ký từ – tới"
             className="max-md:w-full"
           />
+          <Button
+            type="button"
+            variant="ghost"
+            aria-expanded={extraOpen}
+            onClick={() => setExtraOpen((open) => !open)}
+          >
+            {extraOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            Lọc thêm
+          </Button>
           {filtersActive && (
             <Button type="button" variant="ghost" onClick={clearFilters}>
               <FilterX className="size-4" />
@@ -286,22 +390,64 @@ export function CustomsPricePage() {
           )}
         </div>
 
-        {(importerId || partnerId) && (
+        {extraOpen && (
+          /* bao-CR-493 — sáu ô theo sheet 4 của yêu cầu phòng Thu mua. Khoảng số nhập chữ, backend
+             bỏ qua ô rác; giá so trên GIÁ HIỆU LỰC (điều chỉnh nếu có). */
+          <div className="flex flex-wrap items-center gap-2" aria-label="Lọc thêm">
+            <div className="w-36 max-md:w-full">
+              <SearchSelect
+                value={currency}
+                onChange={setCurrency}
+                options={toSelectOptions(options.data?.currencies)}
+                placeholder="Nguyên tệ"
+                searchPlaceholder="Tìm nguyên tệ…"
+                clearable
+              />
+            </div>
+            <div className="w-40 max-md:w-full">
+              <SearchSelect
+                value={incoterm}
+                onChange={setIncoterm}
+                options={toSelectOptions(options.data?.incoterms)}
+                placeholder="Điều kiện giao hàng"
+                searchPlaceholder="Tìm điều kiện…"
+                clearable
+              />
+            </div>
+            <div className="w-56 max-md:w-full">
+              <SearchSelect
+                value={batchId}
+                onChange={setBatchId}
+                options={toSelectOptions(options.data?.batches)}
+                placeholder="Tệp nguồn (lô nạp)"
+                searchPlaceholder="Tìm tệp…"
+                clearable
+              />
+            </div>
+            <RangeFilter label="Đơn giá USD" from={priceMin} to={priceMax} onFrom={setPriceMin} onTo={setPriceMax} />
+            <RangeFilter label="Lượng" from={qtyMin} to={qtyMax} onFrom={setQtyMin} onTo={setQtyMax} />
+            <RangeFilter label="Tỷ giá USD" from={rateMin} to={rateMax} onFrom={setRateMin} onTo={setRateMax} />
+          </div>
+        )}
+
+        {(importerChips.length > 0 || partnerChips.length > 0) && (
           <div className="flex flex-wrap gap-2">
-            {importerId && (
+            {importerChips.map((chip) => (
               <FilterChip
-                label={`Doanh nghiệp: ${importerName || `#${importerId}`}`}
-                onRemove={() => setUrlParams({ importer_id: null, importer_name: null })}
-                removeLabel="Bỏ lọc doanh nghiệp"
+                key={`importer-${chip.id}`}
+                label={`Doanh nghiệp: ${chip.name || `#${chip.id}`}`}
+                onRemove={() => dropImporter(chip.id)}
+                removeLabel={`Bỏ lọc doanh nghiệp ${chip.name || chip.id}`}
               />
-            )}
-            {partnerId && (
+            ))}
+            {partnerChips.map((chip) => (
               <FilterChip
-                label={`Đối tác: ${partnerName || `#${partnerId}`}`}
-                onRemove={() => setUrlParams({ partner_id: null, partner_name: null })}
-                removeLabel="Bỏ lọc đối tác"
+                key={`partner-${chip.id}`}
+                label={`Đối tác: ${chip.name || `#${chip.id}`}`}
+                onRemove={() => dropPartner(chip.id)}
+                removeLabel={`Bỏ lọc đối tác ${chip.name || chip.id}`}
               />
-            )}
+            ))}
           </div>
         )}
       </Card>
@@ -409,6 +555,10 @@ export function CustomsPricePage() {
         <TabsContent value="legal" className="mt-2">
           <CustomsLegalTab filters={filters} alerts={alertItems} />
         </TabsContent>
+
+        <TabsContent value="history" className="mt-2">
+          <CustomsHistoryPanel />
+        </TabsContent>
       </Tabs>
 
       <CustomsLineDetailDialog
@@ -417,9 +567,46 @@ export function CustomsPricePage() {
         onFilterImporter={filterByImporter}
         onFilterPartner={filterByPartner}
       />
-      {dialog === 'import' && <CustomsImportDialog onClose={() => setDialog('')} />}
-      {dialog === 'history' && <CustomsHistoryDialog onClose={() => setDialog('')} />}
+      {importOpen && <CustomsImportDialog onClose={() => setImportOpen(false)} />}
     </PageContainer>
+  )
+}
+
+/** Cặp ô «từ – tới» cho một khoảng số; để trống một đầu là chỉ chặn đầu kia. */
+function RangeFilter({
+  label,
+  from,
+  to,
+  onFrom,
+  onTo,
+}: {
+  label: string
+  from: string
+  to: string
+  onFrom: (value: string) => void
+  onTo: (value: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-1 text-sm" role="group" aria-label={label}>
+      <span className="text-muted-foreground">{label}</span>
+      <Input
+        inputMode="decimal"
+        className="h-9 w-24"
+        value={from}
+        placeholder="từ"
+        aria-label={`${label} từ`}
+        onChange={(event) => onFrom(event.target.value)}
+      />
+      <span className="text-muted-foreground">–</span>
+      <Input
+        inputMode="decimal"
+        className="h-9 w-24"
+        value={to}
+        placeholder="tới"
+        aria-label={`${label} tới`}
+        onChange={(event) => onTo(event.target.value)}
+      />
+    </div>
   )
 }
 

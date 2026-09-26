@@ -21,8 +21,8 @@ from sqlalchemy.orm import Session
 from app.modules.import_tool.model import ImportBatch, ImportMode, ImportModule, ImportStatus
 
 from . import reader
-from .constants import (COLUMNS, FORMULA_CAS, MIN_LINES_FOR_BEST, REGULATION_LIST_LABELS,
-                        TRANSPORT_LABELS, RegulationList)
+from .constants import (COLUMNS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST,
+                        REGULATION_LIST_LABELS, TRANSPORT_LABELS, RegulationList)
 from .model import CustomsLine, CustomsParty, CustomsRegulation, CustomsTariff
 
 PERIODS = ("month", "quarter", "year")
@@ -32,11 +32,38 @@ NEED_FILTER_MSG = "Nhập tên hàng / hoạt chất hoặc chọn mã HS để 
 
 
 # ── Lọc ─────────────────────────────────────────────────────────────────────
+def _id_list(value) -> list[int]:
+    """Một id, một chuỗi «1,2,3» hay một danh sách → danh sách id > 0 (bao-CR-493: chọn NHIỀU)."""
+    if value in (None, "", 0):
+        return []
+    items = value if isinstance(value, (list, tuple)) else str(value).split(",")
+    out = []
+    for v in items:
+        try:
+            n = int(str(v).strip())
+        except (TypeError, ValueError):
+            continue
+        if n > 0:
+            out.append(n)
+    return out
+
+
+def _as_number(value):
+    try:
+        return float(value) if value not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
 def apply_line_filters(q, f: dict):
     """Bộ lọc dùng CHUNG cho danh sách, biểu đồ, xếp hạng, xuất Excel — bốn nơi một luật.
 
     `q` (từ khóa) khớp CẢ tên hàng lẫn hoạt chất đã gắn: gõ ATRAZINE ra cả dòng ghi tên
     thương mại mà hoạt chất suy ra được là atrazine (HQ4).
+
+    bao-CR-493 thêm theo sheet 4 của yêu cầu phòng Thu mua: doanh nghiệp / đối tác chọn NHIỀU
+    (HOẶC), nguyên tệ, điều kiện giao hàng, khoảng đơn giá (giá HIỆU LỰC — điều chỉnh nếu có),
+    khoảng lượng, khoảng tỷ giá USD, lô nạp nguồn. Khoảng số bỏ trống một đầu thì chỉ chặn một đầu.
     """
     term = (f.get("q") or "").strip()
     if term:
@@ -51,9 +78,23 @@ def apply_line_filters(q, f: dict):
     for key, col in (("origin", CustomsLine.origin_country), ("unit", CustomsLine.unit_code)):
         if f.get(key):
             q = q.filter(col == f[key].strip().upper())
-    for key, col in (("importer_id", CustomsLine.importer_id), ("partner_id", CustomsLine.partner_id)):
+    for key, col in (("importer_id", CustomsLine.importer_id), ("partner_id", CustomsLine.partner_id),
+                     ("batch_id", CustomsLine.batch_id)):
+        ids = _id_list(f.get(key))
+        if ids:
+            q = q.filter(col.in_(ids))
+    for key, col in (("currency", CustomsLine.currency), ("incoterm", CustomsLine.incoterm)):
         if f.get(key):
-            q = q.filter(col == int(f[key]))
+            q = q.filter(col == str(f[key]).strip().upper())
+    effective_price = func.coalesce(CustomsLine.adj_price_usd, CustomsLine.price_usd)
+    for key_lo, key_hi, col in (("price_min", "price_max", effective_price),
+                                ("qty_min", "qty_max", CustomsLine.quantity),
+                                ("rate_min", "rate_max", CustomsLine.usd_rate)):
+        lo, hi = _as_number(f.get(key_lo)), _as_number(f.get(key_hi))
+        if lo is not None:
+            q = q.filter(col >= lo)
+        if hi is not None:
+            q = q.filter(col <= hi)
     if f.get("date_from"):
         q = q.filter(CustomsLine.reg_date >= _as_date(f["date_from"], start=True))
     if f.get("date_to"):
@@ -84,6 +125,24 @@ def _num(v):
     return float(v) if isinstance(v, Decimal) else v
 
 
+def compute_vnd_prices(ln: CustomsLine) -> tuple[float | None, float | None]:
+    """Hai cột «Đơn giá quy đổi VND» (bao-CR-493) → (theo thuế 7% tạm tính, theo thuế suất XNK của dòng).
+
+    Gốc quy đổi là GIÁ HIỆU LỰC (điều chỉnh nếu có, không thì khai báo — cùng luật với biểu đồ)
+    nhân tỷ giá USD của ngày đăng ký. Thiếu tỷ giá thì cả hai cột trống; thiếu thuế suất XNK thì
+    chỉ cột theo dòng trống — không tự điền 7% vào đó, hai cột phải nói hai chuyện khác nhau.
+    Làm tròn tới đồng.
+    """
+    price = ln.adj_price_usd if ln.adj_price_usd is not None else ln.price_usd
+    rate = ln.usd_rate if ln.usd_rate is not None else (ln.fx_rate if (ln.currency or "").upper() == "USD" else None)
+    if price is None or rate is None or float(rate) <= 0:
+        return None, None
+    base = float(price) * float(rate)
+    flat = round(base * (1 + FLAT_IMPORT_TAX_RATE))
+    line_tax = round(base * (1 + float(ln.rate_import) / 100)) if ln.rate_import is not None else None
+    return flat, line_tax
+
+
 def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
     """Đủ 32 trường theo khóa của `COLUMNS` + vài trường dẫn xuất. Nối tên đối tượng
     bằng MỘT truy vấn cho cả trang, không truy vấn theo từng dòng."""
@@ -110,6 +169,7 @@ def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
                 v = getattr(ln, key)
                 d[key] = v.isoformat() if isinstance(v, date) else _num(v)
         d["effective_price_usd"] = _num(ln.adj_price_usd if ln.adj_price_usd is not None else ln.price_usd)
+        d["price_vnd_flat"], d["price_vnd_line_tax"] = compute_vnd_prices(ln)
         out.append(d)
     return out
 
@@ -469,9 +529,17 @@ def list_options(db: Session) -> dict:
         rows = (db.query(col, func.count(CustomsLine.id)).filter(col != "")
                 .group_by(col).order_by(func.count(CustomsLine.id).desc()).limit(limit).all())
         return [{"value": v, "count": n} for v, n in rows]
+    #  bao-CR-493: lô nạp làm ô lọc «tệp nguồn» (sheet 4 mục 13) — chỉ lô ghi thật đã xong, mới nhất trước.
+    batches = (db.query(ImportBatch.id, ImportBatch.filename, ImportBatch.created_count)
+               .filter(ImportBatch.module == ImportModule.CUSTOMS_DECLARATION,
+                       ImportBatch.mode == ImportMode.APPLY, ImportBatch.status == ImportStatus.DONE)
+               .order_by(ImportBatch.id.desc()).limit(100).all())
     return {"hs_codes": distinct(CustomsLine.hs_code), "origins": distinct(CustomsLine.origin_country),
             "units": distinct(CustomsLine.unit_code), "ingredients": distinct(CustomsLine.active_ingredient, 300),
             "formulations": distinct(CustomsLine.formulation, 300),
+            "currencies": distinct(CustomsLine.currency), "incoterms": distinct(CustomsLine.incoterm),
+            "batches": [{"value": str(b.id), "label": f"#{b.id} {b.filename}", "count": b.created_count or 0}
+                        for b in batches],
             "ingredient_coverage": _ingredient_coverage(db)}
 
 
@@ -499,11 +567,14 @@ def export_lines_xlsx(db: Session, f: dict) -> bytes:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Tra cuu gia hai quan"
-    header = [label for _, label in COLUMNS] + ["Hoạt chất (suy ra)", "Hàm lượng / dạng (suy ra)"]
+    header = [label for _, label in COLUMNS] + ["Hoạt chất (suy ra)", "Hàm lượng / dạng (suy ra)",
+                                                 "Đơn giá quy đổi VND (thuế NK 7%)",
+                                                 "Đơn giá quy đổi VND (theo thuế suất XNK)"]
     ws.append(header)
     for d in lines:
         row = [d.get("transport_label") if k == "transport_mode" else d.get(k) for k, _ in COLUMNS]
-        ws.append(row + [d.get("active_ingredient"), d.get("formulation")])
+        ws.append(row + [d.get("active_ingredient"), d.get("formulation"),
+                         d.get("price_vnd_flat"), d.get("price_vnd_line_tax")])
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()

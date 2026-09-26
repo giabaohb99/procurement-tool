@@ -9,15 +9,55 @@ export type CustomsFilters = {
   origin: string
   unit: string
   formulation: string
-  importer_id: string
-  importer_name: string   // chỉ để hiện chip "đang lọc theo doanh nghiệp", không gửi lên API
+  importer_id: string     // bao-CR-493: nhiều id nối dấu phẩy («12,34»), backend tự tách, nhiều là HOẶC
+  importer_name: string   // chỉ để hiện chip "đang lọc theo doanh nghiệp", không gửi lên API; nhiều tên nối «|»
+  partner_id: string      // bao-CR-493: đối tác nước ngoài, cùng luật «nhiều id nối dấu phẩy»
+  partner_name: string    // chỉ để in chip, không gửi lên API
   date_from: string
   date_to: string
+  // bao-CR-493 — sáu ô «Lọc thêm» theo sheet 4 yêu cầu phòng Thu mua. Rỗng = không lọc.
+  currency: string
+  incoterm: string
+  batch_id: string
+  price_min: string
+  price_max: string
+  qty_min: string
+  qty_max: string
+  rate_min: string
+  rate_max: string
 }
 
 export const EMPTY_FILTERS: CustomsFilters = {
   q: '', hs_code: '', origin: '', unit: '', formulation: '', importer_id: '', importer_name: '',
-  date_from: '', date_to: '',
+  partner_id: '', partner_name: '', date_from: '', date_to: '',
+  currency: '', incoterm: '', batch_id: '', price_min: '', price_max: '', qty_min: '', qty_max: '',
+  rate_min: '', rate_max: '',
+}
+
+/** Sáu ô của hàng «Lọc thêm» — có giá trị thì hàng tự mở. */
+export const EXTRA_FILTER_KEYS: (keyof CustomsFilters)[] = [
+  'currency', 'incoterm', 'batch_id', 'price_min', 'price_max', 'qty_min', 'qty_max', 'rate_min', 'rate_max',
+]
+
+// bao-CR-493 — doanh nghiệp chọn NHIỀU: `importer_id` là id nối dấu phẩy, `importer_name` là tên nối «|»
+// cùng thứ tự (tên chỉ để in chip). Ba hàm dưới giữ hai chuỗi luôn song song.
+export type NamedId = { id: string; name: string }
+export function splitNamedIds(ids: string, names: string): NamedId[] {
+  const idList = ids.split(',').map((v) => v.trim()).filter(Boolean)
+  const nameList = names.split('|')
+  return idList.map((id, i) => ({ id, name: (nameList[i] ?? '').trim() }))
+}
+export function joinNamedIds(items: NamedId[]): { ids: string; names: string } {
+  return { ids: items.map((x) => x.id).join(','), names: items.map((x) => x.name).join('|') }
+}
+export function addNamedId(ids: string, names: string, id: number | string, name: string) {
+  const key = String(id)
+  const items = splitNamedIds(ids, names)
+  if (items.some((x) => x.id === key)) return joinNamedIds(items)
+  return joinNamedIds([...items, { id: key, name: (name || '').replace(/[|,]/g, ' ').trim() }])
+}
+export function removeNamedId(ids: string, names: string, id: string) {
+  return joinNamedIds(splitNamedIds(ids, names).filter((x) => x.id !== id))
 }
 
 export const PERIODS = [
@@ -39,10 +79,32 @@ export const unitChip = (u: string) => (UNIT_LABELS[u] ? `${UNIT_LABELS[u]} (${u
 export function toParams(f: CustomsFilters): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [k, v] of Object.entries(f)) {
-    if (k === 'importer_name') continue
+    if (k === 'importer_name' || k === 'partner_name') continue
     if (v !== '' && v != null) out[k] = String(v)
   }
   return out
+}
+
+// Cột VND (bao-CR-493): tiền đồng, không lẻ.
+export const fmtVnd = (v: any) => (v == null || v === '' ? '—' : fmtVND(v))
+
+// Tải một tệp từ API (responseType blob). Câu lỗi của backend cũng về dạng blob nên đọc lại
+// thành JSON mới báo đúng lý do — dùng chung cho Xuất Excel và Tải tệp gốc (bao-CR-493).
+export async function downloadBlob(api: any, url: string, fallbackName: string, params?: Record<string, string>) {
+  const r = await api.get(url, { params, responseType: 'blob' })
+  const cd = String(r.headers['content-disposition'] || '')
+  const name = /filename="?([^";]+)"?/.exec(cd)?.[1] || fallbackName
+  const href = window.URL.createObjectURL(new Blob([r.data]))
+  const a = document.createElement('a')
+  a.href = href
+  a.setAttribute('download', name)
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(href)
+}
+export async function blobErrorMessage(e: any, fallback: string): Promise<string> {
+  try { return JSON.parse(await e?.response?.data?.text())?.error?.message || fallback } catch { return fallback }
 }
 
 // Biểu đồ / xếp hạng / so sánh chỉ chạy khi đã có từ khóa hoặc mã HS (đại ca chốt 23/09/2026):
