@@ -37,6 +37,19 @@ def department_head_block(db: Session, department_id: int) -> dict:
     return {"employee_id": head_id, **person_block(db, head_id)}
 
 
+def default_approver_to_head(doc, old_head: int = 0) -> None:
+    """Ô «Trưởng phòng phê duyệt» MẶC ĐỊNH = «Trưởng bộ phận» — bao-CR-499 (đại ca chốt 26/09/2026).
+
+    Trống, hoặc đang đúng bằng TBP CŨ (người lập chưa chọn riêng ai) thì đi theo TBP hiện tại;
+    người lập đã chọn một người khác TBP thì giữ nguyên lựa chọn đó. Chỉ gọi ở đường lập / sửa /
+    gửi duyệt — bấm Duyệt thì `stamp_approver` ghi đè người thực duyệt.
+    """
+    head = int(getattr(doc, "head_of_dept_id", 0) or 0)
+    current = int(getattr(doc, "approver_employee_id", 0) or 0)
+    if head and (not current or (old_head and current == int(old_head))):
+        doc.approver_employee_id = head
+
+
 def stamp_approver(db: Session, doc, user_id: int) -> None:
     """Ghi nhân sự vừa bấm Duyệt vào `approver_employee_id` của chứng từ (không commit)."""
     doc.approver_employee_id = employee_id_of_user(db, user_id)

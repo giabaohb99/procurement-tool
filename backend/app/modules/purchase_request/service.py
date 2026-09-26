@@ -1298,6 +1298,8 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
         pr.head_of_dept_id = find_dept_head_id(db, pr.department, pr.department_id)
     # CR-087: ghi kép hai chiều — id có thì tên chạy theo, phiếu chỉ gửi tên thì tra ra id.
     sync_head_of_dept_name(db, pr)
+    from app.core.print_signers import default_approver_to_head
+    default_approver_to_head(pr)          # bao-CR-499: mặc định = Trưởng bộ phận
     db.add(pr)
     db.commit()
     db.refresh(pr)
@@ -1334,6 +1336,7 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur
         raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
                                  "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
     old_urgent = bool(pr.is_urgent)
+    old_head = int(pr.head_of_dept_id or 0)     # bao-CR-499: để ô người duyệt đi theo TBP mới
     # supplier_req/supplier_pur xử lý riêng bên dưới (không phải cột của model)
     for key, value in data.model_dump(exclude_unset=True,
                                       exclude={"items", "supplier_req", "supplier_pur"}).items():
@@ -1354,6 +1357,8 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur
         if data.head_of_dept_id is None:
             pr.head_of_dept_id = 0
         sync_head_of_dept_name(db, pr)
+    from app.core.print_signers import default_approver_to_head
+    default_approver_to_head(pr, old_head)       # bao-CR-499
     pr.updated_by = user_id
     db.commit()
     if data.items is not None:

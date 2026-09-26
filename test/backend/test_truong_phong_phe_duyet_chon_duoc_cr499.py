@@ -94,7 +94,7 @@ def test_pr_update_can_change_the_chosen_approver_while_draft(db, seed):
     dept = _dept(db, seed)
     pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
                                            requester_id=seed.emp_req_id, department=dept.name), seed.u_req_id)
-    assert pr.approver_employee_id == 0
+    assert pr.approver_employee_id == int(pr.head_of_dept_id or 0), "mặc định = Trưởng bộ phận"
     pr_service.update_pr(db, pr.id, PRUpdate(approver_employee_id=seed.emp_tp_id), seed.u_req_id)
     db.refresh(pr)
     assert pr.approver_employee_id == seed.emp_tp_id
@@ -205,3 +205,51 @@ def test_endpoints_exist_for_all_three_documents():
     for ctl, name in ((pr_ctl, "approver_candidates_"), (sr_ctl, "approver_candidates_"),
                       (po_ctl, "approver_candidates_")):
         assert hasattr(ctl, name) and hasattr(ctl, "approver_candidates_meta")
+
+
+# ── Đại ca chốt 26/09: mặc định = Trưởng bộ phận, dùng chung bộ danh sách với ô TBP ──────────────
+
+def test_default_approver_follows_head_until_user_picks_someone_else(db, seed):
+    dept = _dept(db, seed)
+    pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
+                                           requester_id=seed.emp_req_id, department=dept.name,
+                                           head_of_dept_id=seed.emp_tp_id), seed.u_req_id)
+    assert pr.approver_employee_id == seed.emp_tp_id, "không chọn gì → mặc định bằng TBP"
+
+    #  Đổi TBP khi người duyệt vẫn là TBP cũ → người duyệt đi theo.
+    pr_service.update_pr(db, pr.id, PRUpdate(head_of_dept_id=seed.emp_nstm_id), seed.u_req_id)
+    db.refresh(pr)
+    assert pr.approver_employee_id == seed.emp_nstm_id
+
+    #  Người lập chọn riêng một người khác TBP → đổi TBP không được đè lựa chọn đó.
+    pr_service.update_pr(db, pr.id, PRUpdate(approver_employee_id=seed.emp_req_id), seed.u_req_id)
+    pr_service.update_pr(db, pr.id, PRUpdate(head_of_dept_id=seed.emp_tp_id), seed.u_req_id)
+    db.refresh(pr)
+    assert pr.approver_employee_id == seed.emp_req_id
+
+
+def test_sr_default_approver_is_the_head(db, seed):
+    from app.modules.survey_request import service as sr_service
+    dept = _dept(db, seed)
+    s = sr_service.create_sr(db, SurveyRequestCreate(company_id=seed.company_id, requester="Người YC",
+                                                     requester_id=seed.emp_req_id, department=dept.name,
+                                                     head_of_dept_id=seed.emp_tp_id), seed.u_req_id)
+    assert s.approver_employee_id == seed.emp_tp_id
+
+
+def test_pr_candidate_list_is_the_same_set_as_the_head_box(db, seed, cap_quyen):
+    dept = _dept(db, seed)
+    head, u_head = _person(db, seed, "HEADB499", dept.id)
+    cap_quyen(u_head.id, "purchase_request", scope="dept", read=True, approve=True)
+    boss, u_boss = _person(db, seed, "ALLB499", dept.id)
+    cap_quyen(u_boss.id, "purchase_request", scope="all", read=True, approve=True)
+    db.commit()
+    pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
+                                           requester_id=seed.emp_req_id, department=dept.name), seed.u_req_id)
+    same = pr_service.dept_head_candidates(db, pr)
+    got = pr_ctl.approver_candidates_(pr.id, db=db, user=USER)
+    import json
+    items = json.loads(got.body)["data"]["items"] if hasattr(got, "body") else got["data"]["items"]
+    assert [c["employee_id"] for c in items] == [c["employee_id"] for c in same]
+    ids = {c["employee_id"] for c in items}
+    assert head.id in ids and boss.id not in ids, "người duyệt MỌI phiếu (thu mua toàn quyền) không vào ô này"

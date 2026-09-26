@@ -1032,6 +1032,9 @@ export default function PurchaseRequestDetail() {
                       setPr((s: any) => ({
                         ...s,
                         head_of_dept_id: v,
+                        // bao-CR-499: người duyệt đang là TBP cũ (chưa chọn riêng) thì đi theo TBP mới.
+                        ...((!s.approver_employee_id || s.approver_employee_id === s.head_of_dept_id) && c
+                          ? { approver_employee_id: c.employee_id, approver_employee_name: c.name } : {}),
                         // Bỏ chọn → trả tên về mặc định của phòng, đừng để trống ô in.
                         head_of_dept: c ? c.name : s.head_of_dept,
                       }))
@@ -1056,9 +1059,9 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Trưởng phòng phê duyệt</label>
                 {editable && approverCands.length > 0 ? (
-                  <SearchSelect value={pr.approver_employee_id ? String(pr.approver_employee_id) : ''}
+                  <SearchSelect value={(pr.approver_employee_id || pr.head_of_dept_id) ? String(pr.approver_employee_id || pr.head_of_dept_id) : ''}
                     options={approverCands.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
-                    placeholder={pr.approver_employee_name || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
+                    placeholder={pr.approver_employee_name || pr.head_of_dept || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
                     onChange={(v) => { const c = approverCands.find((x: any) => String(x.employee_id) === v); if (c) setPr((s: any) => ({ ...s, approver_employee_id: c.employee_id, approver_employee_name: c.name })) }} />
                 ) : (
                   <input value={pr.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt phiếu này; chưa duyệt thì là người được chọn" />

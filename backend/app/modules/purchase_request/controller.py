@@ -617,20 +617,18 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
 
     Khai TRƯỚC `/{pid}` kẻo FastAPI nuốt "meta" thành id.
     """
-    from app.core.approver_candidates import candidates_for_draft, draft_fields
-    from .model import PurchaseRequest
-    fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
-    return success({"items": candidates_for_draft(db, PurchaseRequest, "purchase_request", fields)})
+    from app.core.approver_candidates import draft_fields
+    #  bao-CR-499: đại ca chốt ô này DÙNG CHUNG bộ với ô «Trưởng bộ phận» (người duyệt phạm vi phòng).
+    dep = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
+    return success({"items": service.dept_head_candidates_by_department(db, dep["department"], company_id)})
 
 
 @router.get("/{pid}/approver-candidates")
 def approver_candidates_(pid: int, db: Session = Depends(get_db),
                          user=Depends(require("purchase_request", "read"))):
     """bao-CR-499 — người duyệt được ĐÚNG chứng từ này (hỏi apply_scope hành động approve)."""
-    from app.core.approver_candidates import candidates_for_row
-    from .model import PurchaseRequest
     row = _in_scope(db, pid, user, "read")
-    return success({"items": candidates_for_row(db, PurchaseRequest, "purchase_request", row.id)})
+    return success({"items": service.dept_head_candidates(db, row)})   # chung bộ với ô TBP
 
 
 @router.get("/meta/dept-head")
@@ -960,6 +958,9 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     # được gắn phòng sau khi phiếu ra đời) rồi mới CHẶN. Đặt trước `set_status` để phiếu
     # thiếu dữ liệu không bao giờ chạm được trạng thái `submitted`.
     service.ensure_submit_ready(db, pr, user.id)
+    # bao-CR-499: phiếu cũ / phiếu chưa chọn người duyệt → mặc định Trưởng bộ phận vừa chốt ở trên.
+    from app.core.print_signers import default_approver_to_head
+    default_approver_to_head(pr)
     # CR-082: chốt cờ Đơn gấp trước khi gửi duyệt — phiếu cũ (tạo trước luật này) hoặc phiếu
     # sửa dòng bằng đường khác vẫn được đánh dấu đúng, và thông báo duyệt đi kèm mức ưu tiên thật.
     service.apply_auto_urgent(db, pr, user.id)

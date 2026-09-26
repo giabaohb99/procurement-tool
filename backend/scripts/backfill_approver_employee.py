@@ -1,4 +1,9 @@
-"""Điền lại «Trưởng phòng phê duyệt» cho chứng từ đã duyệt TRƯỚC bao-CR-490 — bao-CR-498.
+"""Điền lại «Trưởng phòng phê duyệt» — bao-CR-498 + bao-CR-499.
+
+Hai việc, cùng chỉ đụng dòng đang trống (`approver_employee_id = 0`):
+  1. Chứng từ ĐÃ DUYỆT trước bao-CR-490: điền người THỰC duyệt từ nhật ký thao tác (bao-CR-498).
+  2. YCMH / YCBG CHƯA DUYỆT (nháp · chờ duyệt · bị trả lại): điền mặc định = Trưởng bộ phận
+     (`head_of_dept_id`) — đại ca chốt 26/09/2026 ô này mặc định bằng TBP (bao-CR-499).
 
 Cột `approver_employee_id` chỉ được ghi từ lúc bấm Duyệt sau khi CR-490 lên (dev 25/09/2026).
 Phiếu duyệt trước đó ô trống, màn hình hiện «Chưa ghi nhận». Script tra nhật ký thao tác
@@ -23,6 +28,8 @@ from app.modules.purchase_request.model import STATUS_AFTER_APPROVE, PurchaseReq
 from app.modules.survey_request.model import SurveyRequest  # noqa: E402
 
 #  (model, entity trong nhật ký, trạng thái coi là ĐÃ QUA bước duyệt)
+PENDING_STATUSES = ("draft", "submitted", "rejected")
+
 TARGETS = (
     (PurchaseRequest, "purchase_request", set(STATUS_AFTER_APPROVE)),
     (SurveyRequest, "survey_request",
@@ -64,6 +71,15 @@ def backfill(db, apply: bool) -> None:
             filled += 1
         print(f"{entity}: {len(docs)} chứng từ trống · điền {filled} · không có dòng duyệt trong nhật ký "
               f"{missing} · tài khoản không gắn nhân sự {no_employee}")
+    #  Việc 2 — bao-CR-499: phiếu chưa duyệt mặc định người duyệt = Trưởng bộ phận.
+    for model, entity in ((PurchaseRequest, "purchase_request"), (SurveyRequest, "survey_request")):
+        docs = (db.query(model).filter(model.status.in_(PENDING_STATUSES), model.approver_employee_id == 0,
+                                       model.head_of_dept_id > 0).order_by(model.id).all())
+        for d in docs:
+            print(f"  {entity} {d.code}: chưa duyệt → mặc định TBP nhân sự {d.head_of_dept_id}")
+            if apply:
+                d.approver_employee_id = d.head_of_dept_id
+        print(f"{entity}: {len(docs)} phiếu chưa duyệt được điền mặc định = Trưởng bộ phận")
     if apply:
         db.commit()
         print("Đã ghi.")

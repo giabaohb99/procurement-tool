@@ -348,7 +348,15 @@ export function SurveyRequestInfoCard({
               onChange={(value) => {
                 if (value === String(data.head_of_dept_id)) return
                 const head = deptHeads.find((option) => option.id === Number(value))
-                if (head) onChange({ head_of_dept_id: head.id, head_of_dept: head.name })
+                if (!head) return
+                //  bao-CR-499: người duyệt đang là TBP cũ (chưa chọn riêng) thì đi theo TBP mới.
+                const followsHead =
+                  !data.approver_employee_id || data.approver_employee_id === data.head_of_dept_id
+                onChange({
+                  head_of_dept_id: head.id,
+                  head_of_dept: head.name,
+                  ...(followsHead ? { approver_employee_id: head.id, approver_employee_name: head.name } : {}),
+                })
               }}
             />
           ) : (
@@ -363,8 +371,9 @@ export function SurveyRequestInfoCard({
             đè người THỰC duyệt và khóa. Phiếu duyệt trước 25/09/2026 trống — scripts/backfill_approver_employee.py. */}
         <ApproverSelect
           id="sr-approver"
-          value={data.approver_employee_id ?? 0}
-          name={data.approver_employee_name ?? ''}
+          //  bao-CR-499: chưa chọn riêng thì MẶC ĐỊNH = Trưởng bộ phận (backend lưu y vậy).
+          value={data.approver_employee_id || data.head_of_dept_id}
+          name={data.approver_employee_name || (data.approver_employee_id ? '' : data.head_of_dept)}
           candidates={approverCandidates}
           editable={editing}
           onChange={onChange}

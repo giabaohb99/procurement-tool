@@ -236,20 +236,18 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
 
     Khai TRƯỚC `/{sid}` kẻo FastAPI nuốt "meta" thành id.
     """
-    from app.core.approver_candidates import candidates_for_draft, draft_fields
-    from .model import SurveyRequest
-    fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
-    return success({"items": candidates_for_draft(db, SurveyRequest, "survey_request", fields)})
+    #  bao-CR-499: dùng chung bộ với ô «Trưởng bộ phận» của YCBG — trưởng phòng mọi phòng ban.
+    from app.core.approver_candidates import department_managers
+    return success({"items": department_managers(db)})
 
 
 @router.get("/{sid}/approver-candidates")
 def approver_candidates_(sid: int, db: Session = Depends(get_db),
                          user=Depends(require("survey_request", "read"))):
     """bao-CR-499 — người duyệt được ĐÚNG chứng từ này (hỏi apply_scope hành động approve)."""
-    from app.core.approver_candidates import candidates_for_row
-    from .model import SurveyRequest
-    row = _in_scope(db, sid, user, "read")
-    return success({"items": candidates_for_row(db, SurveyRequest, "survey_request", row.id)})
+    from app.core.approver_candidates import department_managers
+    _in_scope(db, sid, user, "read")
+    return success({"items": department_managers(db)})   # chung bộ với ô TBP
 
 
 @router.get("/meta/dept-head")
@@ -438,6 +436,8 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt phiếu ở trạng thái Nháp hoặc Bị trả lại")
+    from app.core.print_signers import default_approver_to_head
+    default_approver_to_head(s)          # bao-CR-499: phiếu chưa chọn người duyệt → Trưởng bộ phận
     s = service.set_status(db, sid, "submitted", user.id)
     # CHỈ Trưởng bộ phận duyệt (1 người). Phiếu đã chọn đích danh TBP (kể cả TBP
     # phòng khác — QA 29/08) thì báo đúng người đó; chưa chọn thì lùi về TBP của

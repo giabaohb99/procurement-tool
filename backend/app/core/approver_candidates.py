@@ -70,6 +70,22 @@ def candidates_for_draft(db: Session, model, entity: str, fields: dict) -> list[
         sp.rollback()
 
 
+def department_managers(db: Session) -> list[dict]:
+    """Trưởng phòng (Department.manager_id) của mọi phòng đang hoạt động — đúng bộ ô «Trưởng bộ
+    phận» của YCBG (v2 dựng cùng danh sách ở `survey-request-info-card.tsx`)."""
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+    ids = {int(m) for (m,) in db.query(Department.manager_id).filter(Department.is_active == True,   # noqa: E712
+                                                                      Department.manager_id > 0).all()}
+    if not ids:
+        return []
+    emps = db.query(Employee).filter(Employee.id.in_(ids), Employee.status != "resigned").all()
+    out = [{"employee_id": e.id, "code": e.code or "", "name": e.full_name or "", "position": e.position or ""}
+           for e in emps]
+    out.sort(key=lambda r: (r["name"], r["employee_id"]))
+    return out
+
+
 def draft_fields(db: Session, user, department: str = "", department_id: int = 0, company_id: int = 0,
                  handler_dept_id: int = 0) -> dict:
     """Bộ cột phạm vi của chứng từ đang lập — phòng ban neo bằng id, tên chỉ là đường lùi."""

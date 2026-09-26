@@ -8566,6 +8566,12 @@ nhân sự của người lập phiếu, không lẫn người đã nghỉ, khô
 mới cũng ra đúng danh sách như khi sửa. Phiếu không có ai duyệt được thì ô nói rõ để đi kiểm
 tra phân quyền phòng ban.
 
+Chốt lại sau khi đại ca soi trên local: ô Trưởng bộ phận giữ nguyên logic cũ; ô Trưởng phòng
+phê duyệt của yêu cầu mua hàng và yêu cầu báo giá dùng chung đúng danh sách của ô Trưởng bộ
+phận, và mặc định lấy người đang ở ô Trưởng bộ phận; đổi Trưởng bộ phận thì ô này đi theo, trừ
+khi người lập đã chọn riêng người khác. Script chạy lại dữ liệu điền thêm Trưởng bộ phận cho
+phiếu chưa duyệt còn trống.
+
 Kiểm: 42 bài kiểm backend xanh trong đó 6 bài mới; giao diện v2 kiểm kiểu 0 lỗi, nếp mã 0
 lỗi, 596 bài thu mua xanh; bản v1 kiểm kiểu còn đúng 4 lỗi nền cũ.
 

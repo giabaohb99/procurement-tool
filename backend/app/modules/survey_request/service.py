@@ -179,6 +179,8 @@ def create_sr(db: Session, data, user_id: int, user=None, profile=None) -> Surve
     if not s.head_of_dept_id and not s.head_of_dept and (s.department_id or s.department):
         s.head_of_dept_id = find_dept_head_id(db, s.department, s.department_id)
     sync_employee_ref(db, s, "head_of_dept_id", "head_of_dept")   # CR-087
+    from app.core.print_signers import default_approver_to_head
+    default_approver_to_head(s)           # bao-CR-499: mặc định = Trưởng bộ phận
     db.add(s)
     db.commit()
     db.refresh(s)
@@ -196,6 +198,7 @@ def update_sr(db: Session, sid: int, data, user_id: int, user=None, profile=None
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ sửa được khi phiếu ở trạng thái Nháp hoặc Bị trả lại "
                                  "(phiếu Đã từ chối đã khóa — hãy Nhân bản thành phiếu mới).")
+    old_head = int(s.head_of_dept_id or 0)     # bao-CR-499
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
         setattr(s, k, v)
     # CR-086: FE cũ chỉ gửi TÊN phòng → bỏ id cũ rồi tra lại từ tên; gửi kèm id thì id thắng.
@@ -212,6 +215,8 @@ def update_sr(db: Session, sid: int, data, user_id: int, user=None, profile=None
     if not picked_head and (s.department_id or s.department):
         s.head_of_dept_id = find_dept_head_id(db, s.department, s.department_id) or s.head_of_dept_id
     sync_employee_ref(db, s, "head_of_dept_id", "head_of_dept")   # CR-087
+    from app.core.print_signers import default_approver_to_head
+    default_approver_to_head(s, old_head)        # bao-CR-499
     s.updated_by = user_id
     db.commit()
     ordered = None

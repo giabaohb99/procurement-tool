@@ -196,7 +196,13 @@ describe('PurchaseRequestInfoCard — Trưởng bộ phận', () => {
 
     expect(screen.queryByRole('button', { name: 'Lê Văn Trưởng - Trưởng phòng' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Đỗ Văn Phó' }))
-    expect(onChange).toHaveBeenCalledWith({ head_of_dept_id: 51, head_of_dept: 'Đỗ Văn Phó' })
+    //  bao-CR-499: phiếu chưa chọn riêng người duyệt → ô «Trưởng phòng phê duyệt» đi theo TBP mới.
+    expect(onChange).toHaveBeenCalledWith({
+      head_of_dept_id: 51,
+      head_of_dept: 'Đỗ Văn Phó',
+      approver_employee_id: 51,
+      approver_employee_name: 'Đỗ Văn Phó',
+    })
   })
 })
 

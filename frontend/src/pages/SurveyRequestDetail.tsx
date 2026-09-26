@@ -852,9 +852,9 @@ export default function SurveyRequestDetail() {
               <div className="form-row">
                 <label>Trưởng phòng phê duyệt</label>
                 {editable && approverCands.length > 0 ? (
-                  <SearchSelect value={sv.approver_employee_id ? String(sv.approver_employee_id) : ''}
+                  <SearchSelect value={(sv.approver_employee_id || sv.head_of_dept_id) ? String(sv.approver_employee_id || sv.head_of_dept_id) : ''}
                     options={approverCands.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
-                    placeholder={sv.approver_employee_name || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
+                    placeholder={sv.approver_employee_name || sv.head_of_dept || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
                     onChange={(v) => { const c = approverCands.find((x: any) => String(x.employee_id) === v); if (c) setSv((s: any) => ({ ...s, approver_employee_id: c.employee_id, approver_employee_name: c.name })) }} />
                 ) : (
                   <input value={sv.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt phiếu này; chưa duyệt thì là người được chọn" />
