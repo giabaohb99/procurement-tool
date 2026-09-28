@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type {
   HangingSummary,
+  PaymentRefreshPlan,
   PaymentRequest,
   PaymentRequestCreateInput,
   PaymentRequestPrint,
@@ -56,4 +57,14 @@ export const paymentRequestApi = {
   /** CR-268 — ghi nhận NCC hoàn tiền phần treo. `amount` 0/bỏ trống = hoàn toàn bộ. */
   refund: (id: number, payload: { amount: number; note: string }) =>
     apiPost<PaymentRequest>(`${BASE_URL}/${id}/refund`, payload),
+
+  /** bao-CR-509 — xem trước số mới theo công nợ hiện tại (KHÔNG ghi). */
+  refreshPreview: (id: number) => apiGet<PaymentRefreshPlan>(`${BASE_URL}/${id}/refresh-preview`),
+
+  /**
+   * bao-CR-509 — ghi số mới theo công nợ vào phiếu Nháp. Không gửi số nào lên: backend
+   * tính lại từ DB lúc ghi, vì công nợ có thể đổi giữa lúc xem trước và lúc bấm.
+   */
+  refreshFromPayables: (id: number) =>
+    apiPost<PaymentRequest>(`${BASE_URL}/${id}/refresh-from-payables`),
 }

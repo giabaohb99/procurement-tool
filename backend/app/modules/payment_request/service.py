@@ -85,8 +85,23 @@ def matching_payables(db: Session, supplier_code: str, source_type: str,
         Payable.invoice_no == invoice_no).all()
 
 
-def delivery_invoice_date(db: Session, payables: list[Payable]) -> str:
-    """Ngày hóa đơn gốc = tab_po_delivery.invoice_date hoặc POItem.invoice_date hoặc incur_date của đợt giao."""
+def payables_of_line(db: Session, req: PaymentRequest, ln: PaymentRequestLine) -> list[Payable]:
+    """Các khoản công nợ mà MỘT dòng phiếu đang trỏ tới — khớp (NCC + loại + mã PO + số HĐ),
+    không khớp được thì lùi về `payable_id` của dòng. Cùng luật với lúc chi tiền (`set_status`)
+    nên số hiển thị và số sẽ bị trừ khi chi không lệch nhau."""
+    pays = matching_payables(db, req.supplier_code, req.source_type, ln.po_code, ln.invoice_no)
+    if not pays and ln.payable_id:
+        p = db.get(Payable, ln.payable_id)
+        pays = [p] if p else []
+    return pays
+
+
+def delivery_invoice_date(db: Session, payables: list[Payable], use_incur_date: bool = True) -> str:
+    """Ngày hóa đơn gốc = tab_po_delivery.invoice_date hoặc POItem.invoice_date hoặc incur_date của đợt giao.
+
+    `use_incur_date=False` (bao-CR-509): chỉ lấy ngày hóa đơn GÕ THẬT trên đợt giao / dòng ĐMH,
+    bỏ nấc lùi về ngày nhận hàng — nấc đó là giá trị mặc định chứ không phải dữ liệu, không
+    được đè lên ngày người lập đã gõ tay trên phiếu."""
     from app.modules.purchase_order.model import PODelivery, POItem
     for p in payables:
         if not p:
@@ -101,7 +116,7 @@ def delivery_invoice_date(db: Session, payables: list[Payable]) -> str:
                     if it and (it.invoice_date or "").strip():
                         return it.invoice_date
         # Có số hóa đơn mà chưa gõ ngày hóa đơn riêng -> mặc định lấy ngày phát sinh công nợ (ngày nhận hàng)
-        if (p.invoice_no or "").strip() and (p.incur_date or "").strip():
+        if use_incur_date and (p.invoice_no or "").strip() and (p.incur_date or "").strip():
             return p.incur_date
     return ""
 
@@ -338,6 +353,159 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
     record(db, user_id, ENTITY, rid, "update")
     db.refresh(req)
     return req
+
+
+# ============ bao-CR-509 — CẬP NHẬT YCTT THEO CÔNG NỢ HIỆN TẠI ============
+# Dòng phiếu lưu BẢN CHỤP số đề nghị chi / mã PO / số HĐ lúc lập. Sửa ĐMH sau đó làm
+# công nợ đổi, còn phiếu đứng yên ở số cũ. Khách chốt 28/09/2026:
+#   - chỉ phiếu NHÁP mới được nạp lại (xem trước rồi mới ghi), phiếu đã gửi duyệt trở
+#     đi khóa như cũ nhưng màn chi tiết phải CẢNH BÁO khi số trên phiếu lệch công nợ;
+#   - số mới = nợ còn lại hiện tại của các khoản khớp dòng, trừ phần cấn trừ (CR-260);
+#   - dòng gõ tay không gắn công nợ giữ nguyên; khoản nợ đã xóa / đã tất toán thì số về 0
+#     và HIỆN RA cho người dùng tự quyết, không tự bỏ dòng;
+#   - phiếu trả trước (CR-268) không có công nợ nên không áp dụng.
+# Một hàm `plan_refresh` dùng chung cho cả xem trước, ghi, và cờ lệch ở màn chi tiết —
+# đừng chép luật sang giao diện.
+
+# Tình trạng từng dòng khi so với công nợ (mã chuỗi, chỉ trả qua API, không lưu DB).
+SYNC_CHANGED = "changed"            # số / mã PO / số HĐ / ngày HĐ sẽ đổi
+SYNC_UNCHANGED = "unchanged"        # đã khớp công nợ
+SYNC_MANUAL = "manual"              # dòng gõ tay, không gắn khoản nợ nào -> giữ nguyên
+SYNC_PAYABLE_MISSING = "payable_missing"  # khoản nợ dòng từng gắn đã bị xóa -> về 0
+SYNC_PAID_OFF = "paid_off"          # khoản nợ đã tất toán -> về 0
+SYNC_DUPLICATE = "duplicate"        # cùng khoản nợ với một dòng phía trên -> về 0
+
+# Trạng thái mà số trên phiếu còn phải bám công nợ. Đã chi / đã từ chối là chuyện đã xong.
+_SYNC_WATCH_STATUSES = ("draft", "submitted", "approved")
+
+
+def refresh_block_reason(req: PaymentRequest) -> str:
+    """Lý do phiếu KHÔNG được nạp lại theo công nợ; rỗng = được."""
+    if req.prepay:
+        return ("Phiếu thanh toán trước chưa gắn công nợ (tiền chi trước thành tiền treo), "
+                "nên không cập nhật theo công nợ được")
+    if req.status != "draft":
+        return ("Chỉ phiếu Nháp mới cập nhật theo công nợ được — "
+                + EDIT_LOCK_MSG.get(req.status, "phiếu không còn ở trạng thái nháp"))
+    return ""
+
+
+def plan_refresh(db: Session, req: PaymentRequest) -> dict:
+    """Tính số MỚI của từng dòng theo công nợ hiện tại — KHÔNG ghi gì xuống DB.
+
+    Phần cấn trừ (CR-260) chỉ trừ khi phiếu còn nháp / chờ duyệt: duyệt xong thì cấn trừ
+    đã được thực thi vào `paid_amount` của khoản nợ, trừ thêm lần nữa là trừ hai lần.
+
+    Một khoản nợ chỉ được tính cho MỘT dòng (dòng đứng trên): hai dòng cùng trỏ một khoản
+    nợ mà dòng nào cũng nhận đủ nợ còn lại thì phiếu đề nghị chi gấp đôi."""
+    subtract_offset = req.status in ("draft", "submitted")
+    claimed: set[int] = set()
+    rows: list[dict] = []
+    for idx, ln in enumerate(lines_of(db, req.id), start=1):
+        old_amount = round(float(ln.amount or 0), 2)
+        old_po, old_inv, old_date = ln.po_code or "", ln.invoice_no or "", ln.invoice_date or ""
+        offset = max(0.0, round(float(ln.offset_amount or 0), 2))
+        pays = payables_of_line(db, req, ln)
+        row = {"line_id": ln.id, "index": idx, "payable_ids": [p.id for p in pays],
+               "offset_amount": offset, "payable_remaining": None,
+               "po_code_old": old_po, "invoice_no_old": old_inv, "invoice_date_old": old_date,
+               "amount_old": old_amount,
+               "po_code_new": old_po, "invoice_no_new": old_inv, "invoice_date_new": old_date,
+               "amount_new": old_amount}
+        if not pays:
+            if ln.payable_id:
+                row.update(state=SYNC_PAYABLE_MISSING, amount_new=0.0,
+                           reason="Khoản công nợ của dòng này không còn (đã bị xóa hoặc đổi) — "
+                                  "số đề nghị về 0, cân nhắc bỏ dòng")
+            else:
+                row.update(state=SYNC_MANUAL, reason="Không gắn công nợ, giữ nguyên")
+        else:
+            fresh = [p for p in pays if p.id not in claimed]
+            if not fresh:
+                row.update(state=SYNC_DUPLICATE, amount_new=0.0, payable_remaining=0.0,
+                           reason="Cùng khoản công nợ với một dòng phía trên (nợ đã tính ở dòng đó) — "
+                                  "số đề nghị về 0")
+            else:
+                claimed.update(p.id for p in fresh)
+                remaining = round(sum(max(0.0, _remaining(p)) for p in fresh), 2)
+                deduct = offset if subtract_offset else 0.0
+                new_amount = round(max(0.0, remaining - deduct), 2)
+                # Mã PO / số HĐ: công nợ có thì theo công nợ, trống thì giữ bản gõ tay (khoản
+                # chi phí nhập khẩu thường sinh nợ trước khi có số hóa đơn — bao-CR-319 P5).
+                new_po = next((p.po_code for p in fresh if (p.po_code or "").strip()), "") or old_po
+                new_inv = next((p.invoice_no for p in fresh if (p.invoice_no or "").strip()), "") or old_inv
+                new_date = (delivery_invoice_date(db, fresh, use_incur_date=False) or old_date
+                            or delivery_invoice_date(db, fresh))
+                row.update(payable_remaining=remaining, amount_new=new_amount,
+                           po_code_new=new_po, invoice_no_new=new_inv, invoice_date_new=new_date)
+                if remaining <= 0.01:
+                    row.update(state=SYNC_PAID_OFF,
+                               reason="Khoản công nợ đã tất toán — số đề nghị về 0, cân nhắc bỏ dòng")
+                else:
+                    reason = f"Theo nợ còn lại {remaining:,.0f} đ"
+                    if deduct > 0.01:
+                        reason += f" trừ cấn trừ {deduct:,.0f} đ"
+                    if (new_po, new_inv, new_date) != (old_po, old_inv, old_date):
+                        reason += "; mã PO / số HĐ / ngày HĐ lấy theo công nợ"
+                    if deduct > remaining + 0.01:
+                        reason += "; phần cấn trừ VƯỢT nợ còn lại — duyệt sẽ bị chặn, hãy sửa phần cấn trừ"
+                    changed = (abs(new_amount - old_amount) > 0.01
+                               or (new_po, new_inv, new_date) != (old_po, old_inv, old_date))
+                    row.update(state=SYNC_CHANGED if changed else SYNC_UNCHANGED,
+                               reason=reason if changed else "Đã khớp công nợ")
+        row["amount_changed"] = abs(row["amount_new"] - old_amount) > 0.01
+        row["changed"] = row["amount_changed"] or (
+            (row["po_code_new"], row["invoice_no_new"], row["invoice_date_new"]) != (old_po, old_inv, old_date))
+        rows.append(row)
+
+    old_total = round(sum(r["amount_old"] for r in rows), 2)
+    new_total = round(sum(r["amount_new"] for r in rows), 2)
+    block = refresh_block_reason(req)
+    watched = not req.prepay and req.status in _SYNC_WATCH_STATUSES
+    return {
+        "request_id": req.id, "code": req.code, "status": req.status, "prepay": int(req.prepay or 0),
+        "can_apply": not block, "blocked_reason": block,
+        "old_total": old_total, "new_total": new_total,
+        "changed_count": sum(1 for r in rows if r["changed"]),
+        # Cờ cảnh báo ở màn chi tiết: chỉ tính theo SỐ TIỀN (mã PO / số HĐ lệch không đổi
+        # số bị trừ lúc chi — `set_status` còn lùi về payable_id).
+        "out_of_sync": watched and any(r["amount_changed"] for r in rows),
+        "lines": rows,
+    }
+
+
+def apply_refresh(db: Session, rid: int, user_id: int) -> tuple[PaymentRequest, dict]:
+    """GHI số mới theo công nợ vào phiếu NHÁP. Tính lại từ DB ngay lúc ghi — không tin số
+    giao diện gửi lên, vì công nợ có thể đổi giữa lúc xem trước và lúc bấm Cập nhật."""
+    req = get_request(db, rid)
+    block = refresh_block_reason(req)
+    if block:
+        raise HTTPException(400, block)
+    plan = plan_refresh(db, req)
+    changed = [r for r in plan["lines"] if r["changed"]]
+    if not changed:
+        return req, plan
+    by_id = {ln.id: ln for ln in lines_of(db, rid)}
+    for r in changed:
+        ln = by_id[r["line_id"]]
+        ln.amount = r["amount_new"]
+        ln.po_code = r["po_code_new"]
+        ln.invoice_no = r["invoice_no_new"]
+        ln.invoice_date = r["invoice_date_new"]
+        ln.updated_by = user_id
+    req.total = plan["new_total"]
+    req.updated_by = user_id
+    db.commit()
+    details = "; ".join(
+        f"{r['po_code_new'] or r['invoice_no_new'] or 'dòng ' + str(r['index'])}: "
+        f"{r['amount_old']:,.0f} → {r['amount_new']:,.0f}" for r in changed[:10])
+    if len(changed) > 10:
+        details += f"; … và {len(changed) - 10} dòng khác"
+    record(db, user_id, ENTITY, rid, "update",
+           f"Cập nhật theo công nợ: {len(changed)} dòng thay đổi, tổng đề nghị "
+           f"{plan['old_total']:,.0f} → {plan['new_total']:,.0f} đ ({details})")
+    db.refresh(req)
+    return req, plan
 
 
 def check_submit(db: Session, req: PaymentRequest) -> None:

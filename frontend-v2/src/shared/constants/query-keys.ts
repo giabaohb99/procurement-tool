@@ -421,6 +421,12 @@ export const queryKeys = {
       ['finance', 'payment-requests', params ?? {}] as const,
     /** Một phiếu YCTT theo id — hành động (duyệt/chi…) làm mất hiệu lực khóa này. */
     paymentRequest: (id: number) => ['finance', 'payment-requests', id] as const,
+    /**
+     * bao-CR-509 — bản xem trước «Cập nhật theo công nợ» của một phiếu. Nằm DƯỚI khóa
+     * chi tiết phiếu nên mọi thao tác làm mất hiệu lực phiếu cũng làm mất hiệu lực nó.
+     */
+    paymentRequestRefreshPreview: (id: number) =>
+      ['finance', 'payment-requests', id, 'refresh-preview'] as const,
     /** CR-268 — tiền treo (phiếu trả trước đã chi, chưa đối trừ) theo NCC/đơn. */
     prepayHanging: (params?: Record<string, unknown>) =>
       ['finance', 'payment-requests', 'hanging', params ?? {}] as const,

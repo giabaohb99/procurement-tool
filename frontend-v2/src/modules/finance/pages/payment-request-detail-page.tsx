@@ -1,4 +1,18 @@
-import { ArrowLeft, Ban, Banknote, Check, Info, Loader2, Plus, Printer, Save, Send, Undo2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Ban,
+  Banknote,
+  Check,
+  Info,
+  Loader2,
+  Plus,
+  Printer,
+  RefreshCw,
+  Save,
+  Send,
+  Undo2,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -29,6 +43,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
+import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import {
   Dialog,
   DialogContent,
@@ -62,6 +77,7 @@ import {
   PaymentRequestLinesTable,
   type EditablePaymentLine,
 } from '../components/payment-request-lines-table'
+import { PaymentRequestRefreshDialog } from '../components/payment-request-refresh-dialog'
 import { PaymentRequestStatusBadge } from '../components/payment-request-status-badge'
 import {
   useCreatePaymentRequests,
@@ -613,6 +629,9 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const [refundOpen, setRefundOpen] = useState(false)
   const [refundAmountText, setRefundAmountText] = useState('')
   const [refundNote, setRefundNote] = useState('')
+  // bao-CR-509 — hộp xem trước «Cập nhật theo công nợ» (nháp: ghi được; phiếu đã
+  // khóa: chỉ xem chênh lệch từ dải cảnh báo).
+  const [refreshOpen, setRefreshOpen] = useState(false)
 
   // Dữ liệu server về (hoặc lưu xong nạp lại) -> đổ lại bản nháp đang sửa.
   const reqChanged = useHasChanged(req)
@@ -672,6 +691,10 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const hangingAvailable = hangingData?.total ?? 0
   const offsetTotal = lines.reduce((sum, line) => sum + (Number(line.offset_amount) || 0), 0)
   const showOffsetColumn = !isPrepay && (offsetTotal > 0.01 || (editable && hangingAvailable > 0.01))
+
+  // bao-CR-509 — cờ lệch công nợ do backend tính (`plan_refresh`), không tự so ở đây.
+  const outOfSyncCount = (req.lines ?? []).filter((line) => line.out_of_sync).length
+  const canRefresh = req.status === 'draft' && can('payment_request', 'write')
 
   function patchLine(index: number, patch: Partial<EditablePaymentLine>) {
     setLines((current) => current.map((line, i) => (i === index ? { ...line, ...patch } : line)))
@@ -781,6 +804,25 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
               </Button>
             )}
 
+            {/* bao-CR-509 — chỉ bản NHÁP. Phiếu trả trước không có công nợ để bám nên nút
+                tắt kèm lời giải thích (span bọc ngoài vì nút `disabled` không nhận rê chuột). */}
+            {canRefresh &&
+              (isPrepay ? (
+                <IconTooltip label="Phiếu thanh toán trước chưa gắn công nợ nên không cập nhật theo công nợ được">
+                  <span tabIndex={0} className="inline-flex">
+                    <Button variant="outline" disabled className="w-full">
+                      <RefreshCw />
+                      Cập nhật theo công nợ
+                    </Button>
+                  </span>
+                </IconTooltip>
+              ) : (
+                <Button variant="outline" onClick={() => setRefreshOpen(true)}>
+                  <RefreshCw />
+                  Cập nhật theo công nợ
+                </Button>
+              ))}
+
             {req.status === 'draft' && can('payment_request', 'write') && (
               <Button variant="outline" onClick={() => runAction.mutate({ action: 'submit' })} disabled={runAction.isPending}>
                 <Send />
@@ -837,6 +879,45 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           </span>
         </p>
       )}
+
+      {/* bao-CR-509 — số trên phiếu lệch công nợ hiện tại (thường do sửa ĐMH sau khi lập
+          phiếu). Nháp: nhắc bấm nút cập nhật. Đã khóa: cảnh báo đỏ cho người duyệt / kế
+          toán thấy trước khi gật hay chi — phiếu KHÔNG tự đổi số. */}
+      {req.out_of_sync &&
+        (req.status === 'draft' ? (
+          <p className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-warning">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              Công nợ đã đổi sau khi lập phiếu: {outOfSyncCount} dòng có số đề nghị khác nợ còn lại
+              hiện tại.
+              {canRefresh && !isPrepay && (
+                <>
+                  {' '}
+                  Bấm <b>Cập nhật theo công nợ</b> để xem và nạp lại số mới.
+                </>
+              )}
+            </span>
+          </p>
+        ) : (
+          <div className="mb-4 flex flex-wrap items-start gap-2 rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-sm text-destructive">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <b>Phiếu lệch công nợ:</b> {outOfSyncCount} dòng có số đề nghị khác nợ còn lại hiện tại
+              (công nợ đã đổi sau khi lập phiếu, ví dụ sửa ĐMH). Phiếu đã khóa nên không tự cập nhật —
+              {req.status === 'submitted'
+                ? ' người duyệt cân nhắc Từ chối để người lập lập phiếu mới theo số đúng.'
+                : ' kế toán soát lại trước khi ghi nhận chi.'}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive/40 text-destructive hover:text-destructive"
+              onClick={() => setRefreshOpen(true)}
+            >
+              Xem chênh lệch
+            </Button>
+          </div>
+        ))}
 
       <div className="min-w-0 space-y-4">
         <Card className="gap-4 py-4">
@@ -1090,6 +1171,13 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
 
         <AuditTimeline entity="payment_request" entityId={paymentRequestId} showMessage dense />
       </div>
+
+      <PaymentRequestRefreshDialog
+        open={refreshOpen}
+        onOpenChange={setRefreshOpen}
+        paymentRequestId={paymentRequestId}
+        canWrite={canRefresh}
+      />
 
       <ReasonConfirmDialog
         open={rejectOpen}

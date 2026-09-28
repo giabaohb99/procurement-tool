@@ -65,6 +65,62 @@ export interface PaymentRequestLine {
   offset_amount: number
   /** CR-268 — tiền TREO còn lại = amount - allocated_amount - refunded_amount. */
   hanging: number
+  /**
+   * bao-CR-509 — nợ còn lại HIỆN TẠI của các khoản khớp dòng và số đề nghị ĐÁNG RA theo
+   * công nợ. `null` = dòng không theo dõi (phiếu đã chi / đã từ chối / trả trước).
+   * Luật tính nằm ở `service.plan_refresh` của backend — đừng tự tính lại ở đây.
+   */
+  payable_remaining?: number | null
+  expected_amount?: number | null
+  /** bao-CR-509 — số trên dòng đang lệch công nợ hiện tại. */
+  out_of_sync?: boolean
+}
+
+/** bao-CR-509 — tình trạng một dòng khi so với công nợ hiện tại (mã do backend trả). */
+export type PaymentRefreshState =
+  | 'changed'
+  | 'unchanged'
+  | 'manual'
+  | 'payable_missing'
+  | 'paid_off'
+  | 'duplicate'
+
+/** bao-CR-509 — một dòng của bản xem trước «Cập nhật theo công nợ»: số cũ → số mới. */
+export interface PaymentRefreshLine {
+  line_id: number
+  index: number
+  state: PaymentRefreshState
+  /** Câu giải thích do backend dựng (nợ còn lại, cấn trừ, tất toán…). */
+  reason: string
+  payable_ids: number[]
+  payable_remaining: number | null
+  offset_amount: number
+  po_code_old: string
+  po_code_new: string
+  invoice_no_old: string
+  invoice_no_new: string
+  invoice_date_old: string
+  invoice_date_new: string
+  amount_old: number
+  amount_new: number
+  amount_changed: boolean
+  changed: boolean
+}
+
+/** bao-CR-509 — kết quả `GET /api/payment-requests/{id}/refresh-preview` (không ghi gì). */
+export interface PaymentRefreshPlan {
+  request_id: number
+  code: string
+  status: PaymentRequestStatus
+  prepay: number
+  /** Chỉ phiếu Nháp, không phải trả trước, mới ghi được. */
+  can_apply: boolean
+  blocked_reason: string
+  old_total: number
+  new_total: number
+  changed_count: number
+  out_of_sync: boolean
+  lines: PaymentRefreshLine[]
 }
 
 /**
@@ -132,6 +188,11 @@ export interface PaymentRequest extends PaymentRequestSummary {
   lines: PaymentRequestLine[]
   /** CR-149: `_out()` trả dict đã parse (rỗng = chưa sửa, in câu tự động). */
   print_texts: PrintTexts
+  /**
+   * bao-CR-509 — số đề nghị trên phiếu đang lệch công nợ hiện tại (chỉ tính cho phiếu
+   * Nháp / Chờ duyệt / Đã duyệt, không phải trả trước).
+   */
+  out_of_sync?: boolean
 }
 
 /** Dữ liệu bản in `/print` — kèm thông tin đơn vị, người lập và tài khoản nhận. */

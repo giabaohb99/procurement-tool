@@ -70,6 +70,43 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-509 | Nút «Cập nhật theo công nợ» cho YCTT khi ĐMH bị sửa sau khi lập phiếu
+- status: dang-lam
+- date: 2026-09-28
+YCTT (yêu cầu thanh toán) chụp lại số đề nghị chi, mã PO và số hóa đơn ngay lúc lập. Khi
+người dùng sửa ĐMH (đơn mua hàng) sau đó thì công nợ đổi theo, nhưng YCTT vẫn đứng ở số cũ.
+Khách chốt ngày 28/09 muốn có nút nạp lại YCTT theo công nợ hiện tại, và em đã làm nút
+«Cập nhật theo công nợ» ở màn chi tiết YCTT trên cả giao diện cũ lẫn giao diện ERP mới.
+
+Nút chỉ hiện với phiếu còn Nháp và người có quyền sửa phiếu. Bấm vào thì mở hộp xem trước
+cho thấy từng dòng số cũ đổi sang số mới, kèm lý do, cùng tổng cũ và tổng mới; người dùng
+bấm «Cập nhật» mới ghi, và máy chủ tính lại từ công nợ ngay lúc ghi chứ không tin con số
+giao diện gửi lên. Số mới bằng nợ còn lại của khoản công nợ khớp dòng, trừ phần cấn trừ tiền
+trả trước nếu có, không bao giờ âm. Dòng gõ tay không gắn công nợ thì giữ nguyên; khoản công
+nợ đã trả hết, đã bị xóa hoặc bị hai dòng cùng trỏ vào thì số về 0 và được tô đỏ để người
+dùng tự quyết có bỏ dòng hay không, máy không tự xóa dòng. Phiếu thanh toán trước không có
+công nợ nên nút bị tắt kèm lời giải thích khi rê chuột.
+
+Phiếu đã gửi duyệt hoặc đã duyệt vẫn khóa như cũ, nhưng nếu số trên phiếu lệch công nợ thì
+màn chi tiết hiện dải cảnh báo đỏ cho người duyệt và kế toán thấy, kèm nút «Xem chênh lệch»
+mở cùng hộp xem trước ở chế độ chỉ xem. Em cũng rà lại và xác nhận hiện chưa có đường nào đưa
+phiếu đã gửi duyệt quay về Nháp: bấm «Từ chối» là phiếu chuyển sang trạng thái đã từ chối và
+khóa hẳn, nên phiếu lệch chỉ có cách từ chối rồi lập phiếu mới. Không có migration, không
+thêm khóa quyền.
+
+Kiểm: 24 bài kiểm mới phía máy chủ cùng 10 tệp bài kiểm YCTT và công nợ liên quan, tổng 200 bài
+xanh; giao diện mới kiểm kiểu 0 lỗi, lint 0 lỗi, 69 bài kiểm phân hệ Tài chính xanh; giao diện cũ
+kiểm kiểu giữ đúng 4 lỗi nền. Đã commit và đẩy lên erp-v2 ngày 28/09 để đi cùng đợt lên prod; chạy trên bản sao prod
+thì có 5 YCTT đang chờ duyệt đề nghị chi vượt nợ còn lại, sẽ hiện dải cảnh báo đỏ.
+
+Mã nguồn: `payment_request/service.py` (`payables_of_line`, `plan_refresh`, `apply_refresh`,
+`refresh_block_reason`) · `payment_request/controller.py` (`refresh_preview_`, `refresh_apply_`,
+`_out`) · đường API `GET /api/payment-requests/{rid}/refresh-preview` và
+`POST /api/payment-requests/{rid}/refresh-from-payables` ·
+`frontend-v2/src/modules/finance/components/payment-request-refresh-dialog.tsx` ·
+`frontend-v2/src/modules/finance/pages/payment-request-detail-page.tsx` ·
+`frontend/src/pages/PaymentRequestDetail.tsx` · `test/backend/test_yctt_cap_nhat_theo_cong_no.py`
+
 ## bao-CR-508 | Người dùng tự sửa số điện thoại, địa chỉ và người báo tin ở Trang cá nhân
 - status: dang-lam
 - date: 2026-09-28

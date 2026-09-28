@@ -143,6 +143,35 @@ export function usePrepayHanging(
 }
 
 /**
+ * bao-CR-509 — xem trước số mới theo công nợ hiện tại. Chỉ gọi khi hộp thoại mở
+ * (`enabled`), và luôn nạp mới mỗi lần mở (`staleTime: 0`): công nợ đổi theo ĐMH nên
+ * bản xem trước cũ 30 giây đã có thể sai.
+ */
+export function usePaymentRequestRefreshPreview(id: number, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.finance.paymentRequestRefreshPreview(id),
+    queryFn: () => paymentRequestApi.refreshPreview(id),
+    enabled: (options.enabled ?? true) && id > 0,
+    staleTime: 0,
+  })
+}
+
+/**
+ * bao-CR-509 — ghi số mới theo công nợ vào phiếu Nháp. Làm mất hiệu lực cả nhánh
+ * `finance` để chi tiết phiếu, danh sách YCTT và bản xem trước cùng nạp lại.
+ */
+export function useRefreshPaymentRequestFromPayables(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => paymentRequestApi.refreshFromPayables(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.finance.all })
+      toast.success('Đã cập nhật phiếu theo công nợ')
+    },
+  })
+}
+
+/**
  * CR-268 — ghi nhận NCC hoàn tiền phần treo của phiếu trả trước đã chi.
  * Đổi số trên cả phiếu lẫn tiền treo -> làm mất hiệu lực toàn nhánh `finance`.
  */

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm, askPrompt } from '../components/confirm'
@@ -9,6 +9,7 @@ import NumberInput from '../components/NumberInput'
 import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
+import { fmtVND } from '../utils/money'
 import { SOURCE_TYPE_OPTIONS, sourceTypeLabel } from '../utils/payable'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import AuditTimeline from '../components/AuditTimeline'
@@ -296,6 +297,12 @@ function PaymentRequestView() {
   const [files, setFiles] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [notFound, setNotFound] = useState(false)
+  // bao-CR-509 — hộp xem trước «Cập nhật theo công nợ». plan = kết quả refresh-preview
+  // (backend tính hết số và lý do; màn này chỉ hiển thị).
+  const [refresh, setRefresh] = useState<{ open: boolean; loading: boolean; plan: any }>({ open: false, loading: false, plan: null })
+  // Chặn bấm đúp: state chỉ đổi ở lượt render sau, ref đổi ngay trong tick.
+  const applyingRef = useRef(false)
+  const [applying, setApplying] = useState(false)
 
   async function loadAll() {
     try {
@@ -360,6 +367,34 @@ function PaymentRequestView() {
   async function action(path: string) {
     try { await api.post(`${API}/${id}/${path}`); loadAll() } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi') }
   }
+  // bao-CR-509 — xem trước (không ghi) rồi mới ghi; bấm ghi không gửi số nào lên,
+  // backend tính lại từ công nợ ngay lúc ghi.
+  async function openRefresh() {
+    setRefresh({ open: true, loading: true, plan: null })
+    try {
+      const r = await api.get(`${API}/${id}/refresh-preview`)
+      setRefresh({ open: true, loading: false, plan: r.data.data })
+    } catch (ex: any) {
+      toast.error(ex?.response?.data?.error?.message || 'Không tải được bản xem trước')
+      setRefresh({ open: false, loading: false, plan: null })
+    }
+  }
+  async function applyRefresh() {
+    if (applyingRef.current) return
+    applyingRef.current = true
+    setApplying(true)
+    try {
+      const r = await api.post(`${API}/${id}/refresh-from-payables`)
+      toast.success(r.data.message || 'Đã cập nhật phiếu theo công nợ')
+      setRefresh({ open: false, loading: false, plan: null })
+      loadAll()
+    } catch {
+      // client.ts đã tự báo lỗi cho request non-GET
+    } finally {
+      applyingRef.current = false
+      setApplying(false)
+    }
+  }
   async function uploadFiles(fl: FileList | null) {
     if (!fl?.length) return
     const fd = new FormData(); fd.append('entity', 'payment_request'); fd.append('entity_id', String(id))
@@ -368,6 +403,9 @@ function PaymentRequestView() {
   }
 
   const total = req.lines.reduce((s: number, l: any) => s + (Number(l.amount) || 0), 0)
+  // bao-CR-509 — cờ lệch công nợ do backend tính, không tự so ở đây
+  const canRefresh = req.status === 'draft' && can('payment_request', 'write')
+  const outOfSyncCount = (req.lines || []).filter((l: any) => l.out_of_sync).length
 
   return (
     <div>
@@ -378,6 +416,15 @@ function PaymentRequestView() {
         <span style={{ flex: 1 }} />
         {can('payment_request', 'print') && <button className="btn ghost" onClick={() => window.open(`/print/payment-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
         {editable && can('payment_request', 'write') && <button className="btn" onClick={save}>Lưu</button>}
+        {/* bao-CR-509 — chỉ bản NHÁP; phiếu trả trước không có công nợ để bám nên nút tắt kèm lời giải thích
+            (span bọc ngoài vì nút disabled không hiện title khi rê chuột) */}
+        {canRefresh && (req.prepay ? (
+          <span title="Phiếu thanh toán trước chưa gắn công nợ nên không cập nhật theo công nợ được">
+            <button className="btn ghost" disabled style={{ pointerEvents: 'none' }}><i className="ti ti-refresh" />Cập nhật theo công nợ</button>
+          </span>
+        ) : (
+          <button className="btn ghost" onClick={openRefresh}><i className="ti ti-refresh" />Cập nhật theo công nợ</button>
+        ))}
         {req.status === 'draft' && can('payment_request', 'write') && <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>}
         {req.status === 'submitted' && can('payment_request', 'approve') && <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>}
         {req.status === 'submitted' && can('payment_request', 'approve') && (
@@ -404,6 +451,36 @@ function PaymentRequestView() {
           <span><b>Lý do từ chối:</b> {req.reject_reason}</span>
         </div>
       )}
+
+      {/* bao-CR-509 — số trên phiếu lệch công nợ hiện tại (thường do sửa ĐMH sau khi lập phiếu).
+          Nháp: nhắc bấm cập nhật. Đã khóa: cảnh báo đỏ cho người duyệt / kế toán — phiếu KHÔNG tự đổi số. */}
+      {req.out_of_sync && (req.status === 'draft' ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 14,
+          background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12.5, color: '#92400e',
+        }}>
+          <i className="ti ti-alert-triangle" style={{ fontSize: 16, color: '#d97706', flexShrink: 0 }} />
+          <span>
+            Công nợ đã đổi sau khi lập phiếu: {outOfSyncCount} dòng có số đề nghị khác nợ còn lại hiện tại.
+            {canRefresh && !req.prepay && <> Bấm <b>Cập nhật theo công nợ</b> để xem và nạp lại số mới.</>}
+          </span>
+        </div>
+      ) : (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 14,
+          background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12.5, color: '#991b1b',
+        }}>
+          <i className="ti ti-alert-triangle" style={{ fontSize: 16, color: '#dc2626', flexShrink: 0 }} />
+          <span style={{ flex: 1 }}>
+            <b>Phiếu lệch công nợ:</b> {outOfSyncCount} dòng có số đề nghị khác nợ còn lại hiện tại
+            (công nợ đã đổi sau khi lập phiếu, ví dụ sửa ĐMH). Phiếu đã khóa nên không tự cập nhật —
+            {req.status === 'submitted'
+              ? ' người duyệt cân nhắc Từ chối để người lập lập phiếu mới theo số đúng.'
+              : ' kế toán soát lại trước khi ghi nhận chi.'}
+          </span>
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={openRefresh}>Xem chênh lệch</button>
+        </div>
+      ))}
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title">Thông tin phiếu</h3>
@@ -536,6 +613,105 @@ function PaymentRequestView() {
         </div>
       )}
 
+      {refresh.open && (
+        <RefreshPreviewModal
+          loading={refresh.loading}
+          plan={refresh.plan}
+          canWrite={canRefresh}
+          applying={applying}
+          onClose={() => setRefresh({ open: false, loading: false, plan: null })}
+          onApply={applyRefresh}
+        />
+      )}
+
+    </div>
+  )
+}
+
+/** Hai giá trị cũ/mới: giống nhau thì in một, khác thì in «cũ → mới». */
+function oldNew(oldValue: string, newValue: string) {
+  if ((oldValue || '') === (newValue || '')) return newValue || '—'
+  return (
+    <span>
+      <span style={{ color: 'var(--muted)', textDecoration: 'line-through' }}>{oldValue || '—'}</span>
+      {' → '}<b>{newValue || '—'}</b>
+    </span>
+  )
+}
+
+// Dòng số về 0 vì nợ đã hết / mất / trùng khoản nợ — phải đập vào mắt
+const REFRESH_ALERT_STATES = ['paid_off', 'payable_missing', 'duplicate']
+
+/** bao-CR-509 — hộp xem trước «Cập nhật theo công nợ»: số cũ → số mới từng dòng rồi mới ghi. */
+function RefreshPreviewModal({ loading, plan, canWrite, applying, onClose, onApply }: {
+  loading: boolean; plan: any; canWrite: boolean; applying: boolean; onClose: () => void; onApply: () => void
+}) {
+  const allowApply = canWrite && !!plan?.can_apply
+  const hasChanges = (plan?.changed_count || 0) > 0
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+         onClick={onClose}>
+      <div className="modal-card" style={{ width: 960, maxWidth: '100%', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: 12, padding: 24 }}
+           onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginTop: 0, color: 'var(--navy)' }}>Cập nhật theo công nợ</h3>
+        <div style={{ ...hintStyle, marginTop: 0, marginBottom: 12 }}>
+          So số đề nghị trên phiếu với nợ còn lại hiện tại của công nợ (đã trừ phần cấn trừ trả trước nếu có).
+          Soát lại rồi bấm <b>Cập nhật</b> — thay đổi chưa Lưu trên màn hình sẽ bị thay bằng số mới.
+        </div>
+        {loading || !plan ? <div style={{ padding: 24 }}>Đang tải...</div> : (
+          <>
+            {!plan.can_apply && plan.blocked_reason && (
+              <div style={{ padding: '7px 12px', marginBottom: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12.5, color: '#92400e' }}>
+                {plan.blocked_reason}
+              </div>
+            )}
+            {!hasChanges && (
+              <div style={{ padding: '7px 12px', marginBottom: 12, background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12.5, color: '#475569' }}>
+                Phiếu đã khớp công nợ hiện tại, không có dòng nào cần đổi.
+              </div>
+            )}
+            <div className="items-scroll">
+              <table className="items-table" style={{ minWidth: 820 }}>
+                <thead><tr><th>#</th><th>PO</th><th>Số HĐ</th><th>Ngày HĐ</th>
+                  <th style={{ textAlign: 'right' }}>Số cũ → Số mới</th><th>Lý do</th></tr></thead>
+                <tbody>
+                  {(plan.lines || []).map((l: any) => {
+                    const alert = REFRESH_ALERT_STATES.includes(l.state) && l.amount_old > 0.01
+                    return (
+                      <tr key={l.line_id} style={{ background: alert ? '#fef2f2' : undefined, color: l.state === 'manual' ? 'var(--muted)' : undefined }}>
+                        <td>{l.index}</td>
+                        <td>{oldNew(l.po_code_old, l.po_code_new)}</td>
+                        <td>{oldNew(l.invoice_no_old, l.invoice_no_new)}</td>
+                        <td>{oldNew(l.invoice_date_old, l.invoice_date_new)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {l.amount_changed ? (
+                            <>
+                              <span style={{ color: 'var(--muted)', textDecoration: 'line-through' }}>{fmtVND(l.amount_old)}</span>
+                              {' → '}<b style={{ color: alert ? '#dc2626' : undefined }}>{fmtVND(l.amount_new)}</b>
+                            </>
+                          ) : fmtVND(l.amount_new)}
+                        </td>
+                        <td style={{ whiteSpace: 'normal', minWidth: 220, color: alert ? '#991b1b' : undefined }}>{l.reason}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ textAlign: 'right', marginTop: 12, fontSize: 15, color: 'var(--navy)' }}>
+              Tổng đề nghị thanh toán: {fmtVND(plan.old_total)} → <b>{fmtVND(plan.new_total)}</b>
+            </div>
+          </>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+          <button className="btn ghost" onClick={onClose}>{allowApply ? 'Hủy' : 'Đóng'}</button>
+          {allowApply && (
+            <button className="btn" disabled={applying || !hasChanges} onClick={onApply}>
+              <i className="ti ti-refresh" />Cập nhật
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

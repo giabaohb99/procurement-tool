@@ -24,15 +24,18 @@ HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "departm
           "reject_reason", "status"]   # department_id: cột ẩn bao-CR-414 GĐ4, bản in không đọc
 
 
-def _line(db, ln, misa_by_po: dict | None = None) -> dict:
+def _line(db, ln, misa_by_po: dict | None = None, sync: dict | None = None) -> dict:
     """Tổng nợ / Đã trả / Hạn trả luôn ĐỌC từ Công nợ (không lưu trên phiếu, tránh lệch số);
     còn mã PO / số hóa đơn / ngày hóa đơn là dữ liệu nhập trên phiếu (CR-066).
-    Dòng chưa khớp khoản nợ nào (form trắng, hàng chưa về) thì các cột nợ trả về 0 / rỗng."""
+    Dòng chưa khớp khoản nợ nào (form trắng, hàng chưa về) thì các cột nợ trả về 0 / rỗng.
+
+    `sync` (bao-CR-509): dòng tương ứng trong `service.plan_refresh` — số mà dòng ĐÁNG RA
+    mang theo công nợ hiện tại, để màn chi tiết cảnh báo phiếu lệch công nợ."""
     req = db.get(PaymentRequest, ln.request_id) if ln.request_id else None
-    payables = service.matching_payables(db, req.supplier_code, req.source_type,
-                                         ln.po_code, ln.invoice_no) if req else []
-    if not payables and ln.payable_id:
-        p = db.get(Payable, ln.payable_id)
+    if req:
+        payables = service.payables_of_line(db, req, ln)
+    else:
+        p = db.get(Payable, ln.payable_id) if ln.payable_id else None
         payables = [p] if p else []
 
     tot = sum(float(px.total or 0) for px in payables)
@@ -52,7 +55,14 @@ def _line(db, ln, misa_by_po: dict | None = None) -> dict:
             "refunded_amount": float(ln.refunded_amount or 0),
             # CR-260 — phần đề nghị cấn trừ tiền treo, thực thi khi phiếu được DUYỆT
             "offset_amount": float(ln.offset_amount or 0),
-            "hanging": service.line_hanging(ln)}
+            "hanging": service.line_hanging(ln),
+            # bao-CR-509 — nợ còn lại hiện tại (None = dòng không gắn công nợ / không theo dõi)
+            # và số đề nghị ĐÁNG RA theo công nợ; `out_of_sync` = số trên phiếu đang lệch.
+            "payable_remaining": sync["payable_remaining"] if sync else None,
+            "expected_amount": sync["amount_new"] if sync else None,
+            "out_of_sync": bool(sync and sync["amount_changed"]),
+            "sync_state": sync["state"] if sync else "",
+            "sync_reason": sync["reason"] if sync else ""}
 
 
 def _out(db: Session, req: PaymentRequest) -> dict:
@@ -65,7 +75,16 @@ def _out(db: Session, req: PaymentRequest) -> dict:
     lines = service.lines_of(db, req.id)
     # Ticket #26: mã MISA join theo mã PO một lượt cho cả phiếu
     misa_by_po = service.misa_by_po_code(db, [ln.po_code for ln in lines])
-    d["lines"] = [_line(db, ln, misa_by_po) for ln in lines]
+    # bao-CR-509 — so số trên phiếu với công nợ hiện tại. Chỉ tính khi phiếu còn phải bám
+    # công nợ (nháp / chờ duyệt / đã duyệt, không phải phiếu trả trước); đã chi / đã từ
+    # chối thì công nợ đổi là chuyện bình thường, cảnh báo chỉ gây nhiễu.
+    sync_by_line: dict[int, dict] = {}
+    d["out_of_sync"] = False
+    if not req.prepay and req.status in ("draft", "submitted", "approved"):
+        plan = service.plan_refresh(db, req)
+        sync_by_line = {r["line_id"]: r for r in plan["lines"]}
+        d["out_of_sync"] = plan["out_of_sync"]
+    d["lines"] = [_line(db, ln, misa_by_po, sync_by_line.get(ln.id)) for ln in lines]
     return d
 
 
@@ -207,6 +226,28 @@ def update_(rid: int, data: PRequestUpdate, db: Session = Depends(get_db),
             user=Depends(require("payment_request", "write"))):
     _scoped(db, rid, user, "write")
     return success(_out(db, service.update_request(db, rid, data, user.id)), "Đã cập nhật")
+
+
+@router.get("/{rid}/refresh-preview")
+def refresh_preview_(rid: int, db: Session = Depends(get_db),
+                     user=Depends(require("payment_request", "read"))):
+    """bao-CR-509 — XEM TRƯỚC số mới của từng dòng theo công nợ hiện tại, KHÔNG ghi gì.
+
+    Mở cho người có quyền xem (người duyệt xem được phiếu chờ duyệt lệch chỗ nào);
+    `can_apply` / `blocked_reason` cho biết có được bấm ghi hay không."""
+    req = _scoped(db, rid, user, "read")
+    return success(service.plan_refresh(db, req))
+
+
+@router.post("/{rid}/refresh-from-payables")
+def refresh_apply_(rid: int, db: Session = Depends(get_db),
+                   user=Depends(require("payment_request", "write"))):
+    """bao-CR-509 — GHI số mới theo công nợ vào phiếu NHÁP (tính lại từ DB lúc ghi)."""
+    _scoped(db, rid, user, "write")
+    req, plan = service.apply_refresh(db, rid, user.id)
+    n = plan["changed_count"]
+    msg = f"Đã cập nhật {n} dòng theo công nợ" if n else "Phiếu đã khớp công nợ, không có gì thay đổi"
+    return success(_out(db, req), msg)
 
 
 @router.delete("/{rid}")
