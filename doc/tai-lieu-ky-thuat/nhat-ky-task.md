@@ -70,6 +70,16 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-512 | Bài kiểm bộ mã hành động xanh lại sau thay đổi điều phối YCMH
+- status: xong
+- date: 2026-09-28
+Bài kiểm bộ mã hành động báo đỏ từ khi thao tác điều phối yêu cầu mua hàng được ghi nhật ký dưới
+hai mã khác nhau (bấm Điều phối thì ghi «điều phối», duyệt xong tự điều phối thì ghi «duyệt»).
+Em khai chỗ đó vào sổ của bài kiểm; cả hai mã đều đã có sẵn trong bộ mã nên không đổi gì ở phần
+chạy thật. Bài kiểm xanh 31/31, không cần deploy.
+
+Mã nguồn: `test/backend/test_bo_ma_hanh_dong_cr358.py` (`DYNAMIC_ACTION_SITES`)
+
 ## bao-CR-511 | YCTT: màn cũ không còn xóa phần cấn trừ khi lưu, và khóa chuyển trạng thái sai thứ tự
 - status: xong
 - date: 2026-09-28

@@ -82,6 +82,9 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     "modules/purchase_request/option_service.py::choose_option": (
         "option_choose", "option_unchoose"),
     "modules/purchase_request/service.py::set_status": ("submitted", "approved", "rejected"),
+    #  bao-CR-485/497: bấm Điều phối ghi `dispatched`; duyệt xong tự điều phối (bỏ qua bước
+    #  Điều phối) thì ghi dưới `approved` — controller truyền `audit_action="approved"`.
+    "modules/purchase_request/service.py::dispatch_pr": ("dispatched", "approved"),
     #  bao-CR-414: về 0 là trả về thu mua, khác 0 là chuyển sang phòng khác.
     "modules/purchase_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     "modules/survey_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
