@@ -70,6 +70,22 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-515 | Đồng bộ bài hướng dẫn phần thu mua từ dev lên trang hướng dẫn prod
+- status: xong
+- date: 2026-09-28
+Sau khi đẩy toàn bộ erp-v2 lên prod, trang hướng dẫn prod vẫn là bản tháng 8 nên nhiều bài thu mua
+đã cũ so với phần mềm. Đại ca bảo đồng bộ phần thu mua trước. Em so từng bài giữa dev và prod: 16
+bài có sửa, tất cả là nội dung thu mua hoặc đường vào giao diện mới (yêu cầu thanh toán thêm trả
+trước và cấn trừ tiền treo, mã MISA không bắt buộc, nút Trả về, trợ lý AI lập đề nghị thanh toán…).
+Em chép 16 bài đó, thêm 5 bài thu mua mới (lập bộ tài khoản, phương án yêu cầu mua hàng, chi phí thu
+mua trên đơn mua hàng) và 2 câu hỏi thường gặp; không chép bài của Diễn đàn, Nghỉ phép, Đặt phòng họp
+và Văn bản. Trang hướng dẫn prod từ 55 lên 61 bài, phần thu mua khớp dev từng ký tự.
+
+Còn lưu ý: hai bài về phương án yêu cầu mua hàng tả tính năng đang tắt trên prod, chờ đại ca quyết
+bật tính năng hay tạm ẩn bài.
+
+Deploy: prod 28/09 13:37, sao lưu `help_truoc_dong_bo_thu_mua_20260928_1337.sql.gz`
+
 ## bao-CR-514 | Đơn PO00122 trên prod: đưa chi phí thu mua về giai đoạn Dự toán
 - status: xong
 - date: 2026-09-28
