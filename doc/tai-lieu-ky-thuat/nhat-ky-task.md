@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-519 | Tra cứu thị trường: bỏ tô nền cột, gom bốn cột giá bằng vạch dọc
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
 Đại ca xem bản tô nền cả cột thì thấy hàng «Giá tốt nhất» không còn nổi, nên bảo trả bảng về như bản
 đầu nhưng vẫn cần cách phân biệt các cột, và chọn kiểu gom nhóm bằng đường kẻ dọc. Em bỏ nền cột,
@@ -80,13 +80,13 @@ vạch dọc đậm hai bên nhóm. Ở màn mới, bảng dùng chung chưa có
 chọn vạch dọc đậm cho từng cột, đặt sau cột Tổng lượng và sau cột Cao nhất.
 
 Kiểm: kiểm kiểu và lint không lỗi, 741 bài kiểm của bảng dùng chung và phần thu mua xanh, màn cũ giữ
-đúng 4 lỗi nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09.
+đúng 4 lỗi nền. Đã đẩy lên erp-v2, deploy dev và prod ngày 28/09.
 
 Mã nguồn: `frontend-v2/src/shared/data-table` (`dividerAfter`) · `customs-price-chart.tsx` ·
 `frontend/src/components/customs/CustomsChart.tsx`
 
 ## bao-CR-518 | Tô nền bốn cột giá ở Tra cứu thị trường, căn giữa ba cột giai đoạn chi phí
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
 Đại ca xem bản tô màu chữ bốn cột giá (516) thấy hơi lạ nên chọn kiểu tô nền cả cột: mỗi cột một nền
 nhạt từ tiêu đề xuống, chữ giữ màu đen, chỉ cột Bình quân in đậm. Ở màn mới, bảng dùng chung chưa có
@@ -95,13 +95,13 @@ trong menu «Cột» thì màu của họ vẫn được ưu tiên. Đại ca c�
 ở bảng chi phí thu mua màn cũ cho căn giữa, vì tiêu đề căn phải mà ô nhập căn trái nhìn lệch.
 
 Kiểm: kiểm kiểu và lint không lỗi, 740 bài kiểm của bảng dùng chung và phần thu mua xanh (thêm 2 bài
-cho màu cột khai sẵn), màn cũ giữ đúng 4 lỗi nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09.
+cho màu cột khai sẵn), màn cũ giữ đúng 4 lỗi nền. Đã đẩy lên erp-v2, deploy dev và prod ngày 28/09.
 
 Mã nguồn: `frontend-v2/src/shared/data-table` (`defaultColor`) · `customs-price-chart.tsx` ·
 `frontend/src/components/customs/CustomsChart.tsx` · `frontend/src/pages/PurchaseOrderDetail.tsx`
 
 ## bao-CR-517 | Bảng chi phí thu mua ở màn cũ: bỏ chữ VNĐ trên ba cột giai đoạn
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
 Trên màn đơn mua hàng nhập khẩu bản cũ, ba cột Dự toán, Tạm tính, Quyết toán ghi đuôi «(VNĐ)» trong khi
 ô đang nhập nhận số theo tiền tệ của dòng, ví dụ 120 đô. Đại ca bảo bỏ chữ VNĐ cho khỏi hiểu nhầm. Em
@@ -109,12 +109,12 @@ bỏ đuôi đó và để câu giải thích khi rê chuột lên tiêu đề: 
 của dòng, dòng đã khóa hiện số quy đổi tiền Việt đã gồm thuế. Màn mới vốn không ghi đơn vị nên giữ
 nguyên.
 
-Kiểm: màn cũ kiểm kiểu giữ đúng 4 lỗi nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09; prod chờ đại ca.
+Kiểm: màn cũ kiểm kiểu giữ đúng 4 lỗi nền. Đã đẩy lên erp-v2, deploy dev và prod ngày 28/09.
 
 Mã nguồn: `frontend/src/pages/PurchaseOrderDetail.tsx` (`COST_STAGE_HEADER_HINT`)
 
 ## bao-CR-516 | Tra cứu thị trường: ô lọc Phân loại không còn tràn dòng, bốn cột giá có màu riêng
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
 Đại ca báo ô lọc Phân loại trên màn Tra cứu thị trường bị lỗi: chữ gợi ý «Thành phẩm + Nguyên liệu»
 dài hơn ô nên tràn ba dòng, làm lệch cả hàng lọc. Em đổi chữ gợi ý cho ngắn, cùng kiểu các ô bên
@@ -123,7 +123,7 @@ cạnh. Đại ca cũng muốn bốn cột giá của bảng theo kỳ dễ nhì
 trên biểu đồ, thấp nhất xanh lá, cao nhất đỏ. Làm cả màn cũ và màn mới.
 
 Kiểm: kiểm kiểu và lint không lỗi, 626 bài kiểm phần thu mua ở màn mới xanh, màn cũ giữ đúng 4 lỗi
-nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09; prod chờ đại ca.
+nền. Đã đẩy lên erp-v2, deploy dev và prod ngày 28/09.
 
 Mã nguồn: `frontend/src/components/customs/CustomsChart.tsx` · `frontend/src/pages/CustomsPrices.tsx` ·
 `frontend-v2/.../customs/customs-price-chart.tsx` · `frontend-v2/.../pages/customs-price-page.tsx`
