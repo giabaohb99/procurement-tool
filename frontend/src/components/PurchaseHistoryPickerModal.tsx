@@ -140,6 +140,7 @@ export default function PurchaseHistoryPickerModal({
                 <th>Ngày đặt</th>
                 <th>Mã PO</th>
                 {xemNcc && <th>Nhà cung cấp</th>}
+                <th style={{ minWidth: 180 }}>Tên trên hóa đơn</th>
                 <th>ĐVT</th>
                 <th style={{ textAlign: 'right' }}>SL đặt</th>
                 <th style={{ textAlign: 'right' }}>Đơn giá</th>
@@ -156,6 +157,12 @@ export default function PurchaseHistoryPickerModal({
                   {/* Dòng dữ liệu cũ không có ĐMH — ghi rõ như bảng lịch sử, đừng để ô trống */}
                   <td>{h.po_code || <span style={{ color: '#999', fontSize: 12 }}>Dữ liệu cũ</span>}</td>
                   {xemNcc && <td>{h.supplier_name || h.supplier_code}</td>}
+                  {/* bao-CR-522: dòng dữ liệu cũ không có tên trên hóa đơn — backend lùi về tên đang
+                      khai ở danh mục sản phẩm, in nghiêng + chú thích để không lẫn với tên đã xuất */}
+                  <td title={h.invoice_name_from_catalog ? 'Dữ liệu cũ không có — lấy theo danh mục sản phẩm' : undefined}
+                    style={h.invoice_name_from_catalog ? { color: 'var(--muted)', fontStyle: 'italic' } : undefined}>
+                    {h.invoice_name || '—'}
+                  </td>
                   <td>{h.unit}</td>
                   <td style={{ textAlign: 'right' }}>{fmt(h.qty_order)}</td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtPrice(h.price)}</td>
@@ -174,7 +181,7 @@ export default function PurchaseHistoryPickerModal({
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={(xemNcc ? 9 : 8) + (readOnly ? 0 : 1)} style={{ textAlign: 'center', color: '#999', padding: 18 }}>
+                  <td colSpan={(xemNcc ? 10 : 9) + (readOnly ? 0 : 1)} style={{ textAlign: 'center', color: '#999', padding: 18 }}>
                     {loading ? 'Đang tải…' : kw ? 'Không có kết quả khớp từ khóa' : 'Mã hàng này chưa có lịch sử mua hàng'}
                   </td>
                 </tr>

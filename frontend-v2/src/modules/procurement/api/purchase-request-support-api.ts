@@ -148,6 +148,10 @@ export interface PurchaseHistoryRow {
   amount: number
   completed_at: string
   extra: PurchaseHistoryExtra
+  /** bao-CR-522 — tên trên hóa đơn của lần mua; dòng dữ liệu cũ lùi về danh mục sản phẩm. */
+  invoice_name?: string
+  /** `true` = tên lấy từ danh mục sản phẩm, không phải tên đã xuất trên hóa đơn lần đó. */
+  invoice_name_from_catalog?: boolean
 }
 
 const ATTACHMENT_URL = '/api/attachments'

@@ -26,6 +26,7 @@ import {
   formatQuantity,
   formatUnitPrice,
 } from '@/shared/utils/format-money'
+import { cn } from '@/shared/utils/cn'
 import type { PurchaseHistoryRow } from '../api/purchase-request-support-api'
 import { useProductPurchaseHistory } from '../hooks/use-purchase-request-support'
 
@@ -93,7 +94,7 @@ export function PurchaseHistoryDialog({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const start = total ? (page - 1) * PAGE_SIZE + 1 : 0
   const end = Math.min(page * PAGE_SIZE, total)
-  const columnCount = readOnly ? 9 : 10
+  const columnCount = readOnly ? 10 : 11
 
   function pick(row: PurchaseHistoryRow) {
     if (readOnly) return
@@ -129,6 +130,7 @@ export function PurchaseHistoryDialog({
                   <TableHead>Ngày đặt</TableHead>
                   <TableHead>Mã PO</TableHead>
                   <TableHead>Nhà cung cấp</TableHead>
+                  <TableHead className="min-w-44">Tên trên hóa đơn</TableHead>
                   <TableHead>ĐVT</TableHead>
                   <TableHead className="text-right">SL đặt</TableHead>
                   <TableHead className="text-right">Đơn giá</TableHead>
@@ -154,6 +156,18 @@ export function PurchaseHistoryDialog({
                       )}
                     </TableCell>
                     <TableCell>{row.supplier_name || row.supplier_code || '—'}</TableCell>
+                    {/*  bao-CR-522: dòng dữ liệu cũ không có tên trên hóa đơn — backend lùi về tên
+                         đang khai ở danh mục sản phẩm; in nghiêng mờ để không lẫn với tên đã xuất. */}
+                    <TableCell
+                      className={cn(row.invoice_name_from_catalog && 'text-muted-foreground italic')}
+                      title={
+                        row.invoice_name_from_catalog
+                          ? 'Dữ liệu cũ không có — lấy theo danh mục sản phẩm'
+                          : undefined
+                      }
+                    >
+                      {row.invoice_name || '—'}
+                    </TableCell>
                     <TableCell>{row.unit || '—'}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatQuantity(row.qty_order)}
