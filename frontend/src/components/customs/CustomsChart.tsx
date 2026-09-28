@@ -24,14 +24,9 @@ const PRICE_H = 280, PRICE_T = 12, PRICE_B = 28
 const QTY_H = 150, QTY_T = 18, QTY_B = 26
 const BAND = 'rgba(0,174,239,.16)'
 const GREEN = '#16a34a'
-// bao-CR-518 (đại ca chọn 28/09): bốn cột giá TÔ NỀN cả cột, chữ giữ màu thường. Nền là
-// màu trong suốt để vẫn thấy nền xanh của hàng «Giá tốt nhất» bên dưới.
-const COL_BG = {
-  min: 'rgba(22,163,74,.10)',      // Thấp nhất — xanh lá
-  range: 'rgba(8,145,178,.10)',    // Khoảng phổ biến — xanh ngọc
-  wavg: 'rgba(37,99,235,.12)',     // Bình quân gia quyền — xanh dương
-  max: 'rgba(220,38,38,.09)',      // Cao nhất — đỏ
-}
+// bao-CR-519 (đại ca chọn 28/09): bỏ tô nền cột của 518 (làm hàng «Giá tốt nhất» chìm).
+// Bốn cột giá gom thành NHÓM: tiêu đề nhóm «Giá (USD/đơn vị)» + hai vạch dọc đậm hai bên.
+const GROUP_EDGE = '2px solid #94a3b8'
 
 export default function CustomsChart({ filters }: { filters: CustomsFilters }) {
   const [period, setPeriod] = useState('month')
@@ -110,23 +105,30 @@ export default function CustomsChart({ filters }: { filters: CustomsFilters }) {
 
       <div className="card table-card" style={{ marginTop: 12 }}>
         <div className="table-scroll"><table>
-          <thead><tr>
-            <th>Kỳ</th><th style={{ textAlign: 'right' }}>Số dòng</th><th style={{ textAlign: 'right' }}>Tổng lượng ({u})</th>
-            <th style={{ textAlign: 'right', background: COL_BG.wavg }}>Bình quân gia quyền</th>
-            <th style={{ textAlign: 'right', background: COL_BG.range }}>Khoảng phổ biến</th>
-            <th style={{ textAlign: 'right', background: COL_BG.min }}>Thấp nhất</th>
-            <th style={{ textAlign: 'right', background: COL_BG.max }}>Cao nhất</th><th>Ghi chú</th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th rowSpan={2}>Kỳ</th><th rowSpan={2} style={{ textAlign: 'right' }}>Số dòng</th>
+              <th rowSpan={2} style={{ textAlign: 'right' }}>Tổng lượng ({u})</th>
+              <th colSpan={4} style={{ textAlign: 'center', borderLeft: GROUP_EDGE, borderRight: GROUP_EDGE }}>Giá (USD/{u})</th>
+              <th rowSpan={2}>Ghi chú</th>
+            </tr>
+            <tr>
+              <th style={{ textAlign: 'right', borderLeft: GROUP_EDGE }}>Bình quân gia quyền</th>
+              <th style={{ textAlign: 'right' }}>Khoảng phổ biến</th>
+              <th style={{ textAlign: 'right' }}>Thấp nhất</th>
+              <th style={{ textAlign: 'right', borderRight: GROUP_EDGE }}>Cao nhất</th>
+            </tr>
+          </thead>
           <tbody>
             {series.map((s: any) => (
               <tr key={s.period} style={s.period === best ? { background: '#e8f7f0' } : undefined}>
                 <td>{s.label}</td>
                 <td style={{ textAlign: 'right' }}>{s.count}</td>
                 <td style={{ textAlign: 'right' }}>{s.count ? fmtQty(s.qty) : '—'}</td>
-                <td style={{ textAlign: 'right', fontWeight: 600, background: COL_BG.wavg }}>{fmtUsd(s.wavg)}</td>
-                <td style={{ textAlign: 'right', background: COL_BG.range }}>{s.p25 == null ? '—' : `${fmtUsd(s.p25)} – ${fmtUsd(s.p75)}`}</td>
-                <td style={{ textAlign: 'right', background: COL_BG.min }}>{fmtUsd(s.min)}</td>
-                <td style={{ textAlign: 'right', background: COL_BG.max }}>{fmtUsd(s.max)}</td>
+                <td style={{ textAlign: 'right', fontWeight: 600, borderLeft: GROUP_EDGE }}>{fmtUsd(s.wavg)}</td>
+                <td style={{ textAlign: 'right' }}>{s.p25 == null ? '—' : `${fmtUsd(s.p25)} – ${fmtUsd(s.p75)}`}</td>
+                <td style={{ textAlign: 'right' }}>{fmtUsd(s.min)}</td>
+                <td style={{ textAlign: 'right', borderRight: GROUP_EDGE }}>{fmtUsd(s.max)}</td>
                 <td style={{ fontSize: 12, color: 'var(--muted)' }}>
                   {s.count === 0 ? 'Không có dữ liệu' : s.period === best ? 'Giá tốt nhất (đủ dữ liệu)' : s.low_data ? `Ít dữ liệu (< ${minLines} dòng)` : ''}
                 </td>

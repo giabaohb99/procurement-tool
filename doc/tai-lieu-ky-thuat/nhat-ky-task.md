@@ -70,6 +70,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-519 | Tra cứu thị trường: bỏ tô nền cột, gom bốn cột giá bằng vạch dọc
+- status: dang-lam
+- date: 2026-09-28
+Đại ca xem bản tô nền cả cột thì thấy hàng «Giá tốt nhất» không còn nổi, nên bảo trả bảng về như bản
+đầu nhưng vẫn cần cách phân biệt các cột, và chọn kiểu gom nhóm bằng đường kẻ dọc. Em bỏ nền cột,
+thân bảng để trắng. Ở màn cũ, bốn cột giá có thêm một hàng tiêu đề chung «Giá (USD/đơn vị)» và hai
+vạch dọc đậm hai bên nhóm. Ở màn mới, bảng dùng chung chưa có hàng tiêu đề nhóm nên em thêm tùy
+chọn vạch dọc đậm cho từng cột, đặt sau cột Tổng lượng và sau cột Cao nhất.
+
+Kiểm: kiểm kiểu và lint không lỗi, 741 bài kiểm của bảng dùng chung và phần thu mua xanh, màn cũ giữ
+đúng 4 lỗi nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09.
+
+Mã nguồn: `frontend-v2/src/shared/data-table` (`dividerAfter`) · `customs-price-chart.tsx` ·
+`frontend/src/components/customs/CustomsChart.tsx`
+
 ## bao-CR-518 | Tô nền bốn cột giá ở Tra cứu thị trường, căn giữa ba cột giai đoạn chi phí
 - status: dang-lam
 - date: 2026-09-28

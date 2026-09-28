@@ -137,6 +137,7 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 140,
         align: 'right',
         hideable: false,
+        dividerAfter: true,
         cell: (p) => <span className="tabular-nums">{p.count ? formatQuantity(p.qty) : '—'}</span>,
       },
       {
@@ -145,9 +146,9 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 110,
         align: 'right',
         hideable: false,
-        //  bao-CR-518 (đại ca chọn 28/09): bốn cột giá TÔ NỀN cả cột, chữ giữ màu thường —
-        //  thay bản 516 tô chữ + ô nền riêng ở Khoảng phổ biến (nhìn lốm đốm).
-        defaultColor: 'green',
+        //  bao-CR-519 (đại ca chọn 28/09): bỏ tô nền cột của 518 — nền cột làm hàng «Giá tốt
+        //  nhất» chìm mất. Bốn cột giá gom thành NHÓM bằng hai vạch dọc đậm (sau cột Tổng
+        //  lượng và sau cột Cao nhất), thân bảng để trắng như bản đầu.
         cell: (p) => <span className="tabular-nums">{formatUsd(p.min)}</span>,
       },
       {
@@ -156,7 +157,6 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 180,
         align: 'right',
         hideable: false,
-        defaultColor: 'cyan',
         cell: (p) => <span className="tabular-nums">{formatCommonRange(p)}</span>,
       },
       {
@@ -165,16 +165,15 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 150,
         align: 'right',
         hideable: false,
-        defaultColor: 'blue',
         cell: (p) => <span className="font-semibold tabular-nums">{formatUsd(p.wavg)}</span>,
       },
       {
         key: 'max',
         header: 'Cao nhất',
+        dividerAfter: true,
         width: 110,
         align: 'right',
         hideable: false,
-        defaultColor: 'red',
         cell: (p) => <span className="tabular-nums">{formatUsd(p.max)}</span>,
       },
       {

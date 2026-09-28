@@ -63,6 +63,13 @@ const HEAD_CELL =
 const BODY_CELL =
   'min-h-9 px-3 py-1.5 align-middle text-[13.5px] text-foreground shadow-[inset_-1px_0_0_0_var(--border)] last:shadow-none'
 /**
+ * Vạch ngăn NHÓM cột (`dividerAfter`, bao-CR-519): cùng cơ chế `inset shadow` với vạch
+ * thường, chỉ dày 2px và đậm màu hơn — đè lên shadow của `HEAD_CELL` / `BODY_CELL` nhờ
+ * `tailwind-merge` (lớp sau thắng), ô tiêu đề giữ thêm vạch đáy.
+ */
+const DIVIDER_HEAD = 'shadow-[inset_-2px_0_0_0_var(--muted-foreground),inset_0_-1px_0_0_var(--border)]'
+const DIVIDER_BODY = 'shadow-[inset_-2px_0_0_0_var(--muted-foreground)]'
+/**
  * Thân bảng HÀNG CHẴN LẺ ĐẬM NHẠT XEN KẼ (Zebra striping đậm rõ màu):
  * Hàng lẻ (odd): nền thẻ `bg-card`
  * Hàng chẵn (even): `even:bg-row-stripe`
@@ -590,7 +597,12 @@ export function DataTable<T>({
                   key={column.key}
                   column={column}
                   width={widthOf(column)}
-                  className={cn(HEAD_CELL, alignClass(column.align), pinClass(column.key, true))}
+                  className={cn(
+                    HEAD_CELL,
+                    column.dividerAfter && DIVIDER_HEAD,
+                    alignClass(column.align),
+                    pinClass(column.key, true),
+                  )}
                   colorStyle={columnColorStyle(columnColors[column.key], 'head')}
                   pinnedOffset={pinOffset(column.key)}
                   pinnedRightOffset={pinRightOffset(column.key)}
@@ -689,6 +701,7 @@ export function DataTable<T>({
                         }}
                         className={cn(
                           BODY_CELL,
+                          column.dividerAfter && DIVIDER_BODY,
                           alignClass(column.align),
                           pinClass(column.key),
                           // Cột đang bay theo con trỏ thì bản gốc mờ đi —

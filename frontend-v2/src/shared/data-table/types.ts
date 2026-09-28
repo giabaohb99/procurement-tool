@@ -63,6 +63,12 @@ export interface DataTableColumn<T> {
    * menu «Cột» vẫn thắng.
    */
   defaultColor?: string
+  /**
+   * `true` = vạch dọc ĐẬM ở mép phải cột này — ngăn một NHÓM cột với phần còn lại
+   * (vd bốn cột giá của Tra cứu thị trường, bao-CR-519: đánh dấu cột trước nhóm và cột
+   * cuối nhóm). Chỉ đổi độ đậm vạch có sẵn, không đổi nền nên hàng tô nền vẫn nổi.
+   */
+  dividerAfter?: boolean
 }
 
 /**

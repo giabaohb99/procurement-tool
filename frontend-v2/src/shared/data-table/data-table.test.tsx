@@ -361,3 +361,19 @@ describe('DataTable — defaultColor', () => {
     expect(head).not.toContain('22, 163, 74')
   })
 })
+
+/** bao-CR-519 — vạch ngăn nhóm cột: chỉ cột khai `dividerAfter` có vạch đậm, ở cả tiêu đề lẫn thân. */
+describe('DataTable — dividerAfter', () => {
+  it('draws the thick group divider only on columns that declare it', () => {
+    const table = build([
+      { key: 'name', header: 'Tên', cell: (r) => r.name, dividerAfter: true },
+      { key: 'note', header: 'Ghi chú', cell: (r) => r.note },
+    ])
+    const heads = table.querySelectorAll('thead th')
+    const cells = table.querySelectorAll('tbody td')
+    expect(heads[0].className).toContain('inset_-2px')
+    expect(cells[0].className).toContain('inset_-2px')
+    expect(heads[1].className).not.toContain('inset_-2px')
+    expect(cells[1].className).not.toContain('inset_-2px')
+  })
+})
