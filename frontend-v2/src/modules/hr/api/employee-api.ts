@@ -1,5 +1,6 @@
-import { apiDelete, apiGet, apiPatch, apiPost, httpClient } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, httpClient } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
+import type { SelfContactPayload } from '../schemas/self-contact-schema'
 import type {
   Employee,
   EmployeeContact,
@@ -59,6 +60,22 @@ export const employeeApi = {
    * — đó là trạng thái hợp lệ chứ không phải lỗi.
    */
   getMine: () => apiGet<EmployeeDetail | null>(`${BASE_URL}/me`),
+
+  // ── Tự sửa LIÊN HỆ ở Trang cá nhân (bao-CR-508) ──────────────────────────
+  //  Ba cửa chỉ đòi ĐĂNG NHẬP, hồ sơ lấy từ phiên — không nhận id nào. Backend
+  //  cấm khóa lạ (`extra="forbid"`), nên thân gửi lên phải dựng bằng
+  //  `toSelfContactPayload`, đừng rải nguyên object hồ sơ vào.
+
+  /** Số điện thoại + hai địa chỉ của chính mình. Trả lại hồ sơ đã lưu. */
+  updateMyContact: (payload: SelfContactPayload) =>
+    apiPatch<EmployeeDetail>(`${BASE_URL}/me/contact`, payload),
+
+  /** Người báo tin của chính mình — không cần `employee_sensitive.read`. */
+  getMyContacts: () => apiGet<EmployeeContact[]>(`${BASE_URL}/me/contacts`),
+
+  /** ĐẶT LẠI cả bảng người báo tin của chính mình. Dòng trống họ tên bị bỏ. */
+  setMyContacts: (items: Omit<EmployeeContact, 'id' | 'sort_order'>[]) =>
+    apiPut<EmployeeContact[]>(`${BASE_URL}/me/contacts`, { items }),
 
   create: (payload: EmployeeFormValues) =>
     apiPost<Employee>(BASE_URL, toEmployeePayload(payload)),

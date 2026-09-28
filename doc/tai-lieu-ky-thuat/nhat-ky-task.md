@@ -70,6 +70,37 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-508 | Người dùng tự sửa số điện thoại, địa chỉ và người báo tin ở Trang cá nhân
+- status: dang-lam
+- date: 2026-09-28
+Khách chốt ngày 28/09 rằng ai đã có hồ sơ nhân sự cũng phải tự sửa được thông tin liên hệ
+của chính mình, không phải nhờ phòng Nhân sự. Em mở cho mọi người tự sửa đúng bốn thứ trên
+Trang cá nhân: số điện thoại, địa chỉ thường trú, địa chỉ hiện nay và danh sách người báo tin
+khi cần thiết. Các nhóm khác như tài khoản ngân hàng, giấy tờ tùy thân, phòng ban, chức vụ vẫn
+chỉ phòng Nhân sự sửa. Lưu là áp dụng ngay, không báo phòng Nhân sự, nhưng vẫn ghi vào lịch sử
+hồ sơ, và chỉ kể những ô thật sự đổi.
+
+Phía máy chủ có ba đường API mới chỉ cần đăng nhập; hồ sơ được lấy từ tài khoản đang đăng
+nhập chứ không nhận mã hồ sơ từ người gửi, nên không ai sửa được hồ sơ của người khác. Gửi kèm
+bất kỳ ô nào ngoài bốn thứ trên (phòng ban, số tài khoản, pháp nhân…) thì bị từ chối cả lần lưu.
+Tài khoản chưa gắn hồ sơ nhân sự nhận câu báo rõ ràng. Không có migration, không thêm khóa quyền.
+
+Trên giao diện, thẻ «Địa chỉ» chỉ xem trước đây đổi thành thẻ «Liên hệ» có nút «Sửa» mở hộp
+thoại; ngay dưới là bảng người báo tin dùng lại đúng bảng của hồ sơ nhân sự. Hai nút lưu đều
+chặn bấm đúp. Lưu xong thì Trang cá nhân, màn hồ sơ bên Nhân sự và danh sách nhân sự tự nạp lại.
+
+Kiểm: 33 bài kiểm mới phía máy chủ xanh (người không có quyền nhân sự vẫn sửa được, gửi ô ngoài
+nhóm bị chặn và không ghi gì, không trỏ được sang hồ sơ khác, chuỗi quá dài bị chặn, có dòng
+nhật ký), cùng 173 bài hồ sơ nhân sự liên quan xanh; 599 bài kiểm giao diện của Trang cá nhân và
+phân hệ Nhân sự xanh, kiểm kiểu và lint không lỗi. Đã commit, đẩy lên erp-v2 và deploy dev ngày 28/09; chưa bấm thử trên
+trình duyệt.
+
+Mã nguồn: `employee/controller.py` (`update_my_contact`, `list_my_contacts`, `set_my_contacts`) ·
+`employee/schema.py` (`SelfContactUpdate`, `SelfContactsIn`) · `employee/self_contact_service.py` ·
+`frontend-v2/src/app/components/profile/profile-contact-card.tsx`, `self-contact-dialog.tsx`,
+`profile-emergency-contacts.tsx` · `modules/hr/hooks/use-my-contact.ts` ·
+`modules/hr/schemas/self-contact-schema.ts` · `test/backend/test_tu_sua_lien_he_ca_nhan.py`
+
 ## bao-CR-507 | Tự sửa hồ sơ nhân sự của chính mình không còn bị chặn vì ô phòng ban
 - status: xong
 - date: 2026-09-28

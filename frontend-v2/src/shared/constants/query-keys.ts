@@ -161,6 +161,11 @@ export const queryKeys = {
     employee: (id: number) => ['hr', 'employees', id] as const,
     /** Hồ sơ nhân sự của chính người đang đăng nhập (`/api/employees/me`). */
     myEmployee: () => ['hr', 'employees', 'me'] as const,
+    /**
+     * Người báo tin của CHÍNH MÌNH (`/api/employees/me/contacts`, bao-CR-508).
+     * Nằm DƯỚI `myEmployee` nên nạp lại hồ sơ của tôi là quét luôn bảng này.
+     */
+    myEmployeeContacts: () => ['hr', 'employees', 'me', 'contacts'] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     //  Hai bảng con của hồ sơ (duoc-CR-314). Nằm DƯỚI khóa hồ sơ nên
     //  `invalidateQueries({ queryKey: hr.all })` quét luôn — không cần nhớ gọi

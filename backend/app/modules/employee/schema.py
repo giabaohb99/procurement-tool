@@ -491,3 +491,35 @@ class EmployeeFamiliesIn(BaseModel):
     """Đặt lại TOÀN BỘ danh sách thành viên hộ gia đình của một hồ sơ."""
 
     items: list[EmployeeFamilyIn] = Field(default_factory=list, max_length=MAX_PEOPLE_ROWS)
+
+
+# ── Tự sửa LIÊN HỆ ở Trang cá nhân (bao-CR-508) ─────────────────────────────
+#  Khách chốt 28/09/2026: ai đã gắn hồ sơ nhân sự cũng tự sửa được NHÓM LIÊN HỆ
+#  của chính mình — số điện thoại, hai địa chỉ, người báo tin — không cần khóa
+#  `employee.write`. Mọi nhóm khác (ngân hàng, giấy tờ, phòng ban, chức vụ…)
+#  vẫn chỉ phòng Nhân sự sửa.
+#
+#  ⚠️ `extra="forbid"` là CHỐT, không phải cho gọn. Cửa này mở cho MỌI tài
+#  khoản; để mặc định của Pydantic (lờ khóa lạ) thì hôm nào có người thêm một
+#  trường vào đây "cho tiện" là cửa tự phục vụ âm thầm ghi được thứ đó. Gửi
+#  `department_id` / `bank_account_no` / `company_id` phải ăn 422 ngay, để
+#  client sai được sửa chứ không được chiều.
+#
+#  Độ dài lấy đúng bí danh của `EmployeeUpdate` — khớp `String(n)` ở `model.py`.
+#  `None` = không gửi ô đó (giữ nguyên), cùng luật PATCH của hồ sơ.
+
+class SelfContactUpdate(BaseModel):
+    """Ba ô liên hệ người dùng TỰ sửa được trên hồ sơ của chính mình."""
+
+    model_config = {"extra": "forbid"}
+
+    phone: Str25 | None = None
+    permanent_address: Str500 | None = None
+    current_address: Str500 | None = None
+
+
+class SelfContactsIn(EmployeeContactsIn):
+    """Danh sách người báo tin — cùng trần dòng và cùng luật từng dòng với cửa
+    của phòng Nhân sự (`EmployeeContactsIn`); chỉ thêm chốt khóa lạ ở gốc."""
+
+    model_config = {"extra": "forbid"}

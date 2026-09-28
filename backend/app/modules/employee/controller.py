@@ -10,11 +10,11 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
-from . import (contact_service, department_service, position_service, sensitive,
-               service)
+from . import (contact_service, department_service, position_service,
+               self_contact_service, sensitive, service)
 from .schema import (EmployeeContactOut, EmployeeContactsIn, EmployeeCreate,
                      EmployeeDetailOut, EmployeeFamiliesIn, EmployeeFamilyOut,
-                     EmployeeOut, EmployeeUpdate)
+                     EmployeeOut, EmployeeUpdate, SelfContactsIn, SelfContactUpdate)
 
 router = APIRouter(prefix="/api/employees", tags=["employee"])
 
@@ -74,9 +74,65 @@ def get_my_employee(db: Session = Depends(get_db), user=Depends(get_current_user
         #  của người đang đăng nhập nên đừng ném 404 vào mặt họ.
         return success(None, "Không tìm thấy hồ sơ nhân sự gắn với tài khoản này")
 
+    return success(_my_detail(db, user, obj))
+
+
+def _my_detail(db: Session, user, obj) -> dict:
+    """Bản chi tiết hồ sơ của chính mình, đi qua `sensitive.mask` như mọi cửa."""
     data = EmployeeDetailOut.model_validate(obj).model_dump()
     profile = get_perm_profile(db, user)
-    return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id)))
+    return sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id))
+
+
+# ── Tự sửa LIÊN HỆ ở Trang cá nhân (bao-CR-508) ─────────────────────────────
+#  Cùng lý lẽ với `GET /me`: chỉ đòi ĐĂNG NHẬP, hồ sơ lấy từ `user.employee_id`
+#  chứ không từ URL/thân yêu cầu, nên không có tham số nào để trỏ sang người
+#  khác. Schema `SelfContactUpdate` / `SelfContactsIn` cấm khóa lạ — gửi kèm
+#  `department_id` hay `bank_account_no` là 422, không phải lờ đi.
+#
+#  ⚠️ Cả ba cửa phải khai TRƯỚC `/{eid}` và `/{eid}/contacts`: «me» rơi vào
+#  `eid: int` là 422 chứ FastAPI không dò tiếp route sau.
+
+@router.patch("/me/contact")
+def update_my_contact(data: SelfContactUpdate, db: Session = Depends(get_db),
+                      user=Depends(get_current_user)):
+    """Tự sửa số điện thoại + hai địa chỉ. Áp ngay, không báo phòng Nhân sự."""
+    emp = self_contact_service.get_own_employee(db, user)
+    changed = self_contact_service.update_own_contact(db, emp, data, user.id)
+    #  Không đổi ô nào thì không ghi nhật ký — bấm Lưu mà giữ nguyên không phải
+    #  một thao tác sửa hồ sơ, ghi vào chỉ làm dòng thời gian nhiễu.
+    if changed:
+        audit_record(db, user.id, "employee", emp.id, "update",
+                     "Tự sửa liên hệ ở Trang cá nhân: " + ", ".join(changed),
+                     doc_code=emp.code or "")
+    return success(_my_detail(db, user, emp),
+                   "Đã cập nhật thông tin liên hệ" if changed else "Không có thay đổi nào")
+
+
+@router.get("/me/contacts")
+def list_my_contacts(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Người báo tin của CHÍNH MÌNH — không cần `employee_sensitive.read` (ngoại
+    lệ `self`, xem `sensitive.can_read_sensitive`)."""
+    emp = self_contact_service.get_own_employee(db, user)
+    rows = contact_service.list_contacts(db, emp.id)
+    return success([EmployeeContactOut.model_validate(r).model_dump() for r in rows])
+
+
+@router.put("/me/contacts")
+def set_my_contacts(data: SelfContactsIn, db: Session = Depends(get_db),
+                    user=Depends(get_current_user)):
+    """Đặt lại danh sách người báo tin của chính mình — cùng `contact_service`
+    với cửa của phòng Nhân sự, nên trần 30 dòng và luật bỏ dòng rỗng họ tên
+    chỉ có một bản."""
+    emp = self_contact_service.get_own_employee(db, user)
+    rows = contact_service.set_contacts(db, emp.id, data.items, user.id)
+    emp.updated_by = user.id
+    db.commit()
+    audit_record(db, user.id, "employee", emp.id, "update",
+                 f"Tự cập nhật người báo tin ở Trang cá nhân ({len(rows)} người)",
+                 doc_code=emp.code or "")
+    return success([EmployeeContactOut.model_validate(r).model_dump() for r in rows],
+                   "Đã cập nhật người báo tin")
 
 
 #  ⚠️ `/me` phải khai TRƯỚC `/{eid}`: FastAPI dò route theo thứ tự khai, để sau

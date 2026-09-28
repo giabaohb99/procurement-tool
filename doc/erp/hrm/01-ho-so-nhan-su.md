@@ -167,7 +167,7 @@ Hai bảng đều là chi tiết của hồ sơ (không có màn danh sách riê
 | C3 | Màn chi tiết xếp tab | Tab **Chung** (nhóm 1+2) / **Liên hệ & Ngân hàng** (nhóm 3+4, kèm bảng người báo tin) / **Giấy tờ & BHXH** (nhóm 5, upload 2 ảnh CCCD, kèm bảng hộ gia đình) / **Quỹ phép** (link sang phân hệ Nghỉ phép sẵn có) / **Tài khoản** (mục 6). Sau này thêm tab Hợp đồng lao động, Lịch sử điều chuyển. *(bao-CR-472, 23/09/2026: ô **Email công việc** dời từ tab Liên hệ & Ngân hàng sang tab **Chung**, cuối mục Công việc — nó là email đăng nhập, xem U4)* |
 | C4 | Upload ảnh CCCD | 2 tệp ảnh, đi theo cơ chế upload tệp sẵn có, đường dẫn lưu vào 2 cột |
 | C5 | In "Phiếu thông tin nhân viên" | Xuất bản in theo đúng khuôn BM00../QT01/NS từ dữ liệu đã nhập — thay thế việc điền giấy; dùng cơ chế bản in sẵn có |
-| C6 | Nhân viên tự khai | Giai đoạn 2 (không làm ngay): nhân viên đăng nhập tự điền phần thông tin cá nhân của chính mình, nhân sự duyệt lại. Nền tảng scope `self` của hệ phân quyền đã đỡ được |
+| C6 | Nhân viên tự khai | Giai đoạn 2 (không làm ngay): nhân viên đăng nhập tự điền phần thông tin cá nhân của chính mình, nhân sự duyệt lại. Nền tảng scope `self` của hệ phân quyền đã đỡ được. *(bao-CR-508, 28/09/2026: riêng nhóm LIÊN HỆ đã mở cho tự sửa, áp ngay không qua duyệt — xem §7.9)* |
 | C7 | Xuất CSV | Đã có xuất CSV danh sách; KHÔNG xuất các cột nhạy cảm trừ khi người xuất có quyền xem nhóm nhạy cảm |
 
 ### 5.2 Phân quyền
@@ -559,3 +559,55 @@ bằng cách chỉnh khoảng cách: cái thiếu là một cái NEO. Kiểu g�
 kẻ chân làm neo đó. Hằng dùng chung ở `shared/ui/tab-underline.ts` (dời từ
 `modules/hr/utils/list-tab-underline.ts` — `CrudDetailPage` ở `shared/` không
 được import ngược vào phân hệ).
+
+### 7.9. Tự sửa LIÊN HỆ ở Trang cá nhân (bao-CR-508, 28/09/2026)
+
+Khách chốt 28/09/2026: mọi người dùng đã gắn hồ sơ nhân sự (`user.employee_id > 0`)
+**tự sửa được nhóm LIÊN HỆ của chính mình** ngay trên Trang cá nhân (`/me`, tab
+«Thông tin cá nhân»), không cần khóa `employee.write`. Lưu là **áp ngay**, không gửi
+thông báo cho phòng Nhân sự, nhưng vẫn để lại dấu trong lịch sử hồ sơ như mọi lần
+sửa khác. Đây là phần đầu của C6 (§5.1) — chỉ nhóm liên hệ, không có bước duyệt lại.
+
+| Được tự sửa | Cột / bảng |
+|---|---|
+| Số điện thoại | `tab_employee.phone` (25 ký tự) |
+| Địa chỉ thường trú | `tab_employee.permanent_address` (500) |
+| Địa chỉ hiện nay (tạm trú) | `tab_employee.current_address` (500) |
+| Người báo tin trong trường hợp cần thiết | `tab_employee_contact` (tối đa 30 dòng) |
+
+**KHÔNG tự sửa được:** ngân hàng nhận lương, giấy tờ (CCCD · MST · BHXH), pháp nhân,
+phòng ban, chức vụ, tình trạng làm việc và mọi ô còn lại — vẫn chỉ phòng Nhân sự sửa
+ở `/hr/employees/:id`.
+
+**Ba đường API riêng** (không đụng `PATCH /api/employees/{id}` của phòng Nhân sự):
+
+| Đường API | Việc |
+|---|---|
+| `PATCH /api/employees/me/contact` | Sửa ba ô liên hệ. Ô không gửi thì giữ nguyên; gửi `null` là xóa trắng |
+| `GET /api/employees/me/contacts` | Đọc danh sách người báo tin của chính mình |
+| `PUT /api/employees/me/contacts` | Đặt lại cả danh sách một lượt (cùng `contact_service.set_contacts` với cửa của phòng Nhân sự) |
+
+- ⚠️ Cả ba **chỉ đòi đăng nhập** (`get_current_user`), hồ sơ lấy từ
+  `user.employee_id` của phiên — không nhận id nào từ URL hay thân yêu cầu, nên
+  không có cách trỏ sang hồ sơ người khác. Cùng lý lẽ với `GET /api/employees/me`
+  (duoc-CR-378). Ba đường khai **trước** `/{eid}` và `/{eid}/contacts`, không thì
+  «me» rơi vào `eid: int` và ra 422.
+- ⚠️ Khuôn dữ liệu `SelfContactUpdate` / `SelfContactsIn` khai **`extra="forbid"`**:
+  gửi kèm `department_id`, `bank_account_no`, `company_id`… là **422**, không ô nào
+  được ghi. Cố ý không «lờ khóa lạ» — cửa mở cho mọi tài khoản thì phải từ chối to
+  tiếng. Độ dài dùng đúng bí danh `Str25` / `Str500` của `EmployeeUpdate`.
+- Tài khoản chưa gắn hồ sơ nhân sự nhận **400** kèm câu «chưa gắn hồ sơ nhân sự»;
+  tài khoản trỏ tới hồ sơ đã xóa nhận **404**. Giao diện không dựng thẻ sửa cho hai
+  trường hợp này.
+- **Nhật ký:** `core/audit.record` ghi một dòng trên entity `employee` («Tự sửa liên
+  hệ ở Trang cá nhân: số điện thoại, …» — chỉ kể ô ĐỔI THẬT; bấm Lưu mà không đổi gì
+  thì không ghi), và lớp ORM `core/change_tracker` tự ghi giá trị trước/sau như mọi
+  lần sửa hồ sơ.
+- **Giao diện:** thẻ «Địa chỉ» chỉ-xem cũ ở `/me` đổi thành thẻ **«Liên hệ»**
+  (`ProfileContactCard`) gồm ba ô kèm nút **«Sửa»** mở hộp thoại; ngay dưới là bảng
+  **«Người báo tin…»** dùng lại nguyên `EmployeePeopleEditor` của hồ sơ nhân sự (cùng
+  bộ cột `hr/config/employee-contact-columns.ts`, cùng trần 30 dòng, cùng chốt phím
+  Enter). Hai nút lưu chặn bấm đúp bằng `useRef`. Lưu xong nạp lại Trang cá nhân,
+  màn hồ sơ bên Nhân sự, danh sách nhân sự và phiên đăng nhập (số điện thoại ở thẻ
+  «Tài khoản»).
+- Không migration, không khóa quyền mới.

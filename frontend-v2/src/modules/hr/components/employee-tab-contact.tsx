@@ -4,21 +4,17 @@ import {
   EmployeeTextField,
   SensitiveFieldsNotice,
 } from './employee-form-fields'
-import { EmployeePeopleEditor, type PeopleColumn } from './employee-people-editor'
+import { EmployeePeopleEditor } from './employee-people-editor'
+import {
+  CONTACT_COLUMNS,
+  createEmptyContactRow,
+  toContactPayload,
+} from '../config/employee-contact-columns'
 import {
   useEmployeeContacts,
   useSaveEmployeeContacts,
 } from '../hooks/use-employee-profile'
 import type { EmployeeContact } from '../types/employee'
-
-/** Cột của bảng «Người báo tin» — khai ở tầng module, không dựng lại mỗi render. */
-const CONTACT_COLUMNS: PeopleColumn<EmployeeContact>[] = [
-  { key: 'full_name', label: 'Họ tên', kind: 'text', span: 3 },
-  //  Ô CHỌN, không gõ tay (khách chốt 08/09/2026). Quan hệ với NHÂN VIÊN.
-  { key: 'relation', label: 'Quan hệ', kind: 'relation', span: 2, placeholder: '— Chọn quan hệ —' },
-  { key: 'phone', label: 'Điện thoại', kind: 'phone', span: 2 },
-  { key: 'address', label: 'Địa chỉ', kind: 'text', span: 4 },
-]
 
 interface EmployeeTabContactProps {
   employeeId: number
@@ -100,26 +96,10 @@ export function EmployeeTabContact({
           columns={CONTACT_COLUMNS}
           rows={contacts.data}
           isLoading={contacts.isLoading}
-          emptyRow={() => ({
-            id: 0,
-            full_name: '',
-            relation: 0,   // 0 = chưa khai, xem RELATION_OPTIONS
-            address: '',
-            phone: '',
-            sort_order: 0,
-          })}
+          emptyRow={createEmptyContactRow}
           canWrite={canWrite}
           isSaving={saveContacts.isPending}
-          onSave={(rows) =>
-            saveContacts.mutate(
-              rows.map(({ full_name, relation, address, phone }) => ({
-                full_name,
-                relation,
-                address,
-                phone,
-              })),
-            )
-          }
+          onSave={(rows) => saveContacts.mutate(toContactPayload(rows))}
         />
       )}
     </div>

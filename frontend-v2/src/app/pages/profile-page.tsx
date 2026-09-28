@@ -5,7 +5,9 @@ import { useSearchParams } from 'react-router-dom'
 
 import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
 import { ProfileAiKeyTab } from '@/app/components/profile/profile-ai-key-tab'
+import { ProfileContactCard } from '@/app/components/profile/profile-contact-card'
 import { ProfileDevicesTab } from '@/app/components/profile/profile-devices-tab'
+import { ProfileEmergencyContacts } from '@/app/components/profile/profile-emergency-contacts'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
@@ -264,7 +266,18 @@ export function ProfilePage() {
                          (admin, tài khoản hệ thống): không dựng khối nào, và thẻ
                          «Hồ sơ nhân sự» phía trên đã có sẵn câu nhắc liên hệ bộ
                          phận Nhân sự. */}
-                    {myEmployee && <ProfileHrDetails employee={myEmployee} />}
+                    {/*  bao-CR-508 — nhóm LIÊN HỆ tự sửa được: thẻ «Liên hệ» cắm
+                         vào cuối lưới hồ sơ (thay thẻ «Địa chỉ» chỉ-xem cũ), bảng
+                         người báo tin chạy hết bề ngang ngay dưới vì mỗi dòng có
+                         bốn ô nhập. */}
+                    {myEmployee && (
+                      <>
+                        <ProfileHrDetails employee={myEmployee}>
+                          <ProfileContactCard employee={myEmployee} />
+                        </ProfileHrDetails>
+                        <ProfileEmergencyContacts employeeId={myEmployee.id} />
+                      </>
+                    )}
 
                     {/*  ⚠️ Gọi TRẦN, đừng bọc `FormCard`. `AuditTimeline` tự dựng
                          `Card` kèm tiêu đề «Lịch sử thao tác» của chính nó, nên

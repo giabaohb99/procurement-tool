@@ -25,7 +25,7 @@ interface ProfileField {
   icon: LucideIcon
 }
 
-// Hồ sơ nhân sự do bộ phận Nhân sự quản lý — trang này chỉ HIỂN THỊ, không sửa.
+// Hồ sơ nhân sự do bộ phận Nhân sự quản lý — thẻ này chỉ HIỂN THỊ, không sửa.
 const HR_FIELDS: ProfileField[] = [
   { key: 'full_name', label: 'Họ và tên', icon: User },
   { key: 'emp_code', label: 'Mã nhân viên', icon: IdCard },
@@ -79,6 +79,11 @@ function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
  *
  * Cố ý không cho sửa hồ sơ tại đây: mã nhân viên, phòng ban và vai trò là dữ liệu
  * gốc của phân hệ Nhân sự, sửa ở hai nơi thì sớm muộn cũng lệch nhau.
+ *
+ * Nhóm LIÊN HỆ (số điện thoại · hai địa chỉ · người báo tin) là ngoại lệ, tự sửa
+ * được từ bao-CR-508 — nhưng ở thẻ «Liên hệ» (`ProfileContactCard`), không ở
+ * đây. Số điện thoại trong khối «Tài khoản» vẫn chỉ xem; nó đọc từ phiên đăng
+ * nhập và được nạp lại sau khi người dùng tự sửa.
  */
 export function ProfileInfoCard({ profile }: { profile: AuthUser }) {
   return (
@@ -98,7 +103,8 @@ export function ProfileInfoCard({ profile }: { profile: AuthUser }) {
           <Info className="mt-0.5 size-3.5 shrink-0" />
           <span>
             Hồ sơ nhân sự và vai trò do bộ phận Nhân sự / Quản trị hệ thống cập nhật. Nếu thông tin
-            chưa đúng, hãy liên hệ bộ phận Nhân sự để được chỉnh sửa.
+            chưa đúng, hãy liên hệ bộ phận Nhân sự để được chỉnh sửa. Số điện thoại, địa chỉ và
+            người báo tin thì bạn tự sửa ở thẻ «Liên hệ» bên dưới.
           </span>
         </p>
       </FormCard>

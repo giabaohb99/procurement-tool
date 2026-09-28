@@ -9,7 +9,6 @@ import {
   GraduationCap,
   Heart,
   HeartPulse,
-  Home,
   IdCard,
   Landmark,
   Mail,
@@ -21,6 +20,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import type { Employee } from '@/modules/hr/types/employee'
 import { FormCard } from '@/shared/ui/form-card'
@@ -42,11 +42,14 @@ function asDate(value?: string | null): string {
 }
 
 /**
- * HỒ SƠ NHÂN SỰ ĐẦY ĐỦ ở Trang cá nhân — sáu khối, CHỈ XEM.
+ * HỒ SƠ NHÂN SỰ ĐẦY ĐỦ ở Trang cá nhân — năm khối CHỈ XEM + chỗ cắm thẻ «Liên hệ».
  *
  * ⚠️ **Vì sao chỉ xem.** Mã nhân viên, phòng ban, vai trò… là dữ liệu gốc của
- * phân hệ Nhân sự; cho sửa ở hai nơi thì sớm muộn cũng lệch nhau. Đây là quyết
- * định có sẵn của trang, đợt này chỉ bổ sung thứ để ĐỌC chứ không mở cửa ghi.
+ * phân hệ Nhân sự; cho sửa ở hai nơi thì sớm muộn cũng lệch nhau. NGOẠI LỆ duy
+ * nhất là nhóm LIÊN HỆ (bao-CR-508, khách chốt 28/09/2026): số điện thoại, hai
+ * địa chỉ, người báo tin — người dùng tự sửa. Thẻ đó (`ProfileContactCard`) do
+ * nơi gọi truyền vào qua `children` và đứng CUỐI lưới, thay chỗ thẻ «Địa chỉ»
+ * chỉ-xem cũ — khối này không tự gọi API ghi nào.
  *
  * ⚠️ **KHÔNG dựng `SensitiveFieldsNotice` ở đây, và đó là chủ ý.** Ở màn hồ sơ
  * người khác, 15 trường nhạy cảm (ngày sinh · MST · địa chỉ nhà · ngân hàng ·
@@ -60,7 +63,13 @@ function asDate(value?: string | null): string {
  * lấy từ `*_label` mà backend gửi kèm, **không tự tra bảng mã ở TS** — bộ mã số
  * của hồ sơ gõ tay ở `hr/types/employee-codes.ts` và rất dễ lệch với backend.
  */
-export function ProfileHrDetails({ employee }: { employee: Employee }) {
+interface ProfileHrDetailsProps {
+  employee: Employee
+  /** Thẻ cắm thêm vào cuối lưới — hiện là thẻ «Liên hệ» tự sửa được. */
+  children?: ReactNode
+}
+
+export function ProfileHrDetails({ employee, children }: ProfileHrDetailsProps) {
   const personal: Field[] = [
     { icon: Cake, label: 'Ngày sinh', value: asDate(employee.date_of_birth) },
     { icon: MapPin, label: 'Nơi sinh', value: employee.place_of_birth },
@@ -94,11 +103,6 @@ export function ProfileHrDetails({ employee }: { employee: Employee }) {
       : []),
   ]
 
-  const address: Field[] = [
-    { icon: Home, label: 'Địa chỉ thường trú', value: employee.permanent_address },
-    { icon: MapPin, label: 'Chỗ ở hiện tại', value: employee.current_address },
-  ]
-
   const idCard: Field[] = [
     { icon: IdCard, label: 'Số CCCD / CMND', value: employee.id_number },
     { icon: CalendarCheck, label: 'Ngày cấp', value: asDate(employee.id_issue_date) },
@@ -122,7 +126,8 @@ export function ProfileHrDetails({ employee }: { employee: Employee }) {
   //  ⚠️ Thứ tự XẾP THEO CẶP chứ không theo mạch đọc: lưới hai cột lấy chiều cao
   //  của thẻ CAO NHẤT trong mỗi hàng, nên ghép «Thông tin cá nhân» (9 dòng) với
   //  «Địa chỉ» (2 dòng) là chừa một lỗ trắng bảy dòng bên phải. Ghép thẻ dài với
-  //  thẻ dài, ngắn với ngắn thì hai cột đi gần bằng nhau.
+  //  thẻ dài, ngắn với ngắn thì hai cột đi gần bằng nhau. «Bảo hiểm» (3 dòng)
+  //  đứng cặp với thẻ «Liên hệ» (3 dòng) mà nơi gọi cắm vào qua `children`.
   //
   //  Tên thẻ lấy đúng tên `FormSection` mà phân hệ Nhân sự dùng cho cùng bộ
   //  trường ở màn chi tiết nhân sự — người vừa xem hồ sơ người khác rồi mở hồ sơ
@@ -133,7 +138,6 @@ export function ProfileHrDetails({ employee }: { employee: Employee }) {
     { title: 'Căn cước công dân', icon: IdCard, fields: idCard },
     { title: 'Ngân hàng nhận lương', icon: Banknote, fields: bank },
     { title: 'Bảo hiểm', icon: HeartPulse, fields: insurance },
-    { title: 'Địa chỉ', icon: Home, fields: address },
   ]
 
   return (
@@ -156,6 +160,7 @@ export function ProfileHrDetails({ employee }: { employee: Employee }) {
           ))}
         </FormCard>
       ))}
+      {children}
     </div>
   )
 }
