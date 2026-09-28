@@ -70,6 +70,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-517 | Bảng chi phí thu mua ở màn cũ: bỏ chữ VNĐ trên ba cột giai đoạn
+- status: dang-lam
+- date: 2026-09-28
+Trên màn đơn mua hàng nhập khẩu bản cũ, ba cột Dự toán, Tạm tính, Quyết toán ghi đuôi «(VNĐ)» trong khi
+ô đang nhập nhận số theo tiền tệ của dòng, ví dụ 120 đô. Đại ca bảo bỏ chữ VNĐ cho khỏi hiểu nhầm. Em
+bỏ đuôi đó và để câu giải thích khi rê chuột lên tiêu đề: ô đang nhập là số trước thuế theo tiền tệ
+của dòng, dòng đã khóa hiện số quy đổi tiền Việt đã gồm thuế. Màn mới vốn không ghi đơn vị nên giữ
+nguyên.
+
+Kiểm: màn cũ kiểm kiểu giữ đúng 4 lỗi nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09; prod chờ đại ca.
+
+Mã nguồn: `frontend/src/pages/PurchaseOrderDetail.tsx` (`COST_STAGE_HEADER_HINT`)
+
 ## bao-CR-516 | Tra cứu thị trường: ô lọc Phân loại không còn tràn dòng, bốn cột giá có màu riêng
 - status: dang-lam
 - date: 2026-09-28

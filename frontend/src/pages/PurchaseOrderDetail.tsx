@@ -191,6 +191,9 @@ function computeUrgent(items: any[], orderDate: string, stdMap: Record<string, n
   return false
 }
 
+// bao-CR-517 — chú thích chuột cho ba cột giai đoạn chi phí thu mua.
+const COST_STAGE_HEADER_HINT = 'Ô đang nhập: số trước VAT theo tiền tệ của dòng (vd 120 USD). Dòng đã khóa: số quy đổi VNĐ đã gồm VAT.'
+
 export default function PurchaseOrderDetail() {
   const { id } = useParams()
   const isNew = id === 'new'
@@ -1560,11 +1563,14 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 230 }}>Nhà cung cấp</th>
                       <th style={{ width: 95 }}>Tiền tệ</th>
                       <th style={{ width: 70 }}>VAT%</th>
-                      {/* bao-CR-453 GĐ2: ba cột số theo giai đoạn + lệch — đơn vị VNĐ quy đổi */}
-                      <th style={{ width: 130, background: '#f0fdf4', textAlign: 'right' }}>Dự toán (VNĐ)</th>
-                      <th style={{ width: 130, background: '#eff6ff', textAlign: 'right' }}>Tạm tính (VNĐ)</th>
-                      <th style={{ width: 130, background: '#fff3cd', textAlign: 'right' }}>Quyết toán (VNĐ)</th>
-                      <th style={{ width: 110, textAlign: 'right' }}>Lệch</th>
+                      {/* bao-CR-453 GĐ2: ba cột số theo giai đoạn + lệch.
+                          bao-CR-517: bỏ đuôi «(VNĐ)» — ô đang gõ nhận số theo TIỀN TỆ CỦA DÒNG (trước
+                          VAT, vd 120 USD), chỉ ô đã khóa mới bày số quy đổi VNĐ gồm VAT; ghi VNĐ trên
+                          tiêu đề làm người nhập tưởng phải gõ tiền Việt. Giải thích để ở chú thích chuột. */}
+                      <th style={{ width: 130, background: '#f0fdf4', textAlign: 'right' }} title={COST_STAGE_HEADER_HINT}>Dự toán</th>
+                      <th style={{ width: 130, background: '#eff6ff', textAlign: 'right' }} title={COST_STAGE_HEADER_HINT}>Tạm tính</th>
+                      <th style={{ width: 130, background: '#fff3cd', textAlign: 'right' }} title={COST_STAGE_HEADER_HINT}>Quyết toán</th>
+                      <th style={{ width: 110, textAlign: 'right' }} title="Số quy đổi VNĐ">Lệch</th>
                       <th style={{ width: 120, textAlign: 'right' }}>Đã chi</th>
                       <th style={{ width: 120, textAlign: 'right' }}>Còn lại</th>
                       <th style={{ width: 110 }}>Số hóa đơn</th>
