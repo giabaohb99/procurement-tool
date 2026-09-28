@@ -70,8 +70,20 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-514 | Đơn PO00122 trên prod: đưa chi phí thu mua về giai đoạn Dự toán
+- status: xong
+- date: 2026-09-28
+Khi nâng cấp lên bản chi phí ba giai đoạn, 15 dòng chi phí cũ của đơn PO00122 bị xếp vào giai
+đoạn Quyết toán và sinh luôn 15 khoản công nợ chi phí 48,3 triệu. Đại ca bảo nếu chưa thanh toán
+thì để ở Dự toán. Em kiểm: chưa chi đồng nào, không có yêu cầu thanh toán nào trỏ vào. Em chuyển
+số tiền sang cột Dự toán rồi mở lại giai đoạn của đơn về Dự toán bằng đúng chức năng Mở lại của hệ
+thống, có ghi lý do vào lịch sử đơn; 15 khoản công nợ chưa chi được gỡ theo. Khi có hóa đơn thật,
+thu mua chốt Tạm tính rồi Quyết toán như bình thường.
+
+Deploy: prod 28/09 13:30, sao lưu `procurement_truoc_po122_du_toan_20260928_1329.sql.gz`
+
 ## bao-CR-513 | Đưa dữ liệu Tra cứu thị trường từ dev lên prod
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
 Sau đợt đẩy prod trưa 28/09, màn Tra cứu thị trường trên prod đã có nhưng chưa có dữ liệu. Đại ca
 bảo đồng bộ dữ liệu, nên em kiểm dữ liệu trên dev trước (không có dòng mồ côi, năm lô không chồng
@@ -80,7 +92,10 @@ giao dịch: 18.243 dòng tờ khai của năm lô từ tháng 1 tới 17/09/202
 bảo vệ thực vật, pháp lý, biểu thuế và tên hoạt chất. Sau khi chép, số dòng, tổng tiền, tổng lượng,
 nhãn thành phẩm và nguyên liệu đều khớp dev; thử 30 đường xem trên prod không lỗi.
 
-Còn lại: trên prod mới có admin vào được màn này, chờ đại ca chỉ vai trò nào được cấp quyền.
+Sau đó theo lời đại ca: cấp quyền cho ba vai trò thu mua (nhân viên xem và xuất Excel; admin thu
+mua và quản lý thu mua được nạp tệp, hoàn tác lô và sửa danh mục) — 21 tài khoản; chép bài hướng
+dẫn «Tra cứu thị trường» từ dev lên trang hướng dẫn prod; thử bốn công cụ trợ lý AI về thị trường
+bằng tài khoản nhân viên thu mua đều ra dữ liệu.
 
 Deploy: prod 28/09 13:25, sao lưu `procurement_truoc_tra_cuu_thi_truong_20260928_1324.sql.gz`
 
