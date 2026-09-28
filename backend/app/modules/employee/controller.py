@@ -285,7 +285,14 @@ def update_employee(
     #  nào: vai trò `employee.write` phạm vi *own* là có thật, nên tự đổi phòng
     #  của mình sang phòng khác là đọc được dữ liệu phòng đó, không cần đụng tới
     #  màn Phân quyền. Hai cửa cùng đổi một thứ thì phải cùng một luật.
-    if data.department_id is not None:
+    #
+    #  ⚠️ Chỉ chặn khi phòng ban ĐỔI THẬT (bao-CR-507). Màn hồ sơ gửi lại MỌI ô mỗi
+    #  lần lưu, kể cả ô phòng ban không ai đụng tới — chặn theo «có gửi» thì người có
+    #  `employee.write` sửa số điện thoại của chính mình cũng ăn câu «không tự đổi
+    #  phòng ban», dù họ không đổi gì ở đó.
+    current = db.get(service.Employee, eid)
+    if (data.department_id is not None and current is not None
+            and int(data.department_id or 0) != int(current.department_id or 0)):
         profile = get_perm_profile(db, user)
         department_service.block_edit_own_department(db, eid, user)
         department_service.block_out_of_scope_departments(db, [data.department_id], user, profile)

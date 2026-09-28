@@ -70,6 +70,20 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-507 | Tự sửa hồ sơ nhân sự của chính mình không còn bị chặn vì ô phòng ban
+- status: xong
+- date: 2026-09-28
+Đại ca sửa số điện thoại trong hồ sơ nhân sự của chính mình thì bị chặn với câu «không tự đổi
+phòng ban của chính mình», dù không hề đụng tới phòng ban. Nguyên nhân: màn hồ sơ lần nào lưu
+cũng gửi lại mọi ô, kể cả ô phòng ban, còn máy chủ thì chặn hễ thấy có ô phòng ban. Em sửa để
+máy chủ chỉ chặn khi phòng ban thật sự đổi so với bản đang lưu; tự đổi phòng ban của mình vẫn
+bị chặn như cũ vì phòng ban quyết định phạm vi dữ liệu người đó nhìn thấy.
+
+Kiểm: thêm bài kiểm tự sửa số điện thoại giữ nguyên phòng thì qua, đổi phòng thì bị chặn; 73
+bài kiểm phòng ban và phạm vi nhân sự xanh. Đã commit, đẩy lên erp-v2 và deploy dev ngày 28/09.
+
+Mã nguồn: `employee/controller.py` (`update_employee`) · `test/backend/test_kiem_nhiem_phong_ban.py`
+
 ## bao-CR-506 | Đơn nghỉ phép in được cả lúc chờ duyệt, bỏ nút In của thẻ lịch sử phê duyệt
 - status: xong
 - date: 2026-09-28

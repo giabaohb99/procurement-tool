@@ -147,6 +147,30 @@ def test_khong_tu_doi_phong_ban_cua_chinh_minh(db, san):
     assert error.value.status_code == 403
 
 
+def test_self_edit_profile_keeping_same_department_is_allowed(db, san):
+    """bao-CR-507 — màn hồ sơ gửi lại MỌI ô mỗi lần lưu, kể cả ô phòng ban.
+
+    Trước đây cửa PATCH chặn theo «có gửi department_id» nên người có
+    `employee.write` sửa số điện thoại của CHÍNH MÌNH ăn câu «không tự đổi phòng
+    ban» dù không đổi gì ở đó (đại ca báo 28/09/2026). Giữ nguyên phòng = cho qua;
+    đổi phòng thật = vẫn chặn.
+    """
+    from app.modules.employee import controller as ctl
+    from app.modules.employee.schema import EmployeeUpdate
+
+    person, account = san["nguoi"], san["tai_khoan"]
+    ctl.update_employee(person.id, EmployeeUpdate(phone="0795803209",
+                                                  department_id=san["phong"]["P_KT"]),
+                        db, account)
+    db.refresh(person)
+    assert person.phone == "0795803209"
+
+    with pytest.raises(HTTPException) as error:
+        ctl.update_employee(person.id, EmployeeUpdate(department_id=san["phong"]["P_IT"]),
+                            db, account)
+    assert error.value.status_code == 403
+
+
 def test_van_sua_duoc_cho_NGUOI_KHAC(db, san):
     """Chốt trên chỉ chặn đúng chiều tự-mình."""
     dv.block_edit_own_department(db, san["nguoi"].id + 999, san["tai_khoan"])
