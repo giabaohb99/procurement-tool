@@ -253,3 +253,20 @@ def test_pr_candidate_list_is_the_same_set_as_the_head_box(db, seed, cap_quyen):
     assert [c["employee_id"] for c in items] == [c["employee_id"] for c in same]
     ids = {c["employee_id"] for c in items}
     assert head.id in ids and boss.id not in ids, "người duyệt MỌI phiếu (thu mua toàn quyền) không vào ô này"
+
+
+# ── Rà trước prod 28/09/2026 ─────────────────────────────────────────────────────────────
+
+def test_unapproved_print_shows_chosen_name_without_signature(db, seed, monkeypatch):
+    from app.core import print_signers
+    monkeypatch.setattr(print_signers, "person_block",
+                        lambda db, emp_id: {"name": "Trưởng Phòng", "signature": "sig.png"} if emp_id else
+                        {"name": "", "signature": ""})
+    monkeypatch.setattr(pr_ctl, "person_block", print_signers.person_block, raising=False)
+    dept = _dept(db, seed)
+    pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
+                                           requester_id=seed.emp_req_id, department=dept.name,
+                                           head_of_dept_id=seed.emp_tp_id), seed.u_req_id)
+    out = pr_ctl._approval_signers(db, pr)
+    assert out["approver_name"] == "Trưởng Phòng"
+    assert out["approver_signature"] == "", "chưa duyệt thì không in ảnh chữ ký"

@@ -221,7 +221,10 @@ def _approval_signers(db: Session, pr) -> dict:
     from app.core.print_signers import person_block
     stored = person_block(db, int(getattr(pr, "approver_employee_id", 0) or 0))
     if stored["name"]:
-        out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
+        #  Chưa duyệt: in TÊN người được chọn nhưng KHÔNG in ảnh chữ ký — chữ ký trên giấy nghĩa là
+        #  người đó đã ký, in trước khi họ bấm Duyệt là sai (rà trước prod 28/09/2026).
+        out["approver_name"] = stored["name"]
+        out["approver_signature"] = stored["signature"] if pr.status in _AFTER_APPROVE else ""
     want = ([("approved", "approver")] if pr.status in _AFTER_APPROVE else []) + \
            ([("dispatched", "dispatcher")] if pr.status in _AFTER_DISPATCH else [])
     if not want:

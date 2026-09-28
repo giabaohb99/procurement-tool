@@ -1001,9 +1001,10 @@ def is_cost_row_changed(row: POCost, data: dict, stage_fields: dict, manual: dic
     for stage, prefix in COST_STAGE_PREFIX.items():
         old = cost_amount_of(row, stage)
         new = stage_fields.get(f"{prefix}_amount")
-        if (old is None) != (new is None):
-            return True
-        if old is not None and new is not None and round(float(old), 2) != round(float(new), 2):
+        #  Trống (None) và 0 là MỘT với phép so này: bản v1 gửi 0 cho ô chưa gõ, còn dòng chuyển
+        #  từ khuôn cũ (migration 05a62d38a47a) để trống cột Dự toán / Tạm tính — so khắt khe thì
+        #  mọi lần lưu ĐMH trên v1 đều ăn 400 «đã quyết toán» (rà bản sao prod 28/09/2026, PO00122).
+        if round(float(old or 0), 2) != round(float(new or 0), 2):
             return True
     old_manual = parse_manual_allocation(row.manual_allocation)
     if ({k: round(float(v), 2) for k, v in manual.items()}

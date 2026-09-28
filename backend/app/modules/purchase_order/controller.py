@@ -172,6 +172,9 @@ def _import_cost(c, pay: Payable | None, po: PurchaseOrder, types: dict | None =
          "supplier_code": c.supplier_code or "", "supplier_name": c.supplier_name or "",
          "currency": c.currency or DEFAULT_CURRENCY, "vat": float(c.vat or 0),
          "effective_base": effective_base, "base_amount": effective_base,
+         #  Số NGUYÊN TỆ của giai đoạn hiệu lực — bản in đơn nhập khẩu v1 in cột này kèm mã tiền
+         #  (trước đây đọc `amount`, cột đã bỏ ở bao-CR-453 nên lùi về số VNĐ mà vẫn ghi USD).
+         "effective_amount": service.cost_amount_of(c, effective_stage),
          "allocation_method": int(alloc),
          "allocation_method_label": ALLOCATION_METHOD_LABELS.get(alloc, ""),
          "allocation_target": c.allocation_target or "",
@@ -555,7 +558,9 @@ def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
     from app.core.print_signers import department_head_block, person_block
     stored = person_block(db, int(po.approver_employee_id or 0))
     if stored["name"]:
-        out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
+        #  Chưa duyệt: chỉ in TÊN người được chọn, không in ảnh chữ ký (rà trước prod 28/09/2026).
+        out["approver_name"] = stored["name"]
+        out["approver_signature"] = stored["signature"] if po.status in _PO_APPROVED_STATUSES else ""
     head = department_head_block(db, int(po.department_id or 0))
     out["dept_head_name"], out["dept_head_signature"] = head["name"], head["signature"]
     if po.status not in _PO_APPROVED_STATUSES:

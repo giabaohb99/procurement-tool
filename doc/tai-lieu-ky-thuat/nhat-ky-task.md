@@ -70,6 +70,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-504 | Diễn tập đẩy erp-v2 lên prod trên bản sao dữ liệu thật và vá bốn lỗi phần thu mua
+- status: dang-lam
+- date: 2026-09-28
+Đại ca chốt đẩy toàn bộ erp-v2 lên prod lúc 12 giờ trưa 28/09 và dặn kiểm kỹ phần thu mua vì
+đang có người dùng thật. Em lấy bản sao dữ liệu prod về máy, chạy đủ 48 migration và bước seed
+như prod sẽ chạy, rồi so trước và sau cho cả 234 tài khoản: số yêu cầu mua hàng, yêu cầu báo
+giá, phiếu khảo sát, đơn mua hàng, công nợ, yêu cầu thanh toán mỗi người thấy, duyệt, sửa được
+không đổi một phiếu nào; tổng công nợ không đổi. Gọi thử 84 đường xem của thu mua bằng bốn tài
+khoản thật không có lỗi hệ thống, và đường nào trước chạy được thì nay vẫn chạy được.
+
+Rà mã kèm theo bắt được bốn lỗi, đã vá: bản cũ không lưu được đơn mua hàng có dòng chi phí đã
+quyết toán (đúng một đơn trên prod); ô chọn nhân sự thu mua bỏ sót người có quyền được giao
+việc (ba trong bốn người đang nhận việc); bản in in ảnh chữ ký người duyệt khi phiếu chưa duyệt;
+bản in đơn nhập khẩu bản cũ in số tiền Việt dưới nhãn ngoại tệ. Đã commit và đẩy lên
+nhánh erp-v2 ngày 28/09 để đi cùng đợt lên prod.
+
+Kiểm: 108 bài kiểm backend xanh; thử lại trên bản sao prod các ca vừa hỏng đều chạy đúng.
+
+Mã nguồn: purchase_order/service.py · category_assignee/service.py ·
+purchase_request/controller.py · frontend/src/pages/PrintPurchaseOrderImport.tsx
+
 ## bao-CR-389 | Bản in PYC: dời tên người lập xuống cho đủ chỗ ký tay
 - status: xong
 - date: 2026-09-12

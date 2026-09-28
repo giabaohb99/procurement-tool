@@ -195,7 +195,7 @@ export default function PrintPurchaseOrderImport() {
                       <td style={{ ...cell, paddingLeft: 18 }}>{c.description || '-'}</td>
                       <td style={cell}>{c.supplier_name || c.supplier_code}</td>
                       <td style={cell}>{c.invoice_no}{c.invoice_date ? ` (${dmy(c.invoice_date)})` : ''}</td>
-                      <td style={right}>{fmtPrice(c.amount ?? c.effective_base)} {c.currency}</td>
+                      <td style={right}>{c.effective_amount == null ? '-' : `${fmtPrice(c.effective_amount)} ${c.currency}`}</td>
                       <td style={{ ...cell, textAlign: 'center' }}>{Number(c.vat) ? `${fmtQty(c.vat)}%` : '-'}</td>
                       <td style={cell}>{c.allocation_method_label}{c.allocation_target ? ` (${c.allocation_target})` : ''}</td>
                       {/* bao-CR-453: effective_base là số quy đổi hiệu lực; base_amount alias giữ tương thích */}

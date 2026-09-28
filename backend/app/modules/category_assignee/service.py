@@ -123,7 +123,9 @@ def handling_dept_of(ticket) -> int:
 
 # ── Người phụ trách CHỌN ĐƯỢC theo phòng xử lý (bao-CR-486) ──────────────────────────────
 
-_PURCHASING_SCOPES = ("dept_proc", "proc", "all")
+#  «assigned» (được giao) là bậc của nhân sự thu mua thường (`pur_staff`) — thiếu nó thì chính
+#  những người đang nhận việc biến mất khỏi ô chọn (rà trên bản sao prod 28/09/2026: 3/4 NSTM).
+_PURCHASING_SCOPES = ("assigned", "dept_proc", "proc", "all")
 
 
 def _purchasing_employee_ids(db: Session, scopes: tuple[str, ...]) -> set[int]:
@@ -166,7 +168,7 @@ def assignable_staff(db: Session, ticket) -> list:
         ids = _purchasing_employee_ids(db, _PURCHASING_SCOPES)
         q = db.query(Employee).filter(Employee.department_id == dept)
     else:
-        ids = _purchasing_employee_ids(db, ("proc", "all"))
+        ids = _purchasing_employee_ids(db, ("assigned", "proc", "all"))
         self_depts = list_self_purchasing_dept_ids(db)
         q = db.query(Employee)
         if self_depts:
