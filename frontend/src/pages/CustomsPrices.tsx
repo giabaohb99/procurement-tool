@@ -252,7 +252,7 @@ export default function CustomsPrices() {
             options={optionList('units')} onChange={set('unit')} />
         </FilterItem>
         <FilterItem label="Phân loại" width={150}>
-          <SearchSelect value={draft.product_kind} placeholder="Thành phẩm + Nguyên liệu" autoSelectSingle={false}
+          <SearchSelect value={draft.product_kind} placeholder="Tất cả" autoSelectSingle={false}
             options={PRODUCT_KIND_OPTIONS} onChange={set('product_kind')} />
         </FilterItem>
         <FilterItem label="Hàm lượng / dạng" width={150}>

@@ -24,6 +24,10 @@ const PRICE_H = 280, PRICE_T = 12, PRICE_B = 28
 const QTY_H = 150, QTY_T = 18, QTY_B = 26
 const BAND = 'rgba(0,174,239,.16)'
 const GREEN = '#16a34a'
+// bao-CR-516: bốn cột giá của bảng theo kỳ mỗi cột một màu, cùng mã màu với biểu đồ.
+const WAVG_COLOR = 'var(--teal-dark)'
+const RANGE_COLOR = '#0369a1'
+const MAX_COLOR = 'var(--red)'
 
 export default function CustomsChart({ filters }: { filters: CustomsFilters }) {
   const [period, setPeriod] = useState('month')
@@ -104,8 +108,10 @@ export default function CustomsChart({ filters }: { filters: CustomsFilters }) {
         <div className="table-scroll"><table>
           <thead><tr>
             <th>Kỳ</th><th style={{ textAlign: 'right' }}>Số dòng</th><th style={{ textAlign: 'right' }}>Tổng lượng ({u})</th>
-            <th style={{ textAlign: 'right' }}>Bình quân gia quyền</th><th style={{ textAlign: 'right' }}>Khoảng phổ biến</th>
-            <th style={{ textAlign: 'right' }}>Thấp nhất</th><th style={{ textAlign: 'right' }}>Cao nhất</th><th>Ghi chú</th>
+            <th style={{ textAlign: 'right', color: WAVG_COLOR }}>Bình quân gia quyền</th>
+            <th style={{ textAlign: 'right', color: RANGE_COLOR }}>Khoảng phổ biến</th>
+            <th style={{ textAlign: 'right', color: GREEN }}>Thấp nhất</th>
+            <th style={{ textAlign: 'right', color: MAX_COLOR }}>Cao nhất</th><th>Ghi chú</th>
           </tr></thead>
           <tbody>
             {series.map((s: any) => (
@@ -113,10 +119,16 @@ export default function CustomsChart({ filters }: { filters: CustomsFilters }) {
                 <td>{s.label}</td>
                 <td style={{ textAlign: 'right' }}>{s.count}</td>
                 <td style={{ textAlign: 'right' }}>{s.count ? fmtQty(s.qty) : '—'}</td>
-                <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtUsd(s.wavg)}</td>
-                <td style={{ textAlign: 'right' }}>{s.p25 == null ? '—' : `${fmtUsd(s.p25)} – ${fmtUsd(s.p75)}`}</td>
-                <td style={{ textAlign: 'right' }}>{fmtUsd(s.min)}</td>
-                <td style={{ textAlign: 'right' }}>{fmtUsd(s.max)}</td>
+                <td style={{ textAlign: 'right', fontWeight: 600, color: WAVG_COLOR }}>{fmtUsd(s.wavg)}</td>
+                <td style={{ textAlign: 'right' }}>
+                  {s.p25 == null ? '—' : (
+                    <span style={{ background: BAND, color: RANGE_COLOR, borderRadius: 4, padding: '1px 6px' }}>
+                      {fmtUsd(s.p25)} – {fmtUsd(s.p75)}
+                    </span>
+                  )}
+                </td>
+                <td style={{ textAlign: 'right', color: GREEN }}>{fmtUsd(s.min)}</td>
+                <td style={{ textAlign: 'right', color: MAX_COLOR }}>{fmtUsd(s.max)}</td>
                 <td style={{ fontSize: 12, color: 'var(--muted)' }}>
                   {s.count === 0 ? 'Không có dữ liệu' : s.period === best ? 'Giá tốt nhất (đủ dữ liệu)' : s.low_data ? `Ít dữ liệu (< ${minLines} dòng)` : ''}
                 </td>

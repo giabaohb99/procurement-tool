@@ -359,7 +359,8 @@ export function CustomsPricePage() {
               value={productKind}
               onChange={setProductKind}
               options={PRODUCT_KIND_OPTIONS}
-              placeholder="Thành phẩm + Nguyên liệu"
+              //  bao-CR-516: câu dài «Thành phẩm + Nguyên liệu» tràn ba dòng trong ô 11rem.
+              placeholder="Tất cả phân loại"
               searchPlaceholder="Tìm phân loại…"
               clearable
             />

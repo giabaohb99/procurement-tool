@@ -70,6 +70,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-516 | Tra cứu thị trường: ô lọc Phân loại không còn tràn dòng, bốn cột giá có màu riêng
+- status: dang-lam
+- date: 2026-09-28
+Đại ca báo ô lọc Phân loại trên màn Tra cứu thị trường bị lỗi: chữ gợi ý «Thành phẩm + Nguyên liệu»
+dài hơn ô nên tràn ba dòng, làm lệch cả hàng lọc. Em đổi chữ gợi ý cho ngắn, cùng kiểu các ô bên
+cạnh. Đại ca cũng muốn bốn cột giá của bảng theo kỳ dễ nhìn hơn, nên em tô mỗi cột một màu theo
+đúng màu trên biểu đồ: bình quân gia quyền cùng màu đường giá, khoảng phổ biến nền xanh nhạt như dải
+trên biểu đồ, thấp nhất xanh lá, cao nhất đỏ. Làm cả màn cũ và màn mới.
+
+Kiểm: kiểm kiểu và lint không lỗi, 626 bài kiểm phần thu mua ở màn mới xanh, màn cũ giữ đúng 4 lỗi
+nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09; prod chờ đại ca.
+
+Mã nguồn: `frontend/src/components/customs/CustomsChart.tsx` · `frontend/src/pages/CustomsPrices.tsx` ·
+`frontend-v2/.../customs/customs-price-chart.tsx` · `frontend-v2/.../pages/customs-price-page.tsx`
+
 ## bao-CR-515 | Đồng bộ bài hướng dẫn phần thu mua từ dev lên trang hướng dẫn prod
 - status: xong
 - date: 2026-09-28
