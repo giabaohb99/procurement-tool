@@ -12,7 +12,9 @@ class LineIn(BaseModel):
     amount: float = 0
     # CR-260 — phần đề nghị CẤN TRỪ tiền treo cấp NCC vào khoản nợ của dòng;
     # chỉ thực thi khi phiếu được DUYỆT (xem apply_line_offsets trong service).
-    offset_amount: float = 0
+    # bao-CR-511: `None` = người gửi KHÔNG nói gì về cấn trừ (màn cũ chưa có ô này) —
+    # lúc SỬA phiếu thì giữ nguyên phần cấn trừ đang lưu, không hiểu thành 0.
+    offset_amount: float | None = None
 
 
 class PRequestCreate(BaseModel):

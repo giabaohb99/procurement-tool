@@ -352,6 +352,9 @@ function PaymentRequestView() {
         lines: req.lines.map((l: any) => ({
           payable_id: l.payable_id, po_code: l.po_code || '', invoice_no: l.invoice_no || '',
           invoice_date: l.invoice_date || '', amount: Number(l.amount) || 0,
+          // bao-CR-511: màn này chưa có ô cấn trừ nhưng PHẢI gửi lại số đang lưu —
+          // thiếu ô này là phần cấn trừ nhập ở màn mới bị xóa khi bấm Lưu.
+          offset_amount: Number(l.offset_amount) || 0,
         })),
       })
       toast.success('Đã lưu'); loadAll()

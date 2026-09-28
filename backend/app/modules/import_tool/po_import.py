@@ -367,6 +367,6 @@ def _auto_pay(db, po, done_items, apply, uid, log, counts):
         db, PRequestCreate(request_date=po.order_date or "", note=f"Import Misa {po.misa_code}",
                            lines=[LineIn(payable_id=pid, amount=0) for pid in payable_ids]), uid)
     for req in reqs:
-        pr_service.set_status(db, req.id, "paid", uid)
+        pr_service.set_status(db, req.id, "paid", uid, allow_any_source=True)
     log(0, LogLevel.INFO, "autopay",
         f"Đã tạo {len(reqs)} YCTT + ghi ĐÃ CHI {len(payable_ids)} khoản (đơn {po.code})", target_code=po.code)

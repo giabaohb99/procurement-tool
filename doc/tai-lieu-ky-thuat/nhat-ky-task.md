@@ -70,6 +70,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-511 | YCTT: màn cũ không còn xóa phần cấn trừ khi lưu, và khóa chuyển trạng thái sai thứ tự
+- status: xong
+- date: 2026-09-28
+Khi làm nút cập nhật YCTT theo công nợ, em phát hiện hai lỗi có sẵn đang chạy trên prod và đại ca
+bảo sửa luôn. Lỗi thứ nhất: màn thu mua cũ chưa có ô cấn trừ tiền treo, nên bấm Lưu phiếu nháp ở
+đó là xóa mất phần cấn trừ đã nhập ở màn mới, tới lúc duyệt không cấn trừ gì. Nay màn cũ gửi lại
+số đang lưu, và máy chủ hiểu dòng không kèm ô cấn trừ là «giữ nguyên» chứ không phải «về 0» —
+trình duyệt còn giữ bản màn cũ trước đó cũng không làm mất số nữa. Lỗi thứ hai: máy chủ không kiểm
+trạng thái khi đổi trạng thái phiếu, nên phiếu đã từ chối gửi duyệt lại được và phiếu đã chi có
+thể bị ghi chi lần hai. Nay chỉ đi đúng thứ tự: gửi duyệt từ Nháp, duyệt hoặc từ chối từ Chờ duyệt,
+ghi đã chi từ Đã duyệt; riêng công cụ nhập Misa vẫn được ghi đã chi ngay như trước.
+
+Kiểm: 11 bài kiểm mới cùng 462 bài YCTT, công nợ và thu mua liên quan xanh; màn cũ kiểm kiểu giữ
+đúng 4 lỗi nền. Đã commit, đẩy lên main và erp-v2, deploy dev và prod ngày 28/09.
+
+Mã nguồn: `payment_request/service.py` (`_keep_unsent_offsets`, `ALLOWED_FROM`, `set_status`) ·
+`payment_request/schema.py` · `import_tool/po_import.py` · `frontend/src/pages/PaymentRequestDetail.tsx`
+
 ## bao-CR-510 | Đẩy toàn bộ erp-v2 lên prod ngày 28/09 sau khi diễn tập trên bản sao dữ liệu thật
 - status: xong
 - date: 2026-09-28

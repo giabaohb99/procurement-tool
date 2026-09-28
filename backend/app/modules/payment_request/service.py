@@ -322,6 +322,34 @@ EDIT_LOCK_MSG = {
 }
 
 
+def _keep_unsent_offsets(db: Session, rid: int, data_lines) -> None:
+    """bao-CR-511 — dòng gửi lên KHÔNG kèm `offset_amount` thì lấy lại phần cấn trừ đang lưu.
+
+    Màn cũ (`frontend/`) chưa có ô cấn trừ nên bấm Lưu phiếu nháp là gửi dòng thiếu ô đó;
+    trước đây schema mặc định 0 nên phần cấn trừ người khác nhập ở màn mới bị XÓA IM LẶNG
+    — tới lúc duyệt không cấn trừ gì, NCC được chi đủ trong khi tiền treo vẫn treo.
+    Khớp theo khoản nợ (`payable_id`), dòng gõ tay thì theo (mã PO, số HĐ).
+    """
+    if all(ln.offset_amount is not None for ln in data_lines):
+        return
+    by_payable: dict[int, float] = {}
+    by_ref: dict[tuple, float] = {}
+    for old in lines_of(db, rid):
+        offset = float(old.offset_amount or 0)
+        if offset <= 0:
+            continue
+        if old.payable_id:
+            by_payable[old.payable_id] = by_payable.get(old.payable_id, 0.0) + offset
+        by_ref[((old.po_code or "").strip(), (old.invoice_no or "").strip())] = offset
+    for ln in data_lines:
+        if ln.offset_amount is not None:
+            continue
+        if ln.payable_id and ln.payable_id in by_payable:
+            ln.offset_amount = by_payable.pop(ln.payable_id)
+        else:
+            ln.offset_amount = by_ref.pop(((ln.po_code or "").strip(), (ln.invoice_no or "").strip()), 0.0)
+
+
 def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) -> PaymentRequest:
     req = get_request(db, rid)
     # CR-149: người dùng in phiếu SAU khi duyệt, nên câu chữ bản in phải sửa được ở
@@ -340,6 +368,7 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
             v = norm_print_texts(v)
         setattr(req, k, v)
     if data.lines is not None:
+        _keep_unsent_offsets(db, rid, data.lines)
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
         rows = _line_rows(db, data.lines, req.supplier_code, fill_from_payable=False)
         for r in rows:
@@ -575,8 +604,30 @@ def delete_request(db: Session, rid: int, user_id: int):
     record(db, user_id, ENTITY, rid, "delete")
 
 
-def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "") -> PaymentRequest:
+#  bao-CR-511 — trạng thái NGUỒN hợp lệ cho từng đích, khớp đúng các nút trên hai màn:
+#  Gửi duyệt từ Nháp · Duyệt / Từ chối từ Chờ duyệt · Ghi nhận đã chi từ Đã duyệt.
+#  Trước đây không kiểm gì: gọi thẳng API là phiếu ĐÃ TỪ CHỐI sống lại thành Chờ duyệt,
+#  hay phiếu ĐÃ CHI bị ghi chi lần hai (cộng tiền trả vào công nợ hai lần).
+ALLOWED_FROM: dict[str, tuple[str, ...]] = {
+    "submitted": ("draft",),
+    "approved": ("submitted",),
+    "cancelled": ("submitted",),
+    "paid": ("approved",),
+}
+STATUS_LABELS = {"draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
+                 "paid": "Đã chi", "cancelled": "Đã từ chối"}
+
+
+def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "",
+               *, allow_any_source: bool = False) -> PaymentRequest:
+    """`allow_any_source=True` chỉ dành cho công cụ nhập Misa (tạo phiếu rồi ghi Đã chi
+    ngay, bỏ qua duyệt) — mọi đường người dùng bấm đều phải đi đúng thứ tự."""
     req = get_request(db, rid)
+    allowed = ALLOWED_FROM.get(status)
+    if not allow_any_source and allowed is not None and req.status not in allowed:
+        raise HTTPException(
+            400, f"Phiếu đang ở trạng thái «{STATUS_LABELS.get(req.status, req.status)}» — không chuyển "
+                 f"sang «{STATUS_LABELS.get(status, status)}» được. Tải lại trang để xem trạng thái mới nhất.")
     if status == "submitted":
         check_submit(db, req)
     affected_po_ids: set[int] = set()
