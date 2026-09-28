@@ -70,6 +70,18 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-520 | Mở Trợ lý AI cho ba vai trò thu mua trên prod và bật tra bài hướng dẫn
+- status: xong
+- date: 2026-09-28
+Đại ca hỏi tool AI trên prod có thiếu gì không. Em so với dev: prod thiếu đúng một công cụ tra bài
+hướng dẫn, vì chức năng này đang tắt và prod chưa chạy kho dữ liệu cho nó; ngoài ra trợ lý mới chỉ
+mở cho admin. Theo lời đại ca, em cấp quyền dùng trợ lý cho nhân viên thu mua, admin thu mua và quản
+lý thu mua (25 tài khoản dùng được, dữ liệu trợ lý trả về vẫn theo quyền của từng người), bật chức
+năng tra bài hướng dẫn, khởi động kho dữ liệu và nạp đủ 61 bài hướng dẫn cùng 11 câu hỏi thường gặp.
+Thử bằng tài khoản nhân viên thu mua: hỏi về cấn trừ tiền treo hay tra cứu thị trường đều ra đúng bài.
+
+Deploy: prod 28/09 14:40 — sao lưu tệp cấu hình trước khi sửa
+
 ## bao-CR-519 | Tra cứu thị trường: bỏ tô nền cột, gom bốn cột giá bằng vạch dọc
 - status: xong
 - date: 2026-09-28
