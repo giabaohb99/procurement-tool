@@ -1,9 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
-import { BarChart3, ChartColumnBig, TextSearch, Truck } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import type { PermissionEntity } from '@/core/authorization/permission-types'
-import { appRoutes } from '@/shared/constants/app-routes'
+
+import { PROCUREMENT_REPORT_CATALOG } from './report-catalog-procurement'
 
 /** Một trang báo cáo gom về phân hệ Báo cáo. */
 export interface ReportCatalogEntry {
@@ -17,73 +17,35 @@ export interface ReportCatalogEntry {
   icon: LucideIcon
   /** Khóa quyền — GIỐNG HỆT khóa của mục menu ở phân hệ gốc, lệch là lủng. */
   entity: PermissionEntity
-  /** Tên phân hệ gốc — thành tiêu đề nhóm trên menu trái. */
+  /** Tên phân hệ gốc — thành tiêu đề nhóm trên menu trái và dải KPI Tổng quan. */
   group: string
+  /**
+   * Nguồn không lọc theo công ty ở backend (vd Báo cáo khảo sát) — KHỚP
+   * `ReportPageConfig.hideCompany` của trang biểu đồ cùng báo cáo. Trang Tổng
+   * quan đọc cờ này để không gửi `company_id` cho báo cáo đó
+   * (`useReportOverview`): gửi một tham số nguồn không hiểu vừa vô ích vừa làm
+   * dải KPI trông như đã lọc trong khi thực ra không (L7).
+   */
+  hideCompany?: boolean
+  /**
+   * Đường `/summary` — trang Tổng quan gọi thẳng bằng khóa này (`group_by=none`)
+   * để lấy vài chỉ số đầu trang, KHÔNG cần nạp cả trang biểu đồ (`load`).
+   */
+  endpoint: string
+  /**
+   * Khóa chỉ số (`meta.metrics[].key`) hiện thành mini-KPI ở trang Tổng quan,
+   * 1–2 khóa, ĐÚNG thứ tự. Mảng rỗng = báo cáo này không góp mặt ở Tổng quan
+   * (vẫn có mặt ở "Danh sách báo cáo" cuối trang).
+   */
+  overviewKpis: string[]
   /** Nạp trang biểu đồ — `import()` động để mỗi trang một chunk riêng. */
   load: () => Promise<ComponentType>
 }
 
 /**
- * DANH MỤC BÁO CÁO — nguồn DUY NHẤT dựng cả menu, route lẫn thẻ lối tắt của
- * phân hệ Báo cáo. Thêm một báo cáo mới = thêm một dòng ở đây (+ một đường ở
- * `appRoutes.report`).
- *
- * Mỗi báo cáo ở đây là bản BIỂU ĐỒ (trang riêng trong `report/pages/`), số liệu
- * từ một đường `/summary` dùng chung bộ lọc + phạm vi với bảng gốc. BẢNG từng
- * dòng vẫn ở phân hệ gốc (`sourcePath`) — người làm nghiệp vụ cần soi từng dòng,
- * việc đó biểu đồ không thay được — và mỗi trang biểu đồ có nút dẫn sang.
+ * DANH MỤC BÁO CÁO — nguồn DUY NHẤT dựng cả menu, route, thẻ lối tắt VÀ dải KPI
+ * Tổng quan của phân hệ Báo cáo. Ghép từ các tệp nhóm theo phân hệ nguồn
+ * (`report-catalog-<nhóm>.ts`) để mỗi phase sở hữu một tệp, không đụng nhau —
+ * hiện chỉ có nhóm Thu mua (P03); P04–P06 thêm mảng nhóm của mình vào đây.
  */
-export const REPORT_CATALOG: ReportCatalogEntry[] = [
-  {
-    label: 'Báo cáo mua hàng',
-    description: 'Chi phí so năm trước, giao hàng, công nợ, Top NCC · bộ phận · nhóm hàng, vận chuyển.',
-    path: appRoutes.report.purchaseReport,
-    sourcePath: appRoutes.procurement.purchaseReport,
-    icon: ChartColumnBig,
-    entity: 'report',
-    group: 'Thu mua',
-    load: async () => (await import('../pages/purchase-report-chart-page')).PurchaseReportChartPage,
-  },
-  {
-    label: 'Chi tiết YC mua hàng',
-    description: 'Dòng chưa được đặt theo tháng, tiến độ, NSTM, bộ phận, nhóm hàng.',
-    path: appRoutes.report.prLinesReport,
-    sourcePath: appRoutes.procurement.prLinesReport,
-    icon: TextSearch,
-    entity: 'report',
-    group: 'Thu mua',
-    load: async () => (await import('../pages/pr-lines-chart-page')).PrLinesChartPage,
-  },
-  {
-    label: 'Tiến độ báo giá',
-    description: 'Dòng đang mở, trễ hạn, tiến độ xử lý, NSTM đang giữ việc.',
-    path: appRoutes.report.surveyProgress,
-    sourcePath: appRoutes.procurement.surveyProgress,
-    icon: Truck,
-    entity: 'survey_request',
-    group: 'Thu mua',
-    load: async () =>
-      (await import('../pages/survey-progress-chart-page')).SurveyProgressChartPage,
-  },
-  {
-    label: 'Tiến độ mua hàng',
-    description: 'Giao đúng hạn, dòng chưa nhận đủ, NCC trễ, việc mở theo bộ phận.',
-    path: appRoutes.report.purchaseProgress,
-    sourcePath: appRoutes.procurement.purchaseProgress,
-    icon: Truck,
-    entity: 'purchase_request',
-    group: 'Thu mua',
-    load: async () =>
-      (await import('../pages/purchase-progress-chart-page')).PurchaseProgressChartPage,
-  },
-  {
-    label: 'Báo cáo khảo sát',
-    description: 'Khảo sát NCC & sản phẩm theo tháng, kết quả duyệt, NSPT, nhóm hàng.',
-    path: appRoutes.report.surveyReport,
-    sourcePath: appRoutes.procurement.surveyReport,
-    icon: BarChart3,
-    entity: 'survey',
-    group: 'Thu mua',
-    load: async () => (await import('../pages/survey-report-chart-page')).SurveyReportChartPage,
-  },
-]
+export const REPORT_CATALOG: ReportCatalogEntry[] = [...PROCUREMENT_REPORT_CATALOG]

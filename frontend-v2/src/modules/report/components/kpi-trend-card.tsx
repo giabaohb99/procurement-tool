@@ -1,28 +1,24 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
 import { Line, LineChart, ResponsiveContainer, YAxis } from 'recharts'
 
 import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 
+import type { MetricChangeDescription } from '../utils/report-period-comparison'
+import { ReportChangePill } from './report-change-pill'
+
 interface KpiTrendCardProps {
   label: string
   value: string
   /**
-   * Thay đổi so với kỳ trước. `null` = không so được (kỳ trước bằng 0, hoặc
-   * hai kỳ không cùng độ dài) — khi đó thẻ hiện `hint` thay cho dải so sánh.
+   * Thay đổi so với kỳ trước, đã phân loại sẵn (`describeMetricChange`).
+   * Bỏ trống/`kind: 'unavailable'` = không so được — thẻ hiện `hint` thay cho
+   * dải "pill".
    */
-  change?: number | null
-  /** Đơn vị của `change`: `%` (tương đối) hay `điểm` (chênh tỷ lệ tuyệt đối). */
-  changeUnit?: '%' | 'điểm'
-  /** Chữ sau con số thay đổi, vd "so với cùng kỳ 2025". */
+  changeDescription?: MetricChangeDescription
+  /** Chữ sau "pill" thay đổi, vd "so với cùng kỳ 2025". */
   changeCaption?: string
-  /**
-   * Chiều nào là TỐT. Bỏ trống = trung tính: chi tiêu tăng chưa chắc là xấu,
-   * tô xanh/đỏ bừa là gán nghĩa cho con số không có nghĩa đó.
-   */
-  goodDirection?: 'up' | 'down'
-  /** Dòng phụ — hiện khi không có `change`, hoặc kèm thêm dưới dải so sánh. */
+  /** Dòng phụ — hiện khi không có "pill" để hiện, hoặc kèm thêm dưới dải so sánh. */
   hint?: string
   tone?: 'danger'
   /** Đường xu hướng mini (12 tháng). Bỏ trống = không vẽ. */
@@ -30,13 +26,14 @@ interface KpiTrendCardProps {
   loading?: boolean
   /** Lớp phụ cho ô lưới, vd cho thẻ lẻ cuối hàng trải hết bề ngang. */
   className?: string
-}
-
-/** Định dạng thay đổi có dấu: +12,3% · −4 điểm. */
-function formatChange(change: number, unit: '%' | 'điểm'): string {
-  const abs = Math.abs(change).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
-  const sign = change > 0 ? '+' : change < 0 ? '−' : ''
-  return unit === '%' ? `${sign}${abs}%` : `${sign}${abs} điểm`
+  /**
+   * Bấm được để CHỌN — dùng ở trang báo cáo Haravan (`ReportKpiRow`): bấm một
+   * thẻ KPI đổi chỉ số đang vẽ trên biểu đồ xu hướng. Bỏ trống = thẻ tĩnh, giữ
+   * đúng hành vi cũ của các trang biểu đồ Thu mua hiện có.
+   */
+  onClick?: () => void
+  /** Đang là chỉ số được chọn — viền nổi bật. Chỉ có nghĩa cùng `onClick`. */
+  selected?: boolean
 }
 
 /**
@@ -49,32 +46,42 @@ function formatChange(change: number, unit: '%' | 'điểm'): string {
 export function KpiTrendCard({
   label,
   value,
-  change,
-  changeUnit = '%',
+  changeDescription,
   changeCaption,
-  goodDirection,
   hint,
   tone,
   sparkline,
   loading = false,
   className,
+  onClick,
+  selected = false,
 }: KpiTrendCardProps) {
-  const hasChange = typeof change === 'number' && Number.isFinite(change)
-  const rounded = hasChange ? Math.round(change * 10) / 10 : 0
-  const direction = rounded > 0 ? 'up' : rounded < 0 ? 'down' : 'flat'
-  const toneClass =
-    !goodDirection || direction === 'flat'
-      ? 'text-muted-foreground'
-      : direction === goodDirection
-        ? 'text-success'
-        : 'text-destructive'
-  const Arrow = direction === 'up' ? ArrowUpRight : direction === 'down' ? ArrowDownRight : Minus
+  const hasChange = changeDescription && changeDescription.kind !== 'unavailable'
   const points = sparkline?.map((v, i) => ({ i, v }))
 
   return (
     // `min-w-0`: cùng chốt chống tràn ngang của ChartCard — recharts báo ngược
     // bề rộng tối thiểu và nong cả lưới ra trên điện thoại.
-    <Card className={cn('min-w-0 gap-2 p-4', className)}>
+    <Card
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return
+              event.preventDefault()
+              onClick()
+            }
+          : undefined
+      }
+      className={cn(
+        'min-w-0 gap-2 p-4',
+        onClick && 'cursor-pointer transition-colors hover:bg-row-hover',
+        selected && 'ring-2 ring-primary',
+        className,
+      )}
+    >
       <p className="truncate text-sm text-muted-foreground" title={label}>
         {label}
       </p>
@@ -85,16 +92,15 @@ export function KpiTrendCard({
         </>
       ) : (
         <>
-          <p className="truncate text-2xl font-semibold tabular-nums text-navy dark:text-foreground">
+          <p className="truncate text-2xl font-semibold text-navy tabular-nums dark:text-foreground">
             {value}
           </p>
-          {hasChange && (
-            <p className="flex items-center gap-1 text-xs">
-              <span className={cn('inline-flex items-center gap-0.5 font-medium', toneClass)}>
-                <Arrow className="size-3.5" aria-hidden />
-                {formatChange(rounded, changeUnit)}
-              </span>
-              {changeCaption && <span className="truncate text-muted-foreground">{changeCaption}</span>}
+          {hasChange && changeDescription && (
+            <p className="flex items-center gap-1.5 text-xs">
+              <ReportChangePill description={changeDescription} />
+              {changeCaption && (
+                <span className="truncate text-muted-foreground">{changeCaption}</span>
+              )}
             </p>
           )}
           {hint && (

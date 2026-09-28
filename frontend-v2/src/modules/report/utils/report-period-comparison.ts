@@ -1,80 +1,13 @@
-import type { SpendPoint } from '@/modules/procurement/types/purchase-report'
-
-/** Một mốc tháng trên biểu đồ so sánh hai năm. */
-export interface MonthComparisonPoint {
-  /** "T1".."T12". */
-  label: string
-  current: number
-  /** Cùng tháng của năm trước. */
-  previous: number
-}
+import type { ReportMetricGoodDirection, ReportMetricKind } from '../types/report-analytics'
 
 /**
- * Trải 12 tháng của năm `year` và năm trước lên cùng một trục T1..T12.
- *
- * Tháng không phát sinh vẫn giữ mốc với giá trị 0 — thiếu mốc thì đường gấp
- * khúc nối thẳng qua tháng trống và người đọc tưởng tháng đó có số.
- * Điểm của NĂM KHÁC lẫn vào (backend lọc theo `period`, không theo chuỗi
- * tháng) bị bỏ qua chứ không cộng dồn nhầm năm.
+ * Phần trăm thay đổi so với kỳ trước. `null` khi MỘT trong hai vế là `null`
+ * (chỉ số dẫn xuất mẫu số 0 ở kỳ này hoặc kỳ trước — xem `ReportMetricValues`),
+ * không phải số hữu hạn, hoặc kỳ trước bằng 0: "tăng vô hạn %" không nói được
+ * gì, màn hình ghi "—"/"Chưa có kỳ trước".
  */
-export function buildMonthComparison(
-  year: number,
-  current: SpendPoint[],
-  previous: SpendPoint[],
-): MonthComparisonPoint[] {
-  const byMonth = (points: SpendPoint[], y: number) => {
-    const map = new Map<number, number>()
-    for (const point of points) {
-      const [py, pm] = point.month.split('-').map(Number)
-      if (py !== y || !(pm >= 1 && pm <= 12)) continue
-      map.set(pm, (map.get(pm) ?? 0) + Number(point.amount || 0))
-    }
-    return map
-  }
-  const cur = byMonth(current, year)
-  const prev = byMonth(previous, year - 1)
-  return Array.from({ length: 12 }, (_, i) => ({
-    label: `T${i + 1}`,
-    current: cur.get(i + 1) ?? 0,
-    previous: prev.get(i + 1) ?? 0,
-  }))
-}
-
-/**
- * Số tháng được đem so của năm đang xem: năm đã qua = cả 12 tháng; năm hiện
- * tại = tới hết tháng hiện tại (so CÙNG KỲ, như Haravan). Lấy cả năm trước so
- * với 9 tháng năm nay thì năm nào cũng "giảm" — con số sai mà trông hợp lý.
- * Năm tương lai = 0 (chưa có kỳ nào để so).
- */
-export function comparableMonthCount(year: number, today: Date): number {
-  const thisYear = today.getFullYear()
-  if (year < thisYear) return 12
-  if (year > thisYear) return 0
-  return today.getMonth() + 1
-}
-
-/**
- * Điểm để VẼ: tháng chưa tới của năm đang xem thành `null` để đường kỳ này dừng
- * ở tháng hiện tại. Để 0 thì đường cắm đầu xuống đáy ở tháng 10 và người đọc
- * tưởng chi tiêu sụp đổ.
- */
-export function maskFutureMonths(points: MonthComparisonPoint[], months: number) {
-  return points.map((p, i) => ({ ...p, current: i < months ? p.current : null }))
-}
-
-/** Tổng `current` / `previous` của `months` tháng đầu năm. */
-export function sumFirstMonths(points: MonthComparisonPoint[], months: number) {
-  return points.slice(0, Math.max(0, months)).reduce(
-    (acc, p) => ({ current: acc.current + p.current, previous: acc.previous + p.previous }),
-    { current: 0, previous: 0 },
-  )
-}
-
-/**
- * Phần trăm thay đổi so với kỳ trước. `null` khi kỳ trước bằng 0 (hoặc không
- * phải số): "tăng vô hạn %" không nói được gì, màn hình ghi "Chưa có kỳ trước".
- */
-export function percentChange(current: number, previous: number): number | null {
+export function percentChange(current: number | null, previous: number | null): number | null {
+  if (current === null || previous === null) return null
   if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null
   return ((current - previous) / Math.abs(previous)) * 100
 }
@@ -83,4 +16,115 @@ export function percentChange(current: number, previous: number): number | null 
 export function ratePercent(part: number, total: number): number | null {
   if (!Number.isFinite(part) || !Number.isFinite(total) || total <= 0) return null
   return (part / total) * 100
+}
+
+/**
+ * Chênh lệch ĐIỂM phần trăm: `current − previous`. Dùng cho chỉ số
+ * `kind: 'percent'` — so % TƯƠNG ĐỐI của một tỷ lệ đọc sai nghĩa (80%→40% là
+ * "−50%" tương đối nhưng thực chất giảm 40 ĐIỂM), nên đơn vị đúng ở đây là
+ * điểm phần trăm, không phải % thay đổi.
+ */
+export function percentPointChange(current: number | null, previous: number | null): number | null {
+  if (current === null || previous === null) return null
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return null
+  return current - previous
+}
+
+export interface MetricChange {
+  value: number | null
+  unit: '%' | 'điểm'
+}
+
+/**
+ * Thay đổi hiển thị của MỘT chỉ số — đơn vị đi theo `kind` do backend khai:
+ * `percent` → điểm phần trăm (`percentPointChange`), còn lại → % tương đối
+ * (`percentChange`). Điểm gọi DUY NHẤT cho thẻ KPI (`ReportKpiRow`,
+ * `ReportOverviewKpiStrip`) và cột bảng "Xem theo" (`ReportGroupedTable`) để
+ * ba nơi đó không lệch quy ước với nhau.
+ */
+export function resolveMetricChange(
+  current: number | null,
+  previous: number | null,
+  kind: ReportMetricKind,
+): MetricChange {
+  if (kind === 'percent') return { value: percentPointChange(current, previous), unit: 'điểm' }
+  return { value: percentChange(current, previous), unit: '%' }
+}
+
+/** Định dạng thay đổi có dấu: "+12,3%" · "−4 điểm". Dùng chung cho thẻ KPI VÀ ô bảng. */
+export function formatMetricChange(change: number, unit: '%' | 'điểm'): string {
+  const abs = Math.abs(change).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
+  const sign = change > 0 ? '+' : change < 0 ? '−' : ''
+  return unit === '%' ? `${sign}${abs}%` : `${sign}${abs} điểm`
+}
+
+/**
+ * "Nhãn" TRẠNG THÁI của một thay đổi — phân biệt bốn tình huống hay bị gộp
+ * chung thành một con số dễ đọc sai:
+ *  - `'unavailable'` — thiếu một trong hai vế (chưa có dữ liệu để so), KHÔNG vẽ gì.
+ *  - `'new'` — kỳ trước bằng 0, kỳ này > 0: đây là chỉ số MỚI phát sinh, không
+ *    phải "tăng vô hạn %" (`percentChange` trả `null` đúng lúc này — coi `null`
+ *    kèm `compareValue === 0` là tín hiệu để phân biệt với `'unavailable'` thật).
+ *    Chỉ áp cho các `kind` tính % TƯƠNG ĐỐI; `kind: 'percent'` tính CHÊNH ĐIỂM
+ *    nên kỳ trước 0 vẫn ra một con số có nghĩa (vd 0% → 12% = "+12 điểm").
+ *  - `'flat'` — làm tròn về đúng 0 (vd 0,04% làm tròn 1 chữ số thập phân).
+ *  - `'value'` — có một con số thật để hiện.
+ */
+export type MetricChangeKind = 'unavailable' | 'new' | 'flat' | 'value'
+
+export interface MetricChangeDescription {
+  kind: MetricChangeKind
+  /** Chuỗi đã định dạng sẵn: "+20%", "−4,4 điểm", "Mới", "Không đổi". Rỗng khi `unavailable`. */
+  text: string
+  /** Màu theo `metric.good` — `'neutral'` khi chiều không mang nghĩa tốt/xấu. */
+  tone: 'good' | 'bad' | 'neutral'
+  direction: 'up' | 'down' | 'flat' | null
+}
+
+/**
+ * Gộp `resolveMetricChange` + việc phân loại/tô màu vào MỘT hàm — nguồn DUY
+ * NHẤT cho cả "pill" thay đổi (dòng Tổng của bảng "Xem theo", thẻ KPI) lẫn dòng
+ * tooltip của các dòng nhóm, để ba nơi đó không tự suy diễn ba kiểu khác nhau.
+ */
+export function describeMetricChange(
+  current: number | null,
+  compareValue: number | null,
+  kind: ReportMetricKind,
+  good: ReportMetricGoodDirection,
+): MetricChangeDescription {
+  if (current === null || compareValue === null) {
+    return { kind: 'unavailable', text: '', tone: 'neutral', direction: null }
+  }
+
+  const { value: change, unit } = resolveMetricChange(current, compareValue, kind)
+  if (change === null) {
+    //  `percentChange` trả `null` khi mẫu (kỳ trước) bằng 0 — dù kỳ này > 0
+    //  ("Mới") hay CŨNG bằng 0 ("Không đổi", cả hai kỳ đều chưa phát sinh gì).
+    //  Chỉ thật sự "chưa có dữ liệu" khi kỳ trước là số khác 0 nhưng không hữu
+    //  hạn (NaN/Infinity) — trường hợp đó đã bị chặn ở `current/compareValue
+    //  === null` phía trên, nên tới đây `compareValue === 0` luôn đúng.
+    if (compareValue === 0) {
+      return current > 0
+        ? { kind: 'new', text: 'Mới', tone: 'neutral', direction: null }
+        : { kind: 'flat', text: 'Không đổi', tone: 'neutral', direction: 'flat' }
+    }
+    return { kind: 'unavailable', text: '', tone: 'neutral', direction: null }
+  }
+
+  const rounded = Math.round(change * 10) / 10
+  if (rounded === 0) {
+    return { kind: 'flat', text: 'Không đổi', tone: 'neutral', direction: 'flat' }
+  }
+
+  const direction: 'up' | 'down' = rounded > 0 ? 'up' : 'down'
+  const tone = !good ? 'neutral' : direction === good ? 'good' : 'bad'
+  return { kind: 'value', text: formatMetricChange(rounded, unit), tone, direction }
+}
+
+/**
+ * Đuôi chữ cạnh nhãn ±% trên thẻ KPI. Cố ý NGẮN: năm thẻ chung một hàng thì
+ * "so với cùng kỳ năm trước" bị cắt cụt thành "so với cùng kỳ năm trư…".
+ */
+export function compareCaption(compareMode: 'previous' | 'year' | 'none'): string {
+  return compareMode === 'year' ? 'so với năm trước' : 'so với kỳ trước'
 }

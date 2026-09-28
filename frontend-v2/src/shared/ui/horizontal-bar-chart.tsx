@@ -40,8 +40,8 @@ export function HorizontalBarChart({
         <BarChart
           data={data}
           layout="vertical"
-          // Chừa lề phải cho nhãn số ở đầu cột khỏi bị cắt.
-          margin={{ top: 4, right: formatValue ? 56 : 36, bottom: 4, left: 0 }}
+          // Chừa lề phải cho nhãn số ở đầu cột khỏi bị cắt — "431,8 tr đ" cần ~80px.
+          margin={{ top: 4, right: formatValue ? 84 : 36, bottom: 4, left: 0 }}
           barCategoryGap={8}
         >
           {/* Trục X ẩn: mọi cột đã có số ghi thẳng ở đầu, thêm lưới chỉ tổ rối. */}

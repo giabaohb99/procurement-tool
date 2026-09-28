@@ -671,14 +671,13 @@ export const queryKeys = {
    * chung khóa là ghi đè cache của nhau.
    */
   report: {
-    prLinesSummary: (params?: Record<string, unknown>) =>
-      ['report', 'pr-lines-summary', params ?? {}] as const,
-    purchaseProgressSummary: (params?: Record<string, unknown>) =>
-      ['report', 'purchase-progress-summary', params ?? {}] as const,
-    surveyProgressSummary: (params?: Record<string, unknown>) =>
-      ['report', 'survey-progress-summary', params ?? {}] as const,
-    surveyReportSummary: (params?: Record<string, unknown>) =>
-      ['report', 'survey-report-summary', params ?? {}] as const,
+    /**
+     * Khung báo cáo Haravan chung (`ReportAnalyticsPage`) — MỘT khóa cho MỌI
+     * đường `/summary`, tách nhau bằng chính `endpoint` trong khóa: mỗi báo cáo
+     * gọi một đường khác nhau nên không cần một hàm khóa riêng cho từng cái.
+     */
+    analytics: (endpoint: string, params: Record<string, unknown>) =>
+      ['report', 'analytics', endpoint, params] as const,
   },
   coffee: {
     all: ['coffee'] as const,
