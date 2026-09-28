@@ -312,6 +312,16 @@ export function DataTable<T>({
     resetLayout,
   } = useTableLayout(columns, storageKey)
 
+  //  Màu hiệu lực = màu người dùng tự chọn, không có thì màu khai SẴN (`defaultColor`) —
+  //  cùng luật `LinesTable`; dùng chung cho menu «Cột», tiêu đề và thân bảng.
+  const columnColors = useMemo(() => {
+    const merged: Record<string, string> = {}
+    for (const column of columns) {
+      if (column.defaultColor) merged[column.key] = column.defaultColor
+    }
+    return { ...merged, ...layout.columnColors }
+  }, [columns, layout.columnColors])
+
   const { drag, startDrag } = useColumnDrag(moveColumn)
   const tableRef = useRef<HTMLTableElement>(null)
 
@@ -487,7 +497,7 @@ export function DataTable<T>({
                 columns={orderedColumns}
                 hiddenColumns={layout.hiddenColumns}
                 pinnedColumns={layout.pinnedColumns}
-                columnColors={layout.columnColors}
+                columnColors={columnColors}
                 onToggle={toggleColumn}
                 onTogglePin={togglePin}
                 onAutoFitAll={autoFitAll}
@@ -581,7 +591,7 @@ export function DataTable<T>({
                   column={column}
                   width={widthOf(column)}
                   className={cn(HEAD_CELL, alignClass(column.align), pinClass(column.key, true))}
-                  colorStyle={columnColorStyle(layout.columnColors[column.key], 'head')}
+                  colorStyle={columnColorStyle(columnColors[column.key], 'head')}
                   pinnedOffset={pinOffset(column.key)}
                   pinnedRightOffset={pinRightOffset(column.key)}
                   suppressRightDivider={column.key === beforePinnedRightKey}
@@ -675,7 +685,7 @@ export function DataTable<T>({
                           borderRightWidth: column.key === beforePinnedRightKey ? 0 : undefined,
                           // Màu cột đặt SAU nền của hàng: ô đã tô màu giữ nguyên
                           // màu đó kể cả khi rê chuột, đúng ý "đánh dấu cột".
-                          ...columnColorStyle(layout.columnColors[column.key], 'cell'),
+                          ...columnColorStyle(columnColors[column.key], 'cell'),
                         }}
                         className={cn(
                           BODY_CELL,

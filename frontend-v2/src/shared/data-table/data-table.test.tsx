@@ -328,3 +328,36 @@ describe('DataTable — onRowDoubleClick', () => {
     await expect(user.dblClick(screen.getByText('Nguyễn Văn A'))).resolves.not.toThrow()
   })
 })
+
+/**
+ * bao-CR-518 — màu cột khai SẴN (`defaultColor`) cho cột mang nghĩa (bốn cột giá của
+ * Tra cứu thị trường). Màu người dùng tự chọn trong menu «Cột» vẫn phải thắng.
+ */
+describe('DataTable — defaultColor', () => {
+  const tinted = (cell: Element | null) => (cell as HTMLElement | null)?.style.backgroundImage ?? ''
+
+  it('tints header and body cells of a column that declares defaultColor, and only that column', () => {
+    const table = build([
+      { key: 'name', header: 'Tên', cell: (r) => r.name, defaultColor: 'green' },
+      { key: 'note', header: 'Ghi chú', cell: (r) => r.note },
+    ])
+    const heads = table.querySelectorAll('thead th')
+    const cells = table.querySelectorAll('tbody td')
+    expect(tinted(heads[0])).toContain('linear-gradient')
+    expect(tinted(cells[0])).toContain('linear-gradient')
+    expect(tinted(heads[1])).toBe('')
+    expect(tinted(cells[1])).toBe('')
+  })
+
+  it('lets the colour saved by the user override the declared default', () => {
+    localStorage.setItem('erp.table.t-color', JSON.stringify({ columnColors: { name: 'red' } }))
+    const table = build(
+      [{ key: 'name', header: 'Tên', cell: (r) => r.name, defaultColor: 'green' }],
+      't-color',
+    )
+    const head = tinted(table.querySelector('thead th'))
+    //  #dc2626 = đỏ trong COLUMN_COLORS, #16a34a = xanh lá.
+    expect(head).toContain('220, 38, 38')
+    expect(head).not.toContain('22, 163, 74')
+  })
+})

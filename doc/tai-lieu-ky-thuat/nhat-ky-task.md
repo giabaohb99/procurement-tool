@@ -70,6 +70,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-518 | Tô nền bốn cột giá ở Tra cứu thị trường, căn giữa ba cột giai đoạn chi phí
+- status: dang-lam
+- date: 2026-09-28
+Đại ca xem bản tô màu chữ bốn cột giá (516) thấy hơi lạ nên chọn kiểu tô nền cả cột: mỗi cột một nền
+nhạt từ tiêu đề xuống, chữ giữ màu đen, chỉ cột Bình quân in đậm. Ở màn mới, bảng dùng chung chưa có
+chỗ khai màu cột sẵn nên em thêm đúng cơ chế mà bảng dòng chứng từ đang có; người dùng tự đổi màu cột
+trong menu «Cột» thì màu của họ vẫn được ưu tiên. Đại ca cũng bảo ba cột Dự toán, Tạm tính, Quyết toán
+ở bảng chi phí thu mua màn cũ cho căn giữa, vì tiêu đề căn phải mà ô nhập căn trái nhìn lệch.
+
+Kiểm: kiểm kiểu và lint không lỗi, 740 bài kiểm của bảng dùng chung và phần thu mua xanh (thêm 2 bài
+cho màu cột khai sẵn), màn cũ giữ đúng 4 lỗi nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09.
+
+Mã nguồn: `frontend-v2/src/shared/data-table` (`defaultColor`) · `customs-price-chart.tsx` ·
+`frontend/src/components/customs/CustomsChart.tsx` · `frontend/src/pages/PurchaseOrderDetail.tsx`
+
 ## bao-CR-517 | Bảng chi phí thu mua ở màn cũ: bỏ chữ VNĐ trên ba cột giai đoạn
 - status: dang-lam
 - date: 2026-09-28

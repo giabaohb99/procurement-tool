@@ -56,6 +56,13 @@ export interface DataTableColumn<T> {
    * (luật mang từ bản v1, bao-CR-294).
    */
   sortDescFirst?: boolean
+  /**
+   * Màu tô SẴN cho cột (mã trong `COLUMN_COLORS` hoặc hex) — cùng nghĩa với
+   * `LinesTableColumn.defaultColor`: dùng khi màu mang NGHĨA (vd bốn cột giá Thấp nhất /
+   * Khoảng phổ biến / Bình quân / Cao nhất, bao-CR-518). Màu người dùng tự chọn trong
+   * menu «Cột» vẫn thắng.
+   */
+  defaultColor?: string
 }
 
 /**

@@ -145,10 +145,10 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 110,
         align: 'right',
         hideable: false,
-        //  bao-CR-516: bốn cột giá mỗi cột một màu, cùng mã màu với biểu đồ — thấp nhất
-        //  xanh lá, khoảng phổ biến nền xanh nhạt như dải trên biểu đồ, bình quân cùng màu
-        //  đường giá, cao nhất đỏ — nhìn lướt là phân biệt được, không phải đọc tiêu đề.
-        cell: (p) => <span className="tabular-nums text-success">{formatUsd(p.min)}</span>,
+        //  bao-CR-518 (đại ca chọn 28/09): bốn cột giá TÔ NỀN cả cột, chữ giữ màu thường —
+        //  thay bản 516 tô chữ + ô nền riêng ở Khoảng phổ biến (nhìn lốm đốm).
+        defaultColor: 'green',
+        cell: (p) => <span className="tabular-nums">{formatUsd(p.min)}</span>,
       },
       {
         key: 'common_range',
@@ -156,11 +156,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 180,
         align: 'right',
         hideable: false,
-        cell: (p) => (
-          <span className="rounded bg-chart-1/10 px-1.5 py-0.5 text-chart-1 tabular-nums">
-            {formatCommonRange(p)}
-          </span>
-        ),
+        defaultColor: 'cyan',
+        cell: (p) => <span className="tabular-nums">{formatCommonRange(p)}</span>,
       },
       {
         key: 'wavg',
@@ -168,9 +165,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 150,
         align: 'right',
         hideable: false,
-        cell: (p) => (
-          <span className="font-semibold text-chart-1 tabular-nums">{formatUsd(p.wavg)}</span>
-        ),
+        defaultColor: 'blue',
+        cell: (p) => <span className="font-semibold tabular-nums">{formatUsd(p.wavg)}</span>,
       },
       {
         key: 'max',
@@ -178,7 +174,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 110,
         align: 'right',
         hideable: false,
-        cell: (p) => <span className="tabular-nums text-destructive">{formatUsd(p.max)}</span>,
+        defaultColor: 'red',
+        cell: (p) => <span className="tabular-nums">{formatUsd(p.max)}</span>,
       },
       {
         key: 'note',

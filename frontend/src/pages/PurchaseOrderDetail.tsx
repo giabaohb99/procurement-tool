@@ -1567,9 +1567,9 @@ export default function PurchaseOrderDetail() {
                           bao-CR-517: bỏ đuôi «(VNĐ)» — ô đang gõ nhận số theo TIỀN TỆ CỦA DÒNG (trước
                           VAT, vd 120 USD), chỉ ô đã khóa mới bày số quy đổi VNĐ gồm VAT; ghi VNĐ trên
                           tiêu đề làm người nhập tưởng phải gõ tiền Việt. Giải thích để ở chú thích chuột. */}
-                      <th style={{ width: 130, background: '#f0fdf4', textAlign: 'right' }} title={COST_STAGE_HEADER_HINT}>Dự toán</th>
-                      <th style={{ width: 130, background: '#eff6ff', textAlign: 'right' }} title={COST_STAGE_HEADER_HINT}>Tạm tính</th>
-                      <th style={{ width: 130, background: '#fff3cd', textAlign: 'right' }} title={COST_STAGE_HEADER_HINT}>Quyết toán</th>
+                      <th style={{ width: 130, background: '#f0fdf4', textAlign: 'center' }} title={COST_STAGE_HEADER_HINT}>Dự toán</th>
+                      <th style={{ width: 130, background: '#eff6ff', textAlign: 'center' }} title={COST_STAGE_HEADER_HINT}>Tạm tính</th>
+                      <th style={{ width: 130, background: '#fff3cd', textAlign: 'center' }} title={COST_STAGE_HEADER_HINT}>Quyết toán</th>
                       <th style={{ width: 110, textAlign: 'right' }} title="Số quy đổi VNĐ">Lệch</th>
                       <th style={{ width: 120, textAlign: 'right' }}>Đã chi</th>
                       <th style={{ width: 120, textAlign: 'right' }}>Còn lại</th>
@@ -1652,19 +1652,21 @@ export default function PurchaseOrderDetail() {
                           onChange={(v: any) => setCost(i, { vat: v })} /></td>
                         {/* bao-CR-467: cả ba cột đều gõ được như Excel; dòng đã quyết toán thì khóa,
                             ô khóa bày số quy đổi VNĐ (đã gồm VAT) để đối chiếu với công nợ */}
-                        <td style={{ textAlign: 'right', background: '#f0fdf4' }}>
+                        {/* bao-CR-518: ba cột giai đoạn căn GIỮA (đại ca 28/09) — tiêu đề căn phải
+                            trong khi ô nhập căn trái nhìn lệch nhau. */}
+                        <td style={{ textAlign: 'center', background: '#f0fdf4' }}>
                           {costRowEditable(c)
-                            ? <CurrencyInput value={c.estimate_amount ?? 0} disabled={false} onChange={(v: number) => setCost(i, { estimate_amount: v })} />
+                            ? <CurrencyInput value={c.estimate_amount ?? 0} disabled={false} style={{ textAlign: 'center' }} onChange={(v: number) => setCost(i, { estimate_amount: v })} />
                             : <span style={{ fontVariantNumeric: 'tabular-nums' }} title={costLineLocked(c) ? 'Dòng đã quyết toán — mở lại dòng mới sửa được' : undefined}>{fmtVND(c.estimate_base ?? (Number(c.estimate_amount || 0) * (1 + (Number(c.vat) || 0) / 100)))}</span>}
                         </td>
-                        <td style={{ textAlign: 'right', background: '#eff6ff' }}>
+                        <td style={{ textAlign: 'center', background: '#eff6ff' }}>
                           {costRowEditable(c)
-                            ? <CurrencyInput value={c.provisional_amount ?? 0} disabled={false} onChange={(v: number) => setCost(i, { provisional_amount: v })} />
+                            ? <CurrencyInput value={c.provisional_amount ?? 0} disabled={false} style={{ textAlign: 'center' }} onChange={(v: number) => setCost(i, { provisional_amount: v })} />
                             : <span style={{ fontVariantNumeric: 'tabular-nums', color: c.provisional_base || c.provisional_amount ? undefined : 'var(--muted)' }} title={costLineLocked(c) ? 'Dòng đã quyết toán — mở lại dòng mới sửa được' : undefined}>{c.provisional_base || c.provisional_amount ? fmtVND(c.provisional_base ?? (Number(c.provisional_amount || 0) * (1 + (Number(c.vat) || 0) / 100))) : '—'}</span>}
                         </td>
-                        <td style={{ textAlign: 'right', background: '#fff8e6' }}>
+                        <td style={{ textAlign: 'center', background: '#fff8e6' }}>
                           {costRowEditable(c)
-                            ? <CurrencyInput value={c.final_amount ?? 0} disabled={false} onChange={(v: number) => setCost(i, { final_amount: v })} />
+                            ? <CurrencyInput value={c.final_amount ?? 0} disabled={false} style={{ textAlign: 'center' }} onChange={(v: number) => setCost(i, { final_amount: v })} />
                             : <span style={{ fontVariantNumeric: 'tabular-nums', color: c.final_base || c.final_amount ? undefined : 'var(--muted)' }} title={costLineLocked(c) ? 'Dòng đã quyết toán — mở lại dòng mới sửa được' : undefined}>{c.final_base || c.final_amount ? fmtVND(c.final_base ?? (Number(c.final_amount || 0) * (1 + (Number(c.vat) || 0) / 100))) : '—'}</span>}
                         </td>
                         <td style={{ textAlign: 'right', color: (Number(c.variance_base) || 0) < 0 ? 'var(--green)' : (Number(c.variance_base) || 0) > 0 ? 'var(--red)' : 'var(--muted)' }}>
