@@ -217,14 +217,15 @@ def _approval_signers(db: Session, pr) -> dict:
            "dispatcher_name": "", "dispatcher_signature": "",
            "purchasing_head_name": "", "purchasing_head_signature": ""}
     #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt, người THỰC duyệt
-    #  sau khi duyệt — có tên là in tên đó, kể cả phiếu còn Nháp (đại ca chốt 26/09/2026).
+    #  sau khi duyệt.
+    #  bao-CR-521 (ticket prod #57, 28/09/2026): phiếu CHƯA duyệt thì ô «TP/BP đề xuất» để TRỐNG
+    #  HẲN — cả tên lẫn chữ ký. Bản 504 còn in tên người được chọn, người đọc hiểu là trưởng phòng
+    #  đã ký. Người được chọn vẫn hiện ở màn chi tiết (ô «Trưởng phòng phê duyệt»).
     from app.core.print_signers import person_block
     stored = person_block(db, int(getattr(pr, "approver_employee_id", 0) or 0))
-    if stored["name"]:
-        #  Chưa duyệt: in TÊN người được chọn nhưng KHÔNG in ảnh chữ ký — chữ ký trên giấy nghĩa là
-        #  người đó đã ký, in trước khi họ bấm Duyệt là sai (rà trước prod 28/09/2026).
+    if stored["name"] and pr.status in _AFTER_APPROVE:
         out["approver_name"] = stored["name"]
-        out["approver_signature"] = stored["signature"] if pr.status in _AFTER_APPROVE else ""
+        out["approver_signature"] = stored["signature"]
     want = ([("approved", "approver")] if pr.status in _AFTER_APPROVE else []) + \
            ([("dispatched", "dispatcher")] if pr.status in _AFTER_DISPATCH else [])
     if not want:

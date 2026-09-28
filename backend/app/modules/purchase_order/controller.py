@@ -554,13 +554,11 @@ def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
     out = {"creator_name": resolve_actor(db, po.created_by),
            "creator_signature": resolve_signature(db, po.created_by),
            "approver_name": "", "approver_signature": ""}
-    #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt → in tên đó.
+    #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt.
+    #  bao-CR-521 (ticket prod #57): đơn CHƯA duyệt thì ô người duyệt trên bản in để TRỐNG HẲN, cả
+    #  tên lẫn chữ ký — tên in sẵn đọc ra như đã ký. Duyệt rồi mới in (nhánh dưới).
     from app.core.print_signers import department_head_block, person_block
     stored = person_block(db, int(po.approver_employee_id or 0))
-    if stored["name"]:
-        #  Chưa duyệt: chỉ in TÊN người được chọn, không in ảnh chữ ký (rà trước prod 28/09/2026).
-        out["approver_name"] = stored["name"]
-        out["approver_signature"] = stored["signature"] if po.status in _PO_APPROVED_STATUSES else ""
     head = department_head_block(db, int(po.department_id or 0))
     out["dept_head_name"], out["dept_head_signature"] = head["name"], head["signature"]
     if po.status not in _PO_APPROVED_STATUSES:
