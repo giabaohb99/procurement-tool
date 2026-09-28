@@ -70,6 +70,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-522 | Popup Lịch sử mua hàng có thêm cột Tên trên hóa đơn
+- status: dang-lam
+- date: 2026-09-28
+Đại ca muốn popup «Lịch sử mua hàng gần nhất» trên đơn mua hàng hiện thêm tên trên hóa đơn của các
+lần mua trước. Lần mua đi qua đơn mua hàng trên hệ thống đã lưu sẵn tên này. Dữ liệu cũ nạp từ Excel
+(hơn sáu nghìn dòng trên prod) thì tệp gốc không có cột đó, nên em lấy tên đang khai ở danh mục sản
+phẩm và in nghiêng mờ, kèm chú thích khi rê chuột, để người dùng biết đó là tên theo danh mục chứ
+không phải tên đã xuất trên hóa đơn lần đó. Làm cả màn cũ và màn mới.
+
+Kiểm: 13 bài kiểm lịch sử mua hàng xanh, màn mới kiểm kiểu không lỗi và 626 bài phần thu mua xanh,
+màn cũ giữ đúng 4 lỗi nền. Đã đẩy lên erp-v2 và deploy dev ngày 28/09.
+
+Mã nguồn: `purchase_history/controller.py` (`_attach_invoice_names`) · `PurchaseHistoryPickerModal.tsx` ·
+`purchase-history-dialog.tsx`
+
+## bao-CR-521 | Bản in phiếu chưa duyệt để trống ô ký của trưởng phòng
+- status: dang-lam
+- date: 2026-09-28
+Ticket #57 trên prod báo phiếu yêu cầu mua hàng còn nháp, chưa gửi duyệt, mà bản in đã có tên trưởng
+phòng ở ô ký «TP/BP đề xuất». Nguyên nhân là lần sửa trước sáng nay chỉ bỏ ảnh chữ ký nhưng vẫn in
+tên người được chọn duyệt. Đại ca chốt: chưa duyệt thì ô đó để trống hẳn, duyệt rồi mới hiện. Em sửa
+cho cả yêu cầu mua hàng và đơn mua hàng; người được chọn duyệt vẫn hiện ở màn chi tiết như cũ.
+
+Kiểm: 52 bài kiểm về bản in và người duyệt xanh. Đã đẩy lên erp-v2 và deploy dev ngày 28/09.
+
+Mã nguồn: `purchase_request/controller.py` (`_approval_signers`) · `purchase_order/controller.py`
+(`resolve_print_signers`)
+
 ## bao-CR-520 | Mở Trợ lý AI cho ba vai trò thu mua trên prod và bật tra bài hướng dẫn
 - status: xong
 - date: 2026-09-28

@@ -217,10 +217,10 @@ def test_payload_xoa_ten_va_ma_ncc_khi_khong_co_quyen(db):
     db.commit()
     items = db.query(PurchaseHistory).all()
 
-    co = _payload(1, items)["items"][0]
+    co = _payload(db, 1, items)["items"][0]
     assert (co["supplier_code"], co["supplier_name"]) == ("NCC01", "NCC Một")
 
-    khong = _payload(1, items, show_supplier=False)["items"][0]
+    khong = _payload(db, 1, items, show_supplier=False)["items"][0]
     assert (khong["supplier_code"], khong["supplier_name"]) == ("", "")
     # Chỉ che NCC — phần giá/số lượng vẫn phải còn để người yêu cầu tham chiếu
     assert khong["po_code"] == "PO0001" and khong["price"]
