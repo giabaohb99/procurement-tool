@@ -1,0 +1,1010 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Hướng dẫn sử dụng Thư mục văn bản</title><style>
+@page { size: A4; margin: 18mm 17mm 18mm 22mm;
+  @top-center { content: counter(page); font: 11pt "Times New Roman", serif; color: #1A4D6B; } }
+@page :first { @top-center { content: none; } }
+* { box-sizing: border-box; }
+body { font: 12pt/1.5 "Times New Roman", serif; color: #111827; margin: 0; }
+a { color: #1E7F9C; text-decoration: none; }
+b, strong { color: #1A4D6B; }
+code { font: 10.5pt "Courier New", monospace; background: #F1F7FA; padding: 0 3px; border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 11pt; }
+th { background: #1E7F9C; color: #fff; font-weight: bold; text-align: left; padding: 6px 8px; border: 1px solid #1E7F9C; }
+td { padding: 5px 8px; border: 1px solid #CBD5DD; vertical-align: top; }
+tbody tr:nth-child(even) td { background: #F8FBFC; }
+tr, img { break-inside: avoid; }
+ul, ol { margin: 4px 0 8px; padding-left: 22px; }
+li { margin: 2px 0; }
+p { margin: 5px 0 8px; text-align: justify; }
+
+/* Phần đầu tài liệu */
+.doc-head { width: 100%; border-collapse: collapse; margin: 0; }
+.doc-head td { border: 1px solid #9CA3AF; border-bottom: 2px solid #1E7F9C; padding: 8px 10px; background: #fff; }
+.doc-head img { width: 150px; }
+.doc-head .org { text-align: right; color: #1A4D6B; font-weight: bold; font-size: 13pt; }
+.doc-head .kind { text-align: right; color: #6B7C8A; font-style: italic; font-size: 9pt; }
+.doc-head .meta { text-align: right; color: #1A4D6B; font-size: 8.5pt; }
+.doc-title { text-align: center; color: #1A4D6B; font-weight: bold; font-size: 20pt; line-height: 1.2; margin: 18px 0 4px; text-transform: uppercase; }
+.doc-sub { text-align: center; color: #6B7C8A; font-style: italic; margin: 0 0 14px; }
+.info td.label { background: #F1F7FA; border-left: 2px solid #1E7F9C; color: #1E7F9C; font-weight: bold; width: 22%; }
+.info tbody tr:nth-child(even) td { background: none; }
+.info tbody tr:nth-child(even) td.label { background: #F1F7FA; }
+
+/* Thanh đầu phần: khối xanh lá | tên phần trên nền xanh ngọc */
+.sec { display: flex; margin: 22px 0 12px; border: 1px solid #9CA3AF; break-after: avoid; }
+.sec .g { background: #6DBF3C; width: 50%; }
+.sec .t { background: #1E7F9C; color: #fff; width: 50%; padding: 7px 10px; font-weight: bold; font-size: 13pt; text-transform: uppercase; }
+.page-break { break-before: page; }
+/* Đầu mục con */
+h3 { background: #FAFCFD; border: 1px solid #CBD5DD; border-left: 3px solid #27ACE3; color: #1A4D6B;
+     font-size: 13pt; padding: 6px 10px; margin: 18px 0 8px; break-after: avoid; }
+h4 { color: #1E7F9C; font-size: 12pt; margin: 12px 0 6px; break-after: avoid; }
+/* Khung ghi chú */
+blockquote { background: #FFF6E0; border: 1px solid #E8D6A8; border-left: 3px solid #E8A317; margin: 10px 0; padding: 6px 12px; }
+blockquote p { margin: 4px 0; }
+/* Hình + chú thích đi liền, không tách trang */
+.figure { break-inside: avoid; text-align: center; margin: 10px 0 4px; }
+.figure img { max-width: 100%; border: 1px solid #CBD5DD; }
+.caption { text-align: center; color: #6B7C8A; font-size: 10.5pt; margin: 2px 0 8px; break-after: avoid; }
+hr { display: none; }
+/* Mục lục: tên phần in đậm, các mục thụt vào bên dưới */
+.toc p { margin: 10px 0 2px; }
+.toc ol { margin: 0 0 4px; padding-left: 30px; }
+.toc li { margin: 1px 0; }
+</style></head><body>
+<table class="doc-head"><tr>
+  <td style="width:50%"><img src="hinh/logo-dego.svg" alt="DEGO HOLDING"></td>
+  <td><div class="org">DEGO HOLDING · PHÒNG CNTT — DX TEAM</div><div class="kind">HƯỚNG DẪN SỬ DỤNG</div>
+      <div class="meta">Cập nhật 26/09/2026</div><div class="meta">Phân hệ Văn bản — ERP DEGO</div></td>
+</tr></table>
+<div class="doc-title">Hướng dẫn sử dụng<br>Thư mục văn bản</div>
+<div class="doc-sub">Cây thư mục · Xếp văn bản · Tìm trong thư mục · Chia sẻ và phân quyền</div>
+<table class="info"><tbody><tr><td class="label">Phân hệ</td><td>Văn bản (Văn thư) → mục <strong>Thư mục văn bản</strong></td></tr><tr><td class="label">Dành cho</td><td>Mọi người dùng phân hệ Văn bản · Văn thư · Trưởng bộ phận · Người quản lý thư mục · Quản trị phân quyền</td></tr><tr><td class="label">Cập nhật</td><td>26/09/2026</td></tr><tr><td class="label">Cách vào</td><td>Trang chủ → ô <strong>Văn bản</strong> → menu trái <strong>Thư mục văn bản</strong></td></tr><tr><td class="label">Tài liệu liên quan</td><td>Mô tả luồng nghiệp vụ — Thư mục văn bản (luật, quy trình, phân quyền) · Hướng dẫn sử dụng — Quản lý Văn bản</td></tr></tbody></table>
+<blockquote><p><b>CÁCH ĐỌC TÀI LIỆU NÀY</b></p><ul>
+<li>Mỗi hình có <strong>khung đỏ và số tròn màu đỏ</strong> chỉ vào đúng chỗ cần bấm hoặc cần xem.
+  Ngay dưới hình là phần giải thích theo đúng các số đó.</li>
+<li>Chữ <strong>in đậm</strong> là tên nút, tên mục đúng như trên màn hình.</li>
+<li>Chưa quen thì đọc hết <strong>Phần I</strong> trước. Người chỉ cần tìm văn bản đọc thêm Phần IV; người
+  sắp xếp văn bản đọc Phần II, III; người được giao quản lý thư mục đọc thêm Phần V.</li>
+<li>Nút nào bạn không thấy trên màn hình của mình là do bạn <strong>chưa đủ quyền</strong> — xem
+  <a href="#22-ba-mức-quyền-trên-thư-mục">mục 22</a> và <a href="#34-câu-hỏi-thường-gặp">mục 34</a>.</li>
+</ul></blockquote>
+<div class="sec" id="mục-lục"><div class="g"></div><div class="t">MỤC LỤC</div></div><div class="toc">
+<p><strong>PHẦN I. LÀM QUEN</strong></p>
+<ol>
+<li><a href="#1-thư-mục-văn-bản-dùng-để-làm-gì">Thư mục văn bản dùng để làm gì</a></li>
+<li><a href="#2-ba-điều-phải-nhớ-trước-khi-dùng">Ba điều phải nhớ trước khi dùng</a></li>
+<li><a href="#3-bố-cục-màn-hình">Bố cục màn hình</a></li>
+<li><a href="#4-cây-thư-mục-bên-trái">Cây thư mục bên trái</a></li>
+<li><a href="#5-khung-nội-dung-bên-phải">Khung nội dung bên phải</a></li>
+<li><a href="#6-cây-được-xếp-thế-nào">Cây được xếp thế nào</a></li>
+</ol>
+<p><strong>PHẦN II. LÀM VIỆC VỚI THƯ MỤC</strong></p>
+<ol start="7">
+<li><a href="#7-tạo-thư-mục">Tạo thư mục</a></li>
+<li><a href="#8-đổi-tên-thư-mục">Đổi tên thư mục</a></li>
+<li><a href="#9-chuyển-thư-mục-sang-chỗ-khác">Chuyển thư mục sang chỗ khác</a></li>
+<li><a href="#10-đổi-thứ-tự-thư-mục">Đổi thứ tự thư mục</a></li>
+<li><a href="#11-ngừng-dùng-và-khôi-phục">Ngừng dùng và khôi phục</a></li>
+<li><a href="#12-xóa-thư-mục">Xóa thư mục</a></li>
+</ol>
+<p><strong>PHẦN III. XẾP VĂN BẢN VÀO THƯ MỤC</strong></p>
+<ol start="13">
+<li><a href="#13-bấm-chọn-và-phím-tắt">Bấm, chọn và phím tắt</a></li>
+<li><a href="#14-thêm-văn-bản-vào-thư-mục">Thêm văn bản vào thư mục</a></li>
+<li><a href="#15-chuyển-văn-bản-sang-thư-mục-khác">Chuyển văn bản sang thư mục khác</a></li>
+<li><a href="#16-gỡ-văn-bản-khỏi-thư-mục">Gỡ văn bản khỏi thư mục</a></li>
+<li><a href="#17-thư-mục-chính">Thư mục chính</a></li>
+<li><a href="#18-khung-chi-tiết">Khung Chi tiết</a></li>
+<li><a href="#19-tạo-văn-bản-ngay-trong-thư-mục">Tạo văn bản ngay trong thư mục</a></li>
+</ol>
+<p><strong>PHẦN IV. TÌM VĂN BẢN TRONG THƯ MỤC</strong></p>
+<ol start="20">
+<li><a href="#20-tìm-theo-tên-số-hiệu-nội-dung">Tìm theo tên, số hiệu, nội dung</a></li>
+<li><a href="#21-bộ-lọc">Bộ lọc</a></li>
+</ol>
+<p><strong>PHẦN V. CHIA SẺ VÀ PHÂN QUYỀN THƯ MỤC</strong></p>
+<ol start="22">
+<li><a href="#22-ba-mức-quyền-trên-thư-mục">Ba mức quyền trên thư mục</a></li>
+<li><a href="#23-mở-hộp-chia-sẻ">Mở hộp Chia sẻ</a></li>
+<li><a href="#24-cấp-quyền-cho-nhiều-đối-tượng-một-lượt">Cấp quyền cho nhiều đối tượng một lượt</a></li>
+<li><a href="#25-cấm-thời-hạn-và-lý-do">Cấm, thời hạn và lý do</a></li>
+<li><a href="#26-đổi-mức-và-thu-hồi-quyền">Đổi mức và thu hồi quyền</a></li>
+<li><a href="#27-quyền-chung">Quyền chung</a></li>
+<li><a href="#28-chia-sẻ-một-văn-bản-ngay-từ-màn-thư-mục">Chia sẻ một văn bản ngay từ màn thư mục</a></li>
+<li><a href="#29-tình-huống-mẫu">Tình huống mẫu</a></li>
+</ol>
+<p><strong>PHẦN VI. THƯ MỤC Ở CÁC MÀN KHÁC</strong></p>
+<ol start="30">
+<li><a href="#30-khi-tạo-văn-bản">Khi tạo văn bản</a></li>
+<li><a href="#31-ở-chi-tiết-văn-bản">Ở chi tiết văn bản</a></li>
+<li><a href="#32-ở-danh-sách-văn-bản">Ở danh sách Văn bản</a></li>
+<li><a href="#33-quyền-cần-có-ở-màn-phân-quyền">Quyền cần có ở màn Phân quyền</a></li>
+</ol>
+<p><strong>PHẦN VII. HỎI ĐÁP</strong></p>
+<ol start="34">
+<li><a href="#34-câu-hỏi-thường-gặp">Câu hỏi thường gặp</a></li>
+</ol>
+<hr />
+</div><div class="sec page-break" id="phần-i-làm-quen"><div class="g"></div><div class="t">PHẦN I. LÀM QUEN</div></div>
+<h3 id="1-thư-mục-văn-bản-dùng-để-làm-gì">1. Thư mục văn bản dùng để làm gì</h3>
+<p>Thư mục là cách <strong>xếp văn bản cho dễ tìm lại</strong>, giống thư mục trên Google Drive hay trên máy
+tính: «Hợp đồng / Năm 2026», «Quy chế - Quy định», «Biên bản họp»…</p>
+<ul>
+<li>Cả tập đoàn dùng <strong>chung một cây</strong>. Mỗi pháp nhân có sẵn một thư mục mang tên mình; bên dưới,
+  từng phòng tự dựng thư mục con theo cách làm việc của mình.</li>
+<li>Một văn bản nằm được ở <strong>nhiều thư mục</strong> cùng lúc (ví dụ vừa ở «Hợp đồng / Năm 2026» vừa ở
+  «Thu Mua»), trong đó có <strong>một thư mục chính</strong>.</li>
+<li>Thư mục <strong>không đổi</strong> cách văn bản được soạn, duyệt, ban hành. Xếp vào thư mục nào thì văn bản
+  vẫn đi đúng luồng của nó.</li>
+</ul>
+<h3 id="2-ba-điều-phải-nhớ-trước-khi-dùng">2. Ba điều phải nhớ trước khi dùng</h3>
+<blockquote>
+<p><strong>1. Quyền thư mục không cho đọc văn bản.</strong> Thấy một thư mục không có nghĩa là đọc được mọi văn
+bản trong đó. Mỗi người chỉ thấy những văn bản chính họ được phép đọc; số đếm, bảng, kết quả
+tìm đều chỉ tính các văn bản đó. Hai người mở cùng một thư mục có thể thấy số văn bản khác nhau
+— đó là <strong>đúng</strong>, không phải lỗi.</p>
+<p><strong>2. Xếp vào thư mục không sao chép văn bản.</strong> Văn bản chỉ có MỘT bản. Thêm vào thư mục thứ hai
+chỉ là gắn thêm một «lối tắt»; sửa ở đâu cũng là sửa cùng một văn bản.</p>
+<p><strong>3. Xóa thư mục không xóa văn bản.</strong> Văn bản trong thư mục bị xóa được chuyển sang chỗ khác
+(bạn chọn, hoặc về thư mục pháp nhân). Chỉ có một đường làm mất văn bản khỏi hệ thống: chọn văn
+bản rồi bấm <strong>Xóa</strong> trên thanh thao tác hàng loạt (<a href="#13-bấm-chọn-và-phím-tắt">mục 13</a>) — và
+việc đó cần quyền xóa văn bản.</p>
+</blockquote>
+<h3 id="3-bố-cục-màn-hình">3. Bố cục màn hình</h3>
+<div class="figure"><img src="hinh/tm-01-man-thu-muc-tong-the.png" style="width:100%" alt="Màn Thư mục văn bản"><p class="caption"><em>Hình 1. Màn «Thư mục văn bản» khi mới mở</em></p></div>
+<ol>
+<li>Mục menu <strong>Thư mục văn bản</strong> — chỉ hiện với người có quyền xem cây thư mục.</li>
+<li>Nút <strong>+ Mới</strong> — tạo thư mục, tạo văn bản (<a href="#7-tạo-thư-mục">mục 7</a>, <a href="#19-tạo-văn-bản-ngay-trong-thư-mục">mục 19</a>).
+   Không có việc nào bạn đủ quyền làm thì nút này ẩn hẳn.</li>
+<li>Nhãn <strong>THƯ MỤC</strong> — bấm để quay về trang đầu «Thư mục của bạn».</li>
+<li><strong>Cây thư mục</strong> (<a href="#4-cây-thư-mục-bên-trái">mục 4</a>).</li>
+<li><strong>Khung nội dung</strong> — lúc mới mở là trang <strong>Thư mục của bạn</strong>, liệt kê các thư mục ở gốc cây.</li>
+<li>Chuyển <strong>Danh sách / Lưới</strong>. Hệ thống nhớ lựa chọn của bạn.</li>
+<li><strong>Chi tiết</strong> (ⓘ) — bật / tắt khung thông tin bên phải (<a href="#18-khung-chi-tiết">mục 18</a>).</li>
+<li>Thẻ thư mục ở gốc: tên, số thư mục con và số văn bản bạn đọc được trong cả nhánh.</li>
+</ol>
+<p>Biểu tượng <strong>(?)</strong> cạnh tiêu đề trang nhắc: <em>«Sắp xếp văn bản theo thư mục — phục vụ tìm kiếm,
+không thay cho phân quyền văn bản.»</em></p>
+<p>Trên <strong>điện thoại</strong>, cây thư mục ẩn đi; bấm nút <strong>Thư mục</strong> trên đầu trang để mở cây dạng ngăn
+trượt từ trái.</p>
+<h3 id="4-cây-thư-mục-bên-trái">4. Cây thư mục bên trái</h3>
+<div class="figure"><img src="hinh/tm-27-nut-tieu-de-cay.png" style="width:100%" alt="Các nút trên đầu cây"><p class="caption"><em>Hình 2. Các nút trên đầu cây (hiện khi rê chuột vào khung cây)</em></p></div>
+<ol>
+<li><strong>Tìm thư mục</strong> — mở ô lọc tên ngay trên cây.</li>
+<li><strong>Thư mục mới</strong> — tạo thư mục trong thư mục đang mở.</li>
+<li><strong>Thu gọn tất cả</strong> — gập mọi nhánh.</li>
+<li><strong>Làm mới</strong> — tải lại cây (khi người khác vừa sửa).</li>
+<li><strong>Thêm</strong> (⋯) — mở hai tùy chọn số 7 và 8.</li>
+<li><strong>Thu gọn khung thư mục</strong> — gập cả khung cây lại thành một dải hẹp để rộng chỗ xem; bấm
+   <strong>Mở lại khung thư mục</strong> để mở ra.</li>
+<li><strong>Hiện văn bản trong cây</strong> <em>(mặc định bật)</em> — dưới mỗi thư mục hiện luôn các văn bản, như cây
+   tệp của VS Code. Thư mục có hơn 100 văn bản thì cuối danh sách có dòng <strong>Xem thêm n văn bản…</strong></li>
+<li><strong>Hiện thư mục ngừng dùng</strong> <em>(mặc định tắt)</em> — bật lên mới thấy thư mục đã ngừng dùng (icon mờ).</li>
+</ol>
+<p>Hai tùy chọn 7, 8 và bề rộng khung được <strong>nhớ theo trình duyệt</strong> của bạn.</p>
+<p><strong>Cách dùng cây</strong></p>
+<table>
+<thead>
+<tr>
+<th>Thao tác</th>
+<th>Kết quả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bấm một thư mục</td>
+<td>Mở thư mục đó ở khung phải</td>
+</tr>
+<tr>
+<td>Bấm mũi tên ›</td>
+<td>Mở / gập nhánh, không đổi khung phải</td>
+</tr>
+<tr>
+<td>Bấm một văn bản trên cây</td>
+<td>Mở thư mục chứa nó, chọn sẵn văn bản, bật khung Chi tiết</td>
+</tr>
+<tr>
+<td>Bấm đúp một văn bản trên cây</td>
+<td>Sang trang chi tiết văn bản</td>
+</tr>
+<tr>
+<td>Phím mũi tên, Home, End</td>
+<td>Đi lên xuống trên cây</td>
+</tr>
+<tr>
+<td><strong>F2</strong> trên thư mục đang chọn</td>
+<td>Đổi tên tại chỗ (<a href="#8-đổi-tên-thư-mục">mục 8</a>)</td>
+</tr>
+<tr>
+<td>Rê chuột lên một dòng</td>
+<td>Hiện số văn bản cả nhánh, nút <strong>+</strong> (thêm thư mục con) và nút <strong>⋯</strong> (thao tác)</td>
+</tr>
+<tr>
+<td>Kéo mép phải khung cây</td>
+<td>Đổi bề rộng khung (200–480 điểm ảnh)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Rê chuột lên tên thư mục là thấy <strong>đường dẫn đầy đủ</strong> (ví dụ <em>Công ty / CÔNG TY TNHH DEGO
+  HOLDING / Hợp đồng</em>).</li>
+<li><strong>Ô lọc tên</strong>: gõ không cần dấu (<em>hop dong</em> vẫn ra «Hợp đồng»), đoạn khớp được tô vàng, các thư
+  mục cha của kết quả tự mở ra. Phím <strong>Esc</strong> đóng ô lọc.</li>
+<li>Thư mục có <strong>ổ khóa</strong> là thư mục <strong>riêng tư</strong> (quyền chung đặt Riêng tư, <a href="#27-quyền-chung">mục 27</a>).</li>
+<li>Cây <strong>không có menu chuột phải</strong>; dùng nút <strong>⋯</strong> trên từng dòng.</li>
+</ul>
+<h3 id="5-khung-nội-dung-bên-phải">5. Khung nội dung bên phải</h3>
+<p>Bấm một thư mục (ví dụ <strong>DEGO Holding</strong>), khung phải hiện nội dung của nó.</p>
+<div class="figure"><img src="hinh/tm-03-trong-thu-muc-dang-luoi.png" style="width:100%" alt="Trong một thư mục, dạng Lưới"><p class="caption"><em>Hình 3. Nội dung một thư mục — dạng Lưới</em></p></div>
+<ol>
+<li><strong>Đường dẫn</strong> — bấm từng đoạn để lùi lên thư mục cha. Đường dài thì đoạn giữa gập thành «…».</li>
+<li>Tên thư mục và dòng <strong>Quyền: …</strong> — mức quyền của <strong>chính bạn</strong> trên thư mục này (Xem / Đóng góp
+   / Quản lý), kèm số văn bản nằm <strong>trực tiếp</strong> trong thư mục (không tính thư mục con).</li>
+<li><strong>Tải tệp lên</strong> — tạo nhanh văn bản từ tệp có sẵn (<a href="#19-tạo-văn-bản-ngay-trong-thư-mục">mục 19</a>).</li>
+<li><strong>Chia sẻ</strong> — mở hộp phân quyền thư mục (<a href="#phần-v-chia-sẻ-và-phân-quyền-thư-mục">Phần V</a>).</li>
+<li><strong>Danh sách / Lưới</strong>.</li>
+<li><strong>Chi tiết</strong> (ⓘ).</li>
+<li>Ô <strong>tìm</strong> — tìm theo tên, số hiệu, cả nội dung (<a href="#20-tìm-theo-tên-số-hiệu-nội-dung">mục 20</a>).</li>
+<li><strong>Bộ lọc</strong> (<a href="#21-bộ-lọc">mục 21</a>).</li>
+<li>Khối <strong>Thư mục (n)</strong> — các thư mục con. Mỗi thẻ ghi số thư mục con và số văn bản; nút <strong>⋮</strong>
+   mở menu thao tác.</li>
+<li>Dải <strong>sắp xếp</strong>: <em>Tên</em> · <em>Loại</em> · <em>Ngày tạo</em> — bấm lần nữa để đảo chiều.</li>
+<li>Các <strong>văn bản</strong> trong thư mục: ô xem trước, tên, số hiệu (hoặc <em>Chưa cấp số</em>), trạng thái.</li>
+</ol>
+<div class="figure"><img src="hinh/tm-04-dang-danh-sach.png" style="width:100%" alt="Dạng Danh sách"><p class="caption"><em>Hình 4. Cùng thư mục đó — dạng Danh sách</em></p></div>
+<ol>
+<li>Ô tick <strong>Chọn tất cả</strong> (trên trang đang xem).</li>
+<li>Cột <strong>Tên</strong> — bấm để sắp xếp.</li>
+<li>Cột <strong>Người soạn</strong> — với thư mục là <strong>người tạo thư mục</strong>; thư mục do hệ thống tạo ghi
+   <strong>Hệ thống</strong>. Cột này tự ẩn khi khung hẹp.</li>
+<li>Cột <strong>Ngày tạo</strong> — bấm để sắp xếp.</li>
+<li>Cột <strong>Trạng thái</strong> — với thư mục là <strong>Đang dùng / Ngừng dùng</strong>; với văn bản là trạng thái văn
+   bản (Nháp, Có hiệu lực, Bãi bỏ…).</li>
+<li>Dòng <strong>thư mục con</strong> — luôn xếp trước.</li>
+<li>Dòng <strong>văn bản</strong>. Rê chuột lên dòng hiện thêm nút <strong>Chia sẻ</strong> ở cuối dòng.</li>
+</ol>
+<p>Thư mục trống ghi <em>«Thư mục này chưa có gì.»</em> Cuối bảng là <strong>Tổng n văn bản</strong> và phân trang.</p>
+<h3 id="6-cây-được-xếp-thế-nào">6. Cây được xếp thế nào</h3>
+<div class="figure"><img src="hinh/tm-nv-01-cau-truc-cay.png" style="width:100%" alt="Cấu trúc cây"><p class="caption"><em>Hình 5. Bốn loại thư mục trên cây</em></p></div>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Ai tạo</th>
+<th>Đặc điểm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Nhóm «Công ty»</strong></td>
+<td>Hệ thống</td>
+<td>Nằm ở gốc cây, chứa các thư mục pháp nhân. Không chuyển, không xóa được</td>
+</tr>
+<tr>
+<td><strong>Thư mục pháp nhân</strong></td>
+<td>Hệ thống</td>
+<td>Mỗi pháp nhân một thư mục, hiện bằng <strong>tên ngắn</strong> (ABA, AGRIPLANT, DEGO Holding…). Hệ thống tạo khi pháp nhân có văn bản đầu tiên cần chỗ xếp. Đổi tên được, <strong>không xóa được</strong></td>
+</tr>
+<tr>
+<td><strong>Thư mục thường</strong></td>
+<td>Người dùng</td>
+<td>Tạo dưới thư mục pháp nhân hoặc dưới thư mục khác</td>
+</tr>
+<tr>
+<td><strong>Thư mục tự do</strong></td>
+<td>Người dùng</td>
+<td>Tạo thẳng ở gốc cây, <strong>không thuộc pháp nhân nào</strong> — nhận văn bản của mọi pháp nhân (ví dụ «Thu Mua» dùng chung cho cả tập đoàn). Mới tạo thì <strong>chỉ người tạo thấy</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Cây sâu tối đa <strong>100 cấp</strong>, tính cả cấp gốc. Nhánh công ty: Công ty (1) → pháp nhân (2) → còn 98
+  cấp cho bạn tự dựng.</li>
+<li>Tên thư mục <strong>không được trùng</strong> với thư mục cùng cấp đang dùng. Hệ thống so không phân biệt
+  hoa/thường và <strong>bỏ dấu</strong> — «Hợp đồng» trùng «hop dong».</li>
+<li>Tên dài tối đa <strong>150 ký tự</strong>.</li>
+</ul>
+<hr />
+<div class="sec page-break" id="phần-ii-làm-việc-với-thư-mục"><div class="g"></div><div class="t">PHẦN II. LÀM VIỆC VỚI THƯ MỤC</div></div>
+<h3 id="7-tạo-thư-mục">7. Tạo thư mục</h3>
+<p><strong>Cần:</strong> quyền <strong>Tạo</strong> trên «Cây thư mục» (<a href="#33-quyền-cần-có-ở-màn-phân-quyền">mục 33</a>) và mức
+<strong>Đóng góp</strong> trở lên trên thư mục cha.</p>
+<div class="figure"><img src="hinh/tm-02-menu-moi.png" style="width:100%" alt="Menu Mới"><p class="caption"><em>Hình 6. Nút + Mới khi đang đứng trong một thư mục</em></p></div>
+<ol>
+<li><strong>Thư mục mới</strong> — tạo thư mục con trong thư mục đang mở.</li>
+<li><strong>Văn bản mới tại đây</strong> — mở trang tạo văn bản, ô «Lưu vào thư mục» điền sẵn thư mục này.</li>
+<li><strong>Tạo nhanh từ tệp</strong> — như nút <strong>Tải tệp lên</strong> (<a href="#19-tạo-văn-bản-ngay-trong-thư-mục">mục 19</a>).</li>
+</ol>
+<p>Hai mục 2, 3 chỉ hiện khi bạn đang đứng <strong>trong một thư mục</strong> và có quyền tạo văn bản.</p>
+<p>Bấm <strong>Thư mục mới</strong> (hoặc nút <strong>+</strong> khi rê chuột lên một dòng trên cây, hoặc <strong>⋯ → Thêm thư mục
+con</strong>), cây hiện ngay một dòng nhập:</p>
+<div class="figure"><img src="hinh/tm-05-tao-thu-muc-tai-cho.png" style="width:100%" alt="Tạo thư mục tại chỗ"><p class="caption"><em>Hình 7. Gõ tên thư mục mới ngay trên cây</em></p></div>
+<ol>
+<li>Gõ tên, rồi:
+   - <strong>Enter</strong> hoặc bấm ra ngoài → tạo. Hệ thống báo <em>«Đã tạo thư mục»</em> và mở luôn thư mục mới.
+   - <strong>Esc</strong>, hoặc để trống rồi bấm ra ngoài → hủy.
+   - Tên bị từ chối (trùng, quá dài…) → dòng nhập <strong>giữ nguyên chữ đã gõ</strong> để bạn sửa.</li>
+</ol>
+<p><strong>Tạo thư mục tự do ở gốc cây:</strong> bấm nhãn <strong>THƯ MỤC</strong> để về trang đầu, rồi <strong>+ Mới → Thư mục
+mới</strong>. Thư mục này mặc định <strong>Riêng tư</strong> — chỉ bạn (được tự cấp mức Quản lý) thấy; muốn người
+khác dùng thì chia sẻ (<a href="#phần-v-chia-sẻ-và-phân-quyền-thư-mục">Phần V</a>). Tài khoản chưa gắn hồ sơ
+nhân sự không tạo được thư mục ở gốc.</p>
+<p>Không tạo được khi thư mục cha <strong>đang ngừng dùng</strong>, hoặc đã sâu tới cấp 7.</p>
+<h3 id="8-đổi-tên-thư-mục">8. Đổi tên thư mục</h3>
+<p><strong>Cần:</strong> mức <strong>Quản lý</strong> trên thư mục.</p>
+<p>Ba cách:</p>
+<ul>
+<li>Trên cây: chọn thư mục rồi bấm <strong>F2</strong>, hoặc <strong>bấm đúp</strong> vào tên, hoặc <strong>⋯ → Đổi tên tại chỗ</strong>.
+  Gõ tên mới, <strong>Enter</strong> để lưu, <strong>Esc</strong> để hủy.</li>
+<li>Ở khung phải: <strong>⋮</strong> (hoặc chuột phải) trên thẻ / dòng thư mục → <strong>Đổi tên</strong> → hộp <strong>Đổi tên thư
+  mục</strong>, ô <strong>Tên mới</strong>, bấm <strong>Lưu</strong>.</li>
+</ul>
+<p>Thư mục pháp nhân cũng đổi tên được; tên bạn đặt sẽ thay cho tên ngắn của pháp nhân trên cây.</p>
+<h3 id="9-chuyển-thư-mục-sang-chỗ-khác">9. Chuyển thư mục sang chỗ khác</h3>
+<p><strong>Cần:</strong> mức <strong>Quản lý</strong> trên thư mục muốn chuyển và <strong>Đóng góp</strong> trên thư mục đích.</p>
+<p><strong>Cách 1 — kéo thả trên cây:</strong> kéo thư mục thả lên thư mục mới. Thả lên nhãn <strong>THƯ MỤC</strong> để đưa
+ra gốc cây. Nếu nhánh đang kéo có văn bản, hệ thống hỏi lại trước khi chuyển.</p>
+<p><strong>Cách 2 — hộp «Chuyển tới…»:</strong> <strong>⋯ → Chuyển tới…</strong> trên cây, hoặc <strong>⋮ / chuột phải → Chuyển tới…</strong>
+ở khung phải.</p>
+<div class="figure"><img src="hinh/tm-07-hop-chuyen-thu-muc.png" style="width:100%" alt="Hộp chuyển thư mục"><p class="caption"><em>Hình 8. Hộp «Chuyển «Hợp đồng» tới…»</em></p></div>
+<ol>
+<li><strong>Gốc cây</strong> — đưa thư mục ra ngoài cùng.</li>
+<li>Thư mục <strong>không chọn được</strong> hiện mờ, ghi <em>không hợp lệ</em>: chính nó, con cháu của nó, chỗ làm
+   vượt 100 cấp, hoặc chỗ bạn chưa đủ mức Đóng góp.</li>
+<li>Bấm chọn thư mục đích.</li>
+<li>Khung vàng nhắc số văn bản sẽ <strong>đi theo</strong> nhánh này — <em>«có thể còn văn bản bạn không xem được»</em>.</li>
+<li><strong>Chuyển tới đây</strong>. Hệ thống báo <em>«Đã chuyển thư mục»</em>.</li>
+</ol>
+<blockquote>
+<p><strong>Lưu ý:</strong> chuyển thư mục sang nhánh pháp nhân khác <strong>không đổi</strong> pháp nhân của thư mục. Quyền
+chung vẫn tính theo pháp nhân gốc — người của pháp nhân mới chưa chắc thấy nó. Muốn họ thấy thì
+chia sẻ thêm (<a href="#24-cấp-quyền-cho-nhiều-đối-tượng-một-lượt">mục 24</a>).</p>
+</blockquote>
+<p>Nhóm «Công ty» không chuyển được.</p>
+<h3 id="10-đổi-thứ-tự-thư-mục">10. Đổi thứ tự thư mục</h3>
+<p><strong>Cần:</strong> mức <strong>Quản lý</strong> trên <strong>thư mục cha</strong>.</p>
+<p>Trên cây, kéo một thư mục thả vào <strong>khe giữa</strong> hai thư mục cùng cấp (vạch xanh hiện lên) để đổi
+vị trí. Đổi thứ tự các thư mục pháp nhân cần quyền quản lý nhóm «Công ty» — thường chỉ quản trị
+toàn hệ thống.</p>
+<h3 id="11-ngừng-dùng-và-khôi-phục">11. Ngừng dùng và khôi phục</h3>
+<p><strong>Cần:</strong> mức <strong>Quản lý</strong>. Chỉ làm được <strong>trên cây</strong>, qua nút <strong>⋯</strong>.</p>
+<div class="figure"><img src="hinh/tm-06-menu-thao-tac-tren-cay.png" style="width:100%" alt="Menu thao tác trên cây"><p class="caption"><em>Hình 9. Nút ⋯ trên một dòng của cây</em></p></div>
+<ol>
+<li>Nút <strong>⋯</strong> — hiện khi rê chuột. Bạn chỉ có mức Xem thì nút này <strong>không hiện</strong>.</li>
+<li><strong>Thêm thư mục con</strong> (<a href="#7-tạo-thư-mục">mục 7</a>).</li>
+<li><strong>Đổi tên tại chỗ</strong> (<a href="#8-đổi-tên-thư-mục">mục 8</a>).</li>
+<li><strong>Chuyển tới…</strong> (<a href="#9-chuyển-thư-mục-sang-chỗ-khác">mục 9</a>).</li>
+<li><strong>Chia sẻ…</strong> (<a href="#phần-v-chia-sẻ-và-phân-quyền-thư-mục">Phần V</a>).</li>
+<li><strong>Ngừng dùng</strong> — với thư mục đã ngừng thì mục này là <strong>Khôi phục</strong>.</li>
+<li><strong>Xóa</strong> (<a href="#12-xóa-thư-mục">mục 12</a>).</li>
+</ol>
+<ul>
+<li><strong>Ngừng dùng</strong> kéo theo <strong>cả nhánh con</strong>. Thư mục ngừng dùng biến khỏi cây (bật <strong>Hiện thư mục
+  ngừng dùng</strong> để thấy lại), không tạo thư mục con, không nhận văn bản mới được. Văn bản đang nằm
+  trong đó <strong>vẫn nguyên</strong>.</li>
+<li><strong>Khôi phục</strong> chỉ bật lại <strong>đúng thư mục đó</strong> — các thư mục con vẫn ngừng, khôi phục từng cái nếu
+  cần.</li>
+<li>Không có hộp hỏi lại: bấm là làm ngay, hệ thống báo <em>«Đã ngừng dùng thư mục»</em>.</li>
+</ul>
+<p>Dùng <strong>Ngừng dùng</strong> thay cho Xóa khi thư mục đã hết dùng nhưng muốn giữ lại cho tra cứu.</p>
+<h3 id="12-xóa-thư-mục">12. Xóa thư mục</h3>
+<p><strong>Cần:</strong> quyền <strong>Xóa</strong> trên «Cây thư mục» và mức <strong>Quản lý</strong> trên thư mục.</p>
+<p>Thư mục <strong>không xóa được</strong> khi:</p>
+<div class="figure"><img src="hinh/tm-09-khong-xoa-thu-muc-phap-nhan.png" style="width:100%" alt="Không xóa được thư mục pháp nhân"><p class="caption"><em>Hình 10. Mục Xóa bị khóa kèm lý do</em></p></div>
+<ol>
+<li>Mục <strong>Xóa</strong> mờ đi, dòng dưới nói lý do: <em>«Thư mục công ty do hệ thống quản lý, không xóa được»</em>
+   (thư mục pháp nhân, nhóm «Công ty») hoặc <em>«Cần quyền Quản lý»</em>.</li>
+</ol>
+<p>Ngoài ra, thư mục <strong>còn thư mục con</strong> (kể cả con đang ngừng dùng) cũng không xóa được — xóa hoặc
+chuyển các thư mục con đi trước.</p>
+<p>Thư mục xóa được thì hệ thống mở hộp <strong>Xóa thư mục</strong>, đếm văn bản trước khi cho bạn xác nhận:</p>
+<div class="figure"><img src="hinh/tm-08-hop-xoa-thu-muc.png" style="width:100%" alt="Hộp Xóa thư mục"><p class="caption"><em>Hình 11. Hộp «Xóa thư mục» khi thư mục còn văn bản</em></p></div>
+<ol>
+<li>Số văn bản đang nằm trong thư mục — <em>«văn bản không bị xóa theo»</em>. Con số này đếm <strong>toàn hệ
+   thống</strong>, kể cả văn bản bạn không xem được.</li>
+<li>Số văn bản <strong>còn nằm ở thư mục khác</strong> — những văn bản này chỉ bị gỡ khỏi thư mục đang xóa, không
+   đi đâu cả.</li>
+<li><strong>Chuyển văn bản sang</strong> <em>(bắt buộc)</em> — chọn nơi lưu mới cho các văn bản <strong>chỉ</strong> nằm trong thư
+   mục này. Ô tự điền sẵn thư mục cha nếu bạn có mức Đóng góp ở đó. Không chọn được chính thư mục
+   đang xóa.</li>
+<li>Dòng nhắc số văn bản sẽ chuyển sang nơi vừa chọn.</li>
+<li><strong>Chuyển văn bản và xóa</strong> (thư mục trống thì nút chỉ ghi <strong>Xóa</strong>). Xóa xong <strong>không hoàn tác</strong>.</li>
+</ol>
+<p>Hệ thống xử lý từng văn bản như Hình 12.</p>
+<div class="figure"><img src="hinh/tm-nv-04-luong-xoa.png" style="width:100%" alt="Luồng xóa thư mục"><p class="caption"><em>Hình 12. Xóa một thư mục thì văn bản trong đó đi đâu</em></p></div>
+<p><strong>Xóa nhiều thư mục một lượt</strong> (chọn nhiều rồi bấm <strong>Xóa</strong> trên thanh thao tác, hoặc phím
+<strong>Delete</strong>): không có bước chọn nơi lưu — văn bản mồ côi về <strong>thư mục pháp nhân</strong> của nó. Muốn
+chọn nơi khác thì xóa từng thư mục.</p>
+<hr />
+<div class="sec page-break" id="phần-iii-xếp-văn-bản-vào-thư-mục"><div class="g"></div><div class="t">PHẦN III. XẾP VĂN BẢN VÀO THƯ MỤC</div></div>
+<h3 id="13-bấm-chọn-và-phím-tắt">13. Bấm, chọn và phím tắt</h3>
+<p>Ở khung phải (cả Lưới lẫn Danh sách):</p>
+<table>
+<thead>
+<tr>
+<th>Thao tác</th>
+<th>Kết quả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bấm một lần</strong></td>
+<td><strong>Mở</strong> — thư mục thì vào thư mục, văn bản thì sang trang chi tiết</td>
+</tr>
+<tr>
+<td>Tick ô vuông, hoặc <strong>Ctrl/⌘ + bấm</strong></td>
+<td>Chọn / bỏ chọn thêm một mục</td>
+</tr>
+<tr>
+<td><strong>Shift + bấm</strong></td>
+<td>Chọn cả dải từ mục chọn trước tới mục này</td>
+</tr>
+<tr>
+<td><strong>Ctrl/⌘ + A</strong></td>
+<td>Chọn tất cả trên trang</td>
+</tr>
+<tr>
+<td><strong>Esc</strong></td>
+<td>Bỏ chọn</td>
+</tr>
+<tr>
+<td><strong>Enter</strong></td>
+<td>Mở mục đang chọn</td>
+</tr>
+<tr>
+<td><strong>Delete</strong></td>
+<td>Xóa các mục đang chọn (có hỏi lại)</td>
+</tr>
+<tr>
+<td>Chuột phải</td>
+<td>Menu thao tác của mục đó</td>
+</tr>
+</tbody>
+</table>
+<p>Thư mục pháp nhân và nhóm «Công ty» <strong>không có ô tick</strong> (không chọn hàng loạt được). Đổi thư mục,
+đổi bộ lọc, đổi trang là các mục đang chọn tự bỏ.</p>
+<p>Khi có mục được chọn, hàng tìm kiếm đổi thành <strong>thanh thao tác</strong>:</p>
+<div class="figure"><img src="hinh/tm-14-thanh-thao-tac-hang-loat.png" style="width:100%" alt="Thanh thao tác hàng loạt"><p class="caption"><em>Hình 13. Thanh thao tác khi đã chọn 2 văn bản</em></p></div>
+<ol>
+<li><strong>Bỏ chọn</strong> (✕).</li>
+<li>Số mục đang chọn.</li>
+<li><strong>Thêm vào thư mục</strong> — gắn thêm, giữ các thư mục cũ (<a href="#14-thêm-văn-bản-vào-thư-mục">mục 14</a>).</li>
+<li><strong>Chuyển tới</strong> — đổi sang thư mục khác (<a href="#15-chuyển-văn-bản-sang-thư-mục-khác">mục 15</a>).</li>
+<li><strong>Gỡ khỏi «tên thư mục đang mở»</strong> (<a href="#16-gỡ-văn-bản-khỏi-thư-mục">mục 16</a>).</li>
+<li><strong>Xóa</strong> — xem cảnh báo bên dưới.</li>
+<li><strong>Chi tiết</strong>.</li>
+</ol>
+<p>Nút 3 và 5 ẩn nếu trong lượt chọn có thư mục. Mỗi lượt tối đa <strong>500 văn bản</strong> và <strong>50 thư mục</strong>;
+chọn quá thì hiện dấu cảnh báo ⚠.</p>
+<blockquote>
+<p>⚠️ <strong>Nút Xóa trên thanh này XÓA HẲN văn bản khỏi hệ thống</strong>, không phải gỡ khỏi thư mục. Hộp xác
+nhận ghi rõ: <em>«Văn bản xóa HẲN khỏi hệ thống — không phục hồi được.»</em> Văn bản bạn không đủ quyền
+xóa (và văn bản đã có số hiệu, đã ban hành) được <strong>bỏ qua</strong>. Chỉ muốn đưa văn bản ra khỏi thư
+mục thì dùng nút <strong>Gỡ khỏi…</strong> (số 5).</p>
+</blockquote>
+<p>Kết quả mỗi thao tác hàng loạt báo dạng <em>«Đã chuyển n · bị từ chối m»</em>: văn bản nào bạn không
+có quyền sửa thì bị từ chối, các văn bản còn lại vẫn làm bình thường.</p>
+<h3 id="14-thêm-văn-bản-vào-thư-mục">14. Thêm văn bản vào thư mục</h3>
+<p><strong>Cần:</strong> quyền <strong>Sửa</strong> trên từng văn bản và mức <strong>Đóng góp</strong> trên thư mục đích.</p>
+<p>Chọn văn bản → <strong>Thêm vào thư mục</strong>:</p>
+<div class="figure"><img src="hinh/tm-15-them-vao-thu-muc.png" style="width:100%" alt="Hộp Thêm vào thư mục"><p class="caption"><em>Hình 14. Hộp «Thêm vào thư mục…»</em></p></div>
+<ol>
+<li>Bấm <strong>Chọn thư mục…</strong>.</li>
+<li>Gõ tên để tìm — <strong>không cần dấu</strong> (<em>nam 20</em> ra «Năm 2026», «Năm 2025»).</li>
+<li>Mỗi kết quả kèm đường dẫn đầy đủ để phân biệt thư mục trùng tên ở nhánh khác. Bấm chọn là
+   thực hiện ngay.</li>
+</ol>
+<blockquote>
+<p><strong>Kết quả xếp theo độ khớp</strong>: thư mục <strong>trùng hẳn</strong> tên gõ lên đầu, rồi tới thư mục có tên <strong>bắt
+đầu</strong> bằng chữ gõ, cuối cùng là tên <strong>chứa</strong> chữ gõ ở giữa. Cùng hạng thì thư mục <strong>gần gốc</strong>
+hơn lên trước. Ví dụ gõ <em>hop dong</em>: «Hợp đồng» → «Hợp đồng mua bán» → «Lưu trữ hợp đồng».
+Danh sách hiện tối đa <strong>50</strong> thư mục — không thấy thư mục cần tìm thì gõ thêm chữ cho sát hơn.
+Kết quả hiện ra sau khi bạn <strong>ngừng gõ</strong> một nhịp ngắn, không phải theo từng phím.</p>
+</blockquote>
+<p>Văn bản <strong>giữ nguyên</strong> các thư mục cũ; thư mục vừa thêm là thư mục phụ (trừ khi văn bản chưa có
+thư mục chính nào).</p>
+<p><strong>Kéo thả:</strong> kéo văn bản (ở khung phải, hoặc một văn bản trên cây) rồi <strong>giữ phím Alt (Option
+trên Mac) khi thả</strong> lên thư mục đích — văn bản có mặt ở cả hai nơi.</p>
+<p>Cũng thêm được từ màn <strong>Văn bản</strong> (<a href="#32-ở-danh-sách-văn-bản">mục 32</a>) và ở chi tiết văn bản
+(<a href="#31-ở-chi-tiết-văn-bản">mục 31</a>).</p>
+<h3 id="15-chuyển-văn-bản-sang-thư-mục-khác">15. Chuyển văn bản sang thư mục khác</h3>
+<p>«Chuyển» = thêm vào thư mục đích <strong>và</strong> gỡ khỏi thư mục đang đứng.</p>
+<ul>
+<li><strong>Kéo thả</strong> (không giữ phím gì) văn bản lên thư mục đích — trên cây hoặc trên thẻ / dòng thư mục
+  ở khung phải. Thư mục đích hợp lệ được tô viền xanh.</li>
+<li>Hoặc chọn văn bản → <strong>Chuyển tới</strong> trên thanh thao tác → chọn thư mục.</li>
+</ul>
+<blockquote>
+<p>Mục <strong>Chuyển tới…</strong> trong menu chuột phải của một văn bản chỉ <strong>chọn sẵn</strong> văn bản đó; bạn bấm
+tiếp nút <strong>Chuyển tới</strong> trên thanh thao tác để chọn đích.</p>
+</blockquote>
+<p>Hệ thống thêm vào đích <strong>trước</strong>, thành công rồi mới gỡ khỏi chỗ cũ — lỗi giữa chừng thì văn bản
+không bị «treo» ngoài mọi thư mục.</p>
+<h3 id="16-gỡ-văn-bản-khỏi-thư-mục">16. Gỡ văn bản khỏi thư mục</h3>
+<p><strong>Cần:</strong> quyền <strong>Sửa</strong> văn bản và mức <strong>Đóng góp</strong> trên thư mục.</p>
+<div class="figure"><img src="hinh/tm-16-menu-chuot-phai-van-ban.png" style="width:100%" alt="Menu chuột phải trên văn bản"><p class="caption"><em>Hình 15. Menu chuột phải trên một văn bản</em></p></div>
+<ol>
+<li><strong>Xem chi tiết</strong> — sang trang chi tiết văn bản.</li>
+<li><strong>Chuyển tới…</strong> — chọn sẵn văn bản, dùng tiếp thanh thao tác (<a href="#15-chuyển-văn-bản-sang-thư-mục-khác">mục 15</a>).</li>
+<li><strong>Chia sẻ…</strong> — phân quyền riêng cho văn bản (<a href="#28-chia-sẻ-một-văn-bản-ngay-từ-màn-thư-mục">mục 28</a>).</li>
+<li><strong>Xóa</strong> — ở menu này nghĩa là <strong>GỠ khỏi thư mục</strong>, không xóa văn bản:</li>
+</ol>
+<div class="figure"><img src="hinh/tm-17-go-van-ban-khoi-thu-muc.png" style="width:100%" alt="Xác nhận gỡ văn bản"><p class="caption"><em>Hình 16. Hộp xác nhận gỡ</em></p></div>
+<ol>
+<li>Hộp nói rõ <em>«Gỡ «…» khỏi thư mục «…»? Văn bản vẫn còn nguyên ở các thư mục khác.»</em> Bấm <strong>Gỡ</strong>.</li>
+</ol>
+<p>Gỡ nhiều văn bản một lượt: chọn rồi bấm <strong>Gỡ khỏi «…»</strong> trên thanh thao tác.</p>
+<p><strong>Gỡ thư mục cuối cùng</strong> của một văn bản → văn bản <strong>tự quay về thư mục pháp nhân</strong> của nó; không
+bao giờ có văn bản «mồ côi» (trừ văn bản chưa gắn pháp nhân, xem <a href="#34-câu-hỏi-thường-gặp">mục 34</a>).</p>
+<h3 id="17-thư-mục-chính">17. Thư mục chính</h3>
+<p>Văn bản nằm ở nhiều thư mục thì có <strong>một thư mục chính</strong> (ngôi sao ★ / nhãn <strong>Chính</strong>). Đường
+dẫn thư mục chính là đường dẫn hiện ở cột <strong>Thư mục</strong> của màn Văn bản.</p>
+<ul>
+<li>Thư mục chính được chọn khi tạo văn bản, hoặc đổi ở hộp <strong>Sửa thư mục</strong> của chi tiết văn bản
+  (bấm ngôi sao trên thư mục muốn làm chính — <a href="#31-ở-chi-tiết-văn-bản">mục 31</a>).</li>
+<li>Gỡ thư mục chính → thư mục <strong>gắn sớm nhất</strong> còn lại tự lên làm chính.</li>
+<li>Nếu thư mục chính của một văn bản là thư mục <strong>bạn không thấy</strong>, màn hình của bạn hiện thư mục
+  phụ đầu tiên bạn thấy được thay vào.</li>
+</ul>
+<h3 id="18-khung-chi-tiết">18. Khung Chi tiết</h3>
+<p>Bấm <strong>ⓘ</strong> trên đầu khung phải (hoặc trên thanh thao tác) để mở khung bên phải.</p>
+<div class="figure"><img src="hinh/tm-18-khung-chi-tiet.png" style="width:100%" alt="Khung Chi tiết"><p class="caption"><em>Hình 17. Khung Chi tiết khi chọn một văn bản</em></p></div>
+<ol>
+<li>Khung <strong>Chi tiết</strong> — tên, số hiệu, <em>Loại</em>, <em>Trạng thái</em>, <em>Người soạn</em> của văn bản.</li>
+<li><strong>Thư mục chứa</strong> — mọi thư mục (bạn thấy được) đang chứa văn bản này.</li>
+<li>Nhãn <strong>Chính</strong> đánh dấu thư mục chính.</li>
+<li><strong>Mở</strong> — sang trang chi tiết văn bản.</li>
+</ol>
+<p>Khung đổi nội dung theo thứ bạn chọn:</p>
+<table>
+<thead>
+<tr>
+<th>Đang chọn</th>
+<th>Khung hiện</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Không chọn gì</td>
+<td>Thông tin thư mục đang xem</td>
+</tr>
+<tr>
+<td>Một thư mục</td>
+<td>Tên, đường dẫn, <strong>Số văn bản</strong>, <strong>Mức quyền của tôi</strong>; người có mức Quản lý thấy thêm khối <strong>Ai có quyền</strong> và nút <strong>Quản lý quyền</strong> (mở hộp Chia sẻ)</td>
+</tr>
+<tr>
+<td>Một văn bản</td>
+<td>Như Hình 17</td>
+</tr>
+<tr>
+<td>Nhiều mục</td>
+<td><em>«Đã chọn n mục.»</em></td>
+</tr>
+</tbody>
+</table>
+<h3 id="19-tạo-văn-bản-ngay-trong-thư-mục">19. Tạo văn bản ngay trong thư mục</h3>
+<p><strong>Cần:</strong> quyền <strong>Tạo</strong> văn bản và mức <strong>Đóng góp</strong> trên thư mục đang mở.</p>
+<p><strong>Cách 1 — «Văn bản mới tại đây»</strong> (<strong>+ Mới</strong>): mở trang tạo văn bản 3 bước như thường, ô <strong>Lưu vào
+thư mục</strong> điền sẵn thư mục đang mở.</p>
+<p><strong>Cách 2 — «Tải tệp lên» / «Tạo nhanh từ tệp»:</strong> cho văn bản <strong>chỉ gồm tệp có sẵn</strong> (bản scan, hợp
+đồng đã ký, công văn nhận về…) — không có phần soạn thảo.</p>
+<div class="figure"><img src="hinh/tm-21-tao-nhanh-tu-tep.png" style="width:100%" alt="Tạo nhanh từ tệp"><p class="caption"><em>Hình 18. Hộp «Tạo nhanh từ tệp»</em></p></div>
+<ol>
+<li><strong>Mở rộng</strong> — chuyển sang trang tạo đầy đủ 3 bước (giữ thư mục đích, nhưng <strong>không</strong> mang theo
+   những gì đã nhập trong hộp).</li>
+<li><strong>Tệp văn bản</strong> <em>(bắt buộc)</em> — bấm để chọn hoặc kéo thả tệp vào. Nhận PDF, Word, Excel, ảnh,
+   TXT, CSV, XML, MSG, EML, CDR — tối đa 50 MB mỗi tệp.</li>
+<li><strong>Tên văn bản</strong> — tự điền theo tên tệp đầu tiên, sửa được.</li>
+<li><strong>Lưu vào thư mục</strong> — điền sẵn thư mục đang mở, đổi được (hộp này chỉ chọn <strong>một</strong> thư mục; muốn
+   thêm thư mục khác thì thêm sau).</li>
+<li><strong>Người duyệt dự kiến</strong> — chọn loại văn bản và pháp nhân là thấy văn bản sẽ qua ai duyệt.</li>
+<li><strong>Cho phép / chặn người cụ thể</strong> — chia quyền riêng ngay lúc tạo (không bắt buộc).</li>
+<li><strong>Tạo văn bản</strong>.</li>
+</ol>
+<p>Các ô bắt buộc khác: <strong>Loại văn bản</strong>, <strong>Pháp nhân</strong>, <strong>Phòng chủ trì</strong>, <strong>Người phụ trách</strong>. Chưa
+chọn tệp nào thì hệ thống báo <em>«Chọn ít nhất một tệp — văn bản tạo nhanh không có phần soạn thảo.»</em>
+Các thông tin còn lại (mức mật, ngày hiệu lực…) khai sau ở tab <strong>Thông tin</strong> của văn bản.</p>
+<hr />
+<div class="sec page-break" id="phần-iv-tìm-văn-bản-trong-thư-mục"><div class="g"></div><div class="t">PHẦN IV. TÌM VĂN BẢN TRONG THƯ MỤC</div></div>
+<h3 id="20-tìm-theo-tên-số-hiệu-nội-dung">20. Tìm theo tên, số hiệu, nội dung</h3>
+<div class="figure"><img src="hinh/tm-20-tim-toan-van-trong-thu-muc.png" style="width:100%" alt="Tìm toàn văn trong thư mục"><p class="caption"><em>Hình 19. Tìm «nghi le» trong DEGO Holding, gồm cả thư mục con</em></p></div>
+<ol>
+<li>Gõ vào ô tìm. Gõ <strong>từ 2 ký tự</strong> trở lên là hệ thống tìm <strong>cả nội dung soạn thảo và chữ trong
+   tệp đính kèm</strong>, không chỉ tên và số hiệu. Không cần gõ dấu.</li>
+<li><strong>Bộ lọc</strong> có số tròn = số điều kiện lọc đang bật.</li>
+<li>Điều kiện đang bật hiện thành nhãn; bấm <strong>✕</strong> trên nhãn để bỏ. Ở đây đang bật <strong>Gồm thư mục
+   con</strong> — tìm cả các thư mục con.</li>
+<li>Trúng ở <strong>nội dung</strong> → dòng dưới tên ghi <em>Nội dung: …</em> kèm đoạn trích.</li>
+<li>Trúng ở <strong>tệp</strong> → ghi <em>Tệp «tên tệp»: …</em> kèm đoạn trích.</li>
+</ol>
+<p>Cách gõ nâng cao:</p>
+<table>
+<thead>
+<tr>
+<th>Gõ</th>
+<th>Tìm ra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>quy che van ban</code></td>
+<td>Văn bản có <strong>đủ</strong> các từ, không kể thứ tự, không kể dấu</td>
+</tr>
+<tr>
+<td><code>"hợp đồng lao động"</code></td>
+<td>Cụm trong ngoặc kép, <strong>liền mạch, đúng thứ tự</strong></td>
+</tr>
+<tr>
+<td><code>nghỉ lễ -tết</code></td>
+<td>Có «nghỉ lễ» nhưng <strong>không</strong> có «tết» (dấu trừ đứng đầu từ)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tệp đọc được chữ: Word (.docx), Excel (.xlsx), PDF có lớp chữ, .txt, .csv. <strong>PDF scan / ảnh
+  chụp không tìm theo nội dung được</strong> (hệ thống không nhận dạng chữ).</li>
+<li>Kết quả vẫn chỉ gồm văn bản bạn được đọc. Văn bản vừa sửa có thể cần vài giây mới tìm ra theo
+  nội dung mới.</li>
+<li>Không có kết quả: <em>«Không tìm thấy văn bản nào khớp câu tìm — trong tên, số hiệu, nội dung lẫn
+  tệp đính kèm.»</em></li>
+</ul>
+<h3 id="21-bộ-lọc">21. Bộ lọc</h3>
+<div class="figure"><img src="hinh/tm-19-bo-loc-trong-thu-muc.png" style="width:100%" alt="Bộ lọc trong thư mục"><p class="caption"><em>Hình 20. Bấm «Bộ lọc»</em></p></div>
+<ol>
+<li><strong>Loại văn bản</strong>.</li>
+<li><strong>Trạng thái</strong> (Nháp, Có hiệu lực, Bãi bỏ…).</li>
+<li><strong>Năm hiệu lực</strong>.</li>
+<li><strong>Gồm thư mục con</strong> — mặc định <strong>tắt</strong>: chỉ văn bản nằm <strong>trực tiếp</strong> trong thư mục đang mở.
+   Bật lên để lấy cả nhánh (chỉ các thư mục con bạn thấy được).</li>
+<li><strong>Bộ lọc</strong> nâng cao — điều kiện kết hợp, dùng chung với màn Văn bản.</li>
+</ol>
+<p>Đổi điều kiện lọc là bảng tự về trang 1. Bảng rỗng vì lọc ghi <em>«Không có văn bản nào khớp điều
+kiện đang lọc.»</em> — khác với thư mục thật sự trống (<em>«Thư mục này chưa có gì.»</em>).</p>
+<p>Đường dẫn trên thanh địa chỉ lưu cả thư mục, câu tìm và công tắc «Gồm thư mục con» — sao chép gửi
+người khác là họ mở ra đúng chỗ (nếu họ có quyền).</p>
+<hr />
+<div class="sec page-break" id="phần-v-chia-sẻ-và-phân-quyền-thư-mục"><div class="g"></div><div class="t">PHẦN V. CHIA SẺ VÀ PHÂN QUYỀN THƯ MỤC</div></div>
+<h3 id="22-ba-mức-quyền-trên-thư-mục">22. Ba mức quyền trên thư mục</h3>
+<table>
+<thead>
+<tr>
+<th>Mức</th>
+<th>Được làm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Xem</strong></td>
+<td>Thấy thư mục trên cây, mở ra xem</td>
+</tr>
+<tr>
+<td><strong>Đóng góp</strong></td>
+<td>Như Xem, thêm: thêm / gỡ / chuyển văn bản vào ra, tạo thư mục con, tạo văn bản ngay trong thư mục</td>
+</tr>
+<tr>
+<td><strong>Quản lý</strong></td>
+<td>Như Đóng góp, thêm: đổi tên, chuyển, sắp thứ tự, ngừng dùng, xóa, chia sẻ</td>
+</tr>
+</tbody>
+</table>
+<p>Ngoài ra có <strong>Riêng tư</strong> (không ai thấy nếu không được chia riêng) — chỉ dùng cho <em>Quyền chung</em>.</p>
+<ul>
+<li>Quyền đặt ở thư mục cha <strong>áp xuống cả nhánh con</strong>.</li>
+<li>Một dòng <strong>Cấm</strong> ở thư mục hoặc thư mục cha làm thư mục <strong>biến mất</strong> với người bị cấm — Cấm thắng
+  mọi quyền khác.</li>
+<li>Người chỉ có quyền <strong>Xem</strong> văn bản ở màn Phân quyền (không có quyền tạo / sửa nào) thì <strong>tối đa
+  Xem</strong> trên thư mục, dù quyền chung là Đóng góp.</li>
+<li>Được chia <strong>đích danh</strong> một văn bản thì bạn tự thấy (mức Xem) thư mục chứa văn bản đó — để tìm
+  ra nó. Trong thư mục đó bạn vẫn chỉ thấy đúng văn bản được chia.</li>
+</ul>
+<p>Cách hệ thống tính ra mức của một người: xem <em>Mô tả luồng nghiệp vụ — Thư mục văn bản</em>, Phần V.</p>
+<blockquote>
+<p><strong>Nhắc lại:</strong> quyền thư mục <strong>không mở</strong> quyền đọc văn bản. Cấp mức Quản lý trên «Hợp đồng» cho
+một người không làm họ đọc được hợp đồng nào — muốn vậy phải cấp quyền văn bản.</p>
+</blockquote>
+<h3 id="23-mở-hộp-chia-sẻ">23. Mở hộp Chia sẻ</h3>
+<p>Nút <strong>Chia sẻ</strong> trên đầu khung phải, hoặc <strong>Chia sẻ…</strong> trong menu ⋯ / chuột phải, hoặc nút
+<strong>Quản lý quyền</strong> ở khung Chi tiết.</p>
+<div class="figure"><img src="hinh/tm-10-hop-chia-se-thu-muc.png" style="width:100%" alt="Hộp Chia sẻ thư mục"><p class="caption"><em>Hình 21. Hộp «Chia sẻ thư mục»</em></p></div>
+<ol>
+<li><strong>Chọn đối tượng</strong> — người, phòng ban, pháp nhân, vai trò (<a href="#24-cấp-quyền-cho-nhiều-đối-tượng-một-lượt">mục 24</a>).</li>
+<li><strong>Tùy chọn nâng cao</strong> — cấm, hiệu lực từ–đến, lý do (<a href="#25-cấm-thời-hạn-và-lý-do">mục 25</a>).</li>
+<li><strong>Quyền chung</strong> (<a href="#27-quyền-chung">mục 27</a>).</li>
+<li><strong>Người có quyền truy cập (n)</strong> — mọi dòng quyền đang áp lên thư mục này.</li>
+<li>Dòng <strong>Kế thừa từ «…»</strong> — quyền đặt ở thư mục cha. Bấm vào tên thư mục để sang đó sửa; ở đây
+   chỉ xem.</li>
+<li>Lời nhắc: <em>«Quyền thư mục không cho đọc văn bản — người được cấp vẫn chỉ thấy văn bản họ có
+   quyền xem.»</em></li>
+<li><strong>Sao chép liên kết</strong> — lấy đường dẫn tới thư mục để gửi cho người vừa được chia.</li>
+</ol>
+<p>Người <strong>chưa có mức Quản lý</strong> mở hộp này chỉ xem được danh sách, kèm câu <em>«Không đủ quyền để mời
+thêm người hoặc đổi «Quyền chung» trên thư mục này.»</em></p>
+<h3 id="24-cấp-quyền-cho-nhiều-đối-tượng-một-lượt">24. Cấp quyền cho nhiều đối tượng một lượt</h3>
+<p>Bấm ô <strong>Thêm người · phòng ban · pháp nhân · vai trò…</strong>:</p>
+<div class="figure"><img src="hinh/tm-11-chon-doi-tuong-chia-se.png" style="width:100%" alt="Chọn đối tượng"><p class="caption"><em>Hình 22. Danh sách chọn đối tượng</em></p></div>
+<ol>
+<li>Ô <strong>Gõ để tìm…</strong>.</li>
+<li>Lọc theo loại: <strong>Tất cả</strong>, <strong>Pháp nhân</strong>, <strong>Phòng ban</strong>, <strong>Vai trò</strong>, <strong>Người</strong> — kèm số lượng.</li>
+<li>Tick <strong>nhiều</strong> đối tượng, trộn loại thoải mái.</li>
+</ol>
+<p>Đóng danh sách (Esc hoặc bấm ra ngoài), các đối tượng đã chọn hiện thành nhãn:</p>
+<div class="figure"><img src="hinh/tm-12-cap-quyen-va-tuy-chon-nang-cao.png" style="width:100%" alt="Cấp quyền"><p class="caption"><em>Hình 23. Chọn mức và cấp quyền</em></p></div>
+<ol>
+<li>Các đối tượng đã chọn — bấm <strong>✕</strong> để bỏ một cái.</li>
+<li>Chọn <strong>mức</strong>: Xem / Đóng góp / Quản lý (mặc định Xem).</li>
+<li><strong>Cấp quyền (n)</strong> — áp <strong>cùng một mức</strong> cho cả danh sách trong một lượt (tối đa 200 đối tượng).</li>
+<li><strong>Chiều tác động</strong>: <strong>Cho</strong> hoặc <strong>Cấm</strong> (<a href="#25-cấm-thời-hạn-và-lý-do">mục 25</a>).</li>
+<li><strong>Hiệu lực từ / Đến</strong> và <strong>Lý do</strong>.</li>
+</ol>
+<ul>
+<li>Đối tượng <strong>đã có</strong> quyền trên thư mục này → hệ thống <strong>cập nhật mức</strong>, không tạo dòng trùng.</li>
+<li>Hệ thống báo <em>«Đã cấp quyền cho n đối tượng»</em> (đối tượng không còn tồn tại thì bị bỏ qua, có
+  báo số lượng).</li>
+<li>Cấp cho <strong>phòng ban</strong> là tính cả người <strong>kiêm nhiệm</strong> phòng đó. Cấp cho <strong>pháp nhân</strong> là mọi người
+  có pháp nhân chính đó. Cấp cho <strong>vai trò</strong> là mọi người đang giữ vai trò đó.</li>
+<li>Chia sẻ riêng mở được thư mục cho <strong>người ở pháp nhân khác</strong> — cách để hai công ty dùng chung một
+  thư mục.</li>
+</ul>
+<h3 id="25-cấm-thời-hạn-và-lý-do">25. Cấm, thời hạn và lý do</h3>
+<p>Mở <strong>Tùy chọn nâng cao — cấm, hiệu lực từ–đến, lý do</strong>:</p>
+<ul>
+<li><strong>Cấm</strong>: người / nhóm bị cấm <strong>không thấy</strong> thư mục này và cả nhánh con, dù có quyền chung hay
+  được chia ở chỗ khác. Chọn Cấm thì ô chọn mức ẩn đi. Dùng khi muốn chặn <strong>một số ít</strong> người trong
+  một nhóm lớn đang được thấy.</li>
+<li><strong>Hiệu lực từ / Đến</strong>: quyền tự bắt đầu và tự hết theo ngày — tiện cho kiểm toán, tư vấn, người
+  làm dự án ngắn hạn. Để trống là không giới hạn.</li>
+<li><strong>Lý do</strong>: ghi lại vì sao cấp / cấm, hiện dưới tên trong danh sách.</li>
+</ul>
+<blockquote>
+<p>Người quản trị thư mục (có quyền <strong>Sửa</strong> «Cây thư mục» ở màn Phân quyền) <strong>không bị Cấm chặn</strong>
+— họ luôn có mức Quản lý trên các pháp nhân thuộc phạm vi của mình.</p>
+</blockquote>
+<h3 id="26-đổi-mức-và-thu-hồi-quyền">26. Đổi mức và thu hồi quyền</h3>
+<div class="figure"><img src="hinh/tm-13-danh-sach-nguoi-co-quyen.png" style="width:100%" alt="Danh sách người có quyền"><p class="caption"><em>Hình 24. Danh sách «Người có quyền truy cập»</em></p></div>
+<ol>
+<li>Dòng <strong>Cấm</strong> — nhãn đỏ <strong>Cấm</strong>, dòng phụ ghi loại, hạn và lý do.</li>
+<li>Dòng cấp cho <strong>một người</strong>, có hạn (<em>Hết hạn 31/12/2026</em>).</li>
+<li>Dòng cấp cho <strong>một phòng ban</strong>, kèm lý do.</li>
+<li>Ô <strong>mức</strong> trên dòng tự khai — đổi Xem / Đóng góp / Quản lý ngay tại chỗ, hoặc chọn <strong>Gỡ quyền</strong>.</li>
+<li>Dòng <strong>kế thừa</strong> từ thư mục cha — chỉ xem, sửa ở thư mục cha.</li>
+</ol>
+<ul>
+<li>Đổi mức → hệ thống báo <em>«Đã đổi mức quyền»</em>.</li>
+<li><strong>Gỡ quyền</strong> → hỏi <em>«Thu hồi quyền của …?»</em> — dòng quyền được <strong>đánh dấu thu hồi</strong>, vẫn lưu lại
+  để tra cứu về sau. Hệ thống báo <em>«Đã thu hồi quyền»</em>.</li>
+<li>Dòng <strong>Cấm</strong> không đổi mức được; muốn bỏ cấm thì gỡ dòng đó.</li>
+<li>Đổi quyền có hiệu lực <strong>ngay</strong> ở lần mở kế tiếp của người kia, không cần họ đăng xuất.</li>
+</ul>
+<h3 id="27-quyền-chung">27. Quyền chung</h3>
+<p>Ô <strong>Quyền chung</strong> đặt mức cho <strong>mọi người thấy được pháp nhân của thư mục</strong> mà chưa có dòng quyền
+riêng — <em>«Áp cho người thấy nhánh pháp nhân này mà chưa có dòng quyền riêng nào ở dưới.»</em></p>
+<table>
+<thead>
+<tr>
+<th>Chọn</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>Chưa đặt — kế thừa từ thư mục cha</em></td>
+<td>Theo thư mục cha (mặc định của thư mục mới)</td>
+</tr>
+<tr>
+<td><strong>Riêng tư</strong> (ổ khóa)</td>
+<td>Khóa nhánh: chỉ người được chia riêng (và quản trị thư mục) thấy</td>
+</tr>
+<tr>
+<td><strong>Xem</strong></td>
+<td>Ai thấy pháp nhân đều xem được</td>
+</tr>
+<tr>
+<td><strong>Đóng góp</strong></td>
+<td>Ai thấy pháp nhân đều xếp văn bản vào được</td>
+</tr>
+</tbody>
+</table>
+<p>Mặc định: thư mục pháp nhân <strong>Đóng góp</strong>; nhóm «Công ty» <strong>Xem</strong>; thư mục tự do <strong>Riêng tư</strong>. Đổi
+là lưu ngay.</p>
+<p>«Thấy được pháp nhân» nghĩa là phạm vi quyền <strong>Xem văn bản</strong> của người đó (ở màn Phân quyền) với
+tới pháp nhân ấy — phạm vi <em>Tất cả</em> thấy mọi pháp nhân; phạm vi hẹp hơn thấy pháp nhân của mình,
+cộng các công ty được thêm riêng.</p>
+<h3 id="28-chia-sẻ-một-văn-bản-ngay-từ-màn-thư-mục">28. Chia sẻ một văn bản ngay từ màn thư mục</h3>
+<p><strong>Chia sẻ…</strong> trên một <strong>văn bản</strong> (menu chuột phải, hoặc nút chia sẻ cuối dòng) mở hộp <strong>Chia sẻ
+văn bản</strong> — đây là quyền <strong>của văn bản</strong>, khác quyền thư mục:</p>
+<ul>
+<li>Danh sách <strong>Người có quyền riêng (n)</strong>, mỗi dòng ghi <em>Xem, Sửa, Xóa</em> hoặc <em>Chặn</em>; menu ⋯ có <strong>Sửa
+  quyền</strong> / <strong>Hủy quyền</strong>.</li>
+<li>Bấm <strong>Thêm người · phòng ban · pháp nhân · vai trò…</strong> → hộp <strong>Chia quyền truy cập</strong>: chọn <em>Loại
+  đối tượng</em>, chọn đối tượng, <em>Chiều tác động</em> (Cho phép / Không cho phép), <em>Được làm gì</em> (Xem luôn
+  bật, thêm Sửa, Xóa), <em>Hết hạn</em>, <em>Lý do</em> → <strong>Thêm cụm…</strong> → <strong>Xong</strong>.</li>
+<li>Cần quyền <strong>Sửa</strong> trên văn bản; không có thì chỉ xem danh sách.</li>
+<li>Người được chia đích danh một văn bản sẽ tự thấy thư mục chứa nó (<a href="#22-ba-mức-quyền-trên-thư-mục">mục 22</a>).</li>
+</ul>
+<h3 id="29-tình-huống-mẫu">29. Tình huống mẫu</h3>
+<p><strong>Phòng Kế toán tự quản thư mục hợp đồng của mình</strong></p>
+<ol>
+<li>Trong <strong>DEGO Holding</strong>, tạo thư mục <strong>Hợp đồng</strong>.</li>
+<li><strong>Chia sẻ</strong> → chọn phòng ban <strong>Kế toán</strong> → mức <strong>Quản lý</strong> → <strong>Cấp quyền</strong>.</li>
+<li>Trưởng phòng Kế toán tự dựng «Năm 2026», «Năm 2025»… và tự chia tiếp cho người cần.</li>
+</ol>
+<p><strong>Khóa một nhánh chỉ Ban giám đốc thấy</strong></p>
+<ol>
+<li>Tạo thư mục <strong>Tài liệu HĐQT</strong>, <strong>Chia sẻ</strong> → <strong>Quyền chung</strong> = <strong>Riêng tư</strong>.</li>
+<li>Chọn vai trò / từng người trong Ban giám đốc → mức <strong>Xem</strong> hoặc <strong>Đóng góp</strong> → <strong>Cấp quyền</strong>.</li>
+<li>Nhớ cấp thêm <strong>quyền văn bản</strong> cho họ nếu văn bản trong đó có mức mật hoặc quyền riêng.</li>
+</ol>
+<p><strong>Dùng chung một thư mục cho hai pháp nhân</strong></p>
+<ul>
+<li>Tạo <strong>thư mục tự do</strong> ở gốc cây (ví dụ «Thu Mua»), rồi chia cho pháp nhân / phòng ban của cả hai
+  công ty. Thư mục tự do nhận văn bản của mọi pháp nhân.</li>
+</ul>
+<p><strong>Cho kiểm toán xem trong 2 tuần</strong></p>
+<ul>
+<li><strong>Chia sẻ</strong> → chọn người kiểm toán → mức <strong>Xem</strong> → <strong>Tùy chọn nâng cao</strong> → <em>Đến</em> = ngày kết thúc
+  → <em>Lý do</em> «Kiểm toán năm 2026» → <strong>Cấp quyền</strong>. Hết hạn quyền tự tắt.</li>
+</ul>
+<p><strong>Một nhân viên trong phòng không được thấy «Lương thưởng»</strong></p>
+<ul>
+<li><strong>Chia sẻ</strong> thư mục «Lương thưởng» → chọn người đó → <strong>Tùy chọn nâng cao</strong> → <strong>Cấm</strong> → <strong>Cấp
+  quyền</strong>.</li>
+</ul>
+<hr />
+<div class="sec page-break" id="phần-vi-thư-mục-ở-các-màn-khác"><div class="g"></div><div class="t">PHẦN VI. THƯ MỤC Ở CÁC MÀN KHÁC</div></div>
+<h3 id="30-khi-tạo-văn-bản">30. Khi tạo văn bản</h3>
+<p>Bước 1 <strong>Thông tin chính</strong> của trang tạo văn bản có ô <strong>Lưu vào thư mục</strong>:</p>
+<div class="figure"><img src="hinh/tm-22-tao-van-ban-chon-thu-muc.png" style="width:100%" alt="Ô Lưu vào thư mục"><p class="caption"><em>Hình 25. Ô «Lưu vào thư mục» khi tạo văn bản</em></p></div>
+<ol>
+<li>Nút chọn — hiện <em>«n thư mục đã chọn»</em>; để trống là <em>«Chọn thư mục (bỏ trống cũng được)…»</em>.</li>
+<li>Ô tìm <strong>Gõ tên thư mục…</strong> — chỉ liệt kê thư mục bạn có mức <strong>Đóng góp</strong> trở lên.</li>
+<li>Kết quả kèm đường dẫn. Chọn <strong>nhiều</strong> thư mục được.</li>
+<li><strong>Tạo thư mục mới</strong> — tạo nhanh một thư mục dưới thư mục pháp nhân rồi chọn luôn (cần quyền tạo
+   thư mục).</li>
+</ol>
+<p>Các thư mục đã chọn hiện thành nhãn dưới ô: bấm <strong>ngôi sao</strong> để đặt làm <strong>thư mục chính</strong>, <strong>✕</strong> để
+bỏ.</p>
+<p><strong>Để trống thì văn bản vào đâu?</strong> Hệ thống hiện gợi ý <em>«Không chọn → văn bản sẽ vào thư mục "…"»</em>:</p>
+<ol>
+<li><strong>Thư mục mặc định của loại văn bản</strong> (người thiết lập khai ở danh mục Loại văn bản) — nếu thư
+   mục đó đang dùng và cùng pháp nhân với văn bản;</li>
+<li>nếu không có → <strong>thư mục pháp nhân</strong> của văn bản.</li>
+</ol>
+<p>Đổi loại văn bản khi chưa tự chọn thư mục → ô tự đổi theo thư mục mặc định của loại mới.
+<strong>Sao chép</strong> văn bản và <strong>tạo bản trích</strong> luôn đưa văn bản mới vào <strong>thư mục pháp nhân</strong>.</p>
+<p>Thiếu quyền xem cây thư mục thì ô này không hiện — văn bản vẫn vào thư mục mặc định như trên.</p>
+<h3 id="31-ở-chi-tiết-văn-bản">31. Ở chi tiết văn bản</h3>
+<p>Tab <strong>Thông tin</strong> của một văn bản có thẻ <strong>Thư mục</strong>:</p>
+<div class="figure"><img src="hinh/tm-23-the-thu-muc-chi-tiet-van-ban.png" style="width:100%" alt="Thẻ Thư mục"><p class="caption"><em>Hình 26. Thẻ «Thư mục (2)» ở chi tiết văn bản</em></p></div>
+<ol>
+<li><strong>Thư mục (n)</strong> — số thư mục bạn thấy được đang chứa văn bản.</li>
+<li>Thư mục phụ — bấm để mở màn Thư mục đúng chỗ đó.</li>
+<li>Thư mục chính — ngôi sao ★ và nhãn <strong>Chính</strong>.</li>
+<li><strong>Sửa thư mục</strong> — cần quyền Sửa văn bản. Làm được ở <strong>mọi trạng thái</strong> văn bản, kể cả đã ban
+   hành (thư mục không phải nội dung văn bản).</li>
+</ol>
+<div class="figure"><img src="hinh/tm-24-hop-sua-thu-muc-van-ban.png" style="width:100%" alt="Hộp Sửa thư mục"><p class="caption"><em>Hình 27. Hộp «Sửa thư mục»</em></p></div>
+<ol>
+<li>Ô chọn — thêm thư mục như ở <a href="#30-khi-tạo-văn-bản">mục 30</a>.</li>
+<li>Thư mục phụ: bấm ngôi sao rỗng ☆ để đặt làm chính, <strong>✕</strong> để gỡ.</li>
+<li>Thư mục chính: ngôi sao đặc ★.</li>
+<li><strong>Lưu</strong> → <em>«Đã cập nhật thư mục»</em>.</li>
+</ol>
+<ul>
+<li><em>«Gỡ thư mục cuối cùng thì văn bản tự quay về thư mục mang tên pháp nhân.»</em></li>
+<li>Văn bản đang nằm trong một thư mục <strong>bạn không thấy</strong>: bạn lưu thế nào thì liên kết tới thư mục
+  đó <strong>vẫn được giữ</strong> — không bị mất vì bạn không nhìn thấy nó.</li>
+<li>Gỡ một thư mục bạn thấy nhưng chỉ có mức Xem → bị từ chối: <em>«Cần quyền Đóng góp trở lên trên thư
+  mục «…» mới gỡ được văn bản khỏi đó.»</em></li>
+<li>Thẻ chưa có thư mục nào: <em>«Chưa gắn thư mục nào — bấm «Sửa thư mục» để chọn.»</em></li>
+</ul>
+<h3 id="32-ở-danh-sách-văn-bản">32. Ở danh sách Văn bản</h3>
+<div class="figure"><img src="hinh/tm-25-loc-thu-muc-man-van-ban.png" style="width:100%" alt="Lọc theo thư mục ở màn Văn bản"><p class="caption"><em>Hình 28. Lọc theo thư mục ở màn «Văn bản»</em></p></div>
+<ol>
+<li>Ô <strong>Tất cả thư mục</strong> — lọc danh sách theo thư mục.</li>
+<li>Gõ tên để tìm thư mục — không cần dấu, kết quả xếp theo độ khớp như ở <a href="#14-thêm-văn-bản-vào-thư-mục">mục 14</a>.</li>
+<li>Cây thư mục — bấm chọn.</li>
+<li><strong>Gồm cả văn bản trong thư mục con</strong> — tick để lấy cả nhánh; khi bật, ô lọc ghi thêm <strong>+ con</strong>.</li>
+</ol>
+<p>Cột <strong>Thư mục</strong> (mặc định ẩn — bật ở nút <strong>Cột</strong>) hiện đường dẫn thư mục chính, kèm <strong>+n</strong> nếu văn
+bản còn ở n thư mục khác.</p>
+<div class="figure"><img src="hinh/tm-26-them-vao-thu-muc-tu-man-van-ban.png" style="width:100%" alt="Thêm vào thư mục từ màn Văn bản"><p class="caption"><em>Hình 29. Tick văn bản ở màn Văn bản</em></p></div>
+<ol>
+<li><strong>Đã chọn n văn bản</strong>.</li>
+<li><strong>Thêm vào thư mục…</strong> — gắn các văn bản đã chọn vào một thư mục (giữ thư mục cũ). <strong>Bỏ chọn</strong> để
+   thôi.</li>
+</ol>
+<h3 id="33-quyền-cần-có-ở-màn-phân-quyền">33. Quyền cần có ở màn Phân quyền</h3>
+<p>Quyền thư mục nằm ở dòng chức năng <strong>«Văn thư › Cây thư mục»</strong> (khóa <code>doc_folder</code>) ở màn
+<strong>Phân quyền</strong>; một số việc cần thêm quyền trên <strong>«Văn bản»</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Muốn làm</th>
+<th>Cần ở màn Phân quyền</th>
+<th>Cần trên thư mục</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Thấy menu «Thư mục văn bản», xem cây</td>
+<td>Cây thư mục — <strong>Xem</strong></td>
+<td>Xem</td>
+</tr>
+<tr>
+<td>Tạo thư mục</td>
+<td>Cây thư mục — <strong>Tạo</strong></td>
+<td>Đóng góp trên thư mục cha (tạo ở gốc cây: không cần)</td>
+</tr>
+<tr>
+<td>Đổi tên, chuyển, sắp thứ tự, ngừng dùng, chia sẻ</td>
+<td>Cây thư mục — <strong>Sửa</strong></td>
+<td>Quản lý</td>
+</tr>
+<tr>
+<td>Xóa thư mục</td>
+<td>Cây thư mục — <strong>Xóa</strong></td>
+<td>Quản lý (+ Đóng góp trên nơi nhận văn bản)</td>
+</tr>
+<tr>
+<td>Thêm / chuyển / gỡ văn bản</td>
+<td>Văn bản — <strong>Sửa</strong> (trên từng văn bản)</td>
+<td>Đóng góp</td>
+</tr>
+<tr>
+<td>Tạo văn bản trong thư mục, Tải tệp lên</td>
+<td>Văn bản — <strong>Tạo</strong></td>
+<td>Đóng góp</td>
+</tr>
+<tr>
+<td>Xóa hẳn văn bản</td>
+<td>Văn bản — <strong>Xóa</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Mọi vai trò có sẵn đều được <strong>Xem</strong> «Cây thư mục». Vai trò <strong>«Văn bản — soạn &amp; sửa (không xóa, không duyệt)»</strong> có
+  Xem/Tạo/Sửa/Xóa «Cây thư mục» trong phạm vi <strong>công ty</strong> của mình.</li>
+<li>Có <strong>Sửa</strong> «Cây thư mục» = <strong>quản trị thư mục</strong> trong phạm vi đó: luôn mức Quản lý, không bị Cấm
+  chặn. Chỉ giao cho người thật sự quản lý cây.</li>
+<li>Vừa được giao quyền mà chưa thấy nút → <strong>đăng xuất rồi đăng nhập lại</strong>.</li>
+</ul>
+<hr />
+<div class="sec page-break" id="phần-vii-hỏi-đáp"><div class="g"></div><div class="t">PHẦN VII. HỎI ĐÁP</div></div>
+<h3 id="34-câu-hỏi-thường-gặp">34. Câu hỏi thường gặp</h3>
+<p><strong>Tôi không thấy menu «Thư mục văn bản».</strong>
+Vai trò của bạn chưa có quyền <strong>Xem</strong> «Cây thư mục». Nhờ quản trị cấp (<a href="#33-quyền-cần-có-ở-màn-phân-quyền">mục 33</a>).</p>
+<p><strong>Tôi thấy thư mục nhưng không thấy nút + Mới, Tải tệp lên, hay nút ⋯.</strong>
+Bạn chỉ có mức <strong>Xem</strong> trên thư mục đó — hoặc vai trò của bạn không có quyền tạo / sửa nào (khi đó
+tối đa là Xem). Xem dòng <strong>Quyền: …</strong> dưới tên thư mục.</p>
+<p><strong>Đồng nghiệp thấy thư mục có 10 văn bản, tôi chỉ thấy 4.</strong>
+Đúng như thiết kế — mỗi người chỉ thấy văn bản mình được đọc (<a href="#2-ba-điều-phải-nhớ-trước-khi-dùng">mục 2</a>).</p>
+<p><strong>Tôi được chia một văn bản, tự nhiên thấy thêm một thư mục lạ trên cây.</strong>
+Đó là thư mục chứa văn bản được chia cho bạn — hệ thống cho bạn thấy để tìm ra văn bản. Bạn chỉ thấy
+đúng văn bản đó trong thư mục. Người chia thu hồi thì thư mục cũng biến mất.</p>
+<p><strong>Tôi bấm Xóa trên một văn bản trong thư mục — văn bản có mất không?</strong>
+Nếu bấm <strong>Xóa</strong> trong <strong>menu chuột phải</strong> của một văn bản: <strong>không</strong>, đó là gỡ khỏi thư mục. Nếu chọn
+văn bản rồi bấm <strong>Xóa</strong> trên <strong>thanh thao tác</strong> (hoặc phím Delete): <strong>có</strong>, văn bản bị xóa hẳn nếu bạn
+có quyền và văn bản còn ở trạng thái Nháp hoặc Trả về, chưa cấp số. Đọc kỹ hộp xác nhận trước khi bấm.</p>
+<p><strong>Xóa thư mục thì văn bản trong đó đi đâu?</strong>
+Văn bản còn ở thư mục khác thì ở lại chỗ đó; văn bản chỉ ở thư mục này thì chuyển tới nơi bạn chọn
+trong hộp xóa (hoặc về thư mục pháp nhân nếu xóa hàng loạt). Không văn bản nào bị xóa.</p>
+<p><strong>Tôi không xóa được thư mục pháp nhân.</strong>
+Thư mục pháp nhân do hệ thống quản lý, không xóa được. Đổi tên thì được.</p>
+<p><strong>Không xóa được thư mục, báo «còn thư mục con».</strong>
+Kể cả thư mục con <strong>đang ngừng dùng</strong>. Bật <strong>Hiện thư mục ngừng dùng</strong> trên cây để thấy chúng.</p>
+<p><strong>Văn bản giấy nghỉ phép của tôi không nằm trong thư mục nào.</strong>
+Văn bản chưa gắn pháp nhân thì không tự vào thư mục nào — cố ý. Vẫn tìm được ở màn Văn bản; ai có
+quyền thì thêm vào thư mục tự do nếu cần.</p>
+<p><strong>Tôi chuyển thư mục sang nhánh công ty khác, người bên đó không thấy.</strong>
+Thư mục giữ pháp nhân gốc khi chuyển. Chia sẻ thêm cho người / phòng bên đó.</p>
+<p><strong>Tôi tạo thư mục ở gốc cây mà đồng nghiệp không thấy.</strong>
+Thư mục tự do mặc định <strong>Riêng tư</strong>. Mở <strong>Chia sẻ</strong> để cấp cho họ.</p>
+<p><strong>Tìm theo nội dung không ra, dù tôi chắc có chữ đó trong tệp.</strong>
+Tệp là PDF scan / ảnh chụp (không có lớp chữ), hoặc lớn hơn 20 MB, hoặc văn bản vừa sửa vài giây
+trước. Thử tìm theo tên hoặc số hiệu.</p>
+<p><strong>Tôi đã ngừng dùng một thư mục, giờ tìm lại ở đâu?</strong>
+Trên cây: ⋯ <strong>Thêm</strong> → bật <strong>Hiện thư mục ngừng dùng</strong>, rồi ⋯ trên thư mục đó → <strong>Khôi phục</strong>.</p>
+<p><strong>Tôi vừa được cấp quyền mà vẫn chưa thấy nút.</strong>
+Quyền <strong>thư mục</strong> có hiệu lực ngay (bấm <strong>Làm mới</strong> trên cây). Quyền <strong>vai trò</strong> ở màn Phân quyền cần
+đăng xuất rồi đăng nhập lại.</p></body></html>

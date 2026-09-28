@@ -4,7 +4,7 @@
 |---|---|
 | **Phân hệ** | Văn bản (Văn thư) |
 | **Dành cho** | Ban lãnh đạo · Trưởng bộ phận · Văn thư · Người phụ trách quy trình · Đội triển khai |
-| **Cập nhật** | 23/09/2026 |
+| **Cập nhật** | 26/09/2026 |
 | **Tài liệu liên quan** | Hướng dẫn sử dụng — Quản lý Văn bản (cách bấm từng màn hình) |
 
 **Cách đọc tài liệu này**
@@ -535,20 +535,24 @@ tên; bấm một dòng là mở chi tiết văn bản.
 
 ### 24. Thư mục văn bản
 
+*Bản đầy đủ (cấu trúc cây, 9 quy trình, 20 quy tắc, cách tính quyền) ở tài liệu riêng* ***Mô tả
+luồng nghiệp vụ — Thư mục văn bản*** *và* ***Hướng dẫn sử dụng — Thư mục văn bản*** *(26/09/2026).
+Phần dưới đây là tóm tắt.*
+
 Thư mục là cách **xếp văn bản để tìm lại**, không đổi luồng duyệt hay ban hành.
 
 | Nguyên tắc | Nội dung |
 |---|---|
-| **Một cây chung** | Cả tập đoàn dùng chung một cây. Tầng gốc là **mỗi pháp nhân một thư mục**, hệ thống tự tạo, hiện bằng **tên ngắn** của pháp nhân (chưa khai tên ngắn thì hiện tên đầy đủ). Thư mục gốc không đổi tên, không chuyển, không xóa được |
+| **Một cây chung** | Cả tập đoàn dùng chung một cây. Gốc cây có nhóm **«Công ty»** chứa **mỗi pháp nhân một thư mục** (hệ thống tự tạo, hiện bằng **tên ngắn**), cùng các **thư mục tự do** người dùng tạo (không thuộc pháp nhân nào, mặc định riêng tư). Thư mục pháp nhân đổi tên được nhưng **không xóa được** |
 | **Thấy nhánh nào** | Người được phân quyền xem văn bản ở pháp nhân nào thì thấy nhánh của pháp nhân đó, trừ khi thư mục bị khóa riêng (§25) |
-| **Độ sâu** | Tối đa 6 cấp, tính cả thư mục gốc. Thư mục không chuyển được sang nhánh của pháp nhân khác |
+| **Độ sâu** | Tối đa 100 cấp, tính cả gốc cây (nhóm «Công ty» là cấp 1, thư mục pháp nhân cấp 2). Thư mục chuyển được sang nhánh khác nhưng **giữ pháp nhân gốc** |
 | **Nhiều thư mục** | Một văn bản nằm được ở **nhiều thư mục**, trong đó **một thư mục chính** — đường dẫn của thư mục chính là đường dẫn hiện ở danh sách văn bản |
 | **Thư mục mặc định** | Tạo văn bản mà không chọn thư mục: văn bản vào **thư mục mặc định của loại văn bản** (nếu loại có khai, thư mục đó đang dùng và cùng pháp nhân); không có thì vào **thư mục pháp nhân** của văn bản |
 | **Không có văn bản «mồ côi»** | Gỡ thư mục cuối cùng của một văn bản → văn bản tự quay về thư mục pháp nhân |
 | **Đổi pháp nhân** | Văn bản chỉ đang nằm ở thư mục pháp nhân cũ → tự chuyển sang thư mục pháp nhân mới. Văn bản đã được xếp vào thư mục khác thì giữ nguyên |
 | **Văn bản chưa gắn pháp nhân** | Không có thư mục gốc nào để vào, nên **không gắn thư mục nào** (cố ý). Văn bản vẫn tìm được ở màn Văn bản như bình thường |
 | **Ngừng dùng** | Thư mục ngừng dùng kéo theo cả nhánh con; khôi phục chỉ bật lại đúng thư mục đó |
-| **Xóa** | Chỉ xóa được thư mục **không còn thư mục con và không còn văn bản nào** — đếm trên toàn hệ thống, kể cả văn bản người xóa không nhìn thấy. Còn văn bản thì chọn *Ngừng dùng* |
+| **Xóa** | Chỉ xóa được thư mục **không còn thư mục con**. Văn bản trong đó **không bị xóa**: văn bản còn ở thư mục khác thì chỉ bị gỡ; văn bản chỉ nằm ở đây thì chuyển sang nơi người xóa chọn (xóa hàng loạt: về thư mục pháp nhân). Số đếm tính trên toàn hệ thống |
 
 Khi **tạo văn bản** có ô **«Lưu vào thư mục»** (chọn một hoặc nhiều, đánh dấu một thư mục chính;
 chỉ liệt kê thư mục mình có mức Đóng góp trở lên, đúng pháp nhân của văn bản). Tạo văn bản từ trong
@@ -602,15 +606,15 @@ Mục menu **«Thư mục văn bản»** trong phân hệ Văn bản, dành cho 
 **Khung phải — nội dung kiểu Google Drive**
 
 - Hai khối: **Thư mục con** rồi **Văn bản**; chuyển được giữa **Lưới** và **Danh sách**.
-- **Chọn:** bấm = chọn một · **Ctrl/⌘ + bấm** = thêm/bớt · **Shift + bấm** = chọn một dải ·
-  **Ctrl/⌘ + A** = chọn hết · **Esc** = bỏ chọn. Bấm đúp để mở.
+- **Bấm một lần là mở** (từ 24/09/2026). **Chọn:** tick ô, hoặc **Ctrl/⌘ + bấm** = thêm/bớt ·
+  **Shift + bấm** = chọn một dải · **Ctrl/⌘ + A** = chọn hết · **Esc** = bỏ chọn.
 - Có mục đang chọn thì thanh trên đổi thành **thanh thao tác**: *Thêm vào thư mục…* · *Chuyển tới…*
   · *Gỡ khỏi thư mục này*.
 - **Menu chuột phải** trên từng mục: *Mở · Đổi tên · Chuyển tới… · Chia sẻ… · Xem chi tiết · Xóa* —
   chỉ hiện những việc mình đủ quyền làm.
 - **Kéo thả** văn bản hoặc thư mục từ khung phải sang một thư mục (trên cây hoặc trong khung phải):
-  văn bản được **thêm** vào thư mục đích; giữ **Alt/Option** khi thả để **chuyển** (gỡ khỏi thư mục
-  đang đứng).
+  văn bản được **chuyển** sang thư mục đích (gỡ khỏi thư mục đang đứng); giữ **Alt/Option** khi thả để
+  **thêm** (giữ cả chỗ cũ).
 - **Khung chi tiết** cho biết đường dẫn, số văn bản, mức quyền của mình, và các thư mục đang chứa
   văn bản.
 

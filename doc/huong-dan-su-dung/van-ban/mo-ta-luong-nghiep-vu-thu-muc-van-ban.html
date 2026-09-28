@@ -1,0 +1,1258 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Mô tả luồng nghiệp vụ Thư mục văn bản</title><style>
+@page { size: A4; margin: 18mm 17mm 18mm 22mm;
+  @top-center { content: counter(page); font: 11pt "Times New Roman", serif; color: #1A4D6B; } }
+@page :first { @top-center { content: none; } }
+* { box-sizing: border-box; }
+body { font: 12pt/1.5 "Times New Roman", serif; color: #111827; margin: 0; }
+a { color: #1E7F9C; text-decoration: none; }
+b, strong { color: #1A4D6B; }
+code { font: 10.5pt "Courier New", monospace; background: #F1F7FA; padding: 0 3px; border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 11pt; }
+th { background: #1E7F9C; color: #fff; font-weight: bold; text-align: left; padding: 6px 8px; border: 1px solid #1E7F9C; }
+td { padding: 5px 8px; border: 1px solid #CBD5DD; vertical-align: top; }
+tbody tr:nth-child(even) td { background: #F8FBFC; }
+tr, img { break-inside: avoid; }
+ul, ol { margin: 4px 0 8px; padding-left: 22px; }
+li { margin: 2px 0; }
+p { margin: 5px 0 8px; text-align: justify; }
+
+/* Phần đầu tài liệu */
+.doc-head { width: 100%; border-collapse: collapse; margin: 0; }
+.doc-head td { border: 1px solid #9CA3AF; border-bottom: 2px solid #1E7F9C; padding: 8px 10px; background: #fff; }
+.doc-head img { width: 150px; }
+.doc-head .org { text-align: right; color: #1A4D6B; font-weight: bold; font-size: 13pt; }
+.doc-head .kind { text-align: right; color: #6B7C8A; font-style: italic; font-size: 9pt; }
+.doc-head .meta { text-align: right; color: #1A4D6B; font-size: 8.5pt; }
+.doc-title { text-align: center; color: #1A4D6B; font-weight: bold; font-size: 20pt; line-height: 1.2; margin: 18px 0 4px; text-transform: uppercase; }
+.doc-sub { text-align: center; color: #6B7C8A; font-style: italic; margin: 0 0 14px; }
+.info td.label { background: #F1F7FA; border-left: 2px solid #1E7F9C; color: #1E7F9C; font-weight: bold; width: 22%; }
+.info tbody tr:nth-child(even) td { background: none; }
+.info tbody tr:nth-child(even) td.label { background: #F1F7FA; }
+
+/* Thanh đầu phần: khối xanh lá | tên phần trên nền xanh ngọc */
+.sec { display: flex; margin: 22px 0 12px; border: 1px solid #9CA3AF; break-after: avoid; }
+.sec .g { background: #6DBF3C; width: 50%; }
+.sec .t { background: #1E7F9C; color: #fff; width: 50%; padding: 7px 10px; font-weight: bold; font-size: 13pt; text-transform: uppercase; }
+.page-break { break-before: page; }
+/* Đầu mục con */
+h3 { background: #FAFCFD; border: 1px solid #CBD5DD; border-left: 3px solid #27ACE3; color: #1A4D6B;
+     font-size: 13pt; padding: 6px 10px; margin: 18px 0 8px; break-after: avoid; }
+h4 { color: #1E7F9C; font-size: 12pt; margin: 12px 0 6px; break-after: avoid; }
+/* Khung ghi chú */
+blockquote { background: #FFF6E0; border: 1px solid #E8D6A8; border-left: 3px solid #E8A317; margin: 10px 0; padding: 6px 12px; }
+blockquote p { margin: 4px 0; }
+/* Hình + chú thích đi liền, không tách trang */
+.figure { break-inside: avoid; text-align: center; margin: 10px 0 4px; }
+.figure img { max-width: 100%; border: 1px solid #CBD5DD; }
+.caption { text-align: center; color: #6B7C8A; font-size: 10.5pt; margin: 2px 0 8px; break-after: avoid; }
+hr { display: none; }
+/* Mục lục: tên phần in đậm, các mục thụt vào bên dưới */
+.toc p { margin: 10px 0 2px; }
+.toc ol { margin: 0 0 4px; padding-left: 30px; }
+.toc li { margin: 1px 0; }
+</style></head><body>
+<table class="doc-head"><tr>
+  <td style="width:50%"><img src="hinh/logo-dego.svg" alt="DEGO HOLDING"></td>
+  <td><div class="org">DEGO HOLDING · PHÒNG CNTT — DX TEAM</div><div class="kind">MÔ TẢ LUỒNG NGHIỆP VỤ</div>
+      <div class="meta">Cập nhật 26/09/2026</div><div class="meta">Phân hệ Văn bản — ERP DEGO</div></td>
+</tr></table>
+<div class="doc-title">Mô tả luồng nghiệp vụ<br>Thư mục văn bản</div>
+<div class="doc-sub">Cấu trúc cây · 9 quy trình · 20 quy tắc · Cách tính quyền · Điểm cần lưu ý</div>
+<table class="info"><tbody><tr><td class="label">Phân hệ</td><td>Văn bản (Văn thư) → Thư mục văn bản</td></tr><tr><td class="label">Dành cho</td><td>Ban lãnh đạo · Trưởng bộ phận · Văn thư · Người quản lý thư mục · Quản trị phân quyền · Đội triển khai</td></tr><tr><td class="label">Cập nhật</td><td>26/09/2026</td></tr><tr><td class="label">Tài liệu liên quan</td><td>Hướng dẫn sử dụng — Thư mục văn bản (cách bấm từng màn hình) · Mô tả luồng nghiệp vụ — Quản lý Văn bản (§24–27 là bản tóm tắt, tài liệu này là bản đầy đủ)</td></tr></tbody></table>
+<blockquote><p><b>CÁCH ĐỌC TÀI LIỆU NÀY</b></p><ul>
+<li>Tài liệu mô tả <strong>thư mục được tổ chức thế nào, ai làm gì, theo quy tắc gì</strong> — không hướng dẫn
+  bấm nút. Thao tác cụ thể xem <em>Hướng dẫn sử dụng — Thư mục văn bản</em>.</li>
+<li>Mỗi quy trình có mã <strong>TM-xx</strong>; mỗi quy tắc có mã <strong>QT-TMxx</strong> (tách khỏi bộ mã QĐ-xx của luồng văn
+  bản để khỏi lẫn).</li>
+<li>Trong sơ đồ: mỗi <strong>hàng</strong> là một bên thực hiện; <strong>màu mũi tên</strong> cho biết loại chuyển (xanh = đi
+  tiếp, cam = trường hợp riêng, đỏ = chặn / xóa, nét đứt = tùy chọn).</li>
+</ul></blockquote>
+<div class="sec" id="mục-lục"><div class="g"></div><div class="t">MỤC LỤC</div></div><div class="toc">
+<p><strong>PHẦN I. TỔNG QUAN</strong></p>
+<ol>
+<li><a href="#1-mục-đích-và-phạm-vi">Mục đích và phạm vi</a></li>
+<li><a href="#2-các-bên-tham-gia">Các bên tham gia</a></li>
+<li><a href="#3-khái-niệm-dùng-trong-tài-liệu">Khái niệm dùng trong tài liệu</a></li>
+<li><a href="#4-bản-đồ-quy-trình">Bản đồ quy trình</a></li>
+</ol>
+<p><strong>PHẦN II. CẤU TRÚC CÂY</strong></p>
+<ol start="5">
+<li><a href="#5-các-loại-thư-mục">Các loại thư mục</a></li>
+<li><a href="#6-trạng-thái-thư-mục">Trạng thái thư mục</a></li>
+<li><a href="#7-văn-bản-và-thư-mục">Văn bản và thư mục</a></li>
+</ol>
+<p><strong>PHẦN III. CÁC QUY TRÌNH</strong></p>
+<ol start="8">
+<li><a href="#8-tm-01-dựng-cây-thư-mục">TM-01 Dựng cây thư mục</a></li>
+<li><a href="#9-tm-02-xếp-văn-bản-khi-tạo">TM-02 Xếp văn bản khi tạo</a></li>
+<li><a href="#10-tm-03-sắp-xếp-lại-văn-bản">TM-03 Sắp xếp lại văn bản</a></li>
+<li><a href="#11-tm-04-tổ-chức-lại-cây">TM-04 Tổ chức lại cây</a></li>
+<li><a href="#12-tm-05-ngừng-dùng-và-khôi-phục">TM-05 Ngừng dùng và khôi phục</a></li>
+<li><a href="#13-tm-06-xóa-thư-mục">TM-06 Xóa thư mục</a></li>
+<li><a href="#14-tm-07-chia-sẻ-và-thu-hồi-quyền">TM-07 Chia sẻ và thu hồi quyền</a></li>
+<li><a href="#15-tm-08-tìm-văn-bản-theo-thư-mục">TM-08 Tìm văn bản theo thư mục</a></li>
+<li><a href="#16-tm-09-phản-ứng-theo-văn-bản">TM-09 Phản ứng theo văn bản</a></li>
+</ol>
+<p><strong>PHẦN IV. QUY TẮC NGHIỆP VỤ</strong></p>
+<ol start="17">
+<li><a href="#17-bảng-quy-tắc">Bảng quy tắc</a></li>
+<li><a href="#18-giới-hạn-và-con-số">Giới hạn và con số</a></li>
+</ol>
+<p><strong>PHẦN V. PHÂN QUYỀN</strong></p>
+<ol start="19">
+<li><a href="#19-hai-lớp-quyền">Hai lớp quyền</a></li>
+<li><a href="#20-cách-tính-mức-quyền-trên-một-thư-mục">Cách tính mức quyền trên một thư mục</a></li>
+<li><a href="#21-quyền-chung-và-kế-thừa">Quyền chung và kế thừa</a></li>
+<li><a href="#22-việc-gì-cần-quyền-gì">Việc gì cần quyền gì</a></li>
+<li><a href="#23-thấy-một-phần">Thấy một phần</a></li>
+</ol>
+<p><strong>PHẦN VI. ĐIỂM CẦN LƯU Ý</strong></p>
+<ol start="24">
+<li><a href="#24-hệ-quả-dễ-bất-ngờ">Hệ quả dễ bất ngờ</a></li>
+<li><a href="#25-câu-hỏi-còn-mở">Câu hỏi còn mở</a></li>
+</ol>
+<hr />
+</div><div class="sec page-break" id="phần-i-tổng-quan"><div class="g"></div><div class="t">PHẦN I. TỔNG QUAN</div></div>
+<h3 id="1-mục-đích-và-phạm-vi">1. Mục đích và phạm vi</h3>
+<p>Thư mục văn bản cho phép <strong>xếp văn bản theo cách tổ chức làm việc</strong> (theo phòng, theo loại hồ
+sơ, theo năm, theo dự án) để tìm lại nhanh — thay cho việc chỉ lọc theo loại, trạng thái, số hiệu.</p>
+<p><strong>Trong phạm vi</strong></p>
+<ul>
+<li>Một cây thư mục dùng chung cả tập đoàn, mỗi pháp nhân một nhánh, thêm các thư mục dùng chung
+  nhiều pháp nhân.</li>
+<li>Một văn bản nằm ở nhiều thư mục, một thư mục chính.</li>
+<li>Phân quyền riêng cho thư mục (ba mức, cho / cấm, có thời hạn, kế thừa theo nhánh).</li>
+<li>Tìm, lọc, tìm toàn văn trong một thư mục hoặc cả nhánh.</li>
+<li>Tạo văn bản ngay trong thư mục, kể cả văn bản chỉ gồm tệp.</li>
+</ul>
+<p><strong>Ngoài phạm vi (hiện tại)</strong></p>
+<ul>
+<li>Thư mục <strong>không</strong> thay phân quyền văn bản: có quyền thư mục không đọc được văn bản (QT-TM20).</li>
+<li>Thư mục <strong>không</strong> ảnh hưởng luồng soạn — duyệt — ban hành, số hiệu, sổ văn bản.</li>
+<li>Không có thùng rác cho thư mục: xóa là mất thư mục (văn bản không mất).</li>
+<li>Chưa có hạn mức dung lượng theo thư mục, chưa có thống kê theo thư mục.</li>
+</ul>
+<h3 id="2-các-bên-tham-gia">2. Các bên tham gia</h3>
+<table>
+<thead>
+<tr>
+<th>Bên</th>
+<th>Vai trò</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Người dùng</strong></td>
+<td>Mở cây, tìm văn bản. Có mức Đóng góp thì xếp văn bản vào / ra, tạo thư mục con, tạo văn bản ngay trong thư mục</td>
+</tr>
+<tr>
+<td><strong>Người quản lý thư mục</strong></td>
+<td>Có mức <strong>Quản lý</strong> trên một nhánh: đổi tên, chuyển, sắp thứ tự, ngừng dùng, xóa, chia sẻ nhánh đó. Thường là trưởng bộ phận hoặc văn thư của phòng</td>
+</tr>
+<tr>
+<td><strong>Quản trị thư mục</strong></td>
+<td>Vai trò có quyền <strong>Sửa «Văn thư › Cây thư mục»</strong> — luôn mức Quản lý trên mọi thư mục thuộc pháp nhân trong phạm vi vai trò, không bị dòng Cấm chặn</td>
+</tr>
+<tr>
+<td><strong>Người thiết lập</strong></td>
+<td>Khai <strong>thư mục mặc định</strong> cho từng loại văn bản ở danh mục Loại văn bản</td>
+</tr>
+<tr>
+<td><strong>Quản trị phân quyền</strong></td>
+<td>Giao quyền «Cây thư mục» cho vai trò ở màn Phân quyền</td>
+</tr>
+<tr>
+<td><strong>Hệ thống</strong></td>
+<td>Tự tạo nhóm «Công ty» và thư mục pháp nhân, tự xếp văn bản mới vào thư mục mặc định, chống văn bản mồ côi, tính mức quyền, lọc số đếm theo quyền</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-khái-niệm-dùng-trong-tài-liệu">3. Khái niệm dùng trong tài liệu</h3>
+<table>
+<thead>
+<tr>
+<th>Khái niệm</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cây thư mục</strong></td>
+<td>Toàn bộ thư mục, xếp cha — con. Một cây chung cho cả tập đoàn</td>
+</tr>
+<tr>
+<td><strong>Nhóm «Công ty»</strong></td>
+<td>Thư mục hệ thống ở gốc cây, chứa các thư mục pháp nhân</td>
+</tr>
+<tr>
+<td><strong>Thư mục pháp nhân</strong></td>
+<td>Thư mục hệ thống, mỗi pháp nhân một cái, là nơi mặc định của văn bản pháp nhân đó</td>
+</tr>
+<tr>
+<td><strong>Thư mục tự do</strong></td>
+<td>Thư mục người dùng tạo ở gốc cây, không thuộc pháp nhân nào</td>
+</tr>
+<tr>
+<td><strong>Nhánh</strong></td>
+<td>Một thư mục cùng mọi thư mục con cháu của nó</td>
+</tr>
+<tr>
+<td><strong>Liên kết thư mục</strong></td>
+<td>Việc một văn bản «nằm trong» một thư mục. Không phải bản sao</td>
+</tr>
+<tr>
+<td><strong>Thư mục chính</strong></td>
+<td>Liên kết được đánh dấu chính của một văn bản — đường dẫn hiện ở danh sách Văn bản</td>
+</tr>
+<tr>
+<td><strong>Văn bản mồ côi</strong></td>
+<td>Văn bản không còn nằm ở thư mục nào. Hệ thống không để xảy ra, trừ văn bản chưa gắn pháp nhân</td>
+</tr>
+<tr>
+<td><strong>Mức quyền</strong></td>
+<td>Xem · Đóng góp · Quản lý (mức sau gồm mức trước). «Riêng tư» = không mức nào</td>
+</tr>
+<tr>
+<td><strong>Quyền chung</strong></td>
+<td>Mức mặc định cho mọi người «với tới» pháp nhân của thư mục</td>
+</tr>
+<tr>
+<td><strong>Dòng quyền</strong></td>
+<td>Một lần chia sẻ: đối tượng (người / phòng ban / pháp nhân / vai trò), chiều (Cho / Cấm), mức, hiệu lực từ – đến, lý do</td>
+</tr>
+<tr>
+<td><strong>Với tới pháp nhân</strong></td>
+<td>Phạm vi quyền <strong>Xem văn bản</strong> của người đó bao trùm pháp nhân ấy</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-bản-đồ-quy-trình">4. Bản đồ quy trình</h3>
+<div class="figure"><img src="hinh/tm-nv-02-ban-do-quy-trinh.png" style="width:100%" alt="Bản đồ quy trình thư mục"><p class="caption"><em>Hình 1. Chín quy trình của thư mục văn bản và ai làm</em></p></div>
+<ul>
+<li><strong>Người quản lý</strong> dựng cây (TM-01), chia quyền (TM-07), tổ chức lại khi cần (TM-04), ngừng dùng
+  hoặc xóa thư mục hết dùng (TM-05, TM-06).</li>
+<li><strong>Người dùng</strong> xếp văn bản lúc tạo (TM-02), sắp xếp lại sau (TM-03), tìm văn bản (TM-08).</li>
+<li><strong>Hệ thống</strong> lo phần nền: tạo thư mục pháp nhân khi cần, không để văn bản mồ côi, cập nhật thư
+  mục khi văn bản đổi pháp nhân / được sao chép / bị xóa (TM-09).</li>
+</ul>
+<hr />
+<div class="sec page-break" id="phần-ii-cấu-trúc-cây"><div class="g"></div><div class="t">PHẦN II. CẤU TRÚC CÂY</div></div>
+<h3 id="5-các-loại-thư-mục">5. Các loại thư mục</h3>
+<div class="figure"><img src="hinh/tm-nv-01-cau-truc-cay.png" style="width:100%" alt="Cấu trúc cây"><p class="caption"><em>Hình 2. Bốn loại thư mục và quan hệ văn bản — thư mục</em></p></div>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Ai tạo</th>
+<th>Thuộc pháp nhân</th>
+<th>Quyền chung mặc định</th>
+<th>Đổi tên</th>
+<th>Chuyển</th>
+<th>Ngừng dùng</th>
+<th>Xóa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Nhóm «Công ty»</strong></td>
+<td>Hệ thống</td>
+<td>Không</td>
+<td>Xem</td>
+<td>Được*</td>
+<td>Không</td>
+<td>Được*</td>
+<td>Không</td>
+</tr>
+<tr>
+<td><strong>Thư mục pháp nhân</strong></td>
+<td>Hệ thống, khi cần</td>
+<td>Có (đúng một)</td>
+<td>Đóng góp</td>
+<td>Được</td>
+<td>Được</td>
+<td>Được</td>
+<td>Không</td>
+</tr>
+<tr>
+<td><strong>Thư mục thường</strong></td>
+<td>Người dùng</td>
+<td>Theo thư mục cha lúc tạo</td>
+<td>Kế thừa</td>
+<td>Được</td>
+<td>Được</td>
+<td>Được</td>
+<td>Được, khi hết thư mục con</td>
+</tr>
+<tr>
+<td><strong>Thư mục tự do</strong></td>
+<td>Người dùng</td>
+<td>Không</td>
+<td>Riêng tư</td>
+<td>Được</td>
+<td>Được</td>
+<td>Được</td>
+<td>Được, khi hết thư mục con</td>
+</tr>
+</tbody>
+</table>
+<p>* Chỉ quản trị toàn hệ thống có mức Quản lý trên nhóm «Công ty». Xem §24.</p>
+<p><strong>Tên hiển thị</strong>: thư mục pháp nhân chưa đặt tên riêng thì hiện <strong>tên ngắn</strong> của pháp nhân (chưa
+khai tên ngắn thì hiện tên đầy đủ); đặt tên riêng thì tên riêng thắng. Đường dẫn, kết quả tìm vẫn
+ghi tên đầy đủ của pháp nhân.</p>
+<p><strong>Độ sâu</strong>: tối đa <strong>100 cấp</strong> tính cả gốc (mở từ 7 lên 100 ngày 26/09/2026, ngang Google Drive). Nhóm «Công ty» là cấp 1, thư mục pháp nhân cấp 2 → nhánh
+công ty còn 98 cấp cho người dùng; thư mục tự do bắt đầu ở cấp 1 → dùng được đủ 100 cấp.</p>
+<h3 id="6-trạng-thái-thư-mục">6. Trạng thái thư mục</h3>
+<table>
+<thead>
+<tr>
+<th>Trạng thái</th>
+<th>Nghĩa</th>
+<th>Thấy trên cây</th>
+<th>Nhận văn bản mới</th>
+<th>Tạo thư mục con</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Đang dùng</strong></td>
+<td>Bình thường</td>
+<td>Có</td>
+<td>Có</td>
+<td>Có</td>
+</tr>
+<tr>
+<td><strong>Ngừng dùng</strong></td>
+<td>Hết dùng, giữ để tra cứu</td>
+<td>Chỉ khi bật «Hiện thư mục ngừng dùng»</td>
+<td>Không</td>
+<td>Không</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Ngừng dùng <strong>kéo theo cả nhánh</strong>; khôi phục chỉ bật lại <strong>đúng thư mục đó</strong> (QT-TM11).</li>
+<li>Văn bản đang nằm trong thư mục ngừng dùng vẫn giữ nguyên liên kết; văn bản đó vẫn lưu được
+  thông tin bình thường.</li>
+</ul>
+<h3 id="7-văn-bản-và-thư-mục">7. Văn bản và thư mục</h3>
+<table>
+<thead>
+<tr>
+<th>Nguyên tắc</th>
+<th>Nội dung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Liên kết, không sao chép</strong></td>
+<td>Văn bản có một bản duy nhất; mỗi thư mục chứa nó là một liên kết</td>
+</tr>
+<tr>
+<td><strong>Nhiều thư mục</strong></td>
+<td>Một văn bản nằm ở bao nhiêu thư mục cũng được, kể cả thư mục của pháp nhân khác và thư mục tự do</td>
+</tr>
+<tr>
+<td><strong>Một thư mục chính</strong></td>
+<td>Đúng một liên kết là chính. Gỡ thư mục chính → liên kết <strong>sớm nhất</strong> còn lại lên làm chính</td>
+</tr>
+<tr>
+<td><strong>Không mồ côi</strong></td>
+<td>Gỡ liên kết cuối cùng → văn bản tự về thư mục pháp nhân của nó</td>
+</tr>
+<tr>
+<td><strong>Ngoại lệ mồ côi</strong></td>
+<td>Văn bản <strong>chưa gắn pháp nhân</strong> (ví dụ giấy nghỉ phép cá nhân) không có thư mục pháp nhân để về, nên có thể không nằm ở thư mục nào — cố ý</td>
+</tr>
+<tr>
+<td><strong>Không phụ thuộc trạng thái</strong></td>
+<td>Thêm / gỡ / chuyển thư mục làm được ở <strong>mọi trạng thái</strong> văn bản, kể cả đã ban hành, bãi bỏ — thư mục không phải nội dung văn bản</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<div class="sec page-break" id="phần-iii-các-quy-trình"><div class="g"></div><div class="t">PHẦN III. CÁC QUY TRÌNH</div></div>
+<h3 id="8-tm-01-dựng-cây-thư-mục">8. TM-01 Dựng cây thư mục</h3>
+<table class="info">
+<tbody>
+<tr><td class="label"><strong>Mục đích</strong></td>
+<td>Tạo khung thư mục phù hợp cách làm việc của từng phòng / pháp nhân</td>
+</tr>
+<tr><td class="label"><strong>Người thực hiện</strong></td>
+<td>Người có quyền Tạo «Cây thư mục» + mức Đóng góp trên thư mục cha</td>
+</tr>
+<tr><td class="label"><strong>Bắt đầu khi</strong></td>
+<td>Phòng / pháp nhân cần chỗ xếp văn bản</td>
+</tr>
+<tr><td class="label"><strong>Kết quả</strong></td>
+<td>Thư mục mới, đang dùng, quyền chung kế thừa (hoặc Riêng tư nếu ở gốc cây)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Các bước</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Người làm</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Chọn thư mục cha (hoặc gốc cây)</td>
+<td>Người dùng</td>
+<td>Thư mục cha phải đang dùng</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Đặt tên</td>
+<td>Người dùng</td>
+<td>1–150 ký tự, không trùng anh em đang dùng (QT-TM03)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tạo</td>
+<td>Hệ thống</td>
+<td>Kế thừa pháp nhân của cha; xếp cuối danh sách anh em</td>
+</tr>
+<tr>
+<td>4</td>
+<td>(Ở gốc cây) Cấp mức Quản lý cho người tạo</td>
+<td>Hệ thống</td>
+<td>Ghi dòng quyền đích danh, lý do «Người tạo thư mục»</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Chia quyền nếu cần</td>
+<td>Người quản lý</td>
+<td>Xem TM-07</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ngoại lệ</strong></p>
+<ul>
+<li>Thư mục cha ngừng dùng → chặn: <em>«Thư mục cha đang ngừng dùng, không tạo thư mục con được»</em>.</li>
+<li>Vượt 100 cấp → chặn: <em>«Cây thư mục sâu tối đa 100 cấp (tính cả gốc)»</em>.</li>
+<li>Tạo ở gốc cây mà tài khoản chưa gắn hồ sơ nhân sự → chặn (không có ai để cấp mức Quản lý).</li>
+<li>Thư mục pháp nhân <strong>không</strong> tạo tay được — hệ thống tạo ở TM-02 / TM-09.</li>
+</ul>
+<p><strong>Quy tắc áp dụng</strong>: QT-TM01, QT-TM02, QT-TM03, QT-TM04.</p>
+<h3 id="9-tm-02-xếp-văn-bản-khi-tạo">9. TM-02 Xếp văn bản khi tạo</h3>
+<table class="info">
+<tbody>
+<tr><td class="label"><strong>Mục đích</strong></td>
+<td>Mỗi văn bản mới có ngay chỗ trong cây</td>
+</tr>
+<tr><td class="label"><strong>Người thực hiện</strong></td>
+<td>Người soạn; hệ thống khi người soạn không chọn</td>
+</tr>
+<tr><td class="label"><strong>Bắt đầu khi</strong></td>
+<td>Tạo văn bản (trang tạo 3 bước, «Văn bản mới tại đây», «Tạo nhanh từ tệp»)</td>
+</tr>
+<tr><td class="label"><strong>Kết quả</strong></td>
+<td>Văn bản có ít nhất một thư mục (trừ văn bản chưa gắn pháp nhân)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Các bước</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Người làm</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Chọn một hoặc nhiều thư mục, đánh dấu một thư mục chính</td>
+<td>Người soạn</td>
+<td>Chỉ chọn được thư mục mình có mức Đóng góp. Tạo từ trong thư mục thì điền sẵn</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Kiểm tra: thư mục tồn tại, đang dùng, người soạn đủ mức Đóng góp</td>
+<td>Hệ thống</td>
+<td>Thư mục không thấy và thư mục không tồn tại báo <strong>cùng một câu</strong> — không dò được thư mục ẩn</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Không chọn → chọn thư mục mặc định</td>
+<td>Hệ thống</td>
+<td>Theo bảng dưới</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Lưu văn bản và liên kết thư mục <strong>trong cùng một lần lưu</strong></td>
+<td>Hệ thống</td>
+<td>Lỗi thư mục thì văn bản cũng không được tạo</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Thư mục mặc định khi người soạn không chọn</strong></p>
+<table>
+<thead>
+<tr>
+<th>Thứ tự</th>
+<th>Nguồn</th>
+<th>Điều kiện</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Thư mục mặc định của <strong>loại văn bản</strong></td>
+<td>Loại có khai; thư mục đang dùng; <strong>cùng pháp nhân</strong> với văn bản</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Thư mục pháp nhân</strong> của văn bản</td>
+<td>Chưa có thì hệ thống tạo ngay</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Không thư mục nào</td>
+<td>Văn bản chưa gắn pháp nhân</td>
+</tr>
+</tbody>
+</table>
+<p>Thư mục mặc định của loại <strong>không</strong> thể là thư mục tự do (vì thư mục tự do không cùng pháp nhân
+với văn bản nào). Hệ thống không kiểm thư mục mặc định lúc khai loại văn bản — khai sai thì chỉ
+lặng lẽ rơi xuống bước 2.</p>
+<p><strong>Quy tắc áp dụng</strong>: QT-TM05, QT-TM06, QT-TM07.</p>
+<h3 id="10-tm-03-sắp-xếp-lại-văn-bản">10. TM-03 Sắp xếp lại văn bản</h3>
+<table class="info">
+<tbody>
+<tr><td class="label"><strong>Mục đích</strong></td>
+<td>Thêm văn bản vào thư mục khác, chuyển chỗ, gỡ ra, đổi thư mục chính</td>
+</tr>
+<tr><td class="label"><strong>Người thực hiện</strong></td>
+<td>Người có quyền <strong>Sửa</strong> văn bản đó + mức <strong>Đóng góp</strong> trên thư mục liên quan</td>
+</tr>
+<tr><td class="label"><strong>Nơi làm</strong></td>
+<td>Màn Thư mục (kéo thả, thanh thao tác), màn Văn bản (tick → Thêm vào thư mục), chi tiết văn bản (Sửa thư mục)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bốn thao tác</strong></p>
+<table>
+<thead>
+<tr>
+<th>Thao tác</th>
+<th>Tác động</th>
+<th>Điều kiện riêng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Thêm</strong></td>
+<td>Gắn thêm liên kết; thành chính chỉ khi văn bản chưa có thư mục chính</td>
+<td>Đóng góp trên thư mục đích</td>
+</tr>
+<tr>
+<td><strong>Chuyển</strong></td>
+<td>Thêm vào đích, <strong>thành công rồi mới</strong> gỡ khỏi thư mục nguồn</td>
+<td>Đóng góp trên đích và nguồn</td>
+</tr>
+<tr>
+<td><strong>Gỡ</strong></td>
+<td>Xóa liên kết; gỡ chính → liên kết sớm nhất lên chính; gỡ cuối cùng → về thư mục pháp nhân</td>
+<td>Đóng góp trên thư mục bị gỡ</td>
+</tr>
+<tr>
+<td><strong>Đặt lại toàn bộ</strong> (hộp Sửa thư mục)</td>
+<td>Thay danh sách thư mục + thư mục chính</td>
+<td>Đóng góp trên mỗi thư mục <strong>mới thêm</strong> và mỗi thư mục <strong>bị gỡ</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Làm hàng loạt</strong>: tối đa 500 văn bản một lượt. Văn bản không đủ quyền bị <strong>từ chối riêng</strong>, các văn
+bản còn lại vẫn làm; kết quả báo «đã làm n · bị từ chối m» mà không nêu lý do chi tiết.</p>
+<p><strong>Liên kết tới thư mục người dùng không thấy được giữ nguyên</strong> khi họ đặt lại thư mục cho văn
+bản (QT-TM09). Nếu thư mục chính cũ nằm trong số đó, nó vẫn là chính.</p>
+<p><strong>Quy tắc áp dụng</strong>: QT-TM08, QT-TM09, QT-TM10, QT-TM20.</p>
+<h3 id="11-tm-04-tổ-chức-lại-cây">11. TM-04 Tổ chức lại cây</h3>
+<table class="info">
+<tbody>
+<tr><td class="label"><strong>Mục đích</strong></td>
+<td>Đổi cha, đổi thứ tự khi cách tổ chức thay đổi</td>
+</tr>
+<tr><td class="label"><strong>Người thực hiện</strong></td>
+<td>Mức <strong>Quản lý</strong> trên thư mục chuyển + <strong>Đóng góp</strong> trên cha mới; đổi thứ tự cần <strong>Quản lý</strong> trên cha chung</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Chuyển thư mục</strong></p>
+<ul>
+<li>Chuyển được <strong>tới bất kỳ đâu</strong>: sang nhánh pháp nhân khác, ra gốc cây, kể cả chuyển thư mục pháp
+  nhân. Cả nhánh (thư mục con + liên kết văn bản) đi theo.</li>
+<li>Bị chặn khi: chuyển vào chính nó / con cháu của nó; đích ngừng dùng; vượt 100 cấp (tính theo độ cao
+  cả nhánh); trùng tên ở chỗ mới; chuyển nhóm «Công ty».</li>
+<li><strong>Pháp nhân của thư mục KHÔNG đổi</strong> khi chuyển (QT-TM12) — quyền chung vẫn tính theo pháp nhân gốc.</li>
+<li>Thư mục tự do chuyển ra gốc cây → người chuyển được tự cấp mức Quản lý.</li>
+<li>Trước khi chuyển nhánh có văn bản, giao diện nhắc số văn bản sẽ đi theo.</li>
+</ul>
+<p><strong>Đổi thứ tự</strong>: chỉ giữa các thư mục <strong>cùng cha</strong>. Đổi thứ tự các thư mục pháp nhân = quản lý
+nhóm «Công ty» → chỉ quản trị toàn hệ thống.</p>
+<p><strong>Quy tắc áp dụng</strong>: QT-TM02, QT-TM03, QT-TM12.</p>
+<h3 id="12-tm-05-ngừng-dùng-và-khôi-phục">12. TM-05 Ngừng dùng và khôi phục</h3>
+<table class="info">
+<tbody>
+<tr><td class="label"><strong>Mục đích</strong></td>
+<td>Cất thư mục hết dùng mà vẫn giữ cho tra cứu</td>
+</tr>
+<tr><td class="label"><strong>Người thực hiện</strong></td>
+<td>Mức <strong>Quản lý</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Ngừng dùng</strong> áp cho thư mục <strong>và mọi thư mục con cháu</strong>. Nhật ký ghi «(cùng n thư mục con)».</li>
+<li><strong>Khôi phục</strong> chỉ áp cho đúng thư mục được bấm.</li>
+<li>Liên kết văn bản giữ nguyên. Văn bản không thể được <strong>thêm mới</strong> vào thư mục ngừng dùng.</li>
+<li>Không có bước hỏi lại.</li>
+</ul>
+<p><strong>Quy tắc áp dụng</strong>: QT-TM11.</p>
+<h3 id="13-tm-06-xóa-thư-mục">13. TM-06 Xóa thư mục</h3>
+<table class="info">
+<tbody>
+<tr><td class="label"><strong>Mục đích</strong></td>
+<td>Bỏ hẳn một thư mục mà không làm mất văn bản</td>
+</tr>
+<tr><td class="label"><strong>Người thực hiện</strong></td>
+<td>Quyền <strong>Xóa «Cây thư mục»</strong> + mức <strong>Quản lý</strong>; nếu chọn nơi nhận văn bản thì cần <strong>Đóng góp</strong> ở đó</td>
+</tr>
+<tr><td class="label"><strong>Kết quả</strong></td>
+<td>Thư mục bị xóa vĩnh viễn; mọi văn bản vẫn còn, có chỗ ở</td>
+</tr>
+</tbody>
+</table>
+<div class="figure"><img src="hinh/tm-nv-04-luong-xoa.png" style="width:100%" alt="Luồng xóa thư mục"><p class="caption"><em>Hình 3. Xóa một thư mục thì văn bản trong đó đi đâu</em></p></div>
+<p><strong>Các bước</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Người làm</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Bấm Xóa</td>
+<td>Người xóa</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Kiểm chặn</td>
+<td>Hệ thống</td>
+<td>Thư mục pháp nhân / nhóm «Công ty» → <em>«Thư mục công ty do hệ thống quản lý, không xóa được»</em>. Còn thư mục con (kể cả ngừng dùng) → <em>«Thư mục còn thư mục con, không xóa được»</em></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Xem trước: đếm văn bản và văn bản sẽ mồ côi</td>
+<td>Hệ thống</td>
+<td>Đếm <strong>toàn hệ thống</strong>, không lọc theo quyền người xóa (QT-TM13)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Chọn nơi nhận văn bản mồ côi</td>
+<td>Người xóa</td>
+<td>Chỉ khi có văn bản mồ côi. Không được là chính thư mục đang xóa, không được là thư mục ngừng dùng</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Với văn bản còn ở thư mục khác: gỡ liên kết; nếu là thư mục chính → liên kết sớm nhất lên chính</td>
+<td>Hệ thống</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Với văn bản mồ côi: gắn vào nơi nhận, làm thư mục chính</td>
+<td>Hệ thống</td>
+<td>Không chọn nơi nhận (xóa hàng loạt) → về <strong>thư mục pháp nhân</strong> của từng văn bản</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Xóa thư mục, ghi nhật ký</td>
+<td>Hệ thống</td>
+<td>Nhật ký: «Xóa thư mục X (n văn bản), chuyển k văn bản sang «Y»»</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ngoại lệ</strong></p>
+<ul>
+<li>Văn bản chưa gắn pháp nhân mà mồ côi, không có nơi nhận → không còn thư mục nào.</li>
+<li>Hệ thống <strong>không kiểm quyền sửa từng văn bản</strong> khi chuyển văn bản mồ côi — người đủ quyền xóa thư
+  mục được coi là đủ quyền dọn chỗ cho văn bản trong đó.</li>
+</ul>
+<p><strong>Quy tắc áp dụng</strong>: QT-TM08, QT-TM13, QT-TM14.</p>
+<h3 id="14-tm-07-chia-sẻ-và-thu-hồi-quyền">14. TM-07 Chia sẻ và thu hồi quyền</h3>
+<table class="info">
+<tbody>
+<tr><td class="label"><strong>Mục đích</strong></td>
+<td>Quyết định ai thấy / ai xếp được văn bản / ai quản lý một nhánh</td>
+</tr>
+<tr><td class="label"><strong>Người thực hiện</strong></td>
+<td>Quyền <strong>Sửa «Cây thư mục»</strong> + mức <strong>Quản lý</strong> trên thư mục</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Các bước</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Đặt <strong>quyền chung</strong> nếu cần (Kế thừa / Riêng tư / Xem / Đóng góp)</td>
+<td>Riêng tư = khóa nhánh khỏi người chỉ có quyền theo pháp nhân</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Chọn một hoặc nhiều đối tượng: người, phòng ban, pháp nhân, vai trò</td>
+<td>Tối đa 200 đối tượng một lượt, trộn loại được</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Chọn chiều <strong>Cho</strong> (kèm mức) hoặc <strong>Cấm</strong></td>
+<td>Dòng Cấm không có mức</td>
+</tr>
+<tr>
+<td>4</td>
+<td>(Tùy chọn) hiệu lực từ – đến, lý do</td>
+<td>Ngày đến phải sau ngày từ</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Cấp</td>
+<td>Đối tượng đã có dòng <strong>cùng chiều</strong> còn hiệu lực → cập nhật dòng đó, không tạo trùng. Đối tượng không tồn tại → bỏ qua, có báo</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Đổi mức / thu hồi về sau</td>
+<td>Thu hồi = <strong>đánh dấu</strong> kèm người và thời điểm, dòng vẫn lưu</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Dòng quyền đặt ở một thư mục <strong>áp xuống cả nhánh</strong>. Muốn sửa dòng kế thừa thì sửa ở thư mục cha
+  đã đặt nó.</li>
+<li>Một đối tượng có thể có <strong>cả</strong> dòng Cho lẫn dòng Cấm trên cùng thư mục — Cấm thắng.</li>
+<li>Đổi quyền có hiệu lực <strong>ngay</strong> ở lần mở kế tiếp (mức thư mục không lưu tạm).</li>
+</ul>
+<p><strong>Quy tắc áp dụng</strong>: QT-TM15 → QT-TM19.</p>
+<h3 id="15-tm-08-tìm-văn-bản-theo-thư-mục">15. TM-08 Tìm văn bản theo thư mục</h3>
+<table>
+<thead>
+<tr>
+<th>Cách</th>
+<th>Phạm vi</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Duyệt cây</td>
+<td>Thư mục thấy được; văn bản hiện trên cây (tối đa 100 / thư mục, còn lại «Xem thêm»)</td>
+<td></td>
+</tr>
+<tr>
+<td>Mở thư mục</td>
+<td>Văn bản nằm <strong>trực tiếp</strong> trong thư mục</td>
+<td>Bật «Gồm thư mục con» để lấy cả nhánh</td>
+</tr>
+<tr>
+<td>Tìm trong thư mục</td>
+<td>Tên, số hiệu; từ 2 ký tự → cả nội dung soạn thảo và chữ trong tệp</td>
+<td>Không dấu, cụm «…», loại trừ bằng dấu trừ đầu từ</td>
+</tr>
+<tr>
+<td>Lọc ở màn Văn bản</td>
+<td>Ô «Thư mục» + «Gồm cả văn bản trong thư mục con»</td>
+<td>Cột «Thư mục» hiện đường dẫn thư mục chính</td>
+</tr>
+<tr>
+<td>Tìm tên thư mục</td>
+<td>Ô lọc trên cây, ô chọn thư mục</td>
+<td>Không dấu, tối đa 50 kết quả</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Mọi cách đều <strong>chỉ trả văn bản người đó được đọc</strong> (QT-TM20).</li>
+<li>«Gồm thư mục con» chỉ gom các thư mục con <strong>thấy được</strong>.</li>
+<li>Thư mục không thấy được → kết quả rỗng, không báo lỗi (không dò được thư mục ẩn).</li>
+<li>Tìm toàn văn không đọc được PDF scan (không nhận dạng chữ) và tệp quá 20 MB.</li>
+</ul>
+<h3 id="16-tm-09-phản-ứng-theo-văn-bản">16. TM-09 Phản ứng theo văn bản</h3>
+<p>Hệ thống tự cập nhật thư mục khi văn bản có sự kiện:</p>
+<table>
+<thead>
+<tr>
+<th>Sự kiện của văn bản</th>
+<th>Hệ thống làm gì với thư mục</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tạo</strong></td>
+<td>Theo TM-02; thư mục pháp nhân chưa có thì tạo ngay</td>
+</tr>
+<tr>
+<td><strong>Đổi pháp nhân ban hành</strong> (chỉ khi chưa có số hiệu)</td>
+<td>Văn bản đang nằm <strong>đúng một</strong> thư mục và đó là thư mục pháp nhân cũ → chuyển sang thư mục pháp nhân mới. Đã được xếp vào thư mục khác → giữ nguyên</td>
+</tr>
+<tr>
+<td><strong>Sao chép · tạo bản trích · tạo bản riêng cho công ty con</strong></td>
+<td>Văn bản mới vào <strong>thư mục pháp nhân</strong> của nó (không theo thư mục của bản gốc, không theo thư mục mặc định của loại)</td>
+</tr>
+<tr>
+<td><strong>Xóa văn bản</strong> (nháp / trả về chưa có số)</td>
+<td>Xóa mọi liên kết thư mục của nó</td>
+</tr>
+<tr>
+<td><strong>Bãi bỏ, hết hiệu lực, bị thay thế</strong></td>
+<td>Không đổi gì — văn bản vẫn nằm ở thư mục cũ</td>
+</tr>
+<tr>
+<td><strong>Được chia đích danh cho một người</strong></td>
+<td>Người đó tự thấy (mức Xem) thư mục chứa văn bản và các thư mục cha — không tạo dòng quyền nào; thu hồi chia sẻ thì tự mất</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<div class="sec page-break" id="phần-iv-quy-tắc-nghiệp-vụ"><div class="g"></div><div class="t">PHẦN IV. QUY TẮC NGHIỆP VỤ</div></div>
+<h3 id="17-bảng-quy-tắc">17. Bảng quy tắc</h3>
+<table>
+<thead>
+<tr>
+<th>Mã</th>
+<th>Quy tắc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>QT-TM01</strong></td>
+<td>Cả tập đoàn dùng <strong>một cây</strong>. Gốc cây gồm đúng một nhóm «Công ty» và các thư mục tự do</td>
+</tr>
+<tr>
+<td><strong>QT-TM02</strong></td>
+<td>Cây sâu tối đa <strong>100 cấp</strong>, tính cả gốc. Áp cả khi tạo lẫn khi chuyển (tính theo độ cao cả nhánh)</td>
+</tr>
+<tr>
+<td><strong>QT-TM03</strong></td>
+<td>Tên thư mục 1–150 ký tự, <strong>không trùng</strong> thư mục anh em <strong>đang dùng</strong> — so không phân biệt hoa/thường, bỏ dấu, «đ» = «d»</td>
+</tr>
+<tr>
+<td><strong>QT-TM04</strong></td>
+<td>Mỗi pháp nhân có <strong>tối đa một</strong> thư mục pháp nhân, do hệ thống tạo, nằm trong nhóm «Công ty»</td>
+</tr>
+<tr>
+<td><strong>QT-TM05</strong></td>
+<td>Mỗi văn bản có pháp nhân luôn có <strong>ít nhất một</strong> thư mục (không mồ côi)</td>
+</tr>
+<tr>
+<td><strong>QT-TM06</strong></td>
+<td>Không chọn thư mục khi tạo → thư mục mặc định của loại (cùng pháp nhân, đang dùng), không có thì thư mục pháp nhân</td>
+</tr>
+<tr>
+<td><strong>QT-TM07</strong></td>
+<td>Văn bản chưa gắn pháp nhân <strong>không</strong> tự vào thư mục nào</td>
+</tr>
+<tr>
+<td><strong>QT-TM08</strong></td>
+<td>Mỗi văn bản có <strong>đúng một</strong> thư mục chính; mất thư mục chính → liên kết sớm nhất còn lại lên thay</td>
+</tr>
+<tr>
+<td><strong>QT-TM09</strong></td>
+<td>Người dùng sửa thư mục của văn bản <strong>không làm mất</strong> liên kết tới thư mục họ không thấy</td>
+</tr>
+<tr>
+<td><strong>QT-TM10</strong></td>
+<td>Thêm / gỡ / chuyển văn bản cần <strong>cả</strong> quyền Sửa văn bản <strong>và</strong> mức Đóng góp trên thư mục</td>
+</tr>
+<tr>
+<td><strong>QT-TM11</strong></td>
+<td>Ngừng dùng kéo theo cả nhánh; khôi phục chỉ một thư mục. Thư mục ngừng dùng không nhận văn bản mới, không nhận thư mục con</td>
+</tr>
+<tr>
+<td><strong>QT-TM12</strong></td>
+<td>Chuyển thư mục <strong>không đổi</strong> pháp nhân của thư mục</td>
+</tr>
+<tr>
+<td><strong>QT-TM13</strong></td>
+<td>Xóa thư mục <strong>không xóa văn bản</strong>; chỉ xóa được thư mục không còn thư mục con; không xóa được thư mục pháp nhân và nhóm «Công ty»</td>
+</tr>
+<tr>
+<td><strong>QT-TM14</strong></td>
+<td>Số đếm lúc xóa thư mục tính <strong>toàn hệ thống</strong> — văn bản người xóa không thấy vẫn là văn bản thật cần chỗ ở</td>
+</tr>
+<tr>
+<td><strong>QT-TM15</strong></td>
+<td>Ba mức Xem ⊂ Đóng góp ⊂ Quản lý; quyền đặt ở cha <strong>áp xuống</strong> cả nhánh</td>
+</tr>
+<tr>
+<td><strong>QT-TM16</strong></td>
+<td><strong>Cấm thắng Cho</strong>: một dòng Cấm ở thư mục hoặc tổ tiên → thư mục biến mất với người đó</td>
+</tr>
+<tr>
+<td><strong>QT-TM17</strong></td>
+<td>Quản trị thư mục (Sửa «Cây thư mục») luôn mức <strong>Quản lý</strong> trong phạm vi pháp nhân của vai trò, <strong>không bị Cấm chặn</strong></td>
+</tr>
+<tr>
+<td><strong>QT-TM18</strong></td>
+<td>Người không có quyền ghi nào (tạo/sửa thư mục, tạo/sửa văn bản) → mức tối đa <strong>Xem</strong></td>
+</tr>
+<tr>
+<td><strong>QT-TM19</strong></td>
+<td>Được chia đích danh một văn bản → thấy (Xem) thư mục chứa nó và tổ tiên, trừ khi bị Cấm</td>
+</tr>
+<tr>
+<td><strong>QT-TM20</strong></td>
+<td><strong>Quyền thư mục không mở quyền đọc văn bản.</strong> Mọi số đếm, bảng, kết quả tìm lọc theo quyền đọc từng văn bản</td>
+</tr>
+</tbody>
+</table>
+<h3 id="18-giới-hạn-và-con-số">18. Giới hạn và con số</h3>
+<table>
+<thead>
+<tr>
+<th>Giới hạn</th>
+<th>Giá trị</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Độ sâu cây</td>
+<td>100 cấp (tính cả gốc)</td>
+</tr>
+<tr>
+<td>Độ dài tên thư mục · mã · mô tả</td>
+<td>150 · 50 · 500 ký tự</td>
+</tr>
+<tr>
+<td>Văn bản mỗi lượt thao tác hàng loạt</td>
+<td>500</td>
+</tr>
+<tr>
+<td>Thư mục mỗi lượt chuyển hàng loạt</td>
+<td>50</td>
+</tr>
+<tr>
+<td>Đối tượng mỗi lượt cấp quyền</td>
+<td>200</td>
+</tr>
+<tr>
+<td>Thư mục mỗi lần sắp thứ tự</td>
+<td>500</td>
+</tr>
+<tr>
+<td>Thư mục chọn cho một văn bản</td>
+<td>500</td>
+</tr>
+<tr>
+<td>Văn bản hiện dưới một thư mục trên cây</td>
+<td>100 (còn lại «Xem thêm»)</td>
+</tr>
+<tr>
+<td>Kết quả tìm tên thư mục</td>
+<td>50, xếp: trùng hẳn tên → bắt đầu bằng → chứa; cùng hạng thì thư mục gần gốc trước</td>
+</tr>
+<tr>
+<td>Tìm toàn văn</td>
+<td>từ 2 ký tự; tệp ≤ 20 MB; không đọc PDF scan</td>
+</tr>
+<tr>
+<td>Bề rộng khung cây</td>
+<td>200–480 điểm ảnh (mặc định 288)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<div class="sec page-break" id="phần-v-phân-quyền"><div class="g"></div><div class="t">PHẦN V. PHÂN QUYỀN</div></div>
+<h3 id="19-hai-lớp-quyền">19. Hai lớp quyền</h3>
+<p>Mỗi thao tác trên thư mục qua <strong>hai cửa</strong>:</p>
+<ol>
+<li><strong>Quyền vai trò</strong> ở màn Phân quyền — dòng <strong>«Văn thư › Cây thư mục»</strong> (và «Văn bản» cho việc xếp
+   văn bản). Trả lời câu hỏi <em>«người này có được làm loại việc này không»</em>.</li>
+<li><strong>Mức trên thư mục cụ thể</strong> — Xem / Đóng góp / Quản lý. Trả lời câu hỏi <em>«trên thư mục này thì
+   sao»</em>.</li>
+</ol>
+<p>Thiếu cửa 1 → không có nút / bị từ chối. Không thấy thư mục → báo <em>không tìm thấy</em> (không lộ thư
+mục tồn tại). Thấy nhưng thiếu mức → <em>«Cần quyền … trở lên trên thư mục này — bạn đang ở mức …»</em>.</p>
+<p>Vai trò có sẵn: mọi vai trò <strong>Xem</strong> «Cây thư mục» (phạm vi Tất cả); vai trò <strong>«Văn bản — soạn &amp; sửa
+(không xóa, không duyệt)»</strong> có Xem / Tạo / Sửa / Xóa trong phạm vi <strong>Công ty</strong>. «Cây thư mục» cố ý
+<strong>không</strong> nằm trong bộ quyền đầy đủ của Quản lý thu mua. Trên hệ đang chạy, vai trò cũ không tự có
+quyền mới — phải tick ở màn Phân quyền.</p>
+<h3 id="20-cách-tính-mức-quyền-trên-một-thư-mục">20. Cách tính mức quyền trên một thư mục</h3>
+<div class="figure"><img src="hinh/tm-nv-03-tinh-muc-quyen.png" style="width:100%" alt="Cách tính mức quyền"><p class="caption"><em>Hình 4. Sáu bước hệ thống xét cho mỗi người, trên mỗi thư mục</em></p></div>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Bước</th>
+<th>Chi tiết</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Quyền chung</strong></td>
+<td>Chỉ áp nếu người đó <strong>với tới</strong> pháp nhân của thư mục (§21). Lấy quyền chung của thư mục gần nhất (tự nó → cha → ông…) có khai; không ai khai = Riêng tư</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Dòng Cho</strong></td>
+<td>Mọi dòng Cho còn hiệu lực trên thư mục và tổ tiên, khớp <strong>người / phòng ban (kể cả kiêm nhiệm) / pháp nhân chính / vai trò</strong> của họ → lấy mức cao nhất, so với bước 1 lấy cao hơn. Dòng Cho mở được thư mục cho người <strong>không</strong> với tới pháp nhân</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Dòng Cấm</strong></td>
+<td>Có một dòng Cấm còn hiệu lực trên thư mục hoặc tổ tiên → <strong>không thấy</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Quản trị thư mục</strong></td>
+<td>Vai trò có Sửa «Cây thư mục» với tới pháp nhân của thư mục → <strong>Quản lý</strong>, bỏ qua bước 3. Phạm vi <em>Tất cả</em> → Quản lý cả thư mục tự do</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Trần vai trò</strong></td>
+<td>Không có quyền nào trong: Tạo/Sửa «Cây thư mục», Tạo/Sửa «Văn bản» → hạ xuống tối đa <strong>Xem</strong>. Trần chỉ hạ, không làm mất quyền thấy</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Xem ngầm định</strong></td>
+<td>Được chia đích danh một văn bản (còn hiệu lực, không bị chặn) → thư mục chứa nó và mọi tổ tiên ít nhất <strong>Xem</strong> — trừ thư mục bị Cấm</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nhóm «Công ty»</strong>: quản trị toàn hệ → Quản lý; thấy ít nhất một thư mục pháp nhân → Xem; còn lại
+→ ẩn.</p>
+<h3 id="21-quyền-chung-và-kế-thừa">21. Quyền chung và kế thừa</h3>
+<table>
+<thead>
+<tr>
+<th>Thư mục</th>
+<th>Quyền chung mặc định</th>
+<th>Hệ quả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nhóm «Công ty»</td>
+<td>Xem</td>
+<td>Ai thấy một pháp nhân đều thấy nhóm</td>
+</tr>
+<tr>
+<td>Thư mục pháp nhân</td>
+<td><strong>Đóng góp</strong></td>
+<td>Ai với tới pháp nhân (và có quyền ghi) đều xếp văn bản vào được</td>
+</tr>
+<tr>
+<td>Thư mục thường</td>
+<td>Kế thừa</td>
+<td>Theo cha</td>
+</tr>
+<tr>
+<td>Thư mục tự do</td>
+<td><strong>Riêng tư</strong></td>
+<td>Chỉ người tạo (được cấp Quản lý) và người được chia thấy — kể cả người có quyền Xem văn bản <em>Tất cả</em> cũng không thấy</td>
+</tr>
+</tbody>
+</table>
+<p><strong>«Với tới pháp nhân»</strong> tính từ phạm vi quyền <strong>Xem văn bản</strong> của người đó:</p>
+<ul>
+<li>Phạm vi <em>Tất cả</em> (không kèm danh sách công ty riêng) → mọi pháp nhân.</li>
+<li>Phạm vi hẹp hơn → pháp nhân của chính mình.</li>
+<li>Cộng các công ty được <strong>thêm riêng</strong>, trừ các công ty bị <strong>loại riêng</strong> ở màn Phân quyền.</li>
+</ul>
+<p><strong>Khóa một nhánh</strong>: đặt quyền chung = Riêng tư ở thư mục đầu nhánh; rồi chia Cho cho đúng người.</p>
+<h3 id="22-việc-gì-cần-quyền-gì">22. Việc gì cần quyền gì</h3>
+<table>
+<thead>
+<tr>
+<th>Việc</th>
+<th>Quyền vai trò</th>
+<th>Mức trên thư mục</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Xem cây, mở thư mục, tìm</td>
+<td>Xem «Cây thư mục»</td>
+<td>Xem</td>
+</tr>
+<tr>
+<td>Tạo thư mục con</td>
+<td>Tạo «Cây thư mục»</td>
+<td>Đóng góp trên cha</td>
+</tr>
+<tr>
+<td>Tạo thư mục tự do ở gốc</td>
+<td>Tạo «Cây thư mục»</td>
+<td>— (tài khoản phải gắn hồ sơ nhân sự)</td>
+</tr>
+<tr>
+<td>Đổi tên, mã, mô tả, quyền chung, ngừng dùng, khôi phục</td>
+<td>Sửa «Cây thư mục»</td>
+<td>Quản lý</td>
+</tr>
+<tr>
+<td>Chuyển thư mục</td>
+<td>Sửa «Cây thư mục»</td>
+<td>Quản lý (nguồn) + Đóng góp (cha mới)</td>
+</tr>
+<tr>
+<td>Đổi thứ tự</td>
+<td>Sửa «Cây thư mục»</td>
+<td>Quản lý trên cha</td>
+</tr>
+<tr>
+<td>Chia sẻ, đổi mức, thu hồi</td>
+<td>Sửa «Cây thư mục»</td>
+<td>Quản lý</td>
+</tr>
+<tr>
+<td>Xóa thư mục</td>
+<td>Xóa «Cây thư mục»</td>
+<td>Quản lý (+ Đóng góp trên nơi nhận văn bản)</td>
+</tr>
+<tr>
+<td>Thêm / chuyển / gỡ văn bản</td>
+<td>Sửa «Văn bản» + quyền sửa đúng văn bản đó</td>
+<td>Đóng góp</td>
+</tr>
+<tr>
+<td>Tạo văn bản trong thư mục</td>
+<td>Tạo «Văn bản»</td>
+<td>Đóng góp</td>
+</tr>
+<tr>
+<td>Xem ai có quyền trên thư mục</td>
+<td>Xem «Cây thư mục»</td>
+<td>Quản lý mới thấy đủ danh sách kế thừa</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-thấy-một-phần">23. Thấy một phần</h3>
+<p>Thư mục có 5 văn bản mà một người chỉ đọc được 2 thì <strong>mọi chỗ</strong> chỉ nói về 2 văn bản đó:</p>
+<ul>
+<li>số đếm trên cây (thư mục và cả nhánh — <strong>đã khử trùng</strong>, văn bản nằm ở hai thư mục trong nhánh
+  đếm một lần);</li>
+<li>bảng nội dung, kết quả tìm, tab Tệp;</li>
+<li>thẻ «Thư mục (n)» ở chi tiết văn bản, cột «Thư mục» ở màn Văn bản (thư mục chính không thấy →
+  hiện thư mục phụ đầu tiên thấy được).</li>
+</ul>
+<p>Ngoại lệ <strong>cố ý</strong>: hộp xóa thư mục đếm toàn hệ thống (QT-TM14); thao tác hàng loạt báo «bị từ chối
+m» không nêu lý do từng văn bản.</p>
+<hr />
+<div class="sec page-break" id="phần-vi-điểm-cần-lưu-ý"><div class="g"></div><div class="t">PHẦN VI. ĐIỂM CẦN LƯU Ý</div></div>
+<h3 id="24-hệ-quả-dễ-bất-ngờ">24. Hệ quả dễ bất ngờ</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Hiện tượng</th>
+<th>Vì sao</th>
+<th>Cách xử lý</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Chuyển thư mục của Cty A vào nhánh Cty B: người Cty B không thấy, người Cty A vẫn thấy</td>
+<td>Pháp nhân của thư mục không đổi khi chuyển (QT-TM12)</td>
+<td>Chia sẻ thêm cho người Cty B, hoặc tạo thư mục mới trong nhánh B</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Thư mục công ty chuyển ra gốc cây thành «riêng tư» với mọi người thường</td>
+<td>Ra gốc thì không còn tổ tiên để kế thừa quyền chung; người chuyển <strong>không</strong> tự được cấp Quản lý (chỉ thư mục tự do mới được)</td>
+<td>Đặt quyền chung cho nó sau khi chuyển; quản trị thư mục của pháp nhân vẫn thấy</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Thư mục pháp nhân chuyển được (vào pháp nhân khác, ra gốc)</td>
+<td>Chưa có luật chặn</td>
+<td>Chỉ giao mức Quản lý nhóm «Công ty» cho quản trị toàn hệ</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Nhóm «Công ty» đổi tên / ngừng dùng được</td>
+<td>Chưa có luật chặn theo loại; ngừng dùng nhóm = ngừng cả nhánh công ty</td>
+<td>Như trên</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Khôi phục thư mục có thể sinh tên trùng anh em</td>
+<td>Chỉ kiểm trùng lúc tạo / đổi tên / chuyển</td>
+<td>Đổi tên sau khi khôi phục</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Khôi phục thư mục con dưới cha đang ngừng dùng → thư mục «treo»</td>
+<td>Khôi phục không kéo theo cha</td>
+<td>Khôi phục từ trên xuống</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Được chia một văn bản → thấy tên các thư mục cha, kể cả nhánh riêng tư</td>
+<td>Xem ngầm định (QT-TM19) để người đó tìm ra văn bản</td>
+<td>Chấp nhận; muốn giấu thì Cấm thư mục với người đó</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Người chỉ có quyền Xem văn bản không xếp được vào thư mục pháp nhân dù quyền chung là Đóng góp</td>
+<td>Trần vai trò (QT-TM18)</td>
+<td>Cấp quyền Tạo hoặc Sửa văn bản cho vai trò</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Chọn văn bản rồi bấm <strong>Xóa</strong> trên thanh thao tác = <strong>xóa hẳn</strong> văn bản; <strong>Xóa</strong> trong menu chuột phải của văn bản = <strong>gỡ khỏi thư mục</strong></td>
+<td>Hai lối vào khác nghĩa</td>
+<td>Đọc hộp xác nhận; HDSD mục 13, 16 ghi rõ</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Xóa hàng loạt thư mục: văn bản mồ côi về thư mục pháp nhân, không về thư mục cha</td>
+<td>Không có bước chọn nơi nhận</td>
+<td>Muốn chọn nơi nhận thì xóa từng thư mục</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Thư mục mặc định của loại văn bản khai sai pháp nhân → lặng lẽ không dùng</td>
+<td>Hệ thống không kiểm lúc khai</td>
+<td>Khai đúng thư mục trong nhánh pháp nhân</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Hai người mở cùng thư mục thấy số văn bản khác nhau</td>
+<td>Thấy một phần (§23)</td>
+<td>Đúng thiết kế</td>
+</tr>
+</tbody>
+</table>
+<h3 id="25-câu-hỏi-còn-mở">25. Câu hỏi còn mở</h3>
+<ul>
+<li>Có nên <strong>chặn</strong> chuyển / đổi tên / ngừng dùng thư mục pháp nhân và nhóm «Công ty» (điểm 3, 4
+  §24), hay giữ như hiện nay và chỉ khống chế bằng quyền?</li>
+<li>Chuyển thư mục sang nhánh pháp nhân khác có nên <strong>đổi luôn pháp nhân</strong> của thư mục (và cả nhánh)
+  không (điểm 1 §24)?</li>
+<li>Hai lối «Xóa» khác nghĩa trên màn Thư mục (điểm 9 §24): có nên đổi nhãn mục trong menu chuột phải
+  thành <strong>«Gỡ khỏi thư mục»</strong> cho khỏi nhầm?</li>
+<li>Có cần thùng rác / khôi phục thư mục đã xóa không?</li>
+</ul></body></html>

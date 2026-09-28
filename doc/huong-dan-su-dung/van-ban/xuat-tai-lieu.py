@@ -6,7 +6,7 @@ thực hiện công việc DX Team»): phần đầu là bảng logo | tên đơ
 bảng thông tin tài liệu, thanh đầu phần hai màu xanh lá | xanh ngọc, khung ghi chú nền vàng.
 
 Chạy:  ~/.claude/skills/.venv/bin/python3 xuat-tai-lieu.py            # xuất mọi tài liệu
-       ~/.claude/skills/.venv/bin/python3 xuat-tai-lieu.py nhanh      # chỉ một tài liệu (nhanh | hdsd | nghiep-vu)
+       ~/.claude/skills/.venv/bin/python3 xuat-tai-lieu.py nhanh      # chỉ một tài liệu (nhanh | hdsd | nghiep-vu | thu-muc | thu-muc-nghiep-vu)
 Mỗi tài liệu ra một tệp .html (mở bằng trình duyệt) và .pdf (in bằng Chrome chạy ngầm).
 """
 
@@ -30,6 +30,12 @@ DOCS = {
     "nghiep-vu": ("mo-ta-luong-nghiep-vu-van-ban", "MÔ TẢ LUỒNG NGHIỆP VỤ",
                   "Mô tả luồng nghiệp vụ<br>phân hệ Quản lý văn bản",
                   "Vòng đời văn bản · 9 quy trình · Quy tắc nghiệp vụ · Thiết lập · Phân quyền"),
+    "thu-muc": ("huong-dan-su-dung-thu-muc-van-ban", "HƯỚNG DẪN SỬ DỤNG",
+                "Hướng dẫn sử dụng<br>Thư mục văn bản",
+                "Cây thư mục · Xếp văn bản · Tìm trong thư mục · Chia sẻ và phân quyền"),
+    "thu-muc-nghiep-vu": ("mo-ta-luong-nghiep-vu-thu-muc-van-ban", "MÔ TẢ LUỒNG NGHIỆP VỤ",
+                          "Mô tả luồng nghiệp vụ<br>Thư mục văn bản",
+                          "Cấu trúc cây · 9 quy trình · 20 quy tắc · Cách tính quyền · Điểm cần lưu ý"),
 }
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
