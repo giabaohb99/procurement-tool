@@ -70,6 +70,20 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-513 | Đưa dữ liệu Tra cứu thị trường từ dev lên prod
+- status: dang-lam
+- date: 2026-09-28
+Sau đợt đẩy prod trưa 28/09, màn Tra cứu thị trường trên prod đã có nhưng chưa có dữ liệu. Đại ca
+bảo đồng bộ dữ liệu, nên em kiểm dữ liệu trên dev trước (không có dòng mồ côi, năm lô không chồng
+ngày, các dòng giống nhau đều do tệp gốc) rồi chép nguyên từ cơ sở dữ liệu dev sang prod trong một
+giao dịch: 18.243 dòng tờ khai của năm lô từ tháng 1 tới 17/09/2026, cùng danh mục đối tác, thuốc
+bảo vệ thực vật, pháp lý, biểu thuế và tên hoạt chất. Sau khi chép, số dòng, tổng tiền, tổng lượng,
+nhãn thành phẩm và nguyên liệu đều khớp dev; thử 30 đường xem trên prod không lỗi.
+
+Còn lại: trên prod mới có admin vào được màn này, chờ đại ca chỉ vai trò nào được cấp quyền.
+
+Deploy: prod 28/09 13:25, sao lưu `procurement_truoc_tra_cuu_thi_truong_20260928_1324.sql.gz`
+
 ## bao-CR-512 | Bài kiểm bộ mã hành động xanh lại sau thay đổi điều phối YCMH
 - status: xong
 - date: 2026-09-28
