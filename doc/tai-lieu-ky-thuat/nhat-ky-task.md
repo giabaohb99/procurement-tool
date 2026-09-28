@@ -182,8 +182,8 @@ Sau đó theo lời đại ca: cấp quyền cho ba vai trò thu mua (nhân viê
 mua và quản lý thu mua được nạp tệp, hoàn tác lô và sửa danh mục) — 21 tài khoản; chép bài hướng
 dẫn «Tra cứu thị trường» từ dev lên trang hướng dẫn prod; thử bốn công cụ trợ lý AI về thị trường
 bằng tài khoản nhân viên thu mua đều ra dữ liệu.
-Chiều 28/09 đại ca mở thêm cho nhân viên thu mua quyền nạp tệp tờ khai (tải tệp và ghi lô); quyền
-hoàn tác một lô đã nạp vẫn chỉ để admin thu mua và quản lý thu mua.
+Chiều 28/09 đại ca mở thêm cho nhân viên thu mua quyền nạp tệp tờ khai (tải tệp và ghi lô); sau đó
+đại ca mở luôn quyền hoàn tác một lô đã nạp cho nhân viên thu mua.
 
 Deploy: prod 28/09 13:25, sao lưu `procurement_truoc_tra_cuu_thi_truong_20260928_1324.sql.gz`
 
