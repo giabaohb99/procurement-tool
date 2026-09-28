@@ -51,7 +51,9 @@ class SurveySupplierLine(Base, AuditMixin):
     __tablename__ = "tab_survey_supplier_line"
 
     survey_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    contact_date: Mapped[str] = mapped_column(String(10), default="")
+    #  index=True: cột lọc kỳ của Báo cáo khảo sát (`service.report_rows_in_range`, P04) —
+    #  không có chỉ mục thì mỗi lượt xem báo cáo là quét hết bảng dòng NCC.
+    contact_date: Mapped[str] = mapped_column(String(10), default="", index=True)
     reply_date: Mapped[str] = mapped_column(String(10), default="")
     result_date: Mapped[str] = mapped_column(String(10), default="")
     supplier_code: Mapped[str] = mapped_column(String(50), default="")
@@ -86,7 +88,9 @@ class SurveyProductLine(Base, AuditMixin):
     __tablename__ = "tab_survey_product_line"
 
     survey_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    contact_date: Mapped[str] = mapped_column(String(10), default="")       # Ngày liên hệ
+    #  index=True: cột lọc kỳ của Báo cáo khảo sát (`service.report_rows_in_range`, P04) —
+    #  không có chỉ mục thì mỗi lượt xem báo cáo là quét hết bảng dòng SP.
+    contact_date: Mapped[str] = mapped_column(String(10), default="", index=True)   # Ngày liên hệ
     reply_date: Mapped[str] = mapped_column(String(10), default="")         # Ngày dự kiến phản hồi
     result_date: Mapped[str] = mapped_column(String(10), default="")        # Ngày dự kiến trả KQ
     supplier_code: Mapped[str] = mapped_column(String(50), default="")

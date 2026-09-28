@@ -36,7 +36,9 @@ class SurveyRequest(Base, AuditMixin):
     # duyệt / phiếu trước CR-490 (bản in lùi về nhật ký thao tác). Xem `core/print_signers.py`.
     approver_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
     purpose: Mapped[str] = mapped_column(String(255), default="")
-    request_date: Mapped[str] = mapped_column(String(10), default="")
+    #  index=True: cột lọc kỳ của màn Tiến độ báo giá (`survey_progress/controller`, P03) —
+    #  không có chỉ mục thì mỗi lượt xem báo cáo là quét hết bảng YCKS.
+    request_date: Mapped[str] = mapped_column(String(10), default="", index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)  # draft|submitted|approved|rejected|processing|survey_done
     # BỎ: `assignee_id` (NSTM chính toàn phiếu). Việc khảo sát thuộc về DÒNG
     # (`SurveyRequestLine.assignee`) — xem CR-018 trong doc/tai-lieu-ky-thuat/change-log.md.
