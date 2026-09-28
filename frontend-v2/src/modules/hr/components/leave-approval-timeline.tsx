@@ -57,6 +57,9 @@ export function LeaveApprovalTimeline({ request }: LeaveApprovalTimelineProps) {
         instanceId={request.approval_instance_id}
         extraEvents={outcome ? [outcome] : undefined}
         trailingEvents={[createdEvent(request)]}
+        //  Đơn nghỉ phép có nút «In đơn» riêng ở đầu trang — nút «In» của thẻ này
+        //  chỉ in lại cả màn hình, bỏ đi cho khỏi bấm nhầm (bao-CR-506).
+        hidePrint
       />
     )
   }

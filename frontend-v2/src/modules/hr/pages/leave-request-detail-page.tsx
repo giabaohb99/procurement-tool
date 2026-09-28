@@ -39,6 +39,13 @@ import {
 } from '../hooks/use-leave'
 import { EDITABLE_LEAVE_STATUSES, LEAVE_STATUS } from '../types/leave'
 
+const PRINTABLE_LEAVE_STATUSES: number[] = [
+  LEAVE_STATUS.DRAFT,
+  LEAVE_STATUS.PENDING,
+  LEAVE_STATUS.RETURNED,
+  LEAVE_STATUS.APPROVED,
+]
+
 /**
  * CHI TIẾT / TẠO MỚI đơn nghỉ phép — một trang cho cả hai, phân biệt bằng `:id`.
  *
@@ -286,7 +293,11 @@ export function LeaveRequestDetailPage() {
               </>
               )}
 
-            {request?.status === LEAVE_STATUS.APPROVED && (
+            {/*  In được mọi lúc tờ đơn còn hiệu lực (nháp · chờ duyệt · trả về · đã
+                 duyệt), không riêng lúc đã duyệt: người nộp cần in kèm giấy khám bệnh
+                 để nộp tay ngay khi gửi (bao-CR-506). Đơn bị từ chối / đã hủy thì
+                 không in — tờ giấy đó dễ bị cầm đi như một đơn hợp lệ. */}
+            {request && PRINTABLE_LEAVE_STATUSES.includes(request.status) && (
               <Button
                 variant="outline"
                 className={SECONDARY_ACTION_SLOT}

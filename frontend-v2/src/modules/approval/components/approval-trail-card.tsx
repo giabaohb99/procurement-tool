@@ -64,6 +64,12 @@ interface ApprovalTrailCardProps {
    * chỗ nối phần đầu câu chuyện vào.
    */
   trailingEvents?: TrailExtraEvent[]
+  /**
+   * Ẩn nút «In» của thẻ. Chứng từ đã có bản in RIÊNG (đơn nghỉ phép in tờ đơn kèm
+   * chữ ký) thì nút này chỉ in lại cả trang màn hình — người dùng bấm nhầm tưởng là
+   * in đơn (bao-CR-506).
+   */
+  hidePrint?: boolean
   className?: string
 }
 
@@ -158,6 +164,7 @@ export function ApprovalTrailCard({
   instanceId,
   extraEvents = [],
   trailingEvents = [],
+  hidePrint = false,
   className,
 }: ApprovalTrailCardProps) {
   const { data, isLoading } = useApprovalTrail(instanceId)
@@ -186,17 +193,19 @@ export function ApprovalTrailCard({
           {instance && <InstanceStatus status={instance.status} label={instance.status_label} />}
         </CardTitle>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="shrink-0 print:hidden"
-          aria-label="In lịch sử phê duyệt"
-          onClick={() => window.print()}
-        >
-          <Printer className="size-4" />
-          In
-        </Button>
+        {!hidePrint && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 print:hidden"
+            aria-label="In lịch sử phê duyệt"
+            onClick={() => window.print()}
+          >
+            <Printer className="size-4" />
+            In
+          </Button>
+        )}
       </CardHeader>
 
       {isLoading && (

@@ -70,6 +70,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-506 | Đơn nghỉ phép in được cả lúc chờ duyệt, bỏ nút In của thẻ lịch sử phê duyệt
+- status: xong
+- date: 2026-09-28
+Đại ca thử tính năng đính kèm trên dev và thấy đơn đang chờ duyệt không có nút in đơn, chỉ có
+nút «In» ở thẻ lịch sử phê duyệt, mà nút đó chỉ in lại cả màn hình. Em mở nút «In đơn» cho đơn
+đang nháp, chờ duyệt, bị trả về và đã duyệt; đơn bị từ chối hoặc đã hủy vẫn không in để tờ giấy
+đó không bị cầm đi như một đơn hợp lệ. Thẻ lịch sử phê duyệt trên màn đơn nghỉ phép bỏ nút «In»;
+các màn khác dùng chung thẻ này (văn bản, duyệt dấu) vẫn giữ nút như cũ.
+
+Kiểm: kiểm kiểu và lint không lỗi, 545 bài kiểm giao diện của Nhân sự và thẻ lịch sử duyệt xanh.
+Đã commit, đẩy lên nhánh erp-v2 và deploy dev ngày 28/09.
+
+Mã nguồn: `hr/pages/leave-request-detail-page.tsx` · `hr/components/leave-approval-timeline.tsx` ·
+`approval/components/approval-trail-card.tsx` (prop `hidePrint`)
+
 ## bao-CR-505 | Đơn nghỉ phép: đính kèm tệp và in ảnh đính kèm sau tờ đơn
 - status: dang-lam
 - date: 2026-09-28
