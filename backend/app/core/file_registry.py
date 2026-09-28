@@ -67,6 +67,13 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # 50MB chứ không ít hơn: mọi ô nhận PDF đều tối thiểu 50 (CR-148 — PDF in ấn
     # và .cdr thường 30-50MB), có bài quét cả bảng ghim con số đó.
     "work_task":              ("work_task", _DOC | _IMG, 50),
+    # Đính kèm của ĐƠN NGHỈ PHÉP (bao-CR-505) — ảnh giấy khám bệnh, giấy ra viện,
+    # thiệp cưới… `entity_id` = id tờ đơn. Chứa thông tin SỨC KHỎE nên nằm trong
+    # `PRIVATE_ENTITIES` bên dưới. Phạm vi KHÔNG đi `apply_scope` trơn:
+    # `attachment_scope.ensure_in_scope` rẽ sang `_ensure_leave_request` để người
+    # ĐANG phải ký tờ đơn (việc `TASK_PENDING`) cũng xem được tệp, đúng ngoại lệ
+    # CR-260 của chính tờ đơn. Trần 50MB theo luật sàn CR-148 cho ô nhận PDF.
+    "leave_request":          ("leave_request", _DOC, 50),
 }
 
 #  CỬA NHẬN TỆP KHÔNG ĐI QUA `FileLink` — ảnh đại diện, ảnh chữ ký, ảnh chèn bài HDSD.
@@ -114,7 +121,10 @@ def direct_policy(kind: str) -> tuple[set[str], int]:
 #  giấy phép, hợp đồng và chứng nhận — đúng nhóm giấy tờ mà một URL đọc thẳng
 #  bucket bị chuyền tay là hỏng. Phân hệ mới thì không có nợ tương thích nào để
 #  phải cân nhắc, cứ riêng tư từ đầu.
-PRIVATE_ENTITIES: set[str] = {"document_version", "dossier"}
+#
+#  `leave_request` (bao-CR-505): ảnh giấy khám bệnh là dữ liệu sức khỏe — URL đọc
+#  thẳng bucket bị chuyền tay là lộ bệnh án của một người cụ thể.
+PRIVATE_ENTITIES: set[str] = {"document_version", "dossier", "leave_request"}
 
 
 def is_private(entity: str) -> bool:

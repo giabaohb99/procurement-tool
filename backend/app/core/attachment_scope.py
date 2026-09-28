@@ -123,6 +123,13 @@ def parent_records(db: Session, entity: str, entity_id: int):
         from app.modules.dossier.model import Dossier
         return Dossier, [entity_id]
 
+    if entity == "leave_request":
+        #  Tệp treo thẳng vào tờ đơn (`entity_id` = id đơn). Khai ở đây cho đủ bộ
+        #  tra, dù `ensure_in_scope` rẽ sang `_ensure_leave_request` trước khi tới
+        #  đây — xem docstring hàm đó.
+        from app.modules.leave.request_model import LeaveRequest
+        return LeaveRequest, [entity_id]
+
     #  Ba loại dưới đây chưa có mặt trong `SCOPE_FIELDS` nên `apply_scope` không
     #  sinh mệnh đề nào — vẫn khai ở đây để ngày B-07 khai thêm là đính kèm siết
     #  theo, không phải mở lại tệp này.
@@ -178,6 +185,41 @@ def _ensure_task_member(db: Session, user, task_id: int, action: str):
     get_task_or_403(db, actor, task_id, CAN_VIEW if action == "read" else CAN_EDIT)
 
 
+def _ensure_leave_request(db: Session, user, request_id: int, mode: str):
+    """Đính kèm đơn nghỉ phép (bao-CR-505): phạm vi của tờ đơn + ngoại lệ người đang ký.
+
+    Đọc hỏi `approval_bridge.can_read_request` — cùng một hàm màn chi tiết đơn
+    dùng: trong phạm vi dữ liệu, HOẶC đang có việc `TASK_PENDING` trên tờ đơn.
+    Đi `apply_scope` trơn thì Trưởng phòng Nhân sự duyệt chặng 2 mở được tờ đơn
+    mà ảnh giấy khám bệnh kèm theo lại 403 — họ phải duyệt nghỉ ốm mà không được
+    nhìn chính giấy chứng minh.
+
+    Gắn / gỡ tệp thì KHÔNG có ngoại lệ đó: được giao ký không có nghĩa là được
+    sửa hồ sơ của người khác. Soi `write` HOẶC `create`, đúng cặp của `_check`.
+
+    Đơn đã xóa mềm trả 404 như màn chi tiết — tệp của nó không còn cửa nào mở.
+    """
+    from app.core.scoping import get_scoped
+    from app.modules.leave import approval_bridge
+    from app.modules.leave.request_model import LeaveRequest
+
+    obj = db.get(LeaveRequest, request_id)
+    if obj is None or obj.is_deleted:
+        raise HTTPException(404, "Không tìm thấy đơn nghỉ phép")
+    if mode == "read":
+        if approval_bridge.can_read_request(db, request_id, user):
+            return
+    else:
+        profile = get_perm_profile(db, user)
+        for action in ("write", "create"):
+            if get_scoped(db, LeaveRequest, "leave_request", request_id, user,
+                          profile, action) is not None:
+                return
+    log.warning("Chan dinh kem don nghi phep ngoai pham vi: user=%s request=%s mode=%s",
+                getattr(user, "id", "?"), request_id, mode)
+    raise HTTPException(403, "Đơn nghỉ phép của tệp nằm ngoài phạm vi được phép xem")
+
+
 def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = "read"):
     """Ném 403/404 nếu chứng từ cha của tệp nằm ngoài phạm vi dữ liệu của người này.
 
@@ -194,6 +236,9 @@ def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = 
         return
     if parent == "work_task":
         _ensure_task_member(db, user, entity_id, mode)
+        return
+    if parent == "leave_request":
+        _ensure_leave_request(db, user, entity_id, mode)
         return
 
     model, ids = parent_records(db, entity, entity_id)

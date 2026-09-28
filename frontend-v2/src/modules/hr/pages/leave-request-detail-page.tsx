@@ -12,6 +12,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { LeaveApprovalTimeline } from '../components/leave-approval-timeline'
+import { LeaveAttachmentsCard } from '../components/leave-attachments-card'
 import { LeaveDetailDecisionActions } from '../components/leave-detail-decision-actions'
 import { LeaveStatusBadge } from '../components/leave-status-badge'
 import { LeaveRequestForm } from '../components/leave-request-form'
@@ -332,6 +333,14 @@ export function LeaveRequestDetailPage() {
               </CardContent>
             </Card>
           )
+        )}
+
+        {/*  Tệp đính kèm (bao-CR-505) đứng ngay dưới tờ đơn vì nó là một phần
+             của hồ sơ trình duyệt — người duyệt đọc lý do nghỉ rồi xem giấy tờ.
+             Thêm/gỡ được đúng lúc form còn sửa được; sau khi gửi duyệt thì chỉ
+             xem và tải về. Đơn mới chưa có id thì thẻ nhắc «Lưu nháp». */}
+        {(request || (isNew && canWrite)) && (
+          <LeaveAttachmentsCard requestId={requestId} editable={editable && canWrite} />
         )}
 
         {/*  Luồng duyệt đặt DƯỚI nội dung đơn: người mở màn này đọc tờ đơn trước,

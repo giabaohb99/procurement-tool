@@ -123,6 +123,24 @@ def _block_version_in_approval(db: Session, entity: str, entity_id: int):
         block_while_approving(version)
 
 
+def _block_leave_request_locked(db: Session, entity: str, entity_id: int):
+    """Đính kèm ĐƠN NGHỈ PHÉP chỉ thêm/gỡ được khi tờ đơn còn sửa được (bao-CR-505).
+
+    Bộ tệp là một phần hồ sơ trình duyệt, y như văn bản ở hàm trên: gửi duyệt
+    xong mà vẫn gỡ được giấy khám bệnh thì người duyệt ký dựa trên một thứ đã
+    biến mất. Dùng lại đúng `check_editable` của tờ đơn (Nháp · Trả về) để hai
+    luật không trôi lệch nhau.
+    """
+    if entity != "leave_request":
+        return
+    from app.modules.leave.request_model import LeaveRequest
+    from app.modules.leave.request_service import check_editable
+
+    obj = db.get(LeaveRequest, entity_id)
+    if obj:
+        check_editable(obj)
+
+
 def _reindex_document_search(db: Session, entity: str, entity_id: int) -> None:
     """Chỉ mục TÌM KIẾM TOÀN VĂN của văn bản (phase 07, duoc-CR-477) — gọi
     SAU commit khi tệp đính kèm của một PHIÊN BẢN VĂN BẢN (`entity =
@@ -289,6 +307,7 @@ def upload(
     ensure_batch_ok(files)
     exts, max_mb = _check(db, user, entity, "manage", entity_id)
     _block_version_in_approval(db, entity, entity_id)
+    _block_leave_request_locked(db, entity, entity_id)
     _valid_doc_type(doc_type)
     out = []
     for f in files:
@@ -329,6 +348,7 @@ def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends
     _deny_comment(data.entity)
     _check(db, user, data.entity, "manage", data.entity_id)
     _block_version_in_approval(db, data.entity, data.entity_id)
+    _block_leave_request_locked(db, data.entity, data.entity_id)
     _valid_doc_type(data.doc_type)
 
     #  BM-025 — cửa này từng chỉ hỏi "có dòng tab_file nào mang id ấy không", không hỏi
@@ -677,6 +697,7 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
     else:
         _check(db, user, lk.entity, "manage", lk.entity_id)
         _block_version_in_approval(db, lk.entity, lk.entity_id)
+        _block_leave_request_locked(db, lk.entity, lk.entity_id)
     fid = lk.file_id
     entity, entity_id = lk.entity, lk.entity_id
     db.delete(lk); db.flush()

@@ -371,6 +371,21 @@ chặng Giám đốc"* sẽ KHÔNG chạy cho tờ đơn 3 ngày phép năm + 1 
 Cố ý không đưa danh sách loại vào `entity_context`: `condition_service` chỉ so được
 giá trị vô hướng, thêm một ô mà phép `in` của nó không đọc nổi thì tệ hơn không có.
 
+### 7.2. Tệp đính kèm và bản in (bao-CR-505, 28/09/2026)
+
+Màn chi tiết đơn có thẻ **«Tệp đính kèm»** ngay dưới tờ đơn (ảnh giấy khám bệnh, giấy
+ra viện, thiệp cưới… — ảnh JPG/PNG/WEBP, PDF, Word, Excel, tối đa 50MB mỗi tệp). Đơn
+mới chưa lưu thì thẻ chỉ nhắc «Lưu nháp để đính kèm tệp»; đơn **Nháp / Trả về** thì
+thêm và gỡ được; đã gửi duyệt trở đi thì chỉ xem và tải về (backend khóa y hệt bằng
+`check_editable`). Người **đang phải ký** tờ đơn xem được tệp dù ngoài phạm vi dữ liệu
+— cùng ngoại lệ CR-260 ở §8; ký xong là hết. Tệp là **riêng tư** (không có URL công
+khai), đi qua cửa đính kèm dùng chung với `entity=leave_request`.
+
+**Bản in** (nút «In đơn» của đơn đã duyệt, trang `/print/leave-request/:id`): mỗi ảnh đính kèm in thành **một trang A4
+riêng sau tờ đơn** (in hai mặt thì ảnh đầu nằm đúng mặt sau), co vừa trang, giữ tỉ lệ.
+Tệp không phải ảnh không in, chỉ ghi tên ở dòng «Tài liệu đính kèm» trên mặt đơn. Nút
+In khóa tới khi mọi ảnh đã nạp xong; ảnh nào nạp hỏng thì trang in báo tên ảnh đó.
+
 ## 8. Duyệt
 
 Chạy trên **bộ máy duyệt dùng chung** (`app/modules/approval/`), entity

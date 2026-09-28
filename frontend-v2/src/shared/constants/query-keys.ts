@@ -194,6 +194,9 @@ export const queryKeys = {
     leaveRequests: (params?: Record<string, unknown>) =>
       ['hr', 'leave-requests', params ?? {}] as const,
     leaveRequest: (id: number) => ['hr', 'leave-requests', 'detail', id] as const,
+    /** Tệp đính kèm của MỘT tờ đơn (bao-CR-505) — màn chi tiết và trang in dùng chung. */
+    leaveAttachments: (id: number) =>
+      ['hr', 'leave-requests', 'detail', id, 'attachments'] as const,
     //  ── Hộp việc duyệt (CR-260) ───────────────────────────────────────────
     //  Nằm TRONG nhánh `hr` để một lượt duyệt dọn luôn cả ba tab: ký xong thì
     //  đơn rời tab «Cần tôi duyệt» và rơi sang tab «Tôi đã duyệt» cùng lúc.

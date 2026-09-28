@@ -70,6 +70,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-505 | Đơn nghỉ phép: đính kèm tệp và in ảnh đính kèm sau tờ đơn
+- status: dang-lam
+- date: 2026-09-28
+Khách muốn khi lập đơn nghỉ phép thì đính kèm được tệp, ví dụ ảnh giấy khám bệnh hoặc
+bản PDF, và khi in đơn thì mọi ảnh đính kèm được in theo ở mặt sau, mỗi ảnh một trang
+A4. Em dùng lại cửa đính kèm dùng chung của hệ thống chứ không dựng cửa mới: khai loại
+đính kèm «đơn nghỉ phép», để tệp ở chế độ riêng tư vì giấy khám bệnh là thông tin sức
+khỏe, và cho người đang phải ký tờ đơn xem được tệp dù tờ đơn nằm ngoài phạm vi dữ liệu
+của họ (cùng ngoại lệ đã có ở màn chi tiết đơn). Thêm và gỡ tệp chỉ được khi đơn còn ở
+Nháp hoặc Trả về; gửi duyệt rồi thì chỉ xem và tải về. Màn chi tiết đơn ở bản mới có
+thẻ «Tệp đính kèm» ngay dưới tờ đơn; đơn chưa lưu thì thẻ nhắc lưu nháp trước. Trang
+in thêm mỗi ảnh một trang A4 sau tờ đơn, co vừa trang và giữ tỉ lệ; tệp không phải ảnh
+chỉ ghi tên trên mặt đơn; nút In khóa tới khi ảnh nạp xong. Không có migration, không
+thêm khóa quyền. Bài kiểm: 15 bài mới của phía máy chủ xanh, 73 bài đính kèm và nghỉ
+phép liên quan xanh; 539 bài của phân hệ Nhân sự ở giao diện xanh; kiểm kiểu và lint
+không lỗi. Đã commit, đẩy lên nhánh erp-v2 và deploy dev ngày 28/09; chưa bấm thử trên trình duyệt.
+Mã nguồn: `core/file_registry.py` (FILE_POLICY, PRIVATE_ENTITIES), `core/attachment_scope.py` (_ensure_leave_request), `modules/attachment/controller.py` (_block_leave_request_locked), `frontend-v2/src/modules/hr/components/leave-attachments-card.tsx`, `hr/pages/leave-request-print-page.tsx`, `hr/hooks/use-leave-print-images.ts`, `test/backend/test_nghi_phep_dinh_kem.py`.
+
 ## bao-CR-504 | Diễn tập đẩy erp-v2 lên prod trên bản sao dữ liệu thật và vá bốn lỗi phần thu mua
 - status: dang-lam
 - date: 2026-09-28
