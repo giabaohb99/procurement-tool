@@ -9,24 +9,6 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
-## bao-CR-510 | Đẩy toàn bộ erp-v2 lên prod ngày 28/09 sau khi diễn tập trên bản sao dữ liệu thật
-- status: xong
-- date: 2026-09-28
-Đại ca chốt đẩy toàn bộ nhánh erp-v2 lên prod lúc trưa 28/09. Trước khi đẩy, em diễn tập trên bản
-sao dữ liệu prod: dữ liệu thu mua không mất không lệch (chi phí thu mua 15 dòng khớp từng số, công
-nợ 305 khoản khớp từng đồng), phạm vi của 234 tài khoản không đổi, 86 đường thu mua không lỗi hệ
-thống. Lúc đẩy: sao lưu cơ sở dữ liệu và 21 tệp đính kèm mồ côi, dọn 30 GB bộ đệm build (ổ đĩa từ 82%
-xuống 31%), đưa nhánh main lên bản mới rồi build lại; 48 migration chạy xong, seed xong. Sau khi
-lên: điền người duyệt cho 415 chứng từ cũ và 18 phiếu chưa duyệt, cấp quyền loại chi phí mua hàng
-cho ba vai trò thu mua, kiểm chỉ mục tìm kiếm, thử lại 86 đường thu mua ngay trên prod không lỗi.
-
-Còn lại: mọi người tải lại trang cứng; 5 YCTT đang chờ duyệt đề nghị chi vượt nợ còn lại cần người
-duyệt xem kỹ; hai lỗi có sẵn của YCTT (màn cũ lưu nháp xóa phần cấn trừ, phiếu đã từ chối gửi lại
-được) để làm ngay sau.
-
-Deploy: prod `79e7cee4`, alembic `c496a1b2d3e4`, sao lưu `~/proc_backups/procurement_truoc_full_erpv2_20260928_1142.sql.gz`
-và `~/proc_backups/orphans_truoc_don_20260928/`
-
 ## <key> | <tiêu đề hiển thị>
 - status: dang-lam | xong | huy
 - date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
@@ -87,6 +69,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
    (yêu cầu mua hàng)").
 
 ---
+
+## bao-CR-510 | Đẩy toàn bộ erp-v2 lên prod ngày 28/09 sau khi diễn tập trên bản sao dữ liệu thật
+- status: xong
+- date: 2026-09-28
+Đại ca chốt đẩy toàn bộ nhánh erp-v2 lên prod lúc trưa 28/09. Trước khi đẩy, em diễn tập trên bản
+sao dữ liệu prod: dữ liệu thu mua không mất không lệch (chi phí thu mua 15 dòng khớp từng số, công
+nợ 305 khoản khớp từng đồng), phạm vi của 234 tài khoản không đổi, 86 đường thu mua không lỗi hệ
+thống. Lúc đẩy: sao lưu cơ sở dữ liệu và 21 tệp đính kèm mồ côi, dọn 30 GB bộ đệm build (ổ đĩa từ 82%
+xuống 31%), đưa nhánh main lên bản mới rồi build lại; 48 migration chạy xong, seed xong. Sau khi
+lên: điền người duyệt cho 415 chứng từ cũ và 18 phiếu chưa duyệt, cấp quyền loại chi phí mua hàng
+cho ba vai trò thu mua, kiểm chỉ mục tìm kiếm, thử lại 86 đường thu mua ngay trên prod không lỗi.
+
+Còn lại: mọi người tải lại trang cứng; 5 YCTT đang chờ duyệt đề nghị chi vượt nợ còn lại cần người
+duyệt xem kỹ; hai lỗi có sẵn của YCTT (màn cũ lưu nháp xóa phần cấn trừ, phiếu đã từ chối gửi lại
+được) để làm ngay sau.
+
+Deploy: prod `79e7cee4`, alembic `c496a1b2d3e4`, sao lưu `~/proc_backups/procurement_truoc_full_erpv2_20260928_1142.sql.gz`
+và `~/proc_backups/orphans_truoc_don_20260928/`
 
 ## bao-CR-509 | Nút «Cập nhật theo công nợ» cho YCTT khi ĐMH bị sửa sau khi lập phiếu
 - status: dang-lam
