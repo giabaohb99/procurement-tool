@@ -651,6 +651,21 @@ export const queryKeys = {
     candidates: () => ['dossier', 'candidates'] as const,
   },
   /** Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/). */
+  /**
+   * Phân hệ Báo cáo — bản TỔNG HỢP cho các màn biểu đồ. Nguồn là API của Thu mua
+   * nhưng khóa đứng riêng: bảng phân trang và bản tổng hợp khác hình dữ liệu,
+   * chung khóa là ghi đè cache của nhau.
+   */
+  report: {
+    prLinesSummary: (params?: Record<string, unknown>) =>
+      ['report', 'pr-lines-summary', params ?? {}] as const,
+    purchaseProgressSummary: (params?: Record<string, unknown>) =>
+      ['report', 'purchase-progress-summary', params ?? {}] as const,
+    surveyProgressSummary: (params?: Record<string, unknown>) =>
+      ['report', 'survey-progress-summary', params ?? {}] as const,
+    surveyReportSummary: (params?: Record<string, unknown>) =>
+      ['report', 'survey-report-summary', params ?? {}] as const,
+  },
   coffee: {
     all: ['coffee'] as const,
     meta: () => ['coffee', 'meta'] as const,

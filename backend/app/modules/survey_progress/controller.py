@@ -364,3 +364,73 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
     rows = _decorate(db, q.all(), show_supplier, 0)
     columns = pick_columns(ex.columns_for(show_supplier), cols)
     return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
+
+
+#  Hai mốc cuối của chuỗi tiến độ — dòng đã rời tay NSTM, không còn là việc đang mở.
+_CLOSED_STATES = (ex.STATE_PR_CREATED, ex.STATE_DONE)
+
+
+def summarize(decorated: list[dict]) -> dict:
+    """Gom các hàng ĐÃ TRANG TRÍ (`_decorate`) thành số liệu cho màn BIỂU ĐỒ (phân hệ Báo cáo).
+
+    Đọc lại đúng các cột tính của bảng (`progress_state`, `days_late`, `handling_days`) thay vì
+    tính lại — hai nơi hai luật là biểu đồ và bảng lệch nhau lúc nào không hay.
+    - Trễ = `days_late` có giá trị (đã trả sau hạn, hoặc chưa trả mà đã quá hạn).
+    - Số ngày xử lý trung bình chỉ tính dòng ĐÃ có số ngày (đã trả kết quả).
+    - Tháng theo NGÀY YÊU CẦU của phiếu.
+    """
+    state_count = {s: 0 for s in ex.STATES}
+    by_month: dict[str, dict] = {}
+    by_assignee: dict[str, dict] = {}
+    by_group: dict[str, dict] = {}
+    late = answered = 0
+    handling = []
+    for r in decorated:
+        st = r.get("progress_state") or ""
+        state_count[st] = state_count.get(st, 0) + 1
+        is_late = r.get("days_late") is not None
+        late += is_late
+        if r.get("result_date"):
+            answered += 1
+        if r.get("handling_days") is not None:
+            handling.append(r["handling_days"])
+        is_open = st not in _CLOSED_STATES
+        month = (r.get("request_date") or "")[:7]
+        if len(month) == 7:
+            m = by_month.setdefault(month, {"month": month, "lines": 0, "late": 0})
+            m["lines"] += 1
+            m["late"] += is_late
+        who = r.get("assignee_name") or ""
+        a = by_assignee.setdefault(who, {"name": who, "lines": 0, "open": 0, "late": 0})
+        a["lines"] += 1
+        a["open"] += is_open
+        a["late"] += is_late
+        grp = r.get("item_group") or "(Không rõ)"
+        g = by_group.setdefault(grp, {"key": grp, "lines": 0, "late": 0})
+        g["lines"] += 1
+        g["late"] += is_late
+
+    return {
+        "total": {"lines": len(decorated), "late": late, "answered": answered,
+                  "open": sum(v for k, v in state_count.items() if k not in _CLOSED_STATES),
+                  "avg_handling_days": round(sum(handling) / len(handling), 1) if handling else None},
+        # Giữ ĐÚNG thứ tự chuỗi tiến độ (`STATES`), bỏ nhãn không có dòng nào.
+        "by_state": [{"state": k, "lines": v} for k, v in state_count.items() if v],
+        "by_month": [by_month[k] for k in sorted(by_month)],
+        # NSTM đang ôm nhiều dòng mở nhất đứng đầu.
+        "by_assignee": sorted(by_assignee.values(), key=lambda x: (-x["open"], -x["lines"], x["name"])),
+        "by_item_group": sorted(by_group.values(), key=lambda x: (-x["lines"], x["key"])),
+    }
+
+
+@router.get("/summary")
+def progress_summary(request: Request, year: str = "", db: Session = Depends(get_db),
+                     user=Depends(_require_progress)):
+    """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi (cả lọc dòng theo NSTM) với
+    bảng, thêm `year` theo NGÀY YÊU CẦU của phiếu. Không phân trang."""
+    prof = get_perm_profile(db, user)
+    show_supplier = _show_supplier(db, user)
+    q = _build_query(request, db, user, prof, show_supplier)
+    if year.isdigit():
+        q = q.filter(SurveyRequest.request_date.like(f"{year}%"))
+    return success(summarize(_decorate(db, q.all(), show_supplier, 0)))

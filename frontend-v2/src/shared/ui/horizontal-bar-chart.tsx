@@ -15,6 +15,8 @@ interface HorizontalBarChartProps {
   unit?: string
   /** Màu cột. Một chuỗi dữ liệu = MỘT màu cho mọi cột. */
   color?: string
+  /** Định dạng số ở đầu cột và trong tooltip — số tiền hàng tỉ phải rút gọn. */
+  formatValue?: (value: number) => string
 }
 
 /**
@@ -28,6 +30,7 @@ export function HorizontalBarChart({
   data,
   unit,
   color = 'var(--chart-1)',
+  formatValue,
 }: HorizontalBarChartProps) {
   return (
     // Chiều cao cố định theo số dòng (đủ chỗ mọi cột, không sinh thanh cuộn con);
@@ -38,7 +41,7 @@ export function HorizontalBarChart({
           data={data}
           layout="vertical"
           // Chừa lề phải cho nhãn số ở đầu cột khỏi bị cắt.
-          margin={{ top: 4, right: 36, bottom: 4, left: 0 }}
+          margin={{ top: 4, right: formatValue ? 56 : 36, bottom: 4, left: 0 }}
           barCategoryGap={8}
         >
           {/* Trục X ẩn: mọi cột đã có số ghi thẳng ở đầu, thêm lưới chỉ tổ rối. */}
@@ -68,7 +71,7 @@ export function HorizontalBarChart({
               fill: 'var(--row-hover)',
             }}
             wrapperStyle={{ outline: 'none' }}
-            content={<ChartTooltipContent unit={unit} />}
+            content={<ChartTooltipContent unit={unit} formatValue={formatValue} />}
           />
           <Bar
             dataKey="value"
@@ -83,6 +86,13 @@ export function HorizontalBarChart({
               offset={8}
               fill="var(--foreground)"
               fontSize={12}
+              // Khoảng trắng thường thì recharts ngắt dòng nhãn ở cột dài nhất
+              // ("332.3 / tr") — đổi sang khoảng trắng không ngắt.
+              formatter={
+                formatValue
+                  ? (value) => formatValue(Number(value)).replace(/ /g, '\u00a0')
+                  : undefined
+              }
             />
           </Bar>
         </BarChart>

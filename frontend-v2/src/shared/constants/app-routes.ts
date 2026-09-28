@@ -289,8 +289,18 @@ export const appRoutes = {
       return `/document/folders?${qs.toString()}`
     },
   },
+  /**
+   * Phân hệ BÁO CÁO — gom các trang báo cáo của từng phân hệ về một chỗ. Trang
+   * vẫn là của phân hệ gốc, đây là đường thứ hai GẮN SONG SONG (đường cũ giữ
+   * nguyên cho link đã lưu và menu phân hệ gốc). Xem `modules/report/config/report-catalog.ts`.
+   */
   report: {
     root: '/report',
+    purchaseReport: '/report/purchase',
+    prLinesReport: '/report/pr-lines',
+    surveyReport: '/report/survey',
+    surveyProgress: '/report/survey-progress',
+    purchaseProgress: '/report/purchase-progress',
   },
   system: {
     root: '/system',

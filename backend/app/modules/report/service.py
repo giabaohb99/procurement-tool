@@ -458,18 +458,11 @@ def compute_request_range(db, kind, date_from, date_to, company_id, user) -> lis
     return rows
 
 
-def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_status=None,
-                     assignee=None, search=None, page=1, page_size=50) -> dict:
-    """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295 / ticket 23).
-
-    Mục tiêu: NSTM nhìn vào biết MÃ HÀNG nào chưa được đặt (1 phiếu 3 mã thuộc 3 NCC -> phải
-    tách 3 ĐMH, dễ đặt sót). Phân trang server (50/trang); scope phòng ban giống báo cáo PYC
-    (phòng ban YÊU CẦU chỉ thấy phòng mình). Cột GRAM lấy từ Thông số (specs) của Sản phẩm —
-    hệ thống không có trường gram riêng."""
-    from app.modules.employee.model import Employee
-    from app.modules.product.model import Product
+def _pr_lines_base_query(db, user, year, company_id):
+    """Truy vấn gốc (dòng YCMH × phiếu) của báo cáo Chi tiết YC mua hàng: bỏ phiếu đã xóa,
+    lọc năm / công ty và scope phòng ban. Dùng CHUNG cho bảng phân trang và bản tổng hợp —
+    hai đường mà lệch scope là biểu đồ đếm cả dòng bảng không cho xem."""
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
-    from app.modules.purchase_request.service import LINE_STATUS_IDLE
 
     q = (db.query(PurchaseRequestItem, PurchaseRequest)
          .join(PurchaseRequest, PurchaseRequestItem.pr_id == PurchaseRequest.id)
@@ -481,10 +474,13 @@ def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_
     allow = report_dept_scope(db, user)   # phòng ban YÊU CẦU chỉ thấy phòng của mình
     if allow is not None:
         q = q.filter(PurchaseRequest.department.in_(list(allow)))   # set rỗng -> IN () = không dòng nào
+    return q
 
-    # Danh sách NSTM cho dropdown lọc: tính TRƯỚC các lọc chi tiết (như shipping-detail trả carriers)
-    assignees = sorted({a for (a,) in q.with_entities(PurchaseRequestItem.assignee)
-                        .filter(PurchaseRequestItem.assignee != "").distinct().all()})
+
+def _apply_pr_line_filters(q, *, status=None, line_status=None, assignee=None, search=None):
+    """Bốn bộ lọc chi tiết của báo cáo Chi tiết YC mua hàng — dùng chung bảng và tổng hợp."""
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+    from app.modules.purchase_request.service import LINE_STATUS_IDLE
 
     if status:
         q = q.filter(PurchaseRequest.status == status)
@@ -499,6 +495,104 @@ def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_
         q = q.filter(PurchaseRequestItem.product_code.like(like)
                      | PurchaseRequestItem.product_name.like(like)
                      | PurchaseRequest.code.like(like))
+    return q
+
+
+def compute_pr_lines_summary(db, user, *, year=None, company_id=None, status=None,
+                             line_status=None, assignee=None, search=None) -> dict:
+    """Bản TỔNG HỢP của báo cáo Chi tiết YC mua hàng — nuôi màn biểu đồ (phân hệ Báo cáo).
+
+    Cùng truy vấn gốc + bộ lọc với bảng nên số khớp nhau. Luật đếm:
+    - `by_line_status` đếm MỌI dòng, kể cả dòng hủy (để thấy tỷ lệ hủy).
+    - Mọi khối còn lại BỎ dòng hủy: dòng hủy không còn là việc phải đặt, cộng vào thì
+      "giá trị yêu cầu" phình ra bằng đúng số tiền không ai mua.
+    - `idle_*` = dòng CHƯA ĐƯỢC ĐẶT (no_po + not_ordered) — đúng mục tiêu soi sót của báo cáo.
+    - `line_status` rỗng ở dữ liệu cũ tính là `no_po`, cùng luật `recompute_status`.
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+    from app.modules.purchase_request.service import (
+        LINE_STATUS_CANCELLED, LINE_STATUS_IDLE, LINE_STATUS_NO_PO)
+
+    q = _apply_pr_line_filters(_pr_lines_base_query(db, user, year, company_id),
+                               status=status, line_status=line_status,
+                               assignee=assignee, search=search)
+    rows = q.with_entities(PurchaseRequest.request_date, PurchaseRequest.department,
+                           PurchaseRequestItem.item_group, PurchaseRequestItem.assignee,
+                           PurchaseRequestItem.line_status, PurchaseRequestItem.amount).all()
+
+    def bucket():
+        return {"lines": 0, "idle_lines": 0, "amount": 0.0, "idle_amount": 0.0}
+
+    def add(b, idle, amount):
+        b["lines"] += 1
+        b["amount"] += amount
+        if idle:
+            b["idle_lines"] += 1
+            b["idle_amount"] += amount
+
+    total = bucket()
+    by_status, by_month, by_dept, by_group, by_assignee = {}, {}, {}, {}, {}
+    for request_date, department, item_group, who, ls, amount in rows:
+        ls = ls or LINE_STATUS_NO_PO
+        amount = float(amount or 0)
+        st = by_status.setdefault(ls, {"code": ls, "lines": 0, "amount": 0.0})
+        st["lines"] += 1
+        st["amount"] += amount
+        if ls == LINE_STATUS_CANCELLED:
+            continue
+        idle = ls in LINE_STATUS_IDLE
+        add(total, idle, amount)
+        month = (request_date or "")[:7]
+        if len(month) == 7:
+            add(by_month.setdefault(month, {"month": month, **bucket()}), idle, amount)
+        add(by_dept.setdefault(department or "(Không rõ)", {"key": department or "(Không rõ)", **bucket()}), idle, amount)
+        add(by_group.setdefault(item_group or "(Không rõ)", {"key": item_group or "(Không rõ)", **bucket()}), idle, amount)
+        add(by_assignee.setdefault(who or "", {"code": who or "", **bucket()}), idle, amount)
+
+    codes = [c for c in by_assignee if c]
+    names = dict(db.query(Employee.code, Employee.full_name)
+                 .filter(Employee.code.in_(codes)).all()) if codes else {}
+
+    def money(d):
+        return {k: (round(v, 2) if isinstance(v, float) else v) for k, v in d.items()}
+
+    def ranked(d):
+        return [money(v) for v in sorted(d.values(), key=lambda x: (-x["amount"], str(x.get("key", ""))))]
+
+    return {
+        "total": money(total),
+        "by_line_status": [money(v) for v in by_status.values()],
+        "by_month": [money(by_month[m]) for m in sorted(by_month)],
+        "by_department": ranked(by_dept),
+        "by_item_group": ranked(by_group),
+        # NSTM xếp theo số dòng CHƯA ĐẶT — ai đang ôm việc tồn nhất đứng đầu.
+        "by_assignee": [money({**v, "name": names.get(v["code"], "")})
+                        for v in sorted(by_assignee.values(),
+                                        key=lambda x: (-x["idle_lines"], -x["lines"], x["code"]))],
+    }
+
+
+def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_status=None,
+                     assignee=None, search=None, page=1, page_size=50) -> dict:
+    """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295 / ticket 23).
+
+    Mục tiêu: NSTM nhìn vào biết MÃ HÀNG nào chưa được đặt (1 phiếu 3 mã thuộc 3 NCC -> phải
+    tách 3 ĐMH, dễ đặt sót). Phân trang server (50/trang); scope phòng ban giống báo cáo PYC
+    (phòng ban YÊU CẦU chỉ thấy phòng mình). Cột GRAM lấy từ Thông số (specs) của Sản phẩm —
+    hệ thống không có trường gram riêng."""
+    from app.modules.employee.model import Employee
+    from app.modules.product.model import Product
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+
+    q = _pr_lines_base_query(db, user, year, company_id)
+
+    # Danh sách NSTM cho dropdown lọc: tính TRƯỚC các lọc chi tiết (như shipping-detail trả carriers)
+    assignees = sorted({a for (a,) in q.with_entities(PurchaseRequestItem.assignee)
+                        .filter(PurchaseRequestItem.assignee != "").distinct().all()})
+
+    q = _apply_pr_line_filters(q, status=status, line_status=line_status,
+                               assignee=assignee, search=search)
 
     total = q.count()
     page = max(1, int(page or 1)); page_size = max(1, int(page_size or 50))

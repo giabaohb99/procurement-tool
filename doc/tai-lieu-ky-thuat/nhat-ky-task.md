@@ -8904,3 +8904,83 @@ màn hình. Ba cổng kiểm đều xanh.
 Mã nguồn: chín tệp trong `frontend-v2`, gồm màn ma trận quyền, hai màn chi tiết của nhân sự,
 màn chi tiết yêu cầu thanh toán, thẻ kiêm nhiệm, hai khối bình luận và hai màn thu mua.
 Tham chiếu: bao-CR-491 là chỗ đầu tiên của họ lỗi này. Chưa deploy.
+
+## duoc-CR-480 | Bộ tài liệu Thư mục văn bản: hướng dẫn sử dụng và mô tả luồng nghiệp vụ
+- status: xong
+- date: 2026-09-26
+Viết bộ tài liệu riêng cho Thư mục văn bản theo đúng mẫu bộ tài liệu Văn bản ngày 23/09, vì phần thư mục
+trong bộ cũ chỉ có ba mục tóm tắt và đã lạc hậu sau các thay đổi ngày 24 và 25/09 (nhóm «Công ty», thư
+mục tự do, xóa thư mục còn văn bản, tạo nhanh từ tệp, chia sẻ văn bản, trần quyền theo vai trò, xem
+ngầm định khi được chia văn bản).
+
+Hướng dẫn sử dụng có ba mươi tư mục, hai mươi chín hình chụp thật trên máy em, khoanh đỏ và đánh số
+đúng kiểu bản cũ: bố cục màn, cây, tạo, đổi tên, chuyển, ngừng dùng, xóa thư mục; xếp, chuyển, gỡ văn
+bản; tìm toàn văn và bộ lọc; chia sẻ, cấm, thời hạn, quyền chung; thư mục ở màn tạo văn bản, chi tiết
+văn bản, danh sách Văn bản; bảng quyền cần có và hỏi đáp. Mô tả luồng nghiệp vụ có chín quy trình
+TM-01 đến TM-09, hai mươi quy tắc QT-TM01 đến QT-TM20, bảng giới hạn, cách tính mức quyền sáu bước, và
+mười hai hệ quả dễ bất ngờ kèm bốn câu hỏi chờ đại ca quyết. Bốn sơ đồ mới vẽ cùng khung sơ đồ cũ.
+
+Sửa luôn bốn chỗ sai trong mục 24 và 26 của mô tả luồng Văn bản cũ: cây sâu 7 cấp chứ không phải 6;
+kéo thả mặc định là chuyển, giữ Alt mới là thêm (bản cũ ghi ngược); bấm một lần là mở; xóa thư mục còn
+văn bản nay được, văn bản chuyển đi chứ không mất. Bản PDF của tài liệu cũ chưa xuất lại vì ảnh gốc của
+nó không có trên máy.
+
+Việc còn chờ: đại ca đọc bốn câu hỏi ở mục 25 của mô tả luồng thư mục (chặn chuyển thư mục pháp nhân,
+đổi pháp nhân khi chuyển thư mục, đổi nhãn «Xóa» trong menu chuột phải văn bản thành «Gỡ khỏi thư mục»,
+có cần thùng rác). Dữ liệu mẫu tạo để chụp hình chỉ nằm ở máy em.
+
+Tham chiếu: doc/huong-dan-su-dung/van-ban/huong-dan-su-dung-thu-muc-van-ban.md · .pdf ·
+mo-ta-luong-nghiep-vu-thu-muc-van-ban.md · .pdf · hinh/tm-*.png · so-do/thu-muc-*.html ·
+xuat-tai-lieu.py · mo-ta-luong-nghiep-vu-van-ban.md
+
+## duoc-CR-481 | Mở phân hệ Báo cáo, gom các trang báo cáo của từng phân hệ về một chỗ
+- status: xong
+- date: 2026-09-26
+Bật phân hệ Báo cáo ở giao diện v2 (trước đây chỉ là thẻ «Sắp có»). Phân hệ có trang Tổng quan với
+một thẻ lối tắt cho mỗi báo cáo và menu trái nhóm theo phân hệ gốc. Hiện chỉ Thu mua có trang báo cáo
+thật nên gom được năm trang: Báo cáo mua hàng, Chi tiết YC mua hàng, Tiến độ báo giá, Tiến độ mua hàng,
+Báo cáo khảo sát.
+
+Trang không chép sang mà gắn song song: cùng một trang của Thu mua được đăng ký thêm đường /report/...,
+đường cũ ở Thu mua giữ nguyên nên link đã lưu và menu Thu mua không đổi. Khóa quyền của từng mục lấy
+đúng khóa của mục menu bên Thu mua, có bài kiểm canh hai bên không được lệch nhau. Thêm báo cáo mới của
+phân hệ khác chỉ cần thêm một dòng vào danh mục báo cáo.
+
+Trang Tổng quan của phân hệ làm thành trang biểu đồ theo kiểu báo cáo Haravan: bộ lọc năm và công ty
+ở đầu trang, năm thẻ số (chi phí mua, giá trị đặt, số đơn, tỷ lệ giao đúng hạn, công nợ) có so với năm
+trước kèm đường xu hướng nhỏ, biểu đồ đường chi phí từng tháng của năm nay đặt cạnh năm trước, vòng tròn
+giao đúng hạn / trễ hạn, bốn biểu đồ Top (nhà cung cấp, nhân sự phụ trách, bộ phận, nhóm hàng), cuối
+cùng là danh sách báo cáo nhóm theo phân hệ. Năm đang chạy dở thì chi phí so CÙNG KỲ (từ tháng 1 tới
+tháng hiện tại), còn giá trị đặt và số đơn chỉ có số cả năm nên không hiện phần trăm mà ghi số năm trước
+làm mốc. Không sửa backend: toàn bộ số liệu lấy từ đường API báo cáo mua hàng sẵn có, gọi cho hai năm.
+
+Sau đó đổi cả năm trang báo cáo trong phân hệ Báo cáo sang dạng biểu đồ (Báo cáo mua hàng, Chi tiết
+YC mua hàng, Tiến độ báo giá, Tiến độ mua hàng, Báo cáo khảo sát). Mỗi trang có thẻ số, biểu đồ cột
+chồng theo tháng, biểu đồ tiến độ xếp theo quy trình và các biểu đồ Top, kèm nút «Xem bảng chi tiết»
+dẫn sang bảng gốc bên Thu mua. Bảng bên Thu mua giữ nguyên vì người mua hàng cần soi từng dòng. Bốn
+bảng gốc đều phân trang ở máy chủ nên thêm bốn đường API tổng hợp, mỗi đường dùng CHUNG bộ lọc và
+phạm vi dữ liệu với bảng của nó để số trên biểu đồ khớp số dòng của bảng: `/api/reports/pr-lines/summary`,
+`/api/purchase-progress/summary`, `/api/survey-progress/summary`, `/api/survey-report/summary`. Bộ lọc
+của Báo cáo khảo sát được tách thành một hàm dùng chung cho bảng và bản tổng hợp. Có thêm hai bộ bài
+kiểm backend cho phần tổng hợp.
+
+Vá kèm một lỗi dùng chung: thanh đường dẫn phía trên (breadcrumb) so đường dẫn bằng tiền tố trần nên
+`/report/purchase` nuốt luôn `/report/purchase-progress` và ghi sai tên màn; nay khớp theo ranh giới
+dấu `/` như menu trái. Đã rà toàn bộ route, không màn nào khác đổi hành vi.
+
+Phát hiện khi làm: đường API `/api/reports/procurement` trả số liệu theo nhà cung cấp và nhân sự phụ
+trách mà KHÔNG qua chốt `_can_see_ncc` như các đường báo cáo khác; màn hình đã tự gác bằng quyền xem
+đơn mua hàng, nhưng backend vẫn nên chặn.
+
+Mã nguồn: frontend-v2/src/modules/report/config/report-catalog.ts (+ .test.ts) · report/routes.tsx ·
+report/pages/report-overview-page.tsx · report/components/{kpi-trend-card, period-comparison-chart,
+procurement-report-section, report-catalog-list}.tsx · report/utils/report-period-comparison.ts (+ .test.ts) ·
+shared/ui/horizontal-bar-chart.tsx · procurement/types/purchase-report.ts · shared/constants/app-routes.ts ·
+report/pages/{purchase-report,pr-lines,purchase-progress,survey-progress,survey-report}-chart-page.tsx ·
+report/components/{report-chart-page-header, report-period-filters, stacked-month-column-chart}.tsx ·
+report/{api/report-summary-api.ts, hooks/use-report-summaries.ts, hooks/use-report-period.ts,
+types/report-summary.ts, utils/chart-series.ts, utils/pr-lines-chart-data.ts} (+ .test.ts) ·
+app/layouts/module-topbar.tsx · shared/constants/query-keys.ts ·
+backend/app/modules/{report/service.py, report/controller.py, purchase_progress/controller.py,
+survey_progress/controller.py, survey/controller.py} · test/backend/test_bao_cao_dong_ycmh_tong_hop.py ·
+test/backend/test_tong_hop_bieu_do_tien_do_khao_sat.py

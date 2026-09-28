@@ -211,6 +211,19 @@ def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(requi
         page=page, page_size=page_size))
 
 
+@router.get("/pr-lines/summary")
+def pr_lines_summary(request: Request, db: Session = Depends(get_db),
+                     user=Depends(require("report", "read"))):
+    """Tổng hợp của báo cáo Chi tiết YC mua hàng (theo tiến độ / tháng / bộ phận / nhóm hàng /
+    NSTM) cho màn biểu đồ. Nhận cùng bộ lọc với `/pr-lines`, không phân trang."""
+    qp = request.query_params
+    return success(report_service.compute_pr_lines_summary(
+        db, user,
+        year=qp.get("year") or str(datetime.now().year), company_id=qp.get("company_id"),
+        status=qp.get("status") or None, line_status=qp.get("line_status") or None,
+        assignee=qp.get("assignee") or None, search=(qp.get("search") or "").strip() or None))
+
+
 @router.get("/dept-range")
 def dept_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
     """Đặt hàng & đơn gấp theo Bộ phận trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""

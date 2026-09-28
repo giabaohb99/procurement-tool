@@ -26,8 +26,13 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
 
   // Màn hình hiện tại = mục menu khớp URL. Đang ở ngay trang gốc phân hệ thì
   // breadcrumb chỉ có một cấp.
+  //  ⚠️ Khớp theo RANH GIỚI `/` (cùng luật menu trái), không `startsWith` trần:
+  //  trần thì `/report/purchase` nuốt luôn `/report/purchase-progress` và
+  //  breadcrumb ghi sai tên màn (thấy 26/09/2026).
   const current = module.nav.find((item) =>
-    item.end ? pathname === item.path : pathname.startsWith(item.path),
+    item.end
+      ? pathname === item.path
+      : pathname === item.path || pathname.startsWith(`${item.path}/`),
   )
   const isModuleRoot = pathname === module.path
   //  Có cấp thứ hai không — quyết định luôn việc giấu cấp phân hệ ở khổ hẹp.

@@ -293,21 +293,10 @@ def fill_line_(sid: int, table: str, line_id: int, data: dict, db: Session = Dep
 
 
 # ===== Báo cáo khảo sát theo DÒNG (gộp NCC + SP) =====
-report_router = APIRouter(prefix="/api/survey-report", tags=["survey_report"])
-
-
-@report_router.get("/lines")
-def report_lines_(kind: str | None = Query(None), line_approve: str | None = Query(None),
-                  item_group: str | None = Query(None), supplier: str | None = Query(None),
-                  code: str | None = Query(None), q: str | None = Query(None), nspt: str | None = Query(None),
-                  item_code: str | None = Query(None), main_content: str | None = Query(None),
-                  date_from: str | None = Query(None), date_to: str | None = Query(None),
-                  sort_by: str = Query(""), sort_dir: str = Query("asc"),
-                  pg: dict = Depends(pagination), db: Session = Depends(get_db),
-                  user=Depends(require("survey", "read"))):
-    base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
-    rows = service.report_rows(db, base)
-
+def _filter_report_rows(rows, *, kind=None, item_group=None, supplier=None, code=None, q=None,
+                        nspt=None, item_code=None, main_content=None, date_from=None, date_to=None):
+    """Bộ lọc dòng của Báo cáo khảo sát (trừ `line_approve`) — dùng CHUNG cho bảng `/lines`
+    và bản tổng hợp `/summary`, để biểu đồ và bảng luôn đếm cùng một tập dòng."""
     search_kw = (q or code or "").strip().lower()
 
     def keep(r):
@@ -347,7 +336,27 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
             return False
         return True
 
-    rows = [r for r in rows if keep(r)]
+    return [r for r in rows if keep(r)]
+
+
+report_router = APIRouter(prefix="/api/survey-report", tags=["survey_report"])
+
+
+@report_router.get("/lines")
+def report_lines_(kind: str | None = Query(None), line_approve: str | None = Query(None),
+                  item_group: str | None = Query(None), supplier: str | None = Query(None),
+                  code: str | None = Query(None), q: str | None = Query(None), nspt: str | None = Query(None),
+                  item_code: str | None = Query(None), main_content: str | None = Query(None),
+                  date_from: str | None = Query(None), date_to: str | None = Query(None),
+                  sort_by: str = Query(""), sort_dir: str = Query("asc"),
+                  pg: dict = Depends(pagination), db: Session = Depends(get_db),
+                  user=Depends(require("survey", "read"))):
+    base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
+    rows = service.report_rows(db, base)
+
+    rows = _filter_report_rows(rows, kind=kind, item_group=item_group, supplier=supplier,
+                               code=code, q=q, nspt=nspt, item_code=item_code,
+                               main_content=main_content, date_from=date_from, date_to=date_to)
     cnt = Counter(r["line_approve"] for r in rows)   # tổng theo trạng thái (trước lọc trạng thái)
     summary = {k: cnt.get(k, 0) for k in ("Chờ duyệt", "Đã duyệt", "Không duyệt", "Thiếu thông tin")}
     if line_approve:
@@ -358,6 +367,63 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
     total = len(rows)
     items = rows[pg["offset"]: pg["offset"] + pg["limit"]]
     return success({"total": total, "items": items, "summary": summary})
+
+
+APPROVE_STATES = ("Chờ duyệt", "Đã duyệt", "Không duyệt", "Thiếu thông tin")
+
+
+def summarize_report_rows(rows) -> dict:
+    """Gom dòng Báo cáo khảo sát cho màn BIỂU ĐỒ (phân hệ Báo cáo).
+
+    `line_approve` ở hai bảng dòng khảo sát vẫn lưu CHỮ tiếng Việt (ngoại lệ đã biết, xem
+    §2.2 của `doc/erp/15-do-be-tong-nen-v2.md`) nên khóa trả về cũng là chữ — cùng bốn nhãn
+    của `summary` bên `/lines`. Tháng theo cột `date` của dòng (ngày liên hệ, lùi về ngày nhận).
+    """
+    by_approve = {k: 0 for k in APPROVE_STATES}
+    by_kind = {"supplier": 0, "product": 0}
+    by_month: dict[str, dict] = {}
+    by_nspt: dict[str, dict] = {}
+    by_group: dict[str, dict] = {}
+    for r in rows:
+        ap = r.get("line_approve") or "Chờ duyệt"
+        by_approve[ap] = by_approve.get(ap, 0) + 1
+        by_kind[r.get("kind") or ""] = by_kind.get(r.get("kind") or "", 0) + 1
+        approved = ap == "Đã duyệt"
+        month = (r.get("date") or "")[:7]
+        if len(month) == 7:
+            m = by_month.setdefault(month, {"month": month, "supplier": 0, "product": 0})
+            if r.get("kind") in ("supplier", "product"):
+                m[r["kind"]] += 1
+        who = r.get("nspt") or "(Không rõ)"
+        n = by_nspt.setdefault(who, {"key": who, "lines": 0, "approved": 0})
+        n["lines"] += 1
+        n["approved"] += approved
+        grp = r.get("item_group") or "(Không rõ)"
+        g = by_group.setdefault(grp, {"key": grp, "lines": 0, "approved": 0})
+        g["lines"] += 1
+        g["approved"] += approved
+    return {
+        "total": len(rows),
+        "by_approve": [{"state": k, "lines": v} for k, v in by_approve.items()],
+        "by_kind": by_kind,
+        "by_month": [by_month[k] for k in sorted(by_month)],
+        "by_nspt": sorted(by_nspt.values(), key=lambda x: (-x["lines"], x["key"])),
+        "by_item_group": sorted(by_group.values(), key=lambda x: (-x["lines"], x["key"])),
+    }
+
+
+@report_router.get("/summary")
+def report_summary_(kind: str | None = Query(None), item_group: str | None = Query(None),
+                    supplier: str | None = Query(None), q: str | None = Query(None),
+                    nspt: str | None = Query(None), date_from: str | None = Query(None),
+                    date_to: str | None = Query(None), db: Session = Depends(get_db),
+                    user=Depends(require("survey", "read"))):
+    """Tổng hợp Báo cáo khảo sát cho màn biểu đồ — cùng phạm vi + bộ lọc với `/lines`."""
+    base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
+    rows = _filter_report_rows(service.report_rows(db, base), kind=kind, item_group=item_group,
+                               supplier=supplier, q=q, nspt=nspt,
+                               date_from=date_from, date_to=date_to)
+    return success(summarize_report_rows(rows))
 
 
 @report_router.get("/by-supplier")

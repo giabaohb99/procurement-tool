@@ -308,3 +308,87 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
         rows.append(ex.translate_codes(r))   # B-06: cột trạng thái lưu MÃ, file xuất hiện chữ
     columns = pick_columns(ex.columns_for(show_supplier), cols, ex.ALWAYS_COLS)
     return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)
+
+
+#  Tiến độ dòng coi là ĐÃ XONG — không còn việc phải hối thúc.
+_CLOSED_PROGRESS = ("completed", "cancelled")
+
+
+def summarize(rows, show_supplier: bool) -> dict:
+    """Gom các hàng (đơn × dòng × lần giao) của `_build_query` thành số liệu cho màn BIỂU ĐỒ
+    (phân hệ Báo cáo). Tách khỏi route để bài kiểm gọi thẳng được.
+
+    Luật đếm:
+    - Mỗi DÒNG hàng đếm một lần dù có nhiều lần giao (hàng của bảng là theo lần giao).
+    - Tình trạng nhận so TỔNG đã nhận của mọi lần giao với SL đặt — cùng luật ô `recv_state`;
+      dòng SL đặt = 0 không xếp vào nhóm nào.
+    - Lần giao TRỄ = trễ so với hẹn NCC HOẶC so với quy định, cùng luật `/api/reports/procurement`;
+      chỉ đếm lần giao đã nhận (`received_qty > 0`).
+    - Khối NCC rỗng khi người xem không có `supplier.read` — cùng chốt với cột NCC trên bảng.
+    """
+    items: dict[int, dict] = {}
+    delivery_total = delivery_late = 0
+    by_month: dict[str, dict] = {}
+    by_supplier: dict[str, dict] = {}
+    for po, it, dl in rows:
+        item = items.setdefault(it.id, {
+            "status": it.progress_status or "not_ordered", "qty": float(it.qty_order or 0),
+            "received": 0.0, "department": po.department or "(Không rõ)"})
+        if dl is None:
+            continue
+        item["received"] += float(dl.received_qty or 0)
+        if float(dl.received_qty or 0) <= 0:
+            continue
+        late = (dl.diff_promise or 0) < 0 or (dl.diff_regulated or 0) < 0
+        delivery_total += 1
+        delivery_late += late
+        month = (dl.received_date or "")[:7]
+        if len(month) == 7:
+            m = by_month.setdefault(month, {"month": month, "received": 0, "late": 0})
+            m["received"] += 1
+            m["late"] += late
+        if show_supplier:
+            key = po.supplier_name or po.supplier_code or "(Không rõ)"
+            s = by_supplier.setdefault(key, {"key": key, "received": 0, "late": 0})
+            s["received"] += 1
+            s["late"] += late
+
+    by_status: dict[str, int] = {}
+    recv = {"unreceived": 0, "under": 0, "full": 0}
+    by_dept: dict[str, dict] = {}
+    for item in items.values():
+        by_status[item["status"]] = by_status.get(item["status"], 0) + 1
+        if item["qty"] > 0:
+            if item["received"] <= 0:
+                recv["unreceived"] += 1
+            elif item["received"] < item["qty"]:
+                recv["under"] += 1
+            else:
+                recv["full"] += 1
+        d = by_dept.setdefault(item["department"], {"key": item["department"], "items": 0, "open": 0})
+        d["items"] += 1
+        d["open"] += item["status"] not in _CLOSED_PROGRESS
+
+    return {
+        "total": {"items": len(items), "deliveries": delivery_total, "late": delivery_late,
+                  **recv},
+        "by_progress_status": [{"code": k, "items": v} for k, v in by_status.items()],
+        "by_month": [by_month[k] for k in sorted(by_month)],
+        # NCC nhiều lần trễ nhất đứng đầu — đó là người cần hối thúc.
+        "by_supplier": sorted(by_supplier.values(), key=lambda x: (-x["late"], -x["received"], x["key"])),
+        "by_department": sorted(by_dept.values(), key=lambda x: (-x["open"], -x["items"], x["key"])),
+        "show_supplier": show_supplier,
+    }
+
+
+@router.get("/summary")
+def progress_summary(request: Request, year: str = "", db: Session = Depends(get_db),
+                     user=Depends(_require_progress)):
+    """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi với bảng, thêm `year`
+    (theo NGÀY ĐẶT hàng). Không phân trang."""
+    prof = get_perm_profile(db, user)
+    show_supplier = _show_supplier(db, user)
+    q = _build_query(request, db, user, prof, _po_scope(db, user), show_supplier)
+    if year.isdigit():
+        q = q.filter(PurchaseOrder.order_date.like(f"{year}%"))
+    return success(summarize(q.all(), show_supplier))

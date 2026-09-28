@@ -245,12 +245,23 @@ export interface SpendPoint {
 }
 
 /**
+ * Một dòng phân tích theo chiều (NCC / NSPT / bộ phận / nhóm hàng) của
+ * `/api/reports/procurement` — backend đã sắp giảm dần theo `order_value` và
+ * chỉ tính ĐƠN THẬT (đã duyệt trở đi).
+ */
+export interface ProcurementBreakdownRow {
+  /** Tên NCC / mã NSPT / tên bộ phận / nhóm hàng; `(Không rõ)` khi bỏ trống. */
+  key: string
+  order_value: number
+  received_value: number
+}
+
+/**
  * Số liệu tab Tổng quan.
  *
- * Endpoint `/api/reports/procurement` còn trả `by_supplier`, `by_nspt`,
- * `by_department`, `by_item_group`, `late_deliveries`, `inventory` — bản v1
- * KHÔNG hiện những phần đó (tab Tồn kho đã ẩn từ lâu) nên ở đây cũng không khai
- * báo. Cần dùng thì bổ sung, đừng đọc bằng `any`.
+ * Endpoint `/api/reports/procurement` còn trả `late_deliveries` — chưa màn nào
+ * dùng nên chưa khai báo. Cần dùng thì bổ sung, đừng đọc bằng `any`. Các khóa
+ * `by_*` · `shipping` · `inventory` do phân hệ Báo cáo đọc.
  */
 export interface ProcurementReport {
   /** Đếm ĐMH theo trạng thái — giữ CẢ nháp/hủy để thấy phân bố. */
@@ -265,6 +276,26 @@ export interface ProcurementReport {
   delivery: DeliverySummary
   /** Luôn trải cả năm, kể cả khi đang lọc phụ theo tháng. */
   spend_by_month: SpendPoint[]
+  /**
+   * ⚠️ Backend trả `by_supplier` / `by_nspt` KHÔNG qua chốt `_can_see_ncc` như
+   * các đường báo cáo khác — màn hình phải tự gác bằng `purchase_order.read`.
+   */
+  by_supplier: ProcurementBreakdownRow[]
+  by_nspt: ProcurementBreakdownRow[]
+  by_department: ProcurementBreakdownRow[]
+  by_item_group: ProcurementBreakdownRow[]
+  /** Chi phí vận chuyển (công nợ loại `shipping`) — NCC vận chuyển là dữ liệu NCC, gác `purchase_order.read`. */
+  shipping: {
+    total: number
+    /** Sắp giảm dần theo `amount`. */
+    by_carrier: { carrier: string; amount: number; count: number }[]
+    by_month: SpendPoint[]
+  }
+  /** Tồn kho hiện tại (KHÔNG theo năm) — gác `inventory.read`. */
+  inventory: {
+    total: number
+    by_warehouse: { warehouse: string; value: number }[]
+  }
 }
 
 export interface DailyRow {
