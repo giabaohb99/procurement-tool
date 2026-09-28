@@ -42,10 +42,16 @@ _FORMATS = {
     "price": "#,##0.####",     # đơn giá giữ 4 số lẻ (theo migration d4b9e7c1a305)
     "qty": "#,##0.###",        # số lượng giữ 3 số lẻ
     "int": "#,##0",
+    # bao-CR (P03 báo cáo Haravan): giá trị LƯU SẴN theo thang 0-100 (vd 42.5 = "42.5%"),
+    # định dạng CHỮ "%" gắn thẳng vào chuỗi định dạng nên KHÔNG nhân lại 100 như toán tử % thật.
+    "percent": '0.0"%"',
     "date": "dd/mm/yyyy",
     "datetime": "dd/mm/yyyy hh:mm",
 }
-_RIGHT = {"money", "price", "qty", "int"}
+_RIGHT = {"money", "price", "qty", "int", "percent"}
+
+#  M5 — ký tự mở đầu khiến Excel/LibreOffice/Google Sheets hiểu một Ô CHUỖI là công thức.
+_FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@", "\t", "\r")
 
 
 class Col(NamedTuple):
@@ -53,7 +59,7 @@ class Col(NamedTuple):
 
     key: str
     label: str
-    kind: str = "text"   # text | money | price | qty | int | date | datetime | bool
+    kind: str = "text"   # text | money | price | qty | int | percent | date | datetime | bool
     width: int = 16
     #  Cột THAM CHIẾU: giá trị (id) được đổi sang MÃ của bảng đích để import lại
     #  được. "company" | "department" | "employee" | "self" (cùng bảng, vd parent).
@@ -113,8 +119,14 @@ def _to_datetime(v: Any):
 
 def cell_value(col: Col, row: dict) -> Any:
     v = row.get(col.key)
-    if col.kind in ("money", "price", "qty", "int"):
-        if v in (None, ""):
+    if col.kind in ("money", "price", "qty", "int", "percent"):
+        if v is None:
+            #  Review khung báo cáo P03 (28/09/2026): CHỈ kind="percent" coi `None` là "chưa
+            #  có dữ liệu" (mẫu số 0 của một chỉ số dẫn xuất — xem `report_compute.compute_
+            #  derived`) nên để RỖNG thay vì 0 (0% từng đọc nhầm thành "-100% so với kỳ
+            #  trước"). Các kind số khác GIỮ NGUYÊN quy None/"" về 0 như mọi màn xuất khác.
+            return "" if col.kind == "percent" else 0
+        if v == "":
             return 0
         return float(v) if isinstance(v, Decimal) else v
     if col.kind == "date":
@@ -148,7 +160,15 @@ def xlsx_response(filename: str, columns: list[Col], rows: list[dict], sheet_tit
 
     for r, row in enumerate(rows, start=2):
         for i, col in enumerate(columns, start=1):
-            c = ws.cell(row=r, column=i, value=cell_value(col, row))
+            val = cell_value(col, row)
+            c = ws.cell(row=r, column=i, value=val)
+            if isinstance(val, str) and val[:1] in _FORMULA_TRIGGER_CHARS:
+                #  M5 (review khung báo cáo P03, 28/09/2026) — openpyxl tự suy `data_type='f'`
+                #  (công thức) cho CHUỖI bắt đầu bằng =/+/-/@ hay tab/CR; ép lại 's' để Excel/
+                #  LibreOffice hiện NGUYÊN VĂN thay vì chạy như công thức. Áp cho MỌI cột chữ
+                #  (không riêng báo cáo) vì tên NCC/phòng ban/nhóm hàng/ghi chú đều do người
+                #  dùng gõ tay — bề mặt CSV/Excel injection kinh điển.
+                c.data_type = "s"
             fmt = _FORMATS.get(col.kind)
             if fmt:
                 c.number_format = fmt
