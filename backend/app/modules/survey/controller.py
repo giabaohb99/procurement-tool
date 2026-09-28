@@ -9,12 +9,17 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
+from app.core.report_aggregate import build_report
+from app.core.report_export import report_xlsx
+from app.core.report_period import parse_period
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.notification.service import trigger_notification
 
 from . import service
 from .model import Survey, SurveyProductLine
+from .report_grouped_fetch import grouped_report_rows_in_range
+from .report_summary_service import build_spec as build_report_spec
 from .schema import LineApproveCombined, RejectIn, SurveyCreate, SurveyUpdate
 
 
@@ -339,6 +344,28 @@ def _filter_report_rows(rows, *, kind=None, item_group=None, supplier=None, code
     return [r for r in rows if keep(r)]
 
 
+def _ranged_report_fetch(db: Session, base, *, kind, item_group, supplier, q, nspt):
+    """`fetch(d_from, d_to)` của `build_report` cho `/survey-report/summary` (+ `/export`) —
+    dùng CHUNG cho cả hai route để khỏi lệch bộ lọc giữa xem trên màn và xuất Excel.
+
+    P06 (review hiệu năng 28/09/2026): có `q` -> lùi về đường CŨ (`service.report_rows_in_range`
+    + `_filter_report_rows`, nạp từng dòng) vì `q` tìm trên 10 cột trải cả header lẫn hai bảng
+    dòng — dựng lại portable y hệt bằng SQL GROUP BY là việc lớn cho một ô tìm phụ. KHÔNG có
+    `q` -> `report_grouped_fetch` (CỘNG sẵn ở SQL, khỏi nạp cả bảng dòng khảo sát vào Python —
+    bảng đó trên thật đã hơn 7000 dòng/năm, `build_report` gọi `fetch` 2 lần/lượt xem)."""
+
+    def fetch(d_from, d_to):
+        if q:
+            ranged = service.report_rows_in_range(db, base, d_from.isoformat(), d_to.isoformat())
+            return _filter_report_rows(ranged, kind=kind, item_group=item_group, supplier=supplier,
+                                       q=q, nspt=nspt)
+        return grouped_report_rows_in_range(db, base, d_from.isoformat(), d_to.isoformat(),
+                                            kind=kind, item_group=item_group, supplier=supplier,
+                                            nspt=nspt)
+
+    return fetch
+
+
 report_router = APIRouter(prefix="/api/survey-report", tags=["survey_report"])
 
 
@@ -416,14 +443,40 @@ def summarize_report_rows(rows) -> dict:
 def report_summary_(kind: str | None = Query(None), item_group: str | None = Query(None),
                     supplier: str | None = Query(None), q: str | None = Query(None),
                     nspt: str | None = Query(None), date_from: str | None = Query(None),
-                    date_to: str | None = Query(None), db: Session = Depends(get_db),
-                    user=Depends(require("survey", "read"))):
-    """Tổng hợp Báo cáo khảo sát cho màn biểu đồ — cùng phạm vi + bộ lọc với `/lines`."""
+                    date_to: str | None = Query(None), preset: str | None = Query(None),
+                    compare: str | None = Query(None), group_by: str | None = Query(None),
+                    db: Session = Depends(get_db), user=Depends(require("survey", "read"))):
+    """Tổng hợp Báo cáo khảo sát — cùng phạm vi + bộ lọc với `/lines`.
+
+    Có `preset` (P03) -> hợp đồng chuẩn `build_report` (kỳ + so sánh + Xem theo); không có ->
+    hành vi CŨ (`date_from`/`date_to` rời, không so sánh), bảng gốc `/lines` vẫn dùng."""
     base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
+    if preset:
+        period = parse_period({"preset": preset, "date_from": date_from, "date_to": date_to,
+                               "compare": compare})
+        fetch = _ranged_report_fetch(db, base, kind=kind, item_group=item_group,
+                                     supplier=supplier, q=q, nspt=nspt)
+        return success(build_report(fetch, build_report_spec(), period, group_by=group_by or None))
     rows = _filter_report_rows(service.report_rows(db, base), kind=kind, item_group=item_group,
                                supplier=supplier, q=q, nspt=nspt,
                                date_from=date_from, date_to=date_to)
     return success(summarize_report_rows(rows))
+
+
+@report_router.get("/summary/export")
+def report_summary_export_(kind: str | None = Query(None), item_group: str | None = Query(None),
+                           supplier: str | None = Query(None), q: str | None = Query(None),
+                           nspt: str | None = Query(None), date_from: str | None = Query(None),
+                           date_to: str | None = Query(None), preset: str | None = Query(None),
+                           compare: str | None = Query(None), group_by: str | None = Query(None),
+                           db: Session = Depends(get_db), user=Depends(require("survey", "export"))):
+    """Xuất Excel bản THEO KỲ của Báo cáo khảo sát (P03) — cùng bộ lọc với `/summary`."""
+    base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
+    period = parse_period({"preset": preset, "date_from": date_from, "date_to": date_to, "compare": compare})
+    fetch = _ranged_report_fetch(db, base, kind=kind, item_group=item_group, supplier=supplier,
+                                 q=q, nspt=nspt)
+    data = build_report(fetch, build_report_spec(), period, group_by=group_by or None)
+    return report_xlsx("bao-cao-khao-sat", data)
 
 
 @report_router.get("/by-supplier")

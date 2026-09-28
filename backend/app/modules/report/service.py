@@ -462,13 +462,20 @@ def _pr_lines_base_query(db, user, year, company_id):
     """Truy vấn gốc (dòng YCMH × phiếu) của báo cáo Chi tiết YC mua hàng: bỏ phiếu đã xóa,
     lọc năm / công ty và scope phòng ban. Dùng CHUNG cho bảng phân trang và bản tổng hợp —
     hai đường mà lệch scope là biểu đồ đếm cả dòng bảng không cho xem."""
+    from fastapi import HTTPException
+
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 
     q = (db.query(PurchaseRequestItem, PurchaseRequest)
          .join(PurchaseRequest, PurchaseRequestItem.pr_id == PurchaseRequest.id)
          .filter(PurchaseRequest.is_deleted == False))
     if company_id:
-        q = q.filter(PurchaseRequest.company_id == int(company_id))
+        #  L3 (review 28/09/2026) — chuỗi không phải số nguyên -> 422, không phải `ValueError`
+        #  trần của `int(...)` lộ ra 500.
+        cid = str(company_id).strip()
+        if not cid.isdigit():
+            raise HTTPException(422, "company_id phải là số nguyên")
+        q = q.filter(PurchaseRequest.company_id == int(cid))
     if year and year != "all":
         q = q.filter(PurchaseRequest.request_date.like(f"{year}%"))
     allow = report_dept_scope(db, user)   # phòng ban YÊU CẦU chỉ thấy phòng của mình

@@ -52,6 +52,7 @@ from app.modules.purchase_order.cost_type import router as po_cost_type_router
 from app.modules.purchase_progress.controller import router as purchase_progress_router
 from app.modules.survey_progress.controller import router as survey_progress_router
 from app.modules.report.controller import router as report_router
+from app.modules.report.summary_controller import router as report_summary_router
 from app.modules.contract.controller import router as contract_router
 from app.modules.meta.controller import router as meta_router
 from app.modules.alert.controller import router as alert_router
@@ -273,6 +274,7 @@ app.include_router(purchase_history_router)
 app.include_router(inventory_router)
 app.include_router(payable_router)
 app.include_router(payment_request_router)
+app.include_router(report_summary_router)  # TRƯỚC report_router — xem docstring đầu summary_controller.py
 app.include_router(report_router)
 app.include_router(contract_router)
 app.include_router(meta_router)

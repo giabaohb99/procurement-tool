@@ -26,11 +26,15 @@ from app.core.base_controller import pagination, read_multi_param
 from app.core.database import get_db
 from app.core.filter_operators import apply_operator_filters_map
 from app.core.ref_filter import apply_ref_filters
+from app.core.report_aggregate import build_report
+from app.core.report_export import report_xlsx
+from app.core.report_period import parse_period
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
 from . import export as ex
+from . import summary_service as prog_summary
 
 router = APIRouter(prefix="/api/purchase-progress", tags=["purchase_progress"])
 
@@ -384,11 +388,48 @@ def summarize(rows, show_supplier: bool) -> dict:
 @router.get("/summary")
 def progress_summary(request: Request, year: str = "", db: Session = Depends(get_db),
                      user=Depends(_require_progress)):
-    """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi với bảng, thêm `year`
-    (theo NGÀY ĐẶT hàng). Không phân trang."""
+    """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi với bảng.
+
+    Có `preset` (P03) -> hợp đồng chuẩn `build_report` (kỳ + so sánh + Xem theo); không có ->
+    hành vi CŨ theo `year` (theo NGÀY ĐẶT hàng), bảng gốc vẫn dùng nhánh này."""
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
+    qp = request.query_params
+    if qp.get("preset"):
+        group_by = qp.get("group_by") or None
+        if group_by == "supplier" and not show_supplier:
+            raise HTTPException(403, "Không có quyền xem báo cáo theo Nhà cung cấp")
+        period = parse_period(qp)
+
+        def fetch(d_from, d_to):
+            base = _build_query(request, db, user, prof, _po_scope(db, user), show_supplier)
+            return prog_summary.fetch_rows(base, d_from, d_to)
+
+        data = build_report(fetch, prog_summary.build_spec(show_supplier), period, group_by=group_by)
+        data["notes"] = data.get("notes", []) + [prog_summary.NOTE]
+        return success(data)
     q = _build_query(request, db, user, prof, _po_scope(db, user), show_supplier)
     if year.isdigit():
         q = q.filter(PurchaseOrder.order_date.like(f"{year}%"))
     return success(summarize(q.all(), show_supplier))
+
+
+@router.get("/summary/export")
+def progress_summary_export(request: Request, db: Session = Depends(get_db),
+                            user=Depends(_require_progress_export)):
+    """Xuất Excel bản THEO KỲ của màn Tiến độ mua hàng (P03) — cùng bộ lọc với `/summary`."""
+    prof = get_perm_profile(db, user)
+    show_supplier = _show_supplier(db, user)
+    qp = request.query_params
+    group_by = qp.get("group_by") or None
+    if group_by == "supplier" and not show_supplier:
+        raise HTTPException(403, "Không có quyền xem báo cáo theo Nhà cung cấp")
+    period = parse_period(qp)
+
+    def fetch(d_from, d_to):
+        base = _build_query(request, db, user, prof, _po_scope(db, user), show_supplier)
+        return prog_summary.fetch_rows(base, d_from, d_to)
+
+    data = build_report(fetch, prog_summary.build_spec(show_supplier), period, group_by=group_by)
+    data["notes"] = data.get("notes", []) + [prog_summary.NOTE]
+    return report_xlsx("tien-do-mua-hang", data)
