@@ -9283,3 +9283,72 @@ app/layouts/module-topbar.tsx · shared/constants/query-keys.ts ·
 backend/app/modules/{report/service.py, report/controller.py, purchase_progress/controller.py,
 survey_progress/controller.py, survey/controller.py} · test/backend/test_bao_cao_dong_ycmh_tong_hop.py ·
 test/backend/test_tong_hop_bieu_do_tien_do_khao_sat.py
+
+## duoc-CR-482 | Phân hệ Báo cáo làm lại theo kiểu Haravan: chọn kỳ, so sánh kỳ, bảng «Xem theo», xuất Excel
+- status: xong
+- date: 2026-09-28
+Dựng một khung báo cáo dùng chung cho mọi phân hệ, rồi chuyển năm báo cáo Thu mua và trang Tổng quan
+sang khung đó. Người xem chọn kỳ bằng một nút duy nhất: bấm vào ra danh sách mốc (Hôm nay, 7 ngày,
+Tháng này, Quý này, Năm nay, Năm trước, Tùy chọn…), lịch hai tháng và ô «So sánh với» (kỳ trước, cùng
+kỳ năm trước, không so sánh). Mặc định mở ra là Tháng này so với tháng trước. Kỳ theo lịch so với đúng
+khoảng ngày tương ứng của kỳ trước (1–28/9 so với 1–28/8), biểu đồ tự gom theo ngày, tuần hoặc tháng
+tùy độ dài kỳ, và kỳ so sánh được dời lên cùng trục với kỳ này.
+
+Mỗi trang báo cáo gồm thẻ số có phần trăm so kỳ trước và đường xu hướng nhỏ, biểu đồ kỳ này đặt cạnh
+kỳ so sánh, các khối Top xếp theo tiền (không theo số dòng), và bảng «Xem theo» ngay trên trang: mỗi
+chỉ số một cột, dòng Tổng nổi bật mang nhãn tăng giảm, các dòng nhóm rê chuột mới thấy số kỳ trước,
+chỉ số tỷ lệ so theo điểm phần trăm. Kỳ không phát sinh gì thì trang chỉ hiện một thông báo kèm nút
+«Xem cả năm nay». Nút Xuất Excel gác đúng quyền xuất của bảng gốc. Mỗi báo cáo mới về sau chỉ cần khai
+một cấu hình khoảng ba mươi dòng.
+
+Phía máy chủ, năm đường tổng hợp nhận thêm kỳ và so sánh nhưng vẫn dùng chung bộ lọc và phạm vi dữ
+liệu với bảng gốc; khi không gửi kỳ thì trả đúng dạng cũ nên bảng gốc bên Thu mua không đổi. Thêm
+đường tổng hợp mới cho Báo cáo mua hàng: chi phí mua tính theo ngày phát sinh công nợ và được chia về
+bộ phận, nhà cung cấp, nhóm hàng qua đơn mua hàng liên quan; tên nhà cung cấp và nhân sự phụ trách
+bị chặn ngay ở máy chủ khi thiếu quyền xem đơn mua hàng, và phạm vi phòng ban được áp giống bảng gốc.
+Tiến độ mua hàng tính các chỉ số giao theo ngày nhận. Công nợ còn lại của kỳ trong quá khứ là số gần
+đúng vì hệ thống không lưu lịch sử số dư, trang có ghi chú nói rõ.
+
+Vá kèm khi rà mã: tệp Excel xuất ra bị chèn công thức nếu tên bắt đầu bằng dấu bằng (vá ở chỗ xuất
+dùng chung nên mọi tệp Excel của hệ đều được che); ngày xử lý trung bình của Tiến độ báo giá bị nhân
+một trăm lần. Còn một lỗ cũ chưa vá trong đợt này: đường `/api/reports/procurement` cũ vẫn trả tên
+nhà cung cấp cho mọi người có quyền xem báo cáo.
+
+Việc còn chờ: đại ca chốt các câu hỏi trước khi làm tiếp báo cáo Nhân sự, Hành chính, Công việc
+(xem mục câu hỏi còn mở trong kế hoạch).
+
+Mã nguồn: backend/app/core/{report_period, report_aggregate, report_compute, report_export,
+export_xlsx}.py · backend/app/modules/report/{summary_controller, procurement_summary_service,
+procurement_summary_rows, procurement_grouped_rows, pr_lines_period_service}.py ·
+purchase_progress/summary_service.py · survey_progress/summary_service.py ·
+survey/{report_summary_service, report_grouped_fetch}.py · frontend-v2/src/modules/report/** ·
+shared/ui/{toggle, toggle-group, horizontal-bar-chart, date-range-picker}.tsx ·
+test/backend/test_bao_cao_{khung_ky_so_sanh, khung_gom_nhom_va_xuat, thu_mua_theo_ky}.py
+Kế hoạch: plans/260928-0841-bao-cao-kieu-haravan-da-phan-he/
+
+## duoc-CR-483 | Tăng tốc năm đường tổng hợp báo cáo và chịu được dữ liệu gấp năm mươi lần
+- status: xong
+- date: 2026-09-28
+Đo trên máy thì Báo cáo khảo sát chậm nhất: chọn Tháng này vẫn kéo toàn bộ hơn bảy nghìn dòng khảo
+sát từ trước tới nay rồi mới lọc, và mỗi dòng còn chép kèm nguyên phiếu. Báo cáo mua hàng thì nạp
+nguyên bản ghi đơn mua hàng ba bốn lần cho một lần xem. Đã đưa điều kiện lọc kỳ xuống câu truy vấn,
+chỉ lấy đúng các cột cần, gom kỳ này và kỳ so sánh vào một lượt đọc, và thêm bốn chỉ mục cho các cột
+ngày dùng để lọc kỳ.
+
+Sau đó thử tải bằng một cơ sở dữ liệu tạm dựng riêng, nhân dữ liệu lên mười lần và năm mươi lần trong
+cùng khoảng ngày (xóa sạch sau khi đo, cơ sở dữ liệu thật chỉ bị đọc). Ở năm mươi lần, Báo cáo khảo
+sát kỳ Năm nay mất mười tám giây, còn kỳ ba năm làm tràn bộ nhớ hai gigabyte và bị hệ điều hành giết
+tiến trình. Đã chuyển phần cộng dồn của Báo cáo khảo sát sang để cơ sở dữ liệu cộng sẵn theo ngày và
+theo nhóm, nên số dòng trả về không còn tăng theo dữ liệu: kỳ Năm nay còn khoảng nửa giây, kỳ ba năm
+khoảng bốn phần mười giây và không còn tràn bộ nhớ. Báo cáo mua hàng ở mức năm mươi lần từ một phẩy
+hai giây xuống khoảng bảy phần mười giây. Kết quả trả về được so từng số với bản chụp trước khi sửa
+trên ba trăm chín mươi sáu tổ hợp tham số và ba tài khoản, giống hệt.
+
+Giới hạn còn lại: Báo cáo khảo sát khi có gõ ô tìm kiếm vẫn cộng theo từng dòng; giá trị đặt hàng và
+số đơn của Báo cáo mua hàng vẫn cộng ở máy chủ ứng dụng để giữ số tiền khớp tuyệt đối.
+
+Mã nguồn: backend/app/modules/survey/{service, report_grouped_fetch, report_summary_service}.py ·
+backend/app/modules/report/{procurement_summary_rows, procurement_grouped_rows}.py ·
+purchase_progress/summary_service.py · test/backend/test_bao_cao_{khao_sat_gom_o_sql, mua_hang_gom_o_sql}.py
+Migration: 5f39bbc564db (bốn chỉ mục: request_date của yêu cầu mua hàng và yêu cầu báo giá, contact_date
+của hai bảng dòng khảo sát). Deploy phải chạy `alembic upgrade head`.
