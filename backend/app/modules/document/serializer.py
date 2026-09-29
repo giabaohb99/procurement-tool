@@ -47,7 +47,7 @@ def serialize_many(db: Session, docs: list[Document], user=None) -> list[dict]:
     if not docs:
         return []
 
-    types = _lookup(db, DocType, {d.doc_type_id for d in docs}, "name", "code")
+    types = _lookup(db, DocType, {d.doc_type_id for d in docs}, "name", "code", "needs_approval")
     books = _lookup(db, DocumentBook, {d.book_id for d in docs}, "name", "number_prefix")
     companies = _lookup(db, Company, {d.company_id for d in docs}, "name")
     departments = _lookup(db, Department, {d.department_id for d in docs}, "name")
@@ -112,6 +112,10 @@ def serialize_many(db: Session, docs: list[Document], user=None) -> list[dict]:
             **base_fields(doc),
             "doc_type_name": name(types, doc.doc_type_id),
             "doc_type_code": name(types, doc.doc_type_id, 1),
+            #  Loại «không cần duyệt» thì màn chi tiết bày nút *Ban hành* thay
+            #  *Gửi duyệt* (29/09/2026). Không tra được loại → coi là CẦN duyệt:
+            #  thiếu dữ liệu không được là đường tắt bỏ qua người duyệt.
+            "doc_type_needs_approval": bool(types.get(doc.doc_type_id, (None, None, True))[2]),
             "company_name": name(companies, doc.company_id),
             "department_name": name(departments, doc.department_id),
             "owner_name": name(employees, doc.owner_employee_id),
@@ -145,7 +149,12 @@ def serialize_many(db: Session, docs: list[Document], user=None) -> list[dict]:
 
 
 def serialize(db: Session, doc: Document, user=None) -> dict:
-    return serialize_many(db, [doc], user=user)[0]
+    out = serialize_many(db, [doc], user=user)[0]
+    #  Chỉ tính ở bản ghi ĐƠN (màn chi tiết) — `is_pending_issue` hỏi thêm bảng
+    #  phiên duyệt, tính cho cả danh sách là thêm truy vấn theo từng dòng.
+    from .service import is_pending_issue
+    out["is_pending_issue"] = is_pending_issue(db, doc)
+    return out
 
 
 def base_fields(doc: Document) -> dict:

@@ -49,6 +49,7 @@ function session(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
     status_label: 'Đang chạy',
     current_seq: 1,
     started_by_name: 'Dego Admin',
+    started_by_employee_id: 0,
     started_at: '2026-08-21T10:07:00',
     finished_at: null,
     finish_reason: '',

@@ -133,9 +133,12 @@ export const DOCUMENT_TYPE_FLAGS: {
   },
 ]
 
-/** Mọi cờ đều TẮT — dùng cho form thêm mới. */
+/**
+ * Cờ mặc định của form thêm mới. «Cần duyệt» BẬT (29/09/2026): ô này nay thật sự
+ * bỏ chặng duyệt, quên tích phải là «cần duyệt» — khớp mặc định backend.
+ */
 export const EMPTY_DOCUMENT_TYPE_FLAGS = {
-  needs_approval: false,
+  needs_approval: true,
   needs_signature: false,
   needs_decision: false,
   is_confidential_type: false,

@@ -125,8 +125,8 @@ export function FolderShareDialog({ folderId, open, onOpenChange, onNavigateToFo
                       updateFolder.mutate({ id: folderId, payload: { default_access: Number(value) } })
                     }
                   >
-                    <SelectTrigger className="flex-1" aria-label="Quyền chung — mọi người trong pháp nhân">
-                      <SelectValue placeholder="Chưa đặt — kế thừa từ thư mục cha" />
+                    <SelectTrigger className="flex-1" aria-label="Quyền chung — mọi người trong công ty">
+                      <SelectValue placeholder="Chưa đặt — theo thư mục cha" />
                     </SelectTrigger>
                     <SelectContent>
                       {[0, 1, 2].map((value) => (
@@ -138,7 +138,10 @@ export function FolderShareDialog({ folderId, open, onOpenChange, onNavigateToFo
                   </Select>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Áp cho người thấy nhánh pháp nhân này mà chưa có dòng quyền riêng nào ở dưới.
+                  {/*  Viết lại bằng lời thường 29/09/2026 — câu cũ («nhánh pháp nhân», «dòng
+                       quyền riêng») là thuật ngữ nội bộ, người dùng đọc không ra. */}
+                  Mức quyền cho mọi người trong công ty này. Ai được chia sẻ riêng ở danh sách
+                  dưới thì theo mức riêng đó.
                 </p>
               </div>
             )}

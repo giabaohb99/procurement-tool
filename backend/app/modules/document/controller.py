@@ -38,7 +38,7 @@ from .model import ORIGIN_INTERNAL, Document
 from .version_model import DocumentVersion
 from .query import (hide_private_copies_with_visible_source, count_private_copies,
                     documents_query)
-from .model import APPLY_MODE_LABELS, STATUS_PENDING_ISSUE
+from .model import APPLY_MODE_LABELS
 from .schema import (AccessGrant, AccessRevokeIn, ApproveIn, DocumentCreate, DocumentUpdate,
                      ReviewedIn,
                      ManualIssueNumberUpdate, RejectIn, VersionContentUpdate,
@@ -512,7 +512,14 @@ def approve_document(
     #  ĐÃ KÝ ĐỦ, CHỜ BAN HÀNH — nhịp này là của NGƯỜI SOẠN THẢO, không phải của
     #  người có quyền duyệt. Kiểm trước `chan_duong_cu` để câu báo nói đúng
     #  chuyện đang xảy ra thay vì câu chung về luồng nhiều bước.
-    if doc.status == STATUS_PENDING_ISSUE:
+    #  Khóa hàng văn bản TRƯỚC khi ban hành: hai cú bấm cùng lúc mà cùng qua
+    #  được các chốt kiểm là cấp hai số hiệu, gửi thông báo hai lần, sinh bản
+    #  riêng trùng (code-review 29/09/2026, I5). Cú thứ hai chờ khóa rồi thấy bản
+    #  đã ban hành và nhận 400.
+    db.refresh(doc, with_for_update=True)
+    #  «Chờ ban hành» (cả bản 2+) là nhịp của NGƯỜI SOẠN — người có quyền Duyệt
+    #  không bấm thay được.
+    if service.is_pending_issue(db, doc):
         service.ensure_can_issue(db, doc, user)
     else:
         approval_bridge.block_legacy_path(db, doc)
@@ -521,7 +528,60 @@ def approve_document(
     doc = service.approve(db, doc, user.id,
                           data.apply_mode if data else None,
                           mailbox_id=mailbox.id if mailbox else None)
+    return _finish_issue(db, doc, data, user, mailbox, "Đã duyệt và ban hành")
 
+
+@router.post("/{document_id}/issue")
+def issue_document(
+    document_id: int,
+    data: ApproveIn | None = None,
+    db: Session = Depends(get_db),
+    user=Depends(require("document", "write")),
+):
+    """NÚT «BAN HÀNH» CỦA NGƯỜI SOẠN — gác bằng quyền SỬA, không phải quyền Duyệt.
+
+    Hai ca (29/09/2026):
+    - **Chờ ban hành** — ký đủ rồi, chờ người soạn thảo / người chịu trách nhiệm
+      phát hành. Trước đây nút này gọi `/approve`, mà đường đó đòi quyền Duyệt:
+      vai trò «Văn bản — soạn & sửa» (không có Duyệt) bấm vào chỉ nhận 403.
+    - **Loại «không cần duyệt»** — ban hành thẳng từ bản nháp
+      (`service.issue_without_approval`). Người bấm: người soạn / người chịu
+      trách nhiệm, hoặc người có quyền Duyệt văn bản.
+    """
+    doc = _load(db, document_id, user, "write")
+    mailbox = _selected_mailbox(db, data, user)
+    apply_mode = data.apply_mode if data else None
+    mailbox_id = mailbox.id if mailbox else None
+    #  Khóa hàng trước khi ban hành — cùng lý do với `/approve` (I5).
+    db.refresh(doc, with_for_update=True)
+    if service.is_pending_issue(db, doc):
+        service.ensure_can_issue(db, doc, user)
+        doc = service.approve(db, doc, user.id, apply_mode, mailbox_id=mailbox_id)
+    else:
+        if not (service.can_issue(db, doc, user) or _can_approve_doc(db, doc, user)):
+            raise HTTPException(403, "Chỉ người soạn thảo, người chịu trách nhiệm hoặc người có "
+                                     "quyền duyệt văn bản này mới ban hành được")
+        doc = service.issue_without_approval(db, doc, user.id, apply_mode, mailbox_id=mailbox_id)
+    return _finish_issue(db, doc, data, user, mailbox, "Đã ban hành")
+
+
+def _can_approve_doc(db: Session, doc, user) -> bool:
+    """Có quyền Duyệt TRÊN ĐÚNG VĂN BẢN NÀY — tính cả phạm vi của quyền đó.
+
+    Không dùng `user_has_permission` (chỉ hỏi vai trò có cột Duyệt hay không):
+    người được Duyệt ở Cty A nhưng Sửa được văn bản Cty B sẽ ban hành thay được
+    văn bản của Cty B (code-review 29/09/2026, I3).
+    """
+    #  `access_service.can` không có cột «approve» — hỏi thẳng PHẠM VI của quyền
+    #  Duyệt: văn bản này có nằm trong phạm vi Duyệt của người đó không.
+    from app.core.scoping import apply_scope
+    query = db.query(Document.id).filter(Document.id == doc.id)
+    return apply_scope(query, Document, "document", user,
+                       get_perm_profile(db, user), "approve").first() is not None
+
+
+def _finish_issue(db: Session, doc, data, user, mailbox, message: str):
+    """Phần chung sau khi ban hành xong — dùng cho cả `/approve` lẫn `/issue`."""
     #  CR-200 (F12) — người ban hành tích «Đăng thông báo lên diễn đàn» thì clone
     #  thành một bài diễn đàn đã ghim. Chạy SAU khi ban hành xong và nuốt lỗi
     #  cùng luật với kênh chuông/email: diễn đàn hỏng không được biến một văn bản
@@ -546,7 +606,7 @@ def approve_document(
            f" · {APPLY_MODE_LABELS.get(doc.apply_mode, '')}"
            + (f" · gửi thông báo danh nghĩa {mailbox.email}" if mailbox else "")
            + (" · đăng thông báo lên diễn đàn" if forum_posted else ""))
-    return success(serializer.serialize(db, doc, user=user), "Đã duyệt và ban hành")
+    return success(serializer.serialize(db, doc, user=user), message)
 
 
 def _selected_mailbox(db: Session, data, user):

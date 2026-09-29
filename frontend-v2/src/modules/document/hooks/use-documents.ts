@@ -302,6 +302,16 @@ export function useDocumentWorkflow(documentId: number) {
     },
   })
 
+  //  Nút *Ban hành* của người soạn — `/issue` thay vì `/approve` (không đòi quyền Duyệt).
+  const issue = useMutation({
+    mutationFn: (input?: { applyMode?: number; mailboxId?: number; forumAnnounce?: boolean }) =>
+      documentApi.issue(documentId, input?.applyMode, input?.mailboxId, input?.forumAnnounce),
+    onSuccess: (doc) => {
+      toast.success(doc.display_code ? `Đã ban hành ${doc.display_code}` : 'Đã ban hành')
+      refresh()
+    },
+  })
+
   const reject = useMutation({
     mutationFn: (reason: string) => documentApi.reject(documentId, reason),
     onSuccess: () => {
@@ -332,5 +342,5 @@ export function useDocumentWorkflow(documentId: number) {
     },
   })
 
-  return { submit, approve, reject, revoke, confirmReviewed }
+  return { submit, approve, issue, reject, revoke, confirmReviewed }
 }

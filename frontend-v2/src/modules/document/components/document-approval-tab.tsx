@@ -1,4 +1,4 @@
-import { Check, CircleDashed, CircleDot, MinusCircle, ShieldCheck, X } from 'lucide-react'
+import { Check, CircleDashed, CircleDot, MinusCircle, ShieldCheck, Undo2, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { ApprovalActionDialog } from '@/modules/approval/components/approval-action-dialog'
@@ -16,7 +16,10 @@ import {
 } from '@/shared/ui/card'
 import { HelpHint } from '@/shared/ui/help-hint'
 import { cn } from '@/shared/utils/cn'
+import { useAuthStore } from '@/core/auth/auth-store'
+import { canWithdrawApproval } from '../helpers/can-withdraw-approval'
 import { useMyDocumentTask } from '../hooks/use-my-document-approvals'
+import { DocumentWithdrawDialog } from './document-withdraw-dialog'
 
 interface DocumentApprovalTabProps {
   instance: ApprovalInstance | null | undefined
@@ -182,6 +185,8 @@ const SHAPE = {
 export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTabProps) {
   const myTasks = useMyDocumentTask(documentId)
   const [dangXuLy, setDangXuLy] = useState(false)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const employeeId = useAuthStore((s) => s.user?.employee_id)
 
   if (!instance) {
     return (
@@ -229,6 +234,13 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
               <Button type="button" size="sm" onClick={() => setDangXuLy(true)}>
                 <ShieldCheck className="size-4" />
                 Duyệt / Trả lại
+              </Button>
+            )}
+            {/*  Người trình tự rút về khi chưa ai duyệt — cùng luật backend. */}
+            {canWithdrawApproval(instance, employeeId) && (
+              <Button type="button" size="sm" variant="outline" onClick={() => setWithdrawOpen(true)}>
+                <Undo2 className="size-4" />
+                Rút về để sửa
               </Button>
             )}
           </div>
@@ -304,6 +316,9 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
 
       {dangXuLy && myTasks && (
         <ApprovalActionDialog task={myTasks} open onOpenChange={setDangXuLy} />
+      )}
+      {withdrawOpen && (
+        <DocumentWithdrawDialog instanceId={instance.id} open onOpenChange={setWithdrawOpen} />
       )}
     </div>
   )

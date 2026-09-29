@@ -137,6 +137,10 @@ def instance_out(db: Session, instance: ApprovalInstance, with_details: bool = F
         "status_label": INSTANCE_STATUS_LABELS.get(instance.status, ""),
         "current_seq": instance.current_seq,
         "started_by_name": _name_of(db, instance.started_by_employee_id),
+        #  Mã nhân sự người trình — giao diện so với người đang đăng nhập để chỉ
+        #  bày nút «Rút phiếu» cho đúng người trình. Backend vẫn tự kiểm lại
+        #  (`action_service.withdraw`), đây chỉ để khỏi bày nút cho người khác.
+        "started_by_employee_id": instance.started_by_employee_id or 0,
         "started_at": instance.started_at,
         "finished_at": instance.finished_at,
         "finish_reason": instance.finish_reason,
