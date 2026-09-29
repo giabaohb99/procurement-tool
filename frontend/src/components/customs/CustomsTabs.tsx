@@ -1,14 +1,13 @@
 // bao-CR-470 — ba thẻ phụ của màn Tra cứu giá hải quan: Nhà nhập khẩu (T-05), So sánh (B-05),
-// Pháp lý & thuế (P-03 · P-04). Cả ba chỉ chạy khi đã có từ khóa hoặc mã HS, trừ ô tra cứu
-// hóa chất của thẻ Pháp lý (tra độc lập theo tên / CAS / công thức).
+// Thuế (P-04, tra biểu thuế theo mã HS). Cả ba chỉ chạy khi đã có từ khóa hoặc mã HS, trừ ô Thuế
+// (tra độc lập theo mã HS gõ tay hoặc lấy sẵn từ thanh lọc trang).
+// duoc-CR-490 (29/09/2026) — thẻ «Pháp lý» (P-03, duyệt cả danh mục hóa chất theo văn bản) tách
+// sang `CustomsRegulationBrowse.tsx`; thẻ cũ «Pháp lý & thuế» nay chỉ còn phần Thuế.
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
 import {
   CustomsFilters, fmtDate, fmtQty, fmtTick, fmtUsd, niceScale, PERIODS, toParams, unitChip, unitLabel, useWidth,
 } from './customs-shared'
-import {
-  formatBannedLabel, formatThresholdKg, regulationBadgeClass, sortRegulationsBySeverity,
-} from '../../utils/customs-regulation'
 
 const UnitChips = ({ units, unit, onPick }: { units: any[]; unit: string; onPick: (u: string) => void }) => (
   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10, fontSize: 13 }}>
@@ -264,23 +263,13 @@ function CompareSvg({ data, periods, labelOf }: { data: any; periods: string[]; 
   )
 }
 
-// ── Pháp lý & thuế ────────────────────────────────────────────────────────
-export function CustomsLegal({ filters, alerts }: { filters: CustomsFilters; alerts: any[] }) {
-  const [term, setTerm] = useState(filters.q)
-  const [reg, setReg] = useState<any>(null)
-  const [regErr, setRegErr] = useState('')
+// ── Thuế (tách khỏi «Pháp lý & thuế» cũ, 29/09/2026 — phần hóa chất theo văn bản dời sang thẻ
+// «Pháp lý» `CustomsRegulationBrowse.tsx`) ──────────────────────────────────────────────────
+export function CustomsTariff({ filters }: { filters: CustomsFilters }) {
   const [hs, setHs] = useState(filters.hs_code)
   const [tariff, setTariff] = useState<any[] | null>(null)
   const [tariffErr, setTariffErr] = useState('')
 
-  async function lookupReg(t = term) {
-    if (t.trim().length < 2) { setRegErr('Nhập ít nhất 2 ký tự: tên hóa chất, số CAS hoặc công thức'); return }
-    setRegErr('')
-    try {
-      const r = await api.get('/api/customs/regulations/lookup', { params: { q: t.trim() }, _silent: true } as any)
-      setReg(r.data.data)
-    } catch (e: any) { setRegErr(e?.response?.data?.error?.message || 'Không tra được') }
-  }
   async function lookupTariff(code = hs) {
     if (code.replace(/\D/g, '').length < 4) { setTariffErr('Mã HS phải có ít nhất 4 chữ số'); return }
     setTariffErr('')
@@ -290,40 +279,15 @@ export function CustomsLegal({ filters, alerts }: { filters: CustomsFilters; ale
     } catch (e: any) { setTariffErr(e?.response?.data?.error?.message || 'Không tra được') }
   }
   useEffect(() => {
-    setTerm(filters.q); setHs(filters.hs_code)
-    if (filters.q.trim().length >= 2) lookupReg(filters.q)
+    setHs(filters.hs_code)
     if (filters.hs_code.replace(/\D/g, '').length >= 4) lookupTariff(filters.hs_code)
-  }, [filters.q, filters.hs_code]) // chạy lại khi đổi từ khóa / mã HS ở thanh lọc
+  }, [filters.hs_code]) // chạy lại khi đổi mã HS ở thanh lọc
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-        Tra cứu tham khảo từ văn bản đã nạp (NĐ 24/2026/NĐ-CP · TT 75/2025/TT-BNNMT · TT 01/2026/TT-BCT · biểu thuế 2026).
-        Không thay cho ý kiến pháp chế — đối chiếu văn bản gốc trước khi quyết định.
+        Tra cứu tham khảo từ biểu thuế xuất nhập khẩu 2026 đã nạp — đối chiếu văn bản gốc trước khi quyết định.
       </div>
-      {alerts.length > 0 && (
-        <div className="card" style={{ padding: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Cảnh báo cho từ khóa «{filters.q}»</div>
-          <RegTable items={alerts} />
-        </div>
-      )}
-
-      <div className="card" style={{ padding: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Tra hóa chất trong danh mục pháp lý</div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <input value={term} onChange={(e) => setTerm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && lookupReg()}
-            placeholder="Tên, số CAS hoặc công thức (vd H2SO4, 7664-93-9, Ammonia)" style={{ flex: 1 }} />
-          <button className="btn" onClick={() => lookupReg()}><i className="ti ti-search" />Tra</button>
-        </div>
-        {regErr && <div style={{ color: '#b91c1c', fontSize: 13 }}>{regErr}</div>}
-        {reg && (
-          <>
-            {reg.formula_cas && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Công thức {reg.term} → CAS {reg.formula_cas}</div>}
-            {reg.items.length ? <RegTable items={reg.items} /> : <div style={{ fontSize: 13, color: 'var(--muted)' }}>Không có trong danh mục nào đã nạp.</div>}
-          </>
-        )}
-      </div>
-
       <div className="card" style={{ padding: 12 }}>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>Biểu thuế nhập khẩu theo mã HS</div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -335,36 +299,6 @@ export function CustomsLegal({ filters, alerts }: { filters: CustomsFilters; ale
         {tariff && (tariff.length ? <TariffTable rows={tariff} /> : <div style={{ fontSize: 13, color: 'var(--muted)' }}>Không có mã này trong biểu thuế đã nạp.</div>)}
       </div>
     </div>
-  )
-}
-
-// bao-CR-477 (bản cũ) — con số ngưỡng / mức cấm đứng thành CỘT RIÊNG chữ to đậm, nhãn tô theo
-// mức nghiêm trọng, dòng nặng nhất lên đầu. Cùng luật với bản ERP (`utils/customs-regulation.ts`).
-function RegTable({ items }: { items: any[] }) {
-  const rows = sortRegulationsBySeverity(items)
-  return (
-    <div className="table-scroll"><table>
-      <thead><tr><th>Danh mục</th><th>Tên</th><th>Số CAS</th><th>Ngưỡng / Mức cấm</th><th>Lưu ý</th></tr></thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.id}>
-            <td style={{ whiteSpace: 'nowrap' }}>
-              <span className={`badge ${regulationBadgeClass(r.list_code)}`}>{r.list_label}</span>
-            </td>
-            <td>{r.name}{r.name_vi && r.name_vi !== r.name ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>{r.name_vi}</div> : null}</td>
-            <td>{r.cas_no || '—'}</td>
-            <td style={{ whiteSpace: 'nowrap' }}>
-              {r.list_code === 10
-                ? <span className="badge err" style={{ fontWeight: 700 }}>{formatBannedLabel(r.banned_year)}</span>
-                : formatThresholdKg(r.threshold_kg)
-                  ? <span style={{ fontSize: 15, fontWeight: 700, color: '#c2410c', fontVariantNumeric: 'tabular-nums' }}>{formatThresholdKg(r.threshold_kg)}</span>
-                  : null}
-            </td>
-            <td style={{ fontSize: 13 }}>{r.obligation}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table></div>
   )
 }
 

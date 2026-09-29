@@ -9,6 +9,12 @@ import TicketCreateModal from "../components/TicketCreateModal";
 import { TICKET_ENABLED } from "../config/features";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
 import { initialsOf } from "../utils/name";
+import {
+  CUSTOMS_BASE_PATH,
+  CUSTOMS_SECTIONS,
+  canSeeCustomsSection,
+  customsSectionPath,
+} from "../config/customs-sections";
 
 // Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
 // Khu người dùng bên đó CÔNG KHAI, không cần đăng nhập.
@@ -40,6 +46,15 @@ type NavItem = {
   action?: string;        // hiện khi có ĐÚNG action này trên entity (dùng cho menu riêng của 1 nhóm)
   anyEntity?: string[];   // hiện nếu có read trên BẤT KỲ entity nào (OR)
   external?: boolean;     // link ra ngoài app (mở tab mới) thay vì route nội bộ
+  children?: NavChild[];  // menu con — sổ ra khi đang ở trong mục cha (duoc-CR-491)
+};
+type NavChild = {
+  to: string;
+  label: string;
+  icon: string;
+  /** Mục con mặc định: sáng lên cả khi URL chỉ là đường của mục cha (`/customs-prices`). */
+  isDefault?: boolean;
+  visible?: (can: (entity: string, action: string) => boolean) => boolean;
 };
 // Mọi nhóm CÓ tiêu đề đều thu/mở được (đồng bộ trên toàn menu trái).
 // `key` là khóa lưu trạng thái thu/mở trong localStorage — đặt cố định, KHÔNG suy ra từ
@@ -116,10 +131,18 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         // bao-CR-470 — giá nhập khẩu thị trường từ tờ khai hải quan (GTT02)
-        to: "/customs-prices",
+        to: CUSTOMS_BASE_PATH,
         label: "Tra cứu thị trường",
         icon: "ti-world-search",
         entity: "customs_price",
+        // duoc-CR-491 (bê duoc-CR-486 bản v2): hàng thẻ trên màn đổi thành menu con bên trái.
+        children: CUSTOMS_SECTIONS.map((sec, i) => ({
+          to: customsSectionPath(sec.key),
+          label: sec.label,
+          icon: sec.icon,
+          isDefault: i === 0,
+          visible: (can) => canSeeCustomsSection(sec.key, can),
+        })),
       },
     ],
   },
@@ -286,6 +309,49 @@ const NAV_W_DEFAULT = 222;
 
 const isActive = (path: string, to: string) =>
   to === "/" ? path === "/" : path.startsWith(to);
+
+/**
+ * Mục menu có menu con (duoc-CR-491). Đang ở trong mục cha thì sổ các mục con ra và mục con đang
+ * xem sáng lên (mục cha thôi sáng để không có hai dòng cùng sáng); ở ngoài thì chỉ còn dòng cha,
+ * bấm vào là mở mục con đầu tiên. Mục con nào người dùng không được xem thì không vẽ.
+ */
+function NavParent({ item, pathname, can, onPick }: {
+  item: NavItem;
+  pathname: string;
+  can: (entity: string, action: string) => boolean;
+  onPick: () => void;
+}) {
+  const inside = isActive(pathname, item.to);
+  const children = (item.children ?? []).filter((c) => !c.visible || c.visible(can));
+  return (
+    <>
+      <Link
+        to={children[0]?.to ?? item.to}
+        onClick={onPick}
+        className="nav-item"
+        aria-expanded={inside}
+      >
+        <i className={"ti " + item.icon} />
+        <span style={{ flex: 1 }}>{item.label}</span>
+        <i className={"ti " + (inside ? "ti-chevron-down" : "ti-chevron-right")} style={{ fontSize: 13 }} />
+      </Link>
+      {inside && (
+        <div className="nav-sub">
+          {children.map((c) => {
+            const active = pathname === c.to || pathname.startsWith(c.to + "/")
+              || (!!c.isDefault && pathname.replace(/\/$/, "") === item.to);
+            return (
+              <Link key={c.to} to={c.to} onClick={onPick} className={"nav-item" + (active ? " active" : "")}>
+                <i className={"ti " + c.icon} />
+                {c.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function AppLayout() {
   const { user, login, logout, updateUser, can } = useAuth();
@@ -475,6 +541,14 @@ export default function AppLayout() {
                       <i className={"ti " + n.icon} />
                       {n.label}
                     </a>
+                  ) : n.children ? (
+                    <NavParent
+                      key={n.to}
+                      item={n}
+                      pathname={loc.pathname}
+                      can={can}
+                      onPick={() => setOpen(false)}
+                    />
                   ) : (
                     <Link
                       key={n.to}
