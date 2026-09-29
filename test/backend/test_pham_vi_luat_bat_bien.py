@@ -110,6 +110,8 @@ BB3_PUBLIC_CO_LY_DO = {
                      "không thuộc pháp nhân/phòng ban nào — giấu thì tắt bằng QUYỀN customs_price.read",
     "customs_regulation": "danh mục hóa chất theo văn bản pháp lý (NĐ 24/2026, TT 75/2025, TT 01/2026), "
                           "dữ liệu pháp lý chung — sửa gác bằng customs_regulation.write",
+    "customs_pesticide": "danh mục thuốc BVTV đăng ký tại VN (bản cào Cục BVTV, duoc-CR-490), dữ liệu "
+                         "tham khảo bên ngoài không thuộc pháp nhân nào — khóa chỉ gác SỬA danh mục",
     "category_assignee": "bảng phân công NSTM theo phân loại, không thuộc pháp nhân nào",
     "agent_task": "sổ việc + chi phí model của bot Agent Hub (ai-CR-036): việc của QUẢN TRỊ HỆ THỐNG, "
                   "không thuộc pháp nhân/phòng ban nào — khóa nằm trong _SYS_ENTITIES của seed, "
@@ -211,6 +213,9 @@ BB4_CONTROLLER_MIEN_TRU = {
                                "không phải phạm vi",
     "customs/controller.py": "customs_price là entity PUBLIC (dữ liệu thị trường bên ngoài, "
                              "bao-CR-470) — cổng là require('customs_price', …) từng route",
+    "customs/pesticide_controller.py": "duoc-CR-487/490: danh mục thuốc BVTV — đọc gác customs_price.read "
+                                       "(PUBLIC), sửa/nạp gác customs_pesticide (PUBLIC); không có dữ "
+                                       "liệu thuộc người hay phòng ban nào để lọc",
     "customs/kind_controller.py": "bao-CR-494/495: hai danh mục cấu hình của chính màn tra cứu "
                                   "(từ khóa nhãn, từ đồng nghĩa) đi qua make_crud_router + retag/explain "
                                   "— cùng entity PUBLIC customs_price, cổng là require từng route",

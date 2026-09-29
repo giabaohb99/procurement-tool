@@ -29,7 +29,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, user_has_permission
-from app.core.file_registry import policy
+from app.core.file_registry import policy, read_parent
 from app.core.scoping import apply_scope
 
 #  Nhật ký từ chối. `06` H4(b) dặn: thu nhật ký đủ rồi mới chặn, không thì có
@@ -142,6 +142,12 @@ def parent_records(db: Session, entity: str, entity_id: int):
     if entity == "supplier":
         from app.modules.supplier.model import Supplier
         return Supplier, [entity_id]
+    if entity == "customs_pesticide":
+        #  duoc-CR-494 — tra CÓ kiểm tồn tại: thuốc bị xóa / rơi khỏi nguồn thì 404, không để gắn
+        #  tệp vào một id không còn ai (id đó cũng không bao giờ bị cấp lại cho thuốc khác).
+        from app.modules.customs.model import CustomsPesticide
+        return CustomsPesticide, [i for (i,) in db.query(CustomsPesticide.id)
+                                  .filter(CustomsPesticide.id == entity_id)]
     return None, []
 
 
@@ -249,8 +255,12 @@ def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = 
 
     profile = get_perm_profile(db, user)
     actions = ("read",) if mode == "read" else ("write", "create")
+    #  Đọc thì soi phạm vi theo ĐÚNG entity mà `_check` đã hỏi quyền đọc (`READ_PARENT`) — soi theo
+    #  entity cha của lượt sửa thì người chỉ được xem (vd `customs_price.read` với tệp thuốc BVTV)
+    #  không có grant nào trên nó, `apply_scope` ra `false()` và họ bị chặn đọc oan.
+    scope_entity = (read_parent(entity) or parent) if mode == "read" else parent
     for action in actions:
-        q = apply_scope(db.query(model.id).filter(model.id.in_(ids)), model, parent,
+        q = apply_scope(db.query(model.id).filter(model.id.in_(ids)), model, scope_entity,
                         user, profile, action)
         if q.first() is not None:
             return

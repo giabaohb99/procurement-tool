@@ -9471,3 +9471,253 @@ controller.py (/issue, _finish_issue), serializer.py} · backend/app/modules/app
 frontend-v2/src/modules/document/{helpers/can-withdraw-approval.ts, components/document-withdraw-dialog.tsx,
 document-approval-banner.tsx, document-approval-tab.tsx, pages/document-detail-page.tsx,
 components/folder-share-dialog.tsx} · test/backend/test_ban_hanh_khong_can_duyet.py
+
+## duoc-CR-486 | Tra cứu thị trường: các thẻ trên màn chuyển thành menu con bên trái
+- status: xong
+- date: 2026-09-29
+Đại ca yêu cầu bỏ hàng thẻ trên màn Tra cứu thị trường và đưa từng thẻ thành một mục con trong menu
+trái. Nay mục «Tra cứu thị trường» sổ xuống các mục Danh sách, Biểu đồ, Nhà nhập khẩu, So sánh, Pháp
+lý, Thuế, Thuốc BVTV, Lịch sử nạp và Cấu hình; mỗi mục có đường dẫn riêng nên gửi link là mở đúng mục.
+
+Bộ lọc đang áp vẫn đi theo khi bấm sang mục khác trong menu, để người dùng không phải gõ lại. Link cũ
+dạng «?tab=» tự chuyển sang đường mới và giữ nguyên bộ lọc. Mục Cấu hình vẫn gác quyền như trước (sửa
+được cấu hình, hoặc chỉ xem được danh mục hóa chất); lúc viết bài kiểm tìm ra một lỗ — người chỉ có
+quyền xem danh mục hóa chất mà không xem được dữ liệu hải quan vẫn thấy mục Cấu hình — đã chặn luôn.
+
+Đã commit trên erp-v2, chưa lên dev/prod.
+
+Mã nguồn: frontend-v2/src/modules/procurement/config/customs-sections.ts (mới) ·
+routes.tsx · pages/customs-price-page.tsx · app/router/module-definition.ts (keepSearch, alsoReadable) ·
+module-visibility.ts · app/layouts/module-sidebar.tsx · shared/constants/app-routes.ts
+
+## duoc-CR-487 | Tra cứu thị trường: thêm mục «Thuốc BVTV» — danh mục 6.919 thuốc có phạm vi sử dụng, nạp tệp ngay trên màn
+- status: xong
+- date: 2026-09-29
+Dữ liệu cào ngày 28/09 từ danhmuc.thuocbvtv.com (dữ liệu EcoFarm của Cục BVTV) trước đây mới nằm ở
+tệp, chưa vào bảng nào. Nay đã lưu vào cơ sở dữ liệu: bảng danh mục thuốc BVTV sẵn có được mở rộng thêm
+số đăng ký, tình trạng hiệu lực, thời hạn đăng ký, hàm lượng, lĩnh vực, nhóm độc, nhóm kháng và đường
+dẫn nguồn, kèm một bảng con cho phạm vi sử dụng (cây trồng, dịch hại, liều lượng, thời gian cách ly,
+cách dùng). Theo đại ca chốt, dùng lại bảng cũ chứ không dựng bảng song song, giữ cả thuốc hết hiệu
+lực và mặc định chỉ lọc thuốc còn hiệu lực.
+
+Mục mới «Thuốc BVTV» cho tra theo tên thuốc, hoạt chất, công ty hoặc số đăng ký, lọc theo tình trạng
+và phân nhóm; bấm một dòng mở chi tiết và bảng phạm vi sử dụng. Người được nạp dữ liệu hải quan thấy
+thêm nút «Nạp danh mục», nhận tệp JSON hoặc Excel của bản cào; nạp là thay toàn bộ danh mục trong một
+lần, tệp hỏng thì danh mục cũ còn nguyên, xong thì gắn lại hoạt chất cho mọi dòng hàng hải quan.
+
+Script nạp danh mục từ phần mềm HaiQuan Manager thôi không nạp thuốc BVTV nữa, vì chạy lại nó sẽ xóa
+sạch các cột mới và toàn bộ phạm vi sử dụng.
+
+Rà mã (code-review) xong vá thêm: chèn dữ liệu theo lô thay vì từng dòng (nạp còn 2–3 giây, không
+còn nguy cơ đụng trần 120 giây của nginx); khóa để hai người không nạp cùng lúc; tệp không có dòng phạm
+vi sử dụng nào (hoặc tệp Excel thiếu sheet phạm vi) bị từ chối thay vì lặng lẽ xóa sạch phạm vi đang
+có; đếm trần số dòng ngay lúc đọc tệp để tệp nhầm không làm tràn bộ nhớ máy chủ; đường dẫn nguồn chỉ
+nhận http/https; đang nạp thì không đóng được hộp thoại.
+
+Đã nạp thử đủ 6.919 thuốc và 15.309 dòng phạm vi trên máy em, qua cả tệp JSON lẫn Excel. Đã commit trên erp-v2,
+chưa lên dev/prod — lên rồi phải chạy migration và bấm «Nạp danh mục» một lần, vì bảng ở đó đang rỗng.
+
+Mã nguồn: backend/app/modules/customs/{model.py, constants.py (PesticideStatus), pesticide_reader.py,
+pesticide_service.py, pesticide_controller.py} · backend/app/core/action_catalog.py (catalog_import) ·
+backend/scripts/load_customs_catalogs.py · frontend-v2/src/modules/procurement/components/customs/
+customs-pesticide-*.tsx
+Tham chiếu: migration a7c3e91d5b20 · test/backend/test_hai_quan_thuoc_bvtv.py · tệp nguồn
+plans/260928-1553-thuoc-bvtv-danh-muc/
+
+## duoc-CR-488 | Tra cứu thị trường: tách «Pháp lý & thuế» thành hai mục, mục «Pháp lý» có bảng xem cả danh mục hóa chất
+- status: xong
+- date: 2026-09-29
+Đại ca muốn pháp lý thành một mục riêng trong menu Tra cứu thị trường. Trước đây mục «Pháp lý & thuế»
+chỉ cho gõ từng tên hóa chất để tra, không có chỗ nào xem được cả danh sách. Nay mục «Pháp lý» là một
+bảng xem được toàn bộ danh mục hóa chất theo văn bản — hoạt chất thuốc BVTV bị cấm theo Thông tư
+75/2025, các phụ lục của Nghị định 24/2026 (phụ lục IV có ngưỡng khối lượng) và hóa chất phải công bố
+theo lô theo Thông tư 01/2026 — tìm được theo tên, số CAS hoặc công thức hóa học, lọc theo từng văn
+bản. Cảnh báo cho từ khóa đang tra ở màn danh sách vẫn hiện trên đầu mục này.
+
+Phần tra biểu thuế theo mã HS tách thành mục «Thuế». Link cũ trỏ vào mục pháp lý vẫn mở đúng mục
+Pháp lý. Cùng đợt, thanh công cụ của mục Thuốc BVTV được sắp lại thành một hàng như mọi màn danh sách.
+
+Lưu ý: trên máy em danh mục hóa chất đang rỗng (dữ liệu nạp từ phần mềm HaiQuan Manager, không nằm
+trong mã nguồn), nên mục Pháp lý ở máy em hiện câu «chưa có danh mục»; trên môi trường đã nạp thì
+bảng có dữ liệu. Đã commit trên erp-v2, chưa lên dev/prod.
+
+Mã nguồn: backend/app/modules/customs/regulation_browse_service.py (mới) · controller.py
+(/regulations, /regulations/options) · frontend-v2/src/modules/procurement/components/customs/
+{customs-regulation-tab, customs-regulation-alert-table, customs-tariff-tab}.tsx ·
+config/customs-regulation-columns.tsx · config/customs-sections.ts
+Tham chiếu: test/backend/test_hai_quan_phap_ly_duyet.py
+
+## duoc-CR-489 | Tra cứu thị trường: đối chiếu hai chiều danh mục thuốc BVTV với danh sách hoạt chất cấm TT 75/2025
+- status: xong
+- date: 2026-09-29
+Đại ca muốn hai mục «Thuốc BVTV» và «Pháp lý» nói chuyện với nhau. Nay mục Thuốc BVTV có thêm cột
+«Hoạt chất cấm» và ô lọc «Có hoạt chất cấm»; thuốc nào chứa hoạt chất nằm trong danh sách cấm thì
+hộp chi tiết hiện khung cảnh báo đỏ kèm số CAS, năm cấm và văn bản. Chiều ngược lại, mỗi hoạt chất
+cấm ở mục Pháp lý có cột «Thuốc BVTV chứa» đếm số thuốc trong danh mục đang chứa nó; bấm vào số mở
+danh sách các thuốc đó (tính cả thuốc hết hiệu lực), bấm tiếp một thuốc mở chi tiết.
+
+Trước khi làm em đã báo đại ca: dò khoảng 25 hoạt chất cấm quen thuộc trong bản cào 28/09 đều ra 0,
+vì nguồn đã bỏ hẳn thuốc cấm. Kết quả bình thường vì vậy là 0 — đại ca chốt vẫn làm, coi đây là bước
+kiểm chéo: danh mục có lọt thuốc cấm thì màn hình báo. Lọc «Có hoạt chất cấm» mà rỗng thì màn hình
+nói thẳng là không thuốc nào chứa hoạt chất cấm, không bảo người dùng thử bỏ lọc.
+
+Hai danh mục không có khóa chung (danh mục thuốc không có số CAS) nên khớp bằng tên hoạt chất, và
+khớp NGUYÊN TÊN: danh mục có 10 thuốc chứa Chlorpyrifos methyl (không cấm), khớp theo từ đầu thì
+cả 10 bị gắn cờ oan vì thứ bị cấm là Chlorpyrifos ethyl. Chỉ nới cho đuôi muối / dạng chế phẩm
+(Paraquat dichloride vẫn là Paraquat). Màn hình ghi rõ kết quả chỉ để tham khảo. Chưa nạp danh sách
+cấm hoặc chưa nạp danh mục thuốc thì màn hình nói ra chứ không hiện số 0 dễ đọc thành «đã kiểm, sạch».
+
+Không lưu thành cột: danh sách cấm sửa được ở mục Cấu hình, lưu sẵn là lệch ngay khi có người sửa.
+Mỗi lần quét cả danh mục mất 36–62 mili giây trên 6.919 thuốc. Đã chạy thử trên MySQL ở máy em
+(thêm tạm hoạt chất rồi rollback): số trên màn Pháp lý bằng đúng số dòng của danh sách nó mở ra.
+Đã commit trên erp-v2, chưa lên dev/prod.
+
+Mã nguồn: backend/app/modules/customs/banned_ingredient_match.py (mới) · pesticide_service.py ·
+pesticide_controller.py (banned_only, banned_regulation_id) · regulation_browse_service.py
+(pesticide_count) · frontend-v2/src/modules/procurement/components/customs/
+customs-banned-pesticide-dialog.tsx (mới) · customs-pesticide-{tab,detail-dialog}.tsx ·
+customs-regulation-tab.tsx · config/customs-{pesticide,regulation}-columns.tsx
+Tham chiếu: test/backend/test_hai_quan_doi_chieu_hoat_chat_cam.py
+
+## duoc-CR-490 | Tra cứu thị trường: thêm / sửa / xóa thuốc BVTV có phân quyền riêng, nạp lại giữ thuốc tự thêm, đồng bộ sang giao diện cũ
+- status: xong
+- date: 2026-09-29
+Đại ca yêu cầu danh mục thuốc BVTV có đủ thêm, sửa, xóa kèm phân quyền, và giao diện cũ (thumua)
+cũng phải có như bản mới. Đại ca chốt ba điều: dùng khóa quyền mới «Danh mục thuốc BVTV (hải
+quan)» (`customs_pesticide`) chứ không dùng chung khóa tra cứu; nạp lại danh mục thì GIỮ thuốc
+người dùng tự thêm; giao diện cũ đồng bộ cả mục Thuốc BVTV lẫn việc tách «Pháp lý & thuế» thành
+hai thẻ, nhưng giữ hàng thẻ như cũ chứ không đổi sang menu con.
+
+Xem danh mục vẫn theo quyền xem Tra cứu thị trường. Khóa mới gác thêm, sửa, xóa từng thuốc và nút
+«Nạp danh mục» (trước đây nút này đi theo quyền nạp tờ khai hải quan). Khóa mới nằm trong nhóm
+không tự cấp cho Quản lý thu mua, nên trên hệ đang chạy phải tick tay ở màn Phân quyền, và người
+đang đăng nhập phải đăng xuất rồi đăng nhập lại mới thấy nút.
+
+Thuốc tự thêm được đánh dấu bằng một cột riêng chứ không dựa vào mã nguồn bằng 0, vì bộ đọc tệp
+cũng cho 0 khi dòng nguồn thiếu mã — dựa vào đó thì dòng ấy nhân đôi sau mỗi lần nạp. Sửa một thuốc
+lấy từ nguồn thì lần nạp sau ghi đè theo nguồn; màn sửa và hộp nạp đều nói rõ điều này, hộp nạp
+còn nói số thuốc tự thêm được giữ. Sửa tên hay hoạt chất không tự gắn lại nhãn cho mọi dòng hàng
+hải quan (khoảng 18 nghìn dòng trên prod), người dùng bấm «Gắn lại nhãn» ở mục Cấu hình khi cần.
+
+Cùng đợt: vá theo code-review của CR-489 — số thuốc chứa hoạt chất cấm trên màn Pháp lý có thể
+lệch danh sách nó mở ra khi hai tên cấm chồng nhau (Paraquat và Paraquat dichloride), và ba chỗ
+bóc tên hoạt chất làm sót thuốc cấm (hàm lượng viết cách «276 g/ l», mã dạng chế phẩm «20 SL»,
+ngoặc chứa dấu cộng, khoảng trắng không ngắt và ký tự α/β của font Symbol). Hộp nạp ghi trần tệp
+60 MB trong khi máy chủ chỉ nhận 30 MB, đã sửa về 30 MB.
+
+Đã chạy thử trên MySQL ở máy em: thêm một thuốc tay, nạp lại đủ 6.919 thuốc (1,5 giây), thuốc tay
+còn nguyên cả phạm vi sử dụng, xóa đi thì tổng về lại 6.919. Đã bấm tay trên trình duyệt cả hai giao
+diện: thêm thuốc (Enter trong ô không lưu nhầm, bấm đúp chỉ ra một bản ghi), xem cờ hoạt chất cấm,
+bấm số thuốc ở mục Pháp lý mở đúng danh sách, xóa có hộp xác nhận. Lúc bấm thử phát hiện cột «Thuốc
+BVTV chứa» nằm ngoài khung ở màn 1440px nên đã chuyển lên trước cột «Lưu ý». Đã commit trên erp-v2. Lên dev/prod phải chạy
+migration b4d81f2c6e37 và tick khóa mới cho vai trò cần sửa danh mục.
+
+Mã nguồn: backend/app/modules/customs/{pesticide_schema.py, pesticide_edit_service.py (mới),
+pesticide_service.py, pesticide_controller.py, banned_ingredient_match.py, model.py (is_manual)} ·
+backend/app/core/{permissions.py, scoping.py} · backend/app/seed.py (_SYS_ENTITIES) ·
+frontend-v2/src/modules/procurement/components/customs/customs-pesticide-{form-dialog,
+uses-editor}.tsx (mới) · utils/customs-pesticide-form.ts (mới) · frontend/src/pages/CustomsPrices.tsx
+Tham chiếu: migration b4d81f2c6e37 · test/backend/test_hai_quan_thuoc_bvtv_crud.py
+
+## duoc-CR-491 | Tra cứu thị trường (giao diện cũ): hàng thẻ trên màn đổi thành menu con bên trái như bản mới
+- status: xong
+- date: 2026-09-29
+Đại ca muốn giao diện cũ (thumua) giống bản mới: bỏ hàng thẻ trên màn Tra cứu thị trường, đưa từng
+thẻ thành một mục con trong menu trái. Nay mục «Tra cứu thị trường» sổ ra chín mục Danh sách, Biểu
+đồ, Nhà nhập khẩu, So sánh, Pháp lý, Thuế, Thuốc BVTV, Lịch sử nạp và Cấu hình khi đang ở trong màn
+đó; mỗi mục có đường dẫn riêng nên gửi link là mở đúng mục, đường lạ thì về Danh sách. Bộ lọc đang
+áp vẫn giữ khi bấm sang mục khác. Mục Cấu hình vẫn gác quyền như trước (quản lý dữ liệu hải quan
+hoặc xem được danh mục hóa chất), menu và trang dùng chung một hàm gác nên không lệch nhau.
+
+Đã bấm tay trên trình duyệt: menu con sáng đúng mục, gõ «atrazine» rồi sang Biểu đồ và quay lại
+Danh sách vẫn còn từ khóa, mở thẳng đường của mục Thuốc BVTV thì vào đúng mục. Cùng đợt sửa mã CR
+«bao-CR-503» mà agent tự đặt trong chú thích các tệp của CR-490 thành duoc-CR-490. Đã commit trên erp-v2.
+
+Mã nguồn: frontend/src/config/customs-sections.ts (mới) · frontend/src/layouts/AppLayout.tsx
+(NavParent, children) · frontend/src/pages/CustomsPrices.tsx · frontend/src/App.tsx
+(customs-prices/:section?) · frontend/src/index.css (.nav-sub)
+
+## duoc-CR-492 | Thuốc BVTV (bản mới): hộp chi tiết thành trang riêng, bảng phạm vi có tiêu đề rõ, bỏ link nguồn
+- status: xong
+- date: 2026-09-29
+Đại ca góp ý hộp chi tiết thuốc BVTV: nút Sửa/Xóa chen giữa tiêu đề và thông tin, bảng dưới đáy
+không rõ là bảng gì, và không cần link «Xem trên danh mục nguồn». Đại ca chốt chuyển thành trang
+chi tiết riêng như các màn danh mục khác của bản mới. Nay bấm một thuốc là mở trang riêng: tiêu đề
+kèm tình trạng, nút Sửa và Xóa ở góc phải; thẻ «Thông tin đăng ký»; bảng «Phạm vi sử dụng» có tiêu
+đề ngay trên bảng kèm câu giải thích (cây trồng nào, dịch hại gì, liều lượng, thời gian cách ly);
+cuối trang là lịch sử thao tác. Trang nằm dưới mục menu Thuốc BVTV nên cùng quyền xem; Sửa/Xóa theo
+khóa quyền danh mục thuốc như trước.
+
+Bộ lọc của mục Thuốc BVTV chuyển lên đường dẫn (tên riêng, không đụng ô tìm dòng hàng) để bấm vào
+một thuốc rồi quay lại vẫn còn nguyên bộ lọc; bấm số thuốc ở mục Pháp lý cũng mở trang này và lùi
+về đúng mục Pháp lý. Giao diện cũ vẫn là hộp thoại nhưng cũng đã bỏ link nguồn và thêm câu giải
+thích cho bảng phạm vi. Đã bấm tay trên trình duyệt. Đã commit trên erp-v2.
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/customs-pesticide-detail-page.tsx (mới) ·
+components/customs/customs-pesticide-info-card.tsx (mới) · customs-pesticide-tab.tsx ·
+customs-banned-pesticide-dialog.tsx · routes.tsx · shared/constants/app-routes.ts; bỏ
+customs-pesticide-detail-dialog.tsx · frontend/src/components/customs/CustomsPesticideDetail.tsx
+
+## duoc-CR-493 | Thuốc BVTV (giao diện cũ): hộp chi tiết thành trang riêng, đồng bộ bản mới
+- status: xong
+- date: 2026-09-29
+Đại ca yêu cầu giao diện cũ (thumua) đổi theo bản mới: bấm một thuốc BVTV mở trang chi tiết riêng
+thay cho hộp thoại. Trang có nút quay lại, tên thuốc kèm tình trạng và nhãn «Tự thêm», nút Sửa và
+Xóa ở góc phải; thẻ «Thông tin đăng ký»; bảng «Phạm vi sử dụng» có tiêu đề và câu giải thích; cuối
+trang là lịch sử thao tác. Không còn link nguồn. Sửa vẫn mở hộp nhập như trước; thêm thuốc mới xong
+thì mở luôn trang của thuốc đó.
+
+Bộ lọc của mục Thuốc BVTV chuyển lên đường dẫn để quay lại từ trang chi tiết vẫn còn nguyên; bấm
+một thuốc trong danh sách mở từ mục Pháp lý cũng sang trang này và lùi về lại mục Pháp lý. Đã bấm
+tay trên trình duyệt. Đã commit trên erp-v2.
+
+Mã nguồn: frontend/src/pages/CustomsPesticideDetailPage.tsx (mới) · frontend/src/App.tsx
+(customs-prices/pesticides/:id) · components/customs/{CustomsPesticideTab, CustomsBannedPesticideModal,
+CustomsPesticideForm}.tsx; bỏ CustomsPesticideDetail.tsx
+
+## duoc-CR-494 | Thuốc BVTV: tải tệp đính kèm cho từng thuốc (nhãn, giấy chứng nhận đăng ký…), cả hai giao diện
+- status: xong
+- date: 2026-09-29
+Đại ca muốn mỗi thuốc BVTV có chỗ tải tệp lên. Nay trang chi tiết thuốc ở cả hai giao diện có thẻ
+tệp đính kèm, dùng lại đúng thẻ đính kèm chứng từ đang có ở màn Nhà cung cấp và Hợp đồng: kéo thả
+hoặc chọn tệp (PDF, ảnh, Word, Excel…, tối đa 50 MB), xếp theo mục, xem trước và tải về được. Ai
+xem được Tra cứu thị trường thì xem được tệp; tải lên và xóa tệp đòi khóa sửa danh mục thuốc.
+
+Bẫy chính đã chặn: trước đây mỗi lần «Nạp danh mục» thì thuốc lấy từ nguồn bị xóa rồi chèn lại với
+số hiệu mới, nên tệp đính kèm sẽ mất chủ ngay lần nạp sau. Nay lần nạp giữ nguyên số hiệu của thuốc
+vẫn còn trong nguồn (khớp theo mã của bản cào), và số hiệu cho thuốc mới luôn lớn hơn mọi số đã có,
+để một thuốc mới không bao giờ «nhận» tệp của thuốc đã bị bỏ. Thuốc không còn trong tệp nguồn mới,
+hoặc bị xóa tay, thì được dọn luôn tệp đính kèm; hộp nạp nói rõ điều này và báo số thuốc bị bỏ.
+
+Module đính kèm dùng chung được mở rộng một chỗ: một loại đính kèm được khai quyền XEM khác quyền
+SỬA (trước đây chỉ có một khóa cho cả hai), cả ở lớp quyền vai trò lẫn lớp phạm vi dữ liệu — nếu
+không người chỉ được xem thuốc sẽ bị chặn xem tệp oan. Đã thử trên trình duyệt: tải một tệp lên ở
+bản mới, nạp lại đủ 6.919 thuốc (3,1 giây) thì tệp vẫn gắn đúng thuốc, bản cũ cũng thấy tệp đó;
+tệp thử đã dọn. Đã commit trên erp-v2.
+
+Mã nguồn: backend/app/core/{file_registry.py (READ_PARENT, read_parent), attachment_scope.py} ·
+backend/app/modules/attachment/controller.py (_check) · backend/app/modules/customs/{pesticide_service.py
+(giữ id khi nạp), pesticide_edit_service.py} · frontend-v2/.../pages/customs-pesticide-detail-page.tsx ·
+customs-pesticide-import-dialog.tsx · frontend/src/pages/CustomsPesticideDetailPage.tsx ·
+frontend/src/components/customs/CustomsPesticideImportDialog.tsx
+Tham chiếu: test/backend/test_hai_quan_thuoc_bvtv_crud.py (phần tệp đính kèm)
+
+## duoc-CR-495 | Thuốc BVTV: hiện câu mô tả «tóm tắt sử dụng» như trang nguồn, cả hai giao diện
+- status: xong
+- date: 2026-09-29
+Đại ca thấy trang danh mục thuốc BVTV gốc có một câu mô tả cho từng thuốc («Thuốc trừ bệnh … hoạt
+chất …, sử dụng trên …, phòng trừ …, đăng ký bởi …») mà ERP chưa có. Bản cào đã có sẵn câu này ở cả
+tệp JSON lẫn tệp Excel (đủ 6.919 thuốc) nhưng bộ đọc tệp bỏ qua; nay lưu vào danh mục và hiện trong
+thẻ «Thông tin đăng ký» trên trang chi tiết, DƯỚI lưới thông tin, ngăn bằng một vạch mảnh, nhãn
+«Tóm tắt sử dụng» cùng kiểu các ô khác (đại ca chốt sau khi xem: không khung màu, không viền trái).
+Lưới thông tin cũng làm lại: nhãn nhỏ màu nhạt, giá trị đậm, ba cột trên màn rộng. Thuốc
+tự thêm có ô «Mô tả tóm tắt» trong form để người nhập tự viết.
+
+Cột mới gộp vào migration b4d81f2c6e37 (chưa lên môi trường nào). Trên máy em đã nạp lại danh mục để
+có câu mô tả. Đã commit trên erp-v2.
+
+Mã nguồn: backend/app/modules/customs/{model.py (summary), pesticide_reader.py, pesticide_schema.py,
+pesticide_service.py, pesticide_edit_service.py} · migration b4d81f2c6e37 ·
+frontend-v2/.../components/customs/{customs-pesticide-info-card, customs-pesticide-form-dialog}.tsx ·
+utils/customs-pesticide-form.ts · frontend/src/pages/CustomsPesticideDetailPage.tsx ·
+frontend/src/components/customs/CustomsPesticideForm.tsx · frontend/src/utils/customs-pesticide.ts

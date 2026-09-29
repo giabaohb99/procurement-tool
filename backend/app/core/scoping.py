@@ -121,6 +121,8 @@ SCOPE_FIELDS = {
     "customs_price":    PUBLIC,
     #  Danh mục hóa chất theo văn bản — dữ liệu pháp lý chung, không thuộc pháp nhân nào.
     "customs_regulation": PUBLIC,
+    #  Danh mục thuốc BVTV (duoc-CR-490) — dữ liệu tham khảo bên ngoài, cùng lý do.
+    "customs_pesticide": PUBLIC,
     # 2b. Danh mục KHÔNG có chiều pháp nhân trong bảng. Đây là khoảng trống của
     # mô hình dữ liệu chứ không phải của tệp này — ngày nào thêm `company_id`
     # vào bảng nào thì đổi luôn dòng tương ứng ở đây.

@@ -33,7 +33,7 @@ from app.modules.import_tool.model import (ImportBatch, ImportMode, ImportModule
                                            ImportStatus)
 from app.modules.import_tool.tasks import run_import
 
-from . import reader
+from . import reader, regulation_browse_service
 from .constants import COLUMNS
 
 router = APIRouter(prefix="/api/customs", tags=["customs"])
@@ -165,6 +165,23 @@ def get_parties(type: int = 1, q: str = "", db: Session = Depends(get_db),
 @router.get("/tariff")
 def get_tariff(hs_code: str, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     return success(service.lookup_tariff(db, hs_code))
+
+
+@router.get("/regulations")
+def get_regulations(q: str = "", list_code: int | None = Query(None, ge=0, le=99),
+                    pg: dict = Depends(pagination), db: Session = Depends(get_db),
+                    user=Depends(require(ENTITY, "read"))):
+    """Mục «Pháp lý» (29/09/2026) — duyệt cả danh mục hóa chất theo văn bản, có phân trang.
+
+    Gác bằng `customs_price.read` như ô tra `/regulations/lookup`: cùng dữ liệu, chỉ khác cách
+    xem. Sửa danh mục vẫn đòi khóa riêng `customs_regulation` (mục «Cấu hình»)."""
+    total, items = regulation_browse_service.list_regulations(db, q, list_code, pg["offset"], pg["limit"])
+    return success({"total": total, "items": items})
+
+
+@router.get("/regulations/options")
+def get_regulation_options(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
+    return success(regulation_browse_service.regulation_options(db))
 
 
 @router.get("/regulations/lookup")

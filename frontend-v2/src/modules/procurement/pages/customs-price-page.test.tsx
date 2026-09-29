@@ -3,7 +3,7 @@
 // Chặn ở tầng `@/core/api` (luật testing.md) để bắt được đúng đường API màn gọi đi.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CoreApi from '@/core/api'
@@ -60,26 +60,47 @@ vi.mock('@/core/api', async (importOriginal) => {
 })
 
 let canWrite = true
+let canManageConfig = true
+let canReadRegulations = true
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
     can: (entity: string, action: string) => {
       if (entity === 'customs_price' && action === 'write') return canWrite
+      if (entity === 'customs_price' && (action === 'create' || action === 'delete')) {
+        return canManageConfig
+      }
+      if (entity === 'customs_regulation') return canReadRegulations
       return true
     },
     canAccess: () => true,
   }),
 }))
 
+/** Hiện đường + query hiện tại để khẳng định chỗ trang tự chuyển tới. */
+function LocationProbe() {
+  const { pathname, search } = useLocation()
+  return <output aria-label="location">{`${pathname}${search}`}</output>
+}
+
+//  Khớp đúng hai route khai ở `routes.tsx`: đường gốc (Danh sách) + `/:section`.
 function build(url: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[url]}>
-        <CustomsPricePage />
+        <Routes>
+          <Route path="/procurement/customs-prices" element={<CustomsPricePage />} />
+          <Route path="/procurement/customs-prices/:section" element={<CustomsPricePage />} />
+        </Routes>
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   )
+}
+
+function currentLocation() {
+  return screen.getByRole('status', { name: 'location' }).textContent
 }
 
 beforeEach(() => {
@@ -87,11 +108,13 @@ beforeEach(() => {
   coverageTotal = 120
   lineItems = []
   canWrite = true
+  canManageConfig = true
+  canReadRegulations = true
 })
 
 describe('CustomsPricePage', () => {
   it('blocks the chart tab with the need-filter message and never calls /stats without a keyword or HS code', async () => {
-    build('/procurement/customs-prices?tab=chart&origin=CN')
+    build('/procurement/customs-prices/chart?origin=CN')
     expect(
       await screen.findByText('Nhập tên hàng / hoạt chất hoặc chọn mã HS để xem biểu đồ.'),
     ).toBeInTheDocument()
@@ -100,14 +123,14 @@ describe('CustomsPricePage', () => {
   })
 
   it('blocks the importers tab the same way', async () => {
-    build('/procurement/customs-prices?tab=importers')
+    build('/procurement/customs-prices/importers')
     expect(
       await screen.findByText('Nhập tên hàng / hoạt chất hoặc chọn mã HS để xem biểu đồ.'),
     ).toBeInTheDocument()
   })
 
   it('loads the chart with the HS code filter when one is set', async () => {
-    build('/procurement/customs-prices?tab=chart&hs_code=3808')
+    build('/procurement/customs-prices/chart?hs_code=3808')
     await waitFor(() => expect(calls.some((call) => call.url.endsWith('/stats'))).toBe(true))
     const stats = calls.find((call) => call.url.endsWith('/stats'))
     expect(stats?.params).toMatchObject({ hs_code: '3808', period: 'month', price_mode: 'adjusted' })
@@ -138,5 +161,55 @@ describe('CustomsPricePage', () => {
     build('/procurement/customs-prices')
     expect(await screen.findByRole('button', { name: /Lịch sử nạp/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Nạp dữ liệu/ })).not.toBeInTheDocument()
+  })
+
+  //  Link cũ (thẻ chưa thành submenu) còn nằm trong thông báo, lịch sử trình duyệt, tin nhắn —
+  //  phải rơi đúng mục và GIỮ bộ lọc, không được rơi về Danh sách trống trơn.
+  it('redirects a legacy ?tab= link to the section path and keeps the filters', async () => {
+    build('/procurement/customs-prices?tab=chart&hs_code=3808')
+    await waitFor(() =>
+      expect(currentLocation()).toBe('/procurement/customs-prices/chart?hs_code=3808'),
+    )
+    await waitFor(() => expect(calls.some((call) => call.url.endsWith('/stats'))).toBe(true))
+  })
+
+  it('sends /list back to the base path so the «Danh sách» menu item lights up', async () => {
+    build('/procurement/customs-prices/list?origin=CN')
+    await waitFor(() => expect(currentLocation()).toBe('/procurement/customs-prices?origin=CN'))
+  })
+
+  //  «Pháp lý & thuế» chia đôi 29/09/2026: link cũ `?tab=legal` phải rơi vào mục Pháp lý.
+  it('lands an old ?tab=legal link on the Pháp lý section', async () => {
+    build('/procurement/customs-prices?tab=legal')
+    await waitFor(() => expect(currentLocation()).toBe('/procurement/customs-prices/legal'))
+  })
+
+  it('falls back to the list for an unknown section instead of rendering an empty page', async () => {
+    build('/procurement/customs-prices/khong-co?q=abc')
+    await waitFor(() => expect(currentLocation()).toBe('/procurement/customs-prices?q=abc'))
+  })
+
+  it('sends a typed /config URL back to the list when the user has neither config right', async () => {
+    canManageConfig = false
+    canWrite = false
+    canReadRegulations = false
+    build('/procurement/customs-prices/config')
+    await waitFor(() => expect(currentLocation()).toBe('/procurement/customs-prices'))
+  })
+
+  it('opens /config for a user who can only READ the chemical list', async () => {
+    canManageConfig = false
+    canWrite = false
+    build('/procurement/customs-prices/config')
+    expect(await screen.findByRole('heading', { name: /Cấu hình/ })).toBeInTheDocument()
+    expect(currentLocation()).toBe('/procurement/customs-prices/config')
+  })
+
+  it('keeps the filters when the header button jumps to the import history', async () => {
+    build('/procurement/customs-prices?origin=CN')
+    ;(await screen.findByRole('button', { name: /Lịch sử nạp/ })).click()
+    await waitFor(() =>
+      expect(currentLocation()).toBe('/procurement/customs-prices/history?origin=CN'),
+    )
   })
 })

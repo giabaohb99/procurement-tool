@@ -103,6 +103,8 @@ _EDIT = (
     # bao-CR-414 — chuyển phiếu sang phòng khác xử lý / trả về thu mua
     ActionCode("transfer_dept", "Chuyển phòng xử lý", ACTION_GROUP_EDIT),
     ActionCode("return_dept", "Trả phiếu về thu mua", ACTION_GROUP_EDIT),
+    # 29/09/2026 — nạp lại TOÀN BỘ một danh mục tham khảo từ tệp (thuốc BVTV của Tra cứu thị trường)
+    ActionCode("catalog_import", "Nạp danh mục từ tệp", ACTION_GROUP_EDIT),
     # Sổ đồng bộ app cũ — xếp một dòng lỗi chạy lại
     ActionCode("retry", "Xếp chạy lại đồng bộ", ACTION_GROUP_EDIT),
 )

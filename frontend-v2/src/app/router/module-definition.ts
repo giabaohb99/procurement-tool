@@ -26,6 +26,17 @@ export interface ModuleNavItem {
    * Khai cùng `entity` thì `entity` được xét trước.
    */
   entities?: PermissionEntity[]
+  /**
+   * **Hiện thêm khi ĐỌC được một trong các khóa này**, dù luật chính (`manage` /
+   * `action`) không đạt — với điều kiện vẫn ĐỌC được `entity` chính. Nó chỉ nới
+   * mức quyền, không mở màn cho người ngoài: chỉ có khóa phụ mà không đọc được
+   * `entity` thì vẫn ẩn (trang gọi API của `entity` ngay khi mở).
+   *
+   * Sinh ra cho mục «Cấu hình» của Tra cứu thị trường: hai danh mục trong đó cần
+   * QUẢN LÝ `customs_price`, danh mục thứ ba chỉ cần ĐỌC `customs_regulation`.
+   * `entities` không nói được hai mức quyền khác nhau trên hai khóa.
+   */
+  alsoReadable?: PermissionEntity[]
   /** Kiểm tra đúng hành động này trên entity (`read`, `create`, `write`, ...). */
   action?: PermissionAction
   /** Mục quản lý (danh mục, hệ thống): yêu cầu quyền quản lý (`write` | `create` | `delete`). */
@@ -94,6 +105,15 @@ export interface ModuleNavItem {
   badge?: ComponentType
   /** Các mục con tạo thành submenu sổ xuống trong thanh bên. */
   children?: ModuleNavItem[]
+  /**
+   * Khai trên mục CHA có `children`: đang đứng ở một mục con mà bấm sang mục con
+   * khác thì **giữ nguyên query string**.
+   *
+   * Sinh ra cho Tra cứu thị trường: các mục con (danh sách · biểu đồ · so sánh…)
+   * dùng CHUNG một bộ lọc nằm trên URL — đổi mục mà mất bộ lọc là phải gõ lại từ
+   * đầu. Bấm từ chỗ khác vào thì không mang theo gì (query của màn khác vô nghĩa).
+   */
+  keepSearch?: boolean
 }
 
 /**

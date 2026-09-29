@@ -214,6 +214,8 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  bao-CR-470: KHÔNG tự cấp cho Quản lý thu mua — `write` là quyền nạp
                  #  và thay dữ liệu hải quan, `delete` là hoàn tác cả lô. Đại ca tick tay.
                  "customs_price", "customs_regulation",
+                 #  duoc-CR-490: sửa / nạp lại danh mục thuốc BVTV — cùng lý do, đại ca tick tay.
+                 "customs_pesticide",
                  "forum_post", "forum_board",
                  "leave_request", "leave_balance", "leave_type", "holiday",
                  #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải

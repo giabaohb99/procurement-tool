@@ -14,7 +14,7 @@ from app.core.auth import (get_current_user, get_perm_profile,
 from app.core.database import get_db
 from app.core.document_types import (DOC_TYPE_LABEL, DOC_TYPE_VALUES,
                                       DOCUMENT_TYPES)
-from app.core.file_registry import is_private, policy
+from app.core.file_registry import is_private, policy, read_parent
 from app.core.response import success
 from app.core.scoping import apply_scope
 #  ⚠️ Đọc byte của tệp đính kèm đi qua `read_file_bytes(f)`, KHÔNG gọi thẳng
@@ -91,7 +91,7 @@ def _check(db: Session, user, entity: str, mode: str, entity_id: int | None = No
             ensure_orphan_quota(db, user.id)
         return exts, max_mb
     if mode == "read":
-        ok = user_has_permission(db, user, parent, "read")
+        ok = user_has_permission(db, user, read_parent(entity) or parent, "read")
     else:
         ok = user_has_permission(db, user, parent, "write") or user_has_permission(db, user, parent, "create")
     if not ok:

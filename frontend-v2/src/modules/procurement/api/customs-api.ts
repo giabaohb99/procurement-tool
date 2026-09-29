@@ -18,7 +18,9 @@ import type {
   CustomsLineList,
   CustomsOptions,
   CustomsRegulationHit,
+  CustomsRegulationList,
   CustomsRegulationLookup,
+  CustomsRegulationOptions,
   CustomsStats,
   CustomsTariffRow,
 } from '../types/customs'
@@ -57,6 +59,15 @@ export function fetchCustomsImporters(params: Params) {
 
 export function fetchCustomsAlerts(params: Params) {
   return apiGet<CustomsRegulationHit[]>(`${BASE}/alerts`, { params })
+}
+
+/** Mục «Pháp lý» — duyệt cả danh mục hóa chất theo văn bản (phân trang, lọc theo văn bản). */
+export function fetchCustomsRegulations(params: Params) {
+  return apiGet<CustomsRegulationList>(`${BASE}/regulations`, { params })
+}
+
+export function fetchCustomsRegulationOptions() {
+  return apiGet<CustomsRegulationOptions>(`${BASE}/regulations/options`)
 }
 
 export function lookupCustomsRegulations(q: string) {

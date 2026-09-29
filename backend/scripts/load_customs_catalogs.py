@@ -9,7 +9,10 @@ vào repo; repo chỉ giữ cách đọc.
 
 Nạp gì:
   - Từ khóa hoạt chất (`ACTIVE_INGREDIENTS`, ~100)      → tab_customs_ingredient_alias  (thay toàn bộ)
-  - Danh mục thuốc BVTV (`bvtv_data.js`, ~6.900)        → tab_customs_pesticide         (thay toàn bộ)
+  - (29/09/2026) Danh mục thuốc BVTV KHÔNG còn nạp ở đây. Nguồn chuyển sang bản cào
+    danhmuc.thuocbvtv.com — có số đăng ký, hiệu lực, phạm vi sử dụng — nạp bằng nút «Nạp danh
+    mục» của mục Thuốc BVTV (`pesticide_service.replace_catalog`). Nạp lại từ `bvtv_data.js`
+    sẽ thay toàn bộ bảng bằng bản thiếu cột và xóa sạch phạm vi sử dụng.
   - Biểu thuế XNK 2026 (`bieu_thue_2026.js`)            → tab_customs_tariff            (thay toàn bộ)
   - NĐ 24/2026 PL I–IV, TT 75/2025 cấm, TT 01/2026 công bố → tab_customs_regulation     (CHỈ THÊM)
 
@@ -21,7 +24,6 @@ toàn bộ cho khớp nguồn.
 Xong thì gắn lại hoạt chất + hàm lượng cho MỌI dòng hàng đã nạp (`retag_all`).
 """
 import argparse
-import html
 import json
 import os
 import re
@@ -33,8 +35,7 @@ from sqlalchemy import delete, insert
 from app.core.database import SessionLocal
 from app.modules.customs.constants import RegulationList
 from app.modules.customs.ingredient import retag_all
-from app.modules.customs.model import (CustomsIngredientAlias, CustomsPesticide,
-                                       CustomsRegulation, CustomsTariff)
+from app.modules.customs.model import CustomsIngredientAlias, CustomsRegulation, CustomsTariff
 
 _CHUNK = 2000
 
@@ -92,13 +93,6 @@ def _js_objects(source: str, name: str) -> list[dict]:
     return [dict(re.findall(r"(\w+)\s*:\s*'((?:[^'\\]|\\.)*)'", obj)) for obj in re.findall(r"\{([^{}]*)\}", body)]
 
 
-def _trade_key(trade_name: str) -> str:
-    """`Bipyrhone 20EC` → `BIPYRHONE` (phần trước hàm lượng). Ngắn hơn 5 ký tự thì bỏ —
-    tên quá ngắn dò trong tên hàng sẽ khớp bừa."""
-    base = re.split(r"\s+\d", html.unescape(trade_name).upper())[0].strip()
-    return base if len(base) >= 5 else ""
-
-
 def _replace_all(db, model, rows: list[dict]) -> int:
     db.execute(delete(model))
     for i in range(0, len(rows), _CHUNK):
@@ -110,17 +104,6 @@ def load_aliases(db, page: str) -> int:
     rows = {k.upper(): c for k, c in _js_array(page, "ACTIVE_INGREDIENTS")}
     return _replace_all(db, CustomsIngredientAlias,
                         [{"keyword": k, "canonical": c} for k, c in rows.items()])
-
-
-def load_pesticides(db, src: str) -> int:
-    raw = open(os.path.join(src, "bvtv_data.js"), encoding="utf-8").read()
-    data = json.loads(re.search(r"BVTV_NATIONAL_DATA\s*=\s*(\[.*\])", raw, re.S).group(1))
-    rows = [{"source_id": int(d.get("id") or 0), "trade_name": html.unescape(d.get("ten", ""))[:255],
-             "trade_key": _trade_key(d.get("ten", ""))[:255],
-             "active_ingredient": html.unescape(d.get("hoat_chat", ""))[:500],
-             "pest_group": (d.get("nhom") or "")[:100], "registrant": (d.get("cong_ty") or "")[:255]}
-            for d in data]
-    return _replace_all(db, CustomsPesticide, rows)
 
 
 def load_tariff(db, src: str) -> int:
@@ -176,7 +159,6 @@ def main() -> int:
     db = SessionLocal()
     try:
         print("Từ khóa hoạt chất :", load_aliases(db, page))
-        print("Thuốc BVTV        :", load_pesticides(db, args.src))
         print("Biểu thuế (mã HS) :", load_tariff(db, args.src))
         print("Danh mục pháp lý  : thêm", load_regulations(db, page), "dòng mới")
         db.commit()

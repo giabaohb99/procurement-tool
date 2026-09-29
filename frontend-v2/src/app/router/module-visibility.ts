@@ -101,6 +101,16 @@ function itemAllowed(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): boo
   else if (item.entities?.length) baseOk = item.entities.some((khoa) => entityAllowed(item, khoa, can))
   //  Không khai khóa nào = luôn hiện (chủ ý — xem chú thích ở visibleNavItems).
   else baseOk = true
+  //  Hiện thêm khi đọc được khóa phụ — nhưng vẫn phải ĐỌC được `entity` chính. Xem
+  //  `ModuleNavItem.alsoReadable`.
+  if (
+    !baseOk &&
+    item.entity &&
+    can(item.entity, 'read') &&
+    item.alsoReadable?.some((khoa) => can(khoa, 'read'))
+  ) {
+    baseOk = true
+  }
   if (!baseOk) return false
 
   //  Lọc RUNTIME thêm: chỉ điều phối viên (approve) hoặc tài xế (isDriver) mới thấy.

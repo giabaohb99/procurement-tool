@@ -58,6 +58,10 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # Chứng từ có thể là PDF hợp đồng ~17MB nên dùng trần _DOC 50MB. Quyền kiểm trên
     # entity cha `seal_request` (read/write + phạm vi dữ liệu của phiếu).
     "seal_request":           ("seal_request", _DOC, 50),
+    # duoc-CR-494: tệp của một thuốc BVTV (nhãn thuốc, giấy chứng nhận đăng ký, MSDS…) —
+    # `entity_id` = id thuốc. Tải lên / xóa đòi khóa SỬA danh mục `customs_pesticide`; XEM đi theo
+    # `READ_PARENT` bên dưới (ai xem được Tra cứu thị trường thì xem được tệp của thuốc).
+    "customs_pesticide":      ("customs_pesticide", _DOC, 50),
     # Đính kèm của một CÔNG VIỆC trong phân hệ Dự án (E-03). Entity cha là
     # `work_task` thật (lớp RBAC hỏi được), nhưng lớp PHẠM VI thì `apply_scope`
     # vô dụng — `work_task` khai `PUBLIC` ở `SCOPE_FIELDS` vì phạm vi thật là tư
@@ -136,8 +140,20 @@ def is_image(filename: str, content_type: str = "") -> bool:
     return (content_type or "").startswith("image/") or ext_of(filename) in _IMG
 
 
+#  Entity mà quyền XEM tệp khác quyền SỬA tệp. `FILE_POLICY` chỉ có một entity cha cho cả hai,
+#  mà thuốc BVTV thì xem theo `customs_price.read` (một mục của màn tra cứu) còn sửa theo khóa
+#  riêng `customs_pesticide` — không khai ở đây thì người chỉ được xem thuốc lại không xem nổi tệp.
+READ_PARENT: dict[str, str] = {"customs_pesticide": "customs_price"}
+
+
 def policy(entity: str):
     return FILE_POLICY.get(entity)
+
+
+def read_parent(entity: str) -> str | None:
+    """Entity cha để hỏi quyền ĐỌC tệp — mặc định chính entity cha của `FILE_POLICY`."""
+    pol = FILE_POLICY.get(entity)
+    return READ_PARENT.get(entity, pol[0] if pol else None)
 
 
 def ext_of(filename: str) -> str:
