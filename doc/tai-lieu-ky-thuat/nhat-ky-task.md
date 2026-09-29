@@ -9380,3 +9380,94 @@ backend/app/modules/report/{procurement_summary_rows, procurement_grouped_rows}.
 purchase_progress/summary_service.py · test/backend/test_bao_cao_{khao_sat_gom_o_sql, mua_hang_gom_o_sql}.py
 Migration: 5f39bbc564db (bốn chỉ mục: request_date của yêu cầu mua hàng và yêu cầu báo giá, contact_date
 của hai bảng dòng khảo sát). Deploy phải chạy `alembic upgrade head`.
+
+## duoc-CR-484 | Tài liệu Văn bản: sơ đồ quy trình và trạng thái theo vai trò, gộp thư mục vào bộ tài liệu Văn bản
+- status: xong
+- date: 2026-09-29
+Bổ sung ba sơ đồ theo vai trò cho bộ tài liệu phân hệ Văn bản: quy trình văn bản chia làn theo vai
+trò, trạng thái văn bản với màu mũi tên là vai trò bấm nút, và cây thư mục theo vai trò. Vai trò lấy
+đúng tên ở màn Phân quyền (Nhân sự, Văn bản — chỉ xem, Văn bản — soạn & sửa, Văn thư pháp nhân con,
+Quản trị hệ thống). Theo yêu cầu của đại ca, mỗi làn gắn một tài khoản mẫu có sẵn trên hệ thống thử
+kèm bộ quyền của vai trò: DEMO_STAFF, DEMONV, DEMOTP, DEMO_MANAGER, VTAGRIPLANT, DEGO0001.
+
+Mô tả luồng nghiệp vụ Văn bản: thêm cột vai trò ở mục Các bên tham gia và bảng Chuyển trạng thái,
+thêm bảng quyền của từng vai trò ở mục 21, thêm Phần VIII (luồng theo vai trò: quy trình × vai trò,
+trạng thái × vai trò, việc của từng vai trò, lưu ý khi giao vai trò) và Phần IX (thư mục theo vai
+trò, chín quy trình thư mục ai làm, luồng thư mục của từng vai trò). Hướng dẫn sử dụng Văn bản: thêm
+bảng đọc theo vai trò ở đầu tài liệu, hai sơ đồ theo vai trò ở mục 5, bảng vai trò mục 35 có thêm tài
+khoản mẫu và quyền cây thư mục, và Phần VII mới gộp hướng dẫn thư mục chia theo vai trò (mục 36–43);
+Hỏi đáp dời thành Phần VIII mục 44. Hai tài liệu thư mục riêng vẫn giữ theo ý đại ca; sửa một câu cũ
+ghi cây sâu 7 cấp thành 100 cấp.
+
+Phát hiện khi làm: toàn bộ ảnh trong thư mục hinh/ đã mất khỏi ổ đĩa (chưa từng được commit), bản PDF
+mô tả luồng Văn bản xuất ngày 28/09 chỉ còn biểu tượng ảnh vỡ. Đã lấy lại 86 ảnh chụp từ các bản PDF
+cũ còn nguyên và dựng lại sơ đồ từ nguồn HTML bằng script mới, rồi xuất lại cả năm tài liệu.
+Phát hiện thêm: vai trò mẫu Văn thư pháp nhân con không có quyền Cây thư mục; trên máy thử, vai trò
+Nhân sự và Trưởng phòng (duyệt PYC) đang được tick tay thêm quyền Văn bản nên tài khoản mẫu thấy nhiều
+nút hơn tài liệu — đã ghi chú trong tài liệu.
+
+Theo góp ý của đại ca, viết lại hai tài liệu mô tả luồng nghiệp vụ (Văn bản, Thư mục) bằng lời của
+người dùng cuối: bỏ ngày thay đổi và lịch sử, bỏ phần hệ thống tính bên trong (bảng 6 bước tính
+quyền và hình minh họa của nó), bỏ tên kỹ thuật; mục Câu hỏi còn mở chuyển ra ngoài tài liệu để đại
+ca quyết. Sơ đồ bản đồ 9 quy trình thêm dòng «Ai làm» cho từng quy trình; sơ đồ trạng thái theo vai
+trò vẽ lại có đường chính đánh số, nhánh đánh chữ, nhãn mũi tên ghi ai bấm.
+
+Rà lại toàn bộ năm tài liệu từng mục theo lời người dùng cuối (không chỉ sửa một chỗ): giải thích
+thuật ngữ một lần ở chỗ xuất hiện đầu, câu ngắn, bỏ lịch sử và cơ chế bên trong; tách danh sách số chú
+thích ảnh cho khớp số trên ảnh. Đối chiếu với mã nguồn thì sửa được mấy câu SAI: xóa thư mục còn văn
+bản là được (văn bản được chuyển đi); ô «Lưu vào thư mục» liệt kê mọi thư mục có quyền Đóng góp,
+không chỉ của công ty văn bản; vai trò mẫu Văn thư pháp nhân con không xem được cây thư mục. Bỏ
+«Rút phiếu» khỏi sơ đồ và tài liệu vì màn hình chưa có nút đó (backend có sẵn chức năng rút).
+
+Trung tâm hướng dẫn sử dụng: đóng gói lại HDSD Văn bản (1 bài gốc, 8 bài con, 70 ảnh), thêm bài
+«Văn bản — Thư mục văn bản theo vai trò»; bài Hỏi đáp giữ nguyên tiêu đề để đường dẫn không đổi.
+
+Theo góp ý tiếp của đại ca (tài khoản mẫu rải khắp hình nhìn rối), vẽ lại bốn sơ đồ theo vai trò
+và bản đồ quy trình: hình chỉ còn tên vai trò, bỏ tài khoản mẫu và dải quyền trên nhãn làn, nhãn
+mũi tên đổi thành «Người soạn: Gửi duyệt», «Người duyệt: Duyệt», «Quản trị: Bãi bỏ». Tài khoản mẫu
+chuyển xuống phần chữ thành câu ví dụ «tài khoản A giữ vai trò X, có quyền Y nên làm được Z»: mục 29
+của mô tả luồng thay bảng tài khoản mẫu bằng danh sách ví dụ; mỗi mục 32.x và 36.x bỏ mã tài khoản
+khỏi tiêu đề và mở đầu bằng một tình huống ví dụ. Hướng dẫn sử dụng sửa đoạn chữ đi kèm Hình 5, 6,
+59 cho khớp hình mới, cột «Tài khoản mẫu» đổi thành «Ví dụ». Xuất lại PDF, đóng gói và nạp lại
+Trung tâm hướng dẫn trên máy local.
+Đã chạy seed ở máy em; môi trường khác phải chạy lại seed_help_van_ban.py rồi reindex_help_rag.py.
+
+Mã nguồn: doc/huong-dan-su-dung/van-ban/mo-ta-luong-nghiep-vu-van-ban.md · huong-dan-su-dung-van-ban.md ·
+huong-dan-su-dung-thu-muc-van-ban.md · so-do/vai-tro-quy-trinh.html · so-do/vai-tro-trang-thai.html ·
+so-do/vai-tro-thu-muc.html · chup-so-do.py (mới) · xuat-tai-lieu.py · dong-goi-hdsd-cho-seed.py ·
+backend/scripts/help_van_ban/ · hinh/*.png · các tệp .html, .pdf xuất lại
+
+## duoc-CR-485 | Văn bản: nút «Rút về để sửa», loại không cần duyệt thì ban hành thẳng, nút Ban hành của người soạn không còn đòi quyền Duyệt
+- status: xong
+- date: 2026-09-29
+Ba lỗ tìm ra lúc rà tài liệu Văn bản với đại ca, đại ca bảo sửa luôn.
+
+Thứ nhất, người trình không tự rút được văn bản đang chờ duyệt: backend có sẵn chức năng rút nhưng
+màn hình chưa từng có nút. Nay dải thông báo đầu trang và mục Phê duyệt có nút «Rút về để sửa» cho
+đúng người trình, chỉ khi chưa ai duyệt, bắt ghi lý do; văn bản về Nháp.
+
+Thứ hai, ô «Cần duyệt» của loại văn bản chỉ để trưng: thẻ Người duyệt dự kiến báo không cần phê duyệt
+mà văn bản vẫn phải gửi duyệt. Theo đại ca chốt, loại tắt ô này (hiện chỉ có Biểu mẫu) bỏ hẳn chặng
+duyệt: màn văn bản bày nút «Ban hành» thay «Gửi duyệt», người soạn / người chịu trách nhiệm (hoặc
+người có quyền Duyệt) bấm là cấp số và có hiệu lực, vẫn qua đủ các chốt kiểm như khi gửi duyệt. Đường
+gửi duyệt cũ cố ý không bị chặn, vì cột này mặc định tắt, chặn thì loại nào quên tích sẽ mất luồng
+duyệt trong im lặng.
+
+Thứ ba, nút Ban hành ở trạng thái Chờ ban hành gọi đường duyệt nên đòi quyền Duyệt, người soạn thuộc
+vai trò «Văn bản — soạn & sửa» bấm vào bị từ chối. Cả hai ca nay đi qua một đường API mới chỉ đòi
+quyền Sửa và đúng người.
+
+Rà mã (code-review) xong vá thêm: ô «Cần duyệt» nay mặc định BẬT cho loại mới; văn bản đã từng gửi
+duyệt không ban hành thẳng được; đổi bản nháp sang loại không cần duyệt phải có quyền Duyệt; người có
+quyền Duyệt chỉ ban hành thay được văn bản nằm trong phạm vi Duyệt của mình; bản 2 trở đi chờ ban hành
+nay chỉ người soạn bấm được (trước đây ai có quyền Duyệt cũng bấm được); khóa hàng khi ban hành và chặn
+bấm đúp để khỏi cấp hai số hiệu; nút «Rút về để sửa» hiện cả khi phiếu duyệt đang kẹt.
+
+Kèm theo: câu giải thích «Quyền chung» trong hộp Chia sẻ thư mục viết lại bằng lời thường; tài liệu,
+sơ đồ và Trung tâm hướng dẫn cập nhật theo.
+
+Mã nguồn: backend/app/modules/document/{service.py (_check_ready_to_send, issue_without_approval),
+controller.py (/issue, _finish_issue), serializer.py} · backend/app/modules/approval/serializer.py ·
+frontend-v2/src/modules/document/{helpers/can-withdraw-approval.ts, components/document-withdraw-dialog.tsx,
+document-approval-banner.tsx, document-approval-tab.tsx, pages/document-detail-page.tsx,
+components/folder-share-dialog.tsx} · test/backend/test_ban_hanh_khong_can_duyet.py

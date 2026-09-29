@@ -545,7 +545,7 @@ phải mã sai.
 
 ⚠️ **THƯ MỤC + TÌM TOÀN VĂN của phân hệ Văn bản** (23/09/2026 — kế hoạch
 `frontend-v2/plans/260923-1000-van-ban-thu-muc-nguoi-duyet/`, HDSD §22–28 của
-`doc/huong-dan-su-dung/van-ban/mo-ta-luong-nghiep-vu-van-ban.md`):
+`doc/huong-dan-su-dung/van-ban/mo-ta-luong-nghiep-vu-van-ban.pdf`):
 
 - Khóa quyền mới **`doc_folder`** (ENTITIES **+1**; `origin/erp-v2` đã lên 68 nên gộp xong là 69).
   Hệ đang chạy **không tự có** (D-018): tick ở màn Phân quyền, hoặc `SEED_FORCE_SYNC=true` một

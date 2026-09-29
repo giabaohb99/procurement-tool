@@ -6,11 +6,11 @@ Dựng cây: 1 thẻ phân hệ «Hướng dẫn sử dụng Văn bản» (hiệ
 và sau ban hành · sổ, số hiệu và thiết lập · phân quyền · câu hỏi thường gặp. Bài có ảnh chụp
 màn hình đánh dấu số và sơ đồ luồng.
 
-⚠️ Nội dung KHÔNG viết ở đây. Nguồn là `doc/huong-dan-su-dung/van-ban/huong-dan-su-dung-van-ban.md`
-(+ `gioi-thieu-nhanh-van-ban.md` cho bài gốc). Thư mục `doc/` không có trong container, nên
-nội dung được đóng gói sẵn vào `scripts/help_van_ban/` bằng
-`doc/huong-dan-su-dung/van-ban/dong-goi-hdsd-cho-seed.py`. Sửa tài liệu thì chạy lại script
-đóng gói, commit thư mục gói, rồi chạy lại seed này.
+⚠️ Nội dung KHÔNG viết ở đây. Nội dung nằm trong gói `scripts/help_van_ban/` (bài viết +
+ảnh). Gói này từng được đóng gói từ bản `.md` của HDSD Văn bản, nhưng ngày 29/09/2026 đại ca
+chốt thư mục `doc/huong-dan-su-dung/van-ban/` chỉ giữ 3 bản PDF cuối — nguồn `.md`, ảnh và
+script đóng gói đã xóa (còn trong lịch sử git). Từ nay GÓI là nguồn: sửa thẳng
+`help_van_ban/bai-viet.json` (và ảnh cùng thư mục), commit, rồi chạy lại seed này.
 
 THAY bộ HDSD văn thư cũ: cây «Hướng dẫn sử dụng công cụ văn thư» (seed_help_van_thu.py, chia
 theo vai trò) bị xóa nếu còn — không để người dùng thấy hai bộ hướng dẫn cho cùng phân hệ.
