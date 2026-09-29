@@ -57,3 +57,25 @@ export function regulationBadgeClass(listCode: number): string {
   if (listCode === 11) return 'info'
   return 'gray'
 }
+
+// duoc-CR-490 — thẻ «Pháp lý» (bảng duyệt cả danh mục, 29/09/2026): tách khỏi thẻ «Pháp lý & thuế»
+// cũ (chỉ tra một từ). Hai hàm dưới CHÉP ĐÚNG bản ERP
+// (`frontend-v2/src/modules/procurement/utils/customs-regulation.ts`).
+
+/** Ô tìm + ô chọn văn bản → tham số API. `list_code` chỉ gửi khi là số (backend đòi `int`). */
+export function buildRegulationParams(search: string, listCode: string): Record<string, string> {
+  const params: Record<string, string> = {}
+  if (search.trim()) params.q = search.trim()
+  if (/^\d+$/.test(listCode)) params.list_code = listCode
+  return params
+}
+
+/**
+ * Câu bảng rỗng phân biệt «chưa nạp danh mục» với «bộ lọc loại hết». Danh mục nạp bằng script
+ * (dữ liệu bên thứ ba, không nằm trong repo) hoặc thêm tay ở mục «Cấu hình».
+ */
+export function resolveRegulationEmptyMessage(catalogTotal: number): string {
+  return catalogTotal > 0
+    ? 'Không có hóa chất nào khớp — thử đổi từ khóa hoặc chọn «Tất cả văn bản».'
+    : 'Chưa có danh mục hóa chất theo văn bản — nhờ người phụ trách nạp danh mục hoặc thêm ở mục «Cấu hình».'
+}

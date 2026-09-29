@@ -159,6 +159,24 @@ body.col-resizing {
   border-left: none;
 }
 
+/* duoc-CR-491 — menu con (Tra cứu thị trường): thụt vào, chữ nhỏ hơn, vạch dọc nối về mục cha. */
+.nav-sub {
+  margin: 2px 0 4px 22px;
+  padding-left: 8px;
+  border-left: 1px solid #e3e8f2;
+}
+.nav-sub .nav-item {
+  padding: 7px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.nav-sub .nav-item .ti {
+  font-size: 15px;
+}
+.nav-sub .nav-item.active {
+  font-weight: 650;
+}
+
 .nav-group-title {
   font-size: 11px;
   text-transform: uppercase;

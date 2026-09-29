@@ -25,6 +25,7 @@ import PaymentRequestDetail from './pages/PaymentRequestDetail'
 import Reports from './pages/Reports'
 import PrLinesReportPage from './pages/PrLinesReportPage'
 import CustomsPrices from './pages/CustomsPrices'
+import CustomsPesticideDetailPage from './pages/CustomsPesticideDetailPage'
 import SurveyReport from './pages/SurveyReport'
 import CategoryAssignees from './pages/CategoryAssignees'
 import CategoryAssigneeNew from './pages/CategoryAssigneeNew'
@@ -100,7 +101,11 @@ export default function App() {
             {/* bao-CR-296: trang riêng của báo cáo dòng YCMH — nội dung dùng chung tab trong Báo cáo */}
             <Route path="pr-lines-report" element={<PrLinesReportPage />} />
             {/* bao-CR-470: tra cứu giá hải quan — danh mục hóa chất đi route CRUD chung :entity */}
-            <Route path="customs-prices" element={<CustomsPrices />} />
+            {/* duoc-CR-491: mỗi mục một đường `/customs-prices/<mục>` (menu con bên trái). MỘT Route với
+                tham số tùy chọn — đổi mục không dựng lại trang nên bộ lọc đang áp vẫn giữ. */}
+            <Route path="customs-prices/:section?" element={<CustomsPrices />} />
+            {/* duoc-CR-493: chi tiết một thuốc BVTV là TRANG riêng (đồng bộ bản v2). */}
+            <Route path="customs-prices/pesticides/:id" element={<CustomsPesticideDetailPage />} />
             <Route path="survey-report" element={<SurveyReport />} />
             <Route path="category-assignees" element={<CategoryAssignees />} />
             <Route path="category-assignees/new" element={<CategoryAssigneeNew />} />

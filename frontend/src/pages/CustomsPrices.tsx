@@ -1,12 +1,15 @@
 // bao-CR-470 — Tra cứu giá hải quan (bản cũ). Thiết kế: doc/erp/hai-quan/04-giao-dien.md.
 //
-// MỘT màn hình, năm thẻ: Danh sách · Biểu đồ · Nhà nhập khẩu · So sánh · Pháp lý & thuế.
+// MỘT màn hình, nhiều thẻ: Danh sách · Biểu đồ · Nhà nhập khẩu · So sánh · Pháp lý · Thuế ·
+// Thuốc BVTV · Lịch sử nạp · Cấu hình.
 // Đại ca chốt 23/09/2026: biểu đồ nằm chung màn với danh sách, CHỈ hiện khi đã có bộ lọc
 // (từ khóa hoặc mã HS); không có trang tổng quan riêng, không tính sẵn, không tác vụ định kỳ.
-// Quyền: `customs_price` (đọc / ghi = nạp tệp / xóa = hoàn tác / xuất = Excel).
-// bao-CR-493 (yêu cầu phòng Thu mua 25/09, bê từ bản v2): thẻ thứ sáu «Lịch sử nạp» thay hộp thoại;
+// Quyền: `customs_price` (đọc / ghi = nạp tệp / xóa = hoàn tác / xuất = Excel); riêng thẻ
+// «Thuốc BVTV» còn có khóa SỬA riêng `customs_pesticide` (duoc-CR-490, 29/09/2026).
+// bao-CR-493 (yêu cầu phòng Thu mua 25/09, bê từ bản v2): thẻ «Lịch sử nạp» thay hộp thoại;
 // hàng «Lọc thêm» sáu ô; doanh nghiệp chọn NHIỀU (chip cộng dồn); hai cột VND ở cuối bảng.
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import DateRangePicker from '../components/DateRangePicker'
@@ -22,25 +25,20 @@ import CustomsConfigTab from '../components/customs/CustomsConfigTab'
 import CustomsHistoryPanel from '../components/customs/CustomsHistoryPanel'
 import CustomsImportDialog from '../components/customs/CustomsImportDialog'
 import CustomsLineDetail from '../components/customs/CustomsLineDetail'
+import CustomsPesticideTab from '../components/customs/CustomsPesticideTab'
+import CustomsRegulationBrowse from '../components/customs/CustomsRegulationBrowse'
 import CustomsSavedFilters from '../components/customs/CustomsSavedFilters'
-import { CustomsCompare, CustomsImporters, CustomsLegal } from '../components/customs/CustomsTabs'
+import { CustomsCompare, CustomsImporters, CustomsTariff } from '../components/customs/CustomsTabs'
 import {
   addNamedId, blobErrorMessage, CustomsFilters, downloadBlob, EMPTY_FILTERS, EXTRA_FILTER_KEYS, fmtDate, fmtQty,
   fmtUsd, fmtVnd, hasChartFilter, NEED_FILTER_MSG, PRODUCT_KIND_OPTIONS, removeNamedId, splitNamedIds, toParams,
 } from '../components/customs/customs-shared'
+import {
+  CUSTOMS_SECTIONS, CustomsSectionKey, customsSectionPath, resolveCustomsSection,
+} from '../config/customs-sections'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
 import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
 
-const TABS = [
-  { key: 'list', label: 'Danh sách', icon: 'ti-list' },
-  { key: 'chart', label: 'Biểu đồ', icon: 'ti-chart-line', needFilter: true },
-  { key: 'importers', label: 'Nhà nhập khẩu', icon: 'ti-building-factory-2', needFilter: true },
-  { key: 'compare', label: 'So sánh', icon: 'ti-arrows-diff' },
-  { key: 'legal', label: 'Pháp lý & thuế', icon: 'ti-scale' },
-  { key: 'history', label: 'Lịch sử nạp', icon: 'ti-history' },
-  // bao-CR-502 (bê bao-CR-501 bản v2): ba danh mục cấu hình nằm trong thẻ này thay vì màn riêng.
-  { key: 'config', label: 'Cấu hình', icon: 'ti-settings' },
-]
 
 const pct = (v: any) => (v == null || v === '' ? '' : `${v}%`)
 
@@ -95,7 +93,12 @@ export default function CustomsPrices() {
   const { can } = useAuth()
   const [draft, setDraft] = useState<CustomsFilters>({ ...EMPTY_FILTERS })   // ô đang gõ
   const [filters, setFilters] = useState<CustomsFilters>({ ...EMPTY_FILTERS }) // bộ lọc đã áp
-  const [tab, setTab] = useState('list')
+  //  duoc-CR-491 — mục đang xem nằm trên URL (`/customs-prices/<mục>`), chọn từ menu con bên trái.
+  //  Đổi mục chỉ đổi tham số của CÙNG một Route nên trang không dựng lại: bộ lọc đang áp vẫn giữ.
+  const navigate = useNavigate()
+  const { section } = useParams()
+  const tab = resolveCustomsSection(section, can)
+  const setTab = (key: CustomsSectionKey) => navigate(customsSectionPath(key))
   const [coverage, setCoverage] = useState<any>(null)
   const [options, setOptions] = useState<any>(null)
   const [alerts, setAlerts] = useState<any[]>([])
@@ -211,7 +214,7 @@ export default function CustomsPrices() {
   const canConfigure = can('customs_price', 'create') || can('customs_price', 'write') || can('customs_price', 'delete')
   const canReadRegulations = can('customs_regulation', 'read')
   const showConfigTab = canConfigure || canReadRegulations
-  const visibleTabs = TABS.filter((t) => t.key !== 'config' || showConfigTab)
+  const sectionLabel = CUSTOMS_SECTIONS.find((s) => s.key === tab)?.label ?? ''
   // Khóa theo bộ lọc: đổi lọc là dựng lại thẻ biểu đồ / xếp hạng với đơn vị mặc định — một lượt gọi API thay vì hai.
   const filterKey = JSON.stringify(toParams(filters))
   const empty = coverage && coverage.total === 0
@@ -219,7 +222,7 @@ export default function CustomsPrices() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <h2 className="page-title" style={{ margin: 0, flex: 1 }}>Tra cứu thị trường</h2>
+        <h2 className="page-title" style={{ margin: 0, flex: 1 }}>Tra cứu thị trường — {sectionLabel}</h2>
         <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
         {can('customs_price', 'write') && (
           <button className="btn" onClick={() => setImportOpen(true)}><i className="ti ti-upload" />Nạp dữ liệu</button>
@@ -228,8 +231,9 @@ export default function CustomsPrices() {
 
       <CoverageStrip coverage={coverage} ingredient={options?.ingredient_coverage} />
 
-      {/* bao-CR-502 — thẻ «Cấu hình» không dùng bộ lọc dòng hàng: ẩn cả cụm lọc (state giữ nguyên ở trang). */}
-      {tab !== 'config' && (<>
+      {/* bao-CR-502 / duoc-CR-490 — thẻ «Cấu hình» và «Thuốc BVTV» không dùng bộ lọc dòng hàng: ẩn cả cụm
+           lọc (state giữ nguyên ở trang; hai thẻ này lọc bằng state cục bộ riêng). */}
+      {tab !== 'config' && tab !== 'pesticides' && (<>
       {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản, chung kho với bản v2. */}
       <CustomsSavedFilters filters={filters} onApply={(next) => { setDraft(next); apply(next) }} />
 
@@ -345,21 +349,11 @@ export default function CustomsPrices() {
               </li>
             ))}
           </ul>
-          {alerts.length > 5 && <div style={{ marginTop: 4 }}>… và {alerts.length - 5} mục khác — xem thẻ Pháp lý & thuế.</div>}
+          {alerts.length > 5 && <div style={{ marginTop: 4 }}>… và {alerts.length - 5} mục khác — xem mục Pháp lý.</div>}
         </div>
       )}
       </>)}
 
-      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb', marginBottom: 12 }}>
-        {visibleTabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            style={{ background: 'none', border: 'none', padding: '8px 14px', cursor: 'pointer', fontSize: 14,
-              borderBottom: tab === t.key ? '2px solid var(--teal)' : '2px solid transparent',
-              color: tab === t.key ? 'var(--teal)' : 'var(--muted)', fontWeight: tab === t.key ? 600 : 400 }}>
-            <i className={`ti ${t.icon}`} style={{ marginRight: 5 }} />{t.label}
-          </button>
-        ))}
-      </div>
 
       {tab === 'list' && (
         <div className="card table-card">
@@ -408,7 +402,9 @@ export default function CustomsPrices() {
       {tab === 'chart' && chartReady && <CustomsChart key={filterKey} filters={filters} />}
       {tab === 'importers' && chartReady && <CustomsImporters key={filterKey} filters={filters} onPickImporter={pickImporter} />}
       {tab === 'compare' && <CustomsCompare filters={filters} />}
-      {tab === 'legal' && <CustomsLegal filters={filters} alerts={alerts} />}
+      {tab === 'legal' && <CustomsRegulationBrowse filters={filters} alerts={alerts} />}
+      {tab === 'tariff' && <CustomsTariff filters={filters} />}
+      {tab === 'pesticides' && <CustomsPesticideTab />}
       {tab === 'history' && <CustomsHistoryPanel onChanged={refreshAll} />}
       {tab === 'config' && showConfigTab && (
         <CustomsConfigTab canConfigure={canConfigure} canReadRegulations={canReadRegulations} />

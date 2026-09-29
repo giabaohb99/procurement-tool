@@ -1,0 +1,59 @@
+// Các MỤC của màn Tra cứu thị trường (bản cũ) — khai MỘT chỗ cho cả menu trái lẫn trang.
+//
+// duoc-CR-491 (29/09/2026, bê duoc-CR-486 của bản v2): hàng thẻ trên màn đổi thành MENU CON bên trái;
+// mỗi mục có đường riêng `/customs-prices/<mục>` nên gửi link là mở đúng mục. Bộ lọc dòng hàng là
+// state của trang và trang KHÔNG dựng lại khi chỉ đổi mục (cùng một Route `:section?`), nên bấm
+// sang mục khác vẫn giữ bộ lọc đang áp — y như bấm thẻ trước đây.
+
+export type CustomsSectionKey =
+  | 'list' | 'chart' | 'importers' | 'compare' | 'legal' | 'tariff' | 'pesticides' | 'history' | 'config'
+
+export interface CustomsSection {
+  key: CustomsSectionKey
+  label: string
+  icon: string
+  /** Chỉ vẽ khi đã có bộ lọc (từ khóa hoặc mã HS). */
+  needFilter?: boolean
+}
+
+export const CUSTOMS_BASE_PATH = '/customs-prices'
+
+export const CUSTOMS_SECTIONS: CustomsSection[] = [
+  { key: 'list', label: 'Danh sách', icon: 'ti-list' },
+  { key: 'chart', label: 'Biểu đồ', icon: 'ti-chart-line', needFilter: true },
+  { key: 'importers', label: 'Nhà nhập khẩu', icon: 'ti-building-factory-2', needFilter: true },
+  { key: 'compare', label: 'So sánh', icon: 'ti-arrows-diff' },
+  // duoc-CR-490 — thẻ «Pháp lý & thuế» cũ chia đôi: «Pháp lý» (duyệt cả danh mục hóa chất theo
+  // văn bản) và «Thuế» (biểu thuế theo mã HS, giữ nguyên như cũ).
+  { key: 'legal', label: 'Pháp lý', icon: 'ti-scale' },
+  { key: 'tariff', label: 'Thuế', icon: 'ti-receipt-tax' },
+  // duoc-CR-490 — danh mục thuốc BVTV đăng ký tại VN (có thêm / sửa / xóa, khóa `customs_pesticide`).
+  { key: 'pesticides', label: 'Thuốc BVTV', icon: 'ti-flask' },
+  { key: 'history', label: 'Lịch sử nạp', icon: 'ti-history' },
+  // bao-CR-502 (bê bao-CR-501 bản v2): ba danh mục cấu hình nằm trong mục này thay vì màn riêng.
+  { key: 'config', label: 'Cấu hình', icon: 'ti-settings' },
+]
+
+type Can = (entity: string, action: string) => boolean
+
+/**
+ * Mục «Cấu hình»: hai danh mục của `customs_price` cần quyền quản lý (tạo / sửa / xóa), danh mục
+ * hóa chất mở cho ai XEM được nó. Mọi mục khác theo quyền xem cả màn (`customs_price.read`, gác
+ * ở mục cha của menu và ở đầu trang). Menu và trang cùng gọi hàm này — lệch nhau là menu hiện
+ * một mục mà bấm vào trang lại đá về «Danh sách».
+ */
+export function canSeeCustomsSection(key: CustomsSectionKey, can: Can): boolean {
+  if (key !== 'config') return true
+  return can('customs_price', 'create') || can('customs_price', 'write') || can('customs_price', 'delete')
+    || can('customs_regulation', 'read')
+}
+
+/** Đoạn URL → mục hợp lệ mà người dùng được xem; lạ / không được xem thì về «Danh sách». */
+export function resolveCustomsSection(raw: string | undefined, can: Can): CustomsSectionKey {
+  const hit = CUSTOMS_SECTIONS.find((s) => s.key === raw)
+  return hit && canSeeCustomsSection(hit.key, can) ? hit.key : 'list'
+}
+
+export function customsSectionPath(key: CustomsSectionKey): string {
+  return `${CUSTOMS_BASE_PATH}/${key}`
+}
