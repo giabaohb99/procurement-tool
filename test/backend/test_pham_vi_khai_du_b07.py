@@ -180,9 +180,12 @@ def test_du_55_entity():
     69 → 70 ngày 25/09/2026 (gộp erp-v2 vào nhánh bot; đánh số lại): việc của bot Agent Hub (`agent_task`, ai-CR-036) — màn
     `/system/agent-tasks` chỉ đọc. PUBLIC vì việc của bot không thuộc người hay phòng nào;
     gác bằng khóa quyền, và nằm trong `_SYS_ENTITIES` nên Quản lý thu mua không tự có.
+    70 → 71 ngày 29/09/2026: danh mục thuốc BVTV (`customs_pesticide`, duoc-CR-490) — khóa SỬA
+    danh mục thuốc của Tra cứu thị trường; PUBLIC vì là dữ liệu tham khảo bên ngoài, và nằm
+    trong `_SYS_ENTITIES` để Quản lý thu mua không tự có.
     """
-    assert len(ENTITIES) == 70
-    assert len(SCOPE_FIELDS) == 70
+    assert len(ENTITIES) == 71
+    assert len(SCOPE_FIELDS) == 71
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

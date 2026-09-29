@@ -47,6 +47,12 @@ export const queryKeys = {
     /** Những người được phép duyệt bước 1 của một phiếu YCMH (CR-071). */
     /** bao-CR-495 — ô tìm tên hàng hải quan sẽ khớp những cách viết nào. */
     customsSearchExplain: (q: string) => ['procurement', 'customs', 'search-explain', q] as const,
+    /** Mục «Thuốc BVTV» của Tra cứu thị trường — dưới `['procurement', 'customs']` để nạp lại
+        danh mục (kéo theo gắn lại hoạt chất dòng hàng) bỏ hiệu lực cả màn trong một lệnh. */
+    customsPesticides: (params: Record<string, unknown>) =>
+      ['procurement', 'customs', 'pesticides', 'list', params] as const,
+    customsPesticide: (id: number) => ['procurement', 'customs', 'pesticides', 'detail', id] as const,
+    customsPesticideOptions: () => ['procurement', 'customs', 'pesticides', 'options'] as const,
     purchaseRequestDeptHeads: (id: number) =>
       ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,
     /** bao-CR-499 — người duyệt được một YCMH/YCBG/ĐMH (id = 0: đang lập, tra theo phòng ban). */

@@ -5,6 +5,14 @@
 
 Hai bản dùng **chung một bộ API và chung một bố cục**. Khác nhau chỉ ở cách dựng (§5).
 
+> **Cập nhật 29/09/2026 (duoc-CR-486/487/488, chỉ bản mới `frontend-v2/`):** hàng thẻ trên màn đã
+> bỏ — mỗi thẻ thành **một mục con trong menu trái**, có đường riêng `/procurement/customs-prices/<mục>`
+> (Danh sách ở đường gốc; link cũ `?tab=` tự chuyển). Thứ tự: Danh sách · Biểu đồ · Nhà nhập khẩu ·
+> So sánh · **Pháp lý** (bảng duyệt cả danh mục hóa chất theo văn bản, `GET /api/customs/regulations`)
+> · **Thuế** (tra biểu thuế theo mã HS — phần còn lại của thẻ «Pháp lý & thuế» cũ) · **Thuốc BVTV**
+> (danh mục 6.919 thuốc + phạm vi sử dụng, nạp tệp ngay trên màn) · Lịch sử nạp · Cấu hình. Khai một
+> chỗ ở `frontend-v2/src/modules/procurement/config/customs-sections.ts`. Bản cũ `frontend/` giữ nguyên.
+
 ---
 
 ## 1. Danh sách màn hình

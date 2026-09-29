@@ -246,7 +246,7 @@ function NavMenuItemWithSub({
   item: ModuleNavItem
   onNavigate: () => void
 }) {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const { isMobile, state, setOpenMobile } = useSidebar()
   const navigate = useNavigate()
 
@@ -319,7 +319,8 @@ function NavMenuItemWithSub({
               return (
                 <SidebarMenuSubItem key={child.path}>
                   <NavLink
-                    to={child.path}
+                    //  Đổi giữa các mục con cùng cha thì mang bộ lọc theo — xem `keepSearch`.
+                    to={item.keepSearch && isAnyActive ? { pathname: child.path, search } : child.path}
                     end={child.end}
                     onClick={() => {
                       onNavigate()

@@ -1,34 +1,30 @@
 // bao-CR-470 — Tra cứu giá hải quan (bản v2). Thiết kế: doc/erp/hai-quan/04-giao-dien.md.
 //
-// MỘT màn hình, năm thẻ: Danh sách · Biểu đồ · Nhà nhập khẩu · So sánh · Pháp lý & thuế.
+// MỘT trang, nhiều mục: Danh sách · Biểu đồ · Nhà nhập khẩu · So sánh · Pháp lý · Thuế · Thuốc BVTV · Lịch sử
+// nạp · Cấu hình. Ngày 29/09/2026 các thẻ này thành SUBMENU con trên menu trái — mỗi mục một đường
+// (`config/customs-sections.ts`), link cũ `?tab=` tự chuyển sang đường mới.
 // Đại ca chốt 23/09/2026: biểu đồ nằm chung màn với danh sách, CHỈ hiện khi đã có bộ lọc
 // (từ khóa hoặc mã HS); không có trang tổng quan riêng, không tính sẵn, không tác vụ định kỳ.
 // Quyền: `customs_price` (đọc / ghi = nạp tệp / xóa = hoàn tác / xuất = Excel).
 //
-// Bộ lọc và thẻ đang mở nằm TRÊN ĐƯỜNG DẪN — gửi link cho người khác là họ thấy đúng kết
-// quả đang xem. Thanh lọc dùng chung cho cả năm thẻ, đổi thẻ không mất bộ lọc.
+// Bộ lọc và mục đang mở nằm TRÊN ĐƯỜNG DẪN — gửi link cho người khác là họ thấy đúng kết
+// quả đang xem. Thanh lọc dùng chung cho mọi mục, đổi mục (menu `keepSearch`) không mất bộ lọc.
 //
 // bao-CR-493 (yêu cầu phòng Thu mua 25/09): thẻ thứ sáu «Lịch sử nạp» thay hộp thoại; hàng
 // «Lọc thêm» với sáu ô theo sheet 4 (nguyên tệ, giao hàng, lô nguồn, ba khoảng số); doanh
 // nghiệp / đối tác chọn được NHIỀU (chip cộng dồn, id nối dấu phẩy trên URL).
 import {
-  ChartLine,
   ChevronDown,
   ChevronUp,
   Download,
-  Factory,
   FilterX,
-  GitCompareArrows,
   History,
-  Landmark,
-  List,
-  Settings2,
   TriangleAlert,
   Upload,
   X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { DataTable } from '@/shared/data-table'
@@ -45,11 +41,8 @@ import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { SearchField } from '@/shared/ui/search-field'
 import { SearchSelect } from '@/shared/ui/search-select'
-import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
-import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 
 import { exportCustomsLines } from '../api/customs-api'
 import { CustomsSearchHint } from '../components/customs/customs-search-hint'
@@ -60,11 +53,18 @@ import { CustomsConfigTab } from '../components/customs/customs-config-tab'
 import { CustomsHistoryPanel } from '../components/customs/customs-history-panel'
 import { CustomsImportDialog } from '../components/customs/customs-import-dialog'
 import { CustomsImportersTab } from '../components/customs/customs-importers-tab'
-import { CustomsLegalTab } from '../components/customs/customs-legal-tab'
+import { CustomsPesticideTab } from '../components/customs/customs-pesticide-tab'
+import { CustomsRegulationTab } from '../components/customs/customs-regulation-tab'
+import { CustomsTariffTab } from '../components/customs/customs-tariff-tab'
 import { CustomsLineDetailDialog } from '../components/customs/customs-line-detail-dialog'
 import { CustomsPriceChart } from '../components/customs/customs-price-chart'
 import { CustomsSavedFilterBar } from '../components/customs/customs-saved-filter-bar'
 import { CUSTOMS_LINE_COLUMNS } from '../config/customs-line-columns'
+import {
+  buildCustomsSectionPath,
+  CUSTOMS_SECTIONS,
+  type CustomsSectionKey,
+} from '../config/customs-sections'
 import { useCustomsSearchExplain } from '../hooks/use-customs-search-explain'
 import {
   useCustomsAlerts,
@@ -86,20 +86,6 @@ import {
   sortRegulationsBySeverity,
   splitNamedIds,
 } from '../utils/customs'
-
-const TABS = [
-  { key: 'list', label: 'Danh sách', icon: List },
-  { key: 'chart', label: 'Biểu đồ', icon: ChartLine },
-  { key: 'importers', label: 'Nhà nhập khẩu', icon: Factory },
-  { key: 'compare', label: 'So sánh', icon: GitCompareArrows },
-  { key: 'legal', label: 'Pháp lý & thuế', icon: Landmark },
-  { key: 'history', label: 'Lịch sử nạp', icon: History },
-  //  bao-CR-501 — ba danh mục cấu hình (từ khóa nhãn, từ đồng nghĩa, hóa chất theo văn bản)
-  //  nằm ở đây thay vì ba màn riêng trên menu. Hiện khi sửa được cấu hình HOẶC xem được hóa chất.
-  { key: 'config', label: 'Cấu hình', icon: Settings2 },
-] as const
-
-type TabKey = (typeof TABS)[number]['key']
 
 /**
  * Hậu tố `-v2`: bố cục cũ (ẩn 22 cột) đã lưu trong máy người dùng không được thắng bố cục mới.
@@ -162,7 +148,8 @@ function toSelectOptions(items: CustomsOptionItem[] | undefined) {
 export function CustomsPricePage() {
   const { canImport, canExport, canReadRegulations, canConfigure } = useCustomsPermissions()
   const showConfigTab = canConfigure || canReadRegulations
-  const visibleTabs = TABS.filter((item) => item.key !== 'config' || showConfigTab)
+  const visibleSections = CUSTOMS_SECTIONS.filter((item) => item.key !== 'config' || showConfigTab)
+  const { section } = useParams()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam('q')
   const [hsCode, setHsCode] = useUrlParamState('hs_code', '')
   const [origin, setOrigin] = useUrlParamState('origin', '')
@@ -179,15 +166,23 @@ export function CustomsPricePage() {
   const [rateMin, setRateMin] = useUrlParamState('rate_min', '')
   const [rateMax, setRateMax] = useUrlParamState('rate_max', '')
   const [productKind, setProductKind] = useUrlParamState('product_kind', '')   // bao-CR-494
-  const [rawTab, setTab] = useUrlParamState('tab', 'list')
   const [searchParams] = useSearchParams()
   const setUrlParams = useSetUrlParams()
+  const navigate = useNavigate()
 
   const importerId = searchParams.get('importer_id') ?? ''
   const importerName = searchParams.get('importer_name') ?? ''
   const partnerId = searchParams.get('partner_id') ?? ''
   const partnerName = searchParams.get('partner_name') ?? ''
-  const tab: TabKey = visibleTabs.some((item) => item.key === rawTab) ? (rawTab as TabKey) : 'list'
+  //  Link cũ (trước khi thẻ thành submenu) mang `?tab=chart` trên đường gốc — vẫn đọc được,
+  //  rồi chuyển hẳn sang đường mới ở cuối hàm.
+  const legacyTab = section ? null : searchParams.get('tab')
+  const requested = section ?? legacyTab ?? 'list'
+  const current = visibleSections.find((item) => item.key === requested) ?? visibleSections[0]
+  const tab: CustomsSectionKey = current.key
+  //  «Pháp lý», «Thuốc BVTV», «Cấu hình» có ô tìm riêng, không dùng bộ lọc dòng hàng hải quan — ẩn
+  //  thanh lọc + dải cảnh báo (mục Pháp lý tự bày cảnh báo của từ khóa đang tra).
+  const usesLineFilters = tab !== 'config' && tab !== 'pesticides' && tab !== 'legal'
 
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [detailId, setDetailId] = useState<number | null>(null)
@@ -278,17 +273,28 @@ export function CustomsPricePage() {
     setUrlParams(next)
   }
 
-  //  Chọn thêm từ thẻ Nhà nhập khẩu / hộp chi tiết dòng: CỘNG DỒN vào bộ lọc, không thay thế.
+  /** Sang mục khác của màn, GIỮ bộ lọc đang áp (cộng thêm `patch` nếu có). */
+  function openSection(key: CustomsSectionKey, patch: Record<string, string | null> = {}) {
+    const next = new URLSearchParams(searchParams)
+    for (const [name, value] of Object.entries(patch)) {
+      if (value) next.set(name, value)
+      else next.delete(name)
+    }
+    navigate({ pathname: buildCustomsSectionPath(key), search: next.toString() })
+  }
+
+  //  Chọn thêm từ mục Nhà nhập khẩu / hộp chi tiết dòng: CỘNG DỒN vào bộ lọc, không thay thế,
+  //  rồi về mục Danh sách để thấy ngay các dòng của doanh nghiệp đó.
   function filterByImporter(id: number, name: string) {
     setDetailId(null)
     const next = addNamedId(importerId, importerName, id, name)
-    setUrlParams({ importer_id: next.ids, importer_name: next.names || null, tab: null })
+    openSection('list', { importer_id: next.ids, importer_name: next.names || null })
   }
 
   function filterByPartner(id: number, name: string) {
     setDetailId(null)
     const next = addNamedId(partnerId, partnerName, id, name)
-    setUrlParams({ partner_id: next.ids, partner_name: next.names || null, tab: null })
+    openSection('list', { partner_id: next.ids, partner_name: next.names || null })
   }
 
   function dropImporter(id: string) {
@@ -314,14 +320,23 @@ export function CustomsPricePage() {
     })
   }
 
+  //  Link cũ `?tab=` hoặc mục không được xem (gõ tay `/config` khi thiếu quyền) → về đúng đường
+  //  của mục đang hiện, giữ nguyên bộ lọc. `replace` để nút Back không quay lại link hỏng.
+  //  `/list` cũng về đường gốc — «Danh sách» chỉ có MỘT đường, không thì mục menu không sáng.
+  if (legacyTab !== null || (section && (section !== tab || section === 'list'))) {
+    const next = new URLSearchParams(searchParams)
+    next.delete('tab')
+    return <Navigate replace to={{ pathname: buildCustomsSectionPath(tab), search: next.toString() }} />
+  }
+
   return (
     <PageContainer className="flex flex-col gap-3">
       <PageHeader
-        title="Tra cứu thị trường"
+        title={tab === 'list' ? 'Tra cứu thị trường' : `Tra cứu thị trường — ${current.label}`}
         description="Giá nhập khẩu theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
         actions={
           <>
-            <Button type="button" variant="outline" onClick={() => setTab('history')}>
+            <Button type="button" variant="outline" onClick={() => openSection('history')}>
               <History className="size-4" />
               Lịch sử nạp
             </Button>
@@ -341,9 +356,8 @@ export function CustomsPricePage() {
         isLoading={coverage.isLoading}
       />
 
-      {/*  bao-CR-501 — thẻ «Cấu hình» không dùng bộ lọc dòng hàng: ẩn thanh lọc (chỉ ẩn, không gỡ,
-           để quay lại thẻ khác vẫn giữ nguyên ô đang gõ). */}
-      <Card className={cn('gap-3 p-4', tab === 'config' && 'hidden')}>
+      {/*  bao-CR-501 — mục «Cấu hình» (và «Thuốc BVTV») không dùng bộ lọc dòng hàng: ẩn thanh lọc. */}
+      <Card className={cn('gap-3 p-4', !usesLineFilters && 'hidden')}>
         <div className="flex flex-wrap items-center gap-2">
           <SearchField
             value={keyword}
@@ -502,7 +516,7 @@ export function CustomsPricePage() {
         )}
       </Card>
 
-      {alertItems.length > 0 && tab !== 'config' && (
+      {alertItems.length > 0 && usesLineFilters && (
         <CustomsNotice tone="danger" icon={<TriangleAlert className="size-4" />}>
           <p className="font-semibold">Lưu ý pháp lý cho «{filters.q}»:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-5">
@@ -524,98 +538,78 @@ export function CustomsPricePage() {
           </ul>
           {alertItems.length > 5 && (
             <p className="mt-1">
-              … và {alertItems.length - 5} mục khác — xem thẻ Pháp lý &amp; thuế.
+              … và {alertItems.length - 5} mục khác — xem mục Pháp lý.
             </p>
           )}
         </CustomsNotice>
       )}
 
-      <Tabs value={tab} onValueChange={(next) => setTab(next)}>
-        <ScrollableTabsList
-          value={tab}
-          className="max-md:w-full max-md:min-w-0 md:max-w-full md:min-w-0 md:overflow-x-auto"
-        >
-          {visibleTabs.map((item) => (
-            <TabsTrigger key={item.key} value={item.key} className={TAB_TRIGGER_UNDERLINE}>
-              <item.icon className="size-4" />
-              {item.label}
-            </TabsTrigger>
-          ))}
-        </ScrollableTabsList>
+      {tab === 'list' && (
+        <Card className="p-4">
+          <DataTable
+            columns={CUSTOMS_LINE_COLUMNS}
+            rows={lines.data?.items}
+            getRowId={(line) => line.id}
+            isLoading={lines.isLoading}
+            isError={lines.isError}
+            emptyMessage={resolveLinesEmptyMessage(coverage.data?.total, canImport)}
+            storageKey={STORAGE_KEY}
+            onRowClick={(line) => setDetailId(line.id)}
+            //  Bộ lọc đứng NGOÀI bảng (dùng chung cho mọi mục) và đã có nút "Xóa lọc"
+            //  riêng ở thanh lọc — tắt nút của bảng cho khỏi hai nút làm cùng một việc.
+            filtersActive={false}
+            pagination={{
+              page,
+              pageSize,
+              total: lines.data?.total ?? 0,
+              onPageChange: setPage,
+              onPageSizeChange: (size) => {
+                setPageSize(size)
+                setPage(1)
+              },
+              unitLabel: 'dòng hàng',
+            }}
+            toolbar={
+              canExport ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={exporting || !lines.data?.total}
+                  onClick={exportExcel}
+                  title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)"
+                >
+                  <Download className="size-4" />
+                  {exporting ? 'Đang xuất…' : 'Xuất Excel'}
+                </Button>
+              ) : undefined
+            }
+          />
+        </Card>
+      )}
 
-        <TabsContent value="list" className="mt-2">
-          <Card className="p-4">
-            <DataTable
-              columns={CUSTOMS_LINE_COLUMNS}
-              rows={lines.data?.items}
-              getRowId={(line) => line.id}
-              isLoading={lines.isLoading}
-              isError={lines.isError}
-              emptyMessage={resolveLinesEmptyMessage(coverage.data?.total, canImport)}
-              storageKey={STORAGE_KEY}
-              onRowClick={(line) => setDetailId(line.id)}
-              //  Bộ lọc đứng NGOÀI bảng (dùng chung cho năm thẻ) và đã có nút "Xóa lọc"
-              //  riêng ở thanh lọc — tắt nút của bảng cho khỏi hai nút làm cùng một việc.
-              filtersActive={false}
-              pagination={{
-                page,
-                pageSize,
-                total: lines.data?.total ?? 0,
-                onPageChange: setPage,
-                onPageSizeChange: (size) => {
-                  setPageSize(size)
-                  setPage(1)
-                },
-                unitLabel: 'dòng hàng',
-              }}
-              toolbar={
-                canExport ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={exporting || !lines.data?.total}
-                    onClick={exportExcel}
-                    title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)"
-                  >
-                    <Download className="size-4" />
-                    {exporting ? 'Đang xuất…' : 'Xuất Excel'}
-                  </Button>
-                ) : undefined
-              }
-            />
-          </Card>
-        </TabsContent>
+      {tab === 'chart' &&
+        (chartReady ? <CustomsPriceChart filters={filters} /> : <CustomsNeedFilterState />)}
 
-        <TabsContent value="chart" className="mt-2">
-          {chartReady ? <CustomsPriceChart filters={filters} /> : <CustomsNeedFilterState />}
-        </TabsContent>
+      {tab === 'importers' &&
+        (chartReady ? (
+          <CustomsImportersTab filters={filters} onPickImporter={filterByImporter} />
+        ) : (
+          <CustomsNeedFilterState />
+        ))}
 
-        <TabsContent value="importers" className="mt-2">
-          {chartReady ? (
-            <CustomsImportersTab filters={filters} onPickImporter={filterByImporter} />
-          ) : (
-            <CustomsNeedFilterState />
-          )}
-        </TabsContent>
+      {tab === 'compare' && <CustomsCompareTab filters={filters} />}
 
-        <TabsContent value="compare" className="mt-2">
-          <CustomsCompareTab filters={filters} />
-        </TabsContent>
+      {tab === 'legal' && <CustomsRegulationTab keyword={filters.q} alerts={alertItems} />}
 
-        <TabsContent value="legal" className="mt-2">
-          <CustomsLegalTab filters={filters} alerts={alertItems} />
-        </TabsContent>
+      {tab === 'tariff' && <CustomsTariffTab filters={filters} />}
 
-        <TabsContent value="history" className="mt-2">
-          <CustomsHistoryPanel />
-        </TabsContent>
+      {tab === 'pesticides' && <CustomsPesticideTab />}
 
-        {showConfigTab && (
-          <TabsContent value="config" className="mt-2">
-            <CustomsConfigTab canConfigure={canConfigure} canReadRegulations={canReadRegulations} />
-          </TabsContent>
-        )}
-      </Tabs>
+      {tab === 'history' && <CustomsHistoryPanel />}
+
+      {tab === 'config' && (
+        <CustomsConfigTab canConfigure={canConfigure} canReadRegulations={canReadRegulations} />
+      )}
 
       <CustomsLineDetailDialog
         lineId={detailId}

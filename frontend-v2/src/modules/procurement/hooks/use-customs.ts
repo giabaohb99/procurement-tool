@@ -4,7 +4,13 @@
 // mọi lượt bỏ hiệu lực của phân hệ này đều nằm trong chính tệp này (`useInvalidateCustoms`),
 // không nơi nào khác cần với tới. Khóa vẫn mở đầu bằng `'procurement'` nên lệnh bỏ hiệu lực
 // cả phân hệ Thu mua (`queryKeys.procurement.all`) vẫn quét được chúng.
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import { canManageEntity } from '@/app/router/module-visibility'
@@ -22,6 +28,8 @@ import {
   fetchCustomsLine,
   fetchCustomsLines,
   fetchCustomsOptions,
+  fetchCustomsRegulationOptions,
+  fetchCustomsRegulations,
   fetchCustomsStats,
   lookupCustomsRegulations,
   lookupCustomsTariff,
@@ -44,6 +52,8 @@ const customsKeys = {
   importers: (params: Params) => ['procurement', 'customs', 'importers', params] as const,
   alerts: (params: Params) => ['procurement', 'customs', 'alerts', params] as const,
   regulationLookup: (q: string) => ['procurement', 'customs', 'regulation-lookup', q] as const,
+  regulations: (params: Params) => ['procurement', 'customs', 'regulations', params] as const,
+  regulationOptions: () => ['procurement', 'customs', 'regulations', 'options'] as const,
   tariff: (hsCode: string) => ['procurement', 'customs', 'tariff', hsCode] as const,
   batches: (params: Params) => ['procurement', 'customs', 'batches', params] as const,
   batch: (id: number) => ['procurement', 'customs', 'batch', id] as const,
@@ -213,4 +223,17 @@ export function useCustomsPermissions() {
     //  `manage: true` trên menu trước đây — có một trong ba quyền tạo / sửa / xóa.
     canConfigure: canManageEntity('customs_price', can),
   }
+}
+
+/** Mục «Pháp lý» — bảng duyệt cả danh mục hóa chất theo văn bản. */
+export function useCustomsRegulations(params: Params) {
+  return useQuery({
+    queryKey: customsKeys.regulations(params),
+    queryFn: () => fetchCustomsRegulations(params),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useCustomsRegulationOptions() {
+  return useQuery({ queryKey: customsKeys.regulationOptions(), queryFn: fetchCustomsRegulationOptions })
 }

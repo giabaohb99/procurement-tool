@@ -17,6 +17,8 @@ import {
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 
+import { buildCustomsSectionPath, CUSTOMS_SECTIONS } from './config/customs-sections'
+
 /**
  * Phân hệ THU MUA — luồng chứng từ: yêu cầu báo giá → khảo sát → yêu cầu mua
  * hàng → đơn mua hàng → tiến độ nhận hàng.
@@ -100,13 +102,29 @@ export const procurementModule: ErpModule = {
       entity: 'purchase_request',
       group: 'Mua hàng',
     },
-    // bao-CR-470 — Tra cứu giá hải quan, khóa riêng `customs_price`
+    // bao-CR-470 — Tra cứu giá hải quan, khóa riêng `customs_price`. Các thẻ cũ trên màn nay
+    // là submenu con (mỗi mục một đường); bộ lọc dùng chung trên URL nên `keepSearch`.
     {
       label: 'Tra cứu thị trường',
       path: appRoutes.procurement.customsPrices,
       icon: Landmark,
       entity: 'customs_price',
       group: 'Mua hàng',
+      keepSearch: true,
+      children: CUSTOMS_SECTIONS.map((section) => ({
+        label: section.label,
+        path: buildCustomsSectionPath(section.key),
+        icon: section.icon,
+        entity: 'customs_price' as const,
+        //  «Danh sách» ở đường gốc — không `end` thì nó sáng lây ở mọi mục con.
+        end: section.key === 'list',
+        //  «Cấu hình»: quản lý `customs_price` (từ khóa + đồng nghĩa) HOẶC đọc
+        //  `customs_regulation` (danh mục hóa chất) — cùng luật `showConfigTab` của trang.
+        ...(section.key === 'config' && {
+          manage: true,
+          alsoReadable: ['customs_regulation' as const],
+        }),
+      })),
     },
     {
       label: 'Phiếu khảo sát',
@@ -330,6 +348,20 @@ export const procurementModule: ErpModule = {
     // bao-CR-470 — Tra cứu thị trường (danh mục hóa chất nằm trong thẻ «Cấu hình», bao-CR-501)
     {
       path: appRoutes.procurement.customsPrices,
+      lazy: async () => ({
+        Component: (await import('./pages/customs-price-page')).CustomsPricePage,
+      }),
+    },
+    //  duoc-CR-492 — chi tiết một thuốc BVTV. Nằm DƯỚI đường mục «Thuốc BVTV» nên `canAccessRoute`
+    //  gác bằng chính mục menu đó (`customs_price.read`), không mở cửa riêng.
+    {
+      path: appRoutes.procurement.customsPesticideDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/customs-pesticide-detail-page')).CustomsPesticideDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.customsPriceSection(':section'),
       lazy: async () => ({
         Component: (await import('./pages/customs-price-page')).CustomsPricePage,
       }),

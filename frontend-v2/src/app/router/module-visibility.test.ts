@@ -511,3 +511,56 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
   })
 })
 
+
+describe('Tra cứu thị trường — submenu thật (procurementModule)', () => {
+  const procurement = moduleRegistry.find((m) => m.id === 'procurement')
+  if (!procurement) throw new Error('Thiếu phân hệ Thu mua')
+
+  /** `can` giả lập theo từng cặp «khóa.hành động». */
+  function grants(...cap: string[]) {
+    return (entity: PermissionEntity, action: PermissionAction) => cap.includes(`${entity}.${action}`)
+  }
+  function customsChildren(can: ReturnType<typeof grants>) {
+    const parent = visibleNavItems(procurement as ErpModule, can).find(
+      (item) => item.path === '/procurement/customs-prices',
+    )
+    return parent?.children?.map((child) => child.path) ?? []
+  }
+
+  it('người chỉ ĐỌC dữ liệu hải quan thấy mọi mục trừ «Cấu hình» (kể cả «Thuốc BVTV»)', () => {
+    const paths = customsChildren(grants('customs_price.read'))
+    expect(paths).toHaveLength(8)
+    expect(paths).toContain('/procurement/customs-prices/pesticides')
+    expect(paths).not.toContain('/procurement/customs-prices/config')
+  })
+
+  //  «Cấu hình» có hai mức quyền trên hai khóa: QUẢN LÝ `customs_price` (từ khóa + đồng
+  //  nghĩa) hoặc chỉ ĐỌC `customs_regulation` (danh mục hóa chất) — `alsoReadable`.
+  it('chỉ đọc được danh mục hóa chất vẫn thấy và vào được «Cấu hình»', () => {
+    const can = grants('customs_price.read', 'customs_regulation.read')
+    expect(customsChildren(can)).toContain('/procurement/customs-prices/config')
+    expect(
+      canAccessRoute(procurement as ErpModule, '/procurement/customs-prices/config', can),
+    ).toBe(true)
+  })
+
+  it('quản lý customs_price thì thấy «Cấu hình» dù không đọc được hóa chất', () => {
+    expect(customsChildren(grants('customs_price.read', 'customs_price.write'))).toContain(
+      '/procurement/customs-prices/config',
+    )
+  })
+
+  it('gõ thẳng /config khi không có quyền nào của nó thì bị chặn', () => {
+    expect(
+      canAccessRoute(
+        procurement as ErpModule,
+        '/procurement/customs-prices/config',
+        grants('customs_price.read'),
+      ),
+    ).toBe(false)
+  })
+
+  it('không có customs_price.read thì cả cụm biến mất', () => {
+    expect(customsChildren(grants('customs_regulation.read'))).toEqual([])
+  })
+})

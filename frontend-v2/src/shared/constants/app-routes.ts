@@ -99,8 +99,12 @@ export const appRoutes = {
     /** bao-CR-453 — danh mục loại chi phí thu mua. */
     poCostTypes: '/procurement/po-cost-types',
     poCostTypeDetail: (id: number | string) => `/procurement/po-cost-types/${id}`,
-    /** bao-CR-470 — Tra cứu giá hải quan (năm thẻ trên một màn). */
+    /** bao-CR-470 — Tra cứu giá hải quan. Đường gốc = mục «Danh sách». */
     customsPrices: '/procurement/customs-prices',
+    /** Các mục con còn lại (biểu đồ, nhà nhập khẩu…) — mỗi mục một đường, đứng thành submenu. */
+    customsPriceSection: (section: string) => `/procurement/customs-prices/${section}`,
+    /** duoc-CR-492 — trang chi tiết một thuốc BVTV (nằm dưới mục «Thuốc BVTV» nên cùng khóa gác). */
+    customsPesticideDetail: (id: number | string) => `/procurement/customs-prices/pesticides/${id}`,
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»

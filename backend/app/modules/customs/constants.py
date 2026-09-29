@@ -166,3 +166,25 @@ DEFAULT_KIND_KEYWORDS = (
     ("KỸ THUẬT", ProductKind.TECHNICAL, "«Thuốc kỹ thuật …»"),
     ("NGUYÊN LIỆU", ProductKind.TECHNICAL, "«… nguyên liệu dùng SX thuốc …»"),
 )
+
+
+class PesticideStatus(IntEnum):
+    """Tình trạng đăng ký của thuốc BVTV — lưu SMALLINT theo luật R2.
+
+    Nguồn ghi bằng chữ; đọc qua `PESTICIDE_STATUS_BY_LABEL`. Chữ lạ → `UNKNOWN` (không
+    đoán), để nguồn thêm tình trạng mới thì lọc «Còn hiệu lực» không lẫn thuốc sai.
+    """
+    UNKNOWN = 0
+    ACTIVE = 1       # Còn hiệu lực
+    EXPIRED = 2      # Hết hiệu lực
+    IN_USE = 3       # Đang sử dụng — nhóm thuốc cũ không ghi thời hạn đăng ký
+
+
+PESTICIDE_STATUS_LABELS = {
+    PesticideStatus.UNKNOWN: "",
+    PesticideStatus.ACTIVE: "Còn hiệu lực",
+    PesticideStatus.EXPIRED: "Hết hiệu lực",
+    PesticideStatus.IN_USE: "Đang sử dụng",
+}
+
+PESTICIDE_STATUS_BY_LABEL = {label.lower(): code for code, label in PESTICIDE_STATUS_LABELS.items() if label}

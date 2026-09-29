@@ -223,6 +223,24 @@ export interface CustomsRegulationHit {
   legal_basis: string
   note: string
   obligation: string
+  /**
+   * Chỉ có ở bảng duyệt mục «Pháp lý» (không có ở cảnh báo theo từ khóa): số thuốc trong danh mục
+   * BVTV chứa hoạt chất CẤM này. `null` = dòng không phải TT 75, hoặc danh mục thuốc CHƯA nạp.
+   */
+  pesticide_count?: number | null
+  /** `false` = tên cấm không rút ra được khóa so khớp nào (ví dụ chỉ có tên tiếng Việt có dấu). */
+  pesticide_matchable?: boolean
+}
+
+/** Mục «Pháp lý» — bảng duyệt cả danh mục (`GET /api/customs/regulations`). */
+export interface CustomsRegulationList {
+  total: number
+  items: CustomsRegulationHit[]
+}
+
+export interface CustomsRegulationOptions {
+  total: number
+  lists: { value: number; label: string; count: number }[]
 }
 
 export interface CustomsRegulationLookup {

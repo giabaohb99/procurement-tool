@@ -129,6 +129,48 @@ class CustomsPesticide(Base, AuditMixin):
     active_ingredient: Mapped[str] = mapped_column(String(500), default="")
     pest_group: Mapped[str] = mapped_column(String(100), default="")
     registrant: Mapped[str] = mapped_column(String(255), default="")
+    #  29/09/2026 — mục «Thuốc BVTV» của Tra cứu thị trường. Nguồn đổi sang bản cào
+    #  danhmuc.thuocbvtv.com (EcoFarm của Cục BVTV, TT 75/2025) vì bản `bvtv_data.js` cũ không
+    #  có số đăng ký, hiệu lực, phạm vi sử dụng. Nạp qua `pesticide_service.replace_catalog`.
+    #  `pest_group` / `sector` giữ CHỮ của nguồn: đó là phân loại của Cục BVTV (nguồn tự thêm
+    #  nhóm mới được), không phải mã nghiệp vụ của mình — khác `status` bên dưới (luật R2).
+    sector: Mapped[str] = mapped_column(String(100), default="")                  # lĩnh vực
+    status: Mapped[int] = mapped_column(SmallInteger, default=0, index=True)      # PesticideStatus
+    concentration: Mapped[str] = mapped_column(String(100), default="")           # hàm lượng
+    registration_no: Mapped[str] = mapped_column(String(60), default="", index=True)
+    registered_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    expires_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    #  «GHS 5 (GHS - Nhóm 5: …); WHO 4 (…)» — đúng cách tệp Excel của bản cào viết.
+    toxicity: Mapped[str] = mapped_column(String(500), default="")
+    #  Nhóm kháng theo hoạt chất: «Polyoxin B: FRAC 19 | nhóm | phương thức; …».
+    resistance: Mapped[str] = mapped_column(Text, default="", nullable=True)   # TEXT không có DEFAULT
+    source_url: Mapped[str] = mapped_column(String(255), default="")
+    #  duoc-CR-490 — thuốc người dùng tự THÊM trên màn (không có trong bản cào). Nạp lại danh mục
+    #  GIỮ các dòng này, chỉ thay dòng từ nguồn. Không dựa vào `source_id = 0` để nhận ra: bộ đọc
+    #  tệp cũng cho 0 khi dòng nguồn thiếu mã, và dòng đó sẽ nhân đôi sau mỗi lần nạp.
+    is_manual: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    #  duoc-CR-495 — câu mô tả của trang nguồn («Thuốc trừ bệnh X hoạt chất … sử dụng trên …, phòng
+    #  trừ …, đăng ký bởi …»), trường `tom_tat_su_dung` của bản cào. Giữ nguyên chữ nguồn, không tự
+    #  ghép lại từ các cột: nguồn là nơi quyết định câu đó nói gì.
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=True)   # TEXT không có DEFAULT
+
+
+class CustomsPesticideUse(Base):
+    """Phạm vi sử dụng của một thuốc BVTV (cây trồng – dịch hại – liều – cách ly).
+
+    Dữ liệu tham khảo nạp lại TOÀN BỘ mỗi lần (~15 nghìn dòng), không sửa tay — nên
+    không mang `AuditMixin`, cùng lý do với `CustomsLine`.
+    """
+    __tablename__ = "tab_customs_pesticide_use"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    pesticide_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    sort_order: Mapped[int] = mapped_column(SmallInteger, default=0)
+    crop: Mapped[str] = mapped_column(String(255), default="")                    # cây trồng
+    pest: Mapped[str] = mapped_column(String(255), default="")                    # dịch hại
+    dosage: Mapped[str] = mapped_column(String(255), default="")                  # liều lượng
+    pre_harvest_interval: Mapped[str] = mapped_column(String(255), default="")    # thời gian cách ly
+    usage: Mapped[str] = mapped_column(Text, default="", nullable=True)           # cách dùng
 
 
 class CustomsRegulation(Base, AuditMixin):

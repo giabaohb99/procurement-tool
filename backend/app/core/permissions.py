@@ -144,6 +144,11 @@ ENTITIES = [
     # PL I–IV (có ngưỡng kg), hoạt chất cấm TT 75/2025, hóa chất phải công bố TT 01/2026.
     # Khóa RIÊNG vì là màn riêng và `write` = sửa ngưỡng pháp lý (một khóa = một màn, CR-157).
     "customs_regulation",
+    # Danh mục thuốc BVTV của Tra cứu thị trường (duoc-CR-490, 29/09/2026). XEM vẫn theo
+    # `customs_price.read` (nó là một mục của màn tra cứu); khóa này chỉ gác SỬA danh mục:
+    # create/write/delete từng thuốc + nạp lại cả danh mục từ tệp (`write`). Tách khỏi
+    # `customs_price` vì người nạp tờ khai hải quan không nhất thiết là người giữ danh mục thuốc.
+    "customs_pesticide",
     # Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`: danh sách việc Đậu Đậu
     # đã nhận, lịch sử từng bước, chi phí model. Chỉ ĐỌC: mọi thao tác trên việc vẫn đi qua
     # Telegram. Quản trị hệ thống, không phải thu mua (nằm trong `_SYS_ENTITIES` của seed).
@@ -226,6 +231,7 @@ ENTITY_LABELS = {
     "sync_log": "Sổ đồng bộ với hệ ngoài",
     "customs_price": "Tra cứu thị trường",
     "customs_regulation": "Danh mục hóa chất theo văn bản (hải quan)",
+    "customs_pesticide": "Danh mục thuốc BVTV (hải quan)",
     "purchase_cost_type": "Danh mục Loại chi phí thu mua",
     "agent_task": "Trợ lý Telegram › Việc của bot",
 }
