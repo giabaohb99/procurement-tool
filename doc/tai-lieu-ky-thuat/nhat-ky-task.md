@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-524 | Bỏ «Thu mua chung», phòng thu mua mặc định là phòng «Sản xuất -Thu mua»
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Khách chốt ngày 30/09 bỏ phòng ảo «Thu mua chung»: phiếu không nhờ phòng nào khác xử lý từ nay thuộc
 về phòng thật «Sản xuất -Thu mua» (mã PBA017). Trước đây số 0 ở ô phòng xử lý của yêu cầu mua hàng,
@@ -101,8 +101,10 @@ Mã nguồn: `core/central_purchasing.py` · `core/scoping.py` (`_dept_match`, `
 `survey_request/service.py` · `purchase_order/service.py` · `payable/service.py` (`debt_dept_of`) ·
 `scripts/backfill_central_purchasing_dept.py` · `handling-dept-display.ts` · `CategoryAssignees.tsx`
 
+Deploy: dev + prod 30/09 (prod main `9a770062`) — đã chạy script chuyển dữ liệu trên prod, sửa hai bài hướng dẫn lập bộ tài khoản
+
 ## bao-CR-527 | Phân công phụ trách: đúng một NSTM chính «Chính thức» và tối đa một dự phòng
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Khách chốt ngày 30/09: mỗi phân loại hàng có đúng một nhân sự thu mua (NSTM) chính và tối đa một người
 dự phòng, và người chính phải đang ở trạng thái «Chính thức». Em đặt một chốt chung cho mọi đường ghi
@@ -121,8 +123,11 @@ Kiểm: 14 bài kiểm mới xanh cùng bài kiểm luật ở màn mới. Đang
 Mã nguồn: `category_assignee/service.py` (`validate_assignee_pair`, `pick_active_employee`) ·
 `category_assignee/controller.py` · `employee/service.py` (`STATUS_OFFICIAL`) ·
 `category-assignee-rules.ts` · `CategoryAssigneeNew.tsx`
+
+Deploy: dev + prod 30/09 (prod main `9a770062`)
+
 ## bao-CR-523 | Quản trị hệ thống tự sửa quyền của mình được, vai trò Quản trị luôn đủ mọi quyền
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Khách chốt ngày 30/09 rằng người giữ vai trò Quản trị hệ thống được tự sửa vai trò và phạm vi dữ
 liệu của chính mình, cũng như sửa ma trận quyền của vai trò mình đang giữ. Trước đây luật chống tự
@@ -149,8 +154,11 @@ Mã nguồn: `core/privilege_escalation.py` (`block_admin_role_removal`, `block_
 (`ensure_admin_role`) · `account_setup_tool.py` · `hr/utils/system-admin-role.ts` ·
 `user-permission-detail-page.tsx` · `role-permission-page.tsx` · `UserPermissionDetail.tsx` ·
 `RolePermissions.tsx` · `test_quan_tri_tu_sua_quyen_cr523.py`
+
+Deploy: dev + prod 30/09 (prod main `9a770062`)
+
 ## bao-CR-526 | Tạo sẵn bộ vai trò thu mua theo phòng, chưa gán cho ai
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca muốn có sẵn một bộ vai trò thu mua theo phòng để sau này, khi có danh sách nhân sự và phòng
 phụ trách, các anh chị tự gán; vai trò đang dùng thì giữ nguyên, còn bộ quản lý thu mua cũ sẽ tự tick
@@ -162,6 +170,8 @@ Vai trò sẽ tự có trên dev và prod ở lần deploy tới, chưa ai đư�
 Kiểm: 4 bài kiểm mới và các bài kiểm vai trò, lập bộ tài khoản liên quan xanh.
 
 Mã nguồn: `backend/app/seed.py` (`pur_dept_staff`) · `assistant/tools/account_setup_tool.py`
+
+Deploy: dev + prod 30/09 (prod main `9a770062`)
 
 ## bao-CR-525 | Xuất Excel Yêu cầu thanh toán theo dòng chi tiết
 - status: xong

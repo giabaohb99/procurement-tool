@@ -3,7 +3,7 @@
 
 Bài này là BÀI CON của bài «Trợ lý AI» (nằm trong nhóm «Các chức năng khác»), đứng cạnh bài
 «Lập bộ tài khoản thu mua bằng Trợ lý AI» (bao-CR-441). Bài kia nói cách nhờ trợ lý làm hai
-bước cuối; bài này nói đủ BỐN BƯỚC LÀM TAY cho hai bộ tài khoản (phòng tự mua + Thu mua chung
+bước cuối; bài này nói đủ BỐN BƯỚC LÀM TAY cho hai bộ tài khoản (phòng tự mua + Sản xuất -Thu mua
 trừ phòng đó) và cách kiểm tra sau khi làm. Không dựng thẻ phân hệ mới ngoài trang chủ,
 không đụng nội dung bài cha.
 
@@ -57,18 +57,18 @@ def ref(target_title: str, label: str) -> str:
 
 
 SUMMARY = (
-    "HD bốn bước lập tay bộ tài khoản cho phòng tự mua hàng và bộ Thu mua chung trừ phòng đó: "
+    "HD bốn bước lập tay bộ tài khoản cho phòng tự mua hàng và bộ Sản xuất -Thu mua trừ phòng đó: "
     "hồ sơ nhân sự, tài khoản đăng nhập, vai trò, phạm vi, rồi kiểm tra"
 )
 
 CONTENT = f"""<h2>I. Giới thiệu</h2>
-<p>Một phòng ban <strong>tự mua hàng</strong> (ví dụ nhà máy Dego Organic) nghĩa là phiếu của phòng đó do người thu mua <em>của chính phòng</em> xử lý, còn phòng Thu mua chung <strong>không thấy</strong> phiếu đó. Hệ thống <strong>không có ô cấu hình</strong> nào tên là "phòng tự mua hàng": công tắc nằm hoàn toàn ở <strong>vai trò + phạm vi của từng tài khoản</strong>. Bài này hướng dẫn lập tay đủ hai bộ tài khoản và kiểm tra lại. Cách làm dùng cho <strong>mọi phòng tự mua</strong>, không riêng nhà máy.</p>
+<p>Một phòng ban <strong>tự mua hàng</strong> (ví dụ nhà máy Dego Organic) nghĩa là phiếu của phòng đó do người thu mua <em>của chính phòng</em> xử lý, còn phòng Sản xuất -Thu mua <strong>không thấy</strong> phiếu đó. Hệ thống <strong>không có ô cấu hình</strong> nào tên là "phòng tự mua hàng": công tắc nằm hoàn toàn ở <strong>vai trò + phạm vi của từng tài khoản</strong>. Bài này hướng dẫn lập tay đủ hai bộ tài khoản và kiểm tra lại. Cách làm dùng cho <strong>mọi phòng tự mua</strong>, không riêng nhà máy.</p>
 <p>Đã tạo xong hồ sơ và tài khoản đăng nhập rồi thì hai bước gán vai trò + khai phạm vi có thể nhờ trợ lý làm thay: xem bài {ref(AI_ARTICLE_TITLE, "Lập bộ tài khoản thu mua bằng Trợ lý AI")}.</p>
 
 <h2>II. Hiểu trước khi bấm</h2>
 <table><thead><tr><th>Bộ</th><th>Ai giữ</th><th>Vai trò</th><th>Phạm vi</th><th>Thấy gì</th></tr></thead><tbody>
 <tr><td><strong>A. Phòng tự mua</strong></td><td>người đang thuộc phòng đó</td><td><em>Quản lý thu mua phòng</em> + <em>Nhân viên thu mua</em></td><td>bậc <strong>Được giao + đã duyệt trong phòng</strong>, gắn sẵn trong vai trò</td><td>phiếu đã duyệt <strong>của phòng mình</strong> và phiếu phòng khác <strong>nhờ</strong> phòng mình xử lý</td></tr>
-<tr><td><strong>B. Thu mua chung trừ phòng đó</strong></td><td>người phòng Thu mua chung</td><td><em>Quản lý thu mua</em>, <em>Admin thu mua</em>, <em>Nhân viên thu mua</em></td><td>như hiện tại + ô <strong>Loại trừ phòng ban</strong> = phòng tự mua</td><td>mọi phiếu <strong>trừ</strong> phiếu của phòng tự mua; phiếu phòng tự mua <strong>nhờ</strong> Thu mua chung thì vẫn thấy</td></tr>
+<tr><td><strong>B. Sản xuất -Thu mua trừ phòng đó</strong></td><td>người phòng Sản xuất -Thu mua</td><td><em>Quản lý thu mua</em>, <em>Admin thu mua</em>, <em>Nhân viên thu mua</em></td><td>như hiện tại + ô <strong>Loại trừ phòng ban</strong> = phòng tự mua</td><td>mọi phiếu <strong>trừ</strong> phiếu của phòng tự mua; phiếu phòng tự mua <strong>nhờ</strong> Sản xuất -Thu mua thì vẫn thấy</td></tr>
 </tbody></table>
 <p>Bốn điều quyết định kết quả:</p>
 <ul>
@@ -82,7 +82,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h2>III. Chuẩn bị</h2>
 <table><thead><tr><th>Cần</th><th>Kiểm ở đâu</th></tr></thead><tbody>
 <tr><td>Tài khoản quản trị (vai trò <em>Quản trị hệ thống</em>, hoặc vai trò có quyền quản lý Vai trò, sửa Người dùng và tạo Nhân sự)</td><td>Menu <strong>Quản trị › Phân quyền tài khoản</strong> mở được là đủ</td></tr>
-<tr><td>Phòng tự mua và phòng Thu mua chung đã có trong danh mục</td><td><strong>Nhân sự › Phòng ban</strong> — xem bài {ref("Phòng ban", "Phòng ban")}</td></tr>
+<tr><td>Phòng tự mua và phòng Sản xuất -Thu mua đã có trong danh mục</td><td><strong>Nhân sự › Phòng ban</strong> — xem bài {ref("Phòng ban", "Phòng ban")}</td></tr>
 <tr><td>Vai trò <em>Quản lý thu mua phòng</em> có trong danh sách vai trò</td><td><strong>Quản trị › Phân quyền tài khoản › Vai trò &amp; quyền</strong> — xem bài {ref("Vai trò", "Vai trò")}. Thiếu thì báo kỹ thuật</td></tr>
 <tr><td>Không tự sửa quyền của chính mình</td><td>Màn hồ sơ và màn phân quyền <strong>khóa</strong> khi mở đúng tài khoản đang đăng nhập; nhờ một quản trị khác</td></tr>
 </tbody></table>
@@ -96,7 +96,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <li><strong>Mã NV</strong>: gõ mã theo quy ước công ty (để trống thì hệ tự sinh).</li>
 <li><strong>Email</strong>: bắt buộc điền ngay. Email này là <strong>tên đăng nhập</strong> của tài khoản sẽ tạo ở Bước 2.</li>
 <li><strong>Pháp nhân</strong>: chọn công ty ký hợp đồng lao động. Ô này <strong>không</strong> giới hạn phiếu người đó thấy (mục II).</li>
-<li><strong>Phòng ban</strong>: chọn đúng phòng của bộ (phòng tự mua cho bộ A, phòng Thu mua chung cho bộ B). Ô này chỉ hiện phòng của pháp nhân vừa chọn.</li>
+<li><strong>Phòng ban</strong>: chọn đúng phòng của bộ (phòng tự mua cho bộ A, phòng Sản xuất -Thu mua cho bộ B). Ô này chỉ hiện phòng của pháp nhân vừa chọn.</li>
 <li><strong>Vị trí / Chức vụ</strong>: chọn chức danh in trên phiếu. Chức vụ <strong>chỉ là nhãn</strong>, không cấp quyền gì.</li>
 <li><strong>Tình trạng làm việc</strong>: Chính thức. <strong>Trạng thái hồ sơ</strong>: Đang hoạt động. Bấm <strong>Lưu</strong>.</li>
 </ul>
@@ -137,27 +137,27 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <p>Quản lý thu mua của phòng <strong>không cần Ngoại lệ nào</strong>: bậc gắn sẵn trong vai trò đã giới hạn đúng phòng trong hồ sơ. Mở hộp <em>Phạm vi</em> chỉ để đọc phần tóm tắt cho chắc: câu tóm tắt phải nêu tên phòng tự mua.</p>
 
 <h3>Phân công phụ trách riêng cho phòng</h3>
-<p>Khi quản lý thu mua của phòng bấm <strong>Điều phối</strong> một phiếu, máy tra bảng phân công <strong>theo phòng đang xử lý phiếu</strong>. Người của phòng tự mua <strong>không được rơi về bộ "Thu mua chung"</strong> (nếu không là tự gán người ngoài vào phiếu của phòng), nên phải khai bộ riêng:</p>
+<p>Khi quản lý thu mua của phòng bấm <strong>Điều phối</strong> một phiếu, máy tra bảng phân công <strong>theo phòng đang xử lý phiếu</strong>. Người của phòng tự mua <strong>không được rơi về bộ "Sản xuất -Thu mua"</strong> (nếu không là tự gán người ngoài vào phiếu của phòng), nên phải khai bộ riêng:</p>
 <ul>
 <li>Menu <strong>Thu mua › Cấu hình › Phân công phụ trách</strong>, bấm <strong>Gán phân công mới</strong>.</li>
-<li><strong>Phòng áp dụng</strong>: chọn phòng tự mua (không để <em>Thu mua chung</em>).</li>
+<li><strong>Phòng áp dụng</strong>: chọn phòng tự mua (không để <em>Sản xuất -Thu mua</em>).</li>
 <li><strong>Phân loại VTBB</strong>: tick các phân loại phòng hay mua.</li>
 <li><strong>NSTM chính</strong>: chọn nhân viên thu mua của phòng. <strong>NSTM dự phòng</strong>: tùy chọn.</li>
 <li><strong>Lưu phân công</strong>. Lặp lại cho từng nhóm phân loại.</li>
 </ul>
 <p>⚠️ Không khai bảng này thì điều phối vẫn chạy nhưng <strong>mọi dòng đều trống người</strong>, quản lý phòng phải gán tay từng dòng bằng nút <em>Phân bổ</em>.</p>
 
-<h2>VI. Bộ B — Thu mua chung trừ phòng tự mua</h2>
+<h2>VI. Bộ B — Sản xuất -Thu mua trừ phòng tự mua</h2>
 <table><thead><tr><th>Tài khoản</th><th>Bước 1 — Phòng ban</th><th>Bước 3 — Vai trò</th><th>Bước 4 — Phạm vi</th></tr></thead><tbody>
-<tr><td>Quản lý thu mua</td><td>phòng Thu mua chung</td><td><em>Quản lý thu mua</em></td><td><strong>Loại trừ phòng ban = phòng tự mua</strong></td></tr>
-<tr><td>Admin thu mua</td><td>phòng Thu mua chung</td><td><em>Admin thu mua</em></td><td><strong>Loại trừ phòng ban = phòng tự mua</strong></td></tr>
-<tr><td>Nhân viên thu mua chung</td><td>phòng Thu mua chung</td><td><em>Nhân viên thu mua</em></td><td>không (bậc <em>Được giao</em> chỉ thấy dòng được gán, không rò gì thêm)</td></tr>
+<tr><td>Quản lý thu mua</td><td>phòng Sản xuất -Thu mua</td><td><em>Quản lý thu mua</em></td><td><strong>Loại trừ phòng ban = phòng tự mua</strong></td></tr>
+<tr><td>Admin thu mua</td><td>phòng Sản xuất -Thu mua</td><td><em>Admin thu mua</em></td><td><strong>Loại trừ phòng ban = phòng tự mua</strong></td></tr>
+<tr><td>Nhân viên Sản xuất -Thu mua</td><td>phòng Sản xuất -Thu mua</td><td><em>Nhân viên thu mua</em></td><td>không (bậc <em>Được giao</em> chỉ thấy dòng được gán, không rò gì thêm)</td></tr>
 </tbody></table>
 <p>Ghi chú khi khai ô loại trừ:</p>
 <ul>
 <li>Hộp thoại <strong>không hiện cảnh báo vàng</strong> ở ca này: cảnh báo "phòng của chính người này" chỉ bật khi phòng bị trừ trùng phòng trong hồ sơ. Nếu thấy vàng, nghĩa là đang mở nhầm hồ sơ của một người thuộc phòng tự mua.</li>
 <li>Hộp thoại <strong>báo mâu thuẫn</strong> nếu cùng một phòng nằm ở cả ô <em>Xem thêm</em> lẫn ô <em>Loại trừ</em>. Bỏ bên <em>Xem thêm</em>.</li>
-<li>Với người Thu mua chung <strong>đã có tài khoản thật</strong>, chỉ làm Bước 4 cho <strong>từng vai trò thu mua</strong> họ đang giữ (mỗi vai trò một hộp Phạm vi riêng). Bỏ sót một vai trò là vai trò đó vẫn thấy phiếu của phòng tự mua.</li>
+<li>Với người Sản xuất -Thu mua <strong>đã có tài khoản thật</strong>, chỉ làm Bước 4 cho <strong>từng vai trò thu mua</strong> họ đang giữ (mỗi vai trò một hộp Phạm vi riêng). Bỏ sót một vai trò là vai trò đó vẫn thấy phiếu của phòng tự mua.</li>
 </ul>
 
 <h2>VII. Kiểm tra sau khi làm</h2>
@@ -167,17 +167,17 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <tr><td>Trưởng phòng</td><td>phiếu <strong>Đã gửi duyệt</strong> của phòng mình, nút <em>Duyệt</em></td><td>phiếu phòng khác</td></tr>
 <tr><td>Quản lý thu mua của phòng</td><td>phiếu <strong>Đã duyệt</strong> trở đi của phòng mình <strong>đứng tên bất kỳ pháp nhân nào</strong>; nút <em>Điều phối</em>; phiếu phòng khác có ô <em>Phòng xử lý</em> = phòng mình</td><td>phiếu đã duyệt của phòng khác; danh sách trống khi chưa có phiếu nào của phòng được duyệt</td></tr>
 <tr><td>Nhân viên thu mua của phòng</td><td>dòng đã được gán cho mình</td><td>dòng gán người khác</td></tr>
-<tr><td>Quản lý thu mua (chung)</td><td>mọi phiếu đã duyệt mà <strong>Thu mua chung đang mua</strong>, <strong>mọi pháp nhân</strong> — kể cả phiếu phòng tự mua xin nhưng chọn <em>Phòng xử lý</em> = Thu mua chung</td><td>phiếu phòng tự mua <strong>đang tự mua</strong> (ô <em>Phòng xử lý</em> = phòng đó), kể cả phiếu phòng khác nhờ phòng tự mua đi mua (gõ thẳng id lên đường dẫn: phải ra <em>Không tìm thấy</em>)</td></tr>
+<tr><td>Quản lý thu mua (chung)</td><td>mọi phiếu đã duyệt mà <strong>Sản xuất -Thu mua đang mua</strong>, <strong>mọi pháp nhân</strong> — kể cả phiếu phòng tự mua xin nhưng chọn <em>Phòng xử lý</em> = Sản xuất -Thu mua</td><td>phiếu phòng tự mua <strong>đang tự mua</strong> (ô <em>Phòng xử lý</em> = phòng đó), kể cả phiếu phòng khác nhờ phòng tự mua đi mua (gõ thẳng id lên đường dẫn: phải ra <em>Không tìm thấy</em>)</td></tr>
 <tr><td>Admin thu mua</td><td>như Quản lý thu mua, không có nút duyệt</td><td>như Quản lý thu mua</td></tr>
-<tr><td>Nhân viên thu mua chung</td><td>dòng được gán</td><td>phiếu chưa gán</td></tr>
+<tr><td>Nhân viên Sản xuất -Thu mua</td><td>dòng được gán</td><td>phiếu chưa gán</td></tr>
 </tbody></table>
-<p>💡 <strong>Đường chạy thử ngắn nhất:</strong> người lập phiếu của phòng lập một phiếu — ô <em>Phòng xử lý</em> tự hiện tên phòng mình — trưởng phòng duyệt, quản lý thu mua của phòng thấy và điều phối, quản lý thu mua chung <strong>không</strong> thấy phiếu đó. Rồi lập phiếu thứ hai đổi <em>Phòng xử lý</em> thành <em>Thu mua chung</em>, trưởng phòng duyệt: lúc này quản lý thu mua chung thấy, quản lý thu mua của phòng vẫn thấy.</p>
+<p>💡 <strong>Đường chạy thử ngắn nhất:</strong> người lập phiếu của phòng lập một phiếu — ô <em>Phòng xử lý</em> tự hiện tên phòng mình — trưởng phòng duyệt, quản lý thu mua của phòng thấy và điều phối, quản lý Sản xuất -Thu mua <strong>không</strong> thấy phiếu đó. Rồi lập phiếu thứ hai đổi <em>Phòng xử lý</em> thành <em>Sản xuất -Thu mua</em>, trưởng phòng duyệt: lúc này quản lý Sản xuất -Thu mua thấy, quản lý thu mua của phòng vẫn thấy.</p>
 
 <h3>Phiếu lập TRƯỚC khi phòng có bộ máy mua riêng</h3>
-<p>Ô <em>Phòng xử lý</em> chỉ tự điền cho phiếu lập <strong>sau</strong> khi phòng đã có người giữ vai trò <em>Quản lý thu mua phòng</em>. Phiếu cũ của phòng đang mang <em>Thu mua chung</em>, nên Thu mua chung sẽ thấy chúng. Ngay sau khi làm xong Bộ A, nhờ quản trị hệ thống chạy một lần lệnh chuyển đổi (chạy lại vô hại, có chế độ xem thử trước):</p>
+<p>Ô <em>Phòng xử lý</em> chỉ tự điền cho phiếu lập <strong>sau</strong> khi phòng đã có người giữ vai trò <em>Quản lý thu mua phòng</em>. Phiếu cũ của phòng đang mang <em>Sản xuất -Thu mua</em>, nên Sản xuất -Thu mua sẽ thấy chúng. Ngay sau khi làm xong Bộ A, nhờ quản trị hệ thống chạy một lần lệnh chuyển đổi (chạy lại vô hại, có chế độ xem thử trước):</p>
 <pre>docker compose exec -T api python scripts/backfill_handling_dept.py --dry-run
 docker compose exec -T api python scripts/backfill_handling_dept.py</pre>
-<p>Lệnh này gán <em>Phòng xử lý</em> = chính phòng đó cho mọi Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua hàng cũ của phòng còn để <em>Thu mua chung</em>. Phiếu nào phòng thật sự muốn Thu mua chung mua thì mở lại và đổi ô đó sau.</p>
+<p>Lệnh này gán <em>Phòng xử lý</em> = chính phòng đó cho mọi Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua hàng cũ của phòng còn để <em>Sản xuất -Thu mua</em>. Phiếu nào phòng thật sự muốn Sản xuất -Thu mua mua thì mở lại và đổi ô đó sau.</p>
 
 <h2>VIII. Bẫy hay gặp</h2>
 <ul>
@@ -195,9 +195,9 @@ docker compose exec -T api python scripts/backfill_handling_dept.py</pre>
 <p>Không sửa mã, không sửa cấu hình. Lặp lại:</p>
 <ul>
 <li>Mục V cho phòng mới: hồ sơ ở phòng đó, cấp <em>Quản lý thu mua phòng</em> + <em>Nhân viên thu mua</em>, khai <em>Phân công phụ trách</em> với <em>Phòng áp dụng</em> = phòng đó.</li>
-<li>Mục VI Bước 4: mở <strong>từng</strong> tài khoản Thu mua chung, thêm phòng mới vào ô <em>Loại trừ phòng ban</em> của <strong>từng</strong> vai trò thu mua họ giữ.</li>
+<li>Mục VI Bước 4: mở <strong>từng</strong> tài khoản Sản xuất -Thu mua, thêm phòng mới vào ô <em>Loại trừ phòng ban</em> của <strong>từng</strong> vai trò thu mua họ giữ.</li>
 </ul>
-<p>⚠️ Việc thứ hai là chỗ dễ quên nhất và quên thì <strong>lủng im lặng</strong>: Thu mua chung vẫn thấy phiếu phòng mới mà không ai báo lỗi. Ghi phòng mới vào danh sách kiểm định kỳ của quản trị.</p>
+<p>⚠️ Việc thứ hai là chỗ dễ quên nhất và quên thì <strong>lủng im lặng</strong>: Sản xuất -Thu mua vẫn thấy phiếu phòng mới mà không ai báo lỗi. Ghi phòng mới vào danh sách kiểm định kỳ của quản trị.</p>
 
 <h2>X. Điều hướng</h2>
 <ul>
