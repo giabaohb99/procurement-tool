@@ -9390,6 +9390,42 @@ celery_app.py · backend/app/modules/employee/service.py · backend/migrations/v
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py
 
+## bao-CR-503 | Thanh lọc Tra cứu thị trường: ô gõ gợi ý doanh nghiệp, đối tác và chọn nhiều tệp nguồn
+- status: xong
+- date: 2026-09-28
+Sau khi đối chiếu tệp yêu cầu của phòng Thu mua, đại ca bảo làm luôn hai việc nhỏ còn thiếu trên
+thanh lọc, ở cả bản cũ lẫn bản mới.
+
+Việc thứ nhất: trong hàng Lọc thêm có hai ô gõ có gợi ý, một cho doanh nghiệp nhập khẩu, một cho
+đối tác nước ngoài. Gõ tên hoặc mã số thuế là hiện danh sách, chọn một người là thêm một chip vào bộ
+lọc, chọn tiếp người khác là cộng dồn. Danh sách kèm mã số thuế để phân biệt hai công ty trùng tên,
+và bỏ những ai đã có trong bộ lọc. Đang xem biểu đồ mà thêm một doanh nghiệp thì vẫn ở lại biểu đồ.
+
+Việc thứ hai: ô tệp nguồn cho chọn nhiều lô nạp cùng lúc thay vì một.
+
+Cổng kiểm: bản mới kiểm kiểu sạch, lint không lỗi, 630 bài thu mua xanh, trong đó 4 bài mới; bản cũ
+giữ đúng 4 lỗi kiểu có sẵn. Chưa bấm thử trên máy vì stack local đang tắt sau lần khởi động lại WSL.
+Đã commit 30/09, Erp Agent 1 gom cùng các việc khác để đẩy lên dev và prod; nhớ bấm thử trên dev.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components/customs/customs-party-picker.tsx ·
+frontend/src/components/customs/CustomsPartyPicker.tsx · customs-price-page.tsx · CustomsPrices.tsx
+
+## doi-chieu-fr-proc-2026-001 | Đối chiếu tệp yêu cầu Tra cứu thị trường của phòng Thu mua với bản đang chạy
+- status: xong
+- date: 2026-09-28
+Đại ca hỏi theo tệp yêu cầu chị Mi gửi hôm trước thì mình đã đáp ứng được bao nhiêu, và muốn có một
+tệp để dễ đánh dấu. Em đọc lại cả bảy sheet của tệp, soát từng chức năng, từng trường lọc, từng tiêu
+chí nghiệm thu và yêu cầu phi chức năng với mã đang chạy trên dev, rồi viết thành một tệp đối chiếu.
+
+Kết quả: mười một chức năng thì sáu đạt, năm đạt một phần; mười ba trường lọc thì mười đạt, ba một
+phần; bảy tiêu chí nghiệm thu thì năm đạt, hai chưa. Phần thiếu chủ yếu chờ mẫu Excel và mẫu in báo
+giá của chị Mi, còn lại là vài chỗ nhỏ trên thanh lọc và khối lịch sử thao tác.
+
+Soát mã bắt được một rủi ro cần hỏi chị Mi: nạp tệp đang thay dữ liệu theo khoảng ngày, nên nếu hai
+tệp cùng khoảng ngày nhưng khác nhóm mã hàng thì tệp nạp sau xóa dòng của tệp trước.
+
+Tài liệu: doc/erp/hai-quan/06-doi-chieu-yeu-cau-fr-proc-2026-001.md · cập nhật §11 của 01-danh-sach-tinh-nang.md
+
 ## bao-CR-502 | Bản cũ của Tra cứu thị trường theo kịp bản mới: thẻ Cấu hình, lọc theo ngày, và lỗi không lưu được hóa chất
 - status: xong
 - date: 2026-09-26

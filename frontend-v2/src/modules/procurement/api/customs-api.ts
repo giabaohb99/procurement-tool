@@ -17,6 +17,8 @@ import type {
   CustomsLine,
   CustomsLineList,
   CustomsOptions,
+  CustomsParty,
+  CustomsPartyType,
   CustomsRegulationHit,
   CustomsRegulationList,
   CustomsRegulationLookup,
@@ -68,6 +70,11 @@ export function fetchCustomsRegulations(params: Params) {
 
 export function fetchCustomsRegulationOptions() {
   return apiGet<CustomsRegulationOptions>(`${BASE}/regulations/options`)
+}
+
+/** bao-CR-503 — tìm doanh nghiệp / đối tác theo tên hoặc mã số thuế (tối đa 20 mục, xếp theo tên). */
+export function searchCustomsParties(type: CustomsPartyType, q: string) {
+  return apiGet<CustomsParty[]>(`${BASE}/parties`, { params: { type, q } })
 }
 
 export function lookupCustomsRegulations(q: string) {

@@ -42,12 +42,14 @@ import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SearchField } from '@/shared/ui/search-field'
+import { MultiPicker } from '@/shared/ui/multi-picker'
 import { SearchSelect } from '@/shared/ui/search-select'
 
 import { exportCustomsLines } from '../api/customs-api'
 import { CustomsSearchHint } from '../components/customs/customs-search-hint'
 import { CustomsCompareTab } from '../components/customs/customs-compare-tab'
 import { CustomsNeedFilterState, CustomsNotice } from '../components/customs/customs-controls'
+import { CustomsPartyPicker } from '../components/customs/customs-party-picker'
 import { CustomsCoverageStrip } from '../components/customs/customs-coverage-strip'
 import { CustomsConfigTab } from '../components/customs/customs-config-tab'
 import { CustomsHistoryPanel } from '../components/customs/customs-history-panel'
@@ -73,7 +75,7 @@ import {
   useCustomsOptions,
   useCustomsPermissions,
 } from '../hooks/use-customs'
-import type { CustomsFilters, CustomsOptionItem } from '../types/customs'
+import { CUSTOMS_PARTY_TYPE, type CustomsFilters, type CustomsOptionItem } from '../types/customs'
 import { collectFilterParams } from '../utils/customs-saved-filter'
 import {
   addNamedId,
@@ -84,6 +86,7 @@ import {
   removeNamedId,
   resolveLinesEmptyMessage,
   sortRegulationsBySeverity,
+  splitIdList,
   splitNamedIds,
 } from '../utils/customs'
 
@@ -297,6 +300,18 @@ export function CustomsPricePage() {
     openSection('list', { partner_id: next.ids, partner_name: next.names || null })
   }
 
+  //  bao-CR-503 — thêm từ ô gợi ý trên thanh lọc: cộng dồn như trên, nhưng GIỮ thẻ đang mở (đang
+  //  xem biểu đồ mà thêm một doanh nghiệp thì biểu đồ vẽ lại, không bị đẩy về Danh sách).
+  function addImporterFilter(id: number, name: string) {
+    const next = addNamedId(importerId, importerName, id, name)
+    setUrlParams({ importer_id: next.ids, importer_name: next.names || null })
+  }
+
+  function addPartnerFilter(id: number, name: string) {
+    const next = addNamedId(partnerId, partnerName, id, name)
+    setUrlParams({ partner_id: next.ids, partner_name: next.names || null })
+  }
+
   function dropImporter(id: string) {
     const next = removeNamedId(importerId, importerName, id)
     setUrlParams({ importer_id: next.ids || null, importer_name: next.names || null })
@@ -458,6 +473,23 @@ export function CustomsPricePage() {
           /* bao-CR-493 — sáu ô theo sheet 4 của yêu cầu phòng Thu mua. Khoảng số nhập chữ, backend
              bỏ qua ô rác; giá so trên GIÁ HIỆU LỰC (điều chỉnh nếu có). */
           <div className="flex flex-wrap items-center gap-2" aria-label="Lọc thêm">
+            {/* bao-CR-503 — sheet 4 mục 4–5: chọn nhiều doanh nghiệp / đối tác bằng ô gõ có gợi ý. */}
+            <div className="w-64 max-md:w-full">
+              <CustomsPartyPicker
+                partyType={CUSTOMS_PARTY_TYPE.DOMESTIC}
+                selectedIds={importerId}
+                placeholder="Thêm doanh nghiệp nhập khẩu…"
+                onPick={addImporterFilter}
+              />
+            </div>
+            <div className="w-64 max-md:w-full">
+              <CustomsPartyPicker
+                partyType={CUSTOMS_PARTY_TYPE.FOREIGN}
+                selectedIds={partnerId}
+                placeholder="Thêm đối tác nước ngoài…"
+                onPick={addPartnerFilter}
+              />
+            </div>
             <div className="w-36 max-md:w-full">
               <SearchSelect
                 value={currency}
@@ -478,14 +510,20 @@ export function CustomsPricePage() {
                 clearable
               />
             </div>
-            <div className="w-56 max-md:w-full">
-              <SearchSelect
-                value={batchId}
-                onChange={setBatchId}
-                options={toSelectOptions(options.data?.batches)}
+            {/* bao-CR-503 — sheet 4 mục 13: tệp nguồn chọn NHIỀU (backend nhận «1,2» từ bao-CR-493). */}
+            <div className="w-64 max-md:w-full">
+              <MultiPicker
+                value={splitIdList(batchId)}
+                onChange={(ids) => setBatchId(ids.join(','))}
+                options={(options.data?.batches ?? []).map((item) => ({
+                  id: item.value,
+                  label: item.label ?? item.value,
+                  hint: `${item.count} dòng`,
+                }))}
                 placeholder="Tệp nguồn (lô nạp)"
                 searchPlaceholder="Tìm tệp…"
-                clearable
+                summaryInTrigger
+                clearInTrigger
               />
             </div>
             <RangeFilter label="Đơn giá USD" from={priceMin} to={priceMax} onFrom={setPriceMin} onTo={setPriceMax} />

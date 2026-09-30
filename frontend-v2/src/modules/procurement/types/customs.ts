@@ -332,3 +332,19 @@ export type CustomsRegulation = {
   note: string
   is_active: boolean
 }
+
+/** Loại đối tượng — khớp `PartyType` backend (customs/constants.py). bao-CR-503 */
+export const CUSTOMS_PARTY_TYPE = {
+  DOMESTIC: 1,
+  FOREIGN: 2,
+} as const
+
+export type CustomsPartyType = (typeof CUSTOMS_PARTY_TYPE)[keyof typeof CUSTOMS_PARTY_TYPE]
+
+/** Một doanh nghiệp nhập khẩu / đối tác nước ngoài — `GET /api/customs/parties`. */
+export interface CustomsParty {
+  id: number
+  name: string
+  /** Rỗng với đối tác nước ngoài (không có mã). */
+  tax_code: string
+}

@@ -14,6 +14,7 @@ import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
+import MultiCheckSelect from '../components/MultiCheckSelect'
 import Pagination from '../components/Pagination'
 import SearchSelect from '../components/SearchSelect'
 import TableHead, { TableCells } from '../components/TableHead'
@@ -25,6 +26,7 @@ import CustomsConfigTab from '../components/customs/CustomsConfigTab'
 import CustomsHistoryPanel from '../components/customs/CustomsHistoryPanel'
 import CustomsImportDialog from '../components/customs/CustomsImportDialog'
 import CustomsLineDetail from '../components/customs/CustomsLineDetail'
+import CustomsPartyPicker from '../components/customs/CustomsPartyPicker'
 import CustomsPesticideTab from '../components/customs/CustomsPesticideTab'
 import CustomsRegulationBrowse from '../components/customs/CustomsRegulationBrowse'
 import CustomsSavedFilters from '../components/customs/CustomsSavedFilters'
@@ -157,6 +159,19 @@ export default function CustomsPrices() {
     apply(next)
     setTab('list')
   }
+  // bao-CR-503 — thêm từ ô gợi ý trên thanh lọc: cộng dồn như trên nhưng GIỮ thẻ đang mở.
+  function addImporterFilter(id: number, name: string) {
+    const merged = addNamedId(filters.importer_id, filters.importer_name, id, name)
+    const next = { ...draft, importer_id: merged.ids, importer_name: merged.names }
+    setDraft(next)
+    apply(next)
+  }
+  function addPartnerFilter(id: number, name: string) {
+    const merged = addNamedId(filters.partner_id, filters.partner_name, id, name)
+    const next = { ...draft, partner_id: merged.ids, partner_name: merged.names }
+    setDraft(next)
+    apply(next)
+  }
   function dropImporter(id: string) {
     const merged = removeNamedId(filters.importer_id, filters.importer_name, id)
     const next = { ...draft, importer_id: merged.ids, importer_name: merged.names }
@@ -279,6 +294,15 @@ export default function CustomsPrices() {
           /* bao-CR-493 — sáu ô theo sheet 4 yêu cầu phòng Thu mua. Khoảng số nhập chữ, backend bỏ ô rác;
              giá so trên GIÁ HIỆU LỰC (điều chỉnh nếu có). */
           <>
+            {/* bao-CR-503 — sheet 4 mục 4–5: chọn nhiều doanh nghiệp / đối tác bằng ô gõ có gợi ý. */}
+            <FilterItem label="Doanh nghiệp nhập khẩu" width={240}>
+              <CustomsPartyPicker partyType={1} selectedIds={filters.importer_id}
+                placeholder="Gõ tên / MST để thêm…" onPick={addImporterFilter} />
+            </FilterItem>
+            <FilterItem label="Đối tác nước ngoài" width={240}>
+              <CustomsPartyPicker partyType={2} selectedIds={filters.partner_id}
+                placeholder="Gõ tên để thêm…" onPick={addPartnerFilter} />
+            </FilterItem>
             <FilterItem label="Nguyên tệ" width={110}>
               <SearchSelect value={draft.currency} placeholder="Tất cả" autoSelectSingle={false}
                 options={optionList('currencies')} onChange={set('currency')} />
@@ -287,9 +311,10 @@ export default function CustomsPrices() {
               <SearchSelect value={draft.incoterm} placeholder="Tất cả" autoSelectSingle={false}
                 options={optionList('incoterms')} onChange={set('incoterm')} />
             </FilterItem>
-            <FilterItem label="Tệp nguồn (lô nạp)" width={200}>
-              <SearchSelect value={draft.batch_id} placeholder="Tất cả" autoSelectSingle={false}
-                options={optionList('batches')} onChange={set('batch_id')} />
+            {/* bao-CR-503 — sheet 4 mục 13: tệp nguồn chọn NHIỀU (backend nhận «1,2»). */}
+            <FilterItem label="Tệp nguồn (lô nạp)" width={240}>
+              <MultiCheckSelect value={draft.batch_id.split(',').map((v) => v.trim()).filter(Boolean)}
+                options={optionList('batches')} onChange={(ids) => set('batch_id')(ids.join(','))} />
             </FilterItem>
             <FilterItem label="Đơn giá USD từ – tới" width={190}>
               <div style={{ display: 'flex', gap: 4 }}>

@@ -26,6 +26,8 @@ import {
   removeNamedId,
   sortRegulationsBySeverity,
   splitNamedIds,
+  splitIdList,
+  toPartyOptions,
   formatCustomsUnit,
   formatCustomsUnitChip,
   formatRegulationListLabel,
@@ -79,6 +81,38 @@ function makePoint(period: string, wavg: number | null, count = 5): CustomsSerie
     low_data: count > 0 && count < 5,
   }
 }
+
+// bao-CR-503 — ô gợi ý doanh nghiệp / đối tác trên thanh lọc.
+describe('toPartyOptions', () => {
+  const parties = [
+    { id: 1, name: 'Công ty A', tax_code: '0301' },
+    { id: 2, name: 'Công ty A', tax_code: '0302' },
+    { id: 3, name: 'HEBEI VEYONG', tax_code: '' },
+  ]
+
+  it('adds the tax code so two companies with the same name can be told apart', () => {
+    expect(toPartyOptions(parties, '').map((o) => o.label)).toEqual([
+      'Công ty A · MST 0301',
+      'Công ty A · MST 0302',
+      'HEBEI VEYONG',
+    ])
+  })
+
+  it('hides parties already in the filter, even with stray spaces and empty slots', () => {
+    expect(toPartyOptions(parties, ' 1,,3 ').map((o) => o.value)).toEqual(['2'])
+  })
+
+  it('returns nothing while the search has not answered yet', () => {
+    expect(toPartyOptions(undefined, '1')).toEqual([])
+  })
+})
+
+describe('splitIdList', () => {
+  it('trims and drops blanks', () => {
+    expect(splitIdList(' 4, ,5,')).toEqual(['4', '5'])
+    expect(splitIdList('')).toEqual([])
+  })
+})
 
 describe('hasChartFilter', () => {
   it('blocks the chart when neither keyword nor HS code is set', () => {

@@ -12,6 +12,7 @@ import {
   type CustomsCompare,
   type CustomsFilters,
   type CustomsImportBatch,
+  type CustomsParty,
   type CustomsPeriod,
   type CustomsSeriesPoint,
 } from '../types/customs'
@@ -181,6 +182,29 @@ export function addNamedId(ids: string, names: string, id: number | string, name
 
 export function removeNamedId(ids: string, names: string, id: string): { ids: string; names: string } {
   return joinNamedIds(splitNamedIds(ids, names).filter((item) => item.id !== id))
+}
+
+/**
+ * bao-CR-503 — kết quả tìm đối tượng → mục của ô gợi ý. Bỏ những ai ĐÃ nằm trong bộ lọc (chọn lại
+ * cũng không thêm gì, để đó chỉ gây rối), và kèm mã số thuế vào nhãn: hai công ty trùng tên là
+ * chuyện thường trong dữ liệu hải quan, mã số thuế là thứ duy nhất phân biệt được.
+ */
+export function toPartyOptions(
+  parties: CustomsParty[] | undefined,
+  selectedIds: string,
+): { value: string; label: string }[] {
+  const selected = new Set(splitIdList(selectedIds))
+  return (parties ?? [])
+    .filter((party) => !selected.has(String(party.id)))
+    .map((party) => ({
+      value: String(party.id),
+      label: party.tax_code ? `${party.name} · MST ${party.tax_code}` : party.name,
+    }))
+}
+
+/** «1, 2,,3» → ['1', '2', '3'] — danh sách id nối dấu phẩy trên URL (lô nạp, doanh nghiệp…). */
+export function splitIdList(ids: string): string[] {
+  return ids.split(',').map((value) => value.trim()).filter(Boolean)
 }
 
 /**
