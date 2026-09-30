@@ -95,6 +95,8 @@ chung cùng ngày, chưa deploy dev.
 
 Commit: 98c9efff
 
+Lên prod ngày 30/09 (main e70a80ad), sao lưu DB prod trước khi deploy.
+
 Mã nguồn: backend/app/modules/employee/controller.py · report/procurement_summary_service.py ·
 test_pham_vi_duong_vong.py · test_pham_vi_luat_bat_bien.py · test_pham_vi_nhan_su_hanh_chinh.py ·
 test_kiem_nhiem_phong_ban.py · test_bao_cao_thu_mua_theo_ky.py
@@ -10080,6 +10082,8 @@ gật, em sao lưu toàn bộ cơ sở dữ liệu rồi mới ghi. Sau khi gộ
 tồn kho trước và sau khớp tuyệt đối, không còn dòng nào trỏ vào công ty trùng, quyền của mọi
 người không đổi, và các trang đều chạy bình thường.
 
+Lên prod ngày 30/09 (main e70a80ad), sao lưu DB prod trước khi deploy.
+
 Mã nguồn: `backend/app/modules/company/merge_service.py`, `backend/scripts/merge_duplicate_company.py`,
 bài kiểm `test/backend/test_gop_cong_ty_trung_cr532.py` (13 bài).
 Deploy: dữ liệu dev + prod 30/09; sao lưu prod `procurement_truoc_cr532_20260930_1539.sql.gz`.
@@ -10096,6 +10100,8 @@ từ lúc gộp tới giờ chưa deploy lại.
 công ty khác thì seed bỏ qua, không tạo. Trên dev đã gộp id 17 vào id 1 bằng script của bao-CR-532.
 
 Kiểm: 3 bài kiểm mới cùng bài kiểm seed văn thư, chặn trùng mã số thuế và gộp công ty (31 bài xanh).
+
+Lên prod ngày 30/09 (main e70a80ad), sao lưu DB prod trước khi deploy.
 
 Mã nguồn: `app/seed_data/document_phase1.py` (`DOCUMENT_COMPANIES`) · `app/seed.py`
 (`seed_document_phase1`) · `test/backend/test_seed_khong_tao_lai_cong_ty_trung_cr535.py`
@@ -10122,6 +10128,8 @@ chuỗi dài vào là lỗi máy chủ thay vì câu báo.
 Em rà dữ liệu thật trước khi chặn: cả máy thử lẫn máy thật đều không còn cặp nào trùng, nên
 chốt mới không khóa ai. Bài kiểm mới xanh, và em thử gỡ chốt ra thì bài kiểm đỏ đúng chỗ. Cả hai
 giao diện tự hiện câu báo qua thông báo lỗi sẵn có, không phải sửa giao diện.
+
+Lên prod ngày 30/09 (main e70a80ad), sao lưu DB prod trước khi deploy.
 
 Mã nguồn: `backend/app/modules/company/service.py`, `backend/app/modules/company/schema.py`,
 bài kiểm `test/backend/test_chan_trung_mst_cr534.py`.
