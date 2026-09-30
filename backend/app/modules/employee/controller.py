@@ -154,7 +154,9 @@ def update_employee_avatar(eid: int, file: UploadFile = File(...), db: Session =
     from app.modules.user.model import User
     from app.modules.user.service import set_user_avatar
 
-    emp = service.get_employee(db, eid)
+    #  bao-CR-533: cửa GHI phải qua phạm vi như các cửa kiêm nhiệm / liên hệ — trước đây chỉ có
+    #  `require("employee", "write")` (QUYỀN), gõ thẳng id lên URL là đổi được ảnh đại diện của người ngoài phạm vi.
+    emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user), "write")
     u = db.query(User).filter(User.employee_id == eid).first()
     if not u:
         raise HTTPException(400, "Nhân sự chưa có tài khoản đăng nhập — hãy tạo tài khoản trước khi đặt ảnh đại diện")
@@ -182,7 +184,9 @@ def update_employee_signature(eid: int, file: UploadFile = File(...), db: Sessio
     from app.core.upload_guard import guard_upload
     from app.modules.user.model import User
 
-    emp = service.get_employee(db, eid)
+    #  bao-CR-533: cửa GHI phải qua phạm vi như các cửa kiêm nhiệm / liên hệ — trước đây chỉ có
+    #  `require("employee", "write")` (QUYỀN), gõ thẳng id lên URL là đặt được CHỮ KÝ (in lên phiếu) của người ngoài phạm vi.
+    emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user), "write")
     u = db.query(User).filter(User.employee_id == eid).first()
     if not u:
         raise HTTPException(400, "Nhân sự chưa có tài khoản đăng nhập — hãy tạo tài khoản trước khi đặt chữ ký")
@@ -210,7 +214,9 @@ def delete_employee_signature(eid: int, db: Session = Depends(get_db),
     storage giữ nguyên để không phá phiếu đã in."""
     from app.modules.user.model import User
 
-    emp = service.get_employee(db, eid)
+    #  bao-CR-533: cửa GHI phải qua phạm vi như các cửa kiêm nhiệm / liên hệ — trước đây chỉ có
+    #  `require("employee", "write")` (QUYỀN), gõ thẳng id lên URL là gỡ được chữ ký của người ngoài phạm vi.
+    emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user), "write")
     u = db.query(User).filter(User.employee_id == eid).first()
     if u:
         u.signature = ""
@@ -346,10 +352,14 @@ def update_employee(
     #  lần lưu, kể cả ô phòng ban không ai đụng tới — chặn theo «có gửi» thì người có
     #  `employee.write` sửa số điện thoại của chính mình cũng ăn câu «không tự đổi
     #  phòng ban», dù họ không đổi gì ở đó.
-    current = db.get(service.Employee, eid)
-    if (data.department_id is not None and current is not None
+    #
+    #  bao-CR-533: nạp hồ sơ QUA PHẠM VI (404 nếu ngoài). Trước đây cửa này chỉ có
+    #  `require("employee", "write")`: gõ thẳng id lên URL là sửa được hồ sơ — kể cả EMAIL, mà email
+    #  hồ sơ kéo theo email tài khoản (bao-CR-472) và email đó là khóa đăng nhập Google.
+    profile = get_perm_profile(db, user)
+    current = _employee_in_scope(db, eid, user, profile, "write")
+    if (data.department_id is not None
             and int(data.department_id or 0) != int(current.department_id or 0)):
-        profile = get_perm_profile(db, user)
         department_service.block_edit_own_department(db, eid, user)
         department_service.block_out_of_scope_departments(db, [data.department_id], user, profile)
 
@@ -561,6 +571,9 @@ def upload_id_image(
 def delete_employee(
     eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "delete"))
 ):
+    #  bao-CR-533: cửa GHI phải qua phạm vi như các cửa kiêm nhiệm / liên hệ — trước đây chỉ có
+    #  `require("employee", "delete")` (QUYỀN), gõ thẳng id lên URL là xóa được hồ sơ (kèm khóa tài khoản) của người ngoài phạm vi.
+    _employee_in_scope(db, eid, user, get_perm_profile(db, user), "delete")
     locked = service.delete_employee(db, eid, user.id)
     msg = "Đã xóa" if not locked else f"Đã xóa. Đã khoá {locked} tài khoản đăng nhập của nhân sự này."
     return success(None, msg)

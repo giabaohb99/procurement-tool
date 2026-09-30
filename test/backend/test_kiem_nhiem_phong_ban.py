@@ -155,10 +155,24 @@ def test_self_edit_profile_keeping_same_department_is_allowed(db, san):
     ban» dù không đổi gì ở đó (đại ca báo 28/09/2026). Giữ nguyên phòng = cho qua;
     đổi phòng thật = vẫn chặn.
     """
+    from app.core.auth import perm_cache_clear
     from app.modules.employee import controller as ctl
     from app.modules.employee.schema import EmployeeUpdate
+    from app.modules.role.model import Permission, Role
+    from app.modules.user.model import UserRole
 
     person, account = san["nguoi"], san["tai_khoan"]
+    #  bao-CR-533: cửa PATCH nay nạp hồ sơ qua phạm vi `write`, nên tài khoản phải có đúng thứ người
+    #  dùng thật có — `employee.write` phạm vi của mình. Bản cũ để tài khoản trơn (gọi thẳng hàm,
+    #  bỏ qua `require`) vẫn qua được chỉ vì cửa này từng không xét phạm vi.
+    role = Role(code="KN_SELF", name="Tự sửa hồ sơ")
+    db.add(role)
+    db.flush()
+    db.add(Permission(role_id=role.id, entity="employee", scope="own", can_read=True, can_write=True))
+    db.add(UserRole(user_id=account.id, role_id=role.id))
+    db.commit()
+    perm_cache_clear()
+
     ctl.update_employee(person.id, EmployeeUpdate(phone="0795803209",
                                                   department_id=san["phong"]["P_KT"]),
                         db, account)
