@@ -34,9 +34,10 @@ import {
   lookupCustomsRegulations,
   lookupCustomsTariff,
   revertCustomsBatch,
+  searchCustomsParties,
   uploadCustomsFiles,
 } from '../api/customs-api'
-import type { CustomsImportBatch } from '../types/customs'
+import type { CustomsImportBatch, CustomsPartyType } from '../types/customs'
 import { isBatchRunning } from '../utils/customs'
 
 type Params = Record<string, unknown>
@@ -55,6 +56,7 @@ const customsKeys = {
   regulations: (params: Params) => ['procurement', 'customs', 'regulations', params] as const,
   regulationOptions: () => ['procurement', 'customs', 'regulations', 'options'] as const,
   tariff: (hsCode: string) => ['procurement', 'customs', 'tariff', hsCode] as const,
+  parties: (type: number, q: string) => ['procurement', 'customs', 'parties', type, q] as const,
   batches: (params: Params) => ['procurement', 'customs', 'batches', params] as const,
   batch: (id: number) => ['procurement', 'customs', 'batch', id] as const,
   batchLogs: (id: number, params: Params) =>
@@ -66,6 +68,19 @@ const BATCH_POLL_MS = 1500
 
 export function useCustomsCoverage() {
   return useQuery({ queryKey: customsKeys.coverage(), queryFn: fetchCustomsCoverage })
+}
+
+/**
+ * bao-CR-503 — gợi ý doanh nghiệp / đối tác cho ô lọc. Giữ danh sách cũ trong lúc chờ kết quả mới
+ * (`keepPreviousData`) để ô gợi ý không chớp trống sau mỗi phím.
+ */
+export function useCustomsParties(type: CustomsPartyType, q: string) {
+  return useQuery({
+    queryKey: customsKeys.parties(type, q),
+    queryFn: () => searchCustomsParties(type, q),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+  })
 }
 
 export function useCustomsOptions() {

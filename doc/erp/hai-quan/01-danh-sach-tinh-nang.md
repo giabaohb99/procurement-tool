@@ -153,15 +153,18 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 | Y-05 | F11 | Lịch sử nạp thành THẺ trên trang thay hộp thoại | bao-CR-493 | ERP Agent 2 | [x] |
 | Y-06 | Sheet 4 mục 4–5 | Doanh nghiệp nhập / đối tác chọn NHIỀU (chip cộng dồn, id nối dấu phẩy) | bao-CR-493 | ERP Agent 2 | [x] |
 | Y-07 | Sheet 4 mục 6–13 | Hàng «Lọc thêm»: nguyên tệ, điều kiện giao hàng, tệp nguồn (lô nạp), khoảng đơn giá (giá hiệu lực), khoảng lượng, khoảng tỷ giá USD | bao-CR-493 | ERP Agent 2 | [x] |
-| Y-08 | F04 | Nhãn tự động Thành phẩm / Nguyên liệu (TC, TECH, TG, «kỹ thuật», «nguyên liệu»; không khớp = Thành phẩm), cột + lọc theo nhãn, bảng từ khóa admin sửa được | bao-CR-494 | Erp Agent 1 | [~] |
-| Y-09 | F02 | Tìm «Có các từ» / «Không có từ» (AND / NOT) trên tên hàng | bao-CR-495 | Erp Agent 1 | [~] |
-| Y-10 | F02 | Quy đổi cách viết nồng độ theo luật mặc định (3,6% ≡ 3.6EC ≡ 36 G/L); ngoại lệ chị Mi bổ sung sau | bao-CR-495 | Erp Agent 1 | [~] |
-| Y-11 | F02 ghi chú 25/09 | Màn từ đồng nghĩa người dùng tự thêm cặp, nạp mồi từ bảng bí danh sẵn có | bao-CR-495 | Erp Agent 1 | [~] |
-| Y-12 | F07 | Lưu bộ lọc RIÊNG từng người (đặt tên, chọn lại một phát); bảng có sẵn cột dùng chung, mặc định tắt | bao-CR-496 | ERP Agent 2 | [ ] |
-| Y-13 | F01 ghi chú 25/09 | Log từng dòng khi nạp: Thêm mới / Lỗi / Bỏ qua vì trùng trong lô (không có «Cập nhật» vì dữ liệu không có số tờ khai) | bao-CR-496 | ERP Agent 2 | [ ] |
+| Y-08 | F04 | Nhãn tự động Thành phẩm / Nguyên liệu (TC, TECH, TG, «kỹ thuật», «nguyên liệu»; không khớp = Thành phẩm), cột + lọc theo nhãn, bảng từ khóa admin sửa được | bao-CR-494 | Erp Agent 1 | [x] |
+| Y-09 | F02 | Tìm «Có các từ» / «Không có từ» (AND / NOT) trên tên hàng | bao-CR-495 | Erp Agent 1 | [x] |
+| Y-10 | F02 | Quy đổi cách viết nồng độ theo luật mặc định (3,6% ≡ 3.6EC ≡ 36 G/L); ngoại lệ chị Mi bổ sung sau | bao-CR-495 | Erp Agent 1 | [x] |
+| Y-11 | F02 ghi chú 25/09 | Màn từ đồng nghĩa người dùng tự thêm cặp, nạp mồi từ bảng bí danh sẵn có | bao-CR-495 | Erp Agent 1 | [x] |
+| Y-12 | F07 | Lưu bộ lọc RIÊNG từng người (đặt tên, chọn lại một phát); bảng có sẵn cột dùng chung, mặc định tắt | bao-CR-496 | ERP Agent 2 | [x] |
+| Y-13 | F01 ghi chú 25/09 | Log từng dòng khi nạp: Thêm mới / Lỗi / Bỏ qua vì trùng trong lô (không có «Cập nhật» vì dữ liệu không có số tờ khai) | bao-CR-496 | ERP Agent 2 | [x] |
 | Y-14 | F06 | Excel theo mẫu công ty: tiêu đề, header màu, wrap, dd/mm/yyyy, phân cách hàng nghìn, tách sheet theo nhóm | NỢ — chờ tệp mẫu chị Mi | — | [ ] |
 | Y-15 | F09 | Trang tra cứu giá: in báo giá, xuất PDF | NỢ — chờ mẫu in chị Mi | — | [ ] |
 | Y-16 | F08 | Biểu đồ theo TUẦN (yêu cầu ghi «tuần hoặc tháng») | chưa cấp số — hỏi lại có cần không | — | [ ] |
+
+> Cập nhật 28/09/2026: Y-08…Y-13 đã lên dev ở cả v1 lẫn v2. Bảng đối chiếu đầy đủ với tệp yêu cầu nằm ở
+> [`06-doi-chieu-yeu-cau-fr-proc-2026-001.md`](06-doi-chieu-yeu-cau-fr-proc-2026-001.md).
 
 **Đã có sẵn từ trước, không làm lại:** F03 lọc nhiều trường · F05 tỷ giá theo dòng · F08 biểu đồ (tháng / quý / năm,
 so sánh nhiều mặt hàng) · F10 phân quyền (`customs_price`) · F01 nạp nhiều tệp, kiểm cột, hoàn tác lô.
