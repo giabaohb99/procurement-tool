@@ -10015,3 +10015,42 @@ pesticide_service.py, pesticide_edit_service.py} · migration b4d81f2c6e37 ·
 frontend-v2/.../components/customs/{customs-pesticide-info-card, customs-pesticide-form-dialog}.tsx ·
 utils/customs-pesticide-form.ts · frontend/src/pages/CustomsPesticideDetailPage.tsx ·
 frontend/src/components/customs/CustomsPesticideForm.tsx · frontend/src/utils/customs-pesticide.ts
+
+## bao-CR-532 | Gộp pháp nhân DEGO bị trùng vào DEGO gốc rồi xóa bản trùng
+- status: xong
+- date: 2026-09-30
+- pic: NSU209
+Trong danh mục công ty có hai dòng cùng là Công ty TNHH DEGO Holding, cùng mã số thuế, và
+chứng từ đã bị chia đôi giữa hai dòng đó. Đại ca bảo bỏ dòng trùng, dồn hết dữ liệu về dòng
+gốc. Dòng gốc đã đủ địa chỉ, người đại diện nên không phải chép ô nào sang. Mã số của dòng
+trùng khác nhau giữa hai môi trường, nên công cụ tìm theo mã công ty chứ không theo số.
+
+Quy mô hai môi trường khác hẳn nhau. Trên máy thử chỉ có chín dòng dính dòng trùng: một nhân
+viên, một văn bản, một sổ văn bản, ba dòng nghỉ phép, một dòng phân quyền và một thư mục.
+Trên máy thật thì khoảng một nghìn ba trăm bốn mươi dòng chứng từ mua hàng đang dùng: phiếu
+nhập kho, tồn kho, công nợ, đơn mua hàng, yêu cầu mua hàng, yêu cầu thanh toán, yêu cầu báo
+giá, cộng ba dòng phân quyền và một thư mục.
+
+Em viết công cụ chạy thử được: chạy thật toàn bộ trong một giao dịch rồi hủy, nên số chạy thử
+chính là số thật. Nó tự dò mọi cột trỏ tới công ty chứ không gắn cứng danh sách bảng, bỏ qua
+các bảng nhật ký vì đó là lịch sử, và nếu cuối cùng còn sót một dòng trỏ vào bản trùng thì hủy
+cả đợt. Khi dò dữ liệu thật em tìm ra năm chỗ không thể chỉ đổi số: liên kết phòng ban với
+pháp nhân tự bị xóa theo nếu xóa công ty trước khi chuyển; phân quyền lưu số công ty dưới dạng
+chữ nên quét theo cột số không thấy; tồn kho là số tính ra từ các lần nhập xuất nên phải tính
+lại bằng chính hàm của hệ thống; mỗi pháp nhân chỉ được một thư mục gốc; và hàm ghi nhật ký tự
+chốt giao dịch, nếu gọi giữa chừng thì lần chạy thử trên máy thật sẽ thành xóa thật. Chỗ cuối
+cùng em bắt được trước khi chạy, đã tách ra và có bài kiểm canh, thử ngược thấy đỏ đúng.
+
+Trên máy thật em đã kiểm trước các điều kiện an toàn: tồn kho của dòng trùng khớp tuyệt đối
+với lịch sử nhập xuất, không mặt hàng nào có tồn ở cả hai công ty, cách đánh số phiếu không
+phụ thuộc công ty nên gộp xong không sinh số trùng, và ba dòng phân quyền đều đã có sẵn công ty
+gốc nên chỉ cần xóa, quyền không đổi.
+
+Máy thử đã gộp xong và kiểm lại từng dòng. Máy thật chạy thử trước, khớp đúng số dò; đại ca
+gật, em sao lưu toàn bộ cơ sở dữ liệu rồi mới ghi. Sau khi gộp, tổng số lượng và tổng giá trị
+tồn kho trước và sau khớp tuyệt đối, không còn dòng nào trỏ vào công ty trùng, quyền của mọi
+người không đổi, và các trang đều chạy bình thường.
+
+Mã nguồn: `backend/app/modules/company/merge_service.py`, `backend/scripts/merge_duplicate_company.py`,
+bài kiểm `test/backend/test_gop_cong_ty_trung_cr532.py` (13 bài).
+Deploy: dữ liệu dev + prod 30/09; sao lưu prod `procurement_truoc_cr532_20260930_1539.sql.gz`.
