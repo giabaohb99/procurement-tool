@@ -448,8 +448,8 @@ export function SignatureSection({
   showSignature: boolean
 }) {
   //  bao-CR-531 → bao-CR-536: BỘ Ô do backend quyết (`print_signature_cells`) — công ty luôn 4 ô,
-  //  hộ kinh doanh 3 ô «Chủ hộ · TP/BP đề xuất · Người lập»; người đại diện trùng ô nào thì tên lên
-  //  ô đầu, ô trùng GIỮ nhưng trống. Lưới theo số ô thật (3 hoặc 4 cột). Ở đây chỉ áp «Không chữ ký»
+  //  hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành «Chủ hộ» (bao-CR-539); người đại diện trùng ô
+  //  nào thì tên lên ô đầu, ô trùng GIỮ nhưng trống. Lưới vẫn theo số ô thật backend trả. Ở đây chỉ áp «Không chữ ký»
   //  (bỏ cả ảnh lẫn tên) và «Mẫu thuế» (trống hết).
   //  Ô «TP/BP đề xuất» vẫn là người trong cột «Trưởng phòng phê duyệt» (bao-CR-499/521), ô
   //  «TP/BP mua hàng» vẫn là TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397).

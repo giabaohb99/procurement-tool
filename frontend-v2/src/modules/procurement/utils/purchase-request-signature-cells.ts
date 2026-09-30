@@ -47,7 +47,8 @@ function buildLegacyCells(source: PrintSignatureSource): PrintSignatureCell[] {
  * Bộ ô ký cụm «XÉT DUYỆT» sẽ vẽ — bao-CR-531, luật bộ ô đổi ở bao-CR-536.
  *
  * BỘ Ô (mấy ô, nhãn gì, ai ở ô nào) do backend quyết (`print_signature_cells.py`): công ty luôn
- * 4 ô, hộ kinh doanh 3 ô «Chủ hộ · TP/BP đề xuất · Người lập», ô trùng người đại diện để trống.
+ * 4 ô; hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành «Chủ hộ» (bao-CR-539); ô trùng người đại
+ * diện để trống.
  * Ở đây chỉ áp hai chế độ phía máy khách:
  *  · «Không chữ ký» → bỏ CẢ ảnh LẪN tên — đây là nút người dùng tự bấm khi muốn ẩn tên;
  *  · «Mẫu thuế» → để trống hết, nhưng vẫn theo đúng bộ ô backend trả.

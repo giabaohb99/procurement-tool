@@ -464,7 +464,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
           >
             {(() => {
               // bao-CR-531 → bao-CR-536: BỘ Ô do backend quyết (`print_signature_cells`) — công ty
-              // luôn 4 ô; hộ kinh doanh 3 ô «Chủ hộ · TP/BP đề xuất · Người lập» (có tên). Người đại
+              // luôn 4 ô; hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành «Chủ hộ» (bao-CR-539). Người đại
               // diện trùng TP/BP đề xuất và/hoặc TP/BP mua hàng thì tên + chữ ký lên ô đầu, ô trùng
               // GIỮ nhưng để trống.
               // Backend cũ chưa gửi danh sách thì lùi về bốn ô cũ:

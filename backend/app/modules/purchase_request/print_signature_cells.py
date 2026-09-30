@@ -1,4 +1,4 @@
-"""Bộ ô ký cụm «XÉT DUYỆT» trên bản in Phiếu đề xuất mua hàng — bao-CR-531, đổi luật ở bao-CR-536.
+"""Bộ ô ký cụm «XÉT DUYỆT» trên bản in Phiếu đề xuất mua hàng — bao-CR-531, đổi luật ở bao-CR-536/539.
 
 Đây là chỗ DUY NHẤT quyết định phiếu in ra mấy ô ký, ô nào mang tên + chữ ký của ai. Hai giao
 diện (`frontend/` và `frontend-v2/`) chỉ vẽ lại danh sách `print_signature_cells` và áp hai chế
@@ -10,10 +10,11 @@ Luật bao-CR-536 (đại ca chốt 30/09/2026, thay luật «bỏ ô trùng» c
      nào. Người đại diện pháp luật (`Company.legal_representative_id`, id NHÂN SỰ) trùng người ở
      «TP/BP đề xuất» và/hoặc «TP/BP mua hàng» thì tên + chữ ký người đó in ở ô «Giám đốc», còn ô
      trùng GIỮ NGUYÊN nhưng để TRỐNG (không tên, không chữ ký). Không trùng: «Giám đốc» trống.
-  2. HỘ KINH DOANH (`Company.company_type = 2`): 3 ô «Chủ hộ · TP/BP đề xuất · Người lập» (hộ
-     không có phòng mua hàng). IN TÊN + chữ ký như công ty — bản CR-531 để trống cả hai ô là SAI
-     ý đại ca. «Chủ hộ» = người đại diện của hộ, gộp cùng luật với «Giám đốc»: trùng người ở
-     «TP/BP đề xuất» thì in ở «Chủ hộ», ô đề xuất để trống; không trùng thì «Chủ hộ» trống.
+  2. HỘ KINH DOANH (`Company.company_type = 2`): 4 ô y như công ty, CHỈ KHÁC NHÃN ô đầu —
+     «Chủ hộ · TP/BP mua hàng · TP/BP đề xuất · Người lập» (bao-CR-539; đại ca: «còn thiếu phần
+     TP bên thu mua rồi bạn, tới 4 chữ ký lận á» — bản 536 bỏ ô mua hàng là sai). IN TÊN + chữ ký.
+     «Chủ hộ» = người đại diện của hộ, gộp ĐÚNG luật «Giám đốc» (trùng đề xuất và/hoặc mua hàng
+     thì in ở «Chủ hộ», ô trùng giữ nhưng trống).
   So bằng id NHÂN SỰ, không so tên (trùng tên là chuyện thường). Id chưa biết (0) thì KHÔNG gộp.
 
 Ví dụ thật trên prod: ICARE có người đại diện Lê Phước Hữu, cũng là TP/BP đề xuất của
@@ -42,6 +43,7 @@ def build_print_signature_cells(company, signers: dict, requester_name: str,
     `approver_name/_signature`, `proposer_employee_id`, `purchasing_head_name/_signature`,
     `purchasing_head_employee_id`.
     """
+    #  Hộ kinh doanh chỉ khác NHÃN ô đầu (bao-CR-539) — bộ ô và luật gộp y như công ty.
     household = int(getattr(company, "company_type", 0) or CompanyType.COMPANY) == CompanyType.HOUSEHOLD
     representative_id = int(getattr(company, "legal_representative_id", 0) or 0)
 
@@ -52,8 +54,7 @@ def build_print_signature_cells(company, signers: dict, requester_name: str,
     proposer_id = int(signers.get("proposer_employee_id", 0) or 0)
     purchasing_id = int(signers.get("purchasing_head_employee_id", 0) or 0)
     merge_proposer = bool(representative_id) and proposer_id == representative_id
-    #  Hộ kinh doanh không có ô «TP/BP mua hàng» nên không có gì để gộp ở đó.
-    merge_purchasing = not household and bool(representative_id) and purchasing_id == representative_id
+    merge_purchasing = bool(representative_id) and purchasing_id == representative_id
 
     head = _cell("household_owner", ROLE_HOUSEHOLD_OWNER) if household else _cell("director", ROLE_DIRECTOR)
     #  Cùng một người nên tên như nhau; lấy ô đang có tên (ô đề xuất trước) — ô đề xuất còn
@@ -73,6 +74,4 @@ def build_print_signature_cells(company, signers: dict, requester_name: str,
         purchasing["name"], purchasing["signature"] = "", ""
 
     preparer = _cell("preparer", ROLE_PREPARER, requester_name, requester_signature)
-    if household:
-        return [head, proposer, preparer]
     return [head, purchasing, proposer, preparer]

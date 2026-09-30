@@ -49,22 +49,24 @@ describe('resolvePrintSignatureCells', () => {
   })
 
   it('household prints names like a company, and tax template still blanks them', () => {
-    //  bao-CR-536: hộ kinh doanh 3 ô, CÓ tên (CR-531 để trống cả hai ô là sai ý đại ca).
+    //  bao-CR-539: hộ kinh doanh 4 ô như công ty, chỉ khác nhãn «Chủ hộ»; CÓ tên.
     const household: PrintSignatureCell[] = [
       { key: 'household_owner', role: 'Chủ hộ', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
+      { key: 'purchasing_head', role: 'TP/BP mua hàng', name: 'Pham Khanh Ngan', signature: '' },
       { key: 'proposer', role: 'TP/BP đề xuất', name: '', signature: '' },
       { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
     ]
     const shown = resolvePrintSignatureCells(makeSource({ print_signature_cells: household }), withSignature)
-    expect(shown.map((c) => c.role)).toEqual(['Chủ hộ', 'TP/BP đề xuất', 'Người lập'])
+    expect(shown.map((c) => c.role)).toEqual(['Chủ hộ', 'TP/BP mua hàng', 'TP/BP đề xuất', 'Người lập'])
     expect(shown[0].name).toBe('Le Phuoc Huu')
-    expect(shown[2].name).toBe('Nguoi Lap')
+    expect(shown[1].name).toBe('Pham Khanh Ngan')
+    expect(shown[3].name).toBe('Nguoi Lap')
 
     const tax = resolvePrintSignatureCells(makeSource({ print_signature_cells: household }), {
       taxMode: true,
       showSignature: true,
     })
-    expect(tax.map((c) => c.role)).toEqual(['Chủ hộ', 'TP/BP đề xuất', 'Người lập'])
+    expect(tax.map((c) => c.role)).toEqual(['Chủ hộ', 'TP/BP mua hàng', 'TP/BP đề xuất', 'Người lập'])
     expect(tax.every((c) => c.name === '' && c.signature === '')).toBe(true)
   })
 

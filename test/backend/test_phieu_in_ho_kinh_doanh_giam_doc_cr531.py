@@ -108,11 +108,13 @@ def _cell(cells, role):
 
 
 def test_household_owner_is_proposer_prints_in_owner_cell(db, world):
-    """bao-CR-536: hộ kinh doanh 3 ô «Chủ hộ · TP/BP đề xuất · Người lập», IN TÊN như công ty.
-    Chủ hộ (người đại diện) trùng TP/BP đề xuất → tên + chữ ký ở «Chủ hộ», ô đề xuất GIỮ nhưng trống."""
+    """bao-CR-539: hộ kinh doanh 4 ô y như công ty, chỉ khác nhãn «Chủ hộ» (PYC29092604 DR.XANH —
+    bản 536 ra 3 ô, đại ca: «còn thiếu phần TP bên thu mua»). IN TÊN. Chủ hộ trùng TP/BP đề xuất →
+    tên + chữ ký ở «Chủ hộ», ô đề xuất GIỮ nhưng trống."""
     comp = _company(db, "HKD", world.proposer.id, int(CompanyType.HOUSEHOLD))
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
-    assert _roles(cells) == ["Chủ hộ", "TP/BP đề xuất", "Người lập"]
+    assert _roles(cells) == ["Chủ hộ", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
+    assert _cell(cells, "TP/BP mua hàng")["name"] == "Pham Khanh Ngan", "ô mua hàng phải có (bao-CR-539)"
     assert _cell(cells, "Chủ hộ")["name"] == "Le Phuoc Huu"
     assert _cell(cells, "Chủ hộ")["signature"] == "https://cdn/ky-huu.png"
     assert _cell(cells, "TP/BP đề xuất")["name"] == "" and _cell(cells, "TP/BP đề xuất")["signature"] == ""
@@ -122,17 +124,20 @@ def test_household_owner_is_proposer_prints_in_owner_cell(db, world):
 def test_household_owner_not_proposer_keeps_owner_blank_and_prints_proposer(db, world):
     comp = _company(db, "HKD2", world.other.id, int(CompanyType.HOUSEHOLD))
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
-    assert _roles(cells) == ["Chủ hộ", "TP/BP đề xuất", "Người lập"]
+    assert _roles(cells) == ["Chủ hộ", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
     assert _cell(cells, "Chủ hộ")["name"] == ""
     assert _cell(cells, "TP/BP đề xuất")["name"] == "Le Phuoc Huu"
 
 
-def test_household_never_merges_purchasing_head_it_does_not_print(db, world):
-    """Hộ không có ô «TP/BP mua hàng»: đại diện trùng người mua hàng thì KHÔNG kéo tên đó lên «Chủ hộ»."""
+def test_household_owner_is_purchasing_head_merges_like_company(db, world):
+    """bao-CR-539: luật gộp y như công ty — Chủ hộ trùng TP/BP mua hàng thì tên lên «Chủ hộ», ô mua
+    hàng giữ nhưng trống (bản 536 cấm gộp ở đây vì khi đó hộ không in ô mua hàng)."""
     comp = _company(db, "HKD3", world.head.id, int(CompanyType.HOUSEHOLD))
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
-    assert _roles(cells) == ["Chủ hộ", "TP/BP đề xuất", "Người lập"]
-    assert _cell(cells, "Chủ hộ")["name"] == ""
+    assert _roles(cells) == ["Chủ hộ", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
+    assert _cell(cells, "Chủ hộ")["name"] == "Pham Khanh Ngan"
+    assert _cell(cells, "TP/BP mua hàng")["name"] == "" and _cell(cells, "TP/BP mua hàng")["signature"] == ""
+    assert _cell(cells, "TP/BP đề xuất")["name"] == "Le Phuoc Huu"
 
 
 # ─── Luật 2: công ty — gộp ô Giám đốc ───────────────────────────────────────────
