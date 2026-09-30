@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-531 | Bản in phiếu đề xuất mua hàng: hộ kinh doanh chỉ hai ô ký, Giám đốc trùng người ký thì gộp ô
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca chốt cách in cụm «XÉT DUYỆT» của Phiếu đề xuất mua hàng hóa/dịch vụ. Trước đây phiếu luôn in
 bốn ô Giám đốc, TP/BP mua hàng, TP/BP đề xuất, Người lập, trong đó ô Giám đốc luôn để trống vì không có
@@ -96,10 +96,15 @@ Kiểm: 27 bài kiểm mới ở máy chủ xanh; rà lại năm tệp kiểm b�
 bản dùng danh mục công ty (111 bài xanh; riêng bài đếm lệnh tra bảng trong controller đỏ sẵn từ trước
 ở hai tệp đính kèm và nhân sự, không liên quan việc này). Màn mới kiểm kiểu và eslint không lỗi, vitest
 phần thu mua và nhân sự xanh 1290 bài (21 bài mới). Màn cũ giữ đúng 4 lỗi nền. Commit và deploy dev ngày 30/09 cùng bao-CR-529..531 (gộp chung một checkout).
+Lên prod ngày 30/09 cùng bao-CR-528..531: cherry-pick sang main (f7f6ba79), sao lưu DB prod trước khi
+deploy; migration c531a7e4d2f9 được đặt ngay sau c496a1b2d3e4 để không làm lỡ cụm thuốc BVTV.
+
 Mã nguồn: company/constants.py, company/model.py, company/schema.py, company/service.py, migration c531a7e4d2f9, purchase_request/print_signature_cells.py, purchase_request/controller.py (_purchasing_head, _approval_signers, _out), frontend/src/pages/PrintPurchaseRequest.tsx, frontend/src/config/cruds.tsx, frontend-v2 procurement/utils/purchase-request-signature-cells.ts, procurement/pages/purchase-request-print-page.tsx, procurement/types/purchase-request-detail.ts, hr/types/company.ts, hr/schemas/company-schema.ts, hr/components/company-form-dialog.tsx, hr/pages/company-detail-page.tsx
 
+---
+
 ## bao-CR-530 | Màn Phân công phụ trách: ô chọn nhân viên thu mua gõ tìm được
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca báo ở màn Phân công phụ trách, ô chọn nhân viên thu mua chính và dự phòng không gõ tìm tên
 được, danh sách dài phải cuộn tay, trong khi ô phòng áp dụng và phân loại ngay bên trên thì tìm được.
@@ -113,10 +118,15 @@ trước nên không phải sửa.
 Cổng kiểm: kiểm kiểu sạch, lint không lỗi và không thêm cảnh báo, bảy trăm mười ba bài phân hệ thu
 mua xanh trong đó ba bài mới. Commit và deploy dev ngày 30/09 cùng bao-CR-529..531 (gộp chung một checkout).
 
+Lên prod ngày 30/09 cùng bao-CR-528..531: cherry-pick sang main (f7f6ba79), sao lưu DB prod trước khi
+deploy; migration c531a7e4d2f9 được đặt ngay sau c496a1b2d3e4 để không làm lỡ cụm thuốc BVTV.
+
 Mã nguồn: frontend-v2/src/modules/procurement/pages/category-assignee-form-page.tsx (+ .test.tsx)
 
+---
+
 ## bao-CR-529 | Ô «Phòng thu mua mặc định» chọn từ danh mục Phòng ban thay vì gõ mã
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca hỏi ở màn Cấu hình hệ thống: «sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng
 ban». Trước đây quản trị phải tự gõ mã phòng, và gõ sai mã thì hệ thống lặng lẽ quay về «phòng xử lý
@@ -134,6 +144,9 @@ xanh). Màn mới kiểm kiểu và eslint không lỗi, vitest phân hệ Quả
 4 lỗi nền. Đã mở cả hai màn trên máy local: ô hiện đúng «Sản xuất -Thu mua · PBA017», gõ «ke» lọc ra
 Kế toán, Kiểm soát kế hoạch, Thiết kế. Commit và deploy dev ngày 30/09 cùng bao-CR-529..531 (gộp chung một checkout).
 
+Lên prod ngày 30/09 cùng bao-CR-528..531: cherry-pick sang main (f7f6ba79), sao lưu DB prod trước khi
+deploy; migration c531a7e4d2f9 được đặt ngay sau c496a1b2d3e4 để không làm lỡ cụm thuốc BVTV.
+
 Mã nguồn: `setting/service.py` (`_normalize` nhận thêm `db`, kiểu `department`) ·
 `system/components/setting-department-field.tsx` · `system/components/setting-field-row.tsx` ·
 `frontend/src/pages/Settings.tsx` · `test/backend/test_o_chon_phong_thu_mua_mac_dinh_cr529.py`
@@ -141,7 +154,7 @@ Mã nguồn: `setting/service.py` (`_normalize` nhận thêm `db`, kiểu `depar
 ---
 
 ## bao-CR-528 | Ô «Điều kiện bỏ qua điều phối» chọn bằng bộ chọn điều kiện thay vì gõ JSON
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca chê ô «Điều kiện bỏ qua bước thu mua duyệt lần 2» ở màn Cấu hình hệ thống: «sao không làm như
 cái filter, cấu hình là gõ code vào à». Trước đây quản trị phải tự gõ một chuỗi JSON, và gõ sai một
@@ -173,6 +186,9 @@ Thử thật trên dev trước khi đẩy: đặt điều kiện «Phòng xử 
 Gửi duyệt và Duyệt. Phiếu nhờ Dego Organic xử lý đi thẳng sang «Đã điều phối» và tự giao cho nhân viên
 thu mua nhà máy; phiếu của phòng khác vẫn đứng ở «Đã duyệt» chờ thu mua điều phối. Hai phiếu thử đã xóa,
 điều kiện để lại trên dev cho đại ca bấm thử. Đẩy lên erp-v2 và deploy dev ngày 30/09.
+
+Lên prod ngày 30/09 cùng bao-CR-528..531: cherry-pick sang main (f7f6ba79), sao lưu DB prod trước khi
+deploy; migration c531a7e4d2f9 được đặt ngay sau c496a1b2d3e4 để không làm lỡ cụm thuốc BVTV.
 
 Mã nguồn: `setting/service.py` (`_normalize`, `_get_condition_fields`, `_format_value`) ·
 `approval/condition_service.py` (`find_error`, `describe`) · `purchase_request/service.py`
