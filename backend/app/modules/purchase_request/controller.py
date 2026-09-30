@@ -170,7 +170,7 @@ _AFTER_APPROVE = STATUS_AFTER_APPROVE
 _AFTER_DISPATCH = STATUS_AFTER_DISPATCH
 
 
-def _purchasing_head(db: Session, dispatcher_uid: int) -> tuple[str, str]:
+def _purchasing_head(db: Session, dispatcher_uid: int) -> tuple[str, str, int]:
     """bao-CR-397 — TRƯỞNG PHÒNG của phòng ban mà người bấm Điều phối đang thuộc.
 
     Ô "TP/BP mua hàng" trên bản in là chữ ký của trưởng phòng thu mua, không phải của
@@ -179,7 +179,10 @@ def _purchasing_head(db: Session, dispatcher_uid: int) -> tuple[str, str]:
     chính người điều phối (tài khoản -> nhân sự -> `department_id`) rồi đọc
     `Department.manager_id` — cột trưởng bộ phận chọn cứng ở danh mục Phòng ban.
 
-    Trả `("", "")` khi không suy ra được (tài khoản chưa gắn nhân sự, nhân sự chưa có
+    Phần tử thứ ba là id NHÂN SỰ trưởng phòng — bao-CR-531 so nó với người đại diện pháp luật
+    để gộp ô «Giám đốc».
+
+    Trả `("", "", 0)` khi không suy ra được (tài khoản chưa gắn nhân sự, nhân sự chưa có
     phòng, phòng chưa gán trưởng) — chỗ gọi tự lùi về người điều phối như trước CR này.
     Chữ ký tra theo NHÂN SỰ trưởng phòng (`resolve_signature_by_employee`) để ảnh khớp
     đúng tên đang in.
@@ -194,8 +197,8 @@ def _purchasing_head(db: Session, dispatcher_uid: int) -> tuple[str, str]:
     dept = db.get(Department, emp.department_id) if (emp and emp.department_id) else None
     head = db.get(Employee, dept.manager_id) if (dept and dept.manager_id) else None
     if not head or not (head.full_name or "").strip():
-        return "", ""
-    return head.full_name, resolve_signature_by_employee(db, head.id)
+        return "", "", 0
+    return head.full_name, resolve_signature_by_employee(db, head.id), int(head.id)
 
 
 def _approval_signers(db: Session, pr) -> dict:
@@ -210,20 +213,31 @@ def _approval_signers(db: Session, pr) -> dict:
     → ô "TP/BP mua hàng" ra trưởng phòng của NGƯỜI DUYỆT — chấp nhận như trước, vì luồng đó
     không có thu mua nào chạm vào phiếu. Phiếu cũ (trước CR-485) vẫn có dòng `dispatched` nên
     đi đường thường.
+
+    bao-CR-531: kèm hai id NHÂN SỰ để `print_signature_cells` gộp ô «Giám đốc»:
+    `proposer_employee_id` = người của ô «TP/BP đề xuất» — cột `approver_employee_id` (người được
+    chọn / người thực duyệt, có cả khi phiếu CHƯA duyệt: tên để trống nhưng bộ ô đã biết), phiếu cũ
+    cột rỗng thì nhân sự của tài khoản bấm Duyệt trong nhật ký; `purchasing_head_employee_id` =
+    người đang in ở ô «TP/BP mua hàng» (trưởng phòng, hoặc người điều phối khi lùi). 0 = chưa biết.
     """
     from app.core.audit import resolve_actor, resolve_signature
+    from app.core.print_signers import employee_id_of_user
     from app.modules.audit.model import AuditLog
 
     out = {"approver_name": "", "approver_signature": "",
            "dispatcher_name": "", "dispatcher_signature": "",
-           "purchasing_head_name": "", "purchasing_head_signature": ""}
+           "purchasing_head_name": "", "purchasing_head_signature": "",
+           "proposer_employee_id": 0, "purchasing_head_employee_id": 0}
     #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt, người THỰC duyệt
     #  sau khi duyệt.
     #  bao-CR-521 (ticket prod #57, 28/09/2026): phiếu CHƯA duyệt thì ô «TP/BP đề xuất» để TRỐNG
     #  HẲN — cả tên lẫn chữ ký. Bản 504 còn in tên người được chọn, người đọc hiểu là trưởng phòng
     #  đã ký. Người được chọn vẫn hiện ở màn chi tiết (ô «Trưởng phòng phê duyệt»).
     from app.core.print_signers import person_block
-    stored = person_block(db, int(getattr(pr, "approver_employee_id", 0) or 0))
+    stored_id = int(getattr(pr, "approver_employee_id", 0) or 0)
+    stored = person_block(db, stored_id)
+    if stored["name"]:
+        out["proposer_employee_id"] = stored_id
     if stored["name"] and pr.status in _AFTER_APPROVE:
         out["approver_name"] = stored["name"]
         out["approver_signature"] = stored["signature"]
@@ -249,11 +263,15 @@ def _approval_signers(db: Session, pr) -> dict:
             out[f"{key}_signature"] = resolve_signature(db, uid)
     if stored["name"]:      # cột thắng nhật ký (bao-CR-490/499)
         out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
+    elif out["approver_name"] and latest.get("approved"):
+        out["proposer_employee_id"] = employee_id_of_user(db, latest["approved"])
     dispatcher_uid = latest.get("dispatched")
     if dispatcher_uid:
-        head_name, head_sign = _purchasing_head(db, dispatcher_uid)
+        head_name, head_sign, head_id = _purchasing_head(db, dispatcher_uid)
         out["purchasing_head_name"] = head_name or out["dispatcher_name"]
         out["purchasing_head_signature"] = head_sign if head_name else out["dispatcher_signature"]
+        if out["purchasing_head_name"]:
+            out["purchasing_head_employee_id"] = head_id if head_name else employee_id_of_user(db, dispatcher_uid)
     return out
 
 
@@ -417,11 +435,17 @@ def _out(db: Session, pr, user=None) -> dict:
 
     # Fetch company name safely to avoid permission issues on the frontend
     d["company_name"] = ""
+    comp = None
     if pr.company_id:
         from app.modules.company.model import Company
         comp = db.query(Company).filter(Company.id == pr.company_id).first()
         if comp:
             d["company_name"] = comp.name
+    # bao-CR-531: bộ ô ký cụm «XÉT DUYỆT» đã rút gọn (hộ kinh doanh · gộp ô Giám đốc) — hai giao
+    # diện chỉ vẽ lại. Các khóa cũ (approver_name…) giữ nguyên cho giao diện chưa cập nhật.
+    from .print_signature_cells import build_print_signature_cells
+    d["print_signature_cells"] = build_print_signature_cells(
+        comp, d, pr.requester or "", d["requester_signature"])
 
     items = service.items_of(db, pr.id)
     # Batch resolve ảnh gốc theo product_code (2 query/phiếu, tránh N+1).

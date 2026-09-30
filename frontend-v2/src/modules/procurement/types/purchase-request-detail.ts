@@ -66,6 +66,19 @@ export interface SupplierCluster {
   contact: string
 }
 
+/**
+ * Một ô ký cụm «XÉT DUYỆT» trên bản in YCMH — bao-CR-531. Backend
+ * (`purchase_request/print_signature_cells.py`) là nơi duy nhất quyết định bộ ô.
+ */
+export interface PrintSignatureCell {
+  /** `director` · `purchasing_head` · `proposer` · `preparer` · `household_owner`. */
+  key: string
+  /** Nhãn in trên giấy, vd «Giám đốc», «Chủ hộ». */
+  role: string
+  name: string
+  signature: string
+}
+
 /** Phiếu YCMH bản chi tiết — `GET /api/purchase-requests/{id}`. */
 export interface PurchaseRequestDetail {
   id: number
@@ -179,6 +192,12 @@ export interface PurchaseRequestDetail {
    */
   purchasing_head_name: string
   purchasing_head_signature: string
+  /**
+   * bao-CR-531: bộ ô ký cụm «XÉT DUYỆT» backend đã rút gọn — hộ kinh doanh chỉ còn «Chủ hộ» +
+   * «Người lập» (không tên), công ty thì gộp ô trùng người đại diện pháp luật vào «Giám đốc».
+   * Tùy chọn vì backend cũ chưa gửi; thiếu thì bản in lùi về bốn ô dựng từ các khóa cũ.
+   */
+  print_signature_cells?: PrintSignatureCell[]
   /**
    * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và
    * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên

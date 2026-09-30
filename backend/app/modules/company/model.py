@@ -20,6 +20,9 @@ class Company(Base, AuditMixin, LegacyIdMixin):
     short_name: Mapped[str] = mapped_column(String(100), default="")
     #  1 Tập đoàn · 2 công ty thành viên · 3 đơn vị trực thuộc.
     level: Mapped[int] = mapped_column(SmallInteger, default=2)
+    #  Loại hình (bao-CR-531): 1 Công ty · 2 Hộ kinh doanh — mã ở `company/constants.py`.
+    #  Quyết định bộ ô ký của bản in Phiếu đề xuất mua hàng.
+    company_type: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")
     tax_code: Mapped[str] = mapped_column(String(25), default="")
     address: Mapped[str] = mapped_column(Text, default="")
     invoice_email: Mapped[str] = mapped_column(String(255), default="")

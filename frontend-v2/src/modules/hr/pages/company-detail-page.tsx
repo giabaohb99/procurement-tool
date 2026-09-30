@@ -53,7 +53,12 @@ import {
   companySchema,
   type CompanyFormValues,
 } from '../schemas/company-schema'
-import { COMPANY_LEVEL_LABELS, companyInitial, type Company } from '../types/company'
+import {
+  COMPANY_LEVEL_LABELS,
+  COMPANY_TYPE_OPTIONS,
+  companyInitial,
+  type Company,
+} from '../types/company'
 
 /**
  * Chi tiết pháp nhân — form SỬA TRỰC TIẾP, không phải thẻ chỉ-đọc.
@@ -280,6 +285,28 @@ export function CompanyDetailPage() {
                     <FormControl>
                       <Input disabled={!canWrite} {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="company_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Loại hình</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!canWrite}
+                      placeholder="Chọn loại hình"
+                      items={COMPANY_TYPE_OPTIONS}
+                    />
+                    {/* bao-CR-531 */}
+                    <FormDescription>
+                      Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký «Chủ hộ» + «Người lập».
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
