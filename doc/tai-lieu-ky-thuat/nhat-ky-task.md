@@ -10046,7 +10046,7 @@ Mã nguồn: `backend/app/modules/company/merge_service.py`, `backend/scripts/me
 bài kiểm `test/backend/test_gop_cong_ty_trung_cr532.py` (13 bài).
 Deploy: dữ liệu dev + prod 30/09; sao lưu prod `procurement_truoc_cr532_20260930_1539.sql.gz`.
 
-## bao-CR-533 | Chặn tạo hoặc sửa công ty bị trùng mã số thuế
+## bao-CR-534 | Chặn tạo hoặc sửa công ty bị trùng mã số thuế
 - status: xong
 - date: 2026-09-30
 - pic: NSU209
@@ -10068,4 +10068,5 @@ chốt mới không khóa ai. Bài kiểm mới xanh, và em thử gỡ chốt r
 giao diện tự hiện câu báo qua thông báo lỗi sẵn có, không phải sửa giao diện.
 
 Mã nguồn: `backend/app/modules/company/service.py`, `backend/app/modules/company/schema.py`,
-bài kiểm `test/backend/test_chan_trung_mst_cr533.py`. Chưa commit, chưa deploy.
+bài kiểm `test/backend/test_chan_trung_mst_cr534.py`.
+Commit: xem commit bao-CR-534 trên erp-v2; Erp Agent 1 đưa lên dev.
