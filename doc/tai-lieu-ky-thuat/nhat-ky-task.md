@@ -70,6 +70,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-537 | Hotfix: «Ghi chú NSPT» của phiếu khảo sát nhận ghi chú dài hơn 255 ký tự
+- status: xong
+- date: 2026-09-30
+Nhân sự thu mua lưu phiếu khảo sát thì gặp «Hệ thống gặp lỗi không lường trước» (mã sự cố D30D24DF)
+và phải sửa tay rất lâu. Nguyên nhân là ô «Ghi chú NSPT» của dòng nhà cung cấp và dòng sản phẩm chỉ
+chứa được 255 ký tự, trong khi ghi chú họ gõ dài 263 ký tự. Lỗi có từ trước, không do đợt đồng bộ
+code cùng ngày.
+
+Đã nới cả hai cột lên kiểu văn bản dài, và chặn ở tầng dữ liệu vào tối đa 5.000 ký tự để lỡ dán quá
+dài thì nhận câu báo rõ ràng thay vì lỗi không lường trước. Đưa thẳng lên prod trước theo lời đại
+ca, sao lưu cơ sở dữ liệu trước khi deploy; migration đặt ngay sau head của prod để cụm thuốc BVTV
+lên sau vẫn chạy đủ.
+
+Kiểm: 3 bài kiểm mới cùng 171 bài kiểm khảo sát liên quan xanh.
+
+Mã nguồn: `survey/model.py` · `survey/schema.py` · migration `e537b2c4d6f8` ·
+`test/backend/test_ghi_chu_nspt_dai_cr537.py`
+
+---
+
 ## bao-CR-536 | Phiếu in yêu cầu mua hàng: công ty luôn đủ bốn ô ký, hộ kinh doanh in tên
 - status: dang-lam
 - date: 2026-09-30
