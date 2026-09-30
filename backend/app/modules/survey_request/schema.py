@@ -59,8 +59,9 @@ class RejectIn(BaseModel):
 
 
 class TransferDeptIn(BaseModel):
-    """bao-CR-414 GĐ5 — chuyển phiếu sang phòng xử lý khác / trả về phòng lập.
-    `handler_dept_id` = 0 nghĩa là trả về phòng lập; lý do BẮT BUỘC (ghi vào nhật ký)."""
+    """bao-CR-414 GĐ5 — chuyển phiếu sang phòng xử lý khác / trả về thu mua.
+    `handler_dept_id` = 0 nghĩa là trả về PHÒNG THU MUA MẶC ĐỊNH (bao-CR-524, ghi id thật của
+    PBA017); lý do BẮT BUỘC (ghi vào nhật ký)."""
     handler_dept_id: int = 0
     reason: str = ""
 

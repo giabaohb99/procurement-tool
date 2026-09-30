@@ -70,6 +70,57 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-524 | Bỏ «Thu mua chung», phòng thu mua mặc định là phòng «Sản xuất -Thu mua»
+- status: dang-lam
+- date: 2026-09-30
+Khách chốt ngày 30/09 bỏ phòng ảo «Thu mua chung»: phiếu không nhờ phòng nào khác xử lý từ nay thuộc
+về phòng thật «Sản xuất -Thu mua» (mã PBA017). Trước đây số 0 ở ô phòng xử lý của yêu cầu mua hàng,
+yêu cầu báo giá và đơn mua hàng, ở cột phòng của công nợ và yêu cầu thanh toán, và ở bảng phân công
+phụ trách đều mang nghĩa «Thu mua chung», một phòng không có trong danh mục. Em thêm một chỗ duy nhất
+tra mã phòng ra id (không gõ cứng id vì mỗi môi trường một khác), mã đổi được ở màn Cấu hình hệ thống.
+
+Phiếu mới, nút «Trả về thu mua», bản sao, đơn mua hàng lẻ và công nợ mới đều ghi id thật của phòng.
+Phiếu cũ còn số 0 vẫn được hiểu là phòng thu mua mặc định ở mọi chỗ, nên chạy hay chưa chạy script
+chuyển dữ liệu thì không có gì gãy. Quản lý thu mua cấp phòng của phòng «Sản xuất -Thu mua» nay thấy
+phiếu thu mua chung (đúng ý khách). Em chặn thêm một chỗ: trưởng phòng «Sản xuất -Thu mua» ở cấp phòng
+không được coi phiếu thu mua chung là «phiếu được nhờ», nếu không họ sẽ thấy và duyệt bước 1 phiếu của
+mọi phòng. Điều kiện bỏ qua điều phối và báo cáo tổng hợp giữ nguyên cách đọc cũ. Màn cũ và màn mới bỏ
+mục «Thu mua chung» ở ô Phòng xử lý, màn Phân công phụ trách và bộ lọc; nút trả về đổi tên thành «Trả
+về phòng thu mua».
+
+Script chuyển dữ liệu mặc định chỉ xem thử, thêm cờ `--apply` mới ghi, chạy lại vô hại. Nó chỉ đổi
+công nợ có đơn do phòng mặc định xử lý và yêu cầu thanh toán mà mọi khoản nợ gắn vào đều là nợ của
+phòng đó; dòng phân công trùng phân loại với dòng đã có của phòng «Sản xuất -Thu mua» thì báo xung đột
+và bỏ qua, không xóa dòng nào. Chưa chạy ở môi trường nào.
+
+Kiểm: 20 bài kiểm mới xanh; rà lại 57 tệp kiểm liên quan; màn mới kiểm kiểu và eslint không lỗi,
+vitest phần thu mua xanh; màn cũ giữ đúng 4 lỗi nền. Đang ở máy em, chưa commit.
+
+Mã nguồn: `core/central_purchasing.py` · `core/scoping.py` (`_dept_match`, `_explicit_cond`,
+`holds_handling_dept`) · `category_assignee/service.py` · `purchase_request/service.py` ·
+`survey_request/service.py` · `purchase_order/service.py` · `payable/service.py` (`debt_dept_of`) ·
+`scripts/backfill_central_purchasing_dept.py` · `handling-dept-display.ts` · `CategoryAssignees.tsx`
+
+## bao-CR-527 | Phân công phụ trách: đúng một NSTM chính «Chính thức» và tối đa một dự phòng
+- status: dang-lam
+- date: 2026-09-30
+Khách chốt ngày 30/09: mỗi phân loại hàng có đúng một nhân sự thu mua (NSTM) chính và tối đa một người
+dự phòng, và người chính phải đang ở trạng thái «Chính thức». Em đặt một chốt chung cho mọi đường ghi
+bảng phân công (thêm, sửa, gán hàng loạt): thiếu người chính, người chính hay người dự phòng đang nghỉ
+thai sản, nghỉ việc, là cộng tác viên hoặc hồ sơ đã tắt, hoặc dự phòng trùng người chính thì hệ thống
+từ chối và nói rõ tên người cùng tình trạng của họ.
+
+Khi duyệt hoặc điều phối phiếu, hệ thống tự gán người chính nếu người đó còn «Chính thức»; nếu không
+thì chuyển sang người dự phòng, và nếu cả hai đều không đạt thì để trống cho người điều phối chọn tay
+như hiện nay. Trước đây chỉ xét hồ sơ còn bật, nên việc vẫn rơi vào người đang nghỉ thai sản. Màn danh
+sách ở cả màn cũ và màn mới gắn nhãn cảnh báo «Không còn Chính thức» ở dòng có người chính nay đã nghỉ;
+ô chọn người chỉ mời nhân sự «Chính thức».
+
+Kiểm: 14 bài kiểm mới xanh cùng bài kiểm luật ở màn mới. Đang ở máy em, chưa commit.
+
+Mã nguồn: `category_assignee/service.py` (`validate_assignee_pair`, `pick_active_employee`) ·
+`category_assignee/controller.py` · `employee/service.py` (`STATUS_OFFICIAL`) ·
+`category-assignee-rules.ts` · `CategoryAssigneeNew.tsx`
 ## bao-CR-523 | Quản trị hệ thống tự sửa quyền của mình được, vai trò Quản trị luôn đủ mọi quyền
 - status: dang-lam
 - date: 2026-09-30

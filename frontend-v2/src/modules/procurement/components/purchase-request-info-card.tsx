@@ -23,7 +23,7 @@ import { resolveShownDeptHead } from '../utils/dept-head-display'
 import {
   ASSIGN_OTHER_DEPT_LABEL,
   HANDLING_DEPT_HINT,
-  SHARED_PURCHASING_LABEL,
+  HANDLING_DEPT_PLACEHOLDER,
   handlingDeptLabel,
   handlingDeptOptions,
   isHandlingDeptAssigned,
@@ -225,16 +225,16 @@ export function PurchaseRequestInfoCard({
         </Field>
 
         {/*
-          bao-CR-414 / bao-CR-480 — «Phòng xử lý»: phòng nào sẽ đi mua cho phiếu này. `0` là
-          Thu mua chung; nhà máy tự mua thì backend tự điền phòng nhà máy lúc lập phiếu.
-          Chọn phòng thì quản lý thu mua của phòng đó thấy + điều phối được phiếu, còn bộ
-          thu mua chung «trừ nhà máy» thì KHÔNG thấy (loại trừ so đúng ô này). Mục «Thu mua
-          chung» là MỘT MỤC CHỌN ĐƯỢC mang giá trị `0`, đúng cách backend lưu.
+          bao-CR-414 / bao-CR-480 — «Phòng xử lý»: phòng nào sẽ đi mua cho phiếu này; nhà máy
+          tự mua thì backend tự điền phòng nhà máy lúc lập phiếu. Chọn phòng thì quản lý thu
+          mua của phòng đó thấy + điều phối được phiếu, còn bộ thu mua chung «trừ nhà máy» thì
+          KHÔNG thấy (loại trừ so đúng ô này). bao-CR-524: KHÔNG còn mục «Thu mua chung» (0) —
+          phòng thu mua mặc định là phòng thật «Sản xuất -Thu mua» có sẵn trong danh mục.
         */}
         {editing && isNew && departments.length ? (
           /* bao-CR-488: lúc LẬP phiếu ô Phòng xử lý ẩn — hệ thống tự chọn mặc định (nhà máy → chính
-             phòng mình, còn lại → Thu mua chung). Tick «Nhờ phòng khác xử lý» mới bung ô chọn; đã
-             tick thì gửi đúng phòng đã chọn, kể cả Thu mua chung. Màn chi tiết bên dưới giữ như cũ. */
+             phòng mình, còn lại → phòng thu mua mặc định). Tick «Nhờ phòng khác xử lý» mới bung ô
+             chọn; đã tick thì gửi đúng phòng đã chọn (để trống = phòng thu mua mặc định). */
           <div className="space-y-1.5">
             <Label htmlFor="pr-handler-dept">Phòng xử lý</Label>
             <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -254,7 +254,7 @@ export function PurchaseRequestInfoCard({
                 id="pr-handler-dept"
                 searchInTrigger
                 value={String(data.handler_dept_id || 0)}
-                placeholder={SHARED_PURCHASING_LABEL}
+                placeholder={HANDLING_DEPT_PLACEHOLDER}
                 searchPlaceholder="Gõ để tìm phòng ban…"
                 options={handlingDeptOptionList}
                 onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
@@ -272,7 +272,7 @@ export function PurchaseRequestInfoCard({
                   id="pr-handler-dept"
                   searchInTrigger
                   value={String(data.handler_dept_id || 0)}
-                  placeholder={SHARED_PURCHASING_LABEL}
+                  placeholder={HANDLING_DEPT_PLACEHOLDER}
                   searchPlaceholder="Gõ để tìm phòng ban…"
                   options={handlingDeptOptionList}
                   onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}

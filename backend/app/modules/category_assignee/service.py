@@ -1,14 +1,19 @@
 from fastapi import HTTPException
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.central_purchasing import get_central_dept_id, is_central_dept
 
 from .model import CategoryAssignee
 from .schema import CategoryAssigneeCreate, CategoryAssigneeUpdate
 
 ENTITY = "category_assignee"
 
-GLOBAL_DEPT_ID = 0   # bao-CR-414: bộ phân công "Thu mua chung" (dùng cho mọi phòng chưa có bộ riêng)
+#  bao-CR-414: `0` từng là bộ phân công «Thu mua chung» (phòng ảo). bao-CR-524 bỏ phòng ảo: bộ
+#  chung nay là bộ của PHÒNG THU MUA MẶC ĐỊNH (`core/central_purchasing`, mã PBA017). Dòng `0`
+#  còn sót (chưa chạy `scripts/backfill_central_purchasing_dept.py`) vẫn được đọc như bộ đó.
+GLOBAL_DEPT_ID = 0
 
 
 def _log_message(db: Session, primary_id: int, backup_id: int, department_id: int = 0) -> str:
@@ -24,6 +29,58 @@ def _log_message(db: Session, primary_id: int, backup_id: int, department_id: in
     return msg
 
 
+# ── bao-CR-527: đúng 1 NSTM chính + tối đa 1 dự phòng, cả hai phải «Chính thức» ─────────────
+
+def is_official_employee(emp) -> bool:
+    """Nhân sự còn nhận việc được: hồ sơ «Chính thức» VÀ đang hoạt động — bao-CR-527.
+
+    «Nghỉ thai sản», «Nghỉ việc», «Cộng tác viên» hay hồ sơ bị tắt đều KHÔNG tính: phân công
+    cho họ là việc rơi vào người không có mặt để làm."""
+    from app.modules.employee.service import STATUS_OFFICIAL
+    return bool(emp and emp.is_active and (emp.status or "") == STATUS_OFFICIAL)
+
+
+def _status_text(emp) -> str:
+    """Tình trạng để nói trong câu chặn: nhãn trạng thái, hoặc «ngừng hoạt động» khi hồ sơ bị tắt."""
+    if not emp.is_active:
+        return "ngừng hoạt động"
+    return emp.status_label or emp.status or "chưa rõ"
+
+
+def _ensure_official(db: Session, emp_id: int, role_label: str):
+    from app.modules.employee.model import Employee
+    emp = db.get(Employee, int(emp_id)) if emp_id else None
+    if not emp:
+        raise HTTPException(400, f"Không thấy nhân sự được chọn làm {role_label} (id {emp_id})")
+    if not is_official_employee(emp):
+        raise HTTPException(400, f"{role_label} {emp.full_name} ({emp.code}) đang ở tình trạng "
+                                 f"«{_status_text(emp)}» — chỉ phân công được nhân sự «Chính thức» "
+                                 "đang hoạt động")
+    return emp
+
+
+def validate_assignee_pair(db: Session, primary_id: int, backup_id: int) -> None:
+    """Chốt chung của MỌI cửa ghi bảng phân công (tạo · sửa · gán hàng loạt) — bao-CR-527.
+
+    NSTM chính BẮT BUỘC và phải «Chính thức» + đang hoạt động; dự phòng không bắt buộc, nhưng có
+    thì phải khác người chính và cũng phải «Chính thức» + đang hoạt động."""
+    primary_id, backup_id = int(primary_id or 0), int(backup_id or 0)
+    if not primary_id:
+        raise HTTPException(400, "Phải chọn NSTM chính cho phân công")
+    _ensure_official(db, primary_id, "NSTM chính")
+    if not backup_id:
+        return
+    if backup_id == primary_id:
+        raise HTTPException(400, "NSTM dự phòng phải là người khác NSTM chính")
+    _ensure_official(db, backup_id, "NSTM dự phòng")
+
+
+def normalize_department_id(db: Session, department_id) -> int:
+    """Phòng áp dụng lúc GHI: `0` (bộ «Thu mua chung» cũ) → phòng thu mua mặc định — bao-CR-524.
+    Danh mục chưa có phòng mặc định thì giữ `0` như trước."""
+    return int(department_id or 0) or get_central_dept_id(db)
+
+
 def list_all(db: Session):
     return db.query(CategoryAssignee).order_by(CategoryAssignee.id.desc()).all()
 
@@ -36,16 +93,25 @@ def get(db: Session, cid: int) -> CategoryAssignee:
 
 
 def _find_pair(db: Session, department_id: int, item_group_id: int):
-    return (db.query(CategoryAssignee)
-            .filter(CategoryAssignee.department_id == (department_id or 0),
-                    CategoryAssignee.item_group_id == item_group_id)
-            .first())
+    """Dòng phân công của cặp (phòng, phân loại). Phòng thu mua mặc định thì dòng `0` cũ cũng là
+    của nó (bao-CR-524) — ưu tiên dòng mang id thật."""
+    dept = int(department_id or 0)
+    q = db.query(CategoryAssignee).filter(CategoryAssignee.item_group_id == item_group_id)
+    if is_central_dept(db, dept):
+        central = get_central_dept_id(db)
+        rows = q.filter(CategoryAssignee.department_id.in_({GLOBAL_DEPT_ID, central})).all()
+        rows.sort(key=lambda r: 0 if (central and r.department_id == central) else 1)
+        return rows[0] if rows else None
+    return q.filter(CategoryAssignee.department_id == dept).first()
 
 
 def create(db: Session, data: CategoryAssigneeCreate, user_id: int) -> CategoryAssignee:
-    if _find_pair(db, data.department_id, data.item_group_id):
+    validate_assignee_pair(db, data.primary_employee_id, data.backup_employee_id)   # bao-CR-527
+    payload = data.model_dump()
+    payload["department_id"] = normalize_department_id(db, payload.get("department_id"))   # bao-CR-524
+    if _find_pair(db, payload["department_id"], data.item_group_id):
         raise HTTPException(400, "Phân loại này đã được cấu hình phụ trách cho phòng đó")
-    obj = CategoryAssignee(**data.model_dump(), created_by=user_id, updated_by=user_id)
+    obj = CategoryAssignee(**payload, created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -57,6 +123,12 @@ def create(db: Session, data: CategoryAssigneeCreate, user_id: int) -> CategoryA
 def update(db: Session, cid: int, data: CategoryAssigneeUpdate, user_id: int) -> CategoryAssignee:
     obj = get(db, cid)
     changes = data.model_dump(exclude_unset=True)
+    if "department_id" in changes:
+        changes["department_id"] = normalize_department_id(db, changes["department_id"])   # bao-CR-524
+    # bao-CR-527: kiểm CẶP SAU KHI SỬA — dòng có người chính vừa nghỉ thì phải đổi người chính mới
+    # lưu được, dù lần này chỉ sửa ô khác.
+    validate_assignee_pair(db, changes.get("primary_employee_id", obj.primary_employee_id),
+                           changes.get("backup_employee_id", obj.backup_employee_id))
     new_dept = changes.get("department_id", obj.department_id)
     new_group = changes.get("item_group_id", obj.item_group_id)
     if (new_dept, new_group) != (obj.department_id, obj.item_group_id):
@@ -84,8 +156,10 @@ def delete(db: Session, cid: int, user_id: int) -> None:
 def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_id: int,
                 user_id: int, department_id: int = GLOBAL_DEPT_ID) -> int:
     """Gán 1 cặp NSTM (chính + dự phòng) cho NHIỀU phân loại cùng lúc — có rồi thì cập nhật,
-    chưa có thì tạo, khóa theo cặp (phòng, phân loại). `department_id` = 0 là bộ chung."""
-    department_id = department_id or 0
+    chưa có thì tạo, khóa theo cặp (phòng, phân loại). `department_id` = 0 là phòng thu mua mặc
+    định (bao-CR-524); dòng `0` cũ của phòng đó được cập nhật tại chỗ và chuyển sang id thật."""
+    validate_assignee_pair(db, primary_id, backup_id)   # bao-CR-527 — chặn trước khi ghi dòng nào
+    department_id = normalize_department_id(db, department_id)
     n = 0
     msg = _log_message(db, primary_id, backup_id, department_id)
     logs: list[tuple[int, str]] = []   # (row_id, action) — ghi audit sau khi commit
@@ -94,6 +168,7 @@ def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_
             continue
         row = _find_pair(db, department_id, gid)
         if row:
+            row.department_id = department_id
             row.primary_employee_id = primary_id
             row.backup_employee_id = backup_id
             row.updated_by = user_id
@@ -115,10 +190,16 @@ def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_
 
 # ── Tra cứu người phụ trách theo PHÒNG XỬ LÝ (bao-CR-414 GĐ2) ────────────────────────────
 
-def handling_dept_of(ticket) -> int:
-    """Phòng đang XỬ LÝ một phiếu: phòng được nhờ (`handler_dept_id`) nếu có, không thì phòng lập
-    phiếu (`department_id`). Dùng chung cho YCMH lẫn YCBG."""
-    return int(getattr(ticket, "handler_dept_id", 0) or 0) or int(getattr(ticket, "department_id", 0) or 0)
+def handling_dept_of(ticket, central_id: int = 0) -> int:
+    """Phòng đang XỬ LÝ một phiếu (YCMH lẫn YCBG) = ô «Phòng xử lý» (`handler_dept_id`).
+
+    bao-CR-524: phiếu cũ còn `0` là phiếu phòng thu mua mặc định xử lý → trả `central_id` (người
+    gọi tra bằng `core.central_purchasing.get_central_dept_id`). Chỉ khi danh mục chưa có phòng
+    mặc định (`central_id` = 0) mới lùi về phòng lập phiếu như trước."""
+    handler = int(getattr(ticket, "handler_dept_id", 0) or 0)
+    if handler:
+        return handler
+    return int(central_id or 0) or int(getattr(ticket, "department_id", 0) or 0)
 
 
 # ── Người phụ trách CHỌN ĐƯỢC theo phòng xử lý (bao-CR-486) ──────────────────────────────
@@ -147,6 +228,15 @@ def _purchasing_employee_ids(db: Session, scopes: tuple[str, ...]) -> set[int]:
     return {int(r[0]) for r in rows}
 
 
+def _other_self_purchasing_depts(db: Session, central_id: int) -> set[int]:
+    """Phòng tự mua hàng TRỪ phòng thu mua mặc định — bao-CR-524.
+
+    Phòng PBA017 có người giữ bậc `dept_proc` cũng lọt vào `list_self_purchasing_dept_ids`, nhưng
+    người của nó chính là người thu mua chung: loại họ khỏi phiếu thu mua chung là loại nhầm."""
+    from app.modules.purchase_request.service import list_self_purchasing_dept_ids
+    return list_self_purchasing_dept_ids(db) - {int(central_id or 0)}
+
+
 def assignable_staff(db: Session, ticket) -> list:
     """Danh sách NSTM chọn được cho MỘT phiếu (YCMH hay YCBG) — đi theo ô «Phòng xử lý».
 
@@ -155,39 +245,49 @@ def assignable_staff(db: Session, ticket) -> list:
     mua», nên nhà máy thấy cả người thu mua chung, còn phòng «Sản xuất -Thu mua» (tên có chữ
     đó) lại lọt vào danh sách của mọi phiếu.
 
-      · `handler_dept_id` ≠ 0 → người thu mua (bậc dept_proc/proc/all) THUỘC phòng đó;
-      · = 0 (thu mua chung)  → người bậc proc/all KHÔNG thuộc phòng tự mua nào.
+      · phòng xử lý là phòng thu mua mặc định (bao-CR-524: id PBA017, hoặc `0` cũ)
+          → người bậc assigned/proc/all KHÔNG thuộc một phòng tự mua KHÁC, cộng người thu mua
+            (mọi bậc, kể cả `dept_proc`) thuộc chính phòng thu mua mặc định. Giữ nguyên tập người
+            chọn được như thời «Thu mua chung» — chỉ thêm người `dept_proc` của phòng PBA017;
+      · phòng khác → người thu mua (bậc assigned/dept_proc/proc/all) THUỘC phòng đó.
     Trả `Employee` đang hoạt động, xếp theo tên. Người đã gán từ trước mà nay ngoài danh sách
     thì giao diện tự bổ sung để không mất nhãn — cửa ghi mới chặn (`check_assignee_allowed`).
     """
     from app.modules.employee.model import Employee
-    from app.modules.purchase_request.service import list_self_purchasing_dept_ids
 
     dept = int(getattr(ticket, "handler_dept_id", 0) or 0)
-    if dept:
+    if not is_central_dept(db, dept):
         ids = _purchasing_employee_ids(db, _PURCHASING_SCOPES)
-        q = db.query(Employee).filter(Employee.department_id == dept)
+        if not ids:
+            return []
+        q = db.query(Employee).filter(Employee.department_id == dept, Employee.id.in_(ids))
     else:
-        ids = _purchasing_employee_ids(db, ("assigned", "proc", "all"))
-        self_depts = list_self_purchasing_dept_ids(db)
-        q = db.query(Employee)
-        if self_depts:
-            q = q.filter(~Employee.department_id.in_(self_depts))
-    if not ids:
-        return []
-    return (q.filter(Employee.id.in_(ids), Employee.is_active == True)  # noqa: E712
+        central = get_central_dept_id(db)
+        shared_ids = _purchasing_employee_ids(db, ("assigned", "proc", "all"))
+        other_depts = _other_self_purchasing_depts(db, central)
+        conds = []
+        if shared_ids:
+            conds.append(and_(Employee.id.in_(shared_ids), ~Employee.department_id.in_(other_depts))
+                         if other_depts else Employee.id.in_(shared_ids))
+        own_ids = _purchasing_employee_ids(db, _PURCHASING_SCOPES) if central else set()
+        if own_ids:
+            conds.append(and_(Employee.id.in_(own_ids), Employee.department_id == central))
+        if not conds:
+            return []
+        q = db.query(Employee).filter(or_(*conds))
+    return (q.filter(Employee.is_active == True)  # noqa: E712
             .order_by(Employee.full_name, Employee.id).all())
 
 
 def check_assignee_allowed(db: Session, ticket, code: str) -> None:
     """Chặn gán NSTM ngoài phòng xử lý (bao-CR-486) — cửa ghi của cả YCMH lẫn YCBG.
 
-    Luật kiểm LỎNG hơn danh sách gợi ý (chỉ so PHÒNG, không đòi vai trò): phiếu có phòng xử lý
-    thì người được gán phải thuộc phòng đó; phiếu thu mua chung thì người đó không được thuộc
-    phòng tự mua. Bỏ gán (mã rỗng) luôn được. Mã lạ → 400 chứ không lặng lẽ ghi chuỗi rác.
+    Luật kiểm LỎNG hơn danh sách gợi ý (chỉ so PHÒNG, không đòi vai trò): phiếu phòng khác xử
+    lý thì người được gán phải thuộc phòng đó; phiếu phòng thu mua mặc định xử lý (bao-CR-524:
+    id PBA017 hoặc `0` cũ) thì người đó không được thuộc một phòng tự mua KHÁC. Bỏ gán (mã rỗng)
+    luôn được. Mã lạ → 400 chứ không lặng lẽ ghi chuỗi rác.
     """
     from app.modules.employee.model import Employee
-    from app.modules.purchase_request.service import list_self_purchasing_dept_ids
 
     code = (code or "").strip()
     if not code:
@@ -197,38 +297,50 @@ def check_assignee_allowed(db: Session, ticket, code: str) -> None:
         raise HTTPException(400, f"Không thấy nhân sự mã {code}")
     dept = int(getattr(ticket, "handler_dept_id", 0) or 0)
     emp_dept = int(emp.department_id or 0)
-    if dept and emp_dept != dept:
-        raise HTTPException(400, f"{emp.full_name} không thuộc phòng xử lý của phiếu — "
-                                 "chỉ gán được người của phòng đang xử lý")
-    if not dept and emp_dept and emp_dept in list_self_purchasing_dept_ids(db):
-        raise HTTPException(400, f"{emp.full_name} thuộc phòng tự mua hàng — phiếu này do thu "
-                                 "mua chung xử lý, chỉ gán được người thu mua chung")
+    if not is_central_dept(db, dept):
+        if emp_dept != dept:
+            raise HTTPException(400, f"{emp.full_name} không thuộc phòng xử lý của phiếu — "
+                                     "chỉ gán được người của phòng đang xử lý")
+        return
+    if emp_dept and emp_dept in _other_self_purchasing_depts(db, get_central_dept_id(db)):
+        raise HTTPException(400, f"{emp.full_name} thuộc phòng tự mua hàng — phiếu này do phòng "
+                                 "thu mua mặc định xử lý, chỉ gán được người của phòng đó")
 
 
 def load_configs(db: Session, department_id: int, allow_global: bool = True) -> dict[int, CategoryAssignee]:
     """Bộ phân công áp cho một phòng: dòng riêng của phòng đó trước, phân loại nào phòng chưa
-    khai thì rơi về bộ chung (phòng 0) — CHỈ khi `allow_global`.
+    khai thì rơi về bộ của phòng thu mua mặc định — CHỈ khi `allow_global`.
+
+    bao-CR-524: «bộ chung» = dòng của phòng thu mua mặc định (id PBA017) + dòng `0` cũ chưa
+    backfill (id thật thắng `0` nếu cùng phân loại). Phòng đang xét CHÍNH LÀ phòng thu mua mặc
+    định thì bộ chung là bộ riêng của nó, dùng được cả khi `allow_global=False`.
 
     `allow_global=False` dành cho người duyệt/điều phối chỉ có bậc `dept_proc` (quản lý thu mua
-    của phòng tự mua): bộ chung là người của thu mua chung, tự gán là đẩy việc của phòng ra ngoài.
-    Trả dict item_group_id -> dòng cấu hình."""
-    department_id = department_id or 0
-    dept_ids = {department_id}
-    if allow_global:
-        dept_ids.add(GLOBAL_DEPT_ID)
+    của phòng tự mua): bộ chung là người của phòng thu mua mặc định, tự gán là đẩy việc của
+    phòng ra ngoài. Trả dict item_group_id -> dòng cấu hình."""
+    central = get_central_dept_id(db)
+    dept = int(department_id or 0) or central
+    shared = {GLOBAL_DEPT_ID} | ({central} if central else set())
+    dept_ids = {dept}
+    if allow_global or dept in shared:
+        dept_ids |= shared
+    rank = {GLOBAL_DEPT_ID: 0}
+    if central:
+        rank[central] = 1
+    rank[dept] = 2                                           # bộ riêng đè bộ chung, id thật đè `0`
     rows = db.query(CategoryAssignee).filter(CategoryAssignee.department_id.in_(dept_ids)).all()
     configs: dict[int, CategoryAssignee] = {}
-    for row in rows:                                         # bộ chung điền trước, bộ riêng đè lên
-        if row.department_id == GLOBAL_DEPT_ID:
-            configs.setdefault(row.item_group_id, row)
-    for row in rows:
-        if row.department_id == department_id:
-            configs[row.item_group_id] = row
+    for row in sorted(rows, key=lambda r: rank.get(r.department_id, 0)):
+        configs[row.item_group_id] = row
     return configs
 
 
 def pick_active_employee(db: Session, cfg: CategoryAssignee, emp_cache: dict | None = None):
-    """Người CHÍNH nếu còn làm việc, không thì DỰ PHÒNG (có thể None)."""
+    """Người được tự gán: NSTM CHÍNH nếu còn «Chính thức» + đang hoạt động, không thì DỰ PHÒNG
+    nếu người đó đạt cùng điều kiện; không ai đạt → None (dòng để trống, chọn tay) — bao-CR-527.
+
+    Trước bao-CR-527 chỉ xét `is_active`, và DỰ PHÒNG được trả thẳng dù đã nghỉ — nên việc có
+    thể rơi vào người nghỉ thai sản / nghỉ việc mà hồ sơ chưa tắt."""
     from app.modules.employee.model import Employee
     cache = emp_cache if emp_cache is not None else {}
 
@@ -239,16 +351,18 @@ def pick_active_employee(db: Session, cfg: CategoryAssignee, emp_cache: dict | N
             cache[eid] = db.get(Employee, eid)
         return cache[eid]
 
-    primary = emp(cfg.primary_employee_id)
-    if primary and primary.is_active:
-        return primary
-    return emp(cfg.backup_employee_id)
+    for eid in (cfg.primary_employee_id, cfg.backup_employee_id):
+        candidate = emp(eid)
+        if is_official_employee(candidate):
+            return candidate
+    return None
 
 
 def resolve_for_group(db: Session, item_group_name: str, department_id: int = GLOBAL_DEPT_ID,
                       allow_global: bool = True):
-    """Trả về nhân sự NSTM phụ trách 1 phân loại cho phòng `department_id` (chính; chính nghỉ →
-    dự phòng). Không có bộ riêng thì rơi về bộ chung khi `allow_global`. None nếu chưa cấu hình."""
+    """Trả về nhân sự NSTM phụ trách 1 phân loại cho phòng `department_id` (chính; chính không còn
+    «Chính thức» → dự phòng). Không có bộ riêng thì rơi về bộ của phòng thu mua mặc định khi
+    `allow_global`. None nếu chưa cấu hình / không ai nhận được việc."""
     if not item_group_name:
         return None
     from app.modules.catalog.model import ItemGroup
@@ -264,15 +378,16 @@ def resolve_for_group(db: Session, item_group_name: str, department_id: int = GL
 def auto_assign_by_category(db: Session, pr, allow_global: bool = True) -> int:
     """Sau khi duyệt/điều phối PYC: điền `assignee` (mã NV) cho các dòng CHƯA có người, theo phân
     loại của dòng và theo PHÒNG ĐANG XỬ LÝ phiếu (`handling_dept_of`). Ưu tiên người CHÍNH; người
-    chính nghỉ (is_active=false) → DỰ PHÒNG. Tôn trọng gán tay: dòng đã có assignee thì bỏ qua.
-    `allow_global=False` → chỉ dùng bộ riêng của phòng, không rơi về bộ chung. Trả số dòng được gán."""
+    chính không còn «Chính thức» → DỰ PHÒNG (bao-CR-527). Tôn trọng gán tay: dòng đã có assignee
+    thì bỏ qua. `allow_global=False` → chỉ dùng bộ riêng của phòng, không rơi về bộ chung. Trả số
+    dòng được gán."""
     from app.modules.catalog.model import ItemGroup
     from app.modules.purchase_request.model import PurchaseRequestItem
 
     lines = db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pr.id).all()
     if not lines:
         return 0
-    configs = load_configs(db, handling_dept_of(pr), allow_global)
+    configs = load_configs(db, handling_dept_of(pr, get_central_dept_id(db)), allow_global)
     if not configs:
         return 0
     group_id_by_name = {g.name: g.id for g in db.query(ItemGroup).all()}

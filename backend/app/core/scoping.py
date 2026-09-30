@@ -301,12 +301,30 @@ SCOPE_FIELDS = {
 }
 
 
-def _dept_match(model, f, dept_ids, dept_names):
+def _central_dept_expr():
+    """Id phòng thu mua mặc định (bao-CR-524) dạng biểu thức SQL; danh mục chưa có mã đã cấu hình
+    thì ra `-1` (không id nào khớp) chứ không ra NULL — NULL lọt vào `NOT (...)` của ô loại trừ là
+    mất trắng mọi phiếu `handler_dept_id = 0`."""
+    from app.core.central_purchasing import central_dept_id_subquery
+    return func.coalesce(central_dept_id_subquery(), -1)
+
+
+def _dept_match(model, f, dept_ids, dept_names, central_handler: bool = False):
     """Điều kiện "phiếu thuộc một trong các phòng này" — CR-086.
 
     Khớp bằng ID. Chỉ những phiếu KHÔNG điền lùi được id (`department_id = 0`, phòng đã đổi
     tên hoặc dữ liệu nhập tay) mới rơi về so tên, nên tên không bao giờ đè lên id. Xóa nhánh
     tên khi bỏ cột text (N-008). None = không có gì để so.
+
+    bao-CR-524 — phòng thu mua mặc định (`PBA017` «Sản xuất -Thu mua») nay là phòng THẬT, và mọi
+    phiếu không nhờ phòng nào mang `handler_dept_id` = id phòng đó. Nhánh «phiếu được nhờ» vì thế
+    tách hai đường:
+      · `central_handler=True` (chỉ bậc `dept_proc` — quản lý thu mua CỦA PHÒNG): phiếu thu mua
+        mặc định xử lý cũng là việc của phòng đó, kể cả phiếu cũ còn `0`. Người `dept_proc` của
+        phòng thu mua mặc định vì thế thấy phiếu thu mua chung — khách chốt, đúng ý.
+      · còn lại (bậc `dept`, ô «Phòng ban được xem»): phòng thu mua mặc định KHÔNG được tính là
+        «phòng được nhờ». Không có chốt này thì trưởng phòng «Sản xuất -Thu mua» (bậc `dept`)
+        thấy — và duyệt bước 1 được — phiếu của MỌI phòng trong công ty.
     """
     col_id, col_name = f.get("dept_id"), f.get("dept_name")
     cs = []
@@ -318,7 +336,14 @@ def _dept_match(model, f, dept_ids, dept_names):
     # bao-CR-414: phiếu ĐƯỢC NHỜ cho phòng mình cũng là "phiếu thuộc phòng mình".
     col_handler = f.get("handler_dept")
     if col_handler and dept_ids:
-        cs.append(getattr(model, col_handler).in_(list(dept_ids)))
+        handler = getattr(model, col_handler)
+        ids = list(dept_ids)
+        central = _central_dept_expr()
+        if central_handler:
+            cs.append(handler.in_(ids))
+            cs.append(and_(handler == 0, central.in_(ids)))   # «0» cũ = phòng thu mua mặc định
+        else:
+            cs.append(and_(handler.in_(ids), handler != central))
     if not cs:
         return None
     return or_(*cs) if len(cs) > 1 else cs[0]
@@ -327,8 +352,8 @@ def _dept_match(model, f, dept_ids, dept_names):
 def approves_only_in_dept_proc(profile: dict, entity: str) -> bool:
     """Người này duyệt/điều phối `entity` CHỈ bằng bậc `dept_proc` (phòng tự mua) — bao-CR-414.
 
-    Dùng để quyết định tự gán theo nhóm hàng có được RƠI VỀ bộ "Thu mua chung" (phòng 0 của
-    `category_assignee`) hay không: quản lý thu mua của phòng chỉ dùng bộ riêng của phòng mình,
+    Dùng để quyết định tự gán theo nhóm hàng có được RƠI VỀ bộ của phòng thu mua mặc định (bộ
+    `category_assignee` của phòng PBA017, gồm cả dòng `0` cũ — bao-CR-524) hay không: quản lý thu mua của phòng chỉ dùng bộ riêng của phòng mình,
     rơi về bộ chung là đẩy việc của phòng nhà máy sang tay thu mua chung. Có thêm một grant
     `proc`/`all` có `approve` thì tra cả bộ chung như cũ.
     """
@@ -344,17 +369,18 @@ def approves_only_in_dept_proc(profile: dict, entity: str) -> bool:
     return seen_dept_proc
 
 
-def holds_handling_dept(profile: dict, entity: str, ticket) -> bool:
+def holds_handling_dept(profile: dict, entity: str, ticket, central_id: int = 0) -> bool:
     """Người này có đang là quản lý thu mua của PHÒNG ĐANG XỬ LÝ phiếu không — bao-CR-414 GĐ5.
 
-    Dùng cho nút "Chuyển phòng xử lý" / "Trả về phòng lập": chỉ phòng đang cầm phiếu (hoặc
+    Dùng cho nút "Chuyển phòng xử lý" / "Trả về thu mua": chỉ phòng đang cầm phiếu (hoặc
     người có phạm vi toàn hệ) mới được đẩy đi. Grant `approve` bậc `proc`/`all` = toàn hệ;
-    bậc `dept_proc` = phải trùng phòng đang xử lý (`handler_dept_id`, không thì phòng lập).
+    bậc `dept_proc` = phải trùng phòng đang xử lý (`handler_dept_id`).
     Bậc `dept` (trưởng phòng duyệt bước 1) và grant không có `approve` KHÔNG tính.
+    `central_id` (bao-CR-524) = id phòng thu mua mặc định, để phiếu cũ còn `0` tính cho phòng đó.
     """
     from app.modules.category_assignee.service import handling_dept_of
     dept_ids = set(int(x) for x in (profile.get("dept_ids") or []) if x)
-    current = int(handling_dept_of(ticket) or 0)
+    current = int(handling_dept_of(ticket, central_id) or 0)
     for grant in profile.get("grants", []):
         perms = grant["perms"].get(entity)
         if not perms or not perms.get("approve"):
@@ -451,7 +477,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
         def _narrow_to_dept(cond):
             if not in_dept_proc:
                 return cond
-            dm = _dept_match(model, f, dept_ids, dept_names)
+            dm = _dept_match(model, f, dept_ids, dept_names, central_handler=True)
             if dm is None:
                 return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
             return and_(cond, dm)
@@ -701,13 +727,16 @@ def _explicit_cond(model, entity, scopeconf, profile=None):
         # so cột PHÒNG XỬ LÝ (`handler_dept_id`), không so phòng lập phiếu nữa. Bộ thu
         # mua chung trừ nhà máy vì thế: KHÔNG thấy phiếu nhà máy đang tự mua (kể cả phiếu
         # phòng khác nhờ nhà máy mua), nhưng THẤY phiếu nhà máy xin mà thu mua chung mua
-        # (`handler_dept_id = 0` = thu mua chung) — tức thấy đúng việc của mình. Trước
+        # (`handler_dept_id` = phòng thu mua mặc định, `0` cũ cũng vậy — bao-CR-524) — tức
+        # thấy đúng việc của mình. Trước
         # đó loại trừ theo phòng lập nên quản lý thu mua chung không thấy đơn nhân viên
         # mình đang mua cho nhà máy, còn đơn nhà máy mua hộ phòng khác thì lại thấy.
         # Không có nhánh tên phòng: cột phòng xử lý luôn là id.
         exc = _parse_int_values(entity, "department", "loai tru", exc_ids)
         if exc:
-            cs.append(~getattr(model, f["handler_dept"]).in_(exc))
+            handler = getattr(model, f["handler_dept"])
+            # bao-CR-524: loại trừ phòng thu mua mặc định thì loại cả phiếu cũ còn `0`.
+            cs.append(~or_(handler.in_(exc), and_(handler == 0, _central_dept_expr().in_(exc))))
     else:
         dc = _dept_match(model, f, exc_ids, exc_names)
         if dc is not None:

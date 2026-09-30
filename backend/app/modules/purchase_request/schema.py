@@ -38,9 +38,10 @@ class PRCreate(BaseModel):
     requester_position: str = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
     # bao-CR-414/480/488: phòng XỬ LÝ phiếu. `None` (không gửi) = để hệ thống chọn mặc định
-    # (phòng tự mua → chính phòng lập, còn lại → 0 Thu mua chung); gửi số — kể cả 0 — là
-    # người lập ĐÃ CHỌN, giữ nguyên. Trước CR-488 gửi 0 cũng bị tra đè, nhà máy không thể
-    # nhờ Thu mua chung ngay lúc lập phiếu.
+    # (phòng tự mua → chính phòng lập, còn lại → phòng thu mua mặc định PBA017, bao-CR-524);
+    # gửi số — kể cả 0 — là người lập ĐÃ CHỌN, giữ nguyên (0 = phòng thu mua mặc định, ghi id
+    # thật). Trước CR-488 gửi 0 cũng bị tra đè, nhà máy không thể nhờ thu mua chung ngay lúc
+    # lập phiếu.
     handler_dept_id: int | None = None
     department: str = ""
     head_of_dept: str = ""
@@ -139,8 +140,9 @@ class ReasonIn(BaseModel):
 
 
 class TransferDeptIn(BaseModel):
-    """bao-CR-414 GĐ5 — chuyển phiếu sang phòng xử lý khác / trả về phòng lập.
-    `handler_dept_id` = 0 nghĩa là trả về phòng lập; lý do BẮT BUỘC (ghi vào nhật ký)."""
+    """bao-CR-414 GĐ5 — chuyển phiếu sang phòng xử lý khác / trả về thu mua.
+    `handler_dept_id` = 0 nghĩa là trả về PHÒNG THU MUA MẶC ĐỊNH (bao-CR-524, ghi id thật của
+    PBA017); lý do BẮT BUỘC (ghi vào nhật ký)."""
     handler_dept_id: int = 0
     reason: str = ""
 

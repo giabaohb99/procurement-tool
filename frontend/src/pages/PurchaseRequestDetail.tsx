@@ -277,8 +277,8 @@ export default function PurchaseRequestDetail() {
   const canLineStatus = (it: any) => canAssignPurchaser || canManage || isAssignee(it)
   const canEditNote = (it: any) => editable || canLineStatus(it)
 
-  // NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu (phòng xử lý ≠ 0 → người
-  // thu mua của phòng đó; = 0 → người thu mua chung). Trước đó lọc danh mục nhân sự theo TÊN phòng có
+  // NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu (phòng tự mua → người
+  // thu mua của phòng đó; phòng thu mua mặc định → người thu mua chung, bao-CR-524). Trước đó lọc danh mục nhân sự theo TÊN phòng có
   // chữ «thu mua» nên phiếu nhà máy vẫn thấy người thu mua chung. Hiển thị TÊN, lưu MÃ NV; người đã
   // gán ở dòng mà nay ngoài danh sách (gán trước khi chuyển phòng) vẫn giữ để không mất nhãn.
   const purchaserOptions = (() => {
@@ -291,13 +291,17 @@ export default function PurchaseRequestDetail() {
   })()
   const empName = (code: string) => employees.find(e => e.code === code)?.full_name || code
   const companyOptions = companies.map(c => ({ value: String(c.id), label: c.name }))
-  // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — «Thu mua chung» (0) đứng đầu, rồi mọi phòng đang
-  // hoạt động (phòng đã tắt nhưng phiếu cũ còn trỏ tới thì vẫn giữ lại để không mất nhãn).
+  // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — mọi phòng đang hoạt động (phòng đã tắt nhưng phiếu cũ
+  // còn trỏ tới thì vẫn giữ lại để không mất nhãn). bao-CR-524: KHÔNG còn mục ảo «Thu mua chung» (0) —
+  // phòng thu mua mặc định là phòng thật «Sản xuất -Thu mua»; backend trả id + tên thật cho mọi phiếu.
+  // Người không đọc được danh mục phòng ban vẫn thấy tên phòng đang xử lý nhờ `handler_dept_name`.
   const handlerDeptOptions = [
-    { value: '0', label: 'Thu mua chung' },
     ...departments
       .filter(d => d.is_active !== false || d.id === Number(pr.handler_dept_id))
       .map(d => ({ value: String(d.id), label: d.name })),
+    ...(Number(pr.handler_dept_id) && !departments.some(d => d.id === Number(pr.handler_dept_id))
+      ? [{ value: String(pr.handler_dept_id), label: pr.handler_dept_name || `Phòng #${pr.handler_dept_id}` }]
+      : []),
   ]
   const employeeOptions = employees.map(e => ({ value: e.full_name, label: e.full_name }))
   const warehouseOptions = warehouses.map(w => ({ value: w.name, label: `${w.code} - ${w.name}` }))
@@ -602,7 +606,7 @@ export default function PurchaseRequestDetail() {
       head_of_dept_id: Number(pr.head_of_dept_id) || 0, purpose: pr.purpose,
       approver_employee_id: Number(pr.approver_employee_id) || 0,   // bao-CR-499
       // bao-CR-488: lúc tạo mà chưa tick «Nhờ phòng khác xử lý» thì KHÔNG gửi — backend tự chọn mặc định
-      // (nhà máy → chính phòng mình, còn lại → Thu mua chung). Đã tick thì gửi đúng số đã chọn, kể cả 0.
+      // (nhà máy → chính phòng mình, còn lại → phòng thu mua mặc định). Đã tick thì gửi đúng số đã chọn, kể cả 0 (bao-CR-524: 0 = phòng thu mua mặc định).
       handler_dept_id: isNew && !pr.handler_dept_assigned ? undefined : Number(pr.handler_dept_id) || 0,
       request_date: pr.request_date, need_date: earliestNeedDate || pr.need_date || '', is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
@@ -798,7 +802,7 @@ export default function PurchaseRequestDetail() {
             bao-CR-414). Cả hai đường cùng mở thì hỏi (ReturnChoiceModal); một đường thì đi thẳng. */}
         {returnResolution !== null && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
-            title={returnResolution === 'department' ? 'Trả cả phiếu về phòng lập tự xử lý' : 'Trả về để người yêu cầu sửa & gửi duyệt lại'}
+            title={returnResolution === 'department' ? 'Trả cả phiếu về phòng thu mua mặc định' : 'Trả về để người yêu cầu sửa & gửi duyệt lại'}
             onClick={() => (returnResolution === 'choose' ? setReturnChoiceOpen(true) : runReturn(returnResolution))}>
             <i className="ti ti-corner-up-left" />Trả về
           </button>
@@ -985,11 +989,11 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(phòng sẽ đi mua cho phiếu này)</span></label>
-                {/* bao-CR-414 / bao-CR-480: «Thu mua chung» (0) là mặc định; nhà máy tự mua thì backend
-                    tự điền phòng nhà máy lúc lập phiếu. Chọn phòng thì quản lý thu mua của phòng đó
-                    thấy và điều phối được phiếu; bộ thu mua chung «trừ nhà máy» thì không thấy.
-                    bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick «Nhờ phòng khác xử lý» — không tick
-                    thì không gửi, hệ thống tự chọn; tick rồi chọn thì giữ đúng lựa chọn, kể cả Thu mua chung. */}
+                {/* bao-CR-414 / bao-CR-480 / bao-CR-524: phòng thu mua mặc định (Sản xuất -Thu mua) là mặc
+                    định; nhà máy tự mua thì backend tự điền phòng nhà máy lúc lập phiếu. Chọn phòng thì quản
+                    lý thu mua của phòng đó thấy và điều phối được phiếu; bộ thu mua chung «trừ nhà máy» thì
+                    không thấy. bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick «Nhờ phòng khác xử lý» — không
+                    tick thì không gửi, hệ thống tự chọn; tick rồi để trống = phòng thu mua mặc định. */}
                 {isNew ? (
                   <>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 400 }}>
@@ -1001,16 +1005,16 @@ export default function PurchaseRequestDetail() {
                       <SearchSelect value={String(pr.handler_dept_id || 0)}
                         onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                         options={handlerDeptOptions}
-                        placeholder="Thu mua chung" autoSelectSingle={false} />
+                        placeholder="Để trống = phòng thu mua mặc định" autoSelectSingle={false} />
                     ) : (
-                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là Thu mua chung; phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là phòng thu mua (Sản xuất -Thu mua); phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
                     )}
                   </>
                 ) : (
                   <SearchSelect value={String(pr.handler_dept_id || 0)}
                     onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                     options={handlerDeptOptions}
-                    disabled={!editable} placeholder="Thu mua chung" autoSelectSingle={false} />
+                    disabled={!editable} placeholder="Để trống = phòng thu mua mặc định" autoSelectSingle={false} />
                 )}
               </div>
               <div className="form-row">

@@ -32,10 +32,16 @@ FIELDS = [
      "label": "Yêu cầu mua hàng: BỎ QUA bước thu mua duyệt lần 2 cho phiếu thỏa điều kiện",
      "hint": "Chỉ có tác dụng khi công tắc ở trên đang BẬT. Để trống = không bỏ qua phiếu nào. Khai điều kiện JSON "
              "theo cú pháp bộ máy duyệt, các dòng nối nhau bằng VÀ. Trường dùng được: handler_dept_id (phòng xử lý, "
-             "0 = thu mua chung) · department_id (phòng lập) · company_id · is_urgent · line_count. "
-             "Ví dụ để NHÀ MÁY TỰ MUA không qua thu mua chung: [{\"field\": \"handler_dept_id\", \"op\": \"not_empty\"}]. "
+             "0 = phòng thu mua mặc định) · department_id (phòng lập) · company_id · is_urgent · line_count. "
+             "Ví dụ để NHÀ MÁY TỰ MUA không qua phòng thu mua mặc định: [{\"field\": \"handler_dept_id\", \"op\": \"not_empty\"}]. "
              "Phiếu thỏa điều kiện thì trưởng bộ phận duyệt xong là hệ thống tự phân bổ nhân sự theo bộ phân công "
              "RIÊNG của phòng xử lý; phiếu còn lại vẫn chờ thu mua duyệt lần 2. Gõ sai JSON = coi như để trống."},
+    {"key": "central_purchasing_dept_code", "group": "workflow", "type": "str",
+     "label": "Mã phòng thu mua mặc định",
+     "hint": "Mã phòng ban (danh mục Phòng ban) nhận mọi YCMH · YCBG · ĐMH không nhờ phòng nào "
+             "khác xử lý, và là đích của nút «Trả về thu mua». Để trống = PBA017 «Sản xuất -Thu mua». "
+             "Gõ mã không có trong danh mục thì hệ thống quay về cách cũ (phòng xử lý để trống). "
+             "Đổi mã KHÔNG tự chuyển phiếu cũ sang phòng mới."},
     {"key": "pr_options_enabled", "group": "workflow", "type": "bool",
      "label": "Yêu cầu mua hàng: bật cụm phương án (báo giá) trên phiếu",
      "hint": "BẬT: nhân sự thu mua có màn \"Xử lý phương án\" để gắn tối đa 5 phương án cho "

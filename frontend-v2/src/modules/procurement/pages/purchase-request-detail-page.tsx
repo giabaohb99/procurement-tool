@@ -323,7 +323,7 @@ export function PurchaseRequestDetailPage() {
     data.items.every((item) => ['completed', 'cancelled'].includes(item.line_status))
   /**
    * NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu (phòng
-   * xử lý ≠ 0 → người thu mua của phòng đó; = 0 → người thu mua chung). Trước đó lọc
+   * tự mua → người thu mua của phòng đó; phòng thu mua mặc định → người thu mua chung). Trước đó lọc
    * danh mục nhân sự theo TÊN phòng có chữ «thu mua», nên phiếu nhà máy vẫn thấy người
    * thu mua chung. Ô chọn hiện TÊN nhưng lưu MÃ nhân viên.
    * QA 29/08: bổ sung người đã gán ở từng dòng dù họ nằm ngoài danh sách (gán trước khi
@@ -845,7 +845,7 @@ export function PurchaseRequestDetailPage() {
           className="text-amber-700 hover:text-amber-700"
           title={
             returnResolution === 'department'
-              ? 'Trả cả phiếu về phòng lập tự xử lý'
+              ? 'Trả cả phiếu về phòng thu mua mặc định'
               : 'Trả về để người lập sửa và gửi duyệt lại'
           }
           onClick={() => void handleReturn()}

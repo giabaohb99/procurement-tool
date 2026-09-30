@@ -8,6 +8,7 @@ from app.core.auth import (get_current_user, get_perm_profile, require,
                            user_has_permission)
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
 from app.core.ref_filter import apply_ref_filters
+from app.core.central_purchasing import get_central_dept_id, is_central_dept, normalize_handler_dept_id
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import (apply_scope, approves_only_in_dept_proc, holds_handling_dept,
@@ -89,6 +90,8 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     # tên thì tra danh mục để hiển thị, không ghi đè.
     from app.modules.purchase_request.service import handler_dept_name_of
     base["handler_dept_name"] = handler_dept_name_of(db, s.handler_dept_id)
+    # bao-CR-524: phiếu cũ còn `0` hiện đúng id phòng thu mua mặc định.
+    base["handler_dept_id"] = normalize_handler_dept_id(db, s.handler_dept_id)
     # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
     from app.core.print_signers import approver_fields
     base.update(approver_fields(db, s))
@@ -118,15 +121,16 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         d["progress_tone"] = line_state.STATE_TONE.get(d["progress_state"], "gray")
         out_lines.append(d)
     base["lines"] = out_lines
-    # bao-CR-414 GĐ5: nút "Chuyển phòng xử lý" / "Trả về phòng lập" — chỉ quản lý thu mua của
+    # bao-CR-414 GĐ5: nút "Chuyển phòng xử lý" / "Trả về thu mua" — chỉ quản lý thu mua của
     # phòng ĐANG CẦM phiếu (hoặc toàn hệ) và khi việc khảo sát chưa thật sự bắt đầu.
     can_transfer = False
     if user is not None:
         prof = profile if profile is not None else get_perm_profile(db, user)
         can_transfer = bool(service.can_transfer_dept(db, s)
-                            and holds_handling_dept(prof, "survey_request", s))
+                            and holds_handling_dept(prof, "survey_request", s, get_central_dept_id(db)))
     base["can_transfer_dept"] = can_transfer
-    base["can_return_dept"] = bool(can_transfer and (s.handler_dept_id or 0))
+    # bao-CR-524: «Trả về thu mua» chỉ khi phiếu đang ở phòng KHÁC phòng thu mua mặc định.
+    base["can_return_dept"] = bool(can_transfer and not is_central_dept(db, s.handler_dept_id))
     return base
 
 
@@ -473,7 +477,8 @@ def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(
     stamp_approver(db, s, user.id)
     db.commit()
     # bao-CR-414: tự gán NSTM theo phân loại (Task 4) — tra theo phòng đang xử lý phiếu; người
-    # duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) thì không rơi về bộ "Thu mua chung".
+    # duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) thì không rơi về bộ của phòng thu
+    # mua mặc định (bao-CR-524, trước là «Thu mua chung»).
     dept_only = approves_only_in_dept_proc(get_perm_profile(db, user), "survey_request")
     service.auto_assign(db, s, allow_global_assignee=not dept_only)
     s = service.set_status(db, sid, "processing", user.id)   # duyệt xong -> chuyển sang Đang xử lý
@@ -536,13 +541,13 @@ def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
 def _transfer_dept(db: Session, sid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
                    user, *, target: int, message: str):
     s = _in_scope(db, sid, user, "approve")
-    if not holds_handling_dept(get_perm_profile(db, user), "survey_request", s):
+    if not holds_handling_dept(get_perm_profile(db, user), "survey_request", s, get_central_dept_id(db)):
         raise HTTPException(403, "Chỉ quản lý thu mua của phòng đang xử lý mới chuyển được phiếu này")
     old_assignees = [ln.assignee for ln in service.lines_of(db, sid) if ln.assignee]
     s = service.transfer_handler_dept(db, sid, target, data.reason, user.id)
     from app.modules.user.model import User
     creator = db.query(User).filter(User.id == (s.created_by or user.id)).all()
-    where = "phòng lập" if target == 0 else "phòng xử lý khác"
+    where = "phòng thu mua" if not int(target or 0) else "phòng xử lý khác"   # bao-CR-524
     _notify(db, creator, f"{s.code} — Chuyển {where}",
             f"Yêu cầu báo giá {s.code} được chuyển sang {where}. Lý do: {data.reason.strip()}",
             f"/survey-requests/{s.id}", user.id, background_tasks, doc_code=s.code)
@@ -566,9 +571,10 @@ def transfer_dept_(sid: int, data: TransferDeptIn, background_tasks: BackgroundT
 @router.post("/{sid}/return-dept")
 def return_dept_(sid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
                  db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
-    """bao-CR-414 GĐ5 — TRẢ VỀ PHÒNG LẬP: cùng điều kiện, đích là phòng lập (`handler_dept_id` = 0)."""
+    """bao-CR-414 GĐ5 — TRẢ VỀ THU MUA: cùng điều kiện, đích là phòng thu mua mặc định
+    (bao-CR-524: ghi id thật của PBA017, không còn `0` = «Thu mua chung» ảo)."""
     return _transfer_dept(db, sid, data, background_tasks, user, target=0,
-                          message="Đã trả phiếu về phòng lập")
+                          message="Đã trả phiếu về phòng thu mua")
 
 
 @router.patch("/{sid}/lines/{line_id}/assignee")

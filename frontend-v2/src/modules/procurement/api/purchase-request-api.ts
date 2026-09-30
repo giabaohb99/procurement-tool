@@ -21,8 +21,9 @@ export interface PurchaseRequestPayload {
   /** bao-CR-499 — người được chọn duyệt (0 = chưa chọn); sau Duyệt backend tự ghi người thực duyệt. */
   approver_employee_id?: number
   /**
-   * bao-CR-414/488 — id phòng XỬ LÝ phiếu (0 = Thu mua chung). Lúc TẠO mà không gửi thì backend
-   * tự chọn mặc định (nhà máy → chính phòng mình); gửi số — kể cả 0 — là người lập đã chọn.
+   * bao-CR-414/488 — id phòng XỬ LÝ phiếu. Lúc TẠO mà không gửi thì backend tự chọn mặc định
+   * (nhà máy → chính phòng mình, còn lại → phòng thu mua mặc định); gửi số là người lập đã chọn,
+   * gửi 0 = phòng thu mua mặc định (bao-CR-524: backend ghi id thật, không còn «Thu mua chung»).
    */
   handler_dept_id?: number
   purpose: string
@@ -59,8 +60,8 @@ export const purchaseRequestApi = {
   getById: (id: number) => apiGet<PurchaseRequestDetail>(`${BASE_URL}/${id}`),
 
   /**
-   * bao-CR-486 — NSTM chọn được cho phiếu này, đi theo ô «Phòng xử lý» (phòng xử lý ≠ 0
-   * → người thu mua của phòng đó; = 0 → người thu mua chung). Backend chặn gán ngoài
+   * bao-CR-486 — NSTM chọn được cho phiếu này, đi theo ô «Phòng xử lý» (phòng tự mua → người
+   * thu mua của phòng đó; phòng thu mua mặc định → người thu mua chung, bao-CR-524). Backend chặn gán ngoài
    * danh sách, nên ô chọn PHẢI đọc từ đây thay vì lọc danh mục nhân sự theo tên phòng.
    */
   assignableStaff: (id: number) =>
@@ -104,7 +105,7 @@ export const purchaseRequestApi = {
       handler_dept_id: handlerDeptId,
       reason,
     }),
-  /** bao-CR-414 GĐ5: trả cả phiếu về phòng lập tự xử lý (`handler_dept_id` = 0). */
+  /** bao-CR-414 GĐ5: trả cả phiếu về phòng thu mua mặc định (bao-CR-524: backend ghi id thật). */
   returnDept: (id: number, reason: string) =>
     apiPost<PurchaseRequestDetail>(`${BASE_URL}/${id}/return-dept`, { reason }),
   /** Trả phiếu ĐÃ DUYỆT về cho người yêu cầu sửa lại. */

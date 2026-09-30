@@ -26,7 +26,7 @@ export interface SurveyRequestPayload {
   head_of_dept: string
   /** bao-CR-499 — người được chọn duyệt (0 = chưa chọn). */
   approver_employee_id?: number
-  /** bao-CR-414/488: phòng xử lý (0 = Thu mua chung); lúc TẠO không gửi = backend tự chọn mặc định. */
+  /** bao-CR-414/488: phòng xử lý; lúc TẠO không gửi = backend tự chọn mặc định; 0 = phòng thu mua mặc định (bao-CR-524). */
   handler_dept_id?: number
   purpose: string
   request_date: string
@@ -85,7 +85,7 @@ export const surveyRequestApi = {
       handler_dept_id: handlerDeptId,
       reason,
     }),
-  /** bao-CR-414 GĐ5: trả cả phiếu về phòng lập tự xử lý (`handler_dept_id` = 0). */
+  /** bao-CR-414 GĐ5: trả cả phiếu về phòng thu mua mặc định (bao-CR-524: backend ghi id thật). */
   returnDept: (id: number, reason: string) =>
     apiPost<SurveyRequestDetail>(`${BASE_URL}/${id}/return-dept`, { reason }),
 

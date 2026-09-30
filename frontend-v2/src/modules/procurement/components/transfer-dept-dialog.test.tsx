@@ -75,8 +75,8 @@ describe('TransferDeptDialog', () => {
   })
 
   it('falls back to the requesting department as the excluded one when nobody is asked yet', async () => {
-    //  `handler_dept_id` = 0 nghĩa là phòng lập tự xử lý — không được đề nghị
-    //  "chuyển" phiếu sang chính phòng đó.
+    //  `handler_dept_id` = 0 chỉ còn khi danh mục chưa có phòng thu mua mặc định (bao-CR-524,
+    //  backend trả id thật cho mọi phiếu khác) — giữ luật cũ: không đề nghị chuyển sang phòng lập.
     const user = userEvent.setup()
     renderDialog('transfer', 0, 3)
     await openDeptPicker(user)
@@ -97,7 +97,8 @@ describe('TransferDeptDialog', () => {
     expect(onConfirm).toHaveBeenCalledWith(3, 'Kế toán tự mua')
   })
 
-  it('hides the department picker in return mode and sends department 0', async () => {
+  it('hides the department picker in return mode and sends department 0 (central purchasing)', async () => {
+    //  bao-CR-524: 0 = trả về phòng thu mua mặc định, backend ghi id thật.
     const user = userEvent.setup()
     const onConfirm = renderDialog('return')
 

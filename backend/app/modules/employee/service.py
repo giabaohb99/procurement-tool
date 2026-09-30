@@ -284,6 +284,9 @@ def clear_perm_cache_of(db: Session, employee_id: int) -> None:
 #  xem `core/status_codes.EMPLOYEE_STATUS`). Chuyển SANG mã này, hoặc tắt
 #  `is_active`, là hai cách HR nói "người này không còn làm ở đây".
 STATUS_RESIGNED = "resigned"
+#  bao-CR-527: mã «Chính thức» — chỉ nhân sự mang mã này (và đang hoạt động) mới được phân công
+#  làm NSTM chính / dự phòng (`category_assignee.service.is_official_employee`).
+STATUS_OFFICIAL = "official"
 
 
 def has_left_company(fields: dict, obj: Employee, old_status: str, old_active: bool) -> bool:

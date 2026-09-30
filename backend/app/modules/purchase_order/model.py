@@ -172,8 +172,8 @@ class PurchaseOrder(Base, AuditMixin):
     # CR-086: phòng ban neo bằng ID (xem PurchaseRequest.department_id). Cột `department` bên dưới
     # hạ xuống làm BẢN CHỤP TÊN — chỉ để in/đối chiếu, không khớp nghiệp vụ bằng nó nữa.
     department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
-    # bao-CR-414: phòng ĐƯỢC NHỜ xử lý (xem PurchaseRequest.handler_dept_id). 0 = không nhờ.
-    # Chép từ YCMH khi lập đơn từ phiếu; chép theo khi nhân bản đơn.
+    # bao-CR-414: phòng ĐƯỢC NHỜ xử lý (xem PurchaseRequest.handler_dept_id). bao-CR-524: `0` cũ
+    # = phòng thu mua mặc định. Chép từ YCMH khi lập đơn từ phiếu; chép theo khi nhân bản đơn.
     handler_dept_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     department: Mapped[str] = mapped_column(String(255), default="", index=True)  # BẢN CHỤP tên (sẽ xóa — N-008)
     # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). 0 = chưa

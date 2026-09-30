@@ -4,14 +4,15 @@ import SearchSelect from './SearchSelect'
 /** bao-CR-414 GĐ5 — hộp thoại CHUYỂN PHÒNG XỬ LÝ / TRẢ VỀ PHÒNG LẬP cho YCMH và YCBG.
  *
  * `mode = 'transfer'`: chọn phòng đích (bỏ phòng đang xử lý) + lý do bắt buộc.
- * `mode = 'return'`: chỉ hỏi lý do, đích là phòng lập phiếu (backend đặt `handler_dept_id` = 0).
+ * `mode = 'return'`: chỉ hỏi lý do, đích là phòng thu mua mặc định (gửi 0, backend ghi id thật của
+ * «Sản xuất -Thu mua» — bao-CR-524).
  * Không có lựa chọn chuyển MỘT PHẦN dòng — cả phiếu đi cùng nhau (luật đã chốt ở HDSD). */
 interface TransferDeptModalProps {
   open: boolean
   mode: 'transfer' | 'return'
   docLabel: string                               // "yêu cầu mua hàng" / "yêu cầu báo giá"
   options: { value: string; label: string }[]    // mọi phòng đang hoạt động
-  currentDeptId: number                          // phòng ĐANG xử lý (phòng được nhờ, hoặc phòng lập nếu 0)
+  currentDeptId: number                          // phòng ĐANG xử lý (bao-CR-524: backend trả id thật)
   requestingDeptId: number                       // phòng lập phiếu
   onConfirm: (handlerDeptId: number, reason: string) => void
   onCancel: () => void
@@ -58,11 +59,11 @@ export default function TransferDeptModal({
         <div className="confirm-modal-icon" style={{ color: isTransfer ? '#3b82f6' : '#f59e0b' }}>
           <i className={isTransfer ? 'ti ti-transfer' : 'ti ti-corner-up-left'} />
         </div>
-        <h3 className="confirm-modal-title">{isTransfer ? 'Chuyển phòng xử lý' : 'Trả về phòng lập'}</h3>
+        <h3 className="confirm-modal-title">{isTransfer ? 'Chuyển phòng xử lý' : 'Trả về phòng thu mua'}</h3>
         <p className="confirm-modal-message" style={{ marginBottom: 12 }}>
           {isTransfer
             ? `Đẩy cả ${docLabel} này sang phòng khác xử lý. Người phụ trách hiện tại ở mọi dòng sẽ được gỡ để phòng nhận phân công lại. Không chuyển một phần dòng.`
-            : `Trả cả ${docLabel} này về phòng lập phiếu tự xử lý. Người phụ trách hiện tại ở mọi dòng sẽ được gỡ.`}
+            : `Trả cả ${docLabel} này về phòng thu mua mặc định xử lý. Người phụ trách hiện tại ở mọi dòng sẽ được gỡ.`}
         </p>
         {isTransfer && (
           <div style={{ marginBottom: 12 }}>

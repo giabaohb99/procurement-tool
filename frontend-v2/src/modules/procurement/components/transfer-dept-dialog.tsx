@@ -26,21 +26,22 @@ interface TransferDeptDialogProps {
   docLabel: string
   /** Mọi phòng ban đang có; hộp tự lọc phòng hoạt động và bỏ phòng đang xử lý. */
   departments: Department[]
-  /** Phòng ĐANG xử lý (phòng được nhờ; 0 = phòng lập tự xử lý). */
+  /** Phòng ĐANG xử lý (bao-CR-524: backend trả id thật, kể cả phòng thu mua mặc định). */
   currentDeptId: number
   /** Phòng lập phiếu. */
   requestingDeptId: number
   pending?: boolean
   onOpenChange: (open: boolean) => void
-  /** `handlerDeptId` = 0 khi trả về phòng lập. Lý do đã cắt khoảng trắng. */
+  /** `handlerDeptId` = 0 khi trả về phòng thu mua. Lý do đã cắt khoảng trắng. */
   onConfirm: (handlerDeptId: number, reason: string) => void | Promise<void>
 }
 
 /**
- * bao-CR-414 GĐ5 — hộp CHUYỂN PHÒNG XỬ LÝ / TRẢ VỀ PHÒNG LẬP dùng chung cho YCMH và YCBG.
+ * bao-CR-414 GĐ5 — hộp CHUYỂN PHÒNG XỬ LÝ / TRẢ VỀ THU MUA dùng chung cho YCMH và YCBG.
  *
  * `mode = 'transfer'`: chọn phòng đích (bỏ phòng đang xử lý) + lý do bắt buộc.
- * `mode = 'return'`: chỉ hỏi lý do, đích là phòng lập phiếu (backend đặt `handler_dept_id` = 0).
+ * `mode = 'return'`: chỉ hỏi lý do, đích là phòng thu mua mặc định (bao-CR-524: gửi 0, backend
+ * ghi id thật của phòng «Sản xuất -Thu mua»).
  * Không có lựa chọn chuyển MỘT PHẦN dòng — cả phiếu đi cùng nhau (luật đã chốt ở HDSD).
  */
 export function TransferDeptDialog({
@@ -74,11 +75,11 @@ export function TransferDeptDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isTransfer ? 'Chuyển phòng xử lý' : 'Trả về phòng lập'}</DialogTitle>
+          <DialogTitle>{isTransfer ? 'Chuyển phòng xử lý' : 'Trả về phòng thu mua'}</DialogTitle>
           <DialogDescription>
             {isTransfer
               ? `Đẩy cả ${docLabel} này sang phòng khác xử lý. Người phụ trách hiện tại ở mọi dòng sẽ được gỡ để phòng nhận phân công lại. Không chuyển một phần dòng.`
-              : `Trả cả ${docLabel} này về phòng lập phiếu tự xử lý. Người phụ trách hiện tại ở mọi dòng sẽ được gỡ.`}
+              : `Trả cả ${docLabel} này về phòng thu mua mặc định xử lý. Người phụ trách hiện tại ở mọi dòng sẽ được gỡ.`}
           </DialogDescription>
         </DialogHeader>
 

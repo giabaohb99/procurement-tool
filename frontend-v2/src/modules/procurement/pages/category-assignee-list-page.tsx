@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -18,17 +18,42 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import type { CategoryAssignee } from '../types/category-assignee'
-import { SHARED_DEPARTMENT_LABEL } from '../types/category-assignee'
+import { DEFAULT_PURCHASING_LABEL } from '../utils/handling-dept-display'
 
 interface ItemGroupOption {
   id: number
   name: string
 }
 
-/** Nhãn cột Phòng: dòng chung (department_id = 0) in «Thu mua chung». */
+/**
+ * Nhãn cột Phòng. bao-CR-524: backend trả id + tên THẬT cho mọi dòng, kể cả dòng `0` cũ («Thu mua
+ * chung» → phòng thu mua mặc định «Sản xuất -Thu mua»). Nhãn dự phòng chỉ còn cho trường hợp danh
+ * mục chưa có phòng mặc định.
+ */
 function departmentLabel(row: CategoryAssignee): string {
-  if (!row.department_id) return SHARED_DEPARTMENT_LABEL
-  return row.department_name || `#${row.department_id}`
+  if (row.department_name) return row.department_name
+  return row.department_id ? `#${row.department_id}` : DEFAULT_PURCHASING_LABEL
+}
+
+/**
+ * bao-CR-527 — cảnh báo dòng có NSTM chính NAY không còn «Chính thức» (nghỉ thai sản, nghỉ
+ * việc, hồ sơ bị tắt…). Tự gán lúc duyệt sẽ rơi sang dự phòng (hoặc để trống), nên dòng này cần
+ * người sửa. Chỉ báo, không chặn đọc.
+ */
+function PrimaryNotOfficialBadge({ row }: { row: CategoryAssignee }) {
+  if (!row.primary_not_official || !row.primary_employee_id) return null
+  const status =
+    row.primary_is_active === false ? 'ngừng hoạt động' : row.primary_status_label || 'không rõ'
+  return (
+    <Badge
+      variant="outline"
+      className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+      title={`NSTM chính đang «${status}» — tự gán sẽ rơi sang dự phòng. Hãy đổi NSTM chính.`}
+    >
+      <TriangleAlert />
+      Không còn Chính thức
+    </Badge>
+  )
 }
 
 /** Đường sửa một dòng — mang theo phòng để form mở đúng bộ (chung hay riêng phòng). */
@@ -53,10 +78,10 @@ export function CategoryAssigneeListPage() {
 
   const search = searchParams.get('search') || ''
   const catFilter = searchParams.get('cat') || 'all'
-  //  Lọc theo phòng: 'all' = mọi dòng, '0' = chỉ bộ Thu mua chung, '<id>' = một phòng.
-  //  ⚠️ `0` là giá trị THẬT (dòng chung), không lấy làm mốc «tất cả» — xem bẫy duoc-CR-322.
+  //  Lọc theo phòng: 'all' = mọi dòng, '<id>' = một phòng. bao-CR-524: không còn mục «Thu mua
+  //  chung» (0) — bộ đó nay là phòng thật «Sản xuất -Thu mua», nằm trong danh mục như mọi phòng.
   const deptFilter = searchParams.get('dept') || 'all'
-  //  Danh mục phòng ban chỉ để dựng ô lọc; thiếu quyền thì ô còn mỗi «Thu mua chung».
+  //  Danh mục phòng ban chỉ để dựng ô lọc; thiếu quyền thì ô chỉ còn «Tất cả phòng».
   const { data: departmentsData } = useDepartments(
     { page_size: 500 },
     { enabled: can('department', 'read') },
@@ -163,15 +188,9 @@ export function CategoryAssigneeListPage() {
         header: 'Phòng',
         width: 200,
         sortable: true,
-        //  Dòng chung in nhạt hơn để mắt tách được «áp cho mọi phòng» với «riêng một phòng».
-        cell: (r) =>
-          r.department_id ? (
-            <span className="font-medium text-slate-800 dark:text-slate-200">
-              {departmentLabel(r)}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{SHARED_DEPARTMENT_LABEL}</span>
-          ),
+        cell: (r) => (
+          <span className="font-medium text-slate-800 dark:text-slate-200">{departmentLabel(r)}</span>
+        ),
       },
       {
         key: 'primary_name',
@@ -180,13 +199,14 @@ export function CategoryAssigneeListPage() {
         sortable: true,
         cell: (r) =>
           r.primary_name ? (
-            <div className="flex flex-col">
+            <div className="flex flex-col items-start gap-0.5">
               <span className="font-semibold text-slate-800 dark:text-slate-200">
                 {r.primary_name}
               </span>
               {r.primary_code && (
                 <span className="text-xs text-muted-foreground font-mono">{r.primary_code}</span>
               )}
+              <PrimaryNotOfficialBadge row={r} />
             </div>
           ) : (
             <span className="text-muted-foreground font-light">—</span>
@@ -375,7 +395,6 @@ export function CategoryAssigneeListPage() {
                 className="h-9 w-full sm:w-48 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-md:w-auto max-md:min-w-0 max-md:flex-1"
               >
                 <option value="all">Tất cả phòng</option>
-                <option value="0">{SHARED_DEPARTMENT_LABEL}</option>
                 {departments.map((d) => (
                   <option key={d.id} value={String(d.id)}>
                     {d.name}
@@ -427,7 +446,8 @@ function CategoryAssigneeCard({
         </Badge>
         {/*  Phòng đứng cạnh phân loại: cùng một phân loại có thể có dòng chung và
              dòng riêng của từng phòng, thẻ thiếu nhãn này thì hai thẻ trông y hệt. */}
-        <Badge variant={row.department_id ? 'secondary' : 'outline'}>{departmentLabel(row)}</Badge>
+        <Badge variant="secondary">{departmentLabel(row)}</Badge>
+        <PrimaryNotOfficialBadge row={row} />
       </div>
 
       <div className="space-y-1 text-xs text-muted-foreground">

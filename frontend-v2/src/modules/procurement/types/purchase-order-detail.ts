@@ -118,9 +118,9 @@ export interface PurchaseOrderDetail {
   department: string
   /** CR-086: phòng ban neo bằng id (backend trả sẵn); bao-CR-499 dùng để tra người duyệt được. */
   department_id?: number
-  /** bao-CR-414: PHÒNG XỬ LÝ đơn (0 = thu mua chung), chép từ YCMH nguồn. */
+  /** bao-CR-414: PHÒNG XỬ LÝ đơn, chép từ YCMH nguồn (bao-CR-524: id thật, kể cả phòng thu mua mặc định). */
   handler_dept_id?: number
-  /** bao-CR-480: tên phòng xử lý do backend trả kèm (rỗng = thu mua chung). */
+  /** bao-CR-480: tên phòng xử lý do backend trả kèm. */
   handler_dept_name?: string
   /**
    * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và

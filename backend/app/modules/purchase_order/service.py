@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.central_purchasing import normalize_handler_dept_id
 from app.core.status_codes import PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
 from app.modules.catalog import lead_time
 from app.modules.department.service import sync_department_ref
@@ -479,7 +480,7 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
         sup = suppliers.get((row.supplier_code or "").strip())
         pay_service.upsert(
             db, source_type=IMPORT_COST_SOURCE, ref_type=IMPORT_COST_SOURCE, ref_id=row.id,
-            company_id=po.company_id, department_id=pay_service.debt_dept_of(po),
+            company_id=po.company_id, department_id=pay_service.debt_dept_of(po, db),
             supplier_code=(row.supplier_code or "").strip(),
             supplier_name=(row.supplier_name or "").strip() or (sup.name if sup else ""),
             po_id=po.id, po_code=po.code, invoice_no=(row.invoice_no or "").strip(),
@@ -1212,7 +1213,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                 amt = recv * base_price
                 pay_service.upsert(
                     db, source_type="goods", ref_id=d.id, company_id=po.company_id,
-                    department_id=pay_service.debt_dept_of(po),
+                    department_id=pay_service.debt_dept_of(po, db),
                     supplier_code=po.supplier_code, supplier_name=po.supplier_name,
                     po_id=po.id, po_code=po.code, invoice_no=(d.invoice_no or it.invoice_no or "").strip(),
                     incur_date=d.received_date or po.order_date, amount=amt, vat=amt * vat / 100,
@@ -1226,7 +1227,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                     ship_inv = f"{po.misa_code}-{it.product_code}".strip("-")
                     pay_service.upsert(
                         db, source_type="shipping", ref_id=d.id, company_id=po.company_id,
-                        department_id=pay_service.debt_dept_of(po),
+                        department_id=pay_service.debt_dept_of(po, db),
                         supplier_code=d.carrier_code,
                         supplier_name=d.carrier_name or (carrier.name if carrier else ""),
                         po_id=po.id, po_code=po.code, invoice_no=ship_inv,
@@ -1309,7 +1310,8 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
         code="", misa_code="", pr_code=src.pr_code, survey_code=src.survey_code,
         company_id=src.company_id, supplier_code=src.supplier_code, supplier_name=src.supplier_name,
         department=src.department, department_id=src.department_id,
-        handler_dept_id=src.handler_dept_id or 0,   # bao-CR-414: bản sao giữ phòng được nhờ
+        # bao-CR-414: bản sao giữ phòng được nhờ; bao-CR-524: `0` cũ → phòng thu mua mặc định
+        handler_dept_id=normalize_handler_dept_id(db, src.handler_dept_id),
         nspt=src.nspt, nspt_id=src.nspt_id, order_date=src.order_date, vat_rate=src.vat_rate,
         payment_terms=src.payment_terms, is_urgent=src.is_urgent, note=src.note,
         status="draft", created_by=user_id, updated_by=user_id,
@@ -1414,7 +1416,9 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     if not nspt and not nspt_id:
         nspt, nspt_id = _default_nspt(db, data, user_id)
     # bao-CR-414: đơn lập từ YCMH thừa kế phòng được nhờ, trừ khi form gửi rõ.
-    handler_dept_id = data.handler_dept_id or _handler_dept_of_pr(db, (data.pr_code or "").strip())
+    # bao-CR-524: không có phòng nào (đơn lẻ / YCMH cũ còn `0`) → phòng thu mua mặc định.
+    handler_dept_id = normalize_handler_dept_id(
+        db, data.handler_dept_id or _handler_dept_of_pr(db, (data.pr_code or "").strip()))
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
         survey_code=data.survey_code, company_id=data.company_id, supplier_code=data.supplier_code,
@@ -1629,6 +1633,8 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     old_urgent = bool(po.is_urgent)
     for k, v in data.model_dump(exclude_unset=True, exclude={"items", "import_costs"}).items():
         setattr(po, k, v)
+    if data.handler_dept_id is not None:   # bao-CR-524: 0 → phòng thu mua mặc định
+        po.handler_dept_id = normalize_handler_dept_id(db, data.handler_dept_id)
     # CR-086: FE cũ chỉ gửi TÊN phòng → bỏ id cũ rồi tra lại từ tên; gửi kèm id thì id thắng.
     if data.department is not None or data.department_id is not None:
         if data.department_id is None:

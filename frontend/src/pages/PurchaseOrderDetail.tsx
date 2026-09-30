@@ -1227,9 +1227,10 @@ export default function PurchaseOrderDetail() {
                   placeholder={canPickNspt ? 'Chọn nhân sự phụ trách' : ''} />
               </div>
               {/* bao-CR-480: «Phòng xử lý» chép từ YCMH nguồn, chỉ xem — đơn do nhà máy mua hay do
-                  thu mua chung mua phải thấy ngay trên đầu đơn; muốn đổi thì đổi ở YCMH. */}
+                  phòng thu mua mặc định mua phải thấy ngay trên đầu đơn; muốn đổi thì đổi ở YCMH.
+                  bao-CR-524: backend trả tên phòng thật (kể cả đơn cũ còn 0) — không còn «Thu mua chung». */}
               <div className="form-row"><label>Phòng xử lý</label>
-                <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Thu mua chung')} disabled />
+                <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Phòng thu mua mặc định')} disabled />
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt đơn — hệ thống ghi lúc duyệt, chỉ xem. */}
               {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
