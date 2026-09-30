@@ -41,12 +41,14 @@ FIELDS = [
              "nhất là «Phòng xử lý có giá trị» — nghĩa là phiếu nhờ phòng khác (ví dụ nhà máy tự mua) xử lý. "
              "Phiếu thỏa điều kiện thì trưởng bộ phận duyệt xong là hệ thống tự phân bổ nhân sự theo bộ phân công "
              "RIÊNG của phòng xử lý; phiếu còn lại vẫn chờ thu mua duyệt lần 2."},
-    {"key": "central_purchasing_dept_code", "group": "workflow", "type": "str",
-     "label": "Mã phòng thu mua mặc định",
-     "hint": "Mã phòng ban (danh mục Phòng ban) nhận mọi YCMH · YCBG · ĐMH không nhờ phòng nào "
-             "khác xử lý, và là đích của nút «Trả về thu mua». Để trống = PBA017 «Sản xuất -Thu mua». "
-             "Gõ mã không có trong danh mục thì hệ thống quay về cách cũ (phòng xử lý để trống). "
-             "Đổi mã KHÔNG tự chuyển phiếu cũ sang phòng mới."},
+    #  bao-CR-529: `type: "department"` = giao diện vẽ Ô CHỌN từ danh mục Phòng ban thay cho ô gõ
+    #  mã. Dưới DB vẫn lưu MÃ phòng (không lưu id) — `core/central_purchasing` đọc mã, và mã sống
+    #  sót qua nhập lại danh mục còn id thì không. Cửa lưu chặn mã không có / phòng đã ngừng dùng.
+    {"key": "central_purchasing_dept_code", "group": "workflow", "type": "department",
+     "label": "Phòng thu mua mặc định",
+     "hint": "Phòng nhận mọi YCMH · YCBG · ĐMH không nhờ phòng nào khác xử lý, và là đích của nút "
+             "«Trả về thu mua». Để trống = PBA017 «Sản xuất -Thu mua». "
+             "Đổi phòng KHÔNG tự chuyển phiếu cũ sang phòng mới."},
     {"key": "pr_options_enabled", "group": "workflow", "type": "bool",
      "label": "Yêu cầu mua hàng: bật cụm phương án (báo giá) trên phiếu",
      "hint": "BẬT: nhân sự thu mua có màn \"Xử lý phương án\" để gắn tối đa 5 phương án cho "
@@ -191,7 +193,7 @@ _TRUTHY = {"true", "1", "yes", "on"}
 _FALSY = {"false", "0", "no", "off", ""}
 
 
-def _normalize(field: dict, val) -> str:
+def _normalize(field: dict, val, db: Session | None = None) -> str:
     """Đưa giá trị người dùng gửi về đúng chuỗi sẽ nằm dưới DB, chặn thứ vô nghĩa.
 
     Đây là cửa PUT nhận `values: dict` tự do, không có schema Pydantic đứng giữa.
@@ -246,6 +248,19 @@ def _normalize(field: dict, val) -> str:
             raise HTTPException(400, f"\"{nhan}\": điều kiện {problem}")
         #  `[]` nghĩa y như để trống — lưu thành rỗng cho nhật ký và màn hình đọc ra một nghĩa.
         return raw if parse(raw) else ""
+    if kind == "department":
+        #  bao-CR-529: lưu MÃ phòng. Mã không có trong danh mục thì `core/central_purchasing` lặng
+        #  lẽ quay về «phòng xử lý để trống» — đúng loại lỗi không ai hay, nên chặn ngay ở cửa lưu.
+        raw = "" if val is None else str(val).strip()
+        if not raw or db is None or raw == str(app_settings.get(field["key"]) or "").strip():
+            return raw
+        from app.modules.department.model import Department
+        dep = db.query(Department).filter(Department.code == raw).first()
+        if not dep:
+            raise HTTPException(400, f"\"{nhan}\": không có phòng ban mã «{raw}» trong danh mục")
+        if not dep.is_active:
+            raise HTTPException(400, f"\"{nhan}\": phòng «{dep.name}» đã ngừng dùng")
+        return raw
     return str(val)
 
 
@@ -358,7 +373,7 @@ def save(db: Session, values: dict, user_id: int) -> dict:
     #  dừng lại, không có chuyện lưu được nửa chừng. Bước này của bao-CR-429 từng
     #  rơi mất khi gộp bao-CR-461 từ `main` sang — `_normalize` còn đó nhưng không
     #  ai gọi, nên "50 câu" lọt xuống bảng và `_cast` đọc ra 0 = không giới hạn.
-    values = {key: (_normalize(_FIELD_KEYS[key], val) if key in _FIELD_KEYS else val)
+    values = {key: (_normalize(_FIELD_KEYS[key], val, db) if key in _FIELD_KEYS else val)
               for key, val in (values or {}).items()}
     #  Gom chênh lệch TRƯỚC khi ghi — ghi xong thì giá trị cũ không còn ở đâu nữa.
     #  Không đổi gì thì KHÔNG đẻ dòng nhật ký: bấm Lưu hai lần vẫn chỉ một dấu vết.

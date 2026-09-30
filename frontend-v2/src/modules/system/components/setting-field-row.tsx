@@ -14,6 +14,7 @@ import { SUPPORTED_CONDITION_ENTITIES } from '../config/pr-dispatch-condition-fi
 import type { SettingField } from '../types/setting'
 
 import { SettingConditionField } from './setting-condition-field'
+import { SettingDepartmentField } from './setting-department-field'
 import { SettingDocLink } from './setting-doc-link'
 
 interface SettingFieldRowProps {
@@ -66,6 +67,10 @@ export function SettingFieldRow({ field, disabled, onChange }: SettingFieldRowPr
     SUPPORTED_CONDITION_ENTITIES.includes(field.condition_entity ?? '')
   ) {
     return <SettingConditionField field={field} disabled={disabled} onChange={onChange} />
+  }
+
+  if (field.type === 'department') {
+    return <SettingDepartmentField field={field} disabled={disabled} onChange={onChange} />
   }
 
   if (field.type === 'select') {
