@@ -70,6 +70,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-525 | Xuất Excel Yêu cầu thanh toán theo dòng chi tiết
+- status: xong
+- date: 2026-09-30
+Đại ca muốn thêm chức năng xuất Excel cho màn Yêu cầu thanh toán, và chốt xuất theo dòng chi tiết:
+mỗi dòng PO hay hóa đơn của phiếu là một hàng, thông tin phiếu như mã, ngày, công ty, nhà cung cấp,
+trạng thái lặp lại ở từng hàng để lọc và làm bảng tổng hợp ngay trong Excel.
+
+Tệp xuất ra đúng những phiếu người dùng đang thấy trên màn danh sách, theo bộ lọc đang đặt và
+trong phạm vi dữ liệu của họ. Bản cũ có thêm cột tick chọn: tick phiếu nào thì chỉ xuất phiếu đó.
+Nút chỉ hiện với người có quyền xuất của Yêu cầu thanh toán. Đại ca chốt cả cụm thu mua đều được
+xuất: nhân viên thu mua, quản lý thu mua phòng, admin thu mua và quản lý thu mua. Trên dev em tick thẳng
+quyền này cho các vai trò thu mua đang có, vì hệ đang chạy không tự nhận quyền mới từ bộ nạp mẫu.
+
+Tệp không dò lại công nợ từng dòng như màn chi tiết, chỉ lấy số đã ghi trên phiếu, để xuất vài
+nghìn dòng vẫn nhanh.
+
+Cổng kiểm: bài kiểm máy chủ bốn bài mới và chín mươi hai bài phạm vi thu mua xanh; bản mới kiểm kiểu
+sạch, lint sạch, bảy mươi hai bài phân hệ tài chính xanh trong đó ba bài mới; bản cũ giữ đúng bốn lỗi
+kiểu có sẵn. Đã lên dev 30/09 để đại ca kiểm.
+
+Mã nguồn: backend/app/modules/payment_request/export.py · payment_request/controller.py · seed.py ·
+frontend/src/config/cruds.tsx · frontend-v2/src/modules/finance/pages/payment-request-list-page.tsx
+
 ## bao-CR-522 | Popup Lịch sử mua hàng có thêm cột Tên trên hóa đơn
 - status: xong
 - date: 2026-09-28

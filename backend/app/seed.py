@@ -341,7 +341,7 @@ STD_ROLES = {
         "purchase_order": (["read", "create", "write", "delete", "print", "export"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình; xóa được đơn NHÁP của mình
         "inventory": (["read"], "company"),
         "payable": (["read"], "company"),
-        "payment_request": (["read", "create", "write", "print"], "company"),
+        "payment_request": (["read", "create", "write", "print", "export"], "company"),   # bao-CR-525
         "report": (["read"], "company"),
     }},
     # Quản lý thu mua: toàn quyền nghiệp vụ (như admin, trừ quản trị hệ thống user/role/setting)
@@ -361,7 +361,7 @@ STD_ROLES = {
         "survey": (["read", "create", "write", "approve"], "all"),
         "inventory": (["read"], "company"),
         "payable": (["read"], "company"),
-        "payment_request": (["read", "create", "write", "print"], "company"),
+        "payment_request": (["read", "create", "write", "print", "export"], "company"),   # bao-CR-525
         "report": (["read"], "dept"),
     }},
     # Admin thu mua: CRUD toàn bộ danh mục; nghiệp vụ CHỈ ĐỌC.
@@ -384,7 +384,7 @@ STD_ROLES = {
         "goods_receipt": (["read"], "all"),
         "inventory": (["read"], "all"),
         "payable": (["read", "export"], "all"),   # ticket #16: xuất Excel màn Công nợ
-        "payment_request": (["read"], "all"),
+        "payment_request": (["read", "export"], "all"),   # bao-CR-525: cả cụm thu mua được xuất Excel YCTT
         "report": (["read", "export"], "all"),
     }},
     # Quản trị Trung tâm Hướng dẫn sử dụng (app help-center chạy riêng, cổng 8082).

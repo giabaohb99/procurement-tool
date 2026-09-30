@@ -1,7 +1,8 @@
-import { Plus, Search, SlidersHorizontal } from 'lucide-react'
+import { Download, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -9,6 +10,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
+import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useUrlSort } from '@/shared/hooks/use-url-sort'
@@ -53,6 +55,10 @@ const ALL = 'all'
 export function PaymentRequestListPage() {
   const navigate = useNavigate()
   const { can } = usePermission()
+  const canExport = can('payment_request', 'export')
+  const canCreate = can('payment_request', 'create')
+  const singleFlight = useSingleFlight()
+  const [exporting, setExporting] = useState(false)
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   // bao-CR-304 (ticket 26) — lọc theo mã MISA của ĐMH: phiếu không lưu mã nên
   // backend lọc subquery ba nhịp dòng phiếu -> mã PO -> ĐMH (filter_by_misa_code).
@@ -111,6 +117,21 @@ export function PaymentRequestListPage() {
     page_size: pageSize,
     ...filterParams,
   })
+
+  function exportExcel() {
+    void singleFlight(async () => {
+      setExporting(true)
+      try {
+        await downloadFile(
+          '/api/payment-requests/export/xlsx',
+          'yeu-cau-thanh-toan-chi-tiet.xlsx',
+          filterParams,
+        )
+      } finally {
+        setExporting(false)
+      }
+    })
+  }
 
   const companyName = useCallback(
     (id: number) => (companies?.items ?? []).find((company) => company.id === id)?.name ?? '—',
@@ -311,13 +332,32 @@ export function PaymentRequestListPage() {
         //  dán mép phải sau một khoảng trống dài.
         actionsClassName="max-md:[&>a]:flex-1"
         actions={
-          can('payment_request', 'create') ? (
-            <Button asChild>
-              <Link to={appRoutes.finance.paymentRequestNew}>
-                <Plus />
-                Tạo đề nghị thanh toán
-              </Link>
-            </Button>
+          canExport || canCreate ? (
+            <>
+              {/*  bao-CR-525 — tệp THEO DÒNG CHI TIẾT (mỗi dòng PO / hóa đơn một hàng), đúng
+                   bộ lọc đang đặt; `useSingleFlight` chặn bấm đúp ra hai lượt tải. */}
+              {canExport && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="max-md:flex-1"
+                  disabled={exporting}
+                  onClick={exportExcel}
+                  title="Mỗi dòng PO / hóa đơn của phiếu một hàng, đúng bộ lọc đang đặt"
+                >
+                  <Download />
+                  {exporting ? 'Đang xuất…' : 'Xuất Excel'}
+                </Button>
+              )}
+              {canCreate && (
+                <Button asChild>
+                  <Link to={appRoutes.finance.paymentRequestNew}>
+                    <Plus />
+                    Tạo đề nghị thanh toán
+                  </Link>
+                </Button>
+              )}
+            </>
           ) : undefined
         }
       />
