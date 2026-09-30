@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { askConfirm } from '../components/confirm'
 
 const EMPTY = { companies: [], departments: [], employees: [], exclude_companies: [], exclude_departments: [], exclude_employees: [] }
 
@@ -34,10 +35,24 @@ export default function UserPermissionDetail() {
   const empName = (eid: number) => { const e = emps.find((x) => x.id === eid); return e ? `${e.code} — ${e.full_name}` : String(eid) }
   const toggleRole = (rid: number) => setRoleSel((s) => s.includes(rid) ? s.filter((x) => x !== rid) : [...s, rid])
 
-  async function saveRoles() {
+  /** bao-CR-523: quản trị TỰ bỏ vai trò Quản trị hệ thống của chính mình thì backend trả 409
+   *  kèm câu hỏi — hiện nguyên câu đó trong hộp xác nhận, đồng ý thì gửi lại kèm cờ.
+   *  `_silent`: 409 là câu HỎI, không để client bắn toast đỏ; lỗi khác vẫn hiện ở dòng `err`. */
+  async function saveRoles(confirmSelfAdminRemoval = false) {
     setMsg(''); setErr('')
-    try { await api.put(`/api/users/${id}/roles`, { role_ids: roleSel }); setMsg('Đã lưu vai trò'); load() }
-    catch (e: any) { setErr(e?.response?.data?.error?.message || 'Lỗi khi lưu vai trò') }
+    const body: any = { role_ids: roleSel }
+    if (confirmSelfAdminRemoval) body.confirm_self_admin_removal = true
+    try { await api.put(`/api/users/${id}/roles`, body, { _silent: true } as any); setMsg('Đã lưu vai trò'); load() }
+    catch (e: any) {
+      const message = e?.response?.data?.error?.message || ''
+      if (e?.response?.status === 409 && message && !confirmSelfAdminRemoval) {
+        if (await askConfirm({ title: 'Tự bỏ vai trò Quản trị hệ thống', message, confirmText: 'Tiếp tục lưu' })) {
+          await saveRoles(true)
+        }
+        return
+      }
+      setErr(message || 'Lỗi khi lưu vai trò')
+    }
   }
   /** bao-CR-349: quản trị tắt hộ email thông báo cho người không muốn nhận thư. */
   async function toggleNotifyEmail() {
@@ -92,7 +107,7 @@ export default function UserPermissionDetail() {
         </div>
         <span style={{ flex: 1 }} />
         {msg && <span style={{ color: 'var(--green)', fontSize: 13 }}>{msg}</span>}
-        <button className="btn" onClick={saveRoles}><i className="ti ti-device-floppy" />Lưu vai trò</button>
+        <button className="btn" onClick={() => saveRoles()}><i className="ti ti-device-floppy" />Lưu vai trò</button>
       </div>
       {err && <div className="err">{err}</div>}
 

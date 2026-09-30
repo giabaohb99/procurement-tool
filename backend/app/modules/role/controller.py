@@ -104,8 +104,10 @@ def set_permissions(
 ):
     #  Cửa sau thứ ba của tự nâng quyền: không đụng tới tài khoản nào cả, chỉ
     #  tick thêm ô vào ma trận của CHÍNH vai trò mình đang giữ. Xem
-    #  `core/privilege_escalation.py`.
+    #  `core/privilege_escalation.py`. Quản trị hệ thống được miễn L1 (bao-CR-523).
     privilege_escalation.block_edit_own_role(db, rid, user)
+    #  bao-CR-523: vai trò `admin` luôn FULL — bản nào làm hụt dù một ô cũng 400.
+    privilege_escalation.block_admin_role_reduction(db, rid, data.permissions)
     privilege_escalation.block_privilege_escalation(
         db, user, privilege_escalation.permissions_in_matrix(data.permissions))
     service.set_permissions(db, rid, data, user.id)

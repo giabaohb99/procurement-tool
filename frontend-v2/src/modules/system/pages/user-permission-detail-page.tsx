@@ -12,6 +12,7 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { cn } from '@/shared/utils/cn'
 import { UserScopeDialog } from '../components/user-scope-dialog'
 import { useRoles } from '@/modules/hr/hooks/use-roles'
@@ -20,6 +21,10 @@ import {
   useSetUserNotifyEmail,
   useUserAccount,
 } from '@/modules/hr/hooks/use-user-accounts'
+import {
+  holdsSystemAdminRole,
+  readSelfAdminRemovalQuestion,
+} from '@/modules/hr/utils/system-admin-role'
 
 /**
  * Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản.
@@ -48,7 +53,11 @@ export function UserPermissionDetailPage() {
   //  KHÔNG TỰ SỬA QUYỀN CỦA CHÍNH MÌNH — chốt hai người. Backend chặn ở
   //  `core/privilege_escalation.py`; ở đây khóa luôn giao diện để người dùng
   //  thấy LUẬT chứ không tick xong rồi ăn 403 và tưởng hệ hỏng (CR-158).
+  //  bao-CR-523: Quản trị hệ thống được MIỄN — họ tự sửa được, riêng việc tự bỏ
+  //  vai trò Quản trị thì backend trả 409 và trang hỏi lại (xem `saveRoles`).
   const isSelf = !!currentUser && currentUser.id === userId
+  const isSystemAdmin = holdsSystemAdminRole(roles, currentUser?.role_ids)
+  const selfLocked = isSelf && !isSystemAdmin
 
   // Đổi sang tài khoản khác thì mọi thứ tick dở không còn nghĩa gì. Route param
   // đổi mà component KHÔNG mount lại, nên vẫn cần nhịp này.
@@ -105,8 +114,30 @@ export function UserPermissionDetailPage() {
 
   // Lưu xong thì bản của máy chủ mới là bản chuẩn — bỏ nháp đi để lượt nạp lại
   // ngay sau đó (do `invalidateQueries`) hiện ra.
-  const saveRoles = () =>
-    assignRoles.mutate(selectedRoleIds, { onSuccess: () => setDraftRoleIds(null) })
+  //
+  // bao-CR-523: quản trị TỰ bỏ vai trò Quản trị của mình thì backend trả 409 kèm
+  // câu hỏi. Hiện nguyên câu đó trong hộp xác nhận; đồng ý thì gửi lại đúng tập
+  // vai trò ấy kèm cờ. 400 «phải còn ít nhất một quản trị» không vào nhánh này —
+  // hook đã toast, hỏi lại cũng vô ích.
+  const saveRoles = (confirmSelfAdminRemoval = false) => {
+    const roleIds = selectedRoleIds
+    assignRoles.mutate(
+      { roleIds, confirmSelfAdminRemoval },
+      {
+        onSuccess: () => setDraftRoleIds(null),
+        onError: async (error) => {
+          const question = readSelfAdminRemovalQuestion(error)
+          if (question === null || confirmSelfAdminRemoval) return
+          const agreed = await confirm({
+            title: 'Tự bỏ vai trò Quản trị hệ thống',
+            message: question,
+            confirmLabel: 'Tiếp tục lưu',
+          })
+          if (agreed) saveRoles(true)
+        },
+      },
+    )
+  }
 
   const scopeRoleName = roles?.find((role) => role.id === scopeRoleId)?.name ?? ''
   // `undefined` (hệ chưa chạy migration) = vẫn đang nhận — xem `UserAccount.notify_email`.
@@ -124,8 +155,8 @@ export function UserPermissionDetailPage() {
 
         <PermissionGate entity="user" action="write">
           <Button
-            onClick={saveRoles}
-            disabled={assignRoles.isPending || isSelf}
+            onClick={() => saveRoles()}
+            disabled={assignRoles.isPending || selfLocked}
           >
             {assignRoles.isPending ? <Loader2 className="animate-spin" /> : <Save />}
             Lưu vai trò
@@ -141,11 +172,19 @@ export function UserPermissionDetailPage() {
         </p>
       </div>
 
-      {isSelf && (
+      {selfLocked && (
         <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           Đây là tài khoản của chính bạn nên chỉ xem được. Đổi quyền của mình phải
           nhờ một quản trị khác — chốt hai người của phân quyền, tránh việc một
           người tự nâng mình lên quản trị hệ thống bằng một lần bấm.
+        </p>
+      )}
+
+      {isSelf && isSystemAdmin && (
+        <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Đây là tài khoản của chính bạn. Là Quản trị hệ thống nên bạn được tự sửa
+          vai trò và phạm vi của mình — cẩn thận khi bỏ vai trò Quản trị hệ thống:
+          lưu xong bạn mất quyền quản trị ngay.
         </p>
       )}
 
@@ -176,7 +215,7 @@ export function UserPermissionDetailPage() {
                 <label className="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-3">
                   <Checkbox
                     checked={checked}
-                    disabled={isSelf}
+                    disabled={selfLocked}
                     onCheckedChange={() => toggleRole(role.id)}
                   />
                   <span className="truncate font-medium text-navy">{role.name}</span>
@@ -190,7 +229,7 @@ export function UserPermissionDetailPage() {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    disabled={isSelf}
+                    disabled={selfLocked}
                     onClick={() => setScopeRoleId(role.id)}
                   >
                     <Filter />

@@ -235,14 +235,10 @@ def delete_user(db: Session, user_id: int, actor_id: int) -> None:
                                  "chỉ xóa được tài khoản mồ côi. Hãy khóa tài khoản, "
                                  "hoặc xóa hồ sơ nhân sự trước rồi xóa tài khoản.")
 
-    from app.modules.role.model import Role
-    admin_role = db.query(Role).filter(Role.code == "admin").first()
-    if admin_role and db.query(UserRole).filter(UserRole.user_id == user_id,
-                                                UserRole.role_id == admin_role.id).first():
-        others = db.query(UserRole).filter(UserRole.role_id == admin_role.id,
-                                           UserRole.user_id != user_id).count()
-        if others == 0:
-            raise HTTPException(400, "Đây là tài khoản quản trị duy nhất, không thể xóa")
+    #  bao-CR-523: đếm quản trị ĐANG HOẠT ĐỘNG còn lại, không đếm cả tài khoản đã
+    #  khóa — xóa người cuối cùng còn mở khóa là hệ mất đường vào màn Phân quyền.
+    from app.core.privilege_escalation import block_last_admin_loss
+    block_last_admin_loss(db, user_id)
 
     refs = user_data_refs(db, user_id)
     if refs:

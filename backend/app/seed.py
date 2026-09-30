@@ -11,7 +11,7 @@ from app.core.auth import hash_password
 from app.core.base_model import Base
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
-from app.core.permissions import ENTITIES
+from app.core.permissions import ACTIONS, ENTITIES
 
 # Import tất cả model để metadata biết các bảng
 from app.modules.attachment.model import FileLink, StoredFile  # noqa: F401
@@ -963,7 +963,16 @@ def ensure_admin_role(db):
     """Vai trò 'admin' (quản trị hệ thống) + quyền đầy đủ cho MỌI entity.
 
     CỐ Ý chạy mỗi lần khởi động: đây là vai trò "chìa khóa dự phòng" — không được để phân hệ mới
-    ra đời mà admin hệ thống không vào được. Chỉ THÊM entity còn thiếu, KHÔNG sửa dòng có sẵn."""
+    ra đời mà admin hệ thống không vào được.
+
+    ⚠️ NGOẠI LỆ CÓ CHỦ ĐÍCH của D-018 «seed không ghi đè phân quyền» — CHỈ cho vai trò `admin`
+    (bao-CR-523, khách chốt 30/09/2026): vai trò Quản trị hệ thống LUÔN FULL mọi
+    `ENTITIES × ACTIONS`, phạm vi `all`. Nên ngoài việc THÊM entity còn thiếu, hàm này còn
+    ÉP LẠI những dòng có sẵn bị bỏ tick / thu hẹp phạm vi (prod 30/09: 70 dòng cho 72 entity,
+    chỉ 64 dòng đủ). Cửa ghi ma trận (`privilege_escalation.block_admin_role_reduction`) đã chặn
+    làm hụt từ giao diện; bước này dọn phần lệch có từ trước và phần lệch do sửa tay dưới DB.
+    Vai trò khác — kể cả `ADMINISTRATOR` đời cũ — vẫn giữ luật cũ: chỉ THÊM, không sửa dòng có sẵn.
+    """
     admin_role = db.query(Role).filter(Role.code == "admin").first()
     if not admin_role:
         admin_role = Role(code="admin", name="Quản trị hệ thống")
@@ -972,15 +981,26 @@ def ensure_admin_role(db):
         db.refresh(admin_role)
     fill_role_description(db, admin_role, "admin")
 
+    full_flags = {f"can_{action}": True for action in ACTIONS}
     for _ar in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all():
-        existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == _ar.id).all()}
+        rows = db.query(Permission).filter(Permission.role_id == _ar.id).all()
+        existing = {p.entity for p in rows}
         for entity in ENTITIES:
             if entity not in existing:
-                db.add(Permission(
-                     role_id=_ar.id, entity=entity, can_read=True, can_create=True,
-                     can_write=True, can_delete=True, can_approve=True, can_cancel=True,
-                     can_print=True, can_export=True, scope="all",
-                ))
+                db.add(Permission(role_id=_ar.id, entity=entity, scope="all", **full_flags))
+        if _ar.code != "admin":
+            continue
+        repaired = 0
+        for p in rows:
+            if p.entity not in ENTITIES:
+                continue
+            if p.scope != "all" or not all(getattr(p, key) for key in full_flags):
+                for key in full_flags:
+                    setattr(p, key, True)
+                p.scope = "all"
+                repaired += 1
+        if repaired:
+            print(f"Vai trò Quản trị hệ thống: ép lại đủ quyền cho {repaired} dòng bị làm hụt.")
     db.commit()
     return admin_role
 

@@ -11,7 +11,9 @@ Khác `app/seed.py` (bản đầy đủ, dùng cho LOCAL):
 
 Việc nó làm — đúng phần tối thiểu để hệ thống chạy được:
   1. Vai trò 'admin' có đủ quyền cho MỌI entity (chìa khóa dự phòng khi ra phân hệ mới).
-     Chỉ thêm entity còn thiếu.
+     Thêm entity còn thiếu VÀ ép lại dòng có sẵn bị bỏ tick / thu hẹp phạm vi về FULL + `all`
+     — ngoại lệ có chủ đích của luật «không ghi đè» (D-018), CHỈ cho vai trò 'admin'
+     (bao-CR-523: vai trò Quản trị hệ thống luôn đủ mọi quyền). Xem `seed.ensure_admin_role`.
   2. Tạo vai trò chuẩn nào CHƯA có (STD_ROLES). Vai trò đã có thì GIỮ NGUYÊN quyền đang chạy.
   3. Tài khoản quản trị đầu tiên — chỉ khi DB chưa có tài khoản admin nào (cài mới).
   4. Tài khoản quản trị Help Center + 4 khung cấu hình trang chủ HDSD (insert-only).
@@ -76,7 +78,7 @@ def bootstrap_admin_account(db):
 def run():
     db = SessionLocal()
     try:
-        ensure_admin_role(db)          # 1
+        ensure_admin_role(db)          # 1 — ép 'admin' FULL mỗi lần deploy (bao-CR-523)
         seed_standard_roles(db)        # 2 — chỉ tạo vai trò còn thiếu
         force_resync_roles(db)         # no-op trừ khi SEED_FORCE_SYNC=true
         bootstrap_admin_account(db)    # 3
