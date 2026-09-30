@@ -9567,3 +9567,452 @@ app/layouts/module-topbar.tsx · shared/constants/query-keys.ts ·
 backend/app/modules/{report/service.py, report/controller.py, purchase_progress/controller.py,
 survey_progress/controller.py, survey/controller.py} · test/backend/test_bao_cao_dong_ycmh_tong_hop.py ·
 test/backend/test_tong_hop_bieu_do_tien_do_khao_sat.py
+
+## duoc-CR-482 | Phân hệ Báo cáo làm lại theo kiểu Haravan: chọn kỳ, so sánh kỳ, bảng «Xem theo», xuất Excel
+- status: xong
+- date: 2026-09-28
+Dựng một khung báo cáo dùng chung cho mọi phân hệ, rồi chuyển năm báo cáo Thu mua và trang Tổng quan
+sang khung đó. Người xem chọn kỳ bằng một nút duy nhất: bấm vào ra danh sách mốc (Hôm nay, 7 ngày,
+Tháng này, Quý này, Năm nay, Năm trước, Tùy chọn…), lịch hai tháng và ô «So sánh với» (kỳ trước, cùng
+kỳ năm trước, không so sánh). Mặc định mở ra là Tháng này so với tháng trước. Kỳ theo lịch so với đúng
+khoảng ngày tương ứng của kỳ trước (1–28/9 so với 1–28/8), biểu đồ tự gom theo ngày, tuần hoặc tháng
+tùy độ dài kỳ, và kỳ so sánh được dời lên cùng trục với kỳ này.
+
+Mỗi trang báo cáo gồm thẻ số có phần trăm so kỳ trước và đường xu hướng nhỏ, biểu đồ kỳ này đặt cạnh
+kỳ so sánh, các khối Top xếp theo tiền (không theo số dòng), và bảng «Xem theo» ngay trên trang: mỗi
+chỉ số một cột, dòng Tổng nổi bật mang nhãn tăng giảm, các dòng nhóm rê chuột mới thấy số kỳ trước,
+chỉ số tỷ lệ so theo điểm phần trăm. Kỳ không phát sinh gì thì trang chỉ hiện một thông báo kèm nút
+«Xem cả năm nay». Nút Xuất Excel gác đúng quyền xuất của bảng gốc. Mỗi báo cáo mới về sau chỉ cần khai
+một cấu hình khoảng ba mươi dòng.
+
+Phía máy chủ, năm đường tổng hợp nhận thêm kỳ và so sánh nhưng vẫn dùng chung bộ lọc và phạm vi dữ
+liệu với bảng gốc; khi không gửi kỳ thì trả đúng dạng cũ nên bảng gốc bên Thu mua không đổi. Thêm
+đường tổng hợp mới cho Báo cáo mua hàng: chi phí mua tính theo ngày phát sinh công nợ và được chia về
+bộ phận, nhà cung cấp, nhóm hàng qua đơn mua hàng liên quan; tên nhà cung cấp và nhân sự phụ trách
+bị chặn ngay ở máy chủ khi thiếu quyền xem đơn mua hàng, và phạm vi phòng ban được áp giống bảng gốc.
+Tiến độ mua hàng tính các chỉ số giao theo ngày nhận. Công nợ còn lại của kỳ trong quá khứ là số gần
+đúng vì hệ thống không lưu lịch sử số dư, trang có ghi chú nói rõ.
+
+Vá kèm khi rà mã: tệp Excel xuất ra bị chèn công thức nếu tên bắt đầu bằng dấu bằng (vá ở chỗ xuất
+dùng chung nên mọi tệp Excel của hệ đều được che); ngày xử lý trung bình của Tiến độ báo giá bị nhân
+một trăm lần. Còn một lỗ cũ chưa vá trong đợt này: đường `/api/reports/procurement` cũ vẫn trả tên
+nhà cung cấp cho mọi người có quyền xem báo cáo.
+
+Việc còn chờ: đại ca chốt các câu hỏi trước khi làm tiếp báo cáo Nhân sự, Hành chính, Công việc
+(xem mục câu hỏi còn mở trong kế hoạch).
+
+Mã nguồn: backend/app/core/{report_period, report_aggregate, report_compute, report_export,
+export_xlsx}.py · backend/app/modules/report/{summary_controller, procurement_summary_service,
+procurement_summary_rows, procurement_grouped_rows, pr_lines_period_service}.py ·
+purchase_progress/summary_service.py · survey_progress/summary_service.py ·
+survey/{report_summary_service, report_grouped_fetch}.py · frontend-v2/src/modules/report/** ·
+shared/ui/{toggle, toggle-group, horizontal-bar-chart, date-range-picker}.tsx ·
+test/backend/test_bao_cao_{khung_ky_so_sanh, khung_gom_nhom_va_xuat, thu_mua_theo_ky}.py
+Kế hoạch: plans/260928-0841-bao-cao-kieu-haravan-da-phan-he/
+
+## duoc-CR-483 | Tăng tốc năm đường tổng hợp báo cáo và chịu được dữ liệu gấp năm mươi lần
+- status: xong
+- date: 2026-09-28
+Đo trên máy thì Báo cáo khảo sát chậm nhất: chọn Tháng này vẫn kéo toàn bộ hơn bảy nghìn dòng khảo
+sát từ trước tới nay rồi mới lọc, và mỗi dòng còn chép kèm nguyên phiếu. Báo cáo mua hàng thì nạp
+nguyên bản ghi đơn mua hàng ba bốn lần cho một lần xem. Đã đưa điều kiện lọc kỳ xuống câu truy vấn,
+chỉ lấy đúng các cột cần, gom kỳ này và kỳ so sánh vào một lượt đọc, và thêm bốn chỉ mục cho các cột
+ngày dùng để lọc kỳ.
+
+Sau đó thử tải bằng một cơ sở dữ liệu tạm dựng riêng, nhân dữ liệu lên mười lần và năm mươi lần trong
+cùng khoảng ngày (xóa sạch sau khi đo, cơ sở dữ liệu thật chỉ bị đọc). Ở năm mươi lần, Báo cáo khảo
+sát kỳ Năm nay mất mười tám giây, còn kỳ ba năm làm tràn bộ nhớ hai gigabyte và bị hệ điều hành giết
+tiến trình. Đã chuyển phần cộng dồn của Báo cáo khảo sát sang để cơ sở dữ liệu cộng sẵn theo ngày và
+theo nhóm, nên số dòng trả về không còn tăng theo dữ liệu: kỳ Năm nay còn khoảng nửa giây, kỳ ba năm
+khoảng bốn phần mười giây và không còn tràn bộ nhớ. Báo cáo mua hàng ở mức năm mươi lần từ một phẩy
+hai giây xuống khoảng bảy phần mười giây. Kết quả trả về được so từng số với bản chụp trước khi sửa
+trên ba trăm chín mươi sáu tổ hợp tham số và ba tài khoản, giống hệt.
+
+Giới hạn còn lại: Báo cáo khảo sát khi có gõ ô tìm kiếm vẫn cộng theo từng dòng; giá trị đặt hàng và
+số đơn của Báo cáo mua hàng vẫn cộng ở máy chủ ứng dụng để giữ số tiền khớp tuyệt đối.
+
+Mã nguồn: backend/app/modules/survey/{service, report_grouped_fetch, report_summary_service}.py ·
+backend/app/modules/report/{procurement_summary_rows, procurement_grouped_rows}.py ·
+purchase_progress/summary_service.py · test/backend/test_bao_cao_{khao_sat_gom_o_sql, mua_hang_gom_o_sql}.py
+Migration: 5f39bbc564db (bốn chỉ mục: request_date của yêu cầu mua hàng và yêu cầu báo giá, contact_date
+của hai bảng dòng khảo sát). Deploy phải chạy `alembic upgrade head`.
+
+## duoc-CR-484 | Tài liệu Văn bản: sơ đồ quy trình và trạng thái theo vai trò, gộp thư mục vào bộ tài liệu Văn bản
+- status: xong
+- date: 2026-09-29
+Bổ sung ba sơ đồ theo vai trò cho bộ tài liệu phân hệ Văn bản: quy trình văn bản chia làn theo vai
+trò, trạng thái văn bản với màu mũi tên là vai trò bấm nút, và cây thư mục theo vai trò. Vai trò lấy
+đúng tên ở màn Phân quyền (Nhân sự, Văn bản — chỉ xem, Văn bản — soạn & sửa, Văn thư pháp nhân con,
+Quản trị hệ thống). Theo yêu cầu của đại ca, mỗi làn gắn một tài khoản mẫu có sẵn trên hệ thống thử
+kèm bộ quyền của vai trò: DEMO_STAFF, DEMONV, DEMOTP, DEMO_MANAGER, VTAGRIPLANT, DEGO0001.
+
+Mô tả luồng nghiệp vụ Văn bản: thêm cột vai trò ở mục Các bên tham gia và bảng Chuyển trạng thái,
+thêm bảng quyền của từng vai trò ở mục 21, thêm Phần VIII (luồng theo vai trò: quy trình × vai trò,
+trạng thái × vai trò, việc của từng vai trò, lưu ý khi giao vai trò) và Phần IX (thư mục theo vai
+trò, chín quy trình thư mục ai làm, luồng thư mục của từng vai trò). Hướng dẫn sử dụng Văn bản: thêm
+bảng đọc theo vai trò ở đầu tài liệu, hai sơ đồ theo vai trò ở mục 5, bảng vai trò mục 35 có thêm tài
+khoản mẫu và quyền cây thư mục, và Phần VII mới gộp hướng dẫn thư mục chia theo vai trò (mục 36–43);
+Hỏi đáp dời thành Phần VIII mục 44. Hai tài liệu thư mục riêng vẫn giữ theo ý đại ca; sửa một câu cũ
+ghi cây sâu 7 cấp thành 100 cấp.
+
+Phát hiện khi làm: toàn bộ ảnh trong thư mục hinh/ đã mất khỏi ổ đĩa (chưa từng được commit), bản PDF
+mô tả luồng Văn bản xuất ngày 28/09 chỉ còn biểu tượng ảnh vỡ. Đã lấy lại 86 ảnh chụp từ các bản PDF
+cũ còn nguyên và dựng lại sơ đồ từ nguồn HTML bằng script mới, rồi xuất lại cả năm tài liệu.
+Phát hiện thêm: vai trò mẫu Văn thư pháp nhân con không có quyền Cây thư mục; trên máy thử, vai trò
+Nhân sự và Trưởng phòng (duyệt PYC) đang được tick tay thêm quyền Văn bản nên tài khoản mẫu thấy nhiều
+nút hơn tài liệu — đã ghi chú trong tài liệu.
+
+Theo góp ý của đại ca, viết lại hai tài liệu mô tả luồng nghiệp vụ (Văn bản, Thư mục) bằng lời của
+người dùng cuối: bỏ ngày thay đổi và lịch sử, bỏ phần hệ thống tính bên trong (bảng 6 bước tính
+quyền và hình minh họa của nó), bỏ tên kỹ thuật; mục Câu hỏi còn mở chuyển ra ngoài tài liệu để đại
+ca quyết. Sơ đồ bản đồ 9 quy trình thêm dòng «Ai làm» cho từng quy trình; sơ đồ trạng thái theo vai
+trò vẽ lại có đường chính đánh số, nhánh đánh chữ, nhãn mũi tên ghi ai bấm.
+
+Rà lại toàn bộ năm tài liệu từng mục theo lời người dùng cuối (không chỉ sửa một chỗ): giải thích
+thuật ngữ một lần ở chỗ xuất hiện đầu, câu ngắn, bỏ lịch sử và cơ chế bên trong; tách danh sách số chú
+thích ảnh cho khớp số trên ảnh. Đối chiếu với mã nguồn thì sửa được mấy câu SAI: xóa thư mục còn văn
+bản là được (văn bản được chuyển đi); ô «Lưu vào thư mục» liệt kê mọi thư mục có quyền Đóng góp,
+không chỉ của công ty văn bản; vai trò mẫu Văn thư pháp nhân con không xem được cây thư mục. Bỏ
+«Rút phiếu» khỏi sơ đồ và tài liệu vì màn hình chưa có nút đó (backend có sẵn chức năng rút).
+
+Trung tâm hướng dẫn sử dụng: đóng gói lại HDSD Văn bản (1 bài gốc, 8 bài con, 70 ảnh), thêm bài
+«Văn bản — Thư mục văn bản theo vai trò»; bài Hỏi đáp giữ nguyên tiêu đề để đường dẫn không đổi.
+
+Theo góp ý tiếp của đại ca (tài khoản mẫu rải khắp hình nhìn rối), vẽ lại bốn sơ đồ theo vai trò
+và bản đồ quy trình: hình chỉ còn tên vai trò, bỏ tài khoản mẫu và dải quyền trên nhãn làn, nhãn
+mũi tên đổi thành «Người soạn: Gửi duyệt», «Người duyệt: Duyệt», «Quản trị: Bãi bỏ». Tài khoản mẫu
+chuyển xuống phần chữ thành câu ví dụ «tài khoản A giữ vai trò X, có quyền Y nên làm được Z»: mục 29
+của mô tả luồng thay bảng tài khoản mẫu bằng danh sách ví dụ; mỗi mục 32.x và 36.x bỏ mã tài khoản
+khỏi tiêu đề và mở đầu bằng một tình huống ví dụ. Hướng dẫn sử dụng sửa đoạn chữ đi kèm Hình 5, 6,
+59 cho khớp hình mới, cột «Tài khoản mẫu» đổi thành «Ví dụ». Xuất lại PDF, đóng gói và nạp lại
+Trung tâm hướng dẫn trên máy local.
+Đã chạy seed ở máy em; môi trường khác phải chạy lại seed_help_van_ban.py rồi reindex_help_rag.py.
+
+Mã nguồn: doc/huong-dan-su-dung/van-ban/mo-ta-luong-nghiep-vu-van-ban.md · huong-dan-su-dung-van-ban.md ·
+huong-dan-su-dung-thu-muc-van-ban.md · so-do/vai-tro-quy-trinh.html · so-do/vai-tro-trang-thai.html ·
+so-do/vai-tro-thu-muc.html · chup-so-do.py (mới) · xuat-tai-lieu.py · dong-goi-hdsd-cho-seed.py ·
+backend/scripts/help_van_ban/ · hinh/*.png · các tệp .html, .pdf xuất lại
+
+## duoc-CR-485 | Văn bản: nút «Rút về để sửa», loại không cần duyệt thì ban hành thẳng, nút Ban hành của người soạn không còn đòi quyền Duyệt
+- status: xong
+- date: 2026-09-29
+Ba lỗ tìm ra lúc rà tài liệu Văn bản với đại ca, đại ca bảo sửa luôn.
+
+Thứ nhất, người trình không tự rút được văn bản đang chờ duyệt: backend có sẵn chức năng rút nhưng
+màn hình chưa từng có nút. Nay dải thông báo đầu trang và mục Phê duyệt có nút «Rút về để sửa» cho
+đúng người trình, chỉ khi chưa ai duyệt, bắt ghi lý do; văn bản về Nháp.
+
+Thứ hai, ô «Cần duyệt» của loại văn bản chỉ để trưng: thẻ Người duyệt dự kiến báo không cần phê duyệt
+mà văn bản vẫn phải gửi duyệt. Theo đại ca chốt, loại tắt ô này (hiện chỉ có Biểu mẫu) bỏ hẳn chặng
+duyệt: màn văn bản bày nút «Ban hành» thay «Gửi duyệt», người soạn / người chịu trách nhiệm (hoặc
+người có quyền Duyệt) bấm là cấp số và có hiệu lực, vẫn qua đủ các chốt kiểm như khi gửi duyệt. Đường
+gửi duyệt cũ cố ý không bị chặn, vì cột này mặc định tắt, chặn thì loại nào quên tích sẽ mất luồng
+duyệt trong im lặng.
+
+Thứ ba, nút Ban hành ở trạng thái Chờ ban hành gọi đường duyệt nên đòi quyền Duyệt, người soạn thuộc
+vai trò «Văn bản — soạn & sửa» bấm vào bị từ chối. Cả hai ca nay đi qua một đường API mới chỉ đòi
+quyền Sửa và đúng người.
+
+Rà mã (code-review) xong vá thêm: ô «Cần duyệt» nay mặc định BẬT cho loại mới; văn bản đã từng gửi
+duyệt không ban hành thẳng được; đổi bản nháp sang loại không cần duyệt phải có quyền Duyệt; người có
+quyền Duyệt chỉ ban hành thay được văn bản nằm trong phạm vi Duyệt của mình; bản 2 trở đi chờ ban hành
+nay chỉ người soạn bấm được (trước đây ai có quyền Duyệt cũng bấm được); khóa hàng khi ban hành và chặn
+bấm đúp để khỏi cấp hai số hiệu; nút «Rút về để sửa» hiện cả khi phiếu duyệt đang kẹt.
+
+Kèm theo: câu giải thích «Quyền chung» trong hộp Chia sẻ thư mục viết lại bằng lời thường; tài liệu,
+sơ đồ và Trung tâm hướng dẫn cập nhật theo.
+
+Mã nguồn: backend/app/modules/document/{service.py (_check_ready_to_send, issue_without_approval),
+controller.py (/issue, _finish_issue), serializer.py} · backend/app/modules/approval/serializer.py ·
+frontend-v2/src/modules/document/{helpers/can-withdraw-approval.ts, components/document-withdraw-dialog.tsx,
+document-approval-banner.tsx, document-approval-tab.tsx, pages/document-detail-page.tsx,
+components/folder-share-dialog.tsx} · test/backend/test_ban_hanh_khong_can_duyet.py
+
+## duoc-CR-486 | Tra cứu thị trường: các thẻ trên màn chuyển thành menu con bên trái
+- status: xong
+- date: 2026-09-29
+Đại ca yêu cầu bỏ hàng thẻ trên màn Tra cứu thị trường và đưa từng thẻ thành một mục con trong menu
+trái. Nay mục «Tra cứu thị trường» sổ xuống các mục Danh sách, Biểu đồ, Nhà nhập khẩu, So sánh, Pháp
+lý, Thuế, Thuốc BVTV, Lịch sử nạp và Cấu hình; mỗi mục có đường dẫn riêng nên gửi link là mở đúng mục.
+
+Bộ lọc đang áp vẫn đi theo khi bấm sang mục khác trong menu, để người dùng không phải gõ lại. Link cũ
+dạng «?tab=» tự chuyển sang đường mới và giữ nguyên bộ lọc. Mục Cấu hình vẫn gác quyền như trước (sửa
+được cấu hình, hoặc chỉ xem được danh mục hóa chất); lúc viết bài kiểm tìm ra một lỗ — người chỉ có
+quyền xem danh mục hóa chất mà không xem được dữ liệu hải quan vẫn thấy mục Cấu hình — đã chặn luôn.
+
+Đã commit trên erp-v2, chưa lên dev/prod.
+
+Mã nguồn: frontend-v2/src/modules/procurement/config/customs-sections.ts (mới) ·
+routes.tsx · pages/customs-price-page.tsx · app/router/module-definition.ts (keepSearch, alsoReadable) ·
+module-visibility.ts · app/layouts/module-sidebar.tsx · shared/constants/app-routes.ts
+
+## duoc-CR-487 | Tra cứu thị trường: thêm mục «Thuốc BVTV» — danh mục 6.919 thuốc có phạm vi sử dụng, nạp tệp ngay trên màn
+- status: xong
+- date: 2026-09-29
+Dữ liệu cào ngày 28/09 từ danhmuc.thuocbvtv.com (dữ liệu EcoFarm của Cục BVTV) trước đây mới nằm ở
+tệp, chưa vào bảng nào. Nay đã lưu vào cơ sở dữ liệu: bảng danh mục thuốc BVTV sẵn có được mở rộng thêm
+số đăng ký, tình trạng hiệu lực, thời hạn đăng ký, hàm lượng, lĩnh vực, nhóm độc, nhóm kháng và đường
+dẫn nguồn, kèm một bảng con cho phạm vi sử dụng (cây trồng, dịch hại, liều lượng, thời gian cách ly,
+cách dùng). Theo đại ca chốt, dùng lại bảng cũ chứ không dựng bảng song song, giữ cả thuốc hết hiệu
+lực và mặc định chỉ lọc thuốc còn hiệu lực.
+
+Mục mới «Thuốc BVTV» cho tra theo tên thuốc, hoạt chất, công ty hoặc số đăng ký, lọc theo tình trạng
+và phân nhóm; bấm một dòng mở chi tiết và bảng phạm vi sử dụng. Người được nạp dữ liệu hải quan thấy
+thêm nút «Nạp danh mục», nhận tệp JSON hoặc Excel của bản cào; nạp là thay toàn bộ danh mục trong một
+lần, tệp hỏng thì danh mục cũ còn nguyên, xong thì gắn lại hoạt chất cho mọi dòng hàng hải quan.
+
+Script nạp danh mục từ phần mềm HaiQuan Manager thôi không nạp thuốc BVTV nữa, vì chạy lại nó sẽ xóa
+sạch các cột mới và toàn bộ phạm vi sử dụng.
+
+Rà mã (code-review) xong vá thêm: chèn dữ liệu theo lô thay vì từng dòng (nạp còn 2–3 giây, không
+còn nguy cơ đụng trần 120 giây của nginx); khóa để hai người không nạp cùng lúc; tệp không có dòng phạm
+vi sử dụng nào (hoặc tệp Excel thiếu sheet phạm vi) bị từ chối thay vì lặng lẽ xóa sạch phạm vi đang
+có; đếm trần số dòng ngay lúc đọc tệp để tệp nhầm không làm tràn bộ nhớ máy chủ; đường dẫn nguồn chỉ
+nhận http/https; đang nạp thì không đóng được hộp thoại.
+
+Đã nạp thử đủ 6.919 thuốc và 15.309 dòng phạm vi trên máy em, qua cả tệp JSON lẫn Excel. Đã commit trên erp-v2,
+chưa lên dev/prod — lên rồi phải chạy migration và bấm «Nạp danh mục» một lần, vì bảng ở đó đang rỗng.
+
+Mã nguồn: backend/app/modules/customs/{model.py, constants.py (PesticideStatus), pesticide_reader.py,
+pesticide_service.py, pesticide_controller.py} · backend/app/core/action_catalog.py (catalog_import) ·
+backend/scripts/load_customs_catalogs.py · frontend-v2/src/modules/procurement/components/customs/
+customs-pesticide-*.tsx
+Tham chiếu: migration a7c3e91d5b20 · test/backend/test_hai_quan_thuoc_bvtv.py · tệp nguồn
+plans/260928-1553-thuoc-bvtv-danh-muc/
+
+## duoc-CR-488 | Tra cứu thị trường: tách «Pháp lý & thuế» thành hai mục, mục «Pháp lý» có bảng xem cả danh mục hóa chất
+- status: xong
+- date: 2026-09-29
+Đại ca muốn pháp lý thành một mục riêng trong menu Tra cứu thị trường. Trước đây mục «Pháp lý & thuế»
+chỉ cho gõ từng tên hóa chất để tra, không có chỗ nào xem được cả danh sách. Nay mục «Pháp lý» là một
+bảng xem được toàn bộ danh mục hóa chất theo văn bản — hoạt chất thuốc BVTV bị cấm theo Thông tư
+75/2025, các phụ lục của Nghị định 24/2026 (phụ lục IV có ngưỡng khối lượng) và hóa chất phải công bố
+theo lô theo Thông tư 01/2026 — tìm được theo tên, số CAS hoặc công thức hóa học, lọc theo từng văn
+bản. Cảnh báo cho từ khóa đang tra ở màn danh sách vẫn hiện trên đầu mục này.
+
+Phần tra biểu thuế theo mã HS tách thành mục «Thuế». Link cũ trỏ vào mục pháp lý vẫn mở đúng mục
+Pháp lý. Cùng đợt, thanh công cụ của mục Thuốc BVTV được sắp lại thành một hàng như mọi màn danh sách.
+
+Lưu ý: trên máy em danh mục hóa chất đang rỗng (dữ liệu nạp từ phần mềm HaiQuan Manager, không nằm
+trong mã nguồn), nên mục Pháp lý ở máy em hiện câu «chưa có danh mục»; trên môi trường đã nạp thì
+bảng có dữ liệu. Đã commit trên erp-v2, chưa lên dev/prod.
+
+Mã nguồn: backend/app/modules/customs/regulation_browse_service.py (mới) · controller.py
+(/regulations, /regulations/options) · frontend-v2/src/modules/procurement/components/customs/
+{customs-regulation-tab, customs-regulation-alert-table, customs-tariff-tab}.tsx ·
+config/customs-regulation-columns.tsx · config/customs-sections.ts
+Tham chiếu: test/backend/test_hai_quan_phap_ly_duyet.py
+
+## duoc-CR-489 | Tra cứu thị trường: đối chiếu hai chiều danh mục thuốc BVTV với danh sách hoạt chất cấm TT 75/2025
+- status: xong
+- date: 2026-09-29
+Đại ca muốn hai mục «Thuốc BVTV» và «Pháp lý» nói chuyện với nhau. Nay mục Thuốc BVTV có thêm cột
+«Hoạt chất cấm» và ô lọc «Có hoạt chất cấm»; thuốc nào chứa hoạt chất nằm trong danh sách cấm thì
+hộp chi tiết hiện khung cảnh báo đỏ kèm số CAS, năm cấm và văn bản. Chiều ngược lại, mỗi hoạt chất
+cấm ở mục Pháp lý có cột «Thuốc BVTV chứa» đếm số thuốc trong danh mục đang chứa nó; bấm vào số mở
+danh sách các thuốc đó (tính cả thuốc hết hiệu lực), bấm tiếp một thuốc mở chi tiết.
+
+Trước khi làm em đã báo đại ca: dò khoảng 25 hoạt chất cấm quen thuộc trong bản cào 28/09 đều ra 0,
+vì nguồn đã bỏ hẳn thuốc cấm. Kết quả bình thường vì vậy là 0 — đại ca chốt vẫn làm, coi đây là bước
+kiểm chéo: danh mục có lọt thuốc cấm thì màn hình báo. Lọc «Có hoạt chất cấm» mà rỗng thì màn hình
+nói thẳng là không thuốc nào chứa hoạt chất cấm, không bảo người dùng thử bỏ lọc.
+
+Hai danh mục không có khóa chung (danh mục thuốc không có số CAS) nên khớp bằng tên hoạt chất, và
+khớp NGUYÊN TÊN: danh mục có 10 thuốc chứa Chlorpyrifos methyl (không cấm), khớp theo từ đầu thì
+cả 10 bị gắn cờ oan vì thứ bị cấm là Chlorpyrifos ethyl. Chỉ nới cho đuôi muối / dạng chế phẩm
+(Paraquat dichloride vẫn là Paraquat). Màn hình ghi rõ kết quả chỉ để tham khảo. Chưa nạp danh sách
+cấm hoặc chưa nạp danh mục thuốc thì màn hình nói ra chứ không hiện số 0 dễ đọc thành «đã kiểm, sạch».
+
+Không lưu thành cột: danh sách cấm sửa được ở mục Cấu hình, lưu sẵn là lệch ngay khi có người sửa.
+Mỗi lần quét cả danh mục mất 36–62 mili giây trên 6.919 thuốc. Đã chạy thử trên MySQL ở máy em
+(thêm tạm hoạt chất rồi rollback): số trên màn Pháp lý bằng đúng số dòng của danh sách nó mở ra.
+Đã commit trên erp-v2, chưa lên dev/prod.
+
+Mã nguồn: backend/app/modules/customs/banned_ingredient_match.py (mới) · pesticide_service.py ·
+pesticide_controller.py (banned_only, banned_regulation_id) · regulation_browse_service.py
+(pesticide_count) · frontend-v2/src/modules/procurement/components/customs/
+customs-banned-pesticide-dialog.tsx (mới) · customs-pesticide-{tab,detail-dialog}.tsx ·
+customs-regulation-tab.tsx · config/customs-{pesticide,regulation}-columns.tsx
+Tham chiếu: test/backend/test_hai_quan_doi_chieu_hoat_chat_cam.py
+
+## duoc-CR-490 | Tra cứu thị trường: thêm / sửa / xóa thuốc BVTV có phân quyền riêng, nạp lại giữ thuốc tự thêm, đồng bộ sang giao diện cũ
+- status: xong
+- date: 2026-09-29
+Đại ca yêu cầu danh mục thuốc BVTV có đủ thêm, sửa, xóa kèm phân quyền, và giao diện cũ (thumua)
+cũng phải có như bản mới. Đại ca chốt ba điều: dùng khóa quyền mới «Danh mục thuốc BVTV (hải
+quan)» (`customs_pesticide`) chứ không dùng chung khóa tra cứu; nạp lại danh mục thì GIỮ thuốc
+người dùng tự thêm; giao diện cũ đồng bộ cả mục Thuốc BVTV lẫn việc tách «Pháp lý & thuế» thành
+hai thẻ, nhưng giữ hàng thẻ như cũ chứ không đổi sang menu con.
+
+Xem danh mục vẫn theo quyền xem Tra cứu thị trường. Khóa mới gác thêm, sửa, xóa từng thuốc và nút
+«Nạp danh mục» (trước đây nút này đi theo quyền nạp tờ khai hải quan). Khóa mới nằm trong nhóm
+không tự cấp cho Quản lý thu mua, nên trên hệ đang chạy phải tick tay ở màn Phân quyền, và người
+đang đăng nhập phải đăng xuất rồi đăng nhập lại mới thấy nút.
+
+Thuốc tự thêm được đánh dấu bằng một cột riêng chứ không dựa vào mã nguồn bằng 0, vì bộ đọc tệp
+cũng cho 0 khi dòng nguồn thiếu mã — dựa vào đó thì dòng ấy nhân đôi sau mỗi lần nạp. Sửa một thuốc
+lấy từ nguồn thì lần nạp sau ghi đè theo nguồn; màn sửa và hộp nạp đều nói rõ điều này, hộp nạp
+còn nói số thuốc tự thêm được giữ. Sửa tên hay hoạt chất không tự gắn lại nhãn cho mọi dòng hàng
+hải quan (khoảng 18 nghìn dòng trên prod), người dùng bấm «Gắn lại nhãn» ở mục Cấu hình khi cần.
+
+Cùng đợt: vá theo code-review của CR-489 — số thuốc chứa hoạt chất cấm trên màn Pháp lý có thể
+lệch danh sách nó mở ra khi hai tên cấm chồng nhau (Paraquat và Paraquat dichloride), và ba chỗ
+bóc tên hoạt chất làm sót thuốc cấm (hàm lượng viết cách «276 g/ l», mã dạng chế phẩm «20 SL»,
+ngoặc chứa dấu cộng, khoảng trắng không ngắt và ký tự α/β của font Symbol). Hộp nạp ghi trần tệp
+60 MB trong khi máy chủ chỉ nhận 30 MB, đã sửa về 30 MB.
+
+Đã chạy thử trên MySQL ở máy em: thêm một thuốc tay, nạp lại đủ 6.919 thuốc (1,5 giây), thuốc tay
+còn nguyên cả phạm vi sử dụng, xóa đi thì tổng về lại 6.919. Đã bấm tay trên trình duyệt cả hai giao
+diện: thêm thuốc (Enter trong ô không lưu nhầm, bấm đúp chỉ ra một bản ghi), xem cờ hoạt chất cấm,
+bấm số thuốc ở mục Pháp lý mở đúng danh sách, xóa có hộp xác nhận. Lúc bấm thử phát hiện cột «Thuốc
+BVTV chứa» nằm ngoài khung ở màn 1440px nên đã chuyển lên trước cột «Lưu ý». Đã commit trên erp-v2. Lên dev/prod phải chạy
+migration b4d81f2c6e37 và tick khóa mới cho vai trò cần sửa danh mục.
+
+Mã nguồn: backend/app/modules/customs/{pesticide_schema.py, pesticide_edit_service.py (mới),
+pesticide_service.py, pesticide_controller.py, banned_ingredient_match.py, model.py (is_manual)} ·
+backend/app/core/{permissions.py, scoping.py} · backend/app/seed.py (_SYS_ENTITIES) ·
+frontend-v2/src/modules/procurement/components/customs/customs-pesticide-{form-dialog,
+uses-editor}.tsx (mới) · utils/customs-pesticide-form.ts (mới) · frontend/src/pages/CustomsPrices.tsx
+Tham chiếu: migration b4d81f2c6e37 · test/backend/test_hai_quan_thuoc_bvtv_crud.py
+
+## duoc-CR-491 | Tra cứu thị trường (giao diện cũ): hàng thẻ trên màn đổi thành menu con bên trái như bản mới
+- status: xong
+- date: 2026-09-29
+Đại ca muốn giao diện cũ (thumua) giống bản mới: bỏ hàng thẻ trên màn Tra cứu thị trường, đưa từng
+thẻ thành một mục con trong menu trái. Nay mục «Tra cứu thị trường» sổ ra chín mục Danh sách, Biểu
+đồ, Nhà nhập khẩu, So sánh, Pháp lý, Thuế, Thuốc BVTV, Lịch sử nạp và Cấu hình khi đang ở trong màn
+đó; mỗi mục có đường dẫn riêng nên gửi link là mở đúng mục, đường lạ thì về Danh sách. Bộ lọc đang
+áp vẫn giữ khi bấm sang mục khác. Mục Cấu hình vẫn gác quyền như trước (quản lý dữ liệu hải quan
+hoặc xem được danh mục hóa chất), menu và trang dùng chung một hàm gác nên không lệch nhau.
+
+Đã bấm tay trên trình duyệt: menu con sáng đúng mục, gõ «atrazine» rồi sang Biểu đồ và quay lại
+Danh sách vẫn còn từ khóa, mở thẳng đường của mục Thuốc BVTV thì vào đúng mục. Cùng đợt sửa mã CR
+«bao-CR-503» mà agent tự đặt trong chú thích các tệp của CR-490 thành duoc-CR-490. Đã commit trên erp-v2.
+
+Mã nguồn: frontend/src/config/customs-sections.ts (mới) · frontend/src/layouts/AppLayout.tsx
+(NavParent, children) · frontend/src/pages/CustomsPrices.tsx · frontend/src/App.tsx
+(customs-prices/:section?) · frontend/src/index.css (.nav-sub)
+
+## duoc-CR-492 | Thuốc BVTV (bản mới): hộp chi tiết thành trang riêng, bảng phạm vi có tiêu đề rõ, bỏ link nguồn
+- status: xong
+- date: 2026-09-29
+Đại ca góp ý hộp chi tiết thuốc BVTV: nút Sửa/Xóa chen giữa tiêu đề và thông tin, bảng dưới đáy
+không rõ là bảng gì, và không cần link «Xem trên danh mục nguồn». Đại ca chốt chuyển thành trang
+chi tiết riêng như các màn danh mục khác của bản mới. Nay bấm một thuốc là mở trang riêng: tiêu đề
+kèm tình trạng, nút Sửa và Xóa ở góc phải; thẻ «Thông tin đăng ký»; bảng «Phạm vi sử dụng» có tiêu
+đề ngay trên bảng kèm câu giải thích (cây trồng nào, dịch hại gì, liều lượng, thời gian cách ly);
+cuối trang là lịch sử thao tác. Trang nằm dưới mục menu Thuốc BVTV nên cùng quyền xem; Sửa/Xóa theo
+khóa quyền danh mục thuốc như trước.
+
+Bộ lọc của mục Thuốc BVTV chuyển lên đường dẫn (tên riêng, không đụng ô tìm dòng hàng) để bấm vào
+một thuốc rồi quay lại vẫn còn nguyên bộ lọc; bấm số thuốc ở mục Pháp lý cũng mở trang này và lùi
+về đúng mục Pháp lý. Giao diện cũ vẫn là hộp thoại nhưng cũng đã bỏ link nguồn và thêm câu giải
+thích cho bảng phạm vi. Đã bấm tay trên trình duyệt. Đã commit trên erp-v2.
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/customs-pesticide-detail-page.tsx (mới) ·
+components/customs/customs-pesticide-info-card.tsx (mới) · customs-pesticide-tab.tsx ·
+customs-banned-pesticide-dialog.tsx · routes.tsx · shared/constants/app-routes.ts; bỏ
+customs-pesticide-detail-dialog.tsx · frontend/src/components/customs/CustomsPesticideDetail.tsx
+
+## duoc-CR-493 | Thuốc BVTV (giao diện cũ): hộp chi tiết thành trang riêng, đồng bộ bản mới
+- status: xong
+- date: 2026-09-29
+Đại ca yêu cầu giao diện cũ (thumua) đổi theo bản mới: bấm một thuốc BVTV mở trang chi tiết riêng
+thay cho hộp thoại. Trang có nút quay lại, tên thuốc kèm tình trạng và nhãn «Tự thêm», nút Sửa và
+Xóa ở góc phải; thẻ «Thông tin đăng ký»; bảng «Phạm vi sử dụng» có tiêu đề và câu giải thích; cuối
+trang là lịch sử thao tác. Không còn link nguồn. Sửa vẫn mở hộp nhập như trước; thêm thuốc mới xong
+thì mở luôn trang của thuốc đó.
+
+Bộ lọc của mục Thuốc BVTV chuyển lên đường dẫn để quay lại từ trang chi tiết vẫn còn nguyên; bấm
+một thuốc trong danh sách mở từ mục Pháp lý cũng sang trang này và lùi về lại mục Pháp lý. Đã bấm
+tay trên trình duyệt. Đã commit trên erp-v2.
+
+Mã nguồn: frontend/src/pages/CustomsPesticideDetailPage.tsx (mới) · frontend/src/App.tsx
+(customs-prices/pesticides/:id) · components/customs/{CustomsPesticideTab, CustomsBannedPesticideModal,
+CustomsPesticideForm}.tsx; bỏ CustomsPesticideDetail.tsx
+
+## duoc-CR-494 | Thuốc BVTV: tải tệp đính kèm cho từng thuốc (nhãn, giấy chứng nhận đăng ký…), cả hai giao diện
+- status: xong
+- date: 2026-09-29
+Đại ca muốn mỗi thuốc BVTV có chỗ tải tệp lên. Nay trang chi tiết thuốc ở cả hai giao diện có thẻ
+tệp đính kèm, dùng lại đúng thẻ đính kèm chứng từ đang có ở màn Nhà cung cấp và Hợp đồng: kéo thả
+hoặc chọn tệp (PDF, ảnh, Word, Excel…, tối đa 50 MB), xếp theo mục, xem trước và tải về được. Ai
+xem được Tra cứu thị trường thì xem được tệp; tải lên và xóa tệp đòi khóa sửa danh mục thuốc.
+
+Bẫy chính đã chặn: trước đây mỗi lần «Nạp danh mục» thì thuốc lấy từ nguồn bị xóa rồi chèn lại với
+số hiệu mới, nên tệp đính kèm sẽ mất chủ ngay lần nạp sau. Nay lần nạp giữ nguyên số hiệu của thuốc
+vẫn còn trong nguồn (khớp theo mã của bản cào), và số hiệu cho thuốc mới luôn lớn hơn mọi số đã có,
+để một thuốc mới không bao giờ «nhận» tệp của thuốc đã bị bỏ. Thuốc không còn trong tệp nguồn mới,
+hoặc bị xóa tay, thì được dọn luôn tệp đính kèm; hộp nạp nói rõ điều này và báo số thuốc bị bỏ.
+
+Module đính kèm dùng chung được mở rộng một chỗ: một loại đính kèm được khai quyền XEM khác quyền
+SỬA (trước đây chỉ có một khóa cho cả hai), cả ở lớp quyền vai trò lẫn lớp phạm vi dữ liệu — nếu
+không người chỉ được xem thuốc sẽ bị chặn xem tệp oan. Đã thử trên trình duyệt: tải một tệp lên ở
+bản mới, nạp lại đủ 6.919 thuốc (3,1 giây) thì tệp vẫn gắn đúng thuốc, bản cũ cũng thấy tệp đó;
+tệp thử đã dọn. Đã commit trên erp-v2.
+
+Mã nguồn: backend/app/core/{file_registry.py (READ_PARENT, read_parent), attachment_scope.py} ·
+backend/app/modules/attachment/controller.py (_check) · backend/app/modules/customs/{pesticide_service.py
+(giữ id khi nạp), pesticide_edit_service.py} · frontend-v2/.../pages/customs-pesticide-detail-page.tsx ·
+customs-pesticide-import-dialog.tsx · frontend/src/pages/CustomsPesticideDetailPage.tsx ·
+frontend/src/components/customs/CustomsPesticideImportDialog.tsx
+Tham chiếu: test/backend/test_hai_quan_thuoc_bvtv_crud.py (phần tệp đính kèm)
+
+## duoc-CR-495 | Thuốc BVTV: hiện câu mô tả «tóm tắt sử dụng» như trang nguồn, cả hai giao diện
+- status: xong
+- date: 2026-09-29
+Đại ca thấy trang danh mục thuốc BVTV gốc có một câu mô tả cho từng thuốc («Thuốc trừ bệnh … hoạt
+chất …, sử dụng trên …, phòng trừ …, đăng ký bởi …») mà ERP chưa có. Bản cào đã có sẵn câu này ở cả
+tệp JSON lẫn tệp Excel (đủ 6.919 thuốc) nhưng bộ đọc tệp bỏ qua; nay lưu vào danh mục và hiện trong
+thẻ «Thông tin đăng ký» trên trang chi tiết, DƯỚI lưới thông tin, ngăn bằng một vạch mảnh, nhãn
+«Tóm tắt sử dụng» cùng kiểu các ô khác (đại ca chốt sau khi xem: không khung màu, không viền trái).
+Lưới thông tin cũng làm lại: nhãn nhỏ màu nhạt, giá trị đậm, ba cột trên màn rộng. Thuốc
+tự thêm có ô «Mô tả tóm tắt» trong form để người nhập tự viết.
+
+Cột mới gộp vào migration b4d81f2c6e37 (chưa lên môi trường nào). Trên máy em đã nạp lại danh mục để
+có câu mô tả. Đã commit trên erp-v2.
+
+Mã nguồn: backend/app/modules/customs/{model.py (summary), pesticide_reader.py, pesticide_schema.py,
+pesticide_service.py, pesticide_edit_service.py} · migration b4d81f2c6e37 ·
+frontend-v2/.../components/customs/{customs-pesticide-info-card, customs-pesticide-form-dialog}.tsx ·
+utils/customs-pesticide-form.ts · frontend/src/pages/CustomsPesticideDetailPage.tsx ·
+frontend/src/components/customs/CustomsPesticideForm.tsx · frontend/src/utils/customs-pesticide.ts
+
+## bao-CR-532 | Gộp pháp nhân DEGO bị trùng vào DEGO gốc rồi xóa bản trùng
+- status: xong
+- date: 2026-09-30
+- pic: NSU209
+Trong danh mục công ty có hai dòng cùng là Công ty TNHH DEGO Holding, cùng mã số thuế, và
+chứng từ đã bị chia đôi giữa hai dòng đó. Đại ca bảo bỏ dòng trùng, dồn hết dữ liệu về dòng
+gốc. Dòng gốc đã đủ địa chỉ, người đại diện nên không phải chép ô nào sang. Mã số của dòng
+trùng khác nhau giữa hai môi trường, nên công cụ tìm theo mã công ty chứ không theo số.
+
+Quy mô hai môi trường khác hẳn nhau. Trên máy thử chỉ có chín dòng dính dòng trùng: một nhân
+viên, một văn bản, một sổ văn bản, ba dòng nghỉ phép, một dòng phân quyền và một thư mục.
+Trên máy thật thì khoảng một nghìn ba trăm bốn mươi dòng chứng từ mua hàng đang dùng: phiếu
+nhập kho, tồn kho, công nợ, đơn mua hàng, yêu cầu mua hàng, yêu cầu thanh toán, yêu cầu báo
+giá, cộng ba dòng phân quyền và một thư mục.
+
+Em viết công cụ chạy thử được: chạy thật toàn bộ trong một giao dịch rồi hủy, nên số chạy thử
+chính là số thật. Nó tự dò mọi cột trỏ tới công ty chứ không gắn cứng danh sách bảng, bỏ qua
+các bảng nhật ký vì đó là lịch sử, và nếu cuối cùng còn sót một dòng trỏ vào bản trùng thì hủy
+cả đợt. Khi dò dữ liệu thật em tìm ra năm chỗ không thể chỉ đổi số: liên kết phòng ban với
+pháp nhân tự bị xóa theo nếu xóa công ty trước khi chuyển; phân quyền lưu số công ty dưới dạng
+chữ nên quét theo cột số không thấy; tồn kho là số tính ra từ các lần nhập xuất nên phải tính
+lại bằng chính hàm của hệ thống; mỗi pháp nhân chỉ được một thư mục gốc; và hàm ghi nhật ký tự
+chốt giao dịch, nếu gọi giữa chừng thì lần chạy thử trên máy thật sẽ thành xóa thật. Chỗ cuối
+cùng em bắt được trước khi chạy, đã tách ra và có bài kiểm canh, thử ngược thấy đỏ đúng.
+
+Trên máy thật em đã kiểm trước các điều kiện an toàn: tồn kho của dòng trùng khớp tuyệt đối
+với lịch sử nhập xuất, không mặt hàng nào có tồn ở cả hai công ty, cách đánh số phiếu không
+phụ thuộc công ty nên gộp xong không sinh số trùng, và ba dòng phân quyền đều đã có sẵn công ty
+gốc nên chỉ cần xóa, quyền không đổi.
+
+Máy thử đã gộp xong và kiểm lại từng dòng. Máy thật chạy thử trước, khớp đúng số dò; đại ca
+gật, em sao lưu toàn bộ cơ sở dữ liệu rồi mới ghi. Sau khi gộp, tổng số lượng và tổng giá trị
+tồn kho trước và sau khớp tuyệt đối, không còn dòng nào trỏ vào công ty trùng, quyền của mọi
+người không đổi, và các trang đều chạy bình thường.
+
+Mã nguồn: `backend/app/modules/company/merge_service.py`, `backend/scripts/merge_duplicate_company.py`,
+bài kiểm `test/backend/test_gop_cong_ty_trung_cr532.py` (13 bài).
+Deploy: dữ liệu dev + prod 30/09; sao lưu prod `procurement_truoc_cr532_20260930_1539.sql.gz`.
