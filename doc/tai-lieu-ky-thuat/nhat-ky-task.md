@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-533 | Vá các bài kiểm phạm vi đỏ sẵn, lộ ra hai lỗ phạm vi thật
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca giao qua Erp Agent 1: vá các bài kiểm phạm vi đang đỏ trên nhánh chung, soi từng chỗ chứ không
 nâng số cho xanh. Soi ra hai bài đỏ đều trỏ tới lỗ thật.
@@ -90,7 +90,10 @@ xem toàn công ty.
 
 Còn lại là việc sổ sách của bài kiểm: khai thêm một lần đọc hợp lệ ở phần đính kèm đơn nghỉ phép, sửa số
 dòng đã trôi, rút một tệp văn bản khỏi danh sách miễn trừ vì nó đã tự kiểm phạm vi, và sửa hai bài kiểm
-cũ dựng thiếu quyền. Hai mươi tệp kiểm liên quan chạy lại xanh hết. Chưa commit, Agent 1 gom đẩy.
+cũ dựng thiếu quyền. Hai mươi tệp kiểm liên quan chạy lại xanh hết. Erp Agent 1 đã commit và đẩy lên nhánh
+chung cùng ngày, chưa deploy dev.
+
+Commit: 98c9efff
 
 Mã nguồn: backend/app/modules/employee/controller.py · report/procurement_summary_service.py ·
 test_pham_vi_duong_vong.py · test_pham_vi_luat_bat_bien.py · test_pham_vi_nhan_su_hanh_chinh.py ·
