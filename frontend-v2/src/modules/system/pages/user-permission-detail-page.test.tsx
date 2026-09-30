@@ -17,14 +17,25 @@ vi.mock('@/core/api', () => ({
   apiPatch: vi.fn(),
   apiDelete: vi.fn(),
   httpClient: { put: (...args: unknown[]) => httpPut(...args) },
+  extractErrorMessage: (error: { response?: { data?: { error?: { message?: string } } } }) =>
+    error?.response?.data?.error?.message ?? 'Có lỗi xảy ra',
 }))
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+const toastError = vi.fn()
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: (...a: unknown[]) => toastError(...a) } }))
 
-//  Ai đang đăng nhập — trang khóa lại khi đó là tài khoản của chính họ.
+//  Hộp xác nhận toàn cục — trả lời hộ người dùng.
+const confirmMock = vi.fn()
+vi.mock('@/shared/ui/confirm-dialog', () => ({
+  confirm: (...args: unknown[]) => confirmMock(...args),
+}))
+
+//  Ai đang đăng nhập — trang khóa lại khi đó là tài khoản của chính họ, TRỪ
+//  khi họ giữ vai trò Quản trị hệ thống (bao-CR-523).
 let currentUserId = 99
+let currentRoleIds: number[] = []
 vi.mock('@/core/auth/use-auth', () => ({
-  useAuth: () => ({ user: { id: currentUserId } }),
+  useAuth: () => ({ user: { id: currentUserId, role_ids: currentRoleIds } }),
 }))
 
 //  Trang chỉ cần biết «được ghi» — chốt quyền thật nằm ở backend.
@@ -76,8 +87,23 @@ function build(queryClient = newQueryClient()) {
   return { queryClient, unmount }
 }
 
+const SILENT = { _silent: true }
+
+const SELF_ADMIN_QUESTION =
+  'Bạn đang tự bỏ vai trò Quản trị hệ thống của chính mình — sau khi lưu bạn sẽ mất ' +
+  'quyền quản trị, muốn lấy lại phải nhờ quản trị khác. Tiếp tục?'
+
+function httpError(status: number, message: string) {
+  return Object.assign(new Error(message), {
+    response: { status, data: { success: false, error: { code: String(status), message } } },
+  })
+}
+
 beforeEach(() => {
   currentUserId = 99
+  currentRoleIds = []
+  toastError.mockReset()
+  confirmMock.mockReset()
   apiGet.mockReset()
   httpPut.mockReset()
   httpPut.mockResolvedValue({ data: { success: true, message: 'Đã gán vai trò', data: null } })
@@ -117,7 +143,7 @@ describe('UserPermissionDetailPage', () => {
     expect(oDeptHead).toBeChecked()
 
     await nguoi.click(screen.getByRole('button', { name: /Lưu vai trò/ }))
-    expect(httpPut).toHaveBeenCalledWith('/api/users/31/roles', { role_ids: [2, 3] })
+    expect(httpPut).toHaveBeenCalledWith('/api/users/31/roles', { role_ids: [2, 3] }, SILENT)
   })
 
   it('nạp lại khi CHƯA tick gì thì vẫn ăn theo máy chủ', async () => {
@@ -180,5 +206,92 @@ describe('UserPermissionDetailPage', () => {
     expect(await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: /Lưu vai trò/ })).toBeDisabled()
     expect(screen.getByText(/chốt hai người/)).toBeInTheDocument()
+  })
+
+  it('quản trị hệ thống mở trang của chính mình thì sửa được', async () => {
+    //  bao-CR-523: backend miễn chốt hai người cho người giữ `admin`.
+    currentUserId = 31
+    currentRoleIds = [1, 2]
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/users/31' ? Promise.resolve(account([1, 2])) : Promise.resolve(ROLES),
+    )
+
+    build()
+
+    expect(await screen.findByRole('checkbox', { name: /Trưởng phòng/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Lưu vai trò/ })).toBeEnabled()
+    expect(screen.queryByText(/chốt hai người/)).not.toBeInTheDocument()
+  })
+
+  it('tự bỏ vai trò Quản trị: 409 thì hỏi lại, đồng ý thì gửi lại kèm cờ', async () => {
+    const nguoi = userEvent.setup()
+    currentUserId = 31
+    currentRoleIds = [1, 2]
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/users/31' ? Promise.resolve(account([1, 2])) : Promise.resolve(ROLES),
+    )
+    httpPut
+      .mockRejectedValueOnce(httpError(409, SELF_ADMIN_QUESTION))
+      .mockResolvedValueOnce({ data: { success: true, message: 'Đã gán vai trò', data: null } })
+    confirmMock.mockResolvedValue(true)
+
+    build()
+    await nguoi.click(await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ }))
+    await nguoi.click(screen.getByRole('button', { name: /Lưu vai trò/ }))
+
+    await vi.waitFor(() => expect(httpPut).toHaveBeenCalledTimes(2))
+    //  Câu hỏi lấy NGUYÊN từ backend; 409 là câu hỏi nên không bắn toast đỏ.
+    expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({ message: SELF_ADMIN_QUESTION }))
+    expect(toastError).not.toHaveBeenCalled()
+    expect(httpPut).toHaveBeenNthCalledWith(1, '/api/users/31/roles', { role_ids: [2] }, SILENT)
+    expect(httpPut).toHaveBeenNthCalledWith(
+      2,
+      '/api/users/31/roles',
+      { role_ids: [2], confirm_self_admin_removal: true },
+      SILENT,
+    )
+  })
+
+  it('tự bỏ vai trò Quản trị mà bấm Hủy thì không gửi lại', async () => {
+    const nguoi = userEvent.setup()
+    currentUserId = 31
+    currentRoleIds = [1, 2]
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/users/31' ? Promise.resolve(account([1, 2])) : Promise.resolve(ROLES),
+    )
+    httpPut.mockRejectedValueOnce(httpError(409, SELF_ADMIN_QUESTION))
+    confirmMock.mockResolvedValue(false)
+
+    build()
+    const oAdmin = await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ })
+    await nguoi.click(oAdmin)
+    await nguoi.click(screen.getByRole('button', { name: /Lưu vai trò/ }))
+
+    await vi.waitFor(() => expect(confirmMock).toHaveBeenCalledTimes(1))
+    expect(httpPut).toHaveBeenCalledTimes(1)
+    //  Nháp vẫn giữ nguyên để người dùng đổi ý tiếp.
+    expect(oAdmin).not.toBeChecked()
+  })
+
+  it('400 «phải còn ít nhất một quản trị» thì báo lỗi, không hỏi xác nhận', async () => {
+    const nguoi = userEvent.setup()
+    currentUserId = 31
+    currentRoleIds = [1, 2]
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/users/31' ? Promise.resolve(account([1, 2])) : Promise.resolve(ROLES),
+    )
+    httpPut.mockRejectedValueOnce(
+      httpError(400, 'Hệ thống phải còn ít nhất một quản trị đang hoạt động'),
+    )
+
+    build()
+    await nguoi.click(await screen.findByRole('checkbox', { name: /Quản trị hệ thống/ }))
+    await nguoi.click(screen.getByRole('button', { name: /Lưu vai trò/ }))
+
+    await vi.waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith('Hệ thống phải còn ít nhất một quản trị đang hoạt động'),
+    )
+    expect(confirmMock).not.toHaveBeenCalled()
+    expect(httpPut).toHaveBeenCalledTimes(1)
   })
 })

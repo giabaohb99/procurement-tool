@@ -70,6 +70,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-523 | Quản trị hệ thống tự sửa quyền của mình được, vai trò Quản trị luôn đủ mọi quyền
+- status: dang-lam
+- date: 2026-09-30
+Khách chốt ngày 30/09 rằng người giữ vai trò Quản trị hệ thống được tự sửa vai trò và phạm vi dữ
+liệu của chính mình, cũng như sửa ma trận quyền của vai trò mình đang giữ. Trước đây luật chống tự
+nâng quyền chặn cả quản trị, bắt họ đi nhờ người khác cho những việc vặt, trong khi quản trị vốn đã
+có mọi quyền. Người không phải quản trị vẫn bị chặn như cũ, và luật «không cấp thứ mình không có»
+vẫn giữ nguyên.
+
+Để khỏi tự khóa mình ra ngoài, khi quản trị tự bỏ vai trò Quản trị của chính mình thì hệ thống hỏi
+lại bằng một hộp xác nhận, đồng ý mới lưu. Hệ thống cũng không cho bất kỳ ai bỏ vai trò, khóa hay
+xóa tài khoản của quản trị đang hoạt động cuối cùng. Vai trò Quản trị hệ thống từ nay luôn đủ mọi
+quyền: màn phân quyền chỉ cho xem ma trận của vai trò này, hệ thống từ chối mọi lần lưu làm hụt, và
+mỗi lần deploy bước nạp dữ liệu ban đầu tự lấp lại những ô bị bỏ tick (trên prod hiện có 72 chức
+năng nhưng vai trò này chỉ đủ quyền ở 64). Trợ lý AI lập bộ tài khoản cũng cho quản trị tự thêm vai
+trò cho mình, nhưng từ chối hẳn việc bỏ vai trò Quản trị của chính người hỏi.
+
+Chưa làm: đường chuyển hồ sơ nhân sự sang Nghỉ việc vẫn khóa được tài khoản quản trị cuối cùng.
+
+Kiểm: 29 bài kiểm mới xanh; 17 tệp kiểm liên quan tới phân quyền có 575 bài xanh, 41 bài đỏ có sẵn
+từ trước và không dính việc này. Màn mới kiểm kiểu và kiểm quy tắc mã đều 0 lỗi, 819 bài phần nhân
+sự và quản trị xanh; màn cũ giữ đúng 4 lỗi nền. Đang ở máy em, chưa commit.
+
+Mã nguồn: `core/privilege_escalation.py` (`block_admin_role_removal`, `block_last_admin_loss`,
+`block_admin_role_reduction`) · `user/controller.py` · `role/controller.py` · `seed.py`
+(`ensure_admin_role`) · `account_setup_tool.py` · `hr/utils/system-admin-role.ts` ·
+`user-permission-detail-page.tsx` · `role-permission-page.tsx` · `UserPermissionDetail.tsx` ·
+`RolePermissions.tsx` · `test_quan_tri_tu_sua_quyen_cr523.py`
 ## bao-CR-526 | Tạo sẵn bộ vai trò thu mua theo phòng, chưa gán cho ai
 - status: dang-lam
 - date: 2026-09-30

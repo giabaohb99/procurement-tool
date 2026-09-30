@@ -16,6 +16,10 @@ class PasswordReset(BaseModel):
 
 class RoleAssign(BaseModel):
     role_ids: list[int]
+    #  bao-CR-523: quản trị TỰ bỏ vai trò Quản trị hệ thống của chính mình phải gửi
+    #  kèm cờ này = true. Thiếu cờ thì backend trả 409 kèm câu hỏi để giao diện
+    #  hiện hộp xác nhận rồi gửi lại. Mọi trường hợp khác cờ này không có tác dụng.
+    confirm_self_admin_removal: bool = False
 
 
 class ActiveUpdate(BaseModel):

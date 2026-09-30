@@ -86,9 +86,15 @@ def assign_roles(
     #  Ba chốt chống tự nâng quyền — xem `core/privilege_escalation.py`. Không có
     #  chúng thì bất kỳ ai có `user.write` tự phong quản trị hệ thống bằng đúng
     #  một lần bấm trên chính trang của mình (dựng lại được 25/08/2026).
-    privilege_escalation.block_edit_own_permissions(user_id, user)
+    #  bao-CR-523: truyền `db` để Quản trị hệ thống được miễn L1.
+    privilege_escalation.block_edit_own_permissions(user_id, user, db)
     privilege_escalation.block_missing_roles(db, data.role_ids)
     privilege_escalation.block_role_escalation(db, user, data.role_ids)
+    #  Bỏ vai trò Quản trị: 400 nếu hệ còn 0 quản trị đang hoạt động; tự bỏ của
+    #  chính mình mà thiếu `confirm_self_admin_removal` thì 409 để giao diện hỏi lại.
+    privilege_escalation.block_admin_role_removal(
+        db, user_id, user, data.role_ids,
+        confirm_self_removal=data.confirm_self_admin_removal)
     service.assign_roles(db, user_id, data, user.id)
     return success(None, "Đã gán vai trò")
 
@@ -106,6 +112,9 @@ def set_active(
         raise HTTPException(
             403, "Không tự khóa tài khoản của chính mình được — khóa xong bạn "
                  "không đăng nhập lại để mở ra được nữa.")
+    if not data.is_active:
+        #  bao-CR-523: khóa quản trị cuối cùng là cả hệ mất đường vào màn Phân quyền.
+        privilege_escalation.block_last_admin_loss(db, user_id)
     service.set_active(db, user_id, data.is_active, user.id)
     return success(None, "Đã mở khóa tài khoản" if data.is_active else "Đã khóa tài khoản")
 
@@ -158,6 +167,7 @@ def set_scope(user_id: int, role_id: int, data: ScopeUpdate, db: Session = Depen
               user=Depends(require("user", "write"))):
     _block_out_of_scope(db, user_id, user, "write")
     #  Phạm vi dữ liệu cũng là quyền: tự đặt cho mình `all` là thấy toàn bộ hệ.
-    privilege_escalation.block_edit_own_permissions(user_id, user)
+    #  Quản trị hệ thống được miễn (bao-CR-523).
+    privilege_escalation.block_edit_own_permissions(user_id, user, db)
     service.set_user_scope(db, user_id, role_id, data, user.id)
     return success(None, "Đã lưu phạm vi")

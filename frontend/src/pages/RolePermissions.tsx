@@ -108,6 +108,9 @@ export default function RolePermissions() {
   }
 
   const selRole = roles.find((r) => r.id === sel)
+  //  bao-CR-523: vai trò Quản trị hệ thống (mã `admin`) luôn đủ mọi quyền — chỉ xem, không lưu.
+  //  Backend từ chối mọi bản làm hụt (400) và seed ép lại FULL mỗi lần deploy.
+  const adminLocked = selRole?.code === 'admin'
 
   return (
     <div>
@@ -227,11 +230,16 @@ export default function RolePermissions() {
                   <div><b style={{ fontSize: 15 }}>{selRole.name}</b> <span style={{ color: 'var(--muted)', fontSize: 12 }}>({selRole.code})</span></div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     {msg && <span style={{ color: 'var(--green)', fontSize: 13, alignSelf: 'center' }}>{msg}</span>}
-                    <button className="btn" onClick={save}><i className="ti ti-device-floppy" />Lưu quyền</button>
+                    {!adminLocked && <button className="btn" onClick={save}><i className="ti ti-device-floppy" />Lưu quyền</button>}
                     <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={delRole}><i className="ti ti-trash" /></button>
                   </div>
                 </div>
                 {err && <div className="err">{err}</div>}
+                {adminLocked && (
+                  <div style={{ fontSize: 12.5, color: 'var(--navy)', background: 'var(--info-bg)', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
+                    Vai trò Quản trị hệ thống luôn đủ mọi quyền — ma trận này chỉ để xem.
+                  </div>
+                )}
                 <div className="items-scroll">
                   <table className="items-table" style={{ minWidth: 780 }}>
                     <thead>
@@ -246,15 +254,15 @@ export default function RolePermissions() {
                         <tr key={e.key}>
                           <td style={{ textAlign: 'left' }}>
                             {e.label}
-                            <span onClick={() => rowAll(e.key)} className="clickable" style={{ marginLeft: 6, fontSize: 10.5, color: 'var(--teal)' }}>tất cả</span>
+                            {!adminLocked && <span onClick={() => rowAll(e.key)} className="clickable" style={{ marginLeft: 6, fontSize: 10.5, color: 'var(--teal)' }}>tất cả</span>}
                           </td>
                           {actionKeys.map((a) => (
                             <td key={a} style={{ textAlign: 'center' }}>
-                              <input type="checkbox" checked={!!row(e.key)['can_' + a]} onChange={() => toggle(e.key, a)} style={{ width: 16, height: 16 }} />
+                              <input type="checkbox" checked={!!row(e.key)['can_' + a]} disabled={adminLocked} onChange={() => toggle(e.key, a)} style={{ width: 16, height: 16 }} />
                             </td>
                           ))}
                           <td>
-                            <select value={row(e.key).scope || 'own'} onChange={(ev) => setScope(e.key, ev.target.value)} style={{ height: 30, fontSize: 12.5 }}>
+                            <select value={row(e.key).scope || 'own'} disabled={adminLocked} onChange={(ev) => setScope(e.key, ev.target.value)} style={{ height: 30, fontSize: 12.5 }}>
                               {meta?.scopes.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                             </select>
                           </td>

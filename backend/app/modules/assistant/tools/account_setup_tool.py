@@ -22,6 +22,8 @@ Tool KHÔNG làm — cố ý, đừng nới:
 Quyền: chạy dưới danh tính người hỏi, đòi `user.write` (cửa ghi thật của màn Phân quyền)
 + `role.read` + `employee.read`; kiểm ở cả hai bước, tài khoản đích phải nằm trong phạm vi
 `user` của người hỏi (B-07), và L1/L2 của `privilege_escalation` áp y như bấm trên màn.
+Quản trị hệ thống được miễn L1 (bao-CR-523) nhưng tool TỪ CHỐI HẲN việc bỏ vai trò Quản trị
+của chính người hỏi (màn Phân quyền thì cho, sau một hộp xác nhận) — xem `_block_admin_removal`.
 """
 import json
 
@@ -219,6 +221,23 @@ def _plan_scope(db, target: User, role: Role, exclude_names: list[str],
     return new, lines, warnings
 
 
+#  bao-CR-523: màn Phân quyền cho quản trị TỰ bỏ vai trò Quản trị của mình sau một hộp
+#  xác nhận (409 → gửi lại kèm cờ). Tool thì KHÔNG cho hẳn — một câu chat mơ hồ kiểu
+#  «chỉ để tôi làm nhân viên thu mua» + `replace_roles` là tự tước quyền quản trị mà
+#  người gõ có khi không nhận ra; việc hệ trọng đó phải bấm tay trên màn.
+SELF_ADMIN_REMOVAL_REFUSED = ("Trợ lý AI không tự bỏ vai trò Quản trị hệ thống của chính bạn. "
+                              "Muốn bỏ thì làm tay ở Quản trị › Phân quyền tài khoản.")
+
+
+def _block_admin_removal(db, actor, target_id: int, final_ids: list[int]) -> None:
+    """Tự bỏ `admin` của chính mình → từ chối hẳn (403). Bỏ `admin` của người khác → chỉ
+    còn chốt «hệ phải còn ít nhất một quản trị đang hoạt động» (400)."""
+    if target_id == actor.id and privilege_escalation.removes_system_admin(db, target_id, final_ids):
+        raise HTTPException(403, SELF_ADMIN_REMOVAL_REFUSED)
+    privilege_escalation.block_admin_role_removal(db, target_id, actor, final_ids,
+                                                  confirm_self_removal=False)
+
+
 # ── Bước 1: đề xuất ───────────────────────────────────────────────────────────────────────
 
 def _run_propose(ctx: ToolContext, args: dict) -> dict:
@@ -268,14 +287,18 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
                 "message": f"{emp.full_name} ({emp.code}) chưa có tài khoản đăng nhập. Tool không tạo "
                            "tài khoản và không đặt mật khẩu — làm Bước 2 của hướng dẫn ở Quản trị › "
                            "Phân quyền tài khoản › Thêm tài khoản, rồi gọi lại tool này."}
-    if target.id == ctx.user.id:
-        return _denied(privilege_escalation.SELF_CHANGE_MESSAGE)
+    try:
+        #  L1 — Quản trị hệ thống được miễn (bao-CR-523), người khác vẫn bị chặn.
+        privilege_escalation.block_edit_own_permissions(target.id, ctx.user, ctx.db)
+    except HTTPException as e:
+        return _denied(str(e.detail))
     if get_scoped(ctx.db, User, "user", target.id, ctx.user, ctx.profile, "write") is None:
         return _denied(f"Tài khoản của {emp.full_name} nằm ngoài phạm vi tài khoản bạn được sửa.")
 
     final_ids, role_lines = _plan_roles(ctx.db, target, requested, replace)
     try:
         privilege_escalation.block_role_escalation(ctx.db, ctx.user, final_ids)
+        _block_admin_removal(ctx.db, ctx.user, target.id, final_ids)
     except HTTPException as e:
         return {"denied": True, "reason": str(e.detail)}
 
@@ -344,11 +367,12 @@ def confirm_account_setup(db, user, token: str) -> dict:
     target = get_scoped(db, User, "user", target_id, user, profile, "write")
     if target is None:
         raise HTTPException(404, "Không tìm thấy tài khoản")
-    privilege_escalation.block_edit_own_permissions(target_id, user)
+    privilege_escalation.block_edit_own_permissions(target_id, user, db)
 
     final_ids = [int(r) for r in payload.get("roles") or []]
     privilege_escalation.block_missing_roles(db, final_ids)
     privilege_escalation.block_role_escalation(db, user, final_ids)
+    _block_admin_removal(db, user, target_id, final_ids)
 
     updated = []
     if user_service._role_ids(db, target_id) != sorted(final_ids):

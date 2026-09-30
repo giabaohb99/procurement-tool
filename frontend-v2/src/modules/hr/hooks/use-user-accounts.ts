@@ -1,11 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import { extractErrorMessage } from '@/core/api'
 import { appConfig } from '@/core/config/app-config'
 import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
 import { userAccountApi } from '../api/user-account-api'
 import { EMPTY_USER_SCOPE, type UserScope } from '../types/user-account'
+import { readSelfAdminRemovalQuestion } from '../utils/system-admin-role'
 
 /**
  * Danh sách tài khoản đăng nhập, kèm lọc theo phòng ban / vai trò / tình trạng.
@@ -45,14 +47,31 @@ export function useEmployeeAccount(employeeId: number, enabled = true) {
   })
 }
 
+export interface AssignRolesInput {
+  roleIds: number[]
+  /** Đã xác nhận tự bỏ vai trò Quản trị hệ thống của chính mình (bao-CR-523). */
+  confirmSelfAdminRemoval?: boolean
+}
+
+/**
+ * Lưu vai trò của một tài khoản.
+ *
+ * Lỗi 409 (tự bỏ vai trò Quản trị) KHÔNG toast — đó là câu hỏi, trang gọi tự
+ * đọc bằng `readSelfAdminRemovalQuestion` rồi mở hộp xác nhận. Lỗi khác toast như
+ * mọi thao tác ghi (API gọi `_silent` nên interceptor không bắn hộ).
+ */
 export function useAssignRoles(userId: number) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (roleIds: number[]) => userAccountApi.assignRoles(userId, roleIds),
+    mutationFn: ({ roleIds, confirmSelfAdminRemoval = false }: AssignRolesInput) =>
+      userAccountApi.assignRoles(userId, roleIds, confirmSelfAdminRemoval),
     onSuccess: () => {
       toast.success('Đã lưu vai trò')
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+    },
+    onError: (error) => {
+      if (readSelfAdminRemovalQuestion(error) === null) toast.error(extractErrorMessage(error))
     },
   })
 }

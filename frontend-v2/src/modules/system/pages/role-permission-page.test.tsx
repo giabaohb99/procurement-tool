@@ -21,10 +21,11 @@ vi.mock('@/core/api', () => ({
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
+//  Mặc định vai trò đang mở KHÔNG phải vai trò của người đang đăng nhập, nếu
+//  không trang tự khóa nút Lưu (chốt hai người của CR-158). Bài nào cần thì đổi.
+let currentRoleIds: number[] = []
 vi.mock('@/core/auth/use-auth', () => ({
-  //  Vai trò đang mở KHÔNG phải vai trò của người đang đăng nhập, nếu không
-  //  trang tự khóa nút Lưu (chốt hai người của CR-158).
-  useAuth: () => ({ user: { id: 99, role_ids: [] } }),
+  useAuth: () => ({ user: { id: 99, role_ids: currentRoleIds } }),
 }))
 
 vi.mock('@/core/authorization/use-permission', () => ({
@@ -43,6 +44,7 @@ vi.mock('../components/role-name-inline-edit', () => ({ RoleNameInlineEdit: () =
 vi.mock('../components/user-account-table', () => ({ UserAccountTable: () => null }))
 
 const ROLES = [
+  { id: 1, code: 'admin', name: 'Quản trị hệ thống', description: '', sort_order: 1 },
   { id: 7, code: 'pur_staff', name: 'Nhân viên thu mua', description: '', sort_order: 10 },
 ]
 
@@ -66,10 +68,10 @@ function newQueryClient() {
 
 //  Truyền sẵn một `queryClient` khi cần dựng lại trang trên cùng bộ đệm — đó là
 //  cảnh «mở lại link `?role=7`», khác hẳn cảnh vào trang lần đầu.
-function build(queryClient = newQueryClient()) {
+function build(queryClient = newQueryClient(), roleId = 7) {
   const { unmount } = render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/system/permissions?role=7']}>
+      <MemoryRouter initialEntries={[`/system/permissions?role=${roleId}`]}>
         <Routes>
           <Route path="/system/permissions" element={<RolePermissionPage />} />
         </Routes>
@@ -81,6 +83,7 @@ function build(queryClient = newQueryClient()) {
 }
 
 beforeEach(() => {
+  currentRoleIds = []
   apiGet.mockReset()
   httpPut.mockReset()
   httpPut.mockResolvedValue({ data: { success: true, message: 'Đã lưu quyền', data: null } })
@@ -88,6 +91,7 @@ beforeEach(() => {
     if (url === '/api/roles') return Promise.resolve(ROLES)
     if (url === '/api/roles/meta') return Promise.resolve(META)
     if (url === '/api/roles/7/permissions') return Promise.resolve(SAVED_ROWS)
+    if (url === '/api/roles/1/permissions') return Promise.resolve(SAVED_ROWS)
     return Promise.resolve(null)
   })
 })
@@ -142,5 +146,33 @@ describe('RolePermissionPage', () => {
 
     await nguoi.click(await screen.findByRole('button', { name: /Lưu quyền/ }))
     expect(httpPut).toHaveBeenCalledWith('/api/roles/7/permissions', { permissions: [] })
+  })
+
+  it('vai trò Quản trị hệ thống chỉ xem, không có nút Lưu quyền', async () => {
+    //  bao-CR-523: vai trò `admin` luôn FULL. Backend từ chối mọi bản làm hụt, nên
+    //  bày nút Lưu ra chỉ để người ta bỏ tick rồi ăn 400.
+    currentRoleIds = [1]
+    build(newQueryClient(), 1)
+
+    expect(await screen.findByText(/Vai trò Quản trị hệ thống luôn đủ mọi quyền/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Lưu quyền/ })).not.toBeInTheDocument()
+  })
+
+  it('quản trị hệ thống sửa được ma trận của vai trò mình đang giữ', async () => {
+    //  bao-CR-523: backend miễn L1 cho người giữ `admin`, giao diện không được
+    //  khóa thừa.
+    currentRoleIds = [1, 7]
+    build()
+
+    expect(await screen.findByRole('button', { name: /Lưu quyền/ })).toBeEnabled()
+    expect(screen.queryByText(/Bạn đang giữ vai trò này/)).not.toBeInTheDocument()
+  })
+
+  it('người thường đang giữ vai trò thì vẫn bị khóa', async () => {
+    currentRoleIds = [7]
+    build()
+
+    expect(await screen.findByRole('button', { name: /Lưu quyền/ })).toBeDisabled()
+    expect(screen.getByText(/Bạn đang giữ vai trò này/)).toBeInTheDocument()
   })
 })

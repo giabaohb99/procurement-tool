@@ -30,10 +30,22 @@ export const userAccountApi = {
     return res.items[0] ?? null
   },
 
-  assignRoles: (userId: number, roleIds: number[]) =>
-    httpClient.put<SuccessEnvelope<null>>(`${BASE_URL}/${userId}/roles`, {
-      role_ids: roleIds,
-    }),
+  /**
+   * Gán vai trò. `confirmSelfAdminRemoval` = đã hỏi và người dùng đồng ý TỰ bỏ vai
+   * trò Quản trị hệ thống của chính mình (bao-CR-523) — thiếu cờ thì backend trả
+   * 409 kèm câu hỏi. Cờ chỉ gửi khi bật để thân request thường không đổi.
+   *
+   * `_silent`: hook tự báo lỗi — 409 là câu HỎI, không được bắn toast đỏ.
+   */
+  assignRoles: (userId: number, roleIds: number[], confirmSelfAdminRemoval = false) =>
+    httpClient.put<SuccessEnvelope<null>>(
+      `${BASE_URL}/${userId}/roles`,
+      {
+        role_ids: roleIds,
+        ...(confirmSelfAdminRemoval ? { confirm_self_admin_removal: true } : {}),
+      },
+      { _silent: true } as AxiosRequestConfig,
+    ),
 
   setActive: (userId: number, isActive: boolean) =>
     httpClient.put<SuccessEnvelope<null>>(`${BASE_URL}/${userId}/active`, {

@@ -27,6 +27,11 @@ import {
   useUpdateRole,
 } from '@/modules/hr/hooks/use-roles'
 import type { RolePermissionRow } from '@/modules/hr/types/role'
+import {
+  SYSTEM_ADMIN_FULL_NOTE,
+  holdsSystemAdminRole,
+  isSystemAdminRole,
+} from '@/modules/hr/utils/system-admin-role'
 
 /**
  * Màn Phân quyền tài khoản — hai tab của hệ phân quyền hai trục:
@@ -73,8 +78,14 @@ export function RolePermissionPage() {
   //  backend đã chặn bằng `privilege_escalation.chan_sua_vai_tro_cua_chinh_minh`.
   //  Khóa luôn ở giao diện để người ta biết là có LUẬT, chứ không tick xong hai
   //  chục ô rồi ăn 403 và tưởng hệ hỏng (CR-158).
-  const holdsThisRole = !!selectedRoleId && !!user?.role_ids?.includes(selectedRoleId)
-  const canWriteRole = can('role', 'write') && !holdsThisRole
+  //  bao-CR-523: Quản trị hệ thống được MIỄN chốt này (backend miễn L1 cho họ).
+  const isSystemAdmin = holdsSystemAdminRole(roles, user?.role_ids)
+  const holdsThisRole =
+    !!selectedRoleId && !!user?.role_ids?.includes(selectedRoleId) && !isSystemAdmin
+  //  Ma trận của CHÍNH vai trò Quản trị hệ thống luôn FULL — chỉ xem, không có
+  //  nút Lưu. Backend từ chối mọi bản làm hụt (400) và seed ép lại mỗi lần deploy.
+  const viewingAdminRole = isSystemAdminRole(selectedRole)
+  const canWriteRole = can('role', 'write') && !holdsThisRole && !viewingAdminRole
 
   async function handleSave() {
     if (!selectedRoleId || !meta) return
@@ -149,19 +160,21 @@ export function RolePermissionPage() {
                     />
 
                     <div className="flex items-center gap-2">
-                      <PermissionGate entity="role" action="write">
-                        <Button
-                          onClick={handleSave}
-                          disabled={savePermissions.isPending || holdsThisRole}
-                        >
-                          {savePermissions.isPending ? (
-                            <Loader2 className="animate-spin" />
-                          ) : (
-                            <Save />
-                          )}
-                          Lưu quyền
-                        </Button>
-                      </PermissionGate>
+                      {!viewingAdminRole && (
+                        <PermissionGate entity="role" action="write">
+                          <Button
+                            onClick={handleSave}
+                            disabled={savePermissions.isPending || holdsThisRole}
+                          >
+                            {savePermissions.isPending ? (
+                              <Loader2 className="animate-spin" />
+                            ) : (
+                              <Save />
+                            )}
+                            Lưu quyền
+                          </Button>
+                        </PermissionGate>
+                      )}
 
                       <PermissionGate entity="role" action="delete">
                         {/*  Trước 25/08/2026 nút này XÓA NGAY, không hỏi gì: một
@@ -181,7 +194,14 @@ export function RolePermissionPage() {
                     </div>
                   </div>
 
-                  {holdsThisRole && (
+                  {viewingAdminRole && (
+                    <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                      {SYSTEM_ADMIN_FULL_NOTE} — ma trận này chỉ để xem. Phân hệ mới ra
+                      đời thì hệ thống tự cấp đủ cho vai trò này ở lần cập nhật kế tiếp.
+                    </p>
+                  )}
+
+                  {holdsThisRole && !viewingAdminRole && (
                     <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                       Bạn đang giữ vai trò này nên chỉ xem được, không sửa. Tự tick
                       thêm quyền cho vai trò của chính mình là tự nâng quyền — nhờ
