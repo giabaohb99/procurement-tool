@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-539 | Phiếu in yêu cầu mua hàng của hộ kinh doanh đủ bốn ô ký như công ty
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca xem phiếu PYC29092604 của nhà phân phối DR.XANH, vừa đổi sang hộ kinh doanh, thấy bản in chỉ
 có ba ô ký và báo còn thiếu ô trưởng bộ phận bên thu mua, phải đủ bốn chữ ký. Việc này nối tiếp đợt
@@ -83,7 +83,9 @@ ký in ở ô chủ hộ, ô trùng vẫn giữ nhưng để trống. Phiếu c�
 
 Chỉ sửa ở máy chủ, giao diện hai bản chỉ cập nhật chú thích và bài kiểm. Bài kiểm máy chủ năm mươi bảy
 bài xanh, bản mới kiểm kiểu sạch và bảy trăm hai mươi bảy bài thu mua xanh, bản cũ giữ đúng bốn lỗi
-kiểu có sẵn. Chưa commit, chờ đại ca.
+kiểu có sẵn.
+
+Lên dev và prod ngày 30/09 (erp-v2 3832fdbf, main 906d307b), sao lưu cơ sở dữ liệu prod trước khi deploy.
 
 Mã nguồn: backend/app/modules/purchase_request/print_signature_cells.py · test_phieu_in_ho_kinh_doanh_giam_doc_cr531.py ·
 purchase-request-signature-cells(.test).ts · purchase-request-print-page(.test).tsx · PrintPurchaseRequest.tsx (chú thích)
