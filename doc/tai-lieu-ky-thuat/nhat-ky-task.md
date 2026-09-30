@@ -88,7 +88,9 @@ nghìn dòng vẫn nhanh.
 
 Cổng kiểm: bài kiểm máy chủ bốn bài mới và chín mươi hai bài phạm vi thu mua xanh; bản mới kiểm kiểu
 sạch, lint sạch, bảy mươi hai bài phân hệ tài chính xanh trong đó ba bài mới; bản cũ giữ đúng bốn lỗi
-kiểu có sẵn. Đã lên dev 30/09 để đại ca kiểm.
+kiểu có sẵn. Đã lên dev 30/09, đại ca kiểm thấy ổn. Cùng ngày đại ca bảo cấp quyền xuất cho cả cụm
+thu mua trên prod: em cấp cho năm vai trò thu mua đang có, trong đó có vai trò nhân viên thu mua nhà
+máy. Erp Agent 1 đưa mã lên prod cùng ngày.
 
 Mã nguồn: backend/app/modules/payment_request/export.py · payment_request/controller.py · seed.py ·
 frontend/src/config/cruds.tsx · frontend-v2/src/modules/finance/pages/payment-request-list-page.tsx
