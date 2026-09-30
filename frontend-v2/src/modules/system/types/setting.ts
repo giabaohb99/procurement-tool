@@ -14,8 +14,9 @@ export type SettingGroup =
  *
  * `condition` (bao-CR-528) = BỘ CHỌN ĐIỀU KIỆN thay cho ô gõ JSON; giá trị vẫn là
  * chuỗi JSON cú pháp bộ máy duyệt, `condition_entity` nói bộ trường nào.
+ * `department` (bao-CR-529) = ô CHỌN từ danh mục Phòng ban; giá trị vẫn là MÃ phòng.
  */
-export type SettingType = 'bool' | 'int' | 'str' | 'select' | 'condition'
+export type SettingType = 'bool' | 'int' | 'str' | 'select' | 'condition' | 'department'
 
 /** Một lựa chọn của ô `select`. Backend khai kèm trường, frontend không tự đoán. */
 export interface SettingOption {

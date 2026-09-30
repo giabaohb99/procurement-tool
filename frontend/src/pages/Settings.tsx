@@ -3,10 +3,12 @@ import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { fmtDateTime } from '../utils/datetime'
 import ConditionRuleEditor from '../components/ConditionRuleEditor'
+import SearchSelect from '../components/SearchSelect'
 
 type Field = { key: string; group: string; label: string; type: string; value: any; hint?: string; condition_entity?: string }
 type Secret = { key: string; group: string; label: string; configured: boolean }
 type LogRow = { id: number; message: string; by: string; at: string }
+type DeptOption = { value: string; label: string }
 
 const GROUP_TITLE: Record<string, string> = {
   workflow: 'Quy trình duyệt', email: 'Email (SMTP)', storage: 'Lưu trữ (R2 / S3)',
@@ -23,6 +25,9 @@ export default function Settings() {
   const [busy, setBusy] = useState('')
 
   const [logs, setLogs] = useState<LogRow[]>([])
+  //  bao-CR-529: danh mục phòng ban cho ô kiểu `department` (Phòng thu mua mặc định). `_silent`:
+  //  thiếu quyền đọc thì ô rơi về ô chữ, không bắn toast lỗi lúc mở màn.
+  const [deptOptions, setDeptOptions] = useState<DeptOption[] | null>(null)
   const [logErr, setLogErr] = useState('')
 
   async function load() {
@@ -46,7 +51,14 @@ export default function Settings() {
     }
   }
 
-  useEffect(() => { load(); loadLogs() }, [])
+  useEffect(() => {
+    load(); loadLogs()
+    api.get('/api/departments', { params: { page_size: 500 }, _silent: true } as any)
+      .then((r) => setDeptOptions((r.data.data.items || r.data.data || [])
+        .filter((d: any) => d.is_active !== false)
+        .map((d: any) => ({ value: d.code, label: `${d.name} · ${d.code}` }))))
+      .catch(() => setDeptOptions(null))
+  }, [])
 
   const setVal = (key: string, v: any) => setFields((s) => s.map((f) => f.key === key ? { ...f, value: v } : f))
 
@@ -101,6 +113,11 @@ export default function Settings() {
                   //  bao-CR-528: bộ chọn điều kiện thay cho ô gõ JSON. Bộ trường lạ thì rơi về ô chữ.
                   <ConditionRuleEditor value={typeof f.value === 'string' ? f.value : ''} disabled={!canWrite}
                     centralDeptCode={String(fields.find((x) => x.key === 'central_purchasing_dept_code')?.value ?? '')}
+                    onChange={(v) => setVal(f.key, v)} />
+                ) : f.type === 'department' && deptOptions ? (
+                  //  bao-CR-529: chọn từ danh mục Phòng ban thay cho gõ mã; giá trị gửi lên vẫn là MÃ phòng.
+                  <SearchSelect value={f.value ?? ''} options={deptOptions} disabled={!canWrite}
+                    autoSelectSingle={false} placeholder="Để trống = phòng mặc định"
                     onChange={(v) => setVal(f.key, v)} />
                 ) : f.type === 'bool' ? (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: canWrite ? 'pointer' : 'default', height: 40 }}>
