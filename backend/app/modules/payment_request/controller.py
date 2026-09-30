@@ -111,9 +111,9 @@ def _scoped(db: Session, rid: int, user, action: str) -> PaymentRequest:
     return req
 
 
-@router.get("")
-def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
-          user=Depends(require("payment_request", "read"))):
+def _list_query(db: Session, request: Request, user, action: str = "read"):
+    """Truy vấn phiếu theo bộ lọc trên URL + phạm vi dữ liệu — dùng chung cho màn danh sách
+    và tệp xuất Excel (bao-CR-525), để tệp xuất ra ĐÚNG những phiếu người dùng đang thấy."""
     q = apply_filters(db.query(PaymentRequest), PaymentRequest, request, service.FILTERABLE)
     q = apply_range_filters(q, PaymentRequest, request, ["request_date"])
     q = apply_equals(q, PaymentRequest, request, ["company_id"])
@@ -135,7 +135,14 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     if misa_code:
         # Ticket #26 (đợt 2): phiếu không lưu mã MISA -> lọc qua dòng phiếu + ĐMH
         q = service.filter_by_misa_code(q, misa_code)
-    q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user))
+    q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user), action)
+    return q
+
+
+@router.get("")
+def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
+          user=Depends(require("payment_request", "read"))):
+    q = _list_query(db, request, user)
     total = q.count()
     q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
@@ -147,6 +154,29 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
               "updated_at": p.updated_at}   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
            for p in items]
     return success({"total": total, "items": out})
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, db: Session = Depends(get_db),
+                user=Depends(require("payment_request", "export"))):
+    """bao-CR-525 — xuất Excel THEO DÒNG CHI TIẾT: phiếu đúng bộ lọc + phạm vi màn danh sách,
+    mỗi dòng PO / hóa đơn một hàng, thông tin phiếu lặp lại (xem `export.py`). Trần số dòng
+    tính trên số DÒNG xuất ra, không phải số phiếu."""
+    from app.core.export_xlsx import check_row_limit, parse_ids, xlsx_response
+
+    from . import export as ex
+
+    q = _list_query(db, request, user, "export")
+    #  Khung xuất Excel dùng chung của bản cũ (CR-068) gửi kèm `ids` các phiếu đang tick:
+    #  có thì chỉ xuất các phiếu đó (vẫn trong phạm vi), rỗng thì theo bộ lọc. `cols` của
+    #  khung đó bỏ qua — cột màn danh sách là cột PHIẾU, tệp này là cột DÒNG.
+    ids = parse_ids(request.query_params.get("ids"))
+    if ids:
+        q = q.filter(PaymentRequest.id.in_(ids))
+    q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
+    pairs = ex.load_lines(db, q.all())
+    check_row_limit(len(pairs))
+    return xlsx_response(ex.FILE_NAME, ex.COLS, ex.build_rows(db, pairs), ex.SHEET_TITLE)
 
 
 # CR-268 — LƯU Ý thứ tự route: /hanging PHẢI đứng TRƯỚC /{rid}, nếu không FastAPI

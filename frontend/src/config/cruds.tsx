@@ -794,6 +794,8 @@ export const cruds: Record<string, CrudConfig> = {
   },
   'payment-requests': {
     slug: 'payment-requests', entity: 'payment_request', title: 'Yêu cầu thanh toán', apiPath: '/api/payment-requests', txn: true,
+    // bao-CR-525 — nút «Xuất Excel»: tệp THEO DÒNG CHI TIẾT (mỗi dòng PO / hóa đơn một hàng), xem payment_request/export.py.
+    exportXlsx: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' },
       { key: 'request_date', label: 'Ngày lập' },

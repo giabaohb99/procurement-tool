@@ -24,11 +24,24 @@ vi.mock('@/modules/hr/hooks/use-companies', () => ({
   useCompanies: () => ({ data: { total: 1, items: [{ id: 7, name: 'Công ty Dego Cần Thơ' }] } }),
 }))
 
+//  bao-CR-525: quyền `export` bật / tắt được theo từng ca; mọi quyền khác luôn có.
+let allowExport = true
+
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
-    can: () => true,
+    can: (_entity: string, action: string) => action !== 'export' || allowExport,
     canAccess: () => true,
   }),
+}))
+
+const downloadCalls: Array<[string, string, Record<string, unknown> | undefined]> = []
+
+vi.mock('@/core/api/download-file', () => ({
+  //  Chậm 50ms như một lượt tải thật — đủ để cú bấm thứ hai rơi vào lúc lượt đầu chưa xong.
+  downloadFile: async (url: string, filename: string, params?: Record<string, unknown>) => {
+    downloadCalls.push([url, filename, params])
+    await new Promise((resolve) => setTimeout(resolve, 50))
+  },
 }))
 
 function paymentRequest(over: Partial<PaymentRequestSummary> & { id: number }): PaymentRequestSummary {
@@ -85,6 +98,39 @@ async function desktopFilterTrigger() {
 
 beforeEach(() => {
   listCalls.length = 0
+  downloadCalls.length = 0
+  allowExport = true
+})
+
+describe('PaymentRequestListPage — Xuất Excel theo dòng chi tiết (bao-CR-525)', () => {
+  it('hides the button when the role has no export right', () => {
+    allowExport = false
+    build()
+    expect(screen.queryByRole('button', { name: /Xuất Excel/ })).toBeNull()
+  })
+
+  it('exports with exactly the filters on screen, not page / page_size', async () => {
+    const user = userEvent.setup()
+    build('/finance/payment-requests?status=approved&company_id=7')
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    expect(downloadCalls).toHaveLength(1)
+    const [url, filename, params] = downloadCalls[0]
+    expect(url).toBe('/api/payment-requests/export/xlsx')
+    expect(filename).toMatch(/\.xlsx$/)
+    expect(params).toMatchObject({ status: 'approved', company_id: 7 })
+    //  Tệp xuất KHÔNG phân trang: gửi kèm page_size thì chỉ ra đúng một trang phiếu.
+    expect(params).not.toHaveProperty('page')
+    expect(params).not.toHaveProperty('page_size')
+  })
+
+  it('double-click still downloads once', async () => {
+    const user = userEvent.setup()
+    build()
+    const button = screen.getByRole('button', { name: /Xuất Excel/ })
+    await user.dblClick(button)
+    expect(downloadCalls).toHaveLength(1)
+  })
 })
 
 /** ai-CR-017: đồng bộ v1 — bù ô "Mã PO" ra thanh lọc ngoài. */
