@@ -128,6 +128,8 @@ for _sort_order, _row in enumerate(ALL_DOC_TYPES, start=1):
 
 # 13 dòng theo tập dữ liệu đang có và hai pháp nhân được tài liệu B8 nêu đích danh
 # nhưng còn thiếu (SAM, AGRIPLANT). Chỉ điền các trường đang trống, không ghi đè.
+# bao-CR-535: bỏ dòng «DEGO HOLDING» (trùng mã số thuế với «DEGO») — bao-CR-532 đã gộp nó vào DEGO
+# id 1, để lại dòng này thì mỗi lần deploy seed lại đẻ ra bản trùng.
 DOCUMENT_COMPANIES = [
     {"code": "DEGO", "name": "CÔNG TY TNHH DEGO HOLDING", "tax_code": "1801722464",
      "issue_code": "DEGO", "short_name": "DEGO Holding", "level": 1},
@@ -135,8 +137,6 @@ DOCUMENT_COMPANIES = [
      "issue_code": "IDA", "short_name": "IDA Global", "level": 2},
     {"code": "ABA", "name": "CÔNG TY TNHH SẢN XUẤT HÓA CHẤT ABA", "tax_code": "0316342296",
      "issue_code": "ABA", "short_name": "ABA", "level": 2},
-    {"code": "DEGO HOLDING", "name": "CÔNG TY TNHH DEGO HOLDING", "tax_code": "1801722464",
-     "issue_code": "DEGOHOLDING", "short_name": "DEGO Holding", "level": 1},
     {"code": "ICARE", "name": "CÔNG TY TNHH DƯỢC PHẨM ICARE", "tax_code": "0315593265",
      "issue_code": "ICARE", "short_name": "iCare", "level": 2},
     {"code": "NPP DR.XANH", "name": "NHÀ PHÂN PHỐI DR XANH", "tax_code": "578010406",

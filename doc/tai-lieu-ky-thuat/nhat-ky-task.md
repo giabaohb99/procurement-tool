@@ -10046,6 +10046,24 @@ Mã nguồn: `backend/app/modules/company/merge_service.py`, `backend/scripts/me
 bài kiểm `test/backend/test_gop_cong_ty_trung_cr532.py` (13 bài).
 Deploy: dữ liệu dev + prod 30/09; sao lưu prod `procurement_truoc_cr532_20260930_1539.sql.gz`.
 
+## bao-CR-535 | Seed văn thư không đẻ lại công ty DEGO trùng mỗi lần deploy
+- status: xong
+- date: 2026-09-30
+Deploy dev xong thì trên dev lại mọc ra một công ty «DEGO HOLDING» mới (id 17), dù bao-CR-532 vừa
+gộp bản trùng vào DEGO id 1 và xóa đi. Nguyên nhân là bộ seed văn thư chạy ở mọi lần khởi động và
+danh sách công ty của nó còn dòng «DEGO HOLDING»: thấy thiếu mã đó là tạo lại. Prod chưa bị chỉ vì
+từ lúc gộp tới giờ chưa deploy lại.
+
+Đã bỏ dòng đó khỏi danh sách seed, và thêm chốt: công ty trong danh sách mà mã số thuế đã thuộc một
+công ty khác thì seed bỏ qua, không tạo. Trên dev đã gộp id 17 vào id 1 bằng script của bao-CR-532.
+
+Kiểm: 3 bài kiểm mới cùng bài kiểm seed văn thư, chặn trùng mã số thuế và gộp công ty (31 bài xanh).
+
+Mã nguồn: `app/seed_data/document_phase1.py` (`DOCUMENT_COMPANIES`) · `app/seed.py`
+(`seed_document_phase1`) · `test/backend/test_seed_khong_tao_lai_cong_ty_trung_cr535.py`
+
+---
+
 ## bao-CR-534 | Chặn tạo hoặc sửa công ty bị trùng mã số thuế
 - status: xong
 - date: 2026-09-30
