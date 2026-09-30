@@ -6,7 +6,7 @@ import {
   type PrintSignatureSource,
 } from './purchase-request-signature-cells'
 
-// bao-CR-531: backend quyết BỘ Ô, giao diện chỉ áp «Không chữ ký» / «Mẫu thuế».
+// bao-CR-531 / bao-CR-536: backend quyết BỘ Ô, giao diện chỉ áp «Không chữ ký» / «Mẫu thuế».
 
 function makeSource(overrides: Partial<PrintSignatureSource> = {}): PrintSignatureSource {
   return {
@@ -20,19 +20,23 @@ function makeSource(overrides: Partial<PrintSignatureSource> = {}): PrintSignatu
   }
 }
 
+//  Ca ICARE theo luật bao-CR-536: đại diện = TP/BP đề xuất → tên lên «Giám đốc», ô đề xuất GIỮ nhưng trống.
 const mergedCells: PrintSignatureCell[] = [
   { key: 'director', role: 'Giám đốc', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
   { key: 'purchasing_head', role: 'TP/BP mua hàng', name: 'Pham Khanh Ngan', signature: 'https://cdn/ky-ngan.png' },
+  { key: 'proposer', role: 'TP/BP đề xuất', name: '', signature: '' },
   { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
 ]
 
 const withSignature = { taxMode: false, showSignature: true }
 
 describe('resolvePrintSignatureCells', () => {
-  it('renders exactly the cell set sent by the backend (merged director: 3 cells)', () => {
+  it('renders exactly the cell set sent by the backend (merged director keeps 4 cells)', () => {
     const cells = resolvePrintSignatureCells(makeSource({ print_signature_cells: mergedCells }), withSignature)
-    expect(cells.map((c) => c.role)).toEqual(['Giám đốc', 'TP/BP mua hàng', 'Người lập'])
+    expect(cells.map((c) => c.role)).toEqual(['Giám đốc', 'TP/BP mua hàng', 'TP/BP đề xuất', 'Người lập'])
     expect(cells[0]).toMatchObject({ name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' })
+    //  Không tự "điền lại" ô trống từ khóa rời `approver_name` — ô trùng phải trống như backend gửi.
+    expect(cells[2]).toMatchObject({ name: '', signature: '' })
   })
 
   it('"Không chữ ký" blanks BOTH the image and the name (names used to stay before CR-531)', () => {
@@ -40,21 +44,28 @@ describe('resolvePrintSignatureCells', () => {
       taxMode: false,
       showSignature: false,
     })
-    expect(cells).toHaveLength(3)
+    expect(cells).toHaveLength(4)
     expect(cells.every((c) => c.name === '' && c.signature === '')).toBe(true)
   })
 
-  it('tax template blanks everything but keeps the household cell labels', () => {
+  it('household prints names like a company, and tax template still blanks them', () => {
+    //  bao-CR-536: hộ kinh doanh 3 ô, CÓ tên (CR-531 để trống cả hai ô là sai ý đại ca).
     const household: PrintSignatureCell[] = [
-      { key: 'household_owner', role: 'Chủ hộ', name: '', signature: '' },
-      { key: 'preparer', role: 'Người lập', name: '', signature: '' },
+      { key: 'household_owner', role: 'Chủ hộ', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
+      { key: 'proposer', role: 'TP/BP đề xuất', name: '', signature: '' },
+      { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
     ]
-    const cells = resolvePrintSignatureCells(makeSource({ print_signature_cells: household }), {
+    const shown = resolvePrintSignatureCells(makeSource({ print_signature_cells: household }), withSignature)
+    expect(shown.map((c) => c.role)).toEqual(['Chủ hộ', 'TP/BP đề xuất', 'Người lập'])
+    expect(shown[0].name).toBe('Le Phuoc Huu')
+    expect(shown[2].name).toBe('Nguoi Lap')
+
+    const tax = resolvePrintSignatureCells(makeSource({ print_signature_cells: household }), {
       taxMode: true,
       showSignature: true,
     })
-    expect(cells.map((c) => c.role)).toEqual(['Chủ hộ', 'Người lập'])
-    expect(cells.every((c) => c.name === '' && c.signature === '')).toBe(true)
+    expect(tax.map((c) => c.role)).toEqual(['Chủ hộ', 'TP/BP đề xuất', 'Người lập'])
+    expect(tax.every((c) => c.name === '' && c.signature === '')).toBe(true)
   })
 
   it('tax template blanks names even if the backend sent some', () => {
@@ -62,7 +73,7 @@ describe('resolvePrintSignatureCells', () => {
       taxMode: true,
       showSignature: true,
     })
-    expect(cells.map((c) => c.name)).toEqual(['', '', ''])
+    expect(cells.map((c) => c.name)).toEqual(['', '', '', ''])
   })
 
   it.each([undefined, []])(

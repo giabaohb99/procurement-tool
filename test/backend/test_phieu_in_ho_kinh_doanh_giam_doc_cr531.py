@@ -107,25 +107,47 @@ def _cell(cells, role):
 # ─── Luật 1: hộ kinh doanh ─────────────────────────────────────────────────────
 
 
-def test_household_prints_only_owner_and_preparer_without_names(db, world):
+def test_household_owner_is_proposer_prints_in_owner_cell(db, world):
+    """bao-CR-536: hộ kinh doanh 3 ô «Chủ hộ · TP/BP đề xuất · Người lập», IN TÊN như công ty.
+    Chủ hộ (người đại diện) trùng TP/BP đề xuất → tên + chữ ký ở «Chủ hộ», ô đề xuất GIỮ nhưng trống."""
     comp = _company(db, "HKD", world.proposer.id, int(CompanyType.HOUSEHOLD))
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
-    assert _roles(cells) == ["Chủ hộ", "Người lập"]
-    assert all(c["name"] == "" and c["signature"] == "" for c in cells), \
-        "hộ kinh doanh KHÔNG in tên/chữ ký ở mọi chế độ — kể cả khi hệ thống biết người lập"
+    assert _roles(cells) == ["Chủ hộ", "TP/BP đề xuất", "Người lập"]
+    assert _cell(cells, "Chủ hộ")["name"] == "Le Phuoc Huu"
+    assert _cell(cells, "Chủ hộ")["signature"] == "https://cdn/ky-huu.png"
+    assert _cell(cells, "TP/BP đề xuất")["name"] == "" and _cell(cells, "TP/BP đề xuất")["signature"] == ""
+    assert _cell(cells, "Người lập")["name"] == "Nguoi Lap", "CR-531 để trống tên — SAI ý đại ca"
+
+
+def test_household_owner_not_proposer_keeps_owner_blank_and_prints_proposer(db, world):
+    comp = _company(db, "HKD2", world.other.id, int(CompanyType.HOUSEHOLD))
+    cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
+    assert _roles(cells) == ["Chủ hộ", "TP/BP đề xuất", "Người lập"]
+    assert _cell(cells, "Chủ hộ")["name"] == ""
+    assert _cell(cells, "TP/BP đề xuất")["name"] == "Le Phuoc Huu"
+
+
+def test_household_never_merges_purchasing_head_it_does_not_print(db, world):
+    """Hộ không có ô «TP/BP mua hàng»: đại diện trùng người mua hàng thì KHÔNG kéo tên đó lên «Chủ hộ»."""
+    comp = _company(db, "HKD3", world.head.id, int(CompanyType.HOUSEHOLD))
+    cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
+    assert _roles(cells) == ["Chủ hộ", "TP/BP đề xuất", "Người lập"]
+    assert _cell(cells, "Chủ hộ")["name"] == ""
 
 
 # ─── Luật 2: công ty — gộp ô Giám đốc ───────────────────────────────────────────
 
 
 def test_director_is_proposer_merges_into_director_cell(db, world):
-    """Ca ICARE / PYC29092604: đại diện pháp luật chính là TP/BP đề xuất → ba ô."""
+    """Ca ICARE / PYC29092603: đại diện pháp luật chính là TP/BP đề xuất → vẫn ĐỦ 4 ô (bao-CR-536),
+    tên + chữ ký ở «Giám đốc», ô «TP/BP đề xuất» giữ chỗ nhưng trống."""
     comp = _company(db, "ICARE", world.proposer.id)
     d = pr_out(db, _pr(db, world, comp))
     cells = d["print_signature_cells"]
-    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "Người lập"]
+    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
     director = _cell(cells, "Giám đốc")
     assert director["name"] == "Le Phuoc Huu" and director["signature"] == "https://cdn/ky-huu.png"
+    assert _cell(cells, "TP/BP đề xuất")["name"] == "" and _cell(cells, "TP/BP đề xuất")["signature"] == ""
     assert _cell(cells, "TP/BP mua hàng")["name"] == "Pham Khanh Ngan"
     assert _cell(cells, "Người lập") == {"key": "preparer", "role": "Người lập", "name": "Nguoi Lap",
                                          "signature": "https://cdn/ky-lap.png"}
@@ -136,18 +158,21 @@ def test_director_is_proposer_merges_into_director_cell(db, world):
 def test_director_is_purchasing_head_merges_into_director_cell(db, world):
     comp = _company(db, "CTYTM", world.head.id)
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
-    assert _roles(cells) == ["Giám đốc", "TP/BP đề xuất", "Người lập"]
+    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
     assert _cell(cells, "Giám đốc")["name"] == "Pham Khanh Ngan"
     assert _cell(cells, "Giám đốc")["signature"] == "https://cdn/ky-ngan.png"
+    assert _cell(cells, "TP/BP mua hàng")["name"] == "" and _cell(cells, "TP/BP mua hàng")["signature"] == ""
     assert _cell(cells, "TP/BP đề xuất")["name"] == "Le Phuoc Huu"
 
 
-def test_director_is_both_leaves_director_and_preparer(db, world):
+def test_director_is_both_fills_director_and_blanks_both_heads(db, world):
     comp = _company(db, "CTYBOTH", world.head.id)
     pr = _pr(db, world, comp, stored_approver=world.head.id)
     cells = pr_out(db, pr)["print_signature_cells"]
-    assert _roles(cells) == ["Giám đốc", "Người lập"]
+    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
     assert _cell(cells, "Giám đốc")["name"] == "Pham Khanh Ngan"
+    for role in ("TP/BP mua hàng", "TP/BP đề xuất"):
+        assert _cell(cells, role)["name"] == "" and _cell(cells, role)["signature"] == ""
 
 
 def test_no_match_keeps_four_cells_with_blank_director(db, world):
@@ -193,8 +218,9 @@ def test_before_approval_director_cell_merges_but_stays_blank(db, world):
     """Chưa duyệt (bao-CR-521): ô đề xuất để trống tên — bộ ô đã biết nhờ người được chọn."""
     comp = _company(db, "CTYSUB", world.proposer.id)
     cells = pr_out(db, _pr(db, world, comp, status="submitted"))["print_signature_cells"]
-    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "Người lập"]
+    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
     assert _cell(cells, "Giám đốc")["name"] == "" and _cell(cells, "Giám đốc")["signature"] == ""
+    assert _cell(cells, "TP/BP đề xuất")["name"] == ""
 
 
 def test_old_ticket_merges_via_audit_approver(db, world):
@@ -203,7 +229,7 @@ def test_old_ticket_merges_via_audit_approver(db, world):
     pr = _pr(db, world, comp, stored_approver=0)
     record(db, world.proposer_user.id, "purchase_request", pr.id, "approved")
     cells = pr_out(db, pr)["print_signature_cells"]
-    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "Người lập"]
+    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
     assert _cell(cells, "Giám đốc")["signature"] == "https://cdn/ky-huu.png"
 
 
@@ -213,8 +239,9 @@ def test_dispatcher_fallback_is_compared_by_dispatcher_employee(db, world):
     db.commit()
     comp = _company(db, "CTYDISP", world.admin.id)
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
-    assert _roles(cells) == ["Giám đốc", "TP/BP đề xuất", "Người lập"]
+    assert _roles(cells) == ["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
     assert _cell(cells, "Giám đốc")["signature"] == "https://cdn/ky-hau.png"
+    assert _cell(cells, "TP/BP mua hàng")["name"] == ""
 
 
 def test_same_name_different_employee_does_not_merge(db, world):
