@@ -16,13 +16,6 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
 import type { CategoryAssignee, CategoryAssigneeBulkPayload } from '../types/category-assignee'
 import {
   assigneeOptions,
@@ -36,9 +29,6 @@ interface Option {
   value: number
   label: string
 }
-
-/** Mục «chưa chọn ai» của ô chọn nhân sự — `SelectItem` không nhận value rỗng. */
-const NONE = 'none'
 
 /**
  * Chữ mờ của ô Phòng áp dụng khi chưa chọn — bao-CR-524: không còn mục ảo «Thu mua chung»; để
@@ -324,11 +314,11 @@ export function CategoryAssigneeFormPage() {
               </p>
             </div>
 
-            {/*  ⚠️ Hai ô này dùng `Select` dùng chung, bản cũ là `<select>` thô
-                 khai tay `h-10`: cao hơn 4px so với mọi ô nhập khác của hệ, mũi
-                 tên và cỡ chữ cũng khác — đứng cạnh `MultiPicker` ngay trên nó
-                 là thấy ngay ba kiểu ô trong cùng một thẻ. */}
+            {/*  bao-CR-530: hai ô này dùng `SearchSelect` (gõ tìm, không phân biệt dấu) cho đồng bộ
+                 với ô Phòng áp dụng / Phân loại ngay trên — danh sách nhân sự dài, `Select` thường
+                 bắt cuộn tay mới tìm ra người. */}
             <EmployeeSelect
+              id="ca-primary"
               label="NSTM chính"
               required
               value={primaryId}
@@ -339,6 +329,8 @@ export function CategoryAssigneeFormPage() {
             />
 
             <EmployeeSelect
+              id="ca-backup"
+              clearable
               label="NSTM dự phòng (tùy chọn)"
               value={backupId}
               onChange={setBackupId}
@@ -375,14 +367,14 @@ export function CategoryAssigneeFormPage() {
 }
 
 /**
- * Ô chọn MỘT nhân sự thu mua.
+ * Ô chọn MỘT nhân sự thu mua — gõ tìm theo tên hoặc mã (bao-CR-530, `SearchSelect` tìm bỏ dấu).
  *
- * ⚠️ `Select` của Radix không nhận `value=""`, mà "chưa chọn ai" là trạng thái
- * hợp lệ ở đây (ô dự phòng để trống là bình thường). Nên dùng chuỗi sentinel
- * `NONE` cho mục trống rồi quy về `0` khi bắn ra ngoài — đúng cách các màn khác
- * làm với `all` / `none`.
+ * «Chưa chọn ai» = chuỗi rỗng ở ô, quy về `0` khi bắn ra ngoài. Ô dự phòng có nút xóa
+ * (`clearable`) vì để trống là hợp lệ; ô chính thì không — bắt buộc chọn.
  */
 function EmployeeSelect({
+  id,
+  clearable,
   label,
   required,
   value,
@@ -391,6 +383,8 @@ function EmployeeSelect({
   employees,
   hint,
 }: {
+  id: string
+  clearable?: boolean
   label: string
   required?: boolean
   value: number
@@ -401,26 +395,21 @@ function EmployeeSelect({
 }) {
   return (
     <div className="space-y-2">
-      <Label>
+      <Label htmlFor={id}>
         {label}
         {required && <RequiredMark />}
       </Label>
-      <Select
-        value={value ? String(value) : NONE}
-        onValueChange={(next) => onChange(next === NONE ? 0 : Number(next))}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={NONE}>{placeholder}</SelectItem>
-          {employees.map((employee) => (
-            <SelectItem key={employee.value} value={String(employee.value)}>
-              {employee.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchSelect
+        id={id}
+        value={value ? String(value) : ''}
+        onChange={(next) => onChange(Number(next) || 0)}
+        options={employees.map((employee) => ({ value: String(employee.value), label: employee.label }))}
+        placeholder={placeholder}
+        searchPlaceholder="Gõ tên hoặc mã nhân viên…"
+        emptyMessage="Không có nhân sự «Chính thức» nào khớp"
+        clearable={clearable}
+        className="w-full"
+      />
       <p className="text-xs text-muted-foreground">{hint}</p>
     </div>
   )
