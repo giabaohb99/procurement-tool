@@ -70,6 +70,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-539 | Phiếu in yêu cầu mua hàng của hộ kinh doanh đủ bốn ô ký như công ty
+- status: dang-lam
+- date: 2026-09-30
+Đại ca xem phiếu PYC29092604 của nhà phân phối DR.XANH, vừa đổi sang hộ kinh doanh, thấy bản in chỉ
+có ba ô ký và báo còn thiếu ô trưởng bộ phận bên thu mua, phải đủ bốn chữ ký. Việc này nối tiếp đợt
+bao-CR-536, Erp Agent 1 chuyển cho em.
+
+Luật mới: hộ kinh doanh in bốn ô y như công ty, chỉ khác nhãn ô đầu là chủ hộ thay cho giám đốc. Luật
+gộp cũng như công ty: chủ hộ trùng trưởng bộ phận đề xuất hay trưởng bộ phận mua hàng thì tên và chữ
+ký in ở ô chủ hộ, ô trùng vẫn giữ nhưng để trống. Phiếu của công ty giữ nguyên.
+
+Chỉ sửa ở máy chủ, giao diện hai bản chỉ cập nhật chú thích và bài kiểm. Bài kiểm máy chủ năm mươi bảy
+bài xanh, bản mới kiểm kiểu sạch và bảy trăm hai mươi bảy bài thu mua xanh, bản cũ giữ đúng bốn lỗi
+kiểu có sẵn. Chưa commit, chờ đại ca.
+
+Mã nguồn: backend/app/modules/purchase_request/print_signature_cells.py · test_phieu_in_ho_kinh_doanh_giam_doc_cr531.py ·
+purchase-request-signature-cells(.test).ts · purchase-request-print-page(.test).tsx · PrintPurchaseRequest.tsx (chú thích)
+
+---
+
 ## bao-CR-537 | Hotfix: «Ghi chú NSPT» của phiếu khảo sát nhận ghi chú dài hơn 255 ký tự
 - status: xong
 - date: 2026-09-30
@@ -146,6 +166,8 @@ Lên prod ngày 30/09 (main e70a80ad), sao lưu DB prod trước khi deploy.
 Mã nguồn: backend/app/modules/employee/controller.py · report/procurement_summary_service.py ·
 test_pham_vi_duong_vong.py · test_pham_vi_luat_bat_bien.py · test_pham_vi_nhan_su_hanh_chinh.py ·
 test_kiem_nhiem_phong_ban.py · test_bao_cao_thu_mua_theo_ky.py
+
+---
 
 ## bao-CR-531 | Bản in phiếu đề xuất mua hàng: hộ kinh doanh chỉ hai ô ký, Giám đốc trùng người ký thì gộp ô
 - status: xong
