@@ -1138,9 +1138,18 @@ def seed_document_phase1(db):
         changed += 1
 
     existing_companies = {row.code.upper(): row for row in db.query(Company).all()}
+    #  bao-CR-535: mã số thuế đã thuộc công ty khác (khác MÃ) thì KHÔNG tạo thêm — một pháp nhân
+    #  một mã số thuế (bao-CR-534). Thiếu chốt này seed đẻ lại «DEGO HOLDING» mỗi lần deploy sau
+    #  khi bao-CR-532 đã gộp nó vào «DEGO».
+    taken_tax_codes = {"".join((row.tax_code or "").split()).upper()
+                       for row in existing_companies.values()} - {""}
     for values in DOCUMENT_COMPANIES:
         row = existing_companies.get(values["code"].upper())
         if row is None:
+            tax_key = "".join((values.get("tax_code") or "").split()).upper()
+            if tax_key and tax_key in taken_tax_codes:
+                continue
+            taken_tax_codes.add(tax_key)
             row = Company(**values, is_active=True)
             db.add(row)
             existing_companies[values["code"].upper()] = row
