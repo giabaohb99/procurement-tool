@@ -272,6 +272,9 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     # đều không bày, nên mở một đơn nhà máy mua hộ phòng khác không có gì báo ai đang mua.
     from app.modules.purchase_request.service import handler_dept_name_of
     d["handler_dept_name"] = handler_dept_name_of(db, po.handler_dept_id)
+    # bao-CR-524: đơn cũ còn `0` hiện đúng id phòng thu mua mặc định.
+    from app.core.central_purchasing import normalize_handler_dept_id
+    d["handler_dept_id"] = normalize_handler_dept_id(db, po.handler_dept_id)
     # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
     from app.core.print_signers import approver_fields
     d.update(approver_fields(db, po))

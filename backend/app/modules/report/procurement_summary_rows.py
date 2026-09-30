@@ -152,13 +152,21 @@ def payable_rows(db: Session, company_id: int | None, ranges: list[tuple[date, d
     pays = [p for p in pays if not p.po_id or p.po_id in ok]
     po_by, weight_by_po = _resolve_po_context(db, ok)
 
+    #  bao-CR-524: nợ của phòng thu mua mặc định nay mang id thật (PBA017) thay cho `0`. Báo cáo
+    #  giữ cách cũ cho nhóm này — lùi về phòng yêu cầu của ĐMH — kẻo mọi khoản nợ thu mua chung
+    #  dồn hết về một dòng «Sản xuất -Thu mua» sau khi chạy backfill.
+    from app.core.central_purchasing import get_central_dept_id
+    central = get_central_dept_id(db)
     out = []
     for p in pays:
         po = po_by.get(p.po_id)
         #  Phòng: ưu tiên Phòng XỬ LÝ của khoản nợ (`department_id`, bao-CR-484), lùi về phòng
         #  của ĐMH liên quan (bản chụp tên) khi rỗng — "0 = thu mua chung/không có đơn" không
         #  tự suy ra được tên, còn ĐMH thì luôn có phòng yêu cầu.
-        dept = dept_name.get(p.department_id or 0, "") or (po.department if po else "") or ""
+        own_dept = int(p.department_id or 0)
+        if central and own_dept == central:
+            own_dept = 0
+        dept = dept_name.get(own_dept, "") or (po.department if po else "") or ""
         nspt = (po.nspt or "") if po else ""
         supplier = p.supplier_name or p.supplier_code or ""
         total = float(p.total or 0)

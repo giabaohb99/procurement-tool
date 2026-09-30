@@ -4,6 +4,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.central_purchasing import (central_dept_ids, get_central_dept_id, is_central_dept,
+                                         normalize_handler_dept_id)
 from app.core.status_codes import PO_PROGRESS_STATUS, PR_LINE_STATUS
 from app.core.utils import assert_unique_product_codes
 from app.modules.catalog import lead_time
@@ -258,20 +260,21 @@ def list_self_purchasing_dept_ids(db: Session) -> set[int]:
 
 
 def default_handler_dept_id(db: Session, department_id: int) -> int:
-    """Phòng xử lý mặc định lúc LẬP phiếu — bao-CR-480.
+    """Phòng xử lý mặc định lúc LẬP phiếu — bao-CR-480, đổi ở bao-CR-524.
 
-    Người của phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng họ; ai khác thì
-    `0` = thu mua chung. Chỉ áp lúc tạo mới: sau đó người lập đổi sang «Thu mua chung»
-    (giá trị 0) là lựa chọn có chủ ý, cửa cập nhật không được tra đè.
+    Người của phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng họ; ai khác thì là
+    PHÒNG THU MUA MẶC ĐỊNH (bao-CR-524: id thật của mã PBA017 «Sản xuất -Thu mua», trước đó là
+    `0` = «Thu mua chung» ảo; danh mục chưa có phòng đó thì vẫn `0`). Chỉ áp lúc tạo mới: sau đó
+    người lập đổi phòng xử lý là lựa chọn có chủ ý, cửa cập nhật không được tra đè.
 
-    Vì sao phải mặc định: từ CR này bộ thu mua chung loại trừ theo PHÒNG XỬ LÝ, nên phiếu
+    Vì sao phải mặc định: từ CR-480 bộ thu mua chung loại trừ theo PHÒNG XỬ LÝ, nên phiếu
     nhà máy mà quên chọn phòng xử lý là phiếu rơi vào tầm mắt thu mua chung — đúng thứ
     nhà máy muốn tránh (bao-CR-414: nhà máy tự mua vì sợ lộ công thức).
     """
     dept_id = int(department_id or 0)
-    if not dept_id:
-        return 0
-    return dept_id if dept_id in list_self_purchasing_dept_ids(db) else 0
+    if dept_id and dept_id in list_self_purchasing_dept_ids(db):
+        return dept_id
+    return get_central_dept_id(db)
 
 
 def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
@@ -298,6 +301,9 @@ def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
     counts = {"purchase_request": 0, "survey_request": 0, "purchase_order": 0}
     if not targets:
         return counts
+    # bao-CR-524: phiếu «thu mua chung» nay mang id phòng thu mua mặc định chứ không chỉ `0` —
+    # quét cả hai để chạy lại hàm này sau backfill CR-524 vẫn cho đúng kết quả như trước.
+    central_values = list(central_dept_ids(db))
 
     def _dept_of_requester(requester_id: int) -> tuple[int, str]:
         emp = db.get(Employee, int(requester_id or 0)) if requester_id else None
@@ -306,23 +312,23 @@ def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
         return int(emp.department_id), emp.department_name or ""
 
     for model, key in ((PurchaseRequest, "purchase_request"), (SurveyRequest, "survey_request")):
-        for row in db.query(model).filter(model.handler_dept_id == 0).all():
+        for row in db.query(model).filter(model.handler_dept_id.in_(central_values)).all():
             dept_id = int(row.department_id or 0)
             if not dept_id:
                 dept_id, dept_name = _dept_of_requester(getattr(row, "requester_id", 0))
                 if dept_id in targets and not dry_run:
                     row.department_id, row.department = dept_id, dept_name
-            if dept_id not in targets:
+            if dept_id not in targets or dept_id == int(row.handler_dept_id or 0):
                 continue
             counts[key] += 1
             if not dry_run:
                 row.handler_dept_id = dept_id
-    for po in db.query(PurchaseOrder).filter(PurchaseOrder.handler_dept_id == 0).all():
+    for po in db.query(PurchaseOrder).filter(PurchaseOrder.handler_dept_id.in_(central_values)).all():
         dept_id = int(po.department_id or 0)
         if not dept_id and (po.pr_code or "").strip():
             src = db.query(PurchaseRequest).filter(PurchaseRequest.code == po.pr_code).first()
             dept_id = int(src.handler_dept_id or src.department_id or 0) if src else 0
-        if dept_id not in targets:
+        if dept_id not in targets or dept_id == int(po.handler_dept_id or 0):
             continue
         counts["purchase_order"] += 1
         if not dry_run:
@@ -333,8 +339,10 @@ def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
 
 
 def handler_dept_name_of(db: Session, handler_dept_id: int) -> str:
-    """Tên phòng xử lý để HIỂN THỊ; `0` (thu mua chung) trả rỗng, màn hình tự ghi nhãn."""
-    dep = _find_dept(db, "", int(handler_dept_id or 0)) if handler_dept_id else None
+    """Tên phòng xử lý để HIỂN THỊ. bao-CR-524: `0` cũ (chưa backfill) = phòng thu mua mặc định
+    nên trả tên phòng đó; chỉ khi danh mục chưa có phòng mặc định mới trả rỗng."""
+    dept_id = normalize_handler_dept_id(db, handler_dept_id)
+    dep = _find_dept(db, "", dept_id) if dept_id else None
     return dep.name if dep else ""
 
 
@@ -828,8 +836,12 @@ TRANSFERABLE_STATUSES = ("approved", "dispatched")
 
 
 def dept_name_of(db: Session, dept_id: int, requesting_name: str = "") -> str:
-    """Tên phòng để ghi nhật ký. `dept_id` = 0 là phòng lập phiếu."""
+    """Tên phòng xử lý để ghi nhật ký chuyển phòng.
+
+    bao-CR-524: `0` là phòng thu mua mặc định, nên ghi tên phòng đó; danh mục chưa có phòng mặc
+    định thì giữ đúng câu cũ (tên phòng lập)."""
     from app.modules.department.model import Department
+    dept_id = normalize_handler_dept_id(db, dept_id)
     if not dept_id:
         return requesting_name or "phòng lập phiếu"
     dep = db.get(Department, dept_id)
@@ -853,16 +865,21 @@ def can_transfer_dept(db: Session, pr: PurchaseRequest) -> bool:
 
 def validate_transfer_target(db: Session, ticket, handler_dept_id: int, reason: str) -> None:
     """Chốt chung cho YCMH và YCBG: lý do bắt buộc; phòng đích phải có thật, đang hoạt động
-    và khác phòng đang xử lý; trả về (đích = 0) chỉ khi phiếu đang được nhờ."""
+    và khác phòng đang xử lý; «Trả về thu mua» (đích = 0) chỉ khi phiếu đang ở phòng khác.
+
+    bao-CR-524: đích `0` và phiếu cũ còn `0` đều hiểu là PHÒNG THU MUA MẶC ĐỊNH, so bằng id
+    thật — nên chuyển phiếu thu mua chung về chính phòng lập (nhà máy) nay hợp lệ, còn chuyển
+    sang phòng PBA017 một phiếu đang ở PBA017 thì bị chặn như trùng phòng."""
     from app.modules.department.model import Department
     if not (reason or "").strip():
         raise HTTPException(400, "Phải nêu lý do chuyển phòng / trả về")
-    current = int(getattr(ticket, "handler_dept_id", 0) or 0)
-    target = int(handler_dept_id or 0)
-    if target == 0:
-        if current == 0:
-            raise HTTPException(400, "Phiếu đang ở phòng lập, không có gì để trả về")
+    current = normalize_handler_dept_id(db, getattr(ticket, "handler_dept_id", 0))
+    target = normalize_handler_dept_id(db, handler_dept_id)
+    if not int(handler_dept_id or 0):
+        if current == target:
+            raise HTTPException(400, "Phiếu đang ở phòng thu mua mặc định, không có gì để trả về")
         return
+    # `current == 0` chỉ còn khi danh mục chưa có phòng mặc định — giữ đúng luật cũ (0 = phòng lập).
     if target == current or (current == 0 and target == int(ticket.department_id or 0)):
         raise HTTPException(400, "Phòng đích trùng phòng đang xử lý")
     dep = db.get(Department, target)
@@ -872,7 +889,8 @@ def validate_transfer_target(db: Session, ticket, handler_dept_id: int, reason: 
 
 def transfer_handler_dept(db: Session, pid: int, handler_dept_id: int, reason: str,
                           user_id: int) -> PurchaseRequest:
-    """Đẩy YCMH sang phòng xử lý khác (hoặc trả về phòng lập khi `handler_dept_id` = 0).
+    """Đẩy YCMH sang phòng xử lý khác (hoặc TRẢ VỀ THU MUA khi `handler_dept_id` = 0 — bao-CR-524:
+    đích là phòng thu mua mặc định, ghi id thật).
 
     Gỡ NSTM khỏi mọi dòng, đổi phòng, đưa phiếu về «Đã duyệt (chưa điều phối)» để phòng
     nhận điều phối lại. GIỮ `line_status` (đã kiểm là `no_po`/`cancelled`) và GIỮ cụm NCC.
@@ -882,7 +900,7 @@ def transfer_handler_dept(db: Session, pid: int, handler_dept_id: int, reason: s
         raise HTTPException(400, "Chỉ chuyển được khi phiếu vừa duyệt/điều phối và chưa dòng nào có ĐMH")
     validate_transfer_target(db, pr, handler_dept_id, reason)
     old_id = int(pr.handler_dept_id or 0)
-    new_id = int(handler_dept_id or 0)
+    new_id = normalize_handler_dept_id(db, handler_dept_id)
     for it in items_of(db, pid):
         it.assignee = ""
     pr.assignee_id = 0
@@ -890,7 +908,7 @@ def transfer_handler_dept(db: Session, pid: int, handler_dept_id: int, reason: s
     pr.status = "approved"
     pr.updated_by = user_id
     db.commit()
-    action = "return_dept" if new_id == 0 else "transfer_dept"
+    action = "return_dept" if not int(handler_dept_id or 0) else "transfer_dept"
     old_name = dept_name_of(db, old_id, pr.department)
     new_name = dept_name_of(db, new_id, pr.department)
     record(db, user_id, ENTITY, pid, action, f"{reason.strip()} · {old_name} -> {new_name}")
@@ -944,8 +962,12 @@ def dispatch_context(db: Session, pr: PurchaseRequest) -> dict:
     mới thì thêm ở ĐÂY một chỗ, màn Cấu hình chỉ cần nhắc tên trường.
     """
     lines = items_of(db, pr.id)
+    # bao-CR-524: phiếu phòng thu mua mặc định xử lý vẫn đưa `handler_dept_id = 0` vào điều kiện
+    # — giữ nguyên nghĩa của mọi điều kiện admin đã khai kiểu «handler_dept_id not_empty» (= nhà
+    # máy tự mua). Đưa id thật vào đây là mọi phiếu thu mua chung cũng bỏ qua điều phối.
+    handler = int(pr.handler_dept_id or 0)
     return {
-        "handler_dept_id": int(pr.handler_dept_id or 0),
+        "handler_dept_id": 0 if is_central_dept(db, handler) else handler,
         "department_id": int(pr.department_id or 0),
         "company_id": int(pr.company_id or 0),
         "requester_id": int(pr.requester_id or 0),
@@ -991,8 +1013,8 @@ def dispatch_pr(db: Session, pid: int, user_id: int,
     phân loại (logic cũ giữ nguyên, chỉ dời thời điểm) và phiếu chuyển sang 'dispatched' —
     mốc duy nhất cho phép tạo Đơn mua hàng.
 
-    bao-CR-414 (GĐ2): bảng phân công tra theo PHÒNG ĐANG XỬ LÝ phiếu (phòng được nhờ, không
-    thì phòng lập phiếu); phân loại phòng chưa khai riêng thì rơi về bộ "Thu mua chung".
+    bao-CR-414 (GĐ2): bảng phân công tra theo PHÒNG ĐANG XỬ LÝ phiếu; phân loại phòng chưa khai
+    riêng thì rơi về bộ của phòng thu mua mặc định (bao-CR-524: PBA017, gồm cả dòng `0` cũ).
     `allow_global_assignee=False` khi người điều phối chỉ có bậc `dept_proc` (quản lý thu mua
     của phòng tự mua): chỉ dùng bộ riêng của phòng, không đẩy việc sang tay thu mua chung.
 
@@ -1212,7 +1234,8 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
         requester_id=_requester_id,
         requester_position=_requester_position, department=_department,
         department_id=_department_id,
-        handler_dept_id=src.handler_dept_id or 0,   # bao-CR-414: bản sao giữ phòng được nhờ
+        # bao-CR-414: bản sao giữ phòng được nhờ; bao-CR-524: `0` cũ → phòng thu mua mặc định
+        handler_dept_id=normalize_handler_dept_id(db, src.handler_dept_id),
         head_of_dept=_head_of_dept, head_of_dept_id=_head_of_dept_id,
         purpose=src.purpose, request_date=src.request_date,
         need_date=src.need_date, is_urgent=src.is_urgent, note=src.note,
@@ -1268,7 +1291,7 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
         requester_id=data.requester_id,
         requester_position=data.requester_position, department=data.department,
         department_id=data.department_id,
-        handler_dept_id=data.handler_dept_id or 0,   # bao-CR-414 (None → mặc định ở dưới, bao-CR-488)
+        handler_dept_id=data.handler_dept_id or 0,   # bao-CR-414 (None → mặc định ở dưới, bao-CR-488/524)
         head_of_dept=data.head_of_dept, head_of_dept_id=data.head_of_dept_id,
         approver_employee_id=int(data.approver_employee_id or 0),   # bao-CR-499
         purpose=data.purpose, request_date=data.request_date,
@@ -1290,9 +1313,12 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
     sync_department_ref(db, pr)
     # bao-CR-480: phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng đó.
     # bao-CR-488: chỉ tra mặc định khi người lập KHÔNG chọn (không gửi ô này). Gửi 0 là chủ ý
-    # «Thu mua chung» — nhà máy nhờ thu mua chung mua hộ — phải giữ.
+    # nhờ phòng thu mua mặc định (nhà máy nhờ thu mua mua hộ) — phải giữ, không tra lại.
     if data.handler_dept_id is None:
         pr.handler_dept_id = default_handler_dept_id(db, pr.department_id)
+    # bao-CR-524: gửi 0 (tick «Nhờ phòng khác xử lý» mà để trống / chọn thu mua) = phòng thu mua
+    # mặc định — ghi id thật, không còn phòng ảo «Thu mua chung».
+    pr.handler_dept_id = normalize_handler_dept_id(db, pr.handler_dept_id)
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
     if not pr.head_of_dept_id and (pr.department_id or pr.department):
         pr.head_of_dept_id = find_dept_head_id(db, pr.department, pr.department_id)
@@ -1341,6 +1367,8 @@ def update_pr(db: Session, pid: int, data: PRUpdate, user_id: int, can_write_pur
     for key, value in data.model_dump(exclude_unset=True,
                                       exclude={"items", "supplier_req", "supplier_pur"}).items():
         setattr(pr, key, value)
+    if data.handler_dept_id is not None:   # bao-CR-524: 0 → phòng thu mua mặc định
+        pr.handler_dept_id = normalize_handler_dept_id(db, data.handler_dept_id)
     # CR-086: FE cũ chỉ gửi TÊN phòng → bỏ id cũ đi rồi tra lại từ tên, kẻo đổi phòng mà id
     # vẫn nằm ở phòng trước đó. Gửi kèm id thì id nói tiếng nói cuối cùng.
     if data.department is not None or data.department_id is not None:

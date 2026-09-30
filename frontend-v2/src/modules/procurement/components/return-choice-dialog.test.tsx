@@ -12,7 +12,8 @@ describe('ReturnChoiceDialog', () => {
     render(<ReturnChoiceDialog open docLabel="yêu cầu mua hàng" onOpenChange={onOpenChange} onPick={onPick} />)
 
     expect(screen.getByRole('heading', { name: /trả yêu cầu mua hàng về đâu/i })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /trả phòng lập tự xử lý/i }))
+    //  bao-CR-524: đích «department» nay là phòng thu mua mặc định, không còn «phòng lập tự xử lý».
+    await userEvent.click(screen.getByRole('button', { name: /trả về phòng thu mua/i }))
     expect(onPick).toHaveBeenCalledWith('department')
     expect(onOpenChange).toHaveBeenCalledWith(false)
 

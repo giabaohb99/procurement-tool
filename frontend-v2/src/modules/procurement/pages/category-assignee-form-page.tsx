@@ -15,6 +15,7 @@ import { MultiPicker } from '@/shared/ui/multi-picker'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { RequiredMark } from '@/shared/ui/required-mark'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -23,7 +24,13 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import type { CategoryAssignee, CategoryAssigneeBulkPayload } from '../types/category-assignee'
-import { SHARED_DEPARTMENT_LABEL } from '../types/category-assignee'
+import {
+  assigneeOptions,
+  validateAssigneePair,
+  type AssigneeEmployee,
+  type AssigneeOption,
+} from '../utils/category-assignee-rules'
+import { DEFAULT_PURCHASING_LABEL } from '../utils/handling-dept-display'
 
 interface Option {
   value: number
@@ -33,8 +40,11 @@ interface Option {
 /** Mục «chưa chọn ai» của ô chọn nhân sự — `SelectItem` không nhận value rỗng. */
 const NONE = 'none'
 
-/** Mục «Thu mua chung» (department_id = 0) của ô chọn phòng — cùng lý do sentinel như `NONE`. */
-const SHARED = 'shared'
+/**
+ * Chữ mờ của ô Phòng áp dụng khi chưa chọn — bao-CR-524: không còn mục ảo «Thu mua chung»; để
+ * trống thì backend ghi phòng thu mua mặc định (phòng THẬT «Sản xuất -Thu mua» trong danh mục).
+ */
+const DEPARTMENT_PLACEHOLDER = 'Để trống = phòng thu mua mặc định'
 
 export function CategoryAssigneeFormPage() {
   const navigate = useNavigate()
@@ -42,7 +52,8 @@ export function CategoryAssigneeFormPage() {
   const { can } = usePermission()
 
   const [itemGroups, setItemGroups] = useState<Option[]>([])
-  const [employees, setEmployees] = useState<Option[]>([])
+  //  bao-CR-527: giữ cả mã trạng thái + cờ hoạt động để ô chọn chỉ mời người «Chính thức».
+  const [employees, setEmployees] = useState<AssigneeEmployee[]>([])
   //  Toàn bộ dòng phân công của MỌI phòng: cùng một phân loại có thể có một dòng
   //  chung và một dòng riêng cho từng phòng, nên map «phân loại → id dòng» phải
   //  tính theo phòng đang chọn chứ không gộp cả bảng.
@@ -51,13 +62,14 @@ export function CategoryAssigneeFormPage() {
   const [selectedCatIds, setSelectedCatIds] = useState<number[]>([])
   const [primaryId, setPrimaryId] = useState<number | 0>(0)
   const [backupId, setBackupId] = useState<number | 0>(0)
-  //  bao-CR-414 GĐ2: phòng áp dụng, 0 = Thu mua chung. Đọc từ `?dept=` khi Sửa.
+  //  bao-CR-414 GĐ2: phòng áp dụng. Đọc từ `?dept=` khi Sửa. 0 = chưa chọn → backend ghi phòng
+  //  thu mua mặc định (bao-CR-524).
   const [departmentId, setDepartmentId] = useState<number>(0)
 
   const [saving, setSaving] = useState(false)
 
-  //  Danh mục phòng ban cho ô chọn; thiếu quyền thì ô chỉ còn «Thu mua chung»
-  //  và màn cư xử y hệt trước GĐ2.
+  //  Danh mục phòng ban cho ô chọn; thiếu quyền thì ô trống và phân công rơi về phòng thu mua
+  //  mặc định (bao-CR-524) — y hệt trước GĐ2.
   const { data: departmentsData } = useDepartments(
     { page_size: 500 },
     { enabled: can('department', 'read') },
@@ -107,14 +119,19 @@ export function CategoryAssigneeFormPage() {
 
     // Load employees
     httpClient
-      .get<{ items: any[] }>('/api/employees', { params: { page_size: 1000 } })
+      .get<{ items: AssigneeEmployee[] }>('/api/employees', { params: { page_size: 1000 } })
       .then((res) => {
-        const items = res.data?.items || (res.data as any)?.data?.items || []
-        const opts = items.map((x: any) => ({
-          value: x.id,
-          label: `${x.full_name}${x.code ? ` · ${x.code}` : ''}`,
-        }))
-        setEmployees(opts)
+        const items: AssigneeEmployee[] = res.data?.items || (res.data as any)?.data?.items || []
+        setEmployees(
+          items.map((x) => ({
+            id: x.id,
+            full_name: x.full_name,
+            code: x.code,
+            status: x.status,
+            status_label: x.status_label,
+            is_active: x.is_active,
+          })),
+        )
       })
 
     loadAssignees()
@@ -138,8 +155,10 @@ export function CategoryAssigneeFormPage() {
       toast.error('Vui lòng chọn ít nhất 1 phân loại')
       return
     }
-    if (!primaryId) {
-      toast.error('Vui lòng chọn NSTM chính')
+    //  bao-CR-527: chính bắt buộc + «Chính thức»; dự phòng khác người chính + «Chính thức».
+    const pairError = validateAssigneePair(primaryId, backupId, employees)
+    if (pairError) {
+      toast.error(pairError)
       return
     }
 
@@ -175,9 +194,16 @@ export function CategoryAssigneeFormPage() {
   }, [itemGroups])
 
   const departmentLabel = useMemo(() => {
-    if (!departmentId) return SHARED_DEPARTMENT_LABEL
+    if (!departmentId) return DEFAULT_PURCHASING_LABEL
     return departments.find((d) => d.value === departmentId)?.label || `#${departmentId}`
   }, [departmentId, departments])
+
+  //  bao-CR-527: chỉ mời người «Chính thức» đang hoạt động; người đang được gán mà nay không còn
+  //  đạt thì vẫn hiện kèm tình trạng để người sửa thấy phải đổi.
+  const employeeOptions = useMemo(
+    () => assigneeOptions(employees, [primaryId, backupId]),
+    [employees, primaryId, backupId],
+  )
 
   return (
     //  ⚠️ Dùng `PageContainer` + `PageHeader` như mọi màn khác. Bản cũ tự dựng
@@ -254,27 +280,23 @@ export function CategoryAssigneeFormPage() {
                  «đã có» bên dưới, chọn xuôi từ trên xuống thì người dùng không
                  phải quay lên sửa lại. */}
             <div className="space-y-2">
-              <Label>Phòng áp dụng</Label>
-              <Select
-                value={departmentId ? String(departmentId) : SHARED}
-                onValueChange={(next) => setDepartmentId(next === SHARED ? 0 : Number(next))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={SHARED_DEPARTMENT_LABEL} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SHARED}>{SHARED_DEPARTMENT_LABEL}</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d.value} value={String(d.value)}>
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="ca-department">Phòng áp dụng</Label>
+              {/*  bao-CR-524: KHÔNG còn mục ảo «Thu mua chung». Danh sách chỉ gồm phòng thật; để
+                   trống thì backend ghi phòng thu mua mặc định («Sản xuất -Thu mua»). */}
+              <SearchSelect
+                id="ca-department"
+                value={departmentId ? String(departmentId) : ''}
+                onChange={(next) => setDepartmentId(Number(next) || 0)}
+                options={departments.map((d) => ({ value: String(d.value), label: d.label }))}
+                placeholder={DEPARTMENT_PLACEHOLDER}
+                searchPlaceholder="Tìm phòng ban…"
+                emptyMessage="Không có phòng ban nào"
+                className="w-full"
+              />
               <p className="text-xs text-muted-foreground">
-                «{SHARED_DEPARTMENT_LABEL}» áp cho mọi phiếu chưa có dòng riêng của phòng. Chọn một
-                phòng thì cặp NSTM bên dưới chỉ nhận phiếu do phòng đó xử lý, kể cả phiếu phòng
-                khác nhờ phòng này xử lý.
+                Bộ của phòng thu mua mặc định (Sản xuất -Thu mua) áp cho mọi phiếu chưa có dòng
+                riêng của phòng xử lý. Chọn một phòng khác thì cặp NSTM bên dưới chỉ nhận phiếu do
+                phòng đó xử lý, kể cả phiếu phòng khác nhờ phòng này xử lý.
               </p>
             </div>
 
@@ -312,8 +334,8 @@ export function CategoryAssigneeFormPage() {
               value={primaryId}
               onChange={setPrimaryId}
               placeholder="Chọn Nhân sự thu mua chính"
-              employees={employees}
-              hint="Nhân viên này sẽ được hệ thống ưu tiên tự động gán xử lý các dòng thuộc phân loại trên YCMH."
+              employees={employeeOptions}
+              hint="Bắt buộc, chỉ chọn được nhân sự «Chính thức» đang hoạt động. Nhân viên này sẽ được hệ thống ưu tiên tự động gán xử lý các dòng thuộc phân loại trên YCMH."
             />
 
             <EmployeeSelect
@@ -321,8 +343,8 @@ export function CategoryAssigneeFormPage() {
               value={backupId}
               onChange={setBackupId}
               placeholder="Không có dự phòng"
-              employees={employees}
-              hint="Được gán xử lý khi NSTM chính vắng mặt hoặc được ủy quyền."
+              employees={employeeOptions.filter((e) => e.value !== primaryId)}
+              hint="Tối đa một người, khác NSTM chính, cũng phải «Chính thức». Được gán xử lý khi NSTM chính không còn «Chính thức» (nghỉ thai sản, nghỉ việc…)."
             />
           </Card>
         </div>
@@ -374,7 +396,7 @@ function EmployeeSelect({
   value: number
   onChange: (id: number) => void
   placeholder: string
-  employees: Option[]
+  employees: AssigneeOption[]
   hint: string
 }) {
   return (

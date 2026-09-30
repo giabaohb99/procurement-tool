@@ -84,8 +84,8 @@ export interface PurchaseRequestDetail {
    */
   head_of_dept_id: number
   /**
-   * bao-CR-414: id PHÒNG BAN được NHỜ xử lý phiếu. `0` = không nhờ (thu mua chung xử lý,
-   * hoặc phòng tự mua nếu phòng lập phiếu có bộ máy thu mua riêng). Chọn phòng thì quản lý
+   * bao-CR-414: id PHÒNG BAN xử lý phiếu. bao-CR-524: phiếu không nhờ ai mang id THẬT của phòng thu
+   * mua mặc định («Sản xuất -Thu mua»); backend đổi cả `0` cũ sang id đó khi trả về. Chọn phòng thì quản lý
    * thu mua của phòng đó thấy + điều phối được phiếu; backend chép xuống ĐMH/YCBG con.
    */
   handler_dept_id: number
@@ -95,7 +95,7 @@ export interface PurchaseRequestDetail {
    */
   handler_dept_assigned?: boolean
   /**
-   * bao-CR-480: TÊN phòng xử lý do backend trả kèm (rỗng = thu mua chung) — màn hình
+   * bao-CR-480: TÊN phòng xử lý do backend trả kèm (bao-CR-524: có cả tên phòng thu mua mặc định) — màn hình
    * không cần quyền đọc danh mục phòng ban mới hiện được tên.
    */
   handler_dept_name?: string
@@ -159,7 +159,7 @@ export interface PurchaseRequestDetail {
   /** Backend đã tính sẵn quyền của NGƯỜI ĐANG ĐĂNG NHẬP trên phiếu này. */
   can_dispatch: boolean
   can_approve: boolean
-  /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng lập tự xử lý. */
+  /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng thu mua (bao-CR-524). */
   can_transfer_dept?: boolean
   can_return_dept?: boolean
   /** bao-CR-414 GĐ5: id phòng LẬP phiếu — backend luôn trả, chỉ hộp chuyển phòng cần tới. */

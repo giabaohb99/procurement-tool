@@ -288,7 +288,8 @@ export function PurchaseOrderInfoCard({
 
         {/*
           bao-CR-480 — «Phòng xử lý» chép từ YCMH nguồn, chỉ xem: đơn do nhà máy mua hay do
-          thu mua chung mua phải thấy ngay trên đầu đơn. Muốn đổi thì đổi ở YCMH (nút
+          phòng thu mua mặc định (bao-CR-524: «Sản xuất -Thu mua») mua phải thấy ngay trên đầu
+          đơn. Muốn đổi thì đổi ở YCMH (nút
           «Chuyển phòng xử lý»), đơn con đi theo.
         */}
         <ReadOnlyField label="Phòng xử lý">

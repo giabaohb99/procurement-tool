@@ -202,7 +202,7 @@ export function useSetUrgent(id: number) {
   })
 }
 
-/** Tham số của hộp Chuyển phòng xử lý: `handlerDeptId = 0` nghĩa là TRẢ VỀ phòng lập. */
+/** Tham số của hộp Chuyển phòng xử lý: `handlerDeptId = 0` nghĩa là TRẢ VỀ phòng thu mua (bao-CR-524). */
 export interface TransferDeptInput {
   handlerDeptId: number
   reason: string
@@ -221,7 +221,7 @@ export function useTransferPurchaseRequestDept(id: number) {
         ? purchaseRequestApi.returnDept(id, reason)
         : purchaseRequestApi.transferDept(id, handlerDeptId, reason),
     onSuccess: (_data, { handlerDeptId }) => {
-      toast.success(handlerDeptId === 0 ? 'Đã trả phiếu về phòng lập' : 'Đã chuyển phòng xử lý')
+      toast.success(handlerDeptId === 0 ? 'Đã trả phiếu về phòng thu mua' : 'Đã chuyển phòng xử lý')
       void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
     },
   })

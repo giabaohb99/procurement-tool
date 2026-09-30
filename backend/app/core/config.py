@@ -96,6 +96,10 @@ class Settings(BaseSettings):
     # duyệt chung). Rỗng = không bỏ qua phiếu nào, luồng y như công tắc trên. Giá trị thật ở màn
     # Cấu hình hệ thống (key `pr_dispatch_skip_rules`).
     PR_DISPATCH_SKIP_RULES: str = ""
+    # bao-CR-524: MÃ phòng thu mua mặc định (thay phòng ảo «Thu mua chung», id 0). Tra mã → id ở
+    # `core/central_purchasing.py`; giá trị thật ở màn Cấu hình hệ thống (key
+    # `central_purchasing_dept_code`). Không gõ cứng id vì id mỗi môi trường một khác.
+    CENTRAL_PURCHASING_DEPT_CODE: str = "PBA017"
 
     # --- Cụm PHƯƠNG ÁN (báo giá) trên YCMH — bao-CR-310, công tắc bao-CR-468 ---
     # Gồm hai thứ đi liền nhau: màn XỬ LÝ PHƯƠNG ÁN của NSTM và thẻ CHỌN PHƯƠNG ÁN trên chi

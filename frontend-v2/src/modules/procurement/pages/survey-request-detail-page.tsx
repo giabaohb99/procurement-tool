@@ -601,7 +601,7 @@ export function SurveyRequestDetailPage() {
           className="text-warning hover:text-warning"
           title={
             returnResolution === 'department'
-              ? 'Trả cả phiếu về phòng lập tự xử lý'
+              ? 'Trả cả phiếu về phòng thu mua mặc định'
               : 'Trả về để người yêu cầu sửa và gửi lại'
           }
           onClick={handleReturn}

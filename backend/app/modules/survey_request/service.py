@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.central_purchasing import get_central_dept_id, normalize_handler_dept_id
 from app.core.utils import assert_unique_product_codes
 
 from .model import (LINE_STATUSES, LS_COMPLETED, LS_RESURVEY, SurveyRequest,
@@ -169,11 +170,12 @@ def create_sr(db: Session, data, user_id: int, user=None, profile=None) -> Surve
                       **header)
     sync_department_ref(db, s)   # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu
     # bao-CR-480: phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng đó (như YCMH).
-    # bao-CR-488: chỉ khi người lập KHÔNG chọn (None); gửi 0 là chủ ý nhờ Thu mua chung, giữ nguyên.
+    # bao-CR-488: chỉ khi người lập KHÔNG chọn (None); gửi 0 là chủ ý nhờ phòng thu mua mặc định.
     if data.handler_dept_id is None:
         from app.modules.purchase_request.service import default_handler_dept_id
         s.handler_dept_id = default_handler_dept_id(db, s.department_id)
-    s.handler_dept_id = int(s.handler_dept_id or 0)
+    # bao-CR-524: 0 → id thật của phòng thu mua mặc định (PBA017), không còn phòng ảo.
+    s.handler_dept_id = normalize_handler_dept_id(db, s.handler_dept_id)
     # Tự điền Trưởng bộ phận theo Department.manager_id (parity với PYC).
     # Phòng chưa gán trưởng thì để rỗng — lúc đọc sẽ tự lấy lại (xem `_out` ở controller).
     if not s.head_of_dept_id and not s.head_of_dept and (s.department_id or s.department):
@@ -201,6 +203,8 @@ def update_sr(db: Session, sid: int, data, user_id: int, user=None, profile=None
     old_head = int(s.head_of_dept_id or 0)     # bao-CR-499
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
         setattr(s, k, v)
+    if data.handler_dept_id is not None:   # bao-CR-524: 0 → phòng thu mua mặc định
+        s.handler_dept_id = normalize_handler_dept_id(db, data.handler_dept_id)
     # CR-086: FE cũ chỉ gửi TÊN phòng → bỏ id cũ rồi tra lại từ tên; gửi kèm id thì id thắng.
     if data.department is not None or data.department_id is not None:
         if data.department_id is None:
@@ -239,6 +243,7 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
     user_id = getattr(user, "id", 0)
     src = get_sr(db, sid)
     header = {f: getattr(src, f) for f in HEADER_FIELDS}
+    header["handler_dept_id"] = normalize_handler_dept_id(db, src.handler_dept_id)   # bao-CR-524
     # NGƯỜI YÊU CẦU của bản sao = người BẤM NHÂN BẢN (KHÔNG giữ người yêu cầu phiếu gốc).
     # Nếu giữ nguyên: created_by=người clone + requester_id=người gốc -> CẢ HAI đều có quyền phía
     # yêu cầu, và phiếu hiển thị sai người yêu cầu. Đặt lại theo hồ sơ NV của người clone.
@@ -339,7 +344,8 @@ def can_transfer_dept(db: Session, s: SurveyRequest) -> bool:
 
 def transfer_handler_dept(db: Session, sid: int, handler_dept_id: int, reason: str,
                           user_id: int) -> SurveyRequest:
-    """Đẩy YCBG sang phòng xử lý khác (hoặc trả về phòng lập khi `handler_dept_id` = 0).
+    """Đẩy YCBG sang phòng xử lý khác (hoặc TRẢ VỀ THU MUA khi `handler_dept_id` = 0 — bao-CR-524:
+    đích là phòng thu mua mặc định, ghi id thật).
 
     YCBG không có bước điều phối riêng (duyệt là tự gán rồi sang `processing`), nên ở đây chỉ
     gỡ NSTM + ngày tiếp nhận của mọi dòng và đổi phòng; trạng thái giữ nguyên. Phòng nhận
@@ -351,7 +357,7 @@ def transfer_handler_dept(db: Session, sid: int, handler_dept_id: int, reason: s
                                  "chưa chọn phương án và chưa sinh YCMH")
     validate_transfer_target(db, s, handler_dept_id, reason)
     old_id = int(s.handler_dept_id or 0)
-    new_id = int(handler_dept_id or 0)
+    new_id = normalize_handler_dept_id(db, handler_dept_id)
     for ln in lines_of(db, sid):
         ln.assignee = ""
         ln.received_date = ""
@@ -359,7 +365,7 @@ def transfer_handler_dept(db: Session, sid: int, handler_dept_id: int, reason: s
     s.handler_dept_id = new_id
     s.updated_by = user_id
     db.commit()
-    action = "return_dept" if new_id == 0 else "transfer_dept"
+    action = "return_dept" if not int(handler_dept_id or 0) else "transfer_dept"
     old_name = dept_name_of(db, old_id, s.department)
     new_name = dept_name_of(db, new_id, s.department)
     record(db, user_id, ENTITY, sid, action, f"{reason.strip()} · {old_name} -> {new_name}")
@@ -821,7 +827,8 @@ def create_prs(db: Session, sid: int, user_id: int):
             requester_id=s.requester_id,
             requester_position=s.requester_position, department=s.department,
             department_id=s.department_id,      # CR-086: PYC sinh ra thừa kế id phòng của YCBG
-            handler_dept_id=s.handler_dept_id or 0,   # bao-CR-414: phòng được nhờ đi theo phiếu con
+            # bao-CR-414: phòng được nhờ đi theo phiếu con; bao-CR-524: `0` cũ → phòng thu mua mặc định
+            handler_dept_id=normalize_handler_dept_id(db, s.handler_dept_id),
             head_of_dept=s.head_of_dept or find_dept_head(db, s.department or "", s.department_id),
             # CR-087: YCBG nay đã có id TBP → thừa kế thẳng, chỉ suy lại từ phòng khi phiếu
             # nguồn chưa có (phiếu cũ). 0 = không chỉ định ai, chạy theo luật duyệt cũ.
@@ -984,9 +991,9 @@ def auto_assign(db: Session, s: SurveyRequest, allow_global_assignee: bool = Tru
 
     bao-CR-414 (GĐ2): tra bảng phân công theo PHÒNG ĐANG XỬ LÝ phiếu (phòng được nhờ, không thì
     phòng lập phiếu); `allow_global_assignee=False` (người duyệt chỉ có bậc `dept_proc`) thì
-    không rơi về bộ "Thu mua chung"."""
+    không rơi về bộ của phòng thu mua mặc định (bao-CR-524, trước là «Thu mua chung»)."""
     from app.modules.category_assignee.service import handling_dept_of, resolve_for_group
-    dept_id = handling_dept_of(s)
+    dept_id = handling_dept_of(s, get_central_dept_id(db))
     assigned = 0
     for ln in lines_of(db, s.id):
         if ln.assignee:

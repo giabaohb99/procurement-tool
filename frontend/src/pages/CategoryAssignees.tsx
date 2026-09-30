@@ -19,14 +19,33 @@ type Row = {
   id: number; item_group_id: number; item_group_name: string
   primary_employee_id: number; primary_name: string; primary_code: string
   backup_employee_id: number; backup_name: string; backup_code: string
-  // bao-CR-414 GĐ2: 0 = bộ "Thu mua chung" (áp cho mọi phòng chưa có dòng riêng)
+  // bao-CR-524: backend trả id + tên THẬT, kể cả dòng `0` cũ («Thu mua chung» → phòng thu mua
+  // mặc định «Sản xuất -Thu mua»). Không còn mục ảo nào để in riêng.
   department_id: number; department_name: string | null
+  // bao-CR-527: tình trạng HIỆN TẠI của NSTM chính — cờ để gắn cảnh báo.
+  primary_status_label?: string | null; primary_is_active?: boolean | null; primary_not_official?: boolean
 }
 
 type SortField = 'item_group_name' | 'primary_name' | 'backup_name' | 'department_name'
 
-/** Nhãn hiển thị cho dòng phân công chung (department_id = 0) */
-const SHARED_DEPT_LABEL = 'Thu mua chung'
+/** Nhãn dự phòng khi danh mục chưa có phòng thu mua mặc định (bao-CR-524) — không phải mục chọn. */
+const DEFAULT_DEPT_LABEL = 'Phòng thu mua mặc định'
+
+/** Nhãn cột Phòng: tên thật backend trả; thiếu tên mới in số id / nhãn dự phòng. */
+const deptLabel = (r: Row): string =>
+  r.department_name || (r.department_id ? `#${r.department_id}` : DEFAULT_DEPT_LABEL)
+
+/** bao-CR-527 — cảnh báo dòng có NSTM chính NAY không còn «Chính thức»: tự gán sẽ rơi sang dự phòng. */
+function NotOfficialBadge({ row }: { row: Row }) {
+  if (!row.primary_not_official || !row.primary_employee_id) return null
+  const status = row.primary_is_active === false ? 'ngừng hoạt động' : (row.primary_status_label || 'không rõ')
+  return (
+    <span className="badge warn" style={{ marginLeft: 6, fontSize: 11 }}
+      title={`NSTM chính đang «${status}» — tự gán sẽ rơi sang dự phòng. Hãy đổi NSTM chính.`}>
+      <i className="ti ti-alert-triangle" /> Không còn Chính thức
+    </span>
+  )
+}
 
 export default function CategoryAssignees() {
   const { can } = useAuth()
@@ -38,7 +57,7 @@ export default function CategoryAssignees() {
   const [cats, setCats] = useState<{ id: number; name: string }[]>([])
   const [depts, setDepts] = useState<{ id: number; name: string }[]>([])
   // Bộ lọc lưu trên URL (?cat=&name=&code=&dept=) → F5 / gửi link giữ nguyên bộ lọc
-  // dept: '' = tất cả, '0' = chỉ bộ Thu mua chung, '<id>' = một phòng
+  // dept: '' = tất cả, '<id>' = một phòng (bao-CR-524: không còn mục «Thu mua chung» = 0)
   const [f, setF] = useUrlFilters({ cat: '', name: '', code: '', dept: '' })
   const { cat: fCat, name: fName, code: fCode, dept: fDept } = f
   const setFCat = (v: string) => setF((s) => ({ ...s, cat: v }))
@@ -55,13 +74,11 @@ export default function CategoryAssignees() {
     { key: 'item_group_name', label: 'Phân loại', sort: 'item_group_name', width: '26%', cell: (r) => <b>{r.item_group_name || '—'}</b> },
     {
       key: 'department_name', label: 'Phòng', sort: 'department_name', width: '18%',
-      cell: (r) => (r.department_id
-        ? <>{r.department_name || `#${r.department_id}`}</>
-        : <span style={{ color: '#64748b' }}>{SHARED_DEPT_LABEL}</span>),
+      cell: (r) => <>{deptLabel(r)}</>,
     },
     {
       key: 'primary_name', label: 'NSTM chính', sort: 'primary_name', width: '24%',
-      cell: (r) => <>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}</>,
+      cell: (r) => <>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}<NotOfficialBadge row={r} /></>,
     },
     {
       key: 'backup_name', label: 'NSTM dự phòng', sort: 'backup_name', width: '24%',
@@ -92,7 +109,7 @@ export default function CategoryAssignees() {
   }
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then(r => setCats(r.data.data.items || []))
-    // Ô lọc Phòng: người không có quyền đọc phòng ban chỉ thấy lựa chọn "Thu mua chung"
+    // Ô lọc Phòng: người không có quyền đọc phòng ban chỉ thấy lựa chọn "Tất cả"
     api.get('/api/departments', { params: { page_size: 500 }, _silent: true } as any)
       .then(r => setDepts(r.data.data.items || [])).catch(() => setDepts([]))
   }, [])
@@ -116,9 +133,9 @@ export default function CategoryAssignees() {
     (!fCode || `${r.primary_code || ''} ${r.backup_code || ''}`.toLowerCase().includes(fCode.trim().toLowerCase()))
   ), [rows, fCat, fDept, fName, fCode])
 
-  // Giá trị dùng để sort: cột Phòng lấy nhãn hiển thị để "Thu mua chung" xếp cùng các phòng
+  // Giá trị dùng để sort: cột Phòng lấy nhãn hiển thị (phòng thu mua mặc định là phòng thật, bao-CR-524)
   const sortValue = (r: Row): string => sortField === 'department_name'
-    ? (r.department_id ? (r.department_name || '') : SHARED_DEPT_LABEL)
+    ? deptLabel(r)
     : (r[sortField] || '').toString()
 
   const sorted = useMemo(() => {
@@ -159,7 +176,6 @@ export default function CategoryAssignees() {
         <FilterItem label="Phòng" width={200}>
           <select value={fDept} onChange={e => { setFDept(e.target.value); setPage(1) }}>
             <option value="">Tất cả</option>
-            <option value="0">{SHARED_DEPT_LABEL}</option>
             {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </FilterItem>

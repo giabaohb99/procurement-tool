@@ -16,7 +16,8 @@ class Payable(Base, AuditMixin):
 
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     # bao-CR-414 GĐ4 — phòng XỬ LÝ đơn hàng lúc khoản nợ sinh ra. Từ bao-CR-484 (đại ca
-    # chốt 25/09/2026): = ô «Phòng xử lý» của đơn, 0 = thu mua chung / nợ không có đơn —
+    # chốt 25/09/2026): = ô «Phòng xử lý» của đơn (bao-CR-524: thu mua chung = id PBA017; 0 = nợ
+    # không có đơn, hoặc nợ cũ của thu mua chung chưa chạy backfill_central_purchasing_dept) —
     # KHÔNG còn lùi về phòng lập đơn (`payable.service.debt_dept_of`). Cột ẩn: không hiện,
     # không lọc trên màn; chỉ để phạm vi `dept_proc` / `dept` / loại trừ phòng bắt được
     # công nợ của phòng mình. Nợ cũ gán lại bằng `resync_departments_from_orders`.

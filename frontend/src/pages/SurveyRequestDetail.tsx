@@ -214,13 +214,16 @@ export default function SurveyRequestDetail() {
   const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }))
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
   const deptOptions     = departments.map((d) => ({ value: d.name, label: d.name }))
-  // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — «Thu mua chung» (0) đứng đầu, rồi phòng đang hoạt
-  // động; phòng đã tắt mà phiếu cũ còn trỏ tới thì giữ lại để không mất nhãn (cùng luật với YCMH).
+  // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — phòng đang hoạt động; phòng đã tắt mà phiếu cũ còn trỏ
+  // tới thì giữ lại để không mất nhãn (cùng luật với YCMH). bao-CR-524: KHÔNG còn mục ảo «Thu mua chung»
+  // (0); người không đọc được danh mục phòng ban vẫn thấy tên phòng đang xử lý nhờ `handler_dept_name`.
   const handlerDeptOptions = [
-    { value: '0', label: 'Thu mua chung' },
     ...departments
       .filter((d) => d.is_active !== false || d.id === Number(sv.handler_dept_id))
       .map((d) => ({ value: String(d.id), label: d.name })),
+    ...(Number(sv.handler_dept_id) && !departments.some((d) => d.id === Number(sv.handler_dept_id))
+      ? [{ value: String(sv.handler_dept_id), label: sv.handler_dept_name || `Phòng #${sv.handler_dept_id}` }]
+      : []),
   ]
   // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên.
   // bao-CR-486: danh sách đọc từ API theo ô «Phòng xử lý» (trước đó là CẢ danh mục nhân sự).
@@ -615,7 +618,7 @@ export default function SurveyRequestDetail() {
             bao-CR-414). Cả hai đường cùng mở thì hỏi (ReturnChoiceModal); một đường thì đi thẳng. */}
         {returnResolution !== null && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
-            title={returnResolution === 'department' ? 'Trả cả phiếu về phòng lập tự xử lý' : 'Trả về để người YC sửa & gửi lại'}
+            title={returnResolution === 'department' ? 'Trả cả phiếu về phòng thu mua mặc định' : 'Trả về để người YC sửa & gửi lại'}
             onClick={() => (returnResolution === 'choose' ? setReturnChoiceOpen(true) : runReturn(returnResolution))}>
             <i className="ti ti-corner-up-left" />Trả về
           </button>
@@ -822,11 +825,11 @@ export default function SurveyRequestDetail() {
                         value={String(sv.handler_dept_id || 0)}
                         onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                         options={handlerDeptOptions}
-                        placeholder="Thu mua chung"
+                        placeholder="Để trống = phòng thu mua mặc định"
                         autoSelectSingle={false}
                       />
                     ) : (
-                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là Thu mua chung; phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là phòng thu mua (Sản xuất -Thu mua); phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
                     )}
                   </>
                 ) : (
@@ -835,7 +838,7 @@ export default function SurveyRequestDetail() {
                     onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                     options={handlerDeptOptions}
                     disabled={!editable}
-                    placeholder="Thu mua chung"
+                    placeholder="Để trống = phòng thu mua mặc định"
                     autoSelectSingle={false}
                   />
                 )}

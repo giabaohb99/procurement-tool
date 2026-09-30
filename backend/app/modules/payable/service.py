@@ -162,17 +162,24 @@ def status_label(v: str) -> str:
     return PAYABLE_STATUS.label_of(v) or (v or "")
 
 
-def debt_dept_of(po) -> int:
+def debt_dept_of(po, db: Session | None = None) -> int:
     """Phòng mà khoản nợ của một đơn hàng TÍNH CHO — bao-CR-484 (đại ca chốt 25/09/2026).
 
-    = ô «Phòng xử lý» của đơn (`handler_dept_id`); `0` = thu mua chung. KHÔNG lùi về phòng
-    lập đơn như luật CR-414 GĐ4: từ CR-480, `0` đã mang nghĩa «Thu mua chung xử lý», nên nợ
-    của đơn nhà máy xin mà thu mua chung mua hộ là nợ của thu mua chung, không phải của nhà
-    máy — họ không trả, không cấn trừ, không nên thấy nó ở bậc phòng. Đừng dùng
-    `category_assignee.handling_dept_of` ở đây: hàm đó vẫn lùi về phòng lập để tra bộ phân
-    công người phụ trách, một việc khác.
+    = ô «Phòng xử lý» của đơn (`handler_dept_id`). KHÔNG lùi về phòng lập đơn như luật CR-414
+    GĐ4: từ CR-480, phòng xử lý trống nghĩa là thu mua chung xử lý, nên nợ của đơn nhà máy xin
+    mà thu mua chung mua hộ là nợ của thu mua chung, không phải của nhà máy — họ không trả,
+    không cấn trừ, không nên thấy nó ở bậc phòng. Đừng dùng `category_assignee.handling_dept_of`
+    ở đây: hàm đó tra bộ phân công người phụ trách, một việc khác.
+
+    bao-CR-524: có `db` thì đơn cũ còn `0` tính cho PHÒNG THU MUA MẶC ĐỊNH (id thật của PBA017)
+    — nợ mới sinh không còn mang `0`. Không có `db` (hoặc danh mục chưa có phòng đó) thì trả
+    đúng số trên đơn như trước.
     """
-    return int(getattr(po, "handler_dept_id", 0) or 0)
+    handler = int(getattr(po, "handler_dept_id", 0) or 0)
+    if po is None or db is None:
+        return handler
+    from app.core.central_purchasing import normalize_handler_dept_id
+    return normalize_handler_dept_id(db, handler)
 
 
 def resync_departments_from_orders(db: Session, dry_run: bool = False) -> int:
@@ -185,12 +192,14 @@ def resync_departments_from_orders(db: Session, dry_run: bool = False) -> int:
     """
     from app.modules.purchase_order.model import PurchaseOrder
 
+    from app.core.central_purchasing import normalize_handler_dept_id
+
     rows = (db.query(Payable, PurchaseOrder.handler_dept_id)
             .join(PurchaseOrder, PurchaseOrder.id == Payable.po_id)
             .filter(Payable.po_id > 0).all())
     changed = 0
     for p, handler in rows:
-        want = int(handler or 0)
+        want = normalize_handler_dept_id(db, handler)   # bao-CR-524: `0` → phòng thu mua mặc định
         if int(p.department_id or 0) == want:
             continue
         changed += 1
@@ -212,7 +221,7 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
     `due_date` có giá trị thì dùng thẳng (dòng chi phí có ô *Hạn thanh toán* riêng),
     rỗng thì tính từ ngày phát sinh + số ngày công nợ của NCC như trước.
     `department_id` (bao-CR-414 GĐ4, luật đổi ở bao-CR-484): phòng xử lý đơn — người gọi
-    tính sẵn bằng `debt_dept_of(po)` (0 = thu mua chung); cập nhật lại mỗi lần lưu đơn để
+    tính sẵn bằng `debt_dept_of(po, db)` (bao-CR-524: thu mua chung = id PBA017); cập nhật lại mỗi lần lưu đơn để
     đổi phòng xử lý là nợ đi theo.
     """
     p = db.query(Payable).filter(

@@ -24,7 +24,7 @@ def _out(db: Session, p: Payable, misa_by_po: dict[int, str] | None = None,
                     else service.get_invoice_date(db, p))
     return {
         "id": p.id, "company_id": p.company_id, "supplier_code": p.supplier_code,
-        # bao-CR-414 GĐ4 — phòng xử lý đơn lúc nợ sinh ra (0 = nợ cũ / thu mua chung).
+        # bao-CR-414 GĐ4 — phòng xử lý đơn lúc nợ sinh ra (0 = nợ cũ; bao-CR-524: thu mua chung = id PBA017).
         # Cột ẩn: giao diện không hiện, chỉ để kiểm tra / gỡ lỗi phạm vi.
         "department_id": int(p.department_id or 0),
         "supplier_name": p.supplier_name, "source_type": p.source_type,

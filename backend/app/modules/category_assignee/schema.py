@@ -7,7 +7,7 @@ class CategoryAssigneeBase(BaseModel):
     item_group_id: int
     primary_employee_id: int = 0
     backup_employee_id: int = 0
-    department_id: int = 0   # bao-CR-414: 0 = bộ phân công "Thu mua chung"
+    department_id: int = 0   # bao-CR-414/524: 0 = phòng thu mua mặc định (lưu thành id thật)
 
 
 class CategoryAssigneeCreate(CategoryAssigneeBase):
@@ -33,6 +33,6 @@ class CategoryAssigneeOut(CategoryAssigneeBase):
     item_group_name: str | None = None
     primary_name: str | None = None
     backup_name: str | None = None
-    department_name: str | None = None   # bao-CR-414: None khi là bộ chung
+    department_name: str | None = None   # bao-CR-524: tên phòng thật, kể cả dòng `0` cũ
     updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
     model_config = {"from_attributes": True}
