@@ -24,7 +24,7 @@ class SupplierLineIn(BaseModel):
     delivery_policy: str = ""
     debt_policy: str = ""
     defect_return: str = ""
-    nspt_note: str = ""
+    nspt_note: str = Field(default="", max_length=5000)  # bao-CR-537: cột TEXT, chặn 422 thay vì 500
     nspt_reason: str = ""
     line_approve: str = ""
     line_approve_note: str = ""
@@ -67,7 +67,7 @@ class ProductLineIn(BaseModel):
     sample_qty: float = 0
     lab_result: str = ""
     lab_note: str = ""
-    nspt_note: str = ""
+    nspt_note: str = Field(default="", max_length=5000)  # bao-CR-537: cột TEXT, chặn 422 thay vì 500
     nspt_reason: str = ""
     line_approve: str = ""
     line_approve_note: str = ""

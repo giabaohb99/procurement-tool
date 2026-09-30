@@ -73,7 +73,7 @@ class SurveySupplierLine(Base, AuditMixin):
     delivery_policy: Mapped[str] = mapped_column(String(255), default="")
     debt_policy: Mapped[str] = mapped_column(String(50), default="")
     defect_return: Mapped[str] = mapped_column(String(255), default="")
-    nspt_note: Mapped[str] = mapped_column(String(255), default="")
+    nspt_note: Mapped[str] = mapped_column(Text, default="")  # bao-CR-537: 255 -> TEXT
     nspt_reason: Mapped[str] = mapped_column(Text, default="")
     line_approve: Mapped[str] = mapped_column(String(255), default="")
     line_approve_note: Mapped[str] = mapped_column(Text, default="")
@@ -127,7 +127,7 @@ class SurveyProductLine(Base, AuditMixin):
     sample_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     lab_result: Mapped[str] = mapped_column(String(255), default="")
     lab_note: Mapped[str] = mapped_column(Text, default="")
-    nspt_note: Mapped[str] = mapped_column(String(255), default="")
+    nspt_note: Mapped[str] = mapped_column(Text, default="")  # bao-CR-537: 255 -> TEXT
     nspt_reason: Mapped[str] = mapped_column(Text, default="")
     line_approve: Mapped[str] = mapped_column(String(255), default="")
     line_approve_note: Mapped[str] = mapped_column(Text, default="")
