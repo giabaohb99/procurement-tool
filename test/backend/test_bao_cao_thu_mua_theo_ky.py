@@ -183,6 +183,25 @@ class TestBaoCaoMuaHangTongHop:
         data = compute_procurement_summary(db, user, period, cid, None, show_ncc=True)
         assert data["totals"]["current"]["order_value"] == 100.0   # KHÔNG cộng đơn "Phòng Khác"
 
+    def test_cong_no_toan_cong_ty_khong_lot_toi_nguoi_chi_xem_phong_minh(self, db, seed, monkeypatch):
+        """bao-CR-533: `debt_snapshot` tính nợ TOÀN công ty. Người phạm vi phòng ban từng thấy nguyên
+        con số đó ở Tổng, dù dòng chi phí đã khoanh phòng. Nay vắng hẳn hai khóa công nợ; người xem
+        toàn công ty vẫn có đủ (vế đối chứng)."""
+        cid = seed.company_id
+        _payable(db, cid, "2026-09-01", 500, status="unpaid", due_date="2026-08-01")
+        db.commit()
+        user = SimpleNamespace(id=0)
+        period = parse_period({"preset": "custom", "date_from": "2026-09-01",
+                               "date_to": "2026-09-30", "compare": "none"})
+
+        monkeypatch.setattr(report_service, "report_dept_scope", lambda db, user: {"Phòng Test"})
+        cur = compute_procurement_summary(db, user, period, cid, None, show_ncc=True)["totals"]["current"]
+        assert "debt_remaining" not in cur and "debt_overdue" not in cur
+
+        monkeypatch.setattr(report_service, "report_dept_scope", lambda db, user: None)
+        cur = compute_procurement_summary(db, user, period, cid, None, show_ncc=True)["totals"]["current"]
+        assert cur["debt_remaining"] == 500.0 and cur["debt_overdue"] == 500.0
+
     def test_chi_phi_gan_duoc_phong_ban_va_chia_theo_nhom_hang(self, db, seed, monkeypatch):
         """Finding #3: `Payable` không tự có phòng ban/nhóm hàng — tra qua `department_id`
         (bảng Phòng ban) và qua ĐMH liên quan (`po_id`); ĐMH có NHIỀU nhóm hàng thì chia chi

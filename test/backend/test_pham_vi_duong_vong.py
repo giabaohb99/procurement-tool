@@ -177,17 +177,25 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     # ── Đính kèm ─────────────────────────────────────────────────────────────
     "attachment/controller.py": [
-        (OK_KHONG_CAN, "L107 `DocumentVersion` — chỉ đọc TRẠNG THÁI để chặn sửa hồ sơ "
-                       "đang trình duyệt; quyền đã hỏi ở `_check` (L234/L293)"),
-        (OK_DA_KIEM, "L123 `Comment` — L126 `resolve_doc` (quyền + phạm vi, 2 tầng)"),
-        (OK_DA_KIEM, "L143 `ForumPost` — L146 `forum.service.can_view` (luật audience)"),
-        (OK_DA_KIEM, "L237 `FileLink` — L234 `_check(..., \"manage\", entity_id)` + so "
-                     "`lk.entity/entity_id` với thân yêu cầu"),
-        (OK_DA_KIEM, "L297 `StoredFile` — L293 `_check(..., \"manage\", entity_id)`"),
-        (OK_DA_KIEM, "L546 `FileLink` — chính hàm `_get_file_with_permission` kiểm ngay "
-                     "sau đó (L549-561) qua `_check`/`_check_comment`/`_check_forum`"),
-        (OK_KHONG_CAN, "L571 `StoredFile` — lấy theo `lk.file_id` đã kiểm ở trên"),
-        (OK_DA_KIEM, "L605 `FileLink` (DELETE) — L607-613 `_check(..., \"manage\")`"),
+        #  Số dòng rà lại 30/09/2026 (bao-CR-533) — bảng cũ còn ghi số dòng của bản 05/09.
+        (OK_KHONG_CAN, "L121 `DocumentVersion` — chỉ đọc TRẠNG THÁI để chặn sửa hồ sơ "
+                       "đang trình duyệt; quyền đã hỏi ở `_check(..., \"manage\")` ngay trước "
+                       "mọi chỗ gọi `_block_version_in_approval`"),
+        (OK_KHONG_CAN, "L139 `LeaveRequest` (bao-CR-505) — `_block_leave_request_locked` chỉ đọc "
+                       "trạng thái đơn để chặn thêm/gỡ tệp khi đơn đã gửi duyệt; cả ba chỗ gọi "
+                       "(upload · register · xóa) đều chạy SAU `_check(..., \"manage\", entity_id)` "
+                       "nên quyền + phạm vi của tờ đơn đã được hỏi; không trả dữ liệu đơn ra ngoài"),
+        (OK_DA_KIEM, "L174 `Comment` — ngay sau là `resolve_doc` (quyền + phạm vi, 2 tầng)"),
+        (OK_DA_KIEM, "L194 `ForumPost` — ngay sau là `forum.service.can_view` (luật audience)"),
+        (OK_DA_KIEM, "L290 `FileLink` (sắp thứ tự) — `_check(..., \"manage\", entity_id)` ở đầu "
+                     "hàm + so `lk.entity/entity_id` với thân yêu cầu"),
+        (OK_DA_KIEM, "L366 `StoredFile` (register) — `_check(..., \"manage\", entity_id)` ở đầu "
+                     "hàm + chỉ nhận tệp chính người gọi tải lên (`owned`)"),
+        (OK_DA_KIEM, "L631 `FileLink` — chính hàm `_get_file_with_permission` kiểm ngay "
+                     "sau đó qua `_check`/`_check_comment`/`_check_forum`"),
+        (OK_KHONG_CAN, "L656 `StoredFile` — lấy theo `lk.file_id` đã kiểm ở trên"),
+        (OK_DA_KIEM, "L690 `FileLink` (DELETE) — ngay sau là `_check(..., \"manage\")` / "
+                     "`_check_comment` / `_check_forum`"),
     ],
     # ── Đăng nhập ────────────────────────────────────────────────────────────
     "auth/controller.py": [
@@ -272,7 +280,7 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L71 `GET /employees/me` — id lấy từ `user.employee_id` của CHÍNH "
                        "người đang đăng nhập, không nhận từ URL; trường nhạy cảm vẫn qua "
                        "`sensitive.mask`"),
-        (OK_DA_KIEM, "L242 `POST /employees/{eid}/set-password` — "
+        (OK_DA_KIEM, "L304 `POST /employees/{eid}/set-password` — "
                      "`_block_set_password_out_of_scope` → `get_scoped(..., \"write\")` "
                      "chạy trước. ĐÃ VÁ 05/09/2026 (commit 4c1ecaa); trước đó cửa này "
                      "chỉ có `require(\"employee\", \"write\")` nên `employee.write` "
@@ -463,7 +471,10 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #  · `agent_hub/controller.py` +1 (ai-CR-036) — sổ việc bot, entity PUBLIC `agent_task`;
     #  · `document/approval_preview_controller.py` +1 — văn bản gốc, `access_service.can` ngay sau.
     #  90 → 91: `customs/controller.py` +1 (bao-CR-493) — tệp gốc của lô hải quan, lô đã qua `_get_batch`.
-    assert sum(that.values()) == 91, f"tổng phải là 91, đang là {sum(that.values())}"
+    #  91 → 92 (bao-CR-533, 30/09/2026): `attachment/controller.py` +1 — trạng thái đơn nghỉ phép
+    #  (bao-CR-505), sau `_check`. `employee/controller.py` giữ 2: lần gọi bao-CR-507 thêm vào cửa
+    #  PATCH hồ sơ nay đổi thành `_employee_in_scope(..., "write")` — cửa đó trước giờ KHÔNG xét phạm vi.
+    assert sum(that.values()) == 92, f"tổng phải là 92, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
@@ -535,6 +546,48 @@ def test_a2_dat_lai_mat_khau_nhan_su_ngoai_pham_vi_bi_chan(world):
     emp_ctl.set_password(world.emp["a2"], SetPasswordIn(password="dat-lai2026"), db, a1.user)
     a2_hash = db.query(User).filter(User.employee_id == world.emp["a2"]).first().password_hash
     assert verify_password("dat-lai2026", a2_hash) is True
+
+
+def test_a2b_cac_cua_ghi_ho_so_nhan_su_ngoai_pham_vi_bi_chan(world):
+    """CANH KHÔNG TÁI PHÁT (bao-CR-533) — năm cửa GHI hồ sơ nhân sự từng chỉ hỏi QUYỀN.
+
+    `PATCH /employees/{eid}` · `POST /{eid}/avatar` · `POST|DELETE /{eid}/signature` ·
+    `DELETE /{eid}` nạp hồ sơ bằng `service.get_employee` (không phạm vi) nên bài A1 không
+    đếm được chúng. Người có `employee.write` phạm vi công ty gõ id người công ty khác là:
+    đổi EMAIL hồ sơ (kéo theo email tài khoản — khóa đăng nhập Google, bao-CR-472), đặt
+    CHỮ KÝ in lên phiếu, hay xóa hồ sơ kèm khóa tài khoản. Nay cả năm qua
+    `_employee_in_scope` và trả 404 như cửa đặt mật khẩu (A2).
+    """
+    from app.modules.employee import controller as emp_ctl
+    from app.modules.employee.model import Employee
+    from app.modules.employee.schema import EmployeeUpdate
+
+    db = world.db
+    a1 = world.grant("a1", "employee", scope="company", actions=("read", "write", "delete"))
+    b1 = world.emp["b1"]
+    assert b1 not in a1.sees(model_of("employee")), "b1 đứng NGOÀI phạm vi của a1"
+    email_cu = db.get(Employee, b1).email
+
+    cua = [
+        ("PATCH hồ sơ", lambda eid: emp_ctl.update_employee(
+            eid, EmployeeUpdate(email="ke-gian@example.com"), db, a1.user)),
+        ("đổi ảnh", lambda eid: emp_ctl.update_employee_avatar(eid, None, db, a1.user)),
+        ("đặt chữ ký", lambda eid: emp_ctl.update_employee_signature(eid, None, db, a1.user)),
+        ("gỡ chữ ký", lambda eid: emp_ctl.delete_employee_signature(eid, db, a1.user)),
+        ("xóa hồ sơ", lambda eid: emp_ctl.delete_employee(eid, db, a1.user)),
+    ]
+    for ten, goi in cua:
+        with pytest.raises(HTTPException) as e:
+            goi(b1)
+        assert e.value.status_code == 404, f"{ten}: phải 404 như cửa đặt mật khẩu"
+    db.expire_all()
+    assert db.get(Employee, b1) is not None, "hồ sơ ngoài phạm vi không được bị xóa"
+    assert db.get(Employee, b1).email == email_cu, "email ngoài phạm vi không được bị đổi"
+
+    #  Vế đối chứng: trong phạm vi thì cửa sửa hồ sơ vẫn chạy — bản vá không được khóa luôn
+    #  việc có thật của hành chính.
+    emp_ctl.update_employee(world.emp["a2"], EmployeeUpdate(phone="0909000111"), db, a1.user)
+    assert db.get(Employee, world.emp["a2"]).phone == "0909000111"
 
 
 def test_a3_tu_tao_tai_khoan_cho_nhan_su_ngoai_pham_vi_bi_chan(world):

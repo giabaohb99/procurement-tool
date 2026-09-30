@@ -70,6 +70,32 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-533 | Vá các bài kiểm phạm vi đỏ sẵn, lộ ra hai lỗ phạm vi thật
+- status: dang-lam
+- date: 2026-09-30
+Đại ca giao qua Erp Agent 1: vá các bài kiểm phạm vi đang đỏ trên nhánh chung, soi từng chỗ chứ không
+nâng số cho xanh. Soi ra hai bài đỏ đều trỏ tới lỗ thật.
+
+Lỗ thứ nhất ở hồ sơ nhân sự: cửa sửa hồ sơ từ trước tới giờ không xét phạm vi, người có quyền ghi nhân
+sự hẹp gõ mã số là sửa được họ tên, email, trạng thái của người ngoài phạm vi, mà email hồ sơ kéo theo
+email tài khoản dùng để đăng nhập Google. Bốn cửa cùng họ cũng vậy: đổi ảnh đại diện, đặt và gỡ chữ ký
+in lên phiếu, xóa hồ sơ. Em cho cả năm cửa đi qua kiểm phạm vi, ngoài phạm vi trả không tìm thấy. Người
+tự sửa hồ sơ của mình và hành chính sửa hồ sơ trong phạm vi vẫn làm được như cũ. Cửa đọc hồ sơ theo mã
+số cũng chưa xét phạm vi nhưng các trường nhạy cảm vẫn che, em chưa đụng vì có thể màn khác đang dùng,
+chờ đại ca quyết.
+
+Lỗ thứ hai ở báo cáo mua hàng theo kỳ: các dòng chi phí đã khoanh đúng phòng, nhưng số công nợ còn lại
+và quá hạn vẫn tính cho cả công ty, người chỉ xem phòng mình cũng thấy. Nay hai số đó chỉ hiện với người
+xem toàn công ty.
+
+Còn lại là việc sổ sách của bài kiểm: khai thêm một lần đọc hợp lệ ở phần đính kèm đơn nghỉ phép, sửa số
+dòng đã trôi, rút một tệp văn bản khỏi danh sách miễn trừ vì nó đã tự kiểm phạm vi, và sửa hai bài kiểm
+cũ dựng thiếu quyền. Hai mươi tệp kiểm liên quan chạy lại xanh hết. Chưa commit, Agent 1 gom đẩy.
+
+Mã nguồn: backend/app/modules/employee/controller.py · report/procurement_summary_service.py ·
+test_pham_vi_duong_vong.py · test_pham_vi_luat_bat_bien.py · test_pham_vi_nhan_su_hanh_chinh.py ·
+test_kiem_nhiem_phong_ban.py · test_bao_cao_thu_mua_theo_ky.py
+
 ## bao-CR-531 | Bản in phiếu đề xuất mua hàng: hộ kinh doanh chỉ hai ô ký, Giám đốc trùng người ký thì gộp ô
 - status: xong
 - date: 2026-09-30
@@ -10054,3 +10080,27 @@ người không đổi, và các trang đều chạy bình thường.
 Mã nguồn: `backend/app/modules/company/merge_service.py`, `backend/scripts/merge_duplicate_company.py`,
 bài kiểm `test/backend/test_gop_cong_ty_trung_cr532.py` (13 bài).
 Deploy: dữ liệu dev + prod 30/09; sao lưu prod `procurement_truoc_cr532_20260930_1539.sql.gz`.
+
+## bao-CR-533 | Chặn tạo hoặc sửa công ty bị trùng mã số thuế
+- status: xong
+- date: 2026-09-30
+- pic: NSU209
+Sau đợt gộp hai công ty DEGO bị trùng, đại ca bảo chặn luôn từ gốc để chuyện đó không lặp lại.
+Trước giờ hệ thống chỉ chặn trùng mã công ty, mà mã công ty thì ai cũng tự đặt được, nên hai
+dòng cùng một mã số thuế vẫn tạo được bình thường. Nay tạo mới hay sửa công ty mà mã số thuế đã
+thuộc một công ty khác thì hệ thống từ chối, và câu báo nói rõ công ty nào đang giữ mã đó để
+người dùng biết mở đúng chỗ mà sửa.
+
+Khi so trùng, hệ bỏ qua khoảng trắng và không phân biệt chữ hoa thường, nhưng giữ dấu gạch, vì
+mã có đuôi gạch là mã của chi nhánh, khác hẳn công ty mẹ và phải tạo được. Công ty chưa có mã
+số thuế thì không bị coi là trùng. Lúc sửa, hệ chỉ kiểm khi mã số thuế thật sự bị đổi, vì màn
+sửa luôn gửi lại mọi ô, và nếu còn sót dữ liệu cũ bị trùng thì không được khóa luôn việc sửa các
+ô khác của hai công ty đó. Tiện tay em khai luôn độ dài tối đa cho ô mã số thuế, trước đó dán
+chuỗi dài vào là lỗi máy chủ thay vì câu báo.
+
+Em rà dữ liệu thật trước khi chặn: cả máy thử lẫn máy thật đều không còn cặp nào trùng, nên
+chốt mới không khóa ai. Bài kiểm mới xanh, và em thử gỡ chốt ra thì bài kiểm đỏ đúng chỗ. Cả hai
+giao diện tự hiện câu báo qua thông báo lỗi sẵn có, không phải sửa giao diện.
+
+Mã nguồn: `backend/app/modules/company/service.py`, `backend/app/modules/company/schema.py`,
+bài kiểm `test/backend/test_chan_trung_mst_cr533.py`. Chưa commit, chưa deploy.

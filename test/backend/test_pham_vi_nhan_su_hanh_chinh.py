@@ -949,8 +949,8 @@ def test_c5_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_phong_ban_bi_chan(world):
     assert err.value.status_code == 404
 
 
-def test_c6_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_PATCH_KHONG_bi_chan(world):
-    """🔴 LỖ THẬT — `employee/controller.py:188-204`.
+def test_c6_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_PATCH_bi_chan(world):
+    """ĐÃ VÁ (bao-CR-533, 30/09/2026) — trước đây là 🔴 LỖ THẬT ở `employee/controller.py:188-204`.
 
     ```python
     if data.department_id is not None:          # dòng 198
@@ -970,11 +970,11 @@ def test_c6_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_PATCH_KHONG_bi_chan(world):
     Đối chiếu: cửa kiêm nhiệm ngay bên cạnh (`set_employee_departments`, ca C5)
     gọi `_employee_in_scope` trước. Hai cửa cùng một màn hình, hai luật khác nhau.
 
-    Ghim HÀNH VI HIỆN TẠI để bản vá làm ca này đỏ lên có chủ đích.
-
-    # QUYẾT ĐỊNH CHỜ: `PATCH /employees/{eid}` có nên gọi `_employee_in_scope(
-    # db, eid, user, profile, "write")` ở đầu hàm, không phụ thuộc vào việc lần
-    # lưu này có đụng `department_id` hay không?
+    Ca này từng ghim hành vi lỗ để bản vá làm nó đỏ lên có chủ đích, kèm câu hỏi chờ:
+    «`PATCH /employees/{eid}` có nên gọi `_employee_in_scope(..., "write")` ở đầu hàm?».
+    bao-CR-533 trả lời CÓ: cửa nạp hồ sơ qua `_employee_in_scope` rồi mới làm gì khác
+    (cùng lượt vá ảnh đại diện, chữ ký, xóa hồ sơ — xem A2b ở `test_pham_vi_duong_vong.py`).
+    Nay ca này canh ngược lại: ngoài phạm vi → 404, hồ sơ không bị đụng.
     """
     from app.modules.employee import controller as employee_controller
     from app.modules.employee.model import Employee
@@ -983,11 +983,19 @@ def test_c6_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_PATCH_KHONG_bi_chan(world):
     a1 = world.grant("a1", "employee", scope="own", actions=("read", "write"))
     assert a1.sees(Employee, "employee") == {world.emp["a1"]}, "phạm vi đúng là hẹp"
 
-    employee_controller.update_employee(world.emp["b1"],
-                                        EmployeeUpdate(full_name="Bị sửa trộm"),
-                                        world.db, a1.user)
+    ten_cu = world.db.get(Employee, world.emp["b1"]).full_name
+    with pytest.raises(HTTPException) as e:
+        employee_controller.update_employee(world.emp["b1"],
+                                            EmployeeUpdate(full_name="Bị sửa trộm"),
+                                            world.db, a1.user)
+    assert e.value.status_code == 404
+    world.db.expire_all()
+    assert world.db.get(Employee, world.emp["b1"]).full_name == ten_cu
 
-    assert world.db.get(Employee, world.emp["b1"]).full_name == "Bị sửa trộm"
+    #  Vế đối chứng: hồ sơ của CHÍNH MÌNH (phạm vi own = self) vẫn sửa được.
+    employee_controller.update_employee(world.emp["a1"], EmployeeUpdate(phone="0909111222"),
+                                        world.db, a1.user)
+    assert world.db.get(Employee, world.emp["a1"]).phone == "0909111222"
 
 
 def test_c7_doi_phap_nhan_cua_CHINH_MINH_khong_qua_chot_nao(world, leave_ids):
