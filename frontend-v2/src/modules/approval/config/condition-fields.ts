@@ -2,7 +2,7 @@ import {
   FALLBACK_CONFIDENTIAL_LEVELS,
   FALLBACK_URGENCY_LEVELS,
 } from '@/modules/document/types/security-level'
-import type { ConditionOp } from '../helpers/node-condition'
+import type { ConditionField, ConditionOp } from '@/shared/condition-builder/condition-rule'
 
 /**
  * Giá trị của ô lấy ở đâu ra. `level` dùng BẢN DỰ PHÒNG khai ngay tại đây (mảng
@@ -13,15 +13,13 @@ import type { ConditionOp } from '../helpers/node-condition'
  */
 export type ConditionValueSource = 'level' | 'doc_type' | 'company' | 'department' | 'employee'
 
-export interface ConditionFieldDef {
-  /** Phải khớp KHÓA trong bối cảnh phiếu (`approval_bridge.boi_canh`). */
-  name: string
-  label: string
+/**
+ * Một ô của luồng duyệt. `name` phải khớp KHÓA trong bối cảnh phiếu
+ * (`approval_bridge.boi_canh`); phần chung (nhãn, phép so) ở `ConditionField`.
+ */
+export interface ConditionFieldDef extends ConditionField {
   source: ConditionValueSource
-  /** Chỉ bày những phép có nghĩa với ô này — bày đủ tám phép là bày cả phép sai. */
-  ops: ConditionOp[]
   choices?: { value: number; label: string }[]
-  hint?: string
 }
 
 /** Phép so lớn nhỏ chỉ có nghĩa trên thang có thứ bậc (mức mật, độ khẩn). */

@@ -28,14 +28,19 @@ FIELDS = [
              "tự phân bổ nhân sự (phiếu sang \"Đã điều phối\"). "
              "TẮT: quay về luồng cũ — trưởng bộ phận duyệt là phân bổ nhân sự ngay, bỏ hẳn bước thứ 2. "
              "Đổi lúc nào cũng được, có hiệu lực ngay, không ảnh hưởng phiếu đã xử lý xong."},
-    {"key": "pr_dispatch_skip_rules", "group": "workflow", "type": "str",
+    #  bao-CR-528: `type: "condition"` = giao diện vẽ BỘ CHỌN ĐIỀU KIỆN (trường · phép so · giá
+    #  trị) thay cho ô gõ JSON; `condition_entity` nói bộ trường nào. Dưới DB vẫn là chuỗi JSON cú
+    #  pháp bộ máy duyệt, `app_settings.REGISTRY` vẫn khai `str` — kiểu này chỉ là chuyện vẽ ô và
+    #  kiểm ở cửa lưu (`_normalize`). Giao diện cũ chưa biết kiểu này thì rơi về ô chữ như trước.
+    {"key": "pr_dispatch_skip_rules", "group": "workflow", "type": "condition",
+     "condition_entity": "pr_dispatch",
      "label": "Yêu cầu mua hàng: BỎ QUA bước thu mua duyệt lần 2 cho phiếu thỏa điều kiện",
-     "hint": "Chỉ có tác dụng khi công tắc ở trên đang BẬT. Để trống = không bỏ qua phiếu nào. Khai điều kiện JSON "
-             "theo cú pháp bộ máy duyệt, các dòng nối nhau bằng VÀ. Trường dùng được: handler_dept_id (phòng xử lý, "
-             "0 = phòng thu mua mặc định) · department_id (phòng lập) · company_id · is_urgent · line_count. "
-             "Ví dụ để NHÀ MÁY TỰ MUA không qua phòng thu mua mặc định: [{\"field\": \"handler_dept_id\", \"op\": \"not_empty\"}]. "
+     "hint": "Chỉ có tác dụng khi công tắc ở trên đang BẬT. Không đặt điều kiện nào = không bỏ qua phiếu nào. "
+             "Bấm «Thêm điều kiện» rồi chọn trường, phép so và giá trị; có nhiều điều kiện thì phiếu phải thỏa "
+             "TẤT CẢ. Phòng thu mua mặc định (Sản xuất -Thu mua) được tính là «để trống», nên điều kiện hay dùng "
+             "nhất là «Phòng xử lý có giá trị» — nghĩa là phiếu nhờ phòng khác (ví dụ nhà máy tự mua) xử lý. "
              "Phiếu thỏa điều kiện thì trưởng bộ phận duyệt xong là hệ thống tự phân bổ nhân sự theo bộ phân công "
-             "RIÊNG của phòng xử lý; phiếu còn lại vẫn chờ thu mua duyệt lần 2. Gõ sai JSON = coi như để trống."},
+             "RIÊNG của phòng xử lý; phiếu còn lại vẫn chờ thu mua duyệt lần 2."},
     {"key": "central_purchasing_dept_code", "group": "workflow", "type": "str",
      "label": "Mã phòng thu mua mặc định",
      "hint": "Mã phòng ban (danh mục Phòng ban) nhận mọi YCMH · YCBG · ĐMH không nhờ phòng nào "
@@ -170,6 +175,18 @@ def _label_of(key: str) -> str:
     return _LABELS.get(key, key)
 
 
+def _get_condition_fields(entity: str) -> dict:
+    """Bộ trường điều kiện {khóa: nhãn} của một ô `type: "condition"` — bao-CR-528.
+
+    Nhập muộn: `setting` là module hạ tầng, không kéo module nghiệp vụ vào lúc khởi động. Bộ
+    trường lấy từ ĐÚNG chỗ dựng bối cảnh phiếu, nên hai bên không lệch nhau được.
+    """
+    if entity == "pr_dispatch":
+        from app.modules.purchase_request.service import DISPATCH_CONTEXT_FIELDS
+        return DISPATCH_CONTEXT_FIELDS
+    return {}
+
+
 _TRUTHY = {"true", "1", "yes", "on"}
 _FALSY = {"false", "0", "no", "off", ""}
 
@@ -213,6 +230,22 @@ def _normalize(field: dict, val) -> str:
         if raw not in allowed:
             raise HTTPException(400, f"\"{nhan}\" phải là một trong: {', '.join(allowed)}")
         return raw
+    if kind == "condition":
+        #  bao-CR-528: lúc CHẠY, điều kiện hỏng vẫn được đọc khoan dung (= không có điều kiện,
+        #  xem `condition_service.parse`). Nhưng ở cửa lưu thì phải chặn: trước CR này gõ sai một
+        #  tên trường là luồng lặng lẽ không bỏ qua phiếu nào, và không ai biết vì sao.
+        from app.modules.approval.condition_service import find_error, parse
+        raw = "" if val is None else str(val).strip()
+        if raw == str(app_settings.get(field["key"]) or "").strip():
+            #  Màn hình gửi lại MỌI ô mỗi lần bấm Lưu. Giá trị cũ đang nằm dưới DB (khai tay từ
+            #  trước CR này) mà hỏng thì chỉ được phép chặn người SỬA ô này, không được chặn cả
+            #  lần lưu của người chỉ đổi một ô email ở tab khác.
+            return raw
+        problem = find_error(raw, _get_condition_fields(field.get("condition_entity", "")))
+        if problem:
+            raise HTTPException(400, f"\"{nhan}\": điều kiện {problem}")
+        #  `[]` nghĩa y như để trống — lưu thành rỗng cho nhật ký và màn hình đọc ra một nghĩa.
+        return raw if parse(raw) else ""
     return str(val)
 
 
@@ -271,6 +304,13 @@ def _format_value(field: dict, raw: str) -> str:
         label = next((o["label"] for o in field.get("options", []) if o["value"] == raw), "")
         if label:
             return label
+    if field.get("type") == "condition" and raw.strip():
+        #  bao-CR-528: nhật ký đọc ra câu («Phòng xử lý có giá trị») chứ không bày chuỗi JSON.
+        #  Chuỗi hỏng (khai tay từ trước) thì giữ nguyên văn — `describe` sẽ đọc nó thành
+        #  «Mọi phiếu», nói sai hẳn nghĩa.
+        from app.modules.approval.condition_service import describe, parse
+        if parse(raw):
+            return describe(raw, _get_condition_fields(field.get("condition_entity", "")))
     return raw if raw.strip() else "(trống)"
 
 

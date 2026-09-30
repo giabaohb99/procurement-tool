@@ -70,6 +70,48 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-528 | Ô «Điều kiện bỏ qua điều phối» chọn bằng bộ chọn điều kiện thay vì gõ JSON
+- status: dang-lam
+- date: 2026-09-30
+Đại ca chê ô «Điều kiện bỏ qua bước thu mua duyệt lần 2» ở màn Cấu hình hệ thống: «sao không làm như
+cái filter, cấu hình là gõ code vào à». Trước đây quản trị phải tự gõ một chuỗi JSON, và gõ sai một
+chữ thì hệ thống lặng lẽ coi như không có điều kiện nào mà không báo gì.
+
+Nay ô đó là bộ chọn điều kiện ở cả màn cũ lẫn màn mới: mỗi dòng chọn trường, phép so và giá trị,
+nhiều dòng thì phiếu phải thỏa tất cả, bên dưới có câu tiếng Việt đọc lại, ví dụ «Bỏ qua bước thu mua
+duyệt lần 2 khi: Phòng xử lý có giá trị». Trường chọn được là Phòng xử lý, Phòng lập phiếu, Công ty,
+Người yêu cầu, Đơn gấp và Số dòng hàng. Phòng thu mua mặc định (Sản xuất -Thu mua) được tính là «để
+trống» nên không có trong danh sách chọn của ô Phòng xử lý; điều kiện hay dùng nhất là «Phòng xử lý có
+giá trị», nghĩa là phiếu nhờ phòng khác xử lý. Điều kiện khai tay từ trước mà bộ chọn không đọc được
+thì hiện nguyên văn, không bị ghi đè.
+
+Ở máy chủ, cấu hình được gắn cờ kiểu «condition» để giao diện biết vẽ bộ chọn; dưới cơ sở dữ liệu vẫn
+lưu đúng chuỗi cũ nên luồng duyệt không đổi gì. Cửa lưu nay chặn điều kiện hỏng bằng câu báo tiếng Việt
+(sai cú pháp, không phải danh sách, trường lạ, phép so lạ, thiếu giá trị); để trống thì xóa điều kiện.
+Giá trị hỏng cũ đang nằm trong cơ sở dữ liệu không chặn người chỉ sửa ô khác. Lúc chạy thật hệ thống
+vẫn đọc khoan dung như cũ. Nhật ký cấu hình ghi câu «Phòng xử lý có giá trị» thay cho chuỗi JSON.
+
+Ở màn mới, bộ chọn điều kiện của màn Luồng phê duyệt được nâng lên thành phần dùng chung để hai màn
+cùng dùng; màn Luồng phê duyệt giữ nguyên cách hiển thị.
+
+Kiểm: 30 bài kiểm mới ở máy chủ xanh; rà lại 6 bài của bao-CR-497, năm tệp kiểm màn Cấu hình và bốn
+tệp kiểm bộ máy duyệt (tổng 202 bài xanh). Màn mới kiểm kiểu và eslint không lỗi; phần dùng chung và
+màn Cấu hình có 47 bài kiểm (13 bài chuyển từ màn Luồng phê duyệt sang), vitest phần hệ thống, phê
+duyệt và thành phần dùng chung xanh cả 399 bài. Màn cũ giữ đúng 4 lỗi nền.
+
+Thử thật trên dev trước khi đẩy: đặt điều kiện «Phòng xử lý có giá trị» rồi cho hai phiếu thử đi đủ
+Gửi duyệt và Duyệt. Phiếu nhờ Dego Organic xử lý đi thẳng sang «Đã điều phối» và tự giao cho nhân viên
+thu mua nhà máy; phiếu của phòng khác vẫn đứng ở «Đã duyệt» chờ thu mua điều phối. Hai phiếu thử đã xóa,
+điều kiện để lại trên dev cho đại ca bấm thử. Đẩy lên erp-v2 và deploy dev ngày 30/09.
+
+Mã nguồn: `setting/service.py` (`_normalize`, `_get_condition_fields`, `_format_value`) ·
+`approval/condition_service.py` (`find_error`, `describe`) · `purchase_request/service.py`
+(`DISPATCH_CONTEXT_FIELDS`) · `frontend-v2/src/shared/condition-builder/` ·
+`system/components/setting-condition-field.tsx` · `system/config/pr-dispatch-condition-fields.ts` ·
+`system/hooks/use-pr-dispatch-condition-choices.ts` · `approval/components/node-condition-builder.tsx` ·
+`frontend/src/components/ConditionRuleEditor.tsx` · `frontend/src/utils/conditionRule.ts` ·
+`frontend/src/pages/Settings.tsx` · `test/backend/test_o_dieu_kien_bo_qua_dieu_phoi_cr528.py`
+
 ## bao-CR-524 | Bỏ «Thu mua chung», phòng thu mua mặc định là phòng «Sản xuất -Thu mua»
 - status: xong
 - date: 2026-09-30

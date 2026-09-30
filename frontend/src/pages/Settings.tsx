@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { fmtDateTime } from '../utils/datetime'
+import ConditionRuleEditor from '../components/ConditionRuleEditor'
 
-type Field = { key: string; group: string; label: string; type: string; value: any; hint?: string }
+type Field = { key: string; group: string; label: string; type: string; value: any; hint?: string; condition_entity?: string }
 type Secret = { key: string; group: string; label: string; configured: boolean }
 type LogRow = { id: number; message: string; by: string; at: string }
 
@@ -96,7 +97,12 @@ export default function Settings() {
             {gFields(g).map((f) => (
               <div className="form-row" key={f.key} style={f.hint ? { gridColumn: '1 / -1' } : undefined}>
                 <label>{f.label}</label>
-                {f.type === 'bool' ? (
+                {f.type === 'condition' && f.condition_entity === 'pr_dispatch' ? (
+                  //  bao-CR-528: bộ chọn điều kiện thay cho ô gõ JSON. Bộ trường lạ thì rơi về ô chữ.
+                  <ConditionRuleEditor value={typeof f.value === 'string' ? f.value : ''} disabled={!canWrite}
+                    centralDeptCode={String(fields.find((x) => x.key === 'central_purchasing_dept_code')?.value ?? '')}
+                    onChange={(v) => setVal(f.key, v)} />
+                ) : f.type === 'bool' ? (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: canWrite ? 'pointer' : 'default', height: 40 }}>
                     <input type="checkbox" checked={!!f.value} disabled={!canWrite} onChange={(e) => setVal(f.key, e.target.checked)} style={{ width: 18, height: 18 }} />
                     {f.value ? 'Đang bật' : 'Đang tắt'}

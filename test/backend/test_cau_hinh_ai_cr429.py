@@ -58,9 +58,10 @@ def test_kieu_khai_tren_man_hinh_khop_kieu_o_lop_cau_hinh():
     for f in service.FIELDS:
         khai = f.get("type", "str")
         thuc = app_settings.REGISTRY[f["key"]][0]
-        #  `select` là chuyện của giao diện (vẽ ô chọn), dưới DB vẫn là chuỗi.
-        assert (thuc if khai != "select" else "str") == thuc
-        assert khai in ("str", "int", "bool", "select")
+        #  `select` và `condition` (bao-CR-528, bộ chọn điều kiện) là chuyện của giao diện,
+        #  dưới DB vẫn là chuỗi.
+        assert (khai if khai not in ("select", "condition") else "str") == thuc
+        assert khai in ("str", "int", "bool", "select", "condition")
 
 
 def test_bon_khoa_rag_co_y_o_lai_env():
