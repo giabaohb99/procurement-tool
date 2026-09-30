@@ -70,6 +70,20 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-526 | Tạo sẵn bộ vai trò thu mua theo phòng, chưa gán cho ai
+- status: dang-lam
+- date: 2026-09-30
+Đại ca muốn có sẵn một bộ vai trò thu mua theo phòng để sau này, khi có danh sách nhân sự và phòng
+phụ trách, các anh chị tự gán; vai trò đang dùng thì giữ nguyên, còn bộ quản lý thu mua cũ sẽ tự tick
+loại trừ phòng nhà máy. Bộ này gồm «Quản lý thu mua phòng» đã có từ trước và vai trò mới «Nhân viên
+thu mua phòng»: làm được đúng những việc như nhân viên thu mua thường, nhưng thấy mọi phiếu đã duyệt
+của phòng mình thay vì chỉ phiếu được giao. Trợ lý AI lập bộ tài khoản cũng gán được vai trò mới này.
+Vai trò sẽ tự có trên dev và prod ở lần deploy tới, chưa ai được gán.
+
+Kiểm: 4 bài kiểm mới và các bài kiểm vai trò, lập bộ tài khoản liên quan xanh.
+
+Mã nguồn: `backend/app/seed.py` (`pur_dept_staff`) · `assistant/tools/account_setup_tool.py`
+
 ## bao-CR-525 | Xuất Excel Yêu cầu thanh toán theo dòng chi tiết
 - status: xong
 - date: 2026-09-30
