@@ -57,7 +57,7 @@ SUMMARY = "HD nhờ Trợ lý AI gán vai trò và loại trừ phòng ban cho m
 
 CONTENT = f"""<h2>I. Giới thiệu</h2>
 <p>Lập một tài khoản thu mua có bốn bước: tạo hồ sơ nhân sự, tạo tài khoản đăng nhập, gán vai trò, khai phạm vi. Hai bước đầu vẫn làm tay. <strong>Hai bước sau</strong> (gán vai trò + khai ô <em>Loại trừ phòng ban</em>) có thể nhờ {ref(PARENT_TITLE, "Trợ lý AI")} làm thay: bạn gõ một câu, trợ lý dò tình trạng hiện có rồi hiện <strong>thẻ đề xuất</strong>; hệ thống chỉ ghi khi <strong>chính bạn bấm Xác nhận</strong>.</p>
-<p>Dùng bài này khi lập bộ tài khoản cho <strong>phòng tự mua hàng</strong> (ví dụ nhà máy Dego Organic) hoặc bộ <strong>Thu mua chung trừ phòng đó</strong>, và cả khi chỉ cần chỉnh vai trò của một người đã có tài khoản.</p>
+<p>Dùng bài này khi lập bộ tài khoản cho <strong>phòng tự mua hàng</strong> (ví dụ nhà máy Dego Organic) hoặc bộ <strong>Sản xuất -Thu mua trừ phòng đó</strong>, và cả khi chỉ cần chỉnh vai trò của một người đã có tài khoản.</p>
 
 <h2>II. Điều kiện trước khi hỏi</h2>
 <table><thead><tr><th>Cần có</th><th>Kiểm ở đâu</th></tr></thead><tbody>
@@ -77,7 +77,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h3>Bước 2 — Gõ yêu cầu</h3>
 <p>Nói rõ <strong>ai</strong> (tên, hoặc tốt nhất là <strong>mã nhân viên</strong>), <strong>vai trò nào</strong> và <strong>loại trừ phòng nào</strong> (nếu có).</p>
 <table><thead><tr><th>Muốn gì</th><th>Gõ ví dụ</th></tr></thead><tbody>
-<tr><td>Bộ <strong>Thu mua chung trừ nhà máy</strong></td><td>"Lập bộ tài khoản nhân viên thu mua cho Nguyễn Văn A, loại trừ phòng Dego Organic"</td></tr>
+<tr><td>Bộ <strong>Sản xuất -Thu mua trừ nhà máy</strong></td><td>"Lập bộ tài khoản nhân viên thu mua cho Nguyễn Văn A, loại trừ phòng Dego Organic"</td></tr>
 <tr><td>Bộ <strong>Nhà máy</strong> (phòng tự mua)</td><td>"Gán vai trò Quản lý thu mua phòng cho NM_MUA" — không cần loại trừ gì, giới hạn nằm sẵn trong bậc của vai trò</td></tr>
 <tr><td>Chỉ giữ đúng một vai trò, bỏ vai trò thừa</td><td>"Cho Trần Thị B chỉ còn vai trò Nhân viên thu mua"</td></tr>
 <tr><td>Thêm phòng loại trừ cho người đã có bộ</td><td>"Thêm loại trừ phòng Nhà máy Cần Thơ cho các vai trò thu mua của TM_QL"</td></tr>
@@ -115,7 +115,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <tr><td><strong>Nhân sự</strong></td><td>người chỉ lập Yêu cầu mua hàng cho phòng mình; tài khoản mới tự có vai trò này</td></tr>
 <tr><td><strong>Trưởng phòng (duyệt PYC)</strong></td><td>duyệt phiếu của phòng mình</td></tr>
 <tr><td><strong>Nhân viên thu mua</strong></td><td>xử lý các dòng được giao</td></tr>
-<tr><td><strong>Quản lý thu mua</strong></td><td>Thu mua chung: thấy và điều phối mọi phiếu đã duyệt, thường kèm <em>Loại trừ phòng ban</em> = các phòng tự mua</td></tr>
+<tr><td><strong>Quản lý thu mua</strong></td><td>Sản xuất -Thu mua: thấy và điều phối mọi phiếu đã duyệt, thường kèm <em>Loại trừ phòng ban</em> = các phòng tự mua</td></tr>
 <tr><td><strong>Quản lý thu mua phòng</strong></td><td>phòng tự mua hàng: chỉ phiếu đã duyệt của phòng mình và phiếu phòng khác nhờ phòng mình xử lý</td></tr>
 <tr><td><strong>Admin thu mua</strong></td><td>như Quản lý thu mua nhưng không duyệt</td></tr>
 </tbody></table>
@@ -134,10 +134,10 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h2>VII. Kiểm tra sau khi làm</h2>
 <ul>
 <li>Người vừa được gán <strong>phải đăng xuất rồi đăng nhập lại</strong>; máy chủ còn nhớ bản quyền cũ tối đa một phút.</li>
-<li>Kiểm bằng cửa sổ ẩn danh: người của bộ Thu mua chung <strong>không</strong> thấy phiếu của phòng bị loại trừ (gõ thẳng id lên đường dẫn phải ra <em>Không tìm thấy</em>), nhưng vẫn thấy phiếu phòng đó <em>nhờ</em> Thu mua chung xử lý.</li>
+<li>Kiểm bằng cửa sổ ẩn danh: người của bộ Sản xuất -Thu mua <strong>không</strong> thấy phiếu của phòng bị loại trừ (gõ thẳng id lên đường dẫn phải ra <em>Không tìm thấy</em>), nhưng vẫn thấy phiếu phòng đó <em>nhờ</em> Sản xuất -Thu mua xử lý.</li>
 <li>Mọi lần Xác nhận đều có dấu vết ở lịch sử thao tác của tài khoản, giống như bấm tay trên màn Phân quyền.</li>
 </ul>
-<p>💡 <strong>Mở thêm một phòng tự mua khác?</strong> Nhớ nhờ trợ lý <strong>thêm phòng mới vào loại trừ</strong> cho <em>từng</em> tài khoản Thu mua chung. Quên bước này thì Thu mua chung vẫn thấy phiếu phòng mới mà không ai báo lỗi.</p>
+<p>💡 <strong>Mở thêm một phòng tự mua khác?</strong> Nhớ nhờ trợ lý <strong>thêm phòng mới vào loại trừ</strong> cho <em>từng</em> tài khoản Sản xuất -Thu mua. Quên bước này thì Sản xuất -Thu mua vẫn thấy phiếu phòng mới mà không ai báo lỗi.</p>
 
 <h2>VIII. Điều hướng</h2>
 <ul>
