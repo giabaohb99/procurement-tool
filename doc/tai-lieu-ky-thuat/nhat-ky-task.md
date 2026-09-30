@@ -93,6 +93,8 @@ kiểu có sẵn. Đã lên dev 30/09 để đại ca kiểm.
 Mã nguồn: backend/app/modules/payment_request/export.py · payment_request/controller.py · seed.py ·
 frontend/src/config/cruds.tsx · frontend-v2/src/modules/finance/pages/payment-request-list-page.tsx
 
+Deploy: prod 30/09 — chọn riêng lên main `ab42ca88`, dựng lại api, celery, giao diện cũ và mới
+
 ## bao-CR-522 | Popup Lịch sử mua hàng có thêm cột Tên trên hóa đơn
 - status: xong
 - date: 2026-09-28
