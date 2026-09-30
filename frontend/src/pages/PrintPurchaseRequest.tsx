@@ -462,29 +462,35 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               marginTop: 16,
             }}
           >
-            {["Giám đốc", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"].map(
-              (r) => {
-                // Mẫu thường: tự chèn ảnh chữ ký + họ tên cho 3 ô có dữ liệu trong hệ thống.
-                //   Người lập      = người yêu cầu trên phiếu
-                //   TP/BP đề xuất  = người bấm Duyệt (bước 1)
-                //   TP/BP mua hàng = TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397) —
-                //                    backend tra Department.manager_id, phòng chưa gán trưởng
-                //                    thì lùi về chính người điều phối (bước 2, CR-034)
-                // Ô "Giám đốc" không có bước duyệt tương ứng -> để trống, ký tay.
-                // Mẫu thuế để trống toàn bộ như cũ.
-                const filled: Record<string, { sign?: string; name?: string }> = taxMode
-                  ? {}
-                  : {
-                      "Người lập": { sign: pr.requester_signature, name: pr.requester },
-                      // bao-CR-499: luôn in cột «Trưởng phòng phê duyệt» — người thực duyệt / người được chọn.
-                      "TP/BP đề xuất": { sign: pr.approver_signature, name: pr.approver_name },
-                      "TP/BP mua hàng": { sign: pr.purchasing_head_signature, name: pr.purchasing_head_name },
-                    };
-                // Chọn "Không chữ ký" -> bỏ ảnh, giữ họ tên để người ký tự ký tay lên trên.
-                const sign = showSign ? filled[r]?.sign || "" : "";
-                const name = filled[r]?.name || "";
+            {(() => {
+              // bao-CR-531: BỘ Ô do backend quyết (`print_signature_cells`) — hộ kinh doanh chỉ
+              // «Chủ hộ» + «Người lập» (không tên); công ty có người đại diện pháp luật trùng
+              // TP/BP đề xuất và/hoặc TP/BP mua hàng thì bỏ ô trùng, tên + chữ ký lên ô «Giám đốc».
+              // Backend cũ chưa gửi danh sách thì lùi về bốn ô cũ:
+              //   Người lập      = người yêu cầu trên phiếu
+              //   TP/BP đề xuất  = người bấm Duyệt (bước 1)
+              //   TP/BP mua hàng = TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397)
+              //   Giám đốc       = trống, ký tay
+              const cells: { key: string; role: string; name?: string; signature?: string }[] =
+                Array.isArray(pr.print_signature_cells) && pr.print_signature_cells.length
+                  ? pr.print_signature_cells
+                  : [
+                      { key: "director", role: "Giám đốc" },
+                      { key: "purchasing_head", role: "TP/BP mua hàng", name: pr.purchasing_head_name, signature: pr.purchasing_head_signature },
+                      { key: "proposer", role: "TP/BP đề xuất", name: pr.approver_name, signature: pr.approver_signature },
+                      { key: "preparer", role: "Người lập", name: pr.requester, signature: pr.requester_signature },
+                    ];
+              return cells;
+            })().map(
+              (cell) => {
+                const r = cell.role;
+                // Mẫu thuế để trống toàn bộ (vẫn theo bộ ô của backend). bao-CR-531: chọn
+                // "Không chữ ký" -> bỏ CẢ ảnh LẪN họ tên, để ký tay toàn bộ.
+                const blank = taxMode || !showSign;
+                const sign = blank ? "" : cell.signature || "";
+                const name = blank ? "" : cell.name || "";
                 return (
-                  <div key={r}>
+                  <div key={cell.key}>
                     <b>{r}</b>
                     <div style={{ fontStyle: "italic", fontSize: 11 }}>
                       (Ký, ghi rõ họ tên)

@@ -1,5 +1,5 @@
 import { ArrowLeft, Printer, Users, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -18,6 +18,10 @@ import type {
   PurchaseRequestItem,
   SupplierCluster,
 } from '../types/purchase-request-detail'
+import {
+  resolvePrintSignatureCells,
+  type PrintSignatureSource,
+} from '../utils/purchase-request-signature-cells'
 import {
   formatVietnameseLongDate,
   printLineValues,
@@ -433,66 +437,53 @@ function PurchaseRequestPrintItems({
 }
 
 // Xuất cho bản in theo NCC (bản B) dùng lại nguyên cụm XÉT DUYỆT của khuôn
-// 003/BM/PKT — rà lại vòng 3: hai bản in phải cùng một cụm ký 4 ô.
+// 003/BM/PKT — rà lại vòng 3: hai bản in phải cùng một cụm ký.
 export function SignatureSection({
   purchaseRequest,
   taxMode,
   showSignature,
 }: {
-  purchaseRequest: PurchaseRequestDetail
+  purchaseRequest: PrintSignatureSource
   taxMode: boolean
   showSignature: boolean
 }) {
-  //  bao-CR-499: ô «TP/BP đề xuất» luôn in tên trong cột «Trưởng phòng phê duyệt» — người THỰC duyệt,
-  //  chưa ai duyệt thì là người được chọn (backend lùi về nhật ký cho phiếu cũ).
-  const head = { name: purchaseRequest.approver_name ?? '', signature: purchaseRequest.approver_signature ?? '' }
-  const values: Record<string, { signature: string; name: string }> = taxMode
-    ? {}
-    : {
-        'Người lập': {
-          signature: purchaseRequest.requester_signature,
-          name: purchaseRequest.requester,
-        },
-        'TP/BP đề xuất': { signature: head.signature, name: head.name },
-        // bao-CR-397: ô này là TRƯỞNG PHÒNG của người bấm Điều phối (backend tra
-        // Department.manager_id), không phải người bấm nút — phòng chưa gán trưởng thì
-        // backend tự lùi về người điều phối.
-        'TP/BP mua hàng': {
-          signature: purchaseRequest.purchasing_head_signature,
-          name: purchaseRequest.purchasing_head_name,
-        },
-      }
+  //  bao-CR-531: BỘ Ô do backend quyết (`print_signature_cells`) — hộ kinh doanh chỉ «Chủ hộ» +
+  //  «Người lập»; công ty gộp ô trùng người đại diện pháp luật vào «Giám đốc». Nên lưới có thể là
+  //  2, 3 hoặc 4 cột. Ở đây chỉ áp «Không chữ ký» (bỏ cả ảnh lẫn tên) và «Mẫu thuế» (trống hết).
+  //  Ô «TP/BP đề xuất» vẫn là người trong cột «Trưởng phòng phê duyệt» (bao-CR-499/521), ô
+  //  «TP/BP mua hàng» vẫn là TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397).
+  const cells = resolvePrintSignatureCells(purchaseRequest, { taxMode, showSignature })
 
   return (
     <section className="pr-print-signatures">
       <h2 className="pr-print-section-title">
         XÉT DUYỆT
       </h2>
-      <div className="pr-print-signature-grid">
-        {['Giám đốc', 'TP/BP mua hàng', 'TP/BP đề xuất', 'Người lập'].map((role) => {
-          const signature = showSignature ? values[role]?.signature || '' : ''
-          const name = values[role]?.name || ''
-          return (
-            <div key={role} className="pr-print-signature-cell">
-              <b>{role}</b>
-              <p className="text-[11px] italic">(Ký, ghi rõ họ tên)</p>
-              {/* bao-CR-389 → bao-CR-397 → bao-CR-398: MỌI ô đều cao 130px và dồn họ tên
-                  xuống ĐÁY, có ảnh hay không. Ảnh (nếu có) xếp ngay trên tên. Bản trước cho
-                  ô có ảnh 94px căn giữa nên tên người có chữ ký nổi cao hơn ba tên còn lại
-                  trên cùng một hàng — khách chê lệch. Ô không ảnh vẫn chừa ~100px để ký tay. */}
-              <div className="mt-1 flex h-[130px] flex-col items-center justify-end gap-2.5 font-bold">
-                {signature && (
-                  <img
-                    src={signature}
-                    alt={`Chữ ký ${role}`}
-                    className="max-h-14 max-w-full object-contain"
-                  />
-                )}
-                <span>{name}</span>
-              </div>
+      <div
+        className="pr-print-signature-grid"
+        // Số cột theo số ô thật — giá trị động nên đi qua biến CSS, khuôn in giữ `!important`.
+        style={{ '--pr-signature-columns': cells.length } as CSSProperties}
+      >
+        {cells.map((cell) => (
+          <div key={cell.key} className="pr-print-signature-cell">
+            <b>{cell.role}</b>
+            <p className="text-[11px] italic">(Ký, ghi rõ họ tên)</p>
+            {/* bao-CR-389 → bao-CR-397 → bao-CR-398: MỌI ô đều cao 130px và dồn họ tên
+                xuống ĐÁY, có ảnh hay không. Ảnh (nếu có) xếp ngay trên tên. Bản trước cho
+                ô có ảnh 94px căn giữa nên tên người có chữ ký nổi cao hơn ba tên còn lại
+                trên cùng một hàng — khách chê lệch. Ô không ảnh vẫn chừa ~100px để ký tay. */}
+            <div className="mt-1 flex h-[130px] flex-col items-center justify-end gap-2.5 font-bold">
+              {cell.signature && (
+                <img
+                  src={cell.signature}
+                  alt={`Chữ ký ${cell.role}`}
+                  className="max-h-14 max-w-full object-contain"
+                />
+              )}
+              <span>{cell.name}</span>
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
     </section>
   )
@@ -728,7 +719,7 @@ export const PURCHASE_REQUEST_PRINT_STYLES = `
 
   .pr-print-signature-grid {
     display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(var(--pr-signature-columns, 4), minmax(0, 1fr)) !important;
     gap: 8px;
     margin-top: 16px;
     text-align: center;

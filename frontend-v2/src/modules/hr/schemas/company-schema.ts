@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { COMPANY_TYPE } from '../types/company'
+
 const ISSUE_CODE_PATTERN = /^[A-Z0-9]*$/
 
 /** Form công ty (pháp nhân) — bám `CompanyCreate` của backend. */
@@ -14,6 +16,12 @@ export const companySchema = z.object({
     .regex(ISSUE_CODE_PATTERN, 'Chỉ dùng chữ HOA không dấu và số'),
   short_name: z.string().trim().max(100, 'Tên viết tắt tối đa 100 ký tự'),
   level: z.number().int().min(1).max(3),
+  /** bao-CR-531: 1 Công ty · 2 Hộ kinh doanh (`COMPANY_TYPE`). */
+  company_type: z
+    .number()
+    .int()
+    .min(COMPANY_TYPE.COMPANY, 'Chọn loại hình')
+    .max(COMPANY_TYPE.HOUSEHOLD, 'Chọn loại hình'),
   tax_code: z.string().trim().max(25, 'Mã số thuế tối đa 25 ký tự'),
   address: z.string().trim(),
   invoice_email: z.string().trim().max(150, 'Email tối đa 150 ký tự'),
@@ -34,6 +42,7 @@ export const EMPTY_COMPANY_FORM: CompanyFormValues = {
   issue_code: '',
   short_name: '',
   level: 2,
+  company_type: COMPANY_TYPE.COMPANY,
   tax_code: '',
   address: '',
   invoice_email: '',

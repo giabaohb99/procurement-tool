@@ -9,6 +9,8 @@ export interface Company {
   short_name: string
   /** 1 Tập đoàn · 2 công ty thành viên · 3 đơn vị trực thuộc. */
   level: 1 | 2 | 3
+  /** bao-CR-531 — loại hình: xem `COMPANY_TYPE`. Backend cũ chưa gửi thì coi là Công ty. */
+  company_type?: CompanyTypeCode
   tax_code: string
   address: string
   /** Nơi nhận hóa đơn điện tử của pháp nhân này. */
@@ -38,6 +40,29 @@ const COMPANY_LEVELS = [1, 2, 3] as const
 export const COMPANY_LEVEL_OPTIONS = COMPANY_LEVELS.map((value) => ({
   value,
   label: COMPANY_LEVEL_LABELS[value],
+}))
+
+/**
+ * Loại hình pháp nhân — bao-CR-531. Mã SỐ, gõ tay theo `backend/app/modules/company/constants.py`
+ * (`CompanyType`); `gen_status_ts.py` chỉ sinh bộ mã CHUỖI. Đổi ở backend thì sửa tay ở đây.
+ * «Hộ kinh doanh» làm bản in Phiếu đề xuất mua hàng chỉ còn hai ô ký «Chủ hộ» + «Người lập».
+ */
+export const COMPANY_TYPE = {
+  COMPANY: 1,
+  HOUSEHOLD: 2,
+} as const
+
+export type CompanyTypeCode = (typeof COMPANY_TYPE)[keyof typeof COMPANY_TYPE]
+
+export const COMPANY_TYPE_LABELS: Record<CompanyTypeCode, string> = {
+  [COMPANY_TYPE.COMPANY]: 'Công ty',
+  [COMPANY_TYPE.HOUSEHOLD]: 'Hộ kinh doanh',
+}
+
+/** Đổ vào ô chọn «Loại hình»; dựng TỪ bảng nhãn để hai chỗ không trôi khỏi nhau. */
+export const COMPANY_TYPE_OPTIONS = Object.values(COMPANY_TYPE).map((value) => ({
+  id: value as number,
+  label: COMPANY_TYPE_LABELS[value],
 }))
 
 /**

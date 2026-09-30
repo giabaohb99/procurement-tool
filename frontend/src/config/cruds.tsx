@@ -109,6 +109,12 @@ const REGULATION_LISTS = [
 ]
 const regulationListLabel = (v: any) => REGULATION_LISTS.find((o) => o.value === String(v))?.label || String(v ?? '')
 
+// bao-CR-531: loại hình pháp nhân — khớp `CompanyType` ở backend/app/modules/company/constants.py.
+const COMPANY_TYPE_OPTIONS = [
+  { value: '1', label: 'Công ty' },
+  { value: '2', label: 'Hộ kinh doanh' },
+]
+
 const ACTIVE_OPTIONS = [
   { value: 'true', label: 'Đang dùng / Hiện' },
   { value: 'false', label: 'Ngừng / Ẩn' },
@@ -254,6 +260,11 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã', readonlyOnEdit: true, group: 'Định danh' },
       { key: 'name', label: 'Tên pháp nhân', group: 'Định danh' },
       { key: 'tax_code', label: 'MST', group: 'Định danh' },
+      // bao-CR-531: mã SỐ theo `company/constants.py` (CompanyType). Hộ kinh doanh -> bản in
+      // Phiếu đề xuất mua hàng chỉ còn hai ô ký «Chủ hộ» + «Người lập».
+      { key: 'company_type', label: 'Loại hình', type: 'select', default: '1', group: 'Định danh',
+        options: COMPANY_TYPE_OPTIONS,
+        hint: 'Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký «Chủ hộ» + «Người lập».' },
       { key: 'invoice_email', label: 'Email nhận hóa đơn', group: 'Hóa đơn & Liên hệ',
         hint: 'Nơi nhận hóa đơn điện tử của pháp nhân này.' },
       { key: 'address', label: 'Địa chỉ', type: 'textarea', group: 'Hóa đơn & Liên hệ' },

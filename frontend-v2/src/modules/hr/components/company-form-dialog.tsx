@@ -23,7 +23,7 @@ import {
   companySchema,
   type CompanyFormValues,
 } from '../schemas/company-schema'
-import { COMPANY_LEVEL_LABELS, type Company } from '../types/company'
+import { COMPANY_LEVEL_LABELS, COMPANY_TYPE_OPTIONS, type Company } from '../types/company'
 import { ActiveStatusSelect } from './active-status-select'
 import { LookupSelect } from './lookup-select'
 
@@ -111,6 +111,26 @@ export function CompanyFormDialog({ open, onOpenChange, company }: CompanyFormDi
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="company_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Loại hình</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      items={COMPANY_TYPE_OPTIONS}
+                      placeholder="Chọn loại hình"
+                    />
+                    <FormDescription>
+                      Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký «Chủ hộ» + «Người lập».
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

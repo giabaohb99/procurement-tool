@@ -71,6 +71,9 @@ def create_company(db: Session, data: CompanyCreate, user_id: int) -> Company:
 def update_company(db: Session, cid: int, data: CompanyUpdate, user_id: int) -> Company:
     obj = get_company(db, cid)
     values = data.model_dump(exclude_unset=True)
+    #  bao-CR-531: gửi `null` cho loại hình = không đổi (cột NOT NULL, ghi None là 500).
+    if values.get("company_type", 0) is None:
+        values.pop("company_type")
 
     if "issue_code" in values:
         from app.modules.doc_catalog.issue_code_guard import ensure_company_issue_code_free
