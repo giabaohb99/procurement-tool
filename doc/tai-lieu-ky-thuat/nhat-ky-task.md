@@ -85,6 +85,10 @@ lên sau vẫn chạy đủ.
 
 Kiểm: 3 bài kiểm mới cùng 171 bài kiểm khảo sát liên quan xanh.
 
+Sau hotfix đã trả lại ghi chú bị mất: người dùng đã lưu phiếu KS02721 với ô ghi chú bỏ trống để qua lỗi,
+nên em ghi lại nguyên văn ghi chú 263 ký tự (lấy từ log lỗi) vào đúng dòng sản phẩm 5585 (CNT0034, MOQ 200,
+giá 9.610). Hai dòng còn lại của phiếu không có ghi chú trong log nên để nguyên.
+
 Mã nguồn: `survey/model.py` · `survey/schema.py` · migration `e537b2c4d6f8` ·
 `test/backend/test_ghi_chu_nspt_dai_cr537.py`
 
