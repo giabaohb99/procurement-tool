@@ -9,8 +9,13 @@ export type SettingGroup =
   | 'pos365'
   | 'system'
 
-/** Kiểu ô nhập — quyết định trang vẽ công tắc, ô số, ô chọn hay ô chữ. */
-export type SettingType = 'bool' | 'int' | 'str' | 'select'
+/**
+ * Kiểu ô nhập — quyết định trang vẽ công tắc, ô số, ô chọn hay ô chữ.
+ *
+ * `condition` (bao-CR-528) = BỘ CHỌN ĐIỀU KIỆN thay cho ô gõ JSON; giá trị vẫn là
+ * chuỗi JSON cú pháp bộ máy duyệt, `condition_entity` nói bộ trường nào.
+ */
+export type SettingType = 'bool' | 'int' | 'str' | 'select' | 'condition'
 
 /** Một lựa chọn của ô `select`. Backend khai kèm trường, frontend không tự đoán. */
 export interface SettingOption {
@@ -34,6 +39,11 @@ export interface SettingField {
   hint?: string
   /** Chỉ có ở `type: 'select'`. */
   options?: SettingOption[]
+  /**
+   * Chỉ có ở `type: 'condition'`: bộ trường điều kiện (vd `pr_dispatch` = bối
+   * cảnh phiếu YCMH). Bộ lạ thì màn hình rơi về ô chữ, không đoán mò.
+   */
+  condition_entity?: string
   /**
    * Đường dẫn TỚI CHỖ LẤY giá trị này (trang cấp khóa API, trang danh sách
    * model). Mở tab mới, không phải trang trong hệ thống.

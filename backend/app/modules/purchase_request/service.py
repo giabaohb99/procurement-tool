@@ -954,6 +954,20 @@ def dispatch_enabled() -> bool:
     return bool(app_settings.get("pr_dispatch_enabled"))
 
 
+#  Các khóa `dispatch_context()` đưa vào điều kiện, kèm nhãn tiếng Việt — bao-CR-528. Cửa lưu của màn
+#  Cấu hình hệ thống đọc bảng này để chặn điều kiện dùng trường lạ (gõ sai tên trường = điều kiện
+#  không bao giờ khớp mà không ai hay). Thêm khóa vào `dispatch_context` thì thêm ở đây, và thêm
+#  trường tương ứng ở bộ chọn điều kiện của hai giao diện.
+DISPATCH_CONTEXT_FIELDS = {
+    "handler_dept_id": "Phòng xử lý",
+    "department_id": "Phòng lập phiếu",
+    "company_id": "Công ty",
+    "requester_id": "Người yêu cầu",
+    "is_urgent": "Đơn gấp",
+    "line_count": "Số dòng hàng",
+}
+
+
 def dispatch_context(db: Session, pr: PurchaseRequest) -> dict:
     """Bối cảnh phiếu cho điều kiện bỏ qua điều phối — bao-CR-497.
 

@@ -10,8 +10,10 @@ import {
 import { Switch } from '@/shared/ui/switch'
 import { cn } from '@/shared/utils/cn'
 
+import { SUPPORTED_CONDITION_ENTITIES } from '../config/pr-dispatch-condition-fields'
 import type { SettingField } from '../types/setting'
 
+import { SettingConditionField } from './setting-condition-field'
 import { SettingDocLink } from './setting-doc-link'
 
 interface SettingFieldRowProps {
@@ -57,6 +59,13 @@ export function SettingFieldRow({ field, disabled, onChange }: SettingFieldRowPr
         {field.hint && <Hint text={field.hint} />}
       </div>
     )
+  }
+
+  if (
+    field.type === 'condition' &&
+    SUPPORTED_CONDITION_ENTITIES.includes(field.condition_entity ?? '')
+  ) {
+    return <SettingConditionField field={field} disabled={disabled} onChange={onChange} />
   }
 
   if (field.type === 'select') {

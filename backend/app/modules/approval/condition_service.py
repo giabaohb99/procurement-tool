@@ -46,6 +46,45 @@ def parse(raw: str) -> list[dict]:
     return data if isinstance(data, list) else []
 
 
+#  Hai phép không cần giá trị để so, và hai phép nhận DANH SÁCH giá trị.
+VALUE_FREE_OPS = ("empty", "not_empty")
+LIST_OPS = ("in", "not_in")
+
+
+def find_error(raw: str, fields: dict) -> str:
+    """Lỗi ĐẦU TIÊN của chuỗi điều kiện, nói bằng câu tiếng Việt; rỗng = hợp lệ — bao-CR-528.
+
+    `fields` = {khóa trong bối cảnh phiếu: nhãn tiếng Việt}. Dùng ở CỬA LƯU (màn Cấu hình hệ
+    thống), KHÔNG dùng lúc chạy: lúc chạy `parse()` vẫn khoan dung như cũ để một ô cấu hình hỏng
+    không chặn được phiếu nào. Chặn ở cửa lưu là để lỗi gõ sai lộ ra ngay lúc bấm Lưu, thay vì
+    lặng lẽ thành «không bỏ qua phiếu nào» như trước.
+    """
+    if not (raw or "").strip():
+        return ""
+    try:
+        data = json.loads(raw)
+    except (ValueError, TypeError):
+        return "không đọc được (sai cú pháp). Hãy khai lại bằng bộ chọn điều kiện"
+    if not isinstance(data, list):
+        return "phải là một danh sách các dòng điều kiện"
+    known = ", ".join(f"{label} ({key})" for key, label in fields.items())
+    for index, row in enumerate(data, start=1):
+        if not isinstance(row, dict):
+            return f"dòng {index} không phải một điều kiện"
+        field = row.get("field")
+        if not isinstance(field, str) or field not in fields:
+            return f"dòng {index} dùng trường «{field}» không có. Trường dùng được: {known}"
+        op = row.get("op", "eq")
+        if not isinstance(op, str) or op not in OPS:
+            return f"dòng {index} dùng phép so «{op}» không có"
+        value = row.get("value")
+        if op in LIST_OPS and not _as_list(value):
+            return f"dòng {index} ({fields[field]}) chưa chọn giá trị nào"
+        if op not in VALUE_FREE_OPS and op not in LIST_OPS and value in (None, ""):
+            return f"dòng {index} ({fields[field]}) chưa có giá trị để so"
+    return ""
+
+
 def matches(raw: str, subject: dict) -> bool:
     """Bối cảnh phiếu có thỏa điều kiện không. Không khai điều kiện = luôn thỏa."""
     condition = parse(raw)
@@ -101,13 +140,24 @@ def _as_list(value) -> list:
     return [value] if value is not None else []
 
 
-def describe(raw: str) -> str:
-    """Câu tiếng Việt của điều kiện, cho bảng theo dõi và bản in dấu vết."""
+def describe(raw: str, labels: dict | None = None) -> str:
+    """Câu tiếng Việt của điều kiện, cho bảng theo dõi và bản in dấu vết.
+
+    `labels` (tùy chọn, bao-CR-528) đổi khóa trường ra nhãn tiếng Việt — nhật ký màn Cấu hình
+    đọc «Phòng xử lý có giá trị» thay vì «handler_dept_id có giá trị».
+    """
     condition = parse(raw)
     if not condition:
         return "Mọi phiếu"
-    return " và ".join(
-        f"{row.get('field', '?')} {OP_LABELS.get(row.get('op', 'eq'), '?')} "
-        f"{row.get('value', '')}".strip()
-        for row in condition
-    )
+    names = labels or {}
+
+    def _one_text(row) -> str:
+        if not isinstance(row, dict):
+            return "?"
+        field = row.get("field", "?")
+        op = row.get("op", "eq")
+        value = "" if op in VALUE_FREE_OPS else row.get("value", "")
+        name = names.get(field, field) if isinstance(field, str) else field
+        return f"{name} {OP_LABELS.get(op, '?') if isinstance(op, str) else '?'} {value}".strip()
+
+    return " và ".join(_one_text(row) for row in condition)

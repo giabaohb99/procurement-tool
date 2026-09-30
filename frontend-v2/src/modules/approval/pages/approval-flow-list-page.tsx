@@ -10,6 +10,8 @@ import {
   useFilterContext,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { parseCondition } from '@/shared/condition-builder/condition-rule'
+import { conditionText } from '@/shared/condition-builder/condition-sentence'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
@@ -23,8 +25,6 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { APPROVAL_FLOW_FILTER_FIELDS } from '../config/approval-flow-filter-fields'
 import { conditionFieldsOf } from '../config/condition-fields'
-import { conditionText } from '../helpers/condition-sentence'
-import { parseCondition } from '../helpers/node-condition'
 import { useConditionChoices } from '../hooks/use-condition-choices'
 import { CAC_LOAI, ENTITY_LABELS } from '../helpers/entity-link'
 import { ALL, filterApprovalFlows } from '../helpers/filter-approval-flows'
@@ -152,9 +152,7 @@ function ApprovalFlowListContent() {
           //  Dịch điều kiện thành câu tiếng Việt — cột này để ĐỌC LƯỚT, phơi
           //  JSON thô ra bảng thì người khai luồng phải tự giải mã từng dòng.
           const fields = conditionFieldsOf(row.entity)
-          const { rows: dieuKien, advanced } = parseCondition(row.condition, (name) =>
-            fields.some((field) => field.name === name),
-          )
+          const { rows: dieuKien, advanced } = parseCondition(row.condition, fields)
           if (advanced || dieuKien.length === 0) {
             return <span className="truncate font-mono text-xs">{row.condition}</span>
           }
