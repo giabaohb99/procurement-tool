@@ -40,7 +40,8 @@ class CompanyBase(BaseModel):
     level: int = Field(default=2, ge=1, le=3)
     #  bao-CR-531: 1 Công ty · 2 Hộ kinh doanh (`CompanyType`).
     company_type: int = int(CompanyType.COMPANY)
-    tax_code: str = ""
+    #  bao-CR-534: khớp String(25) của model (luật duoc-CR-316: thiếu trần là 500 thay vì 422).
+    tax_code: str = Field(default="", max_length=25)
     address: str = ""
     invoice_email: str = ""
     parent: int = 0
@@ -68,7 +69,7 @@ class CompanyUpdate(BaseModel):
     short_name: str | None = None
     level: int | None = Field(default=None, ge=1, le=3)
     company_type: int | None = None
-    tax_code: str | None = None
+    tax_code: str | None = Field(default=None, max_length=25)
     address: str | None = None
     invoice_email: str | None = None
     parent: int | None = None

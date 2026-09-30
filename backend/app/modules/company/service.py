@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -47,6 +48,38 @@ def get_company(db: Session, cid: int) -> Company:
     return obj
 
 
+def _tax_key(value: str | None) -> str:
+    """Khóa so trùng mã số thuế: bỏ mọi khoảng trắng, không phân biệt hoa thường.
+
+    Cố ý GIỮ dấu gạch: ``0301234567-001`` là mã của CHI NHÁNH, khác hẳn mã công ty mẹ
+    ``0301234567`` — hai pháp nhân đó được phép cùng tồn tại.
+    """
+    return "".join((value or "").split()).upper()
+
+
+def ensure_tax_code_free(db: Session, tax_code: str | None, exclude_id: int = 0) -> None:
+    """bao-CR-534: mỗi mã số thuế chỉ thuộc MỘT công ty — trùng là chặn hẳn (đại ca chốt 30/09).
+
+    Sinh ra sau bao-CR-532: hệ từng có hai dòng «DEGO Holding» cùng mã số thuế, chứng từ chia
+    đôi giữa hai dòng (~1.340 dòng trên prod) và phải viết script gộp. Hệ chỉ chặn trùng ``code``,
+    mà ``code`` thì ai cũng tự đặt được, nên đó không phải cái chốt đúng.
+
+    MST để trống thì cho qua — chưa biết mã chưa phải là trùng.
+    """
+    key = _tax_key(tax_code)
+    if not key:
+        return
+    normalized = func.replace(func.upper(func.trim(func.coalesce(Company.tax_code, ""))), " ", "")
+    other = (db.query(Company.name, Company.code)
+             .filter(normalized == key, Company.id != exclude_id).first())
+    if other:
+        raise HTTPException(
+            400,
+            f"Mã số thuế {tax_code.strip()} đã thuộc công ty «{other.name}» (mã {other.code}). "
+            "Mỗi pháp nhân chỉ có một mã số thuế — hãy sửa công ty đó thay vì tạo thêm.",
+        )
+
+
 def create_company(db: Session, data: CompanyCreate, user_id: int) -> Company:
     if not data.code:
         data.code = generate_code(db, Company, "CTY")
@@ -54,6 +87,8 @@ def create_company(db: Session, data: CompanyCreate, user_id: int) -> Company:
         raise HTTPException(400, "Mã công ty đã tồn tại")
     if data.issue_code and db.query(Company).filter(Company.issue_code == data.issue_code).first():
         raise HTTPException(400, "Mã số hiệu pháp nhân đã tồn tại")
+    data.tax_code = (data.tax_code or "").strip()
+    ensure_tax_code_free(db, data.tax_code)
     obj = Company(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()
@@ -85,6 +120,14 @@ def update_company(db: Session, cid: int, data: CompanyUpdate, user_id: int) -> 
         ) if values["issue_code"] else None
         if duplicate:
             raise HTTPException(400, "Mã số hiệu pháp nhân đã tồn tại")
+
+    #  Chỉ kiểm khi MST THẬT SỰ đổi. Màn sửa gửi lại mọi ô mỗi lần lưu; nếu đâu đó còn sót một
+    #  cặp trùng từ trước (dữ liệu cũ, nạp tay) thì chặn cả lúc MST không đổi là khóa luôn việc
+    #  sửa địa chỉ hay email của cả hai công ty đó — cùng bài học chức vụ ngừng dùng (duoc-CR-320).
+    if values.get("tax_code") is not None:
+        values["tax_code"] = values["tax_code"].strip()
+        if _tax_key(values["tax_code"]) != _tax_key(obj.tax_code):
+            ensure_tax_code_free(db, values["tax_code"], exclude_id=obj.id)
 
     for key, value in values.items():
         setattr(obj, key, value)
