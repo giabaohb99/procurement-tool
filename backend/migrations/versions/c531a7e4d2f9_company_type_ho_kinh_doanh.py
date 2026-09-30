@@ -12,7 +12,10 @@ và câu SQL chứa tiếng Việt là đường dễ dính lỗi mã hóa (CLAU
 Viết TAY (autogenerate repo này trôi ~650 dòng không liên quan).
 
 Revision ID: c531a7e4d2f9
-Revises: b4d81f2c6e37
+Revises: c496a1b2d3e4
+
+Thứ tự: đặt NGAY SAU c496a1b2d3e4 (head của prod ngày 30/09) để lên prod trước cụm thuốc
+BVTV (5f39bbc564db → a7c3e91d5b20 → b4d81f2c6e37) mà không làm alembic bỏ qua cụm đó sau này.
 Create Date: 2026-09-30 10:00:00
 """
 import unicodedata
@@ -22,7 +25,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = 'c531a7e4d2f9'
-down_revision: Union[str, None] = 'b4d81f2c6e37'
+down_revision: Union[str, None] = 'c496a1b2d3e4'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

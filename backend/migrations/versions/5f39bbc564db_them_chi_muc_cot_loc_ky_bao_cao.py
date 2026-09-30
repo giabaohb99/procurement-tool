@@ -12,7 +12,7 @@ chỉ mục hàng loạt trên các bảng khác chưa đồng bộ với model 
 `doc/tai-lieu-ky-thuat/nhat-ky-task.md`), giữ đúng migration này CHỈ 4 chỉ mục cố ý thêm.
 
 Revision ID: 5f39bbc564db
-Revises: c496a1b2d3e4
+Revises: c531a7e4d2f9 (bao-CR-531 chen truoc de len prod som, 30/09/2026)
 Create Date: 2026-09-28 07:19:27.880973
 """
 from typing import Sequence, Union
@@ -21,7 +21,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '5f39bbc564db'
-down_revision: Union[str, None] = 'c496a1b2d3e4'
+down_revision: Union[str, None] = 'c531a7e4d2f9'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
