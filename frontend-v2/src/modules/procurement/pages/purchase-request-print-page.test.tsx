@@ -26,15 +26,19 @@ const fourCells: PrintSignatureCell[] = [
   { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
 ]
 
-const threeCells: PrintSignatureCell[] = [
+//  bao-CR-536 — ca ICARE: đại diện = TP/BP đề xuất → tên lên «Giám đốc», ô đề xuất GIỮ nhưng trống.
+const icareCells: PrintSignatureCell[] = [
   { key: 'director', role: 'Giám đốc', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
   { key: 'purchasing_head', role: 'TP/BP mua hàng', name: 'Pham Khanh Ngan', signature: '' },
+  { key: 'proposer', role: 'TP/BP đề xuất', name: '', signature: '' },
   { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
 ]
 
+//  bao-CR-536 — hộ kinh doanh 3 ô, có tên như công ty.
 const householdCells: PrintSignatureCell[] = [
-  { key: 'household_owner', role: 'Chủ hộ', name: '', signature: '' },
-  { key: 'preparer', role: 'Người lập', name: '', signature: '' },
+  { key: 'household_owner', role: 'Chủ hộ', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
+  { key: 'proposer', role: 'TP/BP đề xuất', name: '', signature: '' },
+  { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
 ]
 
 function renderSection(cells: PrintSignatureCell[] | undefined, showSignature = true, taxMode = false) {
@@ -53,26 +57,29 @@ describe('SignatureSection', () => {
     expect(screen.getAllByRole('img')).toHaveLength(2)
   })
 
-  it('draws three cells and puts the legal representative into «Giám đốc» (ICARE case)', () => {
-    const { grid } = renderSection(threeCells)
-    expect(screen.queryByText('TP/BP đề xuất')).toBeNull()
-    expect(within(grid).getAllByText('(Ký, ghi rõ họ tên)')).toHaveLength(3)
-    expect(grid.style.getPropertyValue('--pr-signature-columns')).toBe('3')
+  it('keeps all four cells and puts the legal representative into «Giám đốc» (ICARE case)', () => {
+    //  bao-CR-531 bỏ hẳn ô «TP/BP đề xuất» — đại ca báo thiếu ô (PYC29092603). Nay ô vẫn có, chỉ trống.
+    const { grid } = renderSection(icareCells)
+    expect(screen.getByText('TP/BP đề xuất')).toBeInTheDocument()
+    expect(within(grid).getAllByText('(Ký, ghi rõ họ tên)')).toHaveLength(4)
+    expect(grid.style.getPropertyValue('--pr-signature-columns')).toBe('4')
     expect(screen.getByAltText('Chữ ký Giám đốc')).toHaveAttribute('src', 'https://cdn/ky-huu.png')
-    expect(screen.getByText('Le Phuoc Huu')).toBeInTheDocument()
+    expect(screen.getAllByText('Le Phuoc Huu')).toHaveLength(1)
   })
 
-  it('draws only «Chủ hộ» + «Người lập» for a household business, no names', () => {
+  it('draws «Chủ hộ · TP/BP đề xuất · Người lập» with names for a household business', () => {
     const { grid } = renderSection(householdCells)
     expect(screen.getByText('Chủ hộ')).toBeInTheDocument()
+    expect(screen.getByText('TP/BP đề xuất')).toBeInTheDocument()
     expect(screen.queryByText('Giám đốc')).toBeNull()
-    expect(screen.queryByText('Nguoi Lap')).toBeNull()
-    expect(screen.queryByRole('img')).toBeNull()
-    expect(grid.style.getPropertyValue('--pr-signature-columns')).toBe('2')
+    expect(screen.queryByText('TP/BP mua hàng')).toBeNull()
+    expect(screen.getByText('Le Phuoc Huu')).toBeInTheDocument()
+    expect(screen.getByText('Nguoi Lap')).toBeInTheDocument()
+    expect(grid.style.getPropertyValue('--pr-signature-columns')).toBe('3')
   })
 
   it('"Không chữ ký" removes names as well as images', () => {
-    renderSection(threeCells, false)
+    renderSection(icareCells, false)
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.queryByText('Le Phuoc Huu')).toBeNull()
     expect(screen.queryByText('Nguoi Lap')).toBeNull()
@@ -80,10 +87,12 @@ describe('SignatureSection', () => {
   })
 
   it('tax template keeps the backend cell set but blanks everything', () => {
-    renderSection(threeCells, true, true)
+    renderSection(householdCells, true, true)
     expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.queryByText('Pham Khanh Ngan')).toBeNull()
-    expect(screen.queryByText('TP/BP đề xuất')).toBeNull()
+    expect(screen.queryByText('Le Phuoc Huu')).toBeNull()
+    expect(screen.queryByText('Nguoi Lap')).toBeNull()
+    expect(screen.getByText('Chủ hộ')).toBeInTheDocument()
+    expect(screen.queryByText('TP/BP mua hàng')).toBeNull()
   })
 
   it('falls back to the legacy four cells when the backend has no cell list', () => {

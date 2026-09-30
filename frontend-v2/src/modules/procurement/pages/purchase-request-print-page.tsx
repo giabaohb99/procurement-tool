@@ -447,9 +447,10 @@ export function SignatureSection({
   taxMode: boolean
   showSignature: boolean
 }) {
-  //  bao-CR-531: BỘ Ô do backend quyết (`print_signature_cells`) — hộ kinh doanh chỉ «Chủ hộ» +
-  //  «Người lập»; công ty gộp ô trùng người đại diện pháp luật vào «Giám đốc». Nên lưới có thể là
-  //  2, 3 hoặc 4 cột. Ở đây chỉ áp «Không chữ ký» (bỏ cả ảnh lẫn tên) và «Mẫu thuế» (trống hết).
+  //  bao-CR-531 → bao-CR-536: BỘ Ô do backend quyết (`print_signature_cells`) — công ty luôn 4 ô,
+  //  hộ kinh doanh 3 ô «Chủ hộ · TP/BP đề xuất · Người lập»; người đại diện trùng ô nào thì tên lên
+  //  ô đầu, ô trùng GIỮ nhưng trống. Lưới theo số ô thật (3 hoặc 4 cột). Ở đây chỉ áp «Không chữ ký»
+  //  (bỏ cả ảnh lẫn tên) và «Mẫu thuế» (trống hết).
   //  Ô «TP/BP đề xuất» vẫn là người trong cột «Trưởng phòng phê duyệt» (bao-CR-499/521), ô
   //  «TP/BP mua hàng» vẫn là TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397).
   const cells = resolvePrintSignatureCells(purchaseRequest, { taxMode, showSignature })

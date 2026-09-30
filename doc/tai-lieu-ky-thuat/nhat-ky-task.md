@@ -70,6 +70,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-536 | Phiếu in yêu cầu mua hàng: công ty luôn đủ bốn ô ký, hộ kinh doanh in tên
+- status: dang-lam
+- date: 2026-09-30
+Đại ca xem phiếu in yêu cầu mua hàng của ICARE thấy thiếu ô trưởng phòng đề xuất, và muốn hộ kinh doanh
+vẫn in tên người ký chứ không để trống; ai muốn ẩn tên thì tự bấm nút không chữ ký. Việc này đổi lại
+luật của đợt bao-CR-531, Erp Agent 1 chuyển cho em.
+
+Luật mới: phiếu của công ty luôn đủ bốn ô giám đốc, trưởng bộ phận mua hàng, trưởng bộ phận đề xuất
+và người lập. Nếu giám đốc cũng chính là trưởng bộ phận đề xuất hay trưởng bộ phận mua hàng thì tên và
+chữ ký in ở ô giám đốc, còn ô trùng vẫn giữ nhưng để trống. Hộ kinh doanh có ba ô chủ hộ, trưởng bộ
+phận đề xuất và người lập, in tên như công ty; chủ hộ trùng người đề xuất thì tên lên ô chủ hộ. Nút
+không chữ ký và mẫu thuế giữ như cũ.
+
+Chỉ phải sửa ở máy chủ vì cả hai bản giao diện chỉ vẽ theo danh sách ô máy chủ trả về; phía giao diện
+chỉ cập nhật chú thích và bài kiểm. Bài kiểm máy chủ năm mươi bảy bài xanh, bản mới kiểm kiểu sạch và
+bảy trăm hai mươi bảy bài thu mua xanh, bản cũ giữ đúng bốn lỗi kiểu có sẵn. Chưa commit, chờ đại ca.
+
+Mã nguồn: backend/app/modules/purchase_request/print_signature_cells.py · test_phieu_in_ho_kinh_doanh_giam_doc_cr531.py ·
+purchase-request-signature-cells(.test).ts · purchase-request-print-page(.test).tsx · PrintPurchaseRequest.tsx (chú thích)
+
 ## bao-CR-533 | Vá các bài kiểm phạm vi đỏ sẵn, lộ ra hai lỗ phạm vi thật
 - status: xong
 - date: 2026-09-30
