@@ -91,7 +91,7 @@ Mã nguồn: `survey/model.py` · `survey/schema.py` · migration `e537b2c4d6f8`
 ---
 
 ## bao-CR-536 | Phiếu in yêu cầu mua hàng: công ty luôn đủ bốn ô ký, hộ kinh doanh in tên
-- status: dang-lam
+- status: xong
 - date: 2026-09-30
 Đại ca xem phiếu in yêu cầu mua hàng của ICARE thấy thiếu ô trưởng phòng đề xuất, và muốn hộ kinh doanh
 vẫn in tên người ký chứ không để trống; ai muốn ẩn tên thì tự bấm nút không chữ ký. Việc này đổi lại
@@ -105,10 +105,12 @@ không chữ ký và mẫu thuế giữ như cũ.
 
 Chỉ phải sửa ở máy chủ vì cả hai bản giao diện chỉ vẽ theo danh sách ô máy chủ trả về; phía giao diện
 chỉ cập nhật chú thích và bài kiểm. Bài kiểm máy chủ năm mươi bảy bài xanh, bản mới kiểm kiểu sạch và
-bảy trăm hai mươi bảy bài thu mua xanh, bản cũ giữ đúng bốn lỗi kiểu có sẵn. Chưa commit, chờ đại ca.
+bảy trăm hai mươi bảy bài thu mua xanh, bản cũ giữ đúng bốn lỗi kiểu có sẵn. Lên dev và prod ngày 30/09 (erp-v2 cc327ed0, main 8e307dc0), sao lưu cơ sở dữ liệu prod trước khi deploy.
 
 Mã nguồn: backend/app/modules/purchase_request/print_signature_cells.py · test_phieu_in_ho_kinh_doanh_giam_doc_cr531.py ·
 purchase-request-signature-cells(.test).ts · purchase-request-print-page(.test).tsx · PrintPurchaseRequest.tsx (chú thích)
+
+---
 
 ## bao-CR-533 | Vá các bài kiểm phạm vi đỏ sẵn, lộ ra hai lỗ phạm vi thật
 - status: xong
