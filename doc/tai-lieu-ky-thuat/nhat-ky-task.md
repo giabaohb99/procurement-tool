@@ -70,6 +70,76 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-531 | Bản in phiếu đề xuất mua hàng: hộ kinh doanh chỉ hai ô ký, Giám đốc trùng người ký thì gộp ô
+- status: dang-lam
+- date: 2026-09-30
+Đại ca chốt cách in cụm «XÉT DUYỆT» của Phiếu đề xuất mua hàng hóa/dịch vụ. Trước đây phiếu luôn in
+bốn ô Giám đốc, TP/BP mua hàng, TP/BP đề xuất, Người lập, trong đó ô Giám đốc luôn để trống vì không có
+bước duyệt nào tương ứng.
+
+Danh mục Công ty nay có thêm ô «Loại hình» với hai lựa chọn Công ty và Hộ kinh doanh, chọn được ở màn
+cũ lẫn màn mới. Migration thêm cột, mặc định mọi pháp nhân là Công ty, và tự đổi thành Hộ kinh doanh
+những pháp nhân có tên bắt đầu bằng «HỘ KINH DOANH»; trên prod chỉ có đúng một dòng là «HỘ KINH DOANH
+DR XANH».
+
+Pháp nhân là hộ kinh doanh thì phiếu chỉ in hai ô «Chủ hộ» và «Người lập», không in tên, không in chữ
+ký ở mọi chế độ. Pháp nhân là công ty thì ô «Giám đốc» là người đại diện pháp luật của công ty; nếu
+người đó cũng chính là người ở ô TP/BP đề xuất hoặc ô TP/BP mua hàng (so theo hồ sơ nhân sự, không so
+theo tên) thì bỏ ô trùng đó và in tên cùng chữ ký của người đó vào ô Giám đốc. Ví dụ phiếu PYC29092604
+của ICARE do ông Lê Phước Hữu (người đại diện) duyệt sẽ in ba ô. Không trùng thì ô Giám đốc vẫn để trống
+ký tay như cũ. Chế độ «Không chữ ký» nay bỏ cả ảnh chữ ký lẫn họ tên; «Mẫu thuế» vẫn để trống toàn bộ.
+
+Việc chọn ô nào in ra được làm ở một chỗ duy nhất trên máy chủ; màn cũ và màn mới chỉ vẽ lại danh sách
+ô mà máy chủ gửi về. Bản in YCBG (yêu cầu báo giá) và ĐMH (đơn mua hàng) không đổi.
+
+Kiểm: 27 bài kiểm mới ở máy chủ xanh; rà lại năm tệp kiểm bản in và người duyệt cũ, cùng tệp kiểm văn
+bản dùng danh mục công ty (111 bài xanh; riêng bài đếm lệnh tra bảng trong controller đỏ sẵn từ trước
+ở hai tệp đính kèm và nhân sự, không liên quan việc này). Màn mới kiểm kiểu và eslint không lỗi, vitest
+phần thu mua và nhân sự xanh 1290 bài (21 bài mới). Màn cũ giữ đúng 4 lỗi nền. Commit và deploy dev ngày 30/09 cùng bao-CR-529..531 (gộp chung một checkout).
+Mã nguồn: company/constants.py, company/model.py, company/schema.py, company/service.py, migration c531a7e4d2f9, purchase_request/print_signature_cells.py, purchase_request/controller.py (_purchasing_head, _approval_signers, _out), frontend/src/pages/PrintPurchaseRequest.tsx, frontend/src/config/cruds.tsx, frontend-v2 procurement/utils/purchase-request-signature-cells.ts, procurement/pages/purchase-request-print-page.tsx, procurement/types/purchase-request-detail.ts, hr/types/company.ts, hr/schemas/company-schema.ts, hr/components/company-form-dialog.tsx, hr/pages/company-detail-page.tsx
+
+## bao-CR-530 | Màn Phân công phụ trách: ô chọn nhân viên thu mua gõ tìm được
+- status: dang-lam
+- date: 2026-09-30
+Đại ca báo ở màn Phân công phụ trách, ô chọn nhân viên thu mua chính và dự phòng không gõ tìm tên
+được, danh sách dài phải cuộn tay, trong khi ô phòng áp dụng và phân loại ngay bên trên thì tìm được.
+Việc này Erp Agent 1 chuyển sang cho em.
+
+Ở bản mới em đổi hai ô đó sang kiểu ô chọn có ô tìm, gõ tên hoặc mã nhân viên đều ra, không cần gõ
+dấu. Luật cũ giữ nguyên: danh sách chỉ gồm người đang chính thức, ô dự phòng không mời lại người đã
+chọn làm chính, ô dự phòng có nút xóa còn ô chính thì bắt buộc chọn. Bản cũ vốn đã gõ tìm được từ
+trước nên không phải sửa.
+
+Cổng kiểm: kiểm kiểu sạch, lint không lỗi và không thêm cảnh báo, bảy trăm mười ba bài phân hệ thu
+mua xanh trong đó ba bài mới. Commit và deploy dev ngày 30/09 cùng bao-CR-529..531 (gộp chung một checkout).
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/category-assignee-form-page.tsx (+ .test.tsx)
+
+## bao-CR-529 | Ô «Phòng thu mua mặc định» chọn từ danh mục Phòng ban thay vì gõ mã
+- status: dang-lam
+- date: 2026-09-30
+Đại ca hỏi ở màn Cấu hình hệ thống: «sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng
+ban». Trước đây quản trị phải tự gõ mã phòng, và gõ sai mã thì hệ thống lặng lẽ quay về «phòng xử lý
+để trống» mà không báo gì.
+
+Nay ô đó là ô chọn có tìm kiếm (gõ tên hoặc mã, không cần dấu) ở cả màn cũ lẫn màn mới, hiện «Tên
+phòng · Mã», chỉ mời chọn phòng đang dùng; để trống vẫn nghĩa là PBA017 «Sản xuất -Thu mua». Dưới cơ
+sở dữ liệu vẫn lưu mã phòng như bao-CR-524 nên không cần migration và không đổi luồng nào. Cửa lưu nay
+chặn mã không có trong danh mục và phòng đã ngừng dùng bằng câu báo tiếng Việt; mã cũ đang nằm dưới
+cơ sở dữ liệu không chặn người chỉ sửa ô khác. Người thiếu quyền đọc danh mục Phòng ban thì ô rơi về
+ô chữ như cũ.
+
+Kiểm: 6 bài kiểm mới ở máy chủ xanh, rà lại bài kiểm màn Cấu hình và phòng thu mua mặc định (99 bài
+xanh). Màn mới kiểm kiểu và eslint không lỗi, vitest phân hệ Quản trị 273 bài xanh; màn cũ giữ đúng
+4 lỗi nền. Đã mở cả hai màn trên máy local: ô hiện đúng «Sản xuất -Thu mua · PBA017», gõ «ke» lọc ra
+Kế toán, Kiểm soát kế hoạch, Thiết kế. Commit và deploy dev ngày 30/09 cùng bao-CR-529..531 (gộp chung một checkout).
+
+Mã nguồn: `setting/service.py` (`_normalize` nhận thêm `db`, kiểu `department`) ·
+`system/components/setting-department-field.tsx` · `system/components/setting-field-row.tsx` ·
+`frontend/src/pages/Settings.tsx` · `test/backend/test_o_chon_phong_thu_mua_mac_dinh_cr529.py`
+
+---
+
 ## bao-CR-528 | Ô «Điều kiện bỏ qua điều phối» chọn bằng bộ chọn điều kiện thay vì gõ JSON
 - status: dang-lam
 - date: 2026-09-30
