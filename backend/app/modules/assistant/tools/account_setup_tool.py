@@ -46,9 +46,11 @@ PROPOSAL_KIND = "account_setup_proposal"
 
 #  Bộ vai trò mẫu của hướng dẫn 20 — tool chỉ gán trong tập này. Quản trị hệ thống, kế toán,
 #  HR... không gán qua chat: một câu gõ nhầm không được thành một cú phong quyền.
+#  bao-CR-526: thêm `pur_dept_staff` — nhân viên thu mua của phòng, cặp với `pur_dept_manager`.
 TEMPLATE_ROLE_CODES = ("employee", "dept_head", "pur_staff", "pur_manager",
-                       "pur_dept_manager", "pur_admin")
-PURCHASING_ROLE_CODES = frozenset({"pur_staff", "pur_manager", "pur_dept_manager", "pur_admin"})
+                       "pur_dept_manager", "pur_dept_staff", "pur_admin")
+PURCHASING_ROLE_CODES = frozenset({"pur_staff", "pur_manager", "pur_dept_manager",
+                                   "pur_dept_staff", "pur_admin"})
 
 REQUIRED_PERMS = (("user", "write"), ("role", "read"), ("employee", "read"))
 
@@ -57,7 +59,7 @@ USER_PERMISSION_URL = "/system/permissions/users/{user_id}"
 
 _DESC = (
     "Lập / chỉnh BỘ TÀI KHOẢN thu mua cho MỘT nhân sự: gán vai trò có sẵn (employee, "
-    "dept_head, pur_staff, pur_manager, pur_dept_manager, pur_admin) và khai ô «Loại trừ "
+    "dept_head, pur_staff, pur_manager, pur_dept_manager, pur_dept_staff, pur_admin) và khai ô «Loại trừ "
     "phòng ban» (ví dụ bộ Thu mua trừ nhà máy: loại trừ Dego Organic). Tool CHỈ ĐỀ XUẤT: dò "
     "hồ sơ, tài khoản, vai trò và phạm vi hiện có rồi trả bảng từng dòng thêm / bỏ / không "
     "đổi kèm nút Xác nhận — hệ thống chỉ ghi khi NGƯỜI DÙNG bấm nút. KHÔNG tạo hồ sơ nhân "
@@ -79,7 +81,8 @@ _PARAMS = {
             "description": "Mã vai trò cần có. employee = nhân sự lập phiếu; dept_head = trưởng "
                            "phòng duyệt; pur_staff = nhân viên thu mua; pur_manager = quản lý thu "
                            "mua toàn quyền; pur_dept_manager = quản lý thu mua CỦA PHÒNG (phòng tự "
-                           "mua hàng); pur_admin = admin thu mua.",
+                           "mua hàng); pur_dept_staff = nhân viên thu mua CỦA PHÒNG (thấy mọi phiếu "
+                           "đã duyệt của phòng mình); pur_admin = admin thu mua.",
         },
         "replace_roles": {
             "type": "boolean",
