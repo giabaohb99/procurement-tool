@@ -66,6 +66,8 @@ export type CrudConfig = {
   exportXlsx?: boolean
   /** Cho phép nút "Xóa đã chọn" (xóa hàng loạt qua `DELETE {apiPath}?ids=`). Mặc định TẮT:
    *  cột tick chọn của CR-068 chỉ để chọn phiếu cần xuất, không mở thêm đường xóa dữ liệu. */
+  /** bao-CR-547: bật nút «Xóa đã chọn». Chỉ xóa phiếu đang Nháp (`status === 'draft'`); phiếu khác
+   *  trạng thái trong lựa chọn được giữ nguyên. Backend cũng chặn cả lô nếu lọt phiếu không Nháp. */
   bulkDelete?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
   txn?: boolean                  // chứng từ giao dịch (PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được

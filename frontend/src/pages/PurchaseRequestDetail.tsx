@@ -235,6 +235,20 @@ export default function PurchaseRequestDetail() {
   }, [pr.department, pr.company_id])
 
   const editable = isNew || pr.status === 'draft' || pr.status === 'rejected'
+  // bao-CR-547 (đại ca chốt 01/10/2026): tick nhiều dòng rồi «Xóa đã chọn» — CHỈ form tạo hoặc phiếu Nháp;
+  // phiếu Bị trả lại vẫn xóa từng dòng như cũ. Chọn theo CHỈ SỐ (dòng mới chưa có id) nên đổi số dòng
+  // là bỏ hết lựa chọn, kẻo tick trúng dòng khác sau khi ai đó xóa/thêm lẻ.
+  const bulkRemovable = editable && (isNew || pr.status === 'draft')
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const itemCount = (pr.items || []).length
+  useEffect(() => { setSelectedRows(new Set()) }, [itemCount, bulkRemovable])
+  const toggleRow = (i: number) => setSelectedRows((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n })
+  const toggleAllRows = () => setSelectedRows((s) => s.size === itemCount ? new Set() : new Set(Array.from({ length: itemCount }, (_, i) => i)))
+  const delSelectedRows = async () => {
+    const n = selectedRows.size
+    if (!n || !(await askConfirm({ message: `Xóa ${n} dòng đã chọn? Dòng bỏ khỏi phiếu ngay trên màn hình, bấm Lưu mới ghi xuống.` }))) return
+    setPr((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => !selectedRows.has(idx)) }))
+  }
   const isStaff = !can('purchase_request', 'approve') && !can('purchase_request', 'delete')
   const prLocked = ['cancelled', 'completed', 'done'].includes(pr.status)   // đã từ chối/hoàn thành → khóa thao tác
   const canAssignPurchaser = can('purchase_request', 'approve') && !prLocked   // phân bổ NSTM (chặn khi phiếu đã kết thúc)
@@ -731,7 +745,9 @@ export default function PurchaseRequestDetail() {
 
   async function handleDelete() {
     try {
-      await api.delete(`${API}?ids=${id}`)
+      // bao-CR-547: xóa TỪNG phiếu đi đường riêng `/{id}` — đường `?ids=` là xóa nhiều, nay chỉ nhận phiếu
+      // Nháp, đi nhầm đường đó thì phiếu Bị trả lại / Đã từ chối không xóa được nữa.
+      await api.delete(`${API}/${id}`)
       navigate('/purchase-requests')
     } catch { /* interceptor đã toast lỗi */ }
   }
@@ -1102,13 +1118,25 @@ export default function PurchaseRequestDetail() {
           <div className="card" style={{ padding: 18, marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h3 className="sec-title" style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>Danh sách Sản phẩm Yêu cầu</h3>
-              {editable && <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 30, padding: '0 10px', fontSize: 13 }}><i className="ti ti-plus" /> Thêm SP</button>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                {bulkRemovable && selectedRows.size > 0 && (
+                  <button className="btn err" onClick={delSelectedRows} style={{ height: 30, padding: '0 10px', fontSize: 13 }}>
+                    <i className="ti ti-trash" /> Xóa đã chọn ({selectedRows.size})
+                  </button>
+                )}
+                {editable && <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 30, padding: '0 10px', fontSize: 13 }}><i className="ti ti-plus" /> Thêm SP</button>}
+              </div>
               {!editable && !isNew && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Trạng thái tự đồng bộ từ ĐMH · thay đổi phụ trách được lưu tự động</span>}
             </div>
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showAssigneeCol ? 1697 : 1537, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ minWidth: (showAssigneeCol ? 1697 : 1537) + (bulkRemovable ? 36 : 0), tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
+                    {bulkRemovable && (
+                      <th style={{ width: 36, textAlign: 'center' }} title="Chọn tất cả dòng">
+                        <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={itemCount > 0 && selectedRows.size === itemCount} onChange={toggleAllRows} aria-label="Chọn tất cả dòng" />
+                      </th>
+                    )}
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
                     <th style={{ width: 215, textAlign: 'left' }}>Mã hàng *</th>
                     <th style={{ width: 265, textAlign: 'left' }}>Tên sản phẩm *</th>
@@ -1130,6 +1158,11 @@ export default function PurchaseRequestDetail() {
                 <tbody>
                   {items.map((it: any, i: number) => (
                     <tr key={i}>
+                      {bulkRemovable && (
+                        <td style={{ textAlign: 'center' }}>
+                          <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectedRows.has(i)} onChange={() => toggleRow(i)} aria-label={`Chọn dòng ${i + 1}`} />
+                        </td>
+                      )}
                       <td>{i + 1}</td>
                       <td
                         style={dupCodes.includes((it.product_code || '').trim()) ? { background: 'var(--red-bg)', boxShadow: 'inset 3px 0 0 var(--red)' } : undefined}
@@ -1243,7 +1276,7 @@ export default function PurchaseRequestDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={showAssigneeCol ? 15 : 14} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={(showAssigneeCol ? 15 : 14) + (bulkRemovable ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>Chưa có sản phẩm nào</td></tr>}
                 </tbody>
               </table>
             </div>

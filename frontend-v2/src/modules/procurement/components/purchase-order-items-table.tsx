@@ -3,6 +3,8 @@ import { Copy, History, PauseCircle, Pencil, PlayCircle, Trash2 } from 'lucide-r
 import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useLineSelection } from '@/shared/hooks/use-line-selection'
+import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -149,10 +151,24 @@ function preferHistory(previous: string, historyValue?: string): string {
   return (historyValue ?? '').trim() || previous || ''
 }
 
+//  Khóa dòng: dòng chưa lưu chưa có id nên lấy chỉ số — khai cấp module để tham chiếu không đổi.
+function purchaseOrderRowKey(item: PurchaseOrderItem, index: number): string | number {
+  return item.id ?? `new-${index}`
+}
+
+function isLineUnlocked(item: PurchaseOrderItem): boolean {
+  return !isLineLocked(item)
+}
+
 interface PurchaseOrderItemsTableProps {
   items: PurchaseOrderItem[]
   /** Sửa được nội dung dòng (đơn chưa chốt + có quyền ghi). */
   editable: boolean
+  /**
+   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
+   */
+  bulkRemovable?: boolean
   /** Cập nhật tiến độ dòng (đơn đã duyệt trở đi). */
   progressEditable: boolean
   onChange: (items: PurchaseOrderItem[]) => void
@@ -185,6 +201,7 @@ const DOMESTIC_ONLY_COLUMNS = new Set(['vat', 'price_after_vat'])
 export function PurchaseOrderItemsTable({
   items,
   editable,
+  bulkRemovable = false,
   progressEditable,
   onChange,
   onProgressChange,
@@ -194,6 +211,21 @@ export function PurchaseOrderItemsTable({
   order,
 }: PurchaseOrderItemsTableProps) {
   const { data: units } = usePurchaseRequestUnits(editable)
+  const lineSelection = useLineSelection({
+    rows: items,
+    rowKey: purchaseOrderRowKey,
+    enabled: editable && bulkRemovable,
+    //  Dòng đã hoàn thành / đã hủy khóa như nút xóa từng dòng.
+    isSelectable: isLineUnlocked,
+    unselectableReason: 'Dòng đã hoàn thành hoặc đã hủy — không xóa được',
+  })
+  const removeSelectedLines = () => {
+    const drop = new Set(lineSelection.selectedIndexes)
+    onChange(items.filter((_, index) => !drop.has(index)))
+    //  Báo từng chỉ số từ CAO xuống THẤP: trang dời phiếu giao chờ lưu theo chỉ số.
+    for (const index of [...lineSelection.selectedIndexes].sort((a, b) => b - a)) onLineRemoved?.(index)
+    lineSelection.clear()
+  }
   const { data: itemGroups } = usePurchaseRequestItemGroups(editable)
   const itemGroupOptions = useMemo(
     () => (itemGroups?.items ?? []).map((group) => ({ value: group.name, label: group.name })),
@@ -552,10 +584,20 @@ export function PurchaseOrderItemsTable({
         columns={columns}
         rows={items}
         storageKey={TABLE_STORAGE_KEY}
-        rowKey={(item, index) => item.id ?? `new-${index}`}
+        rowKey={purchaseOrderRowKey}
         renderCell={renderCell}
         title={`Danh sách dòng hàng (${items.length} dòng)`}
         emptyMessage="Chưa có dòng hàng nào."
+        selection={lineSelection.selection}
+        actions={
+          <BulkDeleteButton
+            size="sm"
+            count={lineSelection.selectedIndexes.length}
+            unitLabel="dòng"
+            description="Các dòng bỏ khỏi đơn ngay trên màn hình; bấm Lưu mới ghi xuống."
+            onConfirm={removeSelectedLines}
+          />
+        }
         cellClassName={(key) =>
           key === 'amount' || key === 'base_amount' ? 'bg-warning/8' : undefined
         }

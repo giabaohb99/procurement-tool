@@ -70,6 +70,138 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-548 | Phân hệ Báo cáo: thêm 8 báo cáo cho Nhân sự, Hành chính, Dự án và làm lại giao diện báo cáo
+- status: xong
+- date: 2026-10-01
+Phân hệ Báo cáo trước đây chỉ có năm báo cáo của Thu mua. Nay có thêm tám báo cáo cùng kiểu (chọn kỳ,
+so với kỳ trước, thẻ chỉ số, biểu đồ xu hướng, bảng «Xem theo», xuất Excel): Biến động nhân sự, Tình
+hình nghỉ phép, Quỹ phép năm, Báo cáo đặt xe, Báo cáo đóng dấu, Báo cáo văn bản, Báo cáo phê duyệt và
+Công việc & dự án. Mỗi báo cáo gác quyền đúng như bảng danh sách gốc của nó (cùng khóa quyền, cùng phạm
+vi dữ liệu); báo cáo Văn bản chỉ đếm văn bản người xem được thấy, báo cáo Phê duyệt chỉ đếm phiên duyệt
+của loại chứng từ người xem có quyền đọc, báo cáo Dự án chỉ đếm việc của dự án mình là thành viên. Lọc
+theo công ty chạy thật ở mọi báo cáo có công ty. Bảng «Xem theo» của báo cáo Nhân sự có định biên đầu và
+cuối kỳ cho từng phòng ban, công ty, cấp bậc. Số «đang mở / đang chờ» ở kỳ so sánh tính đúng tại ngày
+cuối kỳ đó chứ không lấy trạng thái hôm nay.
+
+Giao diện báo cáo được làm lại theo góp ý của đại ca: dòng Tổng không còn huy hiệu «Mới» ở từng ô, mức
+thay đổi đứng cùng hàng với con số; thẻ chỉ số nói «Kỳ trước chưa phát sinh» bằng chữ mờ thay cho khối
+xám; biểu đồ vẽ đường thẳng có chấm từng mốc, trục không còn vạch lẻ «0,3 ngày»; khối lưu ý cách tính
+gấp thành một dòng; tên báo cáo trên menu rút gọn cho khỏi bị cắt.
+
+Kiểm: bài kiểm máy chủ của tám báo cáo xanh (gồm bài kiểm phạm vi quyền, đếm truy vấn cố định, bài so
+kết quả trước/sau khi đổi cách cộng); 1.280 bài kiểm giao diện phân hệ Báo cáo, Thu mua và lớp dùng chung
+xanh, tsc 0 lỗi, eslint 0 lỗi. Đã review chéo, không thấy rò rỉ dữ liệu qua số tổng hợp. Đã commit trên
+erp-v2, chưa lên dev.
+
+Mã nguồn: backend `{employee,leave,vehicle_booking,seal_request,document,approval,work}/report_*.py`,
+`leave/balance_report_*.py`, đăng ký router ở `main.py` · frontend-v2 `modules/report/{config,pages,components}`
+· bài kiểm `test_bao_cao_{nhan_su,nghi_phep,hanh_chinh,van_ban,phe_duyet,cong_viec}*.py`
+
+---
+
+## duoc-CR-549 | Báo cáo chịu tải: nới kho kết nối, cache 60 giây, cộng bằng SQL cho bốn báo cáo nặng
+- status: xong
+- date: 2026-10-01
+Đại ca lo báo cáo làm sập máy chủ khi lên prod nên em đo tải với dữ liệu bơm lớn gấp 8–16 lần quy mô
+thật (5.000 nhân sự, 60.000 đơn nghỉ, 128.000 phiên duyệt, 100.000 việc). Lần đo đầu cho thấy chỉ 3
+người cùng mở trang Tổng quan báo cáo là máy chủ trả lỗi 500 vì cạn kết nối cơ sở dữ liệu, và bốn báo
+cáo Phê duyệt, Nghỉ phép, Dự án, Đặt xe mất 5–24 giây mỗi lần gọi.
+
+Đã sửa: kho kết nối nâng lên 10 + 15 kết nối mỗi tiến trình (tổng lý thuyết 125, dưới trần 151 của
+MySQL); cache Redis 60 giây cho mọi lượt xem báo cáo, khóa theo phiên đăng nhập nên người này không
+thấy số của người khác, Redis hỏng thì vẫn tính bình thường; bảng «Xem theo» tối đa 300 nhóm, phần dư
+gộp vào dòng «Các nhóm khác»; bốn báo cáo nặng chuyển sang cộng bằng SQL thay vì nạp từng dòng lên
+Python; thêm 5 chỉ mục cột ngày (đặt xe, đóng dấu, văn bản, phê duyệt).
+
+Đo lại sau khi sửa: 3 người cùng mở Tổng quan chạy đủ 39/39 lượt gọi (trước 27/39); cache nhanh hơn
+48–1.325 lần khi xem lại; Nghỉ phép nhanh 11 lần, Dự án nhanh 8 lần và ít bộ nhớ hơn 450 lần, Đặt xe
+nhanh 4–27 lần. Còn treo: báo cáo Phê duyệt giảm bộ nhớ từ 226 MB xuống dưới 1 MB nhưng ở khoảng 3 năm
+vẫn chậm (tới 18 giây ở quy mô bơm), do điều kiện phạm vi quyền bị tính lại bốn lần trong một truy vấn;
+mức 10 người cùng lúc trở lên vẫn làm MySQL của môi trường đo (giới hạn 1,5 GB) hết bộ nhớ. Hai việc này
+làm tiếp ở lượt sau. Đã commit trên erp-v2, chưa lên dev.
+
+Mã nguồn: `core/database.py` · `core/config.py` (`DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `REPORT_CACHE_TTL`) ·
+`core/report_cache.py` (mới) · `core/report_aggregate.py` (`GROUP_LIMIT`) · `approval/report_turnaround.py` ·
+`*/report_grouped_fetch.py` · migration `c7e2a9d4b1f3` · bài kiểm `test_bao_cao_cache_tong_quan.py`,
+`test_bao_cao_khung_tran_nhom.py`, `test_*_gom_sql.py`
+
+---
+
+## duoc-CR-550 | Tra cứu thị trường: năm mục tra giá về lại dạng tab, cả hai giao diện
+- status: xong
+- date: 2026-10-01
+Đại ca muốn năm mục Danh sách, Biểu đồ, Nhà nhập khẩu, So sánh, Thuế quay lại thành tab chuyển qua lại
+trên đầu màn như trước khi tách thành menu con. Menu trái nay chỉ còn một mục «Giá nhập khẩu» cho cả năm
+tab (đứng ở tab nào mục này cũng sáng), các mục Pháp lý, Thuốc BVTV, Lịch sử nạp, Cấu hình giữ nguyên là
+menu con. Mỗi tab vẫn có đường riêng nên link cũ không gãy, chuyển tab vẫn giữ bộ lọc, gõ thẳng đường
+của tab vẫn bị chặn khi không có quyền xem giá hải quan. Menu trái của v2 nay ẩn được mục con.
+
+Kiểm: bài kiểm màn Tra cứu thị trường và menu phân hệ xanh (thêm 3 bài); bấm thử trên cả hai giao diện.
+Đã commit trên erp-v2, chưa lên dev.
+
+Mã nguồn: frontend-v2 `procurement/{config/customs-sections.ts, routes.tsx, pages/customs-price-page.tsx}`,
+`app/layouts/module-sidebar.tsx` · frontend `config/customs-sections.ts`, `layouts/AppLayout.tsx`,
+`pages/CustomsPrices.tsx`
+
+---
+
+## duoc-CR-551 | Thuốc BVTV: trang chi tiết có thuốc liên quan, cột tra cứu nhanh và bố cục mới, cả hai giao diện
+- status: xong
+- date: 2026-10-01
+Trang chi tiết thuốc BVTV được làm lại theo trang nguồn danhmuc.thuocbvtv.com. Thẻ đầu trang gom tên,
+tình trạng, hoạt chất, công ty, số đăng ký (bấm chép được) và bốn ô thông tin: phân nhóm, lĩnh vực, ngày
+hết hạn kèm thời gian còn lại, nhóm độc tách thành thẻ theo mức độc. Phần dưới chia hai tab: «Sử dụng &
+tài liệu» (phạm vi sử dụng, tệp đính kèm, lịch sử) và «Thuốc liên quan» với hai lựa chọn «Cùng công ty»
+và «Cùng hoạt chất». Cùng hoạt chất nghĩa là cùng tập tên hoạt chất sau khi bỏ hàm lượng, không phụ thuộc
+thứ tự. Bên phải có cột tìm thuốc khác theo tên, phân nhóm, lĩnh vực và danh sách tra cứu nhanh theo phân
+nhóm kèm số thuốc; màn hẹp thì mở bằng nút «Tra cứu». Danh sách Thuốc BVTV có thêm ô lọc Lĩnh vực.
+
+Kiểm: 89 bài kiểm máy chủ thuốc BVTV xanh (thêm bài cho luật khớp hoạt chất); bài kiểm giao diện phân hệ
+Thu mua xanh, tsc 0 lỗi; v1 tsc giữ đúng 4 lỗi cũ. Đối chiếu thuốc 2S Sea & See 12WP: 10 thuốc đầu cùng
+công ty khớp từng tên với trang nguồn, cùng hoạt chất ra đúng thuốc như nguồn. Đường API mới chạy 25–40
+mili giây. Cùng ngày bản v1 cũng chuyển sang thẻ đầu trang + hai tab như v2; bảng thuốc liên quan ở v1
+có lề cho thanh phân trang và bo góc vừa. Đã commit trên erp-v2, chưa lên dev.
+
+Mã nguồn: backend `customs/pesticide_related_service.py` (mới), `customs/pesticide_controller.py`
+(`GET /api/customs/pesticides/{id}/related`) · frontend-v2 `procurement/components/customs/
+customs-pesticide-{hero-card,detail-tabs,related-cards,lookup-sidebar,banned-notice}.tsx`,
+`utils/customs-pesticide-display.ts` · frontend `components/customs/CustomsPesticide{InfoCard,Related,Lookup}.tsx`
+
+---
+
+## bao-CR-547 | Tick nhiều dòng trong bảng dòng ở trang chi tiết rồi xóa một lần (YCBG, YCMH, ĐMH, YCTT)
+- status: dang-lam
+- date: 2026-10-01
+Đại ca muốn ở bảng dòng sản phẩm trong trang chi tiết của yêu cầu báo giá, yêu cầu mua hàng, đơn mua
+hàng và yêu cầu thanh toán có thể tick nhiều dòng rồi xóa một lần, cả v1 lẫn v2, chỉ khi phiếu đang là
+form tạo hoặc trạng thái Nháp. Bản đầu em làm nhầm ở trang danh sách (tick rồi xóa cả phiếu); đại ca
+đính chính nên phần đó đã gỡ hết, chỉ giữ hai luật ở máy chủ đi kèm: đường xóa nhiều phiếu kiểm cả lô
+trước và chỉ nhận phiếu Nháp, và yêu cầu thanh toán chỉ xóa được khi còn Nháp.
+
+Ở v2, bảng dòng dùng chung có thêm cột tick đứng đầu và được ghim, không dính vào bố cục cột người
+dùng đã lưu; dòng không cho xóa (dòng đơn mua hàng đã hoàn thành hoặc đã hủy) thì ô tick vô hiệu kèm lời
+giải thích. Bốn bảng dòng nhận cờ cho tick, trang bật cờ khi phiếu mới tạo hoặc đang Nháp; nút «Xóa đã
+chọn (n)» đứng cạnh «Thêm dòng», bấm thì hỏi xác nhận, dòng bỏ khỏi phiếu ngay trên màn hình và chỉ ghi
+xuống khi bấm Lưu. Yêu cầu báo giá và đơn mua hàng báo chỉ số dòng bị bỏ từ cao xuống thấp để tệp đính
+kèm và phiếu giao đang chờ lưu dời theo đúng dòng. Ở v1, bốn bảng tự dựng được thêm cột tick, nút xóa
+và hộp xác nhận; chọn theo thứ tự dòng nên đổi số dòng là bỏ hết lựa chọn, màn tạo yêu cầu thanh toán
+chọn theo khóa dòng. Sửa kèm: trang chi tiết yêu cầu mua hàng ở cả hai bản trước xóa từng phiếu nhầm qua
+đường xóa nhiều, nay dùng đường riêng để phiếu bị trả lại vẫn xóa được.
+
+Kiểm: 8 bài kiểm máy chủ mới và 178 bài kiểm phạm vi liên quan xanh; v2 tsc 0 lỗi, eslint 0 lỗi, bài
+kiểm phân hệ thu mua, tài chính và lớp dùng chung xanh (thêm bài cho hook chọn dòng, cột tick của bảng
+dòng, bảng yêu cầu mua hàng, nút xóa); v1 tsc giữ đúng 4 lỗi cũ; bấm thử trên trình duyệt local ở form
+tạo yêu cầu mua hàng cả hai bản. Chưa commit.
+
+Mã nguồn: `core/bulk_delete.py` (mới) · controller xóa nhiều của 4 phân hệ · `payment_request/service.py` ·
+v2 `shared/data-table/lines-table.tsx`, `shared/hooks/use-line-selection.ts` (mới), `shared/ui/bulk-delete-button.tsx`
+(mới), `purchase-request-items-table.tsx`, `survey-request-lines-table.tsx`, `purchase-order-items-table.tsx`,
+`payment-request-lines-table.tsx`, bốn trang chi tiết, `purchase-request-api.ts` · v1 `PurchaseRequestDetail.tsx`,
+`SurveyRequestDetail.tsx`, `PurchaseOrderDetail.tsx`, `PaymentRequestDetail.tsx`, `CrudList.tsx`, `cruds.tsx` ·
+`test/backend/test_xoa_nhieu_phieu_nhap_cr547.py`
+
+---
+
 ## bao-CR-546 | Bản in phiếu đề xuất mua hàng: ô chọn mẫu in và ô tick ẩn nơi giao
 - status: xong
 - date: 2026-10-01

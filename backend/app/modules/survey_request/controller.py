@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy import inspect as sa_inspect, select
 from sqlalchemy.orm import Session
 
+from app.core.bulk_delete import ensure_all_draft
 from app.core.auth import (get_current_user, get_perm_profile, require,
                            user_has_permission)
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
@@ -437,6 +438,8 @@ def bulk_delete_survey_requests(ids: str, db: Session = Depends(get_db), user=De
 def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
     s = _in_scope(db, sid, user, "read")
     if not _can_edit_own(db, s, user):
+    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
+    ensure_all_draft(rows, "phiếu yêu cầu báo giá")
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt phiếu ở trạng thái Nháp hoặc Bị trả lại")

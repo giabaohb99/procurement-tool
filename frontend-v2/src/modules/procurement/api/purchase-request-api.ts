@@ -83,7 +83,8 @@ export const purchaseRequestApi = {
     apiPatch<PurchaseRequestDetail>(`${BASE_URL}/${id}`, payload),
 
   /** Xóa hẳn phiếu. Endpoint nhận danh sách id qua query, không phải path. */
-  remove: (id: number) => apiDelete<null>(`${BASE_URL}?ids=${id}`),
+  //  bao-CR-547: xóa TỪNG phiếu đi đường `/{id}` — `?ids=` là xóa nhiều, nay chỉ nhận phiếu Nháp.
+  remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 
   /** Nhân bản thành phiếu nháp mới. */
   copy: (id: number) => apiPost<PurchaseRequestDetail>(`${BASE_URL}/${id}/copy`, {}),

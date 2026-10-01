@@ -114,7 +114,9 @@ export default function CrudList() {
         cell: (row) => (
           <span onClick={(e) => e.stopPropagation()}>
             <input type="checkbox" checked={selectedIds.includes(row.id)}
-              onChange={() => toggleRow(row.id)} title="Chọn phiếu này để xuất Excel" />
+              onChange={() => toggleRow(row.id)}
+              // bao-CR-547: cột tick nay dùng chung cho Xuất Excel và Xóa đã chọn (chỉ phiếu Nháp).
+              title={cfg.bulkDelete ? 'Chọn phiếu này để xuất Excel hoặc xóa (chỉ phiếu Nháp)' : 'Chọn phiếu này để xuất Excel'} />
           </span>
         ),
       })
@@ -211,40 +213,45 @@ export default function CrudList() {
   async function handleDeleteSelected() {
     if (selectedIds.length === 0) return;
 
-    // Nếu là purchase-requests, kiểm tra chỉ cho xóa phiếu Nháp
-    if (cfg.slug === 'purchase-requests') {
-      const nonDraftItems = items.filter(
-        (item) => selectedIds.includes(item.id) && item.status !== 'draft'
-      );
-      if (nonDraftItems.length > 0) {
-        setConfirmModal({
-          open: true,
-          title: 'Không thể xóa',
-          message: `Không thể xóa item này do trạng thái không phải là Nháp.`,
-          confirmText: 'Đã hiểu',
-          hideCancel: true,
-          variant: 'warn',
-          onConfirm: () => setConfirmModal((prev) => ({ ...prev, open: false })),
-        });
-        return;
-      }
+    // bao-CR-547 (đại ca chốt 01/10/2026): chỉ xóa phiếu NHÁP. Cột tick dùng chung với «Xuất Excel»
+    // nên lựa chọn có thể lẫn phiếu khác trạng thái — lọc lấy phiếu Nháp, phần còn lại giữ nguyên
+    // và nói rõ trong hộp xác nhận. Lựa chọn tự xóa mỗi lần nạp trang nên mọi id đều nằm trong `items`.
+    const selected = items.filter((item) => selectedIds.includes(item.id));
+    const draftIds = selected.filter((item) => item.status === 'draft').map((item) => item.id);
+    const kept = selected.filter((item) => item.status !== 'draft');
+    if (draftIds.length === 0) {
+      setConfirmModal({
+        open: true,
+        title: 'Không có phiếu Nháp',
+        message: 'Chỉ xóa được phiếu ở trạng thái Nháp — các phiếu đã chọn đều không phải Nháp.',
+        confirmText: 'Đã hiểu',
+        hideCancel: true,
+        variant: 'warn',
+        onConfirm: () => setConfirmModal((prev) => ({ ...prev, open: false })),
+      });
+      return;
     }
+    const keptCodes = kept.slice(0, 10).map((item) => item.code || `#${item.id}`).join(', ');
+    const keptNote = kept.length
+      ? ` ${kept.length} phiếu không phải Nháp sẽ được giữ nguyên (${keptCodes}${kept.length > 10 ? '…' : ''}).`
+      : '';
 
     setConfirmModal({
       open: true,
       title: 'Xác nhận xóa',
-      message: `Bạn có chắc chắn muốn xóa ${selectedIds.length} bản ghi đã chọn?`,
-      confirmText: 'Xóa',
+      message: `Xóa ${draftIds.length} phiếu Nháp đã chọn?${keptNote} Thao tác này không hoàn tác được.`,
+      confirmText: `Xóa ${draftIds.length} phiếu`,
       cancelText: 'Hủy',
       variant: 'danger',
       onConfirm: async () => {
         setConfirmModal((prev) => ({ ...prev, open: false }));
         try {
-          await api.delete(cfg.apiPath, { params: { ids: selectedIds.join(',') } });
+          const r = await api.delete(cfg.apiPath, { params: { ids: draftIds.join(',') } });
+          toast.success(r.data?.message || `Đã xóa ${draftIds.length} phiếu`);
           setSelectedIds([]);
           load(page, pageSize, filters);
         } catch (e: any) {
-          toast.error(e.response?.data?.message || 'Lỗi khi xóa dữ liệu');
+          toast.error(e.response?.data?.error?.message || e.response?.data?.message || 'Lỗi khi xóa dữ liệu');
         }
       },
     });

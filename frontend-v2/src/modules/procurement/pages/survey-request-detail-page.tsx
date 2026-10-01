@@ -795,6 +795,7 @@ export function SurveyRequestDetailPage() {
               lines={loadedDraft.lines}
               editing={editable}
               showNstmColumns={showNstmColumns}
+              bulkRemovable={isNew || status === 'draft'}
               showStatus={showStatus}
               canAssignNstm={canAssignNstm}
               invalid={invalid}

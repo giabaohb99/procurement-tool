@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import case, func, select, or_
 from sqlalchemy.orm import Session
 
+from app.core.bulk_delete import ensure_all_draft
 from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
 from app.core.ref_filter import apply_ref_filters
@@ -695,6 +696,8 @@ def bulk_delete_pos(ids: str, db: Session = Depends(get_db), user=Depends(requir
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
     for pid in [r.id for r in rows]:
         try:
+    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa đơn nào — chỉ đơn Nháp (đại ca chốt 01/10/2026).
+    ensure_all_draft(rows, "đơn mua hàng")
             service.delete_po(db, pid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa đơn ID {pid}: {str(e)}")

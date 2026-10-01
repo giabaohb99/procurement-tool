@@ -325,6 +325,12 @@ function PaymentRequestCreate() {
     setLines((current) => current.filter((_, i) => i !== index))
   }
 
+  //  bao-CR-547: bỏ nhiều dòng đã tick một lần.
+  function removeLines(indexes: number[]) {
+    const drop = new Set(indexes)
+    setLines((current) => current.filter((_, i) => !drop.has(i)))
+  }
+
   async function handleCreate() {
     if (!lines.length) {
       toast.error('Chưa có dòng nào để tạo phiếu')
@@ -551,6 +557,7 @@ function PaymentRequestCreate() {
           rows={lines}
           editable
           storageKey="finance.payment-request-create-lines"
+          bulkRemovable
           showSupplierColumns
           lockLinkedPo
           showOffsetColumn={showOffsetColumn}
@@ -558,6 +565,7 @@ function PaymentRequestCreate() {
           sourceDisplay={sourceDisplay}
           onPatch={patchLine}
           onRemove={removeLine}
+          onRemoveMany={removeLines}
         />
 
         <div className="flex flex-wrap items-center gap-3">
@@ -702,6 +710,12 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
 
   function removeLine(index: number) {
     setLines((current) => current.filter((_, i) => i !== index))
+  }
+
+  //  bao-CR-547: bỏ nhiều dòng đã tick một lần.
+  function removeLines(indexes: number[]) {
+    const drop = new Set(indexes)
+    setLines((current) => current.filter((_, i) => !drop.has(i)))
   }
 
   async function handleSave() {
@@ -1027,6 +1041,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           rows={lines}
           editable={editable}
           storageKey="finance.payment-request-view-lines"
+          bulkRemovable={editable}
           showSupplierColumns={false}
           lockLinkedPo={false}
           showOffsetColumn={showOffsetColumn}
@@ -1034,6 +1049,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           sourceDisplay={noop}
           onPatch={patchLine}
           onRemove={removeLine}
+          onRemoveMany={removeLines}
         />
 
         <div className="flex flex-wrap items-center gap-3">
