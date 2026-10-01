@@ -14,7 +14,8 @@ from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import pesticide_edit_service, pesticide_reader, pesticide_service
+from . import (pesticide_edit_service, pesticide_reader, pesticide_related_service,
+               pesticide_service)
 from .pesticide_schema import PesticideIn
 
 ENTITY = "customs_price"
@@ -41,6 +42,15 @@ def list_pesticides(q: str = "", status: int | None = Query(None, ge=0, le=9),
 @router.get("/options")
 def get_options(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     return success(pesticide_service.options(db))
+
+
+@router.get("/{pesticide_id}/related")
+def get_related_pesticides(pesticide_id: int,
+                           limit: int = Query(pesticide_related_service.RELATED_LIMIT, ge=1,
+                                              le=pesticide_related_service.MAX_RELATED_LIMIT),
+                           db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
+    """«Sản phẩm khác cùng công ty» + «Thuốc cùng hoạt chất» của trang chi tiết (01/10/2026)."""
+    return success(pesticide_related_service.related_pesticides(db, pesticide_id, limit))
 
 
 @router.get("/{pesticide_id}")
