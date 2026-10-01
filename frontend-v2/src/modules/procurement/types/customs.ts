@@ -294,6 +294,12 @@ export interface CustomsImportBatch {
   date_from: string
   date_to: string
   date_fixed: number
+  /** bao-CR-541 — dòng lặp lại trong cùng tệp, bỏ qua. Lô cũ (trước CR) không có khóa này. */
+  duplicate_rows?: number
+  /** bao-CR-541 — dòng giống hệt một dòng đã có trong bảng giá, bỏ qua. */
+  existing_rows?: number
+  /** bao-CR-541 — dòng THÊM MỚI nhưng trùng cột nhận diện với dòng đã có mà khác giá/lượng. */
+  suspect_rows?: number
   created_at: string | null
   created_by: number | null
   created_by_name: string | null

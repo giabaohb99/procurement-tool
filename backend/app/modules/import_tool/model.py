@@ -68,20 +68,24 @@ class ImportRowStatus(IntEnum):
 
     `NONE` = dòng nhật ký thường (cảnh báo / thông báo của lô), không phải dòng dữ liệu.
     Cố ý KHÔNG có «Cập nhật»: nguồn GTT02 không có số tờ khai nên không dựng được khóa
-    để biết dòng nào là cùng một dòng cũ (02 §3.1). `DUPLICATE` chỉ ĐÁNH DẤU — dòng vẫn
-    ghi vào bảng giá, vì hai dòng giống hệt có thể là hai lô hàng thật.
+    để biết dòng nào là cùng một dòng cũ đã sửa (02 §3.1).
+    bao-CR-541 (đại ca chốt 01/10/2026): dòng trùng thì BỎ QUA — `DUPLICATE` (lặp một dòng
+    phía trên trong cùng tệp) và `EXISTING` (giống hệt một dòng đã lưu) đều không ghi vào
+    bảng giá; trước đó `DUPLICATE` chỉ đánh dấu và vẫn ghi.
     """
     NONE = 0
     NEW = 1          # Thêm mới
     ERROR = 2        # Lỗi — bỏ dòng
-    DUPLICATE = 3    # Trùng với một dòng khác trong CÙNG tệp (vẫn ghi)
+    DUPLICATE = 3    # Trùng với một dòng khác trong CÙNG tệp — bỏ qua
+    EXISTING = 4     # Giống hệt một dòng đã có trong bảng giá — bỏ qua (bao-CR-541)
 
 
 IMPORT_ROW_STATUS_LABELS = {
     ImportRowStatus.NONE: "",
     ImportRowStatus.NEW: "Thêm mới",
     ImportRowStatus.ERROR: "Lỗi",
-    ImportRowStatus.DUPLICATE: "Trùng trong lô",
+    ImportRowStatus.DUPLICATE: "Trùng trong tệp",
+    ImportRowStatus.EXISTING: "Đã có",
 }
 
 

@@ -21,6 +21,8 @@ export const CUSTOMS_ROW_STATUS = {
   NEW: 1,
   ERROR: 2,
   DUPLICATE: 3,
+  /** bao-CR-541 — giống hệt một dòng đã có trong bảng giá, bỏ qua. */
+  EXISTING: 4,
 } as const
 
 export type CustomsRowStatus = (typeof CUSTOMS_ROW_STATUS)[keyof typeof CUSTOMS_ROW_STATUS]
@@ -48,5 +50,7 @@ export interface CustomsBatchRowSummary {
   new: number
   error: number
   duplicate: number
+  /** bao-CR-541 — dòng đã có trong bảng giá, bỏ qua (lô cũ không có khóa này). */
+  existing?: number
   labels: Record<string, string>
 }

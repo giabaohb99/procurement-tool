@@ -4,9 +4,9 @@
   · bộ lọc lưu RIÊNG từng tài khoản, cột dùng chung có sẵn nhưng tắt; người A không thấy /
     không xóa được của B (404 như không có); trần 50 bộ / người; tên dài → 422 ở SCHEMA
     (SQLite không ép độ dài VARCHAR nên kiểm ở DB là xanh giả — duoc-CR-316);
-  · log từng dòng chỉ ba kết cục Thêm mới · Lỗi · Trùng trong lô — KHÔNG có «Cập nhật»
-    (nguồn không có số tờ khai); dòng trùng chỉ ĐÁNH DẤU, vẫn ghi vào bảng giá, luật đếm
-    của bộ đọc giữ nguyên.
+  · log từng dòng — KHÔNG có «Cập nhật» (nguồn không có số tờ khai).
+bao-CR-541 (đại ca chốt 01/10/2026) đổi luật trùng: dòng trùng trong tệp và dòng đã có trong
+bảng giá đều BỎ QUA (thêm kết cục «Đã có»); bản 496 chỉ đánh dấu rồi vẫn ghi.
 """
 import io
 from datetime import datetime
@@ -149,16 +149,17 @@ def test_every_data_row_gets_exactly_one_status_line(db):
                                    (4, ImportRowStatus.DUPLICATE), (5, ImportRowStatus.NEW)]
     dup = db.query(ImportLog).filter(ImportLog.batch_id == b.id, ImportLog.row_no == 4).one()
     assert "dòng 2" in dup.message and dup.ref_key == "ATRAZINE 97% TECH"
-    assert row_log.count_rows(db, b.id) == {"total": 4, "new": 2, "error": 1, "duplicate": 1}
+    assert row_log.count_rows(db, b.id) == {"total": 4, "new": 2, "error": 1, "duplicate": 1, "existing": 0}
 
 
-def test_duplicate_is_marked_but_still_written_and_counters_unchanged(db):
-    """Đại ca chốt: KHÔNG xóa dòng trùng — có thể là hai lô hàng thật. Luật đếm bộ đọc giữ nguyên."""
+def test_duplicate_in_file_is_skipped_not_written(db):
+    """bao-CR-541: dòng lặp trong cùng tệp BỎ QUA (bản 496 vẫn ghi → prod dồn 806 dòng thừa).
+    `skipped_count` vẫn chỉ đếm dòng bộ đọc không đọc được."""
     b = _batch(db)
     importer.run(db, b, _xlsx([_row(), _row(), _row()]), apply=True)
 
-    assert db.query(CustomsLine).filter(CustomsLine.batch_id == b.id).count() == 3
-    assert b.created_count == 3 and b.skipped_count == 0 and b.error_count == 0
+    assert db.query(CustomsLine).filter(CustomsLine.batch_id == b.id).count() == 1
+    assert b.created_count == 1 and b.skipped_count == 0 and b.error_count == 0
     assert '"duplicate_rows": 2' in b.sheet_info
     assert [s for _, s in _statuses(db, b.id)] == [ImportRowStatus.NEW, ImportRowStatus.DUPLICATE,
                                                    ImportRowStatus.DUPLICATE]
@@ -177,7 +178,7 @@ def test_dry_run_also_writes_row_statuses_without_touching_lines(db):
     b = _batch(db, ImportMode.DRY_RUN)
     importer.run(db, b, _xlsx([_row(), _row()]), apply=False)
     assert db.query(CustomsLine).count() == 0
-    assert row_log.count_rows(db, b.id) == {"total": 2, "new": 1, "error": 0, "duplicate": 1}
+    assert row_log.count_rows(db, b.id) == {"total": 2, "new": 1, "error": 0, "duplicate": 1, "existing": 0}
 
 
 def test_list_rows_filters_by_status_and_pages_in_file_order(db):
@@ -223,5 +224,5 @@ def test_batch_notes_stay_readable_and_do_not_drown_in_row_statuses(db):
 
 
 def test_row_status_enum_has_no_update_state():
-    assert {s.name for s in ImportRowStatus} == {"NONE", "NEW", "ERROR", "DUPLICATE"}, \
+    assert {s.name for s in ImportRowStatus} == {"NONE", "NEW", "ERROR", "DUPLICATE", "EXISTING"}, \
         "GTT02 không có số tờ khai → không có kết cục «Cập nhật» (đại ca chốt 25/09/2026)"

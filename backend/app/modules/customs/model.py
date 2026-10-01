@@ -55,12 +55,18 @@ class CustomsLine(Base):
         #  Nút «Các lần nhập khác của đối tác này» lọc theo partner_id — thiếu chỉ mục này
         #  là quét cả bảng qua mọi phân vùng rồi mới sắp xếp (đo 1,8 giây trên dev, 23/09).
         Index("ix_customs_line_partner_date", "partner_id", "reg_date"),
+        #  bao-CR-541: tra mã băm chống trùng. Kèm `reg_date` vì bảng chia phân vùng theo năm
+        #  của nó — sau này nâng thành UNIQUE thì MySQL buộc khóa phải chứa cột phân vùng.
+        Index("ix_customs_line_hash_date", "row_hash", "reg_date"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     batch_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     source_row: Mapped[int] = mapped_column(Integer, default=0)            # dòng mấy trong tệp gốc
     date_fixed: Mapped[int] = mapped_column(SmallInteger, default=0)       # 1 = ngày đăng ký đã vá
+    #  bao-CR-541: SHA-1 của đủ các cột dữ liệu sau chuẩn hóa (`dedupe.compute_row_hash`).
+    #  Rỗng = dòng nạp trước CR-541, lần nạp sau chạm khoảng ngày của nó thì tự tính.
+    row_hash: Mapped[str] = mapped_column(String(40), default="", server_default="")
 
     reg_date: Mapped[date] = mapped_column(Date)                           # 0  Ngày đăng ký (ĐÃ vá)
     office_code: Mapped[str] = mapped_column(String(10), default="")       # 1

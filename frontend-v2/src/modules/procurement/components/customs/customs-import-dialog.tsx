@@ -1,10 +1,10 @@
-// bao-CR-470 — nạp tệp GTT02 (HQ1). Luôn CHẠY THỬ trước: mỗi tệp một lô, báo số dòng,
-// khoảng ngày, số ngày bị đảo đã vá và số dòng cũ SẼ BỊ THAY; người nạp xem rồi mới bấm
-// Áp dụng.
+// bao-CR-470 — nạp tệp GTT02 (HQ1). Luôn CHẠY THỬ trước: mỗi tệp một lô, báo số dòng mới,
+// khoảng ngày, số ngày bị đảo đã vá và số dòng sẽ BỎ QUA; người nạp xem rồi mới bấm Áp dụng.
 //
-// Luật thay dữ liệu: lô mới xóa mọi dòng cũ nằm trong khoảng ngày của nó rồi ghi lại — tệp
-// GTT02 không có khóa duy nhất (806 dòng trùng khít trong 5 tệp mẫu), nên nạp chồng theo
-// khoảng ngày là cách duy nhất không đếm đôi. Lô đã thay dòng cũ thì KHÔNG hoàn tác được.
+// bao-CR-541 (đại ca chốt 01/10/2026): trùng thì BỎ QUA — dòng giống hệt một dòng đã có trong
+// bảng giá hoặc lặp lại trong cùng tệp không được ghi; không xóa, không ghi đè dòng cũ nào nữa
+// (bỏ luật «thay theo khoảng ngày» của bao-CR-470). Dòng mới trùng cột nhận diện mà khác giá
+// thì vẫn thêm, chỉ đếm «nghi sửa giá» để người nạp rà ở Nhật ký lô.
 //
 // Hai nút Chạy thử / Áp dụng chặn bấm đúp bằng `useRef` ngay trong lượt bấm — `disabled`
 // chỉ đổi ở lượt vẽ sau, bấm liền tay vẫn lọt hai lệnh.
@@ -33,7 +33,7 @@ import {
   useUploadCustomsFiles,
 } from '../../hooks/use-customs'
 import { CUSTOMS_BATCH_STATUS, type CustomsImportBatch } from '../../types/customs'
-import { isBatchRunning, isBatchUsable, sumReplacedLines } from '../../utils/customs'
+import { isBatchRunning, isBatchUsable, sumSkippedLines } from '../../utils/customs'
 import { CustomsBatchStatusBadge } from './customs-batch-status-badge'
 import { CustomsNotice } from './customs-controls'
 
@@ -61,7 +61,11 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
   const stage = applyBatches.length ? 'apply' : dryBatches.length ? 'dry' : 'pick'
   const dryDone = dry.length > 0 && dry.every((batch) => !isBatchRunning(batch))
   const usable = dry.filter(isBatchUsable)
-  const willReplace = sumReplacedLines(dry)
+  const skipped = sumSkippedLines(dry)
+  //  Mọi lô chạy thử xong, không lô nào lỗi, mà không còn dòng mới: tệp đã nạp rồi — nói rõ
+  //  thay vì câu «không tệp nào dùng được» (nghe như tệp hỏng).
+  const nothingNew =
+    dryDone && !usable.length && dry.every((batch) => batch.status === CUSTOMS_BATCH_STATUS.done)
   const appliedDone = applied.length > 0 && applied.every((batch) => !isBatchRunning(batch))
 
   //  Báo MỘT lần khi mọi lô ghi thật đã xong, rồi làm mới cả màn (danh sách, dải tháng,
@@ -73,7 +77,13 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
     if (failed.length) toast.error(`${failed.length} tệp ghi lỗi — xem Lịch sử nạp`)
     else {
       const total = applied.reduce((sum, batch) => sum + (batch.created_count || 0), 0)
-      toast.success(`Đã nạp ${total} dòng hàng`)
+      const done = sumSkippedLines(applied)
+      const skippedTotal = done.existing + done.duplicate
+      toast.success(
+        skippedTotal
+          ? `Đã nạp ${total} dòng hàng mới, bỏ qua ${skippedTotal} dòng trùng`
+          : `Đã nạp ${total} dòng hàng mới`,
+      )
     }
     void invalidate()
   }, [appliedDone, applied, invalidate])
@@ -97,8 +107,8 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
     setApplying(true)
     try {
       const created: CustomsImportBatch[] = []
-      //  Ghi LẦN LƯỢT từng lô: hai lô cùng thay một khoảng ngày mà chạy song song thì
-      //  lô nào xóa trước lô nào ghi trước là chuyện may rủi.
+      //  Ghi LẦN LƯỢT từng lô: lô sau phải thấy dòng lô trước vừa ghi thì mới bỏ qua được
+      //  phần hai tệp chồng nhau (backend cũng khóa, đây là để thứ tự đúng như danh sách).
       for (const batch of usable) {
         created.push(await commit.mutateAsync(batch.id))
       }
@@ -157,8 +167,8 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
                 </ul>
               )}
               <p className="text-xs text-muted-foreground">
-                Lưu ý: nạp tệp có khoảng ngày trùng dữ liệu đã có thì các dòng cũ trong khoảng đó
-                được THAY bằng tệp mới (tệp hải quan không có mã dòng để đối chiếu từng dòng).
+                Dòng đã có trong bảng giá hoặc lặp lại trong cùng tệp sẽ được bỏ qua — nạp lại
+                một tệp không làm nhân đôi dữ liệu, và không dòng cũ nào bị xóa hay ghi đè.
               </p>
             </div>
           )}
@@ -169,13 +179,34 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
               {stage === 'dry' && !dryDone && (
                 <p className="text-sm text-muted-foreground">Đang chạy thử…</p>
               )}
-              {stage === 'dry' && dryDone && willReplace > 0 && (
-                <CustomsNotice tone="warning" icon={<TriangleAlert className="size-4" />}>
-                  Áp dụng sẽ <b>thay {willReplace} dòng cũ</b> nằm trong khoảng ngày của các tệp
-                  này. Lô đã thay dữ liệu cũ thì KHÔNG hoàn tác được.
+              {stage === 'dry' && dryDone && skipped.existing + skipped.duplicate > 0 && (
+                <CustomsNotice tone="info">
+                  Sẽ bỏ qua <b>{skipped.existing} dòng đã có</b> trong bảng giá
+                  {skipped.duplicate > 0 && (
+                    <>
+                      {' '}
+                      và <b>{skipped.duplicate} dòng trùng trong tệp</b>
+                    </>
+                  )}
+                  .
+                  {usable.length > 1 &&
+                    ' Chạy thử tính riêng từng tệp — các tệp chồng ngày nhau thì lúc áp dụng sẽ bỏ qua thêm phần trùng giữa chúng.'}
                 </CustomsNotice>
               )}
-              {stage === 'dry' && dryDone && !usable.length && (
+              {stage === 'dry' && dryDone && skipped.suspect > 0 && (
+                <CustomsNotice tone="warning" icon={<TriangleAlert className="size-4" />}>
+                  <b>{skipped.suspect} dòng mới</b> trùng ngày, doanh nghiệp, đối tác, mã HS, số thứ
+                  tự và tên hàng với một dòng đã có nhưng khác giá hoặc lượng — vẫn được thêm (thường
+                  là lô hàng khác). Nếu là nguồn sửa số liệu thì hoàn tác lô cũ rồi nạp lại; xem ghi
+                  chú «nghi sửa giá» ở Nhật ký lô.
+                </CustomsNotice>
+              )}
+              {stage === 'dry' && nothingNew && (
+                <CustomsNotice tone="info">
+                  Mọi dòng trong các tệp này đã có trong bảng giá — không có gì để thêm.
+                </CustomsNotice>
+              )}
+              {stage === 'dry' && dryDone && !usable.length && !nothingNew && (
                 <CustomsNotice tone="danger" icon={<TriangleAlert className="size-4" />}>
                   Không tệp nào dùng được — xem cột Trạng thái và dòng lỗi bên dưới bảng.
                 </CustomsNotice>
@@ -241,11 +272,27 @@ function BatchTable({ rows, applying }: { rows: CustomsImportBatch[]; applying: 
       },
       {
         key: 'created_count',
-        header: 'Dòng hàng',
-        width: 100,
+        header: applying ? 'Đã thêm' : 'Dòng mới',
+        width: 90,
         align: 'right',
         hideable: false,
         cell: (b) => (b.status === CUSTOMS_BATCH_STATUS.done ? b.created_count : '—'),
+      },
+      {
+        key: 'existing_rows',
+        header: 'Đã có',
+        width: 80,
+        align: 'right',
+        hideable: false,
+        cell: (b) => (b.status === CUSTOMS_BATCH_STATUS.done ? b.existing_rows || 0 : '—'),
+      },
+      {
+        key: 'duplicate_rows',
+        header: 'Trùng trong tệp',
+        width: 110,
+        align: 'right',
+        hideable: false,
+        cell: (b) => (b.status === CUSTOMS_BATCH_STATUS.done ? b.duplicate_rows || 0 : '—'),
       },
       { key: 'range', header: 'Khoảng ngày', width: 200, hideable: false, cell: formatRange },
       {
@@ -255,18 +302,6 @@ function BatchTable({ rows, applying }: { rows: CustomsImportBatch[]; applying: 
         align: 'right',
         hideable: false,
         cell: (b) => b.date_fixed || 0,
-      },
-      {
-        key: 'deleted_count',
-        header: applying ? 'Đã thay' : 'Sẽ thay',
-        width: 90,
-        align: 'right',
-        hideable: false,
-        cell: (b) => (
-          <span className={b.deleted_count > 0 ? 'font-semibold text-warning' : undefined}>
-            {b.deleted_count || 0}
-          </span>
-        ),
       },
       {
         key: 'warning_count',

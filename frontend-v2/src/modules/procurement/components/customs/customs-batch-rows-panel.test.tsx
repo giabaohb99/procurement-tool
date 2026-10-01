@@ -1,4 +1,5 @@
 // bao-CR-496 — hộp nhật ký từng dòng: tổng theo kết cục ở đầu, bấm ô là lọc và về trang 1.
+// bao-CR-541 — thêm kết cục «Đã có»; «Trùng trong lô» đổi thành «Trùng trong tệp» (bỏ qua).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -26,7 +27,7 @@ function mount() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  api.summary.mockResolvedValue({ total: 4, new: 2, error: 1, duplicate: 1, labels: {} })
+  api.summary.mockResolvedValue({ total: 5, new: 2, error: 1, duplicate: 1, existing: 1, labels: {} })
   api.rows.mockResolvedValue({
     total: 4,
     page: 1,
@@ -34,7 +35,8 @@ beforeEach(() => {
     items: [
       { id: 1, row_no: 2, row_status: 1, row_status_label: 'Thêm mới', product_name: 'ATRAZINE 97% TECH', message: 'Thêm mới' },
       { id: 2, row_no: 3, row_status: 2, row_status_label: 'Lỗi', product_name: '', message: 'Không đọc được Ngày đăng ký — bỏ dòng' },
-      { id: 3, row_no: 4, row_status: 3, row_status_label: 'Trùng trong lô', product_name: 'ATRAZINE 97% TECH', message: 'Giống hệt dòng 2 trong cùng tệp — vẫn ghi vào bảng giá, cần rà tay' },
+      { id: 3, row_no: 4, row_status: 3, row_status_label: 'Trùng trong tệp', product_name: 'ATRAZINE 97% TECH', message: 'Giống hệt dòng 2 trong cùng tệp — bỏ qua' },
+      { id: 4, row_no: 5, row_status: 4, row_status_label: 'Đã có', product_name: 'GLYPHOSATE 95% TC', message: 'Đã có trong bảng giá (lô #3) — bỏ qua' },
     ],
   })
 })
@@ -42,21 +44,23 @@ beforeEach(() => {
 describe('CustomsBatchRowsPanel — bao-CR-496', () => {
   it('shows counts per outcome and every data row with its outcome badge', async () => {
     mount()
-    expect(await screen.findByRole('button', { name: 'Tất cả: 4' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Tất cả: 5' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Thêm mới: 2' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Lỗi: 1' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Trùng trong lô: 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Trùng trong tệp: 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đã có: 1' })).toBeInTheDocument()
     expect(await screen.findByText(/giống hệt dòng 2/i)).toBeInTheDocument()
+    expect(screen.getByText(/lô #3/)).toBeInTheDocument()
     expect(api.rows).toHaveBeenCalledWith(5, { page: 1, page_size: 50, row_status: undefined })
   })
 
   it('clicking an outcome chip refetches with that status', async () => {
     mount()
-    await userEvent.click(await screen.findByRole('button', { name: 'Trùng trong lô: 1' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Đã có: 1' }))
     await waitFor(() =>
-      expect(api.rows).toHaveBeenLastCalledWith(5, { page: 1, page_size: 50, row_status: 3 }),
+      expect(api.rows).toHaveBeenLastCalledWith(5, { page: 1, page_size: 50, row_status: 4 }),
     )
-    expect(screen.getByRole('button', { name: 'Trùng trong lô: 1' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Đã có: 1' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('tells the user when a batch predates per-row logging', async () => {

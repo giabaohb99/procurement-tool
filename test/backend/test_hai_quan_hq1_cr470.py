@@ -6,8 +6,9 @@ bài kiểm). Ba cái bẫy được canh ở đây đều IM LẶNG nếu vỡ 
 ```
 cột Ngày đăng ký bị Excel đảo ngày/tháng  -> phải vá, nhưng CHỈ khi tệp có đúng dấu vân tay
 cột Ngày hợp đồng là ngày THẬT            -> tuyệt đối không vá
-nạp lại cùng khoảng ngày                  -> thay, không nhân đôi; lô đã thay thì không hoàn tác
+nạp lại cùng khoảng ngày                  -> bỏ qua dòng đã có, không nhân đôi, không xóa gì
 ```
+(bao-CR-541 đổi luật nạp: trước đó lô mới THAY mọi dòng cũ trong khoảng ngày của nó.)
 
 Tệp mẫu thật nằm ngoài repo (dữ liệu của doanh nghiệp khác), nên ở đây dựng tệp
 `.xlsx` giả bằng openpyxl — đi CÙNG đường luật đọc với `.xls`, vì cả hai định dạng
@@ -206,8 +207,10 @@ def test_ap_dung_ghi_dong_va_doi_tuong(db):
 def test_doanh_nghiep_chong_trung_theo_ma_so_thue_ten_lay_ban_moi_nhat(db):
     """Cùng mã số thuế, hai cách viết hoa → MỘT doanh nghiệp."""
     b = _batch(db)
+    #  Hai dòng khác số thứ tự hàng — chỉ khác tên doanh nghiệp thì là CÙNG một dòng (bao-CR-541
+    #  so trùng theo mã số thuế) và dòng sau bị bỏ qua, không còn gì để kiểm tên.
     importer.run(db, b, _xlsx([_row(importer_name="CôNG TY TNHH BAYER VIệT NAM"),
-                               _row(importer_name="Công ty TNHH Bayer Việt Nam")]), apply=True)
+                               _row(importer_name="Công ty TNHH Bayer Việt Nam", line_no=2)]), apply=True)
 
     domestic = db.query(CustomsParty).filter(CustomsParty.party_type == PartyType.DOMESTIC).all()
     assert len(domestic) == 1
@@ -221,15 +224,17 @@ def test_cung_ten_khac_loai_thi_hai_doi_tuong(db):
     assert db.query(CustomsParty).count() == 2
 
 
-def test_nap_lai_cung_khoang_ngay_thi_thay_khong_nhan_doi(db):
+def test_nap_lai_cung_tep_thi_bo_qua_khong_nhan_doi(db):
+    """bao-CR-541: dòng đã có thì bỏ qua — không nhân đôi, cũng không xóa dòng của lô trước."""
     first = _batch(db)
     importer.run(db, first, _xlsx([_row(), _row(line_no=2), _row(line_no=3)]), apply=True)
     second = _batch(db)
     importer.run(db, second, _xlsx([_row(), _row(line_no=2)]), apply=True)
 
     lines = _lines(db)
-    assert len(lines) == 2 and all(ln.batch_id == second.id for ln in lines)
-    assert second.deleted_count == 3
+    assert len(lines) == 3 and all(ln.batch_id == first.id for ln in lines)
+    assert second.created_count == 0 and second.deleted_count == 0
+    assert '"existing_rows": 2' in second.sheet_info
 
 
 def test_khoang_ngay_khac_nhau_thi_khong_dung_nhau(db):
@@ -250,16 +255,17 @@ def test_hoan_tac_lo_khong_thay_gi(db):
     assert b.status == ImportStatus.REVERTED
 
 
-def test_lo_da_thay_du_lieu_cu_thi_khong_hoan_tac(db):
-    """Hoàn tác lúc này là để trống cả khoảng ngày — dòng cũ đã xóa, không có bản chụp."""
-    first = _batch(db)
-    importer.run(db, first, _xlsx([_row()]), apply=True)
-    second = _batch(db)
-    importer.run(db, second, _xlsx([_row()]), apply=True)
-    res = import_service.revert_batch(db, second, user_id=1)
+def test_lo_cu_da_thay_du_lieu_thi_van_khong_hoan_tac(db):
+    """Lô nạp TRƯỚC bao-CR-541 từng thay dòng cũ (`deleted_count > 0`): hoàn tác lúc này là để
+    trống cả khoảng ngày — dòng cũ đã xóa, không có bản chụp. Lô mới không bao giờ rơi vào ca này."""
+    old = _batch(db)
+    importer.run(db, old, _xlsx([_row()]), apply=True)
+    old.deleted_count = 5                      # giả lô nạp theo luật cũ
+    db.commit()
+    res = import_service.revert_batch(db, old, user_id=1)
 
-    assert res["ok"] is False and "nạp lại tệp đúng" in res["message"]
-    assert len(_lines(db)) == 1 and second.status == ImportStatus.DONE
+    assert res["ok"] is False and "cách cũ" in res["message"]
+    assert len(_lines(db)) == 1 and old.status == ImportStatus.DONE
 
 
 # ── Khai báo hệ thống ───────────────────────────────────────────────────────

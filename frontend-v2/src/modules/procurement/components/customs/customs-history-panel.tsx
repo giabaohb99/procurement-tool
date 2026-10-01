@@ -9,8 +9,9 @@
 // quan gác bằng khóa RIÊNG `customs_price` (đại ca chốt 23/09/2026) — người thu mua có
 // quyền nạp giá hải quan không nhất thiết có quyền xem mọi lô nạp của hệ thống.
 //
-// Lô đã THAY dòng cũ (deleted_count > 0) không hoàn tác được: dòng cũ đã xóa lúc ghi, hoàn
-// tác chỉ xóa được dòng mới và để lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
+// bao-CR-541: lô chỉ THÊM dòng chưa có (trùng thì bỏ qua) nên luôn hoàn tác được. Riêng lô CŨ
+// nạp trước CR đã THAY dòng cũ (deleted_count > 0) thì không: dòng cũ đã xóa lúc ghi, hoàn tác
+// chỉ để lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
 import { Download, ListTree, Undo2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -135,12 +136,12 @@ export function CustomsHistoryPanel() {
         cell: (b) => b.date_fixed || 0,
       },
       {
-        key: 'deleted_count',
-        header: 'Thay dòng cũ',
-        width: 105,
+        key: 'skipped_rows',
+        header: 'Bỏ qua (trùng)',
+        width: 110,
         align: 'right',
         hideable: false,
-        cell: (b) => b.deleted_count || 0,
+        cell: (b) => (b.existing_rows || 0) + (b.duplicate_rows || 0),
       },
       {
         key: 'created_by_name',
@@ -199,7 +200,7 @@ export function CustomsHistoryPanel() {
                 <IconTooltip
                   label={
                     revertState === 'blocked'
-                      ? `Lô này đã thay ${b.deleted_count} dòng cũ nên không hoàn tác được — nạp lại tệp đúng để sửa.`
+                      ? `Lô này nạp theo cách cũ, đã thay ${b.deleted_count} dòng cũ nên không hoàn tác được.`
                       : 'Hoàn tác: xóa các dòng lô này đã ghi'
                   }
                 >
@@ -231,8 +232,8 @@ export function CustomsHistoryPanel() {
       <div>
         <h2 className="text-base font-semibold">Lịch sử nạp dữ liệu hải quan</h2>
         <p className="text-sm text-muted-foreground">
-          Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Lô đã thay dòng cũ thì không hoàn tác
-          được; lô nạp qua màn hình tải lại được tệp gốc.
+          Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Dòng trùng được bỏ qua khi nạp; hoàn tác
+          một lô chỉ xóa dòng của chính lô đó. Lô nạp qua màn hình tải lại được tệp gốc.
         </p>
       </div>
       <DataTable

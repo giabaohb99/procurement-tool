@@ -4,10 +4,12 @@ Lô nạp dùng lại `tab_import_batch` (`ImportModule.CUSTOMS_DECLARATION`), c
 `DRY_RUN` (chạy thử, không ghi gì) hoặc `APPLY`. Thiết kế:
 `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §3.1 + §4.
 
-⚠️ **Nạp theo LÔ, thay theo KHOẢNG NGÀY — không "có rồi thì cập nhật".** Dữ liệu
-không có số tờ khai, so đủ 32 cột vẫn còn 806 dòng trùng khít: không dựng được
-khóa duy nhất. Lô mới phủ khoảng ngày nào thì dòng của lô KHÁC trong khoảng đó bị
-xóa rồi mới chèn — nạp lại một tệp không bao giờ nhân đôi dữ liệu.
+⚠️ **Nạp theo LÔ, CHỈ THÊM dòng chưa có — không ghi đè, không thay theo khoảng ngày**
+(bao-CR-541, đại ca chốt 01/10/2026). Mỗi dòng mang mã băm đủ các cột dữ liệu
+(`dedupe.py`); dòng giống hệt một dòng đã lưu hoặc một dòng phía trên trong cùng tệp thì
+BỎ QUA, nên nạp lại một tệp không nhân đôi dữ liệu. Bản trước (bao-CR-470) xóa mọi dòng
+của lô khác trong khoảng ngày của tệp rồi chèn lại — tệp mới xuất thiếu là mất dữ liệu cũ
+đúng mà không ai hay (rủi ro R1), và lô đã thay thì không hoàn tác được.
 
 ⚠️ **Ghi dòng hàng bằng lệnh chèn hàng loạt, không `db.add` từng dòng.** Một lần
 kết xuất hàng chục nghìn dòng; `db.add` còn kích hoạt nhật ký trước/sau của
@@ -15,15 +17,16 @@ kết xuất hàng chục nghìn dòng; `db.add` còn kích hoạt nhật ký tr
 hàng loạt còn nhanh hơn nhiều).
 """
 import json
+from contextlib import contextmanager
 from datetime import datetime
 
-from sqlalchemy import insert
+from sqlalchemy import insert, text
 from sqlalchemy.orm import Session
 
 from app.modules.import_tool.model import ImportBatch, ImportStatus, LogLevel
 from app.modules.import_tool.service import add_log
 
-from . import reader, row_log
+from . import dedupe, reader, row_log
 from .constants import INSERT_CHUNK, PartyType
 from .ingredient import load_kind_tagger, load_tagger
 from .model import CustomsLine, CustomsParty
@@ -31,6 +34,35 @@ from .model import CustomsLine, CustomsParty
 SHEET = "GTT02"
 
 _PARTY_KEYS = ("importer_tax_code", "importer_name", "partner_name")
+_LOCK_NAME = "customs_declaration_import"
+_LOCK_WAIT_SECONDS = 300
+
+
+class CustomsImportBusyError(reader.CustomsFileError):
+    """Lượt nạp khác giữ khóa quá lâu — từ chối lô này bằng câu đọc được (không kèm traceback)."""
+
+
+@contextmanager
+def _import_lock(db: Session):
+    """Cho từng lô ghi LẦN LƯỢT — kể cả khác tiến trình Celery (khóa có tên của MySQL).
+
+    Hai lô chứa cùng một dòng mà ghi song song thì cả hai cùng thấy «chưa có» và cùng chèn:
+    chống trùng thủng đúng ở chỗ nó cần nhất. Khóa giữ trên một kết nối RIÊNG (khóa MySQL gắn
+    với kết nối, kết nối của `db` có thể trả về pool giữa chừng). SQLite (pytest) bỏ qua.
+    """
+    bind = db.get_bind()
+    if bind.dialect.name != "mysql":
+        yield
+        return
+    with bind.connect() as conn:
+        got = conn.execute(text("SELECT GET_LOCK(:n, :w)"),
+                           {"n": _LOCK_NAME, "w": _LOCK_WAIT_SECONDS}).scalar()
+        if got != 1:
+            raise CustomsImportBusyError("Đang có lượt nạp dữ liệu thị trường khác chạy quá lâu — thử lại sau")
+        try:
+            yield
+        finally:
+            conn.execute(text("SELECT RELEASE_LOCK(:n)"), {"n": _LOCK_NAME})
 
 
 def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
@@ -38,47 +70,51 @@ def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
     res = reader.parse(raw, batch.filename or "")
     for row_no, level, message in res.logs:
         add_log(db, batch, SHEET, row_no, level, "customs", message)
-    #  bao-CR-496: mỗi dòng dữ liệu một dòng nhật ký mang kết cục (Thêm mới · Lỗi · Trùng trong
-    #  lô) — ghi ở CẢ chạy thử lẫn ghi thật để người nạp soi được trước khi bấm ghi.
-    row_counts = row_log.write_row_logs(db, batch, res)
+    with _import_lock(db):
+        _classify_and_write(db, batch, res, apply)
 
+
+def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult, apply: bool) -> None:
     rows = res.rows
     date_from = min((r["reg_date"] for r in rows), default=None)
     date_to = max((r["reg_date"] for r in rows), default=None)
-    #  Số dòng cũ (của lô KHÁC) nằm trong khoảng ngày của lô này — lượt chạy thử
-    #  báo trước con số này để người nạp biết lần này sẽ xóa bao nhiêu dòng cũ.
-    replaced = _count_in_range(db, batch.id, date_from, date_to)
+    #  bao-CR-541: so trùng bằng mã băm với dòng đã lưu trong khoảng ngày của tệp (dòng cũ
+    #  chưa có mã thì tính luôn), rồi chỉ giữ dòng thật sự mới. Chạy thử cũng so — người nạp
+    #  thấy trước bao nhiêu dòng mới, bao nhiêu dòng đã có, bao nhiêu dòng trùng trong tệp.
+    identities = dedupe.stamp_rows(rows)
+    existing = dedupe.load_existing(db, date_from, date_to, exclude_batch_id=batch.id)
+    statuses, to_insert, suspect = row_log.classify_rows(res, identities, existing)
+    #  bao-CR-496: mỗi dòng dữ liệu một dòng nhật ký mang kết cục — ghi ở CẢ chạy thử lẫn ghi thật.
+    row_counts = row_log.write_row_logs(db, batch, statuses)
 
     batch.total_rows = len(rows) + res.skipped
     batch.skipped_count = res.skipped
-    batch.created_count = len(rows)
-    batch.deleted_count = replaced
+    batch.created_count = len(to_insert)
+    batch.deleted_count = 0                     # bao-CR-541: không còn thay dòng cũ
     batch.sheet_info = json.dumps({
         "date_from": date_from.isoformat() if date_from else "",
         "date_to": date_to.isoformat() if date_to else "",
         "date_fixed": sum(r["date_fixed"] for r in rows),
         "date_swap_detected": res.date_swap,
-        "duplicate_rows": row_counts["duplicate"],     # bao-CR-496: trùng trong lô, VẪN ghi
+        "duplicate_rows": row_counts["duplicate"],     # trùng trong tệp — bỏ qua
+        "existing_rows": row_counts["existing"],       # bao-CR-541: đã có trong bảng giá — bỏ qua
+        "suspect_rows": suspect,                       # bao-CR-541: thêm mới nhưng nghi sửa giá
     }, ensure_ascii=False)
 
-    if apply and rows:
+    if apply and to_insert:
         #  HQ4 — gắn hoạt chất + hàm lượng ngay lúc nạp (danh mục nạp một lần cho cả lô).
         tagger = load_tagger(db)
         kinds = load_kind_tagger(db)          # bao-CR-494: nhãn Thành phẩm / Nguyên liệu
         cache: dict[str, tuple[str, str, int]] = {}
-        for r in rows:
+        for r in to_insert:
             name = r["product_name"]
             if name not in cache:
                 active, form = tagger.tag(name)
                 cache[name] = (active, form, kinds.tag(name))
             r["active_ingredient"], r["formulation"], r["product_kind"] = cache[name]
-        importer_ids = _upsert_parties(db, PartyType.DOMESTIC, rows)
-        partner_ids = _upsert_parties(db, PartyType.FOREIGN, rows)
-        if replaced:
-            _delete_in_range(db, batch.id, date_from, date_to)
-            add_log(db, batch, SHEET, 0, LogLevel.INFO, "customs_replace",
-                    f"Đã thay {replaced} dòng cũ trong khoảng {date_from:%d/%m/%Y} → {date_to:%d/%m/%Y}")
-        _insert_lines(db, batch.id, rows, importer_ids, partner_ids)
+        importer_ids = _upsert_parties(db, PartyType.DOMESTIC, to_insert)
+        partner_ids = _upsert_parties(db, PartyType.FOREIGN, to_insert)
+        _insert_lines(db, batch.id, to_insert, importer_ids, partner_ids)
 
     batch.status = ImportStatus.DONE
     batch.finished_at = datetime.utcnow()
@@ -88,16 +124,16 @@ def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
 def revert(db: Session, batch: ImportBatch) -> dict:
     """Hoàn tác một lô đã ghi: xóa mọi dòng hàng mang `batch_id` của nó.
 
-    ⚠️ **Chặn nếu lô đã THAY dữ liệu cũ** (`deleted_count > 0`). Dòng cũ đã xóa lúc
-    thay và không có bản chụp để dựng lại — hoàn tác lúc đó là để trống cả khoảng
-    ngày mà không ai hay. Nạp nhầm tệp thì cách sửa là nạp lại tệp đúng (nó tự thay
-    khoảng ngày đó), không phải hoàn tác.
+    Từ bao-CR-541 lô chỉ THÊM dòng chưa có nên hoàn tác luôn an toàn — kể cả để sửa số liệu:
+    hoàn tác lô sai rồi nạp lại tệp đúng.
+    ⚠️ **Vẫn chặn lô CŨ đã thay dữ liệu** (`deleted_count > 0`, nạp trước bao-CR-541). Dòng cũ
+    đã xóa lúc thay và không có bản chụp để dựng lại — hoàn tác lúc đó là để trống cả khoảng
+    ngày mà không ai hay.
     """
     if batch.deleted_count:
         return {"ok": False,
-                "message": f"Lô này đã thay {batch.deleted_count} dòng cũ nên không hoàn tác được — "
-                           "hoàn tác sẽ để trống cả khoảng ngày đó. Nếu nạp nhầm, hãy nạp lại tệp đúng "
-                           "cho khoảng ngày này."}
+                "message": f"Lô này nạp theo cách cũ, đã thay {batch.deleted_count} dòng cũ nên không "
+                           "hoàn tác được — hoàn tác sẽ để trống cả khoảng ngày đó."}
     deleted = (db.query(CustomsLine).filter(CustomsLine.batch_id == batch.id)
                .delete(synchronize_session=False))
     return {"ok": True, "deleted": deleted, "restored": 0,
@@ -105,22 +141,6 @@ def revert(db: Session, batch: ImportBatch) -> dict:
 
 
 # ── Nội bộ ─────────────────────────────────────────────────────────────────
-def _range_query(db: Session, batch_id: int, date_from, date_to):
-    return db.query(CustomsLine).filter(CustomsLine.reg_date >= date_from,
-                                        CustomsLine.reg_date <= date_to,
-                                        CustomsLine.batch_id != batch_id)
-
-
-def _count_in_range(db: Session, batch_id: int, date_from, date_to) -> int:
-    if date_from is None:
-        return 0
-    return _range_query(db, batch_id, date_from, date_to).count()
-
-
-def _delete_in_range(db: Session, batch_id: int, date_from, date_to) -> None:
-    _range_query(db, batch_id, date_from, date_to).delete(synchronize_session=False)
-
-
 def _party_key(party_type: PartyType, row: dict) -> tuple[str, str, str] | None:
     """→ (khóa chống trùng, mã số thuế, tên), hoặc None nếu dòng không có đối tượng này."""
     if party_type == PartyType.DOMESTIC:
