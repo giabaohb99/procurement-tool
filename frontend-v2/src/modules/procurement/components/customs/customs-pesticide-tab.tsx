@@ -39,6 +39,7 @@ import {
   formatBannedFilterLabel,
   resolvePesticideEmptyMessage,
 } from '../../utils/customs-pesticide'
+import { toSentenceCaseIfShouting } from '../../utils/customs-pesticide-display'
 import { emptyPesticideInput } from '../../utils/customs-pesticide-form'
 import { CustomsPesticideFormDialog } from './customs-pesticide-form-dialog'
 import { CustomsPesticideImportDialog } from './customs-pesticide-import-dialog'
@@ -59,6 +60,9 @@ export function CustomsPesticideTab() {
   const debouncedKeyword = search.debouncedValue
   const [status, setStatus] = useUrlParamState('pstatus', DEFAULT_STATUS)
   const [pestGroup, setPestGroup] = useUrlParamState('pgroup', ALL_PESTICIDE_OPTIONS)
+  //  01/10/2026 — lọc Lĩnh vực (backend đã có từ đầu, màn chưa bày); cột tra cứu ở trang chi tiết
+  //  mở thẳng danh sách với tham số này.
+  const [sector, setSector] = useUrlParamState('psector', ALL_PESTICIDE_OPTIONS)
   const [banned, setBanned] = useUrlParamState('pbanned', ALL_PESTICIDE_OPTIONS)
   const setUrlParams = useSetUrlParams()
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -69,8 +73,14 @@ export function CustomsPesticideTab() {
     navigate(appRoutes.procurement.customsPesticideDetail(id), { state: fromHere(location) })
   }
 
-  const filters = { q: debouncedKeyword, status, pestGroup, banned }
-  const [page, setPage] = usePageResetOnFilterChange([debouncedKeyword, status, pestGroup, banned])
+  const filters = { q: debouncedKeyword, status, pestGroup, sector, banned }
+  const [page, setPage] = usePageResetOnFilterChange([
+    debouncedKeyword,
+    status,
+    pestGroup,
+    sector,
+    banned,
+  ])
   const options = useCustomsPesticideOptions()
   const list = useCustomsPesticides({ ...buildPesticideParams(filters), page, page_size: pageSize })
   const catalogTotal = options.data?.total ?? 0
@@ -81,11 +91,12 @@ export function CustomsPesticideTab() {
     keyword !== '' ||
     status !== DEFAULT_STATUS ||
     pestGroup !== ALL_PESTICIDE_OPTIONS ||
+    sector !== ALL_PESTICIDE_OPTIONS ||
     banned !== ALL_PESTICIDE_OPTIONS
 
   function resetFilters() {
     search.setValue('')
-    setUrlParams({ pq: null, pstatus: null, pgroup: null, pbanned: null })
+    setUrlParams({ pq: null, pstatus: null, pgroup: null, psector: null, pbanned: null })
   }
 
   return (
@@ -139,6 +150,19 @@ export function CustomsPesticideTab() {
                 {(options.data?.pest_groups ?? []).map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.value} ({item.count.toLocaleString('vi-VN')})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sector} onValueChange={setSector}>
+              <SelectTrigger className="w-52 max-md:w-full" aria-label="Lọc theo lĩnh vực">
+                <SelectValue placeholder="Lĩnh vực" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_PESTICIDE_OPTIONS}>Tất cả lĩnh vực</SelectItem>
+                {(options.data?.sectors ?? []).map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {toSentenceCaseIfShouting(item.value)} ({item.count.toLocaleString('vi-VN')})
                   </SelectItem>
                 ))}
               </SelectContent>

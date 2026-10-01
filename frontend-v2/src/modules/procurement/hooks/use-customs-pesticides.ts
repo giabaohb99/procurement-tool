@@ -9,6 +9,7 @@ import {
   deleteCustomsPesticide,
   fetchCustomsPesticide,
   fetchCustomsPesticideOptions,
+  fetchCustomsPesticideRelated,
   fetchCustomsPesticides,
   importCustomsPesticides,
   updateCustomsPesticide,
@@ -38,6 +39,15 @@ export function useCustomsPesticide(id: number | null) {
     queryKey: queryKeys.procurement.customsPesticide(id ?? 0),
     queryFn: () => fetchCustomsPesticide(id ?? 0),
     enabled: id !== null,
+  })
+}
+
+/** Hai khối thuốc liên quan của trang chi tiết; đổi `limit` (bấm «Xem tất cả») giữ số cũ tới khi số mới về. */
+export function useCustomsPesticideRelated(id: number, limit: number) {
+  return useQuery({
+    queryKey: queryKeys.procurement.customsPesticideRelated(id, limit),
+    queryFn: () => fetchCustomsPesticideRelated(id, limit),
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -57,6 +57,29 @@ export interface CustomsPesticideUse {
   usage: string
 }
 
+/** Một thuốc rút gọn trong khối «cùng công ty» / «cùng hoạt chất» (01/10/2026). */
+export interface CustomsPesticideBrief {
+  id: number
+  trade_name: string
+  pest_group: string
+  active_ingredient: string
+  registrant: string
+  status: number
+  status_label: string
+}
+
+export interface CustomsPesticideRelatedGroup {
+  /** Tổng số thuốc khớp — `items` chỉ là phần đầu (mặc định 10). */
+  total: number
+  items: CustomsPesticideBrief[]
+}
+
+export interface CustomsPesticideRelated {
+  same_registrant: CustomsPesticideRelatedGroup
+  /** `label` = tên hoạt chất đã bỏ hàm lượng, vd "Chitosan + Oligo-Alginate". */
+  same_ingredient: CustomsPesticideRelatedGroup & { label: string }
+}
+
 export interface CustomsPesticideDetail extends CustomsPesticide {
   uses: CustomsPesticideUse[]
 }

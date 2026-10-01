@@ -7,6 +7,7 @@ import type {
   CustomsPesticideInput,
   CustomsPesticideList,
   CustomsPesticideOptions,
+  CustomsPesticideRelated,
 } from '../types/customs-pesticide'
 
 const BASE = '/api/customs/pesticides'
@@ -21,6 +22,11 @@ export function fetchCustomsPesticideOptions() {
 
 export function fetchCustomsPesticide(id: number) {
   return apiGet<CustomsPesticideDetail>(`${BASE}/${id}`)
+}
+
+/** «Sản phẩm khác cùng công ty» + «Thuốc cùng hoạt chất» — `limit` mỗi khối (mặc định 10, trần 300). */
+export function fetchCustomsPesticideRelated(id: number, limit: number) {
+  return apiGet<CustomsPesticideRelated>(`${BASE}/${id}/related`, { params: { limit } })
 }
 
 /** Thay các thuốc lấy từ nguồn bằng tệp `thuoc-bvtv.json` / `.xlsx`, giữ thuốc tự thêm (cần `customs_pesticide.write`). */
