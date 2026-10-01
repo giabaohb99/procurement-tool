@@ -70,6 +70,13 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-547 | Chọn nhiều phiếu nháp rồi xóa một lần ở YCBG, YCMH, đơn mua hàng, YCTT
+- status: dang-lam
+- date: 2026-10-01
+Đặt chỗ: màn danh sách v1 và v2 của bốn loại phiếu cho tick nhiều phiếu nháp rồi xóa; YCTT chỉ xóa được phiếu nháp.
+
+---
+
 ## bao-CR-546 | Bản in phiếu đề xuất mua hàng: ô chọn mẫu in và ô tick ẩn nơi giao
 - status: xong
 - date: 2026-10-01
@@ -89,6 +96,8 @@ Kiểm: viết lại các bài kiểm của đợt trước theo luật giữ c�
 thêm bài cho hàm đổi mẫu in sang chế độ in; v2 tsc 0 lỗi, eslint 0 lỗi; v1 tsc giữ đúng 4 lỗi cũ; bấm
 thử trên trình duyệt local cả hai bản. Đại ca kiểm trên local xong, bảo commit và gộp ngày 01/10;
 Agent 1 đẩy lên dev và prod.
+
+Đại ca kiểm trên local xong; lên dev và prod ngày 01/10 (main b2aae626), sao lưu cơ sở dữ liệu prod trước khi deploy.
 
 Mã nguồn: frontend-v2/src/modules/procurement/pages/{purchase-request-print-page,
 purchase-request-supplier-print-page}.tsx · purchase-request-print-page.test.tsx ·
