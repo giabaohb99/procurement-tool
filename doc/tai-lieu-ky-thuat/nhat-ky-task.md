@@ -90,6 +90,8 @@ thêm bài cho hàm đổi mẫu in sang chế độ in; v2 tsc 0 lỗi, eslint 
 thử trên trình duyệt local cả hai bản. Đại ca kiểm trên local xong, bảo commit và gộp ngày 01/10;
 Agent 1 đẩy lên dev và prod.
 
+Đại ca kiểm trên local xong; lên dev và prod ngày 01/10 (main b2aae626), sao lưu cơ sở dữ liệu prod trước khi deploy.
+
 Mã nguồn: frontend-v2/src/modules/procurement/pages/{purchase-request-print-page,
 purchase-request-supplier-print-page}.tsx · purchase-request-print-page.test.tsx ·
 utils/purchase-request-print-template{,.test}.ts (mới) · frontend/src/pages/PrintPurchaseRequest.tsx
