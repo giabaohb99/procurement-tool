@@ -70,6 +70,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-545 | Thêm vai trò «Admin thu mua phòng» và gán bộ thu mua nhà máy
+- status: dang-lam
+- date: 2026-10-01
+Đại ca hỏi vì sao prod không có «Admin thu mua» theo phòng: bộ thu mua theo phòng (bao-CR-526) mới
+có Nhân viên và Quản lý, trong khi bộ chung có đủ Nhân viên, Admin, Quản lý. Đã thêm vai trò
+«Admin thu mua phòng»: chép quyền Admin thu mua (quản danh mục, xem chứng từ thu mua, duyệt điều phối),
+chỉ đổi phạm vi YCMH, YCBG, ĐMH sang phiếu đã duyệt của phòng mình; công nợ, YCTT, báo cáo theo khuôn
+hai vai trò theo phòng kia. Trợ lý AI lập bộ tài khoản cũng gán được vai trò này.
+
+Đại ca giao gán cho phòng Dego Organic: ntphuong làm Admin thu mua phòng; dmkhoi và ntktrang làm Quản
+lý thu mua phòng; lpngoan làm Nhân viên thu mua phòng (tự tạo yêu cầu bằng vai trò Nhân viên sẵn có,
+xử lý phiếu của phòng bằng vai trò mới).
+
+Kiểm: 4 bài kiểm mới cùng các bài kiểm vai trò, phân quyền xanh (247 bài).
+
+Mã nguồn: `app/seed.py` (`STD_ROLES["pur_dept_admin"]`, `ROLE_DESCRIPTIONS`) ·
+`assistant/tools/account_setup_tool.py` · `assistant/service.py` ·
+`test/backend/test_vai_tro_admin_thu_mua_phong_cr545.py`
+
+---
+
 ## bao-CR-543 | Bài kiểm backend chạy nhanh hơn và không còn treo
 - status: xong
 - date: 2026-10-01

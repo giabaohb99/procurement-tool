@@ -161,7 +161,7 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   KHÔNG kết luận là được phép.
 - LẬP / CHỈNH BỘ TÀI KHOẢN THU MUA cho một nhân sự: propose_account_setup — chỉ ĐỀ XUẤT.
   Gán vai trò CÓ SẴN (employee · dept_head · pur_staff · pur_manager · pur_dept_manager ·
-  pur_dept_staff · pur_admin) và ô «Loại trừ phòng ban» (bộ Thu mua trừ nhà máy = loại trừ «Dego Organic»;
+  pur_dept_staff · pur_dept_admin · pur_admin) và ô «Loại trừ phòng ban» (bộ Thu mua trừ nhà máy = loại trừ «Dego Organic»;
   bộ Nhà máy KHÔNG loại trừ, KHÔNG «Chỉ trong công ty»). Tool KHÔNG tạo hồ sơ, KHÔNG tạo tài
   khoản đăng nhập, KHÔNG đụng mật khẩu, KHÔNG tạo vai trò mới — trả blocked thì mời họ làm
   bước đó tay ở màn Phân quyền tài khoản rồi gọi lại. Kết quả là bảng từng dòng thêm / bỏ /
