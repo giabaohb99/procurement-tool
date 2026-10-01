@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator
 
 from app.core.contract_types import CONTRACT_TYPE_SET
 from app.core.status_codes import CONTRACT_PARTY_TYPE, CONTRACT_STATUS
+from app.modules.employee.field_limits import Str10, Str30, Str50, Str255
 
 
 def _check_contract_type(v: str | None) -> str | None:
@@ -31,17 +32,17 @@ def _check_status(v: str | None) -> str | None:
 
 
 class ContractCreate(BaseModel):
-    code: str | None = None
-    party_type: str = "supplier"
-    party_code: str = ""
-    party_name: str = ""
+    code: Str50 | None = None
+    party_type: Str30 = "supplier"
+    party_code: Str50 = ""
+    party_name: Str255 = ""
     company_id: int = 0
-    title: str = ""
-    contract_type: str = ""
-    start_date: str = ""
-    end_date: str = ""
+    title: Str255 = ""
+    contract_type: Str50 = ""
+    start_date: Str10 = ""
+    end_date: Str10 = ""
     signed: bool = False
-    status: str = "active"
+    status: Str30 = "active"
     note: str = ""
 
     _v_type = field_validator("contract_type")(_check_contract_type)
@@ -50,16 +51,16 @@ class ContractCreate(BaseModel):
 
 
 class ContractUpdate(BaseModel):
-    party_type: str | None = None
-    party_code: str | None = None
-    party_name: str | None = None
+    party_type: Str30 | None = None
+    party_code: Str50 | None = None
+    party_name: Str255 | None = None
     company_id: int | None = None
-    title: str | None = None
-    contract_type: str | None = None
-    start_date: str | None = None
-    end_date: str | None = None
+    title: Str255 | None = None
+    contract_type: Str50 | None = None
+    start_date: Str10 | None = None
+    end_date: Str10 | None = None
     signed: bool | None = None
-    status: str | None = None
+    status: Str30 | None = None
     note: str | None = None
 
     _v_type = field_validator("contract_type")(_check_contract_type)

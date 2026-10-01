@@ -1,55 +1,56 @@
+from app.modules.employee.field_limits import Str10, Str25, Str30, Str50, Str100, Str255, Str355, Str500
 from pydantic import BaseModel
 
 
 class SurveyRequestLineIn(BaseModel):
     id: int = 0          # >0 = dòng đã có (giữ nguyên ID để không mất file đính kèm); 0 = dòng mới
-    received_date: str = ""
-    result_due_date: str = ""
-    department_requester: str = ""
-    item_group: str = ""
+    received_date: Str10 = ""
+    result_due_date: Str10 = ""
+    department_requester: Str255 = ""
+    item_group: Str100 = ""
     requirement_detail: str = ""
     other_requirement: str = ""
     request_qty: float = 0
-    uom: str = ""
+    uom: Str25 = ""
     proposed_price: float = 0
-    image_file: str = ""
+    image_file: Str500 = ""
     src_pr_item_id: int = 0   # CR-027: dòng YCMH nguồn — chỉ dùng lúc TẠO dòng mới để kéo ảnh sang
 
 
 class _Header(BaseModel):
     company_id: int = 0
-    requester: str = ""
+    requester: Str255 = ""
     requester_id: int = 0
-    requester_position: str = ""
+    requester_position: Str100 = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
     handler_dept_id: int | None = None   # bao-CR-414/488: None = hệ thống chọn mặc định; số (kể cả 0) = đã chọn
-    department: str = ""
+    department: Str255 = ""
     head_of_dept_id: int = 0      # CR-087: TBP neo bằng id nhân sự; bỏ trống thì lấy theo phòng
     approver_employee_id: int = 0   # bao-CR-499: người được chọn duyệt; sau Duyệt = người thực duyệt
-    head_of_dept: str = ""
-    purpose: str = ""
-    request_date: str = ""
+    head_of_dept: Str255 = ""
+    purpose: Str355 = ""
+    request_date: Str10 = ""
     note: str = ""
 
 
 class SurveyRequestCreate(_Header):
-    code: str | None = None
+    code: Str50 | None = None
     lines: list[SurveyRequestLineIn] = []
 
 
 class SurveyRequestUpdate(BaseModel):
     company_id: int | None = None
-    requester: str | None = None
+    requester: Str255 | None = None
     requester_id: int | None = None
-    requester_position: str | None = None
+    requester_position: Str100 | None = None
     department_id: int | None = None      # CR-086
     handler_dept_id: int | None = None    # bao-CR-414
-    department: str | None = None
+    department: Str255 | None = None
     head_of_dept_id: int | None = None    # CR-087
     approver_employee_id: int | None = None   # bao-CR-499
-    head_of_dept: str | None = None
-    purpose: str | None = None
-    request_date: str | None = None
+    head_of_dept: Str255 | None = None
+    purpose: Str355 | None = None
+    request_date: Str10 | None = None
     note: str | None = None
     lines: list[SurveyRequestLineIn] | None = None
 
@@ -68,4 +69,4 @@ class TransferDeptIn(BaseModel):
 
 class LineStatusIn(BaseModel):
     # "" chưa xác định · "resurvey" cần khảo sát lại · "completed" hoàn thành
-    line_status: str = ""
+    line_status: Str30 = ""

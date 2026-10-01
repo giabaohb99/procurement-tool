@@ -17,7 +17,7 @@ class Survey(Base, AuditMixin):
     received_date: Mapped[str] = mapped_column(String(10), default="")
     result_due_date: Mapped[str] = mapped_column(String(10), default="")
     item_group: Mapped[str] = mapped_column(String(100), default="")       # Phân loại (item_class)
-    main_content: Mapped[str] = mapped_column(String(500), default="")     # Nội dung chính (clone từ Mục đích của YCKS)
+    main_content: Mapped[str] = mapped_column(String(600), default="")     # Nội dung chính (clone từ Mục đích của YCKS)
     requirement_detail: Mapped[str] = mapped_column(Text, default="")      # Yêu cầu kỹ thuật & chất lượng
     request_qty: Mapped[float] = mapped_column(Numeric(18, 3), default=0)   # SL dự kiến mua
     market_price: Mapped[float] = mapped_column(Numeric(18, 2), default=0)  # (deprecated — không dùng nữa)
@@ -64,15 +64,15 @@ class SurveySupplierLine(Base, AuditMixin):
     contact_phone: Mapped[str] = mapped_column(String(30), default="")
     supply_group: Mapped[str] = mapped_column(String(255), default="")
     quote_folder: Mapped[str] = mapped_column(String(500), default="")
-    source_of_information: Mapped[str] = mapped_column(String(255), default="")  # Nguồn thông tin đầu vào
-    production_tech: Mapped[str] = mapped_column(String(255), default="")
+    source_of_information: Mapped[str] = mapped_column(String(355), default="")  # Nguồn thông tin đầu vào
+    production_tech: Mapped[str] = mapped_column(String(355), default="")
     production_time: Mapped[str] = mapped_column(String(100), default="")
     nvkd_eval: Mapped[str] = mapped_column(String(100), default="")
-    invoice_policy: Mapped[str] = mapped_column(String(255), default="")
-    reliability: Mapped[str] = mapped_column(String(255), default="")
-    delivery_policy: Mapped[str] = mapped_column(String(255), default="")
-    debt_policy: Mapped[str] = mapped_column(String(50), default="")
-    defect_return: Mapped[str] = mapped_column(String(255), default="")
+    invoice_policy: Mapped[str] = mapped_column(String(355), default="")
+    reliability: Mapped[str] = mapped_column(String(355), default="")
+    delivery_policy: Mapped[str] = mapped_column(String(355), default="")
+    debt_policy: Mapped[str] = mapped_column(String(100), default="")
+    defect_return: Mapped[str] = mapped_column(String(355), default="")
     nspt_note: Mapped[str] = mapped_column(Text, default="")  # bao-CR-537: 255 -> TEXT
     nspt_reason: Mapped[str] = mapped_column(Text, default="")
     line_approve: Mapped[str] = mapped_column(String(255), default="")
@@ -98,7 +98,7 @@ class SurveyProductLine(Base, AuditMixin):
     invoice_name: Mapped[str] = mapped_column(String(255), default="")
     spec: Mapped[str] = mapped_column(Text, default="")
     # Hàm lượng hoạt chất — chủ yếu cho nguyên liệu / bán thành phẩm; loại khác ghi "Không có".
-    active_ingredient: Mapped[str] = mapped_column(String(255), default="")
+    active_ingredient: Mapped[str] = mapped_column(String(355), default="")
     origin: Mapped[str] = mapped_column(String(100), default="")
     quote_unit: Mapped[str] = mapped_column(String(25), default="")
     moq: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
@@ -117,8 +117,8 @@ class SurveyProductLine(Base, AuditMixin):
     # Phí phát sinh khi giao tới ĐÚNG kho người yêu cầu — tách khỏi `shipping_cost` (phí vận
     # chuyển theo báo giá) vì hai khoản này thương lượng riêng và không phải lúc nào cũng có.
     extra_shipping_cost: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
-    shipping_policy: Mapped[str] = mapped_column(String(255), default="")   # Chính sách vận chuyển
-    debt_policy: Mapped[str] = mapped_column(String(50), default="")        # Ngày công nợ (cùng danh sách với dòng NCC)
+    shipping_policy: Mapped[str] = mapped_column(String(355), default="")   # Chính sách vận chuyển
+    debt_policy: Mapped[str] = mapped_column(String(100), default="")        # Ngày công nợ (cùng danh sách với dòng NCC)
     delivery_time: Mapped[str] = mapped_column(String(100), default="")
     delivery_place: Mapped[str] = mapped_column(String(255), default="")
     quote_file: Mapped[str] = mapped_column(String(500), default="")

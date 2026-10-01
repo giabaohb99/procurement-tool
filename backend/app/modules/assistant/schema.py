@@ -1,4 +1,5 @@
 from pydantic import BaseModel, model_validator
+from app.modules.employee.field_limits import Str30, Str80
 
 
 class HistoryItem(BaseModel):
@@ -11,9 +12,9 @@ class AskIn(BaseModel):
     # "phải có chữ hoặc tệp".
     message: str = ""
     # None = nhà mặc định (config). 'claude' | 'gemini'.
-    provider: str | None = None
+    provider: Str30 | None = None
     # None = model mặc định của nhà đó.
-    model: str | None = None
+    model: Str80 | None = None
     # lookup (loại A) | advice (loại B) | general.
     kind: str = "general"
     # Chèn THÊM vào cuối system (không ghi đè định nghĩa/rào an toàn). Chủ yếu để test.

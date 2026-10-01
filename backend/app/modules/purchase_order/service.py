@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.central_purchasing import normalize_handler_dept_id
 from app.core.status_codes import PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
+from app.core.text_limits import column_limit, ensure_max_length
 from app.modules.catalog import lead_time
 from app.modules.department.service import sync_department_ref
 from app.modules.employee.service import sync_employee_ref
@@ -1915,9 +1916,13 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
     elif target in PROGRESS_EXCEPTIONS:
         if not (reason or "").strip():
             raise HTTPException(400, f"Cần nhập lý do {PO_PROGRESS_STATUS.label_of(target).lower()}.")
+        #  bao-CR-538: chặn trước khi gán — cột `pause_reason` là String(500), để MySQL từ chối
+        #  là ra 500 «lỗi không lường trước».
+        clean_reason = ensure_max_length(reason.strip(), column_limit(POItem, "pause_reason"),
+                                         "Lý do tạm ngưng / hủy")
         if target == PROG_PAUSED:
             item.status_before_pause = item.progress_status
-        item.pause_reason = reason.strip()
+        item.pause_reason = clean_reason
         item.progress_status = target
     elif target in PROGRESS_ORDER:
         raise HTTPException(400, "Trạng thái tiến độ tự động theo dữ liệu — không đặt tay. Chỉ dùng Tạm ngưng/Hủy đơn/Tiếp tục.")

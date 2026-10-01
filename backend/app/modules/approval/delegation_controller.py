@@ -13,6 +13,7 @@ from app.core.response import success
 
 from . import delegation_service, serializer
 from .delegation_model import Delegation
+from app.modules.employee.field_limits import Str50, Str500
 
 router = APIRouter(prefix="/api/delegations", tags=["approval-delegation"])
 
@@ -20,13 +21,13 @@ router = APIRouter(prefix="/api/delegations", tags=["approval-delegation"])
 class DelegationIn(BaseModel):
     from_employee_id: int = Field(gt=0)
     to_employee_id: int = Field(gt=0)
-    entity: str = ""
+    entity: Str50 = ""
     #  Hai ô ngày BẮT BUỘC — ủy quyền vô thời hạn là thứ người ta khai một lần
     #  rồi quên, và ba năm sau vẫn còn người ký thay một người đã nghỉ việc.
     from_date: date
     to_date: date
     is_active: bool = True
-    reason: str = ""
+    reason: Str500 = ""
 
 
 @router.get("")

@@ -1,27 +1,28 @@
 """Pydantic schema đầu vào của Điểm cà phê. Đầu ra serialize tay ở `service.py`
 (khuôn chung của các module: dict + nhãn enum, không dùng response_model)."""
 from pydantic import BaseModel, Field
+from app.modules.employee.field_limits import Str10, Str500
 
 
 class PolicyIn(BaseModel):
     company_id: int = 0
     level_code: int
     monthly_points: int = Field(ge=0)
-    effective_from: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-    note: str = ""
+    effective_from: Str10 = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    note: Str500 = ""
 
 
 class MemberCreate(BaseModel):
     employee_id: int
     level_code: int
     company_id: int = 0
-    note: str = ""
+    note: Str500 = ""
 
 
 class MemberUpdate(BaseModel):
     level_code: int | None = None
     status: int | None = None
-    note: str | None = None
+    note: Str500 | None = None
 
 
 class MatchIn(BaseModel):
@@ -40,7 +41,7 @@ class CreatePartnerIn(BaseModel):
 class AdjustIn(BaseModel):
     employee_id: int
     points: int
-    reason: str = Field(min_length=3, description="Lý do bắt buộc — luật A-07")
+    reason: Str500 = Field(min_length=3, description="Lý do bắt buộc — luật A-07")
 
 
 class ResolveIn(BaseModel):

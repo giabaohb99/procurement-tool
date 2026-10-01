@@ -1,46 +1,47 @@
 from pydantic import BaseModel, Field
 
+from app.modules.employee.field_limits import Str10, Str20, Str25, Str30, Str50, Str100, Str255, Str355
 from .model import AllocationMethod, DEFAULT_CURRENCY, ImportCostType, OrderType
 
 
 class DeliveryIn(BaseModel):
     id: int | None = None
     delivery_no: int = 1
-    warehouse_code: str = ""
-    carrier_code: str = ""
-    carrier_name: str = ""
+    warehouse_code: Str50 = ""
+    carrier_code: Str50 = ""
+    carrier_name: Str255 = ""
     ship_qty: float = 0
-    ship_unit: str = ""
+    ship_unit: Str25 = ""
     received_qty: float = 0
-    promised_date: str = ""
-    expected_date: str = ""
-    received_date: str = ""
+    promised_date: Str10 = ""
+    expected_date: Str10 = ""
+    received_date: Str10 = ""
     std_days: int = 0
-    invoice_no: str = ""
-    invoice_date: str = ""
+    invoice_no: Str50 = ""
+    invoice_date: Str10 = ""
     shipping_unit_price: float = 0
     shipping_amount: float = 0
-    qc_result: str = ""
+    qc_result: Str20 = ""
     extra_request: str = ""
     progress_note: str = ""
 
 
 class POItemIn(BaseModel):
     id: int | None = None
-    product_code: str = ""
-    product_name: str = ""
-    invoice_name: str = ""
-    item_group: str = ""
-    spec: str = ""
-    fg_code: str = ""
-    fg_name: str = ""
-    invoice_no: str = ""
-    invoice_date: str = ""             # Ngày hóa đơn (tự set hôm nay khi có số hóa đơn, sửa tay được)
-    document_delivery_date: str = ""   # Ngày giao chứng từ cho KT (Task 8)
+    product_code: Str50 = ""
+    product_name: Str255 = ""
+    invoice_name: Str255 = ""
+    item_group: Str100 = ""
+    spec: Str255 = ""
+    fg_code: Str50 = ""
+    fg_name: Str255 = ""
+    invoice_no: Str50 = ""
+    invoice_date: Str10 = ""             # Ngày hóa đơn (tự set hôm nay khi có số hóa đơn, sửa tay được)
+    document_delivery_date: Str10 = ""   # Ngày giao chứng từ cho KT (Task 8)
     supplier_ready: bool = False
-    required_date: str = ""
-    expected_date: str = ""            # Dự kiến có hàng — rỗng thì backend copy từ dòng YCMH nguồn
-    unit: str = ""
+    required_date: Str10 = ""
+    expected_date: Str10 = ""            # Dự kiến có hàng — rỗng thì backend copy từ dòng YCMH nguồn
+    unit: Str25 = ""
     qty_request: float = 0
     qty_order: float = 0
     price: float = 0
@@ -49,12 +50,12 @@ class POItemIn(BaseModel):
     # bao-CR-319: đơn giá ghi theo đồng tiền của dòng. Để TRỐNG là cố ý — dòng không khai
     # thì `_save_items` chép loại tiền / tỷ giá từ đơn xuống. Nếu đặt sẵn "VND" ở đây, dòng
     # sinh tự động (tạo ĐMH từ YCMH, nhân bản đơn) sẽ mang cứng VNĐ vào đơn ngoại tệ.
-    currency: str = ""
+    currency: Str10 = ""
     exchange_rate: float = Field(0, ge=0)
     weight_kg: float = Field(0, ge=0)
-    dimension: str = ""
-    warehouse_code: str = ""
-    note: str = ""
+    dimension: Str100 = ""
+    warehouse_code: Str50 = ""
+    note: Str355 = ""
     deliveries: list[DeliveryIn] = []
 
 
@@ -70,11 +71,11 @@ class POImportCostIn(BaseModel):
 
     id: int | None = None
     cost_type: int = int(ImportCostType.OTHER)
-    description: str = ""
-    supplier_code: str = ""
-    supplier_name: str = ""
+    description: Str355 = ""
+    supplier_code: Str50 = ""
+    supplier_name: Str255 = ""
     # Để TRỐNG là cố ý, giống dòng hàng: backend chép loại tiền / tỷ giá từ đơn xuống.
-    currency: str = ""
+    currency: Str10 = ""
     estimate_amount: float | None = Field(None, ge=0)
     estimate_rate: float = Field(0, ge=0)
     provisional_amount: float | None = Field(None, ge=0)
@@ -83,40 +84,40 @@ class POImportCostIn(BaseModel):
     final_rate: float = Field(0, ge=0)
     vat: float = Field(0, ge=0, lt=100)
     allocation_method: int = Field(int(AllocationMethod.BY_VALUE), ge=1, le=5)
-    allocation_target: str = ""                # mã hàng — chỉ dùng khi chia theo chỉ định
+    allocation_target: Str50 = ""                # mã hàng — chỉ dùng khi chia theo chỉ định
     # Cách 5 "Nhập tay": {"<id dòng hàng>": số tiền VNĐ}; tổng phải bằng số quy đổi của khoản
     manual_allocation: dict[str, float] = {}
-    invoice_no: str = ""
-    invoice_date: str = ""
-    payment_due_date: str = ""
-    note: str = ""
+    invoice_no: Str50 = ""
+    invoice_date: Str10 = ""
+    payment_due_date: Str10 = ""
+    note: Str255 = ""
 
 
 class POCreate(BaseModel):
-    code: str | None = None
-    misa_code: str = ""
-    pr_code: str = ""
-    survey_code: str = ""
+    code: Str50 | None = None
+    misa_code: Str50 = ""
+    pr_code: Str50 = ""
+    survey_code: Str50 = ""
     company_id: int = 0
-    supplier_code: str = ""
-    supplier_name: str = ""
+    supplier_code: Str50 = ""
+    supplier_name: Str255 = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
     handler_dept_id: int = 0      # bao-CR-414: phòng ĐƯỢC NHỜ xử lý; 0 = chép từ YCMH nếu có
-    department: str = ""
+    department: Str255 = ""
     nspt_id: int = 0              # CR-087: NSPT neo bằng id; bỏ trống thì tra từ `nspt`
     approver_employee_id: int = 0   # bao-CR-499: người được chọn duyệt; sau Duyệt = người thực duyệt
-    nspt: str = ""
-    order_date: str = ""
+    nspt: Str100 = ""
+    order_date: Str10 = ""
     vat_rate: float = 0.08
-    payment_terms: str = ""
+    payment_terms: Str255 = ""
     is_urgent: bool = False
     # bao-CR-319 — loại đơn + tờ khai hải quan (cụm tờ khai chỉ có nghĩa với đơn nhập khẩu)
     order_type: int = Field(int(OrderType.DOMESTIC), ge=1, le=2)
-    currency: str = DEFAULT_CURRENCY
+    currency: Str10 = DEFAULT_CURRENCY
     exchange_rate: float = Field(1, ge=0)
-    customs_decl_no: str = ""
-    customs_decl_date: str = ""
-    etd_date: str = ""                   # bao-CR-347 — ngày hàng rời cảng xuất
+    customs_decl_no: Str50 = ""
+    customs_decl_date: Str10 = ""
+    etd_date: Str10 = ""                   # bao-CR-347 — ngày hàng rời cảng xuất
     # bao-CR-321 — điều khoản in theo NCC; 0 / rỗng = lùi về NCC rồi về mặc định
     inspection_days: int = Field(0, ge=0, le=365)
     return_days: int = Field(0, ge=0, le=365)
@@ -127,32 +128,32 @@ class POCreate(BaseModel):
 
 
 class POUpdate(BaseModel):
-    misa_code: str | None = None
-    pr_code: str | None = None
-    survey_code: str | None = None
+    misa_code: Str50 | None = None
+    pr_code: Str50 | None = None
+    survey_code: Str50 | None = None
     company_id: int | None = None
-    supplier_code: str | None = None
-    supplier_name: str | None = None
+    supplier_code: Str50 | None = None
+    supplier_name: Str255 | None = None
     department_id: int | None = None      # CR-086
     handler_dept_id: int | None = None    # bao-CR-414
-    department: str | None = None
+    department: Str255 | None = None
     nspt_id: int | None = None            # CR-087
     approver_employee_id: int | None = None   # bao-CR-499
-    nspt: str | None = None
-    order_date: str | None = None
+    nspt: Str100 | None = None
+    order_date: Str10 | None = None
     vat_rate: float | None = None
-    payment_terms: str | None = None
+    payment_terms: Str255 | None = None
     is_urgent: bool | None = None
     order_type: int | None = Field(None, ge=1, le=2)
-    currency: str | None = None
+    currency: Str10 | None = None
     exchange_rate: float | None = Field(None, ge=0)
-    customs_decl_no: str | None = None
-    customs_decl_date: str | None = None
-    etd_date: str | None = None
+    customs_decl_no: Str50 | None = None
+    customs_decl_date: Str10 | None = None
+    etd_date: Str10 | None = None
     inspection_days: int | None = Field(None, ge=0, le=365)
     return_days: int | None = Field(None, ge=0, le=365)
     invoice_deadline: str | None = Field(None, max_length=255)
-    document_status: str | None = None   # Trạng thái hồ sơ chứng từ, cập nhật tay (Task 10b)
+    document_status: Str30 | None = None   # Trạng thái hồ sơ chứng từ, cập nhật tay (Task 10b)
     note: str | None = None
     items: list[POItemIn] | None = None
     # Không gửi khóa này = không đụng tới bảng chi phí; gửi mảng rỗng = xóa hết.
@@ -197,4 +198,4 @@ class ItemProgressIn(BaseModel):
 
 
 class DocumentStatusIn(BaseModel):
-    document_status: str           # MÃ (B-06): none | partial | full — xem PO_DOCUMENT_STATUS
+    document_status: Str30           # MÃ (B-06): none | partial | full — xem PO_DOCUMENT_STATUS

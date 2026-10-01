@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, Field
+from app.modules.employee.field_limits import Str100, Str255, Str500
 
 
 def _reject_timezone(value: datetime) -> datetime:
@@ -38,12 +39,12 @@ class MeetingRoomCreate(BaseModel):
     code: str = Field(..., max_length=30)
     name: str = Field(..., max_length=255)
     company_id: int = 0
-    location: str = ""
+    location: Str255 = ""
     capacity: int = 0
-    equipment: str = ""
+    equipment: Str500 = ""
     is_active: bool = True
     sort_order: int = 0
-    note: str = ""
+    note: Str500 = ""
 
 
 class MeetingRoomUpdate(BaseModel):
@@ -51,12 +52,12 @@ class MeetingRoomUpdate(BaseModel):
     #  ta gọi nhau ("họp ở P301"). Đổi mã là mọi thứ đã in ra trỏ vào chỗ khác.
     name: str | None = Field(None, max_length=255)
     company_id: int | None = None
-    location: str | None = None
+    location: Str255 | None = None
     capacity: int | None = None
-    equipment: str | None = None
+    equipment: Str500 | None = None
     is_active: bool | None = None
     sort_order: int | None = None
-    note: str | None = None
+    note: Str500 | None = None
 
 
 class MeetingRoomResponse(BaseModel):
@@ -79,7 +80,7 @@ class MeetingRoomResponse(BaseModel):
 
 class AttendeeItem(BaseModel):
     employee_id: int
-    role: str = ""
+    role: Str100 = ""
 
 
 class RoomBookingCreate(BaseModel):

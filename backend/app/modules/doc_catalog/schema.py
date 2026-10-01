@@ -5,6 +5,7 @@ có dấu tiếng Việt hay khoảng trắng là hỏng cả chuỗi mã và kh
 đã ban hành.
 """
 from pydantic import BaseModel, Field, field_validator
+from app.modules.employee.field_limits import Str1, Str50, Str150, Str200
 
 CODE_PATTERN = r"^[A-Z0-9-]+$"
 
@@ -17,7 +18,7 @@ def _upper(value: str) -> str:
 class DocTypeCreate(BaseModel):
     code: str = Field(min_length=1, max_length=10, pattern=CODE_PATTERN)
     name: str = Field(min_length=1, max_length=200)
-    group_code: str = ""
+    group_code: Str1 = ""
     description: str = ""
 
     id_scheme: int = 2
@@ -55,7 +56,7 @@ class DocTypeUpdate(BaseModel):
 
     code: str | None = Field(default=None, max_length=10, pattern=CODE_PATTERN)
     name: str | None = Field(default=None, max_length=200)
-    group_code: str | None = None
+    group_code: Str1 | None = None
     description: str | None = None
 
     id_scheme: int | None = None
@@ -93,9 +94,9 @@ class ExternalPartyCreate(BaseModel):
     code: str = Field(default="", max_length=30)
     name: str = Field(min_length=1, max_length=300)
     kind: int = 1
-    contact_person: str = ""
-    phone: str = ""
-    email: str = ""
+    contact_person: Str200 = ""
+    phone: Str50 = ""
+    email: Str150 = ""
     address: str = ""
     is_active: bool = True
 
@@ -109,9 +110,9 @@ class ExternalPartyUpdate(BaseModel):
     code: str | None = Field(default=None, max_length=30)
     name: str | None = Field(default=None, max_length=300)
     kind: int | None = None
-    contact_person: str | None = None
-    phone: str | None = None
-    email: str | None = None
+    contact_person: Str200 | None = None
+    phone: Str50 | None = None
+    email: Str150 | None = None
     address: str | None = None
     is_active: bool | None = None
 

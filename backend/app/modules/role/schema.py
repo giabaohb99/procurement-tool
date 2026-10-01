@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
+from app.modules.employee.field_limits import Str10, Str50
 
 #  Giới hạn bám theo ĐÚNG cột trong `model.py` — `code` 50, `name` 100,
 #  `description` 255. Không khai ở đây thì chuỗi dài hơn cột đi thẳng xuống
@@ -54,7 +55,7 @@ class RoleOut(BaseModel):
 
 
 class PermissionItem(BaseModel):
-    entity: str
+    entity: Str50
     can_read: bool = False
     can_create: bool = False
     can_write: bool = False
@@ -63,7 +64,7 @@ class PermissionItem(BaseModel):
     can_cancel: bool = False
     can_print: bool = False
     can_export: bool = False
-    scope: str = "own"
+    scope: Str10 = "own"
 
 
 class PermissionUpdate(BaseModel):

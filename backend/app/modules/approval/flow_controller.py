@@ -23,6 +23,7 @@ from .flow_model import (APPROVER_KIND_LABELS, MULTI_MODE_LABELS,
                          SKIP_MODE_LABELS, ApprovalFlow, ApprovalNode,
                          ApprovalSwitch)
 from .instance_model import INSTANCE_OPEN_STATUSES, ApprovalInstance
+from app.modules.employee.field_limits import Str50, Str200, Str300, Str500
 
 router = APIRouter(prefix="/api/approval-flows", tags=["approval-flow"])
 
@@ -52,9 +53,9 @@ def _in_labels(labels: dict, field_name: str):
 
 class FlowIn(BaseModel):
     entity: str = Field(min_length=1, max_length=50)
-    code: str = ""
+    code: Str50 = ""
     name: str = Field(min_length=1, max_length=200)
-    description: str = ""
+    description: Str500 = ""
     is_active: bool = True
     company_id: int | None = None
     priority: int = 0
@@ -63,8 +64,8 @@ class FlowIn(BaseModel):
 
 class NodeIn(BaseModel):
     seq: int = Field(ge=1)
-    branch_key: str = ""
-    name: str = ""
+    branch_key: Str50 = ""
+    name: Str200 = ""
     #  Mọi ô "chọn một trong danh sách" đều buộc vào chính bảng nhãn mà
     #  `/options` đổ ra ô chọn — xem `_trong_bang`.
     node_kind: Annotated[int, AfterValidator(
@@ -73,7 +74,7 @@ class NodeIn(BaseModel):
         _in_labels(ROLE_LABELS, "Vai trò bước"))] = 4
     approver_kind: Annotated[int, AfterValidator(
         _in_labels(APPROVER_KIND_LABELS, "Cách chọn người duyệt"))] = 1
-    approver_ref: str = ""
+    approver_ref: Str300 = ""
     multi_mode: Annotated[int, AfterValidator(
         _in_labels(MULTI_MODE_LABELS, "Nhiều người thì"))] = 1
     quorum_percent: int = Field(default=50, ge=1, le=100)
@@ -92,9 +93,9 @@ class NodeIn(BaseModel):
 
 
 class SwitchIn(BaseModel):
-    entity: str
+    entity: Str50
     is_enabled: bool
-    note: str = ""
+    note: Str500 = ""
 
 
 @router.get("/options")

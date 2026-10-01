@@ -70,6 +70,136 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-541 | Tra cứu thị trường: chống trùng dòng khi nạp tệp
+- status: dang-lam
+- date: 2026-10-01
+Đại ca chốt ngày 01/10: dữ liệu hải quan xuất ra là đổ vào luôn, người nạp không biết tệp nào chồng
+lên tệp nào, nên hệ thống phải tự so trùng; trùng thì bỏ qua, không ghi đè, và bỏ hẳn cách «thay toàn
+bộ khoảng ngày» vì người dùng không hiểu được. Cách cũ còn có hai lỗ: tệp mới xuất thiếu dòng thì xóa
+mất dữ liệu cũ đúng mà không ai hay, và dòng lặp trong cùng tệp vẫn được ghi (prod dồn 806 dòng thừa).
+
+Mỗi dòng hàng nay mang một mã băm gói đủ các cột dữ liệu sau khi chuẩn hóa (chữ thường bỏ dấu, gộp
+khoảng trắng, số làm tròn đúng số chữ số lẻ của cột, doanh nghiệp nhập khẩu theo mã số thuế, đối tác
+theo tên chuẩn hóa), lưu ở một cột mới có chỉ mục. Khi nạp, hệ thống đọc mã của các dòng đã có trong
+khoảng ngày của tệp (dòng cũ chưa có mã thì tính luôn), bỏ qua dòng đã có và dòng lặp trong cùng tệp,
+chỉ thêm dòng thật sự mới; các lô ghi lần lượt nhờ một khóa của MySQL để hai lô chồng nhau không cùng
+chèn. Nhật ký từng dòng có thêm kết cục «Đã có» kèm số lô chứa dòng gốc. Dòng trùng ngày, doanh nghiệp,
+đối tác, mã HS, số thứ tự và tên hàng mà khác giá hoặc lượng vẫn được thêm (đo trên dữ liệu thật có 129
+nhóm như vậy, phần lớn là lô hàng khác), kèm ghi chú «nghi sửa giá» để người nạp rà. Lô nạp mới luôn
+hoàn tác được vì chỉ xóa dòng của chính nó.
+
+Giao diện v1 và v2: bảng chạy thử có cột Dòng mới, Đã có, Trùng trong tệp; thông báo số dòng sẽ bỏ qua,
+số dòng nghi sửa giá, và câu «mọi dòng đã có, không có gì để thêm» thay cho câu báo tệp hỏng; lịch sử
+nạp có cột «Bỏ qua (trùng)». Viết lại mục nạp dữ liệu của bài hướng dẫn «Tra cứu thị trường» và tài liệu
+thiết kế hải quan (bản 1.7). Có script tính mã cho toàn bảng và dọn dòng thừa, mặc định chỉ chạy thử,
+xóa thật thì chép dòng sắp xóa ra tệp trước.
+
+Kiểm: 250 bài kiểm hải quan và nạp danh mục xanh (11 bài mới); nạp chạy thử 300 dòng dựng lại từ dữ
+liệu MySQL local ra đủ 300 dòng «Đã có»; tính mã cho 18.243 dòng local ra đúng 576 nhóm, 806 dòng thừa
+như số đếm cũ; đọc mã của 9 tháng dữ liệu mất 1,7 giây. v2 tsc 0 lỗi, eslint 0 lỗi, vitest 396 bài xanh;
+v1 tsc giữ đúng 4 lỗi cũ. Đại ca bảo commit và gộp ngày 01/10, Agent 1 đẩy lên dev; 806 dòng thừa trên prod chưa xóa, chờ đại ca. Số CR ban đầu đặt là 540, đổi sang 541 vì trùng số với việc «Nhóm dự án» của anh Được.
+
+Mã nguồn: `customs/dedupe.py` (mới) · `customs/importer.py` · `customs/row_log.py` · `customs/model.py` ·
+`customs/controller.py` · `import_tool/model.py` (`ImportRowStatus.EXISTING`) · migration `c540a7d3e9f1` ·
+`scripts/customs_row_hash.py` (mới) · `scripts/seed_help_customs_prices.py` · v2 `customs-import-dialog.tsx`,
+`customs-history-panel.tsx`, `customs-batch-rows-panel.tsx`, `types/customs.ts`, `types/customs-saved-filter.ts`,
+`utils/customs.ts` + bài kiểm · v1 `CustomsImportDialog.tsx`, `CustomsHistoryPanel.tsx` ·
+`doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` · `test/backend/test_hai_quan_chong_trung_cr541.py` (mới),
+`test_hai_quan_hq1_cr470.py`, `test_hai_quan_luu_bo_loc_log_dong_cr496.py`
+
+---
+
+## duoc-CR-540 | Dự án: nhóm đổi tên thành «Nhóm dự án», tiêu đề cột kanban đứng yên khi cuộn
+- status: xong
+- date: 2026-10-01
+Đại ca muốn cây bên trái của phân hệ Dự án có tầng cha cho các dự án. Hệ đã có sẵn tầng đó (nhóm,
+lồng tối đa hai cấp) nhưng giao diện gọi lẫn lộn «nhóm» với «danh sách» nên người dùng không nhận
+ra. Đại ca chốt giữ nguyên dữ liệu, chỉ đổi cách gọi thành «Nhóm dự án»; sau hai lần thử «Dự án
+cha» và «Chương trình» thì đại ca thấy không hợp. Các nút tạo nay ghi «Tạo nhóm dự án», «Tạo nhóm
+con», «Tạo dự án trong nhóm», cây có thêm biểu tượng thư mục cho nhóm, cột trên bảng dự án là
+«Nhóm dự án». Khoảng hai mươi câu báo và câu lỗi còn gọi dự án là «danh sách» (sót từ hồi gộp phân
+hệ Công việc vào Dự án) cũng đổi hết sang «dự án». Sửa luôn lỗi tiêu đề hộp tạo bị nháy sang chữ
+khác trong lúc hộp đang đóng.
+
+Ở khung nhìn kanban, tiêu đề từng cột (tên cột và số đếm) nay đứng yên, chỉ phần thẻ bên dưới cuộn,
+mỗi cột cuộn riêng. Trước đây cả bảng cuộn chung nên cuộn cột «Xong» dài là mất tiêu đề.
+
+Không đổi dữ liệu, không có migration. Kiểm: 438 bài kiểm giao diện phân hệ Dự án và 180 bài kiểm
+máy chủ phân hệ Dự án xanh; bấm thử trên trình duyệt luồng tạo nhóm, nhóm con, dự án trong nhóm,
+đổi tên nhóm, chuyển dự án sang nhóm khác; đo trên dự án ERP v2 thấy cuộn cột «Xong» 600 điểm ảnh
+thì tiêu đề không xê dịch. Chưa thử kéo thả thẻ trong cột dài. Đã commit trên erp-v2, chưa lên dev.
+
+Mã nguồn: frontend-v2/src/modules/work/{components/work-sidebar-tree, work-create-dialog,
+group-manage-dialog, group-members-panel, list-info-panel, kanban-column, kanban-board}.tsx ·
+pages/{project-list-page, work-list-page}.tsx · hooks/{use-work-lists, use-work-groups,
+use-work-config}.ts · utils/work-groups.ts · backend/app/modules/work/{group_service, list_service,
+membership_service, list_config_service, task_service}.py · test_cong_viec_hoat_dong.py
+
+---
+
+## bao-CR-538 | Nới các ô chữ đoạn văn của khảo sát, YCBG, YCMH và đơn mua hàng
+- status: dang-lam
+- date: 2026-10-01
+Sau sự cố «Ghi chú NSPT» tràn cột ngày 30/09, Agent 3 rà toàn bộ ô chữ người dùng gõ tay ở khảo sát,
+YCBG, YCMH, đơn mua hàng, YCTT và nhà cung cấp trên dữ liệu thật của prod. Chỉ ô Ghi chú NSPT từng vỡ,
+nhưng nhiều ô khác đang sát trần và không bị chặn độ dài ở tầng kiểm dữ liệu.
+
+Đại ca chốt cách nới: không chuyển sang văn bản dài mà cộng thêm 100 ký tự vào trần hiện tại (255 lên
+355, 500 lên 600); riêng «Chính sách công nợ» là chuỗi mặc định nên 50 lên 100 là đủ. Đã nới 17 cột:
+chính sách công nợ hai dòng khảo sát; hoạt chất, chính sách vận chuyển của dòng sản phẩm; chính sách
+giao hàng, độ tin cậy, công nghệ sản xuất, chính sách hóa đơn, đổi trả lỗi, nguồn thông tin của dòng
+nhà cung cấp; mục đích của YCBG và YCMH; ghi chú dòng YCMH và dòng đơn mua hàng; diễn giải chi phí
+đơn mua hàng; nội dung chính phiếu khảo sát; ghi chú loại chi phí. Các ô đó đều được khai giới hạn
+độ dài khớp trần mới, gõ quá thì nhận câu báo thay vì lỗi không lường trước. Migration chỉ nới độ
+dài, giữ nguyên bắt buộc và mặc định của từng cột như trên prod.
+
+Kiểm: 34 bài kiểm mới xanh; 581 trên 582 bài kiểm khảo sát, YCBG, YCMH, đơn mua hàng xanh. Bài đỏ còn
+lại (`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet`) đỏ sẵn trên erp-v2 vì viết trước bao-CR-511.
+Đợt hai theo lời đại ca «phải bắt validate kỹ các phần này» (chặn ở schema là tuyến chính, lỗi
+MySQL chỉ là lưới cuối): khai giới hạn độ dài cho MỌI ô chữ còn thiếu ở mọi schema ghi của khảo
+sát, YCBG, YCMH, đơn mua hàng, YCTT và nhà cung cấp — 215 chỗ khai báo, số khớp đúng trần cột (thêm
+các bí danh `Str10`…`Str1000`). Thêm bài kiểm canh: mỗi schema ghi phải khai rõ ghi vào bảng nào, và
+gửi chuỗi dài hơn trần cột một ký tự thì schema phải chặn ngay; thêm schema hay ô chữ mới mà quên
+khai là bài đỏ kèm danh sách. Kiểm: bài canh và bài kiểm nới cột 42 bài xanh; 826 trên 827 bài kiểm
+của sáu phân hệ xanh (bài đỏ còn lại là bài YCTT cũ đỏ sẵn). Phần thông báo lỗi bằng lời, lưới bắt
+lỗi MySQL và kiểm độ dài ở các cửa ghi không qua schema do Agent 2 làm. Chưa commit, chờ đại ca.
+
+Phần của Agent 2 (thông báo lỗi bằng lời, lưới cuối, cửa ghi không qua schema). Lỗi kiểm dữ liệu
+nay trả một câu tiếng Việt chỉ đúng ô sai thay cho câu trơn «Dữ liệu không hợp lệ», ví dụ «Ô "Mục
+đích" tối đa 355 ký tự (đang nhập 412)»; lỗi nằm trong dòng con thì thêm «ở dòng thứ k», nhiều lỗi
+thì nêu lỗi đầu kèm «và n lỗi khác». Câu nói được các ca quá dài, quá ngắn, thiếu ô bắt buộc, sai
+kiểu số, sai ngày, vượt ngưỡng số và giữ nguyên câu của các bộ kiểm tự viết; tên ô lấy từ tiêu đề
+khai trong schema, không có thì tra bảng nhãn chung, cuối cùng mới dùng tên trường. Phần chi tiết
+lỗi cho máy đọc giữ nguyên như cũ. Lưới cuối: lỗi nào vẫn lọt xuống MySQL với mã 1406 «Data too
+long» thì trả 422 «Ô X dài quá, tối đa n ký tự» (n tra từ model theo bảng và cột) thay cho lỗi
+không lường trước, ghi cảnh báo kèm đường API và tên cột vào log để biết chỗ còn thiếu chặn, và
+phiên cơ sở dữ liệu được rollback ngay khi lỗi đi ra. Thêm hàm dùng chung chặn độ dài trước khi gán
+cho các cửa ghi nhận dữ liệu thô không qua schema: lý do tạm ngưng hoặc hủy dòng đơn mua hàng, mã
+sản phẩm hệ thống của phương án YCBG và ô bổ sung dòng khảo sát đang thiếu thông tin (soi mọi ô chữ
+theo độ dài cột của dòng). Nhãn phương án YCBG và YCMH do hệ thống tự sinh nên không cần chặn; loại
+chi phí thì Agent 1 đã khai ở schema. Giao diện v2 thôi nối thêm chi tiết tiếng Anh vào sau câu
+báo lỗi (chỉ ghép khi gặp câu trơn cũ), ô thuốc bảo vệ thực vật v1 cũng ưu tiên câu mới; giao diện
+v1 nói chung vốn đã hiện đúng câu của backend. Kiểm: 21 bài kiểm mới xanh; 177 bài kiểm liên quan
+xanh; v2 tsc 0 lỗi, eslint 0 lỗi, vitest khu api 11 bài xanh; v1 tsc giữ đúng 4 lỗi cũ.
+
+Đợt ba, đại ca bảo «làm luôn 26 phân hệ kia»: bài canh mở rộng ra 34 phân hệ (mọi phân hệ có cột chữ
+và schema ghi; phân hệ mới quên thêm vào danh sách là đỏ), ghép schema với bảng tự động khi chắc chắn
+và khai tay phần còn lại. Vá thêm 190 ô ở 28 phân hệ (danh mục văn bản, sản phẩm, dự án, hướng dẫn sử
+dụng, hợp đồng, công ty, phê duyệt, nghỉ phép, văn bản, ticket, phòng họp, hải quan…). Chạy hồi quy
+325 tệp kiểm của các phân hệ bị đụng: 5.252 bài xanh, 2 bài đỏ đều đỏ sẵn trên erp-v2
+(`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet` và `test_phong_ban_theo_id_cr086::test_loai_tru_phong_theo_id`).
+Bài kiểm ban hành văn bản phải chạy trong mạng của stack (cần redis), chạy cô lập thì treo.
+
+Mã nguồn: `survey/model.py` · `survey/schema.py` · `survey_request/*` · `purchase_request/*` ·
+`purchase_order/model.py` · `purchase_order/schema.py` · `purchase_order/cost_type.py` ·
+`employee/field_limits.py` (`Str10`…`Str1000`) · migration `e538c6a1f2d9` ·
+`test/backend/test_noi_o_chu_doan_van_cr538.py` · `test/backend/test_canh_do_dai_o_chu_cr538.py` · `core/text_limits.py` · `core/database.py` (`get_db` rollback) ·
+`main.py` (`validation_exception_handler`, `data_error_handler`) · `purchase_order/service.py` ·
+`survey_request/service.py` · `survey/service.py` · v2 `core/api/response-envelope.ts` + bài kiểm ·
+v1 `utils/customs-pesticide.ts` · `test/backend/test_bao_loi_o_chu_noi_thanh_loi_cr538.py`
+
+---
+
 ## bao-CR-539 | Phiếu in yêu cầu mua hàng của hộ kinh doanh đủ bốn ô ký như công ty
 - status: xong
 - date: 2026-09-30

@@ -8,6 +8,7 @@ from datetime import date, datetime, time
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.modules.employee.field_limits import Str30, Str100, Str150, Str255, Str500, Str1000
 from .constants import (GENDER_LABELS, LEAVE_REQUEST_STATUS_LABELS,
                         LEAVE_SESSION_LABELS, LEAVE_UNIT_LABELS, SESSION_FULL,
                         UNIT_DAY, YEAR_END_DROP, YEAR_END_MODE_LABELS, label)
@@ -61,7 +62,7 @@ class LeaveTypeCreate(LeaveTypeBase):
 class LeaveTypeUpdate(BaseModel):
     #  `code` KHÔNG sửa được: nó là mối nối sang giấy GNP và sang seed. Đổi mã
     #  thì mọi giấy đã phát hành trỏ vào một loại không còn tồn tại.
-    name: str | None = None
+    name: Str100 | None = None
     is_paid: bool | None = None
     counts_balance: bool | None = None
     annual_quota_days: float | None = None
@@ -76,7 +77,7 @@ class LeaveTypeUpdate(BaseModel):
     exclude_holiday: bool | None = None
     sort_order: int | None = None
     is_active: bool | None = None
-    note: str | None = None
+    note: Str500 | None = None
 
 
 class LeaveTypeResponse(LeaveTypeBase):
@@ -111,7 +112,7 @@ class SeniorityTierUpdate(BaseModel):
     years_from: int | None = None
     years_to: int | None = None
     extra_days: float | None = None
-    note: str | None = None
+    note: Str255 | None = None
 
 
 class SeniorityTierResponse(SeniorityTierBase):
@@ -139,7 +140,7 @@ class HolidayCreate(HolidayBase):
 class HolidayUpdate(BaseModel):
     company_id: int | None = None
     date: DateOnly | None = None
-    name: str | None = None
+    name: Str150 | None = None
     is_recurring: bool | None = None
     is_active: bool | None = None
 
@@ -274,9 +275,9 @@ class LeaveRequestUpdate(BaseModel):
     to_time: time | None = None
     unit: int | None = None
     total_days: float | None = None
-    reason: str | None = None
-    contact_phone: str | None = None
-    contact_address: str | None = None
+    reason: Str1000 | None = None
+    contact_phone: Str30 | None = None
+    contact_address: Str255 | None = None
     handovers: list[HandoverItem] | None = None
 
 

@@ -1,16 +1,17 @@
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
+from app.modules.employee.field_limits import Str255, Str500
 
 
 class HelpArticleSlideCreate(BaseModel):
-    image_url: str
+    image_url: Str500
     caption: Optional[str] = None
     step_order: int = 0
 
 
 class HelpArticleSlideUpdate(BaseModel):
-    image_url: Optional[str] = None
+    image_url: Str500 | None = None
     caption: Optional[str] = None
     step_order: Optional[int] = None
 
@@ -26,21 +27,21 @@ class HelpArticleSlideOut(BaseModel):
 
 
 class HelpArticleCreate(BaseModel):
-    title: str
+    title: Str255
     parent_id: Optional[int] = None
     content: str = ""
     sort_order: int = 0
-    summary: Optional[str] = None
-    icon: Optional[str] = None
+    summary: Str255 | None = None
+    icon: Str500 | None = None
 
 
 class HelpArticleUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Str255 | None = None
     parent_id: Optional[int] = None
     content: Optional[str] = None
     sort_order: Optional[int] = None
-    summary: Optional[str] = None
-    icon: Optional[str] = None
+    summary: Str255 | None = None
+    icon: Str500 | None = None
 
 
 class HelpArticleOut(BaseModel):

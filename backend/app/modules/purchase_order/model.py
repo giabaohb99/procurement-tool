@@ -255,7 +255,7 @@ class POItem(Base, AuditMixin):
     # được tính lần nào; service._recalc tính lại từ SL nhận so với SL đặt, không ai nhập tay.
     line_status: Mapped[str] = mapped_column(String(30), default="")
     warehouse_code: Mapped[str] = mapped_column(String(50), default="")     # kho mặc định cho dòng
-    note: Mapped[str] = mapped_column(String(255), default="")
+    note: Mapped[str] = mapped_column(String(355), default="")
     # MÃ cố định, xem PO_PROGRESS_STATUS (B-06) — cột P, máy trạng thái tiến độ (lọc ở màn
     # Tiến độ mua hàng). THỨ TỰ trong bộ mã là logic: service.PROGRESS_ORDER lấy từ đó.
     progress_status: Mapped[str] = mapped_column(String(40), default="not_ordered", index=True)
@@ -294,7 +294,7 @@ class POCost(Base, AuditMixin):
     # Giai đoạn RIÊNG của dòng, chỉ có nghĩa khi VƯỢT giai đoạn của đơn (một khoản có hóa
     # đơn sớm). Giai đoạn hiệu lực = max(po.cost_stage, line_stage), xem `effective_stage_of`.
     line_stage: Mapped[int] = mapped_column(SmallInteger, default=int(CostStage.ESTIMATE))
-    description: Mapped[str] = mapped_column(String(255), default="")
+    description: Mapped[str] = mapped_column(String(355), default="")
     supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
     currency: Mapped[str] = mapped_column(String(10), default=DEFAULT_CURRENCY)
@@ -340,7 +340,7 @@ class POCostType(Base, AuditMixin):
     default_vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    note: Mapped[str] = mapped_column(String(500), default="")
+    note: Mapped[str] = mapped_column(String(600), default="")
 
 
 # 15 mã gốc seed vào danh mục (migration + bộ test). (code, name, group_kind, creates_payable,

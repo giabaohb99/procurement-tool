@@ -10,6 +10,7 @@ from app.core.response import success
 
 from . import signature_service
 from .controller import _load
+from app.modules.employee.field_limits import Str100, Str200
 from .signature_model import (SIGN_KIND_LABELS, SIGN_KIND_NOTES,
                               DocumentSignature)
 
@@ -20,8 +21,8 @@ class SignIn(BaseModel):
     version_id: int
     signer_employee_id: int
     sign_kind: int = Field(default=1, ge=1, le=3)
-    cert_serial: str = ""
-    cert_issuer: str = ""
+    cert_serial: Str100 = ""
+    cert_issuer: Str200 = ""
 
 
 @router.get("/sign-kinds")

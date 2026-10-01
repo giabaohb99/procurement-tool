@@ -22,7 +22,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.crud import make_crud_router
-from app.modules.employee.field_limits import Str50, Str100, Str500
+from app.modules.employee.field_limits import Str50, Str100, Str600
 
 from .model import (AllocationMethod, CostTypeGroup, ImportCostType, POCost, POCostType)
 
@@ -52,7 +52,7 @@ class POCostTypeCreate(BaseModel):
     default_vat: float = Field(0, ge=0, lt=100)
     sort_order: int = 0
     is_active: bool = True
-    note: Str500 = ""
+    note: Str600 = ""
 
     @field_validator("name")
     @classmethod
@@ -70,7 +70,7 @@ class POCostTypeUpdate(BaseModel):
     default_vat: float | None = Field(None, ge=0, lt=100)
     sort_order: int | None = None
     is_active: bool | None = None
-    note: Str500 | None = None
+    note: Str600 | None = None
 
     @field_validator("name")
     @classmethod

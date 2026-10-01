@@ -1,11 +1,12 @@
 from pydantic import BaseModel
+from app.modules.employee.field_limits import Str255
 
 
 class UserProvision(BaseModel):
     """Cấp tài khoản cho 1 nhân viên đã có."""
 
     employee_id: int
-    email: str = ""
+    email: Str255 = ""
     password: str
     role_ids: list[int] = []
 

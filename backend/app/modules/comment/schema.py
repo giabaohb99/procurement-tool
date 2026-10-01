@@ -1,8 +1,9 @@
 from pydantic import BaseModel
+from app.modules.employee.field_limits import Str50
 
 
 class CommentIn(BaseModel):
-    entity: str
+    entity: Str50
     entity_id: int
     body: str = ""
     # 0 = bình luận gốc. Trỏ vào một phản hồi cũng được — backend tự kéo về gốc (luật 2 cấp).

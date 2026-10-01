@@ -12,10 +12,11 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.modules.work.model import WorkMemberRole
+from app.modules.employee.field_limits import Str10, Str20, Str100, Str200, Str500
 
 
 class GroupCreate(BaseModel):
-    name: str
+    name: Str200
     description: str = ""
     #  Có `parent_id` = nhóm con. Service chặn cấp 3 (A-08).
     parent_id: int | None = None
@@ -23,7 +24,7 @@ class GroupCreate(BaseModel):
 
 
 class GroupUpdate(BaseModel):
-    name: str | None = None
+    name: Str200 | None = None
     description: str | None = None
     sort_order: int | None = None
     is_archived: int | None = None
@@ -40,17 +41,17 @@ class MemberIn(BaseModel):
 
 
 class ListCreate(BaseModel):
-    name: str
+    name: Str200
     description: str = ""
-    color: str = ""
+    color: Str20 = ""
     group_id: int | None = None
     sort_order: int = 0
 
 
 class ListUpdate(BaseModel):
-    name: str | None = None
+    name: Str200 | None = None
     description: str | None = None
-    color: str | None = None
+    color: Str20 | None = None
     #  Gửi `0` để kéo list RA khỏi nhóm (đứng lẻ vẫn hợp lệ — A-08).
     group_id: int | None = None
     sort_order: int | None = None
@@ -62,8 +63,8 @@ class TransferIn(BaseModel):
 
 
 class SectionIn(BaseModel):
-    name: str = ""
-    color: str | None = None
+    name: Str100 = ""
+    color: Str20 | None = None
     sort_order: int | None = None
 
 
@@ -78,14 +79,14 @@ class LabelFieldIn(BaseModel):
     """Khai một trường tùy biến. `field_type` theo `WorkLabelFieldType` (B-13);
     mặc định `1 = chọn một` để lời gọi cũ không đổi hành vi."""
 
-    name: str
+    name: Str100
     sort_order: int = 0
     field_type: int = 1
 
 
 class LabelOptionIn(BaseModel):
-    name: str
-    color: str = ""
+    name: Str100
+    color: Str20 = ""
     sort_order: int = 0
 
 
@@ -98,14 +99,14 @@ class LabelFieldUpdate(BaseModel):
     giao diện.
     """
 
-    name: str | None = None
+    name: Str100 | None = None
     field_type: int | None = None
     sort_order: int | None = None
 
 
 class LabelOptionUpdate(BaseModel):
-    name: str | None = None
-    color: str | None = None
+    name: Str100 | None = None
+    color: Str20 | None = None
     sort_order: int | None = None
 
 
@@ -118,10 +119,10 @@ class TaskCreate(BaseModel):
     list_id: int = 0
     section_id: int | None = None
     parent_id: int | None = None
-    title: str
+    title: Str500
     description: str = ""
-    start_date: str = ""
-    due_date: str = ""
+    start_date: Str10 = ""
+    due_date: Str10 = ""
     sort_order: int = 0
     #  `2` = CỘT MỐC (B-14). Mặc định việc thường để lời gọi cũ không đổi nghĩa.
     kind: int = 1
@@ -131,11 +132,11 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     """Sửa task. Kéo thẻ sang cột khác = gửi `section_id` + `sort_order` (B-07)."""
 
-    title: str | None = None
+    title: Str500 | None = None
     description: str | None = None
     status: int | None = None
-    start_date: str | None = None
-    due_date: str | None = None
+    start_date: Str10 | None = None
+    due_date: Str10 | None = None
     section_id: int | None = None
     sort_order: int | None = None
     #  Đổi việc thường ↔ cột mốc (B-14). Xem `WorkTaskKind`.

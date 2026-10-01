@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.central_purchasing import get_central_dept_id, normalize_handler_dept_id
+from app.core.text_limits import ensure_model_fits
 from app.core.utils import assert_unique_product_codes
 
 from .model import (LINE_STATUSES, LS_COMPLETED, LS_RESURVEY, SurveyRequest,
@@ -719,6 +720,9 @@ def set_option_fields(db: Session, line_id: int, oid: int, user_id: int, **field
          .filter(SurveyRequestOption.id == oid, SurveyRequestOption.survey_request_line_id == line_id).first())
     if not o:
         raise HTTPException(404, "Không tìm thấy option")
+    #  bao-CR-538: body là `dict` thô (không qua schema) → soi độ dài theo cột trước khi gán.
+    ensure_model_fits(SurveyRequestOption, {k: (v.strip() if isinstance(v, str) else v)
+                                            for k, v in fields.items() if v is not None})
     for k in ("nstm_note", "system_product_code"):
         if k in fields and fields[k] is not None:
             setattr(o, k, (fields[k] or "").strip() if k == "system_product_code" else (fields[k] or ""))

@@ -1,5 +1,6 @@
 """Schema của SỔ VĂN BẢN."""
 from pydantic import BaseModel, Field, field_validator
+from app.modules.employee.field_limits import Str20
 
 CODE_PATTERN = r"^[A-Z0-9-]+$"
 
@@ -9,7 +10,7 @@ class DocumentBookBase(BaseModel):
     kind: int = 1
     description: str = ""
     company_id: int
-    number_prefix: str = ""
+    number_prefix: Str20 = ""
     reset_yearly: bool = True
     start_no: int = Field(default=1, ge=1)
     is_active: bool = True
@@ -39,7 +40,7 @@ class DocumentBookUpdate(BaseModel):
     kind: int | None = None
     description: str | None = None
     company_id: int | None = None
-    number_prefix: str | None = None
+    number_prefix: Str20 | None = None
     reset_yearly: bool | None = None
     start_no: int | None = Field(default=None, ge=1)
     is_active: bool | None = None
