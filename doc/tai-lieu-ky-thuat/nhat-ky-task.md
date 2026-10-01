@@ -90,6 +90,8 @@ Kiểm: 6 bài kiểm mới và 134 bài kiểm cảnh báo, việc cần làm, 
 local 104 khoản quá hạn hoặc sắp đến hạn gom còn 92 dòng (prod có nhiều đơn nhiều dòng nên giảm mạnh
 hơn). Đại ca bảo commit và gộp ngày 01/10, Agent 1 đẩy lên dev; prod chưa.
 
+Lên prod ngày 01/10 (main d4048656), sao lưu cơ sở dữ liệu prod trước khi deploy; đã kiểm trên prod.
+
 Mã nguồn: `payable/due_alerts.py` (mới) · `alert/controller.py` · `dashboard/controller.py` ·
 `test/backend/test_canh_bao_cong_no_gom_cr542.py`
 
@@ -163,7 +165,7 @@ membership_service, list_config_service, task_service}.py · test_cong_viec_hoat
 ---
 
 ## bao-CR-538 | Nới các ô chữ đoạn văn của khảo sát, YCBG, YCMH và đơn mua hàng
-- status: dang-lam
+- status: xong
 - date: 2026-10-01
 Sau sự cố «Ghi chú NSPT» tràn cột ngày 30/09, Agent 3 rà toàn bộ ô chữ người dùng gõ tay ở khảo sát,
 YCBG, YCMH, đơn mua hàng, YCTT và nhà cung cấp trên dữ liệu thật của prod. Chỉ ô Ghi chú NSPT từng vỡ,
@@ -214,6 +216,8 @@ dụng, hợp đồng, công ty, phê duyệt, nghỉ phép, văn bản, ticket,
 325 tệp kiểm của các phân hệ bị đụng: 5.252 bài xanh, 2 bài đỏ đều đỏ sẵn trên erp-v2
 (`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet` và `test_phong_ban_theo_id_cr086::test_loai_tru_phong_theo_id`).
 Bài kiểm ban hành văn bản phải chạy trong mạng của stack (cần redis), chạy cô lập thì treo.
+
+Lên prod ngày 01/10 (main d4048656), sao lưu cơ sở dữ liệu prod trước khi deploy; đã kiểm trên prod.
 
 Mã nguồn: `survey/model.py` · `survey/schema.py` · `survey_request/*` · `purchase_request/*` ·
 `purchase_order/model.py` · `purchase_order/schema.py` · `purchase_order/cost_type.py` ·
