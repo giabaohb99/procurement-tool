@@ -159,8 +159,8 @@ nhóm kèm số thuốc; màn hẹp thì mở bằng nút «Tra cứu». Danh s�
 Kiểm: 89 bài kiểm máy chủ thuốc BVTV xanh (thêm bài cho luật khớp hoạt chất); bài kiểm giao diện phân hệ
 Thu mua xanh, tsc 0 lỗi; v1 tsc giữ đúng 4 lỗi cũ. Đối chiếu thuốc 2S Sea & See 12WP: 10 thuốc đầu cùng
 công ty khớp từng tên với trang nguồn, cùng hoạt chất ra đúng thuốc như nguồn. Đường API mới chạy 25–40
-mili giây. Bản v1 có thuốc liên quan và cột tra cứu nhưng chưa có thẻ đầu trang và tab như v2. Đã commit
-trên erp-v2, chưa lên dev.
+mili giây. Cùng ngày bản v1 cũng chuyển sang thẻ đầu trang + hai tab như v2; bảng thuốc liên quan ở v1
+có lề cho thanh phân trang và bo góc vừa. Đã commit trên erp-v2, chưa lên dev.
 
 Mã nguồn: backend `customs/pesticide_related_service.py` (mới), `customs/pesticide_controller.py`
 (`GET /api/customs/pesticides/{id}/related`) · frontend-v2 `procurement/components/customs/
