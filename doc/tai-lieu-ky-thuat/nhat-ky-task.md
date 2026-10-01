@@ -86,6 +86,8 @@ Kiểm: thêm 3 bài kiểm giao diện v2 (hiện đủ cột, ẩn thì mọi 
 trên trình duyệt local cả hai bản với phiếu PYC21082601. Đại ca bảo commit và gộp ngày 01/10, Agent 1
 đẩy lên dev và prod.
 
+Lên dev và prod ngày 01/10 cùng bao-CR-545 (main a3c4d51f), sao lưu cơ sở dữ liệu prod trước khi deploy.
+
 Mã nguồn: frontend-v2/src/modules/procurement/pages/{purchase-request-print-page,
 purchase-request-supplier-print-page}.tsx · purchase-request-print-page.test.tsx ·
 frontend/src/pages/PrintPurchaseRequest.tsx
@@ -93,7 +95,7 @@ frontend/src/pages/PrintPurchaseRequest.tsx
 ---
 
 ## bao-CR-545 | Thêm vai trò «Admin thu mua phòng» và gán bộ thu mua nhà máy
-- status: dang-lam
+- status: xong
 - date: 2026-10-01
 Đại ca hỏi vì sao prod không có «Admin thu mua» theo phòng: bộ thu mua theo phòng (bao-CR-526) mới
 có Nhân viên và Quản lý, trong khi bộ chung có đủ Nhân viên, Admin, Quản lý. Đã thêm vai trò
@@ -106,6 +108,10 @@ lý thu mua phòng; lpngoan làm Nhân viên thu mua phòng (tự tạo yêu c�
 xử lý phiếu của phòng bằng vai trò mới).
 
 Kiểm: 4 bài kiểm mới cùng các bài kiểm vai trò, phân quyền xanh (247 bài).
+
+Lên dev và prod ngày 01/10 (main a3c4d51f), sao lưu cơ sở dữ liệu prod trước; vai trò tự tạo khi khởi động. Đã gán trên prod
+(giữ nguyên vai trò cũ): ntphuong thêm Admin thu mua phòng; dmkhoi, ntktrang thêm Quản lý thu mua phòng; lpngoan thêm Nhân
+viên thu mua phòng — kiểm lại: lpngoan tạo, sửa được YCMH, YCBG, ĐMH; ntphuong có thêm duyệt điều phối.
 
 Mã nguồn: `app/seed.py` (`STD_ROLES["pur_dept_admin"]`, `ROLE_DESCRIPTIONS`) ·
 `assistant/tools/account_setup_tool.py` · `assistant/service.py` ·
