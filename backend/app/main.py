@@ -66,6 +66,8 @@ from app.modules.employee.controller import router as employee_router
 from app.modules.employee.report_controller import router as employee_report_router
 from app.modules.leave.report_controller import router as leave_report_router
 from app.modules.leave.balance_report_controller import router as leave_balance_report_router
+from app.modules.vehicle_booking.report_controller import router as vehicle_booking_report_router
+from app.modules.seal_request.report_controller import router as seal_request_report_router
 from app.modules.employee.position_controller import router as job_position_router
 from app.modules.dossier.type_controller import router as dossier_type_router
 from app.modules.dossier.controller import router as dossier_router
@@ -243,6 +245,8 @@ app.include_router(auth_router)
 app.include_router(employee_report_router)
 app.include_router(leave_report_router)
 app.include_router(leave_balance_report_router)
+app.include_router(vehicle_booking_report_router)
+app.include_router(seal_request_report_router)
 app.include_router(company_router)
 app.include_router(department_router)
 app.include_router(employee_router)
