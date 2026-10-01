@@ -131,10 +131,17 @@ export default function SurveyRequestDetail() {
   const [employees, setEmployees]   = useState<any[]>([])
   // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô «Trưởng phòng phê duyệt» (chỉ nạp khi ô còn chọn được).
   const [approverCands, setApproverCands] = useState<any[]>([])
+  // bao-CR-552: ô «Trưởng bộ phận» chọn được — trưởng phòng mọi phòng (cùng bộ với bản v2).
+  const [deptManagers, setDeptManagers] = useState<any[]>([])
+  useEffect(() => {
+    api.get(`${API}/meta/department-managers`, { _silent: true } as any)
+      .then((r) => setDeptManagers(r.data.data.items || []))
+      .catch(() => setDeptManagers([]))
+  }, [])
   useEffect(() => {
     if (!(isNew || ['draft', 'rejected'].includes(sv.status))) { setApproverCands([]); return }
     loadApproverCandidates(API, isNew ? 0 : Number(id), sv).then(setApproverCands)
-  }, [id, isNew, sv.status, sv.department, sv.department_id, sv.company_id, sv.handler_dept_id])
+  }, [id, isNew, sv.status, sv.department, sv.department_id, sv.company_id, sv.handler_dept_id, sv.head_of_dept_id])
   const [assignableStaff, setAssignableStaff] = useState<any[]>([])   // bao-CR-486: NSTM theo phòng xử lý
   const [itemGroups, setItemGroups] = useState<any[]>([])
   const [units, setUnits]           = useState<string[]>([])
@@ -201,7 +208,11 @@ export default function SurveyRequestDetail() {
   useEffect(() => {
     if (!isNew || !sv.department || sv.head_of_dept) return
     api.get(`${API}/meta/dept-head`, { params: { department: sv.department } })
-      .then((r) => { const h = r.data.data.head_of_dept; if (h) setH('head_of_dept', h) })
+      .then((r) => {
+        const h = r.data.data.head_of_dept
+        // bao-CR-552: điền cả id — ô TBP nay chọn được và gửi kèm id, backend ưu tiên id.
+        if (h) setSv((s: any) => ({ ...s, head_of_dept: h, head_of_dept_id: Number(r.data.data.head_of_dept_id) || 0 }))
+      })
       .catch(() => {})
   }, [isNew, sv.department])
 
@@ -431,17 +442,6 @@ export default function SurveyRequestDetail() {
 
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
   const lines: any[] = sv.lines || []
-
-  const setLine = (i: number, k: string, v: any) =>
-    setSv((s: any) => ({
-      ...s,
-      lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, [k]: v } : l),
-    }))
-
-  const addLine = () => setSv((s: any) => ({ ...s, lines: [...(s.lines || []), { ...emptyLine }] }))
-  const delLine = (i: number) => {
-    setSv((s: any) => ({ ...s, lines: s.lines.filter((_: any, idx: number) => idx !== i) }))
-    setPendingFiles((p) => {
   // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — CHỈ form tạo hoặc phiếu Nháp (phiếu Bị trả lại vẫn
   // xóa từng dòng). Chọn theo CHỈ SỐ nên đổi số dòng là bỏ hết lựa chọn.
   const bulkRemovable = editable && (isNew || sv.status === 'draft')
@@ -455,6 +455,17 @@ export default function SurveyRequestDetail() {
     // Xóa từ chỉ số CAO xuống THẤP qua `delLine` để tệp đính kèm chờ lưu dời theo đúng dòng.
     for (const i of [...selectedRows].sort((a, b) => b - a)) delLine(i)
   }
+
+  const setLine = (i: number, k: string, v: any) =>
+    setSv((s: any) => ({
+      ...s,
+      lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, [k]: v } : l),
+    }))
+
+  const addLine = () => setSv((s: any) => ({ ...s, lines: [...(s.lines || []), { ...emptyLine }] }))
+  const delLine = (i: number) => {
+    setSv((s: any) => ({ ...s, lines: s.lines.filter((_: any, idx: number) => idx !== i) }))
+    setPendingFiles((p) => {
       const n: Record<number, File[]> = {}
       for (const [k, v] of Object.entries(p)) { const kk = Number(k); if (kk === i) continue; n[kk > i ? kk - 1 : kk] = v }
       return n
@@ -475,9 +486,12 @@ export default function SurveyRequestDetail() {
   /** Trưởng bộ phận LẤY THEO `Department.manager_id` (nguồn duy nhất) — hỏi server, không đoán
    *  theo chức danh nhân sự cùng phòng. Phòng chưa gán trưởng → để trống. */
   function fetchDeptHead(deptName: string) {
-    if (!deptName) { setH('head_of_dept', ''); return }
+    if (!deptName) { setSv((s: any) => ({ ...s, head_of_dept: '', head_of_dept_id: 0 })); return }
     api.get(`${API}/meta/dept-head`, { params: { department: deptName } })
-      .then((r) => setH('head_of_dept', r.data.data.head_of_dept || ''))
+      .then((r) => setSv((s: any) => ({
+        ...s, head_of_dept: r.data.data.head_of_dept || '',
+        head_of_dept_id: Number(r.data.data.head_of_dept_id) || 0,   // bao-CR-552
+      })))
       .catch(() => {})
   }
 
@@ -522,6 +536,7 @@ export default function SurveyRequestDetail() {
       approver_employee_id: Number(sv.approver_employee_id) || 0,   // bao-CR-499
       department:         sv.department,
       head_of_dept:       sv.head_of_dept,
+      head_of_dept_id:    Number(sv.head_of_dept_id) || 0,   // bao-CR-552: TBP chọn tay neo bằng id
       purpose:            sv.purpose,
       request_date:       sv.request_date,
       note:               sv.note,
@@ -859,8 +874,24 @@ export default function SurveyRequestDetail() {
 
               <div className="form-row">
                 <label>Trưởng bộ phận</label>
-                <input value={sv.head_of_dept || ''} placeholder="Tự động theo phòng ban"
-                  disabled title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
+                {editable && deptManagers.length > 0 ? (
+                  <SearchSelect value={sv.head_of_dept_id ? String(sv.head_of_dept_id) : ''}
+                    options={deptManagers.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
+                    placeholder={sv.head_of_dept || 'Tự động theo phòng ban'} autoSelectSingle={false}
+                    onChange={(v) => {
+                      const c = deptManagers.find((x: any) => String(x.employee_id) === v)
+                      if (!c) return
+                      setSv((s: any) => ({
+                        ...s, head_of_dept_id: c.employee_id, head_of_dept: c.name,
+                        // bao-CR-552: người duyệt còn là TBP cũ (chưa chọn riêng) thì đi theo TBP mới.
+                        ...((!s.approver_employee_id || s.approver_employee_id === s.head_of_dept_id)
+                          ? { approver_employee_id: c.employee_id, approver_employee_name: c.name } : {}),
+                      }))
+                    }} />
+                ) : (
+                  <input value={sv.head_of_dept || ''} placeholder="Tự động theo phòng ban"
+                    disabled title="Lấy theo Trưởng bộ phận đã gán ở màn hình Phòng ban" />
+                )}
               </div>
               {/* bao-CR-490: ai THỰC bấm Duyệt — hệ thống ghi lúc duyệt, chỉ xem. */}
               {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
@@ -868,7 +899,8 @@ export default function SurveyRequestDetail() {
               <div className="form-row">
                 <label>Trưởng phòng phê duyệt</label>
                 {editable && approverCands.length > 0 ? (
-                  <SearchSelect value={(sv.approver_employee_id || sv.head_of_dept_id) ? String(sv.approver_employee_id || sv.head_of_dept_id) : ''}
+                  <SearchSelect value={String(sv.approver_employee_id || sv.head_of_dept_id   // bao-CR-552: khớp TBP mặc định theo tên
+                      || approverCands.find((c: any) => c.name === sv.head_of_dept)?.employee_id || '')}
                     options={approverCands.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
                     placeholder={sv.approver_employee_name || sv.head_of_dept || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
                     onChange={(v) => { const c = approverCands.find((x: any) => String(x.employee_id) === v); if (c) setSv((s: any) => ({ ...s, approver_employee_id: c.employee_id, approver_employee_name: c.name })) }} />
@@ -927,6 +959,11 @@ export default function SurveyRequestDetail() {
               <table className="items-table" style={{ width: '100%', minWidth: (showNstmCols ? 1160 : 960) + (bulkRemovable ? 36 : 0), tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
+                    {bulkRemovable && (
+                      <th style={{ width: 36, textAlign: 'center' }} title="Chọn tất cả dòng">
+                        <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={lines.length > 0 && selectedRows.size === lines.length} onChange={toggleAllRows} aria-label="Chọn tất cả dòng" />
+                      </th>
+                    )}
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
                     {showNstmCols && <th style={{ width: 110, textAlign: 'left' }}>Ngày tiếp nhận</th>}
                     <th style={{ width: 120, textAlign: 'left' }}>Ngày YC trả KQ</th>
@@ -943,6 +980,11 @@ export default function SurveyRequestDetail() {
                 <tbody>
                   {lines.map((l: any, i: number) => (
                     <tr key={i}>
+                      {bulkRemovable && (
+                        <td style={{ textAlign: 'center' }}>
+                          <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectedRows.has(i)} onChange={() => toggleRow(i)} aria-label={`Chọn dòng ${i + 1}`} />
+                        </td>
+                      )}
                       <td style={{ textAlign: 'center' }}>{i + 1}</td>
 
                       {/* Ngày tiếp nhận — chỉ view NSTM/QL */}
@@ -958,11 +1000,6 @@ export default function SurveyRequestDetail() {
                       </td>
 
                       {/* Phân loại */}
-                    {bulkRemovable && (
-                      <th style={{ width: 36, textAlign: 'center' }} title="Chọn tất cả dòng">
-                        <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={lines.length > 0 && selectedRows.size === lines.length} onChange={toggleAllRows} aria-label="Chọn tất cả dòng" />
-                      </th>
-                    )}
                       <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.item_group}>
                         {editable
                           ? <SearchSelect value={l.item_group || ''} options={itemGroupNames} variant="table" placeholder="—" onChange={(v) => setLine(i, 'item_group', v)} />
@@ -979,11 +1016,6 @@ export default function SurveyRequestDetail() {
                       {/* SL dự kiến */}
                       <td style={{ textAlign: 'right' }}>
                         {editable
-                      {bulkRemovable && (
-                        <td style={{ textAlign: 'center' }}>
-                          <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectedRows.has(i)} onChange={() => toggleRow(i)} aria-label={`Chọn dòng ${i + 1}`} />
-                        </td>
-                      )}
                           ? <NumberInput className="cell-input" style={{ textAlign: 'right' }} value={l.request_qty} placeholder="0" onChange={(v: number) => setLine(i, 'request_qty', v)} />
                           : fmtBlank(l.request_qty)}
                       </td>

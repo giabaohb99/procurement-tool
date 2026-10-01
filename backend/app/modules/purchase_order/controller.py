@@ -412,26 +412,28 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
 
 @router.get("/meta/approver-candidates")
 def approver_candidates_meta(department: str = "", department_id: int = 0, company_id: int = 0,
-                             handler_dept_id: int = 0, db: Session = Depends(get_db),
+                             handler_dept_id: int = 0, head_of_dept_id: int = 0, db: Session = Depends(get_db),
                              user=Depends(require("purchase_order", "read"))):
     """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô «Trưởng phòng phê duyệt».
 
     Khai TRƯỚC `/{pid}` kẻo FastAPI nuốt "meta" thành id.
     """
-    from app.core.approver_candidates import candidates_for_draft, draft_fields
+    #  bao-CR-552: + Trưởng bộ phận, bỏ tài khoản Quản trị hệ thống (luật nằm ở core).
+    from app.core.approver_candidates import draft_fields, list_candidates_for_draft
     from .model import PurchaseOrder
     fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
-    return success({"items": candidates_for_draft(db, PurchaseOrder, "purchase_order", fields)})
+    return success({"items": list_candidates_for_draft(db, PurchaseOrder, "purchase_order", fields,
+                                                       head_of_dept_id)})
 
 
 @router.get("/{pid}/approver-candidates")
 def approver_candidates_(pid: int, db: Session = Depends(get_db),
                          user=Depends(require("purchase_order", "read"))):
     """bao-CR-499 — người duyệt được ĐÚNG chứng từ này (hỏi apply_scope hành động approve)."""
-    from app.core.approver_candidates import candidates_for_row
+    from app.core.approver_candidates import list_candidates_for_row
     from .model import PurchaseOrder
     row = _in_scope(db, pid, user, "read")
-    return success({"items": candidates_for_row(db, PurchaseOrder, "purchase_order", row.id)})
+    return success({"items": list_candidates_for_row(db, PurchaseOrder, "purchase_order", row)})   # bao-CR-552
 
 
 @router.get("/export/xlsx")
@@ -694,10 +696,10 @@ def bulk_delete_pos(ids: str, db: Session = Depends(get_db), user=Depends(requir
                        get_perm_profile(db, user), "delete").all()
     if not rows:
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
-    for pid in [r.id for r in rows]:
-        try:
     #  bao-CR-547: kiểm CẢ LÔ trước khi xóa đơn nào — chỉ đơn Nháp (đại ca chốt 01/10/2026).
     ensure_all_draft(rows, "đơn mua hàng")
+    for pid in [r.id for r in rows]:
+        try:
             service.delete_po(db, pid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa đơn ID {pid}: {str(e)}")

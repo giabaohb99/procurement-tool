@@ -70,6 +70,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-552 | Ô «Trưởng phòng phê duyệt» và «Trưởng bộ phận» luôn chọn được ở YCMH, YCBG, ĐMH
+- status: dang-lam
+- date: 2026-10-01
+Đại ca báo trên prod: lập phiếu ở phòng «Lập trình & IT nội bộ» thì không chọn được Trưởng bộ phận lẫn
+Trưởng phòng phê duyệt, và ô phê duyệt không tự lấy theo Trưởng bộ phận. Nguyên nhân: hai ô dùng chung
+một danh sách chỉ gồm người duyệt theo phạm vi phòng; phòng nào không có ai như vậy thì danh sách rỗng
+và giao diện khóa cứng ô. Đại ca muốn mỗi phòng chọn được người duyệt riêng (sản xuất – thu mua là chị
+Mi, pháp lý là anh Dững).
+
+Đại ca chốt: ô «Trưởng phòng phê duyệt» liệt kê mọi người duyệt được chứng từ đó (vẫn theo đúng phạm vi
+duyệt để người được chọn bấm Duyệt được), bỏ hẳn tài khoản giữ vai trò Quản trị hệ thống, và luôn có
+Trưởng bộ phận của phiếu. Ô «Trưởng bộ phận» luôn có trưởng phòng của phòng lập; phòng chưa có trưởng
+thì đưa trưởng phòng các phòng. Ở YCBG bản cũ, ô Trưởng bộ phận trước là ô chữ khóa, nay chọn được và
+gửi kèm mã nhân sự; đổi phòng thì điền lại cả tên lẫn mã. Chọn Trưởng bộ phận mà ô phê duyệt chưa chọn
+riêng thì ô phê duyệt đi theo. Áp cho cả bản cũ lẫn bản mới.
+
+Kiểm: 8 bài kiểm mới; sửa bài kiểm cũ của bao-CR-499 theo luật mới; 167 bài kiểm về người duyệt và
+Trưởng bộ phận xanh. Màn mới kiểm kiểu, eslint không lỗi, vitest thu mua 776 bài xanh; màn cũ giữ đúng
+4 lỗi nền. Chưa commit, chờ đại ca kiểm trên local.
+
+Mã nguồn: `core/approver_candidates.py` (`list_candidates_for_row`, `list_candidates_for_draft`) ·
+`purchase_request/service.py` (`complete_head_choices`) · ba controller (`/approver-candidates`,
+YCBG `/meta/department-managers`) · v1 `SurveyRequestDetail.tsx`, `PurchaseRequestDetail.tsx`,
+`components/approverCandidates.ts` · v2 `api/approver-candidates-api.ts` và hai trang chi tiết ·
+`test/backend/test_nguoi_duyet_chon_duoc_cr552.py`
+
+---
+
 ## duoc-CR-548 | Phân hệ Báo cáo: thêm 8 báo cáo cho Nhân sự, Hành chính, Dự án và làm lại giao diện báo cáo
 - status: xong
 - date: 2026-10-01

@@ -232,6 +232,7 @@ export function PurchaseRequestDetailPage() {
       department_id: formDepartmentId,
       company_id: (draft ?? serverData)?.company_id ?? 0,
       handler_dept_id: (draft ?? serverData)?.handler_dept_id ?? 0,
+      head_of_dept_id: (draft ?? serverData)?.head_of_dept_id ?? 0,   // bao-CR-552
     },
     editing,
   )
@@ -1007,8 +1008,8 @@ export function PurchaseRequestDetailPage() {
               <PurchaseRequestItemsTable
                 items={loadedDraft.items}
                 editing={editing}
-                showAssignee={showAssignee}
                 bulkRemovable={isNew || data.status === 'draft'}
+                showAssignee={showAssignee}
                 onChange={(items) => patch({ items })}
                 onOpenDetail={setLineIndex}
                 orderedByCode={progress?.ordered}
