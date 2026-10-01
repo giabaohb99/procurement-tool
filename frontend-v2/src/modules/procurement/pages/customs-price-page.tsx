@@ -44,6 +44,9 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import { MultiPicker } from '@/shared/ui/multi-picker'
 import { SearchSelect } from '@/shared/ui/search-select'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsTrigger } from '@/shared/ui/tabs'
 
 import { exportCustomsLines } from '../api/customs-api'
 import { CustomsSearchHint } from '../components/customs/customs-search-hint'
@@ -65,6 +68,8 @@ import { CUSTOMS_LINE_COLUMNS } from '../config/customs-line-columns'
 import {
   buildCustomsSectionPath,
   CUSTOMS_SECTIONS,
+  CUSTOMS_TAB_SECTIONS,
+  isCustomsTabSection,
   type CustomsSectionKey,
 } from '../config/customs-sections'
 import { useCustomsSearchExplain } from '../hooks/use-customs-search-explain'
@@ -347,7 +352,9 @@ export function CustomsPricePage() {
   return (
     <PageContainer className="flex flex-col gap-3">
       <PageHeader
-        title={tab === 'list' ? 'Tra cứu thị trường' : `Tra cứu thị trường — ${current.label}`}
+        title={
+          isCustomsTabSection(tab) ? 'Tra cứu thị trường' : `Tra cứu thị trường — ${current.label}`
+        }
         description="Giá nhập khẩu theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
         actions={
           <>
@@ -580,6 +587,24 @@ export function CustomsPricePage() {
             </p>
           )}
         </CustomsNotice>
+      )}
+
+      {/*  01/10/2026 — năm mục tra giá chuyển qua lại bằng THẺ như trước khi tách submenu.
+           Mỗi thẻ vẫn là một đường riêng (`openSection` giữ bộ lọc), nên link cũ không gãy. */}
+      {isCustomsTabSection(tab) && (
+        <Tabs value={tab} onValueChange={(next) => openSection(next as CustomsSectionKey)}>
+          <ScrollableTabsList
+            value={tab}
+            className="max-md:w-full max-md:min-w-0 md:max-w-full md:min-w-0 md:overflow-x-auto"
+          >
+            {CUSTOMS_TAB_SECTIONS.map((item) => (
+              <TabsTrigger key={item.key} value={item.key} className={TAB_TRIGGER_UNDERLINE}>
+                <item.icon className="size-4" />
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </ScrollableTabsList>
+        </Tabs>
       )}
 
       {tab === 'list' && (

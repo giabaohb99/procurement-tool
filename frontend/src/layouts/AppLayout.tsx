@@ -12,6 +12,8 @@ import { initialsOf } from "../utils/name";
 import {
   CUSTOMS_BASE_PATH,
   CUSTOMS_SECTIONS,
+  CUSTOMS_TAB_GROUP_LABEL,
+  CUSTOMS_TAB_SECTIONS,
   canSeeCustomsSection,
   customsSectionPath,
 } from "../config/customs-sections";
@@ -54,6 +56,8 @@ type NavChild = {
   icon: string;
   /** Mục con mặc định: sáng lên cả khi URL chỉ là đường của mục cha (`/customs-prices`). */
   isDefault?: boolean;
+  /** Đường KHÁC cũng làm mục này sáng — mục gom nhiều thẻ, mỗi thẻ một đường riêng. */
+  matchPaths?: string[];
   visible?: (can: (entity: string, action: string) => boolean) => boolean;
 };
 // Mọi nhóm CÓ tiêu đề đều thu/mở được (đồng bộ trên toàn menu trái).
@@ -136,13 +140,22 @@ const NAV_GROUPS: NavGroup[] = [
         icon: "ti-world-search",
         entity: "customs_price",
         // duoc-CR-491 (bê duoc-CR-486 bản v2): hàng thẻ trên màn đổi thành menu con bên trái.
-        children: CUSTOMS_SECTIONS.map((sec, i) => ({
-          to: customsSectionPath(sec.key),
-          label: sec.label,
-          icon: sec.icon,
-          isDefault: i === 0,
-          visible: (can) => canSeeCustomsSection(sec.key, can),
-        })),
+        // 01/10/2026: năm thẻ tra giá gom về MỘT mục con (chuyển bằng hàng thẻ trên màn).
+        children: [
+          {
+            to: customsSectionPath("list"),
+            label: CUSTOMS_TAB_GROUP_LABEL,
+            icon: "ti-list",
+            isDefault: true,
+            matchPaths: CUSTOMS_TAB_SECTIONS.map((sec) => customsSectionPath(sec.key)),
+          },
+          ...CUSTOMS_SECTIONS.filter((sec) => !sec.tabbed).map((sec) => ({
+            to: customsSectionPath(sec.key),
+            label: sec.label,
+            icon: sec.icon,
+            visible: (can: (entity: string, action: string) => boolean) => canSeeCustomsSection(sec.key, can),
+          })),
+        ],
       },
     ],
   },
@@ -339,7 +352,8 @@ function NavParent({ item, pathname, can, onPick }: {
         <div className="nav-sub">
           {children.map((c) => {
             const active = pathname === c.to || pathname.startsWith(c.to + "/")
-              || (!!c.isDefault && pathname.replace(/\/$/, "") === item.to);
+              || (!!c.isDefault && pathname.replace(/\/$/, "") === item.to)
+              || !!c.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + "/"));
             return (
               <Link key={c.to} to={c.to} onClick={onPick} className={"nav-item" + (active ? " active" : "")}>
                 <i className={"ti " + c.icon} />

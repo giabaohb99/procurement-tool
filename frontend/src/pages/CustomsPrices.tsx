@@ -36,7 +36,8 @@ import {
   fmtUsd, fmtVnd, hasChartFilter, NEED_FILTER_MSG, PRODUCT_KIND_OPTIONS, removeNamedId, splitNamedIds, toParams,
 } from '../components/customs/customs-shared'
 import {
-  CUSTOMS_SECTIONS, CustomsSectionKey, customsSectionPath, resolveCustomsSection,
+  CUSTOMS_SECTIONS, CUSTOMS_TAB_SECTIONS, CustomsSectionKey, customsSectionPath, isCustomsTabSection,
+  resolveCustomsSection,
 } from '../config/customs-sections'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
 import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
@@ -237,7 +238,9 @@ export default function CustomsPrices() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <h2 className="page-title" style={{ margin: 0, flex: 1 }}>Tra cứu thị trường — {sectionLabel}</h2>
+        <h2 className="page-title" style={{ margin: 0, flex: 1 }}>
+          {isCustomsTabSection(tab) ? 'Tra cứu thị trường' : `Tra cứu thị trường — ${sectionLabel}`}
+        </h2>
         <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
         {can('customs_price', 'write') && (
           <button className="btn" onClick={() => setImportOpen(true)}><i className="ti ti-upload" />Nạp dữ liệu</button>
@@ -379,6 +382,21 @@ export default function CustomsPrices() {
       )}
       </>)}
 
+      {/* 01/10/2026 — năm thẻ tra giá về lại hàng thẻ như trước duoc-CR-491 (menu trái chỉ còn MỘT
+           mục cho cả năm). Mỗi thẻ vẫn là một đường riêng; trang không dựng lại khi đổi mục nên bộ
+           lọc đang áp đi theo. */}
+      {isCustomsTabSection(tab) && (
+        <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb', marginBottom: 12, overflowX: 'auto' }}>
+          {CUSTOMS_TAB_SECTIONS.map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
+              style={{ background: 'none', border: 'none', padding: '8px 14px', cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap',
+                borderBottom: tab === t.key ? '2px solid var(--teal)' : '2px solid transparent',
+                color: tab === t.key ? 'var(--teal)' : 'var(--muted)', fontWeight: tab === t.key ? 600 : 400 }}>
+              <i className={`ti ${t.icon}`} style={{ marginRight: 5 }} />{t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === 'list' && (
         <div className="card table-card">
