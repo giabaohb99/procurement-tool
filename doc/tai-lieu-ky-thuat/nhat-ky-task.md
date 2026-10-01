@@ -144,6 +144,10 @@ liệu MySQL local ra đủ 300 dòng «Đã có»; tính mã cho 18.243 dòng l
 như số đếm cũ; đọc mã của 9 tháng dữ liệu mất 1,7 giây. v2 tsc 0 lỗi, eslint 0 lỗi, vitest 396 bài xanh;
 v1 tsc giữ đúng 4 lỗi cũ. Đại ca bảo commit và gộp ngày 01/10, Agent 1 đẩy lên dev; 806 dòng thừa trên prod chưa xóa, chờ đại ca. Số CR ban đầu đặt là 540, đổi sang 541 vì trùng số với việc «Nhóm dự án» của anh Được.
 
+Ngày 01/10 đại ca bảo xóa dòng trùng: trên dev đã sao lưu cơ sở dữ liệu rồi chạy xóa thật, chép 806
+dòng bị xóa ra tệp JSON trên VPS; đã xóa 806 dòng thừa trên dev (18.243 còn 17.437 dòng, chạy thử lại
+không còn nhóm trùng). Prod chưa có CR này nên chưa xóa.
+
 Mã nguồn: `customs/dedupe.py` (mới) · `customs/importer.py` · `customs/row_log.py` · `customs/model.py` ·
 `customs/controller.py` · `import_tool/model.py` (`ImportRowStatus.EXISTING`) · migration `c540a7d3e9f1` ·
 `scripts/customs_row_hash.py` (mới) · `scripts/seed_help_customs_prices.py` · v2 `customs-import-dialog.tsx`,
