@@ -241,7 +241,9 @@ def test_sr_default_approver_is_the_head(db, seed):
     assert s.approver_employee_id == seed.emp_tp_id
 
 
-def test_pr_candidate_list_is_the_same_set_as_the_head_box(db, seed, cap_quyen):
+def test_pr_candidate_list_covers_every_approver_not_only_the_head_box(db, seed, cap_quyen):
+    """bao-CR-552 (đại ca 01/10/2026) ĐẢO luật 26/09: ô phê duyệt thôi dùng chung bộ với ô TBP —
+    người duyệt MỌI phiếu (thu mua toàn quyền) nay CÓ mặt; chỉ tài khoản Quản trị hệ thống bị loại."""
     dept = _dept(db, seed)
     head, u_head = _person(db, seed, "HEADB499", dept.id)
     cap_quyen(u_head.id, "purchase_request", scope="dept", read=True, approve=True)
@@ -254,9 +256,9 @@ def test_pr_candidate_list_is_the_same_set_as_the_head_box(db, seed, cap_quyen):
     got = pr_ctl.approver_candidates_(pr.id, db=db, user=USER)
     import json
     items = json.loads(got.body)["data"]["items"] if hasattr(got, "body") else got["data"]["items"]
-    assert [c["employee_id"] for c in items] == [c["employee_id"] for c in same]
     ids = {c["employee_id"] for c in items}
-    assert head.id in ids and boss.id not in ids, "người duyệt MỌI phiếu (thu mua toàn quyền) không vào ô này"
+    assert {c["employee_id"] for c in same} <= ids, "mọi người trong ô TBP vẫn có ở ô phê duyệt"
+    assert head.id in ids and boss.id in ids
 
 
 # ── Rà trước prod 28/09/2026 ─────────────────────────────────────────────────────────────

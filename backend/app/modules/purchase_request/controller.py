@@ -646,24 +646,29 @@ def _see_all_items(profile: dict, pr, user) -> bool:
 
 @router.get("/meta/approver-candidates")
 def approver_candidates_meta(department: str = "", department_id: int = 0, company_id: int = 0,
-                             handler_dept_id: int = 0, db: Session = Depends(get_db),
+                             handler_dept_id: int = 0, head_of_dept_id: int = 0, db: Session = Depends(get_db),
                              user=Depends(require("purchase_request", "read"))):
     """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô «Trưởng phòng phê duyệt».
 
     Khai TRƯỚC `/{pid}` kẻo FastAPI nuốt "meta" thành id.
     """
-    from app.core.approver_candidates import draft_fields
-    #  bao-CR-499: đại ca chốt ô này DÙNG CHUNG bộ với ô «Trưởng bộ phận» (người duyệt phạm vi phòng).
-    dep = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
-    return success({"items": service.dept_head_candidates_by_department(db, dep["department"], company_id)})
+    #  bao-CR-552: mọi người duyệt được (trừ Quản trị hệ thống) + Trưởng bộ phận — thôi dùng chung
+    #  bộ với ô TBP (bản đó chỉ có trưởng phòng theo phòng, phòng IT không ai duyệt là ô khóa cứng).
+    from app.core.approver_candidates import draft_fields, list_candidates_for_draft
+    from .model import PurchaseRequest
+    fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
+    return success({"items": list_candidates_for_draft(db, PurchaseRequest, "purchase_request", fields,
+                                                       head_of_dept_id)})
 
 
 @router.get("/{pid}/approver-candidates")
 def approver_candidates_(pid: int, db: Session = Depends(get_db),
                          user=Depends(require("purchase_request", "read"))):
     """bao-CR-499 — người duyệt được ĐÚNG chứng từ này (hỏi apply_scope hành động approve)."""
+    from app.core.approver_candidates import list_candidates_for_row
+    from .model import PurchaseRequest
     row = _in_scope(db, pid, user, "read")
-    return success({"items": service.dept_head_candidates(db, row)})   # chung bộ với ô TBP
+    return success({"items": list_candidates_for_row(db, PurchaseRequest, "purchase_request", row)})   # bao-CR-552
 
 
 @router.get("/meta/dept-head")
@@ -973,13 +978,13 @@ def bulk_delete_prs(ids: str, db: Session = Depends(get_db), user=Depends(requir
                        get_perm_profile(db, user), "delete").all()
     if not rows:
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
+    ensure_all_draft(rows, "phiếu yêu cầu mua hàng")
     for pid in [r.id for r in rows]:
         try:
             service.delete_pr(db, pid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa phiếu ID {pid}: {str(e)}")
-    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
-    ensure_all_draft(rows, "phiếu yêu cầu mua hàng")
     # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
     return success(None, f"Đã xóa {len(rows)} bản ghi")
 

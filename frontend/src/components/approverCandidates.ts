@@ -11,6 +11,8 @@ export async function loadApproverCandidates(apiBase: string, id: number, doc: a
           params: {
             department: doc.department || '', department_id: Number(doc.department_id) || 0,
             company_id: Number(doc.company_id) || 0, handler_dept_id: Number(doc.handler_dept_id) || 0,
+            // bao-CR-552: backend luôn đưa Trưởng bộ phận đang chọn vào danh sách.
+            head_of_dept_id: Number(doc.head_of_dept_id) || 0,
           },
           _silent: true,
         } as any)

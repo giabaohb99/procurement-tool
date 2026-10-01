@@ -235,13 +235,25 @@ def _users_of_codes(db, codes):
 
 @router.get("/meta/approver-candidates")
 def approver_candidates_meta(department: str = "", department_id: int = 0, company_id: int = 0,
-                             handler_dept_id: int = 0, db: Session = Depends(get_db),
+                             handler_dept_id: int = 0, head_of_dept_id: int = 0, db: Session = Depends(get_db),
                              user=Depends(require("survey_request", "read"))):
     """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô «Trưởng phòng phê duyệt».
 
     Khai TRƯỚC `/{sid}` kẻo FastAPI nuốt "meta" thành id.
     """
-    #  bao-CR-499: dùng chung bộ với ô «Trưởng bộ phận» của YCBG — trưởng phòng mọi phòng ban.
+    #  bao-CR-552: mọi người duyệt được (trừ Quản trị hệ thống) + Trưởng bộ phận.
+    from app.core.approver_candidates import draft_fields, list_candidates_for_draft
+    from .model import SurveyRequest
+    fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
+    return success({"items": list_candidates_for_draft(db, SurveyRequest, "survey_request", fields,
+                                                       head_of_dept_id)})
+
+
+@router.get("/meta/department-managers")
+def department_managers_(db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
+    """bao-CR-552 — trưởng phòng mọi phòng đang hoạt động, cho ô «Trưởng bộ phận» YCBG của bản v1 chọn
+    được (v2 dựng cùng bộ từ danh mục phòng ban). Chỉ đòi quyền đọc YCBG: người lập thường không có
+    quyền đọc danh mục phòng ban/nhân sự. Khai TRƯỚC `/{sid}`."""
     from app.core.approver_candidates import department_managers
     return success({"items": department_managers(db)})
 
@@ -250,9 +262,10 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
 def approver_candidates_(sid: int, db: Session = Depends(get_db),
                          user=Depends(require("survey_request", "read"))):
     """bao-CR-499 — người duyệt được ĐÚNG chứng từ này (hỏi apply_scope hành động approve)."""
-    from app.core.approver_candidates import department_managers
-    _in_scope(db, sid, user, "read")
-    return success({"items": department_managers(db)})   # chung bộ với ô TBP
+    from app.core.approver_candidates import list_candidates_for_row
+    from .model import SurveyRequest
+    row = _in_scope(db, sid, user, "read")
+    return success({"items": list_candidates_for_row(db, SurveyRequest, "survey_request", row)})   # bao-CR-552
 
 
 @router.get("/meta/dept-head")
@@ -425,6 +438,8 @@ def bulk_delete_survey_requests(ids: str, db: Session = Depends(get_db), user=De
                        get_perm_profile(db, user), "delete").all()
     if not rows:
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
+    ensure_all_draft(rows, "phiếu yêu cầu báo giá")
     for sid in [r.id for r in rows]:
         try:
             service.delete_sr(db, sid, user.id)
@@ -438,8 +453,6 @@ def bulk_delete_survey_requests(ids: str, db: Session = Depends(get_db), user=De
 def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
     s = _in_scope(db, sid, user, "read")
     if not _can_edit_own(db, s, user):
-    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
-    ensure_all_draft(rows, "phiếu yêu cầu báo giá")
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt phiếu ở trạng thái Nháp hoặc Bị trả lại")

@@ -313,6 +313,7 @@ export function SurveyRequestDetailPage() {
       department_id: approverSource?.department_id ?? 0,
       company_id: approverSource?.company_id ?? 0,
       handler_dept_id: approverSource?.handler_dept_id ?? 0,
+      head_of_dept_id: approverSource?.head_of_dept_id ?? 0,   // bao-CR-552
     },
     isNew || ['draft', 'rejected'].includes(approverSource?.status ?? ''),
   )
@@ -794,8 +795,8 @@ export function SurveyRequestDetailPage() {
             <SurveyRequestLinesTable
               lines={loadedDraft.lines}
               editing={editable}
-              showNstmColumns={showNstmColumns}
               bulkRemovable={isNew || status === 'draft'}
+              showNstmColumns={showNstmColumns}
               showStatus={showStatus}
               canAssignNstm={canAssignNstm}
               invalid={invalid}

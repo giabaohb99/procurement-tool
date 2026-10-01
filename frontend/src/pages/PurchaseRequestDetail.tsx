@@ -121,7 +121,7 @@ export default function PurchaseRequestDetail() {
   useEffect(() => {
     if (!(isNew || ['draft', 'rejected'].includes(pr.status))) { setApproverCands([]); return }
     loadApproverCandidates(API, isNew ? 0 : Number(id), pr).then(setApproverCands)
-  }, [id, isNew, pr.status, pr.department, pr.department_id, pr.company_id, pr.handler_dept_id])
+  }, [id, isNew, pr.status, pr.department, pr.department_id, pr.company_id, pr.handler_dept_id, pr.head_of_dept_id])
   const [empLoaded, setEmpLoaded] = useState(false)   // bao-CR-376: DS nhân sự đã trả lời xong (kể cả 403/lỗi)
   const [assignableStaff, setAssignableStaff] = useState<any[]>([])   // bao-CR-486: NSTM theo phòng xử lý
   const [departments, setDepartments] = useState<any[]>([])
@@ -1079,7 +1079,10 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Trưởng phòng phê duyệt</label>
                 {editable && approverCands.length > 0 ? (
-                  <SearchSelect value={(pr.approver_employee_id || pr.head_of_dept_id) ? String(pr.approver_employee_id || pr.head_of_dept_id) : ''}
+                  /* bao-CR-552: TBP để «mặc định của phòng» chỉ có TÊN (head_of_dept_id = 0) nên ô này từng
+                     rơi về chữ gợi ý mờ — khớp người mặc định trong danh sách theo tên để hiện như đã chọn. */
+                  <SearchSelect value={String(pr.approver_employee_id || pr.head_of_dept_id
+                      || approverCands.find((c: any) => c.name === pr.head_of_dept)?.employee_id || '')}
                     options={approverCands.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
                     placeholder={pr.approver_employee_name || pr.head_of_dept || 'Chọn người sẽ duyệt — hệ báo người này khi gửi duyệt'}
                     onChange={(v) => { const c = approverCands.find((x: any) => String(x.employee_id) === v); if (c) setPr((s: any) => ({ ...s, approver_employee_id: c.employee_id, approver_employee_name: c.name })) }} />

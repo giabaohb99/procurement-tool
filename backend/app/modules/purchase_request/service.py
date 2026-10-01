@@ -427,7 +427,7 @@ def dept_head_candidates(db: Session, pr: PurchaseRequest) -> list[dict]:
     from app.modules.employee.model import Employee
     users = [u for u in _approver_users(db) if _can_user_approve_row(db, u, pr.id)]
     if not users:
-        return []
+        return complete_head_choices(db, [], int(pr.department_id or 0))
     emps = {e.id: e for e in db.query(Employee).filter(
         Employee.id.in_([u.employee_id for u in users])).all()}
     out = []
@@ -437,6 +437,28 @@ def dept_head_candidates(db: Session, pr: PurchaseRequest) -> list[dict]:
             continue
         out.append({"employee_id": e.id, "name": e.full_name or "", "code": e.code or "",
                     "position": e.position or ""})
+    out.sort(key=lambda r: r["name"])
+    return complete_head_choices(db, out, int(pr.department_id or 0))
+
+
+def complete_head_choices(db: Session, rows: list[dict], department_id: int) -> list[dict]:
+    """bao-CR-552 — ô «Trưởng bộ phận (TBP) / Người liên hệ» LUÔN chọn được.
+
+    Danh sách gốc chỉ có người duyệt theo phạm vi phòng; phòng không có ai như vậy (vd «Lập trình &
+    IT nội bộ») thì rỗng và hai giao diện khóa cứng ô TBP — đại ca báo lỗi 01/10/2026. Luôn kèm trưởng
+    phòng của phòng lập; vẫn rỗng thì đưa trưởng phòng mọi phòng (đúng bộ ô TBP của YCBG).
+    """
+    from app.core.approver_candidates import department_managers, get_department_head_id
+    from app.modules.employee.model import Employee
+    out = list(rows)
+    head_id = get_department_head_id(db, department_id)
+    if head_id and all(r["employee_id"] != head_id for r in out):
+        e = db.get(Employee, head_id)
+        if e and e.status != "resigned":
+            out.append({"employee_id": e.id, "name": e.full_name or "", "code": e.code or "",
+                        "position": e.position or ""})
+    if not out:
+        out = department_managers(db)
     out.sort(key=lambda r: r["name"])
     return out
 
@@ -452,6 +474,8 @@ def dept_head_candidates_by_department(db: Session, department: str, company_id:
     from app.modules.employee.model import Employee
     if not department:
         return []
+    _dep = _find_dept(db, department, 0)
+    _dep_id = int(_dep.id) if _dep else 0
     users = []
     for u in _approver_users(db):
         q = db.query(PurchaseRequest.id).filter(PurchaseRequest.department == department)
@@ -463,7 +487,7 @@ def dept_head_candidates_by_department(db: Session, department: str, company_id:
         if _scope_allows_department(db, u, department, company_id, sub, q):
             users.append(u)
     if not users:
-        return []
+        return complete_head_choices(db, [], _dep_id)
     emps = {e.id: e for e in db.query(Employee).filter(
         Employee.id.in_([u.employee_id for u in users])).all()}
     out = []
@@ -474,7 +498,7 @@ def dept_head_candidates_by_department(db: Session, department: str, company_id:
         out.append({"employee_id": e.id, "name": e.full_name or "", "code": e.code or "",
                     "position": e.position or ""})
     out.sort(key=lambda r: r["name"])
-    return out
+    return complete_head_choices(db, out, _dep_id)
 
 
 def _scope_allows_department(db: Session, u, department: str, company_id: int, scoped_q, plain_q) -> bool:
