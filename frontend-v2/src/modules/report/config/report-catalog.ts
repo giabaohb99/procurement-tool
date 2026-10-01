@@ -3,7 +3,11 @@ import type { ComponentType } from 'react'
 
 import type { PermissionEntity } from '@/core/authorization/permission-types'
 
+import { ADMIN_REPORT_CATALOG } from './report-catalog-admin'
+import { DOCUMENT_REPORT_CATALOG } from './report-catalog-document'
+import { HR_REPORT_CATALOG } from './report-catalog-hr'
 import { PROCUREMENT_REPORT_CATALOG } from './report-catalog-procurement'
+import { WORK_REPORT_CATALOG } from './report-catalog-work'
 
 /** Một trang báo cáo gom về phân hệ Báo cáo. */
 export interface ReportCatalogEntry {
@@ -46,6 +50,13 @@ export interface ReportCatalogEntry {
  * DANH MỤC BÁO CÁO — nguồn DUY NHẤT dựng cả menu, route, thẻ lối tắt VÀ dải KPI
  * Tổng quan của phân hệ Báo cáo. Ghép từ các tệp nhóm theo phân hệ nguồn
  * (`report-catalog-<nhóm>.ts`) để mỗi phase sở hữu một tệp, không đụng nhau —
- * hiện chỉ có nhóm Thu mua (P03); P04–P06 thêm mảng nhóm của mình vào đây.
+ * Thu mua (P03) · Nhân sự (P04) · Hành chính (P05) · Công việc (P06). Thứ tự
+ * mảng = thứ tự nhóm trên menu trái và trang Tổng quan.
  */
-export const REPORT_CATALOG: ReportCatalogEntry[] = [...PROCUREMENT_REPORT_CATALOG]
+export const REPORT_CATALOG: ReportCatalogEntry[] = [
+  ...PROCUREMENT_REPORT_CATALOG,
+  ...HR_REPORT_CATALOG,
+  ...ADMIN_REPORT_CATALOG,
+  ...DOCUMENT_REPORT_CATALOG,
+  ...WORK_REPORT_CATALOG,
+]
