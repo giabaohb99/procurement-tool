@@ -59,6 +59,14 @@ function getClosestNeedDate(items: any[]) {
   return fmtDate(closestDate);
 }
 
+// bao-CR-546 — ba mẫu in cố định của ô chọn «Mẫu in» (khớp v2 `purchase-request-print-template.ts`).
+type PrintTemplate = "normal-signed" | "normal-unsigned" | "tax";
+const PRINT_TEMPLATES: { value: PrintTemplate; label: string; taxMode: boolean; showSign: boolean }[] = [
+  { value: "normal-signed", label: "Mẫu thường – có chữ ký", taxMode: false, showSign: true },
+  { value: "normal-unsigned", label: "Mẫu thường – không chữ ký", taxMode: false, showSign: false },
+  { value: "tax", label: "Mẫu thuế", taxMode: true, showSign: false },
+];
+
 /**
  * bao-CR-314 — `fromPo`: mở từ ĐƠN MUA HÀNG, `id` trên URL là id của ĐƠN chứ không phải
  * của phiếu. Lúc đó dữ liệu lấy qua API bên đơn (`/api/purchase-orders/{id}/purchase-request`),
@@ -74,15 +82,16 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
   const [company, setCompany] = useState("");
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([]);
   const [notFound, setNotFound] = useState(false);
-  const [taxMode, setTaxMode] = useState(false); // Mẫu thuế: để trống thông tin người yêu cầu
-  // Có/không in ảnh chữ ký (mẫu thường). Bản ký tay vẫn giữ họ tên dưới ô cho đúng
-  // "(Ký, ghi rõ họ tên)" — chỉ bỏ ảnh chữ ký số đi.
-  const [showSign, setShowSign] = useState(true);
-  // bao-CR-544: bật/tắt cột «Nơi giao» — bản in gửi ra ngoài không cần lộ kho nhận. Mặc định hiện
-  // như cũ. Bản v2: `purchase-request-print-page.tsx` — hai bản phải có cùng nút.
-  const [showPlace, setShowPlace] = useState(true);
-  // Ba dòng tổng chừa ô trống dưới «Nơi giao» + «Ghi chú»; ẩn nơi giao thì chỉ còn một ô.
-  const trailingSpan = showPlace ? 2 : 1;
+  // bao-CR-546 (đại ca chốt 01/10/2026): MỘT ô chọn «Mẫu in» ba mục cố định thay hai nhóm nút
+  // «Có/Không chữ ký» + «Mẫu thường/Mẫu thuế» — nhóm chữ ký biến mất khi chọn Mẫu thuế làm thanh
+  // nút nhảy. Mỗi mẫu quy về hai cờ cũ: taxMode (để trống thông tin người yêu cầu + mọi ô ký) và
+  // showSign (bỏ ảnh chữ ký số, bản ký tay vẫn giữ họ tên). Bản v2:
+  // `utils/purchase-request-print-template.ts` — giữ hai bản cùng ba mẫu.
+  const [template, setTemplate] = useState<PrintTemplate>("normal-signed");
+  const { taxMode, showSign } = PRINT_TEMPLATES.find((t) => t.value === template) || PRINT_TEMPLATES[0];
+  // bao-CR-544 → bao-CR-546: ô tick «Ẩn nơi giao» GIỮ cột «Nơi giao» (khuôn mẫu không đổi), chỉ để
+  // trống chữ trong ô — bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn.
+  const [hidePlace, setHidePlace] = useState(false);
 
   // Map tên đầy đủ kho -> mã kho (tên viết tắt) để in cột "Nơi giao"
   const whCode = (name: string) =>
@@ -182,14 +191,15 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
           maxWidth: 820,
           margin: "0 auto 12px",
           display: "flex",
+          flexWrap: "wrap",
           gap: 8,
           alignItems: "center",
         }}
       >
-        <button className="btn" onClick={() => window.print()}>
+        <button className="btn" style={{ whiteSpace: "nowrap" }} onClick={() => window.print()}>
           In / Lưu PDF
         </button>
-        <button className="btn ghost" onClick={() => window.close()}>
+        <button className="btn ghost" style={{ whiteSpace: "nowrap" }} onClick={() => window.close()}>
           Đóng
         </button>
         {/* Dòng ĐMH không đối chiếu được sang phiếu (thiếu mã hàng, hoặc mã không có trên
@@ -202,56 +212,26 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
           </span>
         )}
         <span style={{ flex: 1 }} />
-        {!taxMode && (
-          <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
-            {[{ v: true, t: "Có chữ ký" }, { v: false, t: "Không chữ ký" }].map((tab) => (
-              <button
-                key={tab.t}
-                onClick={() => setShowSign(tab.v)}
-                title={tab.v
-                  ? "In kèm ảnh chữ ký đã lưu trong hệ thống"
-                  : "Để trống ô chữ ký (chỉ in họ tên) — dành cho bản in ký tay"}
-                style={{
-                  padding: "7px 16px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
-                  background: showSign === tab.v ? "#00AEEF" : "#fff",
-                  color: showSign === tab.v ? "#fff" : "#475569",
-                }}
-              >
-                {tab.t}
-              </button>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}>
+          Mẫu in:
+          {/* Bề rộng CỐ ĐỊNH: đổi mẫu không làm cả thanh xê dịch. */}
+          <select
+            value={template}
+            onChange={(e) => setTemplate(e.target.value as PrintTemplate)}
+            style={{
+              width: 220, padding: "6px 10px", fontSize: 13, border: "1px solid #d9e0ea",
+              borderRadius: 8, background: "#fff", color: "#0f172a",
+            }}
+          >
+            {PRINT_TEMPLATES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
             ))}
-          </div>
-        )}
-        <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
-          {[{ v: false, t: "Mẫu thường" }, { v: true, t: "Mẫu thuế" }].map((tab) => (
-            <button
-              key={tab.t}
-              onClick={() => setTaxMode(tab.v)}
-              style={{
-                padding: "7px 16px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
-                background: taxMode === tab.v ? "#00AEEF" : "#fff",
-                color: taxMode === tab.v ? "#fff" : "#475569",
-              }}
-            >
-              {tab.t}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
-          {[{ v: true, t: "Hiện nơi giao" }, { v: false, t: "Ẩn nơi giao" }].map((tab) => (
-            <button
-              key={tab.t}
-              onClick={() => setShowPlace(tab.v)}
-              style={{
-                padding: "7px 16px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
-                background: showPlace === tab.v ? "#00AEEF" : "#fff",
-                color: showPlace === tab.v ? "#fff" : "#475569",
-              }}
-            >
-              {tab.t}
-            </button>
-          ))}
-        </div>
+          </select>
+        </label>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", cursor: "pointer" }}>
+          <input type="checkbox" checked={hidePlace} onChange={(e) => setHidePlace(e.target.checked)} />
+          Ẩn nơi giao
+        </label>
       </div>
 
       <div
@@ -375,7 +355,9 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               {/* Mẫu kế toán 003/BM/PKT KHÔNG có cột VAT trên dòng hàng — VAT chỉ hiện ở
                   phần tổng cuối bảng. Không thêm cột vào đây. */}
               <td style={cell}>Thành tiền</td>
-              {showPlace && <td style={cell}>Nơi giao</td>}
+              {/* bao-CR-546: bảng v1 tự co theo chữ — tick «Ẩn nơi giao» thì ô trống làm cột hẹp lại và
+                  tiêu đề gãy dòng. Giữ bề rộng tối thiểu để khuôn y như lúc có chữ. */}
+              <td style={{ ...cell, minWidth: 64, whiteSpace: "nowrap" }}>Nơi giao</td>
               <td style={cell}>Ghi chú</td>
             </tr>
           </thead>
@@ -391,7 +373,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 <td style={{ ...cell, textAlign: "right" }}>
                   {fmtVND((Number(it.qty) || 0) * (Number(it.price) || 0))}
                 </td>
-                {showPlace && <td style={cell}>{whCode(it.warehouse)}</td>}
+                <td style={cell}>{hidePlace ? "" : whCode(it.warehouse)}</td>
                 <td style={cell}>{it.note}</td>
               </tr>
             ))}
@@ -402,7 +384,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
                 {fmtVND(pr.subtotal)}
               </td>
-              <td style={cell} colSpan={trailingSpan} />
+              <td style={cell} colSpan={2} />
             </tr>
             <tr>
               <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
@@ -411,7 +393,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
                 {Number(pr.vat) ? fmtVND(pr.vat) : "0"}
               </td>
-              <td style={{ border: "none" }} colSpan={trailingSpan} />
+              <td style={{ border: "none" }} colSpan={2} />
             </tr>
             <tr>
               <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
@@ -420,7 +402,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
                 {fmtVND(pr.total)}
               </td>
-              <td style={{ border: "none" }} colSpan={trailingSpan} />
+              <td style={{ border: "none" }} colSpan={2} />
             </tr>
           </tbody>
         </table>
