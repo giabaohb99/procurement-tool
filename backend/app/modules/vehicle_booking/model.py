@@ -119,7 +119,9 @@ class VehicleBooking(Base, AuditMixin, LegacyIdMixin):
     """Yêu cầu đặt xe."""
     __tablename__ = "tab_vehicle_booking"
 
-    __table_args__ = (Index("ix_vbooking_created_by", "created_by"),)
+    __table_args__ = (Index("ix_vbooking_created_by", "created_by"),
+                      #  Báo cáo Đặt xe lọc kỳ theo ngày đi (01/10/2026).
+                      Index("ix_vbooking_start_time", "start_time"))
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")
     # TYPE_CAR = đặt xe công tác · TYPE_DELIVERY = giao hàng (xem hằng số ở đầu tệp)
