@@ -11,7 +11,7 @@ R2 (`constants.PesticideStatus`). Nếu bảng đã có dòng nạp từ `bvtv_d
 một lần sau khi deploy.
 
 Revision ID: a7c3e91d5b20
-Revises: 5f39bbc564db
+Revises: e538c6a1f2d9 (01/10: cum thuoc BVTV len prod truoc, chi muc bao cao 5f39 doi ra sau)
 Create Date: 2026-09-29 14:10:00
 """
 from typing import Sequence, Union
@@ -20,7 +20,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = 'a7c3e91d5b20'
-down_revision: Union[str, None] = '5f39bbc564db'
+down_revision: Union[str, None] = 'e538c6a1f2d9'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
