@@ -551,19 +551,17 @@ def build_my_tasks(db: Session, user, prof) -> list[dict]:
     if can("payable"):
         # KHÔNG lọc `remaining > 0`: chuông cũng không lọc — lệch điều kiện là
         # "Đánh dấu làm hết" sót key, chuông còn kẹt lại vài dòng không ẩn được.
-        rows = (apply_scope(db.query(Payable).filter(Payable.status != ST_PAID, Payable.due_date != ""),
-                            Payable, "payable", user, prof)
-                .order_by(Payable.due_date).limit(300).all())
-        warn_until = (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")
-        for p in rows:
-            base = {"type": "payable", "code": p.po_code or p.supplier_code,
-                    "title": p.supplier_name or p.supplier_code,
-                    "subtitle": f"Còn lại {float(p.remaining or 0):,.0f} · hạn {p.due_date}",
-                    "date": p.due_date, "link": f"/payables?supplier={p.supplier_code}"}
-            if p.due_date < today:
-                tasks.append({"key": f"payable:{p.id}:danger", "label": "Công nợ quá hạn", **base})
-            elif p.due_date <= warn_until:
-                tasks.append({"key": f"payable:{p.id}:warn", "label": "Công nợ sắp đến hạn", **base})
+        # bao-CR-542: gom theo đơn + bên được trả bằng CÙNG hàm với chuông (`group_due_payables`),
+        # khóa nhóm khớp khóa chuông. Không còn `limit(300)` theo DÒNG: cắt giữa chừng là một
+        # nhóm bị tách đôi, số khoản và tổng nợ đếm thiếu.
+        from app.modules.payable.due_alerts import LEVEL_DANGER, group_due_payables
+        rows = apply_scope(db.query(Payable).filter(Payable.status != ST_PAID, Payable.due_date != ""),
+                           Payable, "payable", user, prof).all()
+        for g in group_due_payables(rows):
+            tasks.append({"key": g.key, "type": "payable",
+                          "label": "Công nợ quá hạn" if g.level == LEVEL_DANGER else "Công nợ sắp đến hạn",
+                          "code": g.po_code or g.supplier_code, "title": g.party, "subtitle": g.detail(),
+                          "date": g.due_date, "link": f"/payables?supplier={g.supplier_code}"})
 
     if can("contract"):
         # B-02: "liquidated" là mã của bộ `CONTRACT_STATUS`, trước là "Thanh lý".

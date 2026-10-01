@@ -70,6 +70,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-542 | Gom cảnh báo công nợ quá hạn theo đơn, ghi số tiền còn nợ và số ngày trễ
+- status: xong
+- date: 2026-10-01
+Đại ca thấy chuông báo «Công nợ QUÁ HẠN» của đơn PO00003 lặp năm dòng giống hệt. Nguyên nhân: khoản
+công nợ sinh theo từng dòng hàng của từng lần giao, đơn năm dòng hàng nhận cùng ngày là năm khoản cùng
+nhà cung cấp, cùng hạn, và mỗi khoản một cảnh báo; muốn ẩn phải bấm «Đánh dấu làm hết» năm lần.
+
+Nay chuông và tab Việc cần làm gom cảnh báo theo đơn và theo bên được trả (nhà cung cấp bán hàng, đơn
+vị vận chuyển, bên của dòng chi phí), quá hạn và sắp đến hạn tách riêng. Mỗi dòng ghi số khoản, tổng
+tiền còn nợ, số ngày trễ tính từ hạn sớm nhất trong nhóm, ví dụ «Công nợ QUÁ HẠN: Bao bì Cẩm Hùng ·
+PO00003 — 5 khoản · còn nợ 10.000.000 đ · trễ 27 ngày (hạn 04/09/2026)». Nợ vận chuyển và nợ chi phí
+ghi kèm chữ «(vận chuyển)» / «(chi phí)» cho khỏi nhầm với nợ hàng của cùng đơn. Việc người dùng đã
+đánh dấu làm hết trước đây vẫn ẩn; nhóm có thêm khoản nợ mới thì cảnh báo tự nổi lại. Cảnh báo công nợ
+không lưu thành thông báo trong cơ sở dữ liệu mà tính lại mỗi lần mở, nên không phải dọn gì: lên bản
+mới là thấy ngay. Hạn trả và số liệu công nợ giữ nguyên.
+
+Kiểm: 6 bài kiểm mới và 134 bài kiểm cảnh báo, việc cần làm, phạm vi tài chính xanh; trên dữ liệu
+local 104 khoản quá hạn hoặc sắp đến hạn gom còn 92 dòng (prod có nhiều đơn nhiều dòng nên giảm mạnh
+hơn). Đại ca bảo commit và gộp ngày 01/10, Agent 1 đẩy lên dev; prod chưa.
+
+Mã nguồn: `payable/due_alerts.py` (mới) · `alert/controller.py` · `dashboard/controller.py` ·
+`test/backend/test_canh_bao_cong_no_gom_cr542.py`
+
+---
+
 ## bao-CR-541 | Tra cứu thị trường: chống trùng dòng khi nạp tệp
 - status: dang-lam
 - date: 2026-10-01

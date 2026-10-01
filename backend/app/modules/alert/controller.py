@@ -13,6 +13,7 @@ from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.contract.model import Contract
 from app.modules.dashboard.service import load_dismissed_keys
+from app.modules.payable.due_alerts import group_due_payables
 from app.modules.payable.model import Payable
 from app.modules.payable.service import ST_PAID
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
@@ -75,19 +76,14 @@ def build(db: Session, user=None) -> dict:
             elif d_le(due, 2):
                 push(f"delivery:{d.id}:warn", {"type": "delivery", "level": "warn", "title": f"Sắp tới hạn giao: {po_code.get(d.po_id,'')} · {name} (hẹn {due})", "link": link})
 
-    # 2) Công nợ: chưa trả xong, đến/quá hạn
+    # 2) Công nợ: chưa trả xong, đến/quá hạn — bao-CR-542: MỘT dòng cho mỗi đơn + bên được trả
+    #    (trước đây mỗi dòng hàng một dòng: đơn 5 dòng hàng báo 5 lần y hệt), kèm tiền còn nợ + số ngày trễ.
     if see_payable:
-        for p in scoped(db.query(Payable).filter(Payable.status != ST_PAID),
-                        Payable, "payable").all():
-            if not p.due_date:
-                continue
-            # Click vào cảnh báo -> nhảy tới màn Công nợ, lọc sẵn theo NCC của khoản nợ
-            link = f"/payables?po_code={quote(p.po_code or '')}" if p.po_code else "/payables"
-            who = p.supplier_name or p.supplier_code
-            if p.due_date < tstr:
-                push(f"payable:{p.id}:danger", {"type": "payable", "level": "danger", "title": f"Công nợ QUÁ HẠN: {who} · {p.po_code} (hạn {p.due_date})", "link": link})
-            elif d_le(p.due_date, 3):
-                push(f"payable:{p.id}:warn", {"type": "payable", "level": "warn", "title": f"Công nợ sắp đến hạn: {who} · {p.po_code} (hạn {p.due_date})", "link": link})
+        rows = scoped(db.query(Payable).filter(Payable.status != ST_PAID), Payable, "payable").all()
+        for g in group_due_payables(rows, today):
+            # Click vào cảnh báo -> nhảy tới màn Công nợ, lọc sẵn theo đơn của khoản nợ
+            link = f"/payables?po_code={quote(g.po_code)}" if g.po_code else "/payables"
+            push(g.key, {"type": "payable", "level": g.level, "title": g.title(), "link": link})
 
     # 3) Hợp đồng sắp hết hạn / hết hạn
     if see_contract:
