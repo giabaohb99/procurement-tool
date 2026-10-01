@@ -256,15 +256,24 @@ export function isBatchUsable(batch: Pick<CustomsImportBatch, 'status' | 'create
   return batch.status === CUSTOMS_BATCH_STATUS.done && batch.created_count > 0
 }
 
-/** Tổng số dòng cũ SẼ BỊ THAY nếu áp dụng các lô dùng được. */
-export function sumReplacedLines(batches: CustomsImportBatch[]): number {
-  return batches.filter(isBatchUsable).reduce((sum, batch) => sum + (batch.deleted_count || 0), 0)
+/** Tổng dòng BỎ QUA và dòng nghi sửa giá của các lô đã chạy xong — bao-CR-541. */
+export function sumSkippedLines(batches: CustomsImportBatch[]): {
+  existing: number
+  duplicate: number
+  suspect: number
+} {
+  const done = batches.filter((batch) => batch.status === CUSTOMS_BATCH_STATUS.done)
+  return {
+    existing: done.reduce((sum, batch) => sum + (batch.existing_rows || 0), 0),
+    duplicate: done.reduce((sum, batch) => sum + (batch.duplicate_rows || 0), 0),
+    suspect: done.reduce((sum, batch) => sum + (batch.suspect_rows || 0), 0),
+  }
 }
 
 /**
- * Hoàn tác được không. Chỉ lô GHI THẬT đã xong mới có gì để hoàn tác; lô đã THAY dòng
- * cũ thì không — dòng cũ đã xóa lúc ghi, hoàn tác chỉ xóa được dòng mới và để lại một
- * khoảng ngày trống.
+ * Hoàn tác được không. Chỉ lô GHI THẬT đã xong mới có gì để hoàn tác. Từ bao-CR-541 lô chỉ
+ * thêm dòng của chính nó nên luôn hoàn tác được; riêng lô CŨ (nạp trước CR) đã THAY dòng cũ
+ * thì không — dòng cũ đã xóa lúc ghi, hoàn tác chỉ để lại một khoảng ngày trống.
  */
 export function resolveRevertState(
   batch: Pick<CustomsImportBatch, 'mode' | 'status' | 'deleted_count'>,

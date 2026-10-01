@@ -1,6 +1,7 @@
 // bao-CR-470 — lịch sử các lần nạp dữ liệu hải quan (lô chạy thử + lô ghi thật) và nút hoàn tác.
-// Lô đã THAY dòng cũ (deleted_count > 0) không hoàn tác được: dòng cũ đã xóa lúc ghi, hoàn tác
-// chỉ xóa được dòng mới và để lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
+// bao-CR-541: lô chỉ THÊM dòng chưa có (trùng thì bỏ qua) nên luôn hoàn tác được. Riêng lô CŨ nạp
+// trước CR đã THAY dòng cũ (deleted_count > 0) thì không: dòng cũ đã xóa lúc ghi, hoàn tác chỉ để
+// lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
 // bao-CR-493: từ hộp thoại thành MỘT THẺ trên trang (thẻ «Lịch sử nạp», yêu cầu F11 phòng Thu mua)
 // và thêm nút tải lại tệp GTT02 gốc — chỉ lô nạp qua màn hình có tệp (`has_file`).
 import { useCallback, useEffect, useState } from 'react'
@@ -54,13 +55,13 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
   return (
     <div className="card table-card">
       <div style={{ padding: '10px 14px 0', fontSize: 13, color: 'var(--muted)' }}>
-        Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Lô đã thay dòng cũ thì không hoàn tác được; lô nạp qua
+        Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Dòng trùng được bỏ qua khi nạp; hoàn tác một lô chỉ xóa dòng của chính lô đó; lô nạp qua
         màn hình tải lại được tệp gốc.
       </div>
       <div className="table-scroll"><table>
         <thead><tr>
           <th>#</th><th>Tệp</th><th>Loại</th><th>Trạng thái</th><th style={{ textAlign: 'right' }}>Dòng hàng</th>
-          <th>Khoảng ngày</th><th style={{ textAlign: 'right' }}>Vá ngày</th><th style={{ textAlign: 'right' }}>Thay dòng cũ</th>
+          <th>Khoảng ngày</th><th style={{ textAlign: 'right' }}>Vá ngày</th><th style={{ textAlign: 'right' }}>Bỏ qua (trùng)</th>
           <th>Người nạp</th><th>Lúc</th><th />
         </tr></thead>
         <tbody>
@@ -73,7 +74,7 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
               <td style={{ textAlign: 'right' }}>{b.created_count}</td>
               <td>{b.date_from ? `${fmtDate(b.date_from)} → ${fmtDate(b.date_to)}` : '—'}</td>
               <td style={{ textAlign: 'right' }}>{b.date_fixed || 0}</td>
-              <td style={{ textAlign: 'right' }}>{b.deleted_count || 0}</td>
+              <td style={{ textAlign: 'right' }}>{(b.existing_rows || 0) + (b.duplicate_rows || 0)}</td>
               <td>{b.created_by_name || '—'}</td>
               <td>{fmtDateTime(b.finished_at || b.created_at)}</td>
               <td style={{ whiteSpace: 'nowrap' }}>
@@ -88,7 +89,7 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
                 {b.mode === 1 && b.status === 2 && can('customs_price', 'delete') && (
                   <button className="btn ghost" disabled={b.deleted_count > 0} onClick={() => revert(b)}
                     title={b.deleted_count > 0
-                      ? `Lô này đã thay ${b.deleted_count} dòng cũ nên không hoàn tác được — nạp lại tệp đúng để sửa.`
+                      ? `Lô này nạp theo cách cũ, đã thay ${b.deleted_count} dòng cũ nên không hoàn tác được.`
                       : 'Hoàn tác: xóa các dòng lô này đã ghi'}>
                     <i className="ti ti-arrow-back-up" />
                   </button>
@@ -109,8 +110,11 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
 
 const LEVELS: Record<number, [string, string]> = { 0: ['Thông tin', 'gray'], 1: ['Cảnh báo', 'warn'], 2: ['Cần rà', 'info'], 3: ['Lỗi', 'err'] }
 
-// bao-CR-496 — kết cục từng dòng của tệp, khớp `ImportRowStatus` backend (1 Thêm mới · 2 Lỗi · 3 Trùng trong lô).
-const ROW_STATUS: Record<number, [string, string]> = { 1: ['Thêm mới', 'ok'], 2: ['Lỗi', 'err'], 3: ['Trùng trong lô', 'warn'] }
+// bao-CR-496 — kết cục từng dòng của tệp, khớp `ImportRowStatus` backend
+// (1 Thêm mới · 2 Lỗi · 3 Trùng trong tệp · 4 Đã có). bao-CR-541: 3 và 4 là dòng BỎ QUA.
+const ROW_STATUS: Record<number, [string, string]> = {
+  1: ['Thêm mới', 'ok'], 2: ['Lỗi', 'err'], 3: ['Trùng trong tệp', 'warn'], 4: ['Đã có', 'gray'],
+}
 
 /** Kết cục TỪNG DÒNG của tệp (bê từ `customs-batch-rows-panel.tsx` bản v2): tổng theo kết cục, bấm để lọc. */
 function BatchRows({ batchId }: { batchId: number }) {
@@ -128,7 +132,7 @@ function BatchRows({ batchId }: { batchId: number }) {
       .catch(() => { setRows([]); setTotal(0) })
   }, [batchId, page, status])
   const chips: [number | undefined, string, number][] = summary ? [
-    [undefined, 'Tất cả', summary.total], [1, 'Thêm mới', summary.new], [2, 'Lỗi', summary.error], [3, 'Trùng trong lô', summary.duplicate],
+    [undefined, 'Tất cả', summary.total], [1, 'Thêm mới', summary.new], [2, 'Lỗi', summary.error], [3, 'Trùng trong tệp', summary.duplicate], [4, 'Đã có', summary.existing || 0],
   ] : []
   return (
     <div style={{ marginBottom: 14 }}>

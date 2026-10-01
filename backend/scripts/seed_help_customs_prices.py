@@ -81,13 +81,14 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <h2>VIII. Nạp dữ liệu (người có quyền nạp)</h2>
 <ol>
 <li>Bấm <strong>Nạp dữ liệu</strong>, chọn một hoặc nhiều tệp <em>.xls / .xlsx</em> kết xuất từ hệ thống hải quan (mẫu GTT02, đủ 32 cột), bấm <strong>Chạy thử</strong>.</li>
-<li>Xem bảng chạy thử: số dòng, khoảng ngày, số ngày đã tự sửa, và <strong>số dòng cũ sẽ bị thay</strong>. Lúc này chưa có gì được ghi.</li>
+<li>Xem bảng chạy thử: số dòng mới, số dòng <strong>đã có</strong> và số dòng <strong>trùng trong tệp</strong> (hai loại này sẽ được bỏ qua), khoảng ngày, số ngày đã tự sửa. Lúc này chưa có gì được ghi.</li>
 <li>Bấm <strong>Áp dụng</strong>. Hệ thống báo khi ghi xong.</li>
 </ol>
 <ul>
-<li>Tệp hải quan không có mã dòng để đối chiếu, nên nạp một tệp có khoảng ngày trùng dữ liệu đã có thì <strong>các dòng cũ trong khoảng ngày đó được thay</strong> bằng tệp mới — nạp lại không làm nhân đôi.</li>
+<li>Hệ thống tự so trùng: dòng giống hệt một dòng đã có trong bảng giá, hoặc lặp lại một dòng phía trên trong cùng tệp, sẽ <strong>được bỏ qua</strong> — nạp lại một tệp hay nạp các tệp chồng ngày nhau không làm nhân đôi dữ liệu. Không dòng cũ nào bị xóa hay ghi đè.</li>
+<li>Dòng mới trùng ngày, doanh nghiệp, đối tác, mã HS, số thứ tự và tên hàng với một dòng đã có nhưng <strong>khác giá hoặc số lượng</strong> vẫn được thêm (thường là một lô hàng khác), kèm ghi chú «nghi sửa giá» trong nhật ký lô để người nạp rà. Nếu đúng là nguồn sửa số liệu thì hoàn tác lần nạp cũ rồi nạp lại tệp đúng.</li>
 <li>Cột ngày đăng ký trong tệp xuất đôi khi bị Excel đảo ngày và tháng; hệ thống tự nhận ra và đọc lại. Ô ngày có dấu lịch màu cam là dòng đã được sửa.</li>
-<li><strong>Lịch sử nạp</strong> liệt kê mọi lần nạp, ai nạp, lúc nào, kèm nhật ký cảnh báo. Lần nạp <strong>chưa thay dòng cũ</strong> thì hoàn tác được; lần nạp đã thay dòng cũ thì không — muốn sửa thì nạp lại tệp đúng.</li>
+<li><strong>Lịch sử nạp</strong> liệt kê mọi lần nạp, ai nạp, lúc nào, số dòng bỏ qua vì trùng, kèm nhật ký từng dòng. Hoàn tác một lần nạp chỉ xóa đúng các dòng lần đó đã thêm. Riêng các lần nạp cũ (trước khi có so trùng) đã thay dòng cũ thì không hoàn tác được.</li>
 </ul>
 
 <h2>IX. Hỏi trợ lý AI</h2>

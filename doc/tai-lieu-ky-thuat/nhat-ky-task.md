@@ -70,6 +70,45 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-541 | Tra cứu thị trường: chống trùng dòng khi nạp tệp
+- status: dang-lam
+- date: 2026-10-01
+Đại ca chốt ngày 01/10: dữ liệu hải quan xuất ra là đổ vào luôn, người nạp không biết tệp nào chồng
+lên tệp nào, nên hệ thống phải tự so trùng; trùng thì bỏ qua, không ghi đè, và bỏ hẳn cách «thay toàn
+bộ khoảng ngày» vì người dùng không hiểu được. Cách cũ còn có hai lỗ: tệp mới xuất thiếu dòng thì xóa
+mất dữ liệu cũ đúng mà không ai hay, và dòng lặp trong cùng tệp vẫn được ghi (prod dồn 806 dòng thừa).
+
+Mỗi dòng hàng nay mang một mã băm gói đủ các cột dữ liệu sau khi chuẩn hóa (chữ thường bỏ dấu, gộp
+khoảng trắng, số làm tròn đúng số chữ số lẻ của cột, doanh nghiệp nhập khẩu theo mã số thuế, đối tác
+theo tên chuẩn hóa), lưu ở một cột mới có chỉ mục. Khi nạp, hệ thống đọc mã của các dòng đã có trong
+khoảng ngày của tệp (dòng cũ chưa có mã thì tính luôn), bỏ qua dòng đã có và dòng lặp trong cùng tệp,
+chỉ thêm dòng thật sự mới; các lô ghi lần lượt nhờ một khóa của MySQL để hai lô chồng nhau không cùng
+chèn. Nhật ký từng dòng có thêm kết cục «Đã có» kèm số lô chứa dòng gốc. Dòng trùng ngày, doanh nghiệp,
+đối tác, mã HS, số thứ tự và tên hàng mà khác giá hoặc lượng vẫn được thêm (đo trên dữ liệu thật có 129
+nhóm như vậy, phần lớn là lô hàng khác), kèm ghi chú «nghi sửa giá» để người nạp rà. Lô nạp mới luôn
+hoàn tác được vì chỉ xóa dòng của chính nó.
+
+Giao diện v1 và v2: bảng chạy thử có cột Dòng mới, Đã có, Trùng trong tệp; thông báo số dòng sẽ bỏ qua,
+số dòng nghi sửa giá, và câu «mọi dòng đã có, không có gì để thêm» thay cho câu báo tệp hỏng; lịch sử
+nạp có cột «Bỏ qua (trùng)». Viết lại mục nạp dữ liệu của bài hướng dẫn «Tra cứu thị trường» và tài liệu
+thiết kế hải quan (bản 1.7). Có script tính mã cho toàn bảng và dọn dòng thừa, mặc định chỉ chạy thử,
+xóa thật thì chép dòng sắp xóa ra tệp trước.
+
+Kiểm: 250 bài kiểm hải quan và nạp danh mục xanh (11 bài mới); nạp chạy thử 300 dòng dựng lại từ dữ
+liệu MySQL local ra đủ 300 dòng «Đã có»; tính mã cho 18.243 dòng local ra đúng 576 nhóm, 806 dòng thừa
+như số đếm cũ; đọc mã của 9 tháng dữ liệu mất 1,7 giây. v2 tsc 0 lỗi, eslint 0 lỗi, vitest 396 bài xanh;
+v1 tsc giữ đúng 4 lỗi cũ. Đại ca bảo commit và gộp ngày 01/10, Agent 1 đẩy lên dev; 806 dòng thừa trên prod chưa xóa, chờ đại ca. Số CR ban đầu đặt là 540, đổi sang 541 vì trùng số với việc «Nhóm dự án» của anh Được.
+
+Mã nguồn: `customs/dedupe.py` (mới) · `customs/importer.py` · `customs/row_log.py` · `customs/model.py` ·
+`customs/controller.py` · `import_tool/model.py` (`ImportRowStatus.EXISTING`) · migration `c540a7d3e9f1` ·
+`scripts/customs_row_hash.py` (mới) · `scripts/seed_help_customs_prices.py` · v2 `customs-import-dialog.tsx`,
+`customs-history-panel.tsx`, `customs-batch-rows-panel.tsx`, `types/customs.ts`, `types/customs-saved-filter.ts`,
+`utils/customs.ts` + bài kiểm · v1 `CustomsImportDialog.tsx`, `CustomsHistoryPanel.tsx` ·
+`doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` · `test/backend/test_hai_quan_chong_trung_cr541.py` (mới),
+`test_hai_quan_hq1_cr470.py`, `test_hai_quan_luu_bo_loc_log_dong_cr496.py`
+
+---
+
 ## duoc-CR-540 | Dự án: nhóm đổi tên thành «Nhóm dự án», tiêu đề cột kanban đứng yên khi cuộn
 - status: xong
 - date: 2026-10-01

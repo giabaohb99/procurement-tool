@@ -10,19 +10,23 @@ import { CUSTOMS_ROW_STATUS, type CustomsBatchRow } from '../../types/customs-sa
 
 const PAGE_SIZE = 50
 
-/** Nhãn + màu từng kết cục — khớp `ImportRowStatus` backend (1 Thêm mới · 2 Lỗi · 3 Trùng trong lô). */
+/**
+ * Nhãn + màu từng kết cục — khớp `ImportRowStatus` backend
+ * (1 Thêm mới · 2 Lỗi · 3 Trùng trong tệp · 4 Đã có).
+ */
 const ROW_STATUS_META: Record<number, { label: string; tone: string }> = {
   [CUSTOMS_ROW_STATUS.NEW]: { label: 'Thêm mới', tone: TONE_CLASS.done },
   [CUSTOMS_ROW_STATUS.ERROR]: { label: 'Lỗi', tone: TONE_CLASS.danger },
-  [CUSTOMS_ROW_STATUS.DUPLICATE]: { label: 'Trùng trong lô', tone: TONE_CLASS.pending },
+  [CUSTOMS_ROW_STATUS.DUPLICATE]: { label: 'Trùng trong tệp', tone: TONE_CLASS.pending },
+  [CUSTOMS_ROW_STATUS.EXISTING]: { label: 'Đã có', tone: TONE_CLASS.neutral },
 }
 
 /**
  * Hộp «Nhật ký lô» theo TỪNG DÒNG của tệp — bao-CR-496 (F01, ghi chú 25/09 của chị Mi).
  *
  * Đầu hộp là tổng theo kết cục, bấm vào một ô là lọc; bảng liệt kê đủ MỌI dòng dữ liệu (không
- * chỉ dòng có cảnh báo như nhật ký cũ). «Trùng trong lô» chỉ là dấu — dòng vẫn nằm trong bảng
- * giá, người nạp tự rà.
+ * chỉ dòng có cảnh báo như nhật ký cũ). bao-CR-541: «Trùng trong tệp» và «Đã có» là dòng BỎ
+ * QUA, không ghi vào bảng giá; dòng «Thêm mới» nghi sửa giá thì câu ghi chú nói rõ để rà.
  */
 interface CustomsBatchRowsPanelProps {
   batchId: number
@@ -74,6 +78,11 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
           value: CUSTOMS_ROW_STATUS.DUPLICATE,
           label: ROW_STATUS_META[CUSTOMS_ROW_STATUS.DUPLICATE].label,
           count: counts.duplicate,
+        },
+        {
+          value: CUSTOMS_ROW_STATUS.EXISTING,
+          label: ROW_STATUS_META[CUSTOMS_ROW_STATUS.EXISTING].label,
+          count: counts.existing ?? 0,
         },
       ]
     : []

@@ -40,7 +40,7 @@ import {
   mergeCompareSeries,
   resolveLinesEmptyMessage,
   resolveRevertState,
-  sumReplacedLines,
+  sumSkippedLines,
 } from './customs'
 
 function makeBatch(overrides: Partial<CustomsImportBatch>): CustomsImportBatch {
@@ -195,15 +195,16 @@ describe('batch state helpers', () => {
     expect(isBatchUsable(makeBatch({ status: 3, created_count: 10 }))).toBe(false)
   })
 
-  it('sums replaced rows over usable batches only', () => {
+  //  bao-CR-541 — trùng thì bỏ qua: cộng dòng đã có / trùng trong tệp / nghi sửa giá của lô xong.
+  it('sums skipped and suspect rows over finished batches only', () => {
     const batches = [
-      makeBatch({ id: 1, status: 2, created_count: 5, deleted_count: 100 }),
-      makeBatch({ id: 2, status: 3, created_count: 5, deleted_count: 999 }),
-      makeBatch({ id: 3, status: 2, created_count: 0, deleted_count: 50 }),
-      makeBatch({ id: 4, status: 2, created_count: 1, deleted_count: 0 }),
+      makeBatch({ id: 1, status: 2, created_count: 5, existing_rows: 100, duplicate_rows: 3, suspect_rows: 2 }),
+      makeBatch({ id: 2, status: 3, created_count: 0, existing_rows: 999, duplicate_rows: 9 }),
+      makeBatch({ id: 3, status: 2, created_count: 0, existing_rows: 50 }),
+      makeBatch({ id: 4, status: 2, created_count: 1 }),
     ]
-    expect(sumReplacedLines(batches)).toBe(100)
-    expect(sumReplacedLines([])).toBe(0)
+    expect(sumSkippedLines(batches)).toEqual({ existing: 150, duplicate: 3, suspect: 2 })
+    expect(sumSkippedLines([])).toEqual({ existing: 0, duplicate: 0, suspect: 0 })
   })
 
   it('allows revert only for a finished apply batch that replaced nothing', () => {

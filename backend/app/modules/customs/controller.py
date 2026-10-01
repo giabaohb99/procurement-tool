@@ -64,6 +64,10 @@ def _batch_out(db: Session, b: ImportBatch) -> dict:
             "error_count": b.error_count, "error_summary": b.error_summary,
             "date_from": info.get("date_from", ""), "date_to": info.get("date_to", ""),
             "date_fixed": info.get("date_fixed", 0),
+            #  bao-CR-541: dòng bỏ qua vì trùng trong tệp / đã có trong bảng giá, và dòng thêm mới
+            #  nhưng nghi là nguồn sửa giá của một dòng đã có.
+            "duplicate_rows": info.get("duplicate_rows", 0), "existing_rows": info.get("existing_rows", 0),
+            "suspect_rows": info.get("suspect_rows", 0),
             "created_at": b.created_at, "created_by": b.created_by,
             "created_by_name": resolve_actor(db, b.created_by),
             "started_at": b.started_at, "finished_at": b.finished_at}
