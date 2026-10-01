@@ -8,6 +8,8 @@ interface PesticideFilters {
   /** Mã tình trạng dạng chuỗi (từ ô chọn); `all` / rỗng = mọi tình trạng. */
   status: string
   pestGroup: string
+  /** Lĩnh vực (chuỗi gốc của nguồn, vd "THUỐC TRỪ MỐI"); `all` / rỗng = mọi lĩnh vực. */
+  sector?: string
   /** `only` = chỉ thuốc có hoạt chất cấm; giá trị khác = không lọc. */
   banned?: string
 }
@@ -20,12 +22,14 @@ export function buildPesticideParams({
   q,
   status,
   pestGroup,
+  sector,
   banned,
 }: PesticideFilters): Record<string, string> {
   const params: Record<string, string> = {}
   if (q.trim()) params.q = q.trim()
   if (/^\d+$/.test(status)) params.status = status
   if (pestGroup && pestGroup !== ALL_PESTICIDE_OPTIONS) params.pest_group = pestGroup
+  if (sector && sector !== ALL_PESTICIDE_OPTIONS) params.sector = sector
   if (banned === BANNED_ONLY) params.banned_only = 'true'
   return params
 }
@@ -62,4 +66,25 @@ export function resolvePesticideEmptyMessage(
   return canImport
     ? 'Chưa có danh mục thuốc BVTV. Bấm «Nạp danh mục» để tải tệp thuoc-bvtv.json / .xlsx.'
     : 'Chưa có danh mục thuốc BVTV — nhờ người phụ trách nạp tệp danh mục.'
+}
+
+/**
+ * Query string mở mục «Thuốc BVTV» từ cột tra cứu của trang chi tiết (01/10/2026). Dùng đúng tên
+ * tham số URL của mục đó (`pq` · `pgroup` · `psector`) và ép `pstatus=all`: số đếm của «Tra cứu
+ * nhanh» tính trên MỌI tình trạng — để mặc định «Còn hiệu lực» thì bấm vào ra ít hơn số vừa thấy.
+ */
+export function buildPesticideListSearch({
+  q = '',
+  pestGroup = ALL_PESTICIDE_OPTIONS,
+  sector = ALL_PESTICIDE_OPTIONS,
+}: {
+  q?: string
+  pestGroup?: string
+  sector?: string
+}): string {
+  const params = new URLSearchParams({ pstatus: ALL_PESTICIDE_OPTIONS })
+  if (q.trim()) params.set('pq', q.trim())
+  if (pestGroup && pestGroup !== ALL_PESTICIDE_OPTIONS) params.set('pgroup', pestGroup)
+  if (sector && sector !== ALL_PESTICIDE_OPTIONS) params.set('psector', sector)
+  return params.toString()
 }

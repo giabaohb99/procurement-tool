@@ -53,6 +53,9 @@ export const queryKeys = {
       ['procurement', 'customs', 'pesticides', 'list', params] as const,
     customsPesticide: (id: number) => ['procurement', 'customs', 'pesticides', 'detail', id] as const,
     customsPesticideOptions: () => ['procurement', 'customs', 'pesticides', 'options'] as const,
+    /** «Cùng công ty» / «cùng hoạt chất» của trang chi tiết thuốc (01/10/2026). */
+    customsPesticideRelated: (id: number, limit: number) =>
+      ['procurement', 'customs', 'pesticides', 'related', id, limit] as const,
     purchaseRequestDeptHeads: (id: number) =>
       ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,
     /** bao-CR-499 — người duyệt được một YCMH/YCBG/ĐMH (id = 0: đang lập, tra theo phòng ban). */

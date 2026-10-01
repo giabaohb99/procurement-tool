@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildPesticideListSearch,
   buildPesticideParams,
   formatBannedFilterLabel,
   resolvePesticideEmptyMessage,
@@ -69,5 +70,37 @@ describe('banned-ingredient filter', () => {
     expect(resolvePesticideEmptyMessage(6919, true)).toMatch(/khớp bộ lọc/)
     //  Chưa có danh mục thuốc thì nói chuyện đó trước, bộ lọc gì cũng vậy.
     expect(resolvePesticideEmptyMessage(0, true, 30)).toMatch(/Nạp danh mục/)
+  })
+})
+
+describe('buildPesticideParams — sector', () => {
+  it('sends the sector verbatim and drops the "all" choice', () => {
+    expect(
+      buildPesticideParams({ q: '', status: '', pestGroup: '', sector: 'THUỐC TRỪ MỐI' }),
+    ).toEqual({ sector: 'THUỐC TRỪ MỐI' })
+    expect(buildPesticideParams({ q: '', status: '', pestGroup: '', sector: 'all' })).toEqual({})
+  })
+})
+
+describe('buildPesticideListSearch', () => {
+  //  «Tra cứu nhanh» đếm trên MỌI tình trạng — mở danh sách mà để mặc định «Còn hiệu lực» là lệch số.
+  it('always opens the list on every status', () => {
+    expect(new URLSearchParams(buildPesticideListSearch({})).get('pstatus')).toBe('all')
+  })
+
+  it('maps the sidebar filters onto the list URL names and skips empty ones', () => {
+    const params = new URLSearchParams(
+      buildPesticideListSearch({ q: '  abamectin ', pestGroup: 'Thuốc trừ sâu', sector: 'all' }),
+    )
+    expect(params.get('pq')).toBe('abamectin')
+    expect(params.get('pgroup')).toBe('Thuốc trừ sâu')
+    expect(params.has('psector')).toBe(false)
+  })
+
+  it('encodes Vietnamese and "&" safely', () => {
+    const search = buildPesticideListSearch({ q: 'A & B', sector: 'THUỐC XỬ LÝ HẠT GIỐNG' })
+    const params = new URLSearchParams(search)
+    expect(params.get('pq')).toBe('A & B')
+    expect(params.get('psector')).toBe('THUỐC XỬ LÝ HẠT GIỐNG')
   })
 })

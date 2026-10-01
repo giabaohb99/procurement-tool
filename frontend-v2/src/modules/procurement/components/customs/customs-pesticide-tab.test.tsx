@@ -48,7 +48,8 @@ const ROW = {
   resistance: '',
   source_url: '',
   use_count: 1,
-  summary: 'Thuốc trừ sâu Bipyrhone 20EC hoạt chất Bifenazate 277g/l, sử dụng trên cà rốt, phòng trừ đốm vòng.',
+  summary:
+    'Thuốc trừ sâu Bipyrhone 20EC hoạt chất Bifenazate 277g/l, sử dụng trên cà rốt, phòng trừ đốm vòng.',
   is_manual: false,
   banned: [] as unknown[],
 }
@@ -128,7 +129,10 @@ function build() {
       <MemoryRouter>
         <Routes>
           <Route path="/" element={<CustomsPesticideTab />} />
-          <Route path="/procurement/customs-prices/pesticides/:id" element={<CustomsPesticideDetailPage />} />
+          <Route
+            path="/procurement/customs-prices/pesticides/:id"
+            element={<CustomsPesticideDetailPage />}
+          />
         </Routes>
         <WhereAmI />
       </MemoryRouter>
@@ -175,7 +179,12 @@ describe('CustomsPesticideTab', () => {
     build()
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
     expect(await screen.findByText('đốm vòng')).toBeInTheDocument()
-    expect(screen.getByText('Phạm vi sử dụng (1)')).toBeInTheDocument()
+    //  01/10/2026 — tab «Sử dụng & tài liệu» mở sẵn; bảng có tiêu đề «Phạm vi sử dụng» + số dòng.
+    expect(screen.getByRole('tab', { name: 'Sử dụng & tài liệu' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('heading', { name: /Phạm vi sử dụng\s*1/ })).toBeInTheDocument()
     //  Ô nguồn không ghi phải NÓI ra, không để trống như lỗi màn hình.
     expect(screen.getAllByText('Nguồn không ghi').length).toBeGreaterThan(0)
   })
@@ -234,7 +243,9 @@ describe('CustomsPesticideTab', () => {
       expect(last?.params).toMatchObject({ banned_only: 'true', status: '1', page: 1 })
     })
     //  Rỗng lúc này là KẾT QUẢ TỐT — không được bảo người dùng «thử bỏ lọc».
-    expect(await screen.findByText(/Không thuốc nào trong bộ lọc đang chọn chứa hoạt chất cấm/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/Không thuốc nào trong bộ lọc đang chọn chứa hoạt chất cấm/),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Xóa lọc/ }))
     await waitFor(() => {
       const last = calls.filter((call) => call.url.endsWith('/pesticides')).at(-1)
@@ -277,7 +288,9 @@ describe('CustomsPesticideTab', () => {
     it('posts a trimmed body once, drops blank usage rows, then opens the saved drug', async () => {
       build()
       fireEvent.click(await screen.findByRole('button', { name: /Thêm thuốc/ }))
-      fireEvent.change(await screen.findByLabelText(/Tên thuốc/), { target: { value: '  Mới 10EC ' } })
+      fireEvent.change(await screen.findByLabelText(/Tên thuốc/), {
+        target: { value: '  Mới 10EC ' },
+      })
       fireEvent.change(screen.getByLabelText(/Hoạt chất/), { target: { value: 'Abamectin 10g/l' } })
       fireEvent.click(screen.getByRole('button', { name: /Thêm dòng/ }))
       fireEvent.click(screen.getByRole('button', { name: /Thêm dòng/ }))
@@ -287,7 +300,11 @@ describe('CustomsPesticideTab', () => {
       fireEvent.click(submit)
       fireEvent.click(submit)
       await waitFor(() => expect(writes).toHaveLength(1))
-      const body = writes[0]?.body as { trade_name: string; uses: { crop: string }[]; expires_on: unknown }
+      const body = writes[0]?.body as {
+        trade_name: string
+        uses: { crop: string }[]
+        expires_on: unknown
+      }
       expect(writes[0]?.method).toBe('POST')
       expect(body.trade_name).toBe('Mới 10EC')
       expect(body.uses.map((use) => use.crop)).toEqual(['lúa'])
@@ -316,7 +333,9 @@ describe('CustomsPesticideTab', () => {
       fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
       await screen.findByText('đốm vòng')
       expect(screen.queryByRole('button', { name: 'Sửa' })).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /Xóa/ })).not.toBeInTheDocument()
+      //  Tên ĐÚNG «Xóa» — trang chi tiết nay có cột tra cứu với nút «Xóa bộ lọc» (01/10/2026),
+      //  không liên quan quyền xóa thuốc.
+      expect(screen.queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
     })
   })
 
@@ -331,7 +350,9 @@ describe('CustomsPesticideTab', () => {
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('pq=bipy'))
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
     await waitFor(() =>
-      expect(screen.getByTestId('where')).toHaveTextContent('/procurement/customs-prices/pesticides/11'),
+      expect(screen.getByTestId('where')).toHaveTextContent(
+        '/procurement/customs-prices/pesticides/11',
+      ),
     )
     fireEvent.click(await screen.findByRole('button', { name: 'Quay lại danh mục thuốc BVTV' }))
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/?pq=bipy'))
@@ -342,7 +363,7 @@ describe('CustomsPesticideTab', () => {
     items = [ROW]
     build()
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
-    expect(await screen.findByRole('heading', { name: 'Phạm vi sử dụng (1)' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Phạm vi sử dụng\s*1/ })).toBeInTheDocument()
     expect(screen.getByText(/thời gian cách ly/)).toBeInTheDocument()
     expect(screen.queryByText('Xem trên danh mục nguồn')).not.toBeInTheDocument()
   })
@@ -353,15 +374,21 @@ describe('CustomsPesticideTab', () => {
     items = [ROW]
     const { unmount } = build()
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
+    //  Tệp đính kèm nằm chung tab «Sử dụng & tài liệu» (mở sẵn) với bảng phạm vi sử dụng.
     expect(await screen.findByText('Chứng từ & Tài liệu đính kèm')).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /Upload chứng từ/ })).toBeInTheDocument()
     await waitFor(() =>
-      expect(calls.some((c) => c.url.startsWith('/api/attachments') && c.params?.entity === 'customs_pesticide')).toBe(true),
+      expect(
+        calls.some(
+          (c) => c.url.startsWith('/api/attachments') && c.params?.entity === 'customs_pesticide',
+        ),
+      ).toBe(true),
     )
     unmount()
     granted = new Set()
     build()
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
+    //  Tệp đính kèm nằm chung tab «Sử dụng & tài liệu» (mở sẵn) với bảng phạm vi sử dụng.
     expect(await screen.findByText('Chứng từ & Tài liệu đính kèm')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Upload chứng từ/ })).not.toBeInTheDocument()
   })

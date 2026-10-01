@@ -2,53 +2,35 @@
 //
 // Trang riêng thay cho hộp thoại cũ (đại ca chốt): hộp thoại phải nhét nút Sửa/Xóa chen giữa tiêu đề
 // và thông tin, và bảng phạm vi sử dụng dưới đáy không có tiêu đề đủ rõ để biết nó là gì. Trang đi
-// theo khuôn mọi màn chi tiết của v2: tiêu đề + nút ở đầu, thẻ thông tin, bảng phạm vi có tiêu đề
-// + câu giải thích, tệp đính kèm (duoc-CR-494), lịch sử thao tác cuối trang.
+// 01/10/2026 — làm lại cả bố cục (đại ca chê xấu sau ba lần vá từng khối): THẺ ĐẦU TRANG gom thông
+// tin chính, phần dưới chia TAB (phạm vi · thuốc liên quan · tệp · lịch sử), cột «Tìm thuốc khác» +
+// «Tra cứu nhanh» bên phải khi màn đủ rộng, màn hẹp thì thành nút «Tra cứu» mở ngăn kéo.
 //
 // Gác quyền: đường này nằm DƯỚI mục menu «Thuốc BVTV» (`customs_price.read`) nên `canAccessRoute` tự
 // gác; nút Sửa / Xóa theo khóa riêng `customs_pesticide` (duoc-CR-490).
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { ArrowLeft, Pencil, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { AuditTimeline } from '@/shared/audit'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useBackTarget } from '@/shared/hooks/use-back-target'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 
-import { DocumentAttachmentsCard } from '../components/document-attachments-card'
+import { CustomsPesticideBannedNotice } from '../components/customs/customs-pesticide-banned-notice'
+import { CustomsPesticideDetailTabs } from '../components/customs/customs-pesticide-detail-tabs'
 import { CustomsPesticideFormDialog } from '../components/customs/customs-pesticide-form-dialog'
-import {
-  CustomsPesticideBannedNotice,
-  CustomsPesticideInfoCard,
-} from '../components/customs/customs-pesticide-info-card'
-import { CustomsPesticideStatusBadge } from '../components/customs/customs-pesticide-status-badge'
+import { CustomsPesticideHeroCard } from '../components/customs/customs-pesticide-hero-card'
+import { CustomsPesticideLookupSidebar } from '../components/customs/customs-pesticide-lookup-sidebar'
 import { buildCustomsSectionPath } from '../config/customs-sections'
 import {
   useCustomsPesticide,
   useDeleteCustomsPesticide,
   usePesticidePermissions,
 } from '../hooks/use-customs-pesticides'
-import type { CustomsPesticideUse } from '../types/customs-pesticide'
 import { toPesticideInput } from '../utils/customs-pesticide-form'
-
-const USE_COLUMNS: DataTableColumn<CustomsPesticideUse>[] = [
-  { key: 'crop', header: 'Cây trồng', width: 150, wrap: true, cell: (row) => row.crop },
-  { key: 'pest', header: 'Dịch hại', width: 180, wrap: true, cell: (row) => row.pest },
-  { key: 'dosage', header: 'Liều lượng', width: 150, wrap: true, cell: (row) => row.dosage },
-  {
-    key: 'pre_harvest_interval',
-    header: 'Thời gian cách ly',
-    width: 140,
-    wrap: true,
-    cell: (row) => row.pre_harvest_interval,
-  },
-  { key: 'usage', header: 'Cách dùng', width: 380, wrap: true, cell: (row) => row.usage },
-]
 
 export function CustomsPesticideDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -57,6 +39,7 @@ export function CustomsPesticideDetailPage() {
   const back = useBackTarget(buildCustomsSectionPath('pesticides'))
   const { canCreate, canEdit, canDelete } = usePesticidePermissions()
   const [editing, setEditing] = useState(false)
+  const [lookupOpen, setLookupOpen] = useState(false)
   const { data, isLoading } = useCustomsPesticide(pesticideId || null)
   const remove = useDeleteCustomsPesticide()
 
@@ -84,91 +67,75 @@ export function CustomsPesticideDetailPage() {
       <PageContainer>
         <PageHeader leading={backButton} title="Không tìm thấy thuốc BVTV" />
         <p className="text-sm text-muted-foreground">
-          Thuốc này không còn trong danh mục — có thể đã bị xóa, hoặc đã thay bằng lần nạp danh mục mới.
+          Thuốc này không còn trong danh mục — có thể đã bị xóa, hoặc đã thay bằng lần nạp danh mục
+          mới.
         </p>
       </PageContainer>
     )
   }
 
+  const actions = (
+    <>
+      {/*  Màn hẹp không có cột tra cứu — mở nó trong ngăn kéo. */}
+      <Button
+        type="button"
+        variant="outline"
+        className="xl:hidden"
+        onClick={() => setLookupOpen(true)}
+      >
+        <Search className="size-4" />
+        Tra cứu
+      </Button>
+      {canEdit && (
+        <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+          <Pencil className="size-4" />
+          Sửa
+        </Button>
+      )}
+      {canDelete && (
+        <DeleteConfirmButton
+          recordName={data.trade_name}
+          pending={remove.isPending}
+          warning={
+            data.is_manual
+              ? undefined
+              : 'Thuốc này lấy từ bản cào — lần «Nạp danh mục» sau sẽ thêm lại nó theo nguồn.'
+          }
+          onConfirm={async () => {
+            await remove.mutateAsync(data.id)
+            navigate(back.url, { replace: true })
+          }}
+        />
+      )}
+    </>
+  )
+
   return (
     <PageContainer>
-      <PageHeader
-        leading={backButton}
-        title={
-          <span className="flex flex-wrap items-center gap-2">
-            {data.trade_name}
-            <CustomsPesticideStatusBadge status={data.status} label={data.status_label} />
-            {data.is_manual && <Badge variant="outline">Tự thêm</Badge>}
-          </span>
-        }
-        description={[data.pest_group, data.registration_no].filter(Boolean).join(' · ') || 'Thuốc bảo vệ thực vật'}
-        actions={
-          canEdit || canDelete ? (
-            <>
-              {canEdit && (
-                <Button type="button" variant="outline" onClick={() => setEditing(true)}>
-                  <Pencil className="size-4" />
-                  Sửa
-                </Button>
-              )}
-              {canDelete && (
-                <DeleteConfirmButton
-                  recordName={data.trade_name}
-                  pending={remove.isPending}
-                  warning={
-                    data.is_manual
-                      ? undefined
-                      : 'Thuốc này lấy từ bản cào — lần «Nạp danh mục» sau sẽ thêm lại nó theo nguồn.'
-                  }
-                  onConfirm={async () => {
-                    await remove.mutateAsync(data.id)
-                    navigate(back.url, { replace: true })
-                  }}
-                />
-              )}
-            </>
-          ) : undefined
-        }
-      />
-
-      <div className="space-y-4">
-        <CustomsPesticideBannedNotice items={data.banned} />
-        <CustomsPesticideInfoCard pesticide={data} />
-
-        <DataTable
-          columns={USE_COLUMNS}
-          rows={data.uses}
-          getRowId={(use) => use.id}
-          emptyMessage={
-            data.is_manual
-              ? 'Chưa nhập phạm vi sử dụng nào — bấm «Sửa» để thêm.'
-              : 'Nguồn không ghi phạm vi sử dụng cho thuốc này.'
-          }
-          storageKey="procurement.customs-pesticide-uses-v1"
-          //  Tiêu đề nằm NGAY trên hàng công cụ của bảng: đặt riêng phía trên thì hai nút Tải lại / Cột
-          //  chen giữa tiêu đề và bảng, người đọc không nối được chữ với bảng (đại ca góp ý 29/09).
-          toolbar={
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold">Phạm vi sử dụng ({data.uses.length})</h2>
-              <p className="text-xs text-muted-foreground">
-                Thuốc được đăng ký dùng cho cây trồng nào, trị dịch hại gì, liều lượng bao nhiêu và
-                phải ngừng phun trước thu hoạch bao lâu (thời gian cách ly).
-              </p>
-            </div>
-          }
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_16rem] xl:items-start">
+        <div className="min-w-0 space-y-4">
+          <CustomsPesticideBannedNotice items={data.banned} />
+          <CustomsPesticideHeroCard pesticide={data} leading={backButton} actions={actions} />
+          <CustomsPesticideDetailTabs pesticide={data} canManageFiles={canEdit || canCreate} />
+        </div>
+        {/*  `sticky`: cuộn bảng dài vẫn còn ô tìm trong tầm tay. Màn hẹp ẩn hẳn (đã có ngăn kéo). */}
+        <CustomsPesticideLookupSidebar
+          currentPestGroup={data.pest_group}
+          className="hidden xl:sticky xl:top-4 xl:flex"
         />
-
-        {/*  duoc-CR-494 — tệp của thuốc (nhãn, giấy chứng nhận đăng ký, MSDS…). Xem theo quyền xem
-             màn (`READ_PARENT` ở backend); tải lên / xóa khớp `_check` backend: `write` HOẶC
-             `create` trên `customs_pesticide`. Tệp giữ qua các lần «Nạp danh mục» vì id thuốc giữ. */}
-        <DocumentAttachmentsCard
-          entity="customs_pesticide"
-          entityId={data.id}
-          canManage={canEdit || canCreate}
-        />
-
-        <AuditTimeline entity="customs_pesticide" entityId={data.id} showMessage />
       </div>
+
+      <Sheet open={lookupOpen} onOpenChange={setLookupOpen}>
+        <SheetContent side="right" className="gap-0 overflow-y-auto p-0">
+          <SheetHeader className="border-b">
+            <SheetTitle>Tra cứu thuốc BVTV</SheetTitle>
+          </SheetHeader>
+          <CustomsPesticideLookupSidebar
+            currentPestGroup={data.pest_group}
+            className="rounded-none border-0 shadow-none"
+          />
+        </SheetContent>
+      </Sheet>
 
       {editing && (
         <CustomsPesticideFormDialog

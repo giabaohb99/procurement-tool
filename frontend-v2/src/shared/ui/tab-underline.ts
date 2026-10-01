@@ -41,3 +41,15 @@ export const TAB_LIST_UNDERLINE =
 /** Một tab — chữ + gạch chân thay cho ô nền trắng đổ bóng. */
 export const TAB_TRIGGER_UNDERLINE =
   'max-md:-mb-px max-md:h-full max-md:min-w-0 max-md:rounded-none max-md:border-0 max-md:border-b-2 max-md:border-transparent max-md:px-1 max-md:text-xs max-md:data-[state=active]:border-primary max-md:data-[state=active]:bg-transparent max-md:data-[state=active]:font-semibold max-md:data-[state=active]:shadow-none'
+
+/**
+ * Bản gạch chân ở **MỌI khổ màn hình** (01/10/2026) — cho chỗ mà ngay cả màn rộng cũng đã có một
+ * điều khiển phân đoạn nền đặc khác ở gần (vd trang chi tiết thuốc BVTV: tab thân trang + bộ chọn
+ * «Cùng công ty / Cùng hoạt chất» bên trong). Hai dải nền đặc chồng nhau đọc ra MỘT lưới, không ra
+ * hai cấp — cùng lý do màn Phiếu đặt phòng ở trên, chỉ là xảy ra cả ở màn rộng.
+ */
+export const TAB_LIST_UNDERLINE_ALWAYS =
+  'h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0'
+
+export const TAB_TRIGGER_UNDERLINE_ALWAYS =
+  '-mb-px h-10 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent'
