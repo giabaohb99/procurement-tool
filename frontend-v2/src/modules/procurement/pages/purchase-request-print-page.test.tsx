@@ -1,9 +1,13 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import type { PrintSignatureCell } from '../types/purchase-request-detail'
+import type {
+  PrintSignatureCell,
+  PurchaseRequestDetail,
+  PurchaseRequestItem,
+} from '../types/purchase-request-detail'
 import type { PrintSignatureSource } from '../utils/purchase-request-signature-cells'
-import { SignatureSection } from './purchase-request-print-page'
+import { PurchaseRequestPrintSheet, SignatureSection } from './purchase-request-print-page'
 
 // bao-CR-531: cụm «XÉT DUYỆT» vẽ 2, 3 hoặc 4 ô theo backend; «Không chữ ký» bỏ cả tên lẫn ảnh.
 
@@ -105,5 +109,86 @@ describe('SignatureSection', () => {
       expect(screen.getByText(role)).toBeInTheDocument()
     }
     expect(screen.getByText('Le Phuoc Huu')).toBeInTheDocument()
+  })
+})
+
+// bao-CR-544 — nút «Hiện nơi giao | Ẩn nơi giao»: ẩn là bỏ HẲN cột (tiêu đề, ô từng dòng, ô trống ở
+// ba dòng tổng), bảng không được chừa lỗ — mọi hàng phải đủ đúng số cột của <colgroup>.
+function makeItem(id: number, warehouse: string): PurchaseRequestItem {
+  //  why: tờ phiếu chỉ đọc vài trường của dòng — dựng đủ kiểu dòng YCMH ở đây là nhiễu.
+  return {
+    id,
+    product_name: `Hàng ${id}`,
+    product_code: `MH${id}`,
+    unit: 'Cái',
+    qty: 2,
+    price: 1000,
+    vat_pct: 8,
+    warehouse,
+    note: '',
+    need_date: '',
+    chosen_option: null,
+  } as unknown as PurchaseRequestItem
+}
+
+function renderSheet(showDeliveryPlace?: boolean) {
+  const items = [makeItem(1, 'Kho Bình Dương'), makeItem(2, 'Kho Long An')]
+  //  why: như trên — tờ phiếu chỉ cần phần đầu phiếu + nguồn chữ ký.
+  const purchaseRequest = {
+    ...makeSource(fourCells),
+    code: 'PYC01',
+    company_name: 'DEGO',
+    request_date: '2026-10-01',
+    items,
+  } as unknown as PurchaseRequestDetail
+  const view = render(
+    <PurchaseRequestPrintSheet
+      purchaseRequest={purchaseRequest}
+      items={items}
+      supplier={{ name: '', tax_code: '', contact: '' }}
+      warehouseCode={(name) => (name === 'Kho Bình Dương' ? 'KBD' : 'KLA')}
+      taxMode={false}
+      showSignature
+      showDeliveryPlace={showDeliveryPlace}
+    />,
+  )
+  const table = view.container.querySelector('.pr-print-items') as HTMLTableElement
+  return { ...view, table }
+}
+
+function rowWidths(table: HTMLTableElement): number[] {
+  return Array.from(table.rows).map((row) =>
+    Array.from(row.cells).reduce((sum, cell) => sum + (cell.colSpan || 1), 0),
+  )
+}
+
+describe('PurchaseRequestPrintSheet — delivery place toggle (bao-CR-544)', () => {
+  it('prints the «Nơi giao» column by default, as before', () => {
+    const { table } = renderSheet()
+    expect(within(table).getByRole('columnheader', { name: 'Nơi giao' })).toBeInTheDocument()
+    expect(within(table).getByText('KBD')).toBeInTheDocument()
+    expect(table.querySelectorAll('col')).toHaveLength(9)
+    expect(new Set(rowWidths(table))).toEqual(new Set([9]))
+  })
+
+  it('hiding drops header, every line cell and the total-row gap without leaving holes', () => {
+    const { table } = renderSheet(false)
+    expect(within(table).queryByRole('columnheader', { name: 'Nơi giao' })).toBeNull()
+    expect(within(table).queryByText('KBD')).toBeNull()
+    expect(within(table).queryByText('KLA')).toBeNull()
+    expect(table.querySelectorAll('col')).toHaveLength(8)
+    //  Ba dòng tổng từng có ô trống colSpan=2 cố định — quên đổi là hàng dài hơn tiêu đề một ô.
+    expect(new Set(rowWidths(table))).toEqual(new Set([8]))
+    expect(within(table).getByRole('columnheader', { name: 'Ghi chú' })).toBeInTheDocument()
+  })
+
+  it('hiding the place keeps money totals unchanged', () => {
+    const shown = renderSheet(true).table.textContent
+    const hidden = renderSheet(false).table.textContent
+    for (const label of ['Tổng cộng', 'Tiền VAT:', 'Tổng cộng thanh toán (gồm VAT):']) {
+      expect(shown).toContain(label)
+      expect(hidden).toContain(label)
+    }
+    expect(hidden).toContain('4.000')
   })
 })

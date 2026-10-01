@@ -78,6 +78,11 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
   // Có/không in ảnh chữ ký (mẫu thường). Bản ký tay vẫn giữ họ tên dưới ô cho đúng
   // "(Ký, ghi rõ họ tên)" — chỉ bỏ ảnh chữ ký số đi.
   const [showSign, setShowSign] = useState(true);
+  // bao-CR-544: bật/tắt cột «Nơi giao» — bản in gửi ra ngoài không cần lộ kho nhận. Mặc định hiện
+  // như cũ. Bản v2: `purchase-request-print-page.tsx` — hai bản phải có cùng nút.
+  const [showPlace, setShowPlace] = useState(true);
+  // Ba dòng tổng chừa ô trống dưới «Nơi giao» + «Ghi chú»; ẩn nơi giao thì chỉ còn một ô.
+  const trailingSpan = showPlace ? 2 : 1;
 
   // Map tên đầy đủ kho -> mã kho (tên viết tắt) để in cột "Nơi giao"
   const whCode = (name: string) =>
@@ -232,6 +237,21 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
             </button>
           ))}
         </div>
+        <div style={{ display: "inline-flex", border: "1px solid #d9e0ea", borderRadius: 8, overflow: "hidden" }}>
+          {[{ v: true, t: "Hiện nơi giao" }, { v: false, t: "Ẩn nơi giao" }].map((tab) => (
+            <button
+              key={tab.t}
+              onClick={() => setShowPlace(tab.v)}
+              style={{
+                padding: "7px 16px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500,
+                background: showPlace === tab.v ? "#00AEEF" : "#fff",
+                color: showPlace === tab.v ? "#fff" : "#475569",
+              }}
+            >
+              {tab.t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div
@@ -355,7 +375,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               {/* Mẫu kế toán 003/BM/PKT KHÔNG có cột VAT trên dòng hàng — VAT chỉ hiện ở
                   phần tổng cuối bảng. Không thêm cột vào đây. */}
               <td style={cell}>Thành tiền</td>
-              <td style={cell}>Nơi giao</td>
+              {showPlace && <td style={cell}>Nơi giao</td>}
               <td style={cell}>Ghi chú</td>
             </tr>
           </thead>
@@ -371,7 +391,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 <td style={{ ...cell, textAlign: "right" }}>
                   {fmtVND((Number(it.qty) || 0) * (Number(it.price) || 0))}
                 </td>
-                <td style={cell}>{whCode(it.warehouse)}</td>
+                {showPlace && <td style={cell}>{whCode(it.warehouse)}</td>}
                 <td style={cell}>{it.note}</td>
               </tr>
             ))}
@@ -382,7 +402,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               <td style={{ ...cell, textAlign: "right", fontWeight: 700 }}>
                 {fmtVND(pr.subtotal)}
               </td>
-              <td style={cell} colSpan={2} />
+              <td style={cell} colSpan={trailingSpan} />
             </tr>
             <tr>
               <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13 }}>
@@ -391,7 +411,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               <td style={{ border: "none", textAlign: "right", padding: "8px 8px 4px", fontSize: 13, fontWeight: 700 }}>
                 {Number(pr.vat) ? fmtVND(pr.vat) : "0"}
               </td>
-              <td style={{ border: "none" }} colSpan={2} />
+              <td style={{ border: "none" }} colSpan={trailingSpan} />
             </tr>
             <tr>
               <td colSpan={6} style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13 }}>
@@ -400,7 +420,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               <td style={{ border: "none", textAlign: "right", padding: "4px 8px 8px", fontSize: 13, fontWeight: 700 }}>
                 {fmtVND(pr.total)}
               </td>
-              <td style={{ border: "none" }} colSpan={2} />
+              <td style={{ border: "none" }} colSpan={trailingSpan} />
             </tr>
           </tbody>
         </table>

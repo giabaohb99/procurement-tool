@@ -70,6 +70,28 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-544 | Bản in phiếu đề xuất mua hàng có nút ẩn cột «Nơi giao»
+- status: xong
+- date: 2026-10-01
+Đại ca muốn bản in phiếu đề xuất mua hàng có thêm một nút để ẩn nơi giao hàng, và cả giao diện v1
+lẫn v2 đều phải có. Thanh nút trên cùng của màn in nay có thêm bộ «Hiện nơi giao | Ẩn nơi giao» cùng
+kiểu với «Có chữ ký | Không chữ ký» và «Mẫu thường | Mẫu thuế», mặc định hiện như trước. Bấm ẩn thì
+cột «Nơi giao» biến mất hẳn khỏi bảng hàng: cả tiêu đề, ô từng dòng và ô trống ở ba dòng tổng, các
+cột còn lại tự giãn ra cho đều, không để lỗ trắng. Ở v2 nút có ở cả bản in gốc lẫn bản tách theo nhà
+cung cấp vì hai bản in dùng chung một tờ phiếu; v1 chỉ có bản in gốc. Chỉ đổi giao diện, không đụng
+máy chủ hay dữ liệu.
+
+Kiểm: thêm 3 bài kiểm giao diện v2 (hiện đủ cột, ẩn thì mọi hàng vẫn đúng số cột, tổng tiền không
+đổi); v2 tsc 0 lỗi, eslint 0 lỗi, 730 bài kiểm phân hệ thu mua xanh; v1 tsc giữ đúng 4 lỗi cũ; bấm thử
+trên trình duyệt local cả hai bản với phiếu PYC21082601. Đại ca bảo commit và gộp ngày 01/10, Agent 1
+đẩy lên dev và prod.
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/{purchase-request-print-page,
+purchase-request-supplier-print-page}.tsx · purchase-request-print-page.test.tsx ·
+frontend/src/pages/PrintPurchaseRequest.tsx
+
+---
+
 ## bao-CR-545 | Thêm vai trò «Admin thu mua phòng» và gán bộ thu mua nhà máy
 - status: dang-lam
 - date: 2026-10-01
