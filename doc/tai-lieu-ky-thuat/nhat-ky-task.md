@@ -70,6 +70,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-543 | Bài kiểm backend chạy nhanh hơn và không còn treo
+- status: xong
+- date: 2026-10-01
+Đại ca hỏi vì sao chạy bài kiểm lâu: đợt bao-CR-538 phải chạy 5.254 bài (khoảng 20 phút), lại mất gần
+một tiếng vì bài kiểm ban hành văn bản đứng chờ redis khi chạy ngoài mạng của stack mà không báo lỗi,
+và lần nào cũng phải cài lại pytest. Đại ca cho thêm công cụ kiểm thử nếu không nặng.
+
+Đã thêm tệp phụ thuộc riêng cho kiểm thử (pytest, pytest-timeout, pytest-xdist, chỉ vài MB) và một cờ
+dựng ảnh: chỉ image api ở máy local cài chúng, image dev và prod không mang theo. Mỗi bài có giờ chết
+mặc định 120 giây, bài nào treo thì đỏ ngay thay vì đứng cả bộ. Quét rộng thì chạy song song bằng
+`-n 3`: bộ 830 bài của sáu phân hệ thu mua giảm từ khoảng 125 giây xuống 75 giây, kết quả y như chạy
+tuần tự. Đã thử một bài cố ý treo: bị đánh đỏ đúng sau giờ chết.
+
+Mã nguồn: `backend/requirements-test.txt` · `docker/Dockerfile.api` (`INSTALL_TEST_DEPS`) ·
+`docker-compose.yml` · `test/backend/pytest.ini`
+
+---
+
 ## bao-CR-542 | Gom cảnh báo công nợ quá hạn theo đơn, ghi số tiền còn nợ và số ngày trễ
 - status: xong
 - date: 2026-10-01

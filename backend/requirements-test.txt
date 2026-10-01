@@ -1,0 +1,8 @@
+# Chỉ dùng để CHẠY BÀI KIỂM ở máy local — KHÔNG cài vào image dev/prod (xem cờ INSTALL_TEST_DEPS
+# trong docker/Dockerfile.api, chỉ bật ở docker-compose.yml).
+# pytest-timeout: bài nào treo (vd chờ redis khi chạy ngoài mạng của stack) thì đỏ sau 120 giây
+#                 thay vì đứng chờ cả tiếng — trần đặt ở test/backend/pytest.ini.
+# pytest-xdist  : chạy song song khi cần quét rộng: `python -m pytest -n 3 ...`.
+pytest
+pytest-timeout
+pytest-xdist
