@@ -57,6 +57,7 @@ export function PurchaseRequestSupplierPrintPage() {
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set())
   const [taxMode, setTaxMode] = useState(false)
   const [showSignature, setShowSignature] = useState(true)
+  const [showDeliveryPlace, setShowDeliveryPlace] = useState(true)
 
   const plan = useMemo(
     () => buildSupplierPrintPlan(purchaseRequest?.items ?? []),
@@ -183,6 +184,15 @@ export function PurchaseRequestSupplierPrintPage() {
             value={taxMode}
             onChange={setTaxMode}
           />
+          {/* bao-CR-544: cùng nút với bản in gốc — hai bản in một tờ phiếu, phải bật/tắt như nhau. */}
+          <PrintToggle
+            options={[
+              { value: true, label: 'Hiện nơi giao' },
+              { value: false, label: 'Ẩn nơi giao' },
+            ]}
+            value={showDeliveryPlace}
+            onChange={setShowDeliveryPlace}
+          />
         </div>
       </div>
 
@@ -219,6 +229,7 @@ export function PurchaseRequestSupplierPrintPage() {
           warehouseCode={(name) => warehouseCodes.get(name) || name}
           taxMode={taxMode}
           showSignature={showSignature}
+          showDeliveryPlace={showDeliveryPlace}
         />
       ))}
     </main>

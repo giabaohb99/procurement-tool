@@ -57,6 +57,7 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
   const [taxMode, setTaxMode] = useState(false)
   const [showSignature, setShowSignature] = useState(true)
+  const [showDeliveryPlace, setShowDeliveryPlace] = useState(true)
 
   useEffect(() => {
     if (!purchaseRequest?.code) return
@@ -170,6 +171,15 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
             value={taxMode}
             onChange={setTaxMode}
           />
+          {/* bao-CR-544: bật/tắt cột «Nơi giao» — đại ca cần bản in gửi ra ngoài không lộ kho nhận. */}
+          <PrintToggle
+            options={[
+              { value: true, label: 'Hiện nơi giao' },
+              { value: false, label: 'Ẩn nơi giao' },
+            ]}
+            value={showDeliveryPlace}
+            onChange={setShowDeliveryPlace}
+          />
         </div>
       </div>
 
@@ -180,6 +190,7 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
         warehouseCode={(name) => warehouseCodes.get(name) || name}
         taxMode={taxMode}
         showSignature={showSignature}
+        showDeliveryPlace={showDeliveryPlace}
       />
     </main>
   )
@@ -202,6 +213,7 @@ export function PurchaseRequestPrintSheet({
   warehouseCode,
   taxMode,
   showSignature,
+  showDeliveryPlace = true,
 }: {
   purchaseRequest: PurchaseRequestDetail
   items: PurchaseRequestItem[]
@@ -210,6 +222,8 @@ export function PurchaseRequestPrintSheet({
   warehouseCode: (name: string) => string
   taxMode: boolean
   showSignature: boolean
+  /** bao-CR-544 — tắt thì bỏ hẳn cột «Nơi giao» (tiêu đề, ô từng dòng, ô trống ở dòng tổng). */
+  showDeliveryPlace?: boolean
 }) {
   return (
     <article className="pr-print-doc">
@@ -256,7 +270,11 @@ export function PurchaseRequestPrintSheet({
         <PrintLine label="Nội dung" value={purchaseRequest.note} />
       </PrintSection>
 
-      <PurchaseRequestPrintItems items={items} warehouseCode={warehouseCode} />
+      <PurchaseRequestPrintItems
+        items={items}
+        warehouseCode={warehouseCode}
+        showDeliveryPlace={showDeliveryPlace}
+      />
 
       <PrintSection title="NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT">
         <PrintLine label="Tên nhà cung cấp" value={supplier.name || supplierNameFallback} />
@@ -344,11 +362,16 @@ export function PrintLine({ label, value }: { label: string; value?: React.React
 function PurchaseRequestPrintItems({
   items,
   warehouseCode,
+  showDeliveryPlace,
 }: {
   items: PurchaseRequestItem[]
   warehouseCode: (name: string) => string
+  showDeliveryPlace: boolean
 }) {
   const totals = printedTotals(items)
+  //  Ba dòng tổng chừa ô trống dưới «Nơi giao» + «Ghi chú»; ẩn nơi giao thì chỉ còn một ô.
+  //  Bảng `table-layout: fixed` theo phần trăm nên bớt một cột là các cột còn lại tự giãn ra.
+  const trailingSpan = showDeliveryPlace ? 2 : 1
   return (
     <table className="pr-print-items">
       <colgroup>
@@ -359,7 +382,7 @@ function PurchaseRequestPrintItems({
         <col className="pr-print-col-quantity" />
         <col className="pr-print-col-price" />
         <col className="pr-print-col-total" />
-        <col className="pr-print-col-place" />
+        {showDeliveryPlace && <col className="pr-print-col-place" />}
         <col className="pr-print-col-note" />
       </colgroup>
       <thead>
@@ -371,7 +394,7 @@ function PurchaseRequestPrintItems({
           <th>Số lượng</th>
           <th>Đơn giá</th>
           <th>Thành tiền</th>
-          <th>Nơi giao</th>
+          {showDeliveryPlace && <th>Nơi giao</th>}
           <th>Ghi chú</th>
         </tr>
       </thead>
@@ -398,7 +421,7 @@ function PurchaseRequestPrintItems({
               <td className="text-right tabular-nums">
                 {formatMoney(item.qty * line.price)}
               </td>
-              <td>{warehouseCode(item.warehouse)}</td>
+              {showDeliveryPlace && <td>{warehouseCode(item.warehouse)}</td>}
               <td>{item.note}</td>
             </tr>
           )
@@ -411,7 +434,7 @@ function PurchaseRequestPrintItems({
           <td className="whitespace-nowrap text-right font-bold tabular-nums">
             {formatMoney(totals.subtotal)}
           </td>
-          <td colSpan={2} />
+          <td colSpan={trailingSpan} />
         </tr>
         <tr className="pr-print-total-row">
           <td className="pt-2 text-right text-[13px]" colSpan={6}>
@@ -420,7 +443,7 @@ function PurchaseRequestPrintItems({
           <td className="whitespace-nowrap pt-2 text-right text-[13px] font-bold tabular-nums">
             {formatMoney(totals.vat)}
           </td>
-          <td colSpan={2} />
+          <td colSpan={trailingSpan} />
         </tr>
         <tr className="pr-print-total-row">
           <td className="pb-2 pt-1 text-right text-[13px]" colSpan={6}>
@@ -429,7 +452,7 @@ function PurchaseRequestPrintItems({
           <td className="whitespace-nowrap pb-2 pt-1 text-right text-[13px] font-bold tabular-nums">
             {formatMoney(totals.total)}
           </td>
-          <td colSpan={2} />
+          <td colSpan={trailingSpan} />
         </tr>
       </tbody>
     </table>
