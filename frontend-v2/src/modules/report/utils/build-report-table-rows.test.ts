@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReportGroupRow } from '../types/report-analytics'
-import { buildReportTableRows, REPORT_TOTAL_ROW_KEY } from './build-report-table-rows'
+import {
+  buildReportTableRows,
+  REPORT_OTHER_GROUP_KEY,
+  REPORT_TOTAL_ROW_KEY,
+} from './build-report-table-rows'
 
 const TOTALS = { current: { lines: 100, amount: 900 }, compare: { lines: 80, amount: 700 } }
 const GROUPS: ReportGroupRow[] = [
@@ -65,5 +69,33 @@ describe('buildReportTableRows — edge cases', () => {
     ]
     const rows = buildReportTableRows(TOTALS, partialGroups, 'lines', 'desc')
     expect(rows.map((r) => r.key)).toEqual([REPORT_TOTAL_ROW_KEY, 'a', 'b'])
+  })
+})
+
+describe('buildReportTableRows — "nhóm khác" (gói A3, backend report_aggregate._cap_groups)', () => {
+  it('pins the overflow row LAST even though its value would sort it first', () => {
+    //  Hàng gộp mang giá trị LỚN NHẤT (gộp hàng trăm nhóm) — sắp theo "lines" giảm dần lẽ ra
+    //  đẩy nó lên đầu danh sách nhóm, điều đó đọc nhầm thành một phòng ban cụ thể.
+    const groupsWithOther: ReportGroupRow[] = [
+      ...GROUPS,
+      {
+        key: REPORT_OTHER_GROUP_KEY,
+        label: '(Các nhóm khác — 250 nhóm)',
+        current: { lines: 9999, amount: 9999 },
+        compare: null,
+      },
+    ]
+    const rows = buildReportTableRows(TOTALS, groupsWithOther, 'lines', 'desc')
+    expect(rows.map((r) => r.key)).toEqual([REPORT_TOTAL_ROW_KEY, 'kt', 'kd', REPORT_OTHER_GROUP_KEY])
+  })
+
+  it('stays last with no sort applied too, and last even among empty/inactive groups', () => {
+    const emptyGroup: ReportGroupRow = { key: 'z', label: 'Z', current: {}, compare: null }
+    const groupsWithOther: ReportGroupRow[] = [
+      emptyGroup,
+      { key: REPORT_OTHER_GROUP_KEY, label: '(Các nhóm khác — 2 nhóm)', current: {}, compare: null },
+    ]
+    const rows = buildReportTableRows(TOTALS, groupsWithOther, null)
+    expect(rows.map((r) => r.key)).toEqual([REPORT_TOTAL_ROW_KEY, 'z', REPORT_OTHER_GROUP_KEY])
   })
 })

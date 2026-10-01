@@ -9,6 +9,7 @@ import os
 
 from app.core.config import settings
 from app.core.limiter import limiter
+from app.core.report_cache import ReportSummaryCacheMiddleware
 from app.core.request_middleware import RequestContextMiddleware
 from app.core.response import error
 from app.core.text_limits import body_models_of, describe_data_error, describe_validation_errors
@@ -150,6 +151,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 #  tự KHÔNG quan trọng, ghi ra kẻo có người tưởng nó tinh vi: lượt duy nhất CORS
 #  nuốt trọn là preflight `OPTIONS`, mà `OPTIONS` vốn không thuộc diện ghi
 #  (§4.1); còn request thật thì CORS chỉ gắn thêm header rồi cho đi tiếp.
+#  `ReportSummaryCacheMiddleware` (gói A2) đăng ký TRƯỚC — thêm-sau-thành-ngoài nên nó nằm
+#  TRONG CÙNG, một cache HIT vẫn chạy qua `RequestContextMiddleware` (ghi `tab_request_log`
+#  bình thường, nhanh hơn hẳn — tín hiệu để nhận ra cache có hoạt động) và CORS vẫn bọc đúng.
+app.add_middleware(ReportSummaryCacheMiddleware)
 app.add_middleware(RequestContextMiddleware)
 
 app.add_middleware(

@@ -9,6 +9,12 @@ class Settings(BaseSettings):
     DB_NAME: str = "procurement"
     DB_USER: str = "app"
     DB_PASSWORD: str = "app_password"
+    # Gói A1 (hiệu năng báo cáo, 01/10/2026) — pool kết nối tường minh của `core/database.py`.
+    # Mặc định tính cho MySQL `max_connections=151` x 5 engine sống song song (2 api + 2 celery
+    # fork con + 1 beat), xem ngân sách đầy đủ trong comment của `database.py`. ĐỪNG tăng mà
+    # không nâng `max_connections` của MySQL song song.
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 15   # 5 engine x (10+15) = 125 < 151 max_connections, xem core/database.py
 
     JWT_SECRET: str = "change_me_please"
     JWT_ALG: str = "HS256"
@@ -369,6 +375,11 @@ class Settings(BaseSettings):
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"
+
+    # --- Cache ngắn hạn cho /summary báo cáo (gói A2, 01/10/2026) ---
+    # Giây sống của MỘT kết quả `/summary?preset=...` trong Redis, khóa theo (path, query, token
+    # đã băm) — xem `core/report_cache.py`. 0 = TẮT hẳn cache (mỗi lượt gọi luôn tính mới).
+    REPORT_CACHE_TTL: int = 60
 
     @property
     def CELERY_BROKER_URL(self) -> str:

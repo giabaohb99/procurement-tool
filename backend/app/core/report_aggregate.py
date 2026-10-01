@@ -103,6 +103,30 @@ class ReportSpec:
 #  Breakdown là danh sách "Top" — cắt ngọn cho biểu đồ cột ngang khỏi dài vô tận.
 BREAKDOWN_LIMIT = 10
 
+#  Gói A3 (hiệu năng báo cáo, 01/10/2026): `groups` KHÔNG có trần trước đây — `group_by=employee`
+#  ở ~5.000 nhân sự ra ~5.000 nhóm/~1MB JSON (load-test, công nợ phép năm). Giữ TOP
+#  `GROUP_LIMIT - 1` theo xếp hạng, gộp phần còn lại thành MỘT hàng `"__other__"`.
+GROUP_LIMIT = 300
+OTHER_GROUP_KEY = "__other__"
+
+
+def _cap_groups(groups: list[dict], buckets: dict[str, dict], spec: ReportSpec) -> list[dict]:
+    """Trần `GROUP_LIMIT` nhóm (gói A3) — giữ TOP đã xếp hạng ở trên, gộp phần dư thành MỘT
+    hàng `OTHER_GROUP_KEY` tính LẠI từ CHÍNH CÁC HÀNG bị gộp (không cộng `values` đã tính — tỷ lệ
+    dẫn xuất kiểu trung bình-của-trung-bình sẽ sai), để tỷ lệ ở hàng gộp vẫn đúng. Không `rank`
+    (hiếm — spec không có chỉ số nào) thì giữ nguyên thứ tự bucket gốc, không có "top" để xếp.
+    `merge_groups_by_key` ghép khóa này XUYÊN KỲ bình thường vì cả hai kỳ đều dùng chung một
+    chuỗi khóa cố định `"__other__"`."""
+    if len(groups) <= GROUP_LIMIT:
+        return groups
+    kept, overflow = groups[:GROUP_LIMIT - 1], groups[GROUP_LIMIT - 1:]
+    overflow_rows = [r for g in overflow for r in buckets[g["key"]]["rows"]]
+    other_values = drop_snapshot(
+        compute_derived(compute_metrics(overflow_rows, spec.metrics), spec.derived), spec)
+    kept.append({"key": OTHER_GROUP_KEY, "label": f"(Các nhóm khác — {len(overflow)} nhóm)",
+                "values": other_values})
+    return kept
+
 
 def aggregate(rows: list, spec: ReportSpec, d_from: date, d_to: date,
               granularity: str, group_by: str | None) -> dict:
@@ -124,6 +148,7 @@ def aggregate(rows: list, spec: ReportSpec, d_from: date, d_to: date,
                   for k, b in buckets.items()]
         if groups and rank:
             groups.sort(key=lambda g: g["values"].get(rank, 0) or 0, reverse=True)
+        groups = _cap_groups(groups, buckets, spec)
     breakdowns = {}
     for name, dim in spec.breakdowns.items():
         buckets = bucket_rows(rows, dim.key_of, dim.empty_label)

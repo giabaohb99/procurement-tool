@@ -3,6 +3,15 @@ import type { ReportGroupRow, ReportMetricValues } from '../types/report-analyti
 /** Khóa của hàng TỔNG giả — `DataTable` không có dòng chân riêng (xem `ReportGroupedTable`). */
 export const REPORT_TOTAL_ROW_KEY = '__total__'
 
+/**
+ * Khóa hàng "nhóm khác" do backend gộp khi vượt trần `GROUP_LIMIT` (gói A3,
+ * `report_aggregate._cap_groups` — khớp `OTHER_GROUP_KEY` phía backend). Luôn
+ * đứng SAU CÙNG bất kể sắp theo cột nào — nó không phải một nhóm thật, xếp nó
+ * lẫn vào danh sách theo giá trị (vd value cao nhất) dễ đọc nhầm thành một
+ * phòng ban/NCC cụ thể.
+ */
+export const REPORT_OTHER_GROUP_KEY = '__other__'
+
 export interface ReportTableRow {
   key: string
   label: string
@@ -68,8 +77,15 @@ export function buildReportTableRows(
     return [...list].sort((a, b) => dir * ((a.current[sortBy] ?? 0) - (b.current[sortBy] ?? 0)))
   }
 
-  const active = sortRows(rows.filter((r) => !r.isEmpty))
-  const inactive = sortRows(rows.filter((r) => r.isEmpty))
+  //  Hàng "nhóm khác" (gói A3) ghim CUỐI CÙNG, tách khỏi sắp xếp hoạt động/rỗng ở trên — nó có
+  //  thể mang giá trị LỚN (gộp hàng trăm nhóm) nên sắp theo giá trị sẽ đẩy nó lên đầu, dễ đọc
+  //  nhầm thành một nhóm thật thay vì phần dư đã gộp.
+  const isOtherRow = (r: ReportTableRow) => r.key === REPORT_OTHER_GROUP_KEY
+  const normal = rows.filter((r) => !isOtherRow(r))
+  const other = rows.filter(isOtherRow)
 
-  return [totalRow, ...active, ...inactive]
+  const active = sortRows(normal.filter((r) => !r.isEmpty))
+  const inactive = sortRows(normal.filter((r) => r.isEmpty))
+
+  return [totalRow, ...active, ...inactive, ...other]
 }
