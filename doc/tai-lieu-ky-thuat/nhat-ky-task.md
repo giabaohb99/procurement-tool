@@ -153,6 +153,10 @@ bốn migration chạy êm, seed khởi động không lỗi, chống trùng ra 
 rồi xóa thật, chép dòng bị xóa ra tệp JSON trên VPS; 18.243 còn 17.437 dòng, không còn nhóm trùng. Chuỗi migration được xếp lại để
 cụm này đi trước chỉ mục báo cáo theo kỳ (5f39bbc564db) — chỉ mục đó chờ lên prod cùng báo cáo.
 
+Cùng ngày đồng bộ bài hướng dẫn «Tra cứu thị trường» lên prod: chỉ chép đúng bài này (dev id 110 sang prod id 100, giữ
+nguyên id prod), không đồng bộ nguyên khối vì dev có nhiều bài chưa dùng ở prod; bản cũ của bài prod lưu ở tệp JSON trên VPS.
+Nạp lại chỉ mục Trợ lý AI cho riêng bài đó (10 đoạn); kho prod đủ 61/61 bài và 11/11 câu hỏi thường gặp.
+
 Mã nguồn: `customs/dedupe.py` (mới) · `customs/importer.py` · `customs/row_log.py` · `customs/model.py` ·
 `customs/controller.py` · `import_tool/model.py` (`ImportRowStatus.EXISTING`) · migration `c540a7d3e9f1` ·
 `scripts/customs_row_hash.py` (mới) · `scripts/seed_help_customs_prices.py` · v2 `customs-import-dialog.tsx`,
