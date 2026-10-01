@@ -113,6 +113,16 @@ export interface ReportBreakdownConfig {
   /** Khóa trong `response.breakdowns`. */
   key: string
   title: string
+  /**
+   * Chỉ số dùng để ghi phụ đề ("Theo …") + định dạng số đầu cột của RIÊNG
+   * breakdown này — bỏ trống thì lấy `meta.rank_by` (mặc định của trang, đúng
+   * cho đa số báo cáo chỉ có MỘT chỉ số xếp hạng). Khai khi trang có NHIỀU
+   * breakdown xếp theo NHIỀU chỉ số khác nhau (vd "Top dự án theo quá hạn" và
+   * "Top PIC theo việc mở" — hai chỉ số snapshot khác nhau, xem
+   * `pages/work-report-page.tsx`), để mỗi thẻ ghi đúng chỉ số của chính nó
+   * thay vì cùng một phụ đề sai cho mọi thẻ (H3, review 01/10/2026).
+   */
+  rankMetric?: string
 }
 
 /**
@@ -151,6 +161,15 @@ export interface ReportPageConfig {
   chartMetric: string
   /** `group_by` mặc định khi mở trang lần đầu — phải khớp một khóa `meta.dimensions` backend trả. */
   defaultGroupBy: string
+  /**
+   * Preset kỳ khi URL CHƯA có `preset` — bỏ trống thì dùng mặc định chung
+   * `this_month` (Q0.1). Khai khi trang hợp lý hơn ở một kỳ khác lúc mở lần
+   * đầu (vd Quỹ phép năm → `'this_year'`, review H2-FE 01/10/2026); PHẢI là
+   * một khóa thật trong `config/report-period-presets.ts`, sai thì
+   * `useReportFilters` âm thầm lùi về `this_month`. Nút "Đặt lại bộ lọc" cũng
+   * đưa kỳ về ĐÚNG preset này, không phải mặc định chung.
+   */
+  defaultPreset?: string
   /** Breakdown phụ (Top NCC, Top NSTM…) — chỉ vẽ khi backend có trả đúng khóa trong `breakdowns`. */
   breakdowns?: ReportBreakdownConfig[]
   /** Ô lọc riêng của trang, chèn vào thanh lọc TRƯỚC ô Công ty. */

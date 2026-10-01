@@ -22,6 +22,13 @@ function isCompareMode(value: string | null): value is ReportCompareMode {
 export interface UseReportFiltersConfig {
   /** `group_by` khi URL chưa có tham số đó — `ReportPageConfig.defaultGroupBy`. */
   defaultGroupBy: string
+  /**
+   * Preset khi URL chưa có `preset` — `ReportPageConfig.defaultPreset` (review
+   * H2-FE, 01/10/2026). Khóa LẠ (gõ sai ở cấu hình trang) âm thầm lùi về
+   * `DEFAULT_REPORT_PRESET` ("this_month") qua `isReportPresetKey`, không ném
+   * lỗi — một trang cấu hình sai không được làm sập cả bộ lọc kỳ.
+   */
+  defaultPreset?: string
 }
 
 export interface ReportFiltersState {
@@ -83,9 +90,16 @@ export interface ReportFiltersState {
  * đọc, KHÔNG viết đè URL. Đổi bất kỳ bộ lọc nào sau đó ghi bộ tham số mới và
  * `year` tự biến mất khỏi URL (mọi setter đều xóa nó).
  */
-export function useReportFilters({ defaultGroupBy }: UseReportFiltersConfig): ReportFiltersState {
+export function useReportFilters({
+  defaultGroupBy,
+  defaultPreset,
+}: UseReportFiltersConfig): ReportFiltersState {
   const [searchParams] = useSearchParams()
   const setParams = useSetUrlParams()
+  //  H2-FE (01/10/2026): preset "mặc định của TRANG NÀY" khi URL trống — khóa lạ
+  //  (lỗi gõ ở cấu hình trang) lùi về mặc định CHUNG, không ném lỗi giữa chừng.
+  const fallbackPreset: ReportPresetKey =
+    defaultPreset && isReportPresetKey(defaultPreset) ? defaultPreset : DEFAULT_REPORT_PRESET
 
   const presetParam = searchParams.get('preset')
   const legacyYear = searchParams.get('year')
@@ -95,7 +109,7 @@ export function useReportFilters({ defaultGroupBy }: UseReportFiltersConfig): Re
     ? 'custom'
     : isReportPresetKey(presetParam)
       ? presetParam
-      : DEFAULT_REPORT_PRESET
+      : fallbackPreset
 
   const from = isLegacyYear ? `${legacyYear}-01-01` : (searchParams.get('date_from') ?? '')
   const to = isLegacyYear ? `${legacyYear}-12-31` : (searchParams.get('date_to') ?? '')
@@ -150,7 +164,7 @@ export function useReportFilters({ defaultGroupBy }: UseReportFiltersConfig): Re
         return
       }
       setParams({
-        preset: next === DEFAULT_REPORT_PRESET ? null : next,
+        preset: next === fallbackPreset ? null : next,
         year: null,
         date_from: null,
         date_to: null,
@@ -175,7 +189,7 @@ export function useReportFilters({ defaultGroupBy }: UseReportFiltersConfig): Re
 
     applyPeriod: ({ preset: nextPreset, from: nextFrom, to: nextTo, compare: nextCompare }) => {
       const next: Record<string, string | null> = {
-        preset: nextPreset === DEFAULT_REPORT_PRESET ? null : nextPreset,
+        preset: nextPreset === fallbackPreset ? null : nextPreset,
         year: null,
         compare: nextCompare === DEFAULT_COMPARE ? null : nextCompare,
       }

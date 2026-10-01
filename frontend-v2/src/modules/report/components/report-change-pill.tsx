@@ -10,8 +10,17 @@ const TONE_CLASS: Record<MetricChangeDescription['tone'], string> = {
   neutral: 'bg-muted text-muted-foreground',
 }
 
+/** Bản `inline` (ô bảng): cùng màu chữ, KHÔNG nền — đặt sát con số mà không thành một khối. */
+const INLINE_TONE_CLASS: Record<MetricChangeDescription['tone'], string> = {
+  good: 'text-success',
+  bad: 'text-destructive',
+  neutral: 'text-muted-foreground',
+}
+
 interface ReportChangePillProps {
   description: MetricChangeDescription
+  /** `pill` (mặc định, thẻ KPI) có nền bo tròn; `inline` (dòng Tổng của bảng) chỉ là chữ màu. */
+  variant?: 'pill' | 'inline'
   className?: string
 }
 
@@ -25,7 +34,11 @@ interface ReportChangePillProps {
  * `kind: 'unavailable'` KHÔNG vẽ gì (chưa có dữ liệu để so, hoặc đang tắt so
  * sánh) — trả `null` để chỗ gọi khỏi phải tự kiểm tra trước khi render.
  */
-export function ReportChangePill({ description, className }: ReportChangePillProps) {
+export function ReportChangePill({
+  description,
+  variant = 'pill',
+  className,
+}: ReportChangePillProps) {
   if (description.kind === 'unavailable') return null
 
   const Icon =
@@ -38,8 +51,10 @@ export function ReportChangePill({ description, className }: ReportChangePillPro
   return (
     <span
       className={cn(
-        'inline-flex w-fit items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-medium',
-        TONE_CLASS[description.tone],
+        'inline-flex w-fit shrink-0 items-center gap-1 text-xs font-medium whitespace-nowrap',
+        variant === 'pill'
+          ? cn('rounded-full px-1.5 py-0.5', TONE_CLASS[description.tone])
+          : INLINE_TONE_CLASS[description.tone],
         className,
       )}
     >

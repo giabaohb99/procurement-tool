@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -401,7 +401,9 @@ describe('ReportAnalyticsPage — M6 dead-end guard on 403/422', () => {
 })
 
 describe('ReportAnalyticsPage — notes from the response render under the filters', () => {
-  it('shows every note the backend sends as a muted info line', async () => {
+  //  01/10/2026: lưu ý cách tính gấp sẵn thành một dòng (khối mở sẵn chắn ngay
+  //  trên thẻ KPI bị chê xấu) — nhưng KHÔNG được mất câu nào khi mở ra.
+  it('collapses notes into one line and shows every note once opened', async () => {
     vi.mocked(apiGet).mockImplementation(async () => ({
       ...buildFixture('previous'),
       notes: ['Số liệu công nợ là XẤP XỈ.', 'Bỏ dòng đã hủy.'],
@@ -410,8 +412,16 @@ describe('ReportAnalyticsPage — notes from the response render under the filte
     renderPage()
     await screen.findByText(KPI_LOADED_MARK)
 
+    expect(screen.queryByText('Số liệu công nợ là XẤP XỈ.')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Cách tính số liệu \(2 lưu ý\)/ }))
     expect(screen.getByText('Số liệu công nợ là XẤP XỈ.')).toBeInTheDocument()
     expect(screen.getByText('Bỏ dòng đã hủy.')).toBeInTheDocument()
+  })
+
+  it('renders no notes toggle when the backend sends none', async () => {
+    renderPage()
+    await screen.findByText(KPI_LOADED_MARK)
+    expect(screen.queryByRole('button', { name: /Cách tính số liệu/ })).not.toBeInTheDocument()
   })
 })
 

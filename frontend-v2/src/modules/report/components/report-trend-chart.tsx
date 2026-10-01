@@ -50,6 +50,11 @@ export function ReportTrendChart({
   //  phải "chưa phát sinh". Chặn phòng khi `chartMetric` cấu hình lỡ trỏ vào một
   //  chỉ số snapshot (UI bình thường đã chặn bấm chọn nó ở `ReportKpiRow`).
   const isSnapshot = metricMeta?.snapshot ?? false
+  const integerAxis = metricMeta?.kind === 'int' || metricMeta?.kind === 'days'
+  //  Trục chỉ chia mốc nguyên mà để recharts tự chọn 5 vạch thì số lớn nhất 1
+  //  cũng ra trục 0…4 — bốn phần năm khung trống. Ít hơn 5 đơn vị thì mỗi đơn vị một vạch.
+  const maxValue = Math.max(0, ...data.map((p) => Math.max(p.current ?? 0, p.previous ?? 0)))
+  const tickCount = integerAxis && maxValue < 4 ? Math.max(2, Math.ceil(maxValue) + 1) : undefined
   const isEmpty = isSnapshot || data.every((p) => (p.current ?? 0) === 0 && (p.previous ?? 0) === 0)
 
   return (
@@ -68,7 +73,10 @@ export function ReportTrendChart({
         data={data}
         currentLabel="Kỳ này"
         previousLabel={COMPARE_CHART_LABEL[compareMode]}
-        allowDecimals={metricMeta?.kind !== 'int'}
+        //  Đếm (int) và số ngày: trục chỉ chia mốc nguyên — "0,3 ngày" trên
+        //  trục của một chỉ số đi theo nửa ngày là con số không ai đọc nổi.
+        allowDecimals={!integerAxis}
+        tickCount={tickCount}
         formatValue={(value) =>
           formatReportMetricValue(value, metricMeta?.kind ?? 'int', 'compact')
         }

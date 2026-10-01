@@ -8,6 +8,8 @@ import type { MetricChangeDescription } from '../utils/report-period-comparison'
 import { ReportChangePill } from './report-change-pill'
 
 interface KpiTrendCardProps {
+  /** Dòng chữ nhỏ TRÊN nhãn — vd tên báo cáo nguồn ở trang Tổng quan ("Đặt xe"). */
+  eyebrow?: string
   label: string
   value: string
   /**
@@ -36,6 +38,11 @@ interface KpiTrendCardProps {
   selected?: boolean
 }
 
+/** "so với kỳ trước" → "kỳ trước" — đuôi cho câu "Bằng kỳ trước". */
+function compareTarget(caption: string | undefined): string {
+  return caption?.replace(/^so với\s+/, '') || 'kỳ trước'
+}
+
 /**
  * Thẻ KPI kiểu báo cáo Haravan: con số lớn + mũi tên thay đổi so với kỳ trước
  * + đường xu hướng mini ở chân thẻ.
@@ -44,6 +51,7 @@ interface KpiTrendCardProps {
  * mình (người mù màu vẫn đọc được chiều tăng giảm).
  */
 export function KpiTrendCard({
+  eyebrow,
   label,
   value,
   changeDescription,
@@ -56,8 +64,11 @@ export function KpiTrendCard({
   onClick,
   selected = false,
 }: KpiTrendCardProps) {
-  const hasChange = changeDescription && changeDescription.kind !== 'unavailable'
+  const changeKind = changeDescription?.kind ?? 'unavailable'
   const points = sparkline?.map((v, i) => ({ i, v }))
+  //  Dưới HAI mốc khác 0 thì sparkline chỉ là một gai nhọn đơn độc — không kể
+  //  được xu hướng nào, chỉ làm thẻ trông như có biến động lớn. Bỏ hẳn.
+  const showSparkline = !loading && !!points && points.filter((p) => p.v !== 0).length >= 2
 
   return (
     // `min-w-0`: cùng chốt chống tràn ngang của ChartCard — recharts báo ngược
@@ -82,9 +93,16 @@ export function KpiTrendCard({
         className,
       )}
     >
-      <p className="truncate text-sm text-muted-foreground" title={label}>
-        {label}
-      </p>
+      <div className="min-w-0">
+        {eyebrow && (
+          <p className="truncate text-xs text-muted-foreground/80" title={eyebrow}>
+            {eyebrow}
+          </p>
+        )}
+        <p className="truncate text-sm font-medium text-muted-foreground" title={label}>
+          {label}
+        </p>
+      </div>
       {loading ? (
         <>
           <Skeleton className="h-7 w-2/3" />
@@ -95,12 +113,20 @@ export function KpiTrendCard({
           <p className="truncate text-2xl font-semibold text-navy tabular-nums dark:text-foreground">
             {value}
           </p>
-          {hasChange && changeDescription && (
-            <p className="flex items-center gap-1.5 text-xs">
+          {/*  Pill CHỈ khi có một mức thay đổi thật. "Mới" (kỳ trước = 0) và
+               "Không đổi" là câu chữ, không phải tín hiệu — nói bằng chữ mờ
+               thay vì một khối xám lặp lại trên gần như mọi thẻ. */}
+          {changeKind === 'value' && changeDescription && (
+            <p className="flex min-w-0 items-center gap-1.5 text-xs">
               <ReportChangePill description={changeDescription} />
               {changeCaption && (
                 <span className="truncate text-muted-foreground">{changeCaption}</span>
               )}
+            </p>
+          )}
+          {(changeKind === 'new' || changeKind === 'flat') && (
+            <p className="truncate text-xs text-muted-foreground">
+              {changeKind === 'new' ? 'Kỳ trước chưa phát sinh' : `Bằng ${compareTarget(changeCaption)}`}
             </p>
           )}
           {hint && (
@@ -117,13 +143,15 @@ export function KpiTrendCard({
         </>
       )}
       {/* Toàn số 0 thì không vẽ: một đường phẳng ở đáy trông như dữ liệu thật. */}
-      {points && points.length > 1 && points.some((p) => p.v !== 0) && !loading && (
+      {showSparkline && (
         <div className="-mx-1 mt-1 h-10" aria-hidden>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={points} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
               <YAxis hide domain={[0, 'dataMax']} />
               <Line
-                type="monotone"
+                //  `linear`: `monotone` uốn mốc 0-0-1-0 thành hình chuông, đọc
+                //  như có một đợt tăng dần — dữ liệu thật thì không có.
+                type="linear"
                 dataKey="v"
                 stroke="var(--chart-1)"
                 strokeWidth={2}

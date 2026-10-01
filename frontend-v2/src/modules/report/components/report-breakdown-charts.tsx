@@ -11,7 +11,7 @@ import { describeBreakdownRank } from '../utils/breakdown-rank-metric'
 interface ReportBreakdownChartsProps {
   breakdowns?: Record<string, ReportBreakdownItem[]>
   config: ReportBreakdownConfig[]
-  /** Để biết khối Top xếp theo chỉ số nào (`meta.rank_by`) và định dạng số theo nó. */
+  /** Khối Top xếp theo chỉ số nào — `meta.rank_by` mặc định, từng thẻ ghi đè bằng `ReportBreakdownConfig.rankMetric`. */
   meta?: ReportMeta
   isLoading: boolean
 }
@@ -29,12 +29,16 @@ export function ReportBreakdownCharts({
   isLoading,
 }: ReportBreakdownChartsProps) {
   if (config.length === 0) return null
-  const { description, formatValue } = describeBreakdownRank(meta)
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {config.map((c) => {
         const items = breakdowns?.[c.key] ?? []
+        //  H3 (review 01/10/2026) — mỗi thẻ tự tính phụ đề/định dạng theo ĐÚNG
+        //  chỉ số của NÓ (`c.rankMetric`), không dùng chung `meta.rank_by`:
+        //  trang nhiều breakdown xếp theo nhiều chỉ số khác nhau (vd dự án) thì
+        //  một mô tả chung cho mọi thẻ sẽ sai với ít nhất một thẻ.
+        const { description, formatValue } = describeBreakdownRank(meta, c.rankMetric)
         return (
           <ChartCard
             key={c.key}

@@ -76,6 +76,69 @@ function build(url = '/report/test') {
   )
 }
 
+//  H2-FE (review 01/10/2026) — trang có `ReportPageConfig.defaultPreset` (vd
+//  Quỹ phép năm → "this_year") phải mở sẵn ở preset ĐÓ, không phải mặc định
+//  chung "this_month", và "Đặt lại bộ lọc" cũng phải đưa kỳ về ĐÚNG preset đó.
+function ProbeWithDefaultPreset({ defaultPreset }: { defaultPreset?: string }) {
+  const filters = useReportFilters({ defaultGroupBy: 'department', defaultPreset })
+  return (
+    <>
+      <span data-testid="preset">{filters.preset}</span>
+      <button type="button" onClick={() => filters.setPreset('this_year')}>
+        Năm nay
+      </button>
+      <button type="button" onClick={() => filters.setPreset('today')}>
+        Hôm nay
+      </button>
+      <button type="button" onClick={() => filters.resetFilters({ period: true })}>
+        Đặt lại kỳ
+      </button>
+    </>
+  )
+}
+
+function buildWithDefaultPreset(defaultPreset?: string, url = '/report/test') {
+  return render(
+    <MemoryRouter initialEntries={[url]}>
+      <ProbeWithDefaultPreset defaultPreset={defaultPreset} />
+    </MemoryRouter>,
+  )
+}
+
+describe('useReportFilters — defaultPreset (page-level override)', () => {
+  it('opens at the page-configured preset instead of the shared default, with a clean URL', () => {
+    buildWithDefaultPreset('this_year')
+    expect(screen.getByTestId('preset')).toHaveTextContent('this_year')
+  })
+
+  it('selecting the page default back clears the URL param (it is the implicit default now)', async () => {
+    const user = userEvent.setup()
+    buildWithDefaultPreset('this_year')
+    await user.click(screen.getByRole('button', { name: 'Hôm nay' }))
+    expect(screen.getByTestId('preset')).toHaveTextContent('today')
+    await user.click(screen.getByRole('button', { name: 'Năm nay' }))
+    expect(screen.getByTestId('preset')).toHaveTextContent('this_year')
+  })
+
+  it('"Đặt lại bộ lọc" returns to the page default, not the shared "this_month"', async () => {
+    const user = userEvent.setup()
+    buildWithDefaultPreset('this_year')
+    await user.click(screen.getByRole('button', { name: 'Hôm nay' }))
+    await user.click(screen.getByRole('button', { name: 'Đặt lại kỳ' }))
+    expect(screen.getByTestId('preset')).toHaveTextContent('this_year')
+  })
+
+  it('an invalid defaultPreset silently falls back to "this_month" instead of breaking', () => {
+    buildWithDefaultPreset('khong-ton-tai')
+    expect(screen.getByTestId('preset')).toHaveTextContent('this_month')
+  })
+
+  it('omitting defaultPreset keeps the shared "this_month" default', () => {
+    buildWithDefaultPreset(undefined)
+    expect(screen.getByTestId('preset')).toHaveTextContent('this_month')
+  })
+})
+
 describe('useReportFilters — defaults', () => {
   it('defaults to preset=this_month, compare=previous, groupBy=defaultGroupBy with a clean URL', () => {
     build()

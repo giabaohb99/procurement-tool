@@ -26,7 +26,7 @@ interface ReportOverviewKpiStripProps {
  * Dải "Chỉ số chính" của trang Tổng quan — mỗi báo cáo góp 1–2 mini-KPI
  * (`ReportCatalogEntry.overviewKpis`), gom theo PHÂN HỆ (`report.group`). Bấm
  * một thẻ để đổi biểu đồ xu hướng chính (`ReportOverviewPage`) sang chỉ số đó;
- * `hint` luôn hiện TÊN BÁO CÁO vì hai báo cáo khác nhau có thể trùng nhãn chỉ
+ * `eyebrow` luôn hiện TÊN BÁO CÁO vì hai báo cáo khác nhau có thể trùng nhãn chỉ
  * số (vd "Giao đúng hạn" của cả Báo cáo mua hàng lẫn Tiến độ mua hàng).
  */
 export function ReportOverviewKpiStrip({
@@ -76,11 +76,13 @@ export function ReportOverviewKpiStrip({
                 return [
                   <KpiTrendCard
                     key={`${entry.report.path}__${metricKey}`}
+                    //  Tên báo cáo nguồn đứng TRÊN nhãn chỉ số: "Yêu cầu", "Đang chờ",
+                    //  "Quá hạn" đứng một mình không biết là của phân hệ nào.
+                    eyebrow={entry.report.label}
                     label={metric?.label ?? entry.report.label}
                     value={metric ? formatReportMetricValue(current, metric.kind, 'compact') : '—'}
                     changeDescription={changeDescription}
                     changeCaption={compareMode === 'none' ? undefined : compareCaption(compareMode)}
-                    hint={entry.report.label}
                     loading={entry.isLoading && !entry.data}
                     selected={isSelected}
                     //  `snapshot`: không có xu hướng theo kỳ để vẽ — chọn nó làm

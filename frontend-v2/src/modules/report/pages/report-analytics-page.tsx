@@ -1,5 +1,4 @@
 import type { AxiosError } from 'axios'
-import { Info } from 'lucide-react'
 import { useState } from 'react'
 
 import { extractErrorMessage } from '@/core/api'
@@ -14,6 +13,7 @@ import { ReportErrorCard } from '../components/report-error-card'
 import { ReportExportButton } from '../components/report-export-button'
 import { ReportFiltersBar } from '../components/report-filters-bar'
 import { ReportGroupedTable } from '../components/report-grouped-table'
+import { ReportNotes } from '../components/report-notes'
 import { ReportKpiRow } from '../components/report-kpi-row'
 import { ReportPageHeader } from '../components/report-page-header'
 import { ReportPeriodEmptyState } from '../components/report-period-empty-state'
@@ -60,7 +60,10 @@ function buildSourceHref(
  * này không tự tính hay tự dịch mã trạng thái nào (backend là nguồn duy nhất).
  */
 export function ReportAnalyticsPage({ config }: ReportAnalyticsPageProps) {
-  const filters = useReportFilters({ defaultGroupBy: config.defaultGroupBy })
+  const filters = useReportFilters({
+    defaultGroupBy: config.defaultGroupBy,
+    defaultPreset: config.defaultPreset,
+  })
   const [chartMetric, setChartMetric] = useState(config.chartMetric)
   const { data, isLoading, isError, error } = useReportAnalytics(
     config.endpoint,
@@ -126,17 +129,8 @@ export function ReportAnalyticsPage({ config }: ReportAnalyticsPageProps) {
           <>
             {/*  `notes` mang các lưu ý tính toán quan trọng (nguồn dữ liệu gộp
                  hai cột ngày khác nhau, số công nợ là XẤP XỈ…) — backend là
-                 nguồn DUY NHẤT, tầng này chỉ hiện nguyên văn, không được bỏ qua. */}
-            {notes.length > 0 && (
-              <div className="flex gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-                <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                  {notes.map((note, index) => (
-                    <li key={index}>{note}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                 nguồn DUY NHẤT, tầng này hiện nguyên văn (gấp sẵn, bấm để mở). */}
+            <ReportNotes notes={notes} />
 
             <ReportKpiRow
               meta={meta}

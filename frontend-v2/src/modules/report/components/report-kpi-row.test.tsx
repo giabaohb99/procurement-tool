@@ -77,7 +77,7 @@ describe('ReportKpiRow — snapshot metric: no sparkline, not clickable', () => 
 describe('ReportKpiRow — null derived metric (zero denominator) renders — with no change badge', () => {
   it('shows the dash instead of 0% and skips the ±change line entirely', () => {
     renderRow()
-    const card = screen.getByText('Tỷ lệ TB').closest('div')
+    const card = screen.getByText('Tỷ lệ TB').closest('[data-slot="card"]')
     expect(card).toHaveTextContent('—')
     //  Không có dòng thay đổi nào (không mũi tên, không %/điểm) cho thẻ này.
     expect(card).not.toHaveTextContent('điểm')

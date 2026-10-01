@@ -46,6 +46,8 @@ interface PeriodComparisonChartProps {
   formatLabel?: (label: string) => string
   /** `false` cho chỉ số ĐẾM — không thì trục số nhỏ ra vạch lẻ bị làm tròn trùng nhau ("2, 2, 1"). */
   allowDecimals?: boolean
+  /** Số vạch trục Y — bỏ trống để recharts tự chọn (mặc định 5). */
+  tickCount?: number
   height?: number
 }
 
@@ -106,8 +108,14 @@ export function PeriodComparisonChart({
   formatValue,
   formatLabel = (label) => label,
   allowDecimals = true,
+  tickCount,
   height = 280,
 }: PeriodComparisonChartProps) {
+  //  `linear` thay `monotone`: đường cong làm tháng 0 → 1 → 0 thành một quả
+  //  chuông mượt, như thể số liệu tăng giảm dần qua từng ngày (đại ca chê
+  //  01/10/2026). Ít mốc (≤ 16, vd 12 tháng) thì chấm từng mốc để người xem
+  //  biết đâu là số thật, đâu là đoạn nối.
+  const showDots = data.length <= 16
   return (
     <div className="space-y-3">
       {/* Chú giải luôn có với hai chuỗi — màu không bao giờ là thứ duy nhất
@@ -141,6 +149,7 @@ export function PeriodComparisonChart({
           />
           <YAxis
             allowDecimals={allowDecimals}
+            tickCount={tickCount}
             width="auto"
             tickLine={false}
             axisLine={false}
@@ -160,7 +169,7 @@ export function PeriodComparisonChart({
             }
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="previous"
             stroke={PREVIOUS_COLOR}
             strokeWidth={2}
@@ -170,11 +179,11 @@ export function PeriodComparisonChart({
             isAnimationActive={false}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="current"
             stroke={CURRENT_COLOR}
             strokeWidth={2}
-            dot={false}
+            dot={showDots ? { r: 3, fill: CURRENT_COLOR, strokeWidth: 0 } : false}
             activeDot={{ r: 4, stroke: 'var(--card)', strokeWidth: 2 }}
             isAnimationActive={false}
           />
