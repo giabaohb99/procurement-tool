@@ -311,7 +311,9 @@ function NavMenuItemWithSub({
         </SidebarMenuButton>
         <CollapsibleContent>
           <SidebarMenuSub className="my-1 gap-0.5">
-            {item.children?.map((child) => {
+            {/*  Mục con `hidden` (màn gom về một mục khác qua `matchPaths`) không vẽ —
+                 cùng luật lọc của cấp một ở `visibleItems` phía trên. */}
+            {item.children?.filter((child) => !child.hidden).map((child) => {
               const alsoActive = child.matchPaths?.some(
                 (p) => pathname === p || pathname.startsWith(`${p}/`),
               )

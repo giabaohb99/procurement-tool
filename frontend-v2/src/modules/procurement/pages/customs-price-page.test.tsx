@@ -3,6 +3,7 @@
 // Chặn ở tầng `@/core/api` (luật testing.md) để bắt được đúng đường API màn gọi đi.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -203,6 +204,31 @@ describe('CustomsPricePage', () => {
     build('/procurement/customs-prices/config')
     expect(await screen.findByRole('heading', { name: /Cấu hình/ })).toBeInTheDocument()
     expect(currentLocation()).toBe('/procurement/customs-prices/config')
+  })
+
+  //  01/10/2026 — năm mục tra giá về lại dạng THẺ (menu trái chỉ còn một mục cho cả năm):
+  //  bấm thẻ phải đổi đường VÀ giữ bộ lọc, như lúc chưa tách submenu.
+  it('shows the five price tabs and switches section keeping the filters', async () => {
+    build('/procurement/customs-prices?origin=CN')
+    const tabs = await screen.findAllByRole('tab')
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Danh sách',
+      'Biểu đồ',
+      'Nhà nhập khẩu',
+      'So sánh',
+      'Thuế',
+    ])
+    await userEvent.click(screen.getByRole('tab', { name: 'Thuế' }))
+    await waitFor(() =>
+      expect(currentLocation()).toBe('/procurement/customs-prices/tariff?origin=CN'),
+    )
+    expect(screen.getByRole('tab', { name: 'Thuế' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('keeps Pháp lý as its own submenu page without the price tabs', async () => {
+    build('/procurement/customs-prices/legal')
+    expect(await screen.findByRole('heading', { name: /Pháp lý/ })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Danh sách' })).not.toBeInTheDocument()
   })
 
   it('keeps the filters when the header button jumps to the import history', async () => {

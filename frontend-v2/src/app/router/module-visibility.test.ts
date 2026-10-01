@@ -524,14 +524,30 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
     const parent = visibleNavItems(procurement as ErpModule, can).find(
       (item) => item.path === '/procurement/customs-prices',
     )
-    return parent?.children?.map((child) => child.path) ?? []
+    //  Chỉ mục VẼ trên menu — bỏ mục `hidden` (bốn thẻ tra giá gom về «Giá nhập khẩu»).
+    return parent?.children?.filter((child) => !child.hidden).map((child) => child.path) ?? []
   }
 
   it('người chỉ ĐỌC dữ liệu hải quan thấy mọi mục trừ «Cấu hình» (kể cả «Thuốc BVTV»)', () => {
     const paths = customsChildren(grants('customs_price.read'))
-    expect(paths).toHaveLength(8)
-    expect(paths).toContain('/procurement/customs-prices/pesticides')
+    //  01/10/2026: «Giá nhập khẩu» (gom 5 thẻ) · Pháp lý · Thuốc BVTV · Lịch sử nạp.
+    expect(paths).toEqual([
+      '/procurement/customs-prices',
+      '/procurement/customs-prices/legal',
+      '/procurement/customs-prices/pesticides',
+      '/procurement/customs-prices/history',
+    ])
     expect(paths).not.toContain('/procurement/customs-prices/config')
+  })
+
+  //  Bốn thẻ tra giá không còn mục menu RIÊNG — gõ thẳng URL vẫn phải bị chặn bằng
+  //  khóa `customs_price`, không rơi về nhánh "cho xem" của `canAccessRoute`.
+  it('the four tab routes still require customs_price.read', () => {
+    for (const section of ['chart', 'importers', 'compare', 'tariff']) {
+      const path = `/procurement/customs-prices/${section}`
+      expect(canAccessRoute(procurement as ErpModule, path, grants())).toBe(false)
+      expect(canAccessRoute(procurement as ErpModule, path, grants('customs_price.read'))).toBe(true)
+    }
   })
 
   //  «Cấu hình» có hai mức quyền trên hai khóa: QUẢN LÝ `customs_price` (từ khóa + đồng
