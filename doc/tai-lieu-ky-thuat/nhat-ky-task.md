@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-552 | Ô «Trưởng phòng phê duyệt» và «Trưởng bộ phận» luôn chọn được ở YCMH, YCBG, ĐMH
-- status: dang-lam
+- status: xong
 - date: 2026-10-01
 Đại ca báo trên prod: lập phiếu ở phòng «Lập trình & IT nội bộ» thì không chọn được Trưởng bộ phận lẫn
 Trưởng phòng phê duyệt, và ô phê duyệt không tự lấy theo Trưởng bộ phận. Nguyên nhân: hai ô dùng chung
@@ -88,7 +88,11 @@ riêng thì ô phê duyệt đi theo. Áp cho cả bản cũ lẫn bản mới.
 
 Kiểm: 8 bài kiểm mới; sửa bài kiểm cũ của bao-CR-499 theo luật mới; 167 bài kiểm về người duyệt và
 Trưởng bộ phận xanh. Màn mới kiểm kiểu, eslint không lỗi, vitest thu mua 776 bài xanh; màn cũ giữ đúng
-4 lỗi nền. Chưa commit, chờ đại ca kiểm trên local.
+4 lỗi nền.
+
+Lên dev và prod ngày 01/10 cùng bao-CR-547 (main 3d4762db), sao lưu cơ sở dữ liệu prod trước. Kiểm trên prod: phiếu mới
+phòng IT ra người duyệt gồm anh Giang (Trưởng bộ phận), anh Dững, chị Mi, chị Ngân…, không có tài khoản Quản trị; ô Trưởng
+bộ phận có anh Giang. Cùng ngày anh Trần Chí Dững được gán bộ vai trò quản lý (không có Quản trị hệ thống).
 
 Mã nguồn: `core/approver_candidates.py` (`list_candidates_for_row`, `list_candidates_for_draft`) ·
 `purchase_request/service.py` (`complete_head_choices`) · ba controller (`/approver-candidates`,
@@ -198,7 +202,7 @@ customs-pesticide-{hero-card,detail-tabs,related-cards,lookup-sidebar,banned-not
 ---
 
 ## bao-CR-547 | Tick nhiều dòng trong bảng dòng ở trang chi tiết rồi xóa một lần (YCBG, YCMH, ĐMH, YCTT)
-- status: dang-lam
+- status: xong
 - date: 2026-10-01
 Đại ca muốn ở bảng dòng sản phẩm trong trang chi tiết của yêu cầu báo giá, yêu cầu mua hàng, đơn mua
 hàng và yêu cầu thanh toán có thể tick nhiều dòng rồi xóa một lần, cả v1 lẫn v2, chỉ khi phiếu đang là
@@ -220,6 +224,8 @@ Kiểm: 8 bài kiểm máy chủ mới và 178 bài kiểm phạm vi liên quan 
 kiểm phân hệ thu mua, tài chính và lớp dùng chung xanh (thêm bài cho hook chọn dòng, cột tick của bảng
 dòng, bảng yêu cầu mua hàng, nút xóa); v1 tsc giữ đúng 4 lỗi cũ; bấm thử trên trình duyệt local ở form
 tạo yêu cầu mua hàng cả hai bản. Chưa commit.
+
+Lên dev và prod ngày 01/10 cùng bao-CR-552 (main 3d4762db), sao lưu cơ sở dữ liệu prod trước khi deploy.
 
 Mã nguồn: `core/bulk_delete.py` (mới) · controller xóa nhiều của 4 phân hệ · `payment_request/service.py` ·
 v2 `shared/data-table/lines-table.tsx`, `shared/hooks/use-line-selection.ts` (mới), `shared/ui/bulk-delete-button.tsx`
