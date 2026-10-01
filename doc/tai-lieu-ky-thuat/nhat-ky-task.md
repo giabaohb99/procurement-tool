@@ -98,7 +98,7 @@ Mã nguồn: `payable/due_alerts.py` (mới) · `alert/controller.py` · `dashbo
 ---
 
 ## bao-CR-541 | Tra cứu thị trường: chống trùng dòng khi nạp tệp
-- status: dang-lam
+- status: xong
 - date: 2026-10-01
 Đại ca chốt ngày 01/10: dữ liệu hải quan xuất ra là đổ vào luôn, người nạp không biết tệp nào chồng
 lên tệp nào, nên hệ thống phải tự so trùng; trùng thì bỏ qua, không ghi đè, và bỏ hẳn cách «thay toàn
@@ -125,6 +125,11 @@ Kiểm: 250 bài kiểm hải quan và nạp danh mục xanh (11 bài mới); n�
 liệu MySQL local ra đủ 300 dòng «Đã có»; tính mã cho 18.243 dòng local ra đúng 576 nhóm, 806 dòng thừa
 như số đếm cũ; đọc mã của 9 tháng dữ liệu mất 1,7 giây. v2 tsc 0 lỗi, eslint 0 lỗi, vitest 396 bài xanh;
 v1 tsc giữ đúng 4 lỗi cũ. Đại ca bảo commit và gộp ngày 01/10, Agent 1 đẩy lên dev; 806 dòng thừa trên prod chưa xóa, chờ đại ca. Số CR ban đầu đặt là 540, đổi sang 541 vì trùng số với việc «Nhóm dự án» của anh Được.
+
+Lên prod ngày 01/10 cùng cụm Tra cứu thị trường (main 1a597c20). Trước đó diễn tập trên bản sao cơ sở dữ liệu prod ở máy local:
+bốn migration chạy êm, seed khởi động không lỗi, chống trùng ra đúng 806 dòng. Trên prod: sao lưu, deploy, chạy thử khớp 806 dòng
+rồi xóa thật, chép dòng bị xóa ra tệp JSON trên VPS; 18.243 còn 17.437 dòng, không còn nhóm trùng. Chuỗi migration được xếp lại để
+cụm này đi trước chỉ mục báo cáo theo kỳ (5f39bbc564db) — chỉ mục đó chờ lên prod cùng báo cáo.
 
 Mã nguồn: `customs/dedupe.py` (mới) · `customs/importer.py` · `customs/row_log.py` · `customs/model.py` ·
 `customs/controller.py` · `import_tool/model.py` (`ImportRowStatus.EXISTING`) · migration `c540a7d3e9f1` ·
@@ -9407,6 +9412,8 @@ Cổng kiểm: bản mới kiểm kiểu sạch, lint không lỗi, 630 bài thu
 giữ đúng 4 lỗi kiểu có sẵn. Chưa bấm thử trên máy vì stack local đang tắt sau lần khởi động lại WSL.
 Đã commit 30/09, Erp Agent 1 gom cùng các việc khác để đẩy lên dev và prod; nhớ bấm thử trên dev.
 
+Lên prod ngày 01/10 cùng cụm Tra cứu thị trường (thuốc BVTV duoc-CR-486..495 và bao-CR-541), main 1a597c20; sao lưu cơ sở dữ liệu prod trước khi deploy.
+
 Mã nguồn: frontend-v2/src/modules/procurement/components/customs/customs-party-picker.tsx ·
 frontend/src/components/customs/CustomsPartyPicker.tsx · customs-price-page.tsx · CustomsPrices.tsx
 
@@ -9582,7 +9589,7 @@ Mã nguồn: backend/app/modules/customs/search_service.py · kind_controller.py
 frontend-v2 config/customs-search-synonym-crud.tsx
 
 ## bao-CR-496 | Lưu bộ lọc riêng từng người và nhật ký từng dòng khi nạp tờ khai hải quan
-- status: dang-lam
+- status: xong
 - date: 2026-09-25
 Chị Mi yêu cầu (F07) người dùng đặt tên và lưu lại tổ hợp điều kiện đang lọc để lần sau chọn
 một phát, và (F01 ghi chú 25/09) sau khi nạp tệp phải xem được đủ mọi dòng kèm kết cục. Đại
