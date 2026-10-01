@@ -20,6 +20,7 @@ from . import (excerpt_service, issue_service, link_serializer, link_service,
                parent_change_service, supersede_service)
 from .controller import _load, doc_reader
 from .link_serializer import summary_of
+from app.modules.employee.field_limits import Str500
 
 router = APIRouter(prefix="/api/documents", tags=["document-link"])
 
@@ -35,7 +36,7 @@ def _type_name(db: Session, doc_type_id: int | None) -> str:
 class LinkCreate(BaseModel):
     relation: int = Field(ge=1, le=10)
     target_document_id: int
-    note: str = ""
+    note: Str500 = ""
 
 
 class ExcerptCreate(BaseModel):
@@ -43,7 +44,7 @@ class ExcerptCreate(BaseModel):
     content_html: str
     #  Dải thật kiểm ở `excerpt_service` theo danh mục Mức mật.
     secrecy_level: int = Field(ge=1, le=99)
-    note: str = ""
+    note: Str500 = ""
 
 
 @router.get("/prerequisite-check")

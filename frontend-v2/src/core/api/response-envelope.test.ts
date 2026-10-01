@@ -44,4 +44,37 @@ describe('extractErrorMessage', () => {
     }
     expect(extractErrorMessage(error)).toBe('Network Error')
   })
+
+  //  bao-CR-538: backend tự viết câu tiếng Việt cho 422 — không nối details tiếng Anh vào sau.
+  it('lỗi 422 có câu tiếng Việt thì hiện đúng câu đó, không ghép details', () => {
+    const error = {
+      response: {
+        data: {
+          success: false,
+          error: {
+            code: 'validation_error',
+            message: 'Ô "Mục đích" tối đa 355 ký tự (đang nhập 412)',
+            details: [{ loc: ['body', 'purpose'], msg: 'String should have at most 355 characters' }],
+          },
+        },
+      },
+    }
+    expect(extractErrorMessage(error)).toBe('Ô "Mục đích" tối đa 355 ký tự (đang nhập 412)')
+  })
+
+  it('backend cũ trả câu trơn «Dữ liệu không hợp lệ» thì vẫn ghép details', () => {
+    const error = {
+      response: {
+        data: {
+          error: {
+            message: 'Dữ liệu không hợp lệ',
+            details: [{ loc: ['body', 'purpose'], msg: 'String should have at most 355 characters' }],
+          },
+        },
+      },
+    }
+    expect(extractErrorMessage(error)).toBe(
+      'Dữ liệu không hợp lệ (purpose: String should have at most 355 characters)',
+    )
+  })
 })

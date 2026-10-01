@@ -137,6 +137,69 @@ membership_service, list_config_service, task_service}.py · test_cong_viec_hoat
 
 ---
 
+## bao-CR-538 | Nới các ô chữ đoạn văn của khảo sát, YCBG, YCMH và đơn mua hàng
+- status: dang-lam
+- date: 2026-10-01
+Sau sự cố «Ghi chú NSPT» tràn cột ngày 30/09, Agent 3 rà toàn bộ ô chữ người dùng gõ tay ở khảo sát,
+YCBG, YCMH, đơn mua hàng, YCTT và nhà cung cấp trên dữ liệu thật của prod. Chỉ ô Ghi chú NSPT từng vỡ,
+nhưng nhiều ô khác đang sát trần và không bị chặn độ dài ở tầng kiểm dữ liệu.
+
+Đại ca chốt cách nới: không chuyển sang văn bản dài mà cộng thêm 100 ký tự vào trần hiện tại (255 lên
+355, 500 lên 600); riêng «Chính sách công nợ» là chuỗi mặc định nên 50 lên 100 là đủ. Đã nới 17 cột:
+chính sách công nợ hai dòng khảo sát; hoạt chất, chính sách vận chuyển của dòng sản phẩm; chính sách
+giao hàng, độ tin cậy, công nghệ sản xuất, chính sách hóa đơn, đổi trả lỗi, nguồn thông tin của dòng
+nhà cung cấp; mục đích của YCBG và YCMH; ghi chú dòng YCMH và dòng đơn mua hàng; diễn giải chi phí
+đơn mua hàng; nội dung chính phiếu khảo sát; ghi chú loại chi phí. Các ô đó đều được khai giới hạn
+độ dài khớp trần mới, gõ quá thì nhận câu báo thay vì lỗi không lường trước. Migration chỉ nới độ
+dài, giữ nguyên bắt buộc và mặc định của từng cột như trên prod.
+
+Kiểm: 34 bài kiểm mới xanh; 581 trên 582 bài kiểm khảo sát, YCBG, YCMH, đơn mua hàng xanh. Bài đỏ còn
+lại (`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet`) đỏ sẵn trên erp-v2 vì viết trước bao-CR-511.
+Đợt hai theo lời đại ca «phải bắt validate kỹ các phần này» (chặn ở schema là tuyến chính, lỗi
+MySQL chỉ là lưới cuối): khai giới hạn độ dài cho MỌI ô chữ còn thiếu ở mọi schema ghi của khảo
+sát, YCBG, YCMH, đơn mua hàng, YCTT và nhà cung cấp — 215 chỗ khai báo, số khớp đúng trần cột (thêm
+các bí danh `Str10`…`Str1000`). Thêm bài kiểm canh: mỗi schema ghi phải khai rõ ghi vào bảng nào, và
+gửi chuỗi dài hơn trần cột một ký tự thì schema phải chặn ngay; thêm schema hay ô chữ mới mà quên
+khai là bài đỏ kèm danh sách. Kiểm: bài canh và bài kiểm nới cột 42 bài xanh; 826 trên 827 bài kiểm
+của sáu phân hệ xanh (bài đỏ còn lại là bài YCTT cũ đỏ sẵn). Phần thông báo lỗi bằng lời, lưới bắt
+lỗi MySQL và kiểm độ dài ở các cửa ghi không qua schema do Agent 2 làm. Chưa commit, chờ đại ca.
+
+Phần của Agent 2 (thông báo lỗi bằng lời, lưới cuối, cửa ghi không qua schema). Lỗi kiểm dữ liệu
+nay trả một câu tiếng Việt chỉ đúng ô sai thay cho câu trơn «Dữ liệu không hợp lệ», ví dụ «Ô "Mục
+đích" tối đa 355 ký tự (đang nhập 412)»; lỗi nằm trong dòng con thì thêm «ở dòng thứ k», nhiều lỗi
+thì nêu lỗi đầu kèm «và n lỗi khác». Câu nói được các ca quá dài, quá ngắn, thiếu ô bắt buộc, sai
+kiểu số, sai ngày, vượt ngưỡng số và giữ nguyên câu của các bộ kiểm tự viết; tên ô lấy từ tiêu đề
+khai trong schema, không có thì tra bảng nhãn chung, cuối cùng mới dùng tên trường. Phần chi tiết
+lỗi cho máy đọc giữ nguyên như cũ. Lưới cuối: lỗi nào vẫn lọt xuống MySQL với mã 1406 «Data too
+long» thì trả 422 «Ô X dài quá, tối đa n ký tự» (n tra từ model theo bảng và cột) thay cho lỗi
+không lường trước, ghi cảnh báo kèm đường API và tên cột vào log để biết chỗ còn thiếu chặn, và
+phiên cơ sở dữ liệu được rollback ngay khi lỗi đi ra. Thêm hàm dùng chung chặn độ dài trước khi gán
+cho các cửa ghi nhận dữ liệu thô không qua schema: lý do tạm ngưng hoặc hủy dòng đơn mua hàng, mã
+sản phẩm hệ thống của phương án YCBG và ô bổ sung dòng khảo sát đang thiếu thông tin (soi mọi ô chữ
+theo độ dài cột của dòng). Nhãn phương án YCBG và YCMH do hệ thống tự sinh nên không cần chặn; loại
+chi phí thì Agent 1 đã khai ở schema. Giao diện v2 thôi nối thêm chi tiết tiếng Anh vào sau câu
+báo lỗi (chỉ ghép khi gặp câu trơn cũ), ô thuốc bảo vệ thực vật v1 cũng ưu tiên câu mới; giao diện
+v1 nói chung vốn đã hiện đúng câu của backend. Kiểm: 21 bài kiểm mới xanh; 177 bài kiểm liên quan
+xanh; v2 tsc 0 lỗi, eslint 0 lỗi, vitest khu api 11 bài xanh; v1 tsc giữ đúng 4 lỗi cũ.
+
+Đợt ba, đại ca bảo «làm luôn 26 phân hệ kia»: bài canh mở rộng ra 34 phân hệ (mọi phân hệ có cột chữ
+và schema ghi; phân hệ mới quên thêm vào danh sách là đỏ), ghép schema với bảng tự động khi chắc chắn
+và khai tay phần còn lại. Vá thêm 190 ô ở 28 phân hệ (danh mục văn bản, sản phẩm, dự án, hướng dẫn sử
+dụng, hợp đồng, công ty, phê duyệt, nghỉ phép, văn bản, ticket, phòng họp, hải quan…). Chạy hồi quy
+325 tệp kiểm của các phân hệ bị đụng: 5.252 bài xanh, 2 bài đỏ đều đỏ sẵn trên erp-v2
+(`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet` và `test_phong_ban_theo_id_cr086::test_loai_tru_phong_theo_id`).
+Bài kiểm ban hành văn bản phải chạy trong mạng của stack (cần redis), chạy cô lập thì treo.
+
+Mã nguồn: `survey/model.py` · `survey/schema.py` · `survey_request/*` · `purchase_request/*` ·
+`purchase_order/model.py` · `purchase_order/schema.py` · `purchase_order/cost_type.py` ·
+`employee/field_limits.py` (`Str10`…`Str1000`) · migration `e538c6a1f2d9` ·
+`test/backend/test_noi_o_chu_doan_van_cr538.py` · `test/backend/test_canh_do_dai_o_chu_cr538.py` · `core/text_limits.py` · `core/database.py` (`get_db` rollback) ·
+`main.py` (`validation_exception_handler`, `data_error_handler`) · `purchase_order/service.py` ·
+`survey_request/service.py` · `survey/service.py` · v2 `core/api/response-envelope.ts` + bài kiểm ·
+v1 `utils/customs-pesticide.ts` · `test/backend/test_bao_loi_o_chu_noi_thanh_loi_cr538.py`
+
+---
+
 ## bao-CR-539 | Phiếu in yêu cầu mua hàng của hộ kinh doanh đủ bốn ô ký như công ty
 - status: xong
 - date: 2026-09-30

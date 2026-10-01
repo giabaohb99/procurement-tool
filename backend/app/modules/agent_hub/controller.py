@@ -31,6 +31,7 @@ from .constants import (
 )
 from .model import AgentMessage, AgentRun, AgentTask, AgentTaskItem
 from .timeutil import now_local, to_local
+from app.modules.employee.field_limits import Str80
 
 router = APIRouter(prefix="/api/agent-hub", tags=["agent-hub"])
 
@@ -226,7 +227,7 @@ def remove_my_ai_key(user=Depends(get_current_user), db: Session = Depends(get_d
 # Khóa kết nối MCP cá nhân (ai-CR-063, M-02) — tự phục vụ; khóa thô chỉ trả đúng một lần lúc tạo.
 # ---------------------------------------------------------------------------
 class McpKeyIn(BaseModel):
-    name: str = ""
+    name: Str80 = ""
     scope: int = 0
     days: int = 90
 

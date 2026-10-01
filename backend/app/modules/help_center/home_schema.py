@@ -1,11 +1,12 @@
 """Schema cho cấu hình hiển thị trang chủ khu người dùng (4 khung cố định)."""
+from app.modules.employee.field_limits import Str30, Str50, Str150, Str500
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
 
 class HelpHomeSectionUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Str150 | None = None
     is_visible: Optional[bool] = None
     sort_order: Optional[int] = None
 
@@ -18,21 +19,21 @@ class HelpHomeItemCreate(BaseModel):
     # kind = faq
     faq_id: Optional[int] = None
     # kind = custom (thẻ tự do)
-    title: Optional[str] = None
-    description: Optional[str] = None
-    icon: Optional[str] = None
+    title: Str150 | None = None
+    description: Str500 | None = None
+    icon: Str50 | None = None
 
-    background_image: Optional[str] = None
-    gradient: Optional[str] = None
+    background_image: Str500 | None = None
+    gradient: Str30 | None = None
     sort_order: int = 0
 
 
 class HelpHomeItemUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    icon: Optional[str] = None
-    background_image: Optional[str] = None
-    gradient: Optional[str] = None
+    title: Str150 | None = None
+    description: Str500 | None = None
+    icon: Str50 | None = None
+    background_image: Str500 | None = None
+    gradient: Str30 | None = None
     sort_order: Optional[int] = None
 
 

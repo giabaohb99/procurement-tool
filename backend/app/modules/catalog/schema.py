@@ -1,17 +1,18 @@
 from datetime import datetime
 from pydantic import BaseModel
+from app.modules.employee.field_limits import Str20, Str25, Str100, Str255
 
 
 # ---- Warehouse ----
 class WarehouseCreate(BaseModel):
-    code: str = ""
-    name: str
+    code: Str25 = ""
+    name: Str255
     address: str = ""
     is_active: bool = True
 
 
 class WarehouseUpdate(BaseModel):
-    name: str | None = None
+    name: Str255 | None = None
     address: str | None = None
     is_active: bool | None = None
 
@@ -23,13 +24,13 @@ class WarehouseOut(WarehouseCreate):
 
 # ---- Unit ----
 class UnitCreate(BaseModel):
-    code: str = ""
-    name: str
+    code: Str25 = ""
+    name: Str100
     is_active: bool = True
 
 
 class UnitUpdate(BaseModel):
-    name: str | None = None
+    name: Str100 | None = None
     is_active: bool | None = None
 
 
@@ -40,20 +41,20 @@ class UnitOut(UnitCreate):
 
 # ---- ItemGroup ----
 class ItemGroupCreate(BaseModel):
-    code: str = ""
-    name: str
-    std_days: str = ""
-    std_days_unavail: str = ""
+    code: Str25 = ""
+    name: Str100
+    std_days: Str20 = ""
+    std_days_unavail: Str20 = ""
     note: str = ""
-    apply_date: str = ""
+    apply_date: Str20 = ""
     is_active: bool = True
 
 
 class ItemGroupUpdate(BaseModel):
-    std_days: str | None = None
-    std_days_unavail: str | None = None
+    std_days: Str20 | None = None
+    std_days_unavail: Str20 | None = None
     note: str | None = None
-    apply_date: str | None = None
+    apply_date: Str20 | None = None
     is_active: bool | None = None
 
 
@@ -64,20 +65,20 @@ class ItemGroupOut(ItemGroupCreate):
 
 # ---- Brand ----
 class BrandCreate(BaseModel):
-    code: str = ""
-    department: str = ""
+    code: Str25 = ""
+    department: Str255 = ""
     manager_id: int | None = 0
     is_active: bool = True
 
 
 class BrandUpdate(BaseModel):
-    department: str | None = None
+    department: Str255 | None = None
     manager_id: int | None = None
     is_active: bool | None = None
 
 
 class BrandBase(BaseModel):
-    department: str | None = ""
+    department: Str255 | None = ""
     manager_id: int | None = 0
     is_active: bool | None = True
 

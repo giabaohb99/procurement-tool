@@ -48,7 +48,7 @@ class PurchaseRequest(Base, AuditMixin):
     # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). 0 = chưa
     # duyệt / phiếu trước CR-490 (bản in lùi về nhật ký thao tác). Xem `core/print_signers.py`.
     approver_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
-    purpose: Mapped[str] = mapped_column(String(255), default="")          # mục đích mua hàng
+    purpose: Mapped[str] = mapped_column(String(355), default="")          # mục đích mua hàng
     # bao-CR-316: HAI mốc ngày, hai cột, mỗi cột một nghĩa duy nhất. Trước CR này chỉ có
     # `request_date` và `dispatch_pr` ghi đè nó lúc điều phối (bao-CR-293), nên cùng một cột
     # lúc thì là ngày lập lúc thì là ngày tiếp nhận — bộ lọc và báo cáo trộn hai loại ngày,
@@ -117,7 +117,7 @@ class PurchaseRequestItem(Base, AuditMixin):
     qty_ordered: Mapped[float] = mapped_column(Numeric(18, 3), default=0)   # tổng SL đã đặt (đồng bộ từ ĐMH liên kết)
     qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # tổng SL đã nhận (đồng bộ từ ĐMH liên kết)
     progress_note: Mapped[str] = mapped_column(Text, default="")           # chi tiết tiến độ
-    note: Mapped[str] = mapped_column(String(255), default="")
+    note: Mapped[str] = mapped_column(String(355), default="")
     # bao-CR-310 đợt 3b — NSTM "chốt hoàn thành" phần phương án của dòng (khuôn YCBG
     # complete_sr): xong rồi NSTM hết sửa phương án, người yêu cầu mới bắt đầu chọn.
     # KHÁC is_chosen: options_done là cột NSTM tuyên bố "đã xử lý xong dòng này",

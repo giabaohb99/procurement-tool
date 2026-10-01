@@ -1,3 +1,4 @@
+from app.modules.employee.field_limits import Str10, Str25, Str30, Str50, Str100, Str255, Str355, Str1000
 from pydantic import BaseModel, Field
 
 
@@ -10,32 +11,32 @@ class SupplierClusterIn(BaseModel):
 
 class PRItemIn(BaseModel):
     id: int | None = None            # id dòng đã có -> cập nhật tại chỗ (GIỮ id để ảnh đối chiếu không mồ côi)
-    product_code: str = ""
-    product_name: str
-    item_group: str = ""
-    group_desc: str = ""
+    product_code: Str50 = ""
+    product_name: Str255
+    item_group: Str100 = ""
+    group_desc: Str255 = ""
     qty: float = Field(0, ge=0)      # SL không âm; cho số lẻ (BE Numeric(18,3))
-    unit: str = ""
+    unit: Str25 = ""
     price: float = Field(0, ge=0)    # giá không âm; cho số lẻ (BE Numeric(18,4))
     # % VAT theo dòng (Task 4). Nhập tay từ CR-058 → phải chặn ở BE: 0 ≤ VAT < 100.
     # Cột DB là Numeric(5,2), trên 999,99 là MySQL báo lỗi tràn thay vì trả 422 tử tế.
     vat_pct: float = Field(0, ge=0, lt=100)
-    warehouse: str = ""
-    required_date: str = ""
-    assignee: str = ""
+    warehouse: Str100 = ""
+    required_date: Str10 = ""
+    assignee: Str100 = ""
     # MÃ cố định, xem PR_LINE_STATUS trong app/core/status_codes.py (B-06). CR-074: dòng mới
     # chưa có ĐMH nào thì nằm ở `no_po`, khác với `not_ordered` (đã có ĐMH, chưa bấm đặt).
-    line_status: str = "no_po"
+    line_status: Str30 = "no_po"
     progress_note: str = ""
-    note: str = ""
+    note: Str355 = ""
 
 
 class PRCreate(BaseModel):
-    code: str | None = None  # bỏ trống -> tự sinh PYC#####
+    code: Str50 | None = None  # bỏ trống -> tự sinh PYC#####
     company_id: int = 0
-    requester: str = ""
+    requester: Str255 = ""
     requester_id: int = 0
-    requester_position: str = ""
+    requester_position: Str100 = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
     # bao-CR-414/480/488: phòng XỬ LÝ phiếu. `None` (không gửi) = để hệ thống chọn mặc định
     # (phòng tự mua → chính phòng lập, còn lại → phòng thu mua mặc định PBA017, bao-CR-524);
@@ -43,24 +44,24 @@ class PRCreate(BaseModel):
     # thật). Trước CR-488 gửi 0 cũng bị tra đè, nhà máy không thể nhờ thu mua chung ngay lúc
     # lập phiếu.
     handler_dept_id: int | None = None
-    department: str = ""
-    head_of_dept: str = ""
+    department: Str255 = ""
+    head_of_dept: Str255 = ""
     head_of_dept_id: int = 0      # CR-071: id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng)
     # bao-CR-499: người ĐƯỢC CHỌN sẽ duyệt (nhận chuông/mail lúc gửi duyệt); bấm Duyệt xong thì cột này
     # đổi thành người THỰC duyệt (bao-CR-490) — bản in luôn in tên đang nằm trong cột.
     approver_employee_id: int = 0
-    purpose: str = ""
-    request_date: str = ""
-    need_date: str = ""
+    purpose: Str355 = ""
+    request_date: Str10 = ""
+    need_date: Str10 = ""
     is_urgent: bool = False
     vat_rate: float = 0.08
     note: str = ""
     show_code_on_print: bool = True
-    suggested_supplier: str = ""
-    suggested_supplier_tax_code: str = ""
-    suggested_supplier_contact: str = ""
-    quote_filename: str = ""
-    quote_file_url: str = ""
+    suggested_supplier: Str255 = ""
+    suggested_supplier_tax_code: Str50 = ""
+    suggested_supplier_contact: Str255 = ""
+    quote_filename: Str255 = ""
+    quote_file_url: Str1000 = ""
     supplier_req: SupplierClusterIn | None = None   # Task 4: NCC bộ phận đề xuất
     supplier_pur: SupplierClusterIn | None = None   # Task 4: NCC khảo sát/thu mua (cần supplier.write)
     items: list[PRItemIn] = []
@@ -68,28 +69,28 @@ class PRCreate(BaseModel):
 
 class PRUpdate(BaseModel):
     company_id: int | None = None
-    requester: str | None = None
+    requester: Str255 | None = None
     requester_id: int | None = None
-    requester_position: str | None = None
+    requester_position: Str100 | None = None
     department_id: int | None = None      # CR-086
     handler_dept_id: int | None = None    # bao-CR-414
-    department: str | None = None
-    head_of_dept: str | None = None
+    department: Str255 | None = None
+    head_of_dept: Str255 | None = None
     head_of_dept_id: int | None = None    # CR-071
     approver_employee_id: int | None = None   # bao-CR-499
-    purpose: str | None = None
-    request_date: str | None = None
-    need_date: str | None = None
+    purpose: Str355 | None = None
+    request_date: Str10 | None = None
+    need_date: Str10 | None = None
     is_urgent: bool | None = None
     vat_rate: float | None = None
     assignee_id: int | None = None
     note: str | None = None
     show_code_on_print: bool | None = None
-    suggested_supplier: str | None = None
-    suggested_supplier_tax_code: str | None = None
-    suggested_supplier_contact: str | None = None
-    quote_filename: str | None = None
-    quote_file_url: str | None = None
+    suggested_supplier: Str255 | None = None
+    suggested_supplier_tax_code: Str50 | None = None
+    suggested_supplier_contact: Str255 | None = None
+    quote_filename: Str255 | None = None
+    quote_file_url: Str1000 | None = None
     supplier_req: SupplierClusterIn | None = None   # Task 4: NCC bộ phận đề xuất
     supplier_pur: SupplierClusterIn | None = None   # Task 4: NCC khảo sát/thu mua (cần supplier.write)
     items: list[PRItemIn] | None = None
@@ -105,7 +106,7 @@ class ApproveIn(BaseModel):
 
 class AssignItemIn(BaseModel):
     id: int
-    assignee: str = ""
+    assignee: Str100 = ""
 
 
 class AssignIn(BaseModel):
@@ -123,10 +124,10 @@ class ItemStatusItem(BaseModel):
     id: int
     # MÃ cố định (B-06) — service kiểm lại theo PR_LINE_STATUS trước khi ghi, gửi chữ tiếng Việt
     # kiểu cũ sẽ bị chặn 400 chứ không lặng lẽ ghi rác vào cột.
-    line_status: str | None = None
+    line_status: Str30 | None = None
     progress_note: str | None = None
-    note: str | None = None
-    expected_date: str | None = None          # thời gian dự kiến có hàng (NSTM cập nhật)
+    note: Str355 | None = None
+    expected_date: Str10 | None = None          # thời gian dự kiến có hàng (NSTM cập nhật)
     expected_date_reason: str | None = None    # lý do — BẮT BUỘC khi đổi giá trị đã có
 
 
@@ -157,20 +158,20 @@ class PROptionSurveyIn(BaseModel):
 class PROptionManualIn(BaseModel):
     """NSTM gõ thẳng NCC + giá. Chỉ NCC là bắt buộc (service kiểm), phần còn lại
     bỏ trống được — tên SP / ĐVT / VAT trống thì lấy theo dòng YCMH."""
-    supplier_code: str = ""
-    supplier_name: str = ""
-    snap_product_name: str = ""
-    snap_internal_code: str = ""
+    supplier_code: Str50 = ""
+    supplier_name: Str255 = ""
+    snap_product_name: Str255 = ""
+    snap_internal_code: Str50 = ""
     snap_spec: str = ""
-    snap_origin: str = ""
-    snap_quote_unit: str = ""
+    snap_origin: Str100 = ""
+    snap_quote_unit: Str25 = ""
     snap_moq: float = Field(0, ge=0)
     snap_price_by_volume: float = Field(0, ge=0)
-    snap_volume_range: str = ""
+    snap_volume_range: Str100 = ""
     # Cột DB là Numeric(5,2) — thả cửa thì trên 999,99 là MySQL báo lỗi tràn thay vì 422.
     snap_vat: float | None = Field(None, ge=0, lt=100)
-    snap_delivery_time: str = ""
-    snap_delivery_place: str = ""
+    snap_delivery_time: Str100 = ""
+    snap_delivery_place: Str255 = ""
     snap_shipping_cost: float = Field(0, ge=0)
     nstm_note: str = ""
 
@@ -182,18 +183,18 @@ class PROptionUpdateIn(BaseModel):
     snap_price_by_volume: float | None = Field(None, ge=0)
     snap_vat: float | None = Field(None, ge=0, lt=100)
     snap_moq: float | None = Field(None, ge=0)
-    snap_quote_unit: str | None = None
-    snap_volume_range: str | None = None
-    snap_delivery_time: str | None = None
-    snap_delivery_place: str | None = None
+    snap_quote_unit: Str25 | None = None
+    snap_volume_range: Str100 | None = None
+    snap_delivery_time: Str100 | None = None
+    snap_delivery_place: Str255 | None = None
     snap_shipping_cost: float | None = Field(None, ge=0)
 
 
 class PROptionSupplierIn(BaseModel):
     """H.10.4 — điền/sửa NCC trên PHƯƠNG ÁN 0 / phương án nhập tay, kèm sửa giá nếu
     cần. Tách khỏi `PROptionUpdateIn` vì NCC cố ý không nằm trong bộ trường sửa thường."""
-    supplier_code: str = ""
-    supplier_name: str = ""
+    supplier_code: Str50 = ""
+    supplier_name: Str255 = ""
     snap_price_by_volume: float | None = Field(None, ge=0)
 
 

@@ -3,6 +3,7 @@ from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.text_limits import ensure_model_fits
 
 from .model import Survey, SurveyProductLine, SurveySupplierLine
 
@@ -220,6 +221,9 @@ def fill_missing_line(db: Session, sid: int, table: str, line_id: int, data: dic
         raise HTTPException(404, "Không tìm thấy dòng khảo sát")
     if (row.line_approve or "") != MISSING:
         raise HTTPException(403, "Chỉ được bổ sung dòng đang ở trạng thái 'Thiếu thông tin'")
+    #  bao-CR-538: body là `dict` thô gán thẳng theo khóa → soi độ dài MỌI ô chữ với cột
+    #  `String(n)` của dòng trước khi gán, sai thì 422 chỉ đúng ô.
+    ensure_model_fits(LM, data or {})
     for k, v in (data or {}).items():
         if k in _LINE_AUDIT or k in ("line_approve", "line_approve_note"):
             continue

@@ -1,18 +1,19 @@
 from datetime import datetime
 
 from pydantic import BaseModel
+from app.modules.employee.field_limits import Str25, Str50, Str255
 
 
 class ProductBase(BaseModel):
-    code: str
-    name: str
-    invoice_name: str = ""
-    legal_name: str = ""
-    item_group: str = ""
-    unit: str = ""
-    hh_code: str = ""
-    hh_name: str = ""
-    specs: str = ""
+    code: Str50
+    name: Str255
+    invoice_name: Str255 = ""
+    legal_name: Str255 = ""
+    item_group: Str50 = ""
+    unit: Str25 = ""
+    hh_code: Str50 = ""
+    hh_name: Str255 = ""
+    specs: Str255 = ""
     is_active: bool = True
 
 
@@ -21,14 +22,14 @@ class ProductCreate(ProductBase):
 
 
 class ProductUpdate(BaseModel):
-    name: str | None = None
-    invoice_name: str | None = None
-    legal_name: str | None = None
-    item_group: str | None = None
-    unit: str | None = None
-    hh_code: str | None = None
-    hh_name: str | None = None
-    specs: str | None = None
+    name: Str255 | None = None
+    invoice_name: Str255 | None = None
+    legal_name: Str255 | None = None
+    item_group: Str50 | None = None
+    unit: Str25 | None = None
+    hh_code: Str50 | None = None
+    hh_name: Str255 | None = None
+    specs: Str255 | None = None
     is_active: bool | None = None
 
 

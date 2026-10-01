@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from app.modules.employee.field_limits import Str10, Str20, Str50
 
 
 class LineIn(BaseModel):
@@ -6,9 +7,9 @@ class LineIn(BaseModel):
     không gắn khoản công nợ nào; lúc GỬI DUYỆT server mới bắt phải khớp công nợ."""
 
     payable_id: int = 0
-    po_code: str = ""
-    invoice_no: str = ""
-    invoice_date: str = ""
+    po_code: Str50 = ""
+    invoice_no: Str50 = ""
+    invoice_date: Str10 = ""
     amount: float = 0
     # CR-260 — phần đề nghị CẤN TRỪ tiền treo cấp NCC vào khoản nợ của dòng;
     # chỉ thực thi khi phiếu được DUYỆT (xem apply_line_offsets trong service).
@@ -18,22 +19,22 @@ class LineIn(BaseModel):
 
 
 class PRequestCreate(BaseModel):
-    request_date: str = ""
+    request_date: Str10 = ""
     note: str = ""
-    payment_method: str = "transfer"   # transfer = Chuyển khoản | cash = Tiền mặt (CR-035)
+    payment_method: Str20 = "transfer"   # transfer = Chuyển khoản | cash = Tiền mặt (CR-035)
     prepay: int = 0                    # CR-146: 1 = thanh toán TRƯỚC (đơn trả trước), 0 = thanh toán công nợ
     # CR-066 — form trắng: không đi từ màn Công nợ nên NCC/công ty/loại do người lập chọn.
     # Chỉ dùng khi các dòng KHÔNG gắn khoản nợ; đi từ Công nợ thì lấy theo khoản nợ.
-    supplier_code: str = ""
+    supplier_code: Str50 = ""
     company_id: int = 0
-    source_type: str = "goods"         # goods = Hàng hóa | shipping = Vận chuyển | import_cost = Chi phí thu mua (bao-CR-319 P5)
+    source_type: Str20 = "goods"         # goods = Hàng hóa | shipping = Vận chuyển | import_cost = Chi phí thu mua (bao-CR-319 P5)
     lines: list[LineIn] = []   # có thể gồm nhiều NCC -> server tự tách mỗi NCC 1 phiếu
 
 
 class PRequestUpdate(BaseModel):
-    request_date: str | None = None
+    request_date: Str10 | None = None
     note: str | None = None
-    payment_method: str | None = None
+    payment_method: Str20 | None = None
     prepay: int | None = None          # CR-146
     # CR-149: {"content", "line_desc", "transfer"} — câu chữ bản in người dùng sửa.
     # Payload CHỈ chứa print_texts thì được sửa cả khi phiếu đã gửi duyệt / đã duyệt.

@@ -16,6 +16,7 @@ from app.core.response import success
 from . import clone_notification, clone_service
 from .controller import _load
 from .link_serializer import summary_of
+from app.modules.employee.field_limits import Str500
 
 router = APIRouter(prefix="/api/documents", tags=["document-clone"])
 
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/api/documents", tags=["document-clone"])
 class CloneCreate(BaseModel):
     company_ids: list[int] = Field(min_length=1)
     due_date: date | None = None
-    note: str = ""
+    note: Str500 = ""
 
 
 class ClonePlanSave(BaseModel):
@@ -33,7 +34,7 @@ class ClonePlanSave(BaseModel):
     """
     company_ids: list[int] = []
     due_date: date | None = None
-    note: str = ""
+    note: Str500 = ""
 
 
 class CloneStatusUpdate(BaseModel):

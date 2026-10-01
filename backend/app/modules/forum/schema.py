@@ -6,6 +6,7 @@ Chiều RA trả dict dựng ở controller — đúng khuôn module comment: ph
 """
 from pydantic import BaseModel, Field
 
+from app.modules.employee.field_limits import Str50, Str255
 from .model import (ForumAudience, ForumBoardStatus, ForumBodyFormat,
                     ForumPostKind, ForumPrefix, ForumReactionKind)
 
@@ -28,7 +29,7 @@ class PostIn(BaseModel):
     file_ids: list[int] = Field(default_factory=list)
     kind: int = int(ForumPostKind.NORMAL)
     board_id: int = 0
-    title: str = ""
+    title: Str255 = ""
     prefix: int = int(ForumPrefix.NONE)
 
 
@@ -40,9 +41,9 @@ class BoardIn(BaseModel):
     PUBLIC (QĐ-D7a).
     """
 
-    name: str = ""
+    name: Str255 = ""
     description: str = ""
-    icon: str = ""
+    icon: Str50 = ""
     parent_id: int = 0
     sort_order: int = 0
     status: int = int(ForumBoardStatus.ACTIVE)

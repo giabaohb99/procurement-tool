@@ -11,6 +11,15 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        #  bao-CR-538: lỗi nào đi ngang qua đây (kể cả MySQL 1406 «Data too long») thì
+        #  rollback trước khi trả kết nối — không để giao dịch hỏng dính sang lượt sau.
+        #  Rollback hỏng (mất kết nối) thì bỏ qua — lỗi GỐC mới là thứ cần nổi lên.
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        raise
     finally:
         db.close()
 

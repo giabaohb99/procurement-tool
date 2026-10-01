@@ -26,6 +26,7 @@ from app.core.upload_guard import ensure_batch_ok, guard_upload
 from app.modules.document.file_access_log import ACTION_DOWNLOAD, ACTION_VIEW
 
 from .model import FileLink, StoredFile
+from app.modules.employee.field_limits import Str50
 from .service import (_delete_file_if_orphan, attach_thumb, ensure_orphan_quota,
                       linked_file_ids, make_thumb_for, own_file_ids)
 
@@ -335,10 +336,10 @@ def upload_file_only(
 
 
 class RegisterIn(BaseModel):
-    entity: str
+    entity: Str50
     entity_id: int
     purchase_order_id: int = 0
-    doc_type: str = ""
+    doc_type: Str50 = ""
     file_ids: list[int] = []
 
 

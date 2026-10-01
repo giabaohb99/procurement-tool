@@ -31,7 +31,10 @@ Str30 = Annotated[str, StringConstraints(max_length=30)]
 Str50 = Annotated[str, StringConstraints(max_length=50)]
 Str100 = Annotated[str, StringConstraints(max_length=100)]
 Str255 = Annotated[str, StringConstraints(max_length=255)]
+#  bao-CR-538: các ô đoạn văn thu mua nới 255 → 355 (đại ca chốt «255 thêm 100»).
+Str355 = Annotated[str, StringConstraints(max_length=355)]
 Str500 = Annotated[str, StringConstraints(max_length=500)]
+Str600 = Annotated[str, StringConstraints(max_length=600)]
 
 # ── Ngày: dải HỢP LÝ, hẹp hơn dải MySQL cho phép ───────────────────────────
 #  MySQL `DATE` nhận tới năm 9999, nhưng một hồ sơ nhân sự thì không.
@@ -121,3 +124,10 @@ def check_resign_after_hire(hire, resign) -> None:
     """
     if hire is not None and resign is not None and resign < hire:
         raise ValueError("Ngày nghỉ việc không được trước ngày vào làm")
+Str10 = Annotated[str, StringConstraints(max_length=10)]
+Str1000 = Annotated[str, StringConstraints(max_length=1000)]
+Str1 = Annotated[str, StringConstraints(max_length=1)]
+Str80 = Annotated[str, StringConstraints(max_length=80)]
+Str150 = Annotated[str, StringConstraints(max_length=150)]
+Str200 = Annotated[str, StringConstraints(max_length=200)]
+Str300 = Annotated[str, StringConstraints(max_length=300)]

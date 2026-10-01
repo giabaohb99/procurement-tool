@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 from .constants import COMPANY_TYPE_VALUES, CompanyType
+from app.modules.employee.field_limits import Str25, Str100, Str255
 
 
 #  Mã đi vào số hiệu văn bản: chỉ chữ HOA và số. Có dấu tiếng Việt hay khoảng
@@ -32,21 +33,21 @@ def _check_company_type(value):
 
 
 class CompanyBase(BaseModel):
-    code: str = ""
-    name: str
+    code: Str25 = ""
+    name: Str255
     #  Xem `Company.issue_code` — khác `code`, và khóa lại sau khi đã cấp số.
     issue_code: str = Field(default="", max_length=20, pattern=ISSUE_CODE_PATTERN)
-    short_name: str = ""
+    short_name: Str100 = ""
     level: int = Field(default=2, ge=1, le=3)
     #  bao-CR-531: 1 Công ty · 2 Hộ kinh doanh (`CompanyType`).
     company_type: int = int(CompanyType.COMPANY)
     #  bao-CR-534: khớp String(25) của model (luật duoc-CR-316: thiếu trần là 500 thay vì 422).
     tax_code: str = Field(default="", max_length=25)
     address: str = ""
-    invoice_email: str = ""
+    invoice_email: Str255 = ""
     parent: int = 0
     legal_representative_id: int | None = None
-    legal_rep_title: str = ""
+    legal_rep_title: Str100 = ""
     is_active: bool = True
 
     @field_validator("company_type", mode="before")
@@ -64,17 +65,17 @@ class CompanyCreate(CompanyBase):
 
 
 class CompanyUpdate(BaseModel):
-    name: str | None = None
+    name: Str255 | None = None
     issue_code: str | None = Field(default=None, max_length=20, pattern=ISSUE_CODE_PATTERN)
-    short_name: str | None = None
+    short_name: Str100 | None = None
     level: int | None = Field(default=None, ge=1, le=3)
     company_type: int | None = None
     tax_code: str | None = Field(default=None, max_length=25)
     address: str | None = None
-    invoice_email: str | None = None
+    invoice_email: Str255 | None = None
     parent: int | None = None
     legal_representative_id: int | None = None
-    legal_rep_title: str | None = None
+    legal_rep_title: Str100 | None = None
     is_active: bool | None = None
 
     @field_validator("company_type", mode="before")

@@ -35,7 +35,7 @@ class SurveyRequest(Base, AuditMixin):
     # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). 0 = chưa
     # duyệt / phiếu trước CR-490 (bản in lùi về nhật ký thao tác). Xem `core/print_signers.py`.
     approver_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
-    purpose: Mapped[str] = mapped_column(String(255), default="")
+    purpose: Mapped[str] = mapped_column(String(355), default="")
     #  index=True: cột lọc kỳ của màn Tiến độ báo giá (`survey_progress/controller`, P03) —
     #  không có chỉ mục thì mỗi lượt xem báo cáo là quét hết bảng YCKS.
     request_date: Mapped[str] = mapped_column(String(10), default="", index=True)

@@ -187,15 +187,17 @@ export function pesticideFormToPayload(f: PesticideForm) {
 }
 
 /**
- * Lỗi 422 → câu người đọc được. Lỗi nghiệp vụ (`HTTPException`) nằm thẳng ở `message`; lỗi kiểm
- * dữ liệu Pydantic thì `message` chỉ là "Dữ liệu không hợp lệ" chung chung, câu thật nằm rải
- * trong `details` (mảng `{msg,...}`, tiền tố "Value error, " của validator tự viết phải bỏ đi).
+ * Lỗi 422 → câu người đọc được. Lỗi nghiệp vụ (`HTTPException`) nằm thẳng ở `message`.
+ * bao-CR-538: lỗi kiểm dữ liệu Pydantic nay backend cũng viết sẵn câu tiếng Việt chỉ đúng ô ở
+ * `message` — chỉ khi gặp câu trơn cũ "Dữ liệu không hợp lệ" mới bới `details` (mảng `{msg,...}`,
+ * tiền tố "Value error, " của validator tự viết phải bỏ đi).
  */
 export function extractPesticideErrorMessage(e: any, fallback = 'Lỗi khi lưu'): string {
   const err = e?.response?.data?.error
   if (!err) return fallback
   const details = err.details
-  if (Array.isArray(details) && details.length) {
+  const legacyMessage = !err.message || err.message === 'Dữ liệu không hợp lệ'
+  if (legacyMessage && Array.isArray(details) && details.length) {
     const msgs = details
       .map((d: any) => String(d?.msg || '').replace(/^Value error,\s*/, ''))
       .filter(Boolean)

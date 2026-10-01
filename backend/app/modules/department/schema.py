@@ -3,11 +3,12 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 from app.modules.company.schema import ISSUE_CODE_PATTERN
+from app.modules.employee.field_limits import Str25, Str255
 
 
 class DepartmentBase(BaseModel):
-    code: str = ""
-    name: str
+    code: Str25 = ""
+    name: Str255
     #  Mã đi vào số hiệu văn bản (`NS` trong `08/2026/TB-NS-DEGO`), khác `code`.
     issue_code: str = Field(default="", max_length=20, pattern=ISSUE_CODE_PATTERN)
     kind: int = Field(default=1, ge=1, le=3)
@@ -22,7 +23,7 @@ class DepartmentCreate(DepartmentBase):
 
 
 class DepartmentUpdate(BaseModel):
-    name: str | None = None
+    name: Str255 | None = None
     issue_code: str | None = Field(default=None, max_length=20, pattern=ISSUE_CODE_PATTERN)
     kind: int | None = Field(default=None, ge=1, le=3)
     company_id: int | None = None

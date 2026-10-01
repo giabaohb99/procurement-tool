@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import DataError
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +11,7 @@ from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.request_middleware import RequestContextMiddleware
 from app.core.response import error
+from app.core.text_limits import body_models_of, describe_data_error, describe_validation_errors
 from app.modules.attachment.controller import router as attachment_router
 from app.modules.audit.controller import router as audit_router
 from app.modules.auth.controller import router as auth_router
@@ -169,8 +171,28 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return error("Dữ liệu không hợp lệ", code="validation_error", status_code=422,
-                 details=exc.errors())
+    """bao-CR-538: `message` là câu tiếng Việt chỉ đúng ô sai («Ô "Mục đích" tối đa 355 ký tự
+    (đang nhập 412)», lỗi đầu + «và n lỗi khác») thay cho «Dữ liệu không hợp lệ» trơn.
+    `details` GIỮ NGUYÊN danh sách lỗi Pydantic cho máy đọc."""
+    errors = exc.errors()
+    models = body_models_of(request.scope.get("route"))
+    return error(describe_validation_errors(errors, models), code="validation_error", status_code=422,
+                 details=errors)
+
+
+@app.exception_handler(DataError)
+async def data_error_handler(request: Request, exc: DataError):
+    """bao-CR-538 — LƯỚI CUỐI: chuỗi lọt qua schema và helper, xuống MySQL mới bị từ chối
+    (1406 «Data too long for column …»). Trả 422 câu tiếng Việt thay cho 500 «lỗi không lường
+    trước»; ghi WARNING kèm đường API + tên cột để vá chỗ thiếu chặn. Phiên DB đã được
+    `get_db` rollback khi lỗi đi ngang qua dependency."""
+    import logging
+    message, column = describe_data_error(exc)
+    logging.getLogger("app.error").warning(
+        "DataError lọt xuống DB: %s %s cột=%s — %s", request.method, request.url.path,
+        column or "?", getattr(exc, "orig", exc))
+    return error(message, code="validation_error", status_code=422,
+                 details={"column": column} if column else None)
 
 
 @app.exception_handler(Exception)
