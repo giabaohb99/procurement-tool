@@ -5,8 +5,8 @@
 // trang. Nút lùi quay về ĐÚNG chỗ đã mở trang (bộ lọc của thẻ Thuốc BVTV nằm trên URL, hoặc mục
 // Pháp lý) nhờ `state.from`; mở thẳng link thì về thẻ Thuốc BVTV.
 // Quyền: xem theo `customs_price.read`; Sửa / Xóa theo khóa riêng `customs_pesticide` (duoc-CR-490).
-import { useCallback, useEffect, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import AuditTimeline from '../components/AuditTimeline'
@@ -19,7 +19,7 @@ import CustomsPesticideInfoCard from '../components/customs/CustomsPesticideInfo
 import CustomsPesticideLookup from '../components/customs/CustomsPesticideLookup'
 import CustomsPesticideRelated from '../components/customs/CustomsPesticideRelated'
 import { customsSectionPath } from '../config/customs-sections'
-import { extractPesticideErrorMessage, pesticideStatusBadgeClass } from '../utils/customs-pesticide'
+import { extractPesticideErrorMessage } from '../utils/customs-pesticide'
 import { formatBannedLabel } from '../utils/customs-regulation'
 
 export default function CustomsPesticideDetailPage() {
@@ -76,6 +76,17 @@ export default function CustomsPesticideDetailPage() {
     }
   }
 
+  //  Tab thân trang trên URL — gửi link là mở đúng tab; giá trị lạ về tab đầu.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'related' ? 'related' : 'info'
+  function setTab(next: 'info' | 'related') {
+    setSearchParams((cur) => {
+      const p = new URLSearchParams(cur)
+      if (next === 'info') p.delete('tab'); else p.set('tab', next)
+      return p
+    }, { replace: true })
+  }
+
   const backButton = (
     <button className="btn ghost" title="Quay lại danh mục thuốc BVTV" aria-label="Quay lại danh mục thuốc BVTV"
       onClick={() => navigate(backUrl)}>
@@ -101,32 +112,22 @@ export default function CustomsPesticideDetailPage() {
   if (!data) return <div style={{ color: 'var(--muted)', padding: 12 }}>Đang tải thuốc BVTV…</div>
 
   const manual = !!data.is_manual
-  const subtitle = [data.pest_group, data.registration_no].filter(Boolean).join(' · ')
+  //  01/10/2026 — Sửa / Xóa nằm trong thẻ đầu trang (đồng bộ v2), không còn hàng tiêu đề rời.
+  const actions = (canWrite || canDelete) ? (
+    <>
+      {canWrite && <button className="btn ghost" onClick={() => setEditing(true)}><i className="ti ti-edit" />Sửa</button>}
+      {canDelete && (
+        <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} disabled={busy} onClick={remove}>
+          <i className="ti ti-trash" />Xóa
+        </button>
+      )}
+    </>
+  ) : undefined
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        {backButton}
-        <div>
-          <h2 className="page-title" style={{ margin: 0 }}>
-            {data.trade_name}
-            <span className={`badge ${pesticideStatusBadgeClass(data.status)}`} style={{ marginLeft: 8, verticalAlign: 'middle' }}>
-              {data.status_label || 'Chưa rõ'}
-            </span>
-            {manual && <span className="badge gray" style={{ marginLeft: 6, verticalAlign: 'middle' }}>Tự thêm</span>}
-          </h2>
-          {subtitle && <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 2 }}>{subtitle}</div>}
-        </div>
-        <span style={{ flex: 1 }} />
-        {canWrite && <button className="btn ghost" onClick={() => setEditing(true)}><i className="ti ti-edit" />Sửa</button>}
-        {canDelete && (
-          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} disabled={busy} onClick={remove}>
-            <i className="ti ti-trash" />Xóa
-          </button>
-        )}
-      </div>
-
-      {/* 01/10/2026 — cột «Tìm thuốc khác» + «Tra cứu nhanh» bên phải như trang nguồn (đồng bộ v2);
-          màn hẹp thì xuống cuối trang (`pesticide-detail-layout` trong index.css). */}
+      {/* 01/10/2026 — bố cục đồng bộ v2: THẺ ĐẦU TRANG + hai tab (Sử dụng & tài liệu · Thuốc liên quan);
+          cột «Tìm thuốc khác» + «Tra cứu nhanh» bên phải, màn hẹp xuống cuối trang
+          (`pesticide-detail-layout` trong index.css). */}
       <div className="pesticide-detail-layout">
       <div style={{ minWidth: 0 }}>
       {data.banned?.length > 0 && (
@@ -148,7 +149,16 @@ export default function CustomsPesticideDetailPage() {
         </div>
       )}
 
-      <CustomsPesticideInfoCard data={data} />
+      <CustomsPesticideInfoCard data={data} leading={backButton} actions={actions} />
+
+      {/* Hai tab theo NGHĨA nội dung: những gì nói về CHÍNH thuốc này đọc liền một mạch; thuốc KHÁC
+          (cùng công ty / cùng hoạt chất) tách tab riêng. Tab nằm trên URL (`?tab=`). */}
+      <div role="tablist" style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
+        <TabButton active={tab === 'info'} onClick={() => setTab('info')}>Sử dụng &amp; tài liệu</TabButton>
+        <TabButton active={tab === 'related'} onClick={() => setTab('related')}>Thuốc liên quan</TabButton>
+      </div>
+
+      {tab === 'info' && (<>
 
 
       <div className="card table-card" style={{ marginBottom: 16 }}>
@@ -179,9 +189,6 @@ export default function CustomsPesticideDetailPage() {
         </TableScroll>
       </div>
 
-      {/* 01/10/2026 — như trang nguồn: SAU bảng phạm vi sử dụng, thuốc khác cùng công ty + cùng hoạt chất. */}
-      <CustomsPesticideRelated pesticideId={data.id} registrant={data.registrant || ''} />
-
       {/* duoc-CR-494 — nhãn thuốc, giấy chứng nhận đăng ký, MSDS… Tải lên / xóa theo `customs_pesticide`
           (write hoặc create — khớp `_check` backend); tệp giữ qua các lần nạp vì id thuốc giữ nguyên. */}
       <DocumentAttachmentSection
@@ -199,6 +206,9 @@ export default function CustomsPesticideDetailPage() {
         {logs.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13 }}>Chưa có thao tác nào được ghi nhận.</div>}
         <AuditTimeline logs={logs} showMessage />
       </div>
+      </>)}
+
+      {tab === 'related' && <CustomsPesticideRelated pesticideId={data.id} registrant={data.registrant || ''} />}
       </div>
       <aside className="pesticide-detail-aside">
         <CustomsPesticideLookup currentPestGroup={data.pest_group || ''} />
@@ -210,5 +220,17 @@ export default function CustomsPesticideDetailPage() {
           onSaved={() => { setEditing(false); load() }} />
       )}
     </div>
+  )
+}
+
+/** Một tab gạch chân — cùng kiểu dải tab của màn Tra cứu thị trường. */
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" role="tab" aria-selected={active} onClick={onClick}
+      style={{ background: 'none', border: 'none', padding: '8px 0', marginBottom: -1, cursor: 'pointer', fontSize: 14,
+        borderBottom: active ? '2px solid var(--teal)' : '2px solid transparent',
+        color: active ? 'var(--ink)' : 'var(--muted)', fontWeight: active ? 600 : 400 }}>
+      {children}
+    </button>
   )
 }

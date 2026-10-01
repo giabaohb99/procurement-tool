@@ -52,9 +52,9 @@ export default function CustomsPesticideRelated({ pesticideId, registrant }: { p
   function pick(next: Tab) { setPicked(next); setPage(1) }
 
   return (
-    <div className="card table-card" style={{ marginBottom: 16 }}>
+    //  Bo góc VỪA (6px) thay cho 20px của `.card` — đại ca chốt 01/10 cho bảng này.
+    <div className="card table-card" style={{ marginBottom: 16, borderRadius: 6 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, padding: '14px 18px 8px' }}>
-        <h3 className="sec-title" style={{ margin: 0 }}>Thuốc liên quan</h3>
         <div role="tablist" style={{ display: 'flex', gap: 4 }}>
           <TabButton active={tab === 'registrant'} onClick={() => pick('registrant')} label="Cùng công ty" count={data?.same_registrant.total} />
           <TabButton active={tab === 'ingredient'} onClick={() => pick('ingredient')} label="Cùng hoạt chất" count={data?.same_ingredient.total} />
@@ -96,9 +96,12 @@ export default function CustomsPesticideRelated({ pesticideId, registrant }: { p
           </tbody>
         </table>
       </TableScroll>
+      {/* `table-foot` + lề ngang/dưới: không bọc thì thanh phân trang dính sát mép thẻ. */}
       {items.length > 10 && (
-        <Pagination page={page} pageSize={pageSize} total={items.length}
-          onChange={(p, s) => { setPage(s !== pageSize ? 1 : p); setPageSize(s) }} />
+        <div className="table-foot" style={{ padding: '10px 18px 12px' }}>
+          <Pagination page={page} pageSize={pageSize} total={items.length}
+            onChange={(p, s) => { setPage(s !== pageSize ? 1 : p); setPageSize(s) }} />
+        </div>
       )}
     </div>
   )
