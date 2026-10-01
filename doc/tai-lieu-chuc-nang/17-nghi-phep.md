@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép và cột trên từng tab — §8.1) |
+| Bản | 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn: đính kèm, bàn giao, báo cáo đã có; cờ «Bắt buộc đính kèm» chưa chạy) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
 | CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` |
@@ -381,7 +381,7 @@ thêm và gỡ được; đã gửi duyệt trở đi thì chỉ xem và tải v
 — cùng ngoại lệ CR-260 ở §8; ký xong là hết. Tệp là **riêng tư** (không có URL công
 khai), đi qua cửa đính kèm dùng chung với `entity=leave_request`.
 
-**Bản in** (nút «In đơn» của đơn đã duyệt, trang `/print/leave-request/:id`): mỗi ảnh đính kèm in thành **một trang A4
+**Bản in** (nút «In đơn», trang `/print/leave-request/:id` — từ bao-CR-506 in được cả đơn Nháp / Chờ duyệt / Trả về, không riêng đơn đã duyệt): mỗi ảnh đính kèm in thành **một trang A4
 riêng sau tờ đơn** (in hai mặt thì ảnh đầu nằm đúng mặt sau), co vừa trang, giữ tỉ lệ.
 Tệp không phải ảnh không in, chỉ ghi tên ở dòng «Tài liệu đính kèm» trên mặt đơn. Nút
 In khóa tới khi mọi ảnh đã nạp xong; ảnh nào nạp hỏng thì trang in báo tên ảnh đó.
@@ -491,10 +491,10 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | Thiếu | Ghi chú |
 |---|---|
 | ~~Nghỉ **nửa ngày / theo giờ**~~ | **ĐÃ CÓ 07/09/2026** — nửa ngày qua hai ô buổi (§6), theo giờ qua buổi thứ tư *«Theo giờ»* (§7). Cột `unit` vẫn chỉ dùng giá trị *Ngày*: số giờ được **quy đổi ra ngày**, không lưu thành đơn vị riêng |
-| **Đính kèm** trên đơn | Cột `require_attachment` của loại nghỉ đã có nhưng chưa nối vào hạ tầng đính kèm |
-| Danh sách **bàn giao** trên giao diện | Bảng `tab_leave_handover` và API đã có; form v2 chưa dựng ô nhập (bản chỉ xem thì hiện đủ) |
+| ~~**Đính kèm** trên đơn~~ | **ĐÃ CÓ 28/09/2026** (bao-CR-505, §7.2). ⚠️ **Còn treo:** cờ `require_attachment` của loại nghỉ hiện trên form nhưng **không có chỗ nào kiểm lúc gửi duyệt** (`request_service` không đọc nó) — bật «Bắt buộc đính kèm» cho Nghỉ ốm thì đơn không kèm giấy vẫn gửi được |
+| ~~Danh sách **bàn giao** trên giao diện~~ | **ĐÃ CÓ** — ô nhập `leave-handover-editor.tsx` trên form đơn (đối chiếu 01/10/2026) |
 | ~~**Chuyển phép sang năm sau**~~ | **ĐÃ CÓ 07/09/2026** — ba nước *mất / mang sang / quy đổi* + nút **Kết sổ cuối năm**, xem §5. Cờ `carry_over` cũ thành di tích (§11.2). Còn thiếu: **báo cáo đối chiếu** trước/sau kết sổ — hiện chỉ có câu thông báo đếm dòng |
-| **Báo cáo / thống kê** nghỉ phép | Chưa dựng màn riêng |
+| ~~**Báo cáo / thống kê** nghỉ phép~~ | **ĐÃ CÓ 01/10/2026** (duoc-CR-548) — phân hệ Báo cáo: «Tình hình nghỉ phép» và «Quỹ phép năm» |
 | Nạp `hire_date` cho hồ sơ cũ | **Ô nhập đã có từ 07/09/2026** ở *Nhân sự ▸ chi tiết hồ sơ* (kèm ô *Giới tính*) — trước đó hai cột này có trong bảng nhưng không schema nào khai, nên không màn nào nhập được và thâm niên của cả công ty tính bằng 0. Việc còn lại là **nhập bù dữ liệu**, không phải dựng màn |
 
 ## 11. Danh mục **Loại nghỉ** — từng trường
@@ -522,7 +522,7 @@ quan hệ giữa hai ô là khai sai luật nghỉ cho **cả công ty**.
 | Áp dụng cho giới tính | `gender` | chọn | Mọi giới (`0`) | Hồ sơ **chưa khai** giới tính vẫn nộp được — chặn là khóa cả công ty tới khi Nhân sự nhập bù |
 | Tối đa mỗi lần nghỉ (ngày) | `max_days_per_request` | số | 0 | `0` = không giới hạn. Trần của **một đơn**, không dính quỹ năm |
 | Trừ Chủ nhật và ngày lễ | `exclude_holiday` | công tắc | Bật | ⚠️ **Thứ Bảy VẪN tính công** — DEGO làm cả T7 (`WEEKEND_DAYS = (6,)`). Tắt cho loại nghỉ dài liên tục (thai sản) |
-| Bắt buộc đính kèm | `require_attachment` | công tắc | Tắt | Cột đã có; **chưa nối vào hạ tầng đính kèm** (xem §10) |
+| Bắt buộc đính kèm | `require_attachment` | công tắc | Tắt | ⚠️ Đính kèm đã có (§7.2) nhưng cờ này **chưa được kiểm lúc gửi duyệt** — bật lên chưa có tác dụng (xem §10) |
 | *Cụm «Số dư cuối năm»* — xem §5 | | | | |
 | Cách xử lý số dư | `year_end_mode` | chọn | Hết năm là mất (`0`) | Ba nước loại trừ nhau nên là ô chọn, không phải hai công tắc |
 | Hạn dùng phép mang sang | `carry_over_expire_month` | chọn 13 mục | Đến hết tháng 3 năm sau | **Chỉ hiện khi** «Mang sang năm sau». `0` = không hết hạn. Ô CHỌN chứ không phải ô gõ số: hạn này **lặp mỗi năm** nên không chốt cứng được thành một cặp ngày, mà tháng 2 còn nhảy 28/29 |

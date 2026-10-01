@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Phân hệ Nhân sự (HRM) — ERP v2 |
-| Bản | 1.3 — 08/09/2026 (**Đợt 1 + Đợt 2 xong**; §7.7 thêm danh mục Chức vụ, đếm ngược người giữ và tab «Người đang giữ») |
+| Bản | 1.4 — 01/10/2026 (**Đợt 1 + Đợt 2 xong, Đợt 3 xong phần lớn — thiếu K3 và màn kiểm việc treo, Đợt 4 chưa**; §7.10 đối chiếu với mã nguồn và danh sách còn treo) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
 | Dùng để làm gì | Chốt danh sách trường của hồ sơ nhân viên (mở rộng `tab_employee`), hai bảng con, chức năng màn hình, và phần tài khoản đăng nhập đi kèm |
 | Ai đọc | Đội phần mềm, người chủ trì |
 | Nguồn đối chiếu | [tham-khao-hrm/01-nhan-su.md](../tham-khao-hrm/01-nhan-su.md) (NS1, ~90 trường/7 nhóm), [tham-khao-hrm/10-de-xuat-ap-dung.md](../tham-khao-hrm/10-de-xuat-ap-dung.md) (V1-2, V1-3, V1-4), và **Phiếu thông tin nhân viên BM00../QT01/NS** (mẫu công ty đang dùng khi nhận việc, ban hành 01/06/2025) |
@@ -150,7 +150,7 @@ Hai bảng đều là chi tiết của hồ sơ (không có màn danh sách riê
 | Cụm hộ chiếu (5 trường) | Ít người có; đi vào `extra_fields` khi cần |
 | Mã chấm công, mã phân ca, 6 cờ phân quyền chấm công (GPS/wifi/máy/chấm hộ...) | Chờ quyết định C2 về chấm công; thêm bây giờ là trường chết |
 | Loại HĐLĐ, ngày chấm dứt HĐLĐ | Thuộc module Hợp đồng lao động (bước sau); hồ sơ đọc ké qua quan hệ, không lưu 2 chỗ |
-| Đơn vị/phòng ban/chức danh kiêm nhiệm | Để dành cho phiếu Quyết định điều chuyển/bổ nhiệm (V1-8) |
+| ~~Đơn vị/phòng ban/chức danh kiêm nhiệm~~ | **ĐÃ CÓ từ CR-167 (25/08/2026)** — một nhân sự thuộc nhiều phòng ban (`employee/department_model.py`, thẻ kiêm nhiệm trên tab Chung). Phiếu Quyết định điều chuyển/bổ nhiệm (V1-8) vẫn chưa làm |
 | Nguyên quán, tên thường gọi, quốc tịch, Skype, Facebook, tình trạng tiêm vắc xin | Không có nhu cầu nghiệp vụ; `extra_fields` nếu cần |
 | Tách địa chỉ thành tỉnh/phường/địa chỉ (3 trường × 3 loại) | 1 trường chữ gộp là đủ; phiếu công ty cũng ghi 1 dòng |
 
@@ -232,8 +232,8 @@ Hiện trạng: `tab_user.employee_id` trỏ về nhân sự; avatar + chữ ký
 
 1. **Đợt 1 — nền dữ liệu**: ✅ **XONG 08/09/2026.** K1 migration + model + schema + serializer che nhạy cảm + K2 SCOPE_FIELDS + K4 seed quyền. Chi tiết ở §7.1.
 2. **Đợt 2 — màn hình**: ✅ **XONG 08/09/2026.** C2 form tạo nhanh, C3 màn chi tiết tab, C4 upload CCCD, C1 mở rộng danh sách + K5 cảnh báo thiếu quản lý. Chi tiết ở §7.2.
-3. **Đợt 3 — duyệt và tài khoản**: K3 approver mới + U1/U2/U3 tab Tài khoản.
-4. **Đợt 4 — tiện ích**: C5 in phiếu, C7 chặn cột nhạy cảm khi xuất. C6 (tự khai) để giai đoạn sau.
+3. **Đợt 3 — duyệt và tài khoản**: 🟡 **XONG PHẦN LỚN** (đối chiếu 01/10/2026, §7.10). Có U1, U3 (tự khóa khi nghỉ việc), U4, U5; U2 làm khác đặc tả. **Còn thiếu: K3 approver mới và màn kiểm việc duyệt đang treo trước khi khóa (U3/V0-4).**
+4. **Đợt 4 — tiện ích**: ⏳ **CHƯA LÀM** — C5 in phiếu chưa có; C7 hiện an toàn chỉ vì bộ cột xuất chưa có trường nhạy cảm, chưa có cơ chế che. C6 (tự khai) mới mở nhóm Liên hệ (§7.9).
 
 Các bước tiếp theo của phân hệ (ngoài tài liệu này): Hợp đồng lao động + cảnh báo hết hạn (V1-5), Quyết định điều chuyển/bổ nhiệm (V1-8), Sơ đồ tổ chức vẽ từ dữ liệu (V2-6).
 
@@ -611,3 +611,40 @@ phòng ban, chức vụ, tình trạng làm việc và mọi ô còn lại — v
   màn hồ sơ bên Nhân sự, danh sách nhân sự và phiên đăng nhập (số điện thoại ở thẻ
   «Tài khoản»).
 - Không migration, không khóa quyền mới.
+
+### 7.10. Đối chiếu với mã nguồn — đã có và còn treo (01/10/2026)
+
+Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-v2` (HEAD `7185021d`). Chỉ ghi
+«đã có» khi tìm được chỗ trong mã.
+
+**Đã có, ngoài những gì §7.1–7.9 đã ghi:**
+
+| Mục | Hiện trạng | Chỗ trong mã |
+|---|---|---|
+| U1 | Tab «Tài khoản»: có/chưa có tài khoản, email, vai trò, trạng thái khóa, phiên và lịch sử đăng nhập | `hr/components/employee-account-card.tsx` (bao-CR-395) |
+| U2 | **Làm khác đặc tả:** nhân sự tự đặt mật khẩu, hệ tự tạo `tab_user` kèm vai trò mặc định «Nhân sự», không bắt đổi mật khẩu lần đầu | `employee/controller.py` `set_password` → `provision_user` (CR-022, CR-037, bao-CR-405) |
+| U3 | Chuyển «Đã nghỉ việc» hoặc tắt «Đang làm việc» thì tự khóa tài khoản, đá phiên, thu quyền bot | `employee/service.py` `has_left_company`, `lock_linked_users` (bao-CR-400) |
+| U4, U5 | Đồng bộ email đăng nhập; mỗi nhân viên một tài khoản (chặn ở tầng ứng dụng) | `_sync_user_email_from_employee`; `user/service.py` |
+| C7 | Xuất CSV/XLSX chỉ có cột thường, lọc theo phạm vi | `employee/controller.py` `/export/csv`, `/export/xlsx` |
+| Kiêm nhiệm | Một nhân sự nhiều phòng ban (§4 đã sửa) | `employee/department_model.py` (CR-167) |
+| Báo cáo | «Biến động nhân sự», «Tình hình nghỉ phép», «Quỹ phép năm» ở phân hệ Báo cáo | `employee/report_*.py`, `leave/report_*.py` (duoc-CR-548) |
+
+**Còn treo:**
+
+| Ưu tiên | Mục | Tình trạng |
+|---|---|---|
+| **Cao** | **K3** — `APPROVER_DIRECT_MANAGER` | **Chưa làm.** `approval/flow_model.py` chỉ có mã người duyệt 1–7; `approver_resolver` chỉ đọc `Department.manager_id`, không đọc `Employee.manager_id`. ⚠️ Câu gợi ý ô «Quản lý trực tiếp» trên tab Chung nói đơn đi người này — **hiện không đúng**, đơn vẫn đi trưởng bộ phận |
+| **Cao** | **U3 / V0-4** — màn kiểm việc duyệt đang treo trước khi khóa | Làm dở: đã tự khóa và có nút chuyển từng việc, **chưa có màn liệt kê** việc người nghỉ đang giữ |
+| **Cao** | Nhật ký hệ thống lưu nguyên văn trường nhạy cảm | `tab_request_log.request_body` (bộ lọc chỉ che mật khẩu/token) và `tab_change_log` lưu nguyên số tài khoản ngân hàng, CCCD, MST — đọc được bằng quyền xem nhật ký, **không qua** `employee_sensitive` |
+| TB | **C5** — in «Phiếu thông tin nhân viên» BM00../QT01/NS | Chưa làm |
+| TB | **U2** — chốt theo đặc tả hay giữ cách hiện tại | Chờ quyết định |
+| TB | CSV nhân sự gác bằng `read` | Bản XLSX đã gác bằng `export`; CSV chưa (V0-2 còn sót) |
+| TB | **C6** — tự khai đầy đủ + nhân sự duyệt | Mới mở nhóm Liên hệ, áp ngay không duyệt (§7.9) |
+| Thấp | Ô nhập `extra_fields` | Backend có, frontend-v2 chưa có ô |
+| Thấp | U5 ở tầng dữ liệu | Cột chưa có ràng buộc duy nhất — hai lượt cấp cùng lúc có thể ra hai tài khoản |
+| Chờ chính sách | Người có `employee.write` phạm vi «tất cả» đặt được mật khẩu của người quyền cao hơn | Ghi chú tự nêu trong `_block_set_password_out_of_scope` |
+
+Các bước lớn tiếp theo của phân hệ (ngoài tài liệu này) đều **chưa bắt đầu**: Hợp đồng lao động
+(V1-5), Quyết định điều chuyển/bổ nhiệm (V1-8), Sơ đồ tổ chức (V2-6) — tình trạng từng mục của lộ
+trình xem [`tham-khao-hrm/10-de-xuat-ap-dung.md` §0](../tham-khao-hrm/10-de-xuat-ap-dung.md).
+

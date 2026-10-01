@@ -3,10 +3,39 @@
 | | |
 |---|---|
 | Thuộc bộ | Tham khảo hệ thống HRM HrOnline |
-| Bản | 1.0 — 11/08/2026 |
+| Bản | 1.1 — 01/10/2026 (thêm §0 tình trạng thực hiện từng mục, đối chiếu mã nguồn) · 1.0 — 11/08/2026 |
 | Dùng để làm gì | Chuyển kết quả khảo sát thành **thứ tự làm việc** và **danh sách sửa đổi trên mã nguồn hiện có** |
 | Ai đọc | Đội phần mềm, người chủ trì, ban lãnh đạo |
 | Quan hệ với các mục khác | Đây là **mục quyết định thứ tự chung**. Cột "Nên lấy" trong từng mục tính năng chỉ xét riêng trong mục đó; chỗ nào khác nhau thì lấy theo tài liệu này |
+
+---
+
+## 0. Tình trạng thực hiện (đối chiếu mã nguồn 01/10/2026)
+
+Bảng này theo dõi từng mục của §3. Chỉ ghi «Xong» khi tìm được chỗ trong mã nhánh `erp-v2`.
+Chi tiết phần hồ sơ nhân sự xem [`../hrm/01-ho-so-nhan-su.md` §7.10](../hrm/01-ho-so-nhan-su.md).
+
+| Mã | Việc | Tình trạng | Ghi chú |
+|---|---|---|---|
+| V0-1 | Khai đủ phạm vi dữ liệu, thiếu khai thì chặn | **Xong** | `core/scoping.py` (B-07 / CR-131) |
+| V0-2 | Tách quyền xuất / nhập file | **Phần lớn** | Có action `export`; XLSX nhân sự gác bằng nó. **Còn sót:** CSV nhân sự vẫn gác bằng `read` |
+| V0-3 | Bộ máy duyệt dùng chung | **Xong** | `approval/` — 7 loại người duyệt. **Thiếu** vai «quản lý trực tiếp» (`APPROVER_DIRECT_MANAGER`, mục K3 của `01-ho-so-nhan-su`) |
+| V0-4 | Màn kiểm tra trước khi khóa tài khoản | **Làm dở** | Đã tự khóa khi nghỉ việc, có chuyển từng việc duyệt; **chưa có màn liệt kê** việc người đó đang giữ |
+| V1-1 | Danh mục tổ chức (phòng ban cha con, chức danh, cấp bậc, pháp nhân, hình thức) | **Xong** | Kèm danh mục Chức vụ (duoc-CR-320) và kiêm nhiệm (CR-167) |
+| V1-2 | Hồ sơ ~30 trường, tạo nhanh ~10 ô | **Xong** | duoc-CR-314, -315 |
+| V1-3 | Trường quản lý trực tiếp + cây quản lý đúng | **Một nửa** | Dữ liệu và chặn vòng đã có; **bộ máy duyệt chưa đọc trường này** (K3) |
+| V1-4 | Phân quyền theo trường cho nhóm nhạy cảm | **Xong** | `employee_sensitive`, che ở serializer. **Lỗ:** nhật ký hệ thống (`tab_request_log`, `tab_change_log`) vẫn lưu nguyên văn các trường này |
+| V1-5 | Hợp đồng lao động + cảnh báo hết hạn | **Chưa bắt đầu** | `modules/contract` hiện là hợp đồng nhà cung cấp / khách hàng, không phải HĐLĐ |
+| V1-6 | Cấu hình loại đơn từ (loại nghỉ + bậc thâm niên) | **Xong** | **Lỗ:** cờ «Bắt buộc đính kèm» hiện trên form nhưng không được kiểm lúc gửi duyệt |
+| V1-7 | Đơn nghỉ phép + quỹ phép năm | **Xong** | CR-259, -260 và các bản vá sau; báo cáo nghỉ phép duoc-CR-548 |
+| V1-8 | Quyết định điều chuyển và bổ nhiệm | **Chưa bắt đầu** | |
+| V2-1 … V2-3, V2-5 | Onboarding/Offboarding, thôi việc, tài sản, quyết định khác | **Chưa bắt đầu** | |
+| V2-4 | Chấm công | **Chưa bắt đầu** | Chờ quyết định C2 |
+| V2-6 | Sơ đồ tổ chức vẽ từ dữ liệu | **Chưa bắt đầu** | Dữ liệu nền (V1-1, V1-3) đã đủ — làm rẻ |
+| V3-1 … V3-5 | Lương, đánh giá, tuyển dụng, bảo hiểm, dashboard động | **Chưa bắt đầu** | Thư mục `backend/app/modules/payroll/` không có tệp mã nào được theo dõi |
+
+Ngoài lộ trình đã làm thêm: Đặt phòng họp (duoc-CR-279), tab Tài khoản trên hồ sơ, nhân viên tự sửa
+liên hệ (bao-CR-508), trang Tổng quan Nhân sự, ba báo cáo Nhân sự trong phân hệ Báo cáo (duoc-CR-548).
 
 ---
 
