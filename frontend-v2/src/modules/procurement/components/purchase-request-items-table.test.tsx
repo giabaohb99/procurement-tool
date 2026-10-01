@@ -143,3 +143,37 @@ describe('PurchaseRequestItemsTable — khổ điện thoại', () => {
     expect(onOpenDetail).toHaveBeenCalledWith(0)
   })
 })
+
+// bao-CR-547 — tick nhiều dòng rồi «Xóa đã chọn», chỉ khi trang bật `bulkRemovable` (form tạo / Nháp).
+describe('PurchaseRequestItemsTable — xóa nhiều dòng (bao-CR-547)', () => {
+  const second: PurchaseRequestItem = { ...ITEMS[0], id: 8, product_code: 'NAP0030', product_name: 'Nắp nhựa phi 30' }
+
+  it('shows no checkbox column while editing a rejected-but-editable ticket', () => {
+    renderTable({ editing: true, bulkRemovable: false })
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+  })
+
+  it('ticked lines are dropped from the ticket after confirming', async () => {
+    const onChange = vi.fn()
+    renderTable({ items: [ITEMS[0], second], editing: true, bulkRemovable: true, onChange })
+
+    expect(screen.queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 1' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa đã chọn (1)' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa 1 dòng' }))
+
+    expect(onChange).toHaveBeenCalledWith([second])
+  })
+
+  it('select-all then delete empties the ticket in one go', async () => {
+    const onChange = vi.fn()
+    renderTable({ items: [ITEMS[0], second], editing: true, bulkRemovable: true, onChange })
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả dòng' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa đã chọn (2)' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa 2 dòng' }))
+
+    expect(onChange).toHaveBeenCalledWith([])
+  })
+})

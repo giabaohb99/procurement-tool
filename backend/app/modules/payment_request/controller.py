@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.notification.service import trigger_notification
 
+from app.core.bulk_delete import ensure_all_draft
 from app.core.audit import resolve_actor, resolve_actor_profile
 from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
@@ -294,11 +295,14 @@ def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(r
         raise HTTPException(400, "Không có ID hợp lệ")
     # Lọc phạm vi TRƯỚC vòng lặp (khuôn `contract/controller.py`): xóa hàng loạt mà chỉ
     # `db.get` theo id thì gửi đại một dãy id là xóa được phiếu của pháp nhân khác.
-    in_scope = [r.id for r in apply_scope(
+    rows = apply_scope(
         db.query(PaymentRequest).filter(PaymentRequest.id.in_(id_list)),
-        PaymentRequest, "payment_request", user, get_perm_profile(db, user), "delete").all()]
-    if not in_scope:
+        PaymentRequest, "payment_request", user, get_perm_profile(db, user), "delete").all()
+    if not rows:
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
+    ensure_all_draft(rows, "phiếu yêu cầu thanh toán")
+    in_scope = [r.id for r in rows]
     for rid in in_scope:
         try:
             service.delete_request(db, rid, user.id)

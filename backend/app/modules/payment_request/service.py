@@ -594,8 +594,11 @@ def check_submit(db: Session, req: PaymentRequest) -> None:
 
 def delete_request(db: Session, rid: int, user_id: int):
     req = get_request(db, rid)
-    if req.status == "paid":
-        raise HTTPException(400, "Phiếu đã chi, không xóa được")
+    #  bao-CR-547 (đại ca chốt 01/10/2026): chỉ xóa được phiếu NHÁP. Trước đây chặn mỗi phiếu đã
+    #  chi — phiếu chờ duyệt / đã duyệt mà chưa chi vẫn xóa được, mở xóa nhiều là xóa cả loạt.
+    #  Phiếu đã gửi đi mà không dùng nữa thì Từ chối, không xóa.
+    if req.status != "draft":
+        raise HTTPException(400, "Chỉ xóa được phiếu yêu cầu thanh toán ở trạng thái Nháp")
     from app.modules.attachment.service import delete_attachments_for
     delete_attachments_for(db, [("payment_request", rid)])
     db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()

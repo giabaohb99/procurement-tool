@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, type ReactNode } from 'react'
 
 import { useHorizontalOverflow } from '@/shared/hooks/use-horizontal-overflow'
 import { Button } from '@/shared/ui/button'
+import { Checkbox } from '@/shared/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -50,6 +51,25 @@ const BODY_CELL =
 const ROW_BG =
   'group odd:bg-card even:bg-row-stripe hover:bg-row-hover data-[state=selected]:bg-row-selected transition-colors'
 
+/**
+ * bao-CR-547 — tick chọn nhiều DÒNG cho thao tác hàng loạt (xóa dòng đã chọn trên phiếu Nháp).
+ * Trạng thái chọn do nơi dùng giữ (`useLineSelection`); bảng chỉ vẽ cột tick ở ĐẦU và ghim nó.
+ */
+export interface LinesTableSelection<T> {
+  isSelected: (row: T, index: number) => boolean
+  onToggle: (row: T, index: number) => void
+  onToggleAll: () => void
+  allSelected: boolean
+  someSelected: boolean
+  /** Dòng không cho tick (vd dòng đơn hàng đã hoàn thành) — ô khóa, rê chuột thấy lý do. */
+  isSelectable?: (row: T, index: number) => boolean
+  unselectableReason?: string
+}
+
+/** Khóa giả của cột tick — không đi qua `useTableLayout` nên không dính bố cục đã lưu. */
+const SELECT_KEY = '__select'
+const SELECT_WIDTH = 44
+
 export interface LinesTableProps<T> {
   columns: LinesTableColumn[]
   rows: T[]
@@ -72,6 +92,8 @@ export interface LinesTableProps<T> {
   defaultCompact?: boolean
   rowClassName?: (row: T, index: number) => string | undefined
   cellClassName?: (columnKey: string, row: T, index: number) => string | undefined
+  /** Có thì bảng mọc thêm cột tick ở đầu — bao-CR-547. */
+  selection?: LinesTableSelection<T>
 }
 
 /**
@@ -99,6 +121,7 @@ export function LinesTable<T>({
   defaultCompact,
   rowClassName,
   cellClassName,
+  selection,
 }: LinesTableProps<T>) {
   /**
    * `useTableLayout` nhận cột của bảng danh sách; bảng dòng không khai `cell` nên
@@ -153,15 +176,15 @@ export function LinesTable<T>({
   const scrollRef = useRef<HTMLDivElement>(null)
   const overflow = useHorizontalOverflow(scrollRef)
 
-  /** Cột ghim theo đúng thứ tự đang hiện — chúng luôn là dải đầu bảng. */
+  /** Cột ghim theo đúng thứ tự đang hiện — chúng luôn là dải đầu bảng. Cột tick (nếu có) đứng trước hết. */
   const pinnedKeys = useMemo(() => {
-    const keys: string[] = []
+    const keys: string[] = selection ? [SELECT_KEY] : []
     for (const column of visibleColumns) {
       if (!layout.pinnedColumns.includes(column.key)) break
       keys.push(column.key)
     }
     return keys
-  }, [visibleColumns, layout.pinnedColumns])
+  }, [visibleColumns, layout.pinnedColumns, selection])
 
   const { headerRowRef, pinnedOffsets, scrolledX } = usePinnedOffsets(pinnedKeys)
   const lastPinnedKey = pinnedKeys.at(-1)
@@ -186,13 +209,15 @@ export function LinesTable<T>({
     if (!table) return
 
     const widths: Record<string, number> = {}
+    //  Cột tick (nếu có) chiếm ô đầu tiên của hàng nên chỉ số DOM lệch đi một.
+    const indexOffset = selection ? 1 : 0
     visibleColumns.forEach((column, index) => {
-      widths[column.key] = measureColumnContentWidth(table, index, {
+      widths[column.key] = measureColumnContentWidth(table, index + indexOffset, {
         min: column.minWidth ?? LINE_COLUMN_MIN_WIDTH,
       })
     })
     setColumnWidths(widths)
-  }, [visibleColumns, setColumnWidths])
+  }, [visibleColumns, setColumnWidths, selection])
 
   const widthOf = (column: DataTableColumn<T>) =>
     lineColumnWidth(column, layout.columnWidths[column.key])
@@ -317,6 +342,19 @@ export function LinesTable<T>({
               — nền alpha ở hàng tiêu đề là ô cột ghim `bg-inherit` lộ hàng bên dưới.
             */}
             <TableRow ref={headerRowRef} className="bg-row-head hover:bg-row-head">
+              {selection && (
+                <th
+                  data-column-key={SELECT_KEY}
+                  style={{ width: SELECT_WIDTH, minWidth: SELECT_WIDTH, left: pinnedOffsets[SELECT_KEY] }}
+                  className={cn(HEAD_CELL, 'text-center', pinClass(SELECT_KEY))}
+                >
+                  <Checkbox
+                    checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                    aria-label={selection.allSelected ? 'Bỏ chọn tất cả dòng' : 'Chọn tất cả dòng'}
+                    onCheckedChange={selection.onToggleAll}
+                  />
+                </th>
+              )}
               {visibleColumns.map((column) => (
                 <ColumnHeaderCell
                   key={column.key}
@@ -342,7 +380,7 @@ export function LinesTable<T>({
             {rows.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={visibleColumns.length}
+                  colSpan={visibleColumns.length + (selection ? 1 : 0)}
                   className="h-20 px-3 text-center text-muted-foreground"
                 >
                   {emptyMessage}
@@ -353,8 +391,27 @@ export function LinesTable<T>({
             {rows.map((row, index) => (
               <TableRow
                 key={rowKey(row, index)}
+                data-state={selection?.isSelected(row, index) ? 'selected' : undefined}
                 className={cn(ROW_BG, rowClassName?.(row, index))}
               >
+                {selection && (
+                  <TableCell
+                    style={{ width: SELECT_WIDTH, left: pinnedOffsets[SELECT_KEY] }}
+                    className={cn(BODY_CELL, 'text-center', pinClass(SELECT_KEY))}
+                    title={
+                      selection.isSelectable && !selection.isSelectable(row, index)
+                        ? selection.unselectableReason
+                        : undefined
+                    }
+                  >
+                    <Checkbox
+                      checked={selection.isSelected(row, index)}
+                      disabled={selection.isSelectable ? !selection.isSelectable(row, index) : false}
+                      aria-label={`Chọn dòng ${index + 1}`}
+                      onCheckedChange={() => selection.onToggle(row, index)}
+                    />
+                  </TableCell>
+                )}
                 {visibleColumns.map((column) => (
                   <TableCell
                     key={column.key}

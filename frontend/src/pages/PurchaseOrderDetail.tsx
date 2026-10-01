@@ -329,6 +329,21 @@ export default function PurchaseOrderDetail() {
   const progressEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   // Dòng đã Hoàn thành / Hủy đơn → khóa HẲN dòng đó (kể cả bảng vận chuyển), không sửa gì được
   const lineLocked = (it: any) => ['completed', PG_CANCELLED].includes(it?.progress_status || '')
+  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — CHỈ form tạo hoặc đơn Nháp (đơn Bị từ chối vẫn xóa
+  // từng dòng). Dòng đã hoàn thành / đã hủy không tick được, như nút xóa lẻ. Chọn theo CHỈ SỐ nên đổi số
+  // dòng là bỏ hết lựa chọn.
+  const bulkRemovable = headerEditable && (isNew || po.status === 'draft')
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const itemCount = (po.items || []).length
+  useEffect(() => { setSelectedRows(new Set()) }, [itemCount, bulkRemovable])
+  const selectableRowIdx = (po.items || []).map((it: any, i: number) => (lineLocked(it) ? -1 : i)).filter((i: number) => i >= 0)
+  const toggleRow = (i: number) => setSelectedRows((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n })
+  const toggleAllRows = () => setSelectedRows((s) => s.size === selectableRowIdx.length ? new Set() : new Set(selectableRowIdx))
+  const delSelectedRows = async () => {
+    const n = selectedRows.size
+    if (!n || !(await askConfirm({ message: `Xóa ${n} dòng đã chọn? Dòng bỏ khỏi đơn ngay trên màn hình, bấm Lưu mới ghi xuống.` }))) return
+    setPo((s: any) => recalcUrgent({ ...s, items: s.items.filter((_: any, idx: number) => !selectedRows.has(idx)) }))
+  }
   // Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm (Mã hàng, ĐVT). Đổi lúc này sẽ dời
   // phiếu nhập kho + tồn kho đã ghi theo mã cũ sang mã khác. Backend cũng chặn.
   const lineReceived = (it: any) => Number(it?.qty_received || 0) > 0
@@ -1273,6 +1288,9 @@ export default function PurchaseOrderDetail() {
               <h3 className="sec-title" style={{ margin: 0, border: 'none', padding: 0 }}>Dòng hàng</h3>
               {headerEditable && (
                 <div style={{ display: 'flex', gap: 8 }}>
+                  {bulkRemovable && selectedRows.size > 0 && (
+                    <button className="btn err" onClick={delSelectedRows} style={{ height: 32, fontSize: 13 }}><i className="ti ti-trash" />Xóa đã chọn ({selectedRows.size})</button>
+                  )}
                   <button className="btn ghost" onClick={() => addItems(1)} style={{ height: 32, fontSize: 13 }}><i className="ti ti-plus" />Thêm dòng</button>
                   <button className="btn ghost" onClick={async () => { const n = await askPrompt({ message: 'Thêm bao nhiêu dòng?', defaultValue: '3' }); if (n !== null) addItems(Math.max(1, parseInt(n || '0') || 0)) }} style={{ height: 32, fontSize: 13 }}><i className="ti ti-rows" />Thêm nhiều</button>
                 </div>
@@ -1305,9 +1323,14 @@ export default function PurchaseOrderDetail() {
               </div>
             )}
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: (showCurrency ? 1475 : 1345) - (isImport ? 189 : 0) }}>
+              <table className="items-table" style={{ minWidth: (showCurrency ? 1475 : 1345) - (isImport ? 189 : 0) + (bulkRemovable ? 36 : 0) }}>
                 <thead>
                   <tr>
+                    {bulkRemovable && (
+                      <th style={{ width: 36, textAlign: 'center' }} title="Chọn tất cả dòng còn xóa được">
+                        <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectableRowIdx.length > 0 && selectedRows.size === selectableRowIdx.length} onChange={toggleAllRows} aria-label="Chọn tất cả dòng" />
+                      </th>
+                    )}
                     <th style={{ width: 36 }}>#</th>
                     <th style={{ width: 215 }}>Mã hàng</th>
                     <th style={{ minWidth: 265 }}>Tên hàng <span style={{ color: 'var(--red)' }}>*</span></th>
@@ -1329,6 +1352,11 @@ export default function PurchaseOrderDetail() {
                 <tbody>
                   {items.map((it: any, i: number) => (
                     <tr key={i}>
+                      {bulkRemovable && (
+                        <td style={{ textAlign: 'center' }} title={lineLocked(it) ? 'Dòng đã hoàn thành hoặc đã hủy — không xóa được' : undefined}>
+                          <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectedRows.has(i)} disabled={lineLocked(it)} onChange={() => toggleRow(i)} aria-label={`Chọn dòng ${i + 1}`} />
+                        </td>
+                      )}
                       <td>{i + 1}</td>
                       {/* bao-CR-308: trùng mã được phép (tách dòng theo bộ chứng từ) — chỉ tô vàng
                           cảnh báo cho dễ soát gõ nhầm, khi lưu sẽ hỏi xác nhận */}

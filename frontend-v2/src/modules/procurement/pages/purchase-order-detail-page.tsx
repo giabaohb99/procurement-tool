@@ -710,6 +710,7 @@ export function PurchaseOrderDetailPage() {
               items={data.items}
               order={data}
               editable={headerEditable}
+              bulkRemovable={isNew || data.status === 'draft'}
               progressEditable={progressEditable}
               onChange={(items) => patch({ items })}
               onOpenDetail={setLineIndex}

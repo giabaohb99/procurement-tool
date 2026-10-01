@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 
+from app.core.bulk_delete import ensure_all_draft
 from app.core.auth import get_perm_profile, require, user_has_permission
 from app.core.central_purchasing import get_central_dept_id, is_central_dept, normalize_handler_dept_id
 from app.core.scoping import apply_scope, approves_only_in_dept_proc, holds_handling_dept
@@ -977,6 +978,8 @@ def bulk_delete_prs(ids: str, db: Session = Depends(get_db), user=Depends(requir
             service.delete_pr(db, pid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa phiếu ID {pid}: {str(e)}")
+    #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
+    ensure_all_draft(rows, "phiếu yêu cầu mua hàng")
     # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
     return success(None, f"Đã xóa {len(rows)} bản ghi")
 

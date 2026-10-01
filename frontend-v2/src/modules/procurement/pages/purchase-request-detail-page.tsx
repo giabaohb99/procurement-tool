@@ -1008,6 +1008,7 @@ export function PurchaseRequestDetailPage() {
                 items={loadedDraft.items}
                 editing={editing}
                 showAssignee={showAssignee}
+                bulkRemovable={isNew || data.status === 'draft'}
                 onChange={(items) => patch({ items })}
                 onOpenDetail={setLineIndex}
                 orderedByCode={progress?.ordered}

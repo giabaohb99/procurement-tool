@@ -3,6 +3,8 @@ import { Copy, Pencil, Trash2 } from 'lucide-react'
 
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useLineSelection } from '@/shared/hooks/use-line-selection'
+import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 import type { LinesTableColumn } from '@/shared/data-table/types'
@@ -48,9 +50,19 @@ export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
 
 const TABLE_STORAGE_KEY = 'survey-request-lines'
 
+//  Khóa dòng: dòng chưa lưu chưa có id nên lấy chỉ số — khai cấp module để tham chiếu không đổi.
+function surveyRequestRowKey(line: SurveyRequestLine, index: number): string | number {
+  return line.id || `new-${index}`
+}
+
 interface SurveyRequestLinesTableProps {
   lines: SurveyRequestLine[]
   editing: boolean
+  /**
+   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
+   */
+  bulkRemovable?: boolean
   /** Cột nội bộ của thu mua (ngày tiếp nhận, NSTM) — người yêu cầu không thấy. */
   showNstmColumns: boolean
   /** Cột tiến độ dòng: phiếu chưa lưu thì chưa có gì để hiện. */
@@ -86,6 +98,7 @@ interface SurveyRequestLinesTableProps {
 export function SurveyRequestLinesTable({
   lines,
   editing,
+  bulkRemovable = false,
   showNstmColumns,
   showStatus,
   canAssignNstm,
@@ -98,6 +111,19 @@ export function SurveyRequestLinesTable({
   onLineDuplicated,
 }: SurveyRequestLinesTableProps) {
   const units = usePurchaseRequestUnits(editing)
+  const lineSelection = useLineSelection({
+    rows: lines,
+    rowKey: surveyRequestRowKey,
+    enabled: editing && bulkRemovable,
+  })
+  const removeSelectedLines = () => {
+    const drop = new Set(lineSelection.selectedIndexes)
+    onChange(lines.filter((_, index) => !drop.has(index)))
+    //  Báo từng chỉ số từ CAO xuống THẤP: trang dời tệp đính kèm chờ lưu theo chỉ số, báo
+    //  từ thấp lên là các chỉ số sau đã trôi.
+    for (const index of [...lineSelection.selectedIndexes].sort((a, b) => b - a)) onLineRemoved?.(index)
+    lineSelection.clear()
+  }
   const itemGroups = usePurchaseRequestItemGroups(editing)
 
   //  CÙNG một `useIsMobile` mà `DataTable` và mấy bảng dòng khác dùng để đổi
@@ -446,10 +472,20 @@ export function SurveyRequestLinesTable({
       columns={columns}
       rows={lines}
       storageKey={TABLE_STORAGE_KEY}
-      rowKey={(line, index) => line.id || `new-${index}`}
+      rowKey={surveyRequestRowKey}
       renderCell={renderCell}
       title={`Danh sách sản phẩm cần khảo sát (${lines.length} dòng)`}
       emptyMessage='Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu'
+      selection={lineSelection.selection}
+      actions={
+        <BulkDeleteButton
+          size="sm"
+          count={lineSelection.selectedIndexes.length}
+          unitLabel="dòng"
+          description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
+          onConfirm={removeSelectedLines}
+        />
+      }
     />
   )
 }

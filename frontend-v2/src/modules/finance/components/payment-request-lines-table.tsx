@@ -3,6 +3,8 @@ import { useMemo } from 'react'
 
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useLineSelection } from '@/shared/hooks/use-line-selection'
+import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -35,9 +37,18 @@ export interface EditablePaymentLine {
   offset_amount: number
 }
 
+function paymentLineRowKey(row: EditablePaymentLine): string {
+  return row.key
+}
+
 interface PaymentRequestLinesTableProps {
   rows: EditablePaymentLine[]
   editable: boolean
+  /**
+   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
+   */
+  bulkRemovable?: boolean
   storageKey: string
   /**
    * Hiện thêm hai cột Nhà cung cấp / Loại nợ. Bật ở màn TẠO (một phiếu có thể gộp
@@ -55,6 +66,8 @@ interface PaymentRequestLinesTableProps {
   sourceDisplay: (row: EditablePaymentLine) => string
   onPatch: (index: number, patch: Partial<EditablePaymentLine>) => void
   onRemove: (index: number) => void
+  /** bao-CR-547 — bỏ nhiều dòng một lần (chỉ số theo `rows` hiện tại). */
+  onRemoveMany?: (indexes: number[]) => void
 }
 
 export function PaymentRequestLinesTable({
@@ -68,8 +81,19 @@ export function PaymentRequestLinesTable({
   sourceDisplay,
   onPatch,
   onRemove,
+  onRemoveMany,
+  bulkRemovable = false,
 }: PaymentRequestLinesTableProps) {
   const isMobile = useIsMobile()
+  const lineSelection = useLineSelection({
+    rows,
+    rowKey: paymentLineRowKey,
+    enabled: editable && bulkRemovable && !!onRemoveMany,
+  })
+  const removeSelectedLines = () => {
+    onRemoveMany?.(lineSelection.selectedIndexes)
+    lineSelection.clear()
+  }
   const columns = useMemo<LinesTableColumn[]>(() => {
     const cols: LinesTableColumn[] = [
       { key: 'no', header: '#', width: 44, minWidth: 40, hideable: false, defaultPinned: true, align: 'center' },
@@ -254,10 +278,20 @@ export function PaymentRequestLinesTable({
       columns={columns}
       rows={rows}
       storageKey={storageKey}
-      rowKey={(row) => row.key}
+      rowKey={paymentLineRowKey}
       renderCell={renderCell}
       title={`Các khoản công nợ thanh toán (${rows.length})`}
       emptyMessage="Chưa có dòng nào."
+      selection={lineSelection.selection}
+      actions={
+        <BulkDeleteButton
+          size="sm"
+          count={lineSelection.selectedIndexes.length}
+          unitLabel="dòng"
+          description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
+          onConfirm={removeSelectedLines}
+        />
+      }
       cellClassName={(key) => (key === 'amount' ? 'bg-warning/8' : undefined)}
     />
   )

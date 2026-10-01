@@ -169,10 +169,36 @@ customs-pesticide-{hero-card,detail-tabs,related-cards,lookup-sidebar,banned-not
 
 ---
 
-## bao-CR-547 | Chọn nhiều phiếu nháp rồi xóa một lần ở YCBG, YCMH, đơn mua hàng, YCTT
+## bao-CR-547 | Tick nhiều dòng trong bảng dòng ở trang chi tiết rồi xóa một lần (YCBG, YCMH, ĐMH, YCTT)
 - status: dang-lam
 - date: 2026-10-01
-Đặt chỗ: màn danh sách v1 và v2 của bốn loại phiếu cho tick nhiều phiếu nháp rồi xóa; YCTT chỉ xóa được phiếu nháp.
+Đại ca muốn ở bảng dòng sản phẩm trong trang chi tiết của yêu cầu báo giá, yêu cầu mua hàng, đơn mua
+hàng và yêu cầu thanh toán có thể tick nhiều dòng rồi xóa một lần, cả v1 lẫn v2, chỉ khi phiếu đang là
+form tạo hoặc trạng thái Nháp. Bản đầu em làm nhầm ở trang danh sách (tick rồi xóa cả phiếu); đại ca
+đính chính nên phần đó đã gỡ hết, chỉ giữ hai luật ở máy chủ đi kèm: đường xóa nhiều phiếu kiểm cả lô
+trước và chỉ nhận phiếu Nháp, và yêu cầu thanh toán chỉ xóa được khi còn Nháp.
+
+Ở v2, bảng dòng dùng chung có thêm cột tick đứng đầu và được ghim, không dính vào bố cục cột người
+dùng đã lưu; dòng không cho xóa (dòng đơn mua hàng đã hoàn thành hoặc đã hủy) thì ô tick vô hiệu kèm lời
+giải thích. Bốn bảng dòng nhận cờ cho tick, trang bật cờ khi phiếu mới tạo hoặc đang Nháp; nút «Xóa đã
+chọn (n)» đứng cạnh «Thêm dòng», bấm thì hỏi xác nhận, dòng bỏ khỏi phiếu ngay trên màn hình và chỉ ghi
+xuống khi bấm Lưu. Yêu cầu báo giá và đơn mua hàng báo chỉ số dòng bị bỏ từ cao xuống thấp để tệp đính
+kèm và phiếu giao đang chờ lưu dời theo đúng dòng. Ở v1, bốn bảng tự dựng được thêm cột tick, nút xóa
+và hộp xác nhận; chọn theo thứ tự dòng nên đổi số dòng là bỏ hết lựa chọn, màn tạo yêu cầu thanh toán
+chọn theo khóa dòng. Sửa kèm: trang chi tiết yêu cầu mua hàng ở cả hai bản trước xóa từng phiếu nhầm qua
+đường xóa nhiều, nay dùng đường riêng để phiếu bị trả lại vẫn xóa được.
+
+Kiểm: 8 bài kiểm máy chủ mới và 178 bài kiểm phạm vi liên quan xanh; v2 tsc 0 lỗi, eslint 0 lỗi, bài
+kiểm phân hệ thu mua, tài chính và lớp dùng chung xanh (thêm bài cho hook chọn dòng, cột tick của bảng
+dòng, bảng yêu cầu mua hàng, nút xóa); v1 tsc giữ đúng 4 lỗi cũ; bấm thử trên trình duyệt local ở form
+tạo yêu cầu mua hàng cả hai bản. Chưa commit.
+
+Mã nguồn: `core/bulk_delete.py` (mới) · controller xóa nhiều của 4 phân hệ · `payment_request/service.py` ·
+v2 `shared/data-table/lines-table.tsx`, `shared/hooks/use-line-selection.ts` (mới), `shared/ui/bulk-delete-button.tsx`
+(mới), `purchase-request-items-table.tsx`, `survey-request-lines-table.tsx`, `purchase-order-items-table.tsx`,
+`payment-request-lines-table.tsx`, bốn trang chi tiết, `purchase-request-api.ts` · v1 `PurchaseRequestDetail.tsx`,
+`SurveyRequestDetail.tsx`, `PurchaseOrderDetail.tsx`, `PaymentRequestDetail.tsx`, `CrudList.tsx`, `cruds.tsx` ·
+`test/backend/test_xoa_nhieu_phieu_nhap_cr547.py`
 
 ---
 

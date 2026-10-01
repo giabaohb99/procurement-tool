@@ -3,6 +3,8 @@ import { History, Pencil, Plus, PlusCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useLineSelection } from '@/shared/hooks/use-line-selection'
+import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
@@ -52,11 +54,21 @@ import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
 const TABLE_STORAGE_KEY = 'purchase-request-items'
 
+//  Khóa dòng: dòng chưa lưu chưa có id nên lấy chỉ số — khai cấp module để tham chiếu không đổi.
+function purchaseRequestRowKey(item: PurchaseRequestItem, index: number): string | number {
+  return item.id ?? `new-${index}`
+}
+
 interface ItemsTableProps {
   items: PurchaseRequestItem[]
   /** Bật chế độ sửa: hiện ô nhập + nút thêm/xóa dòng. */
   editing: boolean
   onChange: (items: PurchaseRequestItem[]) => void
+  /**
+   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
+   */
+  bulkRemovable?: boolean
   /** SL đã đặt theo MÃ HÀNG, gộp mọi ĐMH sinh từ phiếu (chỉ đọc). */
   orderedByCode?: Record<string, number>
   /** Người yêu cầu / trưởng bộ phận không cần thấy thông tin điều phối nội bộ. */
@@ -114,6 +126,7 @@ export function PurchaseRequestItemsTable({
   items,
   editing,
   onChange,
+  bulkRemovable = false,
   orderedByCode,
   showAssignee = true,
   onOpenDetail,
@@ -124,6 +137,16 @@ export function PurchaseRequestItemsTable({
   onExpectedDateCommit,
 }: ItemsTableProps) {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
+  const lineSelection = useLineSelection({
+    rows: items,
+    rowKey: purchaseRequestRowKey,
+    enabled: editing && bulkRemovable,
+  })
+  const removeSelectedLines = () => {
+    const drop = new Set(lineSelection.selectedIndexes)
+    onChange(items.filter((_, index) => !drop.has(index)))
+    lineSelection.clear()
+  }
   const [bulkCount, setBulkCount] = useState(5)
   const [historyIndex, setHistoryIndex] = useState<number | null>(null)
   const warehouses = usePurchaseRequestWarehouses(editing)
@@ -597,6 +620,13 @@ export function PurchaseRequestItemsTable({
       <Button type="button" size="sm" variant="outline" onClick={() => setBulkDialogOpen(true)}>
         <PlusCircle /> Thêm nhiều
       </Button>
+      <BulkDeleteButton
+        size="sm"
+        count={lineSelection.selectedIndexes.length}
+        unitLabel="dòng"
+        description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
+        onConfirm={removeSelectedLines}
+      />
     </>
   )
 
@@ -652,9 +682,10 @@ export function PurchaseRequestItemsTable({
           columns={columns}
           rows={items}
           storageKey={TABLE_STORAGE_KEY}
-          rowKey={(item, index) => item.id ?? `new-${index}`}
+          rowKey={purchaseRequestRowKey}
           renderCell={renderCell}
           title={`Danh sách sản phẩm (${items.length} dòng)`}
+          selection={lineSelection.selection}
           emptyMessage="Chưa có sản phẩm nào."
           rowClassName={(item) =>
             item.line_status === 'cancelled' ? 'opacity-60' : undefined

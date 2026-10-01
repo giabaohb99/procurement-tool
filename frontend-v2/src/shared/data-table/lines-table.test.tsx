@@ -77,3 +77,49 @@ describe('LinesTable defaultColor', () => {
     expect(bodyCell?.style.backgroundImage).toContain(BLUE)
   })
 })
+
+// bao-CR-547 — cột tick chọn dòng (xóa nhiều dòng trên phiếu Nháp): chỉ mọc khi có `selection`,
+// đứng đầu bảng, ô của dòng khóa thì vô hiệu kèm lý do.
+describe('LinesTable selection column', () => {
+  const twoRows = [{ id: 1 }, { id: 2 }]
+
+  it('has no checkbox column at all without `selection`', () => {
+    renderTable()
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+
+  it('draws a header checkbox plus one per row, first in the row', () => {
+    render(
+      <LinesTable
+        columns={COLUMNS}
+        rows={twoRows}
+        storageKey={STORAGE_KEY}
+        rowKey={(row) => row.id}
+        renderCell={(key) => <span>{key}-cell</span>}
+        title="Bảng thử"
+        emptyMessage="Trống"
+        selection={{
+          isSelected: (row) => row.id === 2,
+          onToggle: () => undefined,
+          onToggleAll: () => undefined,
+          allSelected: false,
+          someSelected: true,
+          isSelectable: (row) => row.id !== 1,
+          unselectableReason: 'Dòng đã khóa',
+        }}
+      />,
+    )
+    const header = screen.getByRole('checkbox', { name: 'Chọn tất cả dòng' })
+    expect(header.closest('th')?.parentElement?.firstElementChild).toBe(header.closest('th'))
+    expect(header).toHaveAttribute('aria-checked', 'mixed')
+
+    const first = screen.getByRole('checkbox', { name: 'Chọn dòng 1' })
+    expect(first).toBeDisabled()
+    expect(first.closest('td')).toHaveAttribute('title', 'Dòng đã khóa')
+    expect(screen.getByRole('checkbox', { name: 'Chọn dòng 2' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('checkbox', { name: 'Chọn dòng 2' }).closest('tr')).toHaveAttribute(
+      'data-state',
+      'selected',
+    )
+  })
+})

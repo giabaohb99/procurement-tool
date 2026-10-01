@@ -98,6 +98,8 @@ function PaymentRequestCreate() {
   const ids = useMemo(() => idsParam.split(',').map(Number).filter(Boolean), [idsParam])
   const blankMode = !ids.length
 
+  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — màn TẠO là form tạo nên luôn bật; chọn theo `key` của dòng.
+  const [selectedKeys, setSelectedKeys] = useState<Set<number>>(new Set())
   const [lines, setLines] = useState<NewLine[]>(
     () => ((location.state as any)?.rows || []).map(fromPayable))
   const [loading, setLoading] = useState(false)
@@ -237,11 +239,29 @@ function PaymentRequestCreate() {
       </div>
 
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-        <h3 className="sec-title">Các khoản công nợ thanh toán ({lines.length})</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <h3 className="sec-title" style={{ margin: 0 }}>Các khoản công nợ thanh toán ({lines.length})</h3>
+          {selectedKeys.size > 0 && (
+            <button className="btn err" style={{ height: 30, padding: '0 10px', fontSize: 13 }}
+              onClick={async () => {
+                if (!(await askConfirm({ message: `Bỏ ${selectedKeys.size} dòng đã chọn khỏi phiếu?` }))) return
+                setLines((s) => s.filter((x) => !selectedKeys.has(x.key)))
+                setSelectedKeys(new Set())
+              }}>
+              <i className="ti ti-trash" /> Xóa đã chọn ({selectedKeys.size})
+            </button>
+          )}
+        </div>
         <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 1200 }}>
+          <table className="items-table" style={{ minWidth: 1236 }}>
             {/* Ticket #26 (bao-CR-302): cột Mã MISA chỉ hiển thị — mã nhập/sửa trên ĐMH */}
-            <thead><tr><th style={{ width: 36 }}>#</th><th>Nhà cung cấp</th><th>Loại</th><th>PO</th>
+            <thead><tr>
+              <th style={{ width: 36, textAlign: 'center' }} title="Chọn tất cả dòng">
+                <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} aria-label="Chọn tất cả dòng"
+                  checked={lines.length > 0 && selectedKeys.size === lines.length}
+                  onChange={() => setSelectedKeys((s) => s.size === lines.length ? new Set() : new Set(lines.map((x) => x.key)))} />
+              </th>
+              <th style={{ width: 36 }}>#</th><th>Nhà cung cấp</th><th>Loại</th><th>PO</th>
               <th>Mã MISA</th><th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
               <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
               <th style={{ textAlign: 'right' }}>Đề nghị trả</th>
@@ -249,6 +269,10 @@ function PaymentRequestCreate() {
             <tbody>
               {lines.map((l, i) => (
                 <tr key={l.key}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectedKeys.has(l.key)} aria-label={`Chọn dòng ${i + 1}`}
+                      onChange={() => setSelectedKeys((s) => { const n = new Set(s); if (n.has(l.key)) n.delete(l.key); else n.add(l.key); return n })} />
+                  </td>
                   <td>{i + 1}</td>
                   <td>{l.payable_id ? (l.supplier_name || l.supplier_code)
                     : (suppliers.find((s) => s.code === headSupplier)?.name || headPayable?.supplier_name || headSupplier || '—')}</td>
@@ -293,6 +317,10 @@ function PaymentRequestView() {
   const { can } = useAuth()
   const navigate = useNavigate()
   const [req, setReq] = useState<any>(null)
+  // bao-CR-547: dòng đã tick ở bảng công nợ (chọn theo CHỈ SỐ nên đổi số dòng là bỏ hết lựa chọn).
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const lineCount = req?.lines?.length ?? 0
+  useEffect(() => { setSelectedRows(new Set()) }, [lineCount, req?.status])
   const [companies, setCompanies] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
@@ -334,6 +362,15 @@ function PaymentRequestView() {
 
   // CR-066: chỉ bản NHÁP mới sửa được. Gửi duyệt / duyệt xong là khóa cứng (backend cũng chặn).
   const editable = req.status === 'draft' && can('payment_request', 'write')
+  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — `editable` ở màn này đã là «phiếu Nháp + quyền ghi».
+  // State + effect khai cạnh `req` (trước các `return` sớm) cho đúng luật hook.
+  const toggleRow = (i: number) => setSelectedRows((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n })
+  const toggleAllRows = () => setSelectedRows((s) => s.size === lineCount ? new Set() : new Set(Array.from({ length: lineCount }, (_, i) => i)))
+  const delSelectedRows = async () => {
+    const n = selectedRows.size
+    if (!n || !(await askConfirm({ message: `Bỏ ${n} dòng đã chọn khỏi phiếu? Bấm Lưu mới ghi xuống.` }))) return
+    setReq((s: any) => ({ ...s, lines: s.lines.filter((_: any, idx: number) => !selectedRows.has(idx)) }))
+  }
   // CR-149: riêng CÂU CHỮ BẢN IN sửa được đến trước khi Đã chi / Đã từ chối —
   // người dùng in phiếu sau khi duyệt nên phải chỉnh được lúc đó.
   const ptEditable = ['draft', 'submitted', 'approved'].includes(req.status) && can('payment_request', 'write')
@@ -523,16 +560,34 @@ function PaymentRequestView() {
           </div>
         )}
         <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 1000 }}>
+          {editable && selectedRows.size > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <button className="btn err" onClick={delSelectedRows} style={{ height: 30, padding: '0 10px', fontSize: 13 }}>
+                <i className="ti ti-trash" /> Xóa đã chọn ({selectedRows.size})
+              </button>
+            </div>
+          )}
+          <table className="items-table" style={{ minWidth: editable ? 1036 : 1000 }}>
             {/* Ticket #26 (bao-CR-302): Mã MISA backend join theo mã PO lúc đọc — sửa mã PO
                 tại chỗ thì cột này chỉ cập nhật sau khi Lưu (nạp lại phiếu). */}
-            <thead><tr><th>#</th><th>PO</th><th>Mã MISA</th><th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
+            <thead><tr>
+              {editable && (
+                <th style={{ width: 36, textAlign: 'center' }} title="Chọn tất cả dòng">
+                  <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={lineCount > 0 && selectedRows.size === lineCount} onChange={toggleAllRows} aria-label="Chọn tất cả dòng" />
+                </th>
+              )}
+              <th>#</th><th>PO</th><th>Mã MISA</th><th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
               <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
               <th style={{ textAlign: 'right' }}>Đề nghị trả</th>
               {editable && <th style={{ width: 50, textAlign: 'center' }}>Bỏ</th>}</tr></thead>
             <tbody>
               {req.lines.map((l: any, i: number) => (
                 <tr key={i}>
+                  {editable && (
+                    <td style={{ textAlign: 'center' }}>
+                      <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectedRows.has(i)} onChange={() => toggleRow(i)} aria-label={`Chọn dòng ${i + 1}`} />
+                    </td>
+                  )}
                   <td>{i + 1}</td>
                   <td>{editable ? <input className="cell-input" style={{ width: 130 }} value={l.po_code || ''}
                     onChange={(e) => setLine(i, { po_code: e.target.value })} placeholder="Mã PO" /> : l.po_code}</td>

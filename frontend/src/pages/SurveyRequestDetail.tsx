@@ -442,6 +442,19 @@ export default function SurveyRequestDetail() {
   const delLine = (i: number) => {
     setSv((s: any) => ({ ...s, lines: s.lines.filter((_: any, idx: number) => idx !== i) }))
     setPendingFiles((p) => {
+  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — CHỈ form tạo hoặc phiếu Nháp (phiếu Bị trả lại vẫn
+  // xóa từng dòng). Chọn theo CHỈ SỐ nên đổi số dòng là bỏ hết lựa chọn.
+  const bulkRemovable = editable && (isNew || sv.status === 'draft')
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  useEffect(() => { setSelectedRows(new Set()) }, [lines.length, bulkRemovable])
+  const toggleRow = (i: number) => setSelectedRows((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n })
+  const toggleAllRows = () => setSelectedRows((s) => s.size === lines.length ? new Set() : new Set(lines.map((_, i) => i)))
+  const delSelectedRows = async () => {
+    const n = selectedRows.size
+    if (!n || !(await askConfirm({ message: `Xóa ${n} dòng đã chọn? Dòng bỏ khỏi phiếu ngay trên màn hình, bấm Lưu mới ghi xuống.` }))) return
+    // Xóa từ chỉ số CAO xuống THẤP qua `delLine` để tệp đính kèm chờ lưu dời theo đúng dòng.
+    for (const i of [...selectedRows].sort((a, b) => b - a)) delLine(i)
+  }
       const n: Record<number, File[]> = {}
       for (const [k, v] of Object.entries(p)) { const kk = Number(k); if (kk === i) continue; n[kk > i ? kk - 1 : kk] = v }
       return n
@@ -895,16 +908,23 @@ export default function SurveyRequestDetail() {
               <h3 className="sec-title" style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>
                 Danh sách Sản phẩm cần Khảo sát
               </h3>
-              {editable && (
-                <button className="btn ghost" onClick={addLine} style={{ height: 30, padding: '0 10px', fontSize: 13 }}>
-                  <i className="ti ti-plus" /> Thêm dòng
-                </button>
-              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                {bulkRemovable && selectedRows.size > 0 && (
+                  <button className="btn err" onClick={delSelectedRows} style={{ height: 30, padding: '0 10px', fontSize: 13 }}>
+                    <i className="ti ti-trash" /> Xóa đã chọn ({selectedRows.size})
+                  </button>
+                )}
+                {editable && (
+                  <button className="btn ghost" onClick={addLine} style={{ height: 30, padding: '0 10px', fontSize: 13 }}>
+                    <i className="ti ti-plus" /> Thêm dòng
+                  </button>
+                )}
+              </div>
               {!editable && !isNew && showNstmCols && <span style={{ fontSize: 12, color: 'var(--muted)' }}><i className="ti ti-device-floppy" /> Thay đổi phụ trách được lưu tự động</span>}
             </div>
 
             <div className="items-scroll">
-              <table className="items-table" style={{ width: '100%', minWidth: showNstmCols ? 1160 : 960, tableLayout: 'fixed' }}>
+              <table className="items-table" style={{ width: '100%', minWidth: (showNstmCols ? 1160 : 960) + (bulkRemovable ? 36 : 0), tableLayout: 'fixed' }}>
                 <thead>
                   <tr>
                     <th style={{ width: 34, textAlign: 'center' }}>No.</th>
@@ -938,6 +958,11 @@ export default function SurveyRequestDetail() {
                       </td>
 
                       {/* Phân loại */}
+                    {bulkRemovable && (
+                      <th style={{ width: 36, textAlign: 'center' }} title="Chọn tất cả dòng">
+                        <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={lines.length > 0 && selectedRows.size === lines.length} onChange={toggleAllRows} aria-label="Chọn tất cả dòng" />
+                      </th>
+                    )}
                       <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.item_group}>
                         {editable
                           ? <SearchSelect value={l.item_group || ''} options={itemGroupNames} variant="table" placeholder="—" onChange={(v) => setLine(i, 'item_group', v)} />
@@ -954,6 +979,11 @@ export default function SurveyRequestDetail() {
                       {/* SL dự kiến */}
                       <td style={{ textAlign: 'right' }}>
                         {editable
+                      {bulkRemovable && (
+                        <td style={{ textAlign: 'center' }}>
+                          <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} checked={selectedRows.has(i)} onChange={() => toggleRow(i)} aria-label={`Chọn dòng ${i + 1}`} />
+                        </td>
+                      )}
                           ? <NumberInput className="cell-input" style={{ textAlign: 'right' }} value={l.request_qty} placeholder="0" onChange={(v: number) => setLine(i, 'request_qty', v)} />
                           : fmtBlank(l.request_qty)}
                       </td>
@@ -1008,7 +1038,7 @@ export default function SurveyRequestDetail() {
                   ))}
                   {lines.length === 0 && (
                     <tr>
-                      <td colSpan={8 + (showNstmCols ? 2 : 0) + (showStatus ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>
+                      <td colSpan={8 + (showNstmCols ? 2 : 0) + (showStatus ? 1 : 0) + (bulkRemovable ? 1 : 0)} style={{ textAlign: 'center', color: '#999', padding: 20 }}>
                         Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
                       </td>
                     </tr>
