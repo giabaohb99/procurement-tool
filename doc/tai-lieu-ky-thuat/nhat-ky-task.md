@@ -70,6 +70,32 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-546 | Bản in phiếu đề xuất mua hàng: ô chọn mẫu in và ô tick ẩn nơi giao
+- status: xong
+- date: 2026-10-01
+Đại ca xem bản in sau đợt thêm nút ẩn nơi giao (bao-CR-544) và chê hai điểm: bấm ẩn thì cột «Nơi
+giao» bị xóa mất làm lệch khuôn mẫu, và thanh nút gãy chữ thành hai dòng, chọn Mẫu thuế thì nhóm
+nút chữ ký biến mất làm cả thanh nhảy. Đại ca chốt thiết kế mới: nút In / Lưu PDF, nút Đóng, một ô
+chọn «Mẫu in» và một ô tick «Ẩn nơi giao».
+
+Ô chọn có ba mẫu cố định: mẫu thường có chữ ký (mặc định), mẫu thường không chữ ký và mẫu thuế; ba
+nhóm nút bật tắt cũ bỏ hẳn. Ô tick «Ẩn nơi giao» áp cho mọi mẫu, giữ nguyên cột «Nơi giao» với tiêu
+đề và độ rộng như cũ, chỉ để trống chữ trong ô. Ô chọn có bề rộng cố định nên đổi mẫu không làm thanh
+nút xê dịch, chữ không gãy dòng, màn hình hẹp thì cả cụm xuống hàng. Bản v2 có ở cả bản in gốc lẫn
+bản tách theo nhà cung cấp; bản v1 dùng ô chọn và ô tick thường, cột «Nơi giao» được giữ độ rộng tối
+thiểu vì bảng v1 tự co theo chữ.
+
+Kiểm: viết lại các bài kiểm của đợt trước theo luật giữ cột, thêm bài cho ô chọn mẫu in và ô tick,
+thêm bài cho hàm đổi mẫu in sang chế độ in; v2 tsc 0 lỗi, eslint 0 lỗi; v1 tsc giữ đúng 4 lỗi cũ; bấm
+thử trên trình duyệt local cả hai bản. Đại ca kiểm trên local xong, bảo commit và gộp ngày 01/10;
+Agent 1 đẩy lên dev và prod.
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/{purchase-request-print-page,
+purchase-request-supplier-print-page}.tsx · purchase-request-print-page.test.tsx ·
+utils/purchase-request-print-template{,.test}.ts (mới) · frontend/src/pages/PrintPurchaseRequest.tsx
+
+---
+
 ## bao-CR-544 | Bản in phiếu đề xuất mua hàng có nút ẩn cột «Nơi giao»
 - status: xong
 - date: 2026-10-01

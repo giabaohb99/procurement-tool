@@ -5,7 +5,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { ErrorState } from '@/shared/ui/error-state'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import {
@@ -27,7 +29,13 @@ import {
   printLineValues,
   printedTotals,
 } from '../utils/purchase-request-print-options'
-import { cn } from '@/shared/utils/cn'
+import {
+  DEFAULT_PRINT_TEMPLATE,
+  PRINT_TEMPLATES,
+  isPrintTemplateValue,
+  resolvePrintTemplate,
+  type PrintTemplateValue,
+} from '../utils/purchase-request-print-template'
 
 /**
  * Mẫu in 003/BM/PKT của Phiếu đề xuất mua hàng hóa/dịch vụ.
@@ -55,9 +63,10 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const { data: purchaseRequest, isLoading, isError } = fromPo ? byOrder : byRequest
   const unmatchedLines = fromPo ? (byOrder.data?.po_lines_unmatched ?? 0) : 0
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
-  const [taxMode, setTaxMode] = useState(false)
-  const [showSignature, setShowSignature] = useState(true)
-  const [showDeliveryPlace, setShowDeliveryPlace] = useState(true)
+  //  bao-CR-546: MỘT ô chọn «Mẫu in» thay hai nhóm nút chữ ký / thường-thuế; ô tick ẩn nơi giao riêng.
+  const [template, setTemplate] = useState<PrintTemplateValue>(DEFAULT_PRINT_TEMPLATE)
+  const [hideDeliveryPlace, setHideDeliveryPlace] = useState(false)
+  const { taxMode, showSignature } = resolvePrintTemplate(template)
 
   useEffect(() => {
     if (!purchaseRequest?.code) return
@@ -152,35 +161,12 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
           )}
         </div>
 
-        <div className="pr-print-toolbar-options">
-          {!taxMode && (
-            <PrintToggle
-              options={[
-                { value: true, label: 'Có chữ ký' },
-                { value: false, label: 'Không chữ ký' },
-              ]}
-              value={showSignature}
-              onChange={setShowSignature}
-            />
-          )}
-          <PrintToggle
-            options={[
-              { value: false, label: 'Mẫu thường' },
-              { value: true, label: 'Mẫu thuế' },
-            ]}
-            value={taxMode}
-            onChange={setTaxMode}
-          />
-          {/* bao-CR-544: bật/tắt cột «Nơi giao» — đại ca cần bản in gửi ra ngoài không lộ kho nhận. */}
-          <PrintToggle
-            options={[
-              { value: true, label: 'Hiện nơi giao' },
-              { value: false, label: 'Ẩn nơi giao' },
-            ]}
-            value={showDeliveryPlace}
-            onChange={setShowDeliveryPlace}
-          />
-        </div>
+        <PurchaseRequestPrintOptions
+          template={template}
+          onTemplateChange={setTemplate}
+          hideDeliveryPlace={hideDeliveryPlace}
+          onHideDeliveryPlaceChange={setHideDeliveryPlace}
+        />
       </div>
 
       <PurchaseRequestPrintSheet
@@ -190,7 +176,7 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
         warehouseCode={(name) => warehouseCodes.get(name) || name}
         taxMode={taxMode}
         showSignature={showSignature}
-        showDeliveryPlace={showDeliveryPlace}
+        hideDeliveryPlace={hideDeliveryPlace}
       />
     </main>
   )
@@ -213,7 +199,7 @@ export function PurchaseRequestPrintSheet({
   warehouseCode,
   taxMode,
   showSignature,
-  showDeliveryPlace = true,
+  hideDeliveryPlace = false,
 }: {
   purchaseRequest: PurchaseRequestDetail
   items: PurchaseRequestItem[]
@@ -222,8 +208,8 @@ export function PurchaseRequestPrintSheet({
   warehouseCode: (name: string) => string
   taxMode: boolean
   showSignature: boolean
-  /** bao-CR-544 — tắt thì bỏ hẳn cột «Nơi giao» (tiêu đề, ô từng dòng, ô trống ở dòng tổng). */
-  showDeliveryPlace?: boolean
+  /** bao-CR-546 — tick «Ẩn nơi giao» thì GIỮ cột «Nơi giao», chỉ để trống chữ trong ô từng dòng. */
+  hideDeliveryPlace?: boolean
 }) {
   return (
     <article className="pr-print-doc">
@@ -273,7 +259,7 @@ export function PurchaseRequestPrintSheet({
       <PurchaseRequestPrintItems
         items={items}
         warehouseCode={warehouseCode}
-        showDeliveryPlace={showDeliveryPlace}
+        hideDeliveryPlace={hideDeliveryPlace}
       />
 
       <PrintSection title="NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT">
@@ -362,16 +348,13 @@ export function PrintLine({ label, value }: { label: string; value?: React.React
 function PurchaseRequestPrintItems({
   items,
   warehouseCode,
-  showDeliveryPlace,
+  hideDeliveryPlace,
 }: {
   items: PurchaseRequestItem[]
   warehouseCode: (name: string) => string
-  showDeliveryPlace: boolean
+  hideDeliveryPlace: boolean
 }) {
   const totals = printedTotals(items)
-  //  Ba dòng tổng chừa ô trống dưới «Nơi giao» + «Ghi chú»; ẩn nơi giao thì chỉ còn một ô.
-  //  Bảng `table-layout: fixed` theo phần trăm nên bớt một cột là các cột còn lại tự giãn ra.
-  const trailingSpan = showDeliveryPlace ? 2 : 1
   return (
     <table className="pr-print-items">
       <colgroup>
@@ -382,7 +365,7 @@ function PurchaseRequestPrintItems({
         <col className="pr-print-col-quantity" />
         <col className="pr-print-col-price" />
         <col className="pr-print-col-total" />
-        {showDeliveryPlace && <col className="pr-print-col-place" />}
+        <col className="pr-print-col-place" />
         <col className="pr-print-col-note" />
       </colgroup>
       <thead>
@@ -394,7 +377,7 @@ function PurchaseRequestPrintItems({
           <th>Số lượng</th>
           <th>Đơn giá</th>
           <th>Thành tiền</th>
-          {showDeliveryPlace && <th>Nơi giao</th>}
+          <th>Nơi giao</th>
           <th>Ghi chú</th>
         </tr>
       </thead>
@@ -421,7 +404,9 @@ function PurchaseRequestPrintItems({
               <td className="text-right tabular-nums">
                 {formatMoney(item.qty * line.price)}
               </td>
-              {showDeliveryPlace && <td>{warehouseCode(item.warehouse)}</td>}
+              {/* bao-CR-546: «Ẩn nơi giao» giữ cột (khuôn mẫu không đổi), chỉ để trống chữ —
+                  bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn. */}
+              <td>{hideDeliveryPlace ? '' : warehouseCode(item.warehouse)}</td>
               <td>{item.note}</td>
             </tr>
           )
@@ -434,7 +419,7 @@ function PurchaseRequestPrintItems({
           <td className="whitespace-nowrap text-right font-bold tabular-nums">
             {formatMoney(totals.subtotal)}
           </td>
-          <td colSpan={trailingSpan} />
+          <td colSpan={2} />
         </tr>
         <tr className="pr-print-total-row">
           <td className="pt-2 text-right text-[13px]" colSpan={6}>
@@ -443,7 +428,7 @@ function PurchaseRequestPrintItems({
           <td className="whitespace-nowrap pt-2 text-right text-[13px] font-bold tabular-nums">
             {formatMoney(totals.vat)}
           </td>
-          <td colSpan={trailingSpan} />
+          <td colSpan={2} />
         </tr>
         <tr className="pr-print-total-row">
           <td className="pb-2 pt-1 text-right text-[13px]" colSpan={6}>
@@ -452,7 +437,7 @@ function PurchaseRequestPrintItems({
           <td className="whitespace-nowrap pb-2 pt-1 text-right text-[13px] font-bold tabular-nums">
             {formatMoney(totals.total)}
           </td>
-          <td colSpan={trailingSpan} />
+          <td colSpan={2} />
         </tr>
       </tbody>
     </table>
@@ -513,32 +498,55 @@ export function SignatureSection({
   )
 }
 
-export function PrintToggle<T extends string | boolean>({
-  options,
-  value,
-  onChange,
+/**
+ * Thanh tùy chọn bản in — bao-CR-546 (đại ca chốt 01/10/2026):
+ * `[In / Lưu PDF] [Đóng] · Mẫu in: [ô chọn] · ☐ Ẩn nơi giao`.
+ *
+ * Bản trước là ba nhóm nút bật/tắt: chữ gãy hai dòng, và chọn Mẫu thuế thì nhóm chữ ký biến
+ * mất làm cả thanh xô lệch. Nay ô chọn có BỀ RỘNG CỐ ĐỊNH (đổi mẫu không xê dịch), chữ không
+ * gãy dòng; màn hẹp thì cả cụm xuống hàng. Bản in gốc và bản tách theo NCC dùng chung.
+ */
+export function PurchaseRequestPrintOptions({
+  template,
+  onTemplateChange,
+  hideDeliveryPlace,
+  onHideDeliveryPlaceChange,
 }: {
-  options: { value: T; label: string }[]
-  value: T
-  onChange: (value: T) => void
+  template: PrintTemplateValue
+  onTemplateChange: (value: PrintTemplateValue) => void
+  hideDeliveryPlace: boolean
+  onHideDeliveryPlaceChange: (value: boolean) => void
 }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-lg border bg-card">
-      {options.map((option) => (
-        <button
-          key={option.label}
-          type="button"
-          className={cn(
-            'px-4 py-2 text-[13px] font-medium whitespace-nowrap transition-colors',
-            value === option.value
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-          )}
-          onClick={() => onChange(option.value)}
+    <div className="pr-print-toolbar-options">
+      <label className="flex items-center gap-2 text-[13px] font-medium whitespace-nowrap">
+        Mẫu in:
+        <Select
+          value={template}
+          onValueChange={(next) => {
+            if (isPrintTemplateValue(next)) onTemplateChange(next)
+          }}
         >
-          {option.label}
-        </button>
-      ))}
+          <SelectTrigger className="h-9 w-[230px] bg-card" aria-label="Mẫu in">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PRINT_TEMPLATES.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+      <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium whitespace-nowrap">
+        <Checkbox
+          checked={hideDeliveryPlace}
+          onCheckedChange={(checked) => onHideDeliveryPlaceChange(checked === true)}
+          aria-label="Ẩn nơi giao"
+        />
+        Ẩn nơi giao
+      </label>
     </div>
   )
 }
@@ -599,6 +607,8 @@ export const PURCHASE_REQUEST_PRINT_STYLES = `
     padding: 0;
     align-items: center;
     justify-content: space-between;
+    /* bao-CR-546: màn hẹp thì cả cụm tùy chọn xuống hàng thay vì bóp chữ gãy dòng. */
+    flex-wrap: wrap;
     gap: 12px;
     border: 0;
     background: transparent;
@@ -615,6 +625,7 @@ export const PURCHASE_REQUEST_PRINT_STYLES = `
 
   .pr-print-toolbar-options {
     justify-content: flex-end;
+    gap: 16px;
   }
 
   .pr-print-doc,

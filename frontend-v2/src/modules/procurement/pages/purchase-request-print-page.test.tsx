@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 
 import type {
   PrintSignatureCell,
@@ -7,7 +8,11 @@ import type {
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
 import type { PrintSignatureSource } from '../utils/purchase-request-signature-cells'
-import { PurchaseRequestPrintSheet, SignatureSection } from './purchase-request-print-page'
+import {
+  PurchaseRequestPrintOptions,
+  PurchaseRequestPrintSheet,
+  SignatureSection,
+} from './purchase-request-print-page'
 
 // bao-CR-531: cụm «XÉT DUYỆT» vẽ 2, 3 hoặc 4 ô theo backend; «Không chữ ký» bỏ cả tên lẫn ảnh.
 
@@ -112,8 +117,8 @@ describe('SignatureSection', () => {
   })
 })
 
-// bao-CR-544 — nút «Hiện nơi giao | Ẩn nơi giao»: ẩn là bỏ HẲN cột (tiêu đề, ô từng dòng, ô trống ở
-// ba dòng tổng), bảng không được chừa lỗ — mọi hàng phải đủ đúng số cột của <colgroup>.
+// bao-CR-544 → bao-CR-546 — ô tick «Ẩn nơi giao»: GIỮ cột «Nơi giao» (khuôn mẫu không đổi), chỉ để
+// trống chữ. Bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn (ảnh PYC29092603).
 function makeItem(id: number, warehouse: string): PurchaseRequestItem {
   //  why: tờ phiếu chỉ đọc vài trường của dòng — dựng đủ kiểu dòng YCMH ở đây là nhiễu.
   return {
@@ -131,7 +136,7 @@ function makeItem(id: number, warehouse: string): PurchaseRequestItem {
   } as unknown as PurchaseRequestItem
 }
 
-function renderSheet(showDeliveryPlace?: boolean) {
+function renderSheet(hideDeliveryPlace?: boolean) {
   const items = [makeItem(1, 'Kho Bình Dương'), makeItem(2, 'Kho Long An')]
   //  why: như trên — tờ phiếu chỉ cần phần đầu phiếu + nguồn chữ ký.
   const purchaseRequest = {
@@ -149,7 +154,7 @@ function renderSheet(showDeliveryPlace?: boolean) {
       warehouseCode={(name) => (name === 'Kho Bình Dương' ? 'KBD' : 'KLA')}
       taxMode={false}
       showSignature
-      showDeliveryPlace={showDeliveryPlace}
+      hideDeliveryPlace={hideDeliveryPlace}
     />,
   )
   const table = view.container.querySelector('.pr-print-items') as HTMLTableElement
@@ -162,33 +167,87 @@ function rowWidths(table: HTMLTableElement): number[] {
   )
 }
 
-describe('PurchaseRequestPrintSheet — delivery place toggle (bao-CR-544)', () => {
-  it('prints the «Nơi giao» column by default, as before', () => {
+describe('PurchaseRequestPrintSheet — hide delivery place (bao-CR-546)', () => {
+  it('prints the delivery place by default, as before', () => {
     const { table } = renderSheet()
     expect(within(table).getByRole('columnheader', { name: 'Nơi giao' })).toBeInTheDocument()
     expect(within(table).getByText('KBD')).toBeInTheDocument()
+    expect(within(table).getByText('KLA')).toBeInTheDocument()
+  })
+
+  it('hiding keeps the column, its header and width, and only blanks the cells', () => {
+    const { table } = renderSheet(true)
+    expect(within(table).getByRole('columnheader', { name: 'Nơi giao' })).toBeInTheDocument()
+    expect(table.querySelector('col.pr-print-col-place')).not.toBeNull()
+    expect(within(table).queryByText('KBD')).toBeNull()
+    expect(within(table).queryByText('KLA')).toBeNull()
+    //  Khuôn giữ nguyên 9 cột ở MỌI hàng, kể cả ba dòng tổng (bản CR-544 rút còn 8 — sai ý đại ca).
     expect(table.querySelectorAll('col')).toHaveLength(9)
     expect(new Set(rowWidths(table))).toEqual(new Set([9]))
   })
 
-  it('hiding drops header, every line cell and the total-row gap without leaving holes', () => {
-    const { table } = renderSheet(false)
-    expect(within(table).queryByRole('columnheader', { name: 'Nơi giao' })).toBeNull()
-    expect(within(table).queryByText('KBD')).toBeNull()
-    expect(within(table).queryByText('KLA')).toBeNull()
-    expect(table.querySelectorAll('col')).toHaveLength(8)
-    //  Ba dòng tổng từng có ô trống colSpan=2 cố định — quên đổi là hàng dài hơn tiêu đề một ô.
-    expect(new Set(rowWidths(table))).toEqual(new Set([8]))
-    expect(within(table).getByRole('columnheader', { name: 'Ghi chú' })).toBeInTheDocument()
+  it('the place cell of each line is empty, not removed', () => {
+    const { table } = renderSheet(true)
+    const headerCells = Array.from(table.tHead?.rows[0].cells ?? [])
+    const placeIndex = headerCells.findIndex((cell) => cell.textContent === 'Nơi giao')
+    const firstLine = table.tBodies[0].rows[0]
+    expect(placeIndex).toBe(7)
+    expect(firstLine.cells[placeIndex].textContent).toBe('')
+    expect(firstLine.cells).toHaveLength(9)
+  })
+})
+
+describe('PurchaseRequestPrintOptions (bao-CR-546)', () => {
+  it('shows one template picker with the default template and an unticked hide-place box', () => {
+    render(
+      <PurchaseRequestPrintOptions
+        template="normal-signed"
+        onTemplateChange={vi.fn()}
+        hideDeliveryPlace={false}
+        onHideDeliveryPlaceChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('combobox', { name: 'Mẫu in' })).toHaveTextContent('Mẫu thường – có chữ ký')
+    expect(screen.getByRole('checkbox', { name: 'Ẩn nơi giao' })).not.toBeChecked()
+    //  Hai nhóm nút cũ đã bỏ hẳn — còn sót là thanh nút lại nhảy khi đổi mẫu.
+    expect(screen.queryByRole('button', { name: 'Không chữ ký' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Mẫu thuế' })).toBeNull()
   })
 
-  it('hiding the place keeps money totals unchanged', () => {
-    const shown = renderSheet(true).table.textContent
-    const hidden = renderSheet(false).table.textContent
-    for (const label of ['Tổng cộng', 'Tiền VAT:', 'Tổng cộng thanh toán (gồm VAT):']) {
-      expect(shown).toContain(label)
-      expect(hidden).toContain(label)
-    }
-    expect(hidden).toContain('4.000')
+  it('the tax template keeps the same controls in place', () => {
+    render(
+      <PurchaseRequestPrintOptions
+        template="tax"
+        onTemplateChange={vi.fn()}
+        hideDeliveryPlace
+        onHideDeliveryPlaceChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('combobox', { name: 'Mẫu in' })).toHaveTextContent('Mẫu thuế')
+    expect(screen.getByRole('checkbox', { name: 'Ẩn nơi giao' })).toBeChecked()
+  })
+
+  it('ticking the box reports true, unticking reports false', async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <PurchaseRequestPrintOptions
+        template="normal-signed"
+        onTemplateChange={vi.fn()}
+        hideDeliveryPlace={false}
+        onHideDeliveryPlaceChange={onChange}
+      />,
+    )
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ẩn nơi giao' }))
+    expect(onChange).toHaveBeenLastCalledWith(true)
+    rerender(
+      <PurchaseRequestPrintOptions
+        template="normal-signed"
+        onTemplateChange={vi.fn()}
+        hideDeliveryPlace
+        onHideDeliveryPlaceChange={onChange}
+      />,
+    )
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Ẩn nơi giao' }))
+    expect(onChange).toHaveBeenLastCalledWith(false)
   })
 })

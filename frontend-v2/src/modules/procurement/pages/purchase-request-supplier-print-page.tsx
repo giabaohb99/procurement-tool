@@ -18,8 +18,13 @@ import {
 } from '../utils/purchase-request-print-options'
 // In LẠI ĐÚNG tờ phiếu đề xuất của bản A, kể cả khuôn CSS — khách chốt 15/09/2026.
 import {
-  PrintToggle,
+  DEFAULT_PRINT_TEMPLATE,
+  resolvePrintTemplate,
+  type PrintTemplateValue,
+} from '../utils/purchase-request-print-template'
+import {
   PURCHASE_REQUEST_PRINT_STYLES,
+  PurchaseRequestPrintOptions,
   PurchaseRequestPrintSheet,
 } from './purchase-request-print-page'
 
@@ -55,9 +60,10 @@ export function PurchaseRequestSupplierPrintPage() {
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
   // Tick mặc định TẤT CẢ các NCC; lưu tập BỎ tick để không phải chờ dữ liệu về.
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set())
-  const [taxMode, setTaxMode] = useState(false)
-  const [showSignature, setShowSignature] = useState(true)
-  const [showDeliveryPlace, setShowDeliveryPlace] = useState(true)
+  //  bao-CR-546: cùng ô chọn «Mẫu in» + ô tick «Ẩn nơi giao» với bản in gốc.
+  const [template, setTemplate] = useState<PrintTemplateValue>(DEFAULT_PRINT_TEMPLATE)
+  const [hideDeliveryPlace, setHideDeliveryPlace] = useState(false)
+  const { taxMode, showSignature } = resolvePrintTemplate(template)
 
   const plan = useMemo(
     () => buildSupplierPrintPlan(purchaseRequest?.items ?? []),
@@ -165,35 +171,12 @@ export function PurchaseRequestSupplierPrintPage() {
           )}
         </div>
 
-        <div className="pr-print-toolbar-options">
-          {!taxMode && (
-            <PrintToggle
-              options={[
-                { value: true, label: 'Có chữ ký' },
-                { value: false, label: 'Không chữ ký' },
-              ]}
-              value={showSignature}
-              onChange={setShowSignature}
-            />
-          )}
-          <PrintToggle
-            options={[
-              { value: false, label: 'Mẫu thường' },
-              { value: true, label: 'Mẫu thuế' },
-            ]}
-            value={taxMode}
-            onChange={setTaxMode}
-          />
-          {/* bao-CR-544: cùng nút với bản in gốc — hai bản in một tờ phiếu, phải bật/tắt như nhau. */}
-          <PrintToggle
-            options={[
-              { value: true, label: 'Hiện nơi giao' },
-              { value: false, label: 'Ẩn nơi giao' },
-            ]}
-            value={showDeliveryPlace}
-            onChange={setShowDeliveryPlace}
-          />
-        </div>
+        <PurchaseRequestPrintOptions
+          template={template}
+          onTemplateChange={setTemplate}
+          hideDeliveryPlace={hideDeliveryPlace}
+          onHideDeliveryPlaceChange={setHideDeliveryPlace}
+        />
       </div>
 
       {/* Bảng tick NCC (H.6): mỗi NCC một dòng, tick NCC nào in tờ phiếu của NCC đó. */}
@@ -229,7 +212,7 @@ export function PurchaseRequestSupplierPrintPage() {
           warehouseCode={(name) => warehouseCodes.get(name) || name}
           taxMode={taxMode}
           showSignature={showSignature}
-          showDeliveryPlace={showDeliveryPlace}
+          hideDeliveryPlace={hideDeliveryPlace}
         />
       ))}
     </main>
