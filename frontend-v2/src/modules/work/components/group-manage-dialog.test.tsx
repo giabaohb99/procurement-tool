@@ -53,7 +53,7 @@ describe('GroupManageDialog — bao-CR-482', () => {
     render(<GroupManageDialog open group={group(WORK_ROLE.OWNER)} onClose={() => {}} />)
     const save = screen.getByRole('button', { name: 'Lưu thông tin' })
     expect(save).toBeDisabled()
-    const name = screen.getByLabelText('Tên nhóm')
+    const name = screen.getByLabelText('Tên nhóm dự án')
     await user.clear(name)
     await user.type(name, 'DX 2026')
     expect(save).toBeEnabled()
@@ -64,15 +64,15 @@ describe('GroupManageDialog — bao-CR-482', () => {
   it('chủ sở hữu: tên rỗng thì khóa Lưu và báo lỗi', async () => {
     const user = userEvent.setup()
     render(<GroupManageDialog open group={group(WORK_ROLE.OWNER)} onClose={() => {}} />)
-    await user.clear(screen.getByLabelText('Tên nhóm'))
+    await user.clear(screen.getByLabelText('Tên nhóm dự án'))
     expect(screen.getByRole('button', { name: 'Lưu thông tin' })).toBeDisabled()
-    expect(screen.getByText('Tên nhóm không được để trống.')).toBeInTheDocument()
+    expect(screen.getByText('Tên nhóm dự án không được để trống.')).toBeInTheDocument()
   })
 
   it('lưu trữ hỏi lại một nhịp rồi mới gọi', async () => {
     const user = userEvent.setup()
     render(<GroupManageDialog open group={group(WORK_ROLE.OWNER)} onClose={() => {}} />)
-    await user.click(screen.getByRole('button', { name: 'Lưu trữ nhóm' }))
+    await user.click(screen.getByRole('button', { name: 'Lưu trữ nhóm dự án' }))
     expect(archiveGroup).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Lưu trữ' }))
     expect(archiveGroup).toHaveBeenCalledWith(1, expect.anything())
@@ -80,10 +80,10 @@ describe('GroupManageDialog — bao-CR-482', () => {
 
   it('quản trị: thông tin chỉ đọc, không có nút Lưu / Lưu trữ, nhưng vẫn có hàng mời', () => {
     render(<GroupManageDialog open group={group(WORK_ROLE.ADMIN)} onClose={() => {}} />)
-    expect(screen.queryByLabelText('Tên nhóm')).toBeNull()
+    expect(screen.queryByLabelText('Tên nhóm dự án')).toBeNull()
     expect(screen.getByText('DX')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Lưu thông tin' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Lưu trữ nhóm' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Lưu trữ nhóm dự án' })).toBeNull()
     expect(screen.getByRole('button', { name: /^Mời/ })).toBeInTheDocument()
   })
 

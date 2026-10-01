@@ -21,10 +21,10 @@ def _get_group_or_403(db: Session, actor: Actor, group_id: int, need: int) -> Wo
     ở `membership_service.get_list_or_403` về việc không để lộ id có thật."""
     grp = db.get(WorkGroup, group_id)
     if not grp:
-        raise HTTPException(403, "Không có quyền trên nhóm này")
+        raise HTTPException(403, "Không có quyền trên nhóm dự án này")
     role = group_role(db, actor.employee_id, group_id)
     if role is None or role > need:
-        raise HTTPException(403, "Không có quyền trên nhóm này")
+        raise HTTPException(403, "Không có quyền trên nhóm dự án này")
     return grp
 
 
@@ -34,7 +34,7 @@ def create_group(db: Session, actor: Actor, data) -> dict:
     if parent_id:
         parent = _get_group_or_403(db, actor, parent_id, CAN_MANAGE)
         if parent.parent_id:
-            raise HTTPException(400, "Nhóm chỉ lồng tối đa 2 cấp")
+            raise HTTPException(400, "Nhóm dự án chỉ lồng tối đa 2 cấp")
 
     grp = WorkGroup(company_id=actor.company_id, parent_id=parent_id,
                     name=data.name.strip(), description=data.description or "",
@@ -47,7 +47,7 @@ def create_group(db: Session, actor: Actor, data) -> dict:
                            role=int(WorkMemberRole.OWNER),
                            created_by=actor.user_id, updated_by=actor.user_id))
     db.commit()
-    record(db, actor.user_id, AUDIT_GROUP, grp.id, "create", f"Tạo nhóm {grp.name}")
+    record(db, actor.user_id, AUDIT_GROUP, grp.id, "create", f"Tạo nhóm dự án {grp.name}")
     return ser.group_out(grp, int(WorkMemberRole.OWNER))
 
 
@@ -60,7 +60,7 @@ def update_group(db: Session, actor: Actor, group_id: int, data) -> dict:
             setattr(grp, field, val)
     grp.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, AUDIT_GROUP, grp.id, "update", f"Sửa nhóm {grp.name}")
+    record(db, actor.user_id, AUDIT_GROUP, grp.id, "update", f"Sửa nhóm dự án {grp.name}")
     return ser.group_out(grp, group_role(db, actor.employee_id, group_id))
 
 
@@ -73,7 +73,7 @@ def archive_group(db: Session, actor: Actor, group_id: int) -> dict:
     grp.is_archived = 1
     grp.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, AUDIT_GROUP, grp.id, "delete", f"Lưu trữ nhóm {grp.name}")
+    record(db, actor.user_id, AUDIT_GROUP, grp.id, "delete", f"Lưu trữ nhóm dự án {grp.name}")
     return ser.group_out(grp, int(WorkMemberRole.OWNER))
 
 
@@ -119,7 +119,7 @@ def add_member(db: Session, actor: Actor, group_id: int, data) -> dict:
     db.add(m)
     db.commit()
     record(db, actor.user_id, AUDIT_GROUP_MEMBER, group_id, "update",
-           f"Thêm nhân sự #{data.employee_id} vào nhóm")
+           f"Thêm nhân sự #{data.employee_id} vào nhóm dự án")
     return _with_names(db, [m])[0]
 
 
@@ -130,11 +130,11 @@ def remove_member(db: Session, actor: Actor, group_id: int, member_id: int) -> N
     if not m or m.group_id != group_id:
         raise HTTPException(404, "Không thấy thành viên này")
     if int(m.role) == int(WorkMemberRole.OWNER):
-        raise HTTPException(400, "Không gỡ được chủ nhóm — chuyển quyền sở hữu trước")
+        raise HTTPException(400, "Không gỡ được chủ nhóm dự án — chuyển quyền sở hữu trước")
     db.delete(m)
     db.commit()
     record(db, actor.user_id, AUDIT_GROUP_MEMBER, group_id, "update",
-           f"Gỡ nhân sự #{m.employee_id} khỏi nhóm")
+           f"Gỡ nhân sự #{m.employee_id} khỏi nhóm dự án")
 
 
 def sidebar(db: Session, actor: Actor, include_archived: bool = False) -> dict:

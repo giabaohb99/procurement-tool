@@ -70,6 +70,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-540 | Dự án: nhóm đổi tên thành «Nhóm dự án», tiêu đề cột kanban đứng yên khi cuộn
+- status: xong
+- date: 2026-10-01
+Đại ca muốn cây bên trái của phân hệ Dự án có tầng cha cho các dự án. Hệ đã có sẵn tầng đó (nhóm,
+lồng tối đa hai cấp) nhưng giao diện gọi lẫn lộn «nhóm» với «danh sách» nên người dùng không nhận
+ra. Đại ca chốt giữ nguyên dữ liệu, chỉ đổi cách gọi thành «Nhóm dự án»; sau hai lần thử «Dự án
+cha» và «Chương trình» thì đại ca thấy không hợp. Các nút tạo nay ghi «Tạo nhóm dự án», «Tạo nhóm
+con», «Tạo dự án trong nhóm», cây có thêm biểu tượng thư mục cho nhóm, cột trên bảng dự án là
+«Nhóm dự án». Khoảng hai mươi câu báo và câu lỗi còn gọi dự án là «danh sách» (sót từ hồi gộp phân
+hệ Công việc vào Dự án) cũng đổi hết sang «dự án». Sửa luôn lỗi tiêu đề hộp tạo bị nháy sang chữ
+khác trong lúc hộp đang đóng.
+
+Ở khung nhìn kanban, tiêu đề từng cột (tên cột và số đếm) nay đứng yên, chỉ phần thẻ bên dưới cuộn,
+mỗi cột cuộn riêng. Trước đây cả bảng cuộn chung nên cuộn cột «Xong» dài là mất tiêu đề.
+
+Không đổi dữ liệu, không có migration. Kiểm: 438 bài kiểm giao diện phân hệ Dự án và 180 bài kiểm
+máy chủ phân hệ Dự án xanh; bấm thử trên trình duyệt luồng tạo nhóm, nhóm con, dự án trong nhóm,
+đổi tên nhóm, chuyển dự án sang nhóm khác; đo trên dự án ERP v2 thấy cuộn cột «Xong» 600 điểm ảnh
+thì tiêu đề không xê dịch. Chưa thử kéo thả thẻ trong cột dài. Đã commit trên erp-v2, chưa lên dev.
+
+Mã nguồn: frontend-v2/src/modules/work/{components/work-sidebar-tree, work-create-dialog,
+group-manage-dialog, group-members-panel, list-info-panel, kanban-column, kanban-board}.tsx ·
+pages/{project-list-page, work-list-page}.tsx · hooks/{use-work-lists, use-work-groups,
+use-work-config}.ts · utils/work-groups.ts · backend/app/modules/work/{group_service, list_service,
+membership_service, list_config_service, task_service}.py · test_cong_viec_hoat_dong.py
+
+---
+
 ## bao-CR-539 | Phiếu in yêu cầu mua hàng của hộ kinh doanh đủ bốn ô ký như công ty
 - status: xong
 - date: 2026-09-30

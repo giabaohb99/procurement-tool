@@ -53,6 +53,6 @@ describe('flattenGroups — bao-CR-482', () => {
     const groups = flattenGroups({ groups: [node(1, 'DX', [])], lists: [] })
     expect(groupNameOf(groups, null)).toBe('')
     expect(groupNameOf(groups, 1)).toBe('DX')
-    expect(groupNameOf(groups, 42)).toBe('Nhóm #42')
+    expect(groupNameOf(groups, 42)).toBe('Nhóm dự án #42')
   })
 })

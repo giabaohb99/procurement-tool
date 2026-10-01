@@ -54,7 +54,7 @@ def create_list(db: Session, actor: Actor, data) -> dict:
     #  — xem đầu `label_model.py`.
     list_config_service.seed_system_label_fields(db, lst.id, actor.company_id, actor.user_id)
     db.commit()
-    record(db, actor.user_id, AUDIT_LIST, lst.id, "create", f"Tạo danh sách {lst.name}")
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "create", f"Tạo dự án {lst.name}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 
@@ -146,7 +146,7 @@ def update_list(db: Session, actor: Actor, list_id: int, data) -> dict:
             setattr(lst, field, val)
     lst.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, AUDIT_LIST, lst.id, "update", f"Sửa danh sách {lst.name}")
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "update", f"Sửa dự án {lst.name}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 
@@ -156,7 +156,7 @@ def archive_list(db: Session, actor: Actor, list_id: int) -> dict:
     lst.is_archived = 1
     lst.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, AUDIT_LIST, lst.id, "delete", f"Lưu trữ danh sách {lst.name}")
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "delete", f"Lưu trữ dự án {lst.name}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 
@@ -179,7 +179,7 @@ def add_member(db: Session, actor: Actor, list_id: int, data) -> dict:
                  WorkListMember.employee_id == data.employee_id).first())
     if m:
         if int(m.role) == int(WorkMemberRole.OWNER):
-            raise HTTPException(400, "Đây là chủ danh sách — dùng chuyển quyền sở hữu")
+            raise HTTPException(400, "Đây là chủ dự án — dùng chuyển quyền sở hữu")
         m.role = data.role
         m.updated_by = actor.user_id
     else:
@@ -189,7 +189,7 @@ def add_member(db: Session, actor: Actor, list_id: int, data) -> dict:
         db.add(m)
     db.commit()
     record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
-           f"Mời nhân sự #{data.employee_id} vào danh sách")
+           f"Mời nhân sự #{data.employee_id} vào dự án")
     return _with_names(db, [m])[0]
 
 
@@ -199,11 +199,11 @@ def remove_member(db: Session, actor: Actor, list_id: int, member_id: int) -> No
     if not m or m.list_id != list_id:
         raise HTTPException(404, "Không thấy thành viên này")
     if int(m.role) == int(WorkMemberRole.OWNER):
-        raise HTTPException(400, "Không gỡ được chủ danh sách — chuyển quyền sở hữu trước")
+        raise HTTPException(400, "Không gỡ được chủ dự án — chuyển quyền sở hữu trước")
     db.delete(m)
     db.commit()
     record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
-           f"Gỡ nhân sự #{m.employee_id} khỏi danh sách")
+           f"Gỡ nhân sự #{m.employee_id} khỏi dự án")
 
 
 def leave_list(db: Session, actor: Actor, list_id: int) -> None:
@@ -213,10 +213,10 @@ def leave_list(db: Session, actor: Actor, list_id: int) -> None:
          .filter(WorkListMember.list_id == list_id,
                  WorkListMember.employee_id == actor.employee_id).first())
     if not m:
-        raise HTTPException(400, "Bạn vào danh sách này bằng quyền kế thừa từ nhóm — "
-                                 "rời thì rời ở nhóm")
+        raise HTTPException(400, "Bạn vào dự án này bằng quyền kế thừa từ nhóm dự án — "
+                                 "rời thì rời ở nhóm dự án")
     if int(m.role) == int(WorkMemberRole.OWNER):
-        raise HTTPException(400, "Chủ danh sách phải chuyển quyền sở hữu trước khi rời")
+        raise HTTPException(400, "Chủ dự án phải chuyển quyền sở hữu trước khi rời")
     db.delete(m)
     db.commit()
 
@@ -239,7 +239,7 @@ def transfer_ownership(db: Session, actor: Actor, list_id: int, employee_id: int
            .filter(WorkListMember.list_id == list_id,
                    WorkListMember.employee_id == employee_id).first())
     if new and int(new.role) == int(WorkMemberRole.OWNER):
-        raise HTTPException(400, "Người này đã là chủ danh sách")
+        raise HTTPException(400, "Người này đã là chủ dự án")
     if not new:
         new = WorkListMember(company_id=actor.company_id, list_id=list_id,
                              employee_id=employee_id, role=int(WorkMemberRole.ADMIN),
@@ -271,5 +271,5 @@ def transfer_ownership(db: Session, actor: Actor, list_id: int, employee_id: int
     lst.updated_by = actor.user_id
     db.commit()
     record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
-           f"Chuyển quyền sở hữu danh sách cho nhân sự #{employee_id}")
+           f"Chuyển quyền sở hữu dự án cho nhân sự #{employee_id}")
     return _with_names(db, [new])[0]

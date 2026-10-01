@@ -276,7 +276,7 @@ function WorkListContent({ listId }: { listId: number }) {
   if (isError) {
     return (
       <ErrorState
-        title="Không mở được danh sách"
+        title="Không mở được dự án"
         description="Có thể bạn không còn là thành viên của danh sách này."
       />
     )

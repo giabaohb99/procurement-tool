@@ -42,7 +42,7 @@ export function useCreateWorkList() {
     mutationFn: (values: { name: string; description?: string; group_id?: number | null }) =>
       workApi.createList(values),
     onSuccess: () => {
-      toast.success('Đã tạo danh sách công việc')
+      toast.success('Đã tạo dự án')
       //  Reset cả cụm: list mới làm đổi sidebar, danh sách phẳng lẫn số đếm.
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
@@ -55,7 +55,7 @@ export function useCreateWorkGroup() {
     mutationFn: (values: { name: string; parent_id?: number | null }) =>
       workApi.createGroup(values),
     onSuccess: () => {
-      toast.success('Đã tạo nhóm')
+      toast.success('Đã tạo nhóm dự án')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
   })
@@ -67,7 +67,7 @@ export function useUpdateWorkList() {
     mutationFn: ({ id, values }: { id: number; values: Record<string, unknown> }) =>
       workApi.updateList(id, values),
     onSuccess: () => {
-      toast.success('Đã lưu danh sách')
+      toast.success('Đã lưu dự án')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
   })
@@ -78,7 +78,7 @@ export function useArchiveWorkList() {
   return useMutation({
     mutationFn: (id: number) => workApi.archiveList(id),
     onSuccess: () => {
-      toast.success('Đã lưu trữ danh sách')
+      toast.success('Đã lưu trữ dự án')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
   })

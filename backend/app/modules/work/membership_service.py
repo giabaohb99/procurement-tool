@@ -45,7 +45,7 @@ def require_employee(actor: Actor) -> int:
         raise HTTPException(
             400,
             "Tài khoản này chưa gắn với hồ sơ nhân sự nên không tham gia được "
-            "danh sách công việc. Nhờ quản trị gắn nhân sự cho tài khoản.",
+            "dự án. Nhờ quản trị gắn nhân sự cho tài khoản.",
         )
     return actor.employee_id
 
@@ -161,17 +161,17 @@ def get_list_or_403(db: Session, actor: Actor, list_id: int, need: int = CAN_VIE
     """
     lst = db.get(WorkList, list_id)
     if not lst:
-        raise HTTPException(403, "Không có quyền trên danh sách công việc này")
+        raise HTTPException(403, "Không có quyền trên dự án này")
     role = effective_role(db, actor.employee_id, list_id)
     if role is None or role > need:
-        raise HTTPException(403, "Không có quyền trên danh sách công việc này")
+        raise HTTPException(403, "Không có quyền trên dự án này")
     return lst
 
 
 def block_if_archived(lst: WorkList) -> None:
     """List đã lưu trữ: tra cứu thì được, ghi thì không (04 §2)."""
     if lst.is_archived:
-        raise HTTPException(400, "Danh sách đã lưu trữ — mở lại trước khi sửa")
+        raise HTTPException(400, "Dự án đã lưu trữ — mở lại trước khi sửa")
 
 
 def assert_can_grant(actor_role: int, target_role: int) -> None:

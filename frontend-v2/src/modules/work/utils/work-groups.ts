@@ -29,8 +29,8 @@ export function flattenGroups(sidebar: WorkSidebar | undefined): FlatWorkGroup[]
 /** Tên nhóm theo id — cho cột «Nhóm» của bảng dự án. Không có = đứng ngoài nhóm. */
 export function groupNameOf(groups: FlatWorkGroup[], groupId: number | null): string {
   if (!groupId) return ''
-  return groups.find((g) => g.id === groupId)?.name ?? `Nhóm #${groupId}`
+  return groups.find((g) => g.id === groupId)?.name ?? `Nhóm dự án #${groupId}`
 }
 
 /** Nhãn cho dự án không thuộc nhóm nào — một chữ, dùng chung mọi chỗ. */
-export const NO_GROUP_LABEL = 'Ngoài nhóm'
+export const NO_GROUP_LABEL = 'Không có'

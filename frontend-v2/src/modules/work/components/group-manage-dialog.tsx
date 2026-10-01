@@ -3,13 +3,7 @@ import { useState } from 'react'
 
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -81,7 +75,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Quản lý nhóm</DialogTitle>
+          <DialogTitle>Quản lý nhóm dự án</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
@@ -90,7 +84,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
             {canEditInfo ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="work-group-name">Tên nhóm</Label>
+                  <Label htmlFor="work-group-name">Tên nhóm dự án</Label>
                   <Input
                     id="work-group-name"
                     value={name}
@@ -105,7 +99,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
                     }}
                   />
                   {!trimmedName && (
-                    <p className="text-xs text-destructive">Tên nhóm không được để trống.</p>
+                    <p className="text-xs text-destructive">Tên nhóm dự án không được để trống.</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -123,7 +117,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label>Tên nhóm</Label>
+                  <Label>Tên nhóm dự án</Label>
                   <ReadOnlyValue>{group.name}</ReadOnlyValue>
                 </div>
                 <div className="space-y-2">
@@ -133,8 +127,8 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
               </>
             )}
             <p className="text-xs text-muted-foreground">
-              Người trong nhóm tự có cùng vai trò trên mọi dự án bên trong nhóm — mời vào đây
-              là cấp quyền cho cả cụm một lần.
+              Người trong nhóm dự án tự có cùng vai trò trên mọi dự án bên trong — mời vào đây là
+              cấp quyền cho cả cụm một lần.
             </p>
           </section>
 
@@ -149,7 +143,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
             <div>
               {confirmArchive ? (
                 <span className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Lưu trữ nhóm này?</span>
+                  <span className="text-muted-foreground">Lưu trữ nhóm dự án này?</span>
                   <Button
                     variant="destructive"
                     size="sm"
@@ -165,7 +159,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
               ) : (
                 <Button variant="ghost" size="sm" onClick={() => setConfirmArchive(true)}>
                   <Archive className="size-4" />
-                  Lưu trữ nhóm
+                  Lưu trữ nhóm dự án
                 </Button>
               )}
             </div>

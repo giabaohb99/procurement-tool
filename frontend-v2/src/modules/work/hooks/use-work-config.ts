@@ -35,7 +35,7 @@ export function useAddWorkMember(listId: number) {
     mutationFn: (values: { employee_id: number; role: number }) =>
       workApi.addMember(listId, values),
     onSuccess: () => {
-      toast.success('Đã mời vào danh sách')
+      toast.success('Đã mời vào dự án')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.members(listId) })
     },
   })
