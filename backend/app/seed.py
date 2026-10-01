@@ -386,6 +386,27 @@ STD_ROLES = {
         "payment_request": (["read", "create", "write", "print", "export"], "company"),   # như pur_staff (bao-CR-525)
         "report": (["read"], "dept"),
     }},
+    # bao-CR-545 — ADMIN thu mua CỦA MỘT PHÒNG, cùng bộ «thu mua theo phòng» với `pur_dept_staff` +
+    # `pur_dept_manager` (đại ca 01/10/2026: bộ chung có Nhân viên · Admin · Quản lý thì bộ theo phòng
+    # cũng đủ ba). Chép quyền `pur_admin`, chỉ đổi phạm vi ba chứng từ sang `dept_proc` (phiếu đã duyệt
+    # của phòng mình hoặc phòng được nhờ xử lý); công nợ · YCTT · báo cáo theo khuôn hai vai trò theo
+    # phòng kia (company / company / dept) thay cho `all` của Admin thu mua chung.
+    "pur_dept_admin": {"name": "Admin thu mua phòng", "perms": {
+        **_CATALOG_CRUD, **_CONTRACT_CRUD,
+        "department": (["read"], "all"),
+        "employee": (["read"], "dept"),
+        "purchase_request": (["read", "approve", "export"], "dept_proc"),   # approve = duyệt điều phối (CR-034)
+        "survey_request": (["read", "export"], "dept_proc"),
+        "ticket": (["read", "create", "write"], "own"),
+        "purchase_order": (["read", "print", "export"], "dept_proc"),
+        "survey": (["read", "create", "write", "delete", "approve"], "all"),
+        "purchase_cost_type": (["read", "create", "write"], "all"),
+        "goods_receipt": (["read"], "company"),
+        "inventory": (["read"], "company"),
+        "payable": (["read", "export"], "company"),
+        "payment_request": (["read", "export"], "company"),
+        "report": (["read", "export"], "dept"),
+    }},
     # Admin thu mua: CRUD toàn bộ danh mục; nghiệp vụ CHỈ ĐỌC.
     # PYC/YCKS phạm vi 'proc' (chỉ thấy chứng từ đã duyệt); ĐMH phạm vi 'all'
     # (thấy + IN MỌI đơn của phòng kể cả nháp/chờ duyệt — KHÔNG duyệt).
@@ -726,6 +747,7 @@ ROLE_DESCRIPTIONS = {
     "pur_manager": "Quản lý thu mua: toàn quyền nghiệp vụ thu mua, không quản trị hệ thống.",
     "pur_dept_manager": "Quản lý thu mua của một phòng tự mua hàng, chỉ thấy phiếu của phòng mình.",
     "pur_dept_staff": "Nhân viên thu mua của một phòng: xử lý mọi phiếu đã duyệt của phòng mình.",
+    "pur_dept_admin": "Admin thu mua của một phòng: quản danh mục, xem chứng từ thu mua đã duyệt của phòng mình, duyệt điều phối.",
     "pur_admin": "Admin thu mua: quản danh mục, xem mọi chứng từ thu mua nhưng không duyệt.",
     "help_admin": "Soạn và sửa bài trong Trung tâm hướng dẫn sử dụng.",
     "support": "Tiếp nhận và xử lý phiếu hỗ trợ của người dùng.",

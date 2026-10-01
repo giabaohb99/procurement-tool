@@ -49,10 +49,11 @@ PROPOSAL_KIND = "account_setup_proposal"
 #  Bộ vai trò mẫu của hướng dẫn 20 — tool chỉ gán trong tập này. Quản trị hệ thống, kế toán,
 #  HR... không gán qua chat: một câu gõ nhầm không được thành một cú phong quyền.
 #  bao-CR-526: thêm `pur_dept_staff` — nhân viên thu mua của phòng, cặp với `pur_dept_manager`.
+#  bao-CR-545: thêm `pur_dept_admin` — admin thu mua của phòng, đủ bộ ba theo phòng.
 TEMPLATE_ROLE_CODES = ("employee", "dept_head", "pur_staff", "pur_manager",
-                       "pur_dept_manager", "pur_dept_staff", "pur_admin")
+                       "pur_dept_manager", "pur_dept_staff", "pur_dept_admin", "pur_admin")
 PURCHASING_ROLE_CODES = frozenset({"pur_staff", "pur_manager", "pur_dept_manager",
-                                   "pur_dept_staff", "pur_admin"})
+                                   "pur_dept_staff", "pur_dept_admin", "pur_admin"})
 
 REQUIRED_PERMS = (("user", "write"), ("role", "read"), ("employee", "read"))
 
