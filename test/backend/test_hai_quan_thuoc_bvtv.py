@@ -277,6 +277,8 @@ def test_every_route_is_guarded():
         ("/api/customs/pesticides", "GET"): ("customs_price", "read"),
         ("/api/customs/pesticides/options", "GET"): ("customs_price", "read"),
         ("/api/customs/pesticides/{pesticide_id}", "GET"): ("customs_price", "read"),
+        #  01/10/2026 — «cùng công ty» / «cùng hoạt chất» của trang chi tiết: cùng quyền đọc.
+        ("/api/customs/pesticides/{pesticide_id}/related", "GET"): ("customs_price", "read"),
         ("/api/customs/pesticides", "POST"): ("customs_pesticide", "create"),
         ("/api/customs/pesticides/{pesticide_id}", "PATCH"): ("customs_pesticide", "write"),
         ("/api/customs/pesticides/{pesticide_id}", "DELETE"): ("customs_pesticide", "delete"),
