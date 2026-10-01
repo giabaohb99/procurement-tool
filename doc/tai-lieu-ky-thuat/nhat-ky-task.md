@@ -162,7 +162,7 @@ các bí danh `Str10`…`Str1000`). Thêm bài kiểm canh: mỗi schema ghi ph�
 gửi chuỗi dài hơn trần cột một ký tự thì schema phải chặn ngay; thêm schema hay ô chữ mới mà quên
 khai là bài đỏ kèm danh sách. Kiểm: bài canh và bài kiểm nới cột 42 bài xanh; 826 trên 827 bài kiểm
 của sáu phân hệ xanh (bài đỏ còn lại là bài YCTT cũ đỏ sẵn). Phần thông báo lỗi bằng lời, lưới bắt
-lỗi MySQL và kiểm độ dài ở các cửa ghi không qua schema do Agent 2 làm. Chưa commit, chờ đại ca.
+lỗi MySQL và kiểm độ dài ở các cửa ghi không qua schema do Agent 2 làm. Commit f6df2935 và deploy dev ngày 01/10; dev và local đã đứng sau migration nên 17 cột được nới bằng lệnh chạy tay, đã đọc lại độ dài từng cột.
 
 Phần của Agent 2 (thông báo lỗi bằng lời, lưới cuối, cửa ghi không qua schema). Lỗi kiểm dữ liệu
 nay trả một câu tiếng Việt chỉ đúng ô sai thay cho câu trơn «Dữ liệu không hợp lệ», ví dụ «Ô "Mục
