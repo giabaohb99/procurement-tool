@@ -34,6 +34,8 @@ export type PesticideFilters = {
   /** '' = mọi tình trạng. */
   status: string
   pestGroup: string
+  /** Lĩnh vực (chuỗi gốc của nguồn); '' = mọi lĩnh vực (01/10/2026). */
+  sector?: string
   /** '' | BANNED_ONLY. */
   banned: string
 }
@@ -49,6 +51,7 @@ export function buildPesticideParams(f: PesticideFilters): Record<string, string
   if (f.q.trim()) out.q = f.q.trim()
   if (/^\d+$/.test(f.status)) out.status = f.status
   if (f.pestGroup) out.pest_group = f.pestGroup
+  if (f.sector) out.sector = f.sector
   if (f.banned === BANNED_ONLY) out.banned_only = 'true'
   return out
 }
@@ -202,4 +205,16 @@ export function extractPesticideErrorMessage(e: any, fallback = 'Lỗi khi lưu'
     if (msgs.length) return msgs.join('; ')
   }
   return err.message || fallback
+}
+
+/**
+ * Query string mở mục «Thuốc BVTV» từ cột tra cứu của trang chi tiết (01/10/2026, đồng bộ bản v2).
+ * Ép `pstatus=all`: số đếm của «Tra cứu nhanh» tính trên MỌI tình trạng.
+ */
+export function buildPesticideListSearch(f: { q?: string; pestGroup?: string; sector?: string }): string {
+  const p = new URLSearchParams({ pstatus: 'all' })
+  if (f.q?.trim()) p.set('pq', f.q.trim())
+  if (f.pestGroup) p.set('pgroup', f.pestGroup)
+  if (f.sector) p.set('psector', f.sector)
+  return p.toString()
 }

@@ -14,8 +14,10 @@ import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import { askConfirm } from '../components/confirm'
 import TableScroll from '../components/TableScroll'
 import { toast } from '../components/toast'
-import { fmtDate } from '../components/customs/customs-shared'
 import CustomsPesticideForm from '../components/customs/CustomsPesticideForm'
+import CustomsPesticideInfoCard from '../components/customs/CustomsPesticideInfoCard'
+import CustomsPesticideLookup from '../components/customs/CustomsPesticideLookup'
+import CustomsPesticideRelated from '../components/customs/CustomsPesticideRelated'
 import { customsSectionPath } from '../config/customs-sections'
 import { extractPesticideErrorMessage, pesticideStatusBadgeClass } from '../utils/customs-pesticide'
 import { formatBannedLabel } from '../utils/customs-regulation'
@@ -123,6 +125,10 @@ export default function CustomsPesticideDetailPage() {
         )}
       </div>
 
+      {/* 01/10/2026 — cột «Tìm thuốc khác» + «Tra cứu nhanh» bên phải như trang nguồn (đồng bộ v2);
+          màn hẹp thì xuống cuối trang (`pesticide-detail-layout` trong index.css). */}
+      <div className="pesticide-detail-layout">
+      <div style={{ minWidth: 0 }}>
       {data.banned?.length > 0 && (
         <div role="alert" style={{ border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b', borderRadius: 8,
           padding: '8px 12px', fontSize: 13, marginBottom: 16 }}>
@@ -142,29 +148,8 @@ export default function CustomsPesticideDetailPage() {
         </div>
       )}
 
-      <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-        <h3 className="sec-title" style={{ marginTop: 0 }}>Thông tin đăng ký</h3>
-        <div className="form-grid">
-          <Field manual={manual} label="Hoạt chất" value={data.active_ingredient} />
-          <Field manual={manual} label="Hàm lượng" value={data.concentration} />
-          <Field manual={manual} label="Công ty đăng ký" value={data.registrant} />
-          <Field manual={manual} label="Số đăng ký" value={data.registration_no} />
-          <Field manual={manual} label="Thời hạn đăng ký"
-            value={data.registered_on || data.expires_on ? `${fmtDate(data.registered_on)} – ${fmtDate(data.expires_on)}` : ''} />
-          <Field manual={manual} label="Phân nhóm" value={data.pest_group} />
-          <Field manual={manual} label="Lĩnh vực" value={data.sector} />
-          <Field manual={manual} label="Nhóm độc" value={data.toxicity} />
-          <Field manual={manual} label="Nhóm kháng (quản lý tính kháng)" value={data.resistance} />
-        </div>
-        {/* duoc-CR-495 — câu mô tả của trang nguồn, DƯỚI lưới thông tin, ngăn bằng một vạch mảnh
-            (đồng bộ bản v2; đại ca chốt 29/09: không khung màu, không viền trái). */}
-        {data.summary && (
-          <div style={{ borderTop: '1px solid var(--border)', marginTop: 14, paddingTop: 12 }}>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>Tóm tắt sử dụng</div>
-            <div style={{ fontSize: 14, lineHeight: 1.6 }}>{data.summary}</div>
-          </div>
-        )}
-      </div>
+      <CustomsPesticideInfoCard data={data} />
+
 
       <div className="card table-card" style={{ marginBottom: 16 }}>
         <div style={{ padding: '14px 18px 8px' }}>
@@ -194,6 +179,9 @@ export default function CustomsPesticideDetailPage() {
         </TableScroll>
       </div>
 
+      {/* 01/10/2026 — như trang nguồn: SAU bảng phạm vi sử dụng, thuốc khác cùng công ty + cùng hoạt chất. */}
+      <CustomsPesticideRelated pesticideId={data.id} registrant={data.registrant || ''} />
+
       {/* duoc-CR-494 — nhãn thuốc, giấy chứng nhận đăng ký, MSDS… Tải lên / xóa theo `customs_pesticide`
           (write hoặc create — khớp `_check` backend); tệp giữ qua các lần nạp vì id thuốc giữ nguyên. */}
       <DocumentAttachmentSection
@@ -211,22 +199,16 @@ export default function CustomsPesticideDetailPage() {
         {logs.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13 }}>Chưa có thao tác nào được ghi nhận.</div>}
         <AuditTimeline logs={logs} showMessage />
       </div>
+      </div>
+      <aside className="pesticide-detail-aside">
+        <CustomsPesticideLookup currentPestGroup={data.pest_group || ''} />
+      </aside>
+      </div>
 
       {editing && (
         <CustomsPesticideForm pesticideId={pesticideId} onClose={() => setEditing(false)}
           onSaved={() => { setEditing(false); load() }} />
       )}
-    </div>
-  )
-}
-
-/** Một cặp nhãn – giá trị. Trống thì ghi rõ, đừng để ô trắng tưởng lỗi màn: thuốc từ bản cào là
- *  «Nguồn không ghi», thuốc tự thêm là «Chưa nhập» (không có nguồn nào để mà «không ghi»). */
-function Field({ label, value, manual }: { label: string; value?: string; manual: boolean }) {
-  return (
-    <div className="form-row">
-      <label>{label}</label>
-      <div style={!value ? { fontStyle: 'italic', color: 'var(--muted)' } : undefined}>{value || (manual ? 'Chưa nhập' : 'Nguồn không ghi')}</div>
     </div>
   )
 }

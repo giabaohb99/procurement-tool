@@ -20,6 +20,7 @@ import {
   BANNED_ONLY, DEFAULT_PESTICIDE_FILTERS, PesticideFilters, buildPesticideParams,
   formatBannedFilterLabel, pesticideStatusBadgeClass, resolvePesticideEmptyMessage,
 } from '../../utils/customs-pesticide'
+import { toSentenceCaseIfShouting } from '../../utils/customs-pesticide-display'
 
 const PAGE_SIZE = 50
 
@@ -36,6 +37,7 @@ export default function CustomsPesticideTab() {
     q: searchParams.get('pq') ?? '',
     status: searchParams.get('pstatus') === 'all' ? '' : searchParams.get('pstatus') ?? DEFAULT_PESTICIDE_FILTERS.status,
     pestGroup: searchParams.get('pgroup') ?? '',
+    sector: searchParams.get('psector') ?? '',
     banned: searchParams.get('pbanned') ?? '',
   }
   //  Ô tìm gõ vào state cục bộ cho khỏi giật; ngưng gõ 350ms mới ghi lên URL.
@@ -60,7 +62,7 @@ export default function CustomsPesticideTab() {
     api.get('/api/customs/pesticides', { params: { ...buildPesticideParams(applied), page, page_size: pageSize } })
       .then((r) => { setRows(r.data.data.items); setTotal(r.data.data.total) })
       .finally(() => setLoading(false))
-  }, [applied.q, applied.status, applied.pestGroup, applied.banned, page, pageSize])
+  }, [applied.q, applied.status, applied.pestGroup, applied.sector, applied.banned, page, pageSize])
   useEffect(() => { load() }, [load])
 
   /** Ghi NHIỀU param trong một lượt (`replace`: đổi lọc không đẻ mục lịch sử cho nút Back). */
@@ -82,13 +84,13 @@ export default function CustomsPesticideTab() {
   //  URL đổi từ ngoài (Xóa lọc, nút Back) thì ô tìm theo.
   useEffect(() => { setDraftQ(applied.q) }, [applied.q])
 
-  function setSelect(k: 'status' | 'pestGroup' | 'banned', v: string) {
+  function setSelect(k: 'status' | 'pestGroup' | 'sector' | 'banned', v: string) {
     if (k === 'status') writeParams({ pstatus: v === DEFAULT_PESTICIDE_FILTERS.status ? null : (v || 'all') })
-    else writeParams({ [k === 'pestGroup' ? 'pgroup' : 'pbanned']: v || null })
+    else writeParams({ [{ pestGroup: 'pgroup', sector: 'psector', banned: 'pbanned' }[k]]: v || null })
   }
   function resetFilters() {
     setDraftQ('')
-    writeParams({ pq: null, pstatus: null, pgroup: null, pbanned: null })
+    writeParams({ pq: null, pstatus: null, pgroup: null, psector: null, pbanned: null })
   }
   //  Mang theo chỗ đang đứng (bộ lọc trên URL) để nút lùi của trang chi tiết quay về đúng đây.
   function openDetail(pesticideId: number) {
@@ -98,7 +100,7 @@ export default function CustomsPesticideTab() {
 
   const catalogTotal = options?.total ?? 0
   const filtersActive = draft.q !== '' || draft.status !== DEFAULT_PESTICIDE_FILTERS.status
-    || draft.pestGroup !== '' || draft.banned !== ''
+    || draft.pestGroup !== '' || !!draft.sector || draft.banned !== ''
   const emptyMessage = resolvePesticideEmptyMessage(catalogTotal, canWrite,
     applied.banned === BANNED_ONLY ? options?.banned_rules : undefined)
 
@@ -118,6 +120,12 @@ export default function CustomsPesticideTab() {
             <SearchSelect value={draft.pestGroup} placeholder="Tất cả phân nhóm" autoSelectSingle={false}
               options={(options?.pest_groups || []).map((g: any) => ({ value: g.value, label: `${g.value} (${g.count})` }))}
               onChange={(v) => setSelect('pestGroup', v)} />
+          </div>
+          {/* 01/10/2026 — lọc Lĩnh vực (backend có sẵn); cột tra cứu của trang chi tiết mở thẳng tham số này. */}
+          <div style={{ width: 220 }}>
+            <SearchSelect value={draft.sector ?? ''} placeholder="Tất cả lĩnh vực" autoSelectSingle={false}
+              options={(options?.sectors || []).map((g: any) => ({ value: g.value, label: `${toSentenceCaseIfShouting(g.value)} (${g.count})` }))}
+              onChange={(v) => setSelect('sector', v)} />
           </div>
           <div style={{ width: 240 }}>
             <SearchSelect value={draft.banned} placeholder="Mọi thuốc" autoSelectSingle={false}

@@ -3220,3 +3220,11 @@ input,
   padding: 0;
   margin: 0;
 }
+
+/* 01/10/2026 — trang chi tiết thuốc BVTV: nội dung + cột tra cứu bên phải (dính khi cuộn); màn hẹp
+   thì cột tra cứu xuống cuối trang. */
+.pesticide-detail-layout { display: grid; gap: 16px; align-items: start; }
+@media (min-width: 1280px) {
+  .pesticide-detail-layout { grid-template-columns: minmax(0, 1fr) 256px; }
+  .pesticide-detail-aside { position: sticky; top: 16px; }
+}
