@@ -63,6 +63,9 @@ from app.modules.purchase_request.controller import router as pr_router
 from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
+from app.modules.employee.report_controller import router as employee_report_router
+from app.modules.leave.report_controller import router as leave_report_router
+from app.modules.leave.balance_report_controller import router as leave_balance_report_router
 from app.modules.employee.position_controller import router as job_position_router
 from app.modules.dossier.type_controller import router as dossier_type_router
 from app.modules.dossier.controller import router as dossier_router
@@ -235,6 +238,11 @@ def health():
 
 
 app.include_router(auth_router)
+#  Báo cáo kiểu Haravan (phase 04–06): mỗi router chỉ có `/summary` + `/summary/export`,
+#  đăng ký SỚM để không bị `/{id}` của router chính cùng tiền tố nuốt mất.
+app.include_router(employee_report_router)
+app.include_router(leave_report_router)
+app.include_router(leave_balance_report_router)
 app.include_router(company_router)
 app.include_router(department_router)
 app.include_router(employee_router)
