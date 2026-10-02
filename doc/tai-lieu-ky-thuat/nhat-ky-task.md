@@ -145,7 +145,13 @@ xóa, em kiểm lại thấy 26 hồ sơ mang UID. Đại ca gật cho đưa wor
 sang nhánh chính; GitHub Actions chạy bộ kiểm và deploy cả hai môi trường thành công. Công tắc đồng bộ
 bên ERP vẫn tắt nên móc của worker đang bị từ chối, người dùng app cũ không bị ảnh hưởng.
 
-Còn chờ: commit và deploy bao-CR-562 lên prod, rồi bật công tắc đồng bộ và chạy tay một lượt quét toàn bộ.
+Đã xong 02/10 (Agent 1 làm thay theo lời đại ca): CR-562 lên prod 14:08; 14:17 bật công tắc đồng bộ qua cửa lưu
+của màn Cấu hình (có nhật ký), «Tự tạo xe / tài xế» vẫn tắt; chạy tay lượt quét toàn bộ 14:17-14:25: lấy 1.401 phiếu,
+ghi 1.399, bỏ qua 2 phiếu đã chốt bên ERP, lỗi 0. Soát: 1.011 đóng dấu + 390 đặt xe mang mã gốc; chỉ 3 phiếu thiếu
+người tạo (người app cũ đã khóa), không phiếu nào thiếu phòng ban hay công ty; xe 336/390, tài xế 329/390 (5 tài xế đã bị
+xóa bên app cũ); 1.602 tệp đính kèm trên 1.010 phiếu; nhật ký duyệt đủ 1.401 phiếu; người tạo khớp tên 1.398/1.398.
+Lưu ý khi soát: ở Đặt xe và Đóng dấu, ô người tạo lưu id TÀI KHOẢN (khác chứng từ thu mua) — Agent 1 từng hiểu nhầm
+là id hồ sơ nên tắt công tắc khoảng 5 phút rồi bật lại; lượt quét kế tiếp và lượt đêm bù phần đó.
 
 Mã nguồn: script tạm `prod_fleet_clone.py` (không commit) · dữ liệu nguồn `D:/vps_deploy/dev_fleet_dump.json`,
 `D:/vps_deploy/prod_fleet_payload.json`
