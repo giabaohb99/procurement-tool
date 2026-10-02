@@ -112,6 +112,28 @@ c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, 
 
 ---
 
+## bao-CR-557 | Tách quyền Tra cứu thị trường thành vai trò riêng, chỉ trưởng phòng thu mua được xem
+- status: xong
+- date: 2026-10-02
+Đại ca muốn Tra cứu thị trường chỉ cho phòng thu mua xem, nhà máy thì không. Em kiểm prod trước: chỉ
+ba vai trò thu mua chung (Nhân viên, Admin, Quản lý thu mua) cùng quản trị hệ thống giữ quyền này, nên
+28 tài khoản đang thấy menu; các vai trò nhà máy và phòng tự mua chưa từng có. Đại ca chốt tách hẳn
+thành vai trò riêng, gỡ quyền khỏi cụm thu mua và chỉ gán cho Mi (NSU141), Dững (NSU001), Duyên Sang
+(NSU142) và Tiên (NSU223).
+
+Vai trò mới «Tra cứu thị trường» được xem, nạp, sửa, xóa, xuất dữ liệu giá tờ khai và sửa danh mục hóa
+chất ở tab Cấu hình. Hai khóa này bị gỡ khỏi ba vai trò thu mua chung. Script đổi dữ liệu chạy lần lượt
+ở local, dev và prod, in bản sao lưu các dòng quyền cũ trước khi xóa. Sau khi chạy, prod chỉ còn bốn
+người được gán cùng các tài khoản quản trị hệ thống xem được. Seed khai thêm vai trò này để môi
+trường mới có sẵn; seed không tự cấp lại hai khóa cho cụm thu mua vì chúng nằm trong tập loại trừ.
+
+Mã nguồn: `backend/app/seed.py` (STD_ROLES["market_lookup"], ROLE_DESCRIPTIONS), bài kiểm
+`test/backend/test_vai_tro_tra_cuu_thi_truong_cr557.py`, script tạm `cr557_market_lookup_role.py`
+(không commit) · sao lưu kết quả prod `D:/vps_deploy/cr557_prod_output.txt`, dev `D:/vps_deploy/cr557_dev_output.txt`
+Deploy: dữ liệu phân quyền đã đổi trên dev + prod 02/10; mã seed CHƯA commit.
+
+---
+
 ## bao-CR-554 | Trả về phiếu đã duyệt (khảo sát, YCBG, YCMH) và chặn duyệt phiếu khảo sát còn dòng chưa quyết
 - status: xong
 - date: 2026-10-02

@@ -700,6 +700,19 @@ STD_ROLES["coffee_counter"] = {"name": "Điểm cà phê — Quầy (tra cứu)"
     "coffee_member": (["read"], "all"),
 }}
 
+#  ── Tra cứu thị trường (bao-CR-557, 02/10/2026) ──────────────────────────────
+#  Đại ca chốt: Tra cứu thị trường (giá tờ khai hải quan) chỉ cho trưởng phòng
+#  thu mua và vài người được chỉ định, KHÔNG đi kèm cả cụm thu mua — nhà máy và
+#  nhân viên thu mua thường không được xem. Nên tách hẳn thành vai trò riêng,
+#  gán tay ở màn Phân quyền. Hai khóa vẫn nằm trong `_SYS_ENTITIES` nên
+#  `pur_manager` không tự nhận lại khi seed chạy.
+#  `customs_regulation` đi kèm vì tab «Cấu hình» của chính màn này đọc danh mục
+#  hóa chất; khóa thuốc BVTV (`customs_pesticide`) vẫn để quản trị tick tay.
+STD_ROLES["market_lookup"] = {"name": "Tra cứu thị trường", "perms": {
+    "customs_price": (["read", "create", "write", "delete", "export"], "all"),
+    "customs_regulation": (["read", "create", "write", "delete"], "all"),
+}}
+
 
 #  ── Danh mục Loại hồ sơ (16/09/2026) ────────────────────────────────────────
 #  Cùng lý lẽ với danh mục Chức vụ: **mọi vai trò phải ĐỌC được**, vì nó là
@@ -766,6 +779,7 @@ ROLE_DESCRIPTIONS = {
     "hr_leave": "Quản lý nghỉ phép: loại nghỉ, ngày lễ, quỹ phép và đơn nghỉ của mọi người.",
     "coffee_admin": "Quản trị Điểm cà phê: chính sách, thành viên, chốt cấp phát kỳ.",
     "coffee_counter": "Quầy cà phê: chỉ tra cứu số dư của thành viên.",
+    "market_lookup": "Tra cứu thị trường: xem, nạp và cấu hình dữ liệu giá tờ khai hải quan.",
 }
 
 
