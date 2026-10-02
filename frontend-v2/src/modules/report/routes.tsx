@@ -31,6 +31,9 @@ export const reportModule: ErpModule = {
       // Không đọc được báo cáo nào thì Tổng quan cũng rỗng — ẩn luôn, kẻo thẻ
       // Báo cáo mở cho người không có gì để xem.
       entities: [...new Set(REPORT_CATALOG.map((r) => r.entity))],
+      // Gác KÉP: hiện khi được gán XEM ÍT NHẤT MỘT báo cáo bất kỳ — union của cả
+      // 13 khóa, đối xứng với `entities` ở trên (OR theo entity).
+      reportKeys: REPORT_CATALOG.map((r) => r.key),
     },
     ...REPORT_CATALOG.map((r) => ({
       label: r.label,
@@ -38,6 +41,8 @@ export const reportModule: ErpModule = {
       icon: r.icon,
       entity: r.entity,
       group: r.group,
+      // Mỗi mục báo cáo gác thêm bằng đúng khóa của chính nó (`ReportKey` backend).
+      reportKeys: [r.key],
     })),
   ],
 

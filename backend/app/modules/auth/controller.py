@@ -23,6 +23,7 @@ from app.modules.login_session.history import (HISTORY_DAYS_DEFAULT, HISTORY_DAY
 from app.modules.login_session.model import LoginSession
 from app.modules.login_session.service import (mark_refreshed, revoke_session,
                                                revoke_user_sessions, start_session)
+from app.modules.report_access.service import viewable_keys
 from app.modules.user.model import User, UserRole
 from app.modules.user_preference.service import get_preferences
 
@@ -127,6 +128,12 @@ def _me_payload(db: Session, user) -> dict:
         #  ăn 403 lúc bấm Lưu thì họ tưởng hệ hỏng, không tưởng là có luật.
         "role_ids": role_ids,
         "permissions": get_user_permissions(db, user),
+        #  Khóa báo cáo (`ReportKey`) được GÁN xem — gác menu/route/Tổng quan của
+        #  phân hệ Báo cáo ở FE (`useNavContext`, cùng lối `is_driver`). KHÔNG làm
+        #  `GET /api/report-access/me` riêng: route riêng thì `canAccessRoute` chạy
+        #  trước khi dữ liệu về, phải thêm trạng thái chờ ở nhiều nơi — một nguồn
+        #  duy nhất ở đây thì không (xem phase 02 plan phân quyền báo cáo).
+        "report_keys": sorted(viewable_keys(db, user)),
         #  Tuỳ chọn hiển thị cá nhân (hiện có: bảng màu giao diện). Gửi kèm ở đây
         #  chứ không để client gọi thêm một vòng: nó cần NGAY ở khung hình đầu
         #  tiên, gọi sau thì người dùng thấy màu mặc định lóe lên rồi mới nhảy

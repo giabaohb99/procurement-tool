@@ -1,119 +1,67 @@
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import { useCompanies } from '@/modules/hr/hooks/use-companies'
-import { useDepartments } from '@/modules/hr/hooks/use-departments'
-import { useEmployees } from '@/modules/hr/hooks/use-employees'
-import { useRoles } from '@/modules/hr/hooks/use-roles'
 import { Badge } from '@/shared/ui/badge'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
-import { stripDiacritics } from '@/shared/utils/vn-text'
 import { SubjectChips } from './access-subject-chips'
-import { SUBJECT_KIND, SUBJECT_KIND_LABELS } from '../types/document-access'
+import {
+  KIND_FILTER_ORDER,
+  filterOptionsByKeyword,
+  keyOfSubject,
+  toPickerOptions,
+} from './access-subject-picker-options'
+import { SUBJECT_KIND_LABELS } from './subject-kind'
+import type { MixedSubject, SubjectOption } from './subject-kind'
 
-export interface MixedSubject {
-  subject_kind: number
-  subject_id: number
-}
-
-interface MixedOption extends MixedSubject {
-  key: string
-  label: string
-  kindLabel: string
-}
-
-interface FolderShareSubjectPickerProps {
+interface AccessSubjectPickerProps {
   value: MixedSubject[]
   onChange: (value: MixedSubject[]) => void
-}
-
-/** Thứ tự nút lọc — cùng thứ tự xếp danh sách (pháp nhân/phòng ban trước, người sau). */
-const KIND_FILTER_ORDER = [
-  SUBJECT_KIND.company,
-  SUBJECT_KIND.department,
-  SUBJECT_KIND.role,
-  SUBJECT_KIND.employee,
-] as const
-
-function keyOf(s: MixedSubject) {
-  return `${s.subject_kind}-${s.subject_id}`
+  /** Danh mục đã trộn sẵn bốn loại — nơi sở hữu dữ liệu tự dựng rồi truyền vào. */
+  options: SubjectOption[]
+  /** Hiện "Đang tải…" khi danh mục chưa về, thay vì "Không có ai khớp." gây hiểu nhầm. */
+  loading?: boolean
 }
 
 /**
  * Ô CHỌN NHIỀU trộn đủ BỐN loại đối tượng cùng một danh sách (đặc tả §C) —
  * khác `SubjectMultiSelect` của `document-access-dialog.tsx` (chọn LOẠI trước
  * rồi mới chọn trong loại đó): ở đây gõ một từ khóa là khớp CẢ BỐN danh mục
- * cùng lúc, đúng cảm giác hộp «Chia sẻ» của Drive — chọn quyền thư mục cho cả
- * một nhóm hỗn hợp người/phòng/pháp nhân/vai trò không cần đổi tab.
+ * cùng lúc, đúng cảm giác hộp «Chia sẻ» của Drive — chọn quyền cho cả một nhóm
+ * hỗn hợp người/phòng/pháp nhân/vai trò không cần đổi tab.
+ *
+ * Bản THUẦN UI — chuyển từ
+ * `document/components/folder-share-subject-picker.tsx` lên đây
+ * (phase 04, kế hoạch `plans/261002-0836-phan-quyen-tung-bao-cao`) để phân hệ
+ * Báo cáo dùng lại được: nhận sẵn `options` qua prop, KHÔNG tự gọi hook của
+ * `hr` — `shared/` cấm import các phân hệ. Nơi gọi tự lấy `options` từ
+ * `useAccessSubjectOptions()` (hr sở hữu dữ liệu người/phòng/pháp nhân/vai trò).
  *
  * Không dùng `cmdk` (repo tránh thêm phụ thuộc chỉ để có ô tìm, xem
  * `shared/ui/search-select.tsx`) — dựng trên `Popover + Input`, lọc bằng
  * `stripDiacritics` để gõ không dấu vẫn khớp.
  */
-export function FolderShareSubjectPicker({ value, onChange }: FolderShareSubjectPickerProps) {
+export function AccessSubjectPicker({
+  value,
+  onChange,
+  options,
+  loading,
+}: AccessSubjectPickerProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [kindFilter, setKindFilter] = useState<number | null>(null)
 
-  const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
-  const { data: departments } = useDepartments({ page_size: 500 })
-  const { data: companies } = useCompanies({ page_size: 200, is_active: true })
-  const { data: roles } = useRoles()
+  const allOptions = useMemo(() => toPickerOptions(options), [options])
 
-  const allOptions = useMemo<MixedOption[]>(() => {
-    const companyNames = new Map(
-      (companies?.items ?? []).map((c) => [c.id, c.short_name || c.name] as const),
-    )
-    const fromEmployees = (employees?.items ?? []).map((e) => ({
-      subject_kind: SUBJECT_KIND.employee,
-      subject_id: e.id,
-      label: e.full_name,
-    }))
-    const fromDepartments = (departments?.items ?? [])
-      .filter((d) => d.is_active)
-      //  Kèm tên pháp nhân: nhiều công ty có phòng TRÙNG TÊN («Kế toán»…),
-      //  không kèm thì chọn nhầm phòng của công ty khác mà không biết.
-      .map((d) => {
-        const company = companyNames.get(d.company_id)
-        return {
-          subject_kind: SUBJECT_KIND.department,
-          subject_id: d.id,
-          label: company ? `${d.name} · ${company}` : d.name,
-        }
-      })
-    const fromCompanies = (companies?.items ?? []).map((c) => ({
-      subject_kind: SUBJECT_KIND.company,
-      subject_id: c.id,
-      label: c.short_name || c.name,
-    }))
-    const fromRoles = (roles ?? []).map((r) => ({
-      subject_kind: SUBJECT_KIND.role,
-      subject_id: r.id,
-      label: r.name,
-    }))
-    //  Pháp nhân · phòng ban · vai trò LÊN TRƯỚC, người xuống cuối (phản hồi
-    //  24/09/2026: 272 dòng người đứng đầu vùi mất 18 phòng ban + 14 pháp nhân,
-    //  người dùng tưởng chỉ chia sẻ được cho từng người).
-    return [...fromCompanies, ...fromDepartments, ...fromRoles, ...fromEmployees].map((option) => ({
-      ...option,
-      key: keyOf(option),
-      kindLabel: SUBJECT_KIND_LABELS[option.subject_kind],
-    }))
-  }, [employees, departments, companies, roles])
-
-  const selectedKeys = useMemo(() => new Set(value.map(keyOf)), [value])
+  const selectedKeys = useMemo(() => new Set(value.map(keyOfSubject)), [value])
   const selectedOptions = allOptions.filter((option) => selectedKeys.has(option.key))
 
-  const keywordMatches = useMemo(() => {
-    const needle = stripDiacritics(keyword.trim().toLowerCase())
-    if (!needle) return allOptions
-    return allOptions.filter((option) =>
-      stripDiacritics(option.label.toLowerCase()).includes(needle),
-    )
-  }, [allOptions, keyword])
+  const keywordMatches = useMemo(
+    () => filterOptionsByKeyword(allOptions, keyword),
+    [allOptions, keyword],
+  )
   const matches =
     kindFilter == null
       ? keywordMatches
@@ -121,9 +69,10 @@ export function FolderShareSubjectPicker({ value, onChange }: FolderShareSubject
   const countByKind = (kind: number) =>
     keywordMatches.filter((option) => option.subject_kind === kind).length
 
-  function toggle(option: MixedOption) {
-    if (selectedKeys.has(option.key)) {
-      onChange(value.filter((item) => keyOf(item) !== option.key))
+  function toggle(option: SubjectOption) {
+    const key = keyOfSubject(option)
+    if (selectedKeys.has(key)) {
+      onChange(value.filter((item) => keyOfSubject(item) !== key))
     } else {
       onChange([...value, { subject_kind: option.subject_kind, subject_id: option.subject_id }])
     }
@@ -183,7 +132,7 @@ export function FolderShareSubjectPicker({ value, onChange }: FolderShareSubject
           <ul role="listbox" aria-multiselectable="true" className="max-h-64 overflow-y-auto p-1">
             {matches.length === 0 ? (
               <li className="px-2 py-6 text-center text-xs text-muted-foreground">
-                Không có ai khớp.
+                {loading ? 'Đang tải…' : 'Không có ai khớp.'}
               </li>
             ) : (
               matches.map((option) => {
@@ -231,7 +180,7 @@ export function FolderShareSubjectPicker({ value, onChange }: FolderShareSubject
             key: option.key,
             label: `${option.label} · ${option.kindLabel}`,
           }))}
-          onRemove={(key) => onChange(value.filter((item) => keyOf(item) !== key))}
+          onRemove={(key) => onChange(value.filter((item) => keyOfSubject(item) !== key))}
         />
       )}
     </div>

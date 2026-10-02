@@ -15,8 +15,10 @@ from sqlalchemy.orm import Session
 from app.core.auth import require
 from app.core.database import get_db
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
+from app.modules.report_access.guard import require_report
 
 from . import report_service as rpt
 from .membership_service import require_employee, resolve_actor
@@ -30,7 +32,7 @@ def _actor(db: Session, user):
     return actor
 
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(require_report(ReportKey.WORK))])
 def work_summary(request: Request, db: Session = Depends(get_db),
                  user=Depends(require("work_task", "read"))):
     actor = _actor(db, user)
@@ -39,7 +41,7 @@ def work_summary(request: Request, db: Session = Depends(get_db),
     return success(data)
 
 
-@router.get("/summary/export")
+@router.get("/summary/export", dependencies=[Depends(require_report(ReportKey.WORK))])
 def work_summary_export(request: Request, db: Session = Depends(get_db),
                         user=Depends(require("work_task", "export"))):
     actor = _actor(db, user)

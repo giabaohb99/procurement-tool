@@ -14,6 +14,14 @@ type CanFn = (entity: PermissionEntity, action: PermissionAction) => boolean
  */
 export interface NavContext {
   isDriver?: boolean
+  /**
+   * Khóa các báo cáo được GÁN xem (`ReportKey` backend, đọc từ `report_keys`
+   * của `/auth/me` qua `useNavContext`) — dùng cho `ModuleNavItem.reportKeys`.
+   * Bỏ trống/`undefined` = không được gán báo cáo nào (fail-closed, khác hẳn
+   * `isDriver` ở trên — mục không khai `entity` là mặc định MỞ, nhưng mục khai
+   * `reportKeys` mà ctx thiếu/rỗng thì luôn ẨN).
+   */
+  reportKeys?: readonly number[]
 }
 
 /**
@@ -112,6 +120,13 @@ function itemAllowed(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): boo
     baseOk = true
   }
   if (!baseOk) return false
+
+  //  Gác KÉP cho báo cáo: xét SAU luật entity, NGƯỢC chiều mặc định của mục
+  //  không khai `entity` (mặc định MỞ) — mục CÓ khai `reportKeys` mà bối cảnh
+  //  thiếu/rỗng/không chứa khóa nào thì luôn ẨN (fail-closed, "chưa gán = đóng").
+  if (item.reportKeys && !item.reportKeys.some((key) => ctx.reportKeys?.includes(key))) {
+    return false
+  }
 
   //  Lọc RUNTIME thêm: chỉ điều phối viên (approve) hoặc tài xế (isDriver) mới thấy.
   if (item.requireDispatchOrDriver) {

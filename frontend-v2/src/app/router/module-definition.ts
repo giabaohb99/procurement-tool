@@ -42,6 +42,20 @@ export interface ModuleNavItem {
   /** Mục quản lý (danh mục, hệ thống): yêu cầu quyền quản lý (`write` | `create` | `delete`). */
   manage?: boolean
   /**
+   * **Khóa báo cáo phải được GÁN XEM** (`ReportKey` backend, qua `report_keys`
+   * của `/auth/me`) — xét SAU luật quyền tĩnh ở trên (gác KÉP). Thiếu ít nhất
+   * một khóa trong đây ở `NavContext.reportKeys` thì ẩn, dù `entity`/`entities`
+   * đã đạt. Ngược với mục không khai `entity` (mặc định MỞ): mục không khai
+   * `reportKeys` thì không bị luật này đụng tới; còn mục CÓ khai mà
+   * `ctx.reportKeys` thiếu/rỗng/không chứa khóa nào thì luôn ẨN (fail-closed) —
+   * đúng chốt "chưa gán = đóng" của phân hệ Báo cáo.
+   *
+   * Sinh ra cho phân hệ Báo cáo (02/10/2026): một người có thể đọc được entity
+   * gốc (vd `purchase_request`) nhưng KHÔNG được giao xem báo cáo tương ứng —
+   * hai quyền tách biệt theo thiết kế, `entity` không nói được điều đó.
+   */
+  reportKeys?: readonly number[]
+  /**
    * **Chỉ hiện với ĐIỀU PHỐI VIÊN hoặc TÀI XẾ.** Ngoài luật quyền thường (`entity`),
    * mục còn đòi: có `approve` trên `entity` (điều phối viên) HOẶC là tài xế
    * (`NavContext.isDriver`). Sinh ra cho *«Chuyến của tôi»* (Đặt xe): người đặt xe

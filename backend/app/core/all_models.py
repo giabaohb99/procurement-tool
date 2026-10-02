@@ -35,6 +35,7 @@ from app.modules.notification import email_template_model as _email_template  # 
 from app.modules.notification import email_exclusion_model as _email_exclusion  # noqa: F401
 from app.modules.push import model as _push  # noqa: F401
 from app.modules.report import model as _report  # noqa: F401
+from app.modules.report_access import model as _report_access  # noqa: F401
 from app.modules.contract import model as _contract  # noqa: F401
 from app.modules.setting import model as _setting  # noqa: F401
 from app.modules.category_assignee import model as _category_assignee  # noqa: F401

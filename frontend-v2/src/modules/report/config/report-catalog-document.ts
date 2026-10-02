@@ -19,6 +19,8 @@ export const DOCUMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     //  `report-catalog.test.ts`). Báo cáo này CHẶT hơn: gác thẳng `document.read`/`.export`.
     sourcePath: appRoutes.document.documents,
     icon: FileText,
+    //  ReportKey.DOCUMENT (backend) = 11.
+    key: 11,
     entity: 'document',
     group: 'Hành chính',
     endpoint: '/api/documents/summary',
@@ -34,6 +36,8 @@ export const DOCUMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     //  "Xem bảng chi tiết" tới đó (xem ghi chú trong `pages/approval-report-page.tsx`).
     sourcePath: appRoutes.approval.flows,
     icon: Workflow,
+    //  ReportKey.APPROVAL (backend) = 12.
+    key: 12,
     entity: 'approval_flow',
     group: 'Hành chính',
     hideCompany: true,

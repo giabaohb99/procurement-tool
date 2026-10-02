@@ -28,8 +28,12 @@ vi.mock('@/core/auth/use-auth', () => ({
   useAuth: () => ({ user: { id: 99, role_ids: currentRoleIds } }),
 }))
 
+//  `canOverride` mặc định `null` = mọi `can(entity, action)` trả `true`, giữ
+//  đúng hành vi cũ của các bài kiểm có sẵn. Bài kiểm tab «Báo cáo» cần tắt
+//  riêng `role.read` nên phải có đường chỉnh được, không thể để nguyên hằng số.
+let canOverride: ((entity: string, action: string) => boolean) | null = null
 vi.mock('@/core/authorization/use-permission', () => ({
-  usePermission: () => ({ can: () => true }),
+  usePermission: () => ({ can: (entity: string, action: string) => canOverride?.(entity, action) ?? true }),
 }))
 
 vi.mock('@/core/authorization/permission-gate', () => ({
@@ -42,6 +46,7 @@ vi.mock('../components/role-side-panel', () => ({ RoleSidePanel: () => null }))
 vi.mock('../components/role-permission-matrix', () => ({ RolePermissionMatrix: () => null }))
 vi.mock('../components/role-name-inline-edit', () => ({ RoleNameInlineEdit: () => null }))
 vi.mock('../components/user-account-table', () => ({ UserAccountTable: () => null }))
+vi.mock('../components/report-access-tab', () => ({ ReportAccessTab: () => null }))
 
 const ROLES = [
   { id: 1, code: 'admin', name: 'Quản trị hệ thống', description: '', sort_order: 1 },
@@ -84,6 +89,7 @@ function build(queryClient = newQueryClient(), roleId = 7) {
 
 beforeEach(() => {
   currentRoleIds = []
+  canOverride = null
   apiGet.mockReset()
   httpPut.mockReset()
   httpPut.mockResolvedValue({ data: { success: true, message: 'Đã lưu quyền', data: null } })
@@ -174,5 +180,18 @@ describe('RolePermissionPage', () => {
 
     expect(await screen.findByRole('button', { name: /Lưu quyền/ })).toBeDisabled()
     expect(screen.getByText(/Bạn đang giữ vai trò này/)).toBeInTheDocument()
+  })
+
+  it('có quyền role.read thì hiện tab «Báo cáo»', async () => {
+    build()
+    expect(await screen.findByRole('tab', { name: 'Báo cáo' })).toBeInTheDocument()
+  })
+
+  it('không có quyền role.read thì KHÔNG hiện tab «Báo cáo» — ẩn hẳn, không chỉ khóa', async () => {
+    canOverride = (entity, action) => !(entity === 'role' && action === 'read')
+    build()
+
+    expect(await screen.findByRole('button', { name: /Lưu quyền/ })).toBeEnabled()
+    expect(screen.queryByRole('tab', { name: 'Báo cáo' })).not.toBeInTheDocument()
   })
 })

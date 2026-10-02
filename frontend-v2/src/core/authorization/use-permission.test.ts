@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ACTIONS, ENTITIES, type PermissionMap } from './permission-types'
-import { usePermission } from './use-permission'
+import { useNavContext, usePermission } from './use-permission'
 
 /**
  * `can()` / `canAccess()` — cổng ẩn/hiện của TOÀN BỘ giao diện.
@@ -17,7 +17,9 @@ import { usePermission } from './use-permission'
 
 //  Zustand thật đọc localStorage lúc nạp module và kéo theo cả http-client;
 //  ở đây chỉ cần đúng hợp đồng selector.
-let state: { user: { permissions?: PermissionMap } | null } = { user: null }
+let state: {
+  user: { permissions?: PermissionMap; is_driver?: boolean; report_keys?: number[] } | null
+} = { user: null }
 
 vi.mock('@/core/auth/auth-store', () => ({
   useAuthStore: (selector: (s: typeof state) => unknown) => selector(state),
@@ -117,5 +119,44 @@ describe('B2 — hình dạng hằng số', () => {
   it('ENTITIES viết snake_case thường — sai kiểu chữ là `can()` im lặng trả false', () => {
     const sai = ENTITIES.filter((e) => !/^[a-z][a-z0-9_]*$/.test(e))
     expect(sai).toEqual([])
+  })
+})
+
+
+describe('useNavContext — reportKeys đọc thẳng từ hồ sơ, fail-closed khi thiếu', () => {
+  it('chưa đăng nhập: cả isDriver và reportKeys đều undefined', () => {
+    const { result } = renderHook(() => useNavContext())
+    expect(result.current.isDriver).toBeUndefined()
+    expect(result.current.reportKeys).toBeUndefined()
+  })
+
+  it('hồ sơ CŨ thiếu report_keys (trước khi trường này ra đời): reportKeys undefined, không phải []', () => {
+    //  Phân biệt undefined và [] có ý nghĩa ở `module-visibility.ts.itemAllowed`:
+    //  cả hai đều ẩn mục báo cáo, nhưng test này canh đúng giá trị TRẢ VỀ từ hook,
+    //  không bịa `?? []` ở đây — bịa thêm một lớp là che mất hồ sơ thật thiếu gì.
+    state = { user: { is_driver: true } }
+    const { result } = renderHook(() => useNavContext())
+    expect(result.current.isDriver).toBe(true)
+    expect(result.current.reportKeys).toBeUndefined()
+  })
+
+  it('trả đúng mảng report_keys khi hồ sơ có', () => {
+    state = { user: { report_keys: [1, 11] } }
+    const { result } = renderHook(() => useNavContext())
+    expect(result.current.reportKeys).toEqual([1, 11])
+  })
+
+  it('report_keys rỗng vẫn trả về mảng rỗng (không ép thành undefined)', () => {
+    state = { user: { report_keys: [] } }
+    const { result } = renderHook(() => useNavContext())
+    expect(result.current.reportKeys).toEqual([])
+  })
+
+  it('giữ nguyên tham chiếu mảng giữa hai lượt render không đổi state — tránh re-render thừa ở nơi dùng trong useQueries/useMemo', () => {
+    state = { user: { report_keys: [1, 2, 3] } }
+    const { result, rerender } = renderHook(() => useNavContext())
+    const first = result.current.reportKeys
+    rerender()
+    expect(result.current.reportKeys).toBe(first)
   })
 })

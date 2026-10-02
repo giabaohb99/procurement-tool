@@ -1,75 +1,3 @@
-# Nhật ký task — sổ nguồn đồng bộ lên phân hệ Dự án
-
-Sổ này do trợ lý AI (hoặc người) ghi trong lúc làm việc. Chạy
-`python backend/scripts/sync_task_journal.py` để đẩy toàn bộ sổ lên phân hệ
-**Dự án** (modules/work) qua API — chạy lại bao nhiêu lần cũng được (idempotent,
-khớp theo `key` ở đầu tiêu đề).
-
-Định dạng một mục:
-
-```
-
-## <key> | <tiêu đề hiển thị>
-- status: dang-lam | xong | huy
-- date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
-- list: <tên task list>      (tùy chọn — mục này đẩy vào task list đó;
-                              bỏ trống = list mặc định "ERP v2". CHỈ khai
-                              ở mục ## cha, việc con ### đi theo cha)
-- pic: <mã nhân sự>          (tùy chọn — người phụ trách, ví dụ NSU209;
-                              nhiều người thì cách nhau bằng dấu phẩy.
-                              Bỏ trống = lấy người mặc định trong cấu hình
-                              WORK_SYNC_PIC; việc con đi theo cha)
-Các dòng còn lại là mô tả tự do: commit, deploy, ghi chú...
-
-### <key-con> | <tiêu đề việc con>   (tùy chọn, nằm ngay dưới mục ## cha)
-- status: xong
-Mô tả việc con. Việc con chỉ MỘT cấp, không có cột kanban — nó hiện
-trong panel chi tiết của task cha dạng checklist n/m.
-```
-
-- `key` là khóa chống trùng (thường là CR ID, ví dụ `bao-CR-389`) — ĐỪNG đổi
-  key của mục đã đồng bộ, đổi là nó thành task mới.
-- `status: xong` → task sang cột **Xong** và tick hoàn thành; `dang-lam` →
-  cột **Đang làm**; `huy` → đánh dấu đã hủy.
-- Sửa mô tả trong sổ rồi chạy lại script là task trên ERP được cập nhật theo —
-  phần mô tả của task do sổ này SỞ HỮU, đừng sửa tay trên ERP.
-- Người phụ trách cũng do sổ sở hữu: mục nào có khai người thì script gán lại
-  đúng danh sách đó mỗi lần chạy. Mục không khai ai thì script KHÔNG đụng tới.
-  Sổ ghi MÃ nhân sự chứ không ghi số id, vì id ở local, dev và prod khác nhau.
-
----
-
-#### Luật viết mô tả (bắt buộc — áp cho cả người và mọi trợ lý AI)
-
-<!-- Mục này cố ý dùng #### chứ không dùng ## : script đọc mọi dòng `## ` là một task
-     của sổ, nên đặt `## ` ở đây là đẩy phần hướng dẫn này lên ERP thành một task rác.
-     Đừng nâng nó lại thành ##. -->
-
-Đại ca chốt 17/09/2026 sau khi đọc sổ: *"các task chỗ mô tả nó không thuần
-tiếng Việt lắm, kiểu đọc hơi khó hiểu"*. Người đọc mô tả này là người đi
-duyệt việc, đọc trên điện thoại, không phải người viết mã. Nên:
-
-1. **Viết thành câu tiếng Việt trọn vẹn**, có chủ ngữ và động từ. Đừng viết
-   kiểu gạch đầu dòng gãy vụn.
-2. **Nói việc trước, nói tên tệp sau.** Mỗi mục trả lời được ba câu: sửa
-   chuyện gì · vì sao phải sửa · giờ đang nằm ở đâu (máy em, dev hay prod).
-3. **Tên tệp, tên hàm, tên bảng, mã commit gom xuống cuối mục** thành dòng
-   riêng mở đầu bằng `Mã nguồn:`, `Commit:`, `Deploy:` hoặc `Tham chiếu:`.
-   Một dòng chỉ gồm tên tệp nối nhau như *"core/client_ip.py
-   (load_trusted_networks, is_trusted_proxy), core/config.py"* là SAI —
-   nó không phải câu, và người đọc không biết nó đã làm gì.
-4. **Từ tiếng Anh chỉ giữ khi trong công ty vẫn gọi bằng từ đó** (commit,
-   deploy, migration, script, API, kanban). Còn lại phải dịch:
-   *upsert* → có rồi thì cập nhật, chưa có thì tạo · *parse* → bóc/đọc ·
-   *gate* → gác quyền · *fixture* → dữ liệu mẫu · *endpoint* → đường API ·
-   *schema* → khuôn dữ liệu · *test* → bài kiểm · *bundle* → gói tĩnh.
-5. **Số đo thì ghi số**, đừng ghi "nhiều/ổn": bao nhiêu dòng, bao nhiêu bài
-   kiểm xanh, đo lúc nào.
-6. Chữ viết tắt lần đầu xuất hiện phải mở ngoặc giải thích (ví dụ "YCMH
-   (yêu cầu mua hàng)").
-
----
-
 ## bao-CR-561 | Gom toàn bộ nhánh erp-v2 lên prod một lần
 - status: dang-lam
 - date: 2026-10-02
@@ -245,6 +173,19 @@ Mã nguồn: backend/app/modules/payment_request (model, schema, service, contro
 frontend/src/pages/PaymentRequestDetail.tsx, frontend-v2/src/modules/finance (Agent 2 dựng, em gỡ ô Người duyệt).
 
 ---
+## duoc-CR-562 | Phân quyền xem từng báo cáo: gán cho người, phòng ban, pháp nhân hoặc vai trò
+- status: xong
+- date: 2026-10-02
+Đại ca muốn mỗi báo cáo trong phân hệ Báo cáo phân quyền được cho từng người. Nay mười ba báo cáo được gác hai lớp: người xem vừa phải có quyền đọc ở phân hệ gốc như trước, vừa phải được gán xem đúng báo cáo đó; được gán thêm không làm lộ thêm dữ liệu vì số liệu vẫn lọc theo phạm vi như bảng gốc. Quyền gán được cho người, phòng ban, pháp nhân hoặc vai trò, có dòng cấm để loại riêng từng người, cấm luôn thắng cho phép, và thu hồi chỉ đánh dấu chứ không xóa dòng.
+
+Báo cáo chưa gán cho ai thì không ai xem được; migration gán sẵn cho vai trò quản trị cả mười ba báo cáo, và mỗi lần khởi động máy chủ sẽ tự gán cho quản trị những báo cáo mới chưa từng có dòng phân quyền nào, không đè lên chỉnh sửa của người dùng. Giao diện chỉ hiện trên menu, trang Tổng quan và khi gõ thẳng đường dẫn những báo cáo người dùng được gán. Màn cấu hình là thẻ «Báo cáo» trong Cài đặt, Phân quyền tài khoản; ai có quyền xem vai trò thì xem được, có quyền sửa vai trò mới gán hoặc thu hồi được.
+
+Trong lúc viết bài kiểm phát hiện bộ nhớ đệm của các đường tóm tắt báo cáo dùng chung một khóa giữa các bài kiểm, làm bài kiểm trả về kết quả của bài khác; đã sửa ở tầng bài kiểm. Bài kiểm máy chủ và giao diện của phần vừa sửa đều đạt; chưa kiểm bằng tay trên trình duyệt, chưa deploy. Sau deploy chỉ quản trị thấy báo cáo, người đang đăng nhập phải đăng xuất rồi đăng nhập lại, và đại ca cần gán quyền ngay.
+
+Mã nguồn: `backend/app/core/report_keys.py` · `backend/app/modules/report_access/` · migration `rptacc01_phan_quyen_tung_bao_cao.py` · `test/backend/test_phan_quyen_bao_cao_*.py` · `frontend-v2/src/modules/report/` · `frontend-v2/src/modules/system/components/report-access-*` · `frontend-v2/src/app/router/module-visibility.ts` · `frontend-v2/src/shared/access-subject/`
+
+---
+
 
 ## bao-CR-552 | Ô «Trưởng phòng phê duyệt» và «Trưởng bộ phận» luôn chọn được ở YCMH, YCBG, ĐMH
 - status: xong

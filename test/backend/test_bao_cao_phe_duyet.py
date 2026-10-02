@@ -3,6 +3,7 @@ thiếu quyền 1 loại chứng từ -> biến mất; `visible_condition=None` 
 "Đang chờ" đúng TẠI MỐC kể cả kỳ quá khứ (M2); SONG SONG đo từ lúc bước mở, bỏ task tự-
 qua/đã hủy (M6); số truy vấn CỐ ĐỊNH.
 """
+import uuid
 from datetime import datetime
 
 import pytest
@@ -11,7 +12,9 @@ from sqlalchemy import event
 
 from app.core.auth import get_current_user, get_perm_profile
 from app.core.database import get_db
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
+from app.core.subject_match import SUBJECT_ROLE
 from app.main import app
 from app.modules.approval import report_service as svc
 from app.modules.approval.instance_model import (INSTANCE_APPROVED, TASK_SKIPPED_DUPLICATE,
@@ -56,10 +59,15 @@ def _build(db, user, group_by=None, **period_kw):
     profile = get_perm_profile(db, user)
     return svc.build_summary(db, user, profile, _period(**period_kw), group_by)
 
-def _viewer(db, seed, cap_quyen, **grants):
+def _viewer(db, seed, cap_quyen, gan_bao_cao=None, **grants):
+    """`gan_bao_cao` TÙY CHỌN — chỉ bài gọi HTTP thật (`client_as`) cần, vì
+    `require_report` (phase 02) gác ở route; bài gọi thẳng `svc.build_summary`
+    không qua route nên không bị ảnh hưởng."""
     v = db.query(User).filter(User.employee_id == seed.emp_tp_id).one()
     for entity, kw in grants.items():
-        cap_quyen(v.id, entity, **kw)
+        role = cap_quyen(v.id, entity, **kw)
+        if gan_bao_cao and entity == "approval_flow":
+            gan_bao_cao(SUBJECT_ROLE, role.id, ReportKey.APPROVAL)
     return v
 
 _AF = dict(scope="all", read=True, export=True)   # grant chuẩn cho `approval_flow`
@@ -158,17 +166,20 @@ def test_dang_cho_o_ky_qua_khu_tinh_dung_tai_moc(db, seed, cap_quyen):
 
 @pytest.fixture
 def client_as(db):
+    """Token Bearer GIẢ nhưng DUY NHẤT mỗi lần build — xem chú thích dài ở
+    `test_phan_quyen_bao_cao_gac_duong.client_as` (`ReportSummaryCacheMiddleware`
+    cache GET `/summary` qua Redis thật theo `(path, query, token)`)."""
     def build(user):
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[get_current_user] = lambda: user
-        return TestClient(app)
+        return TestClient(app, headers={"Authorization": f"Bearer test-{uuid.uuid4().hex}"})
 
     yield build
     app.dependency_overrides.pop(get_db, None)
     app.dependency_overrides.pop(get_current_user, None)
 
-def test_summary_tra_200_khong_bi_id_nuot_va_export_ra_xlsx(db, seed, cap_quyen, client_as):
-    client = client_as(_viewer(db, seed, cap_quyen, approval_flow=_AF))
+def test_summary_tra_200_khong_bi_id_nuot_va_export_ra_xlsx(db, seed, cap_quyen, client_as, gan_bao_cao):
+    client = client_as(_viewer(db, seed, cap_quyen, gan_bao_cao, approval_flow=_AF))
     resp = client.get("/api/approvals/summary?preset=this_month&compare=none")
     assert resp.status_code == 200   # `/{instance_id}: int` sẽ ra 422 nếu bị nuốt
     assert "period" in resp.json()["data"] and "totals" in resp.json()["data"]

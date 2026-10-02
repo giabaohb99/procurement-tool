@@ -6,7 +6,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { useRevokeFolderAccess, useUpdateFolderAccessLevel } from '../hooks/use-document-folder-access'
 import { EFFECT } from '../types/document-access'
 import { FOLDER_ACCESS_LEVEL_LABELS, type FolderAccessEntry } from '../types/document-folder'
-import { AccessSubjectAvatar } from './access-subject-avatar'
+import { AccessSubjectAvatar } from '@/shared/access-subject/access-subject-avatar'
 
 const REVOKE_REASON = 'Thu hồi từ hộp Chia sẻ'
 const REMOVE_VALUE = 'remove'

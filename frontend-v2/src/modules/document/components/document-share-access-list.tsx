@@ -11,7 +11,7 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { formatDate } from '@/shared/utils/format-date'
 import { EFFECT, type DocumentAccess } from '../types/document-access'
-import { AccessSubjectAvatar } from './access-subject-avatar'
+import { AccessSubjectAvatar } from '@/shared/access-subject/access-subject-avatar'
 
 interface DocumentShareAccessListProps {
   rows: DocumentAccess[]

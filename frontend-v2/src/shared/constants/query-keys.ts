@@ -446,6 +446,12 @@ export const queryKeys = {
     all: ['system'] as const,
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — một khóa duy nhất. */
     settings: () => ['system', 'settings'] as const,
+    /**
+     * «Ai xem được báo cáo nào» — tab Báo cáo của Phân quyền tài khoản (phase 06,
+     * kế hoạch `plans/261002-0836-phan-quyen-tung-bao-cao`). Một khóa duy nhất:
+     * 13 báo cáo nạp cả danh sách một lần, không phân trang.
+     */
+    reportAccess: () => ['system', 'report-access'] as const,
     /** Đối chiếu DB với kho vector của Trợ lý AI (bao-CR-451) — bài nào chưa vào chỉ mục. */
     ragIndexStatus: () => ['system', 'rag-index-status'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,

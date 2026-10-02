@@ -102,6 +102,27 @@ Quy ước:
 
 ---
 
+## 4b. Lớp gác thứ ba — Quyền xem TỪNG báo cáo (duoc-CR-562, 2026-10-02)
+
+Gác riêng 13 báo cáo của phân hệ Báo cáo (Thu mua 5 · Nhân sự 3 · Hành chính 2 · Văn bản/Phê duyệt 2 · Công việc 1).
+
+1. **Gác kép.** 26 đường `/summary` + `/summary/export` đòi CÙNG LÚC:
+   - quyền của phân hệ gốc như cũ — `require(entity, 'read'|'export')` + `apply_scope` (entity: `report`, `survey_request`, `purchase_request`, `survey`, `employee`, `leave_request`, `leave_balance`, `vehicle_booking`, `seal_request`, `document`, `approval_flow`, `work_task`);
+   - **và** được gán xem báo cáo đó — `dependencies=[Depends(require_report(ReportKey.X))]` (`modules/report_access/guard.py`).
+   - Thiếu một trong hai → 403 («Chưa được giao xem báo cáo: <tên>»). Gán thêm KHÔNG mở rộng dữ liệu.
+**Phạm vi (đại ca chốt 02/10/2026):** quyền này CHỈ quyết định ai xem được trang báo cáo trong phân hệ Báo cáo (`/report/*` và 26 đường `/summary` của nó). Màn BẢNG gốc ở từng phân hệ (vd «Báo cáo mua hàng», «Chi tiết YC mua hàng» bên Thu mua, cả bản cũ `thumua`; bảng dòng Tiến độ báo giá/mua hàng, Báo cáo khảo sát) vẫn chỉ theo quyền vai trò (`report.read`, …) — không phải lỗ, là phạm vi đã chọn. Muốn chặn cả màn gốc thì phải gác thêm các đường API cũ (lưu ý `/api/reports/matrix` còn được phân hệ Sản xuất dùng).
+2. **Chưa gán = đóng.** Báo cáo không có dòng CHO PHÉP nào khớp người dùng → không xem được.
+3. **Khóa báo cáo** `ReportKey` (IntEnum, `core/report_keys.py`, SMALLINT theo R2/QĐ-11). Số đã cấp không đổi, không tái dùng. Frontend nhận bản sinh `REPORT_KEY` qua `gen_status_ts.py`; test so khóa + nhãn catalog với bản sinh.
+4. **Bảng `tab_report_access`** — cùng hình dạng `tab_doc_folder_access`, dùng lại `core/subject_match.py`:
+   `report_key` · `subject_kind` (1 người · 2 phòng ban · 3 pháp nhân · 4 vai trò) · `subject_id` · `effect` (1 cho phép · 2 cấm) · `valid_from`/`valid_to` (chưa hiện trên giao diện) · `reason` · `revoked_at`/`revoked_by`/`revoke_reason`.
+5. **CẤM thắng CHO PHÉP.** Kết quả = hợp các dòng cho phép còn hiệu lực, trừ mọi dòng cấm còn hiệu lực.
+6. **Thu hồi = đánh dấu `revoked_at`**, không xóa dòng; giao diện chỉ hiện dòng còn hiệu lực. Mọi thay đổi ghi audit.
+7. **Mặc định admin.** Migration `rptacc01` chèn 1 dòng CHO PHÉP cho vai trò `admin` ở mỗi báo cáo. `ensure_report_access_defaults` (gọi trong `seed.py` và `seed_prod.py`) chỉ chèn dòng admin cho khóa CHƯA TỪNG có dòng nào (kể cả dòng đã thu hồi, kể cả dòng của chủ thể khác) → báo cáo mới tự có admin, chỉnh sửa của người dùng không bị đè.
+8. **Cấu hình:** thẻ «Báo cáo» ở Cài đặt › Phân quyền tài khoản (cạnh «Vai trò & quyền», «Người dùng»). Xem cần `role.read`, gán/thu hồi cần `role.write`. API `/api/report-access`. Không thêm entity mới.
+9. **Frontend:** `report_keys` trong `/api/auth/me`; menu, route gõ thẳng, trang Tổng quan và dải KPI chỉ hiện báo cáo có khóa trong đó. Thiếu `report_keys` (thông tin đăng nhập cũ còn trong trình duyệt) = đóng → sau deploy người dùng phải đăng nhập lại.
+
+---
+
 ## 5. Giao diện — một màn "Phân quyền" riêng (3 tab)
 
 ### Tab 1 — Vai trò

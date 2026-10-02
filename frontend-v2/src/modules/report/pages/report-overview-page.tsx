@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { usePermission } from '@/core/authorization/use-permission'
+import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -17,6 +17,7 @@ import { REPORT_CATALOG } from '../config/report-catalog'
 import { useReportFilters } from '../hooks/use-report-filters'
 import { useReportOverview, type ReportOverviewEntry } from '../hooks/use-report-overview'
 import type { ReportMeta } from '../types/report-analytics'
+import { filterVisibleReports } from '../utils/filter-visible-reports'
 
 const EMPTY_META: ReportMeta = { metrics: [], dimensions: [], group_by: 'none' }
 
@@ -54,6 +55,7 @@ function defaultSelection(entry: ReportOverviewEntry | undefined): OverviewMetri
  */
 export function ReportOverviewPage() {
   const { can } = usePermission()
+  const { reportKeys } = useNavContext()
   const filters = useReportFilters({ defaultGroupBy: 'none' })
   const entries = useReportOverview(filters.queryParams)
   const [selected, setSelected] = useState<OverviewMetricSelection | null>(null)
@@ -65,7 +67,7 @@ export function ReportOverviewPage() {
     : undefined
   const procurementEntry = entries.find((e) => e.report.path === appRoutes.report.purchaseReport)
 
-  const reports = REPORT_CATALOG.filter((r) => can(r.entity, 'read'))
+  const reports = filterVisibleReports(REPORT_CATALOG, can, reportKeys)
 
   return (
     <PageContainer>

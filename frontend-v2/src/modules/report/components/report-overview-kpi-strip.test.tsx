@@ -20,6 +20,7 @@ function buildReport(overrides: Partial<ReportCatalogEntry> = {}): ReportCatalog
     path: '/report/test',
     sourcePath: '/procurement/test',
     icon: BarChart3,
+    key: 1,
     entity: 'report',
     group: 'Thu mua',
     endpoint: '/api/reports/test/summary',

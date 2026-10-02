@@ -44,6 +44,7 @@ from app.seed_data.document_phase1 import (ALL_DOC_TYPES, DOC_TYPE_LINK_RULES,
                                            DEPARTMENT_DOCUMENT_CONFIG,
                                            DOCUMENT_COMPANIES)
 from app.modules.notification.model import Notification, EmailLog  # noqa: F401
+from app.modules.report_access.seed_defaults import ensure_report_access_defaults
 
 
 # Seed chạy MỖI LẦN api khởi động (start.prod.sh: alembic upgrade -> python -m app.seed -> uvicorn).
@@ -1415,6 +1416,9 @@ def run():
     db = SessionLocal()
     try:
         admin_role = ensure_admin_role(db)
+        n_report_access = ensure_report_access_defaults(db)   # báo cáo mới -> admin tự có
+        if n_report_access:
+            print(f"Phân quyền báo cáo: chèn {n_report_access} dòng cho phép mặc định cho 'admin'.")
 
         # Vai trò chuẩn (Nhân sự / Trưởng phòng / Quản lý cty / NV thu mua / QL thu mua / Admin thu mua)
         seed_standard_roles(db)

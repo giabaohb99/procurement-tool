@@ -281,6 +281,11 @@ BB4_CONTROLLER_MIEN_TRU = {
     "backup/controller.py": "sao lưu toàn hệ, require('backup') là đúng cổng",
     "setting/controller.py": "cấu hình toàn hệ (PUBLIC)",
     "role/controller.py": "danh mục vai trò (PUBLIC) — cổng là quyền role.write",
+    "report_access/controller.py": "cấu hình quyền XEM TỪNG báo cáo (ai được gán khóa nào), "
+                                   "gác role.read/role.write — không phải dữ liệu nghiệp vụ của "
+                                   "một phân hệ cụ thể để mà apply_scope, cùng lý do "
+                                   "role/controller.py — phase 02, plan "
+                                   "261002-0836-phan-quyen-tung-bao-cao",
     # -- thư/thông báo của CHÍNH MÌNH, lọc bằng user_id chứ không bằng phạm vi --
     "notification/controller.py": "chỉ đọc thư gửi cho mình, lọc theo user_id — cụm 07 B1",
     "push/controller.py": "đăng ký thiết bị của chính mình",

@@ -28,9 +28,11 @@ from app.core.filter_operators import apply_operator_filters_map
 from app.core.ref_filter import apply_ref_filters
 from app.core.report_aggregate import build_report
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
 from app.core.scoping import apply_scope
+from app.modules.report_access.guard import require_report
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
 from . import export as ex
@@ -385,7 +387,7 @@ def summarize(rows, show_supplier: bool) -> dict:
     }
 
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(require_report(ReportKey.PURCHASE_PROGRESS))])
 def progress_summary(request: Request, year: str = "", db: Session = Depends(get_db),
                      user=Depends(_require_progress)):
     """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi với bảng.
@@ -414,7 +416,7 @@ def progress_summary(request: Request, year: str = "", db: Session = Depends(get
     return success(summarize(q.all(), show_supplier))
 
 
-@router.get("/summary/export")
+@router.get("/summary/export", dependencies=[Depends(require_report(ReportKey.PURCHASE_PROGRESS))])
 def progress_summary_export(request: Request, db: Session = Depends(get_db),
                             user=Depends(_require_progress_export)):
     """Xuất Excel bản THEO KỲ của màn Tiến độ mua hàng (P03) — cùng bộ lọc với `/summary`."""

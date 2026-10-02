@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { EFFECT, type DocumentAccessDraft } from '../types/document-access'
-import { SubjectChips } from './access-subject-chips'
+import { SubjectChips } from '@/shared/access-subject/access-subject-chips'
 import { DocumentAccessDialog } from './document-access-dialog'
 import { AccessGroupEditDialog } from './document-access-group-dialog'
 

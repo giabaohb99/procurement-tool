@@ -12,11 +12,16 @@ import { ReportOverviewPage } from './report-overview-page'
 //  `@/core/api`, `can()` điều khiển được TỪNG entity để giả lập thiếu quyền.
 vi.mock('@/core/api', () => ({ apiGet: vi.fn(), downloadFile: vi.fn() }))
 
+/** 1..13 — mọi khóa ReportKey hiện có, dùng làm mặc định "đã gán hết" cho các ca có sẵn. */
+const ALL_REPORT_KEYS = Array.from({ length: 13 }, (_, i) => i + 1)
+
 let readableEntities: string[] = []
+let grantedReportKeys: number[] = ALL_REPORT_KEYS
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
     can: (entity: string, action: string) => action === 'read' && readableEntities.includes(entity),
   }),
+  useNavContext: () => ({ reportKeys: grantedReportKeys }),
 }))
 
 function metric(
@@ -89,6 +94,7 @@ function mockOverviewApi(procurementBreakdowns: string[]) {
 
 beforeEach(() => {
   readableEntities = []
+  grantedReportKeys = ALL_REPORT_KEYS
   vi.mocked(apiGet).mockReset()
 })
 
@@ -201,5 +207,38 @@ describe('ReportOverviewPage — hideCompany reports never receive company_id', 
     expect((surveyCall?.[1] as { params?: Record<string, string> })?.params).not.toHaveProperty(
       'company_id',
     )
+  })
+})
+
+
+//  Gác KÉP báo cáo (02/10/2026): entity đọc được KHÔNG đủ, còn phải được GÁN
+//  xem qua `report_keys`/`reportKeys` — thiếu nó (hồ sơ cũ trong localStorage,
+//  hoặc thật sự chưa được gán) phải im lặng KHÔNG gọi một `/summary` nào, dù
+//  mọi entity nguồn đều đọc được.
+describe('ReportOverviewPage — gác kép: entity đọc được nhưng chưa được GÁN báo cáo nào', () => {
+  it('reportKeys rỗng: không gọi bất kỳ /summary nào, dù đọc được mọi entity', async () => {
+    readableEntities = ['report', 'survey_request', 'purchase_request', 'survey', 'work_task']
+    grantedReportKeys = []
+    mockOverviewApi([])
+    renderOverview()
+
+    await screen.findByRole('heading', { name: 'Báo cáo' })
+    expect(apiGet).not.toHaveBeenCalled()
+    expect(screen.queryByText('Chi phí mua hàng')).not.toBeInTheDocument()
+  })
+
+  it('được gán ĐÚNG một khóa thì chỉ báo cáo đó lộ ra, báo cáo khác cùng entity vẫn ẩn', async () => {
+    //  `report` gác cả khóa 1 (Báo cáo mua hàng) và khóa 2 (Chi tiết YC mua hàng)
+    //  — chỉ gán khóa 1 thì khóa 2 phải ẩn dù entity giống nhau.
+    readableEntities = ['report']
+    grantedReportKeys = [1]
+    mockOverviewApi(['department', 'item_group'])
+    renderOverview()
+
+    await screen.findByText('Chi phí mua hàng')
+    expect(screen.queryByText('Dòng chưa đặt')).not.toBeInTheDocument()
+
+    const calledEndpoints = vi.mocked(apiGet).mock.calls.map((call) => call[0])
+    expect(calledEndpoints).not.toContain('/api/reports/pr-lines/summary')
   })
 })

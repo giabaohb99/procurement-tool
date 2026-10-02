@@ -24,6 +24,14 @@ export interface ReportCatalogEntry {
   /** Tên phân hệ gốc — thành tiêu đề nhóm trên menu trái và dải KPI Tổng quan. */
   group: string
   /**
+   * Khóa báo cáo = `ReportKey` backend (SMALLINT, R2/QĐ-11) — KHÔNG đổi,
+   * KHÔNG tái dùng cho báo cáo khác dù báo cáo cũ bị gỡ. Nguồn gác KÉP thứ hai
+   * (cạnh `entity`): thiếu khóa này trong `report_keys` của `/auth/me` thì ẩn
+   * dù đọc được `entity`, đúng chốt "chưa gán = đóng". Có test canh khớp 1-1
+   * với `REPORT_KEY` sinh từ backend (`report-catalog.test.ts`).
+   */
+  key: number
+  /**
    * Nguồn không lọc theo công ty ở backend (vd Báo cáo khảo sát) — KHỚP
    * `ReportPageConfig.hideCompany` của trang biểu đồ cùng báo cáo. Trang Tổng
    * quan đọc cờ này để không gửi `company_id` cho báo cáo đó

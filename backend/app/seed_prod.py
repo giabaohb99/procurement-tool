@@ -32,6 +32,7 @@ from app.modules.employee.model import Employee
 from app.modules.role.model import Role, Permission  # noqa: F401
 from app.modules.user.model import User, UserRole
 
+from app.modules.report_access.seed_defaults import ensure_report_access_defaults
 from app.seed import (ensure_admin_role, force_resync_roles,
                       seed_cost_types, seed_document_phase1, seed_help_admin,
                       seed_help_home_sections, seed_standard_roles)
@@ -79,6 +80,9 @@ def run():
     db = SessionLocal()
     try:
         ensure_admin_role(db)          # 1 — ép 'admin' FULL mỗi lần deploy (bao-CR-523)
+        n_report_access = ensure_report_access_defaults(db)   # báo cáo mới -> admin tự có
+        if n_report_access:
+            print(f"Phân quyền báo cáo: chèn {n_report_access} dòng cho phép mặc định cho 'admin'.")
         seed_standard_roles(db)        # 2 — chỉ tạo vai trò còn thiếu
         force_resync_roles(db)         # no-op trừ khi SEED_FORCE_SYNC=true
         bootstrap_admin_account(db)    # 3

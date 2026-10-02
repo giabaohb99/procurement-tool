@@ -1,11 +1,12 @@
 import { keepPreviousData, useQueries } from '@tanstack/react-query'
 
-import { usePermission } from '@/core/authorization/use-permission'
+import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { queryKeys } from '@/shared/constants/query-keys'
 
 import { reportAnalyticsApi } from '../api/report-analytics-api'
 import { REPORT_CATALOG, type ReportCatalogEntry } from '../config/report-catalog'
 import type { ReportAnalyticsResponse } from '../types/report-analytics'
+import { filterVisibleReports } from '../utils/filter-visible-reports'
 
 export interface ReportOverviewEntry {
   report: ReportCatalogEntry
@@ -28,7 +29,10 @@ export interface ReportOverviewEntry {
  */
 export function useReportOverview(queryParams: Record<string, string>): ReportOverviewEntry[] {
   const { can } = usePermission()
-  const reports = REPORT_CATALOG.filter((r) => r.overviewKpis.length > 0 && can(r.entity, 'read'))
+  const { reportKeys } = useNavContext()
+  const reports = filterVisibleReports(REPORT_CATALOG, can, reportKeys).filter(
+    (r) => r.overviewKpis.length > 0,
+  )
 
   const results = useQueries({
     queries: reports.map((report) => {

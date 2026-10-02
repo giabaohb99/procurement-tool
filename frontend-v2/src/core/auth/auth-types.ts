@@ -31,6 +31,14 @@ export interface AuthUser {
    */
   is_driver?: boolean
   /**
+   * Khóa các báo cáo (phân hệ Báo cáo) được GÁN xem (`ReportKey` backend) — gác
+   * KÉP với quyền entity thường, "chưa gán = đóng". `undefined`/mảng rỗng đều có
+   * nghĩa "không xem được báo cáo nào" — phải hiểu vậy với hồ sơ cũ lưu trong
+   * localStorage TRƯỚC khi trường này ra đời (thiếu trường ⇒ đóng, đúng chiều an
+   * toàn, tới khi người dùng đăng nhập/làm mới phiên lại).
+   */
+  report_keys?: number[]
+  /**
    * Vai trò ĐANG GIỮ (id), không phải quyền — quyền nằm ở `permissions`.
    *
    * Màn Phân quyền dùng nó để khóa ma trận của chính vai trò mình đang giữ.

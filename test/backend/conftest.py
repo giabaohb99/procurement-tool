@@ -371,3 +371,33 @@ def cap_quyen(db):
         return role
 
     return _cap
+
+
+@pytest.fixture(scope="function")
+def gan_bao_cao(db):
+    """Gán quyền XEM một/nhiều báo cáo cho một chủ thể — phase 03, plan
+    `261002-0836-phan-quyen-tung-bao-cao`. Dùng cho test MỚI của `report_access/`
+    lẫn để vá test HTTP cũ (sau `cap_quyen(...)` gọi thêm dòng này, nếu không
+    đường `/summary` của 26 báo cáo sẽ ăn 403 — gác kép, xem `report_access/guard.py`).
+
+        gan_bao_cao(subject_kind, subject_id, *keys, effect=EFFECT_ALLOW)
+
+    Không truyền `keys` -> gán MỌI `ReportKey` (đủ cho test cũ chỉ cần "không ăn
+    403 vì thiếu phân quyền báo cáo", không cần biết đúng khóa nào).
+    """
+    from app.core.report_keys import ReportKey
+    from app.core.subject_match import EFFECT_ALLOW
+    from app.modules.report_access.model import ReportAccess
+
+    def _gan(subject_kind: int, subject_id: int, *keys, effect: int = EFFECT_ALLOW):
+        use_keys = keys or tuple(ReportKey)
+        rows = [
+            ReportAccess(report_key=int(k), subject_kind=subject_kind, subject_id=subject_id,
+                        effect=effect, reason="test", created_by=0, updated_by=0)
+            for k in use_keys
+        ]
+        db.add_all(rows)
+        db.flush()
+        return rows
+
+    return _gan

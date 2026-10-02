@@ -13,28 +13,20 @@
  *    đọc được văn bản này".
  */
 
-export const SUBJECT_KIND = {
-  employee: 1,
-  department: 2,
-  company: 3,
-  role: 4,
-} as const
-
-export type SubjectKind = (typeof SUBJECT_KIND)[keyof typeof SUBJECT_KIND]
-
-export const SUBJECT_KIND_LABELS: Record<number, string> = {
-  1: 'Người',
-  2: 'Phòng ban',
-  3: 'Pháp nhân',
-  4: 'Vai trò',
-}
-
-export const EFFECT = { allow: 1, deny: 2 } as const
-
-export const EFFECT_LABELS: Record<number, string> = {
-  1: 'Cho phép',
-  2: 'Không cho phép',
-}
+//  SUBJECT_KIND / EFFECT không có gì riêng cho văn bản nên đã dọn lên
+//  `shared/access-subject/subject-kind.ts` (phase 04, kế hoạch
+//  `plans/261002-0836-phan-quyen-tung-bao-cao`) để phân hệ Báo cáo dùng lại
+//  được. Re-export nguyên văn ở đây — KHÔNG phải barrel của module `document`
+//  (luật `naming.md`: module không có barrel) — chỉ là lối tắt tương thích,
+//  13 tệp cũ trong `document/` đang `import … from '../types/document-access'`
+//  khỏi phải đổi theo.
+export {
+  SUBJECT_KIND,
+  SUBJECT_KIND_LABELS,
+  EFFECT,
+  EFFECT_LABELS,
+  type SubjectKind,
+} from '@/shared/access-subject/subject-kind'
 
 export interface DocumentAccess {
   id: number
