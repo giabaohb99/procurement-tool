@@ -70,6 +70,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-558 | Bản cũ: hộp «Thuốc BVTV chứa hoạt chất cấm» tự hiện ở màn Pháp lý và không tắt được
+- status: dang-lam
+- date: 2026-10-02
+Đại ca báo: vào Tra cứu thị trường, bấm mục Pháp lý ở bản cũ thì hiện ngay hộp «Thuốc BVTV chứa hoạt chất cấm»
+trống trơn, bấm Đóng hay dấu X cũng không tắt. Nguyên nhân: màn Pháp lý luôn dựng sẵn hộp này và chỉ đổi hoạt
+chất đang xem, trong khi khung hộp thoại của bản cũ không có công tắc mở/đóng, nên hộp hiện thường trực. Lỗi có
+từ lúc đưa cụm thuốc BVTV sang bản cũ (duoc-CR-490) và prod cũng đang dính. Đã sửa: chưa chọn hoạt chất nào
+thì hộp không hiện. Bản mới không dính lỗi này.
+
+Kiểm: kiểm kiểu bản cũ giữ đúng 4 lỗi nền. Đang ở máy em, chưa commit.
+
+Mã nguồn: frontend/src/components/customs/CustomsBannedPesticideModal.tsx.
+
+---
+
 ## bao-CR-555 | Dọn Mã HH / Tên HH của sản phẩm ngoài phân loại nhãn
 - status: xong
 - date: 2026-10-02
