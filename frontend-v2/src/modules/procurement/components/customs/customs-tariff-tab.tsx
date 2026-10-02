@@ -48,11 +48,11 @@ export function CustomsTariffTab({ filters }: CustomsTariffTabProps) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-muted-foreground">
-        Tra cứu tham khảo từ biểu thuế xuất nhập khẩu 2026 đã nạp — đối chiếu văn bản gốc trước khi
+        Tra cứu tham khảo từ biểu thuế 2026 đã nạp — đối chiếu văn bản gốc trước khi
         quyết định.
       </p>
       <Card className="gap-3 p-4">
-        <CardTitle className="text-base">Biểu thuế nhập khẩu theo mã HS</CardTitle>
+        <CardTitle className="text-base">Biểu thuế theo mã HS</CardTitle>
         <div className="flex flex-wrap gap-2">
           <Input
             value={hsCode}

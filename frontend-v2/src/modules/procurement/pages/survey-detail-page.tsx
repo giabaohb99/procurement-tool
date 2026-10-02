@@ -92,6 +92,7 @@ import {
   type SurveyLine,
   type SurveyTable,
 } from '../types/survey-detail'
+import { getSurveyDraftKey, restoreSurveyDraft } from '@/modules/procurement/utils/survey-new-draft'
 
 /** Đính kèm của ĐẦU phiếu và của TỪNG DÒNG là hai entity khác nhau ở backend. */
 const HEAD_ATTACHMENT_ENTITY = 'survey'
@@ -168,21 +169,17 @@ export function SurveyDetailPage() {
   const saveLineApprove = useSurveyLineApprove(surveyId)
   const fillLine = useFillSurveyLine(surveyId)
 
-  const LOCAL_STORAGE_NEW_SURVEY_KEY = 'survey_new_draft'
+  //  bao-CR-571: nháp F5 tách theo TỪNG tài khoản — khóa chung cũ từng mang nháp (cả NSPT)
+  //  của người lập trước sang người sau trên cùng trình duyệt.
+  const LOCAL_STORAGE_NEW_SURVEY_KEY = getSurveyDraftKey(user?.id)
 
   const [draft, setDraft] = useState<SurveyDetail | null>(() => {
     if (!isNew) return null
     // Đến từ nút "Tạo phiếu khảo sát" của một YCBG (?sr=...) thì phiếu PHẢI gắn
     // đúng YCBG đó — nháp F5 cũ trong localStorage không được đè lên prefill.
     if (!searchParams.get('sr')) {
-      const saved = localStorage.getItem(LOCAL_STORAGE_NEW_SURVEY_KEY)
-      if (saved) {
-        try {
-          return JSON.parse(saved)
-        } catch {
-          // ignore
-        }
-      }
+      const saved = restoreSurveyDraft<SurveyDetail>(localStorage, user)
+      if (saved) return saved
     }
     return createEmptySurvey(user, searchParams.get('sr'), searchParams.get('sr_code'))
   })

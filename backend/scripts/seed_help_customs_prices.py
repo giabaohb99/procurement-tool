@@ -28,12 +28,12 @@ STAFF_PARENT_TITLE = "Dành cho Nhân viên Mua hàng"
 ARTICLE_TITLE = "Tra cứu thị trường"  # bao-CR-500: đổi từ «Tra cứu giá hải quan»
 
 SUMMARY = (
-    "Xem giá và lượng nhập khẩu của thị trường theo tờ khai hải quan: lọc theo tên hàng, hoạt "
+    "Xem giá và lượng của thị trường theo tờ khai hải quan: lọc theo tên hàng, hoạt "
     "chất, mã HS; biểu đồ giá theo tháng, quý, năm; ai đang nhập; cảnh báo pháp lý và biểu thuế"
 )
 
 CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
-<p>Trước khi mua một mặt hàng, người thu mua cần biết <strong>thị trường đang nhập mặt hàng đó về Việt Nam với giá bao nhiêu, lượng bao nhiêu, và tháng nào giá tốt</strong>. Màn <strong>Tra cứu giá hải quan</strong> (menu <em>Mua hàng</em>) trả lời câu đó bằng dữ liệu tờ khai hải quan nhập khẩu do người được giao nạp vào từ tệp Excel.</p>
+<p>Trước khi mua một mặt hàng, người thu mua cần biết <strong>thị trường đang nhập mặt hàng đó về Việt Nam với giá bao nhiêu, lượng bao nhiêu, và tháng nào giá tốt</strong>. Màn <strong>Tra cứu thị trường</strong> (menu <em>Mua hàng</em>) trả lời câu đó bằng dữ liệu tờ khai hải quan do người được giao nạp vào từ tệp Excel.</p>
 <p>Màn này <strong>độc lập</strong>: không nối với danh mục vật tư, tồn kho hay lịch sử mua hàng của công ty. Tìm theo chữ, không theo mã sản phẩm nội bộ.</p>
 <p>Cần quyền <strong>Tra cứu thị trường</strong> (xem). Nạp dữ liệu, hoàn tác, xuất Excel là các quyền riêng — không có quyền thì không thấy nút.</p>
 
@@ -49,7 +49,7 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <ul>
 <li><strong>Tên hàng / hoạt chất</strong>: gõ rồi Enter, ví dụ <em>ATRAZINE</em>, <em>mancozeb</em>. Khớp cả tên hàng lẫn hoạt chất đã suy ra.</li>
 <li><strong>Mã HS · Xuất xứ · Đơn vị tính · Hàm lượng / dạng · Từ tháng · Đến tháng</strong>: chọn xong bấm <em>Tìm</em>.</li>
-<li>Muốn xem riêng một doanh nghiệp: sang thẻ <em>Nhà nhập khẩu</em>, bấm vào dòng của doanh nghiệp đó. Thẻ nhỏ «Doanh nghiệp: ...» hiện dưới thanh lọc, bấm dấu x để bỏ.</li>
+<li>Muốn xem riêng một doanh nghiệp: sang thẻ <em>Doanh nghiệp</em>, bấm vào dòng của doanh nghiệp đó. Thẻ nhỏ «Doanh nghiệp: ...» hiện dưới thanh lọc, bấm dấu x để bỏ.</li>
 </ul>
 <p>Bảng trống có hai câu khác nhau: «Chưa có dữ liệu hải quan» nghĩa là chưa ai nạp gì; «Không có dòng hàng nào khớp bộ lọc» nghĩa là bộ lọc quá hẹp hoặc gõ sai chữ.</p>
 
@@ -59,9 +59,9 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <tbody>
 <tr><td><strong>Danh sách</strong></td><td>Các dòng hàng khớp bộ lọc, mới nhất lên đầu. Bấm một dòng để xem đủ 32 trường. Nút <em>Xuất Excel</em> xuất đúng các dòng đang lọc (tối đa 50.000 dòng).</td></tr>
 <tr><td><strong>Biểu đồ</strong></td><td>Giá thấp nhất, bình quân, cao nhất và lượng nhập theo <strong>tháng / quý / năm</strong>. Chỉ hiện khi đã nhập từ khóa hoặc chọn mã HS.</td></tr>
-<tr><td><strong>Nhà nhập khẩu</strong></td><td>20 doanh nghiệp nhập nhiều nhất mặt hàng đang lọc: số dòng, tổng lượng, thị phần, giá bình quân, lần nhập gần nhất. Gộp theo mã số thuế.</td></tr>
+<tr><td><strong>Doanh nghiệp</strong></td><td>20 doanh nghiệp nhập nhiều nhất mặt hàng đang lọc: số dòng, tổng lượng, thị phần, giá bình quân, lần nhập gần nhất. Gộp theo mã số thuế.</td></tr>
 <tr><td><strong>So sánh</strong></td><td>Đặt 2–5 mặt hàng hoặc hoạt chất cạnh nhau trên cùng một biểu đồ, cùng một đơn vị tính.</td></tr>
-<tr><td><strong>Pháp lý &amp; thuế</strong></td><td>Tra hóa chất trong các danh mục pháp lý theo tên, số CAS hoặc công thức (ví dụ H2SO4); tra thuế suất nhập khẩu, VAT và thuế theo hiệp định thương mại theo mã HS.</td></tr>
+<tr><td><strong>Pháp lý &amp; thuế</strong></td><td>Tra hóa chất trong các danh mục pháp lý theo tên, số CAS hoặc công thức (ví dụ H2SO4); tra thuế suất XNK, VAT và thuế theo hiệp định thương mại theo mã HS.</td></tr>
 </tbody>
 </table>
 
@@ -99,12 +99,12 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <li><strong>Thị trường:</strong> <em>«Ai đang nhập atrazine nhiều nhất?»</em>, <em>«Mua atrazine của ai, từ nước nào?»</em>, <em>«Lô atrazine gần nhất giá bao nhiêu?»</em></li>
 <li><strong>Pháp lý và thuế:</strong> <em>«H2SO4 có phải khai báo không?»</em>, <em>«Carbosulfan có bị cấm không?»</em>, <em>«Thuế nhập mã 38089199 bao nhiêu?»</em> — trợ lý chỉ nói đúng danh mục đã nạp, không nêu mức phạt (dữ liệu không có), và không có trong danh mục thì KHÔNG có nghĩa là được phép.</li>
 </ul>
-<p>Trợ lý luôn nói kèm <strong>độ tin cậy</strong> và số dòng dữ liệu, chỉ gợi ý tháng có đủ dữ liệu, và nhắc cảnh báo pháp lý nếu có. Trợ lý chỉ biết <strong>giá nhập khẩu của thị trường</strong> — không biết tồn kho, nhu cầu sản xuất, hạn dùng hay dòng tiền của công ty — nên câu trả lời để tham khảo, không thay cho quyết định mua.</p>
+<p>Trợ lý luôn nói kèm <strong>độ tin cậy</strong> và số dòng dữ liệu, chỉ gợi ý tháng có đủ dữ liệu, và nhắc cảnh báo pháp lý nếu có. Trợ lý chỉ biết <strong>giá thị trường</strong> — không biết tồn kho, nhu cầu sản xuất, hạn dùng hay dòng tiền của công ty — nên câu trả lời để tham khảo, không thay cho quyết định mua.</p>
 
 <h2>X. Câu hỏi thường gặp</h2>
 <p><strong>Thẻ Biểu đồ chỉ hiện một câu nhắc, không có hình?</strong> Chưa nhập từ khóa hoặc mã HS. Biểu đồ của toàn bộ dữ liệu là trộn hàng nghìn mặt hàng nên không vẽ.</p>
 <p><strong>Tổng lượng trên biểu đồ ít hơn ở Danh sách?</strong> Biểu đồ chỉ tính đơn vị đang chọn; bấm sang đơn vị khác để xem phần còn lại.</p>
-<p><strong>Doanh nghiệp tôi tìm có hai cách viết tên?</strong> Hệ thống gộp doanh nghiệp theo mã số thuế, nên hai cách viết vẫn là một doanh nghiệp ở thẻ Nhà nhập khẩu.</p>
+<p><strong>Doanh nghiệp tôi tìm có hai cách viết tên?</strong> Hệ thống gộp doanh nghiệp theo mã số thuế, nên hai cách viết vẫn là một doanh nghiệp ở thẻ Doanh nghiệp.</p>
 """
 
 ARTICLES = [

@@ -27,7 +27,7 @@ export const CUSTOMS_BASE_PATH = '/customs-prices'
 export const CUSTOMS_SECTIONS: CustomsSection[] = [
   { key: 'list', label: 'Danh sách', icon: 'ti-list', tabbed: true },
   { key: 'chart', label: 'Biểu đồ', icon: 'ti-chart-line', needFilter: true, tabbed: true },
-  { key: 'importers', label: 'Nhà nhập khẩu', icon: 'ti-building-factory-2', needFilter: true, tabbed: true },
+  { key: 'importers', label: 'Doanh nghiệp', icon: 'ti-building-factory-2', needFilter: true, tabbed: true },
   { key: 'compare', label: 'So sánh', icon: 'ti-arrows-diff', tabbed: true },
   // duoc-CR-490 — thẻ «Pháp lý & thuế» cũ chia đôi: «Pháp lý» (duyệt cả danh mục hóa chất theo
   // văn bản) và «Thuế» (biểu thuế theo mã HS, giữ nguyên như cũ).
@@ -44,7 +44,7 @@ export const CUSTOMS_SECTIONS: CustomsSection[] = [
 export const CUSTOMS_TAB_SECTIONS = CUSTOMS_SECTIONS.filter((s) => s.tabbed)
 
 /** Nhãn mục menu đứng thay cho cả năm thẻ tra giá (khớp bản v2). */
-export const CUSTOMS_TAB_GROUP_LABEL = 'Giá nhập khẩu'
+export const CUSTOMS_TAB_GROUP_LABEL = 'Giá thị trường'
 
 export function isCustomsTabSection(key: CustomsSectionKey): boolean {
   return CUSTOMS_TAB_SECTIONS.some((s) => s.key === key)

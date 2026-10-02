@@ -15,10 +15,10 @@ const day = (v: any) => fmtDate(v)
 const GROUPS: { title: string; fields: Field[] }[] = [
   { title: 'Tờ khai', fields: [
     ['reg_date', 'Ngày đăng ký', day], ['office_code', 'Nơi mở tờ khai', txt],
-    ['line_no', 'Số thứ tự hàng', txt], ['import_country', 'Nước nhập khẩu', txt],
+    ['line_no', 'Số thứ tự hàng', txt], ['import_country', 'Nước nhận hàng', txt],
   ] },
   { title: 'Doanh nghiệp', fields: [
-    ['importer_name', 'Doanh nghiệp nhập khẩu', txt], ['importer_tax_code', 'Mã số thuế', txt],
+    ['importer_name', 'Doanh nghiệp', txt], ['importer_tax_code', 'Mã số thuế', txt],
     ['partner_name', 'Đối tác (bên bán)', txt], ['origin_country', 'Nước xuất xứ', txt],
   ] },
   { title: 'Hàng hóa', fields: [
@@ -38,7 +38,7 @@ const GROUPS: { title: string; fields: Field[] }[] = [
     ['incoterm', 'Điều kiện giao hàng', txt], ['transport_mode', 'Phương tiện vận chuyển', (_v, r) => txt(r.transport_label || r.transport_mode)],
   ] },
   { title: 'Thuế', fields: [
-    ['rate_import', 'Thuế suất nhập khẩu', pct], ['tax_import', 'Thuế nhập khẩu', num],
+    ['rate_import', 'Thuế suất XNK', pct], ['tax_import', 'Thuế XNK', num],
     ['rate_vat', 'Thuế suất VAT', pct], ['tax_vat', 'Thuế VAT', num],
     ['rate_excise', 'Thuế suất TTĐB', pct], ['tax_excise', 'Thuế TTĐB', num],
     ['rate_safeguard', 'Thuế suất tự vệ', pct], ['tax_safeguard', 'Thuế tự vệ', num],

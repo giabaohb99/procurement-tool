@@ -93,6 +93,46 @@ frontend-v2 purchase-request-choose-card.tsx và bài kiểm đi kèm.
 
 ---
 
+## bao-CR-571 | Phiếu khảo sát: nháp tạo mới tách theo tài khoản, NSPT luôn là người tạo
+- status: xong
+- date: 2026-10-02
+Đại ca gửi ảnh: tài khoản Quyên mở «Tạo phiếu khảo sát» nhưng ô «NSPT phụ trách (người tạo)» lại ghi tên chị
+Phương. Nguyên nhân là nháp tự lưu của màn tạo phiếu (để F5 không mất dữ liệu) dùng một khóa chung cho mọi
+tài khoản trên cùng trình duyệt và không xóa khi đăng xuất, nên người sau nạp nguyên nháp ngày 28/09 của người
+trước, kể cả tên NSPT; ô này bị khóa nên không sửa được, và backend lưu đúng cái tên giao diện gửi lên. Kiểm
+prod thì phiếu đó chưa được lưu, phiếu khảo sát mới nhất trên prod tạo từ 04/09, không có dữ liệu bị sai.
+
+Sửa ở cả hai giao diện và backend: nháp nay lưu riêng theo từng tài khoản, khóa chung cũ gặp là xóa; mở nháp
+luôn ghi lại NSPT bằng người đang đăng nhập; backend khi tạo mới hoặc nhân bản phiếu tự gán NSPT bằng tên hồ sơ
+người tạo (không có hồ sơ thì email tài khoản), không tin giá trị giao diện gửi. Phiếu nhân bản thuộc về người
+bấm nhân bản.
+
+Mã nguồn: `backend/app/modules/survey/service.py` (`creator_name`, `create_survey`, `copy_survey`),
+`frontend-v2/src/modules/procurement/utils/survey-new-draft.ts` (+ bài kiểm), `pages/survey-detail-page.tsx`,
+`frontend/src/pages/SurveyDetail.tsx`, bài kiểm `test/backend/test_nspt_phieu_khao_sat_la_nguoi_tao_cr571.py` (5 bài).
+Deploy: chưa commit, chưa deploy.
+
+---
+
+## bao-CR-569 | Tra cứu thị trường bỏ chữ «nhập khẩu» khỏi chữ hiển thị
+- status: xong
+- date: 2026-10-02
+Đại ca bảo trên màn Tra cứu thị trường bỏ tên «Giá nhập khẩu», chỉ để «Giá thị trường», và tìm chữ «nhập khẩu»
+bỏ đi. Em đổi toàn bộ chữ hiển thị ở cả hai giao diện: nhóm thẻ «Giá nhập khẩu» thành «Giá thị trường», câu
+mô tả trang cũng nói giá thị trường; thẻ «Nhà nhập khẩu» và nhãn «Doanh nghiệp nhập khẩu» thành «Doanh
+nghiệp»; «Nước nhập khẩu» thành «Nước nhận hàng» vì nó đứng ngay cạnh «Nước xuất xứ», đổi luôn tiêu đề cột khi
+xuất Excel; «Thuế suất nhập khẩu» và «Thuế nhập khẩu» trong hộp chi tiết dòng thành «Thuế suất XNK» và «Thuế
+XNK» cho khớp cột danh sách vốn đã viết vậy; «Biểu thuế nhập khẩu theo mã HS» thành «Biểu thuế theo mã HS».
+Bài hướng dẫn sử dụng của màn trong tệp seed cũng đổi theo. Giữ nguyên mã, khóa, đường dẫn, chú thích trong
+mã và các chữ viết tắt XNK, NK; phân hệ Đơn hàng nhập khẩu không đụng tới.
+
+Mã nguồn: v2 `customs-sections.ts`, `customs-price-page.tsx`, `customs-line-detail-dialog.tsx`, `customs-tariff-tab.tsx`,
+`customs-line-columns.tsx` (+ hai bài kiểm); v1 `customs-sections.ts`, `CustomsPrices.tsx`, `CustomsLineDetail.tsx`,
+`CustomsTabs.tsx`; backend `modules/customs/constants.py`, `scripts/seed_help_customs_prices.py`.
+Deploy: chưa commit, chưa deploy.
+
+---
+
 ## bao-CR-568 | YCMH: chốt xử lý không cần mã VTBB, tạo đơn thì phải có mã, thu mua gắn mã sau điều phối
 - status: dang-lam
 - date: 2026-10-02
@@ -233,6 +273,25 @@ c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, 
 
 ---
 
+## bao-CR-566 | Chép dữ liệu chi tiết thuốc BVTV từ dev lên prod
+- status: xong
+- date: 2026-10-02
+Đại ca hỏi dữ liệu thuốc bảo vệ thực vật trong Tra cứu thị trường đã có trên prod chưa. Em đếm thì prod
+chỉ có danh sách 6.919 thuốc nạp ngày 23/09, còn toàn bộ phần chi tiết do đợt duoc-CR-494/495 nạp trên dev
+thì prod chưa có: câu tóm tắt sử dụng, độc tính, số đăng ký, ngày cấp và hết hạn, cùng 15.309 dòng cách dùng
+theo cây trồng và dịch hại. Đại ca bảo chép từ dev sang.
+
+Em xuất hai bảng từ dev rồi đối chiếu với prod theo id: 6.919 trên 6.919 thuốc khớp mã nguồn và tên, prod
+không có thuốc nào nhập tay và không dòng nào bị sửa sau đợt nạp 23/09, nên chép đè không mất gì. Script sao
+lưu nguyên bảng thuốc prod trước, rồi trong một giao dịch cập nhật mọi cột nghiệp vụ theo dev và thêm 15.309
+dòng cách dùng. Sau khi chép, prod có 6.919 thuốc có tóm tắt, 6.809 có độc tính, 6.835 có số đăng ký. Tệp tạm
+trên máy chủ và trong container đã xóa.
+
+Mã nguồn: script tạm `bvtv_apply_prod.py` (không commit) · sao lưu `~/proc_backups/bvtv_prod_truoc_chep_chi_tiet_20261002_151359.json`
+Deploy: dữ liệu prod 02/10 15:13.
+
+---
+
 ## bao-CR-563 | Trả về phiếu khảo sát gỡ phương án đã đẩy sang Yêu cầu báo giá và mở lại các dòng
 - status: xong
 - date: 2026-10-02
@@ -252,7 +311,7 @@ ghi kèm số phương án đã gỡ vào lý do trả về. Câu hướng dẫn
 Mã nguồn: `backend/app/modules/survey/service.py` (`clear_for_return`), `backend/app/modules/survey/controller.py`
 (`reject_`), `frontend-v2/src/modules/procurement/pages/survey-detail-page.tsx`, `frontend/src/pages/SurveyDetail.tsx`,
 bài kiểm `test/backend/test_tra_ve_khao_sat_don_phuong_an_cr563.py` (8 bài) cùng 17 bài CR-554 xanh.
-Deploy: chưa commit, chưa deploy.
+Commit: erp-v2 `9a7bdb12`. Deploy: DEV 02/10; prod chưa.
 
 ---
 

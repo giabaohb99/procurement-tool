@@ -214,7 +214,7 @@ describe('CustomsPricePage', () => {
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Danh sách',
       'Biểu đồ',
-      'Nhà nhập khẩu',
+      'Doanh nghiệp',
       'So sánh',
       'Thuế',
     ])

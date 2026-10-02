@@ -48,13 +48,13 @@ const GROUPS: { title: string; fields: DetailField[] }[] = [
       { key: 'reg_date', label: 'Ngày đăng ký', format: (l) => formatDate(l.reg_date) || '—' },
       { key: 'office_code', label: 'Nơi mở tờ khai', format: (l) => text(l.office_code) },
       { key: 'line_no', label: 'Số thứ tự hàng', format: (l) => text(l.line_no) },
-      { key: 'import_country', label: 'Nước nhập khẩu', format: (l) => text(l.import_country) },
+      { key: 'import_country', label: 'Nước nhận hàng', format: (l) => text(l.import_country) },
     ],
   },
   {
     title: 'Doanh nghiệp',
     fields: [
-      { key: 'importer_name', label: 'Doanh nghiệp nhập khẩu', format: (l) => text(l.importer_name) },
+      { key: 'importer_name', label: 'Doanh nghiệp', format: (l) => text(l.importer_name) },
       { key: 'importer_tax_code', label: 'Mã số thuế', format: (l) => text(l.importer_tax_code) },
       { key: 'partner_name', label: 'Đối tác (bên bán)', format: (l) => text(l.partner_name) },
       { key: 'origin_country', label: 'Nước xuất xứ', format: (l) => text(l.origin_country) },
@@ -113,8 +113,8 @@ const GROUPS: { title: string; fields: DetailField[] }[] = [
   {
     title: 'Thuế',
     fields: [
-      { key: 'rate_import', label: 'Thuế suất nhập khẩu', format: (l) => percent(l.rate_import) },
-      { key: 'tax_import', label: 'Thuế nhập khẩu', format: (l) => formatUsd(l.tax_import) },
+      { key: 'rate_import', label: 'Thuế suất XNK', format: (l) => percent(l.rate_import) },
+      { key: 'tax_import', label: 'Thuế XNK', format: (l) => formatUsd(l.tax_import) },
       { key: 'rate_vat', label: 'Thuế suất VAT', format: (l) => percent(l.rate_vat) },
       { key: 'tax_vat', label: 'Thuế VAT', format: (l) => formatUsd(l.tax_vat) },
       { key: 'rate_excise', label: 'Thuế suất TTĐB', format: (l) => percent(l.rate_excise) },

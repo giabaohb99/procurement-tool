@@ -286,10 +286,10 @@ export function CustomsTariff({ filters }: { filters: CustomsFilters }) {
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-        Tra cứu tham khảo từ biểu thuế xuất nhập khẩu 2026 đã nạp — đối chiếu văn bản gốc trước khi quyết định.
+        Tra cứu tham khảo từ biểu thuế 2026 đã nạp — đối chiếu văn bản gốc trước khi quyết định.
       </div>
       <div className="card" style={{ padding: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>Biểu thuế nhập khẩu theo mã HS</div>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>Biểu thuế theo mã HS</div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <input value={hs} onChange={(e) => setHs(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && lookupTariff()}
             placeholder="Mã HS, vd 38089199" style={{ width: 220 }} />

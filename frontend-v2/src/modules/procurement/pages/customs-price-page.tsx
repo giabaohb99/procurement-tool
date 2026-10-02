@@ -355,7 +355,7 @@ export function CustomsPricePage() {
         title={
           isCustomsTabSection(tab) ? 'Tra cứu thị trường' : `Tra cứu thị trường — ${current.label}`
         }
-        description="Giá nhập khẩu theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
+        description="Giá thị trường theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
         actions={
           <>
             <Button type="button" variant="outline" onClick={() => openSection('history')}>
@@ -485,7 +485,7 @@ export function CustomsPricePage() {
               <CustomsPartyPicker
                 partyType={CUSTOMS_PARTY_TYPE.DOMESTIC}
                 selectedIds={importerId}
-                placeholder="Thêm doanh nghiệp nhập khẩu…"
+                placeholder="Thêm doanh nghiệp…"
                 onPick={addImporterFilter}
               />
             </div>
