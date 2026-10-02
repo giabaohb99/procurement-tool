@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-558 | Bản cũ: hộp «Thuốc BVTV chứa hoạt chất cấm» tự hiện ở màn Pháp lý và không tắt được
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca báo: vào Tra cứu thị trường, bấm mục Pháp lý ở bản cũ thì hiện ngay hộp «Thuốc BVTV chứa hoạt chất cấm»
 trống trơn, bấm Đóng hay dấu X cũng không tắt. Nguyên nhân: màn Pháp lý luôn dựng sẵn hộp này và chỉ đổi hoạt
@@ -79,7 +79,12 @@ chất đang xem, trong khi khung hộp thoại của bản cũ không có công
 từ lúc đưa cụm thuốc BVTV sang bản cũ (duoc-CR-490) và prod cũng đang dính. Đã sửa: chưa chọn hoạt chất nào
 thì hộp không hiện. Bản mới không dính lỗi này.
 
-Kiểm: kiểm kiểu bản cũ giữ đúng 4 lỗi nền. Đang ở máy em, chưa commit.
+Kiểm: kiểm kiểu bản cũ giữ đúng 4 lỗi nền. Bấm thử trên máy em: vào Pháp lý không còn hộp tự hiện;
+tìm Carbosulfan, bấm «13 thuốc» thì hộp mở đúng, và đóng được bằng nút Đóng, dấu X lẫn phím Esc; các mục Giá
+nhập khẩu, Thuốc BVTV, Lịch sử nạp, Cấu hình mở bình thường.
+
+Lên dev và prod ngày 02/10 (erp-v2 5de7fdc9, main faaeaac2), chỉ build lại giao diện bản cũ; sao lưu prod trước:
+`procurement_truoc_cr558_20261002_1016.sql.gz`.
 
 Mã nguồn: frontend/src/components/customs/CustomsBannedPesticideModal.tsx.
 
@@ -124,6 +129,46 @@ Lên dev và prod ngày 02/10 cùng bao-CR-553 / 554 (main 8e6e23e3). Prod chạ
 Mã nguồn: survey/model.py, survey/controller.py, survey/service.py, core/status_codes.py,
 import_tool/survey_import.py, seed_khao_sat_demo.py, scripts/import_survey_history.py, migration
 c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, shared/constants/statuses.ts.
+
+---
+
+## bao-CR-559 | Đổi chức vụ «Nhân sự» thành «Nhân viên» và đặt mọi hồ sơ là Toàn thời gian
+- status: xong
+- date: 2026-10-02
+Đại ca thấy nhân viên bình thường đang để chức vụ là «Nhân sự» nên bảo đổi hết sang «Nhân viên», và đặt
+Hình thức nhân viên của mọi người là Toàn thời gian, đổi thẳng trên prod. Em đọc prod trước: 208 hồ sơ
+giữ chức vụ «Nhân sự» rải khắp các phòng, cả 236 hồ sơ đều để trống hình thức nhân viên.
+
+Script đổi cả mã chức vụ lẫn nhãn chữ in trên phiếu sang «Nhân viên», đặt hình thức Toàn thời gian cho
+mọi hồ sơ, và in giá trị cũ của từng hồ sơ ra bản sao lưu trước khi ghi. Đã chạy ở local, prod (208 hồ
+sơ đổi chức vụ, 236 hồ sơ đổi hình thức) và dev. Chức vụ «Nhân sự» trong danh mục vẫn còn nhưng không
+ai giữ. Không đổi mã nguồn.
+
+Mã nguồn: script tạm `cr559_position_employment.py` (không commit) · sao lưu `D:/vps_deploy/cr559_prod_output.txt`,
+`D:/vps_deploy/cr559_dev_output.txt`, `D:/vps_deploy/cr559_local_output.txt` (dòng BACKUP_JSON)
+Deploy: dữ liệu prod + dev 02/10.
+
+---
+
+## bao-CR-557 | Tách quyền Tra cứu thị trường thành vai trò riêng, chỉ trưởng phòng thu mua được xem
+- status: xong
+- date: 2026-10-02
+Đại ca muốn Tra cứu thị trường chỉ cho phòng thu mua xem, nhà máy thì không. Em kiểm prod trước: chỉ
+ba vai trò thu mua chung (Nhân viên, Admin, Quản lý thu mua) cùng quản trị hệ thống giữ quyền này, nên
+28 tài khoản đang thấy menu; các vai trò nhà máy và phòng tự mua chưa từng có. Đại ca chốt tách hẳn
+thành vai trò riêng, gỡ quyền khỏi cụm thu mua và chỉ gán cho Mi (NSU141), Dững (NSU001), Duyên Sang
+(NSU142) và Tiên (NSU223).
+
+Vai trò mới «Tra cứu thị trường» được xem, nạp, sửa, xóa, xuất dữ liệu giá tờ khai và sửa danh mục hóa
+chất ở tab Cấu hình. Hai khóa này bị gỡ khỏi ba vai trò thu mua chung. Script đổi dữ liệu chạy lần lượt
+ở local, dev và prod, in bản sao lưu các dòng quyền cũ trước khi xóa. Sau khi chạy, prod chỉ còn bốn
+người được gán cùng các tài khoản quản trị hệ thống xem được. Seed khai thêm vai trò này để môi
+trường mới có sẵn; seed không tự cấp lại hai khóa cho cụm thu mua vì chúng nằm trong tập loại trừ.
+
+Mã nguồn: `backend/app/seed.py` (STD_ROLES["market_lookup"], ROLE_DESCRIPTIONS), bài kiểm
+`test/backend/test_vai_tro_tra_cuu_thi_truong_cr557.py`, script tạm `cr557_market_lookup_role.py`
+(không commit) · sao lưu kết quả prod `D:/vps_deploy/cr557_prod_output.txt`, dev `D:/vps_deploy/cr557_dev_output.txt`
+Deploy: dữ liệu phân quyền đã đổi trên dev + prod 02/10; mã seed CHƯA commit.
 
 ---
 
