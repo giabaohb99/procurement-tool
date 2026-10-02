@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-570 | YCMH: người yêu cầu chọn phương án ngay, không đợi NSTM chốt; làm gọn hộp sửa giá và khối áp NCC
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca thử trên dev và thấy phải đợi nhân sự thu mua bấm «Chốt hoàn thành xử lý» thì người yêu cầu mới thấy chỗ chọn
 phương án, khác với yêu cầu báo giá. Đại ca chốt bỏ bước chờ đó, vì người tạo đơn mua hàng chính là nhân sự thu mua;
@@ -86,7 +86,7 @@ Chỉ làm ở bản mới vì bản cũ không có cụm phương án yêu cầ
 
 Kiểm: 64 bài kiểm máy chủ của cụm phương án xanh (đổi 2 bài theo luật mới); bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi,
 vitest thu mua 780 bài xanh; bấm thử trên máy em thấy thẻ hiện cả dòng chưa chốt, hộp và khối mới hiển thị đúng.
-Đã lên dev 02/10 (b48840c5), chưa lên prod.
+Commit: erp-v2 `b48840c5`, `540b58d0`. Deploy: DEV + PROD 02/10, main `832ca274`.
 
 Mã nguồn: purchase_request/controller.py (choose_option), option_service.py (mark_choice_done, bỏ ensure_line_done);
 frontend-v2 purchase-request-choose-card.tsx và bài kiểm đi kèm.
@@ -134,7 +134,7 @@ Deploy: chưa commit, chưa deploy.
 ---
 
 ## bao-CR-568 | YCMH: chốt xử lý không cần mã VTBB, tạo đơn thì phải có mã, thu mua gắn mã sau điều phối
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca muốn yêu cầu mua hàng chạy giống yêu cầu báo giá: phiếu sinh từ YCBG có thể chưa có mã VTBB, nhân sự thu mua
 vẫn chốt hoàn thành xử lý được; nhưng muốn tạo đơn mua hàng thì dòng phải có mã, và sau khi người yêu cầu chốt phương
@@ -148,16 +148,17 @@ dòng thành ô chọn sản phẩm khi nhân sự thu mua sửa tiến độ; b
 ngay. Tiện thể thêm phân hệ phân quyền báo cáo vào bài canh độ dài ô chữ (bài này đỏ từ khi anh Được thêm phân hệ).
 
 Kiểm: 6 bài kiểm mới; chạy cùng bộ phương án YCMH và bài canh độ dài, 92 bài xanh; bản mới kiểm kiểu 0 lỗi, eslint 0
-lỗi, vitest thu mua 779 bài xanh; bản cũ giữ đúng 4 lỗi nền. Đang ở máy em, chưa commit.
+lỗi, vitest thu mua 779 bài xanh; bản cũ giữ đúng 4 lỗi nền. Đã lên dev và prod 02/10.
 
 Mã nguồn: purchase_request/schema.py, service.py (_set_item_product_code), option_service.py (generate_purchase_orders);
 frontend-v2 purchase-request-line-detail-dialog.tsx, purchase-request-detail-page.tsx, use-purchase-request.ts,
 purchase-request-api.ts, types/purchase-request-options.ts; frontend/src/pages/PurchaseRequestDetail.tsx.
+Commit: erp-v2 `baec53f2`. Deploy: DEV + PROD 02/10, main `832ca274`.
 
 ---
 
 ## bao-CR-567 | YCMH bản mới: quay lại phiếu đã mở thì không sửa được, phải tải lại trang
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca mở phiếu PYC02102601 trên dev, bấm Sửa nhưng mọi ô kể cả Mã hàng đều không đổi được, tải lại trang mới sửa được;
 phiếu PYC02102602 cùng dữ liệu thì sửa bình thường. Nguyên nhân: màn chi tiết chỉ dựng bản nháp để sửa khi thấy «dữ liệu
@@ -165,23 +166,25 @@ server vừa đổi»; phiếu đã nằm sẵn trong bộ nhớ đệm (mở ph
 lượt vẽ đầu nên không ai dựng bản nháp. Bấm Sửa chỉ bật cờ sửa, còn mọi thao tác gõ vào rơi vào bản nháp rỗng. Đã vá:
 có dữ liệu mà chưa có bản nháp thì dựng ngay. Không viết được bài kiểm riêng vì trang này chưa có khung kiểm.
 
-Kiểm: kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đang ở máy em, chưa commit.
+Kiểm: kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đã lên dev và prod 02/10.
 
 Mã nguồn: frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx.
+Commit: erp-v2 `b27f5328`. Deploy: DEV + PROD 02/10, main `832ca274`.
 
 ---
 
 ## bao-CR-565 | Chốt hoàn thành khảo sát không còn bắt gắn Mã SP hệ thống
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca xem phiếu YCBG01102603 ở màn Xử lý khảo sát và bảo bỏ đoạn kiểm «phải có mã sản phẩm» khi bấm Chốt hoàn thành
 khảo sát, để trống vẫn chốt được. Em rà: chỉ giao diện chặn (cả bản cũ lẫn bản mới), máy chủ chưa bao giờ bắt mã ở
 bước này; lúc tạo yêu cầu mua hàng vẫn chặn trùng mã như cũ. Đã bỏ chốt chặn ở hai giao diện, bỏ luôn viền đỏ đánh dấu
 ô thiếu mã ở bản cũ, sửa câu gợi ý ở bản mới thành «để trống vẫn chốt được».
 
-Kiểm: bản cũ giữ đúng 4 lỗi nền; bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đang ở máy em, chưa commit.
+Kiểm: bản cũ giữ đúng 4 lỗi nền; bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đã lên dev và prod 02/10.
 
 Mã nguồn: frontend/src/pages/SurveyRequestProcess.tsx, frontend-v2/src/modules/procurement/components/survey-request-process-card.tsx.
+Commit: erp-v2 `38cd001a`. Deploy: DEV + PROD 02/10, main `832ca274`.
 
 ---
 
