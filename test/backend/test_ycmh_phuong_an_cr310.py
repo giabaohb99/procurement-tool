@@ -443,18 +443,17 @@ def test_sau_chot_nstm_het_sua_phuong_an(db, seed, cap_quyen):
     assert "GIÁ" in e.value.detail
 
 
-def test_chua_chot_thi_nguoi_yc_chua_chon_duoc(db, seed, cap_quyen):
-    """Người yêu cầu chỉ chọn trên danh sách NSTM đã tuyên bố xong — chưa chốt mà
-    chọn là chọn trên dữ liệu đang gắn dở."""
+def test_nguoi_yc_chon_duoc_khi_nstm_chua_chot(db, seed, cap_quyen):
+    """bao-CR-569 (02/10/2026) ĐẢO luật đợt 3b: như YCBG, phương án NSTM gắn tới đâu người yêu
+    cầu chọn tới đó — không đợi NSTM bấm «Chốt hoàn thành xử lý»."""
     pr, it = _make_pr(db, seed)
     nstm = _nstm(db, seed, cap_quyen)
     o = _data(C.add_option_manual(pr.id, it.id, PROptionManualIn(supplier_code="NX"),
                                   db=db, user=nstm))
     req = _requester(db, seed, cap_quyen)
-    with pytest.raises(HTTPException) as e:
-        C.choose_option(pr.id, it.id, o["id"], db=db, user=req)
-    assert e.value.status_code == 400
-    assert "chưa chốt hoàn thành" in e.value.detail
+    out = _data(C.choose_option(pr.id, it.id, o["id"], db=db, user=req))
+    db.refresh(it)
+    assert out["is_chosen"] is True and not it.options_done
 
 
 def test_nguoi_yc_mo_lai_dong_cho_nstm_sua_tiep(db, seed, cap_quyen):

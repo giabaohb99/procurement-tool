@@ -29,6 +29,7 @@ import {
   useSetPrOptionSupplier,
   useUpdateOption,
 } from '../hooks/use-purchase-request-options'
+import { isDispatched } from '../types/purchase-request-detail'
 import type { PurchaseRequestDetail, PurchaseRequestItem } from '../types/purchase-request-detail'
 import type {
   PrAssignSupplierLine,
@@ -68,8 +69,10 @@ function parsePriceInput(raw: string): number | undefined {
  * đúng khe H.10.4), kèm khu "Áp 1 NCC cho nhiều dòng". Dòng CHỐT RỖNG nay vẫn
  * có PHƯƠNG ÁN 0 (mua đúng theo dòng yêu cầu gốc) nên không tắt query nữa.
  *
- * Thẻ tự ẨN khi chưa có dòng nào chốt hoàn thành — phiếu chưa tới nhịp này thì
- * đừng bày một thẻ rỗng bắt người yêu cầu tự hiểu.
+ * bao-CR-569 (02/10/2026): thẻ HIỆN MỌI DÒNG ngay khi phiếu đã điều phối — đại ca chốt
+ * làm như YCBG, phương án NSTM gắn tới đâu người yêu cầu chọn tới đó, không đợi NSTM bấm
+ * «Chốt hoàn thành xử lý» (người lập đơn chính là nhân sự thu mua). Dòng NSTM chưa chốt
+ * mang nhãn «NSTM đang xử lý»; nút «Mở lại cho NSTM xử lý» chỉ còn ở dòng ĐÃ chốt.
  */
 export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestChooseCardProps) {
   const { user } = useAuth()
@@ -96,9 +99,9 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
   const suppliers: SupplierOption[] = suppliersQuery.data?.items ?? []
 
   const doneLines = purchaseRequest.items.filter(
-    (item): item is PurchaseRequestItem & { id: number } => !!item.id && !!item.options_done,
+    (item): item is PurchaseRequestItem & { id: number } => !!item.id,
   )
-  if (doneLines.length === 0) return null
+  if (!isDispatched(purchaseRequest.status) || doneLines.length === 0) return null
 
   // Cùng luật `ensure_own_line` + see-all của backend: thu mua thường chỉ đụng
   // được dòng mình phụ trách, người giữ quyền duyệt đụng được mọi dòng.
@@ -126,7 +129,7 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
       <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <ListChecks className="size-4 text-primary" />
-          Phương án — NSTM đã xử lý xong, chọn phương án mua
+          Phương án — chọn phương án mua
         </CardTitle>
       </CardHeader>
 
@@ -135,8 +138,7 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
           <p className="text-xs text-muted-foreground">
             Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất; bấm lại phương án đang chọn để
             BỎ CHỌN. <b>Phương án 0</b> là mua đúng theo dòng yêu cầu gốc — không chọn gì thì hệ
-            coi như mua theo nó. Muốn NSTM gắn thêm / sửa phương án thì bấm{' '}
-            <b>Mở lại cho NSTM xử lý</b>.
+            coi như mua theo nó. Phương án NSTM gắn thêm sẽ hiện ngay ở đây.
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
@@ -232,7 +234,12 @@ function ChooseLineSection({
         <h4 className="font-semibold">
           Sản phẩm {lineNumber}: {item.product_name || item.product_code || '—'}
         </h4>
-        {canChoose && (
+        {!item.options_done && (
+          <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
+            NSTM đang xử lý
+          </Badge>
+        )}
+        {canChoose && item.options_done && (
           <Button
             type="button"
             variant="outline"
@@ -499,71 +506,104 @@ function OptionPurchaseEditDialog({
     }
   }
 
+  const pending = setSupplierMutation.isPending || updateMutation.isPending
+  const supplierOptions = [
+    { value: NO_SUPPLIER, label: '— Không chọn —' },
+    ...suppliers.map((supplier) => ({
+      value: supplier.code,
+      label: `${supplier.code} — ${supplier.name}`,
+    })),
+  ]
+
   return (
+    //  bao-CR-569: dựng lại cho gọn — một cột, ô nào cũng chiếm hết bề ngang hộp (bản cũ để
+    //  ô chọn + ô gõ tay w-64 cạnh nhau, rớt dòng lệch nhau, nhãn «Đơn giá» chen ngang ô).
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Sửa giá / NCC — {label}</DialogTitle>
           <DialogDescription>
             {canEditNcc
-              ? 'Điền / sửa nhà cung cấp và đơn giá của phương án. Dùng được cả khi dòng đã chốt hoàn thành.'
-              : 'Phương án lấy từ khảo sát — chỉ sửa được đơn giá, NCC giữ theo kết quả khảo sát.'}
+              ? 'Chọn nhà cung cấp và đơn giá cho phương án này.'
+              : 'Phương án từ khảo sát: nhà cung cấp theo kết quả khảo sát, chỉ sửa được đơn giá.'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+            <p className="font-medium leading-snug">{option.snap_product_name || '—'}</p>
+            <p className="text-xs text-muted-foreground">
+              Đơn giá hiện tại:{' '}
+              <b>
+                {option.snap_price_by_volume
+                  ? `${formatUnitPrice(option.snap_price_by_volume)} đ`
+                  : '—'}
+              </b>
+              {!canEditNcc && !!(option.supplier_name || option.supplier_code) && (
+                <> · NCC: <b>{option.supplier_name || option.supplier_code}</b></>
+              )}
+            </p>
+          </div>
+
           {canEditNcc && (
-            <div className="space-y-1">
-              <label className="text-xs font-medium">Nhà cung cấp</label>
-              <div className="flex flex-wrap gap-2">
-                <SearchSelect
-                  className="w-64"
-                  value={supplierCode}
-                  onChange={setSupplierCode}
-                  placeholder="Chọn NCC trong danh mục"
-                  searchPlaceholder="Tìm NCC theo mã / tên…"
-                  options={[
-                    { value: NO_SUPPLIER, label: '— Không chọn —' },
-                    ...suppliers.map((supplier) => ({
-                      value: supplier.code,
-                      label: `${supplier.code} — ${supplier.name}`,
-                    })),
-                  ]}
-                />
-                <Input
-                  className="w-64"
-                  value={supplierName}
-                  placeholder="Hoặc gõ tên NCC ngoài danh mục"
-                  onChange={(event) => setSupplierName(event.target.value)}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Nhà cung cấp</label>
+              <SearchSelect
+                className="w-full"
+                value={supplierCode}
+                onChange={(value) => {
+                  setSupplierCode(value)
+                  //  Hai ô loại trừ nhau: chọn NCC trong danh mục thì bỏ tên gõ tay.
+                  if (value !== NO_SUPPLIER) setSupplierName('')
+                }}
+                placeholder="Chọn NCC trong danh mục"
+                searchPlaceholder="Tìm NCC theo mã / tên…"
+                options={supplierOptions}
+              />
+              <Input
+                value={supplierName}
+                placeholder="Hoặc gõ tên NCC ngoài danh mục"
+                onChange={(event) => {
+                  setSupplierName(event.target.value)
+                  if (event.target.value.trim()) setSupplierCode(NO_SUPPLIER)
+                }}
+              />
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium">Đơn giá</label>
-            <Input
-              type="number"
-              min={0}
-              className="w-48"
-              value={priceRaw}
-              onChange={(event) => setPriceRaw(event.target.value)}
-            />
+          <div className="space-y-1.5">
+            <label htmlFor={`option-price-${option.id}`} className="text-sm font-medium">
+              Đơn giá
+            </label>
+            <div className="relative">
+              <Input
+                id={`option-price-${option.id}`}
+                type="number"
+                min={0}
+                inputMode="decimal"
+                className="pr-8 text-right tabular-nums"
+                value={priceRaw}
+                onChange={(event) => setPriceRaw(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    submit()
+                  }
+                }}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                đ
+              </span>
+            </div>
           </div>
         </div>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
-            Đóng
+            Hủy
           </Button>
-          <Button
-            type="button"
-            disabled={setSupplierMutation.isPending || updateMutation.isPending}
-            onClick={submit}
-          >
-            {(setSupplierMutation.isPending || updateMutation.isPending) && (
-              <Loader2 className="animate-spin" />
-            )}
+          <Button type="button" disabled={pending} onClick={submit}>
+            {pending && <Loader2 className="animate-spin" />}
             Lưu
           </Button>
         </DialogFooter>
@@ -625,69 +665,30 @@ function BulkAssignSupplierZone({
     )
   }
 
+  const allChecked = lines.length > 0 && checkedItemIds.length === lines.length
+  const toggleAll = (checked: boolean) =>
+    setCheckedItemIds(checked ? lines.map((item) => item.id) : [])
+  const hasSupplier = supplierCode !== NO_SUPPLIER || !!supplierName.trim()
+
   return (
-    <div className="space-y-3 rounded-lg border border-dashed p-3">
-      <div>
-        <p className="text-sm font-medium">Áp 1 NCC cho nhiều dòng</p>
-        <p className="text-xs text-muted-foreground">
-          Các dòng dưới đây đang chọn một phương án <b>chưa có NCC</b>. Tick dòng cần áp, chọn
-          một nhà cung cấp (sửa đơn giá theo dòng nếu cần) rồi bấm <b>Áp NCC</b> — một dòng
-          không hợp lệ thì cả lô không được áp.
+    //  bao-CR-569: dựng lại cho gọn — thanh NCC + nút áp một hàng ở TRÊN, bên dưới là bảng
+    //  nhỏ (chọn tất cả · sản phẩm · giá hiện tại · giá mới). Bản cũ trải mỗi dòng một khung
+    //  rộng hết màn, ô giá trôi tận mép phải, ô NCC nằm tách rời ở đáy.
+    <div className="overflow-hidden rounded-lg border">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-muted/40 px-3 py-2">
+        <p className="mr-auto text-sm font-medium">
+          Áp 1 NCC cho nhiều dòng
+          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+            ({lines.length} dòng đang chọn phương án chưa có NCC)
+          </span>
         </p>
-      </div>
-
-      <ul className="space-y-2">
-        {lines.map((item) => {
-          const chosen = item.chosen_option
-          const chosenLabel = chosen
-            ? chosen.display_label || `Phương án ${chosen.public_id}`
-            : '—'
-          return (
-            <li key={item.id} className="flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2">
-              <Checkbox
-                id={`bulk-ncc-line-${item.id}`}
-                checked={checkedItemIds.includes(item.id)}
-                onCheckedChange={(checked) =>
-                  setCheckedItemIds((prev) =>
-                    checked === true ? [...prev, item.id] : prev.filter((id) => id !== item.id),
-                  )
-                }
-              />
-              <label htmlFor={`bulk-ncc-line-${item.id}`} className="min-w-48 flex-1 text-sm">
-                <span className="font-medium">
-                  {item.product_name || item.product_code || '—'}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  Đang chọn: {chosenLabel}
-                </span>
-              </label>
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="number"
-                  min={0}
-                  className="w-36"
-                  aria-label={`Đơn giá mới cho ${item.product_name || item.product_code}`}
-                  placeholder={
-                    chosen?.snap_price_by_volume
-                      ? `Giữ ${formatUnitPrice(chosen.snap_price_by_volume)} đ`
-                      : 'Đơn giá (tùy chọn)'
-                  }
-                  value={priceByItem[item.id] ?? ''}
-                  onChange={(event) =>
-                    setPriceByItem((prev) => ({ ...prev, [item.id]: event.target.value }))
-                  }
-                />
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-
-      <div className="flex flex-wrap items-center gap-2">
         <SearchSelect
-          className="w-64"
+          className="w-60"
           value={supplierCode}
-          onChange={setSupplierCode}
+          onChange={(value) => {
+            setSupplierCode(value)
+            if (value !== NO_SUPPLIER) setSupplierName('')
+          }}
           placeholder="Chọn NCC trong danh mục"
           searchPlaceholder="Tìm NCC theo mã / tên…"
           options={[
@@ -699,16 +700,80 @@ function BulkAssignSupplierZone({
           ]}
         />
         <Input
-          className="w-64"
+          className="w-52"
           value={supplierName}
-          placeholder="Hoặc gõ tên NCC ngoài danh mục"
-          onChange={(event) => setSupplierName(event.target.value)}
+          placeholder="Hoặc tên NCC ngoài danh mục"
+          onChange={(event) => {
+            setSupplierName(event.target.value)
+            if (event.target.value.trim()) setSupplierCode(NO_SUPPLIER)
+          }}
         />
-        <Button type="button" disabled={assignMutation.isPending} onClick={submit}>
+        <Button
+          type="button"
+          size="sm"
+          disabled={assignMutation.isPending || checkedItemIds.length === 0 || !hasSupplier}
+          onClick={submit}
+        >
           {assignMutation.isPending && <Loader2 className="animate-spin" />}
-          Áp NCC cho các dòng đã tick
+          Áp cho {checkedItemIds.length} dòng
         </Button>
       </div>
+
+      <div className="grid grid-cols-[2rem_minmax(0,1fr)_7rem_9rem] items-center gap-x-3 border-b px-3 py-1.5 text-xs font-medium text-muted-foreground">
+        <Checkbox
+          checked={allChecked}
+          onCheckedChange={(checked) => toggleAll(checked === true)}
+          aria-label="Chọn tất cả dòng"
+        />
+        <span>Sản phẩm</span>
+        <span className="text-right">Giá hiện tại</span>
+        <span className="text-right">Giá mới (tùy chọn)</span>
+      </div>
+      <ul className="divide-y">
+        {lines.map((item) => {
+          const chosen = item.chosen_option
+          const chosenLabel = chosen ? chosen.display_label || `Phương án ${chosen.public_id}` : '—'
+          return (
+            <li
+              key={item.id}
+              className="grid grid-cols-[2rem_minmax(0,1fr)_7rem_9rem] items-center gap-x-3 px-3 py-1.5"
+            >
+              <Checkbox
+                id={`bulk-ncc-line-${item.id}`}
+                checked={checkedItemIds.includes(item.id)}
+                onCheckedChange={(checked) =>
+                  setCheckedItemIds((prev) =>
+                    checked === true ? [...prev, item.id] : prev.filter((id) => id !== item.id),
+                  )
+                }
+              />
+              <label htmlFor={`bulk-ncc-line-${item.id}`} className="min-w-0 cursor-pointer text-sm">
+                <span className="block truncate font-medium" title={item.product_name}>
+                  {item.product_name || item.product_code || '—'}
+                </span>
+                <span className="block text-xs text-muted-foreground">{chosenLabel}</span>
+              </label>
+              <span className="text-right text-sm tabular-nums">
+                {chosen?.snap_price_by_volume
+                  ? `${formatUnitPrice(chosen.snap_price_by_volume)} đ`
+                  : '—'}
+              </span>
+              <Input
+                type="number"
+                min={0}
+                inputMode="decimal"
+                className="h-8 text-right tabular-nums"
+                aria-label={`Đơn giá mới cho ${item.product_name || item.product_code}`}
+                placeholder="Giữ nguyên"
+                value={priceByItem[item.id] ?? ''}
+                onChange={(event) =>
+                  setPriceByItem((prev) => ({ ...prev, [item.id]: event.target.value }))
+                }
+              />
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }

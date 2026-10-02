@@ -1336,9 +1336,9 @@ def choose_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db
     pr, item = _open_line(db, pid, item_id, user, "read")
     option_service.ensure_can_choose(
         pr, user, user_has_permission(db, user, "purchase_request", "approve"))
-    # Đợt 3b: chỉ chọn trên dòng NSTM ĐÃ chốt hoàn thành — chưa chốt thì danh sách
-    # phương án còn đang gắn dở, chọn lúc đó là chọn trên dữ liệu chưa xong.
-    option_service.ensure_line_done(item)
+    # bao-CR-569 (02/10/2026): BỎ cổng «NSTM phải chốt hoàn thành xử lý dòng» (đợt 3b). Đại ca
+    # chốt làm như YCBG — phương án gắn tới đâu người yêu cầu thấy và chọn tới đó, vì người lập
+    # đơn là chính nhân sự thu mua, không cần thêm một nhịp bàn giao.
     o = option_service.choose_option(db, pr, item, oid, user.id)
     msg = "Đã chốt phương án" if o.is_chosen else "Đã bỏ chốt phương án"
     return success(_out_option(db, o, user_has_permission(db, user, "supplier", "read")), msg)
