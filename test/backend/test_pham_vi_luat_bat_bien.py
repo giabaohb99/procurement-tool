@@ -224,6 +224,20 @@ BB4_CONTROLLER_MIEN_TRU = {
                                           "dòng của lô thuộc entity PUBLIC customs_price, require từng route",
     "export_log/controller.py": "gác bằng `_guard_view` (can_view_any hoặc setting.read)",
     "comment/controller.py": "gác bằng `service.resolve_doc` — làm CẢ require lẫn apply_scope",
+    # -- báo cáo kiểu Haravan (duoc-CR-548): controller chỉ gác require, phạm vi lọc ở SERVICE.
+    #    Thêm khi gom erp-v2 lên prod 02/10/2026 (bao-CR-561), đã soi từng tệp. --
+    "approval/report_controller.py": "require('approval_flow', …); phạm vi `apply_scope` từng loại "
+                                     "chứng từ trong `report_service` (loại thiếu quyền đọc bị LOẠI HẲN)",
+    "employee/report_controller.py": "require('employee', …); `apply_scope(Employee, 'employee')` "
+                                     "trong `report_headcount_events` cho mọi mốc đếm",
+    "leave/report_controller.py": "require('leave_request', …); `apply_scope(LeaveRequest, "
+                                  "'leave_request')` trong `report_rows`",
+    "leave/balance_report_controller.py": "require('leave_balance', …); `apply_scope(LeaveBalance, "
+                                          "'leave_balance')` trong `balance_report_service`",
+    "document/report_controller.py": "require('document', …); lọc `access_service.visible_condition` "
+                                     "trong `report_service._base_query` — cùng luật với danh sách văn bản",
+    "work/report_controller.py": "require('work_task', …) — `work_task` PUBLIC; chốt thật là "
+                                 "`list_id IN visible_list_ids` trong `report_service.compute_work_summary`",
     #  `document/controller.py` rút khỏi danh sách (bao-CR-533): duoc-CR-485 thêm `apply_scope(..., "approve")`
     #  trong `_can_approve_doc`, tệp đã tự gọi hàm phạm vi.
     "document/link_controller.py": "cùng `ensure_can` — cụm 05",

@@ -70,6 +70,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-561 | Gom toàn bộ nhánh erp-v2 lên prod một lần
+- status: dang-lam
+- date: 2026-10-02
+Đại ca thấy prod còn bản cũ của Tra cứu thị trường và bảo gom hết code lại, đẩy một lần, đừng để rơi rớt. Em đo thì
+erp-v2 còn hơn prod khoảng 300 tệp, gần như toàn bộ là việc của anh Được đã chạy ở dev nhưng chưa lên prod: phân hệ
+Báo cáo theo kỳ kiểu Haravan cùng tám báo cáo mới (nhân sự, nghỉ phép, quỹ phép, đặt xe, đóng dấu, văn bản, phê duyệt,
+công việc), nút «Rút về để sửa» của Văn bản, Nhóm dự án, Tra cứu thị trường dạng tab và trang chi tiết thuốc BVTV mới.
+Đại ca chọn gom hết.
+
+Em làm theo kịch bản phát hành: nạp bản sao lưu prod vào một cơ sở dữ liệu tạm ở máy em, chạy thử hai migration (chỉ
+tạo chỉ mục) và seed prod, đều sạch. Chạy trọn bộ bài kiểm máy chủ (6.636 bài) và giao diện mới (4.930 bài): bài đỏ còn
+lại đều là bài đỏ sẵn trên prod hiện tại (bot Telegram, môi trường dev), trừ hai bài mới đỏ đã được xử lý. Bài luật
+phạm vi báo sáu báo cáo mới không lọc phạm vi ở tầng điều khiển; em soi từng tệp thì cả sáu đều lọc ở tầng xử lý, nên
+chỉ khai thêm lý do miễn trừ, không có lỗ dữ liệu. Bài «bấm đúp Xuất Excel» đỏ ngẫu nhiên do giả lập tải xong tức thì,
+đã sửa bài kiểm. Trần kết nối MySQL prod là 151, lúc cao nhất mới dùng 45, nên vùng kết nối mới không đáng lo.
+
+Mã nguồn: commit gộp trên main có nội dung y hệt erp-v2; test/backend/test_pham_vi_luat_bat_bien.py,
+frontend-v2/src/modules/report/pages/report-analytics-page.test.tsx.
+
+---
+
 ## bao-CR-558 | Bản cũ: hộp «Thuốc BVTV chứa hoạt chất cấm» tự hiện ở màn Pháp lý và không tắt được
 - status: xong
 - date: 2026-10-02
