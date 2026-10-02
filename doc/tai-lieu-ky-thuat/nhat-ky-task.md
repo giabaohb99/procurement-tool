@@ -105,6 +105,10 @@ Mã nguồn: `backend/app/modules/legacy_datxe/builder.py` (`PeopleResolver._mat
 `test/backend/test_dong_bo_datxe_tra_nguoi_theo_email_cr562.py` (10 bài) cùng 65 bài đồng bộ cũ xanh.
 Deploy: chưa commit, chưa deploy.
 
+
+Lên prod lúc 14:08 ngày 02/10 (Agent 1 commit thay Agent 2 theo lời đại ca; erp-v2 a384b908, main 40aab970), cùng đợt với
+ba commit phân quyền báo cáo + K3 của anh Được. Build ảnh trước rồi mới đổi container nên gián đoạn khoảng 30 giây. Công tắc
+đồng bộ bên ERP vẫn tắt.
 ---
 
 ## bao-CR-560 | Chép xe và tài xế từ dev lên prod để chuẩn bị đồng bộ app đặt xe cũ
