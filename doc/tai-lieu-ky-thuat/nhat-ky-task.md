@@ -89,7 +89,7 @@ Mã nguồn: script tạm `clear_hh_non_label.py` (không commit) · sao lưu `~
 ---
 
 ## bao-CR-556 | Bỏ cột «kết quả xét duyệt» (approve_status) của phiếu khảo sát
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca hỏi cột `approve_status` trên phiếu khảo sát là gì và có bỏ được không. Cột này là «kết quả xét
 duyệt» (chưa xét / duyệt / không duyệt) đứng cạnh trạng thái phiếu, ý ban đầu để nhớ quyết định duyệt cũ
@@ -101,7 +101,10 @@ bản mới, gỡ khỏi bộ nhập Excel khảo sát, dữ liệu mẫu và sc
 chỉ để canh cột này. Lý do trả về / từ chối vẫn lưu ở ô ghi chú duyệt như trước.
 
 Kiểm: 106 bài kiểm luồng duyệt, khảo sát, nhập liệu và bộ mã xanh (chỉ còn bài đỏ cũ của YCTT); bản mới
-kiểm kiểu 0 lỗi. Đang ở máy em, chưa commit.
+kiểm kiểu 0 lỗi.
+
+Lên dev và prod ngày 02/10 cùng bao-CR-553 / 554 (main 8e6e23e3). Prod chạy migration thật (sao lưu trước:
+`procurement_truoc_cr553_556_20261002_0917.sql.gz`); dev và máy em đã đứng sau 5f39 nên xóa cột tay.
 
 Mã nguồn: survey/model.py, survey/controller.py, survey/service.py, core/status_codes.py,
 import_tool/survey_import.py, seed_khao_sat_demo.py, scripts/import_survey_history.py, migration
@@ -110,7 +113,7 @@ c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, 
 ---
 
 ## bao-CR-554 | Trả về phiếu đã duyệt (khảo sát, YCBG, YCMH) và chặn duyệt phiếu khảo sát còn dòng chưa quyết
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca nêu hai việc còn lại. Một: phiếu khảo sát chỉ được duyệt cả phiếu khi mọi dòng đã có quyết định
 (Đã duyệt hoặc Không duyệt); còn dòng Chờ duyệt hay Thiếu thông tin thì hệ thống chặn và báo còn mấy
@@ -126,7 +129,9 @@ bị kéo về «chưa có đơn» trong khi đơn vẫn còn — một lỗ cũ
 Nút Trả về của ba chứng từ nay hiện theo cờ do máy chủ tính, cả bản cũ lẫn bản mới.
 
 Kiểm: 15 bài kiểm mới; chạy cùng 50 bài luồng duyệt và chuyển phòng cũ, chỉ còn bài đỏ cũ của YCTT (đã
-ghi nhận từ trước). Đang ở máy em, chưa commit.
+ghi nhận từ trước). Bản mới (Agent 2 làm) kiểm kiểu 0 lỗi, vitest thu mua 779 bài xanh.
+
+Lên dev và prod ngày 02/10 cùng bao-CR-553 / 556 (main 8e6e23e3). Không có migration.
 
 Mã nguồn: survey/service.py (check_lines_decided, RETURNABLE_STATUSES), survey_request/service.py
 (return_to_requester), purchase_request/service.py (can_return_requester) + controller ba phân hệ;
@@ -135,7 +140,7 @@ frontend/src/pages/{SurveyDetail,SurveyRequestDetail,PurchaseRequestDetail}.tsx;
 ---
 
 ## bao-CR-553 | YCTT (yêu cầu thanh toán) thêm ô «Trưởng bộ phận» in trên phiếu
-- status: dang-lam
+- status: xong
 - date: 2026-10-01
 Đại ca muốn phiếu yêu cầu thanh toán in được tên người khác ở dòng «Trưởng phòng ban/bộ phận»: chị Mi
 duyệt, nhưng bản in nội bộ phải ghi anh Dững. Ô Giám đốc và ô TP duyệt trên bản in giữ nguyên như cũ. Cùng
@@ -149,7 +154,11 @@ người được chọn), ngày 02/10 đại ca bảo một ô Trưởng bộ p
 
 Kiểm: 7 bài kiểm mới, cùng 4 bài xuất Excel YCTT, 11 bài xanh; màn cũ giữ đúng 4 lỗi nền; màn mới kiểm
 kiểu 0 lỗi, eslint 0 lỗi, vitest tài chính 72 bài xanh. Bấm thử trên máy em: chọn Trưởng bộ phận, lưu, mở
-bản in thấy đúng tên. Đang ở máy em, chưa commit.
+bản in thấy đúng tên.
+
+Lên dev và prod ngày 02/10 (main 3fe1350a; cụm đi cùng bao-CR-554 / 556, main 8e6e23e3). Prod chạy
+migration thật, thêm 2 cột; dev và máy em đã đứng sau 5f39 nên thêm cột tay. Sao lưu prod trước deploy:
+`~/proc_backups/procurement_truoc_cr553_556_20261002_0917.sql.gz`.
 
 Mã nguồn: backend/app/modules/payment_request (model, schema, service, controller), migration c553b8e2f4a6,
 frontend/src/pages/PaymentRequestDetail.tsx, frontend-v2/src/modules/finance (Agent 2 dựng, em gỡ ô Người duyệt).
