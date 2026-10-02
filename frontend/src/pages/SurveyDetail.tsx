@@ -950,7 +950,7 @@ export default function SurveyDetail() {
         {!isNew && ['submitted', 'approved'].includes(sv.status) && canApprove && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
             title={sv.status === 'approved' ? 'Hủy duyệt — trả về để người khảo sát sửa & gửi lại' : 'Trả về để người khảo sát sửa & gửi lại'}
-            onClick={async () => { const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để sửa & gửi duyệt lại):', confirmText: 'Trả về' }); if (r !== null) action('reject', { reason: r }) }}>
+            onClick={async () => { const r = await askPrompt({ title: 'Trả về', message: 'Lý do trả về (để sửa & gửi duyệt lại). Phương án đã gắn sang Yêu cầu báo giá sẽ được gỡ, các dòng về Chờ duyệt để duyệt lại; phiếu có phương án đã được chọn thì không trả về được.', confirmText: 'Trả về' }); if (r !== null) action('reject', { reason: r }) }}>
             <i className="ti ti-corner-up-left" />Trả về
           </button>
         )}

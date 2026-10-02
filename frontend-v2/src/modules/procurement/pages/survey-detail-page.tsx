@@ -105,8 +105,11 @@ const REASON_ACTIONS: Record<ReasonAction, { title: string; description: string 
   reject: {
     title: 'Trả về cho người khảo sát',
     //  bao-CR-554: câu nói cho cả phiếu chờ duyệt lẫn phiếu đã duyệt (hủy duyệt rồi trả về).
+    //  bao-CR-563: trả về gỡ phương án đã gắn sang YCBG và mở lại các dòng đã duyệt / không duyệt.
     description:
-      'Phiếu chuyển sang Bị trả lại để người khảo sát sửa rồi gửi duyệt lại. Phiếu đã duyệt thì bỏ duyệt trước.',
+      'Phiếu chuyển sang Bị trả lại để người khảo sát sửa rồi gửi duyệt lại. Phương án đã gắn sang ' +
+      'Yêu cầu báo giá sẽ được gỡ và các dòng về Chờ duyệt để duyệt lại. Không trả về được nếu ' +
+      'phương án của phiếu đã được chọn.',
   },
   cancel: {
     title: 'Từ chối phiếu',

@@ -268,7 +268,11 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
     s = _in_scope(db, sid, user, "approve")
     if s.status not in service.RETURNABLE_STATUSES:
         raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt hoặc đã duyệt")
-    s = service.set_status(db, sid, "rejected", user.id, data.reason)
+    removed = service.clear_for_return(db, sid, user.id)   # bao-CR-563
+    note = data.reason or ""
+    if removed:
+        note = f"{note} (gỡ {removed} phương án đã gắn sang Yêu cầu báo giá)".strip()
+    s = service.set_status(db, sid, "rejected", user.id, note)
     trigger_notification(db=db, event="survey_rejected", doc_type="survey", doc_code=s.code,
                          creator_id=s.created_by or user.id, background_tasks=background_tasks,
                          reason=data.reason or "", link=f"/surveys/{s.id}")

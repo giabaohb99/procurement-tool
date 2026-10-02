@@ -86,6 +86,29 @@ c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, 
 
 ---
 
+## bao-CR-563 | Trả về phiếu khảo sát gỡ phương án đã đẩy sang Yêu cầu báo giá và mở lại các dòng
+- status: xong
+- date: 2026-10-02
+Khi kiểm hai luật của bao-CR-554, em thấy «Trả về» phiếu khảo sát không dọn những gì phiếu đã đẩy đi.
+Dòng được duyệt là phương án tự gắn sang Yêu cầu báo giá; trả về mà để nguyên thì phương án cũ vẫn hiện
+bên đó, nhân viên sửa phiếu thì hệ thống xóa rồi tạo lại dòng nên phương án trỏ vào dòng đã mất, duyệt
+lại thì gắn thêm phương án mới thành trùng; dòng sửa giá xong cũng vẫn «Đã duyệt» nên quản lý duyệt lại
+cả phiếu mà không phải xem lại dòng nào. Đại ca bảo sửa luôn, trạng thái giữ «Bị trả lại» và vẫn sửa
+được như Nháp.
+
+Nay trả về (cả phiếu chờ duyệt lẫn phiếu đã duyệt) sẽ chặn nếu phương án lấy từ phiếu đã được chọn ở
+Yêu cầu báo giá hoặc đã nằm trong phương án của Yêu cầu mua hàng. Không vướng thì hệ thống gỡ phương án
+đã gắn, đưa mọi dòng «Đã duyệt» hay «Không duyệt» về «Chờ duyệt» (dòng «Thiếu thông tin» giữ nguyên), và
+ghi kèm số phương án đã gỡ vào lý do trả về. Câu hướng dẫn trong hộp «Trả về» ở cả hai giao diện nói rõ
+điều này.
+
+Mã nguồn: `backend/app/modules/survey/service.py` (`clear_for_return`), `backend/app/modules/survey/controller.py`
+(`reject_`), `frontend-v2/src/modules/procurement/pages/survey-detail-page.tsx`, `frontend/src/pages/SurveyDetail.tsx`,
+bài kiểm `test/backend/test_tra_ve_khao_sat_don_phuong_an_cr563.py` (8 bài) cùng 17 bài CR-554 xanh.
+Deploy: chưa commit, chưa deploy.
+
+---
+
 ## bao-CR-562 | Đồng bộ app đặt xe cũ tự nhận người tạo theo email
 - status: xong
 - date: 2026-10-02
