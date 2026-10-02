@@ -85,6 +85,7 @@ export const LEAVE_TYPE: readonly StatusOption[] = [
   {"value": "wedding", "label": "Nghỉ cưới hỏi", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "funeral", "label": "Nghỉ tang chế", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "comp_off", "label": "Nghỉ bù", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "paternity", "label": "Nghỉ vợ sinh con", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
 /** Trạng thái công nợ */
@@ -146,13 +147,6 @@ export const SUPPLIER_LEGAL_TYPE: readonly StatusOption[] = [
   {"value": "household", "label": "Hộ kinh doanh", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
-/** Kết quả duyệt phiếu khảo sát */
-export const SURVEY_APPROVE_STATUS: readonly StatusOption[] = [
-  {"value": "pending", "label": "Chưa xét duyệt", "sort_order": 0, "is_terminal": false, "is_exception": false},
-  {"value": "approved", "label": "Duyệt", "sort_order": 0, "is_terminal": false, "is_exception": false},
-  {"value": "rejected", "label": "Không duyệt", "sort_order": 0, "is_terminal": false, "is_exception": false},
-]
-
 /** Tra theo tên bộ, cho chỗ dựng ô chọn động. */
 export const STATUS_SETS = {
   contract_expiry: CONTRACT_EXPIRY,
@@ -170,7 +164,6 @@ export const STATUS_SETS = {
   po_progress_status: PO_PROGRESS_STATUS,
   pr_line_status: PR_LINE_STATUS,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
-  survey_approve_status: SURVEY_APPROVE_STATUS,
 } as const
 
 /** Nhãn theo mã, cho chỗ chỉ cần hiển thị. */

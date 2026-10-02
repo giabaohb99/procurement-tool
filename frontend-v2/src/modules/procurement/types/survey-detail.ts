@@ -63,18 +63,8 @@ export interface SurveyDetail {
   uom: string
   proposed_rate: number
 
-  /**
-   * Kết quả duyệt — MÃ cố định (`pending | approved | rejected`), xem `SURVEY_APPROVE_STATUS`
-   * trong `@/shared/constants/statuses`. Backend suy ra từ `status` lúc duyệt, form không gửi
-   * trường này lên bao giờ.
-   *
-   * KHÔNG phải bản sao của `status`: phiếu duyệt xong rồi bị hủy vẫn giữ `approved` ở đây.
-   */
-  approve_status: string
-  /** Nhãn tiếng Việt của `approve_status`, backend gắn sẵn. Muốn hiện thì dùng cái này —
-   *  đừng tự viết bảng dịch mã sang tiếng Việt trong TS. */
-  approve_status_label: string
-  /** Lý do trả lại / từ chối cũng nằm ở đây — bảng `tab_survey` không có cột riêng. */
+  /** Lý do trả lại / từ chối nằm ở đây — bảng `tab_survey` không có cột riêng. (Cột
+   *  `approve_status` + nhãn của nó đã bỏ ở bao-CR-556.) */
   approve_note: string
   status: string
 
@@ -539,4 +529,12 @@ export function isSurveyEditable(status: string): boolean {
 /** Xóa được: chưa gửi, đã bị trả lại, hoặc đã từ chối. */
 export function isSurveyDeletable(status: string): boolean {
   return ['draft', 'rejected', 'cancelled'].includes(status)
+}
+
+/**
+ * bao-CR-554 (đại ca chốt 02/10/2026): «Trả về» cho người khảo sát mở ở cả phiếu ĐÃ DUYỆT —
+ * tức hủy duyệt để sửa rồi gửi lại. Duyệt / Từ chối vẫn chỉ khi đang chờ duyệt.
+ */
+export function isSurveyReturnable(status: string): boolean {
+  return status === 'submitted' || status === 'approved'
 }

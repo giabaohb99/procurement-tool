@@ -172,6 +172,11 @@ export interface PurchaseRequestDetail {
   /** Backend đã tính sẵn quyền của NGƯỜI ĐANG ĐĂNG NHẬP trên phiếu này. */
   can_dispatch: boolean
   can_approve: boolean
+  /**
+   * bao-CR-554: được «Trả về» cho người lập — quản lý (quyền Hủy) hoặc người duyệt, phiếu chờ duyệt
+   * hoặc đã duyệt / đã điều phối mà chưa dòng nào lên ĐMH. Backend tính, giao diện chỉ đọc.
+   */
+  can_return?: boolean
   /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng thu mua (bao-CR-524). */
   can_transfer_dept?: boolean
   can_return_dept?: boolean

@@ -284,7 +284,8 @@ export default function SurveyRequestDetail() {
   const [showPrModal, setShowPrModal] = useState(false)         // popup DS phiếu YCMH đã sinh
   const [transferMode, setTransferMode] = useState<'transfer' | 'return' | null>(null)   // bao-CR-414 GĐ5
   const [returnChoiceOpen, setReturnChoiceOpen] = useState(false)   // bao-CR-498
-  const canReturnToRequester = !isNew && sv.status === 'submitted' && can('survey_request', 'approve')
+  // bao-CR-554: cờ server — chờ duyệt, hoặc đã duyệt mà việc khảo sát chưa bắt đầu (hủy duyệt để sửa lại).
+  const canReturnToRequester = !isNew && !!sv.can_return_requester
   const returnResolution = resolveReturnAction(canReturnToRequester, !isNew && !!sv.can_return_dept)
   const runReturn = async (target: ReturnTarget) => {
     if (target === 'department') { setTransferMode('return'); return }

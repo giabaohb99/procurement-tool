@@ -79,36 +79,11 @@ SUPPLIER_LEGAL_TYPE = register(CodeSet("supplier_legal_type", "Loại hình phá
 
 
 # =========================================================================
-# B-04 — Phiếu khảo sát (`tab_survey.approve_status`)
+# B-04 — Phiếu khảo sát (`tab_survey.approve_status`) — ĐÃ BỎ ở bao-CR-556 (02/10/2026)
 # =========================================================================
-
-# Cột `approve_status` — KẾT QUẢ XÉT DUYỆT của phiếu khảo sát.
-#
-# Khác mọi cột đã làm ở B-02/B-03: cột này KHÔNG do người dùng nhập. Nó không có mặt trong
-# schema đầu vào nào cả, chỉ `survey/service.set_status()` ghi vào, suy từ `status` của phiếu.
-# Vì vậy B-04 không phải sửa ô chọn hay ô lọc nào — `frontend/` không hề đọc cột này.
-#
-# Nó KHÔNG phải bản sao của `status`: `set_status` chỉ ghi khi `status` là `approved`/`rejected`,
-# nên phiếu duyệt xong rồi bị hủy vẫn giữ `approved` ở đây. Cột này nhớ QUYẾT ĐỊNH DUYỆT GẦN
-# NHẤT, còn `status` nhớ phiếu đang ở đâu. Đừng "dọn" bằng cách suy lại từ `status`.
-#
-# Mã trùng chữ với `status` của phiếu (`approved` / `rejected`) là CỐ Ý — cùng một sự kiện
-# duyệt sinh ra cả hai, đặt tên khác nhau chỉ tổ khiến người đọc `set_status` tưởng có hai
-# khái niệm.
-#
-# `pending` thay cho chuỗi rỗng: rỗng ở cột này có nghĩa riêng — CHƯA có quyết định duyệt (phiếu
-# nháp hoặc vừa gửi duyệt) — chứ không phải dữ liệu thiếu, nên nó phải là một mã có tên chứ
-# không được để lẫn với `NULL`/`""` (bẫy đã ghi ở `doc/erp/15` §3 B-04). Nhãn để "Chưa xét duyệt"
-# chứ KHÔNG dùng "Chờ duyệt": "Chờ duyệt" là một giá trị của cột `line_approve` cấp DÒNG, hai
-# cột đứng cạnh nhau trên cùng màn hình, trùng chữ là đọc báo cáo ra hiểu nhầm ngay.
-#
-# `sort_order` để 0 hết: phiếu bị "Không duyệt" vẫn sửa rồi gửi duyệt lại được, không có chuỗi
-# một chiều nào để mà khai.
-SURVEY_APPROVE_STATUS = register(CodeSet("survey_approve_status", "Kết quả duyệt phiếu khảo sát", [
-    Code("pending",  "Chưa xét duyệt"),
-    Code("approved", "Duyệt"),
-    Code("rejected", "Không duyệt"),
-]))
+# Bộ mã `survey_approve_status` (pending / approved / rejected) từng đứng ở đây. Cột chỉ do
+# `survey/service.set_status()` ghi, không màn hình nào đọc, và sau bao-CR-554 (trả về được cả
+# phiếu đã duyệt) nó chỉ còn là bản sao của `status` — đại ca quyết bỏ cả cột lẫn bộ mã.
 
 
 # =========================================================================

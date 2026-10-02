@@ -343,6 +343,31 @@ def can_transfer_dept(db: Session, s: SurveyRequest) -> bool:
     return True
 
 
+#  bao-CR-554 — «Trả về» cho người yêu cầu sửa: từ Chờ duyệt như cũ, và từ Đã duyệt / Đang xử lý
+#  (đại ca chốt 02/10/2026: quản lý hủy duyệt để nhân viên sửa rồi gửi lại) với cùng chốt chặn
+#  của chuyển phòng — việc khảo sát chưa thật sự bắt đầu.
+def can_return_requester(db: Session, s: SurveyRequest) -> bool:
+    if s.status == "submitted":
+        return True
+    return can_transfer_dept(db, s)
+
+
+def return_to_requester(db: Session, sid: int, reason: str, user_id: int) -> SurveyRequest:
+    """Trả phiếu về «Bị trả lại» (rejected). Phiếu đã duyệt thì gỡ NSTM + ngày tiếp nhận mọi
+    dòng (duyệt lại sẽ tự gán lại), như chuyển phòng."""
+    s = get_sr(db, sid)
+    if not can_return_requester(db, s):
+        raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt, hoặc đã duyệt mà chưa dòng nào "
+                                 "hoàn thành, chưa chọn phương án và chưa sinh YCMH")
+    if s.status != "submitted":
+        for ln in lines_of(db, sid):
+            ln.assignee = ""
+            ln.received_date = ""
+            ln.updated_by = user_id
+        db.flush()
+    return set_status(db, sid, "rejected", user_id, reason)
+
+
 def transfer_handler_dept(db: Session, sid: int, handler_dept_id: int, reason: str,
                           user_id: int) -> SurveyRequest:
     """Đẩy YCBG sang phòng xử lý khác (hoặc TRẢ VỀ THU MUA khi `handler_dept_id` = 0 — bao-CR-524:

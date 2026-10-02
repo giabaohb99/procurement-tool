@@ -92,6 +92,11 @@ export interface SurveyRequestDetail {
   /** bao-CR-414 GĐ5: được đẩy cả phiếu sang phòng khác / trả về phòng thu mua (bao-CR-524). */
   can_transfer_dept?: boolean
   can_return_dept?: boolean
+  /**
+   * bao-CR-554: được «Trả về» cho người lập — người duyệt, phiếu chờ duyệt, hoặc đã duyệt / đang xử
+   * lý mà chưa dòng nào hoàn thành, chưa chọn phương án, chưa sinh YCMH. Backend tính, giao diện chỉ đọc.
+   */
+  can_return_requester?: boolean
   purpose: string
   request_date: string
   status: string

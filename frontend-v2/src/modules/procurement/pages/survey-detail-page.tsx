@@ -25,7 +25,6 @@ import { DOC_KINDS } from '@/modules/dossier/types/dossier-applicability'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
-import { SURVEY_APPROVE_STATUS, labelOf } from '@/shared/constants/statuses'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
@@ -86,6 +85,7 @@ import {
   MANAGER_KEYS,
   SURVEY_TABLE_LABELS,
   isSurveyDeletable,
+  isSurveyReturnable,
   isSurveyEditable,
   sectionsOf,
   type SurveyDetail,
@@ -104,7 +104,9 @@ type ReasonAction = 'reject' | 'cancel'
 const REASON_ACTIONS: Record<ReasonAction, { title: string; description: string }> = {
   reject: {
     title: 'Trả về cho người khảo sát',
-    description: 'Phiếu chuyển sang Bị trả lại để người khảo sát sửa rồi gửi duyệt lại.',
+    //  bao-CR-554: câu nói cho cả phiếu chờ duyệt lẫn phiếu đã duyệt (hủy duyệt rồi trả về).
+    description:
+      'Phiếu chuyển sang Bị trả lại để người khảo sát sửa rồi gửi duyệt lại. Phiếu đã duyệt thì bỏ duyệt trước.',
   },
   cancel: {
     title: 'Từ chối phiếu',
@@ -549,33 +551,39 @@ export function SurveyDetailPage() {
         </Button>
       )}
 
+      {/* bao-CR-554: «Trả về» mở cả khi phiếu ĐÃ DUYỆT (= hủy duyệt để sửa lại); Duyệt / Từ chối
+          chỉ khi đang chờ duyệt. Backend `POST /{id}/reject` nhận cả hai trạng thái. */}
+      {!isNew && isSurveyReturnable(status) && canApprove && (
+        <Button
+          variant="outline"
+          className="text-warning hover:text-warning"
+          title={
+            status === 'approved'
+              ? 'Hủy duyệt — trả về để người khảo sát sửa và gửi lại'
+              : 'Trả về để người khảo sát sửa và gửi lại'
+          }
+          onClick={() => {
+            setReason('')
+            setReasonFor('reject')
+          }}
+        >
+          <CornerUpLeft />
+          Trả về
+        </Button>
+      )}
       {!isNew && status === 'submitted' && canApprove && (
-        <>
-          <Button
-            variant="outline"
-            className="text-warning hover:text-warning"
-            title="Trả về để người khảo sát sửa và gửi lại"
-            onClick={() => {
-              setReason('')
-              setReasonFor('reject')
-            }}
-          >
-            <CornerUpLeft />
-            Trả về
-          </Button>
-          <Button
-            variant="outline"
-            className="text-destructive hover:text-destructive"
-            title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
-            onClick={() => {
-              setReason('')
-              setReasonFor('cancel')
-            }}
-          >
-            <Ban />
-            Từ chối
-          </Button>
-        </>
+        <Button
+          variant="outline"
+          className="text-destructive hover:text-destructive"
+          title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
+          onClick={() => {
+            setReason('')
+            setReasonFor('cancel')
+          }}
+        >
+          <Ban />
+          Từ chối
+        </Button>
       )}
 
       {!isNew && isSurveyDeletable(status) && (
@@ -953,9 +961,6 @@ function createEmptySurvey(
     item_name: '',
     uom: '',
     proposed_rate: 0,
-    // Phiếu mới chưa ai xét duyệt — `pending` là MÃ cho tình trạng đó (B-04), không phải rỗng.
-    approve_status: 'pending',
-    approve_status_label: labelOf(SURVEY_APPROVE_STATUS, 'pending'),
     approve_note: '',
     status: 'draft',
     created_at: new Date().toISOString(),

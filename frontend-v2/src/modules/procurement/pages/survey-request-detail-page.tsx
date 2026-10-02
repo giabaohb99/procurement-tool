@@ -348,7 +348,9 @@ export function SurveyRequestDetailPage() {
   const status = data.status
   //  bao-CR-498: hai đường «Trả về» gộp vào một nút — đường luồng duyệt (người duyệt trả người
   //  lập sửa lại) và đường trả phòng lập tự xử lý theo cờ backend `can_return_dept` (bao-CR-414).
-  const canReturnToRequester = !isNew && status === 'submitted' && can('survey_request', 'approve')
+  //  bao-CR-554: luật trả về nay do backend tính (`can_return_requester`) — mở cả phiếu đã duyệt
+  //  khi chưa dòng nào hoàn thành / chọn phương án / sinh YCMH.
+  const canReturnToRequester = !isNew && Boolean(data.can_return_requester)
   const canReturnToDepartment = !isNew && Boolean(data.can_return_dept)
   const returnResolution = resolveReturnAction(canReturnToRequester, canReturnToDepartment)
 

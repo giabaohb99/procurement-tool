@@ -406,6 +406,8 @@ def _out(db: Session, pr, user=None) -> dict:
     d["can_approve"] = bool(user is not None and pr.status == "submitted"
                             and user_has_permission(db, user, "purchase_request", "approve")
                             and _in_approve_scope(db, user, pr.id))
+    # bao-CR-554: nút «Trả về» cho người yêu cầu — server tính vì phải hỏi cả phạm vi lẫn dòng ĐMH.
+    d["can_return"] = bool(user is not None and _can_return_requester(db, user, pr))
     # NCC "hiệu lực" ở cột cũ (suggested_supplier*) — che nếu không có supplier.read (giữ Task 5).
     if not can_sup_read:
         _blank_supplier(d)
@@ -835,6 +837,18 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
     raise HTTPException(403, "Bạn không có quyền trả về / từ chối phiếu này")
 
 
+def _can_return_requester(db: Session, user, pr: PurchaseRequest) -> bool:
+    """bao-CR-554 — cờ «Trả về» cho người yêu cầu (đại ca chốt 02/10/2026): quản lý (quyền Hủy)
+    hoặc người duyệt (quyền Duyệt, trong phạm vi) — cả hai ở Chờ duyệt lẫn Đã duyệt / Đã điều
+    phối, miễn chưa dòng nào lên ĐMH (`service.can_return_requester`). Người duyệt trước đây chỉ
+    trả được ở Chờ duyệt."""
+    if not service.can_return_requester(db, pr):
+        return False
+    if user_has_permission(db, user, "purchase_request", "cancel") and _scope_ok(db, user, pr.id, "cancel"):
+        return True
+    return bool(user_has_permission(db, user, "purchase_request", "approve") and _in_approve_scope(db, user, pr.id))
+
+
 @router.post("/{pid}/cancel")
 def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
@@ -847,7 +861,12 @@ def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
 
 @router.post("/{pid}/return")
 def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
-    _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
+    pr = service.get_pr(db, pid)
+    if not _can_return_requester(db, user, pr):   # bao-CR-554: cùng cờ với nút trên giao diện
+        if pr.status not in ("submitted",) + service.TRANSFERABLE_STATUSES or not service.can_return_requester(db, pr):
+            raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt, hoặc đã duyệt mà chưa dòng nào "
+                                     "lên đơn mua hàng — hủy đơn liên quan trước")
+        raise HTTPException(403, "Bạn không có quyền trả về phiếu này")
     pr = service.return_pr(db, pid, data.reason, user.id)
     trigger_notification(db=db, event="pr_returned", doc_type="purchase_request", doc_code=pr.code,
                          creator_id=pr.created_by or user.id, background_tasks=background_tasks,

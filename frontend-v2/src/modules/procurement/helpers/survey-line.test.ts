@@ -51,8 +51,6 @@ function header(changes: Partial<SurveyDetail> = {}): SurveyDetail {
     item_name: '',
     uom: '',
     proposed_rate: 0,
-    approve_status: 'pending',
-    approve_status_label: 'Chưa xét duyệt',
     approve_note: '',
     status: 'draft',
     created_at: '2026-08-19T00:00:00',

@@ -70,6 +70,92 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-555 | Dọn Mã HH / Tên HH của sản phẩm ngoài phân loại nhãn
+- status: xong
+- date: 2026-10-02
+Đại ca phát hiện nhiều mã sản phẩm không phải nhãn (thùng, chai, nắp…) vẫn đang có Mã HH và Tên HH,
+mà giá trị là dãy số chạy dài gắn tên thuốc không liên quan, giống lỗi lệch dòng khi nạp Excel ngày
+trước. Đại ca chốt: chỉ giữ các phân loại có chữ Nhãn và Tem, mọi phân loại khác thì xóa hai ô này;
+chỉ sửa trên danh mục sản phẩm, dòng đơn mua hàng đang chép Mã HH giữ nguyên.
+
+Em báo số trước khi xóa: prod có 6.201 mã đang có Mã HH, trong đó 963 mã ngoài nhãn (nhiều nhất là
+Thùng 312, Chai 268, Nắp 186). Script chép giá trị cũ của từng mã ra tệp JSON rồi mới xóa, chạy lần
+lượt prod (963 mã), dev và local (941 mã mỗi nơi). Tệp sao lưu để ở thư mục sao lưu trên máy chủ và ở
+máy local. Không đổi mã nguồn.
+
+Mã nguồn: script tạm `clear_hh_non_label.py` (không commit) · sao lưu `~/proc_backups/hh_clear_backup_20261002_013208.json`
+(prod), `~/proc_backups/dev_hh_clear_backup_20261002_013226.json` (dev), `D:/vps_deploy/local_hh_clear_backup_20261002_013233.json`
+
+---
+
+## bao-CR-556 | Bỏ cột «kết quả xét duyệt» (approve_status) của phiếu khảo sát
+- status: dang-lam
+- date: 2026-10-02
+Đại ca hỏi cột `approve_status` trên phiếu khảo sát là gì và có bỏ được không. Cột này là «kết quả xét
+duyệt» (chưa xét / duyệt / không duyệt) đứng cạnh trạng thái phiếu, ý ban đầu để nhớ quyết định duyệt cũ
+khi phiếu bị hủy. Rà mã nguồn: chỉ máy chủ ghi lúc duyệt / trả về, không màn hình nào đọc, và sau
+bao-CR-554 nó chỉ còn là bản sao của trạng thái phiếu. Đại ca quyết bỏ.
+
+Đã bỏ cột khỏi bảng (migration xóa cột, đi cùng đợt với bao-CR-553), bỏ bộ mã tương ứng ở máy chủ và ở
+bản mới, gỡ khỏi bộ nhập Excel khảo sát, dữ liệu mẫu và script nhập lịch sử khảo sát; xóa 15 bài kiểm cũ
+chỉ để canh cột này. Lý do trả về / từ chối vẫn lưu ở ô ghi chú duyệt như trước.
+
+Kiểm: 106 bài kiểm luồng duyệt, khảo sát, nhập liệu và bộ mã xanh (chỉ còn bài đỏ cũ của YCTT); bản mới
+kiểm kiểu 0 lỗi. Đang ở máy em, chưa commit.
+
+Mã nguồn: survey/model.py, survey/controller.py, survey/service.py, core/status_codes.py,
+import_tool/survey_import.py, seed_khao_sat_demo.py, scripts/import_survey_history.py, migration
+c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, shared/constants/statuses.ts.
+
+---
+
+## bao-CR-554 | Trả về phiếu đã duyệt (khảo sát, YCBG, YCMH) và chặn duyệt phiếu khảo sát còn dòng chưa quyết
+- status: dang-lam
+- date: 2026-10-02
+Đại ca nêu hai việc còn lại. Một: phiếu khảo sát chỉ được duyệt cả phiếu khi mọi dòng đã có quyết định
+(Đã duyệt hoặc Không duyệt); còn dòng Chờ duyệt hay Thiếu thông tin thì hệ thống chặn và báo còn mấy
+dòng. Hai: phiếu đã duyệt rồi thì quản lý vẫn «Trả về» được để nhân viên sửa rồi gửi duyệt lại, dùng lại
+đúng nút Trả về đang có, áp cho cả cụm khảo sát, YCBG (yêu cầu báo giá), YCMH (yêu cầu mua hàng) và ĐMH
+(đơn mua hàng).
+
+Cách làm: phiếu khảo sát cho trả về ở cả Đã duyệt. YCBG trả về được từ Đã duyệt / Đang xử lý khi việc khảo
+sát chưa bắt đầu (chưa dòng nào hoàn thành, chưa chọn phương án, chưa sinh YCMH), và gỡ nhân sự phụ trách
+của các dòng để duyệt lại thì tự gán lại. YCMH: người duyệt cũng trả được phiếu Đã duyệt / Đã điều phối,
+nhưng phiếu đã có dòng lên đơn mua hàng thì không ai trả về được nữa (trước đây quản lý trả được và dòng
+bị kéo về «chưa có đơn» trong khi đơn vẫn còn — một lỗ cũ). ĐMH đã có «Hủy duyệt» từ trước, giữ nguyên.
+Nút Trả về của ba chứng từ nay hiện theo cờ do máy chủ tính, cả bản cũ lẫn bản mới.
+
+Kiểm: 15 bài kiểm mới; chạy cùng 50 bài luồng duyệt và chuyển phòng cũ, chỉ còn bài đỏ cũ của YCTT (đã
+ghi nhận từ trước). Đang ở máy em, chưa commit.
+
+Mã nguồn: survey/service.py (check_lines_decided, RETURNABLE_STATUSES), survey_request/service.py
+(return_to_requester), purchase_request/service.py (can_return_requester) + controller ba phân hệ;
+frontend/src/pages/{SurveyDetail,SurveyRequestDetail,PurchaseRequestDetail}.tsx; frontend-v2 (Agent 2).
+
+---
+
+## bao-CR-553 | YCTT (yêu cầu thanh toán) thêm ô «Trưởng bộ phận» in trên phiếu
+- status: dang-lam
+- date: 2026-10-01
+Đại ca muốn phiếu yêu cầu thanh toán in được tên người khác ở dòng «Trưởng phòng ban/bộ phận»: chị Mi
+duyệt, nhưng bản in nội bộ phải ghi anh Dững. Ô Giám đốc và ô TP duyệt trên bản in giữ nguyên như cũ. Cùng
+lúc tắt email thông báo của anh Dững trên dev và prod (chuông trong hệ thống vẫn bật).
+
+Phiếu nay có ô «Trưởng bộ phận» như yêu cầu mua hàng, ở cả bản cũ lẫn bản mới: chọn trong danh sách trưởng
+phòng các phòng (có Ban Giám đốc của anh Dững) và được in ra bản in; để trống thì bản in vẫn ghi trưởng
+phòng của người lập như trước. Ô chỉ để in, không đổi ai được duyệt hay ai được báo; chỉ sửa được khi phiếu
+còn Nháp; phiếu cũ để trống nên hành vi không đổi. Lúc đầu em làm thêm ô «Người duyệt» (gửi duyệt chỉ báo
+người được chọn), ngày 02/10 đại ca bảo một ô Trưởng bộ phận là đủ nên đã gỡ.
+
+Kiểm: 7 bài kiểm mới, cùng 4 bài xuất Excel YCTT, 11 bài xanh; màn cũ giữ đúng 4 lỗi nền; màn mới kiểm
+kiểu 0 lỗi, eslint 0 lỗi, vitest tài chính 72 bài xanh. Bấm thử trên máy em: chọn Trưởng bộ phận, lưu, mở
+bản in thấy đúng tên. Đang ở máy em, chưa commit.
+
+Mã nguồn: backend/app/modules/payment_request (model, schema, service, controller), migration c553b8e2f4a6,
+frontend/src/pages/PaymentRequestDetail.tsx, frontend-v2/src/modules/finance (Agent 2 dựng, em gỡ ô Người duyệt).
+
+---
+
 ## bao-CR-552 | Ô «Trưởng phòng phê duyệt» và «Trưởng bộ phận» luôn chọn được ở YCMH, YCBG, ĐMH
 - status: xong
 - date: 2026-10-01
