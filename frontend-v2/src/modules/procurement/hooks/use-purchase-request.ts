@@ -182,6 +182,8 @@ export function useUpdateItemStatus(id: number) {
       note?: string
       expected_date?: string
       expected_date_reason?: string
+      /** bao-CR-568: gắn / đổi mã VTBB sau điều phối. */
+      product_code?: string
     }) => purchaseRequestApi.updateItemStatus(id, [item]),
     onSuccess: () => {
       toast.success('Đã cập nhật tiến độ dòng')

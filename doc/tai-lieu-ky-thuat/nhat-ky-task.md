@@ -70,6 +70,44 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-568 | YCMH: chốt xử lý không cần mã VTBB, tạo đơn thì phải có mã, thu mua gắn mã sau điều phối
+- status: dang-lam
+- date: 2026-10-02
+Đại ca muốn yêu cầu mua hàng chạy giống yêu cầu báo giá: phiếu sinh từ YCBG có thể chưa có mã VTBB, nhân sự thu mua
+vẫn chốt hoàn thành xử lý được; nhưng muốn tạo đơn mua hàng thì dòng phải có mã, và sau khi người yêu cầu chốt phương
+án, nhân sự thu mua (hoặc quản lý) được gắn hoặc đổi mã trên dòng đó.
+
+Đã làm: bước chốt xử lý vốn không bắt mã, giữ nguyên. Nhân sự thu mua phụ trách dòng hoặc quản lý nay gắn / đổi mã
+VTBB cho dòng sau điều phối qua cùng đường cập nhật tiến độ dòng; mã phải có trong danh mục và còn dùng, không trùng
+dòng khác trên phiếu, và dòng đã lên đơn mua hàng thì không đổi được nữa (đơn nối về dòng bằng chính mã này). Nút gom
+đơn từ phương án bỏ qua dòng chưa có mã và nói rõ còn mấy dòng phải gắn mã. Bản mới: ô «Mã vật tư» trong hộp Chi tiết
+dòng thành ô chọn sản phẩm khi nhân sự thu mua sửa tiến độ; bản cũ: ô Mã hàng trong bảng thành ô chọn, chọn là lưu
+ngay. Tiện thể thêm phân hệ phân quyền báo cáo vào bài canh độ dài ô chữ (bài này đỏ từ khi anh Được thêm phân hệ).
+
+Kiểm: 6 bài kiểm mới; chạy cùng bộ phương án YCMH và bài canh độ dài, 92 bài xanh; bản mới kiểm kiểu 0 lỗi, eslint 0
+lỗi, vitest thu mua 779 bài xanh; bản cũ giữ đúng 4 lỗi nền. Đang ở máy em, chưa commit.
+
+Mã nguồn: purchase_request/schema.py, service.py (_set_item_product_code), option_service.py (generate_purchase_orders);
+frontend-v2 purchase-request-line-detail-dialog.tsx, purchase-request-detail-page.tsx, use-purchase-request.ts,
+purchase-request-api.ts, types/purchase-request-options.ts; frontend/src/pages/PurchaseRequestDetail.tsx.
+
+---
+
+## bao-CR-567 | YCMH bản mới: quay lại phiếu đã mở thì không sửa được, phải tải lại trang
+- status: dang-lam
+- date: 2026-10-02
+Đại ca mở phiếu PYC02102601 trên dev, bấm Sửa nhưng mọi ô kể cả Mã hàng đều không đổi được, tải lại trang mới sửa được;
+phiếu PYC02102602 cùng dữ liệu thì sửa bình thường. Nguyên nhân: màn chi tiết chỉ dựng bản nháp để sửa khi thấy «dữ liệu
+server vừa đổi»; phiếu đã nằm sẵn trong bộ nhớ đệm (mở phiếu này, sang phiếu khác rồi quay lại) thì dữ liệu có ngay từ
+lượt vẽ đầu nên không ai dựng bản nháp. Bấm Sửa chỉ bật cờ sửa, còn mọi thao tác gõ vào rơi vào bản nháp rỗng. Đã vá:
+có dữ liệu mà chưa có bản nháp thì dựng ngay. Không viết được bài kiểm riêng vì trang này chưa có khung kiểm.
+
+Kiểm: kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đang ở máy em, chưa commit.
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx.
+
+---
+
 ## bao-CR-565 | Chốt hoàn thành khảo sát không còn bắt gắn Mã SP hệ thống
 - status: dang-lam
 - date: 2026-10-02

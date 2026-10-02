@@ -736,7 +736,7 @@ def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> 
     ensure_option_zero(db, pr, items)   # sinh bù cho phiếu điều phối trước tính năng
     chosen = chosen_map(db, [i.id for i in items])
 
-    skipped = {"no_chosen": 0, "already_ordered": 0, "cancelled": 0}
+    skipped = {"no_chosen": 0, "already_ordered": 0, "cancelled": 0, "no_code": 0}
     groups: dict[str, dict] = {}
     for i in items:
         if (i.line_status or "") == pr_service.LINE_STATUS_CANCELLED:
@@ -751,6 +751,12 @@ def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> 
             # — đó là lời "khoan mua dòng này", tôn trọng.
             skipped["no_chosen"] += 1
             continue
+        if not (i.product_code or "").strip():
+            # bao-CR-568: phiếu sinh từ YCBG có thể chưa có mã VTBB (chốt khảo sát không bắt mã).
+            # Chốt phương án vẫn được, nhưng lên ĐMH thì dòng phải có mã — NSTM / quản lý gắn mã
+            # ở chi tiết dòng (`update_item_status`) rồi tạo đơn.
+            skipped["no_code"] += 1
+            continue
         code = (opt.supplier_code or "").strip()
         name = (opt.supplier_name or "").strip()
         # NCC ngoài danh mục (chỉ có tên) là một nhóm riêng theo tên — không được
@@ -762,6 +768,9 @@ def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> 
         group["rows"].append((i, opt))
 
     if not groups:
+        if skipped["no_code"]:
+            raise HTTPException(400, f"Còn {skipped['no_code']} dòng đã chốt phương án nhưng chưa có "
+                                     "mã VTBB — nhân sự thu mua gắn mã ở chi tiết dòng rồi mới tạo đơn.")
         raise HTTPException(400, "Không còn dòng nào tạo được đơn: các dòng hoặc chưa "
                                  "chốt phương án, hoặc đã nằm trên đơn mua hàng rồi.")
 

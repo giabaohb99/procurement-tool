@@ -255,7 +255,14 @@ export function PurchaseRequestDetailPage() {
   const isNewChanged = useHasChanged(isNew)
   const serverDataChanged = useHasChanged(serverData)
   const userChanged = useHasChanged(user)
-  if (isNewChanged || serverDataChanged || userChanged) {
+  //  bao-CR-567 (02/10/2026): phiếu đã nằm sẵn trong bộ nhớ đệm React Query (mở 127 → sang 128 →
+  //  quay lại 127) thì `serverData` có ngay từ lượt vẽ ĐẦU, `useHasChanged` không báo đổi, và nếu
+  //  lượt tải lại trả dữ liệu y hệt (React Query giữ nguyên tham chiếu) thì KHÔNG BAO GIỜ dựng
+  //  `draft` — bấm «Sửa» chỉ bật cờ, mọi ô gõ vào rơi vào `patch` với `draft = null` nên không đổi
+  //  được gì, tải lại trang mới sửa được (đại ca báo trên dev: PYC02102601). Có dữ liệu mà chưa có
+  //  bản nháp thì dựng ngay, một lần.
+  const draftMissing = !isNew && draft === null && !!serverData
+  if (isNewChanged || serverDataChanged || userChanged || draftMissing) {
     if (isNew) {
       setDraft(
         (current) =>
@@ -370,6 +377,8 @@ export function PurchaseRequestDetailPage() {
       !!item.id &&
       item.line_status !== 'cancelled' &&
       (item.line_status || 'no_po') === 'no_po' &&
+      //  bao-CR-568: dòng chưa có mã VTBB thì backend bỏ qua lúc gom đơn — soi gương luật đó.
+      !!item.product_code &&
       !!item.chosen_option,
   )
   // Đường GOM THEO PHƯƠNG ÁN — cùng cổng với backend `generate_orders`
@@ -677,6 +686,8 @@ export function PurchaseRequestDetailPage() {
         note: item.note,
         expected_date: item.expected_date,
         expected_date_reason: expectedDateReason,
+        //  bao-CR-568: mã VTBB gắn / đổi sau điều phối; backend tự chặn khi dòng đã lên ĐMH.
+        product_code: item.product_code,
       })
     }
     if (canAssign) {

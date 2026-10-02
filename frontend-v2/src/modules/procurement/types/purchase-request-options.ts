@@ -189,6 +189,8 @@ export interface PrGenerateOrdersResult {
     /** Dòng đã nằm trên một đơn mua hàng (kể cả đơn nháp) — chống sinh trùng. */
     already_ordered: number
     cancelled: number
+    /** bao-CR-568: đã chốt phương án nhưng dòng chưa có mã VTBB — thu mua gắn mã rồi tạo đơn. */
+    no_code: number
   }
 }
 
