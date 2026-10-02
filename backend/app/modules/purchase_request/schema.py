@@ -129,6 +129,9 @@ class ItemStatusItem(BaseModel):
     note: Str355 | None = None
     expected_date: Str10 | None = None          # thời gian dự kiến có hàng (NSTM cập nhật)
     expected_date_reason: str | None = None    # lý do — BẮT BUỘC khi đổi giá trị đã có
+    # bao-CR-568: NSTM / quản lý gắn hoặc đổi Mã VTBB cho dòng SAU điều phối (phiếu sinh từ YCBG
+    # không có mã vẫn chốt được; muốn tạo đơn thì dòng phải có mã). Chỉ khi dòng chưa lên ĐMH.
+    product_code: Str50 | None = None
 
 
 class ItemStatusIn(BaseModel):

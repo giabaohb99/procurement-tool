@@ -128,6 +128,8 @@ export const purchaseRequestApi = {
       expected_date?: string
       /** Bắt buộc khi ĐỔI ngày dự kiến đã có trước đó. */
       expected_date_reason?: string
+      /** bao-CR-568: NSTM / quản lý gắn hoặc đổi mã VTBB sau điều phối (dòng chưa lên ĐMH). */
+      product_code?: string
     }[],
   ) => apiPatch<PurchaseRequestDetail>(`${BASE_URL}/${id}/item-status`, { items }),
 

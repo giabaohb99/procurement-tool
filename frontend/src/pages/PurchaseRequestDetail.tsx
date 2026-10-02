@@ -447,6 +447,19 @@ export default function PurchaseRequestDetail() {
     } catch { loadAll() }
   }
 
+  // bao-CR-568: gắn / đổi mã VTBB cho dòng SAU điều phối (NSTM phụ trách hoặc quản lý) — lưu ngay
+  // qua item-status; backend kiểm mã có trong danh mục, không trùng dòng khác, dòng chưa lên ĐMH.
+  async function commitProductCode(i: number, prod: any) {
+    const it = items[i]
+    if (editable || !it.id || !canLineStatus(it)) return
+    const code = prod?.code || ''
+    if ((it.product_code || '') === code) return
+    try {
+      await api.patch(`${API}/${id}/item-status`, { items: [{ id: it.id, product_code: code }] })
+      toast.success(code ? `Đã gắn mã ${code}` : 'Đã bỏ mã VTBB'); loadAll()
+    } catch { loadAll() }
+  }
+
   // Bật/tắt Đơn gấp. Phiếu còn sửa (nháp/mới) -> cập nhật local, lưu theo nút Lưu. Phiếu đã duyệt -> auto-lưu ngay + đồng bộ ĐMH.
   async function toggleUrgent(v: boolean) {
     // CR-133 — người dùng tự bấm ⇒ cờ thuộc về họ: trả dấu chủ sở hữu về tay người dùng để luật
@@ -1181,6 +1194,19 @@ export default function PurchaseRequestDetail() {
                             {/* Tham chiếu giá đã mua trước đó — chỉ hiện khi đã chọn mã hàng */}
                             {it.product_code && (
                               <button className="icon-btn" style={{ flexShrink: 0 }} title="Lịch sử mua hàng gần nhất của mã hàng này" onClick={() => setHistoryIdx(i)}>
+                                <i className="ti ti-history" style={{ fontSize: 16, color: 'var(--muted)' }} />
+                              </button>
+                            )}
+                          </div>
+                        ) : canLineStatus(it) && (it.line_status || 'no_po') === 'no_po' ? (
+                          // bao-CR-568: phiếu đã điều phối, NSTM / quản lý vẫn gắn hoặc đổi mã VTBB cho dòng
+                          // CHƯA lên ĐMH (phiếu sinh từ YCBG thường chưa có mã) — chọn là lưu ngay qua item-status.
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <ProductPicker compact code={it.product_code} name={it.product_name} onPick={(prod) => commitProductCode(i, prod)} />
+                            </div>
+                            {it.product_code && (
+                              <button className="icon-btn" style={{ flexShrink: 0 }} title="Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)" onClick={() => setHistoryIdx(i)}>
                                 <i className="ti ti-history" style={{ fontSize: 16, color: 'var(--muted)' }} />
                               </button>
                             )}

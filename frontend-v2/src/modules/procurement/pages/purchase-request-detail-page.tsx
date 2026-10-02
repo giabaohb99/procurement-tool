@@ -377,6 +377,8 @@ export function PurchaseRequestDetailPage() {
       !!item.id &&
       item.line_status !== 'cancelled' &&
       (item.line_status || 'no_po') === 'no_po' &&
+      //  bao-CR-568: dòng chưa có mã VTBB thì backend bỏ qua lúc gom đơn — soi gương luật đó.
+      !!item.product_code &&
       !!item.chosen_option,
   )
   // Đường GOM THEO PHƯƠNG ÁN — cùng cổng với backend `generate_orders`
@@ -684,6 +686,8 @@ export function PurchaseRequestDetailPage() {
         note: item.note,
         expected_date: item.expected_date,
         expected_date_reason: expectedDateReason,
+        //  bao-CR-568: mã VTBB gắn / đổi sau điều phối; backend tự chặn khi dòng đã lên ĐMH.
+        product_code: item.product_code,
       })
     }
     if (canAssign) {

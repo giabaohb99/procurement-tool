@@ -29,6 +29,7 @@ import {
   useUploadPurchaseRequestAttachments,
 } from '../hooks/use-purchase-request-support'
 import type { PurchaseRequestItem } from '../types/purchase-request-detail'
+import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
 interface PurchaseRequestLineDetailDialogProps {
   item: PurchaseRequestItem | null
@@ -167,6 +168,20 @@ export function PurchaseRequestLineDetailDialog({
                   value={draft.product_code}
                   onChange={(event) => patch({ product_code: event.target.value })}
                 />
+              ) : canEditProgress && (draft.line_status || 'no_po') === 'no_po' ? (
+                //  bao-CR-568: phiếu đã điều phối, NSTM / quản lý vẫn gắn hoặc đổi mã VTBB cho
+                //  dòng CHƯA lên ĐMH (phiếu sinh từ YCBG thường chưa có mã) — chọn từ danh mục
+                //  để mã luôn có thật; lưu bằng nút «Lưu dòng» như các ô tiến độ.
+                <div className="space-y-1">
+                  <PurchaseRequestProductPicker
+                    code={draft.product_code}
+                    name={draft.product_name}
+                    onPick={(product) => patch({ product_code: product?.code ?? '' })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Chưa có mã thì chưa tạo được đơn mua hàng cho dòng này.
+                  </p>
+                </div>
               ) : (
                 <ReadOnlyValue>{draft.product_code}</ReadOnlyValue>
               )}

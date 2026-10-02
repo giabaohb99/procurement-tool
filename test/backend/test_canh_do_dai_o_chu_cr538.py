@@ -28,7 +28,8 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "doc_catalog", "product", "work", "help_center", "catalog", "contract", "company", "approval",
            "leave", "coffee_point", "document", "ticket", "meeting_room", "customs", "department",
            "inventory", "attachment", "forum", "assistant", "dossier", "faq", "role", "agent_hub",
-           "comment", "employee", "user", "setting", "user_preference"]
+           "comment", "employee", "user", "setting", "user_preference",
+           "report_access"]   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
 
 #  Tên lớp kết thúc bằng các đuôi này là schema TRẢ RA hoặc lọc — không ghi xuống DB.
 READ_SUFFIXES = ("Out", "Response", "Read", "Detail", "Summary", "Row", "Filter", "Query", "Result", "Stats")

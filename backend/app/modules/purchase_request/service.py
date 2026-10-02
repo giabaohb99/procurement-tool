@@ -782,18 +782,50 @@ def _notify_expected_changed(db: Session, pr: PurchaseRequest, changes: list[str
         link=f"/purchase-requests/{pr.id}", recipient_ids=[uid])
 
 
+def _set_item_product_code(db: Session, rows: dict, row: PurchaseRequestItem, raw: str,
+                           changes: list[str]) -> None:
+    """bao-CR-568 (02/10/2026) — gắn / đổi Mã VTBB cho một dòng SAU điều phối.
+
+    Đại ca chốt luồng như YCBG: phiếu sinh từ YCBG có thể không mang mã, NSTM vẫn chốt hoàn
+    thành xử lý được; nhưng muốn TẠO ĐƠN thì dòng phải có mã, nên nhân sự thu mua (hoặc quản
+    lý) gắn mã ở đây. Chỉ khi dòng CHƯA lên ĐMH: dòng ĐMH nối ngược về dòng YCMH bằng chuỗi
+    `product_code` (xem `sync_from_purchase_orders`), đổi mã khi đơn đã có là cắt dây nối.
+    Mã phải có trong danh mục và không trùng dòng khác trên cùng phiếu (luật YCMH cũ).
+    """
+    from app.modules.product.model import Product
+    new = (raw or "").strip()
+    old = (row.product_code or "").strip()
+    if new == old:
+        return
+    if (row.line_status or LINE_STATUS_NO_PO) != LINE_STATUS_NO_PO:
+        raise HTTPException(400, f"Dòng '{row.product_name}' đã lên đơn mua hàng — không đổi mã VTBB được")
+    if new:
+        prod = db.query(Product).filter(Product.code == new).first()
+        if prod is None:
+            raise HTTPException(400, f"Mã VTBB «{new}» không có trong danh mục sản phẩm")
+        if not prod.is_active:
+            raise HTTPException(400, f"Mã VTBB «{new}» đã ngừng dùng")
+    others = [(r.product_code or "") for r in rows.values() if r.id != row.id]
+    assert_unique_product_codes(others + [new], old_codes=[(r.product_code or "") for r in rows.values()])
+    row.product_code = new
+    changes.append(f"{row.product_name}: mã VTBB {old or '—'} → {new or '—'}")
+
+
 def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, emp_code: str, is_manager: bool) -> PurchaseRequest:
     pr = get_pr(db, pid)
     if pr.status in ("cancelled", "completed"):
         raise HTTPException(400, "Phiếu đã bị từ chối/hoàn thành — không thể cập nhật")
     rows = {i.id: i for i in items_of(db, pid)}
     _expected_changes: list[str] = []
+    _code_changes: list[str] = []
     for it in data.items:
         row = rows.get(it.id)
         if row is None:
             continue
         if not is_manager and (row.assignee or "") != (emp_code or "__none__"):
             continue  # NSTM chỉ sửa dòng được giao cho mình
+        if it.product_code is not None:
+            _set_item_product_code(db, rows, row, it.product_code, _code_changes)
         if it.line_status is not None:
             # B-06: cột lưu MÃ. Chặn ngay tại cửa thay vì để giá trị lạ nằm im trong CSDL —
             # dòng mang mã lạ rơi khỏi mọi bộ lọc VÀ khỏi cả điều kiện hoàn thành phiếu.
@@ -822,6 +854,8 @@ def update_item_status(db: Session, pid: int, data: ItemStatusIn, user_id: int, 
     record(db, user_id, ENTITY, pid, "line_status", "Cập nhật trạng thái dòng")
     for msg in _expected_changes:
         record(db, user_id, ENTITY, pid, "expected_date", msg)
+    for msg in _code_changes:
+        record(db, user_id, ENTITY, pid, "product_code", msg)
     if _expected_changes:
         _notify_expected_changed(db, pr, _expected_changes, user_id)
     db.refresh(pr)
