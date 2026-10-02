@@ -1,3 +1,89 @@
+# Nhật ký task — sổ nguồn đồng bộ lên phân hệ Dự án
+
+Sổ này do trợ lý AI (hoặc người) ghi trong lúc làm việc. Chạy
+`python backend/scripts/sync_task_journal.py` để đẩy toàn bộ sổ lên phân hệ
+**Dự án** (modules/work) qua API — chạy lại bao nhiêu lần cũng được (idempotent,
+khớp theo `key` ở đầu tiêu đề).
+
+Định dạng một mục:
+
+```
+
+## <key> | <tiêu đề hiển thị>
+- status: dang-lam | xong | huy
+- date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
+- list: <tên task list>      (tùy chọn — mục này đẩy vào task list đó;
+                              bỏ trống = list mặc định "ERP v2". CHỈ khai
+                              ở mục ## cha, việc con ### đi theo cha)
+- pic: <mã nhân sự>          (tùy chọn — người phụ trách, ví dụ NSU209;
+                              nhiều người thì cách nhau bằng dấu phẩy.
+                              Bỏ trống = lấy người mặc định trong cấu hình
+                              WORK_SYNC_PIC; việc con đi theo cha)
+Các dòng còn lại là mô tả tự do: commit, deploy, ghi chú...
+
+### <key-con> | <tiêu đề việc con>   (tùy chọn, nằm ngay dưới mục ## cha)
+- status: xong
+Mô tả việc con. Việc con chỉ MỘT cấp, không có cột kanban — nó hiện
+trong panel chi tiết của task cha dạng checklist n/m.
+```
+
+- `key` là khóa chống trùng (thường là CR ID, ví dụ `bao-CR-389`) — ĐỪNG đổi
+  key của mục đã đồng bộ, đổi là nó thành task mới.
+- `status: xong` → task sang cột **Xong** và tick hoàn thành; `dang-lam` →
+  cột **Đang làm**; `huy` → đánh dấu đã hủy.
+- Sửa mô tả trong sổ rồi chạy lại script là task trên ERP được cập nhật theo —
+  phần mô tả của task do sổ này SỞ HỮU, đừng sửa tay trên ERP.
+- Người phụ trách cũng do sổ sở hữu: mục nào có khai người thì script gán lại
+  đúng danh sách đó mỗi lần chạy. Mục không khai ai thì script KHÔNG đụng tới.
+  Sổ ghi MÃ nhân sự chứ không ghi số id, vì id ở local, dev và prod khác nhau.
+
+---
+
+#### Luật viết mô tả (bắt buộc — áp cho cả người và mọi trợ lý AI)
+
+<!-- Mục này cố ý dùng #### chứ không dùng ## : script đọc mọi dòng `## ` là một task
+     của sổ, nên đặt `## ` ở đây là đẩy phần hướng dẫn này lên ERP thành một task rác.
+     Đừng nâng nó lại thành ##. -->
+
+Đại ca chốt 17/09/2026 sau khi đọc sổ: *"các task chỗ mô tả nó không thuần
+tiếng Việt lắm, kiểu đọc hơi khó hiểu"*. Người đọc mô tả này là người đi
+duyệt việc, đọc trên điện thoại, không phải người viết mã. Nên:
+
+1. **Viết thành câu tiếng Việt trọn vẹn**, có chủ ngữ và động từ. Đừng viết
+   kiểu gạch đầu dòng gãy vụn.
+2. **Nói việc trước, nói tên tệp sau.** Mỗi mục trả lời được ba câu: sửa
+   chuyện gì · vì sao phải sửa · giờ đang nằm ở đâu (máy em, dev hay prod).
+3. **Tên tệp, tên hàm, tên bảng, mã commit gom xuống cuối mục** thành dòng
+   riêng mở đầu bằng `Mã nguồn:`, `Commit:`, `Deploy:` hoặc `Tham chiếu:`.
+   Một dòng chỉ gồm tên tệp nối nhau như *"core/client_ip.py
+   (load_trusted_networks, is_trusted_proxy), core/config.py"* là SAI —
+   nó không phải câu, và người đọc không biết nó đã làm gì.
+4. **Từ tiếng Anh chỉ giữ khi trong công ty vẫn gọi bằng từ đó** (commit,
+   deploy, migration, script, API, kanban). Còn lại phải dịch:
+   *upsert* → có rồi thì cập nhật, chưa có thì tạo · *parse* → bóc/đọc ·
+   *gate* → gác quyền · *fixture* → dữ liệu mẫu · *endpoint* → đường API ·
+   *schema* → khuôn dữ liệu · *test* → bài kiểm · *bundle* → gói tĩnh.
+5. **Số đo thì ghi số**, đừng ghi "nhiều/ổn": bao nhiêu dòng, bao nhiêu bài
+   kiểm xanh, đo lúc nào.
+6. Chữ viết tắt lần đầu xuất hiện phải mở ngoặc giải thích (ví dụ "YCMH
+   (yêu cầu mua hàng)").
+
+---
+
+## bao-CR-565 | Chốt hoàn thành khảo sát không còn bắt gắn Mã SP hệ thống
+- status: dang-lam
+- date: 2026-10-02
+Đại ca xem phiếu YCBG01102603 ở màn Xử lý khảo sát và bảo bỏ đoạn kiểm «phải có mã sản phẩm» khi bấm Chốt hoàn thành
+khảo sát, để trống vẫn chốt được. Em rà: chỉ giao diện chặn (cả bản cũ lẫn bản mới), máy chủ chưa bao giờ bắt mã ở
+bước này; lúc tạo yêu cầu mua hàng vẫn chặn trùng mã như cũ. Đã bỏ chốt chặn ở hai giao diện, bỏ luôn viền đỏ đánh dấu
+ô thiếu mã ở bản cũ, sửa câu gợi ý ở bản mới thành «để trống vẫn chốt được».
+
+Kiểm: bản cũ giữ đúng 4 lỗi nền; bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đang ở máy em, chưa commit.
+
+Mã nguồn: frontend/src/pages/SurveyRequestProcess.tsx, frontend-v2/src/modules/procurement/components/survey-request-process-card.tsx.
+
+---
+
 ## bao-CR-561 | Gom toàn bộ nhánh erp-v2 lên prod một lần
 - status: xong
 - date: 2026-10-02
