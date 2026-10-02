@@ -11,16 +11,16 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import Pagination from '../Pagination'
-import SearchSelect from '../SearchSelect'
 import TableScroll from '../TableScroll'
 import { fmtDate } from './customs-shared'
+import CustomsPesticideExportMenu from './CustomsPesticideExportMenu'
+import CustomsPesticideFilterBar from './CustomsPesticideFilterBar'
 import CustomsPesticideForm from './CustomsPesticideForm'
 import CustomsPesticideImportDialog from './CustomsPesticideImportDialog'
 import {
   BANNED_ONLY, DEFAULT_PESTICIDE_FILTERS, PesticideFilters, buildPesticideParams,
-  formatBannedFilterLabel, pesticideStatusBadgeClass, resolvePesticideEmptyMessage,
+  pesticideStatusBadgeClass, resolvePesticideEmptyMessage,
 } from '../../utils/customs-pesticide'
-import { toSentenceCaseIfShouting } from '../../utils/customs-pesticide-display'
 
 const PAGE_SIZE = 50
 
@@ -28,6 +28,7 @@ export default function CustomsPesticideTab() {
   const { can } = useAuth()
   const canCreate = can('customs_pesticide', 'create')
   const canWrite = can('customs_pesticide', 'write')
+  const canExport = can('customs_price', 'export')
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -108,34 +109,13 @@ export default function CustomsPesticideTab() {
     <div>
       <div className="card" style={{ padding: 12, marginBottom: 10 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input value={draftQ} onChange={(e) => setDraftQ(e.target.value)} aria-label="Tìm thuốc BVTV"
-            placeholder="Tên thuốc, hoạt chất, công ty, số đăng ký…" style={{ width: 260 }} />
-          <div style={{ width: 190 }}>
-            <SearchSelect value={draft.status} placeholder="Tất cả tình trạng" autoSelectSingle={false}
-              options={[{ value: '', label: 'Tất cả tình trạng' },
-                ...(options?.statuses || []).map((s: any) => ({ value: String(s.value), label: `${s.label} (${s.count})` }))]}
-              onChange={(v) => setSelect('status', v)} />
-          </div>
-          <div style={{ width: 200 }}>
-            <SearchSelect value={draft.pestGroup} placeholder="Tất cả phân nhóm" autoSelectSingle={false}
-              options={(options?.pest_groups || []).map((g: any) => ({ value: g.value, label: `${g.value} (${g.count})` }))}
-              onChange={(v) => setSelect('pestGroup', v)} />
-          </div>
-          {/* 01/10/2026 — lọc Lĩnh vực (backend có sẵn); cột tra cứu của trang chi tiết mở thẳng tham số này. */}
-          <div style={{ width: 220 }}>
-            <SearchSelect value={draft.sector ?? ''} placeholder="Tất cả lĩnh vực" autoSelectSingle={false}
-              options={(options?.sectors || []).map((g: any) => ({ value: g.value, label: `${toSentenceCaseIfShouting(g.value)} (${g.count})` }))}
-              onChange={(v) => setSelect('sector', v)} />
-          </div>
-          <div style={{ width: 240 }}>
-            <SearchSelect value={draft.banned} placeholder="Mọi thuốc" autoSelectSingle={false}
-              options={[{ value: BANNED_ONLY, label: formatBannedFilterLabel(options?.banned_rules, options?.banned_count) }]}
-              onChange={(v) => setSelect('banned', v)} />
-          </div>
-          {filtersActive && (
-            <button className="btn ghost" onClick={resetFilters}><i className="ti ti-rotate" />Xóa lọc</button>
-          )}
+          <CustomsPesticideFilterBar draftQ={draftQ} onDraftQChange={setDraftQ} draft={draft} options={options}
+            filtersActive={filtersActive} onSelect={setSelect} onReset={resetFilters} />
           <span style={{ flex: 1 }} />
+          {canExport && (
+            <CustomsPesticideExportMenu filters={applied} page={page} pageSize={pageSize}
+              pageRowCount={rows.length} disabled={catalogTotal === 0} />
+          )}
           {canWrite && (
             <button className="btn ghost" onClick={() => setImportOpen(true)}><i className="ti ti-upload" />Nạp danh mục</button>
           )}

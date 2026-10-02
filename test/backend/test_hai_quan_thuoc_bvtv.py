@@ -276,6 +276,9 @@ def test_every_route_is_guarded():
     assert guards == {
         ("/api/customs/pesticides", "GET"): ("customs_price", "read"),
         ("/api/customs/pesticides/options", "GET"): ("customs_price", "read"),
+        #  02/10/2026 — xuất Excel (round-trip với «Nạp danh mục»): khóa `export`, không phải
+        #  `read` (QĐ-I4, `doc/erp/16-...md`) — ai chỉ xem được không có nút xuất.
+        ("/api/customs/pesticides/export", "GET"): ("customs_price", "export"),
         ("/api/customs/pesticides/{pesticide_id}", "GET"): ("customs_price", "read"),
         #  01/10/2026 — «cùng công ty» / «cùng hoạt chất» của trang chi tiết: cùng quyền đọc.
         ("/api/customs/pesticides/{pesticide_id}/related", "GET"): ("customs_price", "read"),

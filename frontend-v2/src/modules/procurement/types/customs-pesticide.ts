@@ -111,6 +111,13 @@ export interface CustomsPesticideImportResult {
   /** Thuốc từ nguồn không còn trong tệp mới — bị xóa cùng tệp đính kèm (duoc-CR-494). */
   dropped: number
   retag: { total: number; tagged: number; technical: number }
+  /**
+   * `replace` = tệp toàn bộ danh mục/bản cào gốc (THAY cả danh mục); `merge` = tệp xuất «Trang
+   * hiện tại» (chỉ CẬP NHẬT đúng các thuốc có trong tệp, phần còn lại giữ nguyên) — backend tự
+   * nhận ra qua sheet ẩn trong tệp. Backend CŨ chưa trả field này; thiếu thì coi như chưa biết
+   * mode, tự ghép câu thông báo như trước (xem `customs-pesticide-import-dialog.tsx`).
+   */
+  mode?: 'replace' | 'merge'
 }
 
 /** Một dòng phạm vi sử dụng khi thêm / sửa — chưa có id (backend thay TOÀN BỘ phạm vi mỗi lần lưu). */

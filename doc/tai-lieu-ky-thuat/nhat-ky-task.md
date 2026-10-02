@@ -70,6 +70,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-572 | Xuất Excel danh mục thuốc BVTV, tệp xuất nạp lại được ngay
+- status: xong
+- date: 2026-10-02
+Bên tra cứu thị trường cần mẫu tệp để chuẩn bị dữ liệu thuốc BVTV rồi nạp vào hệ thống, nên đại ca bảo thêm nút xuất ở màn Thuốc BVTV của cả bản cũ lẫn bản mới, và tệp xuất ra phải nạp lại được ngay. Nút «Xuất Excel» có hai lựa chọn: xuất trang đang xem theo đúng bộ lọc và thứ tự, hoặc xuất toàn bộ danh mục. Tệp có đúng hai sheet và đúng tên cột như bản cào, thêm một sheet ẩn đánh dấu loại tệp. Nạp lại tệp toàn bộ thì thay cả danh mục như trước; nạp lại tệp xuất theo trang thì chỉ cập nhật đúng các thuốc có trong tệp, phần còn lại giữ nguyên. Thuốc thêm tay vẫn xuất ra để xem nhưng không được nạp lại, nên luôn giữ nguyên trên hệ thống.
+
+Để chịu được danh mục rất lớn, máy chủ đọc dữ liệu theo từng lô và ghi Excel thẳng ra tệp tạm trên đĩa nên bộ nhớ không tăng theo số dòng; xuất đủ 6.919 thuốc mất khoảng hai giây. Tệp vượt trần của bộ nạp thì báo lỗi rõ thay vì xuất ra một tệp không nạp lại được, và một người không bấm xuất toàn bộ chồng lên nhau được. Bài rà soát tìm ra năm lỗi làm mất dữ liệu khi xuất rồi nạp lại, đều đã sửa và có bài kiểm: tệp theo trang xóa gần hết danh mục, phạm vi của thuốc thêm tay dính sang thuốc khác khi trùng số, ô bắt đầu bằng dấu bằng bị Excel hiểu là công thức, ký tự điều khiển làm hỏng cả lượt xuất, và ô quản lý tính kháng gõ tay bị cắt mất một phần.
+
+Kiểm: bài kiểm máy chủ của phần thuốc BVTV và nhật ký xuất đều đạt, bài kiểm giao diện bản mới của khu Tra cứu thị trường đạt; thử thật trên máy em xuất toàn bộ rồi nạp lại không đổi gì, sửa một ô trong tệp theo trang rồi nạp chỉ đổi đúng thuốc đó. Chưa deploy.
+
+Mã nguồn: `backend/app/modules/customs/pesticide_export_service.py`, `pesticide_merge_service.py`, `pesticide_reader.py` · `frontend/src/components/customs/CustomsPesticideExportMenu.tsx` · `frontend-v2/src/modules/procurement/components/customs/customs-pesticide-export-menu.tsx` · bài kiểm `test/backend/test_thuoc_bvtv_xuat_excel.py`
+
+---
+
 ## bao-CR-570 | YCMH: người yêu cầu chọn phương án ngay, không đợi NSTM chốt; làm gọn hộp sửa giá và khối áp NCC
 - status: xong
 - date: 2026-10-02

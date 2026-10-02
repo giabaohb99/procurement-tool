@@ -19,8 +19,6 @@ import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { SearchField } from '@/shared/ui/search-field'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
 import {
   CUSTOMS_PESTICIDE_COLUMNS,
@@ -36,11 +34,11 @@ import {
   ALL_PESTICIDE_OPTIONS,
   BANNED_ONLY,
   buildPesticideParams,
-  formatBannedFilterLabel,
   resolvePesticideEmptyMessage,
 } from '../../utils/customs-pesticide'
-import { toSentenceCaseIfShouting } from '../../utils/customs-pesticide-display'
 import { emptyPesticideInput } from '../../utils/customs-pesticide-form'
+import { CustomsPesticideExportMenu } from './customs-pesticide-export-menu'
+import { CustomsPesticideFilterControls } from './customs-pesticide-filter-controls'
 import { CustomsPesticideFormDialog } from './customs-pesticide-form-dialog'
 import { CustomsPesticideImportDialog } from './customs-pesticide-import-dialog'
 
@@ -51,7 +49,7 @@ const DEFAULT_STATUS = String(PESTICIDE_STATUS.active)
 //  — trang cha đã gác quyền xem trước khi dựng mục này.
 export function CustomsPesticideTab() {
   //  Sửa / xóa ở trang chi tiết; mục danh sách chỉ còn «Thêm thuốc» và «Nạp danh mục».
-  const { canCreate, canImport } = usePesticidePermissions()
+  const { canCreate, canImport, canExport } = usePesticidePermissions()
   const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -120,67 +118,19 @@ export function CustomsPesticideTab() {
         //  (docs/ui/table.md §3). Ô chọn dùng `Select` có mục «Tất cả …» như mọi màn danh sách.
         toolbar={
           <>
-            <SearchField
-              value={keyword}
-              onChange={search.setValue}
-              placeholder="Tên thuốc, hoạt chất, công ty, số đăng ký…"
-              placeholderShort="Tên thuốc, hoạt chất…"
-              aria-label="Tìm thuốc BVTV"
-              className="w-full max-w-xs"
+            <CustomsPesticideFilterControls
+              keyword={keyword}
+              onKeywordChange={search.setValue}
+              status={status}
+              onStatusChange={setStatus}
+              pestGroup={pestGroup}
+              onPestGroupChange={setPestGroup}
+              sector={sector}
+              onSectorChange={setSector}
+              banned={banned}
+              onBannedChange={setBanned}
+              options={options.data}
             />
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-44 max-md:w-full" aria-label="Lọc theo tình trạng">
-                <SelectValue placeholder="Tình trạng" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_PESTICIDE_OPTIONS}>Tất cả tình trạng</SelectItem>
-                {(options.data?.statuses ?? []).map((item) => (
-                  <SelectItem key={item.value} value={String(item.value)}>
-                    {item.label} ({item.count.toLocaleString('vi-VN')})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={pestGroup} onValueChange={setPestGroup}>
-              <SelectTrigger className="w-52 max-md:w-full" aria-label="Lọc theo phân nhóm">
-                <SelectValue placeholder="Phân nhóm" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_PESTICIDE_OPTIONS}>Tất cả phân nhóm</SelectItem>
-                {(options.data?.pest_groups ?? []).map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.value} ({item.count.toLocaleString('vi-VN')})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sector} onValueChange={setSector}>
-              <SelectTrigger className="w-52 max-md:w-full" aria-label="Lọc theo lĩnh vực">
-                <SelectValue placeholder="Lĩnh vực" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_PESTICIDE_OPTIONS}>Tất cả lĩnh vực</SelectItem>
-                {(options.data?.sectors ?? []).map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {toSentenceCaseIfShouting(item.value)} ({item.count.toLocaleString('vi-VN')})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={banned} onValueChange={setBanned}>
-              <SelectTrigger className="w-56 max-md:w-full" aria-label="Lọc theo hoạt chất cấm">
-                <SelectValue placeholder="Hoạt chất cấm" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_PESTICIDE_OPTIONS}>Mọi thuốc</SelectItem>
-                <SelectItem value={BANNED_ONLY}>
-                  {/* Đang tải thì chưa biết có danh sách cấm hay không — đừng vội nói «chưa có». */}
-                  {options.data
-                    ? formatBannedFilterLabel(options.data.banned_rules, options.data.banned_count)
-                    : 'Có hoạt chất cấm'}
-                </SelectItem>
-              </SelectContent>
-            </Select>
             {canCreate && (
               <Button
                 type="button"
@@ -195,6 +145,15 @@ export function CustomsPesticideTab() {
                 <Upload className="size-4" />
                 Nạp danh mục
               </Button>
+            )}
+            {canExport && (
+              <CustomsPesticideExportMenu
+                filterParams={buildPesticideParams(filters)}
+                page={page}
+                pageSize={pageSize}
+                pageRowCount={list.data?.items.length ?? 0}
+                disabled={catalogTotal === 0}
+              />
             )}
           </>
         }

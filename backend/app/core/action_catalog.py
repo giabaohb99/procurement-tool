@@ -105,6 +105,9 @@ _EDIT = (
     ActionCode("return_dept", "Trả phiếu về thu mua", ACTION_GROUP_EDIT),
     # 29/09/2026 — nạp lại TOÀN BỘ một danh mục tham khảo từ tệp (thuốc BVTV của Tra cứu thị trường)
     ActionCode("catalog_import", "Nạp danh mục từ tệp", ACTION_GROUP_EDIT),
+    # C1, 02/10/2026 — nạp CẬP NHẬT một phần danh mục (tệp xuất theo trang đã sửa), không xóa
+    # phần còn lại — khác hẳn `catalog_import` (thay toàn bộ), nên tách mã riêng.
+    ActionCode("catalog_merge", "Cập nhật danh mục từ tệp theo trang", ACTION_GROUP_EDIT),
     # Sổ đồng bộ app cũ — xếp một dòng lỗi chạy lại
     ActionCode("retry", "Xếp chạy lại đồng bộ", ACTION_GROUP_EDIT),
 )

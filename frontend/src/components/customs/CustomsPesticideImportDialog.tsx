@@ -1,6 +1,10 @@
-// duoc-CR-490 — nạp lại danh mục thuốc BVTV từ tệp bản cào danhmuc.thuocbvtv.com
-// (thuoc-bvtv.json / .xlsx). THAY TOÀN BỘ thuốc LẤY TỪ NGUỒN — thuốc tự thêm trên màn
-// (`is_manual`) được GIỮ NGUYÊN. Hộp nói rõ số thuốc sắp bị thay trước khi cho bấm.
+// duoc-CR-490 — nạp lại danh mục thuốc BVTV, chấp nhận CẢ BA loại tệp: bản cào gốc
+// (thuoc-bvtv.json / .xlsx), tệp xuất «Toàn bộ danh mục» hoặc tệp xuất «Trang hiện tại» (xem
+// `CustomsPesticideExportMenu.tsx`). Backend tự nhận ra loại tệp qua sheet ẩn, trả về `mode`:
+// bản cào gốc/tệp toàn bộ → THAY cả danh mục LẤY TỪ NGUỒN (thuốc tự thêm `is_manual` GIỮ NGUYÊN);
+// tệp theo trang → chỉ CẬP NHẬT đúng các thuốc có trong tệp, phần còn lại giữ nguyên. Hộp không
+// biết trước loại tệp (chỉ biết sau khi nạp xong) nên cảnh báo số thuốc sắp bị thay ở dưới chỉ
+// đúng cho trường hợp THAY.
 //
 // Nút Nạp chặn bấm đúp bằng `useRef` ngay trong lượt bấm (`disabled` chỉ đổi ở lượt vẽ sau).
 // Đang nạp thì KHÔNG cho đóng hộp: đóng là mất cờ chặn, mở lại bấm tiếp là hai lượt thay toàn
@@ -44,10 +48,14 @@ export default function CustomsPesticideImportDialog({ options, onClose, onAppli
       fd.append('file', file)
       const r = await api.post('/api/customs/pesticides/import', fd)
       const d = r.data.data
-      toast.success(`Đã nạp ${Number(d.pesticides).toLocaleString('vi-VN')} thuốc, `
-        + `${Number(d.uses).toLocaleString('vi-VN')} dòng phạm vi sử dụng`
-        + (d.kept_manual ? `, giữ ${Number(d.kept_manual).toLocaleString('vi-VN')} thuốc tự thêm` : '')
-        + (d.dropped ? `, bỏ ${Number(d.dropped).toLocaleString('vi-VN')} thuốc không còn trong tệp` : ''))
+      //  Có `mode` = backend đã biết phân biệt tệp toàn bộ / tệp theo trang, câu `message` của nó
+      //  đã đúng theo từng chế độ — hiện NGUYÊN câu đó. Backend CŨ chưa trả `mode` thì tự ghép câu
+      //  như trước (chỉ đúng cho chế độ THAY, vì bản cũ chỉ có một chế độ).
+      toast.success(d.mode && r.data.message ? r.data.message
+        : `Đã nạp ${Number(d.pesticides).toLocaleString('vi-VN')} thuốc, `
+          + `${Number(d.uses).toLocaleString('vi-VN')} dòng phạm vi sử dụng`
+          + (d.kept_manual ? `, giữ ${Number(d.kept_manual).toLocaleString('vi-VN')} thuốc tự thêm` : '')
+          + (d.dropped ? `, bỏ ${Number(d.dropped).toLocaleString('vi-VN')} thuốc không còn trong tệp` : ''))
       onApplied()
     } catch (e: any) {
       setErr(extractPesticideErrorMessage(e, 'Không nạp được tệp'))
@@ -69,6 +77,12 @@ export default function CustomsPesticideImportDialog({ options, onClose, onAppli
         Tệp <b>thuoc-bvtv.json</b> hoặc <b>thuoc-bvtv.xlsx</b> của bản cào danh mục thuốc BVTV
         (danhmuc.thuocbvtv.com — dữ liệu EcoFarm của Cục BVTV). Tối đa {MAX_MB} MB.
       </p>
+      <div style={{ marginTop: 8, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1e3a8a',
+        borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
+        <i className="ti ti-info-circle" /> Tệp toàn bộ danh mục (bản cào gốc hoặc xuất «Toàn bộ
+        danh mục») sẽ <b>thay cả danh mục</b>. Tệp xuất «Trang hiện tại» chỉ <b>cập nhật</b> đúng
+        các thuốc có trong tệp (thêm thuốc mới nếu chưa có), phần còn lại giữ nguyên.
+      </div>
       <input type="file" accept={ACCEPT} disabled={uploading}
         onChange={(e) => setFile(e.target.files?.[0] || null)} />
       {file && <div style={{ fontSize: 13, marginTop: 8 }}>{file.name} — {(file.size / 1024 / 1024).toFixed(1)} MB</div>}

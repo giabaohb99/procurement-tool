@@ -15,14 +15,20 @@ import { CustomsPesticideTab } from './customs-pesticide-tab'
 const calls: { url: string; params?: Record<string, unknown> }[] = []
 const writes: { method: string; url: string; body?: unknown }[] = []
 let granted = new Set(['create', 'write', 'delete'])
+//  Xuất Excel dùng khóa RIÊNG `customs_price.export` — tách cờ để kiểm được độc lập với
+//  `customs_pesticide` (quyền sửa danh mục).
+let canExportPrice = true
 
 //  Lịch sử thao tác của trang chi tiết gọi API nhật ký riêng — không phải thứ bài này kiểm.
 vi.mock('@/shared/audit', () => ({ AuditTimeline: () => null }))
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
-    //  Chỉ khóa SỬA danh mục (`customs_pesticide`) là thay đổi theo từng bài; khóa khác cứ mở.
-    can: (entity: string, action: string) => entity !== 'customs_pesticide' || granted.has(action),
+    can: (entity: string, action: string) => {
+      if (entity === 'customs_price' && action === 'export') return canExportPrice
+      //  Chỉ khóa SỬA danh mục (`customs_pesticide`) là thay đổi theo từng bài; khóa khác cứ mở.
+      return entity !== 'customs_pesticide' || granted.has(action)
+    },
     canAccess: () => true,
   }),
 }))
@@ -145,6 +151,7 @@ beforeEach(() => {
   catalogTotal = 3
   bannedRules = 3
   granted = new Set(['create', 'write', 'delete'])
+  canExportPrice = true
   writes.length = 0
   items = []
   localStorage.clear()
@@ -164,6 +171,21 @@ describe('CustomsPesticideTab', () => {
     await screen.findByText(/khớp bộ lọc/)
     expect(screen.queryByRole('button', { name: /Nạp danh mục/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Thêm thuốc/ })).not.toBeInTheDocument()
+  })
+
+  it('hides the export button without customs_price.export, even with full customs_pesticide rights', async () => {
+    canExportPrice = false
+    build()
+    await screen.findByText(/khớp bộ lọc/)
+    expect(screen.queryByRole('button', { name: /Xuất Excel/ })).not.toBeInTheDocument()
+  })
+
+  it('disables the export button once the catalog itself is empty', async () => {
+    canExportPrice = true
+    catalogTotal = 0
+    build()
+    await screen.findByText(/Chưa có danh mục thuốc BVTV/)
+    expect(screen.getByRole('button', { name: /Xuất Excel/ })).toBeDisabled()
   })
 
   it('tells an importer the catalog is empty instead of blaming the filter', async () => {
