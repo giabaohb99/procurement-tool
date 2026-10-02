@@ -30,10 +30,11 @@ cập nhật, nhưng CHỈ những ô app cũ làm chủ" (§9.4 bản thiết k
 
 import collections
 import json
+import logging
 import re
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import String, inspect as sa_inspect, select
+from sqlalchemy import String, func, inspect as sa_inspect, select
 
 from app.modules.employee.model import Employee
 from app.modules.seal_request.model import (
@@ -64,7 +65,10 @@ from app.modules.vehicle_booking.model import (
     TYPE_DELIVERY,
     VehicleBooking,
 )
-from app.modules.legacy_datxe.mapping import USER_MANUAL_MAP
+from app.modules.legacy_datxe.firebase import read_node
+from app.modules.legacy_datxe.mapping import USER_MANUAL_MAP, USER_SKIPPED
+
+LOGGER = logging.getLogger(__name__)
 
 SYSTEM_ACTOR_ID = 0
 
@@ -203,14 +207,31 @@ class PeopleResolver:
     của họ vẫn nạp, chỉ là `requester_id` / `created_by` để 0 — ghi một id tài
     khoản bịa ra thì tệ hơn nhiều so với để trống. Tên và email người tạo vẫn
     được chụp lại vào phiếu nên bản in không mất chữ nào.
+
+    NẤC CUỐI — TRA THEO EMAIL (bao-CR-562, 02/10/2026). Hai nấc trên chỉ nhận
+    người ĐÃ được gắn UID từ trước (script `sync_users`), nên ai mới lập tài
+    khoản bên app cũ sau lần gắn đó thì phiếu về ERP trống người tạo dù email
+    của họ có sẵn trên ERP. Nấc này đọc `users/<uid>` trên Firebase lấy email,
+    tìm hồ sơ ERP cùng email (ô email của hồ sơ HOẶC của tài khoản gắn hồ sơ),
+    và chỉ nhận khi ra ĐÚNG MỘT hồ sơ — trùng hai hồ sơ là ca 38/201, phải người
+    chốt ở `USER_MANUAL_MAP`. Khớp thì đóng dấu `legacy_id` y như bộ tra danh
+    mục, lần sau nấc `legacy_id` ăn luôn. Không so số điện thoại: đo prod ngày
+    02/10 chỉ 15/260 hồ sơ có số, và một số máy đứng tên cùng lúc bốn hồ sơ.
+    UID trong `USER_SKIPPED` cố ý không tra lại.
     """
 
-    def __init__(self, db):
+    def __init__(self, db, *, fetch_node=None):
         self.db = db
+        #  Tách ra được để bài kiểm chạy không cần mạng — cùng nếp `LegacyCatalog`.
+        self.fetch_node = fetch_node if fetch_node is not None else read_node
         self._emp_by_uid: dict[str, Employee] = {}
         self._user_by_emp: dict[int, int] = {}
+        #  UID đã tra email mà không ra: nhớ trong lượt để khỏi gọi Firebase lại
+        #  cho từng phiếu của cùng một người.
+        self._email_miss: set[str] = set()
         self.no_account: collections.Counter = collections.Counter()
         self.unknown_uid: collections.Counter = collections.Counter()
+        self.stamped_by_email: collections.Counter = collections.Counter()
 
         for emp in db.execute(select(Employee).where(Employee.legacy_id != "")).scalars():
             self._emp_by_uid[emp.legacy_id] = emp
@@ -237,7 +258,44 @@ class PeopleResolver:
     def employee(self, uid: str) -> Employee | None:
         emp = self._emp_by_uid.get(uid or "")
         if emp is None and uid:
+            emp = self._match_by_email(uid)
+        if emp is None and uid:
             self.unknown_uid[uid] += 1
+        return emp
+
+    def _match_by_email(self, uid: str) -> Employee | None:
+        """Nấc cuối: email của UID trên Firebase -> đúng MỘT hồ sơ ERP, rồi đóng dấu."""
+        if uid in USER_SKIPPED or uid in self._email_miss:
+            return None
+        node = self.fetch_node(f"users/{uid}")
+        email = (node.get("email") or "").strip().lower() if isinstance(node, dict) else ""
+        if not email:
+            self._email_miss.add(uid)
+            return None
+        emp_ids = set(self.db.execute(
+            select(Employee.id).where(func.lower(Employee.email) == email)).scalars())
+        emp_ids |= {eid for eid in self.db.execute(
+            select(User.employee_id).where(func.lower(User.email) == email)).scalars() if eid}
+        if len(emp_ids) != 1:
+            if emp_ids:
+                self.stamped_by_email[f"email trung {len(emp_ids)} ho so: {email}"] += 1
+            self._email_miss.add(uid)
+            return None
+        emp = self.db.get(Employee, emp_ids.pop())
+        if emp is None:
+            self._email_miss.add(uid)
+            return None
+        if emp.legacy_id and emp.legacy_id != uid:
+            #  Hồ sơ đã đeo UID khác (một người hai tài khoản app cũ). Không đè —
+            #  đè là cắt dây nối của UID kia — nhưng vẫn nhận người cho phiếu này.
+            self.stamped_by_email[f"ho so da deo UID khac: {emp.code}"] += 1
+        else:
+            emp.legacy_id = uid
+            emp.updated_by = SYSTEM_ACTOR_ID
+            self.db.flush()
+            self.stamped_by_email[f"dong dau theo email: {emp.code}"] += 1
+            LOGGER.info("Đóng dấu legacy_id %r lên hồ sơ %s theo email", uid, emp.code)
+        self._emp_by_uid[uid] = emp
         return emp
 
     def user_id(self, uid: str) -> int:

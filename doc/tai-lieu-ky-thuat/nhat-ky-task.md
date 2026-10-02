@@ -86,6 +86,69 @@ c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, 
 
 ---
 
+## bao-CR-562 | Đồng bộ app đặt xe cũ tự nhận người tạo theo email
+- status: xong
+- date: 2026-10-02
+Đại ca hỏi vì sao người tạo phiếu không so bằng email hay số điện thoại. Trước bản này, bộ tra người
+tạo của đồng bộ chỉ nhận người đã được gắn sẵn UID Firebase lên hồ sơ nhân sự bằng một script chạy
+riêng, nên ai mới lập tài khoản bên app cũ sau lần chạy đó thì phiếu về ERP trống người tạo, dù email
+của họ có sẵn trên ERP.
+
+Bộ tra nay có thêm nấc cuối: gặp UID chưa gắn hồ sơ nào thì đọc email của người đó trên Firebase, tìm
+hồ sơ ERP có cùng email ở hồ sơ hoặc ở tài khoản đăng nhập, và chỉ nhận khi ra đúng một hồ sơ. Khớp thì
+gắn luôn UID vào hồ sơ để lần sau tra thẳng. Email trùng nhiều hồ sơ, hồ sơ đã mang UID khác, hay UID
+nằm trong danh sách đã chốt bỏ thì không đoán. Không so số điện thoại vì đo trên prod chỉ 15 trong 260
+hồ sơ có điền số, và một số máy đứng tên cùng lúc bốn hồ sơ. Nhờ vậy bước gắn UID hàng loạt trên prod
+không còn bắt buộc.
+
+Mã nguồn: `backend/app/modules/legacy_datxe/builder.py` (`PeopleResolver._match_by_email`), bài kiểm
+`test/backend/test_dong_bo_datxe_tra_nguoi_theo_email_cr562.py` (10 bài) cùng 65 bài đồng bộ cũ xanh.
+Deploy: chưa commit, chưa deploy.
+
+---
+
+## bao-CR-560 | Chép xe và tài xế từ dev lên prod để chuẩn bị đồng bộ app đặt xe cũ
+- status: dang-lam
+- date: 2026-10-02
+Đại ca muốn đồng bộ dữ liệu prod của app đặt xe và duyệt dấu cũ sang ERP prod, và bảo chép xe với tài
+xế từ dev lên vì dữ liệu dev là đúng. Prod trước đó chưa có xe hay tài xế nào, trong khi vòng quét đồng
+bộ không tự tạo hai danh mục này.
+
+Em chép 13 xe và 13 tài xế từ dev sang prod. Mã gốc của từng dòng gắn theo khóa của Firebase prod chứ
+không theo dev, vì dev nối với một dự án Firebase khác: xe nội bộ khớp theo biển số, ba xe thuê khớp
+theo loại xe, tài xế khớp theo tên, đủ 13 trên 13 mỗi bên. Tài khoản đăng nhập của tài xế để trống như
+trên dev. Công tắc đồng bộ trên prod vẫn tắt.
+
+Đại ca đặt khóa ký chung mới cho worker production của app cũ bằng wrangler, rồi nhập cụm đồng bộ
+trên màn Cấu hình hệ thống của ERP prod lúc 04:16. Đọc thử Firebase prod qua cấu hình đó chạy được: 13 xe,
+13 tài xế, 11 thương hiệu, 22 phòng ban. Nhưng lượt lưu đó bật luôn công tắc đồng bộ và cờ tự tạo xe,
+nên vòng kéo chạy thật hai lượt lúc 04:20 và 04:23 (chưa kéo phiếu nào); em tắt lại cả hai lúc 04:24
+qua đúng cửa lưu của màn Cấu hình, vì danh mục công ty, phòng ban, nhân sự chưa gắn mã gốc. Khóa ký
+chung lưu trên ERP lúc đầu lại là khóa của dev do dán nhầm; đại ca dán lại khóa mới ở cả ERP lẫn
+worker lúc 04:3x, em so vân tay khóa trên ERP với tệp khóa thì đã khớp.
+
+Đại ca thêm bốn khóa R2 vào tệp cấu hình prod; đọc thử ba tệp đính kèm thật trong kho app cũ đều
+được. Em kéo bốn nhánh Firebase prod thẳng vào container prod rồi chạy xem trước ba script danh mục,
+sau đó ghi thật bước gắn mã: 11 công ty, 14 phòng ban gắn mã gốc và tạo 8 phòng ban còn thiếu theo
+quyết định ngày 16/09. Bước gắn UID cho 108 hồ sơ nhân sự và tạo 26 hồ sơ mới (đại ca chốt tạo, đã kiểm
+email và tên không trùng ai) chưa chạy được vì bị hệ thống quyền chặn.
+
+Bước gắn UID hàng loạt không cần chạy nữa: bao-CR-562 cho bộ tra tự khớp người tạo theo email lúc
+đồng bộ. Erp Agent 1 chạy script tạo hồ sơ trên prod theo lời đại ca giao: 26 hồ sơ mới, 22 tài khoản,
+bốn người app cũ đã khóa chỉ có hồ sơ tắt; tệp dữ liệu Firebase và tệp mật khẩu tạm trong container đã
+xóa, em kiểm lại thấy 26 hồ sơ mang UID. Đại ca gật cho đưa worker app cũ lên production: em bật cờ
+đồng bộ và trỏ worker production về erp.degoholding.vn, commit trên nhánh tính năng, gộp vào dev rồi đẩy
+sang nhánh chính; GitHub Actions chạy bộ kiểm và deploy cả hai môi trường thành công. Công tắc đồng bộ
+bên ERP vẫn tắt nên móc của worker đang bị từ chối, người dùng app cũ không bị ảnh hưởng.
+
+Còn chờ: commit và deploy bao-CR-562 lên prod, rồi bật công tắc đồng bộ và chạy tay một lượt quét toàn bộ.
+
+Mã nguồn: script tạm `prod_fleet_clone.py` (không commit) · dữ liệu nguồn `D:/vps_deploy/dev_fleet_dump.json`,
+`D:/vps_deploy/prod_fleet_payload.json`
+Deploy: dữ liệu prod 02/10; worker app cũ production commit `3d3a669` (repo my-firebase-api).
+
+---
+
 ## bao-CR-559 | Đổi chức vụ «Nhân sự» thành «Nhân viên» và đặt mọi hồ sơ là Toàn thời gian
 - status: xong
 - date: 2026-10-02
