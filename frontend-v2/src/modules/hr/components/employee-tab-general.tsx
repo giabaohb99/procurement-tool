@@ -330,8 +330,9 @@ export function EmployeeTabGeneral({
                   items={colleagues}
                 />
                 <FormDescription>
-                  Người ký duyệt đơn từ của nhân viên này. Bỏ trống thì đơn chuyển cho
-                  trưởng bộ phận.
+                  Người ký duyệt đơn từ của nhân viên này ở những luồng duyệt có bước
+                  «Quản lý trực tiếp người nộp». Bỏ trống thì bước đó chuyển cho trưởng
+                  bộ phận.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

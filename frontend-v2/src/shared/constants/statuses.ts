@@ -139,6 +139,23 @@ export const PR_LINE_STATUS: readonly StatusOption[] = [
   {"value": "cancelled", "label": "Hủy đơn", "sort_order": 0, "is_terminal": true, "is_exception": true},
 ]
 
+/** Báo cáo */
+export const REPORT_KEY: readonly StatusOption[] = [
+  {"value": "1", "label": "Báo cáo mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Chi tiết YC mua hàng", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Tiến độ báo giá", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Tiến độ mua hàng", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Báo cáo khảo sát", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Biến động nhân sự", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "7", "label": "Tình hình nghỉ phép", "sort_order": 7, "is_terminal": false, "is_exception": false},
+  {"value": "8", "label": "Quỹ phép năm", "sort_order": 8, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Báo cáo đặt xe", "sort_order": 9, "is_terminal": false, "is_exception": false},
+  {"value": "10", "label": "Báo cáo đóng dấu", "sort_order": 10, "is_terminal": false, "is_exception": false},
+  {"value": "11", "label": "Báo cáo văn bản", "sort_order": 11, "is_terminal": false, "is_exception": false},
+  {"value": "12", "label": "Báo cáo phê duyệt", "sort_order": 12, "is_terminal": false, "is_exception": false},
+  {"value": "13", "label": "Công việc & Dự án", "sort_order": 13, "is_terminal": false, "is_exception": false},
+]
+
 /** Loại hình pháp lý NCC */
 export const SUPPLIER_LEGAL_TYPE: readonly StatusOption[] = [
   {"value": "company", "label": "Công ty", "sort_order": 0, "is_terminal": false, "is_exception": false},
@@ -163,6 +180,7 @@ export const STATUS_SETS = {
   po_item_line_status: PO_ITEM_LINE_STATUS,
   po_progress_status: PO_PROGRESS_STATUS,
   pr_line_status: PR_LINE_STATUS,
+  report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
 } as const
 

@@ -20,6 +20,8 @@ export const PROCUREMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.purchaseReport,
     sourcePath: appRoutes.procurement.purchaseReport,
     icon: ChartColumnBig,
+    //  ReportKey.PURCHASE_REPORT (backend) = 1.
+    key: 1,
     entity: 'report',
     group: 'Thu mua',
     endpoint: '/api/reports/procurement/summary',
@@ -32,6 +34,8 @@ export const PROCUREMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.prLinesReport,
     sourcePath: appRoutes.procurement.prLinesReport,
     icon: TextSearch,
+    //  ReportKey.PR_LINES (backend) = 2.
+    key: 2,
     entity: 'report',
     group: 'Thu mua',
     endpoint: '/api/reports/pr-lines/summary',
@@ -44,6 +48,8 @@ export const PROCUREMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.surveyProgress,
     sourcePath: appRoutes.procurement.surveyProgress,
     icon: Truck,
+    //  ReportKey.SURVEY_PROGRESS (backend) = 3.
+    key: 3,
     entity: 'survey_request',
     group: 'Thu mua',
     endpoint: '/api/survey-progress/summary',
@@ -56,6 +62,8 @@ export const PROCUREMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.purchaseProgress,
     sourcePath: appRoutes.procurement.purchaseProgress,
     icon: Truck,
+    //  ReportKey.PURCHASE_PROGRESS (backend) = 4.
+    key: 4,
     entity: 'purchase_request',
     group: 'Thu mua',
     endpoint: '/api/purchase-progress/summary',
@@ -70,6 +78,8 @@ export const PROCUREMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.surveyReport,
     sourcePath: appRoutes.procurement.surveyReport,
     icon: BarChart3,
+    //  ReportKey.SURVEY_REPORT (backend) = 5.
+    key: 5,
     entity: 'survey',
     group: 'Thu mua',
     endpoint: '/api/survey-report/summary',

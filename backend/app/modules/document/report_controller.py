@@ -15,15 +15,17 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_perm_profile, require
 from app.core.database import get_db
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
+from app.modules.report_access.guard import require_report
 
 from . import report_service as svc
 
 router = APIRouter(prefix="/api/documents", tags=["document"])
 
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(require_report(ReportKey.DOCUMENT))])
 def document_summary(request: Request, db: Session = Depends(get_db),
                      user=Depends(require("document", "read"))):
     profile = get_perm_profile(db, user)
@@ -33,7 +35,7 @@ def document_summary(request: Request, db: Session = Depends(get_db),
     return success(data)
 
 
-@router.get("/summary/export")
+@router.get("/summary/export", dependencies=[Depends(require_report(ReportKey.DOCUMENT))])
 def document_summary_export(request: Request, db: Session = Depends(get_db),
                             user=Depends(require("document", "export"))):
     profile = get_perm_profile(db, user)

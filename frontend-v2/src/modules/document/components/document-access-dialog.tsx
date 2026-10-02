@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/shared/utils/cn'
 import { matchesVietnamese } from '@/shared/utils/vn-text'
 import { blockedSelfIds } from '../helpers/blocked-self-ids'
-import { SubjectChips } from './access-subject-chips'
+import { SubjectChips } from '@/shared/access-subject/access-subject-chips'
 import {
   EFFECT,
   SUBJECT_KIND,

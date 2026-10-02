@@ -11,10 +11,12 @@ from app.core.base_controller import apply_filters, apply_sort_from_request, pag
 from app.core.database import get_db
 from app.core.report_aggregate import build_report
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.notification.service import trigger_notification
+from app.modules.report_access.guard import require_report
 
 from . import service
 from .model import Survey, SurveyProductLine
@@ -437,7 +439,7 @@ def summarize_report_rows(rows) -> dict:
     }
 
 
-@report_router.get("/summary")
+@report_router.get("/summary", dependencies=[Depends(require_report(ReportKey.SURVEY_REPORT))])
 def report_summary_(kind: str | None = Query(None), item_group: str | None = Query(None),
                     supplier: str | None = Query(None), q: str | None = Query(None),
                     nspt: str | None = Query(None), date_from: str | None = Query(None),
@@ -461,7 +463,8 @@ def report_summary_(kind: str | None = Query(None), item_group: str | None = Que
     return success(summarize_report_rows(rows))
 
 
-@report_router.get("/summary/export")
+@report_router.get("/summary/export",
+                   dependencies=[Depends(require_report(ReportKey.SURVEY_REPORT))])
 def report_summary_export_(kind: str | None = Query(None), item_group: str | None = Query(None),
                            supplier: str | None = Query(None), q: str | None = Query(None),
                            nspt: str | None = Query(None), date_from: str | None = Query(None),

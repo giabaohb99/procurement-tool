@@ -2,6 +2,7 @@
 đích danh/cá nhân/Nháp không vào số nào; `/summary` không bị `/{id}` nuốt; số truy vấn CỐ
 ĐỊNH; lọc `company_id` (422 nếu sai định dạng); nhóm theo ID (không theo TÊN, tránh trùng).
 """
+import uuid
 from datetime import date, datetime
 
 import pytest
@@ -11,7 +12,9 @@ from sqlalchemy import event
 
 from app.core.auth import get_current_user, get_perm_profile
 from app.core.database import get_db
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
+from app.core.subject_match import SUBJECT_ROLE
 from app.main import app
 from app.modules.department.model import Department
 from app.modules.doc_catalog.model import DocType
@@ -47,9 +50,14 @@ def _totals(db, user, group_by=None, company_id=None, **period_kw):
     profile = get_perm_profile(db, user)
     return svc.build_summary(db, user, profile, _period(**period_kw), group_by, company_id)
 
-def _viewer(db, seed, cap_quyen, scope="all"):
+def _viewer(db, seed, cap_quyen, gan_bao_cao=None, scope="all"):
+    """`gan_bao_cao` TÙY CHỌN — chỉ bài gọi qua HTTP thật (`client_as`) mới cần,
+    vì `require_report` (phase 02) gác ở `dependencies=[...]` của route, bài
+    gọi thẳng `svc.build_summary` không đi qua route nên không bị ảnh hưởng."""
     v = db.query(User).filter(User.employee_id == seed.emp_tp_id).one()
-    cap_quyen(v.id, "document", scope=scope, read=True, export=True)
+    role = cap_quyen(v.id, "document", scope=scope, read=True, export=True)
+    if gan_bao_cao:
+        gan_bao_cao(SUBJECT_ROLE, role.id, ReportKey.DOCUMENT)
     return v
 
 def test_van_ban_bi_cam_dich_danh_khong_vao_so_nao(db, seed, cap_quyen):
@@ -144,22 +152,28 @@ def test_hai_phong_trung_ten_khac_id_khong_gop_nham(db, seed, cap_quyen):
 
 @pytest.fixture
 def client_as(db):
+    """⚠️ Token Bearer GIẢ nhưng DUY NHẤT mỗi lần build — `ReportSummaryCacheMiddleware`
+    (gói A2) cache GET `/summary` qua Redis thật theo khóa `(path, query,
+    sha256(token))`; không có header thì MỌI bài test (và mọi tệp khác) chia
+    cùng khóa (token rỗng), một bài trả 200 làm bài kế ăn lại đúng response cũ
+    — kể cả khi KHÔNG còn quyền (`require_report` bị bỏ qua hẳn vì cache HIT
+    không đụng tới route)."""
     def build(user):
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[get_current_user] = lambda: user
-        return TestClient(app)
+        return TestClient(app, headers={"Authorization": f"Bearer test-{uuid.uuid4().hex}"})
 
     yield build
     app.dependency_overrides.pop(get_db, None)
     app.dependency_overrides.pop(get_current_user, None)
 
-def test_summary_tra_200_khong_bi_id_nuot(db, seed, cap_quyen, client_as):
-    resp = client_as(_viewer(db, seed, cap_quyen)).get("/api/documents/summary?preset=this_month&compare=none")
+def test_summary_tra_200_khong_bi_id_nuot(db, seed, cap_quyen, client_as, gan_bao_cao):
+    resp = client_as(_viewer(db, seed, cap_quyen, gan_bao_cao)).get("/api/documents/summary?preset=this_month&compare=none")
     assert resp.status_code == 200   # `/{document_id}: int` sẽ ra 422 nếu bị nuốt
     assert "period" in resp.json()["data"] and "totals" in resp.json()["data"]
 
-def test_summary_export_tra_file_xlsx(db, seed, cap_quyen, client_as):
-    resp = client_as(_viewer(db, seed, cap_quyen)).get("/api/documents/summary/export?preset=this_month&compare=none")
+def test_summary_export_tra_file_xlsx(db, seed, cap_quyen, client_as, gan_bao_cao):
+    resp = client_as(_viewer(db, seed, cap_quyen, gan_bao_cao)).get("/api/documents/summary/export?preset=this_month&compare=none")
     assert resp.status_code == 200
     assert "spreadsheet" in resp.headers["content-type"]
 

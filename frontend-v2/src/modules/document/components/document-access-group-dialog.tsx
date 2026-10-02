@@ -13,7 +13,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { SubjectChips } from './access-subject-chips'
+import { SubjectChips } from '@/shared/access-subject/access-subject-chips'
 import type { DocumentAccessDraft, DocumentAccessInput } from '../types/document-access'
 
 /** Phần khai lại được cho cả cụm — đối tượng và chiều tác động thì không. */

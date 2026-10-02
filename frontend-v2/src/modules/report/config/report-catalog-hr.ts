@@ -18,6 +18,8 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.hrHeadcount,
     sourcePath: appRoutes.hr.employees,
     icon: IdCard,
+    //  ReportKey.HR_HEADCOUNT (backend) = 6.
+    key: 6,
     entity: 'employee',
     group: 'Nhân sự',
     endpoint: '/api/employees/summary',
@@ -32,6 +34,8 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     icon: CalendarOff,
     //  Khớp mục con «Đơn nghỉ phép» (cùng đường với mục cha «Nghỉ phép») và
     //  `require('leave_request', ...)` của `/api/leave-requests/summary`.
+    //  ReportKey.LEAVE_USAGE (backend) = 7.
+    key: 7,
     entity: 'leave_request',
     group: 'Nhân sự',
     endpoint: '/api/leave-requests/summary',
@@ -44,6 +48,8 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.leaveBalance,
     sourcePath: appRoutes.hr.leaveBalances,
     icon: Wallet,
+    //  ReportKey.LEAVE_BALANCE (backend) = 8.
+    key: 8,
     entity: 'leave_balance',
     group: 'Nhân sự',
     endpoint: '/api/leave-balances/summary',

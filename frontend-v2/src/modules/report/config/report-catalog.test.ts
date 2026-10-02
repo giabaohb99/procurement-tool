@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ModuleNavItem } from '@/app/router/module-definition'
 import { allModules } from '@/app/router/module-registry'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { REPORT_KEY } from '@/shared/constants/statuses'
 
 import { reportModule } from '../routes'
 import { REPORT_CATALOG } from './report-catalog'
@@ -60,5 +61,42 @@ describe('REPORT_CATALOG', () => {
 
   it('every loader resolves to a real component', async () => {
     for (const r of REPORT_CATALOG) expect(typeof (await r.load())).toBe('function')
+  })
+
+  //  Khóa `ReportKey` sinh từ backend (`REPORT_KEY` trong `statuses.ts`) phải
+  //  khớp 1-1 với `key` khai trong danh mục FE — thiếu/thừa một khóa ở bên nào
+  //  thì gác kép mở sai cửa (ẩn báo cáo có thật, hoặc hiện báo cáo không tồn tại
+  //  ở backend) mà không có lỗi biên dịch nào bắt được, vì cả hai đều là số.
+  describe('key (ReportKey backend) đồng bộ với statuses.ts', () => {
+    it('mỗi key duy nhất trong danh mục, không trùng/không tái dùng', () => {
+      const keys = REPORT_CATALOG.map((r) => r.key)
+      expect(new Set(keys).size).toBe(keys.length)
+    })
+
+    it('tập key khớp hệt tập REPORT_KEY sinh từ backend (không thiếu, không thừa)', () => {
+      const catalogKeys = new Set(REPORT_CATALOG.map((r) => String(r.key)))
+      const backendKeys = new Set(REPORT_KEY.map((o) => o.value))
+      expect(catalogKeys).toEqual(backendKeys)
+    })
+
+    it('nhãn khớp nhãn REPORT_KEY — hai nơi đặt tên lệch thì người gán báo cáo đọc nhãn sai', () => {
+      for (const r of REPORT_CATALOG) {
+        const backendLabel = REPORT_KEY.find((o) => o.value === String(r.key))?.label
+        expect(backendLabel, `thiếu ReportKey ${r.key} ở statuses.ts`).toBeDefined()
+        expect(r.label).toBe(backendLabel)
+      }
+    })
+
+    it('mục menu của MỖI báo cáo gác đúng một khóa reportKeys == [key]', () => {
+      for (const r of REPORT_CATALOG) {
+        const item = reportModule.nav.find((i) => i.path === r.path)
+        expect(item?.reportKeys).toEqual([r.key])
+      }
+    })
+
+    it('mục Tổng quan mang đủ mọi khóa (union) để không ai bị chặn oan khỏi cả trang', () => {
+      const overview = reportModule.nav.find((i) => i.path === appRoutes.report.root)
+      expect(new Set(overview?.reportKeys)).toEqual(new Set(REPORT_CATALOG.map((r) => r.key)))
+    })
   })
 })

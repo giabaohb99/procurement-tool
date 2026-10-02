@@ -17,29 +17,11 @@ from .folder_model import DocFolder
 
 
 def _subject_names(db: Session, rows: list[DocFolderAccess]) -> dict[tuple[int, int], str]:
-    """`{(subject_kind, subject_id): tên}` — MỘT lượt tra cho mỗi loại đối
-    tượng, cùng lối `document/serializer.serialize_access`."""
-    from app.core.subject_match import (SUBJECT_COMPANY, SUBJECT_DEPARTMENT,
-                                        SUBJECT_EMPLOYEE, SUBJECT_ROLE)
-    from app.modules.company.model import Company
-    from app.modules.department.model import Department
-    from app.modules.employee.model import Employee
-    from app.modules.role.model import Role
-
-    by_kind = {
-        SUBJECT_EMPLOYEE: (Employee, "full_name"),
-        SUBJECT_DEPARTMENT: (Department, "name"),
-        SUBJECT_COMPANY: (Company, "name"),
-        SUBJECT_ROLE: (Role, "name"),
-    }
-    result: dict[tuple[int, int], str] = {}
-    for kind, (model, field) in by_kind.items():
-        ids = {r.subject_id for r in rows if r.subject_kind == kind}
-        if not ids:
-            continue
-        for oid, name in db.query(model.id, getattr(model, field)).filter(model.id.in_(ids)).all():
-            result[(kind, oid)] = name
-    return result
+    """`{(subject_kind, subject_id): tên}` — nay chỉ gọi lại `core/subject_match.subject_names`
+    (nâng lên dùng chung với `report_access/`, phase 02 plan `261002-0836-phan-quyen-tung-bao-cao`
+    — hành vi giữ nguyên, chỉ còn một bản thật)."""
+    from app.core.subject_match import subject_names
+    return subject_names(db, rows)
 
 
 def _folder_names(db: Session, folder_ids: set[int]) -> dict[int, str]:

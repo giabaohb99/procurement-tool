@@ -9,8 +9,10 @@ from sqlalchemy.orm import Session
 from app.core.auth import require, get_perm_profile
 from app.core.database import get_db
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
+from app.modules.report_access.guard import require_report
 from .excel import build_import_landed_cost_workbook, build_report_workbook
 from . import import_landed_cost
 from .pr_lines_period_service import compute_pr_lines_summary_period
@@ -214,7 +216,7 @@ def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(requi
         page=page, page_size=page_size))
 
 
-@router.get("/pr-lines/summary")
+@router.get("/pr-lines/summary", dependencies=[Depends(require_report(ReportKey.PR_LINES))])
 def pr_lines_summary(request: Request, db: Session = Depends(get_db),
                      user=Depends(require("report", "read"))):
     """Tổng hợp của báo cáo Chi tiết YC mua hàng (theo tiến độ / tháng / bộ phận / nhóm hàng /
@@ -236,7 +238,7 @@ def pr_lines_summary(request: Request, db: Session = Depends(get_db),
         assignee=qp.get("assignee") or None, search=(qp.get("search") or "").strip() or None))
 
 
-@router.get("/pr-lines/summary/export")
+@router.get("/pr-lines/summary/export", dependencies=[Depends(require_report(ReportKey.PR_LINES))])
 def pr_lines_summary_export(request: Request, db: Session = Depends(get_db),
                             user=Depends(require("report", "export"))):
     """Xuất Excel bản THEO KỲ của báo cáo Chi tiết YC mua hàng (P03) — cùng bộ lọc với `/summary`."""

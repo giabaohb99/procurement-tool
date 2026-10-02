@@ -5,6 +5,7 @@ nhạy cảm/chiều tuổi (R2 — `employee.sensitive.SENSITIVE_FIELDS`); ngh�
 thiếu `resign_date` không tính vào chỉ số; đường `/summary` không bị `/{id}`
 nuốt; số truy vấn SQL CỐ ĐỊNH, không tăng theo số nhân sự.
 """
+import uuid
 from datetime import date
 from types import SimpleNamespace
 
@@ -16,7 +17,9 @@ from starlette.datastructures import QueryParams
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
+from app.core.subject_match import SUBJECT_ROLE
 from app.main import app
 from app.modules.employee import report_controller, report_service
 from app.modules.employee.model import Employee
@@ -158,13 +161,17 @@ class TestThuTuRoute:
         paths = [r.path for r in app.routes if getattr(r, "path", "").startswith("/api/employees")]
         assert paths.index("/api/employees/summary") < paths.index("/api/employees/{eid}")
 
-    def test_testclient_goi_summary_tra_200(self, db, world):
+    def test_testclient_goi_summary_tra_200(self, db, world, gan_bao_cao):
         world.grant("a1", "employee", scope="all", actions=("read",))
         actor = world.actor("a1")
+        gan_bao_cao(SUBJECT_ROLE, actor.roles[-1].id, ReportKey.HR_HEADCOUNT)
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[get_current_user] = lambda: actor.user
         try:
-            client = TestClient(app)
+            #  Token Bearer GIẢ nhưng DUY NHẤT — `ReportSummaryCacheMiddleware` (gói A2)
+            #  cache GET `/summary` qua Redis thật theo `(path, query, token)`; không có
+            #  header riêng thì mọi test (và mọi tệp khác) chia cùng khóa (token rỗng).
+            client = TestClient(app, headers={"Authorization": f"Bearer test-{uuid.uuid4().hex}"})
             resp = client.get("/api/employees/summary", params={"preset": "this_month"})
         finally:
             app.dependency_overrides.pop(get_db, None)

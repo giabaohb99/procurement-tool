@@ -12,6 +12,8 @@ from app.core.database import get_db
 from app.core.report_export import report_xlsx
 from app.core.report_period import parse_period
 from app.core.response import success
+from app.core.report_keys import ReportKey
+from app.modules.report_access.guard import require_report
 
 from .controller import _can_see_ncc
 from .procurement_summary_service import compute_procurement_summary
@@ -19,7 +21,7 @@ from .procurement_summary_service import compute_procurement_summary
 router = APIRouter(prefix="/api/reports", tags=["report"])
 
 
-@router.get("/procurement/summary")
+@router.get("/procurement/summary", dependencies=[Depends(require_report(ReportKey.PURCHASE_REPORT))])
 def procurement_summary(request: Request, db: Session = Depends(get_db),
                         user=Depends(require("report", "read"))):
     """Tổng hợp Báo cáo mua hàng kiểu Haravan — kỳ + so sánh + Xem theo, hợp đồng chuẩn
@@ -30,7 +32,8 @@ def procurement_summary(request: Request, db: Session = Depends(get_db),
         db, user, period, qp.get("company_id"), qp.get("group_by") or None, _can_see_ncc(db, user)))
 
 
-@router.get("/procurement/summary/export")
+@router.get("/procurement/summary/export",
+           dependencies=[Depends(require_report(ReportKey.PURCHASE_REPORT))])
 def procurement_summary_export(request: Request, db: Session = Depends(get_db),
                                user=Depends(require("report", "export"))):
     qp = request.query_params

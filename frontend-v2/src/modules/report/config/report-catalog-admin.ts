@@ -12,6 +12,8 @@ export const ADMIN_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.vehicleBooking,
     sourcePath: appRoutes.vehicleBooking.requests,
     icon: Car,
+    //  ReportKey.VEHICLE_BOOKING (backend) = 9.
+    key: 9,
     entity: 'vehicle_booking',
     group: 'Hành chính',
     endpoint: '/api/vehicle-bookings/summary',
@@ -25,6 +27,8 @@ export const ADMIN_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.sealRequest,
     sourcePath: appRoutes.approvalSeal.requests,
     icon: Stamp,
+    //  ReportKey.SEAL_REQUEST (backend) = 10.
+    key: 10,
     entity: 'seal_request',
     group: 'Hành chính',
     endpoint: '/api/seal-requests/summary',

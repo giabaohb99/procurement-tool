@@ -8,6 +8,7 @@ Gọi thẳng `report_service.compute_work_summary` cho các ca nghiệp vụ (n
 khẳng định số liệu); hai ca "chốt HTTP" (`employee_id=0`, 200 qua TestClient,
 xuất Excel) dựng `TestClient` kiểu `client_as` của `test_tu_sua_lien_he_ca_nhan.py`.
 """
+import uuid
 from datetime import datetime
 from io import BytesIO
 
@@ -18,7 +19,9 @@ from sqlalchemy import event
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
+from app.core.subject_match import SUBJECT_ROLE
 from app.main import app
 from app.modules.employee.model import Employee
 from app.modules.user.model import User
@@ -91,21 +94,26 @@ def test_khong_la_thanh_vien_khong_thay_viec_du_an_do(db):
 
 @pytest.fixture
 def client_as(db):
+    """Token Bearer GIẢ nhưng DUY NHẤT mỗi lần build — `ReportSummaryCacheMiddleware`
+    (gói A2) cache GET `/summary` qua Redis thật theo `(path, query, token)`;
+    không có header riêng thì mọi test (và mọi tệp khác) chia cùng khóa (token
+    rỗng), một bài trả 200 làm bài kế ăn lại đúng response cũ dù đã mất quyền."""
     def build(user):
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[get_current_user] = lambda: user
-        return TestClient(app)
+        return TestClient(app, headers={"Authorization": f"Bearer test-{uuid.uuid4().hex}"})
 
     yield build
     app.dependency_overrides.pop(get_db, None)
     app.dependency_overrides.pop(get_current_user, None)
 
 
-def test_employee_id_0_bi_chan(db, client_as, cap_quyen):
+def test_employee_id_0_bi_chan(db, client_as, cap_quyen, gan_bao_cao):
     user = User(email="khongnhansu@dego.vn", employee_id=0, is_active=True)
     db.add(user)
     db.commit()
-    cap_quyen(user.id, "work_task", scope="all", read=True)
+    role = cap_quyen(user.id, "work_task", scope="all", read=True)
+    gan_bao_cao(SUBJECT_ROLE, role.id, ReportKey.WORK)
 
     res = client_as(user).get("/api/work/summary")
     assert res.status_code == 400
@@ -205,12 +213,13 @@ def test_dang_mo_qua_han_tai_moc_qua_khu(db):
 
 # ── Chốt HTTP: 200 qua TestClient + xuất Excel ────────────────────────────────
 
-def test_api_summary_tra_200(db, client_as, cap_quyen):
+def test_api_summary_tra_200(db, client_as, cap_quyen, gan_bao_cao):
     emp = _emp(db, "API1")
     user = User(email="api1@dego.vn", employee_id=emp.id, is_active=True)
     db.add(user)
     db.commit()
-    cap_quyen(user.id, "work_task", scope="all", read=True, export=True)
+    role = cap_quyen(user.id, "work_task", scope="all", read=True, export=True)
+    gan_bao_cao(SUBJECT_ROLE, role.id, ReportKey.WORK)
 
     owner = Actor(user_id=user.id, employee_id=emp.id, company_id=0)
     lid = _project(db, owner)
@@ -226,12 +235,13 @@ def test_api_summary_tra_200(db, client_as, cap_quyen):
     assert body["data"]["totals"]["current"]["created"] == 1
 
 
-def test_xuat_excel_200(db, client_as, cap_quyen):
+def test_xuat_excel_200(db, client_as, cap_quyen, gan_bao_cao):
     emp = _emp(db, "EXP1")
     user = User(email="exp1@dego.vn", employee_id=emp.id, is_active=True)
     db.add(user)
     db.commit()
-    cap_quyen(user.id, "work_task", scope="all", read=True, export=True)
+    role = cap_quyen(user.id, "work_task", scope="all", read=True, export=True)
+    gan_bao_cao(SUBJECT_ROLE, role.id, ReportKey.WORK)
 
     owner = Actor(user_id=user.id, employee_id=emp.id, company_id=0)
     lid = _project(db, owner)

@@ -84,6 +84,33 @@ def _isolate_app_settings():
     app_settings._cache, app_settings._exp = goc_cache, goc_exp
 
 
+# ── Cache báo cáo: TẮT mặc định trong mọi test (M6, code review phân quyền báo cáo) ────
+@pytest.fixture(autouse=True)
+def _tat_cache_bao_cao(monkeypatch):
+    """`core.report_cache.ReportSummaryCacheMiddleware` bọc cả app THẬT (`app.main.app`,
+    nạp ở đầu tệp này) và đi hỏi REDIS THẬT — container `redis` của docker-compose, không
+    phải SQLite trong bộ nhớ của fixture `db`. Bộ test HTTP của 13 đường `/summary` xài
+    CÙNG `preset`+path giữa nhiều bài vì thế ăn chung MỘT khóa cache: bài trước ghi `hit`,
+    bài sau (mong 403 vì vừa đổi quyền hoặc thu hồi gán) đọc lại response CŨ, bỏ qua hẳn
+    `require_report`/`require(entity,...)` — sai âm thầm và phụ thuộc TTL (60s)/thứ tự
+    chạy, không phải phụ thuộc code.
+
+    `settings.REPORT_CACHE_TTL <= 0` là nhánh middleware tự THOÁT SỚM, không mở kết nối
+    Redis nào (xem `ReportSummaryCacheMiddleware.__call__`) — tắt ở đây để cả bộ test
+    không cần Redis thật đứng sẵn, thay vì mẹo "mỗi `TestClient` một Bearer token giả
+    DUY NHẤT" đang rải ở 7 tệp test cũ. Giữ nguyên mẹo token đó (vô hại, chỉ đổi khóa cache
+    chứ không đổi xác thực) làm lớp chặn THỨ HAI — phòng khi một bài quên apply fixture
+    autouse này (vd gọi thẳng ASGI app không qua `TestClient` của `app.main`).
+
+    Bài kiểm RIÊNG của chính cái cache (`test_bao_cao_cache_tong_quan.py`) tự override lại
+    `REPORT_CACHE_TTL=60` bằng fixture autouse cấp tệp của nó (`_ttl_60`) và tự mock
+    `report_cache._redis_client` bằng Redis giả trong bộ nhớ — fixture này không cản được
+    override cấp tệp (chạy SAU, đúng thứ tự pytest), nên không cần né riêng ở đây.
+    """
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "REPORT_CACHE_TTL", 0)
+
+
 # ── Fixture db ──────────────────────────────────────────────────────────────────
 @pytest.fixture(scope="function")
 def db():
@@ -371,3 +398,33 @@ def cap_quyen(db):
         return role
 
     return _cap
+
+
+@pytest.fixture(scope="function")
+def gan_bao_cao(db):
+    """Gán quyền XEM một/nhiều báo cáo cho một chủ thể — phase 03, plan
+    `261002-0836-phan-quyen-tung-bao-cao`. Dùng cho test MỚI của `report_access/`
+    lẫn để vá test HTTP cũ (sau `cap_quyen(...)` gọi thêm dòng này, nếu không
+    đường `/summary` của 26 báo cáo sẽ ăn 403 — gác kép, xem `report_access/guard.py`).
+
+        gan_bao_cao(subject_kind, subject_id, *keys, effect=EFFECT_ALLOW)
+
+    Không truyền `keys` -> gán MỌI `ReportKey` (đủ cho test cũ chỉ cần "không ăn
+    403 vì thiếu phân quyền báo cáo", không cần biết đúng khóa nào).
+    """
+    from app.core.report_keys import ReportKey
+    from app.core.subject_match import EFFECT_ALLOW
+    from app.modules.report_access.model import ReportAccess
+
+    def _gan(subject_kind: int, subject_id: int, *keys, effect: int = EFFECT_ALLOW):
+        use_keys = keys or tuple(ReportKey)
+        rows = [
+            ReportAccess(report_key=int(k), subject_kind=subject_kind, subject_id=subject_id,
+                        effect=effect, reason="test", created_by=0, updated_by=0)
+            for k in use_keys
+        ]
+        db.add_all(rows)
+        db.flush()
+        return rows
+
+    return _gan

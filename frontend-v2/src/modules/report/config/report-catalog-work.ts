@@ -18,6 +18,8 @@ export const WORK_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.work,
     sourcePath: appRoutes.project.list,
     icon: ListChecks,
+    //  ReportKey.WORK (backend) = 13.
+    key: 13,
     entity: 'work_task',
     group: 'Dự án',
     endpoint: '/api/work/summary',

@@ -10,16 +10,18 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_perm_profile, require
 from app.core.database import get_db
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
 from app.modules.report.procurement_summary_rows import valid_company_id
+from app.modules.report_access.guard import require_report
 
 from . import report_service
 
 router = APIRouter(prefix="/api/leave-requests", tags=["leave"])
 
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(require_report(ReportKey.LEAVE_USAGE))])
 def leave_request_summary(request: Request, db: Session = Depends(get_db),
                           user=Depends(require("leave_request", "read"))):
     prof = get_perm_profile(db, user)
@@ -30,7 +32,7 @@ def leave_request_summary(request: Request, db: Session = Depends(get_db),
     return success(data)
 
 
-@router.get("/summary/export")
+@router.get("/summary/export", dependencies=[Depends(require_report(ReportKey.LEAVE_USAGE))])
 def leave_request_summary_export(request: Request, db: Session = Depends(get_db),
                                  user=Depends(require("leave_request", "export"))):
     prof = get_perm_profile(db, user)

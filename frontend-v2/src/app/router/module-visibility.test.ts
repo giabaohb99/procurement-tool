@@ -580,3 +580,95 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
     expect(customsChildren(grants('customs_regulation.read'))).toEqual([])
   })
 })
+
+
+/**
+ * ─── Gác KÉP báo cáo theo `reportKeys` (`ModuleNavItem.reportKeys` /
+ * `NavContext.reportKeys`, 02/10/2026) ───
+ *
+ * Thiết kế ngược chiều mặc định "mục không khai entity thì luôn hiện": mục
+ * CÓ khai `reportKeys` mà bối cảnh thiếu/rỗng/không chứa khóa thì luôn ẨN
+ * (fail-closed), đúng chốt "chưa gán = đóng" của phân hệ Báo cáo.
+ */
+describe('reportKeys — gác kép báo cáo (fail-closed)', () => {
+  function reportNav(reportKeys: readonly number[]): ErpModule['nav'] {
+    return [
+      { label: 'Báo cáo X', path: '/report/x', entity: 'report', reportKeys, icon: FileText },
+    ] as ErpModule['nav']
+  }
+
+  it('ẩn khi ctx không có reportKeys (undefined) dù entity đọc được', () => {
+    const m = module(reportNav([1]))
+    expect(visibleNavItems(m, allow('report'), {})).toHaveLength(0)
+  })
+
+  it('ẩn khi ctx.reportKeys là mảng rỗng', () => {
+    const m = module(reportNav([1]))
+    expect(visibleNavItems(m, allow('report'), { reportKeys: [] })).toHaveLength(0)
+  })
+
+  it('ẩn khi ctx.reportKeys không chứa khóa của mục', () => {
+    const m = module(reportNav([1]))
+    expect(visibleNavItems(m, allow('report'), { reportKeys: [2, 3] })).toHaveLength(0)
+  })
+
+  it('hiện khi ctx.reportKeys chứa khóa VÀ đọc được entity', () => {
+    const m = module(reportNav([1]))
+    expect(visibleNavItems(m, allow('report'), { reportKeys: [1] })).toHaveLength(1)
+  })
+
+  it('có khóa đúng mà THIẾU entity thì vẫn ẩn — gác kép, thiếu một là đóng', () => {
+    const m = module(reportNav([1]))
+    expect(visibleNavItems(m, allow(), { reportKeys: [1] })).toHaveLength(0)
+  })
+
+  it('mục không khai reportKeys thì không bị luật này đụng tới', () => {
+    const nav = [
+      { label: 'Thường', path: '/x/binh-thuong', entity: 'report', icon: FileText },
+    ] as ErpModule['nav']
+    const m = module(nav)
+    expect(visibleNavItems(m, allow('report'), {})).toHaveLength(1)
+  })
+
+  it("canAccessRoute('/report/work') false khi thiếu khóa — gõ thẳng URL vẫn bị chặn", () => {
+    const report = moduleRegistry.find((mm) => mm.id === 'report')
+    expect(report).toBeDefined()
+    if (!report) return
+
+    expect(canAccessRoute(report, '/report/work', allow('work_task'), {})).toBe(false)
+    expect(canAccessRoute(report, '/report/work', allow('work_task'), { reportKeys: [13] })).toBe(
+      true,
+    )
+  })
+
+  it('firstAccessibleNavPath bỏ qua báo cáo CHƯA được gán, dù entity đọc được', () => {
+    const nav = [
+      { label: 'Tổng quan', path: '/report', entity: 'report', reportKeys: [1, 2], icon: FileText },
+      { label: 'Báo cáo A', path: '/report/a', entity: 'report', reportKeys: [1], icon: FileText },
+      { label: 'Báo cáo B', path: '/report/b', entity: 'report', reportKeys: [2], icon: FileText },
+    ] as ErpModule['nav']
+    const m = { ...module(nav), path: '/report' } as ErpModule
+
+    //  Chỉ được gán khóa 2 (Báo cáo B) — khóa 1 (Báo cáo A) tuy đọc được entity
+    //  vẫn phải bị BỎ QUA.
+    expect(firstAccessibleNavPath(m, allow('report'), { reportKeys: [2] })).toBe('/report/b')
+  })
+
+  it('canOpenModule báo cáo false khi reportKeys=[] dù entity đọc được', () => {
+    const m = module(reportNav([1]), 'report')
+    expect(canOpenModule(m, allow('report'), { reportKeys: [] })).toBe(false)
+    expect(canOpenModule(m, allow('report'), { reportKeys: [1] })).toBe(true)
+  })
+
+  it('trên phân hệ Báo cáo THẬT: mục Tổng quan vẫn ẩn nếu không được gán báo cáo nào', () => {
+    const report = moduleRegistry.find((mm) => mm.id === 'report')
+    expect(report).toBeDefined()
+    if (!report) return
+
+    //  Đọc được MỌI entity nguồn nhưng không được gán khóa nào — mô phỏng đúng
+    //  hồ sơ cũ lưu trong localStorage trước khi `report_keys` ra đời.
+    const allowEverything = () => true
+    expect(canOpenModule(report, allowEverything, {})).toBe(false)
+    expect(canOpenModule(report, allowEverything, { reportKeys: [1] })).toBe(true)
+  })
+})

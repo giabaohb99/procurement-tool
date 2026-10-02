@@ -24,9 +24,11 @@ from app.core.filter_operators import apply_operator_filters_map
 from app.core.ref_filter import apply_ref_filters
 from app.core.report_aggregate import build_report
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period, range_filter
 from app.core.response import success
 from app.core.scoping import apply_scope
+from app.modules.report_access.guard import require_report
 from app.modules.survey_request.model import (LS_COMPLETED, LS_RESURVEY, SurveyRequest,
                                               SurveyRequestLine, SurveyRequestOption)
 
@@ -427,7 +429,7 @@ def summarize(decorated: list[dict]) -> dict:
     }
 
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(require_report(ReportKey.SURVEY_PROGRESS))])
 def progress_summary(request: Request, year: str = "", db: Session = Depends(get_db),
                      user=Depends(_require_progress)):
     """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi (cả lọc dòng theo NSTM) với bảng.
@@ -454,7 +456,7 @@ def progress_summary(request: Request, year: str = "", db: Session = Depends(get
     return success(summarize(_decorate(db, q.all(), show_supplier, 0)))
 
 
-@router.get("/summary/export")
+@router.get("/summary/export", dependencies=[Depends(require_report(ReportKey.SURVEY_PROGRESS))])
 def progress_summary_export(request: Request, db: Session = Depends(get_db),
                             user=Depends(_require_progress_export)):
     """Xuất Excel bản THEO KỲ của màn Tiến độ báo giá (P03) — cùng bộ lọc với `/summary`."""

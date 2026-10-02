@@ -14,6 +14,7 @@ Gọi thẳng hàm controller (không qua HTTP) cho phần lớn ca — cùng l�
 `test_bao_cao_thu_mua_theo_ky.py`: các route ở đây chỉ đụng `request.query_params`.
 """
 import json
+import uuid
 from datetime import date, datetime, timedelta
 from io import BytesIO
 from types import SimpleNamespace
@@ -27,6 +28,8 @@ from starlette.datastructures import QueryParams
 
 from app.core.auth import get_current_user, get_perm_profile
 from app.core.database import get_db
+from app.core.report_keys import ReportKey
+from app.core.subject_match import SUBJECT_ROLE
 from app.main import app
 from app.modules.approval.instance_model import INSTANCE_APPROVED, ApprovalInstance
 from app.modules.employee.model import Employee
@@ -377,17 +380,23 @@ def test_dong_dau_company_id_rac_tra_422(db, cap_quyen):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _client_as(db, user):
+    """Token Bearer GIẢ nhưng DUY NHẤT mỗi lần build — `ReportSummaryCacheMiddleware`
+    (gói A2) cache GET `/summary` qua Redis thật theo `(path, query, token)`;
+    không có header riêng thì mọi test (và mọi tệp khác) chia cùng khóa (token
+    rỗng), một bài trả 200 làm bài kế ăn lại đúng response cũ."""
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_current_user] = lambda: user
-    return TestClient(app)
+    return TestClient(app, headers={"Authorization": f"Bearer test-{uuid.uuid4().hex}"})
 
 
-def test_summary_tra_200_qua_http_khong_bi_id_nuot(db, cap_quyen):
+def test_summary_tra_200_qua_http_khong_bi_id_nuot(db, cap_quyen, gan_bao_cao):
     """`/summary` phải khớp router RIÊNG (đăng ký trước `/{id}`), không bị FastAPI thử ép
     "summary" thành id số rồi trả 422/404."""
     actor = _actor(db, uid=401, code="NS401", dept=DEPT_A, company=CTY)
-    cap_quyen(401, "vehicle_booking", scope="all", read=True)
-    cap_quyen(401, "seal_request", scope="all", read=True)
+    role_veh = cap_quyen(401, "vehicle_booking", scope="all", read=True)
+    role_seal = cap_quyen(401, "seal_request", scope="all", read=True)
+    gan_bao_cao(SUBJECT_ROLE, role_veh.id, ReportKey.VEHICLE_BOOKING)
+    gan_bao_cao(SUBJECT_ROLE, role_seal.id, ReportKey.SEAL_REQUEST)
     client = _client_as(db, actor)
     try:
         r1 = client.get("/api/vehicle-bookings/summary",
@@ -403,15 +412,17 @@ def test_summary_tra_200_qua_http_khong_bi_id_nuot(db, cap_quyen):
     assert r2.status_code == 200 and r2.json()["success"] is True
 
 
-def test_summary_export_tra_ve_xlsx(db, cap_quyen):
+def test_summary_export_tra_ve_xlsx(db, cap_quyen, gan_bao_cao):
     actor = _actor(db, uid=402, code="NS402", dept=DEPT_A, company=CTY)
     booking = _booking(db, actor, start_time=f"{TODAY.isoformat()}T08:00")
     booking.status = vm.BK_APPROVED
     seal = _seal(db, actor, [CTY_A])
     seal.status = sm.SEAL_APPROVED
     db.flush()
-    cap_quyen(402, "vehicle_booking", scope="all", export=True)
-    cap_quyen(402, "seal_request", scope="all", export=True)
+    role_veh = cap_quyen(402, "vehicle_booking", scope="all", export=True)
+    role_seal = cap_quyen(402, "seal_request", scope="all", export=True)
+    gan_bao_cao(SUBJECT_ROLE, role_veh.id, ReportKey.VEHICLE_BOOKING)
+    gan_bao_cao(SUBJECT_ROLE, role_seal.id, ReportKey.SEAL_REQUEST)
     client = _client_as(db, actor)
     try:
         #  `group_by=status` để có cột chiều + nhãn "Tổng" (không `group_by` thì

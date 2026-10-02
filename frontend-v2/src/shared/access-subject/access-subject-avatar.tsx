@@ -2,7 +2,7 @@ import { Briefcase, Building2, Shield, User } from 'lucide-react'
 
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { nameInitials } from '@/shared/utils/name-initials'
-import { SUBJECT_KIND } from '../types/document-access'
+import { SUBJECT_KIND } from './subject-kind'
 
 const SUBJECT_ICONS: Record<number, typeof User> = {
   [SUBJECT_KIND.employee]: User,

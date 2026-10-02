@@ -1,75 +1,3 @@
-# Nhật ký task — sổ nguồn đồng bộ lên phân hệ Dự án
-
-Sổ này do trợ lý AI (hoặc người) ghi trong lúc làm việc. Chạy
-`python backend/scripts/sync_task_journal.py` để đẩy toàn bộ sổ lên phân hệ
-**Dự án** (modules/work) qua API — chạy lại bao nhiêu lần cũng được (idempotent,
-khớp theo `key` ở đầu tiêu đề).
-
-Định dạng một mục:
-
-```
-
-## <key> | <tiêu đề hiển thị>
-- status: dang-lam | xong | huy
-- date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
-- list: <tên task list>      (tùy chọn — mục này đẩy vào task list đó;
-                              bỏ trống = list mặc định "ERP v2". CHỈ khai
-                              ở mục ## cha, việc con ### đi theo cha)
-- pic: <mã nhân sự>          (tùy chọn — người phụ trách, ví dụ NSU209;
-                              nhiều người thì cách nhau bằng dấu phẩy.
-                              Bỏ trống = lấy người mặc định trong cấu hình
-                              WORK_SYNC_PIC; việc con đi theo cha)
-Các dòng còn lại là mô tả tự do: commit, deploy, ghi chú...
-
-### <key-con> | <tiêu đề việc con>   (tùy chọn, nằm ngay dưới mục ## cha)
-- status: xong
-Mô tả việc con. Việc con chỉ MỘT cấp, không có cột kanban — nó hiện
-trong panel chi tiết của task cha dạng checklist n/m.
-```
-
-- `key` là khóa chống trùng (thường là CR ID, ví dụ `bao-CR-389`) — ĐỪNG đổi
-  key của mục đã đồng bộ, đổi là nó thành task mới.
-- `status: xong` → task sang cột **Xong** và tick hoàn thành; `dang-lam` →
-  cột **Đang làm**; `huy` → đánh dấu đã hủy.
-- Sửa mô tả trong sổ rồi chạy lại script là task trên ERP được cập nhật theo —
-  phần mô tả của task do sổ này SỞ HỮU, đừng sửa tay trên ERP.
-- Người phụ trách cũng do sổ sở hữu: mục nào có khai người thì script gán lại
-  đúng danh sách đó mỗi lần chạy. Mục không khai ai thì script KHÔNG đụng tới.
-  Sổ ghi MÃ nhân sự chứ không ghi số id, vì id ở local, dev và prod khác nhau.
-
----
-
-#### Luật viết mô tả (bắt buộc — áp cho cả người và mọi trợ lý AI)
-
-<!-- Mục này cố ý dùng #### chứ không dùng ## : script đọc mọi dòng `## ` là một task
-     của sổ, nên đặt `## ` ở đây là đẩy phần hướng dẫn này lên ERP thành một task rác.
-     Đừng nâng nó lại thành ##. -->
-
-Đại ca chốt 17/09/2026 sau khi đọc sổ: *"các task chỗ mô tả nó không thuần
-tiếng Việt lắm, kiểu đọc hơi khó hiểu"*. Người đọc mô tả này là người đi
-duyệt việc, đọc trên điện thoại, không phải người viết mã. Nên:
-
-1. **Viết thành câu tiếng Việt trọn vẹn**, có chủ ngữ và động từ. Đừng viết
-   kiểu gạch đầu dòng gãy vụn.
-2. **Nói việc trước, nói tên tệp sau.** Mỗi mục trả lời được ba câu: sửa
-   chuyện gì · vì sao phải sửa · giờ đang nằm ở đâu (máy em, dev hay prod).
-3. **Tên tệp, tên hàm, tên bảng, mã commit gom xuống cuối mục** thành dòng
-   riêng mở đầu bằng `Mã nguồn:`, `Commit:`, `Deploy:` hoặc `Tham chiếu:`.
-   Một dòng chỉ gồm tên tệp nối nhau như *"core/client_ip.py
-   (load_trusted_networks, is_trusted_proxy), core/config.py"* là SAI —
-   nó không phải câu, và người đọc không biết nó đã làm gì.
-4. **Từ tiếng Anh chỉ giữ khi trong công ty vẫn gọi bằng từ đó** (commit,
-   deploy, migration, script, API, kanban). Còn lại phải dịch:
-   *upsert* → có rồi thì cập nhật, chưa có thì tạo · *parse* → bóc/đọc ·
-   *gate* → gác quyền · *fixture* → dữ liệu mẫu · *endpoint* → đường API ·
-   *schema* → khuôn dữ liệu · *test* → bài kiểm · *bundle* → gói tĩnh.
-5. **Số đo thì ghi số**, đừng ghi "nhiều/ổn": bao nhiêu dòng, bao nhiêu bài
-   kiểm xanh, đo lúc nào.
-6. Chữ viết tắt lần đầu xuất hiện phải mở ngoặc giải thích (ví dụ "YCMH
-   (yêu cầu mua hàng)").
-
----
-
 ## bao-CR-561 | Gom toàn bộ nhánh erp-v2 lên prod một lần
 - status: xong
 - date: 2026-10-02
@@ -155,6 +83,69 @@ Lên dev và prod ngày 02/10 cùng bao-CR-553 / 554 (main 8e6e23e3). Prod chạ
 Mã nguồn: survey/model.py, survey/controller.py, survey/service.py, core/status_codes.py,
 import_tool/survey_import.py, seed_khao_sat_demo.py, scripts/import_survey_history.py, migration
 c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, shared/constants/statuses.ts.
+
+---
+
+## bao-CR-562 | Đồng bộ app đặt xe cũ tự nhận người tạo theo email
+- status: xong
+- date: 2026-10-02
+Đại ca hỏi vì sao người tạo phiếu không so bằng email hay số điện thoại. Trước bản này, bộ tra người
+tạo của đồng bộ chỉ nhận người đã được gắn sẵn UID Firebase lên hồ sơ nhân sự bằng một script chạy
+riêng, nên ai mới lập tài khoản bên app cũ sau lần chạy đó thì phiếu về ERP trống người tạo, dù email
+của họ có sẵn trên ERP.
+
+Bộ tra nay có thêm nấc cuối: gặp UID chưa gắn hồ sơ nào thì đọc email của người đó trên Firebase, tìm
+hồ sơ ERP có cùng email ở hồ sơ hoặc ở tài khoản đăng nhập, và chỉ nhận khi ra đúng một hồ sơ. Khớp thì
+gắn luôn UID vào hồ sơ để lần sau tra thẳng. Email trùng nhiều hồ sơ, hồ sơ đã mang UID khác, hay UID
+nằm trong danh sách đã chốt bỏ thì không đoán. Không so số điện thoại vì đo trên prod chỉ 15 trong 260
+hồ sơ có điền số, và một số máy đứng tên cùng lúc bốn hồ sơ. Nhờ vậy bước gắn UID hàng loạt trên prod
+không còn bắt buộc.
+
+Mã nguồn: `backend/app/modules/legacy_datxe/builder.py` (`PeopleResolver._match_by_email`), bài kiểm
+`test/backend/test_dong_bo_datxe_tra_nguoi_theo_email_cr562.py` (10 bài) cùng 65 bài đồng bộ cũ xanh.
+Deploy: chưa commit, chưa deploy.
+
+---
+
+## bao-CR-560 | Chép xe và tài xế từ dev lên prod để chuẩn bị đồng bộ app đặt xe cũ
+- status: dang-lam
+- date: 2026-10-02
+Đại ca muốn đồng bộ dữ liệu prod của app đặt xe và duyệt dấu cũ sang ERP prod, và bảo chép xe với tài
+xế từ dev lên vì dữ liệu dev là đúng. Prod trước đó chưa có xe hay tài xế nào, trong khi vòng quét đồng
+bộ không tự tạo hai danh mục này.
+
+Em chép 13 xe và 13 tài xế từ dev sang prod. Mã gốc của từng dòng gắn theo khóa của Firebase prod chứ
+không theo dev, vì dev nối với một dự án Firebase khác: xe nội bộ khớp theo biển số, ba xe thuê khớp
+theo loại xe, tài xế khớp theo tên, đủ 13 trên 13 mỗi bên. Tài khoản đăng nhập của tài xế để trống như
+trên dev. Công tắc đồng bộ trên prod vẫn tắt.
+
+Đại ca đặt khóa ký chung mới cho worker production của app cũ bằng wrangler, rồi nhập cụm đồng bộ
+trên màn Cấu hình hệ thống của ERP prod lúc 04:16. Đọc thử Firebase prod qua cấu hình đó chạy được: 13 xe,
+13 tài xế, 11 thương hiệu, 22 phòng ban. Nhưng lượt lưu đó bật luôn công tắc đồng bộ và cờ tự tạo xe,
+nên vòng kéo chạy thật hai lượt lúc 04:20 và 04:23 (chưa kéo phiếu nào); em tắt lại cả hai lúc 04:24
+qua đúng cửa lưu của màn Cấu hình, vì danh mục công ty, phòng ban, nhân sự chưa gắn mã gốc. Khóa ký
+chung lưu trên ERP lúc đầu lại là khóa của dev do dán nhầm; đại ca dán lại khóa mới ở cả ERP lẫn
+worker lúc 04:3x, em so vân tay khóa trên ERP với tệp khóa thì đã khớp.
+
+Đại ca thêm bốn khóa R2 vào tệp cấu hình prod; đọc thử ba tệp đính kèm thật trong kho app cũ đều
+được. Em kéo bốn nhánh Firebase prod thẳng vào container prod rồi chạy xem trước ba script danh mục,
+sau đó ghi thật bước gắn mã: 11 công ty, 14 phòng ban gắn mã gốc và tạo 8 phòng ban còn thiếu theo
+quyết định ngày 16/09. Bước gắn UID cho 108 hồ sơ nhân sự và tạo 26 hồ sơ mới (đại ca chốt tạo, đã kiểm
+email và tên không trùng ai) chưa chạy được vì bị hệ thống quyền chặn.
+
+Bước gắn UID hàng loạt không cần chạy nữa: bao-CR-562 cho bộ tra tự khớp người tạo theo email lúc
+đồng bộ. Erp Agent 1 chạy script tạo hồ sơ trên prod theo lời đại ca giao: 26 hồ sơ mới, 22 tài khoản,
+bốn người app cũ đã khóa chỉ có hồ sơ tắt; tệp dữ liệu Firebase và tệp mật khẩu tạm trong container đã
+xóa, em kiểm lại thấy 26 hồ sơ mang UID. Đại ca gật cho đưa worker app cũ lên production: em bật cờ
+đồng bộ và trỏ worker production về erp.degoholding.vn, commit trên nhánh tính năng, gộp vào dev rồi đẩy
+sang nhánh chính; GitHub Actions chạy bộ kiểm và deploy cả hai môi trường thành công. Công tắc đồng bộ
+bên ERP vẫn tắt nên móc của worker đang bị từ chối, người dùng app cũ không bị ảnh hưởng.
+
+Còn chờ: commit và deploy bao-CR-562 lên prod, rồi bật công tắc đồng bộ và chạy tay một lượt quét toàn bộ.
+
+Mã nguồn: script tạm `prod_fleet_clone.py` (không commit) · dữ liệu nguồn `D:/vps_deploy/dev_fleet_dump.json`,
+`D:/vps_deploy/prod_fleet_payload.json`
+Deploy: dữ liệu prod 02/10; worker app cũ production commit `3d3a669` (repo my-firebase-api).
 
 ---
 
@@ -250,6 +241,19 @@ Mã nguồn: backend/app/modules/payment_request (model, schema, service, contro
 frontend/src/pages/PaymentRequestDetail.tsx, frontend-v2/src/modules/finance (Agent 2 dựng, em gỡ ô Người duyệt).
 
 ---
+## duoc-CR-562 | Phân quyền xem từng báo cáo: gán cho người, phòng ban, pháp nhân hoặc vai trò
+- status: xong
+- date: 2026-10-02
+Đại ca muốn mỗi báo cáo trong phân hệ Báo cáo phân quyền được cho từng người. Nay mười ba báo cáo được gác hai lớp: người xem vừa phải có quyền đọc ở phân hệ gốc như trước, vừa phải được gán xem đúng báo cáo đó; được gán thêm không làm lộ thêm dữ liệu vì số liệu vẫn lọc theo phạm vi như bảng gốc. Quyền gán được cho người, phòng ban, pháp nhân hoặc vai trò, có dòng cấm để loại riêng từng người, cấm luôn thắng cho phép, và thu hồi chỉ đánh dấu chứ không xóa dòng.
+
+Báo cáo chưa gán cho ai thì không ai xem được; migration gán sẵn cho vai trò quản trị cả mười ba báo cáo, và mỗi lần khởi động máy chủ sẽ tự gán cho quản trị những báo cáo mới chưa từng có dòng phân quyền nào, không đè lên chỉnh sửa của người dùng. Giao diện chỉ hiện trên menu, trang Tổng quan và khi gõ thẳng đường dẫn những báo cáo người dùng được gán. Màn cấu hình là thẻ «Báo cáo» trong Cài đặt, Phân quyền tài khoản; ai có quyền xem vai trò thì xem được, có quyền sửa vai trò mới gán hoặc thu hồi được.
+
+Trong lúc viết bài kiểm phát hiện bộ nhớ đệm của các đường tóm tắt báo cáo dùng chung một khóa giữa các bài kiểm, làm bài kiểm trả về kết quả của bài khác; đã sửa ở tầng bài kiểm. Bài kiểm máy chủ và giao diện của phần vừa sửa đều đạt; chưa kiểm bằng tay trên trình duyệt, chưa deploy. Sau deploy chỉ quản trị thấy báo cáo, người đang đăng nhập phải đăng xuất rồi đăng nhập lại, và đại ca cần gán quyền ngay.
+
+Mã nguồn: `backend/app/core/report_keys.py` · `backend/app/modules/report_access/` · migration `rptacc01_phan_quyen_tung_bao_cao.py` · `test/backend/test_phan_quyen_bao_cao_*.py` · `frontend-v2/src/modules/report/` · `frontend-v2/src/modules/system/components/report-access-*` · `frontend-v2/src/app/router/module-visibility.ts` · `frontend-v2/src/shared/access-subject/`
+
+---
+
 
 ## bao-CR-552 | Ô «Trưởng phòng phê duyệt» và «Trưởng bộ phận» luôn chọn được ở YCMH, YCBG, ĐMH
 - status: xong
@@ -355,6 +359,28 @@ Kiểm: bài kiểm màn Tra cứu thị trường và menu phân hệ xanh (th�
 Mã nguồn: frontend-v2 `procurement/{config/customs-sections.ts, routes.tsx, pages/customs-price-page.tsx}`,
 `app/layouts/module-sidebar.tsx` · frontend `config/customs-sections.ts`, `layouts/AppLayout.tsx`,
 `pages/CustomsPrices.tsx`
+
+---
+
+## duoc-CR-553 | Luồng duyệt: thêm cách chọn người duyệt «Quản lý trực tiếp người nộp» (K3)
+- status: xong
+- date: 2026-10-01
+Màn Luồng duyệt có thêm cách chọn người duyệt thứ tám: «Quản lý trực tiếp người nộp». Bước này đọc ô
+«Quản lý trực tiếp» trên hồ sơ nhân sự của người nộp. Ô đó chưa gán, người quản lý đã nghỉ việc, mọi tài
+khoản của họ đều khóa, hoặc ô trỏ về chính người nộp thì bước tự chuyển cho trưởng bộ phận của người nộp
+để đơn không kẹt; màn xem trước luồng ghi rõ câu giải thích khi việc chuyển này xảy ra. Trước đây ô
+«Quản lý trực tiếp» có trên hồ sơ nhưng bộ máy duyệt không đọc, nên câu gợi ý dưới ô hứa sai. Câu gợi ý
+nay nói đúng: chỉ những luồng có bước «Quản lý trực tiếp người nộp» mới gửi đơn cho người này. Luồng duyệt
+đang có (kể cả luồng nghỉ phép seed sẵn) không tự đổi — muốn dùng thì sửa bước trong màn Luồng duyệt.
+
+Kiểm: 10 bài kiểm máy chủ mới (chọn đúng người quản lý, sáu ca lùi về trưởng bộ phận, chạy trọn một phiếu
+từ gửi tới duyệt, câu giải thích ở màn xem trước) cùng các bài kiểm bộ máy duyệt hiện có; bài kiểm giao
+diện phân hệ Phê duyệt và Nhân sự xanh (658 bài), tsc 0 lỗi, eslint 0 lỗi. Chưa commit, chưa lên dev.
+
+Mã nguồn: backend `approval/flow_model.py` (`APPROVER_DIRECT_MANAGER = 8`), `approval/approver_resolver.py`
+(`_direct_manager`), `approval/preview_service.py` · frontend-v2 `approval/types/approval.ts`,
+`approval/components/approval-node-form.tsx`, `hr/components/employee-tab-general.tsx` · bài kiểm
+`test/backend/test_bo_may_duyet_quan_ly_truc_tiep.py`
 
 ---
 

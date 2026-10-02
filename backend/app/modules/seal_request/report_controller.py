@@ -24,10 +24,12 @@ from app.core.auth import get_perm_profile, require
 from app.core.database import get_db
 from app.core.report_aggregate import build_report
 from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period, range_filter
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.report.procurement_summary_rows import valid_company_id
+from app.modules.report_access.guard import require_report
 
 from . import report_service
 from .model import SEAL_DRAFT, SealRequest, SealRequestCompany
@@ -57,7 +59,7 @@ def _fetch_builder(db: Session, user, prof: dict, group_by: str | None, company_
     return fetch
 
 
-@router.get("/summary")
+@router.get("/summary", dependencies=[Depends(require_report(ReportKey.SEAL_REQUEST))])
 def seal_summary(request: Request, db: Session = Depends(get_db),
                  user=Depends(require("seal_request", "read"))):
     prof = get_perm_profile(db, user)
@@ -69,7 +71,7 @@ def seal_summary(request: Request, db: Session = Depends(get_db),
     return success(data)
 
 
-@router.get("/summary/export")
+@router.get("/summary/export", dependencies=[Depends(require_report(ReportKey.SEAL_REQUEST))])
 def seal_summary_export(request: Request, db: Session = Depends(get_db),
                         user=Depends(require("seal_request", "export"))):
     prof = get_perm_profile(db, user)

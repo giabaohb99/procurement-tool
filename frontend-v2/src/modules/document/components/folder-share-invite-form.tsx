@@ -1,6 +1,9 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
+import { useAccessSubjectOptions } from '@/modules/hr/hooks/use-access-subject-options'
+import { AccessSubjectPicker } from '@/shared/access-subject/access-subject-picker'
+import type { MixedSubject } from '@/shared/access-subject/subject-kind'
 import { Button } from '@/shared/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -12,7 +15,6 @@ import { cn } from '@/shared/utils/cn'
 import { useGrantFolderAccessBulk } from '../hooks/use-document-folder-access'
 import { EFFECT } from '../types/document-access'
 import { FOLDER_ACCESS_LEVEL_LABELS } from '../types/document-folder'
-import { FolderShareSubjectPicker, type MixedSubject } from './folder-share-subject-picker'
 
 interface FolderShareInviteFormProps {
   folderId: number
@@ -32,6 +34,7 @@ interface FolderShareInviteFormProps {
  */
 export function FolderShareInviteForm({ folderId }: FolderShareInviteFormProps) {
   const grantBulk = useGrantFolderAccessBulk(folderId)
+  const { options, loading } = useAccessSubjectOptions()
   const [subjects, setSubjects] = useState<MixedSubject[]>([])
   const [effect, setEffect] = useState(String(EFFECT.allow))
   const [level, setLevel] = useState('1')
@@ -70,7 +73,7 @@ export function FolderShareInviteForm({ folderId }: FolderShareInviteFormProps) 
     <div className="space-y-3">
       <div className="space-y-1.5">
         <Label>Chọn đối tượng</Label>
-        <FolderShareSubjectPicker value={subjects} onChange={setSubjects} />
+        <AccessSubjectPicker value={subjects} onChange={setSubjects} options={options} loading={loading} />
       </div>
 
       {subjects.length > 0 && (
