@@ -1,4 +1,4 @@
-"""BẢY CÁCH CHỌN NGƯỜI DUYỆT (I03).
+"""TÁM CÁCH CHỌN NGƯỜI DUYỆT (I03; cách thứ tám — quản lý trực tiếp — thêm 01/10/2026).
 
 Trả về **danh sách employee_id**, đã bỏ trùng và giữ nguyên thứ tự khai — thứ tự
 có nghĩa với bước `lần lượt`.
@@ -15,8 +15,9 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from .flow_model import (APPROVER_COMPANY_REP, APPROVER_DEPT_HEAD,
-                         APPROVER_DEPT_HEAD_OF, APPROVER_EMPLOYEE,
-                         APPROVER_FIELD, APPROVER_LEVEL_UP, APPROVER_ROLE)
+                         APPROVER_DEPT_HEAD_OF, APPROVER_DIRECT_MANAGER,
+                         APPROVER_EMPLOYEE, APPROVER_FIELD, APPROVER_LEVEL_UP,
+                         APPROVER_ROLE)
 
 #  Lên quá số cấp này thì dừng — cây phòng ban khai vòng (A là cha của B, B là
 #  cha của A) sẽ treo vòng lặp, mà dữ liệu khai tay thì chuyện đó xảy ra thật.
@@ -41,6 +42,8 @@ def resolve(db: Session, node, subject: dict, submitter_employee_id: int | None)
         ids = _from_subject_field(subject, node.approver_ref)
     elif kind == APPROVER_DEPT_HEAD_OF:
         ids = _heads_of_specified_departments(db, node.approver_ref)
+    elif kind == APPROVER_DIRECT_MANAGER:
+        ids = _direct_manager(db, submitter_employee_id, subject)
     else:
         ids = []
 
@@ -164,6 +167,34 @@ def _submitter_department_head(db: Session, submitter_employee_id: int | None, s
     if department.manager_id == submitter_employee_id:
         return []
     return [department.manager_id]
+
+
+def _direct_manager(db: Session, submitter_employee_id: int | None, subject: dict) -> list[int]:
+    """QUẢN LÝ TRỰC TIẾP của người nộp (`Employee.manager_id`), lùi về trưởng bộ phận khi
+    không dùng được.
+
+    Bốn trường hợp LÙI về `_submitter_department_head` (cùng luật «bỏ trống thì đơn
+    chuyển cho trưởng bộ phận» mà ô «Quản lý trực tiếp» trên hồ sơ đã hứa):
+
+    1. Không biết người nộp là ai (phiếu do hệ thống / tài khoản chưa gắn hồ sơ);
+    2. Hồ sơ người nộp chưa gán quản lý (`manager_id = 0`) — dữ liệu cũ phần lớn ở
+       cảnh này, màn danh sách nhân sự đã cảnh báo «Chưa gán» (K5);
+    3. Người quản lý đã nghỉ việc hoặc mọi tài khoản đều khóa — giao cho họ là phiếu
+       nằm im vĩnh viễn (cùng định nghĩa `_only_active_employees`);
+    4. Người quản lý trùng chính người nộp (dữ liệu sai — `block_manager_cycle` chặn
+       vòng lúc lưu, nhưng dữ liệu nhập tay cũ thì chưa chắc).
+
+    Lùi chứ không trả rỗng: trả rỗng là đẩy sang `on_no_approver`, mà luồng khai sẵn
+    thường để «dừng phiếu» — một hồ sơ chưa ai kịp gán quản lý không được làm kẹt
+    đơn nghỉ phép của người đó.
+    """
+    if submitter_employee_id:
+        employee = db.get(Employee, submitter_employee_id)
+        manager_id = int(employee.manager_id or 0) if employee else 0
+        if (manager_id and manager_id != submitter_employee_id
+                and _only_active_employees(db, [manager_id])):
+            return [manager_id]
+    return _submitter_department_head(db, submitter_employee_id, subject)
 
 
 def _heads_of_specified_departments(db: Session, raw: str) -> list[int]:

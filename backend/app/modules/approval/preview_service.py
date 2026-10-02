@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from app.modules.employee.model import Employee
 
 from . import approver_resolver, flow_service, instance_service, serializer
-from .flow_model import (APPROVER_FIELD, APPROVER_LEVEL_UP, APPROVER_ROLE,
+from .flow_model import (APPROVER_DIRECT_MANAGER, APPROVER_FIELD, APPROVER_LEVEL_UP, APPROVER_ROLE,
                          NODE_CC, NO_APPROVER_FALLBACK, SKIP_ADJACENT,
                          SKIP_ANY_BEFORE, MULTI_MODE_LABELS, NODE_KIND_LABELS)
 
@@ -148,6 +148,13 @@ def _stage_step(db: Session, node, subject: dict, submitter_employee_id: int | N
 
     if ids:
         step["approvers"] = _approver_profiles(db, ids)
+        #  Quản lý trực tiếp mà phải LÙI về trưởng bộ phận: nói ra, kẻo người soạn tưởng hệ
+        #  chọn nhầm người (hồ sơ chưa gán quản lý là cảnh phổ biến nhất ở dữ liệu cũ).
+        if node.approver_kind == APPROVER_DIRECT_MANAGER and submitter_employee_id:
+            submitter = db.get(Employee, submitter_employee_id)
+            if submitter is None or int(submitter.manager_id or 0) not in ids:
+                step["note"] = ("Hồ sơ người nộp chưa gán quản lý trực tiếp (hoặc người quản lý "
+                               "không duyệt được) — chuyển cho trưởng bộ phận.")
         return step
 
     if duplicate:

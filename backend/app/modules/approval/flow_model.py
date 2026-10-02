@@ -52,6 +52,14 @@ APPROVER_FIELD = 6        # lấy từ một ô trên phiếu → approver_ref =
 #  muốn thế phải khai đích danh một CON NGƯỜI (`APPROVER_EMPLOYEE`) — người đó
 #  đổi vị trí là luồng trỏ sai mà không có gì báo.
 APPROVER_DEPT_HEAD_OF = 7
+#  QUẢN LÝ TRỰC TIẾP của người nộp — đọc `Employee.manager_id` trên hồ sơ (K3 của
+#  `doc/erp/hrm/01-ho-so-nhan-su.md`, 01/10/2026). Không cần `approver_ref`.
+#
+#  Khác `APPROVER_DEPT_HEAD`: trưởng bộ phận là GHẾ của phòng ban, còn quản lý trực
+#  tiếp là NGƯỜI được gán riêng cho từng nhân viên (một phòng có thể có tổ trưởng,
+#  trưởng nhóm…). Hồ sơ chưa gán / người quản lý không bấm được → lùi về trưởng bộ
+#  phận người nộp, để đơn không kẹt (xem `approver_resolver._direct_manager`).
+APPROVER_DIRECT_MANAGER = 8
 
 APPROVER_KIND_LABELS = {
     APPROVER_EMPLOYEE: "Người cụ thể",
@@ -61,6 +69,7 @@ APPROVER_KIND_LABELS = {
     APPROVER_COMPANY_REP: "Người đại diện pháp nhân",
     APPROVER_FIELD: "Lấy từ một ô trên phiếu",
     APPROVER_DEPT_HEAD_OF: "Trưởng bộ phận của phòng ban chỉ định",
+    APPROVER_DIRECT_MANAGER: "Quản lý trực tiếp người nộp",
 }
 
 # ── Nhiều người trong một bước (I05) ────────────────────────────────────────

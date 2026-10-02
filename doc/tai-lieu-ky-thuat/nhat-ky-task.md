@@ -294,6 +294,28 @@ Mã nguồn: frontend-v2 `procurement/{config/customs-sections.ts, routes.tsx, p
 
 ---
 
+## duoc-CR-553 | Luồng duyệt: thêm cách chọn người duyệt «Quản lý trực tiếp người nộp» (K3)
+- status: xong
+- date: 2026-10-01
+Màn Luồng duyệt có thêm cách chọn người duyệt thứ tám: «Quản lý trực tiếp người nộp». Bước này đọc ô
+«Quản lý trực tiếp» trên hồ sơ nhân sự của người nộp. Ô đó chưa gán, người quản lý đã nghỉ việc, mọi tài
+khoản của họ đều khóa, hoặc ô trỏ về chính người nộp thì bước tự chuyển cho trưởng bộ phận của người nộp
+để đơn không kẹt; màn xem trước luồng ghi rõ câu giải thích khi việc chuyển này xảy ra. Trước đây ô
+«Quản lý trực tiếp» có trên hồ sơ nhưng bộ máy duyệt không đọc, nên câu gợi ý dưới ô hứa sai. Câu gợi ý
+nay nói đúng: chỉ những luồng có bước «Quản lý trực tiếp người nộp» mới gửi đơn cho người này. Luồng duyệt
+đang có (kể cả luồng nghỉ phép seed sẵn) không tự đổi — muốn dùng thì sửa bước trong màn Luồng duyệt.
+
+Kiểm: 10 bài kiểm máy chủ mới (chọn đúng người quản lý, sáu ca lùi về trưởng bộ phận, chạy trọn một phiếu
+từ gửi tới duyệt, câu giải thích ở màn xem trước) cùng các bài kiểm bộ máy duyệt hiện có; bài kiểm giao
+diện phân hệ Phê duyệt và Nhân sự xanh (658 bài), tsc 0 lỗi, eslint 0 lỗi. Chưa commit, chưa lên dev.
+
+Mã nguồn: backend `approval/flow_model.py` (`APPROVER_DIRECT_MANAGER = 8`), `approval/approver_resolver.py`
+(`_direct_manager`), `approval/preview_service.py` · frontend-v2 `approval/types/approval.ts`,
+`approval/components/approval-node-form.tsx`, `hr/components/employee-tab-general.tsx` · bài kiểm
+`test/backend/test_bo_may_duyet_quan_ly_truc_tiep.py`
+
+---
+
 ## duoc-CR-551 | Thuốc BVTV: trang chi tiết có thuốc liên quan, cột tra cứu nhanh và bố cục mới, cả hai giao diện
 - status: xong
 - date: 2026-10-01

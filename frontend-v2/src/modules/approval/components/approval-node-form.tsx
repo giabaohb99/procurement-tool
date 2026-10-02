@@ -162,6 +162,14 @@ export function ApprovalNodeForm({
           </>
         )}
 
+        {form.approver_kind === APPROVER_KIND.directManager && (
+          <p className="text-xs text-muted-foreground">
+            Đọc ô «Quản lý trực tiếp» trên hồ sơ của người nộp. Hồ sơ chưa gán, hoặc người
+            quản lý đã nghỉ việc / bị khóa tài khoản, thì bước chuyển cho trưởng bộ phận
+            người nộp — đơn không bị kẹt.
+          </p>
+        )}
+
         {pickRole && (
           <>
             <MultiPicker<string>

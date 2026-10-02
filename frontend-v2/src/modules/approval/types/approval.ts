@@ -62,6 +62,12 @@ export const APPROVER_KIND = {
    * là luồng trỏ sai mà không có gì báo (CR-159).
    */
   deptHeadOf: 7,
+  /**
+   * QUẢN LÝ TRỰC TIẾP của người nộp — đọc ô «Quản lý trực tiếp» (`manager_id`) trên hồ
+   * sơ nhân sự, không cần `approver_ref`. Hồ sơ chưa gán, hoặc người quản lý đã nghỉ /
+   * bị khóa tài khoản, thì backend lùi về trưởng bộ phận người nộp (K3, 01/10/2026).
+   */
+  directManager: 8,
 } as const
 /**
  * ⚠️ `escalate` (đẩy lên cấp trên) **ĐÃ BỎ** (CR-114) — backend không chạy nhánh
