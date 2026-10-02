@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from app.modules.employee.field_limits import Str10, Str20, Str50
+from app.modules.employee.field_limits import Str10, Str20, Str50, Str255
 
 
 class LineIn(BaseModel):
@@ -29,6 +29,9 @@ class PRequestCreate(BaseModel):
     company_id: int = 0
     source_type: Str20 = "goods"         # goods = Hàng hóa | shipping = Vận chuyển | import_cost = Chi phí thu mua (bao-CR-319 P5)
     lines: list[LineIn] = []   # có thể gồm nhiều NCC -> server tự tách mỗi NCC 1 phiếu
+    # bao-CR-553 — Trưởng bộ phận in trên phiếu (id NHÂN SỰ, 0 = trưởng phòng của người lập)
+    head_of_dept_id: int = 0
+    head_of_dept: Str255 = ""
 
 
 class PRequestUpdate(BaseModel):
@@ -36,6 +39,8 @@ class PRequestUpdate(BaseModel):
     note: str | None = None
     payment_method: Str20 | None = None
     prepay: int | None = None          # CR-146
+    head_of_dept_id: int | None = None          # bao-CR-553
+    head_of_dept: Str255 | None = None
     # CR-149: {"content", "line_desc", "transfer"} — câu chữ bản in người dùng sửa.
     # Payload CHỈ chứa print_texts thì được sửa cả khi phiếu đã gửi duyệt / đã duyệt.
     print_texts: dict | None = None

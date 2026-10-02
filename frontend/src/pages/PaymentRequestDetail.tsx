@@ -23,6 +23,39 @@ const ST: Record<string, { label: string; cls: string }> = {
 }
 const stBadge = (s: string) => { const x = ST[s] || { label: s, cls: 'gray' }; return <span className={'badge ' + x.cls}>{x.label}</span> }
 
+// bao-CR-553 — ô «Trưởng bộ phận» (như YCMH), dùng chung màn tạo và màn chi tiết: in ở dòng
+// «Trưởng phòng ban/bộ phận» của bản in (trống = trưởng phòng của người lập). Chỉ để in, không
+// đổi ai được duyệt hay được báo.
+type HeadValue = { head_of_dept_id?: number; head_of_dept?: string }
+function HeadOfDeptField({ value, editable, onChange }: {
+  value: HeadValue; editable: boolean; onChange: (patch: HeadValue) => void
+}) {
+  const [heads, setHeads] = useState<any[]>([])
+  const headId = Number(value.head_of_dept_id) || 0
+  useEffect(() => {
+    if (!editable) return
+    api.get(`${API}/meta/department-managers`, { _silent: true } as any)
+      .then((r) => setHeads(r.data.data.items || [])).catch(() => setHeads([]))
+  }, [editable])
+  if (!editable) return (
+    <div className="form-row"><label>Trưởng bộ phận</label>
+      <input value={value.head_of_dept || 'Mặc định: trưởng phòng của người lập'} disabled /></div>
+  )
+  // Người đã lưu mà không còn trong danh sách (đổi phòng, nghỉ việc) vẫn hiện TÊN, không hiện số id.
+  const rows = headId && value.head_of_dept && !heads.some((r) => r.employee_id === headId)
+    ? [...heads, { employee_id: headId, name: value.head_of_dept }] : heads
+  return (
+    <div className="form-row"><label>Trưởng bộ phận</label>
+      <SearchSelect value={headId ? String(headId) : ''} autoSelectSingle={false}
+        placeholder="Mặc định: trưởng phòng của người lập"
+        options={rows.map((r) => ({ value: String(r.employee_id), label: r.position ? `${r.name} — ${r.position}` : r.name }))}
+        onChange={(v) => onChange({ head_of_dept_id: Number(v) || 0,
+          head_of_dept: heads.find((h) => String(h.employee_id) === v)?.name || '' })} />
+      <div style={hintStyle}>In ở dòng «Trưởng phòng ban/bộ phận» của bản in.</div>
+    </div>
+  )
+}
+
 // CR-035: hình thức thanh toán — quyết định bản in có in cụm "Thông tin chuyển khoản" hay để trống
 const PM: Record<string, string> = { transfer: 'Chuyển khoản', cash: 'Tiền mặt' }
 const pmHint = (m: string) => m === 'cash'
@@ -106,6 +139,7 @@ function PaymentRequestCreate() {
   const [requestDate, setRequestDate] = useState(new Date().toISOString().slice(0, 10))
   const [paymentMethod, setPaymentMethod] = useState('transfer')
   const [note, setNote] = useState('')
+  const [head, setHead] = useState<HeadValue>({})   // bao-CR-553
   const [saving, setSaving] = useState(false)
   // Form trắng: phần đầu phiếu do người lập chọn (đi từ Công nợ/PO thì lấy theo state hoặc khoản nợ)
   const locState = (location.state as any) || {}
@@ -155,6 +189,7 @@ function PaymentRequestCreate() {
       const payload: any = {
         request_date: requestDate, note, payment_method: paymentMethod,
         supplier_code: headSupplier, company_id: companyId, source_type: headSource,
+        head_of_dept_id: head.head_of_dept_id || 0, head_of_dept: head.head_of_dept || '',   // bao-CR-553
         lines: lines.map((l) => ({
           payable_id: l.payable_id, po_code: l.po_code, invoice_no: l.invoice_no,
           invoice_date: l.invoice_date, amount: Number(l.amount) || 0,
@@ -233,6 +268,7 @@ function PaymentRequestCreate() {
             </select>
             <div style={hintStyle}>{pmHint(paymentMethod)}</div>
           </div>
+          <HeadOfDeptField value={head} editable onChange={(p) => setHead((s) => ({ ...s, ...p }))} />
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú áp dụng cho các phiếu được tạo…" /></div>
         </div>
@@ -386,6 +422,7 @@ function PaymentRequestView() {
       await api.patch(`${API}/${id}`, {
         request_date: req.request_date, note: req.note, payment_method: req.payment_method || 'transfer',
         print_texts: req.print_texts || {},   // CR-149
+        head_of_dept_id: Number(req.head_of_dept_id) || 0, head_of_dept: req.head_of_dept || '',   // bao-CR-553
         lines: req.lines.map((l: any) => ({
           payable_id: l.payable_id, po_code: l.po_code || '', invoice_no: l.invoice_no || '',
           invoice_date: l.invoice_date || '', amount: Number(l.amount) || 0,
@@ -541,6 +578,7 @@ function PaymentRequestView() {
             ) : <input value={PM[req.payment_method] || PM.transfer} disabled />}
             <div style={hintStyle}>{pmHint(req.payment_method || 'transfer')}{editable ? ' Nhớ bấm Lưu sau khi đổi.' : ''}</div>
           </div>
+          <HeadOfDeptField value={req} editable={editable} onChange={(p) => setReq((s: any) => ({ ...s, ...p }))} />
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={req.note || ''} disabled={!editable} onChange={(e) => setReq((s: any) => ({ ...s, note: e.target.value }))} /></div>
         </div>
       </div>

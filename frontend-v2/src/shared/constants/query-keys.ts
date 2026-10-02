@@ -436,6 +436,8 @@ export const queryKeys = {
     /** CR-268 — tiền treo (phiếu trả trước đã chi, chưa đối trừ) theo NCC/đơn. */
     prepayHanging: (params?: Record<string, unknown>) =>
       ['finance', 'payment-requests', 'hanging', params ?? {}] as const,
+    /** bao-CR-553 — nguồn ô «Trưởng bộ phận» của YCTT (trưởng phòng mọi phòng). */
+    departmentManagers: () => ['finance', 'payment-requests', 'department-managers'] as const,
   },
   system: {
     all: ['system'] as const,

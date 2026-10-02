@@ -36,6 +36,10 @@ class PaymentRequest(Base, AuditMixin):
     reject_reason: Mapped[str] = mapped_column(Text, default="")   # lý do từ chối (khi cancelled)
     status: Mapped[str] = mapped_column(String(20), default="draft")
     # draft | submitted | approved | paid | cancelled (Đã từ chối)
+    # bao-CR-553 — ô «Trưởng bộ phận» như YCMH, in ở dòng «Trưởng phòng ban/bộ phận» của bản in
+    # (0/rỗng = trưởng phòng của người lập như trước). Chỉ để in, KHÔNG khóa ai được bấm Duyệt.
+    head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    head_of_dept: Mapped[str] = mapped_column(String(255), default="")
 
 
 class PaymentRequestLine(Base, AuditMixin):

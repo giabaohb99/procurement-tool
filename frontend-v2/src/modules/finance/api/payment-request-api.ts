@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type {
   HangingSummary,
+  PaymentApprovalCandidate,
   PaymentRefreshPlan,
   PaymentRequest,
   PaymentRequestCreateInput,
@@ -37,6 +38,10 @@ export const paymentRequestApi = {
     apiPatch<PaymentRequest>(`${BASE_URL}/${id}`, payload),
 
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
+
+  /** bao-CR-553 — ô «Trưởng bộ phận»: trưởng phòng mọi phòng (có Ban Giám đốc). */
+  departmentManagers: () =>
+    apiGet<{ items: PaymentApprovalCandidate[] }>(`${BASE_URL}/meta/department-managers`),
 
   submit: (id: number) => apiPost<PaymentRequest>(`${BASE_URL}/${id}/submit`),
 

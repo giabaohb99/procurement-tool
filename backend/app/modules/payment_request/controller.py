@@ -22,7 +22,8 @@ router = APIRouter(prefix="/api/payment-requests", tags=["payment_request"])
 
 HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "department_id",
           "source_type", "request_date", "payment_method", "prepay", "total", "note",
-          "reject_reason", "status"]   # department_id: cột ẩn bao-CR-414 GĐ4, bản in không đọc
+          "reject_reason", "status",   # department_id: cột ẩn bao-CR-414 GĐ4, bản in không đọc
+          "head_of_dept_id", "head_of_dept"]   # bao-CR-553
 
 
 def _line(db, ln, misa_by_po: dict | None = None, sync: dict | None = None) -> dict:
@@ -195,6 +196,15 @@ def get_hanging_(supplier_code: str, po_code: str = "", unlinked: int = 0,
     return success(service.summarize_hanging(db, supplier_code.strip(), source_type, pc))
 
 
+@router.get("/meta/department-managers")
+def department_managers_(db: Session = Depends(get_db),
+                         user=Depends(require("payment_request", "read"))):
+    """bao-CR-553 — ô «Trưởng bộ phận» của YCTT: trưởng phòng mọi phòng (có Ban Giám đốc).
+    Khai TRƯỚC `/{rid}`, nếu không FastAPI đem «meta» đi parse int."""
+    from app.core.approver_candidates import department_managers
+    return success({"items": department_managers(db)})
+
+
 @router.get("/{rid}")
 def get_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "read"))):
     req = apply_scope(db.query(PaymentRequest).filter(PaymentRequest.id == rid),
@@ -218,7 +228,9 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
     data["created_by_name"] = prof["name"]
     data["created_by_position"] = prof["position"]     # Chức vụ
     data["created_by_dept"] = prof["department"]        # Bộ phận
-    data["dept_manager"] = prof["manager"]              # Trưởng phòng ban/bộ phận
+    # bao-CR-553: ô «Trưởng bộ phận» của phiếu thắng (chị Mi duyệt nhưng bản in nội bộ ghi anh
+    # Dững); để trống thì vẫn là trưởng phòng của người lập như trước.
+    data["dept_manager"] = (req.head_of_dept or "").strip() or prof["manager"]   # Trưởng phòng ban/bộ phận
     # Thông tin ngân hàng NCC (khớp theo mã NCC) để in mục HÌNH THỨC THANH TOÁN.
     # CR-035: phiếu chi TIỀN MẶT thì cụm chuyển khoản để trống — chặn ngay từ server,
     # không gửi số TK ra bản in.

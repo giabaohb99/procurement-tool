@@ -80,6 +80,7 @@ import {
 import { PaymentRequestRefreshDialog } from '../components/payment-request-refresh-dialog'
 import { PaymentRequestStatusBadge } from '../components/payment-request-status-badge'
 import {
+  useDepartmentManagers,
   useCreatePaymentRequests,
   useDeletePaymentRequest,
   usePaymentRequest,
@@ -92,6 +93,7 @@ import type { Payable } from '../types/payable'
 import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_SOURCE_LABELS,
+  type PaymentApprovalCandidate,
   type PaymentMethod,
   type PaymentRequestCreateInput,
   type PaymentRequest,
@@ -209,6 +211,75 @@ function fromRequestLine(line: PaymentRequestLine, index: number): EditablePayme
   }
 }
 
+//  bao-CR-553 ────────────────────────────────────────────────────────────────
+//  (02/10: đại ca bỏ ô «Người duyệt», chỉ giữ ô «Trưởng bộ phận» để in.)
+const DEPT_HEAD_DEFAULT = 'Mặc định: trưởng phòng của người lập'
+
+type PersonPick = { id: number; name: string }
+
+/** Hai cột Trưởng bộ phận gửi lên backend — một chỗ dựng cho cả TẠO lẫn LƯU. */
+function headOfDeptFields(headOfDept: PersonPick) {
+  return {
+    head_of_dept_id: headOfDept.id || 0,
+    head_of_dept: headOfDept.id ? headOfDept.name.trim() : '',
+  }
+}
+
+function headOfDeptOf(req: PaymentRequest | undefined): PersonPick {
+  return { id: req?.head_of_dept_id ?? 0, name: req?.head_of_dept ?? '' }
+}
+
+/**
+ * Ô «Trưởng bộ phận» — tên in ở dòng «Trưởng phòng ban/bộ phận» của bản in nội bộ (ca chị Mi
+ * duyệt nhưng bản in ghi anh Dững). Để trống = mặc định trưởng phòng của người lập như trước.
+ */
+function DeptHeadSelect({
+  value,
+  managers,
+  editable,
+  onChange,
+}: {
+  value: PersonPick
+  managers: PaymentApprovalCandidate[]
+  editable: boolean
+  onChange: (next: PersonPick) => void
+}) {
+  const inList = managers.some((manager) => manager.employee_id === value.id)
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="pr-head-of-dept" className={editable ? '' : 'text-muted-foreground'}>
+        Trưởng bộ phận
+      </Label>
+      {editable ? (
+        <SearchSelect
+          id="pr-head-of-dept"
+          searchInTrigger
+          clearable
+          value={inList ? String(value.id) : ''}
+          placeholder={value.name || DEPT_HEAD_DEFAULT}
+          searchPlaceholder="Gõ tên hoặc mã nhân sự…"
+          options={managers.map((manager) => ({
+            value: String(manager.employee_id),
+            label: manager.position
+              ? `${manager.code} - ${manager.name} - ${manager.position}`
+              : `${manager.code} - ${manager.name}`,
+          }))}
+          onChange={(next) => {
+            if (!next) {
+              onChange({ id: 0, name: '' })
+              return
+            }
+            const manager = managers.find((option) => option.employee_id === Number(next))
+            if (manager) onChange({ id: manager.employee_id, name: manager.name })
+          }}
+        />
+      ) : (
+        <ReadOnlyValue>{value.name || DEPT_HEAD_DEFAULT}</ReadOnlyValue>
+      )}
+    </div>
+  )
+}
+
 /** Ngày hôm nay dạng `yyyy-mm-dd` cho ô Ngày lập mặc định. */
 function today(): string {
   return new Date().toISOString().slice(0, 10)
@@ -266,6 +337,9 @@ function PaymentRequestCreate() {
   // CR-268 — phiếu THANH TOÁN TRƯỚC: đi từ hộp thoại "Lập thanh toán trước" của ĐMH
   // (CR-267) thì tick sẵn; form trắng thì kế toán tự tick khi tạm ứng NCC.
   const [prepay, setPrepay] = useState<boolean>(() => Boolean(navState?.prepay))
+  //  bao-CR-553 — ô «Trưởng bộ phận» in ở bản in nội bộ (để trống = trưởng phòng người lập).
+  const [headOfDept, setHeadOfDept] = useState<{ id: number; name: string }>({ id: 0, name: '' })
+  const { data: managersData } = useDepartmentManagers(true)
 
   // Khoản nợ nạp về sau (F5 / từ nút chat trợ lý) -> đổ vào bảng đúng một lần.
   const refetchedChanged = useHasChanged(refetched)
@@ -350,6 +424,7 @@ function PaymentRequestCreate() {
       // CR-268 — phiếu trả trước: backend miễn khớp công nợ lúc gửi duyệt, tiền
       // đã chi trở thành TIỀN TREO chờ đối trừ.
       prepay: prepay ? 1 : 0,
+      ...headOfDeptFields(headOfDept),
       lines: lines.map((line) => ({
         payable_id: line.payable_id,
         po_code: line.po_code,
@@ -542,6 +617,12 @@ function PaymentRequestCreate() {
                 </div>
               </div>
             )}
+            <DeptHeadSelect
+              value={headOfDept}
+              managers={managersData?.items ?? []}
+              editable
+              onChange={setHeadOfDept}
+            />
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <Label>Ghi chú</Label>
               <Textarea
@@ -631,6 +712,8 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
     () => req?.payment_method ?? 'transfer',
   )
   const [printTexts, setPrintTexts] = useState<PrintTexts>(() => printTextsOf(req))
+  //  bao-CR-553 — ô Trưởng bộ phận, khởi tạo từ phiếu như bốn ô trên (cùng bẫy bao-CR-492).
+  const [headOfDept, setHeadOfDept] = useState<{ id: number; name: string }>(() => headOfDeptOf(req))
   const [rejectOpen, setRejectOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
   // CR-268 — hộp "Ghi nhận NCC hoàn tiền" của phiếu trả trước còn treo.
@@ -648,7 +731,13 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
     setNote(req.note ?? '')
     setPaymentMethod(req.payment_method ?? 'transfer')
     setPrintTexts(printTextsOf(req))
+    setHeadOfDept(headOfDeptOf(req))
   }
+
+  //  bao-CR-553 — nguồn ô Trưởng bộ phận, chỉ hỏi khi ô còn sửa được (phiếu Nháp + quyền ghi).
+  //  Khai TRƯỚC các `return` sớm bên dưới cho đúng luật hook.
+  const canEditApproval = Boolean(req && req.status === 'draft' && can('payment_request', 'write'))
+  const { data: managersData } = useDepartmentManagers(canEditApproval)
 
   if (isLoading) {
     return (
@@ -724,6 +813,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
       note,
       payment_method: paymentMethod,
       print_texts: printTexts,
+      ...headOfDeptFields(headOfDept),
       lines: lines.map((line) => ({
         payable_id: line.payable_id,
         po_code: line.po_code,
@@ -987,6 +1077,12 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
             </div>
             {/* CR-149 (thay CR-146): ô chọn prepay đã BỎ — câu chữ bản in sửa thẳng ở
                 khối "Nội dung bản in" phía dưới cụm Chứng từ. */}
+            <DeptHeadSelect
+              value={headOfDept}
+              managers={managersData?.items ?? []}
+              editable={editable}
+              onChange={setHeadOfDept}
+            />
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <Label>Ghi chú</Label>
               {editable ? (

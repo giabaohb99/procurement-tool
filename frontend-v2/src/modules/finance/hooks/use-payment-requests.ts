@@ -41,6 +41,16 @@ export function usePaymentRequest(id: number) {
   })
 }
 
+/** bao-CR-553 — danh sách cho ô «Trưởng bộ phận» (chỉ gọi khi ô còn sửa được). */
+export function useDepartmentManagers(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.finance.departmentManagers(),
+    queryFn: () => paymentRequestApi.departmentManagers(),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
 /** Dữ liệu bản in — khóa riêng vì hình dạng khác chi tiết và cần quyền `print`. */
 export function usePaymentRequestPrintData(id: number) {
   return useQuery({
