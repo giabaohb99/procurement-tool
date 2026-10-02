@@ -225,14 +225,25 @@ function actAsPurchasingAssignee() {
 }
 
 describe('PurchaseRequestChooseCard', () => {
-  it('renders nothing while no line has been completed by the NSTM', () => {
-    // Phiếu chưa tới nhịp chọn: thẻ tự ẩn, không bày khung rỗng gây hiểu lầm.
+  it('shows lines the NSTM has not completed yet, with an in-progress badge and no reopen button', () => {
+    // bao-CR-570: như YCBG, người yêu cầu thấy và chọn phương án ngay, không đợi NSTM chốt.
     mockUser = { employee_id: 44, emp_code: 'REQ01' }
     grantedPermissions = ['purchase_request:read']
 
     renderCard(buildPurchaseRequest({ items: [buildItem({ options_done: false })] }))
 
-    expect(screen.queryByText(/Phương án — NSTM đã xử lý xong/)).toBeNull()
+    expect(screen.getByText(/Phương án — chọn phương án mua/)).toBeInTheDocument()
+    expect(screen.getByText('NSTM đang xử lý')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mở lại cho NSTM xử lý' })).toBeNull()
+  })
+
+  it('renders nothing before the request is dispatched', () => {
+    mockUser = { employee_id: 44, emp_code: 'REQ01' }
+    grantedPermissions = ['purchase_request:read']
+
+    renderCard(buildPurchaseRequest({ status: 'approved' }))
+
+    expect(screen.queryByText(/Phương án — chọn phương án mua/)).toBeNull()
   })
 
   it('lets the requester choose and reopen even without write permission', () => {
@@ -243,7 +254,7 @@ describe('PurchaseRequestChooseCard', () => {
 
     renderCard(buildPurchaseRequest())
 
-    expect(screen.getByText(/Phương án — NSTM đã xử lý xong/)).toBeInTheDocument()
+    expect(screen.getByText(/Phương án — chọn phương án mua/)).toBeInTheDocument()
     // Cả thẻ phương án là vùng bấm chọn — lọc theo tên vì ô radio trang trí
     // bên trong thẻ không có accessible name.
     expect(screen.getByRole('radio', { name: /Phương án 1/ })).toBeInTheDocument()
@@ -398,11 +409,13 @@ describe('PurchaseRequestChooseCard', () => {
     )
 
     expect(screen.getByText('Áp 1 NCC cho nhiều dòng')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('checkbox'))
-    fireEvent.change(screen.getByPlaceholderText('Hoặc gõ tên NCC ngoài danh mục'), {
+    //  Nút áp khóa tới khi có dòng được tick VÀ có NCC (bao-CR-570).
+    expect(screen.getByRole('button', { name: 'Áp cho 0 dòng' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả dòng' }))
+    fireEvent.change(screen.getByPlaceholderText('Hoặc tên NCC ngoài danh mục'), {
       target: { value: 'CÔNG TY B' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Áp NCC cho các dòng đã tick' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Áp cho 1 dòng' }))
 
     expect(assignBulkMutate).toHaveBeenCalledWith(
       { supplier_code: '', supplier_name: 'CÔNG TY B', items: [{ item_id: 5 }] },
@@ -446,7 +459,7 @@ describe('PurchaseRequestChooseCard', () => {
 
     renderCard(buildPurchaseRequest({ status: 'completed' }))
 
-    expect(screen.getByText(/Phương án — NSTM đã xử lý xong/)).toBeInTheDocument()
+    expect(screen.getByText(/Phương án — chọn phương án mua/)).toBeInTheDocument()
     expect(screen.getByText('Đã chọn')).toBeInTheDocument()
     expect(screen.queryByRole('radio', { name: /Phương án 1/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Mở lại cho NSTM xử lý' })).toBeNull()

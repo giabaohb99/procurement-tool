@@ -501,14 +501,6 @@ def assign_supplier_bulk(db: Session, pr: PurchaseRequest, data, user_id: int,
     return len(rows)
 
 
-def ensure_line_done(item: PurchaseRequestItem) -> None:
-    """Người yêu cầu chỉ CHỌN sau khi NSTM đã chốt hoàn thành dòng (khuôn YCBG:
-    chọn phương án mở ra khi phiếu sang survey_done). Chưa chốt mà cho chọn thì
-    người yêu cầu chọn trên một danh sách NSTM còn đang gắn dở."""
-    if not item.options_done:
-        raise HTTPException(400, "NSTM chưa chốt hoàn thành xử lý dòng này — chưa chọn phương án được")
-
-
 def items_of(db: Session, pr: PurchaseRequest) -> list[PurchaseRequestItem]:
     return (db.query(PurchaseRequestItem)
             .filter(PurchaseRequestItem.pr_id == pr.id)
@@ -595,10 +587,7 @@ def mark_choice_done(db: Session, pr: PurchaseRequest, user) -> int:
     items = items_of(db, pr)
     if not items:
         raise HTTPException(400, "Phiếu không có dòng hàng nào")
-    pending = [i for i in items if not i.options_done]
-    if pending:
-        raise HTTPException(400, f"Còn {len(pending)} dòng nhân sự thu mua chưa chốt "
-                                 "hoàn thành xử lý — chưa chốt xong lựa chọn được")
+    #  bao-CR-570: không còn đòi mọi dòng NSTM chốt hoàn thành trước (chọn được ngay, như YCBG).
     if pr.options_chosen_at:
         raise HTTPException(400, "Phiếu đã chốt xong lựa chọn rồi — muốn chọn lại "
                                  "hãy mở lại dòng cần sửa")

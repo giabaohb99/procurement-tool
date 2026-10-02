@@ -133,7 +133,7 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
   money('tax_vat', 'Thuế VAT'),
   money('tax_environment', 'Thuế môi trường'),
   money('tax_safeguard', 'Thuế tự vệ'),
-  plain('import_country', 'Nước nhập khẩu', 140),
+  plain('import_country', 'Nước nhận hàng', 140),
   plain('active_ingredient', 'Hoạt chất (suy ra)', 160, true),
   plain('formulation', 'Hàm lượng / dạng (suy ra)', 195),
   //  bao-CR-493 — hai cột VND đứng SAU hai cột suy ra, cùng thứ tự với tệp Excel xuất ra;

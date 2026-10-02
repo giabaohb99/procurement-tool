@@ -39,7 +39,7 @@ const EXCEL_COLUMNS: [string, string][] = [
   ['tax_vat', 'Thuế VAT'],
   ['tax_environment', 'Thuế môi trường'],
   ['tax_safeguard', 'Thuế tự vệ'],
-  ['import_country', 'Nước nhập khẩu'],
+  ['import_country', 'Nước nhận hàng'],
 ]
 
 describe('CUSTOMS_LINE_COLUMNS', () => {

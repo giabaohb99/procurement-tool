@@ -341,9 +341,12 @@ export default function SurveyDetail() {
 
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
 
+  // bao-CR-571: NSPT của phiếu TẠO MỚI luôn là người đang đăng nhập — kể cả khi nạp lại
+  // nháp (nháp từng lưu chung, mang tên người lập trước sang). Backend cũng tự gán lại.
+  const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
-    if (isNew && !sv.nspt && user) setH('nspt', (user as any).full_name || '')
-  }, [isNew, user])
+    if (isNew && hydrated && user) setH('nspt', (user as any).full_name || '')
+  }, [isNew, user, hydrated])
 
   // Task 1: mở từ nút "Tạo phiếu khảo sát" trên Yêu cầu khảo sát -> tự gắn liên kết YCKS
   // + clone Mục đích khảo sát (purpose) -> Nội dung chính (main_content)
@@ -363,16 +366,18 @@ export default function SurveyDetail() {
   }, [isNew, searchParams, prList])
 
   // Issue 3: giữ nháp form TẠO MỚI qua F5 (localStorage) — khôi phục khi mở lại, xóa khi tạo xong.
-  const DRAFT_KEY = 'survey_new_draft'
-  const [hydrated, setHydrated] = useState(false)
+  // bao-CR-571: khóa nháp tách theo TÀI KHOẢN; khóa chung cũ `survey_new_draft` gặp là xóa.
+  const DRAFT_KEY = `survey_new_draft:${(user as any)?.id ?? 0}`
   useEffect(() => {
     if (!isNew) { setHydrated(true); return }
+    if (!user) return
     try {
+      localStorage.removeItem('survey_new_draft')
       const raw = localStorage.getItem(DRAFT_KEY)
-      if (raw) { const d = JSON.parse(raw); if (d && typeof d === 'object') setSv((s: any) => ({ ...s, ...d })) }
+      if (raw) { const d = JSON.parse(raw); if (d && typeof d === 'object' && !Array.isArray(d)) setSv((s: any) => ({ ...s, ...d })) }
     } catch { /* ignore */ }
     setHydrated(true)
-  }, [isNew])
+  }, [isNew, DRAFT_KEY])
   useEffect(() => {
     if (!isNew || !hydrated) return
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(sv)) } catch { /* ignore */ }

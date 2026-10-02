@@ -119,7 +119,7 @@ COLUMNS: list[tuple[str, str]] = [
     ("tax_vat", "Thuế VAT"),
     ("tax_environment", "Thuế môi trường"),
     ("tax_safeguard", "Thuế tự vệ"),
-    ("import_country", "Nước nhập khẩu"),
+    ("import_country", "Nước nhận hàng"),
 ]
 
 #  Cột số tiền / đơn giá / tỷ giá / thuế — đọc thành số, ô trống ra NULL (không ra 0).

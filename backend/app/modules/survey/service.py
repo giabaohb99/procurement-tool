@@ -75,10 +75,26 @@ def _reconcile_sr_link(db: Session, s: Survey) -> None:
             s.survey_request_id = sr.id
 
 
+def creator_name(db: Session, user_id: int) -> str:
+    """Tên hiển thị của người tạo — đúng công thức `full_name` của `/api/auth/me`
+    (tên hồ sơ nhân sự, không có hồ sơ thì email tài khoản)."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    user = db.get(User, user_id) if user_id else None
+    if user is None:
+        return ""
+    emp = db.get(Employee, user.employee_id) if user.employee_id else None
+    return (emp.full_name if emp else user.email) or ""
+
+
 def create_survey(db: Session, data, user_id: int) -> Survey:
+    header = {f: getattr(data, f) for f in HEADER_FIELDS}
+    #  bao-CR-571: «NSPT phụ trách (người tạo)» là người tạo — KHÔNG tin giá trị giao diện gửi.
+    #  Nháp F5 lưu chung trên trình duyệt từng mang tên người lập trước sang phiếu của người sau.
+    header["nspt"] = creator_name(db, user_id) or header.get("nspt") or ""
     s = Survey(code=data.code or "", survey_type="combined", status="draft",
-               created_by=user_id, updated_by=user_id,
-               **{f: getattr(data, f) for f in HEADER_FIELDS})
+               created_by=user_id, updated_by=user_id, **header)
     db.add(s)
     db.commit()
     db.refresh(s)
@@ -98,6 +114,8 @@ def copy_survey(db: Session, sid: int, user_id: int) -> Survey:
     src = get_survey(db, sid)
     link_fields = {"pr_code", "survey_request_id", "sr_code"}
     header = {f: getattr(src, f) for f in HEADER_FIELDS if f not in link_fields}
+    #  bao-CR-571: phiếu nhân bản là phiếu MỚI của người bấm nhân bản — NSPT theo họ.
+    header["nspt"] = creator_name(db, user_id) or header.get("nspt") or ""
     s = Survey(code="", survey_type="combined", status="draft",
                created_by=user_id, updated_by=user_id, **header)
     db.add(s)

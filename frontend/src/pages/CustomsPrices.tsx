@@ -82,7 +82,7 @@ const COLS: TableColumn[] = [
   { key: 'tax_vat', label: 'Thuế VAT', width: 110, align: 'right', cell: (r) => fmtUsd(r.tax_vat) },
   { key: 'tax_environment', label: 'Thuế môi trường', width: 115, align: 'right', cell: (r) => fmtUsd(r.tax_environment) },
   { key: 'tax_safeguard', label: 'Thuế tự vệ', width: 110, align: 'right', cell: (r) => fmtUsd(r.tax_safeguard) },
-  { key: 'import_country', label: 'Nước nhập khẩu', width: 110 },
+  { key: 'import_country', label: 'Nước nhận hàng', width: 110 },
   { key: 'active_ingredient', label: 'Hoạt chất (suy ra)', width: 160 },
   { key: 'formulation', label: 'Hàm lượng / dạng (suy ra)', width: 130 },
   // bao-CR-493 — hai cột VND (giá hiệu lực × tỷ giá USD × thuế), cùng thứ tự với Excel xuất ra.
@@ -298,7 +298,7 @@ export default function CustomsPrices() {
              giá so trên GIÁ HIỆU LỰC (điều chỉnh nếu có). */
           <>
             {/* bao-CR-503 — sheet 4 mục 4–5: chọn nhiều doanh nghiệp / đối tác bằng ô gõ có gợi ý. */}
-            <FilterItem label="Doanh nghiệp nhập khẩu" width={240}>
+            <FilterItem label="Doanh nghiệp" width={240}>
               <CustomsPartyPicker partyType={1} selectedIds={filters.importer_id}
                 placeholder="Gõ tên / MST để thêm…" onPick={addImporterFilter} />
             </FilterItem>

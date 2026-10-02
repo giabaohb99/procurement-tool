@@ -21,7 +21,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 export const CUSTOMS_SECTIONS = [
   { key: 'list', label: 'Danh sách', icon: List, tabbed: true },
   { key: 'chart', label: 'Biểu đồ', icon: ChartLine, tabbed: true },
-  { key: 'importers', label: 'Nhà nhập khẩu', icon: Factory, tabbed: true },
+  { key: 'importers', label: 'Doanh nghiệp', icon: Factory, tabbed: true },
   { key: 'compare', label: 'So sánh', icon: GitCompareArrows, tabbed: true },
   //  29/09/2026 — «Pháp lý & thuế» chia đôi. Khóa `legal` giữ cho mục Pháp lý (bảng duyệt hóa chất
   //  theo văn bản) để link cũ `/legal` / `?tab=legal` vẫn rơi đúng chỗ người ta đi tìm pháp lý.
@@ -41,7 +41,7 @@ export type CustomsSectionKey = (typeof CUSTOMS_SECTIONS)[number]['key']
 export const CUSTOMS_TAB_SECTIONS = CUSTOMS_SECTIONS.filter((section) => section.tabbed)
 
 /** Nhãn mục menu đứng thay cho cả năm thẻ tra giá. */
-export const CUSTOMS_TAB_GROUP_LABEL = 'Giá nhập khẩu'
+export const CUSTOMS_TAB_GROUP_LABEL = 'Giá thị trường'
 
 export function isCustomsTabSection(key: CustomsSectionKey): boolean {
   return CUSTOMS_TAB_SECTIONS.some((section) => section.key === key)
