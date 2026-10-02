@@ -74,6 +74,45 @@ def test_khong_co_role_admin_tra_0_khong_no(db):
     assert db.query(ReportAccess).count() == 0
 
 
+#  ── M5 — chèn cho CẢ 'admin' lẫn 'ADMINISTRATOR' nếu cùng tồn tại ───────────────────
+
+def test_admin_va_administrator_cung_ton_tai_ca_hai_duoc_chen_du_lan_dau(db):
+    """Chốt "quyết định theo trạng thái TRƯỚC khi chèn": nếu cài sai thành đọc lại
+    `keys_with_any_row` GIỮA hai vòng vai trò, vai trò xử lý THỨ HAI sẽ thấy mọi khóa đã
+    "có dòng" (do vai trò thứ nhất vừa thêm) và bị skip hết — n sẽ ra 13 chứ không phải 26."""
+    admin = Role(code="admin", name="Quản trị hệ thống")
+    legacy = Role(code="ADMINISTRATOR", name="Quản trị (đời cũ)")
+    db.add_all([admin, legacy])
+    db.commit()
+
+    n = ensure_report_access_defaults(db)
+    assert n == 26   # 13 khóa × 2 vai trò quản trị
+
+    admin_rows = db.query(ReportAccess).filter(ReportAccess.subject_kind == SUBJECT_ROLE,
+                                               ReportAccess.subject_id == admin.id).count()
+    legacy_rows = db.query(ReportAccess).filter(ReportAccess.subject_kind == SUBJECT_ROLE,
+                                                ReportAccess.subject_id == legacy.id).count()
+    assert admin_rows == 13
+    assert legacy_rows == 13
+
+    #  Chạy lại -> cả hai vai trò đã đủ 13 dòng mỗi bên, không chèn thêm.
+    assert ensure_report_access_defaults(db) == 0
+
+
+def test_chi_administrator_khong_co_admin_van_duoc_chen(db):
+    """DB cũ chưa đổi tên vai trò (chỉ còn `ADMINISTRATOR`, chưa có `admin`) vẫn phải
+    được chèn — không riêng mã mới."""
+    legacy = Role(code="ADMINISTRATOR", name="Quản trị (đời cũ)")
+    db.add(legacy)
+    db.commit()
+
+    n = ensure_report_access_defaults(db)
+    assert n == 13
+    rows = db.query(ReportAccess).filter(ReportAccess.subject_kind == SUBJECT_ROLE,
+                                         ReportAccess.subject_id == legacy.id).all()
+    assert len(rows) == 13
+
+
 def test_report_key_lien_tuc_khong_trung():
     values = [int(k) for k in ReportKey]
     assert values == list(range(1, len(values) + 1)), "khóa phải liên tục 1..N, không trùng"

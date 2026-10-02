@@ -35,12 +35,14 @@ def list_report_access(db: Session = Depends(get_db), user=Depends(require("role
 def grant_report_access(key: int, data: ReportAccessGrantIn, db: Session = Depends(get_db),
                         user=Depends(require("role", "write"))):
     report_key = _parse_key(key)
-    result = grant_service.grant(db, report_key, data, actor=user.id)
+    #  `actor=user` (ORM đầy đủ, không phải `user.id`) — `grant_service.grant` cần
+    #  `.id`/`.employee_id` cho hai chốt chống tự nâng quyền (M3, `privilege_escalation.py`).
+    result = grant_service.grant(db, report_key, data, actor=user)
     return success(result, "Đã lưu phân quyền báo cáo")
 
 
 @router.delete("/grants/{access_id}")
 def revoke_report_access(access_id: int, data: ReportAccessRevokeIn,
                          db: Session = Depends(get_db), user=Depends(require("role", "write"))):
-    grant_service.revoke(db, access_id, data.reason, actor=user.id)
+    grant_service.revoke(db, access_id, data.reason, actor=user)
     return success(None, "Đã thu hồi phân quyền báo cáo")
