@@ -9,6 +9,7 @@ import os
 
 from app.core.config import settings
 from app.core.limiter import limiter
+from app.core.report_cache import ReportSummaryCacheMiddleware
 from app.core.request_middleware import RequestContextMiddleware
 from app.core.response import error
 from app.core.text_limits import body_models_of, describe_data_error, describe_validation_errors
@@ -54,6 +55,7 @@ from app.modules.purchase_order.cost_type import router as po_cost_type_router
 from app.modules.purchase_progress.controller import router as purchase_progress_router
 from app.modules.survey_progress.controller import router as survey_progress_router
 from app.modules.report.controller import router as report_router
+from app.modules.report.summary_controller import router as report_summary_router
 from app.modules.contract.controller import router as contract_router
 from app.modules.meta.controller import router as meta_router
 from app.modules.alert.controller import router as alert_router
@@ -61,6 +63,14 @@ from app.modules.purchase_request.controller import router as pr_router
 from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
+from app.modules.employee.report_controller import router as employee_report_router
+from app.modules.leave.report_controller import router as leave_report_router
+from app.modules.leave.balance_report_controller import router as leave_balance_report_router
+from app.modules.vehicle_booking.report_controller import router as vehicle_booking_report_router
+from app.modules.seal_request.report_controller import router as seal_request_report_router
+from app.modules.document.report_controller import router as document_report_router
+from app.modules.approval.report_controller import router as approval_report_router
+from app.modules.work.report_controller import router as work_report_router
 from app.modules.employee.position_controller import router as job_position_router
 from app.modules.dossier.type_controller import router as dossier_type_router
 from app.modules.dossier.controller import router as dossier_router
@@ -149,6 +159,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 #  tự KHÔNG quan trọng, ghi ra kẻo có người tưởng nó tinh vi: lượt duy nhất CORS
 #  nuốt trọn là preflight `OPTIONS`, mà `OPTIONS` vốn không thuộc diện ghi
 #  (§4.1); còn request thật thì CORS chỉ gắn thêm header rồi cho đi tiếp.
+#  `ReportSummaryCacheMiddleware` (gói A2) đăng ký TRƯỚC — thêm-sau-thành-ngoài nên nó nằm
+#  TRONG CÙNG, một cache HIT vẫn chạy qua `RequestContextMiddleware` (ghi `tab_request_log`
+#  bình thường, nhanh hơn hẳn — tín hiệu để nhận ra cache có hoạt động) và CORS vẫn bọc đúng.
+app.add_middleware(ReportSummaryCacheMiddleware)
 app.add_middleware(RequestContextMiddleware)
 
 app.add_middleware(
@@ -229,6 +243,16 @@ def health():
 
 
 app.include_router(auth_router)
+#  Báo cáo kiểu Haravan (phase 04–06): mỗi router chỉ có `/summary` + `/summary/export`,
+#  đăng ký SỚM để không bị `/{id}` của router chính cùng tiền tố nuốt mất.
+app.include_router(employee_report_router)
+app.include_router(leave_report_router)
+app.include_router(leave_balance_report_router)
+app.include_router(vehicle_booking_report_router)
+app.include_router(seal_request_report_router)
+app.include_router(document_report_router)
+app.include_router(approval_report_router)
+app.include_router(work_report_router)
 app.include_router(company_router)
 app.include_router(department_router)
 app.include_router(employee_router)
@@ -296,6 +320,7 @@ app.include_router(purchase_history_router)
 app.include_router(inventory_router)
 app.include_router(payable_router)
 app.include_router(payment_request_router)
+app.include_router(report_summary_router)  # TRƯỚC report_router — xem docstring đầu summary_controller.py
 app.include_router(report_router)
 app.include_router(contract_router)
 app.include_router(meta_router)

@@ -111,7 +111,7 @@ describe('FolderShareDialog', () => {
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
 
     expect(
-      screen.getByRole('combobox', { name: 'Quyền chung — mọi người trong pháp nhân' }),
+      screen.getByRole('combobox', { name: 'Quyền chung — mọi người trong công ty' }),
     ).toHaveTextContent('Xem')
   })
 
@@ -123,8 +123,8 @@ describe('FolderShareDialog', () => {
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
 
     expect(
-      screen.getByRole('combobox', { name: 'Quyền chung — mọi người trong pháp nhân' }),
-    ).toHaveTextContent('Chưa đặt — kế thừa từ thư mục cha')
+      screen.getByRole('combobox', { name: 'Quyền chung — mọi người trong công ty' }),
+    ).toHaveTextContent('Chưa đặt — theo thư mục cha')
   })
 
   it('chưa chọn đối tượng nào thì KHÔNG hiện nút «Cấp quyền» (chỉ hiện khi ≥1 chip)', () => {

@@ -8,9 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require, get_perm_profile
 from app.core.database import get_db
+from app.core.report_export import report_xlsx
+from app.core.report_period import parse_period
 from app.core.response import success
 from .excel import build_import_landed_cost_workbook, build_report_workbook
 from . import import_landed_cost
+from .pr_lines_period_service import compute_pr_lines_summary_period
 from app.modules.inventory.model import Inventory
 from app.modules.payable.model import Payable
 from app.modules.payable.service import ST_PAID
@@ -215,13 +218,35 @@ def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(requi
 def pr_lines_summary(request: Request, db: Session = Depends(get_db),
                      user=Depends(require("report", "read"))):
     """Tổng hợp của báo cáo Chi tiết YC mua hàng (theo tiến độ / tháng / bộ phận / nhóm hàng /
-    NSTM) cho màn biểu đồ. Nhận cùng bộ lọc với `/pr-lines`, không phân trang."""
+    NSTM) cho màn biểu đồ. Nhận cùng bộ lọc với `/pr-lines`, không phân trang.
+
+    Có `preset` (P03 — kỳ + so sánh kiểu Haravan) -> hợp đồng chuẩn `build_report`; không có
+    -> hành vi CŨ theo `year` (bảng gốc `/pr-lines` vẫn dùng, không đổi)."""
     qp = request.query_params
+    if qp.get("preset"):
+        return success(compute_pr_lines_summary_period(
+            db, user, parse_period(qp), company_id=qp.get("company_id"),
+            group_by=qp.get("group_by") or None, status=qp.get("status") or None,
+            line_status=qp.get("line_status") or None, assignee=qp.get("assignee") or None,
+            search=(qp.get("search") or "").strip() or None))
     return success(report_service.compute_pr_lines_summary(
         db, user,
         year=qp.get("year") or str(datetime.now().year), company_id=qp.get("company_id"),
         status=qp.get("status") or None, line_status=qp.get("line_status") or None,
         assignee=qp.get("assignee") or None, search=(qp.get("search") or "").strip() or None))
+
+
+@router.get("/pr-lines/summary/export")
+def pr_lines_summary_export(request: Request, db: Session = Depends(get_db),
+                            user=Depends(require("report", "export"))):
+    """Xuất Excel bản THEO KỲ của báo cáo Chi tiết YC mua hàng (P03) — cùng bộ lọc với `/summary`."""
+    qp = request.query_params
+    data = compute_pr_lines_summary_period(
+        db, user, parse_period(qp), company_id=qp.get("company_id"),
+        group_by=qp.get("group_by") or None, status=qp.get("status") or None,
+        line_status=qp.get("line_status") or None, assignee=qp.get("assignee") or None,
+        search=(qp.get("search") or "").strip() or None)
+    return report_xlsx("chi-tiet-yc-mua-hang", data)
 
 
 @router.get("/dept-range")

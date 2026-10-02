@@ -43,7 +43,7 @@ A1 dưới đây ghim đúng sự vắng mặt đó.
 ⚠️ Đừng lẫn với `test_pham_vi_ap_dung.py`: tệp đó kiểm *phạm vi ÁP DỤNG của văn
 bản* (bước 6), không phải phạm vi dữ liệu RBAC (bước 9).
 
-Bốn nhóm ca: **A** giao hai tầng · **B** đủ 29 route của `document/controller.py`
+Bốn nhóm ca: **A** giao hai tầng · **B** đủ 30 route của `document/controller.py`
 · **C** bình luận · **D** danh mục Văn thư.
 """
 import inspect
@@ -523,7 +523,7 @@ def test_a10_van_ban_da_bai_bo_chi_con_bon_nhom_xem_duoc(vt):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  B. Đủ 29 route của `document/controller.py`
+#  B. Đủ 30 route của `document/controller.py`
 # ══════════════════════════════════════════════════════════════════════════════
 #
 #  Controller này có **0 lần gọi `apply_scope`/`get_scoped`**. Toàn bộ phần gác
@@ -531,7 +531,7 @@ def test_a10_van_ban_da_bai_bo_chi_con_bon_nhom_xem_duoc(vt):
 #  `visible_condition()` (nhiều văn bản). Route nào lọt khỏi hai đường đó là lỗ
 #  y hệt `db.get(...)` của B-08.
 #
-#  Bảng dưới là bản khai TAY của 29 route. Nó tồn tại để một route mới thêm vào
+#  Bảng dưới là bản khai TAY của 30 route. Nó tồn tại để một route mới thêm vào
 #  mà không khai thì test đỏ — chứ không phải để đọc cho vui.
 
 GUARD_LOAD = "_load"                 # → ensure_can trên ĐÚNG một văn bản
@@ -559,6 +559,8 @@ ROUTE_GUARD = {
     ("DELETE", "/api/documents/{document_id}"): GUARD_LOAD,
     ("POST", "/api/documents/{document_id}/submit"): GUARD_LOAD,
     ("POST", "/api/documents/{document_id}/approve"): GUARD_LOAD,
+    #  29/09/2026 — nút «Ban hành» của người soạn (chờ ban hành / loại không cần duyệt).
+    ("POST", "/api/documents/{document_id}/issue"): GUARD_LOAD,
     ("GET", "/api/documents/{document_id}/mailboxes"): GUARD_LOAD,
     ("POST", "/api/documents/{document_id}/reject"): GUARD_LOAD,
     ("POST", "/api/documents/{document_id}/reviewed"): GUARD_LOAD,
@@ -591,7 +593,7 @@ def test_b1_dung_29_route_va_khong_route_nao_thieu_khai(vt):
     người viết test tình cờ nhớ tới.
     """
     thuc_te = set(router_routes())
-    assert len(thuc_te) == 29, f"router có {len(thuc_te)} route, bảng khai 29"
+    assert len(thuc_te) == 30, f"router có {len(thuc_te)} route, bảng khai 30"
     assert thuc_te == set(ROUTE_GUARD), (
         f"lệch bảng khai: thừa {thuc_te - set(ROUTE_GUARD)}, "
         f"thiếu {set(ROUTE_GUARD) - thuc_te}")

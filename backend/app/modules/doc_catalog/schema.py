@@ -29,7 +29,9 @@ class DocTypeCreate(BaseModel):
     #  có chân trong tờ đơn mới thấy. Xem `document/access_service`.
     is_personal: bool = False
 
-    needs_approval: bool = False
+    #  Mặc định BẬT (29/09/2026): ô này nay thật sự bỏ chặng duyệt, quên tích thì
+    #  phải là «cần duyệt», không phải «ai soạn cũng tự ban hành» (code-review I1).
+    needs_approval: bool = True
     needs_signature: bool = False
     needs_decision: bool = False
     needs_request: bool = False

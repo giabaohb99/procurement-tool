@@ -124,7 +124,7 @@ def delete_section(db: Session, actor: Actor, section_id: int, move_to: int | No
             raise HTTPException(400, f"Cột còn {left} việc — chọn cột nhận trước khi xóa")
         target = db.get(WorkSection, move_to)
         if not target or target.list_id != s.list_id:
-            raise HTTPException(400, "Cột nhận phải thuộc cùng danh sách")
+            raise HTTPException(400, "Cột nhận phải thuộc cùng dự án")
         (db.query(WorkTask).filter(WorkTask.section_id == section_id)
          .update({WorkTask.section_id: move_to}, synchronize_session=False))
     db.delete(s)
@@ -236,7 +236,7 @@ def create_label_field(db: Session, actor: Actor, list_id: int, data) -> dict:
     block_if_archived(lst)
     if db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id,
                                        WorkLabelField.name == data.name.strip()).first():
-        raise HTTPException(400, "Danh sách đã có trường nhãn tên này")
+        raise HTTPException(400, "Dự án đã có trường nhãn tên này")
     #  Kiểu lạ thì chặn ngay: lọt xuống CSDL là mọi nơi đọc `WorkLabelFieldType`
     #  đều ném `ValueError` và cả bảng kanban trắng trang.
     try:
@@ -269,7 +269,7 @@ def update_label_field(db: Session, actor: Actor, field_id: int, data) -> dict:
         if (db.query(WorkLabelField)
                 .filter(WorkLabelField.list_id == f.list_id, WorkLabelField.name == name,
                         WorkLabelField.id != field_id).first()):
-            raise HTTPException(400, "Danh sách đã có trường nhãn tên này")
+            raise HTTPException(400, "Dự án đã có trường nhãn tên này")
         f.name = name
 
     kieu_moi = getattr(data, "field_type", None)

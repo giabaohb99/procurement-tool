@@ -100,7 +100,7 @@ export function KanbanColumn({
       return
     }
     onCreateTask(section.id, value)
-    setTitle('')   // giữ ô mở để gõ tiếp việc kế, như Lark
+    setTitle('') // giữ ô mở để gõ tiếp việc kế, như Lark
   }
 
   return (
@@ -108,7 +108,7 @@ export function KanbanColumn({
       ref={setColumnRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={cn(
-        'flex w-72 shrink-0 flex-col rounded-lg bg-muted/40',
+        'flex min-h-0 w-72 shrink-0 flex-col rounded-lg bg-muted/40',
         isDragging && 'opacity-50',
       )}
     >
@@ -135,10 +135,7 @@ export function KanbanColumn({
               <DropdownMenuItem onClick={() => onRenameSection(section)}>
                 Đổi tên / màu
               </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => onDeleteSection(section)}
-              >
+              <DropdownMenuItem variant="destructive" onClick={() => onDeleteSection(section)}>
                 Xóa cột
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -148,8 +145,15 @@ export function KanbanColumn({
 
       {/*  KHÔNG tô nền / viền cột đích khi kéo qua: thẻ đang kéo đã được dời hẳn
           vào cột này rồi (xem `displayed` ở `kanban-board.tsx`), đó mới là dấu hiệu
-          rõ nhất. Tô thêm một mảng xanh mờ chỉ làm cả cột nhấp nháy. */}
-      <div ref={setNodeRef} className="flex min-h-24 flex-1 flex-col gap-2 px-2 pb-2">
+          rõ nhất. Tô thêm một mảng xanh mờ chỉ làm cả cột nhấp nháy.
+          Thân cột TỰ CUỘN (`overflow-y-auto`), tiêu đề đứng yên phía trên: cột
+          «Xong» dài thì vẫn thấy tên cột + số đếm. Chuỗi `min-h-0` ở cột và ở
+          khung bảng là thứ cho phép thân co lại — thiếu một nấc là cả bảng cuộn
+          chung và tiêu đề trôi mất như trước. */}
+      <div
+        ref={setNodeRef}
+        className="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2"
+      >
         <SortableContext items={items} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
             <TaskCard

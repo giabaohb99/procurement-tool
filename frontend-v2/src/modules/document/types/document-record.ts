@@ -180,6 +180,17 @@ export interface DocumentRecord {
 
   doc_type_id: number
   doc_type_name: string
+  /**
+   * Loại văn bản có phải duyệt không. `false` = bỏ chặng duyệt: màn chi tiết bày
+   * *Ban hành* thay *Gửi duyệt* (29/09/2026). Backend không tra được loại thì trả
+   * `true` — thiếu dữ liệu không được là đường tắt bỏ qua người duyệt.
+   */
+  doc_type_needs_approval?: boolean
+  /**
+   * Đã ký đủ, chờ NGƯỜI SOẠN bấm Ban hành — kể cả phiên bản 2+ (lúc đó `status`
+   * vẫn là «Có hiệu lực»). Chỉ có ở bản ghi chi tiết.
+   */
+  is_pending_issue?: boolean
   doc_type_code: string
   /** Pháp nhân BAN HÀNH — không phải pháp nhân của người ngồi nhập. */
   company_id: number

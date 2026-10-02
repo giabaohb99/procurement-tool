@@ -542,6 +542,10 @@ liệu MySQL local ra đủ 300 dòng «Đã có»; tính mã cho 18.243 dòng l
 như số đếm cũ; đọc mã của 9 tháng dữ liệu mất 1,7 giây. v2 tsc 0 lỗi, eslint 0 lỗi, vitest 396 bài xanh;
 v1 tsc giữ đúng 4 lỗi cũ. Đại ca bảo commit và gộp ngày 01/10, Agent 1 đẩy lên dev; 806 dòng thừa trên prod chưa xóa, chờ đại ca. Số CR ban đầu đặt là 540, đổi sang 541 vì trùng số với việc «Nhóm dự án» của anh Được.
 
+Ngày 01/10 đại ca bảo xóa dòng trùng: trên dev đã sao lưu cơ sở dữ liệu rồi chạy xóa thật, chép 806
+dòng bị xóa ra tệp JSON trên VPS; đã xóa 806 dòng thừa trên dev (18.243 còn 17.437 dòng, chạy thử lại
+không còn nhóm trùng). Prod chưa có CR này nên chưa xóa.
+
 Lên prod ngày 01/10 cùng cụm Tra cứu thị trường (main 1a597c20). Trước đó diễn tập trên bản sao cơ sở dữ liệu prod ở máy local:
 bốn migration chạy êm, seed khởi động không lỗi, chống trùng ra đúng 806 dòng. Trên prod: sao lưu, deploy, chạy thử khớp 806 dòng
 rồi xóa thật, chép dòng bị xóa ra tệp JSON trên VPS; 18.243 còn 17.437 dòng, không còn nhóm trùng. Chuỗi migration được xếp lại để
@@ -1004,7 +1008,9 @@ nghìn dòng vẫn nhanh.
 
 Cổng kiểm: bài kiểm máy chủ bốn bài mới và chín mươi hai bài phạm vi thu mua xanh; bản mới kiểm kiểu
 sạch, lint sạch, bảy mươi hai bài phân hệ tài chính xanh trong đó ba bài mới; bản cũ giữ đúng bốn lỗi
-kiểu có sẵn. Đã lên dev 30/09 để đại ca kiểm.
+kiểu có sẵn. Đã lên dev 30/09, đại ca kiểm thấy ổn. Cùng ngày đại ca bảo cấp quyền xuất cho cả cụm
+thu mua trên prod: em cấp cho năm vai trò thu mua đang có, trong đó có vai trò nhân viên thu mua nhà
+máy. Erp Agent 1 đưa mã lên prod cùng ngày.
 
 Mã nguồn: backend/app/modules/payment_request/export.py · payment_request/controller.py · seed.py ·
 frontend/src/config/cruds.tsx · frontend-v2/src/modules/finance/pages/payment-request-list-page.tsx

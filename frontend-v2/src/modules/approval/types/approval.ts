@@ -220,6 +220,8 @@ export interface ApprovalInstance {
   status_label: string
   current_seq: number
   started_by_name: string
+  /** Mã nhân sự người trình; 0 khi tài khoản trình phiếu chưa gắn hồ sơ nhân sự. */
+  started_by_employee_id: number
   started_at: string | null
   finished_at: string | null
   finish_reason: string

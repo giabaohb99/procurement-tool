@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AtSign, Building2, Megaphone, Target, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
@@ -73,8 +73,18 @@ export function DocumentIssueDialog({
   //  theo dõi `open`: đặt state trong effect gây render dây chuyền (đúng cảnh báo
   //  `react-hooks/set-state-in-effect`), mà ở đây không cần — mọi đường người
   //  dùng đóng hộp thoại đều đi qua đúng hàm này.
+  //  Chặn bấm đúp «Ban hành»: `disabled={isPending}` chỉ đúng ở lần render sau,
+  //  hai cú bấm liền là hai request — cấp hai số hiệu, thông báo hai lần
+  //  (code-review 29/09/2026, I5). Mở lại khi request xong (thành công hay lỗi)
+  //  để lỗi rồi còn bấm lại được.
+  const sending = useRef(false)
+  useEffect(() => {
+    if (!isPending) sending.current = false
+  }, [isPending])
+
   const closeAndReset = (next: boolean) => {
     if (!next) {
+      sending.current = false
       setMailboxValue(SYSTEM_MAILBOX)
       setForumAnnounce(false)
     }
@@ -217,13 +227,15 @@ export function DocumentIssueDialog({
           <Button
             type="button"
             disabled={isPending || blocked}
-            onClick={() =>
+            onClick={() => {
+              if (sending.current) return
+              sending.current = true
               onConfirm(
                 applyMode,
                 mailboxValue === SYSTEM_MAILBOX ? undefined : Number(mailboxValue),
                 forumAnnounce,
               )
-            }
+            }}
           >
             Ban hành
           </Button>

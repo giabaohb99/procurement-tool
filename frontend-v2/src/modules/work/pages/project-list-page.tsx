@@ -71,7 +71,7 @@ export function ProjectListPage() {
       },
       {
         key: 'group',
-        header: 'Nhóm',
+        header: 'Nhóm dự án',
         width: 140,
         cell: (row) => {
           const name = groupNameOf(groups, row.group_id)
@@ -150,7 +150,7 @@ export function ProjectListPage() {
         {/*  Khổ hẹp: nút chiếm trọn hàng — hành động chính phải dễ chạm nhất. */}
         <Button size="sm" className="max-md:w-full" onClick={() => setCreating(true)}>
           <Plus className="size-4" />
-          Dự án mới
+          Tạo dự án
         </Button>
       </header>
 
@@ -177,8 +177,8 @@ export function ProjectListPage() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                title={`Quản lý nhóm ${group.name}`}
-                aria-label={`Quản lý nhóm ${group.name}`}
+                title={`Quản lý nhóm dự án ${group.name}`}
+                aria-label={`Quản lý nhóm dự án ${group.name}`}
                 onClick={() => setManageGroup(group)}
               >
                 <Settings2 className="size-4" />

@@ -19,6 +19,12 @@ RUN apt-get update \
 COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
+# Đồ chạy bài kiểm — CHỈ local bật (docker-compose.yml: INSTALL_TEST_DEPS=1). Dev/prod để 0 nên
+# image chạy thật không mang pytest. Đặt SAU bước trên để đổi cờ không làm mất bộ đệm của nó.
+ARG INSTALL_TEST_DEPS=0
+COPY backend/requirements-test.txt /app/requirements-test.txt
+RUN if [ "$INSTALL_TEST_DEPS" = "1" ]; then pip install --no-cache-dir -r /app/requirements-test.txt; fi
+
 # Code sẽ được mount qua volume khi dev; COPY để chạy được cả khi không mount
 COPY backend/ /app/
 # Scripts nạp dữ liệu — một số hàm dùng chung với đồng bộ thường trực (sync_legacy_*)

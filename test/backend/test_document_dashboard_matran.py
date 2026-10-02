@@ -40,7 +40,9 @@ def catalog(db, seed):
     #  Quy chế phải qua duyệt → QUAN TRỌNG. Giấy mời thì không cờ nào → thường.
     regulation = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2,
                       needs_approval=True)
-    giay_moi = DocType(code="GM", name="Giấy mời", id_scheme=2, number_when=2)
+    #  Khai RÕ «không cần duyệt»: từ 29/09/2026 cột này mặc định BẬT.
+    giay_moi = DocType(code="GM", name="Giấy mời", id_scheme=2, number_when=2,
+                       needs_approval=False)
     #  Cờ "cần QĐ ban hành" cũng đủ để tính là quan trọng, không cần duyệt.
     decision = DocType(code="QD", name="Quyết định", id_scheme=2, number_when=2,
                          needs_decision=True)

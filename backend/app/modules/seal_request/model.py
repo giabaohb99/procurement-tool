@@ -43,7 +43,9 @@ class SealRequest(Base, AuditMixin, LegacyIdMixin):
     """Yêu cầu đóng dấu (Duyệt dấu)."""
     __tablename__ = "tab_seal_request"
 
-    __table_args__ = (Index("ix_seal_created_by", "created_by"),)
+    __table_args__ = (Index("ix_seal_created_by", "created_by"),
+                      #  Báo cáo Duyệt đóng dấu lọc kỳ theo ngày tạo (01/10/2026).
+                      Index("ix_seal_created_at", "created_at"))
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")
     title: Mapped[str] = mapped_column(String(255), default="")

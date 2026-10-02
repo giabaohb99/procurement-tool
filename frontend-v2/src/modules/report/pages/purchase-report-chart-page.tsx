@@ -1,87 +1,41 @@
-import { usePermission } from '@/core/authorization/use-permission'
-import { useProcurementReport } from '@/modules/procurement/hooks/use-purchase-report'
-import { shortMoney } from '@/modules/procurement/types/purchase-report'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { ChartCard } from '@/shared/ui/chart'
-import { HorizontalBarChart } from '@/shared/ui/horizontal-bar-chart'
-import { PageContainer } from '@/shared/ui/page-container'
 
-import { ProcurementReportSection } from '../components/procurement-report-section'
-import { ReportChartPageHeader } from '../components/report-chart-page-header'
-import { useReportPeriod } from '../hooks/use-report-period'
-import { topBars } from '../utils/chart-series'
+import type { ReportPageConfig } from '../types/report-analytics'
+import { ReportAnalyticsPage } from './report-analytics-page'
 
-const TOP_N = 8
+const CONFIG: ReportPageConfig = {
+  endpoint: '/api/reports/procurement/summary',
+  exportEndpoint: '/api/reports/procurement/summary/export',
+  entity: 'report',
+  title: 'Báo cáo mua hàng',
+  description: 'Chi phí, giá trị đặt hàng, giao đúng hạn và công nợ mua hàng — so với kỳ trước.',
+  slug: 'purchase-report',
+  sourcePath: appRoutes.procurement.purchaseReport,
+  kpis: ['spend', 'order_value', 'po_count', 'on_time_rate', 'debt_overdue'],
+  chartMetric: 'spend',
+  defaultGroupBy: 'department',
+  //  `deliveries_done` (mẫu số của `on_time_rate`) và các chỉ số công nợ theo
+  //  kỳ so sánh trước đây được ẩn tay qua `hiddenMetrics` — nay backend tự
+  //  đánh dấu bằng `meta.metrics[].helper`/`snapshot`, không cấu hình ở đây nữa.
+  breakdowns: [
+    { key: 'supplier', title: 'Top nhà cung cấp' },
+    { key: 'nspt', title: 'Top NSPT' },
+    { key: 'department', title: 'Top bộ phận' },
+    { key: 'item_group', title: 'Top nhóm hàng' },
+  ],
+}
 
 /**
- * Báo cáo mua hàng — bản BIỂU ĐỒ: toàn bộ khối Thu mua của trang Tổng quan
- * (KPI so năm trước, chi phí hai năm, giao hàng, bốn Top) cộng thêm chi phí vận
- * chuyển theo đơn vị VC và tồn kho theo kho. Bảng ma trận 10 tab vẫn ở Thu mua.
+ * Báo cáo mua hàng — cấu hình mỏng dùng khung chung `ReportAnalyticsPage` (P03).
+ * Bảng ma trận 10 tab (vận chuyển, tồn kho, giá vốn nhập khẩu…) vẫn ở Thu mua
+ * (`sourcePath`) — trang này chỉ là lát biểu đồ kiểu Haravan cho phần
+ * chi phí · đặt hàng · giao hàng · công nợ.
  *
- * Gọi lại `useProcurementReport` với ĐÚNG tham số của khối Thu mua nên react-query
- * trả từ bộ nhớ đệm, không phát thêm request.
+ * `spend`/`order_value` đến từ HAI nguồn khác cột ngày (công nợ theo
+ * `incur_date`, ĐMH theo `order_date` — xem `notes` backend trả về, trang tự
+ * hiện nguyên văn dưới thanh lọc) nên khi "Xem theo" bộ phận/nhóm hàng/NSPT,
+ * phần chi phí mua gộp vào "(Chưa gắn)" — KHÔNG phải lỗi hiển thị.
  */
 export function PurchaseReportChartPage() {
-  const { can } = usePermission()
-  const period = useReportPeriod()
-  const { data, isLoading } = useProcurementReport({
-    year: String(period.year),
-    company_id: period.company,
-  })
-  const carriers = topBars(data?.shipping.by_carrier ?? [], TOP_N, (c) => c.carrier, (c) => c.amount)
-  const warehouses = topBars(
-    data?.inventory.by_warehouse ?? [],
-    TOP_N,
-    (w) => w.warehouse || '(Không rõ)',
-    (w) => w.value,
-  )
-  //  Đơn vị vận chuyển là NCC — cùng khóa gác với tab «Chi phí vận chuyển».
-  const canSeeShipping = can('purchase_order', 'read')
-  const canSeeInventory = can('inventory', 'read')
-
-  return (
-    <PageContainer>
-      <ReportChartPageHeader
-        title="Báo cáo mua hàng"
-        description="Chi phí, đơn hàng, giao hàng và công nợ mua hàng — so với năm trước."
-        period={period}
-        tablePath={appRoutes.procurement.purchaseReport}
-      />
-
-      <div className="flex flex-col gap-4">
-        <ProcurementReportSection
-          year={period.year}
-          companyId={period.company}
-          showHeading={false}
-        />
-
-        {(canSeeShipping || canSeeInventory) && (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {canSeeShipping && (
-              <ChartCard
-                title="Chi phí vận chuyển theo đơn vị"
-                description={`Tổng ${shortMoney(data?.shipping.total ?? 0)} đ trong năm.`}
-                loading={isLoading}
-                isEmpty={carriers.length === 0}
-                emptyLabel="Kỳ này chưa phát sinh chi phí vận chuyển."
-              >
-                <HorizontalBarChart data={carriers} unit="đ" formatValue={shortMoney} />
-              </ChartCard>
-            )}
-            {canSeeInventory && (
-              <ChartCard
-                title="Giá trị tồn kho theo kho"
-                description="Số hiện tại, không theo năm đang xem."
-                loading={isLoading}
-                isEmpty={warehouses.length === 0}
-                emptyLabel="Chưa có tồn kho."
-              >
-                <HorizontalBarChart data={warehouses} unit="đ" formatValue={shortMoney} />
-              </ChartCard>
-            )}
-          </div>
-        )}
-      </div>
-    </PageContainer>
-  )
+  return <ReportAnalyticsPage config={CONFIG} />
 }

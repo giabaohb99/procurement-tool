@@ -91,6 +91,8 @@ class ApprovalInstance(Base, AuditMixin):
     __table_args__ = (
         #  Tra ngược từ chứng từ sang phiên chạy — mỗi lần mở một phiếu ra xem.
         Index("ix_approval_instance_entity", "entity", "entity_id", "status"),
+        #  Báo cáo Phê duyệt lọc kỳ theo lúc bắt đầu phiên (01/10/2026).
+        Index("ix_approval_instance_started_at", "started_at"),
         #  MỖI CHỨNG TỪ NHIỀU NHẤT MỘT PHIẾU ĐANG MỞ — ép ở tầng dữ liệu, xem
         #  `running_slot` bên dưới.
         UniqueConstraint("entity", "running_slot", name="uq_one_running_instance"),

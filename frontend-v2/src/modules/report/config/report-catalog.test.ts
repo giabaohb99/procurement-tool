@@ -7,11 +7,19 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { reportModule } from '../routes'
 import { REPORT_CATALOG } from './report-catalog'
 
-/** Dàn phẳng menu (kể cả mục con) của mọi phân hệ trừ Báo cáo. */
-function flattenSourceNav(): ModuleNavItem[] {
-  const walk = (items: ModuleNavItem[]): ModuleNavItem[] =>
-    items.flatMap((i) => [i, ...walk(i.children ?? [])])
-  return allModules.filter((m) => m.id !== 'report').flatMap((m) => walk(m.nav))
+/**
+ * Dàn phẳng menu (kể cả mục con) của mọi phân hệ trừ Báo cáo, kèm khóa quyền
+ * THỰC SỰ gác mục đó: mục không khai `entity` (vd «Văn bản» — cố ý, xem
+ * `modules/document/routes.tsx`) thì chỉ còn khóa của PHÂN HỆ gác.
+ */
+function flattenSourceNav(): (ModuleNavItem & { gate?: string })[] {
+  return allModules
+    .filter((m) => m.id !== 'report')
+    .flatMap((m) => {
+      const walk = (items: ModuleNavItem[]): (ModuleNavItem & { gate?: string })[] =>
+        items.flatMap((i) => [{ ...i, gate: i.entity ?? m.entity }, ...walk(i.children ?? [])])
+      return walk(m.nav)
+    })
 }
 
 describe('REPORT_CATALOG', () => {
@@ -26,9 +34,13 @@ describe('REPORT_CATALOG', () => {
   it('permission key matches the source module menu item for the same page', () => {
     const sourceNav = flattenSourceNav()
     for (const r of REPORT_CATALOG) {
-      const src = sourceNav.find((i) => i.path === r.sourcePath && !i.crossModule)
+      //  Mục CHA và mục CON có thể chung đường dẫn (vd «Nghỉ phép» gom 4 khóa ›
+      //  «Đơn nghỉ phép» khai `leave_request`) — lấy mục khai khóa RIÊNG, nó mới
+      //  là khóa gác thật của trang đó.
+      const matches = sourceNav.filter((i) => i.path === r.sourcePath && !i.crossModule)
+      const src = matches.find((i) => i.entity) ?? matches[0]
       expect(src, `thiếu mục menu gốc cho ${r.sourcePath}`).toBeDefined()
-      expect(src?.entity).toBe(r.entity)
+      expect(src?.gate).toBe(r.entity)
     }
   })
 

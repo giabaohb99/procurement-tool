@@ -335,8 +335,67 @@ def build_report_header(s: Survey) -> dict:
     }
 
 
+def _supplier_line_row(s: Survey, x: SurveySupplierLine) -> dict:
+    """Một dòng báo cáo từ DÒNG NCC — tách khỏi `report_rows` để `report_rows_in_range`
+    (P04 — nạp theo khoảng ngày ở SQL) dùng lại đúng MỘT khuôn dựng hàng."""
+    return {
+        **_EMPTY_REPORT_ROW, **build_report_header(s),
+        "kind": "supplier", "line_id": x.id,
+        "content": x.supplier_name or x.supplier_code or "",
+        "supplier_code": x.supplier_code or "", "supplier_name": x.supplier_name or "",
+        "tax_code": x.tax_code or "", "contact_person": x.contact_person or "",
+        "contact_phone": x.contact_phone or "", "supply_group": x.supply_group or "",
+        "source_of_information": x.source_of_information or "",
+        "production_time": x.production_time or "", "nvkd_eval": x.nvkd_eval or "",
+        "invoice_policy": x.invoice_policy or "", "reliability": x.reliability or "",
+        "delivery_policy": x.delivery_policy or "", "defect_return": x.defect_return or "",
+        "debt_policy": x.debt_policy or "", "nspt_note": x.nspt_note or "", "note": x.note or "",
+        "contact_date": x.contact_date or "", "reply_date": x.reply_date or "",
+        "result_date": x.result_date or "",
+        "date": x.contact_date or s.received_date or "",
+        "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
+    }
+
+
+def _product_line_row(s: Survey, x: SurveyProductLine) -> dict:
+    """Một dòng báo cáo từ DÒNG SP — xem `_supplier_line_row`."""
+    return {
+        **_EMPTY_REPORT_ROW, **build_report_header(s),
+        "kind": "product", "line_id": x.id,
+        "content": x.product_name or "", "supplier_code": x.supplier_code or "",
+        "internal_code": x.internal_code or "", "invoice_name": x.invoice_name or "",
+        "spec": x.spec or "", "active_ingredient": x.active_ingredient or "",
+        "origin": x.origin or "", "quote_unit": x.quote_unit or "",
+        "volume_range": x.volume_range or "", "shipping_policy": x.shipping_policy or "",
+        "delivery_time": x.delivery_time or "", "delivery_place": x.delivery_place or "",
+        #  Cờ có/không: trả thẳng chữ "Có" cho ô trắng thay vì true/false, để
+        #  cột này xuất CSV và sắp xếp giống mọi cột chữ khác.
+        "sample_ready": "Có" if x.sample_ready else "",
+        "sample_date": x.sample_date or "", "lab_result": x.lab_result or "",
+        "debt_policy": x.debt_policy or "", "nspt_note": x.nspt_note or "", "note": x.note or "",
+        #  SL của DÒNG mới là số dùng để tính thành tiền; header chỉ là dự kiến
+        #  ban đầu nên chỉ lấy làm phương án dự phòng.
+        "request_qty": to_report_number(x.request_qty) or to_report_number(s.request_qty),
+        "moq": to_report_number(x.moq), "price_by_volume": to_report_number(x.price_by_volume),
+        "last_purchase_price": to_report_number(x.last_purchase_price),
+        "max_purchase_price": to_report_number(x.max_purchase_price),
+        "vat": to_report_number(x.vat), "amount": to_report_number(x.amount),
+        "shipping_cost": to_report_number(x.shipping_cost),
+        "extra_shipping_cost": to_report_number(x.extra_shipping_cost),
+        "sample_qty": to_report_number(x.sample_qty),
+        "contact_date": x.contact_date or "", "reply_date": x.reply_date or "",
+        "result_date": x.result_date or "",
+        "date": x.contact_date or s.received_date or "",
+        "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
+    }
+
+
 def report_rows(db: Session, base_survey_query):
-    """Chuẩn hóa TẤT CẢ dòng khảo sát (NCC + SP) trong phạm vi cho phép → list dict (theo dòng)."""
+    """Chuẩn hóa TẤT CẢ dòng khảo sát (NCC + SP) trong phạm vi cho phép → list dict (theo dòng).
+
+    Dùng cho `/lines` (bảng phân trang, không có khoảng ngày cố định) và nhánh CŨ của
+    `/summary` (không `preset`). Nhánh `/summary` CÓ `preset` dùng `report_rows_in_range`
+    ngay dưới — lọc theo khoảng ngày NGAY Ở SQL, khỏi nạp cả bảng dòng rồi lọc bằng Python."""
     surveys = {s.id: s for s in base_survey_query.all()}
     if not surveys:
         return []
@@ -344,59 +403,58 @@ def report_rows(db: Session, base_survey_query):
     rows = []
     for x in db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id.in_(subq)).all():
         s = surveys.get(x.survey_id)
-        if not s:
-            continue
-        rows.append({
-            **_EMPTY_REPORT_ROW, **build_report_header(s),
-            "kind": "supplier", "line_id": x.id,
-            "content": x.supplier_name or x.supplier_code or "",
-            "supplier_code": x.supplier_code or "", "supplier_name": x.supplier_name or "",
-            "tax_code": x.tax_code or "", "contact_person": x.contact_person or "",
-            "contact_phone": x.contact_phone or "", "supply_group": x.supply_group or "",
-            "source_of_information": x.source_of_information or "",
-            "production_time": x.production_time or "", "nvkd_eval": x.nvkd_eval or "",
-            "invoice_policy": x.invoice_policy or "", "reliability": x.reliability or "",
-            "delivery_policy": x.delivery_policy or "", "defect_return": x.defect_return or "",
-            "debt_policy": x.debt_policy or "", "nspt_note": x.nspt_note or "", "note": x.note or "",
-            "contact_date": x.contact_date or "", "reply_date": x.reply_date or "",
-            "result_date": x.result_date or "",
-            "date": x.contact_date or s.received_date or "",
-            "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
-        })
+        if s:
+            rows.append(_supplier_line_row(s, x))
     for x in db.query(SurveyProductLine).filter(SurveyProductLine.survey_id.in_(subq)).all():
         s = surveys.get(x.survey_id)
-        if not s:
-            continue
-        rows.append({
-            **_EMPTY_REPORT_ROW, **build_report_header(s),
-            "kind": "product", "line_id": x.id,
-            "content": x.product_name or "", "supplier_code": x.supplier_code or "",
-            "internal_code": x.internal_code or "", "invoice_name": x.invoice_name or "",
-            "spec": x.spec or "", "active_ingredient": x.active_ingredient or "",
-            "origin": x.origin or "", "quote_unit": x.quote_unit or "",
-            "volume_range": x.volume_range or "", "shipping_policy": x.shipping_policy or "",
-            "delivery_time": x.delivery_time or "", "delivery_place": x.delivery_place or "",
-            #  Cờ có/không: trả thẳng chữ "Có" cho ô trắng thay vì true/false, để
-            #  cột này xuất CSV và sắp xếp giống mọi cột chữ khác.
-            "sample_ready": "Có" if x.sample_ready else "",
-            "sample_date": x.sample_date or "", "lab_result": x.lab_result or "",
-            "debt_policy": x.debt_policy or "", "nspt_note": x.nspt_note or "", "note": x.note or "",
-            #  SL của DÒNG mới là số dùng để tính thành tiền; header chỉ là dự kiến
-            #  ban đầu nên chỉ lấy làm phương án dự phòng.
-            "request_qty": to_report_number(x.request_qty) or to_report_number(s.request_qty),
-            "moq": to_report_number(x.moq), "price_by_volume": to_report_number(x.price_by_volume),
-            "last_purchase_price": to_report_number(x.last_purchase_price),
-            "max_purchase_price": to_report_number(x.max_purchase_price),
-            "vat": to_report_number(x.vat), "amount": to_report_number(x.amount),
-            "shipping_cost": to_report_number(x.shipping_cost),
-            "extra_shipping_cost": to_report_number(x.extra_shipping_cost),
-            "sample_qty": to_report_number(x.sample_qty),
-            "contact_date": x.contact_date or "", "reply_date": x.reply_date or "",
-            "result_date": x.result_date or "",
-            "date": x.contact_date or s.received_date or "",
-            "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
-        })
+        if s:
+            rows.append(_product_line_row(s, x))
     return rows
+
+
+def _lines_in_range(db: Session, base_survey_query, line_model, d_from: str, d_to: str) -> list:
+    """Dòng khảo sát (`line_model`) thuộc các phiếu trong phạm vi, rơi vào kỳ `[d_from, d_to]` —
+    CÙNG luật với `"date": x.contact_date or s.received_date or ""` ở trên.
+
+    Hai truy vấn rời thay vì một OR: OR giữa cột của HAI bảng (dòng.`contact_date` HOẶC
+    phiếu.`received_date`) làm MySQL bỏ chỉ mục, quét cả bảng dòng (`EXPLAIN` ra `type=ALL`,
+    28/09/2026). Tách ra thì nhánh chính (đã có ngày liên hệ, ~99% dòng) đi thẳng chỉ mục
+    `contact_date`; nhánh hiếm (ngày liên hệ rỗng → lùi về ngày nhận của phiếu) lọc riêng. Hai
+    nhánh RỜI NHAU (`contact_date` rỗng / khác rỗng) nên cộng lại không đếm trùng. Không dùng
+    `COALESCE(NULLIF(...))` vì bọc cột trong hàm cũng làm mất chỉ mục.
+
+    Chỉ nạp DÒNG — không `with_entities(line, Survey)`: JOIN kiểu đó chép nguyên bản ghi phiếu
+    (cả cột chữ dài) ra từng dòng, 6.700 dòng là 6.700 bản chép, chiếm ~0,6s truyền dữ liệu.
+    Phiếu nạp MỘT lần ở `report_rows_in_range`. Sắp theo id dòng: `aggregate` giữ thứ tự xuất
+    hiện cho các nhóm hòa điểm, nên thứ tự hàng phải ổn định.
+    """
+    in_scope = line_model.survey_id.in_(base_survey_query.with_entities(Survey.id))
+    with_date = db.query(line_model).filter(
+        in_scope, line_model.contact_date >= d_from, line_model.contact_date <= d_to).all()
+    fallback = (db.query(line_model).join(Survey, line_model.survey_id == Survey.id)
+                .filter(in_scope, line_model.contact_date == "",
+                        Survey.received_date >= d_from, Survey.received_date <= d_to).all())
+    return sorted(with_date + fallback, key=lambda x: x.id)
+
+
+def report_rows_in_range(db: Session, base_survey_query, d_from: str, d_to: str) -> list[dict]:
+    """Bản CÓ LỌC KỲ của `report_rows` — dùng cho `/summary` khi có `preset` (P04). Đẩy điều
+    kiện `[d_from, d_to]` (2 cận, CÙNG kiểu so sánh chuỗi ISO đóng-đóng với `_filter_report_rows`
+    phía controller) xuống SQL, thay vì nạp cả bảng dòng vào Python rồi lọc — bảng dòng khảo sát
+    trên thật đã hơn 7000 dòng/năm, `build_report` gọi hàm này 2 lần (kỳ này + kỳ so sánh).
+
+    Dòng không có ngày hiệu lực (`contact_date` LẪN `received_date` đều rỗng) bị loại — đúng
+    hành vi cũ: `"" < d_from` luôn đúng nên `_filter_report_rows` cũng loại chúng khi có
+    `date_from`, và `build_report` luôn truyền `d_from`/`d_to` (không bao giờ rỗng) cho `fetch`.
+    """
+    sup_lines = _lines_in_range(db, base_survey_query, SurveySupplierLine, d_from, d_to)
+    prod_lines = _lines_in_range(db, base_survey_query, SurveyProductLine, d_from, d_to)
+    survey_ids = {x.survey_id for x in sup_lines} | {x.survey_id for x in prod_lines}
+    if not survey_ids:
+        return []
+    surveys = {s.id: s for s in base_survey_query.filter(Survey.id.in_(survey_ids)).all()}
+    return ([_supplier_line_row(surveys[x.survey_id], x) for x in sup_lines if x.survey_id in surveys]
+            + [_product_line_row(surveys[x.survey_id], x) for x in prod_lines if x.survey_id in surveys])
 
 
 def sort_report_rows(rows: list[dict], sort_by: str, sort_dir: str) -> list[dict]:

@@ -84,7 +84,8 @@ class DocType(Base, AuditMixin):
     #  phải bấm. Loại nào cần thì bật riêng loại đó.
     auto_issue_after_approval: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    needs_approval: Mapped[bool] = mapped_column(Boolean, default=False)
+    #  Mặc định BẬT — xem ghi chú ở `schema.DocTypeCreate.needs_approval`.
+    needs_approval: Mapped[bool] = mapped_column(Boolean, default=True)
     needs_signature: Mapped[bool] = mapped_column(Boolean, default=False)
     # Ban hành phải kèm một Quyết định. Kiểm ở mức PHIÊN BẢN, không phải mức văn
     # bản: mỗi lần sửa lớn phải có một Quyết định mới.

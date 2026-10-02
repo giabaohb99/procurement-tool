@@ -62,7 +62,7 @@ export function ListInfoPanel({ list, form, canEdit, groups }: ListInfoPanelProp
           <ReadOnlyValue>{list.name}</ReadOnlyValue>
         </div>
         <div className="space-y-2">
-          <Label>Nhóm</Label>
+          <Label>Nhóm dự án</Label>
           <ReadOnlyValue>{groupLabel}</ReadOnlyValue>
         </div>
         <div className="space-y-2">
@@ -117,7 +117,7 @@ export function ListInfoPanel({ list, form, canEdit, groups }: ListInfoPanelProp
            quyền QUẢN TRỊ trên nhóm đích; ô chỉ liệt kê nhóm mình là thành viên. */}
       {groups ? (
         <div className="space-y-2">
-          <Label htmlFor="work-info-group">Nhóm</Label>
+          <Label htmlFor="work-info-group">Nhóm dự án</Label>
           <Select
             value={String(form.groupId)}
             onValueChange={(value) => form.setGroupId(Number(value) || 0)}
@@ -137,7 +137,7 @@ export function ListInfoPanel({ list, form, canEdit, groups }: ListInfoPanelProp
         </div>
       ) : (
         <div className="space-y-2">
-          <Label>Nhóm</Label>
+          <Label>Nhóm dự án</Label>
           <ReadOnlyValue>{groupLabel}</ReadOnlyValue>
         </div>
       )}

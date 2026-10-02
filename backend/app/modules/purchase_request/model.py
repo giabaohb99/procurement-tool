@@ -53,7 +53,9 @@ class PurchaseRequest(Base, AuditMixin):
     # `request_date` và `dispatch_pr` ghi đè nó lúc điều phối (bao-CR-293), nên cùng một cột
     # lúc thì là ngày lập lúc thì là ngày tiếp nhận — bộ lọc và báo cáo trộn hai loại ngày,
     # còn ngày lập gốc thì mất hẳn. Đừng gộp lại.
-    request_date: Mapped[str] = mapped_column(String(10), default="")      # ngày LẬP phiếu (YYYY-MM-DD)
+    #  index=True: cột lọc kỳ của báo cáo Chi tiết YC mua hàng (`pr_lines_period_service`, P03)
+    #  — không có chỉ mục thì mỗi lượt xem báo cáo là quét hết bảng YCMH.
+    request_date: Mapped[str] = mapped_column(String(10), default="", index=True)   # ngày LẬP phiếu (YYYY-MM-DD)
     # Rỗng = thu mua CHƯA tiếp nhận. Chỉ `dispatch_pr` được ghi, người dùng không sửa tay.
     received_date: Mapped[str] = mapped_column(String(10), default="")     # ngày TIẾP NHẬN (YYYY-MM-DD)
     need_date: Mapped[str] = mapped_column(String(10), default="")         # ngày cần hàng

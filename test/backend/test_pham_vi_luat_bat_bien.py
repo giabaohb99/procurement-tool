@@ -224,9 +224,8 @@ BB4_CONTROLLER_MIEN_TRU = {
                                           "dòng của lô thuộc entity PUBLIC customs_price, require từng route",
     "export_log/controller.py": "gác bằng `_guard_view` (can_view_any hoặc setting.read)",
     "comment/controller.py": "gác bằng `service.resolve_doc` — làm CẢ require lẫn apply_scope",
-    #  Nhánh main: duoc-CR-485 (thêm `apply_scope` trong `_can_approve_doc`) CHƯA lên prod, nên tệp này
-    #  còn phải nằm ở danh sách miễn trừ. Trên erp-v2 dòng này đã rút (bao-CR-533).
-    "document/controller.py": "gác bằng `access_service.ensure_can` (2 tầng) — cụm 05 B",
+    #  `document/controller.py` rút khỏi danh sách (bao-CR-533): duoc-CR-485 thêm `apply_scope(..., "approve")`
+    #  trong `_can_approve_doc`, tệp đã tự gọi hàm phạm vi.
     "document/link_controller.py": "cùng `ensure_can` — cụm 05",
     "document/clone_controller.py": "cùng `ensure_can` — cụm 05",
     "document/scope_controller.py": "cùng `ensure_can` — cụm 05",
@@ -300,6 +299,11 @@ BB4_CONTROLLER_MIEN_TRU = {
     "seal_request/catalog_controller.py": "seal_type — PUBLIC (danh mục loại con dấu dùng chung)",
     "help_center/controller.py": "help_article — PUBLIC, bài hướng dẫn ai cũng đọc",
     "faq/controller.py": "câu hỏi thường gặp, nội dung công khai",
+    "report/summary_controller.py": "Báo cáo mua hàng theo kỳ (duoc-CR-481): entity `report` PUBLIC ở "
+                                    "SCOPE_FIELDS; dòng số liệu lọc bằng `report_service.report_dept_scope` "
+                                    "trong `compute_procurement_summary` (cùng luật bảng `/matrix`), chiều "
+                                    "NCC/NSPT gác bằng `_can_see_ncc`; công nợ toàn công ty chỉ trả cho "
+                                    "người xem toàn công ty (bao-CR-533)",
 }
 
 _SCOPE_CALLS = ("apply_scope", "get_scoped", "scope_condition")

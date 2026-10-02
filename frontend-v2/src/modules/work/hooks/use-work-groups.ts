@@ -26,7 +26,7 @@ export function useUpdateWorkGroup() {
     mutationFn: ({ id, values }: { id: number; values: Record<string, unknown> }) =>
       workApi.updateGroup(id, values),
     onSuccess: () => {
-      toast.success('Đã lưu nhóm')
+      toast.success('Đã lưu nhóm dự án')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
   })
@@ -37,7 +37,7 @@ export function useArchiveWorkGroup() {
   return useMutation({
     mutationFn: (id: number) => workApi.archiveGroup(id),
     onSuccess: () => {
-      toast.success('Đã lưu trữ nhóm')
+      toast.success('Đã lưu trữ nhóm dự án')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
   })
@@ -51,7 +51,7 @@ export function useAddWorkGroupMember(groupId: number) {
       workApi.addGroupMember(groupId, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.groupMembers(groupId) })
-      //  Vai trò nhóm kế thừa xuống dự án con → vai trò hiệu lực trên từng dự án
+      //  Vai trò nhóm kế thừa xuống dự án → vai trò hiệu lực trên từng dự án
       //  đổi theo, phải nạp lại cả cụm chứ không chỉ danh sách thành viên nhóm.
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },

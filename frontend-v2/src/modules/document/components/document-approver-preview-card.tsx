@@ -71,9 +71,12 @@ function PreviewBody({
 
   if (preview.mode === 'none') {
     return (
-      <p className="text-sm text-muted-foreground">
-        Loại văn bản này KHÔNG cần phê duyệt.
-      </p>
+      <div className="space-y-1 text-sm text-muted-foreground">
+        <p>Loại văn bản này KHÔNG cần phê duyệt.</p>
+        {/*  Nói luôn bước kế tiếp (29/09/2026): màn chi tiết bày nút *Ban hành*
+             thay *Gửi duyệt* cho loại này — bấm là cấp số và có hiệu lực. */}
+        <p>Tạo xong, người soạn bấm «Ban hành» là văn bản có số hiệu và có hiệu lực ngay.</p>
+      </div>
     )
   }
 

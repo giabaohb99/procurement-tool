@@ -154,6 +154,9 @@ class Document(Base, AuditMixin):
         Index("ix_document_issue_number", "issue_number"),
         Index("ix_document_legacy_code", "legacy_code"),
         Index("ix_document_clone", "source_document_id", "clone_status"),
+        #  Báo cáo Văn bản: kỳ theo ngày tạo, chỉ số «Đã ban hành» theo ngày ban hành.
+        Index("ix_document_created_at", "created_at"),
+        Index("ix_document_issued_at", "issued_at"),
     )
 
     # ── Định danh ────────────────────────────────────────────────────────────

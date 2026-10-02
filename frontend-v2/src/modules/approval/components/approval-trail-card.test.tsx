@@ -26,6 +26,7 @@ const TRAIL: ApprovalTrail = {
     status_label: 'Đang chạy',
     current_seq: 1,
     started_by_name: 'Dego Admin',
+    started_by_employee_id: 0,
     started_at: '2026-08-21T02:15:00Z',
     finished_at: null,
     finish_reason: '',

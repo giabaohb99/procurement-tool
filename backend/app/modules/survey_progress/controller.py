@@ -22,12 +22,16 @@ from app.core.base_controller import pagination, read_multi_param
 from app.core.database import get_db
 from app.core.filter_operators import apply_operator_filters_map
 from app.core.ref_filter import apply_ref_filters
+from app.core.report_aggregate import build_report
+from app.core.report_export import report_xlsx
+from app.core.report_period import parse_period, range_filter
 from app.core.response import success
 from app.core.scoping import apply_scope
 from app.modules.survey_request.model import (LS_COMPLETED, LS_RESURVEY, SurveyRequest,
                                               SurveyRequestLine, SurveyRequestOption)
 
 from . import export as ex
+from . import summary_service as prog_summary
 
 router = APIRouter(prefix="/api/survey-progress", tags=["survey_progress"])
 
@@ -426,11 +430,44 @@ def summarize(decorated: list[dict]) -> dict:
 @router.get("/summary")
 def progress_summary(request: Request, year: str = "", db: Session = Depends(get_db),
                      user=Depends(_require_progress)):
-    """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi (cả lọc dòng theo NSTM) với
-    bảng, thêm `year` theo NGÀY YÊU CẦU của phiếu. Không phân trang."""
+    """Số liệu tổng hợp cho màn biểu đồ — cùng bộ lọc + phạm vi (cả lọc dòng theo NSTM) với bảng.
+
+    Có `preset` (P03) -> hợp đồng chuẩn `build_report` (kỳ + so sánh + Xem theo); không có ->
+    hành vi CŨ theo `year` (theo NGÀY YÊU CẦU), bảng gốc vẫn dùng nhánh này."""
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
+    qp = request.query_params
+    if qp.get("preset"):
+        period = parse_period(qp)
+
+        def fetch(d_from, d_to):
+            q = _build_query(request, db, user, prof, show_supplier)
+            q = q.filter(range_filter(SurveyRequest.request_date, "str", d_from, d_to))
+            return _decorate(db, q.all(), show_supplier, 0)
+
+        data = build_report(fetch, prog_summary.build_spec(), period, group_by=qp.get("group_by") or None)
+        data["notes"] = data.get("notes", []) + [prog_summary.NOTE]
+        return success(data)
     q = _build_query(request, db, user, prof, show_supplier)
     if year.isdigit():
         q = q.filter(SurveyRequest.request_date.like(f"{year}%"))
     return success(summarize(_decorate(db, q.all(), show_supplier, 0)))
+
+
+@router.get("/summary/export")
+def progress_summary_export(request: Request, db: Session = Depends(get_db),
+                            user=Depends(_require_progress_export)):
+    """Xuất Excel bản THEO KỲ của màn Tiến độ báo giá (P03) — cùng bộ lọc với `/summary`."""
+    prof = get_perm_profile(db, user)
+    show_supplier = _show_supplier(db, user)
+    qp = request.query_params
+    period = parse_period(qp)
+
+    def fetch(d_from, d_to):
+        q = _build_query(request, db, user, prof, show_supplier)
+        q = q.filter(range_filter(SurveyRequest.request_date, "str", d_from, d_to))
+        return _decorate(db, q.all(), show_supplier, 0)
+
+    data = build_report(fetch, prog_summary.build_spec(), period, group_by=qp.get("group_by") or None)
+    data["notes"] = data.get("notes", []) + [prog_summary.NOTE]
+    return report_xlsx("tien-do-bao-gia", data)

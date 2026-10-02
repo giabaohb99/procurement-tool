@@ -63,9 +63,9 @@ def test_khong_lay_nham_dong_cua_du_an_khac_du_trung_so_id(db, chu):
         _tao_task(db, chu, a["id"], f"Việc {i}")
 
     items = activity_service.list_activities(db, chu, a["id"])["items"]
-    assert "Tạo danh sách Dự án B" not in _cau(items)
-    assert "Tạo danh sách Dự án A" in _cau(items)
-    assert all(i["message"].startswith(("Tạo công việc", "Tạo danh sách Dự án A"))
+    assert "Tạo dự án Dự án B" not in _cau(items)
+    assert "Tạo dự án Dự án A" in _cau(items)
+    assert all(i["message"].startswith(("Tạo công việc", "Tạo dự án Dự án A"))
                for i in items)
 
 
@@ -163,7 +163,7 @@ def test_limit_bi_ep_ve_tran_va_offset_am_ve_khong(db, chu):
 
 
 def test_du_an_chua_co_gi_thi_tra_dong_tao_du_an(db, chu):
-    """Dự án vừa tạo KHÔNG bao giờ rỗng — luôn có ít nhất dòng "Tạo danh sách"."""
+    """Dự án vừa tạo KHÔNG bao giờ rỗng — luôn có ít nhất dòng "Tạo dự án"."""
     lst = _tao_list(db, chu)
     ket_qua = activity_service.list_activities(db, chu, lst["id"])
     assert ket_qua["total"] == 1

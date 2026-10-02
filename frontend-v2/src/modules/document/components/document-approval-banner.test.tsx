@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/core/auth/auth-types'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance, MyTask } from '@/modules/approval/types/approval'
 import { DocumentApprovalBanner } from './document-approval-banner'
@@ -17,6 +19,7 @@ vi.mock('../hooks/use-my-document-approvals', () => ({
 
 beforeEach(() => {
   taskBox.viec = null
+  useAuthStore.setState({ user: null })
 })
 
 function ve(instance: ApprovalInstance | null) {
@@ -41,6 +44,7 @@ function session(doi: Partial<ApprovalInstance> = {}): ApprovalInstance {
     status_label: 'Đang chạy',
     current_seq: 2,
     started_by_name: 'Quản trị viên',
+    started_by_employee_id: 0,
     started_at: null,
     finished_at: null,
     finish_reason: '',
@@ -204,5 +208,35 @@ describe('DocumentApprovalBanner', () => {
     expect(screen.getByText(/đã bị từ chối/i)).toBeInTheDocument()
     expect(screen.getByText(/Sao chép/)).toBeInTheDocument()
     expect(screen.queryByText(/Gửi duyệt lần nữa/)).not.toBeInTheDocument()
+  })
+})
+
+describe('DocumentApprovalBanner — người trình rút về để sửa', () => {
+  //  Backend có sẵn chức năng rút từ lâu nhưng màn hình không có nút: người soạn
+  //  muốn sửa một chữ phải đi nhờ người duyệt bấm «Trả lại» (29/09/2026).
+  it('shows «Rút về để sửa» to the submitter while nobody has approved', () => {
+    useAuthStore.setState({ user: { employee_id: 9 } as AuthUser })
+
+    ve(session({ started_by_employee_id: 9 }))
+
+    expect(screen.getByRole('button', { name: /Rút về để sửa/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Bạn không phải làm gì/)).not.toBeInTheDocument()
+  })
+
+  it('offers it on the «stuck» banner too, where the submitter needs it most', () => {
+    useAuthStore.setState({ user: { employee_id: 9 } as AuthUser })
+
+    ve(session({ started_by_employee_id: 9, status: INSTANCE_STATUS.blocked }))
+
+    expect(screen.getByText(/Phiếu duyệt đang kẹt/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Rút về để sửa/ })).toBeInTheDocument()
+  })
+
+  it('does not show it to anyone else', () => {
+    useAuthStore.setState({ user: { employee_id: 10 } as AuthUser })
+
+    ve(session({ started_by_employee_id: 9 }))
+
+    expect(screen.queryByRole('button', { name: /Rút về để sửa/ })).not.toBeInTheDocument()
   })
 })

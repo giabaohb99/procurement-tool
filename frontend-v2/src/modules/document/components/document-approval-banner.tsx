@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Clock, ShieldCheck, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { ApprovalActionDialog } from '@/modules/approval/components/approval-action-dialog'
@@ -6,7 +6,10 @@ import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance } from '@/modules/approval/types/approval'
 import { Button } from '@/shared/ui/button'
 import { formatDate } from '@/shared/utils/format-date'
+import { useAuthStore } from '@/core/auth/auth-store'
+import { canWithdrawApproval } from '../helpers/can-withdraw-approval'
 import { useMyDocumentTask } from '../hooks/use-my-document-approvals'
+import { DocumentWithdrawDialog } from './document-withdraw-dialog'
 
 interface DocumentApprovalBannerProps {
   instance: ApprovalInstance | null | undefined
@@ -40,6 +43,8 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
   //  ủy quyền bấm thay, mà bấm thay người khác là chuyện phải nói trước khi ký.
   const myTasks = useMyDocumentTask(documentId)
   const [actionDialogOpen, setActionDialogOpen] = useState(false)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const employeeId = useAuthStore((s) => s.user?.employee_id)
 
   if (!instance) return null
 
@@ -60,7 +65,22 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
           {instance.finish_reason && (
             <p className="text-muted-foreground">{instance.finish_reason}</p>
           )}
+          {end && canWithdrawApproval(instance, employeeId) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => setWithdrawOpen(true)}
+            >
+              <Undo2 className="size-4" />
+              Rút về để sửa
+            </Button>
+          )}
         </div>
+        {withdrawOpen && (
+          <DocumentWithdrawDialog instanceId={instance.id} open onOpenChange={setWithdrawOpen} />
+        )}
       </div>
     )
   }
@@ -149,21 +169,43 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
     )
   }
 
+  //  Người TRÌNH còn rút về được (chưa ai duyệt) → mọc nút ngay trên băng, chỗ
+  //  người soạn nhìn thấy «Đang duyệt». Cùng luật backend, xem `canWithdrawApproval`.
+  const canWithdraw = canWithdrawApproval(instance, employeeId)
+
   return (
-    <div className="mb-3 flex gap-3 rounded-md border bg-muted/40 px-4 py-3">
-      <Clock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <div className="text-sm">
-        <p className="font-medium">
-          Đang chạy luồng «{instance.flow_name}» — bước {instance.current_seq}
-          {pending.length > 0 && ` · ${pending[0].node_name}`}
-        </p>
-        {pending.length > 0 && (
-          <p className="text-muted-foreground">
-            Chờ {pending.map((row) => row.assignee_name).join(', ')} duyệt. Bạn không phải
-            làm gì — xem dấu vết ở tab <b>Phê duyệt</b>.
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-4 py-3">
+        <Clock className="size-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1 text-sm">
+          <p className="font-medium">
+            Đang chạy luồng «{instance.flow_name}» — bước {instance.current_seq}
+            {pending.length > 0 && ` · ${pending[0].node_name}`}
           </p>
+          {pending.length > 0 && (
+            <p className="text-muted-foreground">
+              Chờ {pending.map((row) => row.assignee_name).join(', ')} duyệt.{' '}
+              {canWithdraw
+                ? 'Cần sửa thì bấm Rút về để sửa — chỉ làm được khi chưa ai duyệt.'
+                : <>Bạn không phải làm gì — xem dấu vết ở tab <b>Phê duyệt</b>.</>}
+            </p>
+          )}
+        </div>
+        {canWithdraw && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setWithdrawOpen(true)}
+            className="max-sm:w-full"
+          >
+            <Undo2 className="size-4" />
+            Rút về để sửa
+          </Button>
         )}
       </div>
-    </div>
+      {withdrawOpen && (
+        <DocumentWithdrawDialog instanceId={instance.id} open onOpenChange={setWithdrawOpen} />
+      )}
+    </>
   )
 }

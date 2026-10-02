@@ -299,7 +299,7 @@ export function KanbanBoard({
   if (sections.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">Danh sách này chưa có cột nào.</p>
+        <p className="text-sm text-muted-foreground">Dự án này chưa có cột nào.</p>
         {canManage && (
           <Button variant="outline" onClick={onAddSection}>
             <Plus className="size-4" />
@@ -320,7 +320,7 @@ export function KanbanBoard({
       onDragCancel={resetDragState}
       measuring={MEASURING}
     >
-      <div className="flex flex-1 gap-3 overflow-x-auto pb-4">
+      <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-4">
         <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
           {sections.map((section) => (
           <KanbanColumn

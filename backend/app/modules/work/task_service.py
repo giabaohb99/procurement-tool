@@ -193,7 +193,7 @@ def create_task(db: Session, actor: Actor, data) -> dict:
     if not parent:
         section_id = data.section_id or _first_section_id(db, list_id)
         if section_id and not _section_belongs(db, section_id, list_id):
-            raise HTTPException(400, "Cột không thuộc danh sách này")
+            raise HTTPException(400, "Cột không thuộc dự án này")
 
     #  Tên rỗng phải chặn ở ĐÂY chứ không ở schema: `title: str` nhận cả chuỗi
     #  toàn dấu cách, `.strip()` xong thành rỗng và đẻ ra một việc không tên —
@@ -287,7 +287,7 @@ def move_task(db: Session, actor: Actor, task_id: int, section_id: int | None,
         if section_id is None:
             raise HTTPException(400, "Thiếu cột đích")
         if not _section_belongs(db, section_id, t.list_id):
-            raise HTTPException(400, "Cột không thuộc danh sách này")
+            raise HTTPException(400, "Cột không thuộc dự án này")
 
         t.section_id = section_id
         db.flush()
@@ -333,7 +333,7 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
         if t.parent_id:
             raise HTTPException(400, "Việc con không nằm trong cột nào")
         if data.section_id and not _section_belongs(db, data.section_id, t.list_id):
-            raise HTTPException(400, "Cột không thuộc danh sách này")
+            raise HTTPException(400, "Cột không thuộc dự án này")
         t.section_id = data.section_id or None
 
     #  Cùng luật với lúc tạo: đổi tên thành rỗng cũng là một việc không tên.
@@ -441,7 +441,7 @@ def set_label(db: Session, actor: Actor, task_id: int, field_id: int, value) -> 
     #  Trường của list KHÁC thì không có nghĩa gì ở đây — nhận bừa là task mang
     #  một nhãn không bao giờ hiện ra, vì giao diện chỉ vẽ trường của list mình.
     if not field or field.list_id != t.list_id:
-        raise HTTPException(400, "Trường nhãn không thuộc danh sách này")
+        raise HTTPException(400, "Trường nhãn không thuộc dự án này")
 
     _write_label_retrying_deadlock(db, field, task_id, value, actor.user_id)
     return _shape([t], task_enrich.collect(db, [t]))[0]

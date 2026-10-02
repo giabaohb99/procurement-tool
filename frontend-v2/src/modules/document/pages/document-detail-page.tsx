@@ -183,6 +183,9 @@ export function DocumentDetailPage() {
   const createExcerpt = useCreateExcerpt(documentId)
   const [excerptOpen, setExcerptOpen] = useState(false)
   const [issueOpen, setIssueOpen] = useState(false)
+  //  Hộp thoại ban hành dùng chung cho hai đường: người DUYỆT (`/approve`) và
+  //  người SOẠN (`/issue` — chờ ban hành, hoặc loại không cần duyệt).
+  const [issueVia, setIssueVia] = useState<'approve' | 'issue'>('approve')
 
   //  ⚠️ `dangDuyetNhieuBuoc` khai ở ĐẦU hàm (cạnh `useEntityApproval`) vì
   //  `useDocument` cần nó để bật nhịp hỏi lại. Đang chạy nhiều bước thì hai nút
@@ -317,7 +320,10 @@ export function DocumentDetailPage() {
   //  vẫn đúng — mà phiên duyệt thì đã đóng, tức `isMultiStepApproval` đã tắt.
   //  Không tách thì cụm nút *Trả lại / Duyệt và ban hành* bày ra cho mọi người
   //  có quyền `document.approve`, và họ bấm vào chỉ nhận 403.
-  const isPendingIssue = record?.status === DOCUMENT_STATUS.pendingIssue
+  //  Backend báo cả ca bản 2+ chờ ban hành (văn bản vẫn «Có hiệu lực» nên không
+  //  suy được từ `status`) — code-review 29/09/2026, I4.
+  const isPendingIssue =
+    record?.is_pending_issue ?? record?.status === DOCUMENT_STATUS.pendingIssue
   const isSubmitted =
     !isPendingIssue &&
     (openVersion
@@ -331,6 +337,9 @@ export function DocumentDetailPage() {
     !!currentUser?.employee_id &&
     (currentUser.employee_id === record?.drafter_employee_id ||
       currentUser.employee_id === record?.owner_employee_id)
+  //  Loại «không cần duyệt» (29/09/2026): bỏ chặng duyệt, nút *Gửi duyệt* đổi
+  //  thành *Ban hành*. Thiếu cờ (bản ghi cũ trong cache) thì coi là CẦN duyệt.
+  const needsApproval = record?.doc_type_needs_approval !== false
 
   //  ĐÃ TỪ CHỐI thì khóa hẳn — không còn đường gửi lại, gõ tiếp chỉ là gõ vào
   //  một bản chết. Backend chặn bằng 409 (`chan_sua_khi_dang_duyet` +
@@ -530,7 +539,7 @@ export function DocumentDetailPage() {
                  phụ khác đã gom vào `⋯` (`collapseSecondaryActions`), còn mấy
                  nút này là bước kế tiếp của văn bản, giấu đi là mất việc. */}
             {/* Luồng duyệt MỘT BƯỚC tạm thời — P3 thay bằng bộ máy chung. */}
-            {isDraft && canWrite && (
+            {isDraft && canWrite && needsApproval && (
               <Button
                 type="button"
                 variant="outline"
@@ -539,6 +548,22 @@ export function DocumentDetailPage() {
               >
                 <Send className="size-4" />
                 Gửi duyệt
+              </Button>
+            )}
+            {/*  Loại «không cần duyệt» — người soạn / người chịu trách nhiệm (hoặc
+                 người có quyền Duyệt) ban hành thẳng từ bản nháp. Backend giữ
+                 cùng luật ở `/issue`; đây chỉ để khỏi bày nút cho người ngoài. */}
+            {isDraft && canWrite && !needsApproval && (isDrafter || canApprove) && (
+              <Button
+                type="button"
+                onClick={() => {
+                  setIssueVia('issue')
+                  setIssueOpen(true)
+                }}
+                disabled={workflow.issue.isPending}
+              >
+                <Check className="size-4" />
+                Ban hành
               </Button>
             )}
             {isSubmitted && !isMultiStepApproval && (
@@ -566,7 +591,10 @@ export function DocumentDetailPage() {
               <PermissionGate entity="document" action="approve">
                 <Button
                   type="button"
-                  onClick={() => setIssueOpen(true)}
+                  onClick={() => {
+                    setIssueVia('approve')
+                    setIssueOpen(true)
+                  }}
                   disabled={workflow.approve.isPending}
                 >
                   <Check className="size-4" />
@@ -579,11 +607,16 @@ export function DocumentDetailPage() {
                  hành và chọn địa chỉ gửi thông báo (26/08/2026). Không bọc
                  `PermissionGate` quyền `approve`: nhịp này thuộc về người soạn,
                  mà người soạn thường không có quyền duyệt. */}
-            {isPendingIssue && isDrafter && (
+            {isPendingIssue && isDrafter && canWrite && (
               <Button
                 type="button"
-                onClick={() => setIssueOpen(true)}
-                disabled={workflow.approve.isPending}
+                onClick={() => {
+                  //  `/issue`, KHÔNG `/approve`: đường sau đòi quyền Duyệt, mà
+                  //  người soạn thường không có — bấm vào từng nhận 403.
+                  setIssueVia('issue')
+                  setIssueOpen(true)
+                }}
+                disabled={workflow.issue.isPending}
               >
                 <Check className="size-4" />
                 Ban hành
@@ -965,9 +998,9 @@ export function DocumentDetailPage() {
             open={issueOpen}
             onOpenChange={setIssueOpen}
             issuerCompanyId={record.company_id}
-            isPending={workflow.approve.isPending}
+            isPending={workflow.approve.isPending || workflow.issue.isPending}
             onConfirm={(applyMode, mailboxId, forumAnnounce) =>
-              workflow.approve.mutate(
+              (issueVia === 'issue' ? workflow.issue : workflow.approve).mutate(
                 { applyMode, mailboxId, forumAnnounce },
                 { onSuccess: () => setIssueOpen(false) },
               )

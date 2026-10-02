@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   ChevronRight,
+  FolderKanban,
   FolderPlus,
   ListPlus,
   MoreHorizontal,
@@ -86,15 +87,15 @@ export function WorkSidebarTree({
       <div className="flex items-center justify-between gap-1 border-b px-3 py-2">
         <span className="text-sm font-semibold text-navy">Danh sách dự án</span>
         <div className="flex items-center gap-0.5">
-          <Button variant="ghost" size="icon" title="Nhóm mới" onClick={() => onCreateGroup(null)}>
-            <FolderPlus className="size-4" />
-          </Button>
           <Button
             variant="ghost"
             size="icon"
-            title="Danh sách mới"
-            onClick={() => onCreateList(null)}
+            title="Tạo nhóm dự án"
+            onClick={() => onCreateGroup(null)}
           >
+            <FolderPlus className="size-4" />
+          </Button>
+          <Button variant="ghost" size="icon" title="Tạo dự án" onClick={() => onCreateList(null)}>
             <ListPlus className="size-4" />
           </Button>
           <Button
@@ -112,7 +113,7 @@ export function WorkSidebarTree({
       <div className="flex-1 overflow-y-auto p-2">
         {trong && (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-            Chưa có danh sách nào. Bấm dấu cộng ở trên để tạo.
+            Chưa có dự án nào. Bấm dấu cộng ở trên để tạo.
           </p>
         )}
         {groups.map((g) => (
@@ -169,6 +170,9 @@ function GroupNode({
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium"
         >
           <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+          {/*  Nhóm dự án (trên dữ liệu là NHÓM) không có bảng việc riêng — biểu
+               tượng thư mục để khỏi lẫn với dự án thường, vốn mang chấm màu. */}
+          <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" />
           <span className="truncate">{node.name}</span>
         </button>
         {/*  Chỉ hiện khi rê chuột: hàng nào cũng có nút thì cây thành rừng nút.
@@ -176,9 +180,9 @@ function GroupNode({
         <Button
           variant="ghost"
           size="icon"
-          title="Thêm danh sách vào nhóm này"
-          aria-label={`Thêm danh sách vào nhóm ${node.name}`}
-          className="size-6 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+          title="Tạo dự án trong nhóm"
+          aria-label={`Tạo dự án trong nhóm ${node.name}`}
+          className="size-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
           onClick={() => onCreateList(node.id)}
         >
           <ListPlus className="size-3.5" />
@@ -190,9 +194,9 @@ function GroupNode({
             <Button
               variant="ghost"
               size="icon"
-              title="Thao tác với nhóm"
-              aria-label={`Thao tác với nhóm ${node.name}`}
-              className="size-6 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+              title="Thao tác với nhóm dự án"
+              aria-label={`Thao tác với nhóm dự án ${node.name}`}
+              className="size-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
             >
               <MoreHorizontal className="size-3.5" />
             </Button>
@@ -200,17 +204,17 @@ function GroupNode({
           <DropdownMenuContent align="start">
             <DropdownMenuItem onSelect={() => onManageGroup(node)}>
               <Settings2 className="size-4" />
-              Quản lý nhóm
+              Quản lý nhóm dự án
             </DropdownMenuItem>
             {canNest && (
               <DropdownMenuItem onSelect={() => onCreateGroup(node.id)}>
                 <FolderPlus className="size-4" />
-                Thêm nhóm con
+                Tạo nhóm con
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onSelect={() => onCreateList(node.id)}>
               <ListPlus className="size-4" />
-              Thêm danh sách
+              Tạo dự án trong nhóm
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

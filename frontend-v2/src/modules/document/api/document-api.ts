@@ -150,6 +150,17 @@ export const documentApi = {
       mailbox_id: mailboxId ?? null,
       forum_announce: forumAnnounce ?? false,
     }),
+  /**
+   * Nút *Ban hành* CỦA NGƯỜI SOẠN (29/09/2026) — gác bằng quyền Sửa, không phải
+   * quyền Duyệt. Dùng cho hai ca: văn bản *Chờ ban hành*, và loại văn bản «không
+   * cần duyệt» ban hành thẳng từ bản nháp. Tham số như `approve`.
+   */
+  issue: (id: number, applyMode?: number, mailboxId?: number, forumAnnounce?: boolean) =>
+    apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/issue`, {
+      apply_mode: applyMode ?? null,
+      mailbox_id: mailboxId ?? null,
+      forum_announce: forumAnnounce ?? false,
+    }),
   reject: (id: number, reason: string) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/reject`, { reason }),
   //  Bãi bỏ = lối gỡ bỏ của văn bản ĐÃ cấp số; xóa hẳn thì backend từ chối vì

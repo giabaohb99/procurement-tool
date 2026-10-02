@@ -120,3 +120,18 @@ class TestBaoCaoKhaoSat:
     def test_khong_co_dong(self):
         out = summarize_report_rows([])
         assert out["total"] == 0 and out["by_month"] == []
+
+
+def test_ngay_xu_ly_trung_binh_theo_ky_khong_bi_nhan_100():
+    """DerivedSpec mặc định ×100 (cho tỷ lệ %) — ngày xử lý TB phải là TRUNG BÌNH thật:
+    hai dòng 1 và 2 ngày ra 1,5 chứ không phải 150 (lỗi đã gặp trên dữ liệu thật: 1,7 → 168,4)."""
+    from datetime import date
+
+    from app.core.report_aggregate import aggregate
+    from app.modules.survey_progress.summary_service import build_spec
+
+    rows = [{"request_date": "2026-09-01", "handling_days": 1},
+            {"request_date": "2026-09-02", "handling_days": 2},
+            {"request_date": "2026-09-03", "handling_days": None}]
+    totals = aggregate(rows, build_spec(), date(2026, 9, 1), date(2026, 9, 30), "day", None)["totals"]
+    assert totals["avg_handling_days"] == 1.5

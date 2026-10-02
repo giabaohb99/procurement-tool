@@ -29,7 +29,7 @@ export function GroupMembersPanel({ open, groupId, myRole }: GroupMembersPanelPr
       open={open}
       members={members}
       myRole={myRole}
-      subject="nhóm này"
+      subject="nhóm dự án này"
       isInviting={addMember.isPending}
       onInvite={(employee_id, role) => addMember.mutate({ employee_id, role })}
       onChangeRole={(employee_id, role) => addMember.mutate({ employee_id, role })}

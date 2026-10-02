@@ -15,6 +15,8 @@ from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.core.auth import user_has_permission
+
 from app.modules.attachment.model import FileLink
 from app.modules.doc_catalog.model import DocType
 
@@ -321,7 +323,15 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
     if numbered and values.get("company_id", doc.company_id) != doc.company_id:
         raise HTTPException(400, "Văn bản đã có số hiệu, không đổi được pháp nhân ban hành")
     if "doc_type_id" in values and values["doc_type_id"] != doc.doc_type_id:
-        doc_type_or_400(db, values["doc_type_id"])
+        new_kind = doc_type_or_400(db, values["doc_type_id"])
+        #  Đổi một bản nháp «Quy chế» (cần duyệt) sang loại KHÔNG cần duyệt là lối
+        #  tắt bỏ qua người duyệt — rồi bấm «Ban hành» thẳng (code-review
+        #  29/09/2026, I2). Chỉ người có quyền Duyệt mới được đổi theo chiều đó.
+        old_kind = db.get(DocType, doc.doc_type_id)
+        if (old_kind and old_kind.needs_approval and not new_kind.needs_approval
+                and user is not None
+                and not user_has_permission(db, user, "document", "approve")):
+            raise HTTPException(403, "Đổi sang loại văn bản không cần duyệt thì cần quyền Duyệt văn bản")
 
     #  E11 (c) — kiểm LẠI ở đây chứ không chỉ lúc tạo bản trích: người dùng nâng
     #  mức mật sau đó thì bản trích thành ra mật hơn cả bản gốc, tức là phần nội
@@ -524,26 +534,31 @@ def _ensure_submittable_content(db: Session, doc: Document, version) -> None:
                     .first())
         if not has_file:
             raise HTTPException(400, "Văn bản chỉ gồm tệp nhưng chưa đính kèm tệp nào, "
-                                     "chưa gửi duyệt được")
+                                     "chưa gửi đi được")
         return
     if not (version.content_html or "").strip():
-        raise HTTPException(400, "Nội dung văn bản còn trống, chưa gửi duyệt được")
+        raise HTTPException(400, "Nội dung văn bản còn trống, chưa gửi đi được")
 
 
 # ── Luồng duyệt một bước (TẠM — P3 thay) ─────────────────────────────────────
-def submit(db: Session, doc: Document, actor: int) -> Document:
-    """Trình bản đang mở đi duyệt. Nhận cả bản **bị trả về** — đó là cả mục đích
-    của trạng thái đó: sửa xong thì gửi lại trên chính văn bản này, không phải
-    dựng bản mới."""
+def _check_ready_to_send(db: Session, doc: Document, verb: str = "gửi duyệt") -> DocumentVersion:
+    """Mọi điều kiện để một bản nháp RỜI tay người soạn — dùng chung cho *Gửi
+    duyệt* (`submit`) và *Ban hành không qua duyệt* (`issue_without_approval`).
+
+    Tách ra 29/09/2026: loại văn bản khai «không cần duyệt» ban hành thẳng từ bản
+    nháp, nhưng vẫn phải đủ đúng những thứ người duyệt lẽ ra kiểm — nội dung
+    không rỗng, đủ liên kết bắt buộc, đủ phần riêng của loại. Hai bản chép là hai
+    luật lệch nhau từ lần sửa đầu tiên.
+    """
     #  Nói thẳng ở đây thay vì để rơi xuống câu "không có bản nháp nào": văn bản
     #  bị từ chối thì `open_version` không thấy gì cả, mà câu đó không gợi được
     #  đường ra nào cho người đọc.
     if doc.status == STATUS_REJECTED:
-        raise HTTPException(400, "Văn bản đã bị từ chối, không gửi duyệt lại được. "
+        raise HTTPException(400, f"Văn bản đã bị từ chối, không {verb} được. "
                                  "Bấm «Sao chép» để có bản nháp mới.")
     version = open_version(db, doc)
     if not version:
-        raise HTTPException(400, "Văn bản không có bản nháp nào để gửi duyệt")
+        raise HTTPException(400, f"Văn bản không có bản nháp nào để {verb}")
     if version.status == VERSION_SUBMITTED:
         raise HTTPException(400, "Bản này đang chờ duyệt")
     _ensure_submittable_content(db, doc, version)
@@ -563,6 +578,20 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     #  của Thu mua: lưu dở dang là quyền của người soạn, gửi đi mới là cam kết.
     kind = db.get(DocType, doc.doc_type_id)
     type_metadata.require_on_submit(kind.code if kind else "", doc.meta)
+    return version
+
+
+def submit(db: Session, doc: Document, actor: int) -> Document:
+    """Trình bản đang mở đi duyệt. Nhận cả bản **bị trả về** — đó là cả mục đích
+    của trạng thái đó: sửa xong thì gửi lại trên chính văn bản này, không phải
+    dựng bản mới.
+
+    Cố ý KHÔNG chặn loại «không cần duyệt» ở đây: cột `needs_approval` mặc định
+    False, loại nào tạo ra mà quên tích là cả luồng duyệt biến mất trong im lặng.
+    Chỗ đổi hành vi là màn hình (bày *Ban hành* thay *Gửi duyệt*) và đường
+    `issue_without_approval` — gửi duyệt một loại không cần duyệt vẫn chạy như cũ.
+    """
+    version = _check_ready_to_send(db, doc)
 
     #  Kiểm TRA LUỒNG trước khi chuyển bản nháp sang «Đang duyệt». Bản clone
     #  bắt buộc có luồng riêng của pháp nhân nhận; chặn sau `db.commit()` sẽ để
@@ -629,6 +658,29 @@ def mark_pending_issue(db: Session, doc: Document, actor: int) -> Document:
     return doc
 
 
+def is_pending_issue(db: Session, doc: Document) -> bool:
+    """Văn bản đã ký đủ, đang chờ NGƯỜI SOẠN bấm Ban hành — kể cả phiên bản 2+.
+
+    Bản đầu tiên thì `doc.status = STATUS_PENDING_ISSUE` là đủ. Từ bản thứ hai,
+    `mark_pending_issue` cố ý KHÔNG đổi trạng thái văn bản (bản cũ vẫn có hiệu
+    lực), nên phải nhận ra bằng: bản đang mở ở tư thế «chờ duyệt», không còn
+    phiên duyệt nào chạy, và phiên gần nhất đã DUYỆT xong. Thiếu hàm này thì bản
+    2 chờ ban hành bày nút «Duyệt và ban hành» cho mọi người có quyền Duyệt, còn
+    người soạn thì không có nút nào (code-review 29/09/2026, I4).
+    """
+    if doc.status == STATUS_PENDING_ISSUE:
+        return True
+    version = open_version(db, doc)
+    if not version or version.status != VERSION_SUBMITTED or version.prev_version_id is None:
+        return False
+    from app.modules.approval.instance_model import INSTANCE_APPROVED
+    from .approval_bridge import latest_instance, running_instance
+    if running_instance(db, doc.id) is not None:
+        return False
+    last = latest_instance(db, doc.id)
+    return last is not None and last.status == INSTANCE_APPROVED
+
+
 def can_issue(db: Session, doc: Document, user) -> bool:
     """Tài khoản này có phải NGƯỜI SOẠN THẢO của văn bản không.
 
@@ -644,6 +696,41 @@ def can_issue(db: Session, doc: Document, user) -> bool:
     if not employee_id:
         return False
     return employee_id in (doc.drafter_employee_id, doc.owner_employee_id)
+
+
+def issue_without_approval(db: Session, doc: Document, actor: int,
+                           apply_mode: int | None = None,
+                           mailbox_id: int | None = None) -> Document:
+    """BAN HÀNH THẲNG từ bản nháp — chỉ cho loại văn bản khai «không cần duyệt».
+
+    Đại ca chốt 29/09/2026: ô «Cần duyệt» của loại văn bản trước đây chỉ để
+    trưng — thẻ *Người duyệt dự kiến* báo «KHÔNG cần phê duyệt» mà văn bản vẫn
+    phải gửi duyệt. Nay loại đó bỏ hẳn chặng duyệt: người soạn bấm *Ban hành* là
+    cấp số, vào sổ, có hiệu lực — qua đúng `approve()` nên mọi tác động của ban
+    hành (số hiệu, sổ, dây chuyền, bản riêng, thông báo) giữ nguyên một đường.
+
+    Người gọi kiểm AI được bấm trước (người soạn / người chịu trách nhiệm, hoặc
+    người có quyền Duyệt) — xem `controller.issue_document`.
+    """
+    kind = doc_type_or_400(db, doc.doc_type_id)
+    if kind.needs_approval:
+        raise HTTPException(400, f"Loại văn bản «{kind.name}» phải gửi duyệt trước khi ban hành")
+    #  Văn bản ĐÃ TỪNG vào bộ máy duyệt (bị trả về, tự rút…) thì đi tiếp bằng
+    #  đường duyệt — ban hành thẳng lúc này là xóa lời «Trả lại» của người duyệt
+    #  (code-review 29/09/2026, I2).
+    from .approval_bridge import latest_instance
+    if latest_instance(db, doc.id) is not None:
+        raise HTTPException(400, "Văn bản này đã từng gửi duyệt — hãy gửi duyệt tiếp, "
+                                 "không ban hành thẳng được")
+    #  Không hỏi `doc.status`: phiên bản thứ hai trở đi soạn trong lúc văn bản vẫn
+    #  «Có hiệu lực» bằng bản cũ. Điều kiện thật nằm ở PHIÊN BẢN đang mở (có bản
+    #  nháp, chưa chờ duyệt, chưa bị từ chối) — `_check_ready_to_send` hỏi đủ.
+    version = _check_ready_to_send(db, doc, "ban hành")
+    #  `approve()` chỉ nhận bản đang «chờ duyệt» — đặt cờ đó rồi chạy tiếp ngay
+    #  trong cùng giao dịch (approve tự commit), không có lúc nào văn bản nằm ở
+    #  «Đang duyệt» mà không ai duyệt.
+    version.status, version.updated_by = VERSION_SUBMITTED, actor
+    return approve(db, doc, actor, apply_mode, mailbox_id=mailbox_id)
 
 
 def ensure_can_issue(db: Session, doc: Document, user) -> None:

@@ -32,7 +32,7 @@ export interface DateRangePickerProps {
  * — hai chuỗi class cùng ghi `bg-*` thì thứ tự thắng thua do Tailwind sắp, không
  * đoán trước được.
  */
-const RANGE_CLASS_NAMES = {
+export const RANGE_CLASS_NAMES = {
   selected: '',
   range_start: 'rounded-l-md bg-accent [&>button]:bg-primary [&>button]:text-primary-foreground',
   range_end: 'rounded-r-md bg-accent [&>button]:bg-primary [&>button]:text-primary-foreground',
