@@ -71,7 +71,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-561 | Gom toàn bộ nhánh erp-v2 lên prod một lần
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
 Đại ca thấy prod còn bản cũ của Tra cứu thị trường và bảo gom hết code lại, đẩy một lần, đừng để rơi rớt. Em đo thì
 erp-v2 còn hơn prod khoảng 300 tệp, gần như toàn bộ là việc của anh Được đã chạy ở dev nhưng chưa lên prod: phân hệ
@@ -85,6 +85,11 @@ lại đều là bài đỏ sẵn trên prod hiện tại (bot Telegram, môi tr
 phạm vi báo sáu báo cáo mới không lọc phạm vi ở tầng điều khiển; em soi từng tệp thì cả sáu đều lọc ở tầng xử lý, nên
 chỉ khai thêm lý do miễn trừ, không có lỗ dữ liệu. Bài «bấm đúp Xuất Excel» đỏ ngẫu nhiên do giả lập tải xong tức thì,
 đã sửa bài kiểm. Trần kết nối MySQL prod là 151, lúc cao nhất mới dùng 45, nên vùng kết nối mới không đáng lo.
+
+Lên prod lúc 11:10 ngày 02/10 (main 68cc5cea): build lại api, web, erp, celery; hai migration chỉ mục chạy
+sạch, seed prod xong. Gián đoạn khoảng 2 phút vì em gộp build và đổi container vào một lệnh — lần sau build
+ảnh trước rồi mới đổi container để chỉ gián đoạn 10-20 giây. Sao lưu trước deploy:
+`procurement_truoc_cr561_gom_erp_v2_20261002_1110.sql.gz`.
 
 Mã nguồn: commit gộp trên main có nội dung y hệt erp-v2; test/backend/test_pham_vi_luat_bat_bien.py,
 frontend-v2/src/modules/report/pages/report-analytics-page.test.tsx.
