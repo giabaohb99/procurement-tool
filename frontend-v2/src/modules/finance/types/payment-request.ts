@@ -167,6 +167,20 @@ export interface PaymentRequestSummary {
   created_by_name: string
   /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
   updated_at?: string
+  /**
+   * bao-CR-553 — «Trưởng bộ phận» in ở dòng «Trưởng phòng ban/bộ phận» của bản in (id NHÂN SỰ + tên
+   * đã chép). 0 / rỗng = mặc định trưởng phòng của người lập.
+   */
+  head_of_dept_id?: number
+  head_of_dept?: string
+}
+
+/** bao-CR-553 — một người trong ô «Trưởng bộ phận» (cùng dạng với YCMH/YCBG/ĐMH). */
+export interface PaymentApprovalCandidate {
+  employee_id: number
+  code: string
+  name: string
+  position: string
 }
 
 /**
@@ -236,6 +250,9 @@ export interface PaymentRequestCreateInput {
   company_id: number
   source_type: string
   lines: PaymentRequestLineInput[]
+  /** bao-CR-553 — ô Trưởng bộ phận; mặc định 0 / "" = như trước. */
+  head_of_dept_id?: number
+  head_of_dept?: string
 }
 
 /**
@@ -249,6 +266,9 @@ export interface PaymentRequestUpdateInput {
   payment_method?: PaymentMethod
   lines?: PaymentRequestLineInput[]
   print_texts?: PrintTexts
+  /** bao-CR-553 — chỉ nhận khi phiếu Nháp. */
+  head_of_dept_id?: number
+  head_of_dept?: string
 }
 
 /** Đổi bảng nhãn trạng thái thành mảng option cho ô chọn, giữ nguyên thứ tự khai báo. */

@@ -293,7 +293,9 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
             request_date=data.request_date, note=data.note, status="draft",
             payment_method=norm_method(data.payment_method),
             prepay=1 if data.prepay else 0,
+            head_of_dept_id=int(data.head_of_dept_id or 0), head_of_dept=data.head_of_dept or "",   # bao-CR-553
             total=round(sum(r["amount"] for r in rows), 2), created_by=user_id, updated_by=user_id)
+        sync_head_of_dept(db, req)
         db.add(req)
         db.flush()
         req.code = f"YCTT{req.id:05d}"
@@ -311,6 +313,17 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
     for req in created:
         record(db, user_id, ENTITY, req.id, "create")
     return created
+
+
+def sync_head_of_dept(db: Session, req: PaymentRequest) -> None:
+    """bao-CR-553 — ghi kép ô Trưởng bộ phận (có id thì tên theo id, chỉ có tên thì tra id),
+    chung đường với YCMH / YCBG / ĐMH. Cả hai rỗng thì để rỗng: bản in tự lùi về trưởng phòng
+    của người lập."""
+    if not int(req.head_of_dept_id or 0) and not (req.head_of_dept or "").strip():
+        req.head_of_dept_id, req.head_of_dept = 0, ""
+        return
+    from app.modules.employee.service import sync_employee_ref
+    sync_employee_ref(db, req, "head_of_dept_id", "head_of_dept")
 
 
 # CR-066: duyệt xong là khóa số tiền / số hóa đơn — chặn ở BACKEND chứ không chỉ ẩn nút trên UI.
@@ -367,6 +380,8 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
         elif k == "print_texts":            # CR-149: dict -> JSON đã lọc khóa + cắt độ dài
             v = norm_print_texts(v)
         setattr(req, k, v)
+    if "head_of_dept_id" in fields or "head_of_dept" in fields:
+        sync_head_of_dept(db, req)
     if data.lines is not None:
         _keep_unsent_offsets(db, rid, data.lines)
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
