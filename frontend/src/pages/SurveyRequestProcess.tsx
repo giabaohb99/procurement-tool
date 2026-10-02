@@ -168,7 +168,6 @@ export default function SurveyRequestProcess() {
   const [msg, setMsg]             = useState('')
   const [forbidden, setForbidden] = useState(false)
   const [completing, setCompleting] = useState(false)
-  const [attempted, setAttempted] = useState(false)
   const [emptyPrompt, setEmptyPrompt] = useState<ProcessLine[] | null>(null)   // dòng chưa có PA -> hỏi chốt rỗng
   const [emptyChecked, setEmptyChecked] = useState<Set<number>>(new Set())
 
@@ -311,13 +310,9 @@ export default function SurveyRequestProcess() {
   }
 
   async function complete() {
-    setAttempted(true)
     const lines = data?.lines || []
-    const missingOptions = lines.flatMap(l => l.options || []).filter(o => !o.system_product_code)
-    if (missingOptions.length > 0) {
-      toast.error('Vui lòng chọn Mã SP hệ thống cho tất cả Option trước khi chốt')
-      return
-    }
+    // bao-CR-565 (02/10/2026): KHÔNG còn bắt mọi phương án phải có Mã SP hệ thống trước khi chốt —
+    // đại ca chốt để trống vẫn chốt được; mã gắn sau cũng được, backend chưa bao giờ bắt ở bước này.
     // Dòng chưa có phương án -> hỏi chốt rỗng (không có NCC phù hợp)
     const emptyLines = lines.filter((l) => (l.options || []).length === 0)
     if (emptyLines.length > 0) {
@@ -726,7 +721,7 @@ export default function SurveyRequestProcess() {
                           <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.snap_quote_unit || '—'}</td>
                           <td>
                             {line.can_process ? (
-                              <div style={{ border: attempted && !opt.system_product_code ? '1px solid var(--red)' : 'none', borderRadius: 4 }}>
+                              <div>
                                 <ProductPicker code={opt.system_product_code}
                                   onPick={(prod) => setOptionProduct(line.id, opt.id, prod?.code || '')} />
                               </div>

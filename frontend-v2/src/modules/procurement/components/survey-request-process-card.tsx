@@ -12,7 +12,6 @@ import {
   X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
@@ -112,16 +111,9 @@ export function SurveyRequestProcessCard({
   const canFinish = myLines.length > 0 && !myLines.every((line) => line.is_completed)
 
   const startComplete = () => {
-    // Chặn sớm giống v1: mọi phương án trên dòng MÌNH phụ trách phải có Mã SP
-    // hệ thống — thiếu là lúc tạo YCMH không nối được vào danh mục sản phẩm.
-    const missingCode = myLines.some((line) =>
-      (line.options ?? []).some((option) => !option.system_product_code),
-    )
-    if (missingCode) {
-      toast.error('Vui lòng chọn Mã SP hệ thống cho tất cả Option trước khi chốt')
-      return
-    }
-
+    //  bao-CR-565 (02/10/2026): bỏ chốt chặn «mọi phương án phải có Mã SP hệ thống» — đại ca chốt
+    //  để trống vẫn chốt được, gắn mã sau; backend chưa bao giờ bắt ở bước này (chỉ chặn TRÙNG mã
+    //  lúc tạo YCMH).
     const emptyLines = myLines.filter(
       (line) => !line.is_completed && (line.options ?? []).length === 0,
     )
@@ -149,8 +141,8 @@ export function SurveyRequestProcessCard({
       <CardContent className="space-y-6 px-4">
         <p className="text-xs text-muted-foreground">
           Với mỗi sản phẩm: lọc kết quả khảo sát đã duyệt (theo NCC / phân loại / từ khóa) rồi
-          bấm dấu cộng để gắn làm phương án. Chọn <b>Mã SP hệ thống</b> cho từng phương án trước
-          khi chốt. Bạn chỉ thao tác được trên dòng mình phụ trách.
+          bấm dấu cộng để gắn làm phương án. <b>Mã SP hệ thống</b> gắn được cho từng phương án,
+          để trống vẫn chốt được. Bạn chỉ thao tác được trên dòng mình phụ trách.
         </p>
 
         {process.lines.map((line, index) => (
