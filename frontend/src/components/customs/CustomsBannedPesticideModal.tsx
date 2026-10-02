@@ -43,6 +43,11 @@ export default function CustomsBannedPesticideModal({ regulation, onClose }: {
     onClose()
   }
 
+  // bao-CR-558: màn «Pháp lý» dựng hộp này THƯỜNG TRỰC (chỉ đổi `regulation`), mà khung
+  // `CustomsModal` của bản cũ không có cờ mở/đóng — thiếu dòng này thì vừa vào màn là hộp hiện,
+  // bấm Đóng cũng không tắt. Bản v2 dùng Dialog có `open` nên không dính.
+  if (regulation == null) return null
+
   return (
     <CustomsModal title={`Thuốc BVTV chứa ${shown?.name ?? 'hoạt chất cấm'}`} width={860} onClose={close}
       footer={<button className="btn ghost" onClick={close}>Đóng</button>}>
