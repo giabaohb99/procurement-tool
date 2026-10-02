@@ -232,10 +232,18 @@ describe('ReportAnalyticsPage — Xuất Excel gated by can(entity, "export")', 
     renderPage()
     await screen.findByText(KPI_LOADED_MARK)
 
+    //  bao-CR-561: giữ lượt tải ĐANG CHẠY cho tới khi cả hai cú bấm đã vào. Bản cũ cho mock xong
+    //  ngay lập tức nên cú bấm thứ hai đôi khi tới SAU khi lượt đầu đã xong — hai lần tải hợp lệ,
+    //  bài kiểm đỏ ngẫu nhiên (2/3 lần khi gom erp-v2 lên prod 02/10/2026), không phải lỗi chốt chặn.
+    let finishDownload: () => void = () => {}
+    vi.mocked(downloadFile).mockImplementation(
+      () => new Promise<void>((resolve) => { finishDownload = resolve }),
+    )
     const button = screen.getByRole('button', { name: /Xuất Excel/ })
     //  Bấm đúp trong cùng một nhịp — đúng bẫy `useSingleFlight` phải chặn
     //  (`disabled={isPending}` một mình không chặn được, xem use-single-flight.ts).
     await Promise.all([user.click(button), user.click(button)])
+    finishDownload()
 
     await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
     expect(downloadFile).toHaveBeenCalledWith(
