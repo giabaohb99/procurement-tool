@@ -32,15 +32,9 @@ def _dict(obj) -> dict:
 
 
 def _survey_dict(s: Survey) -> dict:
-    """`_dict` của PHIẾU, kèm nhãn tiếng Việt của `approve_status` (B-04).
-
-    Phải có hàm riêng vì `_dict` quét `mapper.column_attrs` — nó chỉ thấy cột thật, không thấy
-    property. Dùng cho CẢ danh sách lẫn chi tiết: chỉ gắn nhãn ở chi tiết thì cột ở bảng danh
-    sách hiện `approved` mà không lỗi gì cả.
-    """
-    d = _dict(s)
-    d["approve_status_label"] = s.approve_status_label
-    return d
+    """`_dict` của PHIẾU — dùng cho CẢ danh sách lẫn chi tiết. (Nhãn `approve_status_label` đã
+    bỏ cùng cột `approve_status` ở bao-CR-556.)"""
+    return _dict(s)
 
 
 def _price_hint(db: Session, s: Survey) -> dict:
@@ -254,6 +248,7 @@ def line_approve_(sid: int, data: LineApproveCombined, db: Session = Depends(get
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
              user=Depends(require("survey", "approve"))):
     _in_scope(db, sid, user, "approve")
+    service.check_lines_decided(db, sid)   # bao-CR-554
     s = service.set_status(db, sid, "approved", user.id)
     _sync_ycks_options(db, s, user.id)
     trigger_notification(db=db, event="survey_approved", doc_type="survey", doc_code=s.code,
@@ -267,7 +262,10 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
             user=Depends(require("survey", "approve"))):
     # "Trả lại" = đưa phiếu về trạng thái BỊ TRẢ LẠI (rejected) để NSPT sửa & gửi duyệt lại
     # (đồng bộ với Yêu cầu khảo sát: rejected = sửa lại được, khác với cancelled = khóa hẳn).
-    _in_scope(db, sid, user, "approve")
+    # bao-CR-554: trả về được cả phiếu ĐÃ DUYỆT (hủy duyệt để nhân viên sửa rồi gửi lại).
+    s = _in_scope(db, sid, user, "approve")
+    if s.status not in service.RETURNABLE_STATUSES:
+        raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt hoặc đã duyệt")
     s = service.set_status(db, sid, "rejected", user.id, data.reason)
     trigger_notification(db=db, event="survey_rejected", doc_type="survey", doc_code=s.code,
                          creator_id=s.created_by or user.id, background_tasks=background_tasks,

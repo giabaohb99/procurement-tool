@@ -132,6 +132,10 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     base["can_transfer_dept"] = can_transfer
     # bao-CR-524: «Trả về thu mua» chỉ khi phiếu đang ở phòng KHÁC phòng thu mua mặc định.
     base["can_return_dept"] = bool(can_transfer and not is_central_dept(db, s.handler_dept_id))
+    # bao-CR-554: nút «Trả về» cho người yêu cầu — người có quyền duyệt, phiếu chờ duyệt hoặc đã
+    # duyệt mà việc khảo sát chưa bắt đầu. Giao diện chỉ bày nút theo cờ này.
+    base["can_return_requester"] = bool(user is not None and service.can_return_requester(db, s)
+                                        and user_has_permission(db, user, "survey_request", "approve"))
     return base
 
 
@@ -529,9 +533,10 @@ def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(
 @router.post("/{sid}/reject")
 def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "approve"))):
-    """TRẢ ĐƠN — trả về để người YC sửa & gửi lại (như nháp). status → rejected (còn sửa được)."""
+    """TRẢ ĐƠN — trả về để người YC sửa & gửi lại (như nháp). status → rejected (còn sửa được).
+    bao-CR-554: trả được cả phiếu đã duyệt / đang xử lý khi việc khảo sát chưa bắt đầu."""
     _in_scope(db, sid, user, "approve")
-    s = service.set_status(db, sid, "rejected", user.id, data.reason)
+    s = service.return_to_requester(db, sid, data.reason, user.id)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
     _notify(db, reqs, f"{s.code} — Bị trả lại YCBG",

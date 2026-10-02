@@ -205,22 +205,14 @@ def _khao_sat(db, status="submitted", code="KS-N01-01"):
     return survey
 
 
-def test_khao_sat_duyet_dat_ca_hai_cot_trang_thai(db):
-    """`status` và `approve_status` phải đi cùng nhau — bảng danh sách đọc cột thứ hai.
-
-    ⚠️ `approve_status` lưu **MÃ**, không lưu tiếng Việt (B-04, xem
-    `SURVEY_APPROVE_STATUS`). Bài này từng đỏ vì còn khẳng định chuỗi `"Duyệt"`
-    sau khi đợt chuyển mã chạy xong. Kiểm cả hai vế — mã đã ghi và nhãn đọc ra —
-    để lần sau đổi nhãn không âm thầm đổi dữ liệu, và ngược lại.
-    """
+def test_khao_sat_duyet_doi_trang_thai(db):
+    """Duyệt cả phiếu → `status = approved`. (Cột `approve_status` đi kèm đã bỏ ở bao-CR-556.)"""
     survey = _khao_sat(db)
 
     sv_ctl.approve_(survey.id, BackgroundTasks(), db=db, user=USER)
 
     db.refresh(survey)
     assert survey.status == "approved"
-    assert survey.approve_status == "approved"
-    assert survey.approve_status_label == "Duyệt"
 
 
 def test_khao_sat_tra_lai_khac_tu_choi(db):
@@ -233,9 +225,6 @@ def test_khao_sat_tra_lai_khac_tu_choi(db):
     sv_ctl.reject_(send_back.id, RejectIn(reason="Thiếu mẫu"), BackgroundTasks(), db=db, user=USER)
     db.refresh(send_back)
     assert send_back.status == "rejected"
-    #  MÃ, không phải tiếng Việt — xem ghi chú ở bài kiểm ngay trên.
-    assert send_back.approve_status == "rejected"
-    assert send_back.approve_status_label == "Không duyệt"
 
     reject = _khao_sat(db, code="KS-N01-TC")
     sv_ctl.cancel_(reject.id, RejectIn(reason="Không cần nữa"), BackgroundTasks(),

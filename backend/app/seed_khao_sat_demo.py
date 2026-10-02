@@ -199,7 +199,6 @@ def run():
                 main_content=main, item_code=item_code, item_name=item_name,
                 has_product_code=bool(item_code), uom=uom, request_qty=qty,
                 nspt="Dego Admin", status=status,
-                approve_status="approved" if status == "approved" else "pending",
             )
             db.add(s)
             by_code[code] = s

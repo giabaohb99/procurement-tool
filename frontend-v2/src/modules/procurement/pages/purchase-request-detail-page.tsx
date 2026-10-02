@@ -482,11 +482,10 @@ export function PurchaseRequestDetailPage() {
     }
   }
 
-  //  bao-CR-498: hai đường «Trả về» gộp vào một nút. Đường luồng duyệt mở theo quyền + trạng
-  //  thái; đường trả phòng lập theo cờ backend `can_return_dept` (bao-CR-414).
-  const canReturnToRequester =
-    (loadedData.can_approve || canManage) &&
-    !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(loadedData.status)
+  //  bao-CR-498: hai đường «Trả về» gộp vào một nút. bao-CR-554: đường luồng duyệt nay theo cờ
+  //  backend `can_return` (quản lý hoặc người duyệt; chờ duyệt, hoặc đã duyệt / đã điều phối mà chưa
+  //  dòng nào lên ĐMH); đường trả phòng lập theo cờ `can_return_dept` (bao-CR-414).
+  const canReturnToRequester = Boolean(loadedData.can_return)
   const canReturnToDepartment = !isNew && Boolean(loadedData.can_return_dept)
   const returnResolution = resolveReturnAction(canReturnToRequester, canReturnToDepartment)
 

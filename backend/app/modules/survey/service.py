@@ -204,6 +204,26 @@ def delete_survey(db: Session, sid: int, user_id: int):
 MISSING = "Thiếu thông tin"
 _LINE_AUDIT = {"id", "survey_id", "created_at", "created_by", "updated_at", "updated_by"}
 
+#  bao-CR-554 — dòng «đã quyết»: duyệt hoặc không duyệt. Chờ duyệt / Thiếu thông tin / rỗng là chưa.
+DECIDED_LINE_STATES = ("Đã duyệt", "Không duyệt")
+#  bao-CR-554 — «Trả về» (rejected) được từ Chờ duyệt lẫn Đã duyệt (đại ca chốt 02/10/2026:
+#  quản lý hủy duyệt để nhân viên sửa rồi gửi lại); Nháp / đã trả / đã từ chối thì không có gì để trả.
+RETURNABLE_STATUSES = ("submitted", "approved")
+
+
+def count_undecided_lines(db: Session, sid: int) -> int:
+    """bao-CR-554 — số dòng NCC + SP chưa duyệt / không duyệt từng dòng."""
+    rows = supplier_lines_of(db, sid) + product_lines_of(db, sid)
+    return sum(1 for r in rows if (r.line_approve or "") not in DECIDED_LINE_STATES)
+
+
+def check_lines_decided(db: Session, sid: int) -> None:
+    """bao-CR-554 — chặn duyệt CẢ PHIẾU khi còn dòng chưa quyết (đại ca chốt 02/10/2026)."""
+    n = count_undecided_lines(db, sid)
+    if n:
+        raise HTTPException(400, f"Còn {n} dòng chưa quyết (Chờ duyệt / Thiếu thông tin) — "
+                                 "duyệt hoặc không duyệt từng dòng rồi mới duyệt cả phiếu")
+
 
 def _line_model(table: str):
     return SurveySupplierLine if table == "supplier" else SurveyProductLine
@@ -507,14 +527,6 @@ def set_status(db: Session, sid: int, status: str, user_id: int, msg: str = "") 
     s = get_survey(db, sid)
     s.status = status
     s.updated_by = user_id
-    # B-04: ghi MÃ. Mã ở đây cố ý trùng chữ với `status` — cùng một sự kiện duyệt sinh ra cả
-    # hai cột. Nhưng KHÔNG gộp làm một: `approve_status` chỉ đổi ở hai nhánh dưới đây, nên
-    # phiếu duyệt xong rồi bị hủy vẫn giữ `approved` — nó nhớ QUYẾT ĐỊNH, còn `status` nhớ
-    # phiếu đang ở đâu.
-    if status == "approved":
-        s.approve_status = "approved"
-    elif status == "rejected":
-        s.approve_status = "rejected"
     if msg:
         s.approve_note = msg
     db.commit()

@@ -254,7 +254,9 @@ export default function PurchaseRequestDetail() {
   const canAssignPurchaser = can('purchase_request', 'approve') && !prLocked   // phân bổ NSTM (chặn khi phiếu đã kết thúc)
   const canManage = can('purchase_request', 'cancel')             // admin/quản lý: hủy/trả/hoàn thành
   // bao-CR-498: hai đường «Trả về» gộp vào một nút — đường luồng duyệt + đường trả phòng lập (cờ backend).
-  const canReturnToRequester = !isNew && (canManage || pr.can_approve) && !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(pr.status)
+  // bao-CR-554: cờ `can_return` do server tính (quyền + phạm vi + chưa dòng nào lên ĐMH) — người
+  // duyệt cũng trả được phiếu Đã duyệt; quản lý không còn trả được phiếu đã có đơn.
+  const canReturnToRequester = !isNew && !!pr.can_return
   const returnResolution = resolveReturnAction(canReturnToRequester, !isNew && !!pr.can_return_dept)
   const runReturn = (target: ReturnTarget) => {
     if (target === 'department') setTransferMode('return')

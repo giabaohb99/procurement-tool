@@ -838,10 +838,22 @@ def cancel_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseReque
     return pr
 
 
+#  bao-CR-554 — trả về được từ Chờ duyệt, và từ Đã duyệt / Đã điều phối khi chưa dòng nào lên ĐMH
+#  (đại ca chốt 02/10/2026). Trước đây quản lý trả về phiếu đã có ĐMH vẫn lọt: dòng bị kéo về
+#  `no_po` trong khi đơn vẫn còn.
+def can_return_requester(db: Session, pr: PurchaseRequest) -> bool:
+    if pr.status == "submitted":
+        return True
+    return can_transfer_dept(db, pr)   # khai bên dưới — chỉ gọi lúc chạy
+
+
 def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseRequest:
     """Trả phiếu về "Bị trả lại" (rejected) — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCKS).
     Xóa nhân sự phụ trách + reset trạng thái mọi dòng về `no_po` (CR-074)."""
     pr = get_pr(db, pid)
+    if not can_return_requester(db, pr):
+        raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt, hoặc đã duyệt mà chưa dòng nào "
+                                 "lên đơn mua hàng — hủy đơn liên quan trước")
     for it in items_of(db, pid):
         it.assignee = ""
         it.line_status = LINE_STATUS_NO_PO
