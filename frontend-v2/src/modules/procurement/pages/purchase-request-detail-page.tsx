@@ -255,7 +255,14 @@ export function PurchaseRequestDetailPage() {
   const isNewChanged = useHasChanged(isNew)
   const serverDataChanged = useHasChanged(serverData)
   const userChanged = useHasChanged(user)
-  if (isNewChanged || serverDataChanged || userChanged) {
+  //  bao-CR-567 (02/10/2026): phiếu đã nằm sẵn trong bộ nhớ đệm React Query (mở 127 → sang 128 →
+  //  quay lại 127) thì `serverData` có ngay từ lượt vẽ ĐẦU, `useHasChanged` không báo đổi, và nếu
+  //  lượt tải lại trả dữ liệu y hệt (React Query giữ nguyên tham chiếu) thì KHÔNG BAO GIỜ dựng
+  //  `draft` — bấm «Sửa» chỉ bật cờ, mọi ô gõ vào rơi vào `patch` với `draft = null` nên không đổi
+  //  được gì, tải lại trang mới sửa được (đại ca báo trên dev: PYC02102601). Có dữ liệu mà chưa có
+  //  bản nháp thì dựng ngay, một lần.
+  const draftMissing = !isNew && draft === null && !!serverData
+  if (isNewChanged || serverDataChanged || userChanged || draftMissing) {
     if (isNew) {
       setDraft(
         (current) =>

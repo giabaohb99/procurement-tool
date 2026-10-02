@@ -70,6 +70,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-567 | YCMH bản mới: quay lại phiếu đã mở thì không sửa được, phải tải lại trang
+- status: dang-lam
+- date: 2026-10-02
+Đại ca mở phiếu PYC02102601 trên dev, bấm Sửa nhưng mọi ô kể cả Mã hàng đều không đổi được, tải lại trang mới sửa được;
+phiếu PYC02102602 cùng dữ liệu thì sửa bình thường. Nguyên nhân: màn chi tiết chỉ dựng bản nháp để sửa khi thấy «dữ liệu
+server vừa đổi»; phiếu đã nằm sẵn trong bộ nhớ đệm (mở phiếu này, sang phiếu khác rồi quay lại) thì dữ liệu có ngay từ
+lượt vẽ đầu nên không ai dựng bản nháp. Bấm Sửa chỉ bật cờ sửa, còn mọi thao tác gõ vào rơi vào bản nháp rỗng. Đã vá:
+có dữ liệu mà chưa có bản nháp thì dựng ngay. Không viết được bài kiểm riêng vì trang này chưa có khung kiểm.
+
+Kiểm: kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đang ở máy em, chưa commit.
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx.
+
+---
+
 ## bao-CR-565 | Chốt hoàn thành khảo sát không còn bắt gắn Mã SP hệ thống
 - status: dang-lam
 - date: 2026-10-02
