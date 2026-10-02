@@ -70,6 +70,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-570 | YCMH: người yêu cầu chọn phương án ngay, không đợi NSTM chốt; làm gọn hộp sửa giá và khối áp NCC
+- status: dang-lam
+- date: 2026-10-02
+Đại ca thử trên dev và thấy phải đợi nhân sự thu mua bấm «Chốt hoàn thành xử lý» thì người yêu cầu mới thấy chỗ chọn
+phương án, khác với yêu cầu báo giá. Đại ca chốt bỏ bước chờ đó, vì người tạo đơn mua hàng chính là nhân sự thu mua;
+đồng thời chê hộp «Sửa giá / NCC» và khối «Áp 1 NCC cho nhiều dòng» trông rời rạc.
+
+Đã làm: máy chủ không còn chặn chọn phương án khi dòng chưa chốt, và «Chốt xong lựa chọn» cũng không đòi mọi dòng
+chốt trước. Thẻ chọn phương án hiện mọi dòng ngay khi phiếu đã điều phối; dòng nhân sự thu mua chưa chốt mang nhãn
+«NSTM đang xử lý». Hộp sửa giá nay một cột gọn, có khung tóm tắt phương án, ô chọn nhà cung cấp và ô gõ tên ngoài
+danh mục loại trừ nhau, ô đơn giá căn phải có chữ «đ». Khối áp nhà cung cấp hàng loạt thành thanh công cụ một hàng
+và bảng nhỏ có ô chọn tất cả, cột giá hiện tại và giá mới; nút áp ghi rõ số dòng và khóa khi chưa đủ điều kiện.
+Chỉ làm ở bản mới vì bản cũ không có cụm phương án yêu cầu mua hàng.
+
+Kiểm: 64 bài kiểm máy chủ của cụm phương án xanh (đổi 2 bài theo luật mới); bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi,
+vitest thu mua 780 bài xanh; bấm thử trên máy em thấy thẻ hiện cả dòng chưa chốt, hộp và khối mới hiển thị đúng.
+Đã lên dev 02/10 (b48840c5), chưa lên prod.
+
+Mã nguồn: purchase_request/controller.py (choose_option), option_service.py (mark_choice_done, bỏ ensure_line_done);
+frontend-v2 purchase-request-choose-card.tsx và bài kiểm đi kèm.
+
+---
+
 ## bao-CR-568 | YCMH: chốt xử lý không cần mã VTBB, tạo đơn thì phải có mã, thu mua gắn mã sau điều phối
 - status: dang-lam
 - date: 2026-10-02

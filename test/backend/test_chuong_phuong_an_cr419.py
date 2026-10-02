@@ -145,7 +145,7 @@ def test_con_dong_cua_nstm_khac_thi_chua_bao(db, seed, cap_quyen, bat_chuong):
 # ── Nút "Chốt xong lựa chọn" ───────────────────────────────────────────────────
 
 def test_chot_lua_chon_duoc_khi_nstm_chua_xong(db, seed, cap_quyen):
-    """bao-CR-569 (02/10/2026): bỏ điều kiện mọi dòng NSTM phải chốt hoàn thành trước."""
+    """bao-CR-570 (02/10/2026): bỏ điều kiện mọi dòng NSTM phải chốt hoàn thành trước."""
     pr, items = _make_pr(db, seed, [seed.emp_nstm_code])
     req = _requester(db, seed, cap_quyen)
     _data(C.complete_option_choice(pr.id, db=db, user=req))

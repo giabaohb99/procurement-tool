@@ -69,7 +69,7 @@ function parsePriceInput(raw: string): number | undefined {
  * đúng khe H.10.4), kèm khu "Áp 1 NCC cho nhiều dòng". Dòng CHỐT RỖNG nay vẫn
  * có PHƯƠNG ÁN 0 (mua đúng theo dòng yêu cầu gốc) nên không tắt query nữa.
  *
- * bao-CR-569 (02/10/2026): thẻ HIỆN MỌI DÒNG ngay khi phiếu đã điều phối — đại ca chốt
+ * bao-CR-570 (02/10/2026): thẻ HIỆN MỌI DÒNG ngay khi phiếu đã điều phối — đại ca chốt
  * làm như YCBG, phương án NSTM gắn tới đâu người yêu cầu chọn tới đó, không đợi NSTM bấm
  * «Chốt hoàn thành xử lý» (người lập đơn chính là nhân sự thu mua). Dòng NSTM chưa chốt
  * mang nhãn «NSTM đang xử lý»; nút «Mở lại cho NSTM xử lý» chỉ còn ở dòng ĐÃ chốt.
@@ -516,7 +516,7 @@ function OptionPurchaseEditDialog({
   ]
 
   return (
-    //  bao-CR-569: dựng lại cho gọn — một cột, ô nào cũng chiếm hết bề ngang hộp (bản cũ để
+    //  bao-CR-570: dựng lại cho gọn — một cột, ô nào cũng chiếm hết bề ngang hộp (bản cũ để
     //  ô chọn + ô gõ tay w-64 cạnh nhau, rớt dòng lệch nhau, nhãn «Đơn giá» chen ngang ô).
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -671,7 +671,7 @@ function BulkAssignSupplierZone({
   const hasSupplier = supplierCode !== NO_SUPPLIER || !!supplierName.trim()
 
   return (
-    //  bao-CR-569: dựng lại cho gọn — thanh NCC + nút áp một hàng ở TRÊN, bên dưới là bảng
+    //  bao-CR-570: dựng lại cho gọn — thanh NCC + nút áp một hàng ở TRÊN, bên dưới là bảng
     //  nhỏ (chọn tất cả · sản phẩm · giá hiện tại · giá mới). Bản cũ trải mỗi dòng một khung
     //  rộng hết màn, ô giá trôi tận mép phải, ô NCC nằm tách rời ở đáy.
     <div className="overflow-hidden rounded-lg border">

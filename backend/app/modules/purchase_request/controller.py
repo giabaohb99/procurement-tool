@@ -1336,7 +1336,7 @@ def choose_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db
     pr, item = _open_line(db, pid, item_id, user, "read")
     option_service.ensure_can_choose(
         pr, user, user_has_permission(db, user, "purchase_request", "approve"))
-    # bao-CR-569 (02/10/2026): BỎ cổng «NSTM phải chốt hoàn thành xử lý dòng» (đợt 3b). Đại ca
+    # bao-CR-570 (02/10/2026): BỎ cổng «NSTM phải chốt hoàn thành xử lý dòng» (đợt 3b). Đại ca
     # chốt làm như YCBG — phương án gắn tới đâu người yêu cầu thấy và chọn tới đó, vì người lập
     # đơn là chính nhân sự thu mua, không cần thêm một nhịp bàn giao.
     o = option_service.choose_option(db, pr, item, oid, user.id)

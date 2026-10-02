@@ -226,7 +226,7 @@ function actAsPurchasingAssignee() {
 
 describe('PurchaseRequestChooseCard', () => {
   it('shows lines the NSTM has not completed yet, with an in-progress badge and no reopen button', () => {
-    // bao-CR-569: như YCBG, người yêu cầu thấy và chọn phương án ngay, không đợi NSTM chốt.
+    // bao-CR-570: như YCBG, người yêu cầu thấy và chọn phương án ngay, không đợi NSTM chốt.
     mockUser = { employee_id: 44, emp_code: 'REQ01' }
     grantedPermissions = ['purchase_request:read']
 
@@ -409,7 +409,7 @@ describe('PurchaseRequestChooseCard', () => {
     )
 
     expect(screen.getByText('Áp 1 NCC cho nhiều dòng')).toBeInTheDocument()
-    //  Nút áp khóa tới khi có dòng được tick VÀ có NCC (bao-CR-569).
+    //  Nút áp khóa tới khi có dòng được tick VÀ có NCC (bao-CR-570).
     expect(screen.getByRole('button', { name: 'Áp cho 0 dòng' })).toBeDisabled()
     fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả dòng' }))
     fireEvent.change(screen.getByPlaceholderText('Hoặc tên NCC ngoài danh mục'), {

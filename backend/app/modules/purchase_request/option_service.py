@@ -587,7 +587,7 @@ def mark_choice_done(db: Session, pr: PurchaseRequest, user) -> int:
     items = items_of(db, pr)
     if not items:
         raise HTTPException(400, "Phiếu không có dòng hàng nào")
-    #  bao-CR-569: không còn đòi mọi dòng NSTM chốt hoàn thành trước (chọn được ngay, như YCBG).
+    #  bao-CR-570: không còn đòi mọi dòng NSTM chốt hoàn thành trước (chọn được ngay, như YCBG).
     if pr.options_chosen_at:
         raise HTTPException(400, "Phiếu đã chốt xong lựa chọn rồi — muốn chọn lại "
                                  "hãy mở lại dòng cần sửa")
