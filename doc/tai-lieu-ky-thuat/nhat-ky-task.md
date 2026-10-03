@@ -177,8 +177,9 @@ Kiểm: 23 bài kiểm mới + 30 bài cũ của màn này xanh; 300 bài giao d
 local: không lọc 8.768 lượt, chỉ POST 676, POST + PUT 694, DELETE 25, biểu đồ POST + PUT cũng 694.
 
 Commit: `c9ff355d` trên erp-v2.
-Deploy: dev 03/10 (dựng lại api, celery-worker, celery-beat, erp; devthumua và deverp trả 200). Không có migration.
-Prod: chưa — đã giao Agent 1 chuẩn bị đưa lên.
+Deploy: dev + prod 03/10. Dev: dựng lại api, celery-worker, celery-beat, erp; devthumua và deverp trả 200.
+Prod 14:46 (Agent 1 làm theo lệnh đại ca): main `603ed2b4`, lấy riêng hai commit `c9ff355d` → `212e4b47` và
+`452548fb` → `9241293c`. Không có migration.
 
 ---
 
