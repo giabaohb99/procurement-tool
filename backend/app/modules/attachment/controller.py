@@ -81,6 +81,13 @@ def _check(db: Session, user, entity: str, mode: str, entity_id: int | None = No
     TẠM (`POST /upload-file`) — tệp chưa gắn vào bản ghi nào nên không có gì để soi.
     """
     parent, exts, max_mb = _policy_or_400(entity)
+    #  Q4 (quá trình công tác nhân sự, plan 261003-0837) — gác tệp QĐ RIÊNG
+    #  trước khi hỏi quyền chung: chính chủ đọc tệp của mình qua ngay, không
+    #  cần `employee.read`; người khác cần thêm `employee_sensitive.read`.
+    #  Hàm tự trả `False` ngay cho mọi entity khác, không chạm gì.
+    from app.modules.employee.work_history_access import check_file as _work_history_check_file
+    if _work_history_check_file(db, user, entity, entity_id, mode):
+        return exts, max_mb
     if parent == "__self__":
         #  `comment` / `forum_post` cố ý không có entity cha để hỏi quyền: chốt thật
         #  của chúng là `_check_comment` / `_check_forum` ở cửa GẮN tệp. Nhưng cửa TẢI

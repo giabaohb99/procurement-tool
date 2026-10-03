@@ -18,6 +18,7 @@ from fastapi import HTTPException
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from app.core.vn_time import vn_today
 from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
@@ -27,9 +28,9 @@ from .task_model import WorkTask
 VN_OFFSET = timedelta(hours=7)   # container chạy UTC — "hôm nay" phải là hôm nay ở VN
 EMPTY_LIST_META = {"name": "", "group_id": 0, "group_name": ""}
 
-
-def today_vn() -> date:
-    return (datetime.utcnow() + VN_OFFSET).date()
+#  Bí danh — review 03/10/2026 (H2): hàm thật nay gộp về `app.core.vn_time.vn_today`,
+#  giữ tên cũ `today_vn()` để `report_service.py` (`rows.today_vn()`) không phải đổi.
+today_vn = vn_today
 
 
 def cutoff_utc(as_of: date) -> datetime:

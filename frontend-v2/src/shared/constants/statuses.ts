@@ -164,6 +164,17 @@ export const SUPPLIER_LEGAL_TYPE: readonly StatusOption[] = [
   {"value": "household", "label": "Hộ kinh doanh", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Loại quá trình công tác */
+export const WORK_EVENT_TYPE: readonly StatusOption[] = [
+  {"value": "1", "label": "Tuyển dụng", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Điều chuyển", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Bổ nhiệm", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Kiêm nhiệm", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Miễn nhiệm", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Thôi việc", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Khác", "sort_order": 9, "is_terminal": false, "is_exception": false},
+]
+
 /** Tra theo tên bộ, cho chỗ dựng ô chọn động. */
 export const STATUS_SETS = {
   contract_expiry: CONTRACT_EXPIRY,
@@ -182,6 +193,7 @@ export const STATUS_SETS = {
   pr_line_status: PR_LINE_STATUS,
   report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
+  work_event_type: WORK_EVENT_TYPE,
 } as const
 
 /** Nhãn theo mã, cho chỗ chỉ cần hiển thị. */

@@ -9,6 +9,23 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## duoc-CR-585 | Quá trình công tác nhân sự — bản gọn của V1-8
+- status: xong
+- date: 2026-10-03
+Triển khai lịch sử công tác ghi tay theo từng người, tệp quyết định đính kèm thẳng vào dòng, hỏi rồi mới áp vào hồ sơ. Bốn quyết định chốt 03/10: ngày hiệu lực gộp với dòng, dòng Thôi việc áp qua update_employee → khóa TK, chặn HR tự sửa quá trình của mình, tệp QĐ người khác cần employee_sensitive.read. Backend: 7 tệp service/schema/access dưới 200 dòng mỗi tệp, 1 migration, bộ mã WorkEventType, sửa 5 tệp nền. Frontend: 11 tệp component/hook/type/schema, 3 sửa, thêm 3 query keys. Test: 4 tệp, 142 bài xanh. Tài liệu: cập nhật bản 01-ho-so-nhan-su.md từ 1.4 → 1.5 (thêm §7.11 mới, cập nhật §4/§5.2/§7.10), cập nhật 10-de-xuat-ap-dung.md §0 (V1-8 = bản gọn xong, còn phần đầy đủ), thêm mục Quá trình công tác vào .claude/rules/hr-employee-profile.md, ghi nhật ký task. Chưa commit, chưa bấm tay qua trình duyệt.
+
+Sau khi đại ca xem bản đầu, tab đổi tên thành «Quá trình công tác & Quyết định» và chia hai khu dùng chung một nguồn dữ liệu: khu «Quyết định bổ nhiệm» ở trên chỉ gồm các dòng có số quyết định (số, ngày ký, loại, nội dung tóm tắt, ngày hiệu lực, tệp), khu «Quá trình công tác» ở dưới gồm mọi dòng. Mỗi khu có nút chuyển giữa dạng bảng và dạng dòng thời gian (mốc mới nhất ở trên, dòng đang hiệu lực có nhãn «Hiện tại»), lựa chọn giữ trên đường dẫn; trang cá nhân hiện y như vậy nhưng chỉ đọc. Bài rà soát mã tìm ra và đã sửa: nút áp vào hồ sơ trên từng dòng chạy thẳng không hỏi (kể cả dòng thôi việc), máy chủ lấy ngày hôm nay theo giờ quốc tế thay vì giờ Việt Nam, gửi ô bắt buộc rỗng làm lỗi máy chủ, xóa dòng là đường vòng qua quyền xem tệp nhạy cảm. Đã thử trên trình duyệt ở máy em cả hai dạng xem với dữ liệu mẫu; chưa thử bấm lưu và áp hồ sơ trên trình duyệt, chưa deploy.
+
+Đại ca xem lại thấy gom hai khu vào một tab khó nhìn, nên chốt TÁCH thành hai tab riêng đứng cạnh nhau: «Quá trình công tác» (mọi dòng, có thao tác, giữ đúng giá trị tab cũ để đường dẫn cũ không gãy) và «Quyết định bổ nhiệm» (chỉ dòng có số quyết định, chỉ xem — rỗng thì có nút nhảy sang tab «Quá trình công tác» nếu còn quyền sửa). Hai tab vẫn dùng chung một lần gọi dữ liệu nhờ bộ nhớ đệm của thư viện truy vấn, không gọi máy chủ hai lần. Mỗi tab tự giữ lựa chọn bảng/dòng thời gian trên đường dẫn như cũ. Ở trang cá nhân, hai khu nay là hai tab con bên trong thẻ, vẫn chỉ xem. Kiểm kiểu 0 lỗi, eslint 0 lỗi, 753 bài kiểm xanh trong các thư mục liên quan. Chưa commit, chưa deploy.
+
+Mã nguồn:
+- Backend: `backend/app/modules/employee/work_history_{model,schema,service,apply_service,rules,serializer,access,controller}.py` · `backend/app/core/hr_work_history_codes.py` · 1 migration `wkhist01_...` · sửa `main.py`, `code_sets.py`, `all_models.py`, `file_registry.py`, `attachment_scope.py`
+- Frontend: `frontend-v2/src/modules/hr/{types/employee-work-history,api/employee-work-history-api,hooks/use-employee-work-history*,schemas/employee-work-history-schema,config/employee-work-history-columns,components/employee-{tab-work-history,work-history-form-dialog*,work-history-files-dialog,work-history-resign-confirm-dialog}}` · `frontend-v2/src/app/components/profile/profile-work-history-card.tsx` · sửa `app/pages/profile-page.tsx`, `shared/constants/query-keys.ts`
+- Test: `test/backend/test_qua_trinh_cong_tac_{quyen,ap_ho_so,kiem_du_lieu,thoi_viec}.py`
+- Tài liệu: `doc/erp/hrm/01-ho-so-nhan-su.md`, `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md`, `.claude/rules/hr-employee-profile.md`, `doc/tai-lieu-ky-thuat/change-log.md`
+
+---
+
 ## bao-CR-584 | Người đang được giao duyệt mở được phiếu Đặt xe / Duyệt dấu; thêm vai trò Pháp lý kiểm tra dấu
 - status: xong
 - date: 2026-10-03

@@ -4,7 +4,9 @@ import {
   Briefcase,
   Building2,
   CalendarDays,
+  FileCheck2,
   Hash,
+  History,
   IdCard,
   Loader2,
   Phone,
@@ -45,6 +47,8 @@ import { EmployeeTabContact } from '../components/employee-tab-contact'
 import { EmployeeTabDocuments } from '../components/employee-tab-documents'
 import { EmployeeTabGeneral } from '../components/employee-tab-general'
 import { EmployeeTabLeave } from '../components/employee-tab-leave'
+import { EmployeeTabWorkDecisions } from '../components/employee-tab-work-decisions'
+import { EmployeeTabWorkHistory } from '../components/employee-tab-work-history'
 import { useCanReadSensitive } from '../hooks/use-employee-profile'
 import { useDepartments } from '../hooks/use-departments'
 import {
@@ -267,6 +271,14 @@ export function EmployeeDetailPage() {
               <TabsTrigger value="general" className={TAB_TRIGGER_UNDERLINE}>
                 Chung
               </TabsTrigger>
+              <TabsTrigger value="work-history" className={TAB_TRIGGER_UNDERLINE}>
+                <History className="size-4" />
+                Quá trình công tác
+              </TabsTrigger>
+              <TabsTrigger value="decisions" className={TAB_TRIGGER_UNDERLINE}>
+                <FileCheck2 className="size-4" />
+                Quyết định bổ nhiệm
+              </TabsTrigger>
               <TabsTrigger value="contact" className={TAB_TRIGGER_UNDERLINE}>
                 <Phone className="size-4" />
                 Liên hệ &amp; Ngân hàng
@@ -316,6 +328,14 @@ export function EmployeeDetailPage() {
                 isSelf={currentUser?.employee_id === employee.id}
                 className="mt-5"
               />
+            </TabsContent>
+
+            <TabsContent value="work-history" className="mt-5 max-md:mt-2">
+              <EmployeeTabWorkHistory employee={employee} />
+            </TabsContent>
+
+            <TabsContent value="decisions" className="mt-5 max-md:mt-2">
+              <EmployeeTabWorkDecisions employee={employee} onGoToWorkHistoryClick={() => setTab('work-history')} />
             </TabsContent>
 
             <TabsContent value="contact" className="mt-5 max-md:mt-2">

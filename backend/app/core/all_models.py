@@ -13,6 +13,7 @@ from app.modules.employee import model as _employee  # noqa: F401
 from app.modules.employee import department_model as _employee_department  # noqa: F401
 from app.modules.employee import contact_model as _employee_contact  # noqa: F401
 from app.modules.employee import position_model as _job_position  # noqa: F401
+from app.modules.employee import work_history_model as _employee_work_history  # noqa: F401
 from app.modules.dossier import type_model as _dossier_type  # noqa: F401
 from app.modules.dossier import model as _dossier  # noqa: F401
 from app.modules.dossier import progress_model as _dossier_progress  # noqa: F401

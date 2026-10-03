@@ -6,6 +6,7 @@ paths:
   - "frontend-v2/src/shared/utils/name-initials.ts"
   - "test/backend/*ho_so*"
   - "test/backend/*nhan_su*"
+  - "test/backend/*qua_trinh*"
   - "doc/erp/hrm/**"
 ---
 # Hồ sơ nhân sự mở rộng và danh mục Chức vụ
@@ -143,3 +144,45 @@ thì chỉ `hr_profile`. Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.7.
 - Trang chi tiết chạy hết bề ngang (`detailMaxWidth: 'max-w-none'`) vì có tab
   **«Người đang giữ»** — bảng nhân sự phân trang thật, kèm ô tìm kiếm và hai ô
   lọc *phòng ban* · *tình trạng*.
+
+### QUÁ TRÌNH CÔNG TÁC (duoc-CR-585, 03/10/2026)
+
+Bảng `tab_employee_work_history` lưu lịch sử công tác ghi tay theo người (bổ nhiệm, điều chuyển, kiêm nhiệm, thôi việc).
+Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.11. Bốn bẫy, một quyết định, một lưu ý giờ VN:
+
+1. **Áp hồ sơ chỉ đi qua `update_employee` / `set_extra_departments` — cấm ghi thẳng cột.**
+   Thứ tự THẬT trong `update_employee`: gán ô (`status`/`resign_date`…) → `has_left_company`
+   phát hiện lần lưu này vừa chuyển sang nghỉ việc → `lock_linked_users` khóa tài khoản + đá
+   phiên — cả ba trong CÙNG một giao dịch với dòng lịch sử. Không gọi `lock_linked_users` tách
+   riêng ở tab Tài khoản là lệch đường, vì không có audit trail nào khoá TK mà không có dòng lịch
+   sử. Test chốt ghi dòng và khóa TK không bị lộn xộn.
+
+2. **`position_label` là nhãn CHỤP, không `propagate_rename`.**
+   Khi đổi tên chức vụ trong danh mục, lịch sử vẫn giữ tên đó để bản in lịch sử không đổi.
+   Giữ nguyên như ô `employee.position` — hai đường ghi duy nhất ở service.
+
+3. **Tệp QĐ người khác gác bằng `employee_sensitive.read`** ở `work_history_access.check_file`,
+   cộng với quyền `employee.read` + phạm vi thường. Chính chủ (`employee_id = id đăng nhập`)
+   luôn xem được. Gác **trước khi trả thân API** (không phải gác ở tầng giao diện). `file_count`
+   vẫn lộ ra (số đếm, không nội dung) — cố ý để người đó biết là có tệp nhưng không được xem.
+
+4. **Hộp thoại có `<form>` bên trong trang hồ sơ phải gọi `e.stopPropagation()`**
+   ở `onSubmit`, trước `form.handleSubmit(onSubmit)(event)`. Không thì bấm Lưu dòng lịch sử
+   sẽ submit cả form hồ sơ phía ngoài. Test xác nhận `onSubmit` của form cha KHÔNG bị gọi.
+
+5. **API: SÁU loại sự kiện áp được.** NĂM loại nhóm chính — HIRE · TRANSFER · APPOINT · DISMISS ·
+   RESIGN (mã 1/2/3/5/6) — đổi hồ sơ qua `update_employee` (RESIGN qua nhánh `has_left_company`,
+   không đổi company/department/position). CỘNG loại CONCURRENT (mã 4, kiêm nhiệm) — áp qua
+   `set_extra_departments` vào `tab_employee_department` trực tiếp, KHÔNG đổi chức vụ chính (khác
+   hàm ghi, không phải "không áp"). Dòng tương lai (`from_date` > hôm nay) → nút Áp tắt. Chỉ loại
+   OTHER/«Khác» (mã 9) là không áp được vào đâu — ghi chú thuần.
+
+6. **"Hôm nay" dùng `app.core.vn_time.vn_today()`, KHÔNG `date.today()`.** Container chạy UTC;
+   `date.today()` đọc ngày UTC, lệch với ngày Việt Nam từ 00:00-06:59 giờ VN (review backend
+   03/10/2026, finding H2). Mọi chốt theo ngày của phân hệ này (`apply_gate`, `compute_can_apply`,
+   gỡ kiêm nhiệm hết hạn) phải qua `vn_today()` — thêm chốt ngày mới thì nhớ đi qua đây, đừng chép
+   tay `datetime.utcnow() + timedelta(hours=7)` lần nữa.
+
+Test: `test/backend/*qua_trinh*` (7 tệp) + `test/backend/*ho_so_nhan_su_dot1.py`; `vitest` trên
+`modules/hr/components/employee-tab-work-history*.tsx` + `use-employee-work-history*.ts`.
+Paths cập nhật: thêm `test/backend/*qua_trinh*`.

@@ -130,6 +130,15 @@ def parent_records(db: Session, entity: str, entity_id: int):
         from app.modules.leave.request_model import LeaveRequest
         return LeaveRequest, [entity_id]
 
+    if entity == "employee_work_history":
+        #  Tệp treo vào DÒNG quá trình công tác (`entity_id` = id dòng), nhưng
+        #  phạm vi dữ liệu xét trên HỒ SƠ CHA — khuôn `_fk` như
+        #  `purchase_request_line_image`. Chốt RIÊNG chính chủ/`employee_sensitive`
+        #  (Q4) chạy TRƯỚC khi tới đây, ở `employee/work_history_access.check_file`.
+        from app.modules.employee.model import Employee
+        from app.modules.employee.work_history_model import EmployeeWorkHistory
+        return _fk(EmployeeWorkHistory.employee_id, Employee, EmployeeWorkHistory.id)
+
     #  Ba loại dưới đây chưa có mặt trong `SCOPE_FIELDS` nên `apply_scope` không
     #  sinh mệnh đề nào — vẫn khai ở đây để ngày B-07 khai thêm là đính kèm siết
     #  theo, không phải mở lại tệp này.

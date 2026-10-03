@@ -78,6 +78,13 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # ĐANG phải ký tờ đơn (việc `TASK_PENDING`) cũng xem được tệp, đúng ngoại lệ
     # CR-260 của chính tờ đơn. Trần 50MB theo luật sàn CR-148 cho ô nhận PDF.
     "leave_request":          ("leave_request", _DOC, 50),
+    # Tệp QĐ của một DÒNG quá trình công tác (plan 261003-0837, phase-02) —
+    # `entity_id` = id dòng (`tab_employee_work_history`), KHÔNG phải id hồ sơ.
+    # Entity cha `employee` để lớp vai trò/phạm vi dùng lại nguyên khóa
+    # `employee`; lớp RIÊNG của tệp này (chính chủ qua, người khác cần thêm
+    # `employee_sensitive.read`, Q4) nằm ở `employee/work_history_access.check_file`,
+    # gọi ở ĐẦU `attachment/controller._check`.
+    "employee_work_history":  ("employee", _DOC, 50),
 }
 
 #  CỬA NHẬN TỆP KHÔNG ĐI QUA `FileLink` — ảnh đại diện, ảnh chữ ký, ảnh chèn bài HDSD.
@@ -128,7 +135,10 @@ def direct_policy(kind: str) -> tuple[set[str], int]:
 #
 #  `leave_request` (bao-CR-505): ảnh giấy khám bệnh là dữ liệu sức khỏe — URL đọc
 #  thẳng bucket bị chuyền tay là lộ bệnh án của một người cụ thể.
-PRIVATE_ENTITIES: set[str] = {"document_version", "dossier", "leave_request"}
+#  `employee_work_history` (plan 261003-0837): tệp QĐ bổ nhiệm/điều chuyển/thôi
+#  việc — cùng nhóm nhạy cảm với CCCD/ngân hàng của hồ sơ nhân sự.
+PRIVATE_ENTITIES: set[str] = {"document_version", "dossier", "leave_request",
+                             "employee_work_history"}
 
 
 def is_private(entity: str) -> bool:
