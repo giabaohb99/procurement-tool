@@ -49,7 +49,7 @@ Mật khẩu = mã đăng nhập.
 |---|---|---|---|
 | #4 `DATXE` Đặt xe công tác | mặc định, mọi phiếu đặt xe không khớp luồng khác | Trưởng bộ phận người nộp | Vai trò «Quản lý điều phối» |
 | #5 `DX-GIAO-HANG` Giao hàng | Loại phiếu là Giao hàng, ưu tiên 10 | Trưởng bộ phận người nộp | Vai trò «Quản lý điều phối» |
-| #6 `DD-MAC-DINH` Duyệt dấu | mặc định | Trưởng bộ phận người tạo chọn trên phiếu | Vai trò «Giám đốc duyệt dấu» |
+| #6 `DD-MAC-DINH` Duyệt dấu (bản 2, giống app cũ) | mặc định | Trưởng bộ phận người tạo chọn trên phiếu | Vai trò «Pháp lý kiểm tra dấu» (`NSU206`, `DEMOTP3`) |
 
 Công tắc Đặt xe và Duyệt dấu đã bật. Vai trò thử đã gán: `DEMONV` người tạo phiếu (phòng Demo Thu Mua,
 trưởng phòng là `DEMOTP`), `DEMOTP` trưởng bộ phận, `DEMOQL` quản lý điều phối + giám đốc duyệt dấu, `DEMOAD`
@@ -68,6 +68,10 @@ Phiếu thử trên dev (tạo 03/10, người tạo `DEMONV`):
 | DX935 | Đặt xe công tác | — | nháp, để tự gửi duyệt |
 | DD866 | Duyệt dấu | #6 DD-MAC-DINH | chặng 1/2, `DEMOTP2` (người tạo chọn) |
 | DD867 | Duyệt dấu | — | nháp có tệp, để tự gửi duyệt |
+| DD868 | Duyệt dấu | #6 bản 2 (Pháp lý) | chặng 1/2, `DEMOTP2`; chặng 2 Pháp lý `NSU206` / `DEMOTP3` |
+
+DD866 gửi trước khi đổi luồng nên vẫn giữ bước 2 cũ «Giám đốc duyệt dấu» — đúng luật «phiếu đang chạy giữ luồng lúc bắt đầu».
+Người được giao duyệt mở được phiếu, tệp chứng từ và ô Trao đổi dù ngoài phạm vi dữ liệu, chỉ trong lúc đang chờ họ (bao-CR-584).
 
 Đặt xe chỉ khai được bước «trưởng bộ phận người nộp», chưa khai được «người tạo chọn người duyệt»: form đặt xe chưa
 có ô chọn người duyệt.
