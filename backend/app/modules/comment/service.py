@@ -115,6 +115,16 @@ def resolve_doc(db: Session, user, entity: str, entity_id: int, mode: str = "rea
         if not doc:
             raise HTTPException(403, "Chứng từ không tồn tại hoặc ngoài phạm vi được phép xem")
         return doc, label, route
+    #  bao-CR-584: người ĐANG được giao duyệt phiếu (đặt xe, duyệt dấu) đọc và góp ý
+    #  được trên phiếu đó dù nằm ngoài phạm vi — đúng lúc họ cần hỏi lại người tạo.
+    #  Trước đây ô Trao đổi báo «không tải được» với chính người phải duyệt.
+    from app.modules.approval.pending_reader import is_pending_approver
+
+    if entity == parent and is_pending_approver(db, parent, entity_id, user):
+        model = doc_model(entity)
+        doc = db.query(model).filter(model.id == entity_id).first() if model else None
+        if doc is not None:
+            return doc, label, route
     if not user_has_permission(db, user, parent, "read"):
         raise HTTPException(403, "Không có quyền xem chứng từ này")
     model = doc_model(entity)

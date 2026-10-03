@@ -179,12 +179,30 @@ def _context_by_id(db: Session, req_id: int) -> dict:
 entity_hooks.register_subject(ENTITY, _context_by_id)
 
 
+def request_for_approver(db: Session, req_id: int, user) -> SealRequest | None:
+    """Phiếu mà người này đang PHẢI DUYỆT — `None` nếu họ không giữ việc nào treo trên nó.
+
+    Đường lùi CHỈ ĐỌC của trang chi tiết (bao-CR-584), cùng khuôn
+    `vehicle_booking.approval_bridge.booking_for_approver`. Mọi cửa ghi vẫn đi qua
+    `get_scoped` với đúng hành động của nó; duyệt thì đi qua bộ máy duyệt.
+    """
+    from app.modules.approval.pending_reader import is_pending_approver
+
+    req = db.get(SealRequest, req_id)
+    if req is None or req.is_deleted:
+        return None
+    return req if is_pending_approver(db, ENTITY, req_id, user) else None
+
+
 def _can_read_request(db: Session, req_id: int, user) -> bool:
+    """Trong phạm vi dữ liệu, HOẶC đang được giao duyệt phiếu này (bao-CR-584)."""
     from app.core.auth import get_perm_profile
     from app.core.scoping import get_scoped
 
     obj = get_scoped(db, SealRequest, ENTITY, req_id, user, get_perm_profile(db, user))
-    return obj is not None and not obj.is_deleted
+    if obj is not None and not obj.is_deleted:
+        return True
+    return request_for_approver(db, req_id, user) is not None
 
 
 entity_hooks.register_reader(ENTITY, _can_read_request)

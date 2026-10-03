@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
-from app.core.auth import get_current_user, get_perm_profile, require
+from app.core.auth import get_current_user, get_perm_profile, require, user_has_permission
 from app.core.base_controller import (
     apply_datetime_range,
     apply_filters,
@@ -174,9 +174,14 @@ def booking_timeline(
 
 @router.get("/{bid}")
 def get_booking(bid: int, db: Session = Depends(get_db),
-                user=Depends(require("vehicle_booking", "read"))):
-    obj = get_scoped(db, VehicleBooking, "vehicle_booking", bid,
-                     user, get_perm_profile(db, user))
+                user=Depends(get_current_user)):
+    #  bao-CR-584: cổng KHÔNG đòi `vehicle_booking.read` ở mức route nữa — người được
+    #  luồng giao duyệt có thể không có quyền đọc Đặt xe nào, khi đó `require` chặn
+    #  403 trước cả đường lùi bên dưới. Có quyền đọc thì soi phạm vi như cũ.
+    obj = None
+    if user_has_permission(db, user, "vehicle_booking", "read"):
+        obj = get_scoped(db, VehicleBooking, "vehicle_booking", bid,
+                         user, get_perm_profile(db, user))
     #  ⚠️ Người ĐANG PHẢI KÝ phiếu này đọc được nó, dù nó ngoài phạm vi dữ liệu
     #  của họ. Chặng 2 của luồng duyệt gần như luôn là người phòng khác (Hành
     #  chính · Nhân sự · Ban giám đốc), mà nút Duyệt của Đặt xe nằm TRONG trang
