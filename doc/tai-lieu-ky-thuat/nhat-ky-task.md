@@ -70,6 +70,64 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-579 | Đặt xe và Duyệt dấu khai nhiều luồng duyệt theo điều kiện, xem được phiếu đang chạy luồng nào
+- status: xong
+- date: 2026-10-03
+Đại ca chốt: ai có quyền thì tự cấu hình luồng duyệt, tách luồng Đặt xe với luồng Duyệt dấu và thêm «loại» cho hai
+luồng này; người dùng tùy điều kiện mà khai nhiều luồng khác nhau (app cũ còn có luồng giao hàng riêng), và cần biết
+phiếu nào đang chạy luồng nào. Bộ máy duyệt đã chạy được điều kiện từ trước, nhưng màn cấu hình chỉ cho khai điều
+kiện với văn bản: với Đặt xe và Duyệt dấu nó báo «chưa có bộ chọn riêng», nên người cấu hình không tự khai nổi.
+
+Đã làm: ô «Áp cho phiếu nào» của luồng và ô điều kiện của từng bước nay dùng bộ dựng điều kiện chung cho hai loại phiếu.
+Đặt xe chọn được loại phiếu (đặt xe công tác hay giao hàng), pháp nhân, phòng ban, người tạo; Duyệt dấu chọn được loại con
+dấu, pháp nhân, phòng ban, người tạo. Luồng có điều kiện và ưu tiên cao được xét trước, luồng không điều kiện là mặc định.
+Cách chọn «Lấy từ một ô trên phiếu» đổi từ ô gõ tay tên cột sang ô chọn, trong đó có «người duyệt do người tạo chọn trên
+phiếu» như app cũ. Máy chủ đưa thêm id nhân sự của người tạo và người được chọn duyệt sang bộ máy (cột gốc trên phiếu là
+id tài khoản, so thẳng thì không bao giờ khớp). Màn danh sách luồng có cột «Đang chạy» đếm số phiếu chưa xong theo từng
+luồng; phiếu đặt xe hiện một dòng «Theo luồng …» trong thẻ Tiến trình xử lý (phiếu dấu đã có sẵn). Tiện sửa cột «Áp khi»
+in «[]» thay vì «Mọi phiếu».
+
+Kiểm: máy chủ 7 bài kiểm mới xanh, cùng các tệp kiểm luồng duyệt / đặt xe / duyệt dấu 558 bài xanh trên bản sạch (một bài
+đỏ có sẵn của YCTT đã được bao-CR-564 sửa, chưa commit). Bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest phê duyệt + đặt
+xe 199 bài xanh. Bấm thử trên local bằng DEMONV: ô điều kiện đọc đúng «Loại phiếu là Giao hàng», ô chọn người duyệt có mục
+«người tạo chọn», cột Đang chạy ra 4 phiếu và 2 phiếu, phiếu giao hàng ghi đúng tên luồng ba lớp.
+
+Mã nguồn: `approval/serializer.py` (`count_running_instances`), `vehicle_booking/approval_bridge.py` và
+`seal_request/approval_bridge.py` (`entity_context`); frontend-v2 `approval/config/condition-fields.ts`,
+`components/flow-condition-picker.tsx`, `flow-scope-picker.tsx`, `approval-node-form.tsx`, `pages/approval-flow-list-page.tsx`,
+`vehicle-booking/components/booking-progress-card.tsx`, `utils/describe-booking-flow.ts`.
+Commit: erp-v2 `e0757bb9`. Deploy: DEV 03/10/2026; prod chưa.
+
+---
+
+## bao-CR-577 | Thử Đặt xe và Duyệt dấu chạy theo luồng duyệt cấu hình trên local
+- status: xong
+- date: 2026-10-03
+Đại ca hỏi Đặt xe và Duyệt dấu trên ERP đã duyệt theo luồng cấu hình chưa. Chưa: cả dev và prod chưa khai luồng
+và chưa bật công tắc, nên phiếu tạo trên ERP đang duyệt một bước theo logic viết sẵn. Mã nguồn đã nối sẵn hai loại
+phiếu với bộ máy duyệt, nên muốn đổi cách duyệt chỉ cần khai luồng và bật công tắc trên màn hình. Đại ca bảo thử
+dưới máy trước và tạo vài phiếu để tự kiểm.
+
+Đã làm dưới máy: gán vai trò cho các tài khoản DEMO, khai ba luồng (Đặt xe hai lớp; Đặt xe giao hàng ba lớp có Giám
+đốc, luồng có điều kiện; Duyệt dấu hai lớp), phân văn thư DEGO, bật công tắc, tạo 7 phiếu mẫu, thêm một vai trò thử
+«Cấu hình luồng duyệt» cho DEMONV đóng vai hành chính. Chạy thử trọn vòng qua API thì lòi ra một lỗi có sẵn của bộ máy
+duyệt: bước khai người duyệt «theo vai trò» nổ lỗi 500 vì hàm tra người duyệt nhập nhầm tệp. Lỗi có từ ngày dựng bộ
+máy và chưa bài kiểm nào chạm tới. Đã vá, sau đó cả hai loại phiếu chạy trọn vòng, chuông đến đúng người ở từng bước.
+
+Lượt hai, đại ca muốn thấy ba chuyện chạy thật: luồng hai lớp rồi mới điều phối, ca lớn thêm lớp Giám đốc, và sửa
+luồng thì phiếu đi theo. Cả ba chạy đúng: phiếu giao hàng tự rơi vào luồng ba lớp, phiếu gửi sau khi sửa luồng đi
+theo luồng mới còn phiếu gửi trước giữ luồng cũ. Đại ca chốt: duyệt dấu cũng dùng luồng cấu hình, ai có quyền thì tự
+cấu hình luồng riêng (xem bao-CR-579).
+
+Kiểm: 2 bài kiểm mới đỏ trên mã cũ, xanh trên mã vá. Bộ kịch bản kiểm cho đại ca ở doc/testcase-bao/06. Ghi nhận
+thêm, chưa tra: ô «Trao đổi» báo không tải được khi trưởng bộ phận mở phiếu đặt xe ngoài phạm vi của mình.
+
+Mã nguồn: `backend/app/modules/approval/approver_resolver.py` (`_by_role`), script
+`backend/scripts/local_test/setup_flow_test_booking_seal.py`, bài kiểm `test/backend/test_nguoi_duyet_theo_vai_tro.py`.
+Commit: erp-v2 `e0757bb9`. Deploy: DEV 03/10/2026; prod chưa. Dữ liệu thử chỉ ở local.
+
+---
+
 ## bao-CR-578 | Bảng danh sách bản erp có sẵn cột ID ở bìa trái
 - status: xong
 - date: 2026-10-03
