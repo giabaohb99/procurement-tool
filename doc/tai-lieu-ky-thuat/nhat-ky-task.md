@@ -82,7 +82,8 @@ kiện với văn bản: với Đặt xe và Duyệt dấu nó báo «chưa có 
 Đặt xe chọn được loại phiếu (đặt xe công tác hay giao hàng), pháp nhân, phòng ban, người tạo; Duyệt dấu chọn được loại con
 dấu, pháp nhân, phòng ban, người tạo. Luồng có điều kiện và ưu tiên cao được xét trước, luồng không điều kiện là mặc định.
 Cách chọn «Lấy từ một ô trên phiếu» đổi từ ô gõ tay tên cột sang ô chọn, trong đó có «người duyệt do người tạo chọn trên
-phiếu» như app cũ. Máy chủ đưa thêm id nhân sự của người tạo và người được chọn duyệt sang bộ máy (cột gốc trên phiếu là
+phiếu» như app cũ — riêng Duyệt dấu, vì form đặt xe không có ô chọn người duyệt nên Đặt xe không bày lựa chọn
+đó (khai theo ô đó là phiếu kẹt ngay chặng 1). Máy chủ đưa thêm id nhân sự của người tạo và người được chọn duyệt sang bộ máy (cột gốc trên phiếu là
 id tài khoản, so thẳng thì không bao giờ khớp). Màn danh sách luồng có cột «Đang chạy» đếm số phiếu chưa xong theo từng
 luồng; phiếu đặt xe hiện một dòng «Theo luồng …» trong thẻ Tiến trình xử lý (phiếu dấu đã có sẵn). Tiện sửa cột «Áp khi»
 in «[]» thay vì «Mọi phiếu».
@@ -92,11 +93,18 @@ Kiểm: máy chủ 7 bài kiểm mới xanh, cùng các tệp kiểm luồng duy
 xe 199 bài xanh. Bấm thử trên local bằng DEMONV: ô điều kiện đọc đúng «Loại phiếu là Giao hàng», ô chọn người duyệt có mục
 «người tạo chọn», cột Đang chạy ra 4 phiếu và 2 phiếu, phiếu giao hàng ghi đúng tên luồng ba lớp.
 
+Khai luồng trên dev theo lời đại ca (03/10): luồng #4 DATXE đổi tên thành «Đặt xe công tác» (mặc định: Trưởng bộ
+phận rồi Quản lý điều phối), thêm #5 DX-GIAO-HANG (điều kiện loại phiếu là Giao hàng, ưu tiên 10, cùng hai bước)
+và #6 DD-MAC-DINH cho Duyệt dấu (Trưởng bộ phận người tạo chọn trên phiếu rồi Giám đốc duyệt dấu); bật công tắc
+hai loại phiếu; gán vai trò thử cho DEMONV, DEMOTP, DEMOQL, DEMOAD; phân VTDEGOHOLDING làm văn thư công ty 1.
+Kiểm chỉ đọc trên dev: đặt xe công tác ra luồng #4, giao hàng ra #5, duyệt dấu ra #6, bước 1 giao DEMOTP, bước 2
+giao NSU001 hoặc DEMOQL. Em không đăng nhập thử trên dev — đó là việc của đại ca.
+
 Mã nguồn: `approval/serializer.py` (`count_running_instances`), `vehicle_booking/approval_bridge.py` và
 `seal_request/approval_bridge.py` (`entity_context`); frontend-v2 `approval/config/condition-fields.ts`,
 `components/flow-condition-picker.tsx`, `flow-scope-picker.tsx`, `approval-node-form.tsx`, `pages/approval-flow-list-page.tsx`,
 `vehicle-booking/components/booking-progress-card.tsx`, `utils/describe-booking-flow.ts`.
-Commit: erp-v2 `e0757bb9`. Deploy: DEV 03/10/2026; prod chưa.
+Commit: erp-v2 `e0757bb9`, `485b7b61`. Deploy: DEV 03/10/2026; prod chưa.
 
 ---
 
