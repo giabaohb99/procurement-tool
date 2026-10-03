@@ -102,7 +102,7 @@ dòng. Chỉ đổi giao diện ERP v2, không đụng backend.
 Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm thêm ở purchase-request-process-card.test.tsx.
 Kiểm: tsc 0 lỗi, eslint sạch, vitest src/modules/procurement 832 bài xanh.
 Commit: 4fd955a3 (chung với bao-CR-583) trên erp-v2.
-Deploy: DEV 03/10 (erp). PROD chờ đại ca gật trực tiếp với Agent 1, gom cùng đợt erp-v2.
+Deploy: DEV + PROD 03/10, main 603ed2b4 (Agent 1 cherry-pick từ 4fd955a3).
 
 ---
 
@@ -130,7 +130,7 @@ Mã nguồn: `backend/app/modules/purchase_request/option_service.py` (`update_o
 `test/backend/test_phuong_an_0_thu_mua_sua_khoi_phuc_cr583.py` (16 bài), `purchase-request-option-details.test.ts`,
 thêm bài trong `purchase-request-choose-card.test.tsx` và `purchase-request-process-card.test.tsx`.
 Commit: 4fd955a3 trên erp-v2.
-Deploy: DEV 03/10 (api, celery-worker, celery-beat, erp; không có migration). PROD chờ đại ca gật trực tiếp với Agent 1; trên prod công tắc pr_options_enabled đang tắt nên chưa ai thấy.
+Deploy: DEV + PROD 03/10, main 603ed2b4 (Agent 1 cherry-pick từ 4fd955a3, không có migration). Trên prod công tắc pr_options_enabled đang tắt nên người dùng chưa thấy.
 
 ---
 
