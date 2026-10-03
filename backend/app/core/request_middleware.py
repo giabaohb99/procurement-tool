@@ -35,6 +35,7 @@ from app.core.logging_codes import ACTOR_KIND_USER, SOURCE_API
 from app.core.logging_policy import (MAX_BODY_BYTES, MAX_ERROR_DETAIL_BYTES, MAX_PATH,
                                      MAX_QUERY_STRING, MAX_REFERER, MAX_ROUTE,
                                      mask_error_detail, mask_payload, redact_raw_inputs,
+                                     sensitive_keys_for_path,
                                      should_capture_response, should_log_request,
                                      should_skip_by_result, summarize_success)
 from app.core.request_context import RequestContext, new_request_id, reset_context, set_context
@@ -116,7 +117,7 @@ def _read_request_body(request, content_type: str) -> dict | None:
     return None
 
 
-def _parse_body(raw: bytes, content_type: str) -> dict | None:
+def _parse_body(raw: bytes, content_type: str, path: str = "") -> dict | None:
     if not raw:
         return None
     if len(raw) > MAX_BODY_BYTES:
@@ -124,12 +125,13 @@ def _parse_body(raw: bytes, content_type: str) -> dict | None:
     if not content_type.startswith("application/json"):
         return {"content_type": content_type or "?", "size": len(raw)}
     try:
-        return mask_payload(json.loads(raw))
+        return mask_payload(json.loads(raw), sensitive_keys_for_path(path))
     except (ValueError, UnicodeDecodeError):
         return {"_unparsed": True, "size": len(raw)}
 
 
-def _summarize_response(raw: bytes, status_code: int) -> tuple[dict | None, str]:
+def _summarize_response(raw: bytes, status_code: int,
+                        path: str = "") -> tuple[dict | None, str]:
     """Thân trả về + mã lỗi, theo Q9.
 
     2xx giữ `message` + phần ĐỊNH DANH của `data` (`summarize_success`). Bản đầu
@@ -157,7 +159,8 @@ def _summarize_response(raw: bytes, status_code: int) -> tuple[dict | None, str]
             brief["data"] = data
         return brief, ""
     error = parsed.get("error") if isinstance(parsed.get("error"), dict) else {}
-    return redact_raw_inputs(mask_payload(parsed)), str(error.get("code") or "")
+    return (redact_raw_inputs(mask_payload(parsed, sensitive_keys_for_path(path))),
+            str(error.get("code") or ""))
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -183,7 +186,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 #  (`_CachedRequest.wrapped_receive`), nên đọc ở đây KHÔNG làm
                 #  endpoint nhận thân rỗng — bẫy 4 ở §6 đã được thư viện xử.
                 try:
-                    request_body = _parse_body(await request.body(), content_type)
+                    request_body = _parse_body(await request.body(), content_type, path)
                 except Exception:  # noqa: BLE001 — thân hỏng thì vẫn phải chạy tiếp
                     request_body = None
 
@@ -224,7 +227,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                         response_body = {"_too_large": True, "size": oversize}
                     else:
                         response_body, error_code = _summarize_response(raw,
-                                                                       response.status_code)
+                                                                       response.status_code,
+                                                                       path)
                 self._write(ctx, method=method, path=path, request=request,
                             request_body=request_body, status_code=response.status_code,
                             response_body=response_body, error_code=error_code,

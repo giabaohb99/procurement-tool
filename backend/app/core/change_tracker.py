@@ -32,6 +32,7 @@ import logging
 from dataclasses import dataclass, field as dc_field
 from datetime import date, datetime
 from decimal import Decimal
+from functools import lru_cache
 
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
@@ -69,12 +70,39 @@ NOISE_COLUMNS = frozenset({"updated_at"})
 #  thêm một cột bí mật vào `tab_user` sau này thì nó tự động an toàn, không phải
 #  nhớ đi khai thêm. `email` được phép vì đổi email đăng nhập là đúng loại việc
 #  cần để lại dấu, và nó không phải bí mật.
+#
+#  Hai bảng con của hồ sơ nhân sự (người báo tin, hộ gia đình) cũng theo luật này
+#  (HRM §7.10, 02/10/2026): cả hai thuộc TRỌN nhóm nhạy cảm — tên, số điện thoại,
+#  địa chỉ, ngày sinh, số CCCD của người thân. Chỉ giữ cột cho biết «thêm/bớt một
+#  người, quan hệ gì», không giữ người đó là ai.
+_PEOPLE_ROW_SAFE_COLUMNS = frozenset({
+    "id", "employee_id", "relation", "gender", "sort_order", "created_by", "updated_by",
+})
 TABLE_FIELD_ALLOWLIST = {
     "tab_user": frozenset({
         "id", "email", "employee_id", "is_active", "notify_email",
         "token_version", "avatar_file_id", "created_by", "updated_by",
     }),
+    "tab_employee_contact": _PEOPLE_ROW_SAFE_COLUMNS,
+    "tab_employee_family": _PEOPLE_ROW_SAFE_COLUMNS,
 }
+
+
+@lru_cache(maxsize=1)
+def _table_field_denylist() -> dict[str, frozenset]:
+    """Luật THUẬN: cho hết, trừ những cột nêu tên — dùng khi bảng có nhiều cột
+    thường cần tra giá trị (đổi phòng ban, chức vụ của nhân viên) và chỉ một nhóm
+    nhỏ cột là bí mật.
+
+    `tab_employee`: đúng 15 cột `employee/sensitive.SENSITIVE_FIELDS` — CÙNG một
+    danh sách đang che ở API, CSV và trợ lý AI, để thêm một trường vào đó là nhật ký
+    tự che theo. Che theo BẢNG chứ không theo tên cột, vì `tax_code`,
+    `bank_account_no` của nhà cung cấp phải giữ giá trị (đổi tài khoản nhận tiền là
+    thứ cần dấu vết nhất). Nhập muộn: tầng `core` không kéo phân hệ lúc khởi động.
+    """
+    from app.modules.employee.sensitive import SENSITIVE_FIELDS
+
+    return {"tab_employee": frozenset(SENSITIVE_FIELDS)}
 
 
 @dataclass
@@ -125,6 +153,8 @@ def _is_allowed(table_name: str, column: str) -> bool:
     """Cột này có được ghi GIÁ TRỊ không (tên cột thì luôn được ghi)."""
     allow = TABLE_FIELD_ALLOWLIST.get(table_name)
     if allow is not None and column not in allow:
+        return False
+    if column in _table_field_denylist().get(table_name, ()):
         return False
     return not is_sensitive_column(column)
 

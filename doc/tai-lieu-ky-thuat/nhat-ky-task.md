@@ -617,6 +617,27 @@ Mã nguồn: frontend-v2 `procurement/{config/customs-sections.ts, routes.tsx, p
 
 ---
 
+## duoc-CR-554 | Nhật ký hệ thống: che số tài khoản, CCCD, mã số thuế và các trường nhạy cảm khác của hồ sơ nhân sự
+- status: xong
+- date: 2026-10-02
+Trước đây mỗi lần lưu hồ sơ nhân sự, nhật ký hệ thống chép nguyên văn số tài khoản ngân hàng, số CCCD,
+mã số thuế, ngày sinh, địa chỉ nhà vào hai bảng nhật ký (nhật ký lượt gọi API và nhật ký thay đổi dữ liệu).
+Ai có quyền xem nhật ký là đọc được, không cần quyền xem nhóm nhạy cảm của hồ sơ. Nay cả hai bảng đều che
+15 trường nhạy cảm của hồ sơ — cùng danh sách đang che ở màn hình, tệp xuất và trợ lý AI — nhưng vẫn ghi TÊN
+ô đã đổi, nên vẫn tra được ai sửa số tài khoản của ai, lúc nào. Danh sách người báo tin và thành viên hộ gia
+đình thì che cả tên, số điện thoại, địa chỉ, CCCD; chỉ giữ quan hệ. Ô cùng tên của nhà cung cấp (mã số thuế,
+số tài khoản) vẫn ghi đủ giá trị, vì đổi tài khoản nhận tiền của nhà cung cấp là thao tác cần dấu vết nhất.
+Dòng nhật ký ghi trước ngày 02/10 vẫn còn nguyên văn, chưa dọn.
+
+Kiểm: 43 bài kiểm máy chủ mới (chạy trên mã cũ thì 22 bài đỏ đúng ở chỗ lộ), cùng các bài kiểm nhật ký và
+hồ sơ nhân sự hiện có, tổng 768 bài xanh. Chưa commit.
+
+Mã nguồn: backend `core/logging_policy.py` (`sensitive_keys_for_path`, `mask_payload`),
+`core/request_middleware.py`, `core/change_tracker.py` (`TABLE_FIELD_ALLOWLIST`, `_table_field_denylist`) ·
+bài kiểm `test/backend/test_nhat_ky_che_ho_so_nhan_su.py`
+
+---
+
 ## duoc-CR-553 | Luồng duyệt: thêm cách chọn người duyệt «Quản lý trực tiếp người nộp» (K3)
 - status: xong
 - date: 2026-10-01

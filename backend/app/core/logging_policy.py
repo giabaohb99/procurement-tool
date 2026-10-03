@@ -15,6 +15,7 @@ Ba nhóm luật sống chung ở đây vì cả ba đều là câu trả lời c
 
 Tài liệu gốc: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §6.
 """
+import re
 
 MASKED = "***"
 
@@ -202,6 +203,38 @@ SENSITIVE_KEY_MARKERS = (
 )
 
 
+#  ⚠️ CHE THEO ĐƯỜNG DẪN — nhóm nhạy cảm của HỒ SƠ NHÂN SỰ (HRM §7.10, 02/10/2026).
+#  Trước đó `PATCH /api/employees/{id}` lưu nguyên văn số tài khoản ngân hàng, số
+#  CCCD, mã số thuế vào `request_body`: ai có quyền xem nhật ký là đọc được, không
+#  cần khóa `employee_sensitive` — đúng đường vòng mà `employee/sensitive.py` dựng
+#  ra để chặn ở API, CSV và trợ lý AI.
+#
+#  Che theo đường dẫn chứ KHÔNG gộp vào `SENSITIVE_BODY_KEYS`: `tax_code` và
+#  `bank_account_no` cũng là ô của NHÀ CUNG CẤP, mà đổi tài khoản nhận tiền của
+#  nhà cung cấp lại chính là thao tác cần để lại dấu nhất (kiểu gian lận kinh điển).
+#  Che toàn hệ là tự bịt mắt ở đúng chỗ đó.
+#
+#  `items` chỉ che ở hai cửa bảng con (người báo tin, hộ gia đình) — cả hai bảng
+#  thuộc trọn nhóm nhạy cảm. Ở `PUT /{id}/departments` thì `items` là phòng ban
+#  kiêm nhiệm, phải giữ để tra.
+_EMPLOYEE_PEOPLE_PATH = re.compile(r"^/api/employees/[^/]+/(contacts|families)/?$")
+_EMPLOYEE_PATH_PREFIX = "/api/employees"
+
+
+def sensitive_keys_for_path(path: str) -> frozenset:
+    """Những khóa phải che THÊM với riêng đường dẫn này (ngoài luật chung)."""
+    if not (path == _EMPLOYEE_PATH_PREFIX or path.startswith(_EMPLOYEE_PATH_PREFIX + "/")):
+        return frozenset()
+    #  Nhập muộn: `employee.sensitive` là tệp thuần không phụ thuộc gì, nhưng tầng
+    #  `core` không nên kéo phân hệ vào lúc khởi động chỉ để đọc một hằng số.
+    from app.modules.employee.sensitive import SENSITIVE_FIELDS
+
+    keys = frozenset(SENSITIVE_FIELDS)
+    if _EMPLOYEE_PEOPLE_PATH.match(path):
+        keys |= {"items"}
+    return keys
+
+
 def is_sensitive_key(name) -> bool:
     """Tên khóa (thân request) hay tên cột (P4) này có cấm ghi giá trị không."""
     low = str(name or "").lower()
@@ -215,8 +248,11 @@ def is_sensitive_column(name: str) -> bool:
     return is_sensitive_key(name)
 
 
-def mask_payload(value, _depth: int = 0):
+def mask_payload(value, extra_keys: frozenset = frozenset(), _depth: int = 0):
     """Chép sâu một cấu trúc JSON, thay giá trị của khóa nhạy cảm bằng `***`.
+
+    `extra_keys` — khóa che thêm theo NGỮ CẢNH (xem `sensitive_keys_for_path`),
+    so khớp chính xác, áp ở mọi tầng lồng.
 
     Chép chứ không sửa tại chỗ: `value` là body người dùng vừa gửi, endpoint
     còn đọc nó sau middleware.
@@ -225,11 +261,12 @@ def mask_payload(value, _depth: int = 0):
         return MASKED
     if isinstance(value, dict):
         return {
-            key: (MASKED if is_sensitive_key(key) else mask_payload(val, _depth + 1))
+            key: (MASKED if is_sensitive_key(key) or key in extra_keys
+                  else mask_payload(val, extra_keys, _depth + 1))
             for key, val in value.items()
         }
     if isinstance(value, list):
-        return [mask_payload(item, _depth + 1) for item in value]
+        return [mask_payload(item, extra_keys, _depth + 1) for item in value]
     return value
 
 
