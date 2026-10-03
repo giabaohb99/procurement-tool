@@ -9,6 +9,7 @@ import type {
   PrAssignSupplierPayload,
   PrOptionManualPayload,
   PrOptionSupplierPayload,
+  PrOptionDetailsPayload,
   PrOptionUpdatePayload,
 } from '../types/purchase-request-options'
 
@@ -141,6 +142,39 @@ export function useSetPrOptionSupplier(prId: number) {
     }) => purchaseRequestOptionApi.setSupplier(prId, itemId, optionId, payload),
     onSuccess: () => {
       toast.success('Đã áp nhà cung cấp vào phương án')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
+/** bao-CR-583 — sửa thông tin phương án 0 / nhập tay. */
+export function useUpdatePrOptionDetails(prId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      itemId,
+      optionId,
+      payload,
+    }: {
+      itemId: number
+      optionId: number
+      payload: PrOptionDetailsPayload
+    }) => purchaseRequestOptionApi.updateDetails(prId, itemId, optionId, payload),
+    onSuccess: () => {
+      toast.success('Đã cập nhật phương án')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
+/** bao-CR-583 — «Khôi phục ban đầu» cho phương án 0. */
+export function useResetPrOptionZero(prId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemId, optionId }: { itemId: number; optionId: number }) =>
+      purchaseRequestOptionApi.resetZero(prId, itemId, optionId),
+    onSuccess: () => {
+      toast.success('Đã khôi phục Phương án 0 về như dòng yêu cầu')
       void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
     },
   })

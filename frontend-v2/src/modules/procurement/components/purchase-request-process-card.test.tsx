@@ -37,6 +37,7 @@ vi.mock('@/modules/production/hooks/use-suppliers', () => ({
 
 vi.mock('../hooks/use-purchase-request-support', () => ({
   usePurchaseRequestItemGroups: () => ({ data: { items: [] } }),
+  usePurchaseRequestProducts: () => ({ data: { items: [] }, isLoading: false, isError: false }),
 }))
 
 const noopMutation = { mutate: vi.fn(), isPending: false }
@@ -53,6 +54,8 @@ vi.mock('../hooks/use-purchase-request-options', () => ({
   useUpdateOption: () => noopMutation,
   useRemoveOption: () => noopMutation,
   useCompletePrOptions: () => ({ mutate: completeMutate, isPending: false }),
+  useUpdatePrOptionDetails: () => noopMutation,
+  useResetPrOptionZero: () => noopMutation,
 }))
 
 function buildOption(overrides: Partial<PurchaseRequestOption> = {}): PurchaseRequestOption {
@@ -232,6 +235,26 @@ describe('PurchaseRequestProcessCard', () => {
     expect(screen.queryByRole('button', { name: 'Chốt' })).toBeNull()
   })
 
+  // Đại ca 03/10/2026: «cho nút bỏ lọc filter» ở khối tra kho khảo sát của màn xử lý.
+  it('clears supplier, item group and keyword in one click with «Bỏ lọc»', () => {
+    mockUser = { employee_id: 77, emp_code: 'NSTM01' }
+    grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
+
+    renderCard(buildPurchaseRequest())
+
+    // Mặc định đã lọc theo phân loại của dòng ('Bao bì') nên nút có sẵn.
+    const keyword = screen.getByPlaceholderText('Tìm theo tên SP / mã / NCC...')
+    fireEvent.change(keyword, { target: { value: 'decal' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ lọc' }))
+
+    expect(keyword).toHaveValue('')
+    // Bỏ hết điều kiện thì backend không trả gì — màn quay về câu gợi ý, và nút tự ẩn.
+    expect(screen.getByText(/Chọn NCC, phân loại hoặc gõ từ khóa/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Bỏ lọc' })).toBeNull()
+    // Lối quay lại gợi ý theo dòng vẫn còn.
+    expect(screen.getByRole('button', { name: 'Về phân loại dòng' })).toBeInTheDocument()
+  })
+
   it('completes directly when every line of mine already has options', () => {
     mockUser = { employee_id: 77, emp_code: 'NSTM01' }
     grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
@@ -359,5 +382,57 @@ describe('PurchaseRequestProcessCard', () => {
 
     expect(screen.getByText(/Dòng đã đủ 5 phương án/)).toBeInTheDocument()
     expect(screen.queryByText(/Thêm phương án từ kết quả khảo sát/)).toBeNull()
+  })
+
+  // bao-CR-583: «phương án 0 xem như phương án nhập tay và chỉnh sửa lại được» — sửa ngay ở màn
+  // xử lý. Phương án khảo sát thì không (thông số là kết quả khảo sát); phương án 0 không gỡ được.
+  describe('editing options on the processing screen (bao-CR-583)', () => {
+    const optionZero = () =>
+      buildOption({ id: 70, source: 3, source_label: 'Yêu cầu gốc', public_id: 0, display_label: 'Phương án 0',
+        product_survey_line_id: null, supplier_code: '', supplier_name: '' })
+    const manual = () =>
+      buildOption({ id: 72, source: 2, source_label: 'Nhập tay', public_id: 2, display_label: 'Phương án 2',
+        product_survey_line_id: null })
+
+    it('offers edit on option zero and manual options only, and never a remove on option zero', () => {
+      mockUser = { employee_id: 77, emp_code: 'NSTM01' }
+      grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
+      mockOptions = [optionZero(), buildOption(), manual()]
+
+      renderCard(buildPurchaseRequest())
+
+      expect(screen.getByRole('button', { name: 'Sửa Phương án 0' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Sửa Phương án 2' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Sửa Phương án 1' })).toBeNull()
+      expect(screen.getAllByRole('button', { name: 'Gỡ phương án' })).toHaveLength(2)
+    })
+
+    it('opens the full editor; only option zero gets the restore button', () => {
+      mockUser = { employee_id: 77, emp_code: 'NSTM01' }
+      grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
+      mockOptions = [optionZero(), manual()]
+      renderCard(buildPurchaseRequest())
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sửa Phương án 0' }))
+      expect(screen.getByRole('button', { name: 'Khôi phục ban đầu' })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Hủy' }))
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sửa Phương án 2' }))
+      expect(screen.getByRole('heading', { name: 'Sửa Phương án 2' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Khôi phục ban đầu' })).toBeNull()
+    })
+
+    it('hides the editor without supplier read, and once the line is completed', () => {
+      mockUser = { employee_id: 77, emp_code: 'NSTM01' }
+      grantedPermissions = ['purchase_request:read', 'purchase_request:write']
+      mockOptions = [optionZero(), manual()]
+      const { unmount } = renderCard(buildPurchaseRequest())
+      expect(screen.queryByRole('button', { name: /^Sửa Phương án/ })).toBeNull()
+      unmount()
+
+      grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
+      renderCard(buildPurchaseRequest({ items: [buildItem({ options_done: true })] }))
+      expect(screen.queryByRole('button', { name: /^Sửa Phương án/ })).toBeNull()
+    })
   })
 })

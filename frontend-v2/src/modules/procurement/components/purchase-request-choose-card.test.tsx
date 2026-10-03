@@ -37,6 +37,8 @@ const reopenMutate = vi.fn()
 const setSupplierMutate = vi.fn()
 const updateOptionMutate = vi.fn()
 const assignBulkMutate = vi.fn()
+const updateDetailsMutate = vi.fn()
+const resetZeroMutate = vi.fn()
 vi.mock('../hooks/use-purchase-request-options', () => ({
   usePurchaseRequestItemOptions: (_prId: number, itemId: number) => ({
     // Khớp `enabled: itemId > 0` của hook thật. Đợt 2 mở rộng bỏ chiêu tắt
@@ -50,7 +52,12 @@ vi.mock('../hooks/use-purchase-request-options', () => ({
   useSetPrOptionSupplier: () => ({ mutate: setSupplierMutate, isPending: false }),
   useUpdateOption: () => ({ mutate: updateOptionMutate, isPending: false }),
   useAssignPrSupplierBulk: () => ({ mutate: assignBulkMutate, isPending: false }),
+  useUpdatePrOptionDetails: () => ({ mutate: updateDetailsMutate, isPending: false }),
+  useResetPrOptionZero: () => ({ mutate: resetZeroMutate, isPending: false }),
 }))
+
+const confirmMock = vi.fn()
+vi.mock('@/shared/ui/confirm-dialog', () => ({ confirm: (...args: unknown[]) => confirmMock(...args) }))
 
 vi.mock('@/modules/production/hooks/use-suppliers', () => ({
   useSuppliers: () => ({
@@ -205,6 +212,9 @@ beforeEach(() => {
   setSupplierMutate.mockClear()
   updateOptionMutate.mockClear()
   assignBulkMutate.mockClear()
+  updateDetailsMutate.mockClear()
+  resetZeroMutate.mockClear()
+  confirmMock.mockReset()
   window.localStorage.clear()
 })
 
@@ -289,7 +299,7 @@ describe('PurchaseRequestChooseCard', () => {
     expect(screen.queryByRole('button', { name: 'Mở lại cho NSTM xử lý' })).toBeNull()
     expect(screen.getByText('Đã chọn')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Sửa giá / NCC của Phương án 1' }),
+      screen.getByRole('button', { name: 'Sửa giá của Phương án 1' }),
     ).toBeInTheDocument()
   })
 
@@ -351,21 +361,21 @@ describe('PurchaseRequestChooseCard', () => {
     ).toBeInTheDocument()
   })
 
-  it('sends the supplier assignment (not a plain update) when the edit dialog saves an NCC', () => {
-    // Phương án 0: điền NCC phải đi đường PATCH .../supplier — PATCH thường bị
-    // backend cấm đổi NCC. Giá không đổi thì payload không đèo snap_price_by_volume.
+  it('saves an NCC typed on option zero through its own door, sending only what changed', () => {
+    // bao-CR-583: phương án 0 có hộp riêng (PATCH .../zero) gánh cả NCC lẫn mọi ô khác; đường
+    // .../supplier và PATCH thường không còn được gọi cho phương án 0. Giá không đổi thì không gửi.
     actAsPurchasingAssignee()
     mockOptions = [buildOptionZero()]
 
     renderCard(buildPurchaseRequest())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sửa giá / NCC của Phương án 0' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa Phương án 0' }))
     fireEvent.change(screen.getByPlaceholderText('Hoặc gõ tên NCC ngoài danh mục'), {
       target: { value: 'CÔNG TY MỚI' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
 
-    expect(setSupplierMutate).toHaveBeenCalledWith(
+    expect(updateDetailsMutate).toHaveBeenCalledWith(
       {
         itemId: 5,
         optionId: 70,
@@ -373,7 +383,44 @@ describe('PurchaseRequestChooseCard', () => {
       },
       expect.anything(),
     )
+    expect(setSupplierMutate).not.toHaveBeenCalled()
     expect(updateOptionMutate).not.toHaveBeenCalled()
+  })
+
+  it('option zero edits more than price and supplier, and refuses an empty save', () => {
+    actAsPurchasingAssignee()
+    mockOptions = [buildOptionZero()]
+    renderCard(buildPurchaseRequest())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa Phương án 0' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(updateDetailsMutate).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'VAT' }), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Có mẫu' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(updateDetailsMutate).toHaveBeenCalledWith(
+      { itemId: 5, optionId: 70, payload: { snap_vat: 10, snap_sample_ready: true } },
+      expect.anything(),
+    )
+  })
+
+  it('restores option zero only after the user confirms', async () => {
+    actAsPurchasingAssignee()
+    mockOptions = [buildOptionZero()]
+    renderCard(buildPurchaseRequest())
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa Phương án 0' }))
+
+    confirmMock.mockResolvedValueOnce(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Khôi phục ban đầu' }))
+    await vi.waitFor(() => expect(confirmMock).toHaveBeenCalledTimes(1))
+    expect(resetZeroMutate).not.toHaveBeenCalled()
+
+    confirmMock.mockResolvedValueOnce(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Khôi phục ban đầu' }))
+    await vi.waitFor(() =>
+      expect(resetZeroMutate).toHaveBeenCalledWith({ itemId: 5, optionId: 70 }, expect.anything()),
+    )
   })
 
   it('only offers a price edit for a survey-sourced option', () => {
@@ -384,7 +431,7 @@ describe('PurchaseRequestChooseCard', () => {
 
     renderCard(buildPurchaseRequest())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sửa giá / NCC của Phương án 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa giá của Phương án 1' }))
     expect(screen.queryByPlaceholderText('Hoặc gõ tên NCC ngoài danh mục')).toBeNull()
     fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '15000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))

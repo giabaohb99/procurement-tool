@@ -18,7 +18,7 @@ from .constants import PR_OPTION_SOURCE_LABELS
 from .model import (STATUS_AFTER_APPROVE, STATUS_AFTER_DISPATCH,
                     PurchaseRequest, PurchaseRequestItem)
 from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRAssignSupplierIn, PRCreate,
-                     PROptionCompleteIn, PROptionManualIn, PROptionSupplierIn,
+                     PROptionCompleteIn, PROptionManualIn, PROptionDetailsIn, PROptionSupplierIn,
                      PROptionSurveyIn, PROptionUpdateIn, PRUpdate,
                      ReasonIn, RejectIn, TransferDeptIn, UrgentIn)
 
@@ -1277,6 +1277,32 @@ def set_option_supplier(pid: int, item_id: int, oid: int, data: PROptionSupplier
     pr, item = _open_line(db, pid, item_id, user, "write")
     o = option_service.set_option_supplier(db, pr, item, oid, data, user.id)
     return success(_out_option(db, o, True), "Đã áp nhà cung cấp vào phương án")
+
+
+@router.patch("/{pid}/items/{item_id}/options/{oid}/details")
+def update_option_details(pid: int, item_id: int, oid: int, data: PROptionDetailsIn,
+                          db: Session = Depends(get_db),
+                          user=Depends(require("purchase_request", "write"))):
+    """bao-CR-583 — sửa thông tin PHƯƠNG ÁN 0 / NHẬP TAY (tên hàng, mã VTBB, NCC, giá, giao
+    hàng…), ở màn xử lý lẫn màn chọn. Cùng cổng với `set_option_supplier`: write +
+    supplier.read, đúng dòng mình phụ trách (hoặc người xem hết), dùng được cả sau khi dòng
+    đã chốt (khe H.10.4)."""
+    if not user_has_permission(db, user, "supplier", "read"):
+        raise HTTPException(403, "Cần quyền xem nhà cung cấp để sửa phương án")
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    o = option_service.update_option_details(db, pr, item, oid, data, user.id)
+    return success(_out_option(db, o, True), f"Đã cập nhật {o.display_label}")
+
+
+@router.post("/{pid}/items/{item_id}/options/{oid}/zero/reset")
+def reset_option_zero(pid: int, item_id: int, oid: int, db: Session = Depends(get_db),
+                      user=Depends(require("purchase_request", "write"))):
+    """bao-CR-583 — «Khôi phục ban đầu»: phương án 0 về đúng như dòng yêu cầu lúc sinh."""
+    if not user_has_permission(db, user, "supplier", "read"):
+        raise HTTPException(403, "Cần quyền xem nhà cung cấp để khôi phục phương án 0")
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    o = option_service.reset_option_zero(db, pr, item, oid, user.id)
+    return success(_out_option(db, o, True), "Đã khôi phục Phương án 0 về như dòng yêu cầu")
 
 
 @router.post("/{pid}/options/assign-supplier")

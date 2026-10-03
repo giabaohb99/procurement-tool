@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  FilterX,
   Loader2,
   Lock,
   PenLine,
@@ -50,7 +51,13 @@ import type {
   PrOptionManualPayload,
   PurchaseRequestOption,
 } from '../types/purchase-request-options'
-import { isPrOptionStageOpen, MAX_OPTIONS_PER_LINE } from '../types/purchase-request-options'
+import {
+  isPrOptionStageOpen,
+  MAX_OPTIONS_PER_LINE,
+  PR_OPTION_SOURCE_ORIGINAL,
+  PR_OPTION_SOURCE_SURVEY,
+} from '../types/purchase-request-options'
+import { PurchaseRequestOptionEditDialog } from './purchase-request-option-edit-dialog'
 
 /** Trùng cỡ trang của màn xử lý YCBG (CR-222) — 8 dòng khảo sát mỗi trang. */
 const AVAILABLE_PAGE_SIZE = 8
@@ -364,6 +371,13 @@ function OptionsTable({
 }) {
   const removeMutation = useRemoveOption(purchaseRequestId)
   const updateMutation = useUpdateOption(purchaseRequestId)
+  //  bao-CR-583: phương án 0 / nhập tay sửa được ngay ở màn xử lý (cần quyền xem NCC).
+  const canEditDetails = editable && ctx.canSeeSupplier
+  const [editingOption, setEditingOption] = useState<PurchaseRequestOption | null>(null)
+  const suppliersQuery = useSuppliers(
+    { page_size: 1000, supplier_type: 'goods', is_active: true },
+    { enabled: canEditDetails },
+  )
 
   // Dùng DataTable để có kéo giãn + đổi vị trí cột. Mọi cột `hideable: false`
   // là CỐ Ý: mỗi dòng YCMH một bảng con — đủ điều kiện đó DataTable mới giấu
@@ -500,37 +514,69 @@ function OptionsTable({
       base.push({
         key: 'actions',
         header: '',
-        width: 56,
+        width: 88,
         hideable: false,
         cell: (option) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            title={
-              option.is_chosen
-                ? 'Phương án đang được chốt — gỡ sẽ bỏ lựa chọn đó'
-                : 'Gỡ phương án'
-            }
-            onClick={() => removeMutation.mutate({ itemId: item.id, optionId: option.id })}
-          >
-            <Trash2 />
-          </Button>
+          <div className="flex items-center gap-0.5">
+            {/* bao-CR-583: «phương án 0 xem như phương án nhập tay và chỉnh sửa lại được» —
+                phương án khảo sát không sửa ở đây (thông số là kết quả khảo sát). */}
+            {canEditDetails && option.source !== PR_OPTION_SOURCE_SURVEY && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Sửa ${option.display_label || `Phương án ${option.public_id}`}`}
+                title="Sửa thông tin phương án"
+                onClick={() => setEditingOption(option)}
+              >
+                <PenLine />
+              </Button>
+            )}
+            {/* Phương án 0 là chính dòng yêu cầu — backend không cho gỡ, nên không bày nút. */}
+            {option.source !== PR_OPTION_SOURCE_ORIGINAL && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive"
+                title={
+                  option.is_chosen
+                    ? 'Phương án đang được chốt — gỡ sẽ bỏ lựa chọn đó'
+                    : 'Gỡ phương án'
+                }
+                onClick={() => removeMutation.mutate({ itemId: item.id, optionId: option.id })}
+              >
+                <Trash2 />
+              </Button>
+            )}
+          </div>
         ),
       })
     }
     return base
-  }, [editable, item.id, ctx.canSeeSupplier, removeMutation, updateMutation])
+  }, [editable, canEditDetails, item.id, ctx.canSeeSupplier, removeMutation, updateMutation])
 
   return (
+    <>
     <DataTable
       columns={columns}
       rows={options}
       getRowId={(option) => option.id}
       storageKey="procurement.pr-process.options"
       emptyMessage="Chưa có phương án nào cho dòng hàng này."
+      //  Bảng con theo từng dòng — nhãn «Phương án n» đã là định danh, cột ID (bao-CR-578) thừa.
+      idColumn={false}
     />
+    {editingOption && (
+      <PurchaseRequestOptionEditDialog
+        purchaseRequestId={purchaseRequestId}
+        itemId={item.id}
+        option={editingOption}
+        suppliers={suppliersQuery.data?.items ?? []}
+        onClose={() => setEditingOption(null)}
+      />
+    )}
+    </>
   )
 }
 
@@ -588,6 +634,8 @@ function AvailableSurveyLinesPicker({
 
   const effectiveSupplier = supplierCode === ALL_SUPPLIERS ? '' : supplierCode
   const hasCriteria = !!effectiveSupplier || !!itemGroup || !!debouncedSearch.trim()
+  //  Theo ô nhập thô (không đợi hoãn) để nút «Bỏ lọc» hiện ngay khi vừa gõ.
+  const hasActiveFilter = !!effectiveSupplier || !!itemGroup || !!search.trim()
   const availableQuery = usePrAvailableSurveyLines(
     purchaseRequestId,
     item.id,
@@ -804,6 +852,28 @@ function AvailableSurveyLinesPicker({
             setPage(1)
           }}
         />
+
+        {/* Bỏ cả ba ô một lần (đại ca 03/10/2026). Bỏ hết thì backend không trả gì (tránh
+            bung cả kho khảo sát), nên màn quay về câu gợi ý — nút «Về phân loại dòng» hiện
+            lại để lấy gợi ý theo dòng. */}
+        {hasActiveFilter && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+            title="Bỏ mọi bộ lọc NCC / phân loại / từ khóa"
+            onClick={() => {
+              setSupplierCode(ALL_SUPPLIERS)
+              setItemGroup('')
+              setSearch('')
+              setPage(1)
+            }}
+          >
+            <FilterX />
+            Bỏ lọc
+          </Button>
+        )}
       </div>
 
       {!hasCriteria ? (

@@ -460,6 +460,122 @@ def set_option_supplier(db: Session, pr: PurchaseRequest, item: PurchaseRequestI
     return o
 
 
+#  bao-CR-583 — các ô sửa được trên PHƯƠNG ÁN 0 / NHẬP TAY (ngoài NCC và mã VTBB xử lý riêng).
+DETAIL_EDITABLE_FIELDS = ("snap_product_name", "snap_price_by_volume", "snap_quote_unit", "snap_moq",
+                        "snap_volume_range", "snap_vat", "snap_origin", "snap_delivery_time",
+                        "snap_delivery_place", "snap_shipping_cost", "snap_sample_ready", "nstm_note")
+
+
+def _get_option_zero(db: Session, item: PurchaseRequestItem, oid: int) -> PurchaseRequestItemOption:
+    o = get_option(db, item.id, oid)
+    if o.source != PR_OPT_ORIGINAL:
+        raise HTTPException(400, "Chỉ Phương án 0 mới khôi phục được về như dòng yêu cầu")
+    return o
+
+
+def _get_detail_editable_option(db: Session, item: PurchaseRequestItem, oid: int) -> PurchaseRequestItemOption:
+    o = get_option(db, item.id, oid)
+    if o.source not in (PR_OPT_ORIGINAL, PR_OPT_MANUAL):
+        raise HTTPException(400, "Phương án từ khảo sát chỉ sửa được giá — thông số là kết quả khảo sát")
+    return o
+
+
+def _check_catalog_code(db: Session, code: str) -> None:
+    from app.modules.product.model import Product
+    prod = db.query(Product).filter(Product.code == code).first()
+    if prod is None:
+        raise HTTPException(400, f"Mã VTBB «{code}» không có trong danh mục sản phẩm")
+    if not prod.is_active:
+        raise HTTPException(400, f"Mã VTBB «{code}» đã ngừng dùng")
+
+
+def _sync_line_code(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem, code: str,
+                    changes: list[str]) -> None:
+    """Phương án 0 ĐANG ĐƯỢC CHỌN = mua đúng dòng, nên mã của nó phải là mã của dòng — lập
+    đơn đọc mã ở DÒNG (bao-CR-568). Đi đúng cổng `_set_item_product_code`: dòng chưa lên
+    ĐMH, mã có trong danh mục, không trùng dòng khác trên phiếu."""
+    from . import service
+    rows = {r.id: r for r in service.items_of(db, pr.id)}
+    row = rows.get(item.id, item)
+    service._set_item_product_code(db, rows, row, code, changes)
+
+
+def update_option_details(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem, oid: int,
+                          data, user_id: int) -> PurchaseRequestItemOption:
+    """bao-CR-583 (đại ca chốt 03/10/2026) — sửa thông tin PHƯƠNG ÁN 0 và phương án NHẬP TAY,
+    ở màn xử lý (NSTM) lẫn màn chọn (thu mua). Đại ca: «phương án 0 xem như phương án nhập tay
+    và chỉnh sửa lại được» — nó sinh từ dòng yêu cầu nên thường thiếu mã VTBB, NCC, giá thật.
+
+    Cùng khe nới H.10.4 với `set_option_supplier`: KHÔNG chặn theo `options_done`. Soát hết
+    rồi mới ghi — mã sai / dòng đã lên ĐMH là từ chối cả gói, không lưu nửa vời.
+    Muốn quay lại như lúc sinh thì dùng `reset_option_zero`."""
+    o = _get_detail_editable_option(db, item, oid)
+    changes: list[str] = []
+
+    if data.snap_internal_code is not None:
+        code = data.snap_internal_code.strip()
+        if code != (o.snap_internal_code or "").strip():
+            if code:
+                _check_catalog_code(db, code)
+            if o.is_chosen and code != (item.product_code or "").strip():
+                _sync_line_code(db, pr, item, code, changes)
+            changes.append(f"mã VTBB {o.snap_internal_code or '—'} → {code or '—'}")
+            o.snap_internal_code = code
+
+    if data.supplier_code is not None or data.supplier_name is not None:
+        code = (data.supplier_code or "").strip()
+        name = (data.supplier_name or "").strip()
+        if not code and not name and o.source == PR_OPT_MANUAL:
+            raise HTTPException(400, "Phương án nhập tay phải có nhà cung cấp")
+        o.supplier_code = code
+        o.supplier_name = name or (resolve_supplier_name(db, code) if code else "")
+        changes.append(f"NCC {o.supplier_name or '—'}")
+
+    for key in DETAIL_EDITABLE_FIELDS:
+        value = getattr(data, key, None)
+        if value is None:
+            continue
+        if isinstance(value, str):
+            value = value.strip()
+        setattr(o, key, value)
+        changes.append(key)
+
+    o.updated_by = user_id
+    db.commit()
+    db.refresh(o)
+    record(db, user_id, ENTITY, pr.id, "option_details_update",
+           f"Dòng {item.product_name or item.product_code}: sửa {o.display_label} — "
+           + ", ".join(changes or ["không đổi gì"]))
+    return o
+
+
+def reset_option_zero(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem, oid: int,
+                      user_id: int) -> PurchaseRequestItemOption:
+    """bao-CR-583 — «Khôi phục ban đầu»: chụp lại phương án 0 từ ĐÚNG DÒNG YÊU CẦU như lúc
+    sinh (`ensure_option_zero`): tên hàng, ĐVT, giá đề xuất, VAT, mã hàng của dòng; bỏ NCC và
+    xóa mọi ô thu mua đã điền. Không đụng việc chọn, không đụng dòng — mã VTBB đã gắn cho
+    DÒNG (bao-CR-568) là dữ kiện của dòng, phương án 0 chỉ chép lại."""
+    o = _get_option_zero(db, item, oid)
+    for column in PurchaseRequestItemOption.__table__.columns:
+        key = column.key
+        if not (key.startswith("snap_") or key.startswith("supplier_") or key == "nstm_note"):
+            continue
+        default = column.default.arg if column.default is not None else None
+        #  Mọi cột snap_*/supplier_* khai mặc định HẰNG ("", 0, False) — không có hàm sinh.
+        setattr(o, key, None if callable(default) else default)
+    o.snap_product_name = item.product_name or ""
+    o.snap_quote_unit = item.unit or ""
+    o.snap_price_by_volume = item.price or 0
+    o.snap_vat = item.vat_pct or 0
+    o.snap_internal_code = item.product_code or ""
+    o.updated_by = user_id
+    db.commit()
+    db.refresh(o)
+    record(db, user_id, ENTITY, pr.id, "option_zero_reset",
+           f"Dòng {item.product_name or item.product_code}: khôi phục {o.display_label} về như dòng yêu cầu")
+    return o
+
+
 def assign_supplier_bulk(db: Session, pr: PurchaseRequest, data, user_id: int,
                          emp_code: str, see_all: bool) -> int:
     """"ÁP 1 NCC CHO NHIỀU DÒNG" trên màn chọn (H.10.5): với mỗi dòng tick, áp NCC

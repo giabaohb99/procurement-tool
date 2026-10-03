@@ -9,71 +9,6 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
-## duoc-CR-585 | Quá trình công tác nhân sự — bản gọn của V1-8
-- status: xong
-- date: 2026-10-03
-Triển khai lịch sử công tác ghi tay theo từng người, tệp quyết định đính kèm thẳng vào dòng, hỏi rồi mới áp vào hồ sơ. Bốn quyết định chốt 03/10: ngày hiệu lực gộp với dòng, dòng Thôi việc áp qua update_employee → khóa TK, chặn HR tự sửa quá trình của mình, tệp QĐ người khác cần employee_sensitive.read. Backend: 7 tệp service/schema/access dưới 200 dòng mỗi tệp, 1 migration, bộ mã WorkEventType, sửa 5 tệp nền. Frontend: 11 tệp component/hook/type/schema, 3 sửa, thêm 3 query keys. Test: 4 tệp, 142 bài xanh. Tài liệu: cập nhật bản 01-ho-so-nhan-su.md từ 1.4 → 1.5 (thêm §7.11 mới, cập nhật §4/§5.2/§7.10), cập nhật 10-de-xuat-ap-dung.md §0 (V1-8 = bản gọn xong, còn phần đầy đủ), thêm mục Quá trình công tác vào .claude/rules/hr-employee-profile.md, ghi nhật ký task. Chưa commit, chưa bấm tay qua trình duyệt.
-
-Sau khi đại ca xem bản đầu, tab đổi tên thành «Quá trình công tác & Quyết định» và chia hai khu dùng chung một nguồn dữ liệu: khu «Quyết định bổ nhiệm» ở trên chỉ gồm các dòng có số quyết định (số, ngày ký, loại, nội dung tóm tắt, ngày hiệu lực, tệp), khu «Quá trình công tác» ở dưới gồm mọi dòng. Mỗi khu có nút chuyển giữa dạng bảng và dạng dòng thời gian (mốc mới nhất ở trên, dòng đang hiệu lực có nhãn «Hiện tại»), lựa chọn giữ trên đường dẫn; trang cá nhân hiện y như vậy nhưng chỉ đọc. Bài rà soát mã tìm ra và đã sửa: nút áp vào hồ sơ trên từng dòng chạy thẳng không hỏi (kể cả dòng thôi việc), máy chủ lấy ngày hôm nay theo giờ quốc tế thay vì giờ Việt Nam, gửi ô bắt buộc rỗng làm lỗi máy chủ, xóa dòng là đường vòng qua quyền xem tệp nhạy cảm. Đã thử trên trình duyệt ở máy em cả hai dạng xem với dữ liệu mẫu; chưa thử bấm lưu và áp hồ sơ trên trình duyệt, chưa deploy.
-
-Đại ca xem lại thấy gom hai khu vào một tab khó nhìn, nên chốt TÁCH thành hai tab riêng đứng cạnh nhau: «Quá trình công tác» (mọi dòng, có thao tác, giữ đúng giá trị tab cũ để đường dẫn cũ không gãy) và «Quyết định bổ nhiệm» (chỉ dòng có số quyết định, chỉ xem — rỗng thì có nút nhảy sang tab «Quá trình công tác» nếu còn quyền sửa). Hai tab vẫn dùng chung một lần gọi dữ liệu nhờ bộ nhớ đệm của thư viện truy vấn, không gọi máy chủ hai lần. Mỗi tab tự giữ lựa chọn bảng/dòng thời gian trên đường dẫn như cũ. Ở trang cá nhân, hai khu nay là hai tab con bên trong thẻ, vẫn chỉ xem. Kiểm kiểu 0 lỗi, eslint 0 lỗi, 753 bài kiểm xanh trong các thư mục liên quan. Chưa commit, chưa deploy.
-
-Mã nguồn:
-- Backend: `backend/app/modules/employee/work_history_{model,schema,service,apply_service,rules,serializer,access,controller}.py` · `backend/app/core/hr_work_history_codes.py` · 1 migration `wkhist01_...` · sửa `main.py`, `code_sets.py`, `all_models.py`, `file_registry.py`, `attachment_scope.py`
-- Frontend: `frontend-v2/src/modules/hr/{types/employee-work-history,api/employee-work-history-api,hooks/use-employee-work-history*,schemas/employee-work-history-schema,config/employee-work-history-columns,components/employee-{tab-work-history,work-history-form-dialog*,work-history-files-dialog,work-history-resign-confirm-dialog}}` · `frontend-v2/src/app/components/profile/profile-work-history-card.tsx` · sửa `app/pages/profile-page.tsx`, `shared/constants/query-keys.ts`
-- Test: `test/backend/test_qua_trinh_cong_tac_{quyen,ap_ho_so,kiem_du_lieu,thoi_viec}.py`
-- Tài liệu: `doc/erp/hrm/01-ho-so-nhan-su.md`, `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md`, `.claude/rules/hr-employee-profile.md`, `doc/tai-lieu-ky-thuat/change-log.md`
-
----
-
-## bao-CR-584 | Người đang được giao duyệt mở được phiếu Đặt xe / Duyệt dấu; thêm vai trò Pháp lý kiểm tra dấu
-- status: xong
-- date: 2026-10-03
-Đại ca chốt bước Pháp lý của luồng duyệt dấu khai theo vai trò, và bổ sung phần mở phiếu. Tra dữ liệu thật: bên app cũ
-vai trò «Legal» chỉ có một người giữ (chị Đào Trúc Nhi, NSU206, phòng Hành chính), bước «Pháp lý kiểm tra» chạy 971
-lần đều do chị duyệt; ERP chưa có vai trò nào tương ứng, chỉ có phòng ban «Pháp Lý» chép từ app cũ.
-
-Lỗ cần vá: luồng cấu hình giao việc cho người ngoài phạm vi dữ liệu của phiếu (Pháp lý của mọi phòng, Giám đốc duyệt dấu
-vốn chỉ thấy phiếu đã duyệt, trưởng bộ phận phòng khác), nhưng ba cửa cùng chặn họ: trang chi tiết (cổng đòi quyền đọc ở
-mức route chặn 403 trước cả đường lùi), tệp chứng từ, và ô Trao đổi (chính lỗi «không tải được nội dung trao đổi» thấy
-hôm trước).
-
-Đã làm: một luật chung «đang giữ việc duyệt treo trên đúng phiếu thì đọc được» áp cho Đặt xe và Duyệt dấu, dùng ở cả ba
-cửa, đóng lại ngay khi duyệt xong và không nới quyền ghi. Seed thêm vai trò chuẩn «Pháp lý kiểm tra dấu», nên prod sẽ tự
-có vai trò này ở lần deploy sau. Trên dev: luồng Duyệt dấu đổi thành Trưởng bộ phận (người tạo chọn trên phiếu) rồi Pháp
-lý kiểm tra, giống app cũ, bỏ bước Giám đốc quản lý thương hiệu vì app cũ chưa từng chạy; gán vai trò Pháp lý cho NSU206 và
-DEMOTP3; tạo phiếu thử DD868 đang chờ DEMOTP2 duyệt chặng 1.
-
-Kiểm: 10 bài kiểm mới xanh; cùng các tệp kiểm luồng duyệt, đặt xe, duyệt dấu, đính kèm, bình luận, phạm vi, vai trò 1.691
-bài xanh (một bài đỏ là bài canh `.env` local đang bật chế độ DEV, không liên quan).
-
-Mã nguồn: `backend/app/modules/approval/pending_reader.py`, `seal_request/controller.py` + `approval_bridge.py`
-(`request_for_approver`), `vehicle_booking/controller.py`, `attachment/controller.py` (`_check`), `comment/service.py`
-(`resolve_doc`), `seed.py` (`seal_legal`).
-Commit: erp-v2 `f6198e80`. Deploy: DEV 03/10/2026; prod chưa.
-
----
-
-## bao-CR-582 | Nhật ký hệ thống: cột Phương thức riêng + lọc nhiều phương thức
-- status: xong
-- date: 2026-10-03
-Đại ca muốn màn Nhật ký hệ thống tách phương thức gọi (GET, POST, PUT, PATCH, DELETE) ra một cột riêng và lọc
-được theo một hay nhiều phương thức, ví dụ chỉ xem POST và PUT. Trước đây phương thức chỉ nằm chung dòng chữ nhỏ
-với đường dẫn và đường API không có tham số lọc theo nó.
-
-Đã làm: bảng có cột «Phương thức» riêng, nhãn có màu (GET xám, lượt ghi có màu, DELETE đỏ); thanh lọc có ô chọn
-nhiều phương thức, chọn POST và PUT là ra mọi lượt thuộc một trong hai. Biểu đồ đi theo đúng bộ lọc của bảng.
-Gõ giá trị rác vào đường API thì bị từ chối (mã 422) chứ không lặng lẽ trả về toàn bộ.
-
-Kiểm: 23 bài kiểm mới + 30 bài cũ của màn này xanh; 300 bài giao diện phân hệ Quản trị xanh; kiểm thật trên API
-local: không lọc 8.768 lượt, chỉ POST 676, POST + PUT 694, DELETE 25, biểu đồ POST + PUT cũng 694.
-
-Commit: `c9ff355d` trên erp-v2.
-Deploy: dev 03/10 (dựng lại api, celery-worker, celery-beat, erp; devthumua và deverp trả 200). Không có migration.
-Prod: chưa — đã giao Agent 1 chuẩn bị đưa lên.
-
----
-
 ## <key> | <tiêu đề hiển thị>
 - status: dang-lam | xong | huy
 - date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
@@ -132,6 +67,147 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
    kiểm xanh, đo lúc nào.
 6. Chữ viết tắt lần đầu xuất hiện phải mở ngoặc giải thích (ví dụ "YCMH
    (yêu cầu mua hàng)").
+
+---
+
+## duoc-CR-585 | Quá trình công tác nhân sự — bản gọn của V1-8
+- status: xong
+- date: 2026-10-03
+Triển khai lịch sử công tác ghi tay theo từng người, tệp quyết định đính kèm thẳng vào dòng, hỏi rồi mới áp vào hồ sơ. Bốn quyết định chốt 03/10: ngày hiệu lực gộp với dòng, dòng Thôi việc áp qua update_employee → khóa TK, chặn HR tự sửa quá trình của mình, tệp QĐ người khác cần employee_sensitive.read. Backend: 7 tệp service/schema/access dưới 200 dòng mỗi tệp, 1 migration, bộ mã WorkEventType, sửa 5 tệp nền. Frontend: 11 tệp component/hook/type/schema, 3 sửa, thêm 3 query keys. Test: 4 tệp, 142 bài xanh. Tài liệu: cập nhật bản 01-ho-so-nhan-su.md từ 1.4 → 1.5 (thêm §7.11 mới, cập nhật §4/§5.2/§7.10), cập nhật 10-de-xuat-ap-dung.md §0 (V1-8 = bản gọn xong, còn phần đầy đủ), thêm mục Quá trình công tác vào .claude/rules/hr-employee-profile.md, ghi nhật ký task. Chưa commit, chưa bấm tay qua trình duyệt.
+
+Sau khi đại ca xem bản đầu, tab đổi tên thành «Quá trình công tác & Quyết định» và chia hai khu dùng chung một nguồn dữ liệu: khu «Quyết định bổ nhiệm» ở trên chỉ gồm các dòng có số quyết định (số, ngày ký, loại, nội dung tóm tắt, ngày hiệu lực, tệp), khu «Quá trình công tác» ở dưới gồm mọi dòng. Mỗi khu có nút chuyển giữa dạng bảng và dạng dòng thời gian (mốc mới nhất ở trên, dòng đang hiệu lực có nhãn «Hiện tại»), lựa chọn giữ trên đường dẫn; trang cá nhân hiện y như vậy nhưng chỉ đọc. Bài rà soát mã tìm ra và đã sửa: nút áp vào hồ sơ trên từng dòng chạy thẳng không hỏi (kể cả dòng thôi việc), máy chủ lấy ngày hôm nay theo giờ quốc tế thay vì giờ Việt Nam, gửi ô bắt buộc rỗng làm lỗi máy chủ, xóa dòng là đường vòng qua quyền xem tệp nhạy cảm. Đã thử trên trình duyệt ở máy em cả hai dạng xem với dữ liệu mẫu; chưa thử bấm lưu và áp hồ sơ trên trình duyệt, chưa deploy.
+
+Đại ca xem lại thấy gom hai khu vào một tab khó nhìn, nên chốt TÁCH thành hai tab riêng đứng cạnh nhau: «Quá trình công tác» (mọi dòng, có thao tác, giữ đúng giá trị tab cũ để đường dẫn cũ không gãy) và «Quyết định bổ nhiệm» (chỉ dòng có số quyết định, chỉ xem — rỗng thì có nút nhảy sang tab «Quá trình công tác» nếu còn quyền sửa). Hai tab vẫn dùng chung một lần gọi dữ liệu nhờ bộ nhớ đệm của thư viện truy vấn, không gọi máy chủ hai lần. Mỗi tab tự giữ lựa chọn bảng/dòng thời gian trên đường dẫn như cũ. Ở trang cá nhân, hai khu nay là hai tab con bên trong thẻ, vẫn chỉ xem. Kiểm kiểu 0 lỗi, eslint 0 lỗi, 753 bài kiểm xanh trong các thư mục liên quan. Chưa commit, chưa deploy.
+
+Mã nguồn:
+- Backend: `backend/app/modules/employee/work_history_{model,schema,service,apply_service,rules,serializer,access,controller}.py` · `backend/app/core/hr_work_history_codes.py` · 1 migration `wkhist01_...` · sửa `main.py`, `code_sets.py`, `all_models.py`, `file_registry.py`, `attachment_scope.py`
+- Frontend: `frontend-v2/src/modules/hr/{types/employee-work-history,api/employee-work-history-api,hooks/use-employee-work-history*,schemas/employee-work-history-schema,config/employee-work-history-columns,components/employee-{tab-work-history,work-history-form-dialog*,work-history-files-dialog,work-history-resign-confirm-dialog}}` · `frontend-v2/src/app/components/profile/profile-work-history-card.tsx` · sửa `app/pages/profile-page.tsx`, `shared/constants/query-keys.ts`
+- Test: `test/backend/test_qua_trinh_cong_tac_{quyen,ap_ho_so,kiem_du_lieu,thoi_viec}.py`
+- Tài liệu: `doc/erp/hrm/01-ho-so-nhan-su.md`, `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md`, `.claude/rules/hr-employee-profile.md`, `doc/tai-lieu-ky-thuat/change-log.md`
+
+---
+
+## bao-CR-586 | Nút «Bỏ lọc» ở khối tra kho khảo sát của màn xử lý phương án
+- status: xong
+- date: 2026-10-03
+Đại ca yêu cầu thêm nút bỏ lọc ở màn xử lý phương án. Khối «Thêm phương án từ kết quả khảo sát» có ba ô lọc là nhà
+cung cấp, phân loại và từ khóa, nhưng muốn xóa phải gỡ từng ô một; chỉ có nút «Về phân loại dòng» đưa riêng ô phân
+loại về như dòng yêu cầu.
+
+Nay thanh lọc có thêm nút «Bỏ lọc» (biểu tượng phễu gạch chéo), hiện khi có ít nhất một ô đang lọc. Bấm một lần là bỏ
+cả ba ô và quay về trang 1. Bỏ hết điều kiện thì hệ thống không liệt kê cả kho khảo sát (giữ nguyên luật cũ), nên màn
+quay về câu gợi ý chọn nhà cung cấp, phân loại hoặc gõ từ khóa; nút «Về phân loại dòng» vẫn còn để lấy lại gợi ý theo
+dòng. Chỉ đổi giao diện ERP v2, không đụng backend.
+
+Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm thêm ở purchase-request-process-card.test.tsx.
+Kiểm: tsc 0 lỗi, eslint sạch, vitest src/modules/procurement 832 bài xanh. Chưa commit, chưa deploy.
+
+---
+
+## bao-CR-583 | Phương án 0 và phương án nhập tay sửa được ở màn xử lý lẫn màn chọn, phương án 0 có «Khôi phục ban đầu»
+- status: xong
+- date: 2026-10-03
+Đại ca hỏi phương án 0 chưa có mã VTBB thì thu mua có cập nhật mã và thông tin trên đó được không, chốt cho sửa được
+nhưng phải có nút trả về tình trạng ban đầu, rồi nói thêm: phương án 0 xem như phương án nhập tay, phải sửa được ngay ở
+trang xử lý phương án. Trước đây màn xử lý chỉ cho sửa ghi chú và gỡ phương án (kể cả nút gỡ trên phương án 0 dù backend
+không cho gỡ); màn chọn chỉ sửa được nhà cung cấp và đơn giá; mã VTBB gắn ở dòng thì thẻ phương án 0 vẫn hiện mã trống.
+
+Nay phương án 0 và phương án nhập tay có chung một hộp «Sửa phương án», mở từ nút bút ở bảng phương án của màn xử lý
+(NSTM phụ trách dòng, khi dòng chưa chốt) và ở thẻ phương án của màn chọn (thu mua, kể cả sau khi dòng đã chốt); cần
+quyền xem nhà cung cấp. Sửa được mã VTBB (chọn từ danh mục, chọn xong tự điền tên hàng và ĐVT), tên hàng, nhà cung cấp,
+đơn giá, ĐVT báo giá, VAT, MOQ, khoảng số lượng, xuất xứ, thời gian và địa điểm giao, phí vận chuyển, có mẫu và ghi chú;
+chỉ ô đã đổi mới được gửi. Phương án nhập tay không được bỏ trống nhà cung cấp. Phương án đang được chọn mà đổi mã thì
+mã của dòng đổi theo, đúng luật bao-CR-568. Riêng phương án 0 có nút «Khôi phục ban đầu», hỏi xác nhận rồi đưa về đúng
+như dòng yêu cầu lúc sinh: bỏ nhà cung cấp, xóa mọi ô đã sửa, giữ việc chọn và mã đã gắn cho dòng. Phương án lấy từ khảo
+sát vẫn chỉ sửa giá. Màn xử lý không còn bày nút gỡ trên phương án 0, và hai bảng con ở đó tắt cột ID tự thêm.
+
+Mã nguồn: `backend/app/modules/purchase_request/option_service.py` (`update_option_details`, `reset_option_zero`),
+`controller.py` (PATCH `.../options/{oid}/details`, POST `.../options/{oid}/zero/reset`), `schema.py` (`PROptionDetailsIn`);
+`frontend-v2/src/modules/procurement/components/purchase-request-option-edit-dialog.tsx` (mới), `purchase-request-process-card.tsx`,
+`purchase-request-choose-card.tsx`, `utils/purchase-request-option-details.ts`, api + hook phương án. Bài kiểm
+`test/backend/test_phuong_an_0_thu_mua_sua_khoi_phuc_cr583.py` (16 bài), `purchase-request-option-details.test.ts`,
+thêm bài trong `purchase-request-choose-card.test.tsx` và `purchase-request-process-card.test.tsx`.
+Deploy: chưa commit, chưa deploy.
+
+---
+
+## bao-CR-584 | Người đang được giao duyệt mở được phiếu Đặt xe / Duyệt dấu; thêm vai trò Pháp lý kiểm tra dấu
+- status: xong
+- date: 2026-10-03
+Đại ca chốt bước Pháp lý của luồng duyệt dấu khai theo vai trò, và bổ sung phần mở phiếu. Tra dữ liệu thật: bên app cũ
+vai trò «Legal» chỉ có một người giữ (chị Đào Trúc Nhi, NSU206, phòng Hành chính), bước «Pháp lý kiểm tra» chạy 971
+lần đều do chị duyệt; ERP chưa có vai trò nào tương ứng, chỉ có phòng ban «Pháp Lý» chép từ app cũ.
+
+Lỗ cần vá: luồng cấu hình giao việc cho người ngoài phạm vi dữ liệu của phiếu (Pháp lý của mọi phòng, Giám đốc duyệt dấu
+vốn chỉ thấy phiếu đã duyệt, trưởng bộ phận phòng khác), nhưng ba cửa cùng chặn họ: trang chi tiết (cổng đòi quyền đọc ở
+mức route chặn 403 trước cả đường lùi), tệp chứng từ, và ô Trao đổi (chính lỗi «không tải được nội dung trao đổi» thấy
+hôm trước).
+
+Đã làm: một luật chung «đang giữ việc duyệt treo trên đúng phiếu thì đọc được» áp cho Đặt xe và Duyệt dấu, dùng ở cả ba
+cửa, đóng lại ngay khi duyệt xong và không nới quyền ghi. Seed thêm vai trò chuẩn «Pháp lý kiểm tra dấu», nên prod sẽ tự
+có vai trò này ở lần deploy sau. Trên dev: luồng Duyệt dấu đổi thành Trưởng bộ phận (người tạo chọn trên phiếu) rồi Pháp
+lý kiểm tra, giống app cũ, bỏ bước Giám đốc quản lý thương hiệu vì app cũ chưa từng chạy; gán vai trò Pháp lý cho NSU206 và
+DEMOTP3; tạo phiếu thử DD868 đang chờ DEMOTP2 duyệt chặng 1.
+
+Kiểm: 10 bài kiểm mới xanh; cùng các tệp kiểm luồng duyệt, đặt xe, duyệt dấu, đính kèm, bình luận, phạm vi, vai trò 1.691
+bài xanh (một bài đỏ là bài canh `.env` local đang bật chế độ DEV, không liên quan).
+
+Mã nguồn: `backend/app/modules/approval/pending_reader.py`, `seal_request/controller.py` + `approval_bridge.py`
+(`request_for_approver`), `vehicle_booking/controller.py`, `attachment/controller.py` (`_check`), `comment/service.py`
+(`resolve_doc`), `seed.py` (`seal_legal`).
+Commit: erp-v2 `f6198e80`. Deploy: DEV 03/10/2026; prod chưa.
+
+---
+
+## bao-CR-582 | Nhật ký hệ thống: cột Phương thức riêng + lọc nhiều phương thức
+- status: xong
+- date: 2026-10-03
+Đại ca muốn màn Nhật ký hệ thống tách phương thức gọi (GET, POST, PUT, PATCH, DELETE) ra một cột riêng và lọc
+được theo một hay nhiều phương thức, ví dụ chỉ xem POST và PUT. Trước đây phương thức chỉ nằm chung dòng chữ nhỏ
+với đường dẫn và đường API không có tham số lọc theo nó.
+
+Đã làm: bảng có cột «Phương thức» riêng, nhãn có màu (GET xám, lượt ghi có màu, DELETE đỏ); thanh lọc có ô chọn
+nhiều phương thức, chọn POST và PUT là ra mọi lượt thuộc một trong hai. Biểu đồ đi theo đúng bộ lọc của bảng.
+Gõ giá trị rác vào đường API thì bị từ chối (mã 422) chứ không lặng lẽ trả về toàn bộ.
+
+Kiểm: 23 bài kiểm mới + 30 bài cũ của màn này xanh; 300 bài giao diện phân hệ Quản trị xanh; kiểm thật trên API
+local: không lọc 8.768 lượt, chỉ POST 676, POST + PUT 694, DELETE 25, biểu đồ POST + PUT cũng 694.
+
+Commit: `c9ff355d` trên erp-v2.
+Deploy: dev 03/10 (dựng lại api, celery-worker, celery-beat, erp; devthumua và deverp trả 200). Không có migration.
+Prod: chưa — đã giao Agent 1 chuẩn bị đưa lên.
+
+---
+
+## bao-CR-581 | Xóa dữ liệu thử YCBG03102601 trên prod
+- status: xong
+- date: 2026-10-03
+Đại ca bảo kiểm mọi dữ liệu dính tới YCBG id 2752 trên prod rồi xóa hết vì đó là phiếu thử. Em liệt kê trước: phiếu
+YCBG03102601 do NSU199 tạo thử sáng 03/10 với 1 dòng và 2 phương án, 3 dây nối sang ba YCMH PYC03102603, PYC03102604,
+PYC03102605 (cả ba đã bị xóa mềm, đều ở trạng thái nháp, tổng 3 dòng) và 8 thông báo trỏ tới các phiếu này. Không có
+phiếu khảo sát, đơn mua hàng, phiên duyệt, tệp đính kèm hay chứng từ nào khác dùng chung. Script sao lưu toàn bộ các dòng
+ra tệp rồi xóa hẳn trong một giao dịch; nhật ký thao tác được giữ lại.
+
+Mã nguồn: script tạm `prod_sr2752_delete.py` (không commit) · sao lưu `~/proc_backups/sr2752_ycbg03102601_truoc_xoa_20261003_110320.json`
+Deploy: dữ liệu prod 03/10 11:03.
+
+---
+
+## bao-CR-580 | Ghi nhận: YCMH đã xóa vẫn nối với YCBG, và luật trả về YCBG còn chặt
+- status: open
+- date: 2026-10-03
+Đại ca báo trên YCBG, YCMH tạo ra rồi xóa đi vẫn còn hiện. Nguyên nhân: xóa YCMH chỉ đánh dấu phiếu là đã xóa, dây nối
+giữa YCBG và YCMH vẫn giữ nguyên, nên YCBG vẫn hiện YCMH đó, vẫn coi là đã sinh YCMH (chặn nút Trả về và chuyển phòng), và
+việc tự hoàn thành YCBG cũng chờ cả YCMH đã xóa. YCBG và đơn mua hàng thì xóa hẳn nên không bị. Đại ca cũng muốn YCBG, YCMH
+đã duyệt hoặc đã điều phối vẫn trả về được kèm lý do: YCMH đã có từ bao-CR-554, còn YCBG đang chặn khi có dòng hoàn thành,
+đã chọn phương án hoặc đã sinh YCMH.
+
+Đề xuất chờ đại ca chốt: (1) xóa YCMH thì gỡ dây nối, ghi lịch sử bên YCBG, YCBG không còn YCMH đang sống thì quay về trạng
+thái trước «Đã tạo YCMH», và lọc YCMH đã xóa ở mọi chỗ hiện liên kết; (2) nới luật trả về YCBG, chỉ chặn khi còn YCMH đang
+sống, trả về thì bỏ chọn phương án và mở lại các dòng, bắt buộc nhập lý do. Đại ca bảo ghi lại, chưa làm.
+
+Mã nguồn: `backend/app/modules/purchase_request/service.py` (`delete_pr`), `survey_request/service.py` (`can_transfer_dept`,
+`auto_complete_from_pr`), `survey_request/controller.py` (`ycmh_list`).
 
 ---
 
@@ -215,7 +291,7 @@ tiết chứng từ không đổi.
 
 Mã nguồn: `frontend-v2/src/shared/data-table/id-column.ts` (mới), `data-table.tsx` (prop `idColumn`), `use-table-layout.ts`,
 `types.ts` (`placeAtStartWhenNew`), bài kiểm `id-column.test.ts`, `use-table-layout.test.tsx`, `data-table.test.tsx`.
-Deploy: chưa commit, chưa deploy.
+Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
 
 ---
 
@@ -230,7 +306,7 @@ dòng đã tick, trước đây gõ giá mà quên tick thì giá bị bỏ qua 
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`,
 `utils/purchase-request-bulk-price.ts` (+ bài kiểm), thêm 2 bài trong `purchase-request-choose-card.test.tsx`.
-Deploy: chưa commit, chưa deploy.
+Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
 
 ---
 
@@ -244,7 +320,7 @@ kéo cả khối rộng ra. Em cho khối nội dung co theo khung để ô ch�
 dòng», ô gõ tên nhà cung cấp được nới rộng cho đọc đủ chữ gợi ý.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`.
-Deploy: chưa commit, chưa deploy.
+Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
 
 ---
 
@@ -265,7 +341,7 @@ sang trang in tương ứng và giữ nguyên kiểu mẫu đang chọn. Hai nú
 Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-request-print-template.ts`, `pages/purchase-request-print-page.tsx`
 (`PurchaseRequestPrintOptions`), `pages/purchase-request-supplier-print-page.tsx`, `pages/purchase-request-detail-page.tsx`,
 bài kiểm `purchase-request-print-template.test.ts` + `purchase-request-print-page.test.tsx` (11 bài mới).
-Deploy: chưa commit, chưa deploy.
+Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
 
 ---
 

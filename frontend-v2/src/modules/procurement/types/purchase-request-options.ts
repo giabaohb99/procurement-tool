@@ -141,6 +141,28 @@ export interface PrOptionManualPayload {
  * dùng được CẢ SAU khi dòng đã chốt hoàn thành. Backend đòi có mã HOẶC tên NCC
  * và từ chối phương án lấy từ khảo sát.
  */
+/**
+ * bao-CR-583 — sửa thông tin PHƯƠNG ÁN 0 / NHẬP TAY (`PATCH .../options/{id}/details`). Chỉ gửi
+ * ô đã đổi; NCC gửi cả `supplier_code` lẫn `supplier_name` rỗng là bỏ NCC (chỉ phương án 0).
+ */
+export interface PrOptionDetailsPayload {
+  snap_product_name?: string
+  snap_internal_code?: string
+  supplier_code?: string
+  supplier_name?: string
+  snap_price_by_volume?: number
+  snap_quote_unit?: string
+  snap_moq?: number
+  snap_volume_range?: string
+  snap_vat?: number
+  snap_origin?: string
+  snap_delivery_time?: string
+  snap_delivery_place?: string
+  snap_shipping_cost?: number
+  snap_sample_ready?: boolean
+  nstm_note?: string
+}
+
 export interface PrOptionSupplierPayload {
   supplier_code?: string
   supplier_name?: string
