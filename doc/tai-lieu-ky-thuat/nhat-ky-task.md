@@ -9,6 +9,34 @@ khớp theo `key` ở đầu tiêu đề).
 
 ```
 
+## bao-CR-584 | Người đang được giao duyệt mở được phiếu Đặt xe / Duyệt dấu; thêm vai trò Pháp lý kiểm tra dấu
+- status: xong
+- date: 2026-10-03
+Đại ca chốt bước Pháp lý của luồng duyệt dấu khai theo vai trò, và bổ sung phần mở phiếu. Tra dữ liệu thật: bên app cũ
+vai trò «Legal» chỉ có một người giữ (chị Đào Trúc Nhi, NSU206, phòng Hành chính), bước «Pháp lý kiểm tra» chạy 971
+lần đều do chị duyệt; ERP chưa có vai trò nào tương ứng, chỉ có phòng ban «Pháp Lý» chép từ app cũ.
+
+Lỗ cần vá: luồng cấu hình giao việc cho người ngoài phạm vi dữ liệu của phiếu (Pháp lý của mọi phòng, Giám đốc duyệt dấu
+vốn chỉ thấy phiếu đã duyệt, trưởng bộ phận phòng khác), nhưng ba cửa cùng chặn họ: trang chi tiết (cổng đòi quyền đọc ở
+mức route chặn 403 trước cả đường lùi), tệp chứng từ, và ô Trao đổi (chính lỗi «không tải được nội dung trao đổi» thấy
+hôm trước).
+
+Đã làm: một luật chung «đang giữ việc duyệt treo trên đúng phiếu thì đọc được» áp cho Đặt xe và Duyệt dấu, dùng ở cả ba
+cửa, đóng lại ngay khi duyệt xong và không nới quyền ghi. Seed thêm vai trò chuẩn «Pháp lý kiểm tra dấu», nên prod sẽ tự
+có vai trò này ở lần deploy sau. Trên dev: luồng Duyệt dấu đổi thành Trưởng bộ phận (người tạo chọn trên phiếu) rồi Pháp
+lý kiểm tra, giống app cũ, bỏ bước Giám đốc quản lý thương hiệu vì app cũ chưa từng chạy; gán vai trò Pháp lý cho NSU206 và
+DEMOTP3; tạo phiếu thử DD868 đang chờ DEMOTP2 duyệt chặng 1.
+
+Kiểm: 10 bài kiểm mới xanh; cùng các tệp kiểm luồng duyệt, đặt xe, duyệt dấu, đính kèm, bình luận, phạm vi, vai trò 1.691
+bài xanh (một bài đỏ là bài canh `.env` local đang bật chế độ DEV, không liên quan).
+
+Mã nguồn: `backend/app/modules/approval/pending_reader.py`, `seal_request/controller.py` + `approval_bridge.py`
+(`request_for_approver`), `vehicle_booking/controller.py`, `attachment/controller.py` (`_check`), `comment/service.py`
+(`resolve_doc`), `seed.py` (`seal_legal`).
+Commit: erp-v2 `f6198e80`. Deploy: DEV 03/10/2026; prod chưa.
+
+---
+
 ## bao-CR-582 | Nhật ký hệ thống: cột Phương thức riêng + lọc nhiều phương thức
 - status: xong
 - date: 2026-10-03
