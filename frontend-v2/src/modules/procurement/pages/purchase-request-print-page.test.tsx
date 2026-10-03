@@ -251,3 +251,80 @@ describe('PurchaseRequestPrintOptions (bao-CR-546)', () => {
     expect(onChange).toHaveBeenLastCalledWith(false)
   })
 })
+
+// bao-CR-574 (đại ca chốt 03/10/2026): nút «In phiếu» luôn mở phiếu chung; người có quyền xem
+// nhà cung cấp chọn bản tách ngay trong ô «Mẫu in». Hai nút lẻ cũ đã bỏ.
+describe('PurchaseRequestPrintOptions — supplier layout group (bao-CR-574)', () => {
+  function renderOptions(props: Partial<Parameters<typeof PurchaseRequestPrintOptions>[0]> = {}) {
+    const onTemplateChange = vi.fn()
+    const onLayoutChange = vi.fn()
+    render(
+      <PurchaseRequestPrintOptions
+        template="normal-signed"
+        onTemplateChange={onTemplateChange}
+        onLayoutChange={onLayoutChange}
+        hideDeliveryPlace={false}
+        onHideDeliveryPlaceChange={vi.fn()}
+        {...props}
+      />,
+    )
+    return { onTemplateChange, onLayoutChange }
+  }
+
+  it('without supplier permission shows only the three common templates', async () => {
+    renderOptions()
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    expect(screen.getAllByRole('option')).toHaveLength(3)
+    expect(screen.queryByText('Tách theo nhà cung cấp')).toBeNull()
+    expect(screen.queryByRole('option', { name: /Theo NCC/ })).toBeNull()
+  })
+
+  it('with permission shows both groups, three templates each', async () => {
+    renderOptions({ supplierLayout: { enabled: true } })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    expect(screen.getAllByRole('option')).toHaveLength(6)
+    expect(screen.getByText('Phiếu chung')).toBeInTheDocument()
+    expect(screen.getByText('Tách theo nhà cung cấp')).toBeInTheDocument()
+  })
+
+  it('picking a supplier template switches layout and keeps the template', async () => {
+    const { onTemplateChange, onLayoutChange } = renderOptions({ supplierLayout: { enabled: true } })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Theo NCC · Mẫu thuế' }))
+    expect(onLayoutChange).toHaveBeenCalledWith('supplier', 'tax')
+    expect(onTemplateChange).not.toHaveBeenCalled()
+  })
+
+  it('picking another template in the same group stays on the page', async () => {
+    const { onTemplateChange, onLayoutChange } = renderOptions({ supplierLayout: { enabled: true } })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Mẫu thuế' }))
+    expect(onTemplateChange).toHaveBeenCalledWith('tax')
+    expect(onLayoutChange).not.toHaveBeenCalled()
+  })
+
+  it('on the supplier page the common group leads back with the same template', async () => {
+    const { onTemplateChange, onLayoutChange } = renderOptions({
+      layout: 'supplier',
+      template: 'normal-unsigned',
+      supplierLayout: { enabled: true },
+    })
+    expect(screen.getByRole('combobox', { name: 'Mẫu in' })).toHaveTextContent(
+      'Theo NCC · Mẫu thường – không chữ ký',
+    )
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Mẫu thường – không chữ ký' }))
+    expect(onLayoutChange).toHaveBeenCalledWith('common', 'normal-unsigned')
+    expect(onTemplateChange).not.toHaveBeenCalled()
+  })
+
+  it('without chosen-supplier lines the supplier group is greyed out with the reason', async () => {
+    const { onLayoutChange } = renderOptions({ supplierLayout: { enabled: false } })
+    await userEvent.click(screen.getByRole('combobox', { name: 'Mẫu in' }))
+    expect(screen.getByText(/chưa có dòng chốt nhà cung cấp/)).toBeInTheDocument()
+    const supplierOptions = screen.getAllByRole('option', { name: /Theo NCC/ })
+    expect(supplierOptions).toHaveLength(3)
+    for (const option of supplierOptions) expect(option).toHaveAttribute('aria-disabled', 'true')
+    expect(onLayoutChange).not.toHaveBeenCalled()
+  })
+})

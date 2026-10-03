@@ -18,6 +18,7 @@ import { measureColumnContentWidth } from './measure-column-width'
 import { columnLabel } from './required-header'
 import type { DataTableColumn, DataTablePagination as PaginationConfig } from './types'
 import { useColumnDrag } from './use-column-drag'
+import { shouldShowIdColumn, withIdColumn } from './id-column'
 import { usePinnedOffsets } from './use-pinned-offsets'
 import { useTableLayout } from './use-table-layout'
 
@@ -249,6 +250,11 @@ export interface DataTableProps<T> {
    * Cũng vì thế menu «Cột» tự ẩn ở chế độ này — không còn cột nào để ẩn/hiện.
    */
   mobileCard?: (row: T) => ReactNode
+  /**
+   * Cột «ID» tự thêm ở bìa trái (bao-CR-578). Mặc định BẬT cho mọi bảng; truyền `false` cho
+   * bảng không muốn. Bảng đã tự khai cột `id`, hoặc hàng không có `id` số, thì tự không thêm.
+   */
+  idColumn?: boolean
 }
 
 /**
@@ -286,6 +292,7 @@ export function DataTable<T>({
   onSortChange,
   fillHeight = false,
   mobileCard,
+  idColumn = true,
 }: DataTableProps<T>) {
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
@@ -306,6 +313,10 @@ export function DataTable<T>({
       setRefreshing(false)
     }
   }, [onRefresh, queryClient])
+  //  bao-CR-578: cột «ID» mặc định ở bìa trái. `showIdColumn` là boolean nên mảng cột chỉ dựng
+  //  lại khi bật/tắt thật, không phải mỗi lần dữ liệu về (`useTableLayout` nhớ theo mảng này).
+  const showIdColumn = shouldShowIdColumn(columns, rows, idColumn)
+  const tableColumns = useMemo(() => withIdColumn(columns, showIdColumn), [columns, showIdColumn])
   const {
     layout,
     orderedColumns,
@@ -317,17 +328,17 @@ export function DataTable<T>({
     moveColumn,
     togglePin,
     resetLayout,
-  } = useTableLayout(columns, storageKey)
+  } = useTableLayout(tableColumns, storageKey)
 
   //  Màu hiệu lực = màu người dùng tự chọn, không có thì màu khai SẴN (`defaultColor`) —
   //  cùng luật `LinesTable`; dùng chung cho menu «Cột», tiêu đề và thân bảng.
   const columnColors = useMemo(() => {
     const merged: Record<string, string> = {}
-    for (const column of columns) {
+    for (const column of tableColumns) {
       if (column.defaultColor) merged[column.key] = column.defaultColor
     }
     return { ...merged, ...layout.columnColors }
-  }, [columns, layout.columnColors])
+  }, [tableColumns, layout.columnColors])
 
   const { drag, startDrag } = useColumnDrag(moveColumn)
   const tableRef = useRef<HTMLTableElement>(null)
@@ -466,7 +477,7 @@ export function DataTable<T>({
 
   return (
     <div className={cn('flex flex-col', fillHeight && 'min-h-0 flex-1')}>
-      {(toolbar || (!asCards && columns.some((c) => c.hideable !== false))) && (
+      {(toolbar || (!asCards && tableColumns.some((c) => c.hideable !== false))) && (
         <div
           className={cn('mb-4 flex shrink-0 flex-wrap items-center gap-3', toolbarClassName)}
         >

@@ -1,14 +1,23 @@
-import { ArrowLeft, Printer, Users, X } from 'lucide-react'
+import { ArrowLeft, Printer, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { ErrorState } from '@/shared/ui/error-state'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { cn } from '@/shared/utils/cn'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import {
   usePurchaseRequest,
@@ -25,15 +34,20 @@ import {
   type PrintSignatureSource,
 } from '../utils/purchase-request-signature-cells'
 import {
+  buildSupplierPrintPlan,
   formatVietnameseLongDate,
   printLineValues,
   printedTotals,
 } from '../utils/purchase-request-print-options'
 import {
-  DEFAULT_PRINT_TEMPLATE,
+  PRINT_LAYOUTS,
   PRINT_TEMPLATES,
-  isPrintTemplateValue,
+  PRINT_TEMPLATE_PARAM,
+  decodePrintChoice,
+  encodePrintChoice,
+  readPrintTemplateParam,
   resolvePrintTemplate,
+  type PrintLayout,
   type PrintTemplateValue,
 } from '../utils/purchase-request-print-template'
 
@@ -64,7 +78,11 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const unmatchedLines = fromPo ? (byOrder.data?.po_lines_unmatched ?? 0) : 0
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
   //  bao-CR-546: MỘT ô chọn «Mẫu in» thay hai nhóm nút chữ ký / thường-thuế; ô tick ẩn nơi giao riêng.
-  const [template, setTemplate] = useState<PrintTemplateValue>(DEFAULT_PRINT_TEMPLATE)
+  //  bao-CR-574: mẫu đi theo `?mau=` để đổi qua lại với bản tách theo NCC không mất lựa chọn.
+  const [searchParams] = useSearchParams()
+  const [template, setTemplate] = useState<PrintTemplateValue>(() =>
+    readPrintTemplateParam(searchParams.get(PRINT_TEMPLATE_PARAM)),
+  )
   const [hideDeliveryPlace, setHideDeliveryPlace] = useState(false)
   const { taxMode, showSignature } = resolvePrintTemplate(template)
 
@@ -133,19 +151,6 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
             <Printer />
             In / Lưu PDF
           </Button>
-          {/* bao-CR-420: lối bắc sang bản tách theo NCC, đối xứng với nút "Xem
-              tờ phiếu gốc" bên trang kia. Chỉ hiện khi người xem có quyền xem
-              NCC — trang bên kia tự gác lại lần nữa (N-17). Mở từ ĐƠN MUA HÀNG
-              thì KHÔNG hiện: `id` trên URL lúc đó là id của đơn, bắc sang sẽ ra
-              nhầm phiếu. */}
-          {!fromPo && canSeeSupplier && (
-            <Button variant="outline" asChild>
-              <Link to={appRoutes.procurement.purchaseRequestSupplierPrint(routeId)}>
-                <Users />
-                Xem bản tách theo nhà cung cấp
-              </Link>
-            </Button>
-          )}
           <Button variant="outline" onClick={closePrintPage}>
             <X />
             Đóng
@@ -161,9 +166,24 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
           )}
         </div>
 
+        {/* bao-CR-574: chuyển sang bản tách theo NCC nằm NGAY trong ô «Mẫu in» (nhóm thứ hai),
+            thay nút lẻ «Xem bản tách theo nhà cung cấp». Chỉ người có quyền xem NCC thấy nhóm
+            đó — trang bên kia tự gác lại lần nữa (N-17). Mở từ ĐƠN MUA HÀNG thì KHÔNG có nhóm
+            này: `id` trên URL lúc đó là id của đơn, bắc sang sẽ ra nhầm phiếu. */}
         <PurchaseRequestPrintOptions
+          layout="common"
           template={template}
           onTemplateChange={setTemplate}
+          supplierLayout={
+            !fromPo && canSeeSupplier
+              ? { enabled: buildSupplierPrintPlan(purchaseRequest.items).groups.length > 0 }
+              : undefined
+          }
+          onLayoutChange={(_layout, nextTemplate) =>
+            navigate(
+              `${appRoutes.procurement.purchaseRequestSupplierPrint(routeId)}?${PRINT_TEMPLATE_PARAM}=${nextTemplate}`,
+            )
+          }
           hideDeliveryPlace={hideDeliveryPlace}
           onHideDeliveryPlaceChange={setHideDeliveryPlace}
         />
@@ -505,37 +525,73 @@ export function SignatureSection({
  * Bản trước là ba nhóm nút bật/tắt: chữ gãy hai dòng, và chọn Mẫu thuế thì nhóm chữ ký biến
  * mất làm cả thanh xô lệch. Nay ô chọn có BỀ RỘNG CỐ ĐỊNH (đổi mẫu không xê dịch), chữ không
  * gãy dòng; màn hẹp thì cả cụm xuống hàng. Bản in gốc và bản tách theo NCC dùng chung.
+ *
+ * bao-CR-574 (đại ca chốt 03/10/2026): `supplierLayout` có mặt thì ô chọn chia hai nhóm —
+ * «Phiếu chung» và «Tách theo nhà cung cấp», mỗi nhóm đủ ba mẫu. Không có quyền xem NCC thì
+ * truyền `undefined`: ô chọn y như cũ. `enabled: false` = nhóm tách hiện nhưng mờ, kèm lý do.
+ * Chọn mẫu CÙNG nhóm gọi `onTemplateChange`; chọn sang nhóm kia gọi `onLayoutChange`.
  */
 export function PurchaseRequestPrintOptions({
+  layout = 'common',
   template,
   onTemplateChange,
+  supplierLayout,
+  onLayoutChange,
   hideDeliveryPlace,
   onHideDeliveryPlaceChange,
 }: {
+  layout?: PrintLayout
   template: PrintTemplateValue
   onTemplateChange: (value: PrintTemplateValue) => void
+  supplierLayout?: { enabled: boolean }
+  onLayoutChange?: (layout: PrintLayout, template: PrintTemplateValue) => void
   hideDeliveryPlace: boolean
   onHideDeliveryPlaceChange: (value: boolean) => void
 }) {
+  const handleChange = (value: string) => {
+    const choice = decodePrintChoice(value)
+    if (!choice) return
+    if (choice.layout === layout) onTemplateChange(choice.template)
+    else onLayoutChange?.(choice.layout, choice.template)
+  }
   return (
     <div className="pr-print-toolbar-options">
       <label className="flex items-center gap-2 text-[13px] font-medium whitespace-nowrap">
         Mẫu in:
-        <Select
-          value={template}
-          onValueChange={(next) => {
-            if (isPrintTemplateValue(next)) onTemplateChange(next)
-          }}
-        >
-          <SelectTrigger className="h-9 w-[230px] bg-card" aria-label="Mẫu in">
+        <Select value={encodePrintChoice(layout, template)} onValueChange={handleChange}>
+          <SelectTrigger
+            className={cn('h-9 bg-card', supplierLayout ? 'w-[320px]' : 'w-[230px]')}
+            aria-label="Mẫu in"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PRINT_TEMPLATES.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
+            {supplierLayout
+              ? PRINT_LAYOUTS.map((group) => {
+                  const disabled = group.value === 'supplier' && !supplierLayout.enabled
+                  return (
+                    <SelectGroup key={group.value}>
+                      <SelectLabel>
+                        {group.label}
+                        {disabled && ' — chưa có dòng chốt nhà cung cấp'}
+                      </SelectLabel>
+                      {PRINT_TEMPLATES.map((option) => (
+                        <SelectItem
+                          key={option.value}
+                          value={encodePrintChoice(group.value, option.value)}
+                          disabled={disabled}
+                        >
+                          {group.value === 'supplier' ? `Theo NCC · ${option.label}` : option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )
+                })
+              : PRINT_TEMPLATES.map((option) => (
+                  <SelectItem key={option.value} value={encodePrintChoice(layout, option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
           </SelectContent>
         </Select>
       </label>

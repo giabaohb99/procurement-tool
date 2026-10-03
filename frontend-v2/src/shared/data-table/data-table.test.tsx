@@ -14,7 +14,9 @@ interface Row {
 
 const ROWS: Row[] = [{ id: 1, name: 'Nguyễn Văn A', note: 'ghi chú rất dài '.repeat(20) }]
 
-function build(columns: DataTableColumn<Row>[], storageKey?: string) {
+//  bao-CR-578: bảng tự thêm cột «ID» ở bìa trái. Các bài dưới kiểm tính năng KHÁC và lấy ô
+//  theo vị trí, nên mặc định tắt cột đó; bài riêng của cột ID truyền `idColumn = true`.
+function build(columns: DataTableColumn<Row>[], storageKey?: string, idColumn = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const { container } = render(
     <QueryClientProvider client={client}>
@@ -23,6 +25,7 @@ function build(columns: DataTableColumn<Row>[], storageKey?: string) {
         rows={ROWS}
         getRowId={(r) => r.id}
         storageKey={storageKey}
+        idColumn={idColumn}
       />
     </QueryClientProvider>,
   )
@@ -375,5 +378,42 @@ describe('DataTable — dividerAfter', () => {
     expect(cells[0].className).toContain('inset_-2px')
     expect(heads[1].className).not.toContain('inset_-2px')
     expect(cells[1].className).not.toContain('inset_-2px')
+  })
+})
+
+/** bao-CR-578 — cột «ID» mặc định ở bìa trái của mọi bảng danh sách. */
+describe('DataTable — cột ID mặc định', () => {
+  const headers = (table: HTMLTableElement) =>
+    Array.from(table.querySelectorAll('thead th')).map((th) => th.textContent?.trim())
+
+  it('adds an ID column at the far left showing the row id', () => {
+    const table = build([{ key: 'name', header: 'Tên', cell: (r) => r.name }], undefined, true)
+    expect(headers(table)[0]).toBe('ID')
+    expect(table.querySelector('tbody td')?.textContent).toBe('1')
+  })
+
+  it('does not add a second one when the screen declares its own id column', () => {
+    const table = build(
+      [
+        { key: 'id', header: 'Mã', cell: (r) => r.id },
+        { key: 'name', header: 'Tên', cell: (r) => r.name },
+      ],
+      undefined,
+      true,
+    )
+    expect(headers(table)).toEqual(['Mã', 'Tên'])
+  })
+
+  it('shows up at the left even for a user who saved an older column order', () => {
+    localStorage.setItem('erp.table.t-id', JSON.stringify({ columnOrder: ['note', 'name'] }))
+    const table = build(
+      [
+        { key: 'name', header: 'Tên', cell: (r) => r.name },
+        { key: 'note', header: 'Ghi chú', cell: (r) => r.note },
+      ],
+      't-id',
+      true,
+    )
+    expect(headers(table)).toEqual(['ID', 'Ghi chú', 'Tên'])
   })
 })

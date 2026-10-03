@@ -70,6 +70,72 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-578 | Bảng danh sách bản erp có sẵn cột ID ở bìa trái
+- status: xong
+- date: 2026-10-03
+Đại ca muốn các màn danh sách trên bản erp có sẵn cột ID ở bìa trái cho dễ nhìn. Thay vì sửa từng màn trong
+khoảng 91 màn, em thêm ngay trong bảng danh sách dùng chung: bảng tự thêm cột «ID» ở đầu, đứng sau cột tick chọn
+nếu màn có cột đó, người dùng vẫn ẩn được trong menu «Cột». Màn đã tự có cột ID thì không thêm cột thứ hai; bảng gộp
+mà hàng không mang ID thì không thêm cho khỏi một cột toàn gạch. Bảng vốn nhớ thứ tự cột của từng người và cột mới bị
+nối xuống cuối, nên em sửa luôn chỗ đó để người đã lưu bố cục cũ vẫn thấy ID ở bìa trái. Bảng dòng trên trang chi
+tiết chứng từ không đổi.
+
+Mã nguồn: `frontend-v2/src/shared/data-table/id-column.ts` (mới), `data-table.tsx` (prop `idColumn`), `use-table-layout.ts`,
+`types.ts` (`placeAtStartWhenNew`), bài kiểm `id-column.test.ts`, `use-table-layout.test.tsx`, `data-table.test.tsx`.
+Deploy: chưa commit, chưa deploy.
+
+---
+
+## bao-CR-576 | Khối «Áp 1 NCC cho nhiều dòng»: giá đứng sát tên hàng, dòng đổi giá nổi lên
+- status: xong
+- date: 2026-10-03
+Đại ca thấy ở khối «Áp 1 NCC cho nhiều dòng» trên chi tiết YCMH, giá hiện tại và ô giá mới nằm tận mép phải
+màn hình, cách tên hàng gần cả màn nên người ta dễ bỏ qua. Em đưa ba phương án và đại ca chọn phương án C. Khối
+không còn trải hết màn, cột giá đứng ngay sau tên hàng. Dòng nào gõ giá mới khác giá cũ thì được tô nền cảnh báo,
+giá cũ bị gạch ngang, và dưới tên hiện «Đổi giá: giá cũ → giá mới». Nhân tiện bịt một bẫy: giá mới chỉ được áp cho
+dòng đã tick, trước đây gõ giá mà quên tick thì giá bị bỏ qua không báo gì; nay gõ giá là tự tick dòng đó.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`,
+`utils/purchase-request-bulk-price.ts` (+ bài kiểm), thêm 2 bài trong `purchase-request-choose-card.test.tsx`.
+Deploy: chưa commit, chưa deploy.
+
+---
+
+## bao-CR-575 | Hộp «Sửa giá / NCC» của YCMH không còn tràn ra ngoài khung
+- status: xong
+- date: 2026-10-03
+Đại ca gửi ảnh màn chọn phương án YCMH: hộp «Sửa giá / NCC» gặp nhà cung cấp tên dài thì ô chọn, ô gõ tên, ô
+đơn giá và nút Lưu vượt ra ngoài khung trắng của hộp, còn ô thông tin sản phẩm phía trên lòi một mảng xám ở mép
+phải. Nguyên nhân là khung hộp thoại xếp theo lưới, cột tự giãn theo dòng chữ dài nhất nên tên nhà cung cấp dài
+kéo cả khối rộng ra. Em cho khối nội dung co theo khung để ô chọn tự cắt bớt chữ. Ở khối «Áp 1 NCC cho nhiều
+dòng», ô gõ tên nhà cung cấp được nới rộng cho đọc đủ chữ gợi ý.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`.
+Deploy: chưa commit, chưa deploy.
+
+---
+
+## bao-CR-574 | In YCMH: chọn bản tách theo nhà cung cấp ngay trong ô «Mẫu in»
+- status: xong
+- date: 2026-10-03
+Đại ca muốn bản in YCMH chia loại trong cùng ô chọn mẫu in như hiện tại, người có quyền xem nhà cung cấp
+thì có thêm dạng in tách theo nhà cung cấp. Trước đây nút «In phiếu» mở bản nào là do quyền người bấm, còn
+chuyển bản phải bấm một nút lẻ trên thanh công cụ của trang in, khó thấy và hai người cùng bấm một nút lại
+ra hai tờ khác nhau. Đại ca chốt theo đề xuất, chỉ làm trên bản erp.
+
+Nay nút «In phiếu» luôn mở phiếu chung cho mọi người. Ô «Mẫu in» của cả hai trang in có thêm nhóm «Tách theo
+nhà cung cấp» với đủ ba mẫu, chỉ người có quyền xem nhà cung cấp mới thấy; phiếu chưa có dòng chốt nhà cung
+cấp thì nhóm này hiện mờ kèm lý do, in từ đơn mua hàng thì không có nhóm này. Chọn mẫu ở nhóm kia là chuyển
+sang trang in tương ứng và giữ nguyên kiểu mẫu đang chọn. Hai nút lẻ «Xem bản tách theo nhà cung cấp» và
+«Xem tờ phiếu gốc» được bỏ. Bản cũ thumua không đổi.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-request-print-template.ts`, `pages/purchase-request-print-page.tsx`
+(`PurchaseRequestPrintOptions`), `pages/purchase-request-supplier-print-page.tsx`, `pages/purchase-request-detail-page.tsx`,
+bài kiểm `purchase-request-print-template.test.ts` + `purchase-request-print-page.test.tsx` (11 bài mới).
+Deploy: chưa commit, chưa deploy.
+
+---
+
 ## bao-CR-573 | Đồng bộ đặt xe, duyệt dấu: 19 phiếu dấu kẹt vì tệp đính kèm khai trùng
 - status: xong
 - date: 2026-10-03
@@ -139,7 +205,7 @@ bấm nhân bản.
 Mã nguồn: `backend/app/modules/survey/service.py` (`creator_name`, `create_survey`, `copy_survey`),
 `frontend-v2/src/modules/procurement/utils/survey-new-draft.ts` (+ bài kiểm), `pages/survey-detail-page.tsx`,
 `frontend/src/pages/SurveyDetail.tsx`, bài kiểm `test/backend/test_nspt_phieu_khao_sat_la_nguoi_tao_cr571.py` (5 bài).
-Deploy: chưa commit, chưa deploy.
+Commit: erp-v2 `b52f5f4b`. Deploy: DEV + PROD 02/10 16:50 (main `832ca274`).
 
 ---
 
@@ -158,7 +224,7 @@ mã và các chữ viết tắt XNK, NK; phân hệ Đơn hàng nhập khẩu kh
 Mã nguồn: v2 `customs-sections.ts`, `customs-price-page.tsx`, `customs-line-detail-dialog.tsx`, `customs-tariff-tab.tsx`,
 `customs-line-columns.tsx` (+ hai bài kiểm); v1 `customs-sections.ts`, `CustomsPrices.tsx`, `CustomsLineDetail.tsx`,
 `CustomsTabs.tsx`; backend `modules/customs/constants.py`, `scripts/seed_help_customs_prices.py`.
-Deploy: chưa commit, chưa deploy.
+Commit: erp-v2 `b52f5f4b`. Deploy: DEV + PROD 02/10 16:50 (main `832ca274`).
 
 ---
 
@@ -343,7 +409,7 @@ ghi kèm số phương án đã gỡ vào lý do trả về. Câu hướng dẫn
 Mã nguồn: `backend/app/modules/survey/service.py` (`clear_for_return`), `backend/app/modules/survey/controller.py`
 (`reject_`), `frontend-v2/src/modules/procurement/pages/survey-detail-page.tsx`, `frontend/src/pages/SurveyDetail.tsx`,
 bài kiểm `test/backend/test_tra_ve_khao_sat_don_phuong_an_cr563.py` (8 bài) cùng 17 bài CR-554 xanh.
-Commit: erp-v2 `9a7bdb12`. Deploy: DEV 02/10; prod chưa.
+Commit: erp-v2 `9a7bdb12`. Deploy: DEV + PROD 02/10 16:50 (main `832ca274`).
 
 ---
 

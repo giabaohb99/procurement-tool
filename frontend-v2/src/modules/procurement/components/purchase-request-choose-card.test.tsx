@@ -423,6 +423,39 @@ describe('PurchaseRequestChooseCard', () => {
     )
   })
 
+  //  bao-CR-576 (phương án C): giá nằm sát tên, dòng đổi giá nổi lên — và gõ giá là tự tick dòng,
+  //  vì giá mới chỉ áp cho dòng đã tick (quên tick là giá bị bỏ qua im lặng).
+  it('typing a new price ticks the line, flags the change and sends the price', () => {
+    actAsPurchasingAssignee()
+    const chosen = buildOptionZero({ is_chosen: true, snap_price_by_volume: 1000 })
+    mockOptions = [chosen]
+    renderCard(buildPurchaseRequest({ items: [buildItem({ chosen_option: chosen })] }))
+
+    fireEvent.change(screen.getByLabelText(/Đơn giá mới cho/), { target: { value: '1200' } })
+    expect(screen.getByText(/Đổi giá: 1\.000 đ → 1\.200 đ/)).toBeInTheDocument()
+    //  Đã tự tick (1 dòng) nhưng nút vẫn khóa vì chưa có NCC.
+    expect(screen.getByRole('button', { name: 'Áp cho 1 dòng' })).toBeDisabled()
+
+    fireEvent.change(screen.getByPlaceholderText('Hoặc tên NCC ngoài danh mục'), {
+      target: { value: 'CÔNG TY B' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Áp cho 1 dòng' }))
+    expect(assignBulkMutate).toHaveBeenCalledWith(
+      { supplier_code: '', supplier_name: 'CÔNG TY B', items: [{ item_id: 5, snap_price_by_volume: 1200 }] },
+      expect.anything(),
+    )
+  })
+
+  it('typing the same price as before is not flagged as a change', () => {
+    actAsPurchasingAssignee()
+    const chosen = buildOptionZero({ is_chosen: true, snap_price_by_volume: 1000 })
+    mockOptions = [chosen]
+    renderCard(buildPurchaseRequest({ items: [buildItem({ chosen_option: chosen })] }))
+
+    fireEvent.change(screen.getByLabelText(/Đơn giá mới cho/), { target: { value: '1000' } })
+    expect(screen.queryByText(/Đổi giá/)).toBeNull()
+  })
+
   it('keeps the bulk zone away when the chosen option already has a supplier or came from a survey', () => {
     // Đã có NCC thì không còn gì để áp; phương án khảo sát thì backend từ chối
     // cả lô — hai loại dòng này không được phép lọt vào danh sách tick.
