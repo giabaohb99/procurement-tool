@@ -98,7 +98,9 @@ phận rồi Quản lý điều phối), thêm #5 DX-GIAO-HANG (điều kiện l
 và #6 DD-MAC-DINH cho Duyệt dấu (Trưởng bộ phận người tạo chọn trên phiếu rồi Giám đốc duyệt dấu); bật công tắc
 hai loại phiếu; gán vai trò thử cho DEMONV, DEMOTP, DEMOQL, DEMOAD; phân VTDEGOHOLDING làm văn thư công ty 1.
 Kiểm chỉ đọc trên dev: đặt xe công tác ra luồng #4, giao hàng ra #5, duyệt dấu ra #6, bước 1 giao DEMOTP, bước 2
-giao NSU001 hoặc DEMOQL. Em không đăng nhập thử trên dev — đó là việc của đại ca.
+giao NSU001 hoặc DEMOQL. Em không đăng nhập thử trên dev — đó là việc của đại ca. Đã tạo 5 phiếu thử trên dev đứng tên DEMONV: DX933
+(công tác, luồng #4), DX934 (giao hàng, luồng #5), DX935 nháp, DD866 (duyệt dấu, luồng #6, trưởng bộ phận chọn DEMOTP2)
+và DD867 nháp có tệp. Đại ca chốt không thêm ô «Người duyệt» vào form đặt xe.
 
 Mã nguồn: `approval/serializer.py` (`count_running_instances`), `vehicle_booking/approval_bridge.py` và
 `seal_request/approval_bridge.py` (`entity_context`); frontend-v2 `approval/config/condition-fields.ts`,

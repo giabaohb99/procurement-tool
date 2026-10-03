@@ -59,6 +59,16 @@ trưởng phòng là `DEMOTP`), `DEMOTP` trưởng bộ phận, `DEMOQL` quản 
 ⚠️ Trên dev, mật khẩu của `DEMOTP` khác mã đăng nhập — cần mật khẩu dev của tài khoản đó, hoặc đổi trưởng phòng
 của phòng Demo Thu Mua sang một tài khoản đăng nhập được, thì mới chạy được bước 1.
 
+Phiếu thử trên dev (tạo 03/10, người tạo `DEMONV`):
+
+| Phiếu | Loại | Luồng | Đang chờ |
+|---|---|---|---|
+| DX933 | Đặt xe công tác | #4 DATXE | chặng 1/2, `DEMOTP` |
+| DX934 | Giao hàng | #5 DX-GIAO-HANG | chặng 1/2, `DEMOTP` |
+| DX935 | Đặt xe công tác | — | nháp, để tự gửi duyệt |
+| DD866 | Duyệt dấu | #6 DD-MAC-DINH | chặng 1/2, `DEMOTP2` (người tạo chọn) |
+| DD867 | Duyệt dấu | — | nháp có tệp, để tự gửi duyệt |
+
 Đặt xe chỉ khai được bước «trưởng bộ phận người nộp», chưa khai được «người tạo chọn người duyệt»: form đặt xe chưa
 có ô chọn người duyệt.
 
