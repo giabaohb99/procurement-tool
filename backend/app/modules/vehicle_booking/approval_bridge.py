@@ -276,13 +276,12 @@ def booking_for_approver(db: Session, booking_id: int, user) -> VehicleBooking |
     Chỉ ĐỌC. Mọi cửa GHI (sửa · điều phối · duyệt thẳng) vẫn đi qua `get_scoped`
     với đúng hành động của nó.
     """
-    from app.modules.approval import steps_service
+    from app.modules.approval.pending_reader import is_pending_approver
 
     booking = db.get(VehicleBooking, booking_id)
     if booking is None or booking.is_deleted:
         return None
-    if not steps_service.has_pending_task(
-            db, ENTITY, booking_id, getattr(user, "employee_id", 0) or 0):
+    if not is_pending_approver(db, ENTITY, booking_id, user):
         return None
     return booking
 

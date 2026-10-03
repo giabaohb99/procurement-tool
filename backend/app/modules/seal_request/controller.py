@@ -8,7 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
-from app.core.auth import get_current_user, get_perm_profile, require
+from app.core.auth import get_current_user, get_perm_profile, require, user_has_permission
 from app.core.base_controller import (
     apply_datetime_range,
     apply_filters,
@@ -120,8 +120,21 @@ def list_approvers(db: Session = Depends(get_db),
 
 @router.get("/{rid}")
 def get_seal_request(rid: int, db: Session = Depends(get_db),
-                     user=Depends(require("seal_request", "read"))):
-    obj = _scoped_or_404(db, rid, user, "read")
+                     user=Depends(get_current_user)):
+    """Chi tiết phiếu: trong phạm vi dữ liệu, HOẶC đang được giao duyệt nó (bao-CR-584).
+
+    Cổng KHÔNG đòi `require("seal_request", "read")` ở mức route nữa: người được luồng
+    giao duyệt (Pháp lý, trưởng bộ phận phòng khác) có thể không có quyền đọc Duyệt
+    dấu nào. Hai lớp vẫn còn đủ: có quyền đọc thì soi phạm vi như cũ; không thì chỉ
+    qua được khi đang giữ việc duyệt treo trên ĐÚNG phiếu này.
+    """
+    obj = None
+    if user_has_permission(db, user, "seal_request", "read"):
+        obj = get_scoped(db, SealRequest, "seal_request", rid, user, get_perm_profile(db, user))
+    if obj is None or obj.is_deleted:
+        obj = approval_bridge.request_for_approver(db, rid, user)
+    if obj is None:
+        raise HTTPException(404, "Không tìm thấy yêu cầu đóng dấu")
     data = service.serialize_seal_request(db, obj)
     #  Cờ để giao diện ẩn cụm nút CỔNG-2 với người không phải Văn thư (backend vẫn chốt).
     data["can_stamp"] = _can_stamp(db, user, obj)

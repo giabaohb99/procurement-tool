@@ -562,6 +562,15 @@ STD_ROLES = {
     "seal_director": {"name": "Giám đốc duyệt dấu (Duyệt dấu)", "perms": {
         "seal_request": (["read"], "company"),
     }},
+    #  Pháp lý kiểm tra dấu (bao-CR-584) — bước «Pháp lý kiểm tra» của luồng duyệt dấu,
+    #  tương ứng vai trò «Legal» bên app cũ (một người làm cả 971 lượt kiểm). Khai
+    #  bước theo VAI TRÒ chứ không theo người cụ thể: đổi người thì gán vai trò, luồng
+    #  giữ nguyên. Xem mọi phiếu để tra lại hồ sơ đã kiểm; phiếu đang chờ mình kiểm
+    #  thì mở được nhờ luật «đang được giao duyệt» (`approval/pending_reader.py`).
+    "seal_legal": {"name": "Pháp lý kiểm tra dấu (Duyệt dấu)", "perms": {
+        "seal_request": (["read"], "all"),
+        "seal_type": (["read"], "all"),
+    }},
     #  Phân hệ Hồ sơ (16/09/2026). Vai trò mẫu để giao cho Hành chính mà không
     #  phải cấp quyền quản trị hệ thống; `admin` vẫn tự có đủ (vòng cấp quyền
     #  cuối `seed.py` quét `ENTITIES`).
@@ -776,6 +785,7 @@ ROLE_DESCRIPTIONS = {
     "seal_approver": "Trưởng bộ phận: duyệt phiếu xin đóng dấu của phòng mình.",
     "seal_admin": "Quản danh mục con dấu và xem mọi phiếu duyệt dấu.",
     "seal_director": "Giám đốc: nhận thông báo và xem phiếu đóng dấu đã duyệt của công ty mình.",
+    "seal_legal": "Pháp lý: kiểm tra hồ sơ ở bước Pháp lý của luồng duyệt dấu, xem mọi phiếu duyệt dấu.",
     "dossier_admin": "Quản danh mục loại hồ sơ và kho hồ sơ công ty.",
     "hr_leave": "Quản lý nghỉ phép: loại nghỉ, ngày lễ, quỹ phép và đơn nghỉ của mọi người.",
     "coffee_admin": "Quản trị Điểm cà phê: chính sách, thành viên, chốt cấp phát kỳ.",

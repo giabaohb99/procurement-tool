@@ -23,6 +23,7 @@ from app.core.scoping import apply_scope
 from app.core.legacy_files import read_file_bytes
 from app.core.storage import dated_key, delete_key, safe_name, upload_fileobj
 from app.core.upload_guard import ensure_batch_ok, guard_upload
+from app.modules.approval.pending_reader import is_pending_approver
 from app.modules.document.file_access_log import ACTION_DOWNLOAD, ACTION_VIEW
 
 from .model import FileLink, StoredFile
@@ -90,6 +91,12 @@ def _check(db: Session, user, entity: str, mode: str, entity_id: int | None = No
         #  bình luận và đăng bài diễn đàn vốn là việc ai cũng làm được.
         if mode != "read":
             ensure_orphan_quota(db, user.id)
+        return exts, max_mb
+    #  bao-CR-584: người ĐANG được giao duyệt phiếu (đặt xe, duyệt dấu) xem được tệp
+    #  treo thẳng vào phiếu đó — không xem được chứng từ thì không kiểm được gì. Chỉ
+    #  khi tệp treo ĐÚNG phiếu (`entity == parent`), và chỉ lúc việc còn treo.
+    if (mode == "read" and entity_id is not None and entity == parent
+            and is_pending_approver(db, parent, entity_id, user)):
         return exts, max_mb
     if mode == "read":
         ok = user_has_permission(db, user, read_parent(entity) or parent, "read")
