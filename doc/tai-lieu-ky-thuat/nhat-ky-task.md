@@ -158,7 +158,7 @@ bài xanh (một bài đỏ là bài canh `.env` local đang bật chế độ D
 Mã nguồn: `backend/app/modules/approval/pending_reader.py`, `seal_request/controller.py` + `approval_bridge.py`
 (`request_for_approver`), `vehicle_booking/controller.py`, `attachment/controller.py` (`_check`), `comment/service.py`
 (`resolve_doc`), `seed.py` (`seal_legal`).
-Commit: erp-v2 `f6198e80`. Deploy: DEV 03/10/2026; prod chưa.
+Commit: erp-v2 `f6198e80`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
@@ -251,7 +251,7 @@ Mã nguồn: `approval/serializer.py` (`count_running_instances`), `vehicle_book
 `seal_request/approval_bridge.py` (`entity_context`); frontend-v2 `approval/config/condition-fields.ts`,
 `components/flow-condition-picker.tsx`, `flow-scope-picker.tsx`, `approval-node-form.tsx`, `pages/approval-flow-list-page.tsx`,
 `vehicle-booking/components/booking-progress-card.tsx`, `utils/describe-booking-flow.ts`.
-Commit: erp-v2 `e0757bb9`, `485b7b61`. Deploy: DEV 03/10/2026; prod chưa.
+Commit: erp-v2 `e0757bb9`, `485b7b61`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
@@ -279,7 +279,7 @@ thêm, chưa tra: ô «Trao đổi» báo không tải được khi trưởng b�
 
 Mã nguồn: `backend/app/modules/approval/approver_resolver.py` (`_by_role`), script
 `backend/scripts/local_test/setup_flow_test_booking_seal.py`, bài kiểm `test/backend/test_nguoi_duyet_theo_vai_tro.py`.
-Commit: erp-v2 `e0757bb9`. Deploy: DEV 03/10/2026; prod chưa. Dữ liệu thử chỉ ở local.
+Commit: erp-v2 `e0757bb9`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`. Dữ liệu thử chỉ ở local.
 
 ---
 
@@ -295,7 +295,7 @@ tiết chứng từ không đổi.
 
 Mã nguồn: `frontend-v2/src/shared/data-table/id-column.ts` (mới), `data-table.tsx` (prop `idColumn`), `use-table-layout.ts`,
 `types.ts` (`placeAtStartWhenNew`), bài kiểm `id-column.test.ts`, `use-table-layout.test.tsx`, `data-table.test.tsx`.
-Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
+Commit: erp-v2 `0667524f`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
@@ -310,7 +310,7 @@ dòng đã tick, trước đây gõ giá mà quên tick thì giá bị bỏ qua 
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`,
 `utils/purchase-request-bulk-price.ts` (+ bài kiểm), thêm 2 bài trong `purchase-request-choose-card.test.tsx`.
-Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
+Commit: erp-v2 `0667524f`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
@@ -324,7 +324,7 @@ kéo cả khối rộng ra. Em cho khối nội dung co theo khung để ô ch�
 dòng», ô gõ tên nhà cung cấp được nới rộng cho đọc đủ chữ gợi ý.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`.
-Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
+Commit: erp-v2 `0667524f`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
@@ -345,7 +345,7 @@ sang trang in tương ứng và giữ nguyên kiểu mẫu đang chọn. Hai nú
 Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-request-print-template.ts`, `pages/purchase-request-print-page.tsx`
 (`PurchaseRequestPrintOptions`), `pages/purchase-request-supplier-print-page.tsx`, `pages/purchase-request-detail-page.tsx`,
 bài kiểm `purchase-request-print-template.test.ts` + `purchase-request-print-page.test.tsx` (11 bài mới).
-Commit: erp-v2 `0667524f`. Deploy: DEV 03/10; prod chưa.
+Commit: erp-v2 `0667524f`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
