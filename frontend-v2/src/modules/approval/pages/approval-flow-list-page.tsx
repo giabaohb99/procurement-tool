@@ -89,7 +89,9 @@ function ApprovalFlowListContent() {
   //  Danh mục để dịch id trong điều kiện thành TÊN. Không truyền nhân sự: điều
   //  kiện ở tầng luồng chỉ lọc theo loại/pháp nhân/phòng, và nạp cả nghìn nhân
   //  sự chỉ để dựng một dòng chữ là quá đắt cho màn danh sách.
-  const getOptions = useConditionChoices([])
+  //  Có luồng Duyệt dấu thì nạp thêm danh mục loại con dấu để điều kiện đọc ra TÊN.
+  const hasSealFlow = (data?.items ?? []).some((row) => row.entity === 'seal_request')
+  const getOptions = useConditionChoices([], hasSealFlow ? 'seal_request' : '')
 
   const engineOn = useMemo(
     () => new Map((switches ?? []).map((row) => [row.entity, row.is_enabled])),
@@ -147,7 +149,10 @@ function ApprovalFlowListContent() {
         header: 'Áp khi',
         width: 300,
         cell: (row) => {
-          if (!row.condition) return <span className="text-muted-foreground">Mọi phiếu</span>
+          //  Chuỗi «[]» cũng là KHÔNG có điều kiện (bộ dựng lưu vậy khi xóa hết dòng)
+          //  — trước đây nó in nguyên «[]» ra bảng.
+          const raw = (row.condition || '').trim()
+          if (!raw || raw === '[]') return <span className="text-muted-foreground">Mọi phiếu</span>
 
           //  Dịch điều kiện thành câu tiếng Việt — cột này để ĐỌC LƯỚT, phơi
           //  JSON thô ra bảng thì người khai luồng phải tự giải mã từng dòng.
@@ -165,6 +170,20 @@ function ApprovalFlowListContent() {
         width: 100,
         align: 'right',
         cell: (row) => <span className="tabular-nums">{row.node_count}</span>,
+      },
+      {
+        //  bao-CR-579: trả lời «luồng nào đang chạy». Sửa luồng chỉ đổi phiếu gửi
+        //  SAU; số này là những phiếu giữ nguyên bản cũ tới khi xong.
+        key: 'running_count',
+        header: 'Đang chạy',
+        width: 110,
+        align: 'right',
+        cell: (row) =>
+          row.running_count ? (
+            <span className="tabular-nums">{row.running_count} phiếu</span>
+          ) : (
+            <span className="text-muted-foreground">0</span>
+          ),
       },
       {
         key: 'version_no',

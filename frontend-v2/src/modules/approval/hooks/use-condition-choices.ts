@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 
+import { useSealTypes } from '@/modules/approval-seal/hooks/use-seal-types'
 import { useActiveDocumentTypes } from '@/modules/document/hooks/use-document-types'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
@@ -14,8 +15,10 @@ import type { ConditionFieldDef } from '../config/condition-fields'
  * Ba danh mục ở đây đều nhỏ và dùng chung khắp app nên đã nằm sẵn trong cache
  * của TanStack Query — mở bảng khai bước không sinh thêm lượt gọi mạng nào.
  */
-export function useConditionChoices(employees: Employee[]) {
+export function useConditionChoices(employees: Employee[], entity = '') {
   const docTypes = useActiveDocumentTypes()
+  //  Danh mục loại con dấu chỉ nạp khi đang khai luồng Duyệt dấu (bao-CR-579).
+  const { data: sealTypes } = useSealTypes({}, { enabled: entity === 'seal_request' })
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500 })
 
@@ -26,6 +29,10 @@ export function useConditionChoices(employees: Employee[]) {
           return (field.choices ?? []).map((item) => ({ id: item.value, label: item.label }))
         case 'doc_type':
           return docTypes.map((item) => ({ id: item.id, label: item.name, hint: item.code }))
+        case 'seal_type':
+          return (sealTypes?.items ?? [])
+            .filter((item) => item.is_active)
+            .map((item) => ({ id: item.id, label: item.name }))
         case 'company':
           return (companies?.items ?? []).map((item) => ({
             id: item.id,
@@ -44,6 +51,6 @@ export function useConditionChoices(employees: Employee[]) {
           }))
       }
     },
-    [companies?.items, departments?.items, docTypes, employees],
+    [companies?.items, departments?.items, docTypes, employees, sealTypes?.items],
   )
 }

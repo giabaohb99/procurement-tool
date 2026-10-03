@@ -11,7 +11,13 @@ import type { ConditionField, ConditionOp } from '@/shared/condition-builder/con
  * `modules/document/types/security-level.ts`. Ba nguồn còn lại là danh mục
  * động, bộ dựng nạp bằng hook của phân hệ tương ứng.
  */
-export type ConditionValueSource = 'level' | 'doc_type' | 'company' | 'department' | 'employee'
+export type ConditionValueSource =
+  | 'level'
+  | 'doc_type'
+  | 'seal_type'
+  | 'company'
+  | 'department'
+  | 'employee'
 
 /**
  * Một ô của luồng duyệt. `name` phải khớp KHÓA trong bối cảnh phiếu
@@ -62,15 +68,88 @@ export const DOCUMENT_CONDITION_FIELDS: ConditionFieldDef[] = [
   { name: 'drafter_employee_id', label: 'Người soạn', source: 'employee', ops: CATALOG_OPS },
 ]
 
+/** Hai loại phiếu đặt xe — khớp `TYPE_CAR` / `TYPE_DELIVERY` của backend. */
+export const BOOKING_REQUEST_TYPES = [
+  { value: 1, label: 'Đặt xe công tác' },
+  { value: 2, label: 'Giao hàng' },
+]
+
+/**
+ * Các ô của PHIẾU ĐẶT XE đem ra rẽ nhánh (bao-CR-579).
+ *
+ * Khớp `vehicle_booking/approval_bridge.entity_context`. Ô người là
+ * `requester_employee_id` (id NHÂN SỰ), không phải `requester_id` — cột đó trên
+ * phiếu là id TÀI KHOẢN, chọn người ở bộ dựng ra id nhân sự nên so với nó là
+ * không bao giờ khớp.
+ */
+export const VEHICLE_BOOKING_CONDITION_FIELDS: ConditionFieldDef[] = [
+  {
+    name: 'request_type',
+    label: 'Loại phiếu',
+    source: 'level',
+    ops: ['eq', 'ne'],
+    choices: BOOKING_REQUEST_TYPES,
+    hint: 'Ví dụ: phiếu giao hàng đi luồng có thêm Giám đốc.',
+  },
+  { name: 'company_id', label: 'Pháp nhân', source: 'company', ops: CATALOG_OPS },
+  { name: 'department_id', label: 'Phòng ban người tạo', source: 'department', ops: CATALOG_OPS },
+  { name: 'requester_employee_id', label: 'Người tạo phiếu', source: 'employee', ops: CATALOG_OPS },
+]
+
+/**
+ * Các ô của PHIẾU DUYỆT DẤU đem ra rẽ nhánh (bao-CR-579). Khớp
+ * `seal_request/approval_bridge.entity_context`. «Pháp nhân» là công ty CHÍNH
+ * của phiếu; phiếu đóng dấu nhiều công ty thì chỉ công ty đầu được xét.
+ */
+export const SEAL_REQUEST_CONDITION_FIELDS: ConditionFieldDef[] = [
+  { name: 'seal_type_id', label: 'Loại con dấu', source: 'seal_type', ops: CATALOG_OPS },
+  { name: 'company_id', label: 'Pháp nhân (công ty chính)', source: 'company', ops: CATALOG_OPS },
+  { name: 'department_id', label: 'Phòng ban', source: 'department', ops: CATALOG_OPS },
+  { name: 'requester_employee_id', label: 'Người tạo phiếu', source: 'employee', ops: CATALOG_OPS },
+]
+
 /**
  * Loại chứng từ nào đã khai được điều kiện bằng bộ dựng.
  *
- * Loại chưa có mặt ở đây thì chưa có cầu nối sang bộ máy duyệt
- * (`approval_bridge` mới chỉ có ở văn bản) — bày một danh mục ô đoán mò còn tệ
- * hơn nói thẳng là chưa hỗ trợ.
+ * Loại chưa có mặt ở đây thì bộ dựng nói thẳng là chưa hỗ trợ thay vì bày một
+ * danh mục ô đoán mò. Thêm một loại vào đây phải đi kèm khóa tương ứng trong
+ * `entity_context` của `approval_bridge` bên backend, nếu không điều kiện không
+ * bao giờ khớp và nhánh lặng lẽ không chạy.
  */
 export const CONDITION_FIELDS_BY_ENTITY: Record<string, ConditionFieldDef[]> = {
   document: DOCUMENT_CONDITION_FIELDS,
+  vehicle_booking: VEHICLE_BOOKING_CONDITION_FIELDS,
+  seal_request: SEAL_REQUEST_CONDITION_FIELDS,
+}
+
+/** Một ô trên phiếu ghi sẵn người duyệt — dùng cho cách chọn «Lấy từ một ô trên phiếu». */
+export interface ApproverFieldDef {
+  name: string
+  label: string
+}
+
+/**
+ * Các ô CHỌN ĐƯỢC cho cách «Lấy từ một ô trên phiếu» (bao-CR-579).
+ *
+ * Trước đây là ô gõ tay tên cột — gõ sai một chữ thì bước không ra ai, phiếu kẹt.
+ * Khóa phải khớp `entity_context` bên backend và phải mang id NHÂN SỰ.
+ */
+export const APPROVER_FIELDS_BY_ENTITY: Record<string, ApproverFieldDef[]> = {
+  document: [
+    { name: 'signer_employee_id', label: 'Người ký' },
+    { name: 'owner_employee_id', label: 'Người phụ trách' },
+    { name: 'drafter_employee_id', label: 'Người soạn' },
+  ],
+  vehicle_booking: [
+    { name: 'first_approver_employee_id', label: 'Người duyệt do người tạo chọn trên phiếu' },
+  ],
+  seal_request: [
+    { name: 'first_approver_employee_id', label: 'Trưởng bộ phận do người tạo chọn trên phiếu' },
+  ],
+}
+
+export function approverFieldsOf(entity: string): ApproverFieldDef[] {
+  return APPROVER_FIELDS_BY_ENTITY[entity] ?? []
 }
 
 export function conditionFieldsOf(entity: string): ConditionFieldDef[] {

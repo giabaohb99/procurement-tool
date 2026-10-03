@@ -34,7 +34,7 @@ export function NodeConditionBuilder({
   employees,
 }: NodeConditionBuilderProps) {
   const fields = conditionFieldsOf(entity)
-  const getOptions = useConditionChoices(employees)
+  const getOptions = useConditionChoices(employees, entity)
 
   //  Loại chứng từ chưa nối vào bộ máy duyệt (mới chỉ văn bản có
   //  `approval_bridge`) thì phiếu của nó CHƯA BAO GIỜ chạy qua đây — mọi điều

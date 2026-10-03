@@ -1,11 +1,15 @@
-import { BadgeCheck } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { BadgeCheck, GitBranch } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { approvalApi } from '@/modules/approval/api/approval-api'
+import { queryKeys } from '@/shared/constants/query-keys'
 import { Card } from '@/shared/ui/card'
 import { TimelineItem, TimelineMarker } from '@/shared/ui/timeline-item'
 import { cn } from '@/shared/utils/cn'
 import type { VehicleBooking } from '../types/vehicle-booking'
 import { buildBookingStages, type BookingStage } from '../utils/build-booking-stages'
+import { describeBookingFlow } from '../utils/describe-booking-flow'
 import { BookingCardHeader } from './booking-info-item'
 import { DriverStatusBadge } from './status-pill'
 
@@ -32,6 +36,8 @@ export function BookingProgressCard({ booking }: { booking: VehicleBooking }) {
       >
         Tiến trình xử lý
       </BookingCardHeader>
+
+      <BookingFlowLine booking={booking} />
 
       <ol className="flex flex-col">
         {stages.map((stage, index) => (
@@ -98,5 +104,31 @@ function StageRow({ stage, badge }: { stage: BookingStage; badge?: ReactNode }) 
         </dl>
       )}
     </div>
+  )
+}
+
+/**
+ * Một dòng «Theo luồng …» — trả lời «phiếu này đang chạy luồng duyệt nào»
+ * (bao-CR-579). Chỉ hỏi máy chủ khi phiếu thật sự có phiên duyệt; phiếu đi đường
+ * một bước có sẵn thì không vẽ gì.
+ *
+ * Cố ý KHÔNG dựng lại khung «Luồng duyệt nhiều bước» đã bỏ ngày 23/09/2026 —
+ * chỉ một dòng chữ, chặng đang chờ ai thì dải tiêu đề đã ghi.
+ */
+function BookingFlowLine({ booking }: { booking: VehicleBooking }) {
+  const instanceId = booking.approval_instance_id ?? 0
+  const { data: instance } = useQuery({
+    queryKey: queryKeys.approval.ofEntity('vehicle_booking', booking.id),
+    queryFn: () => approvalApi.ofEntity('vehicle_booking', booking.id),
+    enabled: instanceId > 0,
+  })
+  const text = describeBookingFlow(instance)
+  if (!text) return null
+
+  return (
+    <p className="-mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+      <GitBranch className="size-3.5 shrink-0" />
+      <span>{text}</span>
+    </p>
   )
 }

@@ -25,6 +25,16 @@ def _name_of(db: Session, employee_id: int | None) -> str:
     return employee.full_name if employee else f"Nhân sự #{employee_id}"
 
 
+def count_running_instances(db: Session, flow_id: int) -> int:
+    """Số phiếu đang chạy (hoặc kẹt chờ quản trị) theo một luồng."""
+    from .instance_model import INSTANCE_OPEN_STATUSES, ApprovalInstance
+
+    return (db.query(ApprovalInstance.id)
+            .filter(ApprovalInstance.flow_id == flow_id,
+                    ApprovalInstance.status.in_(INSTANCE_OPEN_STATUSES))
+            .count())
+
+
 def flow_out(db: Session, flow: ApprovalFlow, with_steps: bool = False) -> dict:
     company = db.get(Company, flow.company_id) if flow.company_id else None
     data = {
@@ -40,6 +50,10 @@ def flow_out(db: Session, flow: ApprovalFlow, with_steps: bool = False) -> dict:
         "priority": flow.priority,
         "condition": flow.condition,
         "node_count": len(flow_service.nodes_of(db, flow.id)),
+        #  bao-CR-579: luồng này đang có bao nhiêu phiếu CHƯA xong. Trả lời câu
+        #  «sửa luồng này thì đụng tới ai» — phiếu đang chạy giữ bản chụp riêng nên
+        #  KHÔNG đổi theo, chỉ phiếu gửi sau mới đi luồng mới.
+        "running_count": count_running_instances(db, flow.id),
         #  Hai luồng mặc định cùng bật thì chỉ một cái chạy — nói ra ngay trên
         #  dòng danh sách, xem `flow_service.canh_bao_trung_mac_dinh`.
         "duplicate_default_warning": flow_service.default_overlap_warning(db, flow),

@@ -19,12 +19,13 @@ import {
   SCOPE_LABELS,
   type FlowScopeKind,
 } from '../helpers/flow-scope'
+import { FlowConditionPicker } from './flow-condition-picker'
 
 interface FlowScopePickerProps {
   /** Chuỗi điều kiện đang lưu trên luồng. */
   condition: string
   onChange: (condition: string) => void
-  /** Luồng của loại chứng từ khác văn bản thì chưa có bộ chọn riêng. */
+  /** Văn bản dùng bộ chọn ba lựa chọn; loại khác dùng bộ dựng điều kiện chung. */
   entity: string
 }
 
@@ -63,18 +64,11 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
     onChange(buildScopeCondition({ kind: kindMoi, ids: kindMoi === kind ? ids : [] }))
   }
 
+  //  Loại khác văn bản (Đặt xe, Duyệt dấu…) đặt điều kiện bằng bộ dựng chung
+  //  trên các ô của chính phiếu đó — bao-CR-579. Loại chưa khai ô nào thì bộ
+  //  dựng tự nói là luồng áp cho mọi phiếu.
   if (!isDocument) {
-    //  Loại chứng từ khác chưa có bộ chọn riêng — nói thẳng thay vì bày một ô
-    //  chọn rỗng không giải thích được.
-    return (
-      <div className="space-y-2">
-        <Label>Áp cho phiếu nào</Label>
-        <p className="text-sm text-muted-foreground">
-          Loại chứng từ này chưa có bộ chọn riêng — luồng áp cho <b>mọi phiếu</b> của loại
-          đó. Cần lọc hẹp hơn thì khai điều kiện ở phần rẽ nhánh của từng bước.
-        </p>
-      </div>
-    )
+    return <FlowConditionPicker condition={condition} onChange={onChange} entity={entity} />
   }
 
   return (
