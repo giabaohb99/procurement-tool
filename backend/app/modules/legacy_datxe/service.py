@@ -422,9 +422,15 @@ def sync_legacy_attachments(db, *, entity: str, entity_id: int, node: dict,
     ids = details.get("attachedFileIds") or []
     if isinstance(ids, dict):
         ids = [ids[k] for k in sorted(ids, key=lambda k: (len(k), k))]
-    file_ids = [i for i in ids if isinstance(i, str) and i.strip()]
+    #  bao-CR-573: phiếu app cũ có thể khai CÙNG một tệp hai lần. Phiên DB tắt
+    #  autoflush nên lần gặp thứ hai không thấy liên kết vừa thêm và ghi thêm một
+    #  dòng; từ đó mọi lần cập nhật phiếu đều nổ MultipleResultsFound (19 phiếu dấu
+    #  kẹt trên prod 02/10). Bỏ trùng, giữ nguyên thứ tự khai.
+    file_ids = list(dict.fromkeys(i for i in ids if isinstance(i, str) and i.strip()))
     if not file_ids:
         return 0
+
+    from sqlalchemy import delete
 
     from app.core.legacy_files import SOURCE_DATXE
     from app.modules.attachment.model import FileLink, StoredFile
@@ -438,8 +444,8 @@ def sync_legacy_attachments(db, *, entity: str, entity_id: int, node: dict,
             select(StoredFile).where(
                 StoredFile.source == SOURCE_DATXE,
                 StoredFile.external_id == external_id
-            )
-        ).scalar_one_or_none()
+            ).order_by(StoredFile.id)
+        ).scalars().first()
 
         if sf is None:
             file_meta = firebase.read_node(f"files/{external_id}") or {}
@@ -450,15 +456,20 @@ def sync_legacy_attachments(db, *, entity: str, entity_id: int, node: dict,
             db.add(sf)
             db.flush()
 
-        link = db.execute(
+        link_ids = list(db.execute(
             select(FileLink.id).where(
                 FileLink.file_id == sf.id,
                 FileLink.entity == entity,
                 FileLink.entity_id == entity_id
-            )
-        ).scalar_one_or_none()
+            ).order_by(FileLink.id)
+        ).scalars())
 
-        if link is None:
+        #  Liên kết trùng do lỗi cũ để lại thì giữ dòng nhỏ nhất, xóa phần thừa:
+        #  phiếu kẹt tự lành ở lần quét kế tiếp, không cần sửa tay dữ liệu prod.
+        if len(link_ids) > 1:
+            db.execute(delete(FileLink).where(FileLink.id.in_(link_ids[1:])))
+
+        if not link_ids:
             fl = FileLink(
                 file_id=sf.id,
                 entity=entity,
