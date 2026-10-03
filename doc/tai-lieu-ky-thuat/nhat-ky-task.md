@@ -70,6 +70,46 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## giang-CR-587 | Tra cứu thị trường đổi tên mục và có đường dẫn ba cấp; YCMH tạo mới bỏ ô tick «Nhờ phòng khác xử lý»
+- status: xong
+- date: 2026-10-03
+Anh Giang yêu cầu ba chỉnh sửa giao diện ERP v2, làm và kiểm trên máy của anh, chưa deploy.
+
+### giang-CR-587a | Mục «Pháp lý» của Tra cứu thị trường đổi tên thành «Tra cứu hóa chất»
+- status: xong
+Tên mục ở menu trái và tiêu đề trang đều đổi thành «Tra cứu hóa chất». Đường dẫn và khóa của mục giữ nguyên nên
+đường dẫn cũ, đường dẫn đã lưu và đường dẫn có `?tab=legal` vẫn mở đúng trang. Hai câu hướng dẫn trên màn hình
+từng bảo người dùng «xem mục Pháp lý» cũng đổi theo tên mới, để không chỉ tới một mục không còn tên đó.
+
+### giang-CR-587b | Tiêu đề trang theo đúng tên ở menu trái, đường dẫn trên thanh trên có cấp thứ ba
+- status: xong
+Ở màn Tra cứu thị trường, tiêu đề trang nay là đúng tên mục đang sáng ở menu trái: năm thẻ tra giá (Danh sách,
+Biểu đồ, Doanh nghiệp, So sánh, Thuế) đều mang tiêu đề «Giá thị trường», các mục khác mang tên của chính chúng
+(ví dụ «Lịch sử nạp» thay cho «Tra cứu thị trường — Lịch sử nạp»). Đường dẫn trên thanh trên có thêm cấp thứ ba
+cho mọi mục menu có mục con, ví dụ «Thu mua › Tra cứu thị trường › Giá thị trường» hay «Nhân sự › Nghỉ phép ›
+Lịch nghỉ». Cấp thứ ba luôn khớp mục đang sáng bên trái: đứng ở thẻ Biểu đồ vẫn ghi «Giá thị trường» chứ không
+ghi tên thẻ; cấp giữa bấm được để quay về, chỉ cấp cuối là trang hiện tại. Trên màn hình hẹp chỉ giữ cấp cuối.
+
+### giang-CR-587c | YCMH (yêu cầu mua hàng) tạo mới: bỏ ô tick ở ô Phòng xử lý
+- status: xong
+Lúc lập YCMH, ô Phòng xử lý không còn ô tick «Nhờ phòng khác xử lý» (đặt ra ở bao-CR-488). Nay chỉ còn một ô
+chọn, hiện sẵn «Phòng thu mua mặc định», bấm vào mới xổ danh mục phòng ban. Mục mặc định nghĩa là chưa nhờ phòng
+nào, nên giao diện vẫn không gửi phòng xử lý lên và hệ thống tự chọn như cũ: người của phòng có bộ máy mua riêng
+(nhà máy) thì ra chính phòng đó, còn lại ra phòng thu mua. Mục này cố ý không quy về phòng số 0, vì làm vậy là âm
+thầm đẩy mọi phiếu của nhà máy sang thu mua chung; muốn nhờ hẳn thu mua thì chọn phòng «Sản xuất -Thu mua» trong
+danh sách. Sửa luôn lỗi ô này hiện nguyên con số «0». Màn YCBG (yêu cầu báo giá) tạo mới vẫn còn ô tick cùng
+kiểu, chưa đổi.
+
+Kiểm: kiểm kiểu 0 lỗi, eslint 0 lỗi, 989 bài kiểm xanh trong src/modules/procurement và src/app, đo ngày 03/10
+trên mã đã gộp với erp-v2 mới nhất.
+Mã nguồn: module-topbar.tsx (đường dẫn ba cấp, kèm bài kiểm mới module-topbar.test.tsx), customs-sections.ts và
+customs-price-page.tsx (tên mục, tiêu đề), customs-pesticide.ts, purchase-request-info-card.tsx và
+handling-dept-display.ts (ô Phòng xử lý), cùng các tệp bài kiểm đi kèm.
+Commit: 6725ff2d trên erp-v2.
+Deploy: chưa — chưa lên dev lẫn prod.
+
+---
+
 ## duoc-CR-585 | Quá trình công tác nhân sự — bản gọn của V1-8
 - status: xong
 - date: 2026-10-03
