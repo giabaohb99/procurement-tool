@@ -135,6 +135,11 @@ export interface ApprovalFlow {
   condition: string
   node_count: number
   /**
+   * Số phiếu ĐANG chạy theo luồng này (bao-CR-579). Sửa luồng không đụng tới
+   * chúng — mỗi phiếu giữ bản chụp lúc bắt đầu; chỉ phiếu gửi sau đi luồng mới.
+   */
+  running_count?: number
+  /**
    * Câu cảnh báo khi có luồng MẶC ĐỊNH khác cùng bật cho loại chứng từ này —
    * chỉ một trong số đó được chọn, các luồng còn lại nằm im. Rỗng = không trùng.
    */

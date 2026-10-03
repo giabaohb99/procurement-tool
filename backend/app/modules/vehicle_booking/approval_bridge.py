@@ -20,7 +20,7 @@ from datetime import datetime
 from types import SimpleNamespace
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.modules.approval import entity_hooks, flow_service, instance_service
 
@@ -40,6 +40,7 @@ def entity_context(booking: VehicleBooking) -> dict:
 
     Chỉ những ô thật sự có nghĩa để rẽ nhánh / định tuyến người duyệt.
     """
+    db = object_session(booking)
     return {
         #  `id` để khai được luồng riêng cho MỘT phiếu (bộ chọn "Áp dụng cho" sinh
         #  điều kiện `id in [...]`). Thiếu ô này lựa chọn đó không bao giờ khớp.
@@ -48,6 +49,11 @@ def entity_context(booking: VehicleBooking) -> dict:
         "company_id": booking.company_id,
         "department_id": booking.department_id,
         "requester_id": booking.requester_id,
+        #  bao-CR-579: hai ô NHÂN SỰ cho điều kiện «người tạo» và bước «lấy từ ô»
+        #  (người tạo chọn người duyệt, như app cũ). Hai cột gốc là id TÀI KHOẢN.
+        "requester_employee_id": (_employee_id_of_user(db, booking.requester_id) or 0) if db else 0,
+        "first_approver_employee_id": (
+            (_employee_id_of_user(db, booking.first_approver_id) or 0) if db else 0),
     }
 
 

@@ -17,7 +17,7 @@ Mẫu: `app/modules/vehicle_booking/approval_bridge.py`.
 from types import SimpleNamespace
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.modules.approval import entity_hooks, flow_service, instance_service
 
@@ -27,12 +27,24 @@ ENTITY = "seal_request"
 
 
 def entity_context(req: SealRequest) -> dict:
-    """Bối cảnh phiếu cho điều kiện rẽ nhánh + chọn người duyệt «lấy từ ô»."""
+    """Bối cảnh phiếu cho điều kiện rẽ nhánh + chọn người duyệt «lấy từ ô».
+
+    bao-CR-579: thêm loại con dấu và hai ô NHÂN SỰ. `requester_id` và
+    `first_approver_id` trên phiếu là id TÀI KHOẢN, còn bộ máy duyệt và bộ chọn
+    điều kiện nói bằng id NHÂN SỰ — đưa thẳng id tài khoản sang là điều kiện
+    «người tạo thuộc danh sách» không bao giờ khớp và bước «lấy từ ô» giao nhầm người.
+    Phải khớp `CONDITION_FIELDS_BY_ENTITY` + `APPROVER_FIELDS_BY_ENTITY` bên frontend-v2.
+    """
+    db = object_session(req)
     return {
         "id": req.id,
         "company_id": req.company_id,
         "department_id": req.department_id,
         "requester_id": req.requester_id,
+        "seal_type_id": req.seal_type_id or 0,
+        "requester_employee_id": (_employee_id_of_user(db, req.requester_id) or 0) if db else 0,
+        "first_approver_employee_id": (
+            (_employee_id_of_user(db, req.first_approver_id) or 0) if db else 0),
     }
 
 

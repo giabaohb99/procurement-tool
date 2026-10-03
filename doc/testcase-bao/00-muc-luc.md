@@ -16,6 +16,7 @@ Kịch bản kiểm thử **thủ công** cho phần việc thuộc dải CR `ba
 | [03-phuong-an-va-chuong.md](03-phuong-an-va-chuong.md) | Chuông luồng phương án, mốc chốt xong lựa chọn | bao-CR-419 |
 | [04-pham-vi-va-bang-rong.md](04-pham-vi-va-bang-rong.md) | Phạm vi dữ liệu và câu chữ khi bảng rỗng | bao-CR-414 · liên đới 422 |
 | [05-vai-tro-va-pham-vi.md](05-vai-tro-va-pham-vi.md) | Màn Vai trò & quyền, hộp thoại Phạm vi dữ liệu, cảnh báo tự loại trừ phòng mình | bao-CR-427 · bao-CR-428 · bao-CR-430 |
+| [06-luong-duyet-cau-hinh-dat-xe-duyet-dau.md](06-luong-duyet-cau-hinh-dat-xe-duyet-dau.md) | Đặt xe và Duyệt dấu chạy theo luồng duyệt cấu hình, thử dưới máy | bao-CR-577 |
 
 ## Môi trường
 

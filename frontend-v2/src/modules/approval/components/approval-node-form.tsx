@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
+import { approverFieldsOf } from '../config/condition-fields'
 import { danhSachId, ghepId } from '../helpers/approver-ref'
 import { useApprovalOptions } from '../hooks/use-approvals'
 import { APPROVER_KIND, MULTI_MODE, type ApprovalNode } from '../types/approval'
@@ -101,7 +102,12 @@ export function ApprovalNodeForm({
   const roleCodes = (form.approver_ref ?? '').split(',').map((s) => s.trim()).filter(Boolean)
   //  Chỉ hai cách còn cần ô GÕ TAY (số cấp, tên ô trên phiếu); vai trò đã có ô
   //  chọn riêng, ba cách còn lại tự suy ra người nên không bày ô.
-  const needsExtraField = SUGGESTION_REF[form.approver_kind ?? 0] !== undefined && !pickRole
+  //  «Lấy từ một ô trên phiếu»: loại chứng từ đã khai danh mục ô thì CHỌN, không
+  //  gõ tay tên cột — gõ sai một chữ là bước không ra ai (bao-CR-579).
+  const approverFields = approverFieldsOf(entity)
+  const pickField = form.approver_kind === APPROVER_KIND.field && approverFields.length > 0
+  const needsExtraField =
+    SUGGESTION_REF[form.approver_kind ?? 0] !== undefined && !pickRole && !pickField
   const multiUser = danhSachId(form.approver_ref).length > 1 || !pickExplicit
 
   return (
@@ -181,6 +187,35 @@ export function ApprovalNodeForm({
             <p className="text-xs text-muted-foreground">
               Người đang giữ vai trò đã chọn sẽ được giao duyệt bước này. Danh sách
               lấy từ màn Phân quyền tài khoản.
+            </p>
+          </>
+        )}
+
+        {pickField && (
+          <>
+            <Select
+              value={form.approver_ref || undefined}
+              onValueChange={(value) => setField('approver_ref', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Chọn ô trên phiếu…" />
+              </SelectTrigger>
+              <SelectContent>
+                {approverFields.map((item) => (
+                  <SelectItem key={item.name} value={item.name}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+                {/*  Ô đã lưu mà không còn trong danh mục thì vẫn phải thấy được. */}
+                {form.approver_ref &&
+                  !approverFields.some((item) => item.name === form.approver_ref) && (
+                    <SelectItem value={form.approver_ref}>{form.approver_ref}</SelectItem>
+                  )}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Người duyệt lấy đúng người ghi ở ô này trên từng phiếu. Ô để trống thì bước xử
+              như không tìm được người duyệt.
             </p>
           </>
         )}

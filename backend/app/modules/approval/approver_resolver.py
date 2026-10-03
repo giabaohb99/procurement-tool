@@ -118,8 +118,10 @@ def _refs_as_ints(raw: str) -> list[int]:
 
 
 def _by_role(db: Session, raw: str) -> list[int]:
-    from app.modules.role.model import Role, UserRole
-    from app.modules.user.model import User
+    #  bao-CR-577: `UserRole` nằm ở user.model. Nhập nhầm từ role.model làm mọi
+    #  bước «theo vai trò» nổ ImportError từ ngày dựng bộ máy (fda76b43).
+    from app.modules.role.model import Role
+    from app.modules.user.model import User, UserRole
 
     codes = [part.strip() for part in (raw or "").split(",") if part.strip()]
     if not codes:
