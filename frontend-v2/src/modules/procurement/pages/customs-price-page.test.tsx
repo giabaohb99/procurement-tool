@@ -225,10 +225,25 @@ describe('CustomsPricePage', () => {
     expect(screen.getByRole('tab', { name: 'Thuế' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('keeps Pháp lý as its own submenu page without the price tabs', async () => {
+  //  03/10/2026 — tiêu đề trang = ĐÚNG tên mục ở menu trái, không ghép «Tra cứu thị trường —»
+  //  (ngữ cảnh đó đã nằm ở breadcrumb cấp hai). `name` dạng chuỗi = khớp NGUYÊN chuỗi, nên
+  //  bản có tiền tố không lọt qua được.
+  it('keeps Tra cứu hóa chất as its own submenu page without the price tabs', async () => {
     build('/procurement/customs-prices/legal')
-    expect(await screen.findByRole('heading', { name: /Pháp lý/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Tra cứu hóa chất' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Tra cứu thị trường/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: 'Danh sách' })).not.toBeInTheDocument()
+  })
+
+  it('titles the five price tabs with the menu label Giá thị trường', async () => {
+    build('/procurement/customs-prices/chart')
+    expect(await screen.findByRole('heading', { name: 'Giá thị trường' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Tra cứu thị trường/ })).not.toBeInTheDocument()
+  })
+
+  it('titles other submenu pages with their own menu label', async () => {
+    build('/procurement/customs-prices/history')
+    expect(await screen.findByRole('heading', { name: 'Lịch sử nạp' })).toBeInTheDocument()
   })
 
   it('keeps the filters when the header button jumps to the import history', async () => {

@@ -66,6 +66,47 @@ export function handlingDeptForCreate(draft: HandlingDeptDraft): number | undefi
 }
 
 /**
+ * 03/10/2026 — lúc LẬP YCMH bỏ ô tick «Nhờ phòng khác xử lý»: chỉ còn MỘT ô chọn, mặc định hiện
+ * «Phòng thu mua mặc định», bấm vào mới xổ danh mục phòng ban.
+ *
+ * ⚠️ Mục mặc định KHÔNG phải phòng `0` hay một phòng cụ thể — nó là trạng thái «CHƯA nhờ»
+ * (`handler_dept_assigned = false`), để `handlingDeptForCreate` KHÔNG gửi gì và backend tự chọn:
+ * người nhà máy → chính phòng nhà máy, còn lại → phòng thu mua mặc định. Quy nó về `0` là ép
+ * mọi phiếu nhà máy sang thu mua chung. Muốn nhờ hẳn phòng thu mua thì chọn phòng thật
+ * «Sản xuất -Thu mua» trong danh sách. Khóa chuỗi riêng (không phải `'0'`) để không lẫn với id.
+ */
+export const HANDLING_DEPT_DEFAULT_OPTION = 'default'
+
+/** Mục chọn lúc LẬP phiếu: «Phòng thu mua mặc định» đứng đầu, sau đó là danh mục phòng ban. */
+export function handlingDeptCreateOptions(
+  departments: Pick<Department, 'id' | 'name' | 'is_active'>[],
+  currentId: number | null | undefined,
+): { value: string; label: string }[] {
+  return [
+    { value: HANDLING_DEPT_DEFAULT_OPTION, label: DEFAULT_PURCHASING_LABEL },
+    ...handlingDeptOptions(departments, currentId),
+  ]
+}
+
+/** Giá trị đang chọn lúc LẬP phiếu — chưa nhờ phòng nào (hoặc nhờ mà để trống) thì là mục mặc định. */
+export function handlingDeptCreateValue(draft: HandlingDeptDraft): string {
+  const id = Number(draft.handler_dept_id) || 0
+  return isHandlingDeptAssigned(draft) && id > 0 ? String(id) : HANDLING_DEPT_DEFAULT_OPTION
+}
+
+/** Đổi lựa chọn lúc LẬP phiếu thành phần cập nhật bản nháp (xem `HANDLING_DEPT_DEFAULT_OPTION`). */
+export function handlingDeptCreateChange(value: string): {
+  handler_dept_assigned: boolean
+  handler_dept_id: number
+} {
+  const id = Number(value) || 0
+  if (value === HANDLING_DEPT_DEFAULT_OPTION || id <= 0) {
+    return { handler_dept_assigned: false, handler_dept_id: 0 }
+  }
+  return { handler_dept_assigned: true, handler_dept_id: id }
+}
+
+/**
  * Mục chọn cho ô Phòng xử lý: phòng đang hoạt động trong danh mục — KHÔNG có mục ảo nào (bao-CR-524
  * bỏ «Thu mua chung» giá trị `0`); phòng đã tắt nhưng phiếu cũ còn trỏ tới thì giữ lại để không
  * mất nhãn.

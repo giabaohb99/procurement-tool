@@ -21,12 +21,13 @@ import type {
 } from '../types/purchase-request-detail'
 import { resolveShownDeptHead } from '../utils/dept-head-display'
 import {
-  ASSIGN_OTHER_DEPT_LABEL,
   HANDLING_DEPT_HINT,
   HANDLING_DEPT_PLACEHOLDER,
+  handlingDeptCreateChange,
+  handlingDeptCreateOptions,
+  handlingDeptCreateValue,
   handlingDeptLabel,
   handlingDeptOptions,
-  isHandlingDeptAssigned,
 } from '../utils/handling-dept-display'
 import { ApproverSelect } from './approver-select'
 
@@ -35,7 +36,7 @@ interface InfoCardProps {
   approverCandidates?: DeptHeadCandidate[]
   data: PurchaseRequestDetail
   editing: boolean
-  /** bao-CR-488 — đang LẬP phiếu mới: ô Phòng xử lý ẩn sau ô tick «Nhờ phòng khác xử lý». */
+  /** Đang LẬP phiếu mới: ô Phòng xử lý mặc định «Phòng thu mua mặc định» (chưa nhờ phòng nào). */
   isNew?: boolean
   /** Sau khi phiếu duyệt, quản lý vẫn được đổi cờ Gấp và backend đồng bộ sang ĐMH. */
   urgentEditable?: boolean
@@ -84,8 +85,8 @@ export function PurchaseRequestInfoCard({
   )
   // bao-CR-480: một ô «Phòng xử lý» cho cả ba chứng từ — luật nhãn/mục chọn ở util dùng chung.
   const handlingDeptOptionList = handlingDeptOptions(departments, data.handler_dept_id)
+  const handlingDeptCreateOptionList = handlingDeptCreateOptions(departments, data.handler_dept_id)
   const handlingDeptText = handlingDeptLabel(data.handler_dept_id, data.handler_dept_name, departments)
-  const handlingDeptAssigned = isHandlingDeptAssigned(data)
   // bao-CR-318: đường về YCBG nguồn — chỉ thành link khi người xem đọc được YCBG,
   // không thì hiện mã dạng chữ (bấm vào chỉ ăn 403).
   const surveyRequestLinkable = Boolean(data.survey_request_id) && can('survey_request', 'read')
@@ -232,36 +233,22 @@ export function PurchaseRequestInfoCard({
           phòng thu mua mặc định là phòng thật «Sản xuất -Thu mua» có sẵn trong danh mục.
         */}
         {editing && isNew && departments.length ? (
-          /* bao-CR-488: lúc LẬP phiếu ô Phòng xử lý ẩn — hệ thống tự chọn mặc định (nhà máy → chính
-             phòng mình, còn lại → phòng thu mua mặc định). Tick «Nhờ phòng khác xử lý» mới bung ô
-             chọn; đã tick thì gửi đúng phòng đã chọn (để trống = phòng thu mua mặc định). */
+          /* 03/10/2026 — bỏ ô tick «Nhờ phòng khác xử lý» (bao-CR-488): MỘT ô chọn, mặc định hiện
+             «Phòng thu mua mặc định», bấm vào mới xổ danh mục phòng ban. Mục mặc định = CHƯA nhờ
+             phòng nào → không gửi, backend tự chọn (nhà máy → chính phòng mình, còn lại → phòng
+             thu mua mặc định) — xem `HANDLING_DEPT_DEFAULT_OPTION`. */
           <div className="space-y-1.5">
             <Label htmlFor="pr-handler-dept">Phòng xử lý</Label>
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <Checkbox
-                checked={handlingDeptAssigned}
-                onCheckedChange={(checked) =>
-                  onChange({
-                    handler_dept_assigned: checked === true,
-                    handler_dept_id: checked === true ? data.handler_dept_id : 0,
-                  })
-                }
-              />
-              {ASSIGN_OTHER_DEPT_LABEL}
-            </label>
-            {handlingDeptAssigned ? (
-              <SearchSelect
-                id="pr-handler-dept"
-                searchInTrigger
-                value={String(data.handler_dept_id || 0)}
-                placeholder={HANDLING_DEPT_PLACEHOLDER}
-                searchPlaceholder="Gõ để tìm phòng ban…"
-                options={handlingDeptOptionList}
-                onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
-              />
-            ) : (
-              <p className="text-xs text-muted-foreground">{HANDLING_DEPT_HINT}</p>
-            )}
+            <SearchSelect
+              id="pr-handler-dept"
+              searchInTrigger
+              value={handlingDeptCreateValue(data)}
+              placeholder={HANDLING_DEPT_PLACEHOLDER}
+              searchPlaceholder="Gõ để tìm phòng ban…"
+              options={handlingDeptCreateOptionList}
+              onChange={(value) => onChange(handlingDeptCreateChange(value))}
+            />
+            <p className="text-xs text-muted-foreground">{HANDLING_DEPT_HINT}</p>
           </div>
         ) : (
           <div className="space-y-1.5">

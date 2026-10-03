@@ -61,7 +61,7 @@ export function resolvePesticideEmptyMessage(
     }
     return bannedRules > 0
       ? 'Không thuốc nào trong bộ lọc đang chọn chứa hoạt chất cấm theo TT 75/2025 (khớp theo tên hoạt chất).'
-      : 'Chưa có danh sách hoạt chất cấm để đối chiếu — danh sách này nạp cùng danh mục pháp lý (mục «Pháp lý»).'
+      : 'Chưa có danh sách hoạt chất cấm để đối chiếu — danh sách này nạp cùng danh mục pháp lý (mục «Tra cứu hóa chất»).'
   }
   return canImport
     ? 'Chưa có danh mục thuốc BVTV. Bấm «Nạp danh mục» để tải tệp thuoc-bvtv.json / .xlsx.'

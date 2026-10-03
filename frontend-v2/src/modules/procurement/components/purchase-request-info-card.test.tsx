@@ -206,41 +206,63 @@ describe('PurchaseRequestInfoCard — Trưởng bộ phận', () => {
   })
 })
 
-describe('PurchaseRequestInfoCard — Phòng xử lý lúc lập phiếu (bao-CR-488)', () => {
+//  03/10/2026 — bỏ ô tick «Nhờ phòng khác xử lý» (bao-CR-488): một ô chọn, mặc định «Phòng thu
+//  mua mặc định», bấm mới xổ danh mục. Mục mặc định = CHƯA nhờ phòng nào (không gửi, backend tự
+//  chọn: nhà máy → chính phòng mình) — KHÔNG được quy về phòng `0`.
+describe('PurchaseRequestInfoCard — Phòng xử lý lúc lập phiếu', () => {
   const DEPARTMENTS = [
     { id: 5, name: 'Dego Organic', is_active: true },
-    { id: 20, name: 'Thu mua', is_active: true },
+    { id: 20, name: 'Sản xuất -Thu mua', is_active: true },
   ] as Department[]
 
-  it('hides the department box behind an unticked «Nhờ phòng khác xử lý» when creating', () => {
+  it('shows Phòng thu mua mặc định by default and no tick box when creating', () => {
     renderCard({ isNew: true, departments: DEPARTMENTS })
-    expect(screen.getByRole('checkbox', { name: /Nhờ phòng khác xử lý/ })).not.toBeChecked()
-    expect(screen.queryByRole('combobox', { name: /Phòng xử lý/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: /Nhờ phòng khác xử lý/ })).not.toBeInTheDocument()
+    //  Lỗi cũ: ô hiện nguyên số «0» vì giá trị 0 không nằm trong danh mục.
+    expect(screen.getByRole('combobox', { name: /Phòng xử lý/ })).toHaveValue('Phòng thu mua mặc định')
   })
 
-  it('ticking reveals the box and marks the draft as assigned without inventing a department', async () => {
+  it('lists the other departments only once the box is clicked', async () => {
+    const user = userEvent.setup()
+    renderCard({ isNew: true, departments: DEPARTMENTS })
+    expect(screen.queryByRole('button', { name: 'Dego Organic' })).toBeNull()
+    await user.click(screen.getByRole('combobox', { name: /Phòng xử lý/ }))
+    expect(await screen.findByRole('button', { name: 'Dego Organic' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sản xuất -Thu mua' })).toBeInTheDocument()
+  })
+
+  it('picking a department marks the draft as assigned to that department', async () => {
     const user = userEvent.setup()
     const { onChange } = renderCard({ isNew: true, departments: DEPARTMENTS })
-    await user.click(screen.getByRole('checkbox', { name: /Nhờ phòng khác xử lý/ }))
-    expect(onChange).toHaveBeenCalledWith({ handler_dept_assigned: true, handler_dept_id: 0 })
+    await user.click(screen.getByRole('combobox', { name: /Phòng xử lý/ }))
+    await user.click(await screen.findByRole('button', { name: 'Dego Organic' }))
+    expect(onChange).toHaveBeenCalledWith({ handler_dept_assigned: true, handler_dept_id: 5 })
   })
 
-  it('shows the box already open when the draft carries a handling department (copied ticket)', () => {
-    renderCard({ isNew: true, departments: DEPARTMENTS, data: { ...BASE_DATA, handler_dept_id: 20 } })
-    expect(screen.getByRole('checkbox', { name: /Nhờ phòng khác xử lý/ })).toBeChecked()
-    expect(screen.getByRole('combobox', { name: /Phòng xử lý/ })).toHaveValue('Thu mua')
-  })
-
-  it('un-ticking resets the department to 0 so nothing stale is sent', async () => {
+  it('going back to the default un-assigns instead of sending department 0', async () => {
     const user = userEvent.setup()
-    const { onChange } = renderCard({ isNew: true, departments: DEPARTMENTS, data: { ...BASE_DATA, handler_dept_id: 20 } })
-    await user.click(screen.getByRole('checkbox', { name: /Nhờ phòng khác xử lý/ }))
+    const { onChange } = renderCard({
+      isNew: true,
+      departments: DEPARTMENTS,
+      data: { ...BASE_DATA, handler_dept_id: 5, handler_dept_assigned: true },
+    })
+    const box = screen.getByRole('combobox', { name: /Phòng xử lý/ })
+    await user.clear(box)
+    await user.type(box, 'mặc định')
+    await user.click(await screen.findByRole('button', { name: 'Phòng thu mua mặc định' }))
     expect(onChange).toHaveBeenCalledWith({ handler_dept_assigned: false, handler_dept_id: 0 })
   })
 
-  it('editing an existing draft keeps the plain box — no tick, detail screen unchanged', () => {
-    renderCard({ departments: DEPARTMENTS })
-    expect(screen.queryByRole('checkbox', { name: /Nhờ phòng khác xử lý/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: /Phòng xử lý/ })).toBeInTheDocument()
+  it('shows the copied handling department of a cloned ticket', () => {
+    renderCard({ isNew: true, departments: DEPARTMENTS, data: { ...BASE_DATA, handler_dept_id: 20 } })
+    expect(screen.getByRole('combobox', { name: /Phòng xử lý/ })).toHaveValue('Sản xuất -Thu mua')
+  })
+
+  it('editing an existing ticket keeps the plain department box without the default entry', async () => {
+    const user = userEvent.setup()
+    renderCard({ departments: DEPARTMENTS, data: { ...BASE_DATA, handler_dept_id: 20 } })
+    await user.click(screen.getByRole('combobox', { name: /Phòng xử lý/ }))
+    await user.clear(screen.getByRole('combobox', { name: /Phòng xử lý/ }))
+    expect(screen.queryByRole('button', { name: 'Phòng thu mua mặc định' })).toBeNull()
   })
 })
