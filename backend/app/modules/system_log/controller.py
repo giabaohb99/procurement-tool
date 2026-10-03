@@ -61,12 +61,20 @@ def _guard(db: Session, user) -> None:
         raise HTTPException(403, "Không có quyền xem nhật ký hệ thống")
 
 
+def _parse_methods_or_422(method: str | None) -> tuple[str, ...]:
+    """Ô «Phương thức» sai thì báo 422, KHÔNG lờ đi — lờ đi là trả toàn hệ (bao-CR-582)."""
+    try:
+        return service.parse_methods(method)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
 def _build_query(db: Session, user_id, doc_code, route, ip, field, table,
-                 from_time, to_time, status, action_group, source):
+                 from_time, to_time, status, action_group, source, method):
     return service.build_query(
         db, user_id=user_id, doc_code=doc_code, route=route, ip=ip, field=field,
         table=table, from_time=from_time, to_time=to_time, status=status,
-        action_group=action_group, source=source)
+        action_group=action_group, source=source, methods=_parse_methods_or_422(method))
 
 
 @router.get("")
@@ -82,6 +90,7 @@ def list_logs(
     status: str = Query(service.STATUS_ALL, description="all | error | blocked"),
     action_group: int | None = Query(None, description="Nhóm hành động"),
     source: int | None = Query(None, description="Nguồn: 1 API, 2 Celery, 3 script"),
+    method: str | None = Query(None, description="Phương thức, nhiều giá trị cách dấu phẩy: POST,PUT"),
     page: dict = Depends(pagination),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
@@ -89,7 +98,7 @@ def list_logs(
     """Danh sách gộp theo `request_id` — mỗi dòng là MỘT lượt gọi."""
     _guard(db, user)
     q = _build_query(db, user_id, doc_code, route, ip, field, table,
-                     from_time, to_time, status, action_group, source)
+                     from_time, to_time, status, action_group, source, method)
     total = q.count()
     items = service.build_page(db, q, page["offset"], page["limit"])
     return success({"total": total, "items": items,
@@ -109,18 +118,19 @@ def read_summary(
     status: str = Query(service.STATUS_ALL),
     action_group: int | None = Query(None),
     source: int | None = Query(None),
+    method: str | None = Query(None),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
     """Số liệu ba biểu đồ.
 
-    ⚠️ Nhận **đúng bộ tham số của danh sách** — cố ý lặp lại cả mười một ô thay vì
+    ⚠️ Nhận **đúng bộ tham số của danh sách** — cố ý lặp lại cả mười hai ô thay vì
     gọn hơn. Biểu đồ và bảng phải nói cùng một chuyện; cho biểu đồ ít ô lọc hơn
     là người dùng lọc bảng rồi đọc biểu đồ toàn hệ mà tưởng là của phần đã lọc.
     """
     _guard(db, user)
     q = _build_query(db, user_id, doc_code, route, ip, field, table,
-                     from_time, to_time, status, action_group, source)
+                     from_time, to_time, status, action_group, source, method)
     return success(service.build_summary(db, q))
 
 

@@ -12,6 +12,7 @@ import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { MultiPicker } from '@/shared/ui/multi-picker'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
@@ -32,9 +33,12 @@ import { SystemLogDetailSheet } from '../components/system-log-detail-sheet'
 import { SystemLogSummaryCharts } from '../components/system-log-summary-charts'
 import { useSystemLogs, useSystemLogSummary } from '../hooks/use-system-logs'
 import {
+  buildMethodParam,
   changeSummaryText,
   defaultLogRange,
   formatDuration,
+  HTTP_METHOD_OPTIONS,
+  httpMethodTone,
   httpStatusHint,
   httpStatusTone,
 } from '../utils/system-log-format'
@@ -57,6 +61,8 @@ export function SystemLogListPage() {
   const [from, setFrom] = useState(initialRange.from)
   const [to, setTo] = useState(initialRange.to)
   const [status, setStatus] = useState<LogStatus>(LOG_STATUS.ALL)
+  //  Nhiều phương thức một lượt là HOẶC (bao-CR-582): «POST + PUT» = mọi lượt ghi.
+  const [methods, setMethods] = useState<string[]>([])
   const [actionGroup, setActionGroup] = useState('')
   const [source, setSource] = useState('')
   const [docCode, setDocCode] = useState('')
@@ -80,12 +86,14 @@ export function SystemLogListPage() {
   const ipQuery = useDebouncedValue(ip)
   const tableQuery = useDebouncedValue(table)
   const fieldQuery = useDebouncedValue(field)
+  const methodParam = buildMethodParam(methods)
 
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [page, setPage] = usePageResetOnFilterChange([
     from,
     to,
     status,
+    methodParam,
     actionGroup,
     source,
     docCodeQuery,
@@ -104,6 +112,7 @@ export function SystemLogListPage() {
     from_time: from || undefined,
     to_time: to || undefined,
     status,
+    method: methodParam,
     action_group: actionGroup ? Number(actionGroup) : undefined,
     source: source ? Number(source) : undefined,
     doc_code: docCodeQuery || undefined,
@@ -121,7 +130,7 @@ export function SystemLogListPage() {
 
   const hasFilter =
     status !== LOG_STATUS.ALL ||
-    Boolean(actionGroup || source || docCodeQuery || routeQuery || ipQuery || tableQuery || fieldQuery)
+    Boolean(methodParam || actionGroup || source || docCodeQuery || routeQuery || ipQuery || tableQuery || fieldQuery)
 
   const columns: DataTableColumn<SystemLogItem>[] = [
     {
@@ -137,6 +146,16 @@ export function SystemLogListPage() {
       cell: (r) => <span className="truncate">{r.user_name || '—'}</span>,
     },
     {
+      key: 'method',
+      header: 'Phương thức',
+      width: 110,
+      cell: (r) => (
+        <Badge className={cn('font-mono', TONE_CLASS[httpMethodTone(r.method)])}>
+          {r.method || '—'}
+        </Badge>
+      ),
+    },
+    {
       key: 'summary',
       header: 'Lần bấm',
       width: 320,
@@ -145,8 +164,9 @@ export function SystemLogListPage() {
           <p className="truncate" title={r.summary}>
             {r.summary || '—'}
           </p>
+          {/*  Phương thức đã có cột riêng (bao-CR-582) — dòng này chỉ còn đường dẫn. */}
           <p className="truncate font-mono text-xs text-muted-foreground" title={r.path}>
-            {r.method} {r.path}
+            {r.path}
           </p>
         </div>
       ),
@@ -303,6 +323,22 @@ export function SystemLogListPage() {
                     <SelectItem value={LOG_STATUS.BLOCKED}>Chỉ bị chặn (401, 403)</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <div className="w-44" aria-label="Lọc theo phương thức">
+                  <MultiPicker<string>
+                    value={methods}
+                    onChange={setMethods}
+                    options={HTTP_METHOD_OPTIONS.map((method) => ({ id: method, label: method }))}
+                    placeholder="Mọi phương thức"
+                    searchPlaceholder="Tìm phương thức…"
+                    emptyMessage="Không có phương thức nào khớp."
+                    contentClassName="w-48"
+                    summaryInTrigger
+                    clearInTrigger
+                    //  «Chọn tất cả» = không lọc gì, chỉ thêm một bước bấm thừa.
+                    hideSelectAll
+                  />
+                </div>
 
                 <Select
                   value={actionGroup || 'all'}
