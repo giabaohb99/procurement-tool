@@ -216,6 +216,8 @@ export interface SystemLogSummary {
  */
 export interface SystemLogFilters {
   user_id?: number
+  /** Một hay nhiều phương thức cách bằng dấu phẩy (`POST,PUT`) — HOẶC giữa các giá trị (bao-CR-582). */
+  method?: string
   doc_code?: string
   route?: string
   ip?: string

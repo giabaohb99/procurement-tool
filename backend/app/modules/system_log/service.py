@@ -15,6 +15,7 @@ Tài liệu gốc: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §8.2�
 """
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime, time
 
@@ -42,6 +43,36 @@ STATUS_BLOCKED = "blocked"
 #  5xx là hệ thống hỏng — trộn hai thứ vào một bộ lọc thì câu hỏi *"hôm nay hỏng
 #  gì"* luôn bị vùi dưới hàng trăm lượt 403 của người thiếu quyền.
 BLOCKED_CODES = (401, 403)
+
+#  Ô «Phương thức» (bao-CR-582): nhận nhiều giá trị một lượt, cách bằng dấu phẩy
+#  (`POST,PUT`). Không khóa cứng danh sách GET/POST/… — middleware ghi nguyên
+#  `request.method` (tối đa 8 ký tự), lượt HEAD/OPTIONS cũng phải lọc ra được.
+#  Chỉ chặn thứ không thể là tên phương thức: giá trị rác mà lờ đi thì bảng trả
+#  về toàn hệ trong khi người dùng tin là đã lọc (họ lỗi bao-CR-447).
+_METHOD_PATTERN = re.compile(r"^[A-Z]{1,8}$")
+MAX_METHODS = 10
+
+
+def parse_methods(text: str | None) -> tuple[str, ...]:
+    """`" post , Put "` -> `("POST", "PUT")`. Rỗng -> `()` = không lọc.
+
+    Giữ thứ tự gặp, bỏ trùng, bỏ phần tử rỗng (`POST,,PUT,`). Giá trị không phải
+    tên phương thức hoặc quá `MAX_METHODS` giá trị -> `ValueError` để cửa API trả 422.
+    """
+    if not text or not text.strip():
+        return ()
+    methods: list[str] = []
+    for part in text.split(","):
+        value = part.strip().upper()
+        if not value:
+            continue
+        if not _METHOD_PATTERN.match(value):
+            raise ValueError(f"Phương thức không hợp lệ: {part.strip()!r}")
+        if value not in methods:
+            methods.append(value)
+    if len(methods) > MAX_METHODS:
+        raise ValueError(f"Lọc tối đa {MAX_METHODS} phương thức một lượt")
+    return tuple(methods)
 
 
 def parse_request_id(text: str) -> bytes | None:
@@ -83,7 +114,7 @@ def build_query(db: Session, *, user_id: int | None = None, doc_code: str | None
                 table: str | None = None, from_time: str | None = None,
                 to_time: str | None = None, status: str = STATUS_ALL,
                 action_group: int | None = None, source: int | None = None,
-                request_id: bytes | None = None):
+                methods: tuple[str, ...] | None = None, request_id: bytes | None = None):
     """Truy vấn trên `tab_request_log` đã áp đủ bộ lọc — CHƯA sắp xếp, CHƯA phân trang.
 
     Ba bộ lọc `doc_code` / `field` / `table` nằm ở BẢNG CON. Chúng đi vào đây
@@ -104,6 +135,10 @@ def build_query(db: Session, *, user_id: int | None = None, doc_code: str | None
         q = q.filter(RequestLog.route.like(f"%{route.strip()}%"))
     if source:
         q = q.filter(RequestLog.source == source)
+    #  Nhiều phương thức là HOẶC (`IN`). Cột không có chỉ mục nhưng luôn đi cùng
+    #  khoảng ngày (`created_at` có chỉ mục) nên chỉ quét trong khoảng đó.
+    if methods:
+        q = q.filter(RequestLog.method.in_(methods))
 
     if status == STATUS_ERROR:
         q = q.filter(RequestLog.http_status >= 500)

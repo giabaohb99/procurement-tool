@@ -180,3 +180,24 @@ export function logBodyText(value: unknown): string {
     return String(value)
   }
 }
+
+/**
+ * Năm phương thức bày trên ô lọc «Phương thức» (bao-CR-582) — đúng năm thứ
+ * người đi tra hỏi tới. HEAD/OPTIONS hiếm gặp nên không chiếm chỗ trong danh
+ * sách; đường API vẫn lọc được chúng nếu cần.
+ */
+export const HTTP_METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
+
+/**
+ * Danh sách đã chọn ở ô lọc -> tham số `method` của `/api/system-logs`
+ * (`POST,PUT`). Rỗng -> `undefined` để axios KHÔNG gửi tham số, nghĩa là không
+ * lọc — gửi `method=` rỗng cũng đúng nhưng làm bẩn URL đem chia sẻ.
+ */
+export function buildMethodParam(methods: readonly string[]): string | undefined {
+  const cleaned: string[] = []
+  for (const method of methods) {
+    const value = method.trim().toUpperCase()
+    if (value && !cleaned.includes(value)) cleaned.push(value)
+  }
+  return cleaned.length ? cleaned.join(',') : undefined
+}

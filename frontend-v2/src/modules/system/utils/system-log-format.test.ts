@@ -3,13 +3,16 @@ import { describe, expect, it } from 'vitest'
 import { TONE_CLASS } from '@/shared/ui/status-tone'
 
 import {
+  buildMethodParam,
   changeSummaryText,
   changeValueText,
   defaultLogRange,
   formatDuration,
   formatHourLabel,
   httpStatusHint,
+  httpMethodTone,
   httpStatusTone,
+  HTTP_METHOD_OPTIONS,
   logBodyText,
   spansMultipleDays,
   tableLabel,
@@ -209,5 +212,44 @@ describe('logBodyText', () => {
     loop.self = loop
     expect(() => logBodyText(loop)).not.toThrow()
     expect(logBodyText(loop)).toBe('[object Object]')
+  })
+})
+
+describe('httpMethodTone', () => {
+  it('returns only tones that really exist in TONE_CLASS, even for odd input', () => {
+    //  Bảng tông thuộc module khác — đổi tên khóa bên đó là nhãn mất màu, im lặng.
+    for (const method of [...HTTP_METHOD_OPTIONS, 'HEAD', 'OPTIONS', '', 'post', 'xyz']) {
+      expect(Object.keys(TONE_CLASS)).toContain(httpMethodTone(method))
+    }
+  })
+
+  it('keeps reads neutral and colours every write, so the eye lands on data changes', () => {
+    //  GET là phần lớn dòng — tô màu thì cả cột rực lên, mất tác dụng nhấn. Cột
+    //  «Phương thức» (bao-CR-582) dùng chung hàm này với khung chi tiết.
+    expect(httpMethodTone('GET')).toBe('neutral')
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+      expect(httpMethodTone(method)).not.toBe('neutral')
+    }
+    expect(httpMethodTone('DELETE')).not.toBe(httpMethodTone('POST'))
+  })
+
+  it('reads lower-case methods the same as upper-case', () => {
+    expect(httpMethodTone('delete')).toBe(httpMethodTone('DELETE'))
+    expect(httpMethodTone('DELETE')).toBe('danger')
+  })
+})
+
+describe('buildMethodParam', () => {
+  it('sends nothing when no method is picked, so the list stays unfiltered', () => {
+    expect(buildMethodParam([])).toBeUndefined()
+    expect(buildMethodParam(['', '  '])).toBeUndefined()
+  })
+
+  it('joins several methods with a comma — the backend reads them as OR', () => {
+    expect(buildMethodParam(['POST', 'PUT'])).toBe('POST,PUT')
+  })
+
+  it('upper-cases, trims and drops duplicates while keeping the picked order', () => {
+    expect(buildMethodParam([' put', 'POST', 'put ', 'post'])).toBe('PUT,POST')
   })
 })
