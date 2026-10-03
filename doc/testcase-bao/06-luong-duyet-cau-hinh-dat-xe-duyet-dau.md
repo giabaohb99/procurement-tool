@@ -41,6 +41,27 @@ Mật khẩu = mã đăng nhập.
 
 Đổi vai thì đăng xuất rồi đăng nhập tài khoản kia, hoặc mở một cửa sổ ẩn danh cho mỗi vai.
 
+## Trên dev (https://deverp.degoholding.vn)
+
+Đã khai sẵn ngày 03/10/2026, đại ca vào sửa thử thoải mái:
+
+| Luồng | Áp cho | Bước 1 | Bước 2 |
+|---|---|---|---|
+| #4 `DATXE` Đặt xe công tác | mặc định, mọi phiếu đặt xe không khớp luồng khác | Trưởng bộ phận người nộp | Vai trò «Quản lý điều phối» |
+| #5 `DX-GIAO-HANG` Giao hàng | Loại phiếu là Giao hàng, ưu tiên 10 | Trưởng bộ phận người nộp | Vai trò «Quản lý điều phối» |
+| #6 `DD-MAC-DINH` Duyệt dấu | mặc định | Trưởng bộ phận người tạo chọn trên phiếu | Vai trò «Giám đốc duyệt dấu» |
+
+Công tắc Đặt xe và Duyệt dấu đã bật. Vai trò thử đã gán: `DEMONV` người tạo phiếu (phòng Demo Thu Mua,
+trưởng phòng là `DEMOTP`), `DEMOTP` trưởng bộ phận, `DEMOQL` quản lý điều phối + giám đốc duyệt dấu, `DEMOAD`
+điều phối viên, `VTDEGOHOLDING` văn thư công ty DEGO. Bước 2 giao cho cả `NSU001` (người thật đang giữ hai vai trò
+đó trên dev) lẫn `DEMOQL`, ai duyệt cũng được.
+
+⚠️ Trên dev, mật khẩu của `DEMOTP` khác mã đăng nhập — cần mật khẩu dev của tài khoản đó, hoặc đổi trưởng phòng
+của phòng Demo Thu Mua sang một tài khoản đăng nhập được, thì mới chạy được bước 1.
+
+Đặt xe chỉ khai được bước «trưởng bộ phận người nộp», chưa khai được «người tạo chọn người duyệt»: form đặt xe chưa
+có ô chọn người duyệt.
+
 ## Phiếu mẫu có sẵn
 
 | Phiếu | Loại | Trạng thái lúc giao | Dùng cho ca |
