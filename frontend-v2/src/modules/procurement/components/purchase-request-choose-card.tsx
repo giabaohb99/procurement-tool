@@ -35,8 +35,12 @@ import type {
   PrAssignSupplierLine,
   PurchaseRequestOption,
 } from '../types/purchase-request-options'
-import { isPrOptionStageOpen, PR_OPTION_SOURCE_SURVEY } from '../types/purchase-request-options'
+import {
+  isPrOptionStageOpen,
+  PR_OPTION_SOURCE_SURVEY,
+} from '../types/purchase-request-options'
 import { describeBulkPriceChange, parsePriceInput } from '../utils/purchase-request-bulk-price'
+import { PurchaseRequestOptionEditDialog } from './purchase-request-option-edit-dialog'
 
 interface PurchaseRequestChooseCardProps {
   purchaseRequest: PurchaseRequestDetail
@@ -289,7 +293,18 @@ function ChooseLineSection({
         </div>
       )}
 
-      {editingOption && (
+      {/* bao-CR-583: phương án 0 và nhập tay mở hộp sửa ĐỦ thông tin (phương án 0 kèm «Khôi
+          phục ban đầu»); phương án khảo sát giữ hộp chỉ sửa giá. */}
+      {editingOption && editingOption.source !== PR_OPTION_SOURCE_SURVEY && (
+        <PurchaseRequestOptionEditDialog
+          purchaseRequestId={purchaseRequestId}
+          itemId={item.id}
+          option={editingOption}
+          suppliers={suppliers}
+          onClose={() => setEditingOption(null)}
+        />
+      )}
+      {editingOption && editingOption.source === PR_OPTION_SOURCE_SURVEY && (
         <OptionPurchaseEditDialog
           purchaseRequestId={purchaseRequestId}
           itemId={item.id}
@@ -356,8 +371,15 @@ function PrOptionCard({
               variant="ghost"
               size="icon"
               className="-my-1 size-7"
-              aria-label={`Sửa giá / NCC của ${label}`}
-              title="Sửa giá / NCC của phương án"
+              //  bao-CR-583: phương án 0 / nhập tay mở hộp sửa ĐỦ thông tin.
+              aria-label={
+                option.source === PR_OPTION_SOURCE_SURVEY ? `Sửa giá của ${label}` : `Sửa ${label}`
+              }
+              title={
+                option.source === PR_OPTION_SOURCE_SURVEY
+                  ? 'Sửa giá của phương án (thông số là kết quả khảo sát)'
+                  : 'Sửa thông tin phương án'
+              }
               // Nút nằm TRONG vùng bấm chọn của thẻ — nuốt sự kiện kẻo bấm
               // Sửa lại thành chọn/bỏ chọn phương án.
               onClick={(event) => {

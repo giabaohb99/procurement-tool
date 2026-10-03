@@ -201,6 +201,28 @@ class PROptionSupplierIn(BaseModel):
     snap_price_by_volume: float | None = Field(None, ge=0)
 
 
+class PROptionDetailsIn(BaseModel):
+    """bao-CR-583 — sửa thông tin PHƯƠNG ÁN 0 và phương án NHẬP TAY (ở màn xử lý lẫn màn chọn).
+    Trường nào gửi `None` thì giữ nguyên; NCC gửi cả hai ô rỗng là BỎ NCC — chỉ phương án 0
+    được bỏ (nó vốn không có NCC), phương án nhập tay bắt buộc có NCC.
+    Độ dài khớp đúng cột `tab_purchase_request_item_option` (luật duoc-CR-316)."""
+    snap_product_name: Str255 | None = None
+    snap_internal_code: Str50 | None = None
+    supplier_code: Str50 | None = None
+    supplier_name: Str255 | None = None
+    snap_price_by_volume: float | None = Field(None, ge=0)
+    snap_quote_unit: Str25 | None = None
+    snap_moq: float | None = Field(None, ge=0)
+    snap_volume_range: Str100 | None = None
+    snap_vat: float | None = Field(None, ge=0, lt=100)
+    snap_origin: Str100 | None = None
+    snap_delivery_time: Str100 | None = None
+    snap_delivery_place: Str255 | None = None
+    snap_shipping_cost: float | None = Field(None, ge=0)
+    snap_sample_ready: bool | None = None
+    nstm_note: Str1000 | None = None
+
+
 class PRAssignSupplierLineIn(BaseModel):
     """Một dòng trong lệnh "áp 1 NCC cho nhiều dòng" — giá sửa kèm là TÙY CHỌN theo dòng."""
     item_id: int

@@ -6,6 +6,7 @@ import type {
   PrAssignSupplierPayload,
   PrOptionManualPayload,
   PrOptionSupplierPayload,
+  PrOptionDetailsPayload,
   PrGenerateOrdersResult,
   PrOptionUpdatePayload,
   PurchaseRequestOption,
@@ -66,6 +67,22 @@ export const purchaseRequestOptionApi = {
     apiPatch<PurchaseRequestOption>(
       `${BASE_URL}/${id}/items/${itemId}/options/${optionId}/supplier`,
       payload,
+    ),
+
+  /**
+   * bao-CR-583 — sửa thông tin PHƯƠNG ÁN 0 / NHẬP TAY (tên hàng, mã VTBB, NCC, giá, giao hàng…).
+   * Phương án đang được chọn mà đổi mã thì backend đổi luôn mã của dòng.
+   */
+  updateDetails: (id: number, itemId: number, optionId: number, payload: PrOptionDetailsPayload) =>
+    apiPatch<PurchaseRequestOption>(
+      `${BASE_URL}/${id}/items/${itemId}/options/${optionId}/details`,
+      payload,
+    ),
+
+  /** bao-CR-583 — «Khôi phục ban đầu»: phương án 0 về đúng như dòng yêu cầu lúc sinh. */
+  resetZero: (id: number, itemId: number, optionId: number) =>
+    apiPost<PurchaseRequestOption>(
+      `${BASE_URL}/${id}/items/${itemId}/options/${optionId}/zero/reset`,
     ),
 
   /**
