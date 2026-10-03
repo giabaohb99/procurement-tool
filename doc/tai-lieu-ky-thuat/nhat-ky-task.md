@@ -10,7 +10,7 @@ khớp theo `key` ở đầu tiêu đề).
 ```
 
 ## bao-CR-582 | Nhật ký hệ thống: cột Phương thức riêng + lọc nhiều phương thức
-- status: dang-lam
+- status: xong
 - date: 2026-10-03
 Đại ca muốn màn Nhật ký hệ thống tách phương thức gọi (GET, POST, PUT, PATCH, DELETE) ra một cột riêng và lọc
 được theo một hay nhiều phương thức, ví dụ chỉ xem POST và PUT. Trước đây phương thức chỉ nằm chung dòng chữ nhỏ
@@ -22,7 +22,10 @@ Gõ giá trị rác vào đường API thì bị từ chối (mã 422) chứ kh�
 
 Kiểm: 23 bài kiểm mới + 30 bài cũ của màn này xanh; 300 bài giao diện phân hệ Quản trị xanh; kiểm thật trên API
 local: không lọc 8.768 lượt, chỉ POST 676, POST + PUT 694, DELETE 25, biểu đồ POST + PUT cũng 694.
-Chưa commit, chưa deploy.
+
+Commit: `c9ff355d` trên erp-v2.
+Deploy: dev 03/10 (dựng lại api, celery-worker, celery-beat, erp; devthumua và deverp trả 200). Không có migration.
+Prod: chưa — đã giao Agent 1 chuẩn bị đưa lên.
 
 ---
 
