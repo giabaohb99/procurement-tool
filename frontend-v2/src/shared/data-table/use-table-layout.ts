@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 
+import { leadingColumnCount } from './id-column'
 import type { ColumnDropSide, DataTableColumn, DataTableLayout } from './types'
 
 const STORAGE_PREFIX = 'erp.table.'
@@ -52,7 +53,12 @@ export function useTableLayout<T>(columns: DataTableColumn<T>[], storageKey?: st
       .map((key) => byKey.get(key))
       .filter((column): column is DataTableColumn<T> => !!column)
     const rest = columns.filter((column) => !layout.columnOrder.includes(column.key))
-    return [...ordered, ...rest]
+    //  bao-CR-578: cột mới khai `placeAtStartWhenNew` (cột ID tự thêm) về ĐẦU bảng, sau cột
+    //  tick chọn — người đã lưu bố cục cũ vẫn thấy ID ở bìa trái chứ không lạc xuống cuối.
+    const front = rest.filter((column) => column.placeAtStartWhenNew)
+    const tail = rest.filter((column) => !column.placeAtStartWhenNew)
+    const at = leadingColumnCount(ordered.map((column) => column.key))
+    return [...ordered.slice(0, at), ...front, ...ordered.slice(at), ...tail]
   }, [columns, layout.columnOrder])
 
   const toggleColumn = useCallback(

@@ -409,9 +409,6 @@ export function PurchaseRequestDetailPage() {
     : canCreateManual
       ? 'manual'
       : null
-  // Bản in theo NCC (H.6 bản B) — gác N-17: chỉ người có quyền xem NCC; trang in
-  // tự gác lại lần nữa. Phiếu đã đóng vẫn in được để lưu hồ sơ.
-  const canPrintBySupplier = !isNew && can('supplier', 'read') && hasDoneLine
   const canManageAttachments =
     editable && (can('purchase_request', 'write') || can('purchase_request', 'create'))
   const canManageLineAttachments =
@@ -801,25 +798,13 @@ export function PurchaseRequestDetailPage() {
     </>
   ) : (
     <>
-      {/* bao-CR-420 (đại ca chốt 17/09/2026): MỘT nút in, KHÔNG sổ xuống. Bản
-          nào mở ra là do vai trò người bấm quyết định — người có quyền xem nhà
-          cung cấp (thu mua) hằng ngày cần bản tách theo NCC để gửi từng nơi,
-          người yêu cầu cần tờ phiếu gốc. Bản kia KHÔNG mất: thanh công cụ của
-          chính trang in có lối bắc sang, xem hai trang in của YCMH.
-          Nhãn là "In phiếu" cho cả hai bản (đại ca chốt 17/09/2026) — nút đổi
-          tên theo quyền người đăng nhập thì hai người ngồi cạnh nhau mô tả cùng
-          một nút bằng hai cái tên, gọi điện cho nhau không ai hiểu ai. Bản nào
-          mở ra thì chính trang in nói, không phải cái nút. */}
+      {/* bao-CR-420 (17/09/2026): MỘT nút in, KHÔNG sổ xuống, nhãn «In phiếu» cho mọi người.
+          bao-CR-574 (đại ca chốt 03/10/2026): nút LUÔN mở phiếu chung, không còn mở theo quyền.
+          Bản tách theo nhà cung cấp chọn ngay trong ô «Mẫu in» của trang in (nhóm «Tách theo
+          nhà cung cấp», chỉ người có quyền xem NCC thấy) — hai người ngồi cạnh nhau bấm cùng một
+          nút là ra cùng một tờ. */}
       <Button variant="outline" asChild>
-        <Link
-          to={
-            canPrintBySupplier
-              ? appRoutes.procurement.purchaseRequestSupplierPrint(data.id)
-              : appRoutes.procurement.purchaseRequestPrint(data.id)
-          }
-          target="_blank"
-          rel="noreferrer"
-        >
+        <Link to={appRoutes.procurement.purchaseRequestPrint(data.id)} target="_blank" rel="noreferrer">
           <Printer />
           In phiếu
         </Link>

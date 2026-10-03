@@ -37,6 +37,12 @@ export interface DataTableColumn<T> {
    */
   defaultPinned?: boolean
   /**
+   * Cột MỚI thêm vào bảng mà người dùng đã lưu bố cục cũ: bình thường cột mới nối vào CUỐI
+   * thứ tự đã lưu; cờ này đưa nó về ĐẦU bảng (sau cột tick chọn) thay vì cuối. Dùng cho cột
+   * ID tự thêm (bao-CR-578). Người dùng kéo nó đi chỗ khác rồi thì vị trí đã lưu thắng.
+   */
+  placeAtStartWhenNew?: boolean
+  /**
    * Cột nghiệp vụ được CỐ ĐỊNH bên phải và luôn xếp cuối bảng. Khác
    * `defaultPinned`, vị trí này do màn hình quy định nên người dùng không thể
    * kéo hoặc ghim nó sang trái. Dùng cho cột thao tác dạng icon.

@@ -1,6 +1,6 @@
-import { ArrowLeft, FileText, Printer, X } from 'lucide-react'
+import { ArrowLeft, Printer, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -18,7 +18,8 @@ import {
 } from '../utils/purchase-request-print-options'
 // In LẠI ĐÚNG tờ phiếu đề xuất của bản A, kể cả khuôn CSS — khách chốt 15/09/2026.
 import {
-  DEFAULT_PRINT_TEMPLATE,
+  PRINT_TEMPLATE_PARAM,
+  readPrintTemplateParam,
   resolvePrintTemplate,
   type PrintTemplateValue,
 } from '../utils/purchase-request-print-template'
@@ -61,7 +62,11 @@ export function PurchaseRequestSupplierPrintPage() {
   // Tick mặc định TẤT CẢ các NCC; lưu tập BỎ tick để không phải chờ dữ liệu về.
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set())
   //  bao-CR-546: cùng ô chọn «Mẫu in» + ô tick «Ẩn nơi giao» với bản in gốc.
-  const [template, setTemplate] = useState<PrintTemplateValue>(DEFAULT_PRINT_TEMPLATE)
+  //  bao-CR-574: mẫu đi theo `?mau=` — chọn ở phiếu chung rồi sang đây vẫn giữ.
+  const [searchParams] = useSearchParams()
+  const [template, setTemplate] = useState<PrintTemplateValue>(() =>
+    readPrintTemplateParam(searchParams.get(PRINT_TEMPLATE_PARAM)),
+  )
   const [hideDeliveryPlace, setHideDeliveryPlace] = useState(false)
   const { taxMode, showSignature } = resolvePrintTemplate(template)
 
@@ -150,16 +155,6 @@ export function PurchaseRequestSupplierPrintPage() {
             <Printer />
             In / Lưu PDF ({printedGroups.length} trang)
           </Button>
-          {/* bao-CR-420: màn chi tiết phiếu nay chỉ còn MỘT nút in, và thu mua
-              được đưa thẳng sang bản tách theo NCC này. Lối bắc sang tờ phiếu
-              gốc phải nằm ở đây, không thì bản A biến mất khỏi giao diện của
-              chính người hay cần in nó nhất. */}
-          <Button variant="outline" asChild>
-            <Link to={appRoutes.procurement.purchaseRequestPrint(routeId)}>
-              <FileText />
-              Xem tờ phiếu gốc
-            </Link>
-          </Button>
           <Button variant="outline" onClick={() => window.close()}>
             <X />
             Đóng
@@ -171,9 +166,18 @@ export function PurchaseRequestSupplierPrintPage() {
           )}
         </div>
 
+        {/* bao-CR-574: quay về phiếu chung bằng nhóm «Phiếu chung» của chính ô chọn này
+            (thay nút lẻ «Xem tờ phiếu gốc»), giữ nguyên kiểu mẫu đang chọn. */}
         <PurchaseRequestPrintOptions
+          layout="supplier"
           template={template}
           onTemplateChange={setTemplate}
+          supplierLayout={{ enabled: true }}
+          onLayoutChange={(_layout, nextTemplate) =>
+            navigate(
+              `${appRoutes.procurement.purchaseRequestPrint(routeId)}?${PRINT_TEMPLATE_PARAM}=${nextTemplate}`,
+            )
+          }
           hideDeliveryPlace={hideDeliveryPlace}
           onHideDeliveryPlaceChange={setHideDeliveryPlace}
         />

@@ -36,6 +36,7 @@ import type {
   PurchaseRequestOption,
 } from '../types/purchase-request-options'
 import { isPrOptionStageOpen, PR_OPTION_SOURCE_SURVEY } from '../types/purchase-request-options'
+import { describeBulkPriceChange, parsePriceInput } from '../utils/purchase-request-bulk-price'
 
 interface PurchaseRequestChooseCardProps {
   purchaseRequest: PurchaseRequestDetail
@@ -47,12 +48,6 @@ const NO_SUPPLIER = '__none__'
 /** Danh mục NCC dùng chung cho ô chọn — cùng hình dạng với `useSuppliers().items`. */
 type SupplierOption = { code: string; name: string }
 
-function parsePriceInput(raw: string): number | undefined {
-  const trimmed = raw.trim()
-  if (!trimmed) return undefined
-  const value = Number(trimmed)
-  return Number.isFinite(value) && value >= 0 ? value : undefined
-}
 
 /**
  * Khu "Phương án" trên màn CHI TIẾT YCMH (bao-CR-310 đợt 3b) — nửa còn lại của
@@ -529,7 +524,10 @@ function OptionPurchaseEditDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        {/* `min-w-0`: `DialogContent` là lưới, cột tự giãn theo chữ dài nhất. Tên NCC dài trong ô
+            chọn (vd «NCCKS030 — Cty TNHH Thương Mại Dịch Vụ Và Phát Triển Thiên An Phát») đẩy cả
+            khối tràn ra ngoài khung trắng — ô sản phẩm phía trên lòi một mảng xám ở mép phải. */}
+        <div className="min-w-0 space-y-4">
           <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
             <p className="font-medium leading-snug">{option.snap_product_name || '—'}</p>
             <p className="text-xs text-muted-foreground">
@@ -674,7 +672,10 @@ function BulkAssignSupplierZone({
     //  bao-CR-570: dựng lại cho gọn — thanh NCC + nút áp một hàng ở TRÊN, bên dưới là bảng
     //  nhỏ (chọn tất cả · sản phẩm · giá hiện tại · giá mới). Bản cũ trải mỗi dòng một khung
     //  rộng hết màn, ô giá trôi tận mép phải, ô NCC nằm tách rời ở đáy.
-    <div className="overflow-hidden rounded-lg border">
+    //  bao-CR-576 (đại ca chọn phương án C, 03/10/2026): khối KHÔNG trải hết màn nữa — cột tên
+    //  hàng chiếm hết phần còn lại nên trên màn rộng giá bị đẩy ra tận mép phải, cách tên gần
+    //  cả màn hình, người ta dễ bỏ qua. Thu về `max-w-4xl` cho giá đứng sát tên hàng.
+    <div className="max-w-4xl overflow-hidden rounded-lg border">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-muted/40 px-3 py-2">
         <p className="mr-auto text-sm font-medium">
           Áp 1 NCC cho nhiều dòng
@@ -700,7 +701,7 @@ function BulkAssignSupplierZone({
           ]}
         />
         <Input
-          className="w-52"
+          className="w-60"
           value={supplierName}
           placeholder="Hoặc tên NCC ngoài danh mục"
           onChange={(event) => {
@@ -733,10 +734,18 @@ function BulkAssignSupplierZone({
         {lines.map((item) => {
           const chosen = item.chosen_option
           const chosenLabel = chosen ? chosen.display_label || `Phương án ${chosen.public_id}` : '—'
+          //  bao-CR-576: dòng có giá mới KHÁC giá cũ thì tô nổi, gạch giá cũ và nói rõ đổi bao nhiêu.
+          const priceChange = describeBulkPriceChange(
+            chosen?.snap_price_by_volume,
+            priceByItem[item.id] ?? '',
+          )
           return (
             <li
               key={item.id}
-              className="grid grid-cols-[2rem_minmax(0,1fr)_7rem_9rem] items-center gap-x-3 px-3 py-1.5"
+              className={cn(
+                'grid grid-cols-[2rem_minmax(0,1fr)_7rem_9rem] items-center gap-x-3 px-3 py-1.5',
+                priceChange && 'bg-warning/10',
+              )}
             >
               <Checkbox
                 id={`bulk-ncc-line-${item.id}`}
@@ -751,9 +760,24 @@ function BulkAssignSupplierZone({
                 <span className="block truncate font-medium" title={item.product_name}>
                   {item.product_name || item.product_code || '—'}
                 </span>
-                <span className="block text-xs text-muted-foreground">{chosenLabel}</span>
+                {priceChange ? (
+                  <span className="block text-xs font-medium text-warning">
+                    {chosenLabel} · Đổi giá:{' '}
+                    {chosen?.snap_price_by_volume
+                      ? `${formatUnitPrice(chosen.snap_price_by_volume)} đ`
+                      : '—'}{' '}
+                    → {formatUnitPrice(priceChange.next)} đ
+                  </span>
+                ) : (
+                  <span className="block text-xs text-muted-foreground">{chosenLabel}</span>
+                )}
               </label>
-              <span className="text-right text-sm tabular-nums">
+              <span
+                className={cn(
+                  'text-right text-sm tabular-nums',
+                  priceChange && 'text-muted-foreground line-through',
+                )}
+              >
                 {chosen?.snap_price_by_volume
                   ? `${formatUnitPrice(chosen.snap_price_by_volume)} đ`
                   : '—'}
@@ -766,9 +790,14 @@ function BulkAssignSupplierZone({
                 aria-label={`Đơn giá mới cho ${item.product_name || item.product_code}`}
                 placeholder="Giữ nguyên"
                 value={priceByItem[item.id] ?? ''}
-                onChange={(event) =>
-                  setPriceByItem((prev) => ({ ...prev, [item.id]: event.target.value }))
-                }
+                onChange={(event) => {
+                  const raw = event.target.value
+                  setPriceByItem((prev) => ({ ...prev, [item.id]: raw }))
+                  //  bao-CR-576: giá mới chỉ áp cho dòng ĐÃ TICK — gõ giá mà quên tick là giá bị
+                  //  bỏ qua im lặng. Gõ giá thì tự tick dòng đó; bỏ tick vẫn làm tay được.
+                  if (raw.trim())
+                    setCheckedItemIds((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]))
+                }}
               />
             </li>
           )
