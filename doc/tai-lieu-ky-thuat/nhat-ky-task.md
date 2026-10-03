@@ -70,6 +70,35 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-573 | Đồng bộ đặt xe, duyệt dấu: 19 phiếu dấu kẹt vì tệp đính kèm khai trùng
+- status: xong
+- date: 2026-10-03
+Đại ca hỏi đồng bộ app đặt xe, duyệt dấu cũ đang tới đâu. Rà sổ đồng bộ trên prod thì thấy 19 phiếu dấu lỗi từ lượt
+quét toàn bộ đêm 02/10, bộ chạy lại đã thử ba lần rồi bỏ. Nghĩa là bên app cũ đổi gì trên 19 phiếu này thì ERP không
+thấy, trong đó có phiếu DD000715 đang chờ duyệt.
+
+Nguyên nhân: mỗi phiếu này khai cùng một tệp đính kèm hai lần. Phiên làm việc với cơ sở dữ liệu tắt chế độ tự đẩy
+xuống trước khi truy vấn, nên lần gặp tệp thứ hai không thấy liên kết vừa thêm và ghi thêm một dòng. Lượt quét đầu
+hôm 02/10 vì vậy sinh 19 cặp liên kết trùng, và từ đó mỗi lần cập nhật phiếu đều nổ lỗi «nhiều dòng khi chỉ được
+một».
+
+Đã vá: bộ đồng bộ bỏ tệp khai trùng trong cùng phiếu, tra tệp không còn nổ khi gặp dòng trùng, và gặp liên kết trùng
+do lỗi cũ để lại thì giữ dòng nhỏ nhất, xóa phần thừa. Nhờ vậy 19 phiếu tự lành ở lượt quét kế tiếp, không phải sửa
+tay dữ liệu prod. Mười chín dòng lỗi cũ vẫn nằm trong sổ theo luật không xóa dòng lỗi, nhưng chuông 08:00 coi là đã
+vá vì sau đó có lượt xử lý êm.
+
+Kiểm: 3 bài kiểm mới, đỏ trên mã cũ và xanh trên mã vá; cùng cụm đồng bộ đặt xe 86 bài xanh, chạy lại trên nền main
+cũng 86 bài xanh. Trên prod: sao lưu procurement_truoc_cr573_20261003_0857, chạy tay lượt quét toàn bộ 1.404 phiếu,
+0 lỗi, 0 cặp liên kết trùng còn lại, cả 19 phiếu ra «không có gì thay đổi» tức đã khớp app cũ.
+Lên prod bằng cherry-pick riêng commit này; hai CR của anh Được (duoc-CR-572, duoc-CR-554) đã lên dev cùng lượt nhưng
+chưa lên prod vì đại ca chưa duyệt.
+
+Mã nguồn: `backend/app/modules/legacy_datxe/service.py` (`sync_legacy_attachments`), bài kiểm
+`test/backend/test_dong_bo_datxe_tep_trung_cr573.py`.
+Commit: erp-v2 `ba3d5709`, main `f86b0afd`. Deploy: DEV + PROD 03/10/2026.
+
+---
+
 ## duoc-CR-572 | Xuất Excel danh mục thuốc BVTV, tệp xuất nạp lại được ngay
 - status: xong
 - date: 2026-10-02
