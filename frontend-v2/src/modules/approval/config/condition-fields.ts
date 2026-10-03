@@ -140,9 +140,10 @@ export const APPROVER_FIELDS_BY_ENTITY: Record<string, ApproverFieldDef[]> = {
     { name: 'owner_employee_id', label: 'Người phụ trách' },
     { name: 'drafter_employee_id', label: 'Người soạn' },
   ],
-  vehicle_booking: [
-    { name: 'first_approver_employee_id', label: 'Người duyệt do người tạo chọn trên phiếu' },
-  ],
+  //  Đặt xe CỐ Ý không có ô nào: form tạo phiếu đặt xe không cho người tạo chọn người
+  //  duyệt, nên `first_approver_employee_id` luôn trống — khai bước theo ô đó là phiếu
+  //  kẹt ngay chặng 1. Có ô chọn trên form rồi mới mở lại.
+  vehicle_booking: [],
   seal_request: [
     { name: 'first_approver_employee_id', label: 'Trưởng bộ phận do người tạo chọn trên phiếu' },
   ],
