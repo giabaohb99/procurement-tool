@@ -6809,7 +6809,7 @@ def test_may_sua_ma_chay_ban_cu_qua_30_phut_thi_bao_mot_lan(db, monkeypatch):
     rn.last_seen_at = later
     db.commit()
     runners.watch(db, now=later, notify=said.append)
-    assert len(said) == 1 and "MÁY SỬA MÃ CHẠY BẢN CŨ" in said[0] and "aaaaaaaaaaaa" in said[0]
+    assert len(said) == 1 and "LỆCH BẢN" in said[0] and "aaaaaaaaaaaa" in said[0]
     rn.last_seen_at = later + timedelta(minutes=5)
     db.commit()
     runners.watch(db, now=later + timedelta(minutes=5), notify=said.append)
@@ -6974,3 +6974,24 @@ def test_doi_lich_sua_dung_su_kien_cu_khong_tao_them(db, monkeypatch):
     assert g._update_calendar_event(ctx, {"title": "khong co", "date": "2026-10-05", "new_start": "2026-10-06T18:00:00"})[
         "need_choice"] == "event"
     assert "update_calendar_event" in g.CREATE_CALENDAR_EVENT_SPEC.description
+
+
+def test_lech_ban_doi_ban_thi_dem_lai_tu_dau(db, monkeypatch):
+    """ai-CR-085: 05/10 máy được dựng lại hai lần trước khi dev deploy → báo nhầm hai lần ngay. Đổi bản = đếm lại."""
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub import runners
+
+    monkeypatch.setattr(runners, "queued_count", lambda name: 0)
+    rn, _ = runners.register(db, "may dai ca")
+    said: list[str] = []
+    t0 = datetime(2026, 10, 5, 16, 0, 0)
+    for minute, ver in ((0, "fp:aaaaaaaaaaaa"), (40, "fp:bbbbbbbbbbbb"), (45, "fp:cccccccccccc")):
+        rn.last_seen_at, rn.version = t0 + timedelta(minutes=minute), ver
+        db.commit()
+        runners.watch(db, now=t0 + timedelta(minutes=minute), notify=said.append)
+    assert said == []                         # mỗi lần đổi bản đều đếm lại, chưa cặp nào lệch đủ 30 phút
+    rn.last_seen_at = t0 + timedelta(minutes=80)
+    db.commit()
+    runners.watch(db, now=t0 + timedelta(minutes=80), notify=said.append)
+    assert len(said) == 1 and "cccccccccccc" in said[0]

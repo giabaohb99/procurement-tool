@@ -235,20 +235,26 @@ def _check_version(db: Session, r: AgentRunner, now: datetime, notify) -> bool:
         return row
 
     first = cursor(f"runner_ver:{r.id}")
+    pair_row = cursor(f"runner_ver_pair:{r.id}")
     alerted = cursor(f"runner_ver_alert:{r.id}")
-    if theirs == code_fingerprint():
+    mine = code_fingerprint()
+    if theirs == mine:
         first.value = 0
         return False
+    #  ai-CR-085: đếm 30 phút cho TỪNG CẶP bản (máy, bot). Máy hay bot vừa đổi bản (dựng lại máy trước, deploy dev sau
+    #  vài phút — chuyện thường mỗi lần ra bản) thì đếm lại từ đầu, không báo ngay như 05/10 (báo nhầm hai lần).
+    pair = int(hashlib.sha1(f"{theirs}:{mine}".encode()).hexdigest()[:12], 16)
     minute = int(now.timestamp() // 60)
-    if not first.value:
-        first.value = minute
+    if not first.value or int(pair_row.value or 0) != pair:
+        first.value, pair_row.value = minute, pair
         return False
-    if minute - int(first.value) < VERSION_STALE_MIN or int(alerted.value or 0) == int(theirs, 16):
+    if minute - int(first.value) < VERSION_STALE_MIN or int(alerted.value or 0) == pair:
         return False
-    alerted.value = int(theirs, 16)
-    notify(f"<b>MÁY SỬA MÃ CHẠY BẢN CŨ</b> · {r.name}\n\nMáy đang chạy bản mã khác bot trên dev đã hơn "
-           f"{VERSION_STALE_MIN} phút (máy {theirs} · bot {code_fingerprint()}).\n"
-           "<i>Cần dựng lại máy sửa mã trên máy đó (Claude của đại ca làm được) — việc mới vẫn chạy, nhưng bằng mã cũ.</i>")
+    alerted.value = pair
+    notify(f"<b>MÁY SỬA MÃ VÀ BOT LỆCH BẢN</b> · {r.name}\n\nMáy sửa mã và bot trên dev chạy hai bản mã khác nhau đã hơn "
+           f"{VERSION_STALE_MIN} phút (máy {theirs} · bot {mine}).\n"
+           "<i>Thường là mã mới đã lên một bên mà chưa lên bên kia: hoặc dev chưa deploy, hoặc máy sửa mã chưa dựng lại. "
+           "Claude của đại ca kiểm và làm nốt bên còn thiếu.</i>")
     return True
 
 

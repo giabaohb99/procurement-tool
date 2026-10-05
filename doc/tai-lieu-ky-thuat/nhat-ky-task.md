@@ -12119,3 +12119,13 @@ theo tên và ngày, đổi giờ và giữ nguyên thời lượng, không ch�
 được dặn chỉ báo đã làm khi công cụ chạy thành công, không lấy công cụ khác làm thay.
 
 Mã nguồn: backend/app/modules/assistant/tools/google_tool.py · agent_hub/google_link.py · agent_hub/policy.py
+
+## ai-CR-085 | Sửa báo nhầm «máy sửa mã chạy bản cũ»
+- status: xong
+- date: 2026-10-05
+Chiều 05/10 bot báo hai lần liền là máy sửa mã chạy bản cũ, trong khi thật ra máy chạy bản mới hơn vì vừa được dựng
+lại trước khi dev kịp deploy. Bộ canh đếm ba mươi phút từ lần lệch đầu tiên và không đếm lại khi máy đổi bản. Nay mỗi
+cặp bản giữa máy và bot được đếm riêng, một bên đổi bản là đếm lại từ đầu; câu báo đổi thành hai bên lệch bản, không
+nói bên nào cũ.
+
+Mã nguồn: backend/app/modules/agent_hub/runners.py · test/backend/test_agent_hub.py
