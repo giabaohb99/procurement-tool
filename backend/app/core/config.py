@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # ai-CR-064 (M-06): bí mật của cùng OAuth client, để nối Google cá nhân (Lịch + Drive) từng người.
     # Ứng dụng phải ở trạng thái «In production» trên Google Cloud Console (Testing thì token chết sau 7 ngày).
     GOOGLE_CLIENT_SECRET: str = ""
+    # ai-CR-083: OAuth client RIÊNG cho «Nối Google» của Trợ lý (đại ca 05/10: dùng client mới). Trống thì dùng lại
+    # GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET như ai-CR-064. Tách ra để không đụng «Đăng nhập bằng Google».
+    AGENT_GOOGLE_CLIENT_ID: str = ""
+    AGENT_GOOGLE_CLIENT_SECRET: str = ""
 
     R2_ENDPOINT: str = ""
     R2_PUBLIC_URL: str = ""

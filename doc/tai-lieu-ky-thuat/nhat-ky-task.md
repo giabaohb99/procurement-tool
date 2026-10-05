@@ -12097,3 +12097,13 @@ làm nốt. Thẻ kế hoạch nói trước việc sẽ chia mấy phần. Kèm
 Mã nguồn: backend/app/modules/agent_hub/coder.py · service.py · tasks.py · doc/agent-hub/02-bo-quy-tac-bot.md · doc/agent-hub/10-huong-dan-noi-google.md
 Commit: 7b35d573 (erp-v2 7b35d573)
 Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
+
+## ai-CR-083 | Nối Google của Trợ lý dùng ứng dụng Google riêng, tách khỏi đăng nhập Google
+- status: xong
+- date: 2026-10-05
+Đại ca muốn tạo ứng dụng Google mới cho Trợ lý thay vì tìm lại ứng dụng cũ. Trước đây phần nối Google của Trợ lý dùng
+chung khóa với chức năng đăng nhập bằng Google của ERP, nên đổi là hỏng đăng nhập. Nay Trợ lý có cặp khóa riêng; có
+cặp riêng thì dùng cặp riêng, chưa có thì dùng cặp cũ như trước. Tài liệu hướng dẫn viết lại theo cách tạo dự án và
+ứng dụng Google mới.
+
+Mã nguồn: backend/app/modules/agent_hub/google_link.py · backend/app/core/config.py · doc/agent-hub/10-huong-dan-noi-google.md

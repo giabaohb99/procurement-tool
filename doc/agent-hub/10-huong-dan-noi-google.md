@@ -1,60 +1,71 @@
 # HƯỚNG DẪN BẬT GOOGLE CÁ NHÂN CHO TRỢ LÝ (dev)
 
-**05/10/2026.** Để thử: xem lịch, đặt lịch họp có mời người (Google tự gửi email mời), tìm và đọc tệp Drive, bản tin
-sáng 7:30 và nhắc trước họp 15 phút. Mã đã có từ ai-CR-064, chỉ thiếu cấu hình phía Google.
+**05/10/2026 · sửa theo ai-CR-083.** Để thử: xem lịch, đặt lịch họp có mời người (Google tự gửi email mời), tìm và đọc
+tệp Drive, bản tin sáng 7:30 và nhắc trước họp 15 phút.
 
-Dev đã có `GOOGLE_CLIENT_ID` (client OAuth dùng cho «Đăng nhập bằng Google», ai-CR-406). Dùng lại đúng client đó.
-Còn thiếu: đường dẫn trả về, bật hai API, khai quyền, và **khóa bí mật** (`GOOGLE_CLIENT_SECRET`).
+Hai thứ khác nhau:
 
-## Bước 1 — Mở đúng dự án Google Cloud
+- **Ứng dụng Google (làm MỘT lần cho cả công ty):** chỉ là «cánh cửa» cho ERP xin quyền Google, không chứa lịch hay tệp
+  của ai. Dùng một OAuth client **riêng** của Trợ lý (`AGENT_GOOGLE_CLIENT_ID` + `AGENT_GOOGLE_CLIENT_SECRET`), tách
+  khỏi client «Đăng nhập bằng Google» của ERP — đổi gì ở đây không ảnh hưởng đăng nhập.
+- **Nối Google (MỖI NGƯỜI tự làm):** ai muốn dùng thì vào Trang cá nhân bấm «Nối Google» bằng Gmail của chính mình. Bot
+  chỉ đọc lịch / Drive của đúng người đó.
 
-Vào https://console.cloud.google.com, chọn dự án đang chứa client đăng nhập ERP. Kiểm: **APIs & Services → Credentials →
-OAuth 2.0 Client IDs** có một client mà Client ID bắt đầu bằng `692103…`.
+## Bước 1 — Tạo dự án riêng
+
+Không dùng dự án «API Degoholding Dev» (của Firebase app cũ). Trên https://console.cloud.google.com:
+bấm ô tên dự án trên cùng → **New project** → tên `ERP Tro ly AI` → **Create** → chọn dự án vừa tạo.
 
 ## Bước 2 — Bật hai API
 
-**APIs & Services → Library**, tìm và bấm **Enable** cho:
+☰ → **APIs and services → Library** → tìm và **Enable**: `Google Calendar API`, `Google Drive API`.
 
-- Google Calendar API
-- Google Drive API
+## Bước 3 — Màn đồng ý (Google Auth Platform)
 
-## Bước 3 — Khai quyền trên màn đồng ý
+☰ → **APIs and services → OAuth consent screen** → **Get started**:
 
-**Google Auth Platform** (tên cũ: OAuth consent screen):
-
-1. **Data access → Add or remove scopes**, tick đủ sáu quyền:
-   - `openid`, `.../auth/userinfo.email`
-   - `.../auth/calendar.events`, `.../auth/calendar.readonly`
-   - `.../auth/drive.readonly`, `.../auth/drive.file`
-2. **Audience**: để **Testing**, bấm **Add users**, thêm Gmail của đại ca (và ai muốn thử).
-   - Testing: dùng được ngay, không cần Google duyệt; nhưng **7 ngày** phải nối lại một lần.
-   - Muốn khỏi nối lại thì bấm **Publish app** (In production). Quyền đọc Drive là loại «hạn chế», app chưa được Google
-     xác minh sẽ hiện màn cảnh báo «chưa xác minh» — bấm *Nâng cao → Tiếp tục* vẫn dùng được (dưới 100 người).
-
-## Bước 4 — Thêm đường dẫn trả về và lấy khóa bí mật
-
-**Credentials → bấm vào client `692103…`**:
-
-1. **Authorized redirect URIs → Add URI**, dán đúng dòng này rồi **Save**:
+1. **App information:** tên `ERP DEGO - Trợ lý AI`, email hỗ trợ = Gmail của đại ca → Next.
+2. **Audience:** chọn **External** → Next.
+3. **Contact information:** Gmail của đại ca → Next → tick đồng ý → **Create**.
+4. Menu trái **Audience → Test users → + Add users** → Gmail của đại ca (và ai muốn thử) → Save.
+5. Menu trái **Data access → Add or remove scopes** → kéo xuống ô **Manually add scopes**, dán 4 dòng → **Add to table**
+   → **Update** → **Save**:
 
    ```
-   https://deverp.degoholding.vn/api/agent-hub/google/callback
+   https://www.googleapis.com/auth/calendar.events
+   https://www.googleapis.com/auth/calendar.readonly
+   https://www.googleapis.com/auth/drive.readonly
+   https://www.googleapis.com/auth/drive.file
    ```
 
-2. Mục **Client secrets**: bấm **Add secret** (hoặc sao chép khóa đang có).
-3. Dán khóa vào một tệp trên máy, mỗi tệp một dòng, **không gửi qua chat**:
+Testing: dùng ngay, nhưng 7 ngày phải nối lại một lần. Muốn bỏ hạn đó thì sau này bấm **Audience → Publish app**
+(sẽ có màn «ứng dụng chưa xác minh», bấm Nâng cao → Tiếp tục vẫn dùng được, dưới 100 người).
 
-   ```
-   D:\New folder\thuthapykien\google-client.secret
-   ```
+## Bước 4 — Tạo client
 
-   Nhắn em «xong google». Em đưa khóa lên `.env.dev` (không in ra), khởi động lại api + worker + poller, rồi xóa tệp.
+Menu trái **Clients → + Create client**:
+
+- Application type: **Web application** · Name: `ERP Tro ly`
+- **Authorized redirect URIs → + Add URI**, dán:
+
+  ```
+  https://deverp.degoholding.vn/api/agent-hub/google/callback
+  ```
+
+- **Create** → hộp thoại hiện **Client ID** và **Client secret**. Chép CẢ HAI vào một tệp, dòng 1 là Client ID, dòng 2 là
+  Client secret, **không gửi qua chat**:
+
+  ```
+  D:\New folder\thuthapykien\google-client.secret
+  ```
+
+Nhắn em «xong google». Em đưa hai khóa lên `.env.dev` (`AGENT_GOOGLE_CLIENT_ID`, `AGENT_GOOGLE_CLIENT_SECRET`, không in ra),
+khởi động lại bot, rồi xóa tệp.
 
 ## Bước 5 — Nối Google của mình
 
-1. Đăng nhập https://deverp.degoholding.vn → **Trang cá nhân → tab «Khóa AI»** → thẻ **Google** → **Nối Google**.
-2. Chọn tài khoản Gmail đã thêm ở bước 3 → **Cho phép** đủ các quyền.
-3. Quay về trang cá nhân thấy «Đã nối …@gmail.com» là xong.
+https://deverp.degoholding.vn → **Trang cá nhân → tab «Khóa AI»** → thẻ **Google** → **Nối Google** → chọn Gmail đã thêm ở
+bước 3 → **Cho phép**. Báo `redirect_uri_mismatch` thì đợi 5 phút (Google áp thay đổi chậm) rồi thử lại.
 
 ## Bước 6 — Thử trên Telegram
 
@@ -63,8 +74,7 @@ OAuth 2.0 Client IDs** có một client mà Client ID bắt đầu bằng `69210
 | «lịch hôm nay của anh» · «tuần này anh có họp gì» | Đọc lịch Google |
 | «đặt lịch họp NCC Thiên An 14h mai 1 tiếng, mời a@gmail.com» | Tạo sự kiện; Google tự gửi email mời |
 | «tìm trên Drive báo giá tháng 9» · «đọc tệp đó tóm tắt giúp anh» | Tìm / đọc Drive |
-| «lên task gọi NCC Thiên An cho anh Được hạn thứ 6» (ai-CR-080) | Bản nháp việc ở phân hệ Dự án → «tạo» → người được giao nhận chuông |
-| «nhắc anh 15h gọi NCC» | Nhắc giờ qua Telegram (không cần Google) |
+| «lên task gọi NCC Thiên An cho anh Được hạn thứ 6» (ai-CR-080) | Bản nháp việc ở phân hệ Dự án → «tạo» → chuông cho người được giao |
 | (tự động) | 7:30 bản tin sáng: lịch hôm nay + việc chờ duyệt · 15 phút trước mỗi cuộc họp: nhắc |
 
-Không cần Google: lên task, nhắc giờ, chuông ERP chuyển sang Telegram — thử được ngay.
+Không cần Google: lên task, nhắc giờ («nhắc anh 15h gọi NCC»), chuông ERP chuyển sang Telegram.

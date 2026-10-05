@@ -41,6 +41,20 @@ CALENDAR_URL = "https://www.googleapis.com/calendar/v3"
 DRIVE_URL = "https://www.googleapis.com/drive/v3"
 TIMEOUT = 20
 #  Lịch: đọc + tạo/sửa sự kiện. Drive: đọc mọi tệp của người đó (tìm, mở) + ghi tệp do ERP tạo (lưu báo cáo).
+def client_id() -> str:
+    """ai-CR-083: client riêng của Trợ lý nếu có, không thì client của đăng nhập Google (ai-CR-064)."""
+    if settings.AGENT_GOOGLE_CLIENT_ID:
+        return settings.AGENT_GOOGLE_CLIENT_ID
+    return settings.GOOGLE_CLIENT_ID
+
+
+def client_secret() -> str:
+    #  Đi theo ĐÚNG client đang dùng: có client riêng thì phải dùng bí mật riêng, không trộn với bí mật cũ.
+    if settings.AGENT_GOOGLE_CLIENT_ID:
+        return settings.AGENT_GOOGLE_CLIENT_SECRET
+    return settings.GOOGLE_CLIENT_SECRET
+
+
 SCOPES = ("openid", "email",
           "https://www.googleapis.com/auth/calendar.events",
           "https://www.googleapis.com/auth/calendar.readonly",
@@ -54,7 +68,7 @@ class GoogleError(Exception):
 
 
 def is_configured() -> bool:
-    return bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET and settings.AGENT_ERP_URL)
+    return bool(client_id() and client_secret() and settings.AGENT_ERP_URL)
 
 
 def redirect_uri() -> str:
@@ -87,8 +101,8 @@ def parse_state(state: str) -> int:
 
 def authorize_url(user_id: int) -> str:
     if not is_configured():
-        raise GoogleError("Chưa cấu hình GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / AGENT_ERP_URL.")
-    params = {"client_id": settings.GOOGLE_CLIENT_ID, "redirect_uri": redirect_uri(), "response_type": "code",
+        raise GoogleError("Chưa cấu hình AGENT_GOOGLE_CLIENT_ID / AGENT_GOOGLE_CLIENT_SECRET (hoặc GOOGLE_CLIENT_*) / AGENT_ERP_URL.")
+    params = {"client_id": client_id(), "redirect_uri": redirect_uri(), "response_type": "code",
               "scope": " ".join(SCOPES), "access_type": "offline", "prompt": "consent", "include_granted_scopes": "true",
               "state": make_state(user_id)}
     return f"{AUTH_URL}?{urlencode(params)}"
@@ -114,7 +128,7 @@ def _post_token(data: dict) -> dict:
 
 def exchange_code(db: Session, user_id: int, code: str) -> AgentGoogleLink:
     """Đổi mã ủy quyền lấy token; lưu mã hóa; dòng cũ (nếu có) đóng."""
-    tok = _post_token({"code": code, "client_id": settings.GOOGLE_CLIENT_ID, "client_secret": settings.GOOGLE_CLIENT_SECRET,
+    tok = _post_token({"code": code, "client_id": client_id(), "client_secret": client_secret(),
                        "redirect_uri": redirect_uri(), "grant_type": "authorization_code"})
     refresh = str(tok.get("refresh_token") or "")
     access = str(tok.get("access_token") or "")
@@ -149,8 +163,8 @@ def access_token(db: Session, link: AgentGoogleLink) -> str:
     if not refresh:
         raise GoogleError("Kết nối Google hỏng (không giải mã được token). Nối lại ở Trang cá nhân → Khóa AI.")
     try:
-        tok = _post_token({"refresh_token": refresh, "client_id": settings.GOOGLE_CLIENT_ID,
-                           "client_secret": settings.GOOGLE_CLIENT_SECRET, "grant_type": "refresh_token"})
+        tok = _post_token({"refresh_token": refresh, "client_id": client_id(),
+                           "client_secret": client_secret(), "grant_type": "refresh_token"})
     except GoogleError as e:
         if "invalid_grant" in str(e):
             link.revoked_at = datetime.now()

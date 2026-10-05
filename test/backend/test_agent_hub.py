@@ -6930,3 +6930,20 @@ def test_the_ke_hoach_noi_truoc_se_chia_phan(db, bot):
     task = _task_with_plan(db, service, _BIG_PLAN)
     service.send_plan_card(db, task)
     assert "Làm theo 3 phần" in sent[-1] and "1. Cấu trúc dữ liệu — 2 tệp" in sent[-1]
+
+
+def test_noi_google_dung_client_rieng_khi_co(monkeypatch):
+    """ai-CR-083: client riêng của Trợ lý thắng client đăng nhập; bí mật đi theo đúng client, không trộn."""
+    from app.modules.agent_hub import google_link as gl
+
+    monkeypatch.setattr(settings, "GOOGLE_CLIENT_ID", "login-id")
+    monkeypatch.setattr(settings, "GOOGLE_CLIENT_SECRET", "login-secret")
+    monkeypatch.setattr(settings, "AGENT_GOOGLE_CLIENT_ID", "")
+    monkeypatch.setattr(settings, "AGENT_GOOGLE_CLIENT_SECRET", "")
+    assert (gl.client_id(), gl.client_secret()) == ("login-id", "login-secret")
+    monkeypatch.setattr(settings, "AGENT_GOOGLE_CLIENT_ID", "bot-id")
+    assert gl.client_secret() == ""                     # có client riêng mà thiếu bí mật riêng → chưa cấu hình
+    monkeypatch.setattr(settings, "AGENT_ERP_URL", "https://erp.test")
+    assert gl.is_configured() is False
+    monkeypatch.setattr(settings, "AGENT_GOOGLE_CLIENT_SECRET", "bot-secret")
+    assert (gl.client_id(), gl.client_secret()) == ("bot-id", "bot-secret") and gl.is_configured() is True
