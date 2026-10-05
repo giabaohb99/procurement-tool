@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 72 tính năng** (05/10/2026) — A 8 · N 8 · P 2 · M 9 · K 4 · D 7 · V 9 · O 6 · T 12 · R 4 · thêm L-01. **Đã xong 44** (05/10/2026): V-01 + V-02 + V-05 (ai-CR-067) · V-03 + V-06 (ai-CR-068) · O-01 … O-06 (ai-CR-069, O-01 một phần) · M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 73 tính năng** (05/10/2026) — A 8 · N 8 · P 2 · M 9 · K 4 · D 7 · V 9 · O 6 · T 12 · R 4 · thêm L-01. **Đã xong 44** (05/10/2026): V-01 + V-02 + V-05 (ai-CR-067) · V-03 + V-06 (ai-CR-068) · O-01 … O-06 (ai-CR-069, O-01 một phần) · M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -177,6 +177,7 @@ Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác
 | T-10 | **XONG 25/09/2026 (ai-CR-060).** «Nhắc anh 3h gọi nhà cung cấp X»: tạo lời nhắc bằng câu nói | S | Dùng bộ hẹn giờ và phần hiểu giờ sẵn có |
 | T-11 | **XONG 25/09/2026 (ai-CR-064).** Tạo lịch Google Calendar bằng câu nói, hỏi lại trước khi tạo | S | Cần N-03 |
 | T-12 | Việc rút ra từ biên bản thành lời nhắc và việc trong phân hệ Công việc của ERP | M | Chỗ hai cụm cộng lại đáng giá nhất |
+| T-13 | Ô **«Lịch hôm nay»** trên Trang chủ ERP v2: sự kiện trong ngày từ Google của từng người + việc ở phân hệ Dự án đến hạn hôm nay; chưa nối Google thì hiện nút «Nối Google» | M | **Để sau** — đại ca dặn note lại 05/10/2026. Lịch hiện xem qua Google Calendar, Telegram («lịch hôm nay»), Trợ lý web, bản tin 7:30 |
 
 ## Nhóm R — Nghiên cứu (research, tìm tài liệu, kiểm chứng)
 
