@@ -12108,4 +12108,4 @@ cặp riêng thì dùng cặp riêng, chưa có thì dùng cặp cũ như trư�
 
 Mã nguồn: backend/app/modules/agent_hub/google_link.py · backend/app/core/config.py · doc/agent-hub/10-huong-dan-noi-google.md
 Commit: 7c3dd3d2 (erp-v2 7c3dd3d2)
-Deploy: DEV 05/10 do Erp Agent 1; khóa Google riêng chờ đại ca tạo; prod CHƯA
+Deploy: DEV 05/10 do Erp Agent 1; 05/10 đại ca tạo dự án Google «ERP Tro ly AI» + client, em đưa hai khóa lên .env.dev (sao lưu trước), dựng lại api + worker + poller, đã cấu hình xong; prod CHƯA
