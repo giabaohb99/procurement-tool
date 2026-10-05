@@ -849,6 +849,25 @@ c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, 
 
 ---
 
+## bao-CR-564 | Bài kiểm luồng duyệt YCTT: đổi bài «chưa chặn ghi chi phiếu nháp» thành bài canh việc chặn
+- status: xong
+- date: 2026-10-02
+Bộ lưới an toàn luồng duyệt thu mua có một bài cố ý ghi lại lỗ hổng cũ: gọi thẳng API là ghi nhận
+đã chi được cho Yêu cầu thanh toán còn nháp, tiền ra khỏi sổ mà chưa ai duyệt. Lỗ này đã được
+bao-CR-511 vá (chỉ phiếu «Đã duyệt» mới sang «Đã chi» được), nên bài cũ đỏ — đúng như chú thích của
+nó dặn: «vá thì bài này đỏ». Hành vi mới là đúng, bài kiểm đã cũ.
+
+Đã đổi bài thành canh điều ngược lại: phiếu nháp bấm ghi chi thì bị từ chối 400 và vẫn giữ trạng
+thái Nháp; chú thích ghi rõ trước đây bài này ghi lại lỗ hổng nào và CR nào đã vá. Không đổi mã chạy
+thật.
+
+Kiểm: chạy riêng tệp bài kiểm luồng duyệt, 30 bài xanh.
+Mã nguồn: `test/backend/test_luong_duyet_thu_mua.py` (`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet`
+→ `test_yctt_pay_draft_is_blocked`).
+Commit: Agent 1 gom vào commit bao-CR-593 erp-v2 76ab6d0a (main 8abecfaa) ngày 05/10; chỉ sửa bài kiểm, không cần deploy.
+
+---
+
 ## bao-CR-566 | Chép dữ liệu chi tiết thuốc BVTV từ dev lên prod
 - status: xong
 - date: 2026-10-02
