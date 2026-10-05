@@ -11835,3 +11835,5 @@ vào địa chỉ giao diện cũ, trong khi đường dẫn Trợ lý AI trả 
 Thêm bài kiểm cho cả hai loại link.
 
 Mã nguồn: backend/app/modules/agent_hub/telegram.py · test/backend/test_agent_hub.py
+Commit: 596e0b24 (erp-v2 a0eb6f3c)
+Deploy: DEV 05/10 do Erp Agent 1, health 200; prod CHƯA
