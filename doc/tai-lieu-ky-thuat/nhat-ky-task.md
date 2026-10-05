@@ -12035,3 +12035,14 @@ lần thì bot tự mở một việc sửa mã, đi đường duyệt thường
 quyền xem loại phiếu đó.
 
 Mã nguồn: backend/app/modules/assistant/tools/learning_tool.py · assistant/glossary.py · assistant/feedback.py · agent_hub/learning.py
+
+## ai-CR-079 | Thuật ngữ chỉ hỏi khi cần: không gửi đề xuất theo lịch, gặp từ lạ thì hỏi kèm lựa chọn
+- status: xong
+- date: 2026-10-05
+Đại ca thấy năm phút gửi một lần đề xuất thuật ngữ là phiền vì lâu lâu mới có thay đổi. Nay bot không tự gửi nữa:
+đề xuất nằm chờ trong sổ, chỉ hiện khi đại ca nhắn «cập nhật thuật ngữ»; một đề xuất thì nhắn «đúng» hoặc «thôi»,
+nhiều thì duyệt theo số hoặc «duyệt hết thuật ngữ». Khi đang trả lời mà gặp từ nội bộ chưa hiểu, Trợ lý tra dữ liệu
+trước: chắc thì làm luôn và nói rõ cách hiểu, không chắc thì hỏi một câu kèm vài lựa chọn đoán sẵn, đại ca chọn số là
+bot nhớ luôn và trả lời tiếp câu gốc.
+
+Mã nguồn: backend/app/modules/agent_hub/learning.py · agent_hub/service.py · assistant/tools/learning_tool.py

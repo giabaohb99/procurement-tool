@@ -6698,28 +6698,45 @@ def test_loi_sua_cua_dai_ca_ghi_thang_nguoi_khac_cho_duyet(db, bot, seed):
     assert len(glossary.load_pending(db)) == 1
 
 
-def test_de_xuat_thuat_ngu_nhan_dai_ca_dung_la_ghi(db, bot):
+def test_de_xuat_thuat_ngu_chi_hien_khi_dai_ca_hoi(db, bot):
+    """ai-CR-079 (đại ca 05/10): KHÔNG gửi đề xuất theo lịch; chỉ hiện khi nhắn «cập nhật thuật ngữ»."""
     from app.modules.agent_hub import learning
     from app.modules.assistant import glossary
 
     service, sent, asked = bot
-    item = glossary.propose(db, "kho 2", "kho Bình Dương", evidence="danh mục có «Kho Bình Dương»",
-                            source="Trợ lý tự suy từ dữ liệu")
-    assert learning.notify_terms(db) == 1 and learning.notify_terms(db) == 0
+    glossary.propose(db, "kho 2", "kho Bình Dương", evidence="danh mục có «Kho Bình Dương»",
+                     source="Trợ lý tự suy từ dữ liệu")
+    before = len(sent)
+    assert learning.tick(db) == {"gap_tasks": 0} and len(sent) == before       # vòng 5 phút không nhắn gì
+    service.handle_message(db, _msg("cập nhật thuật ngữ"))
     card = sent[-1]
     assert card.startswith("<b>ĐỀ XUẤT THUẬT NGỮ</b>") and "kho Bình Dương" in card and "<b>đúng</b>" in card
-    service.handle_message(db, _msg("đúng"))
+    service.handle_message(db, {**_msg("đúng"), "message_id": 8})
     assert glossary.find(glossary.load(db), "kho 2")["meaning"] == "kho Bình Dương" and "ĐÃ NHỚ" in sent[-1]
     assert asked == []
-    #  Đề xuất thứ hai: «thôi» → bỏ; «duyệt thuật ngữ #n» cho đề xuất cũ.
-    glossary.propose(db, "bên Organic", "phòng Dego Organic")
-    learning.notify_terms(db)
-    service.handle_message(db, {**_msg("thôi"), "message_id": 8})
+    #  Nhiều đề xuất → danh sách duyệt bằng số; «duyệt hết thuật ngữ».
+    a = glossary.propose(db, "bên Organic", "phòng Dego Organic")
+    glossary.propose(db, "xưởng", "nhà máy Dego Organic")
+    service.handle_message(db, {**_msg("đề xuất thuật ngữ"), "message_id": 9})
+    assert f"<b>#{a['id']}</b>" in sent[-1] and "duyệt hết thuật ngữ" in sent[-1]
+    service.handle_message(db, {**_msg(f"bỏ thuật ngữ #{a['id']}"), "message_id": 10})
+    service.handle_message(db, {**_msg("duyệt hết thuật ngữ"), "message_id": 11})
     assert glossary.find(glossary.load(db), "bên Organic") is None
-    late = glossary.propose(db, "xưởng", "nhà máy Dego Organic")
-    service.handle_message(db, {**_msg(f"duyệt thuật ngữ #{late['id']}"), "message_id": 9})
-    assert glossary.find(glossary.load(db), "xưởng") is not None
-    assert item["id"] == 1
+    assert glossary.find(glossary.load(db), "xưởng") is not None and glossary.load_pending(db) == []
+    service.handle_message(db, {**_msg("cập nhật thuật ngữ"), "message_id": 12})
+    assert "Không có đề xuất" in sent[-1]
+    #  «cập nhật thuật ngữ: X là Y» là dạy luôn.
+    service.handle_message(db, {**_msg("cập nhật thuật ngữ: kho 3 là kho Long An"), "message_id": 13})
+    assert glossary.find(glossary.load(db), "kho 3")["meaning"] == "kho Long An"
+
+
+def test_mo_ta_tool_day_tro_ly_hoi_kem_lua_chon():
+    """ai-CR-079: không chắc nghĩa → hỏi MỘT câu kèm lựa chọn đánh số đoán sẵn; người dùng chọn → ghi nhớ."""
+    from app.modules.assistant.tools.learning_tool import GLOSSARY_LOOKUP_SPEC, PROPOSE_GLOSSARY_TERM_SPEC
+
+    assert "lựa chọn ĐÁNH SỐ" in GLOSSARY_LOOKUP_SPEC.description
+    assert "CHỌN một lựa chọn" in PROPOSE_GLOSSARY_TERM_SPEC.description
+    assert "đừng nhắc người dùng duyệt" in PROPOSE_GLOSSARY_TERM_SPEC.description
 
 
 def test_do_nghia_tu_noi_bo_trong_du_lieu(db, seed, cap_quyen):

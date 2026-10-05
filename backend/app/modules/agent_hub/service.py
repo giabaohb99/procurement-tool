@@ -1699,7 +1699,7 @@ def _runner_confirm(db: Session, chat_id: str, row: AgentMessage, pending: Agent
 # Sổ thuật ngữ (ai-CR-077): đại ca dạy Trợ lý bằng câu nhắn
 # ---------------------------------------------------------------------------
 _GLOSS_TEACH = re.compile(
-    r"^(?:ghi nhớ|nhớ giúp em|nhớ giúp anh|nhớ giúp|nhớ|dạy em|thuật ngữ)\s*:?\s*(?P<term>.{1,60}?)\s*"
+    r"^(?:ghi nhớ|nhớ giúp em|nhớ giúp anh|nhớ giúp|nhớ|dạy em|cập nhật thuật ngữ|sửa thuật ngữ|thuật ngữ)\s*:?\s*(?P<term>.{1,60}?)\s*"
     r"(?:\s(?:là|nghĩa là|tức là|được hiểu là)\s|=)\s*(?P<meaning>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
 _GLOSS_LIST = re.compile(r"^(?:sổ thuật ngữ|các thuật ngữ|thuật ngữ|danh sách thuật ngữ|em nhớ những (?:gì|từ nào))\s*[?.!]*$",
                          re.IGNORECASE)
@@ -1708,6 +1708,10 @@ _GLOSS_FORGET = re.compile(r"^(?:quên|xóa|bỏ)\s+thuật ngữ\s+(?P<term>.+?
 _GLOSS_DECIDE = re.compile(r"^(?P<verb>duyệt|đúng|ghi|bỏ|thôi|hủy)\s+(?:đề xuất\s+)?thuật ngữ\s+#?(?P<n>\d+)[.!]*$",
                            re.IGNORECASE)
 GLOSS_WINDOW = timedelta(minutes=15)
+#  ai-CR-079: đề xuất chỉ hiện khi đại ca hỏi.
+_GLOSS_REVIEW = re.compile(r"^(?:cập nhật|duyệt|xem)?\s*(?:lại\s+)?(?:đề xuất\s+)?thuật ngữ(?:\s+mới)?\s+(?:chờ duyệt|đề xuất)"
+                           r"|^(?:cập nhật|cập nhật lại|đề xuất)\s+thuật ngữ[.!?]*$", re.IGNORECASE)
+_GLOSS_ALL = re.compile(r"^(?:duyệt|đúng)\s+(?:hết|tất cả)\s+(?:đề xuất\s+)?thuật ngữ[.!]*$", re.IGNORECASE)
 
 
 def _gloss_pending_card(db: Session, chat_id: str, row: AgentMessage) -> AgentMessage | None:
@@ -1760,6 +1764,20 @@ def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         pending.action = ACT_GLOSS_DONE if accept else ACT_GLOSS_DROPPED
         db.commit()
         _gloss_decide(db, chat_id, pid, accept, uid)
+        return True
+    if _GLOSS_REVIEW.match(raw):
+        from . import learning
+
+        row.action = ACT_COMMAND
+        learning.show_pending(db, chat_id)
+        return True
+    if _GLOSS_ALL.match(raw):
+        row.action = ACT_COMMAND
+        waiting = glossary.load_pending(db)
+        for w in waiting:
+            glossary.decide(db, int(w["id"]), accept=True, user_id=uid)
+        reply(db, chat_id, f"<b>ĐÃ NHỚ</b> {len(waiting)} thuật ngữ." if waiting else "Không có đề xuất nào chờ duyệt.")
+        db.commit()
         return True
     if m := _GLOSS_DECIDE.match(raw):
         row.action = ACT_COMMAND

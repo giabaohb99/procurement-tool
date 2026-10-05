@@ -1,7 +1,7 @@
 """VÒNG TỰ HỌC của bot (ai-CR-078) — chạy ở worker của bot trên dev, mỗi 5 phút.
 
-  1. Đề xuất thuật ngữ mới (từ `propose_glossary_term` của Trợ lý, ở web hay Telegram) → nhắn đại ca MỘT thẻ, «đúng» là
-     ghi vào sổ, «thôi» là bỏ. Đề xuất cũ quá 15 phút thì duyệt bằng «duyệt thuật ngữ #n» / «bỏ thuật ngữ #n».
+  1. Đề xuất thuật ngữ mới (từ `propose_glossary_term` của Trợ lý, ở web hay Telegram) nằm CHỜ trong sổ. ai-CR-079: không
+     tự nhắn theo lịch nữa — chỉ hiện khi đại ca nhắn «cập nhật thuật ngữ» (`notify_terms` / `pending_text`).
   2. Chỗ Trợ lý thiếu chức năng lặp từ `feedback.GAP_MIN` lần → mở VIỆC SỬA MÃ nguồn «Trợ lý thiếu chức năng» đi đường
      thường (rà soát → kế hoạch → đại ca duyệt), báo đại ca một câu. Việc đóng thì bỏ gắn để lần thiếu sau tính lại.
 """
@@ -32,6 +32,18 @@ def term_card(item: dict) -> str:
         lines.append(f"<i>Nguồn: {esc(item['source'])}.</i>")
     lines += ["", "Nhắn <b>đúng</b> để ghi vào sổ · <b>thôi</b> để bỏ",
               f"<i>Quá 15 phút thì nhắn «duyệt thuật ngữ #{item['id']}».</i>"]
+    return "\n".join(lines)
+
+
+def pending_text(items: list[dict]) -> str:
+    """Danh sách đề xuất chờ duyệt (khi có từ hai cái trở lên) — duyệt bằng số."""
+    esc = telegram.esc
+    lines = [f"<b>ĐỀ XUẤT THUẬT NGỮ</b> · {len(items)} chờ duyệt", ""]
+    for i in items[:15]:
+        lines.append(f"<b>#{i['id']}</b> «{esc(i['term'])}» = {esc(i['meaning'])}")
+        if i.get("evidence"):
+            lines.append(f"   <i>{esc(i['evidence'][:160])}</i>")
+    lines += ["", "Nhắn <b>duyệt thuật ngữ #n</b> · <b>bỏ thuật ngữ #n</b> · <b>duyệt hết thuật ngữ</b>"]
     return "\n".join(lines)
 
 
@@ -103,4 +115,26 @@ def open_gap_tasks(db: Session) -> int:
 
 
 def tick(db: Session) -> dict:
-    return {"terms": notify_terms(db), "gap_tasks": open_gap_tasks(db)}
+    """ai-CR-079 (đại ca 05/10): KHÔNG tự gửi đề xuất thuật ngữ nữa — «lâu lâu mới có update»; đề xuất nằm chờ tới khi đại ca
+    nhắn «cập nhật thuật ngữ». Vòng này chỉ còn mở việc cho chỗ Trợ lý thiếu chức năng lặp lại."""
+    return {"gap_tasks": open_gap_tasks(db)}
+
+
+def show_pending(db: Session, chat_id: str) -> int:
+    """Đại ca nhắn «cập nhật thuật ngữ»: một đề xuất → thẻ «đúng/thôi»; nhiều → danh sách duyệt bằng số; không có → nói rõ."""
+    from app.modules.assistant import glossary
+
+    from . import service
+
+    items = glossary.load_pending(db)
+    if not items:
+        service.reply(db, chat_id, "Không có đề xuất thuật ngữ nào chờ duyệt.\n\n<i>Dạy em: «ghi nhớ: X là Y».</i>",
+                      action=ACT_OPS)
+    elif len(items) == 1:
+        item = items[0]
+        service.reply(db, chat_id, term_card(item), action=ACT_OPS)
+        service.log_message(db, DIR_OUT, chat_id, 0, json.dumps({"pid": item["id"]}), action=ACT_GLOSS_WAIT)
+    else:
+        service.reply(db, chat_id, pending_text(items), action=ACT_OPS)
+    db.commit()
+    return len(items)

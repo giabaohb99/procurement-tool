@@ -102,15 +102,21 @@ GLOSSARY_LOOKUP_SPEC = ToolSpec(
     name="glossary_lookup",
     description=("DÒ NGHĨA một từ / cụm NỘI BỘ công ty (vd «nhà máy», «kho 2», «bên Organic») trong dữ liệu thật: sổ thuật ngữ, "
                  "phòng ban, pháp nhân, chức vụ, NCC, tên phòng ghi trên phiếu. Gọi TRƯỚC khi đoán nghĩa một từ nội bộ không có "
-                 "trong THUẬT NGỮ CỦA CÔNG TY, hoặc khi công cụ lọc theo từ đó ra rỗng."),
+                 "trong THUẬT NGỮ CỦA CÔNG TY, hoặc khi công cụ lọc theo từ đó ra rỗng. Sau khi tra (ai-CR-079): "
+                 "CHẮC (một ứng viên rõ ràng) → dùng luôn, nói «em hiểu X là Y», gọi propose_glossary_term kind=inferred; "
+                 "KHÔNG CHẮC → hỏi người dùng MỘT câu kèm 2–4 lựa chọn ĐÁNH SỐ lấy từ ứng viên (đoán hợp lý nhất đứng đầu) và "
+                 "một lựa chọn «khác»; người dùng chọn số / giải thích → gọi propose_glossary_term kind=user_correction rồi "
+                 "trả lời tiếp câu gốc."),
     parameters={"type": "object", "properties": {"term": {"type": "string"}}, "required": ["term"]},
     handler=_glossary_lookup,
 )
 PROPOSE_GLOSSARY_TERM_SPEC = ToolSpec(
     name="propose_glossary_term",
     description=("GHI NHỚ nghĩa một từ nội bộ. Gọi khi: (a) người dùng SỬA cách bạn hiểu một từ («không phải, nhà máy là phòng "
-                 "Dego Organic», «ý anh là…») → kind=user_correction; hoặc (b) bạn đã TỰ SUY nghĩa một từ nội bộ từ kết quả "
-                 "glossary_lookup → kind=inferred, kèm evidence (bằng chứng ngắn). KHÔNG gọi cho từ thông dụng."),
+                 "Dego Organic», «ý anh là…») hoặc CHỌN một lựa chọn bạn vừa đưa → kind=user_correction; hoặc (b) bạn đã TỰ SUY "
+                 "nghĩa một từ nội bộ từ kết quả glossary_lookup → kind=inferred, kèm evidence (bằng chứng ngắn). Đề xuất tự suy "
+                 "nằm chờ trong sổ, quản lý xem khi nhắn «cập nhật thuật ngữ» — đừng nhắc người dùng duyệt. KHÔNG gọi cho từ "
+                 "thông dụng."),
     parameters={"type": "object", "properties": {
         "term": {"type": "string"}, "meaning": {"type": "string", "description": "Nghĩa ngắn gọn, vd «phòng Dego Organic»."},
         "kind": {"type": "string", "enum": ["user_correction", "inferred"]},
