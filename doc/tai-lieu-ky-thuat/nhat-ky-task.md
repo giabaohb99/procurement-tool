@@ -70,6 +70,36 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-590 | Gửi duyệt khi đang sửa phải lưu phần đang sửa trước; YCMH bắt buộc Trưởng phòng phê duyệt
+- status: xong
+- date: 2026-10-05
+Đại ca báo: sửa phiếu rồi bấm «Gửi duyệt» mà chưa bấm Lưu thì phiếu gửi đi không mang phần vừa sửa, lỗi có trên nhiều phiếu;
+và trên YCMH ô «Trưởng phòng phê duyệt» phải luôn có khi tạo, gửi duyệt thì bắt buộc.
+
+Rà đủ mười màn có nút Gửi duyệt sửa ngay trên trang (YCMH, YCBG, phiếu khảo sát, đơn mua hàng, yêu cầu thanh toán, mỗi loại hai
+bản). Sáu màn đã đúng (lưu rồi mới gửi). Bốn màn lỗi là đơn mua hàng và yêu cầu thanh toán ở cả bản mới lẫn bản cũ: nút chỉ gọi
+lệnh gửi duyệt nên máy chủ gửi bản cũ, rồi trang nạp lại bản cũ đè lên các ô đang sửa. Đã sửa cả bốn: phiếu còn sửa được thì
+lưu phần đang sửa trước, lưu hỏng thì không gửi, và chặn bấm đúp. Ở bản cũ, nút Lưu từng truyền thẳng sự kiện bấm vào hàm lưu;
+đã đổi để cờ «lưu xong thì gửi» không bị bật nhầm. Tiện vá phiếu khảo sát bản cũ: gửi duyệt thẳng nay tải lên luôn tệp đính kèm
+đang chờ của dòng mới, giống nút Lưu.
+
+YCMH: màn hình vốn đã hiện sẵn trưởng bộ phận mặc định ở ô «Trưởng phòng phê duyệt», nhưng giá trị lưu xuống vẫn trống tới khi
+người dùng tự chọn. Nay người đang hiện được ghi thật xuống phiếu, ô có dấu sao bắt buộc, và gửi duyệt bị chặn khi không còn ai
+(không người duyệt và không trưởng bộ phận). Máy chủ thêm chốt cuối ở bước gửi duyệt: phiếu không có người duyệt thì không lên
+Chờ duyệt.
+
+Kiểm: bản mới kiểm kiểu 0 lỗi, eslint sạch trên các tệp sửa, vitest thu mua + tài chính 920 bài xanh; bản cũ giữ đúng 4 lỗi nền;
+máy chủ 3 bài kiểm mới cùng các bộ kiểm gửi duyệt liên quan 84 bài xanh. Bấm thử trên local: đơn PO00039 gõ mã MISA rồi bấm thẳng
+Gửi duyệt, đơn lên Chờ duyệt và mã MISA được lưu.
+
+Mã nguồn: frontend-v2 `procurement/pages/purchase-order-detail-page.tsx`, `finance/pages/payment-request-detail-page.tsx`,
+`procurement/pages/purchase-request-detail-page.tsx`, `components/approver-select.tsx`, `utils/required-fields.ts`,
+`utils/dept-head-display.ts` (`fillApproverDefaults`); frontend `PurchaseOrderDetail.tsx`, `PaymentRequestDetail.tsx`,
+`SurveyDetail.tsx`, `PurchaseRequestDetail.tsx`; backend `purchase_request/controller.py` (`submit_pr`).
+Commit: erp-v2 `53ee8f92`. Deploy: DEV 05/10/2026; prod chưa.
+
+---
+
 ## bao-CR-588 | Bật luồng duyệt cấu hình cho Đặt xe và Duyệt dấu trên prod, chạy thử đồng bộ app cũ
 - status: xong
 - date: 2026-10-05
