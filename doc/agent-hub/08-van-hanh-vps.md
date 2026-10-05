@@ -113,7 +113,16 @@ Báo tài nguyên 07:35 mỗi sáng (cùng nội dung «tình hình máy»). B�
    `celery-worker celery-beat agent-poller`.
 3. `.env.runner` của máy có cờ deploy: `AGENT_OPS_ENABLED=true` (+ `AGENT_HEAL_ENABLED=true`), dựng lại runner để có mã mới:
    `docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml up -d --build`.
-4. Thử: «môi trường» → «trạng thái dev» → «tình hình máy» → «sql dev: SELECT COUNT(*) FROM tab_agent_task».
+4. **Cấp quyền DB cho tài khoản MySQL `agent_runner`** của máy sửa mã (nó chỉ được cấp theo TỪNG bảng). Thiếu bước này
+   là máy nhận vé rồi hỏng lặng lẽ (05/10 đã dính: ba lệnh đầu tiên treo tới khi cấp). Đã cấp trên dev 05/10:
+   ```sql
+   GRANT SELECT, UPDATE ON procurement_dev.tab_agent_env TO agent_runner@'%';
+   GRANT SELECT, INSERT, UPDATE ON procurement_dev.tab_agent_op TO agent_runner@'%';
+   GRANT SELECT, UPDATE ON procurement_dev.tab_agent_incident TO agent_runner@'%';
+   ```
+   **Luật:** thêm bảng Agent Hub mới mà máy sửa mã đọc/ghi thì phải cấp thêm cho `agent_runner` cùng đợt deploy.
+   Thao tác nằm «chờ máy» quá 5 phút thì bot tự báo một lần (`ops.remind_stuck_ops`).
+5. Thử: «môi trường» → «trạng thái dev» → «tình hình máy» → «sql dev: SELECT COUNT(*) FROM tab_agent_task».
 
 ## 8. Chưa làm, nói thẳng
 

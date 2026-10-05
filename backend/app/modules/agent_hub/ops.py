@@ -540,6 +540,29 @@ def check_health(db: Session, *, fetch=None, now: datetime | None = None) -> dic
     return {"opened": opened, "resolved": resolved}
 
 
+STUCK_AFTER = timedelta(minutes=5)
+STUCK_NOTE = "máy sửa mã chưa nhận sau 5 phút"
+
+
+def remind_stuck_ops(db: Session, *, now: datetime | None = None) -> int:
+    """Thao tác đã duyệt mà nằm «chờ máy» quá 5 phút → báo đại ca MỘT lần (05/10: máy sửa mã thiếu quyền DB
+    nên nhận vé rồi chết lặng, đại ca chờ mà không ai báo). Dấu đã báo = `error` ghi STUCK_NOTE."""
+    from . import service
+
+    now = now or now_utc()
+    rows = list(db.scalars(select(AgentOp).where(AgentOp.status == OPS_QUEUED, AgentOp.error == "",
+                                                 AgentOp.approved_at < now - STUCK_AFTER)))
+    for op in rows:
+        op.error = STUCK_NOTE
+        service.reply(db, op.chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
+                      f"Thao tác <b>#{op.id}</b> ({telegram.esc(op.title[:80])}) đã duyệt hơn 5 phút mà máy sửa mã chưa "
+                      "nhận hoặc nhận rồi hỏng trước khi ghi được kết quả. Máy có thể đang tắt, mất đường hầm, hoặc thiếu "
+                      "quyền DB — em đang chờ; «máy nào đang bật» để xem máy.", action=ACT_OPS)
+    if rows:
+        db.commit()
+    return len(rows)
+
+
 def dispatch_resource_report(db: Session, chat_id: str = "") -> bool:
     return _send_task(db, "agent.resource_report", [chat_id])
 

@@ -6274,3 +6274,23 @@ def test_heuristic_chan_doan_khi_claude_hong():
     d = ops_runner.heuristic_diagnosis(raw)
     assert d["action"] == "up_services" and d["services"] == ["api"]
     assert ops_runner.heuristic_diagnosis("DISK_PCT=95%\n")["action"] == "prune_build_cache"
+
+
+def test_thao_tac_nam_cho_may_qua_5_phut_thi_bao_mot_lan(db, bot, monkeypatch):
+    """05/10: máy sửa mã thiếu quyền DB, nhận vé rồi chết lặng — đại ca chờ mà không ai báo."""
+    from datetime import timedelta
+
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import OP_VIEW, OPS_QUEUED
+    from app.modules.agent_hub.timeutil import now_utc
+
+    _, sent, _ = bot
+    dev, _ = _envs(db)
+    _ops_on(monkeypatch)
+    op = ops.new_op(db, dev, OP_VIEW, title="Trạng thái container", command="ps", params={"what": "status"},
+                    chat_id="12345")
+    assert op.status == OPS_QUEUED
+    assert ops.remind_stuck_ops(db) == 0
+    later = now_utc() + timedelta(minutes=6)
+    assert ops.remind_stuck_ops(db, now=later) == 1 and f"#{op.id}" in sent[-1]
+    assert ops.remind_stuck_ops(db, now=later) == 0 and op.status == OPS_QUEUED

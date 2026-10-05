@@ -655,7 +655,9 @@ def health_check_task() -> dict:
 
     db = SessionLocal()
     try:
-        return {"status": "success", **ops.check_health(db)}
+        out = ops.check_health(db)
+        out["stuck_ops"] = ops.remind_stuck_ops(db)
+        return {"status": "success", **out}
     except Exception as e:  # noqa: BLE001 — vòng beat không được chết
         db.rollback()
         log.exception("agent_hub: vòng theo dõi sức khỏe hỏng")

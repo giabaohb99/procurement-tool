@@ -11785,3 +11785,14 @@ thao tác và tự chữa mặc định tắt. Còn thiếu: đếm lỗi 5xx t�
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · tasks.py · backend/app/core/celery_app.py
 Commit: ed371d19 (erp-v2 a3b0dd55)
 Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; 13:29 bật AGENT_OPS_ENABLED + AGENT_HEAL_ENABLED trên dev và máy sửa mã theo lệnh đại ca; prod CHƯA — đại ca dặn từ từ vì chưa hoàn thiện
+
+## ai-CR-070 | Cấp quyền dữ liệu cho máy sửa mã và báo khi thao tác nằm chờ quá lâu
+- status: xong
+- date: 2026-10-05
+Ba lệnh đầu tiên đại ca thử trên Telegram sau khi bật thao tác máy chủ bị treo khoảng hai phút. Nguyên nhân là
+tài khoản cơ sở dữ liệu của máy sửa mã chỉ được cấp quyền theo từng bảng, chưa có ba bảng mới của phase 6-7, nên
+máy nhận việc rồi hỏng mà không ghi được lỗi. Đã cấp đúng quyền đọc, ghi, sửa cần dùng trên dev và gửi lại ba việc,
+mỗi lệnh xong trong vài giây. Để lần sau không im lặng: thao tác đã duyệt mà nằm chờ máy quá năm phút thì bot tự
+báo đại ca một lần. Tài liệu vận hành ghi thêm bước cấp quyền và luật cấp quyền cùng đợt khi thêm bảng mới.
+
+Mã nguồn: backend/app/modules/agent_hub/ops.py · tasks.py · doc/agent-hub/08-van-hanh-vps.md
