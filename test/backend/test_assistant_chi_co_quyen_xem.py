@@ -163,6 +163,8 @@ TOOL_GHI = {
     #  get_scoped('user', 'write'), canh ở test_assistant_account_setup_tool.
     "propose_account_setup": ("user", "write", {"employee": "NV-BAT-KY",
                                                 "role_codes": ["employee"]}),
+    #  ai-CR-080 — chỉ soạn nháp; tạo thật khi người dùng nhắn «tạo» (draft_create kiểm lại quyền + thành viên dự án).
+    "draft_work_task": ("work_task", "create", {"title": "Gọi NCC"}),
 }
 
 #  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua

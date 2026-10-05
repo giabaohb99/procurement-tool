@@ -39,7 +39,7 @@ flowchart TB
         WK["celery-worker + beat<br/>gom việc · lập kế hoạch · chuông · nhắc · bản tin"]
         SO["Sổ của bot (MySQL dev)<br/>việc · quyền · máy · khóa · nhật ký"]
         RD["Redis — hàng đợi agent_code.&lt;máy&gt;"]
-        TOOLS["Công cụ ERP (48 tool)<br/>tra cứu · tạo phiếu · báo cáo · hải quan · Lịch/Drive"]
+        TOOLS["Công cụ ERP (49 tool)<br/>tra cứu · tạo phiếu · báo cáo · hải quan · Lịch/Drive"]
     end
 
     subgraph VPS2["VPS 2 — BOT CODE (tạm thời: máy đại ca)"]
@@ -99,7 +99,7 @@ flowchart LR
     C -- không --> D{"Có khóa Gemini cá nhân?<br/>Chưa chạm trần lượt/ngày?"}
     D -- không --> D1["Nói rõ lý do, chỉ cách gắn khóa"]
     D -- có --> E["Đọc ý định (Gemini, khóa của người đó)"]
-    E -- hỏi --> F["Trợ lý ERP + 48 tool, đúng quyền người hỏi"]
+    E -- hỏi --> F["Trợ lý ERP + 49 tool, đúng quyền người hỏi"]
     E -- tra cứu --> G["Nghiên cứu web / kiểm chứng"]
     E -- giao việc sửa mã --> H["Luồng 4.2 (chỉ đại ca + người có quyền)"]
     F --> F1{"Tool trả bản nháp phiếu?"}

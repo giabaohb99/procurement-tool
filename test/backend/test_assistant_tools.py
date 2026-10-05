@@ -250,3 +250,63 @@ def test_recent_purchase_orders_loc_phong_ban_phap_nhan_va_link_ncc(db, seed, ca
     none = T.run_tool(db, user, "recent_purchase_orders", {"department": "nhà máy"})
     assert none["total"] == 0 and "nhà máy" in none["note"]
     assert T.run_tool(db, user, "recent_purchase_orders", {"company": "không-có"})["total"] == 0
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-080 — «lên task» ở phân hệ Dự án từ câu nói: soạn nháp → «tạo» → báo chuông người được giao
+# ---------------------------------------------------------------------------
+def _work_setup(db, seed, cap_quyen):
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+    from app.modules.work import list_service, schema
+    from app.modules.work.membership_service import Actor
+
+    me = Employee(code="NV-ME", full_name="Nguyễn Văn Chủ", company_id=seed.company_id)
+    duoc = Employee(code="NV-DUOC", full_name="Trần Minh Được", company_id=seed.company_id)
+    db.add_all([me, duoc])
+    db.flush()
+    user = db.get(User, seed.u_req_id)
+    user.employee_id = me.id
+    other = db.get(User, seed.u_nstm_id)
+    other.employee_id = duoc.id
+    db.commit()
+    actor = Actor(user_id=user.id, employee_id=me.id, company_id=seed.company_id)
+    a = list_service.create_list(db, actor, schema.ListCreate(name="Thu mua"))
+    b = list_service.create_list(db, actor, schema.ListCreate(name="Kho vận"))
+    cap_quyen(seed.u_req_id, "work_task", scope="all", read=True, create=True)
+    return db.get(User, seed.u_req_id), other, a, b
+
+
+def test_soan_nhap_viec_hoi_du_an_khi_mo_ho_va_tim_dung_nguoi(db, seed, cap_quyen):
+    from app.modules.assistant import tools as T
+
+    user, _, a, _ = _work_setup(db, seed, cap_quyen)
+    out = T.run_tool(db, user, "draft_work_task", {"title": "Gọi NCC Thiên An", "assignees": ["Được"]})
+    assert out["need_choice"] == "project" and set(out["options"]) == {"Thu mua", "Kho vận"}
+    out = T.run_tool(db, user, "draft_work_task", {"title": "Gọi NCC Thiên An", "project": "thu mua",
+                                                     "assignees": ["Được"], "due_date": "2026-10-09"})
+    d = out["draft"]
+    assert d["list_id"] == a["id"] and d["assignees"][0]["code"] == "NV-DUOC" and d["due_date"] == "2026-10-09"
+    bad = T.run_tool(db, user, "draft_work_task", {"title": "x", "project": "thu mua", "assignees": ["không-ai"]})
+    assert bad["need_choice"] == "assignee"
+    assert "error" in T.run_tool(db, user, "draft_work_task", {"title": "x", "project": "thu mua", "due_date": "9/10"})
+
+
+def test_tao_viec_tu_nhap_bao_chuong_nguoi_duoc_giao(db, seed, cap_quyen):
+    from app.modules.agent_hub import draft_create
+    from app.modules.assistant import tools as T
+    from app.modules.notification.model import Notification
+    from app.modules.work.task_model import WorkTask
+
+    user, other, a, _ = _work_setup(db, seed, cap_quyen)
+    draft = T.run_tool(db, user, "draft_work_task", {"title": "Gọi NCC Thiên An", "project": "Thu mua",
+                                                       "assignees": ["NV-DUOC"], "due_date": "2026-10-09"})["draft"]
+    assert draft_create.kind_of("draft_work_task") == "work_task"
+    assert "Người phụ trách: Trần Minh Được" in draft_create.summarize("work_task", draft)
+    code, tid = draft_create.create(db, user, "work_task", draft)
+    t = db.get(WorkTask, tid)
+    assert t.title == "Gọi NCC Thiên An" and t.list_id == a["id"] and t.due_date == "2026-10-09"
+    bell = db.query(Notification).filter_by(user_id=other.id).one()
+    assert bell.link == f"/project/tasks/{tid}" and "Gọi NCC Thiên An" in bell.title
+    assert db.query(Notification).filter_by(user_id=user.id).count() == 0       # người tạo không tự báo mình
+    assert any("đã báo chuông" in x for x in draft_create.created_details(db, "work_task", tid))

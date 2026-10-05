@@ -3028,6 +3028,8 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
     lines += [esc(x) for x in draft_create.summarize(kind, draft)]
     if kind in draft_create.SUBMITTABLE:
         lines += ["", "Nhắn «tạo» để lưu Nháp, «tạo và gửi duyệt» để gửi duyệt luôn, «thôi» để bỏ."]
+    elif kind == "work_task":
+        lines += ["", "Nhắn «tạo» để em tạo việc và báo chuông cho người được giao, «thôi» để bỏ."]
     else:
         lines += ["", "Nhắn «tạo» để em gửi phiếu cho nhóm hỗ trợ, «thôi» để bỏ."]
     reply(db, chat_id, "\n".join(lines))

@@ -24,6 +24,7 @@ from .employee_tool import EMPLOYEE_LOOKUP_SPEC
 from .export_tool import EXPORT_EXCEL_FILE_SPEC, EXPORT_REPORT_FILE_SPEC
 from .google_tool import GOOGLE_SPECS
 from .learning_tool import LEARNING_SPECS
+from .work_tool import DRAFT_WORK_TASK_SPEC
 from .leave_tool import MY_LEAVE_SUMMARY_SPEC
 from .payable_tool import (DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC,
                            PAYMENT_REQUEST_READ_SPEC)
@@ -65,7 +66,8 @@ def _active_specs() -> list:
                            CUSTOMS_PRICE_STATS_SPEC, CUSTOMS_BUY_TIMING_SPEC,
                            CUSTOMS_MARKET_SPEC, CUSTOMS_LEGAL_CHECK_SPEC,
                            *GOOGLE_SPECS,   # ai-CR-064: Lịch + Drive Google cá nhân
-                           *LEARNING_SPECS]  # ai-CR-078: dò nghĩa từ nội bộ, đề xuất thuật ngữ, báo thiếu chức năng
+                           *LEARNING_SPECS,  # ai-CR-078: dò nghĩa từ nội bộ, đề xuất thuật ngữ, báo thiếu chức năng
+                           DRAFT_WORK_TASK_SPEC]  # ai-CR-080: soạn nháp việc ở phân hệ Dự án
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs

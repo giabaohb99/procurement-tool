@@ -29,6 +29,7 @@ KIND_BY_TOOL = {
     "draft_survey_request": "survey",
     "draft_purchase_request": "purchase",
     "draft_payment_request": "payment",
+    "draft_work_task": "work_task",      # ai-CR-080
 }
 LABELS = {
     "leave": "đơn nghỉ phép",
@@ -36,6 +37,7 @@ LABELS = {
     "survey": "yêu cầu báo giá (YCBG)",
     "purchase": "yêu cầu mua hàng (YCMH)",
     "payment": "đề nghị thanh toán",
+    "work_task": "công việc (Dự án)",
 }
 ENTITIES = {
     "leave": "leave_request",
@@ -43,12 +45,14 @@ ENTITIES = {
     "survey": "survey_request",
     "purchase": "purchase_request",
     "payment": "payment_request",
+    "work_task": "work_task",
 }
 DETAIL_PATHS = {
     "leave": "/hr/leave-requests/{id}",
     "ticket": "/support/tickets/{id}",
     "survey": "/procurement/survey-requests/{id}",
     "purchase": "/procurement/purchase-requests/{id}",
+    "work_task": "/project/tasks/{id}",
 }
 SESSION_LABELS = {1: "cả ngày", 2: "buổi sáng", 3: "buổi chiều", 4: "theo giờ"}
 
@@ -86,6 +90,14 @@ def summarize(kind: str, draft: dict) -> list[str]:
     if kind == "ticket":
         return [f"Chủ đề: {draft.get('subject', '')}", f"Bộ phận: {draft.get('department') or '(trống)'}",
                 f"Nội dung: {(draft.get('body') or '')[:300]}"]
+    if kind == "work_task":
+        people = ", ".join(p.get("name", "?") for p in draft.get("assignees") or []) or "(chưa giao ai)"
+        out = [f"Việc: {draft.get('title', '')}", f"Dự án: {draft.get('list_name', '?')}", f"Người phụ trách: {people}"]
+        if draft.get("due_date"):
+            out.append(f"Hạn: {draft['due_date']}")
+        if draft.get("description"):
+            out.append(f"Mô tả: {draft['description'][:300]}")
+        return out
     if kind in ("survey", "purchase"):
         items = draft.get("lines") or []
         out = [f"Mục đích: {draft.get('purpose') or '(trống)'}", f"{len(items)} dòng:"]
@@ -142,6 +154,8 @@ def create(db: Session, user, kind: str, draft: dict) -> tuple[str, int]:
             return _create_ticket(db, user, draft)
         if kind == "survey":
             return _create_survey(db, user, draft)
+        if kind == "work_task":
+            return _create_work_task(db, user, draft)
         return _create_purchase(db, user, draft)
     except HTTPException as e:
         db.rollback()
@@ -168,6 +182,33 @@ def _create_leave(db: Session, user, draft: dict) -> tuple[str, int]:
     obj = request_service.create(db, data, user)
     audit_record(db, user.id, "leave_request", obj.id, "create", f"Lập đơn nghỉ phép {obj.code} (qua Telegram)")
     return obj.code, obj.id
+
+
+def _create_work_task(db: Session, user, draft: dict) -> tuple[str, int]:
+    """ai-CR-080: tạo việc bằng ĐÚNG `work.task_service.create_task` của web (kiểm quyền sửa dự án theo thành viên),
+    rồi báo CHUÔNG cho từng người phụ trách — chuông tự chuyển sang Telegram của ai đã nối (P-01)."""
+    from app.modules.notification.model import Notification
+    from app.modules.user.model import User
+    from app.modules.work import task_service
+    from app.modules.work.membership_service import require_employee, resolve_actor
+    from app.modules.work.schema import TaskCreate
+
+    actor = resolve_actor(db, user)
+    require_employee(actor)
+    pics = [int(p["employee_id"]) for p in draft.get("assignees") or [] if p.get("employee_id")]
+    data = TaskCreate(list_id=int(draft.get("list_id") or 0), title=str(draft.get("title") or ""),
+                      description=str(draft.get("description") or ""), due_date=str(draft.get("due_date") or ""),
+                      start_date=str(draft.get("start_date") or ""), assignee_ids=pics)
+    task = task_service.create_task(db, actor, data)
+    tid = int(task["id"])
+    me = getattr(user, "employee_id", 0) or 0
+    due = f" · hạn {draft['due_date']}" if draft.get("due_date") else ""
+    for u in db.query(User).filter(User.employee_id.in_([p for p in pics if p != me] or [-1])):
+        db.add(Notification(user_id=u.id, title=f"Việc mới: {data.title}"[:255],
+                            body=f"Bạn được giao việc «{data.title}» ở dự án {draft.get('list_name', '')}{due}.",
+                            link=f"/project/tasks/{tid}", is_read=False))
+    db.commit()
+    return f"việc #{tid}", tid
 
 
 def _create_ticket(db: Session, user, draft: dict) -> tuple[str, int]:
@@ -314,6 +355,22 @@ def _vn_num(value: float) -> str:
 
 def created_details(db: Session, kind: str, oid: int) -> list[str]:
     """Các dòng thông tin của phiếu vừa tạo / vừa gửi duyệt, đọc từ DB (trạng thái thật sau gửi duyệt)."""
+    if kind == "work_task":
+        from app.modules.employee.model import Employee
+        from app.modules.work.model import WorkList
+        from app.modules.work.task_model import WorkTask, WorkTaskAssignee
+
+        t = db.get(WorkTask, oid)
+        if t is None:
+            return []
+        lst = db.get(WorkList, t.list_id)
+        pic_ids = [a.employee_id for a in db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id == oid)]
+        names = [e.full_name for e in db.query(Employee).filter(Employee.id.in_(pic_ids or [-1]))]
+        out = [f"Việc: {t.title}", f"Dự án: {lst.name if lst else '?'}",
+               f"Người phụ trách: {', '.join(names) or '(chưa giao ai)'} — đã báo chuông"]
+        if t.due_date:
+            out.append(f"Hạn: {t.due_date}")
+        return out
     if kind == "leave":
         from app.modules.leave.constants import LEAVE_REQUEST_STATUS_LABELS, LEAVE_SESSION_LABELS
         from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
