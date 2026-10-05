@@ -67,6 +67,8 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     #  `f"tool:{name}"` — 34 công cụ của trợ lý AI, khai thành HỌ mã.
     "modules/assistant/tools/__init__.py::_audit": ("tool:list_purchase_orders",),
     "modules/category_assignee/service.py::bulk_upsert": ("create", "update"),
+    #  duoc-CR-585: quá trình công tác ghi «Thêm» hay «Sửa» theo đường gọi.
+    "modules/employee/work_history_controller.py::_audit": ("create", "update"),
     #  Bốn kết cục của luồng duyệt Văn thư.
     "modules/document/approval_bridge.py::_write_log": (
         "approved", "rejected", "returned", "withdrawn"),
