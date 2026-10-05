@@ -70,6 +70,18 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-592 | Gom toàn bộ erp-v2 lên prod ngày 05/10, main bằng erp-v2 trở lại
+- status: dang-lam
+- date: 2026-10-05
+Đại ca chốt «gom hết đẩy lên prod». Từ 03/10 main chỉ nhận cherry-pick phần của em và để lại các CR của anh Được và
+Giang; đợt này gom hết: bao-CR-580 và bao-CR-589 (Agent 2), duoc-CR-572, duoc-CR-554, duoc-CR-585 (có migration
+`wkhist01` thêm bảng quá trình công tác) và giang-CR-587. Gộp erp-v2 vào main chỉ vướng sáu tệp đã nhận qua cherry-pick
+rồi được sửa tiếp trên erp-v2; lấy bản erp-v2 cho cả sáu, nên cây mã của main nay trùng hệt erp-v2.
+
+Commit: main `4070a939` (gộp erp-v2).
+
+---
+
 ## bao-CR-590 | Gửi duyệt khi đang sửa phải lưu phần đang sửa trước; YCMH bắt buộc Trưởng phòng phê duyệt
 - status: xong
 - date: 2026-10-05
