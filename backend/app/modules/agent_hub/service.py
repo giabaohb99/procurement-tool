@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import bells, chat_link, coder, draft_create, grants, manager, memory, ops, playbook, reminders, research, runners, telegram, user_keys
+from . import bells, chat_link, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -843,6 +843,17 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         row.action = ACT_COMMAND
         db.commit()
         run_research(db, chat_id, data.get("query") or text, data.get("kind") or research.MODE_WEB)
+    elif data["intent"] == manager.INTENT_DATA:
+        #  ai-CR-073: sửa dữ liệu bằng lời — CHỈ chat đại ca và khi thao tác VPS bật; người khác / tắt thì để
+        #  Trợ lý AI trả lời như một câu hỏi thường (nó có công cụ nghiệp vụ, đi đúng quyền của người hỏi).
+        if telegram.is_allowed_chat(chat_id) and ops.enabled():
+            row.action = ACT_COMMAND
+            db.commit()
+            reply(db, chat_id, ops.start_data_change(db, chat_id, data.get("request") or text, data.get("env") or "dev"))
+            db.commit()
+        else:
+            row.action = ACT_ASKED
+            answer_question(db, chat_id, text, before_id=row.id)
     #  GIAO VIỆC: để `action` rỗng, tin nằm lại INBOX và vòng gom lo tiếp.
     #  ai-CR-021: đại ca muốn biết ngay là bot đã nhận — nhắn MỘT câu báo nhận cho cả chùm tin
     #  liên tiếp (không phải mỗi câu một tiếng chuông, lý do bản cũ im lặng hẳn).
@@ -2766,7 +2777,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         #  Trợ lý AI; nên web vẫn là «Trợ lý AI», chỉ kênh Telegram mới là Đậu Đậu (ai-CR-016).
         #  ai-CR-053: `provider="agent_gemini"` = khóa của NGƯỜI đang chat, không phải khóa công ty của web.
         result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
-                                       system=f"{BOT_PERSONA} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
+                                       system=f"{BOT_PERSONA} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}")
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")

@@ -377,7 +377,7 @@ Bot có hai tay:
     số liệu, tình trạng chứng từ, tạo đơn nghỉ phép, lập báo cáo, duyệt, gửi thông báo.
   - SỔ VIỆC SỬA PHẦN MỀM: ghi lại để lập trình viên sửa mã nguồn.
 
-Có năm kết quả:
+Có sáu kết quả:
 
 - "hoi": giao cho TRỢ LÝ AI. Gồm cả ba dạng: người ta MUỐN BIẾT một điều có sẵn
   (số liệu, tình trạng một chứng từ, ai giữ việc, cách dùng, nội dung tài liệu);
@@ -404,6 +404,11 @@ Có năm kết quả:
   kiem_chung (xét một nhận định đúng/sai) · tai_lieu (tài liệu kỹ thuật dự án), và `query` (câu cần
   tra, viết lại cho rõ nếu cần). Câu hỏi về DỮ LIỆU trong ERP (đơn, NCC, công nợ, nhân sự, phiếu) là
   "hoi", KHÔNG phải tra_cuu.
+- "du_lieu": nhờ SỬA DỮ LIỆU HÀNG LOẠT ngay trong cơ sở dữ liệu theo một điều kiện — gán / đổi / xóa một giá
+  trị cho NHIỀU bản ghi cùng lúc (vd «gán chức vụ Nhân viên (Demo) cho các nhân sự có (CR-414) trong tên», «đổi phòng
+  ban của mấy NCC demo thành Thu mua», «xóa các phiếu nháp test trên dev»). KHÁC "viec" (đổi phần mềm) và KHÁC "hoi"
+  (làm MỘT chứng từ bằng công cụ nghiệp vụ). Điền `env`: "prod" nếu người ta nói rõ prod / thật / chính thức, còn lại
+  "dev"; và `request`: viết lại yêu cầu cho rõ, giữ nguyên mọi tên / mã / chữ trong ngoặc người ta đưa.
 - "mo_ho": đọc xong vẫn không chắc, hoặc tin quá ngắn/cụt để biết người ta muốn gì.
 
 Vài ca dễ nhầm:
@@ -419,6 +424,7 @@ Vài ca dễ nhầm:
 - "sao đơn PO00362 chưa duyệt" -> hoi (hỏi tình trạng một chứng từ cụ thể).
 - "cho thêm cột ngày giao vào bảng đơn hàng" -> viec.
 - "xem lại giúp anh" -> mo_ho (không biết xem cái gì).
+- "gán vị trí chức vụ Nhân viên (Demo) cho nhân sự nào có (CR-414) trong tên" -> du_lieu, env dev.
 
 Nếu có MẠCH TRƯỚC ĐÓ thì phải đọc nó trước khi phán: một tin ngắn cụt đứng ngay sau
 câu hỏi của bot thường là câu nối tiếp (-> hoi), không phải mo_ho.
@@ -434,7 +440,10 @@ hoặc với thao tác:
  "confident": true, "reason": "..."}
 hoặc với tra cứu:
 {"intent": "tra_cuu", "kind": "web", "query": "...", "reason": "..."}
+hoặc với sửa dữ liệu:
+{"intent": "du_lieu", "env": "dev", "request": "...", "reason": "..."}
 """
+INTENT_DATA = "du_lieu"
 INTENT_RESEARCH = "tra_cuu"
 RESEARCH_KINDS = ("web", "kiem_chung", "tai_lieu")
 
@@ -476,7 +485,7 @@ def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, 
     )
     data = parse_json(result.text)
     intent = str(data.get("intent") or "").strip().lower()
-    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE, INTENT_ACT, INTENT_RESEARCH):
+    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE, INTENT_ACT, INTENT_RESEARCH, INTENT_DATA):
         log.warning("agent_hub: phân loại trả ý định lạ %r, coi như mập mờ", intent)
         intent = INTENT_UNSURE
     out = {"intent": intent, "reason": str(data.get("reason") or "")[:200]}
@@ -489,6 +498,10 @@ def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, 
             out.update(action=action, task=str(data.get("task") or "").strip().upper(),
                        when=str(data.get("when") or "").strip(), detail=str(data.get("detail") or "").strip(),
                        confident=bool(data.get("confident")))
+    if intent == INTENT_DATA:
+        env = str(data.get("env") or "dev").strip().lower()
+        out.update(env=env if env in ("dev", "prod") else "dev",
+                   request=str(data.get("request") or "").strip() or text)
     if intent == INTENT_RESEARCH:
         kind = str(data.get("kind") or "").strip().lower()
         out.update(kind=kind if kind in RESEARCH_KINDS else "web",

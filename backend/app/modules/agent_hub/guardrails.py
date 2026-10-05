@@ -39,6 +39,7 @@ BANNED_PATTERNS = (
     "backend/app/modules/agent_hub/ops_runner.py",   # (2) phần thi hành trên VPS, sao lưu, tự chữa
     "backend/scripts/deploy/*",                      # (2) deploy.sh — kịch bản lên dev/prod
     "backend/app/modules/agent_hub/guardrails.py",   # (3) chính tệp này
+    "backend/app/modules/agent_hub/policy.py",       # (2)(3) quy định hỏi và làm (ai-CR-073)
 )
 
 

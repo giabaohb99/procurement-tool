@@ -269,12 +269,14 @@ OP_SQL_WRITE = 5     # UPDATE / INSERT / DELETE / REPLACE — sao lưu bảng tr
 OP_SHELL_WRITE = 6   # lệnh shell ngoài danh sách chỉ đọc
 OP_DEPLOY = 7        # deploy.sh lên một commit
 OP_RESTORE = 8       # nạp lại bản sao lưu bảng (hoàn tác một OP_SQL_WRITE)
+OP_DATA_PLAN = 9     # ai-CR-073: đại ca nhờ sửa dữ liệu bằng lời → máy sửa mã tra + soạn lệnh (chỉ đọc), đẻ ra OP_SQL_WRITE
 OP_KIND_LABELS = {
+    OP_DATA_PLAN: "soạn lệnh sửa dữ liệu",
     OP_VIEW: "xem", OP_SQL_READ: "SQL đọc", OP_SHELL_READ: "lệnh đọc", OP_ACTION: "thao tác",
     OP_SQL_WRITE: "SQL sửa", OP_SHELL_WRITE: "lệnh sửa", OP_DEPLOY: "deploy", OP_RESTORE: "khôi phục",
 }
 #  Loại CHỈ ĐỌC: trên dev chạy luôn, trên prod vẫn phải «đúng» (đại ca chốt 05/10/2026).
-OP_READ_KINDS = (OP_VIEW, OP_SQL_READ, OP_SHELL_READ)
+OP_READ_KINDS = (OP_VIEW, OP_SQL_READ, OP_SHELL_READ, OP_DATA_PLAN)
 
 OPS_WAITING = 1      # thẻ «đúng» đang chờ
 OPS_QUEUED = 2       # đã duyệt, chờ máy sửa mã nhận

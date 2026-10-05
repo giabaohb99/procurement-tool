@@ -6336,3 +6336,151 @@ def test_may_sua_ma_mat_lien_lac_bao_mot_lan_noi_lai_bao_lai(db, monkeypatch):
     runners.register(db, "may moi")
     assert runners.watch(db, now=later + timedelta(hours=1), notify=said.append)["down"] == 1
     assert sum("may-moi" in x for x in said) == 0
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-073 — sửa dữ liệu bằng lời + quy định hỏi và làm
+# ---------------------------------------------------------------------------
+def test_quy_dinh_hoi_va_lam_la_nguon_duy_nhat():
+    from app.modules.agent_hub import coder, ops, policy
+    from app.modules.agent_hub.constants import OP_DATA_PLAN, OP_SQL_WRITE, OP_VIEW
+    from app.modules.agent_hub.model import AgentEnv
+
+    dev, prod = AgentEnv(name="dev", kind=1), AgentEnv(name="prod", kind=2)
+    assert not ops.needs_approval(dev, OP_VIEW) and ops.needs_approval(prod, OP_VIEW)
+    assert ops.needs_approval(dev, OP_SQL_WRITE) and ops.needs_approval(prod, OP_SQL_WRITE)
+    assert not ops.needs_approval(prod, OP_DATA_PLAN)          # tra để soạn lệnh: làm luôn
+    assert policy.data_table_denied("tab_user") and policy.data_table_denied("tab_role_permission")
+    assert not policy.data_table_denied("tab_employee")
+    assert coder.is_banned_path("backend/app/modules/agent_hub/policy.py")
+    assert "KHÔNG bao giờ bảo người dùng tự gõ câu lệnh SQL" in policy.ASSISTANT_RULES
+
+
+def test_cau_noi_sua_du_lieu_di_may_sua_ma_khong_bay_sql(db, bot, monkeypatch):
+    from app.modules.agent_hub.constants import OP_DATA_PLAN, OPS_QUEUED
+    from app.modules.agent_hub.model import AgentOp
+
+    service, sent, asked = bot
+    _envs(db)
+    tasks = _ops_on(monkeypatch)
+    from app.modules.assistant.provider.base import ChatResult
+
+    res = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
+    monkeypatch.setattr(service.manager, "run_intent", lambda text, **kw: (
+        {"intent": "du_lieu", "env": "dev", "request": "gán chức vụ Nhân viên (Demo) cho nhân sự có (CR-414) trong tên",
+         "reason": ""}, res))
+    service.handle_message(db, _msg("gán vị trí chức vụ là nhân viên (demo) cho nhân sự có (CR-414) trong tên"))
+    op = db.query(AgentOp).one()
+    assert op.kind == OP_DATA_PLAN and op.status == OPS_QUEUED and tasks == [("agent.run_op", [op.id])]
+    assert "soạn lệnh" in sent[-1] and "SELECT" not in sent[-1] and asked == []
+
+    #  Chat người khác / thao tác tắt → Trợ lý AI trả lời như câu hỏi thường.
+    monkeypatch.setattr(settings, "AGENT_OPS_ENABLED", False)
+    service.handle_message(db, {**_msg("gán chức vụ X cho nhân sự Y"), "message_id": 8})
+    assert asked and db.query(AgentOp).count() == 1
+
+
+def _fake_claude_rounds(monkeypatch, replies):
+    import json as _json
+
+    from app.modules.agent_hub import coder
+
+    seen: list = []
+
+    def fake(cmd, stdin, worktree, timeout):
+        seen.append((cmd, stdin))
+        return {"result": _json.dumps(replies[len(seen) - 1], ensure_ascii=False)}
+
+    monkeypatch.setattr(coder, "_run_cli", fake)
+    return seen
+
+
+def test_soan_lenh_tra_du_lieu_roi_ra_the_tieng_viet(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops, ops_runner
+    from app.modules.agent_hub.constants import OP_DATA_PLAN, OP_SQL_WRITE, OPS_OK, OPS_WAITING
+    from app.modules.agent_hub.model import AgentOp
+
+    service, sent, _ = bot
+    dev, _ = _envs(db)
+    _ops_on(monkeypatch)
+    final_sql = "UPDATE tab_employee SET position_id = 5, position = 'Nhân viên (Demo)' WHERE full_name LIKE '%(CR-414)%'"
+    seen = _fake_claude_rounds(monkeypatch, [
+        {"lookups": ["SELECT id, name FROM tab_job_position WHERE name LIKE '%Demo%'"]},
+        {"summary": "Gán chức vụ «Nhân viên (Demo)» cho 10 nhân sự có (CR-414) trong tên", "sql": final_sql,
+         "count_sql": "SELECT COUNT(*) FROM tab_employee WHERE full_name LIKE '%(CR-414)%'",
+         "preview_sql": "SELECT code, full_name, position FROM tab_employee WHERE full_name LIKE '%(CR-414)%' LIMIT 10",
+         "assumptions": ["ghi cả position_id lẫn nhãn position như màn hồ sơ"]},
+    ])
+
+    def fake_ssh(script, env, **kw):
+        if "COUNT(*)" in script or "Q09VTlQo" in script:
+            return 'COLS=["COUNT(*)"]\n["10"]\n'
+        return 'COLS=["code", "full_name", "position"]\n["NM_YC", "Nhân sự nhà máy (CR-414)", "Nhân viên"]\n'
+
+    monkeypatch.setattr(ops_runner, "_ssh", fake_ssh)
+    monkeypatch.setattr(ops_runner, "_count_rows", lambda env, q: 10)
+    plan = ops.new_op(db, dev, OP_DATA_PLAN, title="Soạn lệnh", command="gán…", params={"request": "gán…"},
+                      chat_id="12345")
+    ops_runner.execute(db, plan)
+    assert plan.status == OPS_OK and len(seen) == 2 and "Kết quả tra" in seen[1][1] and "--resume" in seen[1][0]
+    write = db.query(AgentOp).filter_by(kind=OP_SQL_WRITE).one()
+    assert write.status == OPS_WAITING and write.command == final_sql and write.params["rows"] == 10
+    card = sent[-1]
+    assert "Gán chức vụ" in card and "<b>10</b>" in card and "Nhân sự nhà máy (CR-414)" in card
+    assert "UPDATE" not in card and "SELECT" not in card and "«đúng»" in card
+    assert "sao lưu bảng tab_employee" in card
+
+
+def test_soan_lenh_tu_choi_bang_cam_va_qua_tran(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops, ops_runner, policy
+    from app.modules.agent_hub.constants import OP_DATA_PLAN, OP_SQL_WRITE
+    from app.modules.agent_hub.model import AgentOp
+
+    _, sent, _ = bot
+    dev, _ = _envs(db)
+    _ops_on(monkeypatch)
+    _fake_claude_rounds(monkeypatch, [{"summary": "x", "sql": "UPDATE tab_user SET is_active=0 WHERE id=1",
+                                       "count_sql": "SELECT COUNT(*) FROM tab_user WHERE id=1", "preview_sql": ""}])
+    plan = ops.new_op(db, dev, OP_DATA_PLAN, title="t", command="khóa tài khoản", params={"request": "khóa"},
+                      chat_id="12345")
+    ops_runner.execute(db, plan)
+    assert "tab_user" in sent[-1] and db.query(AgentOp).filter_by(kind=OP_SQL_WRITE).count() == 0
+
+    _fake_claude_rounds(monkeypatch, [{"summary": "x", "sql": "UPDATE tab_po SET note='a' WHERE 1=1",
+                                       "count_sql": "SELECT COUNT(*) FROM tab_po WHERE 1=1", "preview_sql": ""}])
+    monkeypatch.setattr(ops_runner, "_count_rows", lambda env, q: policy.DATA_MAX_ROWS + 1)
+    plan2 = ops.new_op(db, dev, OP_DATA_PLAN, title="t", command="ghi chú", params={"request": "ghi chú"},
+                       chat_id="12345")
+    ops_runner.execute(db, plan2)
+    assert "quá trần" in sent[-1] and db.query(AgentOp).filter_by(kind=OP_SQL_WRITE).count() == 0
+
+    _fake_claude_rounds(monkeypatch, [{"cannot": "cần đổi cấu trúc bảng"}])
+    plan3 = ops.new_op(db, dev, OP_DATA_PLAN, title="t", command="thêm cột", params={"request": "thêm cột"},
+                       chat_id="12345")
+    ops_runner.execute(db, plan3)
+    assert "cần đổi cấu trúc bảng" in sent[-1]
+
+
+def test_ket_qua_lenh_sua_du_lieu_bao_bang_cau_thuong(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops, ops_runner
+    from app.modules.agent_hub.constants import OP_SQL_WRITE, OPS_OK
+
+    _, sent, _ = bot
+    dev, _ = _envs(db)
+    _ops_on(monkeypatch)
+    _fake_ssh(monkeypatch, [("mysqldump", "BACKUP=/h/agent-backups/op1-dev-20261005-101010.sql.gz\n"),
+                            ("exec -T api python", "ROWCOUNT=10\n")])
+    op = ops.new_op(db, dev, OP_SQL_WRITE, title="Gán chức vụ Nhân viên (Demo) cho 10 nhân sự",
+                    command="UPDATE tab_employee SET position_id=5 WHERE full_name LIKE '%(CR-414)%'",
+                    params={"plain": True, "rows": 10}, chat_id="12345")
+    ops.approve(db, op, "12345")
+    ops_runner.execute(db, op)
+    assert op.status == OPS_OK and "Đã đổi 10 dòng" in sent[-1] and f"hoàn tác thao tác #{op.id}" in sent[-1]
+    assert "ROWCOUNT" not in sent[-1]
+
+
+def test_format_rows_doc_ket_qua_sql():
+    from app.modules.agent_hub import ops
+
+    out = 'COLS=["code", "position"]\n["NM_YC", "Nhân viên"]\n["NM_TP", null]\n'
+    assert ops.format_rows(out) == ["code: NM_YC · position: Nhân viên", "code: NM_TP · position: "]

@@ -30,7 +30,8 @@ Ba bảng mới: `tab_agent_env` (sổ môi trường, nạp sẵn `dev` + `prod
 | «trạng thái dev» · «log api dev 200» | `docker compose ps` · đuôi log một service | dev: không · prod: «đúng» |
 | «chẩn đoán dev: sao api chậm?» | Gom container, log, commit, migration, tài nguyên → Claude chẩn đoán | dev: không · prod: «đúng» |
 | «sql dev: SELECT …» | Chạy câu đọc (phiên MySQL chỉ đọc), in tối đa 50 dòng | dev: không · prod: «đúng» |
-| «sql dev: UPDATE … WHERE …» | Sao lưu đúng các bảng bị đụng → chạy → ghi lệnh hoàn tác | «đúng» |
+| «gán chức vụ Nhân viên (Demo) cho nhân sự có (CR-414) trong tên» (nói thường, ai-CR-073) | Máy sửa mã tự tra + soạn lệnh, thẻ tiếng Việt ghi số dòng + mẫu; xem [`09`](./09-quy-dinh-hoi-va-lam.md) §4 | «đúng» |
+| «sql dev: UPDATE … WHERE …» (cho người biết SQL) | Sao lưu đúng các bảng bị đụng → chạy → ghi lệnh hoàn tác | «đúng» |
 | «chạy dev: docker compose ps \| grep api» | Lệnh shell; nằm trong danh sách chỉ đọc thì là xem | đọc: như xem · sửa: «đúng» |
 | «khởi động lại api celery-worker dev» · «dựng lại erp dev» · «dọn bộ đệm dev» | Thao tác có sẵn | «đúng» |
 | «deploy prod a1b2c3d» · «deploy dev mới nhất api» | `deploy.sh`; prod sao lưu CẢ DB trước | «đúng» |

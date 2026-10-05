@@ -11875,3 +11875,19 @@ lại thì nhắn đã nối lại và đang làm tiếp. Việc giao lúc máy 
 Mã nguồn: backend/app/modules/agent_hub/runners.py · tasks.py · backend/app/core/celery_app.py
 Commit: 186403cc (erp-v2 62c6be6e)
 Deploy: DEV 05/10 do Erp Agent 1, health 200, celery-beat đã có runner_watch; prod CHƯA
+
+## ai-CR-073 | Bot tự soạn lệnh sửa dữ liệu từ câu nói thường, và tệp quy định khi nào hỏi khi nào làm
+- status: xong
+- date: 2026-10-05
+Đại ca thấy bắt mình tự gõ câu SQL là nguy hiểm và chậm, bot lại hỏi quá nhiều. Nay đại ca chỉ cần nói bằng lời, ví
+dụ gán chức vụ Nhân viên (Demo) cho các nhân sự có chữ CR-414 trong tên. Bot nhận ra đây là việc sửa dữ liệu, giao máy
+sửa mã tự đọc cấu trúc bảng trong mã nguồn, tự tra dữ liệu thật trên dev, tự soạn lệnh. Bot kiểm lại: không đụng bảng
+tài khoản, phân quyền, nhật ký, cấu hình; đếm đúng số dòng sẽ đổi; quá năm trăm dòng thì không làm. Sau đó bot gửi
+một thẻ tiếng Việt ghi sẽ đổi gì, bao nhiêu dòng, vài dòng mẫu, chờ một chữ «đúng»; chạy xong báo đã đổi bao nhiêu
+dòng và cách hoàn tác. Câu lệnh không bày ra trên thẻ.
+
+Kèm theo là tệp quy định hỏi và làm dùng chung cho cả bot: đọc dev thì làm luôn, sửa thì hỏi đúng một lần, những
+loại không bao giờ làm; trợ lý trên Telegram được dặn làm luôn khi đủ rõ, hỏi tối đa một câu, không bao giờ bảo người
+dùng tự gõ lệnh.
+
+Mã nguồn: backend/app/modules/agent_hub/policy.py · ops.py · ops_runner.py · manager.py · service.py · doc/agent-hub/09-quy-dinh-hoi-va-lam.md

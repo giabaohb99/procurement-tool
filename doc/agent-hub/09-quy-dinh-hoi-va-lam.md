@@ -1,0 +1,54 @@
+# AGENT HUB — QUY ĐỊNH HỎI VÀ LÀM
+
+**Bản 1.0 · 05/10/2026** · ai-CR-073. Đại ca chốt: *"quy trình có hết rồi cần chi hỏi quá nhiều… làm cái file quy định
+để mọi thứ ổn định"*. Bản máy đọc là `backend/app/modules/agent_hub/policy.py`. Mọi chỗ trong bot quyết «làm luôn
+hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không được sửa tệp đó (danh sách cấm, V-05).
+
+## 1. Ba mức
+
+| Mức | Nghĩa |
+|---|---|
+| **Làm luôn** | Làm, xong báo kết quả. Không hỏi câu nào. |
+| **Hỏi một lần** | Một thẻ tiếng Việt nói rõ sẽ đổi gì, bao nhiêu dòng, sao lưu ra sao, hoàn tác thế nào → «đúng» / «thôi». Không hỏi thêm. |
+| **Không làm** | Nói lý do trong một câu và chỉ đường làm đúng (màn hình nào, hay giao thành việc sửa mã). |
+
+## 2. Bảng quy định
+
+| Loại việc | dev | prod |
+|---|---|---|
+| Hỏi số liệu, tra cứu, xem trạng thái, xem log, tình hình máy | Làm luôn | Hỏi một lần |
+| Tra dữ liệu để soạn lệnh sửa (bước trước khi sửa) | Làm luôn | Làm luôn (câu nhờ sửa đã là lời cho phép đọc) |
+| Sửa dữ liệu, chạy lệnh có thay đổi, khởi động lại / dựng lại, deploy | Hỏi một lần | Hỏi một lần (+ OTP khi làm V-04) |
+| Tạo / gửi duyệt một chứng từ cho chính mình (Trợ lý AI) | Hỏi một lần («tạo» / «tạo và gửi duyệt») | — |
+| Sửa bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình, sổ của bot | Không làm | Không làm |
+| Một lệnh sửa quá 500 dòng | Không làm (chia nhỏ hoặc giao việc sửa mã) | Không làm |
+| Đổi cấu trúc bảng | Không làm (phải qua migration) | Không làm |
+
+## 3. Cách hỏi
+
+- **Không bao giờ bắt đại ca gõ SQL, lệnh máy chủ hay mã.** Đại ca nói bằng lời. Bot tự đọc mô hình dữ liệu, tự tra
+  dữ liệu thật, tự soạn lệnh. Câu lệnh chỉ hiện khi đại ca hỏi «thao tác #n».
+- **Đủ rõ thì làm.** Thiếu một thông tin không suy ra được từ dữ liệu, tài liệu, sổ thuật ngữ hay mạch chat thì hỏi
+  **một** câu, gom mọi điều cần hỏi vào câu đó.
+- **Mơ hồ nhẹ thì chọn cách hợp lý nhất**, làm, và ghi «Em hiểu là: …» trên thẻ. Đại ca thấy sai thì «thôi».
+- **Không hỏi lại điều đã chốt** trong tài liệu, sổ quyết định (`03`), sổ thuật ngữ, hay câu trước đó của đại ca.
+
+## 4. Sửa dữ liệu bằng lời (ai-CR-073)
+
+Ví dụ đại ca nhắn: *«gán vị trí chức vụ Nhân viên (Demo) cho nhân sự nào có (CR-414) trong tên»*.
+
+1. Bộ phân loại nhận ra đây là «sửa dữ liệu» (môi trường mặc định dev; nói «prod» mới là prod).
+2. Máy sửa mã (Claude Code) đọc mô hình bảng trong mã nguồn, xin tra dữ liệu thật (chỉ SELECT, qua lan can), tối đa
+   4 lượt. Nó soạn MỘT lệnh sửa đúng như màn hình tự làm, ví dụ ghi cả mã chức vụ lẫn tên chức vụ.
+3. Runner kiểm lại: lệnh phải là sửa có điều kiện, không đụng bảng cấm, đếm số dòng thật (0 dòng thì báo, không làm;
+   quá 500 thì không làm).
+4. Bot gửi **một** thẻ: sẽ đổi gì, bao nhiêu dòng, vài dòng mẫu, giả định, sao lưu bảng nào → «đúng».
+5. «đúng» → sao lưu đúng bảng bị đụng → chạy → «Xong: đã đổi n dòng. Muốn trả lại: hoàn tác thao tác #n».
+
+Giới hạn: sửa thẳng dữ liệu không đi qua lịch sử thay đổi của từng hồ sơ trên ERP; dấu vết nằm ở nhật ký thao tác của
+bot và tệp sao lưu. Chỉ chat của đại ca dùng được; người khác nhắn kiểu này thì Trợ lý AI trả lời bằng công cụ nghiệp
+vụ theo đúng quyền của họ.
+
+## 5. Đổi quy định
+
+Đổi bảng ở §2 = sửa `policy.py` và tệp này cùng một CR, qua đường sửa mã thường (bot code không tự sửa được).

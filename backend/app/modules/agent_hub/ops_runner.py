@@ -39,6 +39,7 @@ from .constants import (
     INC_RESOLVED,
     INC_WAITING,
     OP_ACTION,
+    OP_DATA_PLAN,
     OP_DEPLOY,
     OP_KIND_LABELS,
     OP_RESTORE,
@@ -388,6 +389,8 @@ def execute(db: Session, op: AgentOp) -> dict:
                 out = _ssh(action_script(env, action, list(p.get("services") or [])), env, timeout=coder.DEPLOY_TIMEOUT_SEC)
         elif op.kind == OP_DEPLOY:
             out = _deploy(db, op, env, p)
+        elif op.kind == OP_DATA_PLAN:
+            out = plan_data(db, op, env)
         else:
             raise OpsError(f"loại thao tác lạ {op.kind}")
         if op.kind in (OP_SHELL_READ, OP_SHELL_WRITE) and re.search(r"^RC=(\d+)\s*$", out, re.MULTILINE):
@@ -402,7 +405,8 @@ def execute(db: Session, op: AgentOp) -> dict:
     op.output = guardrails.mask_secrets(out or "")[-OUTPUT_KEEP:]
     op.finished_at = now_utc()
     db.commit()
-    if not op.auto or op.status == OPS_FAILED:
+    #  Lượt soạn lệnh sửa dữ liệu tự gửi thẻ duyệt / câu trả lời rồi — chỉ báo thêm khi HỎNG.
+    if op.status == OPS_FAILED or not (op.auto or op.kind == OP_DATA_PLAN):
         send_result(db, op, env)
     return {"status": "ok" if op.status == OPS_OK else "error", "op": op.id, "error": op.error}
 
@@ -490,6 +494,17 @@ def _reply(db: Session, chat_id: str, text: str) -> None:
 def send_result(db: Session, op: AgentOp, env: AgentEnv | None) -> None:
     esc = telegram.esc
     secs = int((op.finished_at - op.started_at).total_seconds()) if op.finished_at and op.started_at else 0
+    if (op.params or {}).get("plain") or op.kind == OP_DATA_PLAN:
+        #  ai-CR-073: lệnh sửa dữ liệu bằng lời báo bằng câu thường, không bày output SQL.
+        if op.status == OPS_OK:
+            m = re.findall(r"^ROWCOUNT=(-?\d+)\s*$", op.output or "", re.MULTILINE)
+            done = f" Đã đổi {m[-1]} dòng." if m else ""
+            text = (f"Xong <b>#{op.id}</b>: {esc(op.title)}.{done}"
+                    + (f" Muốn trả lại như cũ: «hoàn tác thao tác #{op.id}»." if op.undo_params else ""))
+        else:
+            text = f"<b>#{op.id}</b> không làm được: {esc(op.error[:500] or 'lỗi không rõ')}."
+        _reply(db, _owner_chat(op), text)
+        return
     head = (f"Thao tác <b>#{op.id}</b> trên <b>{esc(env.name if env else '?')}</b> "
             f"({esc(OP_KIND_LABELS.get(op.kind, '?'))}): "
             + ("<b>XONG</b>" if op.status == OPS_OK else "<b>HỎNG</b>") + f" sau {secs} giây.")
@@ -738,3 +753,157 @@ def handle_incident(db: Session, incident: AgentIncident) -> dict:
            f"Tự chữa sự cố #{incident.id} trên <b>{esc(env.name)}</b> KHÔNG ăn (health {code}). Cần đại ca xem; "
            f"«thao tác #{op.id}» để xem kết quả.")
     return {"status": "heal_failed", "incident": incident.id, "op": op.id}
+
+
+# ---------------------------------------------------------------------------
+# Sửa dữ liệu bằng lời (ai-CR-073)
+# ---------------------------------------------------------------------------
+#  Đại ca nói bằng lời («gán chức vụ Nhân viên (Demo) cho các nhân sự có (CR-414) trong tên»). Claude Code đọc mô hình
+#  dữ liệu trong mã nguồn (/app của runner, chỉ Read/Glob/Grep), xin TRA dữ liệu thật bằng các câu SELECT — runner
+#  chạy giúp qua đường chỉ đọc có lan can rồi đưa kết quả lại — tối đa DATA_ROUNDS lượt, rồi trả MỘT câu lệnh sửa.
+#  Runner kiểm lại bằng lan can + quy định (bảng cấm, trần số dòng), đếm số dòng thật, rồi đẻ ra một thao tác
+#  OP_SQL_WRITE «chờ duyệt» với thẻ tiếng Việt. Claude không bao giờ tự chạy lệnh nào trên máy chủ.
+DATA_ROUNDS = 4
+DATA_LOOKUPS_PER_ROUND = 5
+DATA_TIMEOUT = 600
+
+_DATA_BRIEF = """\
+Bạn là kỹ sư dữ liệu của hệ thống ERP DEGO (FastAPI + SQLAlchemy + MySQL 8). Thư mục hiện tại là mã nguồn backend:
+mô hình bảng ở app/modules/*/model.py (và các tệp *_model.py), luật nghiệp vụ ở *service.py. Đọc chúng để biết bảng,
+cột, và cách hệ thống tự ghi dữ liệu (ví dụ một giá trị phải ghi cùng lúc vào hai cột: cột id và cột nhãn chép).
+
+Đại ca (người quản lý) nhờ, trên môi trường «{env}»:
+«{request}»
+
+Việc của bạn: soạn MỘT câu lệnh SQL làm đúng điều đại ca nhờ, ĐÚNG như hệ thống tự làm khi sửa qua màn hình.
+Bạn KHÔNG chạy được gì. Muốn xem dữ liệu thật (id của danh mục, số dòng khớp, giá trị hiện tại) thì xin tra.
+
+Mỗi lượt trả lời ĐÚNG một khối JSON, không chữ nào ngoài khối, theo MỘT trong ba dạng:
+1. Xin tra (tối đa {per_round} câu, chỉ SELECT, không chọn cột mật khẩu / token / khóa):
+   {{"lookups": ["SELECT ...", "..."]}}
+2. Lệnh cuối:
+   {{"summary": "một câu tiếng Việt cho đại ca: sẽ đổi gì, cho những bản ghi nào",
+     "sql": "MỘT câu UPDATE / INSERT / DELETE, có WHERE, không chú thích, chuỗi tiếng Việt viết đúng dấu",
+     "count_sql": "SELECT COUNT(*) ... cùng điều kiện, đếm số dòng sẽ bị đổi",
+     "preview_sql": "SELECT vài cột nhận diện + cột sẽ đổi, cùng điều kiện, LIMIT 10",
+     "assumptions": ["giả định bạn đã chọn khi yêu cầu chưa rõ, nếu có"]}}
+3. Không làm được an toàn bằng một câu SQL (cần đổi cấu trúc bảng, cần nhiều bước có điều kiện, đụng tài khoản /
+   phân quyền / mật khẩu, yêu cầu vô nghĩa):
+   {{"cannot": "lý do ngắn bằng tiếng Việt, và nên làm cách nào"}}
+
+Luật: KHÔNG hỏi lại đại ca — yêu cầu mơ hồ thì chọn cách hợp lý nhất và ghi vào assumptions. Không DDL, không
+TRUNCATE/DROP. Không đụng bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình hệ thống, bảng tab_agent_*.
+Khớp chuỗi theo đúng chữ đại ca đưa (LIKE với % hai đầu khi đại ca nói «có trong tên»). Tối đa {max_rows} dòng.
+"""
+
+
+def _data_cmd(session_id: str, *, resume: bool) -> list[str]:
+    return [settings.AGENT_CODER_CMD, "-p", *coder.model_args(), "--output-format", "json",
+            "--allowedTools", "Read,Glob,Grep", "--max-turns", "12",
+            "--resume" if resume else "--session-id", session_id]
+
+
+def _data_workdir() -> str:
+    """Claude đọc mô hình dữ liệu từ chính mã backend trong runner (/app); không có thì thư mục trống."""
+    return "/app" if Path("/app/app/modules").is_dir() else _ops_workdir()
+
+
+def _json_block(text: str) -> dict:
+    m = re.search(r"\{.*\}", text or "", re.DOTALL)
+    if not m:
+        return {}
+    try:
+        out = json.loads(m.group(0))
+    except ValueError:
+        return {}
+    return out if isinstance(out, dict) else {}
+
+
+def _run_lookups(env: AgentEnv, queries: list) -> str:
+    parts = []
+    for q in [str(x) for x in queries if str(x).strip()][:DATA_LOOKUPS_PER_ROUND]:
+        kind, reason, _ = guardrails.classify_sql(q)
+        if kind != guardrails.SQL_READ:
+            parts.append(f"SQL: {q}\nBỊ CHẶN: {reason or 'không phải câu đọc'}")
+            continue
+        try:
+            out = _ssh(sql_script(env, q, write=False), env, timeout=SQL_TIMEOUT, check=False)
+        except (OpsError, coder.CoderError, subprocess.TimeoutExpired, OSError) as e:
+            out = f"LỖI: {e}"
+        parts.append(f"SQL: {q}\nKẾT QUẢ:\n{guardrails.mask_secrets(out)[-3000:]}")
+    return "\n\n".join(parts) or "(không có câu tra hợp lệ)"
+
+
+def _count_rows(env: AgentEnv, count_sql: str) -> int:
+    kind, reason, _ = guardrails.classify_sql(count_sql)
+    if kind != guardrails.SQL_READ:
+        raise OpsError(f"câu đếm không hợp lệ: {reason or 'không phải câu đọc'}")
+    out = _ssh(sql_script(env, count_sql, write=False), env, timeout=SQL_TIMEOUT)
+    rows = [ln for ln in out.splitlines() if ln.strip().startswith("[")]
+    try:
+        return int(json.loads(rows[0])[0])
+    except (IndexError, ValueError, TypeError):
+        raise OpsError("không đếm được số dòng sẽ đổi") from None
+
+
+def plan_data(db: Session, op: AgentOp, env: AgentEnv) -> str:
+    """Soạn lệnh sửa dữ liệu từ lời đại ca → thao tác OP_SQL_WRITE chờ «đúng». Trả đoạn nhật ký cho dòng sổ."""
+    from uuid import uuid4
+
+    from . import ops, policy
+
+    request = str((op.params or {}).get("request") or op.command)
+    session = str(uuid4())
+    msg = _DATA_BRIEF.format(env=env.name, request=request, per_round=DATA_LOOKUPS_PER_ROUND,
+                             max_rows=policy.DATA_MAX_ROWS)
+    log_lines: list[str] = []
+    plan: dict = {}
+    for i in range(DATA_ROUNDS):
+        data = coder._run_cli(_data_cmd(session, resume=i > 0), msg, _data_workdir(), DATA_TIMEOUT)
+        plan = _json_block(str(data.get("result") or ""))
+        if plan.get("lookups") and i < DATA_ROUNDS - 1:
+            found = _run_lookups(env, plan["lookups"])
+            log_lines.append(f"--- tra lượt {i + 1}\n{found[-1500:]}")
+            msg = ("Kết quả tra trên VPS:\n\n" + found + "\n\nTiếp tục: xin tra thêm, hoặc trả lệnh cuối, hoặc cannot. "
+                   "Chỉ một khối JSON.")
+            continue
+        break
+    chat = op.chat_id or settings.AGENT_TELEGRAM_CHAT_ID
+    if plan.get("cannot"):
+        _reply(db, chat, f"Em không soạn được lệnh cho yêu cầu này: {telegram.esc(str(plan['cannot'])[:600])}")
+        return "\n".join(log_lines + [f"cannot: {plan['cannot']}"])
+    sql = str(plan.get("sql") or "").strip()
+    if not sql:
+        raise OpsError("máy sửa mã không soạn ra được lệnh sau nhiều lượt tra")
+    kind, reason, tables = guardrails.classify_sql(sql)
+    if kind != guardrails.SQL_WRITE:
+        raise OpsError(f"lệnh soạn ra không qua lan can: {reason or 'không phải lệnh sửa'}")
+    denied = [t for t in tables if policy.data_table_denied(t)]
+    if denied:
+        _reply(db, chat, f"Yêu cầu này đụng bảng {telegram.esc(', '.join(denied))} (tài khoản / phân quyền / nhật ký / "
+               "cấu hình). Quy định không cho sửa thẳng bằng lệnh dữ liệu — đại ca sửa trên màn hình, hoặc giao thành "
+               "việc sửa mã.")
+        return "\n".join(log_lines + [f"từ chối: bảng cấm {denied}"])
+    rows = _count_rows(env, str(plan.get("count_sql") or ""))
+    if rows <= 0:
+        _reply(db, chat, f"Không có bản ghi nào khớp yêu cầu trên <b>{telegram.esc(env.name)}</b> — em không đổi gì.")
+        return "\n".join(log_lines + ["0 dòng khớp"])
+    if rows > policy.DATA_MAX_ROWS:
+        _reply(db, chat, f"Yêu cầu này đổi {rows} dòng, quá trần {policy.DATA_MAX_ROWS} dòng một lệnh. Đại ca chia nhỏ "
+               "điều kiện, hoặc giao thành việc sửa mã.")
+        return "\n".join(log_lines + [f"quá trần: {rows} dòng"])
+    sample: list[str] = []
+    preview_sql = str(plan.get("preview_sql") or "")
+    if guardrails.classify_sql(preview_sql)[0] == guardrails.SQL_READ:
+        try:
+            sample = ops.format_rows(guardrails.mask_secrets(
+                _ssh(sql_script(env, preview_sql, write=False), env, timeout=SQL_TIMEOUT)), limit=5)
+        except (OpsError, coder.CoderError, subprocess.TimeoutExpired, OSError):
+            sample = []
+    summary = str(plan.get("summary") or request)[:250]
+    write = ops.new_op(db, env, OP_SQL_WRITE, title=summary, command=sql, chat_id=chat,
+                       params={"plain": True, "rows": rows, "sample": sample, "request": request[:1000],
+                               "assumptions": [str(a)[:200] for a in (plan.get("assumptions") or [])][:3],
+                               "plan_op": op.id})
+    ops.ask_approval(db, chat, write, env)
+    return "\n".join(log_lines + [f"đã soạn thao tác #{write.id}: {rows} dòng", sql])

@@ -43,6 +43,7 @@ from .constants import (
     INC_STATUS_LABELS,
     INC_WAITING,
     OP_ACTION,
+    OP_DATA_PLAN,
     OP_DEPLOY,
     OP_KIND_LABELS,
     OP_READ_KINDS,
@@ -177,8 +178,14 @@ def add_env(db: Session, name: str, fields: dict) -> AgentEnv:
 # Thao tác (V-02, V-03)
 # ---------------------------------------------------------------------------
 def needs_approval(env: AgentEnv, kind: int) -> bool:
-    """Luật đại ca chốt 05/10: xem dev tự do; xem prod / sửa bất kỳ đâu = «đúng»."""
-    return not (kind in OP_READ_KINDS and not is_prod(env))
+    """Luật đại ca chốt 05/10, đọc từ `policy.py`: xem dev tự do; xem prod / sửa bất kỳ đâu = «đúng».
+    Bước tra để soạn lệnh sửa dữ liệu (OP_DATA_PLAN) làm luôn ở mọi môi trường (policy.DATA_PLAN_READ)."""
+    from . import policy
+
+    if kind == OP_DATA_PLAN:
+        return policy.DATA_PLAN_READ != policy.ACT
+    rw = "read" if kind in OP_READ_KINDS else "write"
+    return policy.ops_rule(rw, ENV_KIND_LABELS.get(int(env.kind or 0), "prod")) != policy.ACT
 
 
 def describe_action(env: AgentEnv, action: str, services: list[str]) -> str:
@@ -239,7 +246,66 @@ def dispatch_op(db: Session, op: AgentOp) -> bool:
     return True
 
 
+def format_rows(out: str, *, limit: int = 5) -> list[str]:
+    """Kết quả SQL đọc (dòng `COLS=[...]` + mỗi dòng một mảng JSON) → vài dòng chữ «cột: giá trị · …»."""
+    cols: list = []
+    rows: list[str] = []
+    for line in (out or "").splitlines():
+        line = line.strip()
+        if line.startswith("COLS="):
+            try:
+                cols = json.loads(line[5:])
+            except ValueError:
+                cols = []
+            continue
+        if cols and line.startswith("["):
+            try:
+                vals = json.loads(line)
+            except ValueError:
+                continue
+            rows.append(" · ".join(f"{c}: {'' if v is None else v}" for c, v in zip(cols, vals)))
+    return rows[:limit]
+
+
+def _plain_card(op: AgentOp, env: AgentEnv) -> str:
+    """Thẻ duyệt cho lệnh sửa dữ liệu bằng lời (ai-CR-073): tiếng Việt, KHÔNG bày câu SQL (xem bằng «thao tác #n»)."""
+    esc = telegram.esc
+    p = op.params or {}
+    _, _, tables = guardrails.classify_sql(op.command)
+    lines = [f"<b>Sửa dữ liệu #{op.id}</b> trên <b>{esc(env.name)}</b>"
+             + (" — <b>PROD, dữ liệu thật</b>" if is_prod(env) else "") + ":",
+             esc(op.title),
+             f"Số dòng sẽ đổi: <b>{int(p.get('rows') or 0)}</b>."]
+    sample = [r for r in (p.get("sample") or []) if r]
+    if sample:
+        lines.append("Ví dụ (giá trị HIỆN TẠI):")
+        lines += [f"• {esc(r[:200])}" for r in sample[:5]]
+    for a in (p.get("assumptions") or [])[:3]:
+        lines.append(f"Em hiểu là: {esc(str(a)[:200])}")
+    lines.append(f"Trước khi chạy em sao lưu bảng {esc(', '.join(tables))}; muốn trả lại như cũ thì nhắn "
+                 f"«hoàn tác thao tác #{op.id}».")
+    if is_prod(env):
+        lines.append("(OTP cho prod tạm bỏ qua theo lệnh đại ca 05/10.)")
+    lines.append("Nhắn «đúng» để chạy, «thôi» để bỏ.")
+    return "\n".join(lines)
+
+
+def start_data_change(db: Session, chat_id: str, text: str, env_name: str = "") -> str:
+    """Đại ca nhờ sửa dữ liệu bằng lời → ghi sổ một lượt soạn lệnh (chỉ đọc, làm luôn) và giao máy sửa mã."""
+    env = env_by_name(db, env_name or "dev") or env_by_name(db, "dev")
+    if env is None:
+        return "Sổ môi trường chưa có dev."
+    op = new_op(db, env, OP_DATA_PLAN, title=f"Soạn lệnh: {text[:200]}", command=text,
+                params={"request": text[:2000]}, chat_id=chat_id)
+    if not dispatch_op(db, op):
+        return f"Không giao được cho máy sửa mã: {op.error}."
+    return (f"Dạ, em tra dữ liệu trên <b>{telegram.esc(env.name)}</b> để soạn lệnh (thao tác #{op.id}). "
+            "Vài phút em gửi thẻ ghi rõ sẽ đổi gì, bao nhiêu dòng để đại ca «đúng».")
+
+
 def _card(op: AgentOp, env: AgentEnv) -> str:
+    if (op.params or {}).get("plain"):
+        return _plain_card(op, env)
     esc = telegram.esc
     lines = [f"Thao tác <b>#{op.id}</b> trên <b>{esc(env.name)}</b>"
              + (" — <b>PROD, dữ liệu thật</b>" if is_prod(env) else "")
