@@ -3692,8 +3692,35 @@ def _plan_task(db: Session, task: AgentTask) -> None:
         #  Kế hoạch hóa ra không nhỏ (nhiều tệp, có câu hỏi, rủi ro cao): trở về làn đầy đủ, thẻ như thường.
         task.lane = LANE_FULL
         db.commit()
+    if _auto_code(db, task, needs):
+        return
     send_plan_card(db, task)
     db.commit()
+
+
+def _auto_code(db: Session, task: AgentTask, needs: bool) -> bool:
+    """ai-CR-086 (đại ca 05/10: «gọn gàng rồi sửa code luôn, xong a review lại, a đâu quan tâm quá trình»): việc rủi ro
+    thấp / vừa, kế hoạch không còn câu hỏi, không đụng tệp cấm → tự duyệt, báo MỘT dòng, sửa mã luôn. Chốt duyệt thật
+    vẫn là «gộp» sau thẻ kết quả. Việc rủi ro cao (tiền, phân quyền, cấu trúc DB, prod) vẫn chờ «duyệt»."""
+    from . import policy
+
+    files = [f for f in (task.plan_files or []) if isinstance(f, str) and f.strip()]
+    if not policy.AUTO_CODE or needs or not files or not settings.AGENT_CODER_ENABLED \
+            or int(task.risk_level or 2) > policy.AUTO_CODE_MAX_RISK or coder.approve_gate(task):
+        return False
+    task.approved_by_chat = "bot:tu-duyet"
+    task.approved_at = datetime.now()
+    db.commit()
+    esc = telegram.esc
+    phases = coder.plan_phases(task)
+    size = f"{len(phases)} phần, {len(files)} tệp" if len(phases) > 1 else f"{len(files)} tệp"
+    reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+          f"<b>{esc(task.code)}</b> · {esc(task.title)}\nEm làm luôn ({size}), xong gửi kết quả để đại ca xem.\n"
+          f"<i>«chi tiết {esc(task.code)}» để xem kế hoạch · «bỏ {esc(task.code)}» nếu không muốn làm.</i>",
+          task_id=task.id)
+    _dispatch_coder(db, settings.AGENT_TELEGRAM_CHAT_ID, task, quiet=True)
+    db.commit()
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -3874,16 +3901,17 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
 
     #  Kế hoạch do model viết là Markdown (`tệp`, **đậm**, 1. 2.): đổi sang HTML Telegram như
     #  câu trả lời của Trợ lý AI, không in thô dấu nháy và dấu sao (đại ca báo 23/09/2026).
-    lines += [_card_md(task.plan), ""]
+    lines += [_card_md(task.plan, limit=900), ""]      # ai-CR-086: gọn — đọc trên điện thoại
     phases = coder.plan_phases(task)
     if len(phases) > 1:
         #  ai-CR-082: việc lớn chạy theo từng phần — nói trước để đại ca biết bot sẽ commit từng phần.
         lines += [f"<b>Làm theo {len(phases)} phần:</b>"]
         lines += [f"{p['index']}. {telegram.esc(p['label'])} — {len(p['files'])} tệp" for p in phases]
         lines += ["<i>Mỗi phần kiểm + commit riêng; vướng ở phần nào thì dừng ở đó, «làm tiếp» để chạy nốt.</i>", ""]
-    lines += ["<b>Tệp sẽ đụng:</b>"] + [f"• <code>{telegram.esc(f)}</code>" for f in task.plan_files]
-    if task.test_plan:
-        lines += ["", "<b>Kiểm thử:</b>", _card_md(task.test_plan[:500])]
+    if len(task.plan_files or []) <= 5:
+        lines += ["<b>Tệp sẽ đụng:</b>"] + [f"• <code>{telegram.esc(f)}</code>" for f in task.plan_files]
+    else:
+        lines += [f"<b>Tệp sẽ đụng:</b> {len(task.plan_files)} tệp <i>(«chi tiết {telegram.esc(task.code)}» để xem)</i>"]
     #  ai-CR-022: bỏ mục «Tài liệu đã tra» (AI-0007 lặp change-log.md bốn lần) và câu giải thích
     #  rủi ro cố định — thẻ dài mà không giúp bấm Duyệt hay không. Danh sách tài liệu vẫn nằm
     #  trong sổ và trong đề bài của runner.

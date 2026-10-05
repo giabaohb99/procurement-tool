@@ -2712,12 +2712,9 @@ def scan_task(db: Session, task: AgentTask) -> dict:
     })
     task.status = ST_TRIAGE
     db.commit()
-    shown = message if len(message) <= SCAN_MESSAGE_MAX else message[:SCAN_MESSAGE_MAX] + "…"
-    #  Câu cần đại ca quyết KHÔNG liệt kê ở đây nữa (ai-CR-021, đại ca thấy hỏi hai lần quá dài):
-    #  thẻ kế hoạch ngay sau là chỗ DUY NHẤT hỏi — `service.plan_task` bảo đảm câu nào cũng lên đó.
-    service.reply(db, chat_id,
-                  f"**{task.code}** · em đã đọc mã trên `{settings.AGENT_BASE_BRANCH}` "
-                  f"(`{head[:8]}`):\n\n{shown}\n\nKế hoạch sửa em gửi ngay sau đây.",
-                  task_id=task.id, markdown=True)
+    #  ai-CR-086 (đại ca 05/10: «chỉ cần viết sơ bộ thôi, khi nào a cần chi tiết thì mới viết chi tiết»): KHÔNG gửi
+    #  đoạn phân tích rà soát nữa — nó nằm trong sổ lượt chạy, đại ca xem bằng «chi tiết AI-xxxx». Tin kế tiếp đại ca
+    #  nhận là một dòng «em làm luôn» (tự duyệt) hoặc thẻ kế hoạch gọn (việc rủi ro cao).
+    _ = SCAN_MESSAGE_MAX
     service.plan_task(db, task)
     return {"status": "ok", "files": info.get("files") or [], "head": head}

@@ -212,9 +212,10 @@ Luật:
    đường dẫn, KHÔNG ghi tên tệp trơn thiếu thư mục.
    Rà soát cho thấy việc ĐÃ được sửa sẵn trên nhánh nền thì đặt `needs_clarification` = true và
    hỏi đại ca còn cần làm gì thêm, đừng lập kế hoạch sửa lại thứ đã có.
-   Câu nghiệp vụ mà rà soát nêu và đại ca CHƯA trả lời (ví dụ có chặn gửi duyệt không, có cho
-   sửa tay không): KHÔNG tự quyết thay. Bỏ phần phụ thuộc câu đó ra khỏi kế hoạch, và ghi vào
-   `assumptions` dạng "Chưa làm: <phần đó> — chờ đại ca quyết: <câu hỏi>".
+   Câu nghiệp vụ PHỤ mà rà soát nêu (ví dụ có gửi thư báo không, xử lý lịch lặp thế nào): TỰ CHỌN
+   cách an toàn nhất, ít bất ngờ nhất, dễ đảo lại; ghi vào `assumptions` dạng "Em giả định: ...".
+   (ai-CR-086, đại ca 05/10: «gọn gàng rồi sửa code luôn, xong a review lại».) Chỉ khi câu đó dính
+   tiền, công nợ, phân quyền thì mới bỏ phần đó ra và ghi "Chưa làm: <phần đó> — chờ đại ca quyết: <câu>".
 2. Chỗ chưa rõ: tra SỔ QUYẾT ĐỊNH CỦA ĐẠI CA (nếu có ở cuối đề bài) TRƯỚC khi hỏi.
    - Có mục khớp: làm theo, ghi vào `assumptions` dạng "Theo QĐ-07: ...".
    - Không có mục khớp nhưng có MỘT cách làm hợp lý, an toàn, dễ đảo lại: chọn nó, ghi vào

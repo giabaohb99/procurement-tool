@@ -2422,8 +2422,9 @@ def test_ra_soat_nhan_phan_tich_roi_lap_ke_hoach_tren_ma_that(db, bot, monkeypat
     run = db.query(AgentRun).filter_by(task_id=task.id, stage=STAGE_SCAN).one()
     assert run.status == service.RUN_OK and run.artifact["info"]["already_fixed"].startswith("v1")
     texts = [t for t, _b in sent]
-    analysis = next(t for t in texts if "em đã đọc mã" in t)
-    assert "Kết luận:" in analysis and "```" not in analysis and "abc123de" in analysis
+    #  ai-CR-086: không gửi đoạn rà soát dài nữa — nằm trong sổ, xem bằng «chi tiết».
+    assert not any("em đã đọc mã" in t for t in texts)
+    assert "Kết luận:" in run.artifact["message"] and "```" not in run.artifact["message"]
     #  Kế hoạch đọc kết quả rà soát, và tên tệp trơn được nối đủ đường dẫn từ rà soát.
     assert "Đã sửa sẵn: v1 đã có ở bao-CR-376" in seen[0]["review"]
     assert task.plan_files == ["frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx"]
@@ -2510,11 +2511,8 @@ def test_ra_soat_cat_cau_dan_va_hien_cau_can_dai_ca_quyet(db, bot, monkeypatch, 
     _fake_plan(monkeypatch, service, seen=seen)
     task = _task_with_plan(db, service, [], status=ST_SCANNING)
     coder.scan_task(db, task)
-    analysis = next(t for t, _b in sent if "em đã đọc mã" in t)
-    assert "Giờ trả lời" not in analysis
-    #  ai-CR-021: câu hỏi KHÔNG liệt kê ở đoạn phân tích nữa — thẻ kế hoạch là chỗ duy nhất hỏi,
-    #  và câu kế hoạch quên nhắc thì tự thêm vào đó.
-    assert "Có chặn gửi duyệt không?" not in analysis
+    #  ai-CR-086: đoạn phân tích không gửi lên Telegram nữa; câu cần quyết vẫn lên thẻ kế hoạch.
+    assert not any("em đã đọc mã" in t for t, _b in sent)
     assert "đại ca CHƯA trả lời: Có chặn gửi duyệt không?" in seen[0]["review"]
     assert "**Còn chờ đại ca quyết:**\n- Có chặn gửi duyệt không?" in task.plan
 
@@ -6995,3 +6993,26 @@ def test_lech_ban_doi_ban_thi_dem_lai_tu_dau(db, monkeypatch):
     db.commit()
     runners.watch(db, now=t0 + timedelta(minutes=80), notify=said.append)
     assert len(said) == 1 and "cccccccccccc" in said[0]
+
+
+def test_viec_rui_ro_vua_tu_duyet_lam_luon_rui_ro_cao_van_cho_duyet(db, bot, monkeypatch):
+    """ai-CR-086 (đại ca 05/10): «gọn gàng rồi sửa code luôn, xong a review lại» — việc rủi ro thấp/vừa không chờ
+    «duyệt» nữa, báo một dòng; việc rủi ro cao vẫn ra thẻ kế hoạch."""
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
+    dispatched: list[int] = []
+    monkeypatch.setattr(coder, "dispatch", lambda tid: dispatched.append(tid))
+    _fake_plan(monkeypatch, service, plan_files=["backend/app/modules/assistant/tools/google_tool.py"], risk_level=2)
+    task = _task_with_plan(db, service, [], status=service.ST_TRIAGE)
+    service.plan_task(db, task)
+    assert dispatched == [task.id] and task.approved_by_chat == "bot:tu-duyet"
+    msg = sent[-1][0] if dispatched else ""
+    assert "Em làm luôn" in msg and "«chi tiết" in msg and "Duyệt" not in [b[0] for b in sent[-1][1]]
+
+    _fake_plan(monkeypatch, service, plan_files=["backend/app/modules/payment/service.py"], risk_level=3)
+    task2 = _task_with_plan(db, service, [], status=service.ST_TRIAGE)
+    service.plan_task(db, task2)
+    assert dispatched == [task.id] and task2.status == service.ST_PLAN       # rủi ro cao: chờ «duyệt»

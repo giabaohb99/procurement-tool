@@ -12133,3 +12133,14 @@ nói bên nào cũ.
 Mã nguồn: backend/app/modules/agent_hub/runners.py · test/backend/test_agent_hub.py
 Commit: 0612d27b (erp-v2 0612d27b)
 Deploy: DEV 05/10 do Erp Agent 1; prod CHƯA
+
+## ai-CR-086 | Bot báo gọn và tự làm luôn việc sửa mã rủi ro thấp, vừa
+- status: xong
+- date: 2026-10-05
+Đại ca thấy bot viết dài khi nhận việc AI-0002 và muốn bot báo sơ bộ, sửa mã luôn rồi đại ca xem kết quả. Nay bot
+không gửi đoạn phân tích mã dài nữa, chi tiết xem bằng «chi tiết AI-xxxx». Việc rủi ro thấp hoặc vừa mà kế hoạch không
+còn câu hỏi thì bot tự duyệt, báo một dòng là làm luôn, xong gửi thẻ kết quả để đại ca xem và nhắn «gộp». Việc rủi ro
+cao như tiền, phân quyền, đổi cấu trúc cơ sở dữ liệu vẫn chờ đại ca duyệt, với thẻ kế hoạch ngắn gọn. Bot lập kế hoạch
+tự chọn cách an toàn cho những câu nghiệp vụ phụ thay vì hỏi lại.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py · coder.py · manager.py · policy.py

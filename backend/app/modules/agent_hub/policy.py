@@ -38,6 +38,11 @@ DATA_DENY_TABLE_PREFIXES = (
     "alembic_version", "tab_doc_folder_access",
 )
 
+#  ai-CR-086 (đại ca 05/10): việc sửa mã rủi ro <= mức này, kế hoạch không còn câu hỏi → tự duyệt, làm luôn; đại ca
+#  duyệt ở bước «gộp» sau thẻ kết quả. 1 = thấp · 2 = vừa · 3 = cao (tiền / phân quyền / cấu trúc DB / prod: vẫn chờ «duyệt»).
+AUTO_CODE = True
+AUTO_CODE_MAX_RISK = 2
+
 #  Luật chung cho câu chữ của bot trên Telegram (chèn vào lời nhắc của Trợ lý AI).
 ASSISTANT_RULES = (
     "Quy định hỏi và làm (đại ca chốt 05/10/2026): yêu cầu đủ rõ để làm thì LÀM LUÔN, không hỏi lại. "

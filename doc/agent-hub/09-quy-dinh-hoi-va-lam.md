@@ -23,6 +23,8 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
 | Thuật ngữ bot TỰ SUY từ dữ liệu, hoặc người khác sửa (ai-CR-078/079) | Nằm chờ trong sổ, KHÔNG tự nhắn; hiện khi đại ca nhắn «cập nhật thuật ngữ» | — |
 | Gặp từ nội bộ chưa hiểu giữa câu hỏi (ai-CR-079) | Chắc → làm luôn, nói «em hiểu X là Y»; không chắc → hỏi MỘT câu kèm 2–4 lựa chọn đoán sẵn, chọn xong là nhớ | — |
 | Trợ lý thiếu chức năng lặp lại 2 lần (ai-CR-078) | Làm luôn: mở việc sửa mã, rồi đi đường duyệt thường | — |
+| Việc sửa mã rủi ro thấp / vừa (ai-CR-086) | Làm luôn: một dòng «em làm luôn», không chờ «duyệt» kế hoạch; đại ca duyệt ở bước «gộp» sau thẻ kết quả | — |
+| Việc sửa mã rủi ro cao (tiền, phân quyền, cấu trúc DB, prod) | Hỏi một lần: thẻ kế hoạch gọn → «duyệt» | — |
 | Lên task ở phân hệ Dự án (ai-CR-080) | Hỏi một lần: bản nháp → «tạo», tạo xong báo chuông người được giao | — |
 | Tạo / gửi duyệt một chứng từ cho chính mình (Trợ lý AI) | Hỏi một lần («tạo» / «tạo và gửi duyệt») | — |
 | Sửa bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình, sổ của bot | Không làm | Không làm |
