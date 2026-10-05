@@ -186,6 +186,73 @@ def describe(db: Session, runner: AgentRunner) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Dấu vân tay mã (ai-CR-081): máy sửa mã có đang chạy CÙNG bản mã với bot không
+# ---------------------------------------------------------------------------
+#  Máy sửa mã dựng ảnh từ mã lúc build (không mount) nên không tự cập nhật khi dev deploy. Không có .git trong ảnh để
+#  đọc commit, nên băm thẳng nội dung các tệp của bot + Trợ lý: hai bên băm ra một số = cùng bản.
+_FP_DIRS = ("agent_hub", "assistant")
+VERSION_STALE_MIN = 30
+
+
+def code_fingerprint() -> str:
+    from functools import lru_cache
+
+    @lru_cache(maxsize=1)
+    def _fp() -> str:
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        h = hashlib.sha1()
+        for d in _FP_DIRS:
+            for f in sorted((root / d).rglob("*.py")):
+                if "__pycache__" in f.parts or f.name.startswith("_tmp"):
+                    continue
+                h.update(f.relative_to(root).as_posix().encode())
+                h.update(f.read_bytes().replace(b"\r\n", b"\n"))
+        return h.hexdigest()[:12]
+
+    return _fp()
+
+
+def version_tag() -> str:
+    return f"fp:{code_fingerprint()}"
+
+
+def _check_version(db: Session, r: AgentRunner, now: datetime, notify) -> bool:
+    """Máy đang bật mà chạy bản mã khác bot quá VERSION_STALE_MIN phút → báo MỘT lần cho mỗi bản lệch."""
+    from .model import AgentCursor
+
+    theirs = (r.version or "")[3:] if (r.version or "").startswith("fp:") else ""
+    if not theirs:
+        return False
+
+    def cursor(name: str) -> AgentCursor:
+        row = db.scalar(select(AgentCursor).where(AgentCursor.name == name))
+        if row is None:
+            row = AgentCursor(name=name, value=0)
+            db.add(row)
+            db.flush()
+        return row
+
+    first = cursor(f"runner_ver:{r.id}")
+    alerted = cursor(f"runner_ver_alert:{r.id}")
+    if theirs == code_fingerprint():
+        first.value = 0
+        return False
+    minute = int(now.timestamp() // 60)
+    if not first.value:
+        first.value = minute
+        return False
+    if minute - int(first.value) < VERSION_STALE_MIN or int(alerted.value or 0) == int(theirs, 16):
+        return False
+    alerted.value = int(theirs, 16)
+    notify(f"<b>MÁY SỬA MÃ CHẠY BẢN CŨ</b> · {r.name}\n\nMáy đang chạy bản mã khác bot trên dev đã hơn "
+           f"{VERSION_STALE_MIN} phút (máy {theirs} · bot {code_fingerprint()}).\n"
+           "<i>Cần dựng lại máy sửa mã trên máy đó (Claude của đại ca làm được) — việc mới vẫn chạy, nhưng bằng mã cũ.</i>")
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Canh máy (ai-CR-072): mất liên lạc thì báo đại ca MỘT lần, nối lại thì báo lại
 # ---------------------------------------------------------------------------
 #  Dấu «đã báo mất liên lạc» nằm ở `tab_agent_cursor` (tên `runner_down:<id>`, giá trị 1/0) — không cần
@@ -221,6 +288,8 @@ def watch(db: Session, *, now: datetime | None = None, notify=None) -> dict:
             db.add(cur)
             db.flush()
         online = is_online(r, now=now)
+        if online:
+            _check_version(db, r, now, notify)
         if not online and not cur.value:
             cur.value = 1
             waiting = queued_count(r.name)

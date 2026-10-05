@@ -1728,7 +1728,9 @@ HEALTH_ATTEMPTS = 12
 HEALTH_DELAY_SEC = 10
 MERGE_BRANCH = "agent-merge"     # worktree riêng để gộp; không đụng worktree của việc
 _DEPLOY_SERVICES_BY_PREFIX = (
-    ("backend/", ("api", "celery-worker", "celery-beat")),
+    #  ai-CR-081: `agent-poller` (đọc tin Telegram) cũng chạy mã backend — thiếu nó thì bot tự sửa cách đọc lệnh chat
+    #  mà dev vẫn chạy bản cũ. deploy.sh tự bỏ service không có ở đích (prod không có poller).
+    ("backend/", ("api", "celery-worker", "celery-beat", "agent-poller")),
     ("frontend-v2/", ("erp",)),
     ("frontend/", ("web",)),
     ("help-center/", ("help",)),

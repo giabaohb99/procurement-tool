@@ -94,7 +94,7 @@ def _start_heartbeat() -> None:
             db = SessionLocal()
             try:
                 if runners.beat(db, settings.AGENT_RUNNER_NAME, settings.AGENT_RUNNER_TOKEN,
-                                version=settings.AGENT_BASE_BRANCH) is None:
+                                version=runners.version_tag()) is None:
                     log.warning("agent_hub: nhịp tim bị từ chối — máy «%s» chưa đăng ký hoặc đã gỡ",
                                 settings.AGENT_RUNNER_NAME)
             except Exception:  # noqa: BLE001 — mất DB vài nhịp không được giết vòng

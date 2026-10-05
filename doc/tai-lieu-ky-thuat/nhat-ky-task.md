@@ -12062,3 +12062,23 @@ bot nhớ luôn và trả lời tiếp câu gốc.
 Mã nguồn: backend/app/modules/agent_hub/learning.py · agent_hub/service.py · assistant/tools/learning_tool.py
 Commit: 29629793 (erp-v2 7e6c576f)
 Deploy: DEV 05/10 15:43 do Erp Agent 1 (sao lưu DB dev trước); prod CHƯA
+
+## ai-CR-080 | Lên task ở phân hệ Dự án bằng câu nói và báo chuông người được giao
+- status: xong
+- date: 2026-10-05
+Đại ca muốn thử nhờ bot lên task. Trợ lý có thêm công cụ soạn nháp một công việc ở phân hệ Dự án từ câu nói: tự tìm dự
+án theo tên trong các dự án người hỏi thấy được, tìm người phụ trách theo tên hoặc mã nhân sự, đọc hạn chót; chưa rõ
+dự án hay người thì hỏi một câu kèm lựa chọn. Trên Telegram bot gửi bản nháp, nhắn «tạo» là tạo việc đúng như màn
+Dự án trên web và báo chuông cho từng người được giao, chuông tự chuyển sang Telegram của ai đã nối.
+
+Mã nguồn: backend/app/modules/assistant/tools/work_tool.py · agent_hub/draft_create.py · agent_hub/service.py
+
+## ai-CR-081 | Bot tự cập nhật đúng bản: dựng lại cả phần đọc tin và báo khi máy sửa mã chạy bản cũ
+- status: xong
+- date: 2026-10-05
+Hai lỗ hổng khi bot tự sửa chính nó. Một là khi gộp sửa đổi phần máy chủ, dev chỉ dựng lại máy chủ và hai tiến trình
+nền, bỏ sót phần đọc tin Telegram nên bot vẫn chạy cách đọc lệnh cũ; nay dựng lại cả phần đó, và script deploy tự bỏ
+qua phần nào môi trường không có. Hai là máy sửa mã trên máy đại ca không tự cập nhật mà cũng không báo đang chạy
+bản nào; nay máy báo dấu vân tay mã, lệch với bot trên dev quá ba mươi phút thì bot nhắn đại ca một lần để dựng lại.
+
+Mã nguồn: backend/app/modules/agent_hub/coder.py · runners.py · tasks.py · backend/scripts/deploy/deploy.sh

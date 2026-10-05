@@ -79,6 +79,19 @@ main() {
   if [ "${#services[@]}" -eq 0 ]; then
     mapfile -t services < <(pick_services "$prev" "$sha")
   fi
+  # ai-CR-081: bỏ service không có trong compose của đích (vd agent-poller trên prod, hoặc dev chưa bật profile bot)
+  # thay vì để `up` hỏng cả lượt.
+  if [ "${#services[@]}" -gt 0 ]; then
+    local known kept=() s
+    # shellcheck disable=SC2086
+    known="$(docker compose $DEPLOY_COMPOSE config --services 2>/dev/null)"
+    if [ -n "$known" ]; then
+      for s in "${services[@]}"; do
+        if grep -qx "$s" <<<"$known"; then kept+=("$s"); else echo "Bỏ qua service không có ở $target: $s"; fi
+      done
+      services=("${kept[@]}")
+    fi
+  fi
   echo "SERVICES=${services[*]:-}"
 
   git reset --hard "$sha" >/dev/null && echo "HEAD=$sha"

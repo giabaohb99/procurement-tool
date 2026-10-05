@@ -1709,12 +1709,12 @@ def test_huy_hen_dong_luot_va_cho_bam_lai(db, bot, monkeypatch):
 def test_deploy_services_for_theo_thu_muc():
     from app.modules.agent_hub.coder import deploy_services_for as f
 
-    assert f(["backend/app/x.py", "test/backend/t.py"]) == ["api", "celery-worker", "celery-beat"]
+    assert f(["backend/app/x.py", "test/backend/t.py"]) == ["api", "celery-worker", "celery-beat", "agent-poller"]
     assert f(["frontend-v2/src/a.ts"]) == ["erp"]
     assert f(["frontend/src/a.tsx", "help-center/x.ts"]) == ["web", "help"]
     assert f(["doc/a.md"]) == []
     assert f(["backend/a.py", "backend/b.py", "frontend-v2/c.ts"]) == ["api", "celery-worker",
-                                                                       "celery-beat", "erp"]
+                                                                       "celery-beat", "agent-poller", "erp"]
 
 
 def test_gop_va_deploy_tron_ven(db, bot, monkeypatch):
@@ -1737,7 +1737,7 @@ def test_gop_va_deploy_tron_ven(db, bot, monkeypatch):
     assert push[-1]["GIT_CONFIG_KEY_0"] == "http.extraheader"
     assert len(scripts) == 1
     #  ai-CR-067: kịch bản = deploy.sh đi qua stdin; tham số đặt bằng `set --` (dev, bản mới nhất, đúng service).
-    assert "set -- 'dev' 'latest' 'api' 'celery-worker' 'celery-beat' 'erp'" in scripts[0]
+    assert "set -- 'dev' 'latest' 'api' 'celery-worker' 'celery-beat' 'agent-poller' 'erp'" in scripts[0]
     assert "export DEPLOY_COMPOSE='--env-file .env.dev -f docker-compose.dev.yml'" in scripts[0]
     assert "export DEPLOY_BRANCH='erp-v2'" in scripts[0]
     assert 'git reset --hard "$sha"' in scripts[0] and "merge-base --is-ancestor" in scripts[0]
@@ -6789,3 +6789,33 @@ def test_thieu_chuc_nang_lap_lai_mo_viec_sua_ma(db, bot, seed, monkeypatch):
     db.commit()
     learning.open_gap_tasks(db)
     assert feedback.load(db)[0]["task_code"] == "" and feedback.load(db)[0]["count"] == 0
+
+
+def test_may_sua_ma_chay_ban_cu_qua_30_phut_thi_bao_mot_lan(db, monkeypatch):
+    """ai-CR-081: máy sửa mã dựng ảnh từ mã lúc build — dev deploy xong mà máy chưa dựng lại thì bot báo."""
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub import runners
+
+    monkeypatch.setattr(runners, "queued_count", lambda name: 0)
+    rn, _ = runners.register(db, "may dai ca")
+    said: list[str] = []
+    now = datetime(2026, 10, 5, 9, 0, 0)
+    rn.last_seen_at, rn.version = now, "fp:aaaaaaaaaaaa"
+    db.commit()
+    runners.watch(db, now=now, notify=said.append)
+    assert said == []                                             # mới lệch: chờ đủ 30 phút (lúc deploy hai bên lệch nhau)
+    later = now + timedelta(minutes=31)
+    rn.last_seen_at = later
+    db.commit()
+    runners.watch(db, now=later, notify=said.append)
+    assert len(said) == 1 and "MÁY SỬA MÃ CHẠY BẢN CŨ" in said[0] and "aaaaaaaaaaaa" in said[0]
+    rn.last_seen_at = later + timedelta(minutes=5)
+    db.commit()
+    runners.watch(db, now=later + timedelta(minutes=5), notify=said.append)
+    assert len(said) == 1                                         # cùng bản lệch: không báo lại
+    rn.version, rn.last_seen_at = runners.version_tag(), later + timedelta(minutes=6)
+    db.commit()
+    runners.watch(db, now=later + timedelta(minutes=6), notify=said.append)
+    assert len(said) == 1
+    assert runners.version_tag().startswith("fp:") and len(runners.code_fingerprint()) == 12
