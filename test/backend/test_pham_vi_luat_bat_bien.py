@@ -206,6 +206,10 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 BB4_CONTROLLER_MIEN_TRU = {
     # -- gác bằng hàm tự viết trong thân hàm, grep không thấy --
     "import_tool/controller.py": "gác bằng `_guard` → user_has_permission(..., 'import')",
+    "employee/work_history_controller.py": "duoc-CR-585: mọi đường /{eid} gọi "
+                                           "`work_history_access.employee_in_scope` → get_scoped(Employee, "
+                                           "'employee', …); `/me/work-history` chỉ đọc hồ sơ của chính "
+                                           "`user.employee_id`, không nhận tham số",
     "agent_hub/controller.py": "hai nhóm đường: sổ việc của bot (`agent_task` PUBLIC, require từng route) "
                                "và các đường CỦA CHÍNH NGƯỜI GỌI — mã nối chat, khóa Gemini, khóa MCP, "
                                "kết nối Google — đều lọc bằng `user.id` (chat_link.list_user_links, "
