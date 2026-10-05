@@ -11903,3 +11903,5 @@ tên cột tiếng Việt cho dòng mẫu, không đưa cột id; thẻ chỉ hi
 Chi tiết kỹ thuật vẫn xem được bằng «thao tác #n».
 
 Mã nguồn: backend/app/modules/agent_hub/ops_runner.py · ops.py · test/backend/test_agent_hub.py
+Commit: 92fac56a (erp-v2 92fac56a)
+Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
