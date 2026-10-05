@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
@@ -47,9 +47,25 @@ export function useCrudDetail<T>(apiPath: string, id: string | number | undefine
   })
 }
 
+/**
+ * Dọn cache của MỌI apiPath liên quan sau khi ghi: gốc của chính `apiPath` cộng
+ * các gốc khai ở `CrudConfig.alsoInvalidate`. Cần khi bảng này kéo theo số liệu
+ * dẫn xuất ở bảng khác (vd gán lịch làm đổi `assignment_count` của mẫu lịch).
+ */
+export function invalidateCrudRoots(
+  queryClient: QueryClient,
+  apiPath: string,
+  alsoInvalidate: readonly string[] = [],
+) {
+  for (const path of [apiPath, ...alsoInvalidate]) {
+    void queryClient.invalidateQueries({ queryKey: getCrudRootKey(path) })
+  }
+}
+
 export function useCrudSave<T, TValues extends Record<string, unknown> = Record<string, unknown>>(
   apiPath: string,
   title: string,
+  alsoInvalidate?: readonly string[],
 ) {
   const queryClient = useQueryClient()
 
@@ -59,19 +75,19 @@ export function useCrudSave<T, TValues extends Record<string, unknown> = Record<
 
     onSuccess: (_data, variables) => {
       toast.success(variables.id ? `Đã cập nhật ${title.toLowerCase()}` : `Đã thêm ${title.toLowerCase()}`)
-      void queryClient.invalidateQueries({ queryKey: getCrudRootKey(apiPath) })
+      invalidateCrudRoots(queryClient, apiPath, alsoInvalidate)
     },
   })
 }
 
-export function useCrudDelete(apiPath: string, title: string) {
+export function useCrudDelete(apiPath: string, title: string, alsoInvalidate?: readonly string[]) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (id: string | number) => apiDelete(`${apiPath}/${id}`),
     onSuccess: () => {
       toast.success(`Đã xóa ${title.toLowerCase()}`)
-      void queryClient.invalidateQueries({ queryKey: getCrudRootKey(apiPath) })
+      invalidateCrudRoots(queryClient, apiPath, alsoInvalidate)
     },
   })
 }

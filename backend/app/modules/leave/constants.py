@@ -17,8 +17,6 @@ Vì sao **loại nghỉ** không nằm ở đây mà thành BẢNG: V1-6 đòi n
 được luật (thêm loại, sửa hạn mức, sửa bậc thâm niên) mà không cần sửa mã và
 deploy. Bảng thì sửa được; hằng số thì không.
 """
-from datetime import time
-
 # --------------------------------------------------------------------------
 # Trạng thái ĐƠN nghỉ phép
 # --------------------------------------------------------------------------
@@ -108,20 +106,8 @@ def same_day_credit(from_session: int, to_session: int) -> float:
     end = 0 if to_session == SESSION_MORNING else 1
     return max(0.0, (end - start + 1) * 0.5)
 
-#  ── Khung giờ làm việc, dùng để quy đổi «nghỉ mấy giờ» ra «mấy ngày phép» ────
-#
-#  ⚠️ Hằng số vì hệ CHƯA có phân hệ Lịch làm việc (xem ghi chú ở `UNIT_HOUR`
-#  bên dưới). Công ty đổi giờ làm thì sửa ĐÚNG bốn dòng này; đừng rải `/ 8` hay
-#  `time(8, 0)` khắp nơi trong mã.
-#
-#  Bốn con số phải KHỚP NHAU: (kết thúc − bắt đầu) − nghỉ trưa = giờ công một
-#  ngày. Lệch thì nghỉ từ đầu giờ tới cuối giờ ra một con số khác 1.0 ngày, và
-#  không ai hiểu vì sao.
-WORK_DAY_START = time(8, 0)
-WORK_DAY_END = time(17, 0)
-LUNCH_START = time(12, 0)
-LUNCH_END = time(13, 0)
-WORK_HOURS_PER_DAY = 8.0
+#  Khung giờ làm việc mặc định KHÔNG còn khai ở đây: nguồn duy nhất là
+#  `work_schedule/day_rules.FALLBACK_WEEK`, và giờ thật theo Lịch làm việc của từng người.
 
 #  Cầu nối sang mã chuỗi của giấy GNP (`core/leave_codes.LEAVE_SESSION_SET`).
 #  Bảng dịch nằm ở ĐÂY, một chỗ — chứ không nội suy bằng `if` rải trong bridge.
@@ -135,12 +121,12 @@ SESSION_TO_DOC_CODE = {
 # --------------------------------------------------------------------------
 # Đơn vị nghỉ — QĐ-NP4
 # --------------------------------------------------------------------------
-#  Bản này CHỈ dùng `UNIT_DAY`. Hai giá trị còn lại khai sẵn để khi có phân hệ
-#  **Lịch làm việc** thì chỉ phải viết thêm cách quy đổi, KHÔNG phải đổi cấu
-#  trúc bảng và chạy migration trên dữ liệu đã có.
+#  Hiện CHỈ dùng `UNIT_DAY`. Phân hệ **Lịch làm việc** đã có (05/10/2026) nên cách
+#  quy đổi đã sẵn ở `workday_service`; hai giá trị còn lại khai sẵn để khi cần thì
+#  KHÔNG phải đổi cấu trúc bảng và chạy migration trên dữ liệu đã có.
 UNIT_DAY = 1       # Theo ngày (đang dùng)
-UNIT_HALF_DAY = 2  # Theo nửa ngày — chờ Lịch làm việc
-UNIT_HOUR = 3      # Theo giờ — chờ Lịch làm việc
+UNIT_HALF_DAY = 2  # Theo nửa ngày — Lịch làm việc đã có, chưa bật cho loại nghỉ nào
+UNIT_HOUR = 3      # Theo giờ — Lịch làm việc đã có, chưa bật cho loại nghỉ nào
 
 LEAVE_UNIT_LABELS = {
     UNIT_DAY: "Ngày",

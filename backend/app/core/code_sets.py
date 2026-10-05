@@ -12,6 +12,7 @@ from app.core import forum_codes  # noqa: F401
 from app.core import hr_work_history_codes  # noqa: F401
 from app.core import leave_codes  # noqa: F401
 from app.core import report_keys  # noqa: F401
+from app.core import work_schedule_codes  # noqa: F401
 from app.core import status_codes  # noqa: F401
 
 __all__: list[str] = []

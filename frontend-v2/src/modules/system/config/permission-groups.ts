@@ -66,7 +66,7 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
     //  `employee_sensitive` (15 trường che) và `job_position` (danh mục chức vụ)
     //  từng rơi vào «Khác» — chúng là khóa của phân hệ Nhân sự (bao-CR-428).
     entities: ['company', 'department', 'employee', 'employee_sensitive',
-      'job_position', 'user', 'role'],
+      'job_position', 'work_schedule', 'user', 'role'],
   },
   {
     id: 'leave',

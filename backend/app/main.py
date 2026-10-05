@@ -133,6 +133,8 @@ from app.modules.work.task_controller import router as work_task_router
 from app.modules.leave.request_controller import router as leave_request_router
 from app.modules.leave.inbox_controller import router as leave_inbox_router
 from app.modules.leave.balance_controller import router as leave_balance_router
+from app.modules.work_schedule.template_controller import router as work_schedule_router
+from app.modules.work_schedule.assignment_controller import router as work_schedule_assignment_router
 from app.modules.meeting_room.controller import (meeting_room_router,
                                                  router as room_booking_router)
 from app.modules.meeting_room.inbox_controller import router as room_inbox_router
@@ -366,6 +368,8 @@ app.include_router(work_task_router)
 app.include_router(leave_inbox_router)
 app.include_router(leave_request_router)
 app.include_router(leave_balance_router)
+app.include_router(work_schedule_router)
+app.include_router(work_schedule_assignment_router)
 app.include_router(leave_type_router)
 #  Đặt phòng họp (duoc-CR-279) — phiếu đặt + danh mục phòng.
 #  ⚠️ Hộp việc duyệt đăng TRƯỚC: `/inbox/...` là đường tĩnh, mà router phiếu có

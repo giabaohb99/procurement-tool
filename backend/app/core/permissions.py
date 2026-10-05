@@ -57,6 +57,10 @@ ENTITIES = [
     #  · `holiday`       — lịch ngày lễ, cũng của quản trị nhưng đổi theo năm
     #    nên thường giao cho hành chính, tách khỏi `leave_type`.
     "leave_request", "leave_balance", "leave_type", "holiday",
+    # Lịch làm việc (05/10/2026) — mẫu lịch tuần + gán theo hệ thống / pháp nhân /
+    # phòng ban / nhân sự; `workday_service` đọc lịch này để tính ngày nghỉ phép.
+    # Khóa riêng: sửa lịch đổi cách tính ngày phép của cả công ty.
+    "work_schedule",
     # Phân hệ Đặt phòng họp (duoc-CR-279). Hai khóa vì hai nhóm người:
     #  · `room_booking` — ai cũng đặt được, trưởng bộ phận/hành chính duyệt;
     #  · `meeting_room` — khai danh mục phòng, việc quản trị. Cho quyền sửa danh
@@ -219,6 +223,7 @@ ENTITY_LABELS = {
     "leave_balance": "Nghỉ phép › Quỹ phép năm",
     "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
     "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
+    "work_schedule": "Nhân sự › Lịch làm việc",
     "room_booking": "Phiếu đặt phòng họp",
     "meeting_room": "Phòng họp (danh mục)",
     "coffee_policy": "Điểm cà phê › Chính sách cấp điểm",

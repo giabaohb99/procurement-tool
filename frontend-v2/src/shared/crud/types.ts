@@ -241,6 +241,12 @@ export interface CrudConfig<T> {
    * `:id`) trỏ vào cùng component chi tiết, nó tự nhận ra chế độ tạo mới.
    */
   createRoute?: string
+  /**
+   * `apiPath` của các bảng KHÁC cần làm mới cache sau khi tạo/sửa/xóa ở bảng này
+   * (vd Gán lịch khai `['/api/work-schedules']` vì số «đang gán n nơi» và tên mẫu
+   * hiện ở màn kia đổi theo). Mặc định chỉ dọn chính `apiPath`.
+   */
+  alsoInvalidate?: string[]
   /** Thẻ danh tính hiển thị trên đầu trang chi tiết. */
   chips?: (row: T) => IdentityChip[]
   /** Cảnh báo khi xóa bản ghi (vd 'Dữ liệu tồn kho liên quan có thể bị ảnh hưởng'). */
@@ -295,6 +301,12 @@ export interface CrudConfig<T> {
    * cũ: điều hướng theo `detailRoute`.
    */
   openFormOnRowClick?: boolean
+  /**
+   * Hiện nút «Xóa» (gác quyền `delete`) ngay trong popup Sửa. Cần cho danh mục mở
+   * popup khi bấm dòng — chúng không có trang chi tiết nên không còn chỗ nào khác để
+   * xóa. Tự nguyện bật để các popup sẵn có không tự nhiên mọc thêm nút.
+   */
+  deleteInForm?: boolean
 }
 
 /** Props chuẩn của hộp thoại Thêm/Sửa — dùng cho cả `CrudFormDialog` lẫn bản ghi đè. */

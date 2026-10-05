@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it } from 'vitest'
 
-import { getCrudDetailKey, getCrudQueryKey, getCrudRootKey } from './use-crud'
+import { getCrudDetailKey, getCrudQueryKey, getCrudRootKey, invalidateCrudRoots } from './use-crud'
 
 /**
  * B-09 (CR-142) dời khóa cache của lớp CRUD từ mảng viết tay sang ba helper.
@@ -54,5 +54,39 @@ describe('khóa cache lớp CRUD', () => {
     void client.invalidateQueries({ queryKey: getCrudRootKey(api) })
 
     expect(client.getQueryState(getCrudQueryKey(other, { page: 1 }))?.isInvalidated).toBe(false)
+  })
+})
+
+/**
+ * Regression (HR Lịch làm việc): Gán lịch đổi `assignment_count` của Mẫu lịch, mà
+ * hook chỉ dọn cache của CHÍNH apiPath nên cảnh báo «Mẫu đang gán n nơi» cũ rích.
+ */
+describe('invalidateCrudRoots', () => {
+  const own = '/api/work-schedule-assignments'
+  const other = '/api/work-schedules'
+
+  function seed() {
+    const client = new QueryClient()
+    client.setQueryData(getCrudQueryKey(own, { page: 1 }), { items: [] })
+    client.setQueryData(getCrudQueryKey(other, { page: 1 }), { items: [] })
+    client.setQueryData(getCrudDetailKey(other, 3), { id: 3 })
+    return client
+  }
+
+  it('dọn cả apiPath của mình lẫn các gốc khai thêm, gồm cả chi tiết', () => {
+    const client = seed()
+    invalidateCrudRoots(client, own, [other])
+    expect(client.getQueryState(getCrudQueryKey(own, { page: 1 }))?.isInvalidated).toBe(true)
+    expect(client.getQueryState(getCrudQueryKey(other, { page: 1 }))?.isInvalidated).toBe(true)
+    expect(client.getQueryState(getCrudDetailKey(other, 3))?.isInvalidated).toBe(true)
+  })
+
+  it('không khai gốc thêm (hoặc mảng rỗng) thì bảng khác không bị đụng', () => {
+    for (const extra of [undefined, []]) {
+      const client = seed()
+      invalidateCrudRoots(client, own, extra)
+      expect(client.getQueryState(getCrudQueryKey(own, { page: 1 }))?.isInvalidated).toBe(true)
+      expect(client.getQueryState(getCrudQueryKey(other, { page: 1 }))?.isInvalidated).toBe(false)
+    }
   })
 })

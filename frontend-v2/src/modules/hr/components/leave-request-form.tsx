@@ -26,8 +26,6 @@ import { LeaveRequestLinesEditor } from './leave-request-lines-editor'
 import {
   LEAVE_SESSION,
   LEAVE_SESSION_LABELS,
-  WORK_DAY_LABEL,
-  WORK_HOURS_PER_DAY,
   isHourlyLeave,
   type LeaveRequest,
 } from '../types/leave'
@@ -126,6 +124,8 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   )
   const { data: estimate } = useEstimateLeaveDays(estimateParams)
   const suggestedDays = estimate?.total_days
+  //  Tùy chọn: backend cũ chưa trả tên lịch thì câu chữ rơi về dạng chung, form vẫn chạy.
+  const scheduleName = estimate?.schedule_name
 
   //  Con số máy vừa tự điền lần gần nhất. So với ô hiện tại để biết người dùng
   //  đã gõ đè hay chưa — KHÔNG dùng cờ `useState` như trước (lỗi báo 05/09/2026):
@@ -252,6 +252,7 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
           year={year}
           employeeId={takerId}
           suggestedDays={suggestedDays}
+          scheduleName={scheduleName}
           isHourly={isHourly}
         />
 
@@ -284,9 +285,10 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
 
         {isHourly && (
           <p className="text-xs text-muted-foreground md:col-span-2">
-            Nghỉ theo giờ quy đổi theo ngày công {WORK_HOURS_PER_DAY} giờ ({WORK_DAY_LABEL}),
-            đã trừ giờ nghỉ trưa. Vắt qua nhiều ngày cũng được: ngày đầu tính tới hết giờ
-            làm, ngày cuối tính từ đầu giờ làm.
+            Nghỉ theo giờ quy đổi theo giờ làm của{' '}
+            {scheduleName ? `lịch «${scheduleName}»` : 'lịch làm việc áp cho người nghỉ'}, đã trừ
+            giờ nghỉ trưa. Vắt qua nhiều ngày cũng được: ngày đầu tính tới hết giờ làm, ngày cuối
+            tính từ đầu giờ làm.
           </p>
         )}
 

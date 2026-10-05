@@ -29,7 +29,9 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "leave", "coffee_point", "document", "ticket", "meeting_room", "customs", "department",
            "inventory", "attachment", "forum", "assistant", "dossier", "faq", "role", "agent_hub",
            "comment", "employee", "user", "setting", "user_preference",
-           "report_access"]   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
+           "report_access",
+           "work_schedule"]   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
+#  ↑ work_schedule: duoc-CR-589 (05/10) — Lịch làm việc, `name` 150 / `note` 500
 
 #  Tên lớp kết thúc bằng các đuôi này là schema TRẢ RA hoặc lọc — không ghi xuống DB.
 READ_SUFFIXES = ("Out", "Response", "Read", "Detail", "Summary", "Row", "Filter", "Query", "Result", "Stats")
@@ -125,6 +127,11 @@ TARGETS.update({
     **_same("employee", "Employee", "SelfContactUpdate"),
     **_same("user", "User", "NotifyEmailUpdate", "UserProvision"),
     **_same("user", "UserScope", "ScopeUpdate"),
+    **_same("employee", "EmployeeWorkHistory", "WorkHistoryIn", "WorkHistoryUpdate"),   # duoc-CR-585
+    "purchase_request.PROptionDetailsIn": ["PurchaseRequestItemOption"],                 # bao-CR-583
+    **_same("work_schedule", "WorkSchedule", "ScheduleCreate", "ScheduleUpdate"),       # duoc-CR-589
+    **_same("work_schedule", "WorkScheduleDay", "DayIn"),
+    **_same("work_schedule", "WorkScheduleAssignment", "AssignmentCreate", "AssignmentUpdate", "_Fields"),
 })
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).

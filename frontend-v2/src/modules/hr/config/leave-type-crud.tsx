@@ -319,14 +319,13 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       //  07/09/2026 nút giấy tờ chen vào giữa, nên đọc từ trên xuống là *mấy
       //  ngày → giấy tờ → lại mấy ngày*.
       name: 'exclude_holiday',
-      //  ⚠️ DEGO Holding **làm cả thứ Bảy** — chỉ Chủ nhật là ngày nghỉ tuần
-      //  (`workday_service.WEEKEND_DAYS`). Nhãn cũ ghi "Trừ thứ Bảy" là mô tả
-      //  sai chính thứ nút này đang bật.
-      label: 'Trừ Chủ nhật và ngày lễ',
+      //  Ngày nghỉ tuần nay do LỊCH LÀM VIỆC của người nghỉ quyết định (mẫu lịch
+      //  tuần, gán theo nhân sự / phòng ban / pháp nhân), không còn «chỉ Chủ nhật».
+      label: 'Trừ ngày nghỉ theo lịch làm việc và ngày lễ',
       type: 'switch',
       defaultValue: true,
       section: 'Điều kiện áp dụng',
-      hint: 'Thứ Bảy vẫn tính công. Tắt cho loại nghỉ dài liên tục (thai sản).',
+      hint: 'Tắt cho loại nghỉ dài liên tục (thai sản) — khi đó đếm cả ngày nghỉ tuần.',
     },
     {
       //  Chốt cụm bằng chuyện GIẤY TỜ — nó là việc của người nộp đơn, khác hẳn

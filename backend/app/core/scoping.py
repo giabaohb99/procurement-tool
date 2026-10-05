@@ -202,6 +202,10 @@ SCOPE_FIELDS = {
     #  của pháp nhân mình VỚI dòng dùng chung), không diễn đạt được bằng khuôn
     #  một-cột của `apply_scope`.
     "holiday":          PUBLIC,
+    #  Lịch làm việc: danh mục cấu hình lịch dùng chung; dòng gán trỏ đích ĐA HÌNH
+    #  (cấp + id) nên khuôn một-cột của apply_scope không diễn đạt được; ai SỬA gác
+    #  bằng work_schedule.write.
+    "work_schedule":    PUBLIC,
 
     # --- Đặt phòng họp (duoc-CR-279) ---
     #  Phiếu đặt khai CẢ `owner` LẪN `self`, cùng lẽ với đơn nghỉ phép: một phiếu

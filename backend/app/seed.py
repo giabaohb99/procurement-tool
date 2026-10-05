@@ -219,6 +219,9 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "customs_pesticide",
                  "forum_post", "forum_board",
                  "leave_request", "leave_balance", "leave_type", "holiday",
+                 #  Lịch làm việc: sửa lịch đổi cách tính ngày phép cả công ty —
+                 #  Quản lý thu mua không tự có (chỉ `read` đại trà + hr_leave/hr_profile sửa).
+                 "work_schedule",
                  #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải
                  #  nằm trong tập loại-trừ này, không thì vòng `_PUR_MANAGER_PERMS`
                  #  quét cả `ENTITIES` và Quản lý thu mua tự nhiên đọc được số
@@ -297,6 +300,8 @@ STD_ROLES = {
         #  (duoc-CR-320). Vòng `setdefault` phía dưới chỉ cấp `read` cho mọi vai
         #  trò; quyền SỬA khai đích danh ở đây.
         "job_position": (["read", "create", "write", "delete"], "all"),
+        #  Lịch làm việc (05/10/2026, đại ca chốt): Nhân sự giữ hồ sơ cũng được sửa lịch.
+        "work_schedule": (["read", "create", "write", "delete"], "all"),
         #  Tab «Tài khoản & thiết bị» trong hồ sơ (bao-CR-395): Nhân sự XEM phiên
         #  đang mở + lịch sử đăng nhập 90 ngày của mọi người. KHÔNG cấp `delete`
         #  (đá phiên là của admin); nút «Khóa tài khoản + đăng xuất mọi thiết bị»
@@ -615,6 +620,8 @@ for _role_info in STD_ROLES.values():
     #  được số ngày. Chỉ `read` — sửa luật là việc của vai trò `hr_leave` dưới.
     _role_info["perms"].setdefault("leave_type", (["read"], "all"))
     _role_info["perms"].setdefault("holiday", (["read"], "all"))
+    #  Lịch làm việc: mọi vai trò đọc được (form nghỉ cần); sửa chỉ hr_leave/hr_profile.
+    _role_info["perms"].setdefault("work_schedule", (["read"], "all"))
 
 #  ── Đặt phòng họp (07/09/2026) ──────────────────────────────────────────────
 #  Cùng lý lẽ: **ai cũng phải đặt được phòng họp**. Trước hôm nay hai khóa này
@@ -676,6 +683,7 @@ STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perm
     "leave_balance": (["read", "create", "write", "delete", "export"], "all"),
     "leave_type": (["read", "create", "write", "delete"], "all"),
     "holiday": (["read", "create", "write", "delete"], "all"),
+    "work_schedule": (["read", "create", "write", "delete"], "all"),
     #  Đọc kèm — thiếu là form Cấp quỹ / Lịch nghỉ rỗng sạch ô chọn người và
     #  phòng ban, đúng lỗi đã dính với `vanthu_cty` (xem ghi chú ở `vanban_xem`).
     "employee": (["read"], "all"),
@@ -738,6 +746,12 @@ STD_ROLES["market_lookup"] = {"name": "Tra cứu thị trường", "perms": {
 #  `job_position.read`, một lỗ có sẵn từ duoc-CR-320; chưa sửa ở đợt này.)
 for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault("dossier_type", (["read"], "all"))
+
+#  Lịch làm việc: vòng `setdefault` ở phần Nghỉ phép chạy TRƯỚC khi `coffee_admin` ·
+#  `coffee_counter` · `market_lookup` được khai nên ba vai trò đó hụt `read` (cùng cảnh `holiday`).
+#  Vòng này đứng sau mọi khai báo vai trò để vét nốt; `setdefault` không đè `hr_leave`.
+for _role_info in STD_ROLES.values():
+    _role_info["perms"].setdefault("work_schedule", (["read"], "all"))
 
 
 #  ── Cây thư mục văn bản (phase 03, duoc-CR-475) ─────────────────────────────

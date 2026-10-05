@@ -192,6 +192,13 @@ export const queryKeys = {
     //  riêng sau khi sửa hồ sơ.
     employeeContacts: (id: number) => ['hr', 'employees', id, 'contacts'] as const,
     employeeFamilies: (id: number) => ['hr', 'employees', id, 'families'] as const,
+    /** Danh sách đối tượng để chọn khi gán lịch làm việc (pháp nhân / phòng ban / nhân sự theo cấp). */
+    workScheduleTargets: (level: number) => ['hr', 'work-schedule', 'targets', level] as const,
+    /** Lịch làm việc ĐANG ÁP của một nhân sự — thẻ «Lịch làm việc» trên hồ sơ. */
+    workScheduleEffective: (employeeId: number) =>
+      ['hr', 'work-schedule', 'effective', employeeId] as const,
+    /** Lưới «Lịch tuần» (ai làm, ai nghỉ) — khóa theo toàn bộ tham số hỏi. */
+    workRoster: (params: Record<string, unknown>) => ['hr', 'work-schedule', 'roster', params] as const,
     departments: (params?: Record<string, unknown>) => ['hr', 'departments', params ?? {}] as const,
     department: (id: number) => ['hr', 'departments', id] as const,
     departmentCompanies: (id: number) => ['hr', 'departments', id, 'companies'] as const,

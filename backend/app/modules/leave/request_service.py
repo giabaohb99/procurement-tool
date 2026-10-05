@@ -25,9 +25,8 @@ from . import balance_service, workday_service
 from .catalog_model import LeaveType
 from .constants import (EDITABLE_STATUSES, GENDER_UNKNOWN, HOLDING_STATUSES,
                         LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING,
-                        LUNCH_END, LUNCH_START, SESSION_AFTERNOON,
-                        SESSION_HOURLY, SESSION_MORNING, UNIT_DAY, UNIT_HOUR,
-                        WORK_DAY_END, WORK_DAY_START)
+                        SESSION_AFTERNOON, SESSION_HOURLY, SESSION_MORNING,
+                        UNIT_DAY, UNIT_HOUR)
 from .request_model import LeaveHandover, LeaveRequest, LeaveRequestLine
 
 #  Bộ lọc danh sách (whitelist của `apply_filters`). `code` để ô tìm nhanh lo.
@@ -261,23 +260,26 @@ def compute_days(db: Session, leave_type: LeaveType, employee: Employee,
     if is_hourly(from_session, to_session):
         return hourly_days(db, from_date, to_date, from_time, to_time,
                            company_id=employee.company_id or 0,
-                           exclude_holiday=bool(leave_type.exclude_holiday))
+                           exclude_holiday=bool(leave_type.exclude_holiday),
+                           employee=employee)
     if requested and requested > 0:
         return round(float(requested), 2)
     days = workday_service.count_leave_days(
         db, from_date, to_date, from_session, to_session,
         company_id=employee.company_id or 0,
-        exclude_holiday=bool(leave_type.exclude_holiday))
+        exclude_holiday=bool(leave_type.exclude_holiday), employee=employee)
     if days <= 0:
         raise HTTPException(
-            400, "Khoảng ngày này không có ngày làm việc nào (rơi trọn vào cuối tuần "
-                 "hoặc ngày lễ). Sửa lại ngày, hoặc nhập tay «Tổng số ngày».")
+            400, "Khoảng ngày này không có ngày làm việc nào theo lịch làm việc áp cho "
+                 f"«{employee.full_name}» (rơi trọn vào ngày nghỉ hoặc ngày lễ). Sửa lại ngày, "
+                 "hoặc nhập tay «Tổng số ngày».")
     return days
 
 
 def hourly_days(db: Session, from_date: date, to_date: date,
                 from_time: time | None, to_time: time | None, *,
-                company_id: int = 0, exclude_holiday: bool = True) -> float:
+                company_id: int = 0, exclude_holiday: bool = True,
+                employee: Employee | None = None) -> float:
     """Nghỉ theo giờ quy ra ngày phép — mỏng, việc thật nằm ở `workday_service`.
 
     Làm tròn 2 chữ số ở đó: 1 tiếng trong ngày công 8 giờ ra `0.13`, hụt một
@@ -288,12 +290,11 @@ def hourly_days(db: Session, from_date: date, to_date: date,
         raise HTTPException(400, "Nghỉ theo giờ phải nhập đủ «Từ giờ» và «Đến giờ»")
     days = workday_service.count_hourly_days(
         db, from_date, to_date, from_time, to_time,
-        company_id=company_id, exclude_holiday=exclude_holiday)
+        company_id=company_id, exclude_holiday=exclude_holiday, employee=employee)
     if days <= 0:
         raise HTTPException(
-            400, "Khoảng giờ này không rơi vào giờ làm việc nào — kiểm lại ngày và giờ "
-                 f"(giờ làm {WORK_DAY_START:%H:%M}–{WORK_DAY_END:%H:%M}, nghỉ trưa "
-                 f"{LUNCH_START:%H:%M}–{LUNCH_END:%H:%M}).")
+            400, "Khoảng giờ này không rơi vào giờ làm việc nào theo lịch làm việc của người "
+                 "nghỉ (ngày nghỉ, ngoài khung giờ, giờ nghỉ trưa hoặc ngày lễ) — kiểm lại ngày và giờ.")
     return days
 
 

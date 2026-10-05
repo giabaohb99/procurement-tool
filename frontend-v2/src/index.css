@@ -104,6 +104,10 @@
   --success: #16a34a;
   --warning: #d97706;
   --info: #0284c7;
+  /* Thẻ nghỉ phép ĐÃ DUYỆT (lưới «Xem lịch»): nền xanh đậm + chữ trắng. Không dùng thẳng `--info`
+     làm nền vì trắng trên #0284c7 chỉ 4.1:1 (dưới ngưỡng 4.5:1 của chữ nhỏ); L=0.50 cho ≈6:1. */
+  --leave-approved: oklch(0.5 0.13 240);
+  --leave-approved-foreground: #ffffff;
 
   /* Màu phụ của bộ nhận diện. */
   --navy: #1b2559;
@@ -233,6 +237,12 @@
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
+  /* Nền tối: `--info` dùng làm CHỮ/viền (thẻ chờ duyệt) nên sáng hơn để nổi trên #1e293b.
+     Thẻ đã duyệt vẫn nền xanh đậm + chữ trắng (≈5.5:1), sáng hơn một bậc để tách khỏi nền thẻ. */
+  --info: #38bdf8;
+  --leave-approved: oklch(0.52 0.13 240);
+  --leave-approved-foreground: #ffffff;
+
   --border: #334155;
   --input: #334155;
   --ring: #00aeef;
@@ -299,6 +309,8 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --color-leave-approved: var(--leave-approved);
+  --color-leave-approved-foreground: var(--leave-approved-foreground);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);

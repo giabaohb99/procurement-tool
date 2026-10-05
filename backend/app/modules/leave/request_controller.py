@@ -315,24 +315,34 @@ def estimate_days(from_date: str, to_date: str,
     employee = request_service.resolve_leave_taker(db, user, employee_id)
     leave_type = (db.get(LeaveType, leave_type_id) if leave_type_id else None)
 
-    #  Nghỉ theo GIỜ: số ngày là phép chia, không đụng tới lịch ngày lễ. Tính ở
-    #  đây chứ không để giao diện tự chia — giờ công một ngày là luật của công
-    #  ty, khai ở `constants.WORK_HOURS_PER_DAY`, và hai chỗ chia thì sớm muộn
-    #  lệch nhau.
+    #  Nghỉ theo GIỜ: số ngày là phép chia theo giờ làm của từng ngày. Tính ở đây chứ
+    #  không để giao diện tự chia — giờ công là luật của Lịch làm việc, hai chỗ chia thì
+    #  sớm muộn lệch nhau.
+    d_from, d_to = _date.fromisoformat(from_date), _date.fromisoformat(to_date)
+    exclude_holiday = bool(leave_type.exclude_holiday) if leave_type else True
+    #  Loại nghỉ `exclude_holiday=False` (thai sản) bỏ qua lịch nên không có tên lịch để hiện.
+    schedule_name = (workday_service.schedule_name_on(db, employee, d_from)
+                     if exclude_holiday else "")
+    #  Tên lịch của người khác chỉ trả khi họ nằm trong phạm vi `employee` của người gọi (bug L1);
+    #  `resolve_leave_taker` cố ý không gác nên chốt ở đây. Số ngày vẫn tính như cũ.
+    if schedule_name and employee.id != (getattr(user, "employee_id", 0) or 0):
+        from app.core.scoping import get_perm_profile, get_scoped
+        if get_scoped(db, Employee, "employee", employee.id, user,
+                      get_perm_profile(db, user)) is None:
+            schedule_name = ""
     if request_service.is_hourly(from_session, to_session):
         return success({"total_days": request_service.hourly_days(
-            db, _date.fromisoformat(from_date), _date.fromisoformat(to_date),
+            db, d_from, d_to,
             _time.fromisoformat(from_time) if from_time else None,
             _time.fromisoformat(to_time) if to_time else None,
-            company_id=employee.company_id or 0,
-            exclude_holiday=bool(leave_type.exclude_holiday) if leave_type else True)})
+            company_id=employee.company_id or 0, exclude_holiday=exclude_holiday,
+            employee=employee), "schedule_name": schedule_name})
 
     days = workday_service.count_leave_days(
-        db, _date.fromisoformat(from_date), _date.fromisoformat(to_date),
-        from_session, to_session,
-        company_id=employee.company_id or 0,
-        exclude_holiday=bool(leave_type.exclude_holiday) if leave_type else True)
-    return success({"total_days": days})
+        db, d_from, d_to, from_session, to_session,
+        company_id=employee.company_id or 0, exclude_holiday=exclude_holiday,
+        employee=employee)
+    return success({"total_days": days, "schedule_name": schedule_name})
 
 
 def _ensure_balance_in_scope(db: Session, user, employee, row) -> None:

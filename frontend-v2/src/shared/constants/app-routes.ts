@@ -452,6 +452,14 @@ export const appRoutes = {
     holidays: '/hr/holidays',
     holidayNew: '/hr/holidays/new',
     holidayDetail: (id: number | string) => `/hr/holidays/${id}`,
+    /** Lịch làm việc: mẫu lịch tuần (trang riêng vì form dài) và việc gán lịch theo cấp. */
+    workSchedules: '/hr/work-schedules',
+    workScheduleNew: '/hr/work-schedules/new',
+    workScheduleDetail: (id: number | string) => `/hr/work-schedules/${id}`,
+    /** ⚠️ KHÔNG nằm dưới `/hr/work-schedules/` — hai mục menu gác độc lập, xem `canAccessRoute`. */
+    workScheduleAssignments: '/hr/work-schedule-assignments',
+    /** Lịch tuần/tháng «ai làm, ai nghỉ» — gác `employee.read`, KHÔNG phải quyền quản lý lịch. */
+    workRoster: '/hr/work-roster',
 
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
     //  Cùng lẽ với Nghỉ phép: đặt phòng là việc hành chính hằng ngày của nhân

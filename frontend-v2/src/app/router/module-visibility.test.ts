@@ -413,7 +413,12 @@ describe('mục có submenu (children)', () => {
 })
 
 describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
-  const hr = allModules.find((m) => m.id === 'hr')!
+  //  Không dùng `!`: module vắng thì ném lỗi rõ ràng thay vì nổ ở dòng khẳng định.
+  const hr = (() => {
+    const found = allModules.find((m) => m.id === 'hr')
+    if (!found) throw new Error('Module hr chưa đăng ký trong module-registry')
+    return found
+  })()
 
   function makeCan(perms: Record<string, string[]>) {
     return (entity: PermissionEntity, action: PermissionAction = 'read') => {
@@ -670,5 +675,80 @@ describe('reportKeys — gác kép báo cáo (fail-closed)', () => {
     const allowEverything = () => true
     expect(canOpenModule(report, allowEverything, {})).toBe(false)
     expect(canOpenModule(report, allowEverything, { reportKeys: [1] })).toBe(true)
+  })
+})
+
+describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên phải có ca riêng', () => {
+  //  Không dùng `!`: module vắng thì ném lỗi rõ ràng thay vì nổ ở dòng khẳng định.
+  const hr = (() => {
+    const found = allModules.find((m) => m.id === 'hr')
+    if (!found) throw new Error('Module hr chưa đăng ký trong module-registry')
+    return found
+  })()
+
+  function makeCan(perms: Record<string, string[]>) {
+    return (entity: PermissionEntity, action: PermissionAction = 'read') =>
+      perms[entity]?.includes(action) ?? false
+  }
+
+  const PATHS = [
+    '/hr/work-schedules',
+    '/hr/work-schedules/new',
+    '/hr/work-schedules/5',
+    '/hr/work-schedule-assignments',
+  ]
+
+  //  `/hr/work-roster` gác `employee.read` — KHÔNG phải quyền quản lý lịch. Nav gác mặc định MỞ,
+  //  nên route này mà thiếu mục menu gác thì ai đăng nhập cũng vào.
+  it.each(['/hr/work-roster'])('%s: chỉ cần employee.read', (path) => {
+    expect(canAccessRoute(hr, path, makeCan({ employee: ['read'] }))).toBe(true)
+    expect(canAccessRoute(hr, path, makeCan({ work_schedule: ['write', 'create', 'delete'] }))).toBe(false)
+    expect(canAccessRoute(hr, path, makeCan({ work_schedule: ['read'] }))).toBe(false)
+    expect(canAccessRoute(hr, path, makeCan({}))).toBe(false)
+  })
+
+  it('có employee.read nhưng thiếu quyền quản lý lịch: vẫn KHÔNG vào được hai màn quản lý', () => {
+    for (const path of PATHS) {
+      expect(canAccessRoute(hr, path, makeCan({ employee: ['read', 'write'] }))).toBe(false)
+    }
+  })
+
+  it.each(PATHS)('%s: có quyền sửa/tạo/xóa work_schedule thì vào được', (path) => {
+    for (const action of ['write', 'create', 'delete']) {
+      expect(canAccessRoute(hr, path, makeCan({ work_schedule: [action] }))).toBe(true)
+    }
+  })
+
+  it.each(PATHS)('%s: chỉ read, không quyền nào, hoặc quyền khóa khác thì KHÔNG vào được', (path) => {
+    expect(canAccessRoute(hr, path, makeCan({ work_schedule: ['read'] }))).toBe(false)
+    expect(canAccessRoute(hr, path, makeCan({}))).toBe(false)
+    expect(canAccessRoute(hr, path, makeCan({ holiday: ['write'] }))).toBe(false)
+    expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write', 'create', 'delete'] }))).toBe(false)
+  })
+
+  it('người chỉ có employee.read thấy nhóm «Lịch làm việc» nhưng CHỈ với con «Xem lịch»', () => {
+    const viewer = visibleNavItems(hr, makeCan({ employee: ['read'], work_schedule: ['read'] }))
+    const item = viewer.find((i) => i.label === 'Lịch làm việc')
+    expect(item?.children?.map((c) => c.label)).toEqual(['Xem lịch'])
+  })
+
+  it('không có employee.read thì không thấy nhóm «Lịch làm việc» (dù đọc được work_schedule)', () => {
+    const nav = visibleNavItems(hr, makeCan({ work_schedule: ['read'] }))
+    expect(nav.some((i) => i.label === 'Lịch làm việc')).toBe(false)
+  })
+
+  it('người sửa được work_schedule thấy hai mục quản lý; có thêm employee.read thì thấy cả ba, Xem lịch đứng đầu', () => {
+    const editor = visibleNavItems(hr, makeCan({ work_schedule: ['write'] }))
+    expect(editor.find((i) => i.label === 'Lịch làm việc')?.children?.map((c) => c.label)).toEqual([
+      'Mẫu lịch tuần',
+      'Gán lịch',
+    ])
+
+    const both = visibleNavItems(hr, makeCan({ employee: ['read'], work_schedule: ['write'] }))
+    expect(both.find((i) => i.label === 'Lịch làm việc')?.children?.map((c) => c.label)).toEqual([
+      'Xem lịch',
+      'Mẫu lịch tuần',
+      'Gán lịch',
+    ])
   })
 })

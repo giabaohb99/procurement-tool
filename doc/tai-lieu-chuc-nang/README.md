@@ -14,6 +14,7 @@ Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
 | [17-nghi-phep.md](17-nghi-phep.md) | Nghỉ phép — đơn nghỉ · quỹ phép năm · lịch nghỉ (ERP v2, trong phân hệ Nhân sự) |
 | [18-dat-phong-hop.md](18-dat-phong-hop.md) | Đặt phòng họp — lịch phòng · phiếu đặt chạy qua bộ máy duyệt · danh mục phòng (ERP v2, trong phân hệ Nhân sự) |
 | [19-bao-cao-thuc-hien-ycbg.md](19-bao-cao-thuc-hien-ycbg.md) | Báo cáo thực hiện — khối theo dõi tiến trình thương vụ trên chi tiết Yêu cầu báo giá (ERP v2). Xem thêm TDD kỹ thuật [`tdd-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
+| [21-lich-lam-viec.md](21-lich-lam-viec.md) | Lịch làm việc — mẫu lịch tuần · gán theo 4 cấp · tính ngày công · xem lịch (ERP v2, trong phân hệ Nhân sự) |
 
 Danh sách đầy đủ ở [00-muc-luc.md](00-muc-luc.md); bảng trên chỉ liệt kê vài mục
 tiêu biểu, đừng coi là danh sách đủ.
