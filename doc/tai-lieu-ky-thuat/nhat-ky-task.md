@@ -70,6 +70,54 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-589 | Nhân sự: Lịch làm việc (mẫu lịch tuần, gán 4 cấp, tính ngày nghỉ theo lịch, màn xem lịch)
+- status: dang-lam
+- date: 2026-10-05
+Đại ca yêu cầu làm chức năng lịch làm việc cho nhân sự trong phân hệ Nhân sự. Trước đây hệ thống coi mọi người
+đều làm thứ Hai đến thứ Bảy, 08:00–17:00, nên người làm thứ Bảy nửa buổi hay làm ca khác vẫn bị trừ phép như
+người làm cả ngày. Nay nhân sự khai được lịch làm việc theo tuần, gán cho từng người hay cả nhóm, và số ngày
+nghỉ phép được gợi ý theo đúng lịch của người nghỉ. Mọi phần đã chạy và đã kiểm trên máy của em, đã commit
+lên nhánh erp-v2, chưa deploy.
+
+### duoc-CR-589a | Mẫu lịch tuần và gán lịch theo bốn cấp
+- status: xong
+Nhân sự tạo mẫu lịch tuần: mỗi thứ chọn làm cả ngày, chỉ buổi sáng, chỉ buổi chiều hay nghỉ, kèm giờ vào, giờ ra
+và giờ nghỉ trưa. Hệ thống tạo sẵn mẫu «Hành chính T2–T7» giống hệt luật cũ nhưng không gán cho ai. Mẫu được gán
+cho toàn hệ thống, một pháp nhân, một phòng ban hoặc một nhân sự, có ngày hiệu lực; cấp hẹp thắng cấp rộng, chưa
+gán gì thì giữ luật cũ. Gán lịch mới thì lịch cũ tự kết thúc ngày hôm trước; lịch mới có ngày kết thúc (lịch tạm)
+thì hết hạn tự quay về lịch cũ; xóa nhầm dòng vừa gán thì lịch cũ tự mở lại. Quyền sửa giao cho vai trò Nhân sự —
+Nghỉ phép và Nhân sự — Hồ sơ, mọi vai trò khác chỉ xem; quyền cấp sẵn bằng migration nên lên prod không phải
+tick tay. Hồ sơ nhân sự có thêm thẻ «Lịch làm việc» cho biết người đó đang theo lịch nào.
+
+### duoc-CR-589b | Số ngày nghỉ phép tính theo lịch của chính người nghỉ
+- status: xong
+Ô số ngày gợi ý trên đơn nghỉ, trợ lý AI lập đơn hộ và lúc lưu đơn đều đọc lịch của người nghỉ theo từng ngày:
+thứ Bảy chỉ làm sáng thì nghỉ ngày đó tính 0,5; nghỉ theo giờ chia cho số giờ làm của chính ngày đó. Người chưa
+được gán lịch ra đúng từng con số như trước — có bài kiểm so mọi tổ hợp buổi với bảy thứ trong tuần để chốt điều
+này. Đơn đã lưu không bị tính lại khi đổi lịch.
+
+### duoc-CR-589c | Màn «Xem lịch»: ngày nào ai đi làm, ai nghỉ
+- status: xong
+Màn mới dạng lưới nhân sự theo ngày, mặc định xem tuần, chuyển được sang tháng; ngày đi làm bình thường để trống
+hoặc ghi giờ chữ nhạt «08:00 – 17:00», chỉ ngày nghỉ phép (đã duyệt tô đặc chữ trắng, chờ duyệt viền nét đứt, nghỉ
+nửa buổi tô nửa ô), ngày lễ và ngày nghỉ theo lịch mới nổi màu. Mỗi người chỉ thấy nhân sự trong phạm vi quyền của
+mình, và chỉ thấy ô nghỉ phép nếu được xem đơn đó. Khi cuộn, người có nghỉ phép dính dưới đầu bảng theo từng đợt
+ba người: đợt sau tới thì đẩy cả đợt trước lên một lượt, làm hoàn toàn bằng CSS nên cuộn mượt (các bản dùng JS
+theo dõi cuộn bị giật trên máy Mac nên đã bỏ). Trên điện thoại màn hình đổi thành danh sách «Đi làm» / «Nghỉ» của
+một ngày. Một lượt xem tối đa 42 ngày, 50 người mỗi trang, số truy vấn cố định khoảng 8 câu dù xem bao nhiêu
+người. Form mẫu lịch tuần cũng làm lại: ô giờ luôn 24 giờ (không còn SA/CH theo máy), mỗi ngày gọn một dòng, có
+nút điền nhanh «T2–T6 hành chính», «T2–T7», «T7 nửa buổi sáng».
+
+Bài kiểm: hơn 1.100 bài kiểm backend của nghỉ phép và lịch làm việc xanh; 1.078 bài kiểm giao diện của phân hệ
+Nhân sự xanh (đo 05/10/2026, 15:00).
+Tham chiếu: doc/tai-lieu-chuc-nang/21-lich-lam-viec.md
+Mã nguồn: backend/app/modules/work_schedule/, backend/app/modules/leave/workday_service.py,
+backend/migrations/versions/wsched01_lich_lam_viec.py, frontend-v2/src/modules/hr/ (work-schedule-*, work-roster-*)
+Commit: e6558159 trên erp-v2.
+Deploy: chưa deploy.
+
+---
+
 ## bao-CR-596 | Dựng chiều đồng bộ ERP sang app đặt xe cũ (P3), khóa bằng công tắc
 - status: dang-lam
 - date: 2026-10-05
