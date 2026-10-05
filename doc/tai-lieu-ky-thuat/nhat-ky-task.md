@@ -11873,3 +11873,5 @@ lại thì nhắn đã nối lại và đang làm tiếp. Việc giao lúc máy 
 động lại máy bằng câu nhắn, vì bot trên máy chủ dev không với tới Docker trên máy đại ca.
 
 Mã nguồn: backend/app/modules/agent_hub/runners.py · tasks.py · backend/app/core/celery_app.py
+Commit: 186403cc (erp-v2 62c6be6e)
+Deploy: DEV 05/10 do Erp Agent 1, health 200, celery-beat đã có runner_watch; prod CHƯA
