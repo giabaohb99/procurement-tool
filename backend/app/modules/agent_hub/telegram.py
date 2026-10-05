@@ -167,11 +167,27 @@ _MD_TABLE_SEP = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
 _SLOT = re.compile("\x00(\\d+)\x00")
 
 
+#  ai-CR-071: gốc đầu tiên của các màn CHỈ có ở giao diện cũ `frontend/` (đóng băng, App.tsx). Chuông ERP còn lưu
+#  đường dẫn kiểu cũ (`/purchase-orders/376`) nên phải về FRONTEND_URL; mọi đường khác (Trợ lý AI trả
+#  `/procurement/purchase-orders/379`, `/hr/…`, `/finance/…`, `/support/…`) là màn ERP v2 → AGENT_ERP_URL.
+#  Trước đây tất cả đi FRONTEND_URL nên link Trợ lý trên Telegram mở `devthumua/procurement/...` → trang trắng.
+_V1_ROOTS = frozenset({
+    "backups", "category-assignees", "contracts", "customs-prices", "documents", "import-batches", "inventory",
+    "notifications", "payables", "payment-requests", "pr-lines-report", "purchase-orders", "purchase-progress",
+    "purchase-requests", "reports", "roles", "settings", "suppliers", "survey-progress", "survey-report",
+    "survey-requests", "surveys", "surveys-product", "surveys-supplier", "tickets", "users",
+})
+
+
 def absolute_url(path: str) -> str:
-    """Đường dẫn tương đối trong ứng dụng -> tuyệt đối. Web tự nối gốc, Telegram thì không."""
-    if path.startswith("/"):
-        return settings.FRONTEND_URL.rstrip("/") + path
-    return path
+    """Đường dẫn tương đối trong ứng dụng -> tuyệt đối. Web tự nối gốc, Telegram thì không.
+    Đường `/api/...` và màn ERP v2 → AGENT_ERP_URL; màn chỉ có ở bản cũ → FRONTEND_URL."""
+    if not path.startswith("/"):
+        return path
+    root = path.lstrip("/").split("/", 1)[0].split("?", 1)[0]
+    legacy = settings.FRONTEND_URL.rstrip("/")
+    base = legacy if root in _V1_ROOTS else (settings.AGENT_ERP_URL or legacy).rstrip("/")
+    return base + path
 
 
 def md_to_html(text: str) -> str:
