@@ -70,6 +70,35 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-593 | Dọn 44 bài kiểm máy chủ đỏ sẵn: không có lỗi thật, sửa bài cho khớp luật hiện hành
+- status: xong
+- date: 2026-10-05
+Đại ca bảo dọn 44 bài kiểm máy chủ đỏ sẵn trên prod (phát hiện khi so cổng kiểm của bao-CR-592) và xem bài nào là lỗi
+thật, bài nào là bài cũ. Rà từng bài: không bài nào chỉ ra lỗi thật của hệ thống.
+
+- 39 bài Agent Hub (bot Telegram) đỏ vì phụ thuộc môi trường: bài viết để chạy trong container bot, nơi `.env` có khóa
+  Gemini, token Telegram và cờ bật bot. Ở container máy chủ thường thiếu ba biến đó nên bot đòi dán khóa rồi dừng, hoặc
+  bỏ qua mọi việc. Ngay trên commit gốc của bot (25/09) cũng đỏ đúng 39 bài. Đã thêm phần dựng sẵn tự đặt giá trị giả cho
+  ba biến; mạng thật vẫn bị chặn nên khóa giả không đi ra ngoài, và khóa thật trong container bot cũng thôi bị dùng.
+  Kết quả 239/239 bài xanh.
+- Bài loại trừ phòng ban theo id: cũ theo luật bao-CR-480 — chứng từ thu mua loại trừ theo PHÒNG XỬ LÝ, bài vẫn dựng
+  phiếu chỉ có phòng lập. Đã gán phòng xử lý cho phiếu cần loại.
+- Bài YCTT ghi chi phiếu nháp: cũ từ bao-CR-511 (đã chặn đúng). Bản sửa bao-CR-564 của Agent 2 nằm chưa commit từ 02/10,
+  em commit giúp.
+- Bài canh độ dài ô chữ: ba khuôn ghi mới (phương án YCMH của bao-CR-583, quá trình công tác của duoc-CR-585) chưa khai
+  bảng đích. Khai xong thì bài kiểm độ dài chạy qua cả ba và xanh, tức không có lỗi 500 tiềm ẩn.
+- Bài công cụ ghi của Trợ lý AI: `create_calendar_event` ghi vào lịch Google của CHÍNH người hỏi, không ghi dữ liệu ERP,
+  nên không có quyền ERP để chặn. Đã khai vào nhóm «ghi ra ngoài ERP» kèm lý do và thêm bài canh: chưa nối Google thì
+  trả lỗi và không gọi API Google nào.
+- Hai bài canh giao diện (`test_dong_bo_giao_dien_v2`, `test_ho_so_truong_rieng`) chỉ đỏ khi chạy bằng `docker run` mà
+  thiếu gắn `frontend-v2/src` vào `/app/fe-src`; gắn đủ thì xanh, không sửa.
+
+Không đổi mã chạy thật nên không cần deploy.
+Mã nguồn: `test_agent_hub.py` (`_fake_bot_env`), `test_phong_ban_theo_id_cr086.py`, `test_luong_duyet_thu_mua.py`
+(bao-CR-564), `test_canh_do_dai_o_chu_cr538.py`, `test_assistant_chi_co_quyen_xem.py` (`TOOL_GHI_NGOAI_ERP`).
+
+---
+
 ## bao-CR-592 | Gom toàn bộ erp-v2 lên prod ngày 05/10, main bằng erp-v2 trở lại
 - status: xong
 - date: 2026-10-05
@@ -817,6 +846,25 @@ Lên dev và prod ngày 02/10 cùng bao-CR-553 / 554 (main 8e6e23e3). Prod chạ
 Mã nguồn: survey/model.py, survey/controller.py, survey/service.py, core/status_codes.py,
 import_tool/survey_import.py, seed_khao_sat_demo.py, scripts/import_survey_history.py, migration
 c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, shared/constants/statuses.ts.
+
+---
+
+## bao-CR-564 | Bài kiểm luồng duyệt YCTT: đổi bài «chưa chặn ghi chi phiếu nháp» thành bài canh việc chặn
+- status: xong
+- date: 2026-10-02
+Bộ lưới an toàn luồng duyệt thu mua có một bài cố ý ghi lại lỗ hổng cũ: gọi thẳng API là ghi nhận
+đã chi được cho Yêu cầu thanh toán còn nháp, tiền ra khỏi sổ mà chưa ai duyệt. Lỗ này đã được
+bao-CR-511 vá (chỉ phiếu «Đã duyệt» mới sang «Đã chi» được), nên bài cũ đỏ — đúng như chú thích của
+nó dặn: «vá thì bài này đỏ». Hành vi mới là đúng, bài kiểm đã cũ.
+
+Đã đổi bài thành canh điều ngược lại: phiếu nháp bấm ghi chi thì bị từ chối 400 và vẫn giữ trạng
+thái Nháp; chú thích ghi rõ trước đây bài này ghi lại lỗ hổng nào và CR nào đã vá. Không đổi mã chạy
+thật.
+
+Kiểm: chạy riêng tệp bài kiểm luồng duyệt, 30 bài xanh.
+Mã nguồn: `test/backend/test_luong_duyet_thu_mua.py` (`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet`
+→ `test_yctt_pay_draft_is_blocked`).
+Commit: Agent 1 gom vào commit bao-CR-593 erp-v2 76ab6d0a (main 8abecfaa) ngày 05/10; chỉ sửa bài kiểm, không cần deploy.
 
 ---
 

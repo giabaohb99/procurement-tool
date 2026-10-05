@@ -165,6 +165,14 @@ TOOL_GHI = {
                                                 "role_codes": ["employee"]}),
 }
 
+#  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua
+#  liên kết Google cá nhân, không đụng dữ liệu ERP — nên không có cặp (entity, action) để
+#  chặn như bảng trên. Chốt thật là «phải có liên kết Google của chính người đó», canh ở
+#  `test_tool_ghi_ngoai_erp_tu_choi_khi_chua_noi_google` bên dưới.
+TOOL_GHI_NGOAI_ERP = {
+    "create_calendar_event": {"title": "Họp NCC", "start": "2026-09-26T14:00:00"},
+}
+
 #  Cách nhận diện "tool có mùi ghi" từ TÊN. Cố ý thô: thà bắt nhầm một tool đọc rồi khai
 #  vào bảng trên, còn hơn bỏ lọt một tool ghi.
 _MUI_GHI = ("draft_", "_create", "create_", "propose_", "update_", "_update", "confirm_")
@@ -174,13 +182,28 @@ def test_moi_tool_co_mui_ghi_deu_phai_khai_o_bang_tren(db):
     """Thêm `draft_xyz` mà quên khai là ĐỎ ngay — không đợi tới lúc khách hỏi."""
     ten = {d.name for d in T.tool_defs()}
     nghi_ngo = {n for n in ten if any(k in n for k in _MUI_GHI)}
-    thieu = sorted(nghi_ngo - set(TOOL_GHI))
+    thieu = sorted(nghi_ngo - set(TOOL_GHI) - set(TOOL_GHI_NGOAI_ERP))
     assert thieu == [], (
         f"tool có mùi ghi nhưng chưa khai ở TOOL_GHI: {thieu}. Khai vào rồi bổ sung một ca "
         "'thiếu quyền thì denied' — đừng sửa `_MUI_GHI` cho hết đỏ.")
     #  Chiều ngược: khai thừa một tool đã gỡ thì bảng thành sai lệch, cũng phải đỏ.
-    du = sorted(set(TOOL_GHI) - ten)
-    assert du == [], f"TOOL_GHI còn khai tool không tồn tại: {du}"
+    du = sorted((set(TOOL_GHI) | set(TOOL_GHI_NGOAI_ERP)) - ten)
+    assert du == [], f"TOOL_GHI / TOOL_GHI_NGOAI_ERP còn khai tool không tồn tại: {du}"
+
+
+@pytest.mark.parametrize("tool_name", sorted(TOOL_GHI_NGOAI_ERP))
+def test_tool_ghi_ngoai_erp_tu_choi_khi_chua_noi_google(db, seed, monkeypatch, tool_name):
+    """Chưa nối Google thì tool ghi ra Google trả lỗi và KHÔNG gọi API Google nào."""
+    from app.modules.assistant.tools import google_tool
+
+    calls: list[str] = []
+    monkeypatch.setattr(google_tool.gl, "api_post", lambda *a, **kw: calls.append("post") or {})
+    monkeypatch.setattr(google_tool.gl, "api_get", lambda *a, **kw: calls.append("get") or {})
+
+    out = _hoi(db, seed, tool_name, TOOL_GHI_NGOAI_ERP[tool_name])
+
+    assert "chưa nối Google" in str(out.get("error", "")), out
+    assert calls == []
 
 
 @pytest.mark.parametrize("ten_tool", sorted(TOOL_GHI))
