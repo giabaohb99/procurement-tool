@@ -70,6 +70,35 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-593 | Dọn 44 bài kiểm máy chủ đỏ sẵn: không có lỗi thật, sửa bài cho khớp luật hiện hành
+- status: xong
+- date: 2026-10-05
+Đại ca bảo dọn 44 bài kiểm máy chủ đỏ sẵn trên prod (phát hiện khi so cổng kiểm của bao-CR-592) và xem bài nào là lỗi
+thật, bài nào là bài cũ. Rà từng bài: không bài nào chỉ ra lỗi thật của hệ thống.
+
+- 39 bài Agent Hub (bot Telegram) đỏ vì phụ thuộc môi trường: bài viết để chạy trong container bot, nơi `.env` có khóa
+  Gemini, token Telegram và cờ bật bot. Ở container máy chủ thường thiếu ba biến đó nên bot đòi dán khóa rồi dừng, hoặc
+  bỏ qua mọi việc. Ngay trên commit gốc của bot (25/09) cũng đỏ đúng 39 bài. Đã thêm phần dựng sẵn tự đặt giá trị giả cho
+  ba biến; mạng thật vẫn bị chặn nên khóa giả không đi ra ngoài, và khóa thật trong container bot cũng thôi bị dùng.
+  Kết quả 239/239 bài xanh.
+- Bài loại trừ phòng ban theo id: cũ theo luật bao-CR-480 — chứng từ thu mua loại trừ theo PHÒNG XỬ LÝ, bài vẫn dựng
+  phiếu chỉ có phòng lập. Đã gán phòng xử lý cho phiếu cần loại.
+- Bài YCTT ghi chi phiếu nháp: cũ từ bao-CR-511 (đã chặn đúng). Bản sửa bao-CR-564 của Agent 2 nằm chưa commit từ 02/10,
+  em commit giúp.
+- Bài canh độ dài ô chữ: ba khuôn ghi mới (phương án YCMH của bao-CR-583, quá trình công tác của duoc-CR-585) chưa khai
+  bảng đích. Khai xong thì bài kiểm độ dài chạy qua cả ba và xanh, tức không có lỗi 500 tiềm ẩn.
+- Bài công cụ ghi của Trợ lý AI: `create_calendar_event` ghi vào lịch Google của CHÍNH người hỏi, không ghi dữ liệu ERP,
+  nên không có quyền ERP để chặn. Đã khai vào nhóm «ghi ra ngoài ERP» kèm lý do và thêm bài canh: chưa nối Google thì
+  trả lỗi và không gọi API Google nào.
+- Hai bài canh giao diện (`test_dong_bo_giao_dien_v2`, `test_ho_so_truong_rieng`) chỉ đỏ khi chạy bằng `docker run` mà
+  thiếu gắn `frontend-v2/src` vào `/app/fe-src`; gắn đủ thì xanh, không sửa.
+
+Không đổi mã chạy thật nên không cần deploy.
+Mã nguồn: `test_agent_hub.py` (`_fake_bot_env`), `test_phong_ban_theo_id_cr086.py`, `test_luong_duyet_thu_mua.py`
+(bao-CR-564), `test_canh_do_dai_o_chu_cr538.py`, `test_assistant_chi_co_quyen_xem.py` (`TOOL_GHI_NGOAI_ERP`).
+
+---
+
 ## bao-CR-592 | Gom toàn bộ erp-v2 lên prod ngày 05/10, main bằng erp-v2 trở lại
 - status: xong
 - date: 2026-10-05
@@ -205,7 +234,7 @@ liệt kê cả kho khảo sát. Chỉ đổi giao diện ERP v2.
 Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm ở purchase-request-process-card.test.tsx.
 Kiểm: tsc 0 lỗi, eslint sạch, 14 bài của màn xử lý xanh.
 Commit: 32dcd96d (chung với bao-CR-580) trên erp-v2.
-Deploy: DEV 05/10 (erp). Prod chưa.
+Deploy: DEV 05/10 (erp); PROD 05/10 trong đợt bao-CR-592 của Agent 1, main 7c1d5a60 (sổ 30821ca5).
 
 ---
 
@@ -235,8 +264,8 @@ Kiểm: 10 bài mới `test_xoa_ycmh_go_lien_ket_ycbg_cr580.py` xanh, 216 bài c
 động còn đỏ một chỗ không phải của em: `employee/work_history_controller.py::_audit` (duoc-CR-585).
 Commit: 32dcd96d trên erp-v2.
 Deploy: DEV 05/10 (api, celery-worker, celery-beat, erp; không có migration); đã chạy script dọn trên dev, gỡ 2 YCMH cũ
-PYC08072601 và PYC08072602, hai YCBG YCKS08072601 và YCKS08072603 về «Đã khảo sát». Prod chưa; prod không có dữ liệu cũ
-cần dọn (đã đếm 05/10).
+PYC08072601 và PYC08072602, hai YCBG YCKS08072601 và YCKS08072603 về «Đã khảo sát». PROD 05/10 trong đợt bao-CR-592 của
+Agent 1, main 7c1d5a60 (sổ 30821ca5); em kiểm prod: có hàm gỡ liên kết, bốn nhãn lịch sử ra tiếng Việt, 0 dữ liệu cũ cần dọn.
 
 ---
 

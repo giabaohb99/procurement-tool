@@ -139,11 +139,16 @@ def test_phong_ban_duoc_xem_cong_them_theo_id(db, seed):
 
 
 def test_loai_tru_phong_theo_id(db, seed):
+    """Từ bao-CR-480 (24/09/2026), chứng từ thu mua loại trừ theo PHÒNG XỬ LÝ
+    (`handler_dept_id`), không theo phòng lập phiếu — nên phiếu của phòng bị loại phải
+    mang đúng phòng xử lý đó."""
     other = Department(code="DEPT02", name="Phòng Kia", company_id=seed.company_id, is_active=True)
     db.add(other)
     db.commit()
     _pr(db, "YC-MINH", seed.company_id, seed.dept_id, "Phòng Test")
-    _pr(db, "YC-KIA", seed.company_id, other.id, "Phòng Kia")
+    kia = _pr(db, "YC-KIA", seed.company_id, other.id, "Phòng Kia")
+    kia.handler_dept_id = other.id
+    db.commit()
 
     prof = _profile(company_id=seed.company_id, scope="company",
                     exc={"department": [other.id], "department_name": ["Phòng Kia"]})
