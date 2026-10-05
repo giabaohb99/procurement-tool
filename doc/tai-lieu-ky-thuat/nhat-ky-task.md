@@ -11905,3 +11905,13 @@ Chi tiết kỹ thuật vẫn xem được bằng «thao tác #n».
 Mã nguồn: backend/app/modules/agent_hub/ops_runner.py · ops.py · test/backend/test_agent_hub.py
 Commit: 92fac56a (erp-v2 92fac56a)
 Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
+
+## ai-CR-075 | Thẻ tin nhắn của bot dễ đọc hơn: tiêu đề đậm, nhãn đậm, ghi chú nghiêng
+- status: xong
+- date: 2026-10-05
+Đại ca thấy tin nhắn của bot khó đọc. Thẻ duyệt và tin báo kết quả thao tác nay có cùng một bố cục: dòng đầu in hoa
+in đậm cho biết loại việc, môi trường và số thao tác; mỗi phần có nhãn in đậm như «Sẽ làm», «Số dòng đổi», «Ví dụ
+đang là», «An toàn», «Kết quả»; ghi chú và cách hoàn tác in nghiêng; các phần cách nhau một dòng trống; cuối thẻ là
+một dòng ngắn «Nhắn đúng để chạy, thôi để bỏ».
+
+Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · test/backend/test_agent_hub.py

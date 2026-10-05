@@ -6021,7 +6021,7 @@ def test_xem_dev_chay_luon_xem_prod_phai_dung(db, bot, monkeypatch):
 
     service.handle_message(db, {**_msg("trạng thái prod"), "message_id": 8})
     op2 = db.query(AgentOp).order_by(AgentOp.id.desc()).first()
-    assert op2.status == OPS_WAITING and len(tasks) == 1 and "PROD" in sent[-1] and "«đúng»" in sent[-1]
+    assert op2.status == OPS_WAITING and len(tasks) == 1 and "PROD" in sent[-1] and "<b>đúng</b>" in sent[-1]
     service.handle_message(db, {**_msg("đúng"), "message_id": 9})
     assert op2.status == OPS_QUEUED and tasks[-1] == ("agent.run_op", [op2.id])
 
@@ -6426,9 +6426,9 @@ def test_soan_lenh_tra_du_lieu_roi_ra_the_tieng_viet(db, bot, monkeypatch):
     write = db.query(AgentOp).filter_by(kind=OP_SQL_WRITE).one()
     assert write.status == OPS_WAITING and write.command == final_sql and write.params["rows"] == 10
     card = sent[-1]
-    assert "Gán chức vụ" in card and "<b>10</b>" in card and "Nhân sự nhà máy (CR-414)" in card
-    assert "UPDATE" not in card and "SELECT" not in card and "«đúng»" in card
-    assert "sao lưu bảng tab_employee" in card
+    assert "Gán chức vụ" in card and "<b>Số dòng đổi:</b> 10" in card and "Nhân sự nhà máy (CR-414)" in card
+    assert "UPDATE" not in card and "SELECT" not in card and "<b>đúng</b>" in card
+    assert "<b>An toàn:</b> sao lưu" in card and card.startswith("<b>SỬA DỮ LIỆU</b>")
 
 
 def test_soan_lenh_tu_choi_bang_cam_va_qua_tran(db, bot, monkeypatch):
@@ -6475,7 +6475,7 @@ def test_ket_qua_lenh_sua_du_lieu_bao_bang_cau_thuong(db, bot, monkeypatch):
                     params={"plain": True, "rows": 10}, chat_id="12345")
     ops.approve(db, op, "12345")
     ops_runner.execute(db, op)
-    assert op.status == OPS_OK and "Đã đổi 10 dòng" in sent[-1] and f"hoàn tác thao tác #{op.id}" in sent[-1]
+    assert op.status == OPS_OK and "<b>Đã đổi:</b> 10 dòng" in sent[-1] and f"hoàn tác thao tác #{op.id}" in sent[-1]
     assert "ROWCOUNT" not in sent[-1]
 
 

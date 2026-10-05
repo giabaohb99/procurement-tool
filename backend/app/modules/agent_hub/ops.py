@@ -267,29 +267,6 @@ def format_rows(out: str, *, limit: int = 5) -> list[str]:
     return rows[:limit]
 
 
-def _plain_card(op: AgentOp, env: AgentEnv) -> str:
-    """Thẻ duyệt cho lệnh sửa dữ liệu bằng lời (ai-CR-073): tiếng Việt, KHÔNG bày câu SQL (xem bằng «thao tác #n»)."""
-    esc = telegram.esc
-    p = op.params or {}
-    _, _, tables = guardrails.classify_sql(op.command)
-    lines = [f"<b>Sửa dữ liệu #{op.id}</b> trên <b>{esc(env.name)}</b>"
-             + (" — <b>PROD, dữ liệu thật</b>" if is_prod(env) else "") + ":",
-             esc(op.title),
-             f"Số dòng sẽ đổi: <b>{int(p.get('rows') or 0)}</b>."]
-    sample = [r for r in (p.get("sample") or []) if r]
-    if sample:
-        lines.append("Ví dụ (đang là):")
-        lines += [f"• {esc(r[:160])}" for r in sample[:3]]
-    for a in (p.get("assumptions") or [])[:2]:
-        lines.append(f"Em hiểu là: {esc(str(a)[:200])}")
-    lines.append(f"Trước khi chạy em sao lưu bảng {esc(', '.join(tables))}; muốn trả lại như cũ thì nhắn "
-                 f"«hoàn tác thao tác #{op.id}».")
-    if is_prod(env):
-        lines.append("(OTP cho prod tạm bỏ qua theo lệnh đại ca 05/10.)")
-    lines.append("Nhắn «đúng» để chạy, «thôi» để bỏ.")
-    return "\n".join(lines)
-
-
 def start_data_change(db: Session, chat_id: str, text: str, env_name: str = "") -> str:
     """Đại ca nhờ sửa dữ liệu bằng lời → ghi sổ một lượt soạn lệnh (chỉ đọc, làm luôn) và giao máy sửa mã."""
     env = env_by_name(db, env_name or "dev") or env_by_name(db, "dev")
@@ -299,35 +276,67 @@ def start_data_change(db: Session, chat_id: str, text: str, env_name: str = "") 
                 params={"request": text[:2000]}, chat_id=chat_id)
     if not dispatch_op(db, op):
         return f"Không giao được cho máy sửa mã: {op.error}."
-    return (f"Dạ, em tra dữ liệu trên <b>{telegram.esc(env.name)}</b> để soạn lệnh (thao tác #{op.id}). "
-            "Vài phút em gửi thẻ ghi rõ sẽ đổi gì, bao nhiêu dòng để đại ca «đúng».")
+    return (f"Dạ, em tra dữ liệu trên <b>{telegram.esc(env.name)}</b> để soạn lệnh · thao tác #{op.id}\n"
+            "<i>Vài phút em gửi thẻ ghi rõ sẽ đổi gì, bao nhiêu dòng để đại ca duyệt.</i>")
+
+
+def _env_badge(env: AgentEnv) -> str:
+    return "<b>PROD</b> (dữ liệu thật)" if is_prod(env) else f"<b>{telegram.esc(env.name)}</b>"
+
+
+def _answer_line(op: AgentOp) -> str:
+    return (f"Nhắn <b>đúng</b> để chạy · <b>thôi</b> để bỏ\n"
+            f"<i>Quá 15 phút thì nhắn «chạy thao tác #{op.id}».</i>")
+
+
+def _plain_card(op: AgentOp, env: AgentEnv) -> str:
+    """Thẻ duyệt cho lệnh sửa dữ liệu bằng lời (ai-CR-073/075): tiếng Việt, nhãn đậm, KHÔNG bày câu SQL
+    (xem bằng «thao tác #n»). Bố cục: tiêu đề · sẽ làm · số dòng · ví dụ · giả định · an toàn · cách trả lời."""
+    esc = telegram.esc
+    p = op.params or {}
+    blocks = [f"<b>SỬA DỮ LIỆU</b> trên {_env_badge(env)} · thao tác #{op.id}",
+              f"<b>Sẽ làm:</b> {esc(op.title)}\n<b>Số dòng đổi:</b> {int(p.get('rows') or 0)}"]
+    sample = [r for r in (p.get("sample") or []) if r]
+    if sample:
+        blocks.append("<b>Ví dụ đang là:</b>\n" + "\n".join(f"• {esc(r[:160])}" for r in sample[:3]))
+    notes = [str(a) for a in (p.get("assumptions") or [])[:2] if str(a).strip()]
+    if notes:
+        blocks.append("\n".join(f"<i>Em hiểu là: {esc(a[:200])}</i>" for a in notes))
+    blocks.append(f"<b>An toàn:</b> sao lưu phần dữ liệu này trước khi chạy.\n"
+                  f"<i>Muốn trả lại như cũ: «hoàn tác thao tác #{op.id}».</i>")
+    if is_prod(env):
+        blocks.append("<i>OTP cho prod tạm bỏ qua theo lệnh đại ca 05/10.</i>")
+    blocks.append(_answer_line(op))
+    return "\n\n".join(blocks)
 
 
 def _card(op: AgentOp, env: AgentEnv) -> str:
     if (op.params or {}).get("plain"):
         return _plain_card(op, env)
     esc = telegram.esc
-    lines = [f"Thao tác <b>#{op.id}</b> trên <b>{esc(env.name)}</b>"
-             + (" — <b>PROD, dữ liệu thật</b>" if is_prod(env) else "")
-             + f" ({esc(OP_KIND_LABELS.get(op.kind, '?'))}): {esc(op.title)}",
-             f"<pre>{esc(op.command[:1500])}</pre>"]
+    blocks = [f"<b>{esc(OP_KIND_LABELS.get(op.kind, 'thao tác').upper())}</b> trên {_env_badge(env)} · thao tác #{op.id}",
+              f"<b>Sẽ làm:</b> {esc(op.title)}",
+              f"<b>Lệnh:</b>\n<pre>{esc(op.command[:1500])}</pre>"]
+    safety = ""
     if op.kind == OP_SQL_WRITE:
         _, _, tables = guardrails.classify_sql(op.command)
-        lines.append(f"Trước khi chạy: sao lưu bảng <code>{esc(', '.join(tables))}</code> ra tệp nén trên VPS. "
-                     f"Hoàn tác = «hoàn tác thao tác #{op.id}» nạp lại đúng bản sao lưu đó (mọi thay đổi khác lên "
-                     "các bảng này sau lúc sao lưu cũng mất).")
+        safety = (f"<b>An toàn:</b> sao lưu bảng <code>{esc(', '.join(tables))}</code> trước khi chạy.\n"
+                  f"<i>Hoàn tác «hoàn tác thao tác #{op.id}» nạp lại bản sao lưu — thay đổi khác lên các bảng này sau "
+                  "lúc sao lưu cũng mất.</i>")
     elif op.kind == OP_RESTORE:
-        lines.append("Trước khi nạp lại: sao lưu trạng thái hiện tại của các bảng đó (để hoàn tác được lượt này).")
+        safety = "<b>An toàn:</b> sao lưu trạng thái hiện tại trước khi nạp lại, để hoàn tác được cả lượt này."
     elif op.kind == OP_DEPLOY:
-        lines.append("deploy.sh: khóa lượt, kiểm commit nằm trên nhánh của môi trường, health hỏng thì tự quay về bản trước."
-                     + (" Prod: sao lưu CẢ DB trước khi deploy." if is_prod(env) else "")
-                     + f" Hoàn tác = «hoàn tác thao tác #{op.id}» deploy lại commit trước.")
+        safety = ("<b>An toàn:</b> một lượt một lúc · commit phải nằm trên nhánh của môi trường · health hỏng thì tự quay "
+                  "về bản trước" + (" · sao lưu CẢ DB prod trước" if is_prod(env) else "") + ".\n"
+                  f"<i>Hoàn tác: «hoàn tác thao tác #{op.id}» deploy lại commit trước.</i>")
     elif op.kind == OP_SHELL_WRITE:
-        lines.append("Lệnh shell tự do: em KHÔNG có cách hoàn tác tự động, chỉ ghi nhật ký kết quả.")
+        safety = "<b>Lưu ý:</b> lệnh tự do — <i>không có cách hoàn tác tự động</i>, em chỉ ghi nhật ký kết quả."
+    if safety:
+        blocks.append(safety)
     if is_prod(env):
-        lines.append("(OTP cho prod tạm bỏ qua theo lệnh đại ca 05/10 — V-04 làm sau.)")
-    lines.append(f"Nhắn «đúng» để chạy, «thôi» để bỏ. Quá 15 phút thì nhắn «chạy thao tác #{op.id}».")
-    return "\n".join(lines)
+        blocks.append("<i>OTP cho prod tạm bỏ qua theo lệnh đại ca 05/10.</i>")
+    blocks.append(_answer_line(op))
+    return "\n\n".join(blocks)
 
 
 def ask_approval(db: Session, chat_id: str, op: AgentOp, env: AgentEnv, *, lead: str = "") -> None:

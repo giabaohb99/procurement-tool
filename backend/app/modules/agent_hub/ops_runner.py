@@ -492,32 +492,39 @@ def _reply(db: Session, chat_id: str, text: str) -> None:
 
 
 def send_result(db: Session, op: AgentOp, env: AgentEnv | None) -> None:
+    """Tin báo kết quả một thao tác (ai-CR-075: tiêu đề đậm · nhãn đậm · ghi chú nghiêng · cách dòng giữa phần)."""
     esc = telegram.esc
     secs = int((op.finished_at - op.started_at).total_seconds()) if op.finished_at and op.started_at else 0
+    ok = op.status == OPS_OK
+    undo = (f"<i>Muốn trả lại như cũ: «hoàn tác thao tác #{op.id}».</i>"
+            if ok and op.undo_params and not op.undone_by_op_id else "")
     if (op.params or {}).get("plain") or op.kind == OP_DATA_PLAN:
         #  ai-CR-073: lệnh sửa dữ liệu bằng lời báo bằng câu thường, không bày output SQL.
-        if op.status == OPS_OK:
+        if ok:
             m = re.findall(r"^ROWCOUNT=(-?\d+)\s*$", op.output or "", re.MULTILINE)
-            done = f" Đã đổi {m[-1]} dòng." if m else ""
-            text = (f"Xong <b>#{op.id}</b>: {esc(op.title)}.{done}"
-                    + (f" Muốn trả lại như cũ: «hoàn tác thao tác #{op.id}»." if op.undo_params else ""))
+            blocks = [f"<b>XONG</b> · thao tác #{op.id}", esc(op.title)]
+            if m:
+                blocks.append(f"<b>Đã đổi:</b> {m[-1]} dòng")
         else:
-            text = f"<b>#{op.id}</b> không làm được: {esc(op.error[:500] or 'lỗi không rõ')}."
-        _reply(db, _owner_chat(op), text)
+            blocks = [f"<b>KHÔNG LÀM ĐƯỢC</b> · thao tác #{op.id}", esc(op.title),
+                      f"<b>Lý do:</b> {esc(op.error[:500] or 'lỗi không rõ')}"]
+        if undo:
+            blocks.append(undo)
+        _reply(db, _owner_chat(op), "\n\n".join(blocks))
         return
-    head = (f"Thao tác <b>#{op.id}</b> trên <b>{esc(env.name if env else '?')}</b> "
-            f"({esc(OP_KIND_LABELS.get(op.kind, '?'))}): "
-            + ("<b>XONG</b>" if op.status == OPS_OK else "<b>HỎNG</b>") + f" sau {secs} giây.")
-    lines = [head]
+    where = f" trên <b>{esc(env.name)}</b>" if env else ""
+    blocks = [("<b>XONG</b>" if ok else "<b>HỎNG</b>") + f" · {esc(OP_KIND_LABELS.get(op.kind, 'thao tác'))}{where} · "
+              f"thao tác #{op.id} · {secs} giây",
+              esc(op.title)]
     if op.error:
-        lines.append(esc(op.error[:500]))
+        blocks.append(f"<b>{'Lưu ý' if ok else 'Lỗi'}:</b> {esc(op.error[:500])}")
     if op.output:
-        lines.append(f"<pre>{esc(op.output[-CARD_OUTPUT:])}</pre>")
+        blocks.append(f"<b>Kết quả:</b>\n<pre>{esc(op.output[-CARD_OUTPUT:])}</pre>")
     if op.backup_ref:
-        lines.append(f"Sao lưu trước khi chạy: <code>{esc(op.backup_ref)}</code>")
-    if op.undo_params and op.status == OPS_OK:
-        lines.append(f"Muốn trả lại như cũ: «hoàn tác thao tác #{op.id}».")
-    _reply(db, _owner_chat(op), "\n".join(lines))
+        blocks.append(f"<b>Sao lưu trước khi chạy:</b> <code>{esc(op.backup_ref)}</code>")
+    if undo:
+        blocks.append(undo)
+    _reply(db, _owner_chat(op), "\n\n".join(blocks))
 
 
 # ---------------------------------------------------------------------------
