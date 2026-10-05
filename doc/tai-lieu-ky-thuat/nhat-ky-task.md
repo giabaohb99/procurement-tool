@@ -11915,3 +11915,14 @@ in đậm cho biết loại việc, môi trường và số thao tác; mỗi ph�
 một dòng ngắn «Nhắn đúng để chạy, thôi để bỏ».
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · test/backend/test_agent_hub.py
+
+## ai-CR-076 | Bot sửa mã được đổi cấu trúc cơ sở dữ liệu, trình bày rõ để đại ca duyệt
+- status: xong
+- date: 2026-10-05
+Trước đây bot sửa mã bị cấm hẳn việc đổi cấu trúc cơ sở dữ liệu, gặp là dừng và chờ người. Đại ca muốn bot làm được
+tính năng trọn vẹn, có trình bày để duyệt. Nay bot được viết migration, kèm năm chốt: đề bài ghi sẵn điểm nối đúng;
+bước kiểm báo đỏ nếu tệp lỗi hoặc kho có hai điểm nối; thẻ kết quả liệt kê từng thay đổi cấu trúc, thay đổi có thể mất
+dữ liệu như xóa bảng, xóa cột, đổi kiểu cột được in đậm kèm cảnh báo; lúc gộp kiểm lại lần nữa, hai điểm nối thì không
+đẩy; trước khi đưa lên dev thì sao lưu cả cơ sở dữ liệu dev, sao lưu hỏng thì không đưa lên.
+
+Mã nguồn: backend/app/modules/agent_hub/schema_change.py · coder.py · guardrails.py · doc/agent-hub/02-bo-quy-tac-bot.md

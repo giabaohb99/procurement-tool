@@ -22,7 +22,8 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
 | Tạo / gửi duyệt một chứng từ cho chính mình (Trợ lý AI) | Hỏi một lần («tạo» / «tạo và gửi duyệt») | — |
 | Sửa bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình, sổ của bot | Không làm | Không làm |
 | Một lệnh sửa quá 500 dòng | Không làm (chia nhỏ hoặc giao việc sửa mã) | Không làm |
-| Đổi cấu trúc bảng | Không làm (phải qua migration) | Không làm |
+| Đổi cấu trúc bảng bằng lệnh dữ liệu | Không làm | Không làm |
+| Đổi cấu trúc bảng trong việc sửa mã (migration, ai-CR-076) | Hỏi một lần: thẻ kết quả liệt kê thay đổi, «gộp» là duyệt; sao lưu DB dev trước deploy | Theo đợt phát hành prod |
 
 ## 3. Cách hỏi
 

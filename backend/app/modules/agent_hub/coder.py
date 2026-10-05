@@ -86,6 +86,7 @@ DEFAULT_MODEL = "claude-code"
 #  Tệp bot KHÔNG ĐƯỢC ĐỤNG (luật C3, C4, §E, §G + ba luật tự cải thiện V-05). Danh sách nằm ở `guardrails.py`
 #  để tệp đó tự khóa được chính nó (ai-CR-067).
 from .guardrails import BANNED_PATTERNS  # noqa: E402
+from . import schema_change  # noqa: E402
 
 #  Bài kiểm không tính vào tỷ lệ lệch kế hoạch (luật C5 bắt bot viết test, mà thẻ kế hoạch
 #  hiếm khi liệt kê tệp test).
@@ -341,7 +342,11 @@ _RULES_BRIEF = """\
 C1. Chỉ sửa trong phạm vi tệp ở trên. Cần đụng thêm tệp thì được, nhưng quá 30% số tệp ngoài \
 kế hoạch hoặc quá {max_files} tệp là DỪNG, không làm nữa, ghi rõ lý do trong tổng kết. Tệp bài kiểm \
 và tài liệu `.md` không tính vào 30% đó — sửa tài liệu cho khớp mã là nên làm.
-C3. KHÔNG tạo migration Alembic, KHÔNG sửa model kéo theo đổi cấu trúc bảng.
+C3. ĐƯỢC đổi cấu trúc bảng khi việc cần (ai-CR-076): sửa model.py (model mới thì thêm vào app/core/all_models.py) \
+VÀ viết tay MỘT tệp migration mới trong backend/migrations/versions/ có cả upgrade lẫn downgrade, \
+`down_revision = '{migration_head}'` (đầu hiện tại của nhánh nền — KHÔNG nối vào revision khác). Ưu tiên THÊM \
+(bảng mới, cột cho phép rỗng hoặc có mặc định, chỉ mục). XÓA / đổi kiểu / đổi tên bảng hay cột chỉ khi kế hoạch cần; \
+ghi rõ trong TỔNG KẾT dữ liệu nào sẽ mất. Không chạy alembic (ở đây không có DB); không ghi chuỗi tiếng Việt qua mysql CLI.
 C4. KHÔNG đụng phân quyền (core/permissions.py, core/scoping.py, seed_prod.py), \
 .github/workflows, docker-compose.production.yml, CLAUDE.md, thư mục .claude/.
 C5. Viết bài kiểm cho phần vừa sửa, gồm ít nhất một ca phủ định (đầu vào sai phải bị chặn).
@@ -360,7 +365,7 @@ C9. Tổng kết TRUNG THỰC: chưa chạy được thì nói chưa chạy, tes
 C10. KHÔNG commit, KHÔNG git push, KHÔNG git merge, KHÔNG đổi nhánh — runner tự commit sau.
 
 ## Khi nào phải dừng và ghi lý do thay vì cố làm (§D)
-Kế hoạch mâu thuẫn với mã thật · phải đụng tệp cấm ở C4 · cần migration · cần thay đổi \
+Kế hoạch mâu thuẫn với mã thật · phải đụng tệp cấm ở C4 · cần thay đổi \
 hợp đồng API đang có màn hình dùng · bài kiểm cũ đỏ vì thay đổi cần thiết · làm xong thì vượt \
 trần tệp{hard_extra}. Gặp một trong các ca đó: dừng, KHÔNG sửa nửa chừng, viết tổng kết nêu rõ \
 ca nào và cần đại ca quyết gì.
@@ -410,7 +415,7 @@ def _with_files_dir(cmd: list[str]) -> list[str]:
 
 
 def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
-                images: list[str] | None = None) -> str:
+                images: list[str] | None = None, migration_head: str = "") -> str:
     """Đề bài sửa mã. `from_scan=True` (ai-CR-024): đề bài đi TIẾP trong phiên rà soát — bỏ trích
     đoạn tài liệu và đoạn rà soát (đã nằm trong phiên), dặn dùng lại những gì đã đọc."""
     lines = [
@@ -464,7 +469,7 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
             "toàn nhất, dễ đảo lại, và ghi «Em giả định: …». Trừ khi chỗ đó dính tiền, công nợ, phân "
             "quyền — thì dừng và hỏi.")
     lines += [_RULES_BRIEF.format(max_files=settings.AGENT_MAX_FILES_TOUCHED, hard_extra=hard_extra,
-                                  soft_rule=soft_rule)]
+                                  soft_rule=soft_rule, migration_head=migration_head or "<đầu hiện tại>")]
     #  ai-CR-023: AI-0007 tiêu 61/80 lượt vào đọc thư viện dùng chung và màn khác rồi hết lượt.
     lines += ["", "## Ngân sách lượt",
               f"Bạn có tối đa {settings.AGENT_CODER_MAX_TURNS} lượt công cụ. Kết quả rà soát ở trên đã chỉ "
@@ -641,14 +646,20 @@ def run_gate(worktree: str, touched: list[str], *, fe_note: str = "") -> dict:
     backend = _run_backend_gate(worktree, touched)
     frontend = run_fe_gate(worktree, touched, note=fe_note)
     v1 = run_fe_v1_gate(worktree, touched)
-    states = {backend["status"], frontend["status"], v1["status"]}
+    schema = schema_change.check(worktree, touched)       # ai-CR-076: migration dịch được + đúng một đầu
+    states = {backend["status"], frontend["status"], v1["status"], schema["status"]}
     status = "fail" if "fail" in states else ("pass" if "pass" in states else "none")
     output = backend["output"]
-    for part in (frontend, v1):
+    for part in (frontend, v1, schema):
         if part["status"] == "fail":
             output = (output + "\n\n" if output else "") + part["output"]
     return {"status": status, "tests": backend["tests"], "output": output[-GATE_TAIL:],
-            "backend": backend["status"], "frontend": frontend, "frontend_v1": v1}
+            "backend": backend["status"], "frontend": frontend, "frontend_v1": v1, "schema": schema}
+
+
+def _head_of(worktree: str) -> str:
+    heads = schema_change.migration_heads(worktree)
+    return heads[0] if len(heads) == 1 else ""
 
 
 def _run_backend_gate(worktree: str, touched: list[str]) -> dict:
@@ -1413,7 +1424,8 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
             docs = memory.recall(f"{task.title}\n{task.summary}")
             images = task_images(db, task)
             try:
-                data = run_claude(worktree, build_brief(task, docs, from_scan=bool(scan_sid), images=images),
+                data = run_claude(worktree, build_brief(task, docs, from_scan=bool(scan_sid), images=images,
+                                                        migration_head=_head_of(worktree)),
                                   session_id=session_id, timeout=settings.AGENT_RUN_TIMEOUT_SEC,
                                   resume=bool(scan_sid))
             except CoderError as e:
@@ -1424,7 +1436,8 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
                 session_id = str(uuid.uuid4())
                 run.artifact = {"session_id": session_id, "resumed": False, "from_scan": False}
                 db.commit()
-                data = run_claude(worktree, build_brief(task, docs, images=images), session_id=session_id,
+                data = run_claude(worktree, build_brief(task, docs, images=images, migration_head=_head_of(worktree)),
+                                  session_id=session_id,
                                   timeout=settings.AGENT_RUN_TIMEOUT_SEC)
     except MaxTurnsError as e:
         return _stop_at_max_turns(db, task, run, worktree, session_id, e)
@@ -1593,6 +1606,7 @@ def send_compact_review_card(db: Session, task: AgentTask, *, gate: dict, escala
     else:
         if summary := report_summary(report):
             lines += [service._card_md(summary, limit=900)]
+        lines += schema_change.card_lines(gate.get("schema") or {}, esc)
         lines += [f"Đã kiểm: {esc(_gate_brief(gate))}."]
         if timing := timing_line(db, task):
             lines += [esc(timing)]
@@ -1656,6 +1670,7 @@ def send_review_card(db: Session, task: AgentTask, run: AgentRun, *, files: list
         head += [v1_line]
         if (gate.get("frontend_v1") or {}).get("status") == "fail":
             head += [f"<pre>{esc(gate['frontend_v1']['output'][-700:])}</pre>"]
+    head += schema_change.card_lines(gate.get("schema") or {}, esc)
     if timing := timing_line(db, task):
         head += [esc(timing)]
     tail = ["", "Bấm «Hỏi thêm» rồi nhắn câu hỏi: em đưa cho đúng phiên đã sửa việc này trả lời."]
@@ -1918,6 +1933,11 @@ def merge_into_base(task: AgentTask) -> str:
             pass
         raise CoderError(f"gộp {branch} vào {settings.AGENT_BASE_BRANCH} bị xung đột, cần đại ca "
                          f"gộp tay: {str(e)[:400]}") from None
+    heads = schema_change.migration_heads(wt)
+    if len(heads) > 1:
+        #  ai-CR-076: nhánh nền vừa có migration khác chen vào → gộp xong thành hai đầu = dev không khởi động được.
+        raise CoderError(f"sau khi gộp, kho có {len(heads)} đầu migration ({', '.join(heads)}) — nhánh nền vừa có "
+                         "migration khác. Em KHÔNG đẩy. Nhắn «sửa cho xanh» để bot nối lại down_revision rồi gộp lại.")
     sha = _git(wt, "rev-parse", "HEAD", timeout=60).strip()
     _push_base_branch(wt)
     return sha
@@ -2033,6 +2053,10 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
             #  Gộp từ lượt trước, nay mới deploy: HEAD của worktree gộp không còn là bản gộp này.
             paths = [f["path"] for f in _code_artifact(db, task).get("files") or []]
         services = deploy_services_for(paths)
+        if any(schema_change.is_migration(p) for p in paths):
+            art["db_backup"] = backup_dev_db(db, task)
+            run.artifact = art
+            db.commit()
         out = run_ssh(deploy_script(services))
         _raise_on_deploy_result(out)
         head = _parse_head(out)
@@ -2057,6 +2081,24 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     db.commit()
     send_deploy_card(db, task, sha=sha, services=services, health=health, reverted=False)
     return {"status": "ok", "merge_sha": sha, "services": services, "health": health}
+
+
+def backup_dev_db(db: Session, task: AgentTask) -> str:
+    """ai-CR-076: bản có migration → sao lưu CẢ DB dev trước khi deploy. Hỏng thì ném lỗi = không deploy."""
+    from . import ops, ops_runner
+
+    env = ops.env_by_name(db, "dev")
+    if env is None:
+        raise CoderError("sổ môi trường không có dev — không sao lưu được, em không deploy bản có migration")
+    try:
+        out = run_ssh(ops_runner.backup_script(task.id, env, [], tag="mig"), timeout=ops_runner.BACKUP_TIMEOUT,
+                      target=env)
+    except CoderError as e:
+        raise CoderError(f"sao lưu DB dev trước migration hỏng — em không deploy: {str(e)[:300]}") from None
+    m = re.search(r"^BACKUP=(\S+)\s*$", out, re.MULTILINE)
+    if not m:
+        raise CoderError("sao lưu DB dev trước migration không ra tệp — em không deploy")
+    return m.group(1)
 
 
 def _health_from(out: str) -> int:

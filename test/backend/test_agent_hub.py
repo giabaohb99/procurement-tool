@@ -832,7 +832,7 @@ def test_duyet_ke_hoach_dung_tep_cam_thi_khong_giao(db, bot, monkeypatch):
     monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
     dispatched: list[int] = []
     monkeypatch.setattr(coder, "dispatch", lambda tid: dispatched.append(tid))
-    task = _task_with_plan(db, service, ["backend/migrations/versions/abc_new.py"])
+    task = _task_with_plan(db, service, ["backend/app/core/permissions.py"])   # ai-CR-076: migration không còn cấm
 
     service.handle_callback(db, _callback(f"ok:{task.id}"))
     assert task.status == service.ST_NEEDS_INPUT and dispatched == []
@@ -860,7 +860,7 @@ def test_tep_cam_so_ca_duong_dan_lan_ten_tep():
 
     assert coder.is_banned_path(".env")
     assert coder.is_banned_path("./.env.production")
-    assert coder.is_banned_path("backend/migrations/versions/x.py")
+    assert not coder.is_banned_path("backend/migrations/versions/x.py")   # ai-CR-076: được viết migration
     assert coder.is_banned_path("backend/app/core/permissions.py")
     assert coder.is_banned_path("backend/.claude/rules/naming.md")
     assert coder.is_banned_path("docker/certs/server.key")
@@ -6495,3 +6495,113 @@ def test_cat_tom_tat_khong_cut_giua_chu():
     assert short_text(long, 60) == "Gán chức vụ Nhân viên (Demo) cho 10 nhân sự."
     assert short_text("một hai ba bốn năm sáu bảy tám", 15).endswith("…")
     assert not short_text("một hai ba bốn năm sáu bảy tám", 15).endswith("b…")
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-076 — bot sửa mã được đổi cấu trúc DB: một đầu migration, thẻ trình bày, sao lưu DB dev trước deploy
+# ---------------------------------------------------------------------------
+def _mig(root, name, rev, down, body="    op.add_column('tab_po', sa.Column('note2', sa.String(50), nullable=True))\n"):
+    d = root / "backend" / "migrations" / "versions"
+    d.mkdir(parents=True, exist_ok=True)
+    down_txt = repr(down) if not isinstance(down, tuple) else repr(down)
+    (d / f"{name}.py").write_text(
+        f"revision: str = '{rev}'\ndown_revision: Union[str, None] = {down_txt}\n\n"
+        f"def upgrade() -> None:\n{body}\n\ndef downgrade() -> None:\n    pass\n", encoding="utf-8")
+    return f"backend/migrations/versions/{name}.py"
+
+
+def test_migration_mot_dau_va_tom_tat_thay_doi(tmp_path):
+    from app.modules.agent_hub import schema_change as sc
+
+    _mig(tmp_path, "a1", "a1", None)
+    _mig(tmp_path, "b2", "b2", "a1")
+    assert sc.migration_heads(str(tmp_path)) == ["b2"]
+    p = _mig(tmp_path, "c3", "c3", "b2", body=(
+        "    op.add_column('tab_po', sa.Column('note2', sa.String(50), nullable=True))\n"
+        "    op.drop_column('tab_po', 'old_note')\n"
+        "    op.create_table('tab_x', sa.Column('id', sa.BigInteger()))\n"
+        "    op.alter_column('tab_po', 'code', type_=sa.String(80))\n"))
+    res = sc.check(str(tmp_path), [p])
+    assert res["status"] == "pass" and res["heads"] == ["c3"]
+    labels = [(c["label"], c["target"], c["destructive"]) for c in res["files"][0]["changes"]]
+    assert labels == [("thêm cột", "tab_po.note2", False), ("XÓA CỘT", "tab_po.old_note", True),
+                      ("tạo bảng", "tab_x", False), ("ĐỔI CỘT", "tab_po.code", True)]
+    lines = "\n".join(sc.card_lines(res, telegram.esc))
+    assert "<b>CÓ ĐỔI CẤU TRÚC DB</b>" in lines and "<b>XÓA CỘT</b> tab_po.old_note" in lines
+    assert "có thể mất dữ liệu" in lines and "sao lưu cả DB dev" in lines
+
+    #  Nối nhầm vào revision cũ → hai đầu → cổng ĐỎ.
+    p2 = _mig(tmp_path, "d4", "d4", "b2")
+    bad = sc.check(str(tmp_path), [p2])
+    assert bad["status"] == "fail" and "2 đầu migration" in bad["output"]
+    #  Lỗi cú pháp cũng đỏ.
+    p3 = _mig(tmp_path, "e5", "e5", "d4", body="    op.add_column('tab_po', (\n")
+    assert "lỗi cú pháp" in sc.check(str(tmp_path), [p3])["output"]
+    assert sc.check(str(tmp_path), ["backend/app/x.py"])["status"] == "none"
+
+
+def test_de_bai_ghi_dau_migration_va_cho_phep_doi_cau_truc(db, bot):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    task = _task_with_session(db, service, coder)
+    brief = coder.build_brief(task, [], migration_head="e8a3c5f1d7b2")
+    assert "down_revision = 'e8a3c5f1d7b2'" in brief and "ĐƯỢC đổi cấu trúc bảng" in brief
+    assert "cần migration" not in brief
+    assert not coder.is_banned_path("backend/migrations/versions/x.py")
+
+
+def test_gop_thanh_hai_dau_migration_thi_khong_day(monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    _mig(tmp_path, "a1", "a1", None)
+    _mig(tmp_path, "b2", "b2", "a1")
+    _mig(tmp_path, "c3", "c3", "a1")
+    pushed: list = []
+    monkeypatch.setattr(coder, "_merge_worktree", lambda: str(tmp_path))
+    monkeypatch.setattr(coder, "_git", lambda *a, **kw: "abc\n")
+    monkeypatch.setattr(coder, "_push_base_branch", lambda wt: pushed.append(wt))
+
+    class T:
+        code, title, branch_name = "AI-0099", "x", "bot/ai-0099-x"
+
+    with pytest.raises(coder.CoderError, match="2 đầu migration"):
+        coder.merge_into_base(T())
+    assert pushed == []
+
+
+def test_deploy_ban_co_migration_sao_luu_db_dev_truoc(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _deploy_on(monkeypatch)
+    _capture_send(monkeypatch, service)
+    _envs(db)
+    git_calls, scripts = _fake_merge_stack(monkeypatch, coder, changed=["backend/migrations/versions/x_new.py",
+                                                                        "backend/app/modules/po/model.py"])
+    monkeypatch.setattr(coder.schema_change, "migration_heads", lambda root: ["x_new"])
+
+    def fake_ssh(script, *, timeout=0, target=None, check=True):
+        scripts.append(script)
+        if "mysqldump" in script:
+            return "BACKUP=/h/agent-backups/op1-dev-20261005-101010-mig.sql.gz\n"
+        return "HEAD=abc1234def5678\n"
+
+    monkeypatch.setattr(coder, "run_ssh", fake_ssh)
+    task = _task_with_session(db, service, coder)
+    run = service._new_deploy_run(db, task, STAGE_DEPLOY, "ngay")
+    assert coder.merge_and_deploy(db, task, run)["status"] == "ok"
+    assert "mysqldump" in scripts[0] and "set -- 'dev'" in scripts[1]
+    assert run.artifact["db_backup"].endswith("-mig.sql.gz")
+
+    #  Sao lưu hỏng → không deploy.
+    def fail_ssh(script, *, timeout=0, target=None, check=True):
+        if "mysqldump" in script:
+            raise coder.CoderError("mysqldump: lỗi")
+        pytest.fail("không sao lưu được mà vẫn deploy")
+
+    monkeypatch.setattr(coder, "run_ssh", fail_ssh)
+    task2 = _task_with_session(db, service, coder)
+    run2 = service._new_deploy_run(db, task2, STAGE_DEPLOY, "ngay")
+    out = coder.merge_and_deploy(db, task2, run2)
+    assert out["status"] == "error" and "không deploy" in run2.error

@@ -61,9 +61,14 @@ leo thang**.
 **C2. Một task một nhánh.** `bot/ai-CR-<số>-<slug>`, cắt từ `erp-v2`. Không làm hai task trên
 một nhánh, không cắt nhánh từ nhánh của task khác.
 
-**C3. Không tự sinh migration.** Cần đổi cấu trúc DB thì **dừng và leo thang cho người**.
-Migration hỏng trên một cơ sở dữ liệu 141 bảng đang chạy thật là loại lỗi không cứu bằng cách
-revert commit. Đây là luật cứng nhất trong §C.
+**C3. Đổi cấu trúc DB phải trình bày và chờ duyệt** (sửa 05/10/2026, ai-CR-076 — đại ca: *"làm tính năng
+thì buộc nhiều khi cũng phải thêm xóa sửa cấu trúc db, thì nó trình bày, a duyệt thì lên thôi"*). Bản cũ
+cấm hẳn và bắt leo thang. Nay bot ĐƯỢC viết migration, kèm năm chốt thi hành trong mã (`schema_change.py`):
+`down_revision` nối đúng đầu hiện tại (ghi sẵn trong đề bài) · cổng kiểm đỏ nếu tệp lỗi cú pháp hay kho
+thành hai đầu · thẻ kết quả có mục «CÓ ĐỔI CẤU TRÚC DB», thay đổi mất dữ liệu (xóa / đổi kiểu / đổi tên /
+SQL tay) in đậm · lúc gộp kiểm lại một đầu, hai đầu thì không đẩy · trước khi deploy dev sao lưu CẢ DB dev,
+sao lưu hỏng thì không deploy. Lý do giữ chặt: migration hỏng trên 141 bảng đang chạy không cứu bằng revert;
+vụ dev sập 25/09 là do hai nhánh cùng đẻ migration.
 
 **C4. Không đổi phân quyền, không đổi `seed_prod.py`, không đổi `.github/workflows/`, không
 đổi `docker-compose.production.yml`.** Bốn thứ này chạm vào là chạm vào chính bộ máy đang canh
@@ -135,7 +140,6 @@ Một con bot được yêu cầu "đừng đọc `.env`" vẫn đọc được 
 .env  .env.*  *.pem  *.key  *.p12
 ~/.claude/.credentials.json
 backend/app/seed_prod.py
-backend/migrations/versions/*
 .github/workflows/*
 docker-compose.production.yml
 mọi thứ ngoài git worktree của task đang làm

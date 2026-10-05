@@ -22,7 +22,8 @@ BANNED_PATTERNS = (
     ".env", ".env.*",
     "*.pem", "*.key", "*.p12",
     "backend/app/seed_prod.py",
-    "backend/migrations/versions/*",          # C3: không migration
+    #  ai-CR-076: bỏ cấm `backend/migrations/versions/*` — bot được viết migration, cổng kiểm một đầu + thẻ trình bày
+    #  thay đổi cấu trúc + đại ca duyệt + sao lưu DB dev trước deploy (xem schema_change.py).
     ".github/workflows/*",                    # C4
     "docker-compose.production.yml",          # C4
     "backend/app/core/permissions.py",        # C4: không đụng phân quyền
