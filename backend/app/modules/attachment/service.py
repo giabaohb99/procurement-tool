@@ -209,9 +209,18 @@ def purge_orphan_files(db: Session, keep_days: int = ORPHAN_KEEP_DAYS) -> int:
     return len(rows)
 
 
-def delete_attachments_for(db: Session, pairs: list[tuple[str, int]]) -> int:
+def delete_attachments_for(db: Session, pairs: list[tuple[str, int]], *, commit: bool = True) -> int:
     """Xóa liên kết file (và file nếu không còn ai dùng) cho các cặp (entity, entity_id).
-    Dùng khi xóa phiếu cha."""
+    Dùng khi xóa phiếu cha.
+
+    `commit=True` mặc định — giữ hành vi cũ cho những nơi gọi đã có từ trước
+    (coi đây là MỘT giao dịch riêng của chính nó). `commit=False` cho nơi gọi
+    muốn đi CHUNG một giao dịch lớn hơn (M7, review 03/10/2026:
+    `work_history_service.delete_all_of` gọi với `commit=False` để
+    `employee_service.delete_employee` giữ đúng MỘT giao dịch — thiếu cờ này,
+    việc xóa tệp tự commit giữa chừng, và một lỗi xảy ra SAU đó trong
+    `delete_employee` chỉ rollback được phần còn lại, để tệp đã mất vĩnh viễn
+    dù hồ sơ nhân sự rốt cuộc không bị xóa)."""
     n = 0
     file_ids: set[int] = set()
     for entity, entity_id in pairs:
@@ -224,6 +233,6 @@ def delete_attachments_for(db: Session, pairs: list[tuple[str, int]]) -> int:
     db.flush()
     for fid in file_ids:
         _delete_file_if_orphan(db, fid)
-    if n or file_ids:
+    if commit and (n or file_ids):
         db.commit()
     return n

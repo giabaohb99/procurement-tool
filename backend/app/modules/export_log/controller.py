@@ -12,7 +12,7 @@ from app.core.storage import download_bytes
 from app.modules.attachment.model import StoredFile
 
 from . import service
-from .registry import EXPORT_ADAPTERS, is_exportable
+from .registry import ENTITY_LABELS_EXTRA, EXPORT_ADAPTERS, is_exportable
 
 router = APIRouter(prefix="/api/exports", tags=["export"])
 
@@ -25,7 +25,8 @@ def _content_disposition(filename: str) -> str:
 
 def _log_out(db, x) -> dict:
     return {"id": x.id, "entity": x.entity,
-            "entity_label": EXPORT_ADAPTERS.get(x.entity, {}).get("label", x.entity),
+            "entity_label": (EXPORT_ADAPTERS.get(x.entity, {}).get("label")
+                             or ENTITY_LABELS_EXTRA.get(x.entity, x.entity)),
             "module": EXPORT_ADAPTERS.get(x.entity, {}).get("module", ""),
             "fmt": x.fmt, "row_count": x.row_count, "filename": x.filename,
             "file_size": x.file_size, "has_file": bool(x.file_id), "filter_summary": x.filter_summary,

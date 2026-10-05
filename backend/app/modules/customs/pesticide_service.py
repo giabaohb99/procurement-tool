@@ -102,7 +102,7 @@ def replace_catalog(db: Session, records: list[dict], user_id: int, filename: st
            f"{f', giữ {kept} thuốc tự thêm' if kept else ''}")
     db.commit()
     return {"pesticides": len(records), "uses": len(uses), "kept_manual": kept,
-            "dropped": len(dropped), "retag": retag}
+            "dropped": len(dropped), "retag": retag, "mode": "replace"}
 
 
 def _filtered(db: Session, query, q: str, status: int | None, pest_group: str, sector: str,
@@ -122,6 +122,17 @@ def _filtered(db: Session, query, q: str, status: int | None, pest_group: str, s
     if banned_ids is not None:
         query = query.filter(CustomsPesticide.id.in_(banned_ids) if banned_ids else false())
     return query
+
+
+def export_query(db: Session, q: str, status: int | None, pest_group: str, sector: str,
+                 banned_only: bool = False, banned_regulation_id: int | None = None):
+    """Câu truy vấn đã LỌC + SẮP XẾP giống đúng `list_pesticides` (chưa phân trang) — dùng lại
+    cho `scope=page` của màn xuất Excel (`pesticide_export_service`, 02/10/2026) để trang xuất
+    ra luôn khớp đúng trang người dùng đang xem, không chép lại logic lọc ở hai nơi."""
+    matcher = banned_match.load_matcher(db)
+    banned_ids = _banned_ids(db, matcher, banned_only, banned_regulation_id)
+    return (_filtered(db, db.query(CustomsPesticide), q, status, pest_group, sector, banned_ids)
+            .order_by(CustomsPesticide.trade_name, CustomsPesticide.id))
 
 
 def _banned_ids(db: Session, matcher: "banned_match.BannedIngredientMatcher", banned_only: bool,

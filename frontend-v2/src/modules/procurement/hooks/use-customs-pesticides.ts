@@ -84,5 +84,8 @@ export function usePesticidePermissions() {
     canDelete: can('customs_pesticide', 'delete'),
     //  Nạp lại cả danh mục = ghi đè hàng nghìn thuốc → cùng mức `write`.
     canImport: can('customs_pesticide', 'write'),
+    //  Xuất Excel dùng chung khóa `customs_price.export` với thẻ Danh sách — KHÁC quyền sửa
+    //  danh mục thuốc (`customs_pesticide`) vì xem/xuất không nhất thiết đi cùng quyền sửa.
+    canExport: can('customs_price', 'export'),
   }
 }

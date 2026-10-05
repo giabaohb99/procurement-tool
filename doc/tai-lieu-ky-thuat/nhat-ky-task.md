@@ -100,6 +100,121 @@ Commit: erp-v2 `53ee8f92`. Deploy: DEV + PROD 05/10/2026, main `a4a4a024` (cherr
 
 ---
 
+## bao-CR-591 | Nhà máy Dego Organic thôi tự mua, trả về phòng Sản xuất - Thu mua xử lý hết
+- status: xong
+- date: 2026-10-05
+Cấp trên chốt nhà máy chưa tách riêng nữa: mọi yêu cầu của nhà máy quay về phòng Sản xuất - Thu mua (PBA017) xử lý như
+trước. Việc làm trên prod, chỉ đổi vai trò, phạm vi và dữ liệu, không đổi mã nguồn. Cơ chế: phòng tự mua được nhận ra
+nhờ có người giữ phạm vi «phòng tự mua» trên YCMH; gỡ hết vai trò cấp phòng thì phiếu mới của nhà máy tự về thu mua chung.
+
+Khảo sát prod ngày 05/10 (chỉ đọc): ba người giữ vai trò cấp phòng là Nguyễn Thanh Phương (Admin thu mua phòng, kèm
+«Nhân viên thu mua nhà máy»), Đoàn Minh Khôi và Nguyễn Thị Kiều Trang (Quản lý thu mua phòng); Lê Phú Ngoan chỉ còn vai
+trò nhân viên. Châu Phúc Hậu (Admin thu mua) và một tài khoản quản lý thu mua đang bị loại trừ phòng Dego Organic nên
+không thấy phiếu nhà máy. Phiếu đang mở của nhà máy: 3 YCMH (PYC01102601, PYC01102604, PYC02102602) và 2 đơn mua hàng
+chờ duyệt (PO00349 người duyệt là anh Khôi, PO00358 người duyệt đã là chị Lê Thị Ngọc Mi); không có YCBG, công nợ, YCTT
+hay phân công riêng của nhà máy. Công tắc duyệt lần hai (điều phối) của YCMH đang bật, áp cho mọi phòng.
+
+Việc dự kiến, chờ đại ca chốt: đổi vai trò (Phương thành Nhân viên thu mua, Trang thành Admin thu mua, anh Khôi chỉ giữ
+Trưởng bộ phận), gỡ loại trừ phòng Dego Organic của bộ thu mua chung, chuyển phòng xử lý 3 YCMH và 2 đơn sang PBA017
+(giữ người phụ trách dòng), đổi người duyệt PO00349 sang chị Ngọc Mi, và tắt công tắc duyệt lần hai.
+
+Đại ca chốt cùng ngày: chị Nguyễn Thanh Phương đại ca đã tự đổi thành vai trò Nhân sự; chị Trần Diễm Phương giữ nguyên;
+duyệt điều phối GIỮ (không tắt công tắc); điều kiện bỏ qua điều phối cho nhà máy nếu có thì tắt, kiểm thì ô điều kiện
+trên prod đang trống nên không có gì để tắt; làm thẳng trên prod. Em đã sao lưu prod
+(`~/proc_backups/procurement_truoc_cr591_nha_may_20261005_0934.sql.gz`) và chạy thử phần chuyển phiếu, kết quả khớp.
+Phần đổi vai trò, phạm vi và lệnh áp chuyển phiếu bị bộ chặn tự động của em từ chối, nên em chuyển cho đại ca tự bấm
+trên màn Phân quyền tài khoản và tự chạy lệnh áp; chưa có gì đổi trên prod ngoài bản sao lưu.
+
+Việc gom này chỉ TẠM tới hết tháng 10/2026, đầu tháng 11 tách lại như bao-CR-414 (đại ca nhắn qua Agent 1). Vì vậy
+dưới đây là TRẠNG THÁI CŨ trên prod, chụp lúc khảo sát sáng 05/10 trước mọi thay đổi, để khôi phục:
+
+Vai trò và phạm vi (user id · mã · tên: vai trò; dòng phạm vi theo vai trò):
+- 45 · NSU014 · Nguyễn Thanh Phương: employee, pur_dept_admin «Admin thu mua phòng», pur_staff_degooranic «Nhân viên
+  thu mua nhà máy»; phạm vi: vai trò 15 (pur_admin) chỉ thấy phòng 5, vai trò 81 (pur_staff_degooranic) chỉ thấy phòng 5.
+  Đại ca đã tự đổi còn mỗi «Nhân sự» trong ngày 05/10.
+- 36 · NSU005 · Đoàn Minh Khôi: dept_head, pur_dept_manager «Quản lý thu mua phòng».
+- 47 · NSU016 · Nguyễn Thị Kiều Trang: cost_factory, employee, pur_dept_manager; phạm vi: vai trò 10 chỉ thấy phòng 5
+  (dòng mồ côi của vai trò đã gỡ từ 01/10).
+- 41 · NSU010 · Lê Phú Ngoan: employee (không đổi).
+- 250 · NSU232 · Châu Phúc Hậu: pur_admin; phạm vi: vai trò 15 LOẠI TRỪ phòng 5.
+- 15 · NSU215 · Phạm Khánh Ngân: pur_manager, pur_staff; phạm vi: vai trò 14 LOẠI TRỪ phòng 5, vai trò 13 LOẠI TRỪ phòng 5.
+- 43 · NSU012 · Trần Diễm Phương: pur_admin, pur_staff; phạm vi: vai trò 15 và 13 chỉ thấy phòng 5 (giữ nguyên).
+- Mã vai trò: 13 pur_staff, 14 pur_manager, 15 pur_admin, 81 pur_staff_degooranic, 82 pur_dept_manager,
+  84 pur_dept_staff, 85 pur_dept_admin.
+
+Phiếu và cấu hình:
+- Phòng 5 = PBA002 Dego Organic, trưởng phòng nhân sự 27 (Đoàn Minh Khôi); phòng 20 = PBA017 Sản xuất - Thu mua,
+  trưởng phòng nhân sự 163 (Lê Thị Ngọc Mi).
+- YCMH phòng xử lý 5: id 207 PYC01102601 (processing), 210 PYC01102604 (dispatched), 221 PYC02102602 (processing); cả
+  ba do Lê Phú Ngoan lập, TBP và người duyệt là nhân sự 27, dòng giao NSU012.
+- ĐMH phòng xử lý 5: id 349 PO00349 (submitted, người duyệt nhân sự 27), 358 PO00358 (submitted, người duyệt 163); cả
+  hai NSPT nhân sự 34 Trần Diễm Phương. Thêm id 367 PO00367 (Nháp, chị Trần Diễm Phương lập 09:39 ngày 05/10, phòng
+  lập 5, phòng xử lý 5, chưa có người duyệt) — lập sau lượt chạy thử nên cũng được chuyển.
+- Không có YCBG, công nợ, YCTT hay dòng phân công NSTM nào của phòng 5.
+- Cấu hình: pr_dispatch_enabled = bật (GIỮ, không tắt), pr_dispatch_skip_rules = trống, central_purchasing_dept_code =
+  PBA017, pr_options_enabled = tắt.
+
+Khôi phục đầu tháng 11: gán lại vai trò và dòng phạm vi như trên; phiếu nhà máy lập trong tháng 10 sẽ nằm ở phòng xử lý
+Sản xuất - Thu mua, lúc tách lại phải quyết chuyển những phiếu nào về phòng 5 (script `backfill_handling_dept.py` chỉ
+xử lý phiếu có phòng xử lý 0, không tự kéo phiếu đã ở phòng 20).
+
+Đã áp trên PROD 05/10 lúc 09:40-09:45: đại ca giao trực tiếp cho Agent 1, Agent 1 sao lưu thêm
+`~/proc_backups/procurement_truoc_cr591_ap_20261005_0940.sql.gz` rồi chạy. Phiếu: 3 YCMH và 3 ĐMH (PO00349, PO00358,
+PO00367) sang phòng xử lý 20, PO00349 người duyệt sang chị Ngọc Mi, mỗi phiếu có dòng lịch sử «Chuyển phòng xử lý».
+Vai trò: chị Kiều Trang thành Admin thu mua (giữ Giá vốn nhà máy, Nhân sự), anh Khôi chỉ còn Trưởng bộ phận. Phạm vi:
+bỏ ba dòng loại trừ phòng Dego Organic của Hậu và chị Ngân. Không đụng công tắc điều phối. Em đọc lại prod: không còn
+phòng tự mua nào, không còn phiếu hay dòng loại trừ nào trỏ phòng 5, điều phối vẫn bật. Người được đổi quyền phải
+đăng xuất rồi đăng nhập lại.
+
+---
+
+## bao-CR-589 | «Bỏ lọc» ở khối tra kho khảo sát về phân loại của dòng, gộp nút «Về phân loại dòng»
+- status: xong
+- date: 2026-10-05
+Đại ca chốt: bấm «Bỏ lọc» ở màn xử lý phương án thì về phân loại của dòng để vẫn thấy kết quả, không về câu gợi ý trống
+như bản bao-CR-586. Nay nút đưa ba ô về mặc định: tất cả nhà cung cấp, phân loại của dòng, bỏ từ khóa, và về trang 1;
+nút chỉ hiện khi bộ lọc lệch mặc định. Nút «Về phân loại dòng» trước đây làm một phần việc đó nên gộp vào luôn, thanh
+lọc còn một nút. Dòng không có phân loại thì mặc định là không điều kiện, màn vẫn hiện câu gợi ý như cũ vì hệ thống không
+liệt kê cả kho khảo sát. Chỉ đổi giao diện ERP v2.
+
+Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm ở purchase-request-process-card.test.tsx.
+Kiểm: tsc 0 lỗi, eslint sạch, 14 bài của màn xử lý xanh.
+Commit: 32dcd96d (chung với bao-CR-580) trên erp-v2.
+Deploy: DEV 05/10 (erp). Prod chưa.
+
+---
+
+## bao-CR-580 | Xóa YCMH sinh từ YCBG thì YCBG gỡ liên kết tới nó
+- status: xong
+- date: 2026-10-05
+Đại ca báo trên YCBG, YCMH tạo ra rồi xóa đi vẫn còn hiện. Nguyên nhân: xóa YCMH chỉ đánh dấu phiếu là đã xóa, còn dây
+nối giữa YCBG và YCMH cùng dấu trên dòng YCBG giữ nguyên, nên YCBG vẫn bày mã YCMH đó ở phương án, vẫn đứng ở «Đã tạo
+YCMH», cờ đã sinh YCMH trên dòng vẫn khóa chuyển phòng và trả về, và việc tự hoàn thành YCBG vẫn chờ cả phiếu đã xóa.
+Ngày 05/10 đại ca chốt sửa phần này; phần nới «Trả về» cho YCBG đã duyệt thì không làm, vì trả về ở YCMH là đủ.
+
+Nay xóa YCMH (xóa một phiếu hay xóa nhiều phiếu nháp) thì YCBG tự gỡ liên kết: bỏ dây nối của YCMH đó; dòng YCBG đang
+trỏ tới nó thì trỏ về YCMH gần nhất còn lại của dòng (trường hợp mua lại nhiều lần), không còn thì xóa dấu và gỡ cờ đã
+sinh YCMH, trừ dòng người yêu cầu đã chốt Hoàn thành bằng tay. YCBG «Đã tạo YCMH» không còn YCMH nào thì về «Đã khảo
+sát»; còn YCMH thì xét lại việc tự hoàn thành như luật cũ; YCBG đã «Hoàn thành» giữ nguyên. YCBG có dòng lịch sử
+«Gỡ liên kết YCMH đã xóa» ghi rõ mã phiếu. Phương án đã chọn lúc tạo YCMH vốn đã tự bỏ chọn, muốn mua lại thì chọn lại
+như thường. Dữ liệu cũ (YCMH xóa trước bản vá) dọn bằng script, chạy thử trước được; trên máy local có 2 phiếu như vậy.
+
+Cùng đợt: khai nhãn tiếng Việt cho ba mã hành động còn thiếu trong bộ mã nhật ký (đổi mã VTBB của bao-CR-568, sửa
+thông tin phương án và khôi phục phương án 0 của bao-CR-583), trước đó dòng lịch sử hiện mã tiếng Anh trần.
+
+Mã nguồn: `survey_request/service.py` (`unlink_deleted_pr`, `unlink_deleted_prs`, `list_deleted_linked_prs`,
+`_auto_complete_sr` tách từ `auto_complete_from_pr`), `purchase_request/service.py` (`delete_pr`),
+`survey_request/controller.py` (`_out_result` bỏ YCMH đã xóa), `core/action_catalog.py`,
+`backend/scripts/unlink_deleted_pr_cr580.py`.
+Kiểm: 10 bài mới `test_xoa_ycmh_go_lien_ket_ycbg_cr580.py` xanh, 216 bài các tệp liên quan xanh. Bài canh bộ mã hành
+động còn đỏ một chỗ không phải của em: `employee/work_history_controller.py::_audit` (duoc-CR-585).
+Commit: 32dcd96d trên erp-v2.
+Deploy: DEV 05/10 (api, celery-worker, celery-beat, erp; không có migration); đã chạy script dọn trên dev, gỡ 2 YCMH cũ
+PYC08072601 và PYC08072602, hai YCBG YCKS08072601 và YCKS08072603 về «Đã khảo sát». Prod chưa; prod không có dữ liệu cũ
+cần dọn (đã đếm 05/10).
+
+---
+
 ## bao-CR-588 | Bật luồng duyệt cấu hình cho Đặt xe và Duyệt dấu trên prod, chạy thử đồng bộ app cũ
 - status: xong
 - date: 2026-10-05
@@ -172,12 +287,18 @@ Triển khai lịch sử công tác ghi tay theo từng người, tệp quyết 
 
 Sau khi đại ca xem bản đầu, tab đổi tên thành «Quá trình công tác & Quyết định» và chia hai khu dùng chung một nguồn dữ liệu: khu «Quyết định bổ nhiệm» ở trên chỉ gồm các dòng có số quyết định (số, ngày ký, loại, nội dung tóm tắt, ngày hiệu lực, tệp), khu «Quá trình công tác» ở dưới gồm mọi dòng. Mỗi khu có nút chuyển giữa dạng bảng và dạng dòng thời gian (mốc mới nhất ở trên, dòng đang hiệu lực có nhãn «Hiện tại»), lựa chọn giữ trên đường dẫn; trang cá nhân hiện y như vậy nhưng chỉ đọc. Bài rà soát mã tìm ra và đã sửa: nút áp vào hồ sơ trên từng dòng chạy thẳng không hỏi (kể cả dòng thôi việc), máy chủ lấy ngày hôm nay theo giờ quốc tế thay vì giờ Việt Nam, gửi ô bắt buộc rỗng làm lỗi máy chủ, xóa dòng là đường vòng qua quyền xem tệp nhạy cảm. Đã thử trên trình duyệt ở máy em cả hai dạng xem với dữ liệu mẫu; chưa thử bấm lưu và áp hồ sơ trên trình duyệt, chưa deploy.
 
-Đại ca xem lại thấy gom hai khu vào một tab khó nhìn, nên chốt TÁCH thành hai tab riêng đứng cạnh nhau: «Quá trình công tác» (mọi dòng, có thao tác, giữ đúng giá trị tab cũ để đường dẫn cũ không gãy) và «Quyết định bổ nhiệm» (chỉ dòng có số quyết định, chỉ xem — rỗng thì có nút nhảy sang tab «Quá trình công tác» nếu còn quyền sửa). Hai tab vẫn dùng chung một lần gọi dữ liệu nhờ bộ nhớ đệm của thư viện truy vấn, không gọi máy chủ hai lần. Mỗi tab tự giữ lựa chọn bảng/dòng thời gian trên đường dẫn như cũ. Ở trang cá nhân, hai khu nay là hai tab con bên trong thẻ, vẫn chỉ xem. Kiểm kiểu 0 lỗi, eslint 0 lỗi, 753 bài kiểm xanh trong các thư mục liên quan. Chưa commit, chưa deploy.
+Đại ca xem lại thấy gom hai khu vào một tab khó nhìn, nên chốt TÁCH thành hai tab riêng đứng cạnh nhau: «Quá trình công tác» (mọi dòng, có thao tác, giữ đúng giá trị tab cũ để đường dẫn cũ không gãy) và «Quyết định bổ nhiệm» (chỉ dòng có số quyết định, chỉ xem — rỗng thì có nút nhảy sang tab «Quá trình công tác» nếu còn quyền sửa). Hai tab vẫn dùng chung một lần gọi dữ liệu nhờ bộ nhớ đệm của thư viện truy vấn, không gọi máy chủ hai lần. Mỗi tab tự giữ lựa chọn bảng/dòng thời gian trên đường dẫn như cũ. Ở trang cá nhân, hai khu nay là hai tab con bên trong thẻ, vẫn chỉ xem. Kiểm kiểu 0 lỗi, eslint 0 lỗi, 753 bài kiểm xanh trong các thư mục liên quan. Bản này đã commit trên erp-v2 ngày 03/10 (e5f3a510) và đã lên dev cùng lượt; đợt deploy prod chiều 03/10 bỏ qua vì đại ca chưa duyệt.
+
+Chiều 03/10, theo góp ý tiếp của đại ca: hai khu gom tiêu đề, nút chuyển bảng/dòng thời gian, Tải lại, Cột và nút thêm về chung một hàng; tab «Quyết định bổ nhiệm» có nút «+ Thêm quyết định» mở thẳng hộp thêm với loại Bổ nhiệm và Số QĐ bắt buộc, thay cho nút nhảy sang tab kia; mốc dòng thời gian của quyết định không có ngày ký thì hiện «Hiệu lực …»; hộp tệp và hộp xem trước chặn sự kiện gửi biểu mẫu lan ra biểu mẫu của trang hồ sơ.
+
+Sáng 05/10 bấm thử trọn luồng trên trình duyệt với nhân sự mẫu DEMOTP3 ở máy local: thêm dòng không đổi gì thì chỉ lưu, không hỏi; Điều chuyển sang phòng khác thì hỏi rồi áp vào hồ sơ, tự đóng dòng chính cũ, biểu mẫu của trang nạp lại phòng mới nên bấm «Lưu» trang sau đó không ghi đè ngược; «+ Thêm quyết định» bỏ trống Số QĐ thì báo lỗi ngay; chuỗi hộp Sửa → Tệp quyết định → Xem trước → Tải về / Mở tab mới không bắn lượt lưu hồ sơ nào; Thôi việc hỏi bằng hộp riêng, chuyển hồ sơ sang nghỉ việc và khóa tài khoản; trang cá nhân hiện hai tab chỉ xem. Lượt thử bắt được một lỗi và đã sửa: nhập bù một dòng chính cũ hơn (Bổ nhiệm 03/10 nhập sau Điều chuyển 04/10) thì cả hai dòng cùng «Đang hiệu lực», còn dòng có ngày bắt đầu ở tương lai cũng bị báo đang hiệu lực. Nay máy chủ coi dòng nhóm chính đã bị dòng nhóm chính mới hơn (đã tới ngày) thay thế là hết hiệu lực, đường trả về một dòng sau khi lưu cũng tính trên mọi dòng của nhân sự; cột «Đến ngày» của bảng đọc chung cờ đó với huy hiệu «Hiện tại» ở dòng thời gian, dòng chưa tới ngày hiện «Chưa hiệu lực». Kiểm: 11 bài kiểm máy chủ mới, cả cụm quá trình công tác 105 bài xanh; frontend kiểm kiểu 0 lỗi, eslint 0 lỗi, 793 bài kiểm nhân sự và trang cá nhân xanh. Dữ liệu thử đã dọn, DEMOTP3 về đúng trạng thái cũ. Đã commit trên erp-v2 (14172791), chưa deploy.
 
 Mã nguồn:
 - Backend: `backend/app/modules/employee/work_history_{model,schema,service,apply_service,rules,serializer,access,controller}.py` · `backend/app/core/hr_work_history_codes.py` · 1 migration `wkhist01_...` · sửa `main.py`, `code_sets.py`, `all_models.py`, `file_registry.py`, `attachment_scope.py`
 - Frontend: `frontend-v2/src/modules/hr/{types/employee-work-history,api/employee-work-history-api,hooks/use-employee-work-history*,schemas/employee-work-history-schema,config/employee-work-history-columns,components/employee-{tab-work-history,work-history-form-dialog*,work-history-files-dialog,work-history-resign-confirm-dialog}}` · `frontend-v2/src/app/components/profile/profile-work-history-card.tsx` · sửa `app/pages/profile-page.tsx`, `shared/constants/query-keys.ts`
-- Test: `test/backend/test_qua_trinh_cong_tac_{quyen,ap_ho_so,kiem_du_lieu,thoi_viec}.py`
+- Test: `test/backend/test_qua_trinh_cong_tac_{quyen,ap_ho_so,kiem_du_lieu,thoi_viec,dang_hieu_luc}.py`
+- Sửa 05/10: `work_history_rules.py` (`compute_is_current`), `work_history_serializer.py`, `config/employee-work-history-columns.tsx`, `utils/employee-work-history-display.ts` (`workHistoryOpenEndLabel`)
+- Commit: erp-v2 `e5f3a510` (bản 03/10), `14172791` (thêm quyết định, gom thanh điều khiển, sửa «Đang hiệu lực» 05/10)
 - Tài liệu: `doc/erp/hrm/01-ho-so-nhan-su.md`, `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md`, `.claude/rules/hr-employee-profile.md`, `doc/tai-lieu-ky-thuat/change-log.md`
 
 ---
@@ -289,24 +410,6 @@ ra tệp rồi xóa hẳn trong một giao dịch; nhật ký thao tác được
 
 Mã nguồn: script tạm `prod_sr2752_delete.py` (không commit) · sao lưu `~/proc_backups/sr2752_ycbg03102601_truoc_xoa_20261003_110320.json`
 Deploy: dữ liệu prod 03/10 11:03.
-
----
-
-## bao-CR-580 | Ghi nhận: YCMH đã xóa vẫn nối với YCBG, và luật trả về YCBG còn chặt
-- status: open
-- date: 2026-10-03
-Đại ca báo trên YCBG, YCMH tạo ra rồi xóa đi vẫn còn hiện. Nguyên nhân: xóa YCMH chỉ đánh dấu phiếu là đã xóa, dây nối
-giữa YCBG và YCMH vẫn giữ nguyên, nên YCBG vẫn hiện YCMH đó, vẫn coi là đã sinh YCMH (chặn nút Trả về và chuyển phòng), và
-việc tự hoàn thành YCBG cũng chờ cả YCMH đã xóa. YCBG và đơn mua hàng thì xóa hẳn nên không bị. Đại ca cũng muốn YCBG, YCMH
-đã duyệt hoặc đã điều phối vẫn trả về được kèm lý do: YCMH đã có từ bao-CR-554, còn YCBG đang chặn khi có dòng hoàn thành,
-đã chọn phương án hoặc đã sinh YCMH.
-
-Đề xuất chờ đại ca chốt: (1) xóa YCMH thì gỡ dây nối, ghi lịch sử bên YCBG, YCBG không còn YCMH đang sống thì quay về trạng
-thái trước «Đã tạo YCMH», và lọc YCMH đã xóa ở mọi chỗ hiện liên kết; (2) nới luật trả về YCBG, chỉ chặn khi còn YCMH đang
-sống, trả về thì bỏ chọn phương án và mở lại các dòng, bắt buộc nhập lý do. Đại ca bảo ghi lại, chưa làm.
-
-Mã nguồn: `backend/app/modules/purchase_request/service.py` (`delete_pr`), `survey_request/service.py` (`can_transfer_dept`,
-`auto_complete_from_pr`), `survey_request/controller.py` (`ycmh_list`).
 
 ---
 
@@ -1033,7 +1136,8 @@ số tài khoản) vẫn ghi đủ giá trị, vì đổi tài khoản nhận ti
 Dòng nhật ký ghi trước ngày 02/10 vẫn còn nguyên văn, chưa dọn.
 
 Kiểm: 43 bài kiểm máy chủ mới (chạy trên mã cũ thì 22 bài đỏ đúng ở chỗ lộ), cùng các bài kiểm nhật ký và
-hồ sơ nhân sự hiện có, tổng 768 bài xanh. Chưa commit.
+hồ sơ nhân sự hiện có, tổng 768 bài xanh. Đã commit trên erp-v2 ngày 03/10 (cb9bc13a), đã lên dev;
+chưa lên prod vì đại ca chưa duyệt.
 
 Mã nguồn: backend `core/logging_policy.py` (`sensitive_keys_for_path`, `mask_payload`),
 `core/request_middleware.py`, `core/change_tracker.py` (`TABLE_FIELD_ALLOWLIST`, `_table_field_denylist`) ·

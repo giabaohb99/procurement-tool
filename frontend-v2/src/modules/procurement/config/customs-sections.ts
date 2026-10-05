@@ -23,9 +23,11 @@ export const CUSTOMS_SECTIONS = [
   { key: 'chart', label: 'Biểu đồ', icon: ChartLine, tabbed: true },
   { key: 'importers', label: 'Doanh nghiệp', icon: Factory, tabbed: true },
   { key: 'compare', label: 'So sánh', icon: GitCompareArrows, tabbed: true },
-  //  29/09/2026 — «Pháp lý & thuế» chia đôi. Khóa `legal` giữ cho mục Pháp lý (bảng duyệt hóa chất
-  //  theo văn bản) để link cũ `/legal` / `?tab=legal` vẫn rơi đúng chỗ người ta đi tìm pháp lý.
-  { key: 'legal', label: 'Pháp lý', icon: Scale, tabbed: false },
+  //  29/09/2026 — «Pháp lý & thuế» chia đôi. Khóa `legal` giữ cho mục này (bảng duyệt hóa chất
+  //  theo văn bản) để link cũ `/legal` / `?tab=legal` vẫn rơi đúng chỗ.
+  //  03/10/2026 — đổi tên hiển thị «Pháp lý» → «Tra cứu hóa chất» (khóa `legal` + đường dẫn
+  //  GIỮ NGUYÊN).
+  { key: 'legal', label: 'Tra cứu hóa chất', icon: Scale, tabbed: false },
   { key: 'tariff', label: 'Thuế', icon: Percent, tabbed: true },
   //  29/09/2026 — danh mục thuốc BVTV (bản cào danhmuc.thuocbvtv.com), có nạp tệp trên màn.
   { key: 'pesticides', label: 'Thuốc BVTV', icon: Sprout, tabbed: false },

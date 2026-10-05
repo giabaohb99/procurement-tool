@@ -1,5 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckSquare, History, KeyRound, LifeBuoy, MonitorSmartphone, Palette, Send, User } from 'lucide-react'
+import {
+  Bell,
+  CheckSquare,
+  FileCheck2,
+  History,
+  KeyRound,
+  LifeBuoy,
+  MonitorSmartphone,
+  Palette,
+  Send,
+  User,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -13,6 +24,8 @@ import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
 import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
+import { ProfileWorkDecisionsTab } from '@/app/components/profile/profile-work-decisions-tab'
+import { ProfileWorkHistoryTab } from '@/app/components/profile/profile-work-history-tab'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
 import { ProfileTelegramTab } from '@/app/components/profile/profile-telegram-tab'
@@ -41,6 +54,9 @@ import { cn } from '@/shared/utils/cn'
  *
  * Gồm dải tab chuẩn:
  * - Tab "Thông tin cá nhân": Xem hồ sơ, đổi chữ ký, đổi mật khẩu.
+ * - Tab "Quá trình công tác" và "Quyết định bổ nhiệm" (đại ca chốt 03/10/2026
+ *   — tách từ tab con lồng trong thẻ cuối tab «Thông tin cá nhân»): CHỈ ĐỌC,
+ *   ẨN khi tài khoản chưa gắn hồ sơ nhân sự (`employee_id = 0`).
  * - Tab "Việc cần làm": Việc đang chờ xử lý (chứng từ chờ duyệt, YCMH, YCBG, ĐMH,
  *   giao trễ, công nợ) — CR-215 gom luôn "Chờ tôi duyệt" vào đây.
  * - Tab "Thông báo": Bản đầy đủ của chuông thông báo (thay trang /notifications cũ).
@@ -61,25 +77,37 @@ export function ProfilePage() {
   const { data: bellData } = useNotifications(false)
   const unreadCount = bellData?.unread ?? 0
 
+  //  Hồ sơ nhân sự đầy đủ (hơn 30 trường) — `/api/auth/me` chỉ trả bộ rút
+  //  gọn đủ dựng menu và chữ ký, không có ngày sinh / ngân hàng / giấy tờ.
+  //  Lấy lên ĐẦU hàm (trước `activeTab`) vì hai tab Quá trình công tác / Quyết
+  //  định bổ nhiệm cũng gác theo cờ này — tài khoản chưa gắn hồ sơ (admin, tài
+  //  khoản hệ thống) thì KHÔNG bày hai tab đó ra, cùng luật với `ProfileLeaveCard`.
+  const { data: myEmployee } = useMyEmployee()
+  const hasEmployeeProfile = Boolean(myEmployee)
+
   const rawTab = searchParams.get('tab')
   const activeTab =
-    rawTab === 'tasks'
-      ? 'tasks'
-      : rawTab === 'notifications'
-        ? 'notifications'
-        : rawTab === 'appearance'
-          ? 'appearance'
-          : rawTab === 'devices'
-            ? 'devices'
-            : rawTab === 'login-history'
-              ? 'login-history'
-              : rawTab === 'telegram'
-                ? 'telegram'
-              : rawTab === 'ai-key'
-                ? 'ai-key'
-              : rawTab === 'tickets' && canReadTickets
-                ? 'tickets'
-                : 'info'
+    rawTab === 'work-history' && hasEmployeeProfile
+      ? 'work-history'
+      : rawTab === 'decisions' && hasEmployeeProfile
+        ? 'decisions'
+        : rawTab === 'tasks'
+          ? 'tasks'
+          : rawTab === 'notifications'
+            ? 'notifications'
+            : rawTab === 'appearance'
+              ? 'appearance'
+              : rawTab === 'devices'
+                ? 'devices'
+                : rawTab === 'login-history'
+                  ? 'login-history'
+                  : rawTab === 'telegram'
+                    ? 'telegram'
+                  : rawTab === 'ai-key'
+                    ? 'ai-key'
+                  : rawTab === 'tickets' && canReadTickets
+                    ? 'tickets'
+                    : 'info'
 
   const handleTabChange = (val: string) => {
     setSearchParams(val === 'info' ? {} : { tab: val }, { replace: true })
@@ -95,10 +123,6 @@ export function ProfilePage() {
   }, [data, setUser])
 
   const profile = data ?? user
-
-  //  Hồ sơ nhân sự đầy đủ (hơn 30 trường) — `/api/auth/me` chỉ trả bộ rút
-  //  gọn đủ dựng menu và chữ ký, không có ngày sinh / ngân hàng / giấy tờ.
-  const { data: myEmployee } = useMyEmployee()
 
   return (
     <PageContainer className="mx-auto w-full max-w-5xl">
@@ -151,6 +175,24 @@ export function ProfilePage() {
                 <User className="size-4" />
                 <span>Thông tin cá nhân</span>
               </TabsTrigger>
+              {/*  Hai tab CHỈ ĐỌC của quá trình công tác (đại ca chốt
+                   03/10/2026 — trước đó lồng làm tab con trong thẻ cuối tab
+                   «Thông tin cá nhân», không ai thấy). Ẩn hẳn khi tài khoản
+                   chưa gắn hồ sơ nhân sự (`employee_id = 0`, vd admin/tài
+                   khoản hệ thống) — cùng luật `{myEmployee && ...}` của
+                   `ProfileLeaveCard`/`ProfileEmergencyContacts`. */}
+              {hasEmployeeProfile && (
+                <>
+                  <TabsTrigger value="work-history" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                    <History className="size-4" />
+                    <span>Quá trình công tác</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="decisions" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                    <FileCheck2 className="size-4" />
+                    <span>Quyết định bổ nhiệm</span>
+                  </TabsTrigger>
+                </>
+              )}
               <TabsTrigger value="tasks" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <CheckSquare className="size-4" />
                 <span>Việc cần làm</span>
@@ -289,6 +331,22 @@ export function ProfilePage() {
                 )
               )}
             </TabsContent>
+
+            {/*  Hai tab chính CHỈ ĐỌC — gác lại ở đây cho chắc (trigger đã ẩn
+                 ở trên khi `!hasEmployeeProfile`, nhưng `activeTab` đã chặn
+                 giá trị này lọt vào khi không có hồ sơ, xem khối tính
+                 `activeTab`). */}
+            {hasEmployeeProfile && (
+              <>
+                <TabsContent value="work-history" className="space-y-4">
+                  <ProfileWorkHistoryTab />
+                </TabsContent>
+
+                <TabsContent value="decisions" className="space-y-4">
+                  <ProfileWorkDecisionsTab />
+                </TabsContent>
+              </>
+            )}
 
             <TabsContent value="tasks" className="space-y-4">
               <ProfileTasksTab onCountChange={setTaskCount} />

@@ -68,6 +68,7 @@ import { CUSTOMS_LINE_COLUMNS } from '../config/customs-line-columns'
 import {
   buildCustomsSectionPath,
   CUSTOMS_SECTIONS,
+  CUSTOMS_TAB_GROUP_LABEL,
   CUSTOMS_TAB_SECTIONS,
   isCustomsTabSection,
   type CustomsSectionKey,
@@ -352,9 +353,10 @@ export function CustomsPricePage() {
   return (
     <PageContainer className="flex flex-col gap-3">
       <PageHeader
-        title={
-          isCustomsTabSection(tab) ? 'Tra cứu thị trường' : `Tra cứu thị trường — ${current.label}`
-        }
+        //  03/10/2026 — tiêu đề = ĐÚNG tên mục đang sáng ở menu trái (năm thẻ tra giá →
+        //  «Giá thị trường»). Ngữ cảnh «Tra cứu thị trường» nằm ở breadcrumb cấp hai, ghép
+        //  thêm vào đây là lặp lại chính dòng ngay trên.
+        title={isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : current.label}
         description="Giá thị trường theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
         actions={
           <>
@@ -583,7 +585,7 @@ export function CustomsPricePage() {
           </ul>
           {alertItems.length > 5 && (
             <p className="mt-1">
-              … và {alertItems.length - 5} mục khác — xem mục Pháp lý.
+              … và {alertItems.length - 5} mục khác — xem mục Tra cứu hóa chất.
             </p>
           )}
         </CustomsNotice>

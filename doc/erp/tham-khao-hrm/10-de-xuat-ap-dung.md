@@ -19,16 +19,16 @@ Chi tiết phần hồ sơ nhân sự xem [`../hrm/01-ho-so-nhan-su.md` §7.10](
 |---|---|---|---|
 | V0-1 | Khai đủ phạm vi dữ liệu, thiếu khai thì chặn | **Xong** | `core/scoping.py` (B-07 / CR-131) |
 | V0-2 | Tách quyền xuất / nhập file | **Phần lớn** | Có action `export`; XLSX nhân sự gác bằng nó. **Còn sót:** CSV nhân sự vẫn gác bằng `read` |
-| V0-3 | Bộ máy duyệt dùng chung | **Xong** | `approval/` — 7 loại người duyệt. **Thiếu** vai «quản lý trực tiếp» (`APPROVER_DIRECT_MANAGER`, mục K3 của `01-ho-so-nhan-su`) |
+| V0-3 | Bộ máy duyệt dùng chung | **Xong** | `approval/` — 8 loại người duyệt, có «Quản lý trực tiếp người nộp» (`APPROVER_DIRECT_MANAGER`, K3, duoc-CR-553) |
 | V0-4 | Màn kiểm tra trước khi khóa tài khoản | **Làm dở** | Đã tự khóa khi nghỉ việc, có chuyển từng việc duyệt; **chưa có màn liệt kê** việc người đó đang giữ |
 | V1-1 | Danh mục tổ chức (phòng ban cha con, chức danh, cấp bậc, pháp nhân, hình thức) | **Xong** | Kèm danh mục Chức vụ (duoc-CR-320) và kiêm nhiệm (CR-167) |
 | V1-2 | Hồ sơ ~30 trường, tạo nhanh ~10 ô | **Xong** | duoc-CR-314, -315 |
-| V1-3 | Trường quản lý trực tiếp + cây quản lý đúng | **Một nửa** | Dữ liệu và chặn vòng đã có; **bộ máy duyệt chưa đọc trường này** (K3) |
-| V1-4 | Phân quyền theo trường cho nhóm nhạy cảm | **Xong** | `employee_sensitive`, che ở serializer. **Lỗ:** nhật ký hệ thống (`tab_request_log`, `tab_change_log`) vẫn lưu nguyên văn các trường này |
+| V1-3 | Trường quản lý trực tiếp + cây quản lý đúng | **Xong** | Dữ liệu, chặn vòng, và bộ máy duyệt đọc trường này qua bước «Quản lý trực tiếp người nộp» (K3, duoc-CR-553) |
+| V1-4 | Phân quyền theo trường cho nhóm nhạy cảm | **Xong** | `employee_sensitive`, che ở serializer; nhật ký hệ thống (`tab_request_log`, `tab_change_log`) che từ 02/10/2026 (duoc-CR-554). **Còn:** dòng nhật ký ghi trước ngày đó chưa dọn |
 | V1-5 | Hợp đồng lao động + cảnh báo hết hạn | **Chưa bắt đầu** | `modules/contract` hiện là hợp đồng nhà cung cấp / khách hàng, không phải HĐLĐ |
 | V1-6 | Cấu hình loại đơn từ (loại nghỉ + bậc thâm niên) | **Xong** | **Lỗ:** cờ «Bắt buộc đính kèm» hiện trên form nhưng không được kiểm lúc gửi duyệt |
 | V1-7 | Đơn nghỉ phép + quỹ phép năm | **Xong** | CR-259, -260 và các bản vá sau; báo cáo nghỉ phép duoc-CR-548 |
-| V1-8 | Quyết định điều chuyển và bổ nhiệm | **Chưa bắt đầu** | |
+| V1-8 | Quyết định điều chuyển và bổ nhiệm | **Bản gọn đã làm (duoc-CR-585)** — lịch sử công tác ghi tay theo người, tệp QĐ, hỏi rồi áp hồ sơ. **Còn:** phiếu nhiều người, tờ trình, duyệt, «Thay thế cho». | duoc-CR-585 |
 | V2-1 … V2-3, V2-5 | Onboarding/Offboarding, thôi việc, tài sản, quyết định khác | **Chưa bắt đầu** | |
 | V2-4 | Chấm công | **Chưa bắt đầu** | Chờ quyết định C2 |
 | V2-6 | Sơ đồ tổ chức vẽ từ dữ liệu | **Chưa bắt đầu** | Dữ liệu nền (V1-1, V1-3) đã đủ — làm rẻ |

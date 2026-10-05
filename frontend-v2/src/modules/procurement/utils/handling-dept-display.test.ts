@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   DEFAULT_PURCHASING_LABEL,
+  HANDLING_DEPT_DEFAULT_OPTION,
+  handlingDeptCreateChange,
+  handlingDeptCreateOptions,
+  handlingDeptCreateValue,
   handlingDeptForCreate,
   handlingDeptLabel,
   handlingDeptOptions,
@@ -84,5 +88,51 @@ describe('handlingDeptForCreate — bao-CR-488 (ô tick «Nhờ phòng khác x�
     expect(isHandlingDeptAssigned({ handler_dept_id: 5 })).toBe(true)
     expect(handlingDeptForCreate({ handler_dept_id: 5 })).toBe(5)
     expect(handlingDeptForCreate({ handler_dept_id: null })).toBeUndefined()
+  })
+})
+
+//  03/10/2026 — ô Phòng xử lý lúc LẬP phiếu bỏ ô tick: mục mặc định «Phòng thu mua mặc định»
+//  phải là trạng thái CHƯA nhờ (không gửi gì, backend tự chọn — nhà máy → chính phòng mình).
+//  Quy nó về phòng 0 là ép mọi phiếu nhà máy sang thu mua chung, im lặng.
+describe('handling department picker when creating', () => {
+  it('puts the default entry first, then the department catalogue', () => {
+    const options = handlingDeptCreateOptions(departments, 0)
+    expect(options[0]).toEqual({ value: HANDLING_DEPT_DEFAULT_OPTION, label: DEFAULT_PURCHASING_LABEL })
+    expect(options.slice(1)).toEqual(handlingDeptOptions(departments, 0))
+  })
+
+  it('never collides the default entry with a department id', () => {
+    expect(HANDLING_DEPT_DEFAULT_OPTION).not.toBe('0')
+    expect(Number.isNaN(Number(HANDLING_DEPT_DEFAULT_OPTION))).toBe(true)
+  })
+
+  it('shows the default entry until a real department is picked', () => {
+    expect(handlingDeptCreateValue({})).toBe(HANDLING_DEPT_DEFAULT_OPTION)
+    expect(handlingDeptCreateValue({ handler_dept_id: 0 })).toBe(HANDLING_DEPT_DEFAULT_OPTION)
+    expect(handlingDeptCreateValue({ handler_dept_id: null })).toBe(HANDLING_DEPT_DEFAULT_OPTION)
+    //  Bản cũ: tick mà để trống → vẫn là mặc định, không hiện số 0.
+    expect(handlingDeptCreateValue({ handler_dept_assigned: true, handler_dept_id: 0 })).toBe(
+      HANDLING_DEPT_DEFAULT_OPTION,
+    )
+    //  Nhờ rồi lại bỏ nhờ — id cũ còn nằm đó nhưng không được hiện.
+    expect(handlingDeptCreateValue({ handler_dept_assigned: false, handler_dept_id: 5 })).toBe(
+      HANDLING_DEPT_DEFAULT_OPTION,
+    )
+    expect(handlingDeptCreateValue({ handler_dept_id: 5 })).toBe('5')
+  })
+
+  it('maps the default entry and junk to un-assigned, a real id to assigned', () => {
+    const unassigned = { handler_dept_assigned: false, handler_dept_id: 0 }
+    expect(handlingDeptCreateChange(HANDLING_DEPT_DEFAULT_OPTION)).toEqual(unassigned)
+    expect(handlingDeptCreateChange('0')).toEqual(unassigned)
+    expect(handlingDeptCreateChange('')).toEqual(unassigned)
+    expect(handlingDeptCreateChange('-3')).toEqual(unassigned)
+    expect(handlingDeptCreateChange('abc')).toEqual(unassigned)
+    expect(handlingDeptCreateChange('20')).toEqual({ handler_dept_assigned: true, handler_dept_id: 20 })
+  })
+
+  it('sends nothing for the default entry so the backend still picks the factory department', () => {
+    expect(handlingDeptForCreate(handlingDeptCreateChange(HANDLING_DEPT_DEFAULT_OPTION))).toBeUndefined()
+    expect(handlingDeptForCreate(handlingDeptCreateChange('20'))).toBe(20)
   })
 })

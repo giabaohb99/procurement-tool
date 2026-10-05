@@ -949,25 +949,106 @@ def finalize_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
 def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
     """Khi 1 Yêu cầu mua hàng (PR) hoàn thành: nếu Yêu cầu khảo sát liên quan (qua line.pr_id)
     đang ở 'pr_created' VÀ tất cả các PR sinh ra từ nó đều đã 'completed' -> tự chuyển YCKS sang 'done'."""
-    from app.modules.purchase_request.model import PurchaseRequest
     sr_ids = [r[0] for r in db.query(SurveyRequestPr.survey_request_id)
               .filter(SurveyRequestPr.pr_id == pr_id).distinct().all()]
     for sid in sr_ids:
+        _auto_complete_sr(db, sid, user_id)
+
+
+def _auto_complete_sr(db: Session, sid: int, user_id: int = 0) -> None:
+    """YCBG đang «Đã tạo YCMH» mà MỌI YCMH còn sống sinh từ nó đã hoàn thành -> tự «Hoàn thành».
+    YCMH đã xóa không tính (bao-CR-580) — bình thường dây nối của nó đã gỡ, đây chỉ là lưới đỡ."""
+    from app.modules.purchase_request.model import PurchaseRequest
+    s = db.get(SurveyRequest, sid)
+    if not s or s.status != "pr_created":
+        return
+    pr_ids = [r[0] for r in db.query(SurveyRequestPr.pr_id)
+              .filter(SurveyRequestPr.survey_request_id == sid).distinct().all()]
+    prs = [db.get(PurchaseRequest, pid) for pid in pr_ids]
+    prs = [p for p in prs if p and not p.is_deleted]
+    #  Còn hồ sơ báo cáo bắt buộc chưa hoàn tất thì KHÔNG tự đóng — bỏ qua im
+    #  lặng, để người dùng đóng tay sau khi hoàn tất báo cáo (đường finalize).
+    from . import report_service
+    if prs and all(p.status == "completed" for p in prs) \
+            and not report_service.required_docs_pending(db, sid):
+        set_status(db, sid, "done", user_id or s.created_by or 0)
+        record(db, user_id or s.created_by or 0, ENTITY, sid, "auto_done",
+               "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")
+
+
+def unlink_deleted_pr(db: Session, pr, user_id: int) -> list[int]:
+    """bao-CR-580 — YCMH sinh từ YCBG bị xóa (xóa mềm) thì YCBG gỡ liên kết tới nó.
+
+    Trước đây chỉ phiếu YCMH mang cờ `is_deleted`, nên YCBG vẫn bày mã YCMH đã xóa, vẫn đứng ở
+    «Đã tạo YCMH», cờ «đã sinh YCMH» trên dòng vẫn khóa chuyển phòng / trả về, và việc tự hoàn
+    thành vẫn chờ cả phiếu đã xóa. Nay:
+      - xóa dây nối `tab_survey_request_pr` của YCMH đó;
+      - dòng YCBG đang trỏ tới nó thì trỏ về YCMH gần nhất CÒN LẠI của dòng (mua lại nhiều lần);
+        không còn YCMH nào thì xóa dấu, và gỡ cờ `is_completed` trừ khi người YC đã chốt dòng
+        Hoàn thành bằng tay;
+      - YCBG «Đã tạo YCMH» không còn YCMH sống nào thì về «Đã khảo sát»; còn thì xét lại việc tự
+        hoàn thành. YCBG đã «Hoàn thành» giữ nguyên.
+    Phương án đã chọn lúc tạo YCMH vốn đã tự bỏ chọn — muốn mua lại thì chọn lại như thường.
+    Trả về danh sách id YCBG bị đụng."""
+    links = db.query(SurveyRequestPr).filter(SurveyRequestPr.pr_id == pr.id).all()
+    #  Đường cũ: phiếu tạo trước khi có bảng nối chỉ để dấu trên dòng.
+    legacy = db.query(SurveyRequestLine).filter(SurveyRequestLine.pr_id == pr.id).all()
+    line_ids = {lk.survey_request_line_id for lk in links} | {ln.id for ln in legacy}
+    sr_ids = {lk.survey_request_id for lk in links} | {ln.survey_request_id for ln in legacy}
+    if not sr_ids:
+        return []
+    for lk in links:
+        db.delete(lk)
+    db.flush()
+    for ln in db.query(SurveyRequestLine).filter(SurveyRequestLine.id.in_(line_ids)).all():
+        if ln.pr_id != pr.id:
+            continue  # dòng đang trỏ YCMH khác (mới hơn) — giữ nguyên
+        last = (db.query(SurveyRequestPr)
+                .filter(SurveyRequestPr.survey_request_line_id == ln.id)
+                .order_by(SurveyRequestPr.id.desc()).first())
+        if last:
+            ln.pr_id, ln.pr_code = last.pr_id, last.pr_code
+        else:
+            ln.pr_id, ln.pr_code = 0, ""
+            if ln.line_status != LS_COMPLETED:
+                ln.is_completed = False
+        ln.updated_by = user_id
+    db.commit()
+    for sid in sorted(sr_ids):
         s = db.get(SurveyRequest, sid)
-        if not s or s.status != "pr_created":
+        if not s:
             continue
-        pr_ids = [r[0] for r in db.query(SurveyRequestPr.pr_id)
-                  .filter(SurveyRequestPr.survey_request_id == sid).distinct().all()]
-        prs = [db.get(PurchaseRequest, pid) for pid in pr_ids]
-        prs = [p for p in prs if p]
-        #  Còn hồ sơ báo cáo bắt buộc chưa hoàn tất thì KHÔNG tự đóng — bỏ qua im
-        #  lặng, để người dùng đóng tay sau khi hoàn tất báo cáo (đường finalize).
-        from . import report_service
-        if prs and all(p.status == "completed" for p in prs) \
-                and not report_service.required_docs_pending(db, sid):
-            set_status(db, sid, "done", user_id or s.created_by or 0)
-            record(db, user_id or s.created_by or 0, ENTITY, sid, "auto_done",
-                   "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")
+        has_live = bool(db.query(SurveyRequestPr.id).filter(SurveyRequestPr.survey_request_id == sid).first()
+                        or db.query(SurveyRequestLine.id).filter(SurveyRequestLine.survey_request_id == sid,
+                                                                 SurveyRequestLine.pr_code != "").first())
+        message = f"Gỡ liên kết Yêu cầu mua hàng {pr.code} vì phiếu đó đã bị xóa"
+        if s.status == "pr_created" and not has_live:
+            s.status = "survey_done"
+            message += "; không còn Yêu cầu mua hàng nào nên phiếu về «Đã khảo sát»"
+        s.updated_by = user_id
+        db.commit()
+        record(db, user_id, ENTITY, sid, "pr_unlinked", message)
+        if has_live:
+            _auto_complete_sr(db, sid, user_id)
+    return sorted(sr_ids)
+
+
+def list_deleted_linked_prs(db: Session) -> list:
+    """YCMH đã xóa mềm mà YCBG vẫn còn nối tới (dữ liệu trước bao-CR-580)."""
+    from app.modules.purchase_request.model import PurchaseRequest
+    pr_ids = {r[0] for r in db.query(SurveyRequestPr.pr_id).distinct().all()}
+    pr_ids |= {r[0] for r in db.query(SurveyRequestLine.pr_id).filter(SurveyRequestLine.pr_id != 0).distinct().all()}
+    if not pr_ids:
+        return []
+    return (db.query(PurchaseRequest)
+            .filter(PurchaseRequest.id.in_(pr_ids), PurchaseRequest.is_deleted == True)  # noqa: E712
+            .order_by(PurchaseRequest.id).all())
+
+
+def unlink_deleted_prs(db: Session, user_id: int) -> list[str]:
+    """Dọn dữ liệu cũ (bao-CR-580): YCMH xóa mềm TRƯỚC bản vá vẫn còn dây nối với YCBG. Chạy lại
+    không đổi gì. Trả về mã các YCMH đã gỡ."""
+    return [pr.code for pr in list_deleted_linked_prs(db) if unlink_deleted_pr(db, pr, user_id)]
 
 
 def complete_sr(db: Session, sid: int, user, profile: dict = None, empty_line_ids=None):

@@ -33,6 +33,10 @@ from sqlalchemy.orm import Session
 from app.core.export_xlsx import VN_OFFSET
 from app.core.report_period import range_filter, to_local_date
 from app.core.scoping import apply_scope
+#  Review 03/10/2026 (H2) — hàm thật nay gộp về `app.core.vn_time.vn_today`;
+#  re-export GIỮ TÊN CŨ vì `employee/report_service.py` nhập thẳng `vn_today`
+#  từ MODULE NÀY (`from .report_headcount_events import (..., vn_today)`).
+from app.core.vn_time import vn_today  # noqa: F401
 from app.modules.employee.model import Employee
 from app.modules.employee.service import STATUS_RESIGNED
 
@@ -43,11 +47,6 @@ _SENIORITY_BUCKETS = ((1, "Dưới 1 năm"), (3, "1-3 năm"), (5, "3-5 năm"), (
 _DIM_COLS = (Employee.company_id, Employee.department_id, Employee.job_level,
             Employee.employment_type, Employee.gender, Employee.position_id, Employee.position,
             Employee.status)
-
-
-def vn_today() -> date:
-    """"Hôm nay" theo giờ VN — container chạy UTC, cùng quy ước `report_period.parse_period`."""
-    return (datetime.utcnow() + VN_OFFSET).date()
 
 
 def effective_hire_date(hire_date, created_at) -> date | None:

@@ -95,7 +95,11 @@ _EDIT = (
     ActionCode("document_status", "Đổi trạng thái chứng từ", ACTION_GROUP_EDIT),
     ActionCode("line_status", "Đổi trạng thái dòng", ACTION_GROUP_EDIT),
     ActionCode("expected_date", "Đổi ngày dự kiến", ACTION_GROUP_EDIT),
+    #  bao-CR-568 — thu mua gắn / đổi mã VTBB của dòng YCMH sau điều phối.
+    ActionCode("product_code", "Đổi mã VTBB", ACTION_GROUP_EDIT),
     ActionCode("pr_created", "Sinh yêu cầu mua hàng", ACTION_GROUP_EDIT),
+    #  bao-CR-580 — YCMH sinh từ YCBG bị xóa thì YCBG gỡ liên kết tới nó.
+    ActionCode("pr_unlinked", "Gỡ liên kết YCMH đã xóa", ACTION_GROUP_EDIT),
     ActionCode("reply", "Phản hồi", ACTION_GROUP_EDIT),
     # bao-CR-453 — chi phí thu mua ba giai đoạn
     ActionCode("cost_stage_prov", "Chốt tạm tính chi phí thu mua", ACTION_GROUP_EDIT),
@@ -105,6 +109,9 @@ _EDIT = (
     ActionCode("return_dept", "Trả phiếu về thu mua", ACTION_GROUP_EDIT),
     # 29/09/2026 — nạp lại TOÀN BỘ một danh mục tham khảo từ tệp (thuốc BVTV của Tra cứu thị trường)
     ActionCode("catalog_import", "Nạp danh mục từ tệp", ACTION_GROUP_EDIT),
+    # C1, 02/10/2026 — nạp CẬP NHẬT một phần danh mục (tệp xuất theo trang đã sửa), không xóa
+    # phần còn lại — khác hẳn `catalog_import` (thay toàn bộ), nên tách mã riêng.
+    ActionCode("catalog_merge", "Cập nhật danh mục từ tệp theo trang", ACTION_GROUP_EDIT),
     # Sổ đồng bộ app cũ — xếp một dòng lỗi chạy lại
     ActionCode("retry", "Xếp chạy lại đồng bộ", ACTION_GROUP_EDIT),
 )
@@ -173,6 +180,9 @@ _OPTION = (
     ActionCode("options_choice_done", "Chốt xong lựa chọn phương án", ACTION_GROUP_EDIT),
     #  Tên rút gọn dưới 20 ký tự cho vừa cột action String(20) — xem option_service.
     ActionCode("options_gen_orders", "Tạo đơn mua hàng nháp theo phương án", ACTION_GROUP_EDIT),
+    #  bao-CR-583 — thu mua sửa phương án 0 / nhập tay, và đưa phương án 0 về như dòng yêu cầu.
+    ActionCode("option_details_update", "Sửa thông tin phương án", ACTION_GROUP_EDIT),
+    ActionCode("option_zero_reset", "Khôi phục phương án 0", ACTION_GROUP_EDIT),
 )
 
 #  =====================================================================

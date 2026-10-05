@@ -121,7 +121,15 @@ function PreviewBody({ file }: { file: AttachmentFile }) {
   }
 
   return (
-    <>
+    //  ⚠️ BẪY 3 (biểu mẫu) — `Button` không tự có `type="button"`; thiếu khai
+    //  thì mặc định `submit`. Hộp này SỐNG trong các trang có `<form>` bọc cả
+    //  trang (hồ sơ nhân sự, văn bản…) nên MỌI nút ở đây phải khai rõ. Bọc thêm
+    //  `onSubmit` chặn-lan ở ranh giới hộp (không có `<form>` nào trong khu này
+    //  hôm nay, nhưng đây là hộp DÙNG CHUNG — một `<form>` thêm vào sau, dù ở
+    //  module nào, cũng không rò submit lên trang chứa nó). `className="contents"`
+    //  để KHÔNG đổi layout flex-col của `DialogContent` cha (bọc bằng div thường
+    //  biến 2 khối con thành 1 flex item, mất khoảng `gap-3` giữa thân và dải nút).
+    <div className="contents" onSubmit={(event) => event.stopPropagation()}>
       <div className="flex min-h-[60vh] flex-1 items-center justify-center overflow-auto rounded-lg border bg-muted/30">
         {!viewable ? (
           <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
@@ -143,15 +151,15 @@ function PreviewBody({ file }: { file: AttachmentFile }) {
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button variant="outline" onClick={openNewTab}>
+        <Button type="button" variant="outline" onClick={openNewTab}>
           <ExternalLink className="size-4" />
           Mở tab mới
         </Button>
-        <Button variant="outline" onClick={() => void download(file)}>
+        <Button type="button" variant="outline" onClick={() => void download(file)}>
           <Download className="size-4" />
           Tải về
         </Button>
       </div>
-    </>
+    </div>
   )
 }

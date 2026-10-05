@@ -18,12 +18,24 @@ from .constants import PESTICIDE_STATUS_BY_LABEL, PesticideStatus
 
 LIST_SHEET = "Danh sach thuoc"
 USE_SHEET = "Pham vi su dung"
+#  Cột THÊM của hệ thống ở cuối sheet «Danh sach thuoc» — bản cào gốc không có cột này, nên
+#  tệp cào thật luôn đọc rỗng ở đây. `pesticide_export_columns` (02/10) ghi NGUYÊN VĂN cột
+#  `resistance` đã lưu vào đây — bộ đọc ưu tiên cột này nếu có+không rỗng, bỏ qua bước tách
+#  rồi ghép lại qua `_resistance()` (H2, review 02/10/2026): chữ tự do có thể chứa `;`/`:`
+#  KHÔNG phải dấu phân tách, mà bước tách-ghép lại hiểu nhầm là dấu phân tách và mất/méo chữ.
+RAW_RESISTANCE_COLUMN = "quan_ly_tinh_khang_raw"
 #  Trần số thuốc một tệp — nguồn hiện 6 919; gấp năm lần vẫn là tệp đúng, quá nữa là tệp nhầm.
 MAX_RECORDS = 40_000
 MAX_USES_PER_RECORD = 500
 #  Trần TỔNG dòng phạm vi (nguồn hiện 15 309) — đếm ngay lúc đọc, tệp nhầm dừng sớm chứ không
 #  nạp hết vào bộ nhớ rồi mới kiểm (container api chỉ có 2 GB).
 MAX_USE_ROWS = 200_000
+#  Trần kích thước tệp NẠP (M3, review 02/10/2026) — dùng CHUNG giữa `pesticide_controller`
+#  (chặn tệp người dùng tải lên) và `pesticide_export_service` (chặn xuất ra một tệp mà bộ
+#  đọc chính mình sẽ từ chối), không khai lại số ở hai nơi. Tệp JSON của bản cào ~18 MB
+#  (Excel ~3,4 MB); trần 30 MB đủ cho nguồn lớn dần mà JSON đã giải ra vẫn nằm gọn trong trần
+#  bộ nhớ 2 GB của container api.
+MAX_UPLOAD_BYTES = 30 * 1024 * 1024
 #  Cột `Text` của MySQL chứa tối đa 64 KB; dài hơn là lỗi 500. Nguồn dài nhất hiện ~3,4 nghìn ký tự.
 _TEXT_LIMIT = 20_000
 
@@ -42,6 +54,9 @@ def trade_key(trade_name: str) -> str:
 
 
 def _text(value) -> str:
+    #  M5 (review 02/10/2026) — `.split()`/`" ".join(...)` GỘP khoảng trắng + xuống dòng liên
+    #  tiếp thành một dấu cách. Hành vi SẴN CÓ từ trước (không phải lỗi mới), giữ nguyên: câu
+    #  tóm tắt/cách dùng nhiều dòng của nguồn không cần giữ xuống dòng để hiển thị đúng.
     if value is None:
         return ""
     return " ".join(html.unescape(str(value)).split())
@@ -159,7 +174,14 @@ def read_json(content: bytes) -> list[dict]:
 
 
 def read_xlsx(content: bytes) -> list[dict]:
+    records, _mode = _read_xlsx(content)
+    return records
+
+
+def _read_xlsx(content: bytes) -> tuple[list[dict], str]:
     from openpyxl import load_workbook
+
+    from . import pesticide_export_marker as marker
     try:
         wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     except Exception as exc:  # openpyxl ném đủ loại lỗi cho tệp hỏng
@@ -171,24 +193,41 @@ def read_xlsx(content: bytes) -> list[dict]:
         #  lặng lẽ xóa sạch mười lăm nghìn dòng phạm vi đang có (review 29/09).
         if USE_SHEET not in wb.sheetnames:
             raise ValueError(f"Tệp Excel thiếu sheet «{USE_SHEET}» — cần đúng tệp thuoc-bvtv.xlsx")
+        mode = marker.detect_mode(wb)
         uses: dict[int, list[tuple[int, dict]]] = defaultdict(list)
         for n, row in enumerate(_sheet_dicts(wb[USE_SHEET]), start=1):
             if n > MAX_USE_ROWS:
                 raise _too_many("dòng phạm vi sử dụng", MAX_USE_ROWS)
-            uses[_int(row.get("id"))].append((_int(row.get("stt_pham_vi")), _use(row)))
+            rid = _int(row.get("id"))
+            if rid <= 0:
+                continue   # C2 — phạm vi của thuốc thủ công / thuốc nguồn trùng source_id lúc xuất
+            uses[rid].append((_int(row.get("stt_pham_vi")), _use(row)))
         records = []
+        seen_ids: set[int] = set()
         for n, row in enumerate(_sheet_dicts(wb[LIST_SHEET]), start=1):
             if n > MAX_RECORDS:
                 raise _too_many("thuốc", MAX_RECORDS)
+            rid = _int(row.get("id"))
+            #  C2 (review 02/10/2026) — id <= 0 = thuốc thủ công (`export_id` xuất `-p.id`) HOẶC
+            #  thuốc nguồn trùng `source_id` với thuốc khác lúc xuất (xuất id ÂM để tránh đụng
+            #  khóa nối hai sheet) — cả hai dòng BỊ BỎ lúc nạp, không đụng tới thuốc khác.
+            if rid <= 0:
+                continue
+            if rid in seen_ids:
+                raise ValueError(
+                    f"Tệp có id {rid} trùng nhau ở sheet «{LIST_SHEET}» — kiểm lại tệp trước khi nạp")
+            seen_ids.add(rid)
             #  Ô nhóm kháng: «Tên: mã | nhóm | phương thức; Tên 2: …» → tách lại rồi dọn phần rỗng.
             items = []
             for chunk in _text(row.get("quan_ly_tinh_khang")).split(";"):
                 #  Tách ở «: » chứ không ở «:» — nguồn có tên hoạt chất dính cả URL (`https://…`, id 3670).
                 name, _, rest = chunk.partition(": ")
                 items.append((name, rest.split("|")))
-            own = [u for _, u in sorted(uses.get(_int(row.get("id")), []), key=lambda x: x[0])]
-            records.append(_record(row, _text(row.get("nhom_doc"))[:500], _resistance(items), own))
-        return _validate(records)
+            raw_resistance = _text(row.get(RAW_RESISTANCE_COLUMN))
+            resistance = raw_resistance if raw_resistance else _resistance(items)
+            own = [u for _, u in sorted(uses.get(rid, []), key=lambda x: x[0])]
+            records.append(_record(row, _text(row.get("nhom_doc"))[:500], resistance, own))
+        return _validate(records), mode
     finally:
         wb.close()
 
@@ -218,9 +257,18 @@ def _validate(records: list[dict]) -> list[dict]:
 
 
 def read_file(filename: str, content: bytes) -> list[dict]:
+    records, _mode = read_file_with_mode(filename, content)
+    return records
+
+
+def read_file_with_mode(filename: str, content: bytes) -> tuple[list[dict], str]:
+    """(bản ghi, chế độ nạp) — `"replace"` (thay toàn bộ, như trước giờ) hay `"merge"` (C1,
+    chỉ cập nhật đúng thuốc có trong tệp — xem `pesticide_export_marker.detect_mode`).
+
+    Tệp JSON LUÔN `"replace"`: bản cào gốc không xuất JSON kèm khái niệm phạm vi trang."""
     name = (filename or "").lower()
     if name.endswith(".json"):
-        return read_json(content)
+        return read_json(content), "replace"
     if name.endswith(".xlsx"):
-        return read_xlsx(content)
+        return _read_xlsx(content)
     raise ValueError("Chỉ nhận tệp .json hoặc .xlsx của bản cào danh mục thuốc BVTV")

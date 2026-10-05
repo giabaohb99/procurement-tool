@@ -176,6 +176,17 @@ export const queryKeys = {
      */
     myEmployeeContacts: () => ['hr', 'employees', 'me', 'contacts'] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
+    /**
+     * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab «Quá trình
+     * công tác». Nằm DƯỚI khóa hồ sơ nên `invalidateQueries({ queryKey: hr.all })`
+     * quét luôn.
+     */
+    employeeWorkHistory: (id: number) => ['hr', 'employees', id, 'work-history'] as const,
+    /** Quá trình công tác của CHÍNH MÌNH (`/api/employees/me/work-history`) — Trang cá nhân đọc bằng khóa này. */
+    myWorkHistory: () => ['hr', 'employees', 'me', 'work-history'] as const,
+    /** Tệp đính kèm của MỘT dòng quá trình công tác (entity `employee_work_history`). */
+    workHistoryFiles: (historyId: number) =>
+      ['hr', 'work-history', historyId, 'files'] as const,
     //  Hai bảng con của hồ sơ (duoc-CR-314). Nằm DƯỚI khóa hồ sơ nên
     //  `invalidateQueries({ queryKey: hr.all })` quét luôn — không cần nhớ gọi
     //  riêng sau khi sửa hồ sơ.

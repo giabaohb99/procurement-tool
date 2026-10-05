@@ -489,7 +489,7 @@ def detach_users(db: Session, eid: int, actor_id: int) -> int:
 
 
 def delete_employee(db: Session, eid: int, user_id: int) -> int:
-    from . import contact_service
+    from . import contact_service, work_history_service
 
     obj = get_employee(db, eid)
     locked = detach_users(db, eid, user_id)
@@ -498,6 +498,9 @@ def delete_employee(db: Session, eid: int, user_id: int) -> int:
     #  bao giờ là nhân viên, gắn vào một id không còn ai. FK đã khai CASCADE
     #  nhưng bộ test chạy SQLite (khóa ngoại mặc định tắt) — xem `delete_all_of`.
     contact_service.delete_all_of(db, eid)
+    #  Quá trình công tác (plan 261003-0837) — dọn mọi dòng + tệp QĐ đính kèm
+    #  của người này, cùng lý lẽ với hai bảng con ngay trên.
+    work_history_service.delete_all_of(db, eid)
     #  ⚠️ Người này đang là quản lý trực tiếp của ai đó thì ô `manager_id` bên
     #  kia thành con số trỏ vào hư không, và bộ máy duyệt lùi về trưởng bộ phận
     #  một cách IM LẶNG. Gỡ tường minh về `0` — cùng nghĩa "chưa gán", nhưng màn

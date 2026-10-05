@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Phân hệ Nhân sự (HRM) — ERP v2 |
-| Bản | 1.4 — 01/10/2026 (**Đợt 1 + Đợt 2 xong, Đợt 3 xong phần lớn — thiếu K3 và màn kiểm việc treo, Đợt 4 chưa**; §7.10 đối chiếu với mã nguồn và danh sách còn treo) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
+| Bản | 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
 | Dùng để làm gì | Chốt danh sách trường của hồ sơ nhân viên (mở rộng `tab_employee`), hai bảng con, chức năng màn hình, và phần tài khoản đăng nhập đi kèm |
 | Ai đọc | Đội phần mềm, người chủ trì |
 | Nguồn đối chiếu | [tham-khao-hrm/01-nhan-su.md](../tham-khao-hrm/01-nhan-su.md) (NS1, ~90 trường/7 nhóm), [tham-khao-hrm/10-de-xuat-ap-dung.md](../tham-khao-hrm/10-de-xuat-ap-dung.md) (V1-2, V1-3, V1-4), và **Phiếu thông tin nhân viên BM00../QT01/NS** (mẫu công ty đang dùng khi nhận việc, ban hành 01/06/2025) |
@@ -150,7 +150,7 @@ Hai bảng đều là chi tiết của hồ sơ (không có màn danh sách riê
 | Cụm hộ chiếu (5 trường) | Ít người có; đi vào `extra_fields` khi cần |
 | Mã chấm công, mã phân ca, 6 cờ phân quyền chấm công (GPS/wifi/máy/chấm hộ...) | Chờ quyết định C2 về chấm công; thêm bây giờ là trường chết |
 | Loại HĐLĐ, ngày chấm dứt HĐLĐ | Thuộc module Hợp đồng lao động (bước sau); hồ sơ đọc ké qua quan hệ, không lưu 2 chỗ |
-| ~~Đơn vị/phòng ban/chức danh kiêm nhiệm~~ | **ĐÃ CÓ từ CR-167 (25/08/2026)** — một nhân sự thuộc nhiều phòng ban (`employee/department_model.py`, thẻ kiêm nhiệm trên tab Chung). Phiếu Quyết định điều chuyển/bổ nhiệm (V1-8) vẫn chưa làm |
+| ~~Đơn vị/phòng ban/chức danh kiêm nhiệm~~ | **ĐÃ CÓ từ CR-167 (25/08/2026)** — một nhân sự thuộc nhiều phòng ban (`employee/department_model.py`, thẻ kiêm nhiệm trên tab Chung). **Phiếu Quyết định bản gọn (V1-8 rút gọn, duoc-CR-585):** dòng lịch sử công tác ghi tay theo người, một dòng một sự kiện (bổ nhiệm, điều chuyển, kiêm nhiệm, thôi việc); ngày hiệu lực = `from_date` của dòng; tệp QĐ đính kèm với dòng; chủ yếu cho quản lý kiêm nhiệm từng người. **Phiếu Quyết định đầy đủ (V1-8)** chưa làm: một phiếu nhiều người (1 loại = 1 dòng), tờ trình, duyệt, thay thế cho — để sau. |
 | Nguyên quán, tên thường gọi, quốc tịch, Skype, Facebook, tình trạng tiêm vắc xin | Không có nhu cầu nghiệp vụ; `extra_fields` nếu cần |
 | Tách địa chỉ thành tỉnh/phường/địa chỉ (3 trường × 3 loại) | 1 trường chữ gộp là đủ; phiếu công ty cũng ghi 1 dòng |
 
@@ -164,7 +164,7 @@ Hai bảng đều là chi tiết của hồ sơ (không có màn danh sách riê
 |---|---|---|
 | C1 | Danh sách nhân sự (đã có, mở rộng) | Thêm cột/lọc: hình thức nhân viên, cấp bậc, người quản lý trực tiếp. Giữ lọc theo pháp nhân, phòng ban, trạng thái |
 | C2 | **Form tạo nhanh ~10 trường** | Chỉ hỏi: mã, họ tên, pháp nhân, phòng ban, chức vụ, ngày vào làm, giới tính, ngày sinh, SĐT, email. Học đúng bài "hộp tạo nhanh 12 trường" của HrOnline — bắt điền đủ 30+ trường ngay từ đầu thì không ai nhập |
-| C3 | Màn chi tiết xếp tab | Tab **Chung** (nhóm 1+2) / **Liên hệ & Ngân hàng** (nhóm 3+4, kèm bảng người báo tin) / **Giấy tờ & BHXH** (nhóm 5, upload 2 ảnh CCCD, kèm bảng hộ gia đình) / **Quỹ phép** (link sang phân hệ Nghỉ phép sẵn có) / **Tài khoản** (mục 6). Sau này thêm tab Hợp đồng lao động, Lịch sử điều chuyển. *(bao-CR-472, 23/09/2026: ô **Email công việc** dời từ tab Liên hệ & Ngân hàng sang tab **Chung**, cuối mục Công việc — nó là email đăng nhập, xem U4)* |
+| C3 | Màn chi tiết xếp tab | Tab **Chung** (nhóm 1+2) / **Quá trình công tác** (giá trị tab `work-history`; mọi dòng, Bảng ⇄ Dòng thời gian, tệp QĐ, áp hồ sơ) / **Quyết định bổ nhiệm** (giá trị tab `decisions`; chỉ dòng có `decision_no`, CHỈ XEM, Bảng ⇄ Dòng thời gian — dùng CHUNG truy vấn với tab Quá trình công tác, tách tab 03/10/2026; duoc-CR-585, §7.11) / **Liên hệ & Ngân hàng** (nhóm 3+4, kèm bảng người báo tin) / **Giấy tờ & BHXH** (nhóm 5, upload 2 ảnh CCCD, kèm bảng hộ gia đình) / **Quỹ phép** (link sang phân hệ Nghỉ phép sẵn có) / **Tài khoản** (mục 6). Sau này thêm tab Hợp đồng lao động. *(bao-CR-472, 23/09/2026: ô **Email công việc** dời từ tab Liên hệ & Ngân hàng sang tab **Chung**, cuối mục Công việc — nó là email đăng nhập, xem U4)* |
 | C4 | Upload ảnh CCCD | 2 tệp ảnh, đi theo cơ chế upload tệp sẵn có, đường dẫn lưu vào 2 cột |
 | C5 | In "Phiếu thông tin nhân viên" | Xuất bản in theo đúng khuôn BM00../QT01/NS từ dữ liệu đã nhập — thay thế việc điền giấy; dùng cơ chế bản in sẵn có |
 | C6 | Nhân viên tự khai | Giai đoạn 2 (không làm ngay): nhân viên đăng nhập tự điền phần thông tin cá nhân của chính mình, nhân sự duyệt lại. Nền tảng scope `self` của hệ phân quyền đã đỡ được. *(bao-CR-508, 28/09/2026: riêng nhóm LIÊN HỆ đã mở cho tự sửa, áp ngay không qua duyệt — xem §7.9)* |
@@ -178,8 +178,8 @@ Hệ đang có đối tượng `employee` với `read`/`write` + phạm vi (all 
 |---|---|
 | `employee.read` | Xem hồ sơ phần thường (nhóm 1 phần thường + nhóm 2 + KCB BHYT) — như hiện tại |
 | `employee.write` | Sửa hồ sơ — như hiện tại |
-| **`employee_sensitive.read`** (mới) | Xem nhóm nhạy cảm: ngày sinh, MST, số BHXH, địa chỉ, ngân hàng (4), CCCD (6), 2 bảng con. Không có quyền này thì serializer trả rỗng/che các trường đó, KHÔNG chỉ giấu trên giao diện |
-| Ngoại lệ `self` | Nhân viên luôn xem được đầy đủ hồ sơ CỦA CHÍNH MÌNH (kể cả nhóm nhạy cảm), không cần `employee_sensitive.read` |
+| **`employee_sensitive.read`** (mới) | Xem nhóm nhạy cảm: ngày sinh, MST, số BHXH, địa chỉ, ngân hàng (4), CCCD (6), 2 bảng con. Cũng bao gồm: **tệp quyết định trong Quá trình công tác của người khác** (duoc-CR-585). Không có quyền này thì serializer trả rỗng/che các trường đó, KHÔNG chỉ giấu trên giao diện |
+| Ngoại lệ `self` | Nhân viên luôn xem được đầy đủ hồ sơ CỦA CHÍNH MÌNH (kể cả nhóm nhạy cảm + tệp quá trình của mình), không cần `employee_sensitive.read` |
 
 Bản đầu khai cứng danh sách trường nhạy cảm trong mã nguồn (một tuple trong module employee), chưa cần màn cấu hình. Che ở tầng serializer để API, CSV, và trợ lý AI cùng ăn một luật.
 
@@ -232,7 +232,7 @@ Hiện trạng: `tab_user.employee_id` trỏ về nhân sự; avatar + chữ ký
 
 1. **Đợt 1 — nền dữ liệu**: ✅ **XONG 08/09/2026.** K1 migration + model + schema + serializer che nhạy cảm + K2 SCOPE_FIELDS + K4 seed quyền. Chi tiết ở §7.1.
 2. **Đợt 2 — màn hình**: ✅ **XONG 08/09/2026.** C2 form tạo nhanh, C3 màn chi tiết tab, C4 upload CCCD, C1 mở rộng danh sách + K5 cảnh báo thiếu quản lý. Chi tiết ở §7.2.
-3. **Đợt 3 — duyệt và tài khoản**: 🟡 **XONG PHẦN LỚN** (đối chiếu 01/10/2026, §7.10). Có U1, U3 (tự khóa khi nghỉ việc), U4, U5; U2 làm khác đặc tả. **Còn thiếu: K3 approver mới và màn kiểm việc duyệt đang treo trước khi khóa (U3/V0-4).**
+3. **Đợt 3 — duyệt và tài khoản**: 🟡 **XONG PHẦN LỚN** (đối chiếu 01/10/2026, §7.10). Có U1, U3 (tự khóa khi nghỉ việc), U4, U5; U2 làm khác đặc tả. K3 xong 01/10/2026 (duoc-CR-553). **Còn thiếu: màn kiểm việc duyệt đang treo trước khi khóa (U3/V0-4).**
 4. **Đợt 4 — tiện ích**: ⏳ **CHƯA LÀM** — C5 in phiếu chưa có; C7 hiện an toàn chỉ vì bộ cột xuất chưa có trường nhạy cảm, chưa có cơ chế che. C6 (tự khai) mới mở nhóm Liên hệ (§7.9).
 
 Các bước tiếp theo của phân hệ (ngoài tài liệu này): Hợp đồng lao động + cảnh báo hết hạn (V1-5), Quyết định điều chuyển/bổ nhiệm (V1-8), Sơ đồ tổ chức vẽ từ dữ liệu (V2-6).
@@ -612,15 +612,25 @@ phòng ban, chức vụ, tình trạng làm việc và mọi ô còn lại — v
   «Tài khoản»).
 - Không migration, không khóa quyền mới.
 
-### 7.10. Đối chiếu với mã nguồn — đã có và còn treo (01/10/2026)
+### 7.10. Đối chiếu với mã nguồn — đã có và còn treo (03/10/2026)
 
-Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-v2` (HEAD `7185021d`). Chỉ ghi
+Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-v2` (HEAD sau duoc-CR-585). Chỉ ghi
 «đã có» khi tìm được chỗ trong mã.
+
+**Bốn quyết định của Quá trình công tác chốt 03/10/2026 (duoc-CR-585):**
+
+| # | Câu hỏi | Chốt |
+|---|---|---|
+| Q1 | Ngày hiệu lực vs Từ ngày | **GỘP**: `from_date` = ngày hiệu lực; `decision_date` (ngày ký QĐ) giữ riêng |
+| Q2 | Dòng «Thôi việc» có áp hồ sơ? | **CÓ** — hỏi «Chuyển hồ sơ sang nghỉ việc?» (hộp xác nhận riêng, nói rõ hệ quả khóa TK + đăng xuất); đồng ý → `update_employee` (nhánh `has_left_company` → `lock_linked_users`), `resign_date` = `from_date` của dòng |
+| Q3 | HR tự sửa quá trình của mình | **CHẶN**, trừ quản trị hệ thống (`is_system_admin`) |
+| Q4 | Mở tệp QĐ của người khác | **Cần thêm `employee_sensitive.read`** (ngoài `employee.read` + phạm vi). Dòng lịch sử vẫn hiện; tệp được gác. Chính chủ luôn mở được tệp của mình |
 
 **Đã có, ngoài những gì §7.1–7.9 đã ghi:**
 
 | Mục | Hiện trạng | Chỗ trong mã |
 |---|---|---|
+| **Quá trình công tác (V1-8 bản gọn)** | Lịch sử công tác ghi tay theo người, tệp QĐ, áp hồ sơ; bốn quyết định (Q1–Q4) chốt 03/10/2026 | `employee/work_history_*.py` (7 tệp service/schema) · `frontend-v2/src/modules/hr/components/employee-tab-work-history.tsx` + 10 tệp khác · bộ mã `WorkEventType` ở `hr_work_history_codes.py` |
 | U1 | Tab «Tài khoản»: có/chưa có tài khoản, email, vai trò, trạng thái khóa, phiên và lịch sử đăng nhập | `hr/components/employee-account-card.tsx` (bao-CR-395) |
 | U2 | **Làm khác đặc tả:** nhân sự tự đặt mật khẩu, hệ tự tạo `tab_user` kèm vai trò mặc định «Nhân sự», không bắt đổi mật khẩu lần đầu | `employee/controller.py` `set_password` → `provision_user` (CR-022, CR-037, bao-CR-405) |
 | U3 | Chuyển «Đã nghỉ việc» hoặc tắt «Đang làm việc» thì tự khóa tài khoản, đá phiên, thu quyền bot | `employee/service.py` `has_left_company`, `lock_linked_users` (bao-CR-400) |
@@ -633,9 +643,10 @@ Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-
 
 | Ưu tiên | Mục | Tình trạng |
 |---|---|---|
-| **Cao** | **K3** — `APPROVER_DIRECT_MANAGER` | **Chưa làm.** `approval/flow_model.py` chỉ có mã người duyệt 1–7; `approver_resolver` chỉ đọc `Department.manager_id`, không đọc `Employee.manager_id`. ⚠️ Câu gợi ý ô «Quản lý trực tiếp» trên tab Chung nói đơn đi người này — **hiện không đúng**, đơn vẫn đi trưởng bộ phận |
+| ~~Cao~~ | **K3** — `APPROVER_DIRECT_MANAGER` | **Xong 01/10/2026 (duoc-CR-553).** Loại người duyệt thứ 8 «Quản lý trực tiếp người nộp» đọc `Employee.manager_id`; chưa gán / đã nghỉ / mọi tài khoản khóa / trỏ về chính mình thì lùi về trưởng bộ phận, màn xem trước luồng ghi rõ lý do lùi. ⚠️ Luồng duyệt **đang có** (kể cả luồng nghỉ phép seed sẵn) **không tự đổi** — muốn đơn đi quản lý trực tiếp thì sửa bước trong màn Luồng duyệt |
+| **Cao** | **Q3** — Chặn HR tự sửa quá trình của mình | **Xong 03/10/2026 (duoc-CR-585).** Backend: `work_history_access.block_self_write`, chặn khi `created_by = user_id` và thiếu `is_system_admin`. Frontend: cờ `can_edit` từ backend, bấm Sửa/Xóa đẩy người dùng lên danh sách nếu không được phép |
 | **Cao** | **U3 / V0-4** — màn kiểm việc duyệt đang treo trước khi khóa | Làm dở: đã tự khóa và có nút chuyển từng việc, **chưa có màn liệt kê** việc người nghỉ đang giữ |
-| **Cao** | Nhật ký hệ thống lưu nguyên văn trường nhạy cảm | `tab_request_log.request_body` (bộ lọc chỉ che mật khẩu/token) và `tab_change_log` lưu nguyên số tài khoản ngân hàng, CCCD, MST — đọc được bằng quyền xem nhật ký, **không qua** `employee_sensitive` |
+| ~~Cao~~ | Nhật ký hệ thống lưu nguyên văn trường nhạy cảm | **Xong 02/10/2026 (duoc-CR-554)** cho dòng ghi MỚI. `tab_request_log`: mọi đường `/api/employees…` che 15 trường của `SENSITIVE_FIELDS` (cả thân gửi lên lẫn thân lỗi), hai cửa bảng con `/contacts`, `/families` che trọn `items`. `tab_change_log`: `tab_employee` che đúng 15 cột đó (vẫn ghi TÊN ô đổi, `is_masked = 1`); hai bảng con chỉ giữ `relation`, `gender`, `sort_order`, `employee_id`. Che theo đường dẫn / bảng chứ không theo tên ô, vì `tax_code`, `bank_account_no` của **nhà cung cấp** phải giữ giá trị. ⚠️ **Dòng cũ đã ghi trước 02/10 vẫn còn nguyên văn** — chưa dọn |
 | TB | **C5** — in «Phiếu thông tin nhân viên» BM00../QT01/NS | Chưa làm |
 | TB | **U2** — chốt theo đặc tả hay giữ cách hiện tại | Chờ quyết định |
 | TB | CSV nhân sự gác bằng `read` | Bản XLSX đã gác bằng `export`; CSV chưa (V0-2 còn sót) |
@@ -644,7 +655,67 @@ Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-
 | Thấp | U5 ở tầng dữ liệu | Cột chưa có ràng buộc duy nhất — hai lượt cấp cùng lúc có thể ra hai tài khoản |
 | Chờ chính sách | Người có `employee.write` phạm vi «tất cả» đặt được mật khẩu của người quyền cao hơn | Ghi chú tự nêu trong `_block_set_password_out_of_scope` |
 
-Các bước lớn tiếp theo của phân hệ (ngoài tài liệu này) đều **chưa bắt đầu**: Hợp đồng lao động
-(V1-5), Quyết định điều chuyển/bổ nhiệm (V1-8), Sơ đồ tổ chức (V2-6) — tình trạng từng mục của lộ
+Các bước lớn tiếp theo của phân hệ (ngoài tài liệu này) đều **chưa bắt đầu hoặc làm dở**: Hợp đồng lao động
+(V1-5), Quyết định điều chuyển/bổ nhiệm **đầy đủ (V1-8)** — bản gọn đã có (duoc-CR-585), còn phiếu nhiều người · tờ trình · duyệt · thay thế cho, Sơ đồ tổ chức (V2-6) — tình trạng từng mục của lộ
 trình xem [`tham-khao-hrm/10-de-xuat-ap-dung.md` §0](../tham-khao-hrm/10-de-xuat-ap-dung.md).
 
+### 7.11. Quá trình công tác nhân sự — bản gọn của V1-8 (duoc-CR-585, 03/10/2026)
+
+**Mục đích:** Lịch sử công tác từng người — dùng để quản lý kiêm nhiệm, theo dõi quá trình thăng tiến, lưu tệp quyết định. **Không phải phiếu duyệt** — ghi tay không duyệt, có thể sửa/xóa, hỏi một lần rồi áp hồ sơ.
+
+**Bảng `tab_employee_work_history`** (18 cột: 14 nghiệp vụ + 4 audit):
+
+| Cột | Kiểu | Ý nghĩa |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `employee_id` | BIGINT FK mềm | Nhân sự liên kết; xóa hồ sơ → xóa dòng |
+| `event_type` | SMALLINT | Bộ mã 7 loại (HIRE · TRANSFER · APPOINT · CONCURRENT · DISMISS · RESIGN · OTHER) ở `hr_work_history_codes.py` → `WORK_EVENT_TYPE` TypeScript |
+| `from_date` | DATE | **Ngày hiệu lực = ngày bắt đầu** của sự kiện; nếu tới ngày hôm nay hoặc quá khứ → cho phép áp hồ sơ |
+| `to_date` | DATE NULL | Khi nào hết hiệu lực (nếu có); kiêm nhiệm kết thúc thì điền |
+| `company_id` · `department_id` · `position_id` | BIGINT | Pháp nhân / Phòng ban / Chức vụ **sau khi** có sự kiện này |
+| `position_label` | VARCHAR(100) | **Nhãn chụp** của chức vụ ngày hôm đó; **không propagate khi đổi tên danh mục** — cố ý để bản in lịch sử không đổi |
+| `decision_no` · `decision_date` | VARCHAR(50) · DATE | Số QĐ ký tên / Ngày ký; `decision_date` giữ riêng từ `from_date` để lưu lịch sử |
+| `note` | VARCHAR(500) | Ghi chú |
+| `applied_at` · `applied_by` | DATETIME · BIGINT | Lúc áp hồ sơ + người áp; lần thay lần |
+
+**Bảy loại sự kiện và cách áp hồ sơ:**
+
+| Loại | Tên (Việt) | Mã | Cột được đổi | Cách áp | Lưu ý |
+|---|---|---|---|---|---|
+| Tuyển dụng | HIRE | 1 | company / dept / position | `update_employee` (chính) | Hướng tới cột `hire_date` nếu chưa có |
+| Điều chuyển | TRANSFER | 2 | company / dept | `update_employee` (chính) | Đổi pháp nhân hoặc phòng (cả hai không thay đổi → lỗi) |
+| Bổ nhiệm | APPOINT | 3 | position | `update_employee` (chính) | Đổi chức vụ; nếu công ty/phòng khác cấp công ty/phòng trước |
+| Kiêm nhiệm | CONCURRENT | 4 | thêm dept/position | `set_extra_departments` | Thêm vào `tab_employee_department` (bảng con kiêm nhiệm) dòng `from_date`–`to_date` này; `to_date` rỗng → vẫn đang kiêm. Dòng kiêm này CHỈ sống ở lịch sử (không có form kiêm thường) |
+| Loại bỏ từ danh sách | DISMISS | 5 | company / dept / position → 0 | `update_employee` (chính) | Gỡ khỏi công ty / phòng ban / chức vụ; cần rõ ràng **không phải đã thôi việc** — vẫn còn làm |
+| **Thôi việc** | **RESIGN** | **6** | `has_left_company = True`, `resign_date = from_date` | `update_employee` (chính) + `lock_linked_users` | **Hộp xác nhận riêng** — lịch sử không thể phục hồi từ bước này. Nói rõ: «Chuyển hồ sơ sang đã nghỉ việc? Tài khoản sẽ bị khóa + thu hồi phiên + huỷ tất cả share docs.» |
+| Khác | OTHER | 9 | (không đổi hồ sơ) | Ghi chú hoàn toàn | |
+
+**Quyền và bộ lọc:**
+
+- `employee.write` (+ phạm vi như thường) để tạo/sửa/xóa dòng và áp hồ sơ.
+- **Q3 — Chặn HR tự sửa quá trình của mình** (`block_self_write`): người được ghi trong `created_by` không sửa được, trừ quản trị hệ thống.
+- **Q4 — Tệp QĐ** gác bằng `employee_sensitive.read` (cộng với `employee.read` + phạm vi). Dòng lịch sử vẫn hiện được; cột «Tệp đính kèm» nói rõ «Có N tệp» nhưng nút xem tắt. Chính chủ (`/me`) luôn xem được tệp của mình mà không cần `employee_sensitive.read`.
+- **A9 — Cờ `can_edit` + `can_open_files`** tính ở backend, trả kèm danh sách. Frontend không tự ghép từ `can() + so id`.
+
+**Nâng lên V1-8 đầy đủ sau:**
+
+- Thêm cột `decision_id` (FK cứng → phiếu quyết định nhiều người). Khi có thì tệp QĐ không nằm trong dòng lịch sử mà nằm trong phiếu QĐ.
+- Một phiếu QĐ có nhiều dòng lịch sử (gom theo loại sự kiện hoặc theo người).
+- Tờ trình → duyệt → QĐ.
+
+**API và endpoint:**
+
+```
+GET    /api/employees/me/work-history                  (đăng nhập, /me chỉ-đọc)
+GET    /api/employees/{eid}/work-history               (list với phạm vi + can_edit/can_open_files)
+POST   /api/employees/{eid}/work-history               (tạo)
+PATCH  /api/employees/{eid}/work-history/{hid}         (sửa)
+DELETE /api/employees/{eid}/work-history/{hid}         (xóa)
+POST   /api/employees/{eid}/work-history/{hid}/apply   (áp vào hồ sơ)
+```
+
+**Dòng tương lai (từ `from_date` > hôm nay):** lưu được, nhưng không cho áp. Nút Áp tắt kèm tooltip «Ngày hiệu lực phải bằng hoặc trước hôm nay». Khi tới ngày, HR bấm Áp để thực thi.
+
+
+
+**Bổ sung 03/10/2026 (đại ca xem bản đầu, rồi chốt tách tab):** bản đầu gộp hai khu vào MỘT tab «Quá trình công tác & Quyết định»; đại ca thấy gom một tab khó nhìn nên chốt TÁCH thành HAI TAB RIÊNG đứng cạnh nhau — «Quá trình công tác» (giá trị `work-history`, giữ nguyên để link cũ không gãy; mọi dòng, có thao tác) và «Quyết định bổ nhiệm» (giá trị `decisions`, chỉ dòng có `decision_no`, CHỈ XEM — rỗng thì có nút «Thêm ở tab Quá trình công tác» khi còn quyền sửa, bấm vào nhảy sang tab kia). Hai tab dùng CHUNG một truy vấn (`useEmployeeWorkHistory`) — TanStack Query cache theo key là đủ, không gọi API hai lần trong 30 giây. Mỗi tab tự có nút «Bảng | Dòng thời gian», giữ trên URL (`whView`/`decView`), mặc định Bảng. Một component dòng thời gian dùng chung cho cả hai tab (`hr/components/employee-work-history-timeline.tsx`); ở trang /me, hai khu nay là HAI TAB CON bên trong thẻ (`profile-work-history-card.tsx`), chỉ xem, không lưu lựa chọn vào URL. Backend không đổi.

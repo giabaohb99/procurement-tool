@@ -40,6 +40,8 @@ vi.mock('../hooks/use-purchase-request-support', () => ({
   usePurchaseRequestProducts: () => ({ data: { items: [] }, isLoading: false, isError: false }),
 }))
 
+/** Đối số mỗi lần gọi hook tra kho khảo sát — để soi bộ lọc thật sự gửi đi. */
+const mockAvailableCalls: unknown[][] = []
 const noopMutation = { mutate: vi.fn(), isPending: false }
 const completeMutate = vi.fn()
 
@@ -48,7 +50,10 @@ vi.mock('../hooks/use-purchase-request-options', () => ({
     data: { items: mockOptions },
     isLoading: false,
   }),
-  usePrAvailableSurveyLines: () => ({ data: { items: [], total: 0 }, isLoading: false }),
+  usePrAvailableSurveyLines: (...args: unknown[]) => {
+    mockAvailableCalls.push(args)
+    return { data: { items: [], total: 0 }, isLoading: false }
+  },
   useAttachSurveyOption: () => noopMutation,
   useAddManualOption: () => noopMutation,
   useUpdateOption: () => noopMutation,
@@ -179,6 +184,7 @@ function buildPurchaseRequest(
 }
 
 beforeEach(() => {
+  mockAvailableCalls.length = 0
   mockUser = null
   grantedPermissions = []
   mockOptions = [buildOption()]
@@ -235,24 +241,46 @@ describe('PurchaseRequestProcessCard', () => {
     expect(screen.queryByRole('button', { name: 'Chốt' })).toBeNull()
   })
 
-  // Đại ca 03/10/2026: «cho nút bỏ lọc filter» ở khối tra kho khảo sát của màn xử lý.
-  it('clears supplier, item group and keyword in one click with «Bỏ lọc»', () => {
+  // Đại ca 03/10/2026: «cho nút bỏ lọc filter» ở khối tra kho khảo sát của màn xử lý; 05/10/2026
+  // chốt «Bỏ lọc» về phân loại của dòng để vẫn thấy kết quả (bao-CR-589).
+  it('«Bỏ lọc» resets to the line defaults and keeps searching by the line item group', () => {
     mockUser = { employee_id: 77, emp_code: 'NSTM01' }
     grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
 
     renderCard(buildPurchaseRequest())
 
-    // Mặc định đã lọc theo phân loại của dòng ('Bao bì') nên nút có sẵn.
+    // Đang đứng ở mặc định (phân loại của dòng 'Bao bì') thì không có gì để bỏ.
+    expect(screen.queryByRole('button', { name: 'Bỏ lọc' })).toBeNull()
+    // Nút cũ «Về phân loại dòng» đã gộp vào «Bỏ lọc».
+    expect(screen.queryByRole('button', { name: 'Về phân loại dòng' })).toBeNull()
+
     const keyword = screen.getByPlaceholderText('Tìm theo tên SP / mã / NCC...')
     fireEvent.change(keyword, { target: { value: 'decal' } })
     fireEvent.click(screen.getByRole('button', { name: 'Bỏ lọc' }))
 
     expect(keyword).toHaveValue('')
-    // Bỏ hết điều kiện thì backend không trả gì — màn quay về câu gợi ý, và nút tự ẩn.
-    expect(screen.getByText(/Chọn NCC, phân loại hoặc gõ từ khóa/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Bỏ lọc' })).toBeNull()
-    // Lối quay lại gợi ý theo dòng vẫn còn.
-    expect(screen.getByRole('button', { name: 'Về phân loại dòng' })).toBeInTheDocument()
+    // Vẫn tra theo phân loại của dòng — không rơi về câu gợi ý trống.
+    expect(screen.queryByText(/Chọn NCC, phân loại hoặc gõ từ khóa/)).toBeNull()
+    const [, , filters, enabled] = mockAvailableCalls[mockAvailableCalls.length - 1]
+    expect(filters).toMatchObject({ supplier_code: '', item_group: 'Bao bì', search: '', page: 1 })
+    expect(enabled).toBe(true)
+  })
+
+  it('«Bỏ lọc» on a line without item group falls back to the search prompt', () => {
+    mockUser = { employee_id: 77, emp_code: 'NSTM01' }
+    grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
+
+    renderCard(buildPurchaseRequest({ items: [buildItem({ item_group: '' })] }))
+
+    expect(screen.getByText(/Chọn NCC, phân loại hoặc gõ từ khóa/)).toBeInTheDocument()
+    fireEvent.change(screen.getByPlaceholderText('Tìm theo tên SP / mã / NCC...'), {
+      target: { value: 'decal' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ lọc' }))
+
+    // Dòng không có phân loại thì mặc định là không điều kiện — backend không liệt kê cả kho.
+    expect(screen.getByText(/Chọn NCC, phân loại hoặc gõ từ khóa/)).toBeInTheDocument()
   })
 
   it('completes directly when every line of mine already has options', () => {

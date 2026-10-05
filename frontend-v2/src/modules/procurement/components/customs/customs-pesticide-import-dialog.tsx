@@ -1,12 +1,16 @@
-// Nạp lại danh mục thuốc BVTV từ tệp của bản cào danhmuc.thuocbvtv.com (`thuoc-bvtv.json` hoặc
-// `thuoc-bvtv.xlsx`). THAY TOÀN BỘ thuốc lấy từ nguồn, GIỮ thuốc tự thêm trên màn (duoc-CR-490) —
-// nên hộp thoại nói rõ số thuốc sắp bị thay, số được giữ, và chỗ sửa tay trên thuốc nguồn sẽ mất.
-// Backend đọc + kiểm hết tệp rồi mới xóa, tệp hỏng thì danh mục cũ còn nguyên.
+// Nạp lại danh mục thuốc BVTV — chấp nhận CẢ BA loại tệp: bản cào gốc (`thuoc-bvtv.json` /
+// `.xlsx` từ danhmuc.thuocbvtv.com), tệp xuất «Toàn bộ danh mục» hoặc tệp xuất «Trang hiện tại»
+// (xem `customs-pesticide-export-menu.tsx`). Backend tự nhận ra loại tệp qua sheet ẩn và trả về
+// `mode`: bản cào gốc/tệp toàn bộ → THAY cả danh mục (GIỮ thuốc tự thêm, duoc-CR-490); tệp theo
+// trang → chỉ CẬP NHẬT đúng các thuốc có trong tệp, phần còn lại giữ nguyên. Hộp thoại không tự
+// đoán trước loại tệp (chỉ biết sau khi nạp xong) nên câu cảnh báo số thuốc sắp bị thay ở dưới chỉ
+// đúng cho trường hợp THAY — đã nói rõ bằng chữ. Backend đọc + kiểm hết tệp rồi mới xóa, tệp hỏng
+// thì danh mục cũ còn nguyên.
 //
 // Nút Nạp chặn bấm đúp bằng `useRef` ngay trong lượt bấm — `disabled` chỉ đổi ở lượt vẽ sau.
 // Đang nạp thì KHÔNG cho đóng hộp: đóng là mất `useRef`, mở lại bấm tiếp là hai lượt thay toàn bộ
 // chạy song song (backend có khóa chặn trả 409, đây là để người dùng khỏi ăn lỗi đó).
-import { FileJson, TriangleAlert, Upload } from 'lucide-react'
+import { FileJson, Info, TriangleAlert, Upload } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -58,16 +62,21 @@ export function CustomsPesticideImportDialog({
     if (busy.current || !file) return
     busy.current = true
     try {
-      const result = await importMutation.mutateAsync(file)
+      const { result, message } = await importMutation.mutateAsync(file)
+      //  Có `mode` = backend đã biết phân biệt tệp toàn bộ / tệp theo trang, câu `message` của nó
+      //  đã đúng theo từng chế độ — hiện NGUYÊN câu đó. Backend CŨ chưa trả `mode` thì tự ghép câu
+      //  như trước (chỉ đúng cho chế độ THAY, vì bản cũ chỉ có một chế độ).
       toast.success(
-        `Đã nạp ${result.pesticides.toLocaleString('vi-VN')} thuốc, ` +
-            `${result.uses.toLocaleString('vi-VN')} dòng phạm vi sử dụng` +
-          (result.kept_manual > 0
-            ? `, giữ ${result.kept_manual.toLocaleString('vi-VN')} thuốc tự thêm`
-            : '') +
-          (result.dropped > 0
-            ? `, bỏ ${result.dropped.toLocaleString('vi-VN')} thuốc không còn trong tệp`
-            : ''),
+        result.mode && message
+          ? message
+          : `Đã nạp ${result.pesticides.toLocaleString('vi-VN')} thuốc, ` +
+              `${result.uses.toLocaleString('vi-VN')} dòng phạm vi sử dụng` +
+              (result.kept_manual > 0
+                ? `, giữ ${result.kept_manual.toLocaleString('vi-VN')} thuốc tự thêm`
+                : '') +
+              (result.dropped > 0
+                ? `, bỏ ${result.dropped.toLocaleString('vi-VN')} thuốc không còn trong tệp`
+                : ''),
       )
       onClose()
     } catch {
@@ -87,6 +96,12 @@ export function CustomsPesticideImportDialog({
             (danhmuc.thuocbvtv.com — dữ liệu EcoFarm của Cục BVTV).
           </DialogDescription>
         </DialogHeader>
+
+        <CustomsNotice tone="info" icon={<Info className="size-4" />}>
+          Tệp toàn bộ danh mục (bản cào gốc hoặc xuất «Toàn bộ danh mục») sẽ{' '}
+          <b>thay cả danh mục</b>. Tệp xuất «Trang hiện tại» chỉ <b>cập nhật</b> đúng các thuốc có
+          trong tệp (thêm thuốc mới nếu chưa có), phần còn lại giữ nguyên.
+        </CustomsNotice>
 
         <FileDropzone
           accept={ACCEPTED}

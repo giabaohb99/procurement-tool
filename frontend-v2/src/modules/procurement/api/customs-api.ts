@@ -139,7 +139,12 @@ export async function exportCustomsLines(params: Params) {
   }
 }
 
-async function readBlobErrorMessage(error: unknown): Promise<string> {
+/**
+ * Lỗi của một đường xuất Excel tải bằng `responseType: 'blob'` (vd `customs-pesticide-api.ts`)
+ * cũng về dạng blob — đọc lại thành JSON mới lấy được câu lỗi tiếng Việt của backend, không thì
+ * người dùng chỉ thấy "có lỗi xảy ra".
+ */
+export async function readBlobErrorMessage(error: unknown): Promise<string> {
   const data = (error as { response?: { data?: unknown } })?.response?.data
   if (data instanceof Blob) {
     try {

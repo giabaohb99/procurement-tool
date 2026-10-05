@@ -6,23 +6,25 @@ Hai khóa quyền:
     danh mục từ tệp (`write` — nạp còn gắn lại hoạt chất cho MỌI dòng hàng hải quan). Tách khỏi
     `customs_price` giống `customs_regulation`: người nạp tờ khai không nhất thiết giữ danh mục.
 """
+import os
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
 
 from app.core.auth import require
 from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import (pesticide_edit_service, pesticide_reader, pesticide_related_service,
-               pesticide_service)
+from . import (pesticide_edit_service, pesticide_export_service, pesticide_merge_service,
+               pesticide_reader, pesticide_related_service, pesticide_service)
 from .pesticide_schema import PesticideIn
 
 ENTITY = "customs_price"
 EDIT_ENTITY = "customs_pesticide"
-#  Tệp JSON của bản cào ~18 MB (Excel ~3,4 MB). Trần 30 MB: đủ cho nguồn lớn dần mà JSON đã
-#  giải ra vẫn nằm gọn trong trần bộ nhớ 2 GB của container api.
-MAX_UPLOAD_BYTES = 30 * 1024 * 1024
+XLSX_MEDIA = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 router = APIRouter(prefix="/api/customs/pesticides", tags=["customs"])
 
@@ -42,6 +44,25 @@ def list_pesticides(q: str = "", status: int | None = Query(None, ge=0, le=9),
 @router.get("/options")
 def get_options(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     return success(pesticide_service.options(db))
+
+
+@router.get("/export")
+def export_pesticides(scope: str = Query("page", pattern="^(page|all)$"),
+                      q: str = "", status: int | None = Query(None, ge=0, le=9),
+                      pest_group: str = "", sector: str = "", banned_only: bool = False,
+                      banned_regulation_id: int | None = Query(None, ge=1),
+                      pg: dict = Depends(pagination),
+                      db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
+    """Xuất Excel mục «Thuốc BVTV» — đặt TRƯỚC `/{pesticide_id}` để "export" không bị nuốt làm id.
+
+    `scope=all` = cả danh mục, nạp lại được ngay bằng «Nạp danh mục» (xem `pesticide_export_
+    service`). `scope=page` = đúng trang đang lọc/xem, dùng để đối chiếu — KHÔNG nhằm nạp lại.
+    """
+    path, filename = pesticide_export_service.export_to_tempfile(
+        db, user, scope, q, status, pest_group, sector, banned_only, banned_regulation_id,
+        pg["page"], pg["offset"], pg["limit"])
+    return FileResponse(path, filename=filename, media_type=XLSX_MEDIA,
+                        background=BackgroundTask(os.remove, path))
 
 
 @router.get("/{pesticide_id}/related")
@@ -82,13 +103,24 @@ def delete_pesticide(pesticide_id: int, db: Session = Depends(get_db),
 @router.post("/import")
 def import_catalog(file: UploadFile = File(...), db: Session = Depends(get_db),
                    user=Depends(require(EDIT_ENTITY, "write"))):
-    """Thay TOÀN BỘ danh mục bằng tệp `thuoc-bvtv.json` / `thuoc-bvtv.xlsx` của bản cào."""
-    content = file.file.read(MAX_UPLOAD_BYTES + 1)
-    if len(content) > MAX_UPLOAD_BYTES:
+    """Nạp danh mục từ tệp `thuoc-bvtv.json`/`thuoc-bvtv.xlsx` của bản cào, HOẶC tệp hệ thống
+    tự xuất (C1, 02/10/2026): tệp xuất TOÀN BỘ / bản cào gốc → THAY TOÀN BỘ như trước giờ; tệp
+    xuất THEO TRANG (sheet ẩn `_xuat` scope=page — `pesticide_export_marker`) → chỉ CẬP NHẬT
+    đúng thuốc có trong tệp, không đụng phần còn lại (`pesticide_merge_service`)."""
+    content = file.file.read(pesticide_reader.MAX_UPLOAD_BYTES + 1)
+    if len(content) > pesticide_reader.MAX_UPLOAD_BYTES:
         raise HTTPException(413, "Tệp quá lớn (tối đa 30 MB)")
     try:
-        records = pesticide_reader.read_file(file.filename or "", content)
+        records, mode = pesticide_reader.read_file_with_mode(file.filename or "", content)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
-    result = pesticide_service.replace_catalog(db, records, user.id, file.filename or "")
-    return success(result, f"Đã nạp {result['pesticides']:,} thuốc BVTV".replace(",", "."))
+    if mode == "merge":
+        result = pesticide_merge_service.merge_catalog(db, records, user.id, file.filename or "")
+        updated_fmt = f"{result['updated']:,}".replace(",", ".")
+        added_fmt = f"{result['added']:,}".replace(",", ".")
+        message = f"Đã cập nhật {updated_fmt} thuốc (thêm mới {added_fmt}), giữ nguyên phần còn lại"
+    else:
+        result = pesticide_service.replace_catalog(db, records, user.id, file.filename or "")
+        pesticides_fmt = f"{result['pesticides']:,}".replace(",", ".")
+        message = f"Đã thay toàn bộ danh mục: {pesticides_fmt} thuốc"
+    return success(result, message)

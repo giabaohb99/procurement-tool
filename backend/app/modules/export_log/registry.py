@@ -307,3 +307,14 @@ EXPORT_ADAPTERS: dict[str, dict] = {
 
 def is_exportable(entity: str) -> bool:
     return entity in EXPORT_ADAPTERS
+
+
+#  L2 (review Xuất Excel Thuốc BVTV, 02/10/2026) — nhãn hiển thị cho các `ExportLog.entity`
+#  KHÔNG đăng ký `EXPORT_ADAPTERS` vì có endpoint xuất RIÊNG, không qua khung `run_export()`
+#  (hai sheet lồng nhau với tên cột cố định khớp bộ nạp — xem `customs.pesticide_export_
+#  service`), nhưng VẪN ghi chung vào `tab_export_log` để truy vết. Chỉ để `/system/exports`
+#  hiện tên đọc được thay vì chuỗi mã entity thô — KHÔNG đưa vào `is_exportable()`/
+#  `available_entities()`, nên không bật nút "Xuất" chung cho các entity này.
+ENTITY_LABELS_EXTRA: dict[str, str] = {
+    "customs_price": "Thuốc BVTV",
+}

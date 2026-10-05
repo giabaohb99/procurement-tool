@@ -63,6 +63,11 @@ from app.modules.purchase_request.controller import router as pr_router
 from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
+#  Quá trình công tác (phase-02, plan 261003-0837) — router RIÊNG, cùng prefix
+#  `/api/employees`. Khai include TRƯỚC `employee_router` (xem main() dưới):
+#  không có xung đột route thật (đường của router này luôn dài hơn một đoạn
+#  `/work-history`), nhưng giữ đúng thứ tự theo chỉ dẫn của phase cho dễ dò.
+from app.modules.employee.work_history_controller import router as employee_work_history_router
 from app.modules.employee.report_controller import router as employee_report_router
 from app.modules.leave.report_controller import router as leave_report_router
 from app.modules.leave.balance_report_controller import router as leave_balance_report_router
@@ -256,6 +261,7 @@ app.include_router(approval_report_router)
 app.include_router(work_report_router)
 app.include_router(company_router)
 app.include_router(department_router)
+app.include_router(employee_work_history_router)
 app.include_router(employee_router)
 app.include_router(job_position_router)
 app.include_router(dossier_type_router)
