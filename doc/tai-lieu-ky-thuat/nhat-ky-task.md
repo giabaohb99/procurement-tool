@@ -119,7 +119,7 @@ Deploy: chưa deploy.
 ---
 
 ## bao-CR-596 | Dựng chiều đồng bộ ERP sang app đặt xe cũ (P3), khóa bằng công tắc
-- status: dang-lam
+- status: xong
 - date: 2026-10-05
 Đại ca chốt ngày 05/10: làm đủ chiều ERP → app cũ, gồm kết cục duyệt, điều phối, trạng thái tài xế, km/chi phí và đóng
 dấu; phiếu tạo trên ERP cũng phải hiện bên app cũ; không gửi thông báo từ phía ERP cho người dùng app cũ; mã viết xong
@@ -151,6 +151,18 @@ Mã nguồn: ERP `legacy_datxe/outbound.py`, `outbound_listener.py`, `outbound_t
 (`retry_pending`), `core/database.py`, `core/celery_app.py`, `core/config.py`, `core/app_settings.py`,
 `setting/service.py`; app cũ `src/services/erp-inbound.service.ts`, `src/index.ts`, `src/types/db.types.ts`, `wrangler.jsonc`.
 
+Chạy thử đầu-cuối trên DEV ngày 05/10 (đại ca cho phép): đẩy app cũ lên nhánh dev (Worker dev tự deploy), bật tạm hai công
+tắc, chạy 6 tình huống rồi đọc thẳng Firebase dev để so. Phiếu xe đến từ app cũ: duyệt → điều phối → tài xế nhận → hoàn
+thành kèm km/chi phí — bên app cũ ra đúng trạng thái, khóa xe và khóa tài xế, chữ biển số và tên tài xế, km, chi phí, mỗi
+bước đúng một dòng lịch sử «Xử lý trên ERP», nội dung người tạo gõ giữ nguyên. Phiếu xe và phiếu dấu tạo trên ERP: app
+cũ tạo đúng `erp_vb_936` / `erp_sr_869`, ERP ghi ngược khóa. Phiếu dấu đến từ app cũ: duyệt → đóng dấu sang đúng. Trả
+về sửa và từ chối sang đúng. 17 lượt gửi đều thành công, mỗi phiếu tối đa 4 lượt (đúng số bước), chiều nhận không kéo
+ngược phiếu vừa gửi (2 dòng «bỏ qua»), không có vòng lặp. Bắt được và đã vá một lỗi: «đã điều phối» sang «hoàn thành»
+từng ghi thêm một dòng «approved» thừa — nay chỉ ghi khi kết cục thật sự đổi. Thử xong đã TẮT lại cả hai công tắc (Worker
+dev trả 503). Phiếu thử còn trên dev: ERP DX000802, DX000799, DX000798, DX000796, DD000865 (dữ liệu thử của app cũ dev),
+P3THU-X083005 (id 936), P3THU-D083005 (id 869).
+Commit: erp-v2 `4f84c041`; app cũ nhánh `dev` `e5c7cd7` + `fb8100a` (vá) + hai commit bật/tắt tạm, Worker dev `ae999a0`.
+Deploy: DEV 05/10/2026 cả hai bên, công tắc TẮT; prod chưa.
 ---
 
 ## bao-CR-595 | Gộp tài khoản «Đào Trúc Nhi (Đặt xe)» vào chị Đào Trúc Nhi NSU206, gán chị làm Văn thư và Quản lý điều phối

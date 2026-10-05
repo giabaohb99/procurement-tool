@@ -106,3 +106,21 @@ Trả về phong bì `{success, data: {legacy_id, status}}`. ERP chỉ ghi `lega
 - `SEAL_DELIVERED` (QĐ-H) chưa làm — luồng thật của app cũ không dùng tới.
 - Hiển thị km/chi phí trên giao diện app cũ (`degoholding-app-frontend`): dữ liệu đã nằm trong
   `details.dispatch`, màn hình chưa vẽ.
+
+## 8. Chạy thử trên dev — 05/10/2026
+
+Đẩy app cũ lên nhánh `dev` (Worker dev tự deploy), bật tạm hai công tắc, chạy 6 tình huống rồi đọc thẳng Firebase dev:
+
+| # | Tình huống | Kết quả |
+|---|---|---|
+| 1 | Phiếu xe từ app cũ: duyệt → điều phối → tài xế nhận → hoàn thành + km/chi phí | Đúng trạng thái, khóa xe/tài xế, chữ, km, chi phí; mỗi bước một dòng lịch sử; nội dung người tạo giữ nguyên |
+| 2 | Phiếu xe tạo trên ERP: tạo → duyệt → điều phối → hoàn thành | App cũ tạo `erp_vb_936`, ERP ghi ngược khóa |
+| 3 | Phiếu dấu tạo trên ERP: tạo → duyệt → đóng dấu | App cũ tạo `erp_sr_869`, công ty → `brandId` đúng |
+| 4 | Phiếu dấu từ app cũ: duyệt → đóng dấu | Đúng |
+| 5 | Trả về sửa | `needs_correction` + một dòng lịch sử |
+| 6 | Từ chối | `rejected` + một dòng lịch sử |
+
+17 lượt gửi đều thành công, mỗi phiếu tối đa 4 lượt, chiều nhận không kéo ngược (2 dòng «bỏ qua»), không vòng lặp.
+Lỗi bắt được và đã vá: «đã điều phối» → «hoàn thành» từng ghi thêm dòng «approved» thừa (đường nhận nay chỉ ghi khi
+kết cục đổi). Thử xong đã TẮT cả hai công tắc. Kho Firebase dev khác prod nên khóa tài xế trên dev (tra theo bảng gán
+tay của prod) có thể không trỏ vào tài xế có thật bên dev — đường ống đúng, dữ liệu danh mục thì prod mới chứng minh được.
