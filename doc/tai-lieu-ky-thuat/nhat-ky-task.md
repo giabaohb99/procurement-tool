@@ -11654,3 +11654,20 @@ Lên prod ngày 30/09 (main e70a80ad), sao lưu DB prod trước khi deploy.
 Mã nguồn: `backend/app/modules/company/service.py`, `backend/app/modules/company/schema.py`,
 bài kiểm `test/backend/test_chan_trung_mst_cr534.py`.
 Commit: xem commit bao-CR-534 trên erp-v2; Erp Agent 1 đưa lên dev.
+
+## ai-CR-065 | Viết lại quy trình và sơ đồ tổ chức của bot trợ lý
+- status: xong
+- date: 2026-10-05
+Đại ca muốn một chỗ đọc toàn bộ bot trợ lý: bot gồm những phần nào, nằm ở đâu, ai được làm gì, các luồng
+chạy ra sao, trước khi làm tiếp phần máy sửa mã thứ hai.
+
+Đã viết tài liệu số 07 gồm: sơ đồ tổ chức với bot tổng ở máy chủ một, bot code ở máy chủ hai (tạm là máy
+đại ca), GitHub, dev và prod; bảng ai giữ chìa khóa gì; bảng vai trò và quyền; sáu luồng chính (tin nhắn
+thường, việc sửa mã, bản xem thử, bot code thao tác trên máy chủ một có duyệt, sao lưu và hoàn tác, bot
+tự cải thiện với ba luật cứng, sổ máy và sổ môi trường); và trạng thái từng phase. Ghi luôn các chốt thiết
+kế ngày 05/10: tài khoản Claude riêng của công ty cho bot code, bản xem thử chạy đủ bộ với cơ sở dữ liệu
+riêng, việc chép dữ liệu dev sang để sau, lệnh lên prod chỉ phát từ máy chủ một kèm mã xác nhận.
+
+Trước đó gộp nhánh dev mới nhất về nhánh bot (180 commit, không đụng độ).
+
+Mã nguồn: doc/agent-hub/07-quy-trinh-va-so-do.md · doc/tai-lieu-ky-thuat/change-log-ai.md
