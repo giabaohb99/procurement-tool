@@ -12144,3 +12144,5 @@ cao như tiền, phân quyền, đổi cấu trúc cơ sở dữ liệu vẫn ch
 tự chọn cách an toàn cho những câu nghiệp vụ phụ thay vì hỏi lại.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py · coder.py · manager.py · policy.py
+Commit: fe90902c (erp-v2 fe90902c)
+Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
