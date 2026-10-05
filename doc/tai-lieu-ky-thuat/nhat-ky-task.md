@@ -11753,7 +11753,7 @@ cùng lúc bị chặn.
 
 Mã nguồn: backend/scripts/deploy/deploy.sh · backend/app/modules/agent_hub/coder.py · guardrails.py · model.py
 Commit: ed371d19 (erp-v2 a3b0dd55)
-Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; công tắc AGENT_OPS_ENABLED / AGENT_HEAL_ENABLED chưa bật; prod chưa
+Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; 13:29 bật AGENT_OPS_ENABLED + AGENT_HEAL_ENABLED trên dev và máy sửa mã theo lệnh đại ca; prod CHƯA — đại ca dặn từ từ vì chưa hoàn thiện
 
 ## ai-CR-068 | Bot thao tác trên máy chủ qua cổng duyệt, sao lưu trước, hoàn tác được, báo tài nguyên
 - status: xong
@@ -11769,7 +11769,7 @@ chẩn đoán) và sao lưu một bảng nhỏ rồi xóa tệp thử.
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · guardrails.py · service.py · tasks.py
 Commit: ed371d19 (erp-v2 a3b0dd55)
-Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; công tắc AGENT_OPS_ENABLED / AGENT_HEAL_ENABLED chưa bật; prod chưa · migration e8a3c5f1d7b2
+Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; 13:29 bật AGENT_OPS_ENABLED + AGENT_HEAL_ENABLED trên dev và máy sửa mã theo lệnh đại ca; prod CHƯA — đại ca dặn từ từ vì chưa hoàn thiện · migration e8a3c5f1d7b2
 
 ## ai-CR-069 | Bot tự vận hành: theo dõi sức khỏe, tự chẩn đoán, tự chữa dev, sổ sự cố
 - status: xong
@@ -11784,4 +11784,4 @@ thao tác và tự chữa mặc định tắt. Còn thiếu: đếm lỗi 5xx t�
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · tasks.py · backend/app/core/celery_app.py
 Commit: ed371d19 (erp-v2 a3b0dd55)
-Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; công tắc AGENT_OPS_ENABLED / AGENT_HEAL_ENABLED chưa bật; prod chưa
+Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; 13:29 bật AGENT_OPS_ENABLED + AGENT_HEAL_ENABLED trên dev và máy sửa mã theo lệnh đại ca; prod CHƯA — đại ca dặn từ từ vì chưa hoàn thiện
