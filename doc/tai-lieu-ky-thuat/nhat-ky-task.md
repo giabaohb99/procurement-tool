@@ -11937,3 +11937,18 @@ ghi vào nhật ký cấu hình. Công cụ tìm đơn mua hàng có thêm bộ 
 theo pháp nhân, trả kèm tên phòng của từng đơn và đường dẫn nhà cung cấp thật thay cho đường dẫn bot tự bịa.
 
 Mã nguồn: backend/app/modules/assistant/glossary.py · assistant/service.py · assistant/tools/catalog.py · agent_hub/service.py
+Commit: 5aa6a711 (erp-v2 45b94440)
+Deploy: DEV 05/10 do Erp Agent 1; prod CHƯA
+
+## ai-CR-078 | Bot tự học: nhớ từ lời sửa, tự dò nghĩa từ dữ liệu, tự đề xuất sửa chỗ còn thiếu
+- status: xong
+- date: 2026-10-05
+Đại ca chọn ba hướng để bot tự cải thiện. Thứ nhất, khi người dùng sửa cách bot hiểu một từ («không phải, nhà máy là
+phòng Dego Organic»), Trợ lý tự ghi lại: đại ca sửa thì ghi thẳng vào sổ thuật ngữ, người khác sửa thì thành đề xuất
+chờ đại ca duyệt. Thứ hai, gặp từ nội bộ lạ, Trợ lý tự tra trong danh mục phòng ban, pháp nhân, chức vụ, nhà cung cấp
+và tên phòng ghi trên phiếu, rồi đề xuất nghĩa kèm bằng chứng; mỗi năm phút bot gửi đại ca thẻ đề xuất để nhắn «đúng»
+hoặc «thôi». Thứ ba, khi Trợ lý không làm được vì công cụ thiếu tính năng, nó ghi lại; cùng một chỗ thiếu gặp từ hai
+lần thì bot tự mở một việc sửa mã, đi đường duyệt thường. Phần đếm số phiếu theo tên phòng chỉ hiện khi người hỏi có
+quyền xem loại phiếu đó.
+
+Mã nguồn: backend/app/modules/assistant/tools/learning_tool.py · assistant/glossary.py · assistant/feedback.py · agent_hub/learning.py
