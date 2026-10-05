@@ -11891,3 +11891,15 @@ loại không bao giờ làm; trợ lý trên Telegram được dặn làm luôn
 dùng tự gõ lệnh.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py · ops.py · ops_runner.py · manager.py · service.py · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
+Commit: 69f2fef4 (erp-v2 69f2fef4)
+Deploy: DEV 05/10 do Erp Agent 1; chạy thật 14:38: đại ca nhắn bằng lời, bot soạn lệnh, «đúng» → 10 nhân sự (CR-414) mang chức vụ Nhân viên (Demo), có sao lưu op5; prod CHƯA
+
+## ai-CR-074 | Thẻ duyệt sửa dữ liệu gọn và dễ đọc hơn
+- status: xong
+- date: 2026-10-05
+Thẻ duyệt đầu tiên chạy thật còn hai chỗ chưa ổn: câu tóm tắt bị cắt cụt giữa chữ, và thẻ lộ tên bảng, tên cột,
+tên hàm khó đọc. Nay câu tóm tắt cắt ở ranh giới câu hoặc chữ; máy sửa mã được dặn viết bằng lời nghiệp vụ, đặt
+tên cột tiếng Việt cho dòng mẫu, không đưa cột id; thẻ chỉ hiện ba dòng mẫu và tối đa hai giả định quan trọng.
+Chi tiết kỹ thuật vẫn xem được bằng «thao tác #n».
+
+Mã nguồn: backend/app/modules/agent_hub/ops_runner.py · ops.py · test/backend/test_agent_hub.py

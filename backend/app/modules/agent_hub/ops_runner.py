@@ -782,11 +782,13 @@ Mỗi lượt trả lời ĐÚNG một khối JSON, không chữ nào ngoài kh�
 1. Xin tra (tối đa {per_round} câu, chỉ SELECT, không chọn cột mật khẩu / token / khóa):
    {{"lookups": ["SELECT ...", "..."]}}
 2. Lệnh cuối:
-   {{"summary": "một câu tiếng Việt cho đại ca: sẽ đổi gì, cho những bản ghi nào",
+   {{"summary": "MỘT câu ngắn (dưới 140 ký tự) bằng lời nghiệp vụ: đổi gì cho ai. KHÔNG tên bảng, tên cột, id, tên hàm",
      "sql": "MỘT câu UPDATE / INSERT / DELETE, có WHERE, không chú thích, chuỗi tiếng Việt viết đúng dấu",
      "count_sql": "SELECT COUNT(*) ... cùng điều kiện, đếm số dòng sẽ bị đổi",
-     "preview_sql": "SELECT vài cột nhận diện + cột sẽ đổi, cùng điều kiện, LIMIT 10",
-     "assumptions": ["giả định bạn đã chọn khi yêu cầu chưa rõ, nếu có"]}}
+     "preview_sql": "SELECT 2-3 cột người đọc hiểu (mã, tên, giá trị HIỆN TẠI của thứ sẽ đổi), đặt bí danh tiếng Việt
+                     bằng dấu huyền (vd `Mã`, `Họ tên`, `Chức vụ hiện tại`), KHÔNG cột id, cùng điều kiện, LIMIT 10",
+     "assumptions": ["tối đa 2 giả định QUAN TRỌNG đại ca cần biết, bằng lời nghiệp vụ, không tên bảng / cột / hàm"]}}
+   Chi tiết kỹ thuật (bảng, cột, vì sao ghi hai cột…) để trong câu sql — đại ca xem được bằng «thao tác #n».
 3. Không làm được an toàn bằng một câu SQL (cần đổi cấu trúc bảng, cần nhiều bước có điều kiện, đụng tài khoản /
    phân quyền / mật khẩu, yêu cầu vô nghĩa):
    {{"cannot": "lý do ngắn bằng tiếng Việt, và nên làm cách nào"}}
@@ -806,6 +808,18 @@ def _data_cmd(session_id: str, *, resume: bool) -> list[str]:
 def _data_workdir() -> str:
     """Claude đọc mô hình dữ liệu từ chính mã backend trong runner (/app); không có thì thư mục trống."""
     return "/app" if Path("/app/app/modules").is_dir() else _ops_workdir()
+
+
+def short_text(text: str, limit: int) -> str:
+    """Cắt ở ranh giới câu / chữ rồi thêm «…» — không cụt giữa chữ như «Qu» (thẻ đầu tiên 05/10)."""
+    text = " ".join((text or "").split())
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    end = max(cut.rfind(". "), cut.rfind("; "))
+    if end >= limit // 2:
+        return cut[:end + 1]
+    return cut.rsplit(" ", 1)[0].rstrip(",;:") + "…"
 
 
 def _json_block(text: str) -> dict:
@@ -900,10 +914,10 @@ def plan_data(db: Session, op: AgentOp, env: AgentEnv) -> str:
                 _ssh(sql_script(env, preview_sql, write=False), env, timeout=SQL_TIMEOUT)), limit=5)
         except (OpsError, coder.CoderError, subprocess.TimeoutExpired, OSError):
             sample = []
-    summary = str(plan.get("summary") or request)[:250]
+    summary = short_text(str(plan.get("summary") or request), 200)
     write = ops.new_op(db, env, OP_SQL_WRITE, title=summary, command=sql, chat_id=chat,
                        params={"plain": True, "rows": rows, "sample": sample, "request": request[:1000],
-                               "assumptions": [str(a)[:200] for a in (plan.get("assumptions") or [])][:3],
+                               "assumptions": [short_text(str(a), 160) for a in (plan.get("assumptions") or [])][:2],
                                "plan_op": op.id})
     ops.ask_approval(db, chat, write, env)
     return "\n".join(log_lines + [f"đã soạn thao tác #{write.id}: {rows} dòng", sql])

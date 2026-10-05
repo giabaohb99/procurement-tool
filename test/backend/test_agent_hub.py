@@ -6484,3 +6484,14 @@ def test_format_rows_doc_ket_qua_sql():
 
     out = 'COLS=["code", "position"]\n["NM_YC", "Nhân viên"]\n["NM_TP", null]\n'
     assert ops.format_rows(out) == ["code: NM_YC · position: Nhân viên", "code: NM_TP · position: "]
+
+
+def test_cat_tom_tat_khong_cut_giua_chu():
+    """Thẻ đầu tiên 05/10 cắt cụt «…như «Trưởng phòng», «Qu»."""
+    from app.modules.agent_hub.ops_runner import short_text
+
+    assert short_text("ngắn", 50) == "ngắn"
+    long = "Gán chức vụ Nhân viên (Demo) cho 10 nhân sự. Các nhãn cũ gõ tay như Trưởng phòng, Quản lý bị thay"
+    assert short_text(long, 60) == "Gán chức vụ Nhân viên (Demo) cho 10 nhân sự."
+    assert short_text("một hai ba bốn năm sáu bảy tám", 15).endswith("…")
+    assert not short_text("một hai ba bốn năm sáu bảy tám", 15).endswith("b…")

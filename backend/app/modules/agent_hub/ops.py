@@ -278,9 +278,9 @@ def _plain_card(op: AgentOp, env: AgentEnv) -> str:
              f"Số dòng sẽ đổi: <b>{int(p.get('rows') or 0)}</b>."]
     sample = [r for r in (p.get("sample") or []) if r]
     if sample:
-        lines.append("Ví dụ (giá trị HIỆN TẠI):")
-        lines += [f"• {esc(r[:200])}" for r in sample[:5]]
-    for a in (p.get("assumptions") or [])[:3]:
+        lines.append("Ví dụ (đang là):")
+        lines += [f"• {esc(r[:160])}" for r in sample[:3]]
+    for a in (p.get("assumptions") or [])[:2]:
         lines.append(f"Em hiểu là: {esc(str(a)[:200])}")
     lines.append(f"Trước khi chạy em sao lưu bảng {esc(', '.join(tables))}; muốn trả lại như cũ thì nhắn "
                  f"«hoàn tác thao tác #{op.id}».")
