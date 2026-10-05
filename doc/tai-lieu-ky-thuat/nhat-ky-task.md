@@ -11861,3 +11861,15 @@ vào địa chỉ giao diện cũ, trong khi đường dẫn Trợ lý AI trả 
 Thêm bài kiểm cho cả hai loại link.
 
 Mã nguồn: backend/app/modules/agent_hub/telegram.py · test/backend/test_agent_hub.py
+Commit: 596e0b24 (erp-v2 a0eb6f3c)
+Deploy: DEV 05/10 do Erp Agent 1, health 200; prod CHƯA
+
+## ai-CR-072 | Bot báo đại ca khi máy sửa mã mất liên lạc và khi nối lại
+- status: xong
+- date: 2026-10-05
+Trước đây máy sửa mã tắt thì đại ca chỉ biết khi giao việc mà bot báo «đang chờ máy». Nay mỗi phút bot xem máy nào
+quá hai phút không báo còn sống thì nhắn đại ca một lần, kèm giờ liên lạc cuối và số việc đang nằm chờ; máy bật
+lại thì nhắn đã nối lại và đang làm tiếp. Việc giao lúc máy tắt vẫn nằm chờ, không mất. Chưa làm được việc khởi
+động lại máy bằng câu nhắn, vì bot trên máy chủ dev không với tới Docker trên máy đại ca.
+
+Mã nguồn: backend/app/modules/agent_hub/runners.py · tasks.py · backend/app/core/celery_app.py

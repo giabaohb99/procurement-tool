@@ -227,6 +227,12 @@ if settings.AGENT_HUB_ENABLED:
             "schedule": crontab(minute="*"),
             "options": {"expires": 50},
         },
+        #  ai-CR-072: máy sửa mã mất liên lạc / nối lại → báo đại ca (không gác AGENT_OPS_ENABLED).
+        "agent-runner-watch": {
+            "task": "agent.runner_watch",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
         "agent-resource-report": {
             "task": "agent.resource_report_due",
             "schedule": crontab(minute="35", hour="7"),

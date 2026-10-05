@@ -680,3 +680,25 @@ def resource_report_due_task() -> dict:
         return {"status": "success", "dispatched": ops.dispatch_resource_report(db)}
     finally:
         db.close()
+
+
+@celery_app.task(name="agent.runner_watch")
+def runner_watch_task() -> dict:
+    """ai-CR-072: mỗi phút xem máy sửa mã nào mất liên lạc / nối lại → báo đại ca một lần mỗi lần đổi."""
+    if (off := _off()) is not None:
+        return off
+    from . import runners
+    from .constants import ACT_OPS
+
+    db = SessionLocal()
+    try:
+        def notify(text: str) -> None:
+            service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, text, action=ACT_OPS)
+
+        return {"status": "success", **runners.watch(db, notify=notify)}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: vòng canh máy sửa mã hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()

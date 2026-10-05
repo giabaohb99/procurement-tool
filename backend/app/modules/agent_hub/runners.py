@@ -186,6 +186,62 @@ def describe(db: Session, runner: AgentRunner) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Canh máy (ai-CR-072): mất liên lạc thì báo đại ca MỘT lần, nối lại thì báo lại
+# ---------------------------------------------------------------------------
+#  Dấu «đã báo mất liên lạc» nằm ở `tab_agent_cursor` (tên `runner_down:<id>`, giá trị 1/0) — không cần
+#  bảng mới. Máy chưa từng liên lạc thì không báo (vừa đăng ký, chưa cài).
+DOWN_CURSOR = "runner_down:{id}"
+
+
+def queued_count(runner_name: str) -> int:
+    """Số vé đang nằm trong hàng đợi Redis của máy. Hỏng (broker chập chờn) thì -1, không ném."""
+    try:
+        from app.core.celery_app import celery_app
+
+        with celery_app.connection_for_write() as conn:
+            return int(conn.default_channel.client.llen(queue_name(runner_name)) or 0)
+    except Exception:  # noqa: BLE001 — chỉ là con số kèm tin báo
+        return -1
+
+
+def watch(db: Session, *, now: datetime | None = None, notify=None) -> dict:
+    """Vòng beat mỗi phút. `notify(text)` gửi tin cho đại ca (tách ra để bài kiểm bắt được)."""
+    from .model import AgentCursor
+    from .timeutil import fmt_local
+
+    now = now or datetime.now()
+    down = back = 0
+    for r in active(db):
+        if r.last_seen_at is None:
+            continue
+        name = DOWN_CURSOR.format(id=r.id)
+        cur = db.scalar(select(AgentCursor).where(AgentCursor.name == name))
+        if cur is None:
+            cur = AgentCursor(name=name, value=0)
+            db.add(cur)
+            db.flush()
+        online = is_online(r, now=now)
+        if not online and not cur.value:
+            cur.value = 1
+            waiting = queued_count(r.name)
+            notify(f"Máy sửa mã <b>{r.name}</b> mất liên lạc từ {fmt_local(r.last_seen_at)} "
+                   f"(quá {settings.AGENT_RUNNER_ONLINE_SEC} giây không báo còn sống). Việc giao cho máy này vẫn nằm "
+                   "chờ, không mất; máy bật lại là tự làm tiếp."
+                   + (f" Đang có {waiting} vé chờ." if waiting > 0 else "")
+                   + " Máy tự khởi động lại khi chương trình bị sập; nếu máy bị TẮT hẳn (tắt Docker, tắt máy) "
+                   "thì phải bật lại trên chính máy đó.")
+            down += 1
+        elif online and cur.value:
+            cur.value = 0
+            waiting = queued_count(r.name)
+            notify(f"Máy sửa mã <b>{r.name}</b> đã nối lại"
+                   + (f", đang làm tiếp {waiting} vé chờ." if waiting > 0 else "."))
+            back += 1
+    db.commit()
+    return {"down": down, "back": back}
+
+
+# ---------------------------------------------------------------------------
 # Câu nhắn của đại ca
 # ---------------------------------------------------------------------------
 _TAIL = r"(\s+(nhé|nha|đi|luôn|giúp em|giúp anh))*[.!]*"

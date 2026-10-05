@@ -6310,3 +6310,29 @@ def test_link_tro_ly_tren_telegram_mo_dung_giao_dien(monkeypatch):
     assert 'href="https://deverp.test/procurement/purchase-orders/379"' in html
     monkeypatch.setattr(settings, "AGENT_ERP_URL", "")
     assert telegram.absolute_url("/hr/leave-requests/5") == "https://devthumua.test/hr/leave-requests/5"
+
+
+def test_may_sua_ma_mat_lien_lac_bao_mot_lan_noi_lai_bao_lai(db, monkeypatch):
+    """ai-CR-072: tắt máy sửa mã thì đại ca biết, không phải chờ tới lúc giao việc mới thấy."""
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub import runners
+
+    monkeypatch.setattr(runners, "queued_count", lambda name: 2)
+    rn, _ = runners.register(db, "may dai ca")
+    said: list[str] = []
+    now = datetime(2026, 10, 5, 7, 0, 0)
+    rn.last_seen_at = now - timedelta(seconds=30)
+    db.commit()
+    assert runners.watch(db, now=now, notify=said.append) == {"down": 0, "back": 0}
+    later = now + timedelta(minutes=5)
+    assert runners.watch(db, now=later, notify=said.append)["down"] == 1
+    assert "mất liên lạc" in said[-1] and "2 vé chờ" in said[-1]
+    assert runners.watch(db, now=later, notify=said.append)["down"] == 0 and len(said) == 1
+    rn.last_seen_at = later
+    db.commit()
+    assert runners.watch(db, now=later, notify=said.append)["back"] == 1 and "đã nối lại" in said[-1]
+    #  Máy chưa từng liên lạc (mới đăng ký) thì không báo.
+    runners.register(db, "may moi")
+    assert runners.watch(db, now=later + timedelta(hours=1), notify=said.append)["down"] == 1
+    assert sum("may-moi" in x for x in said) == 0
