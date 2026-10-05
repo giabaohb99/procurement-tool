@@ -70,6 +70,32 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-595 | Gộp tài khoản «Đào Trúc Nhi (Đặt xe)» vào chị Đào Trúc Nhi NSU206, gán chị làm Văn thư và Quản lý điều phối
+- status: xong
+- date: 2026-10-05
+Đại ca chốt: chưa ai làm văn thư thì để quản trị viên tự phân sau, nhưng trước mắt giao cho chị Đào Trúc Nhi (NSU206)
+để chị duyệt dấu và đặt xe luôn; hồ sơ NSU262 «Đào Trúc Nhi (Đặt xe)» chính là chị, gộp về NSU206.
+
+Khảo sát prod (chỉ đọc): NSU262 là hồ sơ do bộ đồng bộ tạo cho tài khoản thứ hai của chị bên app cũ (email
+trucnhi.work@gmail.com, vai trò Admin của app đặt xe); tài khoản chính NSU206 mang vai trò Legal. NSU262 không dính phiếu
+hay lịch sử duyệt nào, chỉ có hồ sơ, tài khoản 275 và vai trò «Nhân sự».
+
+Bộ đồng bộ nhận người qua `legacy_id` trên hồ sơ (mỗi hồ sơ một UID) và bảng gán tay `USER_MANUAL_MAP`, tra bảng gán
+tay trước. Nên đã thêm UID của tài khoản «Đặt xe» vào bảng gán tay trỏ về hồ sơ NSU206, để phiếu chị tạo bằng tài
+khoản đó sau này về đúng NSU206 (không thì lần đồng bộ sau lại tra email về NSU262). Deploy prod api + celery.
+
+Dữ liệu prod (sao lưu trước `~/proc_backups/procurement_truoc_cr595_20261005_1419.sql.gz`): NSU262 gỡ `legacy_id`, chuyển
+Nghỉ việc, khóa tài khoản 275 và đá phiên; NSU206 thêm vai trò Văn thư (Duyệt dấu) và Quản lý điều phối (Đặt xe, tương
+ứng Admin bên app cũ); phân công văn thư: một dòng văn thư tổng (phiếu nhiều công ty) và 11 dòng cho 11 công ty có
+phiếu dấu (phiếu một công ty về văn thư của công ty đó). Chạy lại kiểm: không còn gì cần thêm. Chị dùng tài khoản
+dtnhi.degoholding@gmail.com từ nay.
+
+Kiểm: 90 bài đồng bộ đặt xe xanh trên cả erp-v2 và main.
+Mã nguồn: `backend/app/modules/legacy_datxe/mapping.py` (`USER_MANUAL_MAP`).
+Commit: erp-v2 `3f5090f6`, main `76f9a0bf`. Deploy: PROD 05/10/2026.
+
+---
+
 ## bao-CR-594 | Gán vai trò Điều phối viên và Tài xế trên prod theo người thật trong dữ liệu app cũ
 - status: xong
 - date: 2026-10-05
