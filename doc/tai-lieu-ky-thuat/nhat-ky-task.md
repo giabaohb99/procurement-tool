@@ -100,6 +100,115 @@ Commit: erp-v2 `53ee8f92`. Deploy: DEV + PROD 05/10/2026, main `a4a4a024` (cherr
 
 ---
 
+## bao-CR-591 | Nhà máy Dego Organic thôi tự mua, trả về phòng Sản xuất - Thu mua xử lý hết
+- status: xong
+- date: 2026-10-05
+Cấp trên chốt nhà máy chưa tách riêng nữa: mọi yêu cầu của nhà máy quay về phòng Sản xuất - Thu mua (PBA017) xử lý như
+trước. Việc làm trên prod, chỉ đổi vai trò, phạm vi và dữ liệu, không đổi mã nguồn. Cơ chế: phòng tự mua được nhận ra
+nhờ có người giữ phạm vi «phòng tự mua» trên YCMH; gỡ hết vai trò cấp phòng thì phiếu mới của nhà máy tự về thu mua chung.
+
+Khảo sát prod ngày 05/10 (chỉ đọc): ba người giữ vai trò cấp phòng là Nguyễn Thanh Phương (Admin thu mua phòng, kèm
+«Nhân viên thu mua nhà máy»), Đoàn Minh Khôi và Nguyễn Thị Kiều Trang (Quản lý thu mua phòng); Lê Phú Ngoan chỉ còn vai
+trò nhân viên. Châu Phúc Hậu (Admin thu mua) và một tài khoản quản lý thu mua đang bị loại trừ phòng Dego Organic nên
+không thấy phiếu nhà máy. Phiếu đang mở của nhà máy: 3 YCMH (PYC01102601, PYC01102604, PYC02102602) và 2 đơn mua hàng
+chờ duyệt (PO00349 người duyệt là anh Khôi, PO00358 người duyệt đã là chị Lê Thị Ngọc Mi); không có YCBG, công nợ, YCTT
+hay phân công riêng của nhà máy. Công tắc duyệt lần hai (điều phối) của YCMH đang bật, áp cho mọi phòng.
+
+Việc dự kiến, chờ đại ca chốt: đổi vai trò (Phương thành Nhân viên thu mua, Trang thành Admin thu mua, anh Khôi chỉ giữ
+Trưởng bộ phận), gỡ loại trừ phòng Dego Organic của bộ thu mua chung, chuyển phòng xử lý 3 YCMH và 2 đơn sang PBA017
+(giữ người phụ trách dòng), đổi người duyệt PO00349 sang chị Ngọc Mi, và tắt công tắc duyệt lần hai.
+
+Đại ca chốt cùng ngày: chị Nguyễn Thanh Phương đại ca đã tự đổi thành vai trò Nhân sự; chị Trần Diễm Phương giữ nguyên;
+duyệt điều phối GIỮ (không tắt công tắc); điều kiện bỏ qua điều phối cho nhà máy nếu có thì tắt, kiểm thì ô điều kiện
+trên prod đang trống nên không có gì để tắt; làm thẳng trên prod. Em đã sao lưu prod
+(`~/proc_backups/procurement_truoc_cr591_nha_may_20261005_0934.sql.gz`) và chạy thử phần chuyển phiếu, kết quả khớp.
+Phần đổi vai trò, phạm vi và lệnh áp chuyển phiếu bị bộ chặn tự động của em từ chối, nên em chuyển cho đại ca tự bấm
+trên màn Phân quyền tài khoản và tự chạy lệnh áp; chưa có gì đổi trên prod ngoài bản sao lưu.
+
+Việc gom này chỉ TẠM tới hết tháng 10/2026, đầu tháng 11 tách lại như bao-CR-414 (đại ca nhắn qua Agent 1). Vì vậy
+dưới đây là TRẠNG THÁI CŨ trên prod, chụp lúc khảo sát sáng 05/10 trước mọi thay đổi, để khôi phục:
+
+Vai trò và phạm vi (user id · mã · tên: vai trò; dòng phạm vi theo vai trò):
+- 45 · NSU014 · Nguyễn Thanh Phương: employee, pur_dept_admin «Admin thu mua phòng», pur_staff_degooranic «Nhân viên
+  thu mua nhà máy»; phạm vi: vai trò 15 (pur_admin) chỉ thấy phòng 5, vai trò 81 (pur_staff_degooranic) chỉ thấy phòng 5.
+  Đại ca đã tự đổi còn mỗi «Nhân sự» trong ngày 05/10.
+- 36 · NSU005 · Đoàn Minh Khôi: dept_head, pur_dept_manager «Quản lý thu mua phòng».
+- 47 · NSU016 · Nguyễn Thị Kiều Trang: cost_factory, employee, pur_dept_manager; phạm vi: vai trò 10 chỉ thấy phòng 5
+  (dòng mồ côi của vai trò đã gỡ từ 01/10).
+- 41 · NSU010 · Lê Phú Ngoan: employee (không đổi).
+- 250 · NSU232 · Châu Phúc Hậu: pur_admin; phạm vi: vai trò 15 LOẠI TRỪ phòng 5.
+- 15 · NSU215 · Phạm Khánh Ngân: pur_manager, pur_staff; phạm vi: vai trò 14 LOẠI TRỪ phòng 5, vai trò 13 LOẠI TRỪ phòng 5.
+- 43 · NSU012 · Trần Diễm Phương: pur_admin, pur_staff; phạm vi: vai trò 15 và 13 chỉ thấy phòng 5 (giữ nguyên).
+- Mã vai trò: 13 pur_staff, 14 pur_manager, 15 pur_admin, 81 pur_staff_degooranic, 82 pur_dept_manager,
+  84 pur_dept_staff, 85 pur_dept_admin.
+
+Phiếu và cấu hình:
+- Phòng 5 = PBA002 Dego Organic, trưởng phòng nhân sự 27 (Đoàn Minh Khôi); phòng 20 = PBA017 Sản xuất - Thu mua,
+  trưởng phòng nhân sự 163 (Lê Thị Ngọc Mi).
+- YCMH phòng xử lý 5: id 207 PYC01102601 (processing), 210 PYC01102604 (dispatched), 221 PYC02102602 (processing); cả
+  ba do Lê Phú Ngoan lập, TBP và người duyệt là nhân sự 27, dòng giao NSU012.
+- ĐMH phòng xử lý 5: id 349 PO00349 (submitted, người duyệt nhân sự 27), 358 PO00358 (submitted, người duyệt 163); cả
+  hai NSPT nhân sự 34 Trần Diễm Phương. Thêm id 367 PO00367 (Nháp, chị Trần Diễm Phương lập 09:39 ngày 05/10, phòng
+  lập 5, phòng xử lý 5, chưa có người duyệt) — lập sau lượt chạy thử nên cũng được chuyển.
+- Không có YCBG, công nợ, YCTT hay dòng phân công NSTM nào của phòng 5.
+- Cấu hình: pr_dispatch_enabled = bật (GIỮ, không tắt), pr_dispatch_skip_rules = trống, central_purchasing_dept_code =
+  PBA017, pr_options_enabled = tắt.
+
+Khôi phục đầu tháng 11: gán lại vai trò và dòng phạm vi như trên; phiếu nhà máy lập trong tháng 10 sẽ nằm ở phòng xử lý
+Sản xuất - Thu mua, lúc tách lại phải quyết chuyển những phiếu nào về phòng 5 (script `backfill_handling_dept.py` chỉ
+xử lý phiếu có phòng xử lý 0, không tự kéo phiếu đã ở phòng 20).
+
+Đã áp trên PROD 05/10 lúc 09:40-09:45: đại ca giao trực tiếp cho Agent 1, Agent 1 sao lưu thêm
+`~/proc_backups/procurement_truoc_cr591_ap_20261005_0940.sql.gz` rồi chạy. Phiếu: 3 YCMH và 3 ĐMH (PO00349, PO00358,
+PO00367) sang phòng xử lý 20, PO00349 người duyệt sang chị Ngọc Mi, mỗi phiếu có dòng lịch sử «Chuyển phòng xử lý».
+Vai trò: chị Kiều Trang thành Admin thu mua (giữ Giá vốn nhà máy, Nhân sự), anh Khôi chỉ còn Trưởng bộ phận. Phạm vi:
+bỏ ba dòng loại trừ phòng Dego Organic của Hậu và chị Ngân. Không đụng công tắc điều phối. Em đọc lại prod: không còn
+phòng tự mua nào, không còn phiếu hay dòng loại trừ nào trỏ phòng 5, điều phối vẫn bật. Người được đổi quyền phải
+đăng xuất rồi đăng nhập lại.
+
+---
+
+## bao-CR-589 | «Bỏ lọc» ở khối tra kho khảo sát về phân loại của dòng, gộp nút «Về phân loại dòng»
+- status: xong
+- date: 2026-10-05
+Đại ca chốt: bấm «Bỏ lọc» ở màn xử lý phương án thì về phân loại của dòng để vẫn thấy kết quả, không về câu gợi ý trống
+như bản bao-CR-586. Nay nút đưa ba ô về mặc định: tất cả nhà cung cấp, phân loại của dòng, bỏ từ khóa, và về trang 1;
+nút chỉ hiện khi bộ lọc lệch mặc định. Nút «Về phân loại dòng» trước đây làm một phần việc đó nên gộp vào luôn, thanh
+lọc còn một nút. Dòng không có phân loại thì mặc định là không điều kiện, màn vẫn hiện câu gợi ý như cũ vì hệ thống không
+liệt kê cả kho khảo sát. Chỉ đổi giao diện ERP v2.
+
+Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm ở purchase-request-process-card.test.tsx.
+Kiểm: tsc 0 lỗi, eslint sạch, 14 bài của màn xử lý xanh.
+
+---
+
+## bao-CR-580 | Xóa YCMH sinh từ YCBG thì YCBG gỡ liên kết tới nó
+- status: xong
+- date: 2026-10-05
+Đại ca báo trên YCBG, YCMH tạo ra rồi xóa đi vẫn còn hiện. Nguyên nhân: xóa YCMH chỉ đánh dấu phiếu là đã xóa, còn dây
+nối giữa YCBG và YCMH cùng dấu trên dòng YCBG giữ nguyên, nên YCBG vẫn bày mã YCMH đó ở phương án, vẫn đứng ở «Đã tạo
+YCMH», cờ đã sinh YCMH trên dòng vẫn khóa chuyển phòng và trả về, và việc tự hoàn thành YCBG vẫn chờ cả phiếu đã xóa.
+Ngày 05/10 đại ca chốt sửa phần này; phần nới «Trả về» cho YCBG đã duyệt thì không làm, vì trả về ở YCMH là đủ.
+
+Nay xóa YCMH (xóa một phiếu hay xóa nhiều phiếu nháp) thì YCBG tự gỡ liên kết: bỏ dây nối của YCMH đó; dòng YCBG đang
+trỏ tới nó thì trỏ về YCMH gần nhất còn lại của dòng (trường hợp mua lại nhiều lần), không còn thì xóa dấu và gỡ cờ đã
+sinh YCMH, trừ dòng người yêu cầu đã chốt Hoàn thành bằng tay. YCBG «Đã tạo YCMH» không còn YCMH nào thì về «Đã khảo
+sát»; còn YCMH thì xét lại việc tự hoàn thành như luật cũ; YCBG đã «Hoàn thành» giữ nguyên. YCBG có dòng lịch sử
+«Gỡ liên kết YCMH đã xóa» ghi rõ mã phiếu. Phương án đã chọn lúc tạo YCMH vốn đã tự bỏ chọn, muốn mua lại thì chọn lại
+như thường. Dữ liệu cũ (YCMH xóa trước bản vá) dọn bằng script, chạy thử trước được; trên máy local có 2 phiếu như vậy.
+
+Cùng đợt: khai nhãn tiếng Việt cho ba mã hành động còn thiếu trong bộ mã nhật ký (đổi mã VTBB của bao-CR-568, sửa
+thông tin phương án và khôi phục phương án 0 của bao-CR-583), trước đó dòng lịch sử hiện mã tiếng Anh trần.
+
+Mã nguồn: `survey_request/service.py` (`unlink_deleted_pr`, `unlink_deleted_prs`, `list_deleted_linked_prs`,
+`_auto_complete_sr` tách từ `auto_complete_from_pr`), `purchase_request/service.py` (`delete_pr`),
+`survey_request/controller.py` (`_out_result` bỏ YCMH đã xóa), `core/action_catalog.py`,
+`backend/scripts/unlink_deleted_pr_cr580.py`.
+Kiểm: 10 bài mới `test_xoa_ycmh_go_lien_ket_ycbg_cr580.py` xanh, 216 bài các tệp liên quan xanh. Bài canh bộ mã hành
+động còn đỏ một chỗ không phải của em: `employee/work_history_controller.py::_audit` (duoc-CR-585).
+
+---
+
 ## bao-CR-588 | Bật luồng duyệt cấu hình cho Đặt xe và Duyệt dấu trên prod, chạy thử đồng bộ app cũ
 - status: xong
 - date: 2026-10-05
@@ -295,24 +404,6 @@ ra tệp rồi xóa hẳn trong một giao dịch; nhật ký thao tác được
 
 Mã nguồn: script tạm `prod_sr2752_delete.py` (không commit) · sao lưu `~/proc_backups/sr2752_ycbg03102601_truoc_xoa_20261003_110320.json`
 Deploy: dữ liệu prod 03/10 11:03.
-
----
-
-## bao-CR-580 | Ghi nhận: YCMH đã xóa vẫn nối với YCBG, và luật trả về YCBG còn chặt
-- status: open
-- date: 2026-10-03
-Đại ca báo trên YCBG, YCMH tạo ra rồi xóa đi vẫn còn hiện. Nguyên nhân: xóa YCMH chỉ đánh dấu phiếu là đã xóa, dây nối
-giữa YCBG và YCMH vẫn giữ nguyên, nên YCBG vẫn hiện YCMH đó, vẫn coi là đã sinh YCMH (chặn nút Trả về và chuyển phòng), và
-việc tự hoàn thành YCBG cũng chờ cả YCMH đã xóa. YCBG và đơn mua hàng thì xóa hẳn nên không bị. Đại ca cũng muốn YCBG, YCMH
-đã duyệt hoặc đã điều phối vẫn trả về được kèm lý do: YCMH đã có từ bao-CR-554, còn YCBG đang chặn khi có dòng hoàn thành,
-đã chọn phương án hoặc đã sinh YCMH.
-
-Đề xuất chờ đại ca chốt: (1) xóa YCMH thì gỡ dây nối, ghi lịch sử bên YCBG, YCBG không còn YCMH đang sống thì quay về trạng
-thái trước «Đã tạo YCMH», và lọc YCMH đã xóa ở mọi chỗ hiện liên kết; (2) nới luật trả về YCBG, chỉ chặn khi còn YCMH đang
-sống, trả về thì bỏ chọn phương án và mở lại các dòng, bắt buộc nhập lý do. Đại ca bảo ghi lại, chưa làm.
-
-Mã nguồn: `backend/app/modules/purchase_request/service.py` (`delete_pr`), `survey_request/service.py` (`can_transfer_dept`,
-`auto_complete_from_pr`), `survey_request/controller.py` (`ycmh_list`).
 
 ---
 

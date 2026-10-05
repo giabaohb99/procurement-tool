@@ -912,6 +912,8 @@ def _out_result(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     ycmh_by_opt: dict = {}
     for link in links:
         pr = pr_map.get(link.pr_id)
+        if pr is not None and pr.is_deleted:
+            continue  # bao-CR-580: lưới đỡ — xóa YCMH đã gỡ dây nối, dữ liệu cũ thì dọn bằng script
         ycmh_by_opt.setdefault(link.option_id, []).append({
             "id": link.pr_id, "code": link.pr_code,
             "date": (pr.request_date if pr else ""), "status": (pr.status if pr else ""),

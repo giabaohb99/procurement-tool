@@ -634,8 +634,10 @@ function AvailableSurveyLinesPicker({
 
   const effectiveSupplier = supplierCode === ALL_SUPPLIERS ? '' : supplierCode
   const hasCriteria = !!effectiveSupplier || !!itemGroup || !!debouncedSearch.trim()
-  //  Theo ô nhập thô (không đợi hoãn) để nút «Bỏ lọc» hiện ngay khi vừa gõ.
-  const hasActiveFilter = !!effectiveSupplier || !!itemGroup || !!search.trim()
+  //  «Bỏ lọc» đưa về MẶC ĐỊNH (NCC tất cả, phân loại của dòng, không từ khóa) — nên chỉ hiện
+  //  khi lệch mặc định. Theo ô nhập thô (không đợi hoãn) để nút hiện ngay khi vừa gõ.
+  const lineItemGroup = item.item_group || ''
+  const isFilterChanged = !!effectiveSupplier || itemGroup !== lineItemGroup || !!search.trim()
   const availableQuery = usePrAvailableSurveyLines(
     purchaseRequestId,
     item.id,
@@ -829,20 +831,6 @@ function AvailableSurveyLinesPicker({
           }))}
         />
 
-        {itemGroup !== (item.item_group || '') && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setItemGroup(item.item_group || '')
-              setPage(1)
-            }}
-          >
-            Về phân loại dòng
-          </Button>
-        )}
-
         <Input
           className="w-64"
           value={search}
@@ -853,19 +841,19 @@ function AvailableSurveyLinesPicker({
           }}
         />
 
-        {/* Bỏ cả ba ô một lần (đại ca 03/10/2026). Bỏ hết thì backend không trả gì (tránh
-            bung cả kho khảo sát), nên màn quay về câu gợi ý — nút «Về phân loại dòng» hiện
-            lại để lấy gợi ý theo dòng. */}
-        {hasActiveFilter && (
+        {/* bao-CR-586 + bao-CR-589 (đại ca 05/10/2026): «Bỏ lọc» về phân loại của dòng để vẫn
+            thấy kết quả — bỏ hết thì backend không trả gì (tránh bung cả kho khảo sát). Nút
+            «Về phân loại dòng» cũ gộp vào đây. */}
+        {isFilterChanged && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-destructive"
-            title="Bỏ mọi bộ lọc NCC / phân loại / từ khóa"
+            title="Về mặc định: tất cả NCC, phân loại của dòng, bỏ từ khóa"
             onClick={() => {
               setSupplierCode(ALL_SUPPLIERS)
-              setItemGroup('')
+              setItemGroup(lineItemGroup)
               setSearch('')
               setPage(1)
             }}

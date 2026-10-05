@@ -1510,6 +1510,9 @@ def delete_pr(db: Session, pid: int, user_id: int) -> None:
     pr.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, "delete")
+    #  bao-CR-580: YCMH sinh từ YCBG thì YCBG gỡ liên kết tới nó (trước đây vẫn bày phiếu đã xóa).
+    from app.modules.survey_request.service import unlink_deleted_pr
+    unlink_deleted_pr(db, pr, user_id)
 
 
 def set_status(db: Session, pid: int, status: str, user_id: int, message: str = "",
