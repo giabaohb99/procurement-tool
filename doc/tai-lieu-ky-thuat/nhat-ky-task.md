@@ -12107,3 +12107,5 @@ cặp riêng thì dùng cặp riêng, chưa có thì dùng cặp cũ như trư�
 ứng dụng Google mới.
 
 Mã nguồn: backend/app/modules/agent_hub/google_link.py · backend/app/core/config.py · doc/agent-hub/10-huong-dan-noi-google.md
+Commit: 7c3dd3d2 (erp-v2 7c3dd3d2)
+Deploy: DEV 05/10 do Erp Agent 1; khóa Google riêng chờ đại ca tạo; prod CHƯA
