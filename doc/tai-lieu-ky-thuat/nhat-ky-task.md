@@ -70,6 +70,41 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-596 | Dựng chiều đồng bộ ERP sang app đặt xe cũ (P3), khóa bằng công tắc
+- status: dang-lam
+- date: 2026-10-05
+Đại ca chốt ngày 05/10: làm đủ chiều ERP → app cũ, gồm kết cục duyệt, điều phối, trạng thái tài xế, km/chi phí và đóng
+dấu; phiếu tạo trên ERP cũng phải hiện bên app cũ; không gửi thông báo từ phía ERP cho người dùng app cũ; mã viết xong
+nhưng khóa bằng công tắc, chưa triển khai; phần chặn chiều nhận ghi đè kết quả ERP để sau. Bản dựng ghi ở
+`doc/dong-bo-dat-xe-duyet-dau/p3-erp-sang-app-cu.md`.
+
+Phía ERP: một bộ nghe ở tầng ORM gom mọi phiếu đặt xe và phiếu dấu vừa đổi (bỏ qua khi đang xử tín hiệu nhận về và khi
+chỉ đổi cột dấu sửa cuối), chỉ giao việc cho Celery sau khi giao dịch commit thật. Việc gửi dựng ẢNH CHỤP phiếu hiện
+tại theo đúng tên trường app cũ: trạng thái dùng đúng bảng ngược của chiều nhận để đi sang rồi về vẫn ra như cũ; xe và
+tài xế gửi khóa app cũ (tài xế bên đó lọc chuyến theo khóa này) kèm chữ biển số, tên; có km/chi phí, giờ bắt đầu/kết
+thúc, đóng dấu. Gói được ký HMAC, ghi sổ đồng bộ chiều gửi đi; trùng ảnh chụp lần gửi thành công trước thì không gửi;
+van chặn 20 lần một giờ cho một phiếu; vòng gửi lại 10 phút một lần; lệnh gửi lần đầu chỉ cho phiếu tạo trên ERP. Phiếu
+ERP được app cũ tạo thì ghi ngược khóa mà không đẻ thêm lượt gửi. Vá kèm: vòng `retry_pending` cũ không lọc chiều, sẽ
+đem dòng gửi đi ra xử như phiếu nhận về — nay chỉ lấy chiều nhận.
+
+Phía app cũ (`my-firebase-api`, nhánh `feat/nhan-dong-bo-tu-erp`, chưa đẩy vì đẩy nhánh dev/main là tự deploy): đường
+`POST /v1/sync/erp-events` đứng trước lớp App Check, kiểm chữ ký, ghi Firebase bằng tài khoản dịch vụ sẵn có (hoặc khóa
+DB riêng nếu khai). Phiếu có sẵn thì chỉ đụng phần ERP làm chủ, thêm đúng một mục lịch sử «Xử lý trên ERP» cho kết cục,
+mục điều phối và tài xế; phiếu ERP tạo thì dựng bản ghi mới dưới khóa cố định `erp_vb_<id>` / `erp_sr_<id>` nên gửi lại
+không đẻ phiếu thứ hai. Không gửi thông báo, không gửi ngược sang ERP, không đóng dấu `updatedAt`.
+
+Hai công tắc đều mặc định TẮT: «Gửi thay đổi từ ERP sang app đặt xe cũ» (`sync_datxe_outbound_enabled`, màn Cấu hình hệ
+thống) và `ERP_INBOUND_ENABLED` trong `wrangler.jsonc`. Phát hiện kèm: Worker phục vụ đường ở gốc tên miền nên đường
+đúng là `/v1/...`, không phải `/api/v1/...` như bản vẽ cũ (đường xem tệp `/api/v1/sync/files/...` bên ERP cũng sai tiền tố).
+
+Kiểm: ERP 13 bài mới cùng các bộ đồng bộ, đặt xe, duyệt dấu, sổ đồng bộ, cấu hình 338 bài xanh; app cũ 14 bài mới, cả bộ
+188 bài xanh, kiểm kiểu 0 lỗi; chữ ký neo bằng mẫu tính từ hàm Python của ERP.
+Mã nguồn: ERP `legacy_datxe/outbound.py`, `outbound_listener.py`, `outbound_tasks.py`, `legacy_datxe/tasks.py`
+(`retry_pending`), `core/database.py`, `core/celery_app.py`, `core/config.py`, `core/app_settings.py`,
+`setting/service.py`; app cũ `src/services/erp-inbound.service.ts`, `src/index.ts`, `src/types/db.types.ts`, `wrangler.jsonc`.
+
+---
+
 ## bao-CR-595 | Gộp tài khoản «Đào Trúc Nhi (Đặt xe)» vào chị Đào Trúc Nhi NSU206, gán chị làm Văn thư và Quản lý điều phối
 - status: xong
 - date: 2026-10-05

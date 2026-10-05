@@ -202,6 +202,10 @@ class Settings(BaseSettings):
     # --- Đồng bộ với app đặt xe / duyệt dấu CŨ (Firebase) ---
     # Mặc định TẮT: bật là mở một đường máy-gọi-máy ra ngoài, phải cố ý bật ở .env.
     SYNC_DATXE_ENABLED: bool = False
+    # Chiều ERP -> app cũ (P3, bao-CR-596). Công tắc RIÊNG, mặc định TẮT, tách khỏi
+    # cầu dao tổng ở trên vì chiều nhận đã chạy thật ở prod còn chiều gửi đi mới
+    # chỉ dựng sẵn (đại ca chốt 05/10/2026: "xây trước thôi chứ chưa triển khai").
+    SYNC_DATXE_OUTBOUND_ENABLED: bool = False
     # Khóa ký chung hai bên (mục 6 của mo-ta-ky-thuat.md). KHÔNG commit, KHÁC NHAU
     # giữa dev và prod. Rỗng = coi như chưa cấu hình, mọi lời gọi sang app cũ dừng.
     SYNC_SHARED_SECRET: str = ""

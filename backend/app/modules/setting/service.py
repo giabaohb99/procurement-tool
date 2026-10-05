@@ -104,6 +104,11 @@ FIELDS = [
      "label": "Bật đồng bộ với app đặt xe cũ",
      "hint": "TẮT là ngắt cả hai chiều ngay lập tức: app cũ gọi vào bị từ chối, ERP cũng thôi "
              "gọi ra. Đây là cầu dao dùng khi đường nối giữa hai hệ trục trặc."},
+    {"key": "sync_datxe_outbound_enabled", "group": "sync", "type": "bool",
+     "label": "Gửi thay đổi từ ERP sang app đặt xe cũ",
+     "hint": "BẬT: duyệt, điều phối, tài xế, km/chi phí, đóng dấu và phiếu tạo trên ERP được gửi "
+             "sang app cũ (cần bật cả cầu dao ở trên và bật đường nhận bên app cũ). TẮT: ERP không "
+             "ghi sổ, không gửi gì. Đang TẮT vì chưa triển khai."},
     {"key": "sync_legacy_api_base", "group": "sync", "type": "str",
      "label": "Địa chỉ gốc API của app cũ",
      "hint": "Ví dụ https://... — không kèm đuôi đường dẫn. Trống thì coi như chưa cấu hình."},

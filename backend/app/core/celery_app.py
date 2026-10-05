@@ -60,6 +60,7 @@ celery_app.conf.update(
         "app.modules.document.search_tasks",  # Dựng chỉ mục tìm kiếm toàn văn văn bản (phase 07)
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
+        "app.modules.legacy_datxe.outbound_tasks",  # Chiều ERP -> app cũ (P3, bao-CR-596)
         "app.modules.agent_hub.tasks",      # Agent Hub — kéo tin Telegram, gom việc, nạp kho tài liệu
         "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
@@ -154,6 +155,13 @@ celery_app.conf.update(
         "datxe-full-sweep": {
             "task": "datxe.full_sweep",
             "schedule": crontab(hour=2, minute=15),  # 02:15 VN, mỗi ngày
+        },
+        #  Chiều ERP -> app cũ (bao-CR-596): gửi lại phiếu kẹt + vá phiếu tạo trên ERP chưa
+        #  sang. Lệch nhịp với `datxe-retry-pending` (phút lẻ 7). Công tắc
+        #  `sync_datxe_outbound_enabled` tắt thì vòng này kết thúc ngay, không ghi gì.
+        "datxe-retry-outbound": {
+            "task": "datxe.retry_outbound",
+            "schedule": crontab(minute="7,17,27,37,47,57"),
         },
         #  Chuông sáng cho dòng sổ đồng bộ hỏng quá 24 giờ mà ba vòng trên không
         #  tự vá được (bao-CR-449). Dùng CHUNG cho mọi hệ nguồn của quyển sổ,

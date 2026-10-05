@@ -51,6 +51,7 @@ REGISTRY = {
     #  cần sửa nóng nhất: khi đường máy-gọi-máy giữa hai hệ trục trặc thì thứ phải
     #  làm ngay là TẮT nó, mà tắt bằng `.env` nghĩa là sửa tệp rồi dựng lại dịch vụ.
     "sync_datxe_enabled": ("bool", "SYNC_DATXE_ENABLED"),
+    "sync_datxe_outbound_enabled": ("bool", "SYNC_DATXE_OUTBOUND_ENABLED"),
     "sync_legacy_api_base": ("str", "SYNC_LEGACY_API_BASE"),
     "sync_datxe_auto_create": ("bool", "SYNC_DATXE_AUTO_CREATE"),
     "legacy_firebase_db_url": ("str", "LEGACY_FIREBASE_DB_URL"),
