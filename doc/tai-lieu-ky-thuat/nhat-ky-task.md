@@ -71,14 +71,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-592 | Gom toàn bộ erp-v2 lên prod ngày 05/10, main bằng erp-v2 trở lại
-- status: dang-lam
+- status: xong
 - date: 2026-10-05
 Đại ca chốt «gom hết đẩy lên prod». Từ 03/10 main chỉ nhận cherry-pick phần của em và để lại các CR của anh Được và
 Giang; đợt này gom hết: bao-CR-580 và bao-CR-589 (Agent 2), duoc-CR-572, duoc-CR-554, duoc-CR-585 (có migration
 `wkhist01` thêm bảng quá trình công tác) và giang-CR-587. Gộp erp-v2 vào main chỉ vướng sáu tệp đã nhận qua cherry-pick
 rồi được sửa tiếp trên erp-v2; lấy bản erp-v2 cho cả sáu, nên cây mã của main nay trùng hệt erp-v2.
 
-Commit: main `4070a939` (gộp erp-v2).
+Kiểm trên đúng cây phát hành: kiểm kiểu bản mới 0 lỗi, eslint 0 lỗi (29 cảnh báo), vitest nhân sự + thu mua + các khu
+dùng chung bị đụng 1.890 bài xanh, kiểm kiểu bản cũ giữ đúng 4 lỗi nền. Bộ kiểm máy chủ chạy hết 7.029 bài, đem so với
+chính bản prod đang chạy (`a4a4a024`): 44 bài đã đỏ sẵn trên prod từ trước (agent hub, trợ lý AI, vài bài canh khác),
+đợt gộp làm đỏ thêm 3 bài. Một bài là báo sai do lúc chạy chưa gắn thư mục giao diện (gắn vào thì 4/4 xanh). Hai bài còn
+lại là bài canh luật bắt duoc-CR-585 quên khai: controller quá trình công tác lọc phạm vi qua `work_history_access`
+(gọi `get_scoped`) nên không phải lỗ thật, chỉ thiếu dòng miễn trừ có lý do; hàm ghi nhật ký sinh mã «create»/«update»
+chưa khai trong sổ mã động. Em khai đủ hai dòng, hai tệp kiểm 67 bài xanh.
+
+Deploy 05/10 khoảng 10:32: sao lưu `~/proc_backups/procurement_truoc_cr592_20261005_1030.sql.gz` (16 MB, kiểm giải nén
+được), build trước rồi khởi động lại; migration `wkhist01` chạy xong, bảng `tab_employee_work_history` đã có, log máy
+chủ 0 lỗi, trang thu mua, trang ERP và API sức khỏe đều trả 200, đường quá trình công tác mới trả 401 khi chưa đăng nhập.
+
+Commit: erp-v2 `44776e83` (khai bài canh); main `4070a939` + `7c1d5a60` (gộp erp-v2). Deploy: PROD 05/10/2026, main
+`7c1d5a60` == erp-v2.
 
 ---
 
