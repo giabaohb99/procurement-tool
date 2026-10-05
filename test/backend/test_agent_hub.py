@@ -353,6 +353,7 @@ def test_bot_tra_loi_xuoi_thi_van_phan_loai_nhung_kem_mach(db, bot, monkeypatch)
 def test_markdown_ra_html_telegram(monkeypatch):
     """Web render Markdown; Telegram in thô `**[X](/y)**`. Bộ đổi phải ra đúng năm thẻ."""
     monkeypatch.setattr(settings, "FRONTEND_URL", "https://erp.test")
+    monkeypatch.setattr(settings, "AGENT_ERP_URL", "https://erp.test")   # ai-CR-071: màn v2 đi gốc ERP v2
     got = telegram.md_to_html(
         "### Ba đơn\n"
         "1. **[PO-01](/procurement/purchase-orders/372)** — 1.350.000 đ & *chờ*\n"
@@ -6294,3 +6295,18 @@ def test_thao_tac_nam_cho_may_qua_5_phut_thi_bao_mot_lan(db, bot, monkeypatch):
     later = now_utc() + timedelta(minutes=6)
     assert ops.remind_stuck_ops(db, now=later) == 1 and f"#{op.id}" in sent[-1]
     assert ops.remind_stuck_ops(db, now=later) == 0 and op.status == OPS_QUEUED
+
+
+def test_link_tro_ly_tren_telegram_mo_dung_giao_dien(monkeypatch):
+    """ai-CR-071: link Trợ lý (màn v2) đi ERP v2; link chuông kiểu cũ đi bản cũ. Trước đây tất cả đi bản cũ."""
+    monkeypatch.setattr(settings, "FRONTEND_URL", "https://devthumua.test")
+    monkeypatch.setattr(settings, "AGENT_ERP_URL", "https://deverp.test/")
+    assert telegram.absolute_url("/procurement/purchase-orders/379") == "https://deverp.test/procurement/purchase-orders/379"
+    assert telegram.absolute_url("/purchase-orders/376") == "https://devthumua.test/purchase-orders/376"
+    assert telegram.absolute_url("/customs-prices?x=1") == "https://devthumua.test/customs-prices?x=1"
+    assert telegram.absolute_url("/api/assistant/files/1") == "https://deverp.test/api/assistant/files/1"
+    assert telegram.absolute_url("https://x.test/a") == "https://x.test/a"
+    html = telegram.md_to_html("[PO00379](/procurement/purchase-orders/379)")
+    assert 'href="https://deverp.test/procurement/purchase-orders/379"' in html
+    monkeypatch.setattr(settings, "AGENT_ERP_URL", "")
+    assert telegram.absolute_url("/hr/leave-requests/5") == "https://devthumua.test/hr/leave-requests/5"

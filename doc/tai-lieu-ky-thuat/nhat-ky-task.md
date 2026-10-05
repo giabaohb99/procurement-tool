@@ -11798,3 +11798,13 @@ báo đại ca một lần. Tài liệu vận hành ghi thêm bước cấp quy�
 Mã nguồn: backend/app/modules/agent_hub/ops.py · tasks.py · doc/agent-hub/08-van-hanh-vps.md
 Commit: 510d7c06 (erp-v2 510d7c06)
 Deploy: DEV 05/10 do Erp Agent 1, health 200; quyền agent_runner chỉ trên procurement_dev; prod CHƯA
+
+## ai-CR-071 | Sửa link trong câu trả lời của bot trên Telegram mở nhầm giao diện cũ
+- status: xong
+- date: 2026-10-05
+Đại ca bấm mã đơn trong câu trả lời của bot trên Telegram thì ra trang trắng. Nguyên nhân là bot nối mọi đường dẫn
+vào địa chỉ giao diện cũ, trong khi đường dẫn Trợ lý AI trả về là màn của ERP mới. Nay bot nhìn đoạn đầu của
+đường dẫn: màn chỉ có ở giao diện cũ (như link trong chuông thông báo) thì mở giao diện cũ, còn lại mở ERP mới.
+Thêm bài kiểm cho cả hai loại link.
+
+Mã nguồn: backend/app/modules/agent_hub/telegram.py · test/backend/test_agent_hub.py
