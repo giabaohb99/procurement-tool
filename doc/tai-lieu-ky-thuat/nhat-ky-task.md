@@ -11671,3 +11671,22 @@ riêng, việc chép dữ liệu dev sang để sau, lệnh lên prod chỉ phá
 Trước đó gộp nhánh dev mới nhất về nhánh bot (180 commit, không đụng độ).
 
 Mã nguồn: doc/agent-hub/07-quy-trinh-va-so-do.md · doc/tai-lieu-ky-thuat/change-log-ai.md
+
+## ai-CR-066 | Lộ trình mới: quy trình code hai máy chủ, tự vận hành, lõi mở
+- status: xong
+- date: 2026-10-05
+Sau khi bàn mô hình điều phối – thực thi và các dự án mở cùng loại, đại ca muốn thêm khả năng bot tự phát
+hiện sự cố máy chủ, tự tìm lỗi và khôi phục; chốt chỉ học ý tưởng từ bên ngoài, không lấy mã của họ thay lõi;
+và bảo cập nhật tài liệu cùng lộ trình mới.
+
+Danh sách tính năng thêm ba nhóm: quy trình code hai máy chủ (chín mục: sổ môi trường, script deploy có nhật ký,
+thao tác trên máy chủ một qua cổng duyệt có sao lưu và hoàn tác, mã xác nhận cho prod, ba luật tự cải thiện,
+báo tài nguyên, bản xem thử đầy đủ, chuyển sang máy chủ hai thật, chép dữ liệu dev để sau); tự vận hành (sáu
+mục: theo dõi sức khỏe, tự chẩn đoán, tự khôi phục trên dev trong danh sách thao tác an toàn có giới hạn số
+lần, prod chỉ đề xuất và chờ duyệt, sổ sự cố, sự cố lặp lại thành việc sửa mã); và đối chiếu bên ngoài. Thêm
+bốn mục lõi mở: gọi công cụ MCP bên ngoài, giao thức A2A giữa các bot, giao việc có tính ngân sách, sổ sự kiện
+chung. Lộ trình viết lại: phase 6 quy trình code hai máy chủ làm ngay, rồi tự vận hành, rồi lõi mở, cuối cùng
+là Zalo và biên bản họp vì đang chờ dữ liệu từ đại ca. Tài liệu số 07 thêm bảng đối chiếu hệ thống với các
+khung mở và nguyên tắc giấy phép khi mượn mã.
+
+Mã nguồn: doc/agent-hub/04-danh-sach-tinh-nang.md · doc/agent-hub/07-quy-trinh-va-so-do.md

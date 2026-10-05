@@ -188,6 +188,30 @@ tệp cấm sửa; mọi thay đổi qua cổng kiểm + đại ca duyệt; lên
 | 3 | Chuông, nhắc việc, tin thoại, trần lượt | [chạy] |
 | 4 | Cổng MCP | [chạy], chưa ai thử bằng ứng dụng thật |
 | 5 | Google cá nhân: Lịch, Drive, bản tin sáng, nhắc họp | Mã đã lên dev; chờ đại ca: redirect URI, «In production», `GOOGLE_CLIENT_SECRET` |
-| **VPS 2** | Sổ môi trường, `deploy.sh` + nhật ký, thao tác VPS 1 có duyệt/sao lưu/hoàn tác, OTP, 3 luật, báo tài nguyên, preview | [làm] — chờ tên miền + token Cloudflare Tunnel cho preview |
-| 6 | Zalo OA, nhiều bot | [sau] — chờ OA + tên bot |
-| 7 | Thư ký biên bản họp | [sau] — chờ tệp ghi âm thật |
+| **6** | Quy trình code hai máy chủ (nhóm V): sổ môi trường, `deploy.sh` + nhật ký, thao tác VPS 1 có duyệt/sao lưu/hoàn tác, OTP, 3 luật, báo tài nguyên, preview | [làm] — tiếp theo |
+| **7** | Tự vận hành (nhóm O): theo dõi sức khỏe, tự chẩn đoán, tự khôi phục dev, prod chỉ đề xuất, sổ sự cố | [làm] sau phase 6 |
+| **8** | Lõi mở: gọi MCP bên ngoài, A2A giữa các bot, giao việc tính ngân sách, sổ sự kiện chung | [sau] |
+| 9 | Zalo OA, nhiều bot | [sau] — chờ OA + tên bot |
+| 10 | Thư ký biên bản họp | [sau] — chờ tệp ghi âm thật |
+
+## 6. Đối chiếu với các mô hình bên ngoài (05/10/2026)
+
+Mô hình của hệ là **orchestrator – worker** (điều phối – thực thi), một trong các mẫu trong bài «Building Effective Agents»
+của Anthropic, đi cùng **tool calling / MCP** (agent dùng công cụ) và sắp tới **A2A** (agent nói chuyện với agent). Hệ là
+**agentic**: tự lên kế hoạch, gọi công cụ, làm nhiều bước. Nguyên tắc: **chỉ học ý tưởng, không clone thay lõi** — phần
+khó nhất (quyền ERP từng người, phạm vi dữ liệu, khóa cá nhân, sổ việc, chi phí) các khung chung không có.
+
+| Tiêu chí | Thông lệ ở các khung mở (mcp-agent, Agent Swarm, cli-agent-orchestrator, OpenAI Agents SDK) | Hệ mình |
+|---|---|---|
+| Điều phối – thực thi | Lead / supervisor giao cho worker | Có: bot tổng → bot code, sổ máy, việc dính máy |
+| Công cụ qua chuẩn chung | MCP client gọi công cụ ngoài | Một nửa: có cổng MCP **mở ra** (`06`); **gọi vào** công cụ MCP ngoài chưa có → M-09 |
+| Agent nói chuyện với agent | A2A | Chưa; đang dùng hàng đợi Redis tự viết → N-06 |
+| Người duyệt ở chỗ nguy hiểm (HITL) | Cổng duyệt trong luồng | Có: duyệt kế hoạch, gộp, sổ quyền; thêm OTP prod + duyệt thao tác → V-03, V-04 |
+| Worker cách ly | Docker / worktree riêng từng việc | Có: worktree riêng, runner không giữ token bot; preview riêng → V-07 |
+| Theo dõi, truy vết | Sổ sự kiện / trace | Có sổ tin + sổ lượt chạy; gom một khuôn → N-08 |
+| Ngân sách | Theo dõi token, chặn khi quá | Có trần lượt/ngày theo người, báo chi phí; giao việc theo ngân sách → N-07 |
+| Tự vận hành | Ít khung có sẵn | Chưa → nhóm O |
+| Quyền theo người dùng thật | Hầu như không có | **Có — điểm mạnh riêng** (chạy dưới quyền ERP của từng người, khóa cá nhân) |
+
+Giấy phép khi mượn mã: MIT / Apache 2.0 dùng được (giữ giấy phép, ghi nguồn); **AGPL tránh**; kho không ghi giấy phép
+chỉ đọc để học.

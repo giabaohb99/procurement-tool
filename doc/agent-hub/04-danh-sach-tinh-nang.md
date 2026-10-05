@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 50 tính năng** — A 8 · N 5 · P 2 · M 8 · K 4 · D 7 · T 12 · R 4. **Đã xong 33** (25/09/2026): M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 72 tính năng** (05/10/2026) — A 8 · N 8 · P 2 · M 9 · K 4 · D 7 · V 9 · O 6 · T 12 · R 4 · thêm L-01. **Đã xong 33** (25/09/2026): M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -44,6 +44,9 @@ một token Telegram riêng.
 | N-03 | Kết nối tài khoản Google một lần (Drive + Calendar), khóa lưu mã hóa | M | Chờ Q2 |
 | N-04 | Chi phí theo từng bot, từng ngày, có trần ngày | S | |
 | N-05 | Cách ly quyền: mỗi bot chỉ thấy khóa của nó | M | Bắt buộc trước khi bật bot Nghiên cứu |
+| N-06 | Giao thức **A2A** (Agent2Agent, Google 2025, nay Linux Foundation) giữa các bot: thẻ giới thiệu năng lực, giao việc, báo tiến độ, trả kết quả — thay hàng đợi Redis tự viết khi có bot thứ ba, thứ tư | M | Thêm 05/10. Học từ các khung orchestrator–worker mở |
+| N-07 | **Giao việc có tính ngân sách**: bot tổng xem còn bao nhiêu lượt Claude / Gemini trước khi giao; gần trần thì xếp hàng hoặc hạ model | S | Thêm 05/10 |
+| N-08 | **Sổ sự kiện chung**: mọi bước của mọi bot một dòng cùng khuôn (ai, việc, bước, model, chi phí, kết quả) để truy vết và dựng lại khi sự cố | M | Thêm 05/10. Gom từ sổ tin + sổ lượt chạy đang có |
 
 ## Nhóm P — Phục vụ từng người đã đăng nhập (thêm 24/09/2026)
 
@@ -69,6 +72,7 @@ lõi. Cổng MCP phải nằm trong backend ERP có tên miền thật (dev rồ
 | M-06 | **XONG 25/09/2026 (ai-CR-064).** Mỗi người tự nối Google của mình (Drive, Lịch), tool lịch / Drive đọc dữ liệu của chính họ | L | Thay N-03 theo hướng từng người; khóa OAuth lưu mã hóa |
 | M-07 | Trợ lý trên web chạy bằng AI + khóa do từng người chọn (khóa lưu mã hóa, chỉ người đó dùng) | M | Công ty thôi trả tiền model theo lượt. Đại ca chốt 24/09: trên dev, web vẫn dùng khóa công ty; D-01 chỉ cho kênh chat |
 | M-08 | Kênh Zalo OA dùng chung lõi với Telegram | M | Zalo đẩy webhook: dùng tên miền ERP |
+| M-09 | **Lõi gọi công cụ MCP bên ngoài**: đại ca nhắn «thêm công cụ X tại địa chỉ Y» → bot ghi sổ, các lượt sau model thấy và gọi được, không build lại. Dùng thư viện MCP client chính thức (`mcp` SDK) | M | Thêm 05/10. Đúng ý «lõi chung, cần gì đấu vào» |
 
 ## Nhóm K — Ai được ra lệnh sửa mã (KHÔNG lên giao diện web, thêm 24/09/2026)
 
@@ -120,6 +124,43 @@ xem tình trạng việc, ra lệnh trên việc vẫn dùng được vì không
 
 Thứ tự làm phase 2: **(a)** D-01 + D-02 (xong 25/09) → **(b)** D-03 + D-04 + D-05 (xong 25/09) → **(c)** D-06. D-07 để cuối.
 
+## Nhóm V — Quy trình code hai máy chủ: bot tổng (VPS 1) giao, bot code (VPS 2) làm (chốt 05/10/2026)
+
+Thiết kế đầy đủ và sơ đồ: [`07-quy-trinh-va-so-do.md`](./07-quy-trinh-va-so-do.md). Bot code dùng tài khoản Claude riêng của
+công ty (gói ~$100); máy đại ca tạm đóng vai VPS 2 cho tới khi có máy thật.
+
+| Mã | Tính năng | Cỡ | Ghi chú |
+|---|---|---|---|
+| V-01 | **Sổ môi trường**: «thêm môi trường staging: vps …, nhánh …, lệnh deploy …» → bot tổng ghi, truyền cho bot code mỗi lần giao việc | S | Thêm VPS = thêm dòng |
+| V-02 | **`deploy.sh <đích> <commit>` + nhật ký deploy**: đúng commit đã kiểm, ai ra lệnh, trước/sau, kết quả, log; «lịch sử deploy» | M | Khóa SSH khóa cứng chỉ chạy đúng lệnh; gộp D-07 |
+| V-03 | **Bot code thao tác trên VPS 1 qua cổng duyệt**: xem dev tự do (MySQL chỉ đọc); xem prod / sửa dev cần «đúng»; thẻ hiện nguyên văn lệnh → sao lưu trước → chạy → nhật ký + lệnh hoàn tác; «hoàn tác thao tác #n» | M | Đại ca chốt 05/10: cho vào, ràng buộc đủ thì được |
+| V-04 | **OTP cho mọi thay đổi prod**; lệnh lên prod phát từ VPS 1, không từ VPS 2 | S | Gộp A-04 (OTP) |
+| V-05 | **Ba luật tự cải thiện**: bot code không sửa sổ quyền, phần OTP / lệnh prod, danh sách tệp cấm của chính nó | S | Thi hành trong mã |
+| V-06 | **Báo tài nguyên hằng ngày**: RAM / CPU / đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; «tình hình máy» | S | |
+| V-07 | **Preview đầy đủ từng việc**: be + fe + worker + redis + MySQL + qdrant riêng, dữ liệu tự seed, `ai-xxxx.preview.<tên miền>` qua Cloudflare Tunnel; 1 bộ một lúc trên máy hiện tại, 2–3 trên VPS preview 16 GB; tự tắt sau 24 giờ | L | Chờ tên miền + token tunnel |
+| V-08 | **Chuyển bot code sang VPS 2 thật** khi mua máy (cài theo `05`, đổi tên máy trong sổ) | S | Chờ VPS + tài khoản Claude công ty |
+| V-09 | Chép DB dev sang preview để test với dữ liệu thật | M | **Để sau** (đại ca 05/10) |
+
+## Nhóm O — Tự vận hành: AI tự phát hiện sự cố và khôi phục (thêm 05/10/2026)
+
+«Agentic»: bot tự hành động nhiều bước — thấy server có vấn đề thì tự tìm lỗi, khôi phục trong giới hạn được phép, rồi báo.
+Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác).
+
+| Mã | Tính năng | Cỡ | Ghi chú |
+|---|---|---|---|
+| O-01 | **Theo dõi sức khỏe** mỗi phút: api dev / prod trả 200, container chạy đủ, đĩa, RAM, hàng đợi, lỗi 5xx tăng đột biến | S | |
+| O-02 | **Tự chẩn đoán**: có sự cố thì gom log container, `docker ps`, migration hiện tại, commit vừa deploy → bot code (Claude) đọc và viết chẩn đoán ngắn: nguyên nhân khả dĩ + cách sửa đề xuất | M | Chỉ đọc |
+| O-03 | **Tự khôi phục trên dev** trong danh sách thao tác an toàn: khởi động lại container, dọn bộ đệm, chạy lại migration đang dở, quay về commit trước nếu lỗi do lần deploy vừa rồi. Trần 3 lần / giờ, quá trần thì dừng và gọi người | M | Không bao giờ xóa dữ liệu |
+| O-04 | **Prod: chỉ đề xuất**, đại ca «đúng» + OTP mới chạy (dùng V-03 / V-04) | S | |
+| O-05 | **Sổ sự cố** tự viết: lúc nào, triệu chứng, chẩn đoán, đã làm gì, kết quả, thời gian gián đoạn | S | |
+| O-06 | **Sự cố lặp lại** → bot đề xuất một việc sửa mã gốc rễ (giao bot code như mọi việc) | S | Vòng tự cải thiện |
+
+## Nhóm L — Đối chiếu và học hỏi bên ngoài (thêm 05/10/2026)
+
+| Mã | Tính năng | Cỡ | Ghi chú |
+|---|---|---|---|
+| L-01 | Định kỳ đối chiếu hệ thống với các khung orchestrator–worker mở (mcp-agent, Agent Swarm, cli-agent-orchestrator, OpenAI Agents SDK); chỉ **học ý tưởng**, không clone thay lõi; mượn thư viện từng phần chỉ từ kho MIT / Apache, ghi nguồn; **tránh AGPL** | S | Bảng đối chiếu ở `07` §6 |
+
 ## Nhóm T — Thư ký (biên bản họp, lịch, nhắc việc)
 
 | Mã | Tính năng | Cỡ | Ghi chú |
@@ -146,29 +187,31 @@ Thứ tự làm phase 2: **(a)** D-01 + D-02 (xong 25/09) → **(b)** D-03 + D-0
 | R-03 | Tìm tài liệu nội bộ: kho tài liệu đã nạp + thư mục Drive | M | **Xong phần kho tài liệu** ai-CR-044 (`/tailieu`); phần Drive chờ N-03 |
 | R-04 | Xuất báo cáo nghiên cứu ra Word lên Drive | S | **Xong phần Word gửi qua Telegram** ai-CR-044 (`/word`); lên Drive chờ N-03 |
 
-## Lộ trình theo phase (sắp lại 24/09/2026 theo hướng «trợ lý mở»)
+## Lộ trình theo phase (viết lại 05/10/2026)
 
-Cỡ là ước THÔ theo ngày công của một người, đo lại sau mỗi phase (A-01 đã có số đo từng bước).
+Cỡ là ước THÔ theo ngày công của một người. Làm **lần lượt** (đại ca chốt 24/09).
 
-| Phase | Tên | Gồm | Cần đại ca quyết / cung cấp | Cỡ ước |
+| Phase | Tên | Gồm | Trạng thái / cần đại ca | Cỡ ước |
 |---|---|---|---|---|
-| **0** | Đang chạy | Đậu Đậu trên máy đại ca: nhận việc, rà, sửa, kiểm, gộp, deploy dev; đăng nhập bằng mã; tạo + gửi duyệt phiếu từ chat; nghiên cứu; chi phí | — | xong |
-| **1** | Khóa quyền sửa mã | K-01 cấp quyền bằng câu nhắn (cách 3) **xong** · K-04 kiểm cấp trước lệnh nhạy cảm **xong** · K-03 bảo vệ nhánh `main` · K-02 khóa riêng của bot | K-03: đại ca bật trên GitHub; K-02: tạo khóa deploy riêng cho bot | 3–4 ngày |
-| **2 ✔ xong 25/09** | Bot lên ERP dev (nhóm D) | (a) D-01 khóa Gemini cá nhân + D-02 bỏ tài khoản chung · (b) D-03 sổ máy + D-04 runner tách rời + D-05 chia việc · (c) D-06 stack bot trên dev, gộp vào `erp-v2` · bật phiếu hỗ trợ làm nguồn việc (A-06) · D-07 để cuối | **Đã chốt 24/09:** một bot trên dev, ai cũng tự đăng nhập, khóa cá nhân, không lùi khóa công ty. Đại ca làm tay: tạo bot mới ở BotFather, dán token + khóa vào `.env` trên VPS | ~2 tuần (a 3 ngày · b 5 ngày · c 2 ngày) |
-| **3 ✔ xong 25/09** (M-07 bỏ theo quyết định web = khóa công ty; M-02 làm ở phase 4) | Trợ lý theo từng người trên web | M-07 web chạy khóa cá nhân (nếu đại ca muốn, nay web = khóa công ty) · M-02 khóa kết nối MCP · P-02 trần chi phí theo người · P-01 đẩy thông báo ERP sang Telegram cá nhân · T-10 nhắc việc bằng câu nói · T-07 tin thoại | P-01: đẩy toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» | 2 tuần |
-| **4 ✔ mã xong 25/09 (ai-CR-063), thử với 1–2 người trên dev** | Cổng MCP | M-01 cổng MCP dùng chung bộ tool · M-03 tool đọc · M-04 tool tạo/gửi duyệt có xác nhận · M-05 báo lỗi → Đậu Đậu | Thử với 1–2 người trước; chạy dev rồi prod | 2 tuần |
-| **5 ✔ mã xong 25/09 (ai-CR-064); Q2 = Google cá nhân; chờ client secret + redirect URI** | Kết nối Google của từng người | M-06 Drive + Lịch riêng từng người → T-08 bản tin sáng, T-09 nhắc trước họp, T-11 tạo lịch bằng câu nói, R-03/R-04 phần Drive | Cá nhân hay Workspace công ty (Q2); đăng ký ứng dụng Google của công ty | 2 tuần |
-| **6** | Nhiều kênh, nhiều bot | M-08 kênh Zalo OA · N-01 nhiều bot một nền · N-04 chi phí theo bot · N-05 cách ly khóa | Tạo bot/OA và đặt tên (Q6) | 1–2 tuần |
-| **7** | Thư ký biên bản họp | T-01 thử một tệp họp thật (M0) → T-02 … T-06, T-12 | Cho ai dùng (Q1), một tệp ghi âm thật (Q5); chỉ làm tiếp khi M0 đạt | 3 tuần |
-| sau | Để sau | A-08 xem thử qua tunnel (AN-007, 4 câu chờ) | — | — |
+| 0 | Bot sửa mã gốc | Nhận việc, rà, sửa, kiểm, gộp, deploy dev; đăng nhập bằng mã; tạo + gửi duyệt phiếu; nghiên cứu; chi phí | Xong | — |
+| 1 | Khóa quyền sửa mã | K-01, K-04 xong · K-02 khóa riêng của bot · K-03 bảo vệ `main` | Còn K-02/K-03: tay đại ca trên GitHub | — |
+| 2 | Bot lên dev | Nhóm D: Lạc Lạc, khóa cá nhân, máy sửa mã tách rời, đường tắt, model theo làn | Xong 25/09 | — |
+| 3 | Trợ lý từng người | Chuông, nhắc việc, tin thoại, trần lượt | Xong 25/09 | — |
+| 4 | Cổng MCP | M-01..M-05 | Xong 25/09, chưa ai thử bằng ứng dụng thật | — |
+| 5 | Google cá nhân | M-06, T-08, T-09, T-11 | Mã xong; **chờ đại ca**: redirect URI, «In production», bật Calendar + Drive API, `GOOGLE_CLIENT_SECRET` | — |
+| **6** | **Quy trình code hai máy chủ** (nhóm V) | (a) V-01 + V-02 + V-03 · (b) V-04 + V-05 + V-06 · (c) V-07 preview · V-08 khi có VPS | **Làm tiếp ngay.** V-07 chờ tên miền + token tunnel; V-08 chờ VPS + tài khoản Claude công ty | ~2 tuần (a 3 ngày · b 1–2 ngày · c 3 ngày) |
+| **7** | **Tự vận hành** (nhóm O) | O-01 → O-06 | Cần phase 6 (a)(b) trước | ~1 tuần |
+| **8** | **Lõi mở** | M-09 gọi MCP bên ngoài · N-06 A2A · N-07 giao việc tính ngân sách · N-08 sổ sự kiện chung · L-01 | — | ~1,5 tuần |
+| 9 | Nhiều kênh, nhiều bot | M-08 Zalo OA · N-01 · N-04 · N-05 | Chờ Zalo OA + tên bot (Q6) | 1–2 tuần |
+| 10 | Thư ký biên bản họp | T-01 thử tệp thật → T-02..T-06, T-12 | Chờ tệp ghi âm thật (Q5) + Q1 | 3 tuần |
+| sau | Để sau | V-09 chép DB dev sang preview · A-08 xem thử qua tunnel cũ (thay bằng V-07) | — | — |
 
-Phase 1 và 2 là nền cho mọi phase sau: 1 để mở cho nhiều người mà không lo ai đụng mã, 2 để bot
-làm việc trên dữ liệu thật. Đại ca chốt 24/09/2026: **làm lần lượt**, không chạy song song nhiều phase
-(đã cân phương án ba mạch A/B/C, bỏ vì ba luồng test dồn lên một người). Phase 3 → 6 mở dần theo hướng đại ca chốt: web trước, MCP, Google từng
-người, rồi Zalo. Phase 7 độc lập, làm khi có tệp thử.
+Vì sao thứ tự này: phase 6 là nền cho mọi đường lên dev/prod sau này và là thứ đại ca đang cần; phase 7 dùng lại
+đúng nhật ký, cổng duyệt, sao lưu, hoàn tác của phase 6 nên làm ngay sau thì rẻ; phase 8 cần khi có bot thứ ba trở đi;
+phase 9, 10 chờ dữ liệu từ đại ca nên đặt cuối, có dữ liệu sớm thì kéo lên.
 
-**Năng lực:** đội làm được khoảng 24 ngày công mỗi tháng và phần lõi ERP còn thiếu 156 ngày
-công (số của `meeting-recap/doc/04`). Các trợ lý này là việc cộng thêm, giành giờ với ERP.
+**Năng lực:** đội làm được khoảng 24 ngày công mỗi tháng; trợ lý là việc cộng thêm, giành giờ với ERP. Phase 6 → 8
+khoảng 4,5 tuần công.
 
 ## Câu chờ đại ca
 
