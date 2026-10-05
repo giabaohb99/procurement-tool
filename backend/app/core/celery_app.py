@@ -236,6 +236,12 @@ if settings.AGENT_HUB_ENABLED:
             "options": {"expires": 50},
         },
         #  ai-CR-072: máy sửa mã mất liên lạc / nối lại → báo đại ca (không gác AGENT_OPS_ENABLED).
+        #  ai-CR-078: vòng tự học — đề xuất thuật ngữ + chỗ Trợ lý thiếu chức năng.
+        "agent-learning-tick": {
+            "task": "agent.learning_tick",
+            "schedule": crontab(minute="*/5"),
+            "options": {"expires": 240},
+        },
         "agent-runner-watch": {
             "task": "agent.runner_watch",
             "schedule": crontab(minute="*"),

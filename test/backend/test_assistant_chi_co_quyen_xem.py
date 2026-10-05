@@ -173,6 +173,15 @@ TOOL_GHI_NGOAI_ERP = {
     "create_calendar_event": {"title": "Họp NCC", "start": "2026-09-26T14:00:00"},
 }
 
+#  Tool CHỈ GHI ĐỀ XUẤT chờ quản lý duyệt (ai-CR-078): không đụng một bản ghi nghiệp vụ nào, chỉ thêm một dòng chờ
+#  duyệt vào `tab_setting` (sổ thuật ngữ / sổ chỗ thiếu chức năng). Mọi người dùng Trợ lý đều được đề xuất — đó là
+#  mục đích: người dùng sửa cách bot hiểu, bot học. Thứ thật sự đổi (sổ thuật ngữ, việc sửa mã) đi qua tay đại ca.
+#  Canh ở `test_de_xuat_khong_ghi_du_lieu_nghiep_vu` bên dưới.
+TOOL_DE_XUAT_CHO_DUYET = {
+    "propose_glossary_term": {"term": "nhà máy", "meaning": "phòng Dego Organic", "kind": "inferred"},
+    "report_missing_feature": {"user_request": "đơn theo kho", "missing": "lọc đơn theo kho nhận"},
+}
+
 #  Cách nhận diện "tool có mùi ghi" từ TÊN. Cố ý thô: thà bắt nhầm một tool đọc rồi khai
 #  vào bảng trên, còn hơn bỏ lọt một tool ghi.
 _MUI_GHI = ("draft_", "_create", "create_", "propose_", "update_", "_update", "confirm_")
@@ -182,12 +191,12 @@ def test_moi_tool_co_mui_ghi_deu_phai_khai_o_bang_tren(db):
     """Thêm `draft_xyz` mà quên khai là ĐỎ ngay — không đợi tới lúc khách hỏi."""
     ten = {d.name for d in T.tool_defs()}
     nghi_ngo = {n for n in ten if any(k in n for k in _MUI_GHI)}
-    thieu = sorted(nghi_ngo - set(TOOL_GHI) - set(TOOL_GHI_NGOAI_ERP))
+    thieu = sorted(nghi_ngo - set(TOOL_GHI) - set(TOOL_GHI_NGOAI_ERP) - set(TOOL_DE_XUAT_CHO_DUYET))
     assert thieu == [], (
         f"tool có mùi ghi nhưng chưa khai ở TOOL_GHI: {thieu}. Khai vào rồi bổ sung một ca "
         "'thiếu quyền thì denied' — đừng sửa `_MUI_GHI` cho hết đỏ.")
     #  Chiều ngược: khai thừa một tool đã gỡ thì bảng thành sai lệch, cũng phải đỏ.
-    du = sorted((set(TOOL_GHI) | set(TOOL_GHI_NGOAI_ERP)) - ten)
+    du = sorted((set(TOOL_GHI) | set(TOOL_GHI_NGOAI_ERP) | set(TOOL_DE_XUAT_CHO_DUYET)) - ten)
     assert du == [], f"TOOL_GHI / TOOL_GHI_NGOAI_ERP còn khai tool không tồn tại: {du}"
 
 
@@ -223,3 +232,17 @@ def test_moi_tool_ghi_deu_tu_choi_khi_thieu_quyen(db, seed, cap_quyen, ten_tool)
         f"`{ten_tool}` không chặn tài khoản chỉ có quyền đọc trên `{entity}` — "
         f"phải gọi ctx.can('{entity}', '{action}') trước khi làm gì khác. "
         f"Kết quả thật: {out}")
+
+
+@pytest.mark.parametrize("tool_name", sorted(TOOL_DE_XUAT_CHO_DUYET))
+def test_de_xuat_khong_ghi_du_lieu_nghiep_vu(db, seed, tool_name):
+    """ai-CR-078: tài khoản KHÔNG quyền gì vẫn đề xuất được, nhưng chỉ đẻ một dòng chờ duyệt trong tab_setting —
+    không bảng nghiệp vụ nào đổi, sổ thuật ngữ thật không đổi."""
+    from app.modules.assistant import glossary
+    from app.modules.setting.model import Setting
+
+    before = {r.skey for r in db.query(Setting)}
+    out = _hoi(db, seed, tool_name, TOOL_DE_XUAT_CHO_DUYET[tool_name])
+    assert out.get("proposed") or out.get("recorded"), out
+    assert glossary.load(db) == []
+    assert {r.skey for r in db.query(Setting)} - before <= {"assistant_glossary_pending", "assistant_feature_gaps"}

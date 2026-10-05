@@ -71,6 +71,9 @@ from .constants import (
     ACT_GRANT_DONE,
     ACT_GRANT_DROPPED,
     ACT_GRANT_WAIT,
+    ACT_GLOSS_DONE,
+    ACT_GLOSS_DROPPED,
+    ACT_GLOSS_WAIT,
     ACT_RUNNER_DONE,
     ACT_RUNNER_DROPPED,
     ACT_RUNNER_WAIT,
@@ -1696,11 +1699,47 @@ def _runner_confirm(db: Session, chat_id: str, row: AgentMessage, pending: Agent
 # Sổ thuật ngữ (ai-CR-077): đại ca dạy Trợ lý bằng câu nhắn
 # ---------------------------------------------------------------------------
 _GLOSS_TEACH = re.compile(
-    r"^(?:ghi nhớ|nhớ giúp em|nhớ giúp anh|nhớ giúp|nhớ|dạy em|thuật ngữ)\s*:?\s*(?P<term>.{1,60}?)\s*"
+    r"^(?:ghi nhớ|nhớ giúp em|nhớ giúp anh|nhớ giúp|nhớ|dạy em|cập nhật thuật ngữ|sửa thuật ngữ|thuật ngữ)\s*:?\s*(?P<term>.{1,60}?)\s*"
     r"(?:\s(?:là|nghĩa là|tức là|được hiểu là)\s|=)\s*(?P<meaning>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
 _GLOSS_LIST = re.compile(r"^(?:sổ thuật ngữ|các thuật ngữ|thuật ngữ|danh sách thuật ngữ|em nhớ những (?:gì|từ nào))\s*[?.!]*$",
                          re.IGNORECASE)
 _GLOSS_FORGET = re.compile(r"^(?:quên|xóa|bỏ)\s+thuật ngữ\s+(?P<term>.+?)[.!]*$", re.IGNORECASE)
+#  ai-CR-078: duyệt / bỏ một ĐỀ XUẤT thuật ngữ theo số (đề xuất từ Trợ lý — lời sửa của người dùng hay tự suy từ dữ liệu).
+_GLOSS_DECIDE = re.compile(r"^(?P<verb>duyệt|đúng|ghi|bỏ|thôi|hủy)\s+(?:đề xuất\s+)?thuật ngữ\s+#?(?P<n>\d+)[.!]*$",
+                           re.IGNORECASE)
+GLOSS_WINDOW = timedelta(minutes=15)
+#  ai-CR-079: đề xuất chỉ hiện khi đại ca hỏi.
+_GLOSS_REVIEW = re.compile(r"^(?:cập nhật|duyệt|xem)?\s*(?:lại\s+)?(?:đề xuất\s+)?thuật ngữ(?:\s+mới)?\s+(?:chờ duyệt|đề xuất)"
+                           r"|^(?:cập nhật|cập nhật lại|đề xuất)\s+thuật ngữ[.!?]*$", re.IGNORECASE)
+_GLOSS_ALL = re.compile(r"^(?:duyệt|đúng)\s+(?:hết|tất cả)\s+(?:đề xuất\s+)?thuật ngữ[.!]*$", re.IGNORECASE)
+
+
+def _gloss_pending_card(db: Session, chat_id: str, row: AgentMessage) -> AgentMessage | None:
+    """Thẻ đề xuất thuật ngữ còn sống và là thẻ chờ MỚI NHẤT của chat (cùng luật với thẻ thao tác VPS)."""
+    from . import ops as _ops
+
+    last = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action.in_(_ops._WAITS),
+                                                AgentMessage.id < row.id).order_by(AgentMessage.id.desc()).limit(1))
+    if last is None or last.action != ACT_GLOSS_WAIT:
+        return None
+    if row.created_at and last.created_at and row.created_at - last.created_at > GLOSS_WINDOW:
+        return None
+    return last
+
+
+def _gloss_decide(db: Session, chat_id: str, pid: int, accept: bool, uid: int) -> None:
+    from app.modules.assistant import glossary
+
+    esc = telegram.esc
+    item = glossary.decide(db, pid, accept=accept, user_id=uid)
+    if item is None:
+        reply(db, chat_id, f"Đề xuất thuật ngữ #{pid} không còn chờ duyệt.")
+    elif accept:
+        reply(db, chat_id, f"<b>ĐÃ NHỚ</b>\n«{esc(item['term'])}» = {esc(item['meaning'])}\n\n"
+              f"<i>Sai thì «quên thuật ngữ {esc(item['term'])}».</i>")
+    else:
+        reply(db, chat_id, f"Dạ, bỏ đề xuất thuật ngữ #{pid} («{esc(item['term'])}»).")
+    db.commit()
 
 
 def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
@@ -1714,16 +1753,51 @@ def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     esc = telegram.esc
     link = chat_link.get_active_link(db, chat_id)
     uid = link.user_id if link is not None else 0
+    pending = _gloss_pending_card(db, chat_id, row)
+    if pending is not None and (_YES.match(raw.lower()) or _NO.match(raw.lower())):
+        row.action = ACT_COMMAND
+        try:
+            pid = int(json.loads(pending.body or "{}").get("pid") or 0)
+        except ValueError:
+            pid = 0
+        accept = bool(_YES.match(raw.lower()))
+        pending.action = ACT_GLOSS_DONE if accept else ACT_GLOSS_DROPPED
+        db.commit()
+        _gloss_decide(db, chat_id, pid, accept, uid)
+        return True
+    if _GLOSS_REVIEW.match(raw):
+        from . import learning
+
+        row.action = ACT_COMMAND
+        learning.show_pending(db, chat_id)
+        return True
+    if _GLOSS_ALL.match(raw):
+        row.action = ACT_COMMAND
+        waiting = glossary.load_pending(db)
+        for w in waiting:
+            glossary.decide(db, int(w["id"]), accept=True, user_id=uid)
+        reply(db, chat_id, f"<b>ĐÃ NHỚ</b> {len(waiting)} thuật ngữ." if waiting else "Không có đề xuất nào chờ duyệt.")
+        db.commit()
+        return True
+    if m := _GLOSS_DECIDE.match(raw):
+        row.action = ACT_COMMAND
+        _gloss_decide(db, chat_id, int(m.group("n")), m.group("verb").lower() in ("duyệt", "đúng", "ghi"), uid)
+        return True
     if _GLOSS_LIST.match(raw):
         row.action = ACT_COMMAND
         items = glossary.load(db)
-        if not items:
-            reply(db, chat_id, "<b>SỔ THUẬT NGỮ</b> đang trống.\n\n<i>Dạy em: «ghi nhớ: nhà máy là phòng Dego Organic».</i>")
-        else:
+        waiting = glossary.load_pending(db)
+        if items:
             lines = [f"<b>SỔ THUẬT NGỮ</b> · {len(items)} từ", ""]
             lines += [f"• {esc(x)}" for x in glossary.listing(items)[:60]]
-            lines += ["", "<i>Thêm: «ghi nhớ: X là Y» · xóa: «quên thuật ngữ X».</i>"]
-            reply(db, chat_id, "\n".join(lines))
+        else:
+            lines = ["<b>SỔ THUẬT NGỮ</b> đang trống."]
+        if waiting:
+            lines += ["", f"<b>Chờ duyệt</b> · {len(waiting)} đề xuất"]
+            lines += [f"• #{w['id']} «{esc(w['term'])}» = {esc(w['meaning'])}" for w in waiting[:10]]
+            lines += ["<i>«duyệt thuật ngữ #n» · «bỏ thuật ngữ #n».</i>"]
+        lines += ["", "<i>Thêm: «ghi nhớ: X là Y» · xóa: «quên thuật ngữ X».</i>"]
+        reply(db, chat_id, "\n".join(lines))
         db.commit()
         return True
     if m := _GLOSS_FORGET.match(raw):

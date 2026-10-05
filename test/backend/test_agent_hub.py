@@ -6657,6 +6657,135 @@ def test_day_thuat_ngu_qua_chat_dai_ca(db, bot):
 
     class Row:
         action = ""
+        id = 10 ** 9
+        created_at = None
     assert s._glossary_by_text(db, "12345", Row(), "nhớ: nhà máy là gì?") is False
     #  Chat người khác không dạy được.
     assert s._glossary_by_text(db, "999", Row(), "ghi nhớ: A là B") is False
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-078 — bot tự học: lời sửa → thuật ngữ, tự dò nghĩa từ dữ liệu, thiếu chức năng lặp → việc sửa mã
+# ---------------------------------------------------------------------------
+def _owner_link(db, user_id: int):
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub.model import AgentChatLink
+
+    db.add(AgentChatLink(user_id=user_id, chat_id="12345", linked_at=datetime.now(),
+                         expires_at=datetime.now() + timedelta(days=30), created_by=0, updated_by=0))
+    db.commit()
+
+
+def test_loi_sua_cua_dai_ca_ghi_thang_nguoi_khac_cho_duyet(db, bot, seed):
+    from app.modules.assistant import glossary
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    _owner_link(db, seed.u_req_id)
+    owner = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, owner, "propose_glossary_term",
+                     {"term": "nhà máy", "meaning": "phòng Dego Organic", "kind": "user_correction"})
+    assert out["saved"] is True and glossary.load(db)[0]["meaning"] == "phòng Dego Organic"
+
+    other = db.get(User, seed.u_nstm_id)
+    out = T.run_tool(db, other, "propose_glossary_term",
+                     {"term": "kho 2", "meaning": "kho Bình Dương", "kind": "user_correction"})
+    assert out["proposed"] is True and glossary.find(glossary.load(db), "kho 2") is None
+    assert glossary.load_pending(db)[0]["term"] == "kho 2"
+    #  Đề xuất trùng y hệt thì không đẻ thêm.
+    T.run_tool(db, other, "propose_glossary_term", {"term": "Kho 2", "meaning": "kho Bình Dương", "kind": "inferred"})
+    assert len(glossary.load_pending(db)) == 1
+
+
+def test_de_xuat_thuat_ngu_chi_hien_khi_dai_ca_hoi(db, bot):
+    """ai-CR-079 (đại ca 05/10): KHÔNG gửi đề xuất theo lịch; chỉ hiện khi nhắn «cập nhật thuật ngữ»."""
+    from app.modules.agent_hub import learning
+    from app.modules.assistant import glossary
+
+    service, sent, asked = bot
+    glossary.propose(db, "kho 2", "kho Bình Dương", evidence="danh mục có «Kho Bình Dương»",
+                     source="Trợ lý tự suy từ dữ liệu")
+    before = len(sent)
+    assert learning.tick(db) == {"gap_tasks": 0} and len(sent) == before       # vòng 5 phút không nhắn gì
+    service.handle_message(db, _msg("cập nhật thuật ngữ"))
+    card = sent[-1]
+    assert card.startswith("<b>ĐỀ XUẤT THUẬT NGỮ</b>") and "kho Bình Dương" in card and "<b>đúng</b>" in card
+    service.handle_message(db, {**_msg("đúng"), "message_id": 8})
+    assert glossary.find(glossary.load(db), "kho 2")["meaning"] == "kho Bình Dương" and "ĐÃ NHỚ" in sent[-1]
+    assert asked == []
+    #  Nhiều đề xuất → danh sách duyệt bằng số; «duyệt hết thuật ngữ».
+    a = glossary.propose(db, "bên Organic", "phòng Dego Organic")
+    glossary.propose(db, "xưởng", "nhà máy Dego Organic")
+    service.handle_message(db, {**_msg("đề xuất thuật ngữ"), "message_id": 9})
+    assert f"<b>#{a['id']}</b>" in sent[-1] and "duyệt hết thuật ngữ" in sent[-1]
+    service.handle_message(db, {**_msg(f"bỏ thuật ngữ #{a['id']}"), "message_id": 10})
+    service.handle_message(db, {**_msg("duyệt hết thuật ngữ"), "message_id": 11})
+    assert glossary.find(glossary.load(db), "bên Organic") is None
+    assert glossary.find(glossary.load(db), "xưởng") is not None and glossary.load_pending(db) == []
+    service.handle_message(db, {**_msg("cập nhật thuật ngữ"), "message_id": 12})
+    assert "Không có đề xuất" in sent[-1]
+    #  «cập nhật thuật ngữ: X là Y» là dạy luôn.
+    service.handle_message(db, {**_msg("cập nhật thuật ngữ: kho 3 là kho Long An"), "message_id": 13})
+    assert glossary.find(glossary.load(db), "kho 3")["meaning"] == "kho Long An"
+
+
+def test_mo_ta_tool_day_tro_ly_hoi_kem_lua_chon():
+    """ai-CR-079: không chắc nghĩa → hỏi MỘT câu kèm lựa chọn đánh số đoán sẵn; người dùng chọn → ghi nhớ."""
+    from app.modules.assistant.tools.learning_tool import GLOSSARY_LOOKUP_SPEC, PROPOSE_GLOSSARY_TERM_SPEC
+
+    assert "lựa chọn ĐÁNH SỐ" in GLOSSARY_LOOKUP_SPEC.description
+    assert "CHỌN một lựa chọn" in PROPOSE_GLOSSARY_TERM_SPEC.description
+    assert "đừng nhắc người dùng duyệt" in PROPOSE_GLOSSARY_TERM_SPEC.description
+
+
+def test_do_nghia_tu_noi_bo_trong_du_lieu(db, seed, cap_quyen):
+    from app.modules.assistant import glossary
+    from app.modules.assistant import tools as T
+    from app.modules.department.model import Department
+    from app.modules.purchase_order.model import PurchaseOrder
+    from app.modules.user.model import User
+
+    db.add(Department(code="NM", name="Nhà máy Dego Organic", company_id=seed.company_id))
+    db.add(PurchaseOrder(code="PO-1", order_date="2026-10-01", status="approved", company_id=seed.company_id,
+                         department="Nhà máy Dego Organic"))
+    db.commit()
+    user = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, user, "glossary_lookup", {"term": "Nhà máy"})
+    kinds = {c["kind"] for c in out["candidates"]}
+    assert "phòng ban" in kinds and "phòng ghi trên đơn mua hàng" not in kinds   # chưa có quyền xem đơn → không đếm
+    cap_quyen(seed.u_req_id, "purchase_order", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, user, "glossary_lookup", {"term": "Nhà máy"})
+    assert any(c.get("count") == 1 for c in out["candidates"])
+    glossary.upsert(db, "nhà máy", "phòng Dego Organic")
+    assert T.run_tool(db, user, "glossary_lookup", {"term": "nhà máy"})["glossary"] == "phòng Dego Organic"
+    assert "note" in T.run_tool(db, user, "glossary_lookup", {"term": "zzkhongco"})
+
+
+def test_thieu_chuc_nang_lap_lai_mo_viec_sua_ma(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import learning
+    from app.modules.agent_hub.constants import SRC_GAP, ST_CANCELLED
+    from app.modules.agent_hub.model import AgentTask
+    from app.modules.assistant import feedback
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    service, sent, _ = bot
+    monkeypatch.setattr(service, "start_scan", lambda db_, task: None)
+    user = db.get(User, seed.u_req_id)
+    T.run_tool(db, user, "report_missing_feature", {"user_request": "đơn giao về kho 2", "missing": "lọc đơn theo kho nhận",
+                                                    "tool": "recent_purchase_orders"})
+    assert learning.open_gap_tasks(db) == 0          # mới một lần
+    T.run_tool(db, user, "report_missing_feature", {"user_request": "đơn kho Bình Dương", "missing": "Lọc đơn theo KHO nhận",
+                                                    "tool": "recent_purchase_orders"})
+    assert learning.open_gap_tasks(db) == 1
+    task = db.query(AgentTask).one()
+    assert task.source == SRC_GAP and "lọc đơn theo kho nhận" in task.title.lower()
+    assert "đơn giao về kho 2" in task.summary and "TRỢ LÝ THIẾU CHỨC NĂNG" in sent[-1]
+    assert learning.open_gap_tasks(db) == 0 and db.query(AgentTask).count() == 1    # đã có việc thì không mở thêm
+    #  Việc đóng → bỏ gắn; phải lặp lại đủ lần mới mở việc mới.
+    task.status = ST_CANCELLED
+    db.commit()
+    learning.open_gap_tasks(db)
+    assert feedback.load(db)[0]["task_code"] == "" and feedback.load(db)[0]["count"] == 0

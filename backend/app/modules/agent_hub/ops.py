@@ -26,6 +26,7 @@ from app.core.config import settings
 from . import guardrails, runners, telegram
 from .constants import (
     ACT_COMMAND,
+    ACT_GLOSS_WAIT,
     ACT_GRANT_WAIT,
     ACT_OP_DONE,
     ACT_OP_DROPPED,
@@ -696,7 +697,7 @@ def parse(text: str) -> dict | None:
     return None
 
 
-_WAITS = (ACT_OP_WAIT, ACT_RUNNER_WAIT, ACT_GRANT_WAIT)
+_WAITS = (ACT_OP_WAIT, ACT_RUNNER_WAIT, ACT_GRANT_WAIT, ACT_GLOSS_WAIT)
 
 
 def _pending(db: Session, chat_id: str, row: AgentMessage) -> AgentMessage | None:

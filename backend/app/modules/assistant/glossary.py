@@ -117,3 +117,89 @@ def prompt_block(db: Session | None, *texts: str) -> str | None:
 
 def listing(items: list[dict]) -> list[str]:
     return [f"«{i['term']}»: {i['meaning']}" for i in sorted(items, key=lambda i: fold(i["term"]))]
+
+
+# ---------------------------------------------------------------------------
+# Đề xuất thuật ngữ chờ đại ca duyệt (ai-CR-078: bot tự học từ lời sửa + tự dò nghĩa từ dữ liệu)
+# ---------------------------------------------------------------------------
+PENDING_KEY = "assistant_glossary_pending"
+MAX_PENDING = 50
+
+
+def owner_user_id(db: Session) -> int:
+    """Tài khoản ERP đang nối với chat của đại ca (AGENT_TELEGRAM_CHAT_ID) — 0 nếu chưa nối."""
+    from app.core.config import settings
+    from app.modules.agent_hub.model import AgentChatLink
+
+    chat = str(settings.AGENT_TELEGRAM_CHAT_ID or "")
+    if not chat:
+        return 0
+    row = db.query(AgentChatLink).filter(AgentChatLink.chat_id == chat, AgentChatLink.revoked_at.is_(None)) \
+        .order_by(AgentChatLink.id.desc()).first()
+    return int(row.user_id) if row is not None and row.user_id else 0
+
+
+def _load_json(db: Session, key: str) -> list[dict]:
+    from app.modules.setting.model import Setting
+
+    row = db.query(Setting).filter(Setting.skey == key).first()
+    try:
+        items = json.loads(row.svalue) if row is not None and row.svalue else []
+    except ValueError:
+        items = []
+    return [i for i in items if isinstance(i, dict)]
+
+
+def _save_json(db: Session, key: str, items: list[dict], user_id: int) -> None:
+    from app.modules.setting import service as setting_service
+
+    setting_service._upsert(db, key, json.dumps(items, ensure_ascii=False), user_id)
+    db.commit()
+
+
+def load_pending(db: Session, *, only_open: bool = True) -> list[dict]:
+    items = _load_json(db, PENDING_KEY)
+    return [i for i in items if i.get("status") == "cho"] if only_open else items
+
+
+def propose(db: Session, term: str, meaning: str, *, evidence: str = "", source: str = "", user_id: int = 0) -> dict:
+    """Ghi một đề xuất (trùng thuật ngữ + nghĩa đang chờ thì trả lại cái cũ). Bot trên dev nhắn đại ca duyệt."""
+    term = " ".join((term or "").split()).strip(" :«»\"'")[:TERM_MAX]
+    meaning = " ".join((meaning or "").split()).strip(" .«»\"'")[:MEANING_MAX]
+    if not term or not meaning:
+        raise ValueError("thiếu thuật ngữ hoặc nghĩa")
+    items = _load_json(db, PENDING_KEY)
+    for i in items:
+        if i.get("status") == "cho" and fold(i["term"]) == fold(term) and fold(i["meaning"]) == fold(meaning):
+            return i
+    cur = find(load(db), term)
+    if cur is not None and fold(cur["meaning"]) == fold(meaning):
+        return {**cur, "id": 0, "status": "da_co"}
+    pid = max([int(i.get("id") or 0) for i in items] or [0]) + 1
+    item = {"id": pid, "term": term, "meaning": meaning, "evidence": (evidence or "")[:300],
+            "source": (source or "")[:120], "by": user_id, "status": "cho", "notified": False,
+            "at": datetime.now().strftime("%Y-%m-%d %H:%M")}
+    items = [i for i in items if i.get("status") == "cho"][-(MAX_PENDING - 1):] + [item]
+    _save_json(db, PENDING_KEY, items, user_id)
+    return item
+
+
+def mark_notified(db: Session, pid: int) -> None:
+    items = _load_json(db, PENDING_KEY)
+    for i in items:
+        if int(i.get("id") or 0) == pid:
+            i["notified"] = True
+    _save_json(db, PENDING_KEY, items, 0)
+
+
+def decide(db: Session, pid: int, *, accept: bool, user_id: int = 0) -> dict | None:
+    """Duyệt (ghi vào sổ) hoặc bỏ một đề xuất đang chờ. Trả đề xuất, None nếu không còn chờ."""
+    items = _load_json(db, PENDING_KEY)
+    item = next((i for i in items if int(i.get("id") or 0) == pid and i.get("status") == "cho"), None)
+    if item is None:
+        return None
+    item["status"] = "da_duyet" if accept else "bo"
+    _save_json(db, PENDING_KEY, items, user_id)
+    if accept:
+        upsert(db, item["term"], item["meaning"], user_id)
+    return item

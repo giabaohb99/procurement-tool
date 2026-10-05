@@ -682,6 +682,24 @@ def resource_report_due_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.learning_tick")
+def learning_tick_task() -> dict:
+    """ai-CR-078: mỗi 5 phút — nhắn đại ca đề xuất thuật ngữ mới; chỗ Trợ lý thiếu chức năng lặp lại → mở việc sửa mã."""
+    if (off := _off()) is not None:
+        return off
+    from . import learning
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **learning.tick(db)}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: vòng tự học hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.runner_watch")
 def runner_watch_task() -> dict:
     """ai-CR-072: mỗi phút xem máy sửa mã nào mất liên lạc / nối lại → báo đại ca một lần mỗi lần đổi."""

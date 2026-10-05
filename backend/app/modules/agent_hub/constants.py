@@ -65,7 +65,9 @@ TIER1_MAX_STATUS = ST_PLAN
 SRC_ERP_TICKET = 1  # Phiếu hỗ trợ trong ERP (`tab_ticket`) — BẬC SAU, xem AN-005
 SRC_TELEGRAM = 2    # Tin nhắn Telegram của đại ca — nguồn DUY NHẤT của bậc 1
 SRC_INCIDENT = 3    # ai-CR-070 (O-06): sự cố lặp lại → bot tự đề xuất một việc sửa gốc rễ
+SRC_GAP = 4         # ai-CR-078: Trợ lý AI thiếu chức năng lặp lại → bot tự đề xuất việc sửa công cụ
 SOURCE_LABELS = {
+    SRC_GAP: "Trợ lý thiếu chức năng",
     SRC_ERP_TICKET: "Phiếu hỗ trợ ERP",
     SRC_TELEGRAM: "Telegram",
     SRC_INCIDENT: "Sự cố lặp lại",
@@ -245,7 +247,11 @@ ACT_OP_WAIT = "cho_thao_tac"
 ACT_OP_DONE = "da_thao_tac"
 ACT_OP_DROPPED = "bo_thao_tac"
 ACT_OPS = "van_hanh"
-NOISE_ACTIONS = (ACT_OP_WAIT, ACT_OP_DONE, ACT_OP_DROPPED, ACT_OPS, ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
+#  ai-CR-078: thẻ đề xuất thuật ngữ chờ «đúng»; `body` = JSON {pid}.
+ACT_GLOSS_WAIT = "cho_thuat_ngu"
+ACT_GLOSS_DONE = "da_thuat_ngu"
+ACT_GLOSS_DROPPED = "bo_thuat_ngu"
+NOISE_ACTIONS = (ACT_GLOSS_WAIT, ACT_GLOSS_DONE, ACT_GLOSS_DROPPED, ACT_OP_WAIT, ACT_OP_DONE, ACT_OP_DROPPED, ACT_OPS, ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
                  ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED,
                  ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED,
                  ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED, ACT_BELL, ACT_REMINDER, ACT_REMIND_WAIT)
