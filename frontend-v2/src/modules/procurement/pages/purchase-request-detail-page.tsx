@@ -107,6 +107,7 @@ import {
   toDraftFromRequest,
 } from '../utils/purchase-order-draft'
 import { validatePurchaseRequest } from '../utils/required-fields'
+import { fillApproverDefaults, resolveShownDeptHead } from '../utils/dept-head-display'
 import { resolveReturnAction, type ReturnTarget } from '../utils/return-action'
 import {
   parsePurchaseAssistantDraft,
@@ -431,7 +432,13 @@ export function PurchaseRequestDetailPage() {
   }
 
   async function handleSave(submitAfterSave = false) {
-    const validationMessage = validatePurchaseRequest(loadedDraft, submitAfterSave)
+    //  bao-CR-590: hai ô TBP + «Trưởng phòng phê duyệt» đang HIỆN người mặc định thì ghi thật
+    //  người đó xuống phiếu — kiểm và lưu đúng thứ người dùng nhìn thấy.
+    const draftToSave = fillApproverDefaults(
+      loadedDraft,
+      resolveShownDeptHead(loadedDraft, editing, defaultDeptHead),
+    )
+    const validationMessage = validatePurchaseRequest(draftToSave, submitAfterSave)
     if (validationMessage) {
       toast.error(validationMessage)
       return
@@ -444,9 +451,9 @@ export function PurchaseRequestDetailPage() {
         requester_id: loadedDraft.requester_id,
         requester_position: loadedDraft.requester_position,
         department: loadedDraft.department,
-        head_of_dept: loadedDraft.head_of_dept,
-        head_of_dept_id: loadedDraft.head_of_dept_id,
-        approver_employee_id: loadedDraft.approver_employee_id ?? 0,   // bao-CR-499
+        head_of_dept: draftToSave.head_of_dept,
+        head_of_dept_id: draftToSave.head_of_dept_id,
+        approver_employee_id: draftToSave.approver_employee_id ?? 0,   // bao-CR-499 · bao-CR-590
         // bao-CR-488: lúc tạo, chưa tick «Nhờ phòng khác xử lý» thì không gửi để backend chọn mặc định.
         handler_dept_id: isNew ? handlingDeptForCreate(loadedDraft) : loadedDraft.handler_dept_id,
         purpose: loadedDraft.purpose,

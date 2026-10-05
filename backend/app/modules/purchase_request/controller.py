@@ -1023,6 +1023,11 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     # bao-CR-499: phiếu cũ / phiếu chưa chọn người duyệt → mặc định Trưởng bộ phận vừa chốt ở trên.
     from app.core.print_signers import default_approver_to_head
     default_approver_to_head(pr)
+    #  bao-CR-590 (đại ca chốt 05/10/2026): gửi duyệt BUỘC có Trưởng phòng phê duyệt. Hôm nay hai
+    #  dòng trên đã bảo đảm điều đó (có TBP → người duyệt mặc định là TBP); chốt này giữ luật đứng
+    #  vững nếu sau này ai đổi luật mặc định — phiếu không người duyệt là phiếu không ai được báo.
+    if not pr.approver_employee_id:
+        raise HTTPException(400, "Phiếu chưa có Trưởng phòng phê duyệt — chọn người duyệt rồi gửi lại")
     # CR-082: chốt cờ Đơn gấp trước khi gửi duyệt — phiếu cũ (tạo trước luật này) hoặc phiếu
     # sửa dòng bằng đường khác vẫn được đánh dấu đúng, và thông báo duyệt đi kèm mức ưu tiên thật.
     service.apply_auto_urgent(db, pr, user.id)

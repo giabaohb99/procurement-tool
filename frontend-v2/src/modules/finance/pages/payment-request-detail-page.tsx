@@ -13,7 +13,7 @@ import {
   Send,
   Undo2,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -723,6 +723,8 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   // bao-CR-509 — hộp xem trước «Cập nhật theo công nợ» (nháp: ghi được; phiếu đã
   // khóa: chỉ xem chênh lệch từ dải cảnh báo).
   const [refreshOpen, setRefreshOpen] = useState(false)
+  /** Chặn bấm đúp «Gửi duyệt» ngay trong tick (bao-CR-590). */
+  const submittingRef = useRef(false)
 
   // Dữ liệu server về (hoặc lưu xong nạp lại) -> đổ lại bản nháp đang sửa.
   const reqChanged = useHasChanged(req)
@@ -824,6 +826,23 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
         offset_amount: Number(line.offset_amount) || 0,
       })),
     })
+  }
+
+  /**
+   * «Gửi duyệt» (bao-CR-590): phiếu còn Nháp sửa được thì LƯU phần đang sửa rồi mới gửi.
+   * Trước đây nút chỉ gọi `/submit` — máy chủ gửi bản CŨ, rồi nhịp nạp lại bên trên đổ bản cũ
+   * đè lên các ô đang sửa, người dùng mất trắng phần vừa nhập. Lưu hỏng thì KHÔNG gửi.
+   * Chặn bấm đúp bằng ref vì `disabled={isPending}` chỉ có hiệu lực ở lượt vẽ sau.
+   */
+  async function handleSubmit() {
+    if (submittingRef.current) return
+    submittingRef.current = true
+    try {
+      if (editable) await handleSave()
+      await runAction.mutateAsync({ action: 'submit' })
+    } finally {
+      submittingRef.current = false
+    }
   }
 
   const noop = () => ''
@@ -928,7 +947,11 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
               ))}
 
             {req.status === 'draft' && can('payment_request', 'write') && (
-              <Button variant="outline" onClick={() => runAction.mutate({ action: 'submit' })} disabled={runAction.isPending}>
+              <Button
+                variant="outline"
+                onClick={() => void handleSubmit()}
+                disabled={runAction.isPending || update.isPending}
+              >
                 <Send />
                 Gửi duyệt
               </Button>

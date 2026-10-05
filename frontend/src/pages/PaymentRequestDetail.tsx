@@ -366,6 +366,8 @@ function PaymentRequestView() {
   const [refresh, setRefresh] = useState<{ open: boolean; loading: boolean; plan: any }>({ open: false, loading: false, plan: null })
   // Chặn bấm đúp: state chỉ đổi ở lượt render sau, ref đổi ngay trong tick.
   const applyingRef = useRef(false)
+  //  bao-CR-590: chặn bấm đúp «Gửi duyệt». Khai Ở ĐÂY, trên các `return` sớm, cho đúng luật hook.
+  const submittingRef = useRef(false)
   const [applying, setApplying] = useState(false)
 
   async function loadAll() {
@@ -417,7 +419,10 @@ function PaymentRequestView() {
     setReq((s: any) => ({ ...s, lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, ...patch } : l) }))
   const unmatched = (req.lines || []).filter((l: any) => !l.matched)
 
-  async function save() {
+  //  bao-CR-590: `submitAfterSave` = bấm «Gửi duyệt» khi phiếu còn Nháp — LƯU phần đang sửa
+  //  rồi mới gửi. Trước đây nút Gửi duyệt chỉ POST `/submit`: máy chủ gửi bản CŨ, rồi `loadAll()`
+  //  đổ bản cũ đè lên form, người dùng mất trắng phần vừa sửa. Lưu hỏng thì KHÔNG gửi.
+  async function save(submitAfterSave = false) {
     try {
       await api.patch(`${API}/${id}`, {
         request_date: req.request_date, note: req.note, payment_method: req.payment_method || 'transfer',
@@ -431,8 +436,31 @@ function PaymentRequestView() {
           offset_amount: Number(l.offset_amount) || 0,
         })),
       })
+    } catch (ex: any) {
+      toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu')
+      return
+    }
+    if (!submitAfterSave) {
       toast.success('Đã lưu'); loadAll()
-    } catch (ex: any) { toast.error(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
+      return
+    }
+    try {
+      await api.post(`${API}/${id}/submit`)
+      toast.success('Đã lưu và gửi duyệt')
+    } catch (ex: any) {
+      toast.error(ex?.response?.data?.error?.message || 'Đã lưu nhưng gửi duyệt không được')
+    }
+    loadAll()
+  }
+  async function submitForApproval() {
+    if (submittingRef.current) return
+    submittingRef.current = true
+    try {
+      if (editable && can('payment_request', 'write')) await save(true)
+      else await action('submit')
+    } finally {
+      submittingRef.current = false
+    }
   }
   // CR-149: phiếu ĐÃ GỬI DUYỆT / ĐÃ DUYỆT thì chỉ được PATCH mỗi print_texts (backend chặn phần còn lại)
   async function savePrintTexts() {
@@ -492,7 +520,7 @@ function PaymentRequestView() {
         {stBadge(req.status)}
         <span style={{ flex: 1 }} />
         {can('payment_request', 'print') && <button className="btn ghost" onClick={() => window.open(`/print/payment-request/${id}`, '_blank')}><i className="ti ti-printer" />In phiếu</button>}
-        {editable && can('payment_request', 'write') && <button className="btn" onClick={save}>Lưu</button>}
+        {editable && can('payment_request', 'write') && <button className="btn" onClick={() => void save()}>Lưu</button>}
         {/* bao-CR-509 — chỉ bản NHÁP; phiếu trả trước không có công nợ để bám nên nút tắt kèm lời giải thích
             (span bọc ngoài vì nút disabled không hiện title khi rê chuột) */}
         {canRefresh && (req.prepay ? (
@@ -502,7 +530,7 @@ function PaymentRequestView() {
         ) : (
           <button className="btn ghost" onClick={openRefresh}><i className="ti ti-refresh" />Cập nhật theo công nợ</button>
         ))}
-        {req.status === 'draft' && can('payment_request', 'write') && <button className="btn secondary" onClick={() => action('submit')}><i className="ti ti-send" />Gửi duyệt</button>}
+        {req.status === 'draft' && can('payment_request', 'write') && <button className="btn secondary" onClick={() => void submitForApproval()}><i className="ti ti-send" />Gửi duyệt</button>}
         {req.status === 'submitted' && can('payment_request', 'approve') && <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>}
         {req.status === 'submitted' && can('payment_request', 'approve') && (
           <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}

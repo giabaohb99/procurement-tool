@@ -101,6 +101,13 @@ export function validatePurchaseRequest(
 
   if (!forSubmit) return ''
 
+  //  bao-CR-590 (đại ca chốt 05/10/2026): gửi duyệt BUỘC phải có Trưởng phòng phê duyệt. Còn trống
+  //  mà có Trưởng bộ phận thì backend tự lấy TBP làm người duyệt (`default_approver_to_head`),
+  //  nên chỉ chặn khi CẢ HAI cùng trống — lúc đó không có ai để giao việc duyệt.
+  if (!data.approver_employee_id && !data.head_of_dept_id) {
+    return 'Vui lòng chọn Trưởng phòng phê duyệt trước khi gửi duyệt'
+  }
+
   for (const line of lines) {
     const missing = missingPurchaseRequestLineFields(line)
     if (missing.length) {

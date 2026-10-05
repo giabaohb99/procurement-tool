@@ -741,7 +741,10 @@ export default function PurchaseOrderDetail() {
     }
   }
 
-  async function save() {
+  //  bao-CR-590: `submitAfterSave` = bấm «Gửi duyệt» khi đơn còn sửa được — LƯU phần đang sửa
+  //  rồi mới gửi. Trước đây nút Gửi duyệt chỉ POST `/submit`: máy chủ gửi bản CŨ, rồi `loadAll()`
+  //  đổ bản cũ đè lên form, người dùng mất trắng phần vừa sửa. Trả `true` khi lưu (và gửi) xong.
+  async function save(submitAfterSave = false): Promise<boolean> {
     const sentItems = items.filter((it: any) => it.product_name || it.product_code)
     // bao-CR-308: ĐMH ĐƯỢC PHÉP trùng mã (mua theo bộ chứng từ: cùng mã, khác lô / khác Tên
     // trên hóa đơn) — đồng bộ về YCMH cộng GỘP theo mã nên số vẫn đúng. Chỉ HỎI XÁC NHẬN
@@ -757,16 +760,16 @@ export default function PurchaseOrderDetail() {
           + '/ số hóa đơn) thì bấm Vẫn lưu — tiến độ trên YCMH vẫn cộng gộp đúng theo mã.\n\n'
           + 'Nếu chỉ là gõ nhầm mã thì bấm Quay lại sửa.',
       })
-      if (!ok) return
+      if (!ok) return false
     }
     // Ràng buộc nhập liệu (để công nợ sinh đúng): có SL nhận thì phải có Ngày nhận; có cước thì phải chọn Đơn vị VC
     for (const it of sentItems) {
       for (const d of (it.deliveries || [])) {
         if ((Number(d.received_qty) || 0) > 0 && !(d.received_date || '').trim()) {
-          toast.error(`Sản phẩm "${it.product_name}": lần giao có SL nhận thì phải nhập Ngày nhận`); return
+          toast.error(`Sản phẩm "${it.product_name}": lần giao có SL nhận thì phải nhập Ngày nhận`); return false
         }
         if ((Number(d.shipping_amount) || 0) > 0 && !(d.carrier_code || '').trim() && !(d.carrier_name || '').trim()) {
-          toast.error(`Sản phẩm "${it.product_name}": lần giao có cước thì phải chọn Đơn vị vận chuyển (hoặc chọn "NCC tự vận chuyển")`); return
+          toast.error(`Sản phẩm "${it.product_name}": lần giao có cước thì phải chọn Đơn vị vận chuyển (hoặc chọn "NCC tự vận chuyển")`); return false
         }
       }
     }
@@ -788,7 +791,7 @@ export default function PurchaseOrderDetail() {
           + diffs.map((it: any) => `• ${it.product_name || it.product_code}: YCMH ${dmy(it.pr_expected_date)} → đơn này ${dmy(it.expected_date)}`).join('\n')
           + '\n\nNgày trên YCMH sẽ KHÔNG tự đổi theo. Nếu cần đổi, vào phiếu YCMH sửa (phải kèm lý do).',
       })
-      if (!ok) return
+      if (!ok) return false
     }
     // Nhập tay: tổng các dòng phải bằng số quy đổi của khoản — backend cũng chặn (400), báo
     // sớm ở đây để người dùng khỏi mất công gửi.
@@ -796,10 +799,10 @@ export default function PurchaseOrderDetail() {
       if (!isManualCost(c)) continue
       const label = (c.description || '').trim() || COST_TYPE_LABEL(c.cost_type)
       if (manualEntered(c) <= 0) {
-        toast.error(`Khoản "${label}" chọn Nhập tay nhưng chưa nhập số tiền dòng nào ở bảng Chi phí theo dòng hàng`); return
+        toast.error(`Khoản "${label}" chọn Nhập tay nhưng chưa nhập số tiền dòng nào ở bảng Chi phí theo dòng hàng`); return false
       }
       if (Math.abs(manualDiff(c)) > MANUAL_ALLOC_TOLERANCE) {
-        toast.error(`Khoản "${label}": tổng nhập tay ${fmtVND(manualEntered(c))} phải bằng ${fmtVND(effectiveBase(c))} (lệch ${fmtVND(manualDiff(c))})`); return
+        toast.error(`Khoản "${label}": tổng nhập tay ${fmtVND(manualEntered(c))} phải bằng ${fmtVND(effectiveBase(c))} (lệch ${fmtVND(manualDiff(c))})`); return false
       }
     }
     const body: any = {
@@ -854,9 +857,33 @@ export default function PurchaseOrderDetail() {
       else {
         const r = await api.patch(`${API}/${id}`, body)
         await uploadPendingDeliveryFiles(sentItems, r.data.data)
-        toast.success('Đã lưu thành công'); loadAll()
+        if (submitAfterSave) {
+          await api.post(`${API}/${id}/submit`)
+          toast.success('Đã lưu và gửi duyệt')
+        } else {
+          toast.success('Đã lưu thành công')
+        }
+        loadAll()
       }
-    } catch { /* interceptor đã toast lỗi */ }
+      return true
+    } catch {
+      /* interceptor đã toast lỗi. Lưu được mà gửi hỏng thì vẫn nạp lại để thấy bản đã lưu. */
+      if (submitAfterSave && !isNew) loadAll()
+      return false
+    }
+  }
+
+  //  bao-CR-590: «Gửi duyệt» — đơn còn sửa được thì lưu rồi gửi; chặn bấm đúp bằng ref.
+  const submittingRef = useRef(false)
+  async function submitForApproval() {
+    if (submittingRef.current) return
+    submittingRef.current = true
+    try {
+      if (headerEditable) await save(true)
+      else await action('submit')
+    } finally {
+      submittingRef.current = false
+    }
   }
 
   async function action(path: string, payload: any = {}) {
@@ -1100,7 +1127,7 @@ export default function PurchaseOrderDetail() {
                 toast.error(submitBlockReason)
                 return
               }
-              action('submit')
+              void submitForApproval()
             }}
           >
             <i className="ti ti-send" />Gửi duyệt
@@ -1144,7 +1171,7 @@ export default function PurchaseOrderDetail() {
           <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Mở lại đơn đã hoàn thành để xử lý tiếp (nhập Số HĐ, tạo yêu cầu thanh toán, cập nhật tiến độ)? Đơn trở về trạng thái theo tiến độ nhận hàng.', confirmText: 'Mở lại' })) action('reopen') }}><i className="ti ti-lock-open" />Mở lại</button>
         )}
         {(headerEditable || deliveryEditable) && can('purchase_order', isNew ? 'create' : 'write') && (
-          <button className="btn" onClick={save} style={{ height: 40, padding: '0 22px', fontSize: 14.5, fontWeight: 700 }}><i className="ti ti-device-floppy" />{isNew ? 'Tạo' : 'Lưu'}</button>
+          <button className="btn" onClick={() => void save()} style={{ height: 40, padding: '0 22px', fontSize: 14.5, fontWeight: 700 }}><i className="ti ti-device-floppy" />{isNew ? 'Tạo' : 'Lưu'}</button>
         )}
       </div>
 

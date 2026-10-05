@@ -572,7 +572,10 @@ export default function SurveyDetail() {
     if (msg) { setInvalidCells(invalid); toast.error(msg); return }
     setInvalidCells(new Set())
     try {
-      await api.patch(`${API}/${id}`, buildBody())
+      const r = await api.patch(`${API}/${id}`, buildBody()); const d = r.data?.data
+      //  bao-CR-590: tệp chọn cho dòng MỚI (chưa có id) chỉ gắn được sau khi lưu — `save()`
+      //  có bước này mà đường gửi duyệt thẳng thì không, nên tệp chờ bị bỏ rơi im lặng.
+      await flushPendingAtt(d?.supplier_lines || [], d?.product_lines || [])
       await api.post(`${API}/${id}/submit`); loadAll()
       toast.success('Đã gửi duyệt phiếu khảo sát')
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi gửi duyệt') }

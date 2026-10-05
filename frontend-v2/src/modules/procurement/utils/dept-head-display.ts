@@ -24,3 +24,23 @@ export function resolveShownDeptHead(
   }
   return { head_of_dept: saved.head_of_dept, head_of_dept_id: saved.head_of_dept_id }
 }
+
+/**
+ * bao-CR-590 — ghi THẬT xuống phiếu người đang hiện ở hai ô TBP + «Trưởng phòng phê duyệt».
+ *
+ * Trước đây màn hình HIỆN TBP mặc định ở cả hai ô nhưng bản nháp vẫn giữ id 0, nên lúc tạo
+ * phiếu, người dùng thấy ô đã có người mà dữ liệu gửi lên thì trống — và bộ kiểm lúc gửi duyệt
+ * đọc bản nháp nên tưởng thiếu. Ô nào người dùng đã tự chọn thì giữ nguyên, không đè.
+ */
+export function fillApproverDefaults<T extends DeptHeadRef & { approver_employee_id?: number | null }>(
+  draft: T,
+  shown: DeptHeadRef,
+): T {
+  const headId = draft.head_of_dept_id || shown.head_of_dept_id
+  return {
+    ...draft,
+    head_of_dept_id: headId,
+    head_of_dept: draft.head_of_dept_id ? draft.head_of_dept : shown.head_of_dept || draft.head_of_dept,
+    approver_employee_id: draft.approver_employee_id || headId,
+  }
+}
