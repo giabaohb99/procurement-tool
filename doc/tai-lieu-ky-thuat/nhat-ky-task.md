@@ -96,7 +96,7 @@ Mã nguồn: frontend-v2 `procurement/pages/purchase-order-detail-page.tsx`, `fi
 `procurement/pages/purchase-request-detail-page.tsx`, `components/approver-select.tsx`, `utils/required-fields.ts`,
 `utils/dept-head-display.ts` (`fillApproverDefaults`); frontend `PurchaseOrderDetail.tsx`, `PaymentRequestDetail.tsx`,
 `SurveyDetail.tsx`, `PurchaseRequestDetail.tsx`; backend `purchase_request/controller.py` (`submit_pr`).
-Commit: erp-v2 `53ee8f92`. Deploy: DEV 05/10/2026; prod chưa.
+Commit: erp-v2 `53ee8f92`. Deploy: DEV + PROD 05/10/2026, main `a4a4a024` (cherry-pick riêng, không kèm duoc-CR-585 / giang-CR-587).
 
 ---
 
