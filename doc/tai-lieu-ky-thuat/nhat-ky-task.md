@@ -12146,3 +12146,12 @@ tự chọn cách an toàn cho những câu nghiệp vụ phụ thay vì hỏi l
 Mã nguồn: backend/app/modules/agent_hub/service.py · coder.py · manager.py · policy.py
 Commit: fe90902c (erp-v2 fe90902c)
 Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
+
+## ai-CR-087 | Thẻ bot dừng nói rõ lý do, tin nhắc họp không hiện mã sự kiện
+- status: xong
+- date: 2026-10-05
+Việc AI-0002 bot dừng đúng luật vì một bài kiểm an toàn cấm công cụ xóa, nhưng thẻ chỉ báo «không sửa tệp nào» nên
+đại ca tưởng lỗi. Nay thẻ dừng in luôn câu tóm tắt lý do của bot và gợi ý nhắn «sửa: …» để làm lại theo ý đại ca.
+Tin nhắc trước cuộc họp không còn hiện chuỗi mã sự kiện; mã đó chỉ lưu trong sổ để khỏi nhắc hai lần.
+
+Mã nguồn: backend/app/modules/agent_hub/coder.py · agent_hub/briefs.py

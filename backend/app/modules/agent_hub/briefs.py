@@ -32,12 +32,15 @@ def _targets(db: Session, now: datetime) -> list[tuple[AgentGoogleLink, list[Age
     return out
 
 
-def _send(db: Session, chat_id: str, text: str, action: str) -> None:
+def _send(db: Session, chat_id: str, text: str, action: str, marker: str = "") -> None:
+    """`marker` chỉ ghi vào SỔ (để khỏi nhắc hai lần), không gửi lên Telegram — ai-CR-087: trước đây mã sự kiện
+    «[qbqj613…]» hiện thẳng trong tin «Sắp họp»."""
     try:
         mid = telegram.send(text, chat_id=chat_id)
     except telegram.TelegramError as e:
         mid, text = 0, f"[KHÔNG GỬI ĐƯỢC: {e}] {text}"
-    db.add(AgentMessage(task_id=0, direction=DIR_OUT, chat_id=chat_id, tg_message_id=mid, body=text, action=action))
+    db.add(AgentMessage(task_id=0, direction=DIR_OUT, chat_id=chat_id, tg_message_id=mid, body=text + marker,
+                        action=action))
 
 
 def _hhmm(iso: str) -> str:
@@ -133,8 +136,8 @@ def send_meeting_reminders(db: Session, *, now: datetime | None = None) -> int:
                 esc = telegram.esc
                 text = (f"<b>Sắp họp</b> lúc {esc(_hhmm(str(ev['start'])))}: {esc(ev['title'])}"
                         + (f" · {esc(ev['location'])}" if ev.get("location") else "")
-                        + (f"\n{esc(ev['meet'])}" if ev.get("meet") else "") + f" [{esc(str(ev['id']))}]")
-                _send(db, c.chat_id, text, ACT_MEETING)
+                        + (f"\n{esc(ev['meet'])}" if ev.get("meet") else ""))
+                _send(db, c.chat_id, text, ACT_MEETING, marker=f" [{ev['id']}]")
                 sent += 1
     if sent:
         db.commit()

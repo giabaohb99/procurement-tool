@@ -1789,8 +1789,12 @@ def send_compact_review_card(db: Session, task: AgentTask, *, gate: dict, escala
     code = esc(task.code)
     lines = [f"<b>{code}</b> · {esc(task.title)}"]
     if escalation:
-        lines += [f"<b>Em dừng, chưa commit:</b> {esc(escalation)}",
-                  f"Nhắn «chi tiết {code}» để xem em vướng gì, hoặc «bỏ {code}»."]
+        lines += [f"<b>Em dừng, chưa commit:</b> {esc(escalation)}"]
+        #  ai-CR-087: nói luôn VÌ SAO dừng (dòng TÓM TẮT của bot) — trước đây chỉ «không sửa tệp nào», đại ca phải
+        #  «chi tiết» mới biết bot dừng vì một bài kiểm an toàn cần đại ca quyết.
+        if summary := report_summary(report):
+            lines += [service._card_md(summary, limit=700)]
+        lines += [f"Nhắn «chi tiết {code}» để xem đủ, «sửa: …» để em làm lại theo ý đại ca, hoặc «bỏ {code}»."]
     else:
         if summary := report_summary(report):
             lines += [service._card_md(summary, limit=900)]

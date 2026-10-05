@@ -5834,7 +5834,8 @@ def test_ban_tin_sang_va_nhac_truoc_hop_chi_gui_nguoi_da_noi_ca_hai(db, bot, mon
     assert sent[-1][0] == "777" and "Lịch hôm nay (2)" in sent[-1][1] and "Họp giao ban" in sent[-1][1] and "PR0012" in sent[-1][1]
     #  Nhắc họp: chỉ sự kiện bắt đầu trong 5–15 phút tới, mỗi sự kiện một lần.
     assert briefs.send_meeting_reminders(db, now=now) == 1
-    assert "Sắp họp" in sent[-1][1] and "Họp giao ban" in sent[-1][1] and "[e1]" in sent[-1][1]
+    assert "Sắp họp" in sent[-1][1] and "Họp giao ban" in sent[-1][1]
+    assert "[e1]" not in sent[-1][1]          # ai-CR-087: mã sự kiện chỉ nằm trong sổ, không hiện trên Telegram
     assert briefs.send_meeting_reminders(db, now=now) == 0
     assert db.query(AgentMessage).filter_by(action=service.ACT_MEETING).count() == 1
     #  Tắt chuông → không nhận bản tin.
