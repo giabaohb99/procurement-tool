@@ -223,12 +223,16 @@ def _caller_context(db, user) -> str | None:
             "hóa đơn theo hồ sơ trên; công ty nhận hóa đơn mặc định là công ty của người hỏi.")
 
 
-def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None) -> str | None:
+def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None,
+                  terms: str | None = None) -> str | None:
     parts = []
     if tool_on:
         # Ngày hôm nay đặt TRƯỚC guide để model quy đổi "năm nay/quý 1/..." sang date_from/date_to.
         parts.append(f"Hôm nay là {date.today().isoformat()} (định dạng YYYY-MM-DD).")
         parts.append(TOOL_GUIDE)
+    if terms:
+        #  ai-CR-077: sổ thuật ngữ — chỉ những từ có trong câu hỏi đang xét.
+        parts.append(terms)
     if profile:
         parts.append(profile)
     if caller:
@@ -273,7 +277,11 @@ def ask(
     # Chân dung người hỏi chỉ chèn khi mở tool: đường không tool (test provider...) giữ
     # system tĩnh cho cache prefix dùng chung.
     profile = _caller_context(db, user) if tool_on else None
-    full_system = build_system(extra=_extra_system(tool_on, system, profile))
+    from . import glossary
+
+    recent = [str(h.get("content") or "") for h in (history or [])[-2:] if h.get("role") == "user"]
+    terms = glossary.prompt_block(db, message, *recent) if tool_on else None
+    full_system = build_system(extra=_extra_system(tool_on, system, profile, terms))
 
     msgs: list[ChatMessage] = []
     for h in history or []:

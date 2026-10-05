@@ -424,6 +424,29 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
         q = q.filter(PurchaseOrder.order_date >= date_from)
     if date_to:
         q = q.filter(PurchaseOrder.order_date <= date_to)
+    #  ai-CR-077: lọc theo PHÒNG BAN (phòng yêu cầu hoặc phòng xử lý, khớp tên/mã một phần) và PHÁP NHÂN. Trước đây
+    #  hỏi «đơn của nhà máy» thì Trợ lý không lọc được gì, trả đơn của cả công ty.
+    department = _need(args, "department")
+    company = _need(args, "company")
+    dept_note = ""
+    if department:
+        from app.modules.department.model import Department
+
+        like = f"%{department}%"
+        dept_ids = [d.id for d in ctx.db.query(Department).filter(
+            or_(Department.name.ilike(like), Department.code.ilike(like))).limit(50)]
+        q = q.filter(or_(PurchaseOrder.department_id.in_(dept_ids or [-1]),
+                         PurchaseOrder.handler_dept_id.in_(dept_ids or [-1]),
+                         PurchaseOrder.department.ilike(like)))
+        if not dept_ids:
+            dept_note = f"Không có phòng ban nào tên/mã chứa «{department}» trong danh mục; chỉ lọc theo tên phòng ghi trên đơn."
+    if company:
+        from app.modules.company.model import Company
+
+        like = f"%{company}%"
+        comp_ids = [c.id for c in ctx.db.query(Company).filter(
+            or_(Company.name.ilike(like), Company.code.ilike(like))).limit(50)]
+        q = q.filter(PurchaseOrder.company_id.in_(comp_ids or [-1]))
     pos = (
         q.order_by(PurchaseOrder.order_date.desc(), PurchaseOrder.id.desc())
         .limit(limit)
@@ -439,10 +462,23 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
             .all()
         ):
             totals[po_id] = _num(tot)
-    items = [
-        {
+    from app.modules.department.model import Department
+
+    dept_names = {d.id: d.name for d in ctx.db.query(Department).filter(
+        Department.id.in_({p.department_id for p in pos if p.department_id} or {-1}))}
+    #  ai-CR-077: link NCC THẬT (màn v2 `/production/suppliers/{id}`) — không có thì Gemini bịa
+    #  `/procurement/suppliers/<tên>` (ca DEMO-DMH-TM02 ngày 05/10). Chỉ khi người hỏi có quyền xem NCC.
+    sup_ids: dict[str, int] = {}
+    if ctx.can("supplier"):
+        codes = {p.supplier_code for p in pos if p.supplier_code}
+        if codes:
+            sup_ids = {s.code: s.id for s in ctx.db.query(Supplier.code, Supplier.id).filter(Supplier.code.in_(codes))}
+    items = []
+    for p in pos:
+        item = {
             "code": p.code,
             "order_date": p.order_date,
+            "department": dept_names.get(p.department_id) or p.department or "",
             "supplier_code": p.supplier_code,
             "supplier_name": p.supplier_name,
             "status": p.status,
@@ -452,9 +488,13 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
             #  ở approval_tool.py.
             "url": f"/procurement/purchase-orders/{p.id}",
         }
-        for p in pos
-    ]
-    return {"items": items, "total": len(items)}
+        if p.supplier_code in sup_ids:
+            item["supplier_url"] = f"/production/suppliers/{sup_ids[p.supplier_code]}"
+        items.append(item)
+    out = {"items": items, "total": len(items)}
+    if dept_note:
+        out["note"] = dept_note
+    return out
 
 
 def purchase_report(ctx: ToolContext, args: dict) -> dict:
@@ -773,12 +813,20 @@ SPECS: list[ToolSpec] = [
     ),
     ToolSpec(
         name="recent_purchase_orders",
-        description="Các ĐƠN MUA HÀNG (PO) gần nhất kèm giá trị đơn (tổng thành tiền các dòng). "
-                    "Dùng cho 'đơn hàng gần nhất', 'PO mới nhất giá trị bao nhiêu'.",
+        description="Các ĐƠN MUA HÀNG (PO) gần nhất kèm giá trị đơn (tổng thành tiền các dòng), phòng ban, link NCC. "
+                    "Dùng cho 'đơn hàng gần nhất', 'PO mới nhất giá trị bao nhiêu', 'đơn của phòng X / nhà máy', "
+                    "'đơn của công ty Y'. Lọc phòng ban / pháp nhân bằng department / company (khớp một phần tên).",
         parameters={
             "type": "object",
             "properties": {
                 "supplier_code": {"type": "string", "description": "Lọc theo một NCC (tùy chọn)."},
+                "department": {"type": "string",
+                               "description": "Lọc theo phòng ban yêu cầu hoặc phòng xử lý — tên hoặc mã, khớp một "
+                                              "phần (tùy chọn). Câu hỏi dùng thuật ngữ công ty (vd «nhà máy») thì truyền TÊN PHÒNG theo "
+                                              "nghĩa trong sổ thuật ngữ (vd «Dego Organic»), không truyền nguyên thuật ngữ."},
+                "company": {"type": "string",
+                            "description": "Lọc theo pháp nhân (công ty nhận hóa đơn) — tên hoặc mã, khớp một phần "
+                                           "(tùy chọn)."},
                 "date_from": {"type": "string", "description": "Từ ngày YYYY-MM-DD (tùy chọn)."},
                 "date_to": {"type": "string", "description": "Đến ngày YYYY-MM-DD (tùy chọn)."},
                 "limit": _LIMIT_PARAM,

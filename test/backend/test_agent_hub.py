@@ -6605,3 +6605,58 @@ def test_deploy_ban_co_migration_sao_luu_db_dev_truoc(db, bot, monkeypatch):
     run2 = service._new_deploy_run(db, task2, STAGE_DEPLOY, "ngay")
     out = coder.merge_and_deploy(db, task2, run2)
     assert out["status"] == "error" and "không deploy" in run2.error
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-077 — sổ thuật ngữ dạy qua chat, chèn vào lời nhắc của Trợ lý
+# ---------------------------------------------------------------------------
+def test_so_thuat_ngu_them_sua_xoa_va_chi_chen_tu_co_trong_cau(db):
+    from app.modules.assistant import glossary as g
+
+    assert g.fold("Nhà  Máy") == "nha may"
+    item, old = g.upsert(db, "nhà máy", "phòng Dego Organic")
+    assert old == "" and g.load(db)[0]["meaning"] == "phòng Dego Organic"
+    _, old = g.upsert(db, "Nhà Máy", "phòng Dego Organic (mã NM)")
+    assert old == "phòng Dego Organic" and len(g.load(db)) == 1
+    g.upsert(db, "PBA017", "phòng thu mua mua hộ nhà máy")
+    block = g.prompt_block(db, "đơn hàng gần nhất của NHA MAY")
+    assert "«nhà máy»: phòng Dego Organic (mã NM)" in block and "PBA017" not in block
+    assert g.prompt_block(db, "đơn hàng gần nhất") is None
+    #  Khớp nguyên cụm, không khớp nửa chữ («máy» trong «máy tính» không kéo «nhà máy» vào).
+    assert g.prompt_block(db, "máy tính hỏng") is None
+    assert g.remove(db, "NHÀ MÁY") and not g.remove(db, "nhà máy")
+    with pytest.raises(ValueError):
+        g.upsert(db, "x", "")
+
+
+def test_tro_ly_nhan_thuat_ngu_trong_loi_nhac(db):
+    from app.modules.assistant import glossary as g
+    from app.modules.assistant import service as a
+
+    g.upsert(db, "nhà máy", "phòng Dego Organic")
+    extra = a._extra_system(True, None, None, g.prompt_block(db, "đơn của nhà máy"))
+    assert "THUẬT NGỮ CỦA CÔNG TY" in extra and "Dego Organic" in extra
+
+
+def test_day_thuat_ngu_qua_chat_dai_ca(db, bot):
+    from app.modules.assistant import glossary as g
+
+    service, sent, asked = bot
+    service.handle_message(db, _msg("ghi nhớ: nhà máy là phòng Dego Organic"))
+    assert g.load(db)[0] == {**g.load(db)[0], "term": "nhà máy", "meaning": "phòng Dego Organic"}
+    assert "<b>ĐÃ NHỚ</b>" in sent[-1] and "quên thuật ngữ nhà máy" in sent[-1]
+    service.handle_message(db, {**_msg("thuật ngữ"), "message_id": 8})
+    assert "<b>SỔ THUẬT NGỮ</b> · 1 từ" in sent[-1]
+    service.handle_message(db, {**_msg("nhớ: nhà máy = phòng SX-TM"), "message_id": 9})
+    assert "<b>ĐÃ SỬA NGHĨA</b>" in sent[-1] and g.load(db)[0]["meaning"] == "phòng SX-TM"
+    service.handle_message(db, {**_msg("quên thuật ngữ nhà máy"), "message_id": 10})
+    assert g.load(db) == [] and "Đã quên" in sent[-1]
+    assert asked == []
+    #  Câu hỏi có chữ «là» mà kết thúc bằng dấu hỏi thì KHÔNG phải dạy.
+    from app.modules.agent_hub import service as s
+
+    class Row:
+        action = ""
+    assert s._glossary_by_text(db, "12345", Row(), "nhớ: nhà máy là gì?") is False
+    #  Chat người khác không dạy được.
+    assert s._glossary_by_text(db, "999", Row(), "ghi nhớ: A là B") is False

@@ -799,7 +799,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
-            or ops.handle_text(db, chat_id, row, text)
+            or ops.handle_text(db, chat_id, row, text) or _glossary_by_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
@@ -1690,6 +1690,68 @@ def _runner_confirm(db: Session, chat_id: str, row: AgentMessage, pending: Agent
     log.info("agent_hub: thêm máy sửa mã %s bởi chat %s", rn.name, chat_id)
     return True
 
+
+
+# ---------------------------------------------------------------------------
+# Sổ thuật ngữ (ai-CR-077): đại ca dạy Trợ lý bằng câu nhắn
+# ---------------------------------------------------------------------------
+_GLOSS_TEACH = re.compile(
+    r"^(?:ghi nhớ|nhớ giúp em|nhớ giúp anh|nhớ giúp|nhớ|dạy em|thuật ngữ)\s*:?\s*(?P<term>.{1,60}?)\s*"
+    r"(?:\s(?:là|nghĩa là|tức là|được hiểu là)\s|=)\s*(?P<meaning>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
+_GLOSS_LIST = re.compile(r"^(?:sổ thuật ngữ|các thuật ngữ|thuật ngữ|danh sách thuật ngữ|em nhớ những (?:gì|từ nào))\s*[?.!]*$",
+                         re.IGNORECASE)
+_GLOSS_FORGET = re.compile(r"^(?:quên|xóa|bỏ)\s+thuật ngữ\s+(?P<term>.+?)[.!]*$", re.IGNORECASE)
+
+
+def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«ghi nhớ: nhà máy là phòng Dego Organic» · «thuật ngữ» · «quên thuật ngữ nhà máy». Chỉ chat đại ca.
+    Dạy là LÀM LUÔN (policy: việc có hoàn tác ngay bằng một câu), trả lời kèm cách xóa."""
+    from app.modules.assistant import glossary
+
+    if not telegram.is_allowed_chat(chat_id):
+        return False
+    raw = (text or "").strip()
+    esc = telegram.esc
+    link = chat_link.get_active_link(db, chat_id)
+    uid = link.user_id if link is not None else 0
+    if _GLOSS_LIST.match(raw):
+        row.action = ACT_COMMAND
+        items = glossary.load(db)
+        if not items:
+            reply(db, chat_id, "<b>SỔ THUẬT NGỮ</b> đang trống.\n\n<i>Dạy em: «ghi nhớ: nhà máy là phòng Dego Organic».</i>")
+        else:
+            lines = [f"<b>SỔ THUẬT NGỮ</b> · {len(items)} từ", ""]
+            lines += [f"• {esc(x)}" for x in glossary.listing(items)[:60]]
+            lines += ["", "<i>Thêm: «ghi nhớ: X là Y» · xóa: «quên thuật ngữ X».</i>"]
+            reply(db, chat_id, "\n".join(lines))
+        db.commit()
+        return True
+    if m := _GLOSS_FORGET.match(raw):
+        row.action = ACT_COMMAND
+        term = m.group("term").strip(" «»\"'")
+        ok = glossary.remove(db, term, uid)
+        reply(db, chat_id, f"Đã quên thuật ngữ «{esc(term)}»." if ok else f"Sổ không có thuật ngữ «{esc(term)}».")
+        db.commit()
+        return True
+    m = _GLOSS_TEACH.match(raw)
+    if not m or raw.rstrip().endswith("?"):
+        return False
+    row.action = ACT_COMMAND
+    try:
+        item, old = glossary.upsert(db, m.group("term"), m.group("meaning"), uid)
+    except ValueError as e:
+        reply(db, chat_id, esc(str(e)))
+        db.commit()
+        return True
+    head = "<b>ĐÃ NHỚ</b>" if not old else "<b>ĐÃ SỬA NGHĨA</b>"
+    lines = [head, f"«{esc(item['term'])}» = {esc(item['meaning'])}"]
+    if old:
+        lines.append(f"<i>Nghĩa cũ: {esc(old)}</i>")
+    lines += ["", "<i>Áp cho Trợ lý trên web lẫn Telegram từ câu hỏi kế tiếp. Sai thì «quên thuật ngữ "
+              f"{esc(item['term'])}».</i>"]
+    reply(db, chat_id, "\n".join(lines))
+    db.commit()
+    return True
 
 REMIND_WINDOW = timedelta(minutes=10)
 

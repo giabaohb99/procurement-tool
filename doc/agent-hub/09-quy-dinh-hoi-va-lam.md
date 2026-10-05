@@ -19,6 +19,7 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
 | Hỏi số liệu, tra cứu, xem trạng thái, xem log, tình hình máy | Làm luôn | Hỏi một lần |
 | Tra dữ liệu để soạn lệnh sửa (bước trước khi sửa) | Làm luôn | Làm luôn (câu nhờ sửa đã là lời cho phép đọc) |
 | Sửa dữ liệu, chạy lệnh có thay đổi, khởi động lại / dựng lại, deploy | Hỏi một lần | Hỏi một lần (+ OTP khi làm V-04) |
+| Dạy thuật ngữ («ghi nhớ: X là Y»), xóa thuật ngữ (ai-CR-077) | Làm luôn, trả lời kèm cách xóa | Làm luôn (sổ dùng chung) |
 | Tạo / gửi duyệt một chứng từ cho chính mình (Trợ lý AI) | Hỏi một lần («tạo» / «tạo và gửi duyệt») | — |
 | Sửa bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình, sổ của bot | Không làm | Không làm |
 | Một lệnh sửa quá 500 dòng | Không làm (chia nhỏ hoặc giao việc sửa mã) | Không làm |

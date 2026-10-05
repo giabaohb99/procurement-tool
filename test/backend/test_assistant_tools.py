@@ -212,3 +212,41 @@ def test_recent_purchase_orders_gac_scope(db, seed, cap_quyen):
     assert out["total"] == 1
     assert out["items"][0]["code"] == "PO-001"
     assert out["items"][0]["amount"] == 5000.0
+
+
+def test_recent_purchase_orders_loc_phong_ban_phap_nhan_va_link_ncc(db, seed, cap_quyen):
+    """ai-CR-077: «đơn của nhà máy» — lọc theo phòng yêu cầu HOẶC phòng xử lý, khớp một phần tên; link NCC thật."""
+    from app.modules.department.model import Department
+    from app.modules.supplier.model import Supplier
+    from app.modules.user.model import User
+
+    nm = Department(code="NM", name="Dego Organic", company_id=seed.company_id)
+    tm = Department(code="TM", name="Phòng Thu mua", company_id=seed.company_id)
+    sup = Supplier(code="A", name="NCC A")
+    db.add_all([nm, tm, sup])
+    db.flush()
+    db.add_all([
+        PurchaseOrder(code="PO-NM", supplier_code="A", supplier_name="NCC A", order_date="2026-10-01",
+                      status="approved", company_id=seed.company_id, department_id=nm.id),
+        PurchaseOrder(code="PO-HD", supplier_code="A", supplier_name="NCC A", order_date="2026-10-02",
+                      status="approved", company_id=seed.company_id, department_id=tm.id, handler_dept_id=nm.id),
+        PurchaseOrder(code="PO-TM", supplier_code="A", supplier_name="NCC A", order_date="2026-10-03",
+                      status="approved", company_id=seed.company_id, department_id=tm.id),
+    ])
+    db.commit()
+    cap_quyen(seed.u_req_id, "purchase_order", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "recent_purchase_orders", {"department": "organic"})
+    assert sorted(i["code"] for i in out["items"]) == ["PO-HD", "PO-NM"]
+    assert {i["department"] for i in out["items"]} == {"Dego Organic", "Phòng Thu mua"}
+    #  Không quyền xem NCC thì không có link NCC.
+    assert all("supplier_url" not in i for i in out["items"])
+    cap_quyen(seed.u_req_id, "supplier", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    out = T.run_tool(db, user, "recent_purchase_orders", {"department": "Dego Organic"})
+    assert out["items"][0]["supplier_url"] == f"/production/suppliers/{sup.id}"
+    #  Phòng không có trong danh mục: không trả bừa cả công ty, có ghi chú.
+    none = T.run_tool(db, user, "recent_purchase_orders", {"department": "nhà máy"})
+    assert none["total"] == 0 and "nhà máy" in none["note"]
+    assert T.run_tool(db, user, "recent_purchase_orders", {"company": "không-có"})["total"] == 0
