@@ -56,8 +56,8 @@ function prDoc(items: PurchaseRequestItem[]): PurchaseRequestDetail {
     requester_id: 5,
     requester_position: '',
     department: 'Sản xuất',
-    head_of_dept: '',
-    head_of_dept_id: 0,
+    head_of_dept: 'Trưởng phòng Sản xuất',
+    head_of_dept_id: 3,
     handler_dept_id: 0,
     purpose: 'Đóng gói lô hàng tháng 9',
     request_date: '2026-08-20',
@@ -233,6 +233,25 @@ describe('validatePurchaseRequest', () => {
     expect(validatePurchaseRequest(data, true)).toBe(
       'Sản phẩm "Bao bì carton 3 lớp" còn thiếu: Kho nhận, Ngày cần hàng.',
     )
+  })
+
+  it('blocks submit when neither an approver nor a department head is set (bao-CR-590)', () => {
+    const data = { ...prDoc([prLine()]), head_of_dept: '', head_of_dept_id: 0, approver_employee_id: 0 }
+    expect(validatePurchaseRequest(data, true)).toBe(
+      'Vui lòng chọn Trưởng phòng phê duyệt trước khi gửi duyệt',
+    )
+    //  Lưu nháp vẫn được: luật chỉ chặn ở bước gửi duyệt.
+    expect(validatePurchaseRequest(data)).toBe('')
+  })
+
+  it('lets submit through when only the department head is set — backend makes it the approver', () => {
+    const data = { ...prDoc([prLine()]), approver_employee_id: 0 }
+    expect(validatePurchaseRequest(data, true)).toBe('')
+  })
+
+  it('lets submit through when an approver was picked even without a head on the form', () => {
+    const data = { ...prDoc([prLine()]), head_of_dept_id: 0, approver_employee_id: 11 }
+    expect(validatePurchaseRequest(data, true)).toBe('')
   })
 
   it('số lượng 0 tính là chưa nhập', () => {

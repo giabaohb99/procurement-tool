@@ -19,7 +19,7 @@ import {
   Send,
   Ship,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -183,6 +183,8 @@ export function PurchaseOrderDetailPage() {
   /** Dòng đang mở hộp chi tiết (thông tin đầy đủ + các lần giao). */
   const [lineIndex, setLineIndex] = useState<number | null>(null)
   const [paymentOpen, setPaymentOpen] = useState(false)
+  /** Chặn bấm đúp «Gửi duyệt» ngay trong tick (bao-CR-590). */
+  const submittingRef = useRef(false)
 
   //  Chọn khung bọc cho nhóm lệnh phụ của đầu trang — xem `HeaderActionsPopover`.
   //
@@ -312,11 +314,17 @@ export function PurchaseOrderDetailPage() {
     setDraft((current) => (current ? { ...current, ...changes } : current))
   }
 
-  async function handleSave() {
-    const message = validatePurchaseOrder(data)
+  /**
+   * Lưu đơn. `submitAfterSave` = «Gửi duyệt» khi đơn còn sửa được (bao-CR-590): LƯU phần
+   * đang sửa trước rồi mới gửi. Trước đây nút Gửi duyệt chỉ gọi `/submit` — máy chủ gửi
+   * bản CŨ, rồi trang nạp lại bản cũ đè lên bản nháp, người dùng mất trắng phần vừa sửa.
+   * Trả `true` khi lưu (và gửi, nếu có) xong.
+   */
+  async function handleSave(submitAfterSave = false): Promise<boolean> {
+    const message = validatePurchaseOrder(data, submitAfterSave)
     if (message) {
       toast.error(message)
-      return
+      return false
     }
     // bao-CR-308: trùng mã được phép (tách dòng theo bộ chứng từ) — chỉ hỏi xác
     // nhận để chặn gõ nhầm mã, không chặn cứng nữa.
@@ -333,14 +341,34 @@ export function PurchaseOrderDetailPage() {
           '/ số hóa đơn) thì bấm Vẫn lưu — tiến độ trên YCMH vẫn cộng gộp đúng theo mã.\n\n' +
           'Nếu chỉ là gõ nhầm mã thì bấm Quay lại sửa.',
       })
-      if (!ok) return
+      if (!ok) return false
     }
     const saved = await savePurchaseOrder.mutateAsync({
       id: isNew ? undefined : purchaseOrderId,
       payload: toPurchaseOrderPayload(data),
     })
     await flushPendingDeliveryFiles(saved)
-    if (isNew) navigate(appRoutes.procurement.purchaseOrderDetail(saved.id), { replace: true })
+    if (isNew) {
+      navigate(appRoutes.procurement.purchaseOrderDetail(saved.id), { replace: true })
+      return true
+    }
+    if (submitAfterSave) await runAction.mutateAsync({ action: 'submit' })
+    return true
+  }
+
+  /**
+   * Bấm «Gửi duyệt». Đơn còn sửa được thì đi đường LƯU RỒI GỬI (bao-CR-590). Chặn bấm đúp
+   * bằng ref đổi ngay trong tick — `disabled={isPending}` chỉ có hiệu lực ở lượt vẽ sau.
+   */
+  async function handleSubmit() {
+    if (submittingRef.current) return
+    submittingRef.current = true
+    try {
+      if (headerEditable) await handleSave(true)
+      else await handleAction('submit')
+    } finally {
+      submittingRef.current = false
+    }
   }
 
   /** Đẩy phiếu giao đang chờ lên đúng lần giao vừa được server trả về. */
@@ -632,7 +660,10 @@ export function PurchaseOrderDetailPage() {
              đề. */}
         <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
           {!isNew && ['draft', 'rejected'].includes(data.status) && canWrite && (
-            <Button onClick={() => void handleAction('submit')} disabled={runAction.isPending}>
+            <Button
+              onClick={() => void handleSubmit()}
+              disabled={runAction.isPending || savePurchaseOrder.isPending}
+            >
               <Send />
               Gửi duyệt
             </Button>

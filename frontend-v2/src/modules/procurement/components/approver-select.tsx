@@ -1,5 +1,6 @@
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
 
 import type { DeptHeadCandidate } from '../types/purchase-request-detail'
@@ -25,14 +26,25 @@ interface ApproverSelectProps {
   /** Đang ở chế độ sửa VÀ phiếu chưa duyệt. */
   editable: boolean
   onChange: (next: { approver_employee_id: number; approver_employee_name: string }) => void
+  /** bao-CR-590: phiếu bắt buộc có người duyệt trước khi gửi duyệt (YCMH) — vẽ dấu sao đỏ. */
+  required?: boolean
 }
 
-export function ApproverSelect({ id, value, name, candidates, editable, onChange }: ApproverSelectProps) {
+export function ApproverSelect({
+  id,
+  value,
+  name,
+  candidates,
+  editable,
+  onChange,
+  required = false,
+}: ApproverSelectProps) {
   const inList = candidates.some((candidate) => candidate.employee_id === value)
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} className={editable && candidates.length ? '' : 'text-muted-foreground'}>
         Trưởng phòng phê duyệt
+        {required && editable && <RequiredMark />}
       </Label>
       {editable && candidates.length ? (
         <SearchSelect

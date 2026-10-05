@@ -360,6 +360,7 @@ export function PurchaseRequestInfoCard({
           candidates={approverCandidates}
           editable={editing}
           onChange={onChange}
+          required
         />
 
         {/*

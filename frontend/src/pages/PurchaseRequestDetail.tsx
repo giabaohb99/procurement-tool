@@ -559,6 +559,14 @@ export default function PurchaseRequestDetail() {
     }))
   }
 
+  //  bao-CR-590: người đang HIỆN ở ô «Trưởng phòng phê duyệt» — đã chọn riêng, hoặc TBP đã chọn,
+  //  hoặc TBP mặc định của phòng (chỉ có TÊN nên khớp theo tên trong danh sách). Lưu và kiểm
+  //  đúng người này: trước đây ô hiện sẵn một người mà phiếu gửi lên vẫn để trống.
+  function shownApproverId(): number {
+    return Number(pr.approver_employee_id) || Number(pr.head_of_dept_id)
+      || Number(approverCands.find((c: any) => c.name === pr.head_of_dept)?.employee_id) || 0
+  }
+
   function validate(forSubmit: boolean): string {
     if (!pr.company_id) return 'Vui lòng chọn Công ty'
     if (!pr.requester) return 'Vui lòng chọn Nhân sự yêu cầu'
@@ -566,6 +574,11 @@ export default function PurchaseRequestDetail() {
     if (valid.length === 0) return 'Cần ít nhất 1 sản phẩm'
     if (dupCodes.length) return `Mã hàng bị trùng: ${dupCodes.join(', ')}. Mỗi mã chỉ được 1 dòng — gộp số lượng vào một dòng hoặc đổi mã.`
     // Chi tiết bắt buộc (mã hàng/SL/kho/ngày cần hàng) CHỈ khi Gửi duyệt — lưu nháp / đóng popup dòng thì không bắt
+    //  bao-CR-590 (đại ca chốt 05/10/2026): gửi duyệt BUỘC có Trưởng phòng phê duyệt. Có TBP (kể cả TBP
+    //  mặc định chỉ có tên) thì backend tự lấy TBP làm người duyệt, nên chỉ chặn khi không còn ai.
+    if (forSubmit && !shownApproverId() && !pr.head_of_dept_id && !(pr.head_of_dept || '').trim()) {
+      return 'Vui lòng chọn Trưởng phòng phê duyệt trước khi gửi duyệt'
+    }
     if (forSubmit) {
       for (const it of valid) {
         if (!it.product_code) return `Sản phẩm "${it.product_name}" cần chọn Mã hàng (chọn từ danh mục)`
@@ -633,7 +646,7 @@ export default function PurchaseRequestDetail() {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept,
       head_of_dept_id: Number(pr.head_of_dept_id) || 0, purpose: pr.purpose,
-      approver_employee_id: Number(pr.approver_employee_id) || 0,   // bao-CR-499
+      approver_employee_id: shownApproverId(),   // bao-CR-499 · bao-CR-590: ghi đúng người đang hiện
       // bao-CR-488: lúc tạo mà chưa tick «Nhờ phòng khác xử lý» thì KHÔNG gửi — backend tự chọn mặc định
       // (nhà máy → chính phòng mình, còn lại → phòng thu mua mặc định). Đã tick thì gửi đúng số đã chọn, kể cả 0 (bao-CR-524: 0 = phòng thu mua mặc định).
       handler_dept_id: isNew && !pr.handler_dept_assigned ? undefined : Number(pr.handler_dept_id) || 0,
@@ -1092,7 +1105,7 @@ export default function PurchaseRequestDetail() {
               {/* bao-CR-499: CHỌN được trước khi duyệt (hệ báo người này lúc gửi duyệt); Duyệt xong hệ ghi
                   đè người THỰC duyệt và khóa. Giữ TÁCH với ô Trưởng bộ phận (đại ca chốt 26/09/2026). */}
               <div className="form-row">
-                <label>Trưởng phòng phê duyệt</label>
+                <label>Trưởng phòng phê duyệt {editable && <span className="req">*</span>}</label>
                 {editable && approverCands.length > 0 ? (
                   /* bao-CR-552: TBP để «mặc định của phòng» chỉ có TÊN (head_of_dept_id = 0) nên ô này từng
                      rơi về chữ gợi ý mờ — khớp người mặc định trong danh sách theo tên để hiện như đã chọn. */
