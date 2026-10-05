@@ -12119,6 +12119,8 @@ theo tên và ngày, đổi giờ và giữ nguyên thời lượng, không ch�
 được dặn chỉ báo đã làm khi công cụ chạy thành công, không lấy công cụ khác làm thay.
 
 Mã nguồn: backend/app/modules/assistant/tools/google_tool.py · agent_hub/google_link.py · agent_hub/policy.py
+Commit: 668e3477 (erp-v2 668e3477)
+Deploy: DEV 05/10 do Erp Agent 1; prod CHƯA
 
 ## ai-CR-085 | Sửa báo nhầm «máy sửa mã chạy bản cũ»
 - status: xong
@@ -12129,3 +12131,5 @@ cặp bản giữa máy và bot được đếm riêng, một bên đổi bản 
 nói bên nào cũ.
 
 Mã nguồn: backend/app/modules/agent_hub/runners.py · test/backend/test_agent_hub.py
+Commit: 0612d27b (erp-v2 0612d27b)
+Deploy: DEV 05/10 do Erp Agent 1; prod CHƯA
