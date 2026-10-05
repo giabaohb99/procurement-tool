@@ -12109,3 +12109,13 @@ cặp riêng thì dùng cặp riêng, chưa có thì dùng cặp cũ như trư�
 Mã nguồn: backend/app/modules/agent_hub/google_link.py · backend/app/core/config.py · doc/agent-hub/10-huong-dan-noi-google.md
 Commit: 7c3dd3d2 (erp-v2 7c3dd3d2)
 Deploy: DEV 05/10 do Erp Agent 1; 05/10 đại ca tạo dự án Google «ERP Tro ly AI» + client, em đưa hai khóa lên .env.dev (sao lưu trước), dựng lại api + worker + poller, đã cấu hình xong; prod CHƯA
+
+## ai-CR-084 | Dời lịch Google sửa đúng sự kiện cũ, không tạo thêm bản trùng
+- status: xong
+- date: 2026-10-05
+Đại ca nhờ dời lịch mua thuốc sang ngày mai thì Trợ lý tạo thêm một sự kiện mới và báo là đã dời, nên lịch bị trùng.
+Nguyên nhân là Trợ lý chưa có công cụ dời lịch. Nay có công cụ dời hoặc đổi tên một sự kiện đã có: tìm đúng sự kiện
+theo tên và ngày, đổi giờ và giữ nguyên thời lượng, không chắc sự kiện nào thì hỏi một câu kèm lựa chọn. Trợ lý cũng
+được dặn chỉ báo đã làm khi công cụ chạy thành công, không lấy công cụ khác làm thay.
+
+Mã nguồn: backend/app/modules/assistant/tools/google_tool.py · agent_hub/google_link.py · agent_hub/policy.py

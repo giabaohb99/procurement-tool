@@ -100,6 +100,7 @@ TOOL_KHONG_PHAM_VI = {
     #  của người đó (tab_agent_google_link); không có bản ghi ERP nào để lọc phạm vi.
     "my_calendar_events": "lịch Google của chính người hỏi, bằng token của họ",
     "create_calendar_event": "tạo sự kiện trên lịch Google của chính người hỏi",
+    "update_calendar_event": "dời / đổi tên sự kiện trên lịch Google của chính người hỏi",
     "drive_search": "tìm trên Drive của chính người hỏi, bằng token của họ",
     #  ai-CR-078: chỉ ghi ĐỀ XUẤT chờ quản lý duyệt vào tab_setting, không đọc bản ghi nghiệp vụ nào.
     "propose_glossary_term": "ghi đề xuất thuật ngữ chờ duyệt — không đọc dữ liệu phiếu",
@@ -120,7 +121,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 49, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 50, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

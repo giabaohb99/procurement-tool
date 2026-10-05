@@ -173,6 +173,7 @@ TOOL_GHI = {
 #  `test_tool_ghi_ngoai_erp_tu_choi_khi_chua_noi_google` bên dưới.
 TOOL_GHI_NGOAI_ERP = {
     "create_calendar_event": {"title": "Họp NCC", "start": "2026-09-26T14:00:00"},
+    "update_calendar_event": {"title": "Họp NCC", "new_start": "2026-09-27T14:00:00"},   # ai-CR-084
 }
 
 #  Tool CHỈ GHI ĐỀ XUẤT chờ quản lý duyệt (ai-CR-078): không đụng một bản ghi nghiệp vụ nào, chỉ thêm một dòng chờ

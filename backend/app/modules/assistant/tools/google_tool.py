@@ -91,6 +91,74 @@ def _create_calendar_event(ctx: ToolContext, args: dict) -> dict:
     return {"ok": True, "event": _event_row(ev)}
 
 
+def _find_event(ctx: ToolContext, link, args: dict) -> tuple[dict | None, dict | None]:
+    """Tìm ĐÚNG MỘT sự kiện: theo `event_id`, hoặc theo tên (khớp một phần, không dấu) trong ngày `date`."""
+    eid = str(args.get("event_id") or "").strip()
+    if eid:
+        try:
+            return gl.api_get(ctx.db, link, f"{gl.CALENDAR_URL}/calendars/primary/events/{eid}"), None
+        except gl.GoogleError as e:
+            return None, {"error": str(e)}
+    from app.modules.assistant.glossary import fold
+
+    title = fold(str(args.get("title") or ""))
+    day = str(args.get("date") or "").strip()
+    if not title:
+        return None, {"error": "Cần event_id, hoặc title (+ date YYYY-MM-DD) của sự kiện cần sửa."}
+    try:
+        rows = list_events(ctx.db, link, day, day) if day else list_events(ctx.db, link, "", "")
+    except gl.GoogleError as e:
+        return None, {"error": str(e)}
+    hits = [r for r in rows if title in fold(r["title"])]
+    if len(hits) != 1:
+        return None, {"need_choice": "event", "candidates": hits[:8] or rows[:8],
+                      "note": ("Không thấy sự kiện khớp" if not hits else "Nhiều sự kiện khớp")
+                              + " — hỏi người dùng MỘT câu kèm lựa chọn đánh số, rồi gọi lại với event_id."}
+    try:
+        return gl.api_get(ctx.db, link, f"{gl.CALENDAR_URL}/calendars/primary/events/{hits[0]['id']}"), None
+    except gl.GoogleError as e:
+        return None, {"error": str(e)}
+
+
+def _update_calendar_event(ctx: ToolContext, args: dict) -> dict:
+    """ai-CR-084: DỜI / đổi tên một sự kiện ĐÃ CÓ (PATCH) — trước đây Trợ lý «dời» bằng cách tạo thêm, đẻ ra bản trùng."""
+    link, err = _link_or_error(ctx)
+    if err:
+        return err
+    ev, err = _find_event(ctx, link, args)
+    if err:
+        return err
+    body: dict = {}
+    new_start = str(args.get("new_start") or "").strip()
+    if new_start:
+        try:
+            st = datetime.fromisoformat(new_start)
+            old_st = (ev.get("start") or {}).get("dateTime")
+            old_en = (ev.get("end") or {}).get("dateTime")
+            if args.get("duration_minutes"):
+                dur = timedelta(minutes=int(args["duration_minutes"]))
+            elif old_st and old_en:
+                dur = datetime.fromisoformat(old_en) - datetime.fromisoformat(old_st)
+            else:
+                dur = timedelta(minutes=60)
+        except ValueError:
+            return {"error": "Giờ không đúng dạng ISO (2026-10-06T09:00:00)."}
+        body["start"] = {"dateTime": st.isoformat(), "timeZone": TZ}
+        body["end"] = {"dateTime": (st + dur).isoformat(), "timeZone": TZ}
+    if args.get("new_title"):
+        body["summary"] = str(args["new_title"])[:255]
+    if args.get("new_location"):
+        body["location"] = str(args["new_location"])[:255]
+    if not body:
+        return {"error": "Không có gì để đổi (cần new_start, new_title hoặc new_location)."}
+    try:
+        out = gl.api_patch(ctx.db, link, f"{gl.CALENDAR_URL}/calendars/primary/events/{ev['id']}", body)
+    except gl.GoogleError as e:
+        return {"error": str(e)}
+    return {"ok": True, "before": _event_row(ev), "event": _event_row(out),
+            "note": "Đã sửa ĐÚNG sự kiện cũ (không tạo thêm)."}
+
+
 def _drive_search(ctx: ToolContext, args: dict) -> dict:
     link, err = _link_or_error(ctx)
     if err:
@@ -138,8 +206,9 @@ MY_CALENDAR_EVENTS_SPEC = ToolSpec(
 )
 CREATE_CALENDAR_EVENT_SPEC = ToolSpec(
     name="create_calendar_event",
-    description=("TẠO một sự kiện trên lịch Google của CHÍNH người hỏi ('đặt lịch họp NCC X 14h mai 1 tiếng', 'thêm lịch…'). "
-                 "Chỉ gọi khi người dùng nói rõ muốn tạo; ghi giờ ISO theo Asia/Ho_Chi_Minh; mặc định 60 phút."),
+    description=("TẠO một sự kiện MỚI trên lịch Google của CHÍNH người hỏi ('đặt lịch họp NCC X 14h mai 1 tiếng', 'thêm lịch…'). "
+                 "Chỉ gọi khi người dùng nói rõ muốn tạo; ghi giờ ISO theo Asia/Ho_Chi_Minh; mặc định 60 phút. KHÔNG dùng "
+                 "để DỜI / đổi giờ / đổi tên lịch đã có — việc đó là update_calendar_event (tạo thêm sẽ đẻ bản trùng)."),
     parameters={"type": "object", "properties": {
         "title": {"type": "string"}, "start": {"type": "string", "description": "ISO 2026-09-26T14:00:00"},
         "end": {"type": "string"}, "duration_minutes": {"type": "integer"},
@@ -162,4 +231,18 @@ DRIVE_READ_SPEC = ToolSpec(
     parameters={"type": "object", "properties": {"file_id": {"type": "string"}}, "required": ["file_id"]},
     handler=_drive_read,
 )
-GOOGLE_SPECS = [MY_CALENDAR_EVENTS_SPEC, CREATE_CALENDAR_EVENT_SPEC, DRIVE_SEARCH_SPEC, DRIVE_READ_SPEC]
+UPDATE_CALENDAR_EVENT_SPEC = ToolSpec(
+    name="update_calendar_event",
+    description=("DỜI / ĐỔI GIỜ / ĐỔI TÊN một sự kiện ĐÃ CÓ trên lịch Google của chính người hỏi ('dời lịch mua thuốc qua mai', "
+                 "'đổi họp NCC sang 3h chiều'). Tìm theo event_id (lấy từ my_calendar_events) hoặc theo tên + ngày. Dời ngày mà "
+                 "không nói giờ thì GIỮ giờ cũ; giữ nguyên thời lượng nếu không nói. Không chắc sự kiện nào → tool trả lựa chọn, "
+                 "hỏi MỘT câu. Chỉ báo «đã dời» khi tool trả ok."),
+    parameters={"type": "object", "properties": {
+        "event_id": {"type": "string"}, "title": {"type": "string", "description": "Tên (một phần) để tìm."},
+        "date": {"type": "string", "description": "Ngày đang có sự kiện, YYYY-MM-DD (giúp tìm đúng)."},
+        "new_start": {"type": "string", "description": "Giờ bắt đầu MỚI, ISO 2026-10-06T18:00:00."},
+        "duration_minutes": {"type": "integer"}, "new_title": {"type": "string"}, "new_location": {"type": "string"}}},
+    handler=_update_calendar_event,
+)
+GOOGLE_SPECS = [MY_CALENDAR_EVENTS_SPEC, CREATE_CALENDAR_EVENT_SPEC, UPDATE_CALENDAR_EVENT_SPEC, DRIVE_SEARCH_SPEC,
+                DRIVE_READ_SPEC]

@@ -6947,3 +6947,30 @@ def test_noi_google_dung_client_rieng_khi_co(monkeypatch):
     assert gl.is_configured() is False
     monkeypatch.setattr(settings, "AGENT_GOOGLE_CLIENT_SECRET", "bot-secret")
     assert (gl.client_id(), gl.client_secret()) == ("bot-id", "bot-secret") and gl.is_configured() is True
+
+
+def test_doi_lich_sua_dung_su_kien_cu_khong_tao_them(db, monkeypatch):
+    """ai-CR-084: 05/10 Trợ lý «dời» lịch mua thuốc bằng cách TẠO thêm một sự kiện → lịch bị trùng."""
+    from app.modules.assistant.tools import google_tool as g
+
+    ev = {"id": "ev1", "summary": "Đi mua thuốc xổ giun",
+          "start": {"dateTime": "2026-10-05T18:00:00+07:00"}, "end": {"dateTime": "2026-10-05T19:00:00+07:00"}}
+    calls: list = []
+    monkeypatch.setattr(g, "_link_or_error", lambda ctx: (object(), None))
+    monkeypatch.setattr(g, "list_events", lambda db_, link, a="", b="", **kw: [g._event_row(ev)])
+    monkeypatch.setattr(g.gl, "api_get", lambda db_, link, url, params=None: ev)
+    monkeypatch.setattr(g.gl, "api_post", lambda *a, **kw: calls.append(("POST", a)) or {})
+    monkeypatch.setattr(g.gl, "api_patch", lambda db_, link, url, body: calls.append(("PATCH", url, body)) or {**ev, **body})
+
+    class Ctx:
+        pass
+    ctx = Ctx()
+    ctx.db = db
+    out = g._update_calendar_event(ctx, {"title": "mua thuoc", "date": "2026-10-05", "new_start": "2026-10-06T18:00:00"})
+    assert out["ok"] is True and [c[0] for c in calls] == ["PATCH"]          # sửa, KHÔNG tạo thêm
+    body = calls[0][2]
+    assert body["start"]["dateTime"] == "2026-10-06T18:00:00" and body["end"]["dateTime"] == "2026-10-06T19:00:00"
+    assert calls[0][1].endswith("/events/ev1")
+    assert g._update_calendar_event(ctx, {"title": "khong co", "date": "2026-10-05", "new_start": "2026-10-06T18:00:00"})[
+        "need_choice"] == "event"
+    assert "update_calendar_event" in g.CREATE_CALENDAR_EVENT_SPEC.description
