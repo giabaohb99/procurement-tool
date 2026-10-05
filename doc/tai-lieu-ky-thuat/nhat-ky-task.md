@@ -11796,3 +11796,5 @@ mỗi lệnh xong trong vài giây. Để lần sau không im lặng: thao tác 
 báo đại ca một lần. Tài liệu vận hành ghi thêm bước cấp quyền và luật cấp quyền cùng đợt khi thêm bảng mới.
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · tasks.py · doc/agent-hub/08-van-hanh-vps.md
+Commit: 510d7c06 (erp-v2 510d7c06)
+Deploy: DEV 05/10 do Erp Agent 1, health 200; quyền agent_runner chỉ trên procurement_dev; prod CHƯA
