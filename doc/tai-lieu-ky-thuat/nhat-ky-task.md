@@ -70,6 +70,71 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-588 | Bật luồng duyệt cấu hình cho Đặt xe và Duyệt dấu trên prod, chạy thử đồng bộ app cũ
+- status: xong
+- date: 2026-10-05
+Đại ca xác nhận trên ERP prod chưa khai luồng duyệt nào, chốt để quản trị viên thao tác cấu hình luồng (hiện chỉ vai trò
+quản trị hệ thống, 5 người, có quyền này), rồi bảo bật luồng cấu hình trên prod và chạy thử việc đồng bộ app cũ xem có
+lỗi gì không.
+
+Đã làm trên prod (sao lưu DB trước): khai ba luồng giống dev. Đặt xe công tác là luồng mặc định: Trưởng bộ phận người nộp,
+phòng chưa có trưởng phòng thì chuyển người dự phòng là anh Trần Chí Dững (NSU001, đang giữ Quản lý điều phối), rồi Quản lý
+điều phối. Giao hàng là luồng riêng có điều kiện, cùng hai bước, sửa riêng được. Duyệt dấu giống app cũ: Trưởng bộ phận do
+người tạo chọn trên phiếu, rồi Pháp lý kiểm tra. Bật công tắc hai loại phiếu, gán vai trò «Pháp lý kiểm tra dấu» cho chị
+Đào Trúc Nhi. Kiểm chỉ đọc: luồng chọn đúng theo loại phiếu, bước 2 đặt xe giao NSU001, bước Pháp lý giao chị Nhi.
+
+Chạy tay ba việc đồng bộ app cũ sau khi bật: quét toàn bộ 1.410 phiếu không lỗi, kéo phiếu đã sửa và chạy lại phiếu lỗi
+đều thành công; không phiếu app cũ nào bị mở luồng mới (phiếu app cũ vẫn chỉ mang bản chép lịch sử duyệt); không dòng lỗi
+đồng bộ, log máy chủ không lỗi.
+
+Còn hở trên prod: 8/26 phòng chưa có trưởng phòng (2 nhân sự đang ở các phòng đó, đã có người dự phòng); chưa ai giữ vai
+trò Điều phối viên, Văn thư duyệt dấu (và chưa phân văn thư công ty nào), Tài xế; ô chọn trưởng bộ phận trên phiếu dấu
+hiện chỉ có 5 tài khoản (người có quyền duyệt dấu); chỉ admin và «Người đặt xe» (chưa ai giữ) tạo được phiếu đặt xe trên ERP.
+
+Deploy: PROD 05/10/2026 (chỉ dữ liệu, không đổi mã). Sao lưu: procurement_truoc_bat_luong_cau_hinh_20261005_0855.
+
+---
+
+## giang-CR-587 | Tra cứu thị trường đổi tên mục và có đường dẫn ba cấp; YCMH tạo mới bỏ ô tick «Nhờ phòng khác xử lý»
+- status: xong
+- date: 2026-10-03
+Anh Giang yêu cầu ba chỉnh sửa giao diện ERP v2, làm và kiểm trên máy của anh, chưa deploy.
+
+### giang-CR-587a | Mục «Pháp lý» của Tra cứu thị trường đổi tên thành «Tra cứu hóa chất»
+- status: xong
+Tên mục ở menu trái và tiêu đề trang đều đổi thành «Tra cứu hóa chất». Đường dẫn và khóa của mục giữ nguyên nên
+đường dẫn cũ, đường dẫn đã lưu và đường dẫn có `?tab=legal` vẫn mở đúng trang. Hai câu hướng dẫn trên màn hình
+từng bảo người dùng «xem mục Pháp lý» cũng đổi theo tên mới, để không chỉ tới một mục không còn tên đó.
+
+### giang-CR-587b | Tiêu đề trang theo đúng tên ở menu trái, đường dẫn trên thanh trên có cấp thứ ba
+- status: xong
+Ở màn Tra cứu thị trường, tiêu đề trang nay là đúng tên mục đang sáng ở menu trái: năm thẻ tra giá (Danh sách,
+Biểu đồ, Doanh nghiệp, So sánh, Thuế) đều mang tiêu đề «Giá thị trường», các mục khác mang tên của chính chúng
+(ví dụ «Lịch sử nạp» thay cho «Tra cứu thị trường — Lịch sử nạp»). Đường dẫn trên thanh trên có thêm cấp thứ ba
+cho mọi mục menu có mục con, ví dụ «Thu mua › Tra cứu thị trường › Giá thị trường» hay «Nhân sự › Nghỉ phép ›
+Lịch nghỉ». Cấp thứ ba luôn khớp mục đang sáng bên trái: đứng ở thẻ Biểu đồ vẫn ghi «Giá thị trường» chứ không
+ghi tên thẻ; cấp giữa bấm được để quay về, chỉ cấp cuối là trang hiện tại. Trên màn hình hẹp chỉ giữ cấp cuối.
+
+### giang-CR-587c | YCMH (yêu cầu mua hàng) tạo mới: bỏ ô tick ở ô Phòng xử lý
+- status: xong
+Lúc lập YCMH, ô Phòng xử lý không còn ô tick «Nhờ phòng khác xử lý» (đặt ra ở bao-CR-488). Nay chỉ còn một ô
+chọn, hiện sẵn «Phòng thu mua mặc định», bấm vào mới xổ danh mục phòng ban. Mục mặc định nghĩa là chưa nhờ phòng
+nào, nên giao diện vẫn không gửi phòng xử lý lên và hệ thống tự chọn như cũ: người của phòng có bộ máy mua riêng
+(nhà máy) thì ra chính phòng đó, còn lại ra phòng thu mua. Mục này cố ý không quy về phòng số 0, vì làm vậy là âm
+thầm đẩy mọi phiếu của nhà máy sang thu mua chung; muốn nhờ hẳn thu mua thì chọn phòng «Sản xuất -Thu mua» trong
+danh sách. Sửa luôn lỗi ô này hiện nguyên con số «0». Màn YCBG (yêu cầu báo giá) tạo mới vẫn còn ô tick cùng
+kiểu, chưa đổi.
+
+Kiểm: kiểm kiểu 0 lỗi, eslint 0 lỗi, 989 bài kiểm xanh trong src/modules/procurement và src/app, đo ngày 03/10
+trên mã đã gộp với erp-v2 mới nhất.
+Mã nguồn: module-topbar.tsx (đường dẫn ba cấp, kèm bài kiểm mới module-topbar.test.tsx), customs-sections.ts và
+customs-price-page.tsx (tên mục, tiêu đề), customs-pesticide.ts, purchase-request-info-card.tsx và
+handling-dept-display.ts (ô Phòng xử lý), cùng các tệp bài kiểm đi kèm.
+Commit: 6725ff2d trên erp-v2.
+Deploy: chưa — chưa lên dev lẫn prod.
+
+---
+
 ## duoc-CR-585 | Quá trình công tác nhân sự — bản gọn của V1-8
 - status: xong
 - date: 2026-10-03
@@ -100,7 +165,9 @@ quay về câu gợi ý chọn nhà cung cấp, phân loại hoặc gõ từ kh�
 dòng. Chỉ đổi giao diện ERP v2, không đụng backend.
 
 Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm thêm ở purchase-request-process-card.test.tsx.
-Kiểm: tsc 0 lỗi, eslint sạch, vitest src/modules/procurement 832 bài xanh. Chưa commit, chưa deploy.
+Kiểm: tsc 0 lỗi, eslint sạch, vitest src/modules/procurement 832 bài xanh.
+Commit: 4fd955a3 (chung với bao-CR-583) trên erp-v2.
+Deploy: DEV + PROD 03/10, main 603ed2b4 (Agent 1 cherry-pick từ 4fd955a3).
 
 ---
 
@@ -127,7 +194,8 @@ Mã nguồn: `backend/app/modules/purchase_request/option_service.py` (`update_o
 `purchase-request-choose-card.tsx`, `utils/purchase-request-option-details.ts`, api + hook phương án. Bài kiểm
 `test/backend/test_phuong_an_0_thu_mua_sua_khoi_phuc_cr583.py` (16 bài), `purchase-request-option-details.test.ts`,
 thêm bài trong `purchase-request-choose-card.test.tsx` và `purchase-request-process-card.test.tsx`.
-Deploy: chưa commit, chưa deploy.
+Commit: 4fd955a3 trên erp-v2.
+Deploy: DEV + PROD 03/10, main 603ed2b4 (Agent 1 cherry-pick từ 4fd955a3, không có migration). Trên prod công tắc pr_options_enabled đang tắt nên người dùng chưa thấy.
 
 ---
 
@@ -174,8 +242,9 @@ Kiểm: 23 bài kiểm mới + 30 bài cũ của màn này xanh; 300 bài giao d
 local: không lọc 8.768 lượt, chỉ POST 676, POST + PUT 694, DELETE 25, biểu đồ POST + PUT cũng 694.
 
 Commit: `c9ff355d` trên erp-v2.
-Deploy: dev 03/10 (dựng lại api, celery-worker, celery-beat, erp; devthumua và deverp trả 200). Không có migration.
-Prod: chưa — đã giao Agent 1 chuẩn bị đưa lên.
+Deploy: dev + prod 03/10. Dev: dựng lại api, celery-worker, celery-beat, erp; devthumua và deverp trả 200.
+Prod 14:46 (Agent 1 làm theo lệnh đại ca): main `603ed2b4`, lấy riêng hai commit `c9ff355d` → `212e4b47` và
+`452548fb` → `9241293c`. Không có migration.
 
 ---
 
