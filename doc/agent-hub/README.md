@@ -11,6 +11,7 @@ rồi giao cho một con bot code thực hiện, kiểm thử, đưa lên dev v�
 | Bot được phép và bị cấm làm gì — lằn ranh an toàn | [02-bo-quy-tac-bot.md](02-bo-quy-tac-bot.md) |
 | Quyết định quen thuộc của đại ca, bot tra trước khi hỏi (ai-CR-015) | [03-so-quyet-dinh.md](03-so-quyet-dinh.md) |
 | Danh sách tính năng còn phải làm: Đậu Đậu + nền nhiều bot + Thư ký + Nghiên cứu (ai-CR-031) | [04-danh-sach-tinh-nang.md](04-danh-sach-tinh-nang.md) |
+| Hướng dẫn bật Google cá nhân cho Trợ lý trên dev (lịch, Drive, bản tin sáng) | [10-huong-dan-noi-google.md](10-huong-dan-noi-google.md) |
 | Quy định hỏi và làm: khi nào bot làm luôn, khi nào hỏi một lần, khi nào không làm; sửa dữ liệu bằng lời (ai-CR-073) | [09-quy-dinh-hoi-va-lam.md](09-quy-dinh-hoi-va-lam.md) |
 | Vận hành VPS qua bot: sổ môi trường, `deploy.sh`, thao tác có duyệt + sao lưu + hoàn tác, tự vận hành (ai-CR-067..069) | [08-van-hanh-vps.md](08-van-hanh-vps.md) |
 | Ai đổi gì, khi nào (sổ CR riêng của mảng AI) | [../tai-lieu-ky-thuat/change-log-ai.md](../tai-lieu-ky-thuat/change-log-ai.md) |

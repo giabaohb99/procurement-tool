@@ -185,7 +185,7 @@ def reindex_docs_task() -> dict:
 
 #  Trần cứng của Celery đặt CAO HƠN trần `claude` (AGENT_RUN_TIMEOUT_SEC) để lượt clone,
 #  pytest và commit sau đó còn chỗ; chạm trần này là worker giết cả tiến trình.
-@celery_app.task(name="agent.code_task", time_limit=settings.AGENT_RUN_TIMEOUT_SEC + 900,
+@celery_app.task(name="agent.code_task", time_limit=settings.AGENT_RUN_TIMEOUT_SEC * coder.MAX_PHASES + 900,
                  acks_late=False)
 def code_task(task_id: int, resume: bool = False, fix_gate: bool = False) -> dict:
     """Bậc 2: sửa mã cho một việc đã duyệt. Chạy TRONG `agent-runner`.

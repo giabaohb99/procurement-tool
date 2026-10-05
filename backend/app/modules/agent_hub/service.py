@@ -1014,7 +1014,7 @@ _COMMANDS = (   # (tên, mẫu) — thứ tự là thứ tự ưu tiên
 )
 _OPEN_FOR = {   # thao tác -> trạng thái việc hợp lệ khi đoán việc (không nêu mã)
     "merge": (ST_REVIEW, ST_PROD), "deploy": (ST_PROD,), "revert": (ST_PROD,), "approve": (ST_PLAN,),
-    "replan": (ST_PLAN, ST_NEEDS_INPUT), "continue": (ST_NEEDS_INPUT,), "fixgate": (ST_REVIEW,),
+    "replan": (ST_PLAN, ST_NEEDS_INPUT), "continue": (ST_NEEDS_INPUT, ST_REVIEW), "fixgate": (ST_REVIEW,),
     "done": (ST_REVIEW, ST_PROD), "pr": (ST_REVIEW,), "cancel": None, "detail": None, "status": None,
     "thorough": (ST_TRIAGE, ST_PLAN, ST_NEEDS_INPUT, ST_CODE, ST_REVIEW),
 }
@@ -1043,7 +1043,7 @@ def _candidates(db: Session, action: str) -> list[AgentTask]:
     if action == "fixgate":
         rows = [t for t in rows if _red_gate(db, t)]
     if action == "continue":
-        rows = [t for t in rows if coder.resumable_session(db, t)]
+        rows = [t for t in rows if coder.resumable_session(db, t) or coder.phases_left(db, t)]
     return rows
 
 
@@ -2706,7 +2706,10 @@ def start_fix_gate(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
 
 def start_continue(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
     """«Làm tiếp» sau khi hết lượt (ai-CR-023): nối đúng phiên, đúng worktree đang dở."""
-    if task.status != ST_NEEDS_INPUT or not coder.resumable_session(db, task):
+    can_resume = task.status == ST_NEEDS_INPUT and bool(coder.resumable_session(db, task))
+    can_phase = task.status in (ST_NEEDS_INPUT, ST_REVIEW) and bool(coder.phases_left(db, task)) \
+        and not coder.merged_sha_for(db, task)
+    if not (can_resume or can_phase):
         telegram.answer_callback(cb_id, "Việc này không còn phiên dở để làm tiếp")
         if not cb_id:
             reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b> không có phiên dở nào để làm tiếp.",
@@ -2717,8 +2720,12 @@ def start_continue(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
     coder.dispatch_continue(task.id)
     _runner_wait_note(db, task)
     telegram.answer_callback(cb_id, "Em làm tiếp")
-    reply(db, chat_id, f"Em làm tiếp <b>{telegram.esc(task.code)}</b> đúng phiên cũ (thêm tối đa "
-          f"{coder.CONTINUE_MAX_TURNS} lượt). Xong em gửi thẻ kết quả.", task_id=task.id)
+    if can_resume:
+        reply(db, chat_id, f"Em làm tiếp <b>{telegram.esc(task.code)}</b> đúng phiên cũ (thêm tối đa "
+              f"{coder.CONTINUE_MAX_TURNS} lượt). Xong em gửi thẻ kết quả.", task_id=task.id)
+    else:
+        reply(db, chat_id, f"Em làm tiếp phần còn lại của <b>{telegram.esc(task.code)}</b> "
+              f"({len(coder.phases_left(db, task))} phần). Xong em gửi thẻ kết quả.", task_id=task.id)
 
 
 def close_done(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
@@ -3868,6 +3875,12 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
     #  Kế hoạch do model viết là Markdown (`tệp`, **đậm**, 1. 2.): đổi sang HTML Telegram như
     #  câu trả lời của Trợ lý AI, không in thô dấu nháy và dấu sao (đại ca báo 23/09/2026).
     lines += [_card_md(task.plan), ""]
+    phases = coder.plan_phases(task)
+    if len(phases) > 1:
+        #  ai-CR-082: việc lớn chạy theo từng phần — nói trước để đại ca biết bot sẽ commit từng phần.
+        lines += [f"<b>Làm theo {len(phases)} phần:</b>"]
+        lines += [f"{p['index']}. {telegram.esc(p['label'])} — {len(p['files'])} tệp" for p in phases]
+        lines += ["<i>Mỗi phần kiểm + commit riêng; vướng ở phần nào thì dừng ở đó, «làm tiếp» để chạy nốt.</i>", ""]
     lines += ["<b>Tệp sẽ đụng:</b>"] + [f"• <code>{telegram.esc(f)}</code>" for f in task.plan_files]
     if task.test_plan:
         lines += ["", "<b>Kiểm thử:</b>", _card_md(task.test_plan[:500])]

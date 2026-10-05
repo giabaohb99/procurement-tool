@@ -58,6 +58,11 @@ cao thì bản tin Telegram phải nói rõ *rủi ro ở đâu*, không đượ
 Lệch quá **30%** số tệp, hoặc quá `AGENT_MAX_FILES_TOUCHED` tệp, thì **dừng, không commit,
 leo thang**.
 
+**C1b. Việc lớn làm theo từng phần** (ai-CR-082, 05/10/2026). Việc chạm từ hai lớp trở lên (cấu trúc dữ liệu · nghiệp vụ
+backend · giao diện) và từ 8 tệp, hoặc đại ca dặn «làm theo từng phần», được chia theo lớp; mỗi phần một lượt Claude
+nối tiếp cùng phiên, kiểm + commit riêng, trần tệp của C1 tính THEO TỪNG PHẦN. Vướng ở phần nào dừng ở phần đó;
+«làm tiếp» chạy nốt phần còn lại.
+
 **C2. Một task một nhánh.** `bot/ai-CR-<số>-<slug>`, cắt từ `erp-v2`. Không làm hai task trên
 một nhánh, không cắt nhánh từ nhánh của task khác.
 

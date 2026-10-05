@@ -12072,6 +12072,7 @@ dự án hay người thì hỏi một câu kèm lựa chọn. Trên Telegram bo
 Dự án trên web và báo chuông cho từng người được giao, chuông tự chuyển sang Telegram của ai đã nối.
 
 Mã nguồn: backend/app/modules/assistant/tools/work_tool.py · agent_hub/draft_create.py · agent_hub/service.py
+Deploy: DEV 05/10 do Erp Agent 1 (erp-v2 83963d64); prod CHƯA
 
 ## ai-CR-081 | Bot tự cập nhật đúng bản: dựng lại cả phần đọc tin và báo khi máy sửa mã chạy bản cũ
 - status: xong
@@ -12082,3 +12083,15 @@ qua phần nào môi trường không có. Hai là máy sửa mã trên máy đ�
 bản nào; nay máy báo dấu vân tay mã, lệch với bot trên dev quá ba mươi phút thì bot nhắn đại ca một lần để dựng lại.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py · runners.py · tasks.py · backend/scripts/deploy/deploy.sh
+Deploy: DEV 05/10 do Erp Agent 1 (erp-v2 83963d64); prod CHƯA
+
+## ai-CR-082 | Chế độ tính năng lớn: bot chia việc theo lớp và làm từng phần
+- status: xong
+- date: 2026-10-05
+Tính năng lớn có bảng mới, API và màn hình dễ chạm trần số tệp và số lượt của một lần sửa, khiến bot dừng giữa chừng.
+Nay việc chạm từ hai lớp trở lên và từ tám tệp, hoặc đại ca dặn «làm theo từng phần», được chia thành tối đa ba phần:
+cấu trúc dữ liệu, nghiệp vụ phía máy chủ, giao diện. Bot làm lần lượt trong cùng một phiên nên nhớ phần trước; mỗi phần
+được kiểm và commit riêng. Vướng ở phần nào thì dừng ở đó, các phần đã xong giữ nguyên, đại ca nhắn «làm tiếp» để bot
+làm nốt. Thẻ kế hoạch nói trước việc sẽ chia mấy phần. Kèm theo là tài liệu hướng dẫn bật Google cá nhân trên dev.
+
+Mã nguồn: backend/app/modules/agent_hub/coder.py · service.py · tasks.py · doc/agent-hub/02-bo-quy-tac-bot.md · doc/agent-hub/10-huong-dan-noi-google.md

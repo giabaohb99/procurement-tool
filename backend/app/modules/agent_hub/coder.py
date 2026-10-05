@@ -1337,8 +1337,10 @@ def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: st
     """Hết lượt: giữ phần đã sửa + phiên, việc về «Đang hỏi lại», thẻ có nút «Làm tiếp» (ai-CR-023)."""
     from . import service
 
+    #  ai-CR-082: giữ `phases_left` / `phases_total` của việc chia phần — «làm tiếp» xong phần dở còn biết phần sau.
+    keep = {k: v for k, v in (run.artifact or {}).items() if k in ("phases_left", "phases_total")}
     _close_run(run, status=RUN_ERROR, error=str(err), data=err.data,
-               artifact={"session_id": session_id, "stopped": "max_turns"})
+               artifact={**keep, "session_id": session_id, "stopped": "max_turns"})
     _git(worktree, "add", "-A", timeout=120)
     numstat = _parse_numstat(_git(worktree, "diff", "--cached", "--numstat", timeout=120))
     _git(worktree, "reset", "-q", timeout=120)
@@ -1368,8 +1370,34 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
 
     chat_id = settings.AGENT_TELEGRAM_CHAT_ID
     previous = resumable_session(db, task) if resume else ""
-    if resume and not previous:
-        raise CoderError("không còn phiên hết lượt nào để làm tiếp")
+    left_phases = phases_left(db, task) if resume and not previous else []
+    carry: dict = {}
+    if previous:
+        #  ai-CR-082: nối phiên hết lượt GIỮA một việc chia phần → mang `phases_left` sang lượt này.
+        stopped = (db.query(AgentRun).filter(AgentRun.task_id == task.id, AgentRun.stage == STAGE_CODE)
+                   .order_by(AgentRun.id.desc()).first())
+        sart = stopped.artifact if stopped is not None and isinstance(stopped.artifact, dict) else {}
+        if sart.get("phases_left"):
+            carry = {"phases_left": sart["phases_left"], "phases_total": int(sart.get("phases_total") or 0)}
+    if resume and not previous and not left_phases:
+        raise CoderError("không còn phiên hết lượt hay phần nào để làm tiếp")
+    if left_phases:
+        #  ai-CR-082: «làm tiếp» sau khi một phần đỏ / các phần trước đã xong — chạy nốt phần còn lại, cùng phiên.
+        last = latest_code_run(db, task)
+        art = (last.artifact if last is not None and isinstance(last.artifact, dict) else {}) or {}
+        sid = str(art.get("session_id") or "")
+        total = int(art.get("phases_total") or (left_phases[-1]["index"] if left_phases else 0))
+        worktree = str(Path(settings.AGENT_WORKTREE_ROOT) / task.code)
+        if not sid or not Path(worktree).exists():
+            raise CoderError("không còn phiên / worktree của các phần trước — bấm Sửa để làm lại từ đầu")
+        branch = task.branch_name or branch_name_for(task)
+        run = _start_run(db, task.id)
+        run.artifact = {"session_id": sid, "resumed": True, "from_scan": False}
+        db.commit()
+        fe_note = link_fe_deps(worktree)
+        return _run_phases(db, task, run, worktree=worktree, branch=branch, session_id=sid, phases=left_phases,
+                           total=total, first_message=phase_message(left_phases[0], total, left_phases[1:]),
+                           resume_first=True, fe_note=fe_note)
     fix_brief = ""
     if fix_gate:
         #  «Sửa cho xanh» (ai-CR-026): nối phiên của lượt sửa vừa xong, đưa kèm lỗi cổng kiểm.
@@ -1423,6 +1451,15 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
         else:
             docs = memory.recall(f"{task.title}\n{task.summary}")
             images = task_images(db, task)
+            phases = plan_phases(task)
+            if len(phases) > 1:
+                #  ai-CR-082: việc lớn → chạy theo từng phần.
+                brief = (build_brief(task, docs, from_scan=bool(scan_sid), images=images,
+                                     migration_head=_head_of(worktree))
+                         + "\n\n" + phase_brief(phases[0], len(phases), phases[1:]))
+                return _run_phases(db, task, run, worktree=worktree, branch=branch, session_id=session_id,
+                                   phases=phases, total=len(phases), first_message=brief,
+                                   resume_first=bool(scan_sid), fe_note=fe_note)
             try:
                 data = run_claude(worktree, build_brief(task, docs, from_scan=bool(scan_sid), images=images,
                                                         migration_head=_head_of(worktree)),
@@ -1490,12 +1527,15 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
     _close_run(run, status=RUN_OK, data=data, artifact={
         "session_id": session_id, "branch": branch, "files": files, "gate": gate,
         "escalation": escalation, "report": report[:8000], "pr": pr,
-        "num_turns": data.get("num_turns"), "duration_ms": data.get("duration_ms"),
+        "num_turns": data.get("num_turns"), "duration_ms": data.get("duration_ms"), **carry,
     })
     db.commit()
 
     send_review_card(db, task, run, files=files, gate=gate, escalation=escalation,
                      report=report, data=data, pr=pr)
+    if carry and not escalation:
+        service.reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b> · còn {len(carry['phases_left'])} phần chưa làm"
+                      f"\n\n<i>Nhắn «làm tiếp {telegram.esc(task.code)}» để em làm phần còn lại.</i>", task_id=task.id)
     if patch.strip() and not settings.AGENT_TG_COMPACT:     # ai-CR-027: gọn thì không gửi .diff
         try:
             telegram.send_document(chat_id, f"{task.code}.diff", patch.encode("utf-8"),
@@ -1504,6 +1544,154 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
         except telegram.TelegramError:
             log.exception("agent_hub.coder: gửi tệp diff hỏng")
     return {"task": task.code, "status": task.status, "files": len(files), "escalation": escalation}
+
+
+# ---------------------------------------------------------------------------
+# Chế độ TÍNH NĂNG LỚN (ai-CR-082): chia theo lớp, chạy nối tiếp trong cùng phiên + cùng nhánh
+# ---------------------------------------------------------------------------
+#  Đại ca 05/10: tính năng lớn (bảng mới + API + màn hình) dễ chạm trần 25 tệp / 120 lượt rồi dừng giữa chừng. Nay việc
+#  chạm từ 2 lớp trở lên VÀ từ BIG_MIN_FILES tệp (hoặc đại ca dặn «làm theo từng phần») được chia: cấu trúc dữ liệu →
+#  nghiệp vụ backend → giao diện (tài liệu đi kèm phần cuối). Mỗi phần một lượt Claude nối tiếp CÙNG phiên (nhớ phần
+#  trước), kiểm + commit riêng; trần tệp tính theo TỪNG phần. Đỏ / hết lượt / lệch kế hoạch ở phần nào thì dừng ở đó,
+#  các phần đã xong giữ nguyên; «làm tiếp» chạy nốt phần còn lại (`phases_left` trong sổ lượt chạy).
+BIG_MIN_FILES = 8
+MAX_PHASES = 3
+_FORCE_PHASES = re.compile(r"làm theo từng phần|tính năng lớn|chia (?:thành )?(?:từng )?phần", re.IGNORECASE)
+_PHASE_LABELS = ("Cấu trúc dữ liệu", "Nghiệp vụ backend", "Giao diện")
+
+
+def _layer_of(path: str) -> int:
+    """0 cấu trúc dữ liệu · 1 nghiệp vụ backend · 2 giao diện · 3 tài liệu."""
+    p = path.replace("\\", "/")
+    if schema_change.is_migration(p) or p.endswith(("/model.py", "_model.py")) or \
+            p.endswith(("core/all_models.py", "core/status_catalog.py")):
+        return 0
+    if p.startswith(("frontend-v2/", "frontend/", "help-center/")):
+        return 2
+    if p.startswith("doc/") or p.endswith(".md"):
+        return 3
+    return 1
+
+
+def plan_phases(task: AgentTask) -> list[dict]:
+    """Các phần của việc lớn theo `plan_files`; rỗng = làm một lượt như cũ."""
+    files = [f for f in (task.plan_files or []) if f]
+    groups: list[list[str]] = [[], [], [], []]
+    for f in files:
+        groups[_layer_of(f)].append(f)
+    layers = [(i, g) for i, g in enumerate(groups[:3]) if g]
+    forced = bool(_FORCE_PHASES.search(f"{task.summary or ''}\n{task.plan or ''}"))
+    if len(layers) < 2 or (len(files) < BIG_MIN_FILES and not forced):
+        return []
+    out = [{"index": n + 1, "label": _PHASE_LABELS[i], "files": list(g)} for n, (i, g) in enumerate(layers)]
+    out[-1]["files"] += groups[3]
+    return out[:MAX_PHASES]
+
+
+def phase_brief(ph: dict, total: int, rest: list[dict]) -> str:
+    lines = [f"## Làm theo từng phần (ai-CR-082) — PHẦN {ph['index']}/{total}: {ph['label']}",
+             "Lượt này CHỈ làm phần này, trên các tệp:", *[f"- {f}" for f in ph["files"]]]
+    if rest:
+        lines += ["Các phần SAU (KHÔNG làm bây giờ, lượt sau mới làm):",
+                  *[f"- Phần {r['index']}: {r['label']} ({len(r['files'])} tệp)" for r in rest]]
+    lines += ["Xong phần này thì chạy kiểm phần vừa sửa và in TỔNG KẾT + dòng TÓM TẮT như luật dưới đây."]
+    return "\n".join(lines)
+
+
+def phase_message(ph: dict, total: int, rest: list[dict]) -> str:
+    return ("Phần trước đã xong và đã commit. " + phase_brief(ph, total, rest) +
+            "\nDùng lại hiểu biết từ các phần trước (cùng phiên), đừng đọc lại tệp đã đọc trừ khi cần sửa.")
+
+
+def phases_left(db: Session, task: AgentTask) -> list[dict]:
+    run = latest_code_run(db, task)
+    art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+    return list(art.get("phases_left") or [])
+
+
+def _run_phases(db: Session, task: AgentTask, run: AgentRun, *, worktree: str, branch: str, session_id: str,
+                phases: list[dict], total: int, first_message: str, resume_first: bool, fe_note: str) -> dict:
+    """Chạy lần lượt các phần trong cùng phiên + cùng worktree; mỗi phần kiểm + commit riêng."""
+    files: list[dict] = []
+    reports: list[str] = []
+    gate = {"status": "none", "tests": [], "output": ""}
+    escalation = ""
+    data: dict = {}
+    left: list[dict] = []
+    for i, ph in enumerate(phases):
+        rest = phases[i + 1:]
+        msg = first_message if i == 0 else phase_message(ph, total, rest)
+        run.artifact = {**(run.artifact or {}), "session_id": session_id, "phase": ph["index"],
+                        "phases_left": phases[i:]}
+        db.commit()
+        try:
+            data = run_claude(worktree, msg, session_id=session_id, timeout=settings.AGENT_RUN_TIMEOUT_SEC,
+                              resume=bool(resume_first or i > 0))
+        except MaxTurnsError as e:
+            #  «làm tiếp» nối đúng phiên để xong phần này; các phần sau vẫn nằm trong phases_left.
+            run.artifact = {**(run.artifact or {}), "phases_left": rest}
+            db.commit()
+            return _stop_at_max_turns(db, task, run, worktree, session_id, e)
+        except subprocess.TimeoutExpired:
+            _close_run(run, status=RUN_ERROR, error=f"phần {ph['index']}: claude quá {settings.AGENT_RUN_TIMEOUT_SEC}s",
+                       artifact={**(run.artifact or {}), "phases_left": phases[i:]})
+            db.commit()
+            raise CoderError(f"phần {ph['index']}/{total} quá {settings.AGENT_RUN_TIMEOUT_SEC // 60} phút, đã dừng; "
+                             "các phần trước đã commit") from None
+        reports.append(f"### Phần {ph['index']}/{total} — {ph['label']}\n" + str(data.get("result") or "").strip())
+        _git(worktree, "add", "-A", timeout=120)
+        touched = [ln.strip() for ln in _git(worktree, "diff", "--cached", "--name-only", timeout=120)
+                   .splitlines() if ln.strip()]
+        if not touched:
+            left = rest
+            continue
+        numstat = _parse_numstat(_git(worktree, "diff", "--cached", "--numstat", timeout=120))
+        escalation = check_drift(touched, task.plan_files or [], max_files=settings.AGENT_MAX_FILES_TOUCHED)
+        if escalation:
+            _git(worktree, "reset", "-q", timeout=120)
+            escalation = f"phần {ph['index']}/{total}: {escalation}"
+            left = phases[i:]
+            break
+        gate = run_gate(worktree, touched, fe_note=fe_note)
+        _git(worktree, "-c", "user.name=Agent Hub bot", "-c", "user.email=agent-hub@degoholding.vn",
+             "commit", "-q", "-m",
+             f"{task.code} (phần {ph['index']}/{total} — {ph['label']}): {task.title}\n\nPhiên Claude Code: {session_id}"
+             "\n\nCo-Authored-By: Claude <noreply@anthropic.com>", timeout=120)
+        files += [{"path": f, "added": numstat.get(f, (0, 0))[0], "deleted": numstat.get(f, (0, 0))[1],
+                   "in_plan": is_in_plan(f, task.plan_files or []) or _is_test_file(f), "phase": ph["index"]}
+                  for f in touched]
+        left = rest
+        if gate.get("status") == "fail":
+            break
+    report = "\n\n".join(reports)
+    pr: dict = {"status": "none"}
+    if escalation:
+        task.status = ST_NEEDS_INPUT
+        task.note = f"Bot dừng: {escalation}"[:2000]
+    elif files:
+        task.status = ST_REVIEW
+        pr = _try_publish(task, worktree, branch, files=files, gate=gate, report=report, session_id=session_id)
+    else:
+        escalation = "bot không sửa tệp nào ở các phần — đọc tổng kết để biết nó vướng gì"
+        task.status = ST_NEEDS_INPUT
+    _close_run(run, status=RUN_OK, data=data, artifact={
+        "session_id": session_id, "branch": branch, "files": files, "gate": gate, "escalation": escalation,
+        "report": report[:8000], "pr": pr, "phases_total": total, "phases_left": left,
+        "num_turns": data.get("num_turns"), "duration_ms": data.get("duration_ms"),
+    })
+    db.commit()
+    send_review_card(db, task, run, files=files, gate=gate, escalation=escalation, report=report, data=data, pr=pr)
+    if left and not escalation:
+        from . import service
+
+        esc = telegram.esc
+        service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+                      f"<b>{esc(task.code)}</b> · đã xong {total - len(left)}/{total} phần\n\n"
+                      + "\n".join(f"• Còn phần {p['index']}: {esc(p['label'])} ({len(p['files'])} tệp)" for p in left)
+                      + "\n\n<i>" + ("Sửa cho xanh trước rồi " if gate.get("status") == "fail" else "")
+                      + f"nhắn «làm tiếp {esc(task.code)}» để em làm phần còn lại.</i>", task_id=task.id)
+    return {"task": task.code, "status": task.status, "files": len(files), "escalation": escalation,
+            "phases_left": len(left)}
 
 
 # ---------------------------------------------------------------------------

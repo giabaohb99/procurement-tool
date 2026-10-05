@@ -6819,3 +6819,114 @@ def test_may_sua_ma_chay_ban_cu_qua_30_phut_thi_bao_mot_lan(db, monkeypatch):
     runners.watch(db, now=later + timedelta(minutes=6), notify=said.append)
     assert len(said) == 1
     assert runners.version_tag().startswith("fp:") and len(runners.code_fingerprint()) == 12
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-082 — chế độ tính năng lớn: chia theo lớp, chạy nối tiếp cùng phiên, kiểm + commit từng phần
+# ---------------------------------------------------------------------------
+_BIG_PLAN = ["backend/migrations/versions/x1_new.py", "backend/app/modules/po/model.py",
+             "backend/app/modules/po/service.py", "backend/app/modules/po/controller.py",
+             "backend/app/modules/po/schema.py", "test/backend/test_po_moi.py",
+             "frontend-v2/src/modules/po/pages/a.tsx", "frontend-v2/src/modules/po/api/b.ts",
+             "doc/erp/po.md"]
+
+
+def test_chia_phan_theo_lop_chi_khi_viec_lon():
+    from app.modules.agent_hub import coder
+
+    class T:
+        summary = plan = ""
+        plan_files = _BIG_PLAN
+
+    phases = coder.plan_phases(T())
+    assert [p["label"] for p in phases] == ["Cấu trúc dữ liệu", "Nghiệp vụ backend", "Giao diện"]
+    assert phases[0]["files"] == ["backend/migrations/versions/x1_new.py", "backend/app/modules/po/model.py"]
+    assert "doc/erp/po.md" in phases[2]["files"]                       # tài liệu đi kèm phần cuối
+    T.plan_files = ["backend/app/modules/po/model.py", "backend/app/modules/po/service.py"]
+    assert coder.plan_phases(T()) == []                                # nhỏ: làm một lượt như cũ
+    T.summary = "làm theo từng phần giúp anh"
+    assert len(coder.plan_phases(T())) == 2                            # đại ca dặn thì chia dù nhỏ
+    T.plan_files = ["backend/a.py", "backend/b.py"] * 5
+    assert coder.plan_phases(T()) == []                                # một lớp thì không chia
+
+
+def _phase_runner(monkeypatch, coder, per_phase: list[list[str]], *, fail_at: int = 0):
+    state = {"i": -1}
+    msgs: list[tuple[str, bool]] = []
+    calls: list[list] = []
+
+    def fake_claude(wt, brief, *, session_id, timeout, resume=False, **kw):
+        state["i"] += 1
+        msgs.append((brief, resume))
+        return {"result": f"## TỔNG KẾT\nphần {state['i'] + 1}\nTÓM TẮT: xong phần {state['i'] + 1}",
+                "num_turns": 5, "usage": {}}
+
+    def fake_git(cwd, *args, timeout=0, extra_env=None):
+        calls.append(list(args))
+        cur = per_phase[state["i"]] if 0 <= state["i"] < len(per_phase) else []
+        if args[:3] == ("diff", "--cached", "--name-only"):
+            return "\n".join(cur)
+        if args[:3] == ("diff", "--cached", "--numstat"):
+            return "\n".join(f"2\t0\t{f}" for f in cur)
+        if args[:2] == ("diff", "--cached"):
+            return "+x" if cur else ""
+        return ""
+
+    def fake_gate(wt, touched, **kw):
+        bad = fail_at and state["i"] + 1 == fail_at
+        return {"status": "fail" if bad else "pass", "tests": [], "output": "1 failed" if bad else ""}
+
+    monkeypatch.setattr(coder, "_git", fake_git)
+    monkeypatch.setattr(coder, "prepare_worktree", lambda task: ("/worktrees/X", "bot/x"))
+    monkeypatch.setattr(coder.memory, "recall", lambda q, limit=6: [])
+    monkeypatch.setattr(coder, "run_claude", fake_claude)
+    monkeypatch.setattr(coder, "run_gate", fake_gate)
+    monkeypatch.setattr(coder.telegram, "send_document", lambda *a, **kw: 1)
+    return msgs, calls
+
+
+def test_viec_lon_chay_tung_phan_cung_phien_commit_tung_phan(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, sent, _ = bot
+    task = _task_with_plan(db, service, _BIG_PLAN, status=service.ST_CODE)
+    per_phase = [_BIG_PLAN[:2], _BIG_PLAN[2:6], _BIG_PLAN[6:]]
+    msgs, calls = _phase_runner(monkeypatch, coder, per_phase)
+    out = coder.run_code_task(db, task)
+    assert task.status == ST_REVIEW and out["phases_left"] == 0 and out["files"] == 9
+    assert len(msgs) == 3 and "PHẦN 1/3: Cấu trúc dữ liệu" in msgs[0][0] and not msgs[0][1]
+    assert "PHẦN 2/3: Nghiệp vụ backend" in msgs[1][0] and msgs[1][1] and msgs[2][1]   # phần sau nối cùng phiên
+    commits = [c for c in calls if "commit" in c]
+    assert len(commits) == 3 and any("(phần 3/3 — Giao diện)" in " ".join(c) for c in commits)
+
+
+def test_phan_do_thi_dung_lam_tiep_chay_phan_con_lai(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    service, sent, _ = bot
+    task = _task_with_plan(db, service, _BIG_PLAN, status=service.ST_CODE)
+    per_phase = [_BIG_PLAN[:2], _BIG_PLAN[2:6], _BIG_PLAN[6:]]
+    msgs, calls = _phase_runner(monkeypatch, coder, per_phase, fail_at=2)
+    out = coder.run_code_task(db, task)
+    assert task.status == ST_REVIEW and out["phases_left"] == 1 and len(msgs) == 2
+    assert coder.phases_left(db, task)[0]["label"] == "Giao diện"
+    assert "còn phần 3: Giao diện" in sent[-1].lower() or "Còn phần 3: Giao diện" in sent[-1]
+    assert "Sửa cho xanh trước" in sent[-1]
+    #  «làm tiếp» được ở trạng thái REVIEW khi còn phần, chạy đúng phần còn lại trên cùng phiên.
+    dispatched: list = []
+    monkeypatch.setattr(coder, "dispatch_continue", lambda tid: dispatched.append(tid))
+    service.handle_message(db, _msg(f"làm tiếp {task.code}"))
+    assert dispatched == [task.id] and "phần còn lại" in sent[-1]
+    monkeypatch.setattr(coder.settings, "AGENT_WORKTREE_ROOT", str(tmp_path))
+    (tmp_path / task.code).mkdir()
+    task.status = service.ST_CODE
+    db.commit()
+    out = coder.run_code_task(db, task, resume=True)
+    assert out["phases_left"] == 0 and "PHẦN 3/3: Giao diện" in msgs[-1][0] and msgs[-1][1]
+
+
+def test_the_ke_hoach_noi_truoc_se_chia_phan(db, bot):
+    service, sent, _ = bot
+    task = _task_with_plan(db, service, _BIG_PLAN)
+    service.send_plan_card(db, task)
+    assert "Làm theo 3 phần" in sent[-1] and "1. Cấu trúc dữ liệu — 2 tệp" in sent[-1]
