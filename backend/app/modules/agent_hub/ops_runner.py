@@ -877,6 +877,10 @@ def plan_data(db: Session, op: AgentOp, env: AgentEnv) -> str:
     session = str(uuid4())
     msg = _DATA_BRIEF.format(env=env.name, request=request, per_round=DATA_LOOKUPS_PER_ROUND,
                              max_rows=policy.DATA_MAX_ROWS)
+    from app.modules.assistant import glossary
+
+    if terms := glossary.prompt_block(db, request):
+        msg += "\n" + terms + "\n"          # ai-CR-077: «nhà máy» = phòng nào — đại ca đã dạy thì dùng luôn
     log_lines: list[str] = []
     plan: dict = {}
     for i in range(DATA_ROUNDS):

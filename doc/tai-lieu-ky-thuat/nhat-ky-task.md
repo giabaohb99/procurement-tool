@@ -11926,3 +11926,14 @@ dữ liệu như xóa bảng, xóa cột, đổi kiểu cột được in đậm
 đẩy; trước khi đưa lên dev thì sao lưu cả cơ sở dữ liệu dev, sao lưu hỏng thì không đưa lên.
 
 Mã nguồn: backend/app/modules/agent_hub/schema_change.py · coder.py · guardrails.py · doc/agent-hub/02-bo-quy-tac-bot.md
+
+## ai-CR-077 | Sổ thuật ngữ dạy qua chat và bộ lọc phòng ban cho câu hỏi về đơn mua hàng
+- status: xong
+- date: 2026-10-05
+Trợ lý AI không biết «nhà máy» là phòng nào nên hỏi đơn của nhà máy thì trả đơn của cả công ty. Nay có sổ thuật ngữ:
+đại ca nhắn «ghi nhớ: nhà máy là phòng Dego Organic» là bot nhớ ngay, «thuật ngữ» để xem, «quên thuật ngữ …» để xóa.
+Mỗi câu hỏi, Trợ lý trên web lẫn Telegram chỉ đọc những từ có trong câu đó nên sổ dài vẫn nhanh; lịch sử thay đổi
+ghi vào nhật ký cấu hình. Công cụ tìm đơn mua hàng có thêm bộ lọc theo phòng ban (phòng yêu cầu hoặc phòng xử lý) và
+theo pháp nhân, trả kèm tên phòng của từng đơn và đường dẫn nhà cung cấp thật thay cho đường dẫn bot tự bịa.
+
+Mã nguồn: backend/app/modules/assistant/glossary.py · assistant/service.py · assistant/tools/catalog.py · agent_hub/service.py
