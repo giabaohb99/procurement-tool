@@ -11752,7 +11752,7 @@ dời sang một tệp riêng và khóa thêm sổ quyền, sổ máy, cổng du
 cùng lúc bị chặn.
 
 Mã nguồn: backend/scripts/deploy/deploy.sh · backend/app/modules/agent_hub/coder.py · guardrails.py · model.py
-Commit: (điền khi gộp)
+Commit: ed371d19 (nhánh agent-hub-bac-1, chờ gộp erp-v2)
 
 ## ai-CR-068 | Bot thao tác trên máy chủ qua cổng duyệt, sao lưu trước, hoàn tác được, báo tài nguyên
 - status: xong
@@ -11767,7 +11767,7 @@ sáng và câu «tình hình máy». Đã thử thật trên dev phần chỉ đ
 chẩn đoán) và sao lưu một bảng nhỏ rồi xóa tệp thử.
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · guardrails.py · service.py · tasks.py
-Commit: (điền khi gộp) · migration e8a3c5f1d7b2
+Commit: ed371d19 (nhánh agent-hub-bac-1, chờ gộp erp-v2) · migration e8a3c5f1d7b2
 
 ## ai-CR-069 | Bot tự vận hành: theo dõi sức khỏe, tự chẩn đoán, tự chữa dev, sổ sự cố
 - status: xong
@@ -11781,4 +11781,4 @@ chẩn đoán, đã làm gì, thời gian gián đoạn. Sửa kèm giờ chạy
 thao tác và tự chữa mặc định tắt. Còn thiếu: đếm lỗi 5xx tăng đột biến và canh hàng đợi.
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · tasks.py · backend/app/core/celery_app.py
-Commit: (điền khi gộp)
+Commit: ed371d19 (nhánh agent-hub-bac-1, chờ gộp erp-v2)
