@@ -1735,9 +1735,11 @@ def test_gop_va_deploy_tron_ven(db, bot, monkeypatch):
     assert "--force" not in push and push[3] == "HEAD:refs/heads/erp-v2"
     assert push[-1]["GIT_CONFIG_KEY_0"] == "http.extraheader"
     assert len(scripts) == 1
-    assert "git reset --hard origin/erp-v2" in scripts[0]
-    assert "up -d --build api celery-worker celery-beat erp" in scripts[0]
-    assert "-f docker-compose.dev.yml" in scripts[0]
+    #  ai-CR-067: kịch bản = deploy.sh đi qua stdin; tham số đặt bằng `set --` (dev, bản mới nhất, đúng service).
+    assert "set -- 'dev' 'latest' 'api' 'celery-worker' 'celery-beat' 'erp'" in scripts[0]
+    assert "export DEPLOY_COMPOSE='--env-file .env.dev -f docker-compose.dev.yml'" in scripts[0]
+    assert "export DEPLOY_BRANCH='erp-v2'" in scripts[0]
+    assert 'git reset --hard "$sha"' in scripts[0] and "merge-base --is-ancestor" in scripts[0]
     assert task.status == ST_PROD and task.deployed_dev_at is not None
     assert run.status == RUN_OK and run.artifact["merged"] and run.artifact["health"] == 200
     assert coder.merged_sha_for(db, task) == "abc1234def5678"
@@ -1832,7 +1834,7 @@ def test_thu_hoi_revert_m1_va_viec_ve_dang_hoi_lai(db, bot, monkeypatch):
     assert revert[2:6] == ["--no-edit", "-m", "1", "abc1234def5678"]
     push = next(c for c in tail if c[1] == "push")
     assert "--force" not in push
-    assert len(scripts) == 2 and "git reset --hard origin/erp-v2" in scripts[1]
+    assert len(scripts) == 2 and "set -- 'dev' 'latest'" in scripts[1]
     assert task.status == ST_NEEDS_INPUT and task.deployed_dev_at is None
     assert "Đã thu hồi" in task.note
     assert coder.merged_sha_for(db, task) == ""
@@ -5864,3 +5866,411 @@ def test_api_google_noi_go_va_callback(db, bot, monkeypatch):
     assert bad.headers["location"].endswith("google=loi")
     monkeypatch.setattr(gl.requests, "post", lambda u, **kw: _Resp(200, {}))
     assert _json(controller.google_disconnect(user=me, db=db))["linked"] is False
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-067..070 — phase 6 (sổ môi trường, deploy.sh, thao tác VPS qua cổng duyệt) + phase 7 (tự vận hành)
+# ---------------------------------------------------------------------------
+def _envs(db):
+    from app.modules.agent_hub.constants import ENV_DEV, ENV_PROD
+    from app.modules.agent_hub.model import AgentEnv
+
+    dev = AgentEnv(name="dev", kind=ENV_DEV, dir="~/procurement-tool-dev",
+                   compose_args="--env-file .env.dev -f docker-compose.dev.yml", branch="erp-v2",
+                   health_url="https://dev.test/api/health", db_name="procurement_dev", auto_heal=True,
+                   created_by=0, updated_by=0)
+    prod = AgentEnv(name="prod", kind=ENV_PROD, dir="~/procurement-tool", compose_args="-f docker-compose.production.yml",
+                    branch="main", health_url="https://prod.test/api/health", db_name="procurement", auto_heal=True,
+                    created_by=0, updated_by=0)
+    db.add_all([dev, prod])
+    db.commit()
+    return dev, prod
+
+
+def _ops_on(monkeypatch, *, heal=False):
+    from app.modules.agent_hub import ops
+
+    monkeypatch.setattr(settings, "AGENT_OPS_ENABLED", True)
+    monkeypatch.setattr(settings, "AGENT_HEAL_ENABLED", heal)
+    sent_tasks: list = []
+    monkeypatch.setattr(ops, "_send_task", lambda db, name, args: sent_tasks.append((name, args)) or True)
+    return sent_tasks
+
+
+def test_lan_can_shell_doc_sua_tu_choi():
+    from app.modules.agent_hub import guardrails as g
+
+    for cmd in ("docker compose ps", "df -h | grep /", "docker compose logs --tail 50 api", "free -m && uptime",
+                "git log -3 --oneline"):
+        assert g.classify_shell(cmd)[0] == g.SHELL_READ, cmd
+    for cmd in ("docker compose restart api", "echo x > /tmp/a", "git pull", "ls $(whoami)", "sed -i s/a/b/ f"):
+        assert g.classify_shell(cmd)[0] == g.SHELL_WRITE, cmd
+    for cmd in ("cat .env.dev", "printenv", "env", "rm -rf /", "docker volume rm x", "docker compose down -v",
+                "cat ~/.ssh/id_ed25519", "docker compose config", "grep PASSWORD x", "shutdown -h now"):
+        assert g.classify_shell(cmd)[0] == g.SHELL_DENIED, cmd
+
+
+def test_lan_can_sql():
+    from app.modules.agent_hub import guardrails as g
+
+    assert g.classify_sql("SELECT id, code FROM tab_po WHERE note LIKE '%a;b%'")[0] == g.SQL_READ
+    kind, _, tables = g.classify_sql("UPDATE tab_po SET note='x' WHERE id = 5;")
+    assert kind == g.SQL_WRITE and tables == ["tab_po"]
+    assert g.classify_sql("INSERT INTO tab_x (a) SELECT a FROM tab_y")[2] == ["tab_x", "tab_y"]
+    for sql in ("DROP TABLE tab_po", "TRUNCATE tab_po", "UPDATE tab_po SET a=1", "DELETE FROM tab_po",
+                "SELECT 1; DELETE FROM tab_po WHERE 1=1", "ALTER TABLE tab_po ADD c INT", "GRANT ALL ON *.* TO x",
+                "SELECT password_hash FROM tab_user", "SELECT * FROM tab_user", "SELECT 1 -- x",
+                "SELECT * FROM t INTO OUTFILE '/tmp/x'"):
+        assert g.classify_sql(sql)[0] == g.SQL_DENIED, sql
+
+
+def test_che_bi_mat_trong_ket_qua():
+    from app.modules.agent_hub.guardrails import mask_secrets
+
+    out = mask_secrets("DB_PASSWORD=abc123\nghp_abcdefghijklmnopqrstuvwx\nmysql://u:p4ss@db/x\nok")
+    assert "abc123" not in out and "ghp_abcdef" not in out and "p4ss" not in out and out.endswith("ok")
+
+
+def test_ba_luat_tu_cai_thien_khoa_tep():
+    """V-05: bot code không sửa sổ quyền, cổng duyệt / lệnh prod, danh sách cấm của chính nó."""
+    from app.modules.agent_hub import coder
+
+    for path in ("backend/app/modules/agent_hub/grants.py", "backend/app/modules/agent_hub/ops.py",
+                 "backend/app/modules/agent_hub/ops_runner.py", "backend/scripts/deploy/deploy.sh",
+                 "backend/app/modules/agent_hub/guardrails.py", "backend/app/modules/agent_hub/runners.py"):
+        assert coder.is_banned_path(path), path
+    assert not coder.is_banned_path("backend/app/modules/agent_hub/briefs.py")
+
+
+def test_deploy_script_dung_deploy_sh_va_chan_tham_so_la():
+    from app.modules.agent_hub import coder
+
+    s = coder.deploy_script(["api"], commit="abc1234", target="prod",
+                            env_vars={"DEPLOY_DIR": "~/p", "DEPLOY_BRANCH": "main", "EVIL": "x"})
+    assert "export DEPLOY_DIR='~/p'" in s and "EVIL" not in s
+    assert "set -- 'prod' 'abc1234' 'api'" in s and 'main "$@" </dev/null' in s
+    with pytest.raises(coder.CoderError):
+        coder.deploy_script(["api; rm -rf /"])
+    info = coder.parse_deploy_output("PREV=aaa1111\nHEAD=bbb2222\nHEALTH=502\nHEAD=aaa1111\nRESULT=rolled_back\n")
+    assert info["head"] == "aaa1111" and info["result"] == "rolled_back" and info["prev"] == "aaa1111"
+    with pytest.raises(coder.CoderError, match="TỰ QUAY VỀ"):
+        coder._raise_on_deploy_result("PREV=aaa1111\nHEALTH=502\nRESULT=rolled_back\n")
+    coder._raise_on_deploy_result("HEAD=abc1234\n")      # output bản cũ: không có RESULT = không ném
+
+
+def test_kich_ban_sinh_ra_dung_cu_phap_bash():
+    import subprocess
+
+    from app.modules.agent_hub import ops_runner as r
+    from app.modules.agent_hub.model import AgentEnv
+
+    env = AgentEnv(name="dev", kind=1, dir="~/procurement-tool-dev", compose_args="--env-file .env.dev -f x.yml",
+                   branch="erp-v2", health_url="https://dev.test/h", db_name="procurement_dev")
+    scripts = [r.sql_script(env, "SELECT 'a''b' FROM t", write=False),
+               r.sql_script(env, "UPDATE t SET a=1 WHERE id=2", write=True),
+               r.backup_script(7, env, ["tab_po"]),
+               r.restore_script(env, "~/agent-backups/op7-dev-20261005-101010.sql.gz"),
+               r.action_script(env, "restart_services", ["api"]), r.action_script(env, "prune_build_cache", []),
+               r.status_script(env), r.logs_script(env, "api", 50), r.diag_script(env), r.RESOURCE_SCRIPT,
+               r.shell_script(env, "docker compose ps | grep api", write=False)]
+    for s in scripts:
+        proc = subprocess.run(["bash", "-n"], input=s, capture_output=True, text=True)
+        assert proc.returncode == 0, (s, proc.stderr)
+    assert "cd \"$HOME\"/'procurement-tool-dev'" in scripts[0] and "exec -T api python -" in scripts[0]
+    assert "UPDATE" not in scripts[1]          # câu SQL đi dạng base64, không ghép chuỗi
+    assert "MYSQL_ROOT_PASSWORD" in scripts[2] and "procurement_dev tab_po" in scripts[2]
+    with pytest.raises(r.OpsError):
+        r.restore_script(env, "/etc/passwd")
+    with pytest.raises(r.OpsError):
+        r.sql_script(env, "UPDATE t SET a=1 WHERE id=2", write=False)   # câu sửa không đi đường đọc
+    with pytest.raises(r.OpsError):
+        r.action_script(env, "restart_services", ["api;reboot"])
+
+
+def test_phan_tich_cau_lenh_van_hanh():
+    from app.modules.agent_hub import ops
+
+    assert ops.parse("môi trường") == {"op": "env_list"}
+    assert ops.parse("trạng thái prod")["env"] == "prod"
+    assert ops.parse("khởi động lại api celery-worker trên dev") == {"op": "restart", "svcs": "api celery-worker",
+                                                                      "env": "dev"}
+    assert ops.parse("deploy prod abc1234 api")["commit"] == "abc1234"
+    assert ops.parse("deploy dev AI-0007") is None           # lệnh trên một việc — đường cũ xử
+    assert ops.parse("SQL dev: SELECT Code FROM tab_po")["body"] == "SELECT Code FROM tab_po"   # giữ chữ hoa
+    assert ops.parse("hoàn tác thao tác #12") == {"op": "undo", "n": "12"}
+    assert ops.parse("chẩn đoán dev: Sao API Chậm?")["q"] == "Sao API Chậm?"
+    add = ops.parse('thêm môi trường staging: dir=~/stg compose="-f s.yml" branch=erp-v2 '
+                    'health=https://s.test/h kind=preview')
+    fields, err = ops.parse_env_fields(add["rest"])
+    assert not err and fields["compose_args"] == "-f s.yml" and fields["kind"] == 3
+    assert ops.parse_env_fields("dir=~/x;rm")[1]
+    assert ops.parse("lịch sử deploy dev") == {"op": "history", "what": "deploy", "env": "dev"}
+
+
+def test_xem_dev_chay_luon_xem_prod_phai_dung(db, bot, monkeypatch):
+    from app.modules.agent_hub.constants import OP_VIEW, OPS_CANCELLED, OPS_QUEUED, OPS_WAITING
+    from app.modules.agent_hub.model import AgentOp
+
+    service, sent, _ = bot
+    _envs(db)
+    tasks = _ops_on(monkeypatch)
+    service.handle_message(db, _msg("trạng thái dev"))
+    op = db.query(AgentOp).one()
+    assert op.kind == OP_VIEW and op.status == OPS_QUEUED and tasks == [("agent.run_op", [op.id])]
+
+    service.handle_message(db, {**_msg("trạng thái prod"), "message_id": 8})
+    op2 = db.query(AgentOp).order_by(AgentOp.id.desc()).first()
+    assert op2.status == OPS_WAITING and len(tasks) == 1 and "PROD" in sent[-1] and "«đúng»" in sent[-1]
+    service.handle_message(db, {**_msg("đúng"), "message_id": 9})
+    assert op2.status == OPS_QUEUED and tasks[-1] == ("agent.run_op", [op2.id])
+
+    service.handle_message(db, {**_msg("trạng thái prod"), "message_id": 10})
+    op3 = db.query(AgentOp).order_by(AgentOp.id.desc()).first()
+    service.handle_message(db, {**_msg("thôi"), "message_id": 11})
+    assert op3.status == OPS_CANCELLED and len(tasks) == 2
+
+
+def test_sua_dev_cung_phai_dung_va_cong_tac_tong(db, bot, monkeypatch):
+    from app.modules.agent_hub.constants import OP_SQL_WRITE, OPS_WAITING
+    from app.modules.agent_hub.model import AgentOp
+
+    service, sent, _ = bot
+    _envs(db)
+    monkeypatch.setattr(settings, "AGENT_OPS_ENABLED", False)
+    service.handle_message(db, _msg("khởi động lại api dev"))
+    assert "AGENT_OPS_ENABLED" in sent[-1] and db.query(AgentOp).count() == 0
+
+    tasks = _ops_on(monkeypatch)
+    service.handle_message(db, {**_msg("sql dev: UPDATE tab_po SET note='x' WHERE id=1"), "message_id": 8})
+    op = db.query(AgentOp).one()
+    assert op.kind == OP_SQL_WRITE and op.status == OPS_WAITING and tasks == []
+    assert "sao lưu bảng" in sent[-1] and "tab_po" in sent[-1] and f"hoàn tác thao tác #{op.id}" in sent[-1]
+    service.handle_message(db, {**_msg("sql dev: DROP TABLE tab_po"), "message_id": 9})
+    assert "không chạy" in sent[-1] and db.query(AgentOp).count() == 1
+    service.handle_message(db, {**_msg("chạy dev: cat .env.dev"), "message_id": 10})
+    assert "bí mật" in sent[-1]
+
+
+def test_nguoi_khac_khong_ra_lenh_van_hanh_duoc(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops
+
+    _envs(db)
+    _ops_on(monkeypatch)
+
+    class Row:
+        id = 99
+        created_at = None
+        action = ""
+
+    assert ops.handle_text(db, "777", Row(), "khởi động lại api dev") is False
+
+
+def _fake_ssh(monkeypatch, outputs):
+    from app.modules.agent_hub import coder
+
+    calls: list[str] = []
+
+    def fake(script, *, timeout=0, target=None, check=True):
+        calls.append(script)
+        for key, out in outputs:
+            if key in script:
+                return out
+        return "ok\n"
+
+    monkeypatch.setattr(coder, "run_ssh", fake)
+    return calls
+
+
+def test_sql_sua_sao_luu_truoc_roi_hoan_tac(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops, ops_runner
+    from app.modules.agent_hub.constants import OP_RESTORE, OP_SQL_WRITE, OPS_OK, OPS_WAITING
+
+    service, sent, _ = bot
+    dev, _ = _envs(db)
+    tasks = _ops_on(monkeypatch)
+    calls = _fake_ssh(monkeypatch, [("mysqldump", "BACKUP=/home/u/agent-backups/op1-dev-20261005-101010.sql.gz\n"),
+                                    ("exec -T api python", "ROWCOUNT=1\n")])
+    op = ops.new_op(db, dev, OP_SQL_WRITE, title="SQL", command="UPDATE tab_po SET note='x' WHERE id=1", chat_id="12345")
+    ops.approve(db, op, "12345")
+    assert tasks[-1] == ("agent.run_op", [op.id])
+    ops_runner.execute(db, op)
+    assert op.status == OPS_OK and "mysqldump" in calls[0] and "exec -T api python" in calls[1]
+    assert op.backup_ref.endswith(".sql.gz") and op.undo_params["kind"] == OP_RESTORE
+    assert "ROWCOUNT=1" in sent[-1] and f"hoàn tác thao tác #{op.id}" in sent[-1]
+
+    service.handle_message(db, _msg(f"hoàn tác thao tác #{op.id}"))
+    undo = db.get(type(op), op.undone_by_op_id)
+    assert undo.kind == OP_RESTORE and undo.status == OPS_WAITING and undo.undo_of_op_id == op.id
+    service.handle_message(db, {**_msg(f"hoàn tác thao tác #{op.id}"), "message_id": 8})
+    assert "đã được hoàn tác" in sent[-1]
+
+
+def test_sao_luu_hong_thi_khong_chay_sql(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops, ops_runner
+    from app.modules.agent_hub.constants import OP_SQL_WRITE, OPS_FAILED
+
+    _envs(db)
+    dev = ops.env_by_name(db, "dev")
+    _ops_on(monkeypatch)
+    calls = _fake_ssh(monkeypatch, [("mysqldump", "mysqldump: lỗi\n")])
+    op = ops.new_op(db, dev, OP_SQL_WRITE, title="SQL", command="DELETE FROM tab_po WHERE id=1", chat_id="12345")
+    ops.approve(db, op, "12345")
+    ops_runner.execute(db, op)
+    assert op.status == OPS_FAILED and "KHÔNG chạy" in op.error and len(calls) == 1
+
+
+def test_deploy_prod_sao_luu_ca_db_va_hoan_tac_ve_commit_truoc(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops, ops_runner
+    from app.modules.agent_hub.constants import OP_DEPLOY, OPS_OK
+
+    _, prod = _envs(db)
+    _ops_on(monkeypatch)
+    calls = _fake_ssh(monkeypatch, [("mysqldump", "BACKUP=/h/agent-backups/op1-prod-20261005-101010-db.sql.gz\n"),
+                                    ("set -- 'prod'", "PREV=aaaaaaa1111\nSERVICES=api\nHEAD=bbbbbbb2222\nHEALTH=200\n"
+                                                      "RESULT=ok\n")])
+    op = ops.new_op(db, prod, OP_DEPLOY, title="Deploy", command="deploy.sh prod bbbbbbb",
+                    params={"commit": "bbbbbbb", "services": []}, chat_id="12345")
+    ops.approve(db, op, "12345")
+    ops_runner.execute(db, op)
+    assert op.status == OPS_OK and "mysqldump" in calls[0] and "set -- 'prod' 'bbbbbbb'" in calls[1]
+    assert "export DEPLOY_BRANCH='main'" in calls[1]
+    assert op.undo_params == {"kind": OP_DEPLOY, "commit": "aaaaaaa1111", "services": ["api"]}
+    new, err = ops.undo(db, op, "12345")
+    assert not err and new.params["commit"] == "aaaaaaa1111"
+
+
+def test_theo_doi_suc_khoe_mo_va_dong_su_co(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import INC_DIAGNOSING, INC_RESOLVED
+    from app.modules.agent_hub.model import AgentIncident
+
+    _, sent, _ = bot
+    dev, _ = _envs(db)
+    tasks = _ops_on(monkeypatch)
+    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", 3)
+    codes = {"https://dev.test/api/health": 502, "https://prod.test/api/health": 200}
+    for _ in range(2):
+        ops.check_health(db, fetch=lambda url: codes[url])
+    assert db.query(AgentIncident).count() == 0 and dev.fail_streak == 2
+    ops.check_health(db, fetch=lambda url: codes[url])
+    inc = db.query(AgentIncident).one()
+    assert inc.status == INC_DIAGNOSING and tasks == [("agent.diagnose_incident", [inc.id])] and "Sự cố" in sent[-1]
+    ops.check_health(db, fetch=lambda url: codes[url])
+    assert db.query(AgentIncident).count() == 1            # sự cố đang mở: không mở thêm
+    codes["https://dev.test/api/health"] = 200
+    ops.check_health(db, fetch=lambda url: codes[url])
+    assert inc.status == INC_RESOLVED and dev.fail_streak == 0 and "đã hết" in sent[-1]
+
+
+def _incident(db, env, symptom="health 502 (3 phút liền)"):
+    from app.modules.agent_hub.constants import INC_DIAGNOSING
+    from app.modules.agent_hub.model import AgentIncident
+    from app.modules.agent_hub.timeutil import now_utc
+
+    inc = AgentIncident(env_id=env.id, status=INC_DIAGNOSING, symptom=symptom, signature="", started_at=now_utc(),
+                        diagnosis="", cause="", action="", created_by=0, updated_by=0)
+    db.add(inc)
+    db.commit()
+    return inc
+
+
+def _fake_diag(monkeypatch, **diag):
+    from app.modules.agent_hub import ops_runner
+
+    base = {"summary": "api thoát", "cause": "container dừng", "action": "up_services", "services": ["api"],
+            "confidence": 0.8, "fix_hint": ""}
+    base.update(diag)
+    monkeypatch.setattr(ops_runner, "_ssh", lambda script, env, **kw: "== CONTAINER\nSERVICE STATE STATUS\napi exited x\n")
+    monkeypatch.setattr(ops_runner, "diagnose", lambda env, raw, **kw: dict(base))
+
+
+def test_tu_chua_dev_trong_tran(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops_runner
+    from app.modules.agent_hub.constants import INC_RESOLVED, INC_WAITING, OP_ACTION, OPS_OK
+    from app.modules.agent_hub.model import AgentOp
+
+    _, sent, _ = bot
+    dev, _ = _envs(db)
+    _ops_on(monkeypatch, heal=True)
+    _fake_diag(monkeypatch)
+    ran: list = []
+
+    def fake_execute(db_, op):
+        ran.append(op.params)
+        op.status = OPS_OK
+        db_.commit()
+        return {"status": "ok"}
+
+    monkeypatch.setattr(ops_runner, "execute", fake_execute)
+    monkeypatch.setattr(ops_runner, "wait_health", lambda env, **kw: 200)
+    inc = _incident(db, dev)
+    assert ops_runner.handle_incident(db, inc)["status"] == "healed"
+    op = db.query(AgentOp).one()
+    assert op.kind == OP_ACTION and op.auto and ran == [{"action": "up_services", "services": ["api"]}]
+    assert inc.status == INC_RESOLVED and inc.signature == "dev:container-dung" and "đã hết sau tự chữa" in sent[-1]
+
+    monkeypatch.setattr(settings, "AGENT_HEAL_MAX_PER_HOUR", 1)
+    inc2 = _incident(db, dev)
+    assert ops_runner.handle_incident(db, inc2)["status"] == "capped"
+    assert inc2.status == INC_WAITING and "DỪNG" in sent[-1] and len(ran) == 1
+
+
+def test_prod_chi_de_xuat_cho_dung(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops_runner
+    from app.modules.agent_hub.constants import ACT_OP_WAIT, INC_WAITING, OPS_WAITING
+    from app.modules.agent_hub.model import AgentMessage, AgentOp
+
+    _, sent, _ = bot
+    _, prod = _envs(db)
+    _ops_on(monkeypatch, heal=True)
+    _fake_diag(monkeypatch, action="restart_services")
+    monkeypatch.setattr(ops_runner, "execute", lambda *a: pytest.fail("prod không được tự chạy"))
+    inc = _incident(db, prod)
+    assert ops_runner.handle_incident(db, inc)["status"] == "proposed"
+    op = db.query(AgentOp).one()
+    assert op.status == OPS_WAITING and not op.auto and inc.status == INC_WAITING and inc.heal_op_id == op.id
+    assert "prod chỉ đề xuất" in sent[-1] and db.query(AgentMessage).filter_by(action=ACT_OP_WAIT).count() == 1
+
+
+def test_su_co_lap_lai_mo_viec_sua_goc_re(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import SRC_INCIDENT
+    from app.modules.agent_hub.model import AgentTask
+
+    service, _, _ = bot
+    dev, _ = _envs(db)
+    monkeypatch.setattr(service, "start_scan", lambda db_, task: None)
+    incs = [_incident(db, dev) for _ in range(3)]
+    for i in incs:
+        i.signature, i.cause = "dev:loi-migration", "lỗi migration"
+    db.commit()
+    note = ops.maybe_root_cause_task(db, incs[-1], {"fix_hint": "sửa migration x"})
+    task = db.query(AgentTask).one()
+    assert task.source == SRC_INCIDENT and "sửa gốc rễ" in note and all(i.task_id == task.id for i in incs)
+    assert "sửa migration x" in task.summary
+    #  Lần thứ tư: việc đang mở thì không mở thêm.
+    inc4 = _incident(db, dev)
+    inc4.signature, inc4.cause = "dev:loi-migration", "lỗi migration"
+    db.commit()
+    assert "đang mở" in ops.maybe_root_cause_task(db, inc4, {}) and db.query(AgentTask).count() == 1
+
+
+def test_bao_tai_nguyen_doc_dung_so():
+    from app.modules.agent_hub import ops_runner
+
+    out = ("HOST=vps1\nCPUS=4\nLOAD=0.5 0.4 0.3\nMEM_TOTAL=7900\nMEM_USED=4600\nMEM_AVAIL=3300\nSWAP_TOTAL=0\n"
+           "SWAP_USED=0\nDISK_TOTAL_KB=80000000\nDISK_USED_KB=50000000\nDISK_PCT=63%\nTOP:\n"
+           "procurement-api 12.5% 600MiB / 1GiB\nDOCKER_DF:\nImages: 10GB (thu hồi được 2GB)\n")
+    info = ops_runner.parse_resources(out)
+    assert info["disk_pct"] == "63%" and info["top"] == ["procurement-api 12.5% 600MiB / 1GiB"]
+    text = ops_runner.resource_text(["dev", "prod"], info)
+    assert "vps1" in text and "4.5/7.7 GB" in text and "63%" in text
+
+
+def test_heuristic_chan_doan_khi_claude_hong():
+    from app.modules.agent_hub import ops_runner
+
+    raw = "== CONTAINER\nSERVICE STATE STATUS\napi exited (1)\nerp running Up\n== LOG api\n..."
+    d = ops_runner.heuristic_diagnosis(raw)
+    assert d["action"] == "up_services" and d["services"] == ["api"]
+    assert ops_runner.heuristic_diagnosis("DISK_PCT=95%\n")["action"] == "prune_build_cache"

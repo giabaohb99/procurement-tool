@@ -83,22 +83,9 @@ log = logging.getLogger("app.agent_hub.coder")
 PROVIDER = "claude_code"
 DEFAULT_MODEL = "claude-code"
 
-#  Tệp bot KHÔNG ĐƯỢC ĐỤNG (luật C3, C4, §E, §G). So bằng fnmatch trên cả đường dẫn đầy đủ
-#  lẫn tên tệp. Mở rộng danh sách này thì sửa cả bài kiểm `test_tep_cam_thi_leo_thang`.
-BANNED_PATTERNS = (
-    ".env", ".env.*",
-    "*.pem", "*.key", "*.p12",
-    "backend/app/seed_prod.py",
-    "backend/migrations/versions/*",          # C3: không migration
-    ".github/workflows/*",                    # C4
-    "docker-compose.production.yml",          # C4
-    "backend/app/core/permissions.py",        # C4: không đụng phân quyền
-    "backend/app/core/scoping.py",
-    "CLAUDE.md", "*/CLAUDE.md",               # §G: không tự sửa luật của mình
-    ".claude/*", "*/.claude/*",
-    "doc/agent-hub/02-bo-quy-tac-bot.md",
-    "doc/agent-hub/03-so-quyet-dinh.md",      # ai-CR-015: sổ chỉ ghi qua nút đại ca duyệt
-)
+#  Tệp bot KHÔNG ĐƯỢC ĐỤNG (luật C3, C4, §E, §G + ba luật tự cải thiện V-05). Danh sách nằm ở `guardrails.py`
+#  để tệp đó tự khóa được chính nó (ai-CR-067).
+from .guardrails import BANNED_PATTERNS  # noqa: E402
 
 #  Bài kiểm không tính vào tỷ lệ lệch kế hoạch (luật C5 bắt bot viết test, mà thẻ kế hoạch
 #  hiếm khi liệt kê tệp test).
@@ -1780,54 +1767,90 @@ def _ssh_key_file():
             pass
 
 
-def _ssh_cmd(key: str) -> list[str]:
-    if not settings.AGENT_VPS_HOST or not settings.AGENT_VPS_USER:
+def _ssh_cmd(key: str, target=None) -> list[str]:
+    """`target` = một dòng sổ môi trường (ai-CR-067); ô trống thì lấy máy mặc định trong .env."""
+    host = (getattr(target, "host", "") or settings.AGENT_VPS_HOST)
+    user = (getattr(target, "ssh_user", "") or settings.AGENT_VPS_USER)
+    port = int(getattr(target, "port", 0) or settings.AGENT_VPS_PORT)
+    if not host or not user:
         raise CoderError("chưa khai AGENT_VPS_HOST / AGENT_VPS_USER trong .env")
     known = str(Path(settings.AGENT_WORKTREE_ROOT) / ".known_hosts")
     return [
         "ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new",
         "-o", f"UserKnownHostsFile={known}", "-o", f"ConnectTimeout={SSH_CONNECT_TIMEOUT}",
-        "-p", str(settings.AGENT_VPS_PORT), "-i", key,
-        f"{settings.AGENT_VPS_USER}@{settings.AGENT_VPS_HOST}", "bash", "-s",
+        "-p", str(port), "-i", key,
+        f"{user}@{host}", "bash", "-s",
     ]
 
 
-def run_ssh(script: str, *, timeout: int = DEPLOY_TIMEOUT_SEC) -> str:
+def run_ssh(script: str, *, timeout: int = DEPLOY_TIMEOUT_SEC, target=None, check: bool = True) -> str:
     """Chạy `script` bằng `bash -s` trên VPS, script đi qua stdin (không lên dòng lệnh, không lên
     lịch sử shell của VPS). Chạy bằng tiến trình worker (root), môi trường sạch, KHÔNG hạ quyền
-    — xem chú thích đầu khối. Trả stdout+stderr; rc != 0 thì ném CoderError kèm đuôi output."""
+    — xem chú thích đầu khối. Trả stdout+stderr; rc != 0 thì ném CoderError kèm đuôi output
+    (`check=False`: trả nguyên output kèm dòng `RC=<mã>` cuối, cho lệnh mà mã lỗi cũng là thông tin)."""
     env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": "/root", "LANG": "C.UTF-8"}
     with _ssh_key_file() as key:
-        proc = subprocess.run(_ssh_cmd(key), input=script, env=env, capture_output=True,
+        proc = subprocess.run(_ssh_cmd(key, target), input=script, env=env, capture_output=True,
                               text=True, timeout=timeout)
     out = (proc.stdout or "") + (("\n" + proc.stderr) if proc.stderr else "")
     if proc.returncode != 0:
+        if not check:
+            return out + f"\nRC={proc.returncode}\n"
+        if re.search(r"^RESULT=", out, re.MULTILINE):
+            _raise_on_deploy_result(out)     # deploy.sh tự báo lý do (quay về bản trước / bận / commit lạ)
         raise CoderError(f"ssh/deploy lỗi (rc={proc.returncode}): {out.strip()[-1200:]}")
     return out
 
 
-def deploy_script(services: list[str]) -> str:
-    """Kịch bản deploy dev y hệt §C quy trình: reset cứng về origin/<nhánh nền> rồi build lại đúng
-    service. Mọi mảnh đều từ settings — không nhận chữ từ bản vá hay Telegram."""
-    base = settings.AGENT_BASE_BRANCH
-    lines = [
-        "set -euo pipefail",
-        f"cd {settings.AGENT_VPS_DEV_DIR}",
-        "git fetch origin",
-        f"git reset --hard origin/{base}",
-        'echo "HEAD=$(git rev-parse HEAD)"',
-    ]
-    if services:
-        lines.append(f"docker compose {settings.AGENT_VPS_DEV_COMPOSE_ARGS} up -d --build "
-                     + " ".join(services))
-    else:
-        lines.append('echo "Không có service nào cần build lại (chỉ đổi doc/test)."')
-    return "\n".join(lines) + "\n"
+DEPLOY_SH = Path(__file__).resolve().parents[3] / "scripts" / "deploy" / "deploy.sh"
+_SAFE_ARG = re.compile(r"^[A-Za-z0-9._/-]{1,80}$")
+
+
+def _sh_quote(value: str) -> str:
+    return "'" + str(value).replace("'", "'\\''") + "'"
+
+
+def deploy_script(services: list[str], *, commit: str = "latest", target: str = "dev",
+                  env_vars: dict | None = None) -> str:
+    """Kịch bản deploy = `backend/scripts/deploy/deploy.sh` (ai-CR-067, V-02) đi qua stdin, tham số đặt bằng
+    `set --` ở đầu. Mặc định = dev, bản mới nhất của nhánh nền — đúng hành vi cũ của đường gộp. Mọi mảnh
+    đều từ settings / sổ môi trường; tham số lạ (không phải sha / tên service) bị từ chối, không ghép chuỗi.
+    deploy.sh tự khóa lượt, kiểm commit nằm trên nhánh của đích, health hỏng thì tự quay về bản trước."""
+    args = [target, commit, *services]
+    for a in args:
+        if not _SAFE_ARG.match(str(a)):
+            raise CoderError(f"tham số deploy lạ: {str(a)[:40]!r}")
+    if env_vars is None:
+        env_vars = {
+            "DEPLOY_DIR": settings.AGENT_VPS_DEV_DIR,
+            "DEPLOY_COMPOSE": settings.AGENT_VPS_DEV_COMPOSE_ARGS,
+            "DEPLOY_BRANCH": settings.AGENT_BASE_BRANCH,
+            "DEPLOY_HEALTH": settings.AGENT_DEV_HEALTH_URL,
+        }
+    head = [f"export {k}={_sh_quote(v)}" for k, v in env_vars.items() if re.match(r"^DEPLOY_[A-Z_]+$", k)]
+    head.append("set -- " + " ".join(_sh_quote(a) for a in args))
+    try:
+        body = DEPLOY_SH.read_text(encoding="utf-8").replace("\r\n", "\n")
+    except OSError as e:
+        raise CoderError(f"không đọc được {DEPLOY_SH}: {e}") from e
+    return "\n".join(head) + "\n" + body
 
 
 def _parse_head(output: str) -> str:
-    m = re.search(r"^HEAD=([0-9a-f]{7,40})\s*$", output, re.MULTILINE)
-    return m.group(1) if m else ""
+    """HEAD cuối cùng mà VPS đang đứng (deploy.sh in HEAD= hai lần khi quay về bản trước)."""
+    found = re.findall(r"^HEAD=([0-9a-f]{7,40})\s*$", output, re.MULTILINE)
+    return found[-1] if found else ""
+
+
+def parse_deploy_output(output: str) -> dict:
+    """Các dòng máy đọc của deploy.sh: PREV / HEAD / SERVICES / HEALTH / RESULT / ERR / LOG."""
+    info: dict = {}
+    for key in ("PREV", "SERVICES", "HEALTH", "RESULT", "ERR", "LOG", "HEALTH_AFTER_ROLLBACK"):
+        found = re.findall(rf"^{key}=(.*)$", output, re.MULTILINE)
+        if found:
+            info[key.lower()] = found[-1].strip()
+    info["head"] = _parse_head(output)
+    return info
 
 
 def wait_dev_health() -> int:
@@ -2011,6 +2034,7 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
             paths = [f["path"] for f in _code_artifact(db, task).get("files") or []]
         services = deploy_services_for(paths)
         out = run_ssh(deploy_script(services))
+        _raise_on_deploy_result(out)
         head = _parse_head(out)
         if head and not sha.startswith(head) and not head.startswith(sha):
             if merged_now:
@@ -2018,7 +2042,7 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
                                  "nhánh nền có bản đẩy khác chen vào?")
             #  Deploy sau: nhánh nền được phép đi tiếp, miễn còn chứa bản gộp của việc này.
             _require_ancestor(sha, head)
-        health = wait_dev_health()
+        health = _health_from(out)
     except (CoderError, subprocess.TimeoutExpired, OSError) as e:
         err = str(e) if not isinstance(e, subprocess.TimeoutExpired) else \
             f"deploy quá {DEPLOY_TIMEOUT_SEC // 60} phút chưa xong"
@@ -2033,6 +2057,29 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     db.commit()
     send_deploy_card(db, task, sha=sha, services=services, health=health, reverted=False)
     return {"status": "ok", "merge_sha": sha, "services": services, "health": health}
+
+
+def _health_from(out: str) -> int:
+    """deploy.sh đã gõ health rồi thì lấy luôn số đó; output bản cũ (không có HEALTH=) thì tự gõ."""
+    raw = parse_deploy_output(out).get("health", "")
+    if re.fullmatch(r"-?\d+", raw or ""):
+        return int(raw)
+    return wait_dev_health()
+
+
+def _raise_on_deploy_result(out: str) -> None:
+    """deploy.sh báo RESULT khác `ok` → lỗi deploy (thẻ đỏ). Output không có dòng RESULT (bản cũ) = như cũ."""
+    info = parse_deploy_output(out)
+    result = info.get("result", "")
+    if not result or result == "ok":
+        return
+    if result == "rolled_back":
+        raise CoderError(f"health {info.get('health') or '?'} sau deploy — VPS đã TỰ QUAY VỀ bản trước "
+                         f"{(info.get('prev') or '?')[:10]} (health sau khi quay về: "
+                         f"{info.get('health_after_rollback') or '?'})")
+    if result == "busy":
+        raise CoderError("đang có một lượt deploy khác trên VPS — chờ xong rồi bấm lại")
+    raise CoderError(f"deploy.sh báo hỏng: {info.get('err') or out.strip()[-600:]}")
 
 
 def _require_ancestor(sha: str, head: str) -> None:
@@ -2096,7 +2143,8 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
         if task.deployed_dev_at:
             services = deploy_services_for(changed_paths_of_head(wt))
             out = run_ssh(deploy_script(services))
-            health = wait_dev_health()
+            _raise_on_deploy_result(out)
+            health = _health_from(out)
         else:
             services, out, health = [], "", -2
     except (CoderError, subprocess.TimeoutExpired, OSError) as e:

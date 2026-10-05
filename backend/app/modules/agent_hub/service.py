@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import bells, chat_link, coder, draft_create, grants, manager, memory, playbook, reminders, research, runners, telegram, user_keys
+from . import bells, chat_link, coder, draft_create, grants, manager, memory, ops, playbook, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -799,6 +799,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
+            or ops.handle_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)

@@ -156,18 +156,18 @@ Model: việc nhỏ `claude-opus-5`, việc đầy đủ `claude-opus-5-5` (đ�
 - Máy hiện tại: 1 bộ một lúc. VPS preview riêng (8 vCPU / 16 GB): 2–3 bộ cùng lúc. Tự tắt khi việc đóng hoặc sau 24 giờ.
 - **Để sau:** chép DB dev sang preview khi cần test với dữ liệu thật.
 
-### 4.4 Bot code thao tác trên VPS 1 — [làm]
+### 4.4 Bot code thao tác trên VPS 1 — [chạy] (ai-CR-068, chi tiết [`08`](./08-van-hanh-vps.md))
 
 | Thao tác | Duyệt | Bảo vệ |
 |---|---|---|
 | Xem dữ liệu / log dev | Không | MySQL chỉ đọc, ghi nhật ký |
 | Xem dữ liệu prod | «đúng» | Ghi nhật ký |
 | Sửa dữ liệu / chạy lệnh dev | «đúng» | Thẻ hiện nguyên văn lệnh → **sao lưu trước** → chạy → nhật ký + **lệnh hoàn tác** |
-| Mọi thay đổi prod | «đúng» + **OTP** | Như trên |
+| Mọi thay đổi prod | «đúng» (+ **OTP** — tạm bỏ qua, đại ca 05/10) | Như trên; deploy prod sao lưu cả DB trước |
 
-«hoàn tác thao tác #12» → bot chạy lệnh hoàn tác đã ghi. «lịch sử thao tác prod» → liệt kê.
+«hoàn tác thao tác #12» → bot đẻ thao tác hoàn tác (cũng qua «đúng»). «lịch sử thao tác prod» → liệt kê. Sự cố: health hỏng 3 phút liền → máy sửa mã chẩn đoán → dev tự chữa (trần 3 lần/giờ), prod thẻ «đúng»; lặp 3 lần/7 ngày → việc sửa gốc rễ (ai-CR-069).
 
-### 4.5 Bot tự cải thiện — [chạy, thêm luật ở bước làm]
+### 4.5 Bot tự cải thiện — [chạy] (ba luật thi hành từ ai-CR-067)
 
 Mã của bot nằm cùng kho, nên «sửa bot» là một việc sửa mã như mọi việc khác (AI-0001 chính là bot sửa giao diện
 của bot). Ba luật cứng thi hành trong mã: bot code **không** được sửa sổ quyền, phần OTP / lệnh lên prod, và danh sách
@@ -176,9 +176,9 @@ tệp cấm sửa; mọi thay đổi qua cổng kiểm + đại ca duyệt; lên
 ### 4.6 Mở rộng — sổ môi trường và sổ máy
 
 - **Sổ máy** [chạy]: «thêm máy của anh Được» · «máy nào đang bật» · «AI-0012 cho máy X làm» · «cho máy X được deploy».
-- **Sổ môi trường** [làm]: «thêm môi trường staging: vps …, nhánh …, lệnh deploy …» → bot tổng ghi, truyền cho bot code
+- **Sổ môi trường** [chạy, ai-CR-067]: «thêm môi trường staging: vps …, nhánh …, lệnh deploy …» → bot tổng ghi, truyền cho bot code
   mỗi lần giao việc. Thêm VPS thứ 3, 4 = thêm dòng.
-- **Báo tài nguyên** [làm]: mỗi ngày RAM/CPU/đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; hỏi «tình hình máy».
+- **Báo tài nguyên** [chạy, ai-CR-068]: mỗi ngày RAM/CPU/đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; hỏi «tình hình máy».
 
 ## 5. Trạng thái tổng (05/10/2026)
 
@@ -188,8 +188,8 @@ tệp cấm sửa; mọi thay đổi qua cổng kiểm + đại ca duyệt; lên
 | 3 | Chuông, nhắc việc, tin thoại, trần lượt | [chạy] |
 | 4 | Cổng MCP | [chạy], chưa ai thử bằng ứng dụng thật |
 | 5 | Google cá nhân: Lịch, Drive, bản tin sáng, nhắc họp | Mã đã lên dev; chờ đại ca: redirect URI, «In production», `GOOGLE_CLIENT_SECRET` |
-| **6** | Quy trình code hai máy chủ (nhóm V): sổ môi trường, `deploy.sh` + nhật ký, thao tác VPS 1 có duyệt/sao lưu/hoàn tác, OTP, 3 luật, báo tài nguyên, preview | [làm] — tiếp theo |
-| **7** | Tự vận hành (nhóm O): theo dõi sức khỏe, tự chẩn đoán, tự khôi phục dev, prod chỉ đề xuất, sổ sự cố | [làm] sau phase 6 |
+| **6** | Quy trình code hai máy chủ (nhóm V): sổ môi trường, `deploy.sh` + nhật ký, thao tác VPS 1 có duyệt/sao lưu/hoàn tác, OTP, 3 luật, báo tài nguyên, preview | [chạy] trừ OTP (tạm bỏ), preview V-07 (chờ tên miền + token), VPS 2 thật (V-08) |
+| **7** | Tự vận hành (nhóm O): theo dõi sức khỏe, tự chẩn đoán, tự khôi phục dev, prod chỉ đề xuất, sổ sự cố | [chạy] — O-01 còn thiếu đếm 5xx + hàng đợi |
 | **8** | Lõi mở: gọi MCP bên ngoài, A2A giữa các bot, giao việc tính ngân sách, sổ sự kiện chung | [sau] |
 | 9 | Zalo OA, nhiều bot | [sau] — chờ OA + tên bot |
 | 10 | Thư ký biên bản họp | [sau] — chờ tệp ghi âm thật |

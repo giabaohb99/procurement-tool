@@ -544,3 +544,137 @@ def heartbeat_task() -> dict:
         return {"status": "error", "reason": str(e)[:300]}
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# Phase 6–7 (ai-CR-068..070): thao tác VPS, chẩn đoán + tự chữa, báo tài nguyên.
+# Ba việc đầu chạy TRONG máy sửa mã có khóa SSH (cờ deploy); hai vòng beat cuối chạy ở worker của bot.
+# `acks_late=False` cho cả ba việc runner: thao tác chạy hai lần (máy chết giữa chừng rồi nhận lại) là
+# hai lần sửa dữ liệu — dòng sổ còn «đang chạy» thì đại ca thấy trong «lịch sử thao tác» và quyết.
+# ---------------------------------------------------------------------------
+@celery_app.task(name="agent.run_op", time_limit=coder.DEPLOY_TIMEOUT_SEC + 900, acks_late=False)
+def run_op_task(op_id: int) -> dict:
+    if (off := _off()) is not None:
+        return off
+    from . import ops_runner
+    from .constants import OPS_FAILED, OPS_QUEUED
+    from .model import AgentOp
+
+    db = SessionLocal()
+    try:
+        op = db.get(AgentOp, op_id)
+        if op is None or op.status != OPS_QUEUED:
+            return {"status": "skipped", "reason": f"thao tác {op_id} không còn chờ máy"}
+        if (refused := _runner_guard(db, None, deploy=True)) is not None or not settings.AGENT_OPS_ENABLED:
+            op.status = OPS_FAILED
+            op.error = (refused or {}).get("reason") or "AGENT_OPS_ENABLED tắt trên máy sửa mã"
+            db.commit()
+            ops_runner.send_result(db, op, None)
+            return {"status": "refused", "reason": op.error}
+        return ops_runner.execute(db, op)
+    except Exception as e:  # noqa: BLE001 — lỗi ngoài dự kiến cũng phải đóng dòng sổ + báo
+        db.rollback()
+        log.exception("agent_hub: thao tác VPS hỏng ngoài dự kiến")
+        from .constants import OPS_FAILED, OPS_RUNNING
+        from .model import AgentOp
+
+        op = db.get(AgentOp, op_id)
+        if op is not None and op.status in (OPS_RUNNING,):
+            op.status = OPS_FAILED
+            op.error = f"hỏng ngoài dự kiến: {str(e)[:500]}"
+            db.commit()
+            from . import ops_runner
+
+            ops_runner.send_result(db, op, None)
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.diagnose_incident", time_limit=coder.DEPLOY_TIMEOUT_SEC + 900, acks_late=False)
+def diagnose_incident_task(incident_id: int) -> dict:
+    if (off := _off()) is not None:
+        return off
+    from . import ops_runner
+    from .constants import INC_DIAGNOSING, INC_WAITING
+    from .model import AgentIncident
+
+    db = SessionLocal()
+    try:
+        inc = db.get(AgentIncident, incident_id)
+        if inc is None or inc.status != INC_DIAGNOSING:
+            return {"status": "skipped"}
+        if (refused := _runner_guard(db, None, deploy=True)) is not None:
+            inc.status = INC_WAITING
+            db.commit()
+            return refused
+        return ops_runner.handle_incident(db, inc)
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: chẩn đoán sự cố hỏng")
+        inc = db.get(AgentIncident, incident_id)
+        if inc is not None:
+            inc.status = INC_WAITING
+            db.commit()
+            service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+                          f"Chẩn đoán sự cố #{incident_id} hỏng ngoài dự kiến: {telegram.esc(str(e)[:300])}. Cần đại ca xem.")
+            db.commit()
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.resource_report", time_limit=900, acks_late=False)
+def resource_report_task(chat_id: str = "") -> dict:
+    if (off := _off()) is not None:
+        return off
+    from . import ops_runner
+
+    db = SessionLocal()
+    try:
+        if (refused := _runner_guard(db, None, deploy=True)) is not None:
+            return refused
+        ops_runner.resource_report(db, chat_id=chat_id)
+        return {"status": "success"}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: báo tài nguyên hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.health_check")
+def health_check_task() -> dict:
+    """O-01: mỗi phút gõ health từng môi trường trong sổ; hỏng liên tiếp thì mở sự cố + giao chẩn đoán."""
+    if (off := _off()) is not None:
+        return off
+    if not settings.AGENT_OPS_ENABLED:
+        return {"status": "skipped", "reason": "AGENT_OPS_ENABLED=false"}
+    from . import ops
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **ops.check_health(db)}
+    except Exception as e:  # noqa: BLE001 — vòng beat không được chết
+        db.rollback()
+        log.exception("agent_hub: vòng theo dõi sức khỏe hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.resource_report_due")
+def resource_report_due_task() -> dict:
+    """V-06: 07:35 sáng giao máy sửa mã đọc tài nguyên các máy + tóm tắt việc của bot."""
+    if (off := _off()) is not None:
+        return off
+    if not settings.AGENT_OPS_ENABLED:
+        return {"status": "skipped", "reason": "AGENT_OPS_ENABLED=false"}
+    from . import ops
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "dispatched": ops.dispatch_resource_report(db)}
+    finally:
+        db.close()

@@ -11738,3 +11738,47 @@ là Zalo và biên bản họp vì đang chờ dữ liệu từ đại ca. Tài 
 khung mở và nguyên tắc giấy phép khi mượn mã.
 
 Mã nguồn: doc/agent-hub/04-danh-sach-tinh-nang.md · doc/agent-hub/07-quy-trinh-va-so-do.md
+
+## ai-CR-067 | Script deploy chung cho dev và prod, sổ môi trường, khóa ba luật tự cải thiện
+- status: xong
+- date: 2026-10-05
+Đại ca bảo bật docker của bot rồi làm tiếp phase 6 và 7, kèm script deploy. Đã viết một script deploy dùng
+chung cho mọi môi trường: mỗi môi trường chỉ một lượt deploy một lúc, commit phải nằm trên nhánh của môi trường
+đó (dev là erp-v2, prod là main), dựng lại đúng các service bị đụng, gõ kiểm tra sức khỏe, hỏng thì tự quay về
+bản đang chạy trước đó, và ghi nhật ký từng lần. Đường gộp và deploy dev cũ của việc sửa mã cũng đi qua script
+này. Thêm sổ môi trường (nạp sẵn dev và prod, khai thêm bằng câu nhắn). Danh sách tệp bot code không được sửa
+dời sang một tệp riêng và khóa thêm sổ quyền, sổ máy, cổng duyệt thao tác, script deploy và chính danh sách đó.
+Đã thử script trên một kho git giả: chạy ổn, sức khỏe hỏng thì tự quay về, commit ngoài nhánh bị chặn, hai lượt
+cùng lúc bị chặn.
+
+Mã nguồn: backend/scripts/deploy/deploy.sh · backend/app/modules/agent_hub/coder.py · guardrails.py · model.py
+Commit: (điền khi gộp)
+
+## ai-CR-068 | Bot thao tác trên máy chủ qua cổng duyệt, sao lưu trước, hoàn tác được, báo tài nguyên
+- status: xong
+- date: 2026-10-05
+Theo chốt của đại ca ngày 05/10, bot code được xem và sửa trên máy chủ một nhưng phải qua cổng: xem dev chạy
+luôn; xem prod và mọi thao tác sửa đều hiện nguyên văn lệnh rồi chờ đại ca nhắn «đúng» (mã xác nhận cho prod
+tạm bỏ qua theo lệnh đại ca). Câu SQL sửa dữ liệu được sao lưu đúng các bảng bị đụng trước khi chạy, sao lưu
+hỏng thì không chạy; deploy prod sao lưu cả cơ sở dữ liệu trước. Mỗi thao tác ghi một dòng nhật ký; «hoàn tác
+thao tác #n» tạo thao tác trả lại như cũ, cũng phải «đúng». Lệnh đụng bí mật, xóa hàng loạt, xóa volume, đổi cấu
+trúc bảng bị từ chối thẳng; kết quả được che bí mật trước khi lên Telegram. Thêm báo tài nguyên 7 giờ 35 mỗi
+sáng và câu «tình hình máy». Đã thử thật trên dev phần chỉ đọc (trạng thái, tài nguyên, câu SQL đọc, gom dữ liệu
+chẩn đoán) và sao lưu một bảng nhỏ rồi xóa tệp thử.
+
+Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · guardrails.py · service.py · tasks.py
+Commit: (điền khi gộp) · migration e8a3c5f1d7b2
+
+## ai-CR-069 | Bot tự vận hành: theo dõi sức khỏe, tự chẩn đoán, tự chữa dev, sổ sự cố
+- status: xong
+- date: 2026-10-05
+Mỗi phút bot gõ kiểm tra sức khỏe từng môi trường trong sổ; hỏng ba phút liền thì mở sự cố, báo đại ca và giao
+máy sửa mã gom nhật ký container, commit, migration, tài nguyên để Claude chẩn đoán và chọn một thao tác an toàn
+(bật lại container, khởi động lại, quay về bản trước nếu bot vừa deploy, dọn bộ đệm build). Trên dev bot tự
+chạy, tối đa ba lần mỗi giờ, quá thì dừng và gọi người; trên prod chỉ đề xuất và chờ «đúng». Cùng một nguyên
+nhân lặp ba lần trong bảy ngày thì bot mở một việc sửa gốc rễ đi đường thường. Sổ sự cố ghi lúc nào, triệu chứng,
+chẩn đoán, đã làm gì, thời gian gián đoạn. Sửa kèm giờ chạy bản tin sáng bị lệch thành nửa đêm. Hai công tắc
+thao tác và tự chữa mặc định tắt. Còn thiếu: đếm lỗi 5xx tăng đột biến và canh hàng đợi.
+
+Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · tasks.py · backend/app/core/celery_app.py
+Commit: (điền khi gộp)

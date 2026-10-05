@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 72 tính năng** (05/10/2026) — A 8 · N 8 · P 2 · M 9 · K 4 · D 7 · V 9 · O 6 · T 12 · R 4 · thêm L-01. **Đã xong 33** (25/09/2026): M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 72 tính năng** (05/10/2026) — A 8 · N 8 · P 2 · M 9 · K 4 · D 7 · V 9 · O 6 · T 12 · R 4 · thêm L-01. **Đã xong 44** (05/10/2026): V-01 + V-02 + V-05 (ai-CR-067) · V-03 + V-06 (ai-CR-068) · O-01 … O-06 (ai-CR-069, O-01 một phần) · M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -131,12 +131,12 @@ công ty (gói ~$100); máy đại ca tạm đóng vai VPS 2 cho tới khi có m
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| V-01 | **Sổ môi trường**: «thêm môi trường staging: vps …, nhánh …, lệnh deploy …» → bot tổng ghi, truyền cho bot code mỗi lần giao việc | S | Thêm VPS = thêm dòng |
-| V-02 | **`deploy.sh <đích> <commit>` + nhật ký deploy**: đúng commit đã kiểm, ai ra lệnh, trước/sau, kết quả, log; «lịch sử deploy» | M | Khóa SSH khóa cứng chỉ chạy đúng lệnh; gộp D-07 |
-| V-03 | **Bot code thao tác trên VPS 1 qua cổng duyệt**: xem dev tự do (MySQL chỉ đọc); xem prod / sửa dev cần «đúng»; thẻ hiện nguyên văn lệnh → sao lưu trước → chạy → nhật ký + lệnh hoàn tác; «hoàn tác thao tác #n» | M | Đại ca chốt 05/10: cho vào, ràng buộc đủ thì được |
-| V-04 | **OTP cho mọi thay đổi prod**; lệnh lên prod phát từ VPS 1, không từ VPS 2 | S | Gộp A-04 (OTP) |
-| V-05 | **Ba luật tự cải thiện**: bot code không sửa sổ quyền, phần OTP / lệnh prod, danh sách tệp cấm của chính nó | S | Thi hành trong mã |
-| V-06 | **Báo tài nguyên hằng ngày**: RAM / CPU / đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; «tình hình máy» | S | |
+| V-01 | **Sổ môi trường**: «thêm môi trường staging: vps …, nhánh …, lệnh deploy …» → bot tổng ghi, truyền cho bot code mỗi lần giao việc | S | **Xong** ai-CR-067 — bảng `tab_agent_env` (nạp sẵn dev + prod), «môi trường», «thêm môi trường …: dir= compose= branch= health=» · xem [`08`](./08-van-hanh-vps.md) |
+| V-02 | **`deploy.sh <đích> <commit>` + nhật ký deploy**: đúng commit đã kiểm, ai ra lệnh, trước/sau, kết quả, log; «lịch sử deploy» | M | **Xong** ai-CR-067 — `backend/scripts/deploy/deploy.sh`: khóa lượt, commit phải trên nhánh của đích, health hỏng tự quay về; «deploy prod <sha>», «lịch sử deploy». Đường gộp cũ cũng đi qua nó. Khóa SSH khóa cứng một lệnh: CHƯA (máy sửa mã cần SSH đầy đủ cho V-03) |
+| V-03 | **Bot code thao tác trên VPS 1 qua cổng duyệt**: xem dev tự do (MySQL chỉ đọc); xem prod / sửa dev cần «đúng»; thẻ hiện nguyên văn lệnh → sao lưu trước → chạy → nhật ký + lệnh hoàn tác; «hoàn tác thao tác #n» | M | **Xong** ai-CR-068 — `tab_agent_op`; SQL sửa sao lưu đúng bảng trước, deploy prod sao lưu cả DB; lan can lệnh/SQL + che bí mật |
+| V-04 | **OTP cho mọi thay đổi prod**; lệnh lên prod phát từ VPS 1, không từ VPS 2 | S | **Tạm bỏ OTP** (đại ca 05/10). Lệnh prod hiện chạy từ máy sửa mã có cờ deploy; chuyển về VPS 1 khi có VPS 2 thật |
+| V-05 | **Ba luật tự cải thiện**: bot code không sửa sổ quyền, phần OTP / lệnh prod, danh sách tệp cấm của chính nó | S | **Xong** ai-CR-067 — danh sách cấm dời sang `guardrails.py`, khóa `grants.py`, `runners.py`, `ops.py`, `ops_runner.py`, `scripts/deploy/*`, `guardrails.py` |
+| V-06 | **Báo tài nguyên hằng ngày**: RAM / CPU / đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; «tình hình máy» | S | **Xong** ai-CR-068 — 07:35 mỗi sáng + «tình hình máy» |
 | V-07 | **Preview đầy đủ từng việc**: be + fe + worker + redis + MySQL + qdrant riêng, dữ liệu tự seed, `ai-xxxx.preview.<tên miền>` qua Cloudflare Tunnel; 1 bộ một lúc trên máy hiện tại, 2–3 trên VPS preview 16 GB; tự tắt sau 24 giờ | L | Chờ tên miền + token tunnel |
 | V-08 | **Chuyển bot code sang VPS 2 thật** khi mua máy (cài theo `05`, đổi tên máy trong sổ) | S | Chờ VPS + tài khoản Claude công ty |
 | V-09 | Chép DB dev sang preview để test với dữ liệu thật | M | **Để sau** (đại ca 05/10) |
@@ -148,12 +148,12 @@ Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| O-01 | **Theo dõi sức khỏe** mỗi phút: api dev / prod trả 200, container chạy đủ, đĩa, RAM, hàng đợi, lỗi 5xx tăng đột biến | S | |
-| O-02 | **Tự chẩn đoán**: có sự cố thì gom log container, `docker ps`, migration hiện tại, commit vừa deploy → bot code (Claude) đọc và viết chẩn đoán ngắn: nguyên nhân khả dĩ + cách sửa đề xuất | M | Chỉ đọc |
-| O-03 | **Tự khôi phục trên dev** trong danh sách thao tác an toàn: khởi động lại container, dọn bộ đệm, chạy lại migration đang dở, quay về commit trước nếu lỗi do lần deploy vừa rồi. Trần 3 lần / giờ, quá trần thì dừng và gọi người | M | Không bao giờ xóa dữ liệu |
-| O-04 | **Prod: chỉ đề xuất**, đại ca «đúng» + OTP mới chạy (dùng V-03 / V-04) | S | |
-| O-05 | **Sổ sự cố** tự viết: lúc nào, triệu chứng, chẩn đoán, đã làm gì, kết quả, thời gian gián đoạn | S | |
-| O-06 | **Sự cố lặp lại** → bot đề xuất một việc sửa mã gốc rễ (giao bot code như mọi việc) | S | Vòng tự cải thiện |
+| O-01 | **Theo dõi sức khỏe** mỗi phút: api dev / prod trả 200, container chạy đủ, đĩa, RAM, hàng đợi, lỗi 5xx tăng đột biến | S | **Xong một phần** ai-CR-069 — health mỗi phút, 3 lượt hỏng liền mở sự cố; container/đĩa/RAM xem lúc chẩn đoán + báo sáng; CHƯA đếm 5xx, chưa canh hàng đợi |
+| O-02 | **Tự chẩn đoán**: có sự cố thì gom log container, `docker ps`, migration hiện tại, commit vừa deploy → bot code (Claude) đọc và viết chẩn đoán ngắn: nguyên nhân khả dĩ + cách sửa đề xuất | M | **Xong** ai-CR-069 — Claude không trả lời được thì luật dự phòng |
+| O-03 | **Tự khôi phục trên dev** trong danh sách thao tác an toàn: khởi động lại container, dọn bộ đệm, chạy lại migration đang dở, quay về commit trước nếu lỗi do lần deploy vừa rồi. Trần 3 lần / giờ, quá trần thì dừng và gọi người | M | **Xong** ai-CR-069 — 4 thao tác an toàn; «chạy lại migration» = khởi động lại api (start.prod.sh tự upgrade). Công tắc `AGENT_HEAL_ENABLED` |
+| O-04 | **Prod: chỉ đề xuất**, đại ca «đúng» + OTP mới chạy (dùng V-03 / V-04) | S | **Xong** ai-CR-069 (chưa OTP) |
+| O-05 | **Sổ sự cố** tự viết: lúc nào, triệu chứng, chẩn đoán, đã làm gì, kết quả, thời gian gián đoạn | S | **Xong** ai-CR-069 — `tab_agent_incident`, «sự cố» |
+| O-06 | **Sự cố lặp lại** → bot đề xuất một việc sửa mã gốc rễ (giao bot code như mọi việc) | S | **Xong** ai-CR-069 — cùng nguyên nhân 3 lần / 7 ngày → việc nguồn «Sự cố lặp lại» |
 
 ## Nhóm L — Đối chiếu và học hỏi bên ngoài (thêm 05/10/2026)
 
@@ -199,8 +199,8 @@ Cỡ là ước THÔ theo ngày công của một người. Làm **lần lượt
 | 3 | Trợ lý từng người | Chuông, nhắc việc, tin thoại, trần lượt | Xong 25/09 | — |
 | 4 | Cổng MCP | M-01..M-05 | Xong 25/09, chưa ai thử bằng ứng dụng thật | — |
 | 5 | Google cá nhân | M-06, T-08, T-09, T-11 | Mã xong; **chờ đại ca**: redirect URI, «In production», bật Calendar + Drive API, `GOOGLE_CLIENT_SECRET` | — |
-| **6** | **Quy trình code hai máy chủ** (nhóm V) | (a) V-01 + V-02 + V-03 · (b) V-04 + V-05 + V-06 · (c) V-07 preview · V-08 khi có VPS | **Làm tiếp ngay.** V-07 chờ tên miền + token tunnel; V-08 chờ VPS + tài khoản Claude công ty | ~2 tuần (a 3 ngày · b 1–2 ngày · c 3 ngày) |
-| **7** | **Tự vận hành** (nhóm O) | O-01 → O-06 | Cần phase 6 (a)(b) trước | ~1 tuần |
+| **6** | **Quy trình code hai máy chủ** (nhóm V) | (a) V-01 + V-02 + V-03 · (b) V-04 + V-05 + V-06 · (c) V-07 preview · V-08 khi có VPS | (a) + V-05 + V-06 **xong 05/10** (ai-CR-067/068); V-04 tạm bỏ OTP. Còn V-07 chờ tên miền + token tunnel; V-08 chờ VPS + tài khoản Claude công ty | ~2 tuần (a 3 ngày · b 1–2 ngày · c 3 ngày) |
+| **7** | **Tự vận hành** (nhóm O) | O-01 → O-06 | **Xong 05/10** (ai-CR-069); O-01 còn thiếu đếm 5xx + hàng đợi | ~1 tuần |
 | **8** | **Lõi mở** | M-09 gọi MCP bên ngoài · N-06 A2A · N-07 giao việc tính ngân sách · N-08 sổ sự kiện chung · L-01 | — | ~1,5 tuần |
 | 9 | Nhiều kênh, nhiều bot | M-08 Zalo OA · N-01 · N-04 · N-05 | Chờ Zalo OA + tên bot (Q6) | 1–2 tuần |
 | 10 | Thư ký biên bản họp | T-01 thử tệp thật → T-02..T-06, T-12 | Chờ tệp ghi âm thật (Q5) + Q1 | 3 tuần |

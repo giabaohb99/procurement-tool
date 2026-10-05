@@ -311,3 +311,87 @@ class AgentGoogleLink(Base, AuditMixin):
     access_token_enc: Mapped[str] = mapped_column(Text, default="")
     access_expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentEnv(Base, AuditMixin):
+    """SỔ MÔI TRƯỜNG (ai-CR-067, V-01): mỗi dòng = một nơi bot được deploy / xem / thao tác.
+
+    Khai bằng câu nhắn ở chat đại ca («thêm môi trường …»), migration nạp sẵn `dev` và `prod`. Ô máy chủ để
+    trống = máy trong .env của runner (`AGENT_VPS_HOST`…) — dev và prod hiện chung một VPS. Thêm VPS mới =
+    thêm một dòng có host riêng, không sửa mã. `kind` = 1 dev · 2 prod · 3 preview (constants.ENV_*).
+    Ba cột sức khỏe cuối do vòng theo dõi mỗi phút ghi (O-01).
+    """
+
+    __tablename__ = "tab_agent_env"
+
+    name: Mapped[str] = mapped_column(String(40), index=True)
+    kind: Mapped[int] = mapped_column(SmallInteger, default=1)
+    host: Mapped[str] = mapped_column(String(255), default="")
+    port: Mapped[int] = mapped_column(Integer, default=0)
+    ssh_user: Mapped[str] = mapped_column(String(60), default="")
+    dir: Mapped[str] = mapped_column(String(255), default="")
+    compose_args: Mapped[str] = mapped_column(String(255), default="")
+    branch: Mapped[str] = mapped_column(String(80), default="")
+    health_url: Mapped[str] = mapped_column(String(255), default="")
+    db_name: Mapped[str] = mapped_column(String(64), default="")
+    #  Tự chữa khi sự cố (O-03). Prod KHÔNG BAO GIỜ tự chữa dù cột này bật — mã chặn theo `kind`.
+    auto_heal: Mapped[bool] = mapped_column(Boolean, default=False)
+    note: Mapped[str] = mapped_column(String(255), default="")
+    last_health_code: Mapped[int] = mapped_column(Integer, default=0)
+    last_health_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    fail_streak: Mapped[int] = mapped_column(Integer, default=0)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentOp(Base, AuditMixin):
+    """NHẬT KÝ THAO TÁC trên VPS (ai-CR-068, V-02 + V-03): mỗi lệnh bot chạy trên một môi trường = một dòng.
+
+    Ghi TRƯỚC khi chạy (thẻ «đúng» hiện nguyên văn `command`), nên dòng sổ là bằng chứng ai cho phép cái gì.
+    Thao tác sửa có `backup_ref` (tệp sao lưu trên VPS) và `undo_params` (cách hoàn tác) — «hoàn tác thao tác
+    #n» đẻ ra một dòng MỚI trỏ `undo_of_op_id` về dòng cũ, không sửa dòng cũ ngoài `undone_by_op_id`.
+    `output` đã qua `guardrails.mask_secrets` — không bao giờ có bí mật thô ở đây.
+    """
+
+    __tablename__ = "tab_agent_op"
+
+    env_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    kind: Mapped[int] = mapped_column(SmallInteger, default=1)
+    status: Mapped[int] = mapped_column(SmallInteger, default=1, index=True)
+    title: Mapped[str] = mapped_column(String(255), default="")
+    command: Mapped[str] = mapped_column(Text, default="")
+    params: Mapped[dict] = mapped_column(JSON, default=dict)
+    backup_ref: Mapped[str] = mapped_column(String(255), default="")
+    undo_params: Mapped[dict] = mapped_column(JSON, default=dict)
+    undo_of_op_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    undone_by_op_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    incident_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    chat_id: Mapped[str] = mapped_column(String(50), default="")
+    #  Bot tự chạy (tự chữa, báo tài nguyên) thì 0 / rỗng; đại ca ra lệnh thì là chat của đại ca.
+    auto: Mapped[bool] = mapped_column(Boolean, default=False)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    output: Mapped[str] = mapped_column(Text, default="")
+    error: Mapped[str] = mapped_column(String(1000), default="")
+
+
+class AgentIncident(Base, AuditMixin):
+    """SỔ SỰ CỐ (ai-CR-069/070, O-05): một lần một môi trường hỏng health liên tiếp, từ lúc phát hiện tới lúc xanh lại.
+
+    `signature` = khóa gom các lần giống nhau (môi trường + nguyên nhân rút gọn) để O-06 đếm lặp lại và đề xuất
+    một việc sửa gốc rễ (`task_id`). Thời gian gián đoạn = `resolved_at - started_at`.
+    """
+
+    __tablename__ = "tab_agent_incident"
+
+    env_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    status: Mapped[int] = mapped_column(SmallInteger, default=1, index=True)
+    symptom: Mapped[str] = mapped_column(String(255), default="")
+    signature: Mapped[str] = mapped_column(String(120), default="", index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    diagnosis: Mapped[str] = mapped_column(Text, default="")
+    cause: Mapped[str] = mapped_column(String(255), default="")
+    action: Mapped[str] = mapped_column(String(40), default="")
+    heal_op_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    task_id: Mapped[int] = mapped_column(BigInteger, default=0)

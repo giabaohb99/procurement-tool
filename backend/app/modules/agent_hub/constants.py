@@ -64,9 +64,11 @@ TIER1_MAX_STATUS = ST_PLAN
 # ---------------------------------------------------------------------------
 SRC_ERP_TICKET = 1  # Phiếu hỗ trợ trong ERP (`tab_ticket`) — BẬC SAU, xem AN-005
 SRC_TELEGRAM = 2    # Tin nhắn Telegram của đại ca — nguồn DUY NHẤT của bậc 1
+SRC_INCIDENT = 3    # ai-CR-070 (O-06): sự cố lặp lại → bot tự đề xuất một việc sửa gốc rễ
 SOURCE_LABELS = {
     SRC_ERP_TICKET: "Phiếu hỗ trợ ERP",
     SRC_TELEGRAM: "Telegram",
+    SRC_INCIDENT: "Sự cố lặp lại",
 }
 
 # ---------------------------------------------------------------------------
@@ -237,10 +239,67 @@ ACT_MEETING = "nhac_hop"
 ACT_RUNNER_WAIT = "cho_may"
 ACT_RUNNER_DONE = "da_may"
 ACT_RUNNER_DROPPED = "bo_may"
-NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
+#  ai-CR-068: thẻ hỏi «đúng» trước một thao tác trên VPS; `body` = JSON {op_id}. Tin báo kết quả thao tác /
+#  sự cố / tài nguyên mang dấu ACT_OPS — tin chiều ra, không vào mạch hội thoại.
+ACT_OP_WAIT = "cho_thao_tac"
+ACT_OP_DONE = "da_thao_tac"
+ACT_OP_DROPPED = "bo_thao_tac"
+ACT_OPS = "van_hanh"
+NOISE_ACTIONS = (ACT_OP_WAIT, ACT_OP_DONE, ACT_OP_DROPPED, ACT_OPS, ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
                  ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED,
                  ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED,
                  ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED, ACT_BELL, ACT_REMINDER, ACT_REMIND_WAIT)
+
+# ---------------------------------------------------------------------------
+# Sổ môi trường (ai-CR-067, V-01) — `tab_agent_env.kind`
+# ---------------------------------------------------------------------------
+ENV_DEV = 1
+ENV_PROD = 2
+ENV_PREVIEW = 3
+ENV_KIND_LABELS = {ENV_DEV: "dev", ENV_PROD: "prod", ENV_PREVIEW: "preview"}
+
+# ---------------------------------------------------------------------------
+# Thao tác trên VPS (ai-CR-068, V-03) — `tab_agent_op.kind` / `.status`
+# ---------------------------------------------------------------------------
+OP_VIEW = 1          # xem: trạng thái container, log, tài nguyên, chẩn đoán — không đổi gì
+OP_SQL_READ = 2      # SELECT / SHOW / EXPLAIN
+OP_SHELL_READ = 3    # lệnh shell nằm trong danh sách chỉ đọc
+OP_ACTION = 4        # khởi động lại / dựng lại / bật service, dọn bộ đệm build — thao tác có sẵn
+OP_SQL_WRITE = 5     # UPDATE / INSERT / DELETE / REPLACE — sao lưu bảng trước
+OP_SHELL_WRITE = 6   # lệnh shell ngoài danh sách chỉ đọc
+OP_DEPLOY = 7        # deploy.sh lên một commit
+OP_RESTORE = 8       # nạp lại bản sao lưu bảng (hoàn tác một OP_SQL_WRITE)
+OP_KIND_LABELS = {
+    OP_VIEW: "xem", OP_SQL_READ: "SQL đọc", OP_SHELL_READ: "lệnh đọc", OP_ACTION: "thao tác",
+    OP_SQL_WRITE: "SQL sửa", OP_SHELL_WRITE: "lệnh sửa", OP_DEPLOY: "deploy", OP_RESTORE: "khôi phục",
+}
+#  Loại CHỈ ĐỌC: trên dev chạy luôn, trên prod vẫn phải «đúng» (đại ca chốt 05/10/2026).
+OP_READ_KINDS = (OP_VIEW, OP_SQL_READ, OP_SHELL_READ)
+
+OPS_WAITING = 1      # thẻ «đúng» đang chờ
+OPS_QUEUED = 2       # đã duyệt, chờ máy sửa mã nhận
+OPS_RUNNING = 3
+OPS_OK = 4
+OPS_FAILED = 5
+OPS_CANCELLED = 6    # đại ca «thôi» hoặc thẻ hết hạn
+OP_STATUS_LABELS = {
+    OPS_WAITING: "chờ duyệt", OPS_QUEUED: "chờ máy", OPS_RUNNING: "đang chạy", OPS_OK: "xong",
+    OPS_FAILED: "hỏng", OPS_CANCELLED: "đã bỏ",
+}
+
+# ---------------------------------------------------------------------------
+# Sổ sự cố (ai-CR-069/070, nhóm O) — `tab_agent_incident.status`
+# ---------------------------------------------------------------------------
+INC_DIAGNOSING = 1   # vừa phát hiện, máy sửa mã đang gom log + chẩn đoán
+INC_HEALING = 2      # đang chạy thao tác tự chữa (chỉ dev)
+INC_WAITING = 3      # chờ người: prod chờ «đúng», hoặc chạm trần tự chữa, hoặc không có thao tác an toàn
+INC_RESOLVED = 4     # health xanh trở lại
+INC_STATUS_LABELS = {
+    INC_DIAGNOSING: "đang chẩn đoán", INC_HEALING: "đang tự chữa", INC_WAITING: "chờ người",
+    INC_RESOLVED: "đã hết",
+}
+#  Thao tác tự chữa AN TOÀN duy nhất bot được chọn (O-03). Không cái nào xóa dữ liệu.
+HEAL_ACTIONS = ("restart_services", "up_services", "rollback_last_deploy", "prune_build_cache", "none")
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token

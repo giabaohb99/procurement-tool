@@ -207,16 +207,30 @@ if settings.AGENT_HUB_ENABLED:
             "schedule": crontab(minute="*"),
             "options": {"expires": 50},
         },
-        #  ai-CR-064: bản tin sáng 07:30 giờ VN (= 00:30 UTC) và nhắc trước họp mỗi 5 phút.
+        #  ai-CR-064: bản tin sáng 07:30 giờ VN và nhắc trước họp mỗi 5 phút. Beat chạy theo giờ VN
+        #  (`timezone="Asia/Ho_Chi_Minh"`, `enable_utc=False`) nên ghi thẳng 7 giờ — bản đầu ghi hour=0 tưởng
+        #  là UTC, thành 00:30 đêm (sửa ở ai-CR-070).
         "agent-morning-brief": {
             "task": "agent.morning_brief",
-            "schedule": crontab(minute="30", hour="0"),
+            "schedule": crontab(minute="30", hour="7"),
             "options": {"expires": 1800},
         },
         "agent-meeting-reminders": {
             "task": "agent.meeting_reminders",
             "schedule": crontab(minute="*/5"),
             "options": {"expires": 240},
+        },
+        #  ai-CR-069 (O-01): theo dõi health từng môi trường mỗi phút; ai-CR-068 (V-06): báo tài nguyên 07:35.
+        #  Cả hai tự bỏ qua khi AGENT_OPS_ENABLED tắt.
+        "agent-health-check": {
+            "task": "agent.health_check",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
+        "agent-resource-report": {
+            "task": "agent.resource_report_due",
+            "schedule": crontab(minute="35", hour="7"),
+            "options": {"expires": 1800},
         },
     })
     #  Vòng kéo tin CHỈ vào lịch khi không có tiến trình `agent-poller` riêng (ai-CR-008):

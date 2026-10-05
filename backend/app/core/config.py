@@ -371,6 +371,20 @@ class Settings(BaseSettings):
     # Sau deploy, chờ địa chỉ này trả 200 rồi mới báo xanh; rỗng = không kiểm.
     AGENT_DEV_HEALTH_URL: str = "https://devthumua.degoholding.vn/api/health"
     AGENT_DEV_UI_URL: str = "https://deverp.degoholding.vn"
+    # ai-CR-067..070 (phase 6–7 của doc/agent-hub/04): sổ môi trường, thao tác trên VPS qua cổng duyệt,
+    # theo dõi sức khỏe + tự chữa. Hai công tắc TÁCH NHAU: tắt OPS = bot không nhận lệnh thao tác nào trên
+    # VPS (chỉ còn deploy dev theo đường gộp cũ); tắt HEAL = vẫn theo dõi + báo sự cố nhưng không tự chạy gì.
+    AGENT_OPS_ENABLED: bool = False
+    AGENT_HEAL_ENABLED: bool = False
+    # Health hỏng liên tiếp bấy nhiêu lượt (mỗi phút một lượt) mới mở sự cố — một nhịp 502 lúc deploy không tính.
+    AGENT_HEALTH_FAIL_STREAK: int = 3
+    # Trần tự chữa trên MỖI môi trường trong 60 phút; quá trần là dừng và gọi người (O-03).
+    AGENT_HEAL_MAX_PER_HOUR: int = 3
+    # Thư mục sao lưu trên VPS trước mỗi thao tác sửa (V-03). Bản sao lưu cũ hơn số ngày này thì dọn.
+    AGENT_OPS_BACKUP_DIR: str = "~/agent-backups"
+    AGENT_OPS_BACKUP_KEEP_DAYS: int = 14
+    # Tên container MySQL dùng chung của dev + prod (sao lưu bảng trước câu SQL sửa dữ liệu).
+    AGENT_OPS_DB_CONTAINER: str = "procurement-mysql"
 
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
