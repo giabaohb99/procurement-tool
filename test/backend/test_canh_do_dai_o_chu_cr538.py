@@ -56,7 +56,7 @@ TARGETS: dict[str, list[str]] = {
                                                                   "ItemStatusItem", "PRAssignSupplierLineIn")},
     **{f"purchase_request.{n}": ["PurchaseRequestItemOption"] for n in ("PROptionCompleteIn", "PROptionManualIn",
                                                                         "PROptionSupplierIn", "PROptionSurveyIn",
-                                                                        "PROptionUpdateIn")},
+                                                                        "PROptionUpdateIn", "PROptionDetailsIn")},
     "purchase_order.POCostTypeCreate": ["POCostType"], "purchase_order.POCostTypeUpdate": ["POCostType"],
     "purchase_order.POImportCostIn": ["POCost"], "purchase_order.CostLinesFinalizeIn": ["POCost"],
     "purchase_order.CostStageAdvanceIn": ["POCost"], "purchase_order.CostStageReopenIn": ["POCost"],
@@ -73,6 +73,7 @@ def _same(module: str, model: str, *names: str) -> dict[str, list[str]]:
 
 
 TARGETS.update({
+    **_same("employee", "EmployeeWorkHistory", "WorkHistoryIn", "WorkHistoryUpdate"),
     **_same("doc_catalog", "DocFolderAccess", "FolderAccessBulkGrantIn", "FolderAccessBulkSubjectIn",
             "FolderAccessGrantIn", "FolderAccessLevelPatchIn", "FolderAccessRevokeIn"),
     **_same("doc_catalog", "DocFolder", "FolderCreate", "FolderUpdate"),

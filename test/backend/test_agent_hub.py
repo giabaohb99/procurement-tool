@@ -132,6 +132,19 @@ def _chan_mang_that(monkeypatch):
     assert not leaked, f"bài kiểm lỡ gọi mạng thật (tốn tiền Gemini/Telegram): {leaked}"
 
 
+@pytest.fixture(autouse=True)
+def _fake_bot_env(monkeypatch):
+    """Bài kiểm vốn viết để chạy TRONG container bot, nơi `.env` có sẵn khóa Gemini, token
+    Telegram và cờ bật bot. Chạy ở container `api` thường (không có ba biến đó) thì 39 bài
+    đỏ: bot đòi «dán khóa» rồi dừng, hoặc `_off()` bỏ qua mọi việc (bao-CR-593). Đặt giá
+    trị GIẢ cho cả ba để kết quả không phụ thuộc chỗ chạy; mạng thật đã bị
+    `_chan_mang_that` chặn nên khóa giả không bao giờ đi ra ngoài, còn khóa thật trong
+    container bot cũng không bị dùng tới nữa. Bài nào cần trạng thái khác thì tự đè lại."""
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "test-gemini-key")
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_BOT_TOKEN", "test-telegram-token")
+    monkeypatch.setattr(settings, "AGENT_HUB_ENABLED", True)
+
+
 @pytest.fixture
 def bot(monkeypatch):
     """Cắm bot vào chỗ trống: chặn mọi lượt gọi mạng, ghi lại thứ bot định gửi."""

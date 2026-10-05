@@ -22,6 +22,8 @@ là duyệt được phiếu còn nháp hoặc duyệt lại phiếu đã hủy.
 một bài `test_*_chua_chan_*` ghi rõ là **lỗ hổng đã biết**. Chúng ở đó để phase 3
 không vá nhầm rồi tưởng mình không đổi gì: vá thì bài kiểm đỏ, và đỏ ở đây nghĩa
 là "hành vi đã đổi, xem lại có cố ý không", chứ không phải "mã hỏng".
+Lỗ của YCTT (ghi chi phiếu chưa duyệt) đã được bao-CR-511 vá; bài tương ứng nay
+canh việc chặn.
 """
 from types import SimpleNamespace
 
@@ -382,14 +384,18 @@ def test_yctt_tu_choi_la_khoa_phieu(db, quyen_yctt):
     assert r.status == "cancelled"
 
 
-def test_yctt_chua_chan_ghi_chi_phieu_chua_duyet(db, quyen_yctt):
-    """⚠️ LỖ HỔNG ĐÃ BIẾT, và là cái nặng nhất trong ba cái.
+def test_yctt_pay_draft_is_blocked(db, quyen_yctt):
+    """Chặn ghi nhận đã chi cho phiếu còn nháp.
 
-    `pay_` không kiểm trạng thái nên gọi API trực tiếp là ghi nhận đã chi cho
-    phiếu còn nháp — tức là tiền ra khỏi sổ mà chưa ai duyệt. Ghi lại ở đây để
-    phase 3 biết mình đang đứng cạnh cái gì; vá thì bài này đỏ.
+    Bài này trước tên `test_yctt_chua_chan_ghi_chi_phieu_chua_duyet`, ghi lại lỗ hổng
+    nặng nhất trong ba cái: `pay_` không kiểm trạng thái nên gọi API trực tiếp là
+    tiền ra khỏi sổ mà chưa ai duyệt. bao-CR-511 đã vá (`ALLOWED_FROM` trong
+    `payment_request/service.py::set_status`: chỉ «Đã duyệt» mới sang «Đã chi»),
+    nên nay bài canh điều ngược lại — phiếu nháp bị từ chối 400 và giữ nguyên.
     """
     r = _yctt(db, status="draft", code="YCTT-N01-HO")
-    pay_ctl.pay_(r.id, BackgroundTasks(), db=db, user=USER)
+    with pytest.raises(HTTPException) as error:
+        pay_ctl.pay_(r.id, BackgroundTasks(), db=db, user=USER)
+    assert error.value.status_code == 400
     db.refresh(r)
-    assert r.status == "paid"
+    assert r.status == "draft"
