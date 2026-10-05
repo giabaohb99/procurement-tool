@@ -70,6 +70,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-588 | Bật luồng duyệt cấu hình cho Đặt xe và Duyệt dấu trên prod, chạy thử đồng bộ app cũ
+- status: xong
+- date: 2026-10-05
+Đại ca xác nhận trên ERP prod chưa khai luồng duyệt nào, chốt để quản trị viên thao tác cấu hình luồng (hiện chỉ vai trò
+quản trị hệ thống, 5 người, có quyền này), rồi bảo bật luồng cấu hình trên prod và chạy thử việc đồng bộ app cũ xem có
+lỗi gì không.
+
+Đã làm trên prod (sao lưu DB trước): khai ba luồng giống dev. Đặt xe công tác là luồng mặc định: Trưởng bộ phận người nộp,
+phòng chưa có trưởng phòng thì chuyển người dự phòng là anh Trần Chí Dững (NSU001, đang giữ Quản lý điều phối), rồi Quản lý
+điều phối. Giao hàng là luồng riêng có điều kiện, cùng hai bước, sửa riêng được. Duyệt dấu giống app cũ: Trưởng bộ phận do
+người tạo chọn trên phiếu, rồi Pháp lý kiểm tra. Bật công tắc hai loại phiếu, gán vai trò «Pháp lý kiểm tra dấu» cho chị
+Đào Trúc Nhi. Kiểm chỉ đọc: luồng chọn đúng theo loại phiếu, bước 2 đặt xe giao NSU001, bước Pháp lý giao chị Nhi.
+
+Chạy tay ba việc đồng bộ app cũ sau khi bật: quét toàn bộ 1.410 phiếu không lỗi, kéo phiếu đã sửa và chạy lại phiếu lỗi
+đều thành công; không phiếu app cũ nào bị mở luồng mới (phiếu app cũ vẫn chỉ mang bản chép lịch sử duyệt); không dòng lỗi
+đồng bộ, log máy chủ không lỗi.
+
+Còn hở trên prod: 8/26 phòng chưa có trưởng phòng (2 nhân sự đang ở các phòng đó, đã có người dự phòng); chưa ai giữ vai
+trò Điều phối viên, Văn thư duyệt dấu (và chưa phân văn thư công ty nào), Tài xế; ô chọn trưởng bộ phận trên phiếu dấu
+hiện chỉ có 5 tài khoản (người có quyền duyệt dấu); chỉ admin và «Người đặt xe» (chưa ai giữ) tạo được phiếu đặt xe trên ERP.
+
+Deploy: PROD 05/10/2026 (chỉ dữ liệu, không đổi mã). Sao lưu: procurement_truoc_bat_luong_cau_hinh_20261005_0855.
+
+---
+
 ## giang-CR-587 | Tra cứu thị trường đổi tên mục và có đường dẫn ba cấp; YCMH tạo mới bỏ ô tick «Nhờ phòng khác xử lý»
 - status: xong
 - date: 2026-10-03
