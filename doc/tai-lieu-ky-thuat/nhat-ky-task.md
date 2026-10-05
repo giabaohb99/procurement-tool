@@ -70,6 +70,33 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-594 | Gán vai trò Điều phối viên và Tài xế trên prod theo người thật trong dữ liệu app cũ
+- status: xong
+- date: 2026-10-05
+Đại ca nhờ xem trên dev ai là người thật để gán vai trò Đặt xe / Duyệt dấu trên prod. Trên dev, người thật giữ vai trò
+chỉ có anh Trần Chí Dững (NSU001, quản lý điều phối và giám đốc duyệt dấu) và chị Đào Trúc Nhi (NSU206, pháp lý), còn
+lại là tài khoản DEMO; phần dữ liệu app cũ trên dev lại là dữ liệu THỬ của chính app cũ (người thao tác «Pháp lý - Legal
+Role Demo», «Tài Xế - An»…), nên không dùng để chọn người được. Em đọc (chỉ đọc) bản đồng bộ thật trên prod: 395 phiếu
+đặt xe, 1.019 phiếu dấu.
+
+Kết quả và việc đã làm trên prod (sao lưu trước `~/proc_backups/procurement_truoc_gan_vai_tro_datxe_20261005_1358.sql.gz`):
+- Điều phối viên: anh Bùi Huỳnh Trường Thành (NSU056) điều phối 339/340 phiếu, chị Trần Thị Hương Tuyền (NSU055) 1
+  phiếu, cả hai thuộc phòng Điều phối → gán vai trò «Điều phối viên (Đặt xe)» cho cả hai.
+- Tài xế: 11 tài xế nội bộ trong danh mục tài xế khớp đúng hồ sơ nhân sự (NSU057–NSU066, NSU254), ai cũng có tài
+  khoản → gán vai trò «Tài xế (Đặt xe)» và nối từng dòng tài xế với tài khoản (`user_id`), thiếu bước nối thì tài xế
+  không thấy chuyến được phân. «Tài xế thuê ngoài» và «Tự lái» không phải người nên không gán. Tác vụ đồng bộ app cũ
+  chỉ tìm tài xế theo số điện thoại hoặc tên, không ghi đè cột nối.
+- Đã có sẵn từ trước: quản lý điều phối NSU001, pháp lý NSU206. Văn thư (Duyệt dấu) chưa có người thật nên để trống.
+- Chạy lại kiểm: 13/13 người đã có vai trò, 11/11 dòng tài xế đã nối.
+
+Ghi nhận chưa làm: vai trò «Nhân sự» trên prod chưa có quyền tạo phiếu đặt xe hay xin dấu (seed chuẩn có cấp xin dấu cho
+mọi vai trò nhưng prod không tự ghi đè), và chiều ERP → app cũ chưa có, nên mở cho toàn nhân viên tạo phiếu trên ERP lúc này
+sẽ sinh phiếu app cũ không thấy. Chờ đại ca chọn thời điểm.
+Mã nguồn: script chạy một lần qua `user.service.assign_roles` (người thao tác 0), không đổi mã nguồn.
+Deploy: PROD 05/10/2026 (dữ liệu).
+
+---
+
 ## bao-CR-593 | Dọn 44 bài kiểm máy chủ đỏ sẵn: không có lỗi thật, sửa bài cho khớp luật hiện hành
 - status: xong
 - date: 2026-10-05
