@@ -47,6 +47,7 @@ import { EmployeeTabContact } from '../components/employee-tab-contact'
 import { EmployeeTabDocuments } from '../components/employee-tab-documents'
 import { EmployeeTabGeneral } from '../components/employee-tab-general'
 import { EmployeeTabLeave } from '../components/employee-tab-leave'
+import { EmployeeWorkScheduleCard } from '../components/employee-work-schedule-card'
 import { EmployeeTabWorkDecisions } from '../components/employee-tab-work-decisions'
 import { EmployeeTabWorkHistory } from '../components/employee-tab-work-history'
 import { useCanReadSensitive } from '../hooks/use-employee-profile'
@@ -355,7 +356,10 @@ export function EmployeeDetailPage() {
             </TabsContent>
 
             <TabsContent value="leave" className="mt-5 max-md:mt-2">
-              <EmployeeTabLeave employee={employee} />
+              <div className="space-y-5">
+                <EmployeeTabLeave employee={employee} />
+                <EmployeeWorkScheduleCard employeeId={employee.id} />
+              </div>
             </TabsContent>
 
             <TabsContent value="account" className="mt-5 max-md:mt-2">

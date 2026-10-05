@@ -70,6 +70,89 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## duoc-CR-589 | Nhân sự: Lịch làm việc (mẫu lịch tuần, gán 4 cấp, tính ngày nghỉ theo lịch, màn xem lịch)
+- status: dang-lam
+- date: 2026-10-05
+Đại ca yêu cầu làm chức năng lịch làm việc cho nhân sự trong phân hệ Nhân sự. Trước đây hệ thống coi mọi người
+đều làm thứ Hai đến thứ Bảy, 08:00–17:00, nên người làm thứ Bảy nửa buổi hay làm ca khác vẫn bị trừ phép như
+người làm cả ngày. Nay nhân sự khai được lịch làm việc theo tuần, gán cho từng người hay cả nhóm, và số ngày
+nghỉ phép được gợi ý theo đúng lịch của người nghỉ. Mọi phần đã chạy và đã kiểm trên máy của em, đã commit
+lên nhánh erp-v2, chưa deploy.
+
+### duoc-CR-589a | Mẫu lịch tuần và gán lịch theo bốn cấp
+- status: xong
+Nhân sự tạo mẫu lịch tuần: mỗi thứ chọn làm cả ngày, chỉ buổi sáng, chỉ buổi chiều hay nghỉ, kèm giờ vào, giờ ra
+và giờ nghỉ trưa. Hệ thống tạo sẵn mẫu «Hành chính T2–T7» giống hệt luật cũ nhưng không gán cho ai. Mẫu được gán
+cho toàn hệ thống, một pháp nhân, một phòng ban hoặc một nhân sự, có ngày hiệu lực; cấp hẹp thắng cấp rộng, chưa
+gán gì thì giữ luật cũ. Gán lịch mới thì lịch cũ tự kết thúc ngày hôm trước; lịch mới có ngày kết thúc (lịch tạm)
+thì hết hạn tự quay về lịch cũ; xóa nhầm dòng vừa gán thì lịch cũ tự mở lại. Quyền sửa giao cho vai trò Nhân sự —
+Nghỉ phép và Nhân sự — Hồ sơ, mọi vai trò khác chỉ xem; quyền cấp sẵn bằng migration nên lên prod không phải
+tick tay. Hồ sơ nhân sự có thêm thẻ «Lịch làm việc» cho biết người đó đang theo lịch nào.
+
+### duoc-CR-589b | Số ngày nghỉ phép tính theo lịch của chính người nghỉ
+- status: xong
+Ô số ngày gợi ý trên đơn nghỉ, trợ lý AI lập đơn hộ và lúc lưu đơn đều đọc lịch của người nghỉ theo từng ngày:
+thứ Bảy chỉ làm sáng thì nghỉ ngày đó tính 0,5; nghỉ theo giờ chia cho số giờ làm của chính ngày đó. Người chưa
+được gán lịch ra đúng từng con số như trước — có bài kiểm so mọi tổ hợp buổi với bảy thứ trong tuần để chốt điều
+này. Đơn đã lưu không bị tính lại khi đổi lịch.
+
+### duoc-CR-589c | Màn «Xem lịch»: ngày nào ai đi làm, ai nghỉ
+- status: xong
+Màn mới dạng lưới nhân sự theo ngày, mặc định xem tuần, chuyển được sang tháng; ngày đi làm bình thường để trống
+hoặc ghi giờ chữ nhạt «08:00 – 17:00», chỉ ngày nghỉ phép (đã duyệt tô đặc chữ trắng, chờ duyệt viền nét đứt, nghỉ
+nửa buổi tô nửa ô), ngày lễ và ngày nghỉ theo lịch mới nổi màu. Mỗi người chỉ thấy nhân sự trong phạm vi quyền của
+mình, và chỉ thấy ô nghỉ phép nếu được xem đơn đó. Khi cuộn, người có nghỉ phép dính dưới đầu bảng theo từng đợt
+ba người: đợt sau tới thì đẩy cả đợt trước lên một lượt, làm hoàn toàn bằng CSS nên cuộn mượt (các bản dùng JS
+theo dõi cuộn bị giật trên máy Mac nên đã bỏ). Trên điện thoại màn hình đổi thành danh sách «Đi làm» / «Nghỉ» của
+một ngày. Một lượt xem tối đa 42 ngày, 50 người mỗi trang, số truy vấn cố định khoảng 8 câu dù xem bao nhiêu
+người. Form mẫu lịch tuần cũng làm lại: ô giờ luôn 24 giờ (không còn SA/CH theo máy), mỗi ngày gọn một dòng, có
+nút điền nhanh «T2–T6 hành chính», «T2–T7», «T7 nửa buổi sáng».
+
+Bài kiểm: hơn 1.100 bài kiểm backend của nghỉ phép và lịch làm việc xanh; 1.078 bài kiểm giao diện của phân hệ
+Nhân sự xanh (đo 05/10/2026, 15:00).
+Tham chiếu: doc/tai-lieu-chuc-nang/21-lich-lam-viec.md
+Mã nguồn: backend/app/modules/work_schedule/, backend/app/modules/leave/workday_service.py,
+backend/migrations/versions/wsched01_lich_lam_viec.py, frontend-v2/src/modules/hr/ (work-schedule-*, work-roster-*)
+Commit: e6558159 trên erp-v2.
+Deploy: chưa deploy.
+
+---
+
+## bao-CR-596 | Dựng chiều đồng bộ ERP sang app đặt xe cũ (P3), khóa bằng công tắc
+- status: dang-lam
+- date: 2026-10-05
+Đại ca chốt ngày 05/10: làm đủ chiều ERP → app cũ, gồm kết cục duyệt, điều phối, trạng thái tài xế, km/chi phí và đóng
+dấu; phiếu tạo trên ERP cũng phải hiện bên app cũ; không gửi thông báo từ phía ERP cho người dùng app cũ; mã viết xong
+nhưng khóa bằng công tắc, chưa triển khai; phần chặn chiều nhận ghi đè kết quả ERP để sau. Bản dựng ghi ở
+`doc/dong-bo-dat-xe-duyet-dau/p3-erp-sang-app-cu.md`.
+
+Phía ERP: một bộ nghe ở tầng ORM gom mọi phiếu đặt xe và phiếu dấu vừa đổi (bỏ qua khi đang xử tín hiệu nhận về và khi
+chỉ đổi cột dấu sửa cuối), chỉ giao việc cho Celery sau khi giao dịch commit thật. Việc gửi dựng ẢNH CHỤP phiếu hiện
+tại theo đúng tên trường app cũ: trạng thái dùng đúng bảng ngược của chiều nhận để đi sang rồi về vẫn ra như cũ; xe và
+tài xế gửi khóa app cũ (tài xế bên đó lọc chuyến theo khóa này) kèm chữ biển số, tên; có km/chi phí, giờ bắt đầu/kết
+thúc, đóng dấu. Gói được ký HMAC, ghi sổ đồng bộ chiều gửi đi; trùng ảnh chụp lần gửi thành công trước thì không gửi;
+van chặn 20 lần một giờ cho một phiếu; vòng gửi lại 10 phút một lần; lệnh gửi lần đầu chỉ cho phiếu tạo trên ERP. Phiếu
+ERP được app cũ tạo thì ghi ngược khóa mà không đẻ thêm lượt gửi. Vá kèm: vòng `retry_pending` cũ không lọc chiều, sẽ
+đem dòng gửi đi ra xử như phiếu nhận về — nay chỉ lấy chiều nhận.
+
+Phía app cũ (`my-firebase-api`, nhánh `feat/nhan-dong-bo-tu-erp`, chưa đẩy vì đẩy nhánh dev/main là tự deploy): đường
+`POST /v1/sync/erp-events` đứng trước lớp App Check, kiểm chữ ký, ghi Firebase bằng tài khoản dịch vụ sẵn có (hoặc khóa
+DB riêng nếu khai). Phiếu có sẵn thì chỉ đụng phần ERP làm chủ, thêm đúng một mục lịch sử «Xử lý trên ERP» cho kết cục,
+mục điều phối và tài xế; phiếu ERP tạo thì dựng bản ghi mới dưới khóa cố định `erp_vb_<id>` / `erp_sr_<id>` nên gửi lại
+không đẻ phiếu thứ hai. Không gửi thông báo, không gửi ngược sang ERP, không đóng dấu `updatedAt`.
+
+Hai công tắc đều mặc định TẮT: «Gửi thay đổi từ ERP sang app đặt xe cũ» (`sync_datxe_outbound_enabled`, màn Cấu hình hệ
+thống) và `ERP_INBOUND_ENABLED` trong `wrangler.jsonc`. Phát hiện kèm: Worker phục vụ đường ở gốc tên miền nên đường
+đúng là `/v1/...`, không phải `/api/v1/...` như bản vẽ cũ (đường xem tệp `/api/v1/sync/files/...` bên ERP cũng sai tiền tố).
+
+Kiểm: ERP 13 bài mới cùng các bộ đồng bộ, đặt xe, duyệt dấu, sổ đồng bộ, cấu hình 338 bài xanh; app cũ 14 bài mới, cả bộ
+188 bài xanh, kiểm kiểu 0 lỗi; chữ ký neo bằng mẫu tính từ hàm Python của ERP.
+Mã nguồn: ERP `legacy_datxe/outbound.py`, `outbound_listener.py`, `outbound_tasks.py`, `legacy_datxe/tasks.py`
+(`retry_pending`), `core/database.py`, `core/celery_app.py`, `core/config.py`, `core/app_settings.py`,
+`setting/service.py`; app cũ `src/services/erp-inbound.service.ts`, `src/index.ts`, `src/types/db.types.ts`, `wrangler.jsonc`.
+
+---
+
 ## bao-CR-595 | Gộp tài khoản «Đào Trúc Nhi (Đặt xe)» vào chị Đào Trúc Nhi NSU206, gán chị làm Văn thư và Quản lý điều phối
 - status: xong
 - date: 2026-10-05

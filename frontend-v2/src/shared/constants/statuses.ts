@@ -164,6 +164,14 @@ export const SUPPLIER_LEGAL_TYPE: readonly StatusOption[] = [
   {"value": "household", "label": "Hộ kinh doanh", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Loại ngày làm việc */
+export const WORK_DAY_KIND: readonly StatusOption[] = [
+  {"value": "1", "label": "Nghỉ", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Cả ngày", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Buổi sáng", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Buổi chiều", "sort_order": 4, "is_terminal": false, "is_exception": false},
+]
+
 /** Loại quá trình công tác */
 export const WORK_EVENT_TYPE: readonly StatusOption[] = [
   {"value": "1", "label": "Tuyển dụng", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -173,6 +181,14 @@ export const WORK_EVENT_TYPE: readonly StatusOption[] = [
   {"value": "5", "label": "Miễn nhiệm", "sort_order": 5, "is_terminal": false, "is_exception": false},
   {"value": "6", "label": "Thôi việc", "sort_order": 6, "is_terminal": false, "is_exception": false},
   {"value": "9", "label": "Khác", "sort_order": 9, "is_terminal": false, "is_exception": false},
+]
+
+/** Cấp gán lịch làm việc */
+export const WORK_SCHEDULE_LEVEL: readonly StatusOption[] = [
+  {"value": "1", "label": "Toàn hệ thống", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Pháp nhân", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Phòng ban", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Nhân sự", "sort_order": 4, "is_terminal": false, "is_exception": false},
 ]
 
 /** Tra theo tên bộ, cho chỗ dựng ô chọn động. */
@@ -193,7 +209,9 @@ export const STATUS_SETS = {
   pr_line_status: PR_LINE_STATUS,
   report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
+  work_day_kind: WORK_DAY_KIND,
   work_event_type: WORK_EVENT_TYPE,
+  work_schedule_level: WORK_SCHEDULE_LEVEL,
 } as const
 
 /** Nhãn theo mã, cho chỗ chỉ cần hiển thị. */

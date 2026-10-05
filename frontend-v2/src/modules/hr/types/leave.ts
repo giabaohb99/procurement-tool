@@ -61,16 +61,6 @@ export const LEAVE_SESSION_LABELS: Record<number, string> = {
   [LEAVE_SESSION.HOURLY]: 'Theo giờ',
 }
 
-/**
- * Giờ công một ngày — mẫu số quy đổi «nghỉ mấy giờ» ra «mấy ngày phép».
- * ⚠️ Phải khớp `WORK_HOURS_PER_DAY` ở `backend/.../leave/constants.py`. Con số
- * THẬT do backend tính; ở đây chỉ để nói cho người dùng biết đang chia cho mấy.
- */
-export const WORK_HOURS_PER_DAY = 8
-
-/** Khung giờ làm, chỉ để HIỆN cho người dùng biết đang quy đổi theo cái gì. */
-export const WORK_DAY_LABEL = '08:00–17:00, nghỉ trưa 12:00–13:00'
-
 /** Đơn khai theo GIỜ — hai ô buổi đều là «Theo giờ», và chỉ trong MỘT ngày. */
 export function isHourlyLeave(fromSession: number, toSession: number): boolean {
   return fromSession === LEAVE_SESSION.HOURLY || toSession === LEAVE_SESSION.HOURLY

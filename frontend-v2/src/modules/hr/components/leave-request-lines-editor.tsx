@@ -19,6 +19,7 @@ import {
   type LeaveLineValue,
 } from '../utils/leave-form-values'
 import type { LeaveType } from '../types/leave'
+import { describeSuggestedDays } from '../utils/leave-suggested-days-note'
 import { LeaveBalanceHintBox } from './leave-balance-hint-box'
 
 interface LeaveRequestLinesEditorProps {
@@ -31,6 +32,8 @@ interface LeaveRequestLinesEditorProps {
   employeeId: number
   /** Số ngày máy tính được cho khoảng đang chọn. `undefined` = chưa tra xong. */
   suggestedDays?: number
+  /** Tên lịch làm việc đang áp cho người nghỉ — chỉ để nói cho người dùng biết ngày công tính theo gì. */
+  scheduleName?: string
   /** Đơn khai theo GIỜ: khóa còn một dòng, số ngày là phép chia nên chỉ xem. */
   isHourly: boolean
 }
@@ -69,9 +72,12 @@ export function LeaveRequestLinesEditor({
   year,
   employeeId,
   suggestedDays,
+  scheduleName,
   isHourly,
 }: LeaveRequestLinesEditorProps) {
   const total = totalLeaveDays(value)
+  //  Cùng loại với loại dùng để tra số ngày gợi ý (dòng ĐẦU) — xem `leave-request-form`.
+  const firstType = types.find((t) => t.id === value[0]?.leave_type_id)
   const canAdd = !isHourly && value.length < MAX_LEAVE_LINES
   //  Chỉ đối chiếu khi có TỪ HAI DÒNG: đơn một dòng đã tự bám con số máy tính,
   //  nói thêm "khác gợi ý" ở đó là nhắc lại thứ người dùng vừa cố ý sửa.
@@ -226,11 +232,9 @@ export function LeaveRequestLinesEditor({
               ? //  Cảnh báo, KHÔNG chặn: lịch làm việc thật luôn có ngoại lệ máy
                 //  không biết (ca kíp, nghỉ bù, công trường chạy Chủ nhật).
                 `Tổng ${total} ngày khác số ngày công của khoảng (${suggestedDays} ngày) — kiểm lại nếu không cố ý.`
-              : //  ⚠️ Nói ĐÚNG lịch của công ty: DEGO làm cả thứ Bảy, chỉ nghỉ
-                //  Chủ nhật (`workday_service.WEEKEND_DAYS`). Câu cũ ghi "đã
-                //  trừ thứ Bảy" nên người dùng đọc xong tưởng máy tính hụt và
-                //  gõ đè thêm một ngày — chữ sai đẻ ra số sai.
-                `Khoảng ngày đã chọn có ${suggestedDays} ngày công (đã trừ Chủ nhật và ngày lễ; thứ Bảy vẫn tính vì công ty làm cả T7).`}
+              : //  Số ngày công tính theo LỊCH LÀM VIỆC của người nghỉ (mẫu gán theo nhân sự /
+                //  phòng ban / pháp nhân), không còn là «chỉ trừ Chủ nhật» cứng cho cả công ty.
+                describeSuggestedDays(suggestedDays, firstType?.exclude_holiday, scheduleName)}
       </p>
     </div>
   )

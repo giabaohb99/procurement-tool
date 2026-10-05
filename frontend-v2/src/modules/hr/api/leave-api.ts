@@ -83,7 +83,7 @@ export const leaveApi = {
     from_session?: number
     to_session?: number
     employee_id?: number
-  }) => apiGet<{ total_days: number }>(`${REQUESTS}/tools/estimate-days`, { params }),
+  }) => apiGet<{ total_days: number; schedule_name?: string }>(`${REQUESTS}/tools/estimate-days`, { params }),
 
   /**
    * Số phép còn lại — ràng buộc §6.1: form phải hiện con số này lúc nộp.

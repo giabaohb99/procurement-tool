@@ -39,7 +39,7 @@ from sqlalchemy import select
 import app.core.all_models  # noqa: F401 — đăng ký toàn bộ mapper
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
-from app.modules.sync_log.constants import SyncGrain, SyncStatus
+from app.modules.sync_log.constants import SyncDirection, SyncGrain, SyncStatus
 from app.modules.sync_log.model import SyncLog
 from app.modules.sync_log.registry import SOURCE_DATXE, require_source
 from app.modules.sync_log.service import (
@@ -241,6 +241,10 @@ def retry_pending(db, *, run_id: int = 0, user_id: int = 0) -> dict:
         .where(
             SyncLog.source == SOURCE_DATXE,
             SyncLog.grain == int(SyncGrain.RECORD),
+            #  bao-CR-596: chỉ dòng NHẬN về. Dòng GỬI ĐI mang ảnh chụp phiếu ERP, đem ra xử
+            #  như phiếu app cũ là ghi đè phiếu bằng chính bản của nó dưới dạng sai hình.
+            #  Chiều gửi đi có vòng riêng: `outbound_tasks.retry_outbound`.
+            SyncLog.direction == int(SyncDirection.INBOUND),
             SyncLog.status.in_([int(SyncStatus.PENDING), int(SyncStatus.FAILED)]),
             SyncLog.attempt_count < MAX_ATTEMPTS,
         )

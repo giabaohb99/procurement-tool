@@ -145,6 +145,9 @@ BB3_PUBLIC_CO_LY_DO = {
     "work_task": "phạm vi thật = tư cách THÀNH VIÊN list; NGHĨA VỤ tự lọc qua visible_list_ids",
     "leave_type": "danh mục luật nghỉ dùng chung; ai sửa gác bằng leave_type.write",
     "holiday": "company_id = 0 nghĩa là 'áp mọi pháp nhân'; lọc đúng ở workday_service",
+    "work_schedule": "danh mục cấu hình lịch dùng chung; dòng gán trỏ đích ĐA HÌNH (cấp + id) "
+                     "nên khuôn một-cột của apply_scope không diễn đạt được; ai SỬA gác bằng "
+                     "work_schedule.write",
     "meeting_room": "company_id = 0 nghĩa là 'phòng dùng chung'; lọc đúng ở list_availability",
     "job_position": "danh mục chức vụ dùng chung — MỌI vai trò cần đọc để đổ ô chọn "
                     "trên hồ sơ; department_id = 0 nghĩa là 'dùng chung mọi phòng ban' "
@@ -234,6 +237,10 @@ BB4_CONTROLLER_MIEN_TRU = {
                                      "chứng từ trong `report_service` (loại thiếu quyền đọc bị LOẠI HẲN)",
     "employee/report_controller.py": "require('employee', …); `apply_scope(Employee, 'employee')` "
                                      "trong `report_headcount_events` cho mọi mốc đếm",
+    "employee/work_history_controller.py": "duoc-CR-585: mọi đường `/{eid}/work-history*` gọi "
+                                           "`work_history_access.employee_in_scope` → `get_scoped(Employee, "
+                                           "'employee', …)` (404 khi ngoài phạm vi); `/me/work-history` "
+                                           "chỉ đọc hồ sơ của chính người gọi qua `user.employee_id`",
     "leave/report_controller.py": "require('leave_request', …); `apply_scope(LeaveRequest, "
                                   "'leave_request')` trong `report_rows`",
     "leave/balance_report_controller.py": "require('leave_balance', …); `apply_scope(LeaveBalance, "

@@ -65,3 +65,10 @@ def get_db():
 from app.core.change_tracker import install_change_tracker  # noqa: E402
 
 install_change_tracker()
+
+#  bao-CR-596 (P3): bộ nghe chiều ERP -> app đặt xe cũ, gắn cùng chỗ và cùng lý do: việc
+#  nền Celery (tài xế bấm qua chiều nhận, vòng duyệt tự động…) cũng phải được nghe. Công tắc
+#  `sync_datxe_outbound_enabled` tắt thì bộ nghe chỉ gom id rồi bỏ, không giao việc gì.
+from app.modules.legacy_datxe.outbound_listener import install_outbound_listener  # noqa: E402
+
+install_outbound_listener()

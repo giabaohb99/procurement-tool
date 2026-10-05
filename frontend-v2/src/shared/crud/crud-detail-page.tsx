@@ -82,8 +82,8 @@ export function CrudDetailPage<T extends CrudRecord>({
   const activeTab = resolveTabKey(tabParam, config.tabs)
   //  Chặn bấm trùng trong cùng một nhịp — xem `useSingleFlight`.
   const once = useSingleFlight()
-  const saveMutation = useCrudSave<T>(config.apiPath, config.title)
-  const deleteMutation = useCrudDelete(config.apiPath, config.title)
+  const saveMutation = useCrudSave<T>(config.apiPath, config.title, config.alsoInvalidate)
+  const deleteMutation = useCrudDelete(config.apiPath, config.title, config.alsoInvalidate)
 
   const listUrl = config.listRoute || '/'
 

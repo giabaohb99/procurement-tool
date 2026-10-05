@@ -98,3 +98,5 @@ from app.modules.coffee_point import model as _coffee_point  # noqa: F401
 from app.modules.sync_log import model as _sync_log  # noqa: F401
 # Agent Hub (doc/agent-hub/, ai-CR-002) — năm bảng sổ của bot quản lý.
 from app.modules.agent_hub import model as _agent_hub  # noqa: F401
+# Lịch làm việc (mẫu lịch tuần + gán 4 cấp) — ba bảng `tab_work_schedule*`.
+from app.modules.work_schedule import model as _work_schedule  # noqa: F401

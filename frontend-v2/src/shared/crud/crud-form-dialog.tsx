@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { PermissionGate } from '@/core/authorization/permission-gate'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
 import {
@@ -12,11 +13,12 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { confirm } from '@/shared/ui/confirm-dialog'
+import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
 import { resolveFormFields } from './resolve-form-fields'
 import type { CrudConfig, CrudRecord } from './types'
-import { useCrudSave } from './use-crud'
+import { useCrudDelete, useCrudSave } from './use-crud'
 
 interface CrudFormDialogProps<T> {
   open: boolean
@@ -31,7 +33,8 @@ export function CrudFormDialog<T extends CrudRecord>({
   config,
   item,
 }: CrudFormDialogProps<T>) {
-  const saveMutation = useCrudSave<T>(config.apiPath, config.title)
+  const saveMutation = useCrudSave<T>(config.apiPath, config.title, config.alsoInvalidate)
+  const deleteMutation = useCrudDelete(config.apiPath, config.title, config.alsoInvalidate)
   const isEditing = Boolean(item)
   //  Chặn bấm trùng trong cùng một nhịp — xem `useSingleFlight`.
   const once = useSingleFlight()
@@ -47,7 +50,8 @@ export function CrudFormDialog<T extends CrudRecord>({
     defaultValues: buildFormDefaults(resolveFormFields(config.formFields, item ?? {}), item),
   })
 
-  const pending = isSubmitting || saveMutation.isPending
+  const pending = isSubmitting || saveMutation.isPending || deleteMutation.isPending
+  const idKey = (config.idKey as string) || 'id'
 
   /** Đóng theo case C-01: chỉ Hủy/X; form đã sửa thì hỏi xác nhận, tránh mất dữ liệu. */
   const attemptClose = async () => {
@@ -66,7 +70,6 @@ export function CrudFormDialog<T extends CrudRecord>({
 
   const onSubmit = (values: Record<string, unknown>) =>
     once(async () => {
-      const idKey = (config.idKey as string) || 'id'
       const id = item ? (item[idKey] as string | number) : undefined
 
       const fields = resolveFormFields(config.formFields, values)
@@ -120,6 +123,23 @@ export function CrudFormDialog<T extends CrudRecord>({
           />
 
           <DialogFooter className="pt-2">
+            {/* Danh mục sửa bằng popup (`openFormOnRowClick`) không có trang chi tiết,
+                nên không bật cờ này thì người dùng KHÔNG có chỗ nào để xóa dòng. */}
+            {isEditing && item && config.deleteInForm && (
+              <PermissionGate entity={config.entity} action="delete">
+                <div className="sm:mr-auto">
+                  <DeleteConfirmButton
+                    recordName={config.getItemName?.(item) ?? config.unitLabel}
+                    pending={deleteMutation.isPending}
+                    warning={config.deleteWarning}
+                    onConfirm={async () => {
+                      await deleteMutation.mutateAsync(item[idKey] as string | number)
+                      onOpenChange(false)
+                    }}
+                  />
+                </div>
+              </PermissionGate>
+            )}
             <Button
               type="button"
               variant="outline"

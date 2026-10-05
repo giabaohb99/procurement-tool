@@ -183,9 +183,11 @@ def test_du_55_entity():
     70 → 71 ngày 29/09/2026: danh mục thuốc BVTV (`customs_pesticide`, duoc-CR-490) — khóa SỬA
     danh mục thuốc của Tra cứu thị trường; PUBLIC vì là dữ liệu tham khảo bên ngoài, và nằm
     trong `_SYS_ENTITIES` để Quản lý thu mua không tự có.
+    71 → 72 ngày 05/10/2026: lịch làm việc (`work_schedule`) — mẫu lịch tuần + gán 4 cấp; PUBLIC
+    vì đích gán đa hình (cấp + id), ai SỬA gác bằng khóa; nằm trong `_SYS_ENTITIES`.
     """
-    assert len(ENTITIES) == 71
-    assert len(SCOPE_FIELDS) == 71
+    assert len(ENTITIES) == 72
+    assert len(SCOPE_FIELDS) == 72
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

@@ -37,7 +37,7 @@ backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/tai-lieu-chuc-n
   kiện rẽ nhánh luồng duyệt chỉ thấy loại CHÍNH — hạn chế đã biết, xem §7.1 của
   `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
 - ⚠️ **Số phép còn lại KHÔNG lưu thành cột** — `balance_service.remaining()` là nơi duy
-  nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()`.
+  nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()` — **SỬ DỤNG LỊCH LÀM VIỆC của người nghỉ** (`work_schedule/resolver.load_day_plans`), không còn `WEEKEND_DAYS`. Gọi `count_leave_days()` hoặc `count_hourly_days()` **PHẢI truyền `employee=`**, nếu quên thì sẽ tính theo lịch mặc định cho người có lịch riêng, dẫn tới sai âm thầm. Xem chi tiết ở `doc/tai-lieu-chuc-nang/21-lich-lam-viec.md` §7, §12.
 - ⚠️ **Hủy đơn KHÔNG được gọi `block_legacy_path`** (chốt đó chỉ dành cho duyệt/từ chối
   thẳng). Đường hủy đi qua `approval_bridge.cancel_request()` — nó **rút phiên duyệt**
   trước. Không rút thì người duyệt ký xong là hook trừ quỹ cho một tờ đơn đã hủy.

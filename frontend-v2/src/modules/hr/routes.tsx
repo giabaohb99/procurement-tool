@@ -17,6 +17,7 @@ import { Navigate } from 'react-router-dom'
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { LegacyUserPermissionRedirect } from './pages/legacy-permission-redirect'
+import { workScheduleNavItem, workScheduleRoutes } from './config/work-schedule-module-entries'
 
 /** Phân hệ NHÂN SỰ — nhân viên, phòng ban, pháp nhân, phân quyền tài khoản. */
 export const hrModule: ErpModule = {
@@ -132,6 +133,8 @@ export const hrModule: ErpModule = {
       manage: true,
       hidden: true,
     },
+    //  ── Lịch làm việc (mẫu lịch tuần + gán lịch) — xem `work-schedule-module-entries.tsx`.
+    workScheduleNavItem,
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
     //  Submenu gồm 3 mục con trên sidebar bên trái:
     //   1. Lịch phòng họp (roomCalendar)
@@ -375,5 +378,6 @@ export const hrModule: ErpModule = {
         Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
       }),
     },
+    ...workScheduleRoutes,
   ],
 }

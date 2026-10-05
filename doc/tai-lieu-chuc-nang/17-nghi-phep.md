@@ -264,8 +264,7 @@ hiện tại và gõ con số họ muốn nó thành; cộng dồn thì bấm L�
 
 ## 6. Số ngày nghỉ
 
-`workday_service.count_leave_days()` là nơi **duy nhất** tính. Đã trừ thứ Bảy,
-Chủ nhật và ngày lễ theo `tab_holiday`.
+`workday_service.count_leave_days()` là nơi **duy nhất** tính. ⚠️ **Thứ Bảy không còn cứng — đó là cấp Chủ nhật của lịch làm việc của mỗi người.** Xem cách tính chi tiết ở [21-lich-lam-viec.md — §7, §12](21-lich-lam-viec.md).
 
 ### Hai ô buổi là MỐC, không phải buổi (vá 07/09/2026)
 
@@ -521,7 +520,7 @@ quan hệ giữa hai ô là khai sai luật nghỉ cho **cả công ty**.
 | *Cụm «Điều kiện áp dụng»* | | | | |
 | Áp dụng cho giới tính | `gender` | chọn | Mọi giới (`0`) | Hồ sơ **chưa khai** giới tính vẫn nộp được — chặn là khóa cả công ty tới khi Nhân sự nhập bù |
 | Tối đa mỗi lần nghỉ (ngày) | `max_days_per_request` | số | 0 | `0` = không giới hạn. Trần của **một đơn**, không dính quỹ năm |
-| Trừ Chủ nhật và ngày lễ | `exclude_holiday` | công tắc | Bật | ⚠️ **Thứ Bảy VẪN tính công** — DEGO làm cả T7 (`WEEKEND_DAYS = (6,)`). Tắt cho loại nghỉ dài liên tục (thai sản) |
+| Trừ Chủ nhật và ngày lễ | `exclude_holiday` | công tắc | Bật | ⚠️ **Thứ Bảy VẪN tính công** — DEGO làm cả T7 (lịch mặc định T2–T7, CN OFF). Xem [21-lich-lam-viec.md §12.2](21-lich-lam-viec.md) để hiểu khi nào tắt cửa này. |
 | Bắt buộc đính kèm | `require_attachment` | công tắc | Tắt | ⚠️ Đính kèm đã có (§7.2) nhưng cờ này **chưa được kiểm lúc gửi duyệt** — bật lên chưa có tác dụng (xem §10) |
 | *Cụm «Số dư cuối năm»* — xem §5 | | | | |
 | Cách xử lý số dư | `year_end_mode` | chọn | Hết năm là mất (`0`) | Ba nước loại trừ nhau nên là ô chọn, không phải hai công tắc |

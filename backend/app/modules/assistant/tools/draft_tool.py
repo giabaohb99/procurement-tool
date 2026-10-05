@@ -609,10 +609,11 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
                          f"{workday_service.MAX_RANGE_DAYS} ngày của một tờ đơn — nhiều khả "
                          "năng gõ nhầm năm, xác nhận lại với người dùng."}
 
-    #  Số ngày GỢI Ý tính đúng như form: qua `workday_service`, tức đã trừ Chủ nhật và ngày
-    #  lễ của pháp nhân. Đây là NƠI DUY NHẤT của công thức — bản cũ gọi `suggested_days()`
+    #  Số ngày GỢI Ý tính đúng như form: qua `workday_service`, tức theo lịch làm việc của người nghỉ và đã
+    #  trừ ngày lễ của pháp nhân. Đây là NƠI DUY NHẤT của công thức — bản cũ gọi `suggested_days()`
     #  của giấy GNP (đếm cả cuối tuần) nên cùng một tờ đơn ra hai con số khác nhau.
-    kwargs = {"company_id": company_id, "exclude_holiday": bool(leave_type.exclude_holiday)}
+    kwargs = {"company_id": company_id, "exclude_holiday": bool(leave_type.exclude_holiday),
+              "employee": emp}
     if hourly:
         from datetime import time as _time
 
