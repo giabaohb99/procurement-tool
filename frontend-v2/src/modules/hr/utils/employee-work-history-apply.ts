@@ -17,6 +17,8 @@ import type { EmployeeWorkHistory } from '../types/employee-work-history'
  * đều có test canh theo tên hằng số này.
  */
 export const POSITION_TRACK = new Set([1, 2, 3, 5]) // Tuyển dụng · Điều chuyển · Bổ nhiệm · Miễn nhiệm
+/** Loại mặc định của nút «+ Thêm quyết định» (tab Quyết định bổ nhiệm, 03/10/2026). */
+export const APPOINT_TYPE = 3 // Bổ nhiệm
 export const CONCURRENT_TYPE = 4 // Kiêm nhiệm
 export const RESIGN_TYPE = 6 // Thôi việc
 /** Nhóm CHÍNH (khác kiêm nhiệm) — khớp `MAIN_TRACK` của backend, gồm cả Thôi việc. */

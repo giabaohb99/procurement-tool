@@ -14,6 +14,7 @@ import { useEmployeeWorkHistoryFormSubmit } from '../hooks/use-employee-work-his
 import { useJobPositions } from '../hooks/use-job-positions'
 import {
   EMPTY_EMPLOYEE_WORK_HISTORY_FORM,
+  employeeWorkHistoryDecisionSchema,
   employeeWorkHistorySchema,
   type EmployeeWorkHistoryFormValues,
 } from '../schemas/employee-work-history-schema'
@@ -44,8 +45,13 @@ interface EmployeeWorkHistoryFormDialogProps {
   /** A9 (Q4) — `false` thì ẨN vùng thả tệp (tạo mới) VÀ nút «Quản lý tệp» (sửa),
    *  không gọi API đính kèm (M4). */
   canOpenFiles: boolean
-  /** Điền sẵn khi mở từ nút «Tạo dòng đầu từ hồ sơ». */
+  /** Điền sẵn khi mở từ nút «Tạo dòng đầu từ hồ sơ» hoặc «+ Thêm quyết định». */
   seed?: Partial<EmployeeWorkHistoryFormValues>
+  /** Nút «+ Thêm quyết định» (mục 3, 03/10/2026) ép Số QĐ bắt buộc — hộp thêm/sửa dùng
+   *  CHUNG, chỉ đổi quy tắc kiểm. Bỏ trống = Số QĐ vẫn tùy chọn (tab «Quá trình công tác»). */
+  requireDecisionNo?: boolean
+  /** Đè tiêu đề lúc TẠO MỚI. Bỏ trống = «Thêm quá trình công tác». */
+  createTitle?: string
 }
 
 /**
@@ -66,6 +72,8 @@ export function EmployeeWorkHistoryFormDialog({
   extraDeptIds,
   canOpenFiles,
   seed,
+  requireDecisionNo = false,
+  createTitle,
 }: EmployeeWorkHistoryFormDialogProps) {
   const { can } = usePermission()
   const { data: companies } = useCompanies({ page_size: 200, is_active: true }, { enabled: can('company', 'read') })
@@ -76,7 +84,7 @@ export function EmployeeWorkHistoryFormDialog({
   const [filesDialogOpen, setFilesDialogOpen] = useState(false)
 
   const form = useForm<EmployeeWorkHistoryFormValues>({
-    resolver: zodResolver(employeeWorkHistorySchema),
+    resolver: zodResolver(requireDecisionNo ? employeeWorkHistoryDecisionSchema : employeeWorkHistorySchema),
     defaultValues: EMPTY_EMPLOYEE_WORK_HISTORY_FORM,
   })
 
@@ -141,7 +149,9 @@ export function EmployeeWorkHistoryFormDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{row ? 'Sửa quá trình công tác' : 'Thêm quá trình công tác'}</DialogTitle>
+            <DialogTitle>
+              {row ? 'Sửa quá trình công tác' : createTitle ?? 'Thêm quá trình công tác'}
+            </DialogTitle>
           </DialogHeader>
 
           <EmployeeWorkHistoryFormDialogFields
@@ -156,6 +166,7 @@ export function EmployeeWorkHistoryFormDialog({
             today={today}
             editingRow={row ?? null}
             canOpenFiles={canOpenFiles}
+            requireDecisionNo={requireDecisionNo}
             queuedFileCount={queuedFiles.length}
             onQueueFiles={handleQueueFiles}
             onOpenFilesDialog={() => setFilesDialogOpen(true)}

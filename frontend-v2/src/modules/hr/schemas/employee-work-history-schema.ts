@@ -34,6 +34,17 @@ export const employeeWorkHistorySchema = z
 
 export type EmployeeWorkHistoryFormValues = z.infer<typeof employeeWorkHistorySchema>
 
+/**
+ * Biến thể khi hộp mở từ tab «Quyết định bổ nhiệm» (nút «+ Thêm quyết định»,
+ * 03/10/2026) — cùng hộp, cùng ô, chỉ khác Số QĐ chuyển từ tùy chọn sang BẮT
+ * BUỘC. Ở tab «Quá trình công tác», Số QĐ vẫn tùy chọn (không phải dòng nào
+ * cũng có quyết định bằng văn bản).
+ */
+export const employeeWorkHistoryDecisionSchema = employeeWorkHistorySchema.refine(
+  (v) => v.decision_no.trim() !== '',
+  { path: ['decision_no'], message: 'Nhập số QĐ' },
+)
+
 export const EMPTY_EMPLOYEE_WORK_HISTORY_FORM: EmployeeWorkHistoryFormValues = {
   event_type: 0,
   from_date: '',

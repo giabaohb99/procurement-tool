@@ -1,15 +1,10 @@
-import { Download, Eye, FileImage, FileText, File as FileIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { downloadFile } from '@/core/api'
 import { AttachmentPreviewDialog } from '@/shared/attachments/attachment-preview-dialog'
-import { Button } from '@/shared/ui/button'
-import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { FileDropzone } from '@/shared/ui/file-dropzone'
-import { Skeleton } from '@/shared/ui/skeleton'
-import { formatFileSize } from '@/shared/utils/format-file-size'
 import { workHistoryFileDownloadUrl } from '../api/employee-work-history-api'
 import {
   useDeleteWorkHistoryFile,
@@ -17,6 +12,7 @@ import {
   useWorkHistoryFiles,
 } from '../hooks/use-employee-work-history-files'
 import type { WorkHistoryFile } from '../types/employee-work-history'
+import { EmployeeWorkHistoryFilesDialogList } from './employee-work-history-files-dialog-list'
 
 /**
  * Trần dung lượng MỘT tệp — khai ở `FILE_POLICY["employee_work_history"]` của
@@ -31,13 +27,6 @@ export const WORK_HISTORY_FILE_ACCEPT =
 
 const MAX_SIZE_MB = WORK_HISTORY_FILE_MAX_SIZE_MB
 const ACCEPT = WORK_HISTORY_FILE_ACCEPT
-
-function fileIcon(file: WorkHistoryFile) {
-  const type = (file.content_type || '').toLowerCase()
-  if (type.startsWith('image/')) return FileImage
-  if (type.includes('pdf')) return FileText
-  return FileIcon
-}
 
 interface EmployeeWorkHistoryFilesDialogProps {
   open: boolean
@@ -105,88 +94,39 @@ export function EmployeeWorkHistoryFilesDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Tệp quyết định</DialogTitle>
-          </DialogHeader>
+          {/*  Hộp này đứng NGANG HÀNG (không lồng trong) `<form>` đã chặn lan của
+               hộp Sửa (`employee-work-history-form-dialog.tsx`) nhưng cả hai đều
+               sống trong `<form>` của trang hồ sơ — chặn lan `submit` riêng ở
+               đây. `contents` giữ nguyên lưới `grid gap-4` của `DialogContent`. */}
+          <div className="contents" onSubmit={(event) => event.stopPropagation()}>
+            <DialogHeader>
+              <DialogTitle>Tệp quyết định</DialogTitle>
+            </DialogHeader>
 
-          {editable && (
-            <FileDropzone
-              onFiles={handleFiles}
-              busy={uploadMutation.isPending}
-              accept={ACCEPT}
-              hint="Kéo tệp vào đây hoặc bấm để chọn"
-              description={`Ảnh, PDF, Word, Excel · tối đa ${MAX_SIZE_MB}MB mỗi tệp`}
+            {editable && (
+              <FileDropzone
+                onFiles={handleFiles}
+                busy={uploadMutation.isPending}
+                accept={ACCEPT}
+                hint="Kéo tệp vào đây hoặc bấm để chọn"
+                description={`Ảnh, PDF, Word, Excel · tối đa ${MAX_SIZE_MB}MB mỗi tệp`}
+              />
+            )}
+
+            <EmployeeWorkHistoryFilesDialogList
+              files={files}
+              isLoading={isLoading}
+              editable={editable}
+              deleting={deleteMutation.isPending}
+              onPreview={setPreviewing}
+              onDownload={(file) => void handleDownload(file)}
+              onDelete={(fileId) => deleteMutation.mutate(fileId)}
             />
-          )}
-
-          {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : !files || files.length === 0 ? (
-            <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-              {editable ? 'Chưa có tệp nào. Kéo tệp vào vùng trên để tải lên.' : 'Dòng này không kèm tệp nào.'}
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {files.map((file) => {
-                const Icon = fileIcon(file)
-                return (
-                  <li
-                    key={file.id}
-                    className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2"
-                  >
-                    <Icon className="size-5 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium" title={file.filename}>
-                        {file.filename}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="Xem trước"
-                        aria-label={`Xem trước ${file.filename}`}
-                        onClick={() => setPreviewing(file)}
-                      >
-                        <Eye className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="Tải về"
-                        aria-label={`Tải về ${file.filename}`}
-                        onClick={() => void handleDownload(file)}
-                      >
-                        <Download className="size-4" />
-                      </Button>
-                      {editable && (
-                        <ConfirmIconButton
-                          icon={Trash2}
-                          title="Gỡ tệp"
-                          confirmTitle="Gỡ tệp đính kèm?"
-                          confirmDescription={`Gỡ «${file.filename}» khỏi dòng quá trình công tác này?`}
-                          destructive
-                          disabled={deleteMutation.isPending}
-                          onConfirm={() => deleteMutation.mutate(file.id)}
-                        />
-                      )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
 
+      {/*  Portal riêng (Radix) — ranh giới chặn lan của chính nó. */}
       <AttachmentPreviewDialog
         file={previewing}
         open={Boolean(previewing)}

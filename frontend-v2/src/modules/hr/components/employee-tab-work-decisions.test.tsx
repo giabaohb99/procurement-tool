@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EmployeeDetail } from '../types/employee'
-import type { EmployeeWorkHistoryListResult } from '../types/employee-work-history'
+import type { EmployeeWorkHistory, EmployeeWorkHistoryListResult } from '../types/employee-work-history'
 import { EmployeeTabWorkDecisions } from './employee-tab-work-decisions'
 
 const state = vi.hoisted(() => ({
@@ -14,6 +14,13 @@ const state = vi.hoisted(() => ({
   isError: false,
   queriedEmployeeId: undefined as number | undefined,
   filesDialogCalls: [] as { open: boolean; historyId: number; editable: boolean }[],
+  formDialogCalls: [] as {
+    open: boolean
+    row: EmployeeWorkHistory | null
+    seed: unknown
+    requireDecisionNo: boolean | undefined
+    createTitle: string | undefined
+  }[],
 }))
 
 vi.mock('../hooks/use-employee-work-history', () => ({
@@ -23,9 +30,35 @@ vi.mock('../hooks/use-employee-work-history', () => ({
   },
 }))
 
+vi.mock('../hooks/use-employees', () => ({
+  useEmployeeDepartments: () => ({ data: { primary_department_id: 0, extra_department_ids: [] } }),
+}))
+
 vi.mock('./employee-work-history-files-dialog', () => ({
   EmployeeWorkHistoryFilesDialog: (props: { open: boolean; historyId: number; editable: boolean }) => {
     state.filesDialogCalls.push({ open: props.open, historyId: props.historyId, editable: props.editable })
+    return null
+  },
+}))
+
+//  Hộp thêm/sửa đã có bài kiểm riêng (`employee-work-history-form-dialog.test.tsx`)
+//  — ở đây chỉ cần biết tab mở nó lên ĐÚNG lúc, ĐÚNG seed/tiêu đề/ép Số QĐ
+//  (mục 3), không cần dựng lại cả hộp (tránh gọi thật useCompanies/useDepartments/useJobPositions).
+vi.mock('./employee-work-history-form-dialog', () => ({
+  EmployeeWorkHistoryFormDialog: (props: {
+    open: boolean
+    row: EmployeeWorkHistory | null
+    seed: unknown
+    requireDecisionNo?: boolean
+    createTitle?: string
+  }) => {
+    state.formDialogCalls.push({
+      open: props.open,
+      row: props.row,
+      seed: props.seed,
+      requireDecisionNo: props.requireDecisionNo,
+      createTitle: props.createTitle,
+    })
     return null
   },
 }))
@@ -50,18 +83,17 @@ const employee: EmployeeDetail = {
   user_id: 1,
 }
 
-function renderTab(onGoToWorkHistoryClick = vi.fn()) {
+function renderTab() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const result = render(
+  return render(
     <QueryClientProvider client={queryClient}>
       {/*  `EmployeeWorkHistoryDecisionSection` đọc/ghi lựa chọn Bảng|Dòng thời
            gian qua `useUrlParamState` — cần `<Router>` bọc ngoài. */}
       <MemoryRouter>
-        <EmployeeTabWorkDecisions employee={employee} onGoToWorkHistoryClick={onGoToWorkHistoryClick} />
+        <EmployeeTabWorkDecisions employee={employee} />
       </MemoryRouter>
     </QueryClientProvider>,
   )
-  return { ...result, onGoToWorkHistoryClick }
 }
 
 beforeEach(() => {
@@ -70,6 +102,7 @@ beforeEach(() => {
   state.isError = false
   state.queriedEmployeeId = undefined
   state.filesDialogCalls = []
+  state.formDialogCalls = []
 })
 
 describe('EmployeeTabWorkDecisions', () => {
@@ -78,26 +111,7 @@ describe('EmployeeTabWorkDecisions', () => {
     expect(state.queriedEmployeeId).toBe(employee.id)
   })
 
-  it('rỗng + can_edit=true → nút «Thêm ở tab Quá trình công tác», bấm vào gọi onGoToWorkHistoryClick', async () => {
-    state.result = { items: [], can_edit: true, can_open_files: true }
-    const { onGoToWorkHistoryClick } = renderTab()
-
-    const button = screen.getByRole('button', { name: 'Thêm ở tab Quá trình công tác' })
-    await userEvent.click(button)
-
-    expect(onGoToWorkHistoryClick).toHaveBeenCalledTimes(1)
-  })
-
-  it('rỗng + can_edit=false → KHÔNG có nút gợi ý (chỉ xem, không quyền sửa)', () => {
-    state.result = { items: [], can_edit: false, can_open_files: true }
-    renderTab()
-
-    expect(
-      screen.queryByRole('button', { name: 'Thêm ở tab Quá trình công tác' }),
-    ).not.toBeInTheDocument()
-  })
-
-  it('không có nút Thêm/Sửa/Xóa/Áp — khu này chỉ đọc dù can_edit=true', () => {
+  it('không có nút Thêm/Sửa/Xóa/Áp — khu này chỉ đọc dù can_edit=true (chỉ có «+ Thêm quyết định»)', () => {
     state.result = {
       items: [{ ...row(), decision_no: 'QD-30' }],
       can_edit: true,
@@ -119,6 +133,44 @@ describe('EmployeeTabWorkDecisions', () => {
     state.result = { items: [], can_edit: false, can_open_files: true }
     renderTab()
     expect(state.filesDialogCalls.at(-1)?.editable).toBe(false)
+  })
+})
+
+/**
+ * Mục 3 (03/10/2026) — nút «+ Thêm quyết định» mở ĐÚNG hộp thêm/sửa quá trình
+ * công tác dùng chung, nhưng với tiêu đề/loại mặc định/ràng buộc riêng cho
+ * ngữ cảnh "thêm quyết định": loại Bổ nhiệm, Số QĐ bắt buộc. Lưu xong dùng
+ * chung khóa truy vấn với tab «Quá trình công tác» nên dòng mới hiện ở cả hai.
+ */
+describe('EmployeeTabWorkDecisions — nút «+ Thêm quyết định» (mục 3)', () => {
+  it('can_edit=true → có nút, bấm vào mở hộp với tiêu đề/loại/ràng buộc đúng ngữ cảnh', async () => {
+    state.result = { items: [], can_edit: true, can_open_files: true }
+    renderTab()
+
+    //  Rỗng → 2 nút cùng tên (toolbarEnd + gợi ý giữa khu), bấm nút nào cũng như nhau.
+    const buttons = screen.getAllByRole('button', { name: /Thêm quyết định/ })
+    await userEvent.click(buttons[0])
+
+    const call = state.formDialogCalls.at(-1)
+    expect(call?.open).toBe(true)
+    expect(call?.row).toBeNull()
+    expect(call?.seed).toEqual({ event_type: 3 }) // APPOINT_TYPE — Bổ nhiệm
+    expect(call?.requireDecisionNo).toBe(true)
+    expect(call?.createTitle).toBe('Thêm quyết định bổ nhiệm')
+  })
+
+  it('can_edit=false → KHÔNG có nút «+ Thêm quyết định» ở đâu cả', () => {
+    state.result = { items: [], can_edit: false, can_open_files: true }
+    renderTab()
+
+    expect(screen.queryByRole('button', { name: /Thêm quyết định/ })).not.toBeInTheDocument()
+  })
+
+  it('hộp luôn mount với `open=false` lúc chưa bấm gì — không tự bật', () => {
+    state.result = { items: [], can_edit: true, can_open_files: true }
+    renderTab()
+
+    expect(state.formDialogCalls.at(-1)?.open).toBe(false)
   })
 })
 

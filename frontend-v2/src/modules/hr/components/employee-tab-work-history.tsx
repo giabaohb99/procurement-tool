@@ -2,9 +2,9 @@ import { useState } from 'react'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { useDeleteEmployeeWorkHistory, useEmployeeWorkHistory } from '../hooks/use-employee-work-history'
+import { useEmployeeWorkHistoryEditorDialog } from '../hooks/use-employee-work-history-editor-dialog'
 import { useBusyIds, useEmployeeWorkHistoryRowApply } from '../hooks/use-employee-work-history-row-apply'
 import { useEmployeeDepartments } from '../hooks/use-employees'
-import type { EmployeeWorkHistoryFormValues } from '../schemas/employee-work-history-schema'
 import type { EmployeeDetail } from '../types/employee'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { EmployeeWorkHistoryFilesDialog } from './employee-work-history-files-dialog'
@@ -43,9 +43,10 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
   const deleting = useBusyIds()
 
   const [filesRow, setFilesRow] = useState<EmployeeWorkHistory | null>(null)
-  const [editRow, setEditRow] = useState<EmployeeWorkHistory | null>(null)
-  const [seed, setSeed] = useState<Partial<EmployeeWorkHistoryFormValues>>()
-  const [formOpen, setFormOpen] = useState(false)
+  //  Điều phối hộp thêm/sửa NÂNG lên chỗ chung — tab «Quyết định bổ nhiệm»
+  //  (`employee-tab-work-decisions.tsx`) dùng CHUNG hook này cho nút
+  //  «+ Thêm quyết định», không chép logic chuyển trạng thái ra bản thứ hai.
+  const editor = useEmployeeWorkHistoryEditorDialog()
 
   const items = data?.items ?? []
   const canEdit = data?.can_edit ?? false
@@ -58,19 +59,9 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
 
   const rowApply = useEmployeeWorkHistoryRowApply(employee.id, employee, extraDeptIds, items)
 
-  function openCreate(initial?: Partial<EmployeeWorkHistoryFormValues>) {
-    setEditRow(null)
-    setSeed(initial)
-    setFormOpen(true)
-  }
-
   const actions = canEdit
     ? {
-        onEdit: (row: EmployeeWorkHistory) => {
-          setEditRow(row)
-          setSeed(undefined)
-          setFormOpen(true)
-        },
+        onEdit: editor.openEdit,
         onApply: rowApply.onApply,
         onDelete: (row: EmployeeWorkHistory) =>
           deleting.run(row.id, (done) => deleteMutation.mutate(row.id, { onSettled: done })),
@@ -97,11 +88,11 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
         onOpenFiles={setFilesRow}
         actions={actions}
         storageKey="hr.employee-work-history"
-        onAddClick={canEdit ? () => openCreate() : undefined}
+        onAddClick={canEdit ? () => editor.openCreate() : undefined}
         onCreateFromProfileClick={
           canEdit
             ? () =>
-                openCreate({
+                editor.openCreate({
                   event_type: HIRE_TYPE,
                   from_date: employee.hire_date ?? '',
                   company_id: employee.company_id,
@@ -113,15 +104,17 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
       />
 
       <EmployeeWorkHistoryFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
+        open={editor.open}
+        onOpenChange={editor.onOpenChange}
         employeeId={employee.id}
         employee={employee}
-        row={editRow}
+        row={editor.editRow}
         allRows={items}
         extraDeptIds={extraDeptIds}
         canOpenFiles={canOpenFiles}
-        seed={seed}
+        seed={editor.seed}
+        requireDecisionNo={editor.requireDecisionNo}
+        createTitle={editor.createTitle}
       />
 
       <EmployeeWorkHistoryFilesDialog

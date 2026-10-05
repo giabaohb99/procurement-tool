@@ -27,6 +27,8 @@ interface EmployeeWorkHistoryFormDialogFieldsProps {
   editingRow: EmployeeWorkHistory | null
   /** A9 (Q4) — `false` thì ẨN cả vùng thả tệp lẫn nút «Quản lý tệp» (M4). */
   canOpenFiles: boolean
+  /** Nút «+ Thêm quyết định» (mục 3) — Số QĐ bắt buộc, chỉ đổi dấu `*` ở nhãn. */
+  requireDecisionNo?: boolean
   queuedFileCount: number
   onQueueFiles: (files: File[]) => void
   onOpenFilesDialog: () => void
@@ -52,6 +54,7 @@ export function EmployeeWorkHistoryFormDialogFields({
   today,
   editingRow,
   canOpenFiles,
+  requireDecisionNo = false,
   queuedFileCount,
   onQueueFiles,
   onOpenFilesDialog,
@@ -147,6 +150,7 @@ export function EmployeeWorkHistoryFormDialogFields({
           companies={companies}
           departments={departments}
           positions={positions}
+          requireDecisionNo={requireDecisionNo}
         />
 
         <EmployeeWorkHistoryFileField

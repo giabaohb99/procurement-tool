@@ -104,6 +104,30 @@ def compute_can_apply(rows: list[EmployeeWorkHistory], today: date) -> dict[int,
     return result
 
 
+def compute_is_current(rows: list[EmployeeWorkHistory], today: date) -> dict[int, bool]:
+    """Cờ `is_current` (huy hiệu «Đang hiệu lực»/«Hiện tại») cho CẢ DANH SÁCH.
+
+    Trước 05/10/2026 chỉ xét `to_date` nên hai trường hợp bị báo nhầm:
+    - nhập BÙ dòng chính cũ hơn mà không đóng (vd Bổ nhiệm 03/10 nhập sau Điều
+      chuyển 04/10) → cả hai dòng cùng «Đang hiệu lực»;
+    - dòng có `from_date` ở TƯƠNG LAI → «Đang hiệu lực» dù chưa tới ngày.
+    Nay dòng nhóm chính còn bị một dòng nhóm chính KHÁC bắt đầu muộn hơn, đã tới
+    ngày (`from_date <= today`), thay thế. Kiêm nhiệm/Khác không bị thay theo
+    kiểu này (song song là chuyện thường).
+    """
+    main_starts = sorted(
+        r.from_date for r in rows
+        if safe_event_type(r.event_type) in MAIN_TRACK and r.from_date <= today)
+
+    result: dict[int, bool] = {}
+    for r in rows:
+        active = r.from_date <= today and (r.to_date is None or r.to_date >= today)
+        if active and safe_event_type(r.event_type) in MAIN_TRACK:
+            active = not any(start > r.from_date for start in main_starts)
+        result[r.id] = active
+    return result
+
+
 def apply_gate(db: Session, eid: int, row: EmployeeWorkHistory, today: date | None = None) -> str | None:
     """Bốn chốt CHUNG của việc ÁP cho ĐÚNG MỘT dòng — dùng ở
     `work_history_apply_service.apply`. Trả câu lỗi (400), hoặc `None` nếu qua

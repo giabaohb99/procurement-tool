@@ -92,13 +92,11 @@ describe('ProfileWorkDecisionsTab', () => {
     expect(state.calls.filter((c) => c.url === '/api/employees/me/work-history')).toHaveLength(1)
   })
 
-  it('rỗng → câu nhắc Phòng Nhân sự, KHÔNG nút nhảy sang tab Quá trình công tác', async () => {
+  it('rỗng → câu nhắc ngắn, KHÔNG nút «+ Thêm quyết định» (Trang cá nhân chỉ đọc)', async () => {
     renderTab()
 
-    expect(
-      await screen.findByText('Chưa có quyết định nào — ghi số QĐ khi thêm dòng quá trình công tác.'),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Thêm ở tab Quá trình công tác' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Chưa có quyết định nào.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Thêm quyết định/ })).not.toBeInTheDocument()
   })
 
   it('không nút Thêm/Sửa/Xóa/Áp dù người dùng có employee.write, kể cả dạng DÒNG THỜI GIAN', async () => {

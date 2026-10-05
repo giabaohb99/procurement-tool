@@ -6,8 +6,9 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
-import { formatDate } from '@/shared/utils/format-date'
+import { formatDate, toDateInputValue } from '@/shared/utils/format-date'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
+import { workHistoryOpenEndLabel } from '../utils/employee-work-history-display'
 
 /** Hành động trên mỗi dòng — chỉ dựng cột «Thao tác» khi truyền tham số này. */
 export interface EmployeeWorkHistoryRowActions {
@@ -88,12 +89,12 @@ export function buildEmployeeWorkHistoryColumns({
       key: 'to_date',
       header: 'Đến ngày',
       width: 130,
-      cell: (row) =>
-        row.to_date ? (
-          formatDate(row.to_date)
-        ) : (
-          <Badge variant="secondary">Đang hiệu lực</Badge>
-        ),
+      cell: (row) => {
+        if (row.to_date) return formatDate(row.to_date)
+        const label = workHistoryOpenEndLabel(row, toDateInputValue(new Date()))
+        if (!label) return <span className="text-muted-foreground">—</span>
+        return <Badge variant={label === 'Đang hiệu lực' ? 'secondary' : 'outline'}>{label}</Badge>
+      },
     },
     {
       key: 'event_type',

@@ -69,9 +69,7 @@ describe('EmployeeWorkHistoryDecisionSection', () => {
   it('danh sách rỗng → câu gợi ý ngắn, không phải câu lỗi chung', () => {
     renderSection([])
 
-    expect(
-      screen.getByText('Chưa có quyết định nào — ghi số QĐ khi thêm dòng quá trình công tác.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Chưa có quyết định nào.')).toBeInTheDocument()
   })
 
   it('toggle Bảng → Dòng thời gian: đổi hiển thị VÀ ghi vào URL param decView', async () => {
@@ -119,29 +117,70 @@ describe('EmployeeWorkHistoryDecisionSection', () => {
   })
 })
 
-describe('EmployeeWorkHistoryDecisionSection — nút gợi ý «Thêm ở tab Quá trình công tác» (tách tab, đại ca chốt 03/10/2026)', () => {
-  it('rỗng + có onAddInWorkHistoryClick → hiện nút, bấm vào gọi đúng handler', async () => {
-    const onAddInWorkHistoryClick = vi.fn()
-    renderSection([], { onAddInWorkHistoryClick })
+describe('EmployeeWorkHistoryDecisionSection — nút «+ Thêm quyết định» (mục 3, đại ca chốt 03/10/2026)', () => {
+  it('rỗng + có onAddClick → hiện CẢ nút ở thanh công cụ LẪN nút gợi ý giữa khu, bấm nút nào cũng gọi đúng handler', async () => {
+    const onAddClick = vi.fn()
+    renderSection([], { onAddClick })
 
-    const button = screen.getByRole('button', { name: 'Thêm ở tab Quá trình công tác' })
+    //  Rỗng → có 2 nút cùng tên: toolbarEnd (luôn hiện) + gợi ý giữa khu (chỉ rỗng).
+    const buttons = screen.getAllByRole('button', { name: /Thêm quyết định/ })
+    expect(buttons).toHaveLength(2)
+    await userEvent.click(buttons[0])
+
+    expect(onAddClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('rỗng + KHÔNG truyền onAddClick (vd thẻ Trang cá nhân /me) → KHÔNG hiện nút nào', () => {
+    renderSection([])
+    expect(screen.queryByRole('button', { name: /Thêm quyết định/ })).not.toBeInTheDocument()
+  })
+
+  it('CÓ dòng rồi (không rỗng) → vẫn hiện nút Ở THANH CÔNG CỤ (khác nút gợi ý giữa khu, chỉ ẨN khi rỗng)', () => {
+    renderSection([row({ id: 1, decision_no: 'QD-06' })], { onAddClick: vi.fn() })
+    //  Đúng MỘT nút «Thêm quyết định» (toolbarEnd) — nút gợi ý giữa khu chỉ hiện lúc rỗng.
+    expect(screen.getAllByRole('button', { name: /Thêm quyết định/ })).toHaveLength(1)
+  })
+
+  it('đang tải → KHÔNG hiện nút gợi ý giữa khu dù rỗng và có handler (tránh nhấp nháy)', () => {
+    renderSection([], { onAddClick: vi.fn(), isLoading: true })
+    //  `DataTable` tự dựng Skeleton nên nút toolbarEnd vẫn còn — chỉ chặn RIÊNG
+    //  nút gợi ý giữa khu (đi theo trạng thái rỗng-đã-biết, không phải đang tải).
+    expect(screen.getAllByRole('button', { name: /Thêm quyết định/ })).toHaveLength(1)
+  })
+
+  it('chế độ Dòng thời gian: nút «+ Thêm quyết định» đứng cạnh Tải lại ở hàng công cụ', async () => {
+    const onAddClick = vi.fn()
+    renderSection([row({ id: 1, decision_no: 'QD-09' })], { onAddClick })
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Dòng thời gian' }))
+    const button = screen.getByRole('button', { name: /Thêm quyết định/ })
     await userEvent.click(button)
 
-    expect(onAddInWorkHistoryClick).toHaveBeenCalledTimes(1)
+    expect(onAddClick).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * Gộp hàng điều khiển thành MỘT HÀNG (đại ca chê hai hàng rời rạc, 03/10/2026).
+ * Khu này KHÔNG có nút «Thêm dòng» (chỉ đọc) — khác khu Quá trình công tác.
+ */
+describe('EmployeeWorkHistoryDecisionSection — gộp thanh điều khiển một hàng', () => {
+  it('chế độ Bảng: có Tải lại + Cột, không Thêm dòng, không Xóa lọc', () => {
+    renderSection([row({ id: 1, decision_no: 'QD-07' })])
+
+    expect(screen.getByRole('button', { name: 'Tải lại dữ liệu' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cột' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Thêm dòng/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xóa lọc' })).not.toBeInTheDocument()
   })
 
-  it('rỗng + KHÔNG truyền onAddInWorkHistoryClick (vd thẻ Trang cá nhân /me) → KHÔNG hiện nút', () => {
-    renderSection([])
-    expect(screen.queryByRole('button', { name: 'Thêm ở tab Quá trình công tác' })).not.toBeInTheDocument()
-  })
+  it('chế độ Dòng thời gian: vẫn có Tải lại, KHÔNG có menu Cột, không Xóa lọc', async () => {
+    renderSection([row({ id: 1, decision_no: 'QD-08' })])
 
-  it('CÓ dòng rồi (không rỗng) → KHÔNG hiện nút dù có handler', () => {
-    renderSection([row({ id: 1, decision_no: 'QD-06' })], { onAddInWorkHistoryClick: vi.fn() })
-    expect(screen.queryByRole('button', { name: 'Thêm ở tab Quá trình công tác' })).not.toBeInTheDocument()
-  })
+    await userEvent.click(screen.getByRole('radio', { name: 'Dòng thời gian' }))
 
-  it('đang tải → KHÔNG hiện nút dù rỗng và có handler (tránh nhấp nháy trước khi biết thật sự rỗng)', () => {
-    renderSection([], { onAddInWorkHistoryClick: vi.fn(), isLoading: true })
-    expect(screen.queryByRole('button', { name: 'Thêm ở tab Quá trình công tác' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tải lại dữ liệu' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cột' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xóa lọc' })).not.toBeInTheDocument()
   })
 })

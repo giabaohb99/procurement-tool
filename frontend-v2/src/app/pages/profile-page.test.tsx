@@ -135,7 +135,7 @@ describe('ProfilePage — hai tab chính quá trình công tác', () => {
     await screen.findByText('QD-20')
     expect(screen.queryByText('Không QĐ')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Thêm dòng/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Thêm ở tab Quá trình công tác' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Thêm quyết định/ })).not.toBeInTheDocument()
   })
 
   it('tài khoản KHÔNG gắn hồ sơ nhân sự (employee_id = 0): ẨN hai tab chính', async () => {

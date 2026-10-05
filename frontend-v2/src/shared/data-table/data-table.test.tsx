@@ -417,3 +417,60 @@ describe('DataTable — cột ID mặc định', () => {
     expect(headers(table)).toEqual(['ID', 'Ghi chú', 'Tên'])
   })
 })
+
+/**
+ * `toolbarEnd` (CR qua-trinh-cong-tac, 03/10/2026) — chỗ gắn nút hành động
+ * chính SAU CÙNG của dải công cụ (sau menu «Cột»), để màn gộp tiêu đề + nút
+ * chuyển chế độ xem + Tải lại + Cột + nút đó vào MỘT hàng duy nhất.
+ */
+describe('DataTable — toolbarEnd', () => {
+  function buildWithToolbarEnd(props: Partial<Parameters<typeof DataTable<Row>>[0]> = {}) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return render(
+      <QueryClientProvider client={client}>
+        <DataTable
+          columns={[{ key: 'name', header: 'Tên', cell: (r: Row) => r.name, width: 100 }]}
+          rows={ROWS}
+          getRowId={(r) => r.id}
+          idColumn={false}
+          toolbarEnd={<button type="button">Thêm dòng</button>}
+          {...props}
+        />
+      </QueryClientProvider>,
+    )
+  }
+
+  it('renders toolbarEnd AFTER the «Cột» menu button, as the last control of the toolbar row', () => {
+    const { container } = buildWithToolbarEnd()
+    const toolbarButtons = Array.from(container.querySelectorAll('.ml-auto button')).map(
+      (button) => button.textContent,
+    )
+    expect(toolbarButtons.at(-1)).toBe('Thêm dòng')
+    //  «Cột» vẫn phải nằm ngay trước nó, không bị toolbarEnd đẩy ra khỏi dải.
+    expect(toolbarButtons.some((text) => text?.includes('Cột'))).toBe(true)
+  })
+
+  it('bỏ trống toolbarEnd thì dải công cụ không đổi — không nút lạ nào mọc ra', () => {
+    const { queryByText } = buildWithToolbarEnd({ toolbarEnd: undefined })
+    expect(queryByText('Thêm dòng')).not.toBeInTheDocument()
+  })
+
+  it('toolbarEnd một mình (không toolbar, mọi cột khai hideable:false) vẫn đủ để DỰNG hàng công cụ', () => {
+    //  Trước khi thêm `toolbarEnd` vào điều kiện hiện hàng, một màn chỉ khai
+    //  prop này (không có `toolbar`, không cột nào ẩn/hiện được) sẽ mất luôn
+    //  cả hàng — nút hành động chính biến mất không dấu vết.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <DataTable
+          columns={[{ key: 'name', header: 'Tên', cell: (r: Row) => r.name, hideable: false }]}
+          rows={ROWS}
+          getRowId={(r) => r.id}
+          idColumn={false}
+          toolbarEnd={<button type="button">Thêm dòng</button>}
+        />
+      </QueryClientProvider>,
+    )
+    expect(screen.getByText('Thêm dòng')).toBeInTheDocument()
+  })
+})

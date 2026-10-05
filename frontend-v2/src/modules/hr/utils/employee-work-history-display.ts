@@ -65,15 +65,41 @@ export function workHistorySummaryLine(row: EmployeeWorkHistory): string {
  * Ngày chính hiện ở ĐẦU mốc — khác nhau theo khu (đại ca chốt): khu Quá trình
  * công tác đọc khoảng hiệu lực (`from_date → to_date`/`→ nay`), khu Quyết định
  * đọc ngày KÝ (`decision_date`, khác `from_date` — Q1).
+ *
+ * ⚠️ Không PHẢI mọi dòng có số QĐ đều có ngày ký (`decision_date` để trống —
+ * ghi tay thiếu, hoặc nhập bù lịch sử cũ không còn giữ ngày ký). Review
+ * 03/10/2026: bản cũ hiện cứng «—» cho cả dòng này, đọc như lỗi dữ liệu. Không
+ * có ngày ký thì lấy `from_date` (ngày HIỆU LỰC của dòng) làm mốc thay — ghi
+ * rõ tiền tố «Hiệu lực» để không ai đọc nhầm đó là ngày ký.
  */
 export function workHistoryTimelineDateLabel(
   row: EmployeeWorkHistory,
   variant: WorkHistoryTimelineVariant,
 ): string {
   if (variant === 'decision') {
-    return row.decision_date ? formatDate(row.decision_date) : '—'
+    if (row.decision_date) return formatDate(row.decision_date)
+    return `Hiệu lực ${formatDate(row.from_date)}`
   }
   const from = formatDate(row.from_date)
   const to = row.to_date ? formatDate(row.to_date) : 'nay'
   return `${from} → ${to}`
+}
+
+/**
+ * Chữ ở ô «Đến ngày» khi dòng CHƯA có ngày kết thúc. Trước 05/10/2026 ô này cứ
+ * `to_date` rỗng là hiện «Đang hiệu lực» — nhập bù một dòng chính cũ hơn (vd
+ * Bổ nhiệm 03/10 nhập sau Điều chuyển 04/10) thì hai dòng cùng «Đang hiệu
+ * lực». Nay đọc chung cờ `is_current` của backend (đã xét dòng chính mới hơn
+ * thay thế) với huy hiệu «Hiện tại» ở dòng thời gian:
+ * - `is_current` → «Đang hiệu lực»;
+ * - chưa tới ngày bắt đầu → «Chưa hiệu lực»;
+ * - còn lại (đã bị dòng chính mới hơn thay) → `null`, nơi gọi hiện «—».
+ */
+export function workHistoryOpenEndLabel(
+  row: Pick<EmployeeWorkHistory, 'from_date' | 'is_current'>,
+  today: string,
+): 'Đang hiệu lực' | 'Chưa hiệu lực' | null {
+  if (row.is_current) return 'Đang hiệu lực'
+  if (row.from_date > today) return 'Chưa hiệu lực'
+  return null
 }

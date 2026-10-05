@@ -202,6 +202,14 @@ export interface DataTableProps<T> {
    */
   toolbarActionsClassName?: string
   /**
+   * Nội dung chèn SAU CÙNG của nhóm nút bên phải — sau menu «Cột» (CR qua-trinh-cong-tac,
+   * 03/10/2026). Dùng cho nút hành động chính của cả khu (vd «Thêm dòng») khi màn muốn GỘP
+   * tiêu đề + nút chuyển chế độ xem + Tải lại + Cột + nút đó vào MỘT hàng duy nhất thay vì
+   * dựng thêm một hàng riêng bên trên bảng. Bỏ trống thì nhóm nút phải giữ nguyên như cũ
+   * (Xóa lọc · Tải lại · Cột) — cộng thêm, không đổi hành vi mặc định.
+   */
+  toolbarEnd?: ReactNode
+  /**
    * Việc chạy khi bấm **Xóa lọc**. Bỏ trống = nút tự xóa mọi param lọc trên URL
    * (đúng cho mọi màn danh sách, vì state bộ lọc nằm trên URL). Chỉ truyền vào
    * khi bảng giữ bộ lọc bằng state cục bộ — bảng con trong trang chi tiết.
@@ -281,6 +289,7 @@ export function DataTable<T>({
   toolbar,
   toolbarClassName,
   toolbarActionsClassName,
+  toolbarEnd,
   onResetFilters,
   filtersActive,
   keepFilterParams,
@@ -477,7 +486,9 @@ export function DataTable<T>({
 
   return (
     <div className={cn('flex flex-col', fillHeight && 'min-h-0 flex-1')}>
-      {(toolbar || (!asCards && tableColumns.some((c) => c.hideable !== false))) && (
+      {(toolbar ||
+        toolbarEnd ||
+        (!asCards && tableColumns.some((c) => c.hideable !== false))) && (
         <div
           className={cn('mb-4 flex shrink-0 flex-wrap items-center gap-3', toolbarClassName)}
         >
@@ -524,6 +535,11 @@ export function DataTable<T>({
                 onReset={resetLayout}
               />
             )}
+
+            {/*  Nút hành động chính của màn (vd «Thêm dòng») — luôn SAU CÙNG,
+                 kể cả ở chế độ thẻ: nó không gắn với cột nào nên không có lý
+                 do gì ẩn theo `ColumnVisibilityMenu`. */}
+            {toolbarEnd}
           </div>
         </div>
       )}

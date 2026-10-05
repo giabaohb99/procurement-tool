@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as CoreApiModule from '@/core/api'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { toDateInputValue } from '@/shared/utils/format-date'
 import type * as EmployeeWorkHistoryApiModule from '../api/employee-work-history-api'
@@ -37,9 +38,20 @@ vi.mock('@/shared/ui/confirm-dialog', () => ({
 }))
 
 const uploadWorkHistoryFilesMock = vi.fn()
+const fetchWorkHistoryFilesMock = vi.fn()
 vi.mock('../api/employee-work-history-api', async (importOriginal) => {
   const actual = await importOriginal<typeof EmployeeWorkHistoryApiModule>()
-  return { ...actual, uploadWorkHistoryFiles: (...args: unknown[]) => uploadWorkHistoryFilesMock(...args) }
+  return {
+    ...actual,
+    uploadWorkHistoryFiles: (...args: unknown[]) => uploadWorkHistoryFilesMock(...args),
+    fetchWorkHistoryFiles: (...args: unknown[]) => fetchWorkHistoryFilesMock(...args),
+  }
+})
+
+const fetchBlobUrlMock = vi.fn()
+vi.mock('@/core/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof CoreApiModule>()
+  return { ...actual, fetchBlobUrl: (...args: unknown[]) => fetchBlobUrlMock(...args), downloadFile: vi.fn() }
 })
 
 const employee: Employee = {
@@ -69,6 +81,8 @@ function renderDialog(
     row?: EmployeeWorkHistory | null
     allRows?: EmployeeWorkHistory[]
     queryClient?: QueryClient
+    requireDecisionNo?: boolean
+    createTitle?: string
   } = {},
 ) {
   const queryClient = options.queryClient ?? new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -84,6 +98,8 @@ function renderDialog(
         extraDeptIds={[]}
         canOpenFiles={options.canOpenFiles ?? true}
         seed={seed as never}
+        requireDecisionNo={options.requireDecisionNo}
+        createTitle={options.createTitle}
       />
     </QueryClientProvider>
   )
@@ -132,6 +148,10 @@ beforeEach(() => {
   confirmMock.mockReset()
   uploadWorkHistoryFilesMock.mockReset()
   uploadWorkHistoryFilesMock.mockResolvedValue([])
+  fetchWorkHistoryFilesMock.mockReset()
+  fetchWorkHistoryFilesMock.mockResolvedValue([])
+  fetchBlobUrlMock.mockReset()
+  fetchBlobUrlMock.mockResolvedValue('blob:fake')
 })
 
 describe('EmployeeWorkHistoryFormDialog', () => {
@@ -170,6 +190,46 @@ describe('EmployeeWorkHistoryFormDialog', () => {
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
     expect(outerSubmit).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Lỗi phát hiện lúc kiểm tay bằng Chrome DevTools 03/10/2026: Sửa → Quản lý
+   * tệp → Xem trước → đóng từng hộp (Close) → đóng hộp Sửa (Hủy/Close) — nghi
+   * có lần bắn `PATCH /api/employees/:id` (submit cả form hồ sơ ngoài trang).
+   * Hộp «Tệp quyết định» và hộp «Xem trước» đứng NGANG HÀNG (không lồng
+   * trong) `<form>` đã chặn lan ở trên, nên phải tự có ranh giới riêng — xem
+   * `employee-work-history-files-dialog.tsx` + `attachment-preview-dialog.tsx`.
+   */
+  it('bẫy 1 mở rộng: Quản lý tệp → Xem trước → đóng hết → KHÔNG submit form cha', async () => {
+    fetchWorkHistoryFilesMock.mockResolvedValue([
+      { id: 1, file_id: 1, filename: 'qd.pdf', url: '', content_type: 'application/pdf', size: 100 },
+    ])
+    const outerSubmit = vi.fn()
+    const user = userEvent.setup()
+    renderDialog(
+      { event_type: 9, from_date: TODAY, to_date: '' },
+      { outerSubmit, row: workHistoryRow(), canOpenFiles: true },
+    )
+
+    await user.click(screen.getByRole('button', { name: /Quản lý tệp/ }))
+    const previewBtn = await screen.findByRole('button', { name: /Xem trước qd\.pdf/ })
+    await user.click(previewBtn)
+
+    await waitFor(() => screen.getByRole('button', { name: /Mở tab mới/ }))
+    await user.click(screen.getByRole('button', { name: /Mở tab mới/ }))
+    await user.click(screen.getByRole('button', { name: /Tải về$/ }))
+
+    //  Đóng hộp Xem trước rồi hộp Tệp (trong ra ngoài) qua nút Close (X) của
+    //  Radix — cả hai quản lý `open` bằng state nội bộ thật (`previewing`/
+    //  `filesDialogOpen`) nên bấm Close THỰC SỰ đóng được (khác hộp Sửa ngoài
+    //  cùng, cố ý giữ `open` tĩnh ở `renderDialog` cho mọi bài kiểm khác).
+    let closeButtons = screen.queryAllByRole('button', { name: /close/i })
+    await user.click(closeButtons[closeButtons.length - 1])
+    closeButtons = screen.queryAllByRole('button', { name: /close/i })
+    await user.click(closeButtons[closeButtons.length - 1])
+
+    expect(outerSubmit).not.toHaveBeenCalled()
+    expect(mutateAsync).not.toHaveBeenCalled()
   })
 
   it('từ chối câu hỏi áp hồ sơ → gửi apply_to_profile:false', async () => {
@@ -323,5 +383,71 @@ describe('EmployeeWorkHistoryFormDialog — M5 (nạp lại danh sách sau khi t
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
     expect(uploadWorkHistoryFilesMock).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Mục 3 (03/10/2026) — nút «+ Thêm quyết định» của tab «Quyết định bổ nhiệm»
+ * mở ĐÚNG hộp này nhưng với tiêu đề riêng và Số QĐ chuyển từ tùy chọn sang
+ * BẮT BUỘC (`employeeWorkHistoryDecisionSchema`). Validate ở TẦNG FORM —
+ * không gọi API khi Số QĐ còn trống.
+ */
+describe('EmployeeWorkHistoryFormDialog — createTitle/requireDecisionNo (mục 3, nút «+ Thêm quyết định»)', () => {
+  it('requireDecisionNo + createTitle → tiêu đề đổi + nhãn Số QĐ thêm dấu *, KHÔNG đụng mặc định khi không truyền', () => {
+    renderDialog(
+      { event_type: 3, from_date: TODAY, to_date: '' },
+      { requireDecisionNo: true, createTitle: 'Thêm quyết định bổ nhiệm' },
+    )
+    expect(screen.getByText('Thêm quyết định bổ nhiệm')).toBeInTheDocument()
+    expect(screen.queryByText('Thêm quá trình công tác')).not.toBeInTheDocument()
+    expect(screen.getByText('Số QĐ *')).toBeInTheDocument()
+  })
+
+  it('không truyền requireDecisionNo/createTitle → giữ nguyên hành vi cũ (không hồi quy)', () => {
+    renderDialog({ event_type: 9, from_date: TODAY, to_date: '' })
+    expect(screen.getByText('Thêm quá trình công tác')).toBeInTheDocument()
+    expect(screen.getByText('Số QĐ')).toBeInTheDocument()
+    expect(screen.queryByText('Số QĐ *')).not.toBeInTheDocument()
+  })
+
+  it('requireDecisionNo=true + Số QĐ rỗng → bấm Lưu hiện lỗi NGAY TẠI FORM, không gọi API', async () => {
+    renderDialog(
+      { event_type: 3, from_date: TODAY, to_date: '', decision_no: '' },
+      { requireDecisionNo: true },
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByText('Nhập số QĐ')).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('requireDecisionNo=true + đã nhập Số QĐ → lưu được như thường', async () => {
+    renderDialog(
+      { event_type: 3, from_date: TODAY, to_date: '', decision_no: 'QD-2026-099' },
+      { requireDecisionNo: true },
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('Nhập số QĐ')).not.toBeInTheDocument()
+  })
+
+  it('requireDecisionNo=false (mặc định, tab Quá trình công tác) → Số QĐ rỗng vẫn lưu được (không hồi quy)', async () => {
+    renderDialog({ event_type: 9, from_date: TODAY, to_date: '', decision_no: '' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+  })
+
+  it('SỬA dòng có sẵn (row != null) → tiêu đề vẫn «Sửa quá trình công tác» dù có createTitle (chỉ áp lúc TẠO MỚI)', () => {
+    renderDialog(
+      { event_type: 3, from_date: TODAY, to_date: '' },
+      { row: workHistoryRow(), createTitle: 'Thêm quyết định bổ nhiệm', requireDecisionNo: true },
+    )
+    expect(screen.getByText('Sửa quá trình công tác')).toBeInTheDocument()
+    expect(screen.queryByText('Thêm quyết định bổ nhiệm')).not.toBeInTheDocument()
   })
 })

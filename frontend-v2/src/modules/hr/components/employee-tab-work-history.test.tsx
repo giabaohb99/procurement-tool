@@ -147,6 +147,22 @@ describe('EmployeeTabWorkHistory', () => {
     expect(screen.getByText('Đang hiệu lực')).toBeInTheDocument()
   })
 
+  //  Lỗi 05/10/2026: dòng chính nhập bù bị dòng mới hơn thay vẫn hiện «Đang hiệu lực».
+  it('to_date rỗng nhưng is_current=false (đã bị dòng chính mới hơn thay) → chỉ MỘT «Đang hiệu lực»', () => {
+    state.result = {
+      items: [
+        row({ id: 9, to_date: null, from_date: '2026-10-04', is_current: true }),
+        row({ id: 10, to_date: null, from_date: '2026-10-03', is_current: false }),
+      ],
+      can_edit: true,
+      can_open_files: true,
+    }
+
+    renderTab()
+
+    expect(screen.getAllByText('Đang hiệu lực')).toHaveLength(1)
+  })
+
   it('danh sách rỗng + can_edit → có nút «Tạo dòng đầu từ hồ sơ»', () => {
     state.result = { items: [], can_edit: true, can_open_files: true }
 

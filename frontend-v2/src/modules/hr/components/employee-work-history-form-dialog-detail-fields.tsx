@@ -12,6 +12,8 @@ interface EmployeeWorkHistoryDetailFieldsProps {
   companies: LookupItem[]
   departments: LookupItem[]
   positions: LookupItem[]
+  /** Nút «+ Thêm quyết định» (mục 3, 03/10/2026) — Số QĐ bắt buộc, thêm dấu `*`. */
+  requireDecisionNo?: boolean
 }
 
 /**
@@ -25,6 +27,7 @@ export function EmployeeWorkHistoryDetailFields({
   companies,
   departments,
   positions,
+  requireDecisionNo = false,
 }: EmployeeWorkHistoryDetailFieldsProps) {
   return (
     <>
@@ -88,7 +91,7 @@ export function EmployeeWorkHistoryDetailFields({
           name="decision_no"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Số QĐ</FormLabel>
+              <FormLabel>{requireDecisionNo ? 'Số QĐ *' : 'Số QĐ'}</FormLabel>
               <FormControl>
                 <Input {...field} maxLength={50} />
               </FormControl>

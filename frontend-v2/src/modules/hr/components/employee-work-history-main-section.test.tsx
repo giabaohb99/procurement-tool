@@ -157,3 +157,48 @@ describe('EmployeeWorkHistoryMainSection', () => {
     expect(screen.queryByRole('button', { name: /^4$/ })).not.toBeInTheDocument()
   })
 })
+
+/**
+ * Gộp hàng điều khiển thành MỘT HÀNG (đại ca chê hai hàng rời rạc, 03/10/2026):
+ * tiêu đề + toggle đi qua `toolbar` của `DataTable`, «Thêm dòng» đi qua
+ * `toolbarEnd` (sau menu «Cột»), Tải lại tự dựng lại ở chế độ Dòng thời gian.
+ */
+describe('EmployeeWorkHistoryMainSection — gộp thanh điều khiển một hàng', () => {
+  it('chế độ Bảng: có Tải lại + Cột + Thêm dòng, Thêm dòng đứng SAU Cột, không có Xóa lọc', () => {
+    renderSection([row({ id: 1 })], { onAddClick: vi.fn() })
+
+    expect(screen.getByRole('button', { name: 'Tải lại dữ liệu' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cột' })).toBeInTheDocument()
+    //  «Xóa lọc» chỉ nên hiện khi THẬT SỰ có bộ lọc — khu này không có bộ lọc
+    //  nào, chỉ có `whView` (không phải lọc), nên dù `toolbar` nay đã khai
+    //  (trước đây trống, chưa từng gặp nhánh này) thì nút đó vẫn phải ẩn.
+    expect(screen.queryByRole('button', { name: 'Xóa lọc' })).not.toBeInTheDocument()
+
+    const buttons = Array.from(document.querySelectorAll('button')).map((b) => b.textContent)
+    const addIndex = buttons.findIndex((t) => t?.includes('Thêm dòng'))
+    const columnsIndex = buttons.findIndex((t) => t?.includes('Cột'))
+    expect(addIndex).toBeGreaterThan(columnsIndex)
+  })
+
+  it('chế độ Dòng thời gian: vẫn có Tải lại, KHÔNG có menu Cột, không Xóa lọc', async () => {
+    renderSection([row({ id: 1 })], { onAddClick: vi.fn() })
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Dòng thời gian' }))
+
+    expect(screen.getByRole('button', { name: 'Tải lại dữ liệu' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cột' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xóa lọc' })).not.toBeInTheDocument()
+    //  Nút Thêm dòng vẫn phải còn — chuyển qua dòng thời gian không phải mất quyền ghi.
+    expect(screen.getByRole('button', { name: /Thêm dòng/ })).toBeInTheDocument()
+  })
+
+  it('bấm Tải lại ở chế độ Dòng thời gian gọi đúng onRefresh truyền từ cha', async () => {
+    const onRefresh = vi.fn().mockResolvedValue(undefined)
+    renderSection([row({ id: 1 })], { onRefresh })
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Dòng thời gian' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Tải lại dữ liệu' }))
+
+    expect(onRefresh).toHaveBeenCalledTimes(1)
+  })
+})

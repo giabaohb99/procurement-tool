@@ -335,7 +335,7 @@ export function EmployeeDetailPage() {
             </TabsContent>
 
             <TabsContent value="decisions" className="mt-5 max-md:mt-2">
-              <EmployeeTabWorkDecisions employee={employee} onGoToWorkHistoryClick={() => setTab('work-history')} />
+              <EmployeeTabWorkDecisions employee={employee} />
             </TabsContent>
 
             <TabsContent value="contact" className="mt-5 max-md:mt-2">

@@ -5,6 +5,7 @@ import {
   filterDecisionRows,
   sortWorkHistoryNewestFirst,
   workHistoryBadgeVariant,
+  workHistoryOpenEndLabel,
   workHistorySummaryLine,
   workHistoryTimelineDateLabel,
 } from './employee-work-history-display'
@@ -147,8 +148,39 @@ describe('workHistoryTimelineDateLabel', () => {
     expect(workHistoryTimelineDateLabel(r, 'decision')).toBe('10/01/2026')
   })
 
-  it('variant "decision" + decision_date null → "—" (không ném lỗi)', () => {
-    const r = row({ decision_date: null })
-    expect(workHistoryTimelineDateLabel(r, 'decision')).toBe('—')
+  it('variant "decision" + decision_date null → dùng from_date, ghi rõ «Hiệu lực» (không phải «—»)', () => {
+    //  Review 03/10/2026: dòng có decision_no nhưng CHƯA GHI ngày ký — bản cũ
+    //  hiện «—» đọc như lỗi dữ liệu dù dòng thời gian hoàn toàn có mốc để dùng.
+    const r = row({ from_date: '2026-10-03', decision_date: null })
+    expect(workHistoryTimelineDateLabel(r, 'decision')).toBe('Hiệu lực 03/10/2026')
+  })
+})
+
+/**
+ * Lỗi 05/10/2026 (bấm thử trên trình duyệt): nhập bù Bổ nhiệm 03/10 sau Điều
+ * chuyển 04/10 → bảng hiện hai dòng cùng «Đang hiệu lực» vì ô chỉ xét `to_date`
+ * rỗng. Ô giờ theo `is_current` của backend — đừng quay về xét `to_date`.
+ */
+describe('workHistoryOpenEndLabel', () => {
+  const today = '2026-10-05'
+
+  it('is_current → «Đang hiệu lực»', () => {
+    expect(workHistoryOpenEndLabel({ from_date: '2026-10-04', is_current: true }, today)).toBe('Đang hiệu lực')
+  })
+
+  it('dòng chính bị dòng mới hơn thay (is_current=false, đã qua ngày bắt đầu) → null, KHÔNG «Đang hiệu lực»', () => {
+    expect(workHistoryOpenEndLabel({ from_date: '2026-10-03', is_current: false }, today)).toBeNull()
+  })
+
+  it('bắt đầu từ ngày mai → «Chưa hiệu lực»', () => {
+    expect(workHistoryOpenEndLabel({ from_date: '2026-10-06', is_current: false }, today)).toBe('Chưa hiệu lực')
+  })
+
+  it('bắt đầu đúng hôm nay mà backend nói không hiện hành → null (không tự đoán ngược backend)', () => {
+    expect(workHistoryOpenEndLabel({ from_date: today, is_current: false }, today)).toBeNull()
+  })
+
+  it('from_date rỗng (dữ liệu hỏng) + is_current=false → null, không ném lỗi', () => {
+    expect(workHistoryOpenEndLabel({ from_date: '', is_current: false }, today)).toBeNull()
   })
 })
