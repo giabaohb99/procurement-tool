@@ -12095,3 +12095,5 @@ cấu trúc dữ liệu, nghiệp vụ phía máy chủ, giao diện. Bot làm l
 làm nốt. Thẻ kế hoạch nói trước việc sẽ chia mấy phần. Kèm theo là tài liệu hướng dẫn bật Google cá nhân trên dev.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py · service.py · tasks.py · doc/agent-hub/02-bo-quy-tac-bot.md · doc/agent-hub/10-huong-dan-noi-google.md
+Commit: 7b35d573 (erp-v2 7b35d573)
+Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
