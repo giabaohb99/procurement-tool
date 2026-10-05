@@ -179,6 +179,8 @@ liệt kê cả kho khảo sát. Chỉ đổi giao diện ERP v2.
 
 Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm ở purchase-request-process-card.test.tsx.
 Kiểm: tsc 0 lỗi, eslint sạch, 14 bài của màn xử lý xanh.
+Commit: 32dcd96d (chung với bao-CR-580) trên erp-v2.
+Deploy: DEV 05/10 (erp). Prod chưa.
 
 ---
 
@@ -206,6 +208,10 @@ Mã nguồn: `survey_request/service.py` (`unlink_deleted_pr`, `unlink_deleted_p
 `backend/scripts/unlink_deleted_pr_cr580.py`.
 Kiểm: 10 bài mới `test_xoa_ycmh_go_lien_ket_ycbg_cr580.py` xanh, 216 bài các tệp liên quan xanh. Bài canh bộ mã hành
 động còn đỏ một chỗ không phải của em: `employee/work_history_controller.py::_audit` (duoc-CR-585).
+Commit: 32dcd96d trên erp-v2.
+Deploy: DEV 05/10 (api, celery-worker, celery-beat, erp; không có migration); đã chạy script dọn trên dev, gỡ 2 YCMH cũ
+PYC08072601 và PYC08072602, hai YCBG YCKS08072601 và YCKS08072603 về «Đã khảo sát». Prod chưa; prod không có dữ liệu cũ
+cần dọn (đã đếm 05/10).
 
 ---
 
