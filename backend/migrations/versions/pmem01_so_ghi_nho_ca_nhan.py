@@ -5,7 +5,7 @@
   - tab_agent_message.scope : 0 chua phan · 1 viec cong ty · 2 viec ca nhan
 
 Revision ID: pmem01
-Revises: wsched01
+Revises: nd24reg01
 """
 from typing import Sequence, Union
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "pmem01"
-down_revision: Union[str, None] = "wsched01"
+down_revision: Union[str, None] = "nd24reg01"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
