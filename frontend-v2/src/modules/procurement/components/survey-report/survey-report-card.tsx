@@ -238,6 +238,13 @@ export function SurveyReportCard({
       status: isReportDocDone(doc) ? REPORT_DOC_DOING : REPORT_DOC_DONE,
     })
 
+  //  Đổi trạng thái NGAY TRÊN DÒNG (ô chọn nhỏ thay pill) — đại ca 06/10: «có cách nào
+  //  chỉnh trạng thái ở ngoài dòng luôn không». Cùng đường với nút ✓, không toast.
+  const handleSetDocStatus = (doc: SurveyReportDoc, status: number) => {
+    if (status === doc.status) return
+    actions.setDocStatus.mutate({ docId: doc.id, status })
+  }
+
   //  Xóa MỘT hồ sơ ngay trên dòng, không phải mở hộp sửa: mẫu chung đổ ra
   //  hàng chục dòng, dọn bớt mà mỗi dòng ba cú bấm thì không ai dọn. Vẫn hỏi
   //  xác nhận vì xóa là mất, và nói rõ hồ sơ khác đang chờ nó sẽ được mở khóa.
@@ -555,6 +562,7 @@ export function SurveyReportCard({
                       onEditDoc={(doc) => setDocDialog({ doc, itemId: doc.item_id })}
                       onDeleteDoc={handleDeleteDoc}
                       onToggleDoc={handleToggleDoc}
+                      onSetDocStatus={handleSetDocStatus}
                     />
                   ) : (
                     <ReportItemTable
@@ -578,6 +586,7 @@ export function SurveyReportCard({
                       onDeleteDoc={handleDeleteDoc}
                       onEditPhase={(phase) => setPhaseDialog({ phase })}
                       onToggleDoc={handleToggleDoc}
+                      onSetDocStatus={handleSetDocStatus}
                     />
                   )}
 
@@ -697,6 +706,7 @@ interface ReportPhaseListProps {
   onEditDoc: (doc: SurveyReportDoc) => void
   onDeleteDoc: (doc: SurveyReportDoc) => void
   onToggleDoc: (doc: SurveyReportDoc) => void
+  onSetDocStatus: (doc: SurveyReportDoc, status: number) => void
 }
 
 /**
@@ -721,6 +731,7 @@ function ReportPhaseList({
   onEditDoc,
   onDeleteDoc,
   onToggleDoc,
+  onSetDocStatus,
 }: ReportPhaseListProps) {
   return (
     <div className="space-y-4">
@@ -837,6 +848,7 @@ function ReportPhaseList({
                     onToggle={() => onToggleDoc(doc)}
                     onEdit={() => onEditDoc(doc)}
                     onDelete={() => onDeleteDoc(doc)}
+                    onStatusChange={(status) => onSetDocStatus(doc, status)}
                   />
                 ))}
               </div>
@@ -872,6 +884,7 @@ interface ReportItemTableProps {
   onDeleteDoc: (doc: SurveyReportDoc) => void
   onEditPhase: (phase: SurveyReportPhase) => void
   onToggleDoc: (doc: SurveyReportDoc) => void
+  onSetDocStatus: (doc: SurveyReportDoc, status: number) => void
 }
 
 /**
@@ -899,6 +912,7 @@ function ReportItemTable({
   onDeleteDoc,
   onEditPhase,
   onToggleDoc,
+  onSetDocStatus,
 }: ReportItemTableProps) {
   const doneCount = report.docs.filter(isReportDocDone).length
   return (
@@ -980,6 +994,7 @@ function ReportItemTable({
                           onDeleteDoc={onDeleteDoc}
                           onEditPhase={onEditPhase}
                           onToggleDoc={onToggleDoc}
+                          onSetDocStatus={onSetDocStatus}
                         />
                       </TableCell>
                     </TableRow>
@@ -1066,6 +1081,7 @@ interface ReportRowDetailProps {
   onDeleteDoc: (doc: SurveyReportDoc) => void
   onEditPhase: (phase: SurveyReportPhase) => void
   onToggleDoc: (doc: SurveyReportDoc) => void
+  onSetDocStatus: (doc: SurveyReportDoc, status: number) => void
 }
 
 /**
@@ -1087,6 +1103,7 @@ function ReportRowDetail({
   onDeleteDoc,
   onEditPhase,
   onToggleDoc,
+  onSetDocStatus,
 }: ReportRowDetailProps) {
   return (
     <div className="space-y-4">
@@ -1130,6 +1147,7 @@ function ReportRowDetail({
                     onToggle={() => onToggleDoc(doc)}
                     onEdit={() => onEditDoc(doc)}
                     onDelete={() => onDeleteDoc(doc)}
+                    onStatusChange={(status) => onSetDocStatus(doc, status)}
                   />
                 ))}
               </div>
@@ -1419,6 +1437,8 @@ interface ReportDocRowProps {
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
+  /** Đổi trạng thái ngay trên dòng (ô chọn nhỏ thay pill khi được sửa). */
+  onStatusChange: (status: number) => void
 }
 
 function ReportDocRow({
@@ -1431,6 +1451,7 @@ function ReportDocRow({
   onToggle,
   onEdit,
   onDelete,
+  onStatusChange,
 }: ReportDocRowProps) {
   const done = isReportDocDone(doc)
   const locked = isReportDocLocked(doc, docsById)
@@ -1537,14 +1558,46 @@ function ReportDocRow({
       <DocDateChip doc={doc} />
       <DocAssignee name={doc.assignee_name} />
 
-      <span
-        className={cn(
-          'shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
-          STATUS_PILL[doc.status] ?? STATUS_PILL[0],
-        )}
-      >
-        {doc.status_label}
-      </span>
+      {canEdit ? (
+        //  Ô chọn trạng thái NGAY TRÊN DÒNG — mang màu pill để liếc vẫn đọc được trạng thái.
+        //  Hồ sơ đang KHÓA (chờ tiên quyết) không chọn được «Hoàn thành», cùng luật với nút ✓.
+        <Select
+          value={String(doc.status)}
+          onValueChange={(value) => onStatusChange(Number(value))}
+          disabled={busy}
+        >
+          <SelectTrigger
+            size="sm"
+            aria-label={`Trạng thái hồ sơ "${doc.title}"`}
+            className={cn(
+              'h-6 shrink-0 gap-1 rounded-full border-0 px-2.5 text-[11px] font-semibold shadow-none',
+              STATUS_PILL[doc.status] ?? STATUS_PILL[0],
+            )}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="end">
+            {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
+              <SelectItem
+                key={code}
+                value={code}
+                disabled={locked && Number(code) === REPORT_DOC_DONE}
+              >
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <span
+          className={cn(
+            'shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
+            STATUS_PILL[doc.status] ?? STATUS_PILL[0],
+          )}
+        >
+          {doc.status_label}
+        </span>
+      )}
       {canEdit && (
         <>
           <Button

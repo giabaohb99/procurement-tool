@@ -143,7 +143,11 @@ Cách làm:
    «Time xử lý (ngày)» → hộp sửa hồ sơ thêm ô «Số ngày xử lý» (không lưu, gõ số ngày thì tự đặt dự định hoàn tất =
    ngày bắt đầu + n); «Kết quả» → thêm cột `result` cho hồ sơ, hiện trên dòng và trong hộp sửa. Bảng Excel không có
    giai đoạn và chạy tuần tự nên script nạp xếp vào 5 giai đoạn mẫu và nối mỗi dòng là tiên quyết của dòng kế.
-   Script `backend/scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]` nạp 21 dòng vào một đơn trên dev.
+   Script `backend/scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]` nạp 21 dòng vào một đơn trên dev
+   (dev: PO00376).
+4. Góp ý sau khi đại ca soi màn (chiều 06/10): trạng thái hồ sơ đổi được NGAY TRÊN DÒNG bằng ô chọn nhỏ mang màu
+   nhãn (hồ sơ đang khóa không chọn được Hoàn thành, cùng luật nút tick); hộp sửa bản cũ bỏ lặp tên hàng dài ở danh
+   sách tiên quyết (chỉ hiện khi khác dòng hàng đang chọn, cắt ngắn, rê chuột đọc đủ).
 
 Kiểm: máy chủ 114 bài liên quan xanh (8 bài mới `test_bao_cao_thuc_hien_dmh_cr602.py`, bài YCBG cũ chuyển sang khóa
 `report_id`); bản mới kiểm kiểu 0 lỗi, lint 0 lỗi, 39 bài helper + bảng dòng hàng xanh; bản cũ giữ đúng 4 lỗi nền.

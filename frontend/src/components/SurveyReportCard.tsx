@@ -61,6 +61,11 @@ function todayIso(): string {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
+/** Cắt nhãn dài cho thẻ phụ trong danh sách: quá 28 ký tự thì «…». */
+function shortLabel(text: string, max = 28): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text
+}
+
 function isLink(text: string): boolean {
   return /^https?:\/\//i.test(text.trim())
 }
@@ -171,6 +176,11 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   }
   async function toggleDone(doc: SurveyReportDoc) {
     const status = isReportDocDone(doc) ? REPORT_DOC_DOING : REPORT_DOC_DONE
+    await mutate(() => api.patch(`${base}/docs/${doc.id}`, { status }))
+  }
+  //  Đổi trạng thái NGAY TRÊN DÒNG (ô chọn nhỏ thay badge) — đại ca 06/10.
+  async function setDocStatus(doc: SurveyReportDoc, status: number) {
+    if (status === doc.status) return
     await mutate(() => api.patch(`${base}/docs/${doc.id}`, { status }))
   }
   async function saveDoc(docId: number | null, payload: SurveyReportDocPayload): Promise<boolean> {
@@ -319,7 +329,23 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
         {doc.assignee_name && (
           <span className="srp-avatar" title={`Thực hiện: ${doc.assignee_name}`}>{nameInitials(doc.assignee_name)}</span>
         )}
-        <span className={`badge ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}>{doc.status_label || REPORT_DOC_STATUS_LABELS[doc.status]}</span>
+        {canEdit ? (
+          //  Ô chọn trạng thái ngay trên dòng, mang màu badge; hồ sơ đang khóa không chọn được Hoàn thành (cùng luật nút ✓).
+          <select
+            className={`badge srp-status-select ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}
+            aria-label={`Trạng thái hồ sơ "${doc.title}"`}
+            value={doc.status}
+            disabled={busy}
+            onChange={(e) => setDocStatus(doc, Number(e.target.value))}
+            style={{ border: 0, cursor: 'pointer', textTransform: 'none', appearance: 'auto', paddingRight: 4 }}
+          >
+            {[REPORT_DOC_IDLE, REPORT_DOC_DOING, 2, REPORT_DOC_DONE].map((s) => (
+              <option key={s} value={s} disabled={locked && s === REPORT_DOC_DONE}>{REPORT_DOC_STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+        ) : (
+          <span className={`badge ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}>{doc.status_label || REPORT_DOC_STATUS_LABELS[doc.status]}</span>
+        )}
         {canEdit && (
           <>
             <button type="button" className="srp-ibtn" title="Sửa hồ sơ" onClick={() => openEditDoc(doc)}><i className="ti ti-pencil" /></button>
@@ -912,7 +938,14 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
                     onChange={(e) => set('depends', e.target.checked ? [...form.depends, d.id] : form.depends.filter((x) => x !== d.id))}
                   />
                   <span>{d.title}</span>
-                  <span style={{ color: 'var(--muted)', fontSize: 11.5 }}>· {itemLabel(d.item_id)}{isReportDocDone(d) ? ' · đã xong' : ''}</span>
+                  {/* Thẻ dòng hàng chỉ bày khi KHÁC dòng hàng đang chọn, và cắt ngắn — tên hàng dài
+                      (vd «BTP CHESSIN V1 bột trắng ngà (Pymetrozine…)») lặp ở mọi dòng làm danh sách
+                      không đọc nổi (đại ca soi popup 06/10). Rê chuột đọc đủ. */}
+                  {(d.item_id !== form.item_id || isReportDocDone(d)) && (
+                    <span style={{ color: 'var(--muted)', fontSize: 11.5 }} title={itemLabel(d.item_id)}>
+                      {d.item_id !== form.item_id ? `· ${shortLabel(itemLabel(d.item_id))}` : ''}{isReportDocDone(d) ? ' · đã xong' : ''}
+                    </span>
+                  )}
                 </label>
               ))}
             </div>
