@@ -12155,3 +12155,12 @@ Việc AI-0002 bot dừng đúng luật vì một bài kiểm an toàn cấm cô
 Tin nhắc trước cuộc họp không còn hiện chuỗi mã sự kiện; mã đó chỉ lưu trong sổ để khỏi nhắc hai lần.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py · agent_hub/briefs.py
+
+## ai-CR-088 | Bỏ việc thì đóng luôn lượt đang dở, báo cáo không đếm lượt kẹt của việc đã bỏ
+- status: xong
+- date: 2026-10-06
+Báo cáo tài nguyên sáng 06/10 ghi «1 lượt kẹt quá 2 giờ»: đó là lượt sửa mã của AI-0002, việc đại ca đã bỏ từ hôm
+05/10 nhưng lượt chạy vẫn nằm trạng thái đang chạy. Nay khi đại ca bỏ một việc, mọi lượt đang dở của việc đó tự đóng
+với ghi chú «việc đã bỏ», và báo cáo chỉ đếm lượt kẹt của những việc còn mở. Thêm một bài kiểm cho đúng tình huống này.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (cancel_task) · agent_hub/ops.py (activity_text)

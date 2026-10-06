@@ -487,8 +487,11 @@ def activity_text(db: Session) -> str:
                                                                  AgentRun.provider == "claude_code")) or 0)
     gemini = int(db.scalar(select(func.count(AgentRun.id)).where(AgentRun.started_at >= since,
                                                                  AgentRun.provider != "claude_code")) or 0)
+    #  ai-CR-088: chỉ đếm lượt kẹt của việc CÒN MỞ (lượt của việc đã bỏ / xong không còn ai chờ).
+    closed_ids = select(AgentTask.id).where(AgentTask.status.in_(CLOSED_STATUSES))
     stuck = int(db.scalar(select(func.count(AgentRun.id)).where(
-        AgentRun.status == RUN_RUNNING, AgentRun.started_at < now_utc() - timedelta(hours=2))) or 0)
+        AgentRun.status == RUN_RUNNING, AgentRun.started_at < now_utc() - timedelta(hours=2),
+        AgentRun.task_id.notin_(closed_ids))) or 0)
     ops_n = int(db.scalar(select(func.count(AgentOp.id)).where(AgentOp.created_at >= since)) or 0)
     inc_open = int(db.scalar(select(func.count(AgentIncident.id)).where(AgentIncident.status != INC_RESOLVED)) or 0)
     inc_day = int(db.scalar(select(func.count(AgentIncident.id)).where(AgentIncident.started_at >= since)) or 0)

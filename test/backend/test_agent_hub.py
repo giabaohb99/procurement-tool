@@ -7017,3 +7017,23 @@ def test_viec_rui_ro_vua_tu_duyet_lam_luon_rui_ro_cao_van_cho_duyet(db, bot, mon
     task2 = _task_with_plan(db, service, [], status=service.ST_TRIAGE)
     service.plan_task(db, task2)
     assert dispatched == [task.id] and task2.status == service.ST_PLAN       # rủi ro cao: chờ «duyệt»
+
+
+def test_bo_viec_dong_luot_dang_do_va_bao_cao_khong_dem_kep(db, bot):
+    """ai-CR-088: sáng 06/10 báo «1 lượt kẹt quá 2 giờ» — lượt sửa mã của AI-0002 đã bị đại ca bỏ."""
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.model import AgentRun
+
+    service, sent, _ = bot
+    task = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_CODE)
+    old = AgentRun(task_id=task.id, stage=4, provider="claude_code", model="x", status=service.RUN_RUNNING,
+                   started_at=datetime.utcnow() - timedelta(hours=3))
+    db.add(old)
+    db.commit()
+    assert "1 lượt kẹt" in ops.activity_text(db)
+    service.cancel_task(db, "12345", "", task)
+    db.commit()
+    assert old.status == service.RUN_ERROR and "việc đã bỏ" in old.error
+    assert "lượt kẹt" not in ops.activity_text(db)

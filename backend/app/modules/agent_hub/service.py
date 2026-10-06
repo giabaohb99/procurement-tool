@@ -2660,6 +2660,12 @@ def cancel_task(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
     task.status = ST_CANCELLED
     task.closed_at = datetime.now()
     task.note = "Đại ca bỏ từ Telegram"
+    #  ai-CR-088: lượt đang dở của việc bị bỏ (máy sửa mã đang chạy / máy tắt giữa chừng) đóng luôn — không thì nó
+    #  nằm «đang chạy» mãi và báo tài nguyên sáng 06/10 đếm thành «1 lượt kẹt quá 2 giờ».
+    for run in db.scalars(select(AgentRun).where(AgentRun.task_id == task.id, AgentRun.status == RUN_RUNNING)):
+        run.status = RUN_ERROR
+        run.error = (run.error or "") + " việc đã bỏ"
+        run.finished_at = datetime.now()
     telegram.answer_callback(cb_id, "Đã bỏ")
     #  Chỉ có toast thì khung chat không còn dấu vết gì (đại ca hỏi 23/09 về AI-0006).
     reply(db, chat_id, f"Đã bỏ <b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}. "
