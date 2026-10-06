@@ -12189,3 +12189,13 @@ khi hết 10 giây; vòng chạy mỗi phút vẫn giữ làm lưới đỡ. Câ
 
 Mã nguồn: backend/app/core/config.py (AGENT_TRIAGE_DELAY_SEC) · agent_hub/service.py (ack_task_message, _kick_triage)
 Deploy: dev 06/10, erp-v2 79654bb8 (Agent 1 gộp và dựng lại phía VPS); prod giữ lại.
+
+## ai-CR-092 | Bot gộp không còn kẹt vì hai sổ ghi chép, trả lời đúng khi đại ca bảo làm lúc đang làm
+- status: xong
+- date: 2026-10-06
+Việc AI-0003 sửa mã xong và kiểm xanh nhưng gộp vào erp-v2 bị dừng, vì sáng đó em và bot cùng ghi thêm một mục vào
+cuối sổ thay đổi và nhật ký task. Hai sổ này chỉ ghi thêm nên nay lượt gộp của bot giữ cả hai mục thay vì dừng; đã
+thử thật trên kho nháp. Thêm nữa, khi đại ca nhắn «làm đi» lúc bot đã tự duyệt và đang sửa, bot trả lời «em đang
+làm rồi» thay cho câu «không có phiên dở nào» dễ gây hiểu lầm.
+
+Mã nguồn: backend/app/modules/agent_hub/coder.py (APPEND_ONLY_DOCS, ensure_union_docs, merge_into_base) · agent_hub/service.py (start_continue)

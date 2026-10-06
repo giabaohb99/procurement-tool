@@ -2725,6 +2725,12 @@ def start_continue(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
     can_resume = task.status == ST_NEEDS_INPUT and bool(coder.resumable_session(db, task))
     can_phase = task.status in (ST_NEEDS_INPUT, ST_REVIEW) and bool(coder.phases_left(db, task)) \
         and not coder.merged_sha_for(db, task)
+    if not (can_resume or can_phase) and task.status in (ST_CODE, ST_SCANNING):
+        #  ai-CR-092: đại ca nhắn «oke làm đi» khi bot ĐÃ tự duyệt và đang sửa — trả lời «đang làm», đừng nói «không có phiên».
+        telegram.answer_callback(cb_id, "Em đang làm rồi")
+        if not cb_id:
+            reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b>: em đang làm rồi, xong em báo.", task_id=task.id)
+        return
     if not (can_resume or can_phase):
         telegram.answer_callback(cb_id, "Việc này không còn phiên dở để làm tiếp")
         if not cb_id:

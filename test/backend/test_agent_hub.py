@@ -7065,3 +7065,26 @@ def test_bo_viec_luc_dang_sua_ma_thi_khong_commit_khong_hoi_sinh(db, bot, monkey
     run = db.query(AgentRun).filter_by(task_id=task.id).one()
     assert run.status == coder.RUN_ERROR and "đã bỏ" in run.error
     assert len(sent) == before
+
+
+def test_gop_so_chi_ghi_them_kieu_union(tmp_path, monkeypatch):
+    """ai-CR-092: AI-0003 gộp xung đột chỉ vì bot và người cùng thêm mục cuối nhat-ky-task.md / change-log-ai.md."""
+    from app.modules.agent_hub import coder
+
+    (tmp_path / "info").mkdir()
+    (tmp_path / "info" / "attributes").write_text("*.bin binary\n", encoding="utf-8")
+    monkeypatch.setattr(coder, "_git", lambda cwd, *a, **kw: str(tmp_path) + "\n")
+    coder.ensure_union_docs("/worktrees/merge")
+    coder.ensure_union_docs("/worktrees/merge")          # chạy lại không nhân đôi dòng
+    lines = (tmp_path / "info" / "attributes").read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "*.bin binary"
+    assert lines.count("doc/tai-lieu-ky-thuat/nhat-ky-task.md merge=union") == 1
+    assert "doc/tai-lieu-ky-thuat/change-log-ai.md merge=union" in lines
+
+
+def test_lam_di_khi_bot_dang_sua_thi_bao_dang_lam(db, bot):
+    """ai-CR-092: 8:44 đại ca nhắn «oke làm đi» lúc bot đã tự duyệt và đang sửa — bot trả lời «không có phiên dở»."""
+    service, sent, _ = bot
+    task = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_CODE)
+    service.start_continue(db, "12345", "", task)
+    assert "đang làm rồi" in sent[-1] and task.status == service.ST_CODE

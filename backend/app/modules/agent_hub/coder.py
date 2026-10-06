@@ -2120,6 +2120,28 @@ def _merge_worktree() -> str:
     return str(wt)
 
 
+#  ai-CR-092: sổ CHỈ GHI THÊM — bot và người cùng thêm mục cuối sổ trong một buổi là gộp xung đột (AI-0003, 06/10),
+#  dù hai bên không đụng nhau. Gộp kiểu «union» giữ cả hai mục. Khai ở info/attributes của kho trên runner, không
+#  khai vào kho chung: chỉ lượt gộp của bot dùng, người gộp tay vẫn thấy xung đột như thường.
+APPEND_ONLY_DOCS = (
+    "doc/tai-lieu-ky-thuat/change-log-ai.md",
+    "doc/tai-lieu-ky-thuat/nhat-ky-task.md",
+    "doc/tai-lieu-ky-thuat/change-log.md",
+)
+
+
+def ensure_union_docs(worktree: str) -> None:
+    common = Path(_git(worktree, "rev-parse", "--git-common-dir", timeout=60).strip())
+    if not common.is_absolute():
+        common = Path(worktree) / common
+    attrs = common / "info" / "attributes"
+    attrs.parent.mkdir(parents=True, exist_ok=True)
+    have = attrs.read_text(encoding="utf-8").splitlines() if attrs.exists() else []
+    need = [f"{p} merge=union" for p in APPEND_ONLY_DOCS if f"{p} merge=union" not in have]
+    if need:
+        attrs.write_text("\n".join(have + need) + "\n", encoding="utf-8")
+
+
 def _push_base_branch(worktree: str) -> None:
     """Đẩy HEAD lên nhánh nền, KHÔNG --force: nhánh nền là của cả đội, bị từ chối thì thôi."""
     _git(worktree, "push", _repo_url(), f"HEAD:refs/heads/{settings.AGENT_BASE_BRANCH}",
@@ -2134,6 +2156,7 @@ def merge_into_base(task: AgentTask) -> str:
         _git(wt, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", timeout=60)
     except CoderError:
         raise CoderError(f"runner không còn nhánh {branch} — bấm Sửa để bot làm lại") from None
+    ensure_union_docs(wt)
     msg = (f"Gộp {branch} vào {settings.AGENT_BASE_BRANCH} ({task.code}: {task.title})\n\n"
            "Đại ca đồng ý trên Telegram; bot Agent Hub gộp (ai-CR-014).")
     try:
