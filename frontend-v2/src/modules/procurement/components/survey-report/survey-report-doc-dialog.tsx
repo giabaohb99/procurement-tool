@@ -295,7 +295,7 @@ export function SurveyReportDocDialog({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-[1fr_1fr_1fr_7rem]">
             <div className="space-y-1.5">
               <Label>Ngày bắt đầu thực hiện</Label>
               <DatePicker
@@ -311,26 +311,6 @@ export function SurveyReportDocDialog({
                 onChange={(value) => patch({ planned_date: value })}
                 placeholder="Chọn ngày dự định"
               />
-              {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-602):
-                  không lưu, suy từ hai mốc; gõ số ngày thì tự đặt ngày dự định =
-                  ngày bắt đầu + n. Chưa có ngày bắt đầu thì ô khóa, nói rõ vì sao. */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="whitespace-nowrap">Số ngày xử lý</span>
-                <Input
-                  type="number"
-                  min={0}
-                  className="h-7 w-20 px-2 text-right"
-                  aria-label="Số ngày xử lý"
-                  disabled={!draft.start_date}
-                  title={draft.start_date ? '' : 'Chọn ngày bắt đầu trước'}
-                  value={durationDays(draft.start_date, draft.planned_date) ?? ''}
-                  onChange={(e) => {
-                    const days = Number(e.target.value)
-                    if (!draft.start_date || !Number.isFinite(days) || days < 0) return
-                    patch({ planned_date: addDaysIso(draft.start_date, days) })
-                  }}
-                />
-              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Ngày hết hiệu lực</Label>
@@ -338,6 +318,27 @@ export function SurveyReportDocDialog({
                 value={draft.expires_at}
                 onChange={(value) => patch({ expires_at: value })}
                 placeholder="Chọn ngày hết hiệu lực"
+              />
+            </div>
+            {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-602): không
+                lưu, suy từ hai mốc; gõ số ngày thì tự đặt ngày dự định = ngày bắt đầu + n.
+                Là một ô đúng khuôn như ba ô ngày (bản đầu kẹp dưới ô ngày, nhãn xám nên
+                lệch — đại ca soi 06/10). Chưa có ngày bắt đầu thì ô khóa, nói rõ vì sao. */}
+            <div className="space-y-1.5">
+              <Label>Số ngày xử lý</Label>
+              <Input
+                type="number"
+                min={0}
+                className="text-right"
+                disabled={!draft.start_date}
+                placeholder={draft.start_date ? '' : 'Cần ngày bắt đầu'}
+                title={draft.start_date ? 'Dự định hoàn tất = ngày bắt đầu + số ngày' : 'Chọn ngày bắt đầu trước'}
+                value={durationDays(draft.start_date, draft.planned_date) ?? ''}
+                onChange={(e) => {
+                  const days = Number(e.target.value)
+                  if (!draft.start_date || !Number.isFinite(days) || days < 0) return
+                  patch({ planned_date: addDaysIso(draft.start_date, days) })
+                }}
               />
             </div>
           </div>

@@ -337,7 +337,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
             value={doc.status}
             disabled={busy}
             onChange={(e) => setDocStatus(doc, Number(e.target.value))}
-            style={{ border: 0, cursor: 'pointer', textTransform: 'none', appearance: 'auto', paddingRight: 4 }}
+            style={{ textTransform: 'none' }}
           >
             {[REPORT_DOC_IDLE, REPORT_DOC_DOING, 2, REPORT_DOC_DONE].map((s) => (
               <option key={s} value={s} disabled={locked && s === REPORT_DOC_DONE}>{REPORT_DOC_STATUS_LABELS[s]}</option>
@@ -884,25 +884,25 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
         <div className="form-row">
           <label>Dự định hoàn tất</label>
           <DateInput value={form.planned_date} onChange={(v) => set('planned_date', v)} />
-          {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — không lưu, gõ số ngày
-              thì dự định hoàn tất = ngày bắt đầu + n; chưa có ngày bắt đầu thì ô khóa. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12, color: 'var(--muted)' }}>
-            <span style={{ whiteSpace: 'nowrap' }}>Số ngày xử lý</span>
-            <input
-              type="number"
-              min={0}
-              style={{ width: 70, height: 26, textAlign: 'right' }}
-              aria-label="Số ngày xử lý"
-              disabled={!form.start_date}
-              title={form.start_date ? '' : 'Chọn ngày bắt đầu trước'}
-              value={durationDays(form.start_date, form.planned_date) ?? ''}
-              onChange={(e) => {
-                const days = Number(e.target.value)
-                if (!form.start_date || !Number.isFinite(days) || days < 0) return
-                set('planned_date', addDaysIso(form.start_date, days))
-              }}
-            />
-          </div>
+        </div>
+        {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — không lưu, gõ số ngày
+            thì dự định hoàn tất = ngày bắt đầu + n; chưa có ngày bắt đầu thì ô khóa. Là một ô
+            nhập đúng khuôn `form-row` như các ô khác (bản đầu kẹp dưới ô ngày nên lệch, đại ca soi 06/10). */}
+        <div className="form-row">
+          <label>Số ngày xử lý</label>
+          <input
+            type="number"
+            min={0}
+            placeholder={form.start_date ? 'Số ngày' : 'Chọn ngày bắt đầu trước'}
+            disabled={!form.start_date}
+            title={form.start_date ? 'Dự định hoàn tất = ngày bắt đầu + số ngày' : 'Chọn ngày bắt đầu trước'}
+            value={durationDays(form.start_date, form.planned_date) ?? ''}
+            onChange={(e) => {
+              const days = Number(e.target.value)
+              if (!form.start_date || !Number.isFinite(days) || days < 0) return
+              set('planned_date', addDaysIso(form.start_date, days))
+            }}
+          />
         </div>
         <div className="form-row">
           <label>Ngày hết hiệu lực</label>
