@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type * as CoreApiModule from '@/core/api'
 import type * as ReactRouterModule from 'react-router-dom'
@@ -83,44 +83,127 @@ function mockRequest(overrides: Partial<LeaveRequest> = {}): LeaveRequest {
   }
 }
 
+/** Ô vuông (checkbox in ra giấy) của một dòng loại hình nghỉ. */
+function boxOf(label: RegExp) {
+  return within(screen.getByRole('row', { name: label })).getByRole('img')
+}
+
 describe('LeaveRequestPrintPage', () => {
-  it('renders complete leave request sheet with correct fields and structure', () => {
-    testRequest.current = mockRequest()
+  //  06/10/2026 — mẫu Word 2026 «ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ»: Quốc hiệu thay logo, ba mục
+  //  đánh số, ba ô loại hình nghỉ, hai ô ký. Mẫu cũ (logo + ba cột ký có P.HCNS) không còn.
+  it('renders the 2026 leave form with national header, three numbered sections and two signatures', () => {
+    testRequest.current = mockRequest({ company_name: 'Công ty CP DEGO Holding' })
     render(
       <MemoryRouter>
         <LeaveRequestPrintPage />
       </MemoryRouter>,
     )
 
-    // Tiêu đề và biểu tượng
-    expect(screen.getByText('ĐƠN XIN NGHỈ PHÉP')).toBeInTheDocument()
-    expect(screen.getByAltText('DEGO HOLDING')).toBeInTheDocument()
+    expect(screen.getByText('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM')).toBeInTheDocument()
+    expect(screen.getByText('Độc lập - Tự do - Hạnh phúc')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ' })).toBeInTheDocument()
+    expect(screen.queryByAltText('DEGO HOLDING')).not.toBeInTheDocument()
+    expect(screen.getByText(/Cần Thơ, ngày 09 tháng 06 năm 2026/)).toBeInTheDocument()
 
     // Kính gửi
-    expect(screen.getByText(/Trưởng phòng\/Bộ phận\/Nhóm:/)).toBeInTheDocument()
-    expect(screen.getByText(/Trưởng phòng HCNS/)).toBeInTheDocument()
+    expect(screen.getByText('- Ban Giám đốc Công ty CP DEGO Holding')).toBeInTheDocument()
+    expect(screen.getByText('- Bộ phận Nhân sự')).toBeInTheDocument()
+    expect(screen.getByText('- Trưởng bộ phận: Lập trình & IT nội bộ')).toBeInTheDocument()
 
-    // Thông tin nhân sự & chữ ký
+    // Ba mục
+    expect(screen.getByRole('heading', { name: '1. Thông tin nhân sự' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '2. Nội dung xin nghỉ' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '3. Bàn giao công việc' })).toBeInTheDocument()
+
+    // Thông tin nhân sự: tên ở bảng + ô ký
     expect(screen.getAllByText(/Phạm Lê Triết Giang/)).toHaveLength(2)
-    expect(screen.getByText(/0973555582/)).toBeInTheDocument()
-    expect(screen.getAllByText(/Lập trình & IT nội bộ/)).toHaveLength(2)
+    expect(screen.getByText(/Chuyên viên/)).toBeInTheDocument()
 
-    // Lý do & thời gian
+    // Nội dung nghỉ
+    expect(screen.getByText(/Từ ngày 09\/06\/2026 đến hết ngày 09\/06\/2026/)).toBeInTheDocument()
+    expect(screen.getByText(/1 ngày\./)).toBeInTheDocument()
     expect(
       screen.getByText(/Em xin phép nghỉ 1 ngày để đưa vợ con về Châu Đốc/),
     ).toBeInTheDocument()
-    expect(screen.getByText(/thứ ba 09\/06\/2026/)).toBeInTheDocument()
 
-    // Bàn giao công việc mặc định
+    // Bàn giao trống vẫn phải nói thành lời (luật hr-leave)
     expect(
       screen.getByText(/Cá nhân tự sắp xếp công việc\. Team hỗ trợ công việc/),
     ).toBeInTheDocument()
 
-    // Chữ ký 3 cột
-    expect(screen.getByText('P.HCNS')).toBeInTheDocument()
-    expect(screen.getByText('Trưởng Phòng/Bộ phận')).toBeInTheDocument()
+    // Hai ô ký, không còn P.HCNS
+    expect(screen.getByText('NGƯỜI XIN NGHỈ')).toBeInTheDocument()
+    expect(screen.getByText('TRƯỞNG BỘ PHẬN')).toBeInTheDocument()
     expect(screen.getByText('Trần Quang Phú')).toBeInTheDocument()
-    expect(screen.getByText('Người làm đơn')).toBeInTheDocument()
+    expect(screen.queryByText('P.HCNS')).not.toBeInTheDocument()
+  })
+
+  it('ticks only the paid-leave box for an annual leave request', () => {
+    testRequest.current = mockRequest()
+    render(
+      <MemoryRouter>
+        <LeaveRequestPrintPage />
+      </MemoryRouter>,
+    )
+    expect(boxOf(/Nghỉ phép năm \(có lương\)/)).toHaveAccessibleName('Đã đánh dấu')
+    expect(boxOf(/Nghỉ việc riêng/)).toHaveAccessibleName('Chưa đánh dấu')
+    expect(boxOf(/Nghỉ chế độ bảo hiểm/)).toHaveAccessibleName('Chưa đánh dấu')
+  })
+
+  //  Tên mẫu tệp Word là «Chế độ thai sản» — nghỉ thai sản phải rơi đúng ô bảo hiểm.
+  it('ticks the insurance box for a maternity leave and leaves annual leave unticked', () => {
+    testRequest.current = mockRequest({ leave_type_name: 'Nghỉ thai sản', total_days: 180 })
+    render(
+      <MemoryRouter>
+        <LeaveRequestPrintPage />
+      </MemoryRouter>,
+    )
+    expect(boxOf(/Nghỉ chế độ bảo hiểm/)).toHaveAccessibleName('Đã đánh dấu')
+    expect(boxOf(/Nghỉ phép năm/)).toHaveAccessibleName('Chưa đánh dấu')
+  })
+
+  it('names the handover person with what they take over', () => {
+    testRequest.current = mockRequest({
+      handovers: [
+        { id: 1, employee_id: 7, employee_name: 'Lê Văn A', content: 'Duyệt YCMH', sort_order: 1 },
+      ],
+    })
+    render(
+      <MemoryRouter>
+        <LeaveRequestPrintPage />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/Lê Văn A \(Duyệt YCMH\)/)).toBeInTheDocument()
+    expect(screen.queryByText(/Cá nhân tự sắp xếp/)).not.toBeInTheDocument()
+  })
+
+  it('shows the half-day session and the hour range next to the dates', () => {
+    testRequest.current = mockRequest({
+      from_session: LEAVE_SESSION.AFTERNOON,
+      to_session: LEAVE_SESSION.AFTERNOON,
+      total_days: 0.5,
+    })
+    const { unmount } = render(
+      <MemoryRouter>
+        <LeaveRequestPrintPage />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/Từ ngày 09\/06\/2026 \(buổi chiều\) đến hết ngày 09\/06\/2026 \(buổi chiều\)/)).toBeInTheDocument()
+    unmount()
+
+    testRequest.current = mockRequest({
+      from_session: LEAVE_SESSION.HOURLY,
+      to_session: LEAVE_SESSION.HOURLY,
+      from_time: '08:00:00',
+      to_time: '10:30:00',
+      total_days: 0.25,
+    })
+    render(
+      <MemoryRouter>
+        <LeaveRequestPrintPage />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/Từ ngày 09\/06\/2026 \(08:00 - 10:30\) đến hết ngày 09\/06\/2026$/)).toBeInTheDocument()
   })
 
   it('triggers window.print when clicking In đơn button', async () => {
@@ -154,8 +237,9 @@ describe('LeaveRequestPrintPage', () => {
     )
 
     expect(
-      screen.getByText(/3 ngày, từ ngày 10\/06\/2026 đến ngày 12\/06\/2026/),
+      screen.getByText(/Từ ngày 10\/06\/2026 đến hết ngày 12\/06\/2026/),
     ).toBeInTheDocument()
+    expect(screen.getByText(/3 ngày\./)).toBeInTheDocument()
   })
 
   it('prints no attachment line and fetches nothing when the request has no files', () => {
