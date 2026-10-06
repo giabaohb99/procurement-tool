@@ -12285,3 +12285,4 @@ dành cho dữ liệu ERP, Google và tìm trên mạng; không bao giờ gạ p
 nhóm C «Trợ lý cá nhân trên nền công ty, token người dùng tự trả» gồm sáu mục trong sổ tính năng, chờ đại ca chốt.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/04-danh-sach-tinh-nang.md (nhóm C, phase 7b) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
+Deploy: dev 06/10, erp-v2 57126e11 (Agent 1 gộp và dựng lại phía VPS); prod giữ lại.
