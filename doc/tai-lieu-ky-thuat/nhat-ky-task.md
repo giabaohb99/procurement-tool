@@ -12188,3 +12188,4 @@ xem có tin nhắn thêm không rồi còn chờ vòng gom chạy mỗi phút. N
 khi hết 10 giây; vòng chạy mỗi phút vẫn giữ làm lưới đỡ. Câu báo nhận rút còn «Em nhận rồi, đang xử lý.».
 
 Mã nguồn: backend/app/core/config.py (AGENT_TRIAGE_DELAY_SEC) · agent_hub/service.py (ack_task_message, _kick_triage)
+Deploy: dev 06/10, erp-v2 79654bb8 (Agent 1 gộp và dựng lại phía VPS); prod giữ lại.
