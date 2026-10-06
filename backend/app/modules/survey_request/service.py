@@ -928,7 +928,7 @@ def _require_report_ready(db: Session, sid: int) -> None:
     sơ bắt buộc thì phải hoàn tất trước, đây là điều kiện đóng phiếu (yêu cầu KH).
     """
     from . import report_service
-    pending = report_service.required_docs_pending(db, sid)
+    pending = report_service.required_docs_pending_of(db, ENTITY, sid)
     if pending:
         titles = ", ".join(d.title for d in pending[:3])
         more = f" và {len(pending) - 3} hồ sơ khác" if len(pending) > 3 else ""
@@ -970,7 +970,7 @@ def _auto_complete_sr(db: Session, sid: int, user_id: int = 0) -> None:
     #  lặng, để người dùng đóng tay sau khi hoàn tất báo cáo (đường finalize).
     from . import report_service
     if prs and all(p.status == "completed" for p in prs) \
-            and not report_service.required_docs_pending(db, sid):
+            and not report_service.required_docs_pending_of(db, ENTITY, sid):
         set_status(db, sid, "done", user_id or s.created_by or 0)
         record(db, user_id or s.created_by or 0, ENTITY, sid, "auto_done",
                "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")

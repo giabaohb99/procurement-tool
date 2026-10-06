@@ -380,10 +380,11 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
                      "action `read`"),
     ],
     "survey_request/report_controller.py": [
-        (OK_KHONG_CAN, "L81 `SurveyReportItem` — chỉ lấy tên nút cho câu lịch sử; "
-                       "`_writable_sr` đã gác phiếu và `apply_template` đã chạy "
-                       "`_check_refs` (nút phải thuộc đúng phiếu) TRƯỚC dòng này"),
-        (OK_KHONG_CAN, "L83 `SurveyReportPhase` — tên giai đoạn, cùng lý do L81"),
+        (OK_KHONG_CAN, "L188 `SurveyReportItem` — chỉ lấy tên nút cho câu lịch sử; "
+                       "`_writable` đã gác chứng từ cha (YCBG/ĐMH, bao-CR-602) và "
+                       "`apply_template` đã chạy `_check_refs` (nút phải thuộc đúng khối) "
+                       "TRƯỚC dòng này"),
+        (OK_KHONG_CAN, "L190 `SurveyReportPhase` — tên giai đoạn, cùng lý do L188"),
     ],
     # ── Tài khoản ────────────────────────────────────────────────────────────
     "user/controller.py": [

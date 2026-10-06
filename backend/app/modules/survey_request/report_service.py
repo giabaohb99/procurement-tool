@@ -1,8 +1,10 @@
-"""Nghiệp vụ khối Báo cáo thực hiện của phiếu YCBG.
+"""Nghiệp vụ khối Báo cáo thực hiện — dùng chung cho YCBG và ĐMH (bao-CR-602).
 
-⚠️ Không hàm nào ở đây xét quyền — chốt nằm ở `report_controller`: phạm vi lấy
-từ phiếu CHA (`_in_scope`) rồi cửa ghi gác bằng cờ `process` (NS Thu mua).
-Mọi hàm ghi KHÔNG commit; controller commit một lượt rồi ghi audit.
+Mọi hàm nhận `report_id` = id dòng ĐẦU `tab_exec_report`; chứng từ chủ → đầu
+báo cáo đi qua `find_report` / `ensure_report`. Không hàm nào ở đây xét quyền —
+chốt nằm ở `report_controller`: phạm vi lấy từ chứng từ CHA (`_in_scope`) rồi
+cửa ghi gác bằng cờ ghi của cha. Mọi hàm ghi KHÔNG commit; controller commit một
+lượt rồi ghi audit.
 """
 from datetime import date
 
@@ -14,8 +16,11 @@ from app.modules.employee.model import Employee
 from .model import SurveyRequestLine
 from .report_constants import (DEFAULT_PHASES, DEFAULT_TEMPLATE_DOCS, MAX_DEPENDS,
                                RD_DONE, REPORT_DOC_STATUS_LABELS)
-from .report_model import (SurveyReportDoc, SurveyReportItem,
-                           SurveyReportPhase, SurveyReportTrash)
+from .report_model import (REPORT_OWNER_ENTITIES, ExecReport, SurveyReportDoc,
+                           SurveyReportItem, SurveyReportPhase, SurveyReportTrash)
+
+#  Một dòng chứng từ nhìn từ khối báo cáo: (id dòng, tên hiện trên nút).
+LineRef = tuple[int, str]
 
 
 def _to_date(value: str | None) -> date | None:
@@ -25,20 +30,55 @@ def _to_date(value: str | None) -> date | None:
     return date.fromisoformat(value)
 
 
-def _rows_of(db: Session, model, sr_id: int) -> list:
+# ── Đầu báo cáo: chứng từ chủ ↔ report_id ───────────────────────────────────────
+def _check_owner(entity: str) -> None:
+    if entity not in REPORT_OWNER_ENTITIES:
+        raise HTTPException(404, "Loại chứng từ không có khối báo cáo thực hiện")
+
+
+def find_report(db: Session, entity: str, owner_id: int) -> ExecReport | None:
+    """Đầu báo cáo của một chứng từ — None khi chứng từ chưa từng có khối."""
+    _check_owner(entity)
+    return (db.query(ExecReport)
+            .filter(ExecReport.owner_entity == entity, ExecReport.owner_id == owner_id)
+            .first())
+
+
+def report_id_of(db: Session, entity: str, owner_id: int) -> int:
+    """`report_id` của chứng từ, 0 nếu chưa có đầu — các hàm đọc nhận 0 và trả khối rỗng."""
+    head = find_report(db, entity, owner_id)
+    return head.id if head else 0
+
+
+def ensure_report(db: Session, entity: str, owner_id: int, user_id: int) -> ExecReport:
+    """Đầu báo cáo của chứng từ — có rồi thì trả, chưa có thì tạo (flush, KHÔNG commit).
+
+    Gọi ở mọi cửa GHI: khối chỉ có đầu khi có người bắt đầu khai, nên GET của
+    một chứng từ không ai đụng tới không đẻ dòng nào.
+    """
+    head = find_report(db, entity, owner_id)
+    if head is None:
+        head = ExecReport(owner_entity=entity, owner_id=owner_id,
+                          created_by=user_id, updated_by=user_id)
+        db.add(head)
+        db.flush()
+    return head
+
+
+def _rows_of(db: Session, model, report_id: int) -> list:
     return (db.query(model)
-            .filter(model.survey_request_id == sr_id)
+            .filter(model.report_id == report_id)
             .order_by(model.sort_order, model.id)
             .all())
 
 
-def get_report_payload(db: Session, sr_id: int) -> dict:
-    """Toàn bộ khối báo cáo của một phiếu — nút, giai đoạn, hồ sơ.
+def get_report_payload(db: Session, report_id: int) -> dict:
+    """Toàn bộ khối báo cáo — nút, giai đoạn, hồ sơ. `report_id = 0` → khối rỗng.
 
     `depends` trả đã LỌC id chết (hồ sơ tiên quyết bị xóa giữa chừng): id chết
     mà lọt ra thì tầng hiển thị đếm nó là «chưa xong» và hồ sơ khóa vĩnh viễn.
     """
-    docs = _rows_of(db, SurveyReportDoc, sr_id)
+    docs = _rows_of(db, SurveyReportDoc, report_id)
     alive_ids = {d.id for d in docs}
     #  Tên nhân sự thực hiện resolve MỘT LƯỢT (tránh N+1) — id chết (nhân sự đã
     #  xóa) ra chuỗi rỗng, FE hiện «Chưa cử». Không join vì chỉ cần tên.
@@ -49,10 +89,10 @@ def get_report_payload(db: Session, sr_id: int) -> dict:
                  db.query(Employee.id, Employee.full_name)
                  .filter(Employee.id.in_(assignee_ids)).all()}
     return {
-        "items": [{"id": r.id, "name": r.name, "sort_order": r.sort_order}
-                  for r in _rows_of(db, SurveyReportItem, sr_id)],
+        "items": [{"id": r.id, "name": r.name, "line_id": r.line_id, "sort_order": r.sort_order}
+                  for r in _rows_of(db, SurveyReportItem, report_id)],
         "phases": [{"id": r.id, "name": r.name, "location": r.location, "sort_order": r.sort_order}
-                   for r in _rows_of(db, SurveyReportPhase, sr_id)],
+                   for r in _rows_of(db, SurveyReportPhase, report_id)],
         "docs": [{
             "id": d.id,
             "phase_id": d.phase_id,
@@ -63,6 +103,7 @@ def get_report_payload(db: Session, sr_id: int) -> dict:
             "status": d.status,
             "status_label": REPORT_DOC_STATUS_LABELS.get(d.status, ""),
             "file_note": d.file_note,
+            "result": d.result,
             "depends": [i for i in (d.depends or []) if i in alive_ids],
             "start_date": d.start_date.isoformat() if d.start_date else "",
             "expires_at": d.expires_at.isoformat() if d.expires_at else "",
@@ -73,78 +114,79 @@ def get_report_payload(db: Session, sr_id: int) -> dict:
         } for d in docs],
         #  Có bản xóa gần nhất chưa hoàn tác không → FE hiện nút «Hoàn tác» đúng
         #  dòng lịch sử (`restorable_audit_id`). Chỉ có nghĩa khi khối đang RỖNG.
-        **_restorable_fields(db, sr_id),
+        **_restorable_fields(db, report_id),
     }
 
 
-def _latest_trash(db: Session, sr_id: int) -> SurveyReportTrash | None:
+def _latest_trash(db: Session, report_id: int) -> SurveyReportTrash | None:
     return (db.query(SurveyReportTrash)
-            .filter(SurveyReportTrash.survey_request_id == sr_id,
+            .filter(SurveyReportTrash.report_id == report_id,
                     SurveyReportTrash.restored.is_(False))
             .order_by(SurveyReportTrash.id.desc())
             .first())
 
 
-def _restorable_fields(db: Session, sr_id: int) -> dict:
-    trash = _latest_trash(db, sr_id)
+def _restorable_fields(db: Session, report_id: int) -> dict:
+    trash = _latest_trash(db, report_id)
     return {
         "restorable": trash is not None,
         "restorable_audit_id": trash.audit_id if trash else 0,
     }
 
 
-def snapshot_report(db: Session, sr_id: int) -> dict:
+def snapshot_report(db: Session, report_id: int) -> dict:
     """Ảnh chụp ĐẦY ĐỦ khối báo cáo để hoàn tác — giữ id CŨ để dựng lại `depends`.
 
     Không dùng `get_report_payload` (nó lọc id chết, thêm nhãn dẫn xuất) — snapshot
     cần dữ liệu THÔ và trung thực để khôi phục nguyên trạng.
     """
     return {
-        "items": [{"id": r.id, "name": r.name, "sort_order": r.sort_order}
-                  for r in _rows_of(db, SurveyReportItem, sr_id)],
+        "items": [{"id": r.id, "name": r.name, "line_id": r.line_id, "sort_order": r.sort_order}
+                  for r in _rows_of(db, SurveyReportItem, report_id)],
         "phases": [{"id": r.id, "name": r.name, "location": r.location, "sort_order": r.sort_order}
-                   for r in _rows_of(db, SurveyReportPhase, sr_id)],
+                   for r in _rows_of(db, SurveyReportPhase, report_id)],
         "docs": [{
             "id": d.id, "phase_id": d.phase_id, "item_id": d.item_id,
             "title": d.title, "description": d.description, "required": d.required,
-            "status": d.status, "file_note": d.file_note, "depends": list(d.depends or []),
+            "status": d.status, "file_note": d.file_note, "result": d.result,
+            "depends": list(d.depends or []),
             "start_date": d.start_date.isoformat() if d.start_date else "",
             "expires_at": d.expires_at.isoformat() if d.expires_at else "",
             "planned_date": d.planned_date.isoformat() if d.planned_date else "",
             "assignee_id": d.assignee_id, "sort_order": d.sort_order,
-        } for d in _rows_of(db, SurveyReportDoc, sr_id)],
+        } for d in _rows_of(db, SurveyReportDoc, report_id)],
     }
 
 
-def delete_all(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash:
+def delete_all(db: Session, report_id: int, user_id: int) -> SurveyReportTrash:
     """Xóa CẢ khối báo cáo, giữ ảnh chụp vào sọt rác để hoàn tác. KHÔNG commit.
 
     `audit_id` để 0, nơi gọi (controller) gắn sau khi ghi dòng lịch sử để lấy id.
     """
-    snap = snapshot_report(db, sr_id)
-    trash = SurveyReportTrash(survey_request_id=sr_id, snapshot=snap,
+    snap = snapshot_report(db, report_id)
+    trash = SurveyReportTrash(report_id=report_id, snapshot=snap,
                               doc_count=len(snap["docs"]),
                               created_by=user_id, updated_by=user_id)
     db.add(trash)
     for model in (SurveyReportDoc, SurveyReportItem, SurveyReportPhase):
-        db.query(model).filter(model.survey_request_id == sr_id).delete(synchronize_session=False)
+        db.query(model).filter(model.report_id == report_id).delete(synchronize_session=False)
     db.flush()
     return trash
 
 
-def restore_latest(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash | None:
+def restore_latest(db: Session, report_id: int, user_id: int) -> SurveyReportTrash | None:
     """Dựng lại khối từ bản xóa gần nhất chưa hoàn tác. KHÔNG commit.
 
     Id thay đổi khi tạo lại, nên phải ÁNH XẠ id cũ→mới cho cả `phase_id`,
     `item_id` lẫn `depends`. Trả về trash đã khôi phục, hoặc None nếu không có.
     Nếu khối hiện KHÔNG rỗng (đã dựng lại khác) thì bỏ qua để không nhân đôi.
     """
-    trash = _latest_trash(db, sr_id)
+    trash = _latest_trash(db, report_id)
     if not trash:
         return None
-    if db.query(SurveyReportDoc.id).filter_by(survey_request_id=sr_id).first() \
-            or db.query(SurveyReportPhase.id).filter_by(survey_request_id=sr_id).first() \
-            or db.query(SurveyReportItem.id).filter_by(survey_request_id=sr_id).first():
+    if db.query(SurveyReportDoc.id).filter_by(report_id=report_id).first() \
+            or db.query(SurveyReportPhase.id).filter_by(report_id=report_id).first() \
+            or db.query(SurveyReportItem.id).filter_by(report_id=report_id).first():
         # Khối không rỗng — coi như đã có nội dung mới, chỉ đánh dấu đã hoàn tác.
         trash.restored = True
         trash.updated_by = user_id
@@ -152,7 +194,7 @@ def restore_latest(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash |
     snap = trash.snapshot or {}
     phase_map: dict[int, int] = {}
     for p in snap.get("phases", []):
-        row = SurveyReportPhase(survey_request_id=sr_id, name=p["name"],
+        row = SurveyReportPhase(report_id=report_id, name=p["name"],
                                 location=p.get("location", ""), sort_order=p.get("sort_order", 0),
                                 created_by=user_id, updated_by=user_id)
         db.add(row)
@@ -160,8 +202,8 @@ def restore_latest(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash |
         phase_map[p["id"]] = row.id
     item_map: dict[int, int] = {}
     for it in snap.get("items", []):
-        row = SurveyReportItem(survey_request_id=sr_id, name=it["name"],
-                               sort_order=it.get("sort_order", 0),
+        row = SurveyReportItem(report_id=report_id, name=it["name"],
+                               line_id=it.get("line_id", 0), sort_order=it.get("sort_order", 0),
                                created_by=user_id, updated_by=user_id)
         db.add(row)
         db.flush()
@@ -170,12 +212,12 @@ def restore_latest(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash |
     new_docs: list[tuple[SurveyReportDoc, list[int]]] = []
     for d in snap.get("docs", []):
         row = SurveyReportDoc(
-            survey_request_id=sr_id,
+            report_id=report_id,
             phase_id=phase_map.get(d.get("phase_id", 0), 0),
             item_id=item_map.get(d.get("item_id", 0), 0) if d.get("item_id") else 0,
             title=d["title"], description=d.get("description", ""),
             required=d.get("required", True), status=d.get("status", 0),
-            file_note=d.get("file_note", ""),
+            file_note=d.get("file_note", ""), result=d.get("result", ""),
             start_date=_to_date(d.get("start_date")), expires_at=_to_date(d.get("expires_at")),
             planned_date=_to_date(d.get("planned_date")),
             assignee_id=d.get("assignee_id", 0), sort_order=d.get("sort_order", 0),
@@ -192,19 +234,24 @@ def restore_latest(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash |
     return trash
 
 
-def required_docs_pending(db: Session, sr_id: int) -> list[SurveyReportDoc]:
+def required_docs_pending(db: Session, report_id: int) -> list[SurveyReportDoc]:
     """Hồ sơ BẮT BUỘC chưa Hoàn thành của khối báo cáo.
 
-    Rỗng = đủ điều kiện đóng phiếu (không có hồ sơ bắt buộc, hoặc mọi hồ sơ bắt
-    buộc đã Hoàn thành). Dùng để chặn `finalize` — báo cáo là tùy chọn, nhưng khi
-    đã khai hồ sơ bắt buộc thì phải hoàn tất trước khi đóng phiếu.
+    Rỗng = đủ điều kiện đóng chứng từ (không có hồ sơ bắt buộc, hoặc mọi hồ sơ
+    bắt buộc đã Hoàn thành). Dùng để chặn `finalize` YCBG — báo cáo là tùy chọn,
+    nhưng khi đã khai hồ sơ bắt buộc thì phải hoàn tất trước khi đóng phiếu.
     """
     return (db.query(SurveyReportDoc)
-            .filter(SurveyReportDoc.survey_request_id == sr_id,
+            .filter(SurveyReportDoc.report_id == report_id,
                     SurveyReportDoc.required.is_(True),
                     SurveyReportDoc.status != RD_DONE)
             .order_by(SurveyReportDoc.sort_order, SurveyReportDoc.id)
             .all())
+
+
+def required_docs_pending_of(db: Session, entity: str, owner_id: int) -> list[SurveyReportDoc]:
+    """Như `required_docs_pending` nhưng đi từ chứng từ chủ; chưa có đầu báo cáo → rỗng."""
+    return required_docs_pending(db, report_id_of(db, entity, owner_id))
 
 
 def _line_item_name(line: SurveyRequestLine, index: int) -> str:
@@ -217,7 +264,15 @@ def _line_item_name(line: SurveyRequestLine, index: int) -> str:
     return f"Dòng {index + 1}"
 
 
-def init_report(db: Session, sr_id: int, user_id: int) -> int:
+def survey_request_lines(db: Session, sid: int) -> list[LineRef]:
+    """Dòng hàng của một YCBG dưới dạng (id dòng, tên nút) cho `init_report`."""
+    lines = (db.query(SurveyRequestLine)
+             .filter(SurveyRequestLine.survey_request_id == sid)
+             .order_by(SurveyRequestLine.id).all())
+    return [(line.id, _line_item_name(line, index)) for index, line in enumerate(lines)]
+
+
+def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int) -> int:
     """Khởi tạo báo cáo mẫu: 5 giai đoạn + một nút cho mỗi dòng hàng + bộ hồ sơ
     CHUNG của mẫu (`apply_template`). Trả về số hồ sơ đã dựng.
 
@@ -225,21 +280,54 @@ def init_report(db: Session, sr_id: int, user_id: int) -> int:
     hai lần không nhân đôi khung. Muốn thêm hồ sơ mẫu vào khối đang có thì đi
     đường «Tạo mẫu» (`apply_template`), nó cộng thêm và bỏ qua trùng.
     """
-    has_any = (db.query(SurveyReportPhase.id).filter_by(survey_request_id=sr_id).first()
-               or db.query(SurveyReportItem.id).filter_by(survey_request_id=sr_id).first())
+    has_any = (db.query(SurveyReportPhase.id).filter_by(report_id=report_id).first()
+               or db.query(SurveyReportItem.id).filter_by(report_id=report_id).first())
     if has_any:
         return -1
     for order, (name, location) in enumerate(DEFAULT_PHASES):
-        db.add(SurveyReportPhase(survey_request_id=sr_id, name=name, location=location,
+        db.add(SurveyReportPhase(report_id=report_id, name=name, location=location,
                                  sort_order=order, created_by=user_id, updated_by=user_id))
-    lines = (db.query(SurveyRequestLine)
-             .filter(SurveyRequestLine.survey_request_id == sr_id)
-             .order_by(SurveyRequestLine.id).all())
-    for order, line in enumerate(lines):
-        db.add(SurveyReportItem(survey_request_id=sr_id, name=_line_item_name(line, order),
+    for order, (line_id, name) in enumerate(lines):
+        db.add(SurveyReportItem(report_id=report_id, name=name, line_id=line_id,
                                 sort_order=order, created_by=user_id, updated_by=user_id))
     db.flush()
-    return apply_template(db, sr_id, item_id=0, phase_id=None, user_id=user_id)
+    return apply_template(db, report_id, item_id=0, phase_id=None, user_id=user_id)
+
+
+def sync_line_items(db: Session, report_id: int, lines: list[LineRef], user_id: int) -> bool:
+    """Đồng bộ nút dòng hàng THEO dòng chứng từ (ĐMH, bao-CR-602). Trả True khi có đổi.
+
+    Chạy mỗi lần đọc khối của ĐMH, vì đơn thêm/bớt/đổi tên dòng ở màn khác mà
+    không ai báo cho khối báo cáo. Luật:
+    - dòng mới → thêm nút (tên = tên hàng), nối đuôi thứ tự;
+    - dòng đổi tên hàng → đổi tên nút;
+    - dòng không còn → xóa nút, hồ sơ của nó về Chung (không mất);
+    - khối CHƯA khởi tạo (không giai đoạn, không nút) → không làm gì: người chỉ
+      xem không được thấy một khối «có nội dung» chỉ vì đơn có dòng hàng.
+    Nút đặt tay (`line_id = 0`) không đụng tới.
+    """
+    items = _rows_of(db, SurveyReportItem, report_id)
+    has_phase = db.query(SurveyReportPhase.id).filter_by(report_id=report_id).first() is not None
+    if not items and not has_phase:
+        return False
+    changed = False
+    by_line = {item.line_id: item for item in items if item.line_id}
+    wanted = {line_id: name for line_id, name in lines if line_id}
+    for line_id, item in by_line.items():
+        if line_id not in wanted:
+            delete_item(db, report_id, item.id, user_id)
+            changed = True
+        elif item.name != wanted[line_id]:
+            item.name = wanted[line_id]
+            item.updated_by = user_id
+            changed = True
+    for line_id, name in lines:
+        if line_id and line_id not in by_line:
+            create_item(db, report_id, name, user_id, line_id=line_id)
+            changed = True
+    if changed:
+        db.flush()
+    return changed
 
 
 def _norm_name(value: str | None) -> str:
@@ -247,12 +335,12 @@ def _norm_name(value: str | None) -> str:
     return " ".join((value or "").split()).casefold()
 
 
-def apply_template(db: Session, sr_id: int, item_id: int, phase_id: int | None,
+def apply_template(db: Session, report_id: int, item_id: int, phase_id: int | None,
                    user_id: int) -> int:
     """Đổ MẪU CHUNG (`DEFAULT_TEMPLATE_DOCS`) vào một nút dòng hàng, hoặc chỉ vào
     một giai đoạn của nút đó. KHÔNG commit. Trả về số hồ sơ THÊM MỚI.
 
-    - `item_id` 0 = hồ sơ Chung; khác 0 phải là nút của phiếu.
+    - `item_id` 0 = hồ sơ Chung; khác 0 phải là nút của khối.
     - `phase_id` None = mọi giai đoạn của mẫu: giai đoạn TRÙNG TÊN thì dùng lại,
       thiếu thì tạo. Có `phase_id` = chỉ phần mẫu của giai đoạn trùng tên với nó;
       giai đoạn người dùng tự đặt tên không có trong mẫu → 400 (không đoán).
@@ -262,8 +350,8 @@ def apply_template(db: Session, sr_id: int, item_id: int, phase_id: int | None,
 
     Mẫu đang nằm trong mã nguồn; có quản lý mẫu thì thay nguồn ở đây, chữ ký giữ.
     """
-    _check_refs(db, sr_id, phase_id, item_id)
-    phases = _rows_of(db, SurveyReportPhase, sr_id)
+    _check_refs(db, report_id, phase_id, item_id)
+    phases = _rows_of(db, SurveyReportPhase, report_id)
     phase_of_no: dict[int, SurveyReportPhase] = {}
     if phase_id is not None:
         target = next(p for p in phases if p.id == phase_id)
@@ -282,11 +370,11 @@ def apply_template(db: Session, sr_id: int, item_id: int, phase_id: int | None,
         for no, (name, location) in enumerate(DEFAULT_PHASES, start=1):
             row = by_name.get(_norm_name(name))
             if row is None:
-                row = create_phase(db, sr_id, name, location, user_id)
+                row = create_phase(db, report_id, name, location, user_id)
             phase_of_no[no] = row
 
     existing = {(d.phase_id, _norm_name(d.title)): d.id
-                for d in _rows_of(db, SurveyReportDoc, sr_id) if d.item_id == item_id}
+                for d in _rows_of(db, SurveyReportDoc, report_id) if d.item_id == item_id}
     id_of_no: dict[int, int] = {}                 # số thứ tự trong mẫu → id hồ sơ
     created: list[tuple[SurveyReportDoc, list[int]]] = []
     for no, (phase_no, title, description, required, depends) in enumerate(
@@ -298,9 +386,9 @@ def apply_template(db: Session, sr_id: int, item_id: int, phase_id: int | None,
         if key in existing:
             id_of_no[no] = existing[key]
             continue
-        row = SurveyReportDoc(survey_request_id=sr_id, phase_id=phase.id, item_id=item_id,
+        row = SurveyReportDoc(report_id=report_id, phase_id=phase.id, item_id=item_id,
                               title=title, description=description, required=required,
-                              depends=[], sort_order=_next_order(db, SurveyReportDoc, sr_id),
+                              depends=[], sort_order=_next_order(db, SurveyReportDoc, report_id),
                               created_by=user_id, updated_by=user_id)
         db.add(row)
         db.flush()
@@ -312,54 +400,55 @@ def apply_template(db: Session, sr_id: int, item_id: int, phase_id: int | None,
     return len(created)
 
 
-def _get_or_404(db: Session, model, sr_id: int, row_id: int):
+def _get_or_404(db: Session, model, report_id: int, row_id: int):
     row = (db.query(model)
-           .filter(model.id == row_id, model.survey_request_id == sr_id)
+           .filter(model.id == row_id, model.report_id == report_id)
            .first())
     if not row:
         raise HTTPException(404, "Không tìm thấy dữ liệu báo cáo")
     return row
 
 
-#  Trần SỐ DÒNG của mỗi bảng con trong một phiếu — `sort_order` là SMALLINT nên
+#  Trần SỐ DÒNG của mỗi bảng con trong một khối — `sort_order` là SMALLINT nên
 #  không có trần thì dòng 32768 tràn số (họ lỗi duoc-CR-316). Con số đặt xa mức
 #  dùng thật để không ai đụng trần vì làm việc bình thường.
 _ROW_CAPS = {SurveyReportItem: 50, SurveyReportPhase: 50, SurveyReportDoc: 500}
 
 
-def _next_order(db: Session, model, sr_id: int) -> int:
-    count = db.query(model.id).filter(model.survey_request_id == sr_id).count()
+def _next_order(db: Session, model, report_id: int) -> int:
+    count = db.query(model.id).filter(model.report_id == report_id).count()
     if count >= _ROW_CAPS[model]:
         raise HTTPException(400, f"Đã chạm trần {_ROW_CAPS[model]} dòng của khối báo cáo")
     last = (db.query(model.sort_order)
-            .filter(model.survey_request_id == sr_id)
+            .filter(model.report_id == report_id)
             .order_by(model.sort_order.desc()).first())
     return (last[0] + 1) if last else 0
 
 
 # ── Nút dòng hàng ───────────────────────────────────────────────────────────────
-def create_item(db: Session, sr_id: int, name: str, user_id: int) -> SurveyReportItem:
-    row = SurveyReportItem(survey_request_id=sr_id, name=name,
-                           sort_order=_next_order(db, SurveyReportItem, sr_id),
+def create_item(db: Session, report_id: int, name: str, user_id: int,
+                line_id: int = 0) -> SurveyReportItem:
+    row = SurveyReportItem(report_id=report_id, name=name, line_id=line_id,
+                           sort_order=_next_order(db, SurveyReportItem, report_id),
                            created_by=user_id, updated_by=user_id)
     db.add(row)
     db.flush()
     return row
 
 
-def rename_item(db: Session, sr_id: int, item_id: int, name: str, user_id: int) -> SurveyReportItem:
-    row = _get_or_404(db, SurveyReportItem, sr_id, item_id)
+def rename_item(db: Session, report_id: int, item_id: int, name: str, user_id: int) -> SurveyReportItem:
+    row = _get_or_404(db, SurveyReportItem, report_id, item_id)
     row.name = name
     row.updated_by = user_id
     return row
 
 
-def delete_item(db: Session, sr_id: int, item_id: int, user_id: int) -> str:
+def delete_item(db: Session, report_id: int, item_id: int, user_id: int) -> str:
     """Xóa một nút. Hồ sơ đang gắn nút đó KHÔNG xóa theo — trả về «Chung»
     (`item_id = 0`): hồ sơ là công sức nhập liệu, nút chỉ là nhãn lọc."""
-    row = _get_or_404(db, SurveyReportItem, sr_id, item_id)
+    row = _get_or_404(db, SurveyReportItem, report_id, item_id)
     moved = (db.query(SurveyReportDoc)
-             .filter(SurveyReportDoc.survey_request_id == sr_id,
+             .filter(SurveyReportDoc.report_id == report_id,
                      SurveyReportDoc.item_id == item_id)
              .all())
     for doc in moved:
@@ -371,30 +460,30 @@ def delete_item(db: Session, sr_id: int, item_id: int, user_id: int) -> str:
 
 
 # ── Giai đoạn ───────────────────────────────────────────────────────────────────
-def create_phase(db: Session, sr_id: int, name: str, location: str, user_id: int) -> SurveyReportPhase:
-    row = SurveyReportPhase(survey_request_id=sr_id, name=name, location=location,
-                            sort_order=_next_order(db, SurveyReportPhase, sr_id),
+def create_phase(db: Session, report_id: int, name: str, location: str, user_id: int) -> SurveyReportPhase:
+    row = SurveyReportPhase(report_id=report_id, name=name, location=location,
+                            sort_order=_next_order(db, SurveyReportPhase, report_id),
                             created_by=user_id, updated_by=user_id)
     db.add(row)
     db.flush()
     return row
 
 
-def update_phase(db: Session, sr_id: int, phase_id: int, name: str, location: str,
+def update_phase(db: Session, report_id: int, phase_id: int, name: str, location: str,
                  user_id: int) -> SurveyReportPhase:
-    row = _get_or_404(db, SurveyReportPhase, sr_id, phase_id)
+    row = _get_or_404(db, SurveyReportPhase, report_id, phase_id)
     row.name = name
     row.location = location
     row.updated_by = user_id
     return row
 
 
-def delete_phase(db: Session, sr_id: int, phase_id: int) -> str:
+def delete_phase(db: Session, report_id: int, phase_id: int) -> str:
     """Chặn xóa giai đoạn còn hồ sơ — xóa lây là mất dữ liệu nhập tay; muốn bỏ
     thì chuyển hồ sơ sang giai đoạn khác trước."""
-    row = _get_or_404(db, SurveyReportPhase, sr_id, phase_id)
+    row = _get_or_404(db, SurveyReportPhase, report_id, phase_id)
     count = (db.query(SurveyReportDoc.id)
-             .filter(SurveyReportDoc.survey_request_id == sr_id,
+             .filter(SurveyReportDoc.report_id == report_id,
                      SurveyReportDoc.phase_id == phase_id)
              .count())
     if count:
@@ -406,15 +495,15 @@ def delete_phase(db: Session, sr_id: int, phase_id: int) -> str:
 
 
 # ── Hồ sơ ───────────────────────────────────────────────────────────────────────
-def _check_refs(db: Session, sr_id: int, phase_id: int | None, item_id: int | None) -> None:
+def _check_refs(db: Session, report_id: int, phase_id: int | None, item_id: int | None) -> None:
     if phase_id is not None:
-        _get_or_404(db, SurveyReportPhase, sr_id, phase_id)
+        _get_or_404(db, SurveyReportPhase, report_id, phase_id)
     if item_id:                                  # 0 = Chung, không cần tra
-        _get_or_404(db, SurveyReportItem, sr_id, item_id)
+        _get_or_404(db, SurveyReportItem, report_id, item_id)
 
 
-def check_depends(db: Session, sr_id: int, doc_id: int, depends: list[int]) -> list[int]:
-    """Kiểm danh sách tiên quyết: cùng phiếu, không tự trỏ mình, không tạo VÒNG.
+def check_depends(db: Session, report_id: int, doc_id: int, depends: list[int]) -> list[int]:
+    """Kiểm danh sách tiên quyết: cùng khối, không tự trỏ mình, không tạo VÒNG.
 
     Vòng tiên quyết (A chờ B, B chờ A) làm cả cụm khóa vĩnh viễn mà không ai
     hiểu vì sao — chặn lúc lưu, đừng để nó thành dữ liệu. Vòng dò có trần độ
@@ -427,12 +516,12 @@ def check_depends(db: Session, sr_id: int, doc_id: int, depends: list[int]) -> l
     if doc_id and doc_id in depends:
         raise HTTPException(400, "Hồ sơ không thể là tiên quyết của chính nó")
     rows = (db.query(SurveyReportDoc.id, SurveyReportDoc.depends)
-            .filter(SurveyReportDoc.survey_request_id == sr_id)
+            .filter(SurveyReportDoc.report_id == report_id)
             .all())
     graph = {rid: list(deps or []) for rid, deps in rows}
     unknown = [i for i in depends if i not in graph]
     if unknown:
-        raise HTTPException(400, "Hồ sơ tiên quyết không thuộc phiếu này")
+        raise HTTPException(400, "Hồ sơ tiên quyết không thuộc chứng từ này")
     if doc_id:
         graph[doc_id] = depends                  # đồ thị SAU khi lưu
         seen: set[int] = set()
@@ -453,30 +542,30 @@ def check_depends(db: Session, sr_id: int, doc_id: int, depends: list[int]) -> l
     return depends
 
 
-def create_doc(db: Session, sr_id: int, data, user_id: int) -> SurveyReportDoc:
-    _check_refs(db, sr_id, data.phase_id, data.item_id)
-    row = SurveyReportDoc(survey_request_id=sr_id, phase_id=data.phase_id,
+def create_doc(db: Session, report_id: int, data, user_id: int) -> SurveyReportDoc:
+    _check_refs(db, report_id, data.phase_id, data.item_id)
+    row = SurveyReportDoc(report_id=report_id, phase_id=data.phase_id,
                           item_id=data.item_id, title=data.title,
                           description=data.description, required=data.required,
-                          status=data.status, file_note=data.file_note,
+                          status=data.status, file_note=data.file_note, result=data.result,
                           start_date=_to_date(data.start_date),
                           expires_at=_to_date(data.expires_at),
                           planned_date=_to_date(data.planned_date),
                           assignee_id=data.assignee_id,
-                          sort_order=_next_order(db, SurveyReportDoc, sr_id),
+                          sort_order=_next_order(db, SurveyReportDoc, report_id),
                           created_by=user_id, updated_by=user_id)
     db.add(row)
     db.flush()
-    row.depends = check_depends(db, sr_id, row.id, data.depends)
+    row.depends = check_depends(db, report_id, row.id, data.depends)
     return row
 
 
-def update_doc(db: Session, sr_id: int, doc_id: int, data, user_id: int) -> SurveyReportDoc:
-    row = _get_or_404(db, SurveyReportDoc, sr_id, doc_id)
+def update_doc(db: Session, report_id: int, doc_id: int, data, user_id: int) -> SurveyReportDoc:
+    row = _get_or_404(db, SurveyReportDoc, report_id, doc_id)
     changes = data.model_dump(exclude_unset=True)
-    _check_refs(db, sr_id, changes.get("phase_id"), changes.get("item_id"))
+    _check_refs(db, report_id, changes.get("phase_id"), changes.get("item_id"))
     if "depends" in changes and changes["depends"] is not None:
-        changes["depends"] = check_depends(db, sr_id, doc_id, changes["depends"])
+        changes["depends"] = check_depends(db, report_id, doc_id, changes["depends"])
     #  Ngày tách riêng: '' nghĩa là XÓA ngày (ghi None), khác với không gửi. Vòng
     #  generic bên dưới bỏ qua mọi None nên không phân biệt được hai ca đó.
     for key in ("start_date", "expires_at", "planned_date"):
@@ -489,12 +578,12 @@ def update_doc(db: Session, sr_id: int, doc_id: int, data, user_id: int) -> Surv
     return row
 
 
-def delete_doc(db: Session, sr_id: int, doc_id: int, user_id: int) -> str:
+def delete_doc(db: Session, report_id: int, doc_id: int, user_id: int) -> str:
     """Xóa một hồ sơ và GỠ nó khỏi danh sách tiên quyết của các hồ sơ khác —
     để lại id chết là hồ sơ khác khóa vĩnh viễn theo một thứ không còn tồn tại."""
-    row = _get_or_404(db, SurveyReportDoc, sr_id, doc_id)
+    row = _get_or_404(db, SurveyReportDoc, report_id, doc_id)
     others = (db.query(SurveyReportDoc)
-              .filter(SurveyReportDoc.survey_request_id == sr_id,
+              .filter(SurveyReportDoc.report_id == report_id,
                       SurveyReportDoc.id != doc_id)
               .all())
     for other in others:

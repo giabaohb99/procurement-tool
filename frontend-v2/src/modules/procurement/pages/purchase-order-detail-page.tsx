@@ -65,6 +65,12 @@ import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment
 import { PurchaseOrderPaymentRequestsCard } from '../components/purchase-order-payment-requests-card'
 import { PurchaseOrderReasonDialog } from '../components/purchase-order-reason-dialog'
 import {
+  SurveyReportCard,
+  type SurveyReportCardHandle,
+} from '../components/survey-report/survey-report-card'
+import { useSurveyRequestReport } from '../hooks/use-survey-request-report'
+import { lineReportProgress } from '../utils/survey-report-helpers'
+import {
   parseDeliveryFileKey,
   pendingFilesOfLine,
   setPendingDeliveryFiles,
@@ -150,6 +156,11 @@ export function PurchaseOrderDetailPage() {
   const purchaseOrderId = isNew ? 0 : Number(id)
 
   const { data: serverData, isLoading, isError } = usePurchaseOrder(purchaseOrderId)
+  //  bao-CR-602: khối Báo cáo thực hiện của đơn — cùng khóa cache với thẻ bên dưới nên
+  //  không thêm request; bảng dòng hàng đọc % theo dòng từ đây.
+  const { data: executionReport } = useSurveyRequestReport(purchaseOrderId, 'purchase_order')
+  const lineReport = useMemo(() => lineReportProgress(executionReport), [executionReport])
+  const reportCardRef = useRef<SurveyReportCardHandle>(null)
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: suppliersData } = useSuppliers(
     { page_size: 1000, is_active: true },
@@ -751,6 +762,8 @@ export function PurchaseOrderDetailPage() {
               onLineDuplicated={(index) =>
                 setPendingFiles((current) => shiftPendingAfterLineInsert(current, index))
               }
+              lineReport={isNew ? undefined : lineReport}
+              onOpenLineReport={(progress) => reportCardRef.current?.focusItem(progress.itemId)}
               onProgressChange={(item, status) => {
                 // Tạm ngưng / Hủy đơn bắt buộc nêu lý do; tiếp tục thì gọi thẳng.
                 if (status === '__resume__') {
@@ -845,6 +858,19 @@ export function PurchaseOrderDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* bao-CR-602: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút
+            dòng hàng bám theo dòng đơn; ai sửa được đơn thì sửa được báo cáo; đơn Hoàn
+            thành / Hủy thì chỉ đọc (backend khóa). */}
+        {!isNew && (
+          <SurveyReportCard
+            ref={reportCardRef}
+            entity="purchase_order"
+            ownerId={purchaseOrderId}
+            canEdit={!locked && can('purchase_order', 'write')}
+            itemsLocked
+          />
+        )}
 
         {/* bao-CR-453: thẻ chi phí thu mua hiện cho MỌI loại đơn (trước: chỉ nhập khẩu). */}
         <PurchaseOrderImportCostsCard

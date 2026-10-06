@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest'
 import type { SurveyReportDoc, SurveyRequestReport } from '../types/survey-request-report'
 import {
   REPORT_FILTER_ALL,
+  addDaysIso,
   currentReportPhaseId,
+  durationDays,
   filterReportDocs,
+  lineReportProgress,
   isReportDocLocked,
   latestPlannedDate,
   matchReportDoc,
@@ -27,6 +30,7 @@ function doc(overrides: Partial<SurveyReportDoc>): SurveyReportDoc {
     status: 0,
     status_label: 'Chưa bắt đầu',
     file_note: '',
+    result: '',
     depends: [],
     start_date: '',
     expires_at: '',
@@ -129,8 +133,8 @@ describe('currentReportPhaseId / trackingMarkers', () => {
   it('points at the first phase with an unfinished doc, per item track', () => {
     const r = report({
       items: [
-        { id: 1, name: 'K2SO4', sort_order: 0 },
-        { id: 2, name: 'KNO3', sort_order: 1 },
+        { id: 1, name: 'K2SO4', line_id: 0, sort_order: 0 },
+        { id: 2, name: 'KNO3', line_id: 0, sort_order: 1 },
       ],
       phases: twoPhases,
       docs: [
@@ -153,9 +157,9 @@ describe('currentReportPhaseId / trackingMarkers', () => {
   it('merges items standing at the same phase into one +n marker', () => {
     const r = report({
       items: [
-        { id: 1, name: 'A', sort_order: 0 },
-        { id: 2, name: 'B', sort_order: 1 },
-        { id: 3, name: 'C', sort_order: 2 },
+        { id: 1, name: 'A', line_id: 0, sort_order: 0 },
+        { id: 2, name: 'B', line_id: 0, sort_order: 1 },
+        { id: 3, name: 'C', line_id: 0, sort_order: 2 },
       ],
       phases: twoPhases,
       // Một hồ sơ CHUNG chưa xong ở GĐ1 → cả ba nút cùng đứng đó.
@@ -168,7 +172,7 @@ describe('currentReportPhaseId / trackingMarkers', () => {
 
   it('returns no marker for a finished or empty track — nothing left to blink at', () => {
     const done = report({
-      items: [{ id: 1, name: 'A', sort_order: 0 }],
+      items: [{ id: 1, name: 'A', line_id: 0, sort_order: 0 }],
       phases: twoPhases,
       docs: [doc({ id: 100, phase_id: 10, item_id: 1, status: 3 })],
     })
@@ -315,5 +319,59 @@ describe('reportPlanLateDays', () => {
     // Mốc là của CẢ khối: hồ sơ không có ngày riêng vẫn nằm trong kế hoạch chung.
     const docs = [doc({ id: 1, planned_date: '2026-09-01' }), doc({ id: 2 })]
     expect(reportPlanLateDays(docs, today)).toBe(11)
+  })
+})
+
+describe('lineReportProgress (bao-CR-602)', () => {
+  const report: SurveyRequestReport = {
+    items: [
+      { id: 11, name: 'Abamectin', line_id: 501, sort_order: 0 },
+      { id: 12, name: 'Dầu khoáng', line_id: 502, sort_order: 1 },
+      { id: 13, name: 'Nút tay', line_id: 0, sort_order: 2 },
+    ],
+    phases: [],
+    docs: [
+      doc({ id: 1, item_id: 0, status: 3 }), // Chung, xong
+      doc({ id: 2, item_id: 0, status: 0 }), // Chung, chưa
+      doc({ id: 3, item_id: 11, status: 3 }),
+      doc({ id: 4, item_id: 11, status: 3 }),
+      doc({ id: 5, item_id: 12, status: 0 }),
+      doc({ id: 6, item_id: 13, status: 3 }),
+    ],
+    restorable: false,
+    restorable_audit_id: 0,
+  }
+
+  it('keys by document line id and counts shared docs into every line', () => {
+    const progress = lineReportProgress(report)
+    expect(progress.get(501)).toEqual({ itemId: 11, done: 3, total: 4, percent: 75 })
+    expect(progress.get(502)).toEqual({ itemId: 12, done: 1, total: 3, percent: 33 })
+  })
+
+  it('skips hand-made items (line_id = 0) — they belong to no document line', () => {
+    expect(lineReportProgress(report).has(0)).toBe(false)
+    expect(lineReportProgress(report).size).toBe(2)
+  })
+
+  it('returns an empty map for a missing report', () => {
+    expect(lineReportProgress(null).size).toBe(0)
+    expect(lineReportProgress(undefined).size).toBe(0)
+  })
+})
+
+describe('addDaysIso / durationDays (cột «Time xử lý» của bảng kế hoạch Excel)', () => {
+  it('adds days without timezone drift and round-trips through durationDays', () => {
+    expect(addDaysIso('2024-12-24', 1)).toBe('2024-12-25')
+    expect(addDaysIso('2025-02-19', 90)).toBe('2025-05-20')
+    expect(addDaysIso('2024-12-31', 0)).toBe('2024-12-31')
+    expect(durationDays('2025-02-19', '2025-05-20')).toBe(90)
+  })
+
+  it('returns null when either date is missing, empty string when the base is garbage', () => {
+    expect(durationDays('', '2025-01-01')).toBeNull()
+    expect(durationDays('2025-01-01', '')).toBeNull()
+    expect(addDaysIso('không phải ngày', 3)).toBe('')
+    // planned trước start: số âm vẫn trả về để ô nhập hiện ra cho người dùng thấy mà sửa
+    expect(durationDays('2025-01-10', '2025-01-05')).toBe(-5)
   })
 })

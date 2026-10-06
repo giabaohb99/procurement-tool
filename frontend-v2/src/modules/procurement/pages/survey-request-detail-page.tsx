@@ -834,7 +834,7 @@ export function SurveyRequestDetailPage() {
             trình thương vụ. Luôn dựng trên phiếu đã lưu, gấp sẵn; người chỉ xem
             mà phiếu chưa có báo cáo thì khối tự ẩn. Nằm trên khối Trao đổi. */}
         {showReportBlock && (
-          <SurveyReportCard surveyRequestId={surveyRequestId} canEdit={canEditReport} />
+          <SurveyReportCard ownerId={surveyRequestId} canEdit={canEditReport} />
         )}
 
         {/* THẺ THỬ «Hồ sơ cần hoàn thành» — dựng SONG SONG với khối Báo cáo

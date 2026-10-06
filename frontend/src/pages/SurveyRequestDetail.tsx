@@ -1242,7 +1242,7 @@ export default function SurveyRequestDetail() {
           {/* bao-CR-390: Báo cáo thực hiện — NS Thu mua (cờ process) dựng/cập nhật, người xem phiếu chỉ xem */}
           {!isNew && (
             <SurveyReportCard
-              surveyRequestId={Number(id)}
+              ownerId={Number(id)}
               canEdit={can('survey_request', 'process')}
               onChanged={reloadLogs}
             />

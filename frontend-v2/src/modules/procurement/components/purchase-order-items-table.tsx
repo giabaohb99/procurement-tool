@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Copy, History, PauseCircle, Pencil, PlayCircle, Trash2 } from 'lucide-react'
+import { ClipboardList, Copy, History, PauseCircle, Pencil, PlayCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { cn } from '@/shared/utils/cn'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import type {
   ProductOption,
@@ -45,6 +46,7 @@ import {
   isMissingExchangeRate,
   resolveLineCurrency,
 } from '../utils/purchase-order-import-cost'
+import type { LineReportProgress } from '../utils/survey-report-helpers'
 
 /** Thành tiền theo SL ĐẶT — hiện ngay khi gõ, không chờ backend tính lại. */
 export function orderLineAmount(item: PurchaseOrderItem): number {
@@ -52,11 +54,12 @@ export function orderLineAmount(item: PurchaseOrderItem): number {
 }
 
 /**
- * Hậu tố `-v2`: bộ cột vừa đổi (thêm Phân loại, thêm Quy đổi VNĐ cho đơn nhập khẩu).
- * `useTableLayout` ưu tiên bố cục đã lưu và nối cột lạ vào cuối, nên bố cục cũ trong
- * `localStorage` sẽ đẩy hai cột mới xuống cuối bảng. Đổi bộ cột lần sau thì tăng số.
+ * Hậu tố `-v3`: bộ cột vừa đổi (bao-CR-602 thêm cột «Hồ sơ» = tiến độ báo cáo thực
+ * hiện theo dòng; `-v2` trước đó thêm Phân loại + Quy đổi VNĐ). `useTableLayout` ưu
+ * tiên bố cục đã lưu và nối cột lạ vào cuối, nên bố cục cũ trong `localStorage` sẽ
+ * đẩy cột mới xuống cuối bảng. Đổi bộ cột lần sau thì tăng số.
  */
-const TABLE_STORAGE_KEY = 'purchase-order-items-v2'
+const TABLE_STORAGE_KEY = 'purchase-order-items-v3'
 
 /** Cột của bảng dòng ĐMH TRONG NƯỚC — đơn nhập khẩu lọc bớt / thêm cột ở trên. */
 function buildColumns(): LinesTableColumn[] {
@@ -127,6 +130,10 @@ function buildColumns(): LinesTableColumn[] {
       align: 'center',
       compactHidden: true,
     },
+    // bao-CR-602: tiến độ BÁO CÁO THỰC HIỆN của dòng (hồ sơ của dòng + hồ sơ chung).
+    // Bấm vào là cuộn xuống khối báo cáo và sổ đúng dòng. Không `compactHidden`:
+    // đại ca muốn nhìn bảng là thấy ngay dòng nào còn vướng hồ sơ.
+    { key: 'report', header: 'Hồ sơ', width: 110, minWidth: 80, align: 'center' },
     {
       key: 'status',
       header: 'Trạng thái',
@@ -187,6 +194,13 @@ interface PurchaseOrderItemsTableProps {
    * (thuế GTGT hàng nhập là một khoản chi phí lô hàng) và thêm cột quy đổi VNĐ.
    */
   order?: Pick<PurchaseOrderDetail, 'order_type' | 'currency' | 'exchange_rate'>
+  /**
+   * bao-CR-602 — tiến độ báo cáo thực hiện theo `item.id` (dòng đã lưu). Không
+   * truyền (màn tạo mới) thì cột «Hồ sơ» ẩn hẳn.
+   */
+  lineReport?: Map<number, LineReportProgress>
+  /** Bấm ô «Hồ sơ» của dòng — trang cuộn tới khối báo cáo và sổ nút của dòng đó. */
+  onOpenLineReport?: (progress: LineReportProgress) => void
 }
 
 const DOMESTIC_ONLY_COLUMNS = new Set(['vat', 'price_after_vat'])
@@ -209,6 +223,8 @@ export function PurchaseOrderItemsTable({
   onLineRemoved,
   onLineDuplicated,
   order,
+  lineReport,
+  onOpenLineReport,
 }: PurchaseOrderItemsTableProps) {
   const { data: units } = usePurchaseRequestUnits(editable)
   const lineSelection = useLineSelection({
@@ -237,7 +253,8 @@ export function PurchaseOrderItemsTable({
   const orderCurrency = { currency: order?.currency ?? '', exchange_rate: order?.exchange_rate ?? 0 }
 
   const columns = useMemo<LinesTableColumn[]>(() => {
-    const all = buildColumns()
+    //  Màn tạo mới chưa có dòng đã lưu → không có gì để báo cáo, bỏ cột cho đỡ rối.
+    const all = buildColumns().filter((column) => column.key !== 'report' || !!lineReport)
     if (!importMode) return all
     // `useTableLayout` đối chiếu theo khóa nên ẩn/thêm cột lúc chạy là an toàn:
     // khóa `vat` trong bản lưu bị bỏ qua. Chèn `base_amount` ngay sau `amount` để
@@ -252,7 +269,7 @@ export function PurchaseOrderItemsTable({
       align: 'right',
     })
     return kept
-  }, [importMode])
+  }, [importMode, lineReport])
 
   const patch = (index: number, changes: Partial<PurchaseOrderItem>) =>
     onChange(items.map((item, current) => (current === index ? { ...item, ...changes } : item)))
@@ -492,6 +509,42 @@ export function PurchaseOrderItemsTable({
             )}
           </div>
         )
+
+      case 'report': {
+        const progress = item.id ? lineReport?.get(item.id) : undefined
+        if (!progress || progress.total === 0) {
+          return (
+            <span
+              className="text-xs text-muted-foreground"
+              title={
+                item.id
+                  ? 'Chưa có hồ sơ báo cáo thực hiện cho dòng này — khởi tạo ở khối Báo cáo thực hiện bên dưới'
+                  : 'Lưu đơn rồi mới theo dõi hồ sơ cho dòng mới'
+              }
+            >
+              —
+            </span>
+          )
+        }
+        const complete = progress.done === progress.total
+        return (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={cn(
+              'h-7 gap-1 px-2 text-xs tabular-nums',
+              complete ? 'border-success/40 text-success' : 'text-foreground',
+            )}
+            title={`${progress.done}/${progress.total} hồ sơ hoàn tất · bấm để xem báo cáo thực hiện của dòng`}
+            aria-label={`Hồ sơ dòng ${index + 1}: ${progress.percent}%`}
+            onClick={() => onOpenLineReport?.(progress)}
+          >
+            <ClipboardList className="size-3.5" />
+            {progress.percent}%
+          </Button>
+        )
+      }
 
       case 'status':
         return (

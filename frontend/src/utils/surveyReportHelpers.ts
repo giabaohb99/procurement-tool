@@ -1,5 +1,6 @@
 /**
- * Khối BÁO CÁO THỰC HIỆN trên chi tiết phiếu YCBG — `/api/survey-requests/{id}/report`.
+ * Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{id}` (bao-CR-602: dùng
+ * chung chi tiết YCBG `survey_request` và ĐMH `purchase_order`).
  * Bản v1 (`frontend/`) chép luật thuần từ
  * `frontend-v2/src/modules/procurement/utils/survey-report-helpers.ts` — sửa một bên
  * thì nhớ sửa bên kia (bao-CR-390).
@@ -9,10 +10,15 @@
  * có trạng thái + danh sách hồ sơ tiên quyết (chưa xong hết thì hồ sơ bị khóa).
  */
 
+/** Chứng từ chủ của khối báo cáo — trùng tên entity phân quyền. */
+export type ReportOwnerEntity = 'survey_request' | 'purchase_order'
+
 /** Một NÚT lọc theo dòng hàng (vd «K₂SO₄»). Hồ sơ `item_id = 0` là CHUNG. */
 export interface SurveyReportItem {
   id: number
   name: string
+  /** Id dòng chứng từ nút bám theo (ĐMH: `tab_po_item.id`); `0` = nút đặt tay (YCBG). */
+  line_id: number
   sort_order: number
 }
 
@@ -38,6 +44,8 @@ export interface SurveyReportDoc {
   status_label: string
   /** Tên tệp hoặc link tài liệu — chữ tự do. */
   file_note: string
+  /** Kết quả / ghi chú SAU khi làm — khác `description` (việc phải làm). bao-CR-602. */
+  result: string
   /** Id các hồ sơ TIÊN QUYẾT (backend đã lọc id chết). */
   depends: number[]
   /** Ngày bắt đầu thực hiện — `yyyy-mm-dd`, `''` = chưa đặt. */
@@ -73,11 +81,60 @@ export interface SurveyReportDocPayload {
   required: boolean
   status: number
   file_note: string
+  result: string
   depends: number[]
   start_date: string
   expires_at: string
   planned_date: string
   assignee_id: number
+}
+
+/**
+ * Ngày `from` cộng `days` ngày — `yyyy-mm-dd`, tính theo UTC nên không lệch múi
+ * giờ. Chuỗi sai dạng trả `''`.
+ */
+export function addDaysIso(from: string, days: number): string {
+  const base = Date.parse(from)
+  if (!Number.isFinite(base)) return ''
+  return new Date(base + Math.round(days) * 86_400_000).toISOString().slice(0, 10)
+}
+
+/**
+ * «Số ngày xử lý» = dự định hoàn tất − ngày bắt đầu (cột «Time xử lý» của bảng kế
+ * hoạch Excel thu mua, bao-CR-602). Không lưu; thiếu một mốc trả `null`.
+ */
+export function durationDays(start: string, planned: string): number | null {
+  if (!start || !planned) return null
+  const days = Math.round((Date.parse(planned) - Date.parse(start)) / 86_400_000)
+  return Number.isFinite(days) ? days : null
+}
+
+/** Tiến độ báo cáo của MỘT dòng chứng từ: hồ sơ của nút dòng đó + hồ sơ Chung. */
+export interface LineReportProgress {
+  itemId: number
+  done: number
+  total: number
+  percent: number
+}
+
+/**
+ * Tiến độ theo TỪNG DÒNG CHỨNG TỪ (bao-CR-602) — khóa là `line_id` (ĐMH: `tab_po_item.id`).
+ * Hồ sơ CHUNG tính vào mọi dòng (cùng luật `filterReportDocs`); nút đặt tay bỏ qua.
+ */
+export function lineReportProgress(report: SurveyRequestReport | null | undefined): Map<number, LineReportProgress> {
+  const out = new Map<number, LineReportProgress>()
+  if (!report) return out
+  for (const item of report.items) {
+    if (!item.line_id) continue
+    const docs = filterReportDocs(report.docs, item.id)
+    out.set(item.line_id, {
+      itemId: item.id,
+      done: docs.filter(isReportDocDone).length,
+      total: docs.length,
+      percent: reportPercent(docs),
+    })
+  }
+  return out
 }
 
 //  Bộ mã SỐ gõ tay theo `backend/.../survey_request/report_constants.py` —

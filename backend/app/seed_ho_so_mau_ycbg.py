@@ -336,9 +336,10 @@ def _dong_bo_bao_cao(db, ycbg_id: int) -> str:
     người thử có thể đã tự thêm dòng riêng, xóa của họ thì mất dữ liệu thật để
     đổi lấy một màn hình cho đẹp.
     """
+    from app.modules.survey_request.report_service import report_id_of
     docs = (
         db.query(SurveyReportDoc)
-        .filter(SurveyReportDoc.survey_request_id == ycbg_id)
+        .filter(SurveyReportDoc.report_id == report_id_of(db, "survey_request", ycbg_id))
         .all()
     )
     if not docs:

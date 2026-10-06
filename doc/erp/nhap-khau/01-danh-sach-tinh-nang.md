@@ -146,25 +146,27 @@ Tổng: **59 chức năng**, trong đó **48 thuộc bản đầu**.
 
 ### NHÓM B · CHECKLIST TRÊN ĐƠN NHẬP KHẨU
 
+> 06/10/2026 — bao-CR-602 đưa khối **Báo cáo thực hiện** (bao-CR-388) lên chi tiết ĐMH **mọi loại đơn**, tái dùng mẫu chung 19 hồ sơ, nút dòng hàng bám dòng đơn; các mục đánh `bao-CR-602` bên dưới đã có theo cách đó (không phải tab «Hồ sơ nhập khẩu» riêng như B01 mô tả). Xem `doc/erp/18-bao-cao-thuc-hien-ycbg.md`.
+
 | Mã | Tính năng | Mô tả | Bản | Có sẵn |
 |---|---|---|---|---|
 | B01 | Tab **Hồ sơ nhập khẩu** trên chi tiết đơn | Chỉ hiện khi `order_type = IMPORT`. Đơn nội địa không thấy tab. Xem mục 5 | 1 | `[ ]` |
-| B02 | Sinh checklist từ khuôn, **theo từng dòng hàng** | Chọn khuôn cho dòng hàng → đẻ ra các dòng hồ sơ của **dòng hàng đó** (H3). **Chép giá trị, không trỏ tới khuôn** — sửa khuôn về sau không được làm đổi lô đang chạy | 1 | `[ ]` |
-| B03 | Thêm / sửa / xóa dòng hồ sơ thủ công | Lô nào cũng có việc phát sinh ngoài khuôn | 1 | `[ ]` |
-| B04 | Đánh dấu hoàn thành | Ô tick. Ghi lại ai tick, lúc nào. Bỏ tick được, có ghi vết | 1 | `[ ]` |
+| B02 | Sinh checklist từ khuôn, **theo từng dòng hàng** | Chọn khuôn cho dòng hàng → đẻ ra các dòng hồ sơ của **dòng hàng đó** (H3). **Chép giá trị, không trỏ tới khuôn** — sửa khuôn về sau không được làm đổi lô đang chạy | 1 | `[x]` bao-CR-602 (nút theo dòng đơn, mẫu chung 19 hồ sơ) |
+| B03 | Thêm / sửa / xóa dòng hồ sơ thủ công | Lô nào cũng có việc phát sinh ngoài khuôn | 1 | `[x]` bao-CR-602 |
+| B04 | Đánh dấu hoàn thành | Ô tick. Ghi lại ai tick, lúc nào. Bỏ tick được, có ghi vết | 1 | `[~]` bao-CR-602 (tick; ai/lúc nào ghi ở Lịch sử thao tác của đơn) |
 | B05 | Trạng thái hồ sơ | Lưu **SMALLINT + IntEnum** (R2/QĐ-11): `1` Chưa bắt đầu · `2` Đang làm · `3` Chờ đối tác · `4` Hoàn thành · `5` Không áp dụng | 1 | `[ ]` |
-| B06 | Người phụ trách từng dòng | Lưu **`assignee_id` = ID NHÂN SỰ**, không phải ID tài khoản. Mục VI của báo cáo pháp lý đã có sẵn cột này | 1 | `[~]` |
+| B06 | Người phụ trách từng dòng | Lưu **`assignee_id` = ID NHÂN SỰ**, không phải ID tài khoản. Mục VI của báo cáo pháp lý đã có sẵn cột này | 1 | `[x]` bao-CR-602 |
 | B07 | Hạn xử lý từng dòng | Tự tính từ ngày bắt đầu chặng + số ngày tối đa; sửa tay đè lên được | 1 | `[ ]` |
 | B08 | Đính kèm tệp vào dòng hồ sơ | **Không cần bảng mới.** `FileLink` đã có `entity` + `entity_id` + `purchase_order_id` + `doc_type`. Tick mà không kèm tệp thì không chứng minh được gì với hải quan — bản gợi ý để "chưa có file" là **chữ xám**, phải đổi thành **nút tải lên** | 1 | `[x]` |
 | B11 | Hai cách nhóm, một tập dữ liệu | Nhóm theo **chặng** và nhóm theo **dòng hàng**. Là `group_by` của cùng một bảng, **không phải bộ dữ liệu thứ hai** — chỗ này bản gợi ý làm đúng | 1 | `[ ]` |
 | B12 | Lọc theo mặt hàng | Chip *Tất cả · K₂SO₄ · KNO₃*. Sau H3 thì đây chỉ là cách trình bày lại của B11 | 1 | `[ ]` |
-| B13 | Ghi chú theo dòng | Số công văn, ngày nộp, tên cán bộ tiếp nhận | 1 | `[ ]` |
+| B13 | Ghi chú theo dòng | Số công văn, ngày nộp, tên cán bộ tiếp nhận | 1 | `[x]` bao-CR-602 (cột «Kết quả») |
 | B14 | Suy ra `document_status` của đơn | `PO_DOCUMENT_STATUS` hiện chỉ `none / partial / full` — **không nói được thiếu tờ nào**. Có checklist rồi thì cột này **tự suy ra**, bỏ hẳn việc nhập tay | 1 | `[~]` |
 | B15 | Mốc ngày chặng | Ngày bắt đầu và ngày kết thúc thực tế của mỗi chặng — tự lấy từ lần tick đầu và lần tick cuối trong chặng. **Không bắt ai gõ ngày** | 1 | `[ ]` |
-| B18 | Cột **Hồ sơ** trên bảng dòng hàng | Chấm màu + `3/12` trên từng dòng hàng, bấm vào nhảy xuống tab đã lọc sẵn. Lối vào 2 ở mục 5. ⚠️ Bảng dòng hàng dùng chung `LinesTable` — khai cột mới ở đó, **không chép khung bảng** | 1 | `[ ]` |
+| B18 | Cột **Hồ sơ** trên bảng dòng hàng | Chấm màu + `3/12` trên từng dòng hàng, bấm vào nhảy xuống tab đã lọc sẵn. Lối vào 2 ở mục 5. ⚠️ Bảng dòng hàng dùng chung `LinesTable` — khai cột mới ở đó, **không chép khung bảng** | 1 | `[x]` bao-CR-602 (cột «Hồ sơ» = %, bấm cuộn xuống khối + sổ dòng; mọi loại đơn) |
 | B19 | Checklist chạy được trên **đơn nháp** | Theo H4. Chặng xin giấy phép xảy ra trước khi đơn được duyệt — không cho khai từ nháp thì mất đúng 45 ngày đầu, tức mất chính thứ chức năng này sinh ra để thấy | 1 | `[ ]` |
 | B20 | ⚠️ Nới chốt khóa sửa sau duyệt cho checklist | CR-108 khóa dòng hàng từ `approved`. Không khai ngoại lệ thì tick xong **không lưu được và không báo lỗi**. Xem mục 5 | 1 | `[~]` |
-| B21 | Xóa dòng hàng thì dọn hồ sơ theo | Không dọn thì thành dữ liệu mồ côi và mọi phép đếm `x/y` đều sai | 1 | `[ ]` |
+| B21 | Xóa dòng hàng thì dọn hồ sơ theo | Không dọn thì thành dữ liệu mồ côi và mọi phép đếm `x/y` đều sai | 1 | `[x]` bao-CR-602 (xóa dòng → hồ sơ của nút về Chung, không mồ côi) |
 | B09 | Cảnh báo tiền quyết (**không khóa**) | Hiện dòng chữ *"Chờ: Hợp đồng NK + đặt cọc"* nhưng **vẫn cho tick**. Khóa cứng hạ xuống bản 2 theo H2 | 2 | `[ ]` |
 | B10 | Chặn vòng tiền quyết | Đi cùng B09. A chờ B, B chờ A thì không ai bắt đầu được và màn hình im lặng. Dò có trần độ sâu; **chạm trần phải chặn**, không được trả về im lặng — đúng bài học `block_manager_cycle` | 2 | `[ ]` |
 | B16 | Sao chép checklist sang đơn khác | Lô sau cùng mặt hàng cùng NCC | 2 | `[ ]` |

@@ -118,6 +118,42 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-602 | Báo cáo thực hiện trên Đơn mua hàng: khối dùng chung YCBG + ĐMH, nút bám dòng đơn, cột «Hồ sơ» trên bảng dòng hàng
+- status: xong
+- date: 2026-10-06
+Đại ca quay lại việc báo cáo tiến độ: trước mắt cần ở đơn mua hàng, hai cách xem (theo dòng hàng và chung), không cần
+mẫu tự định nghĩa mà tái sử dụng khối «Báo cáo thực hiện» của YCBG; mỗi đơn là một báo cáo riêng, không nối YCBG; trên
+dòng hàng hiện phần trăm tiến độ và một nút bấm là dời màn hình xuống khối báo cáo rồi sổ đúng dòng đó ra. Kèm bảng kế
+hoạch Excel «2870 — Kế hoạch Abamectin 3.6» để thử trên một đơn và rà lại logic các cột.
+
+Cách làm:
+1. Máy chủ: thêm bảng đầu `tab_exec_report(owner_entity, owner_id)`; bốn bảng con của khối đổi tên thành
+   `tab_exec_report_*` và đổi khóa `survey_request_id` thành `report_id`. Migration dựng đầu cho dữ liệu YCBG cũ với
+   id = id phiếu nên không chép dòng nào. Một bộ đường API chung `/api/execution-report/{entity}/{owner_id}`; luật
+   theo loại chứng từ nằm ở một bảng trong controller: YCBG giữ nguyên (đọc = read, ghi = process); ĐMH đọc = read,
+   ghi = write, khóa khi đơn Hoàn thành/Hủy. Nút dòng hàng của ĐMH bám theo dòng đơn (`line_id`): mỗi lần đọc khối
+   máy chủ tự đồng bộ — dòng mới thêm nút, đổi tên hàng đổi tên nút, xóa dòng thì xóa nút và hồ sơ của nó về Chung;
+   thêm/đổi tên/xóa nút tay trên ĐMH bị chặn 400.
+2. Hai bản giao diện: thẻ Báo cáo thực hiện nhận `entity` + `ownerId`, đặt dưới bảng dòng hàng của chi tiết ĐMH;
+   bảng dòng hàng thêm cột «Hồ sơ» hiện phần trăm (hồ sơ của dòng + hồ sơ Chung), bấm là cuộn xuống thẻ, chuyển sang
+   dạng xem theo dòng hàng và sổ đúng dòng. Bản mới dùng chung cache nên bảng không gọi thêm API; bản cũ thẻ báo khối
+   lên trang.
+3. Rà cột bảng Excel: Hạng mục = tiêu đề, Công việc chi tiết = mô tả, Người phụ trách = nhân sự thực hiện, Ngày thực
+   hiện = ngày bắt đầu, Ngày dự kiến hoàn thành = dự định hoàn tất, Trạng thái = mã trạng thái. Hai cột chưa có chỗ:
+   «Time xử lý (ngày)» → hộp sửa hồ sơ thêm ô «Số ngày xử lý» (không lưu, gõ số ngày thì tự đặt dự định hoàn tất =
+   ngày bắt đầu + n); «Kết quả» → thêm cột `result` cho hồ sơ, hiện trên dòng và trong hộp sửa. Bảng Excel không có
+   giai đoạn và chạy tuần tự nên script nạp xếp vào 5 giai đoạn mẫu và nối mỗi dòng là tiên quyết của dòng kế.
+   Script `backend/scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]` nạp 21 dòng vào một đơn trên dev.
+
+Kiểm: máy chủ 114 bài liên quan xanh (8 bài mới `test_bao_cao_thuc_hien_dmh_cr602.py`, bài YCBG cũ chuyển sang khóa
+`report_id`); bản mới kiểm kiểu 0 lỗi, lint 0 lỗi, 39 bài helper + bảng dòng hàng xanh; bản cũ giữ đúng 4 lỗi nền.
+Mã nguồn: `survey_request/report_{model,service,controller,schema}.py`, `migrations/versions/bcth01_*.py`,
+`frontend-v2/.../survey-report/survey-report-card.tsx`, `purchase-order-items-table.tsx`, `purchase-order-detail-page.tsx`,
+`frontend/src/components/SurveyReportCard.tsx`, `frontend/src/pages/PurchaseOrderDetail.tsx`.
+Deploy: DEV 06/10/2026; prod chờ đại ca.
+
+---
+
 ## bao-CR-601 | YCMH: tên NSTM phụ trách trả sẵn theo dòng; nút Tạo ĐMH ở bản cũ xét theo quyền thay vì tên phòng
 - status: xong
 - date: 2026-10-06

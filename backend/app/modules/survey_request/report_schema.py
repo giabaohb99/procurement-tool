@@ -72,6 +72,7 @@ class ReportDocIn(BaseModel):
     required: bool = True
     status: int = 0
     file_note: str = Field(default="", max_length=500)
+    result: str = Field(default="", max_length=1000)         # kết quả / ghi chú sau khi làm
     depends: list[int] = Field(default_factory=list, max_length=MAX_DEPENDS)
     start_date: str = Field(default="", max_length=10)      # 'yyyy-mm-dd' | ''
     expires_at: str = Field(default="", max_length=10)      # 'yyyy-mm-dd' | ''
@@ -109,6 +110,7 @@ class ReportDocPatch(BaseModel):
     required: bool | None = None
     status: int | None = None
     file_note: str | None = Field(default=None, max_length=500)
+    result: str | None = Field(default=None, max_length=1000)
     depends: list[int] | None = Field(default=None, max_length=MAX_DEPENDS)
     #  None = không gửi (bỏ qua); '' = XÓA ngày đã đặt. Hai nghĩa khác nhau.
     start_date: str | None = Field(default=None, max_length=10)
