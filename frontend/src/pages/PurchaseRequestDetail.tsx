@@ -263,10 +263,10 @@ export default function PurchaseRequestDetail() {
     else setPromptAction({ type: 'return', title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):' })
   }
   // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
-  // bao-CR-601: xét theo QUYỀN (cờ `process` = là nhân sự thu mua, như v2), không xét tên
-  // phòng ban nữa — nhân sự nhà máy sau bao-CR-591 vẫn thuộc phòng «Dego Organic» nên mất nút.
-  const isPurchaser = can('survey_request', 'process')
-  const canCreatePO = can('purchase_order', 'create') && (isPurchaser || canManage || canAssignPurchaser)
+  // bao-CR-601 (đại ca chốt 06/10/2026): miễn CÓ QUYỀN tạo ĐMH là hiện nút — giống bản mới.
+  // Trước đây còn xét tên phòng ban chứa «thu mua», nên nhân sự nhà máy (phòng «Dego Organic»
+  // sau bao-CR-591) mất nút dù có quyền. Trạng thái phiếu và dòng chưa đặt vẫn xét ở chỗ dùng.
+  const canCreatePO = can('purchase_order', 'create')
   // CR-034: các trạng thái "làm việc được" (tạo ĐMH / hoàn thành phiếu). Bình thường phải qua
   // bước duyệt điều phối; nếu công tắc điều phối bị TẮT thì "Đã duyệt" cũng làm việc được
   // (phiếu cũ còn kẹt ở đó từ lúc công tắc còn bật).

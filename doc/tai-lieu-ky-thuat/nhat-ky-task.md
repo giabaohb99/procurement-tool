@@ -131,8 +131,8 @@ Tra ra hai nguyên nhân riêng:
    mã. Sửa gốc: máy chủ trả sẵn `assignee_name` cho từng dòng YCMH (tra một lượt theo mã, mã chết ra rỗng); v1 và v2 ưu
    tiên tên đó, chỉ lùi về danh sách khi không có.
 2. Nút Tạo ĐMH: bản cũ chỉ hiện khi TÊN phòng ban người dùng chứa chữ «thu mua». Sau bao-CR-591, nhân sự nhà máy vẫn thuộc
-   phòng Dego Organic nên mất nút dù giữ vai trò Nhân viên thu mua. Nay xét theo cờ `process` (là nhân sự thu mua) như
-   bản mới, cùng với quản lý và người được phân bổ NSTM như cũ.
+   phòng Dego Organic nên mất nút dù giữ vai trò Nhân viên thu mua. Đại ca chốt: miễn CÓ QUYỀN tạo ĐMH là hiện nút,
+   giống bản mới — bỏ hẳn điều kiện phụ (phiếu còn ở trạng thái làm được và còn dòng chưa đặt vẫn xét như cũ).
 
 Kiểm: máy chủ 109 bài (có bài mới), bản mới kiểm kiểu 0 lỗi + 8 bài bảng dòng YCMH, bản cũ giữ đúng 4 lỗi nền.
 Ghi nhận cho đại ca: dòng «Pháp nhân được xem» thêm cho NSU012 sáng 06/10 vẫn khiến chị không xem được danh sách nhân sự
