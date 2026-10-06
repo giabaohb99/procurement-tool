@@ -12326,6 +12326,9 @@ cá nhân, do bộ phân loại ý định gán; việc sửa mã, sửa dữ li
 vấn lọc cứng theo người gọi, có bài kiểm chứng minh người này không đọc được sổ người kia.
 
 Mã nguồn: backend/app/modules/agent_hub/personal_memory.py · assistant/tools/personal_tool.py · agent_hub/service.py (_memory_by_text, answer_question) · agent_hub/manager.py (scope) · migration pmem01
+Deploy: dev 06/10 ~16:45, erp-v2 21680b54 (Agent 1 gộp và dựng lại api, celery-worker, celery-beat, agent-poller; migration pmem01 đã chạy, dev hiện ở bcth01); prod giữ lại.
+
+
 ## duoc-CR-598 | Tra cứu thị trường: tra cứu hóa chất gọn lại, dữ liệu hóa chất NĐ 24 mới, breadcrumb và nút Xuất dữ liệu
 - status: xong
 - date: 2026-10-06
