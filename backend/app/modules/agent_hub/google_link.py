@@ -211,6 +211,11 @@ def api_patch(db: Session, link: AgentGoogleLink, url: str, body: dict) -> dict:
     return _api(db, link, "PATCH", url, body=body)
 
 
+def api_delete(db: Session, link: AgentGoogleLink, url: str, params: dict | None = None) -> dict:
+    """AI-0003: xóa một tài nguyên (hủy sự kiện lịch). Google trả 204 rỗng → `{}`."""
+    return _api(db, link, "DELETE", url, params=params)
+
+
 def _api(db: Session, link: AgentGoogleLink, method: str, url: str, *, params: dict | None = None, body: dict | None = None) -> dict:
     token = access_token(db, link)
     try:
