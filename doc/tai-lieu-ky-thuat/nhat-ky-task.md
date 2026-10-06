@@ -141,7 +141,8 @@ Staff không thấy; lỗi hiện đúng câu máy chủ); Worker kiểm kiểu 
 Mã nguồn: `degoholding-app-frontend` `RequestDetailsModal.tsx`, `useRequestDetailsData.ts`, `usePermissions.ts`,
 `App.tsx`, `Sidebar.tsx`, `BottomNavBar.tsx`; `my-firebase-api` `src/api/v1/requests.router.ts`.
 Commit: frontend dev `60690c1`, Worker dev `7c7e7b3` (nhánh feat/quan-tri-vien-dieu-phoi). Deploy: app cũ DEV 06/10/2026;
-prod (nhánh main cả hai repo) chờ đại ca thử xong.
+PROD 06/10/2026 sau khi đại ca thử dev ổn — chỉ cherry-pick đúng commit CR-597 sang `main` (frontend `364034b`, Worker
+`87f83d7`), KHÔNG gộp cả nhánh dev vì dev còn mã P3 chưa được duyệt lên prod.
 
 ---
 
