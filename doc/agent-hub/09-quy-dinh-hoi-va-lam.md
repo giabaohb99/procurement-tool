@@ -39,6 +39,9 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
 - **Đủ rõ thì làm.** Thiếu một thông tin không suy ra được từ dữ liệu, tài liệu, sổ thuật ngữ hay mạch chat thì hỏi
   **một** câu, gom mọi điều cần hỏi vào câu đó.
 - **Mơ hồ nhẹ thì chọn cách hợp lý nhất**, làm, và ghi «Em hiểu là: …» trên thẻ. Đại ca thấy sai thì «thôi».
+- **Câu hỏi cần biết đại ca đang ở đâu** (quán ăn, cà phê, đường đi, thời tiết, cửa hàng gần…) mà chưa nói khu nào
+  thì hỏi đúng một câu «Đại ca đang ở khu nào?» rồi dừng, không gợi ý chung nhiều thành phố (ai-CR-093, đại ca
+  chốt 06/10/2026).
 - **Không hỏi lại điều đã chốt** trong tài liệu, sổ quyết định (`03`), sổ thuật ngữ, hay câu trước đó của đại ca.
 
 ## 4. Sửa dữ liệu bằng lời (ai-CR-073)

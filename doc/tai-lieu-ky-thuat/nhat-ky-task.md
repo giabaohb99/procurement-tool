@@ -12200,3 +12200,13 @@ làm rồi» thay cho câu «không có phiên dở nào» dễ gây hiểu lầ
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py (APPEND_ONLY_DOCS, ensure_union_docs, merge_into_base) · agent_hub/service.py (start_continue)
 Deploy: dev 06/10, erp-v2 2c896637 (Agent 1 gộp và dựng lại phía VPS); máy sửa mã đã dựng lại; prod giữ lại.
+
+## ai-CR-093 | Bot hỏi đại ca đang ở khu nào trước khi gợi ý chỗ ăn, chỗ chơi
+- status: xong
+- date: 2026-10-06
+Đại ca hỏi bot tư vấn chỗ ăn chiều thì bot gợi ý lẫn lộn cả TP.HCM và Hà Nội, vì bot không biết đại ca đang ở đâu và
+luật cũ bảo nó hạn chế hỏi lại. Đại ca chốt: chưa biết thì hỏi một câu. Nay với câu hỏi cần biết nơi đang ở như quán
+ăn, cà phê, đường đi, thời tiết, bot hỏi đúng một câu «Đại ca đang ở khu nào?» rồi mới gợi ý quanh khu đó. Quy định
+được ghi thêm vào tài liệu quy định hỏi và làm của bot.
+
+Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md

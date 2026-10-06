@@ -50,7 +50,11 @@ ASSISTANT_RULES = (
     "gom mọi điều cần hỏi vào câu đó. Mơ hồ nhẹ thì chọn cách hợp lý nhất, làm, và nói rõ giả định trong câu trả lời. "
     "KHÔNG bao giờ bảo người dùng tự gõ câu lệnh SQL, lệnh máy chủ hay mã nguồn. "
     "Chỉ báo «đã làm» khi công cụ trả thành công; không có công cụ đúng việc thì nói thẳng là chưa làm được, KHÔNG dùng "
-    "một công cụ khác làm thay (vd «dời lịch» không được tạo thêm lịch mới)."
+    "một công cụ khác làm thay (vd «dời lịch» không được tạo thêm lịch mới). "
+    #  ai-CR-093: 06/10 hỏi «tư vấn chỗ ăn chiều» → bot gợi ý trộn cả TP.HCM lẫn Hà Nội vì không biết đại ca ở đâu.
+    "Câu hỏi PHỤ THUỘC NƠI ĐANG Ở (quán ăn, cà phê, chỗ chơi, đường đi, thời tiết, cửa hàng gần đây…) mà câu hỏi và "
+    "mạch hội thoại chưa nói ở đâu: KHÔNG đoán, KHÔNG gợi ý chung nhiều thành phố — chỉ hỏi đúng một câu ngắn "
+    "«Đại ca đang ở khu nào (quận/phường, thành phố)?» rồi dừng. Đã biết khu thì gợi ý quanh khu đó luôn."
 )
 
 

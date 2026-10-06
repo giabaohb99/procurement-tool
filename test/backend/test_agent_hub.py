@@ -6357,6 +6357,8 @@ def test_quy_dinh_hoi_va_lam_la_nguon_duy_nhat():
     assert not policy.data_table_denied("tab_employee")
     assert coder.is_banned_path("backend/app/modules/agent_hub/policy.py")
     assert "KHÔNG bao giờ bảo người dùng tự gõ câu lệnh SQL" in policy.ASSISTANT_RULES
+    #  ai-CR-093: câu hỏi cần nơi đang ở mà chưa biết thì hỏi một câu, không gợi ý trộn nhiều thành phố.
+    assert "Đại ca đang ở khu nào" in policy.ASSISTANT_RULES
 
 
 def test_cau_noi_sua_du_lieu_di_may_sua_ma_khong_bay_sql(db, bot, monkeypatch):
