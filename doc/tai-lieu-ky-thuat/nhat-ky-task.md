@@ -118,6 +118,41 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-597 | App cũ: Quản trị viên hệ thống cũng điều phối được; thông báo lỗi điều phối hiện đúng lý do
+- status: xong
+- date: 2026-10-06
+Đại ca báo trên app cũ (prod) mở phiếu đặt xe «Đã duyệt» thì không còn nút «Xác nhận điều phối», tưởng tài khoản quản trị
+bị mất tính năng; trên dev thì phải vào tài khoản admin mới thấy, và dev còn báo «Không thể tải dữ liệu điều phối».
+
+Tra ra: phiếu «Lấy nước thải» trên prod sạch (đã duyệt, chưa có khối điều phối). Khối «Điều phối chuyến đi» từ ngày đầu
+của app (tháng 3/2026) chỉ hiện cho vai trò Admin («Điều phối viên»); máy chủ cũng chỉ cho Admin bấm điều phối. Tài khoản
+đại ca (Dego IT / marketing.degoholding@gmail.com) là Administrator («Quản trị viên hệ thống») ở cả dev lẫn prod, nên
+không thấy; lúc thử trên dev đại ca vào bằng tài khoản vai trò Admin. Hai bên hành xử giống nhau, khác là tài khoản.
+Lỗi thứ hai: máy chủ từ chối tải danh sách xe / tài xế vì «Không thể điều phối do quá hạn thời gian đặt xe» (phiếu dev
+tạo 19/9, giờ đi đã qua), giao diện nuốt lý do thành câu chung chung.
+
+Đại ca chốt 06/10: Quản trị viên hệ thống cũng điều phối được; hiện đúng lý do máy chủ; luật «quá giờ đi thì không cho
+điều phối» GIỮ. Đã sửa: giao diện cho Administrator thấy khối điều phối, menu «Điều phối», điều phối lại, và tải danh sách
+xe / tài xế; Worker mở các đường điều phối, điều phối lại, hủy điều phối, danh sách xe / tài xế cho Administrator (hằng
+`DISPATCH_ROLES`); thông báo lỗi lấy nguyên câu máy chủ, chỉ dùng câu chung khi máy chủ không nói gì.
+
+Kiểm: giao diện lint 0, kiểm kiểu 0, 143 bài xanh (3 bài mới: Administrator thấy khối điều phối và được tải danh sách;
+Staff không thấy; lỗi hiện đúng câu máy chủ); Worker kiểm kiểu 0, 188 bài xanh.
+Mã nguồn: `degoholding-app-frontend` `RequestDetailsModal.tsx`, `useRequestDetailsData.ts`, `usePermissions.ts`,
+`App.tsx`, `Sidebar.tsx`, `BottomNavBar.tsx`; `my-firebase-api` `src/api/v1/requests.router.ts`.
+Commit: frontend dev `60690c1`, Worker dev `7c7e7b3` (nhánh feat/quan-tri-vien-dieu-phoi). Deploy: app cũ DEV 06/10/2026;
+PROD 06/10/2026 sau khi đại ca thử dev ổn — chỉ cherry-pick đúng commit CR-597 sang `main` (frontend `364034b`, Worker
+`87f83d7`), KHÔNG gộp cả nhánh dev vì dev còn mã P3 chưa được duyệt lên prod.
+
+Phát hiện kèm (06/10): giao diện app cũ KHÔNG lên được vì Cloudflare Pages dựng thất bại từ 14/07 — mọi lượt dev lẫn
+main đều «Failure», dev.app vẫn phát bản tháng 7, prod vẫn bản tháng trước. Log: `npm install` chết với «Cannot read
+properties of null (reading 'edgesOut')» (lỗi npm 10). Gốc: `package-lock.json` bị `.gitignore` chặn nên kho trên Pages
+không có tệp khóa, npm phải tự giải gói từ đầu. Đã sửa: đưa `package-lock.json` vào git (dev `be5f072`, main `8886a36`),
+đổi lệnh dựng Pages thành `npm ci --no-audit --no-fund && npm run build` và đặt `SKIP_DEPENDENCY_INSTALL=true` (Production
++ Preview, qua wrangler). Sau đó cả hai lượt dựng xanh, app.degoholding.vn phát gói mới (`index-CWMlaaID.js`).
+
+---
+
 ## bao-CR-596 | Dựng chiều đồng bộ ERP sang app đặt xe cũ (P3), khóa bằng công tắc
 - status: xong
 - date: 2026-10-05
@@ -12210,3 +12245,30 @@ luật cũ bảo nó hạn chế hỏi lại. Đại ca chốt: chưa biết th�
 được ghi thêm vào tài liệu quy định hỏi và làm của bot.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
+
+## AI-0003 | Trợ lý hủy được sự kiện trên lịch Google của chính người hỏi
+- status: xong
+- date: 2026-10-06
+Đại ca giao làm công cụ hủy sự kiện. Trước đây Trợ lý chỉ xem, tạo và dời lịch Google; người dùng bảo hủy thì bot không
+làm được. Nay có thêm công cụ hủy: tìm sự kiện theo mã hoặc theo tên cộng ngày; khớp không cái nào hoặc khớp nhiều cái
+thì hỏi lại người dùng chứ không tự xóa. Lịch lặp lại chỉ hủy buổi của ngày được nói. Cuộc họp có khách mời thì Google
+gửi thư báo hủy. Người hỏi chỉ là khách mời thì sự kiện được gỡ khỏi lịch của họ, lịch người tổ chức không đổi. Thêm bài
+kiểm cho ca hủy đúng, ca mơ hồ phải hỏi lại, ca Google báo lỗi và ca chưa nối Google. Còn chờ đại ca quyết có bắt bot hỏi
+xác nhận trước khi hủy hay không.
+
+Mã nguồn: backend/app/modules/agent_hub/google_link.py (api_delete) · assistant/tools/google_tool.py (_delete_calendar_event, DELETE_CALENDAR_EVENT_SPEC)
+
+## duoc-CR-599 | Bản in đơn nghỉ phép đổi sang mẫu Word 2026 «Đơn xin nghỉ phép / nghỉ chế độ»
+- status: xong
+- date: 2026-10-06
+Đại ca gửi mẫu đơn nghỉ phép mới của năm 2026 và yêu cầu bản in trên ERP đổi theo. Tờ đơn in ra nay mở đầu bằng
+Quốc hiệu thay cho logo công ty, chia ba mục đánh số: thông tin nhân sự, nội dung xin nghỉ và bàn giao công việc.
+Phần loại hình nghỉ có ba ô đánh dấu là phép năm có lương, việc riêng không lương và chế độ bảo hiểm như ốm đau,
+thai sản; hệ thống tự đánh dấu theo tên loại nghỉ của đơn, đơn khai nhiều loại thì đánh nhiều ô, còn nghỉ cưới,
+nghỉ tang và nghỉ bù được xếp vào ô có lương vì mẫu không có ô riêng. Phần ký còn hai ô là người xin nghỉ và trưởng
+bộ phận, bỏ ô phòng hành chính nhân sự như mẫu mới. Dòng tài liệu đính kèm và các trang ảnh đính kèm phía sau vẫn
+giữ nguyên. Đã thêm mười tám bài kiểm và xem bản in thật trên trình duyệt. Đã đẩy lên erp-v2, chưa deploy.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/leave-request-print-sheet.tsx · hr/utils/leave-print-category.ts · hr/pages/leave-request-print-page.tsx
+Commit: ab434648 trên erp-v2.
+Deploy: chưa deploy.

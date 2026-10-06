@@ -6981,6 +6981,51 @@ def test_doi_lich_sua_dung_su_kien_cu_khong_tao_them(db, monkeypatch):
     assert "update_calendar_event" in g.CREATE_CALENDAR_EVENT_SPEC.description
 
 
+def test_huy_lich_xoa_dung_su_kien_va_hoi_lai_khi_mo_ho(db, monkeypatch):
+    """AI-0003: hủy ĐÚNG một sự kiện; khớp 0 hay nhiều sự kiện thì trả lựa chọn, KHÔNG xóa gì."""
+    from app.modules.assistant.tools import google_tool as g
+
+    ev = {"id": "ev1", "summary": "Họp NCC Minh Phát", "organizer": {"self": True},
+          "attendees": [{"email": "ncc@minhphat.vn"}],
+          "start": {"dateTime": "2026-10-06T14:00:00+07:00"}, "end": {"dateTime": "2026-10-06T15:00:00+07:00"}}
+    ev2 = {**ev, "id": "ev2", "summary": "Họp NCC Hòa Bình", "attendees": []}
+    rows = [g._event_row(ev), g._event_row(ev2)]
+    calls: list = []
+    monkeypatch.setattr(g, "_link_or_error", lambda ctx: (object(), None))
+    monkeypatch.setattr(g, "list_events", lambda db_, link, a="", b="", **kw: rows)
+    monkeypatch.setattr(g.gl, "api_get", lambda db_, link, url, params=None: ev if url.endswith("/ev1") else ev2)
+    monkeypatch.setattr(g.gl, "api_delete", lambda db_, link, url, params=None: calls.append((url, params)) or {})
+
+    class Ctx:
+        pass
+    ctx = Ctx()
+    ctx.db = db
+    #  «họp ncc» khớp HAI sự kiện → hỏi lại, không xóa
+    out = g._delete_calendar_event(ctx, {"title": "hop ncc", "date": "2026-10-06"})
+    assert out["need_choice"] == "event" and len(out["candidates"]) == 2 and calls == []
+    #  không khớp gì → cũng không xóa
+    assert g._delete_calendar_event(ctx, {"title": "khong co", "date": "2026-10-06"})["need_choice"] == "event"
+    assert calls == []
+    #  thiếu cả event_id lẫn title → lỗi, không xóa
+    assert "event_id" in g._delete_calendar_event(ctx, {})["error"] and calls == []
+
+    out = g._delete_calendar_event(ctx, {"title": "minh phat", "date": "2026-10-06"})
+    assert out["ok"] is True and out["cancelled"]["title"] == "Họp NCC Minh Phát"
+    assert len(calls) == 1 and calls[0][0].endswith("/events/ev1") and calls[0][1] == {"sendUpdates": "all"}
+
+    #  không có khách mời → không gửi thư; là khách mời → câu báo nói rõ chỉ gỡ khỏi lịch mình
+    calls.clear()
+    ev2["organizer"] = {"email": "sep@dego.vn"}
+    out = g._delete_calendar_event(ctx, {"event_id": "ev2"})
+    assert out["ok"] is True and calls[0][1] == {"sendUpdates": "none"} and "khách mời" in out["note"]
+
+    #  Google báo lỗi → không báo «đã hủy»
+    def _boom(*a, **kw):
+        raise g.gl.GoogleError("Không tìm thấy sự kiện.")
+    monkeypatch.setattr(g.gl, "api_delete", _boom)
+    assert "ok" not in g._delete_calendar_event(ctx, {"event_id": "ev1"})
+
+
 def test_lech_ban_doi_ban_thi_dem_lai_tu_dau(db, monkeypatch):
     """ai-CR-085: 05/10 máy được dựng lại hai lần trước khi dev deploy → báo nhầm hai lần ngay. Đổi bản = đếm lại."""
     from datetime import datetime, timedelta

@@ -104,7 +104,7 @@ def _find_event(ctx: ToolContext, link, args: dict) -> tuple[dict | None, dict |
     title = fold(str(args.get("title") or ""))
     day = str(args.get("date") or "").strip()
     if not title:
-        return None, {"error": "Cần event_id, hoặc title (+ date YYYY-MM-DD) của sự kiện cần sửa."}
+        return None, {"error": "Cần event_id, hoặc title (+ date YYYY-MM-DD) của sự kiện cần sửa / hủy."}
     try:
         rows = list_events(ctx.db, link, day, day) if day else list_events(ctx.db, link, "", "")
     except gl.GoogleError as e:
@@ -157,6 +157,31 @@ def _update_calendar_event(ctx: ToolContext, args: dict) -> dict:
         return {"error": str(e)}
     return {"ok": True, "before": _event_row(ev), "event": _event_row(out),
             "note": "Đã sửa ĐÚNG sự kiện cũ (không tạo thêm)."}
+
+
+def _delete_calendar_event(ctx: ToolContext, args: dict) -> dict:
+    """AI-0003: HỦY một sự kiện ĐÃ CÓ. Tìm như `update_calendar_event` — khớp không đúng một thì trả lựa chọn,
+    KHÔNG xóa. Lịch lặp lại: danh sách đã bung từng buổi (`singleEvents`), nên tìm theo tên + ngày chỉ hủy buổi đó.
+    Có khách mời thì Google gửi thư báo hủy (`sendUpdates=all`)."""
+    link, err = _link_or_error(ctx)
+    if err:
+        return err
+    ev, err = _find_event(ctx, link, args)
+    if err:
+        return err
+    row = _event_row(ev)
+    params = {"sendUpdates": "all" if row["attendees"] else "none"}
+    try:
+        gl.api_delete(ctx.db, link, f"{gl.CALENDAR_URL}/calendars/primary/events/{ev['id']}", params)
+    except gl.GoogleError as e:
+        return {"error": str(e)}
+    organizer = ev.get("organizer") or {}
+    note = "Đã hủy ĐÚNG sự kiện này."
+    if organizer and not organizer.get("self"):
+        note = "Bạn là khách mời: đã gỡ sự kiện khỏi lịch của bạn, lịch của người tổ chức không đổi."
+    elif row["attendees"]:
+        note += " Google đã gửi thư báo hủy cho khách mời."
+    return {"ok": True, "cancelled": row, "note": note}
 
 
 def _drive_search(ctx: ToolContext, args: dict) -> dict:
@@ -244,5 +269,17 @@ UPDATE_CALENDAR_EVENT_SPEC = ToolSpec(
         "duration_minutes": {"type": "integer"}, "new_title": {"type": "string"}, "new_location": {"type": "string"}}},
     handler=_update_calendar_event,
 )
-GOOGLE_SPECS = [MY_CALENDAR_EVENTS_SPEC, CREATE_CALENDAR_EVENT_SPEC, UPDATE_CALENDAR_EVENT_SPEC, DRIVE_SEARCH_SPEC,
-                DRIVE_READ_SPEC]
+DELETE_CALENDAR_EVENT_SPEC = ToolSpec(
+    name="delete_calendar_event",
+    description=("HỦY / XÓA một sự kiện ĐÃ CÓ trên lịch Google của chính người hỏi ('hủy lịch họp NCC chiều nay', "
+                 "'xóa lịch mua thuốc mai'). Chỉ gọi khi người dùng nói rõ muốn hủy; KHÔNG dùng để dời giờ (việc đó là "
+                 "update_calendar_event). Tìm theo event_id (lấy từ my_calendar_events) hoặc theo tên + ngày; lịch lặp lại "
+                 "thì chỉ hủy buổi của ngày đó. Không chắc sự kiện nào → tool trả lựa chọn, hỏi MỘT câu, không tự chọn. "
+                 "Chỉ báo «đã hủy» khi tool trả ok, kèm tên + giờ sự kiện vừa hủy."),
+    parameters={"type": "object", "properties": {
+        "event_id": {"type": "string"}, "title": {"type": "string", "description": "Tên (một phần) để tìm."},
+        "date": {"type": "string", "description": "Ngày đang có sự kiện, YYYY-MM-DD (giúp tìm đúng)."}}},
+    handler=_delete_calendar_event,
+)
+GOOGLE_SPECS = [MY_CALENDAR_EVENTS_SPEC, CREATE_CALENDAR_EVENT_SPEC, UPDATE_CALENDAR_EVENT_SPEC,
+                DELETE_CALENDAR_EVENT_SPEC, DRIVE_SEARCH_SPEC, DRIVE_READ_SPEC]
