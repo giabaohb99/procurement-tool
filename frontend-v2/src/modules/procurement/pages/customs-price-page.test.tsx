@@ -235,10 +235,50 @@ describe('CustomsPricePage', () => {
     expect(screen.queryByRole('tab', { name: 'Danh sách' })).not.toBeInTheDocument()
   })
 
+  //  06/10/2026 — mục hóa chất chỉ giữ tiêu đề + «Lịch sử nạp» + «Nạp dữ liệu» + bảng: dải phủ
+  //  dữ liệu hải quan, câu mô tả GTT02 và thanh lọc dòng hàng đều phải biến mất.
+  it('shows only the title, the two header buttons and the chemical table on Tra cứu hóa chất', async () => {
+    build('/procurement/customs-prices/legal')
+    expect(await screen.findByRole('heading', { name: 'Tra cứu hóa chất' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Lịch sử nạp/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Nạp dữ liệu/ })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Tìm hóa chất theo văn bản' })).toBeInTheDocument()
+    expect(screen.queryByText(/Dữ liệu:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/tệp GTT02/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Xuất dữ liệu/ })).not.toBeInTheDocument()
+  })
+
+  it('still shows the coverage strip on the price tabs', async () => {
+    build('/procurement/customs-prices')
+    expect(await screen.findByText(/Dữ liệu:/)).toBeInTheDocument()
+  })
+
+  //  06/10/2026 — «Xuất Excel» trong thanh công cụ của bảng → «Xuất dữ liệu» ở đầu trang, kế
+  //  «Nạp dữ liệu»; vẫn khóa khi bảng rỗng (không xuất tệp trắng).
+  it('puts Xuất dữ liệu in the page header and disables it while the list is empty', async () => {
+    build('/procurement/customs-prices')
+    const exportButton = await screen.findByRole('button', { name: /Xuất dữ liệu/ })
+    expect(exportButton).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Xuất Excel/ })).not.toBeInTheDocument()
+  })
+
+  it('enables Xuất dữ liệu once the filtered list has rows', async () => {
+    lineItems = [{ id: 1 }]
+    build('/procurement/customs-prices')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Xuất dữ liệu/ })).toBeEnabled(),
+    )
+  })
+
   it('titles the five price tabs with the menu label Giá thị trường', async () => {
     build('/procurement/customs-prices/chart')
     expect(await screen.findByRole('heading', { name: 'Giá thị trường' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /Tra cứu thị trường/ })).not.toBeInTheDocument()
+  })
+
+  it('titles the pesticide section «Tra cứu Thuốc BVTV»', async () => {
+    build('/procurement/customs-prices/pesticides')
+    expect(await screen.findByRole('heading', { name: 'Tra cứu Thuốc BVTV' })).toBeInTheDocument()
   })
 
   it('titles other submenu pages with their own menu label', async () => {

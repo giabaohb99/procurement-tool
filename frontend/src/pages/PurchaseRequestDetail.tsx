@@ -263,8 +263,10 @@ export default function PurchaseRequestDetail() {
     else setPromptAction({ type: 'return', title: 'Trả về', message: 'Lý do trả về (để người yêu cầu sửa & gửi duyệt lại):' })
   }
   // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
-  const isPurchaserDept = ((user as any)?.department_name || '').toLowerCase().includes('thu mua')
-  const canCreatePO = can('purchase_order', 'create') && (isPurchaserDept || canManage || canAssignPurchaser)
+  // bao-CR-601 (đại ca chốt 06/10/2026): miễn CÓ QUYỀN tạo ĐMH là hiện nút — giống bản mới.
+  // Trước đây còn xét tên phòng ban chứa «thu mua», nên nhân sự nhà máy (phòng «Dego Organic»
+  // sau bao-CR-591) mất nút dù có quyền. Trạng thái phiếu và dòng chưa đặt vẫn xét ở chỗ dùng.
+  const canCreatePO = can('purchase_order', 'create')
   // CR-034: các trạng thái "làm việc được" (tạo ĐMH / hoàn thành phiếu). Bình thường phải qua
   // bước duyệt điều phối; nếu công tắc điều phối bị TẮT thì "Đã duyệt" cũng làm việc được
   // (phiếu cũ còn kẹt ở đó từ lúc công tắc còn bật).
@@ -301,11 +303,14 @@ export default function PurchaseRequestDetail() {
     const opts = assignableStaff.map((e: any) => ({ value: e.code, label: e.full_name }))
     for (const it of (pr.items || [])) {
       if (it.assignee && !opts.some((o) => o.value === it.assignee))
-        opts.push({ value: it.assignee, label: employees.find(e => e.code === it.assignee)?.full_name || it.assignee })
+        opts.push({ value: it.assignee, label: it.assignee_name || employees.find(e => e.code === it.assignee)?.full_name || it.assignee })
     }
     return opts
   })()
   const empName = (code: string) => employees.find(e => e.code === code)?.full_name || code
+  //  bao-CR-601: ưu tiên tên máy chủ trả sẵn — danh sách nhân sự tải về bị lọc theo phạm vi
+  //  người xem nên tra có thể trượt và lòi ra mã.
+  const assigneeName = (it: any) => it.assignee_name || empName(it.assignee)
   const companyOptions = companies.map(c => ({ value: String(c.id), label: c.name }))
   // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — mọi phòng đang hoạt động (phòng đã tắt nhưng phiếu cũ
   // còn trỏ tới thì vẫn giữ lại để không mất nhãn). bao-CR-524: KHÔNG còn mục ảo «Thu mua chung» (0) —
@@ -1310,7 +1315,7 @@ export default function PurchaseRequestDetail() {
                               <option value="">-- Chọn NSTM --</option>
                               {purchaserOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                             </select>
-                          ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={empName(it.assignee)}>{it.assignee ? empName(it.assignee) : ''}</span>}
+                          ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={assigneeName(it)}>{it.assignee ? assigneeName(it) : ''}</span>}
                         </td>
                       )}
                       <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>

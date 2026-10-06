@@ -323,6 +323,12 @@ const NAV_W_DEFAULT = 222;
 const isActive = (path: string, to: string) =>
   to === "/" ? path === "/" : path.startsWith(to);
 
+/** Mục con đang sáng — menu trái và breadcrumb cấp ba dùng CHUNG luật này để khỏi lệch tên. */
+const isNavChildActive = (c: NavChild, parentTo: string, pathname: string) =>
+  pathname === c.to || pathname.startsWith(c.to + "/")
+  || (!!c.isDefault && pathname.replace(/\/$/, "") === parentTo)
+  || !!c.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
 /**
  * Mục menu có menu con (duoc-CR-491). Đang ở trong mục cha thì sổ các mục con ra và mục con đang
  * xem sáng lên (mục cha thôi sáng để không có hai dòng cùng sáng); ở ngoài thì chỉ còn dòng cha,
@@ -351,9 +357,7 @@ function NavParent({ item, pathname, can, onPick }: {
       {inside && (
         <div className="nav-sub">
           {children.map((c) => {
-            const active = pathname === c.to || pathname.startsWith(c.to + "/")
-              || (!!c.isDefault && pathname.replace(/\/$/, "") === item.to)
-              || !!c.matchPaths?.some((p) => pathname === p || pathname.startsWith(p + "/"));
+            const active = isNavChildActive(c, item.to, pathname);
             return (
               <Link key={c.to} to={c.to} onClick={onPick} className={"nav-item" + (active ? " active" : "")}>
                 <i className={"ti " + c.icon} />
@@ -483,6 +487,11 @@ export default function AppLayout() {
   const currentGroup = NAV_GROUPS.find((g) =>
     g.items.some((n) => n.to === current?.to),
   );
+  //  06/10/2026 — breadcrumb cấp ba = mục con đang sáng ở menu trái (vd «Mua hàng / Tra cứu thị
+  //  trường / Tra cứu hóa chất»), khớp bản v2. Chỉ xét mục con được vẽ, như `NavParent`.
+  const currentChild = current?.children
+    ?.filter((c) => !c.visible || c.visible(can))
+    .find((c) => isNavChildActive(c, current.to, loc.pathname));
   const name = user?.full_name || "Người dùng";
   const initials = initialsOf(name);
   // CR-028: dòng phụ dưới tên ở góc phải — mã NV · chức vụ (bỏ phần nào rỗng).
@@ -619,6 +628,7 @@ export default function AppLayout() {
             <div className="crumb">
               {currentGroup?.title ? `${currentGroup.title} / ` : ""}
               {current?.label || "Trang chủ"}
+              {currentChild && currentChild.label !== current?.label ? ` / ${currentChild.label}` : ""}
             </div>
           </div>
           <div

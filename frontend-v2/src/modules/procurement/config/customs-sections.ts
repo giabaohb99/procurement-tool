@@ -30,7 +30,8 @@ export const CUSTOMS_SECTIONS = [
   { key: 'legal', label: 'Tra cứu hóa chất', icon: Scale, tabbed: false },
   { key: 'tariff', label: 'Thuế', icon: Percent, tabbed: true },
   //  29/09/2026 — danh mục thuốc BVTV (bản cào danhmuc.thuocbvtv.com), có nạp tệp trên màn.
-  { key: 'pesticides', label: 'Thuốc BVTV', icon: Sprout, tabbed: false },
+  //  06/10/2026 — đổi tên hiển thị «Thuốc BVTV» → «Tra cứu Thuốc BVTV» (khóa + đường dẫn giữ nguyên).
+  { key: 'pesticides', label: 'Tra cứu Thuốc BVTV', icon: Sprout, tabbed: false },
   { key: 'history', label: 'Lịch sử nạp', icon: History, tabbed: false },
   //  bao-CR-501 — ba danh mục cấu hình (từ khóa nhãn, từ đồng nghĩa, hóa chất theo văn bản).
   //  Hiện khi sửa được cấu hình HOẶC xem được hóa chất.

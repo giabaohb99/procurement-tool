@@ -214,11 +214,19 @@ export interface CustomsRegulationHit {
   id: number
   list_code: number
   list_label: string
+  /** duoc-CR-598 — STT in trong phụ lục (chuỗi; rỗng ở danh sách không đánh số). */
+  seq_no: string
+  /** Tên khoa học (danh pháp IUPAC) — tên theo văn bản. */
   name: string
+  /** Tên chất (tiếng Việt). */
   name_vi: string
   cas_no: string
+  /** duoc-CR-598 — công thức hóa học. */
+  formula: string
   category: string
   threshold_kg: number | null
+  /** duoc-CR-598 — ngưỡng hàm lượng trong hỗn hợp (%), chỉ PL II / PL III của NĐ 24. */
+  mixture_pct: number | null
   banned_year: number | null
   legal_basis: string
   note: string
@@ -328,11 +336,15 @@ export interface CustomsBatchLogList {
 export type CustomsRegulation = {
   id: number
   list_code: number
+  seq_no: string
+  sort_order: number
   name: string
   name_vi: string
   cas_no: string
+  formula: string
   category: string
   threshold_kg: number | null
+  mixture_pct: number | null
   banned_year: number | null
   legal_basis: string
   note: string

@@ -118,6 +118,31 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-601 | YCMH: tên NSTM phụ trách trả sẵn theo dòng; nút Tạo ĐMH ở bản cũ xét theo quyền thay vì tên phòng
+- status: xong
+- date: 2026-10-06
+Đại ca báo trên phiếu PYC02102602 (prod, bản cũ): cột «NSTM phụ trách» hiện mã «NSU012» thay vì tên, và tài khoản chị
+Trần Diễm Phương (NSU012) không thấy nút «Tạo đơn mua hàng»; đổi phòng ban của chị sang Sản xuất - Thu mua thì nút hiện.
+
+Tra ra hai nguyên nhân riêng:
+1. Tên NSTM: cả hai bản giao diện tra tên từ danh sách nhân sự tải về (`/api/employees`), mà danh sách này lọc theo phạm vi
+   dữ liệu của người xem. Sáng 06/10 tài khoản NSU012 được thêm «Pháp nhân được xem» (14 công ty) cho vai trò Nhân viên thu
+   mua; trong khi 259 hồ sơ nhân sự trên prod đang để pháp nhân = 0 nên bị loại hết, danh sách gần trống, tra trượt và lòi
+   mã. Sửa gốc: máy chủ trả sẵn `assignee_name` cho từng dòng YCMH (tra một lượt theo mã, mã chết ra rỗng); v1 và v2 ưu
+   tiên tên đó, chỉ lùi về danh sách khi không có.
+2. Nút Tạo ĐMH: bản cũ chỉ hiện khi TÊN phòng ban người dùng chứa chữ «thu mua». Sau bao-CR-591, nhân sự nhà máy vẫn thuộc
+   phòng Dego Organic nên mất nút dù giữ vai trò Nhân viên thu mua. Đại ca chốt: miễn CÓ QUYỀN tạo ĐMH là hiện nút,
+   giống bản mới — bỏ hẳn điều kiện phụ (phiếu còn ở trạng thái làm được và còn dòng chưa đặt vẫn xét như cũ).
+
+Kiểm: máy chủ 109 bài (có bài mới), bản mới kiểm kiểu 0 lỗi + 8 bài bảng dòng YCMH, bản cũ giữ đúng 4 lỗi nền.
+Ghi nhận cho đại ca: dòng «Pháp nhân được xem» thêm cho NSU012 sáng 06/10 vẫn khiến chị không xem được danh sách nhân sự
+(vì hồ sơ nhân sự chưa khai pháp nhân) — cần quyết: bỏ các dòng đó, hay khai pháp nhân cho hồ sơ nhân sự.
+Mã nguồn: `purchase_request/controller.py` (`_out`), `frontend/src/pages/PurchaseRequestDetail.tsx`,
+`frontend-v2/.../purchase-request-items-table.tsx`, `types/purchase-request-detail.ts`.
+Deploy: DEV 06/10/2026; prod chờ đại ca.
+
+---
+
 ## bao-CR-597 | App cũ: Quản trị viên hệ thống cũng điều phối được; thông báo lỗi điều phối hiện đúng lý do
 - status: xong
 - date: 2026-10-06
@@ -12301,3 +12326,22 @@ cá nhân, do bộ phân loại ý định gán; việc sửa mã, sửa dữ li
 vấn lọc cứng theo người gọi, có bài kiểm chứng minh người này không đọc được sổ người kia.
 
 Mã nguồn: backend/app/modules/agent_hub/personal_memory.py · assistant/tools/personal_tool.py · agent_hub/service.py (_memory_by_text, answer_question) · agent_hub/manager.py (scope) · migration pmem01
+## duoc-CR-598 | Tra cứu thị trường: tra cứu hóa chất gọn lại, dữ liệu hóa chất NĐ 24 mới, breadcrumb và nút Xuất dữ liệu
+- status: xong
+- date: 2026-10-06
+Đại ca gửi ảnh màn «Pháp lý» và tệp khai báo hóa chất của phòng Thu mua, yêu cầu làm cho cả bản cũ lẫn bản ERP mới.
+Mục «Pháp lý» đổi tên thành «Tra cứu hóa chất», mục «Thuốc BVTV» đổi thành «Tra cứu Thuốc BVTV»; đường dẫn cũ giữ nguyên.
+Màn tra cứu hóa chất chỉ còn tiêu đề, hai nút «Lịch sử nạp» và «Nạp dữ liệu» cùng bảng hóa chất. Danh mục hóa chất của
+Nghị định 24/2026 được nạp lại từ tệp Excel, đủ 1.349 hóa chất của bốn phụ lục, có thêm số thứ tự trong phụ lục và công
+thức hóa học; bảng tra cứu tách riêng các cột phụ lục, số thứ tự, tên khoa học, tên chất, mã CAS và công thức, còn ô ngưỡng
+ghi đúng loại ngưỡng của từng phụ lục: phụ lục IV là ngưỡng tồn trữ tính bằng kg, phụ lục II là hỗn hợp chứa trên 5%
+khối lượng, phụ lục III là trên 1% (riêng tiền chất công nghiệp nhóm 2 là trên 5%), phụ lục I không có ngưỡng; các mức phần
+trăm lấy từ câu ghi chú của chính Nghị định vì tệp Excel không chép phần này. Tệp Excel có nhiều ô bị Excel tự đổi định
+dạng (mã CAS thêm số 0, biến thành ngày tháng, ô lỗi) nên bộ đọc gỡ lại và kiểm số cuối của mã CAS trước khi tin. Lần
+nạp chỉ cập nhật hoặc thêm dòng, dòng cũ không còn trong tệp chuyển sang ngừng dùng chứ không xóa; danh sách hoạt chất cấm
+và danh sách phải công bố theo lô không bị đụng tới. Bản cũ có thêm breadcrumb cấp ba và tiêu đề trang theo đúng tên mục
+trên menu; nút «Xuất Excel» đổi thành «Xuất dữ liệu», dời lên đầu trang cạnh «Nạp dữ liệu». Đã đẩy lên erp-v2, chưa deploy.
+
+Mã nguồn: backend/app/modules/customs/nd24_regulation_loader.py · customs/data/nd24_2026_regulations.json · scripts/load_nd24_regulations.py · migration nd24reg01 · frontend/src/components/customs/CustomsRegulationBrowse.tsx · frontend-v2/src/modules/procurement/config/customs-regulation-columns.tsx
+Commit: 766b10ca trên erp-v2.
+Deploy: chưa deploy — sau khi deploy chạy tay một lần `docker compose exec -T api python -m scripts.load_nd24_regulations`

@@ -190,11 +190,21 @@ class CustomsRegulation(Base, AuditMixin):
     __tablename__ = "tab_customs_regulation"
 
     list_code: Mapped[int] = mapped_column(SmallInteger, default=0, index=True)   # RegulationList
-    name: Mapped[str] = mapped_column(String(500), default="")
-    name_vi: Mapped[str] = mapped_column(String(500), default="")
+    #  duoc-CR-598 — STT in trong phụ lục (chuỗi: phụ lục III đánh số lại theo từng mục, có dòng con
+    #  không số) và thứ tự dòng trong văn bản để bảng xếp ĐÚNG như phụ lục. `sort_order = 0` = dòng
+    #  thêm tay, xếp sau các dòng nạp từ văn bản.
+    seq_no: Mapped[str] = mapped_column(String(20), default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    name: Mapped[str] = mapped_column(String(500), default="")       # tên khoa học (danh pháp IUPAC)
+    name_vi: Mapped[str] = mapped_column(String(500), default="")    # tên chất (tiếng Việt)
     cas_no: Mapped[str] = mapped_column(String(40), default="", index=True)
+    formula: Mapped[str] = mapped_column(String(100), default="")    # công thức hóa học
     category: Mapped[str] = mapped_column(String(100), default="")
     threshold_kg: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    #  duoc-CR-598 — ngưỡng HÀM LƯỢNG trong hỗn hợp (%): hỗn hợp chứa chất này VƯỢT mức này cũng thuộc
+    #  danh mục. NĐ 24/2026: PL II > 5%; PL III nhóm 1 > 1%, nhóm 2 tiền chất công nghiệp > 5%,
+    #  nhóm 2 còn lại > 1%. Khác `threshold_kg` (ngưỡng TỒN TRỮ của PL IV).
+    mixture_pct: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     banned_year: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     legal_basis: Mapped[str] = mapped_column(String(255), default="")
     note: Mapped[str] = mapped_column(String(500), default="")

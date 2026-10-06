@@ -22,12 +22,15 @@ def _check_list_code(v):
 
 class RegulationCreate(BaseModel):
     list_code: int
+    seq_no: str = Field("", max_length=20)          # duoc-CR-598 — STT trong phụ lục
     name: str = Field(..., min_length=1, max_length=500)
     name_vi: str = Field("", max_length=500)
     cas_no: str = Field("", max_length=40)
+    formula: str = Field("", max_length=100)        # duoc-CR-598 — công thức hóa học
     category: str = Field("", max_length=100)
     #  Ngưỡng khối lượng (kg) — chỉ có nghĩa với Phụ lục IV của NĐ 24/2026.
     threshold_kg: Decimal | None = Field(None, ge=0, le=Decimal("99999999999"))
+    mixture_pct: Decimal | None = Field(None, ge=0, le=100)
     banned_year: int | None = Field(None, ge=1900, le=2100)
     legal_basis: str = Field("", max_length=255)
     note: str = Field("", max_length=500)
@@ -38,11 +41,14 @@ class RegulationCreate(BaseModel):
 
 class RegulationUpdate(BaseModel):
     list_code: int | None = None
+    seq_no: str | None = Field(None, max_length=20)
     name: str | None = Field(None, min_length=1, max_length=500)
     name_vi: str | None = Field(None, max_length=500)
     cas_no: str | None = Field(None, max_length=40)
+    formula: str | None = Field(None, max_length=100)
     category: str | None = Field(None, max_length=100)
     threshold_kg: Decimal | None = Field(None, ge=0, le=Decimal("99999999999"))
+    mixture_pct: Decimal | None = Field(None, ge=0, le=100)
     banned_year: int | None = Field(None, ge=1900, le=2100)
     legal_basis: str | None = Field(None, max_length=255)
     note: str | None = Field(None, max_length=500)
@@ -56,11 +62,15 @@ class RegulationOut(BaseModel):
 
     id: int
     list_code: int
+    seq_no: str = ""
+    sort_order: int = 0
     name: str = ""
     name_vi: str = ""
     cas_no: str = ""
+    formula: str = ""
     category: str = ""
     threshold_kg: float | None = None
+    mixture_pct: float | None = None
     banned_year: int | None = None
     legal_basis: str = ""
     note: str = ""

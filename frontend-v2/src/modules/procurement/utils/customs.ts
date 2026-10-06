@@ -60,7 +60,7 @@ export const COMPARE_MAX_TERMS = 5
 export const REGULATION_LIST_OPTIONS = [
   { value: 1, label: 'NĐ 24/2026 · Phụ lục I' },
   { value: 2, label: 'NĐ 24/2026 · Phụ lục II' },
-  { value: 3, label: 'NĐ 24/2026 · Phụ lục III (tiền chất)' },
+  { value: 3, label: 'NĐ 24/2026 · Phụ lục III (kiểm soát đặc biệt)' },
   { value: 4, label: 'NĐ 24/2026 · Phụ lục IV (ngưỡng khối lượng)' },
   { value: 10, label: 'TT 75/2025 · Hoạt chất cấm' },
   { value: 11, label: 'TT 01/2026 · Phải công bố theo lô' },

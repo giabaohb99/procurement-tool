@@ -615,15 +615,19 @@ def _obligation(r: CustomsRegulation) -> str:
         return f"Có NGƯỠNG KHỐI LƯỢNG {float(r.threshold_kg):g} kg theo {r.legal_basis}."
     if r.list_code == RegulationList.PUBLISH_TT01:
         return "Phải công bố hóa chất nguy hiểm theo từng lô nhập trên chemicaldata.gov.vn (TT 01/2026/TT-BCT Phụ lục XIX)."
-    return f"Có trong {r.legal_basis}{f' — {r.category}' if r.category else ''}."
+    base = f"Có trong {r.legal_basis}{f' — {r.category}' if r.category else ''}."
+    if r.mixture_pct is not None:   # duoc-CR-598 — hỗn hợp vượt ngưỡng hàm lượng cũng thuộc danh mục
+        base += f" Hỗn hợp chứa chất này > {float(r.mixture_pct):g}% khối lượng cũng thuộc danh mục."
+    return base
 
 
 def _regulation_out(r: CustomsRegulation) -> dict:
     return {"id": r.id, "list_code": r.list_code,
             "list_label": REGULATION_LIST_LABELS.get(RegulationList(r.list_code), "") if r.list_code in
             {int(x) for x in RegulationList} else "",
-            "name": r.name, "name_vi": r.name_vi, "cas_no": r.cas_no, "category": r.category,
-            "threshold_kg": _num(r.threshold_kg), "banned_year": r.banned_year,
+            "seq_no": r.seq_no or "", "name": r.name, "name_vi": r.name_vi, "cas_no": r.cas_no,
+            "formula": r.formula or "", "category": r.category,
+            "threshold_kg": _num(r.threshold_kg), "mixture_pct": _num(r.mixture_pct), "banned_year": r.banned_year,
             "legal_basis": r.legal_basis, "note": r.note, "obligation": _obligation(r)}
 
 
@@ -634,7 +638,8 @@ def lookup_regulations(db: Session, term: str, limit: int = 50) -> dict:
         raise HTTPException(400, "Nhập ít nhất 2 ký tự: tên hóa chất, số CAS hoặc công thức")
     cas = FORMULA_CAS.get(t.upper().replace(" ", ""), "")
     like = f"%{t}%"
-    conds = [CustomsRegulation.name.ilike(like), CustomsRegulation.name_vi.ilike(like), CustomsRegulation.cas_no == t]
+    conds = [CustomsRegulation.name.ilike(like), CustomsRegulation.name_vi.ilike(like), CustomsRegulation.cas_no == t,
+             CustomsRegulation.formula == t]
     if cas:
         conds.append(CustomsRegulation.cas_no == cas)
     rows = (db.query(CustomsRegulation).filter(CustomsRegulation.is_active.is_(True), or_(*conds))

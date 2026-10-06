@@ -48,7 +48,7 @@ class RegulationList(IntEnum):
     """
     ND24_PL1 = 1          # NĐ 24/2026/NĐ-CP — Phụ lục I
     ND24_PL2 = 2          # NĐ 24/2026/NĐ-CP — Phụ lục II
-    ND24_PL3 = 3          # NĐ 24/2026/NĐ-CP — Phụ lục III (tiền chất)
+    ND24_PL3 = 3          # NĐ 24/2026/NĐ-CP — Phụ lục III (cần kiểm soát đặc biệt; duoc-CR-598 sửa nhãn «tiền chất»)
     ND24_PL4 = 4          # NĐ 24/2026/NĐ-CP — Phụ lục IV (có NGƯỠNG KHỐI LƯỢNG kg)
     BANNED_TT75 = 10      # TT 75/2025/TT-BNNMT — hoạt chất BVTV CẤM
     PUBLISH_TT01 = 11     # TT 01/2026/TT-BCT Phụ lục XIX — hóa chất phải CÔNG BỐ theo lô
@@ -57,7 +57,7 @@ class RegulationList(IntEnum):
 REGULATION_LIST_LABELS = {
     RegulationList.ND24_PL1: "NĐ 24/2026 · Phụ lục I",
     RegulationList.ND24_PL2: "NĐ 24/2026 · Phụ lục II",
-    RegulationList.ND24_PL3: "NĐ 24/2026 · Phụ lục III (tiền chất)",
+    RegulationList.ND24_PL3: "NĐ 24/2026 · Phụ lục III (kiểm soát đặc biệt)",
     RegulationList.ND24_PL4: "NĐ 24/2026 · Phụ lục IV (ngưỡng khối lượng)",
     RegulationList.BANNED_TT75: "TT 75/2025 · Hoạt chất cấm",
     RegulationList.PUBLISH_TT01: "TT 01/2026 · Phải công bố theo lô",
