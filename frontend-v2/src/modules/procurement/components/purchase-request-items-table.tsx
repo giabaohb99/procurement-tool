@@ -567,7 +567,8 @@ export function PurchaseRequestItemsTable({
           />
         ) : (
           <span className="block break-words whitespace-normal leading-snug">
-            {purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
+            {item.assignee_name ||
+              purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
               item.assignee ||
               '—'}
           </span>
@@ -665,6 +666,7 @@ export function PurchaseRequestItemsTable({
                     ordered={orderedByCode?.[item.product_code] ?? item.qty_ordered}
                     showAssignee={showAssignee}
                     assigneeName={
+                      item.assignee_name ||
                       purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
                       item.assignee
                     }

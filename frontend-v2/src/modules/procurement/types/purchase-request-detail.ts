@@ -34,6 +34,8 @@ export interface PurchaseRequestItem {
   required_date: string
   /** Mã nhân sự thu mua phụ trách dòng. */
   assignee: string
+  /** Tên NSTM phụ trách do máy chủ trả sẵn (bao-CR-601) — rỗng khi chưa cử hoặc mã chết. */
+  assignee_name?: string
   expected_date: string
   /** Trạng thái dòng — chuỗi tiếng Việt, xem `LINE_STATUSES`. */
   line_status: string

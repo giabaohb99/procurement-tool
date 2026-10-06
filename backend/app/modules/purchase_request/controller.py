@@ -475,6 +475,16 @@ def _out(db: Session, pr, user=None) -> dict:
     item_ids = [i.id for i in items]
     opt_counts = option_service.count_map(db, item_ids)
     chosen_by_item = option_service.chosen_map(db, item_ids)
+    #  bao-CR-601: tên NSTM phụ trách trả sẵn theo dòng. Trước đây hai bản giao diện tự tra
+    #  tên từ danh sách nhân sự tải về — danh sách đó lọc theo PHẠM VI người xem, nên ai bị
+    #  giới hạn pháp nhân (mà 259 hồ sơ nhân sự đang để pháp nhân 0) chỉ thấy mã «NSU012».
+    assignee_codes = {i.assignee for i in items if i.assignee}
+    assignee_names: dict[str, str] = {}
+    if assignee_codes:
+        from app.modules.employee.model import Employee
+        assignee_names = {code_: name_ for code_, name_ in
+                          db.query(Employee.code, Employee.full_name)
+                          .filter(Employee.code.in_(assignee_codes)).all()}
     d["items"] = []
     for i in items:
         pid_ = prod_by_code.get(i.product_code or "")
@@ -485,6 +495,7 @@ def _out(db: Session, pr, user=None) -> dict:
              "unit": i.unit, "price": float(i.price or 0), "vat_pct": float(i.vat_pct or 0),
              "amount": float(i.amount or 0),
              "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
+             "assignee_name": assignee_names.get(i.assignee or "", ""),
              "expected_date": i.expected_date,
              "line_status": i.line_status,
              # B-06: cột lưu MÃ, giao diện dùng mã để tô màu/lọc nên phải trả kèm nhãn

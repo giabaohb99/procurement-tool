@@ -118,6 +118,31 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-601 | YCMH: tên NSTM phụ trách trả sẵn theo dòng; nút Tạo ĐMH ở bản cũ xét theo quyền thay vì tên phòng
+- status: xong
+- date: 2026-10-06
+Đại ca báo trên phiếu PYC02102602 (prod, bản cũ): cột «NSTM phụ trách» hiện mã «NSU012» thay vì tên, và tài khoản chị
+Trần Diễm Phương (NSU012) không thấy nút «Tạo đơn mua hàng»; đổi phòng ban của chị sang Sản xuất - Thu mua thì nút hiện.
+
+Tra ra hai nguyên nhân riêng:
+1. Tên NSTM: cả hai bản giao diện tra tên từ danh sách nhân sự tải về (`/api/employees`), mà danh sách này lọc theo phạm vi
+   dữ liệu của người xem. Sáng 06/10 tài khoản NSU012 được thêm «Pháp nhân được xem» (14 công ty) cho vai trò Nhân viên thu
+   mua; trong khi 259 hồ sơ nhân sự trên prod đang để pháp nhân = 0 nên bị loại hết, danh sách gần trống, tra trượt và lòi
+   mã. Sửa gốc: máy chủ trả sẵn `assignee_name` cho từng dòng YCMH (tra một lượt theo mã, mã chết ra rỗng); v1 và v2 ưu
+   tiên tên đó, chỉ lùi về danh sách khi không có.
+2. Nút Tạo ĐMH: bản cũ chỉ hiện khi TÊN phòng ban người dùng chứa chữ «thu mua». Sau bao-CR-591, nhân sự nhà máy vẫn thuộc
+   phòng Dego Organic nên mất nút dù giữ vai trò Nhân viên thu mua. Nay xét theo cờ `process` (là nhân sự thu mua) như
+   bản mới, cùng với quản lý và người được phân bổ NSTM như cũ.
+
+Kiểm: máy chủ 109 bài (có bài mới), bản mới kiểm kiểu 0 lỗi + 8 bài bảng dòng YCMH, bản cũ giữ đúng 4 lỗi nền.
+Ghi nhận cho đại ca: dòng «Pháp nhân được xem» thêm cho NSU012 sáng 06/10 vẫn khiến chị không xem được danh sách nhân sự
+(vì hồ sơ nhân sự chưa khai pháp nhân) — cần quyết: bỏ các dòng đó, hay khai pháp nhân cho hồ sơ nhân sự.
+Mã nguồn: `purchase_request/controller.py` (`_out`), `frontend/src/pages/PurchaseRequestDetail.tsx`,
+`frontend-v2/.../purchase-request-items-table.tsx`, `types/purchase-request-detail.ts`.
+Deploy: DEV 06/10/2026; prod chờ đại ca.
+
+---
+
 ## bao-CR-597 | App cũ: Quản trị viên hệ thống cũng điều phối được; thông báo lỗi điều phối hiện đúng lý do
 - status: xong
 - date: 2026-10-06
