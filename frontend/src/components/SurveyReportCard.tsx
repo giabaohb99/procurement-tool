@@ -9,7 +9,7 @@ import DateInput from './DateInput'
 import {
   COMMON_ROW_ID, REPORT_DOC_DOING, REPORT_DOC_DONE, REPORT_DOC_IDLE, REPORT_DOC_STATUS_BADGE,
   REPORT_DOC_STATUS_LABELS, REPORT_FILTER_ALL, REPORT_STATUS_FILTER_ALL,
-  addDaysIso, currentReportPhaseId, durationDays, expiryTone, filterReportDocs, isReportDocDone, isReportDocLocked,
+  currentReportPhaseId, durationDays, expiryTone, filterReportDocs, isReportDocDone, isReportDocLocked,
   latestPlannedDate, matchReportDoc, nameInitials, nearestExpiry, pendingDepends, reportDocLateDays,
   reportDocsById, reportPercent, reportPlanLateDays, trackingMarkers,
   type ReportOwnerEntity, type SurveyReportDoc, type SurveyReportDocPayload, type SurveyReportItem,
@@ -885,25 +885,14 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
           <label>Dự định hoàn tất</label>
           <DateInput value={form.planned_date} onChange={(v) => set('planned_date', v)} />
         </div>
-        {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — không lưu, gõ số ngày
-            thì dự định hoàn tất = ngày bắt đầu + n; chưa có ngày bắt đầu thì ô khóa. Là một ô
-            nhập đúng khuôn `form-row` như các ô khác (bản đầu kẹp dưới ô ngày nên lệch, đại ca soi 06/10). */}
-        <div className="form-row">
-          <label>Số ngày xử lý</label>
-          <input
-            type="number"
-            min={0}
-            placeholder={form.start_date ? 'Số ngày' : 'Chọn ngày bắt đầu trước'}
-            disabled={!form.start_date}
-            title={form.start_date ? 'Dự định hoàn tất = ngày bắt đầu + số ngày' : 'Chọn ngày bắt đầu trước'}
-            value={durationDays(form.start_date, form.planned_date) ?? ''}
-            onChange={(e) => {
-              const days = Number(e.target.value)
-              if (!form.start_date || !Number.isFinite(days) || days < 0) return
-              set('planned_date', addDaysIso(form.start_date, days))
-            }}
-          />
-        </div>
+        {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — chỉ là dòng ghi chú
+            SUY RA từ hai mốc, không cho sửa (đại ca chốt 06/10). */}
+        {durationDays(form.start_date, form.planned_date) !== null && (
+          <div className="form-row full" style={{ marginTop: -6, fontSize: 12.5, color: 'var(--muted)' }}>
+            Số ngày xử lý: <b style={{ color: 'var(--navy)' }}>{durationDays(form.start_date, form.planned_date)} ngày</b>
+            {' '}(từ {fmtDateStr(form.start_date)} đến {fmtDateStr(form.planned_date)})
+          </div>
+        )}
         <div className="form-row">
           <label>Ngày hết hiệu lực</label>
           <DateInput value={form.expires_at} onChange={(v) => set('expires_at', v)} />
