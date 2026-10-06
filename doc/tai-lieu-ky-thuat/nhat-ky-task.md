@@ -12384,3 +12384,14 @@ trên menu; nút «Xuất Excel» đổi thành «Xuất dữ liệu», dời l�
 Mã nguồn: backend/app/modules/customs/nd24_regulation_loader.py · customs/data/nd24_2026_regulations.json · scripts/load_nd24_regulations.py · migration nd24reg01 · frontend/src/components/customs/CustomsRegulationBrowse.tsx · frontend-v2/src/modules/procurement/config/customs-regulation-columns.tsx
 Commit: 766b10ca trên erp-v2.
 Deploy: chưa deploy — sau khi deploy chạy tay một lần `docker compose exec -T api python -m scripts.load_nd24_regulations`
+
+## ai-CR-096 | Tin mập mờ thì bot trả lời luôn, không hỏi «làm luôn hay ghi việc»
+- status: xong
+- date: 2026-10-06
+Đại ca nhắn «Giá thép Hòa Phát», bot hỏi lại «làm luôn hay ghi việc». Nguyên nhân là luật của bộ phân loại: nghi ngờ
+hay tin ngắn thì xếp mập mờ, và mập mờ thì đưa thẻ hai nút. Nay bộ phân loại hiểu cụm chủ đề ngắn là câu tra cứu hoặc
+câu hỏi dữ liệu, chỉ xếp mập mờ khi tin có thể là việc sửa phần mềm hay thao tác trên việc đang mở; và kể cả khi mập
+mờ, bot trả lời luôn rồi thêm một dòng gợi ý «nếu là việc sửa phần mềm thì nhắn ghi việc: …». Thẻ hai nút chỉ còn
+dùng khi bộ phân loại hỏng.
+
+Mã nguồn: backend/app/modules/agent_hub/manager.py (INTENT_SYSTEM) · agent_hub/service.py (nhánh mo_ho, answer_question hint)

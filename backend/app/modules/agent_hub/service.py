@@ -806,7 +806,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
             or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
-            or _glossary_by_text(db, chat_id, row, text)
+            or _ghi_viec_by_text(db, chat_id, row, text) or _glossary_by_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
@@ -845,7 +845,11 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         row.action = ACT_ASKED
         answer_question(db, chat_id, text, before_id=row.id)
     elif data["intent"] == manager.INTENT_UNSURE:
-        _ask_intent_choice(db, chat_id, row)
+        #  ai-CR-096: không chắc thì TRẢ LỜI luôn kèm một dòng «nếu là việc sửa phần mềm thì nhắn ghi việc: …» — trả lời
+        #  sai thì rẻ; bắt đại ca chọn «làm luôn / ghi việc» cho «Giá thép Hòa Phát» là phiền. Thẻ hai nút chỉ còn
+        #  dùng khi bộ phân loại HỎNG (không có gì để đoán).
+        row.action = ACT_ASKED
+        answer_question(db, chat_id, text, before_id=row.id, hint=UNSURE_HINT)
     elif data["intent"] == manager.INTENT_ACT:
         _act_by_intent(db, chat_id, row, text, data)
     elif data["intent"] == manager.INTENT_RESEARCH:
@@ -1828,6 +1832,21 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
             f"• #{n.id} {esc(n.title)} · {n.chars} ký tự" for n in notes)
     body += "\n\n<i>«nhớ: …» thêm · «quên: …» bớt · «ghi chú: tiêu đề | nội dung» vào kho · «xuất sổ nhớ» lấy tệp.</i>"
     reply(db, chat_id, body, scope=SCOPE_PERSONAL)
+    return True
+
+
+_GHI_VIEC = re.compile(r"^ghi việc\s*:\s*(?P<body>.+)$", re.IGNORECASE | re.DOTALL)
+
+
+def _ghi_viec_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«ghi việc: màn đơn hàng lọc sai» (ai-CR-096): bỏ tiền tố, để tin nằm INBOX (action rỗng) cho vòng gom — không
+    qua bộ phân loại, không hỏi lại."""
+    m = _GHI_VIEC.match((text or "").strip())
+    if not m:
+        return False
+    row.body = m.group("body").strip()
+    row.scope = SCOPE_COMPANY
+    ack_task_message(db, chat_id, row)
     return True
 
 
@@ -2998,7 +3017,10 @@ def _recent_turns(db: Session, chat_id: str, before_id: int) -> list[dict]:
     return turns
 
 
-def answer_question(db: Session, chat_id: str, question: str, *, before_id: int = 0) -> None:
+UNSURE_HINT = "_(Nếu đây là việc sửa phần mềm thì nhắn «ghi việc: …»)_"
+
+
+def answer_question(db: Session, chat_id: str, question: str, *, before_id: int = 0, hint: str = "") -> None:
     """Chuyển câu hỏi cho Trợ lý AI và nhắn lại câu trả lời.
 
     `before_id` = id tin đang hỏi, để mạch hội thoại lấy các tin TRƯỚC nó (không thì
@@ -3057,7 +3079,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         log_message(db, DIR_OUT, chat_id, 0, result.get("text") or "", action=ACT_ANSWER)
         db.commit()
     else:
-        reply(db, chat_id, result.get("text") or "(không có câu trả lời)",
+        reply(db, chat_id, (result.get("text") or "(không có câu trả lời)") + (f"\n\n{hint}" if hint else ""),
               markdown=True, action=ACT_ANSWER, scope=_scope_of(db, before_id))
     deliver_tool_results(db, chat_id, user, tool_calls)
 

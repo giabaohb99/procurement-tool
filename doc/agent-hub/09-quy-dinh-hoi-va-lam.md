@@ -49,6 +49,9 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
   ổn định về họ thì tự ghi và báo «Em ghi nhớ: …» để họ «quên» nếu sai. «nhớ: …» thêm · «quên: …» bớt ·
   «ghi chú: tiêu đề | nội dung» vào kho · «sổ nhớ» xem · «xuất sổ nhớ» lấy tệp. Không bao giờ ghi mật khẩu, khóa,
   số thẻ — kể cả vào sổ thuật ngữ.
+- **Mập mờ giữa «hỏi» và «việc sửa phần mềm» thì trả lời luôn** (ai-CR-096): một cụm chủ đề ngắn như «Giá thép
+  Hòa Phát» là tra cứu, không phải việc; bot trả lời và chỉ thêm một dòng «nếu là việc sửa phần mềm thì nhắn ghi
+  việc: …». Thẻ hai nút «làm luôn / ghi việc» chỉ còn khi bộ phân loại hỏng.
 - **Không hỏi lại điều đã chốt** trong tài liệu, sổ quyết định (`03`), sổ thuật ngữ, hay câu trước đó của đại ca.
 
 ## 4. Sửa dữ liệu bằng lời (ai-CR-073)

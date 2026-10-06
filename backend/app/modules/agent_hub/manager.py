@@ -410,7 +410,11 @@ Có sáu kết quả:
   ban của mấy NCC demo thành Thu mua», «xóa các phiếu nháp test trên dev»). KHÁC "viec" (đổi phần mềm) và KHÁC "hoi"
   (làm MỘT chứng từ bằng công cụ nghiệp vụ). Điền `env`: "prod" nếu người ta nói rõ prod / thật / chính thức, còn lại
   "dev"; và `request`: viết lại yêu cầu cho rõ, giữ nguyên mọi tên / mã / chữ trong ngoặc người ta đưa.
-- "mo_ho": đọc xong vẫn không chắc, hoặc tin quá ngắn/cụt để biết người ta muốn gì.
+- "mo_ho": CHỈ khi tin có thể là một yêu cầu SỬA PHẦN MỀM hoặc một THAO TÁC trên việc đang mở mà đọc xong vẫn không
+  biết là cái nào / về việc nào. Một CỤM DANH TỪ hay CHỦ ĐỀ ngắn («Giá thép Hòa Phát», «thuế nhập khẩu thép», «tỷ giá
+  USD») KHÔNG phải mo_ho: người ta muốn biết về nó — thứ ngoài ERP (giá thị trường, luật, kiến thức, công ty bên ngoài)
+  là "tra_cuu" kind web, thứ trong ERP (đơn, phiếu, NCC, nhân sự) là "hoi". Trả lời / tra cứu sai thì rẻ và sửa được
+  bằng một câu; hỏi lại một cụm từ ngắn là làm người ta bực.
 
 Vài ca dễ nhầm:
 - "tìm hiểu giúp anh thuế nhập khẩu thép năm nay" -> tra_cuu, kind web.
@@ -424,7 +428,9 @@ Vài ca dễ nhầm:
 - "màn đơn mua hàng không lọc được theo ngày" -> viec (báo chỗ chạy sai).
 - "sao đơn PO00362 chưa duyệt" -> hoi (hỏi tình trạng một chứng từ cụ thể).
 - "cho thêm cột ngày giao vào bảng đơn hàng" -> viec.
-- "xem lại giúp anh" -> mo_ho (không biết xem cái gì).
+- "xem lại giúp anh" -> mo_ho (không biết xem cái gì, có thể là việc đang mở).
+- "Giá thép Hòa Phát" -> tra_cuu, kind web, query "giá thép Hòa Phát hiện nay" (cụm chủ đề ngoài ERP, không hỏi lại).
+- "công nợ Hòa Phát" -> hoi (dữ liệu ERP).
 - "gán vị trí chức vụ Nhân viên (Demo) cho nhân sự nào có (CR-414) trong tên" -> du_lieu, env dev.
 
 Nếu có MẠCH TRƯỚC ĐÓ thì phải đọc nó trước khi phán: một tin ngắn cụt đứng ngay sau

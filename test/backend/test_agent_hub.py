@@ -212,15 +212,15 @@ def test_giao_viec_van_nam_lai_inbox(db, bot, monkeypatch):
         service.ACT_ACK
 
 
-def test_map_mo_thi_hoi_lai_chu_khong_doan(db, bot, monkeypatch):
+def test_map_mo_thi_tra_loi_luon_kem_goi_y_ghi_viec(db, bot, monkeypatch):
+    """ai-CR-096: «Giá thép Hòa Phát» từng bị hỏi «làm luôn hay ghi việc» — mập mờ thì trả lời luôn, không hỏi."""
     service, sent, asked = bot
     _fake_intent(monkeypatch, service, "mo_ho")
 
-    service.handle_message(db, _msg("xem lại giúp anh"))
+    service.handle_message(db, _msg("Giá thép Hòa Phát"))
 
-    assert asked == []
-    assert len(sent) == 1
-    assert db.query(service.AgentMessage).filter_by(direction=2).first().action == "cho_y"
+    assert asked == ["Giá thép Hòa Phát"] and sent == []
+    assert db.query(service.AgentMessage).filter_by(direction=2).first().action == service.ACT_ASKED
 
 
 def test_phan_loai_hong_thi_hoi_lai_chu_khong_thanh_viec(db, bot, monkeypatch):
@@ -3509,9 +3509,7 @@ def test_chon_lam_luon_hay_ghi_viec_bang_chu(db, bot, monkeypatch):
     sent = _capture_send(monkeypatch, service)
     _fake_intent(monkeypatch, service, "mo_ho")
     service.handle_message(db, _msg("xem lại giúp anh"))
-    assert "«làm luôn» hoặc «ghi việc»" in sent[-1][0]
-    service.handle_message(db, _msg("làm luôn"))
-    assert asked == ["xem lại giúp anh"]
+    assert asked == ["xem lại giúp anh"] and sent == []       # ai-CR-096: mập mờ thì trả lời luôn
 
 
 # ---------------------------------------------------------------------------
@@ -7328,3 +7326,29 @@ def test_cau_tra_loi_nap_so_rieng_cua_nguoi_da_dang_nhap(db, seed, monkeypatch):
     out = db.query(service.AgentMessage).filter_by(direction=service.DIR_OUT).order_by(
         service.AgentMessage.id.desc()).first()
     assert out.scope == service.SCOPE_PERSONAL and sent[-1].startswith("Quanh Ninh Kiều")
+
+
+def test_tra_loi_map_mo_co_dong_goi_y_ghi_viec(db, seed, monkeypatch):
+    from app.modules.agent_hub import service
+    from app.modules.assistant import service as assistant_service
+
+    sent: list[str] = []
+    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: sent.append(text) or 1)
+    monkeypatch.setattr(service.telegram, "send_chat_action", lambda *a, **kw: None)
+    monkeypatch.setattr(service.user_keys, "active_key", lambda: "k")
+    monkeypatch.setattr(assistant_service, "ask", lambda q, **kw: {"text": "Thép Hòa Phát khoảng 18.500đ/kg."})
+    _owner_link(db, seed.u_req_id)
+    moi = service.log_message(db, service.DIR_IN, "12345", 3, "Giá thép Hòa Phát", action="hoi")
+    service.answer_question(db, "12345", "Giá thép Hòa Phát", before_id=moi.id, hint=service.UNSURE_HINT)
+    assert sent[-1].startswith("Thép Hòa Phát") and "ghi việc" in sent[-1]
+
+
+def test_ghi_viec_bang_chu_di_thang_vao_so_viec(db, bot, monkeypatch):
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, asked = bot
+    _fake_intent(monkeypatch, service, "hoi")     # không được gọi tới: lệnh chữ đi trước phân loại
+    service.handle_message(db, _msg("ghi việc: màn đơn hàng lọc sai ngày"))
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert row.action == "" and row.body == "màn đơn hàng lọc sai ngày" and row.scope == service.SCOPE_COMPANY
+    assert asked == [] and sent[-1] == "Em nhận rồi, đang xử lý."
