@@ -144,6 +144,13 @@ Commit: frontend dev `60690c1`, Worker dev `7c7e7b3` (nhánh feat/quan-tri-vien-
 PROD 06/10/2026 sau khi đại ca thử dev ổn — chỉ cherry-pick đúng commit CR-597 sang `main` (frontend `364034b`, Worker
 `87f83d7`), KHÔNG gộp cả nhánh dev vì dev còn mã P3 chưa được duyệt lên prod.
 
+Phát hiện kèm (06/10): giao diện app cũ KHÔNG lên được vì Cloudflare Pages dựng thất bại từ 14/07 — mọi lượt dev lẫn
+main đều «Failure», dev.app vẫn phát bản tháng 7, prod vẫn bản tháng trước. Log: `npm install` chết với «Cannot read
+properties of null (reading 'edgesOut')» (lỗi npm 10). Gốc: `package-lock.json` bị `.gitignore` chặn nên kho trên Pages
+không có tệp khóa, npm phải tự giải gói từ đầu. Đã sửa: đưa `package-lock.json` vào git (dev `be5f072`, main `8886a36`),
+đổi lệnh dựng Pages thành `npm ci --no-audit --no-fund && npm run build` và đặt `SKIP_DEPENDENCY_INSTALL=true` (Production
++ Preview, qua wrangler). Sau đó cả hai lượt dựng xanh, app.degoholding.vn phát gói mới (`index-CWMlaaID.js`).
+
 ---
 
 ## bao-CR-596 | Dựng chiều đồng bộ ERP sang app đặt xe cũ (P3), khóa bằng công tắc
