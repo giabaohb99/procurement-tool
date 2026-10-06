@@ -7037,3 +7037,27 @@ def test_bo_viec_dong_luot_dang_do_va_bao_cao_khong_dem_kep(db, bot):
     db.commit()
     assert old.status == service.RUN_ERROR and "việc đã bỏ" in old.error
     assert "lượt kẹt" not in ops.activity_text(db)
+
+
+def test_bo_viec_luc_dang_sua_ma_thi_khong_commit_khong_hoi_sinh(db, bot, monkeypatch):
+    """ai-CR-089: AI-0002 bị bỏ 3 phút sau khi máy sửa mã bắt đầu — chạy xong cũng không được commit/đưa về REVIEW."""
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentRun
+
+    service, sent, _ = bot
+    task = _task_with_plan(db, service, ["backend/app/modules/leave/service.py"], status=service.ST_CODE)
+    calls = _fake_runner(monkeypatch, coder, touched=["backend/app/modules/leave/service.py"])
+
+    def claude_then_cancel(wt, brief, *, session_id, timeout, **kw):
+        task.status = service.ST_CANCELLED
+        db.commit()
+        return {"result": "xong", "usage": {}}
+
+    monkeypatch.setattr(coder, "run_claude", claude_then_cancel)
+    before = len(sent)
+    out = coder.run_code_task(db, task)
+    assert out["cancelled"] is True and task.status == service.ST_CANCELLED
+    assert not any("commit" in c for c in calls)
+    run = db.query(AgentRun).filter_by(task_id=task.id).one()
+    assert run.status == coder.RUN_ERROR and "đã bỏ" in run.error
+    assert len(sent) == before

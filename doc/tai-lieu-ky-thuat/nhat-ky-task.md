@@ -12167,3 +12167,14 @@ với ghi chú «việc đã bỏ», và báo cáo chỉ đếm lượt kẹt c�
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (cancel_task) · agent_hub/ops.py (activity_text)
 Deploy: dev 06/10 cùng đợt, erp-v2 84d259bd (Agent 1 gộp và dựng lại api, celery-worker, celery-beat, agent-poller); prod giữ lại.
+
+## ai-CR-089 | Bỏ việc trong lúc máy đang sửa mã thì không commit, việc không sống lại
+- status: xong
+- date: 2026-10-06
+Đại ca hỏi việc đã bỏ có bị chạy lại khi máy sửa mã nối lại không. Đã kiểm trên dev: AI-0002 bỏ lúc 10:54 ngày 05/10,
+không có lượt nào chạy lại, vì lượt đang xếp hàng gặp việc đã bỏ thì bỏ qua và lượt chết giữa chừng không tự chạy lại.
+Còn một kẽ hở: nếu bỏ việc đúng lúc máy đang sửa mã và máy vẫn chạy xong, bot sẽ commit rồi đưa việc về chờ gộp. Nay
+sau mỗi lượt sửa, bot đọc lại trạng thái việc; việc đã bỏ thì đóng lượt, không commit và không gửi thẻ. Thêm một bài
+kiểm cho đúng tình huống này.
+
+Mã nguồn: backend/app/modules/agent_hub/coder.py (_abandoned, run_code_task, _run_phases)

@@ -58,6 +58,7 @@ from . import memory, playbook, telegram
 from .timeutil import now_local
 from .constants import (
     BOT_NAME,
+    CLOSED_STATUSES,
     LANE_QUICK,
     ACT_PATCH_ANSWER,
     RISK_HIGH,
@@ -1332,6 +1333,20 @@ def dispatch_continue(task_id: int) -> None:
     celery_app.send_task("agent.code_task", args=[task_id], kwargs={"resume": True}, queue=queue_for(task_id))
 
 
+def _abandoned(db: Session, task: AgentTask, run: AgentRun, data: dict | None = None) -> dict | None:
+    """ai-CR-089: đại ca bỏ việc TRONG LÚC claude đang chạy → không commit, không đưa việc về «chờ gộp».
+
+    Trạng thái việc đọc lại từ DB (bên bot ghi), vì phiên này giữ bản cũ từ lúc bắt đầu lượt.
+    """
+    db.commit()
+    db.refresh(task)
+    if task.status not in CLOSED_STATUSES:
+        return None
+    _close_run(run, status=RUN_ERROR, error="việc đã bỏ giữa chừng — không commit", data=data)
+    db.commit()
+    return {"cancelled": True, "task": task.code}
+
+
 def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: str, session_id: str,
                        err: MaxTurnsError) -> dict:
     """Hết lượt: giữ phần đã sửa + phiên, việc về «Đang hỏi lại», thẻ có nút «Làm tiếp» (ai-CR-023)."""
@@ -1489,6 +1504,8 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
         db.commit()
         raise
 
+    if (gone := _abandoned(db, task, run, data)) is not None:
+        return gone
     report = str(data.get("result") or "").strip()
     _git(worktree, "add", "-A", timeout=120)
     touched = [ln.strip() for ln in _git(worktree, "diff", "--cached", "--name-only", timeout=120)
@@ -1638,6 +1655,8 @@ def _run_phases(db: Session, task: AgentTask, run: AgentRun, *, worktree: str, b
             db.commit()
             raise CoderError(f"phần {ph['index']}/{total} quá {settings.AGENT_RUN_TIMEOUT_SEC // 60} phút, đã dừng; "
                              "các phần trước đã commit") from None
+        if (gone := _abandoned(db, task, run, data)) is not None:
+            return gone
         reports.append(f"### Phần {ph['index']}/{total} — {ph['label']}\n" + str(data.get("result") or "").strip())
         _git(worktree, "add", "-A", timeout=120)
         touched = [ln.strip() for ln in _git(worktree, "diff", "--cached", "--name-only", timeout=120)
