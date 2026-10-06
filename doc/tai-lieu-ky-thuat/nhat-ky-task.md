@@ -12310,3 +12310,22 @@ dành cho dữ liệu ERP, Google và tìm trên mạng; không bao giờ gạ p
 nhóm C «Trợ lý cá nhân trên nền công ty, token người dùng tự trả» gồm sáu mục trong sổ tính năng, chờ đại ca chốt.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/04-danh-sach-tinh-nang.md (nhóm C, phase 7b) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
+## duoc-CR-598 | Tra cứu thị trường: tra cứu hóa chất gọn lại, dữ liệu hóa chất NĐ 24 mới, breadcrumb và nút Xuất dữ liệu
+- status: xong
+- date: 2026-10-06
+Đại ca gửi ảnh màn «Pháp lý» và tệp khai báo hóa chất của phòng Thu mua, yêu cầu làm cho cả bản cũ lẫn bản ERP mới.
+Mục «Pháp lý» đổi tên thành «Tra cứu hóa chất», mục «Thuốc BVTV» đổi thành «Tra cứu Thuốc BVTV»; đường dẫn cũ giữ nguyên.
+Màn tra cứu hóa chất chỉ còn tiêu đề, hai nút «Lịch sử nạp» và «Nạp dữ liệu» cùng bảng hóa chất. Danh mục hóa chất của
+Nghị định 24/2026 được nạp lại từ tệp Excel, đủ 1.349 hóa chất của bốn phụ lục, có thêm số thứ tự trong phụ lục và công
+thức hóa học; bảng tra cứu tách riêng các cột phụ lục, số thứ tự, tên khoa học, tên chất, mã CAS và công thức, còn ô ngưỡng
+ghi đúng loại ngưỡng của từng phụ lục: phụ lục IV là ngưỡng tồn trữ tính bằng kg, phụ lục II là hỗn hợp chứa trên 5%
+khối lượng, phụ lục III là trên 1% (riêng tiền chất công nghiệp nhóm 2 là trên 5%), phụ lục I không có ngưỡng; các mức phần
+trăm lấy từ câu ghi chú của chính Nghị định vì tệp Excel không chép phần này. Tệp Excel có nhiều ô bị Excel tự đổi định
+dạng (mã CAS thêm số 0, biến thành ngày tháng, ô lỗi) nên bộ đọc gỡ lại và kiểm số cuối của mã CAS trước khi tin. Lần
+nạp chỉ cập nhật hoặc thêm dòng, dòng cũ không còn trong tệp chuyển sang ngừng dùng chứ không xóa; danh sách hoạt chất cấm
+và danh sách phải công bố theo lô không bị đụng tới. Bản cũ có thêm breadcrumb cấp ba và tiêu đề trang theo đúng tên mục
+trên menu; nút «Xuất Excel» đổi thành «Xuất dữ liệu», dời lên đầu trang cạnh «Nạp dữ liệu». Đã đẩy lên erp-v2, chưa deploy.
+
+Mã nguồn: backend/app/modules/customs/nd24_regulation_loader.py · customs/data/nd24_2026_regulations.json · scripts/load_nd24_regulations.py · migration nd24reg01 · frontend/src/components/customs/CustomsRegulationBrowse.tsx · frontend-v2/src/modules/procurement/config/customs-regulation-columns.tsx
+Commit: 766b10ca trên erp-v2.
+Deploy: chưa deploy — sau khi deploy chạy tay một lần `docker compose exec -T api python -m scripts.load_nd24_regulations`
