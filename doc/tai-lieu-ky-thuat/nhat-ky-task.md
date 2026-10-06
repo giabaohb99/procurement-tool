@@ -118,6 +118,33 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-597 | App cũ: Quản trị viên hệ thống cũng điều phối được; thông báo lỗi điều phối hiện đúng lý do
+- status: xong
+- date: 2026-10-06
+Đại ca báo trên app cũ (prod) mở phiếu đặt xe «Đã duyệt» thì không còn nút «Xác nhận điều phối», tưởng tài khoản quản trị
+bị mất tính năng; trên dev thì phải vào tài khoản admin mới thấy, và dev còn báo «Không thể tải dữ liệu điều phối».
+
+Tra ra: phiếu «Lấy nước thải» trên prod sạch (đã duyệt, chưa có khối điều phối). Khối «Điều phối chuyến đi» từ ngày đầu
+của app (tháng 3/2026) chỉ hiện cho vai trò Admin («Điều phối viên»); máy chủ cũng chỉ cho Admin bấm điều phối. Tài khoản
+đại ca (Dego IT / marketing.degoholding@gmail.com) là Administrator («Quản trị viên hệ thống») ở cả dev lẫn prod, nên
+không thấy; lúc thử trên dev đại ca vào bằng tài khoản vai trò Admin. Hai bên hành xử giống nhau, khác là tài khoản.
+Lỗi thứ hai: máy chủ từ chối tải danh sách xe / tài xế vì «Không thể điều phối do quá hạn thời gian đặt xe» (phiếu dev
+tạo 19/9, giờ đi đã qua), giao diện nuốt lý do thành câu chung chung.
+
+Đại ca chốt 06/10: Quản trị viên hệ thống cũng điều phối được; hiện đúng lý do máy chủ; luật «quá giờ đi thì không cho
+điều phối» GIỮ. Đã sửa: giao diện cho Administrator thấy khối điều phối, menu «Điều phối», điều phối lại, và tải danh sách
+xe / tài xế; Worker mở các đường điều phối, điều phối lại, hủy điều phối, danh sách xe / tài xế cho Administrator (hằng
+`DISPATCH_ROLES`); thông báo lỗi lấy nguyên câu máy chủ, chỉ dùng câu chung khi máy chủ không nói gì.
+
+Kiểm: giao diện lint 0, kiểm kiểu 0, 143 bài xanh (3 bài mới: Administrator thấy khối điều phối và được tải danh sách;
+Staff không thấy; lỗi hiện đúng câu máy chủ); Worker kiểm kiểu 0, 188 bài xanh.
+Mã nguồn: `degoholding-app-frontend` `RequestDetailsModal.tsx`, `useRequestDetailsData.ts`, `usePermissions.ts`,
+`App.tsx`, `Sidebar.tsx`, `BottomNavBar.tsx`; `my-firebase-api` `src/api/v1/requests.router.ts`.
+Commit: frontend dev `60690c1`, Worker dev `7c7e7b3` (nhánh feat/quan-tri-vien-dieu-phoi). Deploy: app cũ DEV 06/10/2026;
+prod (nhánh main cả hai repo) chờ đại ca thử xong.
+
+---
+
 ## bao-CR-596 | Dựng chiều đồng bộ ERP sang app đặt xe cũ (P3), khóa bằng công tắc
 - status: xong
 - date: 2026-10-05
