@@ -12239,3 +12239,18 @@ kiểm cho ca hủy đúng, ca mơ hồ phải hỏi lại, ca Google báo lỗi
 xác nhận trước khi hủy hay không.
 
 Mã nguồn: backend/app/modules/agent_hub/google_link.py (api_delete) · assistant/tools/google_tool.py (_delete_calendar_event, DELETE_CALENDAR_EVENT_SPEC)
+
+## duoc-CR-599 | Bản in đơn nghỉ phép đổi sang mẫu Word 2026 «Đơn xin nghỉ phép / nghỉ chế độ»
+- status: xong
+- date: 2026-10-06
+Đại ca gửi mẫu đơn nghỉ phép mới của năm 2026 và yêu cầu bản in trên ERP đổi theo. Tờ đơn in ra nay mở đầu bằng
+Quốc hiệu thay cho logo công ty, chia ba mục đánh số: thông tin nhân sự, nội dung xin nghỉ và bàn giao công việc.
+Phần loại hình nghỉ có ba ô đánh dấu là phép năm có lương, việc riêng không lương và chế độ bảo hiểm như ốm đau,
+thai sản; hệ thống tự đánh dấu theo tên loại nghỉ của đơn, đơn khai nhiều loại thì đánh nhiều ô, còn nghỉ cưới,
+nghỉ tang và nghỉ bù được xếp vào ô có lương vì mẫu không có ô riêng. Phần ký còn hai ô là người xin nghỉ và trưởng
+bộ phận, bỏ ô phòng hành chính nhân sự như mẫu mới. Dòng tài liệu đính kèm và các trang ảnh đính kèm phía sau vẫn
+giữ nguyên. Đã thêm mười tám bài kiểm và xem bản in thật trên trình duyệt. Đã đẩy lên erp-v2, chưa deploy.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/leave-request-print-sheet.tsx · hr/utils/leave-print-category.ts · hr/pages/leave-request-print-page.tsx
+Commit: ab434648 trên erp-v2.
+Deploy: chưa deploy.
