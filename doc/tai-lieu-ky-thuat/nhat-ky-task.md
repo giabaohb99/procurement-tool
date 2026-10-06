@@ -12178,3 +12178,13 @@ sau mỗi lượt sửa, bot đọc lại trạng thái việc; việc đã bỏ
 kiểm cho đúng tình huống này.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py (_abandoned, run_code_task, _run_phases)
+Deploy: dev 06/10, erp-v2 e31f51db (Agent 1 gộp và dựng lại); máy sửa mã đã dựng lại; prod giữ lại.
+
+## ai-CR-091 | Bot bắt tay vào việc nhanh hơn, câu báo nhận ngắn lại
+- status: xong
+- date: 2026-10-06
+Đại ca thấy bot phản hồi chậm: một câu lệnh lẻ trước phải chờ từ 30 đến 90 giây mới được đọc, vì bot đợi 30 giây
+xem có tin nhắn thêm không rồi còn chờ vòng gom chạy mỗi phút. Nay bot chỉ đợi 10 giây và tự hẹn vòng gom chạy ngay
+khi hết 10 giây; vòng chạy mỗi phút vẫn giữ làm lưới đỡ. Câu báo nhận rút còn «Em nhận rồi, đang xử lý.».
+
+Mã nguồn: backend/app/core/config.py (AGENT_TRIAGE_DELAY_SEC) · agent_hub/service.py (ack_task_message, _kick_triage)

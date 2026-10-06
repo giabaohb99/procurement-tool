@@ -162,6 +162,9 @@ def bot(monkeypatch):
     for name in ("dispatch", "dispatch_scan", "dispatch_publish", "dispatch_question", "dispatch_continue", "dispatch_fix_gate",
                  "dispatch_deploy", "dispatch_revert", "dispatch_cleanup"):
         monkeypatch.setattr(_coder, name, lambda *a, **kw: None)
+    kicks: list[int] = []
+    monkeypatch.setattr(service, "_kick_triage", lambda: kicks.append(1))   # ai-CR-091: không hẹn vòng gom thật
+    service._kick_log = kicks
     sent: list[str] = []
     asked: list[str] = []
     typing: list[str] = []
@@ -2831,7 +2834,8 @@ def test_tin_giao_viec_duoc_bao_nhan_mot_lan_cho_ca_chum(db, bot, monkeypatch):
     service.handle_message(db, _msg("màn công nợ lọc sai"))
     first = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
     assert first.action == "" and first.task_id == 0          # vẫn nằm INBOX cho vòng gom
-    assert "Em nhận tin rồi, anh chờ em xíu" in sent[-1][0]
+    assert sent[-1][0] == "Em nhận rồi, đang xử lý."
+    assert service._kick_log == [1]                           # ai-CR-091: hẹn gom ngay, không đợi beat
     acks = db.query(AgentMessage).filter_by(action=service.ACT_ACK).count()
     assert acks == 1
     #  Câu thứ hai trong cùng chùm (tin trước còn chờ gom): không kêu chuông thêm.

@@ -259,7 +259,9 @@ class Settings(BaseSettings):
     # mà "gom được không" lại đúng là câu bậc 1 phải trả lời.
     #  ai-CR-057: 90 → 30. Chùm tin vẫn gom chung (tin sau tới trong 30 giây), nhưng một câu lệnh lẻ
     #  không phải đợi một phút rưỡi mới được đọc.
-    AGENT_TRIAGE_DELAY_SEC: int = 30
+    #  ai-CR-091: 30 → 10 + gọi vòng gom ngay khi hết khoảng lặng (không chờ nhịp beat mỗi phút). Đại ca 06/10:
+    #  «quy trình phản hồi hơi lâu» — trước đó một câu lệnh lẻ chờ 30–90 giây mới được đọc.
+    AGENT_TRIAGE_DELAY_SEC: int = 10
     # Trần tin nhắn gom trong MỘT lời gọi Gemini. Vượt thì để lượt sau.
     AGENT_TRIAGE_BATCH: int = 20
     # Email tài khoản ERP mà lệnh `/hoi` chạy DƯỚI QUYỀN người đó.

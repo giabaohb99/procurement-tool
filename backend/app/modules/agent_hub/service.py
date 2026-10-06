@@ -890,10 +890,20 @@ def ack_task_message(db: Session, chat_id: str, row: AgentMessage) -> None:
             AgentMessage.id < row.id)) or 0
         if pending:
             return
-    seconds = settings.AGENT_TRIAGE_DELAY_SEC
-    reply(db, chat_id,
-          f"Em nhận tin rồi, anh chờ em xíu. Em gom tin trong khoảng {seconds} giây (anh nhắn thêm "
-          "thì em gom chung), rồi đọc mã, kiểm tra và phản hồi.", action=ACT_ACK)
+    reply(db, chat_id, "Em nhận rồi, đang xử lý.", action=ACT_ACK)
+    _kick_triage()
+
+
+def _kick_triage() -> None:
+    """ai-CR-091: hẹn vòng gom chạy ngay khi hết khoảng lặng, khỏi đợi nhịp beat mỗi phút.
+
+    Mất hẹn (restart worker, broker chết) cũng không sao: beat mỗi phút vẫn nhặt tin còn nằm INBOX.
+    """
+    try:
+        from .tasks import triage_inbox_task  # import muộn: tasks import service
+        triage_inbox_task.apply_async(countdown=settings.AGENT_TRIAGE_DELAY_SEC + 1, expires=120)
+    except Exception:  # noqa: BLE001 — chỉ là đường tắt, beat lo phần còn lại
+        log.warning("agent_hub: hẹn vòng gom sớm hỏng, chờ beat", exc_info=True)
 
 
 def _active_stage(db: Session, task: AgentTask) -> tuple[str, datetime | None]:
