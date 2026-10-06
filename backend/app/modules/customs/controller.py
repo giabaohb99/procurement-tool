@@ -43,9 +43,10 @@ router = APIRouter(prefix="/api/customs", tags=["customs"])
 regulation_router = make_crud_router(
     "/api/customs-regulations", "customs_regulation", CustomsRegulation,
     RegulationCreate, RegulationUpdate, RegulationOut,
-    ["list_code", "name", "name_vi", "cas_no", "category", "is_active"], unique_field=None,
-    csv_headers={"id": "ID", "list_code": "Danh sách", "name": "Tên", "name_vi": "Tên tiếng Việt",
-                 "cas_no": "Số CAS", "category": "Phân loại", "threshold_kg": "Ngưỡng (kg)",
+    ["list_code", "seq_no", "name", "name_vi", "cas_no", "formula", "category", "is_active"], unique_field=None,
+    csv_headers={"id": "ID", "list_code": "Danh sách", "seq_no": "STT", "name": "Tên khoa học",
+                 "name_vi": "Tên chất", "cas_no": "Số CAS", "formula": "Công thức hóa học",
+                 "category": "Phân loại", "threshold_kg": "Ngưỡng (kg)", "mixture_pct": "Ngưỡng hỗn hợp (%)",
                  "banned_year": "Năm cấm", "legal_basis": "Căn cứ", "note": "Ghi chú"})
 
 ENTITY = "customs_price"

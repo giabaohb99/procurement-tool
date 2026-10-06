@@ -36,8 +36,8 @@ import {
   fmtUsd, fmtVnd, hasChartFilter, NEED_FILTER_MSG, PRODUCT_KIND_OPTIONS, removeNamedId, splitNamedIds, toParams,
 } from '../components/customs/customs-shared'
 import {
-  CUSTOMS_SECTIONS, CUSTOMS_TAB_SECTIONS, CustomsSectionKey, customsSectionPath, isCustomsTabSection,
-  resolveCustomsSection,
+  CUSTOMS_SECTIONS, CUSTOMS_TAB_GROUP_LABEL, CUSTOMS_TAB_SECTIONS, CustomsSectionKey, customsSectionPath,
+  isCustomsTabSection, resolveCustomsSection,
 } from '../config/customs-sections'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
 import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
@@ -234,24 +234,36 @@ export default function CustomsPrices() {
   // Khóa theo bộ lọc: đổi lọc là dựng lại thẻ biểu đồ / xếp hạng với đơn vị mặc định — một lượt gọi API thay vì hai.
   const filterKey = JSON.stringify(toParams(filters))
   const empty = coverage && coverage.total === 0
+  //  06/10/2026 — mục «Tra cứu hóa chất» chỉ còn tiêu đề + hai nút + bảng hóa chất: dải phủ dữ liệu
+  //  hải quan và cụm lọc dòng hàng không dùng cho bảng này, để lại chỉ làm rối (đại ca chốt).
+  const isLegal = tab === 'legal'
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        {/* 06/10/2026 — tiêu đề = ĐÚNG tên mục đang sáng ở menu trái (năm thẻ tra giá → «Giá thị
+             trường»); ngữ cảnh «Tra cứu thị trường» đã nằm ở breadcrumb. */}
         <h2 className="page-title" style={{ margin: 0, flex: 1 }}>
-          {isCustomsTabSection(tab) ? 'Tra cứu thị trường' : `Tra cứu thị trường — ${sectionLabel}`}
+          {isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : sectionLabel}
         </h2>
         <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
+        {/* 06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế «Nạp dữ liệu». */}
+        {tab === 'list' && can('customs_price', 'export') && (
+          <button className="btn ghost" disabled={exporting || !total} onClick={exportXlsx}
+            title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)">
+            <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất dữ liệu'}
+          </button>
+        )}
         {can('customs_price', 'write') && (
           <button className="btn" onClick={() => setImportOpen(true)}><i className="ti ti-upload" />Nạp dữ liệu</button>
         )}
       </div>
 
-      <CoverageStrip coverage={coverage} ingredient={options?.ingredient_coverage} />
+      {!isLegal && <CoverageStrip coverage={coverage} ingredient={options?.ingredient_coverage} />}
 
-      {/* bao-CR-502 / duoc-CR-490 — thẻ «Cấu hình» và «Thuốc BVTV» không dùng bộ lọc dòng hàng: ẩn cả cụm
-           lọc (state giữ nguyên ở trang; hai thẻ này lọc bằng state cục bộ riêng). */}
-      {tab !== 'config' && tab !== 'pesticides' && (<>
+      {/* bao-CR-502 / duoc-CR-490 — thẻ «Cấu hình», «Thuốc BVTV» và «Tra cứu hóa chất» không dùng bộ lọc
+           dòng hàng: ẩn cả cụm lọc (state giữ nguyên ở trang; các thẻ này lọc bằng state cục bộ riêng). */}
+      {tab !== 'config' && tab !== 'pesticides' && !isLegal && (<>
       {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản, chung kho với bản v2. */}
       <CustomsSavedFilters filters={filters} onApply={(next) => { setDraft(next); apply(next) }} />
 
@@ -377,7 +389,7 @@ export default function CustomsPrices() {
               </li>
             ))}
           </ul>
-          {alerts.length > 5 && <div style={{ marginTop: 4 }}>… và {alerts.length - 5} mục khác — xem mục Pháp lý.</div>}
+          {alerts.length > 5 && <div style={{ marginTop: 4 }}>… và {alerts.length - 5} mục khác — xem mục Tra cứu hóa chất.</div>}
         </div>
       )}
       </>)}
@@ -400,14 +412,7 @@ export default function CustomsPrices() {
 
       {tab === 'list' && (
         <div className="card table-card">
-          <TableToolbar {...table} onRefresh={loadLines}>
-            {can('customs_price', 'export') && (
-              <button className="btn ghost" disabled={exporting || !total} onClick={exportXlsx}
-                title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)">
-                <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất Excel'}
-              </button>
-            )}
-          </TableToolbar>
+          <TableToolbar {...table} onRefresh={loadLines} />
           <TableScroll>
             <table>
               <TableHead {...table} />

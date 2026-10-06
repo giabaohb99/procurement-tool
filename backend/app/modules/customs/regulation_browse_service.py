@@ -19,7 +19,7 @@ def _filtered(query, q: str, list_code: int | None):
     if t:
         like = f"%{t}%"
         conds = [CustomsRegulation.name.ilike(like), CustomsRegulation.name_vi.ilike(like),
-                 CustomsRegulation.cas_no.ilike(like)]
+                 CustomsRegulation.cas_no.ilike(like), CustomsRegulation.formula.ilike(like)]
         cas = FORMULA_CAS.get(t.upper().replace(" ", ""), "")   # «H2SO4» → CAS 7664-93-9
         if cas:
             conds.append(CustomsRegulation.cas_no == cas)
@@ -33,7 +33,9 @@ def list_regulations(db: Session, q: str, list_code: int | None, offset: int,
                      limit: int) -> tuple[int, list[dict]]:
     total = _filtered(db.query(func.count(CustomsRegulation.id)), q, list_code).scalar() or 0
     rows = (_filtered(db.query(CustomsRegulation), q, list_code)
-            .order_by(CustomsRegulation.list_code, CustomsRegulation.name, CustomsRegulation.id)
+            #  duoc-CR-598 — đúng thứ tự dòng của phụ lục; dòng thêm tay (`sort_order = 0`) xếp sau.
+            .order_by(CustomsRegulation.list_code, CustomsRegulation.sort_order == 0,
+                      CustomsRegulation.sort_order, CustomsRegulation.name, CustomsRegulation.id)
             .offset(offset).limit(limit).all())
     counts = _pesticide_counts(db, rows)
     return total, [_regulation_out(r) | {"pesticide_count": counts.get(r.id),

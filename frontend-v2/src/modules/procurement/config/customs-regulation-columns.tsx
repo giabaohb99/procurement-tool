@@ -31,10 +31,32 @@ function regulationTone(listCode: number): string {
   return TONE_CLASS.neutral
 }
 
+const LIST_ND24_PL1 = 1
+
+/**
+ * Câu thay cho ô «Ngưỡng / Mức cấm» khi dòng KHÔNG có ngưỡng kg lẫn ngưỡng hỗn hợp — `null` = danh
+ * sách đó vốn không có cột này. PL I của NĐ 24 không đặt ngưỡng nào; dòng cha PL IV (Amoni nitrat,
+ * Kali nitrat) có ngưỡng ở từng dòng con.
+ */
+export function describeMissingLimit(listCode: number): string | null {
+  if (listCode === LIST_ND24_PL1) return 'Không quy định ngưỡng'
+  if (listCode === LIST_ND24_PL4) return 'Theo từng dạng / hàm lượng'
+  return null
+}
+
+/**
+ * Ngưỡng hàm lượng hỗn hợp (PL II / III) → «> 5% trong hỗn hợp». Không viết tắt «KL» (đọc lướt không
+ * hiểu, «Hỗn hợp > 5% KL» còn bị đọc thành «hàng này là hỗn hợp») — đại ca chốt 06/10/2026.
+ */
+export function formatMixtureLimit(pct: number | null | undefined): string {
+  if (pct === null || pct === undefined || !Number.isFinite(pct) || pct < 0) return ''
+  return `> ${pct.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}% trong hỗn hợp`
+}
+
 export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[] = [
   {
     key: 'list_label',
-    header: 'Danh mục',
+    header: 'Phụ lục / Văn bản',
     width: 230,
     hideable: false,
     wrap: true,
@@ -44,22 +66,26 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
       </Badge>
     ),
   },
+  //  duoc-CR-598 (06/10/2026) — đúng các cột của phụ lục NĐ 24: STT · Tên khoa học · Tên chất ·
+  //  Mã số CAS · Công thức hóa học. Trước đây tên tiếng Việt chỉ là dòng phụ dưới «Tên».
+  {
+    key: 'seq_no',
+    header: 'STT',
+    width: 64,
+    align: 'right',
+    cell: (r) => <span className="tabular-nums">{r.seq_no}</span>,
+  },
   {
     key: 'name',
-    header: 'Tên',
+    header: 'Tên khoa học',
     width: 260,
     hideable: false,
     wrap: true,
-    cell: (r) => (
-      <span>
-        {r.name}
-        {r.name_vi && r.name_vi !== r.name && (
-          <span className="block text-xs text-muted-foreground">{r.name_vi}</span>
-        )}
-      </span>
-    ),
+    cell: (r) => r.name,
   },
-  { key: 'cas_no', header: 'Số CAS', width: 120, hideable: false, cell: (r) => r.cas_no },
+  { key: 'name_vi', header: 'Tên chất', width: 220, wrap: true, cell: (r) => r.name_vi },
+  { key: 'cas_no', header: 'Mã số CAS', width: 120, hideable: false, cell: (r) => r.cas_no },
+  { key: 'formula', header: 'Công thức hóa học', width: 140, wrap: true, cell: (r) => r.formula },
   //  bao-CR-477 — con số quan trọng nhất của dòng đứng thành CỘT RIÊNG, chữ to đậm; trước
   //  đây nó nằm lẫn giữa một câu chữ thường ở cột «Lưu ý», đọc lướt là trôi mất.
   {
@@ -76,7 +102,26 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
         )
       }
       const threshold = formatThresholdKg(r.threshold_kg)
-      if (!threshold) return null
+      //  duoc-CR-598 — PL II / III không có ngưỡng TỒN TRỮ (kg) mà có ngưỡng HÀM LƯỢNG hỗn hợp (%)
+      //  theo câu ghi chú của NĐ 24; ô trống trông như thiếu dữ liệu nên PL I cũng phải nói thành lời.
+      //  Thứ bậc màu của cột: cấm (đỏ) > tồn trữ kg (cam đậm) > hàm lượng hỗn hợp (chữ thường, màu
+      //  trung tính) > không ngưỡng (nghiêng mờ). Tô cam cả ~1.000 dòng PL II/III là biến cột thành bức
+      //  tường cảnh báo, dòng cấm / ngưỡng kg thật sự nghiêm trọng hết nổi.
+      const mixture = formatMixtureLimit(r.mixture_pct)
+      if (!threshold && mixture) {
+        return (
+          <span
+            className="tabular-nums text-foreground/80"
+            title="Hỗn hợp chứa chất này với hàm lượng vượt mức này (theo khối lượng) cũng thuộc danh mục"
+          >
+            {mixture}
+          </span>
+        )
+      }
+      if (!threshold) {
+        const note = describeMissingLimit(r.list_code)
+        return note ? <span className="text-xs text-muted-foreground italic">{note}</span> : null
+      }
       return (
         <span className="text-base font-bold tabular-nums text-orange-700 dark:text-orange-300">
           {threshold}

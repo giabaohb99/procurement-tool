@@ -192,6 +192,9 @@ export function CustomsPricePage() {
   //  «Pháp lý», «Thuốc BVTV», «Cấu hình» có ô tìm riêng, không dùng bộ lọc dòng hàng hải quan — ẩn
   //  thanh lọc + dải cảnh báo (mục Pháp lý tự bày cảnh báo của từ khóa đang tra).
   const usesLineFilters = tab !== 'config' && tab !== 'pesticides' && tab !== 'legal'
+  //  06/10/2026 — mục «Tra cứu hóa chất» chỉ còn tiêu đề + hai nút + bảng hóa chất: dải phủ dữ liệu
+  //  hải quan và câu mô tả về tệp GTT02 không nói gì về bảng này, để lại chỉ làm rối (đại ca chốt).
+  const isLegal = tab === 'legal'
 
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [detailId, setDetailId] = useState<number | null>(null)
@@ -357,13 +360,30 @@ export function CustomsPricePage() {
         //  «Giá thị trường»). Ngữ cảnh «Tra cứu thị trường» nằm ở breadcrumb cấp hai, ghép
         //  thêm vào đây là lặp lại chính dòng ngay trên.
         title={isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : current.label}
-        description="Giá thị trường theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS."
+        description={
+          isLegal
+            ? undefined
+            : 'Giá thị trường theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS.'
+        }
         actions={
           <>
             <Button type="button" variant="outline" onClick={() => openSection('history')}>
               <History className="size-4" />
               Lịch sử nạp
             </Button>
+            {/*  06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế «Nạp dữ liệu». */}
+            {tab === 'list' && canExport && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={exporting || !lines.data?.total}
+                onClick={exportExcel}
+                title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)"
+              >
+                <Download className="size-4" />
+                {exporting ? 'Đang xuất…' : 'Xuất dữ liệu'}
+              </Button>
+            )}
             {canImport && (
               <Button type="button" onClick={() => setImportOpen(true)}>
                 <Upload className="size-4" />
@@ -374,11 +394,13 @@ export function CustomsPricePage() {
         }
       />
 
-      <CustomsCoverageStrip
-        coverage={coverage.data}
-        ingredientCoverage={options.data?.ingredient_coverage}
-        isLoading={coverage.isLoading}
-      />
+      {!isLegal && (
+        <CustomsCoverageStrip
+          coverage={coverage.data}
+          ingredientCoverage={options.data?.ingredient_coverage}
+          isLoading={coverage.isLoading}
+        />
+      )}
 
       {/*  bao-CR-501 — mục «Cấu hình» (và «Thuốc BVTV») không dùng bộ lọc dòng hàng: ẩn thanh lọc. */}
       <Card className={cn('gap-3 p-4', !usesLineFilters && 'hidden')}>
@@ -634,20 +656,6 @@ export function CustomsPricePage() {
               },
               unitLabel: 'dòng hàng',
             }}
-            toolbar={
-              canExport ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={exporting || !lines.data?.total}
-                  onClick={exportExcel}
-                  title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)"
-                >
-                  <Download className="size-4" />
-                  {exporting ? 'Đang xuất…' : 'Xuất Excel'}
-                </Button>
-              ) : undefined
-            }
           />
         </Card>
       )}

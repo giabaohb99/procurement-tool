@@ -31,10 +31,13 @@ export const CUSTOMS_SECTIONS: CustomsSection[] = [
   { key: 'compare', label: 'So sánh', icon: 'ti-arrows-diff', tabbed: true },
   // duoc-CR-490 — thẻ «Pháp lý & thuế» cũ chia đôi: «Pháp lý» (duyệt cả danh mục hóa chất theo
   // văn bản) và «Thuế» (biểu thuế theo mã HS, giữ nguyên như cũ).
-  { key: 'legal', label: 'Pháp lý', icon: 'ti-scale' },
+  // 06/10/2026 — đổi tên hiển thị «Pháp lý» → «Tra cứu hóa chất» (khớp bản v2); khóa `legal` và
+  // đường `/customs-prices/legal` GIỮ NGUYÊN để link cũ không gãy.
+  { key: 'legal', label: 'Tra cứu hóa chất', icon: 'ti-scale' },
   { key: 'tariff', label: 'Thuế', icon: 'ti-receipt-tax', tabbed: true },
   // duoc-CR-490 — danh mục thuốc BVTV đăng ký tại VN (có thêm / sửa / xóa, khóa `customs_pesticide`).
-  { key: 'pesticides', label: 'Thuốc BVTV', icon: 'ti-flask' },
+  // 06/10/2026 — đổi tên hiển thị «Thuốc BVTV» → «Tra cứu Thuốc BVTV» (khớp bản v2; khóa + đường giữ nguyên).
+  { key: 'pesticides', label: 'Tra cứu Thuốc BVTV', icon: 'ti-flask' },
   { key: 'history', label: 'Lịch sử nạp', icon: 'ti-history' },
   // bao-CR-502 (bê bao-CR-501 bản v2): ba danh mục cấu hình nằm trong mục này thay vì màn riêng.
   { key: 'config', label: 'Cấu hình', icon: 'ti-settings' },

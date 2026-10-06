@@ -79,3 +79,20 @@ export function resolveRegulationEmptyMessage(catalogTotal: number): string {
     ? 'Không có hóa chất nào khớp — thử đổi từ khóa hoặc chọn «Tất cả văn bản».'
     : 'Chưa có danh mục hóa chất theo văn bản — nhờ người phụ trách nạp danh mục hoặc thêm ở mục «Cấu hình».'
 }
+
+/**
+ * duoc-CR-598 — câu thay cho ô «Ngưỡng / Mức cấm» khi dòng không có ngưỡng kg lẫn ngưỡng hỗn hợp
+ * (ô trống bị đọc thành THIẾU dữ liệu): NĐ 24 phụ lục I không đặt ngưỡng nào; dòng cha phụ lục IV
+ * (Amoni nitrat, Kali nitrat) có ngưỡng ở từng dòng con. `null` = danh sách đó vốn không có cột này.
+ */
+export function describeMissingLimit(listCode: number): string | null {
+  if (listCode === 1) return 'Không quy định ngưỡng'
+  if (listCode === 4) return 'Theo từng dạng / hàm lượng'
+  return null
+}
+
+/** Ngưỡng hàm lượng hỗn hợp của phụ lục II / III → «> 5% trong hỗn hợp» (khớp bản v2, không viết tắt). */
+export function formatMixtureLimit(pct: number | null | undefined): string {
+  if (pct === null || pct === undefined || !Number.isFinite(pct) || pct < 0) return ''
+  return `> ${pct.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}% trong hỗn hợp`
+}

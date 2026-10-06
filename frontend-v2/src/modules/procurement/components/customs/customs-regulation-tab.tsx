@@ -28,7 +28,8 @@ import { CustomsRegulationAlertTable } from './customs-regulation-alert-table'
 const ALL = 'all'
 const DEFAULT_PAGE_SIZE = 50
 //  v2 (29/09/2026): thêm cột «Thuốc BVTV chứa» — bản lưu bố cục cũ thắng cột mới (table.md §4).
-const STORAGE_KEY = 'procurement.customs-regulations-v2'
+//  v3 (duoc-CR-598): thêm STT · Tên chất · Công thức hóa học.
+const STORAGE_KEY = 'procurement.customs-regulations-v3'
 
 interface CustomsRegulationTabProps {
   /** Từ khóa dòng hàng đang tra (thanh lọc trang) và các cảnh báo khớp nó. */

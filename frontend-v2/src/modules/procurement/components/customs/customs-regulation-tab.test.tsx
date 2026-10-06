@@ -1,7 +1,7 @@
 // Mục «Pháp lý»: bảng duyệt cả danh mục hóa chất theo văn bản + thẻ cảnh báo của từ khóa đang
 // tra. Chặn ở tầng `@/core/api` (luật testing.md).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -19,11 +19,14 @@ function hit(over: Partial<CustomsRegulationHit>): CustomsRegulationHit {
     id: 1,
     list_code: 4,
     list_label: 'NĐ 24/2026 · Phụ lục IV',
+    seq_no: '',
     name: 'Toluene',
     name_vi: '',
     cas_no: '108-88-3',
+    formula: '',
     category: '',
     threshold_kg: 1000,
+    mixture_pct: null,
     banned_year: null,
     legal_basis: 'NĐ 24/2026/NĐ-CP',
     note: '',
@@ -95,6 +98,62 @@ describe('CustomsRegulationTab', () => {
     build()
     expect(await screen.findByText('Toluene')).toBeInTheDocument()
     expect(screen.getByText('NĐ 24/2026 · Phụ lục IV')).toBeInTheDocument()
+  })
+
+  //  duoc-CR-598 — bảng theo đúng các cột của phụ lục NĐ 24: STT · Tên khoa học · Tên chất ·
+  //  Mã số CAS · Công thức hóa học, mỗi thứ một cột (trước đây tên Việt chỉ là dòng phụ).
+  it('shows the appendix columns STT, scientific name, chemical name, CAS and formula separately', async () => {
+    items = [
+      hit({
+        seq_no: '59',
+        name: 'Barium hypochlorite',
+        name_vi: 'Bari hypoclorit',
+        cas_no: '13477-10-6',
+        formula: 'Ba(ClO)2',
+        list_label: 'NĐ 24/2026 · Phụ lục II',
+      }),
+    ]
+    build()
+    expect(await screen.findByText('Barium hypochlorite')).toBeInTheDocument()
+    for (const header of ['STT', 'Tên khoa học', 'Tên chất', 'Mã số CAS', 'Công thức hóa học']) {
+      expect(screen.getByRole('columnheader', { name: new RegExp(header) })).toBeInTheDocument()
+    }
+    const row = screen.getByRole('row', { name: /Barium hypochlorite/ })
+    for (const cell of ['59', 'Bari hypoclorit', '13477-10-6', 'Ba(ClO)2']) {
+      expect(within(row).getByText(cell)).toBeInTheDocument()
+    }
+  })
+
+  it('leaves the new cells blank for documents that have no STT or formula', async () => {
+    items = [hit({ list_code: 10, list_label: 'TT 75/2025 · Hoạt chất cấm', name: 'Paraquat', threshold_kg: null })]
+    build()
+    const row = await screen.findByRole('row', { name: /Paraquat/ })
+    expect(within(row).queryByText('undefined')).not.toBeInTheDocument()
+    expect(within(row).queryByText('null')).not.toBeInTheDocument()
+  })
+
+  //  duoc-CR-598 — ô trống bị đọc thành «thiếu dữ liệu». PL IV có ngưỡng TỒN TRỮ kg; PL II / III có
+  //  ngưỡng HÀM LƯỢNG hỗn hợp % (câu ghi chú của NĐ 24, tệp Excel không có); PL I không có ngưỡng nào.
+  it('fills the limit cell with kg, the mixture percentage, or says there is none', async () => {
+    items = [
+      hit({ id: 1, list_code: 1, list_label: 'NĐ 24/2026 · Phụ lục I', name: 'Argon', threshold_kg: null }),
+      hit({ id: 5, list_code: 2, list_label: 'NĐ 24/2026 · Phụ lục II', name: 'Acetaldehyde', threshold_kg: null, mixture_pct: 5 }),
+      hit({ id: 6, list_code: 3, list_label: 'NĐ 24/2026 · Phụ lục III', name: 'Phosgene', threshold_kg: null, mixture_pct: 1 }),
+      hit({ id: 2, list_code: 4, name: 'Potassium nitrate', threshold_kg: null }),
+      hit({ id: 3, list_code: 4, name: 'Potassium nitrate — Dạng hạt', threshold_kg: 5000000 }),
+      hit({ id: 4, list_code: 11, list_label: 'TT 01/2026', name: 'Benzene', threshold_kg: null }),
+    ]
+    build()
+    const argon = await screen.findByRole('row', { name: /Argon/ })
+    expect(within(argon).getByText('Không quy định ngưỡng')).toBeInTheDocument()
+    expect(within(screen.getByRole('row', { name: /Acetaldehyde/ })).getByText('> 5% trong hỗn hợp')).toBeInTheDocument()
+    expect(within(screen.getByRole('row', { name: /Phosgene/ })).getByText('> 1% trong hỗn hợp')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('row', { name: /^.*Potassium nitrate(?! —)/ })).getByText('Theo từng dạng / hàm lượng'),
+    ).toBeInTheDocument()
+    expect(within(screen.getByRole('row', { name: /Dạng hạt/ })).getByText(/5\.000\.000/)).toBeInTheDocument()
+    const benzene = screen.getByRole('row', { name: /Benzene/ })
+    expect(within(benzene).queryByText(/ngưỡng|hàm lượng|hỗn hợp/)).not.toBeInTheDocument()
   })
 
   it('shows the keyword alerts card only when the current keyword hits something', async () => {
