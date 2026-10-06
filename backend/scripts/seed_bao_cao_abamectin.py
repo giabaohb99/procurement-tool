@@ -19,6 +19,7 @@ from __future__ import annotations
 import sys
 from datetime import date
 
+import app.core.all_models  # noqa: F401  — nạp đủ mapper (Employee ↔ Company) trước khi truy vấn
 from app.core.database import SessionLocal
 from app.modules.employee.model import Employee
 from app.modules.purchase_order import service as po_service
@@ -67,10 +68,13 @@ ROWS = [
 def _employee_id_by_name(db, name: str) -> int:
     """Tra nhân sự theo TÊN GỌI trong Excel («Tiên», «Ngân») — lấy người đầu tiên đang
     làm việc có tên kết thúc bằng chữ đó; không thấy thì 0 (chưa cử)."""
+    #  So khớp CHỮ CUỐI đúng dấu ở Python: LIKE của MySQL không phân biệt dấu nên
+    #  «Tiên» sẽ trúng cả «Tiến».
     rows = (db.query(Employee.id, Employee.full_name)
             .filter(Employee.full_name.like(f"%{name}"))
             .order_by(Employee.id).all())
-    return rows[0][0] if rows else 0
+    exact = [eid for eid, full_name in rows if (full_name or "").split()[-1:] == [name]]
+    return exact[0] if exact else 0
 
 
 def main(po_id: int, overwrite: bool) -> None:
