@@ -12178,3 +12178,15 @@ sau mỗi lượt sửa, bot đọc lại trạng thái việc; việc đã bỏ
 kiểm cho đúng tình huống này.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py (_abandoned, run_code_task, _run_phases)
+
+## AI-0003 | Trợ lý hủy được sự kiện trên lịch Google của chính người hỏi
+- status: xong
+- date: 2026-10-06
+Đại ca giao làm công cụ hủy sự kiện. Trước đây Trợ lý chỉ xem, tạo và dời lịch Google; người dùng bảo hủy thì bot không
+làm được. Nay có thêm công cụ hủy: tìm sự kiện theo mã hoặc theo tên cộng ngày; khớp không cái nào hoặc khớp nhiều cái
+thì hỏi lại người dùng chứ không tự xóa. Lịch lặp lại chỉ hủy buổi của ngày được nói. Cuộc họp có khách mời thì Google
+gửi thư báo hủy. Người hỏi chỉ là khách mời thì sự kiện được gỡ khỏi lịch của họ, lịch người tổ chức không đổi. Thêm bài
+kiểm cho ca hủy đúng, ca mơ hồ phải hỏi lại, ca Google báo lỗi và ca chưa nối Google. Còn chờ đại ca quyết có bắt bot hỏi
+xác nhận trước khi hủy hay không.
+
+Mã nguồn: backend/app/modules/agent_hub/google_link.py (api_delete) · assistant/tools/google_tool.py (_delete_calendar_event, DELETE_CALENDAR_EVENT_SPEC)

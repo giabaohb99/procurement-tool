@@ -94,8 +94,19 @@ def test_khong_ton_tai_tool_nao_xoa_du_lieu(db):
     dòng, hay là xóa cả phiếu?).
     """
     ten = {d.name for d in T.tool_defs()}
-    xau = [n for n in ten if any(k in n for k in ("delete", "remove", "destroy", "xoa"))]
+    xau = [n for n in ten if any(k in n for k in ("delete", "remove", "destroy", "xoa"))
+           and n not in TOOL_XOA_NGOAI_ERP]
     assert xau == [], f"xuất hiện tool xóa dữ liệu: {xau}"
+    #  Miễn trừ chỉ dành cho tool ghi ra NGOÀI ERP — tool xóa dữ liệu ERP không bao giờ được miễn.
+    assert set(TOOL_XOA_NGOAI_ERP) <= set(TOOL_GHI_NGOAI_ERP)
+
+
+#  Giải trình cho bài trên (AI-0003, đại ca giao «công cụ hủy sự kiện»): xóa sự kiện trên lịch Google của CHÍNH
+#  người hỏi, bằng token của họ — không đụng một bản ghi ERP nào. Mơ hồ thì tool trả lựa chọn chứ không tự chọn
+#  (canh ở `test_huy_lich_xoa_dung_su_kien_va_hoi_lai_khi_mo_ho` trong test_agent_hub).
+TOOL_XOA_NGOAI_ERP = {
+    "delete_calendar_event": "hủy sự kiện trên lịch Google của chính người hỏi",
+}
 
 
 # ── 2. Tóm tắt phải đi qua phân quyền ───────────────────────────────────────────────────
@@ -174,6 +185,7 @@ TOOL_GHI = {
 TOOL_GHI_NGOAI_ERP = {
     "create_calendar_event": {"title": "Họp NCC", "start": "2026-09-26T14:00:00"},
     "update_calendar_event": {"title": "Họp NCC", "new_start": "2026-09-27T14:00:00"},   # ai-CR-084
+    "delete_calendar_event": {"title": "Họp NCC", "date": "2026-09-27"},                 # AI-0003
 }
 
 #  Tool CHỈ GHI ĐỀ XUẤT chờ quản lý duyệt (ai-CR-078): không đụng một bản ghi nghiệp vụ nào, chỉ thêm một dòng chờ
@@ -187,7 +199,7 @@ TOOL_DE_XUAT_CHO_DUYET = {
 
 #  Cách nhận diện "tool có mùi ghi" từ TÊN. Cố ý thô: thà bắt nhầm một tool đọc rồi khai
 #  vào bảng trên, còn hơn bỏ lọt một tool ghi.
-_MUI_GHI = ("draft_", "_create", "create_", "propose_", "update_", "_update", "confirm_")
+_MUI_GHI = ("draft_", "_create", "create_", "propose_", "update_", "_update", "confirm_", "delete_", "cancel_")
 
 
 def test_moi_tool_co_mui_ghi_deu_phai_khai_o_bang_tren(db):
@@ -211,6 +223,8 @@ def test_tool_ghi_ngoai_erp_tu_choi_khi_chua_noi_google(db, seed, monkeypatch, t
     calls: list[str] = []
     monkeypatch.setattr(google_tool.gl, "api_post", lambda *a, **kw: calls.append("post") or {})
     monkeypatch.setattr(google_tool.gl, "api_get", lambda *a, **kw: calls.append("get") or {})
+    monkeypatch.setattr(google_tool.gl, "api_patch", lambda *a, **kw: calls.append("patch") or {})
+    monkeypatch.setattr(google_tool.gl, "api_delete", lambda *a, **kw: calls.append("delete") or {})
 
     out = _hoi(db, seed, tool_name, TOOL_GHI_NGOAI_ERP[tool_name])
 
