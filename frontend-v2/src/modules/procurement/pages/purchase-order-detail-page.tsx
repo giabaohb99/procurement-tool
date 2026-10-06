@@ -156,7 +156,7 @@ export function PurchaseOrderDetailPage() {
   const purchaseOrderId = isNew ? 0 : Number(id)
 
   const { data: serverData, isLoading, isError } = usePurchaseOrder(purchaseOrderId)
-  //  bao-CR-598: khối Báo cáo thực hiện của đơn — cùng khóa cache với thẻ bên dưới nên
+  //  bao-CR-602: khối Báo cáo thực hiện của đơn — cùng khóa cache với thẻ bên dưới nên
   //  không thêm request; bảng dòng hàng đọc % theo dòng từ đây.
   const { data: executionReport } = useSurveyRequestReport(purchaseOrderId, 'purchase_order')
   const lineReport = useMemo(() => lineReportProgress(executionReport), [executionReport])
@@ -859,7 +859,7 @@ export function PurchaseOrderDetailPage() {
           </CardContent>
         </Card>
 
-        {/* bao-CR-598: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút
+        {/* bao-CR-602: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút
             dòng hàng bám theo dòng đơn; ai sửa được đơn thì sửa được báo cáo; đơn Hoàn
             thành / Hủy thì chỉ đọc (backend khóa). */}
         {!isNew && (

@@ -1,4 +1,4 @@
-"""Nghiệp vụ khối Báo cáo thực hiện — dùng chung cho YCBG và ĐMH (bao-CR-598).
+"""Nghiệp vụ khối Báo cáo thực hiện — dùng chung cho YCBG và ĐMH (bao-CR-602).
 
 Mọi hàm nhận `report_id` = id dòng ĐẦU `tab_exec_report`; chứng từ chủ → đầu
 báo cáo đi qua `find_report` / `ensure_report`. Không hàm nào ở đây xét quyền —
@@ -295,7 +295,7 @@ def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int)
 
 
 def sync_line_items(db: Session, report_id: int, lines: list[LineRef], user_id: int) -> bool:
-    """Đồng bộ nút dòng hàng THEO dòng chứng từ (ĐMH, bao-CR-598). Trả True khi có đổi.
+    """Đồng bộ nút dòng hàng THEO dòng chứng từ (ĐMH, bao-CR-602). Trả True khi có đổi.
 
     Chạy mỗi lần đọc khối của ĐMH, vì đơn thêm/bớt/đổi tên dòng ở màn khác mà
     không ai báo cho khối báo cáo. Luật:

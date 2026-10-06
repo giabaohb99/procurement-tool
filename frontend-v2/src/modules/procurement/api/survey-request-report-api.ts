@@ -10,7 +10,7 @@ export interface ReportDocPayload {
   required: boolean
   status: number
   file_note: string
-  /** Kết quả / ghi chú sau khi làm (bao-CR-598). */
+  /** Kết quả / ghi chú sau khi làm (bao-CR-602). */
   result: string
   depends: number[]
   /** `yyyy-mm-dd` | `''`. */
@@ -24,7 +24,7 @@ export interface ReportDocPayload {
 }
 
 /**
- * Một bộ đường API cho MỌI chứng từ chủ (bao-CR-598): `entity` chọn luật ở
+ * Một bộ đường API cho MỌI chứng từ chủ (bao-CR-602): `entity` chọn luật ở
  * backend — YCBG (`survey_request`) hay ĐMH (`purchase_order`).
  */
 const base = (entity: ReportOwnerEntity, id: number) => `/api/execution-report/${entity}/${id}`

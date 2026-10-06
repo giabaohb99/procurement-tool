@@ -1,10 +1,10 @@
 """Nạp bảng kế hoạch «2870 — Kế hoạch Abamectin 3.6» (Excel của Thu mua) vào khối
 Báo cáo thực hiện của MỘT đơn mua hàng — để đại ca xem thử dữ liệu thật trên màn
-(bao-CR-598).
+(bao-CR-602).
 
     docker compose exec -T api python scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]
 
-Ánh xạ cột Excel → trường hồ sơ (ghi ở doc bao-CR-598):
+Ánh xạ cột Excel → trường hồ sơ (ghi ở doc bao-CR-602):
     STT → thứ tự · Hạng mục → tiêu đề · Công việc chi tiết → mô tả
     Người/Đơn vị phụ trách → nhân sự thực hiện (tra theo tên, không thấy thì để trống)
     Ngày thực hiện → ngày bắt đầu · Time xử lý (ngày) → suy ra, không lưu

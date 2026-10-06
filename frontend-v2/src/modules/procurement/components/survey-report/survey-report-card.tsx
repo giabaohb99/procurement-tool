@@ -126,7 +126,7 @@ export interface SurveyReportCardHandle {
 interface SurveyReportCardProps {
   /** Id chứng từ chủ (YCBG hay ĐMH tùy `entity`). */
   ownerId: number
-  /** Loại chứng từ chủ — mặc định YCBG (bao-CR-598 thêm ĐMH). */
+  /** Loại chứng từ chủ — mặc định YCBG (bao-CR-602 thêm ĐMH). */
   entity?: ReportOwnerEntity
   /** Ai sửa được — backend gác lại lần nữa theo cửa ghi của chứng từ cha. */
   canEdit: boolean
@@ -190,7 +190,7 @@ export function SurveyReportCard({
     }
   }
 
-  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-598): mở khối, chuyển
+  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-602): mở khối, chuyển
   //  sang dạng xem theo dòng hàng, sổ đúng dòng rồi cuộn tới. Lệnh đi bằng ref
   //  (không qua prop + effect) vì nó là một SỰ KIỆN, không phải trạng thái cần đồng bộ.
   useImperativeHandle(ref, () => ({

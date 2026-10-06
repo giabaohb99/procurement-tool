@@ -118,7 +118,7 @@ Deploy: chưa deploy.
 
 ---
 
-## bao-CR-598 | Báo cáo thực hiện trên Đơn mua hàng: khối dùng chung YCBG + ĐMH, nút bám dòng đơn, cột «Hồ sơ» trên bảng dòng hàng
+## bao-CR-602 | Báo cáo thực hiện trên Đơn mua hàng: khối dùng chung YCBG + ĐMH, nút bám dòng đơn, cột «Hồ sơ» trên bảng dòng hàng
 - status: xong
 - date: 2026-10-06
 Đại ca quay lại việc báo cáo tiến độ: trước mắt cần ở đơn mua hàng, hai cách xem (theo dòng hàng và chung), không cần
@@ -145,7 +145,7 @@ Cách làm:
    giai đoạn và chạy tuần tự nên script nạp xếp vào 5 giai đoạn mẫu và nối mỗi dòng là tiên quyết của dòng kế.
    Script `backend/scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]` nạp 21 dòng vào một đơn trên dev.
 
-Kiểm: máy chủ 114 bài liên quan xanh (8 bài mới `test_bao_cao_thuc_hien_dmh_cr598.py`, bài YCBG cũ chuyển sang khóa
+Kiểm: máy chủ 114 bài liên quan xanh (8 bài mới `test_bao_cao_thuc_hien_dmh_cr602.py`, bài YCBG cũ chuyển sang khóa
 `report_id`); bản mới kiểm kiểu 0 lỗi, lint 0 lỗi, 39 bài helper + bảng dòng hàng xanh; bản cũ giữ đúng 4 lỗi nền.
 Mã nguồn: `survey_request/report_{model,service,controller,schema}.py`, `migrations/versions/bcth01_*.py`,
 `frontend-v2/.../survey-report/survey-report-card.tsx`, `purchase-order-items-table.tsx`, `purchase-order-detail-page.tsx`,

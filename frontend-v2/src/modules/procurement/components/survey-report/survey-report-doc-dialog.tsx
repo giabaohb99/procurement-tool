@@ -311,7 +311,7 @@ export function SurveyReportDocDialog({
                 onChange={(value) => patch({ planned_date: value })}
                 placeholder="Chọn ngày dự định"
               />
-              {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-598):
+              {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-602):
                   không lưu, suy từ hai mốc; gõ số ngày thì tự đặt ngày dự định =
                   ngày bắt đầu + n. Chưa có ngày bắt đầu thì ô khóa, nói rõ vì sao. */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

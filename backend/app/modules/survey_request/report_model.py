@@ -1,10 +1,10 @@
-"""Các bảng của KHỐI BÁO CÁO THỰC HIỆN — dùng chung cho YCBG và ĐMH (bao-CR-598).
+"""Các bảng của KHỐI BÁO CÁO THỰC HIỆN — dùng chung cho YCBG và ĐMH (bao-CR-602).
 
 NS Thu mua theo dõi tiến trình thực thi một thương vụ (giấy phép, hợp đồng,
 chứng từ vận chuyển, thông quan…) ngay trên chứng từ: hồ sơ chia theo GIAI
 ĐOẠN, lọc theo NÚT DÒNG HÀNG, mỗi hồ sơ có trạng thái + danh sách tiên quyết.
 
-Từ bao-CR-598 khối không còn là của riêng phiếu YCBG: thêm bảng ĐẦU
+Từ bao-CR-602 khối không còn là của riêng phiếu YCBG: thêm bảng ĐẦU
 `tab_exec_report(owner_entity, owner_id)` — mỗi chứng từ chủ (YCBG, ĐMH) có
 nhiều nhất MỘT đầu báo cáo, bốn bảng con nối vào đầu đó bằng `report_id`.
 Dữ liệu YCBG cũ: migration dựng đầu với `id = id phiếu` nên cột khóa của bảng
@@ -50,7 +50,7 @@ class SurveyReportItem(Base, AuditMixin):
 
     Là bảng chứ không suy từ dòng chứng từ: trên YCBG người dùng được thêm/sửa/
     xóa nút và đặt tên tùy ý (một nút có thể gom nhiều dòng, hoặc chẳng ứng với
-    dòng nào). Trên ĐMH (bao-CR-598) nút SINH TỰ ĐỘNG theo dòng đơn — `line_id`
+    dòng nào). Trên ĐMH (bao-CR-602) nút SINH TỰ ĐỘNG theo dòng đơn — `line_id`
     là id dòng chứng từ (`tab_po_item.id`), service đồng bộ mỗi lần đọc: dòng
     mới thì thêm nút, đổi tên hàng thì đổi tên nút, dòng bị xóa thì xóa nút (hồ
     sơ của nó về Chung). Hồ sơ không gắn nút nào (`item_id = 0`) là hồ sơ CHUNG.
@@ -95,7 +95,7 @@ class SurveyReportDoc(Base, AuditMixin):
     #  Tên tệp hoặc link tài liệu (Drive…) — chữ tự do, chưa nối kho đính kèm.
     file_note: Mapped[str] = mapped_column(String(500), default="")
     #  KẾT QUẢ / ghi chú sau khi làm (cột «Kết quả» của bảng kế hoạch Excel thu
-    #  mua, bao-CR-598) — khác `description` (việc PHẢI làm, ghi trước khi làm).
+    #  mua, bao-CR-602) — khác `description` (việc PHẢI làm, ghi trước khi làm).
     result: Mapped[str] = mapped_column(String(1000), default="")
     #  Danh sách id hồ sơ TIÊN QUYẾT (cùng khối). Hồ sơ bị KHÓA khi còn tiên
     #  quyết chưa Hoàn thành — cách khóa do tầng hiển thị + service suy, không

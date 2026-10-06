@@ -226,7 +226,7 @@ export default function PurchaseOrderDetail() {
     loadApproverCandidates(API, isNew ? 0 : Number(id), po).then(setApproverCands)
   }, [id, isNew, po.status, po.department, po.department_id, po.company_id, po.handler_dept_id])
   const [logs, setLogs] = useState<any[]>([])
-  //  bao-CR-598: khối Báo cáo thực hiện của đơn — thẻ bên dưới nạp rồi báo lên, bảng dòng
+  //  bao-CR-602: khối Báo cáo thực hiện của đơn — thẻ bên dưới nạp rồi báo lên, bảng dòng
   //  hàng đọc % theo dòng từ đây; bấm ô «Hồ sơ» thì ra lệnh cho thẻ cuộn tới + sổ nút.
   const [execReport, setExecReport] = useState<SurveyRequestReport | null>(null)
   const reportCardRef = useRef<SurveyReportCardHandle>(null)
@@ -1380,7 +1380,7 @@ export default function PurchaseOrderDetail() {
                     {!isImport && <th style={{ width: 125 }}>Đơn giá (Sau VAT)</th>}
                     <th style={{ width: 150, background: '#fff3cd' }}>Thành tiền đơn hàng</th>
                     <th style={{ width: 150 }}>Tiến độ giao</th>
-                    {/* bao-CR-598: tiến độ BÁO CÁO THỰC HIỆN của dòng — bấm là cuộn xuống khối báo cáo */}
+                    {/* bao-CR-602: tiến độ BÁO CÁO THỰC HIỆN của dòng — bấm là cuộn xuống khối báo cáo */}
                     {!isNew && <th style={{ width: 100, textAlign: 'center' }} title="Hồ sơ báo cáo thực hiện của dòng (hồ sơ dòng + hồ sơ chung)">Hồ sơ</th>}
                     <th style={{ width: 170 }}>Trạng thái</th>
                     <th style={{ width: 120, textAlign: 'center' }}>Hành động</th>
@@ -1560,7 +1560,7 @@ export default function PurchaseOrderDetail() {
             </div>
           </div>
 
-          {/* bao-CR-598: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút dòng
+          {/* bao-CR-602: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút dòng
               hàng bám theo dòng đơn; ai sửa được đơn thì sửa được báo cáo; đơn Hoàn thành / Hủy
               thì chỉ đọc (backend khóa). */}
           {!isNew && (

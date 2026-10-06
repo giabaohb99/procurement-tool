@@ -18,7 +18,7 @@ import {
 
 /**
  * bao-CR-390: khối «Báo cáo thực hiện» trên chi tiết YCBG — bản v1 (`frontend/`).
- * bao-CR-598: dùng chung cho ĐMH (`entity="purchase_order"`): nút dòng hàng bám theo dòng
+ * bao-CR-602: dùng chung cho ĐMH (`entity="purchase_order"`): nút dòng hàng bám theo dòng
  * đơn (`itemsLocked`), cột «Kết quả», ô «Số ngày xử lý», và lệnh `focusItem` qua ref để
  * bảng dòng hàng của đơn cuộn tới + sổ đúng nút.
  * Chép hành vi của `frontend-v2/.../survey-report/survey-report-card.tsx` sang phong
@@ -96,7 +96,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     try { localStorage.setItem(VIEW_KEY, mode) } catch { /* private mode */ }
   }
 
-  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-598): mở khối, chuyển
+  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-602): mở khối, chuyển
   //  dạng xem theo dòng hàng, sổ đúng dòng rồi cuộn tới.
   useImperativeHandle(ref, () => ({
     focusItem: (itemId: number) => {
@@ -858,7 +858,7 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
         <div className="form-row">
           <label>Dự định hoàn tất</label>
           <DateInput value={form.planned_date} onChange={(v) => set('planned_date', v)} />
-          {/* bao-CR-598: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — không lưu, gõ số ngày
+          {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — không lưu, gõ số ngày
               thì dự định hoàn tất = ngày bắt đầu + n; chưa có ngày bắt đầu thì ô khóa. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12, color: 'var(--muted)' }}>
             <span style={{ whiteSpace: 'nowrap' }}>Số ngày xử lý</span>

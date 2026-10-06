@@ -1,4 +1,4 @@
-"""bao-CR-598 — khối Báo cáo thực hiện dùng chung YCBG + ĐMH.
+"""bao-CR-602 — khối Báo cáo thực hiện dùng chung YCBG + ĐMH.
 
 - Thêm bảng ĐẦU `tab_exec_report(owner_entity, owner_id)`; dựng đầu cho mọi YCBG
   đang có dữ liệu báo cáo với `id = id phiếu` — nhờ vậy bốn bảng con chỉ ĐỔI TÊN

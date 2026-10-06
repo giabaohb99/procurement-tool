@@ -1,4 +1,4 @@
-"""bao-CR-598 — khối Báo cáo thực hiện dùng chung YCBG + ĐMH.
+"""bao-CR-602 — khối Báo cáo thực hiện dùng chung YCBG + ĐMH.
 
 Bốn thứ khóa bằng test:
 

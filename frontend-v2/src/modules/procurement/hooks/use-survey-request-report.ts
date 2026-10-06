@@ -7,7 +7,7 @@ import type { ReportOwnerEntity, SurveyRequestReport } from '../types/survey-req
 
 /**
  * Khối báo cáo thực hiện của một chứng từ — YCBG hay ĐMH tùy `entity`
- * (bao-CR-598). `id <= 0` (màn tạo mới) không gọi.
+ * (bao-CR-602). `id <= 0` (màn tạo mới) không gọi.
  */
 export function useSurveyRequestReport(id: number, entity: ReportOwnerEntity = 'survey_request') {
   return useQuery({

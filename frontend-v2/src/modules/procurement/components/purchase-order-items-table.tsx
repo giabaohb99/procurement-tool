@@ -54,7 +54,7 @@ export function orderLineAmount(item: PurchaseOrderItem): number {
 }
 
 /**
- * Hậu tố `-v3`: bộ cột vừa đổi (bao-CR-598 thêm cột «Hồ sơ» = tiến độ báo cáo thực
+ * Hậu tố `-v3`: bộ cột vừa đổi (bao-CR-602 thêm cột «Hồ sơ» = tiến độ báo cáo thực
  * hiện theo dòng; `-v2` trước đó thêm Phân loại + Quy đổi VNĐ). `useTableLayout` ưu
  * tiên bố cục đã lưu và nối cột lạ vào cuối, nên bố cục cũ trong `localStorage` sẽ
  * đẩy cột mới xuống cuối bảng. Đổi bộ cột lần sau thì tăng số.
@@ -130,7 +130,7 @@ function buildColumns(): LinesTableColumn[] {
       align: 'center',
       compactHidden: true,
     },
-    // bao-CR-598: tiến độ BÁO CÁO THỰC HIỆN của dòng (hồ sơ của dòng + hồ sơ chung).
+    // bao-CR-602: tiến độ BÁO CÁO THỰC HIỆN của dòng (hồ sơ của dòng + hồ sơ chung).
     // Bấm vào là cuộn xuống khối báo cáo và sổ đúng dòng. Không `compactHidden`:
     // đại ca muốn nhìn bảng là thấy ngay dòng nào còn vướng hồ sơ.
     { key: 'report', header: 'Hồ sơ', width: 110, minWidth: 80, align: 'center' },
@@ -195,7 +195,7 @@ interface PurchaseOrderItemsTableProps {
    */
   order?: Pick<PurchaseOrderDetail, 'order_type' | 'currency' | 'exchange_rate'>
   /**
-   * bao-CR-598 — tiến độ báo cáo thực hiện theo `item.id` (dòng đã lưu). Không
+   * bao-CR-602 — tiến độ báo cáo thực hiện theo `item.id` (dòng đã lưu). Không
    * truyền (màn tạo mới) thì cột «Hồ sơ» ẩn hẳn.
    */
   lineReport?: Map<number, LineReportProgress>

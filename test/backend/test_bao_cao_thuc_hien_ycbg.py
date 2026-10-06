@@ -1,4 +1,4 @@
-"""Khối BÁO CÁO THỰC HIỆN trên phiếu YCBG (tab_exec_report_*, khóa `report_id` từ bao-CR-598).
+"""Khối BÁO CÁO THỰC HIỆN trên phiếu YCBG (tab_exec_report_*, khóa `report_id` từ bao-CR-602).
 
 Bốn thứ phải khóa bằng test:
 
@@ -29,7 +29,7 @@ def _sr(db, code="YCKS-BC1", **kw) -> SurveyRequest:
     s = SurveyRequest(code=code, status="processing", **kw)
     db.add(s)
     db.commit()
-    #  bao-CR-598: khối báo cáo nối vào ĐẦU `tab_exec_report`, không nối thẳng vào
+    #  bao-CR-602: khối báo cáo nối vào ĐẦU `tab_exec_report`, không nối thẳng vào
     #  phiếu nữa — `rid` là khóa mọi hàm service nhận.
     s.rid = svc.ensure_report(db, "survey_request", s.id, user_id=1).id
     db.commit()

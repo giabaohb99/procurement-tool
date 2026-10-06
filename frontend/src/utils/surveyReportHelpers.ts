@@ -1,5 +1,5 @@
 /**
- * Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{id}` (bao-CR-598: dùng
+ * Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{id}` (bao-CR-602: dùng
  * chung chi tiết YCBG `survey_request` và ĐMH `purchase_order`).
  * Bản v1 (`frontend/`) chép luật thuần từ
  * `frontend-v2/src/modules/procurement/utils/survey-report-helpers.ts` — sửa một bên
@@ -44,7 +44,7 @@ export interface SurveyReportDoc {
   status_label: string
   /** Tên tệp hoặc link tài liệu — chữ tự do. */
   file_note: string
-  /** Kết quả / ghi chú SAU khi làm — khác `description` (việc phải làm). bao-CR-598. */
+  /** Kết quả / ghi chú SAU khi làm — khác `description` (việc phải làm). bao-CR-602. */
   result: string
   /** Id các hồ sơ TIÊN QUYẾT (backend đã lọc id chết). */
   depends: number[]
@@ -101,7 +101,7 @@ export function addDaysIso(from: string, days: number): string {
 
 /**
  * «Số ngày xử lý» = dự định hoàn tất − ngày bắt đầu (cột «Time xử lý» của bảng kế
- * hoạch Excel thu mua, bao-CR-598). Không lưu; thiếu một mốc trả `null`.
+ * hoạch Excel thu mua, bao-CR-602). Không lưu; thiếu một mốc trả `null`.
  */
 export function durationDays(start: string, planned: string): number | null {
   if (!start || !planned) return null
@@ -118,7 +118,7 @@ export interface LineReportProgress {
 }
 
 /**
- * Tiến độ theo TỪNG DÒNG CHỨNG TỪ (bao-CR-598) — khóa là `line_id` (ĐMH: `tab_po_item.id`).
+ * Tiến độ theo TỪNG DÒNG CHỨNG TỪ (bao-CR-602) — khóa là `line_id` (ĐMH: `tab_po_item.id`).
  * Hồ sơ CHUNG tính vào mọi dòng (cùng luật `filterReportDocs`); nút đặt tay bỏ qua.
  */
 export function lineReportProgress(report: SurveyRequestReport | null | undefined): Map<number, LineReportProgress> {

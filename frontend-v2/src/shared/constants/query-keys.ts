@@ -99,7 +99,7 @@ export const queryKeys = {
       ['procurement', 'survey-requests', id, 'assignable-staff'] as const,
     /**
      * Khối BÁO CÁO THỰC HIỆN (`/api/execution-report/{entity}/{id}`) — nút · giai
-     * đoạn · hồ sơ. Dùng chung YCBG (`survey_request`) và ĐMH (`purchase_order`), bao-CR-598.
+     * đoạn · hồ sơ. Dùng chung YCBG (`survey_request`) và ĐMH (`purchase_order`), bao-CR-602.
      */
     executionReport: (entity: string, id: number) =>
       ['procurement', 'execution-report', entity, id] as const,

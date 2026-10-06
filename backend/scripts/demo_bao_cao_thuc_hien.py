@@ -124,7 +124,7 @@ def main(request_id: int) -> None:
         if not request:
             raise SystemExit(f"Không có phiếu YCBG id {request_id} trong DB này")
 
-        #  bao-CR-598: khối nối vào ĐẦU `tab_exec_report`, tạo nếu phiếu chưa có.
+        #  bao-CR-602: khối nối vào ĐẦU `tab_exec_report`, tạo nếu phiếu chưa có.
         from app.modules.survey_request.report_service import ensure_report
         report_id = ensure_report(db, "survey_request", request_id, user_id=0).id
         for model in (SurveyReportDoc, SurveyReportPhase, SurveyReportItem):

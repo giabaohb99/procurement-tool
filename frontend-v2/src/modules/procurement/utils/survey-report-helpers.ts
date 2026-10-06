@@ -126,7 +126,7 @@ export function addDaysIso(from: string, days: number): string {
 
 /**
  * «Số ngày xử lý» của một hồ sơ = dự định hoàn tất − ngày bắt đầu (cột «Time xử
- * lý» của bảng kế hoạch Excel thu mua, bao-CR-598). Không lưu — suy từ hai mốc;
+ * lý» của bảng kế hoạch Excel thu mua, bao-CR-602). Không lưu — suy từ hai mốc;
  * thiếu một mốc trả `null` để ô nhập hiện trống chứ không hiện 0 giả.
  */
 export function durationDays(start: string, planned: string): number | null {
@@ -144,7 +144,7 @@ export interface LineReportProgress {
 }
 
 /**
- * Tiến độ theo TỪNG DÒNG CHỨNG TỪ (bao-CR-598) — khóa là `line_id` của dòng (ĐMH:
+ * Tiến độ theo TỪNG DÒNG CHỨNG TỪ (bao-CR-602) — khóa là `line_id` của dòng (ĐMH:
  * `tab_po_item.id`). Hồ sơ CHUNG tính vào mọi dòng, cùng luật với `filterReportDocs`:
  * một giấy phép chung chưa xong thì dòng nào cũng chưa xong. Nút đặt tay
  * (`line_id = 0`) không có dòng chứng từ để gắn nên bỏ qua.

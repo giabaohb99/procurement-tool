@@ -322,7 +322,7 @@ describe('reportPlanLateDays', () => {
   })
 })
 
-describe('lineReportProgress (bao-CR-598)', () => {
+describe('lineReportProgress (bao-CR-602)', () => {
   const report: SurveyRequestReport = {
     items: [
       { id: 11, name: 'Abamectin', line_id: 501, sort_order: 0 },

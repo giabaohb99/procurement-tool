@@ -65,7 +65,7 @@ function renderTable(props: Partial<Parameters<typeof PurchaseOrderItemsTable>[0
   )
 }
 
-/** bao-CR-598 — cột «Hồ sơ»: % báo cáo thực hiện theo dòng, bấm là cuộn tới khối báo cáo. */
+/** bao-CR-602 — cột «Hồ sơ»: % báo cáo thực hiện theo dòng, bấm là cuộn tới khối báo cáo. */
 describe('PurchaseOrderItemsTable — cột Hồ sơ (báo cáo thực hiện theo dòng)', () => {
   beforeEach(() => localStorage.clear())
   afterEach(() => localStorage.clear())

@@ -130,7 +130,7 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
   `doc/tai-lieu-ky-thuat/change-log-bao.md`); prod chạy 4 migration báo cáo từ
   `bee157de2ec8` tới `c3e5a7b9d1f2`.
 
-## Mở rộng sang Đơn mua hàng (bao-CR-598, 06/10/2026)
+## Mở rộng sang Đơn mua hàng (bao-CR-602, 06/10/2026)
 
 - Khối không còn là của riêng YCBG: bảng đầu `tab_exec_report(owner_entity, owner_id)` nói
   **chứng từ nào sở hữu khối**; bốn bảng con đổi tên `tab_exec_report_{item,phase,doc,trash}`
@@ -165,7 +165,7 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
 | Time xử lý (ngày) | *suy ra* | Hộp sửa có ô «Số ngày xử lý»: gõ n → dự định hoàn tất = ngày bắt đầu + n. Không lưu cột riêng |
 | Trạng thái | `status` | Đang thực hiện → Đang làm (1) · Chưa hoàn thành → Chưa bắt đầu (0) · Hoàn thành (3) |
 | Ngày dự kiến hoàn thành | `planned_date` | |
-| Kết quả | `result` | **Cột mới** bao-CR-598, `String(1000)`; hiện trên dòng và trong hộp sửa |
+| Kết quả | `result` | **Cột mới** bao-CR-602, `String(1000)`; hiện trên dòng và trong hộp sửa |
 | Công việc đang thực hiện · Ghi chú | `result` / `description` | Excel để trống; gộp vào hai ô trên |
 | Link | `file_note` | |
 | *(không có)* Giai đoạn | `phase_id` | Excel chạy tuần tự, không chia khâu → script xếp vào 5 giai đoạn mẫu; mỗi dòng là tiên quyết của dòng kế |

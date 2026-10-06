@@ -381,7 +381,7 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     "survey_request/report_controller.py": [
         (OK_KHONG_CAN, "L188 `SurveyReportItem` — chỉ lấy tên nút cho câu lịch sử; "
-                       "`_writable` đã gác chứng từ cha (YCBG/ĐMH, bao-CR-598) và "
+                       "`_writable` đã gác chứng từ cha (YCBG/ĐMH, bao-CR-602) và "
                        "`apply_template` đã chạy `_check_refs` (nút phải thuộc đúng khối) "
                        "TRƯỚC dòng này"),
         (OK_KHONG_CAN, "L190 `SurveyReportPhase` — tên giai đoạn, cùng lý do L188"),

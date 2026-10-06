@@ -1,5 +1,5 @@
 /**
- * Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{id}` (bao-CR-598):
+ * Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{id}` (bao-CR-602):
  * nằm trên chi tiết YCBG (`survey_request`) và ĐMH (`purchase_order`).
  *
  * NS Thu mua theo dõi tiến trình thực thi thương vụ (giấy phép, hợp đồng, chứng
@@ -41,7 +41,7 @@ export interface SurveyReportDoc {
   status_label: string
   /** Tên tệp hoặc link tài liệu — chữ tự do. */
   file_note: string
-  /** Kết quả / ghi chú SAU khi làm — khác `description` (việc phải làm). bao-CR-598. */
+  /** Kết quả / ghi chú SAU khi làm — khác `description` (việc phải làm). bao-CR-602. */
   result: string
   /** Id các hồ sơ TIÊN QUYẾT (backend đã lọc id chết). */
   depends: number[]

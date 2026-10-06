@@ -1,11 +1,11 @@
-"""Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{owner_id}` (bao-CR-598).
+"""Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{owner_id}` (bao-CR-602).
 
 Một bộ đường API cho MỌI chứng từ chủ; `entity` chọn luật ở `_OWNER_RULES`:
 
 - `survey_request` (YCBG, bao-CR-388): ĐỌC = `survey_request.read` + `_in_scope(read)`;
   GHI = `survey_request.process` — cờ suy ra «là NS Thu mua» (xem ghi chú ở
   `set_line_assignee_`), nên PHẠM VI vẫn hỏi theo `read`. Nút dòng hàng đặt tay.
-- `purchase_order` (ĐMH, bao-CR-598): ĐỌC = `purchase_order.read` + `_in_scope(read)`;
+- `purchase_order` (ĐMH, bao-CR-602): ĐỌC = `purchase_order.read` + `_in_scope(read)`;
   GHI = `purchase_order.write` + `_in_scope(write)` — ai sửa được đơn thì sửa được
   báo cáo. Nút dòng hàng SINH TỰ ĐỘNG theo dòng đơn (đồng bộ mỗi lần đọc), không
   thêm/đổi tên/xóa tay.
