@@ -12199,3 +12199,4 @@ thử thật trên kho nháp. Thêm nữa, khi đại ca nhắn «làm đi» lú
 làm rồi» thay cho câu «không có phiên dở nào» dễ gây hiểu lầm.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py (APPEND_ONLY_DOCS, ensure_union_docs, merge_into_base) · agent_hub/service.py (start_continue)
+Deploy: dev 06/10, erp-v2 2c896637 (Agent 1 gộp và dựng lại phía VPS); máy sửa mã đã dựng lại; prod giữ lại.
