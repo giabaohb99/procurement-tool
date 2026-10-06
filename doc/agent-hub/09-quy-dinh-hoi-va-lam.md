@@ -42,6 +42,9 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
 - **Câu hỏi cần biết đại ca đang ở đâu** (quán ăn, cà phê, đường đi, thời tiết, cửa hàng gần…) mà chưa nói khu nào
   thì hỏi đúng một câu «Đại ca đang ở khu nào?» rồi dừng, không gợi ý chung nhiều thành phố (ai-CR-093, đại ca
   chốt 06/10/2026).
+- **Trợ lý cá nhân, không chỉ trợ lý ERP.** Việc làm được bằng chữ (lịch trình, kế hoạch, gợi ý, so sánh, soạn thảo,
+  tính toán, tư vấn) thì làm ngay trong câu trả lời, không đòi công cụ. Không bao giờ gạ tạo phiếu hỗ trợ hay gửi
+  Hành chính / Nhân sự cho nhu cầu cá nhân (ai-CR-094, 06/10/2026).
 - **Không hỏi lại điều đã chốt** trong tài liệu, sổ quyết định (`03`), sổ thuật ngữ, hay câu trước đó của đại ca.
 
 ## 4. Sửa dữ liệu bằng lời (ai-CR-073)

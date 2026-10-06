@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 73 tính năng** (05/10/2026) — A 8 · N 8 · P 2 · M 9 · K 4 · D 7 · V 9 · O 6 · T 12 · R 4 · thêm L-01. **Đã xong 44** (05/10/2026): V-01 + V-02 + V-05 (ai-CR-067) · V-03 + V-06 (ai-CR-068) · O-01 … O-06 (ai-CR-069, O-01 một phần) · M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 79 tính năng** (06/10/2026) — A 8 · N 8 · P 2 · M 9 · K 4 · D 7 · V 9 · O 6 · T 12 · R 4 · L 1 · C 6. **Đã xong 44** (05/10/2026): V-01 + V-02 + V-05 (ai-CR-067) · V-03 + V-06 (ai-CR-068) · O-01 … O-06 (ai-CR-069, O-01 một phần) · M-06 + T-08 + T-09 + T-11 (ai-CR-064) · M-01..M-05 (ai-CR-063) · T-10 (ai-CR-060) · T-07 (ai-CR-061) · P-02 (ai-CR-062) · P-01 (ai-CR-059) · D-06 (ai-CR-056) · D-04 (ai-CR-055) · D-03 + D-05 (ai-CR-054) · D-01 + D-02 (ai-CR-053) · K-01 + K-04 (ai-CR-051); A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -179,6 +179,22 @@ Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác
 | T-12 | Việc rút ra từ biên bản thành lời nhắc và việc trong phân hệ Công việc của ERP | M | Chỗ hai cụm cộng lại đáng giá nhất |
 | T-13 | Ô **«Lịch hôm nay»** trên Trang chủ ERP v2: sự kiện trong ngày từ Google của từng người + việc ở phân hệ Dự án đến hạn hôm nay; chưa nối Google thì hiện nút «Nối Google» | M | **Để sau** — đại ca dặn note lại 05/10/2026. Lịch hiện xem qua Google Calendar, Telegram («lịch hôm nay»), Trợ lý web, bản tin 7:30 |
 
+## Nhóm C — Trợ lý cá nhân trên nền công ty, token người dùng tự trả (thêm 06/10/2026)
+
+**Đại ca nhắc 06/10/2026:** định hướng là **AI trợ lý cá nhân** cho từng người, chạy trên nền tảng của công ty (sổ,
+công cụ ERP, Google cá nhân), **token người dùng tự trả** (khóa riêng, D-01). Bot hôm đó còn hành xử như trợ lý ERP:
+hỏi «lên lịch trình ăn + đi lại» thì nói chưa có công cụ rồi gạ tạo phiếu hỗ trợ gửi Hành chính / Nhân sự; hỏi «chỗ
+ăn chiều» thì gợi ý trộn TP.HCM với Hà Nội vì không biết người hỏi ở đâu.
+
+| Mã | Tính năng | Cỡ | Ghi chú |
+|---|---|---|---|
+| C-01 | **XONG 06/10/2026 (ai-CR-093, ai-CR-094).** Luật trợ lý cá nhân: việc bằng chữ (lịch trình, kế hoạch, gợi ý, soạn thảo, tư vấn) làm ngay không đòi công cụ; không gạ phiếu ERP cho nhu cầu cá nhân; câu cần nơi đang ở mà chưa biết thì hỏi một câu | S | |
+| C-02 | **Sổ ghi nhớ riêng từng người**: khu hay ở, gia đình, thói quen, sở thích, cách xưng hô, điều đã chốt. Mọi lượt trả lời đọc sổ trước; người dùng dạy bằng «nhớ: …», xem «sổ nhớ», quên bằng «quên: …». Bot tự đề nghị ghi khi bị sửa lưng | M | Lưu theo user_id (tab_setting như sổ thuật ngữ), mã hóa phần nhạy cảm; KHÔNG dùng chung giữa người |
+| C-03 | **Vị trí**: đọc tin «gửi vị trí» của Telegram, nhớ vài giờ; gợi ý quanh đó kèm khoảng cách; không có thì dùng khu quen trong C-02 | S | Cần C-02 cho khu quen |
+| C-04 | **Khóa riêng mọi nhà cung cấp**: ngoài Gemini (D-01), người dùng gắn khóa Claude / OpenAI của mình cho kênh chat và web; công ty không trả token thay | M | Gộp M-07; trần P-02 giữ cho người chưa gắn khóa |
+| C-05 | **Thẻ cá nhân**: lịch trình, nhắc việc, chi tiêu cá nhân, danh sách mua sắm — lưu riêng từng người, không vào dữ liệu ERP | M | Nhắc việc T-10 đã có, mở rộng cho dữ liệu riêng |
+| C-06 | **Chế độ**: cùng một bot nhận biết câu nào là việc công ty (ERP, dữ liệu, sửa mã) và câu nào là việc cá nhân; việc cá nhân không đi qua cổng duyệt ERP, không ghi sổ công ty | S | Dựa trên intent sẵn có |
+
 ## Nhóm R — Nghiên cứu (research, tìm tài liệu, kiểm chứng)
 
 | Mã | Tính năng | Cỡ | Ghi chú |
@@ -202,6 +218,7 @@ Cỡ là ước THÔ theo ngày công của một người. Làm **lần lượt
 | 5 | Google cá nhân | M-06, T-08, T-09, T-11 | Mã xong; **chờ đại ca**: redirect URI, «In production», bật Calendar + Drive API, `GOOGLE_CLIENT_SECRET` | — |
 | **6** | **Quy trình code hai máy chủ** (nhóm V) | (a) V-01 + V-02 + V-03 · (b) V-04 + V-05 + V-06 · (c) V-07 preview · V-08 khi có VPS | (a) + V-05 + V-06 **xong 05/10** (ai-CR-067/068); V-04 tạm bỏ OTP. Còn V-07 chờ tên miền + token tunnel; V-08 chờ VPS + tài khoản Claude công ty | ~2 tuần (a 3 ngày · b 1–2 ngày · c 3 ngày) |
 | **7** | **Tự vận hành** (nhóm O) | O-01 → O-06 | **Xong 05/10** (ai-CR-069); O-01 còn thiếu đếm 5xx + hàng đợi | ~1 tuần |
+| **7b** | **Trợ lý cá nhân** (nhóm C) | C-01 xong · C-02 sổ nhớ riêng · C-03 vị trí · C-06 chế độ · C-04 khóa riêng · C-05 thẻ cá nhân | C-01 **xong 06/10**; còn lại chờ đại ca chốt thứ tự | ~1,5 tuần (C-02+C-03+C-06 4 ngày · C-04 2 ngày · C-05 3 ngày) |
 | **8** | **Lõi mở** | M-09 gọi MCP bên ngoài · N-06 A2A · N-07 giao việc tính ngân sách · N-08 sổ sự kiện chung · L-01 | — | ~1,5 tuần |
 | 9 | Nhiều kênh, nhiều bot | M-08 Zalo OA · N-01 · N-04 · N-05 | Chờ Zalo OA + tên bot (Q6) | 1–2 tuần |
 | 10 | Thư ký biên bản họp | T-01 thử tệp thật → T-02..T-06, T-12 | Chờ tệp ghi âm thật (Q5) + Q1 | 3 tuần |

@@ -6359,6 +6359,8 @@ def test_quy_dinh_hoi_va_lam_la_nguon_duy_nhat():
     assert "KHÔNG bao giờ bảo người dùng tự gõ câu lệnh SQL" in policy.ASSISTANT_RULES
     #  ai-CR-093: câu hỏi cần nơi đang ở mà chưa biết thì hỏi một câu, không gợi ý trộn nhiều thành phố.
     assert "Đại ca đang ở khu nào" in policy.ASSISTANT_RULES
+    #  ai-CR-094: việc bằng chữ làm ngay, không gạ phiếu hỗ trợ cho nhu cầu cá nhân.
+    assert "trợ lý CÁ NHÂN" in policy.ASSISTANT_RULES and "KHÔNG BAO GIỜ gợi ý tạo phiếu hỗ trợ" in policy.ASSISTANT_RULES
 
 
 def test_cau_noi_sua_du_lieu_di_may_sua_ma_khong_bay_sql(db, bot, monkeypatch):

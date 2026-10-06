@@ -12245,6 +12245,7 @@ luật cũ bảo nó hạn chế hỏi lại. Đại ca chốt: chưa biết th�
 được ghi thêm vào tài liệu quy định hỏi và làm của bot.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
+Deploy: dev 06/10, erp-v2 f16ea604 (Agent 1 gộp và dựng lại; đợt này mang cả tool hủy lịch AI-0003 lên dev); prod giữ lại.
 
 ## AI-0003 | Trợ lý hủy được sự kiện trên lịch Google của chính người hỏi
 - status: xong
@@ -12272,3 +12273,15 @@ giữ nguyên. Đã thêm mười tám bài kiểm và xem bản in thật trên
 Mã nguồn: frontend-v2/src/modules/hr/components/leave-request-print-sheet.tsx · hr/utils/leave-print-category.ts · hr/pages/leave-request-print-page.tsx
 Commit: ab434648 trên erp-v2.
 Deploy: chưa deploy.
+
+## ai-CR-094 | Bot là trợ lý cá nhân: việc bằng chữ làm ngay, không gạ phiếu hỗ trợ
+- status: xong
+- date: 2026-10-06
+Đại ca nhờ bot lên lịch trình ăn uống và di chuyển hợp lý, bot trả lời chưa có công cụ rồi đề nghị tạo phiếu hỗ trợ
+gửi nhóm Hành chính / Nhân sự. Nguyên nhân là luật «không có công cụ thì nói chưa làm được» bị hiểu quá rộng, trong
+khi lên lịch trình là việc viết bằng chữ, không cần công cụ nào. Nay luật nói rõ bot là trợ lý cá nhân của người đang
+nhắn: việc bằng chữ như lịch trình, kế hoạch, gợi ý, soạn thảo, tư vấn thì làm ngay trong câu trả lời; công cụ chỉ
+dành cho dữ liệu ERP, Google và tìm trên mạng; không bao giờ gạ phiếu ERP cho nhu cầu cá nhân. Đồng thời lên kế hoạch
+nhóm C «Trợ lý cá nhân trên nền công ty, token người dùng tự trả» gồm sáu mục trong sổ tính năng, chờ đại ca chốt.
+
+Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/04-danh-sach-tinh-nang.md (nhóm C, phase 7b) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
