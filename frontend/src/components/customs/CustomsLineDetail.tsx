@@ -11,6 +11,9 @@ const txt = (v: any) => (v == null || v === '' ? '—' : String(v))
 const num = (v: any) => fmtUsd(v)
 const pct = (v: any) => (v == null || v === '' ? '—' : `${v}%`)
 const day = (v: any) => fmtDate(v)
+// bao-CR-603 — giá trị kèm nguồn: «(từ tệp)» khi lấy từ cột tùy chọn của tệp nạp, không thì «(suy ra)» / «(tính)».
+const withSource = (value: string, fromFile: any, derivedNote: string) =>
+  (value === '—' ? value : `${value} ${fromFile ? '(từ tệp)' : derivedNote}`)
 
 const GROUPS: { title: string; fields: Field[] }[] = [
   { title: 'Tờ khai', fields: [
@@ -23,15 +26,18 @@ const GROUPS: { title: string; fields: Field[] }[] = [
   ] },
   { title: 'Hàng hóa', fields: [
     ['product_name', 'Tên hàng', txt], ['hs_code', 'Mã HS', txt],
-    ['active_ingredient', 'Hoạt chất (suy ra)', txt], ['formulation', 'Hàm lượng / dạng (suy ra)', txt],
+    ['active_ingredient', 'Hoạt chất', (v, r) => withSource(txt(v), r.active_ingredient_from_file, '(suy ra)')],
+    ['formulation', 'Hàm lượng / dạng', (v, r) => withSource(txt(v), r.formulation_from_file, '(suy ra)')],
     ['quantity', 'Lượng', (v, r) => fmtQty(v, r.unit_code)], ['unit_code', 'Đơn vị tính', txt],
   ] },
   { title: 'Giá', fields: [
     ['price_usd', 'Đơn giá khai báo (USD)', num], ['adj_price_usd', 'Đơn giá điều chỉnh (USD)', num],
     ['price_nt', 'Đơn giá nguyên tệ khai báo', num], ['adj_price_nt', 'Đơn giá nguyên tệ điều chỉnh', num],
     ['currency', 'Nguyên tệ', txt], ['fx_rate', 'Tỷ giá nguyên tệ', num], ['usd_rate', 'Tỷ giá USD', num],
-    // bao-CR-493 — hai cột VND: 7% tạm tính và theo thuế suất XNK của dòng (backend tính sẵn).
-    ['price_vnd_flat', 'Giá VND (thuế NK 7%)', (v) => fmtVnd(v)], ['price_vnd_line_tax', 'Giá VND (thuế suất dòng)', (v) => fmtVnd(v)],
+    // bao-CR-493 — hai cột VND: 7% tạm tính và theo thuế suất XNK của dòng (backend tính sẵn);
+    // bao-CR-603: tệp nạp có cột VND thì lấy của tệp («từ tệp»).
+    ['price_vnd_flat', 'Giá VND (thuế NK 7%)', (v, r) => withSource(fmtVnd(v), r.price_vnd_flat_from_file, '(tính)')],
+    ['price_vnd_line_tax', 'Giá VND (thuế suất dòng)', (v, r) => withSource(fmtVnd(v), r.price_vnd_line_tax_from_file, '(tính)')],
   ] },
   { title: 'Hợp đồng & vận chuyển', fields: [
     ['contract_no', 'Số hợp đồng', txt], ['contract_date', 'Ngày hợp đồng', day],

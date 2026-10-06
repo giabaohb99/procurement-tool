@@ -118,6 +118,45 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-603 | Tra cứu thị trường: tệp nạp nhận thêm năm cột tùy chọn (Nước nhận hàng, Hoạt chất, Hàm lượng / dạng, hai cột Đơn giá quy đổi VND)
+- status: xong
+- date: 2026-10-06
+Đại ca đề xuất mở thêm năm cột tùy chọn trên tệp Excel nạp vào màn «Tra cứu thị trường»: Nước nhận hàng, Hoạt chất,
+Hàm lượng / dạng, Đơn giá quy đổi VND (thuế NK 7%) và Đơn giá quy đổi VND (theo thuế suất XNK). Không cột nào bắt
+buộc; tệp thiếu cột thì nạp y như cũ. Hoạt chất và hàm lượng trước nay hệ thống suy ra từ tên hàng; nay tệp có cột và ô
+có chữ thì lấy giá trị trong tệp, ô trống mới suy ra. Hai cột giá VND trước nay chỉ tính lúc đọc (giá hiệu lực × tỷ giá
+USD, bao-CR-493); nay tệp có thì lưu số của tệp, không có thì vẫn tính như cũ.
+
+Cách làm:
+1. Bộ đọc tệp nhận diện cột theo tiêu đề đã chuẩn hóa như trước, mỗi cột tùy chọn chấp nhận nhiều cách ghi («Hoạt chất»
+   hoặc «Hoạt chất (suy ra)»; «Hàm lượng / dạng», «Hàm lượng / dạng (suy ra)», «Hàm lượng/dạng», «Hàm lượng»; «Đơn giá
+   quy đổi VND (thuế NK 7%)», «Giá VND (thuế NK 7%)», «Đơn giá VND (thuế NK 7%)»; «Đơn giá quy đổi VND (theo thuế suất
+   XNK)», «Giá VND (thuế suất dòng)», «Đơn giá VND (theo thuế suất XNK)», «Đơn giá quy đổi VND (thuế suất XNK)»). «Nước
+   nhận hàng» vẫn là cột thứ 32 của GTT02 nhưng thiếu không còn bị từ chối lô. Chữ hoạt chất cắt ở 255 ký tự, hàm lượng
+   cắt ở 40 và viết hoa cho khớp ô lọc; ô giá VND không phải số thì cảnh báo và tính như cũ. Nhật ký lô ghi một dòng
+   «Tệp có cột tùy chọn: …» khi tệp có cột thêm.
+2. Bảng dòng hàng thêm bốn cột: hai cờ «lấy từ tệp» cho hoạt chất và hàm lượng (để nút «Gắn lại hoạt chất» không ghi đè
+   giá trị của tệp) và hai cột giá VND DECIMAL(18,2) (trống = tính lúc đọc). Bốn cột này cố ý KHÔNG vào mã băm chống
+   trùng của bao-CR-541: dòng cũ không đổi mã, và cùng một dòng hàng dù có hay không có giá VND vẫn là một dòng.
+3. Máy chủ trả thêm cờ nguồn cho từng ô; hai bản giao diện bỏ chữ «(suy ra)» khỏi tiêu đề cột «Hoạt chất» và «Hàm
+   lượng / dạng», rê chuột lên ô thấy «Lấy từ cột trong tệp nạp» hay «Suy ra từ tên hàng» / «Tính từ giá hiệu lực × tỷ
+   giá USD»; hộp chi tiết dòng ghi «(từ tệp)» / «(suy ra)» / «(tính)»; hộp Nạp dữ liệu nói rõ năm cột tùy chọn. Excel
+   xuất ra dùng đúng bốn tiêu đề bộ đọc nhận, và bộ đọc nhận thêm ngày dạng «YYYY-MM-DD» cùng phương tiện vận chuyển
+   dạng nhãn chữ, nên tệp xuất từ màn này sửa tay rồi nạp lại được (dòng đã có thì bỏ qua như cũ).
+
+Kiểm: máy chủ 171 bài hải quan xanh (11 bài mới `test_hai_quan_cot_tuy_chon_tep_nap_cr603.py` canh đủ: thiếu cột nạp như
+cũ, tệp có cột thì ưu tiên, ô trống mới suy ra, gắn lại không ghi đè, mã băm không đổi, Excel xuất ra nạp lại được); bản
+mới kiểm kiểu 0 lỗi, ESLint 0 lỗi, 93 bài khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền. Chưa chạy trên dữ liệu thật.
+Điểm chờ đại ca quyết: thuế suất XNK để tính cột VND thứ hai vẫn lấy từ cột «Thuế suất XNK» của chính dòng (tệp không
+có thì cột trống) — chưa tra biểu thuế theo mã HS.
+Mã nguồn: `backend/app/modules/customs/{constants,reader,importer,ingredient,service,model}.py`,
+`migrations/versions/hq603_hai_quan_cot_tuy_chon_tep_nap.py`, `frontend-v2/.../config/customs-line-columns.tsx`,
+`customs-line-detail-dialog.tsx`, `customs-import-dialog.tsx`, `types/customs.ts`, `frontend/src/pages/CustomsPrices.tsx`,
+`frontend/src/components/customs/{CustomsLineDetail,CustomsImportDialog}.tsx`.
+Deploy: chưa deploy.
+
+---
+
 ## bao-CR-602 | Báo cáo thực hiện trên Đơn mua hàng: khối dùng chung YCBG + ĐMH, nút bám dòng đơn, cột «Hồ sơ» trên bảng dòng hàng
 - status: xong
 - date: 2026-10-06

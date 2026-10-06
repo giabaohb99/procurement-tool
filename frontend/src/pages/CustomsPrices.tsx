@@ -44,6 +44,9 @@ import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from 
 
 
 const pct = (v: any) => (v == null || v === '' ? '' : `${v}%`)
+// bao-CR-603 — chú thích nguồn của ô (rê chuột): lấy từ cột trong tệp nạp hay hệ thống suy ra / tính.
+const sourceTitle = (value: any, fromFile: any, derived: string) =>
+  (value == null || value === '' ? undefined : fromFile ? 'Lấy từ cột trong tệp nạp' : derived)
 
 // 32 cột ĐÚNG thứ tự và tiêu đề của tệp GTT02, hiện HẾT mặc định (đại ca chốt 23/09/2026),
 // rồi hai cột suy ra ở cuối. Ai muốn gọn thì tự ẩn ở menu «Cột».
@@ -83,11 +86,17 @@ const COLS: TableColumn[] = [
   { key: 'tax_environment', label: 'Thuế môi trường', width: 115, align: 'right', cell: (r) => fmtUsd(r.tax_environment) },
   { key: 'tax_safeguard', label: 'Thuế tự vệ', width: 110, align: 'right', cell: (r) => fmtUsd(r.tax_safeguard) },
   { key: 'import_country', label: 'Nước nhận hàng', width: 110 },
-  { key: 'active_ingredient', label: 'Hoạt chất (suy ra)', width: 160 },
-  { key: 'formulation', label: 'Hàm lượng / dạng (suy ra)', width: 130 },
-  // bao-CR-493 — hai cột VND (giá hiệu lực × tỷ giá USD × thuế), cùng thứ tự với Excel xuất ra.
-  { key: 'price_vnd_flat', label: 'Giá VND (thuế NK 7%)', width: 130, align: 'right', cell: (r) => fmtVnd(r.price_vnd_flat) },
-  { key: 'price_vnd_line_tax', label: 'Giá VND (thuế suất dòng)', width: 130, align: 'right', cell: (r) => fmtVnd(r.price_vnd_line_tax) },
+  // bao-CR-603 — bỏ chữ «(suy ra)»: tệp nạp có cột thì giá trị là của tệp; rê chuột thấy nguồn.
+  { key: 'active_ingredient', label: 'Hoạt chất', width: 160,
+    cell: (r) => <span title={sourceTitle(r.active_ingredient, r.active_ingredient_from_file, 'Suy ra từ tên hàng')}>{r.active_ingredient || ''}</span> },
+  { key: 'formulation', label: 'Hàm lượng / dạng', width: 130,
+    cell: (r) => <span title={sourceTitle(r.formulation, r.formulation_from_file, 'Suy ra từ tên hàng')}>{r.formulation || ''}</span> },
+  // bao-CR-493 — hai cột VND (giá hiệu lực × tỷ giá USD × thuế), cùng thứ tự với Excel xuất ra;
+  // bao-CR-603: tệp nạp có cột VND thì lấy của tệp.
+  { key: 'price_vnd_flat', label: 'Giá VND (thuế NK 7%)', width: 130, align: 'right',
+    cell: (r) => <span title={sourceTitle(r.price_vnd_flat, r.price_vnd_flat_from_file, 'Tính từ giá hiệu lực × tỷ giá USD')}>{fmtVnd(r.price_vnd_flat)}</span> },
+  { key: 'price_vnd_line_tax', label: 'Giá VND (thuế suất dòng)', width: 130, align: 'right',
+    cell: (r) => <span title={sourceTitle(r.price_vnd_line_tax, r.price_vnd_line_tax_from_file, 'Tính từ giá hiệu lực × tỷ giá USD')}>{fmtVnd(r.price_vnd_line_tax)}</span> },
   // bao-CR-494 — nhãn tự gắn theo bộ từ khóa admin sửa được; đứng SAU hai cột VND (như bản v2).
   { key: 'product_kind', label: 'Phân loại', width: 110, cell: (r) => r.product_kind_label || '—' },
 ]

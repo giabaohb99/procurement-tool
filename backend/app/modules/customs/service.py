@@ -21,8 +21,9 @@ from sqlalchemy.orm import Session
 from app.modules.import_tool.model import ImportBatch, ImportMode, ImportModule, ImportStatus
 
 from . import reader
-from .constants import (COLUMNS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST,
-                        PRODUCT_KIND_LABELS, REGULATION_LIST_LABELS, TRANSPORT_LABELS, RegulationList)
+from .constants import (COLUMNS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST, OPTIONAL_COLUMNS,
+                        OPTIONAL_LABELS, PRODUCT_KIND_LABELS, REGULATION_LIST_LABELS, TRANSPORT_LABELS,
+                        RegulationList)
 from .model import CustomsLine, CustomsParty, CustomsRegulation, CustomsTariff
 from .search_service import build_keyword_condition
 
@@ -179,7 +180,15 @@ def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
                 v = getattr(ln, key)
                 d[key] = v.isoformat() if isinstance(v, date) else _num(v)
         d["effective_price_usd"] = _num(ln.adj_price_usd if ln.adj_price_usd is not None else ln.price_usd)
-        d["price_vnd_flat"], d["price_vnd_line_tax"] = compute_vnd_prices(ln)
+        #  bao-CR-603: giá VND LẤY TỪ TỆP thắng (từng cột một); cột nào tệp không có thì tính như
+        #  cũ. Kèm cờ nguồn để màn hình nói «từ tệp» / «suy ra» cho hoạt chất, hàm lượng, giá VND.
+        flat, line_tax = compute_vnd_prices(ln)
+        d["price_vnd_flat"] = _num(ln.price_vnd_flat) if ln.price_vnd_flat is not None else flat
+        d["price_vnd_line_tax"] = _num(ln.price_vnd_line_tax) if ln.price_vnd_line_tax is not None else line_tax
+        d["price_vnd_flat_from_file"] = ln.price_vnd_flat is not None
+        d["price_vnd_line_tax_from_file"] = ln.price_vnd_line_tax is not None
+        d["active_ingredient_from_file"] = bool(ln.active_ingredient_from_file)
+        d["formulation_from_file"] = bool(ln.formulation_from_file)
         out.append(d)
     return out
 
@@ -577,9 +586,9 @@ def export_lines_xlsx(db: Session, f: dict) -> bytes:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Tra cuu gia hai quan"
-    header = [label for _, label in COLUMNS] + ["Hoạt chất (suy ra)", "Hàm lượng / dạng (suy ra)",
-                                                 "Đơn giá quy đổi VND (thuế NK 7%)",
-                                                 "Đơn giá quy đổi VND (theo thuế suất XNK)"]
+    #  bao-CR-603: bốn cột cuối mang đúng tiêu đề bộ đọc chấp nhận (`OPTIONAL_COLUMNS`), nên tệp
+    #  xuất ra sửa tay rồi nạp lại được; bỏ chữ «(suy ra)» vì giá trị có thể lấy từ tệp.
+    header = [label for _, label in COLUMNS] + [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS]
     ws.append(header)
     for d in lines:
         row = [d.get("transport_label") if k == "transport_mode" else d.get(k) for k, _ in COLUMNS]

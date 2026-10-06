@@ -31,14 +31,42 @@ function money(key: keyof CustomsLine, header: string): DataTableColumn<CustomsL
   }
 }
 
-/** bao-CR-493 — hai cột quy đổi VND, backend tính sẵn. */
+/** bao-CR-603 — chú thích nguồn của ô: lấy từ tệp nạp hay hệ thống suy ra / tính. */
+function sourceTitle(fromFile: boolean | undefined, derived: string): string {
+  return fromFile ? 'Lấy từ cột trong tệp nạp' : derived
+}
+
+/** bao-CR-493 — hai cột quy đổi VND; bao-CR-603: tệp nạp có cột thì lấy của tệp, không thì backend tính. */
 function vnd(key: 'price_vnd_flat' | 'price_vnd_line_tax', header: string): DataTableColumn<CustomsLine> {
   return {
     key,
     header,
     width: 175,
     align: 'right',
-    cell: (row) => <span className="tabular-nums">{formatVnd(row[key])}</span>,
+    cell: (row) => {
+      const fromFile = key === 'price_vnd_flat' ? row.price_vnd_flat_from_file : row.price_vnd_line_tax_from_file
+      return (
+        <span className="tabular-nums" title={sourceTitle(fromFile, 'Tính từ giá hiệu lực × tỷ giá USD')}>
+          {formatVnd(row[key])}
+        </span>
+      )
+    },
+  }
+}
+
+/** bao-CR-603 — hoạt chất / hàm lượng: của tệp nạp (nếu có cột và ô có chữ) hoặc suy ra từ tên hàng. */
+function tagged(key: 'active_ingredient' | 'formulation', header: string, width: number, wrap = false): DataTableColumn<CustomsLine> {
+  return {
+    key,
+    header,
+    width,
+    wrap,
+    cell: (row) => {
+      const fromFile = key === 'active_ingredient' ? row.active_ingredient_from_file : row.formulation_from_file
+      return (
+        <span title={row[key] ? sourceTitle(fromFile, 'Suy ra từ tên hàng') : undefined}>{row[key] ?? ''}</span>
+      )
+    },
   }
 }
 
@@ -134,8 +162,9 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
   money('tax_environment', 'Thuế môi trường'),
   money('tax_safeguard', 'Thuế tự vệ'),
   plain('import_country', 'Nước nhận hàng', 140),
-  plain('active_ingredient', 'Hoạt chất (suy ra)', 160, true),
-  plain('formulation', 'Hàm lượng / dạng (suy ra)', 195),
+  //  bao-CR-603 — bỏ chữ «(suy ra)»: tệp nạp có cột thì giá trị là của tệp; rê chuột thấy nguồn.
+  tagged('active_ingredient', 'Hoạt chất', 160, true),
+  tagged('formulation', 'Hàm lượng / dạng', 150),
   //  bao-CR-493 — hai cột VND đứng SAU hai cột suy ra, cùng thứ tự với tệp Excel xuất ra;
   //  bài kiểm cột giữ đúng thứ tự GTT02 phía trước.
   vnd('price_vnd_flat', 'Giá VND (thuế NK 7%)'),

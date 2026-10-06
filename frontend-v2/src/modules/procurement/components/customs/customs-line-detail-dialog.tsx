@@ -41,6 +41,11 @@ function percent(value: number | null): string {
   return value === null ? '—' : `${value}%`
 }
 
+/** bao-CR-603 — giá trị kèm nguồn: «(từ tệp)» khi lấy từ cột tùy chọn của tệp nạp, không thì «(suy ra)» / «(tính)». */
+function withSource(value: string, fromFile: boolean | undefined, derivedNote: string): string {
+  return value === '—' ? value : `${value} ${fromFile ? '(từ tệp)' : derivedNote}`
+}
+
 const GROUPS: { title: string; fields: DetailField[] }[] = [
   {
     title: 'Tờ khai',
@@ -65,8 +70,16 @@ const GROUPS: { title: string; fields: DetailField[] }[] = [
     fields: [
       { key: 'product_name', label: 'Tên hàng', format: (l) => text(l.product_name) },
       { key: 'hs_code', label: 'Mã HS', format: (l) => text(l.hs_code) },
-      { key: 'active_ingredient', label: 'Hoạt chất (suy ra)', format: (l) => text(l.active_ingredient) },
-      { key: 'formulation', label: 'Hàm lượng / dạng (suy ra)', format: (l) => text(l.formulation) },
+      {
+        key: 'active_ingredient',
+        label: 'Hoạt chất',
+        format: (l) => withSource(text(l.active_ingredient), l.active_ingredient_from_file, '(suy ra)'),
+      },
+      {
+        key: 'formulation',
+        label: 'Hàm lượng / dạng',
+        format: (l) => withSource(text(l.formulation), l.formulation_from_file, '(suy ra)'),
+      },
       {
         key: 'quantity',
         label: 'Lượng',
@@ -89,11 +102,16 @@ const GROUPS: { title: string; fields: DetailField[] }[] = [
       { key: 'fx_rate', label: 'Tỷ giá nguyên tệ', format: (l) => formatUsd(l.fx_rate) },
       { key: 'usd_rate', label: 'Tỷ giá USD', format: (l) => formatUsd(l.usd_rate) },
       //  bao-CR-493 — hai cột VND theo yêu cầu phòng Thu mua: 7% tạm tính và theo thuế suất dòng.
-      { key: 'price_vnd_flat', label: 'Đơn giá VND (thuế NK 7%)', format: (l) => formatVnd(l.price_vnd_flat) },
+      //  bao-CR-603 — tệp nạp có cột VND thì lấy của tệp («từ tệp»), không thì tính.
+      {
+        key: 'price_vnd_flat',
+        label: 'Đơn giá VND (thuế NK 7%)',
+        format: (l) => withSource(formatVnd(l.price_vnd_flat), l.price_vnd_flat_from_file, '(tính)'),
+      },
       {
         key: 'price_vnd_line_tax',
         label: 'Đơn giá VND (theo thuế suất XNK)',
-        format: (l) => formatVnd(l.price_vnd_line_tax),
+        format: (l) => withSource(formatVnd(l.price_vnd_line_tax), l.price_vnd_line_tax_from_file, '(tính)'),
       },
     ],
   },

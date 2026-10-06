@@ -40,6 +40,12 @@ export type CustomsLine = {
   partner_id: number | null
   active_ingredient: string
   formulation: string
+  /** bao-CR-603 — true: giá trị lấy từ cột tùy chọn của tệp nạp; false: suy ra từ tên hàng. */
+  active_ingredient_from_file?: boolean
+  formulation_from_file?: boolean
+  /** bao-CR-603 — true: giá VND lấy từ tệp nạp; false: tính từ giá hiệu lực × tỷ giá. */
+  price_vnd_flat_from_file?: boolean
+  price_vnd_line_tax_from_file?: boolean
   /** bao-CR-494 — 0 chưa gắn · 1 Thành phẩm · 2 Nguyên liệu (ProductKind backend). */
   product_kind?: number
   product_kind_label?: string

@@ -108,6 +108,16 @@ class CustomsLine(Base):
     #  hàm lượng / dạng bào chế ~93%. Danh mục đổi thì chạy lại `retag_all`.
     active_ingredient: Mapped[str] = mapped_column(String(255), default="", index=True)
     formulation: Mapped[str] = mapped_column(String(40), default="")
+    #  bao-CR-603: tệp nạp có cột «Hoạt chất» / «Hàm lượng / dạng» và ô có chữ thì lấy của tệp,
+    #  cờ = 1 để `retag_all` KHÔNG ghi đè khi danh mục đổi; ô trống hay tệp không có cột thì suy
+    #  ra như cũ (cờ = 0).
+    active_ingredient_from_file: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    formulation_from_file: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    #  bao-CR-603: hai cột «Đơn giá quy đổi VND» LẤY TỪ TỆP (tùy chọn). NULL = tệp không có cột
+    #  hoặc ô trống → lúc đọc tính như cũ (`service.compute_vnd_prices`). Không vào mã băm chống
+    #  trùng: dòng cũ không đổi mã, và cùng một dòng hàng có hay không có giá VND vẫn là một dòng.
+    price_vnd_flat: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    price_vnd_line_tax: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
     #  bao-CR-494: nhãn THÀNH PHẨM / NGUYÊN LIỆU (`ProductKind`), suy từ tên hàng theo bộ từ
     #  khóa admin sửa được (`tab_customs_kind_keyword`). Gắn lúc nạp và ở `retag_all`; 0 = chưa gắn.
     product_kind: Mapped[int] = mapped_column(SmallInteger, default=0, index=True)
