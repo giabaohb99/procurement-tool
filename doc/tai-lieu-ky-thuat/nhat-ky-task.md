@@ -12286,3 +12286,18 @@ nhóm C «Trợ lý cá nhân trên nền công ty, token người dùng tự tr
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/04-danh-sach-tinh-nang.md (nhóm C, phase 7b) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
 Deploy: dev 06/10, erp-v2 57126e11 (Agent 1 gộp và dựng lại phía VPS); prod giữ lại.
+
+## ai-CR-095 | Sổ ghi nhớ cá nhân hai tầng cho bot, tin nhắn có dấu công ty hay cá nhân
+- status: xong
+- date: 2026-10-06
+Đại ca chốt hướng trợ lý cá nhân và chọn mô hình bộ nhớ ba phần theo khung Letta; đợt này làm hai phần đầu. Phần lõi:
+mỗi người một bản ghi văn bản Markdown bốn mục (bản thân, sở thích, cách làm việc, đã chốt), trần 8.000 ký tự, nạp
+nguyên văn vào mọi câu hỏi của người đó, có bộ đệm trong tiến trình 10 phút. Phần kho: ghi chú dài không trần, đánh
+chỉ mục vector trong bộ sưu tập riêng có gắn mã người, mỗi câu hỏi chỉ lấy năm đoạn liên quan của đúng người đó; chưa
+có ghi chú thì không tốn lượt nhúng. Người dùng dạy bằng «nhớ: …», bỏ bằng «quên: …», lưu dài bằng «ghi chú: …», xem
+bằng «sổ nhớ», lấy tệp bằng «xuất sổ nhớ»; bot cũng tự ghi khi nghe được điều ổn định và báo một dòng «Em ghi nhớ».
+Bot từ chối ghi mật khẩu, khóa, số thẻ, kể cả vào sổ thuật ngữ. Thêm cột đánh dấu tin nhắn là việc công ty hay việc
+cá nhân, do bộ phân loại ý định gán; việc sửa mã, sửa dữ liệu luôn là công ty. Bốn công cụ mới cho Trợ lý, mọi truy
+vấn lọc cứng theo người gọi, có bài kiểm chứng minh người này không đọc được sổ người kia.
+
+Mã nguồn: backend/app/modules/agent_hub/personal_memory.py · assistant/tools/personal_tool.py · agent_hub/service.py (_memory_by_text, answer_question) · agent_hub/manager.py (scope) · migration pmem01

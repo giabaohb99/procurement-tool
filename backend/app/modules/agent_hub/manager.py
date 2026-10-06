@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.modules.assistant.provider.base import ChatMessage, ChatResult, ProviderError
 from app.modules.assistant.provider.gemini import GeminiProvider
 
-from .constants import BOT_NAME
+from .constants import BOT_NAME, SCOPE_COMPANY, SCOPE_PERSONAL
 
 log = logging.getLogger("app.agent_hub.manager")
 
@@ -430,12 +430,16 @@ Vài ca dễ nhầm:
 Nếu có MẠCH TRƯỚC ĐÓ thì phải đọc nó trước khi phán: một tin ngắn cụt đứng ngay sau
 câu hỏi của bot thường là câu nối tiếp (-> hoi), không phải mo_ho.
 
+Mọi kết quả kèm thêm `scope`: "ca_nhan" khi tin nói về ĐỜI RIÊNG của người nhắn — ăn uống, đi lại, gia đình, sức
+khỏe, mua sắm cá nhân, lịch riêng, sở thích, chuyện ngoài công việc, hay kiến thức chung không dính công ty;
+"cong_ty" khi dính ERP, dữ liệu, chứng từ, phần mềm, nhân sự, nhà cung cấp, việc công ty. Không chắc thì "cong_ty".
+
 Nghi ngờ thì chọn "mo_ho". Đoán bừa tốn hơn hỏi lại một câu: đoán thành "viec" thì
 người ta chờ một câu trả lời không bao giờ tới, đoán thành "hoi" thì việc cần làm
 biến mất khỏi sổ.
 
 CHỈ trả JSON, không thêm chữ nào ngoài JSON:
-{"intent": "hoi", "reason": "lý do ngắn bằng tiếng Việt"}
+{"intent": "hoi", "scope": "ca_nhan", "reason": "lý do ngắn bằng tiếng Việt"}
 hoặc với thao tác:
 {"intent": "thao_tac", "action": "gop", "task": "AI-0007", "when": "", "detail": "",
  "confident": true, "reason": "..."}
@@ -490,6 +494,10 @@ def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, 
         log.warning("agent_hub: phân loại trả ý định lạ %r, coi như mập mờ", intent)
         intent = INTENT_UNSURE
     out = {"intent": intent, "reason": str(data.get("reason") or "")[:200]}
+    #  ai-CR-095 (C-06): dấu công ty / cá nhân. Việc sửa mã, sửa dữ liệu, thao tác trên việc LUÔN là công ty.
+    personal = str(data.get("scope") or "").strip().lower() == "ca_nhan" and intent in (INTENT_ASK, INTENT_RESEARCH,
+                                                                                         INTENT_UNSURE)
+    out["scope"] = SCOPE_PERSONAL if personal else SCOPE_COMPANY
     if intent == INTENT_ACT:
         action = ACTIONS.get(str(data.get("action") or "").strip().lower(), "")
         if not action:

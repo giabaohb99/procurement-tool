@@ -51,6 +51,8 @@ from .constants import (
     ACT_DEPLOY_TIME,
     ACT_FILE,
     ACT_PATCH_ANSWER,
+    SCOPE_COMPANY,
+    SCOPE_PERSONAL,
     ACT_PATCH_Q,
     ACT_PLAN_ANSWER,
     ACT_PROPOSAL,
@@ -121,6 +123,7 @@ from .constants import (
     TASK_STATUS_LABELS,
     estimate_cost_usd,
 )
+from . import personal_memory
 from .model import AgentCursor, AgentMessage, AgentRun, AgentRunner, AgentTask, AgentTaskItem
 
 log = logging.getLogger("app.agent_hub")
@@ -802,7 +805,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
-            or ops.handle_text(db, chat_id, row, text) or _glossary_by_text(db, chat_id, row, text)
+            or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
+            or _glossary_by_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
@@ -816,6 +820,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
 
     if _is_follow_up(db, chat_id, row):
         row.action = ACT_ASKED
+        row.scope = _last_scope(db, chat_id, row.id)      # ai-CR-095: câu nối tiếp theo dấu của câu trước
         answer_question(db, chat_id, text, before_id=row.id)
         return
     if not user_keys.active_key():
@@ -834,6 +839,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         _ask_intent_choice(db, chat_id, row)
         return
     finish_run(db, run, result=result)
+    row.scope = int(data.get("scope") or SCOPE_COMPANY)     # ai-CR-095 (C-06)
 
     if data["intent"] == manager.INTENT_ASK:
         row.action = ACT_ASKED
@@ -1752,6 +1758,90 @@ def _gloss_decide(db: Session, chat_id: str, pid: int, accept: bool, uid: int) -
     db.commit()
 
 
+_MEM_TEACH = re.compile(r"^nhớ\s*:\s*(?P<line>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
+_MEM_FORGET = re.compile(r"^quên\s*:\s*(?P<needle>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
+_MEM_NOTE = re.compile(r"^ghi chú\s*:\s*(?P<body>.+)$", re.IGNORECASE | re.DOTALL)
+_MEM_SHOW = re.compile(r"^(?:sổ nhớ|sổ ghi nhớ|em nhớ gì về (?:anh|tôi|em))\s*[?.!]*$", re.IGNORECASE)
+_MEM_EXPORT = re.compile(r"^xuất sổ nhớ\s*[.!]*$", re.IGNORECASE)
+
+
+def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Sổ ghi nhớ riêng (ai-CR-095, C-02): «nhớ: anh ở Cần Thơ» · «quên: Cần Thơ» · «ghi chú: …» · «sổ nhớ» · «xuất sổ nhớ».
+    Mọi chat đã đăng nhập đều dùng được; sổ là của tài khoản ERP gắn với chat, không phải của chat."""
+    raw = (text or "").strip()
+    m_teach, m_forget, m_note = _MEM_TEACH.match(raw), _MEM_FORGET.match(raw), _MEM_NOTE.match(raw)
+    if not (m_teach or m_forget or m_note or _MEM_SHOW.match(raw) or _MEM_EXPORT.match(raw)):
+        return False
+    if m_teach and _GLOSS_TEACH.match(raw) and telegram.is_allowed_chat(chat_id):
+        return False    # «nhớ: nhà máy = phòng SX-TM» dạng «X là/= Y» ở chat đại ca vẫn là dạy THUẬT NGỮ công ty
+    row.action = ACT_COMMAND
+    row.scope = SCOPE_PERSONAL
+    esc = telegram.esc
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None:
+        reply(db, chat_id, "Chat này chưa đăng nhập tài khoản ERP nên chưa có sổ riêng. " + _LINK_HELP, scope=SCOPE_PERSONAL)
+        return True
+    uid = link.user_id
+    if m_teach:
+        out = personal_memory.remember(db, uid, m_teach.group("line"))
+        db.commit()
+        if not out.get("ok"):
+            reply(db, chat_id, f"Em chưa ghi: {esc(out['message'])}.", scope=SCOPE_PERSONAL)
+        elif out.get("duplicate"):
+            reply(db, chat_id, "Sổ đã có dòng này rồi.", scope=SCOPE_PERSONAL)
+        else:
+            extra = f"\n<i>{esc(out['warning'])}</i>" if out.get("warning") else ""
+            reply(db, chat_id, f"Em ghi nhớ ({esc(out['label'])}): {esc(m_teach.group('line').strip(' .'))}\n"
+                               f"<i>Sai thì nhắn «quên: …». Xem cả sổ: «sổ nhớ».</i>{extra}", scope=SCOPE_PERSONAL)
+        return True
+    if m_forget:
+        removed = personal_memory.forget(db, uid, m_forget.group("needle"))
+        db.commit()
+        reply(db, chat_id, ("Đã quên: " + " · ".join(esc(x) for x in removed)) if removed
+              else "Trong sổ không có dòng nào khớp.", scope=SCOPE_PERSONAL)
+        return True
+    if m_note:
+        body = m_note.group("body").strip()
+        title, _, rest = body.partition("|")
+        if not rest.strip():
+            title, rest = "", body
+        out = personal_memory.add_note(db, uid, title.strip(), rest.strip())
+        db.commit()
+        if out.get("ok"):
+            reply(db, chat_id, f"Đã lưu ghi chú <b>{esc(out['title'])}</b> (#{out['note_id']}, {out['chars']} ký tự) vào kho riêng."
+                               + ("" if out.get("indexed") else "\n<i>Chưa đánh chỉ mục tìm theo nghĩa; vẫn tìm được theo tiêu đề.</i>"),
+                  scope=SCOPE_PERSONAL)
+        else:
+            reply(db, chat_id, f"Em chưa lưu: {esc(out['message'])}.", scope=SCOPE_PERSONAL)
+        return True
+    if _MEM_EXPORT.match(raw):
+        data = personal_memory.export_md(db, uid).encode("utf-8")
+        telegram.send_document(chat_id, "so-ghi-nho.md", data, caption="Sổ ghi nhớ riêng của đại ca")
+        return True
+    core = personal_memory.load_core(db, uid)
+    chars, cap = personal_memory.usage(db, uid)
+    notes = personal_memory.list_notes(db, uid, limit=20)
+    body = f"<b>SỔ GHI NHỚ RIÊNG</b> · {chars}/{cap} ký tự\n\n"
+    body += esc(core) if core else "<i>Chưa có gì. Dạy em bằng «nhớ: anh ở Cần Thơ».</i>"
+    if notes:
+        body += "\n\n<b>Kho ghi chú</b> (" + str(len(notes)) + "):\n" + "\n".join(
+            f"• #{n.id} {esc(n.title)} · {n.chars} ký tự" for n in notes)
+    body += "\n\n<i>«nhớ: …» thêm · «quên: …» bớt · «ghi chú: tiêu đề | nội dung» vào kho · «xuất sổ nhớ» lấy tệp.</i>"
+    reply(db, chat_id, body, scope=SCOPE_PERSONAL)
+    return True
+
+
+def _scope_of(db: Session, msg_id: int) -> int:
+    row = db.get(AgentMessage, int(msg_id or 0)) if msg_id else None
+    return int(row.scope or 0) if row is not None else 0
+
+
+def _last_scope(db: Session, chat_id: str, before_id: int) -> int:
+    prev = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN,
+                                                AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
+    return int(prev.scope or 0) if prev is not None else 0
+
+
 def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """«ghi nhớ: nhà máy là phòng Dego Organic» · «thuật ngữ» · «quên thuật ngữ nhà máy». Chỉ chat đại ca.
     Dạy là LÀM LUÔN (policy: việc có hoàn tác ngay bằng một câu), trả lời kèm cách xóa."""
@@ -1821,6 +1911,10 @@ def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     if not m or raw.rstrip().endswith("?"):
         return False
     row.action = ACT_COMMAND
+    if personal_memory.is_secret(raw):
+        #  ai-CR-095: sổ thuật ngữ dùng chung cho mọi người — mật khẩu / khóa / số thẻ càng không được vào đây.
+        reply(db, chat_id, "Em không ghi mật khẩu, khóa, số thẻ hay số tài khoản vào sổ thuật ngữ.")
+        return True
     try:
         item, old = glossary.upsert(db, m.group("term"), m.group("meaning"), uid)
     except ValueError as e:
@@ -2941,9 +3035,13 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         #  `system` của người gọi chỉ CHÈN THÊM vào cuối, không đè định nghĩa và rào an toàn của
         #  Trợ lý AI; nên web vẫn là «Trợ lý AI», chỉ kênh Telegram mới là Đậu Đậu (ai-CR-016).
         #  ai-CR-053: `provider="agent_gemini"` = khóa của NGƯỜI đang chat, không phải khóa công ty của web.
+        #  ai-CR-095 (C-02): sổ ghi nhớ riêng của NGƯỜI ĐÃ ĐĂNG NHẬP chat này — không phải của tài khoản bot mặc định.
+        link = chat_link.get_active_link(db, chat_id)
+        memory_block = personal_memory.prompt_block(db, link.user_id if link is not None else 0, question)
         result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
                                        system=f"{BOT_PERSONA} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
-                                              f"{_account_fact(db, chat_id, user)}")
+                                              f"{_account_fact(db, chat_id, user)}"
+                                              + (f"\n\n{memory_block}" if memory_block else ""))
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         reply(db, chat_id, f"{BOT_NAME} chưa trả lời được: {telegram.esc(str(e)[:300])}")
@@ -2960,7 +3058,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         db.commit()
     else:
         reply(db, chat_id, result.get("text") or "(không có câu trả lời)",
-              markdown=True, action=ACT_ANSWER)
+              markdown=True, action=ACT_ANSWER, scope=_scope_of(db, before_id))
     deliver_tool_results(db, chat_id, user, tool_calls)
 
 
@@ -4068,7 +4166,7 @@ def send_task_list(db: Session, chat_id: str) -> None:
 # ---------------------------------------------------------------------------
 def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
           buttons: list[tuple[str, str]] | None = None,
-          markdown: bool = False, action: str = "") -> None:
+          markdown: bool = False, action: str = "", scope: int = 0) -> None:
     """Gửi Telegram VÀ ghi vào sổ (luật F3). Gửi hỏng thì vẫn ghi, kèm lý do.
 
     `text` mặc định là HTML đã thoát sẵn (các câu của chính bot). `markdown=True` cho
@@ -4082,13 +4180,13 @@ def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
     except telegram.TelegramError as e:
         log.exception("agent_hub: gửi Telegram hỏng")
         mid, text = 0, f"[KHÔNG GỬI ĐƯỢC: {e}] {text}"
-    log_message(db, DIR_OUT, chat_id, mid, text, task_id=task_id, action=action)
+    log_message(db, DIR_OUT, chat_id, mid, text, task_id=task_id, action=action, scope=scope)
 
 
 def log_message(db: Session, direction: int, chat_id: str, tg_message_id: int,
-                body: str, *, action: str = "", task_id: int = 0) -> AgentMessage:
+                body: str, *, action: str = "", task_id: int = 0, scope: int = 0) -> AgentMessage:
     row = AgentMessage(task_id=task_id, direction=direction, chat_id=chat_id,
-                       tg_message_id=tg_message_id, body=body, action=action)
+                       tg_message_id=tg_message_id, body=body, action=action, scope=scope)
     db.add(row)
     db.flush()
     return row

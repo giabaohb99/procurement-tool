@@ -7137,3 +7137,194 @@ def test_lam_di_khi_bot_dang_sua_thi_bao_dang_lam(db, bot):
     task = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_CODE)
     service.start_continue(db, "12345", "", task)
     assert "đang làm rồi" in sent[-1] and task.status == service.ST_CODE
+
+# ---------------------------------------------------------------------------
+# ai-CR-095 — sổ ghi nhớ cá nhân hai tầng (C-02) + dấu công ty / cá nhân trên tin (C-06)
+# ---------------------------------------------------------------------------
+def test_so_nho_loi_nho_quen_trung_bi_mat_va_tran(db):
+    from app.modules.agent_hub import personal_memory as pm
+
+    pm.clear_cache()
+    out = pm.remember(db, 7, "anh ở Cần Thơ, Ninh Kiều")
+    assert out["ok"] and out["section"] == "ban_than"
+    assert pm.remember(db, 7, "không ăn cay")["section"] == "so_thich"
+    assert pm.remember(db, 7, "trả lời ngắn gọn, đừng hỏi lại")["section"] == "cach_lam_viec"
+    assert pm.remember(db, 7, "từ nay họp sáng thứ hai")["section"] == "da_chot"
+    #  Trùng (không dấu, khác hoa thường) thì không thêm dòng thứ hai.
+    dup = pm.remember(db, 7, "Anh o Can Tho, Ninh Kieu")
+    assert dup["ok"] and dup.get("duplicate")
+    assert pm.load_core(db, 7).count("Cần Thơ") == 1
+    #  Bí mật không bao giờ vào sổ, dù người dùng tự nhắn.
+    for s in ("mật khẩu wifi là abc123", "api key sk-xxxx", "số thẻ 4111111111111111"):
+        assert not pm.remember(db, 7, s)["ok"]
+    assert "abc123" not in pm.load_core(db, 7)
+    #  Quên theo cụm không dấu.
+    assert pm.forget(db, 7, "can tho") == ["anh ở Cần Thơ, Ninh Kiều"]
+    assert "Cần Thơ" not in pm.load_core(db, 7)
+    #  Trần: dòng dài quá bị từ chối; sổ đầy bị từ chối, sổ cũ giữ nguyên.
+    assert not pm.remember(db, 7, "x" * (pm.LINE_MAX + 1))["ok"]
+    for i in range(40):
+        pm.remember(db, 7, f"dòng thử {i} " + "y" * 190)
+    before = pm.load_core(db, 7)
+    full = pm.remember(db, 7, "một dòng nữa " + "z" * 200)
+    assert not full["ok"] and "đầy" in full["message"] and pm.load_core(db, 7) == before
+
+
+def test_so_nho_khong_lan_nguoi_khac_va_bo_dem(db, monkeypatch):
+    from app.modules.agent_hub import personal_memory as pm
+
+    pm.clear_cache()
+    pm.remember(db, 1, "ở Cần Thơ")
+    pm.remember(db, 2, "ở Hà Nội")
+    db.commit()
+    assert "Hà Nội" not in pm.prompt_block(db, 1) and "Cần Thơ" in pm.prompt_block(db, 1)
+    assert "Cần Thơ" not in pm.prompt_block(db, 2)
+    assert pm.prompt_block(db, 0) == "" and pm.load_core(db, 0) == ""
+    #  Bộ đệm: đọc lần hai không chạm DB; ghi thì xóa đệm ngay.
+    calls = []
+    real = pm._row
+    monkeypatch.setattr(pm, "_row", lambda d, u: calls.append(u) or real(d, u))
+    pm.load_core(db, 1)
+    pm.load_core(db, 1)
+    assert calls == []
+    pm.remember(db, 1, "thích cà phê")
+    pm.load_core(db, 1)
+    assert calls.count(1) >= 1 and "cà phê" in pm.load_core(db, 1)
+
+
+def test_kho_ghi_chu_vector_theo_nguoi(db, monkeypatch):
+    """Kho tầng 2: nhúng + lưu Qdrant giả theo payload user_id; tìm chỉ ra ghi chú của đúng người."""
+    from app.modules.agent_hub import personal_memory as pm
+
+    points: dict[str, dict] = {}
+
+    class FakeEmb:
+        def embed(self, texts, *, is_query=False):
+            return [[1.0, 0.0] if "thép" in t else [0.0, 1.0] for t in texts]
+
+    class FakeHit:
+        def __init__(self, payload, score):
+            self.payload, self.score = payload, score
+
+    class FakeClient:
+        def search(self, *, collection_name, query_vector, limit, with_payload, query_filter):
+            uid = query_filter.must[0].match.value
+            out = []
+            for p in points.values():
+                if p["payload"]["user_id"] != uid:
+                    continue
+                score = sum(a * b for a, b in zip(query_vector, p["vector"]))
+                out.append(FakeHit(p["payload"], score))
+            return sorted(out, key=lambda h: -h.score)[:limit]
+
+        def delete(self, **kw):
+            pass
+
+    class FakeStore:
+        client = FakeClient()
+
+        def ensure_collection(self):
+            pass
+
+        def upsert(self, pts):
+            for p in pts:
+                points[p["id"]] = p
+
+    monkeypatch.setattr(pm, "_embedder", lambda: FakeEmb())
+    monkeypatch.setattr(pm, "_store", lambda: FakeStore())
+    a = pm.add_note(db, 1, "Giá thép", "Hòa Phát báo giá thép 18.500đ/kg tháng 10")
+    b = pm.add_note(db, 2, "Giá thép bên B", "thép bên người 2")
+    db.commit()
+    assert a["ok"] and a["indexed"] and b["ok"]
+    hits = pm.search_notes(db, 1, "giá thép tháng này")
+    assert [h["note_id"] for h in hits] == [a["note_id"]]
+    assert "Hòa Phát" in pm.prompt_block(db, 1, "giá thép")
+    assert "Hòa Phát" not in pm.prompt_block(db, 2, "giá thép")
+    #  Quên ghi chú: không còn trong danh sách, người khác không quên hộ được.
+    assert not pm.forget_note(db, 2, a["note_id"])
+    assert pm.forget_note(db, 1, a["note_id"]) and pm.list_notes(db, 1) == []
+    #  Vector hỏng → rơi về tìm theo tiêu đề, vẫn đúng người.
+    monkeypatch.setattr(pm, "_embedder", lambda: (_ for _ in ()).throw(RuntimeError("qdrant chết")))
+    assert [h["note_id"] for h in pm.search_notes(db, 2, "giá thép")] == [b["note_id"]]
+    assert pm.search_notes(db, 1, "giá thép") == []
+
+
+def test_lenh_nho_quen_so_nho_tren_telegram(db, bot, seed):
+    from app.modules.agent_hub import personal_memory as pm
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, asked = bot
+    pm.clear_cache()
+    #  Chưa đăng nhập: không có sổ riêng.
+    service.handle_message(db, _msg("nhớ: anh ở Cần Thơ"))
+    assert "chưa đăng nhập" in sent[-1]
+    _owner_link(db, seed.u_req_id)
+    service.handle_message(db, _msg("nhớ: anh ở Cần Thơ"))
+    assert "Em ghi nhớ" in sent[-1] and "Cần Thơ" in sent[-1]
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert row.action == service.ACT_COMMAND and row.scope == service.SCOPE_PERSONAL and asked == []
+    service.handle_message(db, _msg("nhớ: mật khẩu wifi 1234"))
+    assert "không ghi mật khẩu" in sent[-1]
+    service.handle_message(db, _msg("nhớ: mật khẩu wifi là 1234"))     # dạng thuật ngữ cũng không nhận bí mật
+    assert "không ghi mật khẩu" in sent[-1]
+    service.handle_message(db, _msg("sổ nhớ"))
+    assert "SỔ GHI NHỚ RIÊNG" in sent[-1] and "Cần Thơ" in sent[-1]
+    service.handle_message(db, _msg("quên: cần thơ"))
+    assert sent[-1].startswith("Đã quên")
+    service.handle_message(db, _msg("quên: không có"))
+    assert "không có dòng nào" in sent[-1]
+    #  «nhớ X là Y» (không dấu hai chấm) vẫn là dạy thuật ngữ công ty, không phải sổ riêng.
+    assert pm.load_core(db, seed.u_req_id) == ""
+
+
+def test_tin_ca_nhan_duoc_dong_dau_cong_ty_hay_ca_nhan(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import manager
+    from app.modules.agent_hub.model import AgentMessage
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, asked = bot
+    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
+    real_run_intent = manager.run_intent
+    monkeypatch.setattr(service.manager, "run_intent",
+                        lambda text, **kw: ({"intent": "hoi", "scope": service.SCOPE_PERSONAL, "reason": ""}, ket_qua))
+    service.handle_message(db, _msg("chỗ ăn chiều nay"))
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert row.scope == service.SCOPE_PERSONAL and asked == ["chỗ ăn chiều nay"]
+    #  Bộ phân loại: việc sửa mã LUÔN là công ty dù model ghi ca_nhan; câu hỏi thường thì theo model.
+    monkeypatch.setattr(manager, "get_provider", lambda: type("P", (), {"ask": lambda self, *a, **k: ket_qua})())
+    monkeypatch.setattr(manager, "parse_json", lambda t: {"intent": "viec", "scope": "ca_nhan"})
+    assert real_run_intent("sửa màn đơn hàng")[0]["scope"] == service.SCOPE_COMPANY
+    monkeypatch.setattr(manager, "parse_json", lambda t: {"intent": "hoi", "scope": "ca_nhan"})
+    assert real_run_intent("quán cà phê gần đây")[0]["scope"] == service.SCOPE_PERSONAL
+    monkeypatch.setattr(manager, "parse_json", lambda t: {"intent": "hoi"})
+    assert real_run_intent("đơn PO1 sao chưa duyệt")[0]["scope"] == service.SCOPE_COMPANY
+
+
+def test_cau_tra_loi_nap_so_rieng_cua_nguoi_da_dang_nhap(db, seed, monkeypatch):
+    """Không dùng fixture `bot` (nó thay `answer_question`). Sổ riêng của người đã /dangnhap đi vào system."""
+    from app.modules.agent_hub import personal_memory as pm, service
+    from app.modules.assistant import service as assistant_service
+
+    pm.clear_cache()
+    sent: list[str] = []
+    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: sent.append(text) or 1)
+    monkeypatch.setattr(service.telegram, "send_chat_action", lambda *a, **kw: None)
+    monkeypatch.setattr(service.user_keys, "active_key", lambda: "k")
+    _owner_link(db, seed.u_req_id)
+    pm.remember(db, seed.u_req_id, "ở Cần Thơ, Ninh Kiều")
+    db.commit()
+    seen: dict = {}
+
+    def fake_ask(question, *, db, user, history=None, system="", **kw):
+        seen["system"], seen["user"] = system, user.id
+        return {"text": "Quanh Ninh Kiều có quán X."}
+
+    monkeypatch.setattr(assistant_service, "ask", fake_ask)
+    moi = service.log_message(db, service.DIR_IN, "12345", 3, "chỗ ăn chiều", action="hoi",
+                              scope=service.SCOPE_PERSONAL)
+    service.answer_question(db, "12345", "chỗ ăn chiều", before_id=moi.id)
+    assert seen["user"] == seed.u_req_id
+    assert "SỔ GHI NHỚ RIÊNG" in seen["system"] and "Cần Thơ" in seen["system"]
+    out = db.query(service.AgentMessage).filter_by(direction=service.DIR_OUT).order_by(
+        service.AgentMessage.id.desc()).first()
+    assert out.scope == service.SCOPE_PERSONAL and sent[-1].startswith("Quanh Ninh Kiều")

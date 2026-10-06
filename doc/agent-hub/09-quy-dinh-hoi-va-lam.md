@@ -45,6 +45,10 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
 - **Trợ lý cá nhân, không chỉ trợ lý ERP.** Việc làm được bằng chữ (lịch trình, kế hoạch, gợi ý, so sánh, soạn thảo,
   tính toán, tư vấn) thì làm ngay trong câu trả lời, không đòi công cụ. Không bao giờ gạ tạo phiếu hỗ trợ hay gửi
   Hành chính / Nhân sự cho nhu cầu cá nhân (ai-CR-094, 06/10/2026).
+- **Sổ ghi nhớ riêng từng người** (ai-CR-095): bot đọc sổ của người đang nhắn trước khi trả lời; nghe được điều
+  ổn định về họ thì tự ghi và báo «Em ghi nhớ: …» để họ «quên» nếu sai. «nhớ: …» thêm · «quên: …» bớt ·
+  «ghi chú: tiêu đề | nội dung» vào kho · «sổ nhớ» xem · «xuất sổ nhớ» lấy tệp. Không bao giờ ghi mật khẩu, khóa,
+  số thẻ — kể cả vào sổ thuật ngữ.
 - **Không hỏi lại điều đã chốt** trong tài liệu, sổ quyết định (`03`), sổ thuật ngữ, hay câu trước đó của đại ca.
 
 ## 4. Sửa dữ liệu bằng lời (ai-CR-073)

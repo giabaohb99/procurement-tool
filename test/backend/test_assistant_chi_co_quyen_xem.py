@@ -263,3 +263,20 @@ def test_de_xuat_khong_ghi_du_lieu_nghiep_vu(db, seed, tool_name):
     assert out.get("proposed") or out.get("recorded"), out
     assert glossary.load(db) == []
     assert {r.skey for r in db.query(Setting)} - before <= {"assistant_glossary_pending", "assistant_feature_gaps"}
+
+
+def test_so_nho_tool_khong_lan_nguoi_khac(db, seed):
+    """ai-CR-095: tool sổ ghi nhớ chạy đúng người gọi — không có tham số chọn người, nên không với sang sổ người khác."""
+    from app.modules.agent_hub import personal_memory as pm
+
+    pm.clear_cache()
+    a, b = db.get(User, seed.u_req_id), db.get(User, seed.u_nstm_id)
+    out = T.run_tool(db, a, "remember_fact", {"text": "ở Cần Thơ"})
+    assert out["ok"] and out["section"] == "ban_than"
+    assert "Cần Thơ" in pm.load_core(db, a.id) and pm.load_core(db, b.id) == ""
+    assert T.run_tool(db, b, "forget_fact", {"text": "Cần Thơ"})["ok"] is False
+    assert "Cần Thơ" in pm.load_core(db, a.id)
+    assert T.run_tool(db, a, "remember_fact", {"text": "mật khẩu abc"})["ok"] is False
+    for name in ("remember_fact", "forget_fact", "save_note", "search_notes"):
+        params = {d.name: d for d in T.tool_defs()}[name].parameters["properties"]
+        assert "user_id" not in params and "user" not in params

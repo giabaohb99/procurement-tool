@@ -88,6 +88,10 @@ MERGED_BY_LABELS = {
 # ---------------------------------------------------------------------------
 DIR_OUT = 1  # Bot gửi đi
 DIR_IN = 2   # Đại ca gửi tới
+#  ai-CR-095 (C-06): dấu CÔNG TY / CÁ NHÂN trên tin nhắn. Tin cá nhân không vào hàng đợi việc, không ghi sổ công ty.
+SCOPE_UNSET = 0
+SCOPE_COMPANY = 1
+SCOPE_PERSONAL = 2
 DIRECTION_LABELS = {
     DIR_OUT: "Bot gửi",
     DIR_IN: "Đại ca gửi",

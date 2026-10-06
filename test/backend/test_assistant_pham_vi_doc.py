@@ -107,6 +107,12 @@ TOOL_KHONG_PHAM_VI = {
     "propose_glossary_term": "ghi đề xuất thuật ngữ chờ duyệt — không đọc dữ liệu phiếu",
     "report_missing_feature": "ghi chỗ Trợ lý thiếu chức năng — không đọc dữ liệu phiếu",
     "drive_read": "đọc một tệp Drive của chính người hỏi",
+    #  ai-CR-095 (C-02): sổ ghi nhớ RIÊNG — tab_agent_memory / tab_agent_note lọc cứng theo ctx.user.id, model không có
+    #  tham số chọn người (bài canh `test_so_nho_tool_khong_lan_nguoi_khac`); không đọc bản ghi nghiệp vụ nào.
+    "remember_fact": "ghi một dòng vào sổ ghi nhớ riêng của chính người hỏi",
+    "forget_fact": "xóa dòng trong sổ ghi nhớ riêng của chính người hỏi",
+    "save_note": "lưu ghi chú dài vào kho riêng của chính người hỏi",
+    "search_notes": "tìm trong kho ghi chú riêng của chính người hỏi",
 }
 
 
@@ -122,7 +128,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 51, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 55, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

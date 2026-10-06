@@ -169,6 +169,8 @@ class AgentMessage(Base, AuditMixin):
     #  ai-CR-035: tệp đính kèm đã lưu, [{"path": "/agent-files/…", "kind": "photo", "group": "…"}].
     #  `group` = media_group_id của Telegram (album nhiều ảnh), để ghép các ảnh cùng album vào một tin.
     files: Mapped[list | None] = mapped_column(JSON, default=list, nullable=True)
+    #  ai-CR-095 (C-06): 0 chưa phân · 1 việc công ty · 2 việc cá nhân — bộ phân loại ý định gán.
+    scope: Mapped[int] = mapped_column(SmallInteger, default=0)
 
     __table_args__ = (
         #  Vòng gom hỏi "tin ĐẾN nào chưa thuộc task nào, cũ hơn N giây" mỗi phút.
@@ -268,6 +270,30 @@ class AgentRunner(Base, AuditMixin):
     version: Mapped[str] = mapped_column(String(50), default="")
     registered_by_chat: Mapped[str] = mapped_column(String(50), default="")
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentMemory(Base, AuditMixin):
+    """Sổ ghi nhớ cá nhân — tầng LÕI (ai-CR-095, C-02): MỖI NGƯỜI MỘT DÒNG, `text` Markdown bốn mục, trần 8.000 ký tự,
+    nạp nguyên văn vào mọi câu hỏi của người đó. Đọc/ghi chỉ qua `personal_memory`."""
+
+    __tablename__ = "tab_agent_memory"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True, unique=True)
+    text: Mapped[str] = mapped_column(Text, default="")
+
+
+class AgentNote(Base, AuditMixin):
+    """Sổ ghi nhớ cá nhân — tầng KHO (ai-CR-095, C-02): ghi chú dài của từng người, không trần; vector ở collection
+    `agent_personal` của Qdrant (payload `user_id`). «Quên» = `revoked_at`, giữ lịch sử."""
+
+    __tablename__ = "tab_agent_note"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    title: Mapped[str] = mapped_column(String(200), default="")
+    text: Mapped[str] = mapped_column(Text, default="")
+    chars: Mapped[int] = mapped_column(Integer, default=0)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
 
