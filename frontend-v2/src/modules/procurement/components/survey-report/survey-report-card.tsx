@@ -14,7 +14,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react'
-import { Fragment, useState } from 'react'
+import { Fragment, useImperativeHandle, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
@@ -47,6 +47,7 @@ import {
   REPORT_DOC_DOING,
   REPORT_DOC_DONE,
   REPORT_DOC_STATUS_LABELS,
+  type ReportOwnerEntity,
   type SurveyReportDoc,
   type SurveyReportItem,
   type SurveyReportPhase,
@@ -117,14 +118,25 @@ interface ReportItemRow {
   docs: SurveyReportDoc[]
 }
 
+/** Lệnh từ ngoài: bảng dòng hàng của chứng từ bấm «Hồ sơ» → cuộn tới và sổ đúng nút. */
+export interface SurveyReportCardHandle {
+  focusItem: (itemId: number) => void
+}
+
 interface SurveyReportCardProps {
-  surveyRequestId: number
-  /** NS Thu mua (cờ `process`) mới sửa được — backend gác lại lần nữa. */
+  /** Id chứng từ chủ (YCBG hay ĐMH tùy `entity`). */
+  ownerId: number
+  /** Loại chứng từ chủ — mặc định YCBG (bao-CR-598 thêm ĐMH). */
+  entity?: ReportOwnerEntity
+  /** Ai sửa được — backend gác lại lần nữa theo cửa ghi của chứng từ cha. */
   canEdit: boolean
+  /** Nút dòng hàng sinh tự động theo dòng chứng từ (ĐMH) — không thêm/đổi tên/xóa tay. */
+  itemsLocked?: boolean
+  ref?: React.Ref<SurveyReportCardHandle>
 }
 
 /**
- * Khối BÁO CÁO THỰC HIỆN trên chi tiết YCBG.
+ * Khối BÁO CÁO THỰC HIỆN trên chi tiết YCBG / ĐMH.
  *
  * Hai lớp GẤP, cố ý:
  * - Cả khối gấp sẵn, bấm tiêu đề mới sổ ra — nó nằm cuối trang chi tiết, dưới
@@ -134,10 +146,19 @@ interface SurveyReportCardProps {
  *
  * Người không có quyền sửa vẫn xem được; khối rỗng thì ẩn hẳn với họ.
  */
-export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardProps) {
-  const { data: report, isLoading, isError } = useSurveyRequestReport(surveyRequestId)
-  const actions = useSurveyReportActions(surveyRequestId)
+export function SurveyReportCard({
+  ownerId,
+  entity = 'survey_request',
+  canEdit,
+  itemsLocked = false,
+  ref,
+}: SurveyReportCardProps) {
+  const { data: report, isLoading, isError } = useSurveyRequestReport(ownerId, entity)
+  const actions = useSurveyReportActions(ownerId, entity)
   const { user } = useAuth()
+  //  Chữ gọi chứng từ chủ trong câu chữ của khối: «cả phiếu» / «cả đơn».
+  const ownerLabel = entity === 'purchase_order' ? 'đơn' : 'phiếu'
+  const cardRef = useRef<HTMLDivElement>(null)
   //  Hồ sơ mới điền sẵn người thực hiện = người đang đăng nhập (đổi được).
   const defaultAssigneeId = user?.employee_id ?? 0
 
@@ -159,6 +180,29 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
   } | null>(null)
   const [itemDialog, setItemDialog] = useState<{ item: SurveyReportItem | null } | null>(null)
   const [phaseDialog, setPhaseDialog] = useState<{ phase: SurveyReportPhase | null } | null>(null)
+
+  const changeViewMode = (mode: ReportViewMode) => {
+    setViewMode(mode)
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, mode)
+    } catch {
+      //  Không ghi nhớ được thì thôi, đổi dạng xem vẫn phải ăn.
+    }
+  }
+
+  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-598): mở khối, chuyển
+  //  sang dạng xem theo dòng hàng, sổ đúng dòng rồi cuộn tới. Lệnh đi bằng ref
+  //  (không qua prop + effect) vì nó là một SỰ KIỆN, không phải trạng thái cần đồng bộ.
+  useImperativeHandle(ref, () => ({
+    focusItem: (itemId: number) => {
+      setCardOpen(true)
+      changeViewMode('item')
+      setOpenRows((current) => new Set(current).add(itemId))
+      requestAnimationFrame(() => {
+        cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    },
+  }))
 
   const busy =
     actions.init.isPending ||
@@ -276,7 +320,7 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
       ? [
           {
             id: COMMON_ROW_ID,
-            name: 'Chung (cả phiếu)',
+            name: `Chung (cả ${ownerLabel})`,
             item: null,
             docs: commonDocs,
           },
@@ -335,17 +379,8 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
   const allOpen = viewMode === 'phase' ? allPhasesOpen : allRowsOpen
   const toggleAll = viewMode === 'phase' ? toggleAllPhases : toggleAllRows
 
-  const changeViewMode = (mode: ReportViewMode) => {
-    setViewMode(mode)
-    try {
-      localStorage.setItem(VIEW_STORAGE_KEY, mode)
-    } catch {
-      //  Không ghi nhớ được thì thôi, đổi dạng xem vẫn phải ăn.
-    }
-  }
-
   return (
-    <Card className="gap-4 py-4">
+    <Card ref={cardRef} className="scroll-mt-4 gap-4 py-4">
       <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
         <button
           type="button"
@@ -460,9 +495,10 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
           {isEmpty ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Chưa có báo cáo cho phiếu này. Khởi tạo theo mẫu chung (5 giai đoạn + bộ hồ sơ
-                chung + nút theo dòng hàng) rồi chỉnh lại cho hợp, hoặc tự thêm giai đoạn từ
+                Chưa có báo cáo cho {ownerLabel} này. Khởi tạo theo mẫu chung (5 giai đoạn + bộ hồ
+                sơ chung + nút theo dòng hàng) rồi chỉnh lại cho hợp, hoặc tự thêm giai đoạn từ
                 đầu. Mỗi dòng hàng / giai đoạn có nút «Tạo mẫu» riêng để đổ thêm sau.
+                {itemsLocked && ' Nút dòng hàng bám theo dòng của đơn: thêm/bớt dòng trên đơn là khối tự theo.'}
               </p>
               <div className="flex gap-2">
                 <Button disabled={busy} onClick={() => actions.init.mutate()}>
@@ -487,7 +523,7 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
                 <p className="text-sm text-muted-foreground">
                   Không có hồ sơ nào khớp bộ lọc hiện tại
                   {report.docs.length > 0
-                    ? ` — phiếu đang có ${report.docs.length} hồ sơ, thử xóa từ khóa hoặc đổi trạng thái.`
+                    ? ` — ${ownerLabel} đang có ${report.docs.length} hồ sơ, thử xóa từ khóa hoặc đổi trạng thái.`
                     : '.'}
                 </p>
               )}
@@ -530,6 +566,8 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
                       forceOpen={forceOpen}
                       orphanPhases={orphanPhases}
                       canEdit={canEdit}
+                      itemsLocked={itemsLocked}
+                      ownerLabel={ownerLabel}
                       busy={busy}
                       onToggleRow={toggleRow}
                       onAddItem={() => setItemDialog({ item: null })}
@@ -820,6 +858,9 @@ interface ReportItemTableProps {
   forceOpen: boolean
   orphanPhases: SurveyReportPhase[]
   canEdit: boolean
+  /** Nút bám dòng chứng từ (ĐMH): ẩn sửa/thêm nút tay. */
+  itemsLocked: boolean
+  ownerLabel: string
   busy: boolean
   onToggleRow: (rowId: number) => void
   onAddItem: () => void
@@ -846,6 +887,8 @@ function ReportItemTable({
   forceOpen,
   orphanPhases,
   canEdit,
+  itemsLocked,
+  ownerLabel,
   busy,
   onToggleRow,
   onAddItem,
@@ -889,7 +932,7 @@ function ReportItemTable({
                     <TableCell>
                       <span className="flex items-center gap-1.5">
                         <span className="font-medium">{row.name}</span>
-                        {row.item && canEdit && (
+                        {row.item && canEdit && !itemsLocked && (
                           <button
                             type="button"
                             title={`Sửa nút "${row.name}"`}
@@ -944,7 +987,7 @@ function ReportItemTable({
                 </Fragment>
               )
             })}
-            {canEdit && (
+            {canEdit && !itemsLocked && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={ITEM_TABLE_COLUMNS} className="py-1.5">
                   <Button variant="ghost" size="sm" disabled={busy} onClick={onAddItem}>
@@ -958,7 +1001,7 @@ function ReportItemTable({
           <TableFooter>
             <TableRow>
               <TableCell colSpan={2} className="font-semibold">
-                Tổng cả phiếu
+                Tổng cả {ownerLabel}
               </TableCell>
               <TableCell className="text-center font-semibold tabular-nums">
                 {report.docs.length}

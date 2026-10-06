@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
+import { addDaysIso, durationDays } from '../../utils/survey-report-helpers'
 import type { ReportDocPayload } from '../../api/survey-request-report-api'
 import {
   REPORT_DOC_IDLE,
@@ -67,6 +68,7 @@ function buildDraft(
         required: doc.required,
         status: doc.status,
         file_note: doc.file_note,
+        result: doc.result,
         depends: [...doc.depends],
         start_date: doc.start_date,
         expires_at: doc.expires_at,
@@ -81,6 +83,7 @@ function buildDraft(
         required: true,
         status: REPORT_DOC_IDLE,
         file_note: '',
+        result: '',
         depends: [],
         start_date: '',
         expires_at: '',
@@ -308,6 +311,26 @@ export function SurveyReportDocDialog({
                 onChange={(value) => patch({ planned_date: value })}
                 placeholder="Chọn ngày dự định"
               />
+              {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-598):
+                  không lưu, suy từ hai mốc; gõ số ngày thì tự đặt ngày dự định =
+                  ngày bắt đầu + n. Chưa có ngày bắt đầu thì ô khóa, nói rõ vì sao. */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="whitespace-nowrap">Số ngày xử lý</span>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-7 w-20 px-2 text-right"
+                  aria-label="Số ngày xử lý"
+                  disabled={!draft.start_date}
+                  title={draft.start_date ? '' : 'Chọn ngày bắt đầu trước'}
+                  value={durationDays(draft.start_date, draft.planned_date) ?? ''}
+                  onChange={(e) => {
+                    const days = Number(e.target.value)
+                    if (!draft.start_date || !Number.isFinite(days) || days < 0) return
+                    patch({ planned_date: addDaysIso(draft.start_date, days) })
+                  }}
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Ngày hết hiệu lực</Label>
@@ -329,6 +352,16 @@ export function SurveyReportDocDialog({
               searchPlaceholder="Tìm theo tên hoặc mã…"
               emptyMessage="Không tìm thấy nhân sự nào."
               clearable
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Kết quả / ghi chú sau khi làm</Label>
+            <Textarea
+              rows={2}
+              value={draft.result}
+              placeholder="VD: Đã chốt NCC Aston, công nợ 60 ngày"
+              onChange={(e) => patch({ result: e.target.value })}
             />
           </div>
 

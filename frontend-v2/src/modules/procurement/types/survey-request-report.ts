@@ -1,15 +1,21 @@
 /**
- * Khối BÁO CÁO THỰC HIỆN trên chi tiết phiếu YCBG — `/api/survey-requests/{id}/report`.
+ * Khối BÁO CÁO THỰC HIỆN — `/api/execution-report/{entity}/{id}` (bao-CR-598):
+ * nằm trên chi tiết YCBG (`survey_request`) và ĐMH (`purchase_order`).
  *
  * NS Thu mua theo dõi tiến trình thực thi thương vụ (giấy phép, hợp đồng, chứng
  * từ, thông quan…): hồ sơ chia theo GIAI ĐOẠN, lọc theo NÚT DÒNG HÀNG, mỗi hồ sơ
  * có trạng thái + danh sách hồ sơ tiên quyết (chưa xong hết thì hồ sơ bị khóa).
  */
 
+/** Chứng từ chủ của khối báo cáo — trùng tên entity phân quyền. */
+export type ReportOwnerEntity = 'survey_request' | 'purchase_order'
+
 /** Một NÚT lọc theo dòng hàng (vd «K₂SO₄»). Hồ sơ `item_id = 0` là CHUNG. */
 export interface SurveyReportItem {
   id: number
   name: string
+  /** Id dòng chứng từ nút bám theo (ĐMH: `tab_po_item.id`); `0` = nút đặt tay (YCBG). */
+  line_id: number
   sort_order: number
 }
 
@@ -35,6 +41,8 @@ export interface SurveyReportDoc {
   status_label: string
   /** Tên tệp hoặc link tài liệu — chữ tự do. */
   file_note: string
+  /** Kết quả / ghi chú SAU khi làm — khác `description` (việc phải làm). bao-CR-598. */
+  result: string
   /** Id các hồ sơ TIÊN QUYẾT (backend đã lọc id chết). */
   depends: number[]
   /** Ngày bắt đầu thực hiện — `yyyy-mm-dd`, `''` = chưa đặt. */
@@ -53,7 +61,7 @@ export interface SurveyReportDoc {
   sort_order: number
 }
 
-/** `GET /api/survey-requests/{id}/report`. */
+/** `GET /api/execution-report/{entity}/{id}`. */
 export interface SurveyRequestReport {
   items: SurveyReportItem[]
   phases: SurveyReportPhase[]

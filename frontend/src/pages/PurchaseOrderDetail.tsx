@@ -19,6 +19,8 @@ import DocumentUploadModal from '../components/DocumentUploadModal'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
+import SurveyReportCard, { type SurveyReportCardHandle } from '../components/SurveyReportCard'
+import { lineReportProgress, type SurveyRequestReport } from '../utils/surveyReportHelpers'
 import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
 import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
@@ -224,6 +226,12 @@ export default function PurchaseOrderDetail() {
     loadApproverCandidates(API, isNew ? 0 : Number(id), po).then(setApproverCands)
   }, [id, isNew, po.status, po.department, po.department_id, po.company_id, po.handler_dept_id])
   const [logs, setLogs] = useState<any[]>([])
+  //  bao-CR-598: khối Báo cáo thực hiện của đơn — thẻ bên dưới nạp rồi báo lên, bảng dòng
+  //  hàng đọc % theo dòng từ đây; bấm ô «Hồ sơ» thì ra lệnh cho thẻ cuộn tới + sổ nút.
+  const [execReport, setExecReport] = useState<SurveyRequestReport | null>(null)
+  const reportCardRef = useRef<SurveyReportCardHandle>(null)
+  const lineReport = useMemo(() => lineReportProgress(execReport), [execReport])
+  const reloadLogs = () => api.get('/api/audit-logs', { params: { entity: 'purchase_order', entity_id: id } }).then((x) => setLogs(x.data.data))
   const [files, setFiles] = useState<any[]>([])
   const [docModal, setDocModal] = useState(false)
   const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>({})
@@ -1350,7 +1358,7 @@ export default function PurchaseOrderDetail() {
               </div>
             )}
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: (showCurrency ? 1475 : 1345) - (isImport ? 189 : 0) + (bulkRemovable ? 36 : 0) }}>
+              <table className="items-table" style={{ minWidth: (showCurrency ? 1475 : 1345) - (isImport ? 189 : 0) + (bulkRemovable ? 36 : 0) + (isNew ? 0 : 100) }}>
                 <thead>
                   <tr>
                     {bulkRemovable && (
@@ -1372,6 +1380,8 @@ export default function PurchaseOrderDetail() {
                     {!isImport && <th style={{ width: 125 }}>Đơn giá (Sau VAT)</th>}
                     <th style={{ width: 150, background: '#fff3cd' }}>Thành tiền đơn hàng</th>
                     <th style={{ width: 150 }}>Tiến độ giao</th>
+                    {/* bao-CR-598: tiến độ BÁO CÁO THỰC HIỆN của dòng — bấm là cuộn xuống khối báo cáo */}
+                    {!isNew && <th style={{ width: 100, textAlign: 'center' }} title="Hồ sơ báo cáo thực hiện của dòng (hồ sơ dòng + hồ sơ chung)">Hồ sơ</th>}
                     <th style={{ width: 170 }}>Trạng thái</th>
                     <th style={{ width: 120, textAlign: 'center' }}>Hành động</th>
                   </tr>
@@ -1447,6 +1457,24 @@ export default function PurchaseOrderDetail() {
                           )}
                         </div>
                       </td>
+                      {!isNew && (
+                        <td style={{ textAlign: 'center' }}>
+                          {(() => {
+                            const progress = it.id ? lineReport.get(it.id) : undefined
+                            if (!progress || !progress.total) {
+                              return <span style={{ color: 'var(--muted)' }} title={it.id ? 'Chưa có hồ sơ báo cáo thực hiện cho dòng này — khởi tạo ở khối Báo cáo thực hiện bên dưới' : 'Lưu đơn rồi mới theo dõi hồ sơ cho dòng mới'}>—</span>
+                            }
+                            const complete = progress.done === progress.total
+                            return (
+                              <button type="button" className="btn ghost" style={{ height: 26, fontSize: 12, padding: '0 8px', color: complete ? 'var(--green, #16a34a)' : undefined }}
+                                title={`${progress.done}/${progress.total} hồ sơ hoàn tất · bấm để xem báo cáo thực hiện của dòng`}
+                                onClick={() => reportCardRef.current?.focusItem(progress.itemId)}>
+                                <i className="ti ti-list-check" /> {progress.percent}%
+                              </button>
+                            )
+                          })()}
+                        </td>
+                      )}
                       <td style={{ textAlign: 'center' }}>
                         {progressEditable && it.id && ![PG_CANCELLED, 'completed'].includes(it.progress_status) ? (
                           it.progress_status === PG_PAUSED ? (
@@ -1489,7 +1517,7 @@ export default function PurchaseOrderDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={showCurrency ? 13 : 12} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={(showCurrency ? 13 : 12) + (isNew ? 0 : 1)} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1531,6 +1559,23 @@ export default function PurchaseOrderDetail() {
               </div>
             </div>
           </div>
+
+          {/* bao-CR-598: Báo cáo thực hiện của ĐƠN (riêng từng đơn, không nối YCBG) — nút dòng
+              hàng bám theo dòng đơn; ai sửa được đơn thì sửa được báo cáo; đơn Hoàn thành / Hủy
+              thì chỉ đọc (backend khóa). */}
+          {!isNew && (
+            <div style={{ marginBottom: 16 }}>
+              <SurveyReportCard
+                ref={reportCardRef}
+                entity="purchase_order"
+                ownerId={Number(id)}
+                canEdit={!['completed', 'cancelled'].includes(po.status) && can('purchase_order', 'write')}
+                itemsLocked
+                onChanged={reloadLogs}
+                onReport={setExecReport}
+              />
+            </div>
+          )}
 
           {/* bao-CR-453 GĐ2 — Chi phí thu mua. Bảng PHẲNG: mỗi dòng một khoản chi,
               mỗi khoản một nhà cung cấp riêng (hãng tàu, đơn vị khai thuê, kho bãi, và

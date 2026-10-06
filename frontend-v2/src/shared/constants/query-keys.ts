@@ -97,9 +97,12 @@ export const queryKeys = {
     /** bao-CR-486 — NSTM chọn được cho YCBG, cùng luật `purchaseRequestAssignableStaff`. */
     surveyRequestAssignableStaff: (id: number) =>
       ['procurement', 'survey-requests', id, 'assignable-staff'] as const,
-    /** Khối BÁO CÁO THỰC HIỆN của YCBG (`/{id}/report`) — nút · giai đoạn · hồ sơ. */
-    surveyRequestReport: (id: number) =>
-      ['procurement', 'survey-requests', id, 'report'] as const,
+    /**
+     * Khối BÁO CÁO THỰC HIỆN (`/api/execution-report/{entity}/{id}`) — nút · giai
+     * đoạn · hồ sơ. Dùng chung YCBG (`survey_request`) và ĐMH (`purchase_order`), bao-CR-598.
+     */
+    executionReport: (entity: string, id: number) =>
+      ['procurement', 'execution-report', entity, id] as const,
     /** Bảng "Kết quả khảo sát đã duyệt" chọn được cho MỘT dòng của khung xử lý. */
     surveyRequestAvailableLines: (id: number, lineId: number, params?: Record<string, unknown>) =>
       ['procurement', 'survey-requests', id, 'process', 'available', lineId, params ?? {}] as const,

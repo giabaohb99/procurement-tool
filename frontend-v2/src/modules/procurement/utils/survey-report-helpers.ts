@@ -114,6 +114,59 @@ export function reportDocsById(report: SurveyRequestReport): Map<number, SurveyR
   return new Map(report.docs.map((doc) => [doc.id, doc]))
 }
 
+/**
+ * Ngày `from` cộng `days` ngày — `yyyy-mm-dd`, tính theo UTC nên không lệch múi
+ * giờ. Chuỗi sai dạng trả `''`.
+ */
+export function addDaysIso(from: string, days: number): string {
+  const base = Date.parse(from)
+  if (!Number.isFinite(base)) return ''
+  return new Date(base + Math.round(days) * 86_400_000).toISOString().slice(0, 10)
+}
+
+/**
+ * «Số ngày xử lý» của một hồ sơ = dự định hoàn tất − ngày bắt đầu (cột «Time xử
+ * lý» của bảng kế hoạch Excel thu mua, bao-CR-598). Không lưu — suy từ hai mốc;
+ * thiếu một mốc trả `null` để ô nhập hiện trống chứ không hiện 0 giả.
+ */
+export function durationDays(start: string, planned: string): number | null {
+  if (!start || !planned) return null
+  return diffIsoDays(start, planned)
+}
+
+/** Tiến độ báo cáo của MỘT dòng chứng từ: hồ sơ của nút dòng đó + hồ sơ Chung. */
+export interface LineReportProgress {
+  /** Id nút dòng hàng trong khối (để cuộn tới / sổ đúng dòng). */
+  itemId: number
+  done: number
+  total: number
+  percent: number
+}
+
+/**
+ * Tiến độ theo TỪNG DÒNG CHỨNG TỪ (bao-CR-598) — khóa là `line_id` của dòng (ĐMH:
+ * `tab_po_item.id`). Hồ sơ CHUNG tính vào mọi dòng, cùng luật với `filterReportDocs`:
+ * một giấy phép chung chưa xong thì dòng nào cũng chưa xong. Nút đặt tay
+ * (`line_id = 0`) không có dòng chứng từ để gắn nên bỏ qua.
+ */
+export function lineReportProgress(
+  report: SurveyRequestReport | null | undefined,
+): Map<number, LineReportProgress> {
+  const out = new Map<number, LineReportProgress>()
+  if (!report) return out
+  for (const item of report.items) {
+    if (!item.line_id) continue
+    const docs = filterReportDocs(report.docs, item.id)
+    out.set(item.line_id, {
+      itemId: item.id,
+      done: docs.filter(isReportDocDone).length,
+      total: docs.length,
+      percent: reportPercent(docs),
+    })
+  }
+  return out
+}
+
 /** Giá trị bộ lọc trạng thái «Tất cả» — 0 là mã thật (Chưa bắt đầu), sentinel phải âm. */
 export const REPORT_STATUS_FILTER_ALL = -1
 

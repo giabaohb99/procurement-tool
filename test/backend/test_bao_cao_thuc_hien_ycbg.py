@@ -1,4 +1,4 @@
-"""Khối BÁO CÁO THỰC HIỆN trên phiếu YCBG (tab_survey_request_report_*).
+"""Khối BÁO CÁO THỰC HIỆN trên phiếu YCBG (tab_exec_report_*, khóa `report_id` từ bao-CR-598).
 
 Bốn thứ phải khóa bằng test:
 
@@ -29,7 +29,16 @@ def _sr(db, code="YCKS-BC1", **kw) -> SurveyRequest:
     s = SurveyRequest(code=code, status="processing", **kw)
     db.add(s)
     db.commit()
+    #  bao-CR-598: khối báo cáo nối vào ĐẦU `tab_exec_report`, không nối thẳng vào
+    #  phiếu nữa — `rid` là khóa mọi hàm service nhận.
+    s.rid = svc.ensure_report(db, "survey_request", s.id, user_id=1).id
+    db.commit()
     return s
+
+
+def _init(db, s) -> int:
+    """`init_report` của YCBG: nút theo dòng hàng của phiếu."""
+    return svc.init_report(db, s.rid, svc.survey_request_lines(db, s.rid), user_id=1)
 
 
 def _line(db, sr_id, **kw) -> SurveyRequestLine:
@@ -39,8 +48,8 @@ def _line(db, sr_id, **kw) -> SurveyRequestLine:
     return ln
 
 
-def _doc(db, sr_id, phase_id, title="Hồ sơ", **kw) -> SurveyReportDoc:
-    return svc.create_doc(db, sr_id, ReportDocIn(title=title, phase_id=phase_id, **kw),
+def _doc(db, report_id, phase_id, title="Hồ sơ", **kw) -> SurveyReportDoc:
+    return svc.create_doc(db, report_id, ReportDocIn(title=title, phase_id=phase_id, **kw),
                           user_id=1)
 
 
@@ -51,8 +60,8 @@ def test_khoi_tao_dung_khung_va_khong_nhan_doi(db):
     _line(db, s.id, requirement_detail="", item_group="Phân bón")
     _line(db, s.id)          # dòng trống hoàn toàn -> tên «Dòng 3»
 
-    assert svc.init_report(db, s.id, user_id=1) == len(DEFAULT_TEMPLATE_DOCS)
-    payload = svc.get_report_payload(db, s.id)
+    assert _init(db, s) == len(DEFAULT_TEMPLATE_DOCS)
+    payload = svc.get_report_payload(db, s.rid)
     assert [p["name"] for p in payload["phases"]] == [n for n, _ in DEFAULT_PHASES]
     # Tên nút: mô tả yêu cầu (chỉ dòng đầu) > phân loại > «Dòng N».
     assert [i["name"] for i in payload["items"]] == [
@@ -71,8 +80,8 @@ def test_khoi_tao_dung_khung_va_khong_nhan_doi(db):
                                   for no in depends]
 
     # Bấm lần hai: không đụng gì.
-    assert svc.init_report(db, s.id, user_id=1) == -1
-    again = svc.get_report_payload(db, s.id)
+    assert _init(db, s) == -1
+    again = svc.get_report_payload(db, s.rid)
     assert len(again["phases"]) == 5 and len(again["items"]) == 3
     assert len(again["docs"]) == len(DEFAULT_TEMPLATE_DOCS)
 
@@ -80,13 +89,13 @@ def test_khoi_tao_dung_khung_va_khong_nhan_doi(db):
 # ── apply_template: nút «Tạo mẫu» trên nút dòng hàng / giai đoạn ────────────────
 def test_tao_mau_cho_nut_dong_hang_cong_them_va_khong_nhan_doi(db):
     s = _sr(db)
-    svc.init_report(db, s.id, user_id=1)                 # đã có hồ sơ CHUNG của mẫu
-    item = svc.create_item(db, s.id, "Thùng carton 3 lớp", 1)
+    _init(db, s)                 # đã có hồ sơ CHUNG của mẫu
+    item = svc.create_item(db, s.rid, "Thùng carton 3 lớp", 1)
     db.commit()
 
-    added = svc.apply_template(db, s.id, item_id=item.id, phase_id=None, user_id=1)
+    added = svc.apply_template(db, s.rid, item_id=item.id, phase_id=None, user_id=1)
     assert added == len(DEFAULT_TEMPLATE_DOCS)
-    payload = svc.get_report_payload(db, s.id)
+    payload = svc.get_report_payload(db, s.rid)
     # Hồ sơ Chung không bị đụng, hồ sơ của nút là bản riêng, tiên quyết nối trong nút.
     mine = [d for d in payload["docs"] if d["item_id"] == item.id]
     common = [d for d in payload["docs"] if d["item_id"] == 0]
@@ -96,22 +105,22 @@ def test_tao_mau_cho_nut_dong_hang_cong_them_va_khong_nhan_doi(db):
     assert len(payload["phases"]) == 5                    # giai đoạn trùng tên: dùng lại
 
     # Bấm lần hai: không thêm gì.
-    assert svc.apply_template(db, s.id, item_id=item.id, phase_id=None, user_id=1) == 0
-    assert len(svc.get_report_payload(db, s.id)["docs"]) == 2 * len(DEFAULT_TEMPLATE_DOCS)
+    assert svc.apply_template(db, s.rid, item_id=item.id, phase_id=None, user_id=1) == 0
+    assert len(svc.get_report_payload(db, s.rid)["docs"]) == 2 * len(DEFAULT_TEMPLATE_DOCS)
 
 
 def test_tao_mau_vao_mot_giai_doan_chi_do_phan_do_va_cat_tien_quyet_ngoai(db):
     s = _sr(db)
     # Khối tự dựng tay: giai đoạn trùng tên mẫu (khác hoa-thường, dư khoảng trắng)
     # + một giai đoạn tự đặt; mẫu KHÔNG được tạo thêm giai đoạn khi áp vào một GĐ.
-    ph = svc.create_phase(db, s.id, "  sản xuất &  vận chuyển ", "", 1)
-    own = svc.create_phase(db, s.id, "Giai đoạn riêng", "", 1)
+    ph = svc.create_phase(db, s.rid, "  sản xuất &  vận chuyển ", "", 1)
+    own = svc.create_phase(db, s.rid, "Giai đoạn riêng", "", 1)
     db.commit()
 
-    added = svc.apply_template(db, s.id, item_id=0, phase_id=ph.id, user_id=1)
+    added = svc.apply_template(db, s.rid, item_id=0, phase_id=ph.id, user_id=1)
     expected = [row for row in DEFAULT_TEMPLATE_DOCS if row[0] == 3]
     assert added == len(expected) > 0
-    payload = svc.get_report_payload(db, s.id)
+    payload = svc.get_report_payload(db, s.rid)
     assert len(payload["phases"]) == 2
     docs = payload["docs"]
     assert all(d["phase_id"] == ph.id for d in docs)
@@ -123,25 +132,25 @@ def test_tao_mau_vao_mot_giai_doan_chi_do_phan_do_va_cat_tien_quyet_ngoai(db):
 
     # Giai đoạn tự đặt tên không có trong mẫu → chặn rõ, không đoán.
     with pytest.raises(HTTPException) as e:
-        svc.apply_template(db, s.id, item_id=0, phase_id=own.id, user_id=1)
+        svc.apply_template(db, s.rid, item_id=0, phase_id=own.id, user_id=1)
     assert e.value.status_code == 400 and "Giai đoạn riêng" in e.value.detail
 
 
 def test_tao_mau_tu_tao_giai_doan_thieu_va_chan_nut_la(db):
     s = _sr(db)
-    svc.create_phase(db, s.id, "Pháp lý & Giấy phép", "", 1)
+    svc.create_phase(db, s.rid, "Pháp lý & Giấy phép", "", 1)
     db.commit()
 
-    added = svc.apply_template(db, s.id, item_id=0, phase_id=None, user_id=1)
+    added = svc.apply_template(db, s.rid, item_id=0, phase_id=None, user_id=1)
     assert added == len(DEFAULT_TEMPLATE_DOCS)
-    names = [p["name"] for p in svc.get_report_payload(db, s.id)["phases"]]
+    names = [p["name"] for p in svc.get_report_payload(db, s.rid)["phases"]]
     assert names == [n for n, _ in DEFAULT_PHASES]     # GĐ có sẵn dùng lại, 4 GĐ còn lại tạo mới
 
     other = _sr(db, code="YCKS-BC2")
-    stranger = svc.create_item(db, other.id, "Nút phiếu khác", 1)
+    stranger = svc.create_item(db, other.rid, "Nút phiếu khác", 1)
     db.commit()
     with pytest.raises(HTTPException) as e:
-        svc.apply_template(db, s.id, item_id=stranger.id, phase_id=None, user_id=1)
+        svc.apply_template(db, s.rid, item_id=stranger.id, phase_id=None, user_id=1)
     assert e.value.status_code == 404
 
 
@@ -163,24 +172,24 @@ def test_mau_chung_tu_nhat_quan():
 # ── xóa nút / hồ sơ / giai đoạn ─────────────────────────────────────────────────
 def test_xoa_nut_thi_ho_so_ve_chung_khong_mat(db):
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    item = svc.create_item(db, s.id, "KNO3", 1)
-    doc = _doc(db, s.id, ph.id, title="GP tiền chất", item_id=item.id)
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    item = svc.create_item(db, s.rid, "KNO3", 1)
+    doc = _doc(db, s.rid, ph.id, title="GP tiền chất", item_id=item.id)
     db.commit()
 
-    svc.delete_item(db, s.id, item.id, user_id=1)
+    svc.delete_item(db, s.rid, item.id, user_id=1)
     db.commit()
     assert db.get(SurveyReportDoc, doc.id).item_id == 0    # về Chung, không bị xóa lây
 
 
 def test_xoa_ho_so_thi_go_khoi_tien_quyet_cua_ho_so_khac(db):
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    a = _doc(db, s.id, ph.id, title="RFQ")
-    b = _doc(db, s.id, ph.id, title="Hợp đồng", depends=[a.id])
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    a = _doc(db, s.rid, ph.id, title="RFQ")
+    b = _doc(db, s.rid, ph.id, title="Hợp đồng", depends=[a.id])
     db.commit()
 
-    svc.delete_doc(db, s.id, a.id, user_id=1)
+    svc.delete_doc(db, s.rid, a.id, user_id=1)
     db.commit()
     # Không gỡ thì b chờ một id chết -> khóa vĩnh viễn.
     assert db.get(SurveyReportDoc, b.id).depends == []
@@ -188,17 +197,17 @@ def test_xoa_ho_so_thi_go_khoi_tien_quyet_cua_ho_so_khac(db):
 
 def test_xoa_giai_doan_con_ho_so_bi_chan(db):
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    _doc(db, s.id, ph.id)
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    _doc(db, s.rid, ph.id)
     db.commit()
 
     with pytest.raises(HTTPException) as e:
-        svc.delete_phase(db, s.id, ph.id)
+        svc.delete_phase(db, s.rid, ph.id)
     assert e.value.status_code == 400
 
-    ph2 = svc.create_phase(db, s.id, "GĐ trống", "", 1)
+    ph2 = svc.create_phase(db, s.rid, "GĐ trống", "", 1)
     db.commit()
-    svc.delete_phase(db, s.id, ph2.id)        # giai đoạn rỗng xóa được
+    svc.delete_phase(db, s.rid, ph2.id)        # giai đoạn rỗng xóa được
     db.commit()
     assert db.get(SurveyReportPhase, ph2.id) is None
 
@@ -206,56 +215,56 @@ def test_xoa_giai_doan_con_ho_so_bi_chan(db):
 # ── tiên quyết ──────────────────────────────────────────────────────────────────
 def test_tien_quyet_chan_vong_va_tu_tro_minh(db):
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    a = _doc(db, s.id, ph.id, title="A")
-    b = _doc(db, s.id, ph.id, title="B", depends=[a.id])
-    c = _doc(db, s.id, ph.id, title="C", depends=[b.id])
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    a = _doc(db, s.rid, ph.id, title="A")
+    b = _doc(db, s.rid, ph.id, title="B", depends=[a.id])
+    c = _doc(db, s.rid, ph.id, title="C", depends=[b.id])
     db.commit()
 
     # A chờ C trong khi C -> B -> A: vòng ba đỉnh, phải chặn.
     with pytest.raises(HTTPException):
-        svc.update_doc(db, s.id, a.id, ReportDocPatch(depends=[c.id]), user_id=1)
+        svc.update_doc(db, s.rid, a.id, ReportDocPatch(depends=[c.id]), user_id=1)
     with pytest.raises(HTTPException):
-        svc.update_doc(db, s.id, a.id, ReportDocPatch(depends=[a.id]), user_id=1)
+        svc.update_doc(db, s.rid, a.id, ReportDocPatch(depends=[a.id]), user_id=1)
 
 
 def test_tien_quyet_phai_cung_phieu(db):
     s1, s2 = _sr(db), _sr(db, code="YCKS-BC2")
-    ph1 = svc.create_phase(db, s1.id, "GĐ1", "", 1)
-    ph2 = svc.create_phase(db, s2.id, "GĐ1", "", 1)
-    ngoai = _doc(db, s2.id, ph2.id, title="Của phiếu khác")
+    ph1 = svc.create_phase(db, s1.rid, "GĐ1", "", 1)
+    ph2 = svc.create_phase(db, s2.rid, "GĐ1", "", 1)
+    ngoai = _doc(db, s2.rid, ph2.id, title="Của phiếu khác")
     db.commit()
 
     with pytest.raises(HTTPException):
-        _doc(db, s1.id, ph1.id, title="X", depends=[ngoai.id])
+        _doc(db, s1.rid, ph1.id, title="X", depends=[ngoai.id])
 
 
 def test_payload_loc_id_tien_quyet_chet(db):
     """Id chết lọt vào `depends` (dữ liệu cũ, sửa tay DB) không được ra FE —
     FE đếm nó là «chưa xong» và hồ sơ khóa vĩnh viễn."""
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    a = _doc(db, s.id, ph.id, title="A")
-    b = _doc(db, s.id, ph.id, title="B")
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    a = _doc(db, s.rid, ph.id, title="A")
+    b = _doc(db, s.rid, ph.id, title="B")
     db.commit()
     db.get(SurveyReportDoc, b.id).depends = [a.id, 999999]
     db.commit()
 
-    docs = {d["title"]: d for d in svc.get_report_payload(db, s.id)["docs"]}
+    docs = {d["title"]: d for d in svc.get_report_payload(db, s.rid)["docs"]}
     assert docs["B"]["depends"] == [a.id]
 
 
 def test_ho_so_cua_phieu_khac_khong_lo_sang(db):
     s1, s2 = _sr(db), _sr(db, code="YCKS-BC3")
-    ph2 = svc.create_phase(db, s2.id, "GĐ1", "", 1)
-    _doc(db, s2.id, ph2.id, title="Riêng tư")
+    ph2 = svc.create_phase(db, s2.rid, "GĐ1", "", 1)
+    _doc(db, s2.rid, ph2.id, title="Riêng tư")
     db.commit()
 
-    empty = svc.get_report_payload(db, s1.id)
+    empty = svc.get_report_payload(db, s1.rid)
     assert empty["items"] == [] and empty["phases"] == [] and empty["docs"] == []
     with pytest.raises(HTTPException):        # sửa chéo phiếu -> 404
-        svc.update_doc(db, s1.id,
-                       svc.get_report_payload(db, s2.id)["docs"][0]["id"],
+        svc.update_doc(db, s1.rid,
+                       svc.get_report_payload(db, s2.rid)["docs"][0]["id"],
                        ReportDocPatch(status=RD_DONE), user_id=1)
 
 
@@ -282,12 +291,12 @@ def test_tao_ho_so_luu_ngay_va_nhan_su_resolve_ten(db):
     db.add(emp)
     db.commit()
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    _doc(db, s.id, ph.id, title="Giấy phép", start_date="2026-09-01",
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    _doc(db, s.rid, ph.id, title="Giấy phép", start_date="2026-09-01",
          expires_at="2026-12-31", planned_date="2026-10-15", assignee_id=emp.id)
     db.commit()
 
-    doc = svc.get_report_payload(db, s.id)["docs"][0]
+    doc = svc.get_report_payload(db, s.rid)["docs"][0]
     assert doc["start_date"] == "2026-09-01"
     assert doc["expires_at"] == "2026-12-31"
     assert doc["planned_date"] == "2026-10-15"
@@ -298,30 +307,30 @@ def test_tao_ho_so_luu_ngay_va_nhan_su_resolve_ten(db):
 def test_nhan_su_id_chet_ra_ten_rong(db):
     """Nhân sự bị xóa sau khi đã cử — id chết không được làm vỡ payload, chỉ ra ''."""
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    _doc(db, s.id, ph.id, title="X", assignee_id=999999)
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    _doc(db, s.rid, ph.id, title="X", assignee_id=999999)
     db.commit()
-    doc = svc.get_report_payload(db, s.id)["docs"][0]
+    doc = svc.get_report_payload(db, s.rid)["docs"][0]
     assert doc["assignee_id"] == 999999 and doc["assignee_name"] == ""
 
 
 def test_patch_chuoi_rong_xoa_ngay_khac_none_bo_qua(db):
     """'' = XÓA ngày (ghi None); không gửi = giữ nguyên. Hai nghĩa phải khác nhau."""
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    doc = _doc(db, s.id, ph.id, title="X", start_date="2026-09-01", expires_at="2026-10-01",
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    doc = _doc(db, s.rid, ph.id, title="X", start_date="2026-09-01", expires_at="2026-10-01",
                planned_date="2026-09-20")
     db.commit()
 
     # Không gửi expires_at -> giữ nguyên; gửi start_date='' -> xóa; đổi planned_date.
-    svc.update_doc(db, s.id, doc.id, ReportDocPatch(start_date="", planned_date="2026-09-25"),
+    svc.update_doc(db, s.rid, doc.id, ReportDocPatch(start_date="", planned_date="2026-09-25"),
                    user_id=1)
     db.commit()
     row = db.get(SurveyReportDoc, doc.id)
     assert row.start_date is None and row.expires_at is not None
     assert row.planned_date.isoformat() == "2026-09-25"
     # planned_date='' cũng XÓA (bao-CR-392) — cùng luật với hai ô ngày cũ.
-    svc.update_doc(db, s.id, doc.id, ReportDocPatch(planned_date=""), user_id=1)
+    svc.update_doc(db, s.rid, doc.id, ReportDocPatch(planned_date=""), user_id=1)
     db.commit()
     assert db.get(SurveyReportDoc, doc.id).planned_date is None
 
@@ -343,22 +352,22 @@ def test_tran_so_dong_moi_bang_con(db):
     """`sort_order` là SMALLINT — không trần thì dòng 32768 tràn số im lặng."""
     s = _sr(db)
     for i in range(50):
-        svc.create_item(db, s.id, f"Nút {i}", 1)
+        svc.create_item(db, s.rid, f"Nút {i}", 1)
     with pytest.raises(HTTPException) as e:
-        svc.create_item(db, s.id, "Nút 51", 1)
+        svc.create_item(db, s.rid, "Nút 51", 1)
     assert e.value.status_code == 400
 
 
 # ── điều kiện đóng phiếu: hồ sơ báo cáo BẮT BUỘC phải hoàn tất ──────────────────
 def test_required_docs_pending_chi_dem_bat_buoc_chua_xong(db):
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    _doc(db, s.id, ph.id, title="Bắt buộc chưa xong", required=True, status=0)
-    _doc(db, s.id, ph.id, title="Bắt buộc xong", required=True, status=RD_DONE)
-    _doc(db, s.id, ph.id, title="Tùy chọn chưa xong", required=False, status=0)
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    _doc(db, s.rid, ph.id, title="Bắt buộc chưa xong", required=True, status=0)
+    _doc(db, s.rid, ph.id, title="Bắt buộc xong", required=True, status=RD_DONE)
+    _doc(db, s.rid, ph.id, title="Tùy chọn chưa xong", required=False, status=0)
     db.commit()
 
-    pending = svc.required_docs_pending(db, s.id)
+    pending = svc.required_docs_pending(db, s.rid)
     assert [d.title for d in pending] == ["Bắt buộc chưa xong"]
 
 
@@ -374,8 +383,8 @@ def test_finalize_bi_chan_khi_con_ho_so_bat_buoc(db):
     from app.modules.survey_request.service import finalize_sr
 
     s = _sr_at(db, "YCKS-FIN", "survey_done")
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    doc = _doc(db, s.id, ph.id, title="Giấy phép", required=True, status=0)
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    doc = _doc(db, s.rid, ph.id, title="Giấy phép", required=True, status=0)
     db.commit()
 
     with pytest.raises(HTTPException) as e:
@@ -383,7 +392,7 @@ def test_finalize_bi_chan_khi_con_ho_so_bat_buoc(db):
     assert e.value.status_code == 400
 
     # Hoàn tất hồ sơ bắt buộc -> đóng được.
-    svc.update_doc(db, s.id, doc.id, ReportDocPatch(status=RD_DONE), user_id=1)
+    svc.update_doc(db, s.rid, doc.id, ReportDocPatch(status=RD_DONE), user_id=1)
     db.commit()
     assert finalize_sr(db, s.id, user_id=1).status == "done"
 
@@ -391,25 +400,25 @@ def test_finalize_bi_chan_khi_con_ho_so_bat_buoc(db):
 # ── xóa cả khối + hoàn tác ─────────────────────────────────────────────────────
 def test_xoa_ca_khoi_roi_hoan_tac_dung_cau_truc_va_tien_quyet(db):
     s = _sr(db)
-    ph1 = svc.create_phase(db, s.id, "GĐ1", "Nơi 1", 1)
-    ph2 = svc.create_phase(db, s.id, "GĐ2", "Nơi 2", 2)
-    item = svc.create_item(db, s.id, "KNO3", 1)
-    a = _doc(db, s.id, ph1.id, title="A", item_id=item.id, required=True, status=RD_DONE)
-    b = _doc(db, s.id, ph2.id, title="B", depends=[a.id], required=False)
+    ph1 = svc.create_phase(db, s.rid, "GĐ1", "Nơi 1", 1)
+    ph2 = svc.create_phase(db, s.rid, "GĐ2", "Nơi 2", 2)
+    item = svc.create_item(db, s.rid, "KNO3", 1)
+    a = _doc(db, s.rid, ph1.id, title="A", item_id=item.id, required=True, status=RD_DONE)
+    b = _doc(db, s.rid, ph2.id, title="B", depends=[a.id], required=False)
     db.commit()
 
     # Xóa cả khối -> rỗng, còn 1 bản trash chưa hoàn tác.
-    trash = svc.delete_all(db, s.id, user_id=1)
+    trash = svc.delete_all(db, s.rid, user_id=1)
     trash.audit_id = 555
     db.commit()
-    payload = svc.get_report_payload(db, s.id)
+    payload = svc.get_report_payload(db, s.rid)
     assert payload["docs"] == [] and payload["phases"] == [] and payload["items"] == []
     assert payload["restorable"] is True and payload["restorable_audit_id"] == 555
 
     # Hoàn tác -> dựng lại 2 giai đoạn, 1 nút, 2 hồ sơ; depends B->A ánh xạ đúng id mới.
-    assert svc.restore_latest(db, s.id, user_id=1) is not None
+    assert svc.restore_latest(db, s.rid, user_id=1) is not None
     db.commit()
-    p2 = svc.get_report_payload(db, s.id)
+    p2 = svc.get_report_payload(db, s.rid)
     assert len(p2["phases"]) == 2 and len(p2["items"]) == 1 and len(p2["docs"]) == 2
     by_title = {d["title"]: d for d in p2["docs"]}
     assert by_title["A"]["status"] == RD_DONE and by_title["A"]["required"] is True
@@ -423,19 +432,19 @@ def test_xoa_ca_khoi_roi_hoan_tac_dung_cau_truc_va_tien_quyet(db):
 def test_hoan_tac_khong_nhan_doi_khi_khoi_da_co_noi_dung(db):
     """Xóa rồi tự thêm hồ sơ mới, sau đó bấm Hoàn tác: KHÔNG dựng chồng lên."""
     s = _sr(db)
-    ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    _doc(db, s.id, ph.id, title="Cũ")
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    _doc(db, s.rid, ph.id, title="Cũ")
     db.commit()
-    svc.delete_all(db, s.id, user_id=1)
+    svc.delete_all(db, s.rid, user_id=1)
     db.commit()
     # Người dùng dựng nội dung mới.
-    ph2 = svc.create_phase(db, s.id, "GĐ mới", "", 1)
-    _doc(db, s.id, ph2.id, title="Mới")
+    ph2 = svc.create_phase(db, s.rid, "GĐ mới", "", 1)
+    _doc(db, s.rid, ph2.id, title="Mới")
     db.commit()
 
-    svc.restore_latest(db, s.id, user_id=1)      # không được nhân đôi
+    svc.restore_latest(db, s.rid, user_id=1)      # không được nhân đôi
     db.commit()
-    titles = [d["title"] for d in svc.get_report_payload(db, s.id)["docs"]]
+    titles = [d["title"] for d in svc.get_report_payload(db, s.rid)["docs"]]
     assert titles == ["Mới"]
 
 
@@ -448,7 +457,7 @@ def test_finalize_qua_khi_khong_co_bao_cao_hoac_chi_tuy_chon(db):
     assert finalize_sr(db, s1.id, user_id=1).status == "done"
 
     s2 = _sr_at(db, "YCKS-F2", "pr_created")
-    ph = svc.create_phase(db, s2.id, "GĐ1", "", 1)
-    _doc(db, s2.id, ph.id, title="Tùy chọn", required=False, status=0)
+    ph = svc.create_phase(db, s2.rid, "GĐ1", "", 1)
+    _doc(db, s2.rid, ph.id, title="Tùy chọn", required=False, status=0)
     db.commit()
     assert finalize_sr(db, s2.id, user_id=1).status == "done"

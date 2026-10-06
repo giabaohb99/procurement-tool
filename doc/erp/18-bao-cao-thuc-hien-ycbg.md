@@ -129,3 +129,45 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
 - Đã lên **dev + prod** ngày 12/09/2026 (bao-CR-388 · 390 · 391 · 392 · 393, ghi ở
   `doc/tai-lieu-ky-thuat/change-log-bao.md`); prod chạy 4 migration báo cáo từ
   `bee157de2ec8` tới `c3e5a7b9d1f2`.
+
+## Mở rộng sang Đơn mua hàng (bao-CR-598, 06/10/2026)
+
+- Khối không còn là của riêng YCBG: bảng đầu `tab_exec_report(owner_entity, owner_id)` nói
+  **chứng từ nào sở hữu khối**; bốn bảng con đổi tên `tab_exec_report_{item,phase,doc,trash}`
+  và nối vào đầu bằng `report_id`. Migration `bcth01` dựng đầu cho mọi YCBG đang có dữ liệu
+  với `id = id phiếu`, nên cột khóa chỉ đổi tên, không chép dòng nào.
+- Một bộ API `/api/execution-report/{entity}/{owner_id}` (thay `/api/survey-requests/{sid}/report`).
+  Luật theo loại chứng từ ở `_OWNER_RULES` của `report_controller.py`:
+
+  | Chứng từ | Đọc | Ghi | Khóa khi | Nút dòng hàng |
+  |---|---|---|---|---|
+  | YCBG `survey_request` | `read` + phạm vi | `process` (phạm vi hỏi theo `read`) | done · cancelled | đặt tay |
+  | ĐMH `purchase_order` | `read` + phạm vi | `write` + phạm vi `write` | completed · cancelled | **bám dòng đơn** |
+
+- **Mỗi đơn một báo cáo riêng**, không nối YCBG (đại ca chốt 06/10: «mỗi cái đơn là mỗi cái báo
+  cáo riêng, tại họ tự thêm dòng vào được mà»).
+- Nút dòng hàng của ĐMH mang `line_id = tab_po_item.id`; mỗi lần đọc khối máy chủ đồng bộ theo
+  dòng đơn (thêm / đổi tên / xóa nút, hồ sơ của nút bị xóa về Chung). Thêm/đổi tên/xóa nút tay
+  trên ĐMH trả 400. Khối CHƯA khởi tạo thì đồng bộ không đẻ nút.
+- Bảng dòng hàng ĐMH (cả hai bản) có cột **«Hồ sơ»** = % hồ sơ hoàn tất của dòng (hồ sơ của
+  dòng + hồ sơ Chung, `lineReportProgress`); bấm là cuộn xuống thẻ, chuyển dạng xem theo dòng
+  hàng và sổ đúng dòng (`focusItem` qua ref).
+
+### Đối chiếu cột bảng kế hoạch Excel của Thu mua («2870 — Kế hoạch Abamectin 3.6»)
+
+| Cột Excel | Trường hồ sơ | Ghi chú |
+|---|---|---|
+| STT | `sort_order` | |
+| Hạng mục | `title` | |
+| Công việc chi tiết | `description` | |
+| Người/Đơn vị phụ trách | `assignee_id` | Excel ghi tên gọi («Tiên», «Ngân»); ERP chọn nhân sự thật |
+| Ngày thực hiện | `start_date` | |
+| Time xử lý (ngày) | *suy ra* | Hộp sửa có ô «Số ngày xử lý»: gõ n → dự định hoàn tất = ngày bắt đầu + n. Không lưu cột riêng |
+| Trạng thái | `status` | Đang thực hiện → Đang làm (1) · Chưa hoàn thành → Chưa bắt đầu (0) · Hoàn thành (3) |
+| Ngày dự kiến hoàn thành | `planned_date` | |
+| Kết quả | `result` | **Cột mới** bao-CR-598, `String(1000)`; hiện trên dòng và trong hộp sửa |
+| Công việc đang thực hiện · Ghi chú | `result` / `description` | Excel để trống; gộp vào hai ô trên |
+| Link | `file_note` | |
+| *(không có)* Giai đoạn | `phase_id` | Excel chạy tuần tự, không chia khâu → script xếp vào 5 giai đoạn mẫu; mỗi dòng là tiên quyết của dòng kế |
+
+Script nạp thử: `python scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]` (21 dòng, gắn nút dòng hàng đầu tiên của đơn).

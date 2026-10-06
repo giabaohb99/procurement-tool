@@ -2,17 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
-import {
-  surveyRequestReportApi,
-  type ReportDocPayload,
-} from '../api/survey-request-report-api'
-import type { SurveyRequestReport } from '../types/survey-request-report'
+import { executionReportApi, type ReportDocPayload } from '../api/survey-request-report-api'
+import type { ReportOwnerEntity, SurveyRequestReport } from '../types/survey-request-report'
 
-/** Khối báo cáo thực hiện của một phiếu YCBG. `id <= 0` (màn tạo mới) không gọi. */
-export function useSurveyRequestReport(id: number) {
+/**
+ * Khối báo cáo thực hiện của một chứng từ — YCBG hay ĐMH tùy `entity`
+ * (bao-CR-598). `id <= 0` (màn tạo mới) không gọi.
+ */
+export function useSurveyRequestReport(id: number, entity: ReportOwnerEntity = 'survey_request') {
   return useQuery({
-    queryKey: queryKeys.procurement.surveyRequestReport(id),
-    queryFn: () => surveyRequestReportApi.get(id),
+    queryKey: queryKeys.procurement.executionReport(entity, id),
+    queryFn: () => executionReportApi(entity).get(id),
     enabled: id > 0,
   })
 }
@@ -22,6 +22,7 @@ export function useSurveyRequestReport(id: number) {
  * thay vì invalidate: đỡ một lượt GET, và màn hình đổi ngay khi bấm ✓.
  */
 function useReportMutation<TVars>(
+  entity: ReportOwnerEntity,
   id: number,
   mutationFn: (vars: TVars) => Promise<SurveyRequestReport>,
   successMessage?: string,
@@ -31,20 +32,22 @@ function useReportMutation<TVars>(
     mutationFn,
     onSuccess: (data) => {
       if (successMessage) toast.success(successMessage)
-      queryClient.setQueryData(queryKeys.procurement.surveyRequestReport(id), data)
-      //  Mọi thao tác báo cáo đều ghi Lịch sử thao tác của phiếu — làm mới nó để
-      //  dòng mới hiện ngay (nhất là dòng «Xóa» có nút Hoàn tác).
-      void queryClient.invalidateQueries({ queryKey: ['audit-logs', 'survey_request', id] })
+      queryClient.setQueryData(queryKeys.procurement.executionReport(entity, id), data)
+      //  Mọi thao tác báo cáo đều ghi Lịch sử thao tác của chứng từ cha — làm mới
+      //  nó để dòng mới hiện ngay (nhất là dòng «Xóa» có nút Hoàn tác).
+      void queryClient.invalidateQueries({ queryKey: ['audit-logs', entity, id] })
     },
   })
 }
 
-/** Toàn bộ thao tác ghi của khối báo cáo — chỉ NS Thu mua (cờ `process`) gọi được. */
-export function useSurveyReportActions(id: number) {
+/** Toàn bộ thao tác ghi của khối báo cáo — backend gác theo cửa ghi của chứng từ cha. */
+export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = 'survey_request') {
+  const api = executionReportApi(entity)
   return {
     init: useReportMutation<void>(
+      entity,
       id,
-      () => surveyRequestReportApi.init(id),
+      () => api.init(id),
       'Đã khởi tạo báo cáo theo mẫu chung',
     ),
     /**
@@ -52,68 +55,72 @@ export function useSurveyReportActions(id: number) {
      * sơ (hay không thêm gì vì đã đủ) chỉ biết khi so khối trước/sau — chỗ gọi lo.
      */
     applyTemplate: useReportMutation(
+      entity,
       id,
       ({ itemId, phaseId }: { itemId: number; phaseId?: number }) =>
-        surveyRequestReportApi.applyTemplate(id, itemId, phaseId),
+        api.applyTemplate(id, itemId, phaseId),
     ),
 
     saveItem: useReportMutation(
+      entity,
       id,
       ({ itemId, name }: { itemId?: number; name: string }) =>
-        itemId
-          ? surveyRequestReportApi.renameItem(id, itemId, name)
-          : surveyRequestReportApi.createItem(id, name),
+        itemId ? api.renameItem(id, itemId, name) : api.createItem(id, name),
       'Đã lưu nút dòng hàng',
     ),
     deleteItem: useReportMutation(
+      entity,
       id,
-      ({ itemId }: { itemId: number }) => surveyRequestReportApi.deleteItem(id, itemId),
+      ({ itemId }: { itemId: number }) => api.deleteItem(id, itemId),
       'Đã xóa nút — hồ sơ gắn nút chuyển về Chung',
     ),
 
     savePhase: useReportMutation(
+      entity,
       id,
       ({ phaseId, name, location }: { phaseId?: number; name: string; location: string }) =>
-        phaseId
-          ? surveyRequestReportApi.updatePhase(id, phaseId, name, location)
-          : surveyRequestReportApi.createPhase(id, name, location),
+        phaseId ? api.updatePhase(id, phaseId, name, location) : api.createPhase(id, name, location),
       'Đã lưu giai đoạn',
     ),
     deletePhase: useReportMutation(
+      entity,
       id,
-      ({ phaseId }: { phaseId: number }) => surveyRequestReportApi.deletePhase(id, phaseId),
+      ({ phaseId }: { phaseId: number }) => api.deletePhase(id, phaseId),
       'Đã xóa giai đoạn',
     ),
 
     saveDoc: useReportMutation(
+      entity,
       id,
       ({ docId, payload }: { docId?: number; payload: ReportDocPayload }) =>
-        docId
-          ? surveyRequestReportApi.updateDoc(id, docId, payload)
-          : surveyRequestReportApi.createDoc(id, payload),
+        docId ? api.updateDoc(id, docId, payload) : api.createDoc(id, payload),
       'Đã lưu hồ sơ',
     ),
     /** Nút ✓ — chỉ đổi trạng thái, không toast để bấm liên tiếp không dội thông báo. */
     setDocStatus: useReportMutation(
+      entity,
       id,
       ({ docId, status }: { docId: number; status: number }) =>
-        surveyRequestReportApi.updateDoc(id, docId, { status }),
+        api.updateDoc(id, docId, { status }),
     ),
     deleteDoc: useReportMutation(
+      entity,
       id,
-      ({ docId }: { docId: number }) => surveyRequestReportApi.deleteDoc(id, docId),
+      ({ docId }: { docId: number }) => api.deleteDoc(id, docId),
       'Đã xóa hồ sơ',
     ),
 
     /** Xóa CẢ khối — hoàn tác được từ Lịch sử thao tác. */
     deleteReport: useReportMutation<void>(
+      entity,
       id,
-      () => surveyRequestReportApi.deleteAll(id),
+      () => api.deleteAll(id),
       'Đã xóa báo cáo thực hiện — có thể hoàn tác ở Lịch sử thao tác',
     ),
     restoreReport: useReportMutation<void>(
+      entity,
       id,
-      () => surveyRequestReportApi.restore(id),
+      () => api.restore(id),
       'Đã hoàn tác — khôi phục báo cáo thực hiện',
     ),
   }
@@ -122,10 +129,11 @@ export function useSurveyReportActions(id: number) {
 export type SurveyReportActions = ReturnType<typeof useSurveyReportActions>
 
 /** Hoàn tác lần «Xóa báo cáo thực hiện» — dùng ở nút trên Lịch sử thao tác. */
-export function useRestoreSurveyReport(id: number) {
+export function useRestoreSurveyReport(id: number, entity: ReportOwnerEntity = 'survey_request') {
   return useReportMutation<void>(
+    entity,
     id,
-    () => surveyRequestReportApi.restore(id),
+    () => executionReportApi(entity).restore(id),
     'Đã hoàn tác — khôi phục báo cáo thực hiện',
   )
 }

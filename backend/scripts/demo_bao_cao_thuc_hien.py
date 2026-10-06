@@ -124,8 +124,11 @@ def main(request_id: int) -> None:
         if not request:
             raise SystemExit(f"Không có phiếu YCBG id {request_id} trong DB này")
 
+        #  bao-CR-598: khối nối vào ĐẦU `tab_exec_report`, tạo nếu phiếu chưa có.
+        from app.modules.survey_request.report_service import ensure_report
+        report_id = ensure_report(db, "survey_request", request_id, user_id=0).id
         for model in (SurveyReportDoc, SurveyReportPhase, SurveyReportItem):
-            db.query(model).filter(model.survey_request_id == request_id).delete()
+            db.query(model).filter(model.report_id == report_id).delete()
         db.flush()
 
         employee = db.query(Employee).order_by(Employee.id).offset(2).first()
@@ -134,14 +137,14 @@ def main(request_id: int) -> None:
         phases = []
         for order, (name, location) in enumerate(DEFAULT_PHASES, start=1):
             phase = SurveyReportPhase(
-                survey_request_id=request_id, name=name, location=location, sort_order=order
+                report_id=report_id, name=name, location=location, sort_order=order
             )
             db.add(phase)
             phases.append(phase)
 
         items = []
         for order, name in enumerate(ITEMS, start=1):
-            item = SurveyReportItem(survey_request_id=request_id, name=name, sort_order=order)
+            item = SurveyReportItem(report_id=report_id, name=name, sort_order=order)
             db.add(item)
             items.append(item)
         db.flush()
@@ -152,7 +155,7 @@ def main(request_id: int) -> None:
         for order, row in enumerate(DOCS, start=1):
             phase_no, item_no, title, description, required, status, file_note, _, start, expires = row
             doc = SurveyReportDoc(
-                survey_request_id=request_id,
+                report_id=report_id,
                 phase_id=phases[phase_no - 1].id,
                 item_id=items[item_no - 1].id if item_no else 0,
                 title=title,

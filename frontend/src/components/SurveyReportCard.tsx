@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { askConfirm } from './confirm'
 import { toast } from './toast'
@@ -9,15 +9,18 @@ import DateInput from './DateInput'
 import {
   COMMON_ROW_ID, REPORT_DOC_DOING, REPORT_DOC_DONE, REPORT_DOC_IDLE, REPORT_DOC_STATUS_BADGE,
   REPORT_DOC_STATUS_LABELS, REPORT_FILTER_ALL, REPORT_STATUS_FILTER_ALL,
-  currentReportPhaseId, expiryTone, filterReportDocs, isReportDocDone, isReportDocLocked,
+  addDaysIso, currentReportPhaseId, durationDays, expiryTone, filterReportDocs, isReportDocDone, isReportDocLocked,
   latestPlannedDate, matchReportDoc, nameInitials, nearestExpiry, pendingDepends, reportDocLateDays,
   reportDocsById, reportPercent, reportPlanLateDays, trackingMarkers,
-  type SurveyReportDoc, type SurveyReportDocPayload, type SurveyReportItem, type SurveyReportPhase,
-  type SurveyRequestReport,
+  type ReportOwnerEntity, type SurveyReportDoc, type SurveyReportDocPayload, type SurveyReportItem,
+  type SurveyReportPhase, type SurveyRequestReport,
 } from '../utils/surveyReportHelpers'
 
 /**
  * bao-CR-390: khối «Báo cáo thực hiện» trên chi tiết YCBG — bản v1 (`frontend/`).
+ * bao-CR-598: dùng chung cho ĐMH (`entity="purchase_order"`): nút dòng hàng bám theo dòng
+ * đơn (`itemsLocked`), cột «Kết quả», ô «Số ngày xử lý», và lệnh `focusItem` qua ref để
+ * bảng dòng hàng của đơn cuộn tới + sổ đúng nút.
  * Chép hành vi của `frontend-v2/.../survey-report/survey-report-card.tsx` sang phong
  * cách v1 (CSS thuần `.srp-*`, tabler icons, askConfirm/toast). Backend dùng chung,
  * mọi mutation trả về NGUYÊN KHỐI mới nên state chỉ thay một lượt, không refetch.
@@ -31,11 +34,21 @@ const VIEW_KEY = 'erp.survey-report.view'
 const EXPIRY_SOON_DAYS = 7
 
 type Props = {
-  surveyRequestId: number
+  /** Id chứng từ chủ (YCBG hay ĐMH tùy `entity`). */
+  ownerId: number
+  /** Loại chứng từ chủ — mặc định YCBG. */
+  entity?: ReportOwnerEntity
   canEdit: boolean
+  /** Nút dòng hàng sinh tự động theo dòng chứng từ (ĐMH) — không thêm/đổi tên/xóa tay. */
+  itemsLocked?: boolean
   /** Gọi sau mỗi lần ghi — cha nạp lại Lịch sử thao tác. */
   onChanged?: () => void
+  /** Khối mới nhất (sau nạp và sau mỗi lần ghi) — cha dùng tính % theo dòng hàng. */
+  onReport?: (report: SurveyRequestReport | null) => void
 }
+
+/** Lệnh từ ngoài: bảng dòng hàng của chứng từ bấm «Hồ sơ» → cuộn tới và sổ đúng nút. */
+export type SurveyReportCardHandle = { focusItem: (itemId: number) => void }
 
 type DocDialogState = { doc: SurveyReportDoc | null; defaults?: Partial<SurveyReportDocPayload> }
 type ItemDialogState = { item: SurveyReportItem | null }
@@ -56,9 +69,13 @@ function readViewMode(): ViewMode {
   try { return localStorage.getItem(VIEW_KEY) === 'item' ? 'item' : 'phase' } catch { return 'phase' }
 }
 
-export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }: Props) {
+const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function SurveyReportCard(
+  { ownerId, entity = 'survey_request', canEdit, itemsLocked = false, onChanged, onReport }, ref,
+) {
   const { user } = useAuth()
-  const base = `/api/survey-requests/${surveyRequestId}/report`
+  const base = `/api/execution-report/${entity}/${ownerId}`
+  const ownerLabel = entity === 'purchase_order' ? 'đơn' : 'phiếu'
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const [report, setReport] = useState<SurveyRequestReport | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -79,22 +96,34 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
     try { localStorage.setItem(VIEW_KEY, mode) } catch { /* private mode */ }
   }
 
+  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-598): mở khối, chuyển
+  //  dạng xem theo dòng hàng, sổ đúng dòng rồi cuộn tới.
+  useImperativeHandle(ref, () => ({
+    focusItem: (itemId: number) => {
+      setOpen(true)
+      setViewMode('item')
+      setExpandedItems((s) => new Set(s).add(itemId))
+      requestAnimationFrame(() => rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    },
+  }))
+
   // --- nạp khối ---
   useEffect(() => {
-    if (!surveyRequestId) return
+    if (!ownerId) return
     let alive = true
     api.get(base, { _silent: true } as any)
       .then((r) => {
         if (!alive) return
         const data: SurveyRequestReport = r.data.data
         setReport(data)
-        // Thẻ gấp mặc định; phiếu chưa có gì thì mở sẵn để người thực hiện thấy nút Khởi tạo
+        onReport?.(data)
+        // Thẻ gấp mặc định; chứng từ chưa có gì thì mở sẵn để người thực hiện thấy nút Khởi tạo
         setOpen(!data.phases.length && !data.docs.length)
       })
       .catch(() => { if (alive) setReport(null) })
       .finally(() => { if (alive) setLoaded(true) })
     return () => { alive = false }
-  }, [surveyRequestId])
+  }, [ownerId, entity])
 
   /** Chạy một mutation: khối mới thay vào state, toast, báo cha nạp lại lịch sử. */
   async function mutate(run: () => Promise<any>, message?: string | ((next: SurveyRequestReport) => string | null)): Promise<boolean> {
@@ -104,6 +133,7 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
       const r = await run()
       const next: SurveyRequestReport = r.data.data
       setReport(next)
+      onReport?.(next)
       const text = typeof message === 'function' ? message(next) : message
       if (text) toast.success(text)
       onChanged?.()
@@ -262,7 +292,9 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
           <span className="badge gray" style={{ textTransform: 'none', fontSize: 11 }}>{itemName(doc.item_id) || 'Chung'}</span>
         )}
         {doc.required && <span className="badge err">Bắt buộc</span>}
-        <span className="srp-desc" title={doc.description}>{doc.description}</span>
+        <span className="srp-desc" title={[doc.description, doc.result && `Kết quả: ${doc.result}`].filter(Boolean).join('\n')}>
+          {doc.description}{doc.result && <span style={{ color: 'var(--teal)' }}>{doc.description ? ' · ' : ''}Kết quả: {doc.result}</span>}
+        </span>
         {locked && (
           <i className="ti ti-lock" style={{ color: 'var(--amber)', fontSize: 15 }}
             title={`Chờ hồ sơ tiên quyết: ${pending.map((p) => p.title).join(', ')}`} />
@@ -364,7 +396,7 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
           </td>
           <td>
             <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{name}</span>
-            {canEdit && item && (
+            {canEdit && item && !itemsLocked && (
               <button type="button" className="srp-ibtn" style={{ marginLeft: 4 }} title="Đổi tên / xóa nút" onClick={() => setItemDialog({ item })}><i className="ti ti-pencil" /></button>
             )}
           </td>
@@ -427,9 +459,9 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
             </tr>
           </thead>
           <tbody>
-            {showCommon && renderItemRow(COMMON_ROW_ID, 'Chung (cả phiếu)', null)}
+            {showCommon && renderItemRow(COMMON_ROW_ID, `Chung (cả ${ownerLabel})`, null)}
             {report!.items.map((it) => renderItemRow(it.id, it.name, it))}
-            {canEdit && (
+            {canEdit && !itemsLocked && (
               <tr>
                 <td colSpan={6}>
                   <button type="button" className="btn ghost sm" onClick={() => setItemDialog({ item: null })}><i className="ti ti-plus" /> Thêm nút dòng hàng</button>
@@ -440,7 +472,7 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
           <tfoot>
             <tr>
               <td />
-              <td style={{ fontWeight: 700, color: 'var(--navy)' }}>Tổng cả phiếu</td>
+              <td style={{ fontWeight: 700, color: 'var(--navy)' }}>Tổng cả {ownerLabel}</td>
               <td>{report!.docs.length}</td>
               <td>{report!.docs.filter(isReportDocDone).length}</td>
               <td style={{ fontSize: 12, color: 'var(--muted)' }}>{reportPercent(report!.docs)}%</td>
@@ -495,7 +527,7 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
   const currentPhaseName = report.phases.find((p) => p.id === currentPhaseId)?.name
 
   return (
-    <div className="card" style={{ padding: 18 }}>
+    <div ref={rootRef} className="card" style={{ padding: 18, scrollMarginTop: 12 }}>
       <div className="srp-head" onClick={() => setOpen((o) => !o)}>
         <i className={`ti ti-chevron-${open ? 'down' : 'right'}`} style={{ color: '#94a3b8' }} />
         <h3 className="sec-title" style={{ margin: 0, border: 0, padding: 0 }}><i className="ti ti-list-check" /> Báo cáo thực hiện</h3>
@@ -515,7 +547,10 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
 
       {open && isEmpty && (
         <div style={{ padding: '14px 0 4px', color: 'var(--muted)', fontSize: 13 }}>
-          <div style={{ marginBottom: 10 }}>Phiếu này chưa có báo cáo thực hiện.</div>
+          <div style={{ marginBottom: 10 }}>
+            {ownerLabel === 'đơn' ? 'Đơn' : 'Phiếu'} này chưa có báo cáo thực hiện.
+            {itemsLocked && ' Nút dòng hàng bám theo dòng của đơn: thêm/bớt dòng trên đơn là khối tự theo.'}
+          </div>
           {canEdit && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {report.restorable && (
@@ -571,10 +606,10 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
                   {idx + 1}. {it.name}
                 </button>
               ))}
-              {canEdit && (
+              {canEdit && !itemsLocked && (
                 <button type="button" className="srp-chip" title="Thêm nút dòng hàng" onClick={() => setItemDialog({ item: null })}><i className="ti ti-plus" /></button>
               )}
-              {canEdit && itemFilter !== REPORT_FILTER_ALL && (
+              {canEdit && !itemsLocked && itemFilter !== REPORT_FILTER_ALL && (
                 <button type="button" className="srp-chip" title="Đổi tên / xóa nút đang chọn"
                   onClick={() => { const it = report.items.find((x) => x.id === itemFilter); if (it) setItemDialog({ item: it }) }}>
                   <i className="ti ti-pencil" />
@@ -661,7 +696,9 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
       )}
     </div>
   )
-}
+})
+
+export default SurveyReportCard
 
 // ============================================================================
 // Hộp thoại dùng chung (C-01: chỉ đóng bằng Hủy / X; form dở thì hỏi xác nhận;
@@ -722,12 +759,12 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
 }) {
   const initial: SurveyReportDocPayload = useMemo(() => doc ? {
     title: doc.title, description: doc.description, phase_id: doc.phase_id, item_id: doc.item_id,
-    required: doc.required, status: doc.status, file_note: doc.file_note, depends: [...doc.depends],
+    required: doc.required, status: doc.status, file_note: doc.file_note, result: doc.result || '', depends: [...doc.depends],
     start_date: doc.start_date || '', expires_at: doc.expires_at || '', planned_date: doc.planned_date || '',
     assignee_id: doc.assignee_id || 0,
   } : {
     title: '', description: '', phase_id: defaults?.phase_id ?? (report.phases[0]?.id ?? 0),
-    item_id: defaults?.item_id ?? COMMON_ROW_ID, required: false, status: REPORT_DOC_IDLE, file_note: '',
+    item_id: defaults?.item_id ?? COMMON_ROW_ID, required: false, status: REPORT_DOC_IDLE, file_note: '', result: '',
     depends: [], start_date: '', expires_at: '', planned_date: '', assignee_id: defaultAssigneeId,
   }, [])
   const [form, setForm] = useState<SurveyReportDocPayload>(initial)
@@ -821,6 +858,25 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
         <div className="form-row">
           <label>Dự định hoàn tất</label>
           <DateInput value={form.planned_date} onChange={(v) => set('planned_date', v)} />
+          {/* bao-CR-598: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — không lưu, gõ số ngày
+              thì dự định hoàn tất = ngày bắt đầu + n; chưa có ngày bắt đầu thì ô khóa. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12, color: 'var(--muted)' }}>
+            <span style={{ whiteSpace: 'nowrap' }}>Số ngày xử lý</span>
+            <input
+              type="number"
+              min={0}
+              style={{ width: 70, height: 26, textAlign: 'right' }}
+              aria-label="Số ngày xử lý"
+              disabled={!form.start_date}
+              title={form.start_date ? '' : 'Chọn ngày bắt đầu trước'}
+              value={durationDays(form.start_date, form.planned_date) ?? ''}
+              onChange={(e) => {
+                const days = Number(e.target.value)
+                if (!form.start_date || !Number.isFinite(days) || days < 0) return
+                set('planned_date', addDaysIso(form.start_date, days))
+              }}
+            />
+          </div>
         </div>
         <div className="form-row">
           <label>Ngày hết hiệu lực</label>
@@ -835,6 +891,10 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
             autoSelectSingle={false}
             onChange={(v) => set('assignee_id', Number(v) || 0)}
           />
+        </div>
+        <div className="form-row full">
+          <label>Kết quả / ghi chú sau khi làm</label>
+          <textarea rows={2} style={{ minHeight: 48 }} value={form.result} placeholder="Vd: Đã chốt NCC Aston, công nợ 60 ngày" onChange={(e) => set('result', e.target.value)} />
         </div>
         <div className="form-row">
           <label>Tệp đính kèm / link</label>
