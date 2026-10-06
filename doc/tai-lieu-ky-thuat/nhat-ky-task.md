@@ -12155,6 +12155,8 @@ Việc AI-0002 bot dừng đúng luật vì một bài kiểm an toàn cấm cô
 Tin nhắc trước cuộc họp không còn hiện chuỗi mã sự kiện; mã đó chỉ lưu trong sổ để khỏi nhắc hai lần.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py · agent_hub/briefs.py
+Deploy: dev 06/10 cùng đợt, erp-v2 84d259bd (Agent 1 gộp và dựng lại api, celery-worker, celery-beat, agent-poller); prod giữ lại.
+
 
 ## ai-CR-088 | Bỏ việc thì đóng luôn lượt đang dở, báo cáo không đếm lượt kẹt của việc đã bỏ
 - status: xong
@@ -12164,3 +12166,4 @@ Báo cáo tài nguyên sáng 06/10 ghi «1 lượt kẹt quá 2 giờ»: đó l�
 với ghi chú «việc đã bỏ», và báo cáo chỉ đếm lượt kẹt của những việc còn mở. Thêm một bài kiểm cho đúng tình huống này.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (cancel_task) · agent_hub/ops.py (activity_text)
+Deploy: dev 06/10 cùng đợt, erp-v2 84d259bd (Agent 1 gộp và dựng lại api, celery-worker, celery-beat, agent-poller); prod giữ lại.
