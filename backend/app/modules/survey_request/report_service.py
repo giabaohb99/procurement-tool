@@ -280,10 +280,21 @@ def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int)
     hai lần không nhân đôi khung. Muốn thêm hồ sơ mẫu vào khối đang có thì đi
     đường «Tạo mẫu» (`apply_template`), nó cộng thêm và bỏ qua trùng.
     """
-    has_any = (db.query(SurveyReportPhase.id).filter_by(report_id=report_id).first()
-               or db.query(SurveyReportItem.id).filter_by(report_id=report_id).first())
-    if has_any:
+    if not is_report_empty(db, report_id):
         return -1
+    _build_skeleton(db, report_id, lines, user_id)
+    return apply_template(db, report_id, item_id=0, phase_id=None, user_id=user_id)
+
+
+def is_report_empty(db: Session, report_id: int) -> bool:
+    """Khối chưa có giai đoạn, nút dòng hàng lẫn hồ sơ nào — đúng trạng thái «lần đầu»."""
+    return not (db.query(SurveyReportPhase.id).filter_by(report_id=report_id).first()
+                or db.query(SurveyReportItem.id).filter_by(report_id=report_id).first()
+                or db.query(SurveyReportDoc.id).filter_by(report_id=report_id).first())
+
+
+def _build_skeleton(db: Session, report_id: int, lines: list[LineRef], user_id: int) -> None:
+    """KHUNG của khối: 5 giai đoạn mặc định + một nút cho mỗi dòng hàng, CHƯA có hồ sơ."""
     for order, (name, location) in enumerate(DEFAULT_PHASES):
         db.add(SurveyReportPhase(report_id=report_id, name=name, location=location,
                                  sort_order=order, created_by=user_id, updated_by=user_id))
@@ -291,7 +302,6 @@ def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int)
         db.add(SurveyReportItem(report_id=report_id, name=name, line_id=line_id,
                                 sort_order=order, created_by=user_id, updated_by=user_id))
     db.flush()
-    return apply_template(db, report_id, item_id=0, phase_id=None, user_id=user_id)
 
 
 def sync_line_items(db: Session, report_id: int, lines: list[LineRef], user_id: int) -> bool:
@@ -594,3 +604,54 @@ def delete_doc(db: Session, report_id: int, doc_id: int, user_id: int) -> str:
     title = row.title
     db.delete(row)
     return title
+
+
+def delete_docs(db: Session, report_id: int, doc_ids: list[int], user_id: int) -> list[str]:
+    """Xóa NHIỀU hồ sơ một lượt — cùng luật với `delete_doc`: gỡ các id vừa xóa khỏi
+    danh sách tiên quyết của hồ sơ CÒN LẠI. Tất cả hoặc không: một id không thuộc
+    khối này (đã bị người khác xóa, hay id của phiếu khác) → 404, không xóa gì cả."""
+    wanted = set(doc_ids)
+    rows = (db.query(SurveyReportDoc)
+            .filter(SurveyReportDoc.report_id == report_id,
+                    SurveyReportDoc.id.in_(wanted))
+            .all())
+    if len(rows) != len(wanted):
+        raise HTTPException(404, "Có hồ sơ không còn trong báo cáo — tải lại rồi chọn lại")
+    others = (db.query(SurveyReportDoc)
+              .filter(SurveyReportDoc.report_id == report_id,
+                      SurveyReportDoc.id.notin_(wanted))
+              .all())
+    for other in others:
+        deps = list(other.depends or [])
+        if any(i in wanted for i in deps):
+            other.depends = [i for i in deps if i not in wanted]
+            other.updated_by = user_id
+    titles = [row.title for row in sorted(rows, key=lambda r: r.sort_order)]
+    for row in rows:
+        db.delete(row)
+    return titles
+
+
+def create_first_doc(db: Session, report_id: int, lines: list[LineRef], data,
+                     user_id: int) -> SurveyReportDoc:
+    """duoc-CR-611 — «Thêm hồ sơ» khi khối còn TRỐNG: dựng khung (5 giai đoạn + nút theo
+    dòng hàng, KHÔNG đổ bộ hồ sơ mẫu) rồi thêm đúng một hồ sơ vào dòng hàng + giai đoạn đã
+    chọn. Khối đã có gì rồi → 400: lúc đó nút «Thêm hồ sơ» thường đã có ô chọn nút sẵn, đi
+    đường này nữa là dựng khung chồng lên khung."""
+    if not is_report_empty(db, report_id):
+        raise HTTPException(400, "Báo cáo đã có nội dung — tải lại rồi dùng nút «Thêm hồ sơ»")
+    if data.line_id and data.line_id not in {line_id for line_id, _ in lines}:
+        raise HTTPException(404, "Dòng hàng không còn trên chứng từ — tải lại rồi chọn lại")
+    _build_skeleton(db, report_id, lines, user_id)
+    phase = (db.query(SurveyReportPhase)
+             .filter_by(report_id=report_id, sort_order=data.phase_order).one())
+    item_id = 0
+    if data.line_id:
+        item_id = (db.query(SurveyReportItem.id)
+                   .filter_by(report_id=report_id, line_id=data.line_id).scalar())
+    row = SurveyReportDoc(report_id=report_id, phase_id=phase.id, item_id=item_id,
+                          title=data.title, sort_order=0,
+                          created_by=user_id, updated_by=user_id)
+    db.add(row)
+    db.flush()
+    return row

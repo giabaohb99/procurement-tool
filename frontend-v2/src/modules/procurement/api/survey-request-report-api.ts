@@ -1,5 +1,10 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
-import type { ReportOwnerEntity, SurveyRequestReport } from '../types/survey-request-report'
+import type {
+  ReportFirstDocOptions,
+  ReportFirstDocPayload,
+  ReportOwnerEntity,
+  SurveyRequestReport,
+} from '../types/survey-request-report'
 
 /** Payload thêm/sửa một hồ sơ trong khối báo cáo. */
 export interface ReportDocPayload {
@@ -78,6 +83,15 @@ export function executionReportApi(entity: ReportOwnerEntity) {
       apiPatch<SurveyRequestReport>(`${base(entity, id)}/docs/${docId}`, payload),
     deleteDoc: (id: number, docId: number) =>
       apiDelete<SurveyRequestReport>(`${base(entity, id)}/docs/${docId}`),
+    /** Ô chọn của hộp «Thêm hồ sơ» khi khối còn trống — chỉ đọc, không dựng gì. */
+    firstDocOptions: (id: number) =>
+      apiGet<ReportFirstDocOptions>(`${base(entity, id)}/first-doc-options`),
+    /** Hồ sơ ĐẦU TIÊN: backend dựng khung (5 giai đoạn + nút theo dòng) rồi thêm đúng hồ sơ này. */
+    createFirstDoc: (id: number, payload: ReportFirstDocPayload) =>
+      apiPost<SurveyRequestReport>(`${base(entity, id)}/first-doc`, payload),
+    /** Xóa NHIỀU hồ sơ một lượt (duoc-CR-611) — POST vì DELETE kèm thân hay bị rơi. */
+    deleteDocs: (id: number, docIds: number[]) =>
+      apiPost<SurveyRequestReport>(`${base(entity, id)}/docs/bulk-delete`, { doc_ids: docIds }),
   }
 }
 

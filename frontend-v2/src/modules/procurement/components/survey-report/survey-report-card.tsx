@@ -23,6 +23,7 @@ import { formatDate, parseLocalDate, toDateInputValue } from '@/shared/utils/for
 import { nameInitials } from '@/shared/utils/name-initials'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { SearchField } from '@/shared/ui/search-field'
 import {
@@ -68,6 +69,8 @@ import {
   reportPlanLateDays,
 } from '../../utils/survey-report-helpers'
 import { SurveyReportDocDialog } from './survey-report-doc-dialog'
+import { SurveyReportDocSelectionBar } from './survey-report-doc-selection-bar'
+import { SurveyReportFirstDocDialog } from './survey-report-first-doc-dialog'
 import { SurveyReportItemDialog } from './survey-report-item-dialog'
 import { SurveyReportPhaseDialog } from './survey-report-phase-dialog'
 import { SurveyReportTracking } from './survey-report-tracking'
@@ -180,6 +183,8 @@ export function SurveyReportCard({
   } | null>(null)
   const [itemDialog, setItemDialog] = useState<{ item: SurveyReportItem | null } | null>(null)
   const [phaseDialog, setPhaseDialog] = useState<{ phase: SurveyReportPhase | null } | null>(null)
+  /** Hộp «Thêm hồ sơ» của khối còn TRỐNG (duoc-CR-611). */
+  const [firstDocOpen, setFirstDocOpen] = useState(false)
 
   const changeViewMode = (mode: ReportViewMode) => {
     setViewMode(mode)
@@ -206,6 +211,7 @@ export function SurveyReportCard({
 
   const busy =
     actions.init.isPending ||
+    actions.createFirstDoc.isPending ||
     actions.applyTemplate.isPending ||
     actions.saveItem.isPending ||
     actions.deleteItem.isPending ||
@@ -214,6 +220,7 @@ export function SurveyReportCard({
     actions.saveDoc.isPending ||
     actions.setDocStatus.isPending ||
     actions.deleteDoc.isPending ||
+    actions.deleteDocs.isPending ||
     actions.deleteReport.isPending
 
   //  Xóa CẢ khối — thao tác nặng nên hỏi xác nhận; hoàn tác được ở Lịch sử.
@@ -257,6 +264,29 @@ export function SurveyReportCard({
     )
       return
     await actions.deleteDoc.mutateAsync({ docId: doc.id })
+  }
+
+  //  duoc-CR-611 — xóa NHIỀU hồ sơ một lượt: các hồ sơ đã chọn, hoặc cả cụm hồ sơ của một
+  //  dòng hàng. `scope` là đoạn câu nói xóa ở đâu, để hộp xác nhận đọc ra đúng việc sắp làm.
+  //  Trả `true` khi đã xóa — chỗ gọi dọn lựa chọn.
+  const handleDeleteDocs = async (docs: SurveyReportDoc[], scope: string): Promise<boolean> => {
+    if (docs.length === 0) return false
+    const preview = docs
+      .slice(0, 3)
+      .map((doc) => `"${doc.title}"`)
+      .join(', ')
+    const more = docs.length > 3 ? ` và ${docs.length - 3} hồ sơ khác` : ''
+    if (
+      !(await confirm({
+        title: `Xóa ${docs.length} hồ sơ?`,
+        message: `Xóa ${docs.length} hồ sơ ${scope}: ${preview}${more}? Hồ sơ khác đang chờ chúng sẽ được mở khóa.`,
+        confirmLabel: `Xóa ${docs.length} hồ sơ`,
+      }))
+    )
+      return false
+    await actions.deleteDocs.mutateAsync({ docIds: docs.map((doc) => doc.id) })
+    toast.success(`Đã xóa ${docs.length} hồ sơ`)
+    return true
   }
 
   //  «Tạo mẫu» vào một nút dòng hàng (hoặc chỉ một giai đoạn của nút Chung).
@@ -512,6 +542,11 @@ export function SurveyReportCard({
                   <Sparkles />
                   Khởi tạo báo cáo mẫu
                 </Button>
+                {/* duoc-CR-611 — ghi đúng MỘT hồ sơ cho một dòng hàng mà không phải đổ cả mẫu. */}
+                <Button variant="outline" disabled={busy} onClick={() => setFirstDocOpen(true)}>
+                  <Plus />
+                  Thêm hồ sơ
+                </Button>
                 <Button
                   variant="outline"
                   disabled={busy}
@@ -561,6 +596,7 @@ export function SurveyReportCard({
                       onApplyTemplate={(phaseId) => handleApplyTemplate(COMMON_ROW_ID, phaseId)}
                       onEditDoc={(doc) => setDocDialog({ doc, itemId: doc.item_id })}
                       onDeleteDoc={handleDeleteDoc}
+                      onDeleteDocs={handleDeleteDocs}
                       onToggleDoc={handleToggleDoc}
                       onSetDocStatus={handleSetDocStatus}
                     />
@@ -584,6 +620,7 @@ export function SurveyReportCard({
                       onApplyTemplate={(itemId) => handleApplyTemplate(itemId)}
                       onEditDoc={(doc) => setDocDialog({ doc, itemId: doc.item_id })}
                       onDeleteDoc={handleDeleteDoc}
+                      onDeleteDocs={handleDeleteDocs}
                       onEditPhase={(phase) => setPhaseDialog({ phase })}
                       onToggleDoc={handleToggleDoc}
                       onSetDocStatus={handleSetDocStatus}
@@ -620,6 +657,23 @@ export function SurveyReportCard({
         pending={actions.saveDoc.isPending || actions.deleteDoc.isPending}
         onSave={(docId, payload) => actions.saveDoc.mutateAsync({ docId, payload })}
         onDelete={(docId) => actions.deleteDoc.mutateAsync({ docId })}
+      />
+
+      <SurveyReportFirstDocDialog
+        open={firstDocOpen}
+        onOpenChange={setFirstDocOpen}
+        ownerId={ownerId}
+        entity={entity}
+        ownerLabel={ownerLabel}
+        pending={actions.createFirstDoc.isPending}
+        onSave={async (payload) => {
+          const next = await actions.createFirstDoc.mutateAsync(payload)
+          //  Hồ sơ vừa thêm phải THẤY ngay: mở khối, sang dạng theo dòng hàng, sổ đúng dòng của nó.
+          const itemId = next.docs[0]?.item_id ?? COMMON_ROW_ID
+          setCardOpen(true)
+          changeViewMode('item')
+          setOpenRows(new Set([itemId]))
+        }}
       />
 
       <SurveyReportItemDialog
@@ -705,6 +759,8 @@ interface ReportPhaseListProps {
   onApplyTemplate: (phaseId: number) => void
   onEditDoc: (doc: SurveyReportDoc) => void
   onDeleteDoc: (doc: SurveyReportDoc) => void
+  /** Xóa nhiều hồ sơ một lượt — `scope` là đoạn câu cho hộp xác nhận. */
+  onDeleteDocs: (docs: SurveyReportDoc[], scope: string) => Promise<boolean>
   onToggleDoc: (doc: SurveyReportDoc) => void
   onSetDocStatus: (doc: SurveyReportDoc, status: number) => void
 }
@@ -730,6 +786,7 @@ function ReportPhaseList({
   onApplyTemplate,
   onEditDoc,
   onDeleteDoc,
+  onDeleteDocs,
   onToggleDoc,
   onSetDocStatus,
 }: ReportPhaseListProps) {
@@ -792,6 +849,14 @@ function ReportPhaseList({
                   >
                     <Sparkles className="size-3.5" />
                   </button>
+                  {/* duoc-CR-611 — xóa cả cụm hồ sơ của giai đoạn (mọi dòng hàng; đang lọc thì
+                      chỉ những hồ sơ đang bày). Giai đoạn giữ nguyên — xóa giai đoạn ở hộp sửa. */}
+                  <ClusterDeleteButton
+                    label={`giai đoạn "${phase.name}"`}
+                    count={phaseDocs.length}
+                    busy={busy}
+                    onClick={() => void onDeleteDocs(phaseDocs, `ở giai đoạn "${phase.name}"`)}
+                  />
                   <button
                     type="button"
                     title={`Sửa giai đoạn "${phase.name}"`}
@@ -882,6 +947,8 @@ interface ReportItemTableProps {
   onApplyTemplate: (itemId: number) => void
   onEditDoc: (doc: SurveyReportDoc) => void
   onDeleteDoc: (doc: SurveyReportDoc) => void
+  /** Xóa nhiều hồ sơ một lượt — `scope` là đoạn câu cho hộp xác nhận. */
+  onDeleteDocs: (docs: SurveyReportDoc[], scope: string) => Promise<boolean>
   onEditPhase: (phase: SurveyReportPhase) => void
   onToggleDoc: (doc: SurveyReportDoc) => void
   onSetDocStatus: (doc: SurveyReportDoc, status: number) => void
@@ -910,6 +977,7 @@ function ReportItemTable({
   onApplyTemplate,
   onEditDoc,
   onDeleteDoc,
+  onDeleteDocs,
   onEditPhase,
   onToggleDoc,
   onSetDocStatus,
@@ -960,6 +1028,24 @@ function ReportItemTable({
                             <Pencil className="size-3.5" />
                           </button>
                         )}
+                        {/* duoc-CR-611 — «Xóa cụm»: xóa mọi hồ sơ của dòng hàng này (đang lọc thì
+                            chỉ những hồ sơ khớp bộ lọc — đúng thứ đang bày). Nút dòng hàng giữ
+                            nguyên: xóa NÚT là việc khác, nằm trong hộp sửa nút. */}
+                        {canEdit && (
+                          <ClusterDeleteButton
+                            label={`"${row.name}"`}
+                            count={rowDocs.length}
+                            busy={busy}
+                            onClick={() =>
+                              void onDeleteDocs(
+                                rowDocs,
+                                rowDocs.length < row.docs.length
+                                  ? `đang khớp bộ lọc của "${row.name}"`
+                                  : `của "${row.name}"`,
+                              )
+                            }
+                          />
+                        )}
                       </span>
                     </TableCell>
                     <TableCell className="text-center tabular-nums">{row.docs.length}</TableCell>
@@ -992,6 +1078,8 @@ function ReportItemTable({
                           onApplyTemplate={() => onApplyTemplate(row.id)}
                           onEditDoc={onEditDoc}
                           onDeleteDoc={onDeleteDoc}
+                          onDeleteSelected={(docs) => onDeleteDocs(docs, `đã chọn của "${row.name}"`)}
+                          onDeleteCluster={(docs, scope) => onDeleteDocs(docs, `của "${row.name}" ${scope}`)}
                           onEditPhase={onEditPhase}
                           onToggleDoc={onToggleDoc}
                           onSetDocStatus={onSetDocStatus}
@@ -1079,6 +1167,10 @@ interface ReportRowDetailProps {
   onApplyTemplate: () => void
   onEditDoc: (doc: SurveyReportDoc) => void
   onDeleteDoc: (doc: SurveyReportDoc) => void
+  /** Xóa các hồ sơ đã chọn — `true` khi đã xóa (hộp xác nhận không bị hủy). */
+  onDeleteSelected: (docs: SurveyReportDoc[]) => Promise<boolean>
+  /** Xóa cả cụm hồ sơ của một giai đoạn trong dòng này — `scope` là đoạn câu xác nhận. */
+  onDeleteCluster: (docs: SurveyReportDoc[], scope: string) => Promise<boolean>
   onEditPhase: (phase: SurveyReportPhase) => void
   onToggleDoc: (doc: SurveyReportDoc) => void
   onSetDocStatus: (doc: SurveyReportDoc, status: number) => void
@@ -1101,12 +1193,47 @@ function ReportRowDetail({
   onApplyTemplate,
   onEditDoc,
   onDeleteDoc,
+  onDeleteSelected,
+  onDeleteCluster,
   onEditPhase,
   onToggleDoc,
   onSetDocStatus,
 }: ReportRowDetailProps) {
+  //  duoc-CR-611 — chế độ «chọn nhiều» riêng của dòng này. Ô chọn chỉ hiện khi bật, vì ô ✓
+  //  đầu mỗi hồ sơ đã là «hoàn thành»: hai ô vuông cạnh nhau thường trực thì bấm nhầm.
+  //  Đếm theo hồ sơ ĐANG BÀY — id đã xóa / đã lọc khuất tự rơi khỏi phép đếm.
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const selectedDocs = docs.filter((doc) => selected.has(doc.id))
+  const toggleSelected = (docId: number, checked: boolean) =>
+    setSelected((current) => {
+      const next = new Set(current)
+      if (checked) next.add(docId)
+      else next.delete(docId)
+      return next
+    })
+  const stopSelecting = () => {
+    setSelecting(false)
+    setSelected(new Set())
+  }
+  const deleteSelected = async () => {
+    if (await onDeleteSelected(selectedDocs)) stopSelecting()
+  }
+
   return (
     <div className="space-y-4">
+      {canEdit && docs.length > 0 && (
+        <SurveyReportDocSelectionBar
+          selecting={selecting}
+          total={docs.length}
+          selectedCount={selectedDocs.length}
+          busy={busy}
+          onStart={() => setSelecting(true)}
+          onToggleAll={(checked) => setSelected(checked ? new Set(docs.map((doc) => doc.id)) : new Set())}
+          onDeleteSelected={() => void deleteSelected()}
+          onCancel={stopSelecting}
+        />
+      )}
       {docs.length === 0 ? (
         <p className="text-xs text-muted-foreground">Chưa có hồ sơ nào ở dòng hàng này.</p>
       ) : (
@@ -1125,6 +1252,14 @@ function ReportRowDetail({
                 )}
                 <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
                 {canEdit && (
+                  <ClusterDeleteButton
+                    label={`giai đoạn "${phase.name}"`}
+                    count={phaseDocs.length}
+                    busy={busy}
+                    onClick={() => void onDeleteCluster(phaseDocs, `ở giai đoạn "${phase.name}"`)}
+                  />
+                )}
+                {canEdit && (
                   <button
                     type="button"
                     title="Sửa giai đoạn"
@@ -1137,19 +1272,33 @@ function ReportRowDetail({
                 )}
               </div>
               <div className="space-y-1.5">
-                {phaseDocs.map((doc) => (
-                  <ReportDocRow
-                    key={doc.id}
-                    doc={doc}
-                    docsById={docsById}
-                    canEdit={canEdit}
-                    busy={busy}
-                    onToggle={() => onToggleDoc(doc)}
-                    onEdit={() => onEditDoc(doc)}
-                    onDelete={() => onDeleteDoc(doc)}
-                    onStatusChange={(status) => onSetDocStatus(doc, status)}
-                  />
-                ))}
+                {phaseDocs.map((doc) => {
+                  const row = (
+                    <ReportDocRow
+                      key={doc.id}
+                      doc={doc}
+                      docsById={docsById}
+                      canEdit={canEdit}
+                      busy={busy}
+                      onToggle={() => onToggleDoc(doc)}
+                      onEdit={() => onEditDoc(doc)}
+                      onDelete={() => onDeleteDoc(doc)}
+                      onStatusChange={(status) => onSetDocStatus(doc, status)}
+                    />
+                  )
+                  if (!selecting) return row
+                  return (
+                    <div key={doc.id} className="flex items-start gap-2">
+                      <Checkbox
+                        className="mt-3"
+                        aria-label={`Chọn hồ sơ "${doc.title}"`}
+                        checked={selected.has(doc.id)}
+                        onCheckedChange={(checked) => toggleSelected(doc.id, checked === true)}
+                      />
+                      <div className="min-w-0 flex-1">{row}</div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )
@@ -1421,6 +1570,38 @@ function DocAssignee({ name }: { name: string }) {
     >
       {nameInitials(name)}
     </span>
+  )
+}
+
+interface ClusterDeleteButtonProps {
+  /** Tên cụm trong câu chú thích, vd `"Nắp 50 75ml"` hay `giai đoạn "Pháp lý"`. */
+  label: string
+  /** Số hồ sơ sẽ bị xóa — 0 thì không bày nút (không có gì để xóa). */
+  count: number
+  busy: boolean
+  onClick: () => void
+}
+
+/**
+ * duoc-CR-611 — nút thùng rác «xóa cả cụm» trên tiêu đề một dòng hàng / một giai đoạn.
+ * Chặn nổi bọt: dòng hàng bấm vào là sổ / gấp, bấm xóa mà sổ luôn dòng thì lạ tay.
+ */
+function ClusterDeleteButton({ label, count, busy, onClick }: ClusterDeleteButtonProps) {
+  if (count === 0) return null
+  return (
+    <button
+      type="button"
+      title={`Xóa cả cụm ${count} hồ sơ của ${label}`}
+      aria-label={`Xóa cả cụm hồ sơ của ${label}`}
+      disabled={busy}
+      className="rounded-md p-1 text-muted-foreground hover:text-destructive disabled:opacity-50"
+      onClick={(event) => {
+        event.stopPropagation()
+        onClick()
+      }}
+    >
+      <Trash2 className="size-3.5" />
+    </button>
   )
 }
 
