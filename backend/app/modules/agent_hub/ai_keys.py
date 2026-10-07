@@ -32,13 +32,18 @@ PROVIDER_OPENAI = "openai"
 PROVIDER_OPENROUTER = "openrouter"
 PROVIDER_DEEPSEEK = "deepseek"      # ai-CR-107
 PROVIDER_XAI = "xai"                # ai-CR-107: Grok
-PROVIDERS = (PROVIDER_GEMINI, PROVIDER_CLAUDE, PROVIDER_OPENAI, PROVIDER_OPENROUTER, PROVIDER_DEEPSEEK, PROVIDER_XAI)
+#  ai-CR-108: trạm trung gian / máy chủ tự dựng nói API kiểu OpenAI (vd modelapi.vn) — địa chỉ trạm nhập theo từng khóa.
+PROVIDER_CUSTOM = "openai_compat"
+PROVIDERS = (PROVIDER_GEMINI, PROVIDER_CLAUDE, PROVIDER_OPENAI, PROVIDER_OPENROUTER, PROVIDER_DEEPSEEK, PROVIDER_XAI,
+             PROVIDER_CUSTOM)
 PROVIDER_LABELS = {PROVIDER_GEMINI: "Gemini", PROVIDER_CLAUDE: "Claude", PROVIDER_OPENAI: "OpenAI",
-                   PROVIDER_OPENROUTER: "OpenRouter", PROVIDER_DEEPSEEK: "DeepSeek", PROVIDER_XAI: "Grok (xAI)"}
+                   PROVIDER_OPENROUTER: "OpenRouter", PROVIDER_DEEPSEEK: "DeepSeek", PROVIDER_XAI: "Grok (xAI)",
+                   PROVIDER_CUSTOM: "Tương thích OpenAI (tùy chỉnh)"}
 #  Trang lấy khóa — bot chỉ cách, không bao giờ nhận khóa qua chat.
 PROVIDER_SITES = {PROVIDER_GEMINI: "https://aistudio.google.com/apikey", PROVIDER_CLAUDE: "https://console.anthropic.com/",
                   PROVIDER_OPENAI: "https://platform.openai.com/api-keys", PROVIDER_OPENROUTER: "https://openrouter.ai/keys",
-                  PROVIDER_DEEPSEEK: "https://platform.deepseek.com/api_keys", PROVIDER_XAI: "https://console.x.ai"}
+                  PROVIDER_DEEPSEEK: "https://platform.deepseek.com/api_keys", PROVIDER_XAI: "https://console.x.ai",
+                  PROVIDER_CUSTOM: ""}
 
 PROBE_TIMEOUT = 15
 _COMPANY_TTL = 60.0
@@ -63,6 +68,48 @@ class KeyRef:
     priority: int = 1
     daily_cap: int = 0
     source: str = "db"      # db · env
+    base_url: str = ""      # ai-CR-108: chỉ hãng tùy chỉnh
+
+
+# ---------------------------------------------------------------------------
+# Địa chỉ trạm tùy chỉnh (ai-CR-108)
+# ---------------------------------------------------------------------------
+def normalize_base_url(url: str) -> str:
+    """Chỉ nhận `https://<tên miền công khai>[/đường dẫn]`. Chặn localhost / IP nội bộ / http — máy chủ gửi KHÓA tới địa
+    chỉ này, để mở là lỗ dò mạng nội bộ (SSRF) và lộ khóa."""
+    import ipaddress
+    from urllib.parse import urlparse
+
+    url = (url or "").strip().rstrip("/")
+    u = urlparse(url)
+    host = (u.hostname or "").lower()
+    if u.scheme != "https" or not host or u.username or u.password:
+        raise InvalidKey("Địa chỉ trạm phải dạng https://ten-mien/v1.")
+    if host in ("localhost",) or host.endswith((".local", ".internal", ".localhost")) or "." not in host:
+        raise InvalidKey("Địa chỉ trạm phải là tên miền công khai.")
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    if ip is not None and (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved):
+        raise InvalidKey("Địa chỉ trạm phải là tên miền công khai.")
+    return url[:200]
+
+
+def custom_models(base_url: str, raw: str) -> list[str]:
+    """Danh sách model của trạm tùy chỉnh (GET /models, không tốn token)."""
+    try:
+        r = requests.get(f"{base_url}/models", headers={"authorization": f"Bearer {raw}"}, timeout=PROBE_TIMEOUT)
+    except requests.RequestException as e:
+        raise InvalidKey(f"Không gọi được trạm {base_url}: {type(e).__name__}") from e
+    if r.status_code in (400, 401, 403):
+        raise InvalidKey("Trạm không nhận khóa này (sai hoặc đã thu hồi).")
+    if r.status_code != 200:
+        raise InvalidKey(f"Trạm trả lỗi {r.status_code} khi kiểm khóa.")
+    try:
+        return [str(m.get("id")) for m in (r.json() or {}).get("data", []) if m.get("id")]
+    except ValueError:
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +144,7 @@ def _probe(provider: str, raw: str) -> int:
 
 def verify(provider: str, raw: str) -> None:
     raw = (raw or "").strip()
-    if provider not in PROVIDERS:
+    if provider not in PROVIDERS or provider == PROVIDER_CUSTOM:
         raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
     if len(raw) < 20 or " " in raw:
         raise InvalidKey("Khóa không đúng dạng.")
@@ -115,7 +162,8 @@ def verify(provider: str, raw: str) -> None:
 def _ref(row: AiKey) -> KeyRef:
     return KeyRef(provider=row.provider, key=app_settings._decrypt(row.key_enc), model=row.model or "",
                   owner_type=int(row.owner_type), owner_id=int(row.owner_id), row_id=int(row.id),
-                  hint=row.key_hint, priority=int(row.priority or 1), daily_cap=int(row.daily_cap or 0))
+                  hint=row.key_hint, priority=int(row.priority or 1), daily_cap=int(row.daily_cap or 0),
+                  base_url=row.base_url or "")
 
 
 def active_rows(db: Session, owner_type: int, owner_id: int) -> list[AiKey]:
@@ -196,13 +244,25 @@ def clear_cache() -> None:
 
 
 def add_key(db: Session, *, owner_type: int, owner_id: int, provider: str, raw: str, model: str = "",
-            priority: int = 0, daily_cap: int = 0, by_user: int = 0, check: bool = True) -> AiKey:
-    """Kiểm với hãng rồi lưu mã hóa. Cùng chủ + cùng hãng + cùng ưu tiên thì đóng dòng cũ (thay khóa)."""
+            priority: int = 0, daily_cap: int = 0, by_user: int = 0, check: bool = True, base_url: str = "") -> AiKey:
+    """Kiểm với hãng rồi lưu mã hóa. Cùng chủ + cùng hãng + cùng ưu tiên thì đóng dòng cũ (thay khóa).
+    Hãng tùy chỉnh (ai-CR-108): bắt buộc `base_url`; chưa chọn model thì lấy model đầu tiên trạm liệt kê."""
     raw = (raw or "").strip()
-    if check:
-        verify(provider, raw)
-    elif provider not in PROVIDERS:
-        raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
+    if provider == PROVIDER_CUSTOM:
+        base_url = normalize_base_url(base_url)
+        if len(raw) < 20 or " " in raw:
+            raise InvalidKey("Khóa không đúng dạng.")
+        models = custom_models(base_url, raw) if check else []
+        if not model:
+            if not models:
+                raise InvalidKey("Trạm không liệt kê model nào — nhập tên model ở «Tùy chọn».")
+            model = models[0]
+    else:
+        base_url = ""
+        if check:
+            verify(provider, raw)
+        elif provider not in PROVIDERS:
+            raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
     rows = active_rows(db, owner_type, owner_id)
     if priority <= 0:
         same = [r for r in rows if r.provider == provider]
@@ -212,6 +272,7 @@ def add_key(db: Session, *, owner_type: int, owner_id: int, provider: str, raw: 
         if old.provider == provider and int(old.priority) == priority:
             old.revoked_at = now
     row = AiKey(owner_type=owner_type, owner_id=int(owner_id), provider=provider, model=(model or "")[:80],
+                base_url=base_url,
                 priority=priority, daily_cap=max(0, int(daily_cap or 0)), key_enc=app_settings.encrypt(raw),
                 key_hint=raw[-4:], verified_at=now, created_by=by_user, updated_by=by_user)
     db.add(row)
@@ -265,6 +326,7 @@ def describe_rows(rows: list[AiKey], db: Session | None = None) -> list[dict]:
         "model": r.model or "", "priority": int(r.priority or 1), "daily_cap": int(r.daily_cap or 0),
         "hint": f"…{r.key_hint}", "verified_at": r.verified_at.isoformat(timespec="seconds") if r.verified_at else None,
         "used_today": used.get(int(r.id), 0),
+        "base_url": r.base_url or "",
     } for r in rows]
 
 

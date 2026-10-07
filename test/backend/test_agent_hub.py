@@ -8159,3 +8159,46 @@ def test_them_hang_deepseek_va_grok(db, monkeypatch):
     assert posts == [("https://api.deepseek.com/v1/chat/completions", "Bearer sk-ds-abcdefghijk", "deepseek-chat"),
                      ("https://api.x.ai/v1/chat/completions", "Bearer xai-key-abcdefghijk", "grok-4")]
 
+
+def test_khoa_tram_tuy_chinh_kieu_openai(db, monkeypatch):
+    """ai-CR-108: đại ca có khóa modelapi.vn (trạm kiểu OpenAI) — chọn «DeepSeek» thì máy chủ DeepSeek từ chối."""
+    from app.modules.agent_hub import ai_keys, manager, user_keys
+    from app.modules.assistant.provider import openai_compat as oc
+    from app.modules.assistant.provider.base import ChatMessage
+
+    ai_keys.clear_cache()
+    for bad in ("http://modelapi.vn/v1", "https://localhost/v1", "https://10.0.0.5/v1", "https://api:8000/v1",
+                "https://user:pw@modelapi.vn/v1", "ftp://x.vn"):
+        with pytest.raises(ai_keys.InvalidKey):
+            ai_keys.normalize_base_url(bad)
+    assert ai_keys.normalize_base_url("https://modelapi.vn/v1/") == "https://modelapi.vn/v1"
+
+    class R:
+        status_code = 200
+
+        def json(self):
+            return {"data": [{"id": "deepseek-v4.1-flash"}]}
+
+    seen = []
+    monkeypatch.setattr(ai_keys.requests, "get", lambda url, headers=None, timeout=0: seen.append(url) or R())
+    lan = _erp_user(db, key=False)
+    row = user_keys.set_key(db, lan.id, "sk-router-abcdefghijklmnopqrstuvwxyz", "openai_compat",
+                            base_url="https://modelapi.vn/v1")
+    assert seen == ["https://modelapi.vn/v1/models"] and row.model == "deepseek-v4.1-flash"
+    assert row.base_url == "https://modelapi.vn/v1"
+    with pytest.raises(ai_keys.InvalidKey):
+        user_keys.set_key(db, lan.id, "sk-router-abcdefghijklmnopqrstuvwxyz", "openai_compat", base_url="")
+    posts = []
+
+    class P:
+        status_code = 200
+
+        def json(self):
+            return {"model": "deepseek-v4.1-flash", "usage": {}, "choices": [{"message": {"content": "dạ"}}]}
+
+    monkeypatch.setattr(oc.requests, "post", lambda url, json=None, headers=None, timeout=0:
+                        posts.append((url, json["model"], "max_tokens" in json)) or P())
+    with user_keys.use_chain(ai_keys.chain_for_user(db, lan.id)):
+        assert manager.get_provider().ask([ChatMessage(role="user", content="alo")]).text == "dạ"
+    assert posts == [("https://modelapi.vn/v1/chat/completions", "deepseek-v4.1-flash", True)]
+

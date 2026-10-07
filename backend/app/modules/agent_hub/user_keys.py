@@ -186,8 +186,11 @@ def key_for_user(db: Session, user_id: int) -> str:
 
 
 def set_key(db: Session, user_id: int, raw: str, provider: str = PROVIDER_GEMINI, *, model: str = "",
-            priority: int = 0, daily_cap: int = 0) -> AiKey:
+            priority: int = 0, daily_cap: int = 0, base_url: str = "") -> AiKey:
     """Kiểm khóa với hãng rồi lưu mã hóa; cùng hãng + cùng ưu tiên thì dòng cũ đóng. Không bao giờ ghi khóa thô."""
+    if provider == ai_keys.PROVIDER_CUSTOM:
+        return ai_keys.add_key(db, owner_type=OWNER_USER, owner_id=user_id, provider=provider, raw=raw, model=model,
+                               priority=priority, daily_cap=daily_cap, by_user=user_id, base_url=base_url)
     verify(raw, provider)
     return ai_keys.add_key(db, owner_type=OWNER_USER, owner_id=user_id, provider=provider, raw=raw, model=model,
                            priority=priority, daily_cap=daily_cap, by_user=user_id, check=False)

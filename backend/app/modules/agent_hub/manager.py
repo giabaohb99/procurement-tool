@@ -198,8 +198,27 @@ class _AgentXai(XaiProvider):
         return user_keys.active_key()
 
 
+class _AgentCustom(OpenAICompatProvider):
+    """ai-CR-108: trạm tùy chỉnh kiểu OpenAI — địa chỉ trạm lấy từ khóa đang dùng trong chuỗi."""
+
+    name = "openai_compat"
+    max_tokens_field = "max_tokens"
+
+    @property
+    def base_url(self) -> str:  # type: ignore[override]
+        from . import user_keys
+
+        ref = user_keys.active_ref()
+        return ref.base_url if ref is not None else ""
+
+    def _api_key(self) -> str:
+        from . import user_keys
+
+        return user_keys.active_key()
+
+
 _DELEGATES: dict[str, Provider] = {"claude": _AgentClaude(), "openai": _AgentOpenAI(), "openrouter": _AgentOpenRouter(),
-                                   "deepseek": _AgentDeepSeek(), "xai": _AgentXai()}
+                                   "deepseek": _AgentDeepSeek(), "xai": _AgentXai(), "openai_compat": _AgentCustom()}
 
 
 def get_provider() -> AgentGeminiProvider:

@@ -255,6 +255,8 @@ class AiKey(Base, AuditMixin):
     owner_id: Mapped[int] = mapped_column(BigInteger, default=0)
     provider: Mapped[str] = mapped_column(String(30), default="gemini")
     model: Mapped[str] = mapped_column(String(80), default="")
+    #  ai-CR-108: địa chỉ trạm cho hãng «tùy chỉnh» (https, tên miền công khai); trống với hãng có sẵn.
+    base_url: Mapped[str] = mapped_column(String(200), default="")
     priority: Mapped[int] = mapped_column(SmallInteger, default=1)
     daily_cap: Mapped[int] = mapped_column(Integer, default=0)
     key_enc: Mapped[str] = mapped_column(Text, default="")

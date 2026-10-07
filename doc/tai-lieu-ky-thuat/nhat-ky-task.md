@@ -12764,3 +12764,15 @@ deepseek-chat và các model Grok. Không đổi cấu trúc dữ liệu.
 
 Mã nguồn: backend/app/modules/assistant/provider/openai_compat.py (DeepSeekProvider, XaiProvider) · agent_hub/ai_keys.py · agent_hub/manager.py · frontend-v2 ai-key-list-card.tsx
 Deploy: dev 07/10, erp-v2 89f16b68 (Agent 1 gộp và dựng lại api, erp, celery-worker, celery-beat, agent-poller); prod giữ lại.
+
+## ai-CR-108 | Khóa AI dùng được trạm trung gian kiểu OpenAI như modelapi.vn
+- status: xong
+- date: 2026-10-07
+Đại ca dán khóa vào mục DeepSeek thì bị từ chối, vì khóa đó là của trạm trung gian modelapi.vn chứ không phải của
+DeepSeek; em đã thử trực tiếp, khóa chạy được với model deepseek-v4.1-flash và gọi được công cụ. Màn Khóa AI có thêm
+hãng «Tương thích OpenAI (tùy chỉnh)»: chọn hãng này thì nhập địa chỉ trạm (ví dụ https://modelapi.vn/v1) và dán khóa;
+hệ thống hỏi trạm danh sách model, chưa chọn model thì lấy model đầu tiên. Vì máy chủ sẽ gửi khóa tới địa chỉ người dùng
+nhập, chỉ nhận địa chỉ https có tên miền công khai, chặn địa chỉ nội bộ. Thêm một cột địa chỉ trạm vào bảng khóa.
+
+Mã nguồn: backend/app/modules/agent_hub/ai_keys.py (normalize_base_url, custom_models) · agent_hub/manager.py (_AgentCustom) · migration aibase01 · frontend-v2 ai-key-list-card.tsx
+

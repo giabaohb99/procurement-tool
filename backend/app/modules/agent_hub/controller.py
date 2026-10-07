@@ -31,7 +31,7 @@ from .constants import (
 )
 from .model import AgentMessage, AgentRun, AgentTask, AgentTaskItem
 from .timeutil import now_local, to_local
-from app.modules.employee.field_limits import Str80
+from app.modules.employee.field_limits import Str80, Str200
 
 router = APIRouter(prefix="/api/agent-hub", tags=["agent-hub"])
 
@@ -203,6 +203,7 @@ class AiKeyIn(BaseModel):
     key: str
     provider: str = "gemini"
     model: Str80 = ""
+    base_url: Str200 = ""     # ai-CR-108: chỉ hãng «tùy chỉnh»
     priority: int = 0
     daily_cap: int = 0
 
@@ -224,7 +225,7 @@ def set_my_ai_key(body: AiKeyIn, user=Depends(get_current_user), db: Session = D
     chỗ cũ, hãng mới thì xếp cuối)."""
     try:
         user_keys.set_key(db, user.id, body.key, body.provider, model=body.model, priority=body.priority,
-                          daily_cap=body.daily_cap)
+                          daily_cap=body.daily_cap, base_url=body.base_url)
     except user_keys.InvalidKey as e:
         raise HTTPException(400, str(e)) from e
     label = ai_keys.PROVIDER_LABELS.get(body.provider, body.provider)
@@ -269,7 +270,8 @@ def get_company_ai_keys(user=Depends(require("setting", "read")), db: Session = 
 def set_company_ai_key(body: AiKeyIn, user=Depends(require("setting", "write")), db: Session = Depends(get_db)):
     try:
         ai_keys.add_key(db, owner_type=ai_keys.OWNER_COMPANY, owner_id=0, provider=body.provider, raw=body.key,
-                        model=body.model, priority=body.priority, daily_cap=body.daily_cap, by_user=user.id)
+                        model=body.model, priority=body.priority, daily_cap=body.daily_cap, by_user=user.id,
+                        base_url=body.base_url)
     except ai_keys.InvalidKey as e:
         raise HTTPException(400, str(e)) from e
     return success(_company_payload(db), f"Đã lưu khóa công ty {ai_keys.PROVIDER_LABELS.get(body.provider, body.provider)}")

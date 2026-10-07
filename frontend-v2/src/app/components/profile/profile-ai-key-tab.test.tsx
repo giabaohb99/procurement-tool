@@ -213,3 +213,26 @@ describe('ProfileAiKeyTab — dễ dùng (ai-CR-101)', () => {
   })
 })
 
+describe('ProfileAiKeyTab — trạm tùy chỉnh kiểu OpenAI (ai-CR-108)', () => {
+  beforeEach(() => {
+    apiGet.mockReset()
+    apiPut.mockReset()
+  })
+
+  it('asks for the endpoint instead of a provider link and sends base_url', async () => {
+    mockKey()
+    apiPut.mockResolvedValue({ provider: 'openai_compat', has_key: true, hint: '…JbE0', verified_at: null })
+    renderTab()
+    await userEvent.selectOptions(await screen.findByLabelText(/Hãng/), 'openai_compat')
+    expect(screen.queryByRole('link', { name: /Mở trang/ })).not.toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText(/Dán khóa của trạm/), 'sk-router-abcdefghijklmnop')
+    expect(screen.getByRole('button', { name: /Lưu khóa/ })).toBeDisabled()     // chưa có địa chỉ trạm
+    await userEvent.type(screen.getByLabelText(/Địa chỉ trạm/), 'https://modelapi.vn/v1')
+    await userEvent.click(screen.getByRole('button', { name: /Lưu khóa/ }))
+    await waitFor(() => expect(apiPut).toHaveBeenCalledWith('/api/agent-hub/ai-key', {
+      key: 'sk-router-abcdefghijklmnop', provider: 'openai_compat', model: '', priority: 0, daily_cap: 0,
+      base_url: 'https://modelapi.vn/v1',
+    }))
+  })
+})
+

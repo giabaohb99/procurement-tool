@@ -18,6 +18,7 @@ const FALLBACK_PROVIDERS: AiProviderInfo[] = [
   { name: 'openrouter', label: 'OpenRouter', site: 'https://openrouter.ai/keys' },
   { name: 'deepseek', label: 'DeepSeek', site: 'https://platform.deepseek.com/api_keys' },
   { name: 'xai', label: 'Grok (xAI)', site: 'https://console.x.ai' },
+  { name: 'openai_compat', label: 'Tương thích OpenAI (tùy chỉnh)', site: '' },
 ]
 
 /** Gợi ý model hay dùng của từng hãng — chỉ là gợi ý, gõ tên khác vẫn được. */
@@ -28,6 +29,7 @@ const MODEL_SUGGESTIONS: Record<string, string[]> = {
   openrouter: ['google/gemini-2.5-flash', 'anthropic/claude-sonnet-4.5', 'openai/gpt-5-mini', 'deepseek/deepseek-chat'],
   deepseek: ['deepseek-chat', 'deepseek-reasoner'],
   xai: ['grok-4-fast', 'grok-4', 'grok-3-mini'],
+  openai_compat: [],
 }
 
 interface AiKeyListCardProps {
@@ -65,22 +67,29 @@ export function AiKeyListCard({
   const [draft, setDraft] = useState('')
   const [model, setModel] = useState('')
   const [cap, setCap] = useState('')
+  const [baseUrl, setBaseUrl] = useState('')
   const [showOptions, setShowOptions] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   //  Chặn bấm đúp ngay trong tick (luật bốn bẫy biểu mẫu) — `saving` là state nên trễ một lượt render.
   const busy = useRef(false)
   const current = list.find((p) => p.name === provider) ?? list[0]
   const idPrefix = title.replace(/\W+/g, '-')
+  //  ai-CR-108: trạm trung gian / máy chủ tự dựng kiểu OpenAI (vd modelapi.vn) — nhập địa chỉ trạm thay vì «Mở trang».
+  const custom = provider === 'openai_compat'
 
   async function handleSave() {
     const key = draft.trim()
-    if (!key || busy.current) return
+    if (!key || busy.current || (custom && !baseUrl.trim())) return
     busy.current = true
     try {
-      await onAdd({ key, provider, model: model.trim(), priority: 0, daily_cap: Math.max(0, Number(cap) || 0) })
+      await onAdd({
+        key, provider, model: model.trim(), priority: 0, daily_cap: Math.max(0, Number(cap) || 0),
+        ...(custom ? { base_url: baseUrl.trim() } : {}),
+      })
       setDraft('')
       setModel('')
       setCap('')
+      setBaseUrl('')
     } catch {
       //  Lỗi kiểm khóa đã có toast của lớp gọi API; giữ nguyên ô nhập để sửa.
     } finally {
@@ -133,6 +142,7 @@ export function AiKeyListCard({
                       <span className="font-medium">{item.provider_label}</span>{' '}
                       <span className="font-mono text-xs text-muted-foreground">{item.hint}</span>
                       <span className="block text-xs text-muted-foreground">
+                        {item.base_url ? `Trạm: ${item.base_url} · ` : ''}
                         Model: {item.model || 'mặc định'} · Trần: {item.daily_cap > 0 ? `${item.daily_cap} lượt/ngày` : 'không'} ·
                         Hôm nay {item.used_today} lượt
                       </span>
@@ -181,16 +191,24 @@ export function AiKeyListCard({
                   ))}
                 </select>
               </div>
-              <div className="space-y-1">
-                <span className="block text-sm font-medium">2. Lấy khóa</span>
-                <Button asChild type="button" variant="outline" size="sm" className="h-9">
-                  <a href={current.site} target="_blank" rel="noreferrer">
-                    <ExternalLink className="mr-1.5 size-4" /> Mở trang {current.label}
-                  </a>
-                </Button>
-              </div>
+              {custom ? (
+                <div className="min-w-56 space-y-1">
+                  <Label htmlFor={`${idPrefix}-base`}>2. Địa chỉ trạm</Label>
+                  <Input id={`${idPrefix}-base`} placeholder="https://modelapi.vn/v1" value={baseUrl}
+                         onChange={(e) => setBaseUrl(e.target.value)} />
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <span className="block text-sm font-medium">2. Lấy khóa</span>
+                  <Button asChild type="button" variant="outline" size="sm" className="h-9">
+                    <a href={current.site} target="_blank" rel="noreferrer">
+                      <ExternalLink className="mr-1.5 size-4" /> Mở trang {current.label}
+                    </a>
+                  </Button>
+                </div>
+              )}
               <div className="min-w-56 flex-1 space-y-1">
-                <Label htmlFor={`${idPrefix}-key`}>3. Dán khóa {current.label}</Label>
+                <Label htmlFor={`${idPrefix}-key`}>3. Dán khóa {custom ? 'của trạm' : current.label}</Label>
                 <Input
                   id={`${idPrefix}-key`}
                   type="password"
@@ -207,7 +225,7 @@ export function AiKeyListCard({
                 />
               </div>
               <Button type="button" size="sm" className="h-9" onClick={() => void handleSave()}
-                      disabled={!draft.trim() || saving}>
+                      disabled={!draft.trim() || saving || (custom && !baseUrl.trim())}>
                 <KeyRound className="mr-1.5 size-4" /> {saving ? 'Đang kiểm…' : 'Lưu khóa'}
               </Button>
             </div>
