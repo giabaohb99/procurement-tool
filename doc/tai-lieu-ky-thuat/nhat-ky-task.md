@@ -12688,3 +12688,13 @@ thái thẳng cột, nút sửa và xóa chỉ hiện rõ khi rê chuột. Khố
 khối dính sát nhau. Chưa đưa lên dev theo lời đại ca.
 
 Mã nguồn: frontend/src/components/SurveyReportCard.tsx · frontend/src/index.css
+
+## duoc-CR-609 | Tra cứu hóa chất ở bản cũ: thêm nút Cột để ẩn hiện từng cột của bảng
+- status: xong
+- date: 2026-10-07
+Đại ca yêu cầu thêm nút ẩn hiện cột cho bảng Tra cứu hóa chất ở bản cũ. Nút Cột nay nằm ở góc phải hàng lọc, giống nút
+Cột ở các bảng khác của bản cũ như Tồn kho hay Công nợ: bỏ tick là cột ẩn ngay, nút báo đang ẩn mấy cột, có chọn tất cả và
+trả về mặc định, lựa chọn được nhớ trên máy cho lần mở sau. Bảng cảnh báo theo từ khóa dùng chung bộ cột vẫn giữ nguyên.
+Bản mới không cần sửa vì bảng chung của bản mới đã có sẵn menu Cột. Đã bấm thử trên máy, chưa đưa lên dev.
+
+Mã nguồn: frontend/src/components/customs/CustomsRegulationColumns.tsx · frontend/src/components/customs/CustomsRegulationBrowse.tsx
