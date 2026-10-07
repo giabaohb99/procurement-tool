@@ -1798,7 +1798,9 @@ def _gloss_decide(db: Session, chat_id: str, pid: int, accept: bool, uid: int) -
     db.commit()
 
 
-_MEM_TEACH = re.compile(r"^nhớ\s*:\s*(?P<line>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
+_MEM_TEACH = re.compile(
+    r"^nhớ(?:\s+(?P<when>đến\s+\d{1,2}/\d{1,2}(?:/\d{4})?|hôm nay|tuần này|tháng này))?\s*:\s*(?P<line>.+?)[.!]*$",
+    re.IGNORECASE | re.DOTALL)
 _MEM_FORGET = re.compile(r"^quên\s*:\s*(?P<needle>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
 _MEM_NOTE = re.compile(r"^ghi chú\s*:\s*(?P<body>.+)$", re.IGNORECASE | re.DOTALL)
 _MEM_SHOW = re.compile(r"^(?:sổ nhớ|sổ ghi nhớ|em nhớ gì về (?:anh|tôi|em))\s*[?.!]*$", re.IGNORECASE)
@@ -1823,7 +1825,12 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
         return True
     uid = link.user_id
     if m_teach:
-        out = personal_memory.remember(db, uid, m_teach.group("line"))
+        until = personal_memory.resolve_until(m_teach.group("when") or "") if m_teach.group("when") else None
+        if m_teach.group("when") and until is None:
+            reply(db, chat_id, "Em chưa đọc được ngày hết hạn. Nhắn kiểu «nhớ đến 15/10: …», «nhớ tuần này: …».",
+                  scope=SCOPE_PERSONAL)
+            return True
+        out = personal_memory.remember(db, uid, m_teach.group("line"), until=until)
         db.commit()
         if not out.get("ok"):
             reply(db, chat_id, f"Em chưa ghi: {esc(out['message'])}.", scope=SCOPE_PERSONAL)
@@ -1831,7 +1838,7 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
             reply(db, chat_id, "Sổ đã có dòng này rồi.", scope=SCOPE_PERSONAL)
         else:
             extra = f"\n<i>{esc(out['warning'])}</i>" if out.get("warning") else ""
-            reply(db, chat_id, f"Em ghi nhớ ({esc(out['label'])}): {esc(m_teach.group('line').strip(' .'))}\n"
+            reply(db, chat_id, f"Em ghi nhớ ({esc(out['label'])}): {esc(out.get('line') or m_teach.group('line'))}\n"
                                f"<i>Sai thì nhắn «quên: …». Xem cả sổ: «sổ nhớ».</i>{extra}", scope=SCOPE_PERSONAL)
         return True
     if m_forget:
@@ -1866,7 +1873,9 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
     if notes:
         body += "\n\n<b>Kho ghi chú</b> (" + str(len(notes)) + "):\n" + "\n".join(
             f"• #{n.id} {esc(n.title)} · {n.chars} ký tự" for n in notes)
-    body += "\n\n<i>«nhớ: …» thêm · «quên: …» bớt · «ghi chú: tiêu đề | nội dung» vào kho · «xuất sổ nhớ» lấy tệp.</i>"
+    body += ("\n\n<i>«nhớ: …» thêm · «nhớ tuần này: …» / «nhớ đến 15/10: …» nhớ có hạn · «quên: …» bớt · "
+             "«ghi chú: tiêu đề | nội dung» vào kho · «xuất sổ nhớ» lấy tệp. Cuối mỗi buổi chat (im lặng 30 phút) "
+             "em tự tóm tắt vào kho.</i>")
     reply(db, chat_id, body, scope=SCOPE_PERSONAL)
     return True
 

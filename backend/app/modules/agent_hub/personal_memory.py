@@ -59,6 +59,74 @@ _SECRET_RE = re.compile(
 
 _CACHE: dict[int, tuple[float, str]] = {}
 
+#  ai-CR-102: dòng CÓ HẠN — đuôi «(đến dd/mm/yyyy)». Quá hạn thì không nạp vào câu hỏi nữa, lần ghi kế tiếp tự bỏ.
+_UNTIL_RE = re.compile(r"\s*\(đến (\d{1,2})/(\d{1,2})/(\d{4})\)\s*$")
+
+
+def until_of(line: str):
+    """Ngày hết hạn của một dòng (date) hoặc None nếu dòng không có hạn / hạn viết sai."""
+    from datetime import date
+
+    m = _UNTIL_RE.search(line or "")
+    if not m:
+        return None
+    try:
+        return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+    except ValueError:
+        return None
+
+
+def _today():
+    from .timeutil import now_local
+
+    return now_local().date()
+
+
+def drop_expired(text: str) -> str:
+    """Bỏ các dòng đã quá hạn (theo ngày giờ Việt Nam). Dòng không hạn giữ nguyên."""
+    today = _today()
+    sections = parse(text)
+    changed = False
+    for key in SECTION_KEYS:
+        keep = [ln for ln in sections[key] if (until_of(ln) is None or until_of(ln) >= today)]
+        changed = changed or len(keep) != len(sections[key])
+        sections[key] = keep
+    return render(sections) if changed else text
+
+
+def resolve_until(when: str):
+    """«hôm nay» · «tuần này» (tới Chủ nhật) · «tháng này» · «đến 15/10» · «đến 15/10/2026» · «2026-10-15» → date."""
+    import calendar
+    from datetime import date, timedelta
+
+    w = " ".join((when or "").lower().split())
+    if not w:
+        return None
+    today = _today()
+    if w == "hôm nay":
+        return today
+    if w == "tuần này":
+        return today + timedelta(days=6 - today.weekday())
+    if w == "tháng này":
+        return today.replace(day=calendar.monthrange(today.year, today.month)[1])
+    m = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})", w)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+    m = re.fullmatch(r"(?:đến\s+)?(\d{1,2})/(\d{1,2})(?:/(\d{4}))?", w)
+    if m:
+        year = int(m.group(3) or today.year)
+        try:
+            d = date(year, int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            return None
+        if not m.group(3) and d < today:
+            d = d.replace(year=year + 1)     # «đến 05/01» gõ hôm 20/12 là sang năm
+        return d
+    return None
+
 
 # ---------------------------------------------------------------------------
 # Tầng 1 — lõi
@@ -85,7 +153,7 @@ def load_core(db: Session, user_id: int) -> str:
     if hit is not None and hit[0] > now:
         return hit[1]
     row = _row(db, uid)
-    text = (row.text or "") if row is not None else ""
+    text = drop_expired((row.text or "") if row is not None else "")
     _CACHE[uid] = (now + CACHE_TTL, text)
     return text
 
@@ -144,10 +212,15 @@ def _save_core(db: Session, user_id: int, text: str) -> None:
     _invalidate(user_id)
 
 
-def remember(db: Session, user_id: int, line: str, section: str = "") -> dict:
-    """Thêm MỘT dòng vào lõi. Trả {ok, message, section, chars, max}. Không ghi bí mật, không ghi trùng."""
+def remember(db: Session, user_id: int, line: str, section: str = "", until=None) -> dict:
+    """Thêm MỘT dòng vào lõi. Trả {ok, message, section, chars, max}. Không ghi bí mật, không ghi trùng.
+    `until` (date, ai-CR-102): dòng có hạn — gắn đuôi «(đến dd/mm/yyyy)», quá hạn thì tự rút."""
     uid = int(user_id or 0)
     line = " ".join((line or "").split()).strip(" .")
+    if until is not None:
+        if until < _today():
+            return {"ok": False, "message": "ngày hết hạn đã qua"}
+        line = _UNTIL_RE.sub("", line) + f" (đến {until:%d/%m/%Y})"
     if uid <= 0:
         return {"ok": False, "message": "chat này chưa đăng nhập tài khoản ERP nên chưa có sổ riêng"}
     if not line:
@@ -170,7 +243,7 @@ def remember(db: Session, user_id: int, line: str, section: str = "") -> dict:
                                         "dài vào «ghi chú: …»"}
     _save_core(db, uid, text)
     out = {"ok": True, "message": "đã ghi", "section": key, "label": _LABEL_BY_KEY[key], "chars": len(text),
-           "max": CORE_MAX}
+           "max": CORE_MAX, "line": line}
     if len(text) >= CORE_MAX * WARN_AT:
         out["warning"] = f"sổ lõi đã dùng {len(text) * 100 // CORE_MAX}% — nên dọn bớt"
     return out
@@ -373,3 +446,57 @@ def export_md(db: Session, user_id: int) -> str:
     if notes:
         out += "\n# Kho ghi chú\n\n" + "\n\n".join(f"## {n.title} (#{n.id})\n{n.text}" for n in notes) + "\n"
     return out
+
+
+# ---------------------------------------------------------------------------
+# Hồi ức (ai-CR-102) — tìm lại hội thoại cũ của CHÍNH người đó trên mọi chat họ từng đăng nhập
+# ---------------------------------------------------------------------------
+RECALL_MAX_DAYS = 180
+RECALL_HITS = 8
+
+
+def chat_ids_of(db: Session, user_id: int) -> list[str]:
+    from .model import AgentChatLink
+
+    rows = db.scalars(select(AgentChatLink.chat_id).where(AgentChatLink.user_id == int(user_id or 0),
+                                                          AgentChatLink.chat_id != ""))
+    return sorted({str(c) for c in rows if c})
+
+
+def search_history(db: Session, user_id: int, query: str, days: int = 30) -> list[dict]:
+    """Tin hỏi / trả lời / tra cứu cũ khớp `query` trong các chat của người đó; mới trước, khớp nhiều chữ trước."""
+    from datetime import timedelta
+
+    from sqlalchemy import or_
+
+    from .constants import DIR_IN
+    from .model import AgentMessage
+    from .timeutil import now_utc, to_local
+
+    uid = int(user_id or 0)
+    words = [w for w in fold(query).split() if len(w) >= 3][:6]
+    chats = chat_ids_of(db, uid)
+    if uid <= 0 or not words or not chats:
+        return []
+    days = max(1, min(int(days or 30), RECALL_MAX_DAYS))
+    raw_words = [w for w in (query or "").split() if len(fold(w)) >= 3][:6] or words
+    rows = list(db.scalars(select(AgentMessage).where(
+        AgentMessage.chat_id.in_(chats), AgentMessage.action.in_(("hoi", "tra_loi", "nghien_cuu")),
+        AgentMessage.created_at >= now_utc() - timedelta(days=days),
+        or_(*[AgentMessage.body.ilike(f"%{w}%") for w in raw_words + words]),
+    ).order_by(AgentMessage.id.desc()).limit(200)))
+    scored = []
+    for r in rows:
+        body = fold(r.body)
+        score = sum(1 for w in words if w in body)
+        if score:
+            scored.append((score, r))
+    scored.sort(key=lambda x: (-x[0], -x[1].id))
+    out = []
+    for _score, r in scored[:RECALL_HITS]:
+        when = to_local(r.created_at)
+        out.append({"at": when.strftime("%d/%m/%Y %H:%M") if when else "",
+                    "who": "người dùng" if r.direction == DIR_IN else "bot",
+                    "text": " ".join((r.body or "").split())[:400]})
+    return out
+

@@ -48,7 +48,9 @@ hay hỏi» đọc từ đó, không tự đặt luật riêng. Bot code không 
 - **Sổ ghi nhớ riêng từng người** (ai-CR-095): bot đọc sổ của người đang nhắn trước khi trả lời; nghe được điều
   ổn định về họ thì tự ghi và báo «Em ghi nhớ: …» để họ «quên» nếu sai. «nhớ: …» thêm · «quên: …» bớt ·
   «ghi chú: tiêu đề | nội dung» vào kho · «sổ nhớ» xem · «xuất sổ nhớ» lấy tệp. Không bao giờ ghi mật khẩu, khóa,
-  số thẻ — kể cả vào sổ thuật ngữ.
+  số thẻ — kể cả vào sổ thuật ngữ. Điều tạm thời thì nhớ có hạn: «nhớ tuần này: …», «nhớ đến 15/10: …» (ai-CR-102).
+  Cuối mỗi buổi chat (im lặng 30 phút) bot tự tóm tắt vào kho, không nhắn gì; hỏi lại chuyện cũ thì bot tìm trong kho
+  và trong hội thoại cũ của chính người đó.
 - **Mập mờ giữa «hỏi» và «việc sửa phần mềm» thì trả lời luôn** (ai-CR-096): một cụm chủ đề ngắn như «Giá thép
   Hòa Phát» là tra cứu, không phải việc; bot trả lời và chỉ thêm một dòng «nếu là việc sửa phần mềm thì nhắn ghi
   việc: …». Thẻ hai nút «làm luôn / ghi việc» chỉ còn khi bộ phân loại hỏng.

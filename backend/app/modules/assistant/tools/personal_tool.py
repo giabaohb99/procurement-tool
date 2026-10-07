@@ -21,7 +21,12 @@ def _uid(ctx: ToolContext) -> int:
 
 
 def _remember_fact(ctx: ToolContext, args: dict) -> dict:
-    out = pm.remember(ctx.db, _uid(ctx), str(args.get("text") or ""), str(args.get("section") or ""))
+    until = None
+    if str(args.get("until") or "").strip():
+        until = pm.resolve_until(str(args.get("until")))
+        if until is None:
+            return {"ok": False, "message": "ngày hết hạn không đọc được, dùng dạng YYYY-MM-DD"}
+    out = pm.remember(ctx.db, _uid(ctx), str(args.get("text") or ""), str(args.get("section") or ""), until=until)
     if out.get("ok"):
         ctx.db.commit()
     return out
@@ -42,6 +47,11 @@ def _save_note(ctx: ToolContext, args: dict) -> dict:
     return out
 
 
+def _search_chat_history(ctx: ToolContext, args: dict) -> dict:
+    hits = pm.search_history(ctx.db, _uid(ctx), str(args.get("query") or ""), int(args.get("days") or 30))
+    return {"count": len(hits), "messages": hits}
+
+
 def _search_notes(ctx: ToolContext, args: dict) -> dict:
     hits = pm.search_notes(ctx.db, _uid(ctx), str(args.get("query") or ""))
     return {"count": len(hits), "notes": hits}
@@ -56,7 +66,9 @@ REMEMBER_FACT_SPEC = ToolSpec(
                  "`section`: ban_than · so_thich · cach_lam_viec · da_chot (bỏ trống thì tự xếp)."),
     parameters={"type": "object", "properties": {
         "text": {"type": "string", "description": "Một dòng ngắn, ngôi thứ ba hoặc trung tính, vd «ở Cần Thơ, Ninh Kiều»."},
-        "section": {"type": "string", "enum": list(pm.SECTION_KEYS)}},
+        "section": {"type": "string", "enum": list(pm.SECTION_KEYS)},
+        "until": {"type": "string", "description": ("Ngày hết hạn YYYY-MM-DD cho điều TẠM THỜI («tuần này anh ở Đà Nẵng», "
+                                                    "«tháng này ăn kiêng»). Bỏ trống = nhớ lâu dài.")}},
         "required": ["text"]},
     handler=_remember_fact,
 )
@@ -85,4 +97,14 @@ SEARCH_NOTES_SPEC = ToolSpec(
     parameters={"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
     handler=_search_notes,
 )
-PERSONAL_SPECS = [REMEMBER_FACT_SPEC, FORGET_FACT_SPEC, SAVE_NOTE_SPEC, SEARCH_NOTES_SPEC]
+SEARCH_CHAT_HISTORY_SPEC = ToolSpec(
+    name="search_chat_history",
+    description=("TÌM LẠI HỘI THOẠI CŨ của chính người đang hỏi với bot («hôm trước anh hỏi gì về NCC X», «tuần trước mình "
+                 "bàn giá thép thế nào»). Trả các tin cũ khớp từ khóa kèm ngày giờ. Dùng cùng search_notes (kho có bản tóm "
+                 "tắt từng buổi). `days` mặc định 30, tối đa 180."),
+    parameters={"type": "object", "properties": {"query": {"type": "string"},
+                                                 "days": {"type": "integer", "minimum": 1, "maximum": 180}},
+                "required": ["query"]},
+    handler=_search_chat_history,
+)
+PERSONAL_SPECS = [REMEMBER_FACT_SPEC, FORGET_FACT_SPEC, SAVE_NOTE_SPEC, SEARCH_NOTES_SPEC, SEARCH_CHAT_HISTORY_SPEC]

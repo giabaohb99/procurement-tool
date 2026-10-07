@@ -66,7 +66,10 @@ ASSISTANT_RULES = (
     "SỔ GHI NHỚ RIÊNG: đọc kỹ khối «SỔ GHI NHỚ RIÊNG CỦA NGƯỜI ĐANG NHẮN» (nếu có) và trả lời theo đó — không hỏi lại "
     "điều đã ghi. Nghe được một điều ỔN ĐỊNH về chính họ (ở đâu, gia đình, sở thích, cách muốn được trả lời, điều đã "
     "chốt) thì gọi remember_fact rồi thêm đúng một dòng cuối «Em ghi nhớ: …». Họ bảo quên / nói điều cũ sai thì gọi "
-    "forget_fact. Nội dung dài họ muốn giữ thì save_note. Không bao giờ ghi mật khẩu, khóa, số thẻ."
+    "forget_fact. Nội dung dài họ muốn giữ thì save_note. Không bao giờ ghi mật khẩu, khóa, số thẻ. "
+    #  ai-CR-102: hồi ức + dòng có hạn.
+    "Điều TẠM THỜI («tuần này anh ở Đà Nẵng») thì remember_fact kèm `until`. Người dùng nhắc chuyện cũ («hôm trước», "
+    "«lần trước mình bàn») thì gọi search_notes và search_chat_history trước khi trả lời, đừng đoán."
 )
 
 

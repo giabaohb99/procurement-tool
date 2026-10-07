@@ -7617,3 +7617,134 @@ def test_tra_loi_trich_tin_va_mach_khong_keo_chuyen_hom_qua(db, bot, monkeypatch
     service.handle_message(db, {**_msg("/taikhoan"), "message_id": 9, "reply_to_message": {"text": "abc"}})
     assert not any("abc" in t for t in seen[1:])
 
+
+# ---------------------------------------------------------------------------
+# ai-CR-102 — sổ nhớ đợt 2: dòng có hạn, tóm tắt cuối buổi (im lặng 30 phút), hồi ức hội thoại cũ
+# ---------------------------------------------------------------------------
+def test_dong_nho_co_han_tu_rut_khi_qua_han(db, monkeypatch):
+    from datetime import date
+
+    from app.modules.agent_hub import personal_memory as pm
+
+    pm.clear_cache()
+    monkeypatch.setattr(pm, "_today", lambda: date(2026, 10, 7))       # thứ tư
+    assert pm.resolve_until("hôm nay") == date(2026, 10, 7)
+    assert pm.resolve_until("tuần này") == date(2026, 10, 11)          # tới Chủ nhật
+    assert pm.resolve_until("tháng này") == date(2026, 10, 31)
+    assert pm.resolve_until("đến 15/10") == date(2026, 10, 15)
+    assert pm.resolve_until("05/01") == date(2027, 1, 5)               # ngày đã qua trong năm → sang năm
+    assert pm.resolve_until("2026-12-01") == date(2026, 12, 1)
+    assert pm.resolve_until("31/02") is None and pm.resolve_until("mai mốt") is None
+    out = pm.remember(db, 9, "tuần này ở Đà Nẵng", until=date(2026, 10, 11))
+    assert out["ok"] and out["line"].endswith("(đến 11/10/2026)")
+    pm.remember(db, 9, "ở Cần Thơ")
+    assert not pm.remember(db, 9, "chuyện cũ", until=date(2026, 10, 1))["ok"]
+    db.commit()
+    assert "Đà Nẵng" in pm.load_core(db, 9)
+    #  Qua ngày 11/10: dòng có hạn biến mất khỏi câu hỏi, dòng lâu dài còn nguyên.
+    pm.clear_cache()
+    monkeypatch.setattr(pm, "_today", lambda: date(2026, 10, 12))
+    core = pm.load_core(db, 9)
+    assert "Đà Nẵng" not in core and "Cần Thơ" in core
+
+
+def test_lenh_nho_tuan_nay_qua_telegram(db, bot, seed, monkeypatch):
+    from datetime import date
+
+    from app.modules.agent_hub import personal_memory as pm
+
+    service, sent, _ = bot
+    pm.clear_cache()
+    monkeypatch.setattr(pm, "_today", lambda: date(2026, 10, 7))
+    _owner_link(db, seed.u_req_id)
+    service.handle_message(db, _msg("nhớ tuần này: anh ở Đà Nẵng"))
+    assert "Em ghi nhớ" in sent[-1] and "(đến 11/10/2026)" in sent[-1]
+    service.handle_message(db, {**_msg("nhớ đến 31/02: abc"), "message_id": 8})
+    assert "chưa đọc được ngày" in sent[-1]
+
+
+def _talk(service, chat, rows, minutes_ago):
+    from datetime import datetime, timedelta
+
+    out = []
+    for i, (direction, action, body) in enumerate(rows):
+        m = service.log_message(service_db[0], direction, chat, 100 + i, body, action=action)
+        m.created_at = datetime.utcnow() - timedelta(minutes=minutes_ago - i)
+        out.append(m)
+    service_db[0].commit()
+    return out
+
+
+service_db: list = []
+
+
+def test_tom_tat_cuoi_buoi_khi_im_lang_30_phut(db, bot, seed, monkeypatch):
+    import json as _json
+
+    from app.modules.agent_hub import personal_memory as pm, sessions
+    from app.modules.agent_hub.model import AgentMessage, AgentNote
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, _ = bot
+    service_db[:] = [db]
+    pm.clear_cache()
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(service.user_keys, "active_key", lambda: "k")
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    asked: list[str] = []
+
+    class P:
+        def ask(self, messages, **kw):
+            asked.append(messages[0].content)
+            return ChatResult(text="- Hỏi giá thép Hòa Phát\n- Hẹn mai gọi NCC", provider="gemini", model="x",
+                              input_tokens=10, output_tokens=5)
+
+    monkeypatch.setattr(sessions.manager if hasattr(sessions, "manager") else service.manager, "get_provider", lambda: P())
+    convo = [(service.DIR_IN, "hoi", "giá thép Hòa Phát"), (service.DIR_OUT, "tra_loi", "18.500đ/kg"),
+             (service.DIR_IN, "hoi", "còn Pomina"), (service.DIR_OUT, "tra_loi", "18.200đ/kg"),
+             (service.DIR_IN, "hoi", "mai nhắc anh gọi NCC"), (service.DIR_OUT, "tra_loi", "dạ")]
+    #  Buổi vừa nói 10 phút trước: CHƯA tóm tắt.
+    _talk(service, "12345", convo, minutes_ago=10)
+    assert sessions.tick(db) == {"summarized": 0, "skipped": 0} and not asked
+    #  Im lặng ≥ 30 phút: tóm tắt một lần, cất vào kho, đặt dấu; không nhắn gì lên Telegram.
+    n_sent = len(sent)
+    from datetime import timedelta
+    assert sessions.tick(db, now=sessions.now_utc() + timedelta(minutes=40)) == {"summarized": 1, "skipped": 0}
+    assert "Người dùng: giá thép Hòa Phát" in asked[0] and "Trợ lý: 18.500đ/kg" in asked[0]
+    note = db.query(AgentNote).filter_by(user_id=seed.u_req_id).one()
+    assert note.title.startswith("Buổi ") and "Hòa Phát" in note.text
+    mark = db.query(AgentMessage).filter_by(action=sessions.ACT_SESSION_MARK).one()
+    assert _json.loads(mark.body)["note_id"] == note.id and len(sent) == n_sent
+    #  Chạy lại: không tóm tắt trùng.
+    assert sessions.tick(db, now=sessions.now_utc() + timedelta(minutes=50)) == {"summarized": 0, "skipped": 0}
+    #  Buổi ngắn (dưới 3 câu hỏi): chỉ đặt dấu, không tốn lượt model.
+    _talk(service, "12345", [(service.DIR_IN, "hoi", "alo"), (service.DIR_OUT, "tra_loi", "dạ")], minutes_ago=5)
+    assert sessions.tick(db, now=sessions.now_utc() + timedelta(minutes=60)) == {"summarized": 0, "skipped": 1}
+    assert len(asked) == 1
+    #  Tóm tắt không vào mạch hội thoại.
+    assert all("until_id" not in t["content"] for t in service._recent_turns(db, "12345", 0))
+
+
+def test_hoi_uc_tim_hoi_thoai_cu_dung_nguoi(db, bot, seed):
+    from app.modules.agent_hub import personal_memory as pm
+    from app.modules.agent_hub.model import AgentChatLink
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    service, _, _ = bot
+    service_db[:] = [db]
+    _owner_link(db, seed.u_req_id)
+    from datetime import datetime, timedelta
+    db.add(AgentChatLink(user_id=seed.u_nstm_id, chat_id="999", linked_at=datetime.now(),
+                         expires_at=datetime.now() + timedelta(days=30), created_by=0, updated_by=0))
+    db.commit()
+    _talk(service, "12345", [(service.DIR_IN, "hoi", "giá thép Hòa Phát tháng này"),
+                             (service.DIR_OUT, "tra_loi", "Hòa Phát báo 18.500đ/kg")], minutes_ago=60 * 24 * 3)
+    _talk(service, "999", [(service.DIR_IN, "hoi", "giá thép Hòa Phát bên em")], minutes_ago=60)
+    hits = pm.search_history(db, seed.u_req_id, "Hòa Phát")
+    assert [h["who"] for h in hits] == ["bot", "người dùng"] and all("bên em" not in h["text"] for h in hits)
+    assert pm.search_history(db, seed.u_req_id, "Hòa Phát", days=1) == []
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "search_chat_history", {"query": "Hòa Phát"})
+    assert out["count"] == 2
+    assert T.run_tool(db, db.get(User, seed.u_nstm_id), "search_chat_history", {"query": "18.500"})["count"] == 0
+

@@ -700,6 +700,24 @@ def learning_tick_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.session_summary")
+def session_summary_task() -> dict:
+    """ai-CR-102: mỗi 10 phút — buổi chat im lặng ≥ 30 phút thì tóm tắt vào kho ghi chú riêng của người đó."""
+    if (off := _off()) is not None:
+        return off
+    from . import sessions
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **sessions.tick(db)}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: vòng tóm tắt buổi chat hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.runner_watch")
 def runner_watch_task() -> dict:
     """ai-CR-072: mỗi phút xem máy sửa mã nào mất liên lạc / nối lại → báo đại ca một lần mỗi lần đổi."""

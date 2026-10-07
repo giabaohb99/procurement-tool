@@ -242,6 +242,12 @@ if settings.AGENT_HUB_ENABLED:
             "schedule": crontab(minute="*/5"),
             "options": {"expires": 240},
         },
+        #  ai-CR-102: tóm tắt cuối buổi chat (im lặng ≥ 30 phút) vào kho ghi chú riêng của người dùng.
+        "agent-session-summary": {
+            "task": "agent.session_summary",
+            "schedule": crontab(minute="*/10"),
+            "options": {"expires": 540},
+        },
         "agent-runner-watch": {
             "task": "agent.runner_watch",
             "schedule": crontab(minute="*"),

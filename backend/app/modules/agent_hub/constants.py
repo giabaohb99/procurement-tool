@@ -160,6 +160,8 @@ STAGE_SCAN = 25
 STAGE_RESEARCH = 26
 #  Chép tin thoại thành chữ (ai-CR-061): một lượt Gemini nghe audio, trả chữ.
 STAGE_VOICE = 27
+#  Tóm tắt cuối buổi chat vào kho ghi chú riêng (ai-CR-102).
+STAGE_SESSION = 28
 #  Nhãn bước cho màn Việc của bot (ai-CR-036).
 STAGE_LABELS = {
     STAGE_TRIAGE: "Gom việc",
@@ -169,6 +171,7 @@ STAGE_LABELS = {
     STAGE_ASK: "Hỏi thêm về bản vá",
     STAGE_DEPLOY: "Gộp / deploy dev",
     STAGE_VOICE: "Chép tin thoại",
+    STAGE_SESSION: "Tóm tắt buổi chat",
     STAGE_REVERT: "Thu hồi",
     STAGE_RULE: "Đề xuất ghi sổ",
     STAGE_SCAN: "Rà soát mã",

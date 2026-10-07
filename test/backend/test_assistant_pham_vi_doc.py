@@ -113,6 +113,7 @@ TOOL_KHONG_PHAM_VI = {
     "forget_fact": "xóa dòng trong sổ ghi nhớ riêng của chính người hỏi",
     "save_note": "lưu ghi chú dài vào kho riêng của chính người hỏi",
     "search_notes": "tìm trong kho ghi chú riêng của chính người hỏi",
+    "search_chat_history": "tìm hội thoại cũ với bot của chính người hỏi (ai-CR-102)",
 }
 
 
@@ -128,7 +129,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 55, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 56, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

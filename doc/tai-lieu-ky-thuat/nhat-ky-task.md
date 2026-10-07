@@ -12624,3 +12624,15 @@ thì bấm nút sửa. Thẻ khóa công ty ở Cấu hình hệ thống dùng c
 
 Mã nguồn: frontend-v2/src/modules/system/components/ai-key-list-card.tsx · frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx
 Deploy: dev 07/10, erp-v2 c7d0df58 (Agent 1 gộp và dựng lại api, erp, celery-worker, celery-beat, agent-poller); prod giữ lại.
+
+## ai-CR-102 | Sổ ghi nhớ đợt 2: tóm tắt cuối buổi, tìm lại hội thoại cũ, nhớ có hạn
+- status: xong
+- date: 2026-10-07
+Một buổi chat được coi là xong khi đã im lặng 30 phút sau tin hỏi đáp cuối. Cứ mười phút một vòng chạy nền tìm các buổi
+đã xong của người đã đăng nhập; buổi có từ ba câu hỏi trở lên thì bot dùng khóa của chính người đó viết vài gạch đầu
+dòng tóm tắt và cất vào kho ghi chú riêng, không nhắn gì lên Telegram; buổi ngắn thì chỉ đánh dấu cho khỏi xét lại.
+Trợ lý có thêm công cụ tìm lại hội thoại cũ của chính người đó trên mọi chat họ từng đăng nhập, tối đa 180 ngày. Sổ lõi
+nhận dòng có hạn như «nhớ tuần này: anh ở Đà Nẵng» hay «nhớ đến 15/10: …»; quá hạn thì dòng tự rút khỏi câu hỏi.
+
+Mã nguồn: backend/app/modules/agent_hub/sessions.py (mới) · agent_hub/personal_memory.py (dòng có hạn, search_history) · assistant/tools/personal_tool.py (search_chat_history) · lịch chạy agent-session-summary
+
