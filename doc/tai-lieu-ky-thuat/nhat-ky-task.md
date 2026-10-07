@@ -12787,4 +12787,4 @@ xác định là việc sửa phần mềm mới trả tin về cho vòng gom. N
 thông báo lỗi nữa, và máy sửa mã được dựng lại để chạy bản mới có model dự phòng.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (ACT_READING trong nhánh đọc ý, plan_task) · agent_hub/constants.py
-
+Deploy: dev 07/10, erp-v2 5901a9e5 (Agent 1 gộp và dựng lại); máy sửa mã đã dựng lại; prod giữ lại.
