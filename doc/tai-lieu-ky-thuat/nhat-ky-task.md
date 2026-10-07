@@ -12752,4 +12752,4 @@ hoặc treo, bot chuyển ngay sang model dự phòng (mặc định là model c
 chỉ chờ tối đa 25 giây, và với người không phải chủ bot thì mặc định bot gọi «anh/chị» hoặc theo tên. Mỗi người có cách xưng hô riêng: ai dặn «gọi tôi là …» thì bot ghi vào sổ ghi nhớ riêng của người đó và từ đó xưng hô theo sổ.
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (fallback_model, _send, _call) · agent_hub/research.py · agent_hub/constants.py (BOT_PERSONA_OTHER) · agent_hub/service.py (_persona) · core/config.py
-
+Deploy: dev 07/10, erp-v2 404cdcf7 rồi 953cc7bd (Agent 1 gộp và dựng lại hai lượt); prod giữ lại.
