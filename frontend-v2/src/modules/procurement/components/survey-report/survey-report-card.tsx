@@ -1458,14 +1458,14 @@ function ReportDocRow({
   const waiting = pendingDepends(doc, docsById)
   const isLink = /^https?:\/\//i.test(doc.file_note)
 
-  //  MỘT DÒNG cho mỗi hồ sơ: tiêu đề bên trái, mô tả co giãn ở giữa (cắt bớt,
-  //  rê chuột đọc đủ), khóa tiên quyết / đính kèm / trạng thái / sửa dồn phải —
-  //  đính kèm và sửa chỉ còn icon. Chi tiết đầy đủ nằm ở hộp Sửa. Tên nút dòng
-  //  hàng KHÔNG lặp ở đây nữa: dòng bảng bên trên đã nói rồi.
+  //  duoc-CR-607 (07/10/2026, đại ca chốt «dòng 2 tầng», cùng bố cục bản cũ): trước đây MỘT hàng chứa
+  //  tới 10 thứ nên tên bị cắt «…» ở 45% bề rộng và trạng thái / sửa / xóa TRÀN ra ngoài khung dòng.
+  //  Nay 3 cột: ô tick · [tên ở tầng trên, thông tin phụ ở tầng dưới] · [trạng thái + sửa + xóa].
+  //  Cột giữa `minmax(0,1fr)` để tên dài xuống dòng trong khung; cột phải `auto` nên nút không tràn.
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-lg border bg-card py-1.5 pr-1.5 pl-3',
+        'grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-2.5 rounded-lg border bg-card px-3 py-2',
         locked && 'opacity-70',
       )}
     >
@@ -1475,7 +1475,7 @@ function ReportDocRow({
         title={locked ? 'Chờ hồ sơ tiên quyết hoàn thành trước' : ''}
         disabled={!canEdit || locked || busy}
         className={cn(
-          'grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors',
+          'mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors',
           done
             ? 'border-success bg-success text-white'
             : 'border-input bg-muted/50 text-transparent hover:border-success/60',
@@ -1486,143 +1486,152 @@ function ReportDocRow({
         <Check className="size-3.5" />
       </button>
 
-      {showItemTag && (
-        <span
-          title={itemName || 'Chung (cả phiếu)'}
-          className={cn(
-            'max-w-36 shrink-0 truncate rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
-            itemName ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
-          )}
-        >
-          {itemName || 'Chung'}
-        </span>
-      )}
-
-      <span className="max-w-[45%] shrink-0 truncate text-sm font-medium" title={doc.title}>
-        {doc.title}
-      </span>
-      {doc.required && (
-        <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-destructive">
-          Bắt buộc
-        </span>
-      )}
-
-      {/* Mô tả chiếm phần còn lại của dòng — cũng là khoảng đệm khi rỗng. */}
-      <span
-        className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
-        title={doc.description || undefined}
-      >
-        {doc.description}
-      </span>
-
-      {doc.depends.length > 0 && waiting.length > 0 && (
-        <span
-          className="shrink-0 text-destructive"
-          title={`Chờ hồ sơ tiên quyết: ${waiting.map((dep) => dep.title).join(', ')}`}
-        >
-          <Lock className="size-3.5" />
-        </span>
-      )}
-
-      {isLink ? (
-        <a
-          href={doc.file_note}
-          target="_blank"
-          rel="noreferrer"
-          title={doc.file_note}
-          aria-label="Mở tệp đính kèm"
-          className="grid size-7 shrink-0 place-items-center rounded-md text-primary hover:bg-accent"
-        >
-          <Paperclip className="size-3.5" />
-        </a>
-      ) : (
-        <button
-          type="button"
-          title={
-            doc.file_note ||
-            (canEdit ? 'Chưa có tệp — bấm để dán tên tệp/link trong hộp sửa' : 'Chưa có tệp')
-          }
-          aria-label="Tệp đính kèm"
-          onClick={canEdit ? onEdit : undefined}
-          className={cn(
-            'grid size-7 shrink-0 place-items-center rounded-md',
-            doc.file_note ? 'text-foreground' : 'text-muted-foreground/50',
-            canEdit ? 'hover:bg-accent hover:text-foreground' : 'cursor-default',
-          )}
-        >
-          <Paperclip className="size-3.5" />
-        </button>
-      )}
-
-      <DocPlannedChip doc={doc} />
-      <DocDateChip doc={doc} />
-      <DocAssignee name={doc.assignee_name} />
-
-      {canEdit ? (
-        //  Ô chọn trạng thái NGAY TRÊN DÒNG — mang màu pill để liếc vẫn đọc được trạng thái.
-        //  Hồ sơ đang KHÓA (chờ tiên quyết) không chọn được «Hoàn thành», cùng luật với nút ✓.
-        <Select
-          value={String(doc.status)}
-          onValueChange={(value) => onStatusChange(Number(value))}
-          disabled={busy}
-        >
-          <SelectTrigger
-            size="sm"
-            aria-label={`Trạng thái hồ sơ "${doc.title}"`}
+      <div className="min-w-0 space-y-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span
             className={cn(
-              'h-6 shrink-0 gap-1 rounded-full border-0 px-2.5 text-[11px] font-semibold shadow-none',
+              'text-sm font-medium [overflow-wrap:anywhere]',
+              done && 'text-muted-foreground line-through',
+            )}
+            title={doc.title}
+          >
+            {doc.title}
+          </span>
+          {doc.depends.length > 0 && waiting.length > 0 && (
+            <span
+              className="shrink-0 text-destructive"
+              title={`Chờ hồ sơ tiên quyết: ${waiting.map((dep) => dep.title).join(', ')}`}
+            >
+              <Lock className="size-3.5" />
+            </span>
+          )}
+        </div>
+
+        {/* Tầng dưới: nhãn · ngày (thứ cần đọc nhanh) · người làm · mô tả co vào phần còn lại · tệp. */}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          {showItemTag && (
+            <span
+              title={itemName || 'Chung (cả phiếu)'}
+              className={cn(
+                'max-w-40 shrink-0 truncate rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                itemName ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+              )}
+            >
+              {itemName || 'Chung'}
+            </span>
+          )}
+          {doc.required && (
+            <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+              Bắt buộc
+            </span>
+          )}
+          <DocPlannedChip doc={doc} />
+          <DocDateChip doc={doc} />
+          <DocAssignee name={doc.assignee_name} />
+          {doc.description && (
+            <span className="min-w-[7.5rem] flex-1 truncate" title={doc.description}>
+              {doc.description}
+            </span>
+          )}
+          {isLink ? (
+            <a
+              href={doc.file_note}
+              target="_blank"
+              rel="noreferrer"
+              title={doc.file_note}
+              aria-label="Mở tệp đính kèm"
+              className="grid size-6 shrink-0 place-items-center rounded-md text-primary hover:bg-accent"
+            >
+              <Paperclip className="size-3.5" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              title={
+                doc.file_note ||
+                (canEdit ? 'Chưa có tệp — bấm để dán tên tệp/link trong hộp sửa' : 'Chưa có tệp')
+              }
+              aria-label="Tệp đính kèm"
+              onClick={canEdit ? onEdit : undefined}
+              className={cn(
+                'grid size-6 shrink-0 place-items-center rounded-md',
+                doc.file_note ? 'text-foreground' : 'text-muted-foreground/50',
+                canEdit ? 'hover:bg-accent hover:text-foreground' : 'cursor-default',
+              )}
+            >
+              <Paperclip className="size-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1">
+        {canEdit ? (
+          //  Ô chọn trạng thái NGAY TRÊN DÒNG — mang màu pill để liếc vẫn đọc được trạng thái.
+          //  Hồ sơ đang KHÓA (chờ tiên quyết) không chọn được «Hoàn thành», cùng luật với nút ✓.
+          <Select
+            value={String(doc.status)}
+            onValueChange={(value) => onStatusChange(Number(value))}
+            disabled={busy}
+          >
+            <SelectTrigger
+              size="sm"
+              aria-label={`Trạng thái hồ sơ "${doc.title}"`}
+              className={cn(
+                'h-6 shrink-0 gap-1 rounded-full border-0 px-2.5 text-[11px] font-semibold shadow-none',
+                STATUS_PILL[doc.status] ?? STATUS_PILL[0],
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
+                <SelectItem
+                  key={code}
+                  value={code}
+                  disabled={locked && Number(code) === REPORT_DOC_DONE}
+                >
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
               STATUS_PILL[doc.status] ?? STATUS_PILL[0],
             )}
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end">
-            {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
-              <SelectItem
-                key={code}
-                value={code}
-                disabled={locked && Number(code) === REPORT_DOC_DONE}
-              >
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        <span
-          className={cn(
-            'shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
-            STATUS_PILL[doc.status] ?? STATUS_PILL[0],
-          )}
-        >
-          {doc.status_label}
-        </span>
-      )}
-      {canEdit && (
-        <>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-7 shrink-0"
-            aria-label="Sửa hồ sơ"
-            title="Sửa hồ sơ"
-            onClick={onEdit}
-          >
-            <Pencil className="size-3.5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-7 shrink-0 text-destructive hover:text-destructive"
-            aria-label="Xóa hồ sơ"
-            title="Xóa hồ sơ"
-            disabled={busy}
-            onClick={onDelete}
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
-        </>
-      )}
+            {doc.status_label}
+          </span>
+        )}
+        {canEdit && (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7 shrink-0"
+              aria-label="Sửa hồ sơ"
+              title="Sửa hồ sơ"
+              onClick={onEdit}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7 shrink-0 text-destructive hover:text-destructive"
+              aria-label="Xóa hồ sơ"
+              title="Xóa hồ sơ"
+              disabled={busy}
+              onClick={onDelete}
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   )
 }

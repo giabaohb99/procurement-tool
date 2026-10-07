@@ -286,6 +286,10 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     const dateTitle = [doc.start_date && `Bắt đầu: ${fmtDateStr(doc.start_date)}`, doc.expires_at && `Hết hiệu lực: ${fmtDateStr(doc.expires_at)}`].filter(Boolean).join(' · ')
     const lateDays = reportDocLateDays(doc, today)
     const plannedTitle = [`Dự định hoàn tất: ${fmtDateStr(doc.planned_date)}`, lateDays > 0 ? `Trễ ${lateDays} ngày` : isDone ? 'Đã hoàn thành' : ''].filter(Boolean).join(' · ')
+    const descTitle = [doc.description, doc.result && `Kết quả: ${doc.result}`].filter(Boolean).join('\n')
+    //  duoc-CR-607 (07/10/2026, đại ca chốt «dòng 2 tầng»): trước đây 8–9 thứ nằm chung MỘT hàng nên tên
+    //  hồ sơ bị ép tới 6 dòng («Đơn / mua / hàng / (PO)…») và mô tả cụt «Bản sao…». Nay 3 vùng: ô tick ·
+    //  [tên ở tầng trên, thông tin phụ ở tầng dưới] · [trạng thái + sửa + xóa] luôn nằm gọn bên phải.
     return (
       <div key={doc.id} className={`srp-doc${isDone ? ' done' : ''}${locked ? ' locked' : ''}`}>
         <button
@@ -297,61 +301,71 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
         >
           <i className="ti ti-check" />
         </button>
-        <span className="srp-title" title={doc.title}>{doc.title}</span>
-        {showItemTag && (
-          <span className="badge gray" style={{ textTransform: 'none', fontSize: 11 }}>{itemName(doc.item_id) || 'Chung'}</span>
-        )}
-        {doc.required && <span className="badge err">Bắt buộc</span>}
-        <span className="srp-desc" title={[doc.description, doc.result && `Kết quả: ${doc.result}`].filter(Boolean).join('\n')}>
-          {doc.description}{doc.result && <span style={{ color: 'var(--teal)' }}>{doc.description ? ' · ' : ''}Kết quả: {doc.result}</span>}
-        </span>
-        {locked && (
-          <i className="ti ti-lock" style={{ color: 'var(--amber)', fontSize: 15 }}
-            title={`Chờ hồ sơ tiên quyết: ${pending.map((p) => p.title).join(', ')}`} />
-        )}
-        {doc.file_note && (isLink(doc.file_note) ? (
-          <a href={doc.file_note} target="_blank" rel="noopener noreferrer" className="srp-ibtn" title={doc.file_note}>
-            <i className="ti ti-paperclip" />
-          </a>
-        ) : (
-          <span className="srp-ibtn" title={doc.file_note} style={{ cursor: 'default' }}><i className="ti ti-paperclip" /></span>
-        ))}
-        {doc.planned_date && (
-          <span className={`srp-date${lateDays > 0 ? ' overdue' : ''}`} title={plannedTitle}>
-            <i className="ti ti-calendar-check" /> {fmtDateStr(doc.planned_date)}{lateDays > 0 && ` · Trễ ${lateDays} ngày`}
-          </span>
-        )}
-        {doc.expires_at && (
-          <span className={`srp-date ${tone}`} title={dateTitle}>
-            <i className="ti ti-calendar" /> {fmtDateStr(doc.expires_at)}
-          </span>
-        )}
-        {doc.assignee_name && (
-          <span className="srp-avatar" title={`Thực hiện: ${doc.assignee_name}`}>{nameInitials(doc.assignee_name)}</span>
-        )}
-        {canEdit ? (
-          //  Ô chọn trạng thái ngay trên dòng, mang màu badge; hồ sơ đang khóa không chọn được Hoàn thành (cùng luật nút ✓).
-          <select
-            className={`badge srp-status-select ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}
-            aria-label={`Trạng thái hồ sơ "${doc.title}"`}
-            value={doc.status}
-            disabled={busy}
-            onChange={(e) => setDocStatus(doc, Number(e.target.value))}
-            style={{ textTransform: 'none' }}
-          >
-            {[REPORT_DOC_IDLE, REPORT_DOC_DOING, 2, REPORT_DOC_DONE].map((s) => (
-              <option key={s} value={s} disabled={locked && s === REPORT_DOC_DONE}>{REPORT_DOC_STATUS_LABELS[s]}</option>
+        <div className="srp-doc-main">
+          <div className="srp-doc-line">
+            <span className="srp-title" title={doc.title}>{doc.title}</span>
+            {locked && (
+              <i className="ti ti-lock" style={{ color: 'var(--amber)', fontSize: 14 }}
+                title={`Chờ hồ sơ tiên quyết: ${pending.map((p) => p.title).join(', ')}`} />
+            )}
+          </div>
+          <div className="srp-doc-meta">
+            {showItemTag && <span className="srp-tag">{itemName(doc.item_id) || 'Chung'}</span>}
+            {doc.required && <span className="srp-tag req">Bắt buộc</span>}
+            {doc.planned_date && (
+              <span className={`srp-date${lateDays > 0 ? ' overdue' : ''}`} title={plannedTitle}>
+                <i className="ti ti-calendar-check" /> Hạn {fmtDateStr(doc.planned_date)}{lateDays > 0 && ` · trễ ${lateDays} ngày`}
+              </span>
+            )}
+            {doc.expires_at && (
+              <span className={`srp-date ${tone}`} title={dateTitle}>
+                <i className="ti ti-calendar" /> HL {fmtDateStr(doc.expires_at)}
+              </span>
+            )}
+            {doc.assignee_name && (
+              <span className="srp-assignee" title={`Thực hiện: ${doc.assignee_name}`}>
+                <span className="srp-avatar">{nameInitials(doc.assignee_name)}</span>{doc.assignee_name}
+              </span>
+            )}
+            {(doc.description || doc.result) && (
+              <span className="srp-desc" title={descTitle}>
+                {doc.description}{doc.result && <span style={{ color: 'var(--teal)' }}>{doc.description ? ' · ' : ''}Kết quả: {doc.result}</span>}
+              </span>
+            )}
+            {doc.file_note && (isLink(doc.file_note) ? (
+              <a href={doc.file_note} target="_blank" rel="noopener noreferrer" className="srp-meta-link" title={doc.file_note}>
+                <i className="ti ti-paperclip" /> Tệp
+              </a>
+            ) : (
+              <span className="srp-meta-link" title={doc.file_note} style={{ cursor: 'default' }}><i className="ti ti-paperclip" /> Tệp</span>
             ))}
-          </select>
-        ) : (
-          <span className={`badge ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}>{doc.status_label || REPORT_DOC_STATUS_LABELS[doc.status]}</span>
-        )}
-        {canEdit && (
-          <>
-            <button type="button" className="srp-ibtn" title="Sửa hồ sơ" onClick={() => openEditDoc(doc)}><i className="ti ti-pencil" /></button>
-            <button type="button" className="srp-ibtn danger" title="Xóa hồ sơ" disabled={busy} onClick={() => deleteDoc(doc)}><i className="ti ti-trash" /></button>
-          </>
-        )}
+          </div>
+        </div>
+        <div className="srp-doc-actions">
+          {canEdit ? (
+            //  Ô chọn trạng thái ngay trên dòng, mang màu badge; hồ sơ đang khóa không chọn được Hoàn thành (cùng luật nút ✓).
+            <select
+              className={`badge srp-status-select ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}
+              aria-label={`Trạng thái hồ sơ "${doc.title}"`}
+              value={doc.status}
+              disabled={busy}
+              onChange={(e) => setDocStatus(doc, Number(e.target.value))}
+              style={{ textTransform: 'none' }}
+            >
+              {[REPORT_DOC_IDLE, REPORT_DOC_DOING, 2, REPORT_DOC_DONE].map((s) => (
+                <option key={s} value={s} disabled={locked && s === REPORT_DOC_DONE}>{REPORT_DOC_STATUS_LABELS[s]}</option>
+              ))}
+            </select>
+          ) : (
+            <span className={`badge ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}>{doc.status_label || REPORT_DOC_STATUS_LABELS[doc.status]}</span>
+          )}
+          {canEdit && (
+            <>
+              <button type="button" className="srp-ibtn" title="Sửa hồ sơ" onClick={() => openEditDoc(doc)}><i className="ti ti-pencil" /></button>
+              <button type="button" className="srp-ibtn danger" title="Xóa hồ sơ" disabled={busy} onClick={() => deleteDoc(doc)}><i className="ti ti-trash" /></button>
+            </>
+          )}
+        </div>
       </div>
     )
   }
@@ -597,10 +611,10 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
               <button type="button" className={viewMode === 'item' ? 'on' : ''} onClick={() => setViewMode('item')}><i className="ti ti-table" /> Theo dòng hàng</button>
             </span>
             <input
+              className="srp-search"
               placeholder="Tìm hồ sơ (bỏ dấu được)…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ width: 220 }}
             />
             <select value={statusFilter} onChange={(e) => setStatusFilter(Number(e.target.value))} style={{ width: 150 }}>
               <option value={REPORT_STATUS_FILTER_ALL}>Mọi trạng thái</option>
@@ -608,11 +622,12 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
                 <option key={s} value={s}>{REPORT_DOC_STATUS_LABELS[s]}</option>
               ))}
             </select>
-            <button type="button" className="btn ghost sm" onClick={toggleAll}>
+            {/* duoc-CR-607: chỉ còn biểu tượng (chữ ở `title`) để cả thanh nằm MỘT hàng. */}
+            <button type="button" className="srp-ibtn srp-ibtn-lg" onClick={toggleAll}
+              title={viewMode === 'item' ? (expandedItems.size ? 'Thu gọn' : 'Mở tất cả') : (allCollapsed ? 'Mở tất cả' : 'Thu gọn')}
+              aria-label={viewMode === 'item' ? (expandedItems.size ? 'Thu gọn' : 'Mở tất cả') : (allCollapsed ? 'Mở tất cả' : 'Thu gọn')}>
               <i className={`ti ti-${viewMode === 'item' ? (expandedItems.size ? 'fold' : 'fold-down') : (allCollapsed ? 'fold-down' : 'fold')}`} />
-              {viewMode === 'item' ? (expandedItems.size ? 'Thu gọn' : 'Mở tất cả') : (allCollapsed ? 'Mở tất cả' : 'Thu gọn')}
             </button>
-            <span style={{ flex: 1 }} />
             {canEdit && (
               <>
                 <button type="button" className="btn ghost sm" onClick={() => setPhaseDialog({ phase: null })}><i className="ti ti-plus" /> Thêm giai đoạn</button>

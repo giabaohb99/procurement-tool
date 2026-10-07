@@ -12572,3 +12572,16 @@ Mã nguồn: backend/app/modules/labor_contract/ · core/labor_contract_codes.py
 Tham chiếu: frontend-v2/plans/261005-1537-hop-dong-lao-dong-mau-theo-phap-nhan/ · migration lbrct01 · thư viện mới docxtpl==0.20.2
 Deploy: DEV 07/10/2026 (erp-v2). Prod CHƯA — khi deploy prod phải dựng lại image api (requirements.txt đổi), và tick hai quyền labor_contract / labor_contract_template cho vai trò Nhân sự trên prod
 
+
+## duoc-CR-607 | Báo cáo thực hiện trên YCBG và đơn mua hàng: mỗi hồ sơ hiện thành dòng hai tầng dễ đọc
+- status: xong
+- date: 2026-10-07
+Đại ca mở khối «Báo cáo thực hiện» trên đơn mua hàng ở bản cũ và yêu cầu làm lại giao diện, chọn phương án dòng hai tầng.
+Trước đây mỗi hồ sơ dồn tám đến mười thông tin trên một hàng nên ở bản cũ tên hồ sơ bị ép xuống tới sáu dòng, mô tả bị cắt,
+còn ở bản mới ô trạng thái và nút sửa, xóa tràn ra ngoài khung. Nay mỗi hồ sơ có tầng trên là tên đọc trọn, tầng dưới là
+dòng hàng, nhãn bắt buộc, ngày hạn, ngày hết hiệu lực, người làm và mô tả; trạng thái cùng nút sửa, xóa luôn nằm thẳng cột bên
+phải. Thanh công cụ của bản cũ gọn lại thành một hàng. Chỉ đổi giao diện, cách tính và quyền của khối này giữ nguyên. Đã xem
+cả hai bản trên trình duyệt, đẩy lên erp-v2 và cập nhật dev.
+
+Mã nguồn: frontend/src/components/SurveyReportCard.tsx · frontend/src/index.css · frontend-v2/src/modules/procurement/components/survey-report/survey-report-card.tsx
+Deploy: DEV 07/10/2026

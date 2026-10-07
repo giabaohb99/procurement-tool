@@ -3008,26 +3008,58 @@ input,
 .srp-ibtn:hover { background: #eef2f8; color: var(--navy); }
 .srp-ibtn.danger:hover { background: var(--red-bg); color: var(--red); }
 .srp-ibtn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* duoc-CR-607 (07/10/2026) — dòng hồ sơ 2 tầng: ô tick · [tên / thông tin phụ] · [trạng thái + nút].
+   Cột giữa `minmax(0, 1fr)` để tên dài xuống dòng TRONG khung, cột phải `auto` nên nút không bao giờ tràn. */
 .srp-doc {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 10px;
+  padding: 9px 12px;
   border-top: 1px solid #f1f5f9;
   font-size: 13px;
-  min-width: 0;
 }
 .srp-doc:first-child { border-top: 0; }
+.srp-doc:hover { background: #fafcff; }
 .srp-doc.locked { opacity: 0.6; }
 .srp-doc.done .srp-title { color: var(--muted); text-decoration: line-through; }
+.srp-doc > .srp-check { margin-top: 1px; }
+.srp-doc-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.srp-doc-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.srp-doc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+.srp-doc-actions { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
 .srp-title {
   font-weight: 600;
   color: var(--navy);
-  /* bao-CR-602: tiêu đề dài XUỐNG DÒNG thay vì cắt «…» — đại ca soi màn 06/10 không đọc được chữ. */
   white-space: normal;
   overflow-wrap: anywhere;
-  max-width: 360px;
+  line-height: 1.4;
 }
+.srp-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #5a6b8c;
+  font-size: 11px;
+  font-weight: 600;
+}
+.srp-tag.req { background: var(--red-bg); color: var(--red); }
+.srp-meta-link { display: inline-flex; align-items: center; gap: 3px; color: var(--teal-dark); text-decoration: none; }
+.srp-assignee { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.srp-assignee .srp-avatar { width: 18px; height: 18px; font-size: 9px; }
+.srp-search { flex: 1 1 200px; min-width: 160px; max-width: 320px; }
+.srp-ibtn.srp-ibtn-lg { width: 34px; height: 34px; border: 1px solid #e9edf7; border-radius: 10px; }
 /* bao-CR-602: ô chọn trạng thái NGAY TRÊN DÒNG — gọn như badge, không ăn luật
    `select { width: 100%; height: 40px }` của form chung. */
 .srp-doc select.srp-status-select {
@@ -3045,15 +3077,13 @@ input,
 }
 .srp-doc select.srp-status-select:focus { box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.25); }
 .srp-desc {
-  flex: 1;
-  min-width: 40px;
+  /* Mô tả ĐỨNG CUỐI tầng dưới, co vào phần còn lại (1 dòng, rê chuột đọc đủ) — ngày hạn / hết hiệu lực
+     đứng trước để không bị đẩy xuống tầng thứ ba. */
+  flex: 1 1 160px;
+  min-width: 120px;
   color: var(--muted);
   font-size: 12px;
-  /* bao-CR-602: mô tả dài xuống dòng, tối đa 2 dòng, rê chuột đọc đủ. */
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
