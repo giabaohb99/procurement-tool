@@ -8114,5 +8114,9 @@ def test_gemini_qua_tai_doi_sang_model_du_phong_va_xung_ho_nguoi_khac(db, monkey
         out = manager.get_provider().ask([ChatMessage(role="user", content="ê cu")], model="gemini-flash-latest")
     assert out.text == "ok" and seen == ["gemini-flash-latest", "gemini-flash-lite-latest"]
     monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
-    assert "đại ca" in service._persona("12345") and "KHÔNG gọi «đại ca»" in service._persona("1971166074")
+    assert "«đại ca»" in service._persona("12345") and "không gọi «đại ca»" in service._persona("1971166074")
+    #  Đại ca 07/10: mỗi người một cách xưng hô — sổ ghi nhớ riêng thắng mặc định, ở cả hai persona.
+    assert all("sổ ghi nhớ riêng" in service._persona(c) and "theo sổ" in service._persona(c) for c in ("12345", "1971166074"))
+    from app.modules.agent_hub import personal_memory as pm
+    assert pm.guess_section("gọi anh là sếp") == "cach_lam_viec"
 

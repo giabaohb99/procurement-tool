@@ -12749,7 +12749,7 @@ Deploy: dev 07/10, erp-v2 a3c1bfb0 (Agent 1 sao lưu DB dev, gộp, dựng lại
 lời, nhưng chậm tới hai phút, vì model Gemini dùng cho việc nền của bot đang quá tải: mỗi lượt treo đủ 60 giây rồi mới
 báo lỗi, bot thử lại thêm 60 giây mới chuyển sang Trợ lý. Bot còn gọi người khác là «đại ca». Nay khi model chính quá tải
 hoặc treo, bot chuyển ngay sang model dự phòng (mặc định là model của Trợ lý trên web) thay vì chờ thử lại, mỗi lượt gọi
-chỉ chờ tối đa 25 giây, và với người không phải chủ bot thì bot gọi «anh/chị» hoặc theo tên.
+chỉ chờ tối đa 25 giây, và với người không phải chủ bot thì mặc định bot gọi «anh/chị» hoặc theo tên. Mỗi người có cách xưng hô riêng: ai dặn «gọi tôi là …» thì bot ghi vào sổ ghi nhớ riêng của người đó và từ đó xưng hô theo sổ.
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (fallback_model, _send, _call) · agent_hub/research.py · agent_hub/constants.py (BOT_PERSONA_OTHER) · agent_hub/service.py (_persona) · core/config.py
 

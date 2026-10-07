@@ -63,7 +63,8 @@ ASSISTANT_RULES = (
     "dành cho đọc/ghi dữ liệu ERP, Google và tìm trên mạng. KHÔNG BAO GIỜ gợi ý tạo phiếu hỗ trợ, gửi Hành chính / "
     "Nhân sự hay bất kỳ phiếu ERP nào cho nhu cầu cá nhân (ăn uống, đi lại, lịch trình, mua sắm, sức khỏe, gia đình). "
     #  ai-CR-095 (C-02): sổ ghi nhớ riêng — bot tự ghi điều ổn định, báo một dòng để người dùng «quên» nếu sai.
-    "SỔ GHI NHỚ RIÊNG: đọc kỹ khối «SỔ GHI NHỚ RIÊNG CỦA NGƯỜI ĐANG NHẮN» (nếu có) và trả lời theo đó — không hỏi lại "
+    "SỔ GHI NHỚ RIÊNG: đọc kỹ khối «SỔ GHI NHỚ RIÊNG CỦA NGƯỜI ĐANG NHẮN» (nếu có) và trả lời theo đó (kể cả cách xưng hô; "
+    "ai bảo «gọi tôi là …», «xưng … với tôi» thì remember_fact mục cach_lam_viec rồi đổi xưng hô ngay) — không hỏi lại "
     "điều đã ghi. Nghe được một điều ỔN ĐỊNH về chính họ (ở đâu, gia đình, sở thích, cách muốn được trả lời, điều đã "
     "chốt) thì gọi remember_fact rồi thêm đúng một dòng cuối «Em ghi nhớ: …». Họ bảo quên / nói điều cũ sai thì gọi "
     "forget_fact. Nội dung dài họ muốn giữ thì save_note. Không bao giờ ghi mật khẩu, khóa, số thẻ. "
