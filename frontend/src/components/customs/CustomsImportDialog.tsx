@@ -5,6 +5,9 @@
 // bảng giá hoặc lặp lại trong cùng tệp không được ghi; không xóa, không ghi đè dòng cũ nào nữa
 // (bỏ luật «thay theo khoảng ngày»). Dòng mới trùng cột nhận diện mà khác giá vẫn thêm, chỉ đếm
 // «nghi sửa giá». Bản v2: `customs-import-dialog.tsx` — giữ hai bản nói cùng một luật.
+//
+// bao-CR-608 (đại ca 07/10/2026): cột «ID» (tùy chọn) có thật → GHI ĐÈ đúng dòng đó; cột «Thao tác»
+// = xóa → XÓA dòng có ID đó. Lô chỉ ghi đè / chỉ xóa cũng là lô có việc để áp dụng.
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
 import { toast } from '../toast'
@@ -13,6 +16,9 @@ import { fmtDate } from './customs-shared'
 
 const STATUS = { QUEUED: 0, RUNNING: 1, DONE: 2, FAILED: 3 }
 const running = (b: any) => b.status === STATUS.QUEUED || b.status === STATUS.RUNNING
+// bao-CR-608 — lô chạy thử xong mà có việc: thêm mới, ghi đè (cột ID) hoặc xóa (cột Thao tác).
+const usableBatch = (b: any) => b.status === STATUS.DONE
+  && (b.created_count || 0) + (b.updated_count || 0) + (b.deleted_count || 0) > 0
 
 export default function CustomsImportDialog({ onClose, onApplied }: { onClose: () => void; onApplied: () => void }) {
   const [files, setFiles] = useState<File[]>([])
@@ -40,10 +46,13 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
     const failed = applied.filter((b) => b.status === STATUS.FAILED)
     if (failed.length) toast.error(`${failed.length} tệp ghi lỗi — xem Lịch sử nạp`)
     else {
-      const total = applied.reduce((s, b) => s + (b.created_count || 0), 0)
-      const skippedTotal = applied.reduce((s, b) => s + (b.existing_rows || 0) + (b.duplicate_rows || 0), 0)
-      toast.success(skippedTotal ? `Đã nạp ${total} dòng hàng mới, bỏ qua ${skippedTotal} dòng trùng`
-        : `Đã nạp ${total} dòng hàng mới`)
+      const sum = (key: string) => applied.reduce((s, b) => s + (b[key] || 0), 0)
+      const skippedTotal = sum('existing_rows') + sum('duplicate_rows')
+      const parts = [`Đã nạp ${sum('created_count')} dòng hàng mới`]
+      if (sum('updated_count')) parts.push(`ghi đè ${sum('updated_count')} dòng`)
+      if (sum('deleted_count')) parts.push(`xóa ${sum('deleted_count')} dòng`)
+      if (skippedTotal) parts.push(`bỏ qua ${skippedTotal} dòng trùng`)
+      toast.success(parts.join(', '))
     }
     onApplied()
   }, [appliedDone]) // chỉ chạy một lần khi mọi lô ghi thật đã xong
@@ -68,7 +77,7 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
     busy.current = true
     try {
       const out = []
-      for (const b of dry.filter((x) => x.status === STATUS.DONE && x.created_count > 0)) {
+      for (const b of dry.filter(usableBatch)) {
         const r = await api.post(`/api/customs/imports/${b.id}/commit`)
         out.push(r.data.data)
       }
@@ -79,7 +88,7 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
   }
 
   const dryDone = dry.length > 0 && dry.every((b) => !running(b))
-  const usable = dry.filter((b) => b.status === STATUS.DONE && b.created_count > 0)
+  const usable = dry.filter(usableBatch)
   const doneDry = dry.filter((b) => b.status === STATUS.DONE)
   const skippedExisting = doneDry.reduce((s, b) => s + (b.existing_rows || 0), 0)
   const skippedDuplicate = doneDry.reduce((s, b) => s + (b.duplicate_rows || 0), 0)
@@ -116,6 +125,14 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
             hoạt chất / hàm lượng suy ra từ tên hàng và giá VND tính từ giá × tỷ giá như cũ. Tệp Excel xuất từ màn
             này nạp lại được.
           </p>
+          {/* bao-CR-608 — hai cột điều khiển: ghi đè / xóa đúng dòng theo ID. */}
+          <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+            Cột <b>ID</b> (tùy chọn): ô ghi ID của một dòng đang có thì dòng đó bị <b>ghi đè</b> toàn bộ bằng dữ liệu
+            trong tệp; ID không có thì dòng được thêm mới như thường; ô trống thì như cũ. Cột <b>Thao tác</b> (tùy chọn,
+            nhận cả tiêu đề «Action», «Hành động»): ghi <b>xóa</b> / <b>delete</b> thì <b>xóa</b> dòng có ID đó — dòng xóa
+            chỉ cần ô ID. Excel xuất từ màn này có sẵn cột ID ở đầu và cột Thao tác trống ở cuối: xuất → sửa → nạp lại.
+            Hoàn tác lô trả lại đủ dòng đã ghi đè / xóa.
+          </p>
           <input type="file" multiple accept=".xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
           {files.length > 0 && (
             <ul style={{ fontSize: 13, marginBottom: 0 }}>
@@ -124,7 +141,7 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
           )}
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)' }}>
             Dòng đã có trong bảng giá hoặc lặp lại trong cùng tệp sẽ được bỏ qua — nạp lại một tệp không làm nhân đôi
-            dữ liệu, và không dòng cũ nào bị xóa hay ghi đè.
+            dữ liệu. Dòng cũ chỉ bị ghi đè / xóa khi tệp chỉ ra đúng ID của nó.
           </div>
         </div>
       )}
@@ -149,7 +166,7 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
           )}
           {stage === 'dry' && nothingNew && (
             <div style={{ marginTop: 12, fontSize: 13, color: 'var(--muted)' }}>
-              Mọi dòng trong các tệp này đã có trong bảng giá — không có gì để thêm.
+              Mọi dòng trong các tệp này đã có trong bảng giá — không có gì để thêm, ghi đè hay xóa.
             </div>
           )}
           {stage === 'dry' && !dryDone && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--muted)' }}>Đang chạy thử…</div>}
@@ -164,6 +181,8 @@ function BatchTable({ rows, applying }: { rows: any[]; applying: boolean }) {
     <div className="table-scroll"><table>
       <thead><tr>
         <th>Tệp</th><th>Trạng thái</th><th style={{ textAlign: 'right' }}>{applying ? 'Đã thêm' : 'Dòng mới'}</th>
+        <th style={{ textAlign: 'right' }}>{applying ? 'Đã ghi đè' : 'Ghi đè'}</th>
+        <th style={{ textAlign: 'right' }}>{applying ? 'Đã xóa' : 'Xóa'}</th>
         <th style={{ textAlign: 'right' }}>Đã có</th><th style={{ textAlign: 'right' }}>Trùng trong tệp</th>
         <th>Khoảng ngày</th><th style={{ textAlign: 'right' }}>Đã vá ngày</th>
         <th style={{ textAlign: 'right' }}>Cảnh báo</th>
@@ -174,6 +193,8 @@ function BatchTable({ rows, applying }: { rows: any[]; applying: boolean }) {
             <td style={{ wordBreak: 'break-all' }}>{b.filename}</td>
             <td><StatusBadge b={b} /></td>
             <td style={{ textAlign: 'right' }}>{b.status === STATUS.DONE ? b.created_count : '—'}</td>
+            <td style={{ textAlign: 'right' }}>{b.status === STATUS.DONE ? b.updated_count || 0 : '—'}</td>
+            <td style={{ textAlign: 'right' }}>{b.status === STATUS.DONE ? b.deleted_count || 0 : '—'}</td>
             <td style={{ textAlign: 'right' }}>{b.status === STATUS.DONE ? b.existing_rows || 0 : '—'}</td>
             <td style={{ textAlign: 'right' }}>{b.status === STATUS.DONE ? b.duplicate_rows || 0 : '—'}</td>
             <td>{b.date_from ? `${fmtDate(b.date_from)} → ${fmtDate(b.date_to)}` : '—'}</td>
@@ -182,7 +203,7 @@ function BatchTable({ rows, applying }: { rows: any[]; applying: boolean }) {
           </tr>
         ))}
         {rows.some((b) => b.status === STATUS.FAILED) && (
-          <tr><td colSpan={8} style={{ color: '#b91c1c', fontSize: 12, whiteSpace: 'pre-wrap' }}>
+          <tr><td colSpan={10} style={{ color: '#b91c1c', fontSize: 12, whiteSpace: 'pre-wrap' }}>
             {rows.filter((b) => b.status === STATUS.FAILED).map((b) => `${b.filename}: ${(b.error_summary || '').split('\n')[0]}`).join('\n')}
           </td></tr>
         )}

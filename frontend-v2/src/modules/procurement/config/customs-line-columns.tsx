@@ -85,6 +85,15 @@ function plain(key: keyof CustomsLine, header: string, width: number, wrap = fal
 }
 
 export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
+  //  bao-CR-608 — mã dòng, ĐẦU bảng như cột «ID» đầu tệp Excel xuất ra: xuất → sửa → nạp lại là
+  //  ghi đè đúng dòng; tra một dòng cụ thể khi trao đổi cũng nói bằng số này.
+  {
+    key: 'id',
+    header: 'ID',
+    width: 80,
+    align: 'right',
+    cell: (row) => <span className="tabular-nums">{row.id}</span>,
+  },
   {
     key: 'reg_date',
     header: 'Ngày đăng ký',

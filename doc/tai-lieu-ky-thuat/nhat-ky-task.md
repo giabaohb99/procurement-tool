@@ -119,6 +119,42 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-608 | Giá thị trường: cột ID, nạp tệp ghi đè và xóa theo ID, sửa và xóa từng dòng trên màn, hoàn tác lô trả lại đủ dòng cũ
+- status: xong
+- date: 2026-10-07
+Đại ca yêu cầu màn «Tra cứu thị trường → Giá thị trường» có cột ID của từng dòng, Excel xuất ra cũng có cột ID; tệp nạp
+có cột ID thì ghi đè đúng dòng đó, có cột «Thao tác» ghi «xóa» thì xóa dòng đó; và trên màn sửa, xóa được từng dòng.
+Bảng dòng hàng ở cả bản cũ và bản mới nay có cột ID đứng đầu. Excel xuất ra có cột «ID» ở đầu và một cột «Thao tác» để
+trống ở cuối, nên người dùng xuất ra, sửa ô, gõ «xóa» vào dòng muốn bỏ rồi nạp lại là xong.
+Luật nạp mới: ô ID trỏ đúng một dòng đang có thì dòng đó bị ghi đè toàn bộ bằng dữ liệu trong tệp, giữ nguyên id và lô
+gốc, mã băm chống trùng được tính lại; dòng ghi đè không qua bộ lọc trùng. Dòng có ID mà dữ liệu y hệt dòng đang lưu thì
+ghi «dữ liệu không đổi» và bỏ qua, để xuất cả nghìn dòng sửa vài dòng nạp lại chỉ đụng đúng mấy dòng đã sửa. Ô ID có số mà
+không có dòng đó thì thêm mới như dòng thường kèm cảnh báo «ID n không có — thêm mới». Ô «Thao tác» nhận «xóa», «xoa»,
+«delete», «del» (tiêu đề nhận cả «Action», «Hành động»); dòng xóa chỉ cần ô ID; xóa mà ID trống hoặc không có thì bỏ qua
+kèm cảnh báo; một ID gặp nhiều lần thì dòng đầu thắng. Ô suy ra hoặc tự tính trong Excel xuất ra (hoạt chất, hàm lượng,
+hai giá VND) mà trùng giá trị hệ thống tự làm thì vẫn coi là suy ra, không bị đóng băng thành số người nhập.
+Trước khi ghi đè hoặc xóa, hệ thống chụp đủ mọi cột của dòng vào bảng mới `tab_customs_line_change`. Hoàn tác một lô nay
+xóa dòng lô thêm mới, dựng lại dòng lô đã xóa đúng id cũ, trả dòng lô đã ghi đè về bản chụp; dòng bị sửa tiếp sau lô đó
+vẫn trả về bản trước lô kèm cảnh báo. Lô cũ nạp trước bao-CR-541 đã thay dòng mà không có bản chụp thì vẫn chặn như cũ.
+Chạy thử báo đủ số thêm mới, ghi đè, xóa, bỏ qua mà không ghi gì. Nhật ký từng dòng có thêm ba kết cục «Ghi đè», «Xóa»,
+«Bỏ qua» (mã 5, 6, 7, mã cũ giữ nguyên); Lịch sử nạp và bảng chạy thử có thêm cột Ghi đè và Xóa.
+Hộp chi tiết dòng ở cả hai bản có nút «Sửa» (quyền sửa của Tra cứu thị trường) chuyển sang biểu mẫu sửa tại chỗ, chỉ gửi ô
+đã đổi, và nút «Xóa» (quyền xóa) có hỏi xác nhận. Doanh nghiệp nhập khẩu sửa qua mã số thuế cộng tên, đối tác qua tên, đều
+tra hoặc tạo đối tượng như bộ nạp. Hoạt chất hoặc hàm lượng gõ tay được đánh dấu là giá trị do người nhập để «Gắn lại
+nhãn» không ghi đè; xóa trắng ô thì trả về cho hệ thống suy ra. Sửa và xóa tay cũng chụp bản trước vào bảng mới và ghi
+nhật ký thao tác. Trần độ dài, trần số và dải ngày khai đủ ở biểu mẫu sửa phía máy chủ.
+Kiểm: bài kiểm backend khu hải quan cùng bài canh phạm vi và bài canh độ dài ô chữ 364 bài xanh (một bài đỏ có sẵn của
+phân hệ hợp đồng lao động duoc-CR-606, không thuộc việc này), trong đó 35 bài mới; bản mới kiểm kiểu 0 lỗi, lint 0 lỗi,
+khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền.
+Mã nguồn: `backend/app/modules/customs/` (`line_change.py`, `line_edit_service.py` mới; `importer.py`, `reader.py`,
+`row_log.py`, `dedupe.py`, `controller.py`, `schema.py`, `service.py`, `model.py`, `constants.py`), `import_tool/model.py`,
+migration `hq608` (nối sau `lbrct01`), `test/backend/test_hai_quan_id_ghi_de_xoa_cr608.py`; v2
+`frontend-v2/src/modules/procurement/` (`customs-line-edit-form.tsx`, `utils/customs-line-form.ts` mới, hộp chi tiết dòng,
+hộp nạp, lịch sử nạp); v1 `frontend/src/components/customs/` (`CustomsLineEditForm.tsx` mới) và `pages/CustomsPrices.tsx`.
+Deploy: chưa deploy.
+
+---
+
 ## bao-CR-605 | Tra cứu thị trường: bỏ dải «Dữ liệu · lần nạp gần nhất · T1…T12» ở mọi mục, cả hai bản giao diện
 - status: xong
 - date: 2026-10-07

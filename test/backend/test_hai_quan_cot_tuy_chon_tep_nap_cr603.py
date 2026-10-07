@@ -194,8 +194,8 @@ def test_exported_excel_round_trips_through_the_reader(db, alias):
     importer.run(db, b, _xlsx([{**ROW, "active_ingredient": "ABC", "price_vnd_flat": 5000}], WITH_OPTIONAL), apply=True)
     raw = S.export_lines_xlsx(db, {})
     ws = openpyxl.load_workbook(io.BytesIO(raw)).active
-    assert ws.max_column == 36
-    assert [ws.cell(1, 33 + i).value for i in range(4)] == [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS]
+    assert ws.max_column == 38                  # bao-CR-608: + «ID» đầu, «Thao tác» cuối
+    assert [ws.cell(1, 34 + i).value for i in range(4)] == [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS]
     res = reader.parse(raw, today=date(2026, 9, 23))
     assert res.optional_columns == ["active_ingredient", "formulation", "price_vnd_flat", "price_vnd_line_tax"]
     #  Excel xuất ghi ngày dạng ISO và phương tiện vận chuyển dạng nhãn — bộ đọc phải nhận, không bỏ dòng.
@@ -204,6 +204,7 @@ def test_exported_excel_round_trips_through_the_reader(db, alias):
     assert res.rows[0]["active_ingredient"] == "ABC" and res.rows[0]["price_vnd_flat"] == Decimal("5000")
     assert res.rows[0]["price_vnd_line_tax"] == Decimal(str(round(3 * 26130 * 1.05)))
     #  Nạp lại tệp xuất ra: dòng đã có → bỏ qua, không nhân đôi (cột tùy chọn không vào mã băm).
+    #  bao-CR-608: tệp xuất có cột «ID» — dòng trỏ đúng dòng đã lưu mà dữ liệu y hệt → «Đã có».
     again = _batch(db)
     importer.run(db, again, raw, apply=True)
     assert db.query(CustomsLine).count() == 1 and again.created_count == 0

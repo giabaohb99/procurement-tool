@@ -12,6 +12,9 @@
 // bao-CR-541: lô chỉ THÊM dòng chưa có (trùng thì bỏ qua) nên luôn hoàn tác được. Riêng lô CŨ
 // nạp trước CR đã THAY dòng cũ (deleted_count > 0) thì không: dòng cũ đã xóa lúc ghi, hoàn tác
 // chỉ để lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
+//
+// bao-CR-608: thêm cột «Ghi đè» / «Xóa» (tệp có cột «ID» + «Thao tác»). Lô ghi đè / xóa có bản
+// chụp nên VẪN hoàn tác được: trả dòng ghi đè về bản cũ, dựng lại dòng đã xóa đúng id cũ.
 import { Download, ListTree, Undo2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -46,7 +49,7 @@ import {
   type CustomsBatchLog,
   type CustomsImportBatch,
 } from '../../types/customs'
-import { resolveRevertState } from '../../utils/customs'
+import { formatRevertConfirm, resolveRevertState } from '../../utils/customs'
 import { CustomsBatchRowsPanel } from './customs-batch-rows-panel'
 import { CustomsBatchStatusBadge } from './customs-batch-status-badge'
 
@@ -79,7 +82,7 @@ export function CustomsHistoryPanel() {
       if (reverting.current) return
       const ok = await confirm({
         title: 'Hoàn tác lô nạp',
-        message: `Xóa ${batch.created_count} dòng hàng của tệp «${batch.filename}»? Dữ liệu khoảng ${formatRange(batch)} sẽ trống.`,
+        message: formatRevertConfirm(batch),
         confirmLabel: 'Hoàn tác',
       })
       if (!ok || reverting.current) return
@@ -120,11 +123,29 @@ export function CustomsHistoryPanel() {
       },
       {
         key: 'created_count',
-        header: 'Dòng hàng',
-        width: 95,
+        header: 'Thêm mới',
+        width: 90,
         align: 'right',
         hideable: false,
         cell: (b) => b.created_count,
+      },
+      //  bao-CR-608 — ghi đè theo cột «ID», xóa theo cột «Thao tác». Lô cũ (trước bao-CR-541) có
+      //  «Xóa» là số dòng cũ bị THAY — cột Thao tác khóa nút hoàn tác của lô đó.
+      {
+        key: 'updated_count',
+        header: 'Ghi đè',
+        width: 80,
+        align: 'right',
+        hideable: false,
+        cell: (b) => b.updated_count || 0,
+      },
+      {
+        key: 'deleted_count',
+        header: 'Xóa',
+        width: 70,
+        align: 'right',
+        hideable: false,
+        cell: (b) => b.deleted_count || 0,
       },
       { key: 'range', header: 'Khoảng ngày', width: 190, hideable: false, cell: formatRange },
       {
@@ -201,7 +222,7 @@ export function CustomsHistoryPanel() {
                   label={
                     revertState === 'blocked'
                       ? `Lô này nạp theo cách cũ, đã thay ${b.deleted_count} dòng cũ nên không hoàn tác được.`
-                      : 'Hoàn tác: xóa các dòng lô này đã ghi'
+                      : 'Hoàn tác: xóa dòng lô này đã thêm, trả lại dòng lô đã ghi đè / xóa'
                   }
                 >
                   {/*  Bọc `span`: nút `disabled` không nhận sự kiện chuột nên tooltip
@@ -233,7 +254,8 @@ export function CustomsHistoryPanel() {
         <h2 className="text-base font-semibold">Lịch sử nạp dữ liệu hải quan</h2>
         <p className="text-sm text-muted-foreground">
           Mọi lô chạy thử và ghi thật, mới nhất lên đầu. Dòng trùng được bỏ qua khi nạp; hoàn tác
-          một lô chỉ xóa dòng của chính lô đó. Lô nạp qua màn hình tải lại được tệp gốc.
+          một lô xóa dòng lô đó đã thêm và trả lại dòng lô đó đã ghi đè / xóa (theo cột ID / Thao
+          tác). Lô nạp qua màn hình tải lại được tệp gốc.
         </p>
       </div>
       <DataTable

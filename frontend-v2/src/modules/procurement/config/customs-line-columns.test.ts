@@ -46,6 +46,8 @@ describe('CUSTOMS_LINE_COLUMNS', () => {
   it('follows the GTT02 Excel order and headers, then the derived and VND columns last', () => {
     const actual = CUSTOMS_LINE_COLUMNS.map((column) => [column.key, column.header])
     expect(actual).toEqual([
+      //  bao-CR-608 — cột ID đầu bảng, khớp cột «ID» đầu Excel xuất ra.
+      ['id', 'ID'],
       ...EXCEL_COLUMNS,
       //  bao-CR-603 — không còn chữ «(suy ra)»: tệp nạp có cột thì giá trị lấy từ tệp.
       ['active_ingredient', 'Hoạt chất'],

@@ -3,10 +3,17 @@
 // 23/09/2026 — bản đầu là ngăn kéo bên phải), đủ 32 cột của tệp gốc xếp thành 6 nhóm. Giá trị là chữ thường — bôi đen và chép được, không dùng
 // ô nhập bị khóa. Chân popup có hai lối đổ ngược bộ lọc vào màn: cùng doanh nghiệp / cùng
 // đối tác.
-import { Building2, CalendarSync, Handshake } from 'lucide-react'
+//
+// bao-CR-608 (đại ca 07/10/2026): thêm nút «Sửa» (quyền `customs_price.write`) — chuyển hộp sang
+// biểu mẫu sửa ngay tại chỗ — và «Xóa» (quyền `customs_price.delete`, hỏi xác nhận). Nút ẩn theo
+// quyền; backend gác lại bằng `require` tương ứng.
+import { Building2, CalendarSync, Handshake, Pencil } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import {
   Dialog,
   DialogContent,
@@ -21,9 +28,10 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatQuantity } from '@/shared/utils/format-money'
 import { cn } from '@/shared/utils/cn'
 
-import { useCustomsLine } from '../../hooks/use-customs'
+import { useCustomsLine, useDeleteCustomsLine } from '../../hooks/use-customs'
 import type { CustomsLine } from '../../types/customs'
 import { formatCustomsUnit, formatUsd, formatVnd } from '../../utils/customs'
+import { CustomsLineEditForm } from './customs-line-edit-form'
 
 type FieldFormatter = (line: CustomsLine) => string
 
@@ -149,6 +157,10 @@ interface CustomsLineDetailDialogProps {
   onClose: () => void
   onFilterImporter: (id: number, name: string) => void
   onFilterPartner: (id: number, name: string) => void
+  /** bao-CR-608 — `customs_price.write`: hiện nút «Sửa». */
+  canEdit?: boolean
+  /** bao-CR-608 — `customs_price.delete`: hiện nút «Xóa». */
+  canDelete?: boolean
 }
 
 export function CustomsLineDetailDialog({
@@ -156,16 +168,47 @@ export function CustomsLineDetailDialog({
   onClose,
   onFilterImporter,
   onFilterPartner,
+  canEdit = false,
+  canDelete = false,
 }: CustomsLineDetailDialogProps) {
   const { data, isLoading, isError } = useCustomsLine(lineId)
+  //  Nhớ ĐANG SỬA dòng nào (không phải cờ true/false): mở dòng khác là tự về chế độ xem, không
+  //  cần effect đặt lại.
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const editing = data !== undefined && editingId === data.id
+  const remove = useDeleteCustomsLine()
+  //  Chặn bấm đúp ngay trong lượt bấm — `pending` chỉ đổi ở lượt vẽ sau (duoc-CR-317).
+  const deleting = useRef(false)
+
+  async function deleteLine(line: CustomsLine) {
+    if (deleting.current) return
+    deleting.current = true
+    try {
+      await remove.mutateAsync(line.id)
+      toast.success(`Đã xóa dòng hàng ID ${line.id}`)
+      onClose()
+    } catch {
+      //  `httpClient` đã báo lỗi bằng toast.
+    } finally {
+      deleting.current = false
+    }
+  }
+
+  function close() {
+    setEditingId(null)
+    onClose()
+  }
 
   return (
-    <Dialog open={lineId !== null} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={lineId !== null} onOpenChange={(open) => !open && close()}>
       {/*  Không đặt max-h / overflow lên DialogContent: overlay của Dialog đã là khung cuộn,
        *  lồng thêm khung thứ hai là con lăn chuột chết (xem ghi chú trong shared/ui/dialog.tsx). */}
       <DialogContent className="gap-0 p-0 sm:max-w-5xl">
         <DialogHeader className="border-b p-5 pr-12">
-          <DialogTitle>Chi tiết dòng hàng</DialogTitle>
+          <DialogTitle>
+            {editing ? 'Sửa dòng hàng' : 'Chi tiết dòng hàng'}
+            {data && <span className="ml-2 text-sm font-normal text-muted-foreground">ID {data.id}</span>}
+          </DialogTitle>
           <DialogDescription>
             Một dòng hàng trong tệp GTT02 — một tờ khai có thể gồm nhiều dòng; tệp không có số tờ
             khai.
@@ -189,7 +232,11 @@ export function CustomsLineDetailDialog({
           )}
         </DialogHeader>
 
-        <div className="p-5">
+        {data && editing && (
+          <CustomsLineEditForm line={data} onCancel={() => setEditingId(null)} onSaved={() => setEditingId(null)} />
+        )}
+
+        <div className={cn('p-5', editing && 'hidden')}>
           {isLoading && (
             <div className="space-y-3">
               <Skeleton className="h-24 w-full" />
@@ -222,8 +269,22 @@ export function CustomsLineDetailDialog({
           )}
         </div>
 
-        {data && (data.importer_id || data.partner_id) ? (
+        {data && !editing && (data.importer_id || data.partner_id || canEdit || canDelete) ? (
           <DialogFooter className="flex-wrap border-t p-4 sm:justify-end">
+            {canDelete && (
+              <DeleteConfirmButton
+                recordName={`dòng hàng ID ${data.id} — ${data.product_name}`}
+                pending={remove.isPending}
+                warning="Bản trước khi xóa được lưu trong nhật ký thay đổi của dòng hàng."
+                onConfirm={() => deleteLine(data)}
+              />
+            )}
+            {canEdit && (
+              <Button type="button" variant="outline" onClick={() => setEditingId(data.id)}>
+                <Pencil className="size-4" />
+                Sửa
+              </Button>
+            )}
             {data.importer_id ? (
               <Button
                 type="button"

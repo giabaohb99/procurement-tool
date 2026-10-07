@@ -51,6 +51,8 @@ const sourceTitle = (value: any, fromFile: any, derived: string) =>
 // 32 cột ĐÚNG thứ tự và tiêu đề của tệp GTT02, hiện HẾT mặc định (đại ca chốt 23/09/2026),
 // rồi hai cột suy ra ở cuối. Ai muốn gọn thì tự ẩn ở menu «Cột».
 const COLS: TableColumn[] = [
+  // bao-CR-608 — mã dòng, ĐẦU bảng như cột «ID» đầu tệp Excel xuất ra (xuất → sửa → nạp lại = ghi đè).
+  { key: 'id', label: 'ID', width: 70, align: 'right' },
   { key: 'reg_date', label: 'Ngày đăng ký', width: 105, cell: (r) => (
     <span title={r.date_fixed ? 'Ngày trong tệp bị đảo ngày/tháng — đã đọc lại' : undefined}>
       {fmtDate(r.reg_date)}{r.date_fixed && <i className="ti ti-calendar-repeat" style={{ color: '#d97706', marginLeft: 4 }} />}
@@ -468,7 +470,7 @@ export default function CustomsPrices() {
       )}
 
       {detailId != null && (
-        <CustomsLineDetail id={detailId} onClose={() => setDetailId(null)}
+        <CustomsLineDetail id={detailId} onClose={() => setDetailId(null)} onChanged={refreshAll}
           onFilterImporter={(id, name) => { pickImporter(id, name); setDetailId(null) }} onFilterPartner={pickPartner} />
       )}
       {importOpen && <CustomsImportDialog onClose={() => setImportOpen(false)} onApplied={refreshAll} />}

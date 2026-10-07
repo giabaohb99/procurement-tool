@@ -6,6 +6,10 @@
 // (bỏ luật «thay theo khoảng ngày» của bao-CR-470). Dòng mới trùng cột nhận diện mà khác giá
 // thì vẫn thêm, chỉ đếm «nghi sửa giá» để người nạp rà ở Nhật ký lô.
 //
+// bao-CR-608 (đại ca 07/10/2026): tệp có thêm cột «ID» (tùy chọn) thì ID có thật → GHI ĐÈ đúng
+// dòng đó; cột «Thao tác» = xóa → XÓA dòng có ID đó. Excel xuất ra từ màn này có sẵn cột ID đầu
+// và cột «Thao tác» rỗng cuối. Bảng chạy thử có thêm hai cột Ghi đè / Xóa.
+//
 // Hai nút Chạy thử / Áp dụng chặn bấm đúp bằng `useRef` ngay trong lượt bấm — `disabled`
 // chỉ đổi ở lượt vẽ sau, bấm liền tay vẫn lọt hai lệnh.
 import { Check, FileSpreadsheet, Play, TriangleAlert, X } from 'lucide-react'
@@ -33,7 +37,13 @@ import {
   useUploadCustomsFiles,
 } from '../../hooks/use-customs'
 import { CUSTOMS_BATCH_STATUS, type CustomsImportBatch } from '../../types/customs'
-import { isBatchRunning, isBatchUsable, sumSkippedLines } from '../../utils/customs'
+import {
+  formatWrittenSummary,
+  isBatchRunning,
+  isBatchUsable,
+  sumSkippedLines,
+  sumWrittenLines,
+} from '../../utils/customs'
 import { CustomsBatchStatusBadge } from './customs-batch-status-badge'
 import { CustomsNotice } from './customs-controls'
 
@@ -76,14 +86,8 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
     const failed = applied.filter((batch) => batch.status === CUSTOMS_BATCH_STATUS.failed)
     if (failed.length) toast.error(`${failed.length} tệp ghi lỗi — xem Lịch sử nạp`)
     else {
-      const total = applied.reduce((sum, batch) => sum + (batch.created_count || 0), 0)
       const done = sumSkippedLines(applied)
-      const skippedTotal = done.existing + done.duplicate
-      toast.success(
-        skippedTotal
-          ? `Đã nạp ${total} dòng hàng mới, bỏ qua ${skippedTotal} dòng trùng`
-          : `Đã nạp ${total} dòng hàng mới`,
-      )
+      toast.success(formatWrittenSummary(sumWrittenLines(applied), done.existing + done.duplicate))
     }
     void invalidate()
   }, [appliedDone, applied, invalidate])
@@ -146,6 +150,15 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
                 thiếu cột thì hoạt chất / hàm lượng suy ra từ tên hàng và giá VND tính từ giá × tỷ giá như
                 cũ. Tệp Excel xuất từ màn này nạp lại được.
               </p>
+              {/*  bao-CR-608 — hai cột điều khiển: ghi đè / xóa đúng dòng theo ID. */}
+              <p className="text-xs text-muted-foreground">
+                Cột <b>ID</b> (tùy chọn): ô ghi ID của một dòng đang có thì dòng đó bị <b>ghi đè</b>{' '}
+                toàn bộ bằng dữ liệu trong tệp; ID không có thì dòng được thêm mới như thường; ô trống
+                thì như cũ. Cột <b>Thao tác</b> (tùy chọn, nhận cả tiêu đề «Action», «Hành động»): ghi{' '}
+                <b>xóa</b> / <b>delete</b> thì <b>xóa</b> dòng có ID đó — dòng xóa chỉ cần ô ID. Excel
+                xuất từ màn này có sẵn cột ID ở đầu và cột Thao tác trống ở cuối: xuất → sửa → nạp lại.
+                Hoàn tác lô trả lại đủ dòng đã ghi đè / xóa.
+              </p>
               <FileDropzone
                 accept={ACCEPTED}
                 busy={upload.isPending}
@@ -176,7 +189,8 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
               )}
               <p className="text-xs text-muted-foreground">
                 Dòng đã có trong bảng giá hoặc lặp lại trong cùng tệp sẽ được bỏ qua — nạp lại
-                một tệp không làm nhân đôi dữ liệu, và không dòng cũ nào bị xóa hay ghi đè.
+                một tệp không làm nhân đôi dữ liệu. Dòng cũ chỉ bị ghi đè / xóa khi tệp chỉ ra đúng
+                ID của nó.
               </p>
             </div>
           )}
@@ -211,7 +225,8 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
               )}
               {stage === 'dry' && nothingNew && (
                 <CustomsNotice tone="info">
-                  Mọi dòng trong các tệp này đã có trong bảng giá — không có gì để thêm.
+                  Mọi dòng trong các tệp này đã có trong bảng giá — không có gì để thêm, ghi đè hay
+                  xóa.
                 </CustomsNotice>
               )}
               {stage === 'dry' && dryDone && !usable.length && !nothingNew && (
@@ -285,6 +300,23 @@ function BatchTable({ rows, applying }: { rows: CustomsImportBatch[]; applying: 
         align: 'right',
         hideable: false,
         cell: (b) => (b.status === CUSTOMS_BATCH_STATUS.done ? b.created_count : '—'),
+      },
+      //  bao-CR-608 — ghi đè theo cột «ID», xóa theo cột «Thao tác».
+      {
+        key: 'updated_count',
+        header: applying ? 'Đã ghi đè' : 'Ghi đè',
+        width: 90,
+        align: 'right',
+        hideable: false,
+        cell: (b) => (b.status === CUSTOMS_BATCH_STATUS.done ? b.updated_count || 0 : '—'),
+      },
+      {
+        key: 'deleted_count',
+        header: applying ? 'Đã xóa' : 'Xóa',
+        width: 70,
+        align: 'right',
+        hideable: false,
+        cell: (b) => (b.status === CUSTOMS_BATCH_STATUS.done ? b.deleted_count || 0 : '—'),
       },
       {
         key: 'existing_rows',

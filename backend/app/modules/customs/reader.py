@@ -27,8 +27,9 @@ from decimal import Decimal, InvalidOperation
 
 from app.modules.import_tool.catalog_import import ImportValidationError
 
-from .constants import (COLUMNS, DECIMAL_KEYS, OPTIONAL_COLUMNS, OPTIONAL_DECIMAL_KEYS,
-                        OPTIONAL_IN_COLUMNS, OPTIONAL_LABELS, TEXT_LIMITS, TRANSPORT_LABELS, TransportMode)
+from .constants import (ACTION_KEY, COLUMNS, CONTROL_COLUMNS, DECIMAL_KEYS,
+                        DELETE_ACTION_WORDS, OPTIONAL_COLUMNS, OPTIONAL_DECIMAL_KEYS, OPTIONAL_IN_COLUMNS,
+                        OPTIONAL_LABELS, REF_ID_KEY, TEXT_LIMITS, TRANSPORT_LABELS, TransportMode)
 
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0"   # .xls đời cũ (BIFF)
 _ZIP_MAGIC = b"PK"                  # .xlsx
@@ -58,6 +59,11 @@ class ParseResult:
     #  bao-CR-603: khóa của các cột TÙY CHỌN tệp này có (theo thứ tự `OPTIONAL_COLUMNS` +
     #  `OPTIONAL_IN_COLUMNS`), để lô ghi lại «tệp có thêm cột gì» và bộ ghi biết ô nào lấy từ tệp.
     optional_columns: list[str] = field(default_factory=list)
+    #  bao-CR-608: khóa các cột ĐIỀU KHIỂN tệp có (`REF_ID_KEY` / `ACTION_KEY`), và các dòng
+    #  «Thao tác = xóa» — tách khỏi `rows` vì dòng xóa chỉ cần ô ID, không qua luật đọc dữ liệu.
+    #  Mỗi phần tử: {"source_row", "ref_id" (None nếu ô trống), "product_name"}.
+    control_columns: list[str] = field(default_factory=list)
+    deletes: list[dict] = field(default_factory=list)
 
 
 def normalize_text(value: object) -> str:
@@ -174,7 +180,7 @@ def map_header(header: list[Cell]) -> dict[str, int]:
     if missing:
         raise CustomsFileError("Tệp thiếu cột: " + ", ".join(f"«{m}»" for m in missing)
                                + ". Tệp phải là kết xuất tra cứu GTT02 (đủ các cột bắt buộc).")
-    for key, labels in OPTIONAL_COLUMNS:
+    for key, labels in OPTIONAL_COLUMNS + CONTROL_COLUMNS:
         idx = next((found[normalize_text(lb)] for lb in labels if normalize_text(lb) in found), None)
         if idx is not None:
             col_of[key] = idx
@@ -185,6 +191,11 @@ def optional_columns_of(col_of: dict[str, int]) -> list[str]:
     """Khóa các cột tùy chọn NGOÀI GTT02 mà tệp có (bốn cột của `OPTIONAL_COLUMNS`). «Nước nhận
     hàng» không kể vào đây: nó có ở mọi tệp GTT02 chuẩn, chỉ được phép thiếu chứ không phải cột thêm."""
     return [k for k, _ in OPTIONAL_COLUMNS if k in col_of]
+
+
+def control_columns_of(col_of: dict[str, int]) -> list[str]:
+    """bao-CR-608 — khóa các cột điều khiển («ID», «Thao tác») mà tệp có."""
+    return [k for k, _ in CONTROL_COLUMNS if k in col_of]
 
 
 def check_headers(raw: bytes, filename: str = "") -> None:
@@ -283,6 +294,37 @@ def _read_transport(cell: Cell) -> int | None:
     return code
 
 
+_MAX_REF_ID = 10 ** 15   # trần hợp lý cho ô ID (cột BIGINT) — số dài hơn là gõ nhầm, không phải id
+
+
+def read_ref_id(cell: Cell) -> tuple[int | None, str]:
+    """bao-CR-608 — ô «ID» → (id, câu cảnh báo). Ô trống → (None, ""). Ô không phải số nguyên
+    dương → (None, câu cảnh báo): dòng xử lý như KHÔNG có ID, không đoán."""
+    if cell.kind == EMPTY:
+        return None, ""
+    if cell.kind == NUMBER and float(cell.value).is_integer():
+        n = int(cell.value)
+    elif cell.kind == TEXT and re.fullmatch(r"\s*['#]?\s*\d{1,18}\s*", str(cell.value)):
+        n = int(re.sub(r"\D", "", str(cell.value)))
+    else:
+        return None, f"Ô «ID» «{cell.value}» không phải số — xử lý như dòng không có ID"
+    if n <= 0 or n >= _MAX_REF_ID:
+        return None, f"Ô «ID» «{cell.value}» không hợp lệ — xử lý như dòng không có ID"
+    return n, ""
+
+
+def read_row_action(cell: Cell) -> tuple[bool, str]:
+    """bao-CR-608 — ô «Thao tác» → (là xóa?, câu cảnh báo). Nhận «xóa» / «xoa» / «delete» / «del»
+    (không phân biệt hoa thường, bỏ dấu). Chữ lạ → cảnh báo, xử lý như không có thao tác."""
+    text = _read_text(cell)
+    if not text:
+        return False, ""
+    if normalize_text(text) in DELETE_ACTION_WORDS:
+        return True, ""
+    return False, (f"Ô «Thao tác» «{text}» không hiểu — xử lý như không có thao tác "
+                   "(chỉ nhận «xóa» / «delete» / «del»)")
+
+
 # ── Đọc cả tệp ──────────────────────────────────────────────────────────────
 def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseResult:
     from app.modules.import_tool.model import LogLevel
@@ -296,12 +338,24 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
     body = [r + [Cell(EMPTY)] * (width - len(r)) for r in body]
 
     res = ParseResult(date_swap=_detect_date_swap([r[col["reg_date"]] for r in body]),
-                      optional_columns=optional_columns_of(col))
+                      optional_columns=optional_columns_of(col), control_columns=control_columns_of(col))
     labels = dict(COLUMNS) | OPTIONAL_LABELS
     for offset, cells in enumerate(body):
         row_no = offset + 2                      # dòng thật trong tệp (dòng 1 là tiêu đề)
         #  Cột tùy chọn mà tệp không có thì trả ô TRỐNG — mọi luật phía dưới chạy y như cũ.
         get = lambda key: cells[col[key]] if key in col else Cell(EMPTY)   # noqa: E731
+        #  bao-CR-608: hai cột điều khiển. Dòng «xóa» chỉ cần ô ID — tách ra TRƯỚC luật đọc dữ
+        #  liệu, kẻo bị bỏ vì thiếu Ngày đăng ký.
+        ref_id, warn = read_ref_id(get(REF_ID_KEY))
+        if warn:
+            res.logs.append((row_no, LogLevel.WARNING, warn))
+        is_delete, warn = read_row_action(get(ACTION_KEY))
+        if warn:
+            res.logs.append((row_no, LogLevel.WARNING, warn))
+        if is_delete:
+            res.deletes.append({"source_row": row_no, "ref_id": ref_id,
+                                "product_name": _read_text(get("product_name"))[:255]})
+            continue
         reg_date, fixed = _read_date(get("reg_date"), res.date_swap)
         if reg_date is None:
             res.skipped += 1
@@ -345,6 +399,8 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
                 res.logs.append((row_no, LogLevel.WARNING,
                                  f"Cột «{labels[key]}» dài hơn {limit} ký tự — đã cắt"))
                 out[key] = out[key][:limit]
+        if ref_id is not None:
+            out[REF_ID_KEY] = ref_id          # bao-CR-608 — KHÔNG phải cột của bảng, bộ ghi bóc ra
         res.rows.append(out)
 
     today = today or date.today()

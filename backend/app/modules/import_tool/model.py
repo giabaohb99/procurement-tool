@@ -78,6 +78,11 @@ class ImportRowStatus(IntEnum):
     ERROR = 2        # Lỗi — bỏ dòng
     DUPLICATE = 3    # Trùng với một dòng khác trong CÙNG tệp — bỏ qua
     EXISTING = 4     # Giống hệt một dòng đã có trong bảng giá — bỏ qua (bao-CR-541)
+    #  bao-CR-608 (đại ca 07/10/2026): tệp nạp có cột «ID» / «Thao tác» thì người nạp CHỈ RA dòng
+    #  nào — không cần đoán bằng khóa nữa, nên mới có «Ghi đè» / «Xóa». Thêm mã mới, mã cũ giữ nguyên.
+    UPDATED = 5      # Ô ID trỏ đúng một dòng đã có → ghi đè dòng đó
+    DELETED = 6      # Ô «Thao tác» = xóa, ID có thật → xóa dòng đó
+    IGNORED = 7      # Bỏ qua: xóa mà ID trống / không có, hoặc ID đã xử lý ở dòng trên
 
 
 IMPORT_ROW_STATUS_LABELS = {
@@ -86,6 +91,9 @@ IMPORT_ROW_STATUS_LABELS = {
     ImportRowStatus.ERROR: "Lỗi",
     ImportRowStatus.DUPLICATE: "Trùng trong tệp",
     ImportRowStatus.EXISTING: "Đã có",
+    ImportRowStatus.UPDATED: "Ghi đè",
+    ImportRowStatus.DELETED: "Xóa",
+    ImportRowStatus.IGNORED: "Bỏ qua",
 }
 
 

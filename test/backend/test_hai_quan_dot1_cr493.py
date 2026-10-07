@@ -66,9 +66,9 @@ def test_serialize_and_export_carry_the_two_vnd_columns(db):
     assert row["price_vnd_flat"] == round(3 * 26130 * 1.07)
     assert row["price_vnd_line_tax"] == round(3 * 26130 * 1.05)
     ws = openpyxl.load_workbook(io.BytesIO(S.export_lines_xlsx(db, {}))).active
-    assert ws.max_column == 36
-    assert ws.cell(1, 35).value.startswith("Đơn giá quy đổi VND (thuế NK 7%)")
-    assert ws.cell(2, 35).value == row["price_vnd_flat"] and ws.cell(2, 36).value == row["price_vnd_line_tax"]
+    assert ws.max_column == 38                  # bao-CR-608: + «ID» đầu, «Thao tác» cuối
+    assert ws.cell(1, 36).value.startswith("Đơn giá quy đổi VND (thuế NK 7%)")
+    assert ws.cell(2, 36).value == row["price_vnd_flat"] and ws.cell(2, 37).value == row["price_vnd_line_tax"]
 
 
 # ── Bộ lọc mới ──────────────────────────────────────────────────────────────

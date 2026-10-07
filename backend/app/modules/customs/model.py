@@ -13,10 +13,10 @@ Thiết kế + số đo: `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §3.
 ⚠️ Lô nạp KHÔNG có bảng riêng: dùng lại `tab_import_batch` / `tab_import_log` của
 `import_tool` (`ImportModule.CUSTOMS_DECLARATION`). Cột `batch_id` trỏ vào đó.
 """
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import (BigInteger, Boolean, Date, Index, Integer, Numeric, SmallInteger,
-                        String, Text, UniqueConstraint)
+from sqlalchemy import (JSON, BigInteger, Boolean, Date, DateTime, Index, Integer, Numeric, SmallInteger,
+                        String, Text, UniqueConstraint, func)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -111,6 +111,8 @@ class CustomsLine(Base):
     #  bao-CR-603: tệp nạp có cột «Hoạt chất» / «Hàm lượng / dạng» và ô có chữ thì lấy của tệp,
     #  cờ = 1 để `retag_all` KHÔNG ghi đè khi danh mục đổi; ô trống hay tệp không có cột thì suy
     #  ra như cũ (cờ = 0).
+    #  bao-CR-608: tên cột giữ nguyên nhưng nghĩa rộng ra thành «GIÁ TRỊ DO NGƯỜI NHẬP» — lấy từ
+    #  tệp nạp HOẶC người sửa tay trên màn (hộp sửa dòng). Cả hai ca `retag_all` đều không ghi đè.
     active_ingredient_from_file: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     formulation_from_file: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     #  bao-CR-603: hai cột «Đơn giá quy đổi VND» LẤY TỪ TỆP (tùy chọn). NULL = tệp không có cột
@@ -121,6 +123,34 @@ class CustomsLine(Base):
     #  bao-CR-494: nhãn THÀNH PHẨM / NGUYÊN LIỆU (`ProductKind`), suy từ tên hàng theo bộ từ
     #  khóa admin sửa được (`tab_customs_kind_keyword`). Gắn lúc nạp và ở `retag_all`; 0 = chưa gắn.
     product_kind: Mapped[int] = mapped_column(SmallInteger, default=0, index=True)
+
+
+class CustomsLineChange(Base):
+    """bao-CR-608 — BẢN CHỤP ĐẦY ĐỦ một dòng hàng ngay TRƯỚC khi bị ghi đè / xóa.
+
+    Hai nguồn (`CustomsLineChangeSource`): lô nạp tệp có cột «ID» / «Thao tác» (`batch_id` = lô)
+    và sửa / xóa tay trên màn (`batch_id` = 0). `snapshot` giữ MỌI cột của `tab_customs_line`
+    (kèm `id`, `reg_date`, `batch_id`, `importer_id`, `partner_id`, `row_hash`) ở dạng chuỗi /
+    số JSON — đủ để chèn lại đúng id cũ khi hoàn tác.
+
+    Vì sao cần: dòng bị GHI ĐÈ giữ nguyên `batch_id` của lô đã thêm nó (đổi sang lô mới thì
+    hoàn tác lô mới xóa mất dòng cũ), còn dòng bị XÓA thì mất hẳn — hoàn tác lô (`importer.revert`)
+    chỉ dựng lại được nhờ bảng này. Sửa tay thì bảng này là dấu vết «trước khi sửa là gì».
+    """
+    __tablename__ = "tab_customs_line_change"
+    __table_args__ = (
+        Index("ix_customs_line_change_batch", "batch_id"),
+        Index("ix_customs_line_change_line", "line_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    batch_id: Mapped[int] = mapped_column(BigInteger, default=0)            # 0 = sửa / xóa tay
+    line_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    action: Mapped[int] = mapped_column(SmallInteger, default=0)            # CustomsLineChangeAction
+    source: Mapped[int] = mapped_column(SmallInteger, default=0)            # CustomsLineChangeSource
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_by: Mapped[int] = mapped_column(BigInteger, default=0)
 
 
 class CustomsIngredientAlias(Base, AuditMixin):

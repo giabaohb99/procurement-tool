@@ -71,7 +71,7 @@ def test_reimport_skips_existing_rows_and_names_origin_batch(db):
     assert f"lô #{first.id}" in _message(db, second.id, 2)
     assert second.created_count == 1
     assert row_log.count_rows(db, second.id) == {"total": 2, "new": 1, "error": 0, "duplicate": 0,
-                                                 "existing": 1}
+                                                 "existing": 1, "updated": 0, "deleted": 0, "ignored": 0}
 
 
 def test_new_file_missing_rows_never_deletes_old_data(db):
@@ -118,7 +118,7 @@ def test_dry_run_reports_existing_without_writing(db):
     assert len(_lines(db)) == 1
     assert trial.created_count == 1
     assert row_log.count_rows(db, trial.id) == {"total": 3, "new": 1, "error": 0, "duplicate": 1,
-                                                "existing": 1}
+                                                "existing": 1, "updated": 0, "deleted": 0, "ignored": 0}
 
 
 def test_old_rows_without_hash_are_recognised_on_next_import(db):

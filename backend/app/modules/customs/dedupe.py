@@ -128,6 +128,14 @@ def load_existing(db: Session, date_from, date_to, exclude_batch_id: int = 0) ->
     return index
 
 
+def stored_hashes(db: Session, lines: list[CustomsLine]) -> dict[int, str]:
+    """bao-CR-608 — mã băm HIỆN TẠI của các dòng đã lưu (dòng cũ chưa có mã thì tính), để biết dòng
+    trong tệp có cột «ID» có thật sự đổi gì so với dòng nó trỏ tới không."""
+    parties = _party_keys(db, {x.importer_id for x in lines} | {x.partner_id for x in lines})
+    return {x.id: x.row_hash or compute_row_hash(_stored_values(x), parties.get(x.importer_id, ""),
+                                                 parties.get(x.partner_id, "")) for x in lines}
+
+
 def stamp_rows(rows: list[dict]) -> list[str]:
     """Gắn `row_hash` vào từng dòng của tệp (cột thật của bảng); → mã nhận diện cùng thứ tự."""
     identities = []

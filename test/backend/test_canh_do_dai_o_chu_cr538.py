@@ -30,8 +30,10 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "inventory", "attachment", "forum", "assistant", "dossier", "faq", "role", "agent_hub",
            "comment", "employee", "user", "setting", "user_preference",
            "report_access",
-           "work_schedule"]   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
+           "work_schedule",   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
+           "labor_contract"]
 #  ↑ work_schedule: duoc-CR-589 (05/10) — Lịch làm việc, `name` 150 / `note` 500
+#  ↑ labor_contract: duoc-CR-606 (07/10) — Hợp đồng lao động; khai ở bao-CR-608 khi bài canh đỏ
 
 #  Tên lớp kết thúc bằng các đuôi này là schema TRẢ RA hoặc lọc — không ghi xuống DB.
 READ_SUFFIXES = ("Out", "Response", "Read", "Detail", "Summary", "Row", "Filter", "Query", "Result", "Stats")
@@ -132,10 +134,15 @@ TARGETS.update({
     **_same("work_schedule", "WorkSchedule", "ScheduleCreate", "ScheduleUpdate"),       # duoc-CR-589
     **_same("work_schedule", "WorkScheduleDay", "DayIn"),
     **_same("work_schedule", "WorkScheduleAssignment", "AssignmentCreate", "AssignmentUpdate", "_Fields"),
+    #  duoc-CR-606 (07/10) — Hợp đồng lao động: mẫu Word + chuyển trạng thái (`reason` → `terminate_reason`)
+    **_same("labor_contract", "LaborContractTemplate", "TemplateCreateIn", "TemplateUpdate"),
+    **_same("labor_contract", "LaborContract", "TransitionIn"),
 })
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).
 NO_TARGET = {
+    #  duoc-CR-606: chỉ mang id mẫu / nội dung HTML soạn mẫu (lưu vào tệp Word, không vào cột chữ)
+    "labor_contract.GenerateIn", "labor_contract.TemplateContentIn",
     "survey.LineApproveIn", "survey.LineApproveCombined", "survey_request.ReportTemplateApplyIn",
     #  chỉ mang id / thứ tự / lệnh di chuyển — không ghi cột chữ nào
     "doc_catalog.DocumentFolderSetIn", "doc_catalog.FolderLinkIn", "doc_catalog.FolderUnlinkIn",

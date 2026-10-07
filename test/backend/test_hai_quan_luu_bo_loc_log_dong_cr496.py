@@ -149,7 +149,8 @@ def test_every_data_row_gets_exactly_one_status_line(db):
                                    (4, ImportRowStatus.DUPLICATE), (5, ImportRowStatus.NEW)]
     dup = db.query(ImportLog).filter(ImportLog.batch_id == b.id, ImportLog.row_no == 4).one()
     assert "dòng 2" in dup.message and dup.ref_key == "ATRAZINE 97% TECH"
-    assert row_log.count_rows(db, b.id) == {"total": 4, "new": 2, "error": 1, "duplicate": 1, "existing": 0}
+    assert row_log.count_rows(db, b.id) == {"total": 4, "new": 2, "error": 1, "duplicate": 1, "existing": 0,
+                                            "updated": 0, "deleted": 0, "ignored": 0}
 
 
 def test_duplicate_in_file_is_skipped_not_written(db):
@@ -178,7 +179,8 @@ def test_dry_run_also_writes_row_statuses_without_touching_lines(db):
     b = _batch(db, ImportMode.DRY_RUN)
     importer.run(db, b, _xlsx([_row(), _row()]), apply=False)
     assert db.query(CustomsLine).count() == 0
-    assert row_log.count_rows(db, b.id) == {"total": 2, "new": 1, "error": 0, "duplicate": 1, "existing": 0}
+    assert row_log.count_rows(db, b.id) == {"total": 2, "new": 1, "error": 0, "duplicate": 1, "existing": 0,
+                                            "updated": 0, "deleted": 0, "ignored": 0}
 
 
 def test_list_rows_filters_by_status_and_pages_in_file_order(db):
@@ -224,5 +226,8 @@ def test_batch_notes_stay_readable_and_do_not_drown_in_row_statuses(db):
 
 
 def test_row_status_enum_has_no_update_state():
-    assert {s.name for s in ImportRowStatus} == {"NONE", "NEW", "ERROR", "DUPLICATE", "EXISTING"}, \
-        "GTT02 không có số tờ khai → không có kết cục «Cập nhật» (đại ca chốt 25/09/2026)"
+    """GTT02 không có số tờ khai → KHÔNG tự đoán «Cập nhật» (đại ca chốt 25/09/2026). bao-CR-608
+    (07/10/2026) thêm «Ghi đè» / «Xóa» / «Bỏ qua» — chỉ khi NGƯỜI NẠP chỉ ra dòng bằng cột «ID»; mã
+    cũ giữ nguyên số."""
+    assert {s.name: int(s) for s in ImportRowStatus} == {
+        "NONE": 0, "NEW": 1, "ERROR": 2, "DUPLICATE": 3, "EXISTING": 4, "UPDATED": 5, "DELETED": 6, "IGNORED": 7}
