@@ -151,7 +151,11 @@ Mã nguồn: `backend/app/modules/customs/` (`line_change.py`, `line_edit_servic
 migration `hq608` (nối sau `lbrct01`), `test/backend/test_hai_quan_id_ghi_de_xoa_cr608.py`; v2
 `frontend-v2/src/modules/procurement/` (`customs-line-edit-form.tsx`, `utils/customs-line-form.ts` mới, hộp chi tiết dòng,
 hộp nạp, lịch sử nạp); v1 `frontend/src/components/customs/` (`CustomsLineEditForm.tsx` mới) và `pages/CustomsPrices.tsx`.
-Deploy: chưa deploy.
+Đại ca chốt 07/10/2026 (giữ đúng như đề nghị): (1) dòng có ID mà dữ liệu y hệt dòng đang lưu thì bỏ qua, không
+ghi đè; (2) tệp chỉ toàn dòng xóa vẫn phải đủ tiêu đề các cột của mẫu, ô để trống được; (3) sửa tên doanh nghiệp
+hoặc đối tác trên một dòng thì đổi theo mọi dòng cùng mã số thuế hoặc cùng đối tác; (4) ô số trong biểu mẫu sửa hiểu
+dấu chấm và dấu phẩy là dấu thập phân, có ghi chú trên ô.
+Deploy: DEV 07/10/2026 10:55 (migration hq608, có sao lưu trước); prod chờ đại ca.
 
 ---
 
