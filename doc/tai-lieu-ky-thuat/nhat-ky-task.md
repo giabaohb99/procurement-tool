@@ -12763,4 +12763,4 @@ khác. Cả hai hãng dùng chung cách gọi kiểu OpenAI nên bot và Trợ l
 deepseek-chat và các model Grok. Không đổi cấu trúc dữ liệu.
 
 Mã nguồn: backend/app/modules/assistant/provider/openai_compat.py (DeepSeekProvider, XaiProvider) · agent_hub/ai_keys.py · agent_hub/manager.py · frontend-v2 ai-key-list-card.tsx
-
+Deploy: dev 07/10, erp-v2 89f16b68 (Agent 1 gộp và dựng lại api, erp, celery-worker, celery-beat, agent-poller); prod giữ lại.
