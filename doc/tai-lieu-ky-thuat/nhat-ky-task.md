@@ -12672,3 +12672,15 @@ nhận dòng có hạn như «nhớ tuần này: anh ở Đà Nẵng» hay «nh�
 
 Mã nguồn: backend/app/modules/agent_hub/sessions.py (mới) · agent_hub/personal_memory.py (dòng có hạn, search_history) · assistant/tools/personal_tool.py (search_chat_history) · lịch chạy agent-session-summary
 Deploy: dev 07/10 khoảng 11:10, erp-v2 28901d52 (Agent 1 gộp, dựng lại api, celery-worker, celery-beat, agent-poller; lịch agent-session-summary đã có trên beat); prod giữ lại.
+
+
+## duoc-CR-607 | Báo cáo thực hiện ở bản cũ: làm dòng hồ sơ dễ nhìn hơn và tách khối khỏi phần Trao đổi
+- status: xong
+- date: 2026-10-07
+Đại ca xem lại khối Báo cáo thực hiện ở bản cũ và yêu cầu làm cho dễ nhìn hơn, chỉ sửa bản cũ, bản mới giữ nguyên.
+Mỗi dòng hồ sơ nay có viền trái mang màu trạng thái, trễ hạn thì đỏ, nên liếc dọc là thấy tiến độ cả giai đoạn. Hồ sơ đang
+khóa không còn bị làm mờ cả dòng mà ghi rõ đang chờ hồ sơ nào ngay cạnh tên. Nhãn Chung và nhãn dòng hàng tách màu, ô trạng
+thái thẳng cột, nút sửa và xóa chỉ hiện rõ khi rê chuột. Khối báo cáo cũng được cách ra khỏi khối Trao đổi vì trước đó hai
+khối dính sát nhau. Chưa đưa lên dev theo lời đại ca.
+
+Mã nguồn: frontend/src/components/SurveyReportCard.tsx · frontend/src/index.css
