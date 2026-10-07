@@ -12775,4 +12775,4 @@ hệ thống hỏi trạm danh sách model, chưa chọn model thì lấy model 
 nhập, chỉ nhận địa chỉ https có tên miền công khai, chặn địa chỉ nội bộ. Thêm một cột địa chỉ trạm vào bảng khóa.
 
 Mã nguồn: backend/app/modules/agent_hub/ai_keys.py (normalize_base_url, custom_models) · agent_hub/manager.py (_AgentCustom) · migration aibase01 · frontend-v2 ai-key-list-card.tsx
-
+Deploy: dev 07/10, erp-v2 d3331f8d (Agent 1 sao lưu DB dev, gộp, dựng lại; migration aibase01 đã chạy); prod giữ lại.
