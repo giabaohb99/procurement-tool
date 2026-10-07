@@ -12725,4 +12725,4 @@ mẫu: tóm tắt nhanh, chính thức, danh sách việc, đầy đủ theo gi�
 dựng lại vì thêm ffmpeg. Chưa thử bằng tệp họp thật, chờ đại ca gửi một tệp.
 
 Mã nguồn: backend/app/modules/agent_hub/meetings.py (mới) · agent_hub/service.py (_meeting_by_message) · tác vụ agent.meeting_process · docker/Dockerfile.api · migration meet01
-
+Deploy: dev 07/10, erp-v2 42c5832d (Agent 1 sao lưu DB dev, dựng lại image có ffmpeg 7.1.5, migration meet01 đã chạy); prod giữ lại. Lưu ý đợt prod kế: image api prod cũng sẽ có ffmpeg.
