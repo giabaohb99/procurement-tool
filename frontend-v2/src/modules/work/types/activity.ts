@@ -18,6 +18,8 @@ export interface WorkActivity {
   /** Tên người thao tác, backend đã tra sẵn. */
   by: string
   by_id: number
+  /** bao-CR-604: ảnh đại diện người thao tác; rỗng thì vẽ chữ tắt. */
+  by_avatar?: string
   /** Mốc thời gian ISO, giờ UTC không hậu tố — `format-date` tự bù múi giờ. */
   at: string
   /** Có id thì dòng bấm sang được panel chi tiết việc. */

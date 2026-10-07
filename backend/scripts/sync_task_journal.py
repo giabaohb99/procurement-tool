@@ -19,9 +19,27 @@ backend/scripts/.task_sync.env, dạng KEY=VALUE, KHÔNG commit tệp này):
     WORK_SYNC_PASS=...
     WORK_SYNC_LIST=Nhật ký task
     WORK_SYNC_PIC=NSU209
+    WORK_SYNC_PIC_BY_PREFIX=bao=NSU209,duoc=NSU231,giang=NSU199,ai=NSU209   # tùy chọn
+    WORK_SYNC_TAG_BY_PREFIX=bao=Bảo,duoc=Được,giang=Giang,ai=Bot AI          # tùy chọn, "-" = tắt
+    WORK_SYNC_ROUTE=1                                                        # 0 = không chia dự án theo từ khóa
 
 `WORK_SYNC_PIC` là mã nhân sự nhận mọi task của sổ (mục nào khai `- pic:` riêng
 thì theo mục đó). Để trống thì script không đụng tới người phụ trách.
+
+bao-CR-604 (07/10/2026) — ba luật thêm để bảng dự án đọc được ai làm gì:
+- NGƯỜI PHỤ TRÁCH theo TIỀN TỐ key: `duoc-CR-…` → Được (NSU231), `giang-CR-…` →
+  Giang, `bao-CR-…` và `ai-CR-…` → Bảo; mục khai `- pic:` thì vẫn theo mục.
+- NHÃN «Tag» theo tiền tố (Bảo / Được / Giang / Bot AI) — trường «Tag» chọn nhiều
+  có sẵn ở mọi list, thiếu thì tạo; giá trị gán CỘNG THÊM, không gỡ tag người
+  dùng tự gán. Mục khai `- tag: A, B` thì thêm cả A, B.
+- CHIA DỰ ÁN theo từ khóa trong key + tiêu đề (`LIST_RULES`): văn thư → «Công cụ
+  văn thư», đặt xe / duyệt dấu → «Duyệt dấu, Đặt xe», bot / Agent Hub → «Công cụ
+  Ai»… Mục khai `- list:` thì theo mục. Task ĐÃ có ở dự án khác thì giữ nguyên
+  và báo; chạy `--move` mới xóa chỗ cũ (vào thùng rác) rồi tạo ở dự án đúng —
+  API không có đường chuyển task giữa hai list.
+Đẩy lên PROD: đổi `WORK_SYNC_BASE_URL` sang https://erp.degoholding.vn và tài
+khoản prod (có quyền `work_task` create/write + đọc hồ sơ nhân sự), chạy
+`--dry-run` xem trước; nhóm «DX» chưa có thì script tự tạo.
 """
 from __future__ import annotations
 
@@ -41,6 +59,50 @@ REPO_ROOT = SCRIPT_DIR.parent.parent
 DEFAULT_JOURNAL = REPO_ROOT / "doc" / "tai-lieu-ky-thuat" / "nhat-ky-task.md"
 DEFAULT_ENV_FILE = SCRIPT_DIR / ".task_sync.env"
 DEFAULT_LIST_NAME = "ERP v2"
+
+#  bao-CR-604: mặc định theo TIỀN TỐ key (`bao-CR-…`, `duoc-CR-…`, `giang-CR-…`, `ai-CR-…`).
+#  Mã nhân sự giống nhau ở local / dev / prod nên để thẳng ở đây; đổi bằng env
+#  `WORK_SYNC_PIC_BY_PREFIX` / `WORK_SYNC_TAG_BY_PREFIX` (dạng `k=v,k=v`; "-" = tắt).
+DEFAULT_PIC_BY_PREFIX = {"bao": "NSU209", "duoc": "NSU231", "giang": "NSU199", "ai": "NSU209"}
+DEFAULT_TAG_BY_PREFIX = {"bao": "Bảo", "duoc": "Được", "giang": "Giang", "ai": "Bot AI"}
+TAG_FIELD_NAME = "Tag"
+#  Chia vào DỰ ÁN theo từ khóa trong KEY + TIÊU ĐỀ (không soi mô tả — mô tả nhắc
+#  đủ thứ phân hệ). Luật đầu khớp thắng; không khớp thì về list mặc định.
+LIST_RULES: list[tuple[str, str]] = [
+    (r"văn thư|văn bản|doc_folder|thư mục văn bản|sổ văn bản", "Công cụ văn thư"),
+    (r"đặt xe|duyệt dấu|đóng dấu|dấu mộc|app cũ|datxe|vehicle_booking|seal_request", "Duyệt dấu, Đặt xe"),
+    (r"diễn đàn|forum", "Diễn đàn"),
+    (r"^ai-cr|agent hub|bot telegram|đậu đậu|trợ lý ai|assistant|agent_hub", "Công cụ Ai"),
+    (r"nhật ký hệ thống|system_log", "Nhật ký hệ thống"),
+]
+
+
+def key_prefix(key: str) -> str:
+    m = re.match(r"^([a-z]+)-CR-", key, re.IGNORECASE)
+    return m.group(1).lower() if m else ""
+
+
+def route_list(entry: "JournalEntry") -> str:
+    text = f"{entry.key} {entry.title}".lower()
+    for pattern, name in LIST_RULES:
+        if re.search(pattern, text):
+            return name
+    return ""
+
+
+def parse_map(raw: str, default: dict[str, str]) -> dict[str, str]:
+    """`k=v,k=v` → dict; rỗng = mặc định; "-" = tắt hẳn."""
+    raw = (raw or "").strip()
+    if not raw:
+        return dict(default)
+    if raw == "-":
+        return {}
+    out = {}
+    for part in re.split(r"[,;]", raw):
+        if "=" in part:
+            k, v = part.split("=", 1)
+            out[k.strip().lower()] = v.strip()
+    return out
 
 #  Trạng thái trong sổ → (cột kanban, WorkTaskStatus). Bộ số khớp
 #  app/modules/work/model.py: OPEN=1, DONE=2, CANCELLED=3.
@@ -73,6 +135,8 @@ class JournalEntry:
     #  Mã nhân sự của người phụ trách (`- pic:`, nhiều mã cách nhau bằng dấu
     #  phẩy). Rỗng = lấy theo cấu hình `WORK_SYNC_PIC`; việc con theo cha.
     pic_codes: list[str] = field(default_factory=list)
+    #  Nhãn «Tag» cần có trên task (`- tag:` + tag theo tiền tố, bao-CR-604).
+    tag_names: list[str] = field(default_factory=list)
 
     @property
     def display_title(self) -> str:
@@ -155,6 +219,10 @@ def parse_journal(path: Path) -> list[JournalEntry]:
         if m:
             current.pic_codes = [c.strip().upper()
                                  for c in re.split(r"[,;]", m.group(2)) if c.strip()]
+            continue
+        m = re.match(r"^-\s*(tag|nhan)\s*:\s*(.+)", raw, re.IGNORECASE)
+        if m:
+            current.tag_names = [c.strip() for c in re.split(r"[,;]", m.group(2)) if c.strip()]
             continue
         if raw.strip():
             current.desc_lines.append(raw.rstrip())
@@ -304,14 +372,21 @@ def find_group_id(api: WorkApi, name: str) -> int | None:
 
 def ensure_list(api: WorkApi, name: str, dry: bool) -> int:
     lists = api.call("GET", "/api/work/lists") or []
-    for row in lists:
-        if row.get("name") == name:
-            return int(row["id"])
+    #  Trùng tên thì ưu tiên dự án NẰM TRONG NHÓM — «Nhật ký hệ thống» trên dev từng có
+    #  một bản đứng ngoài nhóm (sinh trước bao-CR-482) cạnh bản trong «DX».
+    same = [row for row in lists if row.get("name") == name]
+    for row in sorted(same, key=lambda r: (not r.get("group_id"), int(r["id"]))):
+        return int(row["id"])
     group_name = os.environ.get("WORK_SYNC_GROUP", DEFAULT_GROUP_NAME)
     group_id = find_group_id(api, group_name)
+    if group_name and not group_id and not dry:
+        #  bao-CR-604: prod chưa có nhóm «DX» — tạo luôn, kẻo dự án đứng lẻ ngoài cây.
+        created = api.call("POST", "/api/work/groups", {"name": group_name})
+        group_id = int(created["id"])
+        print(f"+ tạo nhóm '{group_name}' (id {group_id})")
     if dry:
         print(f"[dry-run] sẽ tạo dự án '{name}'"
-              + (f" trong nhóm '{group_name}'" if group_id else " (đứng ngoài nhóm)"))
+              + (f" trong nhóm '{group_name}'" if group_id else f" (và nhóm '{group_name}')" if group_name else " (đứng ngoài nhóm)"))
         return 0
     body = {"name": name,
             "description": "Sổ task đồng bộ từ nhat-ky-task.md — đừng sửa mô tả task bằng tay."}
@@ -336,6 +411,56 @@ def ensure_sections(api: WorkApi, list_id: int, names: set[str], dry: bool) -> d
         have[name] = int(created["id"])
         print(f"+ tạo cột '{name}'")
     return have
+
+
+def ensure_tag_options(api: WorkApi, list_id: int, names: set[str], dry: bool) -> tuple[int, dict[str, int]]:
+    """Trường «Tag» (chọn nhiều) của list + id từng giá trị cần có; thiếu thì tạo.
+    Trả `(field_id, {tên: option_id})`; `field_id = 0` khi dry-run chưa có trường."""
+    if not names:
+        return 0, {}
+    fields = api.call("GET", f"/api/work/lists/{list_id}/label-fields") or []
+    tag = next((f for f in fields
+                if (f.get("name") or "").strip().lower() == TAG_FIELD_NAME.lower()
+                and int(f.get("field_type") or 1) == 2), None)
+    if tag is None:
+        if dry:
+            print(f"[dry-run] sẽ tạo trường '{TAG_FIELD_NAME}' (chọn nhiều) cho list {list_id}")
+            return 0, {}
+        tag = api.call("POST", f"/api/work/lists/{list_id}/label-fields",
+                       {"name": TAG_FIELD_NAME, "field_type": 2})
+        tag["options"] = []
+        print(f"+ tạo trường '{TAG_FIELD_NAME}' (chọn nhiều)")
+    opts = {(o.get("name") or "").strip().lower(): int(o["id"]) for o in tag.get("options") or []}
+    out: dict[str, int] = {}
+    for name in sorted(names):
+        oid = opts.get(name.lower())
+        if oid is None:
+            if dry:
+                print(f"[dry-run] sẽ thêm giá trị tag '{name}'")
+                continue
+            created = api.call("POST", f"/api/work/label-fields/{tag['id']}/options", {"name": name})
+            oid = int(created["id"])
+            print(f"+ thêm giá trị tag '{name}'")
+        out[name] = oid
+    return int(tag["id"]), out
+
+
+def sync_tags(api: WorkApi, task: dict, entry: JournalEntry, field_id: int,
+              option_ids: dict[str, int], dry: bool, indent: str = "") -> None:
+    """Gán tag cho task — CỘNG THÊM vào giá trị đang có, không gỡ tag người dùng tự gán."""
+    want = {option_ids[n] for n in entry.tag_names if n in option_ids}
+    if not want or not field_id:
+        return
+    have = {int(lb.get("option_id") or 0) for lb in (task.get("labels") or [])
+            if int(lb.get("field_id") or 0) == field_id}
+    if want <= have:
+        return
+    if dry:
+        print(f"[dry-run] {indent}sẽ gán tag [{entry.key}]: " + ", ".join(entry.tag_names))
+        return
+    api.call("PUT", f"/api/work/tasks/{task['id']}/label",
+             {"field_id": field_id, "value": sorted(have | want)})
+    print(f"{indent}# [{entry.key}] tag " + ", ".join(entry.tag_names))
 
 
 def _key_of(title: str) -> str:
@@ -389,18 +514,44 @@ def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry,
         sync_pic(api, old, c, people, dry, indent="  ")
 
 
+def index_all_tasks(api: WorkApi) -> dict[str, tuple[int, str, dict]]:
+    """`{key: (list_id, tên list, task)}` của MỌI dự án — để biết một mục đang nằm
+    ở dự án khác (bao-CR-604) chứ không tạo thêm bản nữa."""
+    out: dict[str, tuple[int, str, dict]] = {}
+    for row in api.call("GET", "/api/work/lists") or []:
+        board = api.call("GET", f"/api/work/lists/{row['id']}/board") or {}
+        for t in board.get("tasks", []):
+            out.setdefault(_key_of(t.get("title", "")), (int(row["id"]), row.get("name") or "", t))
+    return out
+
+
 def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
-         people: PeopleDirectory, dry: bool) -> None:
+         people: PeopleDirectory, dry: bool,
+         elsewhere: dict[str, tuple[int, str, dict]] | None = None,
+         move: bool = False) -> None:
     sections = ensure_sections(api, list_id, {e.section_name for e in entries}, dry)
     board = api.call("GET", f"/api/work/lists/{list_id}/board") if list_id else {"tasks": []}
     #  Khớp theo tiền tố "key — " để đổi TIÊU ĐỀ trong sổ không đẻ task mới.
     by_key: dict[str, dict] = {}
     for t in board.get("tasks", []):
         by_key.setdefault(_key_of(t.get("title", "")), t)
+    tag_field, tag_opts = ensure_tag_options(
+        api, list_id, {n for e in entries for n in e.tag_names}, dry) if list_id else (0, {})
 
     for e in entries:
         target_section = sections.get(e.section_name, 0)
         old = by_key.get(e.key)
+        if old is None and elsewhere and e.key in elsewhere and elsewhere[e.key][0] != list_id:
+            other_list_id, other_name, other_task = elsewhere[e.key]
+            if not move:
+                print(f"! [{e.key}] đang ở dự án '{other_name}' — giữ nguyên "
+                      f"(chạy --move để chuyển sang đây)")
+                continue
+            if dry:
+                print(f"[dry-run] sẽ chuyển [{e.key}] từ '{other_name}' sang đây (xóa chỗ cũ, tạo lại)")
+                continue
+            api.call("DELETE", f"/api/work/tasks/{other_task['id']}")
+            print(f"- [{e.key}] bỏ khỏi '{other_name}' (vào thùng rác), tạo lại ở dự án này")
         if old is None:
             if dry:
                 print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
@@ -419,6 +570,7 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
                          {"status": e.task_status})
             print(f"+ tạo [{e.key}] ({e.section_name})")
             sync_pic(api, created, e, people, dry)
+            sync_tags(api, created, e, tag_field, tag_opts, dry)
             sync_children(api, int(created["id"]), e, people, dry)
             continue
 
@@ -441,6 +593,7 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
             api.call("PATCH", f"/api/work/tasks/{old['id']}", patch)
             print(f"~ cập nhật [{e.key}]: {', '.join(patch)}")
         sync_pic(api, old, e, people, dry)
+        sync_tags(api, old, e, tag_field, tag_opts, dry)
         sync_children(api, int(old["id"]), e, people, dry)
 
 
@@ -467,6 +620,8 @@ def main() -> None:
     ap.add_argument("--list-name")
     ap.add_argument("--pic", help="Mã nhân sự nhận mọi task chưa khai `- pic:`")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--move", action="store_true",
+                    help="Mục đã có ở dự án khác thì xóa chỗ cũ (thùng rác) rồi tạo ở dự án đúng")
     args = ap.parse_args()
 
     env = {**load_env_file(Path(args.env_file)), **{
@@ -489,10 +644,21 @@ def main() -> None:
         print("Sổ chưa có mục nào — không có gì để đồng bộ.")
         return
 
-    #  Người phụ trách: mục nào không khai `- pic:` thì lấy người mặc định,
-    #  và việc con đi theo mục cha của nó.
+    #  bao-CR-604: người phụ trách + tag theo TIỀN TỐ key, chia dự án theo từ khóa.
+    pic_by_prefix = parse_map(env.get("WORK_SYNC_PIC_BY_PREFIX", ""), DEFAULT_PIC_BY_PREFIX)
+    tag_by_prefix = parse_map(env.get("WORK_SYNC_TAG_BY_PREFIX", ""), DEFAULT_TAG_BY_PREFIX)
+    route = env.get("WORK_SYNC_ROUTE", "1").strip() != "0"
+    #  Người phụ trách: mục nào không khai `- pic:` thì theo tiền tố, rồi tới người
+    #  mặc định; việc con đi theo mục cha của nó.
     for e in entries:
+        prefix = key_prefix(e.key)
+        if not e.pic_codes and prefix in pic_by_prefix:
+            e.pic_codes = [pic_by_prefix[prefix].upper()]
         e.pic_codes = e.pic_codes or default_pics
+        if prefix in tag_by_prefix and tag_by_prefix[prefix] not in e.tag_names:
+            e.tag_names.append(tag_by_prefix[prefix])
+        if route and not e.list_name:
+            e.list_name = route_list(e)
         for c in e.children:
             c.pic_codes = c.pic_codes or e.pic_codes
 
@@ -509,14 +675,19 @@ def main() -> None:
     try:
         if default_pics:
             print("Người phụ trách mặc định: " + ", ".join(default_pics))
+        elsewhere = index_all_tasks(api)
         for name, group_entries in by_list.items():
             print(f"-- list '{name}' ({len(group_entries)} mục)")
             list_id = ensure_list(api, name, args.dry_run)
             if not list_id and args.dry_run:
                 for e in group_entries:
-                    print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
+                    if e.key in elsewhere:
+                        print(f"[dry-run] [{e.key}] đang ở '{elsewhere[e.key][1]}'"
+                              + (" — sẽ chuyển" if args.move else " — giữ nguyên (cần --move)"))
+                    else:
+                        print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
                 continue
-            sync(api, list_id, group_entries, people, args.dry_run)
+            sync(api, list_id, group_entries, people, args.dry_run, elsewhere, args.move)
     finally:
         #  Kể cả dry-run hay lỗi giữa chừng: phiên mở ra thì phải đóng lại.
         api.logout()

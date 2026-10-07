@@ -11,6 +11,7 @@ import { WORK_ACTIVITY_KIND, type WorkActivity, type WorkActivityKind } from '..
 import { describeActivity } from '../utils/describe-activity'
 import { groupActivitiesByDay } from '../utils/group-activities-by-day'
 import { initials } from '../utils/people'
+import { PersonAvatar } from './person-avatar'
 
 interface ActivityFeedProps {
   listId: number
@@ -178,15 +179,14 @@ function ActivityRow({
           {formatTime(activity.at)}
         </time>
 
-        <span
-          aria-hidden
-          className={cn(
-            'grid size-7 shrink-0 place-items-center rounded-full border text-[10px] font-medium',
-            kindTone(activity.kind),
-          )}
-        >
-          {initials(activity.by)}
-        </span>
+        {/* bao-CR-604: ảnh thật của người thao tác khi hồ sơ có; màu viền vẫn
+            theo LOẠI sự kiện để liếc là biết cụm nào là cụm nào. */}
+        <PersonAvatar
+          name={activity.by}
+          avatar={activity.by_avatar}
+          initials={initials(activity.by)}
+          className={cn('size-7 shrink-0 text-[10px]', kindTone(activity.kind))}
+        />
 
         <div className="min-w-0 flex-1">
           {/*  Dòng nhỏ phía trên = ĐỐI TƯỢNG bị tác động: tên việc, hoặc tên

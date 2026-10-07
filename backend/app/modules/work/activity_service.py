@@ -56,19 +56,30 @@ def _resolve_actor_names(db: Session, user_ids: set[int]) -> dict[int, str]:
     `core.audit.resolve_actor` tra từng người một: 30 dòng nhật ký là 60 lượt
     query, mà một trang hoạt động gần như luôn chỉ có vài người khác nhau.
     """
+    return {uid: info["name"] for uid, info in _resolve_actors(db, user_ids).items()}
+
+
+def _resolve_actors(db: Session, user_ids: set[int]) -> dict[int, dict]:
+    """`{user_id: {name, avatar}}` — tên + ảnh đại diện (bao-CR-604) trong ba lượt
+    truy vấn; ảnh đọc ké `User.avatar` (thumbnail) như `people.employee_info`."""
+    from sqlalchemy.orm import joinedload
+
     from app.modules.employee.model import Employee
     from app.modules.user.model import User
 
     ids = {i for i in user_ids if i}
     if not ids:
         return {}
-    users = db.query(User).filter(User.id.in_(ids)).all()
+    users = (db.query(User).options(joinedload(User.avatar_file))
+             .filter(User.id.in_(ids)).all())
     emp_ids = {u.employee_id for u in users if u.employee_id}
     names = {}
     if emp_ids:
         names = {e.id: e.full_name for e in
                  db.query(Employee).filter(Employee.id.in_(emp_ids)).all()}
-    return {u.id: (names.get(u.employee_id) or u.email or f"User #{u.id}") for u in users}
+    return {u.id: {"name": names.get(u.employee_id) or u.email or f"User #{u.id}",
+                   "avatar": (u.avatar or "") if u.avatar_file_id else ""}
+            for u in users}
 
 
 def _resolve_task_titles(db: Session, task_ids: set[int]) -> dict[int, str]:
@@ -108,25 +119,28 @@ def list_activities(db: Session, actor: Actor, list_id: int,
     #  giữa hai trang thì cuộn xuống sẽ thấy dòng lặp hoặc dòng mất.
     rows = q.order_by(AuditLog.id.desc()).offset(offset).limit(limit).all()
 
-    names = _resolve_actor_names(db, {r.created_by for r in rows})
+    actors = _resolve_actors(db, {r.created_by for r in rows})
     titles = _resolve_task_titles(
         db, {r.entity_id for r in rows if r.entity == AUDIT_TASK})
 
-    items = [_activity_out(r, names, titles) for r in rows]
+    items = [_activity_out(r, actors, titles) for r in rows]
     return {"items": items, "total": total, "has_more": offset + len(rows) < total}
 
 
-def _activity_out(log: AuditLog, names: dict[int, str], titles: dict[int, str]) -> dict:
+def _activity_out(log: AuditLog, actors: dict[int, dict], titles: dict[int, str]) -> dict:
     kind = ACTIVITY_KIND_BY_ENTITY.get(log.entity, WorkActivityKind.LIST)
     task_id = log.entity_id if log.entity == AUDIT_TASK else None
+    actor = actors.get(log.created_by) or {}
     return {
         "id": log.id,
         "kind": int(kind),
         "action": log.action,
         "action_label": label_of_action(log.action),
         "message": log.message or "",
-        "by": names.get(log.created_by) or "Hệ thống",
+        "by": actor.get("name") or "Hệ thống",
         "by_id": log.created_by,
+        #  bao-CR-604: ảnh đại diện người thao tác — rỗng thì giao diện vẽ chữ tắt.
+        "by_avatar": actor.get("avatar", ""),
         "at": log.created_at,
         #  Có `task_id` thì giao diện mở được panel chi tiết ngay từ dòng nhật
         #  ký. Việc đã xóa cứng thì không còn tiêu đề — để rỗng, giao diện tự
