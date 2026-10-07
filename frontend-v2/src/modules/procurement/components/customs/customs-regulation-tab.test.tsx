@@ -124,6 +124,16 @@ describe('CustomsRegulationTab', () => {
     }
   })
 
+  //  07/10/2026 — đại ca chốt: STT của phụ lục là cột ĐẦU TIÊN, không có cột ID nội bộ chen trước.
+  it('puts the appendix STT as the very first column, with no internal ID column', async () => {
+    items = [hit({ seq_no: '59', name: 'Barium hypochlorite' })]
+    build()
+    await screen.findByText('Barium hypochlorite')
+    const headers = screen.getAllByRole('columnheader').map((h) => h.textContent?.trim() ?? '')
+    expect(headers[0]).toMatch(/^STT/)
+    expect(headers.some((h) => /^ID\b/.test(h))).toBe(false)
+  })
+
   it('leaves the new cells blank for documents that have no STT or formula', async () => {
     items = [hit({ list_code: 10, list_label: 'TT 75/2025 · Hoạt chất cấm', name: 'Paraquat', threshold_kg: null })]
     build()

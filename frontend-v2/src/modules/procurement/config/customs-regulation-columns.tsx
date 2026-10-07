@@ -54,6 +54,17 @@ export function formatMixtureLimit(pct: number | null | undefined): string {
 }
 
 export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[] = [
+  //  duoc-CR-598 (06/10/2026) — đúng các cột của phụ lục NĐ 24: STT · Tên khoa học · Tên chất ·
+  //  Mã số CAS · Công thức hóa học. Trước đây tên tiếng Việt chỉ là dòng phụ dưới «Tên».
+  //  07/10/2026 — STT đứng ĐẦU bảng (đại ca chốt), trước cả cột Phụ lục.
+  {
+    key: 'seq_no',
+    header: 'STT',
+    width: 64,
+    //  Căn GIỮA cả tiêu đề lẫn số: căn phải thì số lệch hẳn khỏi chữ «STT» (đại ca chụp 07/10/2026).
+    align: 'center',
+    cell: (r) => <span className="tabular-nums">{r.seq_no}</span>,
+  },
   {
     key: 'list_label',
     header: 'Phụ lục / Văn bản',
@@ -65,15 +76,6 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
         {r.list_label || `Danh sách ${r.list_code}`}
       </Badge>
     ),
-  },
-  //  duoc-CR-598 (06/10/2026) — đúng các cột của phụ lục NĐ 24: STT · Tên khoa học · Tên chất ·
-  //  Mã số CAS · Công thức hóa học. Trước đây tên tiếng Việt chỉ là dòng phụ dưới «Tên».
-  {
-    key: 'seq_no',
-    header: 'STT',
-    width: 64,
-    align: 'right',
-    cell: (r) => <span className="tabular-nums">{r.seq_no}</span>,
   },
   {
     key: 'name',
@@ -91,7 +93,10 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
   {
     key: 'limit',
     header: 'Ngưỡng / Mức cấm',
-    width: 150,
+    //  duoc-CR-598 (07/10/2026): 150px cắt cụt «Không quy định ngưỡng» / «> 5% trong hỗn hợp» thành
+    //  «Không quy định ngư…» — nới rộng và cho xuống dòng thay vì để dấu ba chấm nuốt mất ý.
+    width: 180,
+    wrap: true,
     hideable: false,
     cell: (r) => {
       if (r.list_code === LIST_BANNED_TT75) {

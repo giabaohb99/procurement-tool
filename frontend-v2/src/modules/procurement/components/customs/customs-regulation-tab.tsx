@@ -29,7 +29,8 @@ const ALL = 'all'
 const DEFAULT_PAGE_SIZE = 50
 //  v2 (29/09/2026): thêm cột «Thuốc BVTV chứa» — bản lưu bố cục cũ thắng cột mới (table.md §4).
 //  v3 (duoc-CR-598): thêm STT · Tên chất · Công thức hóa học.
-const STORAGE_KEY = 'procurement.customs-regulations-v3'
+//  v4 (07/10/2026): STT dời lên ĐẦU bảng — thứ tự cột đã lưu trong máy sẽ giữ STT ở chỗ cũ nếu không đổi khóa.
+const STORAGE_KEY = 'procurement.customs-regulations-v4'
 
 interface CustomsRegulationTabProps {
   /** Từ khóa dòng hàng đang tra (thanh lọc trang) và các cảnh báo khớp nó. */
@@ -81,6 +82,9 @@ export function CustomsRegulationTab({ keyword, alerts }: CustomsRegulationTabPr
           columns={columns}
           rows={list.data?.items}
           getRowId={(row) => row.id}
+          //  07/10/2026 — STT của phụ lục đứng ĐẦU bảng (đại ca chốt); cột ID tự thêm (bao-CR-578) là số
+          //  nội bộ của DB, không có trong văn bản, và luôn chen lên trước mọi cột → tắt riêng ở bảng này.
+          idColumn={false}
           isLoading={list.isLoading}
           isError={list.isError}
           emptyMessage={resolveRegulationEmptyMessage(options.data?.total ?? 0)}

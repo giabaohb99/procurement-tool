@@ -15,10 +15,9 @@ import { CustomsFilters } from './customs-shared'
 import CustomsBannedPesticideModal from './CustomsBannedPesticideModal'
 import CustomsRegulationAlertTable from './CustomsRegulationAlertTable'
 import {
-  buildRegulationParams, describeMissingLimit, formatBannedLabel, formatMixtureLimit, formatThresholdKg,
-  regulationBadgeClass,
-  resolveRegulationEmptyMessage,
-} from '../../utils/customs-regulation'
+  REGULATION_COMMON_COLUMN_COUNT, RegulationCommonCells, RegulationCommonHeaders,
+} from './CustomsRegulationColumns'
+import { buildRegulationParams, resolveRegulationEmptyMessage } from '../../utils/customs-regulation'
 
 const ALL = ''
 const PAGE_SIZE = 50
@@ -91,41 +90,19 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
         <TableScroll>
           <table>
             <thead><tr>
-              {/* duoc-CR-598 — đúng các cột của phụ lục NĐ 24 (khớp bản v2). */}
-              <th>Phụ lục / Văn bản</th><th>STT</th><th>Tên khoa học</th><th>Tên chất</th><th>Mã số CAS</th>
-              <th>Công thức hóa học</th><th>Ngưỡng / Mức cấm</th><th>Lưu ý</th><th>Thuốc BVTV chứa</th>
+              {/* duoc-CR-598 — đúng thứ tự cột của bản v2: phần chung · Thuốc BVTV chứa · Lưu ý. */}
+              <RegulationCommonHeaders /><th>Thuốc BVTV chứa</th><th>Lưu ý</th>
             </tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <span className={`badge ${regulationBadgeClass(r.list_code)}`}>{r.list_label}</span>
-                  </td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.seq_no}</td>
-                  <td>{r.name}</td>
-                  <td>{r.name_vi}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>{r.cas_no || '—'}</td>
-                  <td>{r.formula}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {r.list_code === 10
-                      ? <span className="badge err" style={{ fontWeight: 700 }}>{formatBannedLabel(r.banned_year)}</span>
-                      : formatThresholdKg(r.threshold_kg)
-                        ? <span style={{ fontSize: 15, fontWeight: 700, color: '#c2410c', fontVariantNumeric: 'tabular-nums' }}>{formatThresholdKg(r.threshold_kg)}</span>
-                        : formatMixtureLimit(r.mixture_pct)
-                          // Chữ thường màu trung tính: cam đậm để dành cho ngưỡng tồn trữ kg (khớp bản v2).
-                          ? <span style={{ fontVariantNumeric: 'tabular-nums' }}
-                              title="Hỗn hợp chứa chất này với hàm lượng vượt mức này (theo khối lượng) cũng thuộc danh mục">
-                              {formatMixtureLimit(r.mixture_pct)}</span>
-                        : describeMissingLimit(r.list_code)
-                          ? <span style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>{describeMissingLimit(r.list_code)}</span>
-                          : null}
-                  </td>
-                  <td style={{ fontSize: 13 }}>{r.obligation}</td>
+                  <RegulationCommonCells r={r} />
                   <td>{r.list_code === 10 && <PesticideCountCell row={r} onOpen={() => setPesticidesOf(r)} />}</td>
+                  <td style={{ fontSize: 13 }}>{r.obligation}</td>
                 </tr>
               ))}
               {!loading && rows.length === 0 && (
-                <tr><td colSpan={9} className="table-empty">{resolveRegulationEmptyMessage(options?.total ?? 0)}</td></tr>
+                <tr><td colSpan={REGULATION_COMMON_COLUMN_COUNT + 2} className="table-empty">{resolveRegulationEmptyMessage(options?.total ?? 0)}</td></tr>
               )}
             </tbody>
           </table>

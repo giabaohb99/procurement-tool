@@ -1,30 +1,19 @@
-// duoc-CR-490 — bảng 5 cột của dải cảnh báo pháp lý theo từ khóa dòng hàng đang tra (thẻ «Pháp lý»,
-// và trước đây thẻ «Pháp lý & thuế»). Bảng DUYỆT cả danh mục (`CustomsRegulationBrowse.tsx`) có
-// thêm cột «Thuốc BVTV chứa» nên KHÔNG dùng chung tệp này.
-import {
-  formatBannedLabel, formatThresholdKg, regulationBadgeClass, sortRegulationsBySeverity,
-} from '../../utils/customs-regulation'
+// duoc-CR-490 — bảng cảnh báo pháp lý theo từ khóa dòng hàng đang tra (mục «Tra cứu hóa chất»).
+// duoc-CR-598 (07/10/2026): đồng bộ cột với bản v2 — phần chung (STT · Phụ lục · Tên khoa học · Tên chất ·
+// CAS · Công thức · Ngưỡng) + «Lưu ý». Trước đây còn 5 cột cũ (Danh mục · Tên · Số CAS · Ngưỡng · Lưu ý),
+// thiếu ngưỡng hỗn hợp % của phụ lục II / III.
+import { sortRegulationsBySeverity } from '../../utils/customs-regulation'
+import { RegulationCommonCells, RegulationCommonHeaders } from './CustomsRegulationColumns'
 
 export default function CustomsRegulationAlertTable({ items }: { items: any[] }) {
   const rows = sortRegulationsBySeverity(items)
   return (
     <div className="table-scroll"><table>
-      <thead><tr><th>Danh mục</th><th>Tên</th><th>Số CAS</th><th>Ngưỡng / Mức cấm</th><th>Lưu ý</th></tr></thead>
+      <thead><tr><RegulationCommonHeaders /><th>Lưu ý</th></tr></thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.id}>
-            <td style={{ whiteSpace: 'nowrap' }}>
-              <span className={`badge ${regulationBadgeClass(r.list_code)}`}>{r.list_label}</span>
-            </td>
-            <td>{r.name}{r.name_vi && r.name_vi !== r.name ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>{r.name_vi}</div> : null}</td>
-            <td>{r.cas_no || '—'}</td>
-            <td style={{ whiteSpace: 'nowrap' }}>
-              {r.list_code === 10
-                ? <span className="badge err" style={{ fontWeight: 700 }}>{formatBannedLabel(r.banned_year)}</span>
-                : formatThresholdKg(r.threshold_kg)
-                  ? <span style={{ fontSize: 15, fontWeight: 700, color: '#c2410c', fontVariantNumeric: 'tabular-nums' }}>{formatThresholdKg(r.threshold_kg)}</span>
-                  : null}
-            </td>
+            <RegulationCommonCells r={r} />
             <td style={{ fontSize: 13 }}>{r.obligation}</td>
           </tr>
         ))}
