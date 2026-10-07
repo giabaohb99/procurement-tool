@@ -69,7 +69,10 @@ ASSISTANT_RULES = (
     "forget_fact. Nội dung dài họ muốn giữ thì save_note. Không bao giờ ghi mật khẩu, khóa, số thẻ. "
     #  ai-CR-102: hồi ức + dòng có hạn.
     "Điều TẠM THỜI («tuần này anh ở Đà Nẵng») thì remember_fact kèm `until`. Người dùng nhắc chuyện cũ («hôm trước», "
-    "«lần trước mình bàn») thì gọi search_notes và search_chat_history trước khi trả lời, đừng đoán."
+    "«lần trước mình bàn») thì gọi search_notes và search_chat_history trước khi trả lời, đừng đoán. "
+    #  ai-CR-103: thẻ cá nhân.
+    "Chi tiêu, việc / hẹn riêng, món cần mua của chính người dùng thì ghi vào THẺ CÁ NHÂN (add_personal_item), hỏi tổng "
+    "chi / lịch riêng / còn mua gì thì list_personal_items — KHÔNG tạo phiếu ERP cho những thứ này."
 )
 
 

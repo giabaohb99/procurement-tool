@@ -107,4 +107,90 @@ SEARCH_CHAT_HISTORY_SPEC = ToolSpec(
                 "required": ["query"]},
     handler=_search_chat_history,
 )
-PERSONAL_SPECS = [REMEMBER_FACT_SPEC, FORGET_FACT_SPEC, SAVE_NOTE_SPEC, SEARCH_NOTES_SPEC, SEARCH_CHAT_HISTORY_SPEC]
+# ── Thẻ cá nhân (ai-CR-103, C-05): lịch trình / chi tiêu / mua sắm — dữ liệu riêng, không phải ERP ─────────────
+def _kind(args: dict):
+    from app.modules.agent_hub import personal_items as pi
+
+    return pi.KIND_BY_NAME.get(str(args.get("kind") or "").strip())
+
+
+def _add_personal_item(ctx: ToolContext, args: dict) -> dict:
+    from app.modules.agent_hub import personal_items as pi
+
+    kind = _kind(args)
+    if kind is None:
+        return {"ok": False, "message": "kind phải là lich_trinh · chi_tieu · mua_sam"}
+    when = None
+    if str(args.get("when") or "").strip():
+        when = pi.parse_when(str(args.get("when")))
+        if when is None:
+            return {"ok": False, "message": "giờ không đọc được, dùng dạng YYYY-MM-DD HH:MM"}
+    try:
+        amount = int(float(args.get("amount") or 0))
+    except (TypeError, ValueError):
+        amount = 0
+    out = pi.add(ctx.db, _uid(ctx), kind, str(args.get("title") or ""), amount=amount,
+                 category=str(args.get("category") or ""), when=when, note=str(args.get("note") or ""))
+    if out.get("ok"):
+        ctx.db.commit()
+    return out
+
+
+def _list_personal_items(ctx: ToolContext, args: dict) -> dict:
+    from app.modules.agent_hub import personal_items as pi
+
+    kind = _kind(args)
+    if kind is None:
+        return {"error": "kind phải là lich_trinh · chi_tieu · mua_sam"}
+    return pi.list_items(ctx.db, _uid(ctx), kind, period=str(args.get("period") or ""),
+                         include_done=bool(args.get("include_done")))
+
+
+def _mark_personal_item(ctx: ToolContext, args: dict) -> dict:
+    from app.modules.agent_hub import personal_items as pi
+
+    status = pi.ItemStatus.CANCELLED if str(args.get("status") or "") == "bo" else pi.ItemStatus.DONE
+    out = pi.mark(ctx.db, _uid(ctx), item_id=int(args.get("id") or 0), title=str(args.get("title") or ""),
+                  kind=_kind(args), status=status)
+    if out.get("ok"):
+        ctx.db.commit()
+    return out
+
+
+_KIND_PARAM = {"type": "string", "enum": ["lich_trinh", "chi_tieu", "mua_sam"]}
+ADD_PERSONAL_ITEM_SPEC = ToolSpec(
+    name="add_personal_item",
+    description=("GHI vào THẺ CÁ NHÂN của người đang hỏi (dữ liệu riêng, không phải ERP): `lich_trinh` = việc / hẹn riêng "
+                 "(kèm `when` nếu có giờ); `chi_tieu` = một khoản đã chi (`amount` đồng, `category` như ăn uống, đi lại, "
+                 "nhà cửa…); `mua_sam` = món cần mua. Ví dụ «trưa nay ăn 45k» → chi_tieu 45000 ăn uống; «mua sữa với trứng» → "
+                 "hai món mua_sam. Ghi xong báo một dòng."),
+    parameters={"type": "object", "properties": {
+        "kind": _KIND_PARAM, "title": {"type": "string"},
+        "amount": {"type": "number", "description": "Số tiền đồng (chỉ chi_tieu). «45k» = 45000, «1tr2» = 1200000."},
+        "category": {"type": "string"},
+        "when": {"type": "string", "description": "YYYY-MM-DD HH:MM giờ Việt Nam (lịch trình), hoặc lúc chi."},
+        "note": {"type": "string"}},
+        "required": ["kind", "title"]},
+    handler=_add_personal_item,
+)
+LIST_PERSONAL_ITEMS_SPEC = ToolSpec(
+    name="list_personal_items",
+    description=("XEM THẺ CÁ NHÂN: lịch trình riêng, chi tiêu (kèm tổng và theo nhóm), danh sách cần mua. `period` hom_nay · "
+                 "tuan_nay · thang_nay · tat_ca (chi tiêu mặc định tháng này)."),
+    parameters={"type": "object", "properties": {
+        "kind": _KIND_PARAM, "period": {"type": "string", "enum": ["hom_nay", "tuan_nay", "thang_nay", "tat_ca"]},
+        "include_done": {"type": "boolean"}},
+        "required": ["kind"]},
+    handler=_list_personal_items,
+)
+MARK_PERSONAL_ITEM_SPEC = ToolSpec(
+    name="mark_personal_item",
+    description=("ĐÁNH DẤU một món trong thẻ cá nhân là XONG («mua sữa rồi», «xong việc đón con») hoặc BỎ (`status` = bo). Theo "
+                 "`id` hoặc `title` (khớp đúng một món đang mở; khớp nhiều thì hỏi lại kèm lựa chọn)."),
+    parameters={"type": "object", "properties": {
+        "id": {"type": "integer"}, "title": {"type": "string"}, "kind": _KIND_PARAM,
+        "status": {"type": "string", "enum": ["xong", "bo"]}}},
+    handler=_mark_personal_item,
+)
+PERSONAL_SPECS = [REMEMBER_FACT_SPEC, FORGET_FACT_SPEC, SAVE_NOTE_SPEC, SEARCH_NOTES_SPEC, SEARCH_CHAT_HISTORY_SPEC,
+                  ADD_PERSONAL_ITEM_SPEC, LIST_PERSONAL_ITEMS_SPEC, MARK_PERSONAL_ITEM_SPEC]

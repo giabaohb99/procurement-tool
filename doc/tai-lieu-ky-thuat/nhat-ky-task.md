@@ -12684,3 +12684,15 @@ thái thẳng cột, nút sửa và xóa chỉ hiện rõ khi rê chuột. Khố
 khối dính sát nhau. Chưa đưa lên dev theo lời đại ca.
 
 Mã nguồn: frontend/src/components/SurveyReportCard.tsx · frontend/src/index.css
+
+## ai-CR-103 | Thẻ cá nhân cho bot: lịch trình riêng, chi tiêu, danh sách mua sắm
+- status: xong
+- date: 2026-10-07
+Mỗi người có thêm một thẻ dữ liệu riêng do bot ghi giúp, tách khỏi dữ liệu ERP: việc hoặc hẹn riêng kèm giờ, các khoản
+chi tiêu có số tiền và nhóm, và danh sách món cần mua. Người dùng chỉ cần nhắn tự nhiên như «trưa nay ăn 45k», «mua sữa
+với trứng», «chiều 5 giờ đón con»; hỏi «tháng này chi bao nhiêu» thì bot cộng tổng và chia theo nhóm. Món đã mua hay
+việc đã xong thì đánh dấu xong hoặc bỏ, không có thao tác xóa. Dữ liệu lọc cứng theo người dùng, người khác không xem
+được. Bản tin sáng có thêm mục «Việc riêng» liệt kê lịch riêng trong ngày và số món còn cần mua.
+
+Mã nguồn: backend/app/modules/agent_hub/personal_items.py (mới) · assistant/tools/personal_tool.py (ba công cụ thẻ) · agent_hub/briefs.py · migration pitem01
+

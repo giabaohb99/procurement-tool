@@ -63,6 +63,14 @@ def morning_text(db: Session, user, events: list[dict]) -> str:
             lines.append(f"• {when} {esc(ev['title'])}{loc}")
     else:
         lines.append("Hôm nay lịch trống.")
+    #  ai-CR-103: lịch trình riêng + số món cần mua trong thẻ cá nhân.
+    from . import personal_items
+
+    own = personal_items.today_digest(db, int(getattr(user, "id", 0) or 0))
+    if own:
+        lines.append("")
+        lines.append("<b>Việc riêng</b>")
+        lines.extend(f"• {esc(x)}" for x in own)
     try:
         tasks = run_tool(db, user, "my_approval_tasks", {"limit": 10})
         items = tasks.get("items") or []

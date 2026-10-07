@@ -7748,3 +7748,58 @@ def test_hoi_uc_tim_hoi_thoai_cu_dung_nguoi(db, bot, seed):
     assert out["count"] == 2
     assert T.run_tool(db, db.get(User, seed.u_nstm_id), "search_chat_history", {"query": "18.500"})["count"] == 0
 
+
+# ---------------------------------------------------------------------------
+# ai-CR-103 — thẻ cá nhân (C-05): lịch trình, chi tiêu, mua sắm của từng người
+# ---------------------------------------------------------------------------
+def test_the_ca_nhan_ghi_xem_danh_dau_va_khong_lan_nguoi(db, seed):
+    from app.modules.agent_hub import personal_items as pi
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    a, b = db.get(User, seed.u_req_id), db.get(User, seed.u_nstm_id)
+    run = T.run_tool
+    assert run(db, a, "add_personal_item", {"kind": "chi_tieu", "title": "ăn trưa", "amount": 45000, "category": "ăn uống"})["ok"]
+    assert run(db, a, "add_personal_item", {"kind": "chi_tieu", "title": "grab", "amount": "32000", "category": "đi lại"})["ok"]
+    assert not run(db, a, "add_personal_item", {"kind": "chi_tieu", "title": "lỗi", "amount": 0})["ok"]
+    assert not run(db, a, "add_personal_item", {"kind": "chi_tieu", "title": "nhầm", "amount": 99_000_000_000})["ok"]
+    assert run(db, a, "add_personal_item", {"kind": "mua_sam", "title": "Sữa tươi"})["ok"]
+    dup = run(db, a, "add_personal_item", {"kind": "mua_sam", "title": "sua tuoi"})
+    assert dup["ok"] and dup.get("duplicate")
+    assert run(db, a, "add_personal_item", {"kind": "mua_sam", "title": "trứng"})["ok"]
+    assert run(db, a, "add_personal_item", {"kind": "lich_trinh", "title": "đón con", "when": "2026-10-08 17:00"})["ok"]
+    assert not run(db, a, "add_personal_item", {"kind": "lich_trinh", "title": "x", "when": "mai mốt"})["ok"]
+    assert not run(db, a, "add_personal_item", {"kind": "la", "title": "x"})["ok"]
+    spent = run(db, a, "list_personal_items", {"kind": "chi_tieu", "period": "tat_ca"})
+    assert spent["total"] == 77000 and list(spent["by_category"]) == ["ăn uống", "đi lại"]
+    shop = run(db, a, "list_personal_items", {"kind": "mua_sam"})
+    assert [i["title"] for i in shop["items"]] == ["Sữa tươi", "trứng"]
+    #  Đánh dấu theo tên: khớp đúng một món; người khác không thấy, không đánh dấu hộ được.
+    assert run(db, a, "mark_personal_item", {"title": "sữa", "kind": "mua_sam"})["ok"]
+    assert [i["title"] for i in run(db, a, "list_personal_items", {"kind": "mua_sam"})["items"]] == ["trứng"]
+    assert run(db, b, "list_personal_items", {"kind": "chi_tieu", "period": "tat_ca"})["count"] == 0
+    egg_id = run(db, a, "list_personal_items", {"kind": "mua_sam"})["items"][0]["id"]
+    assert not run(db, b, "mark_personal_item", {"id": egg_id})["ok"]
+    assert run(db, a, "mark_personal_item", {"id": egg_id, "status": "bo"})["item"]["status"] == "đã bỏ"
+    #  Tool không có tham số chọn người.
+    for name in ("add_personal_item", "list_personal_items", "mark_personal_item"):
+        props = {d.name: d for d in T.tool_defs()}[name].parameters["properties"]
+        assert "user_id" not in props
+    assert pi.parse_when("14:30") is not None and pi.parse_when("2026-13-40") is None
+
+
+def test_ban_tin_sang_co_viec_rieng(db, seed, monkeypatch):
+    from datetime import date, datetime
+
+    from app.modules.agent_hub import briefs, personal_items as pi
+    from app.modules.user.model import User
+
+    u = db.get(User, seed.u_req_id)
+    pi.add(db, u.id, pi.ItemKind.SCHEDULE, "đón con", when=datetime(2026, 10, 8, 17, 0))
+    pi.add(db, u.id, pi.ItemKind.SHOPPING, "trứng")
+    db.commit()
+    assert pi.today_digest(db, u.id, date(2026, 10, 8)) == ["17:00 đón con", "Còn 1 món cần mua"]
+    monkeypatch.setattr(pi, "today_digest", lambda db, uid, day=None: ["17:00 đón con"])
+    text = briefs.morning_text(db, u, [])
+    assert "Việc riêng" in text and "17:00 đón con" in text
+

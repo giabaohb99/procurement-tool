@@ -314,6 +314,27 @@ class AgentNote(Base, AuditMixin):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
 
+class AgentPersonalItem(Base, AuditMixin):
+    """Thẻ cá nhân (ai-CR-103, C-05): lịch trình / việc riêng, chi tiêu, món cần mua — của TỪNG người, không phải ERP.
+
+    `kind` 1 lịch trình · 2 chi tiêu · 3 mua sắm; `status` 1 còn · 2 xong · 3 đã bỏ (SMALLINT + IntEnum ở
+    `personal_items.py`). `at` = giờ hẹn (lịch trình) hoặc lúc chi (chi tiêu), giờ Việt Nam. `amount` đồng.
+    """
+
+    __tablename__ = "tab_agent_personal_item"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    kind: Mapped[int] = mapped_column(SmallInteger, default=1)
+    status: Mapped[int] = mapped_column(SmallInteger, default=1)
+    title: Mapped[str] = mapped_column(String(300), default="")
+    amount: Mapped[int] = mapped_column(BigInteger, default=0)
+    category: Mapped[str] = mapped_column(String(60), default="")
+    at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    note: Mapped[str] = mapped_column(String(500), default="")
+
+    __table_args__ = (Index("ix_agent_personal_item_user_kind", "user_id", "kind", "status"),)
+
+
 class AgentReminder(Base, AuditMixin):
     """Lời nhắc đặt bằng câu nói (ai-CR-060, T-10): tới `due_at` (UTC) thì bot nhắn lại đúng `chat_id`."""
 
