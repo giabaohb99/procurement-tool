@@ -12827,3 +12827,4 @@ nhóm Zalo bot chỉ ghi lặng; người đã đăng nhập nói câu đầu ti
 338 bài, trong đó tám bài mới cho kênh Zalo.
 
 Mã nguồn: backend/app/modules/agent_hub/channels.py (mới) · agent_hub/zalo.py (mới) · agent_hub/telegram.py · agent_hub/service.py (poll_zalo_once) · agent_hub/poller.py (run_zalo) · agent_hub/groups.py · agent_hub/tasks.py · core/config.py (AGENT_ZALO_BOT_TOKEN) · test/backend/test_agent_hub.py
+Deploy: dev 07/10 (Agent 1 gộp 613cb131, dựng lại api, celery-worker, celery-beat, agent-poller; chưa khai token Zalo); máy sửa mã đã dựng lại; prod giữ lại.
