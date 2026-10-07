@@ -290,8 +290,12 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     //  duoc-CR-607 (07/10/2026, đại ca chốt «dòng 2 tầng»): trước đây 8–9 thứ nằm chung MỘT hàng nên tên
     //  hồ sơ bị ép tới 6 dòng («Đơn / mua / hàng / (PO)…») và mô tả cụt «Bản sao…». Nay 3 vùng: ô tick ·
     //  [tên ở tầng trên, thông tin phụ ở tầng dưới] · [trạng thái + sửa + xóa] luôn nằm gọn bên phải.
+    //  Vòng 2 (cùng ngày, «cho dễ nhìn hơn»): viền trái mang màu trạng thái (trễ hạn → đỏ) để liếc cột
+    //  trái là đọc được tiến độ, không phải dò sang ô trạng thái tận mép phải; hồ sơ khóa KHÔNG làm mờ
+    //  cả dòng nữa (đọc không ra chữ) mà nói thẳng «Chờ: ‹hồ sơ tiên quyết›».
+    const accent = lateDays > 0 && !isDone ? 'late' : `st-${doc.status}`
     return (
-      <div key={doc.id} className={`srp-doc${isDone ? ' done' : ''}${locked ? ' locked' : ''}`}>
+      <div key={doc.id} className={`srp-doc ${accent}${isDone ? ' done' : ''}${locked ? ' locked' : ''}`}>
         <button
           type="button"
           className={`srp-check${isDone ? ' done' : ''}`}
@@ -303,14 +307,17 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
         </button>
         <div className="srp-doc-main">
           <div className="srp-doc-line">
-            <span className="srp-title" title={doc.title}>{doc.title}</span>
-            {locked && (
-              <i className="ti ti-lock" style={{ color: 'var(--amber)', fontSize: 14 }}
-                title={`Chờ hồ sơ tiên quyết: ${pending.map((p) => p.title).join(', ')}`} />
+            <span className={`srp-title${locked && pending.length > 0 ? ' with-wait' : ''}`} title={doc.title}>{doc.title}</span>
+            {locked && pending.length > 0 && (
+              <span className="srp-wait" title={`Chờ hồ sơ tiên quyết: ${pending.map((p) => p.title).join(', ')}`}>
+                <i className="ti ti-lock" /> chờ «{pending[0].title}»{pending.length > 1 && ` +${pending.length - 1}`}
+              </span>
             )}
           </div>
           <div className="srp-doc-meta">
-            {showItemTag && <span className="srp-tag">{itemName(doc.item_id) || 'Chung'}</span>}
+            {showItemTag && (
+              <span className={`srp-tag${doc.item_id ? ' item' : ''}`}>{itemName(doc.item_id) || 'Chung'}</span>
+            )}
             {doc.required && <span className="srp-tag req">Bắt buộc</span>}
             {doc.planned_date && (
               <span className={`srp-date${lateDays > 0 ? ' overdue' : ''}`} title={plannedTitle}>
@@ -387,10 +394,12 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
                   <i className={`ti ti-chevron-${collapsed ? 'right' : 'down'}`} />
                 </button>
                 <span className={`srp-num${finished ? ' done' : ''}`}>{idx + 1}</span>
-                <span style={{ fontWeight: 700, color: 'var(--navy)' }}>{phase.name}</span>
-                {phase.location && <span style={{ color: 'var(--muted)', fontSize: 12.5 }}>{phase.location}</span>}
+                <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy)' }}>{phase.name}</span>
+                {phase.location && <span style={{ color: 'var(--muted)', fontSize: 12.5 }}>· {phase.location}</span>}
                 <span style={{ flex: 1 }} />
-                <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{phaseDone}/{phaseAll.length} hồ sơ · {reportPercent(phaseAll)}%</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                  <b style={{ color: 'var(--navy)' }}>{phaseDone}/{phaseAll.length}</b> hồ sơ · {reportPercent(phaseAll)}%
+                </span>
                 <span className="srp-bar" style={{ width: 80 }}><i style={{ width: `${reportPercent(phaseAll)}%` }} /></span>
                 {canEdit && (
                   <>
@@ -567,7 +576,8 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   const currentPhaseName = report.phases.find((p) => p.id === currentPhaseId)?.name
 
   return (
-    <div ref={rootRef} className="card" style={{ padding: 18, scrollMarginTop: 12 }}>
+    //  marginBottom như mọi thẻ khác của trang (`.card` không tự cách) — thiếu thì dính sát khối «Trao đổi».
+    <div ref={rootRef} className="card" style={{ padding: 18, marginBottom: 16, scrollMarginTop: 12 }}>
       <div className="srp-head" onClick={() => setOpen((o) => !o)}>
         <i className={`ti ti-chevron-${open ? 'down' : 'right'}`} style={{ color: '#94a3b8' }} />
         <h3 className="sec-title" style={{ margin: 0, border: 0, padding: 0 }}><i className="ti ti-list-check" /> Báo cáo thực hiện</h3>
