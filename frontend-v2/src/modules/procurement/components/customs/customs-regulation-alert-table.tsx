@@ -19,6 +19,9 @@ export function CustomsRegulationAlertTable({ items }: CustomsRegulationAlertTab
       columns={CUSTOMS_REGULATION_COLUMNS}
       rows={sortedItems}
       getRowId={(row) => row.id}
+      //  07/10/2026 — STT của phụ lục đứng ĐẦU bảng (đại ca chốt); cột ID tự thêm (bao-CR-578) là số
+      //  nội bộ của DB, không có trong văn bản, và luôn chen lên trước mọi cột → tắt riêng ở bảng này.
+      idColumn={false}
       emptyMessage="Không có mục nào."
     />
   )

@@ -91,17 +91,17 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
         <TableScroll>
           <table>
             <thead><tr>
-              {/* duoc-CR-598 — đúng các cột của phụ lục NĐ 24 (khớp bản v2). */}
-              <th>Phụ lục / Văn bản</th><th>STT</th><th>Tên khoa học</th><th>Tên chất</th><th>Mã số CAS</th>
+              {/* duoc-CR-598 — đúng các cột của phụ lục NĐ 24 (khớp bản v2); STT đứng ĐẦU bảng (07/10/2026). */}
+              <th style={{ textAlign: 'center' }}>STT</th><th>Phụ lục / Văn bản</th><th>Tên khoa học</th><th>Tên chất</th><th>Mã số CAS</th>
               <th>Công thức hóa học</th><th>Ngưỡng / Mức cấm</th><th>Lưu ý</th><th>Thuốc BVTV chứa</th>
             </tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
+                  <td style={{ textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{r.seq_no}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <span className={`badge ${regulationBadgeClass(r.list_code)}`}>{r.list_label}</span>
                   </td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.seq_no}</td>
                   <td>{r.name}</td>
                   <td>{r.name_vi}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{r.cas_no || '—'}</td>
