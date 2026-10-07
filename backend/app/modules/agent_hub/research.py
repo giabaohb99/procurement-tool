@@ -81,7 +81,13 @@ def search_web(question: str, *, mode: str = MODE_WEB) -> tuple[str, list[dict],
 
         if not ai_keys.is_transient(str(e)):
             raise
-        time.sleep(manager.TRANSIENT_WAIT_SEC)       # ai-CR-099
+        #  ai-CR-106: model chính quá tải thì đổi sang model dự phòng (cùng hỗ trợ google_search).
+        alt = manager.fallback_model()
+        if alt != model:
+            model = alt
+            payload["generationConfig"] = provider._gen_config(model, 2048, 0.3, False)
+        else:
+            time.sleep(manager.TRANSIENT_WAIT_SEC)   # ai-CR-099
         data = provider._post(model, payload)
     candidates = data.get("candidates") or []
     first = candidates[0] if candidates else {}

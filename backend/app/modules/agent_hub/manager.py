@@ -31,6 +31,13 @@ log = logging.getLogger("app.agent_hub.manager")
 #  suy nghĩ tính giá như đầu ra — phần tốn nhất của một lượt. Hạ về 4096 (ai-CR-022).
 THINKING_BUDGET = 4096
 TRANSIENT_WAIT_SEC = 2      # ai-CR-099: chờ trước khi thử lại một lần khi hãng quá tải
+
+
+def fallback_model() -> str:
+    """ai-CR-106: model Gemini dự phòng khi model chính quá tải."""
+    from app.core import app_settings
+
+    return settings.AGENT_FALLBACK_MODEL or app_settings.get("ai_gemini_model") or "gemini-flash-lite-latest"
 NO_KEY_MSG = "Chưa có khóa AI nào dùng được cho chat này (Trang cá nhân → Khóa AI)."
 
 
@@ -49,6 +56,16 @@ class AgentGeminiProvider(GeminiProvider):
     """
 
     name = "agent_gemini"
+
+    @staticmethod
+    def _send(url: str, payload: dict, headers: dict):
+        """ai-CR-106: trần chờ riêng của bot (AGENT_GEMINI_TIMEOUT), ngắn hơn 60 s của Trợ lý web."""
+        import requests
+
+        try:
+            return requests.post(url, json=payload, headers=headers, timeout=settings.AGENT_GEMINI_TIMEOUT)
+        except requests.RequestException as e:
+            raise ProviderError(f"Lỗi gọi Gemini: {e}") from e
 
     def _api_key(self) -> str:
         #  ai-CR-053: khóa của NGƯỜI đang chat (ngữ cảnh do service mở); ngoài ngữ cảnh mới là khóa `.env`.
@@ -107,7 +124,13 @@ class AgentGeminiProvider(GeminiProvider):
             except ProviderError as e:
                 if ai_keys.is_transient(str(e)) and not retried:
                     #  ai-CR-099: 07/10 «alo how are u» chết vì Gemini 503 «high demand» → thẻ hỏi lại vô duyên.
+                    #  ai-CR-106: Gemini thì đổi sang model DỰ PHÒNG (model chính đang quá tải, thử lại y nguyên vẫn treo).
                     retried = True
+                    current = self._model_for(ref, model) or ""
+                    if ref.provider == "gemini" and not ref.model and fallback_model() != current:
+                        model = fallback_model()
+                        log.warning("agent_hub: gemini %s quá tải, chuyển sang %s", current or "mặc định", model)
+                        continue
                     log.warning("agent_hub: %s quá tải, thử lại sau %ss", ref.provider, TRANSIENT_WAIT_SEC)
                     time.sleep(TRANSIENT_WAIT_SEC)
                     continue

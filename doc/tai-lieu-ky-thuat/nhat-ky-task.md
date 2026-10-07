@@ -12741,3 +12741,15 @@ riêng tư của bot trong BotFather. Không liên quan bot IDA.
 
 Mã nguồn: backend/app/modules/agent_hub/groups.py · agent_hub/doc_text.py · assistant/tools/group_tool.py · agent_hub/service.py (_document_by_message) · migration grp01 · doc/agent-hub/12-de-xuat-tom-tat-nhom.md
 Deploy: dev 07/10, erp-v2 a3c1bfb0 (Agent 1 sao lưu DB dev, gộp, dựng lại api, celery-worker, celery-beat, agent-poller; migration grp01 đã chạy, lịch dọn tin nhóm đã có); prod giữ lại.
+
+## ai-CR-106 | Bot trả lời nhanh khi model chính quá tải, gọi người khác là anh chị
+- status: xong
+- date: 2026-10-07
+Đại ca thử nhắn bot bằng tài khoản khác và thấy như không chạy. Tra sổ và log trên dev thì tài khoản đó vẫn được trả
+lời, nhưng chậm tới hai phút, vì model Gemini dùng cho việc nền của bot đang quá tải: mỗi lượt treo đủ 60 giây rồi mới
+báo lỗi, bot thử lại thêm 60 giây mới chuyển sang Trợ lý. Bot còn gọi người khác là «đại ca». Nay khi model chính quá tải
+hoặc treo, bot chuyển ngay sang model dự phòng (mặc định là model của Trợ lý trên web) thay vì chờ thử lại, mỗi lượt gọi
+chỉ chờ tối đa 25 giây, và với người không phải chủ bot thì bot gọi «anh/chị» hoặc theo tên.
+
+Mã nguồn: backend/app/modules/agent_hub/manager.py (fallback_model, _send, _call) · agent_hub/research.py · agent_hub/constants.py (BOT_PERSONA_OTHER) · agent_hub/service.py (_persona) · core/config.py
+

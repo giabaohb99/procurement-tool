@@ -257,6 +257,13 @@ def _document_by_message(db: Session, msg: dict, chat_id: str, text: str) -> boo
     return True
 
 
+def _persona(chat_id: str) -> str:
+    """ai-CR-106: «đại ca» chỉ cho chat chủ bot; người khác là «anh/chị» / tên."""
+    from .constants import BOT_PERSONA_OTHER
+
+    return BOT_PERSONA if telegram.is_allowed_chat(chat_id) else BOT_PERSONA_OTHER
+
+
 def _quoted_text(msg: dict) -> str:
     """Câu được trích khi người dùng bấm «Trả lời» một tin trên Telegram (ai-CR-100)."""
     rep = msg.get("reply_to_message") or {}
@@ -3241,7 +3248,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         link = chat_link.get_active_link(db, chat_id)
         memory_block = personal_memory.prompt_block(db, link.user_id if link is not None else 0, question)
         result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
-                                       system=f"{BOT_PERSONA} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
+                                       system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}"
                                               + (f"\n\n{memory_block}" if memory_block else ""))
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời

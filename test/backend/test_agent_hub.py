@@ -8091,3 +8091,28 @@ def test_don_tin_nhom_qua_han(db):
     assert groups.purge(db, days=30) == 1
     assert [m.text for m in db.query(AgentGroupMessage).all()] == ["mới"]
 
+
+def test_gemini_qua_tai_doi_sang_model_du_phong_va_xung_ho_nguoi_khac(db, monkeypatch):
+    """ai-CR-106: 07/10 tài khoản Được nhắn «ê cu» — model chính quá tải treo 60 s × 2, 2 phút mới trả lời, lại gọi
+    «đại ca». Nay quá tải thì đổi ngay sang model dự phòng; người khác được gọi «anh/chị»."""
+    from app.modules.agent_hub import manager, service, user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider.base import ChatMessage, ProviderError
+
+    monkeypatch.setattr(settings, "AGENT_FALLBACK_MODEL", "gemini-flash-lite-latest")
+    monkeypatch.setattr(manager, "TRANSIENT_WAIT_SEC", 0)
+    seen = []
+
+    def post(self, model, payload):
+        seen.append(model)
+        if model == "gemini-flash-latest":
+            raise ProviderError("Lỗi gọi Gemini: Read timed out. (read timeout=25)")
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}], "usageMetadata": {}}
+
+    monkeypatch.setattr(manager.GeminiProvider, "_post", post)
+    with user_keys.use_chain([KeyRef(provider="gemini", key="AIzaSy-k-abcdefgh", row_id=1)]):
+        out = manager.get_provider().ask([ChatMessage(role="user", content="ê cu")], model="gemini-flash-latest")
+    assert out.text == "ok" and seen == ["gemini-flash-latest", "gemini-flash-lite-latest"]
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    assert "đại ca" in service._persona("12345") and "KHÔNG gọi «đại ca»" in service._persona("1971166074")
+

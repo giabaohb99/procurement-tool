@@ -251,6 +251,12 @@ class Settings(BaseSettings):
     # theo, mà lúc đó không ai biết vì sao.
     AGENT_GEMINI_API_KEY: str = ""
     AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
+    # ai-CR-106: model DỰ PHÒNG khi model chính quá tải (503 / treo). Trống = model Gemini của Trợ lý web
+    # (`ai_gemini_model` trong cấu hình hệ thống), không có nữa thì gemini-flash-lite-latest.
+    AGENT_FALLBACK_MODEL: str = ""
+    # ai-CR-106: trần chờ một lượt Gemini của bot (giây). Trước dùng chung 60 s của Trợ lý web — model quá tải treo đủ
+    # 60 s rồi mới lỗi, cộng lượt thử lại là 2 phút mới trả lời.
+    AGENT_GEMINI_TIMEOUT: int = 25
     # Trần số task mỗi ngày. Trần này bảo vệ ĐẠI CA chứ không phải bảo vệ máy — hạn
     # mức dùng chung với người, bot ngốn hết thì người ngồi gõ tay cũng hết lượt.
     AGENT_DAILY_TASK_CAP: int = 5
