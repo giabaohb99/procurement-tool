@@ -12610,6 +12610,8 @@ câu được trích được ghép lên đầu tin, mạch tính từ tin đang
 hội thoại.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_quoted_text, _recent_turns, nhánh tra cứu)
+Deploy: dev 07/10, erp-v2 c7d0df58 (Agent 1 gộp và dựng lại api, erp, celery-worker, celery-beat, agent-poller); prod giữ lại.
+
 
 ## ai-CR-101 | Màn Khóa AI dễ dùng hơn, kết nối MCP thu vào mục Nâng cao
 - status: xong
@@ -12621,4 +12623,4 @@ chọn» có gợi ý sẵn tên model. Mỗi khóa trong danh sách đọc thà
 thì bấm nút sửa. Thẻ khóa công ty ở Cấu hình hệ thống dùng chung giao diện này.
 
 Mã nguồn: frontend-v2/src/modules/system/components/ai-key-list-card.tsx · frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx
-
+Deploy: dev 07/10, erp-v2 c7d0df58 (Agent 1 gộp và dựng lại api, erp, celery-worker, celery-beat, agent-poller); prod giữ lại.
