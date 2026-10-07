@@ -149,7 +149,7 @@ cũ, tệp có cột thì ưu tiên, ô trống mới suy ra, gắn lại không
 mới kiểm kiểu 0 lỗi, ESLint 0 lỗi, 93 bài khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền. Chưa chạy trên dữ liệu thật.
 Đại ca chốt 07/10/2026: (1) thuế suất XNK để tính cột VND thứ hai lấy từ cột «Thuế suất XNK» của chính dòng (tệp
 không có thì cột trống), KHÔNG tra biểu thuế theo mã HS; (2) «Nước nhận hàng» giữ nghĩa «cột thứ 32 của GTT02 thành
-không bắt buộc», nếu tệp của chị Mi đặt tên khác thì chỉ thêm tiêu đề vào bảng nhận diện; (3) nhãn cột bỏ chữ «(suy
+không bắt buộc» (đại ca xác nhận lại 07/10: chỉ cần vậy, không phải cột tên khác); (3) nhãn cột bỏ chữ «(suy
 ra)», nguồn xem khi rê chuột. Ba điểm này giữ đúng như đã làm, không sửa thêm.
 Mã nguồn: `backend/app/modules/customs/{constants,reader,importer,ingredient,service,model}.py`,
 `migrations/versions/hq603_hai_quan_cot_tuy_chon_tep_nap.py`, `frontend-v2/.../config/customs-line-columns.tsx`,
