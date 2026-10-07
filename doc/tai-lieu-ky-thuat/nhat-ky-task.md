@@ -12671,4 +12671,4 @@ Trợ lý có thêm công cụ tìm lại hội thoại cũ của chính ngườ
 nhận dòng có hạn như «nhớ tuần này: anh ở Đà Nẵng» hay «nhớ đến 15/10: …»; quá hạn thì dòng tự rút khỏi câu hỏi.
 
 Mã nguồn: backend/app/modules/agent_hub/sessions.py (mới) · agent_hub/personal_memory.py (dòng có hạn, search_history) · assistant/tools/personal_tool.py (search_chat_history) · lịch chạy agent-session-summary
-
+Deploy: dev 07/10 khoảng 11:10, erp-v2 28901d52 (Agent 1 gộp, dựng lại api, celery-worker, celery-beat, agent-poller; lịch agent-session-summary đã có trên beat); prod giữ lại.
