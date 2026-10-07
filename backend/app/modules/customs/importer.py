@@ -27,7 +27,7 @@ from app.modules.import_tool.model import ImportBatch, ImportStatus, LogLevel
 from app.modules.import_tool.service import add_log
 
 from . import dedupe, reader, row_log
-from .constants import INSERT_CHUNK, PartyType
+from .constants import COLUMNS, INSERT_CHUNK, OPTIONAL_LABELS, PartyType
 from .ingredient import load_kind_tagger, load_tagger
 from .model import CustomsLine, CustomsParty
 
@@ -68,6 +68,12 @@ def _import_lock(db: Session):
 def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
     """Đọc tệp của lô, ghi số liệu vào lô; `apply=True` mới ghi dòng hàng thật."""
     res = reader.parse(raw, batch.filename or "")
+    if res.optional_columns:
+        #  bao-CR-603: nói ra tệp có thêm cột gì — người nạp biết hoạt chất / giá VND của lô này
+        #  lấy từ tệp (ô trống vẫn suy ra / tính như cũ).
+        names = ", ".join(f"«{(dict(COLUMNS) | OPTIONAL_LABELS)[k]}»" for k in res.optional_columns)
+        add_log(db, batch, SHEET, 0, LogLevel.INFO, "customs", f"Tệp có cột tùy chọn: {names} — ô có giá trị thì lấy "
+                "của tệp, ô trống thì suy ra / tính như cũ")
     for row_no, level, message in res.logs:
         add_log(db, batch, SHEET, row_no, level, "customs", message)
     with _import_lock(db):
@@ -111,7 +117,18 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
             if name not in cache:
                 active, form = tagger.tag(name)
                 cache[name] = (active, form, kinds.tag(name))
-            r["active_ingredient"], r["formulation"], r["product_kind"] = cache[name]
+            active, form, r["product_kind"] = cache[name]
+            #  bao-CR-603: tệp có cột và ô có chữ thì lấy của tệp (cờ `_from_file` để retag không
+            #  ghi đè); ô trống hoặc tệp không có cột thì suy ra như cũ. Giá VND của tệp (nếu có)
+            #  đã nằm sẵn trong `r`; thiếu thì NULL → lúc đọc tính như cũ.
+            file_active = (r.get("active_ingredient") or "").strip()
+            file_form = (r.get("formulation") or "").strip()
+            r["active_ingredient"] = file_active or active
+            r["active_ingredient_from_file"] = bool(file_active)
+            r["formulation"] = file_form or form
+            r["formulation_from_file"] = bool(file_form)
+            r.setdefault("price_vnd_flat", None)
+            r.setdefault("price_vnd_line_tax", None)
         importer_ids = _upsert_parties(db, PartyType.DOMESTIC, to_insert)
         partner_ids = _upsert_parties(db, PartyType.FOREIGN, to_insert)
         _insert_lines(db, batch.id, to_insert, importer_ids, partner_ids)

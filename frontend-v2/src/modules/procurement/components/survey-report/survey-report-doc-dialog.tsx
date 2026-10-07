@@ -28,7 +28,8 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
-import { addDaysIso, durationDays } from '../../utils/survey-report-helpers'
+import { formatDate } from '@/shared/utils/format-date'
+import { durationDays } from '../../utils/survey-report-helpers'
 import type { ReportDocPayload } from '../../api/survey-request-report-api'
 import {
   REPORT_DOC_IDLE,
@@ -187,7 +188,9 @@ export function SurveyReportDocDialog({
       }}
     >
       <DialogContent
-        className="sm:max-w-xl"
+        //  Rộng hơn mặc định (bao-CR-602): ba ô ngày đứng chung một hàng mà nhãn không
+        //  xuống dòng, tên dòng hàng dài có chỗ hiện — đại ca soi 06/10 thấy lệch.
+        className="sm:max-w-2xl"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -222,22 +225,20 @@ export function SurveyReportDocDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Dòng hàng</Label>
-              <Select
+              {/* `SearchSelect wrap`: tên hàng dài (vd «BTP CHESSIN V1 bột trắng ngà (Pymetrozine…)»)
+                  xuống dòng trong ô chọn thay vì bị cắt — ô Select thường cắt một dòng (bao-CR-602). */}
+              <SearchSelect
+                wrap
                 value={String(draft.item_id)}
-                onValueChange={(value) => patch({ item_id: Number(value) })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Chung (mọi dòng hàng)</SelectItem>
-                  {report.items.map((item) => (
-                    <SelectItem key={item.id} value={String(item.id)}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => patch({ item_id: Number(value) || 0 })}
+                options={[
+                  { value: '0', label: 'Chung (mọi dòng hàng)' },
+                  ...report.items.map((item) => ({ value: String(item.id), label: item.name })),
+                ]}
+                placeholder="Chọn dòng hàng"
+                searchPlaceholder="Tìm dòng hàng…"
+                emptyMessage="Không có dòng hàng nào"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Trạng thái</Label>
@@ -297,7 +298,7 @@ export function SurveyReportDocDialog({
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label>Ngày bắt đầu thực hiện</Label>
+              <Label>Ngày bắt đầu</Label>
               <DatePicker
                 value={draft.start_date}
                 onChange={(value) => patch({ start_date: value })}
@@ -311,26 +312,6 @@ export function SurveyReportDocDialog({
                 onChange={(value) => patch({ planned_date: value })}
                 placeholder="Chọn ngày dự định"
               />
-              {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-602):
-                  không lưu, suy từ hai mốc; gõ số ngày thì tự đặt ngày dự định =
-                  ngày bắt đầu + n. Chưa có ngày bắt đầu thì ô khóa, nói rõ vì sao. */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="whitespace-nowrap">Số ngày xử lý</span>
-                <Input
-                  type="number"
-                  min={0}
-                  className="h-7 w-20 px-2 text-right"
-                  aria-label="Số ngày xử lý"
-                  disabled={!draft.start_date}
-                  title={draft.start_date ? '' : 'Chọn ngày bắt đầu trước'}
-                  value={durationDays(draft.start_date, draft.planned_date) ?? ''}
-                  onChange={(e) => {
-                    const days = Number(e.target.value)
-                    if (!draft.start_date || !Number.isFinite(days) || days < 0) return
-                    patch({ planned_date: addDaysIso(draft.start_date, days) })
-                  }}
-                />
-              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Ngày hết hiệu lực</Label>
@@ -341,6 +322,9 @@ export function SurveyReportDocDialog({
               />
             </div>
           </div>
+          {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-602): chỉ là
+              dòng ghi chú SUY RA từ hai mốc, không cho sửa (đại ca chốt 06/10). */}
+          <DurationNote start={draft.start_date} planned={draft.planned_date} />
 
           <div className="space-y-1.5">
             <Label>Nhân sự thực hiện</Label>
@@ -429,5 +413,17 @@ export function SurveyReportDocDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** Ghi chú «Số ngày xử lý» = dự định hoàn tất − ngày bắt đầu; thiếu một mốc thì không hiện. */
+function DurationNote({ start, planned }: { start: string; planned: string }) {
+  const days = durationDays(start, planned)
+  if (days === null) return null
+  return (
+    <p className="-mt-2 text-xs text-muted-foreground">
+      Số ngày xử lý: <span className="font-semibold text-foreground">{days} ngày</span> (từ{' '}
+      {formatDate(start)} đến {formatDate(planned)})
+    </p>
   )
 }

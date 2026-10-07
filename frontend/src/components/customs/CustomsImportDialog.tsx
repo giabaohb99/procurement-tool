@@ -108,6 +108,14 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
             Chọn một hoặc nhiều tệp <b>.xls / .xlsx</b> xuất từ hệ thống hải quan (mẫu GTT02 — đủ 32 cột).
             Mỗi tệp chạy thử riêng; chưa có gì ghi vào dữ liệu cho tới khi bấm <b>Áp dụng</b>.
           </p>
+          {/* bao-CR-603 — năm cột tùy chọn: thiếu thì nạp như cũ, có thì ô có chữ mới thắng. */}
+          <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+            Tệp có thể thêm các cột tùy chọn <b>Hoạt chất</b>, <b>Hàm lượng / dạng</b>,{' '}
+            <b>Đơn giá quy đổi VND (thuế NK 7%)</b>, <b>Đơn giá quy đổi VND (theo thuế suất XNK)</b>; cột{' '}
+            <b>Nước nhận hàng</b> cũng không bắt buộc. Ô có giá trị thì lấy của tệp; ô trống hoặc thiếu cột thì
+            hoạt chất / hàm lượng suy ra từ tên hàng và giá VND tính từ giá × tỷ giá như cũ. Tệp Excel xuất từ màn
+            này nạp lại được.
+          </p>
           <input type="file" multiple accept=".xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
           {files.length > 0 && (
             <ul style={{ fontSize: 13, marginBottom: 0 }}>

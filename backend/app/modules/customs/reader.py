@@ -27,7 +27,8 @@ from decimal import Decimal, InvalidOperation
 
 from app.modules.import_tool.catalog_import import ImportValidationError
 
-from .constants import COLUMNS, DECIMAL_KEYS, TEXT_LIMITS, TransportMode
+from .constants import (COLUMNS, DECIMAL_KEYS, OPTIONAL_COLUMNS, OPTIONAL_DECIMAL_KEYS,
+                        OPTIONAL_IN_COLUMNS, OPTIONAL_LABELS, TEXT_LIMITS, TRANSPORT_LABELS, TransportMode)
 
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0"   # .xls đời cũ (BIFF)
 _ZIP_MAGIC = b"PK"                  # .xlsx
@@ -54,6 +55,9 @@ class ParseResult:
     logs: list[tuple[int, int, str]] = field(default_factory=list)   # (dòng, LogLevel, câu)
     skipped: int = 0
     date_swap: bool = False
+    #  bao-CR-603: khóa của các cột TÙY CHỌN tệp này có (theo thứ tự `OPTIONAL_COLUMNS` +
+    #  `OPTIONAL_IN_COLUMNS`), để lô ghi lại «tệp có thêm cột gì» và bộ ghi biết ô nào lấy từ tệp.
+    optional_columns: list[str] = field(default_factory=list)
 
 
 def normalize_text(value: object) -> str:
@@ -153,19 +157,34 @@ def _cells_from_xlsx(raw: bytes) -> list[list[Cell]]:
 
 # ── Tiêu đề ─────────────────────────────────────────────────────────────────
 def map_header(header: list[Cell]) -> dict[str, int]:
-    """Khớp 32 cột theo CHỮ đã chuẩn hóa, không theo vị trí. Thiếu cột nào → từ chối lô."""
+    """Khớp cột theo CHỮ đã chuẩn hóa, không theo vị trí. Thiếu cột BẮT BUỘC nào → từ chối lô.
+
+    bao-CR-603: cột trong `OPTIONAL_IN_COLUMNS` và bốn cột `OPTIONAL_COLUMNS` được phép thiếu —
+    có thì vào `col_of`, không có thì bỏ qua; mỗi cột tùy chọn nhận nhiều cách ghi tiêu đề.
+    """
     found = {normalize_text(c.value): i for i, c in enumerate(header) if c.kind != EMPTY}
     col_of, missing = {}, []
     for key, label in COLUMNS:
         idx = found.get(normalize_text(label))
         if idx is None:
-            missing.append(label)
+            if key not in OPTIONAL_IN_COLUMNS:
+                missing.append(label)
         else:
             col_of[key] = idx
     if missing:
         raise CustomsFileError("Tệp thiếu cột: " + ", ".join(f"«{m}»" for m in missing)
-                               + ". Tệp phải là kết xuất tra cứu GTT02 đủ 32 cột.")
+                               + ". Tệp phải là kết xuất tra cứu GTT02 (đủ các cột bắt buộc).")
+    for key, labels in OPTIONAL_COLUMNS:
+        idx = next((found[normalize_text(lb)] for lb in labels if normalize_text(lb) in found), None)
+        if idx is not None:
+            col_of[key] = idx
     return col_of
+
+
+def optional_columns_of(col_of: dict[str, int]) -> list[str]:
+    """Khóa các cột tùy chọn NGOÀI GTT02 mà tệp có (bốn cột của `OPTIONAL_COLUMNS`). «Nước nhận
+    hàng» không kể vào đây: nó có ở mọi tệp GTT02 chuẩn, chỉ được phép thiếu chứ không phải cột thêm."""
+    return [k for k, _ in OPTIONAL_COLUMNS if k in col_of]
 
 
 def check_headers(raw: bytes, filename: str = "") -> None:
@@ -189,11 +208,18 @@ def _detect_date_swap(cells: list[Cell]) -> bool:
 
 
 def _parse_text_date(text: str) -> date | None:
+    """`DD-MM-YYYY` của GTT02; bao-CR-603 nhận thêm `YYYY-MM-DD` — dạng Excel của chính màn này
+    xuất ra, để tệp xuất ra sửa tay rồi nạp lại được."""
     m = re.fullmatch(r"\s*(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\s*", text)
-    if not m:
-        return None
+    if m:
+        y, mo, d = int(m.group(3)), int(m.group(2)), int(m.group(1))
+    else:
+        m = re.fullmatch(r"\s*(\d{4})-(\d{2})-(\d{2})\s*", text)
+        if not m:
+            return None
+        y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
     try:
-        return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        return date(y, mo, d)
     except ValueError:
         return None
 
@@ -249,6 +275,9 @@ def _read_transport(cell: Cell) -> int | None:
         return None
     m = re.match(r"\s*(\d+)", text)
     code = int(m.group(1)) if m else None
+    if code is None:
+        #  bao-CR-603: Excel của màn này xuất ra chỉ ghi nhãn («Đường biển (container)») — tra ngược.
+        code = next((int(k) for k, v in TRANSPORT_LABELS.items() if normalize_text(v) == normalize_text(text)), None)
     if code not in {int(t) for t in TransportMode}:
         raise CustomsFileError(f"Phương tiện vận chuyển lạ: «{text}». Nguồn có thể đã đổi khuôn.")
     return code
@@ -266,10 +295,13 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
     width = max((len(r) for r in body), default=0)
     body = [r + [Cell(EMPTY)] * (width - len(r)) for r in body]
 
-    res = ParseResult(date_swap=_detect_date_swap([r[col["reg_date"]] for r in body]))
+    res = ParseResult(date_swap=_detect_date_swap([r[col["reg_date"]] for r in body]),
+                      optional_columns=optional_columns_of(col))
+    labels = dict(COLUMNS) | OPTIONAL_LABELS
     for offset, cells in enumerate(body):
         row_no = offset + 2                      # dòng thật trong tệp (dòng 1 là tiêu đề)
-        get = lambda key: cells[col[key]]        # noqa: E731
+        #  Cột tùy chọn mà tệp không có thì trả ô TRỐNG — mọi luật phía dưới chạy y như cũ.
+        get = lambda key: cells[col[key]] if key in col else Cell(EMPTY)   # noqa: E731
         reg_date, fixed = _read_date(get("reg_date"), res.date_swap)
         if reg_date is None:
             res.skipped += 1
@@ -287,16 +319,31 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
             out[key] = _read_text(get(key))
         out["importer_name"] = clean_party_name(out["importer_name"])
         out["partner_name"] = clean_party_name(out["partner_name"])
+        #  bao-CR-603: bốn cột tùy chọn — chỉ đọc khi tệp có; ô trống ra "" / None để bộ ghi
+        #  suy ra hoặc tính như cũ. Hàm lượng viết hoa cho khớp ô lọc (giá trị suy ra cũng in hoa).
+        for key, _ in OPTIONAL_COLUMNS:
+            if key not in col:
+                continue
+            if key in OPTIONAL_DECIMAL_KEYS:
+                try:
+                    out[key] = _read_decimal(get(key))
+                except ValueError as e:
+                    out[key] = None
+                    res.logs.append((row_no, LogLevel.WARNING, f"Cột «{labels[key]}» {e} — để trống, sẽ tính như cũ"))
+            else:
+                out[key] = _read_text(get(key))
+                if key == "formulation":
+                    out[key] = out[key].upper()
         for key in DECIMAL_KEYS:
             try:
                 out[key] = _read_decimal(get(key))
             except ValueError as e:
                 out[key] = None
-                res.logs.append((row_no, LogLevel.WARNING, f"Cột «{dict(COLUMNS)[key]}» {e} — để trống"))
+                res.logs.append((row_no, LogLevel.WARNING, f"Cột «{labels[key]}» {e} — để trống"))
         for key, limit in TEXT_LIMITS.items():
-            if len(out[key]) > limit:
+            if key in out and len(out[key]) > limit:
                 res.logs.append((row_no, LogLevel.WARNING,
-                                 f"Cột «{dict(COLUMNS)[key]}» dài hơn {limit} ký tự — đã cắt"))
+                                 f"Cột «{labels[key]}» dài hơn {limit} ký tự — đã cắt"))
                 out[key] = out[key][:limit]
         res.rows.append(out)
 

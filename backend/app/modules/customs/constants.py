@@ -122,6 +122,28 @@ COLUMNS: list[tuple[str, str]] = [
     ("import_country", "Nước nhận hàng"),
 ]
 
+#  bao-CR-603 — cột trong `COLUMNS` được phép THIẾU trên tệp: thiếu thì ô để trống, nạp như cũ.
+#  «Nước nhận hàng» vẫn đứng trong `COLUMNS` (giữ thứ tự hiển thị, cột Excel xuất và mã băm
+#  chống trùng y như trước) nhưng tệp không có cột đó cũng không bị từ chối.
+OPTIONAL_IN_COLUMNS = frozenset({"import_country"})
+
+#  bao-CR-603 — bốn cột TÙY CHỌN ngoài 32 cột GTT02: mỗi khóa → các tiêu đề được chấp nhận
+#  (khớp theo chữ đã chuẩn hóa như `COLUMNS`). Tiêu đề đầu là tiêu đề Excel xuất ra của chính
+#  màn này, nên tệp xuất ra rồi sửa tay nạp lại được. Luật: tệp CÓ cột và ô CÓ chữ thì lấy của
+#  tệp; ô trống thì hoạt chất / hàm lượng suy ra từ tên hàng, giá VND tính từ giá × tỷ giá —
+#  đúng như khi tệp không có cột.
+OPTIONAL_COLUMNS: list[tuple[str, tuple[str, ...]]] = [
+    ("active_ingredient", ("Hoạt chất", "Hoạt chất (suy ra)")),
+    ("formulation", ("Hàm lượng / dạng", "Hàm lượng / dạng (suy ra)", "Hàm lượng/dạng", "Hàm lượng")),
+    ("price_vnd_flat", ("Đơn giá quy đổi VND (thuế NK 7%)", "Giá VND (thuế NK 7%)",
+                        "Đơn giá VND (thuế NK 7%)")),
+    ("price_vnd_line_tax", ("Đơn giá quy đổi VND (theo thuế suất XNK)", "Giá VND (thuế suất dòng)",
+                            "Đơn giá VND (theo thuế suất XNK)", "Đơn giá quy đổi VND (thuế suất XNK)")),
+]
+OPTIONAL_LABELS = {key: labels[0] for key, labels in OPTIONAL_COLUMNS}
+#  Hai cột VND của tệp là số; hai cột còn lại là chữ.
+OPTIONAL_DECIMAL_KEYS = frozenset({"price_vnd_flat", "price_vnd_line_tax"})
+
 #  Cột số tiền / đơn giá / tỷ giá / thuế — đọc thành số, ô trống ra NULL (không ra 0).
 DECIMAL_KEYS = frozenset({
     "price_usd", "price_nt", "adj_price_usd", "adj_price_nt", "fx_rate", "usd_rate",
@@ -135,6 +157,8 @@ TEXT_LIMITS = {
     "office_code": 10, "importer_tax_code": 14, "importer_name": 255, "partner_name": 255,
     "hs_code": 8, "product_name": 255, "currency": 3, "unit_code": 4, "origin_country": 2,
     "contract_no": 40, "incoterm": 3, "import_country": 2,
+    #  bao-CR-603 — hai cột chữ tùy chọn, khớp `active_ingredient` String(255) / `formulation` String(40).
+    "active_ingredient": 255, "formulation": 40,
 }
 
 #  Chèn dòng hàng theo khối — một lần kết xuất hàng chục nghìn dòng.

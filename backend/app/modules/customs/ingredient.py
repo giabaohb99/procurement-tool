@@ -199,10 +199,18 @@ def retag_all(db: Session) -> dict:
     batch: list[dict] = []
     #  Đọc hết trước rồi mới ghi: đọc kiểu luồng (`yield_per`) giữ con trỏ mở trên cùng
     #  kết nối, MySQL không cho chạy câu UPDATE xen giữa.
-    for line_id, name in db.query(CustomsLine.id, CustomsLine.product_name).all():
+    #  bao-CR-603: dòng có hoạt chất / hàm lượng LẤY TỪ TỆP (cờ `_from_file`) thì giữ nguyên giá
+    #  trị đó — gắn lại chỉ đụng phần suy ra.
+    for line_id, name, stored_active, stored_form, active_from_file, form_from_file in db.query(
+            CustomsLine.id, CustomsLine.product_name, CustomsLine.active_ingredient, CustomsLine.formulation,
+            CustomsLine.active_ingredient_from_file, CustomsLine.formulation_from_file).all():
         if name not in cache:
             cache[name] = tagger.tag(name)
         active, form = cache[name]
+        if active_from_file:
+            active = stored_active
+        if form_from_file:
+            form = stored_form
         kind = kinds.tag(name)
         total += 1
         tagged += bool(active)

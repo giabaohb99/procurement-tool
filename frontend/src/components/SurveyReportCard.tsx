@@ -9,7 +9,7 @@ import DateInput from './DateInput'
 import {
   COMMON_ROW_ID, REPORT_DOC_DOING, REPORT_DOC_DONE, REPORT_DOC_IDLE, REPORT_DOC_STATUS_BADGE,
   REPORT_DOC_STATUS_LABELS, REPORT_FILTER_ALL, REPORT_STATUS_FILTER_ALL,
-  addDaysIso, currentReportPhaseId, durationDays, expiryTone, filterReportDocs, isReportDocDone, isReportDocLocked,
+  currentReportPhaseId, durationDays, expiryTone, filterReportDocs, isReportDocDone, isReportDocLocked,
   latestPlannedDate, matchReportDoc, nameInitials, nearestExpiry, pendingDepends, reportDocLateDays,
   reportDocsById, reportPercent, reportPlanLateDays, trackingMarkers,
   type ReportOwnerEntity, type SurveyReportDoc, type SurveyReportDocPayload, type SurveyReportItem,
@@ -59,6 +59,11 @@ function todayIso(): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
   return `${d.getFullYear()}-${mm}-${dd}`
+}
+
+/** Cắt nhãn dài cho thẻ phụ trong danh sách: quá 28 ký tự thì «…». */
+function shortLabel(text: string, max = 28): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
 
 function isLink(text: string): boolean {
@@ -171,6 +176,11 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   }
   async function toggleDone(doc: SurveyReportDoc) {
     const status = isReportDocDone(doc) ? REPORT_DOC_DOING : REPORT_DOC_DONE
+    await mutate(() => api.patch(`${base}/docs/${doc.id}`, { status }))
+  }
+  //  Đổi trạng thái NGAY TRÊN DÒNG (ô chọn nhỏ thay badge) — đại ca 06/10.
+  async function setDocStatus(doc: SurveyReportDoc, status: number) {
+    if (status === doc.status) return
     await mutate(() => api.patch(`${base}/docs/${doc.id}`, { status }))
   }
   async function saveDoc(docId: number | null, payload: SurveyReportDocPayload): Promise<boolean> {
@@ -319,7 +329,23 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
         {doc.assignee_name && (
           <span className="srp-avatar" title={`Thực hiện: ${doc.assignee_name}`}>{nameInitials(doc.assignee_name)}</span>
         )}
-        <span className={`badge ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}>{doc.status_label || REPORT_DOC_STATUS_LABELS[doc.status]}</span>
+        {canEdit ? (
+          //  Ô chọn trạng thái ngay trên dòng, mang màu badge; hồ sơ đang khóa không chọn được Hoàn thành (cùng luật nút ✓).
+          <select
+            className={`badge srp-status-select ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}
+            aria-label={`Trạng thái hồ sơ "${doc.title}"`}
+            value={doc.status}
+            disabled={busy}
+            onChange={(e) => setDocStatus(doc, Number(e.target.value))}
+            style={{ textTransform: 'none' }}
+          >
+            {[REPORT_DOC_IDLE, REPORT_DOC_DOING, 2, REPORT_DOC_DONE].map((s) => (
+              <option key={s} value={s} disabled={locked && s === REPORT_DOC_DONE}>{REPORT_DOC_STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+        ) : (
+          <span className={`badge ${REPORT_DOC_STATUS_BADGE[doc.status] || 'gray'}`}>{doc.status_label || REPORT_DOC_STATUS_LABELS[doc.status]}</span>
+        )}
         {canEdit && (
           <>
             <button type="button" className="srp-ibtn" title="Sửa hồ sơ" onClick={() => openEditDoc(doc)}><i className="ti ti-pencil" /></button>
@@ -858,26 +884,15 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
         <div className="form-row">
           <label>Dự định hoàn tất</label>
           <DateInput value={form.planned_date} onChange={(v) => set('planned_date', v)} />
-          {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — không lưu, gõ số ngày
-              thì dự định hoàn tất = ngày bắt đầu + n; chưa có ngày bắt đầu thì ô khóa. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12, color: 'var(--muted)' }}>
-            <span style={{ whiteSpace: 'nowrap' }}>Số ngày xử lý</span>
-            <input
-              type="number"
-              min={0}
-              style={{ width: 70, height: 26, textAlign: 'right' }}
-              aria-label="Số ngày xử lý"
-              disabled={!form.start_date}
-              title={form.start_date ? '' : 'Chọn ngày bắt đầu trước'}
-              value={durationDays(form.start_date, form.planned_date) ?? ''}
-              onChange={(e) => {
-                const days = Number(e.target.value)
-                if (!form.start_date || !Number.isFinite(days) || days < 0) return
-                set('planned_date', addDaysIso(form.start_date, days))
-              }}
-            />
-          </div>
         </div>
+        {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — chỉ là dòng ghi chú
+            SUY RA từ hai mốc, không cho sửa (đại ca chốt 06/10). */}
+        {durationDays(form.start_date, form.planned_date) !== null && (
+          <div className="form-row full" style={{ marginTop: -6, fontSize: 12.5, color: 'var(--muted)' }}>
+            Số ngày xử lý: <b style={{ color: 'var(--navy)' }}>{durationDays(form.start_date, form.planned_date)} ngày</b>
+            {' '}(từ {fmtDateStr(form.start_date)} đến {fmtDateStr(form.planned_date)})
+          </div>
+        )}
         <div className="form-row">
           <label>Ngày hết hiệu lực</label>
           <DateInput value={form.expires_at} onChange={(v) => set('expires_at', v)} />
@@ -912,7 +927,14 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
                     onChange={(e) => set('depends', e.target.checked ? [...form.depends, d.id] : form.depends.filter((x) => x !== d.id))}
                   />
                   <span>{d.title}</span>
-                  <span style={{ color: 'var(--muted)', fontSize: 11.5 }}>· {itemLabel(d.item_id)}{isReportDocDone(d) ? ' · đã xong' : ''}</span>
+                  {/* Thẻ dòng hàng chỉ bày khi KHÁC dòng hàng đang chọn, và cắt ngắn — tên hàng dài
+                      (vd «BTP CHESSIN V1 bột trắng ngà (Pymetrozine…)») lặp ở mọi dòng làm danh sách
+                      không đọc nổi (đại ca soi popup 06/10). Rê chuột đọc đủ. */}
+                  {(d.item_id !== form.item_id || isReportDocDone(d)) && (
+                    <span style={{ color: 'var(--muted)', fontSize: 11.5 }} title={itemLabel(d.item_id)}>
+                      {d.item_id !== form.item_id ? `· ${shortLabel(itemLabel(d.item_id))}` : ''}{isReportDocDone(d) ? ' · đã xong' : ''}
+                    </span>
+                  )}
                 </label>
               ))}
             </div>
