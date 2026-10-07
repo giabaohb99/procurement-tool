@@ -13,6 +13,7 @@ Hai luật KHÔNG giao cho câu nhắc giữ vì nhắc suông thì model quên:
 import json
 import logging
 import re
+import time
 
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatMessage, ChatResult, ProviderError
@@ -29,6 +30,7 @@ log = logging.getLogger("app.agent_hub.manager")
 #  Trần phần suy nghĩ của bot quản lý. Đo 23/09: lượt lập kế hoạch nghĩ 6-14 nghìn token, và token
 #  suy nghĩ tính giá như đầu ra — phần tốn nhất của một lượt. Hạ về 4096 (ai-CR-022).
 THINKING_BUDGET = 4096
+TRANSIENT_WAIT_SEC = 2      # ai-CR-099: chờ trước khi thử lại một lần khi hãng quá tải
 NO_KEY_MSG = "Chưa có khóa AI nào dùng được cho chat này (Trang cá nhân → Khóa AI)."
 
 
@@ -91,6 +93,7 @@ class AgentGeminiProvider(GeminiProvider):
         from . import ai_keys, user_keys
 
         last: ProviderError | None = None
+        retried = False
         while True:
             ref = user_keys.active_ref()
             if ref is None or not ref.key:
@@ -102,6 +105,12 @@ class AgentGeminiProvider(GeminiProvider):
             try:
                 return fn(*args, model=self._model_for(ref, model), **kw)
             except ProviderError as e:
+                if ai_keys.is_transient(str(e)) and not retried:
+                    #  ai-CR-099: 07/10 «alo how are u» chết vì Gemini 503 «high demand» → thẻ hỏi lại vô duyên.
+                    retried = True
+                    log.warning("agent_hub: %s quá tải, thử lại sau %ss", ref.provider, TRANSIENT_WAIT_SEC)
+                    time.sleep(TRANSIENT_WAIT_SEC)
+                    continue
                 if ai_keys.is_key_problem(str(e)) and user_keys.advance():
                     log.warning("agent_hub: khóa %s …%s hỏng (%s), nhảy sang khóa kế", ref.provider, ref.hint,
                                 str(e)[:80])

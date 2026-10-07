@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import bells, chat_link, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
+from . import ai_keys, bells, chat_link, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -422,6 +422,19 @@ def _research_command(db: Session, chat_id: str, text: str, *, allow_docs: bool)
     return False
 
 
+def _research_error_text(error: str) -> str:
+    """ai-CR-099: không bao giờ đổ cục JSON của hãng ra chat. 429 ở lượt tìm Google thường là hạn mức TÌM KIẾM của
+    dự án (gói miễn phí rất thấp) chứ không phải hết lượt hỏi — 07/10 khóa mới hỏi được nhưng «giá vàng hôm nay» 429."""
+    from . import ai_keys
+
+    e = (error or "").lower()
+    if "429" in e or "resource_exhausted" in e or "quota" in e:
+        return ("Khóa Gemini của đại ca hỏi đáp được nhưng <b>hết hạn mức tìm Google</b> (Google báo 429). Gói miễn phí "
+                "giới hạn tìm kiếm rất thấp; bật thanh toán cho dự án chứa khóa ở AI Studio là tra được. Câu hỏi không "
+                "cần tra mạng vẫn trả lời bình thường.")
+    return ai_keys.short_error(error)
+
+
 def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
     """Một lượt nghiên cứu: gọi `research.run`, ghi sổ chi phí, nhắn kết quả + nguồn."""
     if not question:
@@ -440,7 +453,7 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
         log.exception("agent_hub: nghiên cứu hỏng")
         finish_run(db, run, error=str(e))
         db.commit()
-        reply(db, chat_id, f"{BOT_NAME} chưa tra được: {telegram.esc(str(e)[:300])}")
+        reply(db, chat_id, _research_error_text(str(e)))
         return
     if result is not None:
         finish_run(db, run, result=result)
@@ -843,8 +856,11 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             log.warning("agent_hub: phân loại hỏng vì khóa AI (%s)", str(e)[:120])
             reply(db, chat_id, problem)
             return
-        log.warning("agent_hub: phân loại ý định hỏng (%s), hỏi lại đại ca", e)
-        _ask_intent_choice(db, chat_id, row)
+        #  ai-CR-099: 07/10 «alo how are u» gặp Gemini 503 → thẻ «làm luôn hay ghi việc». Trả lời luôn kèm dòng gợi
+        #  ý (như mo_ho, ai-CR-096); việc sửa phần mềm thì đại ca nhắn «ghi việc: …».
+        log.warning("agent_hub: phân loại ý định hỏng (%s), trả lời luôn", str(e)[:120])
+        row.action = ACT_ASKED
+        answer_question(db, chat_id, text, before_id=row.id, hint=UNSURE_HINT)
         return
     finish_run(db, run, result=result)
     row.scope = int(data.get("scope") or SCOPE_COMPANY)     # ai-CR-095 (C-06)
@@ -3120,8 +3136,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
                                               + (f"\n\n{memory_block}" if memory_block else ""))
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
-        reply(db, chat_id, user_keys.key_problem(str(e))
-              or f"{BOT_NAME} chưa trả lời được: {telegram.esc(str(e)[:300])}")
+        reply(db, chat_id, user_keys.key_problem(str(e)) or ai_keys.short_error(str(e)))
         return
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.

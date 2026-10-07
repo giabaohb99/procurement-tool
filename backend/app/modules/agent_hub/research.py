@@ -13,6 +13,8 @@ Cũng vì vậy module này không đọc biến khóa nào ngoài khóa Gemini 
 """
 from __future__ import annotations
 
+import time
+
 import io
 import re
 from urllib.parse import urlparse
@@ -72,7 +74,15 @@ def search_web(question: str, *, mode: str = MODE_WEB) -> tuple[str, list[dict],
         "tools": [{"google_search": {}}],
         "generationConfig": provider._gen_config(model, 2048, 0.3, False),
     }
-    data = provider._post(model, payload)
+    try:
+        data = provider._post(model, payload)
+    except Exception as e:  # noqa: BLE001 — chỉ thử lại lỗi quá tải tạm thời, còn lại ném lên
+        from . import ai_keys
+
+        if not ai_keys.is_transient(str(e)):
+            raise
+        time.sleep(manager.TRANSIENT_WAIT_SEC)       # ai-CR-099
+        data = provider._post(model, payload)
     candidates = data.get("candidates") or []
     first = candidates[0] if candidates else {}
     text = "".join(p.get("text", "") for p in (first.get("content") or {}).get("parts", []) if "text" in p)

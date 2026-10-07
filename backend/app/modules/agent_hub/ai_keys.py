@@ -282,3 +282,19 @@ def key_problem(error: str, provider: str = "") -> str:
 
 def is_key_problem(error: str) -> bool:
     return bool(key_problem(error))
+
+
+def is_transient(error: str) -> bool:
+    """ai-CR-099: hãng quá tải tạm thời (503 «high demand», 500, 504) — thử lại một lần là thường qua."""
+    e = (error or "").lower()
+    return any(k in e for k in (" 503", "lỗi 503", "unavailable", "high demand", "overloaded", " 500:", " 504",
+                                "deadline", "timed out", "timeout"))
+
+
+def short_error(error: str) -> str:
+    """Một câu ngắn thay cho cục JSON của hãng (ai-CR-099: đại ca thấy trả lời «không mượt»)."""
+    if problem := key_problem(error):
+        return problem
+    if is_transient(error):
+        return "Gemini đang quá tải tạm thời, em đã thử lại mà chưa được. Đại ca nhắn lại sau ít phút giúp em."
+    return "Em gặp lỗi khi gọi AI, đại ca nhắn lại giúp em. Lặp lại nhiều thì báo em xem sổ chạy."

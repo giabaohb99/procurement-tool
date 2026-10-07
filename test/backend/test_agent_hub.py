@@ -223,23 +223,23 @@ def test_map_mo_thi_tra_loi_luon_kem_goi_y_ghi_viec(db, bot, monkeypatch):
     assert db.query(service.AgentMessage).filter_by(direction=2).first().action == service.ACT_ASKED
 
 
-def test_phan_loai_hong_thi_hoi_lai_chu_khong_thanh_viec(db, bot, monkeypatch):
-    """Gemini chết (429) thì hỏi lại kèm hai nút — tin không bốc hơi, cũng không tự thành việc.
+def test_phan_loai_hong_thi_tra_loi_luon_chu_khong_thanh_viec(db, bot, monkeypatch):
+    """Phân loại chết (mạng, 503) thì TRẢ LỜI luôn — tin không bốc hơi, cũng không tự thành việc.
 
-    Bản trước rơi về giao việc: một câu hỏi gặp lúc hết hạn mức là 90 giây sau có
-    một thẻ việc sửa mã. Đó là một nửa nguyên nhân của ca AI-0004.
+    Bản đầu rơi về giao việc (một nửa nguyên nhân AI-0004); bản sau hỏi «làm luôn hay ghi việc» — 07/10 «alo how are u»
+    gặp Gemini 503 và nhận đúng câu hỏi vô duyên đó (ai-CR-099). Nay trả lời kèm dòng gợi ý «ghi việc: …».
     """
     service, sent, asked = bot
 
     def no(text, **kw):
-        raise ProviderError("hết hạn mức")
+        raise ProviderError("Gemini trả lỗi 503: This model is currently experiencing high demand")
 
     monkeypatch.setattr(service.manager, "run_intent", no)
-    service.handle_message(db, _msg("sửa giúp anh chỗ này"))
+    service.handle_message(db, _msg("alo how are u"))
 
-    assert asked == []
-    assert len(sent) == 1
-    assert db.query(service.AgentMessage).filter_by(direction=2).one().action == "cho_y"
+    assert asked == ["alo how are u"] and sent == []
+    row = db.query(service.AgentMessage).filter_by(direction=2).one()
+    assert row.action == service.ACT_ASKED and row.task_id == 0
 
 
 def test_lenh_khong_bao_gio_thanh_viec(db, bot, monkeypatch):
@@ -2261,7 +2261,7 @@ def test_tro_ly_tren_telegram_nhan_persona_dau_dau(db, monkeypatch):
 
     monkeypatch.setattr(assistant_service, "ask", boom)
     service.answer_question(db, "12345", "em tên gì")
-    assert sent[-1].startswith("Đậu Đậu chưa trả lời được")
+    assert "lỗi khi gọi AI" in sent[-1] and "mất mạng" not in sent[-1]    # ai-CR-099: câu ngắn, không đổ lỗi thô
 
 
 def test_loi_chao_va_de_bai_claude_goi_ten_dau_dau(db, bot, monkeypatch):
@@ -7374,7 +7374,7 @@ def test_khoa_gemini_het_tien_thi_noi_thang_khong_hoi_lam_luon_hay_ghi_viec(db, 
     #  Lỗi khác (mạng) vẫn đi thẻ hai nút như cũ.
     monkeypatch.setattr(service.manager, "run_intent", lambda text, **kw: (_ for _ in ()).throw(RuntimeError("timeout")))
     service.handle_message(db, {**_msg("xem lại giúp anh"), "message_id": 8})
-    assert "chưa chắc" in sent[-1]
+    assert asked == ["xem lại giúp anh"]       # ai-CR-099: lỗi khác thì trả lời luôn, không hỏi lại
     assert service.user_keys.key_problem("429 RESOURCE_EXHAUSTED") and not service.user_keys.key_problem("timeout")
 
 # ---------------------------------------------------------------------------
@@ -7556,3 +7556,32 @@ def test_api_khoa_ai_nhieu_hang_va_khoa_cong_ty(db, monkeypatch):
     assert [i["provider"] for i in data(cty)["items"]] == ["claude"]
     ai_keys.company_chain(db)
     assert ai_keys.company_key("claude").endswith("0003")
+
+
+def test_gemini_qua_tai_thi_thu_lai_mot_lan_va_tra_cuu_khong_do_json(db, bot, monkeypatch):
+    """ai-CR-099: 07/10 «alo how are u» chết vì 503 «high demand»; «giá vàng hôm nay» nhận nguyên cục JSON 429."""
+    from app.modules.agent_hub import manager, research, user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider.base import ChatMessage, ProviderError
+
+    service, sent, _ = bot
+    monkeypatch.setattr(manager, "TRANSIENT_WAIT_SEC", 0)
+    calls = []
+
+    def flaky(self, model, payload):
+        calls.append(1)
+        if len(calls) == 1:
+            raise ProviderError('Gemini trả lỗi 503: {"error": {"status": "UNAVAILABLE", "message": "high demand"}}')
+        return {"candidates": [{"content": {"parts": [{"text": "chào đại ca"}]}}], "usageMetadata": {}}
+
+    monkeypatch.setattr(manager.GeminiProvider, "_post", flaky)
+    with user_keys.use_chain([KeyRef(provider="gemini", key="AIzaSy-x-abcdefgh-1111", row_id=1)]):
+        out = manager.get_provider().ask([ChatMessage(role="user", content="hi")])
+    assert out.text == "chào đại ca" and len(calls) == 2
+    #  Tra cứu: 429 hạn mức tìm Google → một câu giải thích, không cục JSON.
+    monkeypatch.setattr(research, "run", lambda q, mode: (_ for _ in ()).throw(ProviderError(
+        'Gemini trả lỗi 429: {"error": {"code": 429, "message": "You exceeded your current quota", "status": "RESOURCE_EXHAUSTED"}}')))
+    monkeypatch.setattr(user_keys, "active_key", lambda: "k")
+    service.run_research(db, "12345", "giá vàng hôm nay", research.MODE_WEB)
+    assert "hết hạn mức tìm Google" in sent[-1] and "{" not in sent[-1] and "RESOURCE_EXHAUSTED" not in sent[-1]
+

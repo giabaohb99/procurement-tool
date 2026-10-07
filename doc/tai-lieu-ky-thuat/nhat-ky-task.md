@@ -12541,3 +12541,14 @@ nhớ trước đây chỉ chạy ở chat đại ca.
 
 Mã nguồn: backend/app/modules/agent_hub/ai_keys.py · agent_hub/user_keys.py · agent_hub/manager.py (AgentGeminiProvider) · assistant/provider/openai_compat.py · frontend-v2 ai-key-list-card.tsx, company-ai-keys-panel.tsx · migration aikey01
 Deploy: dev 07/10 khoảng 10:05, erp-v2 26222996 (Agent 1 sao lưu DB dev, dựng lại api, web, erp, celery-worker, celery-beat, agent-poller; migration aikey01 đã chạy). Sau đó cấp lại quyền chỉ đọc bảng tab_ai_key cho tài khoản MySQL của máy sửa mã và gỡ quyền trên tên bảng cũ, vì máy sửa mã đọc khóa của đại ca để lập kế hoạch sau bước rà soát; đã thử máy đọc được. Prod giữ lại.
+
+## ai-CR-099 | Bot trả lời mượt hơn khi Gemini quá tải hay hết hạn mức tìm kiếm
+- status: xong
+- date: 2026-10-07
+Sáng 07/10 đại ca nhắn «alo how are u» thì bot hỏi lại «làm luôn hay ghi việc», nhắn «giá vàng hôm nay» thì bot đổ
+nguyên đoạn lỗi tiếng Anh của Google ra chat. Tra sổ chạy trên dev: lần đầu Gemini đang quá tải (mã 503), lần sau khóa
+mới hỏi đáp được nhưng hết hạn mức tìm Google của dự án (mã 429). Nay khi Gemini quá tải tạm thời, bot tự thử lại một
+lần sau 2 giây; nếu vẫn không phân loại được thì trả lời luôn kèm dòng gợi ý «ghi việc: …» thay vì hỏi lại; và mọi lỗi
+của hãng đều thành một câu tiếng Việt ngắn, riêng lỗi hết hạn mức tìm Google thì nói rõ cần bật thanh toán cho dự án.
+
+Mã nguồn: backend/app/modules/agent_hub/ai_keys.py (is_transient, short_error) · agent_hub/manager.py · agent_hub/research.py · agent_hub/service.py
