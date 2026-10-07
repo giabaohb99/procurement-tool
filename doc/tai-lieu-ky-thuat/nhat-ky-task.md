@@ -12740,4 +12740,4 @@ thức trong nhóm chỉ thấy tin trả lời hoặc nhắc tên bot, nên ph�
 riêng tư của bot trong BotFather. Không liên quan bot IDA.
 
 Mã nguồn: backend/app/modules/agent_hub/groups.py · agent_hub/doc_text.py · assistant/tools/group_tool.py · agent_hub/service.py (_document_by_message) · migration grp01 · doc/agent-hub/12-de-xuat-tom-tat-nhom.md
-
+Deploy: dev 07/10, erp-v2 a3c1bfb0 (Agent 1 sao lưu DB dev, gộp, dựng lại api, celery-worker, celery-beat, agent-poller; migration grp01 đã chạy, lịch dọn tin nhóm đã có); prod giữ lại.
