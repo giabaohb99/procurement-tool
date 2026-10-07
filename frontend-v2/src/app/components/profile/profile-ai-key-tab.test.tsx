@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AiKeyInfo } from '@/modules/system/api/agent-hub-api'
+import type { AiKeyInfo, AiKeyItem } from '@/modules/system/api/agent-hub-api'
 import { ProfileAiKeyTab } from './profile-ai-key-tab'
 
 /**
@@ -17,12 +17,18 @@ const apiGet = vi.fn()
 const apiPut = vi.fn()
 const apiPost = vi.fn()
 const apiDelete = vi.fn()
+const apiPatch = vi.fn()
+
+function keyItem(over: Partial<AiKeyItem> = {}): AiKeyItem {
+  return { id: 1, provider: 'gemini', provider_label: 'Gemini', model: '', priority: 1, daily_cap: 0, hint: '…0000',
+    verified_at: null, used_today: 0, ...over }
+}
 
 vi.mock('@/core/api', () => ({
   apiGet: (...args: unknown[]) => apiGet(...args),
   apiPost: (...args: unknown[]) => apiPost(...args),
   apiPut: (...args: unknown[]) => apiPut(...args),
-  apiPatch: vi.fn(),
+  apiPatch: (...args: unknown[]) => apiPatch(...args),
   apiDelete: (...args: unknown[]) => apiDelete(...args),
 }))
 
@@ -68,20 +74,47 @@ describe('ProfileAiKeyTab', () => {
     const input = screen.getByLabelText(/Dán khóa Gemini/)
     expect(input).toHaveAttribute('type', 'password')
     await userEvent.type(input, 'AIzaSy-khoa-thu-9999')
-    mockKey({ has_key: true, hint: '…9999', verified_at: '2026-09-25T08:00:00' })
+    mockKey({ has_key: true, hint: '…9999', verified_at: '2026-09-25T08:00:00', items: [keyItem({ id: 1, hint: '…9999' })] })
     await userEvent.click(screen.getByRole('button', { name: /Lưu khóa/ }))
-    await waitFor(() => expect(apiPut).toHaveBeenCalledWith('/api/agent-hub/ai-key', { key: 'AIzaSy-khoa-thu-9999' }))
+    await waitFor(() => expect(apiPut).toHaveBeenCalledWith('/api/agent-hub/ai-key', {
+      key: 'AIzaSy-khoa-thu-9999', provider: 'gemini', model: '', priority: 0, daily_cap: 0,
+    }))
     await waitFor(() => expect(input).toHaveValue(''))
     expect(await screen.findByText('…9999')).toBeInTheDocument()
     expect(screen.queryByText(/AIzaSy-khoa-thu-9999/)).not.toBeInTheDocument()
   })
 
-  it('removes the key after confirmation', async () => {
-    mockKey({ has_key: true, hint: '…1234' })
+  it('sends the chosen provider and model when adding a second key (ai-CR-098)', async () => {
+    mockKey({ has_key: true, hint: '…1111', items: [keyItem({ id: 1, hint: '…1111' })] })
+    apiPut.mockResolvedValue({ provider: 'gemini', has_key: true, hint: '…1111', verified_at: null })
+    renderTab()
+    await userEvent.selectOptions(await screen.findByLabelText('Hãng'), 'openrouter')
+    await userEvent.type(screen.getByLabelText(/Dán khóa OpenRouter/), 'sk-or-v1-abcdefghijklmnop')
+    await userEvent.type(screen.getByLabelText('Model (tùy chọn)'), 'anthropic/claude-sonnet-4.5')
+    await userEvent.click(screen.getByRole('button', { name: /Lưu khóa/ }))
+    await waitFor(() => expect(apiPut).toHaveBeenCalledWith('/api/agent-hub/ai-key', {
+      key: 'sk-or-v1-abcdefghijklmnop', provider: 'openrouter', model: 'anthropic/claude-sonnet-4.5', priority: 0, daily_cap: 0,
+    }))
+  })
+
+  it('removes one key by id after confirmation', async () => {
+    mockKey({ has_key: true, hint: '…1234', items: [keyItem({ id: 5, hint: '…1234' })] })
     apiDelete.mockResolvedValue({ provider: 'gemini', has_key: false, hint: '', verified_at: null })
     renderTab()
     await userEvent.click(await screen.findByRole('button', { name: /Gỡ khóa/ }))
-    await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/api/agent-hub/ai-key'))
+    await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/api/agent-hub/ai-key/5'))
+  })
+
+  it('moves the second key above the first by swapping priorities', async () => {
+    mockKey({ has_key: true, hint: '…1111', items: [
+      keyItem({ id: 1, hint: '…1111', priority: 1 }),
+      keyItem({ id: 2, hint: '…2222', priority: 2, provider: 'claude', provider_label: 'Claude' }),
+    ] })
+    apiPatch.mockResolvedValue({})
+    renderTab()
+    await userEvent.click(await screen.findByRole('button', { name: /Đưa khóa …2222 lên trước/ }))
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/api/agent-hub/ai-key/2', { priority: 1 }))
+    expect(apiPatch).toHaveBeenCalledWith('/api/agent-hub/ai-key/1', { priority: 2 })
   })
 
   it('keeps the save button disabled while the input is blank', async () => {

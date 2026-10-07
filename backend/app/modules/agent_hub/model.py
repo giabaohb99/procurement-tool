@@ -16,7 +16,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, synonym
 
 from app.core.base_model import AuditMixin, Base
 
@@ -137,6 +137,8 @@ class AgentRun(Base, AuditMixin):
     input_tokens: Mapped[int] = mapped_column(Integer, default=0)
     #  ai-CR-053: tài khoản ERP có khóa Gemini đã trả tiền cho lượt này (0 = khóa `.env` của máy bot).
     owner_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    #  ai-CR-098: dòng `tab_ai_key` đã trả lời lượt này (0 = khóa `.env` / không rõ) — để áp `daily_cap` từng khóa.
+    key_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     #  ĐÃ CỘNG token "suy nghĩ" vào đây — Gemini tính giá chúng như output, tách ra
     #  hai cột thì mọi chỗ cộng chi phí đều phải nhớ cộng cả hai, và sẽ có chỗ quên.
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
@@ -235,22 +237,37 @@ class AgentGrant(Base, AuditMixin):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
 
-class AgentUserKey(Base, AuditMixin):
-    """Khóa Gemini CÁ NHÂN của một tài khoản ERP (ai-CR-053, D-01).
+class AiKey(Base, AuditMixin):
+    """Sổ khóa AI MỘT BẢNG cho công ty lẫn cá nhân (ai-CR-053 D-01 → ai-CR-098 C-04, đại ca chốt 07/10/2026).
 
-    Dán ở Trang cá nhân → «Khóa AI», lưu mã hóa Fernet (cùng khóa suy từ `JWT_SECRET` như cấu hình hệ
-    thống), chỉ giữ 4 ký tự cuối để người dùng nhận ra. Đổi khóa = đóng dòng cũ (`revoked_at`) + dòng
-    mới; nghỉ việc thì đóng cùng lúc khóa phiên. Bot không bao giờ in khóa thô ra chat hay log.
+    `owner_type` 1 công ty (`owner_id` 0) · 2 cá nhân (`owner_id` = user_id). `provider` gemini · claude · openai ·
+    openrouter. `priority` 1 = khóa chính, 2, 3… dự phòng (hỏng vì hết tiền / hạn mức / khóa sai thì tự nhảy).
+    `model` mặc định cho khóa đó (trống = mặc định của hãng); `daily_cap` trần lượt/ngày riêng (0 = trần chung).
+    Khóa lưu mã hóa Fernet (cùng khóa suy từ `JWT_SECRET` như cấu hình hệ thống), chỉ giữ 4 ký tự cuối; gỡ = `revoked_at`
+    giữ lịch sử; nghỉ việc thì đóng cùng lúc khóa phiên. Bot không bao giờ in khóa thô ra chat hay log.
+    Đọc/ghi chỉ qua `ai_keys.py` (sổ) và `user_keys.py` (ngữ cảnh lượt gọi).
     """
 
-    __tablename__ = "tab_agent_user_key"
+    __tablename__ = "tab_ai_key"
 
-    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    owner_type: Mapped[int] = mapped_column(SmallInteger, default=2)
+    owner_id: Mapped[int] = mapped_column(BigInteger, default=0)
     provider: Mapped[str] = mapped_column(String(30), default="gemini")
+    model: Mapped[str] = mapped_column(String(80), default="")
+    priority: Mapped[int] = mapped_column(SmallInteger, default=1)
+    daily_cap: Mapped[int] = mapped_column(Integer, default=0)
     key_enc: Mapped[str] = mapped_column(Text, default="")
     key_hint: Mapped[str] = mapped_column(String(8), default="")
     verified_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    #  Tên cũ (ai-CR-053): mã cũ và bài kiểm còn gọi `user_id` — với dòng cá nhân nó chính là `owner_id`.
+    user_id = synonym("owner_id")
+
+    __table_args__ = (Index("ix_tab_ai_key_owner", "owner_type", "owner_id"),)
+
+
+#  Bí danh tương thích (ai-CR-053): chỗ cũ import `AgentUserKey`.
+AgentUserKey = AiKey
 
 
 class AgentRunner(Base, AuditMixin):

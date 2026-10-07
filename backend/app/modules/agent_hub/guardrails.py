@@ -134,7 +134,7 @@ def classify_sql(sql: str) -> tuple[str, str, list[str]]:
         return SQL_DENIED, "đổi cấu trúc bảng phải qua migration, không qua bot", []
     tables = list(dict.fromkeys(m.group(1) for m in _SQL_TABLE.finditer(bare)))
     if _SQL_READ_HEAD.match(bare):
-        if _SQL_SECRET_COLS.search(bare) or re.search(r"\bselect\s+\*\s+from\s+`?(tab_user|tab_agent_user_key|"
+        if _SQL_SECRET_COLS.search(bare) or re.search(r"\bselect\s+\*\s+from\s+`?(tab_user|tab_agent_user_key|tab_ai_key|"
                                                      r"tab_agent_google_link|tab_agent_mcp_key|tab_setting)\b",
                                                      bare, re.IGNORECASE):
             return SQL_DENIED, "câu này đọc cột bí mật (mật khẩu / token / khóa) — chọn đúng cột cần xem", tables

@@ -204,7 +204,7 @@ def usage(db: Session, user_id: int) -> tuple[int, int]:
 def _embedder():
     from app.modules.assistant.rag.embedder import GeminiEmbedder
 
-    key = user_keys.active_key() or settings.AGENT_GEMINI_API_KEY
+    key = user_keys.gemini_key()      # ai-CR-098: chuỗi có thể đang ở khóa Claude — nhúng vẫn cần Gemini
     if not key:
         return None
     return GeminiEmbedder(model=settings.AI_EMBED_MODEL, api_key=key, dim=settings.AI_EMBED_DIM)

@@ -126,13 +126,61 @@ export interface TelegramLinkCode {
   deep_link: string
 }
 
-/** Khóa Gemini CÁ NHÂN của chính mình (ai-CR-053, D-01). Khóa thô chỉ đi VÀO; chỉ 4 ký tự cuối đi ra. */
+/** Một hãng AI bot nhận khóa (ai-CR-098): gemini · claude · openai · openrouter. */
+export interface AiProviderInfo {
+  name: string
+  label: string
+  /** Trang lấy khóa của hãng. */
+  site: string
+}
+
+/** Một dòng khóa trong sổ `tab_ai_key` (ai-CR-098) — cá nhân hoặc công ty. Không bao giờ có khóa thô. */
+export interface AiKeyItem {
+  id: number
+  provider: string
+  provider_label: string
+  /** Trống = model mặc định của hãng. */
+  model: string
+  /** 1 = khóa chính; 2, 3… dự phòng, hỏng thì bot tự nhảy sang. */
+  priority: number
+  /** Trần lượt/ngày riêng của khóa; 0 = theo trần chung. */
+  daily_cap: number
+  hint: string
+  verified_at: string | null
+  used_today: number
+}
+
+/** Khóa AI CÁ NHÂN của chính mình (ai-CR-053 → ai-CR-098 nhiều khóa). Khóa thô chỉ đi VÀO; chỉ 4 ký tự cuối đi ra. */
 export interface AiKeyInfo {
   provider: string
   has_key: boolean
-  /** `…9999` — đủ để nhận ra khóa nào, không đủ để dùng. */
+  /** `…9999` của khóa ưu tiên cao nhất — đủ để nhận ra, không đủ để dùng. */
   hint: string
   verified_at: string | null
+  items?: AiKeyItem[]
+  /** Số khóa công ty đang có — hết khóa cá nhân thì bot lùi về đây (có trần lượt/ngày). */
+  company_keys?: number
+  providers?: AiProviderInfo[]
+}
+
+/** Khóa AI CÔNG TY (ai-CR-098) — gác quyền cấu hình hệ thống. */
+export interface CompanyAiKeys {
+  items: AiKeyItem[]
+  providers: AiProviderInfo[]
+}
+
+export interface AiKeyInput {
+  key: string
+  provider?: string
+  model?: string
+  priority?: number
+  daily_cap?: number
+}
+
+export interface AiKeyPatch {
+  model?: string
+  priority?: number
+  daily_cap?: number
 }
 
 /** Khóa kết nối MCP cá nhân (ai-CR-063). `key` chỉ có trong kết quả tạo, đúng một lần. */
@@ -172,10 +220,18 @@ export const agentHubApi = {
   removeLink: (id: number) => apiDelete<null>(`/api/agent-hub/links/${id}`),
   setLinkNotifyMode: (id: number, notify_mode: number) => apiPatch<TelegramLink>(`/api/agent-hub/links/${id}`, { notify_mode }),
 
-  /** Khóa Gemini cá nhân — tự phục vụ, chỉ đòi đăng nhập (ai-CR-053). */
+  /** Khóa AI cá nhân — tự phục vụ, chỉ đòi đăng nhập (ai-CR-053, nhiều khóa từ ai-CR-098). */
   myAiKey: () => apiGet<AiKeyInfo>('/api/agent-hub/ai-key'),
-  setAiKey: (key: string) => apiPut<AiKeyInfo>('/api/agent-hub/ai-key', { key }),
+  setAiKey: (body: AiKeyInput) => apiPut<AiKeyInfo>('/api/agent-hub/ai-key', body),
+  patchAiKey: (id: number, body: AiKeyPatch) => apiPatch<AiKeyInfo>(`/api/agent-hub/ai-key/${id}`, body),
+  removeOneAiKey: (id: number) => apiDelete<AiKeyInfo>(`/api/agent-hub/ai-key/${id}`),
   removeAiKey: () => apiDelete<AiKeyInfo>('/api/agent-hub/ai-key'),
+
+  /** Khóa AI công ty (ai-CR-098) — quyền cấu hình hệ thống. */
+  companyAiKeys: () => apiGet<CompanyAiKeys>('/api/agent-hub/ai-key/company'),
+  setCompanyAiKey: (body: AiKeyInput) => apiPut<CompanyAiKeys>('/api/agent-hub/ai-key/company', body),
+  patchCompanyAiKey: (id: number, body: AiKeyPatch) => apiPatch<CompanyAiKeys>(`/api/agent-hub/ai-key/company/${id}`, body),
+  removeCompanyAiKey: (id: number) => apiDelete<CompanyAiKeys>(`/api/agent-hub/ai-key/company/${id}`),
 
   /** Khóa MCP cá nhân — tự phục vụ (ai-CR-063). */
   myMcpKeys: () => apiGet<McpKeysResult>('/api/agent-hub/mcp-keys'),

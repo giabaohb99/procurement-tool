@@ -696,12 +696,13 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     if _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text):
         return
     if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
-            or _reminder_by_text(db, chat_id, row, text):
+            or _reminder_by_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text) \
+            or _keys_by_text(db, chat_id, row, text):     # ai-CR-095/098: sổ nhớ + «còn khóa nào» cho mọi người
         return
     if _over_daily_cap(db, chat_id, row):
         return
     if not user_keys.active_key():
-        #  ai-CR-053: không lùi về khóa công ty. Dấu lệnh để tin không rơi vào INBOX.
+        #  ai-CR-098: chuỗi khóa = khóa cá nhân → khóa công ty khai trong sổ; cả hai trống mới tới đây.
         row.action = ACT_COMMAND
         reply(db, chat_id, user_keys.NO_KEY_HELP)
         return
@@ -806,7 +807,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
             or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
-            or _ghi_viec_by_text(db, chat_id, row, text) or _glossary_by_text(db, chat_id, row, text)
+            or _ghi_viec_by_text(db, chat_id, row, text) or _keys_by_text(db, chat_id, row, text)
+            or _glossary_by_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
@@ -1853,6 +1855,52 @@ def _ghi_viec_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     row.body = m.group("body").strip()
     row.scope = SCOPE_COMPANY
     ack_task_message(db, chat_id, row)
+    return True
+
+
+_KEYS_Q = re.compile(
+    r"^(?:/khoa|khóa ai|khoá ai|các khóa|còn (?:khóa|key) nào|(?:khóa|key) nào|khóa của (?:anh|tôi|em)|"
+    r"(?:còn )?(?:bao nhiêu|mấy) (?:khóa|key)|giới hạn (?:khóa|key|lượt)(?: bao nhiêu)?|hạn mức(?: khóa)?)\s*[?.!]*$",
+    re.IGNORECASE)
+
+
+def _keys_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«khóa AI» · «còn khóa nào» · «giới hạn bao nhiêu» (ai-CR-098): liệt kê chuỗi khóa của chat này + lượt đã dùng.
+    Đại ca 07/10: đổi khóa không nhắn; ai hỏi mới nói."""
+    from . import ai_keys
+
+    if not _KEYS_Q.match((text or "").strip()):
+        return False
+    row.action = ACT_COMMAND
+    esc = telegram.esc
+    refs, owner = user_keys.chain_for_chat(db, chat_id)
+    if not refs:
+        reply(db, chat_id, user_keys.NO_KEY_HELP)
+        return True
+    used = user_keys.usage_today(db, owner) if owner else {}
+    per_key = ai_keys.used_today(db, [r.row_id for r in refs])
+    cap = int(settings.AGENT_USER_DAILY_TURNS or 0)
+    lines = ["<b>KHÓA AI CỦA CHAT NÀY</b> · thứ tự dùng, hỏng thì tự nhảy sang khóa kế", ""]
+    for i, ref in enumerate(refs, 1):
+        label = ai_keys.PROVIDER_LABELS.get(ref.provider, ref.provider)
+        who = ("cá nhân" if ref.owner_type == ai_keys.OWNER_USER else
+               ("công ty" if ref.source != "env" else "công ty (.env máy chủ)"))
+        model = ref.model or "model mặc định"
+        n_used = per_key.get(ref.row_id, 0)
+        cap_txt = (f"hôm nay {n_used}/{ref.daily_cap} lượt" if ref.daily_cap else
+                   (f"hôm nay {n_used} lượt" if ref.row_id else "không đếm riêng"))
+        hint = f"…{ref.hint}" if ref.hint else ""
+        lines.append(f"<b>{i}. {esc(label)}</b> {esc(hint)} · {esc(who)} · {esc(model)} · {esc(cap_txt)}")
+    lines.append("")
+    if owner:
+        total = sum(used.values())
+        by = " · ".join(f"{esc(ai_keys.PROVIDER_LABELS.get(p, p or 'gemini'))} {n}" for p, n in used.items()) or "chưa có"
+        if telegram.is_allowed_chat(chat_id):
+            lines.append(f"<b>Hôm nay</b>: {total} lượt ({by}) · chat đại ca không có trần.")
+        else:
+            lines.append(f"<b>Hôm nay</b>: {total}/{cap} lượt ({by}).")
+    lines.append("<i>Thêm, bớt, đổi ưu tiên ở ERP → Trang cá nhân → Khóa AI. Không dán khóa vào chat.</i>")
+    reply(db, chat_id, "\n".join(lines))
     return True
 
 
@@ -4243,5 +4291,9 @@ def finish_run(db: Session, run: AgentRun, *, result=None, error: str = "") -> N
     #  Token "suy nghĩ" gộp vào output — Gemini tính giá chúng như output.
     run.output_tokens = result.output_tokens + result.thinking_tokens
     run.model = result.model or run.model
+    if getattr(result, "provider", "") and result.provider != "agent_gemini":
+        run.provider = result.provider      # ai-CR-098: hãng thật đã trả lời (gemini / claude / openai / openrouter)
+    ref = user_keys.active_ref()
+    run.key_id = ref.row_id if ref is not None else 0
     run.cost_usd = estimate_cost_usd(run.model, run.input_tokens, run.output_tokens)
     run.artifact = {"text": (result.text or "")[:8000]}

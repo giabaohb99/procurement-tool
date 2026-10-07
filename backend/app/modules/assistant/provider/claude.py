@@ -57,8 +57,15 @@ class ClaudeProvider(Provider):
         #  trên màn hình cũng không ăn thua cho tới lần khởi động lại.
         return app_settings.get("ai_claude_model") or "claude-sonnet-5"
 
+    def _api_key(self) -> str:
+        """Khóa dùng cho lượt gọi này — lớp con của bot đổi nguồn (agent_hub/manager.py). ai-CR-098: dòng khóa CÔNG TY
+        trong `tab_ai_key` đi trước cấu hình hệ thống."""
+        from app.modules.agent_hub import ai_keys  # import muộn: tránh vòng import
+
+        return ai_keys.company_key(self.name) or app_settings.get("anthropic_api_key")
+
     def is_configured(self) -> bool:
-        return bool(app_settings.get("anthropic_api_key"))
+        return bool(self._api_key())
 
     def ask(
         self,
@@ -96,13 +103,8 @@ class ClaudeProvider(Provider):
         # Ghi chú: bật extended thinking cho Claude là chuyện của P2 (đổi model + thinking config).
         # Phase 1 chưa bật để giữ chi phí thấp và tránh khác biệt định dạng giữa các model.
 
-        headers = {
-            "x-api-key": app_settings.get("anthropic_api_key"),
-            "anthropic-version": API_VERSION,
-            "content-type": "application/json",
-        }
         try:
-            resp = requests.post(API_URL, json=payload, headers=headers, timeout=TIMEOUT)
+            resp = requests.post(API_URL, json=payload, headers=self._headers(), timeout=TIMEOUT)
         except requests.RequestException as e:
             raise ProviderError(f"Lỗi gọi Claude: {e}") from e
 
@@ -126,10 +128,9 @@ class ClaudeProvider(Provider):
         )
 
     # ── Hạ tầng dùng chung ────────────────────────────────────────────────────────────
-    @staticmethod
-    def _headers() -> dict:
+    def _headers(self) -> dict:
         return {
-            "x-api-key": app_settings.get("anthropic_api_key"),
+            "x-api-key": self._api_key(),
             "anthropic-version": API_VERSION,
             "content-type": "application/json",
         }

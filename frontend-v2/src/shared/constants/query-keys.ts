@@ -505,6 +505,8 @@ export const queryKeys = {
     telegramLinks: () => ['system', 'telegram-links'] as const,
     /** Khóa Gemini cá nhân của chính mình (ai-CR-053). */
     aiKey: () => ['system', 'ai-key'] as const,
+    /** Khóa AI công ty (ai-CR-098). */
+    companyAiKeys: () => ['system', 'ai-key', 'company'] as const,
     /** Khóa MCP cá nhân (ai-CR-063). */
     mcpKeys: () => ['system', 'mcp-keys'] as const,
     /** Kết nối Google cá nhân (ai-CR-064). */

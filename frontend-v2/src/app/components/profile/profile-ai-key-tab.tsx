@@ -1,6 +1,7 @@
-import { CalendarDays, KeyRound, Plug, Trash2 } from 'lucide-react'
+import { CalendarDays, Plug, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { AiKeyListCard } from '@/modules/system/components/ai-key-list-card'
 import {
   useAiKey,
   useCreateMcpKey,
@@ -8,8 +9,9 @@ import {
   useGoogleAuthorize,
   useGoogleLink,
   useMcpKeys,
-  useRemoveAiKey,
+  usePatchAiKey,
   useRemoveMcpKey,
+  useRemoveOneAiKey,
   useSetAiKey,
 } from '@/modules/system/hooks/use-ai-key'
 import { Button } from '@/shared/ui/button'
@@ -23,88 +25,48 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDateTime } from '@/shared/utils/format-date'
 
 /**
- * Tab «Khóa AI» ở Trang cá nhân (ai-CR-053, D-01) — khóa Gemini CÁ NHÂN cho bot Telegram / Zalo.
+ * Tab «Khóa AI» ở Trang cá nhân (ai-CR-053, D-01 → ai-CR-098, C-04) — khóa AI CÁ NHÂN cho bot Telegram / Zalo.
  *
+ * Nhiều khóa, nhiều hãng (Gemini · Claude · OpenAI · OpenRouter) theo thứ tự ưu tiên: khóa trên cùng hết tiền / hết
+ * hạn mức / sai thì bot tự nhảy sang khóa kế, hết khóa cá nhân thì lùi về khóa công ty (có trần lượt mỗi ngày).
  * Dán ở đây, KHÔNG dán vào chat: Telegram giữ lịch sử vĩnh viễn, khóa nằm trong chat là khóa đã lộ.
- * Backend kiểm khóa với Gemini rồi lưu mã hóa; không cửa nào trả khóa ra, kể cả cho chính chủ —
- * chỉ 4 ký tự cuối. Ô nhập là `type="password"` và xóa trắng ngay sau khi lưu.
- * Khóa của Trợ lý trên web là khóa công ty, cấu hình ở Quản trị; hai khóa không dùng chung.
+ * Backend kiểm khóa với hãng rồi lưu mã hóa; không cửa nào trả khóa ra, kể cả cho chính chủ — chỉ 4 ký tự cuối.
  */
 export function ProfileAiKeyTab() {
   const { data, isLoading } = useAiKey()
   const setKey = useSetAiKey()
-  const remove = useRemoveAiKey()
-  const [draft, setDraft] = useState('')
-
-  async function handleSave() {
-    const key = draft.trim()
-    if (!key) return
-    await setKey.mutateAsync(key).then(() => setDraft(''), () => undefined)
-  }
-
-  async function handleRemove() {
-    const ok = await confirm({
-      title: 'Gỡ khóa Gemini',
-      message: 'Gỡ khóa này? Bot Telegram sẽ không trả lời câu hỏi AI cho bạn nữa cho tới khi dán khóa khác.',
-      confirmLabel: 'Gỡ khóa',
-    })
-    if (ok) remove.mutate()
-  }
+  const patch = usePatchAiKey()
+  const removeOne = useRemoveOneAiKey()
+  const companyKeys = data?.company_keys ?? 0
 
   return (
     <div className="space-y-4">
       <GoogleCard />
       <McpKeysCard />
-      <Card>
-        <CardHeader>
-          <SectionHeading>Khóa AI của bạn cho bot Telegram</SectionHeading>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p className="text-muted-foreground">
-            Mọi câu hỏi bạn gửi bot Telegram (và Zalo sau này) chạy bằng khóa Gemini của chính bạn, chi phí tính
-            theo khóa đó. Lấy khóa ở{' '}
-            <a className="font-medium text-primary hover:underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
-              Google AI Studio
-            </a>
-            . Chỉ dán ở đây, không bao giờ gửi khóa vào khung chat. Khóa của Trợ lý trên web là khóa công ty, không dùng chung.
+      <AiKeyListCard
+        title="Khóa AI của bạn cho bot Telegram"
+        description={
+          <p>
+            Mọi câu hỏi bạn gửi bot Telegram (và Zalo sau này) chạy bằng khóa của chính bạn, theo thứ tự trong danh
+            sách; khóa trên cùng hỏng thì bot tự dùng khóa kế, không nhắn gì. Hỏi bot «còn khóa nào» để xem lượt đã
+            dùng hôm nay.{' '}
+            {companyKeys > 0
+              ? 'Hết khóa cá nhân thì bot dùng khóa công ty, có trần lượt mỗi ngày.'
+              : 'Công ty chưa khai khóa chung, nên chưa có khóa nào thì bot chưa trả lời câu hỏi AI.'}{' '}
+            Chỉ dán ở đây, không bao giờ gửi khóa vào khung chat.
           </p>
-          {isLoading && <Skeleton className="h-10 w-full" />}
-          {!isLoading && data?.has_key && (
-            <div className="flex flex-wrap items-center gap-3 rounded-md border p-3">
-              <span className="min-w-0 flex-1">
-                Đang dùng khóa <span className="font-mono">{data.hint}</span>
-                {data.verified_at && <span className="text-muted-foreground"> · kiểm lúc {formatDateTime(data.verified_at)}</span>}
-              </span>
-              <Button type="button" variant="ghost" size="sm" onClick={() => void handleRemove()} disabled={remove.isPending}>
-                <Trash2 className="mr-1 size-4" /> Gỡ khóa
-              </Button>
-            </div>
-          )}
-          {!isLoading && data && !data.has_key && (
-            <p className="rounded-md border border-dashed p-3 text-muted-foreground">
-              Chưa có khóa. Bot vẫn cho đăng nhập, xem tình trạng việc, nhưng chưa trả lời câu hỏi AI.
-            </p>
-          )}
-          <div className="space-y-1.5">
-            <Label htmlFor="ai-key-input">{data?.has_key ? 'Dán khóa mới để thay' : 'Dán khóa Gemini'}</Label>
-            <div className="flex gap-2">
-              <Input
-                id="ai-key-input"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="AIza…"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-              />
-              <Button type="button" size="sm" onClick={() => void handleSave()} disabled={!draft.trim() || setKey.isPending}>
-                <KeyRound className="mr-1.5 size-4" /> {setKey.isPending ? 'Đang kiểm…' : 'Lưu khóa'}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">Hệ thống gọi thử Gemini một lượt không tốn token để chắc khóa dùng được rồi mới lưu (đã mã hóa).</p>
-          </div>
-        </CardContent>
-      </Card>
+        }
+        items={data?.items ?? []}
+        providers={data?.providers}
+        isLoading={isLoading}
+        canWrite
+        emptyText="Chưa có khóa. Bot vẫn cho đăng nhập, xem tình trạng việc, nhưng câu hỏi AI chỉ chạy khi có khóa (của bạn hoặc của công ty)."
+        removeMessage="Bot sẽ dùng khóa kế trong danh sách."
+        saving={setKey.isPending}
+        onAdd={(body) => setKey.mutateAsync(body)}
+        onPatch={(id, body) => patch.mutate({ id, body })}
+        onRemove={(id) => removeOne.mutate(id)}
+      />
     </div>
   )
 }

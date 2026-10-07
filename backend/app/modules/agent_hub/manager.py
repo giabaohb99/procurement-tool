@@ -16,19 +16,34 @@ import re
 
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatMessage, ChatResult, ProviderError
+from app.modules.assistant.provider.base import Provider
+from app.modules.assistant.provider.claude import ClaudeProvider
 from app.modules.assistant.provider.gemini import GeminiProvider
+from app.modules.assistant.provider.openai_compat import OpenAICompatProvider, OpenRouterProvider
 
 from .constants import BOT_NAME, SCOPE_COMPANY, SCOPE_PERSONAL
 
 log = logging.getLogger("app.agent_hub.manager")
 
 
-class AgentGeminiProvider(GeminiProvider):
-    """Gemini chạy bằng khóa RIÊNG của bot (QĐ-AI-7).
+#  Trần phần suy nghĩ của bot quản lý. Đo 23/09: lượt lập kế hoạch nghĩ 6-14 nghìn token, và token
+#  suy nghĩ tính giá như đầu ra — phần tốn nhất của một lượt. Hạ về 4096 (ai-CR-022).
+THINKING_BUDGET = 4096
+NO_KEY_MSG = "Chưa có khóa AI nào dùng được cho chat này (Trang cá nhân → Khóa AI)."
 
-    Bot chạy nền và tự gọi model; dùng chung khóa với Trợ lý AI thì một ngày bot bận
-    là hạn mức cạn, và thứ chết trước là trợ lý người dùng đang gõ trực tiếp — chết
-    im lặng, giữa giờ làm.
+
+class AgentGeminiProvider(GeminiProvider):
+    """Provider của bot: Gemini bằng khóa của NGƯỜI đang chat (QĐ-AI-7, ai-CR-053) + bộ định tuyến chuỗi khóa nhiều
+    hãng (ai-CR-098, C-04). Giữ tên «agent_gemini» cho mọi chỗ gọi cũ.
+
+    Bot chạy nền và tự gọi model; dùng chung khóa với Trợ lý AI thì một ngày bot bận là hạn mức cạn, và thứ chết
+    trước là trợ lý người dùng đang gõ trực tiếp — chết im lặng, giữa giờ làm.
+
+    Mỗi lượt: lấy khóa đang dùng trong chuỗi (`user_keys.active_ref()`); khóa Gemini thì chạy chính lớp này, hãng khác
+    giao cho adapter tương ứng (`_DELEGATES`). Hãng trả lỗi vì CHUYỆN CỦA KHÓA (hết tiền 402, hạn mức 429, khóa sai
+    401/403 — `ai_keys.key_problem`) thì nhảy sang khóa kế và gọi lại, im lặng (đại ca 07/10: «khỏi cần báo»). Hết
+    chuỗi thì ném lỗi cuối cho người gọi nói thẳng. Model: khóa khai `model` thì dùng; khóa Gemini không khai thì theo
+    model người gọi đưa (cấu hình bot); hãng khác không khai thì mặc định của hãng.
     """
 
     name = "agent_gemini"
@@ -65,14 +80,87 @@ class AgentGeminiProvider(GeminiProvider):
             cfg["thinkingConfig"] = {"thinkingBudget": 0}
         return cfg
 
+    # ── Bộ định tuyến chuỗi khóa (ai-CR-098) ──────────────────────────────────────────
+    @staticmethod
+    def _model_for(ref, model: str | None) -> str | None:
+        if ref.model:
+            return ref.model
+        return model if ref.provider == "gemini" else None
 
-#  Trần phần suy nghĩ của bot quản lý. Đo 23/09: lượt lập kế hoạch nghĩ 6-14 nghìn token, và token
-#  suy nghĩ tính giá như đầu ra — phần tốn nhất của một lượt. Hạ về 4096 (ai-CR-022).
-THINKING_BUDGET = 4096
+    def _call(self, method: str, *args, model: str | None = None, **kw):
+        from . import ai_keys, user_keys
+
+        last: ProviderError | None = None
+        while True:
+            ref = user_keys.active_ref()
+            if ref is None or not ref.key:
+                raise last or ProviderError(NO_KEY_MSG)
+            if ref.provider == "gemini":
+                fn = getattr(GeminiProvider, method).__get__(self, AgentGeminiProvider)
+            else:
+                fn = getattr(_DELEGATES.get(ref.provider) or _DELEGATES["claude"], method)
+            try:
+                return fn(*args, model=self._model_for(ref, model), **kw)
+            except ProviderError as e:
+                if ai_keys.is_key_problem(str(e)) and user_keys.advance():
+                    log.warning("agent_hub: khóa %s …%s hỏng (%s), nhảy sang khóa kế", ref.provider, ref.hint,
+                                str(e)[:80])
+                    last = e
+                    continue
+                raise
+
+    def ask(self, messages, *, model=None, system=None, max_tokens=1024, temperature=0.3, thinking=False,
+            cache_system=False):
+        return self._call("ask", messages, model=model, system=system, max_tokens=max_tokens,
+                          temperature=temperature, thinking=thinking, cache_system=cache_system)
+
+    def run_tools(self, messages, *, tools, execute, model=None, system=None, max_tokens=1024, temperature=0.3,
+                  thinking=False, cache_system=False, max_iters=6):
+        return self._call("run_tools", messages, tools=tools, execute=execute, model=model, system=system,
+                          max_tokens=max_tokens, temperature=temperature, thinking=thinking,
+                          cache_system=cache_system, max_iters=max_iters)
+
+
+class _AgentGeminiOnly(AgentGeminiProvider):
+    """Gemini thuần bằng khóa Gemini TRONG chuỗi (việc chỉ Gemini làm được: tìm Google ở `research.py`)."""
+
+    def _api_key(self) -> str:
+        from . import user_keys
+
+        return user_keys.gemini_key()
+
+
+class _AgentClaude(ClaudeProvider):
+    def _api_key(self) -> str:
+        from . import user_keys
+
+        return user_keys.active_key()
+
+
+class _AgentOpenAI(OpenAICompatProvider):
+    def _api_key(self) -> str:
+        from . import user_keys
+
+        return user_keys.active_key()
+
+
+class _AgentOpenRouter(OpenRouterProvider):
+    def _api_key(self) -> str:
+        from . import user_keys
+
+        return user_keys.active_key()
+
+
+_DELEGATES: dict[str, Provider] = {"claude": _AgentClaude(), "openai": _AgentOpenAI(), "openrouter": _AgentOpenRouter()}
 
 
 def get_provider() -> AgentGeminiProvider:
     return AgentGeminiProvider()
+
+
+def gemini_provider() -> _AgentGeminiOnly:
+    """Gemini thuần bằng khóa Gemini trong chuỗi — cho tìm Google (`research.search_web`)."""
+    return _AgentGeminiOnly()
 
 
 def register_with_assistant() -> None:

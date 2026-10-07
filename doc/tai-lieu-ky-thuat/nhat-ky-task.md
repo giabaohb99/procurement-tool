@@ -12507,3 +12507,17 @@ bộ phân loại lẫn Trợ lý AI, nói thẳng lý do và chỉ cách nạp 
 
 Mã nguồn: backend/app/modules/agent_hub/user_keys.py (key_problem) · agent_hub/service.py (nhánh phân loại hỏng, answer_question)
 Deploy: dev 07/10 khoảng 09:30, erp-v2 91201c32 (Agent 1 gộp và dựng lại); prod giữ lại.
+
+## ai-CR-098 | Sổ khóa AI một bảng cho công ty và từng người, nhiều hãng, tự đổi khóa khi hỏng
+- status: xong
+- date: 2026-10-07
+Đại ca muốn dùng khóa của nhiều hãng AI và để công ty cũng có nhiều khóa. Bảng khóa cá nhân cũ được đổi thành một sổ
+chung, mỗi dòng ghi khóa đó của công ty hay của ai, thuộc hãng nào (Gemini, Claude, OpenAI, OpenRouter), model mặc
+định, thứ tự ưu tiên và trần lượt mỗi ngày; khóa cũ giữ nguyên. Bot dùng khóa theo thứ tự: khóa cá nhân trước, rồi
+khóa công ty; khóa đang dùng hết tiền, hết hạn mức hay sai thì tự chuyển sang khóa kế mà không nhắn gì, đúng ý đại ca.
+Ai hỏi «còn khóa nào» thì bot liệt kê từng khóa và số lượt đã dùng hôm nay. Thêm bộ nối cho OpenAI và OpenRouter có
+gọi được công cụ; Trợ lý trên web cũng đọc khóa công ty trong sổ này. Màn Khóa AI ở Trang cá nhân nay nhận nhiều khóa,
+đổi thứ tự, đặt model và trần; thẻ Trợ lý AI ở Cấu hình hệ thống có danh sách khóa công ty. Vá kèm lỗi lệnh sổ ghi
+nhớ trước đây chỉ chạy ở chat đại ca.
+
+Mã nguồn: backend/app/modules/agent_hub/ai_keys.py · agent_hub/user_keys.py · agent_hub/manager.py (AgentGeminiProvider) · assistant/provider/openai_compat.py · frontend-v2 ai-key-list-card.tsx, company-ai-keys-panel.tsx · migration aikey01

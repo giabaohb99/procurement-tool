@@ -4396,6 +4396,7 @@ def _fake_gemini_search(monkeypatch, research, *, text="**Kết luận: ĐÚNG**
                                         {"web": {"uri": "https://g.co/r/3", "title": "gdt.gov.vn"}}]}}]}
 
     monkeypatch.setattr(research.manager, "get_provider", lambda: Fake())
+    monkeypatch.setattr(research.manager, "gemini_provider", lambda: Fake())   # ai-CR-098: tìm Google đi Gemini thuần
 
 
 def test_kiem_chung_goi_google_search_tra_ket_luan_va_nguon(db, bot, monkeypatch):
@@ -5000,8 +5001,10 @@ def test_luu_khoa_kiem_voi_gemini_ma_hoa_va_chi_giu_4_ky_tu_cuoi(db, monkeypatch
     row = user_keys.set_key(db, lan.id, "AIzaSy-khoa-dung-abcdefgh-9999")
     assert row.key_hint == "9999" and "AIzaSy" not in row.key_enc and row.verified_at is not None
     assert user_keys.key_for_user(db, lan.id) == "AIzaSy-khoa-dung-abcdefgh-9999"
-    assert user_keys.describe(db, lan.id) == {"provider": "gemini", "has_key": True, "hint": "…9999",
-                                              "verified_at": row.verified_at.isoformat(timespec="seconds")}
+    d = user_keys.describe(db, lan.id)
+    assert {k: d[k] for k in ("provider", "has_key", "hint", "verified_at")} == {
+        "provider": "gemini", "has_key": True, "hint": "…9999", "verified_at": row.verified_at.isoformat(timespec="seconds")}
+    assert [i["hint"] for i in d["items"]] == ["…9999"] and "AIzaSy" not in str(d)
     user_keys.set_key(db, lan.id, "AIzaSy-khoa-moi-abcdefgh-0001")             # đổi khóa: dòng cũ đóng
     assert db.query(AgentUserKey).filter_by(user_id=lan.id, revoked_at=None).count() == 1
     assert user_keys.describe(db, lan.id)["hint"] == "…0001"
@@ -5018,7 +5021,7 @@ def test_nguoi_lien_ket_chua_gan_khoa_thi_bot_khong_goi_gemini_ma_chi_nhac(db, b
     code, _ = chat_link.issue_code(db, lan.id)
     service.handle_message(db, _other_msg(f"/dangnhap {code}"))
     service.handle_message(db, _other_msg("3 đơn mua hàng gần nhất"))
-    assert "chưa gắn khóa Gemini" in sent[-1] and "Khóa AI" in sent[-1] and not asked
+    assert "chưa gắn khóa AI" in sent[-1] and "Khóa AI" in sent[-1] and not asked
     #  Không cần khóa vẫn làm được: tài khoản, tình trạng việc (K-04) — không dính khóa.
     service.handle_message(db, _other_msg("/taikhoan"))
     assert "lan@dego.vn" in sent[-1]
@@ -5086,7 +5089,7 @@ def test_chat_dai_ca_lui_ve_khoa_env_khi_chua_co_khoa_ca_nhan_con_co_thi_dung_kh
     monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "")
     user_keys.revoke(db, me.id)
     service.handle_message(db, _msg("màn công nợ lọc sai ngày"))
-    assert "chưa gắn khóa Gemini" in sent[-1]
+    assert "chưa gắn khóa AI" in sent[-1]
     monkeypatch.setattr(service.manager, "run_triage", lambda *a, **kw: pytest.fail("không có khóa thì không gom"))
     assert service.triage_inbox(db, force=True) == 0
 
@@ -5576,7 +5579,7 @@ def test_tin_thoai_chep_thanh_chu_roi_di_nhu_tin_chu(db, bot, monkeypatch):
     from app.modules.agent_hub import user_keys
     user_keys.revoke(db, lan.id)
     service.handle_message(db, voice)
-    assert "chưa gắn khóa Gemini" in sent[-1][1] and asked == ["ba đơn mua hàng gần nhất"]
+    assert "chưa gắn khóa AI" in sent[-1][1] and asked == ["ba đơn mua hàng gần nhất"]
 
 
 def test_tran_luot_ai_moi_ngay_cho_chat_thuong(db, bot, monkeypatch):
@@ -7365,7 +7368,7 @@ def test_khoa_gemini_het_tien_thi_noi_thang_khong_hoi_lam_luon_hay_ghi_viec(db, 
 
     monkeypatch.setattr(service.manager, "run_intent", boom)
     service.handle_message(db, _msg("Giá thép Hòa Phát"))
-    assert "hết tiền trả trước" in sent[-1] and "làm luôn" not in sent[-1]
+    assert "hết tiền" in sent[-1] and "402" in sent[-1] and "làm luôn" not in sent[-1]
     row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
     assert row.action == service.ACT_COMMAND and asked == []
     #  Lỗi khác (mạng) vẫn đi thẻ hai nút như cũ.
@@ -7373,3 +7376,183 @@ def test_khoa_gemini_het_tien_thi_noi_thang_khong_hoi_lam_luon_hay_ghi_viec(db, 
     service.handle_message(db, {**_msg("xem lại giúp anh"), "message_id": 8})
     assert "chưa chắc" in sent[-1]
     assert service.user_keys.key_problem("429 RESOURCE_EXHAUSTED") and not service.user_keys.key_problem("timeout")
+
+# ---------------------------------------------------------------------------
+# ai-CR-098 — sổ khóa AI một bảng (công ty + cá nhân), nhiều hãng, ưu tiên, tự nhảy khóa, trần riêng (C-04)
+# ---------------------------------------------------------------------------
+def _add_key(db, owner_type, owner_id, provider, raw, priority=0, daily_cap=0, model=""):
+    from app.modules.agent_hub import ai_keys
+
+    return ai_keys.add_key(db, owner_type=owner_type, owner_id=owner_id, provider=provider, raw=raw,
+                           priority=priority, daily_cap=daily_cap, model=model, check=False)
+
+
+def test_so_khoa_mot_bang_uu_tien_va_chuoi_cua_chat(db, monkeypatch):
+    from app.modules.agent_hub import ai_keys, user_keys
+
+    ai_keys.clear_cache()
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "khoa-env-may-bot")
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    lan = _erp_user(db, key=False)
+    _add_key(db, 2, lan.id, "gemini", "AIzaSy-lan-gemini-abcdefgh-0001")
+    _add_key(db, 2, lan.id, "claude", "sk-ant-lan-claude-abcdefgh-0002")
+    _add_key(db, 1, 0, "openrouter", "sk-or-cty-openrouter-abcdefgh-0003")
+    #  Xếp tự động: khóa đầu ưu tiên 1, hãng mới xếp cuối; công ty sau cá nhân.
+    refs = ai_keys.chain_for_user(db, lan.id) + ai_keys.company_chain_for_bot(db)
+    assert [(r.provider, r.priority, r.owner_type) for r in refs] == [
+        ("gemini", 1, 2), ("claude", 2, 2), ("openrouter", 1, 1)]
+    #  Thay khóa cùng hãng giữ đúng chỗ ưu tiên, dòng cũ đóng.
+    _add_key(db, 2, lan.id, "gemini", "AIzaSy-lan-gemini-moi-abcdefgh-0009")
+    assert [(r.provider, r.hint) for r in ai_keys.chain_for_user(db, lan.id)] == [("gemini", "0009"), ("claude", "0002")]
+    #  Chat đại ca chưa liên kết: công ty rồi `.env`; chat lạ chưa liên kết: không khóa.
+    refs, owner = user_keys.chain_for_chat(db, "12345")
+    assert [r.provider for r in refs] == ["openrouter", "gemini"] and refs[-1].source == "env" and owner == 0
+    assert user_keys.chain_for_chat(db, "999") == ([], 0)
+    #  Khóa công ty cũng đi vào provider của Trợ lý web (đọc trước cấu hình hệ thống).
+    ai_keys.company_chain(db)                    # nạp bộ đệm từ DB của bài kiểm (provider web đọc qua đệm)
+    assert ai_keys.company_key("openrouter").startswith("sk-or-cty")
+
+
+def test_khoa_het_tien_thi_tu_nhay_sang_khoa_ke_im_lang(db, monkeypatch):
+    from app.modules.agent_hub import manager, user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider.base import ChatMessage, ChatResult, ProviderError
+
+    calls: list[str] = []
+
+    def gemini_post(self, model, payload):
+        calls.append(f"gemini:{self._api_key()[-4:]}")
+        raise ProviderError('Gemini trả lỗi 402: {"error": {"message": "Your prepayment credits are depleted."}}')
+
+    def claude_ask(self, messages, *, model=None, **kw):
+        calls.append(f"claude:{self._api_key()[-4:]}:{model}")
+        return ChatResult(text="ok từ Claude", provider="claude", model="claude-x", input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(manager.GeminiProvider, "_post", gemini_post)
+    monkeypatch.setattr(manager.ClaudeProvider, "ask", claude_ask)
+    refs = [KeyRef(provider="gemini", key="AIzaSy-gem-abcdefgh-1111", row_id=1, hint="1111"),
+            KeyRef(provider="claude", key="sk-ant-cl-abcdefgh-2222", row_id=2, hint="2222", model="claude-haiku-x")]
+    with user_keys.use_chain(refs, owner=7):
+        out = manager.get_provider().ask([ChatMessage(role="user", content="hi")], model="gemini-flash-latest")
+        assert out.text == "ok từ Claude" and user_keys.active_ref().provider == "claude"
+    assert calls == ["gemini:1111", "claude:2222:claude-haiku-x"]
+    #  Lỗi KHÔNG phải của khóa (mạng) thì không nhảy, ném luôn.
+    calls.clear()
+
+    def timeout_post(self, model, payload):
+        raise ProviderError("Lỗi gọi Gemini: timeout")
+
+    monkeypatch.setattr(manager.GeminiProvider, "_post", timeout_post)
+    with user_keys.use_chain(refs, owner=7):
+        with pytest.raises(ProviderError, match="timeout"):
+            manager.get_provider().ask([ChatMessage(role="user", content="hi")])
+        assert user_keys.active_ref().provider == "gemini"
+    #  Hết chuỗi: ném lỗi của khóa cuối để người gọi nói thẳng.
+    monkeypatch.setattr(manager.GeminiProvider, "_post", gemini_post)
+    with user_keys.use_chain(refs[:1], owner=7):
+        with pytest.raises(ProviderError, match="402"):
+            manager.get_provider().ask([ChatMessage(role="user", content="hi")])
+
+
+def test_tran_rieng_tung_khoa_va_lenh_khoa_ai(db, bot, monkeypatch):
+    from app.modules.agent_hub import ai_keys, chat_link
+    from app.modules.agent_hub.model import AgentRun
+
+    service, sent, _ = bot
+    ai_keys.clear_cache()
+    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "")
+    lan = _erp_user(db, key=False)
+    k1 = _add_key(db, 2, lan.id, "gemini", "AIzaSy-lan-gemini-abcdefgh-0001", daily_cap=2)
+    _add_key(db, 2, lan.id, "openai", "sk-lan-openai-abcdefgh-0002", model="gpt-5-mini")
+    for _ in range(2):
+        db.add(AgentRun(task_id=0, stage=service.STAGE_INTENT, provider="gemini", model="x", status=2,
+                        started_at=datetime.utcnow(), owner_id=lan.id, key_id=k1.id))
+    db.commit()
+    #  Khóa Gemini đã chạm trần 2 lượt hôm nay → chuỗi bỏ qua, OpenAI lên đầu.
+    assert [r.provider for r in ai_keys.chain_for_user(db, lan.id)] == ["openai"]
+    #  «còn khóa nào»: liệt kê chuỗi đang dùng được + lượt hôm nay, không lộ khóa.
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("còn khóa nào"))
+    assert "KHÓA AI CỦA CHAT NÀY" in sent[-1] and "OpenAI" in sent[-1] and "gpt-5-mini" in sent[-1]
+    assert "Hôm nay" in sent[-1] and "sk-lan" not in sent[-1] and "AIzaSy" not in sent[-1]
+    d = service.user_keys.describe(db, lan.id)
+    assert {i["provider"]: i["used_today"] for i in d["items"]} == {"gemini": 2, "openai": 0}
+
+
+def test_adapter_openai_va_openrouter_goi_cong_cu(monkeypatch):
+    """Một vòng tool-calling kiểu Chat Completions: model gọi tool → nhận kết quả → trả chữ."""
+    import json as _json
+
+    from app.modules.assistant.provider import openai_compat as oc
+    from app.modules.assistant.provider.base import ChatMessage, ToolDef
+
+    posts: list[dict] = []
+    replies = iter([
+        {"model": "gpt-5-mini", "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+         "choices": [{"message": {"content": None, "tool_calls": [
+             {"id": "c1", "type": "function", "function": {"name": "count_po", "arguments": '{"n": 3}'}}]}}]},
+        {"model": "gpt-5-mini", "usage": {"prompt_tokens": 20, "completion_tokens": 7},
+         "choices": [{"message": {"content": "Có 3 đơn."}}]},
+    ])
+
+    class R:
+        status_code = 200
+
+        def __init__(self, data):
+            self._d = data
+
+        def json(self):
+            return self._d
+
+    def fake_post(url, json=None, headers=None, timeout=0):
+        posts.append({"url": url, "json": _json.loads(_json.dumps(json)), "auth": headers.get("authorization")})
+        return R(next(replies))
+
+    monkeypatch.setattr(oc.requests, "post", fake_post)
+    p = oc.OpenAICompatProvider()
+    monkeypatch.setattr(p, "_api_key", lambda: "sk-test")
+    out = p.run_tools([ChatMessage(role="user", content="mấy đơn?")],
+                      tools=[ToolDef(name="count_po", description="đếm", parameters={"type": "object", "properties": {}})],
+                      execute=lambda name, args: {"count": args["n"]}, system="sys")
+    assert out.text == "Có 3 đơn." and out.input_tokens == 30 and out.tool_calls[0]["name"] == "count_po"
+    assert posts[0]["url"].endswith("/chat/completions") and posts[0]["auth"] == "Bearer sk-test"
+    assert "temperature" not in posts[0]["json"] and posts[0]["json"]["max_completion_tokens"] == 1024
+    assert posts[0]["json"]["messages"][0] == {"role": "system", "content": "sys"}
+    assert _json.loads(posts[1]["json"]["messages"][-1]["content"]) == {"count": 3}
+    r = oc.OpenRouterProvider()
+    assert r.base_url.startswith("https://openrouter.ai") and r.max_tokens_field == "max_tokens"
+
+
+def test_api_khoa_ai_nhieu_hang_va_khoa_cong_ty(db, monkeypatch):
+    import json as _json
+    from types import SimpleNamespace
+
+    from app.modules.agent_hub import ai_keys, controller
+
+    def data(resp):
+        return _json.loads(resp.body)["data"]
+
+    ai_keys.clear_cache()
+    monkeypatch.setattr(ai_keys, "_probe", lambda provider, raw: 200)
+    lan = _erp_user(db, key=False)
+    me = SimpleNamespace(id=lan.id)
+    controller.set_my_ai_key(controller.AiKeyIn(key="AIzaSy-lan-abcdefghijk-0001"), user=me, db=db)
+    out = controller.set_my_ai_key(controller.AiKeyIn(key="sk-or-lan-abcdefghijk-0002", provider="openrouter",
+                                                      model="google/gemini-2.5-flash"), user=me, db=db)
+    items = data(out)["items"]
+    assert [(i["provider"], i["priority"], i["hint"]) for i in items] == [("gemini", 1, "…0001"), ("openrouter", 2, "…0002")]
+    #  Đổi ưu tiên + gỡ một khóa; khóa người khác không đụng được.
+    controller.patch_my_ai_key(items[1]["id"], controller.AiKeyPatch(priority=1), user=me, db=db)
+    with pytest.raises(controller.HTTPException):
+        controller.remove_one_ai_key(items[0]["id"], user=SimpleNamespace(id=lan.id + 99), db=db)
+    controller.remove_one_ai_key(items[0]["id"], user=me, db=db)
+    assert [i["provider"] for i in data(controller.get_my_ai_key(user=me, db=db))["items"]] == ["openrouter"]
+    #  Hãng lạ bị từ chối; khóa công ty đi đường riêng (gác quyền cấu hình hệ thống).
+    with pytest.raises(controller.HTTPException):
+        controller.set_my_ai_key(controller.AiKeyIn(key="x" * 30, provider="la"), user=me, db=db)
+    cty = controller.set_company_ai_key(controller.AiKeyIn(key="sk-ant-cty-abcdefghijk-0003", provider="claude"),
+                                        user=me, db=db)
+    assert [i["provider"] for i in data(cty)["items"]] == ["claude"]
+    ai_keys.company_chain(db)
+    assert ai_keys.company_key("claude").endswith("0003")

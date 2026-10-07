@@ -16,11 +16,14 @@ from .base import (
 )
 from .claude import ClaudeProvider
 from .gemini import GeminiProvider
+from .openai_compat import OpenAICompatProvider, OpenRouterProvider
 
 # Đăng ký một thực thể mỗi nhà (không giữ trạng thái nên dùng chung an toàn).
 _REGISTRY: dict[str, Provider] = {
     ClaudeProvider.name: ClaudeProvider(),
     GeminiProvider.name: GeminiProvider(),
+    OpenAICompatProvider.name: OpenAICompatProvider(),      # ai-CR-098: OpenAI + OpenRouter (cùng kiểu API)
+    OpenRouterProvider.name: OpenRouterProvider(),
 }
 
 

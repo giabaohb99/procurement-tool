@@ -92,8 +92,10 @@ class GeminiProvider(Provider):
         """Khóa dùng cho lượt gọi này. Tách thành hàm để lớp con đổi được nguồn khóa —
         Agent Hub chạy khóa RIÊNG (`AGENT_GEMINI_API_KEY`) chứ không tiêu chung hạn mức
         với Trợ lý AI, xem `agent_hub/manager.py`. Trợ lý AI đọc khóa từ cấu hình hệ thống
-        (`tab_setting`, bao-CR-428/429)."""
-        return app_settings.get("gemini_api_key")
+        (`tab_setting`, bao-CR-428/429). ai-CR-098: dòng khóa CÔNG TY trong `tab_ai_key` đi trước."""
+        from app.modules.agent_hub import ai_keys  # import muộn: tránh vòng import
+
+        return ai_keys.company_key(self.name) or app_settings.get("gemini_api_key")
 
     def is_configured(self) -> bool:
         return bool(self._api_key())

@@ -20,7 +20,7 @@ from app.core.response import success
 
 from pydantic import BaseModel
 
-from . import chat_link, coder, google_link, mcp_keys, telegram, user_keys
+from . import ai_keys, chat_link, coder, google_link, mcp_keys, telegram, user_keys
 from .constants import (
     DIRECTION_LABELS,
     RISK_LABELS,
@@ -201,6 +201,16 @@ def remove_link(link_id: int, user=Depends(get_current_user), db: Session = Depe
 # ---------------------------------------------------------------------------
 class AiKeyIn(BaseModel):
     key: str
+    provider: str = "gemini"
+    model: Str80 = ""
+    priority: int = 0
+    daily_cap: int = 0
+
+
+class AiKeyPatch(BaseModel):
+    model: Str80 | None = None
+    priority: int | None = None
+    daily_cap: int | None = None
 
 
 @router.get("/ai-key")
@@ -210,17 +220,75 @@ def get_my_ai_key(user=Depends(get_current_user), db: Session = Depends(get_db))
 
 @router.put("/ai-key")
 def set_my_ai_key(body: AiKeyIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-098: nhiều khóa, nhiều hãng. Cùng hãng + cùng ưu tiên = thay khóa; ưu tiên 0 = tự xếp (cùng hãng thì giữ
+    chỗ cũ, hãng mới thì xếp cuối)."""
     try:
-        user_keys.set_key(db, user.id, body.key)
+        user_keys.set_key(db, user.id, body.key, body.provider, model=body.model, priority=body.priority,
+                          daily_cap=body.daily_cap)
     except user_keys.InvalidKey as e:
         raise HTTPException(400, str(e)) from e
-    return success(user_keys.describe(db, user.id), "Đã lưu khóa Gemini. Bot Telegram sẽ dùng khóa này cho anh/chị.")
+    label = ai_keys.PROVIDER_LABELS.get(body.provider, body.provider)
+    return success(user_keys.describe(db, user.id), f"Đã lưu khóa {label}. Bot Telegram sẽ dùng khóa này cho anh/chị.")
+
+
+@router.patch("/ai-key/{row_id}")
+def patch_my_ai_key(row_id: int, body: AiKeyPatch, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if ai_keys.update_key(db, row_id, owner_type=ai_keys.OWNER_USER, owner_id=user.id, model=body.model,
+                          priority=body.priority, daily_cap=body.daily_cap) is None:
+        raise HTTPException(404, "Không tìm thấy khóa")
+    return success(user_keys.describe(db, user.id), "Đã cập nhật khóa")
+
+
+@router.delete("/ai-key/{row_id}")
+def remove_one_ai_key(row_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if not ai_keys.revoke_key(db, row_id, owner_type=ai_keys.OWNER_USER, owner_id=user.id):
+        raise HTTPException(404, "Không tìm thấy khóa")
+    return success(user_keys.describe(db, user.id), "Đã gỡ khóa")
 
 
 @router.delete("/ai-key")
 def remove_my_ai_key(user=Depends(get_current_user), db: Session = Depends(get_db)):
     user_keys.revoke(db, user.id)
-    return success(user_keys.describe(db, user.id), "Đã gỡ khóa Gemini")
+    return success(user_keys.describe(db, user.id), "Đã gỡ mọi khóa AI")
+
+
+# Khóa CÔNG TY (ai-CR-098): một bảng với khóa cá nhân, owner_type = 1. Gác bằng quyền cấu hình hệ thống — cùng chỗ
+# hai ô khóa cũ (Quản trị → Cấu hình hệ thống → Trợ lý AI). Dùng cho Trợ lý web + đường lùi của bot.
+def _company_payload(db: Session) -> dict:
+    return {"items": ai_keys.describe_rows(ai_keys.active_rows(db, ai_keys.OWNER_COMPANY, 0), db),
+            "providers": [{"name": p, "label": ai_keys.PROVIDER_LABELS[p], "site": ai_keys.PROVIDER_SITES[p]}
+                          for p in ai_keys.PROVIDERS]}
+
+
+@router.get("/ai-key/company")
+def get_company_ai_keys(user=Depends(require("setting", "read")), db: Session = Depends(get_db)):
+    return success(_company_payload(db))
+
+
+@router.put("/ai-key/company")
+def set_company_ai_key(body: AiKeyIn, user=Depends(require("setting", "write")), db: Session = Depends(get_db)):
+    try:
+        ai_keys.add_key(db, owner_type=ai_keys.OWNER_COMPANY, owner_id=0, provider=body.provider, raw=body.key,
+                        model=body.model, priority=body.priority, daily_cap=body.daily_cap, by_user=user.id)
+    except ai_keys.InvalidKey as e:
+        raise HTTPException(400, str(e)) from e
+    return success(_company_payload(db), f"Đã lưu khóa công ty {ai_keys.PROVIDER_LABELS.get(body.provider, body.provider)}")
+
+
+@router.patch("/ai-key/company/{row_id}")
+def patch_company_ai_key(row_id: int, body: AiKeyPatch, user=Depends(require("setting", "write")),
+                         db: Session = Depends(get_db)):
+    if ai_keys.update_key(db, row_id, owner_type=ai_keys.OWNER_COMPANY, owner_id=0, model=body.model,
+                          priority=body.priority, daily_cap=body.daily_cap) is None:
+        raise HTTPException(404, "Không tìm thấy khóa")
+    return success(_company_payload(db), "Đã cập nhật khóa công ty")
+
+
+@router.delete("/ai-key/company/{row_id}")
+def remove_company_ai_key(row_id: int, user=Depends(require("setting", "write")), db: Session = Depends(get_db)):
+    if not ai_keys.revoke_key(db, row_id, owner_type=ai_keys.OWNER_COMPANY, owner_id=0):
+        raise HTTPException(404, "Không tìm thấy khóa")
+    return success(_company_payload(db), "Đã gỡ khóa công ty")
 
 
 # ---------------------------------------------------------------------------

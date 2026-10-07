@@ -64,7 +64,7 @@ def _sources_of(candidate: dict) -> list[dict]:
 
 def search_web(question: str, *, mode: str = MODE_WEB) -> tuple[str, list[dict], ChatResult]:
     """Một lượt Gemini có công cụ `google_search`. Trả (câu trả lời Markdown, nguồn, số đo token)."""
-    provider = manager.get_provider()
+    provider = manager.gemini_provider()      # ai-CR-098: tìm Google chỉ Gemini có; khóa Gemini trong chuỗi
     model = settings.AGENT_MANAGER_MODEL
     payload = {
         "contents": [{"role": "user", "parts": [{"text": question}]}],

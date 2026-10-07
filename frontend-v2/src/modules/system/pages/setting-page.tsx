@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 
 import { settingApi } from '../api/setting-api'
 import { EmailExclusionPanel } from '../components/email-exclusion-panel'
+import { CompanyAiKeysPanel } from '../components/company-ai-keys-panel'
 import { RagIndexPanel } from '../components/rag-index-panel'
 import { SettingFieldRow } from '../components/setting-field-row'
 import { SettingHistoryPanel } from '../components/setting-history-panel'
@@ -318,6 +319,9 @@ export function SettingPage() {
               {/*  Loại trừ email đi CÙNG tab Email: nó là "ai KHÔNG nhận", đọc
                    liền mạch ngay dưới phần khai máy chủ gửi. */}
               {item.value === 'email' && <EmailExclusionPanel canWrite={canWrite} />}
+
+              {/*  ai-CR-098: khóa AI công ty nhiều hãng theo ưu tiên — một bảng với khóa cá nhân ở Trang cá nhân. */}
+              {item.value === 'assistant' && <CompanyAiKeysPanel canWrite={canWrite} />}
 
               {item.value === 'assistant' && canReindex && <RagIndexPanel />}
 

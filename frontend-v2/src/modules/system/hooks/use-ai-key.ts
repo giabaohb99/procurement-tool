@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
-import { agentHubApi } from '../api/agent-hub-api'
+import { agentHubApi, type AiKeyInput, type AiKeyPatch } from '../api/agent-hub-api'
 
-/** Khóa Gemini cá nhân (ai-CR-053) — tab «Khóa AI» ở Trang cá nhân. Bot Telegram/Zalo dùng khóa này cho chính mình. */
+/** Khóa AI cá nhân (ai-CR-053 → ai-CR-098 nhiều khóa) — tab «Khóa AI» ở Trang cá nhân. Bot dùng theo thứ tự ưu tiên. */
 export function useAiKey() {
   return useQuery({
     queryKey: queryKeys.system.aiKey(),
@@ -15,9 +15,30 @@ export function useAiKey() {
 export function useSetAiKey() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (key: string) => agentHubApi.setAiKey(key),
+    mutationFn: (body: AiKeyInput) => agentHubApi.setAiKey(body),
     onSuccess: () => {
-      toast.success('Đã lưu khóa Gemini. Bot sẽ dùng khóa này cho bạn.')
+      toast.success('Đã lưu khóa. Bot sẽ dùng khóa này cho bạn theo thứ tự ưu tiên.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.aiKey() })
+    },
+  })
+}
+
+export function usePatchAiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: AiKeyPatch }) => agentHubApi.patchAiKey(id, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.aiKey() })
+    },
+  })
+}
+
+export function useRemoveOneAiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => agentHubApi.removeOneAiKey(id),
+    onSuccess: () => {
+      toast.success('Đã gỡ khóa.')
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.aiKey() })
     },
   })
@@ -28,8 +49,49 @@ export function useRemoveAiKey() {
   return useMutation({
     mutationFn: () => agentHubApi.removeAiKey(),
     onSuccess: () => {
-      toast.success('Đã gỡ khóa Gemini.')
+      toast.success('Đã gỡ mọi khóa AI.')
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.aiKey() })
+    },
+  })
+}
+
+/** Khóa AI CÔNG TY (ai-CR-098) — thẻ «Trợ lý AI» ở Cấu hình hệ thống. */
+export function useCompanyAiKeys(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.system.companyAiKeys(),
+    queryFn: () => agentHubApi.companyAiKeys(),
+    enabled,
+  })
+}
+
+export function useSetCompanyAiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AiKeyInput) => agentHubApi.setCompanyAiKey(body),
+    onSuccess: () => {
+      toast.success('Đã lưu khóa công ty.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.companyAiKeys() })
+    },
+  })
+}
+
+export function usePatchCompanyAiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: AiKeyPatch }) => agentHubApi.patchCompanyAiKey(id, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.companyAiKeys() })
+    },
+  })
+}
+
+export function useRemoveCompanyAiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => agentHubApi.removeCompanyAiKey(id),
+    onSuccess: () => {
+      toast.success('Đã gỡ khóa công ty.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.companyAiKeys() })
     },
   })
 }
