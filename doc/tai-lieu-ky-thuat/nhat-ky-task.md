@@ -12799,6 +12799,8 @@ khai, chặn mọi địa chỉ nội bộ. Nếu khóa Gemini còn hạn mức 
 câu «giá vàng hôm nay»: tìm ra tám kết quả và đọc được bảng giá SJC.
 
 Mã nguồn: backend/app/modules/agent_hub/web_search.py (mới) · agent_hub/research.py (run, search_web_any)
+Deploy: dev 07/10 (Agent 1 gộp và dựng lại api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
+
 
 ## duoc-CR-610 | Tra cứu hóa chất ở bản mới: bỏ khóa cột để người dùng tự ẩn hiện mọi cột
 - status: xong
