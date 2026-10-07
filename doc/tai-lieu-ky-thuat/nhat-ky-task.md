@@ -12884,3 +12884,4 @@ ghi vào mô tả. Ai chưa tạo việc được ở phân hệ Dự án thì v
 chưa nối Google thì ghi vào thẻ cá nhân. Mỗi mục nhớ trạng thái nên nhắn «tạo» lần hai không tạo trùng. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_actions.py (mới) · agent_hub/meetings.py · agent_hub/service.py · agent_hub/model.py · migration meet03 · test/backend/test_agent_hub.py
+Deploy: dev 07/10 (Agent 1 gộp 66601fb1, sao lưu DB dev trước, migration meet03, dựng lại api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
