@@ -17,11 +17,13 @@ from app.modules.employee.model import Employee
 from app.modules.survey_request import report_service as svc
 from app.modules.survey_request.model import SurveyRequest, SurveyRequestLine
 from app.modules.survey_request.report_constants import (DEFAULT_PHASES,
-                                                         DEFAULT_TEMPLATE_DOCS, RD_DONE)
+                                                         DEFAULT_TEMPLATE_DOCS,
+                                                         MAX_BULK_DELETE_DOCS, RD_DONE)
 from app.modules.survey_request.report_model import (SurveyReportDoc,
                                                      SurveyReportItem,
                                                      SurveyReportPhase)
-from app.modules.survey_request.report_schema import (ReportDocIn, ReportDocPatch,
+from app.modules.survey_request.report_schema import (ReportDocBulkDeleteIn, ReportDocIn,
+                                                      ReportDocPatch, ReportFirstDocIn,
                                                       ReportItemIn)
 
 
@@ -194,6 +196,113 @@ def test_xoa_ho_so_thi_go_khoi_tien_quyet_cua_ho_so_khac(db):
     # Không gỡ thì b chờ một id chết -> khóa vĩnh viễn.
     assert db.get(SurveyReportDoc, b.id).depends == []
 
+
+
+# ── duoc-CR-611: xóa NHIỀU hồ sơ (chọn tay / cả cụm một dòng hàng) ──────────────
+def test_xoa_nhieu_ho_so_go_tien_quyet_cua_ho_so_con_lai(db):
+    s = _sr(db)
+    ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
+    a = _doc(db, s.rid, ph.id, title="RFQ")
+    b = _doc(db, s.rid, ph.id, title="Báo giá", depends=[a.id])
+    c = _doc(db, s.rid, ph.id, title="Hợp đồng", depends=[a.id, b.id])
+    d = _doc(db, s.rid, ph.id, title="Thanh toán", depends=[c.id])
+    db.commit()
+
+    #  Id lặp trong danh sách không được đếm hai lần.
+    titles = svc.delete_docs(db, s.rid, [a.id, b.id, a.id], user_id=1)
+    db.commit()
+    assert titles == ["RFQ", "Báo giá"]
+    assert db.get(SurveyReportDoc, a.id) is None and db.get(SurveyReportDoc, b.id) is None
+    #  c chờ cả hai id vừa xóa → gỡ hết, không để id chết khóa vĩnh viễn; d không đụng.
+    assert db.get(SurveyReportDoc, c.id).depends == []
+    assert db.get(SurveyReportDoc, d.id).depends == [c.id]
+
+
+def test_xoa_nhieu_mot_id_la_thi_khong_xoa_gi_ca(db):
+    s1, s2 = _sr(db), _sr(db, code="YCKS-BC9")
+    ph1 = svc.create_phase(db, s1.rid, "GĐ1", "", 1)
+    ph2 = svc.create_phase(db, s2.rid, "GĐ1", "", 1)
+    mine = _doc(db, s1.rid, ph1.id, title="Của phiếu 1")
+    other = _doc(db, s2.rid, ph2.id, title="Của phiếu 2")
+    db.commit()
+
+    #  Trộn id của phiếu khác (hoặc id đã bị người khác xóa) → 404, KHÔNG xóa nửa vời.
+    for ids in ([mine.id, other.id], [mine.id, 999_999]):
+        with pytest.raises(HTTPException) as e:
+            svc.delete_docs(db, s1.rid, ids, user_id=1)
+        assert e.value.status_code == 404
+    db.rollback()
+    assert db.get(SurveyReportDoc, mine.id) is not None
+    assert db.get(SurveyReportDoc, other.id) is not None
+
+
+def test_schema_xoa_nhieu_chan_rong_va_qua_tran():
+    with pytest.raises(ValidationError):
+        ReportDocBulkDeleteIn(doc_ids=[])
+    with pytest.raises(ValidationError):
+        ReportDocBulkDeleteIn(doc_ids=list(range(1, MAX_BULK_DELETE_DOCS + 2)))
+    assert len(ReportDocBulkDeleteIn(doc_ids=list(range(1, MAX_BULK_DELETE_DOCS + 1))).doc_ids) \
+        == MAX_BULK_DELETE_DOCS
+
+
+# ── duoc-CR-611: hồ sơ ĐẦU TIÊN khi khối còn trống, chọn được dòng hàng ─────────
+def test_ho_so_dau_tien_dung_khung_khong_do_mau_va_gan_dung_dong_hang(db):
+    s = _sr(db)
+    l1 = _line(db, s.id, requirement_detail="K2SO4")
+    l2 = _line(db, s.id, requirement_detail="KNO3")
+    lines = svc.survey_request_lines(db, s.id)
+
+    doc = svc.create_first_doc(db, s.rid, lines,
+                               ReportFirstDocIn(title="  C/O form D  ", line_id=l2.id, phase_order=3),
+                               user_id=1)
+    db.commit()
+    payload = svc.get_report_payload(db, s.rid)
+    #  Khung đủ 5 giai đoạn + một nút mỗi dòng, nhưng KHÔNG đổ bộ hồ sơ mẫu: chỉ đúng 1 hồ sơ.
+    assert [p["name"] for p in payload["phases"]] == [name for name, _ in DEFAULT_PHASES]
+    assert sorted(i["line_id"] for i in payload["items"]) == sorted([l1.id, l2.id])
+    assert len(payload["docs"]) == 1
+    item_l2 = next(i for i in payload["items"] if i["line_id"] == l2.id)
+    assert doc.item_id == item_l2["id"]
+    assert doc.phase_id == payload["phases"][3]["id"]
+    assert doc.title == "C/O form D"
+
+
+def test_ho_so_dau_tien_vao_chung_va_bi_chan_khi_khoi_da_co_noi_dung(db):
+    s = _sr(db)
+    lines = svc.survey_request_lines(db, s.id)
+    doc = svc.create_first_doc(db, s.rid, lines, ReportFirstDocIn(title="RFQ"), user_id=1)
+    db.commit()
+    assert doc.item_id == 0                     # line_id=0 → hồ sơ Chung
+    #  Bấm lần hai (tab khác chưa tải lại) → 400, không dựng khung chồng lên khung.
+    with pytest.raises(HTTPException) as e:
+        svc.create_first_doc(db, s.rid, lines, ReportFirstDocIn(title="RFQ 2"), user_id=1)
+    assert e.value.status_code == 400
+    db.rollback()
+    assert len(svc.get_report_payload(db, s.rid)["phases"]) == len(DEFAULT_PHASES)
+
+
+def test_ho_so_dau_tien_dong_hang_la_thi_khong_dung_gi(db):
+    s1, s2 = _sr(db), _sr(db, code="YCKS-BC10")
+    foreign = _line(db, s2.id, requirement_detail="Dòng phiếu khác")
+    with pytest.raises(HTTPException) as e:
+        svc.create_first_doc(db, s1.rid, svc.survey_request_lines(db, s1.id),
+                             ReportFirstDocIn(title="x", line_id=foreign.id), user_id=1)
+    assert e.value.status_code == 404
+    db.rollback()
+    assert svc.is_report_empty(db, s1.rid)
+
+
+def test_schema_ho_so_dau_tien_chan_giai_doan_ngoai_khung_va_tieu_de_rong():
+    with pytest.raises(ValidationError):
+        ReportFirstDocIn(title="x", phase_order=len(DEFAULT_PHASES))
+    with pytest.raises(ValidationError):
+        ReportFirstDocIn(title="x", phase_order=-1)
+    with pytest.raises(ValidationError):
+        ReportFirstDocIn(title="   ")
+    with pytest.raises(ValidationError):
+        ReportFirstDocIn(title="x" * 256)
+    with pytest.raises(ValidationError):
+        ReportFirstDocIn(title="x", line_id=-1)
 
 def test_xoa_giai_doan_con_ho_so_bi_chan(db):
     s = _sr(db)

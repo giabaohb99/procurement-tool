@@ -106,3 +106,7 @@ DEFAULT_TEMPLATE_DOCS = (
 #  Trần số hồ sơ tiên quyết của MỘT hồ sơ — đủ rộng cho mọi quy trình thật,
 #  đồng thời chặn payload rác (cột JSON không tự chặn gì cả, xem duoc-CR-316).
 MAX_DEPENDS = 30
+
+#  Trần số hồ sơ của MỘT lượt «xóa nhiều» — bằng trần số hồ sơ của cả khối
+#  (`_ROW_CAPS` ở report_service), nên xóa sạch một khối đầy vẫn lọt một lượt.
+MAX_BULK_DELETE_DOCS = 500

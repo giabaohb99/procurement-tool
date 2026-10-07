@@ -8,7 +8,8 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
 
-from .report_constants import MAX_DEPENDS, REPORT_DOC_STATUS_LABELS
+from .report_constants import (DEFAULT_PHASES, MAX_BULK_DELETE_DOCS, MAX_DEPENDS,
+                               REPORT_DOC_STATUS_LABELS)
 
 
 def _validate_iso_date(v: str | None) -> str | None:
@@ -139,3 +140,25 @@ class ReportDocPatch(BaseModel):
     @classmethod
     def valid_dates(cls, v: str | None) -> str | None:
         return _validate_iso_date(v)
+
+
+class ReportDocBulkDeleteIn(BaseModel):
+    """Xóa NHIỀU hồ sơ một lượt (chọn tay hoặc cả cụm của một dòng hàng)."""
+    doc_ids: list[int] = Field(min_length=1, max_length=MAX_BULK_DELETE_DOCS)
+
+
+class ReportFirstDocIn(BaseModel):
+    """duoc-CR-611 — hồ sơ ĐẦU TIÊN của một khối còn trống: chọn dòng hàng + giai đoạn mặc định."""
+    title: str = Field(min_length=1, max_length=255)
+    #  Id DÒNG CHỨNG TỪ (dòng YCBG / dòng ĐMH), 0 = Chung — nút dòng hàng chưa tồn tại lúc này.
+    line_id: int = Field(default=0, ge=0)
+    #  Vị trí trong 5 giai đoạn mặc định (0 = «Pháp lý & Giấy phép»).
+    phase_order: int = Field(default=0, ge=0, le=len(DEFAULT_PHASES) - 1)
+
+    @field_validator("title")
+    @classmethod
+    def strip_title(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Tiêu đề hồ sơ không được để trống")
+        return v

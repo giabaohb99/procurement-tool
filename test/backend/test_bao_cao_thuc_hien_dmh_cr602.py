@@ -205,3 +205,21 @@ def test_cot_ket_qua_luu_duoc_va_co_tran_o_schema(db, seed):
         ReportDocIn(title="ok", phase_id=1, result="x" * 1001)
     with pytest.raises(ValidationError):
         ReportDocPatch(result="x" * 1001)
+
+
+# ── duoc-CR-611: hồ sơ đầu tiên trên ĐMH gắn đúng nút sinh từ dòng đơn ───────────
+def test_ho_so_dau_tien_dmh_gan_nut_cua_dong_don_va_dong_bo_khong_xoa(db, seed):
+    from app.modules.survey_request.report_schema import ReportFirstDocIn
+    po = _po(db, seed, code="PO-CR611")
+    a = _po_line(db, po.id, "Abamectin 3.6EC")
+    b = _po_line(db, po.id, "Vitamin B1")
+    rid = svc.ensure_report(db, PO, po.id, user_id=1).id
+    lines = ctl._po_lines(db, po)
+    doc = svc.create_first_doc(db, rid, lines,
+                               ReportFirstDocIn(title="Giấy phép", line_id=b.id), user_id=1)
+    db.commit()
+    items = {i["line_id"]: i["id"] for i in svc.get_report_payload(db, rid)["items"]}
+    assert set(items) == {a.id, b.id}
+    assert doc.item_id == items[b.id]
+    #  Đọc lại (đồng bộ nút theo dòng đơn) không được coi nút vừa dựng là thừa.
+    assert svc.sync_line_items(db, rid, lines, user_id=1) is False

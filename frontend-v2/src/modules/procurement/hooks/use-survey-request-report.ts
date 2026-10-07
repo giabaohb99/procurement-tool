@@ -3,7 +3,11 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { executionReportApi, type ReportDocPayload } from '../api/survey-request-report-api'
-import type { ReportOwnerEntity, SurveyRequestReport } from '../types/survey-request-report'
+import type {
+  ReportFirstDocPayload,
+  ReportOwnerEntity,
+  SurveyRequestReport,
+} from '../types/survey-request-report'
 
 /**
  * Khối báo cáo thực hiện của một chứng từ — YCBG hay ĐMH tùy `entity`
@@ -14,6 +18,22 @@ export function useSurveyRequestReport(id: number, entity: ReportOwnerEntity = '
     queryKey: queryKeys.procurement.executionReport(entity, id),
     queryFn: () => executionReportApi(entity).get(id),
     enabled: id > 0,
+  })
+}
+
+/**
+ * Ô chọn dòng hàng + giai đoạn của hộp «Thêm hồ sơ» khi khối còn trống (duoc-CR-611).
+ * Chỉ gọi khi hộp MỞ — khối đã có nội dung thì không ai cần tới nó.
+ */
+export function useReportFirstDocOptions(
+  id: number,
+  entity: ReportOwnerEntity,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: queryKeys.procurement.executionReportFirstDocOptions(entity, id),
+    queryFn: () => executionReportApi(entity).firstDocOptions(id),
+    enabled: enabled && id > 0,
   })
 }
 
@@ -108,6 +128,19 @@ export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = '
       id,
       ({ docId }: { docId: number }) => api.deleteDoc(id, docId),
       'Đã xóa hồ sơ',
+    ),
+    /** Hồ sơ ĐẦU TIÊN khi khối còn trống — backend dựng khung rồi thêm đúng hồ sơ đó. */
+    createFirstDoc: useReportMutation(
+      entity,
+      id,
+      (payload: ReportFirstDocPayload) => api.createFirstDoc(id, payload),
+      'Đã thêm hồ sơ đầu tiên',
+    ),
+    /** Xóa nhiều hồ sơ (chọn tay / cả cụm một dòng hàng) — câu báo có số lượng, chỗ gọi lo. */
+    deleteDocs: useReportMutation(
+      entity,
+      id,
+      ({ docIds }: { docIds: number[] }) => api.deleteDocs(id, docIds),
     ),
 
     /** Xóa CẢ khối — hoàn tác được từ Lịch sử thao tác. */

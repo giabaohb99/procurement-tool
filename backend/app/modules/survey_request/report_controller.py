@@ -29,9 +29,11 @@ from app.modules.purchase_order.controller import _in_scope as po_in_scope
 
 from . import report_service
 from .controller import _in_scope as sr_in_scope
+from .report_constants import DEFAULT_PHASES
 from .report_model import (REPORT_OWNER_PURCHASE_ORDER, REPORT_OWNER_SURVEY_REQUEST,
                            SurveyReportItem, SurveyReportPhase)
-from .report_schema import (ReportDocIn, ReportDocPatch, ReportItemIn, ReportPhaseIn,
+from .report_schema import (ReportDocBulkDeleteIn, ReportDocIn, ReportDocPatch, ReportFirstDocIn,
+                            ReportItemIn, ReportPhaseIn,
                             ReportTemplateApplyIn)
 
 report_router = APIRouter(prefix="/api/execution-report/{entity}/{owner_id}",
@@ -293,3 +295,42 @@ def delete_doc_(entity: str, owner_id: int, doc_id: int, db: Session = Depends(g
     parent, report_id = _writable(db, entity, owner_id, user)
     title = report_service.delete_doc(db, report_id, doc_id, user.id)
     return _done(db, entity, parent, report_id, user, f"Báo cáo: xóa hồ sơ '{title}'")
+
+
+#  Đi POST chứ không DELETE: thân DELETE có máy proxy / thư viện bỏ rơi. Đường tĩnh
+#  `/docs/bulk-delete` không đụng `/docs/{doc_id}` vì khác phương thức.
+@report_router.post("/docs/bulk-delete")
+def delete_docs_(entity: str, owner_id: int, data: ReportDocBulkDeleteIn,
+                 db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    parent, report_id = _writable(db, entity, owner_id, user)
+    titles = report_service.delete_docs(db, report_id, data.doc_ids, user.id)
+    #  Một dòng lịch sử cho cả lượt; liệt kê tối đa 5 tên, còn lại gộp «+n».
+    shown = ", ".join(f"'{t}'" for t in titles[:5])
+    more = f" +{len(titles) - 5}" if len(titles) > 5 else ""
+    return _done(db, entity, parent, report_id, user,
+                 f"Báo cáo: xóa {len(titles)} hồ sơ: {shown}{more}")
+
+
+# ── Hồ sơ đầu tiên (duoc-CR-611) ────────────────────────────────────────────────
+@report_router.get("/first-doc-options")
+def first_doc_options_(entity: str, owner_id: int, db: Session = Depends(get_db),
+                       user=Depends(_require_owner("write"))):
+    """Ô chọn của hộp «Thêm hồ sơ» khi khối còn trống: dòng hàng của chứng từ + 5 giai
+    đoạn mặc định. Chỉ ĐỌC — không dựng đầu báo cáo (người mở hộp rồi hủy không để lại gì)."""
+    rule = _rule_of(entity)
+    parent = rule.load(db, owner_id, user, rule.write_scope_action)
+    return success({
+        "lines": [{"line_id": line_id, "name": name} for line_id, name in rule.lines(db, parent)],
+        "phases": [{"order": order, "name": name, "location": location}
+                   for order, (name, location) in enumerate(DEFAULT_PHASES)],
+    })
+
+
+@report_router.post("/first-doc")
+def create_first_doc_(entity: str, owner_id: int, data: ReportFirstDocIn,
+                      db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    parent, report_id = _writable(db, entity, owner_id, user)
+    lines = _rule_of(entity).lines(db, parent)
+    report_service.create_first_doc(db, report_id, lines, data, user.id)
+    return _done(db, entity, parent, report_id, user,
+                 f"Báo cáo: thêm hồ sơ đầu tiên '{data.title}' (dựng khung 5 giai đoạn)")

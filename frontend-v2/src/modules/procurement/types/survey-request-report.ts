@@ -75,6 +75,21 @@ export interface SurveyRequestReport {
 //  Bộ mã SỐ gõ tay theo `backend/.../survey_request/report_constants.py` —
 //  `gen_status_ts.py` chỉ sinh cho bộ mã CHUỖI (cùng cảnh `hr/types/leave.ts`).
 //  Đổi ở backend thì phải nhớ sửa tay bên này.
+/** Ô chọn của hộp «Thêm hồ sơ» khi khối còn trống (duoc-CR-611). */
+export interface ReportFirstDocOptions {
+  /** Dòng của chứng từ (dòng YCBG / dòng ĐMH) — nút dòng hàng CHƯA có lúc này. */
+  lines: { line_id: number; name: string }[]
+  /** 5 giai đoạn mặc định; `order` là vị trí gửi lên backend. */
+  phases: { order: number; name: string; location: string }[]
+}
+
+export interface ReportFirstDocPayload {
+  title: string
+  /** 0 = Chung (cả phiếu / cả đơn). */
+  line_id: number
+  phase_order: number
+}
+
 export const REPORT_DOC_IDLE = 0
 export const REPORT_DOC_DOING = 1
 export const REPORT_DOC_REVIEW = 2

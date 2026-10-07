@@ -12827,3 +12827,15 @@ nhóm Zalo bot chỉ ghi lặng; người đã đăng nhập nói câu đầu ti
 338 bài, trong đó tám bài mới cho kênh Zalo.
 
 Mã nguồn: backend/app/modules/agent_hub/channels.py (mới) · agent_hub/zalo.py (mới) · agent_hub/telegram.py · agent_hub/service.py (poll_zalo_once) · agent_hub/poller.py (run_zalo) · agent_hub/groups.py · agent_hub/tasks.py · core/config.py (AGENT_ZALO_BOT_TOKEN) · test/backend/test_agent_hub.py
+
+## duoc-CR-611 | Báo cáo thực hiện: xóa nhiều hồ sơ, xóa cả cụm, và thêm hồ sơ đầu tiên theo dòng hàng
+- status: xong
+- date: 2026-10-07
+Đại ca yêu cầu mỗi dòng hàng trong khối Báo cáo thực hiện xóa được nhiều hồ sơ và xóa được cả một cụm, rồi yêu cầu thêm việc
+thêm hồ sơ lần đầu có chọn dòng hàng. Nay mỗi dòng hàng và mỗi giai đoạn có nút thùng rác xóa cả cụm hồ sơ của nó, còn nút
+Chọn nhiều trong dải sổ của dòng hàng cho tick từng hồ sơ rồi xóa một lượt; hệ thống luôn hỏi xác nhận kèm số lượng và gỡ các
+hồ sơ đã xóa khỏi danh sách tiên quyết của hồ sơ còn lại. Khối báo cáo còn trống có thêm nút Thêm hồ sơ: chọn dòng hàng, giai
+đoạn và tên hồ sơ, hệ thống dựng sẵn năm giai đoạn cùng nút cho từng dòng hàng mà không đổ bộ hồ sơ mẫu. Bài kiểm của backend và
+giao diện chạy xanh, đã bấm thử trên máy, chưa đưa lên dev.
+
+Mã nguồn: backend/app/modules/survey_request/report_controller.py · report_service.py · report_schema.py · frontend-v2/src/modules/procurement/components/survey-report/survey-report-card.tsx · survey-report-doc-selection-bar.tsx · survey-report-first-doc-dialog.tsx
