@@ -12788,3 +12788,15 @@ thông báo lỗi nữa, và máy sửa mã được dựng lại để chạy b
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (ACT_READING trong nhánh đọc ý, plan_task) · agent_hub/constants.py
 Deploy: dev 07/10, erp-v2 5901a9e5 (Agent 1 gộp và dựng lại); máy sửa mã đã dựng lại; prod giữ lại.
+
+## ai-CR-110 | Bot tra mạng được mà không cần Google Search của Gemini
+- status: xong
+- date: 2026-10-07
+Khóa Gemini của đại ca hết hạn mức tìm Google nên bot không tra mạng được, trong khi đại ca đang dùng DeepSeek. Đại ca
+chọn làm đường tra mạng riêng: bot tự tìm trên DuckDuckGo, không ra thì sang Bing, đọc vài trang đầu rồi để model đang
+dùng tóm tắt kèm số thứ tự nguồn; trang không có số liệu thì bot nói chưa tìm được chứ không đoán. Bot chỉ đọc trang công
+khai, chặn mọi địa chỉ nội bộ. Nếu khóa Gemini còn hạn mức thì bot vẫn ưu tiên Google Search của Gemini trước. Đã thử thật
+câu «giá vàng hôm nay»: tìm ra tám kết quả và đọc được bảng giá SJC.
+
+Mã nguồn: backend/app/modules/agent_hub/web_search.py (mới) · agent_hub/research.py (run, search_web_any)
+

@@ -8232,3 +8232,50 @@ def test_dang_doc_y_thi_vong_gom_khong_nhat_va_viec_da_bo_khong_lap_ke_hoach(db,
     service.plan_task(db, task)
     assert len(sent) == n
 
+
+def test_tra_mang_khong_can_gemini(db, bot, monkeypatch):
+    """ai-CR-110: khóa Gemini hết hạn mức tìm Google → tìm DuckDuckGo/Bing + đọc trang, model đang dùng tóm tắt kèm nguồn."""
+    from app.modules.agent_hub import research, user_keys, web_search
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider.base import ChatResult, ProviderError
+
+    ddg_html = (
+        '<a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fsjc.com.vn%2Fgia-vang">Giá vàng '
+        'SJC hôm nay</a><a class="result__snippet" href="x">SJC mua 120 triệu</a>'
+        '<a rel="nofollow" class="result__a" href="https://duckduckgo.com/y.js?ad=1">Quảng cáo</a>'
+        '<a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fpnj.com.vn%2Fgia">PNJ</a>'
+        '<a class="result__snippet" href="x">PNJ bán 121 triệu</a>')
+
+    class R:
+        def __init__(self, code, text):
+            self.status_code, self.text = code, text
+
+    monkeypatch.setattr(web_search.requests, "post", lambda *a, **k: R(200, ddg_html))
+    monkeypatch.setattr(web_search, "fetch", lambda url: "Bảng giá vàng 07/10: SJC 120,0 - 122,0 triệu" if "sjc" in url else "")
+    res = web_search.search("giá vàng hôm nay")
+    assert [r["url"] for r in res] == ["https://sjc.com.vn/gia-vang", "https://pnj.com.vn/gia"]   # bỏ quảng cáo
+    seen = []
+
+    class P:
+        def ask(self, messages, *, system=None, **kw):
+            seen.append((messages[0].content, system))
+            return ChatResult(text="SJC bán 122 triệu [1]", provider="openai_compat", model="ds", input_tokens=1,
+                              output_tokens=1)
+
+    monkeypatch.setattr(research.manager, "get_provider", lambda: P())
+
+    def gemini_429(*a, **k):
+        raise ProviderError("Gemini trả lỗi 429: You exceeded your current quota")
+
+    monkeypatch.setattr(research, "search_web", gemini_429)
+    with user_keys.use_chain([KeyRef(provider="openai_compat", key="sk-router-abcdefgh", base_url="https://x.vn/v1"),
+                              KeyRef(provider="gemini", key="AIzaSy-gem-abcdefgh")]):
+        text, sources, _ = research.run("giá vàng hôm nay", research.MODE_WEB)
+    assert text == "SJC bán 122 triệu [1]" and sources[0]["url"] == "https://sjc.com.vn/gia-vang"
+    assert "SJC 120,0 - 122,0 triệu" in seen[0][0] and "KHÔNG tự tìm được" in seen[0][1]
+    #  Không chạy vào mạng nội bộ dù kết quả tìm kiếm chỉ tới.
+    for bad in ("http://localhost/x", "http://127.0.0.1/a", "http://10.1.2.3/", "file:///etc/passwd", "http://api:8000/"):
+        assert not web_search.public_url(bad)
+    assert "Xin chào" in web_search.page_text("<html><script>x=1</script><p>Xin chào</p><nav>menu</nav></html>")
+    assert "menu" not in web_search.page_text("<nav>menu</nav><p>a</p>")
+
