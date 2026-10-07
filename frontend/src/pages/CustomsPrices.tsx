@@ -268,7 +268,7 @@ export default function CustomsPrices() {
         )}
       </div>
 
-      {!isLegal && <CoverageStrip coverage={coverage} ingredient={options?.ingredient_coverage} />}
+      {/* bao-CR-605 (07/10/2026): bỏ dải «Dữ liệu: … · T1…T12» ở mọi mục — đại ca chốt: dư. */}
 
       {/* bao-CR-502 / duoc-CR-490 — thẻ «Cấu hình», «Thuốc BVTV» và «Tra cứu hóa chất» không dùng bộ lọc
            dòng hàng: ẩn cả cụm lọc (state giữ nguyên ở trang; các thẻ này lọc bằng state cục bộ riêng). */}
@@ -494,47 +494,3 @@ function SearchHint({ query, explain }: { query: string; explain: any }) {
   )
 }
 
-const MONTHS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12']
-
-// Dải tháng đã phủ — để người xem thấy ngay tháng nào CHƯA nạp (quên một tệp là biểu đồ
-// thủng một tháng mà không ai biết). Ba trạng thái: có dữ liệu · trống · chưa tới.
-function CoverageStrip({ coverage, ingredient }: { coverage: any; ingredient?: any }) {
-  if (!coverage) return null
-  if (!coverage.total) return (
-    <div className="card" style={{ padding: '10px 14px', marginBottom: 10, fontSize: 13, color: 'var(--muted)' }}>
-      Chưa có dữ liệu hải quan nào.
-    </div>
-  )
-  const now = new Date()
-  const future = (y: number, m: number) => y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth())
-  return (
-    <div className="card" style={{ padding: '10px 14px', marginBottom: 10, fontSize: 13 }}>
-      <div style={{ marginBottom: 6 }}>
-        Dữ liệu: <b>{fmtDate(coverage.date_from)} → {fmtDate(coverage.date_to)}</b> · {fmtQty(coverage.total)} dòng hàng
-        {coverage.last_import_at && <> · lần nạp gần nhất {fmtDate(coverage.last_import_at)}</>}
-        {ingredient?.ratio != null && (
-          <span title="Tỷ lệ dòng hàng nhận ra được hoạt chất từ tên hàng — dòng không nhận ra vẫn tìm được bằng tên hàng">
-            {' '}· nhận ra hoạt chất {(ingredient.ratio * 100).toFixed(0)}%
-          </span>
-        )}
-      </div>
-      {coverage.years.map((y: any) => (
-        <div key={y.year} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-          <span style={{ width: 40, color: 'var(--muted)' }}>{y.year}</span>
-          {y.months.map((n: number, i: number) => {
-            const fut = future(y.year, i)
-            return (
-              <span key={i} title={fut ? `${MONTHS[i]}/${y.year}: chưa tới` : `${MONTHS[i]}/${y.year}: ${n} dòng`}
-                style={{ width: 44, textAlign: 'center', fontSize: 11, borderRadius: 4, padding: '2px 0',
-                  background: fut ? '#f8fafc' : n ? '#dcf2fb' : '#fee2e2',
-                  color: fut ? '#cbd5e1' : n ? '#0369a1' : '#b91c1c',
-                  border: fut ? '1px dashed #e2e8f0' : '1px solid transparent' }}>
-                {MONTHS[i]}
-              </span>
-            )
-          })}
-        </div>
-      ))}
-    </div>
-  )
-}

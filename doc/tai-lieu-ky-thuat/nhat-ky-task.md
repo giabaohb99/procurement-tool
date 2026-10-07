@@ -119,6 +119,20 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-605 | Tra cứu thị trường: bỏ dải «Dữ liệu · lần nạp gần nhất · T1…T12» ở mọi mục, cả hai bản giao diện
+- status: xong
+- date: 2026-10-07
+Đại ca khoanh đỏ dải tóm tắt phủ dữ liệu hải quan ở đầu các mục Tra cứu thị trường (khoảng ngày, số dòng hàng, lần nạp
+gần nhất, tỷ lệ nhận ra hoạt chất, dải tháng T1…T12) và chốt bỏ vì dư, không mang nhiều giá trị. Đã gỡ ở cả bản cũ và bản
+mới, mọi mục của cụm (trước đó chỉ mục Tra cứu hóa chất là ẩn). Số đếm dữ liệu vẫn giữ để bảng dòng hàng nói đúng câu
+«chưa có dữ liệu». Bài kiểm trang đổi từ «vẫn hiện dải phủ ở thẻ giá» thành «không còn dải phủ».
+Kiểm: bản mới kiểm kiểu 0 lỗi, lint 0 lỗi, 90 bài khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền.
+Mã nguồn: `frontend-v2/.../pages/customs-price-page.tsx` (+ test), xóa `components/customs/customs-coverage-strip.tsx`,
+`frontend/src/pages/CustomsPrices.tsx`.
+Deploy: DEV 07/10/2026; prod chờ đại ca.
+
+---
+
 ## bao-CR-604 | Sổ việc trên phân hệ Dự án: chia theo dự án, nhãn và người phụ trách theo tiền tố CR, ảnh đại diện trên thẻ việc và nhật ký, dọn mục còn treo
 - status: xong
 - date: 2026-10-07

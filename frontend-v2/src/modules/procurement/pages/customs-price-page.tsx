@@ -53,7 +53,6 @@ import { CustomsSearchHint } from '../components/customs/customs-search-hint'
 import { CustomsCompareTab } from '../components/customs/customs-compare-tab'
 import { CustomsNeedFilterState, CustomsNotice } from '../components/customs/customs-controls'
 import { CustomsPartyPicker } from '../components/customs/customs-party-picker'
-import { CustomsCoverageStrip } from '../components/customs/customs-coverage-strip'
 import { CustomsConfigTab } from '../components/customs/customs-config-tab'
 import { CustomsHistoryPanel } from '../components/customs/customs-history-panel'
 import { CustomsImportDialog } from '../components/customs/customs-import-dialog'
@@ -394,14 +393,9 @@ export function CustomsPricePage() {
         }
       />
 
-      {!isLegal && (
-        <CustomsCoverageStrip
-          coverage={coverage.data}
-          ingredientCoverage={options.data?.ingredient_coverage}
-          isLoading={coverage.isLoading}
-        />
-      )}
-
+      {/*  bao-CR-605 (07/10/2026): bỏ dải «Dữ liệu: … · lần nạp gần nhất … · T1…T12» ở mọi mục của
+          cụm Tra cứu thị trường — đại ca chốt: dư, không mang nhiều giá trị. Số đếm `coverage`
+          vẫn giữ cho câu «chưa có dữ liệu» của bảng dòng hàng. */}
       {/*  bao-CR-501 — mục «Cấu hình» (và «Thuốc BVTV») không dùng bộ lọc dòng hàng: ẩn thanh lọc. */}
       <Card className={cn('gap-3 p-4', !usesLineFilters && 'hidden')}>
         <div className="flex flex-wrap items-center gap-2">
