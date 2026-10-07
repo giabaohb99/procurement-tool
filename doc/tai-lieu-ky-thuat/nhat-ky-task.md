@@ -126,6 +126,11 @@ Deploy: chưa deploy.
 gần nhất, tỷ lệ nhận ra hoạt chất, dải tháng T1…T12) và chốt bỏ vì dư, không mang nhiều giá trị. Đã gỡ ở cả bản cũ và bản
 mới, mọi mục của cụm (trước đó chỉ mục Tra cứu hóa chất là ẩn). Số đếm dữ liệu vẫn giữ để bảng dòng hàng nói đúng câu
 «chưa có dữ liệu». Bài kiểm trang đổi từ «vẫn hiện dải phủ ở thẻ giá» thành «không còn dải phủ».
+Kèm theo: đại ca hỏi dữ liệu Tra cứu hóa chất Được cập nhật (duoc-CR-598) đã có chưa. Kiểm ra mã và migration
+`nd24reg01` đã lên dev từ 06/10 nhưng script nạp dữ liệu NĐ 24/2026 chưa ai chạy, nên dev và máy em vẫn là bộ cũ ngày
+23/09 (1.019 dòng phụ lục I–IV, chưa có STT và công thức). Đã sao lưu bảng `tab_customs_regulation` trên dev rồi chạy
+`python -m scripts.load_nd24_regulations` ở dev và máy em: 1.349 dòng, thêm 382, cập nhật 967, ngừng dùng 52 dòng không
+còn trong tệp. Prod chưa có migration `nd24reg01` nên chưa nạp được, đi theo đợt prod kế.
 Kiểm: bản mới kiểm kiểu 0 lỗi, lint 0 lỗi, 90 bài khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền.
 Mã nguồn: `frontend-v2/.../pages/customs-price-page.tsx` (+ test), xóa `components/customs/customs-coverage-strip.tsx`,
 `frontend/src/pages/CustomsPrices.tsx`.
