@@ -15,6 +15,8 @@ import requests
 
 from app.core.config import settings
 
+from . import channels
+
 BASE_URL = "https://api.telegram.org/bot{token}/{method}"
 
 #  Telegram chặn tin quá 4096 ký tự bằng lỗi 400. Cắt ở 3900 để còn chỗ cho phần
@@ -122,7 +124,12 @@ def get_bot_username() -> str:
 def download_file(file_id: str, *, max_bytes: int) -> tuple[bytes, str]:
     """Tải một tệp người dùng gửi (ai-CR-035). Trả (nội dung, đường dẫn phía Telegram).
 
-    Lỗi KHÔNG được mang URL tải: URL chứa token của bot."""
+    Lỗi KHÔNG được mang URL tải: URL chứa token của bot.
+    ai-CR-111: «file_id» mang tiền tố `zlurl:` là đường tải của Zalo → tải bên `zalo`."""
+    if file_id.startswith(channels.ZALO_FILE_PREFIX):
+        from . import zalo
+
+        return zalo.download(file_id[len(channels.ZALO_FILE_PREFIX):], max_bytes=max_bytes)
     info = _call("getFile", {"file_id": file_id})
     size = int(info.get("file_size") or 0)
     if size and size > max_bytes:
@@ -285,6 +292,11 @@ def send_chat_action(chat_id: str = "", action: str = "typing") -> None:
     """
     if relaying():
         return
+    if channels.is_zalo(chat_id):
+        from . import zalo
+
+        zalo.send_chat_action(chat_id, action)
+        return
     try:
         _call("sendChatAction", {
             "chat_id": chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
@@ -308,7 +320,13 @@ def send(text: str, *, buttons: list[tuple[str, str]] | None = None,
 
     Mã hành động đi thẳng vào `callback_data`, và Telegram chặn nó ở 64 byte —
     nên giữ dạng ngắn `<hành động>:<id task>`, đừng nhét JSON vào.
+    ai-CR-111: chat Zalo (`zl:…`) rẽ sang `zalo.send` — nút bấm thành danh sách lựa chọn nhắn lại bằng chữ. Máy sửa mã
+    (không token) vẫn gửi vòng qua worker như cũ; worker thấy tiền tố `zl:` thì gửi bằng Zalo.
     """
+    if channels.is_zalo(chat_id) and not relaying():
+        from . import zalo
+
+        return zalo.send(chat_id, text, buttons=buttons)
     payload: dict = {
         "chat_id": chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
         "text": _clip(text),
@@ -348,6 +366,10 @@ def send_document(chat_id: str, filename: str, data: bytes, *, caption: str = ""
     ERP nên bot phải đọc byte từ kho rồi đẩy thẳng qua `sendDocument` (multipart).
     `caption` là HTML đã thoát, tối đa 1024 ký tự theo Telegram.
     """
+    if channels.is_zalo(chat_id):
+        from . import zalo
+
+        return zalo.send_document(chat_id, filename, data, caption=caption)
     if len(data) > MAX_DOCUMENT_BYTES:
         raise TelegramError(f"Tệp {filename} nặng {len(data)} byte, quá trần 50 MB của Telegram")
     payload = {"chat_id": chat_id or settings.AGENT_TELEGRAM_CHAT_ID}
@@ -379,8 +401,8 @@ def answer_callback(callback_id: str, text: str = "") -> None:
 def edit_text(chat_id: str, message_id: int, text: str) -> bool:
     """Sửa chữ của một tin đã gửi (ai-CR-021: tin báo đang chạy cập nhật số phút mà không kêu
     chuông lần nữa). Trả False nếu hỏng — kể cả lỗi «message is not modified», không sao."""
-    if not message_id:
-        return False
+    if not message_id or channels.is_zalo(chat_id):
+        return False                    # Zalo không cho sửa tin đã gửi
     try:
         _call("editMessageText", {
             "chat_id": chat_id, "message_id": message_id, "text": _clip(text),
@@ -398,7 +420,7 @@ def clear_buttons(chat_id: str, message_id: int) -> None:
     (hoặc một cú chạm nhầm) gửi lại đúng lệnh ấy lần nữa, và ở bậc 2 lần thứ hai đó
     là một lượt gọi bot code thật.
     """
-    if not message_id:
+    if not message_id or channels.is_zalo(chat_id):
         return
     try:
         _call("editMessageReplyMarkup", {

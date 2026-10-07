@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.glossary import fold
 
-from . import chat_link, telegram
+from . import channels, chat_link, telegram
 from .model import AgentChatLink, AgentGroup, AgentGroupMessage
 from .timeutil import now_utc, to_local
 
@@ -112,6 +112,13 @@ def capture(db: Session, msg: dict) -> None:
     if not text and not f:
         return
     from_id, name = _sender(msg)
+    if channels.is_zalo(row.chat_id) and not row.owner_user_id:
+        #  ai-CR-111: Zalo không báo «ai thêm bot vào nhóm» — người đã đăng nhập ERP nói câu đầu tiên trong nhóm là chủ.
+        zid = str((msg.get("from") or {}).get("zalo_id") or "")
+        link = chat_link.get_active_link(db, channels.zalo_chat(zid)) if zid else None
+        if link is not None:
+            row.owner_user_id = int(link.user_id)
+            row.owner_tg_id = from_id
     db.add(AgentGroupMessage(group_id=row.id, tg_message_id=int(msg.get("message_id") or 0), from_tg_id=from_id,
                              from_name=name, text=text, file=f,
                              sent_at=datetime.utcfromtimestamp(int(msg.get("date") or 0)) if msg.get("date") else now_utc()))
@@ -130,7 +137,21 @@ def _tg_ids_of(db: Session, user_id: int) -> list[int]:
     return ids
 
 
+def _zalo_member(db: Session, user_id: int, group: AgentGroup) -> bool:
+    """Nhóm Zalo không có API hỏi thành viên: người từng nhắn trong nhóm (bằng tài khoản Zalo đã đăng nhập ERP) mới đọc
+    được nhóm đó."""
+    ids = [channels.number_of(channels.raw_id(c)) for c in db.scalars(
+        select(AgentChatLink.chat_id).where(AgentChatLink.user_id == int(user_id), AgentChatLink.revoked_at.is_(None)))
+        if channels.is_zalo(c)]
+    if not ids:
+        return False
+    return db.scalar(select(AgentGroupMessage.id).where(AgentGroupMessage.group_id == group.id,
+                                                        AgentGroupMessage.from_tg_id.in_(ids)).limit(1)) is not None
+
+
 def is_member(group: AgentGroup, tg_id: int) -> bool:
+    if channels.is_zalo(group.chat_id):
+        return False
     try:
         info = telegram._call("getChatMember", {"chat_id": group.chat_id, "user_id": tg_id})
     except telegram.TelegramError:
@@ -143,6 +164,8 @@ def can_read(db: Session, user_id: int, group: AgentGroup) -> bool:
         return False
     if group.owner_user_id and int(group.owner_user_id) == int(user_id):
         return True
+    if channels.is_zalo(group.chat_id):
+        return _zalo_member(db, user_id, group)
     return any(is_member(group, tg) for tg in _tg_ids_of(db, user_id))
 
 

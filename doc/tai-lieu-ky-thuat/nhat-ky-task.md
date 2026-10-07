@@ -12810,3 +12810,20 @@ Tên khoa học, Mã số CAS, Ngưỡng hoặc mức cấm và Lưu ý bị kh�
 Thẻ cảnh báo theo từ khóa dùng chung bộ cột nên cũng được mở theo. Bài kiểm của phần tra cứu hóa chất chạy xanh, chưa đưa lên dev.
 
 Mã nguồn: frontend-v2/src/modules/procurement/config/customs-regulation-columns.tsx
+
+
+## ai-CR-111 | Tách phần nhận và gửi tin của bot thành lớp kênh, thêm bot Zalo chính thức
+- status: xong
+- date: 2026-10-07
+Đại ca giao làm mục B1: tách phần nhận và gửi tin khỏi mã Telegram để bot Lạc Lạc chạy được cả trên Zalo mà vẫn dùng chung
+một lõi xử lý. Chat Zalo mang mã có tiền tố «zl:», còn chat Telegram giữ nguyên mã cũ nên dữ liệu đã có không phải đổi. Mọi
+lệnh gửi tin, báo đang soạn, gửi tệp và tải tệp tự chuyển sang Zalo khi gặp chat Zalo, nên hơn hai trăm chỗ gọi trong lõi
+không phải sửa. Bộ nối Zalo kéo tin bằng cách giữ kết nối chờ như Telegram, đổi tin Zalo về cùng dạng tin Telegram, gửi chữ
+có định dạng đậm, nghiêng mà Zalo nhận được, tự cắt tin dài thành nhiều mẩu, và gửi lại chữ trơn khi Zalo chê định dạng. Zalo
+không có nút bấm nên bot liệt kê lựa chọn để người dùng nhắn lại; Zalo chưa cho bot gửi tệp nên bot báo người dùng lấy tệp
+qua Telegram hoặc web. Người dùng Zalo đăng nhập bằng mã như Telegram và dùng chung sổ ghi nhớ, khóa AI, chuông ERP. Trong
+nhóm Zalo bot chỉ ghi lặng; người đã đăng nhập nói câu đầu tiên trong nhóm là chủ, và chỉ người từng nhắn trong nhóm mới đọc
+được nhóm đó. Kênh Zalo chỉ bật khi có token bot Zalo, hiện đang chờ đại ca tạo bot và gửi token. Bài kiểm của bot chạy xanh
+338 bài, trong đó tám bài mới cho kênh Zalo.
+
+Mã nguồn: backend/app/modules/agent_hub/channels.py (mới) · agent_hub/zalo.py (mới) · agent_hub/telegram.py · agent_hub/service.py (poll_zalo_once) · agent_hub/poller.py (run_zalo) · agent_hub/groups.py · agent_hub/tasks.py · core/config.py (AGENT_ZALO_BOT_TOKEN) · test/backend/test_agent_hub.py

@@ -15,6 +15,7 @@ mất mạng đều là chuyện tạm thời, và bot chết im lặng thì đ�
 """
 import logging
 import signal
+import threading
 import time
 from collections.abc import Callable
 
@@ -55,6 +56,32 @@ def run(*, session_factory: Callable, should_stop: Callable[[], bool] = lambda: 
     return rounds
 
 
+def run_zalo(*, session_factory: Callable, should_stop: Callable[[], bool] = lambda: False,
+             sleep: Callable[[float], None] = time.sleep, timeout: int | None = None) -> int:
+    """Vòng kéo tin Zalo (ai-CR-111) — chạy trong một luồng phụ của cùng tiến trình, song song vòng Telegram.
+    Chưa có token Zalo thì ngủ dài; hỏng thì nghỉ ngắn rồi kéo tiếp, y như vòng Telegram."""
+    from . import service, zalo
+
+    poll_timeout = zalo.LONG_POLL_TIMEOUT if timeout is None else timeout
+    rounds = 0
+    while not should_stop():
+        rounds += 1
+        if not zalo.is_enabled():
+            sleep(IDLE_SLEEP)
+            continue
+        db = session_factory()
+        try:
+            service.poll_zalo_once(db, timeout=poll_timeout)
+            db.commit()
+        except Exception:  # noqa: BLE001 - vòng kéo không được chết vì một lượt hỏng
+            db.rollback()
+            log.exception("agent_hub: lượt kéo tin Zalo hỏng, nghỉ %ss rồi kéo tiếp", ERROR_SLEEP)
+            sleep(ERROR_SLEEP)
+        finally:
+            db.close()
+    return rounds
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -77,6 +104,12 @@ def main() -> None:
 
     log.info("agent_hub poller: bắt đầu, giữ kết nối %ss/lượt, cầu dao %s",
              telegram.LONG_POLL_TIMEOUT, "BẬT" if telegram.is_enabled() else "TẮT")
+    from . import zalo
+
+    if zalo.is_enabled():
+        log.info("agent_hub poller: kênh Zalo BẬT, mở vòng kéo tin Zalo")
+        threading.Thread(target=run_zalo, kwargs={"session_factory": SessionLocal, "should_stop": lambda: stopping},
+                         name="zalo-poller", daemon=True).start()
     run(session_factory=SessionLocal, should_stop=lambda: stopping)
     log.info("agent_hub poller: đã dừng")
 

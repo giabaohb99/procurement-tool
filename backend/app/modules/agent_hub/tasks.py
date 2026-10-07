@@ -50,6 +50,17 @@ def _off() -> dict | None:
 @celery_app.task(name="agent.send_telegram", acks_late=False)
 def send_telegram_task(method: str, payload: dict) -> dict:
     """Gửi HỘ một lượt Bot API cho máy sửa mã không giữ token (chạy ở worker của bot)."""
+    from . import channels
+
+    if method == "sendMessage" and channels.is_zalo(payload.get("chat_id")):
+        #  ai-CR-111: tin cho chat Zalo — đổi gói Telegram (chữ + hàng nút) sang `zalo.send`.
+        from . import zalo
+
+        rows = ((payload.get("reply_markup") or {}).get("inline_keyboard")) or []
+        buttons = [(str(b.get("text") or ""), str(b.get("url") or b.get("callback_data") or ""))
+                   for row in rows for b in row]
+        mid = zalo.send(str(payload["chat_id"]), str(payload.get("text") or ""), buttons=buttons or None)
+        return {"status": "success" if mid else "error", "message_id": mid}
     if not settings.AGENT_TELEGRAM_BOT_TOKEN:
         return {"status": "skipped", "reason": "worker này cũng không có token"}
     try:

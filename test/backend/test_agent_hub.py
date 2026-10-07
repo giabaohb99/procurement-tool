@@ -8279,3 +8279,170 @@ def test_tra_mang_khong_can_gemini(db, bot, monkeypatch):
     assert "Xin chào" in web_search.page_text("<html><script>x=1</script><p>Xin chào</p><nav>menu</nav></html>")
     assert "menu" not in web_search.page_text("<nav>menu</nav><p>a</p>")
 
+
+
+# --- ai-CR-111: lớp kênh + bot Zalo chính thức (B1 / Z-1, Z-2) -------------------------------------
+def _zl_update(text="", *, chat="abc123", ctype="PRIVATE", sender="abc123", mid="m1", event="message.text.received",
+               date_ms=0, **extra) -> dict:
+    import time
+
+    msg = {"from": {"id": sender, "display_name": "Lan Zalo", "is_bot": False},
+           "chat": {"id": chat, "chat_type": ctype}, "message_id": mid,
+           "date": date_ms or int(time.time() * 1000), **extra}
+    if text:
+        msg["text"] = text
+    return {"event_name": event, "message": msg}
+
+
+def test_zalo_doi_update_thanh_tin_kieu_telegram():
+    from app.modules.agent_hub import zalo
+
+    m = zalo.normalize(_zl_update("xin chào", date_ms=1_759_800_000_000))
+    assert m["chat"] == {"id": "zl:abc123", "type": "private", "title": ""}
+    assert m["text"] == "xin chào" and m["from"]["first_name"] == "Lan Zalo" and m["date"] == 1_759_800_000
+    assert isinstance(m["message_id"], int) and m["message_id"] > 0
+    assert zalo.normalize(_zl_update("a", mid="m1"))["message_id"] == m["message_id"]          # cùng id → cùng số
+    assert zalo.normalize(_zl_update("hi", ctype="GROUP", chat="g9"))["chat"]["type"] == "group"
+    img = zalo.normalize(_zl_update(event="message.image.received", photo="https://f1.zdn.vn/a.jpg", caption="lỗi"))
+    assert img["photo"][0]["file_id"] == "zlurl:https://f1.zdn.vn/a.jpg" and img["caption"] == "lỗi"
+    #  Sticker, tin bot khác, id dài quá cột → bỏ.
+    assert zalo.normalize(_zl_update(event="message.sticker.received")) is None
+    bot_msg = _zl_update("x")
+    bot_msg["message"]["from"]["is_bot"] = True
+    assert zalo.normalize(bot_msg) is None
+    assert zalo.normalize(_zl_update("x", chat="9" * 60)) is None
+    assert zalo.normalize({"ok": True}) is None
+
+
+def test_zalo_html_chi_giu_the_zalo_nhan_va_cat_tin_dai():
+    from app.modules.agent_hub import zalo
+
+    out = zalo.to_zalo_html('<b>Tổng</b> <code>AI-0007</code> <a href="https://erp.x/po/1">ĐMH 1</a> &lt;5')
+    assert out == "<b>Tổng</b> AI-0007 ĐMH 1 (https://erp.x/po/1) &lt;5"
+    parts = zalo.split_text("<b>" + "chữ " * 1500 + "</b>")
+    assert len(parts) == 4 and all(len(p) <= 2000 for p in parts)
+    assert parts[0].startswith("<b>") and parts[0].endswith("</b>")                # thẻ mở được đóng trong mẩu
+    huge = zalo.split_text("x " * 20_000)
+    assert len(huge) == zalo.MAX_PARTS and huge[-1].endswith("(đã cắt bớt)")
+    assert zalo.split_text("") == []
+
+
+def test_gui_cho_chat_zalo_di_duong_zalo_khong_dung_telegram(monkeypatch):
+    from app.modules.agent_hub import zalo
+
+    monkeypatch.setattr(settings, "AGENT_ZALO_BOT_TOKEN", "zl-test")
+    calls: list[tuple[str, dict]] = []
+    monkeypatch.setattr(zalo, "_call", lambda m, p, **kw: calls.append((m, p)) or {"message_id": "z1"})
+    monkeypatch.setattr(telegram, "_call", lambda *a, **kw: pytest.fail("chat Zalo không được gọi Telegram"))
+    mid = telegram.send("<b>Duyệt</b> phiếu?", chat_id="zl:abc", buttons=[("Đồng ý", "ok:1"), ("Mở", "https://e/x")])
+    assert mid > 0
+    method, payload = calls[-1]
+    assert method == "sendMessage" and payload["chat_id"] == "abc" and payload["parse_mode"] == "html"
+    assert "«Đồng ý»" in payload["text"] and "Mở: https://e/x" in payload["text"]
+    telegram.send_chat_action("zl:abc")
+    assert calls[-1][0] == "sendChatAction"
+    assert telegram.edit_text("zl:abc", 5, "x") is False                               # Zalo không sửa tin
+    telegram.clear_buttons("zl:abc", 5)
+    telegram.send_document("zl:abc", "bao-cao.xlsx", b"x" * 4096)
+    assert "bao-cao.xlsx" in calls[-1][1]["text"] and "Zalo chưa cho bot gửi tệp" in calls[-1][1]["text"]
+
+
+def test_zalo_che_dinh_dang_thi_gui_lai_chu_tron(monkeypatch):
+    from app.modules.agent_hub import zalo
+
+    monkeypatch.setattr(settings, "AGENT_ZALO_BOT_TOKEN", "zl-test")
+    calls: list[dict] = []
+
+    def fake(m, p, **kw):
+        calls.append(p)
+        if "parse_mode" in p:
+            raise zalo.ZaloError("Zalo sendMessage từ chối (400): bad html")
+        return {"message_id": "z2"}
+
+    monkeypatch.setattr(zalo, "_call", fake)
+    assert zalo.send("zl:abc", "<b>a</b> &amp; b") > 0
+    assert calls[-1] == {"chat_id": "abc", "text": "a & b"}
+
+
+def test_zalo_het_gio_cho_la_khong_co_tin_va_tai_tep_chi_tu_may_zalo(monkeypatch):
+    from app.modules.agent_hub import zalo
+
+    monkeypatch.setattr(settings, "AGENT_ZALO_BOT_TOKEN", "zl-test")
+
+    class R:
+        status_code = 408
+
+        @staticmethod
+        def json():
+            return {"ok": False, "error_code": 408, "description": "Request timeout"}
+
+    monkeypatch.setattr(zalo.requests, "post", lambda *a, **kw: R())
+    assert zalo.fetch_updates(timeout=1) == []
+    #  Đường tải lạ (nội bộ / không https / máy khác) bị chặn trước khi gọi mạng; lỗi bắt được như lỗi Telegram.
+    for bad in ("http://f1.zdn.vn/a.jpg", "https://127.0.0.1/a", "https://evil.com/zdn.vn/a", "https://zdn.vn.evil.com/a"):
+        with pytest.raises(telegram.TelegramError):
+            telegram.download_file("zlurl:" + bad, max_bytes=1000)
+
+
+def test_zalo_dang_nhap_bang_ma_roi_hoi_cung_loi_voi_telegram(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, zalo
+    from app.modules.agent_hub.model import AgentChatLink
+
+    service, sent, _ = bot
+    _fake_intent(monkeypatch, service, "hoi")
+    lan = _erp_user(db)
+    seen: list[tuple] = []
+    monkeypatch.setattr(service, "answer_question",
+                        lambda db, chat_id, q, before_id=0: seen.append((chat_id, q, service._assistant_user(db, chat_id).email)))
+    code, _ = chat_link.issue_code(db, lan.id)
+    queue = [[_zl_update(f"/dangnhap {code}", mid="m1")],
+             [_zl_update("công nợ tháng này", mid="m2"), _zl_update("công nợ tháng này", mid="m2")]]
+    monkeypatch.setattr(zalo, "fetch_updates", lambda **kw: queue.pop(0))
+    service.poll_zalo_once(db, timeout=0)
+    assert "Đã đăng nhập tài khoản ERP" in sent[-1]
+    assert db.query(AgentChatLink).filter_by(chat_id="zl:abc123", user_id=lan.id).count() == 1
+    service.poll_zalo_once(db, timeout=0)
+    #  Zalo trả lại cùng một tin hai lần: chỉ trả lời một lần.
+    assert seen == [("zl:abc123", "công nợ tháng này", "lan@dego.vn")]
+    #  Chat Zalo không bao giờ là chat chủ bot (không ra lệnh sửa mã).
+    assert not telegram.is_allowed_chat("zl:abc123")
+
+
+def test_may_sua_ma_gui_ho_tin_zalo_qua_worker(monkeypatch):
+    from app.modules.agent_hub import tasks, zalo
+
+    got: list[tuple] = []
+    monkeypatch.setattr(zalo, "send", lambda chat_id, text, buttons=None: got.append((chat_id, text, buttons)) or 9)
+    out = tasks.send_telegram_task("sendMessage", {"chat_id": "zl:abc", "text": "xong",
+                                                   "reply_markup": {"inline_keyboard": [[{"text": "Gộp",
+                                                                                          "callback_data": "merge:3"}]]}})
+    assert out == {"status": "success", "message_id": 9}
+    assert got == [("zl:abc", "xong", [("Gộp", "merge:3")])]
+
+
+def test_nhom_zalo_nguoi_tung_nhan_trong_nhom_moi_doc_duoc(db, bot, seed, monkeypatch):
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub import groups, zalo
+    from app.modules.agent_hub.model import AgentChatLink, AgentGroup
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    service, sent, asked = bot
+    for uid, chat in ((seed.u_req_id, "zl:u1"), (seed.u_nstm_id, "zl:u2")):
+        db.add(AgentChatLink(user_id=uid, chat_id=chat, linked_at=datetime.now(),
+                             expires_at=datetime.now() + timedelta(days=30), created_by=0, updated_by=0))
+    db.commit()
+    monkeypatch.setattr(telegram, "_call", lambda *a, **kw: pytest.fail("nhóm Zalo không hỏi Telegram"))
+    service.handle_message(db, zalo.normalize(_zl_update("@bot chốt giao hàng thứ 6", chat="g1", ctype="GROUP",
+                                                         sender="u1", mid="a")))
+    assert sent == [] and asked == []                                  # bot im lặng trong nhóm
+    g = db.query(AgentGroup).one()
+    assert g.chat_id == "zl:g1" and g.owner_user_id == seed.u_req_id   # người đăng nhập nói đầu tiên = chủ
+    assert groups.can_read(db, seed.u_req_id, g)
+    owner, other = db.get(User, seed.u_req_id), db.get(User, seed.u_nstm_id)
+    out = T.run_tool(db, owner, "read_group_messages", {"group": "1", "hours": 24 * 3650})
+    assert "chốt giao hàng" in out["messages"][0]
+    assert T.run_tool(db, other, "list_my_groups", {})["count"] == 0   # chưa từng nhắn trong nhóm
+    service.handle_message(db, zalo.normalize(_zl_update("ok anh", chat="g1", ctype="GROUP", sender="u2", mid="b")))
+    assert T.run_tool(db, other, "list_my_groups", {})["count"] == 1

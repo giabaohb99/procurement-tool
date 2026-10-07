@@ -246,6 +246,9 @@ class Settings(BaseSettings):
     # CHỈ chat_id này được ra lệnh. Rỗng = không ai ra lệnh được (chốt chặn, không
     # phải "cho tất cả") — xem `telegram.is_allowed_chat`.
     AGENT_TELEGRAM_CHAT_ID: str = ""
+    # ai-CR-111: token bot Zalo CHÍNH THỨC (Zalo Bot Platform). Trống = kênh Zalo tắt. Có token thì tiến trình
+    # `agent-poller` mở thêm một vòng kéo tin Zalo (getUpdates) chạy song song với Telegram.
+    AGENT_ZALO_BOT_TOKEN: str = ""
     # Khóa Gemini RIÊNG của bot (QĐ-AI-7). CỐ Ý không lùi về GEMINI_API_KEY: bot chạy
     # nền gọi liên tục, đốt hết hạn mức thì Trợ lý AI đang phục vụ người thật chết
     # theo, mà lúc đó không ai biết vì sao.

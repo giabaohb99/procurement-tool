@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, chat_link, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
+from . import ai_keys, bells, channels, chat_link, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -178,6 +178,35 @@ def poll_once(db: Session, *, timeout: int = telegram.POLL_TIMEOUT) -> int:
                 handle_message(db, upd["message"])
         except Exception:
             log.exception("agent_hub: hỏng khi xử update %s", upd.get("update_id"))
+        db.commit()
+    return len(updates)
+
+
+#  ai-CR-111: Zalo không có con trỏ (tin đã trả là đã nhận) — nhớ id các tin vừa xử để lỡ Zalo trả lại một tin thì
+#  không trả lời hai lần.
+_ZALO_SEEN: list[tuple[str, int]] = []
+_ZALO_SEEN_MAX = 500
+
+
+def poll_zalo_once(db: Session, *, timeout: int = 25) -> int:
+    """Kéo một lượt tin Zalo (bot chính thức) và xử bằng ĐÚNG lõi của Telegram (ai-CR-111). Trả số update đã đọc."""
+    from . import zalo
+
+    db.commit()                 # như poll_once: không giữ giao dịch mở suốt lúc chờ tin
+    updates = zalo.fetch_updates(timeout=timeout)
+    for upd in updates:
+        msg = zalo.normalize(upd)
+        if msg is None:
+            continue
+        key = (str(msg["chat"]["id"]), int(msg.get("message_id") or 0))
+        if key[1] and key in _ZALO_SEEN:
+            continue
+        _ZALO_SEEN.append(key)
+        del _ZALO_SEEN[:-_ZALO_SEEN_MAX]
+        try:
+            handle_message(db, msg)
+        except Exception:
+            log.exception("agent_hub: hỏng khi xử tin Zalo %s", key)
         db.commit()
     return len(updates)
 
@@ -409,7 +438,7 @@ def _save_photo(chat_id: str, msg: dict, file_id: str) -> dict | None:
     folder = Path(settings.AGENT_FILES_DIR) / "tg" / now_local().strftime("%Y%m")
     try:
         folder.mkdir(parents=True, exist_ok=True)
-        path = folder / f"{chat_id}_{int(msg.get('message_id') or 0)}.{ext}"
+        path = folder / f"{channels.safe_name(chat_id)}_{int(msg.get('message_id') or 0)}.{ext}"
         path.write_bytes(data)
     except OSError as e:
         log.warning("agent_hub: ghi ảnh hỏng: %s", e)

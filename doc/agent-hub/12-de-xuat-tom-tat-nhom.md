@@ -63,8 +63,8 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
 
 | Bước | Việc | Cỡ |
 |---|---|---|
-| Z-1 | Tách lớp «kênh» khỏi mã Telegram: gửi / nhận / tải tệp / mã chat có tiền tố kênh (`tg:` / `zl:`), đăng nhập bằng mã dùng chung | 2 ngày |
-| Z-2 | Kênh A: bộ nối Zalo Bot API (polling, gửi tin, tải tệp), tiến trình nhận tin riêng | 2 ngày |
+| Z-1 | Tách lớp «kênh» khỏi mã Telegram: gửi / nhận / tải tệp / mã chat có tiền tố kênh (Telegram giữ số cũ, Zalo `zl:`), đăng nhập bằng mã dùng chung | **Xong mã — ai-CR-111** |
+| Z-2 | Kênh A: bộ nối Zalo Bot API (polling, gửi tin, tải tệp), luồng nhận tin Zalo trong `agent-poller` | **Xong mã — ai-CR-111**, chờ token để bật |
 | Z-3 | Kênh B: tiến trình phụ (Node, thư viện tài khoản cá nhân) chỉ ghi lặng tin nhóm → API nội bộ của backend → bảng nhóm chung; tự báo khi bị đá phiên | 3 ngày |
 | Z-4 | Đọc nhóm Zalo qua cùng 3 công cụ nhóm (`list_my_groups`…), quyền đọc = người đã thêm tài khoản B vào nhóm | 1 ngày |
 
@@ -72,5 +72,17 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
 
 | Mã | Việc | Ghi chú |
 |---|---|---|
-| Z1 | Token bot Zalo chính thức (mini app Zalo Bot Creator → tạo bot → lấy token), lưu vào một tệp trên máy rồi báo em đường dẫn | Em đưa vào `.env.dev` như lần khóa Google, xong xóa tệp |
+| Z1 | Token bot Zalo chính thức (mini app Zalo Bot Creator → tạo bot → lấy token), lưu vào một tệp trên máy rồi báo em đường dẫn. **Đừng đặt webhook** cho bot (Zalo không cho kéo tin khi đã có webhook) | Em đưa vào `.env.dev` thành `AGENT_ZALO_BOT_TOKEN`, xong xóa tệp, khởi động lại `agent-poller` |
 | Z2 | Một tài khoản Zalo riêng cho kênh B + lúc rảnh để quét QR | Rủi ro bị khóa — đừng dùng số cá nhân |
+
+## 6. Kênh Zalo A đã dựng (ai-CR-111, 07/10/2026)
+
+| Việc | Cách chạy trên Zalo |
+|---|---|
+| Đăng nhập | Nhắn `/dangnhap <mã>` (mã lấy ở Trang cá nhân trên ERP, cùng mã với Telegram) |
+| Hỏi đáp, sổ ghi nhớ, thẻ cá nhân, khóa AI, chuông ERP | Y hệt Telegram — cùng một lõi |
+| Ảnh kèm chú thích, tin thoại | Có (tin thoại chép thành chữ rồi trả lời như tin chữ) |
+| Nút bấm | Zalo không có → bot liệt kê lựa chọn, người dùng nhắn lại bằng chữ |
+| Gửi tệp Word / Excel | Zalo Bot chưa có API gửi tệp → bot báo lấy qua Telegram hoặc web |
+| Tin dài | Cắt tối đa 5 mẩu, mỗi mẩu ≤ 1900 ký tự |
+| Nhóm Zalo | Bot chính thức chỉ nhận tin trả lời bot / tin nhắc tên bot → ghi lặng; người đăng nhập nói đầu tiên là chủ; chỉ người từng nhắn trong nhóm đọc được. Đọc TOÀN BỘ nhóm phải chờ hướng B (Z-3) |
