@@ -46,10 +46,31 @@ Em đề xuất: làm **A ngay** (cùng lõi với Telegram, 3–4 ngày công: 
 Telegram) để người dùng Zalo có trợ lý riêng; phần **tóm tắt nhóm Zalo** chỉ làm theo **B** nếu đại ca chấp nhận rủi ro
 khóa tài khoản và dùng một số Zalo riêng cho bot.
 
-## 3. Câu chờ đại ca
+## 3. Đã chốt (đại ca 07/10/2026)
 
-| Mã | Câu | Em đề xuất |
+- **Không làm** bản tổng hợp nhóm tự động cuối ngày — chỉ tổng hợp khi người dùng nhắn hỏi.
+- **Zalo làm cả A và B**:
+  - **A — bot Zalo chính thức** (Zalo Bot Platform): trợ lý chat riêng y như Telegram — hỏi đáp ERP, sổ nhớ, thẻ cá
+    nhân, đọc tệp, biên bản họp. Nhận tin bằng polling (`getUpdates`) như Telegram nên không cần mở webhook. Cần: đại
+    ca tạo bot trong mini app «Zalo Bot Creator» và đưa token qua tệp (không dán vào chat).
+  - **B — một tài khoản Zalo riêng làm «bot» đọc nhóm** (thư viện không chính thức, dựng phía mình, KHÔNG dùng mã IDA):
+    chỉ để GHI LẶNG tin + tệp các nhóm Zalo mà tài khoản đó được thêm vào, đổ vào cùng bảng nhóm như Telegram; người
+    dùng hỏi qua bot A hoặc Telegram. Cần: một số điện thoại / tài khoản Zalo riêng (không phải số cá nhân của ai), đại
+    ca quét QR đăng nhập một lần; chấp nhận rủi ro bị khóa tài khoản.
+- **Xưng hô**: mỗi người theo sổ ghi nhớ riêng; mặc định «anh/chị» (ai-CR-106).
+
+## 4. Lộ trình Zalo
+
+| Bước | Việc | Cỡ |
 |---|---|---|
-| Z1 | Zalo đi hướng nào (A / B / C ở §2)? | A ngay; B chỉ khi chấp nhận rủi ro |
-| Z2 | Nếu B: dùng số Zalo nào làm bot (số riêng, không phải số cá nhân của ai)? | Số riêng |
-| G3 | Bản tổng hợp nhóm tự động mỗi ngày: có làm, mấy giờ? | Có, 17:30, người dùng tự bật |
+| Z-1 | Tách lớp «kênh» khỏi mã Telegram: gửi / nhận / tải tệp / mã chat có tiền tố kênh (`tg:` / `zl:`), đăng nhập bằng mã dùng chung | 2 ngày |
+| Z-2 | Kênh A: bộ nối Zalo Bot API (polling, gửi tin, tải tệp), tiến trình nhận tin riêng | 2 ngày |
+| Z-3 | Kênh B: tiến trình phụ (Node, thư viện tài khoản cá nhân) chỉ ghi lặng tin nhóm → API nội bộ của backend → bảng nhóm chung; tự báo khi bị đá phiên | 3 ngày |
+| Z-4 | Đọc nhóm Zalo qua cùng 3 công cụ nhóm (`list_my_groups`…), quyền đọc = người đã thêm tài khoản B vào nhóm | 1 ngày |
+
+## 5. Còn chờ đại ca
+
+| Mã | Việc | Ghi chú |
+|---|---|---|
+| Z1 | Token bot Zalo chính thức (mini app Zalo Bot Creator → tạo bot → lấy token), lưu vào một tệp trên máy rồi báo em đường dẫn | Em đưa vào `.env.dev` như lần khóa Google, xong xóa tệp |
+| Z2 | Một tài khoản Zalo riêng cho kênh B + lúc rảnh để quét QR | Rủi ro bị khóa — đừng dùng số cá nhân |
