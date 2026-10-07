@@ -88,9 +88,10 @@ describe('ProfileAiKeyTab', () => {
     mockKey({ has_key: true, hint: '…1111', items: [keyItem({ id: 1, hint: '…1111' })] })
     apiPut.mockResolvedValue({ provider: 'gemini', has_key: true, hint: '…1111', verified_at: null })
     renderTab()
-    await userEvent.selectOptions(await screen.findByLabelText('Hãng'), 'openrouter')
+    await userEvent.selectOptions(await screen.findByLabelText(/Hãng/), 'openrouter')
     await userEvent.type(screen.getByLabelText(/Dán khóa OpenRouter/), 'sk-or-v1-abcdefghijklmnop')
-    await userEvent.type(screen.getByLabelText('Model (tùy chọn)'), 'anthropic/claude-sonnet-4.5')
+    await userEvent.click(screen.getByRole('button', { name: /Tùy chọn: chọn model/ }))
+    await userEvent.type(screen.getByLabelText(/Model \(để trống/), 'anthropic/claude-sonnet-4.5')
     await userEvent.click(screen.getByRole('button', { name: /Lưu khóa/ }))
     await waitFor(() => expect(apiPut).toHaveBeenCalledWith('/api/agent-hub/ai-key', {
       key: 'sk-or-v1-abcdefghijklmnop', provider: 'openrouter', model: 'anthropic/claude-sonnet-4.5', priority: 0, daily_cap: 0,
@@ -136,6 +137,7 @@ describe('ProfileAiKeyTab — khóa MCP (ai-CR-063)', () => {
     mockKey()
     apiPost.mockResolvedValue({ id: 3, name: 'Claude', hint: '…abcd', scope: 0, scope_label: 'chỉ đọc', expires_at: null, last_used_at: null, created_at: null, key: 'dego_mcp_xyz' })
     renderTab()
+    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao: dùng Claude Desktop/ }))
     await userEvent.type(await screen.findByLabelText(/Tên khóa/), 'Claude')
     await userEvent.click(screen.getByRole('button', { name: /Tạo khóa MCP/ }))
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/api/agent-hub/mcp-keys', { name: 'Claude', scope: 0, days: 90 }))
@@ -147,6 +149,7 @@ describe('ProfileAiKeyTab — khóa MCP (ai-CR-063)', () => {
     mockKey({}, { items: [{ id: 7, name: 'Cursor', hint: '…9999', scope: 1, scope_label: 'được ghi', expires_at: null, last_used_at: null, created_at: null }] })
     apiDelete.mockResolvedValue(null)
     renderTab()
+    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao: dùng Claude Desktop/ }))
     const row = (await screen.findByText('Cursor')).closest('li')!
     await userEvent.click(row.querySelector('button')!)
     await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/api/agent-hub/mcp-keys/7'))
@@ -170,3 +173,43 @@ describe('ProfileAiKeyTab — Google cá nhân (ai-CR-064)', () => {
     await waitFor(() => expect(assign).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?x=1'))
   })
 })
+
+describe('ProfileAiKeyTab — dễ dùng (ai-CR-101)', () => {
+  beforeEach(() => {
+    apiGet.mockReset()
+    apiPatch.mockReset()
+    localStorage.clear()
+  })
+
+  it('keeps the MCP card collapsed by default and puts the AI key card first', async () => {
+    mockKey()
+    renderTab()
+    const toggle = await screen.findByRole('button', { name: /Nâng cao: dùng Claude Desktop/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: /Tạo khóa MCP/ })).not.toBeInTheDocument()
+    const headings = screen.getAllByText(/Khóa AI của bạn|Google của bạn/)
+    expect(headings[0]).toHaveTextContent(/Khóa AI của bạn/)
+  })
+
+  it('reads each key as one sentence and edits model and cap only after pressing Sửa', async () => {
+    mockKey({ has_key: true, hint: '…1111', items: [keyItem({ id: 3, hint: '…1111', model: 'gemini-flash-latest', daily_cap: 50, used_today: 7 })] })
+    apiPatch.mockResolvedValue({})
+    renderTab()
+    expect(await screen.findByText(/Model: gemini-flash-latest · Trần: 50 lượt\/ngày · Hôm nay 7 lượt/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Trần lượt/ngày')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Sửa khóa …1111/ }))
+    const capInput = screen.getByLabelText('Trần lượt/ngày')
+    await userEvent.clear(capInput)
+    await userEvent.type(capInput, '0')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/api/agent-hub/ai-key/3', { model: 'gemini-flash-latest', daily_cap: 0 }))
+  })
+
+  it('links the "get key" button to the chosen provider site', async () => {
+    mockKey()
+    renderTab()
+    await userEvent.selectOptions(await screen.findByLabelText(/Hãng/), 'claude')
+    expect(screen.getByRole('link', { name: /Mở trang Claude/ })).toHaveAttribute('href', 'https://console.anthropic.com/')
+  })
+})
+

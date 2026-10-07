@@ -16,6 +16,7 @@ import {
 } from '@/modules/system/hooks/use-ai-key'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
+import { CollapsibleSection } from '@/shared/ui/collapsible-section'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -39,10 +40,10 @@ export function ProfileAiKeyTab() {
   const removeOne = useRemoveOneAiKey()
   const companyKeys = data?.company_keys ?? 0
 
+  //  ai-CR-101 (đại ca 07/10): Khóa AI lên đầu (thứ ai cũng cần), Google kế, MCP thu vào «Nâng cao» mặc định gập —
+  //  MCP là chiều NGƯỢC (ứng dụng AI ngoài gọi vào ERP), chỉ ai dùng Claude Desktop / Cursor mới cần.
   return (
     <div className="space-y-4">
-      <GoogleCard />
-      <McpKeysCard />
       <AiKeyListCard
         title="Khóa AI của bạn cho bot Telegram"
         description={
@@ -67,6 +68,16 @@ export function ProfileAiKeyTab() {
         onPatch={(id, body) => patch.mutate({ id, body })}
         onRemove={(id) => removeOne.mutate(id)}
       />
+      <GoogleCard />
+      <CollapsibleSection
+        title="Nâng cao: dùng Claude Desktop / Cursor với dữ liệu ERP (MCP)"
+        description="Chỉ cần khi bạn dùng ứng dụng AI riêng trên máy và muốn nó đọc dữ liệu ERP. Chat với bot Telegram thì không cần mục này."
+        summary="Không bắt buộc"
+        storageKey="profile.mcp"
+        defaultOpen={false}
+      >
+        <McpKeysCard />
+      </CollapsibleSection>
     </div>
   )
 }

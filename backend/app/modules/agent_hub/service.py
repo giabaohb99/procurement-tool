@@ -185,9 +185,20 @@ def handle_message(db: Session, msg: dict) -> None:
         _handle_message(db, msg, chat_id)
 
 
+def _quoted_text(msg: dict) -> str:
+    """Câu được trích khi người dùng bấm «Trả lời» một tin trên Telegram (ai-CR-100)."""
+    rep = msg.get("reply_to_message") or {}
+    return " ".join(str(rep.get("text") or rep.get("caption") or "").split())[:500]
+
+
 def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
     #  ai-CR-035: ảnh gửi kèm chú thích thì chú thích là nội dung tin.
     text = (msg.get("text") or msg.get("caption") or "").strip()
+    #  ai-CR-100: 07/10 đại ca bấm «Trả lời» tin «giá vàng hôm nay» rồi nhắn «trả lời cho tao» — bot chỉ thấy câu sau,
+    #  không biết hỏi gì. Ghép câu được trích lên đầu để phân loại và Trợ lý đọc đúng ý. Lệnh `/` giữ nguyên.
+    quoted = _quoted_text(msg)
+    if quoted and text and not text.startswith("/"):
+        text = f"{quoted}\n({text})"
     photo_id = _photo_file_id(msg)
     if not text and not photo_id and _voice_file(msg):
         #  ai-CR-061: tin thoại → chữ, rồi đi tiếp y như tin chữ. Chỉ chép cho chat đại ca / chat đã đăng nhập.
@@ -453,7 +464,7 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
         log.exception("agent_hub: nghiên cứu hỏng")
         finish_run(db, run, error=str(e))
         db.commit()
-        reply(db, chat_id, _research_error_text(str(e)))
+        reply(db, chat_id, _research_error_text(str(e)), action=ACT_RESEARCH)
         return
     if result is not None:
         finish_run(db, run, result=result)
@@ -729,6 +740,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
         answer_question(db, chat_id, text, before_id=row.id)
         return
     finish_run(db, run, result=result)
+    row.action = ACT_ASKED      # ai-CR-100: câu hỏi / tra cứu là hội thoại — câu sau («trả lời đi») nối được
     db.commit()
     if data["intent"] == manager.INTENT_RESEARCH:
         kind = data.get("kind") or research.MODE_WEB
@@ -877,7 +889,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     elif data["intent"] == manager.INTENT_ACT:
         _act_by_intent(db, chat_id, row, text, data)
     elif data["intent"] == manager.INTENT_RESEARCH:
-        row.action = ACT_COMMAND
+        row.action = ACT_ASKED      # ai-CR-100: nằm trong mạch hỏi đáp để «trả lời cho tao» nối được
         db.commit()
         run_research(db, chat_id, data.get("query") or text, data.get("kind") or research.MODE_WEB)
     elif data["intent"] == manager.INTENT_DATA:
@@ -3063,7 +3075,7 @@ def _recent_turns(db: Session, chat_id: str, before_id: int) -> list[dict]:
     q = (
         select(AgentMessage)
         .where(AgentMessage.chat_id == chat_id,
-               AgentMessage.action.in_((ACT_ASKED, ACT_ANSWER)))
+               AgentMessage.action.in_((ACT_ASKED, ACT_ANSWER, ACT_RESEARCH)))
         .order_by(AgentMessage.id.desc())
         .limit(HISTORY_TURNS * 2)
     )
@@ -3072,7 +3084,12 @@ def _recent_turns(db: Session, chat_id: str, before_id: int) -> list[dict]:
     rows = list(db.scalars(q))
     if not rows:
         return []
-    newest = max((r.created_at for r in rows if r.created_at), default=None)
+    #  ai-CR-100: mốc là TIN ĐANG HỎI. Bản cũ lấy tin lịch sử MỚI NHẤT làm mốc, nên 07/10 «trả lời cho tao» kéo
+    #  nguyên cuộc «lên lịch trình» hôm 06/10 vào mạch (các tin sáng 07/10 là lệnh / tra cứu, không nằm trong sổ hỏi
+    #  đáp) và bot trả lời chuyện hôm qua.
+    current = db.get(AgentMessage, before_id) if before_id else None
+    newest = (current.created_at if current is not None and current.created_at else
+              max((r.created_at for r in rows if r.created_at), default=None))
     turns: list[dict] = []
     total = 0
     for r in rows:  # mới -> cũ, dừng ở tin quá cũ hoặc quá trần chữ

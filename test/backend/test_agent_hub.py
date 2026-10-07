@@ -7585,3 +7585,35 @@ def test_gemini_qua_tai_thi_thu_lai_mot_lan_va_tra_cuu_khong_do_json(db, bot, mo
     service.run_research(db, "12345", "giá vàng hôm nay", research.MODE_WEB)
     assert "hết hạn mức tìm Google" in sent[-1] and "{" not in sent[-1] and "RESOURCE_EXHAUSTED" not in sent[-1]
 
+
+def test_tra_loi_trich_tin_va_mach_khong_keo_chuyen_hom_qua(db, bot, monkeypatch):
+    """ai-CR-100: 07/10 10:28 đại ca bấm «Trả lời» tin «giá vàng hôm nay», nhắn «trả lời cho tao» → bot trả lời cuộc
+    «lên lịch trình» hôm 06/10. Hai lỗi: không đọc câu được trích; mạch lấy mốc là tin lịch sử mới nhất (hôm qua)."""
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, asked = bot
+    seen: list[str] = []
+
+    def fake_intent(text, **kw):
+        from app.modules.assistant.provider.base import ChatResult
+        seen.append(text)
+        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="agent_gemini", model="x",
+                                                          input_tokens=0, output_tokens=0)
+
+    monkeypatch.setattr(service.manager, "run_intent", fake_intent)
+    #  Cuộc hỏi đáp hôm qua.
+    old_q = service.log_message(db, service.DIR_IN, "12345", 1, "lên lịch trình ăn uống", action=service.ACT_ASKED)
+    old_a = service.log_message(db, service.DIR_OUT, "12345", 2, "Lịch trình ngày cơ bản…", action=service.ACT_ANSWER)
+    old_q.created_at = old_a.created_at = datetime.now() - timedelta(hours=20)
+    db.commit()
+    msg = {**_msg("trả lời cho tao"), "reply_to_message": {"message_id": 159, "text": "giá vàng hôm nay"}}
+    service.handle_message(db, msg)
+    assert seen[-1] == "giá vàng hôm nay\n(trả lời cho tao)" and asked[-1] == "giá vàng hôm nay\n(trả lời cho tao)"
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert service._recent_turns(db, "12345", row.id) == []          # chuyện 20 giờ trước không vào mạch
+    #  Lệnh `/` không bị ghép.
+    service.handle_message(db, {**_msg("/taikhoan"), "message_id": 9, "reply_to_message": {"text": "abc"}})
+    assert not any("abc" in t for t in seen[1:])
+

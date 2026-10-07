@@ -12598,3 +12598,27 @@ cả hai bản trên trình duyệt, đẩy lên erp-v2 và cập nhật dev.
 
 Mã nguồn: frontend/src/components/SurveyReportCard.tsx · frontend/src/index.css · frontend-v2/src/modules/procurement/components/survey-report/survey-report-card.tsx
 Deploy: DEV 07/10/2026
+
+## ai-CR-100 | Bot đọc tin được trích và không kéo chuyện hôm qua vào câu trả lời
+- status: xong
+- date: 2026-10-07
+Đại ca bấm «Trả lời» tin «giá vàng hôm nay» rồi nhắn «trả lời cho tao», bot lại trả lời cuộc lên lịch trình ăn uống từ
+hôm trước. Có hai lỗi. Bot không đọc câu được trích khi người dùng bấm «Trả lời» trên Telegram, nên chỉ thấy câu «trả
+lời cho tao». Và mạch hội thoại lấy mốc hai giờ tính từ tin hỏi đáp gần nhất trong sổ chứ không tính từ tin đang hỏi;
+các tin sáng hôm đó là lệnh và tra cứu, không nằm trong sổ hỏi đáp, nên mạch kéo nguyên cuộc trò chuyện hôm qua. Nay
+câu được trích được ghép lên đầu tin, mạch tính từ tin đang hỏi, và câu hỏi lẫn câu trả lời tra cứu cũng được tính là
+hội thoại.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (_quoted_text, _recent_turns, nhánh tra cứu)
+
+## ai-CR-101 | Màn Khóa AI dễ dùng hơn, kết nối MCP thu vào mục Nâng cao
+- status: xong
+- date: 2026-10-07
+Đại ca thấy tab Khóa AI ở Trang cá nhân có hai thẻ dễ nhầm và muốn cấu hình dễ dùng. Thẻ Khóa AI nay nằm đầu, thẻ Google
+kế tiếp, còn Kết nối MCP thu vào mục «Nâng cao» mặc định gập vì chỉ ai dùng Claude Desktop hay Cursor mới cần. Thêm khóa
+còn ba bước: chọn hãng, bấm nút mở trang lấy khóa của hãng đó, dán rồi lưu; chọn model và đặt trần lượt gập vào «Tùy
+chọn» có gợi ý sẵn tên model. Mỗi khóa trong danh sách đọc thành một câu gồm model, trần và số lượt hôm nay, muốn đổi
+thì bấm nút sửa. Thẻ khóa công ty ở Cấu hình hệ thống dùng chung giao diện này.
+
+Mã nguồn: frontend-v2/src/modules/system/components/ai-key-list-card.tsx · frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx
+
