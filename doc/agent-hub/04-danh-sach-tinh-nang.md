@@ -165,11 +165,11 @@ Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| T-01 | **Thử trước (M0):** chạy một tệp họp thật qua Gemini ra biên bản, đo chất lượng và chi phí | S | Chốt chặn: không qua thì dừng cụm biên bản. Chờ Q1, Q5 |
+| T-01 | **Thử bằng tệp giả 07/10/2026 (ai-CR-112): qua — chép lời đúng gần như nguyên văn, đoán đúng tên người nói; còn chờ một tệp họp thật (nhiều tiếng ồn, nói chồng).** **Thử trước (M0):** chạy một tệp họp thật qua Gemini ra biên bản, đo chất lượng và chi phí | S | Chốt chặn: không qua thì dừng cụm biên bản. Chờ Q1, Q5 |
 | T-02 | Đọc thư mục ghi âm trên Drive, gom nhiều tệp của một cuộc họp thành một phiên | M | Tệp họp dài không gửi qua bot được, phải qua Drive |
 | T-03 | **XONG 07/10/2026 (ai-CR-104).** Chuẩn hóa và cắt âm thanh dài cho vừa model | M | |
 | T-04 | **XONG 07/10/2026 (ai-CR-104), một tệp / phiên; gộp nhiều tệp một cuộc họp còn ở T-02.** Gỡ băng từng tệp, nối theo thứ tự thời gian | M | |
-| T-05 | **Một phần 07/10/2026 (ai-CR-104): 4 mẫu có trong mã, chọn bằng chữ; còn đưa ra cấu hình để sửa không cần mã (bước 10.2).** Mẫu biên bản là dữ liệu (chính thức · gạch đầu dòng · danh sách việc · đầy đủ theo giờ), chọn mẫu bằng chữ | M | Thêm mẫu không phải sửa mã |
+| T-05 | **XONG 07/10/2026 (ai-CR-112):** 4 mẫu sẵn + mẫu RIÊNG từng người lưu bằng lời («lưu mẫu biên bản …»), lời dặn tại chỗ («theo mẫu: …»), viết lại cuộc họp cũ theo mẫu khác không chép lời lại; Word mẫu DEGO vào thư mục «Biên bản họp» trên Drive. Mẫu biên bản là dữ liệu (chính thức · gạch đầu dòng · danh sách việc · đầy đủ theo giờ), chọn mẫu bằng chữ | M | Thêm mẫu không phải sửa mã |
 | T-06 | **XONG 07/10/2026 (ai-CR-104).** Xuất Word lên Drive, gửi bản tóm tắt ngay trong chat kèm link | M | |
 | T-07 | **XONG 25/09/2026 (ai-CR-061).** Tin thoại ngắn thành lời nhắc hoặc việc | S | Cần N-02 |
 | T-08 | **XONG 25/09/2026 (ai-CR-064).** Bản tin 8h sáng: lịch hôm nay, việc đến hạn, phiếu chờ đại ca duyệt | M | Cần N-03 |

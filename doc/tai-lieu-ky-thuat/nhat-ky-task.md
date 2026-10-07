@@ -12828,3 +12828,19 @@ nhóm Zalo bot chỉ ghi lặng; người đã đăng nhập nói câu đầu ti
 
 Mã nguồn: backend/app/modules/agent_hub/channels.py (mới) · agent_hub/zalo.py (mới) · agent_hub/telegram.py · agent_hub/service.py (poll_zalo_once) · agent_hub/poller.py (run_zalo) · agent_hub/groups.py · agent_hub/tasks.py · core/config.py (AGENT_ZALO_BOT_TOKEN) · test/backend/test_agent_hub.py
 Deploy: dev 07/10 (Agent 1 gộp 613cb131, dựng lại api, celery-worker, celery-beat, agent-poller; chưa khai token Zalo); máy sửa mã đã dựng lại; prod giữ lại.
+
+
+## ai-CR-112 | Biên bản họp: mẫu riêng từng người, viết lại theo mẫu khác, Word mẫu DEGO
+- status: xong
+- date: 2026-10-07
+Đại ca chưa có tệp ghi âm thật nên em dựng một cuộc họp giao ban giả dài 88 giây bằng giọng đọc máy với ba người nói, rồi
+chạy thật trên dev bằng khóa của đại ca. Bot chép lời gần như nguyên văn, đoán đúng tên người nói và viết đúng cả bốn mẫu
+biên bản. Lần thử tìm ra hai lỗi và em đã vá: DeepSeek qua trạm modelapi có lúc trả lẫn cả đoạn suy nghĩ rác vào câu trả
+lời, nay bot tự bỏ phần đó cho mọi câu trả lời; và trần độ dài khi viết biên bản quá thấp với model suy luận nên được nâng
+lên. Phần chính của bước 10.2: ngoài bốn mẫu sẵn, mỗi người lưu được mẫu biên bản riêng bằng lời và mẫu nằm trong sổ ghi nhớ
+của chính họ, hoặc dặn cách viết ngay trong chú thích tệp. Cuộc họp đã làm xong có thể nhờ viết lại theo mẫu khác mà không phải
+chép lời lại. Tệp Word theo mẫu DEGO có đầu trang công ty, bảng thông tin, bảng việc, số trang; mẫu chính thức có thêm quốc
+hiệu và chỗ ký. Word được đẩy vào thư mục «Biên bản họp» trên Drive của người gửi. Em cũng khai bổ sung lý do gác quyền cho
+hai mươi công cụ trợ lý cá nhân còn thiếu trong bài kiểm phạm vi. Bài kiểm của bot và của công cụ trợ lý chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/meetings.py · agent_hub/google_link.py (ensure_folder) · agent_hub/model.py · agent_hub/service.py · agent_hub/policy.py · assistant/tools/meeting_tool.py (mới) · assistant/provider/openai_compat.py (clean_reply) · migration meet02 · test/backend/test_agent_hub.py · test_assistant_pham_vi_doc.py · test_pham_vi_bo_may_duyet_xuyen_suot.py

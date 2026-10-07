@@ -122,6 +122,10 @@ TOOL_KHONG_PHAM_VI = {
     "list_my_groups": "nhóm Telegram người hỏi là chủ hoặc thành viên",
     "read_group_messages": "tin của nhóm người hỏi đọc được (chủ / thành viên)",
     "read_group_file": "tệp trong nhóm người hỏi đọc được (chủ / thành viên)",
+    #  ai-CR-112: biên bản họp — tab_agent_meeting lọc cứng theo ctx.user.id; mẫu riêng nằm trong sổ ghi nhớ của chính họ.
+    "list_my_meetings": "cuộc họp người hỏi đã gửi làm biên bản",
+    "rewrite_meeting_minutes": "viết lại biên bản cuộc họp của chính người hỏi",
+    "save_meeting_template": "lưu mẫu biên bản riêng vào sổ ghi nhớ của chính người hỏi",
 }
 
 
@@ -137,7 +141,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 62, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 65, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

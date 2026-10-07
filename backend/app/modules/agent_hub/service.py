@@ -238,7 +238,7 @@ def _meeting_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool
         reply(db, chat_id, "Biên bản họp cần chat này đăng nhập tài khoản ERP trước. " + _LINK_HELP)
         db.commit()
         return True
-    template = meetings.template_of(text)
+    template = meetings.resolve_template(db, link.user_id, text)
     if media:
         title = (text.split("\n")[0][:120] if text else "") or media["name"]
         row = meetings.create(db, user_id=link.user_id, chat_id=chat_id, kind=meetings.SourceKind.TELEGRAM,
@@ -248,7 +248,7 @@ def _meeting_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool
                               ref=drive_id, title="Cuộc họp", template=template)
     row_in.scope = SCOPE_PERSONAL
     db.commit()
-    label = meetings.TEMPLATES[row.template][0].lower()
+    label = meetings.template_for_row(row).label.lower()
     reply(db, chat_id, f"Em nhận tệp họp rồi, đang chép lời và viết biên bản ({label}). Họp một giờ mất khoảng 3–5 phút; "
                        "xong em gửi biên bản kèm tệp Word.", scope=SCOPE_PERSONAL)
     db.commit()

@@ -7,6 +7,7 @@ Khóa đọc qua `_api_key()` để lớp con của bot (agent_hub/manager.py) �
 from __future__ import annotations
 
 import json
+import re
 
 import requests
 
@@ -34,6 +35,33 @@ def _wire_content(content):
         else:
             out.append({"type": "text", "text": b.get("text", "")})
     return out
+
+
+_THINK_BLOCK = re.compile(r"<think>.*?</think>\s*", re.S | re.I)
+#  Dấu chuyển sang câu trả lời thật: «Final answer:», «Final:», «Final?» ở đầu dòng (cho phép vài ký hiệu đứng trước).
+_FINAL_MARK = re.compile(r"(?:^|\n)[^\w\n]{0,6}final(?: answer)?\s*[:?]", re.I)
+
+
+def clean_reply(text: str) -> str:
+    """Bỏ phần «nghĩ» mà model suy luận lỡ trả lẫn vào câu trả lời (ai-CR-112).
+
+    07/10/2026 chạy thử biên bản họp bằng `deepseek-v4.1-flash` qua trạm modelapi: một lần trong bốn, nội dung mở đầu
+    bằng cả đoạn rác («**:», «### Final? Let's prepare final…») rồi mới tới «Final answer:» và biên bản thật. Có khối
+    <think>…</think> thì bỏ khối; có dấu «Final answer:» ở đầu dòng thì chỉ lấy phần sau dấu CUỐI CÙNG (bỏ nốt phần còn
+    lại của dòng đó nếu chỉ là ký hiệu). Câu bình thường không có hai dấu này thì giữ nguyên.
+    """
+    if not text:
+        return text
+    out = _THINK_BLOCK.sub("", text)
+    marks = list(_FINAL_MARK.finditer(out))
+    if marks:
+        tail = out[marks[-1].end():]
+        first, _, rest = tail.partition("\n")
+        if not re.search(r"\w", first):
+            tail = rest
+        if tail.strip():
+            out = tail
+    return out.strip()
 
 
 def _no_temperature(model: str) -> bool:
@@ -115,7 +143,7 @@ class OpenAICompatProvider(Provider):
         data = self._post(self._payload(used_model, msgs, system, max_tokens, temperature))
         acc = {"input": 0, "output": 0, "thinking": 0, "cache_read": 0}
         self._accumulate(acc, data.get("usage") or {})
-        return self._result(data, used_model, str(self._message_of(data).get("content") or ""), [], acc)
+        return self._result(data, used_model, clean_reply(str(self._message_of(data).get("content") or "")), [], acc)
 
     def run_tools(self, messages: list[ChatMessage], *, tools: list[ToolDef], execute: ToolExecutor,
                   model: str | None = None, system: str | None = None, max_tokens: int = 1024,
@@ -138,7 +166,7 @@ class OpenAICompatProvider(Provider):
             message = self._message_of(data)
             calls = message.get("tool_calls") or []
             if not calls:
-                return self._result(data, used_model, str(message.get("content") or ""), tool_calls, acc)
+                return self._result(data, used_model, clean_reply(str(message.get("content") or "")), tool_calls, acc)
             #  Vọng lại nguyên lượt assistant (gồm tool_calls) rồi trả kết quả từng tool theo tool_call_id.
             msgs.append({"role": "assistant", "content": message.get("content") or None, "tool_calls": calls})
             for tc in calls:
@@ -161,7 +189,7 @@ class OpenAICompatProvider(Provider):
         #  Hết vòng: ép một lượt chốt không kèm tool.
         data = self._post(self._payload(used_model, msgs, system, max_tokens, temperature))
         self._accumulate(acc, data.get("usage") or {})
-        return self._result(data, used_model, str(self._message_of(data).get("content") or ""), tool_calls, acc)
+        return self._result(data, used_model, clean_reply(str(self._message_of(data).get("content") or "")), tool_calls, acc)
 
 
 class OpenRouterProvider(OpenAICompatProvider):

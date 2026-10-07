@@ -77,7 +77,11 @@ ASSISTANT_RULES = (
     #  ai-CR-105: nhóm Telegram + đọc / viết báo cáo.
     "Hỏi về một NHÓM («nhóm X hôm nay bàn gì», «tổng hợp nhóm kế toán tuần này») thì read_group_messages rồi tóm tắt: ý "
     "chính, quyết định, việc được giao (ai — hạn), câu hỏi còn treo; cuối cùng liệt kê tệp trong nhóm kèm số thứ tự và "
-    "gợi ý «tóm tắt tệp số n» (đọc bằng read_group_file). Nhờ VIẾT báo cáo thì soạn nội dung rồi export_report_file ra Word."
+    "gợi ý «tóm tắt tệp số n» (đọc bằng read_group_file). Nhờ VIẾT báo cáo thì soạn nội dung rồi export_report_file ra Word. "
+    #  ai-CR-112: biên bản họp theo mẫu.
+    "BIÊN BẢN HỌP: muốn biên bản cuộc họp đã gửi viết theo kiểu khác («viết lại biên bản chính thức», «chỉ lấy danh sách "
+    "việc») thì rewrite_meeting_minutes (không bắt gửi lại tệp); muốn giữ một kiểu viết riêng để dùng lại thì "
+    "save_meeting_template; hỏi các cuộc họp / mẫu đã có thì list_my_meetings."
 )
 
 

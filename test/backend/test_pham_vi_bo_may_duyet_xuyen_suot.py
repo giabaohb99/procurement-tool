@@ -1261,6 +1261,24 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "create_calendar_event": "google_link.get_link(user.id) — ghi vào lịch của chính người hỏi",
     "drive_search": "google_link.get_link(user.id) — Drive của chính người hỏi",
     "drive_read": "google_link.get_link(user.id) — Drive của chính người hỏi",
+    "update_calendar_event": "google_link.get_link(user.id) — dời sự kiện trên lịch của chính người hỏi",
+    "delete_calendar_event": "google_link.get_link(user.id) — hủy sự kiện trên lịch của chính người hỏi",
+    # (b-ter) sổ riêng của trợ lý cá nhân (ai-CR-095/102/103/105/112): mọi bảng `tab_agent_*` lọc cứng theo
+    #  ctx.user.id, model không có tham số chọn người — không phải bảng nghiệp vụ ERP nên không có phạm vi.
+    "remember_fact": "personal_memory theo ctx.user.id — sổ ghi nhớ của chính người hỏi",
+    "forget_fact": "personal_memory theo ctx.user.id — sổ ghi nhớ của chính người hỏi",
+    "save_note": "personal_memory theo ctx.user.id — kho ghi chú của chính người hỏi",
+    "search_notes": "personal_memory.search_notes lọc user_id (Qdrant + SQL) — của chính người hỏi",
+    "search_chat_history": "chat đã liên kết của ctx.user.id — hội thoại của chính người hỏi với bot",
+    "add_personal_item": "personal_items theo ctx.user.id — thẻ riêng của chính người hỏi",
+    "list_personal_items": "personal_items theo ctx.user.id — thẻ riêng của chính người hỏi",
+    "mark_personal_item": "personal_items theo ctx.user.id — chỉ món của chính người hỏi",
+    "list_my_groups": "groups.can_read(user.id): chủ nhóm hoặc thành viên Telegram xác nhận / từng nhắn (Zalo)",
+    "read_group_messages": "groups.find → groups.can_read(user.id) trước khi đọc",
+    "read_group_file": "groups.find → groups.can_read(user.id) + tệp phải thuộc đúng nhóm",
+    "list_my_meetings": "tab_agent_meeting lọc user_id = ctx.user.id",
+    "rewrite_meeting_minutes": "meetings.find chỉ trong phiên của ctx.user.id",
+    "save_meeting_template": "ghi vào sổ ghi nhớ của chính ctx.user.id",
     "my_approval_tasks": "task_service.my_tasks(employee_id) — hộp việc của chính mình",
     "my_requests_status": "lọc theo started_by_employee_id — phiếu chính mình trình",
     "my_tickets": "lọc theo created_by/requester_id + ctx.can(ticket, read)",
@@ -1273,6 +1291,9 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "draft_survey_request": "ctx.can(survey_request, create) — chỉ soạn nháp",
     "draft_purchase_request": "ctx.can(purchase_request, create) — chỉ soạn nháp",
     "draft_leave_request": "ctx.can(leave_request, create) — chỉ soạn nháp",
+    "draft_work_task": "ctx.can(work_task, create) — chỉ soạn nháp, bước «tạo» mới ghi (ai-CR-080)",
+    "propose_glossary_term": "chỉ ghi đề xuất thuật ngữ chờ duyệt; sửa thẳng chỉ khi chính là chủ từ điển (ai-CR-078)",
+    "report_missing_feature": "chỉ ghi phản hồi «thiếu chức năng» kèm user_id người báo (ai-CR-078)",
     "propose_account_setup": "ctx.can(user/role…) + apply_scope(Employee) + get_scoped "
                              "tài khoản đích + chặn tự nâng quyền — chỉ đề xuất, bước "
                              "confirm mới ghi (bao-CR-435)",
@@ -1280,6 +1301,7 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "export_report_file": "dựng tệp từ kết quả tool khác (đã qua apply_scope)",
     "export_excel_file": "cùng lý do export_report_file",
     "search_docs": "bài Trung tâm HDSD — nội dung mọi người đăng nhập đều đọc được",
+    "glossary_lookup": "từ điển thuật ngữ nội bộ dùng chung (tab_setting) — không đọc bản ghi nghiệp vụ (ai-CR-078)",
 }
 
 

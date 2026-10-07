@@ -251,10 +251,42 @@ def export_text(db: Session, link: AgentGoogleLink, file_id: str, mime: str) -> 
     return resp.text[:20000]
 
 
-def upload_file(db: Session, link: AgentGoogleLink, filename: str, data: bytes, mime: str) -> dict:
-    """Đưa một tệp lên Drive của người đó (scope drive.file: chỉ tệp do ERP tạo). Trả {id, webViewLink}."""
+_FOLDER_MIME = "application/vnd.google-apps.folder"
+_FOLDER_CACHE: dict[tuple[int, str], str] = {}
+
+
+def ensure_folder(db: Session, link: AgentGoogleLink, name: str) -> str:
+    """Id thư mục `name` ở gốc Drive của người đó; chưa có thì tạo (ai-CR-112). Scope drive.file chỉ thấy thư mục do ERP
+    tạo, nên thư mục cùng tên người dùng tự tạo tay không bị đụng. Hỏng thì trả "" (tệp lên gốc Drive)."""
+    key = (int(link.id or 0), name)
+    if key in _FOLDER_CACHE:
+        return _FOLDER_CACHE[key]
     token = access_token(db, link)
-    meta = json.dumps({"name": filename}).encode()
+    headers = {"Authorization": f"Bearer {token}"}
+    safe = name.replace("\\", "\\\\").replace("'", "\\'")
+    try:
+        resp = requests.get("https://www.googleapis.com/drive/v3/files", headers=headers, timeout=20,
+                            params={"q": f"name = '{safe}' and mimeType = '{_FOLDER_MIME}' and trashed = false",
+                                    "fields": "files(id)", "pageSize": 1})
+        found = (resp.json().get("files") or []) if resp.status_code < 400 else []
+        if found:
+            folder = str(found[0].get("id") or "")
+        else:
+            resp = requests.post("https://www.googleapis.com/drive/v3/files", headers=headers, timeout=20,
+                                 params={"fields": "id"}, json={"name": name, "mimeType": _FOLDER_MIME})
+            folder = str(resp.json().get("id") or "") if resp.status_code < 400 else ""
+    except (requests.RequestException, ValueError):
+        return ""
+    if folder:
+        _FOLDER_CACHE[key] = folder
+    return folder
+
+
+def upload_file(db: Session, link: AgentGoogleLink, filename: str, data: bytes, mime: str, *, parent: str = "") -> dict:
+    """Đưa một tệp lên Drive của người đó (scope drive.file: chỉ tệp do ERP tạo). Trả {id, webViewLink}.
+    `parent` = id thư mục (ai-CR-112); trống = gốc Drive."""
+    token = access_token(db, link)
+    meta = json.dumps({"name": filename, **({"parents": [parent]} if parent else {})}).encode()
     files = {"metadata": ("metadata", meta, "application/json; charset=UTF-8"), "file": (filename, data, mime)}
     resp = requests.post("https://www.googleapis.com/upload/drive/v3/files", params={"uploadType": "multipart", "fields": "id,webViewLink"},
                          headers={"Authorization": f"Bearer {token}"}, files=files, timeout=60)

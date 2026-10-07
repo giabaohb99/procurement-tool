@@ -77,6 +77,23 @@ thanh-video / tin thoại > 3 phút, ≤ 20 MB) hoặc link Drive kèm chữ «h
 lời trong chú thích: «chính thức», «danh sách việc», «theo giờ» (mặc định tóm tắt nhanh). 4 mẫu đã có trong mã
 (`TEMPLATES`); bước 10.2 đưa ra cấu hình để sửa không cần mã.
 
+**Bước 10.0 thử bằng tệp GIẢ 07/10 (đại ca chưa có tệp thật):** dựng một cuộc họp giao ban 88 giây bằng giọng đọc máy
+(gTTS, ba giọng đổi cao độ, ba người Hùng · Mai · Tuấn bàn giá thép, phạt nhà cung cấp xi măng, ngân sách quý 4, lịch họp
+tuần sau), chạy trên dev bằng khóa của đại ca. Chép lời (Gemini Flash) gần như nguyên văn, đổi số thành chữ số
+(14.200.000, 10/10, 60%), đoán đúng tên người nói theo nội dung. Bốn mẫu viết đúng ý, đúng người, đúng hạn. Hai lỗi tìm ra
+và đã vá ở ai-CR-112: (1) DeepSeek v4.1 flash qua trạm modelapi một lần trong bốn trả lẫn cả đoạn «nghĩ» rác vào biên bản
+→ `openai_compat.clean_reply` bỏ khối <think> và phần trước «Final answer:»; (2) model suy luận tiêu 3–4 nghìn token cho
+phần nghĩ, trần 4000 cũ có thể cắt cụt biên bản → `RECAP_MAX_TOKENS` 12000. Giọng máy rõ hơn họp thật nhiều: vẫn cần
+một tệp họp thật để đo tiếng ồn, nói chồng, giọng địa phương.
+
+**Bước 10.2 XONG 07/10 (ai-CR-112)** — mẫu là dữ liệu: 4 mẫu sẵn (`BUILTIN`) + mẫu RIÊNG từng người là một dòng
+«Mẫu biên bản «tên»: lời dặn» trong sổ ghi nhớ (tool `save_meeting_template`, «quên» được như mọi dòng sổ) + lời dặn tại
+chỗ trong chú thích («theo mẫu: …»). Phiên chép lại mẫu đã dùng (`template_label`, `template_prompt`, migration `meet02`).
+Tool `list_my_meetings` · `rewrite_meeting_minutes` (viết lại theo mẫu khác, KHÔNG chép lời lại) — 65 tool. Word theo mẫu
+DEGO: Times New Roman 13, lề 3/2 cm, đầu trang công ty, bảng thông tin (ngày lập · thời lượng · mẫu · người lập), bảng
+Markdown thành bảng Word, chữ đậm giữ đậm, số trang; mẫu chính thức thêm quốc hiệu, «Số: …/BB-HĐ» và chỗ ký Thư ký /
+Chủ trì. Word lên Drive vào thư mục «Biên bản họp» (tự tạo lần đầu).
+
 ## 7. Câu chờ đại ca chốt (bản đầu)
 
 | Mã | Câu | Em đề xuất |

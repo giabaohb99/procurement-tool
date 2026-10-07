@@ -8446,3 +8446,142 @@ def test_nhom_zalo_nguoi_tung_nhan_trong_nhom_moi_doc_duoc(db, bot, seed, monkey
     assert T.run_tool(db, other, "list_my_groups", {})["count"] == 0   # chưa từng nhắn trong nhóm
     service.handle_message(db, zalo.normalize(_zl_update("ok anh", chat="g1", ctype="GROUP", sender="u2", mid="b")))
     assert T.run_tool(db, other, "list_my_groups", {})["count"] == 1
+
+
+# --- ai-CR-112: biên bản họp bước 10.2 — mẫu dạng dữ liệu, mẫu riêng, viết lại, Word mẫu DEGO, thư mục Drive ----------
+def test_chon_mau_bien_ban_tai_cho_rieng_san_mac_dinh(db, seed):
+    from app.modules.agent_hub import meetings as mt, personal_memory as pm
+
+    pm.clear_cache()
+    uid = seed.u_req_id
+    assert mt.resolve_template(db, uid, "biên bản chính thức giúp anh").key == "chinh_thuc"
+    assert mt.resolve_template(db, uid, "").key == mt.DEFAULT_TEMPLATE
+    adhoc = mt.resolve_template(db, uid, "họp sáng nay, theo mẫu: chỉ ghi số liệu và hạn chót")
+    assert adhoc.key == mt.CUSTOM_KEY and adhoc.prompt == "chỉ ghi số liệu và hạn chót"
+    #  Mẫu riêng: lưu vào sổ ghi nhớ, gọi bằng tên; lưu lại cùng tên thì thay chứ không thêm dòng.
+    assert mt.save_personal_template(db, uid, "Giao ban", "chỉ ghi việc của từng phòng và hạn")["ok"]
+    assert mt.save_personal_template(db, uid, "giao ban", "mỗi phòng một mục: việc, người, hạn")["ok"]
+    mine = mt.personal_templates(db, uid)
+    assert [t.label for t in mine] == ["giao ban"] and mine[0].prompt == "mỗi phòng một mục: việc, người, hạn"
+    got = mt.resolve_template(db, uid, "làm biên bản theo mẫu giao ban")
+    assert got.key == mt.CUSTOM_KEY and got.label == "giao ban"
+    #  Không cho trùng tên mẫu sẵn, không nhận lời dặn rỗng; người khác không thấy mẫu của mình.
+    assert not mt.save_personal_template(db, uid, "Biên bản chính thức", "viết gì đó đủ dài")["ok"]
+    assert not mt.save_personal_template(db, uid, "X", "")["ok"]
+    assert mt.personal_templates(db, seed.u_nstm_id) == []
+    #  Phiên ghi lại đúng mẫu đã dùng: mẫu riêng giữ lời dặn, mẫu sẵn để trống (sửa mẫu sẵn trong mã thì áp luôn).
+    row = mt.create(db, user_id=uid, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="F", title="Họp", template=got)
+    assert row.template == mt.CUSTOM_KEY and row.template_label == "giao ban" and "mỗi phòng" in row.template_prompt
+    row2 = mt.create(db, user_id=uid, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="G", title="Họp 2",
+                     template="chinh_thuc")
+    assert row2.template_prompt == "" and mt.template_for_row(row2).label == "Biên bản chính thức"
+
+
+def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monkeypatch):
+    import io
+
+    from docx import Document
+
+    from app.modules.agent_hub import meetings as mt, personal_memory as pm
+    from app.modules.assistant import tools as T
+    from app.modules.assistant.provider.base import ChatResult
+    from app.modules.user.model import User
+
+    service, sent, _ = bot
+    pm.clear_cache()
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    monkeypatch.setattr(mt.requests, "post", lambda *a, **kw: pytest.fail("viết lại không được chép lời lại"))
+    docs: list[bytes] = []
+    monkeypatch.setattr(mt.telegram, "send_document", lambda chat, fn, data, **kw: docs.append(data) or 1)
+    prompts: list[str] = []
+
+    class P:
+        def ask(self, messages, **kw):
+            prompts.append(messages[0].content)
+            return ChatResult(text="## Nội dung\n- Mua **20 tấn** thép\n\n| Việc | Người làm | Hạn |\n|---|---|---|\n"
+                                   "| Đặt hàng | Bảo | 10/10 |", provider="x", model="x", input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(service.manager, "get_provider", lambda: P())
+    monkeypatch.setattr(mt, "dispatch", lambda mid: mt.process(db, mid))
+    row = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="F", title="Giao ban")
+    row.transcript, row.status, row.duration_sec = "[00:05] Bảo: chốt mua 20 tấn thép", int(mt.MeetingStatus.DONE), 1260
+    db.commit()
+    owner = db.get(User, seed.u_req_id)
+    listed = T.run_tool(db, owner, "list_my_meetings", {})
+    assert listed["count"] == 1 and listed["meetings"][0]["template"] == "Tóm tắt nhanh"
+    assert any(t["name"] == "Biên bản chính thức" for t in listed["templates"])
+    out = T.run_tool(db, owner, "rewrite_meeting_minutes", {"meeting": "1", "template": "chính thức"})
+    assert out["started"] and out["template"] == "Biên bản chính thức"
+    assert "Thành phần" in prompts[-1] and "chốt mua 20 tấn thép" in prompts[-1]
+    assert row.status == mt.MeetingStatus.DONE and row.template == "chinh_thuc" and "BIÊN BẢN" in sent[-1]
+    word = Document(io.BytesIO(docs[-1]))
+    text = "\n".join(p.text for p in word.paragraphs) + "\n".join(c.text for t in word.tables for r in t.rows for c in r.cells)
+    assert "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM" in text and "THƯ KÝ" in text and "21 phút" in text
+    assert "Phụ lục: bản chép lời" in text and "**" not in text
+    assert any(c.text == "Đặt hàng" for t in word.tables for r in t.rows for c in r.cells)      # bảng Markdown → bảng Word
+    assert any(r.bold and r.text == "20 tấn" for p in word.paragraphs for r in p.runs)          # **đậm** → chữ đậm
+    #  Người khác không viết lại được cuộc họp của mình; cuộc họp chưa chép lời thì báo lỗi.
+    other = db.get(User, seed.u_nstm_id)
+    assert "error" in T.run_tool(db, other, "rewrite_meeting_minutes", {"template": "chính thức"})
+    mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="H", title="Mới")
+    db.commit()
+    assert "chưa chép lời" in T.run_tool(db, owner, "rewrite_meeting_minutes", {"template": "theo giờ"})["error"]
+    #  Lưu mẫu riêng bằng tool rồi dùng tên mẫu khi viết lại.
+    assert T.run_tool(db, owner, "save_meeting_template", {"name": "Ngắn", "instruction": "ba dòng: chốt gì, ai làm, hạn"})["ok"]
+    assert T.run_tool(db, owner, "rewrite_meeting_minutes", {"meeting": "Giao ban", "template": "mẫu Ngắn"})["template"] == "Ngắn"
+    assert "ba dòng: chốt gì" in prompts[-1]
+
+
+def test_bo_phan_nghi_ma_model_suy_luan_tra_lan_vao_cau_tra_loi():
+    from app.modules.assistant.provider.openai_compat import clean_reply
+
+    leaked = ('**:\n\n.\n\n**:\n- "T.\n\n### Final? Let\'s prepare final. "B.\n\nLet\'s craft.\n\n### .\n\n'
+              "Final answer:**:\n**Biên bản họp giao ban**\n\n- Mục đích: họp tuần")
+    assert clean_reply(leaked) == "**Biên bản họp giao ban**\n\n- Mục đích: họp tuần"
+    assert clean_reply("<think>nghĩ lung tung</think>\nGiá vàng hôm nay 120 triệu") == "Giá vàng hôm nay 120 triệu"
+    normal = "Kết luận cuối cùng: chốt mua.\nfinal của giải bóng đá là thứ bảy"
+    assert clean_reply(normal) == normal                     # chữ «final» giữa câu không phải dấu chuyển
+    assert clean_reply("Final answer:") == "Final answer:"     # sau dấu không còn gì thì giữ nguyên
+    assert clean_reply("") == ""
+
+
+def test_word_bien_ban_len_thu_muc_bien_ban_hop_tren_drive(db, monkeypatch):
+    import json as _json
+
+    from app.modules.agent_hub import google_link
+
+    calls: list[tuple] = []
+
+    class R:
+        def __init__(self, data, code=200):
+            self._d, self.status_code = data, code
+
+        def json(self):
+            return self._d
+
+    monkeypatch.setattr(google_link, "access_token", lambda db, link: "tok")
+    monkeypatch.setattr(google_link, "_FOLDER_CACHE", {})
+    monkeypatch.setattr(google_link.requests, "get", lambda url, **kw: calls.append(("get", kw["params"]["q"])) or R({"files": []}))
+
+    def post(url, **kw):
+        if "upload" in url:
+            calls.append(("upload", _json.loads(kw["files"]["metadata"][1])))
+            return R({"id": "F1", "webViewLink": "https://drive/F1"})
+        calls.append(("mkdir", kw["json"]))
+        return R({"id": "DIR1"})
+
+    monkeypatch.setattr(google_link.requests, "post", post)
+
+    class L:
+        id = 7
+
+    assert google_link.ensure_folder(db, L(), "Biên bản họp") == "DIR1"
+    assert google_link.ensure_folder(db, L(), "Biên bản họp") == "DIR1"          # lần sau lấy từ bộ nhớ, không tạo lại
+    assert [c[0] for c in calls] == ["get", "mkdir"]
+    assert "name = 'Biên bản họp'" in calls[0][1]
+    google_link.upload_file(db, L(), "bb.docx", b"x", "application/x", parent="DIR1")
+    assert calls[-1] == ("upload", {"name": "bb.docx", "parents": ["DIR1"]})
+    #  Tên có dấu nháy không phá câu truy vấn của Drive.
+    google_link.ensure_folder(db, L(), "Họp 'A'")
+    assert "Họp \\'A\\'" in calls[-2][1]

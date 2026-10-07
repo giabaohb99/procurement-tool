@@ -1,4 +1,4 @@
-"""Biên bản họp từ ghi âm / video (ai-CR-104, phase 10 bước 10.1 — kế hoạch `doc/agent-hub/11-ke-hoach-bien-ban-hop.md`).
+"""Biên bản họp từ ghi âm / video (ai-CR-104 bước 10.1, ai-CR-112 bước 10.2 — kế hoạch `doc/agent-hub/11-ke-hoach-bien-ban-hop.md`).
 
 Đại ca chốt 07/10/2026: mọi người đã đăng nhập bot đều dùng (chạy bằng khóa AI của chính họ) · video chỉ lấy TIẾNG ·
 biên bản chỉ người gửi xem · việc rút ra thì bot hỏi dự án (bước 10.3).
@@ -11,6 +11,12 @@ biên bản chỉ người gửi xem · việc rút ra thì bot hỏi dự án (
   4. một lượt model (bộ định tuyến khóa — hãng nào cũng được) viết biên bản theo mẫu;
   5. gửi biên bản vào chat + tệp Word; đẩy Word lên Drive của người gửi (nếu đã nối Google); cất vào kho ghi chú.
 Tệp âm thanh chỉ nằm trong thư mục tạm, xóa ngay sau lượt chạy.
+
+Bước 10.2 (ai-CR-112): mẫu biên bản là DỮ LIỆU — bốn mẫu sẵn + mẫu RIÊNG của từng người (một dòng trong sổ ghi nhớ:
+«Mẫu biên bản «tên»: lời dặn») + lời dặn tại chỗ («theo mẫu: …»). Mẫu đã chọn chép vào phiên (`template_label`,
+`template_prompt`) để viết lại / tra lại đúng như lúc làm. Viết lại theo mẫu khác KHÔNG chép lời lại (giữ `transcript`).
+Word theo mẫu DEGO (đầu trang, bảng thông tin, bảng việc, chỗ ký với mẫu chính thức), đẩy vào thư mục «Biên bản họp»
+trên Drive của người gửi.
 """
 from __future__ import annotations
 
@@ -22,6 +28,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
@@ -49,6 +56,10 @@ ACTIVE_WAIT_SEC = 300
 FFMPEG_TIMEOUT = 1800
 LONG_VOICE_SEC = 180                           # tin thoại dài hơn 3 phút coi là ghi âm họp
 RECAP_MAX_CHARS = 120_000                      # bản chép đưa vào lượt viết biên bản
+#  ai-CR-112: model suy luận (DeepSeek v4 qua trạm) tiêu 3–4 nghìn token cho phần nghĩ trước khi viết — trần 4000 cũ
+#  có thể cắt cụt biên bản.
+RECAP_MAX_TOKENS = 12000
+DRIVE_FOLDER = "Biên bản họp"
 
 _DRIVE_ID = re.compile(r"https?://(?:drive|docs)\.google\.com/(?:file/d/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{20,})")
 _MEETING_WORDS = re.compile(r"(họp|biên bản|ghi âm|recap|tóm tắt|cuộc gọi|meeting)", re.IGNORECASE)
@@ -71,18 +82,44 @@ class MeetingError(RuntimeError):
     """Lỗi nói được cho người dùng (một câu tiếng Việt, không có URL / khóa)."""
 
 
-#  Bốn mẫu biên bản là DỮ LIỆU (QĐ-M6 cũ): khóa · nhãn · lời dặn. Bước 10.2 cho sửa / thêm mẫu không cần sửa mã.
-TEMPLATES: dict[str, tuple[str, str]] = {
-    "gach_dau_dong": ("Tóm tắt nhanh", "Viết 5–12 gạch đầu dòng: mục đích cuộc họp, các ý chính, quyết định đã chốt, rồi mục "
-                                       "«Việc cần làm» (mỗi dòng: việc — người làm — hạn, thiếu thì ghi «chưa rõ»)."),
-    "chinh_thuc": ("Biên bản chính thức", "Viết biên bản họp chính thức: Thời gian, Thành phần (tên nghe được), Nội dung từng "
-                                          "vấn đề đã bàn, Kết luận / quyết định, Việc cần làm (việc — người làm — hạn)."),
-    "danh_sach_viec": ("Danh sách việc", "Chỉ liệt kê việc cần làm rút ra từ cuộc họp: mỗi dòng «việc — người làm — hạn», "
-                                        "nhóm theo người làm; cuối cùng là các câu hỏi còn bỏ ngỏ."),
-    "theo_gio": ("Đầy đủ theo giờ", "Viết diễn biến theo mốc giờ [mm:ss]: ai nói gì (tóm ý từng đoạn), kết thúc bằng Kết luận "
-                                    "và Việc cần làm."),
-}
+@dataclass(frozen=True)
+class Template:
+    """Một mẫu biên bản: khóa · nhãn · lời dặn cho model · chữ khóa để chọn bằng lời."""
+
+    key: str
+    label: str
+    prompt: str
+    words: tuple[str, ...] = ()
+
+
+#  Bốn mẫu sẵn (QĐ-M6 cũ: mẫu là DỮ LIỆU). Người dùng thêm mẫu riêng bằng lời, không cần sửa mã — xem `personal_templates`.
+BUILTIN: dict[str, Template] = {t.key: t for t in (
+    Template("gach_dau_dong", "Tóm tắt nhanh",
+             "Viết 5–12 gạch đầu dòng: mục đích cuộc họp, các ý chính, quyết định đã chốt, rồi mục «Việc cần làm» (mỗi "
+             "dòng: việc — người làm — hạn, thiếu thì ghi «chưa rõ»).",
+             ("tóm tắt nhanh", "gạch đầu dòng", "ngắn gọn")),
+    Template("chinh_thuc", "Biên bản chính thức",
+             "Viết biên bản họp chính thức: Thời gian, Thành phần (tên nghe được), Nội dung từng vấn đề đã bàn, Kết luận / "
+             "quyết định, Việc cần làm dạng bảng | Việc | Người làm | Hạn |. Không tự đặt tiêu đề lớn (đầu trang đã có).",
+             ("chính thức", "hành chính", "trình ký")),
+    Template("danh_sach_viec", "Danh sách việc",
+             "Chỉ liệt kê việc cần làm rút ra từ cuộc họp: mỗi dòng «việc — người làm — hạn», nhóm theo người làm; cuối cùng "
+             "là các câu hỏi còn bỏ ngỏ.",
+             ("danh sách việc", "việc cần làm", "giao việc")),
+    Template("theo_gio", "Đầy đủ theo giờ",
+             "Viết diễn biến theo mốc giờ [mm:ss]: ai nói gì (tóm ý từng đoạn), kết thúc bằng Kết luận và Việc cần làm.",
+             ("theo giờ", "đầy đủ", "diễn biến")),
+)}
+#  Giữ dạng cũ (khóa → (nhãn, lời dặn)) cho chỗ gọi cũ.
+TEMPLATES: dict[str, tuple[str, str]] = {k: (t.label, t.prompt) for k, t in BUILTIN.items()}
 DEFAULT_TEMPLATE = "gach_dau_dong"
+CUSTOM_KEY = "rieng"
+#  Dòng mẫu riêng trong sổ ghi nhớ: «Mẫu biên bản «Giao ban»: lời dặn…».
+PERSONAL_PREFIX = "Mẫu biên bản"
+_PERSONAL_RE = re.compile(r"^\s*Mẫu biên bản\s*«([^»]{1,40})»\s*:\s*(.+)$", re.IGNORECASE)
+#  Lời dặn tại chỗ trong chú thích tệp: «theo mẫu: …» / «yêu cầu: …».
+_ADHOC_RE = re.compile(r"(?:theo\s+)?(?:mẫu|yêu cầu|cách viết)\s*:\s*(.{8,})", re.IGNORECASE | re.S)
+TEMPLATE_PROMPT_MAX = 1500
 
 TRANSCRIBE_PROMPT = (
     "Chép lại NGUYÊN VĂN lời nói tiếng Việt trong đoạn ghi âm cuộc họp này. Mỗi lượt nói một dòng dạng "
@@ -109,14 +146,72 @@ def wants_meeting(text: str) -> bool:
 
 
 def template_of(text: str) -> str:
+    """Khóa mẫu SẴN khớp chữ trong câu (không xét mẫu riêng); không khớp = mẫu mặc định."""
     t = (text or "").lower()
-    if "chính thức" in t:
-        return "chinh_thuc"
-    if "danh sách việc" in t or "việc cần làm" in t:
-        return "danh_sach_viec"
-    if "theo giờ" in t or "đầy đủ" in t:
-        return "theo_gio"
+    for tpl in BUILTIN.values():
+        if any(w in t for w in tpl.words):
+            return tpl.key
     return DEFAULT_TEMPLATE
+
+
+def personal_templates(db: Session, user_id: int) -> list[Template]:
+    """Mẫu riêng của một người = các dòng «Mẫu biên bản «tên»: …» trong sổ ghi nhớ của họ."""
+    if int(user_id or 0) <= 0:
+        return []
+    out = []
+    for line in personal_memory.load_core(db, int(user_id)).splitlines():
+        m = _PERSONAL_RE.match(line.lstrip("-• ").strip())
+        if m:
+            name = m.group(1).strip()
+            prompt = re.sub(r"\s*\(đến \d{2}/\d{2}/\d{4}\)\s*$", "", m.group(2))
+            out.append(Template(CUSTOM_KEY, name, prompt.strip(), (name.lower(),)))
+    return out
+
+
+def save_personal_template(db: Session, user_id: int, name: str, prompt: str) -> dict:
+    """Lưu / thay mẫu riêng «name» vào sổ ghi nhớ (mục cách làm việc)."""
+    name = " ".join((name or "").split()).strip(" «»\"'")[:40]
+    prompt = " ".join((prompt or "").split()).strip()
+    if not name or len(prompt) < 8:
+        return {"ok": False, "message": "cần tên mẫu và lời dặn (ít nhất vài chữ)"}
+    if name.lower() in {t.label.lower() for t in BUILTIN.values()}:
+        return {"ok": False, "message": f"«{name}» trùng tên mẫu sẵn, đặt tên khác giúp em"}
+    personal_memory.forget(db, int(user_id), f"{PERSONAL_PREFIX} «{name}»")
+    res = personal_memory.remember(db, int(user_id), f"{PERSONAL_PREFIX} «{name}»: {prompt}", section="cach_lam_viec")
+    return {**res, "template": name}
+
+
+def list_templates(db: Session, user_id: int) -> list[dict]:
+    return ([{"name": t.label, "kind": "sẵn", "say": t.words[0]} for t in BUILTIN.values()]
+            + [{"name": t.label, "kind": "riêng", "say": f"mẫu {t.label}"} for t in personal_templates(db, user_id)])
+
+
+def resolve_template(db: Session | None, user_id: int, text: str, *, allow_adhoc: bool = True) -> Template:
+    """Chọn mẫu từ câu của người dùng: lời dặn tại chỗ («theo mẫu: …») → mẫu riêng nhắc tên → mẫu sẵn → mặc định."""
+    raw = text or ""
+    if allow_adhoc:
+        m = _ADHOC_RE.search(raw)
+        if m:
+            return Template(CUSTOM_KEY, "Theo yêu cầu riêng", m.group(1).strip()[:TEMPLATE_PROMPT_MAX])
+    low = raw.lower()
+    if db is not None:
+        for tpl in sorted(personal_templates(db, user_id), key=lambda t: -len(t.label)):
+            if tpl.label.lower() in low:
+                return tpl
+    return BUILTIN[template_of(raw)]
+
+
+def template_for_row(row: AgentMeeting) -> Template:
+    if row.template_prompt:
+        return Template(row.template or CUSTOM_KEY, row.template_label or "Theo yêu cầu riêng", row.template_prompt)
+    return BUILTIN.get(row.template or "", BUILTIN[DEFAULT_TEMPLATE])
+
+
+def apply_template(row: AgentMeeting, tpl: Template) -> None:
+    row.template = tpl.key[:40]
+    row.template_label = tpl.label[:80]
+    #  Mẫu sẵn không chép lời dặn: sửa mẫu sẵn trong mã thì phiên cũ viết lại cũng theo bản mới.
+    row.template_prompt = "" if tpl.key in BUILTIN and BUILTIN[tpl.key] == tpl else tpl.prompt[:TEMPLATE_PROMPT_MAX]
 
 
 def telegram_media(msg: dict) -> dict | None:
@@ -138,11 +233,11 @@ def telegram_media(msg: dict) -> dict | None:
 # Tạo phiên + giao chạy nền
 # ---------------------------------------------------------------------------
 def create(db: Session, *, user_id: int, chat_id: str, kind: SourceKind, ref: str, title: str, mime: str = "",
-           template: str = DEFAULT_TEMPLATE) -> AgentMeeting:
+           template: str | Template = DEFAULT_TEMPLATE) -> AgentMeeting:
     row = AgentMeeting(user_id=int(user_id), chat_id=str(chat_id), source_kind=int(kind), source_ref=ref[:300],
                        title=(title or "Cuộc họp")[:200], mime=(mime or "")[:80], status=int(MeetingStatus.QUEUED),
-                       template=template if template in TEMPLATES else DEFAULT_TEMPLATE,
                        created_by=int(user_id), updated_by=int(user_id))
+    apply_template(row, template if isinstance(template, Template) else BUILTIN.get(template, BUILTIN[DEFAULT_TEMPLATE]))
     db.add(row)
     db.flush()
     return row
@@ -163,7 +258,7 @@ def _download_drive(db: Session, user_id: int, file_id: str, dest: Path) -> tupl
 
     link = google_link.get_link(db, user_id)
     if link is None:
-        raise MeetingError("Tệp trên Drive cần đại ca nối Google trước: ERP → Trang cá nhân → Khóa AI → «Nối Google».")
+        raise MeetingError("Tệp trên Drive cần nối Google trước: ERP → Trang cá nhân → Khóa AI → «Nối Google».")
     meta = google_link.api_get(db, link, f"{DRIVE_URL}/files/{file_id}",
                                {"fields": "name,mimeType,size", "supportsAllDrives": "true"})
     mime = str(meta.get("mimeType") or "")
@@ -329,29 +424,186 @@ def _shift_stamps(text: str, offset_sec: int) -> str:
 # ---------------------------------------------------------------------------
 # Word
 # ---------------------------------------------------------------------------
-def build_docx(title: str, when: datetime | None, recap: str, transcript: str) -> bytes:
+_MD_TABLE_SEP = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
+_MD_BOLD = re.compile(r"\*\*(.+?)\*\*")
+WORD_FONT = "Times New Roman"
+COMPANY_NAME = "DEGO HOLDING"
+
+
+def _runs(par, text: str, *, size: float | None = None, bold: bool = False, italic: bool = False) -> None:
+    """Thêm chữ vào đoạn, **đậm** thành chữ đậm; bỏ các dấu Markdown khác."""
+    from docx.shared import Pt
+
+    text = re.sub(r"(?<!\*)\*(?!\*)|`|^#+\s*", "", text)
+    pos = 0
+    for m in list(_MD_BOLD.finditer(text)) + [None]:
+        chunk = text[pos:m.start()] if m else text[pos:]
+        if chunk:
+            r = par.add_run(chunk)
+            r.bold, r.italic = bold or None, italic or None
+            if size:
+                r.font.size = Pt(size)
+        if m:
+            r = par.add_run(m.group(1))
+            r.bold, r.italic = True, italic or None
+            if size:
+                r.font.size = Pt(size)
+            pos = m.end()
+
+
+def _no_borders(table) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    tbl_pr = table._tbl.tblPr
+    borders = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        el = OxmlElement(f"w:{edge}")
+        el.set(qn("w:val"), "nil")
+        borders.append(el)
+    tbl_pr.append(borders)
+
+
+def _page_number(par) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    par.add_run("Trang ")
+    for code in ("PAGE",):
+        run = par.add_run()
+        begin, instr, end = OxmlElement("w:fldChar"), OxmlElement("w:instrText"), OxmlElement("w:fldChar")
+        begin.set(qn("w:fldCharType"), "begin")
+        instr.set(qn("xml:space"), "preserve")
+        instr.text = code
+        end.set(qn("w:fldCharType"), "end")
+        run._r.append(begin)
+        run._r.append(instr)
+        run._r.append(end)
+
+
+def _md_table(doc, rows: list[list[str]]) -> None:
+    width = max(len(r) for r in rows)
+    table = doc.add_table(rows=0, cols=width)
+    table.style = "Table Grid"
+    for i, cells in enumerate(rows):
+        row = table.add_row().cells
+        for j in range(width):
+            par = row[j].paragraphs[0]
+            _runs(par, cells[j] if j < len(cells) else "", bold=(i == 0))
+
+
+def _md_body(doc, md: str) -> None:
+    """Markdown đơn giản của model → Word: tiêu đề, gạch đầu dòng, đánh số, bảng, chữ đậm."""
+    lines = (md or "").splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
+        stripped = line.strip()
+        if not stripped or re.fullmatch(r"[-*_]{3,}", stripped):
+            i += 1
+            continue
+        if stripped.startswith("|"):
+            block = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                if not _MD_TABLE_SEP.match(lines[i]):
+                    block.append([c.strip() for c in lines[i].strip().strip("|").split("|")])
+                i += 1
+            if block:
+                _md_table(doc, block)
+            continue
+        if stripped.startswith("#"):
+            level = min(3, len(stripped) - len(stripped.lstrip("#")) + 1)
+            doc.add_heading(re.sub(r"[*#`]", "", stripped).strip(), level=max(2, level))
+        elif re.match(r"^[-*•+]\s+", stripped):
+            _runs(doc.add_paragraph(style="List Bullet"), re.sub(r"^[-*•+]\s+", "", stripped))
+        elif re.match(r"^\d+[.)]\s+", stripped):
+            _runs(doc.add_paragraph(style="List Number"), re.sub(r"^\d+[.)]\s+", "", stripped))
+        else:
+            _runs(doc.add_paragraph(), stripped)
+        i += 1
+
+
+def build_docx(title: str, when: datetime | None, recap: str, transcript: str, *, label: str = "",
+               minutes: int = 0, author: str = "", formal: bool = False) -> bytes:
+    """Biên bản Word theo mẫu DEGO. `formal` (mẫu chính thức): đầu trang hành chính + chỗ ký."""
     from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.shared import Cm, Pt
 
     doc = Document()
-    doc.add_heading(f"Biên bản: {title[:150]}", level=1)
-    if when:
-        doc.add_paragraph(f"Thời gian xử lý: {when:%d/%m/%Y %H:%M}")
-    for line in (recap or "").splitlines():
-        clean = re.sub(r"[*_`#]+", "", line).strip()
-        if not clean:
-            continue
-        if line.lstrip().startswith("#"):
-            doc.add_heading(clean, level=2)
-        elif clean.startswith(("- ", "• ")):
-            doc.add_paragraph(clean[2:].strip(), style="List Bullet")
-        else:
-            doc.add_paragraph(clean)
+    sec = doc.sections[0]
+    sec.top_margin, sec.bottom_margin, sec.left_margin, sec.right_margin = Cm(2), Cm(2), Cm(3), Cm(2)
+    normal = doc.styles["Normal"]
+    normal.font.name, normal.font.size = WORD_FONT, Pt(13)
+    normal.element.get_or_add_rPr().get_or_add_rFonts().set(qn("w:eastAsia"), WORD_FONT)
+    for st in ("Heading 1", "Heading 2", "Heading 3"):
+        doc.styles[st].font.name = WORD_FONT
+        doc.styles[st].font.color.rgb = None
+
+    head = doc.add_table(rows=1, cols=2)
+    _no_borders(head)
+    left, right = head.rows[0].cells
+    lp = left.paragraphs[0]
+    lp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _runs(lp, COMPANY_NAME, bold=True, size=12)
+    if formal:
+        _runs(left.add_paragraph(), "Số: ....../BB-HĐ", size=12)
+        left.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        rp = right.paragraphs[0]
+        rp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        _runs(rp, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold=True, size=12)
+        rp2 = right.add_paragraph()
+        rp2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        _runs(rp2, "Độc lập – Tự do – Hạnh phúc", bold=True, size=12)
+    else:
+        rp = right.paragraphs[0]
+        rp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        _runs(rp, f"{when:%d/%m/%Y}" if when else "", italic=True, size=12)
+
+    doc.add_paragraph()
+    tp = doc.add_paragraph()
+    tp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _runs(tp, "BIÊN BẢN HỌP" if formal or not label else label.upper(), bold=True, size=15)
+    sp = doc.add_paragraph()
+    sp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _runs(sp, f"Về việc: {title[:150]}", italic=True)
+
+    info = doc.add_table(rows=0, cols=2)
+    info.style = "Table Grid"
+    for k, v in (("Ngày lập", f"{when:%d/%m/%Y %H:%M}" if when else ""), ("Thời lượng ghi âm", f"{minutes} phút" if minutes else ""),
+                 ("Mẫu biên bản", label), ("Người lập", author or "Trợ lý AI (từ bản ghi âm)")):
+        if v:
+            cells = info.add_row().cells
+            _runs(cells[0].paragraphs[0], k, bold=True, size=12)
+            _runs(cells[1].paragraphs[0], v, size=12)
+    doc.add_paragraph()
+
+    _md_body(doc, recap)
+
+    if formal:
+        doc.add_paragraph()
+        doc.add_paragraph("Biên bản được lập từ bản ghi âm cuộc họp và được các bên thống nhất.").runs[0].italic = True
+        sign = doc.add_table(rows=1, cols=2)
+        _no_borders(sign)
+        for cell, role in zip(sign.rows[0].cells, ("THƯ KÝ", "CHỦ TRÌ")):
+            p1 = cell.paragraphs[0]
+            p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _runs(p1, role, bold=True)
+            p2 = cell.add_paragraph()
+            p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _runs(p2, "(Ký, ghi rõ họ tên)", italic=True, size=12)
+
     if transcript:
         doc.add_page_break()
         doc.add_heading("Phụ lục: bản chép lời", level=2)
         for line in transcript.splitlines()[:5000]:
             if line.strip():
-                doc.add_paragraph(line.strip())
+                _runs(doc.add_paragraph(), line.strip(), size=11)
+
+    fp = sec.footer.paragraphs[0]
+    fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _page_number(fp)
     buf = io.BytesIO()
     doc.save(buf)
     return buf.getvalue()
@@ -367,6 +619,19 @@ def process(db: Session, meeting_id: int) -> dict:
     row = db.get(AgentMeeting, int(meeting_id))
     if row is None or row.status not in (int(MeetingStatus.QUEUED), int(MeetingStatus.FAILED)):
         return {"status": "skipped"}
+    if row.transcript:
+        #  ai-CR-112: đã có bản chép (viết lại theo mẫu khác, hoặc lần trước hỏng ở bước viết) → chỉ viết lại.
+        with user_keys.for_chat(db, row.chat_id):
+            try:
+                return _write(db, row)
+            except MeetingError as e:
+                row.status = int(MeetingStatus.FAILED)
+                row.error = str(e)[:500]
+                db.commit()
+                service.reply(db, row.chat_id, f"Em chưa viết lại được biên bản «{telegram.esc(row.title)}»: "
+                                               f"{telegram.esc(str(e))}")
+                db.commit()
+                return {"status": "error", "reason": str(e)[:300]}
     row.started_at = datetime.now()
     workdir = Path(tempfile.mkdtemp(prefix="meet_"))
     try:
@@ -385,8 +650,8 @@ def process(db: Session, meeting_id: int) -> dict:
         row.status = int(MeetingStatus.FAILED)
         row.error = str(e)[:500]
         db.commit()
-        service.reply(db, row.chat_id, f"Em chưa làm được biên bản «{telegram.esc(row.title)}» (lỗi hệ thống). Đại ca "
-                                       "gửi lại giúp em; lặp lại thì báo em xem sổ.")
+        service.reply(db, row.chat_id, f"Em chưa làm được biên bản «{telegram.esc(row.title)}» (lỗi hệ thống). Gửi lại "
+                                       "giúp em; lặp lại thì báo quản trị xem sổ.")
         db.commit()
         return {"status": "error", "reason": str(e)[:300]}
     finally:
@@ -448,37 +713,91 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
     if not transcript:
         raise MeetingError("Em không nghe ra lời nói nào trong tệp.")
     row.transcript = transcript
-    row.status = int(MeetingStatus.WRITING)
     db.commit()
+    out = _write(db, row)
+    return {**out, "segments": len(segments)}
 
-    label, instruction = TEMPLATES.get(row.template, TEMPLATES[DEFAULT_TEMPLATE])
+
+def _author_of(db: Session, user_id: int) -> str:
+    from app.modules.user.model import User
+
+    from . import service
+
+    user = db.get(User, int(user_id or 0))
+    if user is None:
+        return ""
+    try:
+        return service.describe_user(db, user)[0]
+    except Exception:  # noqa: BLE001 — chỉ là dòng «Người lập»
+        return str(getattr(user, "email", "") or "")
+
+
+def _write(db: Session, row: AgentMeeting) -> dict:
+    """Viết biên bản theo mẫu của phiên từ bản chép đã có, gửi chữ + Word, lưu kho, đẩy Drive."""
+    from . import ai_keys, manager, service
+
+    row.status = int(MeetingStatus.WRITING)
+    row.error = ""
+    db.commit()
+    tpl = template_for_row(row)
     try:
         result = manager.get_provider().ask(
-            [ChatMessage(role="user", content=f"YÊU CẦU: {instruction}\n\nBẢN CHÉP LỜI:\n{transcript[:RECAP_MAX_CHARS]}")],
-            system=RECAP_SYSTEM, max_tokens=4000, temperature=0.2)
+            [ChatMessage(role="user", content=f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n{row.transcript[:RECAP_MAX_CHARS]}")],
+            system=RECAP_SYSTEM, max_tokens=RECAP_MAX_TOKENS, temperature=0.2)
     except Exception as e:  # noqa: BLE001
         raise MeetingError(ai_keys.short_error(str(e))) from None
     recap = (result.text or "").strip()
     if not recap:
-        raise MeetingError("Model không viết được biên bản, đại ca thử lại giúp em.")
+        raise MeetingError("Model không viết được biên bản, thử lại giúp em.")
     row.recap = recap
-    note = personal_memory.add_note(db, row.user_id, f"Họp: {row.title}"[:200], f"{label}\n\n{recap}")
+    note = personal_memory.add_note(db, row.user_id, f"Họp: {row.title} — {tpl.label}"[:200], f"{tpl.label}\n\n{recap}")
     row.note_id = int(note.get("note_id") or 0)
     row.status = int(MeetingStatus.DONE)
     row.finished_at = datetime.now()
     db.commit()
 
-    minutes = int(duration // 60)
-    service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, {label.lower()})\n\n{recap}",
+    minutes = int((row.duration_sec or 0) // 60)
+    service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, {tpl.label.lower()})\n\n{recap}",
                   markdown=True)
-    data = build_docx(row.title, row.finished_at, recap, transcript)
-    filename = re.sub(r"[^\w\- ]+", "", f"bien-ban {row.title}")[:80].strip() + ".docx"
+    data = build_docx(row.title, row.finished_at, recap, row.transcript, label=tpl.label, minutes=minutes,
+                      author=_author_of(db, row.user_id), formal=(tpl.key == "chinh_thuc"))
+    filename = re.sub(r"[^\w\- ]+", "", f"bien-ban {row.title} {tpl.label}")[:90].strip() + ".docx"
     telegram.send_document(row.chat_id, filename, data, caption="Biên bản kèm phụ lục bản chép lời")
     drive_link = _upload_word(db, row, filename, data)
     if drive_link:
-        service.reply(db, row.chat_id, f"Đã lưu lên Drive của đại ca: {telegram.esc(drive_link)}")
+        service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục «{DRIVE_FOLDER}»: {telegram.esc(drive_link)}")
     db.commit()
-    return {"status": "done", "meeting_id": row.id, "minutes": minutes, "segments": len(segments)}
+    return {"status": "done", "meeting_id": row.id, "minutes": minutes, "template": tpl.label}
+
+
+def rewrite(db: Session, row: AgentMeeting, tpl: Template) -> None:
+    """Viết lại biên bản một phiên đã chép lời theo mẫu khác — chạy nền, không chép lời lại."""
+    apply_template(row, tpl)
+    row.status = int(MeetingStatus.QUEUED)
+    db.commit()
+    dispatch(row.id)
+
+
+def recent(db: Session, user_id: int, limit: int = 10) -> list[AgentMeeting]:
+    from sqlalchemy import select
+
+    return list(db.scalars(select(AgentMeeting).where(AgentMeeting.user_id == int(user_id))
+                           .order_by(AgentMeeting.id.desc()).limit(limit)))
+
+
+def find(db: Session, user_id: int, ref: str) -> AgentMeeting | None:
+    """Phiên của chính người hỏi theo số thứ tự trong `recent` (1 = mới nhất), id, hoặc một phần tên. Trống = mới nhất."""
+    rows = recent(db, user_id, 20)
+    key = (ref or "").strip().lower().lstrip("#")
+    if not key or key in ("mới nhất", "vừa rồi", "gần nhất", "cuối"):
+        return rows[0] if rows else None
+    if key.isdigit():
+        n = int(key)
+        if 1 <= n <= len(rows):
+            return rows[n - 1]
+        return next((r for r in rows if r.id == n), None)
+    hits = [r for r in rows if key in (r.title or "").lower()]
+    return hits[0] if hits else None
 
 
 def _upload_word(db: Session, row: AgentMeeting, filename: str, data: bytes) -> str:
@@ -488,8 +807,10 @@ def _upload_word(db: Session, row: AgentMeeting, filename: str, data: bytes) -> 
     if link is None:
         return ""
     try:
+        folder = google_link.ensure_folder(db, link, DRIVE_FOLDER)
         info = google_link.upload_file(db, link, filename, data,
-                                       "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                                       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                       parent=folder)
     except Exception as e:  # noqa: BLE001 — Drive hỏng thì thôi, Word đã gửi trong chat
         log.warning("agent_hub: đẩy biên bản lên Drive hỏng: %s", e)
         return ""
@@ -499,5 +820,6 @@ def _upload_word(db: Session, row: AgentMeeting, filename: str, data: bytes) -> 
 
 def describe(row: AgentMeeting) -> dict:
     return {"id": row.id, "title": row.title, "status": MeetingStatus(row.status).name.lower(),
-            "minutes": int((row.duration_sec or 0) // 60), "template": row.template, "error": row.error or None,
+            "minutes": int((row.duration_sec or 0) // 60), "template": template_for_row(row).label,
+            "error": row.error or None,
             "info": json.dumps({"note_id": row.note_id}) if row.note_id else None}
