@@ -12712,3 +12712,17 @@ trả về mặc định, lựa chọn được nhớ trên máy cho lần mở 
 Bản mới không cần sửa vì bảng chung của bản mới đã có sẵn menu Cột. Đã bấm thử trên máy, chưa đưa lên dev.
 
 Mã nguồn: frontend/src/components/customs/CustomsRegulationColumns.tsx · frontend/src/components/customs/CustomsRegulationBrowse.tsx
+
+## ai-CR-104 | Bot làm biên bản họp từ ghi âm hoặc video (bước 10.1)
+- status: xong
+- date: 2026-10-07
+Đại ca chốt cho mọi người đã đăng nhập bot dùng, video chỉ lấy phần tiếng, biên bản chỉ người gửi xem. Người dùng gửi
+tệp ghi âm hoặc video vào chat riêng với bot (tới 20 MB), hoặc gửi link Google Drive kèm chữ «họp» hay «biên bản» cho
+tệp lớn; bot tải tệp bằng tài khoản Google của chính người đó. Bot tách lấy phần tiếng, cuộc họp dài trên 40 phút thì cắt
+thành đoạn 30 phút, đẩy từng đoạn lên Gemini để chép lời có mốc giờ và người nói, rồi viết biên bản theo một trong bốn
+mẫu: tóm tắt nhanh, chính thức, danh sách việc, đầy đủ theo giờ. Kết quả gửi vào chat kèm tệp Word có phụ lục bản chép,
+đẩy lên Drive nếu đã nối Google và cất vào kho ghi chú để hỏi lại sau. Tệp âm thanh không giữ trên máy chủ. Máy chủ cần
+dựng lại vì thêm ffmpeg. Chưa thử bằng tệp họp thật, chờ đại ca gửi một tệp.
+
+Mã nguồn: backend/app/modules/agent_hub/meetings.py (mới) · agent_hub/service.py (_meeting_by_message) · tác vụ agent.meeting_process · docker/Dockerfile.api · migration meet01
+

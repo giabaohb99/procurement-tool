@@ -10,9 +10,9 @@ WORKDIR /app
 # prod cùng một hành vi (dev vốn đã khai y hệt trong docker-compose.dev.yml).
 ENV PYTHONPATH=/app
 
-# Client MySQL/MariaDB (mysqldump) và bộ đọc Word .doc đời cũ.
+# Client MySQL/MariaDB (mysqldump), bộ đọc Word .doc đời cũ, ffmpeg (ai-CR-104: tách tiếng từ ghi âm / video họp).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends default-mysql-client antiword \
+    && apt-get install -y --no-install-recommends default-mysql-client antiword ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Cài dependency trước -> tận dụng cache, chỉ build lại khi requirements đổi

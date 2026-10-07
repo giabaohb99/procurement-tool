@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column, synonym
 
 from app.core.base_model import AuditMixin, Base
@@ -333,6 +334,33 @@ class AgentPersonalItem(Base, AuditMixin):
     note: Mapped[str] = mapped_column(String(500), default="")
 
     __table_args__ = (Index("ix_agent_personal_item_user_kind", "user_id", "kind", "status"),)
+
+
+class AgentMeeting(Base, AuditMixin):
+    """Một phiên biên bản họp (ai-CR-104, phase 10): nguồn tệp, trạng thái, bản chép, biên bản. Chỉ người gửi xem.
+
+    `source_kind` 1 Telegram (`source_ref` = file_id) · 2 Google Drive (id tệp). `status` 1 chờ · 2 đang chép ·
+    3 đang viết · 4 xong · 5 hỏng (SMALLINT + IntEnum ở `meetings.py`). Tệp âm thanh KHÔNG giữ trên máy chủ.
+    """
+
+    __tablename__ = "tab_agent_meeting"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    chat_id: Mapped[str] = mapped_column(String(50), default="")
+    source_kind: Mapped[int] = mapped_column(SmallInteger, default=1)
+    source_ref: Mapped[str] = mapped_column(String(300), default="")
+    title: Mapped[str] = mapped_column(String(200), default="")
+    mime: Mapped[str] = mapped_column(String(80), default="")
+    status: Mapped[int] = mapped_column(SmallInteger, default=1)
+    template: Mapped[str] = mapped_column(String(40), default="")
+    duration_sec: Mapped[int] = mapped_column(Integer, default=0)
+    transcript: Mapped[str] = mapped_column(Text().with_variant(mysql.MEDIUMTEXT(), "mysql"), default="")
+    recap: Mapped[str] = mapped_column(Text, default="")
+    note_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    drive_file_id: Mapped[str] = mapped_column(String(120), default="")
+    error: Mapped[str] = mapped_column(String(500), default="")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
 
 class AgentReminder(Base, AuditMixin):

@@ -7803,3 +7803,150 @@ def test_ban_tin_sang_co_viec_rieng(db, seed, monkeypatch):
     text = briefs.morning_text(db, u, [])
     assert "Việc riêng" in text and "17:00 đón con" in text
 
+
+# ---------------------------------------------------------------------------
+# ai-CR-104 — biên bản họp từ ghi âm / video (phase 10 bước 10.1)
+# ---------------------------------------------------------------------------
+def test_nhan_dien_tep_hop_link_drive_va_mau():
+    from app.modules.agent_hub import meetings as mt
+
+    assert mt.telegram_media({"audio": {"file_id": "A1", "mime_type": "audio/mpeg", "file_size": 9}})["file_id"] == "A1"
+    assert mt.telegram_media({"document": {"file_id": "D1", "mime_type": "video/mp4", "file_name": "hop.mp4"}})["name"] == "hop.mp4"
+    assert mt.telegram_media({"document": {"file_id": "D2", "mime_type": "application/pdf"}}) is None
+    assert mt.telegram_media({"voice": {"file_id": "V1", "duration": 30}}) is None          # tin thoại ngắn: đường cũ
+    assert mt.telegram_media({"voice": {"file_id": "V2", "duration": 600}})["duration"] == 600
+    link = "https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/view?usp=sharing"
+    assert mt.drive_file_id(link) == "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+    assert mt.wants_meeting(f"tóm tắt cuộc họp này {link}") and not mt.wants_meeting(link)
+    assert mt.template_of("biên bản chính thức giúp anh") == "chinh_thuc" and mt.template_of("") == "gach_dau_dong"
+    assert mt._shift_stamps("[01:05] A: chào", 1800) == "[31:05] A: chào"
+    assert mt._shift_stamps("[45:00] B: x", 1800) == "[1:15:00] B: x"
+
+
+def _fake_meeting_env(monkeypatch, mt, *, duration=1200.0, transcript="[00:05] Anh Bảo: chốt mua thép 20 tấn"):
+    import json as _json
+    from pathlib import Path
+
+    calls: dict = {"upload": 0, "delete": 0, "transcribe": 0, "ffmpeg": []}
+
+    def fake_run(cmd, timeout=0):
+        calls["ffmpeg"].append(cmd[0])
+        if cmd[0] == "ffprobe":
+            return f"{duration}\n"
+        out = Path(cmd[-1])
+        if "%03d" in out.name:
+            for i in range(2):
+                (out.parent / f"seg_{i:03d}.mp3").write_bytes(b"x")
+        else:
+            out.write_bytes(b"mp3")
+        return ""
+
+    class R:
+        def __init__(self, code=200, data=None, headers=None):
+            self.status_code, self._d, self.headers, self.text = code, data or {}, headers or {}, _json.dumps(data or {})
+
+        def json(self):
+            return self._d
+
+    def fake_post(url, headers=None, json=None, data=None, timeout=0):
+        if url.endswith("/upload/v1beta/files"):
+            return R(headers={"X-Goog-Upload-URL": "https://upload.example/u1"})
+        if url.startswith("https://upload.example"):
+            calls["upload"] += 1
+            return R(data={"file": {"name": f"files/f{calls['upload']}", "uri": "gs://f", "state": "ACTIVE"}})
+        calls["transcribe"] += 1
+        return R(data={"candidates": [{"content": {"parts": [{"text": transcript}]}}],
+                       "usageMetadata": {"promptTokenCount": 1000, "candidatesTokenCount": 200}})
+
+    monkeypatch.setattr(mt, "_run", fake_run)
+    monkeypatch.setattr(mt.requests, "post", fake_post)
+    monkeypatch.setattr(mt.requests, "delete", lambda *a, **kw: calls.__setitem__("delete", calls["delete"] + 1))
+    monkeypatch.setattr(mt.telegram, "download_file", lambda fid, *, max_bytes: (b"OGG", "x.oga"))
+    return calls
+
+
+def test_bien_ban_hop_tu_tep_telegram_chay_tron(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import meetings as mt, personal_memory as pm
+    from app.modules.agent_hub.model import AgentMeeting, AgentNote
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, _ = bot
+    pm.clear_cache()
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    monkeypatch.setattr(service.user_keys, "gemini_key", lambda: "AIzaSy-k")
+    calls = _fake_meeting_env(monkeypatch, mt)
+    docs = []
+    monkeypatch.setattr(mt.telegram, "send_document", lambda chat, fn, data, **kw: docs.append(fn) or 1)
+    asked = []
+
+    class P:
+        def ask(self, messages, **kw):
+            asked.append(messages[0].content)
+            return ChatResult(text="## Kết luận\n- Mua 20 tấn thép\n## Việc cần làm\n- Đặt hàng — anh Bảo — 10/10",
+                              provider="gemini", model="x", input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(service.manager, "get_provider", lambda: P())
+    dispatched = []
+    monkeypatch.setattr(mt, "dispatch", lambda mid: dispatched.append(mid))
+    msg = {**_msg("họp giao ban sáng nay"), "chat": {"id": "12345", "type": "private"},
+           "audio": {"file_id": "AUD1", "mime_type": "audio/mp4", "file_size": 5_000_000, "duration": 1200}}
+    msg.pop("text")
+    msg["caption"] = "họp giao ban sáng nay"
+    service.handle_message(db, msg)
+    assert "Em nhận tệp họp rồi" in sent[-1] and len(dispatched) == 1
+    row = db.get(AgentMeeting, dispatched[0])
+    assert row.title == "họp giao ban sáng nay" and row.user_id == seed.u_req_id
+    out = mt.process(db, row.id)
+    assert out["status"] == "done" and out["minutes"] == 20 and out["segments"] == 1
+    assert calls["ffmpeg"] == ["ffmpeg", "ffprobe"] and calls["upload"] == 1 and calls["delete"] == 1
+    assert "chốt mua thép 20 tấn" in asked[0]
+    assert row.status == mt.MeetingStatus.DONE and "Mua 20 tấn thép" in row.recap
+    assert "BIÊN BẢN" in sent[-1] and docs and docs[0].endswith(".docx")
+    note = db.query(AgentNote).filter_by(user_id=seed.u_req_id).one()
+    assert note.title.startswith("Họp:") and "Mua 20 tấn thép" in note.text
+    #  Chạy lại một phiên đã xong: bỏ qua.
+    assert mt.process(db, row.id) == {"status": "skipped"}
+
+
+def test_bien_ban_hop_dai_cat_doan_va_loi_khong_khoa(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import meetings as mt, personal_memory as pm
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, _ = bot
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    monkeypatch.setattr(mt.telegram, "send_document", lambda *a, **kw: 1)
+    calls = _fake_meeting_env(monkeypatch, mt, duration=3000.0, transcript="[00:10] A: ý một")
+    seen = []
+
+    class P:
+        def ask(self, messages, **kw):
+            seen.append(messages[0].content)
+            return ChatResult(text="- ok", provider="gemini", model="x", input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(service.manager, "get_provider", lambda: P())
+    monkeypatch.setattr(service.user_keys, "gemini_key", lambda: "AIzaSy-k")
+    row = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="F", title="Họp dài")
+    db.commit()
+    assert mt.process(db, row.id)["segments"] == 2 and calls["upload"] == 2 and calls["delete"] == 2
+    assert "[00:10] A: ý một" in seen[0] and "[30:10] A: ý một" in seen[0]     # đoạn 2 cộng mốc 30 phút
+    #  Không có khóa Gemini: phiên hỏng, nhắn một câu, không gọi Gemini.
+    monkeypatch.setattr(service.user_keys, "gemini_key", lambda: "")
+    row2 = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="G", title="Họp 2")
+    db.commit()
+    assert mt.process(db, row2.id)["status"] == "error" and row2.status == mt.MeetingStatus.FAILED
+    assert "khóa Gemini" in sent[-1] and calls["upload"] == 2
+
+
+def test_tep_hop_tu_chat_la_hoac_nhom_thi_lo_di(db, bot, monkeypatch):
+    from app.modules.agent_hub import meetings as mt
+    from app.modules.agent_hub.model import AgentMeeting
+
+    service, sent, _ = bot
+    monkeypatch.setattr(mt, "dispatch", lambda mid: pytest.fail("không được nhận"))
+    audio = {"file_id": "AUD", "mime_type": "audio/mpeg"}
+    service.handle_message(db, {"chat": {"id": "777", "type": "private"}, "message_id": 3, "audio": audio})
+    service.handle_message(db, {"chat": {"id": "-100123", "type": "supergroup"}, "message_id": 4, "audio": audio})
+    assert sent == [] and db.query(AgentMeeting).count() == 0
+

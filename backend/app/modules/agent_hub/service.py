@@ -185,6 +185,47 @@ def handle_message(db: Session, msg: dict) -> None:
         _handle_message(db, msg, chat_id)
 
 
+def _meeting_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool:
+    """Nhận một phiên biên bản họp (ai-CR-104). Chỉ chat riêng đã đăng nhập (biên bản chỉ người gửi xem — đại ca chốt
+    07/10). Trả True khi đã nhận (đã báo nhận + giao chạy nền)."""
+    from . import meetings
+
+    if str((msg.get("chat") or {}).get("type") or "private") != "private":
+        return False
+    media = meetings.telegram_media(msg)
+    drive_id = meetings.drive_file_id(text) if not media and meetings.wants_meeting(text) else ""
+    if not media and not drive_id:
+        return False
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None and not telegram.is_allowed_chat(chat_id):
+        return False                         # chat lạ: im lặng như mọi tin khác (không xác nhận bot có chủ)
+    row_in = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), text or "(tệp họp)", action=ACT_COMMAND)
+    if link is None:
+        reply(db, chat_id, "Biên bản họp cần chat này đăng nhập tài khoản ERP trước. " + _LINK_HELP)
+        db.commit()
+        return True
+    template = meetings.template_of(text)
+    if media:
+        title = (text.split("\n")[0][:120] if text else "") or media["name"]
+        row = meetings.create(db, user_id=link.user_id, chat_id=chat_id, kind=meetings.SourceKind.TELEGRAM,
+                              ref=media["file_id"], title=title, mime=media["mime"], template=template)
+    else:
+        row = meetings.create(db, user_id=link.user_id, chat_id=chat_id, kind=meetings.SourceKind.DRIVE,
+                              ref=drive_id, title="Cuộc họp", template=template)
+    row_in.scope = SCOPE_PERSONAL
+    db.commit()
+    label = meetings.TEMPLATES[row.template][0].lower()
+    reply(db, chat_id, f"Em nhận tệp họp rồi, đang chép lời và viết biên bản ({label}). Họp một giờ mất khoảng 3–5 phút; "
+                       "xong em gửi biên bản kèm tệp Word.", scope=SCOPE_PERSONAL)
+    db.commit()
+    try:
+        meetings.dispatch(row.id)
+    except Exception:  # noqa: BLE001 — broker hỏng thì chạy ngay tại chỗ còn hơn mất việc
+        log.exception("agent_hub: giao biên bản họp hỏng, chạy tại chỗ")
+        meetings.process(db, row.id)
+    return True
+
+
 def _quoted_text(msg: dict) -> str:
     """Câu được trích khi người dùng bấm «Trả lời» một tin trên Telegram (ai-CR-100)."""
     rep = msg.get("reply_to_message") or {}
@@ -199,6 +240,9 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
     quoted = _quoted_text(msg)
     if quoted and text and not text.startswith("/"):
         text = f"{quoted}\n({text})"
+    #  ai-CR-104: tệp họp (audio / video / tin thoại dài) hoặc link Drive kèm chữ «họp / biên bản / ghi âm» → biên bản.
+    if _meeting_by_message(db, msg, chat_id, text):
+        return
     photo_id = _photo_file_id(msg)
     if not text and not photo_id and _voice_file(msg):
         #  ai-CR-061: tin thoại → chữ, rồi đi tiếp y như tin chữ. Chỉ chép cho chat đại ca / chat đã đăng nhập.

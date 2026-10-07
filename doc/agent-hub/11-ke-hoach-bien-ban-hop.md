@@ -66,7 +66,18 @@ Word trên Drive, danh sách việc đã tạo. Tệp âm thanh **không giữ**
 
 Tổng khoảng **10 ngày công**, thay cho 25 ngày của bản app riêng (nhờ dùng lại Google, khóa AI, nháp việc, kho ghi chú).
 
-## 6. Câu chờ đại ca chốt
+## 6. Đã chốt (đại ca 07/10/2026: «làm theo đề xuất của em, mọi người dùng được»)
+
+Q1 mọi người đã đăng nhập bot dùng, chạy bằng khóa AI của chính họ · Q7 video chỉ lấy tiếng · Q8 biên bản chỉ người gửi
+xem · Q9 việc rút ra thì bot hỏi một câu kèm danh sách dự án. Còn chờ Q5 (một tệp họp thật để chạy bước 10.0).
+
+**Bước 10.1 XONG 07/10 (ai-CR-104)** — `agent_hub/meetings.py`, bảng `tab_agent_meeting` (migration `meet01`), task
+`agent.meeting_process`, ffmpeg trong `docker/Dockerfile.api`. Gửi tệp vào chat riêng (audio / video / document âm
+thanh-video / tin thoại > 3 phút, ≤ 20 MB) hoặc link Drive kèm chữ «họp / biên bản / ghi âm / tóm tắt». Chọn mẫu bằng
+lời trong chú thích: «chính thức», «danh sách việc», «theo giờ» (mặc định tóm tắt nhanh). 4 mẫu đã có trong mã
+(`TEMPLATES`); bước 10.2 đưa ra cấu hình để sửa không cần mã.
+
+## 7. Câu chờ đại ca chốt (bản đầu)
 
 | Mã | Câu | Em đề xuất |
 |---|---|---|

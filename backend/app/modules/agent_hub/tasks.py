@@ -718,6 +718,20 @@ def session_summary_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.meeting_process", time_limit=3 * 3600, acks_late=False)
+def meeting_process_task(meeting_id: int) -> dict:
+    """ai-CR-104: một phiên biên bản họp (tải tệp → ffmpeg → Gemini File API → biên bản → gửi). Chạy trên worker VPS."""
+    if (off := _off()) is not None:
+        return off
+    from . import meetings
+
+    db = SessionLocal()
+    try:
+        return meetings.process(db, meeting_id)
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.runner_watch")
 def runner_watch_task() -> dict:
     """ai-CR-072: mỗi phút xem máy sửa mã nào mất liên lạc / nối lại → báo đại ca một lần mỗi lần đổi."""
