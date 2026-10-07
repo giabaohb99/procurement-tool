@@ -8585,3 +8585,35 @@ def test_word_bien_ban_len_thu_muc_bien_ban_hop_tren_drive(db, monkeypatch):
     #  Tên có dấu nháy không phá câu truy vấn của Drive.
     google_link.ensure_folder(db, L(), "Họp 'A'")
     assert "Họp \\'A\\'" in calls[-2][1]
+
+
+def test_chep_loi_treo_thi_doi_model_du_phong_khong_cho_muoi_lam_phut(monkeypatch):
+    """ai-CR-112: thử trên dev 07/10, tệp 88 giây treo 12 phút ở model chính (trần cũ 15 phút cố định)."""
+    import requests as _rq
+
+    from app.modules.agent_hub import meetings as mt
+
+    seen: list[tuple[str, int]] = []
+
+    class R:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {"candidates": [{"content": {"parts": [{"text": "[00:01] A: chào"}]}}], "usageMetadata": {}}
+
+    def post(url, headers=None, json=None, timeout=0):
+        model = url.split("/models/")[1].split(":")[0]
+        seen.append((model, timeout))
+        if model == "chinh":
+            raise _rq.Timeout("treo")
+        return R()
+
+    monkeypatch.setattr(mt.requests, "post", post)
+    text, usage = mt.gemini_transcribe("k", "gs://f", "audio/mp3", "chinh", audio_sec=90, fallback="du-phong")
+    assert text == "[00:01] A: chào" and usage["model"] == "du-phong"
+    assert seen == [("chinh", 150), ("du-phong", 150)]
+    assert mt.transcribe_timeout(1800) == 720                     # đoạn 30 phút: chờ tối đa 12 phút
+    monkeypatch.setattr(mt.requests, "post", lambda *a, **kw: (_ for _ in ()).throw(_rq.Timeout("treo")))
+    with pytest.raises(mt.MeetingError, match="quá lâu"):
+        mt.gemini_transcribe("k", "gs://f", "audio/mp3", "chinh", audio_sec=90, fallback="du-phong")

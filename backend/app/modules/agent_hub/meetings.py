@@ -384,20 +384,42 @@ def gemini_delete(key: str, name: str) -> None:
         pass        # tệp tự hết hạn sau 48 giờ phía Gemini
 
 
-def gemini_transcribe(key: str, file_uri: str, mime: str, model: str) -> tuple[str, dict]:
+def transcribe_timeout(audio_sec: float) -> int:
+    """Trần chờ MỘT lượt chép lời (ai-CR-112): 2 phút + 1/3 độ dài đoạn. Chạy thử trên dev 07/10 một tệp 88 giây treo 12
+    phút vì model chính quá tải mà trần cũ là 15 phút cố định — người gửi tưởng bot chết."""
+    return int(120 + max(0.0, audio_sec) / 3)
+
+
+def gemini_transcribe(key: str, file_uri: str, mime: str, model: str, *, audio_sec: float = 0,
+                      fallback: str = "") -> tuple[str, dict]:
+    """Chép lời một đoạn. Model chính quá tải (5xx) hoặc treo quá `transcribe_timeout` thì thử MỘT lần bằng model dự phòng
+    (cùng khóa). `usage["model"]` = model đã chép được."""
     payload = {
         "contents": [{"role": "user", "parts": [{"file_data": {"mime_type": mime, "file_uri": file_uri}},
                                                 {"text": TRANSCRIBE_PROMPT}]}],
         "generationConfig": {"temperature": 0.0, "maxOutputTokens": TRANSCRIBE_MAX_TOKENS},
     }
-    if not model.startswith("gemini-3"):
-        payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
+    timeout = transcribe_timeout(audio_sec)
+    models = [model] + ([fallback] if fallback and fallback != model else [model])
     resp = None
-    for attempt in range(2):
-        resp = requests.post(f"{GEM_BASE}/v1beta/models/{model}:generateContent", headers={"x-goog-api-key": key},
-                             json=payload, timeout=900)
-        if resp.status_code in (500, 503, 504) and attempt == 0:
-            time.sleep(3)
+    for i, m in enumerate(models):
+        body = json.loads(json.dumps(payload))
+        if not m.startswith("gemini-3"):
+            body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
+        try:
+            resp = requests.post(f"{GEM_BASE}/v1beta/models/{m}:generateContent", headers={"x-goog-api-key": key},
+                                 json=body, timeout=timeout)
+        except requests.Timeout:
+            log.warning("agent_hub: chép lời bằng %s quá %ss", m, timeout)
+            resp = None
+            if i + 1 < len(models):
+                continue
+            raise MeetingError(f"Gemini chép lời quá lâu (quá {timeout // 60} phút), có thể đang quá tải — gửi lại sau "
+                               "ít phút giúp em.") from None
+        except requests.RequestException as e:
+            raise MeetingError(f"Không gọi được Gemini ({type(e).__name__}).") from None
+        if resp.status_code in (429, 500, 503, 504) and i + 1 < len(models):
+            time.sleep(2)
             continue
         break
     if resp is None or resp.status_code >= 400:
@@ -405,7 +427,9 @@ def gemini_transcribe(key: str, file_uri: str, mime: str, model: str) -> tuple[s
     data = resp.json() or {}
     cands = data.get("candidates") or []
     parts = ((cands[0].get("content") or {}).get("parts") or []) if cands else []
-    return "".join(p.get("text", "") for p in parts).strip(), data.get("usageMetadata") or {}
+    usage = dict(data.get("usageMetadata") or {})
+    usage["model"] = m
+    return "".join(p.get("text", "") for p in parts).strip(), usage
 
 
 def _shift_stamps(text: str, offset_sec: int) -> str:
@@ -689,6 +713,7 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
     model = settings.AGENT_MANAGER_MODEL
     pieces: list[str] = []
     usage_in = usage_out = 0
+    used_model = model
     segments = split_audio(audio, workdir, duration)
     try:
         for i, seg in enumerate(segments):
@@ -696,18 +721,21 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
             name = str(info.get("name") or "")
             try:
                 info = gemini_wait_active(key, name) if info.get("state") != "ACTIVE" else info
-                text, usage = gemini_transcribe(key, str(info.get("uri") or ""), "audio/mp3", model)
+                seg_sec = min(SEGMENT_SEC, duration) if len(segments) > 1 else duration
+                text, usage = gemini_transcribe(key, str(info.get("uri") or ""), "audio/mp3", model, audio_sec=seg_sec,
+                                                fallback=manager.fallback_model())
             finally:
                 if name:
                     gemini_delete(key, name)
             usage_in += int(usage.get("promptTokenCount") or 0)
             usage_out += int(usage.get("candidatesTokenCount") or 0)
+            used_model = str(usage.get("model") or model)
             pieces.append(_shift_stamps(text, i * SEGMENT_SEC if len(segments) > 1 else 0))
     except MeetingError as e:
         service.finish_run(db, run, error=str(e))
         db.commit()
         raise
-    service.finish_run(db, run, result=ChatResult(text="", provider="gemini", model=model, input_tokens=usage_in,
+    service.finish_run(db, run, result=ChatResult(text="", provider="gemini", model=used_model, input_tokens=usage_in,
                                                   output_tokens=usage_out))
     transcript = "\n".join(p for p in pieces if p).strip()
     if not transcript:

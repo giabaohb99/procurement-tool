@@ -12857,3 +12857,15 @@ hồ sơ đã xóa khỏi danh sách tiên quyết của hồ sơ còn lại. Kh
 giao diện chạy xanh, đã bấm thử trên máy, chưa đưa lên dev.
 
 Mã nguồn: backend/app/modules/survey_request/report_controller.py · report_service.py · report_schema.py · frontend-v2/src/modules/procurement/components/survey-report/survey-report-card.tsx · survey-report-doc-selection-bar.tsx · survey-report-first-doc-dialog.tsx
+
+
+## ai-CR-113 | Chép lời biên bản họp không còn treo khi model quá tải
+- status: xong
+- date: 2026-10-07
+Em chạy trọn một phiên biên bản họp trên dev bằng tệp họp giả dài 88 giây, gửi vào chat Telegram của đại ca. Phiên chạy
+đúng từ đầu đến cuối: chép lời, viết biên bản chính thức, gửi tệp Word và lưu vào thư mục «Biên bản họp» trên Drive. Tuy vậy
+bước chép lời bị treo mười hai phút vì model Gemini chính đang quá tải mà thời gian chờ cũ cố định tới mười lăm phút. Nay
+thời gian chờ tính theo độ dài đoạn ghi âm (hai phút cộng một phần ba độ dài), quá hạn hoặc model báo quá tải thì bot thử lại
+một lần bằng model dự phòng, hỏng cả hai thì báo người gửi một câu để gửi lại sau. Bài kiểm phần biên bản họp chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/meetings.py (transcribe_timeout, gemini_transcribe) · test/backend/test_agent_hub.py
