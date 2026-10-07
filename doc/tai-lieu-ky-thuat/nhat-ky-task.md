@@ -12440,6 +12440,8 @@ mờ, bot trả lời luôn rồi thêm một dòng gợi ý «nếu là việc 
 dùng khi bộ phân loại hỏng.
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (INTENT_SYSTEM) · agent_hub/service.py (nhánh mo_ho, answer_question hint)
+Deploy: dev 06/10 16:55, erp-v2 24f2fae5 (Agent 1 gộp và dựng lại); prod giữ lại.
+
 
 ## ai-CR-097 | Khóa Gemini hết tiền thì bot nói thẳng, không hỏi «làm luôn hay ghi việc»
 - status: xong
@@ -12451,3 +12453,4 @@ bộ phân loại lẫn Trợ lý AI, nói thẳng lý do và chỉ cách nạp 
 đi đường cũ. Việc cần tay đại ca: nạp thêm tiền cho khóa Gemini ở AI Studio.
 
 Mã nguồn: backend/app/modules/agent_hub/user_keys.py (key_problem) · agent_hub/service.py (nhánh phân loại hỏng, answer_question)
+Deploy: dev 07/10 khoảng 09:30, erp-v2 91201c32 (Agent 1 gộp và dựng lại); prod giữ lại.
