@@ -35,3 +35,4 @@ Telegram. Đại ca ra lệnh thì mới **lên prod**.
    mã nguồn của việc nó đang làm.
 3. **Làm theo bốn bậc, bậc 4 là cổng prod và làm sau cùng.** Bậc 1 không đụng một dòng mã nào
    của hệ thống mà vẫn trả lời được câu hỏi đắt nhất: con bot quản lý có đủ khôn không.
+- `11-ke-hoach-bien-ban-hop.md` — phase 10: biên bản họp từ ghi âm / video (mp3, m4a, mp4 qua Drive), lộ trình 10.0–10.4 + câu chờ chốt.

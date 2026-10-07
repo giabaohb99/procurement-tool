@@ -221,7 +221,7 @@ Cỡ là ước THÔ theo ngày công của một người. Làm **lần lượt
 | **7b** | **Trợ lý cá nhân** (nhóm C) | C-01 · C-02 · C-04 · C-05 · C-06 **xong 06–07/10** (C-03 bỏ) | C-03 vị trí **bỏ** (đại ca 06/10: lấy khu trong sổ nhớ); đợt 2 + C-04/C-05 chờ đại ca | ~1,5 tuần (C-02+C-03+C-06 4 ngày · C-04 2 ngày · C-05 3 ngày) |
 | **8** | **Lõi mở** | M-09 gọi MCP bên ngoài · N-06 A2A · N-07 giao việc tính ngân sách · N-08 sổ sự kiện chung · L-01 | — | ~1,5 tuần |
 | 9 | Nhiều kênh, nhiều bot | M-08 Zalo OA · N-01 · N-04 · N-05 | Chờ Zalo OA + tên bot (Q6) | 1–2 tuần |
-| 10 | Thư ký biên bản họp | T-01 thử tệp thật → T-02..T-06, T-12 | Chờ tệp ghi âm thật (Q5) + Q1 | 3 tuần |
+| 10 | Thư ký biên bản họp | T-01 thử tệp thật → T-02..T-06, T-12 — kế hoạch chi tiết `11-ke-hoach-bien-ban-hop.md` (07/10) | Chờ Q1 · Q5 · Q7 · Q8 · Q9 | ~10 ngày công |
 | sau | Để sau | V-09 chép DB dev sang preview · A-08 xem thử qua tunnel cũ (thay bằng V-07) | — | — |
 
 Vì sao thứ tự này: phase 6 là nền cho mọi đường lên dev/prod sau này và là thứ đại ca đang cần; phase 7 dùng lại
