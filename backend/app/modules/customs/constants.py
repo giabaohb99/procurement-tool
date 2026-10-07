@@ -164,6 +164,43 @@ TEXT_LIMITS = {
 #  Chèn dòng hàng theo khối — một lần kết xuất hàng chục nghìn dòng.
 INSERT_CHUNK = 2000
 
+# ── bao-CR-608: hai cột ĐIỀU KHIỂN của tệp nạp + bảng chụp dòng trước khi ghi đè / xóa ────
+#  «ID» và «Thao tác» KHÔNG phải dữ liệu: không lưu, không vào mã băm chống trùng. Cả hai tùy
+#  chọn; tệp không có thì nạp y như trước. Tiêu đề khớp theo chữ đã chuẩn hóa như `COLUMNS`.
+#  «ID» là tiêu đề cột ĐẦU TIÊN của Excel xuất ra từ màn này — xuất → sửa → nạp lại là ghi đè
+#  đúng dòng.
+REF_ID_KEY = "ref_id"
+ACTION_KEY = "row_action"
+CONTROL_COLUMNS: list[tuple[str, tuple[str, ...]]] = [
+    (REF_ID_KEY, ("ID",)),
+    (ACTION_KEY, ("Thao tác", "Action", "Hành động")),
+]
+CONTROL_LABELS = {key: labels[0] for key, labels in CONTROL_COLUMNS}
+#  Ô «Thao tác» mang một trong các chữ này (đã bỏ dấu, chữ thường) = XÓA dòng có ID đó.
+DELETE_ACTION_WORDS = frozenset({"xoa", "delete", "del"})
+
+
+class CustomsLineChangeAction(IntEnum):
+    """Việc đã làm với một dòng hàng có sẵn — `tab_customs_line_change.action` (luật R2)."""
+    UPDATE = 1      # ghi đè (nạp tệp có ID / sửa tay)
+    DELETE = 2      # xóa (nạp tệp «Thao tác = xóa» / xóa tay)
+
+
+class CustomsLineChangeSource(IntEnum):
+    """Nguồn của thay đổi — `tab_customs_line_change.source` (luật R2)."""
+    IMPORT = 1      # lô nạp tệp — `batch_id` = lô; hoàn tác lô thì trả về bản chụp
+    MANUAL = 2      # sửa / xóa tay trên màn — `batch_id` = 0
+
+
+CUSTOMS_LINE_CHANGE_ACTION_LABELS = {
+    CustomsLineChangeAction.UPDATE: "Ghi đè",
+    CustomsLineChangeAction.DELETE: "Xóa",
+}
+CUSTOMS_LINE_CHANGE_SOURCE_LABELS = {
+    CustomsLineChangeSource.IMPORT: "Nạp tệp",
+    CustomsLineChangeSource.MANUAL: "Sửa tay",
+}
+
 
 # ── bao-CR-494: nhãn THÀNH PHẨM / NGUYÊN LIỆU của từng dòng hàng ─────────────────────────
 class ProductKind(IntEnum):

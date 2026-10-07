@@ -18,6 +18,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 
 import {
   commitCustomsBatch,
+  deleteCustomsLine,
   fetchCustomsAlerts,
   fetchCustomsBatch,
   fetchCustomsBatches,
@@ -35,6 +36,7 @@ import {
   lookupCustomsTariff,
   revertCustomsBatch,
   searchCustomsParties,
+  updateCustomsLine,
   uploadCustomsFiles,
 } from '../api/customs-api'
 import type { CustomsImportBatch, CustomsPartyType } from '../types/customs'
@@ -226,12 +228,44 @@ export function useRevertCustomsBatch() {
   })
 }
 
+/** bao-CR-608 — sửa một dòng; xong bỏ hiệu lực cả màn (danh sách, biểu đồ, ô lọc đều có thể đổi). */
+export function useUpdateCustomsLine() {
+  const invalidate = useInvalidateCustoms()
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: number; patch: Record<string, string | number | null> }) =>
+      updateCustomsLine(id, patch),
+    onSuccess: () => invalidate(),
+  })
+}
+
+/**
+ * bao-CR-608 — xóa một dòng. Bỏ hiệu lực cả màn TRỪ chính dòng vừa xóa: hộp chi tiết còn mở thì
+ * truy vấn dòng đó đang hoạt động, làm mới nó là gọi lại một id đã mất và ăn thông báo 404.
+ */
+export function useDeleteCustomsLine() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteCustomsLine,
+    onSuccess: (_, id) => {
+      const deletedKey = customsKeys.line(id)
+      return queryClient.invalidateQueries({
+        queryKey: customsKeys.all,
+        predicate: (query) =>
+          !(query.queryKey[2] === deletedKey[2] && query.queryKey[3] === deletedKey[3]),
+      })
+    },
+  })
+}
+
 /** Quyền trên màn — gom một chỗ cho các thành phần con khỏi gọi `can` rải rác. */
 export function useCustomsPermissions() {
   const { can } = usePermission()
   return {
     canImport: can('customs_price', 'write'),
     canRevert: can('customs_price', 'delete'),
+    //  bao-CR-608 — sửa / xóa TỪNG dòng: cùng khóa với nạp tệp (write) và hoàn tác lô (delete).
+    canEditLine: can('customs_price', 'write'),
+    canDeleteLine: can('customs_price', 'delete'),
     canExport: can('customs_price', 'export'),
     canReadRegulations: can('customs_regulation', 'read'),
     //  bao-CR-501 — thẻ «Cấu hình» (từ khóa nhãn + từ đồng nghĩa): cùng luật hiện mục

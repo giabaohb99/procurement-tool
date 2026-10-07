@@ -213,8 +213,9 @@ def test_xuat_excel_du_cot(db):
     _line(db, date(2026, 1, 5))
     db.commit()
     ws = openpyxl.load_workbook(io.BytesIO(S.export_lines_xlsx(db, {}))).active
-    assert ws.max_column == 36 and ws.max_row == 2   # 32 nguồn + 2 suy ra + 2 VND (bao-CR-493)
-    assert ws.cell(1, 1).value == "Ngày đăng ký"
+    #  32 nguồn + 2 suy ra + 2 VND (bao-CR-493) + «ID» đầu và «Thao tác» cuối (bao-CR-608)
+    assert ws.max_column == 38 and ws.max_row == 2
+    assert ws.cell(1, 1).value == "ID" and ws.cell(1, 2).value == "Ngày đăng ký"
 
 
 # ── Pháp lý + biểu thuế (HQ6) ───────────────────────────────────────────────

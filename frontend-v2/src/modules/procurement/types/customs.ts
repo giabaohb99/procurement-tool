@@ -300,6 +300,10 @@ export interface CustomsImportBatch {
   has_file?: boolean
   total_rows: number
   created_count: number
+  /** bao-CR-608 — dòng GHI ĐÈ theo cột «ID» (lô cũ không có khóa này). */
+  updated_count?: number
+  /** Từ bao-CR-608: dòng XÓA theo cột «Thao tác» (có bản chụp, hoàn tác được). Lô nạp trước
+   *  bao-CR-541 dùng cột này cho số dòng cũ bị THAY — xem `legacy_replace`. */
   deleted_count: number
   skipped_count: number
   warning_count: number
@@ -314,6 +318,14 @@ export interface CustomsImportBatch {
   existing_rows?: number
   /** bao-CR-541 — dòng THÊM MỚI nhưng trùng cột nhận diện với dòng đã có mà khác giá/lượng. */
   suspect_rows?: number
+  /** bao-CR-608 — dòng ghi đè / xóa theo cột «ID» + «Thao tác»; dòng xóa hỏng bị bỏ qua; dòng có
+   *  số ID mà không có dòng đó (đã thêm mới). */
+  updated_rows?: number
+  deleted_rows?: number
+  ignored_rows?: number
+  id_not_found?: number
+  /** bao-CR-608 — lô CŨ đã thay dòng mà không có bản chụp: không hoàn tác được. */
+  legacy_replace?: boolean
   created_at: string | null
   created_by: number | null
   created_by_name: string | null

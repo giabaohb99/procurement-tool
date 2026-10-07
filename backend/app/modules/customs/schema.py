@@ -4,12 +4,12 @@ Mọi cột chữ khai `max_length` khớp ĐÚNG `String(n)` ở `model.py`: th
 dài đi thẳng xuống MySQL và ra lỗi 500 thay vì câu "tối đa n ký tự" (duoc-CR-316).
 Bộ test chạy SQLite, không ép độ dài — nên chốt phải nằm ở đây.
 """
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .constants import ProductKind, RegulationList
+from .constants import ProductKind, RegulationList, TransportMode
 
 _LIST_CODES = {int(x) for x in RegulationList}
 
@@ -231,3 +231,87 @@ class SavedFilterOut(BaseModel):
     params: str = ""
     is_shared: bool = False
     updated_at: datetime | None = None
+
+
+# ── bao-CR-608: sửa tay MỘT dòng hàng trên màn «Giá thị trường» ──────────────────────────
+#  Trần độ dài khớp ĐÚNG `String(n)` của `CustomsLine` (hai cột đối tượng khớp `CustomsParty`:
+#  `tax_code` String(14), `name` String(255)). Số: trần theo độ chính xác của cột `Numeric(p, s)`
+#  — vượt là MySQL báo «Out of range» thành 500. Ngày: dải hợp lý 2000 → 2100.
+_MIN_LINE_DATE = date(2000, 1, 1)
+_MAX_LINE_DATE = date(2100, 12, 31)
+_Price = Field(None, ge=0, le=Decimal("999999999999"))          # Numeric(16, 4)
+_FxRate = Field(None, ge=0, le=Decimal("9999999999"))           # Numeric(14, 4)
+_Quantity = Field(None, ge=0, le=Decimal("99999999999999"))     # Numeric(18, 4)
+_Rate = Field(None, ge=0, le=Decimal("9999"))                   # Numeric(6, 2) — thuế suất %
+_Tax = Field(None, ge=0, le=Decimal("999999999999999"))         # Numeric(18, 3)
+_Vnd = Field(None, ge=0, le=Decimal("9999999999999999"))        # Numeric(18, 2)
+
+
+def _check_line_date(v):
+    if v is not None and not (_MIN_LINE_DATE <= v <= _MAX_LINE_DATE):
+        raise ValueError(f"Ngày phải trong khoảng {_MIN_LINE_DATE.year}–{_MAX_LINE_DATE.year}")
+    return v
+
+
+def _check_transport(v):
+    if v is not None and int(v) not in {int(t) for t in TransportMode}:
+        raise ValueError(f"Phương tiện vận chuyển không hợp lệ: {v}")
+    return v
+
+
+class CustomsLineUpdate(BaseModel):
+    """Hộp sửa dòng — chỉ gửi trường nào đổi (PATCH). Trường bỏ trống chữ = để trống ô.
+
+    Hai trường suy ra «Hoạt chất» / «Hàm lượng / dạng»: gửi chữ = giá trị DO NGƯỜI NHẬP (cờ
+    `_from_file` = 1, `retag_all` không ghi đè); gửi chuỗi rỗng = trả về cho hệ thống suy ra từ
+    tên hàng. Hai cột giá VND: gửi số = giữ số đó; gửi null = để hệ thống tính như cũ.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    reg_date: date | None = None
+    office_code: str | None = Field(None, max_length=10)
+    importer_tax_code: str | None = Field(None, max_length=14)
+    importer_name: str | None = Field(None, max_length=255)
+    partner_name: str | None = Field(None, max_length=255)
+    hs_code: str | None = Field(None, max_length=8)
+    line_no: int | None = Field(None, ge=0, le=32767)                # SmallInteger
+    product_name: str | None = Field(None, min_length=1, max_length=255)
+    price_usd: Decimal | None = _Price
+    price_nt: Decimal | None = _Price
+    adj_price_usd: Decimal | None = _Price
+    adj_price_nt: Decimal | None = _Price
+    currency: str | None = Field(None, max_length=3)
+    fx_rate: Decimal | None = _FxRate
+    usd_rate: Decimal | None = _FxRate
+    quantity: Decimal | None = _Quantity
+    unit_code: str | None = Field(None, max_length=4)
+    origin_country: str | None = Field(None, max_length=2)
+    contract_no: str | None = Field(None, max_length=40)
+    contract_date: date | None = None
+    incoterm: str | None = Field(None, max_length=3)
+    transport_mode: int | None = None
+    rate_import: Decimal | None = _Rate
+    rate_excise: Decimal | None = _Rate
+    rate_vat: Decimal | None = _Rate
+    rate_safeguard: Decimal | None = _Rate
+    tax_import: Decimal | None = _Tax
+    tax_excise: Decimal | None = _Tax
+    tax_vat: Decimal | None = _Tax
+    tax_environment: Decimal | None = _Tax
+    tax_safeguard: Decimal | None = _Tax
+    import_country: str | None = Field(None, max_length=2)
+    active_ingredient: str | None = Field(None, max_length=255)
+    formulation: str | None = Field(None, max_length=40)
+    price_vnd_flat: Decimal | None = _Vnd
+    price_vnd_line_tax: Decimal | None = _Vnd
+
+    _v_dates = field_validator("reg_date", "contract_date")(_check_line_date)
+    _v_transport = field_validator("transport_mode")(_check_transport)
+
+    @field_validator("reg_date")
+    @classmethod
+    def _reg_date_required(cls, v):
+        #  Gửi `reg_date: null` = xóa Ngày đăng ký — cột bắt buộc (khóa phân vùng), không cho.
+        if v is None:
+            raise ValueError("Ngày đăng ký không được để trống")
+        return v

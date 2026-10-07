@@ -152,6 +152,8 @@ NO_LOG_TABLES = frozenset({
     #  vết đã có ở lô nạp `tab_import_batch` (ai · lúc nào · tệp nào · bao nhiêu dòng).
     "tab_customs_line",
     "tab_customs_party",
+    #  bao-CR-608: chính nó LÀ bản chụp trước/sau của dòng hàng (lô nạp ghi đè hàng nghìn dòng).
+    "tab_customs_line_change",
     "tab_setting",
 })
 

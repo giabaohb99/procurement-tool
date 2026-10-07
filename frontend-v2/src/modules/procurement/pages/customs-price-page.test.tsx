@@ -41,6 +41,9 @@ vi.mock('@/core/api', async (importOriginal) => {
         }
       }
       if (url.endsWith('/lines')) return { total: lineItems.length, items: lineItems }
+      //  bao-CR-608 — hộp chi tiết dòng đọc lại đúng dòng theo id.
+      const lineMatch = /\/lines\/(\d+)$/.exec(url)
+      if (lineMatch) return lineItems.find((line) => (line as { id: number }).id === Number(lineMatch[1]))
       if (url.endsWith('/alerts')) return []
       if (url.endsWith('/stats')) {
         return {
@@ -271,6 +274,28 @@ describe('CustomsPricePage', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Xuất dữ liệu/ })).toBeEnabled(),
     )
+  })
+
+  //  bao-CR-608 — cột ID đầu bảng (khớp cột «ID» đầu Excel xuất ra) và nút Sửa / Xóa trong hộp
+  //  chi tiết dòng ẩn theo quyền `customs_price.write` / `customs_price.delete`.
+  it('shows the line ID column and offers Sửa / Xóa in the line detail to users with the rights', async () => {
+    lineItems = [{ id: 4321, batch_id: 9, source_row: 2, product_name: 'ATRAZINE 97% TECH' }]
+    build('/procurement/customs-prices')
+    expect(await screen.findByRole('columnheader', { name: /^ID/ })).toBeInTheDocument()
+    await userEvent.click(await screen.findByText('4321'))
+    expect(await screen.findByRole('button', { name: /Sửa/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Xóa/ })).toBeInTheDocument()
+  })
+
+  it('hides Sửa / Xóa in the line detail without customs_price write / delete', async () => {
+    canWrite = false
+    canManageConfig = false
+    lineItems = [{ id: 4321, batch_id: 9, source_row: 2, product_name: 'ATRAZINE 97% TECH' }]
+    build('/procurement/customs-prices')
+    await userEvent.click(await screen.findByText('4321'))
+    expect(await screen.findByText(/Lô nạp #9/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Sửa/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Xóa/ })).not.toBeInTheDocument()
   })
 
   it('titles the five price tabs with the menu label Giá thị trường', async () => {

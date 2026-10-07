@@ -5,6 +5,7 @@ tick trên vai trò), không dùng khóa `import` chung của `/api/imports`:
   read   → xem lịch sử nạp
   write  → nạp tệp, chạy thử, áp dụng
   delete → hoàn tác một lô
+bao-CR-608: sửa một dòng hàng = `write`, xóa một dòng hàng = `delete`.
 
 Lô nạp dùng lại `tab_import_batch` + tác vụ nền `import_tool.run_import`; cửa này
 chỉ khác cửa chung ở hai chỗ: nhận `.xls` đời cũ (cửa chung chỉ nhận `.xlsx`/`.csv`)
@@ -25,9 +26,9 @@ from app.core.crud import make_crud_router
 from app.core.database import get_db
 from app.core.response import success
 
-from . import service
+from . import line_change, line_edit_service, service
 from .model import CustomsRegulation
-from .schema import RegulationCreate, RegulationOut, RegulationUpdate
+from .schema import CustomsLineUpdate, RegulationCreate, RegulationOut, RegulationUpdate
 from app.modules.import_tool import service as import_service
 from app.modules.import_tool.model import (ImportBatch, ImportMode, ImportModule,
                                            ImportStatus)
@@ -61,6 +62,8 @@ def _batch_out(db: Session, b: ImportBatch) -> dict:
     return {"id": b.id, "mode": b.mode, "status": b.status, "filename": b.filename,
             "file_size": b.file_size, "has_file": bool(b.file_id), "total_rows": b.total_rows,
             "created_count": b.created_count, "deleted_count": b.deleted_count,
+            #  bao-CR-608: ghi đè theo cột «ID» (lô nạp trước CR này luôn là 0).
+            "updated_count": b.updated_count or 0,
             "skipped_count": b.skipped_count, "warning_count": b.warning_count,
             "error_count": b.error_count, "error_summary": b.error_summary,
             "date_from": info.get("date_from", ""), "date_to": info.get("date_to", ""),
@@ -69,6 +72,13 @@ def _batch_out(db: Session, b: ImportBatch) -> dict:
             #  nhưng nghi là nguồn sửa giá của một dòng đã có.
             "duplicate_rows": info.get("duplicate_rows", 0), "existing_rows": info.get("existing_rows", 0),
             "suspect_rows": info.get("suspect_rows", 0),
+            #  bao-CR-608: dòng ghi đè / xóa theo cột «ID» + «Thao tác», dòng xóa hỏng bị bỏ qua, và dòng
+            #  có số ID mà không có dòng đó (đã thêm mới).
+            "updated_rows": info.get("updated_rows", 0), "deleted_rows": info.get("deleted_rows", 0),
+            "ignored_rows": info.get("ignored_rows", 0), "id_not_found": info.get("id_not_found", 0),
+            #  Lô CŨ (trước bao-CR-541) đã THAY dòng mà không có bản chụp → màn khóa nút hoàn tác. Chỉ
+            #  tra bảng chụp khi lô có xóa (đa số lô không có) — không thêm truy vấn cho mọi lô.
+            "legacy_replace": bool(b.deleted_count) and not line_change.has_snapshots(db, b.id),
             "created_at": b.created_at, "created_by": b.created_by,
             "created_by_name": resolve_actor(db, b.created_by),
             "started_at": b.started_at, "finished_at": b.finished_at}
@@ -128,6 +138,21 @@ def export_lines(f: dict = Depends(line_filters), db: Session = Depends(get_db),
 @router.get("/lines/{line_id}")
 def get_line(line_id: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     return success(service.get_line(db, line_id))
+
+
+@router.patch("/lines/{line_id}")
+def update_line(line_id: int, body: CustomsLineUpdate, db: Session = Depends(get_db),
+                user=Depends(require(ENTITY, "write"))):
+    """bao-CR-608 — sửa tay một dòng; chụp bản trước khi sửa vào `tab_customs_line_change`."""
+    line = line_edit_service.update_line(db, line_id, body, user.id)
+    return success(service.serialize_lines(db, [line])[0], "Đã lưu dòng hàng")
+
+
+@router.delete("/lines/{line_id}")
+def delete_line(line_id: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "delete"))):
+    """bao-CR-608 — xóa tay một dòng; chụp bản trước khi xóa vào `tab_customs_line_change`."""
+    line_edit_service.delete_line(db, line_id, user.id)
+    return success(None, "Đã xóa dòng hàng")
 
 
 @router.get("/stats")

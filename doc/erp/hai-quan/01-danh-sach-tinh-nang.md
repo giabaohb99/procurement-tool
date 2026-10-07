@@ -163,6 +163,7 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 | Y-14 | F06 | Excel theo mẫu công ty: tiêu đề, header màu, wrap, dd/mm/yyyy, phân cách hàng nghìn, tách sheet theo nhóm | NỢ — chờ tệp mẫu chị Mi | — | [ ] |
 | Y-15 | F09 | Trang tra cứu giá: in báo giá, xuất PDF | NỢ — chờ mẫu in chị Mi | — | [ ] |
 | Y-16 | F08 | Biểu đồ theo TUẦN (yêu cầu ghi «tuần hoặc tháng») | chưa cấp số — hỏi lại có cần không | — | [ ] |
+| Y-17 | Đại ca 07/10/2026 | Cột ID trên bảng Giá thị trường + Excel xuất (cột đầu); tệp nạp có cột «ID» thì ghi đè đúng dòng, cột «Thao tác» = xóa thì xóa dòng; sửa / xóa từng dòng trên màn (v1 + v2); hoàn tác lô trả lại dòng đã ghi đè / xóa từ bản chụp | bao-CR-608 | Trợ lý AI (Bảo) | [x] |
 
 > Cập nhật 28/09/2026: Y-08…Y-13 đã lên dev ở cả v1 lẫn v2. Bảng đối chiếu đầy đủ với tệp yêu cầu nằm ở
 > [`06-doi-chieu-yeu-cau-fr-proc-2026-001.md`](06-doi-chieu-yeu-cau-fr-proc-2026-001.md).

@@ -21,9 +21,9 @@ from sqlalchemy.orm import Session
 from app.modules.import_tool.model import ImportBatch, ImportMode, ImportModule, ImportStatus
 
 from . import reader
-from .constants import (COLUMNS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST, OPTIONAL_COLUMNS,
-                        OPTIONAL_LABELS, PRODUCT_KIND_LABELS, REGULATION_LIST_LABELS, TRANSPORT_LABELS,
-                        RegulationList)
+from .constants import (ACTION_KEY, COLUMNS, CONTROL_LABELS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST,
+                        OPTIONAL_COLUMNS, OPTIONAL_LABELS, PRODUCT_KIND_LABELS, REF_ID_KEY, REGULATION_LIST_LABELS,
+                        TRANSPORT_LABELS, RegulationList)
 from .model import CustomsLine, CustomsParty, CustomsRegulation, CustomsTariff
 from .search_service import build_keyword_condition
 
@@ -588,12 +588,15 @@ def export_lines_xlsx(db: Session, f: dict) -> bytes:
     ws.title = "Tra cuu gia hai quan"
     #  bao-CR-603: bốn cột cuối mang đúng tiêu đề bộ đọc chấp nhận (`OPTIONAL_COLUMNS`), nên tệp
     #  xuất ra sửa tay rồi nạp lại được; bỏ chữ «(suy ra)» vì giá trị có thể lấy từ tệp.
-    header = [label for _, label in COLUMNS] + [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS]
+    #  bao-CR-608: cột «ID» ĐẦU TIÊN + cột «Thao tác» RỖNG ở CUỐI — xuất → sửa ô → nạp lại là ghi
+    #  đè đúng dòng; gõ «xóa» vào ô Thao tác là xóa dòng đó (bộ đọc nhận hai cột này, `reader.py`).
+    header = ([CONTROL_LABELS[REF_ID_KEY]] + [label for _, label in COLUMNS]
+              + [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS] + [CONTROL_LABELS[ACTION_KEY]])
     ws.append(header)
     for d in lines:
         row = [d.get("transport_label") if k == "transport_mode" else d.get(k) for k, _ in COLUMNS]
-        ws.append(row + [d.get("active_ingredient"), d.get("formulation"),
-                         d.get("price_vnd_flat"), d.get("price_vnd_line_tax")])
+        ws.append([d["id"]] + row + [d.get("active_ingredient"), d.get("formulation"),
+                                     d.get("price_vnd_flat"), d.get("price_vnd_line_tax"), None])
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()

@@ -1,7 +1,14 @@
 // bao-CR-470 — chi tiết MỘT DÒNG HÀNG (không phải một tờ khai: tệp GTT02 không có số tờ khai,
 // xem 02-thiet-ke-ky-thuat.md §2.2). Đủ 32 cột của tệp gốc, xếp thành 6 nhóm.
+// bao-CR-608 (đại ca 07/10/2026): nút «Sửa» (quyền `customs_price.write`) chuyển hộp sang biểu mẫu
+// sửa tại chỗ; nút «Xóa» (quyền `customs_price.delete`) hỏi xác nhận rồi xóa. Nút ẩn theo `can()`;
+// backend gác lại bằng `require` và chụp bản trước khi sửa / xóa.
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
+import { useAuth } from '../../auth/AuthContext'
+import { askConfirm } from '../confirm'
+import { toast } from '../toast'
+import CustomsLineEditForm from './CustomsLineEditForm'
 import CustomsModal from './CustomsModal'
 import { fmtDate, fmtQty, fmtUsd, fmtVnd } from './customs-shared'
 
@@ -54,14 +61,38 @@ const GROUPS: { title: string; fields: Field[] }[] = [
 
 type Pick = (id: number, name: string) => void
 
-export default function CustomsLineDetail({ id, onClose, onFilterImporter, onFilterPartner }: {
+export default function CustomsLineDetail({ id, onClose, onFilterImporter, onFilterPartner, onChanged }: {
   id: number
   onClose: () => void
   /** bao-CR-493 — cộng thêm doanh nghiệp / đối tác của dòng này vào bộ lọc (như bản v2). */
   onFilterImporter?: Pick
   onFilterPartner?: Pick
+  /** bao-CR-608 — gọi sau khi sửa / xóa để trang tải lại bảng. */
+  onChanged?: () => void
 }) {
+  const { can } = useAuth()
   const [row, setRow] = useState<any>(null)
+  const [editing, setEditing] = useState(false)
+  const deleting = useRef(false)
+
+  async function remove() {
+    if (deleting.current || !row) return
+    const ok = await askConfirm({
+      title: 'Xóa dòng hàng',
+      message: `Xóa dòng hàng ID ${row.id} — «${String(row.product_name || '').slice(0, 80)}»? Bản trước khi xóa được lưu trong nhật ký thay đổi.`,
+      confirmText: 'Xóa',
+    })
+    if (!ok || deleting.current) return
+    deleting.current = true
+    try {
+      await api.delete(`/api/customs/lines/${row.id}`)
+      toast.success(`Đã xóa dòng hàng ID ${row.id}`)
+      onChanged?.()
+      onClose()
+    } catch { /* interceptor đã báo lỗi */ } finally {
+      deleting.current = false
+    }
+  }
   const closeRef = useRef(onClose)
   closeRef.current = onClose
   // Chỉ tải lại khi đổi dòng — `onClose` của trang là hàm mới mỗi lượt render.
@@ -69,16 +100,30 @@ export default function CustomsLineDetail({ id, onClose, onFilterImporter, onFil
     api.get(`/api/customs/lines/${id}`).then((r) => setRow(r.data.data)).catch(() => closeRef.current())
   }, [id])
   return (
-    <CustomsModal title="Chi tiết dòng hàng" width={860} onClose={onClose}>
-      {!row ? <div style={{ color: 'var(--muted)' }}>Đang tải…</div> : (
+    <CustomsModal title={<>{editing ? 'Sửa dòng hàng' : 'Chi tiết dòng hàng'}{row && <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 400, color: 'var(--muted)' }}>ID {row.id}</span>}</>}
+      width={860} onClose={onClose}>
+      {!row ? <div style={{ color: 'var(--muted)' }}>Đang tải…</div> : editing ? (
+        <CustomsLineEditForm row={row} onCancel={() => setEditing(false)}
+          onSaved={(fresh) => { setRow(fresh); setEditing(false); onChanged?.() }} />
+      ) : (
         <>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
             Một dòng hàng trong tệp GTT02 — một tờ khai có thể gồm nhiều dòng; tệp không có số tờ khai.
             Lô nạp #{row.batch_id}, dòng {row.source_row} của tệp gốc.
             {row.date_fixed && <> <span className="badge warn">Đã sửa ngày</span> ngày đăng ký trong tệp bị đảo ngày/tháng, hệ thống đã đọc lại.</>}
           </div>
-          {(onFilterImporter || onFilterPartner) && (
+          {(onFilterImporter || onFilterPartner || can('customs_price', 'write') || can('customs_price', 'delete')) && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              {can('customs_price', 'write') && (
+                <button className="btn ghost" type="button" onClick={() => setEditing(true)}>
+                  <i className="ti ti-pencil" />Sửa
+                </button>
+              )}
+              {can('customs_price', 'delete') && (
+                <button className="btn ghost" type="button" style={{ color: '#b91c1c' }} onClick={remove}>
+                  <i className="ti ti-trash" />Xóa
+                </button>
+              )}
               {onFilterImporter && row.importer_id > 0 && (
                 <button className="btn ghost" type="button" onClick={() => onFilterImporter(row.importer_id, row.importer_name)}>
                   <i className="ti ti-building-factory-2" />Lọc theo doanh nghiệp này

@@ -107,7 +107,8 @@ const PRODUCT_KIND_OPTIONS = [
   { value: '2', label: 'Nguyên liệu' },
 ]
 
-const STORAGE_KEY = 'procurement.customs-lines-v4'
+//  v5: bao-CR-608 thêm cột «ID» đầu bảng — đổi khóa để bố cục đã lưu không giấu mất cột mới.
+const STORAGE_KEY = 'procurement.customs-lines-v5'
 const DEFAULT_PAGE_SIZE = 50
 /** Tham số lọc trên URL — "Xóa lọc" dọn đúng bộ này, giữ nguyên thẻ đang mở. */
 const FILTER_PARAMS = [
@@ -154,7 +155,8 @@ function toSelectOptions(items: CustomsOptionItem[] | undefined) {
 }
 
 export function CustomsPricePage() {
-  const { canImport, canExport, canReadRegulations, canConfigure } = useCustomsPermissions()
+  const { canImport, canExport, canReadRegulations, canConfigure, canEditLine, canDeleteLine } =
+    useCustomsPermissions()
   const showConfigTab = canConfigure || canReadRegulations
   const visibleSections = CUSTOMS_SECTIONS.filter((item) => item.key !== 'config' || showConfigTab)
   const { section } = useParams()
@@ -683,6 +685,8 @@ export function CustomsPricePage() {
         onClose={() => setDetailId(null)}
         onFilterImporter={filterByImporter}
         onFilterPartner={filterByPartner}
+        canEdit={canEditLine}
+        canDelete={canDeleteLine}
       />
       {importOpen && <CustomsImportDialog onClose={() => setImportOpen(false)} />}
     </PageContainer>

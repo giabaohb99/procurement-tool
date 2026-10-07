@@ -35,6 +35,8 @@ import {
   hasChartFilter,
   isBatchRunning,
   isBatchUsable,
+  formatWrittenSummary,
+  sumWrittenLines,
   isValidHsLookup,
   isValidRegulationLookup,
   mergeCompareSeries,
@@ -195,6 +197,25 @@ describe('batch state helpers', () => {
     expect(isBatchUsable(makeBatch({ status: 3, created_count: 10 }))).toBe(false)
   })
 
+  //  bao-CR-608 — tệp chỉ ghi đè / chỉ xóa theo cột «ID» vẫn là tệp có việc để áp dụng.
+  it('applies dry runs that only overwrite or delete', () => {
+    expect(isBatchUsable(makeBatch({ status: 2, created_count: 0, updated_count: 3 }))).toBe(true)
+    expect(isBatchUsable(makeBatch({ status: 2, created_count: 0, deleted_count: 1 }))).toBe(true)
+  })
+
+  it('sums written rows and phrases the result', () => {
+    const batches = [
+      makeBatch({ id: 1, status: 2, created_count: 3, updated_count: 2, deleted_count: 1 }),
+      makeBatch({ id: 2, status: 3, created_count: 9, updated_count: 9 }),
+    ]
+    const written = sumWrittenLines(batches)
+    expect(written).toEqual({ created: 3, updated: 2, deleted: 1 })
+    expect(formatWrittenSummary(written, 4)).toBe(
+      'Đã nạp 3 dòng hàng mới, ghi đè 2 dòng, xóa 1 dòng, bỏ qua 4 dòng trùng',
+    )
+    expect(formatWrittenSummary({ created: 5, updated: 0, deleted: 0 }, 0)).toBe('Đã nạp 5 dòng hàng mới')
+  })
+
   //  bao-CR-541 — trùng thì bỏ qua: cộng dòng đã có / trùng trong tệp / nghi sửa giá của lô xong.
   it('sums skipped and suspect rows over finished batches only', () => {
     const batches = [
@@ -215,6 +236,16 @@ describe('batch state helpers', () => {
     expect(resolveRevertState(makeBatch({ mode: 0, status: 2, deleted_count: 0 }))).toBe('hidden')
     expect(resolveRevertState(makeBatch({ mode: 1, status: 4, deleted_count: 0 }))).toBe('hidden')
     expect(resolveRevertState(makeBatch({ mode: 1, status: 1, deleted_count: 0 }))).toBe('hidden')
+  })
+
+  //  bao-CR-608 — lô xóa theo cột «Thao tác» có bản chụp: hoàn tác được; chỉ lô cũ mới khóa.
+  it('trusts the backend legacy flag over deleted_count', () => {
+    expect(
+      resolveRevertState(makeBatch({ mode: 1, status: 2, deleted_count: 3, legacy_replace: false })),
+    ).toBe('allowed')
+    expect(
+      resolveRevertState(makeBatch({ mode: 1, status: 2, deleted_count: 3, legacy_replace: true })),
+    ).toBe('blocked')
   })
 
   it('labels batch status by mode', () => {

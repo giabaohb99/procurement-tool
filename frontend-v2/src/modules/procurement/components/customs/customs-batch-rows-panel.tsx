@@ -12,14 +12,24 @@ const PAGE_SIZE = 50
 
 /**
  * Nhãn + màu từng kết cục — khớp `ImportRowStatus` backend
- * (1 Thêm mới · 2 Lỗi · 3 Trùng trong tệp · 4 Đã có).
+ * (1 Thêm mới · 2 Lỗi · 3 Trùng trong tệp · 4 Đã có · bao-CR-608: 5 Ghi đè · 6 Xóa · 7 Bỏ qua).
  */
 const ROW_STATUS_META: Record<number, { label: string; tone: string }> = {
   [CUSTOMS_ROW_STATUS.NEW]: { label: 'Thêm mới', tone: TONE_CLASS.done },
   [CUSTOMS_ROW_STATUS.ERROR]: { label: 'Lỗi', tone: TONE_CLASS.danger },
   [CUSTOMS_ROW_STATUS.DUPLICATE]: { label: 'Trùng trong tệp', tone: TONE_CLASS.pending },
   [CUSTOMS_ROW_STATUS.EXISTING]: { label: 'Đã có', tone: TONE_CLASS.neutral },
+  [CUSTOMS_ROW_STATUS.UPDATED]: { label: 'Ghi đè', tone: TONE_CLASS.progress },
+  [CUSTOMS_ROW_STATUS.DELETED]: { label: 'Xóa', tone: TONE_CLASS.danger },
+  [CUSTOMS_ROW_STATUS.IGNORED]: { label: 'Bỏ qua', tone: TONE_CLASS.pending },
 }
+
+/** bao-CR-608 — ba kết cục chỉ có khi tệp có cột «ID» / «Thao tác»: ô đếm 0 thì không hiện cho đỡ rối. */
+const OPTIONAL_CHIPS = [
+  { value: CUSTOMS_ROW_STATUS.UPDATED, key: 'updated' },
+  { value: CUSTOMS_ROW_STATUS.DELETED, key: 'deleted' },
+  { value: CUSTOMS_ROW_STATUS.IGNORED, key: 'ignored' },
+] as const
 
 /**
  * Hộp «Nhật ký lô» theo TỪNG DÒNG của tệp — bao-CR-496 (F01, ghi chú 25/09 của chị Mi).
@@ -84,6 +94,11 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
           label: ROW_STATUS_META[CUSTOMS_ROW_STATUS.EXISTING].label,
           count: counts.existing ?? 0,
         },
+        ...OPTIONAL_CHIPS.filter((chip) => (counts[chip.key] ?? 0) > 0).map((chip) => ({
+          value: chip.value,
+          label: ROW_STATUS_META[chip.value].label,
+          count: counts[chip.key] ?? 0,
+        })),
       ]
     : []
 

@@ -3,7 +3,7 @@
 // Mọi cửa đọc dùng CHUNG một bộ lọc (`line_filters` ở backend) — nên tham số gửi đi
 // luôn dựng từ `buildCustomsParams`. Quyền: `customs_price` (read · write = nạp tệp ·
 // delete = hoàn tác · export = Excel).
-import { apiGet, apiPost, extractErrorMessage, httpClient } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, extractErrorMessage, httpClient } from '@/core/api'
 import { downloadFile } from '@/core/api/download-file'
 import type { SuccessEnvelope } from '@/core/api/response-envelope'
 
@@ -45,6 +45,16 @@ export function fetchCustomsLines(params: Params) {
 
 export function fetchCustomsLine(id: number) {
   return apiGet<CustomsLine>(`${BASE}/lines/${id}`)
+}
+
+/** bao-CR-608 — sửa một dòng (chỉ gửi ô đã đổi). Quyền `customs_price.write`. */
+export function updateCustomsLine(id: number, patch: Record<string, string | number | null>) {
+  return apiPatch<CustomsLine>(`${BASE}/lines/${id}`, patch)
+}
+
+/** bao-CR-608 — xóa một dòng. Quyền `customs_price.delete`; backend chụp bản trước khi xóa. */
+export function deleteCustomsLine(id: number) {
+  return apiDelete<null>(`${BASE}/lines/${id}`)
 }
 
 export function fetchCustomsStats(params: Params) {

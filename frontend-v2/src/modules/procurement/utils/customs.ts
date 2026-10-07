@@ -251,9 +251,43 @@ export function isBatchRunning(batch: Pick<CustomsImportBatch, 'status'>): boole
   return batch.status === CUSTOMS_BATCH_STATUS.queued || batch.status === CUSTOMS_BATCH_STATUS.running
 }
 
-/** Lô chạy thử đã xong và có dòng để ghi — chỉ những lô này mới đem đi Áp dụng. */
-export function isBatchUsable(batch: Pick<CustomsImportBatch, 'status' | 'created_count'>): boolean {
-  return batch.status === CUSTOMS_BATCH_STATUS.done && batch.created_count > 0
+/**
+ * Lô chạy thử đã xong và có việc để ghi — chỉ những lô này mới đem đi Áp dụng. bao-CR-608: «có
+ * việc» gồm cả ghi đè (cột «ID») và xóa (cột «Thao tác»), không chỉ dòng mới.
+ */
+export function isBatchUsable(
+  batch: Pick<CustomsImportBatch, 'status' | 'created_count' | 'updated_count' | 'deleted_count'>,
+): boolean {
+  return (
+    batch.status === CUSTOMS_BATCH_STATUS.done &&
+    batch.created_count + (batch.updated_count || 0) + (batch.deleted_count || 0) > 0
+  )
+}
+
+/** bao-CR-608 — tổng dòng thêm / ghi đè / xóa của các lô đã chạy xong. */
+export function sumWrittenLines(batches: CustomsImportBatch[]): {
+  created: number
+  updated: number
+  deleted: number
+} {
+  const done = batches.filter((batch) => batch.status === CUSTOMS_BATCH_STATUS.done)
+  return {
+    created: done.reduce((sum, batch) => sum + (batch.created_count || 0), 0),
+    updated: done.reduce((sum, batch) => sum + (batch.updated_count || 0), 0),
+    deleted: done.reduce((sum, batch) => sum + (batch.deleted_count || 0), 0),
+  }
+}
+
+/** bao-CR-608 — câu báo kết quả ghi: «Đã nạp 3 dòng mới, ghi đè 2 dòng, xóa 1 dòng, bỏ qua 4 dòng trùng». */
+export function formatWrittenSummary(
+  written: { created: number; updated: number; deleted: number },
+  skippedTotal: number,
+): string {
+  const parts = [`Đã nạp ${written.created} dòng hàng mới`]
+  if (written.updated) parts.push(`ghi đè ${written.updated} dòng`)
+  if (written.deleted) parts.push(`xóa ${written.deleted} dòng`)
+  if (skippedTotal) parts.push(`bỏ qua ${skippedTotal} dòng trùng`)
+  return parts.join(', ')
 }
 
 /** Tổng dòng BỎ QUA và dòng nghi sửa giá của các lô đã chạy xong — bao-CR-541. */
@@ -274,14 +308,32 @@ export function sumSkippedLines(batches: CustomsImportBatch[]): {
  * Hoàn tác được không. Chỉ lô GHI THẬT đã xong mới có gì để hoàn tác. Từ bao-CR-541 lô chỉ
  * thêm dòng của chính nó nên luôn hoàn tác được; riêng lô CŨ (nạp trước CR) đã THAY dòng cũ
  * thì không — dòng cũ đã xóa lúc ghi, hoàn tác chỉ để lại một khoảng ngày trống.
+ * bao-CR-608: lô xóa / ghi đè theo cột «ID» có bản chụp nên VẪN hoàn tác được — backend báo lô
+ * cũ bằng `legacy_replace`; bản backend chưa có khóa này thì lùi về luật cũ `deleted_count > 0`.
  */
 export function resolveRevertState(
-  batch: Pick<CustomsImportBatch, 'mode' | 'status' | 'deleted_count'>,
+  batch: Pick<CustomsImportBatch, 'mode' | 'status' | 'deleted_count' | 'legacy_replace'>,
 ): 'hidden' | 'blocked' | 'allowed' {
   if (batch.mode !== CUSTOMS_BATCH_MODE.apply || batch.status !== CUSTOMS_BATCH_STATUS.done) {
     return 'hidden'
   }
-  return batch.deleted_count > 0 ? 'blocked' : 'allowed'
+  return (batch.legacy_replace ?? batch.deleted_count > 0) ? 'blocked' : 'allowed'
+}
+
+/**
+ * bao-CR-608 — câu hỏi xác nhận hoàn tác: nói đủ ba việc hoàn tác sẽ làm (xóa dòng lô đã thêm, trả
+ * dòng lô đã ghi đè về bản cũ, dựng lại dòng lô đã xóa) thay vì chỉ «xóa N dòng».
+ */
+export function formatRevertConfirm(
+  batch: Pick<CustomsImportBatch, 'filename' | 'created_count' | 'updated_count' | 'deleted_count'>,
+): string {
+  const parts = [`xóa ${batch.created_count} dòng lô này đã thêm`]
+  if (batch.updated_count) parts.push(`trả ${batch.updated_count} dòng lô đã ghi đè về bản trước lô`)
+  if (batch.deleted_count) parts.push(`dựng lại ${batch.deleted_count} dòng lô đã xóa`)
+  const tail = batch.updated_count
+    ? ' Dòng bị sửa tiếp sau lô này cũng trả về bản trước lô — phần sửa sau sẽ mất.'
+    : ''
+  return `Hoàn tác tệp «${batch.filename}»: ${parts.join(', ')}?${tail}`
 }
 
 /** Nhãn trạng thái lô. */

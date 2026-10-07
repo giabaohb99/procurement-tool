@@ -11,6 +11,11 @@ BỎ QUA, nên nạp lại một tệp không nhân đôi dữ liệu. Bản tr�
 của lô khác trong khoảng ngày của tệp rồi chèn lại — tệp mới xuất thiếu là mất dữ liệu cũ
 đúng mà không ai hay (rủi ro R1), và lô đã thay thì không hoàn tác được.
 
+bao-CR-608 (đại ca 07/10/2026) — hai cột ĐIỀU KHIỂN tùy chọn: «ID» có thật → GHI ĐÈ đúng dòng
+đó (giữ id + `batch_id` cũ, tính lại `row_hash`); «Thao tác = xóa» → XÓA dòng có ID đó. Trước khi
+đụng, dòng được chụp đủ vào `tab_customs_line_change` (`line_change.py`) để hoàn tác lô dựng lại
+được. Không có hai cột đó thì nạp y như trên.
+
 ⚠️ **Ghi dòng hàng bằng lệnh chèn hàng loạt, không `db.add` từng dòng.** Một lần
 kết xuất hàng chục nghìn dòng; `db.add` còn kích hoạt nhật ký trước/sau của
 `change_tracker` cho từng dòng (hai bảng này đã vào `NO_LOG_TABLES`, nhưng chèn
@@ -19,21 +24,28 @@ hàng loạt còn nhanh hơn nhiều).
 import json
 from contextlib import contextmanager
 from datetime import datetime
+from decimal import Decimal
+from types import SimpleNamespace
 
-from sqlalchemy import insert, text
+from sqlalchemy import insert, text, update
 from sqlalchemy.orm import Session
 
 from app.modules.import_tool.model import ImportBatch, ImportStatus, LogLevel
 from app.modules.import_tool.service import add_log
 
-from . import dedupe, reader, row_log
-from .constants import COLUMNS, INSERT_CHUNK, OPTIONAL_LABELS, PartyType
+from . import dedupe, line_change, reader, row_log
+from .constants import (COLUMNS, CONTROL_LABELS, INSERT_CHUNK, OPTIONAL_LABELS, REF_ID_KEY,
+                        CustomsLineChangeAction, CustomsLineChangeSource, PartyType)
 from .ingredient import load_kind_tagger, load_tagger
 from .model import CustomsLine, CustomsParty
 
 SHEET = "GTT02"
 
 _PARTY_KEYS = ("importer_tax_code", "importer_name", "partner_name")
+#  Khóa của dòng trong tệp KHÔNG phải cột của bảng: ba cột đối tượng (đi qua `CustomsParty`) và ô
+#  «ID» của bao-CR-608. Ghi đè còn giữ `source_row` cũ (dòng mấy trong tệp GỐC của lô đã thêm nó).
+_NON_COLUMN_KEYS = frozenset(_PARTY_KEYS) | {REF_ID_KEY}
+_VND_KEYS = ("price_vnd_flat", "price_vnd_line_tax")
 _LOCK_NAME = "customs_declaration_import"
 _LOCK_WAIT_SECONDS = 300
 
@@ -74,6 +86,10 @@ def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
         names = ", ".join(f"«{(dict(COLUMNS) | OPTIONAL_LABELS)[k]}»" for k in res.optional_columns)
         add_log(db, batch, SHEET, 0, LogLevel.INFO, "customs", f"Tệp có cột tùy chọn: {names} — ô có giá trị thì lấy "
                 "của tệp, ô trống thì suy ra / tính như cũ")
+    if res.control_columns:
+        names = ", ".join(f"«{CONTROL_LABELS[k]}»" for k in res.control_columns)
+        add_log(db, batch, SHEET, 0, LogLevel.INFO, "customs", f"Tệp có cột {names} — ô ID có thật thì ghi đè "
+                "đúng dòng đó, «Thao tác» = xóa thì xóa dòng có ID đó; hoàn tác lô trả lại như cũ")
     for row_no, level, message in res.logs:
         add_log(db, batch, SHEET, row_no, level, "customs", message)
     with _import_lock(db):
@@ -89,14 +105,22 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
     #  thấy trước bao nhiêu dòng mới, bao nhiêu dòng đã có, bao nhiêu dòng trùng trong tệp.
     identities = dedupe.stamp_rows(rows)
     existing = dedupe.load_existing(db, date_from, date_to, exclude_batch_id=batch.id)
-    statuses, to_insert, suspect = row_log.classify_rows(res, identities, existing)
+    #  bao-CR-608: tra MỘT LẦN mọi id mà cột «ID» trỏ tới (từng cụm 1000), không truy vấn từng dòng.
+    wanted = {r[REF_ID_KEY] for r in rows if r.get(REF_ID_KEY)} | {d["ref_id"] for d in res.deletes if d["ref_id"]}
+    targets = line_change.load_lines_by_id(db, wanted)
+    taggers = _Taggers(db) if (targets or (apply and rows)) else None
+    unchanged = _tag_overwrites(db, rows, targets, taggers) if targets else set()
+    cls = row_log.classify_rows(res, identities, existing, frozenset(targets), unchanged)
+    for row_no, message in cls.warnings:
+        add_log(db, batch, SHEET, row_no, LogLevel.WARNING, "customs", message)
     #  bao-CR-496: mỗi dòng dữ liệu một dòng nhật ký mang kết cục — ghi ở CẢ chạy thử lẫn ghi thật.
-    row_counts = row_log.write_row_logs(db, batch, statuses)
+    row_counts = row_log.write_row_logs(db, batch, cls.statuses)
 
-    batch.total_rows = len(rows) + res.skipped
-    batch.skipped_count = res.skipped
-    batch.created_count = len(to_insert)
-    batch.deleted_count = 0                     # bao-CR-541: không còn thay dòng cũ
+    batch.total_rows = len(rows) + len(res.deletes) + res.skipped
+    batch.skipped_count = res.skipped + cls.ignored
+    batch.created_count = len(cls.to_insert)
+    batch.updated_count = len(cls.to_update)    # bao-CR-608 — ghi đè theo cột «ID»
+    batch.deleted_count = len(cls.to_delete)    # bao-CR-608 — xóa theo «Thao tác» (có bản chụp)
     batch.sheet_info = json.dumps({
         "date_from": date_from.isoformat() if date_from else "",
         "date_to": date_to.isoformat() if date_to else "",
@@ -104,57 +128,152 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
         "date_swap_detected": res.date_swap,
         "duplicate_rows": row_counts["duplicate"],     # trùng trong tệp — bỏ qua
         "existing_rows": row_counts["existing"],       # bao-CR-541: đã có trong bảng giá — bỏ qua
-        "suspect_rows": suspect,                       # bao-CR-541: thêm mới nhưng nghi sửa giá
+        "suspect_rows": cls.suspect,                   # bao-CR-541: thêm mới nhưng nghi sửa giá
+        "updated_rows": row_counts["updated"],         # bao-CR-608: ghi đè theo ID
+        "deleted_rows": row_counts["deleted"],         # bao-CR-608: xóa theo «Thao tác»
+        "ignored_rows": row_counts["ignored"],         # bao-CR-608: xóa hỏng / ID lặp — bỏ qua
+        "id_not_found": cls.id_not_found,              # bao-CR-608: ô ID có số mà không có → thêm mới
     }, ensure_ascii=False)
 
-    if apply and to_insert:
-        #  HQ4 — gắn hoạt chất + hàm lượng ngay lúc nạp (danh mục nạp một lần cho cả lô).
-        tagger = load_tagger(db)
-        kinds = load_kind_tagger(db)          # bao-CR-494: nhãn Thành phẩm / Nguyên liệu
-        cache: dict[str, tuple[str, str, int]] = {}
-        for r in to_insert:
-            name = r["product_name"]
-            if name not in cache:
-                active, form = tagger.tag(name)
-                cache[name] = (active, form, kinds.tag(name))
-            active, form, r["product_kind"] = cache[name]
-            #  bao-CR-603: tệp có cột và ô có chữ thì lấy của tệp (cờ `_from_file` để retag không
-            #  ghi đè); ô trống hoặc tệp không có cột thì suy ra như cũ. Giá VND của tệp (nếu có)
-            #  đã nằm sẵn trong `r`; thiếu thì NULL → lúc đọc tính như cũ.
-            file_active = (r.get("active_ingredient") or "").strip()
-            file_form = (r.get("formulation") or "").strip()
-            r["active_ingredient"] = file_active or active
-            r["active_ingredient_from_file"] = bool(file_active)
-            r["formulation"] = file_form or form
-            r["formulation_from_file"] = bool(file_form)
-            r.setdefault("price_vnd_flat", None)
-            r.setdefault("price_vnd_line_tax", None)
-        importer_ids = _upsert_parties(db, PartyType.DOMESTIC, to_insert)
-        partner_ids = _upsert_parties(db, PartyType.FOREIGN, to_insert)
-        _insert_lines(db, batch.id, to_insert, importer_ids, partner_ids)
+    if apply:
+        user_id = batch.created_by or 0
+        #  bao-CR-608: CHỤP trước rồi mới đụng — hoàn tác lô dựng lại từ bản chụp.
+        if cls.to_delete:
+            line_change.record_snapshots(db, [targets[i] for i in cls.to_delete], CustomsLineChangeAction.DELETE,
+                                         CustomsLineChangeSource.IMPORT, batch.id, user_id)
+            line_change.delete_lines(db, cls.to_delete)
+        if cls.to_update:
+            line_change.record_snapshots(db, [targets[i] for _, i in cls.to_update],
+                                         CustomsLineChangeAction.UPDATE, CustomsLineChangeSource.IMPORT,
+                                         batch.id, user_id)
+        for r in cls.to_insert:
+            taggers.tag(r)
+        written = cls.to_insert + [r for r, _ in cls.to_update]
+        if written:
+            importer_ids = upsert_parties(db, PartyType.DOMESTIC, written)
+            partner_ids = upsert_parties(db, PartyType.FOREIGN, written)
+            _insert_lines(db, batch.id, cls.to_insert, importer_ids, partner_ids)
+            _update_lines(db, cls.to_update, importer_ids, partner_ids)
 
     batch.status = ImportStatus.DONE
     batch.finished_at = datetime.utcnow()
     db.commit()
 
 
-def revert(db: Session, batch: ImportBatch) -> dict:
-    """Hoàn tác một lô đã ghi: xóa mọi dòng hàng mang `batch_id` của nó.
+class _Taggers:
+    """HQ4 — gắn hoạt chất + hàm lượng + nhãn Thành phẩm / Nguyên liệu; danh mục nạp MỘT lần cho cả lô."""
 
-    Từ bao-CR-541 lô chỉ THÊM dòng chưa có nên hoàn tác luôn an toàn — kể cả để sửa số liệu:
-    hoàn tác lô sai rồi nạp lại tệp đúng.
-    ⚠️ **Vẫn chặn lô CŨ đã thay dữ liệu** (`deleted_count > 0`, nạp trước bao-CR-541). Dòng cũ
-    đã xóa lúc thay và không có bản chụp để dựng lại — hoàn tác lúc đó là để trống cả khoảng
-    ngày mà không ai hay.
+    def __init__(self, db: Session):
+        self.tagger = load_tagger(db)
+        self.kinds = load_kind_tagger(db)          # bao-CR-494: nhãn Thành phẩm / Nguyên liệu
+        self.cache: dict[str, tuple[str, str, int]] = {}
+
+    def derive(self, name: str) -> tuple[str, str, int]:
+        if name not in self.cache:
+            active, form = self.tagger.tag(name)
+            self.cache[name] = (active, form, self.kinds.tag(name))
+        return self.cache[name]
+
+    def tag(self, r: dict, previous: CustomsLine | None = None) -> None:
+        """Điền hoạt chất / hàm lượng / nhãn / giá VND vào dòng `r` của tệp (sửa tại chỗ).
+
+        bao-CR-603: tệp có cột và ô có chữ thì lấy của tệp (cờ `_from_file` = giá trị do người
+        nhập, `retag_all` không ghi đè); ô trống hoặc tệp không có cột thì suy ra như cũ. Giá VND
+        của tệp (nếu có) đã nằm sẵn trong `r`; thiếu thì NULL → lúc đọc tính như cũ.
+
+        bao-CR-608, `previous` = dòng đã lưu mà dòng này GHI ĐÈ (theo cột «ID»): ô của tệp trùng
+        đúng giá trị hệ thống tự suy ra / tự tính — theo dữ liệu MỚI của dòng, hoặc đúng giá trị
+        suy ra / tính đang hiện trên màn cho dòng CŨ — thì coi là SUY RA (cờ 0, giá VND NULL).
+        Lý do: Excel xuất ra từ màn này điền sẵn cả bốn cột đó; xuất → sửa đơn giá → nạp lại mà
+        coi mọi ô là «của tệp» thì giá VND cũ (tính theo đơn giá cũ) bị đóng băng thành số tay.
+        """
+        active, form, r["product_kind"] = self.derive(r["product_name"])
+        file_active = (r.get("active_ingredient") or "").strip()
+        file_form = (r.get("formulation") or "").strip()
+        if previous is not None:
+            if _is_derived_text(file_active, active, previous.active_ingredient, previous.active_ingredient_from_file):
+                file_active = ""
+            if _is_derived_text(file_form, form, previous.formulation, previous.formulation_from_file):
+                file_form = ""
+        r["active_ingredient"] = file_active or active
+        r["active_ingredient_from_file"] = bool(file_active)
+        r["formulation"] = file_form or form
+        r["formulation_from_file"] = bool(file_form)
+        for key in _VND_KEYS:
+            r.setdefault(key, None)
+        if previous is not None and any(r[key] is not None for key in _VND_KEYS):
+            from .service import compute_vnd_prices    # nạp muộn — tránh nạp vòng lúc khởi động
+            source = SimpleNamespace(**{k: r.get(k) for k in ("adj_price_usd", "price_usd", "usd_rate",
+                                                              "fx_rate", "currency", "rate_import")})
+            computed_new = dict(zip(_VND_KEYS, compute_vnd_prices(source)))
+            computed_old = dict(zip(_VND_KEYS, compute_vnd_prices(previous)))
+            for key in _VND_KEYS:
+                shown_old = computed_old[key] if getattr(previous, key) is None else None
+                if r[key] is not None and (_same_decimal(r[key], computed_new[key])
+                                           or _same_decimal(r[key], shown_old)):
+                    r[key] = None
+
+
+def _is_derived_text(value: str, derived_now: str, stored: str, stored_from_user: bool) -> bool:
+    """Ô chữ của tệp chỉ là giá trị SUY RA (không phải người nhập): trùng giá trị suy ra từ tên hàng
+    mới, hoặc trùng giá trị suy ra đang lưu của dòng cũ (cờ 0)."""
+    if not value:
+        return False
+    return (value.upper() == (derived_now or "").upper()
+            or (not stored_from_user and value.upper() == (stored or "").upper()))
+
+
+def _same_decimal(a, b) -> bool:
+    if a is None or b is None:
+        return a is None and b is None
+    return Decimal(str(a)).quantize(Decimal("0.01")) == Decimal(str(b)).quantize(Decimal("0.01"))
+
+
+def _tag_overwrites(db: Session, rows: list[dict], targets: dict[int, CustomsLine], taggers: _Taggers) -> set[int]:
+    """Gắn nhãn cho các dòng có ID trỏ đúng dòng đã có; → số dòng (trong tệp) có dữ liệu Y HỆT dòng
+    đã lưu — những dòng đó bỏ qua, không chụp, không ghi (xuất → sửa vài dòng → nạp lại cả tệp
+    thì chỉ dòng thật sự sửa mới thành «Ghi đè»)."""
+    hashes = dedupe.stored_hashes(db, list(targets.values()))
+    unchanged: set[int] = set()
+    for r in rows:
+        line = targets.get(r.get(REF_ID_KEY) or 0)
+        if line is None:
+            continue
+        taggers.tag(r, previous=line)
+        same = (r["row_hash"] == hashes[line.id]
+                and r["active_ingredient"] == (line.active_ingredient or "")
+                and r["formulation"] == (line.formulation or "")
+                and r["active_ingredient_from_file"] == bool(line.active_ingredient_from_file)
+                and r["formulation_from_file"] == bool(line.formulation_from_file)
+                and all(_same_decimal(r[k], getattr(line, k)) for k in _VND_KEYS))
+        if same:
+            unchanged.add(r["source_row"])
+    return unchanged
+
+
+def revert(db: Session, batch: ImportBatch) -> dict:
+    """Hoàn tác một lô đã ghi: xóa dòng thêm mới; bao-CR-608 còn dựng lại dòng lô đã xóa và trả
+    dòng lô đã ghi đè về bản chụp (`line_change.revert_batch_lines`).
+
+    Từ bao-CR-541 lô chỉ THÊM dòng chưa có (và từ bao-CR-608 ghi đè / xóa thì có bản chụp) nên
+    hoàn tác luôn an toàn — kể cả để sửa số liệu: hoàn tác lô sai rồi nạp lại tệp đúng.
+    ⚠️ **Vẫn chặn lô CŨ đã thay dữ liệu** (`deleted_count > 0` mà KHÔNG có bản chụp nào — nạp
+    trước bao-CR-541). Dòng cũ đã xóa lúc thay và không có bản chụp để dựng lại — hoàn tác lúc
+    đó là để trống cả khoảng ngày mà không ai hay.
     """
-    if batch.deleted_count:
+    if batch.deleted_count and not line_change.has_snapshots(db, batch.id):
         return {"ok": False,
                 "message": f"Lô này nạp theo cách cũ, đã thay {batch.deleted_count} dòng cũ nên không "
                            "hoàn tác được — hoàn tác sẽ để trống cả khoảng ngày đó."}
-    deleted = (db.query(CustomsLine).filter(CustomsLine.batch_id == batch.id)
-               .delete(synchronize_session=False))
-    return {"ok": True, "deleted": deleted, "restored": 0,
-            "message": f"Đã hoàn tác: xóa {deleted} dòng hàng của lô này"}
+    out = line_change.revert_batch_lines(db, batch.id)
+    parts = [f"xóa {out['deleted']} dòng thêm mới"]
+    if out["restored"]:
+        parts.append(f"trả {out['restored']} dòng ghi đè về bản cũ")
+    if out["reinserted"]:
+        parts.append(f"dựng lại {out['reinserted']} dòng đã xóa")
+    return {"ok": True, "deleted": out["deleted"], "restored": out["restored"] + out["reinserted"],
+            "warnings": out["warnings"],
+            "message": "Đã hoàn tác: " + ", ".join(parts) + line_change.summarize_warnings(out["warnings"])}
 
 
 # ── Nội bộ ─────────────────────────────────────────────────────────────────
@@ -167,7 +286,7 @@ def _party_key(party_type: PartyType, row: dict) -> tuple[str, str, str] | None:
     return (reader.hash_name(name), "", name) if name else None
 
 
-def _upsert_parties(db: Session, party_type: PartyType, rows: list[dict]) -> dict[str, int]:
+def upsert_parties(db: Session, party_type: PartyType, rows: list[dict]) -> dict[str, int]:
     """Tra hoặc tạo đối tượng cho CẢ LÔ trong vài truy vấn, không truy vấn từng dòng.
 
     → map khóa chống trùng → id. Tên lấy của lần nạp MỚI NHẤT (dòng cuối cùng gặp).
@@ -199,16 +318,35 @@ def _upsert_parties(db: Session, party_type: PartyType, rows: list[dict]) -> dic
     return ids
 
 
+def party_ids_of(row: dict, importer_ids: dict[str, int], partner_ids: dict[str, int]) -> dict[str, int]:
+    imp = _party_key(PartyType.DOMESTIC, row)
+    par = _party_key(PartyType.FOREIGN, row)
+    return {"importer_id": importer_ids.get(imp[0], 0) if imp else 0,
+            "partner_id": partner_ids.get(par[0], 0) if par else 0}
+
+
 def _insert_lines(db: Session, batch_id: int, rows: list[dict],
                   importer_ids: dict[str, int], partner_ids: dict[str, int]) -> None:
     payload = []
     for r in rows:
-        line = {k: v for k, v in r.items() if k not in _PARTY_KEYS}
-        imp = _party_key(PartyType.DOMESTIC, r)
-        par = _party_key(PartyType.FOREIGN, r)
-        line.update(batch_id=batch_id,
-                    importer_id=importer_ids.get(imp[0], 0) if imp else 0,
-                    partner_id=partner_ids.get(par[0], 0) if par else 0)
+        line = {k: v for k, v in r.items() if k not in _NON_COLUMN_KEYS}
+        line.update(batch_id=batch_id, **party_ids_of(r, importer_ids, partner_ids))
         payload.append(line)
     for i in range(0, len(payload), INSERT_CHUNK):
         db.execute(insert(CustomsLine), payload[i:i + INSERT_CHUNK])
+
+
+def _update_lines(db: Session, pairs: list[tuple[dict, int]],
+                  importer_ids: dict[str, int], partner_ids: dict[str, int]) -> None:
+    """bao-CR-608 — ghi đè TOÀN BỘ cột dữ liệu theo khóa chính, giữ `batch_id` + `source_row` cũ.
+
+    `row_hash` mới đã nằm trong dòng (`dedupe.stamp_rows`). Đổi `reg_date` sang năm khác thì
+    MySQL tự dời dòng sang phân vùng mới. Lệnh cập nhật hàng loạt theo khóa chính của ORM —
+    không nạp đối tượng, không kích hoạt `change_tracker`."""
+    payload = []
+    for r, line_id in pairs:
+        line = {k: v for k, v in r.items() if k not in _NON_COLUMN_KEYS and k != "source_row"}
+        line.update(id=line_id, **party_ids_of(r, importer_ids, partner_ids))
+        payload.append(line)
+    for i in range(0, len(payload), INSERT_CHUNK):
+        db.execute(update(CustomsLine), payload[i:i + INSERT_CHUNK])
