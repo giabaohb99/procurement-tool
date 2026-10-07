@@ -151,7 +151,11 @@ Mã nguồn: `backend/app/modules/customs/` (`line_change.py`, `line_edit_servic
 migration `hq608` (nối sau `lbrct01`), `test/backend/test_hai_quan_id_ghi_de_xoa_cr608.py`; v2
 `frontend-v2/src/modules/procurement/` (`customs-line-edit-form.tsx`, `utils/customs-line-form.ts` mới, hộp chi tiết dòng,
 hộp nạp, lịch sử nạp); v1 `frontend/src/components/customs/` (`CustomsLineEditForm.tsx` mới) và `pages/CustomsPrices.tsx`.
-Deploy: chưa deploy.
+Đại ca chốt 07/10/2026 (giữ đúng như đề nghị): (1) dòng có ID mà dữ liệu y hệt dòng đang lưu thì bỏ qua, không
+ghi đè; (2) tệp chỉ toàn dòng xóa vẫn phải đủ tiêu đề các cột của mẫu, ô để trống được; (3) sửa tên doanh nghiệp
+hoặc đối tác trên một dòng thì đổi theo mọi dòng cùng mã số thuế hoặc cùng đối tác; (4) ô số trong biểu mẫu sửa hiểu
+dấu chấm và dấu phẩy là dấu thập phân, có ghi chú trên ô.
+Deploy: DEV 07/10/2026 10:55 (migration hq608, có sao lưu trước); prod chờ đại ca.
 
 ---
 
@@ -12674,9 +12678,10 @@ Mã nguồn: backend/app/modules/agent_hub/sessions.py (mới) · agent_hub/pers
 Deploy: dev 07/10 khoảng 11:10, erp-v2 28901d52 (Agent 1 gộp, dựng lại api, celery-worker, celery-beat, agent-poller; lịch agent-session-summary đã có trên beat); prod giữ lại.
 
 
-## duoc-CR-607 | Báo cáo thực hiện ở bản cũ: làm dòng hồ sơ dễ nhìn hơn và tách khối khỏi phần Trao đổi
+## duoc-CR-607-v1 | Báo cáo thực hiện ở bản cũ: làm dòng hồ sơ dễ nhìn hơn và tách khối khỏi phần Trao đổi
 - status: xong
 - date: 2026-10-07
+Ghi sổ 07/10/2026: mã sổ đổi từ «duoc-CR-607» thành «duoc-CR-607-v1» vì trùng mã với mục ngay trên (cùng CR, lượt sửa thứ hai chỉ ở bản cũ); script đồng bộ sổ dừng khi hai mục trùng mã.
 Đại ca xem lại khối Báo cáo thực hiện ở bản cũ và yêu cầu làm cho dễ nhìn hơn, chỉ sửa bản cũ, bản mới giữ nguyên.
 Mỗi dòng hồ sơ nay có viền trái mang màu trạng thái, trễ hạn thì đỏ, nên liếc dọc là thấy tiến độ cả giai đoạn. Hồ sơ đang
 khóa không còn bị làm mờ cả dòng mà ghi rõ đang chờ hồ sơ nào ngay cạnh tên. Nhãn Chung và nhãn dòng hàng tách màu, ô trạng
@@ -12696,3 +12701,12 @@ việc đã xong thì đánh dấu xong hoặc bỏ, không có thao tác xóa. 
 
 Mã nguồn: backend/app/modules/agent_hub/personal_items.py (mới) · assistant/tools/personal_tool.py (ba công cụ thẻ) · agent_hub/briefs.py · migration pitem01
 
+## duoc-CR-609 | Tra cứu hóa chất ở bản cũ: thêm nút Cột để ẩn hiện từng cột của bảng
+- status: xong
+- date: 2026-10-07
+Đại ca yêu cầu thêm nút ẩn hiện cột cho bảng Tra cứu hóa chất ở bản cũ. Nút Cột nay nằm ở góc phải hàng lọc, giống nút
+Cột ở các bảng khác của bản cũ như Tồn kho hay Công nợ: bỏ tick là cột ẩn ngay, nút báo đang ẩn mấy cột, có chọn tất cả và
+trả về mặc định, lựa chọn được nhớ trên máy cho lần mở sau. Bảng cảnh báo theo từ khóa dùng chung bộ cột vẫn giữ nguyên.
+Bản mới không cần sửa vì bảng chung của bản mới đã có sẵn menu Cột. Đã bấm thử trên máy, chưa đưa lên dev.
+
+Mã nguồn: frontend/src/components/customs/CustomsRegulationColumns.tsx · frontend/src/components/customs/CustomsRegulationBrowse.tsx

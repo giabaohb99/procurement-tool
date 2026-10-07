@@ -6,21 +6,25 @@
 // Bộ lọc là state CỤC BỘ: ô tìm `q` trên URL là của thanh lọc dòng hàng hải quan, dùng chung thì
 // đổi thẻ là ô tìm hóa chất bị ghi đè bằng tên hàng. Riêng thẻ cảnh báo trên đầu vẫn đọc từ khóa
 // dòng hàng đang tra (`filters.q`) — dải cảnh báo ở các thẻ khác bảo «xem thẻ Pháp lý» là trỏ vào đây.
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../api/client'
+import { TableColumn, useTableColumns } from '../../hooks/useTableColumns'
 import Pagination from '../Pagination'
 import SearchSelect from '../SearchSelect'
 import TableScroll from '../TableScroll'
+import TableToolbar from '../TableToolbar'
 import { CustomsFilters } from './customs-shared'
 import CustomsBannedPesticideModal from './CustomsBannedPesticideModal'
 import CustomsRegulationAlertTable from './CustomsRegulationAlertTable'
 import {
-  REGULATION_COMMON_COLUMN_COUNT, RegulationCommonCells, RegulationCommonHeaders,
+  REGULATION_COMMON_COLUMNS, RegulationHeaderCells, RegulationRowCells,
 } from './CustomsRegulationColumns'
 import { buildRegulationParams, resolveRegulationEmptyMessage } from '../../utils/customs-regulation'
 
 const ALL = ''
 const PAGE_SIZE = 50
+/** Khóa lưu cột ẩn / hiện (localStorage `colhide:<khóa>`) — đổi là người dùng mất lựa chọn đã lưu. */
+const COLUMN_STORE_KEY = 'customs-regulations'
 
 export default function CustomsRegulationBrowse({ filters, alerts }: { filters: CustomsFilters; alerts: any[] }) {
   const [search, setSearch] = useState('')
@@ -33,6 +37,18 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
   const [loading, setLoading] = useState(false)
   const [options, setOptions] = useState<any>(null)
   const [pesticidesOf, setPesticidesOf] = useState<any | null>(null)
+
+  //  duoc-CR-609 — nút «Cột» ẩn / hiện từng cột (đại ca yêu cầu 07/10/2026). Thứ tự cột vẫn đúng bản
+  //  v2: phần chung · Thuốc BVTV chứa · Lưu ý. Mảng cột dựng một lần (hook so theo tham chiếu).
+  const allColumns = useMemo<TableColumn[]>(() => [
+    ...REGULATION_COMMON_COLUMNS,
+    {
+      key: 'pesticides', label: 'Thuốc BVTV chứa',
+      cell: (r) => r.list_code === 10 && <PesticideCountCell row={r} onOpen={() => setPesticidesOf(r)} />,
+    },
+    { key: 'obligation', label: 'Lưu ý', td: { fontSize: 13 }, cell: (r) => r.obligation },
+  ], [])
+  const table = useTableColumns(COLUMN_STORE_KEY, allColumns)
 
   useEffect(() => {
     api.get('/api/customs/regulations/options').then((r) => setOptions(r.data.data))
@@ -85,24 +101,21 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
           {filtersActive && (
             <button className="btn ghost" onClick={resetFilters}><i className="ti ti-rotate" />Xóa lọc</button>
           )}
+          {/* Nút «Cột» dồn về góc phải hàng lọc. */}
+          <div style={{ marginLeft: 'auto' }}>
+            <TableToolbar {...table} />
+          </div>
         </div>
 
         <TableScroll>
           <table>
-            <thead><tr>
-              {/* duoc-CR-598 — đúng thứ tự cột của bản v2: phần chung · Thuốc BVTV chứa · Lưu ý. */}
-              <RegulationCommonHeaders /><th>Thuốc BVTV chứa</th><th>Lưu ý</th>
-            </tr></thead>
+            <thead><tr><RegulationHeaderCells columns={table.columns} /></tr></thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <RegulationCommonCells r={r} />
-                  <td>{r.list_code === 10 && <PesticideCountCell row={r} onOpen={() => setPesticidesOf(r)} />}</td>
-                  <td style={{ fontSize: 13 }}>{r.obligation}</td>
-                </tr>
+              {rows.map((r, i) => (
+                <tr key={r.id}><RegulationRowCells columns={table.columns} r={r} index={i} /></tr>
               ))}
               {!loading && rows.length === 0 && (
-                <tr><td colSpan={REGULATION_COMMON_COLUMN_COUNT + 2} className="table-empty">{resolveRegulationEmptyMessage(options?.total ?? 0)}</td></tr>
+                <tr><td colSpan={table.columns.length} className="table-empty">{resolveRegulationEmptyMessage(options?.total ?? 0)}</td></tr>
               )}
             </tbody>
           </table>
