@@ -25,6 +25,7 @@ import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
 import { taskDraggableId } from '../utils/kanban-drop'
 import { initials } from '../utils/people'
 import { chipClass } from '../utils/work-colors'
+import { PersonAvatar } from './person-avatar'
 
 interface TaskCardBodyProps {
   task: WorkTask
@@ -245,14 +246,17 @@ function buildFieldRow(
           <span className="flex items-center -space-x-1.5">
             {/* Tối đa 3 avatar rồi "+n" — đông người mà xếp hết thì thẻ dài ra
                 gấp đôi và cột kanban tụt hết xuống dưới màn hình. */}
+            {/* bao-CR-604: có ảnh thì hiện ảnh, không thì chữ tắt — cùng khuôn
+                `PersonAvatar` của thành viên dự án. */}
             {people.slice(0, 3).map((a) => (
-              <span
+              <PersonAvatar
                 key={a.employee_id}
+                name={a.employee_name}
                 title={a.employee_name || `Nhân sự #${a.employee_id}`}
-                className="grid size-5 place-items-center rounded-full border bg-accent text-[10px] font-medium text-accent-foreground"
-              >
-                {initials(a.employee_name)}
-              </span>
+                avatar={a.avatar}
+                initials={initials(a.employee_name)}
+                className="size-5"
+              />
             ))}
             {people.length > 3 && (
               <span className="pl-2.5 text-muted-foreground">+{people.length - 3}</span>

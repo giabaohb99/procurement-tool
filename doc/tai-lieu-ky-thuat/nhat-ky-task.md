@@ -71,8 +71,9 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## duoc-CR-589 | Nhân sự: Lịch làm việc (mẫu lịch tuần, gán 4 cấp, tính ngày nghỉ theo lịch, màn xem lịch)
-- status: dang-lam
+- status: xong
 - date: 2026-10-05
+Chốt sổ 07/10/2026: việc này đã xong (DEV 05/10 (wsched01)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca yêu cầu làm chức năng lịch làm việc cho nhân sự trong phân hệ Nhân sự. Trước đây hệ thống coi mọi người
 đều làm thứ Hai đến thứ Bảy, 08:00–17:00, nên người làm thứ Bảy nửa buổi hay làm ca khác vẫn bị trừ phép như
 người làm cả ngày. Nay nhân sự khai được lịch làm việc theo tuần, gán cho từng người hay cả nhóm, và số ngày
@@ -115,6 +116,41 @@ Mã nguồn: backend/app/modules/work_schedule/, backend/app/modules/leave/workd
 backend/migrations/versions/wsched01_lich_lam_viec.py, frontend-v2/src/modules/hr/ (work-schedule-*, work-roster-*)
 Commit: e6558159 trên erp-v2.
 Deploy: chưa deploy.
+
+---
+
+## bao-CR-604 | Sổ việc trên phân hệ Dự án: chia theo dự án, nhãn và người phụ trách theo tiền tố CR, ảnh đại diện trên thẻ việc và nhật ký, dọn mục còn treo
+- status: xong
+- date: 2026-10-07
+Đại ca xem bảng «ERP v2» trên dev (483 việc dồn một dự án, 20 việc «Đang làm» đã xong từ lâu, mọi việc đều mang tên
+Bảo, ô ảnh đại diện hiện «BẢ») và dặn: viết cập nhật sổ, chuẩn bị đồng bộ lên prod, chia nhóm hoặc gắn nhãn hoặc chia
+đúng dự án, việc của Được thì để Được phụ trách, và sửa ảnh đại diện trên bảng và nhật ký hoạt động cho ổn.
+
+Đã làm:
+1. Sổ: chốt 18 mục còn để «đang làm» dù việc đã xong (bao-CR-504/505/508/509 lên prod 28/09, 485..490 dev 25/09, duoc-CR-473..478
+   dev 24/09, duoc-CR-589, bao-CR-560, ai-CR-002, ai-CR-056, lark-import, hai mục đặt xe), mỗi mục thêm một câu chốt sổ.
+   bao-CR-412 (Danh mục Kho ba trường) vẫn để đó vì đại ca chốt ghi sổ, chưa làm.
+2. Script đồng bộ: người phụ trách mặc định theo TIỀN TỐ mã CR (duoc → Trần Minh Được NSU231, giang → NSU199, bao và ai → NSU209);
+   nhãn «Tag» theo tiền tố (Bảo / Được / Giang / Bot AI), trường Tag thiếu thì tạo, giá trị gán cộng thêm chứ không gỡ nhãn
+   người dùng tự gán, mục khai `- tag:` thì thêm nhãn đó; chia dự án theo từ khóa trong mã + tiêu đề (văn thư → «Công cụ văn
+   thư», đặt xe và duyệt dấu → «Duyệt dấu, Đặt xe», bot và Agent Hub → «Công cụ Ai», nhật ký hệ thống → «Nhật ký hệ thống»,
+   còn lại «ERP v2»), mục khai `- list:` thì theo mục. Việc đã có ở dự án khác thì giữ và báo; chạy `--move` mới bỏ chỗ cũ (vào
+   thùng rác) rồi tạo lại ở dự án đúng, vì API chưa có đường chuyển việc giữa hai dự án. Trùng tên dự án thì ưu tiên bản nằm
+   trong nhóm; nhóm «DX» chưa có (prod) thì script tự tạo.
+3. Giao diện Dự án: thẻ việc và dòng nhật ký hoạt động hiện ảnh thật khi hồ sơ có ảnh, không có thì chữ tắt theo luật chung
+   «chữ đầu của hai từ cuối» («Huỳnh Gia Bảo» → GB) thay cho hai chữ đầu của từ cuối («BẢ»). Máy chủ trả thêm ảnh người thao
+   tác ở nhật ký hoạt động.
+4. Chạy thật trên dev với `--move`: sổ 363 mục chia về 5 dự án (ERP v2 220, Công cụ Ai 95, Duyệt dấu Đặt xe 31, Công cụ văn
+   thư 13, Nhật ký hệ thống 4).
+
+Đường lên prod: đổi `WORK_SYNC_BASE_URL` trong `backend/scripts/.task_sync.env` sang https://erp.degoholding.vn cùng tài
+khoản prod có quyền work_task tạo/sửa và đọc hồ sơ nhân sự (đại ca tự điền, tệp không commit), chạy `--dry-run` xem trước rồi
+chạy thật; prod chưa có dự án nào nên không cần `--move`.
+
+Kiểm: máy chủ 4 tệp bài kiểm phân hệ Dự án xanh; bản mới kiểm kiểu 0 lỗi, lint 0 lỗi, 438 bài phân hệ Dự án xanh.
+Mã nguồn: `backend/scripts/sync_task_journal.py`, `backend/app/modules/work/activity_service.py`,
+`frontend-v2/src/modules/work/utils/people.ts`, `components/task-card.tsx`, `components/activity-feed.tsx`, `types/activity.ts`.
+Deploy: DEV 07/10/2026; prod chờ đại ca.
 
 ---
 
@@ -1225,8 +1261,9 @@ ba commit phân quyền báo cáo + K3 của anh Được. Build ảnh trước 
 ---
 
 ## bao-CR-560 | Chép xe và tài xế từ dev lên prod để chuẩn bị đồng bộ app đặt xe cũ
-- status: dang-lam
+- status: xong
 - date: 2026-10-02
+Chốt sổ 07/10/2026: việc này đã xong (dữ liệu prod 02/10, đồng bộ đã bật); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca muốn đồng bộ dữ liệu prod của app đặt xe và duyệt dấu cũ sang ERP prod, và bảo chép xe với tài
 xế từ dev lên vì dữ liệu dev là đúng. Prod trước đó chưa có xe hay tài xế nào, trong khi vòng quét đồng
 bộ không tự tạo hai danh mục này.
@@ -2406,8 +2443,9 @@ Deploy: prod `79e7cee4`, alembic `c496a1b2d3e4`, sao lưu `~/proc_backups/procur
 và `~/proc_backups/orphans_truoc_don_20260928/`
 
 ## bao-CR-509 | Nút «Cập nhật theo công nợ» cho YCTT khi ĐMH bị sửa sau khi lập phiếu
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 YCTT (yêu cầu thanh toán) chụp lại số đề nghị chi, mã PO và số hóa đơn ngay lúc lập. Khi
 người dùng sửa ĐMH (đơn mua hàng) sau đó thì công nợ đổi theo, nhưng YCTT vẫn đứng ở số cũ.
 Khách chốt ngày 28/09 muốn có nút nạp lại YCTT theo công nợ hiện tại, và em đã làm nút
@@ -2443,8 +2481,9 @@ Mã nguồn: `payment_request/service.py` (`payables_of_line`, `plan_refresh`, `
 `frontend/src/pages/PaymentRequestDetail.tsx` · `test/backend/test_yctt_cap_nhat_theo_cong_no.py`
 
 ## bao-CR-508 | Người dùng tự sửa số điện thoại, địa chỉ và người báo tin ở Trang cá nhân
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Khách chốt ngày 28/09 rằng ai đã có hồ sơ nhân sự cũng phải tự sửa được thông tin liên hệ
 của chính mình, không phải nhờ phòng Nhân sự. Em mở cho mọi người tự sửa đúng bốn thứ trên
 Trang cá nhân: số điện thoại, địa chỉ thường trú, địa chỉ hiện nay và danh sách người báo tin
@@ -2503,8 +2542,9 @@ Mã nguồn: `hr/pages/leave-request-detail-page.tsx` · `hr/components/leave-ap
 `approval/components/approval-trail-card.tsx` (prop `hidePrint`)
 
 ## bao-CR-505 | Đơn nghỉ phép: đính kèm tệp và in ảnh đính kèm sau tờ đơn
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Khách muốn khi lập đơn nghỉ phép thì đính kèm được tệp, ví dụ ảnh giấy khám bệnh hoặc
 bản PDF, và khi in đơn thì mọi ảnh đính kèm được in theo ở mặt sau, mỗi ảnh một trang
 A4. Em dùng lại cửa đính kèm dùng chung của hệ thống chứ không dựng cửa mới: khai loại
@@ -2521,8 +2561,9 @@ không lỗi. Đã commit, đẩy lên nhánh erp-v2 và deploy dev ngày 28/09;
 Mã nguồn: `core/file_registry.py` (FILE_POLICY, PRIVATE_ENTITIES), `core/attachment_scope.py` (_ensure_leave_request), `modules/attachment/controller.py` (_block_leave_request_locked), `frontend-v2/src/modules/hr/components/leave-attachments-card.tsx`, `hr/pages/leave-request-print-page.tsx`, `hr/hooks/use-leave-print-images.ts`, `test/backend/test_nghi_phep_dinh_kem.py`.
 
 ## bao-CR-504 | Diễn tập đẩy erp-v2 lên prod trên bản sao dữ liệu thật và vá bốn lỗi phần thu mua
-- status: dang-lam
+- status: xong
 - date: 2026-09-28
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09 (đợt gom erp-v2)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca chốt đẩy toàn bộ erp-v2 lên prod lúc 12 giờ trưa 28/09 và dặn kiểm kỹ phần thu mua vì
 đang có người dùng thật. Em lấy bản sao dữ liệu prod về máy, chạy đủ 48 migration và bước seed
 như prod sẽ chạy, rồi so trước và sau cho cả 234 tài khoản: số yêu cầu mua hàng, yêu cầu báo
@@ -2955,8 +2996,9 @@ trong đợt 5abd5dc3 và migration đã chạy trên prod. Còn lại đúng m�
 dịch vụ việc nền.
 
 ## lark-import | Đồng bộ task từ Lark sang phân hệ Dự án (dev)
-- status: dang-lam
+- status: xong
 - date: 2026-09-14
+Chốt sổ 07/10/2026: việc này đã xong (đã nhập xong, sổ .md là nguồn chính từ 14/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đã đánh giá là làm được: Lark có cửa cho phần mềm ngoài gọi vào, chỉ cần lập một ứng
 dụng riêng của công ty và xin quyền đọc công việc; hoặc đọc qua bảng dữ liệu của Lark.
 Đang chờ đại ca trả lời hai câu mới làm tiếp được: task hiện nằm ở phần Nhiệm vụ của
@@ -3930,9 +3972,10 @@ DEMO-CR310-02, hai mã hàng NAP0185 và VT0175.
 Tham chiếu: biểu mẫu chung 003/BM/PKT.
 
 ## dong-bo-datxe-plan | Nối app đặt xe cũ (Firebase) với ERP — khảo sát và soạn kế hoạch
-- status: dang-lam
+- status: xong
 - date: 2026-09-15
 - list: Duyệt dấu, Đặt xe
+Chốt sổ 07/10/2026: việc này đã xong (kế hoạch đã chốt, P1-P3 đã dựng (bao-CR-577/596)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Tham chiếu: phần nạp dữ liệu của cụm này ghi trong sổ thay đổi dưới mã bao-CR-415; khóa task
 ở sổ nhật ký giữ nguyên để không đẻ thêm task mới trên phân hệ Dự án.
 Đại ca: "tôi có source app đặt xe là app cũ, giờ tôi có hệ thống ERP... làm cách nào
@@ -5889,9 +5932,10 @@ Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`cleanup_task_branch`, `d
 Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`timing_line`, `fmt_minutes`) · `service.py` (`show_task`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
 
 ## ai-CR-002 | Dựng bậc 1 của Agent Hub: bot Telegram gom việc, viết bản đề xuất và tra kho tài liệu
-- status: dang-lam
+- status: xong
 - date: 2026-09-18
 - pic: NSU209
+Chốt sổ 07/10/2026: việc này đã xong (bậc 1 đã chạy trên dev từ 25/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca duyệt bản thiết kế Agent Hub rồi ra lệnh làm bậc 1. Bậc này dựng một con bot quản lý
 nhận việc qua Telegram: đại ca nhắn một câu mô tả việc cần làm, bot gom những tin cùng loại
 lại thành một đầu việc, tóm tắt, rồi tự viết ra một bản đề xuất cách sửa kèm danh sách tệp nó
@@ -6418,9 +6462,10 @@ Commit: 277b0cd2 (gom chung CR-427/428/430).
 Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
 
 ## dong-bo-datxe-app-cu-p2 | Bên app đặt xe cũ: đóng dấu thời điểm sửa và móc đẩy phiếu thẳng sang ERP
-- status: dang-lam
+- status: xong
 - date: 2026-09-19
 - list: Duyệt dấu, Đặt xe
+Chốt sổ 07/10/2026: việc này đã xong (đã lên app cũ, bật đồng bộ prod 02/10); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 
 Phần việc nằm bên app cũ của chặng hai, tức chiều app cũ đẩy phiếu sang ERP. Trước đợt này ERP
 đã có sẵn cửa nhận và hai vòng quét nền, nhưng phía app cũ chưa có gì: phiếu sửa xong không ai
@@ -10271,8 +10316,9 @@ doc/erp/hai-quan/01 · 02 · 03
 Cập nhật 25/09/2026: đại ca cho chạy seed bài hướng dẫn trên dev — đã tạo bài «Tra cứu giá hải quan» (id 100) dưới nhóm Dành cho Nhân viên Mua hàng.
 
 ## duoc-CR-473 | Màn tạo văn bản cho biết trước ai sẽ duyệt
-- status: dang-lam
+- status: xong
 - date: 2026-09-23
+Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca muốn người soạn văn bản biết văn bản của mình sẽ qua tay những ai trước khi bấm gửi
 duyệt. Em đã thêm thẻ «Người duyệt dự kiến» ở màn tạo văn bản và ở chi tiết văn bản khi văn
 bản còn nháp hoặc bị trả lại. Thẻ liệt kê từng chặng duyệt và tên người duyệt, nói rõ khi
@@ -10294,8 +10340,9 @@ Mã nguồn: `backend/app/modules/approval/preview_service.py` ·
 `frontend-v2/src/modules/document/components/document-approver-preview-card.tsx`.
 
 ## duoc-CR-474 | Sổ văn bản có lại bảng văn bản trong sổ
-- status: dang-lam
+- status: xong
 - date: 2026-09-23
+Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca muốn bấm vào một sổ văn bản là thấy danh sách văn bản trong sổ, rồi bấm vào từng văn
 bản để xem chi tiết. Bảng này từng bị gỡ ngày 25/08/2026 theo CR-175; nay dựng lại theo yêu
 cầu mới. Chi tiết sổ có thêm tab «Văn bản trong sổ»: văn bản có số vào sổ mới nhất nằm trên
@@ -10315,8 +10362,9 @@ Mã nguồn: `backend/app/modules/document/controller.py` ·
 `frontend-v2/src/modules/document/pages/document-book-detail-page.tsx`.
 
 ## duoc-CR-475 | Nền máy chủ cho cây thư mục văn bản và quyền trên thư mục
-- status: dang-lam
+- status: xong
 - date: 2026-09-23
+Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Để xếp văn bản vào thư mục và tìm lại theo thư mục, em dựng phần nền phía máy chủ: một cây
 thư mục chung cho cả tập đoàn, mỗi pháp nhân một thư mục gốc do hệ thống tự tạo, một văn bản
 nằm được ở nhiều thư mục với một thư mục chính. Văn bản không chọn thư mục thì vào thư mục
@@ -10342,8 +10390,9 @@ Mã nguồn: `backend/app/modules/doc_catalog/folder_link_service.py` ·
 khóa quyền `doc_folder` · migration `e4a1c9d572b6`, `1c035ad17323` và `32b55e9888f6`.
 
 ## duoc-CR-476 | Màn Thư mục văn bản kiểu Google Drive, cây kiểu VS Code, chọn thư mục khi tạo văn bản
-- status: dang-lam
+- status: xong
 - date: 2026-09-23
+Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca muốn có trang quản lý cây thư mục văn bản làm kỹ để phục vụ tìm kiếm, lúc tạo văn
 bản thì chọn được thư mục lưu, và tối cùng ngày chốt thêm là giao diện phải giống Google
 Drive, cây giống VS Code, phân quyền thì chọn được nhiều người một lần. Em đã dựng trang
@@ -10371,8 +10420,9 @@ Mã nguồn: `frontend-v2/src/modules/document/pages/document-folder-page.tsx` �
 `backend/app/modules/doc_catalog/folder_access_bulk_service.py`.
 
 ## duoc-CR-477 | Tìm toàn văn văn bản: tìm cả trong nội dung soạn thảo và tệp đính kèm
-- status: dang-lam
+- status: xong
 - date: 2026-09-23
+Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Trước đây ô tìm của màn Văn bản chỉ dò trên vài cột như tên và số hiệu. Em đã làm thêm
 công tắc «Tìm cả nội dung»: bật lên thì hệ thống tìm cả trong phần soạn thảo và chữ bên
 trong tệp đính kèm (Word, Excel, PDF có lớp chữ, tệp chữ thường), không phân biệt hoa
@@ -10398,8 +10448,9 @@ Mã nguồn: `backend/app/modules/document/search_service.py` ·
 `747c71718181` và `83679db84fd1`.
 
 ## duoc-CR-478 | Nút «Tạo, không soạn thảo», tab Tệp của văn bản, và công tắc tạm tắt hạn xem tệp
-- status: dang-lam
+- status: xong
 - date: 2026-09-23
+Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Nhiều văn bản chỉ là tệp có sẵn như bản scan, văn bản đến hay hợp đồng đã ký, không cần
 soạn gì. Em thêm nút «Tạo, không soạn thảo» ở màn tạo văn bản: tạo xong hệ thống mở thẳng
 tab «Tệp» mới của văn bản. Tab này có một tệp thì hiện luôn tệp đó, có nhiều tệp thì hiện
@@ -10548,8 +10599,9 @@ Mã nguồn: docker-compose.runner.yml · docker/Dockerfile.tunnel · docker/tun
 .env.runner.example · .gitignore · doc/agent-hub/05-may-sua-ma.md
 
 ## ai-CR-056 | Đưa Đậu Đậu lên dev: gộp nhánh, compose dev có profile bot, chờ đại ca đẩy và dựng
-- status: dang-lam
+- status: xong
 - date: 2026-09-25
+Chốt sổ 07/10/2026: việc này đã xong (Đậu Đậu đã lên dev 25/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Phase 2 phần (c). Đại ca cho làm hết các phase không cần hỏi và cho thao tác trên máy chủ dev.
 
 Đã làm. Một, gộp nhánh dev mới nhất vào nhánh bot: mười ba commit về thư mục văn bản và phòng xử
@@ -10827,8 +10879,9 @@ Kiểm: một bài mới (cùng lượt chạy 231 bài xanh).
 Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/service.py
 
 ## bao-CR-485..490 | Gom bảy góp ý màn YCBG/YCMH thành năm cụm, chia hai phiên
-- status: dang-lam
+- status: xong
 - date: 2026-09-25
+Chốt sổ 07/10/2026: việc này đã xong (DEV 25/09 (migration c490e1f2a3b4)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
 Đại ca dùng thử tài khoản nhà máy trên dev và nêu bảy điểm. Đã rà mã để đánh giá từng
 điểm, gom thành năm cụm và đặt chỗ số CR 485 đến 490 trong sổ thay đổi, ghi bảng chia
 việc ở kiểm kê việc còn lại mục 7.2. Erp Agent 1 nhận cụm A (sổ thao tác một dòng Duyệt,

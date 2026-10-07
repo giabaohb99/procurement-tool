@@ -5,11 +5,16 @@
  * chép tay thì thẻ và panel lệch chữ tắt của cùng một người.
  */
 
-/** Chữ tắt trên avatar: hai chữ cái đầu của TỪ CUỐI — tên Việt gọi theo tên. */
+import { nameInitials } from '@/shared/utils/name-initials'
+
+/**
+ * Chữ tắt trên avatar: chữ cái đầu của HAI TỪ CUỐI («Huỳnh Gia Bảo» → «GB»),
+ * cùng luật với bảng dự án và menu tài khoản. Trước bao-CR-604 thẻ việc và
+ * nhật ký lấy hai chữ đầu của TỪ CUỐI («BẢ») — đại ca soi 07/10 thấy xấu và
+ * khó nhận ra người. Tên rỗng trả «?» để ô không trống.
+ */
 export function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return '?'
-  return words[words.length - 1].slice(0, 2).toUpperCase()
+  return nameInitials(name) || '?'
 }
 
 /** Tên bày ra cho một nhân sự; chưa có tên thì lấy mã số làm chỗ bấu víu. */
