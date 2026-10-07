@@ -12869,3 +12869,4 @@ thời gian chờ tính theo độ dài đoạn ghi âm (hai phút cộng một 
 một lần bằng model dự phòng, hỏng cả hai thì báo người gửi một câu để gửi lại sau. Bài kiểm phần biên bản họp chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meetings.py (transcribe_timeout, gemini_transcribe) · test/backend/test_agent_hub.py
+Deploy: dev 07/10 (Agent 1 gộp 173895f6, dựng lại api, celery-worker, celery-beat, agent-poller); prod giữ lại.
