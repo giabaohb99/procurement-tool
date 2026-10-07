@@ -7950,3 +7950,144 @@ def test_tep_hop_tu_chat_la_hoac_nhom_thi_lo_di(db, bot, monkeypatch):
     service.handle_message(db, {"chat": {"id": "-100123", "type": "supergroup"}, "message_id": 4, "audio": audio})
     assert sent == [] and db.query(AgentMeeting).count() == 0
 
+
+# ---------------------------------------------------------------------------
+# ai-CR-105 — bot trong nhóm Telegram: ghi lặng, chủ / thành viên nhờ tóm tắt riêng; đọc báo cáo gửi riêng
+# ---------------------------------------------------------------------------
+def _docx_bytes(lines):
+    import io as _io
+
+    from docx import Document
+
+    d = Document()
+    for ln in lines:
+        d.add_paragraph(ln)
+    buf = _io.BytesIO()
+    d.save(buf)
+    return buf.getvalue()
+
+
+def _group_msg(text="", mid=1, from_id=555, name="Chị Mi", **extra):
+    return {"chat": {"id": -100777, "type": "supergroup", "title": "Kế toán DEGO"}, "message_id": mid,
+            "from": {"id": from_id, "first_name": name}, "date": 1791340000 + mid, **({"text": text} if text else {}),
+            **extra}
+
+
+def test_doc_text_doc_duoc_word_excel_van_ban():
+    import io as _io
+
+    from openpyxl import Workbook
+
+    from app.modules.agent_hub import doc_text
+
+    assert "Doanh thu quý 3" in doc_text.extract("bc.docx", "", _docx_bytes(["Doanh thu quý 3", "tăng 12%"]))
+    wb = Workbook()
+    wb.active.append(["Mặt hàng", "Số lượng"])
+    wb.active.append(["Thép", 20])
+    buf = _io.BytesIO()
+    wb.save(buf)
+    assert "Thép | 20" in doc_text.extract("so.xlsx", "", buf.getvalue())
+    assert doc_text.extract("a.txt", "text/plain", "xin chào".encode()) == "xin chào"
+    assert doc_text.readable("bc.pdf", "") and not doc_text.readable("x.zip", "application/zip")
+    with pytest.raises(doc_text.DocTextError):
+        doc_text.extract("rong.txt", "text/plain", b"   ")
+
+
+def test_bot_trong_nhom_ghi_lang_chu_doc_duoc_nguoi_la_khong(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import groups
+    from app.modules.agent_hub.model import AgentGroup, AgentGroupMessage
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    service, sent, asked = bot
+    _owner_link(db, seed.u_req_id)                                   # chat riêng 12345 = id Telegram của chủ
+    groups.on_member_update(db, {"chat": {"id": -100777, "type": "supergroup", "title": "Kế toán DEGO"},
+                                 "from": {"id": 12345}, "new_chat_member": {"status": "member"}})
+    db.commit()
+    g = db.query(AgentGroup).one()
+    assert g.owner_user_id == seed.u_req_id and g.active
+    service.handle_message(db, _group_msg("chốt thanh toán NCC Hòa Phát thứ 6", 1))
+    service.handle_message(db, _group_msg(mid=2, caption="báo cáo tuần",
+                                          document={"file_id": "DOC1", "file_name": "bao-cao.docx",
+                                                    "mime_type": "application/vnd.openxmlformats-officedocument."
+                                                                 "wordprocessingml.document", "file_size": 9000}))
+    assert sent == [] and asked == []                                # bot im lặng trong nhóm
+    assert db.query(AgentGroupMessage).count() == 2
+    owner, other = db.get(User, seed.u_req_id), db.get(User, seed.u_nstm_id)
+    out = T.run_tool(db, owner, "read_group_messages", {"group": "kế toán", "hours": 24 * 3650})
+    assert out["count"] == 2 and "Chị Mi: chốt thanh toán NCC Hòa Phát thứ 6" in out["messages"][0]
+    assert out["files"][0]["name"] == "bao-cao.docx"
+    ref = out["files"][0]["file_ref"]
+    #  Người không phải thành viên: không thấy nhóm, không đọc được.
+    monkeypatch.setattr(groups, "is_member", lambda g, tg: False)
+    assert T.run_tool(db, other, "list_my_groups", {})["count"] == 0
+    assert "error" in T.run_tool(db, other, "read_group_messages", {"group": "kế toán"})
+    #  Thành viên Telegram xác nhận: đọc được.
+    from datetime import datetime, timedelta
+    from app.modules.agent_hub.model import AgentChatLink
+    db.add(AgentChatLink(user_id=other.id, chat_id="888", linked_at=datetime.now(),
+                         expires_at=datetime.now() + timedelta(days=30), created_by=0, updated_by=0))
+    db.commit()
+    monkeypatch.setattr(groups, "is_member", lambda g, tg: tg == 888)
+    assert T.run_tool(db, other, "list_my_groups", {})["groups"][0]["title"] == "Kế toán DEGO"
+    #  Đọc tệp Word trong nhóm.
+    monkeypatch.setattr(service.telegram, "download_file",
+                        lambda fid, *, max_bytes: (_docx_bytes(["Tổng chi tuần: 1,2 tỷ"]), "x.docx"))
+    got = T.run_tool(db, owner, "read_group_file", {"group": "1", "file_ref": ref})
+    assert "1,2 tỷ" in got["text"] and got["from"] == "Chị Mi"
+    #  Bot bị mời ra: ngừng nhận đọc.
+    groups.on_member_update(db, {"chat": {"id": -100777, "type": "supergroup"}, "new_chat_member": {"status": "left"}})
+    db.commit()
+    assert T.run_tool(db, owner, "list_my_groups", {})["count"] == 0
+
+
+def test_tep_ghi_am_trong_nhom_chuyen_sang_bien_ban_gui_rieng(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import groups, meetings
+    from app.modules.agent_hub.model import AgentMeeting
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    service, _, _ = bot
+    _owner_link(db, seed.u_req_id)
+    groups.on_member_update(db, {"chat": {"id": -100777, "type": "supergroup", "title": "Kế toán DEGO"},
+                                 "from": {"id": 12345}, "new_chat_member": {"status": "member"}})
+    service.handle_message(db, _group_msg(mid=3, audio={"file_id": "AU1", "mime_type": "audio/mpeg", "title": "họp sáng"}))
+    db.commit()
+    ref = T.run_tool(db, db.get(User, seed.u_req_id), "read_group_messages", {"group": "kế toán", "hours": 24 * 3650})["files"][0]["file_ref"]
+    started = []
+    monkeypatch.setattr(meetings, "dispatch", lambda mid: started.append(mid))
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "read_group_file", {"group": "kế toán", "file_ref": ref})
+    assert out["started"] and started
+    m = db.get(AgentMeeting, started[0])
+    assert m.chat_id == "12345" and m.source_ref == "AU1"           # biên bản gửi RIÊNG, không vào nhóm
+
+
+def test_bao_cao_gui_rieng_doc_roi_tra_loi(db, bot, seed, monkeypatch):
+    service, sent, asked = bot
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(service.telegram, "download_file",
+                        lambda fid, *, max_bytes: (_docx_bytes(["Lợi nhuận tháng 9 đạt 3 tỷ"]), "x.docx"))
+    msg = {"chat": {"id": "12345", "type": "private"}, "message_id": 9, "caption": "lợi nhuận bao nhiêu",
+           "document": {"file_id": "D9", "file_name": "bc-thang9.docx",
+                        "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}}
+    service.handle_message(db, msg)
+    assert asked and asked[-1].startswith("lợi nhuận bao nhiêu") and "3 tỷ" in asked[-1]
+    #  Chat lạ gửi tệp: im lặng.
+    n = len(asked)
+    service.handle_message(db, {**msg, "chat": {"id": "999", "type": "private"}, "message_id": 10})
+    assert len(asked) == n and sent == []
+
+
+def test_don_tin_nhom_qua_han(db):
+    from datetime import timedelta
+
+    from app.modules.agent_hub import groups
+    from app.modules.agent_hub.model import AgentGroupMessage
+    from app.modules.agent_hub.timeutil import now_utc
+
+    db.add(AgentGroupMessage(group_id=1, text="cũ", sent_at=now_utc() - timedelta(days=40)))
+    db.add(AgentGroupMessage(group_id=1, text="mới", sent_at=now_utc() - timedelta(days=2)))
+    db.commit()
+    assert groups.purge(db, days=30) == 1
+    assert [m.text for m in db.query(AgentGroupMessage).all()] == ["mới"]
+

@@ -363,6 +363,37 @@ class AgentMeeting(Base, AuditMixin):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
 
+class AgentGroup(Base, AuditMixin):
+    """Nhóm Telegram bot đang ở (ai-CR-105). Chủ = người đã thêm bot (`owner_user_id` tài khoản ERP, 0 nếu chưa rõ)."""
+
+    __tablename__ = "tab_agent_group"
+
+    chat_id: Mapped[str] = mapped_column(String(50), default="", index=True, unique=True)
+    title: Mapped[str] = mapped_column(String(200), default="")
+    owner_user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    owner_tg_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    joined_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    left_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentGroupMessage(Base, AuditMixin):
+    """Một tin trong nhóm bot đang ở (ai-CR-105) — giữ AGENT_GROUP_RETENTION_DAYS ngày. `file` = siêu dữ liệu tệp
+    (chưa tải), đọc khi người dùng nhờ. `sent_at` giờ UTC."""
+
+    __tablename__ = "tab_agent_group_message"
+
+    group_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    tg_message_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    from_tg_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    from_name: Mapped[str] = mapped_column(String(120), default="")
+    text: Mapped[str] = mapped_column(Text, default="")
+    file: Mapped[dict | None] = mapped_column(JSON, default=None, nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+    __table_args__ = (Index("ix_agent_group_msg_group_sent", "group_id", "sent_at"),)
+
+
 class AgentReminder(Base, AuditMixin):
     """Lời nhắc đặt bằng câu nói (ai-CR-060, T-10): tới `due_at` (UTC) thì bot nhắn lại đúng `chat_id`."""
 

@@ -364,6 +364,8 @@ class Settings(BaseSettings):
     AGENT_ERP_URL: str = ""
     AGENT_TICKET_DEPARTMENTS: str = ""
     AGENT_FILE_MAX_MB: int = 20
+    # ai-CR-105: số ngày giữ tin các nhóm Telegram bot đang ở (vòng dọn hằng ngày).
+    AGENT_GROUP_RETENTION_DAYS: int = 30
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
     AGENT_LOCAL_DOCS_DIR: str = ""

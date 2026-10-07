@@ -268,7 +268,8 @@ def fetch_updates(offset: int, *, timeout: int = POLL_TIMEOUT) -> list[dict]:
             "timeout": timeout,
             #  Chỉ xin hai loại mình xử. Không lọc thì mỗi lần ai đó vào/ra nhóm là
             #  một update rỗng làm con trỏ nhảy, không hại nhưng tốn lượt.
-            "allowed_updates": ["message", "callback_query"],
+            #  ai-CR-105: + my_chat_member — bot được thêm vào / mời ra khỏi nhóm (ghi chủ nhóm).
+            "allowed_updates": ["message", "callback_query", "my_chat_member"],
         },
         timeout=timeout + HTTP_TIMEOUT,
     )

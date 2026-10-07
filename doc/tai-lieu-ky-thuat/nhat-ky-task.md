@@ -12726,3 +12726,18 @@ dựng lại vì thêm ffmpeg. Chưa thử bằng tệp họp thật, chờ đ�
 
 Mã nguồn: backend/app/modules/agent_hub/meetings.py (mới) · agent_hub/service.py (_meeting_by_message) · tác vụ agent.meeting_process · docker/Dockerfile.api · migration meet01
 Deploy: dev 07/10, erp-v2 42c5832d (Agent 1 sao lưu DB dev, dựng lại image có ffmpeg 7.1.5, migration meet01 đã chạy); prod giữ lại. Lưu ý đợt prod kế: image api prod cũng sẽ có ffmpeg.
+
+## ai-CR-105 | Trợ lý đọc nhóm Telegram giúp chủ, đọc báo cáo gửi riêng
+- status: xong
+- date: 2026-10-07
+Theo định hướng trợ lý của từng người, ai thêm bot vào nhóm Telegram nào thì bot ghi lặng tin và tệp của nhóm đó, không
+nói gì trong nhóm. Chủ nhóm, tức người đã thêm bot, hoặc người đã đăng nhập ERP mà Telegram xác nhận là thành viên, nhắn
+riêng cho bot kiểu «nhóm kế toán hôm nay bàn gì» là bot tổng hợp ý chính, quyết định, việc được giao và liệt kê tệp kèm số
+thứ tự; nhờ «tóm tắt tệp số 2» thì bot đọc tệp pdf, Word, Excel; tệp ghi âm hoặc video thì chuyển sang làm biên bản họp
+và gửi riêng. Người dùng cũng gửi được báo cáo pdf, Word, Excel vào chat riêng để bot đọc và trả lời theo chú thích; nhờ
+viết báo cáo thì bot xuất ra Word bằng công cụ sẵn có. Tin nhóm giữ 30 ngày rồi tự dọn. Đã tra tài liệu Zalo: bot chính
+thức trong nhóm chỉ thấy tin trả lời hoặc nhắc tên bot, nên phần nhóm Zalo chờ đại ca chọn hướng. Việc tay: tắt chế độ
+riêng tư của bot trong BotFather. Không liên quan bot IDA.
+
+Mã nguồn: backend/app/modules/agent_hub/groups.py · agent_hub/doc_text.py · assistant/tools/group_tool.py · agent_hub/service.py (_document_by_message) · migration grp01 · doc/agent-hub/12-de-xuat-tom-tat-nhom.md
+

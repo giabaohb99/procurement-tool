@@ -248,6 +248,12 @@ if settings.AGENT_HUB_ENABLED:
             "schedule": crontab(minute="*/10"),
             "options": {"expires": 540},
         },
+        #  ai-CR-105: dọn tin nhóm Telegram quá hạn giữ (mặc định 30 ngày), 03:20 mỗi đêm.
+        "agent-group-purge": {
+            "task": "agent.group_purge",
+            "schedule": crontab(hour=3, minute=20),
+            "options": {"expires": 3000},
+        },
         "agent-runner-watch": {
             "task": "agent.runner_watch",
             "schedule": crontab(minute="*"),

@@ -118,6 +118,10 @@ TOOL_KHONG_PHAM_VI = {
     "add_personal_item": "ghi lịch trình / chi tiêu / món cần mua vào thẻ riêng của chính người hỏi",
     "list_personal_items": "xem thẻ riêng của chính người hỏi",
     "mark_personal_item": "đánh dấu xong / bỏ một món trong thẻ riêng của chính người hỏi",
+    #  ai-CR-105: nhóm Telegram bot đang ở — chỉ chủ nhóm / thành viên Telegram xác nhận (groups.can_read), không phải ERP.
+    "list_my_groups": "nhóm Telegram người hỏi là chủ hoặc thành viên",
+    "read_group_messages": "tin của nhóm người hỏi đọc được (chủ / thành viên)",
+    "read_group_file": "tệp trong nhóm người hỏi đọc được (chủ / thành viên)",
 }
 
 
@@ -133,7 +137,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 59, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 62, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

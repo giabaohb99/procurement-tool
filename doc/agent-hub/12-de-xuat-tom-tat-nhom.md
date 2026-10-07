@@ -1,45 +1,55 @@
-# 12 — Đề xuất: bot trong nhóm tóm tắt tin nhắn và tệp (Telegram + Zalo)
+# 12 — Trợ lý cá nhân đọc nhóm: tóm tắt tin nhắn, tệp, đọc và viết báo cáo (Telegram + Zalo)
 
-> Bản 0.1 — 07/10/2026, ý của đại ca: «cài bot vào nhóm thì tóm tắt được tin nhắn của nhóm, rồi gợi ý tóm tắt luôn
-> các tệp gửi trong nhóm», cho cả bot Telegram và bot Zalo. Chưa làm, chờ chốt các câu ở §4.
+> Bản 1.0 — 07/10/2026. Đại ca chốt: **trợ lý của từng người**; ai thêm bot vào nhóm nào thì **nhắn riêng** cho bot
+> để nó tổng hợp, **không cần gọi @bot trong nhóm**; tin gửi riêng cho bot cũng được tóm tắt, ghi nhận; đọc báo cáo,
+> viết báo cáo; làm cho **Telegram và Zalo**; trước mắt nội bộ, khách hàng để sau. **Không liên quan bot IDA** — chỉ
+> mượn ý, không đụng kho `ida-zalo-assistant`.
 
-## 1. Đánh giá nhanh
+## 1. Telegram — XONG đợt 1 (ai-CR-105)
 
-Ý hay và hợp với hướng trợ lý cá nhân: nhóm công việc là chỗ thông tin trôi nhanh nhất, người vắng nửa ngày phải đọc
-lại hàng trăm tin. Phần lớn nền đã có: kho ghi chú, tóm tắt buổi (ai-CR-102), đọc tệp pdf / Word / Excel của Trợ lý,
-biên bản họp từ ghi âm (ai-CR-104), khóa AI từng người (ai-CR-098).
+| Việc | Cách chạy |
+|---|---|
+| Ghi tin nhóm | Bot ở trong nhóm ghi lặng mọi tin + siêu dữ liệu tệp (chưa tải). **Không nói gì trong nhóm** |
+| Chủ nhóm | Người thêm bot vào nhóm (update `my_chat_member`) = chủ, nếu chat riêng của họ đã đăng nhập ERP |
+| Ai đọc được | Chủ nhóm, hoặc người đã đăng nhập ERP mà Telegram xác nhận đang là thành viên nhóm (`getChatMember`) |
+| Hỏi | Nhắn riêng: «nhóm Kế toán hôm nay bàn gì», «tổng hợp nhóm X tuần này», «bot đang ở nhóm nào» |
+| Tệp trong nhóm | Bản tóm tắt liệt kê tệp kèm số thứ tự; «tóm tắt tệp số 2» → đọc pdf / Word / Excel / văn bản; ghi âm / video → biên bản họp gửi riêng |
+| Đọc báo cáo gửi riêng | Gửi tệp pdf / Word / Excel / txt vào chat riêng, chú thích là câu hỏi (trống = tóm tắt) |
+| Viết báo cáo | «viết báo cáo tuần từ nhóm X ra Word» → công cụ xuất Word sẵn có |
+| Tin gửi riêng | Đã có: tóm tắt cuối buổi vào kho (ai-CR-102), tìm lại hội thoại cũ, sổ ghi nhớ |
+| Giữ tin nhóm | 30 ngày (`AGENT_GROUP_RETENTION_DAYS`), dọn lúc 03:20 mỗi đêm |
 
-| Kênh | Đọc tin nhóm | Lịch sử cũ | Tệp | Rủi ro |
-|---|---|---|---|---|
-| **Telegram** | Được, phải TẮT chế độ riêng tư của bot (BotFather → `/setprivacy` → Disable) hoặc cho bot làm quản trị nhóm | Chỉ từ lúc bot vào nhóm (Bot API không đọc tin cũ) | Tải được tệp ≤ 20 MB | Thấp — API chính thức |
-| **Zalo** | Bot IDA đã đọc tin nhóm (tài khoản cá nhân qua `zca-js`), đã lưu tin + ảnh vào kho của nó | Đo 02/10: chỉ khoảng 2 tuần qua bookmarklet Zalo Web | Đã tải tệp đính kèm | Cao hơn — không phải API chính thức, có thể bị khóa tài khoản; Zalo OA không vào được nhóm |
+**Việc tay của đại ca (một lần):** BotFather → `/setprivacy` → chọn bot → **Disable**. Không tắt thì trong nhóm bot chỉ
+thấy lệnh `/…` và tin trả lời bot. Sau khi tắt, **mời bot ra rồi thêm lại** vào các nhóm đã có để Telegram áp chế độ mới.
+Bot chỉ đọc được tin **từ lúc vào nhóm**, không lấy được tin cũ.
 
-## 2. Cách làm đề xuất
+Còn lại (đợt 2): bản tổng hợp tự động mỗi ngày gửi riêng (giờ do từng người bật), màn web xem nhóm.
 
-1. **Lưu tin nhóm** (Telegram): bảng tin nhóm riêng, giữ 30 ngày, chỉ nhóm do người đã đăng nhập ERP thêm bot vào.
-2. **Tóm tắt khi được hỏi**: trong nhóm gọi «@bot tóm tắt hôm nay» / «tóm tắt từ sáng» → bot gửi bản tóm tắt
-   **vào tin riêng** của người hỏi (không làm ồn nhóm); người hỏi phải là thành viên nhóm đó.
-3. **Bản tổng hợp định kỳ** (tùy chọn): 17:30 mỗi ngày gửi riêng cho chủ bot: ý chính, việc được giao, câu hỏi còn treo,
-   **danh sách tệp mới** kèm số thứ tự.
-4. **Gợi ý tóm tắt tệp**: không tự nhắn vào nhóm mỗi khi có tệp; tệp mới nằm trong bản tổng hợp, người dùng nhắn
-   «tóm tắt tệp 2» thì bot đọc tệp đó (pdf / Word / Excel / ảnh; ghi âm / video thì đi đường biên bản họp).
-5. **Zalo**: không viết lại phần đọc nhóm — bot IDA đã có. Hai cách: (a) làm tóm tắt ngay trong IDA (đội IDA, kế hoạch
-   doc/02 của IDA đã có mục brief / báo cáo); (b) IDA chuyển tin nhóm sang Agent Hub qua một đường API, một lõi tóm tắt
-   dùng chung cho cả hai kênh. Em nghiêng (b) về lâu dài, (a) nếu cần nhanh.
+## 2. Zalo — CẦN ĐẠI CA CHỐT HƯỚNG
 
-Ước: Telegram 3–4 ngày công; nối Zalo theo cách (b) thêm 2–3 ngày phía Agent Hub + phần việc bên IDA.
+Đã tra tài liệu chính thức Zalo Bot Platform (`docs.zaloplatforms.com`, 07/10/2026):
 
-## 3. Thứ tự đề xuất
+- Bot Zalo chính thức **vào được nhóm** nhưng tính năng đang **«thử nghiệm nội bộ, sẽ ra mắt»**.
+- Trong nhóm, bot chính thức **chỉ nhận tin trả lời bot hoặc tin @nhắc tên bot** — **không đọc được toàn bộ tin nhóm**.
+  Tức là **không tóm tắt nhóm được** bằng đường chính thức.
+- Zalo OA (tài khoản doanh nghiệp) không vào được nhóm.
 
-Làm sau bước 10.2 của biên bản họp (khi đã thử tệp họp thật), hoặc chen trước nếu đại ca cần gấp — hai việc độc lập.
+Ba hướng:
 
-## 4. Câu chờ đại ca chốt
+| Hướng | Được | Mất |
+|---|---|---|
+| **A. Bot Zalo chính thức** | Đúng luật Zalo, ổn định | Không đọc được tin nhóm → chỉ làm được trợ lý chat riêng (hỏi đáp, đọc tệp gửi riêng, biên bản họp, sổ nhớ) |
+| **B. Tài khoản Zalo cá nhân làm bot** (thư viện không chính thức kiểu `zca-js`, tự dựng phía mình) | Đọc được toàn bộ tin nhóm như Telegram | Không phải cách Zalo cho phép, **có thể bị khóa tài khoản**; Zalo đổi giao thức là gãy; cần một tài khoản Zalo riêng cho bot |
+| **C. Chờ Zalo mở nhóm cho bot chính thức** | Đường chính thức | Chưa biết bao giờ, và có thể vẫn chỉ nhận @nhắc tên |
+
+Em đề xuất: làm **A ngay** (cùng lõi với Telegram, 3–4 ngày công: kênh Zalo vào cùng bộ xử lý tin, đăng nhập bằng mã như
+Telegram) để người dùng Zalo có trợ lý riêng; phần **tóm tắt nhóm Zalo** chỉ làm theo **B** nếu đại ca chấp nhận rủi ro
+khóa tài khoản và dùng một số Zalo riêng cho bot.
+
+## 3. Câu chờ đại ca
 
 | Mã | Câu | Em đề xuất |
 |---|---|---|
-| G1 | Ai được nhờ tóm tắt nhóm: mọi thành viên, hay chỉ người đã thêm bot vào? | Mọi thành viên đã đăng nhập ERP, chạy bằng khóa AI của họ |
-| G2 | Bản tóm tắt gửi đâu: vào nhóm hay tin riêng người hỏi? | Tin riêng; chỉ gửi vào nhóm khi nói rõ «gửi vào nhóm» |
-| G3 | Có bản tổng hợp tự động mỗi ngày không, mấy giờ, gửi cho ai? | Có, 17:30, gửi riêng người đã bật |
-| G4 | Giữ tin nhóm bao lâu? | 30 ngày |
-| G5 | Zalo: làm trong IDA, hay nối IDA vào lõi Agent Hub? | Nối vào lõi Agent Hub (một nơi tóm tắt, một nơi giữ khóa) |
-| G6 | Tắt chế độ riêng tư của bot Telegram (đại ca thao tác trong BotFather, em hướng dẫn) | — |
+| Z1 | Zalo đi hướng nào (A / B / C ở §2)? | A ngay; B chỉ khi chấp nhận rủi ro |
+| Z2 | Nếu B: dùng số Zalo nào làm bot (số riêng, không phải số cá nhân của ai)? | Số riêng |
+| G3 | Bản tổng hợp nhóm tự động mỗi ngày: có làm, mấy giờ? | Có, 17:30, người dùng tự bật |

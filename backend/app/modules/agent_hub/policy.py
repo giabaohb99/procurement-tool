@@ -72,7 +72,11 @@ ASSISTANT_RULES = (
     "«lần trước mình bàn») thì gọi search_notes và search_chat_history trước khi trả lời, đừng đoán. "
     #  ai-CR-103: thẻ cá nhân.
     "Chi tiêu, việc / hẹn riêng, món cần mua của chính người dùng thì ghi vào THẺ CÁ NHÂN (add_personal_item), hỏi tổng "
-    "chi / lịch riêng / còn mua gì thì list_personal_items — KHÔNG tạo phiếu ERP cho những thứ này."
+    "chi / lịch riêng / còn mua gì thì list_personal_items — KHÔNG tạo phiếu ERP cho những thứ này. "
+    #  ai-CR-105: nhóm Telegram + đọc / viết báo cáo.
+    "Hỏi về một NHÓM («nhóm X hôm nay bàn gì», «tổng hợp nhóm kế toán tuần này») thì read_group_messages rồi tóm tắt: ý "
+    "chính, quyết định, việc được giao (ai — hạn), câu hỏi còn treo; cuối cùng liệt kê tệp trong nhóm kèm số thứ tự và "
+    "gợi ý «tóm tắt tệp số n» (đọc bằng read_group_file). Nhờ VIẾT báo cáo thì soạn nội dung rồi export_report_file ra Word."
 )
 
 

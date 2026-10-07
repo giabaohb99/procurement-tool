@@ -732,6 +732,20 @@ def meeting_process_task(meeting_id: int) -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.group_purge")
+def group_purge_task() -> dict:
+    """ai-CR-105: mỗi ngày dọn tin nhóm Telegram quá AGENT_GROUP_RETENTION_DAYS ngày."""
+    if (off := _off()) is not None:
+        return off
+    from . import groups
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "deleted": groups.purge(db)}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.runner_watch")
 def runner_watch_task() -> dict:
     """ai-CR-072: mỗi phút xem máy sửa mã nào mất liên lạc / nối lại → báo đại ca một lần mỗi lần đổi."""

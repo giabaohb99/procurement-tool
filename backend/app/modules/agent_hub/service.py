@@ -169,6 +169,10 @@ def poll_once(db: Session, *, timeout: int = telegram.POLL_TIMEOUT) -> int:
         try:
             if upd.get("callback_query"):
                 handle_callback(db, upd["callback_query"])
+            elif upd.get("my_chat_member"):
+                from . import groups
+
+                groups.on_member_update(db, upd["my_chat_member"])
             elif upd.get("message"):
                 handle_message(db, upd["message"])
         except Exception:
@@ -226,6 +230,33 @@ def _meeting_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool
     return True
 
 
+def _document_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool:
+    """ai-CR-105: tệp pdf / Word / Excel / văn bản gửi riêng → đọc chữ rồi trả lời theo chú thích (mặc định tóm tắt).
+    Chỉ chat riêng đã đăng nhập; chat lạ im lặng."""
+    from . import doc_text
+
+    doc = msg.get("document") or {}
+    name, mime = str(doc.get("file_name") or "tệp"), str(doc.get("mime_type") or "")
+    if not doc.get("file_id") or mime.startswith(("image/", "audio/", "video/")) or not doc_text.readable(name, mime):
+        return False
+    if chat_link.get_active_link(db, chat_id) is None and not telegram.is_allowed_chat(chat_id):
+        return False
+    question = text or "Tóm tắt tệp này: ý chính, số liệu quan trọng, việc cần làm (nếu có)."
+    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), f"[tệp {name}] {question}"[:4000],
+                      action=ACT_ASKED)
+    row.scope = SCOPE_PERSONAL
+    db.commit()
+    try:
+        data, _ = telegram.download_file(str(doc["file_id"]), max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
+        content = doc_text.extract(name, mime, data)
+    except (telegram.TelegramError, doc_text.DocTextError) as e:
+        reply(db, chat_id, f"Em chưa đọc được tệp «{telegram.esc(name)}»: {telegram.esc(str(e))}.")
+        db.commit()
+        return True
+    answer_question(db, chat_id, f"{question}\n\nNỘI DUNG TỆP «{name}»:\n{content}", before_id=row.id)
+    return True
+
+
 def _quoted_text(msg: dict) -> str:
     """Câu được trích khi người dùng bấm «Trả lời» một tin trên Telegram (ai-CR-100)."""
     rep = msg.get("reply_to_message") or {}
@@ -233,6 +264,13 @@ def _quoted_text(msg: dict) -> str:
 
 
 def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
+    #  ai-CR-105: tin trong NHÓM chỉ được ghi lặng để chủ / thành viên nhờ tóm tắt RIÊNG; bot không nói gì trong nhóm.
+    from . import groups
+
+    if groups.is_group(msg):
+        groups.capture(db, msg)
+        db.commit()
+        return
     #  ai-CR-035: ảnh gửi kèm chú thích thì chú thích là nội dung tin.
     text = (msg.get("text") or msg.get("caption") or "").strip()
     #  ai-CR-100: 07/10 đại ca bấm «Trả lời» tin «giá vàng hôm nay» rồi nhắn «trả lời cho tao» — bot chỉ thấy câu sau,
@@ -242,6 +280,8 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
         text = f"{quoted}\n({text})"
     #  ai-CR-104: tệp họp (audio / video / tin thoại dài) hoặc link Drive kèm chữ «họp / biên bản / ghi âm» → biên bản.
     if _meeting_by_message(db, msg, chat_id, text):
+        return
+    if _document_by_message(db, msg, chat_id, text):
         return
     photo_id = _photo_file_id(msg)
     if not text and not photo_id and _voice_file(msg):
