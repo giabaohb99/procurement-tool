@@ -248,9 +248,12 @@ describe('CustomsPricePage', () => {
     expect(screen.queryByRole('button', { name: /Xuất dữ liệu/ })).not.toBeInTheDocument()
   })
 
-  it('still shows the coverage strip on the price tabs', async () => {
+  //  bao-CR-605 (07/10/2026) — dải phủ dữ liệu bỏ ở MỌI mục (đại ca chốt: dư), kể cả các thẻ giá.
+  it('no longer shows the coverage strip on the price tabs', async () => {
     build('/procurement/customs-prices')
-    expect(await screen.findByText(/Dữ liệu:/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Giá thị trường' })).toBeInTheDocument()
+    expect(screen.queryByText(/Dữ liệu:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/lần nạp gần nhất/)).not.toBeInTheDocument()
   })
 
   //  06/10/2026 — «Xuất Excel» trong thanh công cụ của bảng → «Xuất dữ liệu» ở đầu trang, kế

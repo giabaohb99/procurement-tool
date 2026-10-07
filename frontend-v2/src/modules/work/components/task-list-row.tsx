@@ -4,6 +4,7 @@ import { ChevronRight, GripVertical, ListTree, MessageSquare } from 'lucide-reac
 
 import { Checkbox } from '@/shared/ui/checkbox'
 import { cn } from '@/shared/utils/cn'
+import { DONE_CHECK_CLASS } from '../utils/work-colors'
 import { columnWidthVar } from '../hooks/use-list-column-widths'
 import { taskDraggableId } from '../utils/kanban-drop'
 import { COLUMN_GAP, GUIDE_LEFT, LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
@@ -265,7 +266,7 @@ export function TaskListRow({
         )}
 
         <Checkbox
-          className="shrink-0 rounded-full"
+          className={cn("shrink-0 rounded-full", DONE_CHECK_CLASS)}
           checked={done}
           disabled={!canEdit}
           aria-label={`Đánh dấu hoàn thành: ${task.title}`}

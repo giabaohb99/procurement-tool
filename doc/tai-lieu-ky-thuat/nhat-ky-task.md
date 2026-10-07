@@ -119,6 +119,25 @@ Deploy: chưa deploy.
 
 ---
 
+## bao-CR-605 | Tra cứu thị trường: bỏ dải «Dữ liệu · lần nạp gần nhất · T1…T12» ở mọi mục, cả hai bản giao diện
+- status: xong
+- date: 2026-10-07
+Đại ca khoanh đỏ dải tóm tắt phủ dữ liệu hải quan ở đầu các mục Tra cứu thị trường (khoảng ngày, số dòng hàng, lần nạp
+gần nhất, tỷ lệ nhận ra hoạt chất, dải tháng T1…T12) và chốt bỏ vì dư, không mang nhiều giá trị. Đã gỡ ở cả bản cũ và bản
+mới, mọi mục của cụm (trước đó chỉ mục Tra cứu hóa chất là ẩn). Số đếm dữ liệu vẫn giữ để bảng dòng hàng nói đúng câu
+«chưa có dữ liệu». Bài kiểm trang đổi từ «vẫn hiện dải phủ ở thẻ giá» thành «không còn dải phủ».
+Kèm theo: đại ca hỏi dữ liệu Tra cứu hóa chất Được cập nhật (duoc-CR-598) đã có chưa. Kiểm ra mã và migration
+`nd24reg01` đã lên dev từ 06/10 nhưng script nạp dữ liệu NĐ 24/2026 chưa ai chạy, nên dev và máy em vẫn là bộ cũ ngày
+23/09 (1.019 dòng phụ lục I–IV, chưa có STT và công thức). Đã sao lưu bảng `tab_customs_regulation` trên dev rồi chạy
+`python -m scripts.load_nd24_regulations` ở dev và máy em: 1.349 dòng, thêm 382, cập nhật 967, ngừng dùng 52 dòng không
+còn trong tệp. Prod chưa có migration `nd24reg01` nên chưa nạp được, đi theo đợt prod kế.
+Kiểm: bản mới kiểm kiểu 0 lỗi, lint 0 lỗi, 90 bài khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền.
+Mã nguồn: `frontend-v2/.../pages/customs-price-page.tsx` (+ test), xóa `components/customs/customs-coverage-strip.tsx`,
+`frontend/src/pages/CustomsPrices.tsx`.
+Deploy: DEV 07/10/2026; prod chờ đại ca.
+
+---
+
 ## bao-CR-604 | Sổ việc trên phân hệ Dự án: chia theo dự án, nhãn và người phụ trách theo tiền tố CR, ảnh đại diện trên thẻ việc và nhật ký, dọn mục còn treo
 - status: xong
 - date: 2026-10-07
@@ -5684,7 +5703,7 @@ Commit: `cf6acd9f` (gộp nhánh chính) trên nhánh `erp-v2`.
 ## duoc-CR-425 | Thiết kế lại trang chi tiết phân công văn thư đóng dấu với thanh đầu dính và cột phải cuộn độc lập
 - status: xong
 - date: 2026-09-18
-- pic: NSU209
+- pic: NSU231
 Trang chi tiết phân công văn thư đóng dấu tại đường dẫn `/approval-seal/clerks/:id` được thiết kế lại hoàn chỉnh theo khuôn giao diện hiện đại:
 - Thanh tiêu đề trên cùng dính chặt ở đỉnh trang khi cuộn xuống dưới, kèm hiệu ứng nền canvas mờ đục. Thanh này tích hợp nút quay lại danh sách, ảnh đại diện và họ tên văn thư, huy hiệu cảnh báo khi có thay đổi chưa lưu, cụm nút lưu và xóa phân công, cùng dải tóm tắt gồm mã nhân viên, phòng ban, chức vụ, trạng thái nhận việc, loại hình văn thư tổng hay đơn vị, và cụm ảnh tròn các công ty phụ trách có hiển thị giải thích khi rê chuột.
 - Thân trang chia làm hai cột rõ rệt: cột bên trái hiển thị thẻ thông tin nhân sự lấy từ hồ sơ nhân sự kèm liên kết mở xem chi tiết, và thẻ cấu hình phân công đóng dấu gồm ô chọn trạng thái, công tắc bật chế độ văn thư tổng cho nhiều pháp nhân, ô chọn công ty phụ trách có thanh tìm kiếm, và danh sách các thẻ công ty đã chọn kèm nút gỡ nhanh từng đơn vị.
@@ -6305,7 +6324,7 @@ bài kiểm `test/backend/test_dong_bo_datxe_vong_quet.py`.
 ## duoc-CR-426 | Bỏ hai cột đếm người giữ ở danh mục Chức vụ, cột mã đổi thành ID
 - status: xong
 - date: 2026-09-19
-- pic: NSU209
+- pic: NSU231
 Màn danh mục Chức vụ tại đường dẫn `/hr/job-positions` bỏ hẳn hai cột «Đang giữ» và «Phòng ban
 đang giữ». Bỏ luôn đường API đếm ngược nuôi hai cột đó ở máy chủ, kèm hai hàm đếm và mười một
 bài kiểm của chúng — giữ lại một đường API mà không màn nào đọc thì lần sau có người sửa nhầm
@@ -6737,7 +6756,7 @@ Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
 ## duoc-CR-427 | Thiết kế lại thân trang chi tiết phiếu đặt xe: bỏ tường ô khóa, dựng trục lộ trình và trục tiến trình
 - status: xong
 - date: 2026-09-19
-- pic: NSU209
+- pic: NSU231
 Trang chi tiết phiếu đặt xe tại đường dẫn `/vehicle-booking/:id` được dựng lại phần thân. Đại ca
 mở phiếu DX324 lên và nói nhìn nhiều ô nhập quá, xấu. Đọc lại thì vấn đề không nằm ở số lượng ô
 mà ở chỗ một trang CHỈ ĐỂ XEM lại đang mặc áo của biểu mẫu: hai mươi bốn ô khóa có viền xếp thành
@@ -6792,7 +6811,7 @@ bốn chặng, kèm bài kiểm) · `components/booking-route-card.tsx` · `book
 ## duoc-CR-428 | Dựng lại trang Tổng quan Duyệt dấu: bỏ bảng nhồi trong khung hẹp, vá màu bánh trùng và hai lỗ trắng
 - status: xong
 - date: 2026-09-19
-- pic: NSU209
+- pic: NSU231
 Trang Tổng quan Duyệt dấu tại đường dẫn `/approval-seal`. Đại ca mở ra và nói nhìn khá xấu. Rà
 từng khối thì ra bốn chỗ hỏng chứ không phải một, và hai trong số đó là lỗi thật chứ không phải
 chuyện thẩm mỹ.
@@ -6844,7 +6863,7 @@ trạng thái, kèm bài kiểm) · xóa `components/seal-queue-table.tsx`.
 ## duoc-CR-429 | Màn Quỹ phép năm gom dòng theo người, bày dạng cây cha–con
 - status: xong
 - date: 2026-09-19
-- pic: NSU209
+- pic: NSU231
 Màn Quỹ phép năm tại đường dẫn `/hr/leave-balances` trước đây bày phẳng mỗi dòng quỹ một hàng.
 Máy chủ trả một dòng cho mỗi bộ ba người và năm và loại nghỉ, nên công ty khai tám loại nghỉ là
 mỗi nhân sự tám hàng, mà sáu trong tám hàng đó hạn mức bằng không. Bảng vì thế dài gấp tám lần
@@ -6897,7 +6916,7 @@ lớp CSS cho từng hàng) · `column-header-cell.tsx` (vạch kéo giãn cột
 ## duoc-CR-430 | Dải thẻ Tổng quan Nhân sự nói rõ «Không có quyền xem» thay vì để số 0
 - status: xong
 - date: 2026-09-19
-- pic: NSU209
+- pic: NSU231
 Ba ô trên dải thẻ Tổng quan Nhân sự đọc từ hồ sơ nhân sự. Người thiếu quyền đọc hồ sơ thì truy
 vấn không chạy nên mọi con số về không — mà số không ở đây KHÔNG có nghĩa là không có ai, nó có
 nghĩa là không được xem. Không nói ra thì người dùng đọc ô «Hồ sơ cần bổ sung 0 — Đã khai đủ» và
@@ -7786,7 +7805,7 @@ Deploy: máy chủ thử nghiệm, 21/09/2026 — dựng lại api rồi chạy 
 ## duoc-CR-431 | Điều kiện áp dụng của hồ sơ: chứng từ có dòng hàng khớp thì mọc ra thẻ «Hồ sơ cần kèm»
 - status: xong
 - date: 2026-09-21
-- pic: NSU209
+- pic: NSU231
 Trước đây hồ sơ chỉ nằm trong kho của phân hệ Hồ sơ, ai cần thì phải nhớ mà đi tìm. Nay mỗi tờ hồ
 sơ khai được hai thứ: áp cho loại chứng từ nào, và dòng hàng phải thỏa điều kiện gì. Chứng từ nào
 có ít nhất một dòng khớp thì trang chi tiết của nó mọc ra thẻ «Hồ sơ cần kèm», kèm câu nói rõ vì
@@ -7820,7 +7839,7 @@ Migration: `2ef5534e5ace` — thêm `apply_doc_kinds` và `apply_conditions` và
 ## duoc-CR-432 | Thẻ «Hồ sơ cần hoàn thành» trên chi tiết YCBG nhìn y hệt thẻ «Báo cáo thực hiện»
 - status: xong
 - date: 2026-09-21
-- pic: NSU209
+- pic: NSU231
 Hai thẻ nằm cạnh nhau trên cùng một trang mà lệch nhau vài chỗ nhỏ, nên mắt đọc ra hai khối khác
 loại chứ không phải hai cách theo dõi cùng một việc. Nay đã căn cho khớp: thanh tiến độ của nhóm
 dùng đúng lối của bản gốc (chữ đè giữa thanh, màu mềm, xanh lá khi xong hết), ô tổng «Đã có giấy»
@@ -7846,7 +7865,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossi
 ## duoc-CR-433 | Chế độ «Theo dòng hàng» của thẻ Hồ sơ thành BẢNG, và hai khối dùng chung một bộ số liệu để đối chiếu
 - status: xong
 - date: 2026-09-21
-- pic: NSU209
+- pic: NSU231
 Bấm sang «Theo dòng hàng» ở thẻ Hồ sơ cần hoàn thành thì vẫn ra danh sách gập y như «Xem tổng»,
 trong khi bản gốc ở đó là một cái bảng: mỗi dòng hàng một dòng, các cột Hồ sơ · Đã xong · Tiến độ
 · Hạn gần nhất, bấm vào dòng thì sổ hồ sơ của riêng nó, dưới cùng có dòng Tổng cả phiếu. Nay đã
@@ -7883,7 +7902,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossi
 ## duoc-CR-434 | Hộp sửa hồ sơ trong thẻ «Hồ sơ cần hoàn thành» bày đủ ô như hộp bên Báo cáo thực hiện
 - status: xong
 - date: 2026-09-21
-- pic: NSU209
+- pic: NSU231
 Dòng ngoài của hai khối đã khớp nhau, nhưng bấm nút sửa thì lệch hẳn: hộp bên Báo cáo thực hiện có
 mười một ô kèm danh sách hồ sơ tiên quyết, hộp bên Hồ sơ chỉ có ba ô là tình trạng, hạn hiệu lực
 và ghi chú. Rà lại thì kho Hồ sơ thật ra có chỗ lưu cho tám trong số đó, chỉ là hộp chưa bày:
@@ -7914,7 +7933,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossi
 ## duoc-CR-435 | Tiến độ hồ sơ đi theo TỪNG chứng từ, không còn dùng chung toàn công ty
 - status: xong
 - date: 2026-09-21
-- pic: NSU209
+- pic: NSU231
 Thẻ «Hồ sơ cần hoàn thành» vẫn đo tiến độ bằng cột tình trạng của chính tờ hồ sơ trong kho, mà
 cột đó dùng chung cho cả công ty. Hậu quả: tick xong một tờ ở yêu cầu báo giá này thì hai chục
 phiếu khác cũng hiện đã xong, nên con số tiến độ của mọi phiếu giống hệt nhau và không nói lên
@@ -7952,7 +7971,7 @@ Migration: `b92c74d55ee7` — thêm bảng `tab_dossier_progress`.
 ## duoc-CR-436 | Hồ sơ tiên quyết: khai trên TỜ HỒ SƠ, khóa tính theo từng chứng từ
 - status: xong
 - date: 2026-09-21
-- pic: NSU209
+- pic: NSU231
 Nốt cuối cùng mà thẻ «Hồ sơ cần hoàn thành» còn thiếu so với khối Báo cáo thực hiện. Nay mỗi tờ hồ
 sơ khai được danh sách những tờ phải xong TRƯỚC nó; trên mỗi chứng từ, tờ nào còn chờ thì làm mờ,
 hiện biểu tượng khóa, ô tick bị chặn và rê chuột đọc ra đang chờ tờ nào.
