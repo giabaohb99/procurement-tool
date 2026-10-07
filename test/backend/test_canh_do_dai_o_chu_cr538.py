@@ -49,6 +49,8 @@ TARGETS: dict[str, list[str]] = {
                                              "SupplierSurveyUpdate", "SurveyCreate", "SurveyUpdate", "_HeaderUpdate",
                                              "_SurveyHeader", "RejectIn")},
     "survey_request.ReportDocIn": ["SurveyReportDoc"], "survey_request.ReportDocPatch": ["SurveyReportDoc"],
+    #  duoc-CR-611 (07/10): hồ sơ đầu tiên của khối trống — `title` 255 khớp SurveyReportDoc.title
+    "survey_request.ReportFirstDocIn": ["SurveyReportDoc"],
     "survey_request.ReportItemIn": ["SurveyReportItem"], "survey_request.ReportPhaseIn": ["SurveyReportPhase"],
     "survey_request.LineStatusIn": ["SurveyRequestLine"], "survey_request.SurveyRequestLineIn": ["SurveyRequestLine"],
     **{f"survey_request.{n}": ["SurveyRequest"] for n in ("SurveyRequestCreate", "SurveyRequestUpdate", "_Header",
@@ -144,6 +146,7 @@ NO_TARGET = {
     #  duoc-CR-606: chỉ mang id mẫu / nội dung HTML soạn mẫu (lưu vào tệp Word, không vào cột chữ)
     "labor_contract.GenerateIn", "labor_contract.TemplateContentIn",
     "survey.LineApproveIn", "survey.LineApproveCombined", "survey_request.ReportTemplateApplyIn",
+    "survey_request.ReportDocBulkDeleteIn",   # duoc-CR-611: chỉ mang danh sách id hồ sơ cần xóa
     #  chỉ mang id / thứ tự / lệnh di chuyển — không ghi cột chữ nào
     "doc_catalog.DocumentFolderSetIn", "doc_catalog.FolderLinkIn", "doc_catalog.FolderUnlinkIn",
     "doc_catalog.FolderMoveIn", "doc_catalog.FolderReorderIn", "doc_catalog.FolderReorderItem",
