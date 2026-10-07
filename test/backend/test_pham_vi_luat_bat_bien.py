@@ -209,6 +209,11 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 BB4_CONTROLLER_MIEN_TRU = {
     # -- gác bằng hàm tự viết trong thân hàm, grep không thấy --
     "import_tool/controller.py": "gác bằng `_guard` → user_has_permission(..., 'import')",
+    "survey_request/report_controller.py": "bao-CR-602: khối Báo cáo thực hiện dùng chung YCBG + ĐMH, "
+                                           "entity nằm trên URL nên route gác bằng `_require_owner` → "
+                                           "user_has_permission theo `_OWNER_RULES`; MỌI đường nạp chứng từ "
+                                           "cha qua `rule.load` = `_in_scope` của controller YCBG / ĐMH "
+                                           "(apply_scope … .first(), 404 ngoài phạm vi) trước khi đụng khối",
     "employee/work_history_controller.py": "duoc-CR-585: mọi đường /{eid} gọi "
                                            "`work_history_access.employee_in_scope` → get_scoped(Employee, "
                                            "'employee', …); `/me/work-history` chỉ đọc hồ sơ của chính "
