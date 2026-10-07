@@ -147,13 +147,15 @@ Cách làm:
 Kiểm: máy chủ 171 bài hải quan xanh (11 bài mới `test_hai_quan_cot_tuy_chon_tep_nap_cr603.py` canh đủ: thiếu cột nạp như
 cũ, tệp có cột thì ưu tiên, ô trống mới suy ra, gắn lại không ghi đè, mã băm không đổi, Excel xuất ra nạp lại được); bản
 mới kiểm kiểu 0 lỗi, ESLint 0 lỗi, 93 bài khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền. Chưa chạy trên dữ liệu thật.
-Điểm chờ đại ca quyết: thuế suất XNK để tính cột VND thứ hai vẫn lấy từ cột «Thuế suất XNK» của chính dòng (tệp không
-có thì cột trống) — chưa tra biểu thuế theo mã HS.
+Đại ca chốt 07/10/2026: (1) thuế suất XNK để tính cột VND thứ hai lấy từ cột «Thuế suất XNK» của chính dòng (tệp
+không có thì cột trống), KHÔNG tra biểu thuế theo mã HS; (2) «Nước nhận hàng» giữ nghĩa «cột thứ 32 của GTT02 thành
+không bắt buộc», nếu tệp của chị Mi đặt tên khác thì chỉ thêm tiêu đề vào bảng nhận diện; (3) nhãn cột bỏ chữ «(suy
+ra)», nguồn xem khi rê chuột. Ba điểm này giữ đúng như đã làm, không sửa thêm.
 Mã nguồn: `backend/app/modules/customs/{constants,reader,importer,ingredient,service,model}.py`,
 `migrations/versions/hq603_hai_quan_cot_tuy_chon_tep_nap.py`, `frontend-v2/.../config/customs-line-columns.tsx`,
 `customs-line-detail-dialog.tsx`, `customs-import-dialog.tsx`, `types/customs.ts`, `frontend/src/pages/CustomsPrices.tsx`,
 `frontend/src/components/customs/{CustomsLineDetail,CustomsImportDialog}.tsx`.
-Deploy: chưa deploy.
+Deploy: DEV 06/10/2026 17:40 (migration hq603 đã áp); prod chờ đại ca.
 
 ---
 
