@@ -183,3 +183,35 @@ def test_ky_tu_dac_biet_khong_lam_vo_xml():
     #  Parse được = XML hợp lệ. Vỡ ở đây nghĩa là Word cũng không mở nổi.
     ElementTree.fromstring(xml)
     assert "A &lt; B &amp; C" in xml
+
+
+# ── duoc-CR-606 (07/10/2026): bảng phải có <w:tblGrid> ─────────────────────────────────────
+def test_bang_xuat_ra_co_luoi_cot_dung_so_cot_ke_ca_khi_gop_o():
+    """Chuẩn OOXML bắt buộc `<w:tblGrid>`. Word bỏ qua được nên lâu nay không ai thấy, nhưng
+    `docxtpl` (sinh HĐLĐ từ mẫu soạn trên web) đổ lỗi `NoneType.findall` ngay bảng đầu tiên."""
+    import io
+    import re
+    import zipfile
+
+    from app.modules.document.html_docx import html_to_docx
+
+    html = ("<table><tr><td colspan='2'>Gộp</td><td>c</td></tr>"
+            "<tr><td>a</td><td>b</td><td>c</td></tr></table>"
+            "<table><tr><td colwidth='100'>x</td><td colwidth='200'>y</td></tr></table>")
+    xml = zipfile.ZipFile(io.BytesIO(html_to_docx(html))).read("word/document.xml").decode()
+    grids = re.findall(r"<w:tblGrid>(.*?)</w:tblGrid>", xml)
+    assert len(grids) == 2, "mỗi bảng một lưới cột"
+    assert grids[0].count("<w:gridCol") == 3, "số cột = hàng có tổng colspan lớn nhất"
+    assert re.findall(r'w:w="(\d+)"', grids[1]) == ["1500", "3000"], "bề rộng theo colwidth hàng đầu (px × 15)"
+    #  Lưới nằm ngay sau tblPr, đúng thứ tự schema.
+    assert re.search(r"</w:tblPr><w:tblGrid>", xml)
+
+
+def test_bang_rong_khong_hang_van_co_luoi_mot_cot():
+    import io
+    import zipfile
+
+    from app.modules.document.html_docx import html_to_docx
+
+    xml = zipfile.ZipFile(io.BytesIO(html_to_docx("<table></table>"))).read("word/document.xml").decode()
+    assert '<w:tblGrid><w:gridCol w:w="9000"/></w:tblGrid>' in xml

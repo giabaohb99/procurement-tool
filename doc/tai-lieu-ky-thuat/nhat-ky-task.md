@@ -12541,3 +12541,34 @@ nhớ trước đây chỉ chạy ở chat đại ca.
 
 Mã nguồn: backend/app/modules/agent_hub/ai_keys.py · agent_hub/user_keys.py · agent_hub/manager.py (AgentGeminiProvider) · assistant/provider/openai_compat.py · frontend-v2 ai-key-list-card.tsx, company-ai-keys-panel.tsx · migration aikey01
 Deploy: dev 07/10 khoảng 10:05, erp-v2 26222996 (Agent 1 sao lưu DB dev, dựng lại api, web, erp, celery-worker, celery-beat, agent-poller; migration aikey01 đã chạy). Sau đó cấp lại quyền chỉ đọc bảng tab_ai_key cho tài khoản MySQL của máy sửa mã và gỡ quyền trên tên bảng cũ, vì máy sửa mã đọc khóa của đại ca để lập kế hoạch sau bước rà soát; đã thử máy đọc được. Prod giữ lại.
+
+## duoc-CR-606 | Hợp đồng lao động trong hồ sơ nhân sự, chọn mẫu Word theo pháp nhân
+- status: xong
+- date: 2026-10-05
+Phòng nhân sự cần lập hợp đồng lao động ngay trong hồ sơ nhân sự, và mỗi pháp nhân có bộ mẫu hợp đồng riêng.
+Nay có màn «Mẫu hợp đồng» ở phân hệ Nhân sự để tải lên tệp Word mẫu cho từng pháp nhân và từng loại hợp đồng;
+trong mẫu người soạn chèn các biến như họ tên, số CCCD, lương, lương bằng chữ. Hồ sơ nhân sự có thêm tab «Hợp đồng»:
+lập hợp đồng, chọn mẫu của đúng pháp nhân và đúng loại, sinh tệp Word đã điền sẵn, đánh dấu đã ký, tải lên bản scan,
+chấm dứt hoặc hủy; hợp đồng đã ký quá ngày kết thúc tự hiện «Hết hạn». Lương là thông tin nhạy cảm nên có hai khóa
+quyền riêng (hợp đồng và mẫu hợp đồng), tách khỏi quyền xem hồ sơ; lương được che trong nhật ký thay đổi và nhật ký
+request. Tệp mẫu được kiểm kỹ khi tải lên: chỉ cho phép biến đơn, chặn biến lạ, chặn macro, chặn liên kết ngoài và
+chặn tệp phình to làm sập máy chủ. Đợt rà soát đã vá lỗi người có phạm vi «của tôi» lập được hợp đồng cho nhân sự
+công ty khác. Ngày 06/10 đã bấm thử trọn luồng trên trình duyệt (tải mẫu, lập, sinh tệp, sửa, ký, tải bản scan,
+chấm dứt, hủy, xóa, chặn tài khoản không có quyền) và sửa thêm bốn chỗ: ô chọn pháp nhân hiện kèm mã vì có hai
+pháp nhân trùng tên, thông báo lỗi mẫu có thẻ lệnh gọn lại, tên tệp tải về không còn lặp «HDLD-HDLD», cột trạng thái
+dời lên đầu bảng để không bị che ở màn laptop. Hộp lập hợp đồng có thêm hàng nút chọn nhanh thời hạn (12 · 24 · 36
+tháng; thử việc 30 · 60 ngày) tự điền ngày kết thúc theo đúng cách hệ thống tính «Thời hạn» trong tệp Word, vì trước
+đó hợp đồng ba năm phải bấm qua tháng 36 lần trên lịch. Đang ở máy em, chưa commit, chưa deploy.
+
+Ngày 07/10 bổ sung theo yêu cầu của đại ca: màn «Mẫu hợp đồng» có thêm nút «Sửa thông tin» để đổi tên, loại hợp đồng và
+ghi chú của mẫu mà không phải xóa đi tải lại, và trang «Soạn nội dung» để sửa chữ trong mẫu ngay trên web. Bên phải trang soạn có
+khung «Chèn biến»: đặt con trỏ rồi bấm tên biến là biến được chèn đúng chỗ, không phải tự gõ tay nên không còn gõ sai. Khi lưu,
+hệ thống dựng lại tệp Word, kiểm biến giống hệt lúc tải tệp lên rồi thay tệp, giữ nguyên lề trang của bản gốc; trước lần lưu đầu
+có lời nhắc rằng đầu trang, chân trang và vài định dạng riêng của Word có thể mất. Trong lúc kiểm phát hiện bộ chuyển nội dung
+web sang Word dùng chung với phân hệ Văn bản dựng bảng thiếu một phần bắt buộc của định dạng Word, làm hợp đồng có bảng không
+sinh được; đã vá tận gốc nên bản xuất Word của phân hệ Văn bản cũng đúng chuẩn hơn.
+
+Mã nguồn: backend/app/modules/labor_contract/ · core/labor_contract_codes.py · core/vn_number_words.py · core/scoping.py · core/change_tracker.py · core/logging_policy.py · frontend-v2/src/modules/hr (labor-contract-*, employee-tab-labor-contracts)
+Tham chiếu: frontend-v2/plans/261005-1537-hop-dong-lao-dong-mau-theo-phap-nhan/ · migration lbrct01 · thư viện mới docxtpl==0.20.2
+Deploy: DEV 07/10/2026 (erp-v2). Prod CHƯA — khi deploy prod phải dựng lại image api (requirements.txt đổi), và tick hai quyền labor_contract / labor_contract_template cho vai trò Nhân sự trên prod
+

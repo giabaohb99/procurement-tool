@@ -222,6 +222,8 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  Lịch làm việc: sửa lịch đổi cách tính ngày phép cả công ty —
                  #  Quản lý thu mua không tự có (chỉ `read` đại trà + hr_leave/hr_profile sửa).
                  "work_schedule",
+                 #  ⚠️ HĐLĐ có LƯƠNG + mẫu HĐ: không để Quản lý thu mua tự có (xem `employee_sensitive`).
+                 "labor_contract", "labor_contract_template",
                  #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải
                  #  nằm trong tập loại-trừ này, không thì vòng `_PUR_MANAGER_PERMS`
                  #  quét cả `ENTITIES` và Quản lý thu mua tự nhiên đọc được số
@@ -302,6 +304,9 @@ STD_ROLES = {
         "job_position": (["read", "create", "write", "delete"], "all"),
         #  Lịch làm việc (05/10/2026, đại ca chốt): Nhân sự giữ hồ sơ cũng được sửa lịch.
         "work_schedule": (["read", "create", "write", "delete"], "all"),
+        #  Hợp đồng lao động (có lương) + mẫu hợp đồng: chỉ vai trò này (ngoài admin).
+        "labor_contract": (["read", "create", "write", "delete", "print"], "all"),
+        "labor_contract_template": (["read", "create", "write", "delete"], "all"),
         #  Tab «Tài khoản & thiết bị» trong hồ sơ (bao-CR-395): Nhân sự XEM phiên
         #  đang mở + lịch sử đăng nhập 90 ngày của mọi người. KHÔNG cấp `delete`
         #  (đá phiên là của admin); nút «Khóa tài khoản + đăng xuất mọi thiết bị»

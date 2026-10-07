@@ -68,6 +68,25 @@ export const FORUM_PREFIX: readonly StatusOption[] = [
   {"value": "5", "label": "Đánh giá", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Trạng thái hợp đồng lao động */
+export const LABOR_CONTRACT_STATUS: readonly StatusOption[] = [
+  {"value": "1", "label": "Nháp", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Đã ký – hiệu lực", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Hết hạn", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Đã chấm dứt / thanh lý", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Đã hủy", "sort_order": 5, "is_terminal": false, "is_exception": false},
+]
+
+/** Loại hợp đồng lao động */
+export const LABOR_CONTRACT_TYPE: readonly StatusOption[] = [
+  {"value": "1", "label": "Thử việc", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Xác định thời hạn", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Không xác định thời hạn", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Khoán việc / dịch vụ", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Cộng tác viên", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Khác", "sort_order": 9, "is_terminal": false, "is_exception": false},
+]
+
 /** Buổi nghỉ */
 export const LEAVE_SESSION: readonly StatusOption[] = [
   {"value": "full", "label": "Cả ngày", "sort_order": 0, "is_terminal": false, "is_exception": false},
@@ -199,6 +218,8 @@ export const STATUS_SETS = {
   contract_type: CONTRACT_TYPE,
   employee_status: EMPLOYEE_STATUS,
   forum_prefix: FORUM_PREFIX,
+  labor_contract_status: LABOR_CONTRACT_STATUS,
+  labor_contract_type: LABOR_CONTRACT_TYPE,
   leave_session: LEAVE_SESSION,
   leave_type: LEAVE_TYPE,
   payable_status: PAYABLE_STATUS,

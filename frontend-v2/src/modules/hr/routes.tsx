@@ -4,6 +4,7 @@ import {
   Building2,
   CalendarDays,
   DoorOpen,
+  FileSignature,
   CalendarOff,
   CalendarRange,
   IdCard,
@@ -72,6 +73,16 @@ export const hrModule: ErpModule = {
       icon: BriefcaseBusiness,
       entity: 'job_position',
       manage: true,
+      group: 'Danh mục',
+    },
+    {
+      //  Mẫu HĐLĐ (.docx) theo pháp nhân. ⚠️ Mục menu khai `entity` LÀ hàng rào
+      //  của route (gác điều hướng mặc định MỞ): thiếu mục này thì ai đăng nhập
+      //  cũng gõ URL vào được. Trang còn tự kiểm `can(..., 'read')` một lần nữa.
+      label: 'Mẫu hợp đồng',
+      path: appRoutes.hr.laborContractTemplates,
+      icon: FileSignature,
+      entity: 'labor_contract_template',
       group: 'Danh mục',
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
@@ -331,6 +342,22 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.roomBookingDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/room-booking-detail-page')).RoomBookingDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.laborContractTemplates,
+      lazy: async () => ({
+        Component: (await import('./pages/labor-contract-template-list-page'))
+          .LaborContractTemplateListPage,
+      }),
+    },
+    //  duoc-CR-606 — soạn nội dung mẫu trên web. Đường nằm DƯỚI mục menu «Mẫu hợp đồng» nên chung
+    //  hàng rào `labor_contract_template` (gác điều hướng khớp theo ranh giới `/`).
+    {
+      path: appRoutes.hr.laborContractTemplateEditor(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/labor-contract-template-editor-page'))
+          .LaborContractTemplateEditorPage,
       }),
     },
     {

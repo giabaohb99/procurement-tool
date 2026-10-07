@@ -104,6 +104,9 @@ export const ENTITIES = [
   'holiday',
   //  Lịch làm việc (05/10/2026) — mẫu lịch tuần + gán 4 cấp; mọi vai trò `read`, sửa: hr_leave/hr_profile.
   'work_schedule',
+  //  Hợp đồng lao động (có lương) + mẫu hợp đồng theo pháp nhân (05/10/2026) — chỉ hr_profile + admin.
+  'labor_contract',
+  'labor_contract_template',
   //  Đặt phòng họp (duoc-CR-279). Hai khóa: đặt phòng là việc của mọi người,
   //  khai danh mục phòng là việc quản trị.
   'room_booking',

@@ -252,3 +252,18 @@ def test_people_rows_keep_only_relation_not_identity(db, seed, ctx, model):
     assert "Trần Mẹ" not in raw and "0909123456" not in raw and SECRET_ID not in raw
     assert entry.snapshot["relation"] == "1"
     assert entry.snapshot["employee_id"] == str(employee.id)
+
+
+#  Lương HĐLĐ (05/10/2026): change log đã che, nhưng thân request ở nhật ký request từng ghi nguyên
+#  văn `base_salary`… ở cả hai nhóm đường của hợp đồng lao động.
+@pytest.mark.parametrize("path", ["/api/labor-contracts/7", "/api/labor-contracts/7/transition",
+                                  "/api/employees/5/labor-contracts"])
+def test_labor_contract_paths_mask_salary_keys(path):
+    keys = sensitive_keys_for_path(path)
+    assert {"base_salary", "insurance_salary", "allowance", "allowance_note"} <= keys
+    che = mask_payload({"base_salary": 15_000_000, "contract_no": "HD-1"}, keys)
+    assert che["base_salary"] == MASKED and che["contract_no"] == "HD-1"
+
+
+def test_labor_contract_prefix_lookalike_is_not_masked():
+    assert sensitive_keys_for_path("/api/labor-contracts-x/1") == frozenset()

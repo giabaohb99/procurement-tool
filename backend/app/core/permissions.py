@@ -61,6 +61,13 @@ ENTITIES = [
     # phòng ban / nhân sự; `workday_service` đọc lịch này để tính ngày nghỉ phép.
     # Khóa riêng: sửa lịch đổi cách tính ngày phép của cả công ty.
     "work_schedule",
+    # HỢP ĐỒNG LAO ĐỘNG (05/10/2026) — bản ghi HĐ của nhân sự, CÓ LƯƠNG.
+    # Khóa RIÊNG, tách khỏi `employee`: `employee.read` gần như vai trò nào cũng có (đổ ô chọn
+    # người), gộp vào đó là cả công ty đọc được lương của nhau. Cùng lý lẽ `employee_sensitive`.
+    "labor_contract",
+    # MẪU hợp đồng lao động (.docx theo pháp nhân) — luật «một khóa = một màn hình» (CR-157):
+    # màn Mẫu hợp đồng riêng, người soạn mẫu không nhất thiết là người xem lương.
+    "labor_contract_template",
     # Phân hệ Đặt phòng họp (duoc-CR-279). Hai khóa vì hai nhóm người:
     #  · `room_booking` — ai cũng đặt được, trưởng bộ phận/hành chính duyệt;
     #  · `meeting_room` — khai danh mục phòng, việc quản trị. Cho quyền sửa danh
@@ -224,6 +231,8 @@ ENTITY_LABELS = {
     "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
     "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
     "work_schedule": "Nhân sự › Lịch làm việc",
+    "labor_contract": "Hợp đồng lao động (có lương)",
+    "labor_contract_template": "Mẫu hợp đồng lao động",
     "room_booking": "Phiếu đặt phòng họp",
     "meeting_room": "Phòng họp (danh mục)",
     "coffee_policy": "Điểm cà phê › Chính sách cấp điểm",

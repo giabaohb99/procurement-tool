@@ -424,6 +424,10 @@ export const appRoutes = {
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
     jobPositionNew: '/hr/job-positions/new',
     jobPositionDetail: (id: number | string) => `/hr/job-positions/${id}`,
+    /** Mẫu hợp đồng lao động (.docx) theo pháp nhân. */
+    laborContractTemplates: '/hr/labor-contract-templates',
+    /** Soạn nội dung mẫu trên web (duoc-CR-606) — nằm dưới mục menu «Mẫu hợp đồng» nên chung hàng rào quyền. */
+    laborContractTemplateEditor: (id: number | string) => `/hr/labor-contract-templates/${id}/edit`,
     /**
      * Đường CŨ của màn Phân quyền tài khoản — nay chỉ còn route chuyển tiếp sang
      * `system.permissions` (duoc-CR-396). **Đừng dùng để dựng liên kết mới**;

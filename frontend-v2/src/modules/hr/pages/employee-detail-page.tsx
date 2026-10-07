@@ -5,6 +5,7 @@ import {
   Building2,
   CalendarDays,
   FileCheck2,
+  FileSignature,
   Hash,
   History,
   IdCard,
@@ -46,6 +47,7 @@ import { EmployeeSignatureCard } from '../components/employee-signature-card'
 import { EmployeeTabContact } from '../components/employee-tab-contact'
 import { EmployeeTabDocuments } from '../components/employee-tab-documents'
 import { EmployeeTabGeneral } from '../components/employee-tab-general'
+import { EmployeeTabLaborContracts } from '../components/employee-tab-labor-contracts'
 import { EmployeeTabLeave } from '../components/employee-tab-leave'
 import { EmployeeWorkScheduleCard } from '../components/employee-work-schedule-card'
 import { EmployeeTabWorkDecisions } from '../components/employee-tab-work-decisions'
@@ -94,9 +96,13 @@ export function EmployeeDetailPage() {
   const { can } = usePermission()
   const { user: currentUser } = useAuth()
   const canWrite = can('employee', 'write')
+  //  Lương là dữ liệu nhạy cảm: không có quyền thì không dựng cả tab lẫn nội dung (tránh 403 lúc mount).
+  const canReadLaborContract = can('labor_contract', 'read')
   const canReadSensitive = useCanReadSensitive(employeeId)
 
-  const [tab, setTab] = useUrlParamState('tab', 'general')
+  const [urlTab, setTab] = useUrlParamState('tab', 'general')
+  //  Mở thẳng `?tab=labor-contracts` khi không có quyền thì về tab Chung, không để khung trống.
+  const tab = urlTab === 'labor-contracts' && !canReadLaborContract ? 'general' : urlTab
   const backTarget = useBackTarget(appRoutes.hr.employees)
 
   const { data: employee, isLoading, isError } = useEmployee(employeeId)
@@ -288,6 +294,12 @@ export function EmployeeDetailPage() {
                 <IdCard className="size-4" />
                 Giấy tờ &amp; BHXH
               </TabsTrigger>
+              {canReadLaborContract && (
+                <TabsTrigger value="labor-contracts" className={TAB_TRIGGER_UNDERLINE}>
+                  <FileSignature className="size-4" />
+                  Hợp đồng
+                </TabsTrigger>
+              )}
               <TabsTrigger value="leave" className={TAB_TRIGGER_UNDERLINE}>
                 <CalendarDays className="size-4" />
                 Quỹ phép
@@ -354,6 +366,12 @@ export function EmployeeDetailPage() {
                 canReadSensitive={canReadSensitive}
               />
             </TabsContent>
+
+            {canReadLaborContract && (
+              <TabsContent value="labor-contracts" className="mt-5 max-md:mt-2">
+                <EmployeeTabLaborContracts employee={employee} />
+              </TabsContent>
+            )}
 
             <TabsContent value="leave" className="mt-5 max-md:mt-2">
               <div className="space-y-5">

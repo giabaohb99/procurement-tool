@@ -489,9 +489,14 @@ def detach_users(db: Session, eid: int, actor_id: int) -> int:
 
 
 def delete_employee(db: Session, eid: int, user_id: int) -> int:
+    from app.modules.labor_contract import service as labor_contract_service
+
     from . import contact_service, work_history_service
 
     obj = get_employee(db, eid)
+    #  HĐLĐ đã ký / đã chấm dứt là chứng từ pháp lý → CHẶN 409 (trước `detach_users` để không
+    #  khóa tài khoản rồi mới báo lỗi). HĐ Nháp / Đã hủy thì dọn kèm tệp ở dưới.
+    labor_contract_service.ensure_employee_deletable(db, eid)
     locked = detach_users(db, eid, user_id)
     #  Hai bảng con mang dữ liệu cá nhân của NGƯỜI THỨ BA (cha mẹ, vợ chồng,
     #  con). Xóa hồ sơ mà để chúng lại là giữ hồ sơ CCCD của những người chưa
@@ -501,6 +506,7 @@ def delete_employee(db: Session, eid: int, user_id: int) -> int:
     #  Quá trình công tác (plan 261003-0837) — dọn mọi dòng + tệp QĐ đính kèm
     #  của người này, cùng lý lẽ với hai bảng con ngay trên.
     work_history_service.delete_all_of(db, eid)
+    labor_contract_service.delete_all_of(db, eid)
     #  ⚠️ Người này đang là quản lý trực tiếp của ai đó thì ô `manager_id` bên
     #  kia thành con số trỏ vào hư không, và bộ máy duyệt lùi về trưởng bộ phận
     #  một cách IM LẶNG. Gỡ tường minh về `0` — cùng nghĩa "chưa gán", nhưng màn

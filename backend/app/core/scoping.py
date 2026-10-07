@@ -207,6 +207,20 @@ SCOPE_FIELDS = {
     #  bằng work_schedule.write.
     "work_schedule":    PUBLIC,
 
+    #  HỢP ĐỒNG LAO ĐỘNG (05/10/2026). `company_id` / `department_id` là SNAPSHOT lúc lập
+    #  (HĐ thuộc phòng lúc ký); `self` = chính chủ HĐ (`employee_id`).
+    #  ⚠️ CỐ Ý KHÔNG khai `owner` (`created_by`): dòng MỚI luôn mang `created_by = người lập`, nên
+    #  phạm vi `own` kiểu owner sẽ cho MỌI người có quyền create lập HĐ cho nhân sự của BẤT KỲ pháp
+    #  nhân nào (lộ CCCD / STK qua tệp .docx). Không có `owner` thì `own` rơi vào nhánh `self`:
+    #  chỉ thấy HĐ của CHÍNH MÌNH (`employee_id == hồ sơ của tôi`; chưa gắn hồ sơ thì chặn hết);
+    #  lập HĐ cho chính mình bị `service.create` từ chối riêng (403).
+    "labor_contract":   {"company": "company_id", "dept_id": "department_id", "self": "employee_id"},
+    #  Mẫu thuộc một pháp nhân, không có chiều phòng ban và KHÔNG khai `owner` (cùng lẽ trên: người
+    #  tải mẫu lên pháp nhân nào cũng là `created_by` của dòng mới). Không `owner`, không `self` thì
+    #  `own` rơi về `company` (nhánh `scope = "company"` ở `_role_scope_cond`): chỉ mẫu của pháp
+    #  nhân MÌNH; chưa gắn pháp nhân thì chặn hết — không có đường nào thành «thấy tất cả».
+    "labor_contract_template": {"company": "company_id"},
+
     # --- Đặt phòng họp (duoc-CR-279) ---
     #  Phiếu đặt khai CẢ `owner` LẪN `self`, cùng lẽ với đơn nghỉ phép: một phiếu
     #  có hai người dính tới nó — người ĐẶT (`requester_employee_id`, chủ trì) và
