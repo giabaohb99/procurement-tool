@@ -12552,6 +12552,9 @@ lần sau 2 giây; nếu vẫn không phân loại được thì trả lời lu�
 của hãng đều thành một câu tiếng Việt ngắn, riêng lỗi hết hạn mức tìm Google thì nói rõ cần bật thanh toán cho dự án.
 
 Mã nguồn: backend/app/modules/agent_hub/ai_keys.py (is_transient, short_error) · agent_hub/manager.py · agent_hub/research.py · agent_hub/service.py
+Deploy: dev 07/10 khoảng 10:40, erp-v2 22cf18ef (Agent 1 sao lưu DB dev rồi dựng lại); prod giữ lại.
+
+
 ## duoc-CR-606 | Hợp đồng lao động trong hồ sơ nhân sự, chọn mẫu Word theo pháp nhân
 - status: xong
 - date: 2026-10-05
