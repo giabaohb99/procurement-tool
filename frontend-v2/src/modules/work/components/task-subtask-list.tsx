@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/utils/cn'
+import { DONE_CHECK_CLASS } from '../utils/work-colors'
 import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
 import type { WorkTask } from '../types/work'
 import { WORK_TASK_STATUS } from '../types/work'
@@ -71,7 +72,7 @@ export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubt
             <li key={s.id} className="flex items-center gap-2 rounded-md py-1 hover:bg-accent/50">
               <Checkbox
                 id={`subtask-${s.id}`}
-                className="rounded-full"
+                className={cn("rounded-full", DONE_CHECK_CLASS)}
                 checked={daXong}
                 disabled={!canEdit}
                 onCheckedChange={(checked) => onToggle(s.id, checked === true)}

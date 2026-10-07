@@ -24,7 +24,7 @@ import {
 import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
 import { taskDraggableId } from '../utils/kanban-drop'
 import { initials } from '../utils/people'
-import { chipClass } from '../utils/work-colors'
+import { chipClass, DONE_CHECK_CLASS } from '../utils/work-colors'
 import { PersonAvatar } from './person-avatar'
 
 interface TaskCardBodyProps {
@@ -156,7 +156,9 @@ export const TaskCardBody = memo(function TaskCardBody({
         <Checkbox
           //  `mt-0.5`: ô tick 16px còn dòng chữ 20px, không đẩy xuống thì nó
           //  treo cao hơn chữ nửa thân.
-          className="mt-0.5 shrink-0 rounded-full"
+          //  bao-CR-604: tick xong tô XANH LÁ, cùng màu chip «Hoàn thành» ở panel chi tiết
+          //  (mặc định của Checkbox là màu chủ đạo xanh biển, đại ca soi 07/10 thấy lệch).
+          className={cn("mt-0.5 shrink-0 rounded-full", DONE_CHECK_CLASS)}
           checked={done}
           disabled={!canEdit || !onToggleDone}
           aria-label={`Đánh dấu hoàn thành: ${task.title}`}
