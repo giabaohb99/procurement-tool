@@ -12844,6 +12844,7 @@ hiệu và chỗ ký. Word được đẩy vào thư mục «Biên bản họp»
 hai mươi công cụ trợ lý cá nhân còn thiếu trong bài kiểm phạm vi. Bài kiểm của bot và của công cụ trợ lý chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meetings.py · agent_hub/google_link.py (ensure_folder) · agent_hub/model.py · agent_hub/service.py · agent_hub/policy.py · assistant/tools/meeting_tool.py (mới) · assistant/provider/openai_compat.py (clean_reply) · migration meet02 · test/backend/test_agent_hub.py · test_assistant_pham_vi_doc.py · test_pham_vi_bo_may_duyet_xuyen_suot.py
+Deploy: dev 07/10 (Agent 1 gộp c910b95d, sao lưu DB dev trước, migration meet02, dựng lại api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
 
 ## duoc-CR-611 | Báo cáo thực hiện: xóa nhiều hồ sơ, xóa cả cụm, và thêm hồ sơ đầu tiên theo dòng hàng
 - status: xong
