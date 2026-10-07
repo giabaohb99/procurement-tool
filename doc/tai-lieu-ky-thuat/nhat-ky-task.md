@@ -12700,6 +12700,8 @@ việc đã xong thì đánh dấu xong hoặc bỏ, không có thao tác xóa. 
 được. Bản tin sáng có thêm mục «Việc riêng» liệt kê lịch riêng trong ngày và số món còn cần mua.
 
 Mã nguồn: backend/app/modules/agent_hub/personal_items.py (mới) · assistant/tools/personal_tool.py (ba công cụ thẻ) · agent_hub/briefs.py · migration pitem01
+Deploy: dev 07/10, erp-v2 5fb91c51 (Agent 1 sao lưu DB dev, gộp, dựng lại; migration pitem01 đã chạy); prod giữ lại.
+
 
 ## duoc-CR-609 | Tra cứu hóa chất ở bản cũ: thêm nút Cột để ẩn hiện từng cột của bảng
 - status: xong
