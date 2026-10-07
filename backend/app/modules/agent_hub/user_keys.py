@@ -168,3 +168,23 @@ def describe(db: Session, user_id: int) -> dict:
     row = active_row(db, user_id)
     return {"provider": PROVIDER_GEMINI, "has_key": row is not None, "hint": f"…{row.key_hint}" if row else "",
             "verified_at": row.verified_at.isoformat(timespec="seconds") if row and row.verified_at else None}
+
+
+def key_problem(error: str) -> str:
+    """ai-CR-097: lỗi nhà cung cấp AI nào là CHUYỆN CỦA KHÓA (hết tiền, hết hạn mức, khóa sai) → câu nói thẳng cho người
+    dùng, thay vì thẻ «làm luôn hay ghi việc» vô nghĩa. Lỗi khác → rỗng (xử lý như cũ).
+
+    06/10/2026: «Giá thép Hòa Phát» → Gemini 402 «prepayment credits are depleted» → bot hỏi «làm luôn hay ghi việc»,
+    đại ca tưởng bot không biết tra cứu.
+    """
+    e = (error or "").lower()
+    if "402" in e or "depleted" in e or "prepayment" in e or "billing" in e:
+        return ("Khóa Gemini của đại ca <b>hết tiền trả trước</b> (Gemini báo 402). Nạp thêm ở AI Studio "
+                "(ai.studio → Billing) rồi nhắn lại câu vừa rồi; hoặc đổi khóa ở ERP → Trang cá nhân → Khóa AI.")
+    if "429" in e or "resource_exhausted" in e or "quota" in e or "rate limit" in e:
+        return ("Khóa Gemini của đại ca <b>hết hạn mức</b> tạm thời (429). Chờ một phút rồi nhắn lại; "
+                "lặp lại nhiều thì nâng hạn mức ở AI Studio.")
+    if "api key not valid" in e or "api_key_invalid" in e or "permission_denied" in e or " 403" in e or "401" in e:
+        return ("Khóa Gemini của đại ca <b>không còn hợp lệ</b> (Gemini từ chối). Lấy khóa mới ở AI Studio rồi dán lại "
+                "ở ERP → Trang cá nhân → Khóa AI.")
+    return ""

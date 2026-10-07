@@ -2257,7 +2257,7 @@ def test_tro_ly_tren_telegram_nhan_persona_dau_dau(db, monkeypatch):
     assert sent[-1] == "Em là Đậu Đậu."
 
     def boom(question, **kw):
-        raise RuntimeError("429")
+        raise RuntimeError("mất mạng")   # ai-CR-097: lỗi KHÓA (402/429) nay có câu riêng, bài này giữ ca lỗi khác
 
     monkeypatch.setattr(assistant_service, "ask", boom)
     service.answer_question(db, "12345", "em tên gì")
@@ -7352,3 +7352,24 @@ def test_ghi_viec_bang_chu_di_thang_vao_so_viec(db, bot, monkeypatch):
     row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
     assert row.action == "" and row.body == "màn đơn hàng lọc sai ngày" and row.scope == service.SCOPE_COMPANY
     assert asked == [] and sent[-1] == "Em nhận rồi, đang xử lý."
+
+
+def test_khoa_gemini_het_tien_thi_noi_thang_khong_hoi_lam_luon_hay_ghi_viec(db, bot, monkeypatch):
+    """ai-CR-097: 06/10 «Giá thép Hòa Phát» → Gemini 402 depleted → bot hỏi «làm luôn hay ghi việc» (vô nghĩa)."""
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, asked = bot
+
+    def boom(text, **kw):
+        raise RuntimeError('Gemini trả lỗi 402: {"error": {"code": 402, "message": "Your prepayment credits are depleted."}}')
+
+    monkeypatch.setattr(service.manager, "run_intent", boom)
+    service.handle_message(db, _msg("Giá thép Hòa Phát"))
+    assert "hết tiền trả trước" in sent[-1] and "làm luôn" not in sent[-1]
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert row.action == service.ACT_COMMAND and asked == []
+    #  Lỗi khác (mạng) vẫn đi thẻ hai nút như cũ.
+    monkeypatch.setattr(service.manager, "run_intent", lambda text, **kw: (_ for _ in ()).throw(RuntimeError("timeout")))
+    service.handle_message(db, {**_msg("xem lại giúp anh"), "message_id": 8})
+    assert "chưa chắc" in sent[-1]
+    assert service.user_keys.key_problem("429 RESOURCE_EXHAUSTED") and not service.user_keys.key_problem("timeout")

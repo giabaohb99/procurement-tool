@@ -835,6 +835,12 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
                                           tasks=_task_context(db, chat_id, row.id))
     except Exception as e:  # noqa: BLE001 - phân loại hỏng không được làm mất tin
         finish_run(db, run, error=str(e))
+        if problem := user_keys.key_problem(str(e)):
+            #  ai-CR-097: lỗi do KHÓA (hết tiền / hạn mức / khóa sai) thì nói thẳng, không hỏi «làm luôn hay ghi việc».
+            row.action = ACT_COMMAND
+            log.warning("agent_hub: phân loại hỏng vì khóa AI (%s)", str(e)[:120])
+            reply(db, chat_id, problem)
+            return
         log.warning("agent_hub: phân loại ý định hỏng (%s), hỏi lại đại ca", e)
         _ask_intent_choice(db, chat_id, row)
         return
@@ -3066,7 +3072,8 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
                                               + (f"\n\n{memory_block}" if memory_block else ""))
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
-        reply(db, chat_id, f"{BOT_NAME} chưa trả lời được: {telegram.esc(str(e)[:300])}")
+        reply(db, chat_id, user_keys.key_problem(str(e))
+              or f"{BOT_NAME} chưa trả lời được: {telegram.esc(str(e)[:300])}")
         return
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.

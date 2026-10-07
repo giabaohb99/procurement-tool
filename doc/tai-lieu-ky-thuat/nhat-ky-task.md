@@ -12395,3 +12395,14 @@ mờ, bot trả lời luôn rồi thêm một dòng gợi ý «nếu là việc 
 dùng khi bộ phân loại hỏng.
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (INTENT_SYSTEM) · agent_hub/service.py (nhánh mo_ho, answer_question hint)
+
+## ai-CR-097 | Khóa Gemini hết tiền thì bot nói thẳng, không hỏi «làm luôn hay ghi việc»
+- status: xong
+- date: 2026-10-07
+Chiều 06/10 đại ca nhắn «Giá thép Hòa Phát» vẫn bị bot hỏi «làm luôn hay ghi việc» dù bản sửa ai-CR-096 đã lên dev.
+Tra sổ chạy trên dev thì lượt phân loại lỗi vì Gemini trả mã 402: khóa Gemini cá nhân của đại ca hết tiền trả trước,
+bộ phân loại hỏng nên bot rơi về thẻ hỏi lại cũ. Nay bot nhận diện lỗi do khóa (hết tiền, hết hạn mức, khóa sai) ở cả
+bộ phân loại lẫn Trợ lý AI, nói thẳng lý do và chỉ cách nạp thêm hoặc đổi khóa ở Trang cá nhân. Lỗi khác như mạng vẫn
+đi đường cũ. Việc cần tay đại ca: nạp thêm tiền cho khóa Gemini ở AI Studio.
+
+Mã nguồn: backend/app/modules/agent_hub/user_keys.py (key_problem) · agent_hub/service.py (nhánh phân loại hỏng, answer_question)
