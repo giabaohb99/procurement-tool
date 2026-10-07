@@ -53,6 +53,8 @@ export function formatMixtureLimit(pct: number | null | undefined): string {
   return `> ${pct.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}% trong hỗn hợp`
 }
 
+//  07/10/2026 — đại ca chốt: KHÔNG khóa cột nào (bỏ hết `hideable: false`), mọi cột đều ẩn / hiện
+//  được ở menu «Cột», kể cả «Ngưỡng / Mức cấm» và «Lưu ý».
 export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[] = [
   //  duoc-CR-598 (06/10/2026) — đúng các cột của phụ lục NĐ 24: STT · Tên khoa học · Tên chất ·
   //  Mã số CAS · Công thức hóa học. Trước đây tên tiếng Việt chỉ là dòng phụ dưới «Tên».
@@ -69,7 +71,6 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     key: 'list_label',
     header: 'Phụ lục / Văn bản',
     width: 230,
-    hideable: false,
     wrap: true,
     cell: (r) => (
       <Badge className={cn('whitespace-normal', regulationTone(r.list_code))}>
@@ -81,12 +82,11 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     key: 'name',
     header: 'Tên khoa học',
     width: 260,
-    hideable: false,
     wrap: true,
     cell: (r) => r.name,
   },
   { key: 'name_vi', header: 'Tên chất', width: 220, wrap: true, cell: (r) => r.name_vi },
-  { key: 'cas_no', header: 'Mã số CAS', width: 120, hideable: false, cell: (r) => r.cas_no },
+  { key: 'cas_no', header: 'Mã số CAS', width: 120, cell: (r) => r.cas_no },
   { key: 'formula', header: 'Công thức hóa học', width: 140, wrap: true, cell: (r) => r.formula },
   //  bao-CR-477 — con số quan trọng nhất của dòng đứng thành CỘT RIÊNG, chữ to đậm; trước
   //  đây nó nằm lẫn giữa một câu chữ thường ở cột «Lưu ý», đọc lướt là trôi mất.
@@ -97,7 +97,6 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     //  «Không quy định ngư…» — nới rộng và cho xuống dòng thay vì để dấu ba chấm nuốt mất ý.
     width: 180,
     wrap: true,
-    hideable: false,
     cell: (r) => {
       if (r.list_code === LIST_BANNED_TT75) {
         return (
@@ -138,7 +137,6 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
     key: 'obligation',
     header: 'Lưu ý',
     width: 360,
-    hideable: false,
     wrap: true,
     cell: (r) => r.obligation,
   },

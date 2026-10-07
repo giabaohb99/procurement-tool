@@ -12788,3 +12788,11 @@ thông báo lỗi nữa, và máy sửa mã được dựng lại để chạy b
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (ACT_READING trong nhánh đọc ý, plan_task) · agent_hub/constants.py
 
+## duoc-CR-610 | Tra cứu hóa chất ở bản mới: bỏ khóa cột để người dùng tự ẩn hiện mọi cột
+- status: xong
+- date: 2026-10-07
+Đại ca yêu cầu menu Cột của bảng Tra cứu hóa chất ở bản mới không được khóa cột nào. Trước đây năm cột Phụ lục hoặc văn bản,
+Tên khoa học, Mã số CAS, Ngưỡng hoặc mức cấm và Lưu ý bị khóa nên người dùng không bỏ tick được; nay mọi cột đều ẩn hiện được.
+Thẻ cảnh báo theo từ khóa dùng chung bộ cột nên cũng được mở theo. Bài kiểm của phần tra cứu hóa chất chạy xanh, chưa đưa lên dev.
+
+Mã nguồn: frontend-v2/src/modules/procurement/config/customs-regulation-columns.tsx
