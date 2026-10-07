@@ -176,7 +176,7 @@ Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác
 | T-09 | **XONG 25/09/2026 (ai-CR-064).** Nhắc trước mỗi cuộc họp 15 phút | S | Cần N-03 |
 | T-10 | **XONG 25/09/2026 (ai-CR-060).** «Nhắc anh 3h gọi nhà cung cấp X»: tạo lời nhắc bằng câu nói | S | Dùng bộ hẹn giờ và phần hiểu giờ sẵn có |
 | T-11 | **XONG 25/09/2026 (ai-CR-064).** Tạo lịch Google Calendar bằng câu nói, hỏi lại trước khi tạo. Dời / đổi tên lịch đã có: `update_calendar_event` (ai-CR-084). **Hủy** lịch đã có: `delete_calendar_event` (AI-0003, 06/10/2026) — khớp không đúng một sự kiện thì hỏi lại, lịch lặp lại chỉ hủy buổi của ngày đó, có khách mời thì Google gửi thư báo hủy | S | Cần N-03 |
-| T-12 | Việc rút ra từ biên bản thành lời nhắc và việc trong phân hệ Công việc của ERP | M | Chỗ hai cụm cộng lại đáng giá nhất |
+| T-12 | **XONG 07/10/2026 (ai-CR-114):** biên bản xong → một thẻ việc + lịch hẹn đánh số; «tạo hết» / «tạo 1 3 dự án 2» / «bỏ»; việc vào phân hệ Dự án (gán người khi khớp đúng một nhân sự), không có dự án thì thẻ cá nhân; lịch vào Google Calendar, chưa nối Google thì thẻ cá nhân. Việc rút ra từ biên bản thành lời nhắc và việc trong phân hệ Công việc của ERP | M | Chỗ hai cụm cộng lại đáng giá nhất |
 | T-13 | Ô **«Lịch hôm nay»** trên Trang chủ ERP v2: sự kiện trong ngày từ Google của từng người + việc ở phân hệ Dự án đến hạn hôm nay; chưa nối Google thì hiện nút «Nối Google» | M | **Để sau** — đại ca dặn note lại 05/10/2026. Lịch hiện xem qua Google Calendar, Telegram («lịch hôm nay»), Trợ lý web, bản tin 7:30 |
 
 ## Nhóm C — Trợ lý cá nhân trên nền công ty, token người dùng tự trả (thêm 06/10/2026)

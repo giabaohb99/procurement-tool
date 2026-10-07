@@ -8513,7 +8513,8 @@ def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monke
     assert any(t["name"] == "Biên bản chính thức" for t in listed["templates"])
     out = T.run_tool(db, owner, "rewrite_meeting_minutes", {"meeting": "1", "template": "chính thức"})
     assert out["started"] and out["template"] == "Biên bản chính thức"
-    assert "Thành phần" in prompts[-1] and "chốt mua 20 tấn thép" in prompts[-1]
+    writes = [p for p in prompts if p.startswith("YÊU CẦU")]       # lượt rút việc (ai-CR-114) không tính
+    assert "Thành phần" in writes[-1] and "chốt mua 20 tấn thép" in writes[-1]
     assert row.status == mt.MeetingStatus.DONE and row.template == "chinh_thuc" and "BIÊN BẢN" in sent[-1]
     word = Document(io.BytesIO(docs[-1]))
     text = "\n".join(p.text for p in word.paragraphs) + "\n".join(c.text for t in word.tables for r in t.rows for c in r.cells)
@@ -8530,7 +8531,7 @@ def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monke
     #  Lưu mẫu riêng bằng tool rồi dùng tên mẫu khi viết lại.
     assert T.run_tool(db, owner, "save_meeting_template", {"name": "Ngắn", "instruction": "ba dòng: chốt gì, ai làm, hạn"})["ok"]
     assert T.run_tool(db, owner, "rewrite_meeting_minutes", {"meeting": "Giao ban", "template": "mẫu Ngắn"})["template"] == "Ngắn"
-    assert "ba dòng: chốt gì" in prompts[-1]
+    assert "ba dòng: chốt gì" in [p for p in prompts if p.startswith("YÊU CẦU")][-1]
 
 
 def test_bo_phan_nghi_ma_model_suy_luan_tra_lan_vao_cau_tra_loi():
@@ -8617,3 +8618,121 @@ def test_chep_loi_treo_thi_doi_model_du_phong_khong_cho_muoi_lam_phut(monkeypatc
     monkeypatch.setattr(mt.requests, "post", lambda *a, **kw: (_ for _ in ()).throw(_rq.Timeout("treo")))
     with pytest.raises(mt.MeetingError, match="quá lâu"):
         mt.gemini_transcribe("k", "gs://f", "audio/mp3", "chinh", audio_sec=90, fallback="du-phong")
+
+
+# --- ai-CR-114: biên bản họp bước 10.3 — việc + lịch → một thẻ duyệt → việc ERP / thẻ cá nhân / lịch Google ----------
+def test_rut_viec_lich_chuan_hoa_va_doc_cau_tra_loi_the():
+    from app.modules.agent_hub import meeting_actions as ma
+
+    items = ma.normalize({"tasks": [{"title": "Chốt so sánh báo giá", "owner": "Mai", "due": "2026-10-10"},
+                                    {"title": "", "owner": "x"}, {"title": "Soạn công văn", "due": "mai"}, "rác"],
+                          "events": [{"title": "Họp giao ban", "start": "2026-10-14T09:00", "minutes": 9999,
+                                      "location": "phòng họp tầng 3"}, {"title": "Gặp NCC", "start": "chưa rõ"}]})
+    assert [(i["no"], i["kind"]) for i in items] == [(1, "task"), (2, "task"), (3, "event")]
+    assert items[1]["due"] == "" and items[2]["minutes"] == 600              # ngày lạ bỏ trống, độ dài có trần
+    assert ma.parse_reply("tạo hết", 3) == ("yes", [1, 2, 3], "")
+    assert ma.parse_reply("Tạo 1, 3 dự án 2", 3) == ("yes", [1, 3], "2")
+    assert ma.parse_reply("tạo hết dự án Thu mua", 3) == ("yes", [1, 2, 3], "Thu mua")
+    assert ma.parse_reply("tạo 7 9", 3) is None                              # số ngoài thẻ: không đoán
+    assert ma.parse_reply("tạo phiếu mua hàng 5 tấn thép", 3) is None        # câu khác có chữ «tạo»
+    assert ma.parse_reply("bỏ", 3) == ("no", [], "") and ma.parse_reply("không tạo", 3)[0] == "no"
+    assert ma.parse_reply("giá vàng hôm nay", 3) is None
+
+
+def _meeting_with_actions(db, mt, uid, monkeypatch, service, extracted: dict):
+    import json
+    from app.modules.agent_hub import personal_memory as pm
+    from app.modules.assistant.provider.base import ChatResult
+
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    monkeypatch.setattr(mt.telegram, "send_document", lambda *a, **kw: 1)
+
+    class P:
+        def ask(self, messages, **kw):
+            text = messages[0].content
+            body = json.dumps(extracted, ensure_ascii=False) if text.startswith("NGÀY HỌP") else "- Chốt mua thép"
+            return ChatResult(text=body, provider="x", model="x", input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(service.manager, "get_provider", lambda: P())
+    row = mt.create(db, user_id=uid, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="F", title="Giao ban")
+    row.transcript = "[00:05] Hùng: Mai chốt báo giá trước thứ sáu; thứ ba 14/10 họp lại 9 giờ"
+    db.commit()
+    return row
+
+
+def test_the_viec_lich_tu_bien_ban_duyet_roi_moi_tao(db, bot, seed, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.modules.agent_hub import draft_create, google_link, meeting_actions as ma, meetings as mt
+
+    service, sent, _ = bot
+    _owner_link(db, seed.u_req_id)
+    row = _meeting_with_actions(db, mt, seed.u_req_id, monkeypatch, service, {
+        "tasks": [{"title": "Chốt so sánh báo giá", "owner": "Mai", "due": "2026-10-10"},
+                  {"title": "Soạn công văn nhắc NCC xi măng", "owner": "", "due": ""}],
+        "events": [{"title": "Họp giao ban", "start": "2026-10-14T09:00", "minutes": 60, "location": "tầng 3"}]})
+    projects = [SimpleNamespace(id=11, name="Thu mua chung"), SimpleNamespace(id=12, name="Công trình Bình Dương")]
+    monkeypatch.setattr(ma, "projects_for", lambda db, user: projects)
+    monkeypatch.setattr(google_link, "get_link", lambda db, uid: SimpleNamespace(id=1))
+    events: list[dict] = []
+    monkeypatch.setattr(google_link, "api_post", lambda db, link, url, body: events.append(body) or {"id": "EV1"})
+    created: list[dict] = []
+    monkeypatch.setattr(draft_create, "create",
+                        lambda db, user, kind, draft: created.append(draft) or (f"việc #{len(created)}", len(created)))
+    assert mt.process(db, row.id)["status"] == "done"
+    card = sent[-1]
+    assert "Việc và lịch rút từ biên bản «Giao ban»" in card and "1. Chốt so sánh báo giá — Mai — hạn thứ bảy 10/10" in card
+    assert "3. Họp giao ban — 09:00 thứ tư 14/10 — tầng 3" in card and "Việc vào dự án nào? 1) Thu mua chung" in card
+    assert created == [] and events == []                                   # chưa duyệt thì chưa tạo gì
+    #  Nhiều dự án mà chưa nói dự án nào: hỏi lại MỘT câu, chưa tạo.
+    service.handle_message(db, _msg("tạo hết"))
+    assert "Việc vào dự án nào?" in sent[-1] and created == []
+    service.handle_message(db, _msg("tạo 1 3 dự án 2"))
+    assert [d["list_id"] for d in created] == [12] and created[0]["due_date"] == "2026-10-10"
+    assert "Người làm nêu trong họp: Mai" in created[0]["description"]     # «Mai» không khớp đúng một nhân sự
+    assert events[0]["start"]["dateTime"] == "2026-10-14T09:00:00" and events[0]["location"] == "tầng 3"
+    assert "1. Đã tạo việc #1" in sent[-1] and "3. Đã thêm vào lịch Google" in sent[-1]
+    db.refresh(row)
+    assert [it["state"] for it in row.actions] == [ma.ActionState.CREATED, ma.ActionState.PENDING, ma.ActionState.CREATED]
+    #  Thẻ đã dùng: «tạo hết» lần nữa không tạo lại (không còn thẻ chờ → đi đường khác, không tạo trùng).
+    service.handle_message(db, _msg("tạo hết dự án 2"))
+    assert len(created) == 1 and len(events) == 1
+
+
+def test_the_bien_ban_khong_co_du_an_thi_ghi_the_ca_nhan_va_bo_duoc(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import google_link, meeting_actions as ma, meetings as mt, personal_items as pi
+
+    service, sent, _ = bot
+    _owner_link(db, seed.u_req_id)
+    data = {"tasks": [{"title": "Gọi lại NCC", "owner": "Tuấn", "due": "2026-10-09"}],
+            "events": [{"title": "Gặp Hòa Phát", "start": "2026-10-15T14:30", "minutes": 30, "location": ""}]}
+    row = _meeting_with_actions(db, mt, seed.u_req_id, monkeypatch, service, data)
+    monkeypatch.setattr(ma, "projects_for", lambda db, user: [])
+    monkeypatch.setattr(google_link, "get_link", lambda db, uid: None)
+    mt.process(db, row.id)
+    assert "thẻ cá nhân (tài khoản chưa tạo việc được" in sent[-1] and "chưa nối Google" in sent[-1]
+    service.handle_message(db, _msg("tạo hết"))
+    items = pi.list_items(db, seed.u_req_id, pi.ItemKind.SCHEDULE, period="tat_ca")["items"]
+    titles = sorted(i["title"] for i in items)
+    assert titles == ["Gặp Hòa Phát", "Gọi lại NCC — Tuấn"]
+    assert "Đã ghi thẻ cá nhân" in sent[-1]
+    #  Biên bản khác → thẻ mới; «bỏ» thì không tạo gì.
+    row2 = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="G", title="Họp 2")
+    row2.transcript = "[00:01] A: x"
+    db.commit()
+    mt.process(db, row2.id)
+    service.handle_message(db, _msg("bỏ"))
+    assert "không tạo việc / lịch nào" in sent[-1]
+    assert len(pi.list_items(db, seed.u_req_id, pi.ItemKind.SCHEDULE, period="tat_ca")["items"]) == 2
+
+
+def test_rut_viec_hong_thi_khong_gui_the_va_bien_ban_van_xong(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import meetings as mt
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, _ = bot
+    _owner_link(db, seed.u_req_id)
+    row = _meeting_with_actions(db, mt, seed.u_req_id, monkeypatch, service, {})
+    assert mt.process(db, row.id)["status"] == "done"
+    assert "BIÊN BẢN" in "".join(sent) and not any("Việc và lịch rút" in m for m in sent)
+    assert not db.query(AgentMessage).filter_by(action="bb_cho_tao").count()

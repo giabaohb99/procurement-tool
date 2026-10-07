@@ -12870,3 +12870,17 @@ một lần bằng model dự phòng, hỏng cả hai thì báo người gửi m
 
 Mã nguồn: backend/app/modules/agent_hub/meetings.py (transcribe_timeout, gemini_transcribe) · test/backend/test_agent_hub.py
 Deploy: dev 07/10 (Agent 1 gộp 173895f6, dựng lại api, celery-worker, celery-beat, agent-poller); prod giữ lại.
+
+
+## ai-CR-114 | Biên bản họp rút việc và lịch hẹn thành một thẻ duyệt
+- status: xong
+- date: 2026-10-07
+Đại ca giao làm bước 10.3 của biên bản họp. Sau khi gửi biên bản, bot đọc lại bản chép lời và biên bản để rút ra các việc cần
+làm (tên việc, người làm, hạn) và các cuộc hẹn tiếp theo (tên, giờ, nơi), rồi gửi một thẻ đánh số. Bot không tạo gì khi người
+gửi chưa duyệt. Người gửi nhắn «tạo hết», chọn từng mục như «tạo 1 3», kèm «dự án 2» khi có nhiều dự án, hoặc «bỏ» để thôi;
+nếu có nhiều dự án mà chưa chọn thì bot hỏi lại đúng một câu. Việc được tạo trong phân hệ Dự án theo đúng đường tạo việc sẵn có,
+có kiểm quyền và báo chuông cho người được giao; người làm chỉ được gán khi tên khớp đúng một nhân sự, còn không thì tên được
+ghi vào mô tả. Ai chưa tạo việc được ở phân hệ Dự án thì việc được ghi vào thẻ cá nhân. Cuộc hẹn được thêm vào lịch Google,
+chưa nối Google thì ghi vào thẻ cá nhân. Mỗi mục nhớ trạng thái nên nhắn «tạo» lần hai không tạo trùng. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/meeting_actions.py (mới) · agent_hub/meetings.py · agent_hub/service.py · agent_hub/model.py · migration meet03 · test/backend/test_agent_hub.py

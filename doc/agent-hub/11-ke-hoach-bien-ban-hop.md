@@ -94,6 +94,17 @@ DEGO: Times New Roman 13, lề 3/2 cm, đầu trang công ty, bảng thông tin 
 Markdown thành bảng Word, chữ đậm giữ đậm, số trang; mẫu chính thức thêm quốc hiệu, «Số: …/BB-HĐ» và chỗ ký Thư ký /
 Chủ trì. Word lên Drive vào thư mục «Biên bản họp» (tự tạo lần đầu).
 
+**Chạy trọn trên dev 07/10 (ai-CR-113):** tệp giả gửi vào chat đại ca → biên bản chính thức + Word + Drive đúng; bước chép
+lời treo 12 phút vì model chính quá tải → trần chờ theo độ dài đoạn (2 phút + 1/3 độ dài) + thử một lần model dự phòng.
+
+**Bước 10.3 XONG 07/10 (ai-CR-114)** — `agent_hub/meeting_actions.py`, cột `tab_agent_meeting.actions` (migration
+`meet03`). Biên bản gửi xong → một lượt model rút JSON việc (tên · người làm · hạn) + lịch hẹn (tên · giờ · độ dài · nơi),
+ngày tương đối tính theo ngày xử lý → MỘT thẻ đánh số, không tạo gì khi chưa duyệt. Người gửi nhắn «tạo hết», «tạo 1 3»,
+kèm «dự án 2» khi có nhiều dự án (Q9: thẻ liệt kê sẵn dự án, thiếu thì hỏi lại đúng một câu), hoặc «bỏ». Việc → phân hệ
+Dự án qua đường «tạo» của nháp việc (kiểm quyền work_task.create, báo chuông người được giao); người làm khớp đúng một nhân
+sự thì gán, không thì ghi tên vào mô tả. Không quyền / không ở dự án nào → thẻ cá nhân. Lịch → Google Calendar, chưa nối
+Google → thẻ cá nhân. Mỗi mục ghi trạng thái, «tạo» lần hai không tạo trùng; thẻ mới thay thẻ cũ còn treo; thẻ sống 48 giờ.
+
 ## 7. Câu chờ đại ca chốt (bản đầu)
 
 | Mã | Câu | Em đề xuất |

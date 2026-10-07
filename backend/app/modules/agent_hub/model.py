@@ -358,6 +358,8 @@ class AgentMeeting(Base, AuditMixin):
     #  ai-CR-112: mẫu đã dùng — nhãn + lời dặn (mẫu riêng / lời dặn tại chỗ). Mẫu sẵn để trống lời dặn.
     template_label: Mapped[str] = mapped_column(String(80), default="")
     template_prompt: Mapped[str] = mapped_column(Text, default="")
+    #  ai-CR-114: việc + lịch rút từ biên bản, đánh số cho thẻ duyệt; mỗi mục ghi trạng thái (ActionState) và chỗ đã tạo.
+    actions: Mapped[list | None] = mapped_column(JSON, default=None, nullable=True)
     duration_sec: Mapped[int] = mapped_column(Integer, default=0)
     transcript: Mapped[str] = mapped_column(Text().with_variant(mysql.MEDIUMTEXT(), "mysql"), default="")
     recap: Mapped[str] = mapped_column(Text, default="")

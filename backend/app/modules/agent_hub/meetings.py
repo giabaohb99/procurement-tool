@@ -795,6 +795,10 @@ def _write(db: Session, row: AgentMeeting) -> dict:
     if drive_link:
         service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục «{DRIVE_FOLDER}»: {telegram.esc(drive_link)}")
     db.commit()
+    #  ai-CR-114 (bước 10.3): rút việc + lịch hẹn thành MỘT thẻ duyệt; hỏng thì thôi, biên bản đã gửi.
+    from . import meeting_actions
+
+    meeting_actions.offer(db, row)
     return {"status": "done", "meeting_id": row.id, "minutes": minutes, "template": tpl.label}
 
 
