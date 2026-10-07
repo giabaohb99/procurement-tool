@@ -8202,3 +8202,33 @@ def test_khoa_tram_tuy_chinh_kieu_openai(db, monkeypatch):
         assert manager.get_provider().ask([ChatMessage(role="user", content="alo")]).text == "dạ"
     assert posts == [("https://modelapi.vn/v1/chat/completions", "deepseek-v4.1-flash", True)]
 
+
+def test_dang_doc_y_thi_vong_gom_khong_nhat_va_viec_da_bo_khong_lap_ke_hoach(db, bot, monkeypatch):
+    """ai-CR-109: 07/10 «đơn hàng gần nhất» vừa được trả lời vừa thành việc AI-0004 (vòng gom nhặt lúc đang đọc ý)."""
+    from app.modules.agent_hub.model import AgentMessage
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, asked = bot
+    seen_actions = []
+
+    def slow_intent(text, **kw):
+        row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+        seen_actions.append(row.action)
+        #  Đúng lúc này vòng gom chạy: không được nhặt tin đang đọc ý.
+        monkeypatch.setattr(service.manager, "run_triage", lambda *a, **k: pytest.fail("không được gom tin đang đọc"))
+        assert service.triage_inbox(db, force=True) == 0
+        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="x", model="x", input_tokens=0,
+                                                          output_tokens=0)
+
+    monkeypatch.setattr(service.manager, "run_intent", slow_intent)
+    service.handle_message(db, _msg("alooo, đơn hàng gần nhất"))
+    assert seen_actions == [service.ACT_READING] and asked == ["alooo, đơn hàng gần nhất"]
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).one()
+    assert row.action == service.ACT_ASKED and row.task_id == 0
+    #  Việc đã bỏ: lập kế hoạch không chạy, không nhắn gì.
+    task = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_CANCELLED)
+    n = len(sent)
+    monkeypatch.setattr(service, "_plan_task", lambda *a, **k: pytest.fail("việc đã bỏ không lập kế hoạch"))
+    service.plan_task(db, task)
+    assert len(sent) == n
+

@@ -192,6 +192,7 @@ ACT_ASKED = "hoi"         # Đã chuyển cho Trợ lý AI trả lời tại ch�
 #  `cho_xn:<thao tác>` — chép luôn tên thao tác vào dấu để câu «đúng» chạy đúng thứ đã hỏi, khỏi
 #  hỏi lại model lần hai.
 ACT_WAIT_CONFIRM = "cho_xn:"
+ACT_READING = "dang_doc"  # ai-CR-109: đang đọc ý — vòng gom KHÔNG được nhặt (đọc ý chậm hơn khoảng lặng 10 s)
 ACT_WAIT_CHOICE = "cho_y"  # Chưa rõ hỏi hay giao việc, đang chờ đại ca bấm nút
 ACT_ANSWER = "tra_loi"    # Tin bot gửi = câu trả lời của Trợ lý AI (để nối mạch hội thoại)
 #  Kết quả tool của Trợ lý AI đưa ra Telegram (ai-CR-009). Tin CHIỀU RA, không vào mạch

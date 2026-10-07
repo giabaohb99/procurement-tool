@@ -12776,3 +12776,15 @@ nhập, chỉ nhận địa chỉ https có tên miền công khai, chặn đị
 
 Mã nguồn: backend/app/modules/agent_hub/ai_keys.py (normalize_base_url, custom_models) · agent_hub/manager.py (_AgentCustom) · migration aibase01 · frontend-v2 ai-key-list-card.tsx
 Deploy: dev 07/10, erp-v2 d3331f8d (Agent 1 sao lưu DB dev, gộp, dựng lại; migration aibase01 đã chạy); prod giữ lại.
+
+## ai-CR-109 | Bot không tự sinh việc sửa mã khi đang đọc câu hỏi, việc đã bỏ thì không lập kế hoạch
+- status: xong
+- date: 2026-10-07
+Đại ca hỏi «đơn hàng gần nhất», bot vừa trả lời vừa sinh ra việc sửa mã AI-0004. Nguyên nhân là lúc đọc ý câu hỏi mất hơn
+mười giây vì model chính quá tải phải chuyển sang model dự phòng, trong khi vòng gom việc chạy sau mười giây lặng đã nhặt
+tin đó như một việc mới. Nay tin được đánh dấu «đang đọc» trước khi bot đọc ý, vòng gom bỏ qua tin đang đọc, chỉ khi bot
+xác định là việc sửa phần mềm mới trả tin về cho vòng gom. Ngoài ra, việc đã bỏ thì bot không lập kế hoạch và không gửi
+thông báo lỗi nữa, và máy sửa mã được dựng lại để chạy bản mới có model dự phòng.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (ACT_READING trong nhánh đọc ý, plan_task) · agent_hub/constants.py
+

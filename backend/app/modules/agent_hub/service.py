@@ -59,6 +59,7 @@ from .constants import (
     ACT_PROPOSAL_DONE,
     ACT_PROPOSAL_DROPPED,
     ACT_WAIT_CHOICE,
+    ACT_READING,
     ACT_WAIT_CONFIRM,
     ACT_PHOTO_ACK,
     ACT_PHOTO_USED,
@@ -947,6 +948,11 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         reply(db, chat_id, user_keys.NO_KEY_HELP)
         return
 
+    #  ai-CR-109: 07/10 «đơn hàng gần nhất» — đọc ý mất > 10 s (model chính quá tải, sang model dự phòng), vòng gom
+    #  nhặt tin còn dấu rỗng thành việc AI-0004 trong khi Trợ lý vẫn trả lời. Đóng dấu «đang đọc» trước khi gọi model;
+    #  chỉ nhánh GIAO VIỆC mới trả về dấu rỗng cho vòng gom.
+    row.action = ACT_READING
+    db.commit()
     run = start_run(db, 0, STAGE_INTENT)
     try:
         data, result = manager.run_intent(text, context=_intent_context(db, chat_id, row.id),
@@ -998,7 +1004,10 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  ai-CR-021: đại ca muốn biết ngay là bot đã nhận — nhắn MỘT câu báo nhận cho cả chùm tin
     #  liên tiếp (không phải mỗi câu một tiếng chuông, lý do bản cũ im lặng hẳn).
     else:
+        row.action = ""          # ai-CR-109: trả tin về INBOX cho vòng gom
         ack_task_message(db, chat_id, row)
+    if row.action == ACT_READING:
+        row.action = ACT_COMMAND     # nhánh nào quên đóng dấu thì cũng không để vòng gom nhặt nhầm
 
 
 # ---------------------------------------------------------------------------
@@ -3944,6 +3953,10 @@ def next_code(db: Session) -> str:
 # ---------------------------------------------------------------------------
 def plan_task(db: Session, task: AgentTask) -> None:
     """Lập kế hoạch. Gọi từ worker (ngoài ngữ cảnh) thì chạy bằng khóa của đại ca (ai-CR-053)."""
+    db.refresh(task)
+    if task.status in CLOSED_STATUSES:
+        #  ai-CR-109: AI-0004 bị bỏ lúc máy sửa mã đang rà soát; rà xong vẫn đi lập kế hoạch rồi báo «lỗi 503».
+        return
     if user_keys.in_context():
         _plan_task(db, task)
         return
