@@ -12753,3 +12753,14 @@ chỉ chờ tối đa 25 giây, và với người không phải chủ bot thì 
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (fallback_model, _send, _call) · agent_hub/research.py · agent_hub/constants.py (BOT_PERSONA_OTHER) · agent_hub/service.py (_persona) · core/config.py
 Deploy: dev 07/10, erp-v2 404cdcf7 rồi 953cc7bd (Agent 1 gộp và dựng lại hai lượt); prod giữ lại.
+
+## ai-CR-107 | Thêm DeepSeek và Grok vào danh sách khóa AI
+- status: xong
+- date: 2026-10-07
+Đại ca muốn dùng thêm model của DeepSeek và Grok. Màn Khóa AI ở Trang cá nhân và thẻ khóa công ty ở Cấu hình hệ thống
+nay có thêm hai hãng này: dán khóa, hệ thống gọi thử một lượt không tốn token rồi lưu, đặt thứ tự ưu tiên như các hãng
+khác. Cả hai hãng dùng chung cách gọi kiểu OpenAI nên bot và Trợ lý web gọi được, kể cả gọi công cụ ERP với model
+deepseek-chat và các model Grok. Không đổi cấu trúc dữ liệu.
+
+Mã nguồn: backend/app/modules/assistant/provider/openai_compat.py (DeepSeekProvider, XaiProvider) · agent_hub/ai_keys.py · agent_hub/manager.py · frontend-v2 ai-key-list-card.tsx
+

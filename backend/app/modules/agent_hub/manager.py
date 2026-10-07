@@ -20,7 +20,8 @@ from app.modules.assistant.provider.base import ChatMessage, ChatResult, Provide
 from app.modules.assistant.provider.base import Provider
 from app.modules.assistant.provider.claude import ClaudeProvider
 from app.modules.assistant.provider.gemini import GeminiProvider
-from app.modules.assistant.provider.openai_compat import OpenAICompatProvider, OpenRouterProvider
+from app.modules.assistant.provider.openai_compat import (DeepSeekProvider, OpenAICompatProvider, OpenRouterProvider,
+                                                         XaiProvider)
 
 from .constants import BOT_NAME, SCOPE_COMPANY, SCOPE_PERSONAL
 
@@ -183,7 +184,22 @@ class _AgentOpenRouter(OpenRouterProvider):
         return user_keys.active_key()
 
 
-_DELEGATES: dict[str, Provider] = {"claude": _AgentClaude(), "openai": _AgentOpenAI(), "openrouter": _AgentOpenRouter()}
+class _AgentDeepSeek(DeepSeekProvider):
+    def _api_key(self) -> str:
+        from . import user_keys
+
+        return user_keys.active_key()
+
+
+class _AgentXai(XaiProvider):
+    def _api_key(self) -> str:
+        from . import user_keys
+
+        return user_keys.active_key()
+
+
+_DELEGATES: dict[str, Provider] = {"claude": _AgentClaude(), "openai": _AgentOpenAI(), "openrouter": _AgentOpenRouter(),
+                                   "deepseek": _AgentDeepSeek(), "xai": _AgentXai()}
 
 
 def get_provider() -> AgentGeminiProvider:

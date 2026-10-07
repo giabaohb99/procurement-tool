@@ -8120,3 +8120,42 @@ def test_gemini_qua_tai_doi_sang_model_du_phong_va_xung_ho_nguoi_khac(db, monkey
     from app.modules.agent_hub import personal_memory as pm
     assert pm.guess_section("gọi anh là sếp") == "cach_lam_viec"
 
+
+def test_them_hang_deepseek_va_grok(db, monkeypatch):
+    """ai-CR-107: đại ca «cho thêm model của deepseek… và grok nữa»."""
+    from app.modules.agent_hub import ai_keys, manager, user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider import get_provider
+    from app.modules.assistant.provider import openai_compat as oc
+    from app.modules.assistant.provider.base import ChatMessage
+
+    assert {"deepseek", "xai"} <= set(ai_keys.PROVIDERS)
+    assert ai_keys.PROVIDER_LABELS["xai"] == "Grok (xAI)"
+    urls = []
+
+    class R:
+        status_code = 200
+
+    monkeypatch.setattr(ai_keys.requests, "get", lambda url, headers=None, timeout=0: urls.append(url) or R())
+    ai_keys.verify("deepseek", "sk-deepseek-abcdefghijklmnop")
+    ai_keys.verify("xai", "xai-abcdefghijklmnopqrstuvw")
+    assert urls == ["https://api.deepseek.com/models", "https://api.x.ai/v1/models"]
+    assert get_provider("deepseek").base_url == "https://api.deepseek.com/v1" and get_provider("xai").name == "xai"
+    #  Bộ định tuyến khóa giao đúng hãng, đúng khóa.
+    posts = []
+
+    class P:
+        status_code = 200
+
+        def json(self):
+            return {"model": "deepseek-chat", "usage": {}, "choices": [{"message": {"content": "chào"}}]}
+
+    monkeypatch.setattr(oc.requests, "post", lambda url, json=None, headers=None, timeout=0:
+                        posts.append((url, headers["authorization"], json["model"])) or P())
+    with user_keys.use_chain([KeyRef(provider="deepseek", key="sk-ds-abcdefghijk", row_id=9)]):
+        assert manager.get_provider().ask([ChatMessage(role="user", content="hi")]).text == "chào"
+    with user_keys.use_chain([KeyRef(provider="xai", key="xai-key-abcdefghijk", row_id=10, model="grok-4")]):
+        manager.get_provider().ask([ChatMessage(role="user", content="hi")])
+    assert posts == [("https://api.deepseek.com/v1/chat/completions", "Bearer sk-ds-abcdefghijk", "deepseek-chat"),
+                     ("https://api.x.ai/v1/chat/completions", "Bearer xai-key-abcdefghijk", "grok-4")]
+

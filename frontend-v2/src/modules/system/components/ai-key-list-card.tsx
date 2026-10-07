@@ -16,6 +16,8 @@ const FALLBACK_PROVIDERS: AiProviderInfo[] = [
   { name: 'claude', label: 'Claude', site: 'https://console.anthropic.com/' },
   { name: 'openai', label: 'OpenAI', site: 'https://platform.openai.com/api-keys' },
   { name: 'openrouter', label: 'OpenRouter', site: 'https://openrouter.ai/keys' },
+  { name: 'deepseek', label: 'DeepSeek', site: 'https://platform.deepseek.com/api_keys' },
+  { name: 'xai', label: 'Grok (xAI)', site: 'https://console.x.ai' },
 ]
 
 /** Gợi ý model hay dùng của từng hãng — chỉ là gợi ý, gõ tên khác vẫn được. */
@@ -24,6 +26,8 @@ const MODEL_SUGGESTIONS: Record<string, string[]> = {
   claude: ['claude-haiku-4-5', 'claude-sonnet-4-5'],
   openai: ['gpt-5-mini', 'gpt-5'],
   openrouter: ['google/gemini-2.5-flash', 'anthropic/claude-sonnet-4.5', 'openai/gpt-5-mini', 'deepseek/deepseek-chat'],
+  deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+  xai: ['grok-4-fast', 'grok-4', 'grok-3-mini'],
 }
 
 interface AiKeyListCardProps {

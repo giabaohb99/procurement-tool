@@ -175,6 +175,29 @@ class OpenRouterProvider(OpenAICompatProvider):
     max_tokens_field = "max_tokens"
 
 
+class DeepSeekProvider(OpenAICompatProvider):
+    """DeepSeek (ai-CR-107) — API kiểu OpenAI. `deepseek-chat` gọi công cụ được; `deepseek-reasoner` suy luận sâu, không
+    nên giao việc cần gọi công cụ ERP."""
+
+    name = "deepseek"
+    base_url = "https://api.deepseek.com/v1"
+    setting_key = "deepseek_api_key"
+    setting_model = "ai_deepseek_model"
+    fallback_model = "deepseek-chat"
+    max_tokens_field = "max_tokens"
+
+
+class XaiProvider(OpenAICompatProvider):
+    """Grok của xAI (ai-CR-107) — API kiểu OpenAI tại api.x.ai."""
+
+    name = "xai"
+    base_url = "https://api.x.ai/v1"
+    setting_key = "xai_api_key"
+    setting_model = "ai_xai_model"
+    fallback_model = "grok-4-fast"
+    max_tokens_field = "max_tokens"
+
+
 def _row_count(result: dict) -> int | None:
     for k in ("total", "count"):
         if isinstance(result.get(k), int):

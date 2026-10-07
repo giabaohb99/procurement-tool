@@ -30,12 +30,15 @@ PROVIDER_GEMINI = "gemini"
 PROVIDER_CLAUDE = "claude"
 PROVIDER_OPENAI = "openai"
 PROVIDER_OPENROUTER = "openrouter"
-PROVIDERS = (PROVIDER_GEMINI, PROVIDER_CLAUDE, PROVIDER_OPENAI, PROVIDER_OPENROUTER)
+PROVIDER_DEEPSEEK = "deepseek"      # ai-CR-107
+PROVIDER_XAI = "xai"                # ai-CR-107: Grok
+PROVIDERS = (PROVIDER_GEMINI, PROVIDER_CLAUDE, PROVIDER_OPENAI, PROVIDER_OPENROUTER, PROVIDER_DEEPSEEK, PROVIDER_XAI)
 PROVIDER_LABELS = {PROVIDER_GEMINI: "Gemini", PROVIDER_CLAUDE: "Claude", PROVIDER_OPENAI: "OpenAI",
-                   PROVIDER_OPENROUTER: "OpenRouter"}
+                   PROVIDER_OPENROUTER: "OpenRouter", PROVIDER_DEEPSEEK: "DeepSeek", PROVIDER_XAI: "Grok (xAI)"}
 #  Trang lấy khóa — bot chỉ cách, không bao giờ nhận khóa qua chat.
 PROVIDER_SITES = {PROVIDER_GEMINI: "https://aistudio.google.com/apikey", PROVIDER_CLAUDE: "https://console.anthropic.com/",
-                  PROVIDER_OPENAI: "https://platform.openai.com/api-keys", PROVIDER_OPENROUTER: "https://openrouter.ai/keys"}
+                  PROVIDER_OPENAI: "https://platform.openai.com/api-keys", PROVIDER_OPENROUTER: "https://openrouter.ai/keys",
+                  PROVIDER_DEEPSEEK: "https://platform.deepseek.com/api_keys", PROVIDER_XAI: "https://console.x.ai"}
 
 PROBE_TIMEOUT = 15
 _COMPANY_TTL = 60.0
@@ -75,6 +78,12 @@ def _probe(provider: str, raw: str) -> int:
                              headers={"x-api-key": raw, "anthropic-version": "2023-06-01"}, timeout=PROBE_TIMEOUT)
         elif provider == PROVIDER_OPENAI:
             r = requests.get("https://api.openai.com/v1/models", headers={"authorization": f"Bearer {raw}"},
+                             timeout=PROBE_TIMEOUT)
+        elif provider == PROVIDER_DEEPSEEK:
+            r = requests.get("https://api.deepseek.com/models", headers={"authorization": f"Bearer {raw}"},
+                             timeout=PROBE_TIMEOUT)
+        elif provider == PROVIDER_XAI:
+            r = requests.get("https://api.x.ai/v1/models", headers={"authorization": f"Bearer {raw}"},
                              timeout=PROBE_TIMEOUT)
         elif provider == PROVIDER_OPENROUTER:
             r = requests.get("https://openrouter.ai/api/v1/key", headers={"authorization": f"Bearer {raw}"},
