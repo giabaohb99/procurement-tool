@@ -70,7 +70,7 @@ GRANT SELECT, INSERT, UPDATE ON `procurement_dev`.`tab_agent_message` TO 'agent_
 GRANT SELECT, UPDATE ON `procurement_dev`.`tab_agent_runner` TO 'agent_runner'@'%';
 GRANT SELECT ON `procurement_dev`.`tab_agent_grant` TO 'agent_runner'@'%';
 GRANT SELECT ON `procurement_dev`.`tab_agent_chat_link` TO 'agent_runner'@'%';
-GRANT SELECT ON `procurement_dev`.`tab_agent_user_key` TO 'agent_runner'@'%';
+GRANT SELECT ON `procurement_dev`.`tab_ai_key` TO 'agent_runner'@'%';   -- ai-CR-098: tên mới của tab_agent_user_key; rà soát xong máy gọi lập kế hoạch bằng khóa đại ca
 GRANT SELECT ON `procurement_dev`.`tab_setting` TO 'agent_runner'@'%';
 GRANT SELECT ON `procurement_dev`.`alembic_version` TO 'agent_runner'@'%';
 FLUSH PRIVILEGES;

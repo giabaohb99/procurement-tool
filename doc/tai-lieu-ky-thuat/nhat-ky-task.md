@@ -12540,3 +12540,4 @@ gọi được công cụ; Trợ lý trên web cũng đọc khóa công ty trong
 nhớ trước đây chỉ chạy ở chat đại ca.
 
 Mã nguồn: backend/app/modules/agent_hub/ai_keys.py · agent_hub/user_keys.py · agent_hub/manager.py (AgentGeminiProvider) · assistant/provider/openai_compat.py · frontend-v2 ai-key-list-card.tsx, company-ai-keys-panel.tsx · migration aikey01
+Deploy: dev 07/10 khoảng 10:05, erp-v2 26222996 (Agent 1 sao lưu DB dev, dựng lại api, web, erp, celery-worker, celery-beat, agent-poller; migration aikey01 đã chạy). Sau đó cấp lại quyền chỉ đọc bảng tab_ai_key cho tài khoản MySQL của máy sửa mã và gỡ quyền trên tên bảng cũ, vì máy sửa mã đọc khóa của đại ca để lập kế hoạch sau bước rà soát; đã thử máy đọc được. Prod giữ lại.
