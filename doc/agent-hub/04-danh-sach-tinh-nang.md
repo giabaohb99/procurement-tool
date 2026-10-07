@@ -41,7 +41,7 @@ một token Telegram riêng.
 |---|---|---|---|
 | N-01 | Nhiều bot một nền: mỗi bot một token, sổ ghi rõ tin nào của bot nào | M | |
 | N-02 | Tải tệp từ Telegram: ảnh, tin thoại, tệp nhỏ (trần 20 MB của Telegram) | S | **Xong phần ảnh** ai-CR-035; tin thoại để T-07 |
-| N-03 | Kết nối tài khoản Google một lần (Drive + Calendar), khóa lưu mã hóa | M | Chờ Q2 |
+| N-03 | **Thay bằng M-06 (Google từng người, ai-CR-064).** Kết nối tài khoản Google một lần (Drive + Calendar), khóa lưu mã hóa | M | Chờ Q2 |
 | N-04 | Chi phí theo từng bot, từng ngày, có trần ngày | S | |
 | N-05 | Cách ly quyền: mỗi bot chỉ thấy khóa của nó | M | Bắt buộc trước khi bật bot Nghiên cứu |
 | N-06 | Giao thức **A2A** (Agent2Agent, Google 2025, nay Linux Foundation) giữa các bot: thẻ giới thiệu năng lực, giao việc, báo tiến độ, trả kết quả — thay hàng đợi Redis tự viết khi có bot thứ ba, thứ tư | M | Thêm 05/10. Học từ các khung orchestrator–worker mở |
@@ -70,7 +70,7 @@ lõi. Cổng MCP phải nằm trong backend ERP có tên miền thật (dev rồ
 | M-04 | **XONG 25/09/2026 (ai-CR-063).** Tool tạo / gửi duyệt qua MCP, xác nhận hai bước phía server (dùng lại `draft_create`) | M | Đề nghị thanh toán chỉ trên web |
 | M-05 | **XONG 25/09/2026 (ai-CR-063).** Tool báo lỗi qua MCP → phiếu hỗ trợ → Đậu Đậu | S | Duyệt / gộp vẫn theo nhóm K |
 | M-06 | **XONG 25/09/2026 (ai-CR-064).** Mỗi người tự nối Google của mình (Drive, Lịch), tool lịch / Drive đọc dữ liệu của chính họ | L | Thay N-03 theo hướng từng người; khóa OAuth lưu mã hóa |
-| M-07 | Trợ lý trên web chạy bằng AI + khóa do từng người chọn (khóa lưu mã hóa, chỉ người đó dùng) | M | Công ty thôi trả tiền model theo lượt. Đại ca chốt 24/09: trên dev, web vẫn dùng khóa công ty; D-01 chỉ cho kênh chat |
+| M-07 | **Một phần 07/10/2026 (ai-CR-098): sổ khóa chung; web vẫn dùng khóa công ty — khóa cá nhân cho web chưa làm.** Trợ lý trên web chạy bằng AI + khóa do từng người chọn (khóa lưu mã hóa, chỉ người đó dùng) | M | Công ty thôi trả tiền model theo lượt. Đại ca chốt 24/09: trên dev, web vẫn dùng khóa công ty; D-01 chỉ cho kênh chat |
 | M-08 | Kênh Zalo OA dùng chung lõi với Telegram | M | Zalo đẩy webhook: dùng tên miền ERP |
 | M-09 | **Lõi gọi công cụ MCP bên ngoài**: đại ca nhắn «thêm công cụ X tại địa chỉ Y» → bot ghi sổ, các lượt sau model thấy và gọi được, không build lại. Dùng thư viện MCP client chính thức (`mcp` SDK) | M | Thêm 05/10. Đúng ý «lõi chung, cần gì đấu vào» |
 
@@ -167,10 +167,10 @@ Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác
 |---|---|---|---|
 | T-01 | **Thử trước (M0):** chạy một tệp họp thật qua Gemini ra biên bản, đo chất lượng và chi phí | S | Chốt chặn: không qua thì dừng cụm biên bản. Chờ Q1, Q5 |
 | T-02 | Đọc thư mục ghi âm trên Drive, gom nhiều tệp của một cuộc họp thành một phiên | M | Tệp họp dài không gửi qua bot được, phải qua Drive |
-| T-03 | Chuẩn hóa và cắt âm thanh dài cho vừa model | M | |
-| T-04 | Gỡ băng từng tệp, nối theo thứ tự thời gian | M | |
-| T-05 | Mẫu biên bản là dữ liệu (chính thức · gạch đầu dòng · danh sách việc · đầy đủ theo giờ), chọn mẫu bằng chữ | M | Thêm mẫu không phải sửa mã |
-| T-06 | Xuất Word theo mẫu DEGO lên Drive, gửi bản tóm tắt ngay trong chat kèm link | M | |
+| T-03 | **XONG 07/10/2026 (ai-CR-104).** Chuẩn hóa và cắt âm thanh dài cho vừa model | M | |
+| T-04 | **XONG 07/10/2026 (ai-CR-104), một tệp / phiên; gộp nhiều tệp một cuộc họp còn ở T-02.** Gỡ băng từng tệp, nối theo thứ tự thời gian | M | |
+| T-05 | **Một phần 07/10/2026 (ai-CR-104): 4 mẫu có trong mã, chọn bằng chữ; còn đưa ra cấu hình để sửa không cần mã (bước 10.2).** Mẫu biên bản là dữ liệu (chính thức · gạch đầu dòng · danh sách việc · đầy đủ theo giờ), chọn mẫu bằng chữ | M | Thêm mẫu không phải sửa mã |
+| T-06 | **XONG 07/10/2026 (ai-CR-104).** Xuất Word lên Drive, gửi bản tóm tắt ngay trong chat kèm link | M | |
 | T-07 | **XONG 25/09/2026 (ai-CR-061).** Tin thoại ngắn thành lời nhắc hoặc việc | S | Cần N-02 |
 | T-08 | **XONG 25/09/2026 (ai-CR-064).** Bản tin 8h sáng: lịch hôm nay, việc đến hạn, phiếu chờ đại ca duyệt | M | Cần N-03 |
 | T-09 | **XONG 25/09/2026 (ai-CR-064).** Nhắc trước mỗi cuộc họp 15 phút | S | Cần N-03 |
@@ -190,7 +190,7 @@ hỏi «lên lịch trình ăn + đi lại» thì nói chưa có công cụ rồ
 |---|---|---|---|
 | C-01 | **XONG 06/10/2026 (ai-CR-093, ai-CR-094).** Luật trợ lý cá nhân: việc bằng chữ (lịch trình, kế hoạch, gợi ý, soạn thảo, tư vấn) làm ngay không đòi công cụ; không gạ phiếu ERP cho nhu cầu cá nhân; câu cần nơi đang ở mà chưa biết thì hỏi một câu | S | |
 | C-02 | **XONG đợt 1, 06/10/2026 (ai-CR-095).** Hai tầng theo khung Letta: LÕI (`tab_agent_memory`, mỗi người một dòng Markdown bốn mục, trần 8.000 ký tự, nạp mọi câu hỏi, bộ đệm 10 phút) + KHO (`tab_agent_note` + vector `agent_personal` lọc `user_id`, lấy 5 đoạn liên quan). Lệnh «nhớ: …» · «quên: …» · «ghi chú: tiêu đề \| nội dung» · «sổ nhớ» · «xuất sổ nhớ»; bot tự ghi qua `remember_fact` và báo «Em ghi nhớ: …». Không ghi bí mật. **Đợt 2 XONG 07/10/2026 (ai-CR-102):** tóm tắt cuối buổi (im lặng 30 phút, vòng nền 10 phút, cất vào kho, không nhắn), hồi ức `search_chat_history` (56 tool), dòng có hạn «nhớ tuần này / đến 15/10: …» + `remember_fact.until`. ~~**Sổ ghi nhớ riêng từng người**~~: khu hay ở, gia đình, thói quen, sở thích, cách xưng hô, điều đã chốt. Mọi lượt trả lời đọc sổ trước; người dùng dạy bằng «nhớ: …», xem «sổ nhớ», quên bằng «quên: …». Bot tự đề nghị ghi khi bị sửa lưng | M | Lưu theo user_id (tab_setting như sổ thuật ngữ), mã hóa phần nhạy cảm; KHÔNG dùng chung giữa người |
-| C-03 | **Vị trí**: đọc tin «gửi vị trí» của Telegram, nhớ vài giờ; gợi ý quanh đó kèm khoảng cách; không có thì dùng khu quen trong C-02 | S | Cần C-02 cho khu quen |
+| C-03 | **BỎ 06/10/2026 (đại ca: lấy khu trong sổ ghi nhớ).** **Vị trí**: đọc tin «gửi vị trí» của Telegram, nhớ vài giờ; gợi ý quanh đó kèm khoảng cách; không có thì dùng khu quen trong C-02 | S | Cần C-02 cho khu quen |
 | C-04 | **XONG 07/10/2026 (ai-CR-098).** Sổ khóa MỘT bảng `tab_ai_key` cho công ty (`owner_type` 1) lẫn cá nhân (2): Gemini · Claude · OpenAI · OpenRouter, `priority` (1 = chính), `model`, `daily_cap` riêng (đếm qua `tab_agent_run.key_id`). Bot dùng chuỗi cá nhân → công ty (→ `.env` chỉ cho chat đại ca); khóa hết tiền / hạn mức / sai thì tự nhảy khóa kế, KHÔNG nhắn (đại ca chốt); hỏi «còn khóa nào» thì liệt kê + lượt hôm nay. Màn: Trang cá nhân → Khóa AI (nhiều dòng, đổi ưu tiên, model, trần) + Cấu hình hệ thống → Trợ lý AI (khóa công ty). Adapter mới `openai_compat.py`. Tìm Google và nhúng vector vẫn cần một khóa Gemini trong chuỗi. ~~**Khóa riêng mọi nhà cung cấp**~~: ngoài Gemini (D-01), người dùng gắn khóa Claude / OpenAI của mình cho kênh chat và web; công ty không trả token thay | M | Gộp M-07; trần P-02 giữ cho người chưa gắn khóa |
 | C-05 | **XONG 07/10/2026 (ai-CR-103).** Bảng `tab_agent_personal_item` (kind 1 lịch trình · 2 chi tiêu · 3 mua sắm; status còn / xong / đã bỏ), 3 tool `add_personal_item` · `list_personal_items` (chi tiêu có tổng + theo nhóm) · `mark_personal_item` (59 tool), lọc cứng theo người gọi, không có đường xóa; bản tin sáng có mục «Việc riêng». Màn web để sau. ~~**Thẻ cá nhân**: lịch trình, nhắc việc, chi tiêu cá nhân, danh sách mua sắm — lưu riêng từng người, không vào dữ liệu ERP | M | Nhắc việc T-10 đã có, mở rộng cho dữ liệu riêng |
 | C-06 | **XONG 06/10/2026 (ai-CR-095).** Bộ phân loại ý định gán `scope` (1 công ty · 2 cá nhân) lên `tab_agent_message`, câu trả lời và câu nối tiếp kế thừa; việc sửa mã / sửa dữ liệu / thao tác luôn là công ty. ~~**Chế độ**: cùng một bot nhận biết~~ câu nào là việc công ty (ERP, dữ liệu, sửa mã) và câu nào là việc cá nhân; việc cá nhân không đi qua cổng duyệt ERP, không ghi sổ công ty | S | Dựa trên intent sẵn có |
