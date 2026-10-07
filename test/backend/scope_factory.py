@@ -89,6 +89,8 @@ ENTITY_MODEL_PATHS = {
     "pos_order": ("app.modules.coffee_point.model", "PosOrder"),
     "login_session": ("app.modules.login_session.model", "LoginSession"),
     "dossier": ("app.modules.dossier.model", "Dossier"),
+    "labor_contract": ("app.modules.labor_contract.model", "LaborContract"),
+    "labor_contract_template": ("app.modules.labor_contract.template_model", "LaborContractTemplate"),
 }
 
 

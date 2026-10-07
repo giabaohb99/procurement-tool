@@ -63,6 +63,8 @@ from app.modules.purchase_request.controller import router as pr_router
 from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
+from app.modules.labor_contract.controller import router as labor_contract_router
+from app.modules.labor_contract.template_controller import router as labor_contract_template_router
 #  Quá trình công tác (phase-02, plan 261003-0837) — router RIÊNG, cùng prefix
 #  `/api/employees`. Khai include TRƯỚC `employee_router` (xem main() dưới):
 #  không có xung đột route thật (đường của router này luôn dài hơn một đoạn
@@ -264,6 +266,9 @@ app.include_router(work_report_router)
 app.include_router(company_router)
 app.include_router(department_router)
 app.include_router(employee_work_history_router)
+#  HĐLĐ: chung tiền tố `/api/employees/{eid}/...` — PHẢI trước `employee_router` (nó có `/{eid}`).
+app.include_router(labor_contract_router)
+app.include_router(labor_contract_template_router)
 app.include_router(employee_router)
 app.include_router(job_position_router)
 app.include_router(dossier_type_router)

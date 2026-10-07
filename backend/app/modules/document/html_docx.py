@@ -129,6 +129,12 @@ class _Converter(HTMLParser):
         self._list_stack: list[tuple[str, int]] = []   # (ul|ol, số thứ tự)
         self._in_labels = False
         self._table: list[str] = []
+        #  Lưới cột của bảng đang dựng (duoc-CR-606): số cột = hàng có tổng `colspan` lớn nhất; bề
+        #  rộng lấy từ hàng ĐẦU nếu ô nào cũng khai `colwidth`. Xem `_tbl_grid`.
+        self._row_span = 0
+        self._grid_cols = 0
+        self._row_index = 0
+        self._first_row_widths: list[int] = []
 
     # ── tiện ích ─────────────────────────────────────────────────────────────
     @property
@@ -255,11 +261,19 @@ class _Converter(HTMLParser):
         if tag == "table":
             self._in_labels = True
             self._table = ["<w:tbl>", self._tbl_pr()]
+            self._grid_cols, self._row_index, self._first_row_widths = 0, 0, []
             return
         if tag == "tr":
             self._table.append("<w:tr>")
+            self._row_span = 0
             return
         if tag in {"td", "th"}:
+            span = int(attrs["colspan"]) if attrs.get("colspan", "").isdigit() else 1
+            self._row_span += max(1, span)
+            if self._row_index == 0:
+                width = (attrs.get("colwidth") or attrs.get("data-colwidth") or "").split(",")[0].strip()
+                self._first_row_widths.append(
+                    int(width) * _TWIPS_PER_PX if width.isdigit() and span <= 1 else 0)
             self._table.append(self._tc_pr(attrs))
             #  Ô luôn phải mở bằng một đoạn, kể cả ô trống.
             self._open_paragraph("p", {})
@@ -305,8 +319,12 @@ class _Converter(HTMLParser):
             return
         if tag == "tr":
             self._table.append("</w:tr>")
+            self._grid_cols = max(self._grid_cols, self._row_span)
+            self._row_index += 1
             return
         if tag == "table":
+            if len(self._table) >= 2:
+                self._table.insert(2, self._tbl_grid())
             self._table.append("</w:tbl>")
             self._in_labels = False
             self.out.append("".join(self._table))
@@ -336,6 +354,16 @@ class _Converter(HTMLParser):
         )
         return (f'<w:tblPr><w:tblW w:w="5000" w:type="pct"/>'
                 f'<w:tblBorders>{align}</w:tblBorders></w:tblPr>')
+
+    def _tbl_grid(self) -> str:
+        """`<w:tblGrid>` — BẮT BUỘC theo chuẩn OOXML. Word mở được bảng thiếu nó nên lâu nay không ai
+        thấy, nhưng `docxtpl` (sinh hợp đồng lao động từ mẫu soạn trên web) đổ lỗi ngay ở bảng đầu
+        tiên — duoc-CR-606 bắt được 07/10/2026. Không biết bề rộng thì chia đều ~16 cm khổ chữ A4."""
+        cols = max(1, self._grid_cols)
+        widths = self._first_row_widths
+        if len(widths) != cols or not all(widths):
+            widths = [9000 // cols] * cols
+        return "<w:tblGrid>" + "".join(f'<w:gridCol w:w="{w}"/>' for w in widths) + "</w:tblGrid>"
 
     def _tc_pr(self, attrs: dict[str, str]) -> str:
         style = _parse_style(attrs.get("style", ""))

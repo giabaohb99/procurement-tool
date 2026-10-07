@@ -100,3 +100,6 @@ from app.modules.sync_log import model as _sync_log  # noqa: F401
 from app.modules.agent_hub import model as _agent_hub  # noqa: F401
 # Lịch làm việc (mẫu lịch tuần + gán 4 cấp) — ba bảng `tab_work_schedule*`.
 from app.modules.work_schedule import model as _work_schedule  # noqa: F401
+# Hợp đồng lao động + mẫu hợp đồng theo pháp nhân — `tab_labor_contract*`.
+from app.modules.labor_contract import model as _labor_contract  # noqa: F401
+from app.modules.labor_contract import template_model as _labor_contract_template  # noqa: F401

@@ -213,6 +213,11 @@ BB4_CONTROLLER_MIEN_TRU = {
                                            "`work_history_access.employee_in_scope` → get_scoped(Employee, "
                                            "'employee', …); `/me/work-history` chỉ đọc hồ sơ của chính "
                                            "`user.employee_id`, không nhận tham số",
+    "labor_contract/template_controller.py": "05/10/2026: mọi đường /{template_id} đi qua `_scoped` → "
+                                             "`access.get_or_404_scoped` → get_scoped(LaborContractTemplate, "
+                                             "'labor_contract_template', …); danh sách lọc ở "
+                                             "`template_service.list_templates` bằng apply_scope; tải lên kiểm "
+                                             "`access.can_create_for` / `ensure_created_in_scope`",
     "agent_hub/controller.py": "hai nhóm đường: sổ việc của bot (`agent_task` PUBLIC, require từng route) "
                                "và các đường CỦA CHÍNH NGƯỜI GỌI — mã nối chat, khóa Gemini, khóa MCP, "
                                "kết nối Google — đều lọc bằng `user.id` (chat_link.list_user_links, "

@@ -221,8 +221,16 @@ _EMPLOYEE_PEOPLE_PATH = re.compile(r"^/api/employees/[^/]+/(contacts|families)/?
 _EMPLOYEE_PATH_PREFIX = "/api/employees"
 
 
+#  Hợp đồng lao động: lương/phụ cấp là nhạy cảm (lý do tách khóa quyền `labor_contract`), nên
+#  thân request của `/api/labor-contracts/...` và `/api/employees/{id}/labor-contracts` cũng che.
+_LABOR_CONTRACT_PATH_PREFIX = "/api/labor-contracts"
+_LABOR_CONTRACT_KEYS = frozenset({"base_salary", "insurance_salary", "allowance", "allowance_note"})
+
+
 def sensitive_keys_for_path(path: str) -> frozenset:
     """Những khóa phải che THÊM với riêng đường dẫn này (ngoài luật chung)."""
+    if path == _LABOR_CONTRACT_PATH_PREFIX or path.startswith(_LABOR_CONTRACT_PATH_PREFIX + "/"):
+        return _LABOR_CONTRACT_KEYS
     if not (path == _EMPLOYEE_PATH_PREFIX or path.startswith(_EMPLOYEE_PATH_PREFIX + "/")):
         return frozenset()
     #  Nhập muộn: `employee.sensitive` là tệp thuần không phụ thuộc gì, nhưng tầng
@@ -230,6 +238,8 @@ def sensitive_keys_for_path(path: str) -> frozenset:
     from app.modules.employee.sensitive import SENSITIVE_FIELDS
 
     keys = frozenset(SENSITIVE_FIELDS)
+    if "/labor-contracts" in path:
+        keys |= _LABOR_CONTRACT_KEYS
     if _EMPLOYEE_PEOPLE_PATH.match(path):
         keys |= {"items"}
     return keys

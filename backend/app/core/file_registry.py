@@ -103,6 +103,10 @@ DIRECT_FILE_POLICY: dict[str, tuple[set[str], int]] = {
     "signature":  (_IMG, 5),
     "help_image": (_IMG_WEB, 10),
     "id_image":   (_IMG, 10),   # ảnh CCCD hai mặt — điện thoại chụp nên trần rộng hơn avatar
+    #  HĐLĐ (plan 261005-1537): mẫu .docx (HR tải lên) · bản sinh từ mẫu · bản scan đã ký.
+    "labor_contract_template": ({"docx"}, 10),
+    "labor_contract_docx":     ({"docx"}, 20),
+    "labor_contract_signed":   ({"pdf", "jpg", "jpeg", "png"}, 50),
 }
 
 

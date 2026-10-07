@@ -102,7 +102,11 @@ def _table_field_denylist() -> dict[str, frozenset]:
     """
     from app.modules.employee.sensitive import SENSITIVE_FIELDS
 
-    return {"tab_employee": frozenset(SENSITIVE_FIELDS)}
+    #  `tab_labor_contract`: lương / bảo hiểm / phụ cấp nằm sau khóa quyền riêng `labor_contract`,
+    #  nhật ký hệ thống (khóa `change_log`) không được thành đường vòng đọc lương.
+    return {"tab_employee": frozenset(SENSITIVE_FIELDS),
+            "tab_labor_contract": frozenset({"base_salary", "insurance_salary", "allowance",
+                                             "allowance_note"})}
 
 
 @dataclass

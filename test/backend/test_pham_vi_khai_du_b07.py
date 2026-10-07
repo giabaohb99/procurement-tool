@@ -185,9 +185,11 @@ def test_du_55_entity():
     trong `_SYS_ENTITIES` để Quản lý thu mua không tự có.
     71 → 72 ngày 05/10/2026: lịch làm việc (`work_schedule`) — mẫu lịch tuần + gán 4 cấp; PUBLIC
     vì đích gán đa hình (cấp + id), ai SỬA gác bằng khóa; nằm trong `_SYS_ENTITIES`.
+    72 → 74 ngày 05/10/2026: hợp đồng lao động (`labor_contract`, có lương, scope company/dept/self)
+    + mẫu hợp đồng (`labor_contract_template`, scope company); cả hai nằm trong `_SYS_ENTITIES`.
     """
-    assert len(ENTITIES) == 72
-    assert len(SCOPE_FIELDS) == 72
+    assert len(ENTITIES) == 74
+    assert len(SCOPE_FIELDS) == 74
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

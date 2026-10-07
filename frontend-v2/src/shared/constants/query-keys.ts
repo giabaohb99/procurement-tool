@@ -213,6 +213,23 @@ export const queryKeys = {
     jobPositions: (params?: Record<string, unknown>) =>
       ['hr', 'job-positions', params ?? {}] as const,
     company: (id: number) => ['hr', 'companies', id] as const,
+    /** Mẫu hợp đồng lao động theo pháp nhân (màn «Mẫu hợp đồng»). */
+    laborContractTemplates: (params?: Record<string, unknown>) =>
+      ['hr', 'labor-contract-templates', params ?? {}] as const,
+    /** Danh mục biến của mẫu .docx — gần như bất biến, đọc từ backend. */
+    laborContractPlaceholders: () => ['hr', 'labor-contract-placeholders'] as const,
+    /** MỘT mẫu (trang soạn trên web). Dưới `hr.all` nên mọi lệnh ghi của HĐLĐ đều quét. */
+    laborContractTemplate: (id: number) => ['hr', 'labor-contract-template', id] as const,
+    /** Nội dung HTML của một mẫu để soạn trên web (duoc-CR-606). */
+    laborContractTemplateContent: (id: number) => ['hr', 'labor-contract-template', id, 'content'] as const,
+    /** HĐLĐ của MỘT hồ sơ (tab «Hợp đồng»). Nằm DƯỚI khóa hồ sơ nên `hr.all` quét luôn. */
+    employeeLaborContracts: (id: number) => ['hr', 'employees', id, 'labor-contracts'] as const,
+    /** Mẫu chọn được cho hồ sơ này (theo pháp nhân hiện tại + loại HĐ; 0 = mọi loại). */
+    employeeLaborContractTemplates: (id: number, contractType: number) =>
+      ['hr', 'employees', id, 'labor-contract-templates', contractType] as const,
+    /** Mẫu chọn được cho MỘT hợp đồng (theo pháp nhân + loại của chính HĐ). Nằm dưới khóa HĐ của hồ sơ nên mọi lệnh ghi quét luôn. */
+    laborContractTemplateOptions: (employeeId: number, contractId: number) =>
+      ['hr', 'employees', employeeId, 'labor-contracts', contractId, 'templates'] as const,
     roles: (params?: Record<string, unknown>) => ['hr', 'roles', params ?? {}] as const,
     /** Danh sách entity/action/scope để dựng ma trận — gần như bất biến. */
     permissionMeta: () => ['hr', 'permission-meta'] as const,
