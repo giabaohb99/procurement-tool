@@ -178,8 +178,13 @@ def list_my_links(user=Depends(get_current_user), db: Session = Depends(get_db))
 @router.post("/links/code")
 def create_link_code(user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Mã 6 số dùng một lần để nhắn `/dangnhap <mã>` cho bot. Mã cũ chưa dùng bị hủy."""
+    from app.core.auth import user_has_permission
+
     if not settings.AGENT_LINK_ENABLED:
         raise HTTPException(400, "Liên kết Telegram đang tắt")
+    if not user_has_permission(db, user, "assistant", "read"):
+        #  ai-CR-131: dùng bot cần quyền «Trợ lý AI» như trên web.
+        raise HTTPException(403, "Tài khoản chưa được cấp quyền «Trợ lý AI» nên chưa nối được bot. Nhờ quản trị cấp quyền.")
     code, expires = chat_link.issue_code(db, user.id)
     bot = telegram.get_bot_username()
     return success({"code": code, "expires_at": _iso(expires),
@@ -666,3 +671,51 @@ def zalo_refresh_groups(user=Depends(require(GROUP_ENTITY, "write"))):
     except zalo_account.ZaloAccountError as e:
         raise HTTPException(409, str(e)) from None
     return success(None, "Đang đồng bộ lại nhóm và thành viên Zalo")
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-131: «Người dùng bot» — ai đang nối Telegram / Zalo với tài khoản ERP nào, còn quyền dùng bot không
+# ---------------------------------------------------------------------------
+@router.get("/links/all")
+def list_all_links(user=Depends(require(GROUP_ENTITY, "read")), db: Session = Depends(get_db)):
+    from app.core.auth import user_has_permission
+    from sqlalchemy import select
+
+    from . import channels, erp
+    from .model import AgentMessage
+
+    links = chat_link.list_all_links(db)
+    out = []
+    cache: dict[int, tuple[str, str, bool]] = {}
+    for link in links:
+        uid = int(link.user_id or 0)
+        if uid not in cache:
+            u = erp.user_by_id(db, uid)
+            label, detail = erp.describe(db, u) if u is not None else (f"#{uid}", "")
+            allowed = bool(u is not None and getattr(u, "is_active", False)
+                           and user_has_permission(db, u, "assistant", "read"))
+            cache[uid] = (label, detail, allowed)
+        label, detail, allowed = cache[uid]
+        last = db.scalar(select(AgentMessage.created_at).where(
+            AgentMessage.chat_id == link.chat_id, AgentMessage.direction == 2)
+            .order_by(AgentMessage.id.desc()).limit(1))
+        ch = channels.channel_of(link.chat_id)
+        out.append({"id": link.id, "user_id": uid, "user_label": label, "user_detail": detail,
+                    "channel": ch, "channel_label": {"telegram": "Telegram", "zalo": "Zalo (bot chính thức)",
+                                                     "zalo_account": "Zalo (tài khoản công ty)"}.get(ch, ch),
+                    "chat": chat_link.mask_chat(link.chat_id), "name": link.tg_name or "",
+                    "linked_at": _iso(link.linked_at), "expires_at": _iso(link.expires_at),
+                    "last_message_at": _iso(last), "has_permission": allowed,
+                    "notify_mode": int(link.notify_mode or 0)})
+    return success({"items": out, "total": len(out)})
+
+
+@router.delete("/links/{link_id}/admin")
+def revoke_link_admin(link_id: int, user=Depends(require(GROUP_ENTITY, "write")), db: Session = Depends(get_db)):
+    """Người quản lý bot AI gỡ liên kết của người khác (nghỉ việc, đổi máy, nối nhầm)."""
+    link = next((x for x in chat_link.list_all_links(db) if x.id == link_id), None)
+    if link is None:
+        raise HTTPException(404, "Không tìm thấy liên kết")
+    chat_link.revoke_chat(db, link.chat_id)
+    return success(None, "Đã gỡ liên kết")
+

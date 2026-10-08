@@ -109,6 +109,14 @@ def list_user_links(db: Session, user_id: int, *, now: datetime | None = None) -
         AgentChatLink.expires_at > now).order_by(AgentChatLink.id.desc())))
 
 
+def list_all_links(db: Session, *, now: datetime | None = None) -> list[AgentChatLink]:
+    """ai-CR-131: mọi liên kết còn hiệu lực — màn «Người dùng bot» của người quản lý bot AI."""
+    now = now or datetime.now()
+    return list(db.scalars(select(AgentChatLink).where(
+        AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None),
+        AgentChatLink.expires_at > now).order_by(AgentChatLink.id.desc())))
+
+
 def has_too_many_failures(db: Session, chat_id: str, *, now: datetime | None = None) -> bool:
     now = now or datetime.now()
     n = db.scalar(select(func.count(AgentMessage.id)).where(

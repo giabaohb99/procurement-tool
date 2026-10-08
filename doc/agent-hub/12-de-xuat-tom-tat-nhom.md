@@ -63,6 +63,10 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
   này nếu cho trả lời khi được gọi trong nhóm thì **số liệu ERP luôn nhắn riêng** cho người gọi (biết ai hỏi, kiểm được
   quyền). Trợ lý AI trên web **không cần** tự nạp sổ ghi nhớ cá nhân.
 
+- **08/10 (tối):** người chưa đăng nhập nhắn bot thì bot **vẫn im** (không gửi câu hướng dẫn); dùng bot cần quyền
+  **«Trợ lý AI»** (`assistant.read`, cấp ở màn Phân quyền) — người quản lý xem ở màn **Người dùng bot**; nhóm
+  «KINH TẾ K52 - CTU» **tắt ghi**; màn **Nhóm chat KHÔNG mở** cho mọi nhân viên (giữ trong phân hệ Trợ lý AI).
+
 ## 4. Lộ trình Zalo
 
 | Bước | Việc | Cỡ |

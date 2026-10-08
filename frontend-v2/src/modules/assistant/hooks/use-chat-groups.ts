@@ -96,6 +96,23 @@ export function useZaloLogin() {
   })
 }
 
+/** ai-CR-131: ai đang nối bot, còn quyền «Trợ lý AI» không. */
+export function useBotUserLinks() {
+  return useQuery({
+    queryKey: queryKeys.assistant.botUsers(),
+    queryFn: chatGroupApi.botUsers,
+    staleTime: 30 * 1000,
+  })
+}
+
+export function useRevokeBotUserLink() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => chatGroupApi.revokeBotUser(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.assistant.botUsers() }),
+  })
+}
+
 /** ai-CR-129: đăng xuất / đổi tài khoản Zalo công ty. */
 export function useZaloLogout() {
   const qc = useQueryClient()

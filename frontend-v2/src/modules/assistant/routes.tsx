@@ -1,4 +1,4 @@
-import { MessagesSquare, Sparkles } from 'lucide-react'
+import { MessagesSquare, Sparkles, UsersRound } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -37,6 +37,13 @@ export const assistantModule: ErpModule = {
       icon: MessagesSquare,
       entity: 'assistant',
     },
+    {
+      //  ai-CR-131: chỉ người quản lý bot AI.
+      label: 'Người dùng bot',
+      path: appRoutes.assistant.botUsers,
+      icon: UsersRound,
+      entity: 'agent_group',
+    },
   ],
 
   routes: [
@@ -50,6 +57,12 @@ export const assistantModule: ErpModule = {
       path: appRoutes.assistant.groups,
       lazy: async () => ({
         Component: (await import('./pages/chat-group-list-page')).ChatGroupListPage,
+      }),
+    },
+    {
+      path: appRoutes.assistant.botUsers,
+      lazy: async () => ({
+        Component: (await import('./pages/bot-user-list-page')).BotUserListPage,
       }),
     },
     {

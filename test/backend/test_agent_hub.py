@@ -168,6 +168,10 @@ def bot(monkeypatch):
     monkeypatch.setattr(service, "_kick_doc_wait", lambda rid: doc_waits.append(rid))   # ai-CR-115
     service._doc_wait_log = doc_waits
     service._kick_log = kicks
+    #  ai-CR-131: dùng bot cần quyền «Trợ lý AI». Bài cũ dựng tài khoản không vai trò — mặc định cho qua; luật thật kiểm ở
+    #  `test_dung_bot_can_quyen_tro_ly_ai`.
+    monkeypatch.setattr(service, "_may_use_bot_real", service.may_use_bot, raising=False)
+    monkeypatch.setattr(service, "may_use_bot", lambda db, user_id: True)
     sent: list[str] = []
     asked: list[str] = []
     typing: list[str] = []
@@ -4219,7 +4223,7 @@ def test_chat_dai_ca_lien_ket_thi_hoi_duoi_tai_khoan_that_con_khong_thi_tai_khoa
     assert service._assistant_user(db, "12345") is None               # tài khoản khóa: không chạy
 
 
-def test_api_lay_ma_va_go_lien_ket_cua_chinh_minh(db, bot):
+def test_api_lay_ma_va_go_lien_ket_cua_chinh_minh(db, bot, cap_quyen):
     from types import SimpleNamespace
 
     from fastapi import HTTPException
@@ -4229,6 +4233,7 @@ def test_api_lay_ma_va_go_lien_ket_cua_chinh_minh(db, bot):
     service, _, _ = bot
     lan = _erp_user(db)
     other = _erp_user(db, "khac@dego.vn")
+    cap_quyen(lan.id, "assistant", read=True)                          # ai-CR-131: lấy mã cần quyền «Trợ lý AI»
     me = SimpleNamespace(id=lan.id)
     data = _json(controller.create_link_code(user=me, db=db))
     assert len(data["code"]) == 6 and data["code"].isdigit()
@@ -9577,3 +9582,53 @@ def test_zalo_tk_cong_ty_gui_kieu_chu_va_bao_nhan_tin_khi_tra_loi_lau(monkeypatc
     #  Nhóm thì không bao giờ: bot không nói trong nhóm.
     telegram.send_chat_action("zg:g5")
     assert len(timers) == n and calls[-1][0] != "/typing" or calls[-1][1].get("thread_type") != "group"
+
+
+# --- ai-CR-131: dùng bot cần quyền «Trợ lý AI»; người quản lý xem ai đang nối bot -------------------------------------
+def test_dung_bot_can_quyen_tro_ly_ai(db, bot, seed, monkeypatch, cap_quyen):
+    """Đại ca 08/10: «họ có quyền thì mới hỏi được» — khóa `assistant.read` ở màn Phân quyền, như Trợ lý AI trên web."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.core.auth import get_current_user
+    from app.core.database import get_db
+    from app.modules.agent_hub import chat_link, controller
+    from app.modules.agent_hub.model import AgentChatLink
+    from app.modules.user.model import User
+
+    service, sent, asked = bot
+    monkeypatch.setattr(service, "may_use_bot", service._may_use_bot_real)     # bỏ lối tắt của fixture
+    monkeypatch.setattr(settings, "AGENT_LINK_ENABLED", True)
+    _fake_intent(monkeypatch, service, "hoi")
+    other = db.get(User, seed.u_nstm_id)
+    _give_key(db, other.id)
+    #  Chưa có quyền: web không cấp mã; mã cũ (cấp trước khi bị thu quyền) đổi được nhưng bot từ chối và gỡ liên kết.
+    app = FastAPI()
+    app.include_router(controller.router)
+    app.dependency_overrides[get_current_user] = lambda: db.get(User, other.id)
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+    r = client.post("/api/agent-hub/links/code")
+    assert r.status_code == 403
+    code, _ = chat_link.issue_code(db, other.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    assert "chưa được cấp quyền «Trợ lý AI»" in sent[-1]
+    assert chat_link.get_active_link(db, "777") is None
+    #  Được cấp quyền: đăng nhập và hỏi bình thường.
+    cap_quyen(other.id, "assistant", read=True)
+    assert client.post("/api/agent-hub/links/code").status_code == 200
+    code, _ = chat_link.issue_code(db, other.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    assert "Đã đăng nhập tài khoản ERP" in sent[-1]
+    service.handle_message(db, _other_msg("công nợ tháng này"))
+    assert asked == ["công nợ tháng này"]
+    #  Người quản lý bot AI thấy ai đang nối, còn quyền không; gỡ được liên kết của người khác.
+    app.dependency_overrides[get_current_user] = lambda: db.get(User, seed.u_req_id)
+    assert client.get("/api/agent-hub/links/all").status_code == 403
+    cap_quyen(seed.u_req_id, "agent_group", read=True, write=True)
+    items = client.get("/api/agent-hub/links/all").json()["data"]["items"]
+    mine = next(i for i in items if i["user_id"] == other.id)
+    assert mine["channel"] == "telegram" and mine["has_permission"] is True and mine["chat"].endswith("777")
+    assert client.delete(f"/api/agent-hub/links/{mine['id']}/admin").status_code == 200
+    assert db.query(AgentChatLink).filter_by(chat_id="777", revoked_at=None).count() == 0
+

@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import { downloadFile } from '@/core/api/download-file'
 
 /**
@@ -130,6 +130,25 @@ export interface ZaloAccountStatus {
   qr_image?: string
 }
 
+/** Một chat Telegram / Zalo đang nối với tài khoản ERP (ai-CR-131, màn «Người dùng bot»). */
+export interface BotUserLink {
+  id: number
+  user_id: number
+  user_label: string
+  user_detail: string
+  channel: string
+  channel_label: string
+  /** Mã chat đã che, chỉ còn 4 số cuối. */
+  chat: string
+  name: string
+  linked_at: string | null
+  expires_at: string | null
+  last_message_at: string | null
+  /** Còn quyền «Trợ lý AI» không — thiếu thì bot không trả lời dù vẫn nối. */
+  has_permission: boolean
+  notify_mode: number
+}
+
 const BASE = '/api/agent-hub'
 
 export const chatGroupApi = {
@@ -151,4 +170,7 @@ export const chatGroupApi = {
   zaloLogin: () => apiPost<null>(`${BASE}/zalo/login`, {}),
   zaloRefreshGroups: () => apiPost<null>(`${BASE}/zalo/refresh-groups`, {}),
   zaloLogout: () => apiPost<null>(`${BASE}/zalo/logout`, {}),
+
+  botUsers: () => apiGet<{ items: BotUserLink[]; total: number }>(`${BASE}/links/all`),
+  revokeBotUser: (id: number) => apiDelete<null>(`${BASE}/links/${id}/admin`),
 }

@@ -731,6 +731,20 @@ def _get_tg_name(msg: dict) -> str:
     return name or (f"@{who['username']}" if who.get("username") else "")
 
 
+#  ai-CR-131: đại ca 08/10 «họ có quyền thì mới hỏi được». Dùng bot (Telegram / Zalo) cần đúng quyền như Trợ lý AI trên
+#  web — khóa `assistant.read` ở màn Phân quyền; số liệu ERP trong câu trả lời vẫn lọc theo quyền của từng người như cũ.
+BOT_USE_PERMISSION = ("assistant", "read")
+_NO_BOT_RIGHT = ("Tài khoản ERP <b>{name}</b> chưa được cấp quyền «Trợ lý AI» nên chưa dùng được bot. Nhờ quản trị cấp quyền ở "
+                 "màn Phân quyền tài khoản rồi đăng nhập lại.")
+
+
+def may_use_bot(db: Session, user_id: int) -> bool:
+    user = erp.user_by_id(db, user_id)
+    if user is None or not getattr(user, "is_active", False):
+        return False
+    return erp.can(db, user, *BOT_USE_PERMISSION)
+
+
 def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: bool = True) -> None:
     """Đổi mã lấy liên kết. Sổ ghi lệnh đã che mã. Sai thì đếm để chặn dò mã."""
     ok = chat_link.redeem_code(db, chat_id, code, _get_tg_name(msg)) if settings.AGENT_LINK_ENABLED else None
@@ -743,6 +757,10 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
         return
     user = erp.user_by_id(db, ok.user_id)
     name, detail = describe_user(db, user)
+    if not telegram.is_allowed_chat(chat_id) and not may_use_bot(db, ok.user_id):
+        chat_link.revoke_chat(db, chat_id)
+        reply(db, chat_id, _NO_BOT_RIGHT.format(name=telegram.esc(name)))
+        return
     reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{telegram.esc(name)}</b> cho chat này"
           + (f" ({telegram.esc(detail)})" if detail else "")
           + f". Hết hạn sau {settings.AGENT_LINK_DAYS} ngày. Cứ nhắn câu hỏi, em trả lời đúng quyền của tài khoản đó. "
@@ -1064,8 +1082,15 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), text or "(ảnh)",
                       action=ACT_ASKED)
     db.commit()
-    telegram.send_chat_action(chat_id)
     low = (text or "").strip().lower()
+    if not _LOGOUT_CMD.match(low) and not may_use_bot(db, link.user_id):
+        #  ai-CR-131: bị thu quyền «Trợ lý AI» sau khi đã nối — không trả lời, nói rõ vì sao (liên kết vẫn để đó: cấp lại
+        #  quyền là dùng tiếp, khỏi đăng nhập lại).
+        row.action = ACT_COMMAND
+        name, _ = describe_user(db, erp.user_by_id(db, link.user_id))
+        reply(db, chat_id, _NO_BOT_RIGHT.format(name=telegram.esc(name)).replace(" rồi đăng nhập lại", ""))
+        return True
+    telegram.send_chat_action(chat_id)
     if _LOGOUT_CMD.match(low):
         row.action = ACT_COMMAND
         _logout(db, chat_id)

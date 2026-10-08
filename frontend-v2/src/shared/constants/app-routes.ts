@@ -156,6 +156,8 @@ export const appRoutes = {
     /** Nhóm chat Telegram / Zalo mà bot đang ở (ai-CR-123). */
     groups: '/assistant/groups',
     group: (id: number | string) => `/assistant/groups/${id}`,
+    /** Ai đang nối Telegram / Zalo với bot, còn quyền «Trợ lý AI» không (ai-CR-131). */
+    botUsers: '/assistant/bot-users',
   },
   customer: {
     root: '/customer',

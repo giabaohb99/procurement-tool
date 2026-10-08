@@ -627,6 +627,8 @@ export const queryKeys = {
       ['assistant', 'chat-groups', 'detail', id, 'messages', params ?? {}] as const,
     chatGroupSummaries: (id: number) => ['assistant', 'chat-groups', 'detail', id, 'summaries'] as const,
     chatGroupViews: (id: number) => ['assistant', 'chat-groups', 'detail', id, 'views'] as const,
+    /** Ai đang nối Telegram / Zalo với tài khoản ERP (ai-CR-131). */
+    botUsers: () => ['assistant', 'bot-users'] as const,
     /** Tài khoản Zalo công ty (ai-CR-122) — tình trạng + ảnh QR khi đang đăng nhập. */
     zaloStatus: () => ['assistant', 'zalo-status'] as const,
   },

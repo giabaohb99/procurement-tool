@@ -13116,3 +13116,15 @@ có câu trả lời thì bot nhắn một câu «em nhận tin rồi, đang tì
 nay đánh số các nhóm I, II, III và nhóm cuối là nhận định, áp cho cả Telegram. Bài kiểm của bot và của tiến trình Zalo chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/zalo_account.py (to_styled, split_styled, send_typing) · telegram.py · research.py · zalo-listener/index.mjs (/typing, styles) · test/backend/test_agent_hub.py
+
+## ai-CR-131 | Dùng bot cần quyền Trợ lý AI và màn xem ai đang nối bot
+- status: dang-lam
+- date: 2026-10-08
+Đại ca chốt người chưa đăng nhập nhắn bot thì bot vẫn im, chỉ người có quyền mới hỏi được, và hỏi làm sao kiểm tra quyền của
+họ. Nay muốn dùng bot trên Telegram hay Zalo phải có quyền «Trợ lý AI», cấp ở màn Phân quyền tài khoản như Trợ lý AI trên web:
+thiếu quyền thì trang cá nhân không cấp mã, đăng nhập bằng mã cũ thì bot từ chối và nói lý do, đang dùng mà bị thu quyền thì
+bot không trả lời nữa. Màn mới «Người dùng bot» trong phân hệ Trợ lý AI cho người quản lý bot thấy ai đang nối kênh nào, nhắn
+lần cuối khi nào, còn quyền hay không, và gỡ được liên kết. Em cũng tắt ghi nhóm lớp «KINH TẾ K52 - CTU» trên dev theo ý đại ca;
+màn Nhóm chat giữ trong phân hệ Trợ lý AI, không mở cho mọi nhân viên. Bài kiểm máy chủ và giao diện chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (may_use_bot) · controller.py (/links/all, /links/{id}/admin) · chat_link.py · frontend-v2/src/modules/assistant/pages/bot-user-list-page.tsx · test/backend/test_agent_hub.py
