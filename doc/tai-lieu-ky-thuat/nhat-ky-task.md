@@ -12918,3 +12918,4 @@ và số trang. Mẫu mặc định đổi sang «Recap DEGO». Em đã dựng t
 chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (mới) · agent_hub/dego_docx.py (mới) · agent_hub/assets/dego_logo.png · agent_hub/meetings.py (build_docx, word_of, resend, concat_audio) · agent_hub/meeting_actions.py · agent_hub/service.py · agent_hub/tasks.py · core/celery_app.py · assistant/tools/meeting_tool.py · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp 18140fd0, sao lưu DB dev trước, dựng lại đủ 4 image api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
