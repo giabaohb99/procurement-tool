@@ -151,3 +151,14 @@ nhóm đông sẽ dồn) — đúng hàng «chat / heavy» đã ghi ở doc 13 �
 **Rủi ro riêng Zalo B:** tài khoản cá nhân **nói** trong nhóm (nhất là nhóm đông, nhiều người lạ) dễ bị Zalo đánh dấu
 hơn chỉ đọc. Nếu bật, em đề xuất Telegram trước, Zalo B sau một hai tuần chạy ổn, và giới hạn nhóm được phép nói.
 
+## 9. Màn «Nhóm chat» trên ERP v2 (ai-CR-123, 08/10/2026)
+
+Đại ca: «phải có chỗ nào để check» — chỉ làm trên ERP v2. Trợ lý AI → **Nhóm chat** (`/assistant/groups`).
+
+| Phần | Nội dung |
+|---|---|
+| Danh sách | Mọi nhóm bot đang ở; lọc theo **kênh / bot** (Telegram · Zalo tài khoản công ty · Zalo bot chính thức) và **loại** (chưa phân loại, nội bộ phòng ban, dự án, khách hàng, nhà cung cấp, điều hành, khác); số tin, số tệp, tin mới nhất, người thêm bot, tình trạng (đang ghi / ngừng ghi / bot đã rời) |
+| Chi tiết nhóm | Tab Tin nhắn (tìm, xem tin cũ hơn) · Tệp (tải về, bot tải hộ từ Telegram / Zalo) · **Bản tóm tắt** · Nhật ký xem |
+| Bản tóm tắt | Mọi câu trả lời của bot / Trợ lý web có đọc nhóm **tự lưu** vào nhóm đó; thêm nút «Tóm tắt» 24 giờ / 3 / 7 / 30 ngày |
+| Ai thấy gì | Người thường: nhóm mình là thành viên (cùng luật bot). Khóa **«Trợ lý AI › Quản lý nhóm chat của bot»** (`agent_group`): `read` = thấy **mọi** nhóm kể cả nội dung, mở nhóm mình không ở thì có **nhật ký xem**; `write` = phân loại mọi nhóm, **ngừng ghi** một nhóm, đăng nhập Zalo công ty bằng **QR ngay trên web**. Quản trị hệ thống tự có; ai khác thì tick ở Phân quyền |
+| Phân loại | Chủ nhóm (người thêm bot) tự gán loại cho nhóm của mình; người quản lý gán cho mọi nhóm |

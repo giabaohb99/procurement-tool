@@ -318,6 +318,9 @@ SCOPE_FIELDS = {
     "purchase_cost_type": PUBLIC,   # bao-CR-453 — danh mục dùng chung, không có chủ
     #  ai-CR-036: việc của bot không thuộc người, phòng hay pháp nhân nào — gác bằng khóa quyền.
     "agent_task":       PUBLIC,
+    #  ai-CR-123: nhóm chat của bot không thuộc pháp nhân / phòng nào; người thường xem nhóm mình là thành viên (lọc ở
+    #  `agent_hub/groups.can_read`), khóa `agent_group.read` mở MỌI nhóm cho người quản lý bot AI.
+    "agent_group":      PUBLIC,
 }
 
 

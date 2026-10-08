@@ -384,6 +384,9 @@ class AgentGroup(Base, AuditMixin):
     joined_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     left_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     members: Mapped[list | None] = mapped_column(JSON, default=None, nullable=True)
+    #  ai-CR-123: loại nhóm (`constants.GROUP_CAT_*`) + ngừng ghi (người quản lý bot AI tắt một nhóm mà bot vẫn ở).
+    category: Mapped[int] = mapped_column(SmallInteger, default=0)
+    paused: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class AgentGroupMessage(Base, AuditMixin):
@@ -401,6 +404,33 @@ class AgentGroupMessage(Base, AuditMixin):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
     __table_args__ = (Index("ix_agent_group_msg_group_sent", "group_id", "sent_at"),)
+
+
+class AgentGroupSummary(Base, AuditMixin):
+    """Bản tóm tắt / câu trả lời về một nhóm mà bot hoặc Trợ lý AI đã viết (ai-CR-123) — để xem lại trên web.
+    `user_id` = người hỏi (tài khoản ERP); `source` = 1 bot nhắn riêng / Trợ lý web, 2 nút «Tóm tắt» trên màn nhóm."""
+
+    __tablename__ = "tab_agent_group_summary"
+
+    group_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    source: Mapped[int] = mapped_column(SmallInteger, default=1)
+    hours: Mapped[int] = mapped_column(Integer, default=24)
+    question: Mapped[str] = mapped_column(String(500), default="")
+    text: Mapped[str] = mapped_column(Text, default="")
+
+    __table_args__ = (Index("ix_agent_group_sum_group", "group_id", "id"),)
+
+
+class AgentGroupView(Base, AuditMixin):
+    """Nhật ký người quản lý bot AI mở NỘI DUNG một nhóm mà họ không phải thành viên (ai-CR-123, đại ca chốt 08/10:
+    quản lý AI thấy hết, nhưng có dấu vết)."""
+
+    __tablename__ = "tab_agent_group_view"
+
+    group_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    what: Mapped[str] = mapped_column(String(40), default="")
 
 
 class AgentReminder(Base, AuditMixin):

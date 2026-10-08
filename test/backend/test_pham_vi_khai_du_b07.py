@@ -187,9 +187,11 @@ def test_du_55_entity():
     vì đích gán đa hình (cấp + id), ai SỬA gác bằng khóa; nằm trong `_SYS_ENTITIES`.
     72 → 74 ngày 05/10/2026: hợp đồng lao động (`labor_contract`, có lương, scope company/dept/self)
     + mẫu hợp đồng (`labor_contract_template`, scope company); cả hai nằm trong `_SYS_ENTITIES`.
+    74 → 75 ngày 08/10/2026 (ai-CR-123): quản lý nhóm chat của bot (`agent_group`) — PUBLIC vì nhóm chat không thuộc
+    pháp nhân / phòng nào (người thường lọc theo thành viên ở `groups.can_read`); nằm trong `_SYS_ENTITIES`.
     """
-    assert len(ENTITIES) == 74
-    assert len(SCOPE_FIELDS) == 74
+    assert len(ENTITIES) == 75
+    assert len(SCOPE_FIELDS) == 75
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

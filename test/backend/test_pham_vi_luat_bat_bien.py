@@ -116,6 +116,8 @@ BB3_PUBLIC_CO_LY_DO = {
     "agent_task": "sổ việc + chi phí model của bot Agent Hub (ai-CR-036): việc của QUẢN TRỊ HỆ THỐNG, "
                   "không thuộc pháp nhân/phòng ban nào — khóa nằm trong _SYS_ENTITIES của seed, "
                   "giấu thì tắt bằng QUYỀN agent_task.read",
+    "agent_group": "nhóm chat bot đang ở (ai-CR-123): không thuộc pháp nhân/phòng ban nào — người thường chỉ thấy "
+                   "nhóm mình là thành viên (groups.can_read), khóa agent_group.read mở mọi nhóm cho quản lý bot AI",
     "doc_type": "danh mục nền Văn thư, tách khóa là để phân quyền theo MÀN HÌNH (CR-157)",
     "doc_template": "cùng lý do CR-157",
     "doc_numbering_rule": "cùng lý do CR-157",
@@ -227,7 +229,9 @@ BB4_CONTROLLER_MIEN_TRU = {
                                "và các đường CỦA CHÍNH NGƯỜI GỌI — mã nối chat, khóa Gemini, khóa MCP, "
                                "kết nối Google — đều lọc bằng `user.id` (chat_link.list_user_links, "
                                "user_keys, mcp_keys.list_for_user, google_link.get_link); quyền SỞ HỮU, "
-                               "không phải phạm vi",
+                               "không phải phạm vi. ai-CR-123 thêm nhóm thứ ba: màn «Nhóm chat» — nhóm chat "
+                               "không thuộc pháp nhân/phòng nào (`agent_group` PUBLIC); người thường lọc theo "
+                               "thành viên (`groups.can_read`), quản lý bot AI có `agent_group.read`",
     "customs/controller.py": "customs_price là entity PUBLIC (dữ liệu thị trường bên ngoài, "
                              "bao-CR-470) — cổng là require('customs_price', …) từng route",
     "customs/pesticide_controller.py": "duoc-CR-487/490: danh mục thuốc BVTV — đọc gác customs_price.read "

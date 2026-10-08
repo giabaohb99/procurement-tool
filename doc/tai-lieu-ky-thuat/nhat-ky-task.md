@@ -13009,3 +13009,16 @@ nhóm khi được gọi. Bài kiểm của bot và của tiến trình Zalo ch�
 Mã nguồn: zalo-listener/ (mới) · docker/Dockerfile.zalo-listener · docker-compose.agent-hub.yml · backend/app/modules/agent_hub/zalo_account.py (mới) · channels.py · telegram.py · tasks.py · groups.py · service.py (poll_zalo_account_once, /zalo) · poller.py (run_zalo_account) · model.py (AgentGroup.members) · user_guide.py · core/config.py · migrations grp02 + migrations_agent agent0002 · doc/agent-hub/12 §7–8, 13, 14 §7
 Deploy: dev 08/10 (Agent 1 gộp f6fc41e9, dựng zalo-listener trong stack agent-hub); ERP dev chạy grp02 ở lần dựng kế; prod giữ lại.
 
+## ai-CR-123 | Màn «Nhóm chat» trên ERP v2 để xem và quản lý những gì bot ghi ở nhóm Telegram, Zalo
+- status: dang-lam
+- date: 2026-10-08
+Đại ca muốn có một chỗ trên ERP để kiểm tra bot đã ghi nhận gì trong các nhóm, chia theo loại và theo bot, và người quản
+lý AI thấy được tất cả. Em làm màn «Nhóm chat» trong phân hệ Trợ lý AI của ERP v2: danh sách nhóm lọc theo kênh (Telegram,
+Zalo tài khoản công ty, Zalo bot chính thức) và theo loại nhóm, trang chi tiết có tin nhắn, tệp tải về được, các bản tóm
+tắt và nhật ký ai đã mở xem. Mỗi lần bot hoặc Trợ lý AI trả lời câu hỏi có đọc nhóm thì câu trả lời được lưu thành bản tóm
+tắt của nhóm đó, và trên màn có nút tóm tắt nhanh từ một ngày tới ba mươi ngày. Người thường chỉ thấy nhóm mình là thành
+viên; người có quyền mới «Quản lý nhóm chat của bot» thấy mọi nhóm kể cả nội dung, mỗi lần mở nhóm mình không ở đều có
+nhật ký; quyền sửa thì phân loại nhóm, ngừng ghi một nhóm và đăng nhập Zalo công ty bằng mã QR ngay trên web. Quản trị hệ
+thống tự có quyền này. Bài kiểm máy chủ và giao diện chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/groups.py · controller.py (đường /groups*, /zalo/*) · constants.py (GROUP_CAT_*) · model.py (AgentGroupSummary, AgentGroupView) · assistant/service.py · core/permissions.py + scoping.py (agent_group) · migrations grp03 + agent0003 · zalo-listener/index.mjs · frontend-v2/src/modules/assistant (chat-group-*) · test/backend/test_agent_hub_nhom_web.py

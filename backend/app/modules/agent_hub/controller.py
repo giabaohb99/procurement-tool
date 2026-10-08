@@ -408,3 +408,249 @@ def stats(days: int = Query(30, ge=1, le=365), user=Depends(require(ENTITY, "rea
         "cost_by_stage": [{"stage": s, "label": STAGE_LABELS.get(s, str(s)), "cost_usd": round(c, 4)}
                           for s, c in sorted(per_stage.items(), key=lambda x: -x[1])],
     })
+
+
+# ---------------------------------------------------------------------------
+# Màn «Nhóm chat» của Trợ lý AI trên ERP v2 (ai-CR-123)
+#
+# Hai lớp người xem (đại ca chốt 08/10):
+#   - Ai cũng xem được nhóm MÌNH là thành viên (cùng luật bot: `groups.can_read`) — không cần khóa quyền.
+#   - Người có `agent_group.read` (quản lý bot AI) thấy MỌI nhóm, kể cả nội dung; mở nội dung nhóm mình không phải
+#     thành viên thì ghi nhật ký `tab_agent_group_view`. `agent_group.write` = phân loại mọi nhóm, ngừng ghi nhóm,
+#     đăng nhập Zalo công ty. Chủ nhóm (người thêm bot) tự phân loại nhóm của mình.
+# ---------------------------------------------------------------------------
+GROUP_ENTITY = "agent_group"
+GROUP_HOURS_MAX = 24 * 90
+
+
+def _group_rights(db: Session, user) -> tuple[bool, bool]:
+    from app.core.auth import user_has_permission
+
+    return (user_has_permission(db, user, GROUP_ENTITY, "read"), user_has_permission(db, user, GROUP_ENTITY, "write"))
+
+
+def _viewable_group(db: Session, user, group_id: int):
+    """Nhóm người gọi được xem; không có / không được xem đều trả 404 (không lộ nhóm tồn tại)."""
+    from . import groups
+
+    manager, writer = _group_rights(db, user)
+    g = groups.by_id(db, group_id)
+    if g is None or not groups.is_viewer(db, user.id, g, manager=manager):
+        raise HTTPException(404, "Không tìm thấy nhóm")
+    return g, manager, writer
+
+
+def _user_labels(db: Session, ids) -> dict[int, str]:
+    from . import erp
+
+    out: dict[int, str] = {}
+    for uid in {int(i) for i in ids if i}:
+        try:
+            u = erp.user_by_id(db, uid)
+            out[uid] = erp.describe(db, u)[0] if u is not None else f"#{uid}"
+        except Exception:  # noqa: BLE001 — tên chỉ để hiển thị
+            out[uid] = f"#{uid}"
+    return out
+
+
+@router.get("/groups/meta")
+def group_meta(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import groups
+    from .constants import GROUP_CATEGORY_LABELS
+
+    manager, writer = _group_rights(db, user)
+    return success({
+        "categories": [{"value": k, "label": v} for k, v in GROUP_CATEGORY_LABELS.items()],
+        "channels": [{"value": k, "label": v} for k, v in groups.CHANNEL_LABELS.items()],
+        "can_view_all": manager, "can_manage": writer,
+        "retention_days": int(settings.AGENT_GROUP_RETENTION_DAYS),
+        "zalo_enabled": bool(settings.AGENT_ZALO_LISTENER_URL),
+    })
+
+
+@router.get("/groups")
+def list_groups(scope: str = Query("mine", pattern="^(mine|all)$"), channel: str = Query("", max_length=20),
+                category: int | None = Query(None, ge=0, le=99), q: str = Query("", max_length=100),
+                include_inactive: bool = False, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import groups
+
+    manager, writer = _group_rights(db, user)
+    items = groups.list_for_web(db, user.id, manager=manager, scope=scope, channel=channel, category=category, q=q,
+                                include_inactive=include_inactive and manager)
+    names = _user_labels(db, [i["owner_user_id"] for i in items])
+    for i in items:
+        i["owner_label"] = names.get(i["owner_user_id"], "")
+        i["can_edit"] = writer or i["is_owner"]
+    return success({"items": items, "total": len(items), "can_view_all": manager, "can_manage": writer})
+
+
+@router.get("/groups/{group_id}")
+def get_group(group_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import groups
+
+    g, manager, writer = _viewable_group(db, user, group_id)
+    item = next((i for i in groups.list_for_web(db, user.id, manager=manager, scope="all", include_inactive=True)
+                 if i["id"] == g.id), None)
+    if item is None:
+        raise HTTPException(404, "Không tìm thấy nhóm")
+    item["owner_label"] = _user_labels(db, [item["owner_user_id"]]).get(item["owner_user_id"], "")
+    item["can_edit"] = writer or item["is_owner"]
+    item["can_pause"] = writer
+    return success(item)
+
+
+@router.get("/groups/{group_id}/messages")
+def group_messages(group_id: int, before_id: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=200),
+                   q: str = Query("", max_length=100), files_only: bool = False,
+                   user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import groups
+
+    g, manager, _ = _viewable_group(db, user, group_id)
+    groups.record_view(db, g, user.id, "tệp" if files_only else "tin nhắn", manager=manager)
+    data = groups.messages_page(db, g, before_id=before_id, limit=limit, q=q, files_only=files_only)
+    db.commit()
+    return success(data)
+
+
+@router.get("/groups/{group_id}/files/{message_id}")
+def group_file(group_id: int, message_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Tải tệp gửi trong nhóm (bot tải hộ từ Telegram / Zalo). Tệp chỉ lấy được khi còn trong hạn giữ của kênh."""
+    from urllib.parse import quote
+
+    from fastapi.responses import Response
+
+    from . import groups
+
+    g, manager, _ = _viewable_group(db, user, group_id)
+    row = groups.file_by_ref(db, g, message_id)
+    if row is None:
+        raise HTTPException(404, "Không thấy tệp này trong nhóm (hoặc đã quá hạn giữ)")
+    f = row.file or {}
+    try:
+        data, _ = telegram.download_file(str(f.get("file_id") or ""),
+                                         max_bytes=int(settings.AGENT_FILE_MAX_MB) * 1024 * 1024)
+    except telegram.TelegramError as e:
+        raise HTTPException(409, f"Không tải được tệp: {e}") from None
+    groups.record_view(db, g, user.id, "tải tệp", manager=manager)
+    db.commit()
+    name = str(f.get("name") or "tep")
+    return Response(content=data, media_type=str(f.get("mime") or "application/octet-stream"),
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"})
+
+
+@router.get("/groups/{group_id}/summaries")
+def group_summaries(group_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import groups
+
+    g, manager, _ = _viewable_group(db, user, group_id)
+    items = groups.summaries(db, g)
+    names = _user_labels(db, [i["user_id"] for i in items])
+    for i in items:
+        i["user_label"] = names.get(i["user_id"], "")
+    groups.record_view(db, g, user.id, "bản tóm tắt", manager=manager)
+    db.commit()
+    return success({"items": items})
+
+
+class GroupSummarizeIn(BaseModel):
+    hours: int = 24
+
+
+@router.post("/groups/{group_id}/summarize")
+def summarize_group(group_id: int, body: GroupSummarizeIn, user=Depends(get_current_user),
+                    db: Session = Depends(get_db)):
+    from app.modules.assistant import usage
+
+    from . import groups
+
+    g, manager, _ = _viewable_group(db, user, group_id)
+    hours = max(1, min(int(body.hours or 24), GROUP_HOURS_MAX))
+    try:
+        usage.check_daily_limit(db, user)
+    except usage.QuotaExceeded as e:
+        raise HTTPException(429, str(e)) from None
+    groups.record_view(db, g, user.id, "tóm tắt", manager=manager)
+    out = groups.summarize_now(db, g, user, hours=hours)
+    db.commit()
+    if out["empty"]:
+        return success(out, f"Nhóm không có tin nào trong {hours} giờ qua")
+    return success(out, "Đã tóm tắt và lưu lại")
+
+
+class GroupPatchIn(BaseModel):
+    category: int | None = None
+    paused: bool | None = None
+
+
+@router.patch("/groups/{group_id}")
+def update_group(group_id: int, body: GroupPatchIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from .constants import GROUP_CATEGORY_LABELS
+
+    g, _manager, writer = _viewable_group(db, user, group_id)
+    is_owner = bool(g.owner_user_id and int(g.owner_user_id) == int(user.id))
+    if body.category is not None:
+        if not (writer or is_owner):
+            raise HTTPException(403, "Chỉ chủ nhóm hoặc người quản lý bot AI được phân loại nhóm")
+        if body.category not in GROUP_CATEGORY_LABELS:
+            raise HTTPException(422, "Loại nhóm không hợp lệ")
+        g.category = int(body.category)
+    if body.paused is not None:
+        if not writer:
+            raise HTTPException(403, "Chỉ người quản lý bot AI được ngừng / mở lại ghi nhóm")
+        g.paused = bool(body.paused)
+    g.updated_by = int(user.id)
+    db.commit()
+    return success({"id": g.id, "category": int(g.category or 0), "paused": bool(g.paused)}, "Đã lưu")
+
+
+@router.get("/groups/{group_id}/views")
+def group_views(group_id: int, user=Depends(require(GROUP_ENTITY, "read")), db: Session = Depends(get_db)):
+    from . import groups
+
+    g, _, _ = _viewable_group(db, user, group_id)
+    items = groups.views(db, g)
+    names = _user_labels(db, [i["user_id"] for i in items])
+    for i in items:
+        i["user_label"] = names.get(i["user_id"], "")
+    return success({"items": items})
+
+
+@router.get("/zalo/status")
+def zalo_status(user=Depends(require(GROUP_ENTITY, "read")), db: Session = Depends(get_db)):
+    """Tình trạng tài khoản Zalo công ty (ai-CR-122). Ảnh QR chỉ trả cho người có `agent_group.write`."""
+    from app.core.auth import user_has_permission
+
+    from . import zalo_account
+
+    if not settings.AGENT_ZALO_LISTENER_URL:
+        return success({"enabled": False, "state": "off"})
+    try:
+        st = zalo_account.status()
+    except zalo_account.ZaloAccountError as e:
+        return success({"enabled": True, "state": "unreachable", "reason": str(e)})
+    out = {k: st.get(k) for k in ("state", "name", "groups", "queued", "reason")}
+    out["enabled"] = True
+    out["qr_image"] = st.get("qr_image") or "" if user_has_permission(db, user, GROUP_ENTITY, "write") else ""
+    return success(out)
+
+
+@router.post("/zalo/login")
+def zalo_login(user=Depends(require(GROUP_ENTITY, "write"))):
+    from . import zalo_account
+
+    try:
+        zalo_account.request_login()
+    except zalo_account.ZaloAccountError as e:
+        raise HTTPException(409, str(e)) from None
+    return success(None, "Đang lấy mã QR — quét bằng điện thoại giữ số Zalo công ty")
+
+
+@router.post("/zalo/refresh-groups")
+def zalo_refresh_groups(user=Depends(require(GROUP_ENTITY, "write"))):
+    from . import zalo_account
+
+    try:
+        zalo_account.refresh_groups()
+    except zalo_account.ZaloAccountError as e:
+        raise HTTPException(409, str(e)) from None
+    return success(None, "Đang đồng bộ lại nhóm và thành viên Zalo")

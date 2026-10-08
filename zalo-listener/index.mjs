@@ -113,7 +113,7 @@ function ack(offset) {
 // ---------------------------------------------------------------------------
 // Trạng thái phiên Zalo
 // ---------------------------------------------------------------------------
-const state = { value: "idle", name: "", uid: "", since: Date.now(), reason: "" };
+const state = { value: "idle", name: "", uid: "", since: Date.now(), reason: "", qr: "" };
 let api = null;
 let loggingIn = false;
 let reloginTimer = null;
@@ -122,6 +122,7 @@ const groupNames = new Map();
 function setState(value, extra = {}) {
   const changed = state.value !== value;
   Object.assign(state, { value, since: changed ? Date.now() : state.since, reason: "" }, extra);
+  if (value !== "qr") state.qr = "";
   if (changed && (value === "connected" || value === "down")) {
     push({ kind: "status", state: value, name: state.name, reason: state.reason });
   }
@@ -298,8 +299,10 @@ async function loginQR() {
     const zalo = new Zalo({ selfListen: false, checkUpdate: false, logging: false });
     const newApi = await zalo.loginQR({ userAgent: USER_AGENT }, async (ev) => {
       if (ev.type === LoginQRCallbackEventType.QRCodeGenerated) {
-        push({ kind: "qr", image: String(ev.data?.image || "") });
+        state.qr = String(ev.data?.image || "");
+        push({ kind: "qr", image: state.qr });
       } else if (ev.type === LoginQRCallbackEventType.QRCodeExpired) {
+        state.qr = "";
         push({ kind: "qr", expired: true });
         ev.actions?.abort?.();
       } else if (ev.type === LoginQRCallbackEventType.QRCodeScanned) {
@@ -316,6 +319,7 @@ async function loginQR() {
   } catch (e) {
     log("đăng nhập QR hỏng:", e?.message || e);
     state.value = "idle";
+    state.qr = "";
   } finally {
     loggingIn = false;
   }
@@ -436,7 +440,9 @@ async function handle(req, res) {
   }
   if (req.method === "GET" && url.pathname === "/status") {
     return reply(res, 200, { ok: true, state: state.value, name: state.name, uid: state.uid,
-                             groups: state.groups ?? null, queued, since: state.since, reason: state.reason });
+                             groups: state.groups ?? null, queued, since: state.since, reason: state.reason,
+                             // ai-CR-123: màn «Nhóm chat» trên ERP hiện mã QR để quét ngay trên web.
+                             qr_image: state.value === "qr" ? state.qr : "" });
   }
   return reply(res, 404, { ok: false, error: "không có đường này" });
 }

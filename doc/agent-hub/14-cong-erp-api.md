@@ -121,3 +121,15 @@ chạy khi api ERP khởi động lại sau đợt gộp kế.
 Quay lui: xóa dòng `AGENT_ZALO_LISTENER_URL` khỏi `.env.agent`, `docker compose ... stop zalo-listener`, `up -d
 agent-poller` — bot về như trước (cột `members` để nguyên, vô hại).
 
+## 8. Màn «Nhóm chat» (ai-CR-123) — dựng trên dev
+
+Đợt này đụng **cả ba**: ERP api (khóa quyền mới `agent_group` — dịch vụ AI hỏi quyền qua cổng B nên ERP phải biết khóa
+này), giao diện ERP v2 (màn mới) và stack agent-hub (bảng mới + zalo-listener trả ảnh QR).
+
+1. Gộp `agent-hub-bac-1` vào `erp-v2` như mọi lần; `alembic heads` ERP phải ra một head `grp03`.
+2. ERP dev: dựng lại api (migration `grp03` + seed tự thêm `agent_group` đủ quyền cho vai trò Quản trị) và erp (giao
+   diện v2) theo quy trình deploy dev thường lệ.
+3. Stack agent-hub: `cd ~/agent-hub && git pull && docker compose --env-file .env.agent -p agent-hub -f
+   docker-compose.agent-hub.yml up -d --build` — `agent-api` lên `agent0003`, `zalo-listener` dựng lại.
+4. Kiểm: đăng nhập web dev bằng tài khoản quản trị → Trợ lý AI → **Nhóm chat** có tab «Tất cả nhóm» và thẻ «Zalo tài
+   khoản công ty»; `alembic -c alembic_agent.ini current` = `agent0003 (head)`.

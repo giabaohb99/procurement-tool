@@ -407,3 +407,27 @@ BOT_LOGIN_FACTS = (
     "tab «Telegram» → «Lấy mã liên kết», rồi nhắn cho bot «/dangnhap <mã 6 số>» (mã dùng một lần, hết "
     "hạn sau vài phút). «/dangxuat» để bỏ liên kết, «/taikhoan» để xem chat đang dùng tài khoản nào."
 )
+
+
+# ---------------------------------------------------------------------------
+# Nhóm bot đang ở — phân loại (ai-CR-123, `tab_agent_group.category`)
+# ---------------------------------------------------------------------------
+#  Đại ca 08/10: «các nhóm có chia theo loại, theo bot không». Loại do chủ nhóm hoặc người quản lý bot AI gán trên
+#  màn «Nhóm chat» của ERP v2; bot không tự đoán. Số đã cấp không đổi / không tái dùng.
+GROUP_CAT_NONE = 0
+GROUP_CAT_INTERNAL = 1      # nội bộ phòng ban
+GROUP_CAT_PROJECT = 2       # dự án
+GROUP_CAT_CUSTOMER = 3      # khách hàng
+GROUP_CAT_SUPPLIER = 4      # nhà cung cấp
+GROUP_CAT_MANAGEMENT = 5    # ban lãnh đạo / điều hành
+GROUP_CAT_OTHER = 9
+
+GROUP_CATEGORY_LABELS = {
+    GROUP_CAT_NONE: "Chưa phân loại",
+    GROUP_CAT_INTERNAL: "Nội bộ phòng ban",
+    GROUP_CAT_PROJECT: "Dự án",
+    GROUP_CAT_CUSTOMER: "Khách hàng",
+    GROUP_CAT_SUPPLIER: "Nhà cung cấp",
+    GROUP_CAT_MANAGEMENT: "Điều hành",
+    GROUP_CAT_OTHER: "Khác",
+}

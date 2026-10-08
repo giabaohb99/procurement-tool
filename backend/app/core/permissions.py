@@ -164,6 +164,10 @@ ENTITIES = [
     # đã nhận, lịch sử từng bước, chi phí model. Chỉ ĐỌC: mọi thao tác trên việc vẫn đi qua
     # Telegram. Quản trị hệ thống, không phải thu mua (nằm trong `_SYS_ENTITIES` của seed).
     "agent_task",
+    # Quản lý nhóm chat của bot (ai-CR-123) — màn «Nhóm chat» của Trợ lý AI trên ERP v2. Ai cũng xem được nhóm MÌNH
+    # là thành viên mà không cần khóa này; `read` = thấy MỌI nhóm bot đang ở kể cả nội dung (đại ca chốt 08/10: quản
+    # lý AI thấy hết, có nhật ký xem) · `write` = phân loại, ngừng ghi nhóm, đăng nhập Zalo công ty.
+    "agent_group",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -248,6 +252,7 @@ ENTITY_LABELS = {
     "customs_pesticide": "Danh mục thuốc BVTV (hải quan)",
     "purchase_cost_type": "Danh mục Loại chi phí thu mua",
     "agent_task": "Trợ lý Telegram › Việc của bot",
+    "agent_group": "Trợ lý AI › Quản lý nhóm chat của bot",
 }
 
 ACTION_LABELS = {

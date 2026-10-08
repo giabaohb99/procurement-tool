@@ -260,6 +260,8 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  Việc của bot Agent Hub (ai-CR-036): sổ việc + chi phí model của
                  #  bot sửa mã — việc của quản trị hệ thống.
                  "agent_task",
+                 #  ai-CR-123: quản lý nhóm chat của bot — đọc được NỘI DUNG mọi nhóm, đại ca tick tay.
+                 "agent_group",
                  #  Thư mục văn bản (rà soát 23/09/2026, code-reviewer C2):
                  #  `doc_folder.write` scope "all" nghĩa là QUẢN LÝ (bỏ qua cả
                  #  ACL cấm — bước 4 của `folder_access_service.effective_levels`)

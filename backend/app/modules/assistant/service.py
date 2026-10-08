@@ -9,6 +9,7 @@ Routing quyết định: bật/tắt suy nghĩ + trần token + có mở tool ha
 from datetime import date
 
 from app.core import app_settings
+from app.core.config import settings
 
 from .knowledge import build_system
 from .provider import ChatMessage, get_provider
@@ -317,6 +318,12 @@ def ask(
         )
     else:
         result = prov.ask(msgs, **common)
+
+    if tool_on and not settings.agent_is_erp:
+        #  ai-CR-123: câu trả lời có đọc nhóm chat → lưu làm bản tóm tắt của nhóm, xem lại trên màn «Nhóm chat».
+        from app.modules.agent_hub import groups
+
+        groups.record_answers(db, user, message, result.tool_calls, result.text)
 
     return {
         "text": result.text,

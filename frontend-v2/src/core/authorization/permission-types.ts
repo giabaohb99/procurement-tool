@@ -166,6 +166,8 @@ export const ENTITIES = [
   //  Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`, chỉ đọc: danh sách việc
   //  Đậu Đậu đã nhận, từng bước đã chạy, chi phí model. Thao tác trên việc vẫn đi qua Telegram.
   'agent_task',
+  // Quản lý nhóm chat của bot (ai-CR-123) — màn «Nhóm chat» của Trợ lý AI.
+  'agent_group',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

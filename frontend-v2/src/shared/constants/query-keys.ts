@@ -617,6 +617,18 @@ export const queryKeys = {
     providers: () => ['assistant', 'providers'] as const,
     conversations: () => ['assistant', 'conversations'] as const,
     conversation: (id: number) => ['assistant', 'conversations', id] as const,
+    /** Nhóm chat bot đang ở (ai-CR-123) — danh sách, chi tiết, tin, bản tóm tắt, nhật ký xem. */
+    /** Gốc của mọi khóa nhóm chat — sửa / đồng bộ nhóm thì làm tươi cả cây này. */
+    chatGroupsAll: () => ['assistant', 'chat-groups'] as const,
+    chatGroupMeta: () => ['assistant', 'chat-groups', 'meta'] as const,
+    chatGroups: (params?: Record<string, unknown>) => ['assistant', 'chat-groups', 'list', params ?? {}] as const,
+    chatGroup: (id: number) => ['assistant', 'chat-groups', 'detail', id] as const,
+    chatGroupMessages: (id: number, params?: Record<string, unknown>) =>
+      ['assistant', 'chat-groups', 'detail', id, 'messages', params ?? {}] as const,
+    chatGroupSummaries: (id: number) => ['assistant', 'chat-groups', 'detail', id, 'summaries'] as const,
+    chatGroupViews: (id: number) => ['assistant', 'chat-groups', 'detail', id, 'views'] as const,
+    /** Tài khoản Zalo công ty (ai-CR-122) — tình trạng + ảnh QR khi đang đăng nhập. */
+    zaloStatus: () => ['assistant', 'zalo-status'] as const,
   },
   /**
    * Phân hệ Công việc (CR-216). `board` là khóa nặng nhất — mọi thao tác trên
