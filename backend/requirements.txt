@@ -16,6 +16,7 @@ google-auth==2.35.0
 requests==2.32.3
 pywebpush==2.3.0
 openpyxl==3.1.5
+pycel==1.0b30   # ai-CR-115: bot tự tính ô công thức Excel không lưu sẵn kết quả (kéo theo numpy, networkx)
 xlrd==2.0.1
 celery==5.4.0
 redis==5.1.1

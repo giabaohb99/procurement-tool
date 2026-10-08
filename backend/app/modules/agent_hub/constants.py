@@ -230,6 +230,7 @@ ACT_HEARTBEAT = "dang_chay"
 #  ai-CR-046: bản nháp chứng từ chờ «tạo». Dòng sổ ẩn (không gửi Telegram), `body` = JSON
 #  {tool, kind, user_id, draft}; dùng xong đổi sang `da_tao` / `bo_tao`.
 ACT_DRAFT_WAIT = "cho_tao"
+ACT_DOC_WAIT = "cho_hoi_tep"   # ai-CR-115: tệp gửi riêng chưa kèm câu hỏi, chờ tin chữ kế tiếp (DOC_WAIT_SEC)
 ACT_DRAFT_DONE = "da_tao"
 ACT_DRAFT_DROPPED = "bo_tao"
 #  ai-CR-051: thẻ hỏi lại «cấp cho X cấp Y?» của đại ca; `body` = JSON {op, user_id, level}.

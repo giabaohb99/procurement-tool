@@ -70,6 +70,7 @@ from .constants import (
     ACT_DRAFT_DONE,
     ACT_DENIED,
     ACT_DRAFT_DROPPED,
+    ACT_DOC_WAIT,
     ACT_DRAFT_WAIT,
     ACT_GRANT_DONE,
     ACT_GRANT_DROPPED,
@@ -271,19 +272,95 @@ def _document_by_message(db: Session, msg: dict, chat_id: str, text: str) -> boo
         return False
     if chat_link.get_active_link(db, chat_id) is None and not telegram.is_allowed_chat(chat_id):
         return False
-    question = text or "Tóm tắt tệp này: ý chính, số liệu quan trọng, việc cần làm (nếu có)."
-    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), f"[tệp {name}] {question}"[:4000],
+    info = {"kind": "doc", "file_id": str(doc["file_id"]), "name": name, "mime": mime}
+    if not text:
+        #  ai-CR-115: tệp KHÔNG kèm chú thích — người dùng hay gửi tệp rồi mới gõ câu hỏi ở tin sau (08/10 đại ca gửi báo
+        #  cáo rồi nhắn «phân tích báo cáo này» → bot trả lời HAI lần: một bản tóm tắt + một bản phân tích). Chờ
+        #  DOC_WAIT_SEC giây: có câu hỏi thì trả lời theo câu đó, không có thì tự tóm tắt.
+        row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), f"[tệp {name}]"[:4000],
+                          action=ACT_DOC_WAIT)
+        row.files = [info]
+        row.scope = SCOPE_PERSONAL
+        db.commit()
+        _kick_doc_wait(row.id)
+        return True
+    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), f"[tệp {name}] {text}"[:4000],
                       action=ACT_ASKED)
     row.scope = SCOPE_PERSONAL
     db.commit()
+    _answer_document(db, chat_id, info, text, row.id)
+    return True
+
+
+DOC_WAIT_SEC = 20
+DOC_DEFAULT_QUESTION = "Tóm tắt tệp này: ý chính, số liệu quan trọng, việc cần làm (nếu có)."
+#  Dặn thêm cho mọi câu hỏi về tệp (ai-CR-115: đại ca 08/10 «góc nhìn oke, chi tiết hơn thì oke hơn»).
+DOC_GUIDE = ("(Đọc HẾT các trang tính / mục của tệp trước khi trả lời. Trả lời đầy đủ và chi tiết: nêu số liệu cụ thể kèm "
+             "đơn vị, so sánh giữa các kỳ / đơn vị, tỷ lệ tự tính được thì tính và ghi rõ là tự tính, chỉ ra điểm bất thường "
+             "và rủi ro, cuối cùng là nhận xét + đề xuất. Không bỏ dở giữa chừng.)")
+
+
+def _kick_doc_wait(row_id: int) -> None:
+    from .tasks import doc_wait_task  # import muộn: tasks import service
+
     try:
-        data, _ = telegram.download_file(str(doc["file_id"]), max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
+        doc_wait_task.apply_async(args=[int(row_id)], countdown=DOC_WAIT_SEC, expires=600)
+    except Exception:  # noqa: BLE001 — broker hỏng: thôi chờ, tin chữ kế tiếp vẫn nhận tệp
+        log.exception("agent_hub: hẹn đọc tệp hỏng")
+
+
+def _claim_doc(db: Session, row_id: int) -> bool:
+    """Giành tệp đang chờ câu hỏi — đúng MỘT bên thắng (tin chữ kế tiếp hoặc vòng hẹn giờ)."""
+    from sqlalchemy import update
+
+    done = db.execute(update(AgentMessage).where(AgentMessage.id == int(row_id), AgentMessage.action == ACT_DOC_WAIT)
+                      .values(action=ACT_ASKED))
+    db.commit()
+    return bool(done.rowcount)
+
+
+def _answer_document(db: Session, chat_id: str, info: dict, question: str, before_id: int) -> None:
+    from . import doc_text
+
+    name, mime = str(info.get("name") or "tệp"), str(info.get("mime") or "")
+    telegram.send_chat_action(chat_id)
+    try:
+        data, _ = telegram.download_file(str(info.get("file_id") or ""), max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
         content = doc_text.extract(name, mime, data)
     except (telegram.TelegramError, doc_text.DocTextError) as e:
         reply(db, chat_id, f"Em chưa đọc được tệp «{telegram.esc(name)}»: {telegram.esc(str(e))}.")
         db.commit()
-        return True
-    answer_question(db, chat_id, f"{question}\n\nNỘI DUNG TỆP «{name}»:\n{content}", before_id=row.id)
+        return
+    answer_question(db, chat_id, f"{question}\n\n{DOC_GUIDE}\n\nNỘI DUNG TỆP «{name}»:\n{content}", before_id=before_id,
+                    kind="document")
+
+
+def flush_pending_doc(db: Session, row_id: int) -> bool:
+    """Hết DOC_WAIT_SEC mà người dùng không hỏi gì thêm: tự tóm tắt tệp."""
+    row = db.get(AgentMessage, int(row_id))
+    if row is None or row.action != ACT_DOC_WAIT or not _claim_doc(db, row.id):
+        return False
+    info = (row.files or [{}])[0]
+    with user_keys.for_chat(db, row.chat_id):
+        _answer_document(db, row.chat_id, info, DOC_DEFAULT_QUESTION, row.id)
+    return True
+
+
+def _doc_followup(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Tin chữ ngay sau một tệp chưa kèm câu hỏi = câu hỏi VỀ tệp đó (một câu trả lời, không phải hai)."""
+    if not text or text.startswith("/"):
+        return False
+    pending = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DOC_WAIT,
+                                                   AgentMessage.id < row.id).order_by(AgentMessage.id.desc()).limit(1))
+    if pending is None or (row.created_at and pending.created_at
+                           and row.created_at - pending.created_at > timedelta(seconds=DOC_WAIT_SEC * 6)):
+        return False
+    if not _claim_doc(db, pending.id):
+        return False
+    row.action = ACT_ASKED
+    row.scope = SCOPE_PERSONAL
+    db.commit()
+    _answer_document(db, chat_id, (pending.files or [{}])[0], text, row.id)
     return True
 
 
@@ -838,7 +915,8 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     dự án KHÔNG mở cho họ, hạ về tìm web); mọi ý định khác → Trợ lý ERP dưới quyền của chính họ. Họ
     không giao được việc sửa mã và không thao tác được việc của bot, nên «viec» / «thao_tac» cũng về Trợ lý.
     """
-    if meeting_actions.handle_text(db, chat_id, row, text) or _draft_by_text(db, chat_id, row, text)             or _word_by_text(db, chat_id, row, text):
+    if (_doc_followup(db, chat_id, row, text) or meeting_actions.handle_text(db, chat_id, row, text)
+            or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
         return
     if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
             or _reminder_by_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text) \
@@ -942,6 +1020,9 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     nhánh mập mờ. Bản trước rơi về giao việc — tức một câu hỏi gặp lúc Gemini 429 là
     thành một thẻ việc 90 giây sau; tin vẫn không mất, nhưng nay đại ca là người chốt.
     """
+    #  ai-CR-115: tin chữ ngay sau một tệp chưa kèm câu hỏi = câu hỏi về tệp đó — đi trước mọi đường khác.
+    if _doc_followup(db, chat_id, row, text):
+        return
     #  Bot vừa mời hẹn giờ gộp + deploy (ai-CR-014): tin kế là giờ hẹn, không đi phân loại.
     if task_id := _deploy_time_target(db, chat_id, row):
         _schedule_deploy(db, chat_id, row, text, task_id)
@@ -3246,7 +3327,8 @@ def _recent_turns(db: Session, chat_id: str, before_id: int) -> list[dict]:
 UNSURE_HINT = "_(Nếu đây là việc sửa phần mềm thì nhắn «ghi việc: …»)_"
 
 
-def answer_question(db: Session, chat_id: str, question: str, *, before_id: int = 0, hint: str = "") -> None:
+def answer_question(db: Session, chat_id: str, question: str, *, before_id: int = 0, hint: str = "",
+                    kind: str = "general") -> None:
     """Chuyển câu hỏi cho Trợ lý AI và nhắn lại câu trả lời.
 
     `before_id` = id tin đang hỏi, để mạch hội thoại lấy các tin TRƯỚC nó (không thì
@@ -3287,6 +3369,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         link = chat_link.get_active_link(db, chat_id)
         memory_block = personal_memory.prompt_block(db, link.user_id if link is not None else 0, question)
         result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
+                                       kind=kind,
                                        system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}"
                                               + (f"\n\n{memory_block}" if memory_block else ""))

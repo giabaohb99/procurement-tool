@@ -743,6 +743,20 @@ def meeting_process_task(meeting_id: int) -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.doc_wait", acks_late=False)
+def doc_wait_task(row_id: int) -> dict:
+    """ai-CR-115: tệp gửi riêng không kèm câu hỏi, hết giờ chờ mà không có tin chữ nào → tự tóm tắt."""
+    if (off := _off()) is not None:
+        return off
+    from . import service
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "answered": service.flush_pending_doc(db, row_id)}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.group_purge")
 def group_purge_task() -> dict:
     """ai-CR-105: mỗi ngày dọn tin nhóm Telegram quá AGENT_GROUP_RETENTION_DAYS ngày."""

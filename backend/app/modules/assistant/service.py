@@ -23,6 +23,8 @@ ROUTING: dict[str, dict] = {
     "lookup":  {"thinking": False, "max_tokens": 1024, "temperature": 0.2, "tools": True},
     "advice":  {"thinking": True,  "max_tokens": 2048, "temperature": 0.4, "tools": True},
     "general": {"thinking": False, "max_tokens": 1536, "temperature": 0.3, "tools": True},
+    #  ai-CR-115: đọc / phân tích tệp người dùng gửi cho bot — câu trả lời dài, có số liệu; trần cũ 1536 cắt cụt giữa câu.
+    "document": {"thinking": False, "max_tokens": 8192, "temperature": 0.3, "tools": True},
 }
 
 # Hướng dẫn khi bật tool — bản đồ NĂNG LỰC + chiến lược gọi tool, để model tự chọn/kết hợp

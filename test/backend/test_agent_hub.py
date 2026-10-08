@@ -164,6 +164,9 @@ def bot(monkeypatch):
         monkeypatch.setattr(_coder, name, lambda *a, **kw: None)
     kicks: list[int] = []
     monkeypatch.setattr(service, "_kick_triage", lambda: kicks.append(1))   # ai-CR-091: không hẹn vòng gom thật
+    doc_waits: list[int] = []
+    monkeypatch.setattr(service, "_kick_doc_wait", lambda rid: doc_waits.append(rid))   # ai-CR-115
+    service._doc_wait_log = doc_waits
     service._kick_log = kicks
     sent: list[str] = []
     asked: list[str] = []
@@ -7517,7 +7520,8 @@ def test_adapter_openai_va_openrouter_goi_cong_cu(monkeypatch):
                       execute=lambda name, args: {"count": args["n"]}, system="sys")
     assert out.text == "Có 3 đơn." and out.input_tokens == 30 and out.tool_calls[0]["name"] == "count_po"
     assert posts[0]["url"].endswith("/chat/completions") and posts[0]["auth"] == "Bearer sk-test"
-    assert "temperature" not in posts[0]["json"] and posts[0]["json"]["max_completion_tokens"] == 1024
+    #  ai-CR-115: trần đầu ra có sàn MIN_OUTPUT_TOKENS (model suy luận tính cả phần «nghĩ»).
+    assert "temperature" not in posts[0]["json"] and posts[0]["json"]["max_completion_tokens"] == 8000
     assert posts[0]["json"]["messages"][0] == {"role": "system", "content": "sys"}
     assert _json.loads(posts[1]["json"]["messages"][-1]["content"]) == {"count": 3}
     r = oc.OpenRouterProvider()
@@ -8736,3 +8740,121 @@ def test_rut_viec_hong_thi_khong_gui_the_va_bien_ban_van_xong(db, bot, seed, mon
     assert mt.process(db, row.id)["status"] == "done"
     assert "BIÊN BẢN" in "".join(sent) and not any("Việc và lịch rút" in m for m in sent)
     assert not db.query(AgentMessage).filter_by(action="bb_cho_tao").count()
+
+
+# --- ai-CR-115: đọc báo cáo — một câu trả lời cho «tệp + câu hỏi», Excel tự tính công thức, không cắt cụt ---------------
+def _xlsx_report_bytes(sheets: int = 8) -> bytes:
+    import io
+
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "KQKD"
+    ws.append(["Chỉ tiêu", "2025", "2026"])
+    ws.append(["Doanh thu", 308.7, 347.2])
+    ws.append(["Giá vốn", 255.2, 270.8])
+    ws.append(["Biên gộp", "=(B2-B3)/B2", "=ROUND((C2-C3)/C2,4)"])
+    ws.append(["Tăng trưởng", "", "=C2/B2-1"])
+    ws.append(["Hàm lạ", "=KHONGCOHAMNAY(1)"])
+    for i in range(2, sheets + 1):
+        wb.create_sheet(f"Trang {i}").append([f"Nội dung trang {i}", i])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def test_excel_khong_luu_ket_qua_cong_thuc_thi_tu_tinh_va_doc_het_trang():
+    from app.modules.agent_hub import doc_text
+
+    text = doc_text.extract("bc.xlsx", "", _xlsx_report_bytes())
+    #  Trước ai-CR-115: openpyxl đọc ô công thức ra rỗng → bot kết luận «tệp chưa có số».
+    assert "4: Biên gộp | 0.1733 | 0.22" in text
+    assert "5: Tăng trưởng |  | 0.1247" in text
+    assert "=KHONGCOHAMNAY(1)" in text                          # tính không được thì in công thức gốc
+    assert "đã tự tính" in text.splitlines()[0]
+    assert "## Trang tính: Trang 8" in text                     # trước chỉ đọc 5 trang đầu
+    #  Tệp có kết quả lưu sẵn (không có ô công thức trống) thì không có dòng ghi chú.
+    import io
+
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    wb.active.append(["Thép", 20])
+    buf = io.BytesIO()
+    wb.save(buf)
+    plain = doc_text.extract("so.xlsx", "", buf.getvalue())
+    assert plain.startswith("## Trang tính") and "1: Thép | 20" in plain
+
+
+def _doc_msg(mid: int, caption: str = "") -> dict:
+    msg = {"chat": {"id": "12345", "type": "private"}, "message_id": mid,
+           "document": {"file_id": f"D{mid}", "file_name": "Bao_cao_nhan_su.xlsx",
+                        "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}}
+    if caption:
+        msg["caption"] = caption
+    return msg
+
+
+def test_tep_roi_moi_hoi_chi_tra_loi_mot_lan_theo_cau_hoi(db, bot, seed, monkeypatch):
+    service, sent, asked = bot
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(service.telegram, "download_file", lambda fid, *, max_bytes: (_xlsx_report_bytes(), "x.xlsx"))
+    service.handle_message(db, _doc_msg(20))
+    assert asked == [] and service._doc_wait_log                  # chưa trả lời, đang chờ câu hỏi
+    service.handle_message(db, _msg("phân tích báo cáo này"))
+    assert len(asked) == 1 and asked[0].startswith("phân tích báo cáo này")
+    assert "Trả lời đầy đủ và chi tiết" in asked[0] and "0.1733" in asked[0]
+    #  Hết giờ chờ: tệp đã được hỏi rồi thì vòng hẹn giờ không trả lời lần hai.
+    assert service.flush_pending_doc(db, service._doc_wait_log[-1]) is False
+    assert len(asked) == 1
+
+
+def test_tep_khong_ai_hoi_thi_het_gio_tu_tom_tat(db, bot, seed, monkeypatch):
+    service, sent, asked = bot
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(service.telegram, "download_file", lambda fid, *, max_bytes: (_xlsx_report_bytes(), "x.xlsx"))
+    service.handle_message(db, _doc_msg(21))
+    assert service.flush_pending_doc(db, service._doc_wait_log[-1]) is True
+    assert len(asked) == 1 and asked[0].startswith("Tóm tắt tệp này")
+    #  Tin chữ tới sau khi đã tự tóm tắt: là câu hỏi thường, không đọc lại tệp lần nữa.
+    monkeypatch.setattr(service, "_route_linked_text", lambda *a, **kw: None)
+    assert service._doc_followup(db, "12345", service.log_message(db, service.DIR_IN, "12345", 22, "x"), "x") is False
+    #  Tệp kèm chú thích: trả lời ngay, không chờ.
+    n = len(service._doc_wait_log)
+    service.handle_message(db, _doc_msg(23, caption="doanh thu 2026 bao nhiêu"))
+    assert len(service._doc_wait_log) == n and asked[-1].startswith("doanh thu 2026 bao nhiêu")
+
+
+def test_tin_dai_cat_thanh_nhieu_tin_khong_cut_cut(monkeypatch):
+    calls: list[dict] = []
+    monkeypatch.setattr(telegram, "send_payload", lambda p: calls.append(p) or {"message_id": len(calls)})
+    body = "\n\n".join(f"<b>Mục {i}</b>\n" + "số liệu " * 80 for i in range(30))
+    mid = telegram.send(body, chat_id="12345", buttons=[("Xuất Word", "word:1")])
+    assert mid == 1 and 2 <= len(calls) <= telegram.MAX_PARTS
+    assert all(len(c["text"]) <= telegram.MAX_TEXT + 60 for c in calls)
+    assert all(c["text"].count("<b>") == c["text"].count("</b>") for c in calls)   # không tách đôi thẻ
+    assert "reply_markup" in calls[-1] and all("reply_markup" not in c for c in calls[:-1])
+    assert telegram.split_long("ngắn") == ["ngắn"]
+
+
+def test_model_kieu_openai_khong_bi_tran_1536_cat_cut(monkeypatch):
+    from app.modules.assistant.provider import openai_compat as oc
+    from app.modules.assistant.provider.base import ChatMessage
+
+    sent: list[dict] = []
+
+    class R:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {"model": "deepseek-v4.1-flash", "usage": {},
+                    "choices": [{"message": {"content": "Phân tích: doanh thu tăng"}, "finish_reason": "length"}]}
+
+    monkeypatch.setattr(oc.requests, "post", lambda url, json=None, headers=None, timeout=0: sent.append(json) or R())
+    p = oc.DeepSeekProvider()
+    monkeypatch.setattr(p, "_api_key", lambda: "k")
+    out = p.ask([ChatMessage(role="user", content="phân tích")], max_tokens=1536)
+    assert sent[-1]["max_tokens"] == oc.MIN_OUTPUT_TOKENS
+    assert out.text.startswith("Phân tích: doanh thu tăng") and "viết tiếp" in out.text

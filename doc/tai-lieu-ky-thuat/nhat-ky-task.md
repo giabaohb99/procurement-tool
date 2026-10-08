@@ -12885,3 +12885,19 @@ chưa nối Google thì ghi vào thẻ cá nhân. Mỗi mục nhớ trạng thá
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_actions.py (mới) · agent_hub/meetings.py · agent_hub/service.py · agent_hub/model.py · migration meet03 · test/backend/test_agent_hub.py
 Deploy: dev 07/10 (Agent 1 gộp 66601fb1, sao lưu DB dev trước, migration meet03, dựng lại api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
+
+
+## ai-CR-115 | Bot đọc báo cáo trả lời một lần, tự tính công thức Excel, không cắt cụt câu trả lời
+- status: xong
+- date: 2026-10-08
+Đại ca gửi tệp báo cáo nhân sự dạng Excel rồi nhắn «phân tích báo cáo này» và thấy bot trả lời hai lần, phân tích chưa chuẩn và
+còn thiếu chi tiết. Em tìm ra bốn nguyên nhân và đã sửa. Thứ nhất, tệp gửi không kèm câu hỏi bị tóm tắt ngay rồi câu hỏi gõ sau
+lại được trả lời riêng; nay bot chờ hai mươi giây, có câu hỏi thì trả lời một lần theo câu đó, không có thì tự tóm tắt. Thứ hai,
+tệp Excel do phần mềm sinh ra không lưu sẵn kết quả công thức nên bot tưởng các chỉ số như biên lợi nhuận đều trống; nay bot tự
+tính lại công thức, ô nào không tính được thì ghi rõ công thức, và đọc đủ mọi trang tính thay vì năm trang đầu. Thứ ba, câu trả
+lời bị cắt giữa chừng vì model DeepSeek tiêu phần lớn giới hạn độ dài cho bước suy nghĩ; nay giới hạn được nâng lên và nếu vẫn
+chạm trần thì bot báo để người dùng nhắn viết tiếp. Thứ tư, tin dài không còn bị cắt mà được tách thành vài tin liên tiếp. Bot
+cũng được dặn phân tích chi tiết hơn: số liệu cụ thể, so sánh giữa các kỳ, tỷ lệ tự tính, điểm bất thường và đề xuất. Cần dựng
+lại image api vì thêm thư viện tính công thức Excel. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/doc_text.py · agent_hub/service.py (_doc_followup, flush_pending_doc) · agent_hub/telegram.py (split_long) · agent_hub/tasks.py (agent.doc_wait) · assistant/service.py · assistant/provider/openai_compat.py · backend/requirements.txt (pycel) · test/backend/test_agent_hub.py

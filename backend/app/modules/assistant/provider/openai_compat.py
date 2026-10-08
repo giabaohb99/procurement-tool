@@ -18,6 +18,8 @@ from .base import ChatMessage, ChatResult, Provider, ProviderError, ToolDef, Too
 TIMEOUT = 90
 OPENAI_URL = "https://api.openai.com/v1"
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
+MIN_OUTPUT_TOKENS = 8000
+CUT_NOTE = "\n\n_(Câu trả lời chạm trần độ dài nên bị cắt — nhắn «viết tiếp» để em viết nốt.)_"
 
 
 def _wire_content(content):
@@ -110,13 +112,19 @@ class OpenAICompatProvider(Provider):
         return resp.json()
 
     def _payload(self, model: str, msgs: list[dict], system: str | None, max_tokens: int, temperature: float) -> dict:
+        #  ai-CR-115: model suy luận (DeepSeek v4, gpt-5, o*…) tính cả phần «nghĩ» vào trần đầu ra — trần 1536 của Trợ lý
+        #  cắt cụt câu trả lời giữa chừng (08/10 bot phân tích báo cáo dừng ở «Chi phí 2026: bán hàng 28,6 · QLDN»). Trần
+        #  chỉ là mức chặn trên, tiền tính theo token thật dùng, nên nâng sàn lên MIN_OUTPUT_TOKENS.
         payload: dict = {"model": model, "messages": ([{"role": "system", "content": system}] if system else []) + msgs,
-                         self.max_tokens_field: max_tokens}
+                         self.max_tokens_field: max(int(max_tokens or 0), MIN_OUTPUT_TOKENS)}
         if not _no_temperature(model):
             payload["temperature"] = temperature
         return payload
 
     def _result(self, data: dict, used_model: str, text: str, tool_calls: list[dict], acc: dict) -> ChatResult:
+        choices = data.get("choices") or []
+        if choices and choices[0].get("finish_reason") == "length" and text:
+            text += CUT_NOTE
         return ChatResult(text=text, provider=self.name, model=data.get("model", used_model),
                           input_tokens=acc["input"], output_tokens=acc["output"], thinking_tokens=acc["thinking"],
                           cache_read_tokens=acc["cache_read"], tool_calls=tool_calls, raw=data)

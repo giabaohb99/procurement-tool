@@ -327,17 +327,55 @@ def send(text: str, *, buttons: list[tuple[str, str]] | None = None,
         from . import zalo
 
         return zalo.send(chat_id, text, buttons=buttons)
-    payload: dict = {
-        "chat_id": chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
-        "text": _clip(text),
-        "parse_mode": "HTML",
-        "disable_web_page_preview": True,
-    }
-    if buttons:
-        payload["reply_markup"] = {"inline_keyboard": [[_button(label, data)] for label, data in buttons]}
-    if relaying():
-        return _relay("sendMessage", payload)
-    return int(send_payload(payload).get("message_id") or 0)
+    parts = split_long(text)
+    first = 0
+    for i, part in enumerate(parts):
+        payload: dict = {
+            "chat_id": chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
+            "text": part,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+        }
+        if buttons and i == len(parts) - 1:
+            payload["reply_markup"] = {"inline_keyboard": [[_button(label, data)] for label, data in buttons]}
+        if relaying():
+            _relay("sendMessage", payload)
+            continue
+        mid = int(send_payload(payload).get("message_id") or 0)
+        first = first or mid
+    return first
+
+
+#  ai-CR-115: tin dài cắt thành nhiều tin (trước đây cắt cụt ở MAX_TEXT, đại ca mất nửa sau bài phân tích báo cáo).
+MAX_PARTS = 4
+
+
+def split_long(text: str, limit: int = MAX_TEXT, max_parts: int = MAX_PARTS) -> list[str]:
+    """Cắt theo đoạn trống → xuống dòng → khoảng trắng, không cắt giữa thẻ HTML và không cắt trong khối <pre>."""
+    text = text or ""
+    if len(text) <= limit:
+        return [text]
+    parts: list[str] = []
+    rest = text
+    while rest and len(parts) < max_parts - 1 and len(rest) > limit:
+        cut = -1
+        for sep in ("\n\n", "\n", " "):
+            cut = rest.rfind(sep, 0, limit)
+            if cut >= limit // 2:
+                break
+        if cut < limit // 2:
+            cut = limit
+        pre_open = rest.rfind("<pre>", 0, cut)
+        if pre_open > rest.rfind("</pre>", 0, cut) and pre_open > 0:
+            cut = pre_open                      # đừng tách đôi một khối mã
+        lt, gt = rest.rfind("<", 0, cut), rest.rfind(">", 0, cut)
+        if lt > gt:
+            cut = lt                            # đừng tách đôi một thẻ
+        parts.append(rest[:cut].rstrip())
+        rest = rest[cut:].lstrip()
+    if rest:
+        parts.append(_clip(rest))
+    return [p for p in parts if p.strip()] or [_clip(text)]
 
 
 _TAG = re.compile(r"<[^>]+>")
