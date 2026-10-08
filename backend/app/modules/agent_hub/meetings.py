@@ -54,6 +54,7 @@ MAX_DURATION_SEC = 6 * 3600
 TRANSCRIBE_MAX_TOKENS = 30000
 ACTIVE_WAIT_SEC = 300
 FFMPEG_TIMEOUT = 1800
+MAX_PARTS = 8                                  # ai-CR-116: tối đa 8 tệp Drive gộp thành một cuộc họp
 LONG_VOICE_SEC = 180                           # tin thoại dài hơn 3 phút coi là ghi âm họp
 RECAP_MAX_CHARS = 120_000                      # bản chép đưa vào lượt viết biên bản
 #  ai-CR-112: model suy luận (DeepSeek v4 qua trạm) tiêu 3–4 nghìn token cho phần nghĩ trước khi viết — trần 4000 cũ
@@ -94,6 +95,17 @@ class Template:
 
 #  Bốn mẫu sẵn (QĐ-M6 cũ: mẫu là DỮ LIỆU). Người dùng thêm mẫu riêng bằng lời, không cần sửa mã — xem `personal_templates`.
 BUILTIN: dict[str, Template] = {t.key: t for t in (
+    #  ai-CR-116: chuẩn recap của công ty (STD-RECAP-DEGO-v1.0) — mặc định, Word dựng đúng các khối của chuẩn.
+    Template("dego", "Recap DEGO",
+             "Viết RECAP HỌP theo chuẩn DEGO, Markdown, ĐÚNG các mục theo thứ tự sau (mục nào không có nội dung thì bỏ):\n"
+             "## TÓM TẮT NHANH — 3–6 gạch đầu dòng, mỗi dòng một ý cốt lõi.\n"
+             "## NỘI DUNG CUỘC HỌP — mỗi vấn đề một mục «### 1. Tên vấn đề»: một đoạn diễn giải ngắn; dòng «Ý CHÍNH:» rồi các "
+             "gạch đầu dòng; dòng «ĐÃ CHỐT:» rồi các dòng bắt đầu bằng «✓ ».\n"
+             "## CÔNG VIỆC CẦN LÀM — bảng | Việc | Người | Hạn | Ưu tiên | (Ưu tiên chỉ ghi Cao / TB / Thấp; thiếu thì «chưa rõ»).\n"
+             "## VẤN ĐỀ CÒN MỞ — gạch đầu dòng.\n"
+             "## NGƯỜI THAM DỰ — gạch đầu dòng «Tên – vai trò (nếu nghe được)».\n"
+             "In **đậm** con số, tên riêng, mốc thời gian quan trọng. Không viết tiêu đề lớn ở đầu.",
+             ("recap", "chuẩn dego", "mẫu dego", "mẫu công ty")),
     Template("gach_dau_dong", "Tóm tắt nhanh",
              "Viết 5–12 gạch đầu dòng: mục đích cuộc họp, các ý chính, quyết định đã chốt, rồi mục «Việc cần làm» (mỗi "
              "dòng: việc — người làm — hạn, thiếu thì ghi «chưa rõ»).",
@@ -112,7 +124,7 @@ BUILTIN: dict[str, Template] = {t.key: t for t in (
 )}
 #  Giữ dạng cũ (khóa → (nhãn, lời dặn)) cho chỗ gọi cũ.
 TEMPLATES: dict[str, tuple[str, str]] = {k: (t.label, t.prompt) for k, t in BUILTIN.items()}
-DEFAULT_TEMPLATE = "gach_dau_dong"
+DEFAULT_TEMPLATE = "dego"
 CUSTOM_KEY = "rieng"
 #  Dòng mẫu riêng trong sổ ghi nhớ: «Mẫu biên bản «Giao ban»: lời dặn…».
 PERSONAL_PREFIX = "Mẫu biên bản"
@@ -322,6 +334,17 @@ def to_audio(src: Path, dest: Path) -> None:
           "-c:a", "libmp3lame", "-b:a", "32k", str(dest)])
 
 
+def concat_audio(parts: list[Path], dest: Path) -> None:
+    """Nối các phần (đã cùng định dạng sau `to_audio`) thành một tệp theo đúng thứ tự."""
+    if len(parts) == 1:
+        shutil.move(str(parts[0]), str(dest))
+        return
+    listing = dest.parent / "concat.txt"
+    listing.write_text("".join(f"file '{p.as_posix()}'\n" for p in parts), encoding="utf-8")
+    _run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
+          "-c", "copy", str(dest)])
+
+
 def split_audio(path: Path, workdir: Path, duration: float) -> list[Path]:
     if duration <= SPLIT_OVER_SEC:
         return [path]
@@ -450,184 +473,206 @@ def _shift_stamps(text: str, offset_sec: int) -> str:
 # ---------------------------------------------------------------------------
 _MD_TABLE_SEP = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
 _MD_BOLD = re.compile(r"\*\*(.+?)\*\*")
-WORD_FONT = "Times New Roman"
-COMPANY_NAME = "DEGO HOLDING"
+_LABEL_LINE = re.compile(r"^\**\s*(Ý CHÍNH|ĐÃ CHỐT|KẾT LUẬN|QUYẾT ĐỊNH|VẤN ĐỀ|ĐỀ XUẤT)\s*:?\s*\**\s*:?\s*$", re.I)
+_TLDR_HEAD = re.compile(r"(TL;?DR|TÓM TẮT NHANH)", re.I)
+_PEOPLE_HEAD = re.compile(r"(NGƯỜI THAM DỰ|THÀNH PHẦN)", re.I)
+COMPANY_LINE = "DEGO HOLDING · Cần Thơ, Việt Nam"
+FOOTER_CENTER = "Tài liệu nội bộ · Lưu hành hạn chế"
+AI_NOTE = ("Biên bản tổng hợp tự động từ bản ghi âm bằng Trợ lý AI — tên riêng, thuật ngữ và số liệu nên đối chiếu lại "
+           "với bản chép lời ở phụ lục.")
 
 
-def _runs(par, text: str, *, size: float | None = None, bold: bool = False, italic: bool = False) -> None:
-    """Thêm chữ vào đoạn, **đậm** thành chữ đậm; bỏ các dấu Markdown khác."""
-    from docx.shared import Pt
-
-    text = re.sub(r"(?<!\*)\*(?!\*)|`|^#+\s*", "", text)
-    pos = 0
-    for m in list(_MD_BOLD.finditer(text)) + [None]:
-        chunk = text[pos:m.start()] if m else text[pos:]
-        if chunk:
-            r = par.add_run(chunk)
-            r.bold, r.italic = bold or None, italic or None
-            if size:
-                r.font.size = Pt(size)
-        if m:
-            r = par.add_run(m.group(1))
-            r.bold, r.italic = True, italic or None
-            if size:
-                r.font.size = Pt(size)
-            pos = m.end()
+def _html(text: str) -> str:
+    """Markdown một dòng → chuỗi cho `dego_docx.add_runs`: **đậm** → <strong>, bỏ các dấu Markdown còn lại."""
+    text = re.sub(r"`|(?<!\*)\*(?!\*)|^#+\s*", "", (text or "").strip())
+    text = re.sub(r"\[([^\]]+)\]\((https?://[^)]+)\)", r"\1 (\2)", text)
+    return _MD_BOLD.sub(r"<strong>\1</strong>", text)
 
 
-def _no_borders(table) -> None:
-    from docx.oxml import OxmlElement
-    from docx.oxml.ns import qn
-
-    tbl_pr = table._tbl.tblPr
-    borders = OxmlElement("w:tblBorders")
-    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
-        el = OxmlElement(f"w:{edge}")
-        el.set(qn("w:val"), "nil")
-        borders.append(el)
-    tbl_pr.append(borders)
-
-
-def _page_number(par) -> None:
-    from docx.oxml import OxmlElement
-    from docx.oxml.ns import qn
-
-    par.add_run("Trang ")
-    for code in ("PAGE",):
-        run = par.add_run()
-        begin, instr, end = OxmlElement("w:fldChar"), OxmlElement("w:instrText"), OxmlElement("w:fldChar")
-        begin.set(qn("w:fldCharType"), "begin")
-        instr.set(qn("xml:space"), "preserve")
-        instr.text = code
-        end.set(qn("w:fldCharType"), "end")
-        run._r.append(begin)
-        run._r.append(instr)
-        run._r.append(end)
+def _plain(text: str) -> str:
+    return re.sub(r"</?strong>", "", _html(text))
 
 
 def _md_table(doc, rows: list[list[str]]) -> None:
-    width = max(len(r) for r in rows)
-    table = doc.add_table(rows=0, cols=width)
-    table.style = "Table Grid"
-    for i, cells in enumerate(rows):
-        row = table.add_row().cells
-        for j in range(width):
-            par = row[j].paragraphs[0]
-            _runs(par, cells[j] if j < len(cells) else "", bold=(i == 0))
+    """Bảng Markdown → bảng DEGO: hàng đầu nền teal chữ trắng, cột STT navy, dòng chẵn tô nền; cột «Ưu tiên» tô màu."""
+    from docx.enum.table import WD_ALIGN_VERTICAL
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Pt
+
+    from . import dego_docx as D
+
+    head, body = rows[0], rows[1:]
+    has_no = bool(head) and _plain(head[0]).strip().lower() in ("stt", "#", "tt")
+    if not has_no:
+        head = ["STT"] + head
+        body = [[str(i)] + r for i, r in enumerate(body, 1)]
+    n = len(head)
+    t = doc.add_table(rows=1, cols=n)
+    pri_col = next((i for i, h in enumerate(head) if "ưu tiên" in _plain(h).lower()), -1)
+    for i, c in enumerate(t.rows[0].cells):
+        D.shade(c, D.TEAL)
+        D.cell_borders(c, color=D.TEAL, sz=4)
+        D.set_cell_margins(c, 60, 60, 110, 110)
+        p = c.paragraphs[0]
+        p.paragraph_format.space_after = Pt(0)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER if i in (0, pri_col) else WD_ALIGN_PARAGRAPH.LEFT
+        r = p.add_run(_plain(head[i]))
+        r.bold = True
+        r.font.size = Pt(9.5)
+        r.font.color.rgb = D.C(D.WHITE)
+        D.set_font(r)
+        c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    for idx, row in enumerate(body, 1):
+        cells = t.add_row().cells
+        for j, c in enumerate(cells):
+            value = row[j] if j < len(row) else ""
+            D.cell_borders(c, color=D.LINE, sz=4)
+            D.set_cell_margins(c, 50, 50, 110, 110)
+            p = c.paragraphs[0]
+            p.paragraph_format.space_after = Pt(0)
+            p.paragraph_format.line_spacing = 1.2
+            if j == pri_col and _plain(value).strip():
+                bg, tx = D.PRI.get(_plain(value).strip(), D.PRI_DEFAULT)
+                D.shade(c, bg)
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r = p.add_run(_plain(value).strip())
+                r.bold = True
+                r.font.size = Pt(9)
+                r.font.color.rgb = D.C(tx)
+                D.set_font(r)
+                continue
+            if idx % 2 == 0:
+                D.shade(c, D.BG_ROWALT)
+            if j == 0:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+                r = p.add_run(_plain(value) or str(idx))
+                r.bold = True
+                r.font.size = Pt(9)
+                r.font.color.rgb = D.C(D.NAVY)
+                D.set_font(r)
+            else:
+                D.add_runs(p, _html(value), size=9)
+    #  Bề rộng: STT 1,25 cm, cột thứ hai (nội dung chính) rộng gấp đôi các cột còn lại.
+    rest = D.USABLE_CM - 1.25
+    weights = [2.0] + [1.0] * (n - 2) if n > 2 else [1.0]
+    unit = rest / sum(weights)
+    D.set_col_widths(t, [1.25] + [w * unit for w in weights])
+    D.spacer(doc, 6)
+
+
+def _participants(recap: str) -> str:
+    """Gạch đầu dòng dưới mục «NGƯỜI THAM DỰ» → một dòng cho bảng thông tin (để trống nếu không có)."""
+    out, inside = [], False
+    for line in (recap or "").splitlines():
+        s = line.strip()
+        if s.startswith("#"):
+            inside = bool(_PEOPLE_HEAD.search(s))
+            continue
+        if inside and re.match(r"^[-*•+]\s+", s):
+            out.append(_plain(re.sub(r"^[-*•+]\s+", "", s)))
+    return " · ".join(out)[:600]
 
 
 def _md_body(doc, md: str) -> None:
-    """Markdown đơn giản của model → Word: tiêu đề, gạch đầu dòng, đánh số, bảng, chữ đậm."""
+    """Markdown của model → các khối DEGO: «## TL;DR / TÓM TẮT NHANH» → hộp TL;DR · «## …» → thanh mục teal · «### …» →
+    đề mục con · «Ý CHÍNH: / ĐÃ CHỐT:» → nhãn · «✓ …» → dòng đã chốt · gạch đầu dòng · bảng · đoạn văn."""
+    from . import dego_docx as D
+
     lines = (md or "").splitlines()
     i = 0
     while i < len(lines):
-        line = lines[i].rstrip()
-        stripped = line.strip()
-        if not stripped or re.fullmatch(r"[-*_]{3,}", stripped):
+        s = lines[i].strip()
+        if not s or re.fullmatch(r"[-*_]{3,}", s):
             i += 1
             continue
-        if stripped.startswith("|"):
+        level = len(s) - len(s.lstrip("#"))
+        if level and _TLDR_HEAD.search(s):
+            items = []
+            i += 1
+            while i < len(lines) and not lines[i].strip().startswith("#"):
+                t = lines[i].strip()
+                if t:
+                    items.append(_html(re.sub(r"^([-*•+]|\d+[.)])\s+", "", t)))
+                i += 1
+            if items:
+                D.tldr_box(doc, "TL;DR — Tóm tắt nhanh", items)
+            continue
+        if s.startswith("|"):
             block = []
             while i < len(lines) and lines[i].strip().startswith("|"):
                 if not _MD_TABLE_SEP.match(lines[i]):
                     block.append([c.strip() for c in lines[i].strip().strip("|").split("|")])
                 i += 1
-            if block:
+            if len(block) >= 2:
                 _md_table(doc, block)
+            elif block:
+                D.para(doc, _html(" · ".join(block[0])))
             continue
-        if stripped.startswith("#"):
-            level = min(3, len(stripped) - len(stripped.lstrip("#")) + 1)
-            doc.add_heading(re.sub(r"[*#`]", "", stripped).strip(), level=max(2, level))
-        elif re.match(r"^[-*•+]\s+", stripped):
-            _runs(doc.add_paragraph(style="List Bullet"), re.sub(r"^[-*•+]\s+", "", stripped))
-        elif re.match(r"^\d+[.)]\s+", stripped):
-            _runs(doc.add_paragraph(style="List Number"), re.sub(r"^\d+[.)]\s+", "", stripped))
+        if level in (1, 2):
+            D.section_bar(doc, _plain(s))
+        elif level >= 3:
+            D.h2(doc, _plain(s))
+        elif _LABEL_LINE.match(s):
+            D.label(doc, _plain(s).rstrip(": "))
+        elif re.match(r"^([-*•+]\s+)?✓\s*", s) and "✓" in s[:4]:
+            D.check(doc, _html(re.sub(r"^([-*•+]\s+)?✓\s*", "", s)))
+        elif re.match(r"^[-*•+]\s+", s):
+            D.bullet(doc, _html(re.sub(r"^[-*•+]\s+", "", s)))
+        elif re.match(r"^\d+[.)]\s+", s):
+            m = re.match(r"^(\d+[.)])\s+(.*)$", s)
+            D.bullet(doc, _html(m.group(2)), marker=m.group(1))
         else:
-            _runs(doc.add_paragraph(), stripped)
+            D.para(doc, _html(s))
         i += 1
 
 
 def build_docx(title: str, when: datetime | None, recap: str, transcript: str, *, label: str = "",
-               minutes: int = 0, author: str = "", formal: bool = False) -> bytes:
-    """Biên bản Word theo mẫu DEGO. `formal` (mẫu chính thức): đầu trang hành chính + chỗ ký."""
-    from docx import Document
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
+               minutes: int = 0, author: str = "", formal: bool = False, code: str = "", source: str = "") -> bytes:
+    """Biên bản / recap Word theo chuẩn DEGO (ai-CR-116, STD-RECAP-DEGO-v1.0 qua `dego_docx`): đầu trang logo + mã văn
+    bản, tiêu đề, bảng thông tin, TL;DR, các thanh mục teal, bảng việc, (mẫu chính thức: khối XÉT DUYỆT ký), phụ lục bản
+    chép lời, chân trang lặp mọi trang có số trang."""
+    from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
-    from docx.shared import Cm, Pt
+    from docx.shared import Pt
 
-    doc = Document()
-    sec = doc.sections[0]
-    sec.top_margin, sec.bottom_margin, sec.left_margin, sec.right_margin = Cm(2), Cm(2), Cm(3), Cm(2)
-    normal = doc.styles["Normal"]
-    normal.font.name, normal.font.size = WORD_FONT, Pt(13)
-    normal.element.get_or_add_rPr().get_or_add_rFonts().set(qn("w:eastAsia"), WORD_FONT)
-    for st in ("Heading 1", "Heading 2", "Heading 3"):
-        doc.styles[st].font.name = WORD_FONT
-        doc.styles[st].font.color.rgb = None
+    from . import dego_docx as D
 
-    head = doc.add_table(rows=1, cols=2)
-    _no_borders(head)
-    left, right = head.rows[0].cells
-    lp = left.paragraphs[0]
-    lp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _runs(lp, COMPANY_NAME, bold=True, size=12)
-    if formal:
-        _runs(left.add_paragraph(), "Số: ....../BB-HĐ", size=12)
-        left.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        rp = right.paragraphs[0]
-        rp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        _runs(rp, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold=True, size=12)
-        rp2 = right.add_paragraph()
-        rp2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        _runs(rp2, "Độc lập – Tự do – Hạnh phúc", bold=True, size=12)
-    else:
-        rp = right.paragraphs[0]
-        rp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        _runs(rp, f"{when:%d/%m/%Y}" if when else "", italic=True, size=12)
-
-    doc.add_paragraph()
-    tp = doc.add_paragraph()
-    tp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _runs(tp, "BIÊN BẢN HỌP" if formal or not label else label.upper(), bold=True, size=15)
-    sp = doc.add_paragraph()
-    sp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _runs(sp, f"Về việc: {title[:150]}", italic=True)
-
-    info = doc.add_table(rows=0, cols=2)
-    info.style = "Table Grid"
-    for k, v in (("Ngày lập", f"{when:%d/%m/%Y %H:%M}" if when else ""), ("Thời lượng ghi âm", f"{minutes} phút" if minutes else ""),
-                 ("Mẫu biên bản", label), ("Người lập", author or "Trợ lý AI (từ bản ghi âm)")):
-        if v:
-            cells = info.add_row().cells
-            _runs(cells[0].paragraphs[0], k, bold=True, size=12)
-            _runs(cells[1].paragraphs[0], v, size=12)
-    doc.add_paragraph()
-
+    when = when or datetime.now()
+    doc = D.new_document()
+    head = ["BIÊN BẢN HỌP", "MEETING MINUTES"] if formal else ["RECAP HỌP", "MEETING RECAP"]
+    D.header(doc, head + [f"Mã văn bản: {code or f'RECAP-{when:%Y.%m.%d}'}", "Phiên bản: v1.0"])
+    D.title(doc, (title or "Cuộc họp")[:150].upper())
+    D.subtitle(doc, f"{label or 'Biên bản'} · tổng hợp từ bản ghi âm")
+    people = _participants(recap)
+    D.meta_table(doc, [("Ngày lập", f"{when:%d/%m/%Y %H:%M}", "Thời lượng", f"{minutes} phút" if minutes else "—"),
+                       ("Người ghi", author or "Trợ lý AI", "Nguồn", (source or "tệp ghi âm")[:80])],
+                 full=[("Thành phần", _html(people))] if people else None)
+    D.note(doc, AI_NOTE)
     _md_body(doc, recap)
-
     if formal:
-        doc.add_paragraph()
-        doc.add_paragraph("Biên bản được lập từ bản ghi âm cuộc họp và được các bên thống nhất.").runs[0].italic = True
-        sign = doc.add_table(rows=1, cols=2)
-        _no_borders(sign)
-        for cell, role in zip(sign.rows[0].cells, ("THƯ KÝ", "CHỦ TRÌ")):
-            p1 = cell.paragraphs[0]
-            p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            _runs(p1, role, bold=True)
-            p2 = cell.add_paragraph()
-            p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            _runs(p2, "(Ký, ghi rõ họ tên)", italic=True, size=12)
-
+        D.section_bar(doc, "XÉT DUYỆT")
+        D.signoff(doc, [("THƯ KÝ", ""), ("CHỦ TRÌ", "")])
     if transcript:
         doc.add_page_break()
-        doc.add_heading("Phụ lục: bản chép lời", level=2)
+        D.section_bar(doc, "PHỤ LỤC — BẢN CHÉP LỜI")
         for line in transcript.splitlines()[:5000]:
             if line.strip():
-                _runs(doc.add_paragraph(), line.strip(), size=11)
-
-    fp = sec.footer.paragraphs[0]
-    fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _page_number(fp)
+                D.para(doc, _html(line.strip()), size=9, space_after=2)
+    D.footer(doc, COMPANY_LINE, FOOTER_CENTER, "Trang ", sub="Bản recap tạo tự động · Trợ lý AI DEGO")
+    fp = doc.sections[0].footer.paragraphs[0]
+    run = fp.add_run()
+    run.bold = True
+    run.font.size = Pt(7.5)
+    run.font.color.rgb = D.C(D.GRAY)
+    for kind, text in (("begin", None), ("instr", "PAGE"), ("end", None)):
+        el = OxmlElement("w:instrText" if kind == "instr" else "w:fldChar")
+        if kind == "instr":
+            el.set(qn("xml:space"), "preserve")
+            el.text = text
+        else:
+            el.set(qn("w:fldCharType"), kind)
+        run._r.append(el)
     buf = io.BytesIO()
     doc.save(buf)
     return buf.getvalue()
@@ -691,17 +736,29 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
         raise MeetingError("Chép lời họp chỉ chạy bằng Gemini — thêm một khóa Gemini ở ERP → Trang cá nhân → Khóa AI.")
     row.status = int(MeetingStatus.TRANSCRIBING)
     db.commit()
-    src = workdir / "source.bin"
-    if row.source_kind == int(SourceKind.DRIVE):
-        name, mime = _download_drive(db, row.user_id, row.source_ref, src)
-        if row.title in ("", "Cuộc họp"):
-            row.title = Path(name).stem[:200] or row.title
-        row.mime = mime[:80]
-    else:
-        _download_telegram(row.source_ref, src)
     audio = workdir / "audio.mp3"
-    to_audio(src, audio)
-    src.unlink(missing_ok=True)
+    if row.source_kind == int(SourceKind.DRIVE):
+        #  ai-CR-116 (bước 10.4): nhiều tệp Drive của CÙNG một cuộc họp (ghi thành nhiều phần) — `source_ref` = các id
+        #  cách nhau dấu phẩy, đã xếp theo giờ tạo; mỗi tệp tách tiếng rồi nối thành một.
+        ids = [x for x in row.source_ref.split(",") if x.strip()][:MAX_PARTS]
+        parts: list[Path] = []
+        for i, fid in enumerate(ids):
+            src = workdir / f"source_{i}.bin"
+            name, mime = _download_drive(db, row.user_id, fid.strip(), src)
+            if i == 0:
+                if row.title in ("", "Cuộc họp"):
+                    row.title = Path(name).stem[:200] or row.title
+                row.mime = mime[:80]
+            part = workdir / f"part_{i}.mp3"
+            to_audio(src, part)
+            src.unlink(missing_ok=True)
+            parts.append(part)
+        concat_audio(parts, audio)
+    else:
+        src = workdir / "source.bin"
+        _download_telegram(row.source_ref, src)
+        to_audio(src, audio)
+        src.unlink(missing_ok=True)
     duration = probe_duration(audio)
     row.duration_sec = int(duration)
     if duration > MAX_DURATION_SEC:
@@ -787,9 +844,7 @@ def _write(db: Session, row: AgentMeeting) -> dict:
     minutes = int((row.duration_sec or 0) // 60)
     service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, {tpl.label.lower()})\n\n{recap}",
                   markdown=True)
-    data = build_docx(row.title, row.finished_at, recap, row.transcript, label=tpl.label, minutes=minutes,
-                      author=_author_of(db, row.user_id), formal=(tpl.key == "chinh_thuc"))
-    filename = re.sub(r"[^\w\- ]+", "", f"bien-ban {row.title} {tpl.label}")[:90].strip() + ".docx"
+    filename, data = word_of(db, row)
     telegram.send_document(row.chat_id, filename, data, caption="Biên bản kèm phụ lục bản chép lời")
     drive_link = _upload_word(db, row, filename, data)
     if drive_link:
@@ -800,6 +855,32 @@ def _write(db: Session, row: AgentMeeting) -> dict:
 
     meeting_actions.offer(db, row)
     return {"status": "done", "meeting_id": row.id, "minutes": minutes, "template": tpl.label}
+
+
+def word_of(db: Session, row: AgentMeeting) -> tuple[str, bytes]:
+    """(tên tệp, nội dung) Word của một phiên đã viết xong — dùng khi gửi lần đầu và khi gửi lại."""
+    tpl = template_for_row(row)
+    when = row.finished_at or datetime.now()
+    data = build_docx(row.title, when, row.recap, row.transcript, label=tpl.label,
+                      minutes=int((row.duration_sec or 0) // 60), author=_author_of(db, row.user_id),
+                      formal=(tpl.key == "chinh_thuc"), code=f"RECAP-{when:%Y.%m.%d}-{row.id}",
+                      source="Google Drive" if row.source_kind == int(SourceKind.DRIVE) else "Telegram")
+    filename = re.sub(r"[^\w\- ]+", "", f"bien-ban {row.title} {tpl.label}")[:90].strip() + ".docx"
+    return filename, data
+
+
+def resend(db: Session, row: AgentMeeting) -> None:
+    """ai-CR-116: gửi lại biên bản đã làm (chữ + Word) và thẻ việc / lịch còn chờ — «report cuộc họp mới nhất»."""
+    from . import meeting_actions, service
+
+    tpl = template_for_row(row)
+    minutes = int((row.duration_sec or 0) // 60)
+    service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, {tpl.label.lower()})\n\n{row.recap}",
+                  markdown=True)
+    filename, data = word_of(db, row)
+    telegram.send_document(row.chat_id, filename, data, caption="Biên bản kèm phụ lục bản chép lời")
+    db.commit()
+    meeting_actions.offer(db, row)
 
 
 def rewrite(db: Session, row: AgentMeeting, tpl: Template) -> None:

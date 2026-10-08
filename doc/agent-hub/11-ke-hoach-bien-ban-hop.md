@@ -105,6 +105,24 @@ Dự án qua đường «tạo» của nháp việc (kiểm quyền work_task.cr
 sự thì gán, không thì ghi tên vào mô tả. Không quyền / không ở dự án nào → thẻ cá nhân. Lịch → Google Calendar, chưa nối
 Google → thẻ cá nhân. Mỗi mục ghi trạng thái, «tạo» lần hai không tạo trùng; thẻ mới thay thẻ cũ còn treo; thẻ sống 48 giờ.
 
+**Bước 10.4 + Word chuẩn DEGO XONG 08/10 (ai-CR-116).** Đại ca: *"họp xong anh đưa file mới nhất lên thư mục họp trên
+Drive, em nhận thông tin và hỏi anh, hoặc anh nói cần report cuộc họp mới nhất, em tìm và trả, kèm công việc trích xuất"*.
+
+- `agent_hub/meeting_drive.py`: vòng `agent.meeting_drive_scan` mỗi 5 phút, với mỗi người đã nối Google + có chat riêng: tìm
+  tệp âm thanh / video mới trong thư mục tên «Họp» (scope drive.readonly; mốc từng người ở `tab_agent_cursor`
+  `drive_hop:<user>`; lần đầu chỉ đặt mốc). Có tệp mới → một thẻ HỎI (không tự chạy, vì tốn khóa AI của họ): «làm biên bản»
+  gộp mọi tệp thành một cuộc họp nối theo giờ tạo (họp ghi nhiều phần), «làm tệp 2» chọn tệp (hai máy cùng ghi thì chọn tệp
+  rõ nhất), thêm tên mẫu được, «bỏ qua». Câu thường có chữ «làm» («làm sao để…») không bị thẻ nuốt.
+- Nhiều tệp Drive: `source_ref` = các id cách dấu phẩy (≤ 8), mỗi tệp tách tiếng rồi `concat_audio` nối lại.
+- Tool `latest_meeting_report` (66 tool): thư mục «Họp» có tệp mới hơn cuộc họp đã làm → làm luôn; không thì gửi lại biên
+  bản + Word + thẻ việc / lịch còn chờ (`meetings.resend`, thẻ dùng lại mục đã rút, không tốn lượt model).
+- Word theo chuẩn DEGO (STD-RECAP-DEGO-v1.0): chép nguyên thư viện `dego_docx.py` của skill dego-docx + logo
+  (`agent_hub/assets/dego_logo.png`) — đầu trang logo + «RECAP HỌP / BIÊN BẢN HỌP» + mã văn bản `RECAP-yyyy.mm.dd-<id>`,
+  tiêu đề in hoa, bảng thông tin (ngày lập · thời lượng · người ghi · nguồn · thành phần lấy từ mục NGƯỜI THAM DỰ), ghi chú AI,
+  hộp TL;DR, thanh mục teal, đề mục con, nhãn Ý CHÍNH / ĐÃ CHỐT (✓), bảng việc có chip Ưu tiên, mẫu chính thức thêm khối XÉT
+  DUYỆT ký, phụ lục bản chép lời, chân trang lặp có số trang. Mẫu mặc định mới «Recap DEGO» (khóa `dego`) viết đúng các mục
+  của chuẩn. Tệp mẫu đã dựng thử ở thư mục `mau-bien-ban/` cạnh các kho mã.
+
 ## 7. Câu chờ đại ca chốt (bản đầu)
 
 | Mã | Câu | Em đề xuất |

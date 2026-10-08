@@ -165,6 +165,11 @@ def _fmt_day(iso: str) -> str:
 
 
 def item_line(it: dict) -> str:
+    done = " <i>(đã tạo)</i>" if it.get("state") == int(ActionState.CREATED) else ""
+    return _item_line(it) + done
+
+
+def _item_line(it: dict) -> str:
     esc = telegram.esc
     if it["kind"] == "task":
         bits = [esc(it["title"])]
@@ -209,10 +214,17 @@ def offer(db: Session, row: AgentMeeting) -> int:
 
     from . import google_link, service
 
-    items = extract(db, row)
-    if not items:
-        return 0
-    row.actions = items
+    existing = [dict(it) for it in (row.actions or [])]
+    if existing:
+        #  Đã rút rồi (gửi lại / viết lại theo mẫu khác): dùng lại, không tốn lượt model; hết mục chờ thì thôi.
+        if not any(it.get("state") == int(ActionState.PENDING) for it in existing):
+            return 0
+        items = existing
+    else:
+        items = extract(db, row)
+        if not items:
+            return 0
+        row.actions = items
     user = db.get(User, int(row.user_id or 0))
     projects = projects_for(db, user)
     google = google_link.get_link(db, row.user_id) is not None

@@ -126,6 +126,7 @@ TOOL_KHONG_PHAM_VI = {
     "list_my_meetings": "cuộc họp người hỏi đã gửi làm biên bản",
     "rewrite_meeting_minutes": "viết lại biên bản cuộc họp của chính người hỏi",
     "save_meeting_template": "lưu mẫu biên bản riêng vào sổ ghi nhớ của chính người hỏi",
+    "latest_meeting_report": "cuộc họp mới nhất của chính người hỏi + thư mục «Họp» trên Drive của chính họ",
 }
 
 
@@ -141,7 +142,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 65, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 66, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

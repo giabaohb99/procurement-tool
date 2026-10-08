@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, channels, chat_link, meeting_actions, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
+from . import ai_keys, bells, channels, chat_link, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -916,6 +916,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     không giao được việc sửa mã và không thao tác được việc của bot, nên «viec» / «thao_tac» cũng về Trợ lý.
     """
     if (_doc_followup(db, chat_id, row, text) or meeting_actions.handle_text(db, chat_id, row, text)
+            or meeting_drive.handle_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
         return
     if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
@@ -1038,6 +1039,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             or _glossary_by_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or meeting_actions.handle_text(db, chat_id, row, text)      # ai-CR-114: thẻ việc / lịch từ biên bản
+            or meeting_drive.handle_text(db, chat_id, row, text)        # ai-CR-116: tệp họp mới trên Drive
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
             or _word_by_text(db, chat_id, row, text)

@@ -7822,7 +7822,7 @@ def test_nhan_dien_tep_hop_link_drive_va_mau():
     link = "https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/view?usp=sharing"
     assert mt.drive_file_id(link) == "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
     assert mt.wants_meeting(f"tóm tắt cuộc họp này {link}") and not mt.wants_meeting(link)
-    assert mt.template_of("biên bản chính thức giúp anh") == "chinh_thuc" and mt.template_of("") == "gach_dau_dong"
+    assert mt.template_of("biên bản chính thức giúp anh") == "chinh_thuc" and mt.template_of("") == "dego"
     assert mt._shift_stamps("[01:05] A: chào", 1800) == "[31:05] A: chào"
     assert mt._shift_stamps("[45:00] B: x", 1800) == "[1:15:00] B: x"
 
@@ -8513,7 +8513,7 @@ def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monke
     db.commit()
     owner = db.get(User, seed.u_req_id)
     listed = T.run_tool(db, owner, "list_my_meetings", {})
-    assert listed["count"] == 1 and listed["meetings"][0]["template"] == "Tóm tắt nhanh"
+    assert listed["count"] == 1 and listed["meetings"][0]["template"] == "Recap DEGO"     # ai-CR-116: mặc định
     assert any(t["name"] == "Biên bản chính thức" for t in listed["templates"])
     out = T.run_tool(db, owner, "rewrite_meeting_minutes", {"meeting": "1", "template": "chính thức"})
     assert out["started"] and out["template"] == "Biên bản chính thức"
@@ -8522,8 +8522,9 @@ def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monke
     assert row.status == mt.MeetingStatus.DONE and row.template == "chinh_thuc" and "BIÊN BẢN" in sent[-1]
     word = Document(io.BytesIO(docs[-1]))
     text = "\n".join(p.text for p in word.paragraphs) + "\n".join(c.text for t in word.tables for r in t.rows for c in r.cells)
-    assert "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM" in text and "THƯ KÝ" in text and "21 phút" in text
-    assert "Phụ lục: bản chép lời" in text and "**" not in text
+    #  ai-CR-116: Word theo chuẩn DEGO — đầu trang «BIÊN BẢN HỌP» + mã văn bản, khối XÉT DUYỆT ký, phụ lục chép lời.
+    assert "BIÊN BẢN HỌP" in text and f"RECAP-" in text and "THƯ KÝ" in text and "21 phút" in text
+    assert "PHỤ LỤC — BẢN CHÉP LỜI" in text and "**" not in text and "DEGO HOLDING" in word.sections[0].footer.paragraphs[0].text
     assert any(c.text == "Đặt hàng" for t in word.tables for r in t.rows for c in r.cells)      # bảng Markdown → bảng Word
     assert any(r.bold and r.text == "20 tấn" for p in word.paragraphs for r in p.runs)          # **đậm** → chữ đậm
     #  Người khác không viết lại được cuộc họp của mình; cuộc họp chưa chép lời thì báo lỗi.
@@ -8858,3 +8859,191 @@ def test_model_kieu_openai_khong_bi_tran_1536_cat_cut(monkeypatch):
     out = p.ask([ChatMessage(role="user", content="phân tích")], max_tokens=1536)
     assert sent[-1]["max_tokens"] == oc.MIN_OUTPUT_TOKENS
     assert out.text.startswith("Phân tích: doanh thu tăng") and "viết tiếp" in out.text
+
+
+# --- ai-CR-116: Word chuẩn DEGO (STD-RECAP-DEGO) + thư mục «Họp» trên Drive (bước 10.4) ------------------------------
+_RECAP_DEGO = """## TÓM TẮT NHANH
+- Chốt so sánh báo giá thép **trước 10/10**
+- Phạt NCC xi măng giao trễ
+
+## NỘI DUNG CUỘC HỌP
+### 1. Đơn hàng thép Hòa Phát
+Hòa Phát báo **14.200.000 đ/tấn**, tăng 3%.
+Ý CHÍNH:
+- Đã xin thêm báo giá Pomina
+ĐÃ CHỐT:
+✓ Mai chốt so sánh hai báo giá
+
+## CÔNG VIỆC CẦN LÀM
+| Việc | Người | Hạn | Ưu tiên |
+|---|---|---|---|
+| Chốt so sánh báo giá | Mai | 10/10 | Cao |
+| Soạn công văn nhắc NCC | Tuấn | chưa rõ | TB |
+
+## NGƯỜI THAM DỰ
+- Hùng – chủ trì
+- Mai – thu mua
+"""
+
+
+def test_word_bien_ban_theo_chuan_dego():
+    import io
+    from datetime import datetime
+
+    from docx import Document
+
+    from app.modules.agent_hub import meetings as mt
+
+    data = mt.build_docx("Họp giao ban thu mua", datetime(2026, 10, 8, 9, 30), _RECAP_DEGO, "[00:01] Hùng: bắt đầu",
+                         label="Recap DEGO", minutes=42, author="Lan", code="RECAP-2026.10.08-7", source="Google Drive")
+    doc = Document(io.BytesIO(data))
+    cells = [c.text for t in doc.tables for r in t.rows for c in r.cells]
+    paras = [p.text for p in doc.paragraphs]
+    alltext = "\n".join(cells + paras)
+    assert "RECAP HỌP" in alltext and "Mã văn bản: RECAP-2026.10.08-7" in alltext   # đầu trang
+    assert "HỌP GIAO BAN THU MUA" in paras                                         # tiêu đề in hoa
+    assert "42 phút" in cells and "Lan" in cells and "Google Drive" in cells       # bảng thông tin
+    assert any(c.startswith("Hùng – chủ trì · Mai – thu mua") for c in cells)      # Thành phần lấy từ NGƯỜI THAM DỰ
+    assert any("TL;DR — Tóm tắt nhanh" in c and "trước 10/10" in c for c in cells)  # hộp TL;DR
+    assert "NỘI DUNG CUỘC HỌP" in cells and "1. Đơn hàng thép Hòa Phát" in cells    # thanh mục + đề mục con
+    assert "Ý CHÍNH" in paras and any(p.startswith("✓") for p in paras)            # nhãn + dòng đã chốt
+    assert ["STT", "Việc", "Người", "Hạn", "Ưu tiên"] == cells[cells.index("STT"):cells.index("STT") + 5]
+    assert "PHỤ LỤC — BẢN CHÉP LỜI" in cells and "**" not in alltext
+    assert doc.inline_shapes and "DEGO HOLDING" in doc.sections[0].footer.paragraphs[0].text   # logo + chân trang
+    assert "PAGE" in doc.sections[0].footer.paragraphs[0]._p.xml                               # số trang
+    #  Mẫu chính thức: «BIÊN BẢN HỌP» + khối XÉT DUYỆT.
+    formal = Document(io.BytesIO(mt.build_docx("X", None, "- a", "", label="Biên bản chính thức", formal=True)))
+    ftext = "\n".join(c.text for t in formal.tables for r in t.rows for c in r.cells)
+    assert "BIÊN BẢN HỌP" in ftext and "XÉT DUYỆT" in ftext and "CHỦ TRÌ" in ftext
+
+
+def _fake_drive(monkeypatch, files: list[dict]):
+    import re
+    from types import SimpleNamespace
+
+    from app.modules.agent_hub import google_link, meeting_drive
+
+    monkeypatch.setattr(meeting_drive, "_FOLDER_CACHE", {})
+    monkeypatch.setattr(google_link, "get_link", lambda db, uid: SimpleNamespace(id=uid, user_id=uid))
+    queries: list[str] = []
+
+    def api_get(db, link, url, params=None):
+        q = (params or {}).get("q", "")
+        queries.append(q)
+        if "mimeType = 'application/vnd.google-apps.folder'" in q:
+            return {"files": [{"id": "FOLDER1"}]} if "'Họp'" in q else {"files": []}
+        since = re.search(r"createdTime > '([^']+)'", q)
+        rows = [f for f in files if not since or f["createdTime"][:19] > since.group(1)]
+        return {"files": sorted(rows, key=lambda f: f["createdTime"], reverse=True)}
+
+    monkeypatch.setattr(google_link, "api_get", api_get)
+    return queries
+
+
+def test_thu_muc_hop_tren_drive_co_tep_moi_thi_hoi_roi_moi_lam(db, bot, seed, monkeypatch):
+    from datetime import datetime
+
+    from app.modules.agent_hub import meeting_drive as md, meetings as mt
+    from app.modules.agent_hub.model import AgentGoogleLink, AgentMeeting
+
+    service, sent, _ = bot
+    _owner_link(db, seed.u_req_id)
+    db.add(AgentGoogleLink(user_id=seed.u_req_id, email="a@x", created_by=0, updated_by=0))
+    db.commit()
+    files: list[dict] = []
+    queries = _fake_drive(monkeypatch, files)
+    dispatched: list[int] = []
+    monkeypatch.setattr(mt, "dispatch", lambda mid: dispatched.append(mid))
+    t0 = datetime(2026, 10, 8, 1, 0)
+    assert md.scan(db, now=t0) == 0 and sent == []                      # lần đầu: chỉ đặt mốc, không hỏi tệp cũ
+    files += [{"id": "F2", "name": "hop-giao-ban-phan-2.m4a", "mimeType": "audio/mp4", "createdTime": "2026-10-08T02:40:00Z",
+               "videoMediaMetadata": {"durationMillis": 1_200_000}},
+              {"id": "F1", "name": "hop-giao-ban-phan-1.m4a", "mimeType": "audio/mp4", "createdTime": "2026-10-08T02:00:00Z"}]
+    assert md.scan(db, now=t0) == 1
+    card = sent[-1]
+    assert "Có 2 tệp họp mới trong thư mục «Họp»" in card and "1) hop-giao-ban-phan-1.m4a" in card
+    assert "2) hop-giao-ban-phan-2.m4a (20 phút" in card                # xếp theo giờ tạo
+    assert any("'FOLDER1' in parents" in q for q in queries)
+    assert md.scan(db, now=t0) == 0                                      # quét lại: không hỏi lại tệp đã báo
+    #  Câu thường có chữ «làm» không bị thẻ nuốt.
+    assert md.parse_reply("làm sao để xuất báo cáo", 2) is None
+    service.handle_message(db, _msg("làm biên bản chính thức"))
+    row = db.query(AgentMeeting).one()
+    assert row.source_kind == mt.SourceKind.DRIVE and row.source_ref == "F1,F2"   # gộp, nối theo giờ tạo
+    assert row.template == "chinh_thuc" and row.title == "hop-giao-ban-phan-1" and dispatched == [row.id]
+    assert "gộp 2 tệp" in sent[-1]
+    #  Tệp mới tiếp theo: chọn một tệp; «bỏ qua» thì thôi.
+    files.append({"id": "F3", "name": "hop-chieu.mp3", "mimeType": "audio/mpeg", "createdTime": "2026-10-08T07:00:00Z"})
+    files.append({"id": "F4", "name": "hop-chieu-may-2.mp3", "mimeType": "audio/mpeg",
+                  "createdTime": "2026-10-08T07:01:00Z"})
+    assert md.scan(db, now=t0) == 1
+    service.handle_message(db, _msg("làm tệp 2"))
+    assert db.query(AgentMeeting).order_by(AgentMeeting.id.desc()).first().source_ref == "F4"
+    files.append({"id": "F5", "name": "x.mp3", "mimeType": "audio/mpeg", "createdTime": "2026-10-08T09:00:00Z"})
+    md.scan(db, now=t0)
+    service.handle_message(db, _msg("bỏ qua"))
+    assert "bỏ qua tệp họp này" in sent[-1] and db.query(AgentMeeting).count() == 2
+
+
+def test_nhieu_tep_drive_noi_thanh_mot_cuoc_hop(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import meetings as mt, personal_memory as pm
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, _ = bot
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    monkeypatch.setattr(mt.telegram, "send_document", lambda *a, **kw: 1)
+    monkeypatch.setattr(service.user_keys, "gemini_key", lambda: "AIzaSy-k")
+    calls = _fake_meeting_env(monkeypatch, mt, duration=600.0)
+    downloaded: list[str] = []
+
+    def fake_drive(db, uid, fid, dest):
+        downloaded.append(fid)
+        dest.write_bytes(b"x")
+        return f"{fid}.m4a", "audio/mp4"
+
+    monkeypatch.setattr(mt, "_download_drive", fake_drive)
+
+    class P:
+        def ask(self, messages, **kw):
+            return ChatResult(text="- ok", provider="x", model="x", input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(service.manager, "get_provider", lambda: P())
+    row = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.DRIVE, ref="A,B,C", title="Cuộc họp")
+    db.commit()
+    assert mt.process(db, row.id)["status"] == "done"
+    assert downloaded == ["A", "B", "C"] and row.title == "A"
+    assert calls["ffmpeg"].count("ffmpeg") == 4                          # 3 lần tách tiếng + 1 lần nối
+
+
+def test_report_cuoc_hop_moi_nhat_gui_lai_hoac_lam_tep_moi(db, bot, seed, monkeypatch):
+    from datetime import datetime
+
+    from app.modules.agent_hub import google_link, meeting_drive as md, meetings as mt, personal_memory as pm
+    from app.modules.assistant import tools as T
+    from app.modules.user.model import User
+
+    service, sent, _ = bot
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    docs: list[str] = []
+    monkeypatch.setattr(mt.telegram, "send_document", lambda chat, fn, data, **kw: docs.append(fn) or 1)
+    monkeypatch.setattr(google_link, "get_link", lambda db, uid: None)
+    owner = db.get(User, seed.u_req_id)
+    assert "error" in T.run_tool(db, owner, "latest_meeting_report", {})          # chưa có cuộc họp nào
+    row = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="F", title="Giao ban")
+    row.transcript, row.recap = "[00:01] A: x", "## TÓM TẮT NHANH\n- chốt mua thép"
+    row.status, row.finished_at, row.duration_sec = int(mt.MeetingStatus.DONE), datetime.now(), 600
+    row.actions = [{"no": 1, "kind": "task", "title": "Đặt hàng", "owner": "", "due": "", "state": 1}]
+    db.commit()
+    out = T.run_tool(db, owner, "latest_meeting_report", {})
+    assert out["sent"] and "BIÊN BẢN — Giao ban" in sent[-2] and docs[-1].endswith(".docx")
+    assert "Việc và lịch rút từ biên bản «Giao ban»" in sent[-1]                   # thẻ việc còn chờ gửi kèm
+    #  Thư mục «Họp» có tệp MỚI hơn cuộc họp đã làm → làm tệp đó.
+    files = [{"id": "NEW", "name": "hop-chieu.m4a", "mimeType": "audio/mp4",
+              "createdTime": (datetime.utcnow()).strftime("%Y-%m-%dT%H:%M:%SZ")}]
+    _fake_drive(monkeypatch, files)
+    started: list[int] = []
+    monkeypatch.setattr(mt, "dispatch", lambda mid: started.append(mid))
+    out = T.run_tool(db, owner, "latest_meeting_report", {"template": "chính thức"})
+    assert out["started"] and started and db.get(mt.AgentMeeting, started[0]).source_ref == "NEW"

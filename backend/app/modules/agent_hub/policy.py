@@ -81,7 +81,8 @@ ASSISTANT_RULES = (
     #  ai-CR-112: biên bản họp theo mẫu.
     "BIÊN BẢN HỌP: muốn biên bản cuộc họp đã gửi viết theo kiểu khác («viết lại biên bản chính thức», «chỉ lấy danh sách "
     "việc») thì rewrite_meeting_minutes (không bắt gửi lại tệp); muốn giữ một kiểu viết riêng để dùng lại thì "
-    "save_meeting_template; hỏi các cuộc họp / mẫu đã có thì list_my_meetings."
+    "save_meeting_template; hỏi các cuộc họp / mẫu đã có thì list_my_meetings. Hỏi «report / biên bản cuộc họp mới nhất» thì "
+    "latest_meeting_report (tự tìm tệp mới trong thư mục «Họp» trên Drive) rồi chỉ báo ngắn là đã gửi."
 )
 
 

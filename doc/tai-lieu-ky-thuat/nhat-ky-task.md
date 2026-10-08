@@ -12902,3 +12902,19 @@ lại image api vì thêm thư viện tính công thức Excel. Bài kiểm củ
 
 Mã nguồn: backend/app/modules/agent_hub/doc_text.py · agent_hub/service.py (_doc_followup, flush_pending_doc) · agent_hub/telegram.py (split_long) · agent_hub/tasks.py (agent.doc_wait) · assistant/service.py · assistant/provider/openai_compat.py · backend/requirements.txt (pycel) · test/backend/test_agent_hub.py
 Deploy: dev 08/10 (Agent 1 gộp 0c449f04, sao lưu DB dev trước, dựng lại image api, celery-worker, celery-beat, agent-poller — bốn image riêng); máy sửa mã đã dựng lại; prod giữ lại.
+
+
+## ai-CR-116 | Biên bản họp: nhặt tệp từ thư mục «Họp» trên Drive, report cuộc họp mới nhất, Word theo chuẩn DEGO
+- status: xong
+- date: 2026-10-08
+Đại ca muốn họp xong chỉ cần đưa tệp ghi âm lên thư mục «Họp» trên Drive là bot tự biết và hỏi, hoặc nhắn «report cuộc họp mới
+nhất» là bot tìm và gửi lại kèm danh sách việc rút ra. Nay cứ năm phút bot xem thư mục «Họp» của từng người đã nối Google; có tệp
+mới thì bot hỏi trước chứ không tự chạy, vì chép lời tốn khóa AI của chính người đó. Người dùng nhắn «làm biên bản» để gộp mọi
+tệp mới thành một cuộc họp nối theo giờ, «làm tệp 2» để chỉ lấy một tệp, thêm tên mẫu nếu muốn, hoặc «bỏ qua». Khi được hỏi report
+cuộc họp mới nhất, bot làm luôn tệp mới chưa xử lý, còn nếu không có thì gửi lại biên bản, tệp Word và thẻ việc còn chờ của cuộc họp
+gần nhất. Tệp Word giờ theo đúng chuẩn recap của DEGO lấy từ bộ mẫu của công ty: logo, mã văn bản, bảng thông tin, hộp tóm tắt
+nhanh, các thanh mục màu xanh, ý chính và điều đã chốt, bảng việc có mức ưu tiên, khối ký với mẫu chính thức, phụ lục bản chép lời
+và số trang. Mẫu mặc định đổi sang «Recap DEGO». Em đã dựng thử và xem bản in, tệp mẫu để ở thư mục mau-bien-ban. Bài kiểm của bot
+chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (mới) · agent_hub/dego_docx.py (mới) · agent_hub/assets/dego_logo.png · agent_hub/meetings.py (build_docx, word_of, resend, concat_audio) · agent_hub/meeting_actions.py · agent_hub/service.py · agent_hub/tasks.py · core/celery_app.py · assistant/tools/meeting_tool.py · test/backend/test_agent_hub.py

@@ -1279,6 +1279,7 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "list_my_meetings": "tab_agent_meeting lọc user_id = ctx.user.id",
     "rewrite_meeting_minutes": "meetings.find chỉ trong phiên của ctx.user.id",
     "save_meeting_template": "ghi vào sổ ghi nhớ của chính ctx.user.id",
+    "latest_meeting_report": "meetings.recent(ctx.user.id) + Drive của chính người hỏi (google_link.get_link(user.id))",
     "my_approval_tasks": "task_service.my_tasks(employee_id) — hộp việc của chính mình",
     "my_requests_status": "lọc theo started_by_employee_id — phiếu chính mình trình",
     "my_tickets": "lọc theo created_by/requester_id + ctx.can(ticket, read)",

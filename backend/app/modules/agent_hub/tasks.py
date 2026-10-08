@@ -743,6 +743,20 @@ def meeting_process_task(meeting_id: int) -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.meeting_drive_scan")
+def meeting_drive_scan_task() -> dict:
+    """ai-CR-116: mỗi 5 phút tìm tệp họp mới trong thư mục «Họp» trên Drive của từng người, có thì HỎI làm biên bản."""
+    if (off := _off()) is not None:
+        return off
+    from . import meeting_drive
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "asked": meeting_drive.scan(db)}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.doc_wait", acks_late=False)
 def doc_wait_task(row_id: int) -> dict:
     """ai-CR-115: tệp gửi riêng không kèm câu hỏi, hết giờ chờ mà không có tin chữ nào → tự tóm tắt."""

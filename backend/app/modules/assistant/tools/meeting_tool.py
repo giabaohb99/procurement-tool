@@ -41,6 +41,15 @@ def _rewrite_meeting_minutes(ctx: ToolContext, args: dict) -> dict:
             "message": f"Đang viết lại biên bản «{row.title}» theo mẫu «{tpl.label}», xong em gửi kèm tệp Word."}
 
 
+def _latest_meeting_report(ctx: ToolContext, args: dict) -> dict:
+    from app.modules.agent_hub import meeting_drive
+
+    chat = meeting_drive.private_chat(ctx.db, _uid(ctx))
+    if not chat:
+        return {"error": "cần nhắn riêng với bot (đã đăng nhập ERP) để nhận biên bản"}
+    return meeting_drive.latest_report(ctx.db, _uid(ctx), chat, str(args.get("template") or ""))
+
+
 def _save_meeting_template(ctx: ToolContext, args: dict) -> dict:
     return meetings.save_personal_template(ctx.db, _uid(ctx), str(args.get("name") or ""),
                                            str(args.get("instruction") or ""))
@@ -74,4 +83,14 @@ SAVE_MEETING_TEMPLATE_SPEC = ToolSpec(
                 "required": ["name", "instruction"]},
     handler=_save_meeting_template,
 )
-MEETING_SPECS = [LIST_MY_MEETINGS_SPEC, REWRITE_MEETING_MINUTES_SPEC, SAVE_MEETING_TEMPLATE_SPEC]
+LATEST_MEETING_REPORT_SPEC = ToolSpec(
+    name="latest_meeting_report",
+    description=("Lấy BIÊN BẢN / REPORT CUỘC HỌP MỚI NHẤT của người hỏi («report cuộc họp mới nhất», «biên bản họp vừa rồi», «họp "
+                 "sáng nay chốt gì gửi lại anh»). Thư mục «Họp» trên Google Drive của họ có tệp ghi âm mới chưa làm → bắt đầu "
+                 "làm biên bản (chạy nền); không thì GỬI LẠI biên bản + Word + thẻ việc / lịch của cuộc họp gần nhất vào chat "
+                 "riêng. `template` = tên mẫu nếu người dùng nói («chính thức»…), không thì bỏ trống."),
+    parameters={"type": "object", "properties": {"template": {"type": "string"}}},
+    handler=_latest_meeting_report,
+)
+MEETING_SPECS = [LIST_MY_MEETINGS_SPEC, REWRITE_MEETING_MINUTES_SPEC, SAVE_MEETING_TEMPLATE_SPEC,
+                 LATEST_MEETING_REPORT_SPEC]

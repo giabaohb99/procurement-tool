@@ -166,7 +166,7 @@ Dựa trên V-02 / V-03 / V-06 (nhật ký, cổng duyệt, sao lưu, hoàn tác
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
 | T-01 | **Thử bằng tệp giả 07/10/2026 (ai-CR-112): qua — chép lời đúng gần như nguyên văn, đoán đúng tên người nói; còn chờ một tệp họp thật (nhiều tiếng ồn, nói chồng).** **Thử trước (M0):** chạy một tệp họp thật qua Gemini ra biên bản, đo chất lượng và chi phí | S | Chốt chặn: không qua thì dừng cụm biên bản. Chờ Q1, Q5 |
-| T-02 | Đọc thư mục ghi âm trên Drive, gom nhiều tệp của một cuộc họp thành một phiên | M | Tệp họp dài không gửi qua bot được, phải qua Drive |
+| T-02 | **XONG 08/10/2026 (ai-CR-116):** vòng 5 phút tìm tệp mới trong thư mục «Họp» trên Drive của từng người → HỎI «làm biên bản» (gộp nhiều tệp nối theo giờ) / «làm tệp 2» / «bỏ qua»; «report cuộc họp mới nhất» tự làm tệp mới hoặc gửi lại biên bản + Word + thẻ việc. Đọc thư mục ghi âm trên Drive, gom nhiều tệp của một cuộc họp thành một phiên | M | Tệp họp dài không gửi qua bot được, phải qua Drive |
 | T-03 | **XONG 07/10/2026 (ai-CR-104).** Chuẩn hóa và cắt âm thanh dài cho vừa model | M | |
 | T-04 | **XONG 07/10/2026 (ai-CR-104), một tệp / phiên; gộp nhiều tệp một cuộc họp còn ở T-02.** Gỡ băng từng tệp, nối theo thứ tự thời gian | M | |
 | T-05 | **XONG 07/10/2026 (ai-CR-112):** 4 mẫu sẵn + mẫu RIÊNG từng người lưu bằng lời («lưu mẫu biên bản …»), lời dặn tại chỗ («theo mẫu: …»), viết lại cuộc họp cũ theo mẫu khác không chép lời lại; Word mẫu DEGO vào thư mục «Biên bản họp» trên Drive. Mẫu biên bản là dữ liệu (chính thức · gạch đầu dòng · danh sách việc · đầy đủ theo giờ), chọn mẫu bằng chữ | M | Thêm mẫu không phải sửa mã |
