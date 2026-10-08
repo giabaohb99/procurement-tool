@@ -52,6 +52,15 @@ def send_telegram_task(method: str, payload: dict) -> dict:
     """Gửi HỘ một lượt Bot API cho máy sửa mã không giữ token (chạy ở worker của bot)."""
     from . import channels
 
+    if method == "sendMessage" and channels.is_zalo_account(payload.get("chat_id")):
+        #  ai-CR-122: chat Zalo của tài khoản công ty — như nhánh dưới nhưng gửi qua `zalo-listener`.
+        from . import zalo_account
+
+        rows = ((payload.get("reply_markup") or {}).get("inline_keyboard")) or []
+        buttons = [(str(b.get("text") or ""), str(b.get("url") or b.get("callback_data") or ""))
+                   for row in rows for b in row]
+        mid = zalo_account.send(str(payload["chat_id"]), str(payload.get("text") or ""), buttons=buttons or None)
+        return {"status": "success" if mid else "error", "message_id": mid}
     if method == "sendMessage" and channels.is_zalo(payload.get("chat_id")):
         #  ai-CR-111: tin cho chat Zalo — đổi gói Telegram (chữ + hàng nút) sang `zalo.send`.
         from . import zalo

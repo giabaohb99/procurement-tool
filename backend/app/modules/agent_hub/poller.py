@@ -82,6 +82,49 @@ def run_zalo(*, session_factory: Callable, should_stop: Callable[[], bool] = lam
     return rounds
 
 
+#  ai-CR-122: tiến trình `zalo-listener` không trả lời liền bấy nhiêu giây thì báo đại ca MỘT lần (nối lại thì báo lần nữa).
+LISTENER_DOWN_ALERT_SEC = 300
+
+
+def run_zalo_account(*, session_factory: Callable, should_stop: Callable[[], bool] = lambda: False,
+                     sleep: Callable[[float], None] = time.sleep, timeout: int | None = None,
+                     clock: Callable[[], float] = time.monotonic) -> int:
+    """Vòng kéo sự kiện từ `zalo-listener` (ai-CR-122, tài khoản Zalo của công ty) — luồng phụ, như `run_zalo`."""
+    from . import service, telegram, zalo_account
+
+    poll_timeout = zalo_account.LONG_POLL_TIMEOUT if timeout is None else timeout
+    rounds = 0
+    failing_since: float | None = None
+    alerted = False
+    while not should_stop():
+        rounds += 1
+        if not zalo_account.is_enabled():
+            sleep(IDLE_SLEEP)
+            continue
+        db = session_factory()
+        try:
+            service.poll_zalo_account_once(db, timeout=poll_timeout)
+            db.commit()
+            if alerted:
+                telegram.send("Tiến trình zalo-listener đã trả lời lại, kênh Zalo tài khoản công ty chạy tiếp.")
+            failing_since, alerted = None, False
+        except Exception as e:  # noqa: BLE001 - vòng kéo không được chết vì một lượt hỏng
+            db.rollback()
+            log.warning("agent_hub: lượt kéo Zalo (tài khoản công ty) hỏng: %s — nghỉ %ss", e, ERROR_SLEEP)
+            failing_since = failing_since if failing_since is not None else clock()
+            if not alerted and clock() - failing_since >= LISTENER_DOWN_ALERT_SEC:
+                alerted = True
+                try:
+                    telegram.send("Tiến trình zalo-listener không trả lời hơn 5 phút — tin Zalo nhóm đang KHÔNG được "
+                                  "ghi. Kiểm container zalo-listener trong stack agent-hub.")
+                except Exception:  # noqa: BLE001
+                    pass
+            sleep(ERROR_SLEEP)
+        finally:
+            db.close()
+    return rounds
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -110,6 +153,13 @@ def main() -> None:
         log.info("agent_hub poller: kênh Zalo BẬT, mở vòng kéo tin Zalo")
         threading.Thread(target=run_zalo, kwargs={"session_factory": SessionLocal, "should_stop": lambda: stopping},
                          name="zalo-poller", daemon=True).start()
+    from . import zalo_account
+
+    if zalo_account.is_enabled():
+        log.info("agent_hub poller: Zalo tài khoản công ty BẬT, mở vòng kéo từ zalo-listener")
+        threading.Thread(target=run_zalo_account, kwargs={"session_factory": SessionLocal,
+                                                          "should_stop": lambda: stopping},
+                         name="zalo-account-poller", daemon=True).start()
     run(session_factory=SessionLocal, should_stop=lambda: stopping)
     log.info("agent_hub poller: đã dừng")
 

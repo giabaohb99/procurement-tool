@@ -249,6 +249,9 @@ class Settings(BaseSettings):
     # ai-CR-111: token bot Zalo CHÍNH THỨC (Zalo Bot Platform). Trống = kênh Zalo tắt. Có token thì tiến trình
     # `agent-poller` mở thêm một vòng kéo tin Zalo (getUpdates) chạy song song với Telegram.
     AGENT_ZALO_BOT_TOKEN: str = ""
+    # ai-CR-122 (Zalo hướng B): tiến trình `zalo-listener` giữ phiên MỘT tài khoản Zalo của công ty (đăng nhập QR). Trống
+    # = tắt. Có địa chỉ thì `agent-poller` mở thêm vòng kéo tin từ tiến trình đó (ký bằng AGENT_SERVICE_SECRET).
+    AGENT_ZALO_LISTENER_URL: str = ""
     # ai-CR-119 (phase S, doc/agent-hub/13 §3): phần AI tách thành DỊCH VỤ RIÊNG. Một mã nguồn, ba cách chạy:
     #   embedded — như trước: một tiến trình vừa ERP vừa bot, một DB (mặc định, prod/dev hiện tại).
     #   service  — tiến trình này LÀ dịch vụ AI (nút A): DB riêng `agent_hub`, hỏi số liệu ERP qua cổng B
@@ -396,8 +399,9 @@ class Settings(BaseSettings):
     AGENT_ERP_URL: str = ""
     AGENT_TICKET_DEPARTMENTS: str = ""
     AGENT_FILE_MAX_MB: int = 20
-    # ai-CR-105: số ngày giữ tin các nhóm Telegram bot đang ở (vòng dọn hằng ngày).
-    AGENT_GROUP_RETENTION_DAYS: int = 30
+    # ai-CR-105: số ngày giữ tin các nhóm bot đang ở (vòng dọn hằng ngày). ai-CR-122: đại ca chốt 08/10 giữ 3 tháng,
+    # áp chung Telegram + Zalo.
+    AGENT_GROUP_RETENTION_DAYS: int = 90
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
     AGENT_LOCAL_DOCS_DIR: str = ""

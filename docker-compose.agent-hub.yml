@@ -79,6 +79,24 @@ services:
       - agent-api
       - redis-agent
 
+  # ai-CR-122 (Zalo hướng B): giữ phiên tài khoản Zalo của công ty. Chỉ trong mạng agent-internal, không mở cổng ra
+  # ngoài. Bật bằng AGENT_ZALO_LISTENER_URL=http://zalo-listener:3100 trong .env.agent; quét QR bằng lệnh `/zalo dangnhap`.
+  zalo-listener:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.zalo-listener
+    image: dego-zalo-listener:latest
+    restart: always
+    environment:
+      AGENT_SERVICE_SECRET: ${AGENT_SERVICE_SECRET}
+      ZALO_SEND_GAP_MS: ${ZALO_SEND_GAP_MS:-1500}
+    volumes:
+      - zalo_session:/data
+    mem_limit: 256m
+    cpus: 0.5
+    networks:
+      - agent-internal
+
   redis-agent:
     image: redis:7.2-alpine
     restart: always
@@ -101,6 +119,7 @@ volumes:
   agent_beat:
   agent_redis:
   agent_qdrant:
+  zalo_session:
 
 networks:
   agent-internal:

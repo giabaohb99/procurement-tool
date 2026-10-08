@@ -371,7 +371,8 @@ class AgentMeeting(Base, AuditMixin):
 
 
 class AgentGroup(Base, AuditMixin):
-    """Nhóm Telegram bot đang ở (ai-CR-105). Chủ = người đã thêm bot (`owner_user_id` tài khoản ERP, 0 nếu chưa rõ)."""
+    """Nhóm bot đang ở (ai-CR-105 Telegram, ai-CR-122 Zalo `zg:`). Chủ = người đã thêm bot (`owner_user_id` tài khoản
+    ERP, 0 nếu chưa rõ). `members` = id Zalo các thành viên (chỉ nhóm Zalo — Telegram hỏi thẳng `getChatMember`)."""
 
     __tablename__ = "tab_agent_group"
 
@@ -382,6 +383,7 @@ class AgentGroup(Base, AuditMixin):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     joined_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     left_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    members: Mapped[list | None] = mapped_column(JSON, default=None, nullable=True)
 
 
 class AgentGroupMessage(Base, AuditMixin):

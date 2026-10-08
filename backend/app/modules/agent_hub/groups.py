@@ -7,7 +7,9 @@
   - Bot chỉ thấy tin TỪ LÚC vào nhóm (Bot API không đọc tin cũ).
   - Nhóm ghi nhận chủ = người đã thêm bot (update `my_chat_member`, `from.id` → chat riêng đã đăng nhập ERP). Người khác
     đã đăng nhập ERP đọc được nhóm khi Telegram xác nhận họ đang là thành viên (`getChatMember`).
-  - Tin nhóm giữ GROUP_RETENTION_DAYS ngày rồi dọn (vòng nền hằng ngày).
+  - Tin nhóm giữ GROUP_RETENTION_DAYS ngày rồi dọn (vòng nền hằng ngày) — 90 ngày từ ai-CR-122.
+  - ai-CR-122: nhóm Zalo của tài khoản công ty (`zg:`) — tiến trình `zalo-listener` báo tên + danh sách thành viên;
+    người đọc được = tài khoản Zalo đã đăng nhập ERP (`zu:<uid>`) có trong danh sách đó.
 """
 from __future__ import annotations
 
@@ -73,7 +75,8 @@ def get_group(db: Session, chat_id: str) -> AgentGroup | None:
 def _ensure(db: Session, chat: dict) -> AgentGroup:
     row = get_group(db, str(chat.get("id")))
     if row is None:
-        row = AgentGroup(chat_id=str(chat.get("id")), title=str(chat.get("title") or "nhóm")[:200], active=True,
+        default = "nhóm Zalo" if channels.is_zalo_account(chat.get("id")) else "nhóm"
+        row = AgentGroup(chat_id=str(chat.get("id")), title=str(chat.get("title") or default)[:200], active=True,
                          joined_at=datetime.now())
         db.add(row)
         db.flush()
@@ -149,8 +152,19 @@ def _zalo_member(db: Session, user_id: int, group: AgentGroup) -> bool:
                                                         AgentGroupMessage.from_tg_id.in_(ids)).limit(1)) is not None
 
 
+def _zalo_uids_of(db: Session, user_id: int) -> set[str]:
+    return {channels.raw_id(c) for c in db.scalars(
+        select(AgentChatLink.chat_id).where(AgentChatLink.user_id == int(user_id), AgentChatLink.revoked_at.is_(None)))
+        if str(c or "").startswith(channels.ZALO_USER_PREFIX)}
+
+
+def _zalo_account_member(db: Session, user_id: int, group: AgentGroup) -> bool:
+    members = {str(m) for m in (group.members or [])}
+    return bool(members & _zalo_uids_of(db, user_id))
+
+
 def is_member(group: AgentGroup, tg_id: int) -> bool:
-    if channels.is_zalo(group.chat_id):
+    if not channels.is_telegram(group.chat_id):
         return False
     try:
         info = telegram._call("getChatMember", {"chat_id": group.chat_id, "user_id": tg_id})
@@ -164,6 +178,8 @@ def can_read(db: Session, user_id: int, group: AgentGroup) -> bool:
         return False
     if group.owner_user_id and int(group.owner_user_id) == int(user_id):
         return True
+    if channels.is_zalo_account(group.chat_id):
+        return _zalo_account_member(db, user_id, group)
     if channels.is_zalo(group.chat_id):
         return _zalo_member(db, user_id, group)
     return any(is_member(group, tg) for tg in _tg_ids_of(db, user_id))
@@ -226,7 +242,11 @@ def purge(db: Session, *, days: int | None = None) -> int:
 
 
 def private_chat_of(db: Session, user_id: int) -> str:
-    """Chat riêng đang đăng nhập của một tài khoản ERP (để gửi kết quả riêng, không vào nhóm)."""
+    """Chat riêng đang đăng nhập của một tài khoản ERP (để gửi kết quả riêng, không vào nhóm). Telegram trước, không có
+    thì chat riêng Zalo của tài khoản công ty (ai-CR-122)."""
     ids = _tg_ids_of(db, user_id)
-    return str(ids[0]) if ids else ""
+    if ids:
+        return str(ids[0])
+    uids = sorted(_zalo_uids_of(db, user_id))
+    return channels.zalo_user_chat(uids[0]) if uids else ""
 

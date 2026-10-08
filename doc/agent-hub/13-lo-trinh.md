@@ -29,7 +29,7 @@
 | 10 | Thư ký biên bản họp (T-01…T-06, T-12) | **Xong** 07–08/10 | ai-CR-104, 112, 113, 114, 116, 117; T-01 mới thử tệp giả |
 | 11 | Đọc nhóm Telegram + đọc / viết báo cáo (G) | **Xong đợt 1** 07–08/10 | ai-CR-105, 115; đợt 2 ở §5 |
 | **S** | **Tách dịch vụ AI thành nhiều bot nói chuyện với nhau (A2A)** — §3 | **Xong mã S-0…S-4** 08/10 (ai-CR-119), chờ Agent 1 dựng trên dev theo doc 14 §4; S-5/S-6 là runbook | |
-| Z-3/Z-4 | Zalo hướng B: tài khoản riêng ghi lặng nhóm, đọc nhóm Zalo | **Chưa** | chờ tài khoản Zalo riêng |
+| Z-3/Z-4 | Zalo hướng B: tài khoản Zalo công ty ghi lặng nhóm, đọc nhóm Zalo, chat riêng | **Xong mã** 08/10 (ai-CR-122) | chờ Agent 1 dựng dev (doc 14 §7) + đại ca quét QR bằng số Zalo công ty |
 
 **Một câu:** phần «trợ lý cá nhân hỏi gì đáp nấy» (ERP, sổ nhớ, khóa AI riêng, lịch, Drive, biên bản họp, đọc báo cáo,
 tóm tắt nhóm Telegram) đã chạy thật trên dev cho mọi người đã đăng nhập; phần «bot tự theo dõi, tự báo» (tin quan trọng
@@ -62,7 +62,7 @@ chưa thì là ứng viên cho §5.
 |---|---|---|
 | Telegram: chat riêng, tin thoại, ảnh, tệp, nút bấm | Xong | không (Zalo) |
 | Zalo bot chính thức: chat riêng, đăng nhập bằng mã, cùng lõi | Xong mã, chờ token | có (tài khoản cá nhân) |
-| Zalo tài khoản riêng ghi lặng nhóm (hướng B) | Chưa | có |
+| Zalo tài khoản công ty ghi lặng nhóm + chat riêng (hướng B, doc 12 §7) | Xong mã 08/10, chờ quét QR | có |
 | Web (Trợ lý AI trong ERP), cổng MCP cho ứng dụng AI ngoài | Xong | có (web riêng) |
 | Nhiều bot một nền, mỗi bot một token, cách ly khóa (N-01, N-05) | Chưa | có (nhiều tài khoản bot) |
 
@@ -277,5 +277,6 @@ cho worker và dung lượng kho tin nhắn.
 | Đại ca | Chốt S1–S4 (§3.4) |
 | Đại ca | Token bot Zalo chính thức (Zalo Bot Manager → Tạo bot), gửi qua tệp |
 | Đại ca | Một tệp họp THẬT để thử T-01 thật; thử đường Drive «Họp» với tệp ghi âm |
-| Đại ca | VPS AI riêng (cấu hình S4); tài khoản Zalo riêng cho hướng B |
+| Đại ca | VPS AI riêng (cấu hình S4) |
+| Đại ca | Điện thoại giữ số Zalo công ty: quét QR khi bot gửi (`/zalo dangnhap`); không mở Zalo Web / PC bằng số đó |
 | Đại ca | K-02 / K-03 trên GitHub; bật OTP prod khi muốn |

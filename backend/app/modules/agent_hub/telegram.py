@@ -292,6 +292,8 @@ def send_chat_action(chat_id: str = "", action: str = "typing") -> None:
     """
     if relaying():
         return
+    if channels.is_zalo_account(chat_id):
+        return                          # ai-CR-122: tài khoản cá nhân — không bật «đang soạn», đỡ một lượt gọi Zalo
     if channels.is_zalo(chat_id):
         from . import zalo
 
@@ -323,6 +325,10 @@ def send(text: str, *, buttons: list[tuple[str, str]] | None = None,
     ai-CR-111: chat Zalo (`zl:…`) rẽ sang `zalo.send` — nút bấm thành danh sách lựa chọn nhắn lại bằng chữ. Máy sửa mã
     (không token) vẫn gửi vòng qua worker như cũ; worker thấy tiền tố `zl:` thì gửi bằng Zalo.
     """
+    if channels.is_zalo_account(chat_id) and not relaying():
+        from . import zalo_account
+
+        return zalo_account.send(chat_id, text, buttons=buttons)
     if channels.is_zalo(chat_id) and not relaying():
         from . import zalo
 
@@ -404,6 +410,10 @@ def send_document(chat_id: str, filename: str, data: bytes, *, caption: str = ""
     ERP nên bot phải đọc byte từ kho rồi đẩy thẳng qua `sendDocument` (multipart).
     `caption` là HTML đã thoát, tối đa 1024 ký tự theo Telegram.
     """
+    if channels.is_zalo_account(chat_id):
+        from . import zalo_account
+
+        return zalo_account.send_document(chat_id, filename, data, caption=caption)
     if channels.is_zalo(chat_id):
         from . import zalo
 
@@ -439,7 +449,7 @@ def answer_callback(callback_id: str, text: str = "") -> None:
 def edit_text(chat_id: str, message_id: int, text: str) -> bool:
     """Sửa chữ của một tin đã gửi (ai-CR-021: tin báo đang chạy cập nhật số phút mà không kêu
     chuông lần nữa). Trả False nếu hỏng — kể cả lỗi «message is not modified», không sao."""
-    if not message_id or channels.is_zalo(chat_id):
+    if not message_id or not channels.is_telegram(chat_id):
         return False                    # Zalo không cho sửa tin đã gửi
     try:
         _call("editMessageText", {
@@ -458,7 +468,7 @@ def clear_buttons(chat_id: str, message_id: int) -> None:
     (hoặc một cú chạm nhầm) gửi lại đúng lệnh ấy lần nữa, và ở bậc 2 lần thứ hai đó
     là một lượt gọi bot code thật.
     """
-    if not message_id or channels.is_zalo(chat_id):
+    if not message_id or not channels.is_telegram(chat_id):
         return
     try:
         _call("editMessageReplyMarkup", {

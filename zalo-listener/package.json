@@ -1,0 +1,11 @@
+{
+  "name": "zalo-listener",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Giữ phiên tài khoản Zalo của công ty cho bot Lạc Lạc (ai-CR-122)",
+  "type": "module",
+  "main": "index.mjs",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node index.mjs", "test": "node --test" },
+  "dependencies": { "zca-js": "2.2.0" }
+}

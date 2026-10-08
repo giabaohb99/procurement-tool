@@ -12993,3 +12993,18 @@ cập nhật, chia vài nhóm có nhãn đậm, số liệu in đậm, số ngu�
 
 Mã nguồn: backend/app/modules/agent_hub/user_guide.py · agent_hub/research.py (_COMMON, _ANALYSIS, sources_markdown) · agent_hub/service.py · test/backend/test_agent_hub.py
 Deploy: dev 08/10 (Agent 1 gộp 7d63c08c, dựng lại stack agent-hub); prod giữ lại.
+
+## ai-CR-122 | Zalo hướng B: tài khoản Zalo của công ty đọc nhóm và trả lời riêng
+- status: dang-lam
+- date: 2026-10-08
+Đại ca chốt dùng một tài khoản Zalo riêng của công ty làm bot, bot chỉ trả lời khi nhắn riêng, tin nhóm giữ ba tháng. Em dựng
+một tiến trình riêng giữ phiên đăng nhập của tài khoản đó (quét mã QR một lần, phiên lưu mã hóa), ghi lặng mọi tin và tệp trong các
+nhóm có tài khoản công ty vào cùng kho nhóm với Telegram, và chuyển tin nhắn riêng vào đúng bộ xử lý chung nên nhắn riêng tài khoản
+công ty dùng được bot y như Telegram, gửi được cả tệp Word và Excel. Người đọc được một nhóm Zalo là người đã đăng nhập ERP qua
+Zalo và có tên trong danh sách thành viên nhóm đó. Bot không bao giờ nói trong nhóm. Đại ca có lệnh xem tình trạng, lấy mã QR và
+đồng bộ lại nhóm; phiên văng hoặc tiến trình im quá năm phút thì bot báo. Thời gian giữ tin nhóm đổi từ 30 lên 90 ngày cho cả
+Telegram. Em cũng ghi đánh giá hạ tầng cho hai câu đại ca hỏi: mỗi người tự quét mã bằng Zalo cá nhân, và cho bot trả lời trong
+nhóm khi được gọi. Bài kiểm của bot và của tiến trình Zalo chạy xanh. Còn chờ dựng trên dev và đại ca quét mã.
+
+Mã nguồn: zalo-listener/ (mới) · docker/Dockerfile.zalo-listener · docker-compose.agent-hub.yml · backend/app/modules/agent_hub/zalo_account.py (mới) · channels.py · telegram.py · tasks.py · groups.py · service.py (poll_zalo_account_once, /zalo) · poller.py (run_zalo_account) · model.py (AgentGroup.members) · user_guide.py · core/config.py · migrations grp02 + migrations_agent agent0002 · doc/agent-hub/12 §7–8, 13, 14 §7
+

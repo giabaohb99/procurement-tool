@@ -87,8 +87,9 @@ SECTIONS: tuple[Section, ...] = (
         ("phân tích báo cáo này", ""),
         ("tóm tắt tệp 1", "tài liệu trong thư mục Họp trên Drive"),
     )),
-    Section("nhom", "Nhóm Telegram", ("nhom", "group"), (
-        ("", "Thêm em vào nhóm — em không nói gì trong nhóm, chỉ ghi lại tin từ lúc vào"),
+    Section("nhom", "Nhóm Telegram, Zalo", ("nhom", "group", "zalo"), (
+        ("", "Thêm em vào nhóm — em không nói gì trong nhóm, chỉ ghi lại tin từ lúc vào. Nhóm Zalo: thêm tài khoản "
+             "Zalo của công ty vào nhóm, rồi nhắn riêng tài khoản đó «/dangnhap mã» một lần để em biết anh/chị là ai"),
         ("bot đang ở nhóm nào", ""),
         ("nhóm Kế toán hôm nay bàn gì", "nhắn riêng với em"),
         ("tổng hợp nhóm Kế toán tuần này", ""),
@@ -118,6 +119,7 @@ SECTIONS: tuple[Section, ...] = (
         ("lịch sử deploy dev", ""),
         ("deploy dev mới nhất", ""),
         ("tháng này bot tốn bao nhiêu", ""),
+        ("/zalo", "tình trạng tài khoản Zalo công ty; «/zalo dangnhap» lấy mã QR, «/zalo nhom» đồng bộ nhóm"),
     ), admin_only=True),
 )
 

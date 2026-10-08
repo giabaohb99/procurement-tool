@@ -96,3 +96,28 @@ branch=erp-v2 health=http://127.0.0.1:8020/api/health kind=dev» — từ đó b
   `AGENT_SERVICE_URL=https://<tên miền dịch vụ AI>`; bật lại poller ở máy mới (tắt máy cũ trước — một token Telegram một poller).
 - **S-6:** nhóm bảng `tab_agent_group*` + tệp nhóm tách thành DB / stack «kho tin nhắn» khi chạm ngưỡng §4 doc 13; giao diện
   nội bộ: `tin của nhóm X từ giờ Y`, `tìm toàn văn`, `tệp theo ref` — chính là 3 hàm `groups.read / find / file_by_ref` hiện nay.
+
+## 7. Zalo hướng B — dựng `zalo-listener` trên dev (ai-CR-122, Agent 1)
+
+Chỉ đụng stack agent-hub; ERP chỉ thêm migration `grp02` (cột `tab_agent_group.members`, cho chế độ embedded) — tự
+chạy khi api ERP khởi động lại sau đợt gộp kế.
+
+1. `cd ~/agent-hub && git pull` (lên commit có ai-CR-122).
+2. Thêm vào `.env.agent` (KHÔNG in giá trị khóa ra log):
+   ```
+   AGENT_ZALO_LISTENER_URL=http://zalo-listener:3100
+   AGENT_GROUP_RETENTION_DAYS=90
+   ```
+   `zalo-listener` đọc `AGENT_SERVICE_SECRET` từ chính `.env.agent` (compose truyền qua `${AGENT_SERVICE_SECRET}`) —
+   nhớ chạy `compose` với `--env-file .env.agent` như mọi lần.
+3. `docker compose --env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml up -d --build` — dựng thêm image
+   `dego-zalo-listener`, `agent-api` tự chạy `alembic -c alembic_agent.ini upgrade head` (lên `agent0002`).
+4. Kiểm:
+   - `docker logs agent-hub-zalo-listener-1 --tail 5` có «zalo-listener nghe cổng 3100» và «chưa có phiên»;
+   - `docker logs agent-hub-agent-poller-1 --tail 20` có «Zalo tài khoản công ty BẬT»;
+   - `docker exec agent-hub-agent-api-1 alembic -c alembic_agent.ini current` ra `agent0002 (head)`.
+5. Báo em; đại ca nhắn bot Telegram `/zalo` (phải ra «chưa đăng nhập») rồi `/zalo dangnhap` để nhận ảnh QR.
+
+Quay lui: xóa dòng `AGENT_ZALO_LISTENER_URL` khỏi `.env.agent`, `docker compose ... stop zalo-listener`, `up -d
+agent-poller` — bot về như trước (cột `members` để nguyên, vô hại).
+

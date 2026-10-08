@@ -17,7 +17,7 @@
 | Đọc báo cáo gửi riêng | Gửi tệp pdf / Word / Excel / txt vào chat riêng, chú thích là câu hỏi (trống = tóm tắt) |
 | Viết báo cáo | «viết báo cáo tuần từ nhóm X ra Word» → công cụ xuất Word sẵn có |
 | Tin gửi riêng | Đã có: tóm tắt cuối buổi vào kho (ai-CR-102), tìm lại hội thoại cũ, sổ ghi nhớ |
-| Giữ tin nhóm | 30 ngày (`AGENT_GROUP_RETENTION_DAYS`), dọn lúc 03:20 mỗi đêm |
+| Giữ tin nhóm | **90 ngày** từ ai-CR-122 (đại ca chốt 08/10; trước đó 30), `AGENT_GROUP_RETENTION_DAYS`, dọn lúc 03:20 mỗi đêm |
 
 **Việc tay của đại ca (một lần):** BotFather → `/setprivacy` → chọn bot → **Disable**. Không tắt thì trong nhóm bot chỉ
 thấy lệnh `/…` và tin trả lời bot. Sau khi tắt, **mời bot ra rồi thêm lại** vào các nhóm đã có để Telegram áp chế độ mới.
@@ -65,8 +65,8 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
 |---|---|---|
 | Z-1 | Tách lớp «kênh» khỏi mã Telegram: gửi / nhận / tải tệp / mã chat có tiền tố kênh (Telegram giữ số cũ, Zalo `zl:`), đăng nhập bằng mã dùng chung | **Xong mã — ai-CR-111** |
 | Z-2 | Kênh A: bộ nối Zalo Bot API (polling, gửi tin, tải tệp), luồng nhận tin Zalo trong `agent-poller` | **Xong mã — ai-CR-111**, chờ token để bật |
-| Z-3 | Kênh B: tiến trình phụ (Node, thư viện tài khoản cá nhân) chỉ ghi lặng tin nhóm → API nội bộ của backend → bảng nhóm chung; tự báo khi bị đá phiên | 3 ngày |
-| Z-4 | Đọc nhóm Zalo qua cùng 3 công cụ nhóm (`list_my_groups`…), quyền đọc = người đã thêm tài khoản B vào nhóm | 1 ngày |
+| Z-3 | Kênh B: tiến trình phụ `zalo-listener` (Node, zca-js) ghi lặng tin nhóm + chat riêng với tài khoản công ty; tự báo khi bị đá phiên | **Xong mã — ai-CR-122** (08/10) |
+| Z-4 | Đọc nhóm Zalo qua cùng 3 công cụ nhóm, quyền đọc = tài khoản Zalo đã đăng nhập ERP có tên trong danh sách thành viên | **Xong mã — ai-CR-122** (08/10) |
 
 ## 5. Còn chờ đại ca
 
@@ -86,3 +86,63 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
 | Gửi tệp Word / Excel | Zalo Bot chưa có API gửi tệp → bot báo lấy qua Telegram hoặc web |
 | Tin dài | Cắt tối đa 5 mẩu, mỗi mẩu ≤ 1900 ký tự |
 | Nhóm Zalo | Bot chính thức chỉ nhận tin trả lời bot / tin nhắc tên bot → ghi lặng; người đăng nhập nói đầu tiên là chủ; chỉ người từng nhắn trong nhóm đọc được. Đọc TOÀN BỘ nhóm phải chờ hướng B (Z-3) |
+
+## 7. Kênh Zalo B đã dựng (ai-CR-122, 08/10/2026)
+
+Đại ca chốt 08/10: **một tài khoản Zalo riêng của công ty làm «bot»** · **chỉ trả lời riêng** như hiện tại · **giữ tin 3
+tháng**.
+
+| Việc | Cách chạy |
+|---|---|
+| Tiến trình | Service `zalo-listener` (Node 20 + zca-js 2.2.0) trong stack agent-hub, chỉ mạng nội bộ, 256 MB. Giữ phiên MỘT tài khoản. Không có nghiệp vụ: chỉ ghi sự kiện vào hàng đợi, gửi tin khi được gọi |
+| Đăng nhập | Đại ca nhắn bot Telegram `/zalo dangnhap` → ảnh QR về chat đại ca → quét bằng điện thoại **giữ số Zalo công ty**. Phiên lưu mã hóa (AES-256-GCM) ở volume `zalo_session`; khởi động lại không phải quét lại |
+| Văng phiên | Zalo đá phiên (mở Zalo Web / PC cùng tài khoản ở nơi khác, đứt mạng lâu) → bot báo đại ca, tự thử nối lại 10 phút một lần; không được thì `/zalo dangnhap` quét lại. `zalo-listener` im quá 5 phút → báo một lần |
+| Nhận tin | `agent-poller` kéo `GET /updates` có con trỏ (như Telegram). Mọi lượt gọi ký HMAC bằng `AGENT_SERVICE_SECRET` |
+| Nhóm | Tin + tệp mọi nhóm có tài khoản công ty → kho nhóm chung (`zg:<id>`). Bot **không nói gì trong nhóm** (chặn cứng ở hàm gửi). Tên nhóm + danh sách thành viên quét lại 6 giờ/lần và mỗi khi có người vào / ra |
+| Ai đọc được nhóm | Người đã nhắn riêng tài khoản công ty `/dangnhap <mã>` (mã ở Trang cá nhân ERP) VÀ có tên trong danh sách thành viên nhóm đó. Người thêm tài khoản công ty vào nhóm ghi là chủ |
+| Chat riêng | Nhắn riêng tài khoản công ty = dùng bot y như Telegram (hỏi ERP, sổ nhớ, biên bản họp, đọc tệp, chuông). Khác bot Zalo chính thức: **gửi được tệp** Word / Excel. Không có nút bấm (liệt kê lựa chọn), không sửa tin đã gửi |
+| Nhịp gửi | Một hàng, cách nhau 1,5–2,2 giây (`ZALO_SEND_GAP_MS`) — giảm rủi ro Zalo khóa số |
+| Lệnh chủ bot | `/zalo` tình trạng · `/zalo dangnhap` lấy QR · `/zalo nhom` đồng bộ lại nhóm |
+
+**Luật vận hành:** không mở Zalo Web / Zalo PC bằng tài khoản công ty trên máy nào khác (sẽ đá phiên của bot); điện
+thoại giữ số vẫn dùng bình thường. Người muốn bot đọc nhóm Zalo nào thì **thêm tài khoản công ty vào nhóm đó**; bot chỉ
+thấy tin **từ lúc vào**.
+
+## 8. Đánh giá hạ tầng (đại ca hỏi 08/10)
+
+### 8.1 Nếu mỗi người tự quét QR bằng Zalo cá nhân (phương án b)
+
+| Mặt | Tài khoản công ty (đang làm) | Mỗi người một QR (100 người) |
+|---|---|---|
+| Phiên giữ thường trực | 1 kết nối | 100 kết nối, mỗi cái ~40–60 MB RAM → **4–6 GB RAM** riêng cho phần này (gom nhiều tài khoản / tiến trình thì ~2–3 GB). CPU thấp (kết nối nằm chờ) |
+| Số nhóm bị ghi | Chỉ nhóm có thêm tài khoản công ty (vài chục) | **Mọi nhóm** của 100 người, gồm nhóm gia đình, nhóm riêng tư — vài nghìn nhóm (nhóm chung nhiều người chỉ lưu một lần) |
+| Lượng tin, giữ 90 ngày | ~5–20 nghìn tin / ngày → 0,5–2 triệu dòng, **1–3 GB** — MySQL hiện tại chịu được | ~100–300 nghìn tin / ngày → 9–27 triệu dòng, **10–30 GB** + tệp. Phải làm tầng lưu trữ đã ghi ở doc 13 §4 (chia bảng theo tháng, tệp lên R2) và tách kho tin (S-6) |
+| Rủi ro khóa số | Dồn vào MỘT số của công ty | Khóa đúng **Zalo cá nhân** của nhân viên |
+| Đá phiên | Không ai dùng Zalo Web / PC bằng số công ty → hiếm | Người nào đang dùng Zalo PC / Web thì bot và họ đá nhau liên tục — gần như chắc chắn xảy ra hằng ngày |
+| Riêng tư | Chỉ nhóm công việc người ta chủ động thêm bot | Bot đọc cả tin riêng tư; cần sự đồng ý bằng văn bản của từng người (dữ liệu cá nhân theo Nghị định 13/2023) |
+
+**Kết luận:** máy móc không phình nhiều (thêm một VPS 4–8 GB là đủ), nhưng **dữ liệu phình 10–15 lần**, và hai cái khó
+thật nằm ở **đá phiên** (người dùng Zalo PC) và **khóa số cá nhân**. Em đề xuất giữ tài khoản công ty; nếu sau này cần thì
+chỉ mở QR cá nhân cho **vài người tự nguyện** (quản lý), mỗi người chọn **danh sách nhóm được ghi** thay vì ghi tất cả.
+
+### 8.2 Nếu cho bot trả lời trong nhóm khi được gọi (@bot) — Telegram và Zalo
+
+**Mã phải đổi (khoảng 3–4 ngày):**
+
+| Việc | Ghi chú |
+|---|---|
+| Nhận ra «được gọi» | Telegram: tin có `@tên_bot` hoặc trả lời tin của bot. Zalo B: danh sách `mentions` có id tài khoản công ty, hoặc trích tin của nó. Zalo A: bot chính thức vốn chỉ nhận tin kiểu này |
+| Trả lời dưới quyền ai | Người gọi phải đã đăng nhập ERP (nhắn riêng `/dangnhap` trước); dùng khóa AI của người gọi. Người chưa đăng nhập → im hoặc một câu nhắc ngắn |
+| **Chống lộ số liệu ERP** — chỗ quan trọng nhất | Câu trả lời trong nhóm ai cũng thấy. Đề xuất: trong nhóm chỉ trả lời câu chung (tóm tắt nhóm, tra mạng, giải thích); câu đụng số liệu ERP thì nhắn kết quả **riêng** cho người gọi và trong nhóm chỉ báo «em đã nhắn riêng». Chủ nhóm có thể bật «nhóm nội bộ, được trả lời số liệu» |
+| Ngữ cảnh | Dùng luôn kho tin nhóm: «@bot tóm tắt từ sáng tới giờ», «@bot ai hứa gửi báo giá» |
+| Chống loạn | Trần ~10 câu trả lời / giờ / nhóm, bỏ qua tin của bot khác, câu trả lời ngắn, không nút bấm (Telegram: nút trong nhóm ai cũng bấm được → nút phải kiểm người bấm = người gọi) |
+| Gỡ chốt chặn | Hàm gửi Zalo B đang chặn cứng tin vào nhóm; đổi thành theo cờ cấu hình từng nhóm |
+
+**Hạ tầng: không cần đánh giá lại** ở quy mô hiện tại. Kho tin không đổi (đằng nào cũng đã ghi hết tin nhóm). Số lượt gọi
+AI tăng ít vì chỉ trả lời khi được gọi. Một việc nên làm cùng lúc: **đẩy phần trả lời sang hàng đợi worker** (hiện trả lời
+chạy ngay trong `agent-poller` — một câu dài 30 giây làm tin nhóm khác ghi chậm theo; tin không mất vì có hàng đợi, nhưng
+nhóm đông sẽ dồn) — đúng hàng «chat / heavy» đã ghi ở doc 13 §7. Thêm bộ đếm trần theo nhóm trong Redis sẵn có.
+
+**Rủi ro riêng Zalo B:** tài khoản cá nhân **nói** trong nhóm (nhất là nhóm đông, nhiều người lạ) dễ bị Zalo đánh dấu
+hơn chỉ đọc. Nếu bật, em đề xuất Telegram trước, Zalo B sau một hai tuần chạy ổn, và giới hạn nhóm được phép nói.
+

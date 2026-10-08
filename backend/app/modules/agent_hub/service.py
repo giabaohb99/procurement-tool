@@ -212,6 +212,150 @@ def poll_zalo_once(db: Session, *, timeout: int = 25) -> int:
     return len(updates)
 
 
+ZALO_ACCOUNT_CURSOR = "zalo_account_offset"
+
+
+def _zalo_cursor(db: Session) -> AgentCursor:
+    row = db.scalar(select(AgentCursor).where(AgentCursor.name == ZALO_ACCOUNT_CURSOR))
+    if row is None:
+        row = AgentCursor(name=ZALO_ACCOUNT_CURSOR, value=0)
+        db.add(row)
+        db.flush()
+    return row
+
+
+def poll_zalo_account_once(db: Session, *, timeout: int = 25) -> int:
+    """Kéo một lượt sự kiện từ `zalo-listener` (ai-CR-122, tài khoản Zalo của công ty) và xử bằng đúng lõi chung. Có con
+    trỏ như Telegram: tiến trình Node giữ sự kiện tới khi được báo đã nhận (offset vượt qua)."""
+    from . import zalo_account
+
+    offset = _zalo_cursor(db).value
+    db.commit()                 # như poll_once: không giữ giao dịch mở suốt lúc chờ tin
+    events = zalo_account.fetch_updates(offset, timeout=timeout)
+    if not events:
+        return 0
+    cursor = _zalo_cursor(db)
+    for ev in events:
+        cursor.value = max(cursor.value, int(ev.get("id") or 0) + 1)
+        try:
+            _handle_zalo_account_event(db, ev)
+        except Exception:
+            log.exception("agent_hub: hỏng khi xử sự kiện Zalo (tài khoản công ty) %s", ev.get("id"))
+            db.rollback()
+            cursor = _zalo_cursor(db)
+            cursor.value = max(cursor.value, int(ev.get("id") or 0) + 1)
+        db.commit()
+    return len(events)
+
+
+def _handle_zalo_account_event(db: Session, ev: dict) -> None:
+    from . import zalo_account
+
+    kind = str(ev.get("kind") or "")
+    if kind == zalo_account.EV_MESSAGE:
+        msg = zalo_account.normalize(ev)
+        if msg is not None:
+            handle_message(db, msg)
+    elif kind == zalo_account.EV_GROUP:
+        zalo_account.apply_group(db, ev)
+    elif kind == zalo_account.EV_QR:
+        _send_zalo_qr(ev)
+    elif kind == zalo_account.EV_STATUS:
+        _report_zalo_status(ev)
+
+
+def _send_zalo_qr(ev: dict) -> None:
+    """Ảnh QR đăng nhập tài khoản Zalo công ty → CHỈ chat của đại ca (người giữ điện thoại số đó quét)."""
+    import base64
+    import binascii
+
+    admin = (settings.AGENT_TELEGRAM_CHAT_ID or "").strip()
+    if not admin:
+        return
+    if ev.get("expired"):
+        telegram.send("Mã QR đăng nhập Zalo đã hết hạn. Nhắn <code>/zalo dangnhap</code> để lấy mã mới.", chat_id=admin)
+        return
+    try:
+        data = base64.b64decode(str(ev.get("image") or "").split(",")[-1], validate=True)
+    except (binascii.Error, ValueError):
+        data = b""
+    if not data:
+        return
+    telegram.send_document(admin, "zalo-qr.png", data, content_type="image/png",
+                           caption="Quét mã này bằng Zalo của <b>tài khoản công ty</b> (không dùng Zalo cá nhân). "
+                                   "Mã sống khoảng 1 phút.")
+
+
+_ZALO_STATE_TEXT = {
+    "connected": "Zalo (tài khoản công ty) đã kết nối{who}. Bot bắt đầu ghi tin các nhóm tài khoản này có mặt.",
+    "down": "Zalo (tài khoản công ty) MẤT KẾT NỐI{why}. Nhắn <code>/zalo dangnhap</code> để quét QR lại nếu phiên "
+            "không tự nối được.",
+}
+
+
+def _report_zalo_status(ev: dict) -> None:
+    import html as _html
+
+    admin = (settings.AGENT_TELEGRAM_CHAT_ID or "").strip()
+    state = str(ev.get("state") or "")
+    tpl = _ZALO_STATE_TEXT.get(state)
+    if not admin or not tpl:
+        return
+    who = f" ({_html.escape(str(ev['name']))})" if ev.get("name") else ""
+    why = f": {_html.escape(str(ev['reason'])[:200])}" if ev.get("reason") else ""
+    telegram.send(tpl.format(who=who, why=why), chat_id=admin)
+
+
+def zalo_account_report() -> str:
+    """Trạng thái tài khoản Zalo công ty cho lệnh `/zalo` của đại ca."""
+    import html as _html
+
+    from . import zalo_account
+
+    if not settings.AGENT_ZALO_LISTENER_URL:
+        return "Kênh Zalo tài khoản công ty đang TẮT (chưa khai AGENT_ZALO_LISTENER_URL)."
+    try:
+        st = zalo_account.status()
+    except zalo_account.ZaloAccountError as e:
+        return f"Không hỏi được tiến trình zalo-listener: {_html.escape(str(e))}"
+    labels = {"connected": "đang kết nối", "qr": "đang chờ quét QR", "down": "mất kết nối",
+              "idle": "chưa đăng nhập"}
+    lines = [f"<b>Zalo tài khoản công ty:</b> {labels.get(str(st.get('state')), str(st.get('state') or '?'))}"]
+    if st.get("name"):
+        lines.append(f"Tài khoản: {_html.escape(str(st['name']))}")
+    if st.get("groups") is not None:
+        lines.append(f"Số nhóm đang ở: {int(st.get('groups') or 0)}")
+    if st.get("queued"):
+        lines.append(f"Tin đang chờ gửi: {int(st['queued'])}")
+    if str(st.get("state")) != "connected":
+        lines.append("Nhắn <code>/zalo dangnhap</code> để lấy mã QR.")
+    return "\n".join(lines)
+
+
+def _zalo_command(db: Session, chat_id: str, text: str) -> None:
+    """`/zalo` — trạng thái; `/zalo dangnhap` — xin mã QR; `/zalo nhom` — đồng bộ lại danh sách nhóm + thành viên."""
+    from . import zalo_account
+
+    arg = text.strip()[5:].strip().lower()
+    if arg.startswith(("dangnhap", "login", "qr")):
+        try:
+            zalo_account.request_login()
+        except zalo_account.ZaloAccountError as e:
+            reply(db, chat_id, f"Không mở được đăng nhập Zalo: {e}")
+            return
+        reply(db, chat_id, "Em đang xin mã QR, vài giây nữa ảnh mã sẽ tới chat này.")
+        return
+    if arg.startswith(("nhom", "group")):
+        try:
+            zalo_account.refresh_groups()
+        except zalo_account.ZaloAccountError as e:
+            reply(db, chat_id, f"Không đồng bộ được nhóm Zalo: {e}")
+            return
+        reply(db, chat_id, "Em đang đồng bộ lại danh sách nhóm và thành viên Zalo.")
+        return
+    reply(db, chat_id, zalo_account_report())
+
+
 def handle_message(db: Session, msg: dict) -> None:
     """Mọi tin vào đi qua đây. ai-CR-053: mở ngữ cảnh KHÓA GEMINI của chat (khóa cá nhân của tài khoản đã
     liên kết; chat đại ca chưa có khóa cá nhân thì khóa `.env`) cho toàn bộ lượt xử lý bên trong."""
@@ -997,6 +1141,8 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
         _logout(db, chat_id)
     elif lower.startswith("/taikhoan"):
         show_account(db, chat_id)
+    elif lower == "/zalo" or lower.startswith("/zalo "):
+        _zalo_command(db, chat_id, text)
     elif _research_command(db, chat_id, text, allow_docs=True):
         pass
     elif lower.startswith("/chiphi"):

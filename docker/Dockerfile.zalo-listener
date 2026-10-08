@@ -1,0 +1,12 @@
+# zalo-listener (ai-CR-122): tiến trình Node giữ phiên tài khoản Zalo của công ty. Chỉ nghe trong mạng agent-internal.
+FROM node:20-alpine
+WORKDIR /app
+COPY zalo-listener/package.json zalo-listener/package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY zalo-listener/index.mjs ./
+RUN mkdir -p /data && chown node:node /data
+USER node
+ENV NODE_ENV=production PORT=3100 ZALO_SESSION_FILE=/data/session.enc
+EXPOSE 3100
+HEALTHCHECK --interval=60s --timeout=5s CMD wget -qO- http://127.0.0.1:3100/health >/dev/null || exit 1
+CMD ["node", "index.mjs"]
