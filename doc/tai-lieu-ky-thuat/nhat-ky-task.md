@@ -13023,3 +13023,9 @@ thống tự có quyền này. Bài kiểm máy chủ và giao diện chạy xan
 
 Mã nguồn: backend/app/modules/agent_hub/groups.py · controller.py (đường /groups*, /zalo/*) · constants.py (GROUP_CAT_*) · model.py (AgentGroupSummary, AgentGroupView) · assistant/service.py · core/permissions.py + scoping.py (agent_group) · migrations grp03 + agent0003 · zalo-listener/index.mjs · frontend-v2/src/modules/assistant (chat-group-*) · test/backend/test_agent_hub_nhom_web.py
 Deploy: dev 08/10 (Agent 1 gộp 1a69ad5b, dựng lại ERP api, erp và stack agent-hub); prod giữ lại.
+
+Vá sau khi dựng dev (08/10): mở màn «Nhóm chat» thì cả ERP dev treo, mọi yêu cầu đứng chờ. Nguyên nhân là đường chuyển tiếp
+của ERP sang dịch vụ AI gọi chặn ngay trong luồng chính, nên trong lúc chờ ERP không phục vụ được gì, mà dịch vụ AI lại quay
+sang hỏi quyền «Quản lý nhóm chat của bot» ở chính ERP, thế là hai bên chờ nhau tới hết hai phút. Em cho lệnh gọi chạy ở luồng
+phụ để ERP vẫn trả lời được trong lúc chờ, và thêm bài kiểm nhắc lại đúng lỗi này (đỏ với mã cũ, xanh với mã mới).
+Mã nguồn: backend/app/modules/agent_gateway/proxy.py (run_in_threadpool) · test/backend/test_agent_hub_tach_dich_vu.py

@@ -14,6 +14,7 @@ import logging
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from starlette.concurrency import run_in_threadpool
 
 from app.core import agent_signature
 from app.core.auth import get_current_user, require
@@ -42,8 +43,11 @@ async def forward(request: Request, user_id: int) -> Response:
     if path.startswith("/api/mcp") and request.headers.get("authorization"):
         headers["authorization"] = request.headers["authorization"]
     try:
-        resp = requests.request(request.method, f"{base}{path}", params=request.url.query or None, data=body or None,
-                                headers=headers, timeout=TIMEOUT, allow_redirects=False)
+        #  Gọi trong luồng phụ, KHÔNG chặn vòng sự kiện: dịch vụ AI có thể quay lại hỏi ERP qua cổng B (vd quyền
+        #  `agent_group`, ai-CR-123) giữa lúc ERP đang chờ — gọi chặn thì ERP đứng hình, hai bên chờ nhau tới hết 120 giây
+        #  và mọi API khác của ERP cũng treo theo (gặp trên dev 08/10/2026).
+        resp = await run_in_threadpool(requests.request, request.method, f"{base}{path}", params=request.url.query or None,
+                                       data=body or None, headers=headers, timeout=TIMEOUT, allow_redirects=False)
     except requests.RequestException as e:
         log.warning("agent_proxy: không gọi được dịch vụ AI: %s", e)
         raise HTTPException(503, "Dịch vụ AI không phản hồi, thử lại sau ít phút") from None

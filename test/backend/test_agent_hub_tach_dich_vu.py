@@ -210,6 +210,58 @@ def test_che_do_erp_khong_gan_bot_va_cau_hinh_mode():
     assert agent_signature.body_digest(body) == agent_signature.body_digest(body.decode())
 
 
+def test_chuyen_tiep_khong_chan_vong_su_kien_cua_erp(monkeypatch):
+    """Lỗi dev 08/10/2026: proxy gọi dịch vụ AI bằng `requests` ngay trong hàm async → cả ERP đứng hình trong lúc chờ;
+    dịch vụ AI quay lại hỏi quyền ERP qua cổng B thì hai bên chờ nhau (mọi API ERP treo tới 120 giây). Lệnh gọi phải
+    chạy ở luồng phụ: trong lúc chờ, ERP vẫn phục vụ được việc khác."""
+    import asyncio
+    import time
+
+    from starlette.requests import Request
+
+    from app.modules.agent_gateway import proxy
+
+    monkeypatch.setattr(settings, "AGENT_SERVICE_SECRET", SECRET)
+    monkeypatch.setattr(settings, "AGENT_SERVICE_URL", "http://agent.test")
+
+    class R:
+        status_code = 200
+        content = b"{}"
+        headers = {"content-type": "application/json"}
+
+    def slow_request(*args, **kwargs):
+        time.sleep(0.4)  # dịch vụ AI chậm / đang chờ hỏi ngược ERP
+        return R()
+
+    monkeypatch.setattr(proxy.requests, "request", slow_request)
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    scope = {"type": "http", "method": "GET", "path": "/api/agent-hub/groups/meta", "query_string": b"", "headers": []}
+
+    async def main():
+        ticks = 0
+
+        async def other_work():
+            nonlocal ticks
+            for _ in range(20):
+                await asyncio.sleep(0.01)
+                ticks += 1
+
+        async def call_proxy():
+            resp = await proxy.forward(Request(scope, receive), 1)
+            return resp, ticks  # số nhịp việc khác đã chạy TỚI LÚC proxy xong
+
+        (resp, ticks_when_done), _ = await asyncio.gather(call_proxy(), other_work())
+        return resp, ticks_when_done
+
+    resp, ticks_when_done = asyncio.run(main())
+    assert resp.status_code == 200
+    #  Gọi chặn: vòng sự kiện đứng 0,4 giây, việc khác được 0–1 nhịp. Luồng phụ: việc khác chạy hết 20 nhịp trong lúc chờ.
+    assert ticks_when_done >= 15
+
+
 def test_nhan_su_nghi_erp_da_tach_bao_sang_dich_vu_ai(db, seed, monkeypatch):
     from datetime import datetime, timedelta
 
