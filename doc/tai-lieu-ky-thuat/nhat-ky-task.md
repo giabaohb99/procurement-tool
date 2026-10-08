@@ -12944,3 +12944,4 @@ nhận cả có dấu lẫn không dấu; chữ đệm như «tệp», «biên b
 hỏi; chọn mẫu biên bản cũng nhận chữ không dấu. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (parse_reply) · agent_hub/meeting_actions.py (parse_reply) · agent_hub/meetings.py (template_of, resolve_template) · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp 3c228a7f, sao lưu DB dev trước, dựng lại đủ 4 image); prod giữ lại.
