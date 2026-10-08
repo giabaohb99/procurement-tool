@@ -178,6 +178,21 @@ class _Local:
 
         return {s.skey: s.svalue for s in db.query(Setting).all()}
 
+    #  ai-CR-128: sổ JSON trong `tab_setting` mà bot đọc / ghi (thuật ngữ, đề xuất thuật ngữ, chỗ Trợ lý thiếu chức năng).
+    @staticmethod
+    def setting_raw_get(db, key: str) -> str:
+        from app.modules.setting.model import Setting
+
+        row = db.query(Setting).filter(Setting.skey == key).first()
+        return row.svalue if row is not None and row.svalue else ""
+
+    @staticmethod
+    def setting_raw_put(db, key: str, value: str, user_id: int) -> None:
+        from app.modules.setting import service as setting_service
+
+        setting_service._upsert(db, key, value, int(user_id or 0))
+        db.commit()
+
     # --- tạo phiếu từ nháp ---------------------------------------------------------------------------------------
     @staticmethod
     def create_draft(db, user, kind: str, draft: dict) -> tuple[str, int]:
@@ -415,6 +430,12 @@ class _Remote:
             log.warning("agent_hub erp: không lấy được cấu hình hệ thống, dùng .env: %s", e)
             return {}
 
+    def setting_raw_get(self, db, key: str) -> str:
+        return str((self._call("GET", "/settings/raw", params={"key": key}) or {}).get("value") or "")
+
+    def setting_raw_put(self, db, key: str, value: str, user_id: int) -> None:
+        self._call("PUT", "/settings/raw", user_id=int(user_id or 0), body={"key": key, "value": value})
+
     # --- công cụ của Trợ lý ---
     def tool_defs(self, db, user=None) -> list:
         from app.modules.assistant.provider.base import ToolDef
@@ -597,6 +618,18 @@ def caller_context(db, user) -> str | None:
 
 def glossary_block(db, texts: list[str]) -> str | None:
     return _impl().glossary_block(db, texts)
+
+
+#  Chỉ những khóa này đi qua cổng — cổng B không phải cửa sửa cấu hình tùy ý.
+SETTING_RAW_KEYS = ("assistant_glossary", "assistant_glossary_pending", "assistant_feature_gaps")
+
+
+def setting_raw_get(db, key: str) -> str:
+    return _impl().setting_raw_get(db, key)
+
+
+def setting_raw_put(db, key: str, value: str, user_id: int = 0) -> None:
+    _impl().setting_raw_put(db, key, value, user_id)
 
 
 def settings_snapshot(db=None) -> dict:

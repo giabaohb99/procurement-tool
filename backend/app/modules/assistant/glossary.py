@@ -32,24 +32,48 @@ def fold(text: str) -> str:
     return " ".join(re.sub(r"[^\w()\-]+", " ", s).split())
 
 
-def load(db: Session) -> list[dict]:
+def _read_raw(db: Session, key: str) -> str:
+    """Chuỗi JSON của một khóa `tab_setting`. ai-CR-128: ở DỊCH VỤ AI (DB riêng, không có `tab_setting`) đọc qua cổng B —
+    08/10 vòng tự học (`learning.tick`) đổ lỗi «Table 'agent_hub.tab_setting' doesn't exist» mỗi 5 phút."""
+    from app.core.config import settings
+
+    if settings.agent_is_service:
+        from app.modules.agent_hub import erp
+
+        return erp.setting_raw_get(db, key)
     from app.modules.setting.model import Setting
 
-    row = db.query(Setting).filter(Setting.skey == KEY).first()
-    if row is None or not row.svalue:
+    row = db.query(Setting).filter(Setting.skey == key).first()
+    return row.svalue if row is not None and row.svalue else ""
+
+
+def _write_raw(db: Session, key: str, value: str, user_id: int) -> None:
+    from app.core.config import settings
+
+    if settings.agent_is_service:
+        from app.modules.agent_hub import erp
+
+        erp.setting_raw_put(db, key, value, user_id)
+        return
+    from app.modules.setting import service as setting_service
+
+    setting_service._upsert(db, key, value, user_id)
+    db.commit()
+
+
+def load(db: Session) -> list[dict]:
+    raw = _read_raw(db, KEY)
+    if not raw:
         return []
     try:
-        items = json.loads(row.svalue)
+        items = json.loads(raw)
     except ValueError:
         return []
     return [i for i in items if isinstance(i, dict) and i.get("term") and i.get("meaning")]
 
 
 def _save(db: Session, items: list[dict], user_id: int) -> None:
-    from app.modules.setting import service as setting_service
-
-    setting_service._upsert(db, KEY, json.dumps(items, ensure_ascii=False), user_id)
-    db.commit()
+    _write_raw(db, KEY, json.dumps(items, ensure_ascii=False), user_id)
 
 
 def find(items: list[dict], term: str) -> dict | None:
@@ -140,21 +164,16 @@ def owner_user_id(db: Session) -> int:
 
 
 def _load_json(db: Session, key: str) -> list[dict]:
-    from app.modules.setting.model import Setting
-
-    row = db.query(Setting).filter(Setting.skey == key).first()
+    raw = _read_raw(db, key)
     try:
-        items = json.loads(row.svalue) if row is not None and row.svalue else []
+        items = json.loads(raw) if raw else []
     except ValueError:
         items = []
-    return [i for i in items if isinstance(i, dict)]
+    return [i for i in items if isinstance(i, dict)] if isinstance(items, list) else []
 
 
 def _save_json(db: Session, key: str, items: list[dict], user_id: int) -> None:
-    from app.modules.setting import service as setting_service
-
-    setting_service._upsert(db, key, json.dumps(items, ensure_ascii=False), user_id)
-    db.commit()
+    _write_raw(db, key, json.dumps(items, ensure_ascii=False), user_id)
 
 
 def load_pending(db: Session, *, only_open: bool = True) -> list[dict]:

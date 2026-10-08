@@ -214,6 +214,7 @@ ACT_WAIT_DEPLOY_TIME = "cho_hen_gio"
 #  đẻ thành VIỆC MỚI, việc cũ treo ở «Đang hỏi lại». Nay tin kế sau dấu chờ gắn thẳng vào việc.
 ACT_WAIT_PLAN_ANSWER = "cho_tra_loi_kh"   # Tin bot: thẻ kế hoạch đang hỏi lại / mời nói rõ thêm
 ACT_PLAN_ANSWER = "tra_loi_kh"            # Tin đại ca: câu trả lời, đã gắn vào việc + lập lại kế hoạch
+ACT_REPLAN_RESUME = "lap_lai_kh"          # Tin bot (ai-CR-127): lượt lập lại kế hoạch bị ngắt, đang làm lại
 ACT_DEPLOY_TIME = "hen_gio"       # Tin đại ca: giờ hẹn gộp + deploy, đã ghi vào sổ lượt chạy
 #  ai-CR-021: tin bot báo đã nhận việc, và tin báo việc đang chạy (bot sửa lại chính tin đó để
 #  cập nhật số phút). Hai loại này KHÔNG phải một lượt hội thoại: các mạch nối tin «ngay trước»

@@ -55,6 +55,7 @@ from .constants import (
     SCOPE_PERSONAL,
     ACT_PATCH_Q,
     ACT_PLAN_ANSWER,
+    ACT_REPLAN_RESUME,
     ACT_PROPOSAL,
     ACT_PROPOSAL_DONE,
     ACT_PROPOSAL_DROPPED,
@@ -1377,6 +1378,8 @@ def _active_stage(db: Session, task: AgentTask) -> tuple[str, datetime | None]:
 #  ai-CR-127: lượt lập lại kế hoạch chạy NGAY trong tiến trình nhận tin; bot bị dựng lại giữa chừng (deploy dev) thì lượt
 #  đó mất hẳn — 08/10 đại ca trả lời AI-0005 lúc 16:45, Agent 1 dựng lại bot lúc 16:47, việc nằm im ở «Đang hỏi lại».
 REPLAN_RESUME_AFTER = timedelta(minutes=3)
+#  Nhặt lại một lần rồi mà vẫn không ra lượt lập kế hoạch nào (lần nhặt cũng bị ngắt) thì chờ chừng này mới thử lần nữa.
+REPLAN_RESUME_RETRY = timedelta(minutes=15)
 
 
 def resume_lost_replans(db: Session, now: datetime | None = None) -> int:
@@ -1396,10 +1399,17 @@ def resume_lost_replans(db: Session, now: datetime | None = None) -> int:
                                                   AgentRun.started_at >= ans.created_at).limit(1))
         if ran is not None:
             continue                                # đã lập (xong hoặc hỏng có ghi sổ) — không lặp
+        #  Đã nhặt lại rồi mà lượt đó còn đang chạy (dòng sổ chỉ ghi lúc xong): vòng beat kế tiếp không nhặt lần hai —
+        #  08/10 tin «bị ngắt, em làm lại» tới hai lần, 17:00 và 17:01.
+        again = db.scalar(select(AgentMessage.created_at).where(
+            AgentMessage.task_id == task.id, AgentMessage.action == ACT_REPLAN_RESUME,
+            AgentMessage.id > ans.id).order_by(AgentMessage.id.desc()).limit(1))
+        if again is not None and now - again < REPLAN_RESUME_RETRY:
+            continue
         log.warning("agent_hub: %s — lượt lập lại kế hoạch sau câu trả lời bị ngắt, làm lại", task.code)
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
               f"<b>{telegram.esc(task.code)}</b>: lượt lập lại kế hoạch sau câu trả lời của đại ca bị ngắt giữa chừng "
-              "(bot vừa được cập nhật), em làm lại ngay.", task_id=task.id)
+              "(bot vừa được cập nhật), em làm lại ngay.", task_id=task.id, action=ACT_REPLAN_RESUME)
         db.commit()
         plan_task(db, task)
         resumed += 1

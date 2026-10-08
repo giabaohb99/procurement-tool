@@ -9483,6 +9483,12 @@ def test_tra_loi_xong_ma_luot_lap_ke_hoach_bi_ngat_thi_vong_beat_lam_lai(db, bot
     assert service.resume_lost_replans(db, now=at + timedelta(minutes=2)) == 0 and planned == []
     assert service.resume_lost_replans(db, now=at + timedelta(minutes=4)) == 1 and planned == [task.id]
     assert "bị ngắt giữa chừng" in sent[-1]
+    #  Lượt vừa nhặt còn đang chạy (dòng sổ chỉ ghi lúc xong): vòng beat kế tiếp không nhặt lần hai (08/10 báo hai tin).
+    resumed_at = db.query(AgentMessage).filter_by(action=service.ACT_REPLAN_RESUME).one().created_at
+    assert service.resume_lost_replans(db, now=resumed_at + timedelta(minutes=1)) == 0 and planned == [task.id]
+    #  Lần nhặt đó cũng bị ngắt (không ra dòng sổ nào) → 15 phút sau thử lại.
+    assert service.resume_lost_replans(db, now=resumed_at + timedelta(minutes=16)) == 1 and planned == [task.id] * 2
+    planned.pop()
     #  Đã có lượt lập kế hoạch sau câu trả lời (xong hay hỏng đều có dòng sổ) → không làm lại lần nữa.
     db.add(AgentRun(task_id=task.id, stage=service.STAGE_PLAN, status=2, started_at=at + timedelta(minutes=4),
                     created_by=0, updated_by=0))

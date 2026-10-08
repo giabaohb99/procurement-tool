@@ -98,6 +98,31 @@ def settings_snapshot(_: int = Depends(gateway_signed), db: Session = Depends(ge
     return success(L.settings_snapshot(db))
 
 
+class SettingRawIn(BaseModel):
+    key: str = Field(max_length=60)
+    value: str = Field(max_length=512_000)
+
+
+def _raw_key(key: str) -> str:
+    from app.modules.agent_hub.erp import SETTING_RAW_KEYS
+
+    if key not in SETTING_RAW_KEYS:
+        raise HTTPException(403, "Khóa cấu hình này không mở qua cổng")
+    return key
+
+
+@router.get("/settings/raw")
+def setting_raw_get(key: str = Query(max_length=60), _: int = Depends(gateway_signed), db: Session = Depends(get_db)):
+    """ai-CR-128: sổ JSON trong tab_setting mà bot đọc (thuật ngữ, đề xuất thuật ngữ, chỗ Trợ lý thiếu chức năng)."""
+    return success({"value": L.setting_raw_get(db, _raw_key(key))})
+
+
+@router.put("/settings/raw")
+def setting_raw_put(body: SettingRawIn, user_id: int = Depends(gateway_signed), db: Session = Depends(get_db)):
+    L.setting_raw_put(db, _raw_key(body.key), body.value, user_id)
+    return success(None)
+
+
 class GlossaryIn(BaseModel):
     texts: list[str] = Field(default_factory=list, max_length=10)
 

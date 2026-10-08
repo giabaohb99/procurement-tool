@@ -325,3 +325,23 @@ def test_nhan_su_nghi_erp_da_tach_bao_sang_dich_vu_ai(db, seed, monkeypatch):
     erp_app.include_router(proxy.router)
     erp_app.dependency_overrides[get_current_user] = lambda: db.get(User, seed.u_req_id)
     assert TestClient(erp_app).post("/api/agent-hub/internal/revoke", json={"user_id": 1}).status_code == 404
+
+
+def test_so_thuat_ngu_va_cho_thieu_chuc_nang_di_qua_cong_o_dich_vu_ai(db, gateway):
+    """ai-CR-128: dịch vụ AI không có `tab_setting` — 08/10 vòng tự học đổ lỗi «Table 'agent_hub.tab_setting' doesn't
+    exist» mỗi 5 phút. Ba sổ JSON (thuật ngữ, đề xuất thuật ngữ, chỗ Trợ lý thiếu chức năng) đi qua cổng B."""
+    from app.modules.agent_hub import erp, learning
+    from app.modules.assistant import feedback, glossary
+
+    glossary.propose(db, "nhà máy", "phòng Dego Organic", user_id=3)
+    assert [i["term"] for i in glossary.load_pending(db)] == ["nhà máy"]
+    feedback.report(db, request="đơn của nhà máy", missing="lọc theo phòng")
+    assert feedback.load(db)[0]["count"] == 1
+    assert ("PUT", "/api/agent-gw/settings/raw") in gateway and ("GET", "/api/agent-gw/settings/raw") in gateway
+    assert learning.tick(db) == {"gap_tasks": 0}                 # chưa đủ hai lần thì chưa mở việc, nhưng không lỗi
+    #  Cổng chỉ mở đúng ba khóa — không phải cửa đọc / sửa cấu hình tùy ý.
+    with pytest.raises(erp.ErpError):
+        erp.setting_raw_get(db, "jwt_secret")
+    with pytest.raises(erp.ErpError):
+        erp.setting_raw_put(db, "ai_daily_msg_limit", "0", 1)
+

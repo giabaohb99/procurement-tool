@@ -13082,3 +13082,14 @@ Em cũng bớt tin «Zalo đã kết nối»: chỉ báo khi vừa quét mã ho�
 máy chủ. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (resume_lost_replans) · tasks.py (heartbeat_task) · zalo-listener/index.mjs · test/backend/test_agent_hub.py
+
+## ai-CR-128 | Dịch vụ AI đọc sổ thuật ngữ qua cổng ERP và không báo làm lại kế hoạch hai lần
+- status: dang-lam
+- date: 2026-10-08
+Sau khi tách dịch vụ AI, vòng tự học của bot vẫn đọc sổ thuật ngữ và sổ chỗ Trợ lý thiếu chức năng thẳng từ bảng cấu hình của
+ERP, mà cơ sở dữ liệu riêng của dịch vụ AI không có bảng đó nên cứ năm phút lại báo lỗi. Nay ba sổ này đi qua cổng có chữ ký
+của ERP, cổng chỉ mở đúng ba khóa đó. Em cũng chặn việc bot báo «lượt lập kế hoạch bị ngắt, em làm lại» hai lần liền: đã nhặt
+lại một lần thì mười lăm phút sau mới thử lại nếu vẫn chưa có kết quả. Một dòng sổ chạy kẹt từ ngày 05/10 của việc đã bỏ cũng
+được dọn trên dev.
+
+Mã nguồn: backend/app/modules/assistant/glossary.py · agent_hub/erp.py · agent_gateway/controller.py · agent_hub/service.py · constants.py · test/backend/test_agent_hub_tach_dich_vu.py · test_agent_hub.py
