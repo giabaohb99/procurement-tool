@@ -262,6 +262,27 @@ def test_chuyen_tiep_khong_chan_vong_su_kien_cua_erp(monkeypatch):
     assert ticks_when_done >= 15
 
 
+def test_dich_vu_ai_rieng_dung_duoc_moi_quan_he_model():
+    """Lỗi dev 08/10/2026: `app.agent_main` (AGENT_MODE=service) nạp model ERP `Employee` / `User` mà không nạp `Department`,
+    `Company` → SQLAlchemy dựng quan hệ hỏng ở lần truy vấn đầu và hỏng luôn: danh sách nhóm, lịch sử hội thoại… đều 500.
+    Bộ test thường nạp ĐỦ model (conftest) nên không thấy — phải chạy đúng như dịch vụ khởi động: tiến trình riêng."""
+    import os
+    import subprocess
+    import sys
+
+    code = ("import app.agent_main as m\n"
+            "from sqlalchemy.orm import configure_mappers\n"
+            "configure_mappers()\n"
+            "print('OK', type(m.app).__name__)\n")
+    #  Gốc mã backend: thư mục chứa gói `app` (trong container api là /app, bài kiểm nằm ở /app/test/backend)
+    backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    if not os.path.isdir(os.path.join(backend_root, "app")):
+        backend_root = os.path.join(backend_root, "backend")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120,
+                         env={**os.environ, "AGENT_MODE": "service"}, cwd=backend_root)
+    assert "OK FastAPI" in out.stdout, out.stderr[-1500:]
+
+
 def test_nhan_su_nghi_erp_da_tach_bao_sang_dich_vu_ai(db, seed, monkeypatch):
     from datetime import datetime, timedelta
 

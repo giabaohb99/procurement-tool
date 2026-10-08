@@ -13029,3 +13029,9 @@ của ERP sang dịch vụ AI gọi chặn ngay trong luồng chính, nên trong
 sang hỏi quyền «Quản lý nhóm chat của bot» ở chính ERP, thế là hai bên chờ nhau tới hết hai phút. Em cho lệnh gọi chạy ở luồng
 phụ để ERP vẫn trả lời được trong lúc chờ, và thêm bài kiểm nhắc lại đúng lỗi này (đỏ với mã cũ, xanh với mã mới).
 Mã nguồn: backend/app/modules/agent_gateway/proxy.py (run_in_threadpool) · test/backend/test_agent_hub_tach_dich_vu.py
+
+Vá lần hai cùng ngày: hết treo rồi thì danh sách nhóm và lịch sử hội thoại Trợ lý AI trên web vẫn báo lỗi. Dịch vụ AI chạy
+riêng chỉ nạp một phần dữ liệu mẫu của ERP: có Nhân sự và Tài khoản nhưng thiếu Phòng ban và Pháp nhân mà hai cái kia trỏ
+tới, nên lần truy vấn đầu tiên hỏng và hỏng luôn cho tới khi khởi động lại. Em nạp thêm hai mẫu đó lúc dịch vụ AI khởi động
+và thêm bài kiểm chạy đúng như dịch vụ khởi động (đỏ với mã cũ, xanh với mã mới). Tiến trình worker, beat, poller đã kiểm, không bị.
+Mã nguồn: backend/app/agent_main.py · test/backend/test_agent_hub_tach_dich_vu.py
