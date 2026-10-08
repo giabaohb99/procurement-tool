@@ -12978,3 +12978,4 @@ lý trả lời theo tài liệu hướng dẫn. Danh sách câu lệnh nằm �
 bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/user_guide.py (mới) · agent_hub/service.py (_guide_by_text, _send_guide) · agent_hub/policy.py · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp c23d7f82, dựng lại stack agent-hub và stack ERP dev); prod giữ lại.
