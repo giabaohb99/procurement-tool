@@ -1,6 +1,7 @@
 import { TONE_CLASS } from '@/shared/ui/status-tone'
+import { formatDate } from '@/shared/utils/format-date'
 
-import type { ChatGroupItem, ZaloAccountStatus } from '../api/chat-group-api'
+import type { ChatGroupItem, ChatGroupMessage, ZaloAccountStatus } from '../api/chat-group-api'
 
 /** Tông màu từng kênh — ba kênh nằm cạnh nhau trong cùng một bảng nên phải khác màu hẳn. */
 const CHANNEL_TONE: Record<string, string> = {
@@ -63,3 +64,80 @@ export function toQrImageSrc(raw: string | null | undefined): string {
   if (!/^[A-Za-z0-9+/=\s]+$/.test(value)) return ''
   return `data:image/png;base64,${value.replace(/\s+/g, '')}`
 }
+
+// ---------------------------------------------------------------------------
+// Khung chat của nhóm (dựng theo khung hội thoại của Trợ lý AI)
+// ---------------------------------------------------------------------------
+/** Hai tin cùng người gửi cách nhau quá chừng này thì vẽ lại tên + giờ. */
+const SAME_RUN_MS = 5 * 60 * 1000
+
+export type GroupThreadItem =
+  | { kind: 'day'; key: string; label: string }
+  | { kind: 'message'; key: string; message: ChatGroupMessage; showHeader: boolean }
+
+function toMillis(value: string | null): number {
+  if (!value) return Number.NaN
+  //  Máy chủ trả giờ UTC trần (không `Z`) — cùng quy ước `shared/utils/format-date.ts`.
+  const hasZone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(value)
+  return new Date(hasZone ? value : `${value}Z`).getTime()
+}
+
+function dayLabel(day: string, now: Date): string {
+  if (day === formatDate(now)) return 'Hôm nay'
+  if (day === formatDate(new Date(now.getTime() - 24 * 60 * 60 * 1000))) return 'Hôm qua'
+  return day
+}
+
+/**
+ * Tin nhóm (máy chủ trả mới nhất trước, nhiều trang) → dòng hiển thị theo thứ tự đọc: cũ trên, mới dưới, có vạch ngày
+ * và gộp các tin liên tiếp của cùng một người (chỉ tin đầu cụm có tên + giờ, như Zalo / Telegram).
+ */
+export function buildGroupThread(messages: ChatGroupMessage[], now: Date = new Date()): GroupThreadItem[] {
+  const ordered = [...new Map(messages.map((m) => [m.id, m])).values()].sort((a, b) => a.id - b.id)
+  const out: GroupThreadItem[] = []
+  let lastDay = ''
+  let lastSender = ''
+  let lastAt = Number.NaN
+  for (const m of ordered) {
+    const day = m.sent_at ? formatDate(m.sent_at) : ''
+    const at = toMillis(m.sent_at)
+    if (day && day !== lastDay) {
+      out.push({ kind: 'day', key: `day-${day}`, label: dayLabel(day, now) })
+      lastDay = day
+      lastSender = ''
+    }
+    const sameRun =
+      m.from_name === lastSender && Number.isFinite(at) && Number.isFinite(lastAt) && at - lastAt <= SAME_RUN_MS
+    out.push({ kind: 'message', key: `m-${m.id}`, message: m, showHeader: !sameRun })
+    lastSender = m.from_name
+    lastAt = at
+  }
+  return out
+}
+
+/** Chữ trên ô ảnh đại diện: chữ đầu của hai từ cuối («Trần Được» → «TĐ», «Pltgiang» → «P»). */
+export function getInitials(name: string | null | undefined): string {
+  const words = (name ?? '').trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return '?'
+  return words
+    .slice(-2)
+    .map((w) => w[0]?.toLocaleUpperCase('vi-VN') ?? '')
+    .join('')
+}
+
+const AVATAR_TONES = [
+  TONE_CLASS.progress,
+  TONE_CLASS.done,
+  TONE_CLASS.handoff,
+  TONE_CLASS.active,
+  TONE_CLASS.partial,
+  TONE_CLASS.returned,
+]
+
+/** Màu ô ảnh đại diện cố định theo tên — cùng một người luôn cùng một màu. */
+export function getAvatarTone(name: string | null | undefined): string {
+  let h = 0
+  for (const ch of name ?? '') h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return AVATAR_TONES[h % AVATAR_TONES.length] ?? TONE_CLASS.neutral
+}
+

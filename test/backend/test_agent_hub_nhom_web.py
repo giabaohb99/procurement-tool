@@ -83,6 +83,11 @@ def test_nguoi_thuong_chi_thay_nhom_minh_quan_ly_ai_thay_het_co_nhat_ky(db, seed
     assert client.get("/api/agent-hub/groups").json()["data"]["items"] == []          # «của tôi» vẫn là của tôi
     msgs = client.get(f"/api/agent-hub/groups/{other.id}/messages").json()["data"]
     assert msgs["items"][0]["text"] == "lương tháng 10" and msgs["items"][0]["from_name"] == "Sếp"
+    #  Giờ trả cho web là UTC trần, giao diện tự đổi sang giờ VN — đổi ở máy chủ là lệch 7 tiếng hai lần (08/10: tin
+    #  16:37 hiện 23:37).
+    from app.modules.agent_hub.model import AgentGroupMessage
+    stored = db.query(AgentGroupMessage).filter_by(group_id=other.id).one().sent_at
+    assert msgs["items"][0]["sent_at"] == stored.isoformat()
     log = db.query(AgentGroupView).all()
     assert [(v.group_id, v.user_id, v.what) for v in log] == [(other.id, seed.u_nstm_id, "tin nhắn")]
     views = client.get(f"/api/agent-hub/groups/{other.id}/views").json()["data"]["items"]

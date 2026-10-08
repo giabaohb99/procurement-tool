@@ -344,7 +344,6 @@ def list_for_web(db: Session, user_id: int, *, manager: bool, scope: str = "mine
     out = []
     for g, member in picked:
         n, nf, last = counts.get(g.id, (0, 0, None))
-        last_local = to_local(last) if last else None
         ch = channel_of(g)
         out.append({
             "id": g.id, "title": g.title, "channel": ch, "channel_label": CHANNEL_LABELS[ch],
@@ -354,16 +353,18 @@ def list_for_web(db: Session, user_id: int, *, manager: bool, scope: str = "mine
             "owner_user_id": int(g.owner_user_id or 0),
             "members_count": len(g.members) if g.members is not None else None,
             "message_count": n, "file_count": nf,
-            "last_message_at": last_local.isoformat() if last_local else None,
+            "last_message_at": last.isoformat() if last else None,
             "joined_at": g.joined_at.isoformat() if g.joined_at else None,
         })
     return out
 
 
 def _message_dict(r: AgentGroupMessage) -> dict:
-    when = to_local(r.sent_at) if r.sent_at else None
+    #  Màn web nhận giờ UTC trần (giao diện tự đổi sang giờ VN, `shared/utils/format-date.ts`) — đổi ở đây là lệch 7
+    #  tiếng hai lần (gặp 08/10: tin 16:37 hiện 23:37).
     f = r.file or None
-    return {"id": r.id, "from_name": r.from_name, "text": r.text, "sent_at": when.isoformat() if when else None,
+    return {"id": r.id, "from_name": r.from_name, "text": r.text,
+            "sent_at": r.sent_at.isoformat() if r.sent_at else None,
             "file": ({"name": f.get("name"), "kind": f.get("kind"), "mime": f.get("mime") or "",
                       "size": int(f.get("size") or 0)} if f else None)}
 
@@ -404,7 +405,7 @@ def summaries(db: Session, group: AgentGroup, *, limit: int = 50) -> list[dict]:
                       .order_by(AgentGroupSummary.id.desc()).limit(max(1, min(int(limit), 200))))
     out = []
     for r in rows:
-        when = to_local(r.created_at) if r.created_at else None
+        when = r.created_at
         out.append({"id": r.id, "user_id": int(r.user_id or 0), "source": int(r.source or 1),
                     "hours": int(r.hours or 24), "question": r.question, "text": r.text,
                     "created_at": when.isoformat() if when else None})
@@ -418,7 +419,7 @@ def views(db: Session, group: AgentGroup, *, limit: int = 100) -> list[dict]:
                       .order_by(AgentGroupView.id.desc()).limit(max(1, min(int(limit), 500))))
     out = []
     for r in rows:
-        when = to_local(r.created_at) if r.created_at else None
+        when = r.created_at
         out.append({"id": r.id, "user_id": int(r.user_id or 0), "what": r.what,
                     "at": when.isoformat() if when else None})
     return out

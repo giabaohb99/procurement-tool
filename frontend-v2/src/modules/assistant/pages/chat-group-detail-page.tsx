@@ -20,6 +20,8 @@ import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 
 import { chatGroupApi, type ChatGroupItem, type ChatGroupMessage } from '../api/chat-group-api'
+import { AssistantAvatar } from '../components/assistant-avatar'
+import { GroupChatThread } from '../components/group-chat-thread'
 import { MarkdownMessage } from '../components/markdown-message'
 import {
   useChatGroup,
@@ -100,8 +102,8 @@ export function ChatGroupDetailPage() {
           <TabsTrigger value="summaries">Bản tóm tắt</TabsTrigger>
           {canViewAll && <TabsTrigger value="views">Nhật ký xem</TabsTrigger>}
         </TabsList>
-        <TabsContent value="messages">
-          <MessageList groupId={group.id} />
+        <TabsContent value="messages" className="mt-3">
+          <GroupChatThread groupId={group.id} />
         </TabsContent>
         <TabsContent value="files">
           <MessageList groupId={group.id} filesOnly />
@@ -191,6 +193,7 @@ interface MessageListProps {
   filesOnly?: boolean
 }
 
+/** Tab «Tệp»: chỉ các tin có tệp, mới nhất trước. Tin nhắn thường xem ở khung chat (`GroupChatThread`). */
 function MessageList({ groupId, filesOnly = false }: MessageListProps) {
   const [search, setSearch] = useState('')
   const q = useDebouncedValue(search, 300).trim()
@@ -319,17 +322,29 @@ function SummaryList({ groupId }: { groupId: number }) {
             sẽ được lưu ở đây.
           </p>
         )}
-        {items.map((s) => (
-          <div key={s.id} className="rounded-md border p-3">
-            <div className="mb-2 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{s.user_label || '—'}</span>
-              <span>{formatDateTime(s.created_at)}</span>
-              <span>{s.source === 2 ? 'nút Tóm tắt' : 'hỏi bot / Trợ lý'}</span>
-              {s.question && <span className="italic">«{s.question}»</span>}
+        {/*  Mỗi bản tóm tắt dựng như một lượt hỏi–đáp của Trợ lý AI: câu hỏi là bong bóng bên phải, câu trả lời
+             là chữ trên nền trang kèm dấu Trợ lý. */}
+        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+          {items.map((s) => (
+            <div key={s.id} className="flex flex-col gap-3">
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-xs text-muted-foreground">
+                  {s.user_label || '—'} · {formatDateTime(s.created_at)} ·{' '}
+                  {s.source === 2 ? 'nút Tóm tắt' : 'hỏi bot / Trợ lý'}
+                </span>
+                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-sm whitespace-pre-wrap text-accent-foreground">
+                  {s.question || `Tóm tắt ${s.hours} giờ qua`}
+                </div>
+              </div>
+              <div className="flex gap-3 max-md:gap-0">
+                <span className="max-md:hidden">
+                  <AssistantAvatar />
+                </span>
+                <MarkdownMessage content={s.text} className="min-w-0 flex-1 text-sm text-foreground" />
+              </div>
             </div>
-            <MarkdownMessage content={s.text} className="text-sm" />
-          </div>
-        ))}
+          ))}
+        </div>
       </CardContent>
     </Card>
   )

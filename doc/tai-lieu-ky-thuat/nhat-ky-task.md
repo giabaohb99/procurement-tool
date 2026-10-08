@@ -13059,3 +13059,15 @@ không còn bị gắn vào thẻ đang hỏi lại. Em cũng đã thử thật 
 sau máy tự kéo đúng bản của bot rồi khởi động lại. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_task_code_in, is_greeting, route_task_command) · test/backend/test_agent_hub.py
+
+## ai-CR-126 | Màn Nhóm chat hiện tin nhắn kiểu khung chat của Trợ lý AI và đúng giờ Việt Nam
+- status: dang-lam
+- date: 2026-10-08
+Đại ca thấy phần tin nhắn trong màn Nhóm chat xấu và giờ bị lệch (tin lúc 16:37 hiện 23:37). Em dựng lại tab tin nhắn theo
+đúng kiểu khung hội thoại của Trợ lý AI: bong bóng bo tròn, tin cũ ở trên tin mới ở dưới, có vạch ngày, tin liên tiếp của
+cùng một người gộp lại, mỗi người một ô chữ cái và màu riêng, tệp hiện thành nút bấm để tải; xem tin cũ hơn thì không bị
+giật về cuối. Bản tóm tắt cũng hiện như một lượt hỏi và trả lời của Trợ lý. Lỗi lệch giờ do máy chủ đã đổi sang giờ Việt
+Nam trong khi giao diện lại đổi thêm lần nữa; nay máy chủ trả giờ chuẩn như các màn khác. Bài kiểm máy chủ và giao diện chạy
+xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/groups.py · frontend-v2/src/modules/assistant/components/group-chat-thread.tsx · utils/chat-group-format.ts · pages/chat-group-detail-page.tsx · test/backend/test_agent_hub_nhom_web.py
