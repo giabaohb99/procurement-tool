@@ -12992,3 +12992,4 @@ cập nhật, chia vài nhóm có nhãn đậm, số liệu in đậm, số ngu�
 ý; danh sách nguồn gọn lại một dòng theo tên trang. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/user_guide.py · agent_hub/research.py (_COMMON, _ANALYSIS, sources_markdown) · agent_hub/service.py · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp 7d63c08c, dựng lại stack agent-hub); prod giữ lại.
