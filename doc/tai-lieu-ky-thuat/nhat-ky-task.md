@@ -12932,3 +12932,4 @@ Docs; thẻ báo chia hai nhóm ghi âm và tài liệu, đánh số chung. Ngư
 được sửa theo. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (read_docs, is_media) · agent_hub/google_link.py (export_text) · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp 6b1d5e6a, sao lưu DB dev trước, dựng lại đủ 4 image); prod giữ lại.
