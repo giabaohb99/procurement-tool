@@ -334,10 +334,20 @@ def zalo_account_report() -> str:
 
 
 def _zalo_command(db: Session, chat_id: str, text: str) -> None:
-    """`/zalo` — trạng thái; `/zalo dangnhap` — xin mã QR; `/zalo nhom` — đồng bộ lại danh sách nhóm + thành viên."""
+    """`/zalo` — trạng thái; `/zalo dangnhap` — xin mã QR; `/zalo nhom` — đồng bộ lại danh sách nhóm + thành viên;
+    `/zalo dangxuat` — ngắt + xóa phiên (đổi tài khoản, ai-CR-129)."""
     from . import zalo_account
 
     arg = text.strip()[5:].strip().lower()
+    if arg.startswith(("dangxuat", "logout", "doitaikhoan")):
+        try:
+            zalo_account.logout()
+        except zalo_account.ZaloAccountError as e:
+            reply(db, chat_id, f"Không đăng xuất được Zalo: {e}")
+            return
+        reply(db, chat_id, "Đã đăng xuất Zalo và xóa phiên đã lưu. Nhắn <code>/zalo dangnhap</code> để quét bằng tài khoản "
+                           "công ty.")
+        return
     if arg.startswith(("dangnhap", "login", "qr")):
         try:
             zalo_account.request_login()

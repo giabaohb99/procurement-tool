@@ -328,3 +328,8 @@ def status() -> dict:
 
 def refresh_groups() -> dict:
     return _request("POST", "/groups/refresh", body={})
+
+
+def logout() -> dict:
+    """Ngắt phiên + xóa phiên đã lưu (ai-CR-129). Muốn dùng tiếp thì quét QR lại — đổi tài khoản cũng đi đường này."""
+    return _request("POST", "/logout", body={})

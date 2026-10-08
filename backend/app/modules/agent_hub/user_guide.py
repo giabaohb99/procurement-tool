@@ -119,7 +119,8 @@ SECTIONS: tuple[Section, ...] = (
         ("lịch sử deploy dev", ""),
         ("deploy dev mới nhất", ""),
         ("tháng này bot tốn bao nhiêu", ""),
-        ("/zalo", "tình trạng tài khoản Zalo công ty; «/zalo dangnhap» lấy mã QR, «/zalo nhom» đồng bộ nhóm"),
+        ("/zalo", "tình trạng tài khoản Zalo công ty; «/zalo dangnhap» lấy mã QR, «/zalo nhom» đồng bộ nhóm, "
+                  "«/zalo dangxuat» đăng xuất / đổi tài khoản"),
     ), admin_only=True),
 )
 

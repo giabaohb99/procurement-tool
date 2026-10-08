@@ -96,6 +96,15 @@ export function useZaloLogin() {
   })
 }
 
+/** ai-CR-129: đăng xuất / đổi tài khoản Zalo công ty. */
+export function useZaloLogout() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: chatGroupApi.zaloLogout,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.assistant.zaloStatus() }),
+  })
+}
+
 export function useZaloRefreshGroups() {
   const qc = useQueryClient()
   return useMutation({

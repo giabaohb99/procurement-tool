@@ -294,6 +294,18 @@ function stopListener() {
   api = null;
 }
 
+// ai-CR-129: đăng xuất / đổi tài khoản — ngắt phiên, XÓA phiên đã lưu, quên tên + nhóm. Lần đăng nhập sau phải quét QR.
+// 08/10: đại ca lỡ quét bằng Zalo cá nhân, bot không có cách nào bỏ phiên đó ngoài vào máy chủ xóa tệp.
+async function logout() {
+  clearTimeout(reloginTimer);
+  reloginTimer = null;
+  stopListener();
+  await fs.rm(SESSION_FILE, { force: true });
+  groupNames.clear();
+  Object.assign(state, { name: "", uid: "", groups: null, reason: "", qr: "" });
+  setState("idle");
+}
+
 async function loginQR() {
   if (loggingIn) return;
   loggingIn = true;
@@ -437,6 +449,10 @@ async function handle(req, res) {
     if (state.value === "connected") return reply(res, 200, { ok: true, state: state.value });
     loginQR();
     return reply(res, 200, { ok: true, state: "qr" });
+  }
+  if (req.method === "POST" && url.pathname === "/logout") {
+    await logout();
+    return reply(res, 200, { ok: true, state: state.value });
   }
   if (req.method === "POST" && url.pathname === "/groups/refresh") {
     syncGroups().catch((e) => log("đồng bộ nhóm hỏng:", e?.message || e));

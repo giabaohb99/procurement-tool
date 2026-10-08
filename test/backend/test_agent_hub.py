@@ -9375,6 +9375,10 @@ def test_zalo_tk_cong_ty_qr_trang_thai_va_lenh_cua_dai_ca(db, bot, monkeypatch):
     assert asked_login == [1] and "mã QR" in sent[-1]
     service.handle_message(db, _msg("/zalo"))
     assert "đang kết nối" in sent[-1] and "DEGO Bot" in sent[-1] and "Số nhóm đang ở: 3" in sent[-1]
+    outs: list[int] = []
+    monkeypatch.setattr(za, "logout", lambda: outs.append(1) or {"ok": True})
+    service.handle_message(db, _msg("/zalo dangxuat"))
+    assert outs == [1] and "Đã đăng xuất Zalo" in sent[-1]
     monkeypatch.setattr(settings, "AGENT_ZALO_LISTENER_URL", "")
     service.handle_message(db, _msg("/zalo"))
     assert "TẮT" in sent[-1]

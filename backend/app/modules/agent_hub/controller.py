@@ -645,6 +645,18 @@ def zalo_login(user=Depends(require(GROUP_ENTITY, "write"))):
     return success(None, "Đang lấy mã QR — quét bằng điện thoại giữ số Zalo công ty")
 
 
+@router.post("/zalo/logout")
+def zalo_logout(user=Depends(require(GROUP_ENTITY, "write"))):
+    """ai-CR-129: ngắt + xóa phiên Zalo công ty (đổi tài khoản). Tin đã ghi giữ nguyên."""
+    from . import zalo_account
+
+    try:
+        zalo_account.logout()
+    except zalo_account.ZaloAccountError as e:
+        raise HTTPException(409, str(e)) from None
+    return success(None, "Đã đăng xuất Zalo — quét QR để đăng nhập tài khoản khác")
+
+
 @router.post("/zalo/refresh-groups")
 def zalo_refresh_groups(user=Depends(require(GROUP_ENTITY, "write"))):
     from . import zalo_account

@@ -1,14 +1,15 @@
-import { QrCode, RefreshCw, Smartphone } from 'lucide-react'
+import { LogOut, QrCode, RefreshCw, Smartphone } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { extractErrorMessage } from '@/core/api'
 import { Button } from '@/shared/ui/button'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { Card } from '@/shared/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { cn } from '@/shared/utils/cn'
 
-import { useZaloLogin, useZaloRefreshGroups, useZaloStatus } from '../hooks/use-chat-groups'
+import { useZaloLogin, useZaloLogout, useZaloRefreshGroups, useZaloStatus } from '../hooks/use-chat-groups'
 import { describeZaloState, toQrImageSrc } from '../utils/chat-group-format'
 
 interface ZaloAccountCardProps {
@@ -27,9 +28,24 @@ export function ZaloAccountCard({ canManage }: ZaloAccountCardProps) {
   const status = useZaloStatus(true)
   const login = useZaloLogin()
   const refresh = useZaloRefreshGroups()
+  const logout = useZaloLogout()
   const view = describeZaloState(status.data)
   const qrSrc = toQrImageSrc(status.data?.qr_image)
   const connected = status.data?.state === 'connected'
+
+  /** ai-CR-129: ngắt + xóa phiên đang giữ (lỡ quét nhầm tài khoản, đổi số). Tin đã ghi giữ nguyên. */
+  const signOut = async () => {
+    const ok = await confirm({
+      title: 'Đăng xuất Zalo',
+      message: `Ngắt phiên Zalo «${status.data?.name || 'tài khoản hiện tại'}» và xóa phiên đã lưu. Bot thôi ghi tin các nhóm cho tới khi quét QR lại bằng tài khoản công ty.`,
+      confirmLabel: 'Đăng xuất',
+    })
+    if (!ok) return
+    logout.mutate(undefined, {
+      onSuccess: () => toast.success('Đã đăng xuất Zalo'),
+      onError: (e) => toast.error(extractErrorMessage(e)),
+    })
+  }
 
   const startLogin = () => {
     setQrOpen(true)
@@ -51,19 +67,24 @@ export function ZaloAccountCard({ canManage }: ZaloAccountCardProps) {
       {canManage && status.data?.enabled && (
         <div className="flex gap-2">
           {connected ? (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={refresh.isPending}
-              onClick={() =>
-                refresh.mutate(undefined, {
-                  onSuccess: () => toast.success('Đang đồng bộ lại nhóm và thành viên Zalo'),
-                  onError: (e) => toast.error(extractErrorMessage(e)),
-                })
-              }
-            >
-              <RefreshCw className="mr-1.5 size-4" /> Đồng bộ nhóm
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={refresh.isPending}
+                onClick={() =>
+                  refresh.mutate(undefined, {
+                    onSuccess: () => toast.success('Đang đồng bộ lại nhóm và thành viên Zalo'),
+                    onError: (e) => toast.error(extractErrorMessage(e)),
+                  })
+                }
+              >
+                <RefreshCw className="mr-1.5 size-4" /> Đồng bộ nhóm
+              </Button>
+              <Button variant="outline" size="sm" disabled={logout.isPending} onClick={() => void signOut()}>
+                <LogOut className="mr-1.5 size-4" /> Đăng xuất / đổi tài khoản
+              </Button>
+            </>
           ) : (
             <Button size="sm" disabled={login.isPending} onClick={startLogin}>
               <QrCode className="mr-1.5 size-4" /> Đăng nhập Zalo

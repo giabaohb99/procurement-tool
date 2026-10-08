@@ -54,6 +54,12 @@ test("HTTP: không ký bị từ chối, có ký thì đọc được trạng th
     const send = await call(port, "POST", "/send", { thread_id: "123", thread_type: "user", text: "chào" });
     assert.equal(send.status, 409);
     assert.match(send.json.error, /chưa kết nối/);
+
+    // ai-CR-129: đăng xuất khi chưa có phiên vẫn trả gọn, máy về «idle»; không ký thì bị chặn.
+    const out = await call(port, "POST", "/logout", {});
+    assert.equal(out.status, 200);
+    assert.equal(out.json.state, "idle");
+    assert.equal((await call(port, "POST", "/logout", {}, { sign: false })).status, 401);
   } finally {
     server.close();
   }

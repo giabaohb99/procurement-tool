@@ -150,4 +150,5 @@ export const chatGroupApi = {
   zaloStatus: () => apiGet<ZaloAccountStatus>(`${BASE}/zalo/status`),
   zaloLogin: () => apiPost<null>(`${BASE}/zalo/login`, {}),
   zaloRefreshGroups: () => apiPost<null>(`${BASE}/zalo/refresh-groups`, {}),
+  zaloLogout: () => apiPost<null>(`${BASE}/zalo/logout`, {}),
 }

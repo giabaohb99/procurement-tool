@@ -171,3 +171,7 @@ def test_tai_tep_nhom_va_trang_thai_zalo_chi_nguoi_quan_ly(db, seed, web, cap_qu
     asked: list[int] = []
     monkeypatch.setattr(za, "request_login", lambda: asked.append(1) or {"ok": True})
     assert client.post("/api/agent-hub/zalo/login").status_code == 200 and asked == [1]
+    #  ai-CR-129: đăng xuất / đổi tài khoản — chỉ người có quyền sửa.
+    outs: list[int] = []
+    monkeypatch.setattr(za, "logout", lambda: outs.append(1) or {"ok": True})
+    assert client.post("/api/agent-hub/zalo/logout").status_code == 200 and outs == [1]
