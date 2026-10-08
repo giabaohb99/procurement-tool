@@ -13037,7 +13037,7 @@ và thêm bài kiểm chạy đúng như dịch vụ khởi động (đỏ với
 Mã nguồn: backend/app/agent_main.py · test/backend/test_agent_hub_tach_dich_vu.py
 
 ## ai-CR-124 | Máy sửa mã nhận lại việc của bot và tự cập nhật cho khớp bản mã trên dev
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Đại ca thấy bot báo «máy sửa mã và bot lệch bản» nhiều lần và việc AI-0005 nằm chờ mãi. Em tìm ra lỗi gốc: từ khi tách
 dịch vụ AI, việc bot giao nằm ở Redis của dịch vụ AI, còn máy sửa mã trên máy đại ca vẫn nối vào Redis cũ của ERP nên không
@@ -13047,3 +13047,4 @@ bản mã đang chạy, máy thấy lệch quá năm phút mà đang rảnh thì
 bản chỉ còn hiện khi tự cập nhật không được sau ba mươi phút. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/runner_update.py (mới) · runners.py · tasks.py · core/config.py · backend/start.runner.sh · docker-compose.runner.yml · docker-compose.agent-hub.yml (redis-agent-forward) · test/backend/test_agent_hub_may_tu_cap_nhat.py
+Deploy: dev 08/10 (Agent 1 gộp bd9a80a2, gỡ cổng nối cũ, dựng lại stack agent-hub; em dựng lại máy sửa mã trên máy đại ca, hai bên cùng bản 8a5a491601ba); prod giữ lại.
