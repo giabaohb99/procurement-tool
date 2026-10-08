@@ -206,6 +206,8 @@ hỏi «lên lịch trình ăn + đi lại» thì nói chưa có công cụ rồ
 
 ## Lộ trình theo phase (viết lại 05/10/2026)
 
+> **Bảng này dừng ở 05/10/2026.** Trạng thái mới nhất, kiến trúc đích A2A và việc kế tiếp xem [`13-lo-trinh.md`](13-lo-trinh.md).
+
 Cỡ là ước THÔ theo ngày công của một người. Làm **lần lượt** (đại ca chốt 24/09).
 
 | Phase | Tên | Gồm | Trạng thái / cần đại ca | Cỡ ước |
