@@ -58,7 +58,7 @@ docker exec -i procurement-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql' 
 # 1. Checkout riêng cho dịch vụ AI (cùng kho, nhánh erp-v2) — deploy.sh đích «agent» dùng thư mục này
 git clone -b erp-v2 <repo> ~/agent-hub && cd ~/agent-hub
 cp .env.agent.example .env.agent      # điền: DB_PASSWORD, JWT_SECRET (TRÙNG .env.dev), AGENT_* tokens chép từ .env.dev,
-                                       # AGENT_SERVICE_SECRET=$(openssl rand -hex 32), AGENT_GATEWAY_URL=http://api:8000
+                                       # AGENT_SERVICE_SECRET=$(openssl rand -hex 32), AGENT_GATEWAY_URL=http://procurement-tool-dev-api-1:8000
 # 2. Dừng bot cũ trong stack ERP dev (tin không bị xử hai nơi)
 cd ~/procurement-tool-dev && docker compose --env-file .env.dev -f docker-compose.dev.yml stop agent-poller celery-worker celery-beat
 # 3. Chép dữ liệu bot sang DB mới (bảng cũ GIỮ NGUYÊN ở DB ERP, dọn sau)
@@ -73,8 +73,10 @@ docker compose --env-file .env.dev -f docker-compose.dev.yml rm -sf agent-poller
 # 6. Kiểm: web ERP → Trang cá nhân → Khóa AI (đi qua chuyển tiếp); nhắn bot trên Telegram; log agent-worker
 ```
 
-Mạng: `docker-compose.agent-hub.yml` nối hai mạng ngoài `dego-db` (MySQL) và `procurement-tool-dev_procurement-internal`
-(để gọi `http://api:8000`); prod đổi tên mạng tương ứng. Máy sửa mã (`.env.runner` trên máy đại ca): `DB_NAME=agent_hub`,
+Mạng: `docker-compose.agent-hub.yml` nối hai mạng ngoài `dego-db` (MySQL) và `procurement-tool-dev_procurement-internal`;
+prod đổi tên mạng tương ứng. ⚠️ `AGENT_GATEWAY_URL` phải là **tên container** (`procurement-tool-dev-api-1`), KHÔNG phải bí
+danh `api`: trên mạng `dego-db` bí danh `api` trỏ tới HAI máy chủ (dev và một stack khác) nên lượt gọi rơi luân phiên sang máy
+không có cổng B → 404 (gặp ngay lúc dựng 08/10). Máy sửa mã (`.env.runner` trên máy đại ca): `DB_NAME=agent_hub`,
 `DB_USER=agent_runner` — em tự đổi sau khi dev chạy.
 
 Quay lui: đổi `.env.dev` về `AGENT_MODE=embedded` (hoặc bỏ dòng), bật lại profile bot, dựng lại 4 service ERP; bảng cũ vẫn

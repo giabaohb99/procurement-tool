@@ -7,7 +7,7 @@
 #   cd ~/procurement-tool-dev
 #   docker compose --env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml up -d --build
 #
-# .env.agent: xem .env.agent.example (AGENT_MODE=service, DB_NAME=agent_hub, AGENT_GATEWAY_URL=http://api:8000,
+# .env.agent: xem .env.agent.example (AGENT_MODE=service, DB_NAME=agent_hub, AGENT_GATEWAY_URL=http://procurement-tool-dev-api-1:8000,
 # AGENT_SERVICE_SECRET trùng với .env.dev của ERP, JWT_SECRET TRÙNG với ERP — khóa AI / token Google mã hóa bằng nó).
 #
 # Bốn service dùng chung MỘT image (build một lần, `up` dùng lại) — khác hẳn stack dev cũ (bốn image riêng, ai-CR-115).
