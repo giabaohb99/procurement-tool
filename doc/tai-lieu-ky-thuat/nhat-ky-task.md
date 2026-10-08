@@ -13095,7 +13095,7 @@ lại một lần thì mười lăm phút sau mới thử lại nếu vẫn chư
 Mã nguồn: backend/app/modules/assistant/glossary.py · agent_hub/erp.py · agent_gateway/controller.py · agent_hub/service.py · constants.py · test/backend/test_agent_hub_tach_dich_vu.py · test_agent_hub.py
 
 ## ai-CR-129 | Đăng xuất và đổi tài khoản Zalo công ty ngay trên ERP, dọn phiên quét nhầm
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Đại ca lỡ quét mã đăng nhập bằng tài khoản Zalo cá nhân nên bot đọc năm mươi mốt nhóm riêng tư. Em ngắt và xóa phiên đó trên
 dev, xóa toàn bộ năm mươi mốt nhóm mà phiên đó đồng bộ về (tên nhóm và danh sách thành viên; phiên này chưa kịp ghi tin nào),
@@ -13104,3 +13104,4 @@ quyền quản lý, kèm hộp xác nhận, và lệnh Telegram «/zalo dangxuat
 lại bằng tài khoản công ty. Bài kiểm máy chủ, giao diện và tiến trình Zalo chạy xanh.
 
 Mã nguồn: zalo-listener/index.mjs (/logout) · backend/app/modules/agent_hub/zalo_account.py · service.py · controller.py · user_guide.py · frontend-v2/src/modules/assistant/components/zalo-account-card.tsx · api/chat-group-api.ts · hooks/use-chat-groups.ts
+Deploy: dev 08/10 (Agent 1 gộp 612ac875, dựng lại stack agent-hub và erp); prod giữ lại.
