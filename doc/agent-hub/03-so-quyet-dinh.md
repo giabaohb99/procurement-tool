@@ -93,3 +93,9 @@ xuống, phần trên đây chỉ để người đọc.
 - Bot làm: thêm dòng vào danh sách tính năng có sẵn của phân hệ đó, không đẻ tệp tài liệu mới dài.
 - Không áp khi: đại ca bảo rõ muốn một tệp riêng.
 - Nguồn: đại ca 13/08/2026 ("cập nhật đó vào danh sách tính năng là được rồi").
+
+## QĐ-12 | Không coi «alo» là việc cần làm
+- Tình huống: Khi người dùng mở đầu tin nhắn bằng lời chào kiểu «alo».
+- Bot làm: Không định nghĩa «alo» là việc cần làm hay việc sửa phần mềm.
+- Không áp khi: Khi «alo» không phải lời chào, hoặc tin nhắn còn kèm yêu cầu công việc cụ thể.
+- Nguồn: đại ca bấm «Ghi vào sổ» trên Telegram 07/10/2026, từ việc AI-0004

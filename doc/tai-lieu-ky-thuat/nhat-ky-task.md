@@ -13010,7 +13010,7 @@ Mã nguồn: zalo-listener/ (mới) · docker/Dockerfile.zalo-listener · docker
 Deploy: dev 08/10 (Agent 1 gộp f6fc41e9, dựng zalo-listener trong stack agent-hub); ERP dev chạy grp02 ở lần dựng kế; prod giữ lại.
 
 ## ai-CR-123 | Màn «Nhóm chat» trên ERP v2 để xem và quản lý những gì bot ghi ở nhóm Telegram, Zalo
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Đại ca muốn có một chỗ trên ERP để kiểm tra bot đã ghi nhận gì trong các nhóm, chia theo loại và theo bot, và người quản
 lý AI thấy được tất cả. Em làm màn «Nhóm chat» trong phân hệ Trợ lý AI của ERP v2: danh sách nhóm lọc theo kênh (Telegram,
@@ -13022,3 +13022,4 @@ nhật ký; quyền sửa thì phân loại nhóm, ngừng ghi một nhóm và �
 thống tự có quyền này. Bài kiểm máy chủ và giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/groups.py · controller.py (đường /groups*, /zalo/*) · constants.py (GROUP_CAT_*) · model.py (AgentGroupSummary, AgentGroupView) · assistant/service.py · core/permissions.py + scoping.py (agent_group) · migrations grp03 + agent0003 · zalo-listener/index.mjs · frontend-v2/src/modules/assistant (chat-group-*) · test/backend/test_agent_hub_nhom_web.py
+Deploy: dev 08/10 (Agent 1 gộp 1a69ad5b, dựng lại ERP api, erp và stack agent-hub); prod giữ lại.

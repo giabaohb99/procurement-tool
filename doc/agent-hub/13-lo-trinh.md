@@ -29,7 +29,7 @@
 | 10 | Thư ký biên bản họp (T-01…T-06, T-12) | **Xong** 07–08/10 | ai-CR-104, 112, 113, 114, 116, 117; T-01 mới thử tệp giả |
 | 11 | Đọc nhóm Telegram + đọc / viết báo cáo (G) | **Xong đợt 1** 07–08/10 | ai-CR-105, 115; đợt 2 ở §5 |
 | **S** | **Tách dịch vụ AI thành nhiều bot nói chuyện với nhau (A2A)** — §3 | **Xong mã S-0…S-4** 08/10 (ai-CR-119), chờ Agent 1 dựng trên dev theo doc 14 §4; S-5/S-6 là runbook | |
-| G-5 | Màn «Nhóm chat» trên ERP v2: theo kênh / loại, tin, tệp, bản tóm tắt, quyền quản lý AI thấy hết (doc 12 §9) | **Xong mã** 08/10 (ai-CR-123) | chờ Agent 1 dựng dev (doc 14 §8) |
+| G-5 | Màn «Nhóm chat» trên ERP v2: theo kênh / loại, tin, tệp, bản tóm tắt, quyền quản lý AI thấy hết (doc 12 §9) | **Xong** DEV 08/10 (ai-CR-123) | chờ đại ca xem bằng tài khoản admin |
 | Z-3/Z-4 | Zalo hướng B: tài khoản Zalo công ty ghi lặng nhóm, đọc nhóm Zalo, chat riêng | **Xong** DEV 08/10 (ai-CR-122) | chờ đại ca quét QR bằng số Zalo công ty (khác số bot IDA) |
 
 **Một câu:** phần «trợ lý cá nhân hỏi gì đáp nấy» (ERP, sổ nhớ, khóa AI riêng, lịch, Drive, biên bản họp, đọc báo cáo,
