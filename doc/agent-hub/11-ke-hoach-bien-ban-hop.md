@@ -122,6 +122,7 @@ Drive, em nhận thông tin và hỏi anh, hoặc anh nói cần report cuộc h
   hộp TL;DR, thanh mục teal, đề mục con, nhãn Ý CHÍNH / ĐÃ CHỐT (✓), bảng việc có chip Ưu tiên, mẫu chính thức thêm khối XÉT
   DUYỆT ký, phụ lục bản chép lời, chân trang lặp có số trang. Mẫu mặc định mới «Recap DEGO» (khóa `dego`) viết đúng các mục
   của chuẩn. Tệp mẫu đã dựng thử ở thư mục `mau-bien-ban/` cạnh các kho mã.
+- ai-CR-117 (08/10): thư mục «Họp» báo cả TÀI LIỆU (pdf / Word / Excel / Google Docs); «tóm tắt tệp n» hoặc «phân tích tệp n …» đọc rồi trả lời. `export_text` bóc chữ PDF / Word / Excel thay vì trả byte.
 
 ## 7. Câu chờ đại ca chốt (bản đầu)
 

@@ -8961,7 +8961,7 @@ def test_thu_muc_hop_tren_drive_co_tep_moi_thi_hoi_roi_moi_lam(db, bot, seed, mo
               {"id": "F1", "name": "hop-giao-ban-phan-1.m4a", "mimeType": "audio/mp4", "createdTime": "2026-10-08T02:00:00Z"}]
     assert md.scan(db, now=t0) == 1
     card = sent[-1]
-    assert "Có 2 tệp họp mới trong thư mục «Họp»" in card and "1) hop-giao-ban-phan-1.m4a" in card
+    assert "Có 2 tệp mới trong thư mục «Họp»" in card and "1) hop-giao-ban-phan-1.m4a" in card
     assert "2) hop-giao-ban-phan-2.m4a (20 phút" in card                # xếp theo giờ tạo
     assert any("'FOLDER1' in parents" in q for q in queries)
     assert md.scan(db, now=t0) == 0                                      # quét lại: không hỏi lại tệp đã báo
@@ -9047,3 +9047,63 @@ def test_report_cuoc_hop_moi_nhat_gui_lai_hoac_lam_tep_moi(db, bot, seed, monkey
     monkeypatch.setattr(mt, "dispatch", lambda mid: started.append(mid))
     out = T.run_tool(db, owner, "latest_meeting_report", {"template": "chính thức"})
     assert out["started"] and started and db.get(mt.AgentMeeting, started[0]).source_ref == "NEW"
+
+
+def test_tai_lieu_trong_thu_muc_hop_cung_duoc_bao_va_tom_tat(db, bot, seed, monkeypatch):
+    """ai-CR-116: đại ca 08/10 thả một tệp PDF vào «Họp» rồi chờ — bot chỉ nhìn ghi âm nên im lặng."""
+    from datetime import datetime
+
+    from app.modules.agent_hub import google_link, meeting_drive as md
+    from app.modules.agent_hub.model import AgentGoogleLink, AgentMeeting
+
+    service, sent, asked = bot
+    _owner_link(db, seed.u_req_id)
+    db.add(AgentGoogleLink(user_id=seed.u_req_id, email="a@x", created_by=0, updated_by=0))
+    db.commit()
+    files: list[dict] = []
+    queries = _fake_drive(monkeypatch, files)
+    md.scan(db, now=datetime(2026, 10, 8, 1, 0))
+    files.append({"id": "P1", "name": "03-KIEN-TRUC-KY-THUAT.pdf", "mimeType": "application/pdf",
+                  "createdTime": "2026-10-08T02:41:42Z"})
+    assert md.scan(db, now=datetime(2026, 10, 8, 1, 0)) == 1
+    assert "mimeType = 'application/pdf'" in queries[-1]
+    assert "Tài liệu: nhắn «tóm tắt tệp 1»" in sent[-1] and "1) 03-KIEN-TRUC-KY-THUAT.pdf" in sent[-1]
+    #  Chỉ có tài liệu mà nhắn «làm biên bản»: nói rõ, không tạo phiên họp.
+    service.handle_message(db, _msg("làm biên bản"))
+    assert "Không có tệp ghi âm / video" in sent[-1] and db.query(AgentMeeting).count() == 0
+    read: list[tuple] = []
+    monkeypatch.setattr(google_link, "export_text",
+                        lambda db, link, fid, mime, max_chars=0: read.append((fid, mime)) or "Kiến trúc: 3 tầng, API REST")
+    service.handle_message(db, _msg("phân tích tệp 1 rủi ro kỹ thuật"))
+    assert read == [("P1", "application/pdf")]
+    assert asked[-1].startswith("phân tích rủi ro kỹ thuật") and "3 tầng, API REST" in asked[-1]
+    assert md.parse_reply("tóm tắt nhóm kế toán hôm nay", 1) is None       # câu thường không bị thẻ nuốt
+
+
+def test_doc_tep_pdf_word_tren_drive_ra_chu_khong_ra_byte(db, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.modules.agent_hub import google_link
+
+    class R:
+        status_code = 200
+
+        def __init__(self, data):
+            self._d = data
+
+        def iter_content(self, n):
+            yield self._d
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(google_link, "access_token", lambda db, link: "tok")
+    monkeypatch.setattr(google_link.requests, "get", lambda *a, **kw: R(_docx_bytes(["Doanh thu quý 3 tăng 12%"])))
+    mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    text = google_link.export_text(db, SimpleNamespace(id=1), "F", mime)
+    assert "Doanh thu quý 3 tăng 12%" in text and "PK" not in text[:5]
+    monkeypatch.setattr(google_link.requests, "get", lambda *a, **kw: R("xin chào".encode()))
+    assert google_link.export_text(db, SimpleNamespace(id=1), "F", "text/plain") == "xin chào"

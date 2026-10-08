@@ -236,19 +236,40 @@ def _api(db: Session, link: AgentGoogleLink, method: str, url: str, *, params: d
         return {"text": resp.text}
 
 
-def export_text(db: Session, link: AgentGoogleLink, file_id: str, mime: str) -> str:
-    """Nội dung chữ của một tệp Drive: Google Docs/Sheets xuất text/csv; tệp thường tải thẳng (chỉ text)."""
+FILE_MAX_BYTES = 20 * 1024 * 1024
+
+
+def export_text(db: Session, link: AgentGoogleLink, file_id: str, mime: str, *, max_chars: int = 20000) -> str:
+    """Nội dung chữ của một tệp Drive: Google Docs/Sheets xuất text/csv; pdf / Word / Excel tải về rồi bóc chữ bằng
+    `doc_text` (ai-CR-116: trước đây trả thẳng byte của PDF — model nhận một đống ký tự rác); tệp chữ thường giữ nguyên."""
+    from . import doc_text
+
     token = access_token(db, link)
     if mime.startswith("application/vnd.google-apps."):
         target = "text/csv" if mime.endswith("spreadsheet") else "text/plain"
         resp = requests.get(f"{DRIVE_URL}/files/{file_id}/export", params={"mimeType": target},
                             headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT)
-    else:
-        resp = requests.get(f"{DRIVE_URL}/files/{file_id}", params={"alt": "media"},
-                            headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT)
-    if resp.status_code >= 400:
-        raise GoogleError(f"Google trả lỗi {resp.status_code} khi mở tệp.")
-    return resp.text[:20000]
+        if resp.status_code >= 400:
+            raise GoogleError(f"Google trả lỗi {resp.status_code} khi mở tệp.")
+        return resp.text[:max_chars]
+    try:
+        with requests.get(f"{DRIVE_URL}/files/{file_id}", params={"alt": "media"},
+                          headers={"Authorization": f"Bearer {token}"}, timeout=60, stream=True) as resp:
+            if resp.status_code >= 400:
+                raise GoogleError(f"Google trả lỗi {resp.status_code} khi mở tệp.")
+            data = b""
+            for chunk in resp.iter_content(256 * 1024):
+                data += chunk
+                if len(data) > FILE_MAX_BYTES:
+                    raise GoogleError("Tệp lớn hơn 20 MB, em chưa đọc được.")
+    except requests.RequestException as e:
+        raise GoogleError(f"Không tải được tệp từ Drive ({type(e).__name__}).") from None
+    if doc_text.readable("", mime) and not mime.startswith("text/"):
+        try:
+            return doc_text.extract("", mime, data)[:max_chars]
+        except doc_text.DocTextError as e:
+            raise GoogleError(str(e)) from None
+    return data.decode("utf-8", errors="replace")[:max_chars]
 
 
 _FOLDER_MIME = "application/vnd.google-apps.folder"

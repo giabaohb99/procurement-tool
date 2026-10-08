@@ -12919,3 +12919,16 @@ chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (mới) · agent_hub/dego_docx.py (mới) · agent_hub/assets/dego_logo.png · agent_hub/meetings.py (build_docx, word_of, resend, concat_audio) · agent_hub/meeting_actions.py · agent_hub/service.py · agent_hub/tasks.py · core/celery_app.py · assistant/tools/meeting_tool.py · test/backend/test_agent_hub.py
 Deploy: dev 08/10 (Agent 1 gộp 18140fd0, sao lưu DB dev trước, dựng lại đủ 4 image api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
+
+
+## ai-CR-117 | Thư mục «Họp» trên Drive báo cả tài liệu, đọc đúng chữ của PDF trên Drive
+- status: xong
+- date: 2026-10-08
+Đại ca thả một tệp PDF vào thư mục «Họp» trên Drive nhưng bot không nói gì. Em kiểm trên dev thì bot vẫn thấy đúng thư mục và
+tệp, chỉ là vòng quét lúc đó chỉ nhận ghi âm và video. Nay bot báo cả tài liệu trong thư mục «Họp» như PDF, Word, Excel và Google
+Docs; thẻ báo chia hai nhóm ghi âm và tài liệu, đánh số chung. Người dùng nhắn «tóm tắt tệp 1» hoặc hỏi thẳng «phân tích tệp 1 …»
+để bot đọc tài liệu rồi trả lời, còn ghi âm vẫn dùng «làm biên bản». Em cũng sửa lỗi đọc tệp PDF, Word, Excel trên Drive: trước
+đây bot nhận nguyên dữ liệu nhị phân thay vì chữ, nay bot tải tệp về rồi bóc chữ đúng cách, công cụ đọc tệp Drive của Trợ lý cũng
+được sửa theo. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (read_docs, is_media) · agent_hub/google_link.py (export_text) · test/backend/test_agent_hub.py

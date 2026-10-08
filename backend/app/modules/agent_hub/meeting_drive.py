@@ -61,15 +61,36 @@ def folder_ids(db: Session, link: AgentGoogleLink) -> list[str]:
     return ids
 
 
-def media_files(db: Session, link: AgentGoogleLink, *, since: datetime | None = None, limit: int = 20) -> list[dict]:
-    """Tệp ghi âm / video trong thư mục «Họp», mới nhất trước. `since` (UTC) = chỉ tệp tạo SAU mốc đó."""
+#  ai-CR-116 (đại ca 08/10 thả một tệp PDF vào «Họp» rồi chờ — bot chỉ nhìn ghi âm nên im lặng): tài liệu trong thư mục
+#  «Họp» (tài liệu họp, báo cáo) cũng được báo, kèm lựa chọn «tóm tắt tệp n».
+DOC_MIMES = (
+    "application/pdf", "application/msword", "text/plain",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.google-apps.document", "application/vnd.google-apps.spreadsheet",
+    "application/vnd.google-apps.presentation",
+)
+MAX_DOCS = 3
+
+
+def is_media(f: dict) -> bool:
+    return str(f.get("mimeType") or f.get("mime") or "").startswith(("audio/", "video/"))
+
+
+def media_files(db: Session, link: AgentGoogleLink, *, since: datetime | None = None, limit: int = 20,
+                with_docs: bool = False) -> list[dict]:
+    """Tệp ghi âm / video (và tài liệu khi `with_docs`) trong thư mục «Họp», mới nhất trước. `since` (UTC) = chỉ tệp tạo
+    SAU mốc đó."""
     from . import google_link
 
     folders = folder_ids(db, link)
     if not folders:
         return []
     parents = " or ".join(f"'{f}' in parents" for f in folders)
-    q = f"({parents}) and trashed = false and (mimeType contains 'audio/' or mimeType contains 'video/')"
+    kinds = ["mimeType contains 'audio/'", "mimeType contains 'video/'"]
+    if with_docs:
+        kinds += [f"mimeType = '{m}'" for m in DOC_MIMES]
+    q = f"({parents}) and trashed = false and ({' or '.join(kinds)})"
     if since is not None:
         q += f" and createdTime > '{since.strftime('%Y-%m-%dT%H:%M:%S')}'"
     data = google_link.api_get(db, link, DRIVE_URL, {
@@ -123,22 +144,34 @@ def _fmt_file(i: int, f: dict) -> str:
 def ask(db: Session, chat_id: str, files: list[dict], *, intro: str = "") -> None:
     from . import service
 
-    files = sorted(files, key=lambda f: str(f.get("createdTime") or ""))[:MAX_FILES]
-    lines = [intro or f"Có {len(files)} tệp họp mới trong thư mục «{FOLDER_NAME}» trên Drive:"]
-    lines += [_fmt_file(i, f) for i, f in enumerate(files, 1)]
+    #  Một dãy số chung: ghi âm / video trước (theo giờ tạo), tài liệu sau.
+    media = sorted([f for f in files if is_media(f)], key=lambda f: str(f.get("createdTime") or ""))[:MAX_FILES]
+    docs = sorted([f for f in files if not is_media(f)], key=lambda f: str(f.get("createdTime") or ""))[:MAX_FILES]
+    files = media + docs
+    lines = [intro or f"Có {len(files)} tệp mới trong thư mục «{FOLDER_NAME}» trên Drive:"]
+    if media and docs:
+        lines.append("<b>Ghi âm / video</b>")
+    lines += [_fmt_file(i, f) for i, f in enumerate(media, 1)]
+    if docs:
+        lines.append("<b>Tài liệu</b>")
+        lines += [_fmt_file(i, f) for i, f in enumerate(docs, len(media) + 1)]
     lines.append("")
-    if len(files) > 1:
-        lines.append("Nhắn «làm biên bản» để em gộp thành MỘT cuộc họp (nối theo giờ tạo), hoặc «làm tệp 1» nếu chỉ cần "
-                     "một tệp (vd hai máy cùng ghi một buổi thì chọn tệp rõ nhất).")
-    else:
-        lines.append("Nhắn «làm biên bản» để em làm.")
-    lines.append("Muốn mẫu khác thì thêm tên mẫu («làm biên bản chính thức»); «bỏ qua» nếu không cần.")
+    if len(media) > 1:
+        lines.append("Nhắn «làm biên bản» để em gộp các ghi âm thành MỘT cuộc họp (nối theo giờ tạo), hoặc «làm tệp 1» nếu "
+                     "chỉ cần một tệp (vd hai máy cùng ghi một buổi thì chọn tệp rõ nhất).")
+    elif media:
+        lines.append("Nhắn «làm biên bản» để em làm biên bản (thêm tên mẫu nếu muốn, vd «làm biên bản chính thức»).")
+    if docs:
+        first_doc = len(media) + 1
+        lines.append(f"Tài liệu: nhắn «tóm tắt tệp {first_doc}», hoặc hỏi thẳng «phân tích tệp {first_doc} …».")
+    lines.append("«bỏ qua» nếu không cần.")
     for old in db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_ASK)):
         old.action = ACT_ASK_DROPPED
     db.commit()
     service.reply(db, chat_id, "\n".join(lines))
     service.log_message(db, service.DIR_OUT, chat_id, 0,
-                        json.dumps({"files": [{"id": f["id"], "name": f.get("name", "")} for f in files]},
+                        json.dumps({"files": [{"id": f["id"], "name": f.get("name", ""), "mime": f.get("mimeType", "")}
+                                              for f in files]},
                                    ensure_ascii=False), action=ACT_ASK)
     db.commit()
 
@@ -169,7 +202,7 @@ def scan(db: Session, *, now: datetime | None = None) -> int:
             db.commit()
             continue
         try:
-            files = media_files(db, link, since=datetime.utcfromtimestamp(cur.value))
+            files = media_files(db, link, since=datetime.utcfromtimestamp(cur.value), with_docs=True)
         except google_link.GoogleError as e:
             log.info("agent_hub: quét thư mục Họp của user %s hỏng: %s", link.user_id, e)
             continue
@@ -188,7 +221,8 @@ def scan(db: Session, *, now: datetime | None = None) -> int:
 # ---------------------------------------------------------------------------
 # Trả lời thẻ
 # ---------------------------------------------------------------------------
-_YES = re.compile(r"^\s*(?:ok\s+|ừ\s+|được\s+|có\s+)?(làm|gộp)\b(.*)$", re.I | re.S)
+_YES = re.compile(r"^\s*(?:ok\s+|ừ\s+|được\s+|có\s+)?(làm|gộp|tóm tắt|đọc|phân tích)\b(.*)$", re.I | re.S)
+_DOC_VERBS = ("tóm tắt", "đọc", "phân tích")
 #  Sau «làm / gộp» chỉ nhận các chữ này đứng đầu — «làm sao để…», «làm ơn tra giá…» không phải trả lời thẻ.
 _YES_NEXT = ("biên", "recap", "tệp", "đi", "luôn", "hết", "nhé", "giúp", "cả", "theo", "mẫu", "báo", "ngay")
 _NO = re.compile(r"^\s*(bỏ qua|bỏ|không cần|không|thôi)(\s+(nhé|đi|hết))?\s*[.!]?\s*$", re.I)
@@ -210,13 +244,15 @@ def pending_ask(db: Session, chat_id: str, before_id: int) -> AgentMessage | Non
 
 
 def parse_reply(text: str, n_files: int) -> tuple[str, list[int], str] | None:
-    """(«yes»|«no», số tệp chọn (rỗng = tất cả), phần chữ còn lại để chọn mẫu). Không phải trả lời thẻ → None."""
+    """(«yes»|«doc»|«no», số tệp chọn (rỗng = tất cả), phần chữ còn lại — tên mẫu, hoặc câu hỏi về tài liệu).
+    Không phải trả lời thẻ → None. «tóm tắt / đọc / phân tích» = hỏi về TÀI LIỆU."""
     low = " ".join((text or "").split())
     if _NO.match(low):
         return "no", [], ""
     m = _YES.match(low)
     if not m:
         return None
+    verb = m.group(1).lower()
     rest = m.group(2) or ""
     first = rest.strip().split(" ")[0].lower().strip(",.!") if rest.strip() else ""
     if first and first not in _YES_NEXT:
@@ -228,6 +264,8 @@ def parse_reply(text: str, n_files: int) -> tuple[str, list[int], str] | None:
         if not picks:
             return None
         rest = rest[:pm.start()] + rest[pm.end():]
+    if verb in _DOC_VERBS:
+        return "doc", picks, (f"{verb} {rest.strip()}".strip() if rest.strip() else "")
     return "yes", picks, rest.strip()
 
 
@@ -258,10 +296,47 @@ def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> 
         service.reply(db, chat_id, "Chat này đã đăng xuất ERP, em không làm biên bản.")
         return True
     chosen = [files[i - 1] for i in picks] if picks else files
+    if verdict == "doc":
+        docs = [f for f in chosen if not is_media(f)]
+        if not docs:
+            db.commit()
+            service.reply(db, chat_id, "Tệp đó là ghi âm / video — nhắn «làm biên bản» để em làm biên bản.")
+            return True
+        db.commit()
+        read_docs(db, int(link.user_id), chat_id, docs[:MAX_DOCS], rest)
+        return True
+    media = [f for f in chosen if is_media(f)]
+    if not media:
+        db.commit()
+        service.reply(db, chat_id, "Không có tệp ghi âm / video nào để làm biên bản — tài liệu thì nhắn «tóm tắt tệp n».")
+        return True
     card.action = ACT_ASK_DONE
     db.commit()
-    start(db, int(link.user_id), chat_id, chosen, rest)
+    start(db, int(link.user_id), chat_id, media, rest)
     return True
+
+
+def read_docs(db: Session, user_id: int, chat_id: str, docs: list[dict], question: str = "") -> None:
+    """Đọc tài liệu trong thư mục «Họp» (pdf / Word / Excel / Google Docs) rồi trả lời — mặc định tóm tắt."""
+    from . import google_link, service
+
+    link = google_link.get_link(db, user_id)
+    if link is None:
+        service.reply(db, chat_id, "Chat này chưa nối Google nên em chưa mở được tệp trên Drive.")
+        return
+    q = question.strip() or service.DOC_DEFAULT_QUESTION
+    for f in docs:
+        name = str(f.get("name") or "tệp")
+        try:
+            text = google_link.export_text(db, link, str(f["id"]), str(f.get("mime") or f.get("mimeType") or ""),
+                                           max_chars=60_000)
+        except google_link.GoogleError as e:
+            service.reply(db, chat_id, f"Em chưa đọc được «{telegram.esc(name)}»: {telegram.esc(str(e))}")
+            continue
+        row = service.log_message(db, service.DIR_IN, chat_id, 0, f"[Drive «{name}»] {q}"[:4000], action=service.ACT_ASKED)
+        db.commit()
+        service.answer_question(db, chat_id, f"{q}\n\n{service.DOC_GUIDE}\n\nNỘI DUNG TỆP «{name}»:\n{text}",
+                                before_id=row.id, kind="document")
 
 
 def start(db: Session, user_id: int, chat_id: str, files: list[dict], text: str = "") -> AgentMeeting:
