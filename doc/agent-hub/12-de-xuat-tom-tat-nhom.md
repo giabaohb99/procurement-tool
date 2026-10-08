@@ -105,7 +105,8 @@ tháng**.
 | Lệnh chủ bot | `/zalo` tình trạng · `/zalo dangnhap` lấy QR · `/zalo nhom` đồng bộ lại nhóm |
 
 **Luật vận hành:** không mở Zalo Web / Zalo PC bằng tài khoản công ty trên máy nào khác (sẽ đá phiên của bot); điện
-thoại giữ số vẫn dùng bình thường. Người muốn bot đọc nhóm Zalo nào thì **thêm tài khoản công ty vào nhóm đó**; bot chỉ
+thoại giữ số vẫn dùng bình thường. **Số Zalo công ty phải KHÁC mọi số đang chạy bot IDA** (IDA đang giữ phiên số «thaotho»): mỗi
+tài khoản chỉ giữ được một phiên web, quét trùng thì hai bot đá nhau. Người muốn bot đọc nhóm Zalo nào thì **thêm tài khoản công ty vào nhóm đó**; bot chỉ
 thấy tin **từ lúc vào**.
 
 ## 8. Đánh giá hạ tầng (đại ca hỏi 08/10)
