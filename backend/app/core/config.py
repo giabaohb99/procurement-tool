@@ -338,6 +338,10 @@ class Settings(BaseSettings):
     AGENT_RUNNER_TOKEN: str = ""
     # Máy «đang bật» = có nhịp tim trong chừng này giây (runner ghi mỗi 30 giây).
     AGENT_RUNNER_ONLINE_SEC: int = 120
+    # ai-CR-124: máy sửa mã lệch bản với bot quá 5 phút mà đang rảnh thì tự kéo mã khớp bot (thử lần lượt các nhánh
+    # dưới, lấy nhánh băm ra đúng vân tay của bot) rồi khởi động lại. Tắt = báo lệch bản như cũ để người dựng lại tay.
+    AGENT_RUNNER_SELF_UPDATE: bool = True
+    AGENT_RUNNER_UPDATE_BRANCHES: str = "erp-v2,agent-hub-bac-1"
     # Không máy nào bật thì vé đi vào máy này (thường là máy đại ca); trống = máy liên lạc gần nhất.
     AGENT_DEFAULT_RUNNER: str = ""
     # Hết giờ thì giết tiến trình, ghi FAILED, nhắn Telegram; không tự thử lại (§8 thiết kế).

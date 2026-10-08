@@ -177,6 +177,9 @@ services:
       - procurement-internal
     profiles: [bot]
 
+  #  ai-CR-124: CHỈ dùng khi dev chạy bot nhúng (AGENT_MODE=embedded). Dev đã tách dịch vụ AI → cổng 16379 do service
+  #  `redis-agent-forward` của docker-compose.agent-hub.yml giữ (Redis của dịch vụ AI); bật lại cái này là máy sửa mã
+  #  nối nhầm Redis ERP và không thấy vé nào.
   redis-dev-forward:
     image: alpine/socat
     container_name: procurement-redis-dev-forward

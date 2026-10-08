@@ -97,6 +97,23 @@ services:
     networks:
       - agent-internal
 
+  # ai-CR-124: đường hầm SSH của máy sửa mã (doc 05) mở 127.0.0.1:16379 trên VPS → nay là Redis của DỊCH VỤ AI. Trước
+  # đây cổng này do `redis-dev-forward` của stack ERP dev giữ (Redis ERP) — sau khi tách dịch vụ (ai-CR-119) máy sửa mã
+  # vẫn nối vào đó và không bao giờ thấy vé bot giao (gặp 08/10: AI-0005 nằm chờ mãi). Giữ đúng số 16379 vì khóa đường
+  # hầm của từng máy chỉ được mở hai cổng 13306 / 16379 (`permitopen` trong authorized_keys).
+  # Dựng lần đầu: `docker rm -f procurement-redis-dev-forward` trước (cùng cổng).
+  redis-agent-forward:
+    image: alpine/socat
+    restart: always
+    command: TCP-LISTEN:6379,fork,reuseaddr TCP:redis-agent:6379
+    ports:
+      - "127.0.0.1:16379:6379"
+    mem_limit: 32m
+    networks:
+      - agent-internal
+    depends_on:
+      - redis-agent
+
   redis-agent:
     image: redis:7.2-alpine
     restart: always

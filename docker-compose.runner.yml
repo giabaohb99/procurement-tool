@@ -55,10 +55,9 @@ services:
         source: ${AGENT_VPS_SSH_KEY_FILE:-./docker/vps_ssh_key.placeholder}
         target: /root/vps_ssh_key
         read_only: true
-    # Mỗi máy nghe hàng đợi RIÊNG của nó; một việc một lúc.
-    command: >
-      sh -c 'celery -A app.core.celery_app worker -l info -c 1
-      -Q agent_code.$${AGENT_RUNNER_NAME} -n $${AGENT_RUNNER_NAME}@%h'
+    # Mỗi máy nghe hàng đợi RIÊNG của nó; một việc một lúc. ai-CR-124: start.runner.sh chạy bản mã máy đã tự cập nhật
+    # (khớp bot trên dev) nếu có — khỏi phải dựng lại ảnh mỗi lần dev deploy.
+    command: ["sh", "/app/start.runner.sh"]
     stop_grace_period: 60s
     restart: unless-stopped
 

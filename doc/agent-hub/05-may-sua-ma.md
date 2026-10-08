@@ -95,6 +95,8 @@ Ba thứ, làm sau khi stack bot đã lên dev (D-06) vì tài khoản MySQL c�
 
 ### 1.1 Cổng chuyển tiếp Redis dev (MySQL đã có sẵn `procurement-db-forward` 127.0.0.1:13306)
 
+> **Từ ai-CR-124 (08/10/2026):** dev đã tách dịch vụ AI, nên cổng 16379 do service `redis-agent-forward` của `docker-compose.agent-hub.yml` giữ — chuyển tới **Redis của dịch vụ AI** (nơi bot xếp vé). Khối dưới đây chỉ còn đúng khi bot chạy nhúng trong ERP. Máy sửa mã tự cập nhật mã cho khớp bot (`agent_hub/runner_update.py`), không phải dựng lại ảnh mỗi lần dev deploy; chỉ dựng lại khi đổi `Dockerfile.runner`.
+
 Thêm vào compose của stack bot trên dev một service socat, chỉ nghe trên `127.0.0.1` của VPS:
 
 ```yaml

@@ -107,7 +107,7 @@ def _start_heartbeat() -> None:
     import threading
     import time
 
-    from . import runners
+    from . import runner_update, runners
 
     def loop() -> None:
         while True:
@@ -117,6 +117,11 @@ def _start_heartbeat() -> None:
                                 version=runners.version_tag()) is None:
                     log.warning("agent_hub: nhịp tim bị từ chối — máy «%s» chưa đăng ký hoặc đã gỡ",
                                 settings.AGENT_RUNNER_NAME)
+                else:
+                    #  ai-CR-124: lệch bản với bot quá 5 phút mà đang rảnh thì tự kéo mã khớp bot rồi khởi động lại.
+                    done = runner_update.tick(db)
+                    if done and done != "lệch bản, chờ":
+                        log.info("agent_hub: tự cập nhật máy sửa mã: %s", done)
             except Exception:  # noqa: BLE001 — mất DB vài nhịp không được giết vòng
                 log.exception("agent_hub: nhịp tim hỏng")
             finally:
@@ -127,12 +132,31 @@ def _start_heartbeat() -> None:
 
 
 try:
-    from celery.signals import worker_ready
+    from celery.signals import task_postrun, task_prerun, worker_ready
 
     @worker_ready.connect
     def _on_worker_ready(**_kw) -> None:
         if settings.AGENT_RUNNER_NAME:
+            from . import runner_update
+
+            runner_update.mark_busy(False)     # khởi động lại giữa chừng thì dấu cũ không còn đúng
             _start_heartbeat()
+
+    #  ai-CR-124: tiến trình con làm vé đánh dấu «đang bận» trên đĩa — nhịp tim ở tiến trình chính không tự cập nhật giữa
+    #  lúc máy đang sửa mã.
+    @task_prerun.connect
+    def _on_task_start(**_kw) -> None:
+        if settings.AGENT_RUNNER_NAME:
+            from . import runner_update
+
+            runner_update.mark_busy(True)
+
+    @task_postrun.connect
+    def _on_task_end(**_kw) -> None:
+        if settings.AGENT_RUNNER_NAME:
+            from . import runner_update
+
+            runner_update.mark_busy(False)
 except ImportError:  # pragma: no cover
     pass
 

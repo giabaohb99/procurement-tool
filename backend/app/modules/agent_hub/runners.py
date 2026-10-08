@@ -192,26 +192,47 @@ def describe(db: Session, runner: AgentRunner) -> str:
 #  đọc commit, nên băm thẳng nội dung các tệp của bot + Trợ lý: hai bên băm ra một số = cùng bản.
 _FP_DIRS = ("agent_hub", "assistant")
 VERSION_STALE_MIN = 30
+#  ai-CR-124: bot ghi vân tay mã của nó ở đây (số nguyên của 12 ký tự hex) để máy sửa mã tự cập nhật cho khớp.
+BOT_FP_CURSOR = "bot_fp"
+
+
+def fingerprint_dir(modules_root) -> str:
+    """Vân tay mã bot + Trợ lý dưới một thư mục `app/modules` bất kỳ (bản đang chạy, hoặc bản vừa xuất ra đĩa)."""
+    from pathlib import Path
+
+    root = Path(modules_root)
+    h = hashlib.sha1()
+    for d in _FP_DIRS:
+        for f in sorted((root / d).rglob("*.py")):
+            if "__pycache__" in f.parts or f.name.startswith("_tmp"):
+                continue
+            h.update(f.relative_to(root).as_posix().encode())
+            h.update(f.read_bytes().replace(b"\r\n", b"\n"))
+    return h.hexdigest()[:12]
 
 
 def code_fingerprint() -> str:
     from functools import lru_cache
+    from pathlib import Path
 
     @lru_cache(maxsize=1)
     def _fp() -> str:
-        from pathlib import Path
-
-        root = Path(__file__).resolve().parents[1]
-        h = hashlib.sha1()
-        for d in _FP_DIRS:
-            for f in sorted((root / d).rglob("*.py")):
-                if "__pycache__" in f.parts or f.name.startswith("_tmp"):
-                    continue
-                h.update(f.relative_to(root).as_posix().encode())
-                h.update(f.read_bytes().replace(b"\r\n", b"\n"))
-        return h.hexdigest()[:12]
+        return fingerprint_dir(Path(__file__).resolve().parents[1])
 
     return _fp()
+
+
+def publish_bot_fingerprint(db: Session) -> None:
+    """Bot ghi vân tay mã của nó cho máy sửa mã đọc (ai-CR-124). Không commit — vòng `watch` commit."""
+    from .model import AgentCursor
+
+    value = int(code_fingerprint(), 16)
+    row = db.scalar(select(AgentCursor).where(AgentCursor.name == BOT_FP_CURSOR))
+    if row is None:
+        db.add(AgentCursor(name=BOT_FP_CURSOR, value=value))
+    elif int(row.value or 0) != value:
+        row.value = value
+    db.flush()
 
 
 def version_tag() -> str:
@@ -251,10 +272,12 @@ def _check_version(db: Session, r: AgentRunner, now: datetime, notify) -> bool:
     if minute - int(first.value) < VERSION_STALE_MIN or int(alerted.value or 0) == pair:
         return False
     alerted.value = pair
-    notify(f"<b>MÁY SỬA MÃ VÀ BOT LỆCH BẢN</b> · {r.name}\n\nMáy sửa mã và bot trên dev chạy hai bản mã khác nhau đã hơn "
+    #  ai-CR-124: máy tự cập nhật sau ~5 phút (runner_update.tick) — còn lệch sau 30 phút nghĩa là TỰ CẬP NHẬT KHÔNG
+    #  ĐƯỢC (bot chạy mã chưa đẩy lên GitHub, máy tắt tự cập nhật, hay kéo GitHub hỏng): lúc đó mới đáng báo.
+    notify(f"<b>MÁY SỬA MÃ VÀ BOT LỆCH BẢN</b> · {r.name}\n\nMáy sửa mã chưa tự cập nhật được cho khớp bot sau "
            f"{VERSION_STALE_MIN} phút (máy {theirs} · bot {mine}).\n"
-           "<i>Thường là mã mới đã lên một bên mà chưa lên bên kia: hoặc dev chưa deploy, hoặc máy sửa mã chưa dựng lại. "
-           "Claude của đại ca kiểm và làm nốt bên còn thiếu.</i>")
+           "<i>Thường là bot trên dev chạy mã chưa có trên GitHub (nhánh nền), hoặc máy tắt AGENT_RUNNER_SELF_UPDATE. "
+           "Claude của đại ca kiểm nhật ký máy sửa mã.</i>")
     return True
 
 
@@ -284,6 +307,7 @@ def watch(db: Session, *, now: datetime | None = None, notify=None) -> dict:
 
     now = now or datetime.now()
     down = back = 0
+    publish_bot_fingerprint(db)
     for r in active(db):
         if r.last_seen_at is None:
             continue

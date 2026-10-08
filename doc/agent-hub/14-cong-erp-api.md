@@ -133,3 +133,13 @@ này), giao diện ERP v2 (màn mới) và stack agent-hub (bảng mới + zalo-
    docker-compose.agent-hub.yml up -d --build` — `agent-api` lên `agent0003`, `zalo-listener` dựng lại.
 4. Kiểm: đăng nhập web dev bằng tài khoản quản trị → Trợ lý AI → **Nhóm chat** có tab «Tất cả nhóm» và thẻ «Zalo tài
    khoản công ty»; `alembic -c alembic_agent.ini current` = `agent0003 (head)`.
+
+## 9. Máy sửa mã nối đúng Redis của dịch vụ AI (ai-CR-124) — dựng trên dev
+
+1. `docker rm -f procurement-redis-dev-forward` (stack ERP dev, đang giữ cổng 127.0.0.1:16379 → Redis ERP).
+2. `cd ~/agent-hub && git pull && docker compose --env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml up
+   -d --build` — thêm `redis-agent-forward` (127.0.0.1:16379 → `redis-agent`), dựng lại bot (ghi vân tay `bot_fp`).
+3. Kiểm: `docker exec agent-hub-redis-agent-1 redis-cli LLEN agent_code.may-dai-ca` giảm về 0 khi máy đại ca nối lại
+   (máy đại ca không phải đổi gì: vẫn đường hầm 16379).
+4. Quay lui: `docker compose ... stop redis-agent-forward`, rồi `docker compose -f docker-compose.dev.yml --profile bot
+   up -d redis-dev-forward` ở stack ERP dev.

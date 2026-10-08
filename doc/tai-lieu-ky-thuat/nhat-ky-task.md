@@ -13035,3 +13035,15 @@ riêng chỉ nạp một phần dữ liệu mẫu của ERP: có Nhân sự và 
 tới, nên lần truy vấn đầu tiên hỏng và hỏng luôn cho tới khi khởi động lại. Em nạp thêm hai mẫu đó lúc dịch vụ AI khởi động
 và thêm bài kiểm chạy đúng như dịch vụ khởi động (đỏ với mã cũ, xanh với mã mới). Tiến trình worker, beat, poller đã kiểm, không bị.
 Mã nguồn: backend/app/agent_main.py · test/backend/test_agent_hub_tach_dich_vu.py
+
+## ai-CR-124 | Máy sửa mã nhận lại việc của bot và tự cập nhật cho khớp bản mã trên dev
+- status: dang-lam
+- date: 2026-10-08
+Đại ca thấy bot báo «máy sửa mã và bot lệch bản» nhiều lần và việc AI-0005 nằm chờ mãi. Em tìm ra lỗi gốc: từ khi tách
+dịch vụ AI, việc bot giao nằm ở Redis của dịch vụ AI, còn máy sửa mã trên máy đại ca vẫn nối vào Redis cũ của ERP nên không
+bao giờ nhận được việc, tin máy gửi về Telegram cũng thất lạc. Em chuyển cổng nối của máy sửa mã sang Redis của dịch vụ AI
+(giữ nguyên số cổng để không phải đổi khóa của từng máy). Em cũng làm cho máy sửa mã tự cập nhật: bot ghi lại dấu vân tay
+bản mã đang chạy, máy thấy lệch quá năm phút mà đang rảnh thì tự kéo bản mã khớp với bot rồi khởi động lại; thông báo lệch
+bản chỉ còn hiện khi tự cập nhật không được sau ba mươi phút. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/runner_update.py (mới) · runners.py · tasks.py · core/config.py · backend/start.runner.sh · docker-compose.runner.yml · docker-compose.agent-hub.yml (redis-agent-forward) · test/backend/test_agent_hub_may_tu_cap_nhat.py
