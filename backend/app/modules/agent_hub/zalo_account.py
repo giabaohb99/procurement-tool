@@ -22,6 +22,8 @@ import json
 import logging
 import mimetypes
 import re
+import threading
+import time
 from datetime import datetime
 from urllib.parse import urlencode
 
@@ -278,16 +280,24 @@ def send(chat_id: str, text: str, *, buttons: list[tuple[str, str]] | None = Non
     """Gửi chữ tới một chat Zalo của tài khoản công ty. Trả số dương khi gửi được, lỗi thì 0.
 
     Chặn cứng tin vào NHÓM: đại ca chốt bot chỉ trả lời riêng — lỡ một nhánh nào đó trong lõi định trả lời vào chat nhóm
-    thì dừng ở đây."""
+    thì dừng ở đây. ai-CR-130: giữ chữ đậm / nghiêng (kiểu chữ Zalo), hủy tin «em nhận tin rồi» đang hẹn."""
     if str(chat_id).startswith(channels.ZALO_GROUP_PREFIX):
         log.warning("agent_hub: chặn một tin định gửi vào nhóm Zalo %s (bot chỉ trả lời riêng)", chat_id)
         return 0
+    _settle_ack(chat_id)
+    plain, spans = to_styled((text or "") + html.escape(_button_lines(buttons)))
+    return _post_parts(chat_id, split_styled(plain, spans))
+
+
+def _post_parts(chat_id: str, parts: list[tuple[str, list[dict]]]) -> int:
     tid, kind = _target(chat_id)
     first = 0
-    for part in split_text(to_plain((text or "") + _button_lines(buttons))):
+    for part, styles in parts:
+        body = {"thread_id": tid, "thread_type": kind, "text": part}
+        if styles:
+            body["styles"] = styles
         try:
-            res = _request("POST", "/send", body={"thread_id": tid, "thread_type": kind, "text": part},
-                           timeout=SEND_TIMEOUT)
+            res = _request("POST", "/send", body=body, timeout=SEND_TIMEOUT)
         except ZaloAccountError as e:
             log.warning("agent_hub: gửi Zalo (tài khoản công ty) hỏng: %s", e)
             return first
@@ -333,3 +343,163 @@ def refresh_groups() -> dict:
 def logout() -> dict:
     """Ngắt phiên + xóa phiên đã lưu (ai-CR-129). Muốn dùng tiếp thì quét QR lại — đổi tài khoản cũng đi đường này."""
     return _request("POST", "/logout", body={})
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-130: chữ đậm / nghiêng trên Zalo cá nhân + báo «đang soạn» / «em nhận tin rồi» khi trả lời lâu
+# ---------------------------------------------------------------------------
+#  Zalo cá nhân không nhận HTML; zca-js gửi kiểu chữ bằng danh sách {start, len, st} (vị trí tính theo đơn vị UTF-16 như
+#  chuỗi JavaScript). Đại ca 08/10: câu trả lời giá vàng «không có in đậm nhạt hay chỉ mục» trên Zalo.
+_STYLE_TAGS = {"b": "b", "strong": "b", "i": "i", "em": "i", "u": "u", "ins": "u", "s": "s", "strike": "s", "del": "s"}
+_ANY_TAG = re.compile(r"<(/?)([a-zA-Z0-9-]+)(?:\s[^>]*)?>")
+STYLE_MAX = 200
+
+
+def _u16(s: str) -> int:
+    return len(s.encode("utf-16-le")) // 2
+
+
+def to_styled(text: str) -> tuple[str, list[tuple[int, int, str]]]:
+    """HTML kiểu Telegram → (chữ trơn, [(đầu, cuối, kiểu)]) — vị trí theo chỉ số Python trên chữ trơn."""
+
+    def _link(m: re.Match) -> str:
+        url, label = m.group(1), m.group(2)
+        plain_label = _TAG.sub("", label).strip()
+        return f"{label} ({url})" if plain_label and plain_label != url else url
+
+    src = _LINK.sub(_link, text or "")
+    src = _LI.sub("- ", _BR.sub("\n", src))
+    src = _BLOCK_END.sub("\n", src)
+    out: list[str] = []
+    length = 0
+    spans: list[tuple[int, int, str]] = []
+    opened: dict[str, list[int]] = {}
+    pos = 0
+    for m in _ANY_TAG.finditer(src):
+        chunk = html.unescape(src[pos:m.start()])
+        out.append(chunk)
+        length += len(chunk)
+        pos = m.end()
+        st = _STYLE_TAGS.get(m.group(2).lower())
+        if not st:
+            continue
+        if m.group(1):                              # thẻ đóng
+            if opened.get(st):
+                start = opened[st].pop()
+                if length > start:
+                    spans.append((start, length, st))
+        else:
+            opened.setdefault(st, []).append(length)
+    tail = html.unescape(src[pos:])
+    out.append(tail)
+    return _squeeze("".join(out), spans)
+
+
+def _squeeze(text: str, spans: list[tuple[int, int, str]]) -> tuple[str, list[tuple[int, int, str]]]:
+    """Gộp ≥ 3 dòng trống liên tiếp thành 2 và bỏ khoảng trắng đầu / cuối — dời vị trí kiểu chữ theo."""
+    keep: list[str] = []
+    index_map: list[int] = []
+    for ch in text:
+        index_map.append(len(keep))
+        if ch == "\n" and len(keep) >= 2 and keep[-1] == "\n" and keep[-2] == "\n":
+            continue
+        keep.append(ch)
+    index_map.append(len(keep))
+    squeezed = "".join(keep)
+    lead = len(squeezed) - len(squeezed.lstrip())
+    body = squeezed.strip()
+    out = []
+    for a, b, st in spans:
+        na, nb = index_map[a] - lead, index_map[b] - lead
+        na, nb = max(0, na), min(len(body), nb)
+        if nb > na:
+            out.append((na, nb, st))
+    return body, out
+
+
+def split_styled(text: str, spans: list[tuple[int, int, str]], limit: int = MAX_TEXT) -> list[tuple[str, list[dict]]]:
+    """Cắt như `split_text` nhưng giữ kiểu chữ: mỗi mẩu kèm danh sách {start, len, st} theo UTF-16 của chính mẩu đó."""
+    pieces: list[tuple[int, int]] = []
+    start = 0
+    n = len(text)
+    while start < n and len(pieces) < MAX_PARTS:
+        while start < n and text[start].isspace():
+            start += 1
+        if start >= n:
+            break
+        if n - start <= limit:
+            pieces.append((start, n))
+            start = n
+            break
+        window = text[start:start + limit]
+        cut = -1
+        for sep in ("\n\n", "\n", " "):
+            cut = window.rfind(sep)
+            if cut >= limit // 2:
+                break
+        if cut < limit // 2:
+            cut = limit
+        end = start + cut
+        while end > start and text[end - 1].isspace():
+            end -= 1
+        pieces.append((start, end))
+        start = start + cut
+    truncated = start < n and text[start:].strip() != ""
+    out: list[tuple[str, list[dict]]] = []
+    for i, (a, b) in enumerate(pieces):
+        part = text[a:b]
+        styles = []
+        for sa, sb, st in spans:
+            ca, cb = max(sa, a), min(sb, b)
+            if cb > ca:
+                styles.append({"start": _u16(text[a:ca]), "len": _u16(text[ca:cb]), "st": st})
+        if truncated and i == len(pieces) - 1:
+            part += "\n\n… (đã cắt bớt)"
+        out.append((part, styles[:STYLE_MAX]))
+    return out
+
+
+#  «Đang soạn» + tin «em nhận tin rồi» khi câu trả lời lâu (đại ca 08/10: «nó phản hồi hơi lâu… bot nhắn là em nhận tin»).
+ACK_AFTER_SEC = 8
+ACK_QUIET_SEC = 180         # đã báo nhận rồi thì trong chừng này giây không báo lần hai cho cùng một lượt
+ACK_TEXT = "Em nhận tin rồi, đang tìm câu trả lời, anh/chị đợi em chút nhé."
+_ACK_LOCK = threading.Lock()
+_ACK_TIMERS: dict[str, threading.Timer] = {}
+_ACKED_AT: dict[str, float] = {}
+
+
+def send_typing(chat_id: str) -> None:
+    """Bật «đang soạn tin» trên Zalo và hẹn tin báo nhận sau ACK_AFTER_SEC giây nếu tới lúc đó chưa trả lời. Chỉ chat riêng."""
+    if not str(chat_id).startswith(channels.ZALO_USER_PREFIX):
+        return
+    tid, kind = _target(chat_id)
+    try:
+        _request("POST", "/typing", body={"thread_id": tid, "thread_type": kind}, timeout=5)
+    except ZaloAccountError:
+        pass
+    with _ACK_LOCK:
+        if chat_id in _ACK_TIMERS:
+            return
+        if time.monotonic() - _ACKED_AT.get(chat_id, -1e9) < ACK_QUIET_SEC:
+            return
+        timer = threading.Timer(ACK_AFTER_SEC, _send_ack, args=(chat_id,))
+        timer.daemon = True
+        _ACK_TIMERS[chat_id] = timer
+    timer.start()
+
+
+def _send_ack(chat_id: str) -> None:
+    with _ACK_LOCK:
+        if _ACK_TIMERS.pop(chat_id, None) is None:
+            return
+        _ACKED_AT[chat_id] = time.monotonic()
+    _post_parts(chat_id, [(ACK_TEXT, [])])
+
+
+def _settle_ack(chat_id: str) -> None:
+    """Câu trả lời thật đã đi: hủy tin báo nhận đang hẹn, lượt sau được báo lại."""
+    with _ACK_LOCK:
+        timer = _ACK_TIMERS.pop(chat_id, None)
+        _ACKED_AT.pop(chat_id, None)
+    if timer is not None:
+        timer.cancel()

@@ -9284,7 +9284,10 @@ def test_zalo_tk_cong_ty_gui_qua_listener_co_chu_ky_va_chan_tin_vao_nhom(monkeyp
     assert telegram.send("xin chào cả nhóm", chat_id="zg:g5") == 0 and len(calls) == n
     assert telegram.edit_text("zu:u77", 5, "x") is False
     telegram.send_chat_action("zu:u77")
-    assert len(calls) == n                                       # không bật «đang soạn» qua tài khoản cá nhân
+    #  ai-CR-130: chat riêng Zalo có «đang soạn» (đường /typing, không phải tin) + hẹn tin báo nhận — hủy ngay ở đây.
+    assert len(calls) == n + 1 and calls[-1][:2] == ("POST", "/typing")
+    za._settle_ack("zu:u77")
+    n += 1
     #  Tài khoản cá nhân gửi được tệp (bot Zalo chính thức thì không).
     assert telegram.send_document("zu:u77", "bao-cao.xlsx", b"PK\x03\x04data", caption="<b>Báo cáo</b>") > 0
     f = calls[-1][2]["file"]
@@ -9502,3 +9505,75 @@ def test_tra_loi_xong_ma_luot_lap_ke_hoach_bi_ngat_thi_vong_beat_lam_lai(db, bot
     other = _task_hoi_lai(db, service)
     assert other.questions
     assert service.resume_lost_replans(db, now=datetime.now() + timedelta(hours=1)) == 0
+
+
+# --- ai-CR-130: chữ đậm / nghiêng trên Zalo cá nhân + «đang soạn» / «em nhận tin rồi» -----------------------------
+def test_zalo_tk_cong_ty_giu_chu_dam_nghieng_theo_vi_tri_utf16():
+    """08/10: câu trả lời giá vàng trên Zalo «không có in đậm nhạt» — tin cá nhân không nhận HTML, phải gửi kiểu chữ."""
+    from app.modules.agent_hub import zalo_account as za
+
+    plain, spans = za.to_styled("<b>Giá</b> vàng <i>mới</i> &lt;5\n\n\n\n<b>I. Trong nước</b>\n• <b>140</b> triệu")
+    assert plain == "Giá vàng mới <5\n\nI. Trong nước\n• 140 triệu"
+    assert [(plain[a:b], st) for a, b, st in spans] == [("Giá", "b"), ("mới", "i"), ("I. Trong nước", "b"), ("140", "b")]
+    #  Liên kết thành «chữ (địa chỉ)», thẻ lạ bỏ, thẻ không đóng không làm hỏng.
+    plain, spans = za.to_styled('<a href="https://erp.x/po/1">ĐMH <b>1</b></a> <code>AI-7</code> <b>mở')
+    assert plain == "ĐMH 1 (https://erp.x/po/1) AI-7 mở" and [(plain[a:b], st) for a, b, st in spans] == [("1", "b")]
+    #  Vị trí theo UTF-16 (như JavaScript): biểu tượng ngoài BMP chiếm 2 đơn vị.
+    plain, spans = za.to_styled("😀 <b>ok</b>")
+    (part, styles), = za.split_styled(plain, spans)
+    assert styles == [{"start": 3, "len": 2, "st": "b"}]
+    #  Cắt tin dài: kiểu chữ vắt qua chỗ cắt được chia đúng cho từng mẩu, vị trí tính lại từ đầu mẩu.
+    long = "<b>" + "chữ " * 600 + "</b>"
+    plain, spans = za.to_styled(long)
+    parts = za.split_styled(plain, spans)
+    assert len(parts) == 2 and all(p[1] and p[1][0]["start"] == 0 for p in parts)
+    for part, styles in parts:
+        s = styles[0]
+        assert s["start"] + s["len"] <= len(part)
+    huge = za.split_styled("x " * 20_000, [])
+    assert len(huge) == za.MAX_PARTS and huge[-1][0].endswith("(đã cắt bớt)")
+    assert za.split_styled("", []) == [] and za.split_styled("   ", []) == []
+
+
+def test_zalo_tk_cong_ty_gui_kieu_chu_va_bao_nhan_tin_khi_tra_loi_lau(monkeypatch):
+    import threading
+
+    from app.modules.agent_hub import zalo_account as za
+
+    monkeypatch.setattr(settings, "AGENT_ZALO_LISTENER_URL", "http://zalo-listener:3100")
+    calls: list[tuple[str, dict]] = []
+    monkeypatch.setattr(za, "_request", lambda m, path, body=None, timeout=0: calls.append((path, body)) or
+                        {"ok": True, "msg_id": "1"})
+    timers: list = []
+
+    class FakeTimer:
+        def __init__(self, sec, fn, args=()):
+            self.fn, self.args, self.cancelled = fn, args, False
+            timers.append(self)
+
+        def start(self):
+            pass
+
+        def cancel(self):
+            self.cancelled = True
+
+    monkeypatch.setattr(threading, "Timer", FakeTimer)
+    za._ACK_TIMERS.clear()
+    za._ACKED_AT.clear()
+    telegram.send("<b>Kết luận</b>: giá đứng", chat_id="zu:u77")
+    assert calls[-1][0] == "/send" and calls[-1][1]["styles"] == [{"start": 0, "len": 8, "st": "b"}]
+    #  Nhận tin: «đang soạn» ngay, hẹn tin báo nhận; trả lời kịp thì hủy hẹn.
+    telegram.send_chat_action("zu:u77")
+    assert calls[-1] == ("/typing", {"thread_id": "u77", "thread_type": "user"}) and len(timers) == 1
+    telegram.send("xong", chat_id="zu:u77")
+    assert timers[0].cancelled
+    #  Lượt sau trả lời lâu: tới hạn thì gửi «em nhận tin rồi» MỘT lần, gọi «đang soạn» lần nữa không hẹn thêm.
+    telegram.send_chat_action("zu:u77")
+    timers[-1].fn(*timers[-1].args)
+    assert calls[-1][0] == "/send" and "Em nhận tin rồi" in calls[-1][1]["text"]
+    n = len(timers)
+    telegram.send_chat_action("zu:u77")
+    assert len(timers) == n
+    #  Nhóm thì không bao giờ: bot không nói trong nhóm.
+    telegram.send_chat_action("zg:g5")
+    assert len(timers) == n and calls[-1][0] != "/typing" or calls[-1][1].get("thread_type") != "group"

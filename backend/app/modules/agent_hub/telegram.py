@@ -293,7 +293,11 @@ def send_chat_action(chat_id: str = "", action: str = "typing") -> None:
     if relaying():
         return
     if channels.is_zalo_account(chat_id):
-        return                          # ai-CR-122: tài khoản cá nhân — không bật «đang soạn», đỡ một lượt gọi Zalo
+        #  ai-CR-130: «đang soạn» trên Zalo + hẹn tin «em nhận tin rồi» nếu trả lời lâu.
+        from . import zalo_account
+
+        zalo_account.send_typing(chat_id)
+        return
     if channels.is_zalo(chat_id):
         from . import zalo
 

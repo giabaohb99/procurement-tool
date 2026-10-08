@@ -371,6 +371,14 @@ async function doSend(body) {
   if (!/^\d{1,40}$/.test(threadId)) throw new Error("thread_id không hợp lệ");
   const type = body.thread_type === "group" ? ThreadType.Group : ThreadType.User;
   const content = { msg: String(body.text || "").slice(0, 4000) };
+  // ai-CR-130: chữ đậm / nghiêng — chỉ nhận b / i / u / s, vị trí nằm trong tin.
+  const styles = Array.isArray(body.styles) ? body.styles : [];
+  const okStyles = styles
+    .filter((x) => x && ["b", "i", "u", "s"].includes(x.st) && Number.isInteger(x.start) && Number.isInteger(x.len)
+      && x.start >= 0 && x.len > 0 && x.start + x.len <= content.msg.length)
+    .slice(0, 200)
+    .map((x) => ({ start: x.start, len: x.len, st: x.st }));
+  if (okStyles.length) content.styles = okStyles;
   if (body.file && body.file.b64) {
     const data = Buffer.from(String(body.file.b64), "base64");
     let filename = String(body.file.name || "tep.bin").replace(/[\\/:*?"<>|]/g, "_").slice(0, 150);
@@ -449,6 +457,15 @@ async function handle(req, res) {
     if (state.value === "connected") return reply(res, 200, { ok: true, state: state.value });
     loginQR();
     return reply(res, 200, { ok: true, state: "qr" });
+  }
+  if (req.method === "POST" && url.pathname === "/typing") {
+    // ai-CR-130: «đang soạn tin» — không qua hàng gửi giãn nhịp (không phải tin), lỗi thì bỏ qua.
+    const threadId = String(json.thread_id || "");
+    if (api && state.value === "connected" && /^\d{1,40}$/.test(threadId)) {
+      const type = json.thread_type === "group" ? ThreadType.Group : ThreadType.User;
+      api.sendTypingEvent(threadId, type).catch(() => {});
+    }
+    return reply(res, 200, { ok: true });
   }
   if (req.method === "POST" && url.pathname === "/logout") {
     await logout();

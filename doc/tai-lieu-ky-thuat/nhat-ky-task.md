@@ -13105,3 +13105,14 @@ lại bằng tài khoản công ty. Bài kiểm máy chủ, giao diện và ti�
 
 Mã nguồn: zalo-listener/index.mjs (/logout) · backend/app/modules/agent_hub/zalo_account.py · service.py · controller.py · user_guide.py · frontend-v2/src/modules/assistant/components/zalo-account-card.tsx · api/chat-group-api.ts · hooks/use-chat-groups.ts
 Deploy: dev 08/10 (Agent 1 gộp 612ac875, dựng lại stack agent-hub và erp); prod giữ lại.
+
+## ai-CR-130 | Bot trên Zalo có chữ đậm nghiêng, báo đang soạn và báo đã nhận tin khi trả lời lâu
+- status: dang-lam
+- date: 2026-10-08
+Đại ca hỏi giá vàng qua tài khoản Zalo công ty thấy bot trả lời lâu và câu trả lời không có chữ đậm, chữ nghiêng hay chỉ mục.
+Zalo cá nhân không đọc được định dạng kiểu web nên em đổi sang kiểu chữ riêng của Zalo: chữ đậm, nghiêng, gạch chân, gạch ngang
+hiện đúng chỗ, kể cả khi tin dài bị cắt làm nhiều mẩu. Khi nhận tin, bot bật dòng «đang soạn tin» trên Zalo; quá tám giây chưa
+có câu trả lời thì bot nhắn một câu «em nhận tin rồi, đang tìm câu trả lời», mỗi lượt chỉ một lần. Câu trả lời tra cứu trên mạng
+nay đánh số các nhóm I, II, III và nhóm cuối là nhận định, áp cho cả Telegram. Bài kiểm của bot và của tiến trình Zalo chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/zalo_account.py (to_styled, split_styled, send_typing) · telegram.py · research.py · zalo-listener/index.mjs (/typing, styles) · test/backend/test_agent_hub.py
