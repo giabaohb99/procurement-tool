@@ -59,6 +59,10 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
     ca quét QR đăng nhập một lần; chấp nhận rủi ro bị khóa tài khoản.
 - **Xưng hô**: mỗi người theo sổ ghi nhớ riêng; mặc định «anh/chị» (ai-CR-106).
 
+- **08/10 (bổ sung):** bot cá nhân **đọc nhóm, ghi nhận tóm tắt và tệp, nhưng CHỈ trả lời riêng** (Telegram + Zalo). Sau
+  này nếu cho trả lời khi được gọi trong nhóm thì **số liệu ERP luôn nhắn riêng** cho người gọi (biết ai hỏi, kiểm được
+  quyền). Trợ lý AI trên web **không cần** tự nạp sổ ghi nhớ cá nhân.
+
 ## 4. Lộ trình Zalo
 
 | Bước | Việc | Cỡ |
