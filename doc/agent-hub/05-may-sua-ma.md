@@ -43,6 +43,7 @@ AGENT_ASSISTANT_USER=
 EOF'
 
 # 3. Dựng lại (backend + giao diện v2 đổi; migration chạy trong start.prod.sh của api)
+#    ⚠️ api / celery-worker / celery-beat / agent-poller là BỐN image riêng: đổi requirements thì build đủ cả bốn.
 ssh <vps> 'cd ~/procurement-tool-dev && docker compose --env-file .env.dev -f docker-compose.dev.yml \
   up -d --build api celery-worker celery-beat erp agent-poller redis-dev-forward'
 ssh <vps> 'cd ~/procurement-tool-dev && docker compose --env-file .env.dev -f docker-compose.dev.yml \

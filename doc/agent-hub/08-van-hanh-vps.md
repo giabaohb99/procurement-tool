@@ -85,6 +85,12 @@ prod = `main`) · `reset --hard` · `up -d --build` đúng service (bỏ trống
 thì **tự quay về `PREV`**. In các dòng `PREV= HEAD= SERVICES= HEALTH= RESULT=ok|fail|rolled_back|busy`, ghi tệp nhật ký ở
 `~/agent-deploy-logs`. Đường gộp + deploy dev của việc sửa mã (`coder.merge_and_deploy`) cũng đi qua tệp này từ ai-CR-067.
 
+⚠️ **Bốn service backend trên dev dùng bốn IMAGE RIÊNG** (`procurement-tool-dev-api`, `-celery-worker`, `-celery-beat`,
+`-agent-poller`), không dùng chung image api (Agent 1 phát hiện khi deploy ai-CR-115, 08/10/2026). Đổi `requirements.txt`
+hay `Dockerfile` mà chỉ `--build api` thì worker / beat / poller vẫn chạy mã cũ, thiếu thư viện mới (lần đó là `pycel`). Bỏ
+trống danh sách service thì `pick_services` đã tự chọn đủ bốn; gõ tay thì luôn kê đủ `api celery-worker celery-beat
+agent-poller`.
+
 ## 6. Tự vận hành (phase 7)
 
 ```

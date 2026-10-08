@@ -12901,3 +12901,4 @@ cũng được dặn phân tích chi tiết hơn: số liệu cụ thể, so sá
 lại image api vì thêm thư viện tính công thức Excel. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/doc_text.py · agent_hub/service.py (_doc_followup, flush_pending_doc) · agent_hub/telegram.py (split_long) · agent_hub/tasks.py (agent.doc_wait) · assistant/service.py · assistant/provider/openai_compat.py · backend/requirements.txt (pycel) · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp 0c449f04, sao lưu DB dev trước, dựng lại image api, celery-worker, celery-beat, agent-poller — bốn image riêng); máy sửa mã đã dựng lại; prod giữ lại.
