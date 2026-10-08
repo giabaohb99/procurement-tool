@@ -221,11 +221,15 @@ def scan(db: Session, *, now: datetime | None = None) -> int:
 # ---------------------------------------------------------------------------
 # Trả lời thẻ
 # ---------------------------------------------------------------------------
-_YES = re.compile(r"^\s*(?:ok\s+|ừ\s+|được\s+|có\s+)?(làm|gộp|tóm tắt|đọc|phân tích)\b(.*)$", re.I | re.S)
-_DOC_VERBS = ("tóm tắt", "đọc", "phân tích")
+_YES = re.compile(r"^\s*(?:(?:ok|[uừ]|[dđ][uư][oợ]c|c[oó])[,!]?\s+)?"
+                  r"(l[aà]m|g[oộ]p|t[oó]m\s*t[aắ]t|[dđ][oọ]c|ph[aâ]n\s*t[ií]ch)\b(.*)$", re.I | re.S)
+#  Động từ hỏi về TÀI LIỆU, tra theo dạng không dấu (`fold`).
+_DOC_VERBS = {"tom tat": "tóm tắt", "doc": "đọc", "phan tich": "phân tích"}
 #  Sau «làm / gộp» chỉ nhận các chữ này đứng đầu — «làm sao để…», «làm ơn tra giá…» không phải trả lời thẻ.
-_YES_NEXT = ("biên", "recap", "tệp", "đi", "luôn", "hết", "nhé", "giúp", "cả", "theo", "mẫu", "báo", "ngay")
-_NO = re.compile(r"^\s*(bỏ qua|bỏ|không cần|không|thôi)(\s+(nhé|đi|hết))?\s*[.!]?\s*$", re.I)
+_YES_NEXT = ("bien", "recap", "tep", "di", "luon", "het", "nhe", "giup", "ca", "theo", "mau", "bao", "ngay")
+_NO = re.compile(r"^\s*(b[oỏ]\s+qua|b[oỏ]|kh[oô]ng\s+c[aầ]n|kh[oô]ng|th[oô]i)(\s+(nh[eé]|[dđ]i|h[eế]t))?\s*[.!]?\s*$", re.I)
+_FILLER = re.compile(r"(?<!\w)(bi[eê]n\s+b[aả]n|recap|t[eệ]p|[dđ]i|lu[oô]n|nh[eé]|gi[uú]p(\s+em)?|h[eế]t|c[aả]|ngay)(?!\w)", re.I)
+_PICK = re.compile(r"t[eệ]p\s+((?:\d+\s*(?:,|v[aà]|\s)\s*)*\d+)", re.I)
 
 
 def pending_ask(db: Session, chat_id: str, before_id: int) -> AgentMessage | None:
@@ -252,20 +256,24 @@ def parse_reply(text: str, n_files: int) -> tuple[str, list[int], str] | None:
     m = _YES.match(low)
     if not m:
         return None
-    verb = m.group(1).lower()
+    from app.modules.assistant.glossary import fold
+
+    verb = fold(m.group(1))
     rest = m.group(2) or ""
-    first = rest.strip().split(" ")[0].lower().strip(",.!") if rest.strip() else ""
+    first = fold(rest.strip().split(" ")[0]) if rest.strip() else ""
     if first and first not in _YES_NEXT:
         return None
     picks = []
-    pm = re.search(r"tệp\s+((?:\d+\s*(?:,|và|\s)\s*)*\d+)", rest, re.I)
+    pm = _PICK.search(rest)
     if pm:
         picks = sorted({int(x) for x in re.findall(r"\d+", pm.group(1)) if 1 <= int(x) <= n_files})
         if not picks:
             return None
         rest = rest[:pm.start()] + rest[pm.end():]
+    #  Bỏ chữ đệm còn sót («tệp», «đi», «luôn», «giúp em»…) để phần còn lại chỉ là tên mẫu hoặc câu hỏi.
+    rest = " ".join(_FILLER.sub(" ", rest).split())
     if verb in _DOC_VERBS:
-        return "doc", picks, (f"{verb} {rest.strip()}".strip() if rest.strip() else "")
+        return "doc", picks, (f"{_DOC_VERBS[verb]} {rest.strip()}".strip() if rest.strip() else "")
     return "yes", picks, rest.strip()
 
 

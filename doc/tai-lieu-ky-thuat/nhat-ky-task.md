@@ -12933,3 +12933,14 @@ Docs; thẻ báo chia hai nhóm ghi âm và tài liệu, đánh số chung. Ngư
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (read_docs, is_media) · agent_hub/google_link.py (export_text) · test/backend/test_agent_hub.py
 Deploy: dev 08/10 (Agent 1 gộp 6b1d5e6a, sao lưu DB dev trước, dựng lại đủ 4 image); prod giữ lại.
+
+
+## ai-CR-118 | Trả lời thẻ của bot nhận cả chữ không dấu
+- status: xong
+- date: 2026-10-08
+Đại ca trả lời thẻ tệp Drive bằng «Tom tắt tệp» thiếu dấu ở chữ «Tóm» nên bot không nhận ra, câu rơi sang Trợ lý AI và Trợ lý
+đoán nhầm sang tệp Excel gửi hôm trước. Nay mọi câu trả lời thẻ của bot, gồm thẻ tệp trên Drive và thẻ việc rút từ biên bản, đều
+nhận cả có dấu lẫn không dấu; chữ đệm như «tệp», «biên bản», «đi», «giúp em» được bỏ để phần còn lại đúng là tên mẫu hoặc câu
+hỏi; chọn mẫu biên bản cũng nhận chữ không dấu. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (parse_reply) · agent_hub/meeting_actions.py (parse_reply) · agent_hub/meetings.py (template_of, resolve_template) · test/backend/test_agent_hub.py

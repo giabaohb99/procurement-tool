@@ -9107,3 +9107,21 @@ def test_doc_tep_pdf_word_tren_drive_ra_chu_khong_ra_byte(db, monkeypatch):
     assert "Doanh thu quý 3 tăng 12%" in text and "PK" not in text[:5]
     monkeypatch.setattr(google_link.requests, "get", lambda *a, **kw: R("xin chào".encode()))
     assert google_link.export_text(db, SimpleNamespace(id=1), "F", "text/plain") == "xin chào"
+
+
+def test_tra_loi_the_khong_dau_van_nhan(db):
+    """ai-CR-118: đại ca gõ «Tom tắt tệp» (thiếu dấu) — thẻ không nhận, câu rơi sang Trợ lý rồi đoán nhầm tệp khác."""
+    from app.modules.agent_hub import meeting_actions as ma, meeting_drive as md
+
+    assert md.parse_reply("Tom tắt tệp", 1) == ("doc", [], "")
+    assert md.parse_reply("Tom tat tep 1 rui ro", 2) == ("doc", [1], "tóm tắt rui ro")
+    assert md.parse_reply("phan tich tệp 2 chi phí", 2) == ("doc", [2], "phân tích chi phí")
+    assert md.parse_reply("lam bien ban chinh thuc", 1) == ("yes", [], "chinh thuc")
+    assert md.parse_reply("Duoc, lam tep 1 va 2", 3) == ("yes", [1, 2], "")
+    assert md.parse_reply("bo qua", 1) == ("no", [], "") and md.parse_reply("khong can", 1)[0] == "no"
+    assert md.parse_reply("lam sao de xuat bao cao", 1) is None
+    assert md.parse_reply("tom tat nhom ke toan", 1) is None
+    assert ma.parse_reply("tao het du an 2", 3) == ("yes", [1, 2, 3], "2")
+    assert ma.parse_reply("Tao 1, 3", 3) == ("yes", [1, 3], "")
+    assert ma.parse_reply("khong tao", 3) == ("no", [], "")
+    assert ma.parse_reply("tao phieu mua hang", 3) is None

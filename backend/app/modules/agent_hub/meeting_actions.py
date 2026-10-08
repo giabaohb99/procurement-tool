@@ -241,9 +241,12 @@ def offer(db: Session, row: AgentMeeting) -> int:
 # ---------------------------------------------------------------------------
 # Trả lời thẻ bằng chữ
 # ---------------------------------------------------------------------------
-_YES = re.compile(r"^\s*(?:ok\s+|ừ\s+|được\s+)?(tạo|làm)\s*(hết|tất cả|cả|các mục|luôn)?\b(.*)$", re.I | re.S)
-_NO = re.compile(r"^\s*(bỏ|không tạo|khỏi tạo|thôi)(\s+(hết|đi|nhé|các mục))?\s*[.!]?\s*$", re.I)
-_PROJECT = re.compile(r"(?:dự án|du an|project)\s*(?:số\s*)?(.+)$", re.I)
+#  ai-CR-118: nhận cả có dấu lẫn không dấu («tao het du an 2»).
+_YES = re.compile(r"^\s*(?:(?:ok|[uừ]|[dđ][uư][oợ]c)[,!]?\s+)?(t[aạ]o|l[aà]m)\s*"
+                  r"(h[eế]t|t[aấ]t\s*c[aả]|c[aả]|c[aá]c\s*m[uụ]c|lu[oô]n)?\b(.*)$", re.I | re.S)
+_NO = re.compile(r"^\s*(b[oỏ]|kh[oô]ng\s+t[aạ]o|kh[oỏ]i\s+t[aạ]o|th[oô]i)(\s+(h[eế]t|[dđ]i|nh[eé]|c[aá]c\s*m[uụ]c))?\s*[.!]?\s*$",
+                 re.I)
+_PROJECT = re.compile(r"(?:d[uự]\s*[aá]n|project)\s*(?:s[oố]\s*)?(.+)$", re.I)
 
 
 def pending_card(db: Session, chat_id: str, before_id: int) -> AgentMessage | None:
@@ -274,7 +277,7 @@ def parse_reply(text: str, n_items: int) -> tuple[str, list[int], str] | None:
         project = pm.group(1).strip(" .,«»\"")
         rest = rest[:pm.start()]
     nums = sorted({int(x) for x in re.findall(r"\d+", rest) if 1 <= int(x) <= n_items})
-    if re.sub(r"[\d,;.\s]|và|mục|số", "", rest, flags=re.I).strip():
+    if re.sub(r"[\d,;.\s]|v[aà]|m[uụ]c|s[oố]", "", rest, flags=re.I).strip():
         return None                      # còn chữ lạ («tạo phiếu mua hàng…») → không phải trả lời thẻ
     if not nums and (m.group(2) or not rest.strip()):
         nums = list(range(1, n_items + 1))

@@ -159,9 +159,12 @@ def wants_meeting(text: str) -> bool:
 
 def template_of(text: str) -> str:
     """Khóa mẫu SẴN khớp chữ trong câu (không xét mẫu riêng); không khớp = mẫu mặc định."""
-    t = (text or "").lower()
+    #  ai-CR-118: so khớp không dấu («chinh thuc» cũng ra mẫu chính thức).
+    from app.modules.assistant.glossary import fold
+
+    t = fold(text)
     for tpl in BUILTIN.values():
-        if any(w in t for w in tpl.words):
+        if any(fold(w) in t for w in tpl.words):
             return tpl.key
     return DEFAULT_TEMPLATE
 
@@ -205,10 +208,12 @@ def resolve_template(db: Session | None, user_id: int, text: str, *, allow_adhoc
         m = _ADHOC_RE.search(raw)
         if m:
             return Template(CUSTOM_KEY, "Theo yêu cầu riêng", m.group(1).strip()[:TEMPLATE_PROMPT_MAX])
-    low = raw.lower()
+    from app.modules.assistant.glossary import fold
+
+    low = fold(raw)
     if db is not None:
         for tpl in sorted(personal_templates(db, user_id), key=lambda t: -len(t.label)):
-            if tpl.label.lower() in low:
+            if fold(tpl.label) and fold(tpl.label) in low:
                 return tpl
     return BUILTIN[template_of(raw)]
 
