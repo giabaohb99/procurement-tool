@@ -223,10 +223,52 @@ Thứ tự mượn từ IDA phase 5 → 7 (họ đã hỏi khách 27 câu, ta h�
 | G-4 | **Đồng hồ chờ**: câu hỏi của khách / của sếp chưa ai trả lời sau n giờ làm việc → nhắc người phụ trách | 2 ngày |
 | T-14 | **Nhắc hạn 3 mốc** cho việc rút từ biên bản và thẻ cá nhân; bản tin cuối ngày | 2 ngày |
 | Z-3/Z-4 | Zalo hướng B: tiến trình phụ ghi lặng nhóm Zalo → kho D; đọc nhóm Zalo qua 3 công cụ nhóm | 4 ngày |
-| N-01/N-05 | Nhiều bot một nền (Thư ký, Nghiên cứu tách token), cách ly khóa | 3 ngày |
+| N-01/N-05 | Nhiều bot một nền + **bot riêng cho từng người** (ghi nhận 08/10, §7 — chưa làm) | ~1 tuần |
 | M-07 | Khóa AI cá nhân cho Trợ lý trên web | 2 ngày |
 | Prod | Đưa toàn bộ phase 7b–11 lên prod theo stack đã tách (S-1) — hiện prod đang giữ từ 19/09 | 1 ngày |
 | Khách | Tách theo công ty (tenant) trên nút A và D khi có khách đầu tiên | sau |
+
+## 7. Ghi nhận — BOT RIÊNG cho từng người (N-01), CHƯA làm
+
+> Đại ca 08/10/2026: *"nếu anh muốn tự cấu hình 1 con bot riêng được không… thôi, ghi nhận lại thôi, chưa cần làm, nhưng nếu
+> làm thì mình cần hạ tầng như thế nào"*.
+
+**Hiện có:** mọi người dùng CHUNG một bot (Lạc Lạc, token ở `.env.agent`); mỗi người tự chỉnh trợ lý của mình (khóa AI, sổ nhớ,
+xưng hô, mẫu biên bản, chuông, Google). **Chưa có:** con bot riêng mang tên / tính cách / token riêng.
+
+### 7.1 Làm thì làm gì (~1 tuần, trên dịch vụ AI đã tách)
+
+| Phần | Nội dung |
+|---|---|
+| Bảng | `tab_agent_bot`: chủ (user_id), kênh (Telegram / Zalo), token mã hóa, tên, cách xưng hô, lời chào, tính cách, bật / tắt từng nhóm tính năng, danh sách người được dùng, `webhook_secret`, trạng thái |
+| Mã chat | thêm mã bot vào mã chat (`tg:<bot>:<chat>`, `zl:<bot>:<chat>`) — cùng cách lớp kênh ai-CR-111 đã làm; bot chung giữ mã cũ |
+| Giao diện | Trang cá nhân → tab «Bot của tôi»: dán token (tạo ở BotFather / Zalo Bot Manager), đặt tên, tính cách, tính năng, ai được dùng |
+| Nhận tin | **webhook** cho bot riêng (Telegram / Zalo đẩy tin về `https://<tên miền dịch vụ AI>/hook/<bot>/<secret>`); bot chung có thể giữ polling |
+| Bộ não | dùng chung: sổ nhớ, công cụ ERP đúng quyền, khóa AI **của chủ bot** (người dùng phụ dùng khóa riêng của họ nếu có) |
+| Câu chờ chốt | ai được tạo bot (tự do / quản trị duyệt) · bot chỉ chủ dùng hay chia cho người khác (bot của phòng) · làm trước hay sau Zalo + prod |
+
+### 7.2 Hạ tầng cần
+
+| Thứ | Vì sao | Cụ thể |
+|---|---|---|
+| **Tên miền + HTTPS công khai** cho dịch vụ AI | Telegram / Zalo chỉ đẩy webhook tới địa chỉ HTTPS công khai | vd `bot.degoholding.vn` qua Cloudflare (tunnel hoặc proxy), chặn mọi đường trừ `/hook/*` và `/api/health` |
+| **Webhook thay polling** | polling = mỗi bot một kết nối treo 25 s liên tục; 100 bot là 100 luồng chờ suông | webhook: không có tin thì không tốn gì; nhận tin trả 200 ngay rồi đẩy vào hàng đợi |
+| **Hàng đợi + worker tách loại** | webhook phải trả lời nhanh (Telegram chờ vài giây là gửi lại); lượt AI mất 5–60 s | Redis + Celery: hàng `chat` (nhiều luồng, việc chờ mạng) và hàng `heavy` (ffmpeg biên bản, đọc tệp lớn — ít luồng, ăn CPU) |
+| **Giới hạn tốc độ gửi** | Telegram: ~30 tin / giây mỗi bot, 1 tin / giây mỗi chat; Zalo có trần riêng | bộ đếm theo bot trong Redis, tin dư xếp hàng |
+| **Khóa mã hóa riêng** | token bot là chìa khóa điều khiển bot — lộ là người khác nhắn dưới tên bot | khóa Fernet RIÊNG cho token bot (không suy từ JWT_SECRET), xoay được; đổi token ở BotFather thì gỡ token cũ |
+| **Theo dõi từng bot** | chủ thu hồi token / bot bị khóa thì bot «chết im» | vòng nền hỏi `getWebhookInfo` / lỗi gửi tin → báo chủ bot qua bot chung |
+| **Sao lưu** | thêm bảng bot + token mã hóa | đi chung sao lưu DB `agent_hub` |
+
+### 7.3 Cỡ máy theo số bot
+
+| Số bot riêng | Cách nhận tin | Máy |
+|---|---|---|
+| ≤ 20 | polling được (thêm luồng trong `agent-poller`) | VPS AI đề xuất (4 lõi, 8 GB) là đủ |
+| 20 – 200 | **bắt buộc webhook** | cùng VPS AI: `agent-api` 2–4 tiến trình nhận webhook, worker hàng `chat` 4–8 luồng, hàng `heavy` 1–2 |
+| > 200 hoặc có khách ngoài | webhook | tách 2 máy: máy nhận webhook + API, máy worker; Redis và MySQL riêng (hoặc dịch vụ quản lý); chia kho theo công ty (§4) |
+
+Chi phí AI không đổi theo số bot: mỗi lượt vẫn tính vào khóa AI của chủ bot / người hỏi. Thứ tăng theo số bot chỉ là RAM / CPU
+cho worker và dung lượng kho tin nhắn.
 
 ## 6. Đang chờ
 
