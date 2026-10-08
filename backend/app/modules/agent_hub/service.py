@@ -1225,8 +1225,9 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             or _word_by_text(db, chat_id, row, text)
             or _cost_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text)):
         return
-    #  Trạm kế hoạch vừa hỏi lại (ai-CR-015): tin kế là câu trả lời CỦA VIỆC ĐÓ, không phải việc mới.
-    if task_id := _plan_answer_target(db, chat_id, row):
+    #  Trạm kế hoạch vừa hỏi lại (ai-CR-015): tin kế là câu trả lời CỦA VIỆC ĐÓ, không phải việc mới. ai-CR-125: lời
+    #  chào trơn («lô») không phải câu trả lời — 08/10 bot gắn «lô» vào AI-0005 rồi hỏi lại «lô là gì».
+    if not is_greeting(text) and (task_id := _plan_answer_target(db, chat_id, row)):
         _answer_plan(db, chat_id, row, text, task_id)
         return
 
@@ -1427,7 +1428,30 @@ _CODE_IN_TEXT = re.compile(r"(?i)\bai[-\s]?0*(\d{1,6})\b")
 #  «Chỉ vào việc» phải là cụm CÓ DANH TỪ («việc này», «fix này», «code vừa sửa», «commit mới này»):
 #  «mới», «này» đứng một mình thì «bỏ nút tạo mới này» — một yêu cầu MỚI — thành lệnh bỏ việc.
 _TASK_DEICTIC = re.compile(
-    r"(?<!\w)(việc|fix|bản sửa|bản vá|commit|code|mã)(?!\w).{0,25}(?<!\w)(này|nãy|đó|vừa|mới)(?!\w)")
+    r"(?<!\w)(việc|kế hoạch|fix|bản sửa|bản vá|commit|code|mã)(?!\w).{0,25}(?<!\w)(này|nãy|đó|vừa|mới)(?!\w)")
+#  ai-CR-125: 08/10 đại ca nhắn «bỏ kế hoạch 0005 đi» — không có chữ «AI-» nên bot không nhận ra mã việc, gắn câu đó làm
+#  câu trả lời kế hoạch. Nhận thêm «việc / kế hoạch / task <số>» và số 4 chữ số đệm 0 («0005») đứng riêng.
+_TASK_NUMBER = re.compile(r"(?<!\w)(?:việc|kế hoạch|task)\s+(?:số\s+)?0*(\d{1,6})(?!\w)|(?<![\w.,])(0\d{3})(?![\w.,])")
+#  Lời chào trơn («lô», «alo», «chào em») KHÔNG phải câu trả lời cho thẻ hỏi lại, cũng không phải việc (QĐ-12). So trên
+#  chữ đã bỏ dấu.
+_GREETING = re.compile(r"^(a?\s*l[oô]+|al+o+|hello|hi|chao(\s+(em|anh|bot|ban|lac lac|ca nha))?|e|oi|em oi)[\s.!?,~]*$")
+
+
+def _task_code_in(low: str) -> str:
+    """Mã việc «AI-0007» trong câu: «AI-7», «ai 0007», «việc 7», «kế hoạch 0005», «0005». Không có thì ""."""
+    m = _CODE_IN_TEXT.search(low)
+    if m:
+        return f"AI-{int(m.group(1)):04d}"
+    m = _TASK_NUMBER.search(low)
+    if m:
+        return f"AI-{int(m.group(1) or m.group(2)):04d}"
+    return ""
+
+
+def is_greeting(text: str) -> bool:
+    from app.modules.assistant.glossary import fold
+
+    return bool(_GREETING.match(fold(text or "").strip()))
 #  Lệnh TRƠN (không mã việc, không cụm chỉ vào việc): chỉ gồm động từ + vài chữ đệm. «gộp hai cột
 #  ngày» không khớp -> không phải lệnh, đi đường cũ thành việc mới.
 _BARE = {
@@ -1436,7 +1460,7 @@ _BARE = {
     "deploy": r"^(deploy|triển khai|đẩy lên dev|lên dev)(\s+(dev|đi|luôn|nhé|nha|lại|giúp|anh|em|lên))*[.! ]*$",
     "approve": r"^(ok[, ]+)?duyệt(\s+(đi|luôn|nhé|nha|kế hoạch))*[.! ]*$",
     "done": r"^(xong|đóng)(\s+(rồi|việc|nhé|đi|nha))*[.! ]*$",
-    "cancel": r"^(bỏ|hủy)(\s+(việc|đi|luôn))+[.! ]*$",
+    "cancel": r"^(bỏ|hủy)(\s+(việc|kế hoạch|đi|luôn|nhé|nha))+[.! ]*$",
     "continue": r"^làm tiếp(\s+(đi|nhé|nha))*[.! ]*$",
     "fixgate": r"^sửa cho (xanh|qua)(\s+(đi|nhé|nha))*[.! ]*$",
     "revert": r"^(thu hồi|revert)(\s+(đi|luôn|nhé))*[.! ]*$",
@@ -1459,7 +1483,7 @@ _COMMANDS = (   # (tên, mẫu) — thứ tự là thứ tự ưu tiên
     ("pr", r"(?<!\w)(mở pr|link pr)(?!\w)"),
     ("detail", r"^(chi tiết|xem)(?!\w)"),
     ("done", r"^(xong|đóng)(\s+(rồi|việc|nhé|đi|nha))?(?!\w)"),
-    ("cancel", r"^(bỏ|hủy)\s+(việc|đi|luôn|hẹn)(?!\w)|^(bỏ|hủy)\s+ai[-\s]?\d"),
+    ("cancel", r"^(bỏ|hủy)\s+(việc|kế hoạch|đi|luôn|hẹn)(?!\w)|^(bỏ|hủy)\s+ai[-\s]?\d"),
 )
 _OPEN_FOR = {   # thao tác -> trạng thái việc hợp lệ khi đoán việc (không nêu mã)
     "merge": (ST_REVIEW, ST_PROD), "deploy": (ST_PROD,), "revert": (ST_PROD,), "approve": (ST_PLAN,),
@@ -1500,8 +1524,8 @@ def route_task_command(db: Session, chat_id: str, row: AgentMessage, text: str) 
     """Tin này là lệnh trên một việc thì làm và trả True; không phải thì False (đi đường cũ)."""
     low = text.strip().lower()
     words = len(low.split())
-    code_m = _CODE_IN_TEXT.search(low)
-    pointed = bool(code_m) or (words <= 20 and bool(_TASK_DEICTIC.search(low)))
+    code = _task_code_in(low)
+    pointed = bool(code) or (words <= 20 and bool(_TASK_DEICTIC.search(low)))
     action = _match_command(low)
     if action in ("rule_yes", "rule_no"):
         return _rule_by_text(db, chat_id, row, action)
@@ -1513,10 +1537,10 @@ def route_task_command(db: Session, chat_id: str, row: AgentMessage, text: str) 
     if not (pointed or bare or action == "replan"):
         return False
 
-    if code_m:
-        task = db.scalar(select(AgentTask).where(AgentTask.code == f"AI-{int(code_m.group(1)):04d}"))
+    if code:
+        task = db.scalar(select(AgentTask).where(AgentTask.code == code))
         if task is None:
-            reply(db, chat_id, f"Không có việc <b>AI-{int(code_m.group(1)):04d}</b> trong sổ.")
+            reply(db, chat_id, f"Không có việc <b>{code}</b> trong sổ.")
             row.action = ACT_COMMAND
             return True
     else:

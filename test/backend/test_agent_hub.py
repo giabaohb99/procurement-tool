@@ -9425,3 +9425,36 @@ def test_giu_tin_nhom_mac_dinh_ba_thang_va_gui_ho_tin_zalo_tk_cong_ty(monkeypatc
     monkeypatch.setattr(za, "send", lambda chat_id, text, buttons=None: got.append((chat_id, text, buttons)) or 7)
     out = tasks.send_telegram_task("sendMessage", {"chat_id": "zu:u77", "text": "xong"})
     assert out == {"status": "success", "message_id": 7} and got == [("zu:u77", "xong", None)]
+
+
+# --- ai-CR-125: «bỏ kế hoạch 0005» là lệnh bỏ việc; «lô» không phải câu trả lời thẻ hỏi lại ------------------------
+def test_ma_viec_viet_tat_va_loi_chao_khong_gan_vao_the_hoi_lai(db, bot, monkeypatch, tmp_path):
+    """08/10 đại ca nhắn «lô» rồi «bỏ kế hoạch 0005 đi» lúc AI-0005 đang hỏi lại: bot gắn cả hai làm câu trả lời kế
+    hoạch và hỏi «lô là gì», việc không bị bỏ."""
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, _ = bot
+    _so_tam(monkeypatch, tmp_path)
+    _capture_send(monkeypatch, service)
+    _fake_plan(monkeypatch, service, seen=[])
+    _fake_rule(monkeypatch, service, calls=[])
+    _fake_intent(monkeypatch, service, "hoi")
+    assert service._task_code_in("bỏ kế hoạch 0005 đi") == "AI-0005"
+    assert service._task_code_in("việc số 7 xong chưa") == "AI-0007"
+    assert service._task_code_in("gọi 0901234567 giúp em") == ""          # số điện thoại không phải mã việc
+    assert service._task_code_in("giá 1.050 đồng") == ""
+    assert all(service.is_greeting(t) for t in ("lô", "Alo!", "a lô", "chào em", "Chào anh"))
+    assert not any(service.is_greeting(t) for t in ("lô hàng 5 tấn bị trễ", "chào giá thép", "lo cho anh việc này"))
+
+    task = _task_hoi_lai(db, service)
+    service.send_plan_card(db, task)
+    service.handle_message(db, _msg("lô"))
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert row.task_id != task.id and row.action != service.ACT_PLAN_ANSWER
+    db.refresh(task)
+    assert task.status == service.ST_NEEDS_INPUT
+
+    service.send_plan_card(db, task)
+    service.handle_message(db, _msg(f"bỏ kế hoạch {task.code[3:]} đi"))
+    db.refresh(task)
+    assert task.status == service.ST_CANCELLED

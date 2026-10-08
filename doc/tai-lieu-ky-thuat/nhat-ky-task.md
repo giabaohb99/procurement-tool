@@ -13048,3 +13048,14 @@ bản chỉ còn hiện khi tự cập nhật không được sau ba mươi phú
 
 Mã nguồn: backend/app/modules/agent_hub/runner_update.py (mới) · runners.py · tasks.py · core/config.py · backend/start.runner.sh · docker-compose.runner.yml · docker-compose.agent-hub.yml (redis-agent-forward) · test/backend/test_agent_hub_may_tu_cap_nhat.py
 Deploy: dev 08/10 (Agent 1 gộp bd9a80a2, gỡ cổng nối cũ, dựng lại stack agent-hub; em dựng lại máy sửa mã trên máy đại ca, hai bên cùng bản 8a5a491601ba); prod giữ lại.
+
+## ai-CR-125 | Bot hiểu lệnh bỏ việc viết tắt và không coi lời chào là câu trả lời
+- status: dang-lam
+- date: 2026-10-08
+Lúc bot đang hỏi lại về việc AI-0005, đại ca nhắn «lô» rồi «bỏ kế hoạch 0005 đi», nhưng bot gắn cả hai câu làm câu trả lời
+và lập lại kế hoạch, việc không bị bỏ. Nay bot nhận ra mã việc viết tắt như «việc 7», «kế hoạch 0005» hay «0005» đứng riêng
+(không nhầm với số điện thoại hay số tiền), hiểu «bỏ kế hoạch» là lệnh bỏ việc, và lời chào trơn như «lô», «alo», «chào em»
+không còn bị gắn vào thẻ đang hỏi lại. Em cũng đã thử thật phần máy sửa mã tự cập nhật: làm máy lệch bản, khoảng năm phút
+sau máy tự kéo đúng bản của bot rồi khởi động lại. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (_task_code_in, is_greeting, route_task_command) · test/backend/test_agent_hub.py
