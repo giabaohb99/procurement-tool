@@ -147,6 +147,7 @@ NO_TARGET = {
     "labor_contract.GenerateIn", "labor_contract.TemplateContentIn",
     "survey.LineApproveIn", "survey.LineApproveCombined", "survey_request.ReportTemplateApplyIn",
     "survey_request.ReportDocBulkDeleteIn",   # duoc-CR-611: chỉ mang danh sách id hồ sơ cần xóa
+    "agent_hub.RevokeIn",   # ai-CR-119: ERP báo nhân sự nghỉ qua cổng máy-nói-máy — chỉ mang user_id
     #  chỉ mang id / thứ tự / lệnh di chuyển — không ghi cột chữ nào
     "doc_catalog.DocumentFolderSetIn", "doc_catalog.FolderLinkIn", "doc_catalog.FolderUnlinkIn",
     "doc_catalog.FolderMoveIn", "doc_catalog.FolderReorderIn", "doc_catalog.FolderReorderItem",
