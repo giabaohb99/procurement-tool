@@ -13107,7 +13107,7 @@ Mã nguồn: zalo-listener/index.mjs (/logout) · backend/app/modules/agent_hub/
 Deploy: dev 08/10 (Agent 1 gộp 612ac875, dựng lại stack agent-hub và erp); prod giữ lại.
 
 ## ai-CR-130 | Bot trên Zalo có chữ đậm nghiêng, báo đang soạn và báo đã nhận tin khi trả lời lâu
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Đại ca hỏi giá vàng qua tài khoản Zalo công ty thấy bot trả lời lâu và câu trả lời không có chữ đậm, chữ nghiêng hay chỉ mục.
 Zalo cá nhân không đọc được định dạng kiểu web nên em đổi sang kiểu chữ riêng của Zalo: chữ đậm, nghiêng, gạch chân, gạch ngang
@@ -13116,9 +13116,10 @@ có câu trả lời thì bot nhắn một câu «em nhận tin rồi, đang tì
 nay đánh số các nhóm I, II, III và nhóm cuối là nhận định, áp cho cả Telegram. Bài kiểm của bot và của tiến trình Zalo chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/zalo_account.py (to_styled, split_styled, send_typing) · telegram.py · research.py · zalo-listener/index.mjs (/typing, styles) · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp 27e5c492, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-131 | Dùng bot cần quyền Trợ lý AI và màn xem ai đang nối bot
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Đại ca chốt người chưa đăng nhập nhắn bot thì bot vẫn im, chỉ người có quyền mới hỏi được, và hỏi làm sao kiểm tra quyền của
 họ. Nay muốn dùng bot trên Telegram hay Zalo phải có quyền «Trợ lý AI», cấp ở màn Phân quyền tài khoản như Trợ lý AI trên web:
@@ -13128,3 +13129,4 @@ lần cuối khi nào, còn quyền hay không, và gỡ được liên kết. E
 màn Nhóm chat giữ trong phân hệ Trợ lý AI, không mở cho mọi nhân viên. Bài kiểm máy chủ và giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (may_use_bot) · controller.py (/links/all, /links/{id}/admin) · chat_link.py · frontend-v2/src/modules/assistant/pages/bot-user-list-page.tsx · test/backend/test_agent_hub.py
+Deploy: dev 08/10 (Agent 1 gộp 0696c86a, dựng lại stack agent-hub và erp); prod giữ lại.
