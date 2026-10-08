@@ -4499,7 +4499,7 @@ def test_xuat_word_bang_chu_sau_khi_vua_tra(db, bot, monkeypatch):
     monkeypatch.setattr(service.telegram, "send_document", lambda chat_id, name, data, **kw: docs.append(name) or 9)
     monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("xuất Word không đi phân loại"))
     service.handle_message(db, _msg("/tim giá thép tháng 9"))
-    assert "nhắn «xuất Word»" in sent[-1]
+    assert "<code>xuất Word</code>" in sent[-1]                       # ai-CR-121: câu lệnh in kiểu mã, không «»
     service.handle_message(db, _msg("xuất word giúp anh"))
     assert docs == ["nghien-cuu.docx"]
 
@@ -9183,7 +9183,12 @@ def test_huong_dan_nhan_dien_cau_hoi_va_chu_de():
     assert ug.match("hướng dẫn xuất hóa đơn")[0] is False
     assert ug.match("công nợ tháng này")[0] is False and ug.match("")[0] is False
     full = ug.render(admin=False)
-    assert "Biên bản họp" in full and "«nhớ: " in full and "/dangnhap" in full and "Sửa phần mềm" not in full
+    assert "Biên bản họp" in full and "<code>nhớ: anh ở Cần Thơ</code>" in full and "/dangnhap" in full
+    assert "Sửa phần mềm" not in full and "«" not in full.split("\n", 2)[2]       # ai-CR-121: không ngoặc «» trong danh sách
+    assert len(full) < 3900                                                        # bản tóm tắt gọn trong MỘT tin
+    for key, ask in ug.ASK.items():                                                # mọi «Xem thêm» dẫn đúng nhóm
+        hit, topic = ug.match(ask)
+        assert hit and ug._section_for(topic).key == key, ask
     assert "Sửa phần mềm" in ug.render(admin=True)
     one = ug.render("bien ban")
     assert one.startswith("<b>Biên bản họp</b>") and "Sổ ghi nhớ" not in one

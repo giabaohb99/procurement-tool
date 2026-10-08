@@ -12979,3 +12979,16 @@ bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/user_guide.py (mới) · agent_hub/service.py (_guide_by_text, _send_guide) · agent_hub/policy.py · test/backend/test_agent_hub.py
 Deploy: dev 08/10 (Agent 1 gộp c23d7f82, dựng lại stack agent-hub và stack ERP dev); prod giữ lại.
+
+
+## ai-CR-121 | Trình bày hướng dẫn và câu trả lời tra mạng dễ đọc, có phân tích
+- status: xong
+- date: 2026-10-08
+Đại ca thấy danh sách hướng dẫn và câu trả lời giá vàng khó đọc vì nhiều ngoặc «» và chữ dồn một màu, muốn có chữ đậm nhạt và
+phân tích. Nay mỗi câu lệnh trong hướng dẫn nằm một dòng, in kiểu mã để chạm là chép được, giải thích để dòng thường, không còn
+ngoặc «»; bản hướng dẫn chung gọn trong một tin với hai câu mẫu mỗi nhóm và dòng xem thêm để mở đủ từng nhóm. Em cũng sửa lỗi nhắn
+«hướng dẫn nhóm» lại ra phần sổ ghi nhớ. Câu trả lời tra cứu trên mạng giờ mở bằng một câu kết luận in đậm, có dòng nghiêng ghi mốc
+cập nhật, chia vài nhóm có nhãn đậm, số liệu in đậm, số nguồn chỉ ở cuối dòng, và luôn có phần nhận định về xu hướng và điều nên lưu
+ý; danh sách nguồn gọn lại một dòng theo tên trang. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/user_guide.py · agent_hub/research.py (_COMMON, _ANALYSIS, sources_markdown) · agent_hub/service.py · test/backend/test_agent_hub.py

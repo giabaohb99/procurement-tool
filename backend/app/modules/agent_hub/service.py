@@ -671,7 +671,7 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
                     "sources": sources}
     db.commit()
     reply(db, chat_id, (text or "(không có câu trả lời)") + research.sources_markdown(sources)
-          + "\n\n_Muốn bản Word thì nhắn «xuất Word»._", markdown=True, action=ACT_RESEARCH)
+          + "\n\n_Muốn bản Word: nhắn_ `xuất Word`", markdown=True, action=ACT_RESEARCH)
 
 
 #  «xuất word giúp anh», «gửi bản word», «cho file word» — chỉ khi chat này VỪA tra xong (trong

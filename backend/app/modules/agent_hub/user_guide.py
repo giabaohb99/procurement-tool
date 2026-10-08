@@ -1,14 +1,18 @@
 """HƯỚNG DẪN DÙNG BOT bằng câu nhắn (ai-CR-120) — đại ca 08/10/2026: «mấy cái nhắn với bot, anh hỏi thì nó nên liệt kê
 ra, kiểu hướng dẫn người dùng».
 
-Nhắn «hướng dẫn» / «bot làm được gì» / «/huongdan» → mục lục + toàn bộ câu lệnh theo nhóm. Nhắn «hướng dẫn <chủ đề>»
+Nhắn «hướng dẫn» / «bot làm được gì» / «/huongdan» → toàn bộ câu lệnh theo nhóm. Nhắn «hướng dẫn <chủ đề>»
 («hướng dẫn biên bản», «hướng dẫn sổ nhớ»…) → đúng một nhóm. So khớp không dấu. Nhóm «Sửa phần mềm» chỉ hiện cho chat chủ
 bot và người được cấp quyền sửa mã.
+
+ai-CR-121 (đại ca 08/10: «cái «» khó chịu quá, khó đọc»): mỗi câu lệnh MỘT DÒNG, in kiểu mã (Telegram chạm là chép được),
+giải thích ngắn ở dòng thường — bỏ ngoặc «» và dấu «·» nối nhiều lệnh trên một dòng.
 
 Đây là NGUỒN DUY NHẤT của danh sách câu lệnh người dùng thấy — thêm câu lệnh mới cho bot thì thêm một dòng ở đây.
 """
 from __future__ import annotations
 
+import html
 import re
 from dataclasses import dataclass
 
@@ -19,73 +23,101 @@ from app.modules.assistant.glossary import fold
 class Section:
     key: str
     title: str
-    words: tuple[str, ...]          # chữ (không dấu) để gọi riêng nhóm này: «hướng dẫn <chữ>»
-    lines: tuple[str, ...]
+    words: tuple[str, ...]                  # chữ (không dấu) để gọi riêng nhóm này: «hướng dẫn <chữ>»
+    items: tuple[tuple[str, str], ...]      # (câu nhắn mẫu, giải thích); câu rỗng = dòng ghi chú
     admin_only: bool = False
 
 
 SECTIONS: tuple[Section, ...] = (
     Section("tai_khoan", "Tài khoản và khóa AI", ("tai khoan", "dang nhap", "khoa", "key"), (
-        "<code>/dangnhap &lt;mã&gt;</code> — nối chat này với tài khoản ERP (mã lấy ở Trang cá nhân → Telegram)",
-        "<code>/dangxuat</code> · <code>/taikhoan</code> — đăng xuất · xem chat đang dùng tài khoản nào",
-        "«còn khóa nào» — xem các khóa AI đang dùng, hạn mức hôm nay (gắn / sửa khóa ở Trang cá nhân → Khóa AI)",
+        ("/dangnhap <mã>", "nối chat với tài khoản ERP (mã ở Trang cá nhân → Telegram)"),
+        ("/taikhoan", "chat đang dùng tài khoản nào"),
+        ("/dangxuat", "đăng xuất"),
+        ("còn khóa nào", "các khóa AI đang dùng, hạn mức hôm nay"),
     )),
     Section("erp", "Hỏi số liệu ERP và tạo phiếu", ("erp", "phieu", "so lieu", "tao phieu"), (
-        "Hỏi thẳng: «3 đơn mua hàng gần nhất», «công nợ Hòa Phát còn bao nhiêu», «phiếu nào đang chờ anh duyệt»",
-        "Nhờ soạn: «tạo YCMH 20 tấn thép cho phòng kỹ thuật», «xin nghỉ thứ 6», «lên task gọi NCC X cho anh Được hạn thứ 6»",
-        "Em gửi bản nháp → nhắn «tạo» (lưu nháp) · «tạo và gửi duyệt» · «thôi»",
-        "«xuất Excel» / «xuất Word» — tệp báo cáo của lần tra vừa rồi",
+        ("3 đơn mua hàng gần nhất", "hỏi thẳng, em tra theo quyền của anh/chị"),
+        ("phiếu nào đang chờ anh duyệt", ""),
+        ("xin nghỉ thứ 6 cả ngày", "em soạn nháp phiếu"),
+        ("lên task gọi NCC X cho anh Được hạn thứ 6", "em soạn nháp việc ở phân hệ Dự án"),
+        ("tạo", "lưu bản nháp vừa soạn"),
+        ("tạo và gửi duyệt", "lưu và gửi duyệt luôn"),
+        ("xuất Excel", "tệp của lần tra vừa rồi (hoặc xuất Word)"),
     )),
     Section("so_nho", "Sổ ghi nhớ riêng", ("so nho", "ghi nho", "nho", "xung ho", "ghi chu"), (
-        "«nhớ: anh ở Cần Thơ, uống cà phê đen» · «quên: cà phê» — thêm / xóa một dòng",
-        "«nhớ tuần này anh ở Đà Nẵng» — dòng có hạn, hết hạn tự bỏ",
-        "«gọi anh là sếp» / «xưng em với anh» — đổi cách xưng hô",
-        "«ghi chú: …» — lưu một đoạn dài vào kho riêng · «hôm trước mình bàn gì về …» — em tìm lại",
-        "«sổ nhớ» · «xuất sổ nhớ» — xem / tải toàn bộ sổ",
+        ("nhớ: anh ở Cần Thơ", "thêm một dòng vào sổ"),
+        ("quên: Cần Thơ", "xóa dòng có chữ đó"),
+        ("nhớ tuần này anh ở Đà Nẵng", "dòng có hạn, hết hạn tự bỏ"),
+        ("gọi anh là sếp", "đổi cách xưng hô"),
+        ("ghi chú: …", "lưu một đoạn dài vào kho riêng"),
+        ("sổ nhớ", "xem sổ"),
+        ("xuất sổ nhớ", "tải sổ về"),
     )),
     Section("viec_rieng", "Việc riêng, chi tiêu, nhắc việc", ("viec rieng", "chi tieu", "mua", "nhac", "the ca nhan"), (
-        "«chi 50k ăn trưa» · «tháng này anh chi bao nhiêu» — sổ chi tiêu",
-        "«cần mua sữa, giấy in» · «còn phải mua gì» · «mua sữa rồi» — danh sách mua",
-        "«thứ 7 đưa con đi khám 9h» · «lịch riêng hôm nay» — việc / hẹn riêng",
-        "«nhắc anh 3h gọi NCC X» — lời nhắc đúng giờ · bản tin 8h sáng tự gửi khi đã nối Google",
+        ("chi 50k ăn trưa", "ghi chi tiêu"),
+        ("tháng này anh chi bao nhiêu", ""),
+        ("cần mua sữa, giấy in", "thêm vào danh sách mua"),
+        ("còn phải mua gì", ""),
+        ("thứ 7 đưa con đi khám 9h", "việc / hẹn riêng"),
+        ("lịch riêng hôm nay", ""),
+        ("nhắc anh 3h gọi NCC X", "lời nhắc đúng giờ"),
     )),
     Section("lich", "Lịch Google, Drive", ("lich", "google", "drive", "hop online"), (
-        "«hôm nay anh có họp gì» · «lịch tuần này»",
-        "«đặt lịch họp NCC 14h mai 1 tiếng» · «dời cuộc họp NCC sang 16h» · «hủy lịch họp NCC»",
-        "«tìm trên Drive hợp đồng ABC» · «đọc tệp đó» (cần nối Google ở Trang cá nhân → Khóa AI)",
+        ("hôm nay anh có họp gì", ""),
+        ("đặt lịch họp NCC 14h mai 1 tiếng", ""),
+        ("dời cuộc họp NCC sang 16h", ""),
+        ("hủy lịch họp NCC", ""),
+        ("tìm trên Drive hợp đồng ABC", "cần nối Google ở Trang cá nhân → Khóa AI"),
     )),
     Section("bien_ban", "Biên bản họp", ("bien ban", "hop", "recap", "ghi am", "mau bien ban"), (
-        "Gửi tệp ghi âm / video (≤ 20 MB) vào chat, hoặc link Drive kèm chữ «họp» — em chép lời và viết biên bản",
-        "Thả tệp vào thư mục <b>«Họp»</b> trên Drive — em tự báo, nhắn «làm biên bản» · «làm tệp 2» · «bỏ qua»",
-        "Chọn mẫu khi gửi hoặc trả lời: «chính thức», «danh sách việc», «theo giờ», «tóm tắt nhanh» (mặc định: Recap DEGO); "
-        "dặn tại chỗ «theo mẫu: chỉ ghi số liệu và hạn»",
-        "«lưu mẫu biên bản Giao ban: mỗi phòng một mục, việc, người, hạn» — mẫu riêng, gọi lại bằng tên",
-        "«viết lại biên bản theo mẫu chính thức» — không phải gửi lại tệp · «các cuộc họp của anh» · «report cuộc họp mới nhất»",
-        "Thẻ việc / lịch sau biên bản: «tạo hết» · «tạo 1 3 dự án 2» · «bỏ»",
+        ("", "Gửi tệp ghi âm / video (≤ 20 MB) vào chat, hoặc thả vào thư mục Họp trên Drive — em báo rồi chờ anh/chị bảo"),
+        ("làm biên bản", "làm biên bản tệp vừa báo (mặc định mẫu Recap DEGO)"),
+        ("làm biên bản chính thức", "chọn mẫu: chính thức, danh sách việc, theo giờ, tóm tắt nhanh"),
+        ("làm tệp 2", "chỉ làm một tệp trong số tệp mới"),
+        ("bỏ qua", "không làm"),
+        ("viết lại biên bản theo mẫu chính thức", "đổi mẫu, không phải gửi lại tệp"),
+        ("lưu mẫu biên bản Giao ban: mỗi phòng một mục", "mẫu riêng, gọi lại bằng tên"),
+        ("report cuộc họp mới nhất", "gửi lại biên bản + Word + việc"),
+        ("tạo hết", "tạo mọi việc / lịch rút từ biên bản"),
+        ("tạo 1 3 dự án 2", "chỉ tạo mục 1 và 3, việc vào dự án số 2"),
+        ("bỏ", "không tạo gì"),
     )),
     Section("tep", "Đọc tệp, báo cáo", ("tep", "bao cao", "excel", "pdf", "word", "tai lieu"), (
-        "Gửi tệp pdf / Word / Excel kèm câu hỏi («phân tích báo cáo này»), hoặc gửi tệp rồi nhắn câu hỏi ngay sau",
-        "Gửi tệp không hỏi gì — em tự tóm tắt sau 20 giây",
-        "Tài liệu trong thư mục «Họp» trên Drive: «tóm tắt tệp 1» · «phân tích tệp 1 rủi ro chi phí»",
+        ("", "Gửi tệp pdf / Word / Excel kèm câu hỏi, hoặc gửi tệp rồi nhắn câu hỏi ngay sau; không hỏi gì thì em tự tóm tắt"),
+        ("phân tích báo cáo này", ""),
+        ("tóm tắt tệp 1", "tài liệu trong thư mục Họp trên Drive"),
     )),
     Section("nhom", "Nhóm Telegram", ("nhom", "group"), (
-        "Thêm em vào nhóm (em không nói gì trong nhóm, chỉ ghi lại tin từ lúc vào)",
-        "Nhắn riêng: «bot đang ở nhóm nào» · «nhóm Kế toán hôm nay bàn gì» · «tổng hợp nhóm X tuần này»",
-        "«tóm tắt tệp số 2 trong nhóm X» · «viết báo cáo tuần từ nhóm X ra Word»",
+        ("", "Thêm em vào nhóm — em không nói gì trong nhóm, chỉ ghi lại tin từ lúc vào"),
+        ("bot đang ở nhóm nào", ""),
+        ("nhóm Kế toán hôm nay bàn gì", "nhắn riêng với em"),
+        ("tổng hợp nhóm Kế toán tuần này", ""),
+        ("viết báo cáo tuần từ nhóm Kế toán ra Word", ""),
     )),
     Section("mang", "Tra cứu trên mạng", ("tra mang", "tim", "mang", "kiem chung", "web"), (
-        "Hỏi thẳng: «giá vàng hôm nay», «tìm hiểu thuế nhập khẩu thép» — em tìm và ghi nguồn",
-        "«có đúng là … không» — kiểm chứng · «xuất Word» — bản Word của lần tìm vừa rồi",
-        "Gõ tắt: <code>/tim</code> · <code>/kiemchung</code> · <code>/word</code>",
+        ("giá vàng hôm nay", "hỏi thẳng, em tìm và ghi nguồn"),
+        ("có đúng là … không", "kiểm chứng một thông tin"),
+        ("xuất Word", "bản Word của lần tìm vừa rồi"),
     )),
     Section("chuong", "Chuông ERP", ("chuong", "thong bao"), (
-        "Mặc định em chuyển chuông «chờ anh/chị duyệt» và «việc giao cho anh/chị» từ ERP sang đây",
-        "«tắt chuông» · «bật chuông» · «chuông tất cả»",
+        ("", "Mặc định em chuyển chuông chờ duyệt và việc giao cho anh/chị từ ERP sang đây"),
+        ("tắt chuông", ""),
+        ("bật chuông", ""),
+        ("chuông tất cả", "nhận mọi thông báo"),
     )),
     Section("sua_ma", "Sửa phần mềm (chỉ người được cấp quyền)", ("sua ma", "sua phan mem", "code", "deploy", "viec ai"), (
-        "Kể lỗi / yêu cầu bình thường — em gom thành việc AI-xxxx, lập kế hoạch rồi gửi thẻ duyệt; «ghi việc: …» để chắc chắn",
-        "«AI-0007 xong chưa» · «duyệt» · «gộp AI-0007» · «bỏ việc này» · <code>/ds</code> · <code>/xem AI-0007</code>",
-        "«tình hình máy» · «sự cố» · «lịch sử deploy dev» · «deploy dev mới nhất» · «tháng này bot tốn bao nhiêu»",
+        ("", "Kể lỗi / yêu cầu bình thường — em gom thành việc AI-xxxx, lập kế hoạch rồi gửi thẻ duyệt"),
+        ("ghi việc: màn công nợ lọc sai ngày", "chắc chắn ghi thành việc"),
+        ("AI-0007 xong chưa", ""),
+        ("duyệt", "duyệt kế hoạch của việc đang hỏi"),
+        ("gộp AI-0007", ""),
+        ("bỏ việc này", ""),
+        ("/ds", "danh sách việc"),
+        ("tình hình máy", "RAM, CPU, đĩa, việc kẹt"),
+        ("sự cố", ""),
+        ("lịch sử deploy dev", ""),
+        ("deploy dev mới nhất", ""),
+        ("tháng này bot tốn bao nhiêu", ""),
     ), admin_only=True),
 )
 
@@ -113,22 +145,44 @@ def match(text: str) -> tuple[bool, str]:
 def _section_for(topic: str) -> Section | None:
     if not topic:
         return None
+    #  So NGUYÊN TỪ: «nhom» không được khớp «nho» của nhóm Sổ ghi nhớ (lỗi bản đầu: «hướng dẫn nhóm» ra sổ nhớ).
     for sec in SECTIONS:
-        if any(w in topic for w in sec.words):
+        if any(re.search(rf"(?<!\w){re.escape(w)}(?!\w)", topic) for w in sec.words):
             return sec
     return None
+
+
+def _line(cmd: str, note: str) -> str:
+    if not cmd:
+        return f"<i>{html.escape(note)}</i>"
+    out = f"• <code>{html.escape(cmd)}</code>"
+    return out + (f"\n   {html.escape(note)}" if note else "")
+
+
+def _block(sec: Section) -> str:
+    return f"<b>{html.escape(sec.title)}</b>\n" + "\n".join(_line(c, n) for c, n in sec.items)
+
+
+#  Câu gọi riêng từng nhóm, hiện ở cuối mỗi nhóm trong bản tóm tắt.
+ASK = {"tai_khoan": "hướng dẫn tài khoản", "erp": "hướng dẫn phiếu", "so_nho": "hướng dẫn sổ nhớ",
+       "viec_rieng": "hướng dẫn chi tiêu", "lich": "hướng dẫn lịch", "bien_ban": "hướng dẫn biên bản",
+       "tep": "hướng dẫn tệp", "nhom": "hướng dẫn nhóm", "mang": "hướng dẫn tra mạng", "chuong": "hướng dẫn chuông",
+       "sua_ma": "hướng dẫn sửa mã"}
+SUMMARY_ITEMS = 2          # bản tóm tắt: mỗi nhóm 2 câu tiêu biểu, gọn trong một tin
 
 
 def render(topic: str = "", *, admin: bool = False, bot_name: str = "Lạc Lạc") -> str:
     visible = [s for s in SECTIONS if admin or not s.admin_only]
     sec = _section_for(fold(topic))
     if sec is not None and (admin or not sec.admin_only):
-        return f"<b>{sec.title}</b>\n" + "\n".join(f"• {line}" for line in sec.lines)
-    out = [f"<b>Hướng dẫn dùng {bot_name}</b> — cứ nhắn bình thường, em tự hiểu. Các câu hay dùng:"]
+        return _block(sec)
+    out = [f"<b>Hướng dẫn dùng {html.escape(bot_name)}</b>",
+           "Cứ nhắn bình thường, em tự hiểu. Mỗi nhóm có vài câu mẫu — chạm vào câu để chép; "
+           "nhắn câu sau chữ «Xem thêm» để thấy đủ nhóm đó."]
     for s in visible:
+        cmds = [(c, n) for c, n in s.items if c][:SUMMARY_ITEMS]
         out.append("")
-        out.append(f"<b>{s.title}</b>")
-        out.extend(f"• {line}" for line in s.lines)
-    out.append("")
-    out.append("Xem riêng một nhóm: «hướng dẫn biên bản», «hướng dẫn sổ nhớ», «hướng dẫn nhóm»…")
+        out.append(f"<b>{html.escape(s.title)}</b>")
+        out.extend(f"• <code>{html.escape(c)}</code>" + (f" — {html.escape(n)}" if n else "") for c, n in cmds)
+        out.append(f"   <i>Xem thêm:</i> <code>{html.escape(ASK.get(s.key, 'hướng dẫn'))}</code>")
     return "\n".join(out)
