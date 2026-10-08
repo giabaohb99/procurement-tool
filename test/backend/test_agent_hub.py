@@ -2273,7 +2273,7 @@ def test_loi_chao_va_de_bai_claude_goi_ten_dau_dau(db, bot, monkeypatch):
 
     service, sent, _ = bot
     service._run_command(db, "12345", "/start")
-    assert sent[-1].startswith("Em là <b>Đậu Đậu</b>.")
+    assert sent[-1].startswith("<b>Hướng dẫn dùng Đậu Đậu</b>")      # ai-CR-120: /start = hướng dẫn, mang tên bot
     task = _task_with_plan(db, service, ["backend/app/x.py"])
     assert "Bạn là Đậu Đậu, bot sửa mã" in coder.build_brief(task, [])
     #  Trợ lý AI trên web KHÔNG đổi tên: định nghĩa gốc không nhắc Đậu Đậu.
@@ -9168,3 +9168,44 @@ def test_bot_che_do_dich_vu_dang_nhap_va_hoi_qua_cong(db, bot, seed, monkeypatch
     #  «/taikhoan» và nhãn người dùng vẫn ra đúng tên qua cổng.
     service.handle_message(db, _other_msg("/taikhoan"))
     assert "đang dùng tài khoản ERP" in sent[-1] and erp.describe(db, erp.user_by_id(db, seed.u_req_id))[0] in sent[-1]
+
+# --- ai-CR-120: «hướng dẫn» — bot liệt kê câu lệnh dùng được ------------------------------------------------------------
+def test_huong_dan_nhan_dien_cau_hoi_va_chu_de():
+    from app.modules.agent_hub import user_guide as ug
+
+    for q in ("hướng dẫn", "Huong dan", "/huongdan", "/help", "bot làm được gì", "em làm được những gì", "có lệnh gì",
+              "cách dùng bot", "/start", "danh sách lệnh"):
+        assert ug.match(q)[0], q
+    assert ug.match("hướng dẫn biên bản") == (True, "bien ban")
+    assert ug.match("huong dan so nho")[1] == "so nho"
+    #  Câu hỏi cách dùng ERP (Trợ lý tra HDSD) không bị nuốt; câu thường không dính.
+    assert ug.match("hướng dẫn tạo đơn nghỉ phép trên ERP")[0] is False
+    assert ug.match("hướng dẫn xuất hóa đơn")[0] is False
+    assert ug.match("công nợ tháng này")[0] is False and ug.match("")[0] is False
+    full = ug.render(admin=False)
+    assert "Biên bản họp" in full and "«nhớ: " in full and "/dangnhap" in full and "Sửa phần mềm" not in full
+    assert "Sửa phần mềm" in ug.render(admin=True)
+    one = ug.render("bien ban")
+    assert one.startswith("<b>Biên bản họp</b>") and "Sổ ghi nhớ" not in one
+    assert "Sửa phần mềm" not in ug.render("sua ma", admin=False)          # người thường hỏi riêng nhóm này: không lộ
+
+
+def test_huong_dan_tren_telegram_theo_quyen(db, bot, seed, monkeypatch):
+    service, sent, asked = bot
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _msg("hướng dẫn"))                          # chat chủ bot
+    assert "Hướng dẫn dùng" in sent[-1] and "Sửa phần mềm" in sent[-1] and asked == []
+    from app.modules.agent_hub import chat_link
+
+    _give_key(db, seed.u_req_id)
+    code, _ = chat_link.issue_code(db, seed.u_req_id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("bot làm được gì"))              # người dùng thường
+    assert "Hướng dẫn dùng" in sent[-1] and "Sửa phần mềm" not in sent[-1]
+    service.handle_message(db, _other_msg("hướng dẫn biên bản"))
+    assert sent[-1].startswith("<b>Biên bản họp</b>")
+    service.handle_message(db, _other_msg("/lenhla"))                       # lệnh lạ → cũng ra hướng dẫn
+    assert "Hướng dẫn dùng" in sent[-1]
+    n = len(asked)
+    service.handle_message(db, _other_msg("hướng dẫn tạo đơn nghỉ phép trên ERP"))
+    assert len(asked) == n + 1                                              # câu hỏi HDSD đi Trợ lý

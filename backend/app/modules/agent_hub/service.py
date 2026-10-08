@@ -851,6 +851,32 @@ def revoke_user_access(db: Session, user_id: int, *, now: datetime | None = None
     return n
 
 
+def user_guide_topic(text: str) -> str:
+    from . import user_guide
+
+    return user_guide.match(text)[1]
+
+
+def _send_guide(db: Session, chat_id: str, topic: str, user_id: int = 0) -> None:
+    """Hướng dẫn dùng bot (ai-CR-120). Nhóm «Sửa phần mềm» chỉ cho chat chủ bot / người được cấp quyền."""
+    from . import user_guide
+
+    admin = telegram.is_allowed_chat(chat_id) or bool(user_id and grants.level_for(db, user_id))
+    reply(db, chat_id, user_guide.render(topic, admin=admin, bot_name=BOT_NAME), action=ACT_ANSWER)
+
+
+def _guide_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    from . import user_guide
+
+    hit, topic = user_guide.match(text)
+    if not hit:
+        return False
+    row.action = ACT_COMMAND
+    link = chat_link.get_active_link(db, chat_id)
+    _send_guide(db, chat_id, topic, int(link.user_id) if link is not None else 0)
+    return True
+
+
 def _logout(db: Session, chat_id: str) -> None:
     n = chat_link.revoke_chat(db, chat_id)
     reply(db, chat_id, ("Đã đăng xuất tài khoản ERP khỏi chat này. " if n else "Chat này chưa đăng nhập. ")
@@ -904,9 +930,7 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
             return True
     if low.startswith("/") and not low.startswith("/hoi"):
         row.action = ACT_COMMAND
-        reply(db, chat_id, f"Em là <b>{BOT_NAME}</b>. Anh/chị cứ nhắn bình thường: hỏi số liệu ERP (em trả lời "
-              "theo quyền tài khoản của anh/chị), nhờ tìm hiểu một chủ đề trên mạng, hỏi một thông tin có đúng "
-              "không, hay «xuất Word» bản vừa tìm. Đăng xuất: <code>/dangxuat</code>.")
+        _send_guide(db, chat_id, user_guide_topic(text), link.user_id)
         return True
     if low.startswith("/hoi"):
         answer_question(db, chat_id, text[4:].strip(), before_id=row.id)
@@ -927,7 +951,8 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     dự án KHÔNG mở cho họ, hạ về tìm web); mọi ý định khác → Trợ lý ERP dưới quyền của chính họ. Họ
     không giao được việc sửa mã và không thao tác được việc của bot, nên «viec» / «thao_tac» cũng về Trợ lý.
     """
-    if (_doc_followup(db, chat_id, row, text) or meeting_actions.handle_text(db, chat_id, row, text)
+    if (_doc_followup(db, chat_id, row, text) or _guide_by_text(db, chat_id, row, text)
+            or meeting_actions.handle_text(db, chat_id, row, text)
             or meeting_drive.handle_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
         return
@@ -989,15 +1014,10 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
         if not n:
             reply(db, chat_id, "Không có tin nào đang chờ gom.")
     else:
-        reply(db, chat_id,
-              f"Em là <b>{BOT_NAME}</b>. Đại ca cứ nhắn bình thường, em tự hiểu, ví dụ:\n"
-              "• «3 đơn mua hàng gần nhất» — em tra số liệu ERP\n"
-              "• «màn công nợ lọc sai ngày» — em ghi thành việc sửa phần mềm\n"
-              "• «tìm hiểu giúp anh thuế nhập khẩu thép» · «có đúng là … không» — em tìm trên mạng, kèm nguồn\n"
-              "• «xuất Word giúp anh» — bản Word của lần tìm vừa rồi\n"
-              "• «AI-0007 xong chưa» · «tháng này bot tốn bao nhiêu» · «tài khoản anh đang dùng là gì»\n"
-              "Lệnh gõ tắt vẫn dùng được nếu muốn chắc (/ds · /xem · /chiphi · /tim · /word · /taikhoan), "
-              "trừ đăng nhập phải nhắn <b>/dangnhap &lt;mã&gt;</b> (lấy mã ở Trang cá nhân → Telegram).")
+        #  ai-CR-120: lệnh lạ / «/huongdan» / «/help» → hướng dẫn đầy đủ (chat chủ bot thấy cả nhóm sửa phần mềm).
+        from . import user_guide
+
+        reply(db, chat_id, user_guide.render(user_guide.match(text)[1], admin=True, bot_name=BOT_NAME))
 
 
 #  Bot vừa hỏi lại mà đại ca nhắn tiếp trong khoảng này thì tin đó LÀ CÂU TRẢ LỜI, không
@@ -1035,6 +1055,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     """
     #  ai-CR-115: tin chữ ngay sau một tệp chưa kèm câu hỏi = câu hỏi về tệp đó — đi trước mọi đường khác.
     if _doc_followup(db, chat_id, row, text):
+        return
+    if _guide_by_text(db, chat_id, row, text):          # ai-CR-120: «hướng dẫn», «bot làm được gì»
         return
     #  Bot vừa mời hẹn giờ gộp + deploy (ai-CR-014): tin kế là giờ hẹn, không đi phân loại.
     if task_id := _deploy_time_target(db, chat_id, row):

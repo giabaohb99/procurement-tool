@@ -12964,3 +12964,17 @@ toàn bộ bài kiểm của bot và trợ lý chạy xanh ở cả hai chế đ
 
 Mã nguồn: backend/app/core/{config,agent_signature,agent_identity,agent_client,agent_tables,app_factory,auth,app_settings,celery_app}.py · app/agent_main.py · app/main.py · modules/agent_gateway/ (mới) · modules/agent_hub/erp.py (mới) · modules/agent_hub/{service,bells,briefs,grants,runners,meetings,meeting_actions,mcp,controller}.py · modules/assistant/{service,conversation,controller}.py · modules/employee/service.py · alembic_agent.ini · migrations_agent/ · start.agent.sh · docker-compose.agent-hub.yml · .env.agent.example · scripts/agent_split/ · scripts/deploy/deploy.sh · test/backend/test_agent_hub_tach_dich_vu.py · doc/agent-hub/13, 14, 08, README
 Deploy: dev 08/10 (Agent 1 gộp 87801692, sao lưu DB + .env.dev trước, tạo DB agent_hub, chép 23 bảng, dựng stack agent-hub 6 container, ERP sang AGENT_MODE=erp; em vá AGENT_GATEWAY_URL sang tên container procurement-tool-dev-api-1 vì bí danh api trỏ hai máy, đổi .env.runner máy đại ca sang DB agent_hub); prod vẫn embedded.
+
+
+## ai-CR-120 | Bot tự liệt kê hướng dẫn dùng khi người dùng hỏi
+- status: xong
+- date: 2026-10-08
+Đại ca muốn khi hỏi thì bot liệt kê các câu nhắn dùng được, kiểu hướng dẫn người dùng. Nay nhắn «hướng dẫn», «bot làm được gì»,
+«có lệnh gì» hoặc gõ /huongdan, /help, /start là bot gửi danh sách đầy đủ chia mười một nhóm: tài khoản và khóa AI, hỏi số liệu
+ERP và tạo phiếu, sổ ghi nhớ, việc riêng và chi tiêu, lịch Google, biên bản họp, đọc tệp, nhóm Telegram, tra cứu trên mạng, chuông
+ERP và nhóm sửa phần mềm. Nhắn «hướng dẫn biên bản», «hướng dẫn sổ nhớ»… thì chỉ ra đúng nhóm đó, gõ không dấu cũng được. Nhóm sửa
+phần mềm chỉ hiện với chủ bot và người được cấp quyền. Câu hỏi dài về cách dùng ERP như «hướng dẫn tạo đơn nghỉ phép» vẫn để Trợ
+lý trả lời theo tài liệu hướng dẫn. Danh sách câu lệnh nằm ở một tệp duy nhất để thêm tính năng mới thì thêm một dòng. Bài kiểm của
+bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/user_guide.py (mới) · agent_hub/service.py (_guide_by_text, _send_guide) · agent_hub/policy.py · test/backend/test_agent_hub.py
