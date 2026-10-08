@@ -17,6 +17,7 @@ import logging
 import re
 from datetime import date, datetime, timedelta
 from enum import IntEnum
+from types import SimpleNamespace
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -122,7 +123,15 @@ def extract(db: Session, row: AgentMeeting, *, today: date | None = None) -> lis
 # Dự án + người làm
 # ---------------------------------------------------------------------------
 def projects_for(db: Session, user) -> list:
-    """Dự án (danh sách việc) người gửi tạo việc được. Không quyền work_task.create / không ở dự án nào → []."""
+    """Dự án (danh sách việc) người gửi tạo việc được. Không quyền work_task.create / không ở dự án nào → [].
+    ai-CR-119: qua cổng ERP; trả các đối tượng có `.id`, `.name`."""
+    from . import erp
+
+    return [SimpleNamespace(**p) for p in erp.projects_for(db, user)]
+
+
+def _projects_local(db: Session, user) -> list:
+    """Bản chạy thẳng trong ERP (cổng B gọi)."""
     from app.core.auth import user_has_permission
     from app.modules.work.membership_service import resolve_actor, visible_list_ids
     from app.modules.work.model import WorkList
@@ -140,6 +149,13 @@ def projects_for(db: Session, user) -> list:
 
 def match_employee(db: Session, name: str) -> dict | None:
     """Đúng MỘT nhân sự đang làm khớp tên / mã thì trả {employee_id, name, code}; mơ hồ hay không thấy → None."""
+    from . import erp
+
+    return erp.match_employee(db, name)
+
+
+def _match_employee_local(db: Session, name: str) -> dict | None:
+    """Bản chạy thẳng trong ERP (cổng B gọi)."""
     from sqlalchemy import or_
 
     from app.modules.employee.model import Employee
@@ -210,9 +226,7 @@ def card_text(row: AgentMeeting, items: list[dict], projects: list, google: bool
 
 def offer(db: Session, row: AgentMeeting) -> int:
     """Rút việc + lịch rồi gửi thẻ duyệt. Trả số mục. Không có mục nào thì im lặng."""
-    from app.modules.user.model import User
-
-    from . import google_link, service
+    from . import erp, google_link, service
 
     existing = [dict(it) for it in (row.actions or [])]
     if existing:
@@ -225,7 +239,7 @@ def offer(db: Session, row: AgentMeeting) -> int:
         if not items:
             return 0
         row.actions = items
-    user = db.get(User, int(row.user_id or 0))
+    user = erp.user_by_id(db, int(row.user_id or 0))
     projects = projects_for(db, user)
     google = google_link.get_link(db, row.user_id) is not None
     #  Thẻ mới thay thẻ cũ còn treo của chat này: «tạo hết» luôn nói về biên bản vừa nhận.
@@ -356,7 +370,7 @@ def _when(iso: str, hour: int = 9) -> datetime | None:
 
 
 def create_items(db: Session, user, meeting: AgentMeeting, chosen: list[dict], project) -> list[str]:
-    from . import draft_create, google_link, personal_items
+    from . import erp, google_link, personal_items
 
     esc = telegram.esc
     out: list[str] = []
@@ -369,7 +383,7 @@ def create_items(db: Session, user, meeting: AgentMeeting, chosen: list[dict], p
                 desc = note + (f" Người làm nêu trong họp: {it['owner']}." if it.get("owner") and not person else "")
                 draft = {"list_id": project.id, "list_name": project.name, "title": it["title"], "description": desc,
                          "due_date": it.get("due") or "", "start_date": "", "assignees": [person] if person else []}
-                code, oid = draft_create.create(db, user, "work_task", draft)
+                code, oid = erp.create_draft(db, user, "work_task", draft)
                 it["ref"] = {"type": "work_task", "id": oid}
                 who = f" — giao {esc(person['name'])}" if person else ""
                 out.append(f"{it['no']}. Đã tạo {esc(code)} ở dự án «{esc(project.name)}»{who}.")

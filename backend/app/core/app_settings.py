@@ -133,6 +133,14 @@ def _decrypt(s: str) -> str:
 
 def _load():
     global _cache, _exp
+    if _env.agent_is_service:
+        #  ai-CR-119: dịch vụ AI không có bảng tab_setting — cấu hình hệ thống lấy qua cổng B (bộ đệm 30 giây),
+        #  cổng hỏng thì rơi về .env.
+        from app.modules.agent_hub import erp
+
+        _cache = erp.settings_snapshot()
+        _exp = time.time() + _TTL
+        return
     from app.core.database import SessionLocal
     from app.modules.setting.model import Setting
     db = SessionLocal()

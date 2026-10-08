@@ -12945,3 +12945,21 @@ hỏi; chọn mẫu biên bản cũng nhận chữ không dấu. Bài kiểm c�
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (parse_reply) · agent_hub/meeting_actions.py (parse_reply) · agent_hub/meetings.py (template_of, resolve_template) · test/backend/test_agent_hub.py
 Deploy: dev 08/10 (Agent 1 gộp 3c228a7f, sao lưu DB dev trước, dựng lại đủ 4 image); prod giữ lại.
+
+
+## ai-CR-119 | Tách phần AI thành dịch vụ riêng nói chuyện với ERP qua cổng có chữ ký (phase S, S-0 đến S-4)
+- status: xong
+- date: 2026-10-08
+Đại ca muốn phần AI thành một dịch vụ riêng, trước mắt chạy cùng máy chủ nhưng tách Docker và dữ liệu, sau này sang máy chủ
+riêng, và làm đủ các bước rồi mới đưa lên. Em giữ một mã nguồn nhưng cho ba cách chạy: như cũ (mặc định, không đổi gì cho
+prod và dev hiện tại), làm dịch vụ AI, hoặc làm ERP đã tách. Dịch vụ AI có cơ sở dữ liệu riêng tên agent_hub với bộ di trú
+riêng, ứng dụng riêng, bốn tiến trình dùng chung một ảnh Docker cùng Redis và Qdrant riêng. Mọi chỗ bot cần tới ERP như tài
+khoản, quyền, công cụ, tạo phiếu, phiếu hỗ trợ, chuông, tệp, nhân sự, dự án, cấu hình đều đi qua một lớp cổng duy nhất; ERP mở
+cổng B nhận các lượt gọi có chữ ký kèm danh tính người dùng và chạy công cụ đúng quyền người đó, còn bốn nhóm công cụ cá nhân chạy
+ngay tại dịch vụ AI. Trợ lý trên web và cổng MCP vẫn ở tên miền ERP, ERP xác thực rồi chuyển tiếp sang dịch vụ AI; nhân sự nghỉ
+thì ERP báo sang để đóng khóa và liên kết bên đó. Có kịch bản deploy riêng cho dịch vụ AI để sau này bot tự cập nhật chính nó.
+Hợp đồng cổng và cách dựng trên dev ghi ở tài liệu 14; hai bước sang máy chủ riêng và tách kho tin nhắn ghi dạng hướng dẫn vì
+chưa có máy và chưa tới ngưỡng. Bài kiểm mới dựng cổng B thật trên cơ sở dữ liệu thử để kiểm chữ ký, quyền, công cụ và chuyển tiếp;
+toàn bộ bài kiểm của bot và trợ lý chạy xanh ở cả hai chế độ. Chưa dựng trên dev, chờ Agent 1 làm theo tài liệu 14.
+
+Mã nguồn: backend/app/core/{config,agent_signature,agent_identity,agent_client,agent_tables,app_factory,auth,app_settings,celery_app}.py · app/agent_main.py · app/main.py · modules/agent_gateway/ (mới) · modules/agent_hub/erp.py (mới) · modules/agent_hub/{service,bells,briefs,grants,runners,meetings,meeting_actions,mcp,controller}.py · modules/assistant/{service,conversation,controller}.py · modules/employee/service.py · alembic_agent.ini · migrations_agent/ · start.agent.sh · docker-compose.agent-hub.yml · .env.agent.example · scripts/agent_split/ · scripts/deploy/deploy.sh · test/backend/test_agent_hub_tach_dich_vu.py · doc/agent-hub/13, 14, 08, README

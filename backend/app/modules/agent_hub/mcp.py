@@ -62,10 +62,10 @@ def is_write_tool(name: str) -> bool:
 
 
 def list_tools(db: Session, scope: int) -> list[dict]:
-    from app.modules.assistant.tools import tool_defs
+    from . import erp
 
     out = []
-    for d in tool_defs(db):
+    for d in erp.tool_defs(db):
         if d.name in HIDDEN:
             continue
         if scope != mcp_keys.SCOPE_WRITE and is_write_tool(d.name):
@@ -80,7 +80,7 @@ def list_tools(db: Session, scope: int) -> list[dict]:
 
 def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
     """Trả dict kết quả (JSON-hóa được). Lỗi nghiệp vụ → {"error": ...}, không ném."""
-    from app.modules.assistant.tools import run_tool
+    from . import erp
 
     if name == "report_issue":
         return _report_issue(db, user, args)
@@ -90,7 +90,7 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
         return _confirm_draft(db, user, args)
     if name in HIDDEN or (scope != mcp_keys.SCOPE_WRITE and is_write_tool(name)):
         return {"error": f"Công cụ '{name}' không mở cho khóa này."}
-    return run_tool(db, user, name, args or {})
+    return erp.run_tool(db, user, name, args or {})
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -104,20 +104,21 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
     if submit and kind in draft_create.SUBMITTABLE:
         if missing := draft_create.missing_for_submit(kind, draft):
             return {"error": f"Chưa gửi duyệt được: {missing} Chưa tạo gì."}
+    from . import erp
+
     try:
-        code, oid = draft_create.create(db, user, kind, draft)
+        code, oid = erp.create_draft(db, user, kind, draft)
         if submit and kind in draft_create.SUBMITTABLE:
-            draft_create.submit(db, user, kind, oid)
+            erp.submit_draft(db, user, kind, oid)
     except draft_create.DraftError as e:
         return {"error": str(e)}
     return {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
-            "details": draft_create.created_details(db, kind, oid),
+            "details": erp.created_details(db, kind, oid),
             "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}
 
 
 def _report_issue(db: Session, user, args: dict) -> dict:
-    from app.modules.ticket import service as ticket_service
-    from app.modules.ticket.schema import TicketCreate
+    from . import erp
 
     title = str(args.get("title") or "").strip()[:200]
     detail = str(args.get("detail") or "").strip()[:4000]
@@ -125,10 +126,8 @@ def _report_issue(db: Session, user, args: dict) -> dict:
         return {"error": "Cần title và detail."}
     dept = (settings.AGENT_TICKET_DEPARTMENTS or "").split(",")[0].strip()
     body = detail + (f"\n\nMàn hình: {args.get('screen_url')}" if args.get("screen_url") else "") + "\n\n(Gửi qua cổng MCP.)"
-    t = ticket_service.create_ticket(db, TicketCreate(subject=title, department=dept, body=body),
-                                     user_id=user.id, requester_emp_id=int(getattr(user, "employee_id", 0) or 0))
-    db.commit()
-    return {"ok": True, "ticket": t.code, "department": dept,
+    t = erp.create_ticket(db, user, subject=title, department=dept, body=body)
+    return {"ok": True, "ticket": t.get("code"), "department": dept,
             "note": "Nhóm kỹ thuật (và bot sửa mã) sẽ nhận phiếu này." if dept else "Phiếu đã tạo, chưa gắn bộ phận."}
 
 
@@ -176,13 +175,13 @@ router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
 
 def _auth(db: Session, authorization: str | None):
-    from app.modules.user.model import User
+    from . import erp
 
     raw = authorization.split(" ", 1)[1] if authorization and authorization.lower().startswith("bearer ") else ""
     key = mcp_keys.authenticate(db, raw) if raw else None
     if key is None:
         return None, None
-    user = db.get(User, key.user_id)
+    user = erp.user_by_id(db, key.user_id)
     if user is None or not user.is_active:
         return None, None
     return key, user

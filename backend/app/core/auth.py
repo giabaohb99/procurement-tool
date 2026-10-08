@@ -285,6 +285,11 @@ def get_user_permissions(db: Session, user) -> dict:
 
 
 def user_has_permission(db: Session, user, entity: str, action: str) -> bool:
+    if settings.agent_is_service:
+        #  ai-CR-119: dịch vụ AI không có bảng quyền — hỏi cổng B của ERP (bộ đệm 60 giây).
+        from app.modules.agent_hub import erp
+
+        return erp.can(db, user, entity, action)
     return bool(get_perm_profile(db, user)["perms_union"].get(entity, {}).get(action, False))
 
 

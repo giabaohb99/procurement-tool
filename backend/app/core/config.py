@@ -249,6 +249,29 @@ class Settings(BaseSettings):
     # ai-CR-111: token bot Zalo CHÍNH THỨC (Zalo Bot Platform). Trống = kênh Zalo tắt. Có token thì tiến trình
     # `agent-poller` mở thêm một vòng kéo tin Zalo (getUpdates) chạy song song với Telegram.
     AGENT_ZALO_BOT_TOKEN: str = ""
+    # ai-CR-119 (phase S, doc/agent-hub/13 §3): phần AI tách thành DỊCH VỤ RIÊNG. Một mã nguồn, ba cách chạy:
+    #   embedded — như trước: một tiến trình vừa ERP vừa bot, một DB (mặc định, prod/dev hiện tại).
+    #   service  — tiến trình này LÀ dịch vụ AI (nút A): DB riêng `agent_hub`, hỏi số liệu ERP qua cổng B
+    #              (`AGENT_GATEWAY_URL`), nhận người dùng web qua chữ ký của ERP.
+    #   erp      — tiến trình này là ERP (nút B): không chạy bot, mở cổng `/api/agent-gw/*` cho dịch vụ AI,
+    #              chuyển tiếp `/api/agent-hub/*`, `/api/assistant/*`, `/api/mcp/*` sang `AGENT_SERVICE_URL`.
+    AGENT_MODE: str = "embedded"
+    AGENT_SERVICE_URL: str = ""      # ERP → dịch vụ AI, vd http://agent-api:8000
+    AGENT_GATEWAY_URL: str = ""      # dịch vụ AI → ERP, vd http://api:8000
+    # Khóa ký chung hai đầu (HMAC-SHA256, xem core/agent_signature.py). Trống = từ chối mọi lượt máy-nói-máy.
+    AGENT_SERVICE_SECRET: str = ""
+
+    @property
+    def agent_is_service(self) -> bool:
+        return self.AGENT_MODE == "service"
+
+    @property
+    def agent_is_erp(self) -> bool:
+        return self.AGENT_MODE == "erp"
+
+    @property
+    def agent_embedded(self) -> bool:
+        return self.AGENT_MODE not in ("service", "erp")
     # Khóa Gemini RIÊNG của bot (QĐ-AI-7). CỐ Ý không lùi về GEMINI_API_KEY: bot chạy
     # nền gọi liên tục, đốt hết hạn mức thì Trợ lý AI đang phục vụ người thật chết
     # theo, mà lúc đó không ai biết vì sao.

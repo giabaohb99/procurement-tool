@@ -71,12 +71,12 @@ def find(db: Session, text: str) -> list[AgentRunner]:
     key = fold(text)
     if not key:
         return []
-    from app.modules.user.model import User
+    from . import erp
 
     out = []
     for r in active(db):
         hay = [r.name, r.note]
-        owner = db.get(User, r.owner_user_id) if r.owner_user_id else None
+        owner = erp.user_by_id(db, r.owner_user_id) if r.owner_user_id else None
         if owner is not None:
             hay += _names_of(db, owner)
         if any(key == fold(h) or (len(key) >= 3 and key in fold(h)) for h in hay if h):
@@ -178,10 +178,10 @@ def queue_for_task(db: Session, task_id: int) -> str:
 
 
 def describe(db: Session, runner: AgentRunner) -> str:
+    from . import erp
     from .service import describe_user
-    from app.modules.user.model import User
 
-    owner = describe_user(db, db.get(User, runner.owner_user_id))[0] if runner.owner_user_id else ""
+    owner = describe_user(db, erp.user_by_id(db, runner.owner_user_id))[0] if runner.owner_user_id else ""
     return f"{runner.name}" + (f" ({owner})" if owner else "")
 
 

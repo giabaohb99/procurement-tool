@@ -40,12 +40,20 @@ main() {
       : "${DEPLOY_COMPOSE:=-f docker-compose.production.yml}"
       : "${DEPLOY_BRANCH:=main}"
       : "${DEPLOY_HEALTH:=https://thumua.degoholding.vn/api/health}" ;;
+    agent)
+      #  ai-CR-119: DỊCH VỤ AI (nút A) — checkout RIÊNG `~/agent-hub` (cùng kho, cùng nhánh erp-v2), stack
+      #  docker-compose.agent-hub.yml, cổng health 127.0.0.1:8020. Bot code deploy được chính nó qua đích này (S-4).
+      : "${DEPLOY_DIR:=$HOME/agent-hub}"
+      : "${DEPLOY_COMPOSE:=--env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml}"
+      : "${DEPLOY_BRANCH:=erp-v2}"
+      : "${DEPLOY_HEALTH:=http://127.0.0.1:8020/api/health}" ;;
     *)
       if [ -z "${DEPLOY_DIR:-}" ] || [ -z "${DEPLOY_COMPOSE:-}" ] || [ -z "${DEPLOY_BRANCH:-}" ]; then
         echo "ERR=đích lạ «$target»: phải khai DEPLOY_DIR, DEPLOY_COMPOSE, DEPLOY_BRANCH"; echo "RESULT=fail"; return 2
       fi ;;
   esac
   : "${DEPLOY_HEALTH:=}"
+  DEPLOY_TARGET="$target"
   DEPLOY_DIR="${DEPLOY_DIR/#\~/$HOME}"   # sổ môi trường ghi «~/…»: biến trong ngoặc kép không tự nở dấu ~
   : "${DEPLOY_ROLLBACK:=1}"
   : "${DEPLOY_LOG_DIR:=$HOME/agent-deploy-logs}"
@@ -117,6 +125,14 @@ pick_services() {
   local prev="$1" sha="$2" paths
   paths="$(git diff --name-only "$prev" "$sha")"
   local out=()
+  if [ "${DEPLOY_TARGET:-}" = "agent" ]; then
+    #  Stack dịch vụ AI: bốn service dùng chung một image; đổi backend / compose / doc bot thì dựng lại cả bốn.
+    if grep -qE '^(backend/|docker/|docker-compose\.agent-hub\.yml|doc/agent-hub/)' <<<"$paths"; then
+      out+=(agent-api agent-worker agent-beat agent-poller)
+    fi
+    printf '%s\n' "${out[@]}"
+    return
+  fi
   if grep -q '^backend/' <<<"$paths"; then
     out+=(api celery-worker celery-beat)
     # shellcheck disable=SC2086

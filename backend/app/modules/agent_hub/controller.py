@@ -7,7 +7,7 @@ không thuộc người hay phòng nào).
 """
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
@@ -362,6 +362,25 @@ def google_disconnect(user=Depends(get_current_user), db: Session = Depends(get_
     if link is not None:
         google_link.revoke(db, link)
     return success(google_link.describe(db, user.id), "Đã gỡ kết nối Google")
+
+
+class RevokeIn(BaseModel):
+    user_id: int
+
+
+@router.post("/internal/revoke")
+async def internal_revoke(request: Request, body: RevokeIn, db: Session = Depends(get_db)):
+    """ai-CR-119: ERP (đã tách) báo nhân sự nghỉ — chỉ nhận chữ ký máy-nói-máy, không có người dùng."""
+    from app.core import agent_signature
+
+    ok, reason, _uid = agent_signature.verify(request.method, request.url.path, await request.body(), request.headers)
+    if not ok:
+        raise HTTPException(401, f"Chữ ký ERP không hợp lệ: {reason}")
+    from .service import revoke_user_access
+
+    n = revoke_user_access(db, body.user_id)
+    db.commit()
+    return success({"revoked": n})
 
 
 @router.get("/stats")

@@ -328,20 +328,11 @@ def lock_linked_users(db: Session, eid: int, actor_id: int, reason: int) -> list
 
 def _revoke_bot_access(db: Session, user_id: int) -> None:
     """ai-CR-053: nghỉ việc thì khóa Gemini cá nhân + liên kết Telegram của bot cũng đóng cùng lúc phiên
-    web (không có gì hỏi được bot dưới tên người đã đi). Không commit ở đây — đi chung với người gọi."""
-    from datetime import datetime
+    web (không có gì hỏi được bot dưới tên người đã đi). Không commit ở đây — đi chung với người gọi.
+    ai-CR-119: ERP đã tách thì gọi sang dịch vụ AI (`core/agent_client.py`), bảng nằm bên đó."""
+    from app.core.agent_client import revoke_user
 
-    from app.modules.agent_hub.model import AgentChatLink, AgentGoogleLink, AgentMcpKey, AgentUserKey
-
-    now = datetime.now()
-    for row in db.query(AgentUserKey).filter(AgentUserKey.user_id == user_id, AgentUserKey.revoked_at.is_(None)):
-        row.revoked_at = now
-    for row in db.query(AgentChatLink).filter(AgentChatLink.user_id == user_id, AgentChatLink.revoked_at.is_(None)):
-        row.revoked_at = now
-    for row in db.query(AgentMcpKey).filter(AgentMcpKey.user_id == user_id, AgentMcpKey.revoked_at.is_(None)):
-        row.revoked_at = now
-    for row in db.query(AgentGoogleLink).filter(AgentGoogleLink.user_id == user_id, AgentGoogleLink.revoked_at.is_(None)):
-        row.revoked_at = now
+    revoke_user(db, user_id)
 
 
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:

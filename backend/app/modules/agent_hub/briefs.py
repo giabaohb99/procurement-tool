@@ -51,7 +51,7 @@ def _hhmm(iso: str) -> str:
 
 
 def morning_text(db: Session, user, events: list[dict]) -> str:
-    from app.modules.assistant.tools import run_tool
+    from . import erp
 
     esc = telegram.esc
     lines = [f"<b>Sáng {now_local():%d/%m}</b>"]
@@ -72,7 +72,7 @@ def morning_text(db: Session, user, events: list[dict]) -> str:
         lines.append("<b>Việc riêng</b>")
         lines.extend(f"• {esc(x)}" for x in own)
     try:
-        tasks = run_tool(db, user, "my_approval_tasks", {"limit": 10})
+        tasks = erp.run_tool(db, user, "my_approval_tasks", {"limit": 10})
         items = tasks.get("items") or []
         if items:
             lines.append(f"Chờ anh/chị duyệt ({tasks.get('total') or len(items)}):")
@@ -84,14 +84,14 @@ def morning_text(db: Session, user, events: list[dict]) -> str:
 
 
 def send_morning_briefs(db: Session, *, now: datetime | None = None) -> int:
-    from app.modules.user.model import User
-
     from app.modules.assistant.tools.google_tool import list_events
+
+    from . import erp
 
     now = now or now_utc()
     sent = 0
     for g, chats in _targets(db, now):
-        user = db.get(User, g.user_id)
+        user = erp.user_by_id(db, g.user_id)
         if user is None or not user.is_active:
             continue
         try:

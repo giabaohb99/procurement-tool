@@ -61,7 +61,7 @@ celery_app.conf.update(
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
         "app.modules.legacy_datxe.outbound_tasks",  # Chiều ERP -> app cũ (P3, bao-CR-596)
-        "app.modules.agent_hub.tasks",      # Agent Hub — kéo tin Telegram, gom việc, nạp kho tài liệu
+        *(["app.modules.agent_hub.tasks"] if not settings.agent_is_erp else []),   # Agent Hub (bỏ ở ERP đã tách, ai-CR-119)
         "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
@@ -176,7 +176,7 @@ celery_app.conf.update(
 
 #  Agent Hub — chỉ đưa vào lịch khi đã bật, vì hai vòng này thức dậy rất dày và
 #  không có lý do gì để chúng chạy trên máy chưa cấu hình bot.
-if settings.AGENT_HUB_ENABLED:
+if settings.AGENT_HUB_ENABLED and not settings.agent_is_erp:
     celery_app.conf.beat_schedule.update({
         "agent-triage-inbox": {
             "task": "agent.triage_inbox",
@@ -284,7 +284,12 @@ if settings.AGENT_HUB_ENABLED:
             "options": {"expires": 8},
         }
 
-if not settings.POS365_HARD_OFF:
+#  ai-CR-119: tiến trình DỊCH VỤ AI chỉ giữ lịch của bot — sao lưu, dọn nhật ký, POS365, đồng bộ app cũ… là việc của ERP.
+if settings.agent_is_service:
+    celery_app.conf.beat_schedule = {k: v for k, v in celery_app.conf.beat_schedule.items() if k.startswith("agent-")}
+    celery_app.conf.imports = ["app.modules.agent_hub.tasks"]
+
+if not settings.POS365_HARD_OFF and not settings.agent_is_service:
     celery_app.conf.beat_schedule.update({
         "coffee-pull-orders": {
             "task": "coffee.pull_orders",

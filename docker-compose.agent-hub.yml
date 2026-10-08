@@ -1,0 +1,111 @@
+# STACK DỊCH VỤ AI (nút A — bot cá nhân) — ai-CR-119, phase S của doc/agent-hub/13-lo-trinh.md.
+#
+# Chạy RIÊNG cạnh stack ERP, trên cùng VPS lúc đầu (S-1) và bê nguyên sang VPS AI sau (S-5). Dùng chung MySQL với ERP
+# (database `agent_hub` riêng, tài khoản riêng) qua mạng ngoài `dego-db`; gọi ERP qua cổng B `http://api:8000` qua mạng
+# `procurement-internal` của stack ERP (khai external). Redis và Qdrant của riêng mình.
+#
+#   cd ~/procurement-tool-dev
+#   docker compose --env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml up -d --build
+#
+# .env.agent: xem .env.agent.example (AGENT_MODE=service, DB_NAME=agent_hub, AGENT_GATEWAY_URL=http://api:8000,
+# AGENT_SERVICE_SECRET trùng với .env.dev của ERP, JWT_SECRET TRÙNG với ERP — khóa AI / token Google mã hóa bằng nó).
+#
+# Bốn service dùng chung MỘT image (build một lần, `up` dùng lại) — khác hẳn stack dev cũ (bốn image riêng, ai-CR-115).
+x-agent-base: &agent-base
+  image: dego-agent-hub:latest
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.api
+  env_file: .env.agent
+  environment:
+    PYTHONPATH: /app
+    AGENT_MODE: service
+    AGENT_LONG_POLL: "true"        # poller riêng giữ kết nối chờ tin; beat không đặt lịch poll
+    REDIS_URL: redis://redis-agent:6379/0
+    QDRANT_URL: http://qdrant-agent:6333
+  restart: always
+  networks:
+    - agent-internal
+    - dego-db
+    - erp-internal
+
+services:
+  agent-api:
+    <<: *agent-base
+    command: ["sh", "start.agent.sh"]
+    volumes:
+      - agent_files:/agent-files
+      - ./doc/agent-hub:/agent-docs
+    ports:
+      - "127.0.0.1:8020:8000"      # health cho deploy.sh / O-01; ERP gọi qua mạng nội bộ http://agent-api:8000
+    mem_limit: 1g
+    cpus: 1
+    depends_on:
+      - redis-agent
+
+  agent-worker:
+    <<: *agent-base
+    command: celery -A app.core.celery_app worker -l info -c 2 -n agent-worker@%h
+    volumes:
+      - agent_files:/agent-files
+      - ./doc/agent-hub:/agent-docs:ro
+    stop_grace_period: 120s        # một lượt chép lời / viết biên bản có thể dài vài phút
+    mem_limit: 2g                  # ffmpeg + pycel + Qdrant client
+    cpus: 2
+    depends_on:
+      - agent-api
+      - redis-agent
+
+  agent-beat:
+    <<: *agent-base
+    command: celery -A app.core.celery_app beat -l info --scheduler celery.beat:PersistentScheduler --schedule /app/beatdata/celerybeat-schedule
+    volumes:
+      - agent_beat:/app/beatdata
+    mem_limit: 256m
+    cpus: 0.25
+    depends_on:
+      - agent-worker
+
+  agent-poller:
+    <<: *agent-base
+    command: python -m app.modules.agent_hub.poller
+    volumes:
+      - agent_files:/agent-files
+      - ./doc/agent-hub:/agent-docs
+    stop_grace_period: 30s
+    mem_limit: 512m
+    cpus: 0.5
+    depends_on:
+      - agent-api
+      - redis-agent
+
+  redis-agent:
+    image: redis:7.2-alpine
+    restart: always
+    command: redis-server --save 60 1
+    volumes:
+      - agent_redis:/data
+    networks:
+      - agent-internal
+
+  qdrant-agent:
+    image: qdrant/qdrant:latest
+    restart: always
+    volumes:
+      - agent_qdrant:/qdrant/storage
+    networks:
+      - agent-internal
+
+volumes:
+  agent_files:
+  agent_beat:
+  agent_redis:
+  agent_qdrant:
+
+networks:
+  agent-internal:
+  dego-db:
+    external: true                 # MySQL dùng chung của VPS (container procurement-mysql)
+  erp-internal:
+    external: true
+    name: procurement-tool-dev_procurement-internal   # mạng của stack ERP dev; prod đổi tên tương ứng

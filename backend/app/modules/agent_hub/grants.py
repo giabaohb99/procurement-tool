@@ -94,37 +94,32 @@ def fold(s: str) -> str:
 
 
 def _names_of(db: Session, user) -> list[str]:
-    from app.modules.employee.model import Employee
+    from . import erp
 
-    emp = db.get(Employee, user.employee_id) if user.employee_id else None
-    names = [user.email or ""]
-    if emp is not None:
-        names += [emp.full_name or "", emp.code or "", (emp.full_name or "").split()[-1] if emp.full_name else ""]
-    return [n for n in names if n]
+    return erp.names_of(db, user)
 
 
 def find_users(db: Session, name: str) -> list:
     """Tài khoản ERP đang hoạt động khớp tên: theo họ tên nhân sự, mã NV, tên đăng nhập, hoặc tên
     Telegram lúc liên kết. So không dấu. Khớp trọn tên/tên gọi thì ưu tiên; còn lại trả hết để hỏi lại."""
-    from app.modules.user.model import User
+    from . import erp
 
     key = fold(name)
     if not key:
         return []
     now = datetime.now()
-    tg_by_user: dict[int, str] = {}
+    #  ai-CR-119: tên ERP (họ tên, mã NV, tên đăng nhập) tra qua cổng ERP; tên Telegram lúc liên kết nằm ở sổ của bot.
+    users = list(erp.search_users(db, name))
+    seen = {int(u.id) for u in users}
     for link in db.scalars(select(AgentChatLink).where(AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None),
                                                        AgentChatLink.expires_at > now)):
-        tg_by_user.setdefault(link.user_id, link.tg_name)
-    found, exact = [], []
-    for user in db.scalars(select(User).where(User.is_active.is_(True))):
-        names = _names_of(db, user) + [tg_by_user.get(user.id, "")]
-        folded = [fold(n) for n in names if n]
-        if any(key == f for f in folded):
-            exact.append(user)
-        elif len(key) >= 3 and any(key in f for f in folded):
-            found.append(user)
-    return exact if exact else found
+        tg = fold(link.tg_name or "")
+        if tg and (key == tg or (len(key) >= 3 and key in tg)) and int(link.user_id) not in seen:
+            u = erp.user_by_id(db, link.user_id)
+            if u is not None and getattr(u, "is_active", True):
+                users.append(u)
+                seen.add(int(u.id))
+    return users
 
 
 def is_linked(db: Session, user_id: int) -> bool:

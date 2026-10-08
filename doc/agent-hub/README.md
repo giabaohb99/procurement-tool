@@ -37,4 +37,5 @@ Telegram. Đại ca ra lệnh thì mới **lên prod**.
    của hệ thống mà vẫn trả lời được câu hỏi đắt nhất: con bot quản lý có đủ khôn không.
 - `11-ke-hoach-bien-ban-hop.md` — phase 10: biên bản họp từ ghi âm / video (mp3, m4a, mp4 qua Drive), lộ trình 10.0–10.4 + câu chờ chốt.
 - `12-de-xuat-tom-tat-nhom.md` — đề xuất bot trong nhóm Telegram / Zalo tóm tắt tin nhắn và tệp; câu chờ chốt G1–G6.
+- `14-cong-erp-api.md` — hợp đồng cổng B ERP ↔ dịch vụ AI, ba chế độ `AGENT_MODE`, cách dựng dịch vụ AI tách riêng trên dev, deploy đích `agent`, runbook S-5/S-6 (ai-CR-119).
 - `13-lo-trinh.md` — **lộ trình tổng** (08/10): trạng thái theo phase, bộ 44 chức năng của một trợ lý cá nhân đối chiếu bot IDA, kiến trúc đích A2A bốn nút (bot cá nhân · cổng ERP · bot code · kho tin nhắn), tầng lưu trữ, việc kế tiếp. Thay bảng phase cuối doc 04.

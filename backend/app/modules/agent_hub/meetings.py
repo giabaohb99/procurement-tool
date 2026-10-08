@@ -809,11 +809,9 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
 
 
 def _author_of(db: Session, user_id: int) -> str:
-    from app.modules.user.model import User
+    from . import erp, service
 
-    from . import service
-
-    user = db.get(User, int(user_id or 0))
+    user = erp.user_by_id(db, int(user_id or 0))
     if user is None:
         return ""
     try:

@@ -10,7 +10,6 @@ from datetime import date
 
 from app.core import app_settings
 
-from . import tools as tool_layer
 from .knowledge import build_system
 from .provider import ChatMessage, get_provider
 
@@ -278,11 +277,12 @@ def ask(
     # `system` của caller KHÔNG ghi đè định nghĩa/rào an toàn — chỉ chèn THÊM vào cuối.
     # Chân dung người hỏi chỉ chèn khi mở tool: đường không tool (test provider...) giữ
     # system tĩnh cho cache prefix dùng chung.
-    profile = _caller_context(db, user) if tool_on else None
-    from . import glossary
+    #  ai-CR-119: ở DỊCH VỤ AI, công cụ ERP / chân dung / thuật ngữ đi qua cổng B (`agent_hub.erp`); embedded gọi thẳng.
+    from app.modules.agent_hub import erp
 
+    profile = erp.caller_context(db, user) if tool_on else None
     recent = [str(h.get("content") or "") for h in (history or [])[-2:] if h.get("role") == "user"]
-    terms = glossary.prompt_block(db, message, *recent) if tool_on else None
+    terms = erp.glossary_block(db, [message, *recent]) if tool_on else None
     full_system = build_system(extra=_extra_system(tool_on, system, profile, terms))
 
     msgs: list[ChatMessage] = []
@@ -311,8 +311,8 @@ def ask(
     if tool_on:
         result = prov.run_tools(
             msgs,
-            tools=tool_layer.tool_defs(db),
-            execute=lambda name, args: tool_layer.run_tool(db, user, name, args),
+            tools=erp.tool_defs(db, user),
+            execute=lambda name, args: erp.run_tool(db, user, name, args),
             **common,
         )
     else:

@@ -285,3 +285,11 @@ def rag_reindex(mode: str = "all", user=Depends(require("help_article", "write")
     message = ("Đã xếp hàng nạp bù các tài liệu còn thiếu" if mode == "missing"
                else "Đã xếp hàng nạp lại chỉ mục tài liệu")
     return success({"task_id": async_result.id, "mode": mode}, message=message)
+
+
+#  ai-CR-119: ERP đã tách (`AGENT_MODE=erp`) chỉ giữ lại các đường đụng KHO TỆP và Trung tâm HDSD của chính nó; phần còn
+#  lại chuyển tiếp sang dịch vụ AI (`agent_gateway/proxy.py`). Lọc theo đường dẫn để không chép mã.
+ERP_LOCAL_PATHS = {"/api/assistant/uploads", "/api/assistant/uploads/{file_id}", "/api/assistant/files/{file_id}/download",
+                   "/api/assistant/rag/index-status", "/api/assistant/rag/reindex"}
+erp_local_router = APIRouter(tags=["assistant"])
+erp_local_router.routes.extend(r for r in router.routes if getattr(r, "path", "") in ERP_LOCAL_PATHS)

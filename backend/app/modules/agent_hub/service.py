@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, channels, chat_link, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
+from . import ai_keys, bells, channels, chat_link, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -586,9 +586,7 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
     if ok is None:
         reply(db, chat_id, "Mã không đúng hoặc đã hết hạn. " + _LINK_HELP)
         return
-    from app.modules.user.model import User
-
-    user = db.get(User, ok.user_id)
+    user = erp.user_by_id(db, ok.user_id)
     name, detail = describe_user(db, user)
     reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{telegram.esc(name)}</b> cho chat này"
           + (f" ({telegram.esc(detail)})" if detail else "")
@@ -792,11 +790,13 @@ def describe_user(db: Session, user) -> tuple[str, str]:
 
     ai-CR-042: bản đầu chỉ in email, tài khoản không có email thì ra «#238» — đại ca không biết là ai.
     """
+    if user is None:
+        return "", ""
+    if isinstance(user, erp.ErpUser):
+        return user.label or (user.email or f"tài khoản #{user.id}"), user.detail
     from app.modules.department.model import Department
     from app.modules.employee.model import Employee
 
-    if user is None:
-        return "", ""
     emp = db.get(Employee, user.employee_id) if getattr(user, "employee_id", 0) else None
     login = (getattr(user, "email", "") or "").strip()
     if emp is not None:
@@ -822,11 +822,9 @@ def _account_fact(db: Session, chat_id: str, user) -> str:
 
 def show_account(db: Session, chat_id: str) -> None:
     """«/taikhoan»: chat này hỏi Trợ lý dưới tài khoản nào, và cách đổi (ai-CR-040)."""
-    from app.modules.user.model import User
-
     link = chat_link.get_active_link(db, chat_id)
     if link is not None:
-        name, detail = describe_user(db, db.get(User, link.user_id))
+        name, detail = describe_user(db, erp.user_by_id(db, link.user_id))
         text = (f"Chat này đang dùng tài khoản ERP <b>{telegram.esc(name)}</b>"
                 + (f" ({telegram.esc(detail)})" if detail else "")
                 + f". Đăng nhập bằng mã lúc {fmt_local(link.linked_at)}, hết hạn {fmt_local(link.expires_at)}.")
@@ -837,6 +835,20 @@ def show_account(db: Session, chat_id: str) -> None:
                 f"<b>{telegram.esc(name)}</b>" + (f" ({telegram.esc(detail)})" if detail else "") + "."
                 if user is not None else "Chat này chưa đăng nhập tài khoản ERP nào.")
     reply(db, chat_id, text + "\nĐăng nhập tài khoản trên web KHÔNG làm chat này đổi theo. " + _LINK_HELP)
+
+
+def revoke_user_access(db: Session, user_id: int, *, now: datetime | None = None) -> int:
+    """Nhân sự nghỉ (ai-CR-053 / ai-CR-119): đóng khóa AI cá nhân, liên kết chat, khóa MCP, token Google của người đó.
+    Không commit — người gọi quyết (ERP gọi chung giao dịch khóa tài khoản; đường nội bộ của dịch vụ AI tự commit)."""
+    from .model import AgentChatLink, AgentGoogleLink, AgentMcpKey, AgentUserKey
+
+    now = now or datetime.now()
+    n = 0
+    for model in (AgentUserKey, AgentChatLink, AgentMcpKey, AgentGoogleLink):
+        for row in db.query(model).filter(model.user_id == int(user_id), model.revoked_at.is_(None)):
+            row.revoked_at = now
+            n += 1
+    return n
 
 
 def _logout(db: Session, chat_id: str) -> None:
@@ -1735,14 +1747,12 @@ def _grant_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
 
 
 def _grant_confirm(db: Session, chat_id: str, row: AgentMessage, pending: AgentMessage, *, yes: bool) -> bool:
-    from app.modules.user.model import User
-
     row.action = ACT_COMMAND
     try:
         info = json.loads(pending.body or "{}")
     except ValueError:
         info = {}
-    user = db.get(User, int(info.get("user_id") or 0))
+    user = erp.user_by_id(db, int(info.get("user_id") or 0))
     if not yes or user is None:
         pending.action = ACT_GRANT_DROPPED
         db.commit()
@@ -1766,15 +1776,13 @@ def _grant_confirm(db: Session, chat_id: str, row: AgentMessage, pending: AgentM
 
 
 def _grant_listing(db: Session) -> str:
-    from app.modules.user.model import User
-
     rows = grants.list_active(db)
     if not rows:
         return "Chưa cấp quyền sửa mã cho ai ngoài chat của đại ca."
     esc = telegram.esc
     lines = ["<b>Đang được ra lệnh sửa mã qua bot:</b>"]
     for g in rows:
-        label, _detail = describe_user(db, db.get(User, g.user_id))
+        label, _detail = describe_user(db, erp.user_by_id(db, g.user_id))
         linked = "" if grants.is_linked(db, g.user_id) else " · chưa đăng nhập bot"
         lines.append(f"• {esc(label or f'tài khoản #{g.user_id}')} — cấp <b>{grants.LEVEL_LABELS.get(int(g.level), '?')}</b>"
                      f", từ {fmt_local(g.created_at)}{linked}")
@@ -1788,10 +1796,8 @@ def _grant_allows(db: Session, chat_id: str, row: AgentMessage, task: AgentTask,
     need = grants.required_level(action)
     if level >= need:
         return True
-    from app.modules.user.model import User
-
     link = chat_link.get_active_link(db, chat_id)
-    label = describe_user(db, db.get(User, link.user_id))[0] if link is not None else f"chat {chat_link.mask_chat(chat_id)}"
+    label = describe_user(db, erp.user_by_id(db, link.user_id))[0] if link is not None else f"chat {chat_link.mask_chat(chat_id)}"
     esc = telegram.esc
     row.action = ACT_DENIED
     have = grants.LEVEL_LABELS.get(level, "chưa có quyền")
@@ -2358,10 +2364,8 @@ def _notify_admin_action(db: Session, chat_id: str, task: AgentTask, action: str
     """Người khác vừa ra lệnh đổi trạng thái việc: một dòng về chat đại ca (sổ đã có tin gốc)."""
     if telegram.is_allowed_chat(chat_id) or action not in grants.NOTIFY_ACTIONS:
         return
-    from app.modules.user.model import User
-
     link = chat_link.get_active_link(db, chat_id)
-    label = describe_user(db, db.get(User, link.user_id))[0] if link is not None else f"chat {chat_link.mask_chat(chat_id)}"
+    label = describe_user(db, erp.user_by_id(db, link.user_id))[0] if link is not None else f"chat {chat_link.mask_chat(chat_id)}"
     esc = telegram.esc
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
           f"<b>{esc(label)}</b> vừa nhắn «{esc(text[:80])}» → {esc(_ACTION_LABELS.get(action, action))} "
@@ -3409,17 +3413,15 @@ def _assistant_user(db: Session, chat_id: str = ""):
     chưa liên kết thì lùi về tài khoản khai cứng `AGENT_ASSISTANT_USER` (`QĐ-AI-10`); chat khác
     không bao giờ được lùi về tài khoản đó.
     """
-    from app.modules.user.model import User
-
     if chat_id:
         link = chat_link.get_active_link(db, chat_id)
         if link is not None:
-            linked = db.get(User, link.user_id)
+            linked = erp.user_by_id(db, link.user_id)
             return linked if linked is not None and linked.is_active else None
         if not telegram.is_allowed_chat(chat_id):
             return None
     email = (settings.AGENT_ASSISTANT_USER or "").strip()
-    user = db.scalar(select(User).where(User.email == email)) if email else None
+    user = erp.user_by_email(db, email) if email else None
     if user is None or not user.is_active:
         return None
     return user
@@ -3544,7 +3546,7 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     pending.action = ACT_DRAFT_DONE
     db.commit()
     try:
-        code, oid = draft_create.create(db, user, kind, info.get("draft") or {})
+        code, oid = erp.create_draft(db, user, kind, info.get("draft") or {})
     except draft_create.DraftError as e:
         pending.action = ACT_DRAFT_DROPPED
         db.commit()
@@ -3578,7 +3580,7 @@ def _reply_created(db: Session, chat_id: str, kind: str, oid: int, head: str, ta
     """Báo phiếu vừa tạo / gửi duyệt KÈM thông tin đọc lại từ DB + link (ai-CR-049). Ghi dấu câu trả lời
     để lượt hỏi sau Trợ lý biết phiếu ĐÃ tạo — không thì «cho chi tiết phiếu» lại bị soạn nháp lần nữa."""
     lines = [f"<b>{telegram.esc(head)}</b>"]
-    lines += [telegram.esc(x) for x in draft_create.created_details(db, kind, oid)]
+    lines += [telegram.esc(x) for x in erp.created_details(db, kind, oid)]
     lines.append(_doc_link_html(kind, oid))
     if tail:
         lines.append(telegram.esc(tail))
@@ -3589,7 +3591,7 @@ def _submit_and_report(db: Session, chat_id: str, user, kind: str, oid: int, cod
                        pending: AgentMessage) -> None:
     label = draft_create.LABELS[kind]
     try:
-        draft_create.submit(db, user, kind, oid)
+        erp.submit_draft(db, user, kind, oid)
     except draft_create.DraftError as e:
         _reply_created(db, chat_id, kind, oid, f"Đã tạo {label} {code} (Nháp) nhưng chưa gửi duyệt được: "
                        f"{str(e)[:400]}")
@@ -3661,27 +3663,24 @@ def _send_report_file(db: Session, chat_id: str, user, meta: dict) -> None:
     tệp phải của CHÍNH tài khoản bot đang mượn và nằm trong thư mục `assistant-report/`.
     Không có chốt này thì một khối `file` bịa id là lối tải mọi tệp đính kèm trong kho.
     """
-    from app.core.storage import download_bytes
-    from app.modules.attachment.model import StoredFile
-
-    f = db.get(StoredFile, int(meta.get("id") or 0)) if str(meta.get("id") or "").isdigit() else None
-    if f is None or f.created_by != user.id or "/assistant-report/" not in (f.file_key or ""):
+    fid = int(meta.get("id") or 0) if str(meta.get("id") or "").isdigit() else 0
+    f = erp.report_file(db, user, fid) if fid else None
+    if f is None:
         reply(db, chat_id, "Trợ lý báo có tệp báo cáo nhưng em không tìm thấy nó trong kho.")
         return
     telegram.send_chat_action(chat_id, "upload_document")
     try:
-        data = download_bytes(f.file_key)
-        mid = telegram.send_document(chat_id, f.filename, data,
-                                     caption=f"<b>{telegram.esc(f.filename)}</b>",
-                                     content_type=f.content_type or "")
+        mid = telegram.send_document(chat_id, f["filename"], f["data"],
+                                     caption=f"<b>{telegram.esc(f['filename'])}</b>",
+                                     content_type=f["content_type"] or "")
     except Exception as e:  # noqa: BLE001 - kho hay Telegram hỏng đều phải thành câu trả lời
-        log.exception("agent_hub: gửi tệp %s hỏng", f.id)
+        log.exception("agent_hub: gửi tệp %s hỏng", fid)
         reply(db, chat_id,
-              f"Không gửi được tệp <b>{telegram.esc(f.filename)}</b> "
+              f"Không gửi được tệp <b>{telegram.esc(f['filename'])}</b> "
               f"({telegram.esc(str(e)[:200])}). Đại ca tải trên web: "
               f"{telegram.esc(telegram.absolute_url(str(meta.get('download_url') or '')))}")
         return
-    log_message(db, DIR_OUT, chat_id, mid, f"[tệp] {f.filename} ({f.size} byte)",
+    log_message(db, DIR_OUT, chat_id, mid, f"[tệp] {f['filename']} ({f['size']} byte)",
                 action=ACT_FILE)
 
 
@@ -3933,10 +3932,8 @@ def _named_cursor(db: Session, name: str) -> AgentCursor | None:
 
 
 def _ticket_bot_user(db: Session):
-    from app.modules.user.model import User
-
     email = (settings.AGENT_TICKET_ASSIGNEE or "").strip()
-    return db.scalar(select(User).where(User.email == email)) if email else None
+    return erp.user_by_email(db, email) if email else None
 
 
 def _ticket_departments() -> set[str]:
@@ -3944,9 +3941,8 @@ def _ticket_departments() -> set[str]:
 
 
 def pull_tickets(db: Session) -> int:
-    """Phiếu hỗ trợ đủ điều kiện mà chưa thành việc -> việc mới, đi thẳng bước rà soát. Trả số việc."""
-    from app.modules.ticket.model import Ticket
-
+    """Phiếu hỗ trợ đủ điều kiện mà chưa thành việc -> việc mới, đi thẳng bước rà soát. Trả số việc.
+    ai-CR-119: phiếu đọc qua cổng ERP (`erp.tickets_open`), bot không đụng bảng phiếu."""
     bot_user = _ticket_bot_user(db)
     departments = _ticket_departments()
     if bot_user is None and not departments:
@@ -3954,76 +3950,54 @@ def pull_tickets(db: Session) -> int:
     cursor = _named_cursor(db, TICKET_CURSOR)
     if cursor is None:
         #  Lần đầu bật: mốc = phiếu mới nhất hiện có, phiếu cũ không tự tràn vào theo nhãn bộ phận.
-        cursor = AgentCursor(name=TICKET_CURSOR, value=int(db.scalar(select(func.max(Ticket.id))) or 0))
+        cursor = AgentCursor(name=TICKET_CURSOR, value=erp.tickets_max_id(db))
         db.add(cursor)
         db.commit()
-    linked = select(AgentTaskItem.ref_id).where(AgentTaskItem.source == SRC_ERP_TICKET)
-    rows = list(db.scalars(select(Ticket).where(Ticket.status.in_(_TICKET_OPEN), Ticket.id.not_in(linked))
-                           .order_by(Ticket.id).limit(200)))
+    linked = [int(x) for x in db.scalars(select(AgentTaskItem.ref_id).where(AgentTaskItem.source == SRC_ERP_TICKET))]
+    rows = erp.tickets_open(db, list(_TICKET_OPEN), linked)
+    bot_id = int(bot_user.id) if bot_user is not None else 0
     picked = [t for t in rows
-              if (bot_user is not None and t.assignee_id == bot_user.id)
-              or (t.id > cursor.value and (t.department or "").strip().casefold() in departments)]
+              if (bot_id and t["assignee_id"] == bot_id)
+              or (t["id"] > cursor.value and (t["department"] or "").strip().casefold() in departments)]
     created = 0
     for ticket in picked[:TICKET_BATCH]:
         if _quota_left(db) <= 0:
-            log.warning("agent_hub: chạm trần việc/ngày, phiếu %s chờ lượt sau", ticket.code)
+            log.warning("agent_hub: chạm trần việc/ngày, phiếu %s chờ lượt sau", ticket["code"])
             break
-        task = _task_from_ticket(db, ticket, bot_user)
+        task = _task_from_ticket(db, ticket, bot_id)
         created += 1
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
-              f"Phiếu hỗ trợ <b>{telegram.esc(ticket.code)}</b> thành việc <b>{telegram.esc(task.code)}</b>: "
-              f"{telegram.esc(ticket.subject[:120])}", task_id=task.id)
+              f"Phiếu hỗ trợ <b>{telegram.esc(ticket['code'])}</b> thành việc <b>{telegram.esc(task.code)}</b>: "
+              f"{telegram.esc(ticket['subject'][:120])}", task_id=task.id)
         db.commit()
         start_scan(db, task)
         db.commit()
     return created
 
 
-def _task_from_ticket(db: Session, ticket, bot_user) -> AgentTask:
-    from app.modules.employee.model import Employee
-    from app.modules.ticket.model import TicketMessage
-
-    first = db.scalar(select(TicketMessage).where(TicketMessage.ticket_id == ticket.id,
-                                                  TicketMessage.is_staff.is_(False))
-                      .order_by(TicketMessage.id).limit(1))
-    requester = db.get(Employee, ticket.requester_id) if ticket.requester_id else None
-    who = (requester.full_name if requester is not None else "") or "người dùng"
-    lines = [f"Phiếu hỗ trợ {ticket.code} của {who} (bộ phận: {ticket.department or 'không ghi'}, "
-             f"ưu tiên: {ticket.priority}).", "", ticket.subject or ""]
-    if first is not None and (first.body or "").strip():
-        lines += ["", first.body.strip()]
-    if ticket.origin_url:
-        lines += ["", f"Trang người gửi đang đứng lúc tạo phiếu: {ticket.origin_url}"]
-    task = AgentTask(code=next_code(db), title=(ticket.subject or ticket.code)[:255], source=SRC_ERP_TICKET,
+def _task_from_ticket(db: Session, ticket: dict, bot_id: int) -> AgentTask:
+    who = ticket.get("requester") or "người dùng"
+    lines = [f"Phiếu hỗ trợ {ticket['code']} của {who} (bộ phận: {ticket.get('department') or 'không ghi'}, "
+             f"ưu tiên: {ticket.get('priority')}).", "", ticket.get("subject") or ""]
+    if ticket.get("first_body"):
+        lines += ["", ticket["first_body"]]
+    if ticket.get("origin_url"):
+        lines += ["", f"Trang người gửi đang đứng lúc tạo phiếu: {ticket['origin_url']}"]
+    task = AgentTask(code=next_code(db), title=(ticket.get("subject") or ticket["code"])[:255], source=SRC_ERP_TICKET,
                      status=ST_TRIAGE, summary="\n".join(lines), risk_level=RISK_MEDIUM)
     db.add(task)
     db.flush()
-    db.add(AgentTaskItem(task_id=task.id, source=SRC_ERP_TICKET, ref_id=ticket.id, merged_by=MERGED_BY_BOT))
-    _ticket_note(db, ticket, bot_user,
-                 f"Phiếu đã chuyển cho bot sửa mã {BOT_NAME} (mã việc {task.code}). Kết quả sẽ báo lại ở đây.",
-                 status="in_progress")
+    db.add(AgentTaskItem(task_id=task.id, source=SRC_ERP_TICKET, ref_id=ticket["id"], merged_by=MERGED_BY_BOT))
     db.commit()
+    erp.ticket_note(db, ticket["id"], f"Phiếu đã chuyển cho bot sửa mã {BOT_NAME} (mã việc {task.code}). Kết quả sẽ báo "
+                                      "lại ở đây.", status="in_progress", by_user_id=bot_id)
     return task
 
 
-def _ticket_note(db: Session, ticket, bot_user, body: str, *, status: str) -> None:
-    """Một dòng trả lời của nhóm hỗ trợ trên phiếu + đặt trạng thái (không qua service để khỏi tự
-    đổi trạng thái sang «Đã trả lời» lúc bot mới NHẬN việc)."""
-    from app.modules.ticket.model import TicketMessage
-
-    uid = bot_user.id if bot_user is not None else 0
-    db.add(TicketMessage(ticket_id=ticket.id, body=body, is_staff=True, created_by=uid, updated_by=uid))
-    ticket.status = status
-    ticket.closed_at = None
-    ticket.updated_by = uid
-
-
-def _tickets_of(db: Session, task: AgentTask) -> list:
-    from app.modules.ticket.model import Ticket
-
-    ids = db.scalars(select(AgentTaskItem.ref_id).where(AgentTaskItem.task_id == task.id,
-                                                        AgentTaskItem.source == SRC_ERP_TICKET)).all()
-    return list(db.scalars(select(Ticket).where(Ticket.id.in_(ids)))) if ids else []
+def _tickets_of(db: Session, task: AgentTask) -> list[dict]:
+    ids = [int(x) for x in db.scalars(select(AgentTaskItem.ref_id).where(AgentTaskItem.task_id == task.id,
+                                                                          AgentTaskItem.source == SRC_ERP_TICKET))]
+    return erp.tickets_by_ids(db, ids) if ids else []
 
 
 def report_to_tickets(db: Session, task: AgentTask, *, done: bool) -> None:
@@ -4032,16 +4006,15 @@ def report_to_tickets(db: Session, task: AgentTask, *, done: bool) -> None:
     if not tickets:
         return
     bot_user = _ticket_bot_user(db)
+    bot_id = int(bot_user.id) if bot_user is not None else 0
     for t in tickets:
         if done:
-            _ticket_note(db, t, bot_user, f"{BOT_NAME} đã sửa xong việc {task.code}, bản sửa đã lên môi trường "
-                         "thử (dev). Anh/chị kiểm tra lại giúp, còn lỗi thì trả lời ngay trên phiếu này.",
-                         status="answered")
+            erp.ticket_note(db, t["id"], f"{BOT_NAME} đã sửa xong việc {task.code}, bản sửa đã lên môi trường "
+                            "thử (dev). Anh/chị kiểm tra lại giúp, còn lỗi thì trả lời ngay trên phiếu này.",
+                            status="answered", by_user_id=bot_id)
         else:
-            _ticket_note(db, t, bot_user, f"Bot không xử lý việc {task.code}; nhóm hỗ trợ sẽ xử lý phiếu này.",
-                         status="open")
-            if bot_user is not None and t.assignee_id == bot_user.id:
-                t.assignee_id = 0
+            erp.ticket_note(db, t["id"], f"Bot không xử lý việc {task.code}; nhóm hỗ trợ sẽ xử lý phiếu này.",
+                            status="open", by_user_id=bot_id, clear_assignee=True)
     db.commit()
 
 

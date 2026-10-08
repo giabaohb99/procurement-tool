@@ -12,6 +12,7 @@ Mỗi liên kết chọn một mức (`AgentChatLink.notify_mode`), đổi ở T
 from __future__ import annotations
 
 import re
+from types import SimpleNamespace
 from datetime import datetime
 
 from sqlalchemy import func, select
@@ -20,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.notification.model import Notification
 
-from . import telegram
+from . import erp, telegram
 from .constants import ACT_BELL, DIR_OUT, NOTIFY_ALL, NOTIFY_MINE, NOTIFY_OFF
 from .model import AgentChatLink, AgentCursor, AgentMessage
 
@@ -42,7 +43,7 @@ def _cursor(db: Session) -> AgentCursor:
     row = db.scalar(select(AgentCursor).where(AgentCursor.name == CURSOR_NAME))
     if row is None:
         #  Lần đầu: đứng ở dòng mới nhất, không đổ cả lịch sử chuông cũ vào Telegram.
-        last = int(db.scalar(select(func.max(Notification.id))) or 0)
+        last = erp.notifications_max_id(db)
         row = AgentCursor(name=CURSOR_NAME, value=last, created_by=0, updated_by=0)
         db.add(row)
         db.commit()
@@ -75,12 +76,12 @@ def forward_bells(db: Session, *, now: datetime | None = None) -> int:
     """Một lượt: đọc chuông mới hơn con trỏ, gửi cho chat đã liên kết theo mức từng chat. Trả số tin đã gửi."""
     now = now or datetime.now()
     cur = _cursor(db)
-    rows = list(db.scalars(select(Notification).where(Notification.id > cur.value)
-                           .order_by(Notification.id).limit(BATCH)))
+    #  ai-CR-119: chuông đọc qua cổng ERP (dịch vụ AI không có bảng thông báo).
+    rows = [SimpleNamespace(**n) for n in erp.notifications_after(db, int(cur.value), BATCH)]
     if not rows:
         return 0
     links = _active_links_by_user(db, {int(r.user_id or 0) for r in rows if r.user_id}, now)
-    per_chat: dict[str, list[Notification]] = {}
+    per_chat: dict[str, list] = {}
     for n in rows:
         for link in links.get(int(n.user_id or 0), []):
             mode = int(link.notify_mode or NOTIFY_OFF)

@@ -140,9 +140,11 @@ def chat(db: Session, user, body) -> dict:
 
     # Tệp đính kèm lượt này (CR-204): kiểm quyền SỞ HỮU từng id rồi mới đọc nội dung —
     # id lạ / tệp người khác / tệp ngoài thư mục chat là chặn cả lượt (PermissionError -> 404).
-    files = attach.resolve_owned(db, user, body.attachment_ids or [])
-    blocks = attach.build_blocks(files) if files else None
-    attachment_meta = attach.meta_of(files)
+    #  ai-CR-119: ở dịch vụ AI, kho tệp nằm bên ERP — lấy khối nội dung + mô tả qua cổng B.
+    from app.modules.agent_hub import erp
+
+    blocks, attachment_meta = erp.attachment_blocks(db, user, body.attachment_ids or [])
+    files = attachment_meta
 
     # Ngữ cảnh: hội thoại cũ -> lấy từ DB; hội thoại mới -> dùng history client gửi (nếu có).
     if conv is not None:
@@ -166,7 +168,7 @@ def chat(db: Session, user, body) -> dict:
     if conv is None:
         # Gửi mỗi tệp không kèm chữ -> đặt tiêu đề theo tên tệp cho danh sách còn đọc được.
         title = _title_from(body.message) if body.message.strip() else (
-            _title_from(f"Tệp: {files[0].filename}") if files else _title_from("")
+            _title_from(f"Tệp: {files[0]['filename']}") if files else _title_from("")
         )
         conv = AssistantConversation(
             title=title,

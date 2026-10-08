@@ -9125,3 +9125,46 @@ def test_tra_loi_the_khong_dau_van_nhan(db):
     assert ma.parse_reply("Tao 1, 3", 3) == ("yes", [1, 3], "")
     assert ma.parse_reply("khong tao", 3) == ("no", [], "")
     assert ma.parse_reply("tao phieu mua hang", 3) is None
+
+
+# --- ai-CR-119: bot chạy ở CHẾ ĐỘ DỊCH VỤ (tách khỏi ERP) vẫn đi trọn đường qua cổng B ----------------------------------
+def _service_mode(db, monkeypatch):
+    """Cổng B (ERP) thành một app nhỏ trên cùng SQLite; `agent_hub.erp` gọi sang bằng TestClient thay `requests`."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.core.database import get_db
+    from app.modules.agent_gateway.controller import router as gw_router
+    from app.modules.agent_hub import erp
+
+    gw = FastAPI()
+    gw.include_router(gw_router)
+    gw.dependency_overrides[get_db] = lambda: db
+    client = TestClient(gw)
+    monkeypatch.setattr(settings, "AGENT_SERVICE_SECRET", "khoa-thu")
+    monkeypatch.setattr(settings, "AGENT_GATEWAY_URL", "http://erp.test")
+    monkeypatch.setattr(settings, "AGENT_MODE", "service")
+    monkeypatch.setattr(erp, "_remote", None)
+    monkeypatch.setattr(erp.requests, "request", lambda method, url, params=None, data=None, headers=None, timeout=0, **kw:
+                        client.request(method, url.replace("http://erp.test", ""), params=params, content=data, headers=headers))
+
+
+def test_bot_che_do_dich_vu_dang_nhap_va_hoi_qua_cong(db, bot, seed, monkeypatch):
+    from app.modules.agent_hub import chat_link, erp
+    from app.modules.agent_hub.model import AgentChatLink
+
+    service, sent, _ = bot
+    _service_mode(db, monkeypatch)
+    _give_key(db, seed.u_req_id)
+    _fake_intent(monkeypatch, service, "hoi")
+    seen = []
+    monkeypatch.setattr(service, "answer_question",
+                        lambda db, chat_id, q, **kw: seen.append((q, type(service._assistant_user(db, chat_id)).__name__)))
+    code, _ = chat_link.issue_code(db, seed.u_req_id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    assert "Đã đăng nhập tài khoản ERP" in sent[-1] and db.query(AgentChatLink).filter_by(chat_id="777").count() == 1
+    service.handle_message(db, _other_msg("công nợ còn bao nhiêu"))
+    assert seen and seen[-1][1] == "ErpUser"                     # tài khoản là bản chụp từ cổng, không phải ORM
+    #  «/taikhoan» và nhãn người dùng vẫn ra đúng tên qua cổng.
+    service.handle_message(db, _other_msg("/taikhoan"))
+    assert "đang dùng tài khoản ERP" in sent[-1] and erp.describe(db, erp.user_by_id(db, seed.u_req_id))[0] in sent[-1]

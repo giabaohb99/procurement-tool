@@ -28,7 +28,7 @@
 | 9 | Nhiều kênh: lớp kênh + bot Zalo chính thức (B1, Z-1, Z-2) | **Xong mã** 07/10 (ai-CR-111) | **Chờ đại ca**: token bot Zalo |
 | 10 | Thư ký biên bản họp (T-01…T-06, T-12) | **Xong** 07–08/10 | ai-CR-104, 112, 113, 114, 116, 117; T-01 mới thử tệp giả |
 | 11 | Đọc nhóm Telegram + đọc / viết báo cáo (G) | **Xong đợt 1** 07–08/10 | ai-CR-105, 115; đợt 2 ở §5 |
-| **S** | **Tách dịch vụ AI thành nhiều bot nói chuyện với nhau (A2A)** — §3 | **Chưa** — chờ đại ca chốt §3.4 | |
+| **S** | **Tách dịch vụ AI thành nhiều bot nói chuyện với nhau (A2A)** — §3 | **Xong mã S-0…S-4** 08/10 (ai-CR-119), chờ Agent 1 dựng trên dev theo doc 14 §4; S-5/S-6 là runbook | |
 | Z-3/Z-4 | Zalo hướng B: tài khoản riêng ghi lặng nhóm, đọc nhóm Zalo | **Chưa** | chờ tài khoản Zalo riêng |
 
 **Một câu:** phần «trợ lý cá nhân hỏi gì đáp nấy» (ERP, sổ nhớ, khóa AI riêng, lịch, Drive, biên bản họp, đọc báo cáo,
@@ -172,24 +172,28 @@ nút giữ khóa công ty (B) không nhận tin lạ trực tiếp; nút sửa m
 
 | Bước | Việc | Cỡ | Điều kiện |
 |---|---|---|---|
-| S-0 | Viết hợp đồng API A ↔ B (danh sách công cụ, token theo người, mã lỗi), đo tải hiện tại (QPS DB, lượt model / ngày, dung lượng bảng) | 2 ngày | — |
-| S-1 | **Stack AI riêng cùng VPS**: compose `agent-hub` (api-agent, worker, beat, poller, redis, qdrant), **DB riêng** cho bảng `tab_agent_*` + nhóm, `.env` riêng, deploy riêng (`deploy.sh agent`). Mã vẫn chung kho | 4 ngày | S-0 |
-| S-2 | Lớp «cổng ERP» trong mã: hai cách chạy — gọi trực tiếp (như nay) và gọi HTTP qua B — chuyển **từng công cụ** sang HTTP, công cụ nào xong thì tắt đường trực tiếp | 8–10 ngày | S-1 |
-| S-3 | Trợ lý AI trên web và cổng MCP chuyển sang gọi A (hoặc B giữ bản mình) | 2 ngày | S-2 |
-| S-4 | Bot code deploy được stack AI (môi trường «agent» trong sổ V-01); O-01 theo dõi sức khỏe thêm nút A | 1 ngày | S-1 |
-| S-5 | **Dời stack AI sang VPS riêng**: chép DB + Qdrant + R2 + token, đổi DNS, bật lại poller | 1 ngày | VPS mua xong |
-| S-6 | Tách D (kho tin nhắn) khi số đo §4 chạm ngưỡng | 3 ngày | số đo |
+| S-0 | **Xong 08/10** — hợp đồng [`14-cong-erp-api.md`](14-cong-erp-api.md); đo dev: 23 bảng bot < 1 MB, 25 lượt model / ngày, DB cả hệ ~4 truy vấn / giây | 2 ngày | — |
+| S-1 | **Xong mã 08/10** — `docker-compose.agent-hub.yml` (4 service một image + redis + qdrant riêng), `app/agent_main.py`, `AGENT_MODE=service/erp`, alembic riêng `alembic_agent.ini` (bảng ở `core/agent_tables.py`), `scripts/agent_split/` (tạo DB, chép bảng), `.env.agent.example` | 4 ngày | S-0 |
+| S-2 | **Xong mã 08/10** — `agent_hub/erp.py` (một lớp, hai cách chạy) + cổng B `agent_gateway/controller.py`; thay vì chuyển từng công cụ, cổng B chạy **cả 62 công cụ ERP** qua một đường `/tools/run` dưới quyền người gọi; 4 nhóm công cụ cá nhân chạy tại dịch vụ AI | 8–10 ngày | S-1 |
+| S-3 | **Xong mã 08/10** — ERP `AGENT_MODE=erp` chuyển tiếp `/api/agent-hub/*`, `/api/assistant/*` (trừ uploads / files / rag), `/api/mcp/*` sang dịch vụ AI kèm chữ ký (`agent_gateway/proxy.py`); dịch vụ AI nhận danh tính qua `core/agent_identity.py`; nhân sự nghỉ → ERP báo `internal/revoke` | 2 ngày | S-2 |
+| S-4 | **Xong mã 08/10** — `deploy.sh agent <commit>` (checkout `~/agent-hub`, health 127.0.0.1:8020, tự chọn 4 service); môi trường «agent» thêm vào sổ bằng câu nhắn (doc 14 §5) | 1 ngày | S-1 |
+| S-5 | Runbook doc 14 §6 — chép DB + volume + `.env.agent`, ERP đổi `AGENT_SERVICE_URL`, tắt poller cũ trước khi bật mới | 1 ngày | VPS mua xong |
+| S-6 | Runbook doc 14 §6 — giao diện nội bộ = 3 hàm `groups.read / find / file_by_ref` hiện có | 3 ngày | số đo |
 
 Ước tổng **3–4 tuần công**, có thể xen kẽ với việc khác. S-1 làm được ngay sau khi đại ca chốt §3.4.
 
 ### 3.4 Chờ đại ca chốt
 
-| Mã | Câu | Em đề xuất |
+**Đại ca chốt 08/10/2026: «cập nhật kế hoạch rồi làm S-1… làm full 6 S rồi mới đẩy lên VPS».** Em hiểu là: tách DB ngay
+ở S-1, làm hết phần mã của S-1…S-4 trước rồi mới dựng trên dev (một lần, không dựng dở), S-5/S-6 viết runbook vì chưa có
+VPS AI và chưa chạm ngưỡng. Cách dựng trên dev: doc 14 §4 (Agent 1 làm).
+
+| Mã | Câu | Chốt |
 |---|---|---|
-| S1 | S-1 tách DB riêng ngay (cùng MySQL, schema khác) hay dùng chung DB ERP tới S-5 | Tách ngay: dời sau tốn hơn, và bảng nhóm sẽ lớn |
-| S2 | Thứ tự: phase S trước hay sau Zalo A (chỉ còn chờ token) và đợt lên prod đang giữ | Zalo A bật ngay khi có token (không tốn công); S-0 + S-1 làm trước đợt prod kế để prod nhận stack đã tách |
-| S3 | Nút D ở cùng VPS AI lúc đầu (đề xuất) hay tách từ đầu | Cùng VPS AI, tách khi chạm ngưỡng §4 |
-| S4 | VPS AI cấu hình đề xuất: 4 lõi, 8 GB RAM, 80 GB SSD + R2 cho tệp; worker ffmpeg + Qdrant ăn RAM nhiều nhất | — |
+| S1 | Tách DB riêng ngay ở S-1 | Có — database `agent_hub` |
+| S2 | Thứ tự | Phase S làm ngay (08/10); Zalo A bật khi có token |
+| S3 | Nút D | Cùng VPS AI lúc đầu |
+| S4 | VPS AI | Chưa mua; đề xuất 4 lõi, 8 GB RAM, 80 GB SSD + R2 |
 
 ## 4. Lưu trữ: kho tin nhắn lớn thì làm gì
 

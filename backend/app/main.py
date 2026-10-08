@@ -365,7 +365,12 @@ app.include_router(faq_router)
 app.include_router(ticket_router)
 app.include_router(comment_router)
 app.include_router(forum_router)
-app.include_router(assistant_router)
+if settings.agent_is_erp:
+    from app.modules.assistant.controller import erp_local_router as assistant_local_router  # noqa: E402
+
+    app.include_router(assistant_local_router)      # ai-CR-119: uploads / files / rag ở lại ERP, còn lại chuyển tiếp
+else:
+    app.include_router(assistant_router)
 app.include_router(work_router)
 app.include_router(work_task_router)
 #  ⚠️ Hộp việc duyệt đăng ký TRƯỚC đường đơn nghỉ phép: nó dùng chung tiền tố
@@ -400,9 +405,17 @@ app.include_router(sync_log_router)
 #  Cửa nhận của app đặt xe cũ. KHÔNG có phân quyền người dùng — gác bằng chữ ký
 #  HMAC chung khóa (`app/core/sync_signature.py`), xem đầu tệp controller.
 app.include_router(legacy_datxe_router)
-app.include_router(agent_hub_router)
-from app.modules.agent_hub.mcp import router as mcp_router  # noqa: E402 — ai-CR-063 cổng MCP
-app.include_router(mcp_router)
+if settings.agent_is_erp:
+    #  ai-CR-119: ERP đã tách — bot, Trợ lý, MCP sống ở dịch vụ AI; ERP chỉ mở cổng B và chuyển tiếp.
+    from app.modules.agent_gateway.controller import router as agent_gateway_router  # noqa: E402
+    from app.modules.agent_gateway.proxy import router as agent_proxy_router  # noqa: E402
+
+    app.include_router(agent_gateway_router)
+    app.include_router(agent_proxy_router)
+else:
+    app.include_router(agent_hub_router)
+    from app.modules.agent_hub.mcp import router as mcp_router  # noqa: E402 — ai-CR-063 cổng MCP
+    app.include_router(mcp_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)
