@@ -120,10 +120,14 @@ let reloginTimer = null;
 const groupNames = new Map();
 
 function setState(value, extra = {}) {
-  const changed = state.value !== value;
+  const prev = state.value;
+  const changed = prev !== value;
   Object.assign(state, { value, since: changed ? Date.now() : state.since, reason: "" }, extra);
   if (value !== "qr") state.qr = "";
-  if (changed && (value === "connected" || value === "down")) {
+  // Báo «đã kết nối» chỉ khi vừa quét QR hoặc vừa nối lại sau lúc văng — khởi động lại tiến trình (mỗi lần dựng lại
+  // stack) mà nối bằng phiên đã lưu thì im lặng (08/10: đại ca nhận hai tin «đã kết nối» trong 8 phút).
+  const report = value === "down" || (value === "connected" && (prev === "qr" || prev === "down"));
+  if (changed && report) {
     push({ kind: "status", state: value, name: state.name, reason: state.reason });
   }
 }

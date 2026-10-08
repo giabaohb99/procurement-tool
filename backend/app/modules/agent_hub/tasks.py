@@ -581,7 +581,10 @@ def heartbeat_task() -> dict:
         return off
     db = SessionLocal()
     try:
-        return {"status": "success", "touched": service.heartbeat(db)}
+        touched = service.heartbeat(db)
+        #  ai-CR-127: nhặt lại lượt lập kế hoạch bị ngắt vì bot khởi động lại (deploy) giữa chừng.
+        resumed = service.resume_lost_replans(db)
+        return {"status": "success", "touched": touched, "resumed": resumed}
     except Exception as e:  # noqa: BLE001 — tin báo hỏng không được làm chết vòng beat
         db.rollback()
         log.exception("agent_hub: vòng báo đang chạy hỏng")

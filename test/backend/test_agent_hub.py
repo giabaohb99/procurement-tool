@@ -9458,3 +9458,37 @@ def test_ma_viec_viet_tat_va_loi_chao_khong_gan_vao_the_hoi_lai(db, bot, monkeyp
     service.handle_message(db, _msg(f"bỏ kế hoạch {task.code[3:]} đi"))
     db.refresh(task)
     assert task.status == service.ST_CANCELLED
+
+
+# --- ai-CR-127: lượt lập lại kế hoạch bị ngắt vì bot khởi động lại thì vòng beat nhặt lại ----------------------------
+def test_tra_loi_xong_ma_luot_lap_ke_hoach_bi_ngat_thi_vong_beat_lam_lai(db, bot, monkeypatch):
+    """08/10: đại ca trả lời AI-0005 lúc 16:45, Agent 1 dựng lại bot lúc 16:47 — lượt lập kế hoạch chạy trong tiến
+    trình nhận tin mất hẳn, việc nằm im ở «Đang hỏi lại» với `questions` rỗng."""
+    from datetime import datetime, timedelta
+
+    from app.modules.agent_hub.model import AgentMessage, AgentRun
+
+    service, sent, _ = bot
+    planned: list[int] = []
+    monkeypatch.setattr(service, "plan_task", lambda db, task: planned.append(task.id))
+    task = _task_hoi_lai(db, service)
+    task.questions = []                                   # _answer_plan đã xóa câu hỏi rồi mới bị ngắt
+    ans = AgentMessage(direction=service.DIR_IN, chat_id="12345", body="tắt hẳn", task_id=task.id,
+                       action=service.ACT_PLAN_ANSWER, created_by=0, updated_by=0)
+    db.add(ans)
+    db.commit()
+    db.refresh(ans)
+    at = ans.created_at
+    #  Chưa đủ 3 phút: có thể lượt kia vẫn đang chạy.
+    assert service.resume_lost_replans(db, now=at + timedelta(minutes=2)) == 0 and planned == []
+    assert service.resume_lost_replans(db, now=at + timedelta(minutes=4)) == 1 and planned == [task.id]
+    assert "bị ngắt giữa chừng" in sent[-1]
+    #  Đã có lượt lập kế hoạch sau câu trả lời (xong hay hỏng đều có dòng sổ) → không làm lại lần nữa.
+    db.add(AgentRun(task_id=task.id, stage=service.STAGE_PLAN, status=2, started_at=at + timedelta(minutes=4),
+                    created_by=0, updated_by=0))
+    db.commit()
+    assert service.resume_lost_replans(db, now=at + timedelta(minutes=10)) == 0 and planned == [task.id]
+    #  Việc còn câu hỏi chưa ai trả lời → không đụng.
+    other = _task_hoi_lai(db, service)
+    assert other.questions
+    assert service.resume_lost_replans(db, now=datetime.now() + timedelta(hours=1)) == 0

@@ -1374,6 +1374,38 @@ def _active_stage(db: Session, task: AgentTask) -> tuple[str, datetime | None]:
     return "", None
 
 
+#  ai-CR-127: lượt lập lại kế hoạch chạy NGAY trong tiến trình nhận tin; bot bị dựng lại giữa chừng (deploy dev) thì lượt
+#  đó mất hẳn — 08/10 đại ca trả lời AI-0005 lúc 16:45, Agent 1 dựng lại bot lúc 16:47, việc nằm im ở «Đang hỏi lại».
+REPLAN_RESUME_AFTER = timedelta(minutes=3)
+
+
+def resume_lost_replans(db: Session, now: datetime | None = None) -> int:
+    """Vòng beat mỗi phút: việc «Đang hỏi lại» mà câu hỏi đã được trả lời (`questions` rỗng, có tin trả lời) quá 3 phút
+    vẫn chưa có lượt lập kế hoạch nào bắt đầu sau câu trả lời đó → lượt ấy đã bị ngắt; báo một câu rồi lập lại."""
+    now = now or datetime.now()
+    resumed = 0
+    for task in db.scalars(select(AgentTask).where(AgentTask.status == ST_NEEDS_INPUT)).all():
+        if task.questions:
+            continue                                # còn đang chờ đại ca trả lời thật
+        ans = db.scalar(select(AgentMessage).where(
+            AgentMessage.task_id == task.id, AgentMessage.direction == DIR_IN,
+            AgentMessage.action == ACT_PLAN_ANSWER).order_by(AgentMessage.id.desc()).limit(1))
+        if ans is None or ans.created_at is None or now - ans.created_at < REPLAN_RESUME_AFTER:
+            continue
+        ran = db.scalar(select(AgentRun.id).where(AgentRun.task_id == task.id, AgentRun.stage == STAGE_PLAN,
+                                                  AgentRun.started_at >= ans.created_at).limit(1))
+        if ran is not None:
+            continue                                # đã lập (xong hoặc hỏng có ghi sổ) — không lặp
+        log.warning("agent_hub: %s — lượt lập lại kế hoạch sau câu trả lời bị ngắt, làm lại", task.code)
+        reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+              f"<b>{telegram.esc(task.code)}</b>: lượt lập lại kế hoạch sau câu trả lời của đại ca bị ngắt giữa chừng "
+              "(bot vừa được cập nhật), em làm lại ngay.", task_id=task.id)
+        db.commit()
+        plan_task(db, task)
+        resumed += 1
+    return resumed
+
+
 def _heartbeat_text(task: AgentTask, doing: str, minutes: int) -> str:
     return (f"<b>{telegram.esc(task.code)}</b>: em vẫn đang {doing}, đã {max(minutes, 1)} phút, "
             "anh đợi em xíu. Xong em nhắn ngay.")

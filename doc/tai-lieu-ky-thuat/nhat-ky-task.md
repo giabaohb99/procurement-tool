@@ -13071,3 +13071,14 @@ Nam trong khi giao diện lại đổi thêm lần nữa; nay máy chủ trả g
 xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/groups.py · frontend-v2/src/modules/assistant/components/group-chat-thread.tsx · utils/chat-group-format.ts · pages/chat-group-detail-page.tsx · test/backend/test_agent_hub_nhom_web.py
+
+## ai-CR-127 | Bot tự làm lại lượt lập kế hoạch bị ngắt khi được cập nhật giữa chừng
+- status: dang-lam
+- date: 2026-10-08
+Đại ca trả lời câu hỏi của việc AI-0005 xong thì bot im luôn. Nguyên nhân là bot được dựng lại để cập nhật đúng lúc nó đang
+lập lại kế hoạch, nên lượt đó bị ngắt và không ai chạy lại. Nay mỗi phút bot tự kiểm: việc nào đại ca đã trả lời hơn ba phút
+mà chưa có lượt lập kế hoạch nào bắt đầu thì bot báo một câu rồi làm lại; lượt nào đã chạy, kể cả bị lỗi, thì không lặp lại.
+Em cũng bớt tin «Zalo đã kết nối»: chỉ báo khi vừa quét mã hoặc vừa nối lại sau lúc mất kết nối, không báo mỗi lần dựng lại
+máy chủ. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (resume_lost_replans) · tasks.py (heartbeat_task) · zalo-listener/index.mjs · test/backend/test_agent_hub.py
