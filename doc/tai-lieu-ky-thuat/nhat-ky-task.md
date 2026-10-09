@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-139 | Sao lưu tự động DB của bot, cảnh báo, khôi phục thử hằng tuần và quy trình quay lại
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Agent 1 phát hiện cơ sở dữ liệu riêng của bot trên dev không được sao lưu lần nào trong ba ngày: khi bot chạy tách khỏi ERP, lịch
 chạy nền chỉ giữ việc của bot nên lịch sao lưu của ERP bị lọc mất. Mất cơ sở dữ liệu này là mất lịch sử chat, trí nhớ, sổ ý định,
@@ -13209,6 +13209,7 @@ nhận mới chạy. Nhân tiện, việc dọn sổ ý định và tin nhóm c�
 ghi vào tài liệu vận hành. Bài kiểm của bot và giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/db_backup.py (mới) · purge.py (mới) · tasks.py · controller.py · model.py (AgentDbBackup) · groups.py · intent_ledger.py · backup/service.py (dump_sql) · core/celery_app.py · migrations grp07 + agent0007 · backend/scripts/agent_restore.sh (mới) · frontend-v2/src/modules/system/pages/backup-list-page.tsx · api/backup-api.ts · hooks/use-backups.ts · types/backup.ts · test/backend/test_agent_hub_sao_luu_db_bot.py · doc/agent-hub/08-van-hanh-vps.md
+Deploy: dev 09/10 (Agent 1 gộp 32edc213, cấp quyền DB tạm, khai R2 cho stack bot, chạy thử sao lưu và khôi phục thử đều thành công); prod giữ lại.
 
 ## ai-CR-138 | Màn «Bot nhớ gì về tôi», bot hiểu câu hỏi tắt theo thói quen và bộ đo độ đúng (phase 13 đợt B)
 - status: xong

@@ -86,7 +86,7 @@ ERP KHÔNG gồm bảng bot. Trước 09/10/2026 DB này không có bản nào: 
 | phút 45 mỗi giờ | `agent.db_backup_watch` | Quá 26 giờ không có bản thành công → nhắn chat chủ bot + người có `agent_ops` (một lần mỗi 24 giờ) |
 | Chủ nhật 04:30 | `agent.db_restore_test` | Nạp bản mới nhất vào DB tạm `agent_hub_restore_test`, kiểm `alembic_version` + số bảng (≥ 90% DB đang chạy) + đếm dòng `tab_agent_message` / `tab_agent_task` / `tab_agent_chat_link` / `tab_agent_memory`, rồi XÓA DB tạm (kể cả khi hỏng). Hỏng thì báo |
 
-Sao lưu lỗi cũng báo ngay. Thiếu R2 thì KHÔNG lùi về thư mục `uploads/` (thư mục đó phục vụ công khai) — ghi lỗi và báo.
+Trên dev (09/10) stack bot đặt `STORAGE_PREFIX=agent` nên tệp nằm ở `agent/backup/agent_hub-*.sql.gz`. Sao lưu lỗi cũng báo ngay. Thiếu R2 thì KHÔNG lùi về thư mục `uploads/` (thư mục đó phục vụ công khai) — ghi lỗi và báo.
 Theo dõi: ERP v2 › Quản trị › Sao lưu CSDL › chọn **DB bot (agent_hub)** — danh sách bản, «Sao lưu ngay», «Khôi phục thử»,
 «Tải về». KHÔNG có nút khôi phục trên web.
 
