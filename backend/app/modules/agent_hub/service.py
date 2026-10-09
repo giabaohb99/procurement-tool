@@ -295,6 +295,21 @@ _ZALO_STATE_TEXT = {
 }
 
 
+#  ai-CR-135: đại ca 09/10 «nhắc một lần thôi, khi nào anh hỏi thì nhắc tiếp» — mỗi lần dựng lại stack, zalo-listener khởi
+#  động lại, thử phiên cũ hỏng → lại báo «MẤT KẾT NỐI» (9:21, 9:31…). Báo mất kết nối MỘT lần cho tới khi nối lại được;
+#  muốn biết tình trạng thì hỏi `/zalo` hoặc xem thẻ Zalo trên màn Nhóm chat.
+ZALO_DOWN_CURSOR = "zalo_down_alerted"
+
+
+def _zalo_down_cursor(db: Session) -> AgentCursor:
+    row = db.scalar(select(AgentCursor).where(AgentCursor.name == ZALO_DOWN_CURSOR))
+    if row is None:
+        row = AgentCursor(name=ZALO_DOWN_CURSOR, value=0)
+        db.add(row)
+        db.flush()
+    return row
+
+
 def _report_zalo_status(db: Session, ev: dict) -> None:
     import html as _html
 
@@ -303,6 +318,13 @@ def _report_zalo_status(db: Session, ev: dict) -> None:
     tpl = _ZALO_STATE_TEXT.get(state)
     if not admin or not tpl:
         return
+    alerted = _zalo_down_cursor(db)
+    if state == "down":
+        if alerted.value:
+            return                                  # đã báo rồi, chưa nối lại — im
+        alerted.value = 1
+    elif state == "connected":
+        alerted.value = 0
     who = f" ({_html.escape(str(ev['name']))})" if ev.get("name") else ""
     why = f": {_html.escape(str(ev['reason'])[:200])}" if ev.get("reason") else ""
     reply(db, admin, tpl.format(who=who, why=why), action=ACT_OPS)

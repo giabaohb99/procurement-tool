@@ -171,6 +171,7 @@ def bot(monkeypatch):
     #  ai-CR-131: dùng bot cần quyền «Trợ lý AI». Bài cũ dựng tài khoản không vai trò — mặc định cho qua; luật thật kiểm ở
     #  `test_dung_bot_can_quyen_tro_ly_ai`.
     monkeypatch.setattr(service, "_may_use_bot_real", service.may_use_bot, raising=False)
+    service._OPS_CACHE.clear()          # ai-CR-132: danh sách người nhận tin vận hành nhớ 2 phút — không mang sang bài khác
     monkeypatch.setattr(service, "may_use_bot", lambda db, user_id: True)
     sent: list[str] = []
     asked: list[str] = []
@@ -9823,4 +9824,28 @@ def test_tin_co_link_tep_thi_doc_ca_tep_theo_cau_hoi(db, bot, monkeypatch):
     monkeypatch.setattr(ws, "fetch_resource", lambda url, max_bytes: {"kind": "none", "reason": "drive_private"})
     service.handle_message(db, _msg("tóm tắt https://drive.google.com/file/d/PRIVATEFILE12/view"))
     assert "chưa chia sẻ công khai" in sent[-1]
+
+
+# --- ai-CR-135: «Zalo mất kết nối» chỉ báo một lần cho tới khi nối lại -------------------------------------------------
+def test_zalo_mat_ket_noi_chi_bao_mot_lan_toi_khi_noi_lai(db, bot, monkeypatch):
+    """09/10: mỗi lần dựng lại stack, listener thử phiên cũ hỏng rồi lại báo «MẤT KẾT NỐI» (9:21, 9:31) — đại ca: «nhắc
+    một lần thôi, khi nào anh hỏi thì nhắc tiếp»."""
+    service, sent, _ = bot
+    down = {"kind": "status", "state": "down", "reason": "phiên cũ không dùng được"}
+    service._report_zalo_status(db, down)
+    service._report_zalo_status(db, down)
+    service._report_zalo_status(db, down)
+    assert len([s for s in sent if "MẤT KẾT NỐI" in s]) == 1
+    #  Hỏi thì vẫn trả lời tình trạng.
+    from app.modules.agent_hub import zalo_account as za
+
+    monkeypatch.setattr(settings, "AGENT_ZALO_LISTENER_URL", "http://zalo-listener:3100")
+    monkeypatch.setattr(za, "status", lambda: {"ok": True, "state": "down", "reason": "phiên cũ không dùng được"})
+    service.handle_message(db, _msg("/zalo"))
+    assert "mất kết nối" in sent[-1]
+    #  Nối lại xong rồi văng lần nữa → báo lại một lần.
+    service._report_zalo_status(db, {"kind": "status", "state": "connected", "name": "Bảo Huỳnh"})
+    service._report_zalo_status(db, down)
+    service._report_zalo_status(db, down)
+    assert len([s for s in sent if "MẤT KẾT NỐI" in s]) == 2
 
