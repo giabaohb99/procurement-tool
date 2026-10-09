@@ -843,3 +843,45 @@ def runner_watch_task() -> dict:
         return {"status": "error", "reason": str(e)[:300]}
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# Sao lưu DB của dịch vụ AI (ai-CR-139) — KHÔNG gác `_off()`: bot tắt / chưa khai token thì dữ liệu vẫn phải được giữ.
+# ---------------------------------------------------------------------------
+@celery_app.task(name="agent.db_backup")
+def db_backup_task(source: int = 1, actor_id: int = 0) -> dict:
+    from . import db_backup
+
+    db = SessionLocal()
+    try:
+        rec = db_backup.run(db, source=db_backup.Source(int(source)), actor_id=int(actor_id))
+        return {"status": "success", "id": rec.id, "key": rec.file_key, "size": rec.size_bytes}
+    except Exception as e:  # noqa: BLE001 — đã ghi sổ + báo trong `run`
+        return {"status": "failed", "error": str(e)[:300]}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.db_backup_watch")
+def db_backup_watch_task() -> dict:
+    from . import db_backup
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **db_backup.watch(db)}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.db_restore_test")
+def db_restore_test_task(actor_id: int = 0) -> dict:
+    from . import db_backup
+
+    db = SessionLocal()
+    try:
+        rec = db_backup.restore_test(db, actor_id=int(actor_id))
+        return {"status": "success", "id": rec.id, "message": rec.message}
+    except Exception as e:  # noqa: BLE001 — đã ghi sổ + báo trong `restore_test`
+        return {"status": "failed", "error": str(e)[:300]}
+    finally:
+        db.close()

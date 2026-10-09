@@ -624,3 +624,24 @@ class AgentIncident(Base, AuditMixin):
     action: Mapped[str] = mapped_column(String(40), default="")
     heal_op_id: Mapped[int] = mapped_column(BigInteger, default=0)
     task_id: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class AgentDbBackup(Base, AuditMixin):
+    """Sổ sao lưu DB của DỊCH VỤ AI (ai-CR-139): một dòng mỗi lượt sao lưu (`kind` 1) hoặc khôi phục thử (`kind` 2).
+    Mã số khai ở `db_backup.py` (`Kind` · `Source` · `Status`). Tệp nén ở R2 `<env>/backup/agent_hub-*.sql.gz`, ở đây chỉ
+    giữ key + kích thước. Chỉ dùng khi bot chạy TÁCH DB (`AGENT_MODE=service`); nhúng chung DB ERP thì bản sao lưu ERP
+    đã gồm bảng bot."""
+
+    __tablename__ = "tab_agent_db_backup"
+
+    kind: Mapped[int] = mapped_column(SmallInteger, default=1)
+    source: Mapped[int] = mapped_column(SmallInteger, default=1)
+    status: Mapped[int] = mapped_column(SmallInteger, default=1)
+    file_key: Mapped[str] = mapped_column(String(255), default="")
+    size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    message: Mapped[str] = mapped_column(Text, default="")
+    detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+    __table_args__ = (Index("ix_agent_db_backup_kind", "kind", "status", "id"),)

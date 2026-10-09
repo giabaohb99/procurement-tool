@@ -1,6 +1,8 @@
 import {
+  Bot,
   Database,
   Download,
+  FlaskConical,
   Info,
   Loader2,
   RotateCw,
@@ -17,6 +19,7 @@ import { Card } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { formatFileSize } from '@/shared/utils/format-file-size'
 
@@ -24,25 +27,35 @@ import {
   useBackups,
   useDeleteBackup,
   useDownloadBackup,
+  useRestoreTest,
   useRunBackup,
 } from '../hooks/use-backups'
-import type { DbBackupItem } from '../types/backup'
+import type { BackupTarget, DbBackupItem } from '../types/backup'
 
 export function BackupListPage() {
   const { can } = usePermission()
   const canCreate = can('backup', 'create')
   const canDelete = can('backup', 'delete')
 
+  //  ai-CR-139: «DB ERP | DB bot (agent_hub)». DB bot không có nút xóa bản và KHÔNG có nút khôi phục (quay lại DB làm
+  //  trên máy chủ bằng scripts/agent_restore.sh); chỉ có «Khôi phục thử» — nạp vào DB tạm, kiểm, rồi xóa.
+  const [target, setTarget] = useState<BackupTarget>('erp')
+  const isAgent = target === 'agent'
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
-  const { data, isLoading, isError, refetch } = useBackups({
-    page,
-    page_size: pageSize,
-  })
+  const { data, isLoading, isError, refetch } = useBackups(
+    {
+      page,
+      page_size: pageSize,
+    },
+    target,
+  )
+  const agentOff = isAgent && data?.enabled === false
 
-  const runMutation = useRunBackup()
-  const downloadMutation = useDownloadBackup()
+  const runMutation = useRunBackup(target)
+  const restoreTestMutation = useRestoreTest()
+  const downloadMutation = useDownloadBackup(target)
   const deleteMutation = useDeleteBackup()
 
   const columns: DataTableColumn<DbBackupItem>[] = [
@@ -68,12 +81,15 @@ export function BackupListPage() {
       header: 'Nguồn',
       width: 110,
       cell: (r) => (
-        <Badge
-          variant={r.source === 'manual' ? 'default' : 'secondary'}
-          className={r.source === 'manual' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
-        >
-          {r.source === 'manual' ? 'Bấm tay' : 'Tự động'}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-1">
+          <Badge
+            variant={r.source === 'manual' ? 'default' : 'secondary'}
+            className={r.source === 'manual' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+          >
+            {r.source === 'manual' ? 'Bấm tay' : 'Tự động'}
+          </Badge>
+          {r.kind === 'restore_test' && <Badge variant="outline">Khôi phục thử</Badge>}
+        </div>
       ),
     },
     {
@@ -137,7 +153,7 @@ export function BackupListPage() {
       hideable: false,
       cell: (r) => (
         <div className="flex items-center justify-center gap-1">
-          {r.status === 'success' && r.file_key && (
+          {r.status === 'success' && r.file_key && r.kind !== 'restore_test' && (
             <Button
               variant="ghost"
               size="sm"
@@ -150,7 +166,7 @@ export function BackupListPage() {
             </Button>
           )}
 
-          {canDelete && r.status !== 'running' && (
+          {canDelete && !isAgent && r.status !== 'running' && (
             <ConfirmIconButton
               icon={Trash2}
               title="Xóa bản sao lưu"
@@ -173,6 +189,25 @@ export function BackupListPage() {
         description="Quản lý và tạo bản sao lưu cơ sở dữ liệu hệ thống"
         actions={
           <div className="flex items-center gap-2">
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              value={target}
+              onValueChange={(next) => {
+                if (!next) return
+                setTarget(next as BackupTarget)
+                setPage(1)
+              }}
+            >
+              <ToggleGroupItem value="erp">
+                <Database className="size-4" />
+                DB ERP
+              </ToggleGroupItem>
+              <ToggleGroupItem value="agent">
+                <Bot className="size-4" />
+                DB bot (agent_hub)
+              </ToggleGroupItem>
+            </ToggleGroup>
             <Button
               variant="outline"
               size="sm"
@@ -182,10 +217,23 @@ export function BackupListPage() {
               <RotateCw className="size-4" />
             </Button>
 
+            {canCreate && isAgent && (
+              <Button
+                variant="outline"
+                onClick={() => restoreTestMutation.mutate()}
+                disabled={restoreTestMutation.isPending || agentOff}
+                className="gap-2"
+                title="Nạp thử bản mới nhất vào DB tạm, kiểm rồi xóa — không đụng DB đang chạy"
+              >
+                <FlaskConical className="size-4" />
+                Khôi phục thử
+              </Button>
+            )}
+
             {canCreate && (
               <Button
                 onClick={() => runMutation.mutate()}
-                disabled={runMutation.isPending}
+                disabled={runMutation.isPending || agentOff}
                 className="gap-2"
               >
                 {runMutation.isPending ? (
@@ -201,6 +249,30 @@ export function BackupListPage() {
       />
 
       {/* Info Banner */}
+      {isAgent ? (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50/70 p-4 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+          <Info className="mt-0.5 size-4 shrink-0 text-blue-600 dark:text-blue-400" />
+          {agentOff ? (
+            <p>
+              Bot đang chạy chung DB ERP ở môi trường này — bảng của bot đã nằm trong bản sao lưu «DB ERP», không có bản
+              riêng.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              <p className="font-semibold text-sm">Sao lưu DB của bot ({data?.db_name ?? 'agent_hub'}):</p>
+              <p>
+                Tự động lúc <strong className="font-semibold">01:20</strong> (và 13:20 ở prod), giữ{' '}
+                <strong className="font-semibold">{data?.keep ?? 30} bản</strong> mới nhất. Quá{' '}
+                {data?.stale_hours ?? 26} giờ không có bản thành công, hoặc sao lưu lỗi, bot nhắn người quản lý bot.
+              </p>
+              <p>
+                Mỗi chủ nhật bot tự «khôi phục thử» bản mới nhất vào DB tạm rồi xóa. Không có nút khôi phục trên web —
+                quay lại DB làm trên máy chủ theo quy trình trong tài liệu vận hành.
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50/70 p-4 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
         <Info className="mt-0.5 size-4 shrink-0 text-blue-600 dark:text-blue-400" />
         <div className="space-y-1">
@@ -214,6 +286,7 @@ export function BackupListPage() {
           </p>
         </div>
       </div>
+      )}
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
         <DataTable
@@ -224,7 +297,7 @@ export function BackupListPage() {
           isLoading={isLoading}
           isError={isError}
           onRefresh={() => refetch()}
-          emptyMessage="Chưa có bản sao lưu CSDL nào."
+          emptyMessage={isAgent ? 'Chưa có bản sao lưu DB bot nào.' : 'Chưa có bản sao lưu CSDL nào.'}
           storageKey="system.backups"
           pagination={{
             page,

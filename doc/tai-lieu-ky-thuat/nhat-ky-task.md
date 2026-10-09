@@ -13193,8 +13193,25 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
-## ai-CR-138 | Màn «Bot nhớ gì về tôi», bot hiểu câu hỏi tắt theo thói quen và bộ đo độ đúng (phase 13 đợt B)
+## ai-CR-139 | Sao lưu tự động DB của bot, cảnh báo, khôi phục thử hằng tuần và quy trình quay lại
 - status: dang-lam
+- date: 2026-10-09
+Agent 1 phát hiện cơ sở dữ liệu riêng của bot trên dev không được sao lưu lần nào trong ba ngày: khi bot chạy tách khỏi ERP, lịch
+chạy nền chỉ giữ việc của bot nên lịch sao lưu của ERP bị lọc mất. Mất cơ sở dữ liệu này là mất lịch sử chat, trí nhớ, sổ ý định,
+sổ việc sửa phần mềm và liên kết Telegram, Zalo. Nay bot có lịch sao lưu riêng lúc 01:20 hằng ngày, ở prod thêm 13:20, dùng lại
+cách sao lưu của ERP, đẩy tệp nén lên kho R2 cùng chỗ với ERP, ghi sổ từng lượt và chỉ giữ số bản theo cài đặt. Trên màn Sao lưu
+của ERP bản mới có thêm lựa chọn xem cơ sở dữ liệu của bot: danh sách bản, nút sao lưu ngay, khôi phục thử và tải về; không có nút
+khôi phục thật trên web. Khi sao lưu lỗi hoặc quá 26 giờ không có bản thành công, bot nhắn chủ bot và người có quyền vận hành bot.
+Mỗi chủ nhật bot tự nạp thử bản mới nhất vào một cơ sở dữ liệu tạm, kiểm phiên bản cấu trúc, số bảng và số dòng vài bảng chính
+rồi xóa cơ sở dữ liệu tạm, hỏng thì báo. Có script quay lại theo hai kiểu: quay lại toàn bộ về một bản, có dừng bot và lưu bản hiện
+tại để quay ngược; hoặc lấy lại đúng vài dòng như trí nhớ của một người bị xóa nhầm mà không dừng bot. Script bắt gõ đúng câu xác
+nhận mới chạy. Nhân tiện, việc dọn sổ ý định và tin nhóm cũ nay xóa theo từng lô năm nghìn dòng để không khóa bảng lâu. Quy trình
+ghi vào tài liệu vận hành. Bài kiểm của bot và giao diện chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/db_backup.py (mới) · purge.py (mới) · tasks.py · controller.py · model.py (AgentDbBackup) · groups.py · intent_ledger.py · backup/service.py (dump_sql) · core/celery_app.py · migrations grp07 + agent0007 · backend/scripts/agent_restore.sh (mới) · frontend-v2/src/modules/system/pages/backup-list-page.tsx · api/backup-api.ts · hooks/use-backups.ts · types/backup.ts · test/backend/test_agent_hub_sao_luu_db_bot.py · doc/agent-hub/08-van-hanh-vps.md
+
+## ai-CR-138 | Màn «Bot nhớ gì về tôi», bot hiểu câu hỏi tắt theo thói quen và bộ đo độ đúng (phase 13 đợt B)
+- status: xong
 - date: 2026-10-09
 Đây là đợt B của phase 13 Agent 1 giao, đại ca đã duyệt. Ở Trang cá nhân trên ERP bản mới có thêm tab «Bot nhớ gì về tôi»: mỗi
 người xem được sổ nhớ bot giữ về mình theo bốn mục, dòng nào bot tự rút thì có nhãn và hạn dùng; xem những điều bot đang để ý mà
@@ -13209,6 +13226,7 @@ cũng được cập nhật phần trí nhớ tự rút, lệnh xem trí nhớ, 
 giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/memory_view.py (mới) · intent_eval.py (mới) · intent_ledger.py · service.py · controller.py · model.py · user_guide.py · assistant/conversation.py · backend/scripts/intent_eval.py (mới) · migrations grp06 + agent0006 · frontend-v2/src/app/components/profile/profile-memory-tab.tsx · app/pages/profile-page.tsx · modules/system/api/bot-memory-api.ts · modules/system/hooks/use-bot-memory.ts · test/backend/test_agent_hub_tri_nho_cua_toi.py · test/backend/data/intent_samples.json
+Deploy: dev 09/10 (Agent 1 gộp 319433f9, dựng lại ERP api + erp v2 rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-137 | Bot ghi sổ ý định và tự rút ghi nhớ khi người dùng nhắc lại nhiều lần (phase 13 đợt A)
 - status: xong

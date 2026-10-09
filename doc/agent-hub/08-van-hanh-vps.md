@@ -73,6 +73,56 @@ Thẻ «đúng» luôn hiện **nguyên văn** lệnh / câu SQL sẽ chạy, k�
 `mysqldump` chạy TRONG container `procurement-mysql`; mật khẩu root nở ra bên trong container, không qua dòng lệnh VPS,
 không lên output. Tệp sao lưu quá 14 ngày tự dọn (`AGENT_OPS_BACKUP_KEEP_DAYS`).
 
+### 4.1 Sao lưu DB của bot (`agent_hub`) và quy trình quay lại — ai-CR-139
+
+Khi bot chạy TÁCH DB (`AGENT_MODE=service`, stack `~/agent-hub`, DB `agent_hub` trên `procurement-mysql`) thì bản sao lưu
+ERP KHÔNG gồm bảng bot. Trước 09/10/2026 DB này không có bản nào: `celery_app.py` ở chế độ service chỉ giữ lịch tên
+`agent-*` và chỉ nạp task agent_hub, nên `backup.run` của ERP bị lọc mất. Nay có lịch riêng (chạy ở `agent-beat` /
+`agent-worker`):
+
+| Lịch | Task | Việc |
+|---|---|---|
+| 01:20 (prod thêm 13:20; dev `BACKUP_ONCE_DAILY=true`) | `agent.db_backup` | mysqldump `agent_hub` → gzip → R2 `<env>/backup/agent_hub-YYYYmmdd-HHMMSS.sql.gz` → sổ `tab_agent_db_backup`; giữ `backup_keep` bản (cùng cài đặt với ERP) |
+| phút 45 mỗi giờ | `agent.db_backup_watch` | Quá 26 giờ không có bản thành công → nhắn chat chủ bot + người có `agent_ops` (một lần mỗi 24 giờ) |
+| Chủ nhật 04:30 | `agent.db_restore_test` | Nạp bản mới nhất vào DB tạm `agent_hub_restore_test`, kiểm `alembic_version` + số bảng (≥ 90% DB đang chạy) + đếm dòng `tab_agent_message` / `tab_agent_task` / `tab_agent_chat_link` / `tab_agent_memory`, rồi XÓA DB tạm (kể cả khi hỏng). Hỏng thì báo |
+
+Sao lưu lỗi cũng báo ngay. Thiếu R2 thì KHÔNG lùi về thư mục `uploads/` (thư mục đó phục vụ công khai) — ghi lỗi và báo.
+Theo dõi: ERP v2 › Quản trị › Sao lưu CSDL › chọn **DB bot (agent_hub)** — danh sách bản, «Sao lưu ngay», «Khôi phục thử»,
+«Tải về». KHÔNG có nút khôi phục trên web.
+
+⚠️ **Một lần khi dựng:** tài khoản MySQL của stack bot cần quyền trên DB tạm của khôi phục thử, chạy trong
+`procurement-mysql` bằng root: `GRANT ALL PRIVILEGES ON agent_hub_restore_test.* TO '<DB_USER của stack bot>'@'%';`.
+Thiếu quyền thì lượt khôi phục thử đầu tiên báo lỗi «Access denied … CREATE».
+
+**Quay lại DB — `backend/scripts/agent_restore.sh`** (chạy trên VPS, ngoài container; bản sao lưu tải từ màn Sao lưu hoặc
+từ R2 về máy trước). Script in kế hoạch rồi bắt gõ đúng một cụm xác nhận; gõ sai / không gõ thì thoát mã 3 TRƯỚC khi đụng
+docker hay DB. `--yes` bỏ bước gõ — chỉ dùng khi đã được duyệt (vd qua thẻ duyệt thao tác VPS, chưa nối sẵn).
+
+(a) **Quay lại TOÀN BỘ về bản X** — mất mọi thay đổi sau giờ của bản X:
+
+```
+bash ~/agent-hub/backend/scripts/agent_restore.sh ~/agent_hub-20261009-012000.sql.gz --full
+```
+
+Script tự làm theo thứ tự: dừng `agent-api agent-worker agent-beat agent-poller zalo-listener` → dump bản HIỆN TẠI vào
+`~/agent-hub/restore-safety/agent_hub-truoc-khi-quay-lai-<giờ>.sql.gz` (để quay ngược) → nạp bản X vào DB tạm
+`agent_hub_restore_tmp`, kiểm `alembic_version` + số bảng (không đạt thì dừng, DB đang chạy chưa bị đụng) → xóa / dựng lại
+`agent_hub` và nạp bản X → xóa DB tạm → khởi động lại (agent-api tự chạy alembic lên head nếu bản cũ thấp hơn) → gõ
+`HEALTH_URL` nếu có khai. Biến chỉnh được: `MYSQL_CONTAINER`, `AGENT_DB`, `STACK_DIR`, `COMPOSE_ARGS`, `SERVICES`,
+`HEALTH_URL`, `SAFETY_DIR` (đầu script).
+
+(b) **Lấy lại MỘT PHẦN** (hay gặp: trí nhớ / lịch sử của một người bị xóa nhầm) — KHÔNG dừng stack:
+
+```
+bash ~/agent-hub/backend/scripts/agent_restore.sh <tệp> --table tab_agent_memory --where "user_id=12"
+bash ~/agent-hub/backend/scripts/agent_restore.sh <tệp> --table tab_agent_note --where "user_id=12"
+```
+
+Nạp bản vào DB tạm, chép đúng các dòng khớp sang `agent_hub` bằng `REPLACE` (dòng còn thì ghi đè đúng dòng đó, dòng khác
+không đụng), rồi xóa DB tạm. Bắt buộc có `--where`; tên bảng phải dạng `tab_…`. Lõi sổ nhớ có bộ đệm 10 phút trong tiến
+trình — muốn thấy ngay thì khởi động lại `agent-api`. Vector Qdrant của ghi chú không đi theo — ghi chú lấy lại vẫn tìm được
+theo tiêu đề, tìm theo nghĩa thì đánh chỉ mục lại.
+
 ## 5. `deploy.sh`
 
 ```bash
@@ -144,4 +194,6 @@ Báo tài nguyên 07:35 mỗi sáng (cùng nội dung «tình hình máy»). B�
 - **O-03 «chạy lại migration dở»** không có thao tác riêng: khởi động lại `api` đã chạy lại `alembic upgrade head` trong
   `start.prod.sh`.
 - Dev và prod chung một VPS: VPS chết hẳn thì bot (cũng ở trên đó) không báo được gì.
+- **Quay lại DB bot qua thẻ duyệt trên Telegram** (ai-CR-139): script `agent_restore.sh` đã có bước xác nhận + `--yes`, chưa
+  nối thành thao tác VPS có duyệt (ai-CR-068). Qdrant không sao lưu (dựng lại được từ DB + HDSD).
 - **V-07 preview** chờ tên miền + token Cloudflare Tunnel; **V-08** chờ VPS 2 + tài khoản Claude công ty.

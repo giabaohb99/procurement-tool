@@ -4,11 +4,12 @@ import { toast } from 'sonner'
 import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
 import { backupApi } from '../api/backup-api'
+import type { BackupTarget } from '../types/backup'
 
-export function useBackups(params: ListParams) {
+export function useBackups(params: ListParams, target: BackupTarget = 'erp') {
   return useQuery({
-    queryKey: queryKeys.system.backups(params as Record<string, unknown>),
-    queryFn: () => backupApi.list(params),
+    queryKey: queryKeys.system.backups({ ...params, target } as Record<string, unknown>),
+    queryFn: () => backupApi.list(params, target),
     refetchInterval: (query) => {
       const items = query.state.data?.items
       const isRunning = items?.some((r) => r.status === 'running')
@@ -17,21 +18,34 @@ export function useBackups(params: ListParams) {
   })
 }
 
-export function useRunBackup() {
+export function useRunBackup(target: BackupTarget = 'erp') {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => backupApi.runNow(),
+    mutationFn: () => backupApi.runNow(target),
     onSuccess: () => {
-      toast.success('Đã bắt đầu sao lưu CSDL. Đang xử lý...')
+      toast.success(target === 'agent' ? 'Đã bắt đầu sao lưu DB bot. Đang xử lý...' : 'Đã bắt đầu sao lưu CSDL. Đang xử lý...')
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.all })
     },
   })
 }
 
-export function useDownloadBackup() {
+/** ai-CR-139: khôi phục THỬ DB bot (nạp vào DB tạm, kiểm, xóa) — không đụng DB đang chạy. */
+export function useRestoreTest() {
+  const queryClient = useQueryClient()
+
   return useMutation({
-    mutationFn: (id: number) => backupApi.download(id),
+    mutationFn: () => backupApi.restoreTest(),
+    onSuccess: () => {
+      toast.success('Đã bắt đầu khôi phục thử. Kết quả hiện trong danh sách sau ít phút.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.all })
+    },
+  })
+}
+
+export function useDownloadBackup(target: BackupTarget = 'erp') {
+  return useMutation({
+    mutationFn: (id: number) => backupApi.download(id, target),
     onSuccess: (res) => {
       if (res?.url) {
         window.open(res.url, '_blank')

@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -255,10 +255,11 @@ def file_by_ref(db: Session, group: AgentGroup, ref: int) -> AgentGroupMessage |
 
 
 def purge(db: Session, *, days: int | None = None) -> int:
+    from .purge import delete_in_batches
+
     days = int(days or settings.AGENT_GROUP_RETENTION_DAYS)
-    res = db.execute(delete(AgentGroupMessage).where(AgentGroupMessage.sent_at < now_utc() - timedelta(days=days)))
-    db.commit()
-    return int(res.rowcount or 0)
+    #  ai-CR-139: xóa theo lô — một phát vài trăm nghìn dòng khóa bảng tin nhóm lâu.
+    return delete_in_batches(db, AgentGroupMessage, AgentGroupMessage.sent_at < now_utc() - timedelta(days=days))
 
 
 def private_chat_of(db: Session, user_id: int) -> str:

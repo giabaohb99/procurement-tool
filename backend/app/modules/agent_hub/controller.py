@@ -458,6 +458,54 @@ def wipe_my_memory(user=Depends(get_current_user), db: Session = Depends(get_db)
     return success({**memory_view.snapshot(db, user.id), "wiped": out}, "Đã xóa toàn bộ trí nhớ")
 
 
+# ---------------------------------------------------------------------------
+# Sao lưu DB của dịch vụ AI (ai-CR-139) — cùng hình `/api/backups` của ERP để màn Sao lưu dùng chung bảng; gác cùng
+# khóa `backup`. KHÔNG có đường khôi phục: quay lại DB làm trên máy chủ bằng `scripts/agent_restore.sh`.
+# ---------------------------------------------------------------------------
+@router.get("/backups")
+def list_db_backups(pg: dict = Depends(pagination), db: Session = Depends(get_db), user=Depends(require("backup", "read"))):
+    from . import db_backup
+
+    return success(db_backup.page(db, offset=pg["offset"], limit=pg["limit"]))
+
+
+@router.post("/backups/run")
+def run_db_backup(user=Depends(require("backup", "create"))):
+    from . import db_backup
+    from .tasks import db_backup_task
+
+    if not db_backup.enabled():
+        raise HTTPException(400, "Bot đang chạy chung DB ERP — bản sao lưu ERP đã gồm bảng bot")
+    db_backup_task.delay(source=int(db_backup.Source.MANUAL), actor_id=int(user.id))
+    return success(None, "Đã bắt đầu sao lưu DB bot — làm mới danh sách sau vài giây", 202)
+
+
+@router.post("/backups/restore-test")
+def run_db_restore_test(user=Depends(require("backup", "create"))):
+    """Nạp thử bản mới nhất vào DB tạm rồi xóa — chỉ KIỂM bản sao lưu dùng được, không đụng DB đang chạy."""
+    from . import db_backup
+    from .tasks import db_restore_test_task
+
+    if not db_backup.enabled():
+        raise HTTPException(400, "Bot đang chạy chung DB ERP — không có DB riêng để khôi phục thử")
+    db_restore_test_task.delay(actor_id=int(user.id))
+    return success(None, "Đã bắt đầu khôi phục thử — làm mới danh sách sau ít phút", 202)
+
+
+@router.get("/backups/{bid}/download")
+def download_db_backup(bid: int, db: Session = Depends(get_db), user=Depends(require("backup", "read"))):
+    from app.core.storage import presigned_url
+
+    from . import db_backup
+    from .model import AgentDbBackup
+
+    r = db.get(AgentDbBackup, bid)
+    if r is None or r.kind != db_backup.Kind.BACKUP or not r.file_key:
+        raise HTTPException(404, "Không có tệp sao lưu")
+    name = r.file_key.split("/")[-1]
+    return success({"url": presigned_url(r.file_key, expires=600, download_name=name), "filename": name})
+
+
 class RevokeIn(BaseModel):
     user_id: int
 

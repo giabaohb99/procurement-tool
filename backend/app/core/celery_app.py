@@ -285,6 +285,34 @@ if settings.AGENT_HUB_ENABLED and not settings.agent_is_erp:
         }
 
 #  ai-CR-119: tiến trình DỊCH VỤ AI chỉ giữ lịch của bot — sao lưu, dọn nhật ký, POS365, đồng bộ app cũ… là việc của ERP.
+#  ai-CR-139: sao lưu DB của DỊCH VỤ AI. Ở chế độ service, dòng lọc ngay dưới chỉ giữ lịch tên `agent-*` và chỉ nạp task
+#  agent_hub — `backup.run` của ERP rơi mất, DB `agent_hub` 72 giờ không có bản nào. Lịch riêng mang tên `agent-*` (sống
+#  qua dòng lọc), lệch 20 phút với lịch ERP để hai lượt dump không đè nhau trên cùng máy MySQL. Không phụ thuộc
+#  AGENT_HUB_ENABLED: bot tắt thì dữ liệu cũ vẫn phải được giữ.
+if settings.agent_is_service:
+    celery_app.conf.beat_schedule.update({
+        "agent-db-backup-sang": {
+            "task": "agent.db_backup",
+            "schedule": crontab(hour=1, minute=20),
+            "kwargs": {"source": 1, "actor_id": 0},
+        },
+        "agent-db-backup-watch": {                # quá 26 giờ không có bản thành công thì báo
+            "task": "agent.db_backup_watch",
+            "schedule": crontab(minute=45),
+            "options": {"expires": 3000},
+        },
+        "agent-db-restore-test": {                # chủ nhật 04:30 — nạp thử bản mới nhất vào DB tạm rồi xóa
+            "task": "agent.db_restore_test",
+            "schedule": crontab(day_of_week=0, hour=4, minute=30),
+        },
+    })
+    if not settings.BACKUP_ONCE_DAILY:
+        celery_app.conf.beat_schedule["agent-db-backup-chieu"] = {
+            "task": "agent.db_backup",
+            "schedule": crontab(hour=13, minute=20),
+            "kwargs": {"source": 1, "actor_id": 0},
+        }
+
 if settings.agent_is_service:
     celery_app.conf.beat_schedule = {k: v for k, v in celery_app.conf.beat_schedule.items() if k.startswith("agent-")}
     celery_app.conf.imports = ["app.modules.agent_hub.tasks"]

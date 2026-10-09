@@ -361,9 +361,10 @@ def habit_lines(db: Session, user_id: int, *, days: int = 30, top: int = 6) -> l
 
 
 def purge(db: Session, *, days: int = RETENTION_DAYS) -> int:
-    res = db.execute(delete(AgentIntent).where(AgentIntent.created_at < now_utc() - timedelta(days=days)))
-    db.commit()
-    return int(res.rowcount or 0)
+    from .purge import delete_in_batches
+
+    #  ai-CR-139: xóa theo lô, không khóa bảng lâu.
+    return delete_in_batches(db, AgentIntent, AgentIntent.created_at < now_utc() - timedelta(days=days))
 
 
 def forget_user(db: Session, user_id: int) -> int:

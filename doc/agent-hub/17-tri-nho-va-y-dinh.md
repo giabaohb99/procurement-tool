@@ -156,6 +156,15 @@ tab khác → 409, không sửa nhầm dòng bên cạnh.
 Bài kiểm luôn chạy: bộ mẫu hợp lệ (đủ nhãn, không trùng câu), bộ phân loại «trả hoi cho mọi câu» phải trượt ngưỡng
 (chống xanh giả), chấm tệp nhãn tay, tỷ lệ hỏi lại, nhãn con theo công cụ (bộ mẫu `SAMPLES` của ai-CR-137).
 
+## 10b. Sao lưu và lấy lại trí nhớ (ai-CR-139)
+
+Cả năm lớp nhớ nằm trong DB của bot. Bot chạy tách DB thì DB `agent_hub` có lịch sao lưu riêng (01:20, prod thêm 13:20,
+R2 `<env>/backup/agent_hub-*.sql.gz`), canh quá 26 giờ, khôi phục thử mỗi chủ nhật — xem `08-van-hanh-vps.md` §4.1.
+Lấy lại trí nhớ của MỘT người bị xóa nhầm không cần dừng bot:
+`agent_restore.sh <bản> --table tab_agent_memory --where "user_id=<id>"` (thêm `tab_agent_note`,
+`tab_agent_memory_candidate`, `tab_agent_intent` nếu cần). Thu hồi tài khoản xóa sạch trí nhớ (§7) — bản sao lưu cũ vẫn
+còn dữ liệu đó tới khi bị dọn theo `backup_keep`.
+
 ## 11. Mã nguồn
 
 - `backend/app/modules/agent_hub/intent_ledger.py` — sổ ý định, nhãn con, đối tượng, kết cục, dọn.

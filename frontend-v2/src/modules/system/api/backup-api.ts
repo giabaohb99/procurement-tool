@@ -1,8 +1,12 @@
 import { apiDelete, apiGet, apiPost } from '@/core/api'
 import type { ListParams } from '@/shared/types/api'
-import type { DbBackupListResponse } from '../types/backup'
+import type { BackupTarget, DbBackupListResponse } from '../types/backup'
 
-const BASE_URL = '/api/backups'
+/** ai-CR-139: DB bot đi qua proxy `/api/agent-hub/*` như các màn agent khác; gác cùng khóa `backup`. */
+const BASE_URL: Record<BackupTarget, string> = {
+  erp: '/api/backups',
+  agent: '/api/agent-hub/backups',
+}
 
 export interface DownloadBackupResponse {
   url: string
@@ -10,15 +14,20 @@ export interface DownloadBackupResponse {
 }
 
 export const backupApi = {
-  list: (params?: ListParams) =>
-    apiGet<DbBackupListResponse>(BASE_URL, { params }),
+  list: (params?: ListParams, target: BackupTarget = 'erp') =>
+    apiGet<DbBackupListResponse>(BASE_URL[target], { params }),
 
-  runNow: () =>
-    apiPost<null>(`${BASE_URL}/run`),
+  runNow: (target: BackupTarget = 'erp') =>
+    apiPost<null>(`${BASE_URL[target]}/run`),
 
-  download: (id: number) =>
-    apiGet<DownloadBackupResponse>(`${BASE_URL}/${id}/download`),
+  /** Chỉ DB bot — nạp thử bản mới nhất vào DB tạm rồi xóa. KHÔNG có đường khôi phục thật trên web. */
+  restoreTest: () =>
+    apiPost<null>(`${BASE_URL.agent}/restore-test`),
 
+  download: (id: number, target: BackupTarget = 'erp') =>
+    apiGet<DownloadBackupResponse>(`${BASE_URL[target]}/${id}/download`),
+
+  /** Chỉ DB ERP có đường xóa bản sao lưu. */
   deleteBackup: (id: number) =>
-    apiDelete<null>(`${BASE_URL}/${id}`),
+    apiDelete<null>(`${BASE_URL.erp}/${id}`),
 }

@@ -43,7 +43,7 @@ thì dùng số mới.
 | 10 | Thư ký biên bản họp | phase 10 | Phần lớn xong; chờ thử tệp họp thật |
 | 11 | Tách dịch vụ AI khỏi ERP (DB riêng, cổng B) | phase S (S-0…S-6) | S-0…S-4 xong dev 08/10; S-5 / S-6 chờ VPS AI |
 | 12 | Kênh Zalo công ty, màn Nhóm chat, đọc link / tệp, quyền dùng bot | (gom ai-CR-120…135) | Xong dev 08–09/10 |
-| **13** | **Hiểu ý định + tự ghi nhớ** | mới | **Đã giao Agent 4 (09/10)** — logic ghi ở `17-tri-nho-va-y-dinh.md` |
+| **13** | **Hiểu ý định + tự ghi nhớ** | mới | **Xong dev 09/10** — ai-CR-137 (đợt A) + ai-CR-138 (đợt B); logic ở `17-tri-nho-va-y-dinh.md` |
 | **14** | **Nén hội thoại** | mới | **Xong dev 09/10** — ai-CR-136 (84faee30) |
 | **15** | **Một lớp duyệt chung khi ghi** | mới | Kế hoạch |
 | **16** | **Gọn và đo** | mới | Kế hoạch |
@@ -99,7 +99,7 @@ ca đồng ý — đang ở đây · 3 tự gộp khi kiểm xanh · 4 lên prod
 Đánh số nối tiếp bảng trên. Thứ tự theo ý đại ca 09/10: **hiểu ý định trước**, rồi tới những thứ làm bot «khôn» khi việc dài, rồi an toàn khi ghi,
 rồi mới lên prod và mở rộng.
 
-### Phase 13 — Hiểu ý định + tự ghi nhớ (ưu tiên số 1) — đã giao Agent 4 (09/10)
+### Phase 13 — Hiểu ý định + tự ghi nhớ (ưu tiên số 1) — xong dev 09/10 (ai-CR-137, ai-CR-138)
 
 Mục tiêu: người dùng chỉ việc hỏi như thường; bot tự hiểu họ là ai, hay làm gì, và dùng điều đó cho lần sau.
 

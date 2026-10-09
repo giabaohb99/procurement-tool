@@ -95,6 +95,10 @@ def run_dump_pass(cmd: list[str], exe: str, label: str) -> bytes:
 
 
 def _dump_sql() -> bytes:
+    return dump_sql(settings.DB_NAME, LOG_TABLES)
+
+
+def dump_sql(db_name: str, log_tables: tuple[str, ...] = ()) -> bytes:
     """Dump HAI LƯỢT rồi nối lại thành một tệp .sql (QĐ-C).
 
     Lượt 1: cả CSDL, bỏ dữ liệu bốn bảng nhật ký bằng `--ignore-table`.
@@ -112,9 +116,12 @@ def _dump_sql() -> bytes:
     """
     exe = resolve_dump_exe()
     base = build_dump_command(exe)
-    ignore = [f"--ignore-table={settings.DB_NAME}.{table}" for table in LOG_TABLES]
-    data_sql = run_dump_pass(base + ignore + [settings.DB_NAME], exe, "dữ liệu nghiệp vụ")
-    schema_sql = run_dump_pass(base + ["--no-data", settings.DB_NAME, *LOG_TABLES],
+    ignore = [f"--ignore-table={db_name}.{table}" for table in log_tables]
+    data_sql = run_dump_pass(base + ignore + [db_name], exe, "dữ liệu nghiệp vụ")
+    if not log_tables:
+        #  ai-CR-139: DB bot (agent_hub) không có bảng nhật ký đi đường gói R2 — một lượt là đủ.
+        return data_sql
+    schema_sql = run_dump_pass(base + ["--no-data", db_name, *log_tables],
                                exe, "cấu trúc bảng nhật ký")
     return data_sql + b"\n" + schema_sql
 
