@@ -5,7 +5,7 @@ luật hỏi-trước và dấu vết hội thoại; màn này để tra: bot đ
 bao lâu, tốn bao nhiêu. Khóa quyền riêng `agent_task` (PUBLIC ở `SCOPE_FIELDS`: việc của bot
 không thuộc người hay phòng nào).
 """
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
@@ -31,7 +31,7 @@ from .constants import (
 )
 from .model import AgentMessage, AgentRun, AgentTask, AgentTaskItem
 from .timeutil import now_local, to_local
-from app.modules.employee.field_limits import Str80, Str200
+from app.modules.employee.field_limits import Str20, Str80, Str200, Str600
 
 router = APIRouter(prefix="/api/agent-hub", tags=["agent-hub"])
 
@@ -367,6 +367,95 @@ def google_disconnect(user=Depends(get_current_user), db: Session = Depends(get_
     if link is not None:
         google_link.revoke(db, link)
     return success(google_link.describe(db, user.id), "Đã gỡ kết nối Google")
+
+
+# ---------------------------------------------------------------------------
+# «Bot đang nhớ gì về tôi» (ai-CR-138, phase 13.4) — CHỈ chủ sổ: mọi đường lấy `user.id` của phiên, không nhận user_id
+# từ ngoài, không có biến thể cho quản trị. Chỉ đòi đăng nhập: xem / xóa dữ liệu về chính mình không cần quyền nào thêm.
+# ---------------------------------------------------------------------------
+class MemoryLineIn(BaseModel):
+    section: Str20
+    text: Str600
+    until: date | None = None
+
+
+class MemoryLineEdit(BaseModel):
+    section: Str20
+    old: Str600
+    text: Str600 = ""
+
+
+def _memory_call(fn, *args):
+    from .memory_view import MemoryConflict
+
+    try:
+        return fn(*args)
+    except MemoryConflict as e:
+        raise HTTPException(409, str(e)) from None
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from None
+
+
+@router.get("/me/memory")
+def my_memory(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import memory_view
+
+    return success(memory_view.snapshot(db, user.id))
+
+
+@router.post("/me/memory/lines")
+def add_memory_line(body: MemoryLineIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import memory_view
+
+    if body.until is not None and not (date(2000, 1, 1) <= body.until <= date(2100, 12, 31)):
+        raise HTTPException(400, "Ngày hết hạn không hợp lệ")
+    out = _memory_call(memory_view.add_line, db, user.id, body.section, body.text, body.until)
+    if not out.get("ok"):
+        raise HTTPException(400, out.get("message") or "Chưa ghi được")
+    return success(memory_view.snapshot(db, user.id), out.get("message") or "Đã ghi")
+
+
+@router.patch("/me/memory/lines")
+def edit_memory_line(body: MemoryLineEdit, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import memory_view
+
+    _memory_call(memory_view.edit_line, db, user.id, body.section, body.old, body.text)
+    return success(memory_view.snapshot(db, user.id), "Đã sửa")
+
+
+@router.post("/me/memory/lines/delete")
+def delete_memory_line(body: MemoryLineEdit, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import memory_view
+
+    _memory_call(memory_view.delete_line, db, user.id, body.section, body.old)
+    return success(memory_view.snapshot(db, user.id), "Đã xóa")
+
+
+@router.delete("/me/memory/watching/{cand_id}")
+def drop_memory_watching(cand_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import memory_view
+
+    if not memory_view.drop_watching(db, user.id, cand_id):
+        raise HTTPException(404, "Không tìm thấy")
+    return success(memory_view.snapshot(db, user.id), "Em sẽ không để ý điều này nữa")
+
+
+@router.delete("/me/memory/notes/{note_id}")
+def delete_memory_note(note_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import memory_view
+
+    if not memory_view.delete_note(db, user.id, note_id):
+        raise HTTPException(404, "Không tìm thấy ghi chú")
+    return success(memory_view.snapshot(db, user.id), "Đã xóa ghi chú")
+
+
+@router.delete("/me/memory")
+def wipe_my_memory(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import memory_view
+
+    out = memory_view.wipe(db, user.id)
+    db.commit()
+    return success({**memory_view.snapshot(db, user.id), "wiped": out}, "Đã xóa toàn bộ trí nhớ")
 
 
 class RevokeIn(BaseModel):

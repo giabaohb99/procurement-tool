@@ -2,7 +2,8 @@
 
 > Viết 09/10/2026 cùng ai-CR-137 (phase 13 đợt A, đại ca duyệt 09/10, Agent 1 giao). Gom về MỘT chỗ toàn bộ lôgic nhớ
 > của Lạc Lạc / Trợ lý AI: nhớ gì, ở đâu, ai thấy, khi nào quên, và mỗi lượt gọi model nạp những gì theo thứ tự nào.
-> Đợt B (13.4 màn «Bot đang nhớ gì về tôi», 13.5 điền đối tượng theo thói quen, 13.6 đo) sẽ bổ sung vào chính tệp này.
+> Đợt B (ai-CR-138, 09/10): 13.4 màn «Bot nhớ gì về tôi» + thu hồi xóa sạch (§7), 13.5 điền đối tượng theo thói quen
+> (§9), 13.6 đo độ đúng (§10).
 
 ## 1. Năm lớp nhớ
 
@@ -52,6 +53,7 @@ Mỗi câu hỏi = một dòng `tab_agent_intent`:
 | `entities` | JSON `[{type, id \| code \| ref}]` — ncc · phap_nhan · du_an · phong · nhan_su · san_pham · chung_tu |
 | `tools` | JSON tên công cụ đã gọi (≤ 12) |
 | `outcome` | 1 trả lời được · 2 phải hỏi lại · 3 lỗi (`Outcome`) |
+| `message_id` | Con trỏ tới TIN câu hỏi (`tab_agent_message` / `tab_assistant_message`) — chỉ để gắn nhãn tay trên dev (13.6); sổ vẫn không chép chữ |
 
 Luật:
 
@@ -105,33 +107,66 @@ buổi chat RIÊNG im lặng 30' ──► tóm tắt cuối buổi (kho) ──
 - Chi phí: một lượt model rẻ cho mỗi buổi đã tóm tắt (≥ 3 câu hỏi), ghi `tab_agent_run` bước 31 «Tự rút ghi nhớ».
 - Web chưa có tự rút (web không có vòng tóm tắt cuối buổi) — chỉ ghi sổ ý định.
 
-## 7. Riêng tư, xem và xóa
+## 7. Riêng tư, xem và xóa (13.4, ai-CR-138)
 
-| Việc | Hiện có | Đợt B (13.4) |
+| Việc | Trên chat | Trên ERP v2 — Trang cá nhân › tab «Bot nhớ gì về tôi» |
 |---|---|---|
-| Xem lõi | Chat «sổ nhớ» / «em nhớ gì về anh» · «xuất sổ nhớ» | Màn ERP v2 «Bot đang nhớ gì về tôi», chỉ chủ sổ thấy |
-| Sửa / xóa | «nhớ: …» · «quên: …» · tool `remember_fact` / `forget_fact` | Sửa / xóa từng dòng trên màn, xem điều «đang để ý» |
+| Xem | «sổ nhớ» / «em (bot) nhớ gì về anh/chị/tôi/mình» — lõi + kho + tối đa 5 điều đang để ý · «xuất sổ nhớ» | Bốn mục lõi (dòng tự rút có nhãn + hạn), điều đang để ý (n/3 lần · n/2 ngày), thói quen + đề xuất, kho ghi chú |
+| Thêm / sửa | «nhớ: …» | Thêm dòng từng mục; sửa từng dòng. Sửa dòng tự rút = dòng thành của người dùng (bỏ đuôi), điều gốc thành bia mộ |
+| Xóa | «quên: …» | Xóa từng dòng (bia mộ), bỏ điều đang để ý, xóa ghi chú, **Xóa toàn bộ trí nhớ** |
 | Quản trị xem sổ người khác | Không có đường nào | Không có — kể cả admin / quản lý |
-| Thu hồi / nghỉ việc | — | Xóa sổ ý định (`intent_ledger.forget_user`) + điểm tự rút + lõi |
+| Thu hồi / nghỉ việc | `service.revoke_user_access` (ERP gọi khi khóa tài khoản, dịch vụ AI qua `/internal/revoke`) gọi `memory_view.wipe`: lõi, kho (kèm vector), điểm tự rút, sổ ý định, con trỏ báo tự rút | — |
+
+API (chỉ đòi đăng nhập, người dùng lấy từ phiên, không tham số chọn người): `GET /api/agent-hub/me/memory` ·
+`POST /me/memory/lines` · `PATCH /me/memory/lines` · `POST /me/memory/lines/delete` · `DELETE /me/memory/watching/{id}` ·
+`DELETE /me/memory/notes/{id}` · `DELETE /me/memory`. Sửa / xóa chỉ dòng bằng (mục, NGUYÊN VĂN dòng cũ): dòng đã đổi ở
+tab khác → 409, không sửa nhầm dòng bên cạnh.
 
 ## 8. Thứ tự nạp mỗi lượt gọi model
 
 | Lượt gọi | Nạp (theo thứ tự) | Không nạp |
 |---|---|---|
 | Phân loại ý định (`manager.run_intent`) | Luật phân loại · vài tin gần nhất của chat (`_intent_context`) · việc đang mở (chat đại ca) · câu mới | Lõi, kho, tóm tắt cuộc |
-| Trả lời bot (`answer_question`) | System: gói tri thức + hướng dẫn công cụ + thuật ngữ khớp câu + chân dung người hỏi → persona Lạc Lạc + luật trợ lý + luật nháp / đăng nhập + dòng tài khoản → **lõi sổ nhớ + 5 đoạn kho liên quan** → **bản tóm tắt cuộc** · Lượt: các lượt gần nhất (đã lược / cắt theo ngân sách) · câu mới | Sổ ý định (đợt B dùng cho 13.5) |
-| Trả lời web (`conversation.chat`) | System: gói tri thức + hướng dẫn công cụ + thuật ngữ + chân dung → `system` của trang → bản tóm tắt cuộc · Lượt: các lượt gần nhất · câu mới + tệp | Lõi / kho sổ nhớ (sổ nhớ là của bot) |
+| Trả lời bot (`answer_question`) | System: gói tri thức + hướng dẫn công cụ + thuật ngữ khớp câu + chân dung người hỏi → persona Lạc Lạc + luật trợ lý + luật nháp / đăng nhập + dòng tài khoản → **lõi sổ nhớ + 5 đoạn kho liên quan** → **thói quen từ sổ ý định (13.5)** → **bản tóm tắt cuộc** · Lượt: các lượt gần nhất (đã lược / cắt theo ngân sách) · câu mới | Nguyên văn sổ ý định |
+| Trả lời web (`conversation.chat`) | System: gói tri thức + hướng dẫn công cụ + thuật ngữ + chân dung → `system` của trang → bản tóm tắt cuộc → thói quen từ sổ ý định (13.5) · Lượt: các lượt gần nhất · câu mới + tệp | Lõi / kho sổ nhớ (sổ nhớ là của bot) |
 | Tóm tắt cuộc (nén, ai-CR-136) | Luật tóm · TÓM TẮT CŨ · các lượt từ mốc `upto_id` | Lõi, kho |
 | Tóm tắt cuối buổi (ai-CR-102) | Luật tóm buổi · chép buổi (≤ 12.000 ký tự) | Lõi, kho |
 | Tự rút ghi nhớ (ai-CR-137) | Luật rút · bản tóm tắt buổi · đếm 30 ngày từ sổ ý định · lõi hiện có · điều đang theo dõi | Tin nhóm, nguyên văn câu hỏi |
 | Nghiên cứu / đọc link | Luật nghiên cứu theo chế độ · câu hỏi · nội dung trang | Lõi, kho, tóm tắt |
 
-## 9. Mã nguồn
+## 9. Dùng sổ ý định để đỡ việc (13.5, ai-CR-138)
+
+- `intent_ledger.defaults_of`: trong 60 ngày, mỗi loại đối tượng (pháp nhân · NCC · dự án · phòng) lấy giá trị nhắc nhiều
+  nhất nếu **≥ 3 lần VÀ ≥ 60%** số lần nhắc loại đó. Không áp đảo thì không đoán. Chỉ lấy mã / tên, không lấy id trần.
+- `habit_block` chèn vào phần luật của lượt trả lời (bot + web): giá trị quen + luật «câu THIẾU đối tượng mà công cụ cần thì
+  dùng giá trị quen VÀ nói rõ ngay câu đầu, ví dụ "Em hiểu là pháp nhân DEGO như mọi lần — khác thì anh/chị nói em nhé";
+  câu đã nêu đối tượng thì theo câu».
+- Đề xuất chủ động (`suggestions_of`): cùng một nhãn con TRA CỨU vào cùng một thứ trong tuần ở ≥ 3 tuần khác nhau (8 tuần
+  gần nhất) → một dòng đề xuất trên màn «Bot nhớ gì về tôi». **Chỉ hiển thị, không bao giờ tự gửi**; nút bật bản tin
+  theo đề xuất để đợt sau khi đại ca muốn.
+
+## 10. Đo (13.6, ai-CR-138)
+
+| Phép đo | Cách chạy | Ghi chú |
+|---|---|---|
+| Bộ câu mẫu cố định | `python scripts/intent_eval.py fixed` (cần khóa AI của chat chủ bot) · hoặc pytest với `AI_EVAL=1` | `test/backend/data/intent_samples.json`: 30 câu, mỗi nhãn ≥ 4, `min_accuracy` 0,85. Đổi model / luật phân loại thì chạy trước khi đưa lên |
+| Gắn nhãn tay ~200 câu | `intent_eval.py export --out /tmp/y.csv` → điền `true_intent`, `true_sub`, `entities_ok` → `intent_eval.py score --file /tmp/y.csv` | Tệp xuất có NGUYÊN VĂN câu hỏi (lấy qua `message_id`) — chỉ để trên máy dev, gắn xong thì xóa, không commit |
+| Tỷ lệ phải hỏi lại trước / sau | `intent_eval.py clarify --pivot YYYY-MM-DD [--days 14]` | Theo kênh; mốc nên là ngày 13.5 lên dev |
+
+Bài kiểm luôn chạy: bộ mẫu hợp lệ (đủ nhãn, không trùng câu), bộ phân loại «trả hoi cho mọi câu» phải trượt ngưỡng
+(chống xanh giả), chấm tệp nhãn tay, tỷ lệ hỏi lại, nhãn con theo công cụ (bộ mẫu `SAMPLES` của ai-CR-137).
+
+## 11. Mã nguồn
 
 - `backend/app/modules/agent_hub/intent_ledger.py` — sổ ý định, nhãn con, đối tượng, kết cục, dọn.
 - `backend/app/modules/agent_hub/auto_memory.py` — rút, đếm, ghi, gia hạn, bia mộ, hết hạn, báo một lần.
 - `backend/app/modules/agent_hub/personal_memory.py` — lõi + kho; `forget` gọi `auto_memory.tombstone`.
 - `backend/app/modules/agent_hub/sessions.py` — tóm tắt cuối buổi, gọi tự rút.
 - `backend/app/modules/assistant/compaction.py` — nén hội thoại.
-- Bảng: `tab_agent_intent`, `tab_agent_memory_candidate` (migration `grp05` + `agent0005`).
-- Bài kiểm: `test/backend/test_agent_hub_y_dinh_tu_nho.py`.
+- `backend/app/modules/agent_hub/memory_view.py` — xem / sửa / xóa của chủ sổ, `wipe` khi thu hồi (ai-CR-138).
+- `backend/app/modules/agent_hub/intent_eval.py` + `backend/scripts/intent_eval.py` — đo (ai-CR-138).
+- `frontend-v2/src/app/components/profile/profile-memory-tab.tsx` — tab «Bot nhớ gì về tôi».
+- Bảng: `tab_agent_intent`, `tab_agent_memory_candidate` (migration `grp05` + `agent0005`; cột `message_id` ở `grp06` +
+  `agent0006`).
+- Bài kiểm: `test/backend/test_agent_hub_y_dinh_tu_nho.py`, `test/backend/test_agent_hub_tri_nho_cua_toi.py`,
+  `profile-memory-tab.test.tsx`.

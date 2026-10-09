@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   Bell,
+  Brain,
   CheckSquare,
   FileCheck2,
   History,
@@ -24,6 +25,7 @@ import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
 import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
+import { ProfileMemoryTab } from '@/app/components/profile/profile-memory-tab'
 import { ProfileWorkDecisionsTab } from '@/app/components/profile/profile-work-decisions-tab'
 import { ProfileWorkHistoryTab } from '@/app/components/profile/profile-work-history-tab'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
@@ -105,6 +107,8 @@ export function ProfilePage() {
                     ? 'telegram'
                   : rawTab === 'ai-key'
                     ? 'ai-key'
+                  : rawTab === 'bot-memory'
+                    ? 'bot-memory'
                   : rawTab === 'tickets' && canReadTickets
                     ? 'tickets'
                     : 'info'
@@ -243,6 +247,11 @@ export function ProfilePage() {
                 <KeyRound className="size-4" />
                 <span>Khóa AI</span>
               </TabsTrigger>
+              {/* ai-CR-138 — bot đang nhớ gì về CHÍNH MÌNH: xem / sửa / xóa. Không gác quyền: dữ liệu về chính mình. */}
+              <TabsTrigger value="bot-memory" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                <Brain className="size-4" />
+                <span>Bot nhớ gì về tôi</span>
+              </TabsTrigger>
               <TabsTrigger value="appearance" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Palette className="size-4" />
                 <span>Giao diện</span>
@@ -372,6 +381,10 @@ export function ProfilePage() {
 
             <TabsContent value="ai-key" className="space-y-4">
               <ProfileAiKeyTab />
+            </TabsContent>
+
+            <TabsContent value="bot-memory" className="space-y-4">
+              <ProfileMemoryTab />
             </TabsContent>
 
             <TabsContent value="login-history" className="space-y-4">

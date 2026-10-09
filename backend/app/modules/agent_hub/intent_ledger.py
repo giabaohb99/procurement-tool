@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from . import channels
 from .constants import CONV_CHAT
 from .model import AgentIntent
-from .timeutil import now_utc
+from .timeutil import now_utc, to_local
 
 log = logging.getLogger("app.agent_hub.intent_ledger")
 
@@ -307,7 +307,8 @@ def outcome_of(text: str, *, error: bool = False, tools: list[str] | None = None
 
 
 def record(db: Session, *, user_id: int, channel: Channel, scope_key: str, intent, scope: int = CONV_CHAT,
-           tool_calls=None, mode: str = "", question: str = "", answer: str = "", error: bool = False) -> AgentIntent | None:
+           tool_calls=None, mode: str = "", question: str = "", answer: str = "", error: bool = False,
+           message_id: int = 0) -> AgentIntent | None:
     """Ghi MỘT dòng. `question` chỉ dùng để dò mã chứng từ, KHÔNG lưu. Hỏng thì nuốt lỗi — câu trả lời đã đi rồi."""
     uid = int(user_id or 0)
     if uid <= 0 or (scope == CONV_CHAT and is_group_chat(scope_key)):
@@ -318,7 +319,7 @@ def record(db: Session, *, user_id: int, channel: Channel, scope_key: str, inten
         row = AgentIntent(
             user_id=uid, channel=int(channel), scope=int(scope), scope_key=str(scope_key or "")[:80],
             intent=int(big), sub_intent=int(sub_of(big, tools, mode)), entities=entities_of(tool_calls, question),
-            tools=tools, outcome=int(outcome_of(answer, error=error, tools=tools)),
+            tools=tools, outcome=int(outcome_of(answer, error=error, tools=tools)), message_id=int(message_id or 0),
             created_by=uid, updated_by=uid)
         db.add(row)
         db.commit()
@@ -370,3 +371,77 @@ def forget_user(db: Session, user_id: int) -> int:
     res = db.execute(delete(AgentIntent).where(AgentIntent.user_id == int(user_id)))
     db.commit()
     return int(res.rowcount or 0)
+
+
+# ---------------------------------------------------------------------------
+# 13.5 — dùng sổ ý định để đỡ việc (ai-CR-138)
+# ---------------------------------------------------------------------------
+HABIT_DAYS = 60
+HABIT_MIN = 3            # một đối tượng phải được nhắc ít nhất chừng này lần…
+HABIT_SHARE = 0.6        # …và chiếm ít nhất chừng này phần trong các lần nhắc loại đó
+HABIT_TYPES = {"phap_nhan": "pháp nhân", "ncc": "nhà cung cấp", "du_an": "dự án", "phong": "phòng ban"}
+SUGGEST_WEEKS = 8
+SUGGEST_MIN_WEEKS = 3
+_WEEKDAYS = ("thứ hai", "thứ ba", "thứ tư", "thứ năm", "thứ sáu", "thứ bảy", "chủ nhật")
+
+
+def defaults_of(db: Session, user_id: int, *, days: int = HABIT_DAYS) -> list[dict]:
+    """Đối tượng «như mọi lần» của MỘT người: mỗi loại (pháp nhân, NCC, dự án, phòng) lấy giá trị nhắc nhiều nhất nếu đủ
+    HABIT_MIN lần và chiếm ≥ HABIT_SHARE. Chỉ lấy mã / tên (id trần không nói gì với model)."""
+    counts: dict[str, dict[str, int]] = {}
+    for r in recent(db, user_id, days=days, limit=1000):
+        for e in r.entities or []:
+            if not isinstance(e, dict) or e.get("type") not in HABIT_TYPES:
+                continue
+            val = str(e.get("code") or e.get("ref") or "").strip()
+            if val:
+                bucket = counts.setdefault(e["type"], {})
+                bucket[val] = bucket.get(val, 0) + 1
+    out = []
+    for kind, bucket in counts.items():
+        total = sum(bucket.values())
+        value, n = max(bucket.items(), key=lambda x: x[1])
+        if n >= HABIT_MIN and n / total >= HABIT_SHARE:
+            out.append({"type": kind, "label": HABIT_TYPES[kind], "value": value, "count": n, "total": total})
+    return sorted(out, key=lambda x: list(HABIT_TYPES).index(x["type"]))
+
+
+def habit_block(db: Session, user_id: int) -> str:
+    """Khối chèn vào phần luật của lượt trả lời: đối tượng quen + luật NÓI RÕ giả định. Rỗng nếu chưa đủ thói quen."""
+    uid = int(user_id or 0)
+    if uid <= 0:
+        return ""
+    try:
+        items = defaults_of(db, uid)
+    except Exception:  # noqa: BLE001 — thiếu thói quen thì trả lời như cũ
+        log.exception("agent_hub: không đọc được thói quen từ sổ ý định")
+        return ""
+    if not items:
+        return ""
+    lines = [f"- {x['label']} hay hỏi: {x['value']} ({x['count']}/{x['total']} lần nhắc gần đây)" for x in items]
+    return ("THÓI QUEN CỦA NGƯỜI ĐANG NHẮN (đếm từ các câu hỏi trước, chỉ của chính họ):\n" + "\n".join(lines) + "\n"
+            "Câu hỏi THIẾU đối tượng loại trên mà công cụ cần thì dùng giá trị thói quen VÀ nói rõ giả định ngay câu đầu, "
+            "ví dụ «Em hiểu là pháp nhân DEGO như mọi lần — khác thì anh/chị nói em nhé.». Câu đã nêu đối tượng thì làm "
+            "đúng theo câu, bỏ thói quen. Không tự gửi gì khi người dùng chưa hỏi.")
+
+
+def suggestions_of(db: Session, user_id: int, *, now=None) -> list[dict]:
+    """ĐỀ XUẤT chủ động (chỉ để người dùng bật, không bao giờ tự gửi): cùng một nhãn con vào cùng một thứ trong tuần ở
+    ≥ SUGGEST_MIN_WEEKS tuần khác nhau trong SUGGEST_WEEKS tuần gần nhất."""
+    now = now or now_utc()
+    rows = db.scalars(select(AgentIntent).where(
+        AgentIntent.user_id == int(user_id), AgentIntent.created_at >= now - timedelta(weeks=SUGGEST_WEEKS)))
+    weeks: dict[tuple[int, int], set] = {}
+    for r in rows:
+        if r.created_at is None or not (20 <= int(r.sub_intent or 0) < 50):
+            continue                                      # chỉ gợi ý cho TRA CỨU lặp lại, không gợi ý thao tác ghi
+        local = to_local(r.created_at)
+        weeks.setdefault((int(r.sub_intent), local.weekday()), set()).add(local.isocalendar()[:2])
+    out = []
+    for (sub, wd), seen in sorted(weeks.items(), key=lambda x: -len(x[1])):
+        if len(seen) >= SUGGEST_MIN_WEEKS:
+            code, label = SUB_CODES.get(Sub(sub), ("", ""))
+            out.append({"sub": code, "label": label, "weekday": wd, "weeks": len(seen),
+                        "text": f"{_WEEKDAYS[wd].capitalize()} nào cũng hỏi «{label}» ({len(seen)} tuần) — có thể bật bản "
+                                f"tin gửi sẵn sáng {_WEEKDAYS[wd]}."})
+    return out[:5]

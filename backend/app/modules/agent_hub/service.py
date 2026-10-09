@@ -1058,6 +1058,10 @@ def revoke_user_access(db: Session, user_id: int, *, now: datetime | None = None
         for row in db.query(model).filter(model.user_id == int(user_id), model.revoked_at.is_(None)):
             row.revoked_at = now
             n += 1
+    #  ai-CR-138 (13.4): nghỉ việc / thu hồi thì xóa sạch trí nhớ bot giữ về người đó (lõi, kho, tự rút, sổ ý định).
+    from . import memory_view
+
+    memory_view.wipe(db, int(user_id))
     return n
 
 
@@ -2430,7 +2434,8 @@ _MEM_TEACH = re.compile(
     re.IGNORECASE | re.DOTALL)
 _MEM_FORGET = re.compile(r"^quên\s*:\s*(?P<needle>.+?)[.!]*$", re.IGNORECASE | re.DOTALL)
 _MEM_NOTE = re.compile(r"^ghi chú\s*:\s*(?P<body>.+)$", re.IGNORECASE | re.DOTALL)
-_MEM_SHOW = re.compile(r"^(?:sổ nhớ|sổ ghi nhớ|em nhớ gì về (?:anh|tôi|em))\s*[?.!]*$", re.IGNORECASE)
+_MEM_SHOW = re.compile(r"^(?:sổ nhớ|sổ ghi nhớ|(?:em|bot) (?:đang )?nhớ gì về (?:anh|chị|tôi|em|mình))\s*[?.!]*$",
+                       re.IGNORECASE)
 _MEM_EXPORT = re.compile(r"^xuất sổ nhớ\s*[.!]*$", re.IGNORECASE)
 
 
@@ -2500,9 +2505,16 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
     if notes:
         body += "\n\n<b>Kho ghi chú</b> (" + str(len(notes)) + "):\n" + "\n".join(
             f"• #{n.id} {esc(n.title)} · {n.chars} ký tự" for n in notes)
+    #  ai-CR-138 (13.4): điều bot ĐANG ĐỂ Ý (tự rút, chưa đủ lần nhắc nên chưa ghi) — người dùng thấy được, bỏ được.
+    from . import auto_memory
+
+    watching = [c for c in auto_memory.active(db, uid, limit=10) if c.status == auto_memory.CandidateStatus.PENDING]
+    if watching:
+        body += "\n\n<b>Em đang để ý</b> (chưa ghi, cần nhắc lại thêm):\n" + "\n".join(
+            f"• {esc(c.line)} · {c.hits}/{auto_memory.MIN_HITS} lần" for c in watching[:5])
     body += ("\n\n<i>«nhớ: …» thêm · «nhớ tuần này: …» / «nhớ đến 15/10: …» nhớ có hạn · «quên: …» bớt · "
              "«ghi chú: tiêu đề | nội dung» vào kho · «xuất sổ nhớ» lấy tệp. Cuối mỗi buổi chat (im lặng 30 phút) "
-             "em tự tóm tắt vào kho.</i>")
+             "em tự tóm tắt vào kho. Xem, sửa, xóa từng dòng: ERP › Trang cá nhân › «Bot nhớ gì về tôi».</i>")
     reply(db, chat_id, body, scope=SCOPE_PERSONAL)
     return True
 
@@ -3830,16 +3842,22 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         #  ai-CR-095 (C-02): sổ ghi nhớ riêng của NGƯỜI ĐÃ ĐĂNG NHẬP chat này — không phải của tài khoản bot mặc định.
         link = chat_link.get_active_link(db, chat_id)
         memory_block = personal_memory.prompt_block(db, link.user_id if link is not None else 0, question)
+        #  ai-CR-138 (13.5): đối tượng «như mọi lần» từ sổ ý định — thiếu thì dùng và NÓI RÕ giả định.
+        from . import intent_ledger
+
+        habits = intent_ledger.habit_block(db, link.user_id if link is not None else 0)
         result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
                                        kind=kind,
                                        system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}"
                                               + (f"\n\n{memory_block}" if memory_block else "")
+                                              + (f"\n\n{habits}" if habits else "")
                                               + (f"\n\n{summary_note}" if summary_note else ""))
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         reply(db, chat_id, user_keys.key_problem(str(e)) or ai_keys.short_error(str(e)))
-        _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True)
+        _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True,
+                message_id=before_id)
         return
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.
@@ -3859,7 +3877,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
             db.commit()
     deliver_tool_results(db, chat_id, user, tool_calls)
     _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), tool_calls=tool_calls, question=question,
-            answer=str(result.get("text") or ""))
+            answer=str(result.get("text") or ""), message_id=before_id)
 
 
 def _ledger(db: Session, chat_id: str, intent: str, *, user_id: int = 0, **kw) -> None:

@@ -13193,6 +13193,23 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-138 | Màn «Bot nhớ gì về tôi», bot hiểu câu hỏi tắt theo thói quen và bộ đo độ đúng (phase 13 đợt B)
+- status: dang-lam
+- date: 2026-10-09
+Đây là đợt B của phase 13 Agent 1 giao, đại ca đã duyệt. Ở Trang cá nhân trên ERP bản mới có thêm tab «Bot nhớ gì về tôi»: mỗi
+người xem được sổ nhớ bot giữ về mình theo bốn mục, dòng nào bot tự rút thì có nhãn và hạn dùng; xem những điều bot đang để ý mà
+chưa ghi, những thói quen bot đếm được và kho ghi chú. Người dùng thêm, sửa, xóa từng dòng, bỏ một điều bot đang để ý, xóa ghi
+chú hoặc xóa toàn bộ trí nhớ. Chỉ chính người đó xem được, quản trị cũng không có đường nào xem sổ người khác; khi tài khoản bị
+thu hồi thì toàn bộ trí nhớ bot giữ về người đó bị xóa sạch. Trên chat, câu «em nhớ gì về anh» nay hiện thêm những điều bot đang
+để ý. Khi người dùng hỏi tắt mà thiếu pháp nhân hay nhà cung cấp, bot dùng cái người đó hay hỏi, chỉ khi đã hỏi từ ba lần và
+chiếm phần lớn, và nói rõ ngay câu đầu là đang hiểu như vậy. Gợi ý chủ động như «thứ hai nào cũng hỏi công nợ» chỉ hiện trên màn
+để người dùng tự bật, bot không tự gửi. Để đo độ đúng có bộ ba mươi câu mẫu cố định với ngưỡng 85%, một script xuất câu hỏi thật
+trên dev để gắn nhãn tay rồi chấm, và đếm tỷ lệ bot phải hỏi lại trước và sau một mốc ngày. Theo lời đại ca, sổ hướng dẫn của bot
+cũng được cập nhật phần trí nhớ tự rút, lệnh xem trí nhớ, tab trên ERP và cách bot hiểu câu hỏi tắt. Bài kiểm của bot, Trợ lý và
+giao diện chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/memory_view.py (mới) · intent_eval.py (mới) · intent_ledger.py · service.py · controller.py · model.py · user_guide.py · assistant/conversation.py · backend/scripts/intent_eval.py (mới) · migrations grp06 + agent0006 · frontend-v2/src/app/components/profile/profile-memory-tab.tsx · app/pages/profile-page.tsx · modules/system/api/bot-memory-api.ts · modules/system/hooks/use-bot-memory.ts · test/backend/test_agent_hub_tri_nho_cua_toi.py · test/backend/data/intent_samples.json
+
 ## ai-CR-137 | Bot ghi sổ ý định và tự rút ghi nhớ khi người dùng nhắc lại nhiều lần (phase 13 đợt A)
 - status: xong
 - date: 2026-10-09

@@ -43,15 +43,21 @@ SECTIONS: tuple[Section, ...] = (
         ("tạo", "lưu bản nháp vừa soạn"),
         ("tạo và gửi duyệt", "lưu và gửi duyệt luôn"),
         ("xuất Excel", "tệp của lần tra vừa rồi (hoặc xuất Word)"),
+        ("công nợ tháng này", "hỏi tắt thiếu pháp nhân / NCC thì em dùng cái anh/chị hay hỏi và nói rõ em đang hiểu là "
+                              "cái nào"),
     )),
-    Section("so_nho", "Sổ ghi nhớ riêng", ("so nho", "ghi nho", "nho", "xung ho", "ghi chu"), (
+    Section("so_nho", "Sổ ghi nhớ riêng", ("so nho", "ghi nho", "nho", "xung ho", "ghi chu", "tri nho", "tu rut"), (
         ("nhớ: anh ở Cần Thơ", "thêm một dòng vào sổ"),
-        ("quên: Cần Thơ", "xóa dòng có chữ đó"),
+        ("quên: Cần Thơ", "xóa dòng có chữ đó; điều em tự rút thì em cũng thôi rút lại"),
         ("nhớ tuần này anh ở Đà Nẵng", "dòng có hạn, hết hạn tự bỏ"),
         ("gọi anh là sếp", "đổi cách xưng hô"),
         ("ghi chú: …", "lưu một đoạn dài vào kho riêng"),
-        ("sổ nhớ", "xem sổ"),
+        ("em nhớ gì về anh", "xem sổ, kèm những điều em đang để ý mà chưa ghi"),
         ("xuất sổ nhớ", "tải sổ về"),
+        ("", "Điều anh/chị nhắc lại từ 3 lần trên 2 ngày khác nhau em tự ghi vào sổ, có nhãn tự rút; 120 ngày không "
+             "nhắc lại thì tự bỏ. Em không rút từ tin nhóm, không ghi mật khẩu hay số tài khoản"),
+        ("", "Xem, sửa, xóa từng dòng hoặc xóa hết trí nhớ: ERP → Trang cá nhân → Bot nhớ gì về tôi. Chỉ chính "
+             "anh/chị xem được, quản trị cũng không"),
     )),
     Section("viec_rieng", "Việc riêng, chi tiêu, nhắc việc", ("viec rieng", "chi tieu", "mua", "nhac", "the ca nhan"), (
         ("chi 50k ăn trưa", "ghi chi tiêu"),

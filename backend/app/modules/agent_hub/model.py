@@ -468,6 +468,9 @@ class AgentIntent(Base, AuditMixin):
     entities: Mapped[list] = mapped_column(JSON, default=list)
     tools: Mapped[list] = mapped_column(JSON, default=list)
     outcome: Mapped[int] = mapped_column(SmallInteger, default=0)
+    #  ai-CR-138 (13.6): id TIN câu hỏi (`tab_agent_message` / `tab_assistant_message`) — chỉ là con trỏ để gắn nhãn tay
+    #  trên dev; sổ ý định vẫn không chép chữ. Tin bị xóa / dọn thì con trỏ thành mồ côi, không sao.
+    message_id: Mapped[int] = mapped_column(BigInteger, default=0)
 
     __table_args__ = (Index("ix_agent_intent_user", "user_id", "created_at"),
                       Index("ix_agent_intent_created", "created_at"))

@@ -189,6 +189,8 @@ def chat(db: Session, user, body) -> dict:
     from app.modules.agent_hub import intent_ledger
     from app.modules.agent_hub.constants import CONV_WEB
 
+    #  ai-CR-138 (13.5): đối tượng «như mọi lần» từ sổ ý định — thiếu thì dùng và nói rõ giả định.
+    habits = intent_ledger.habit_block(db, user.id)
     try:
         result = service.ask(
             body.message,
@@ -197,7 +199,7 @@ def chat(db: Session, user, body) -> dict:
             provider=body.provider,
             model=body.model,
             kind=body.kind,
-            system="\n\n".join(x for x in (body.system, summary_note) if x) or None,
+            system="\n\n".join(x for x in (body.system, summary_note, habits) if x) or None,
             history=history,
             attachments=blocks,
         )
@@ -234,11 +236,12 @@ def chat(db: Session, user, body) -> dict:
     # KHÔNG đặt tên biến này là `usage` — trùng tên module `usage` đã import ở đầu file, khiến
     # `usage.check_daily_limit(...)` phía trên bị Python coi là biến cục bộ chưa gán (UnboundLocalError).
     usage_data = result.get("usage", {})
-    db.add(AssistantMessage(
+    asked = AssistantMessage(
         conversation_id=conv.id, role=MessageRole.USER, content=body.message,
         attachments=json.dumps(attachment_meta, ensure_ascii=False) if attachment_meta else "",
         created_by=user.id, updated_by=user.id,
-    ))
+    )
+    db.add(asked)
     db.add(AssistantMessage(
         conversation_id=conv.id, role=MessageRole.ASSISTANT, content=result["text"],
         provider=result["provider"], model=result["model"],
@@ -255,7 +258,7 @@ def chat(db: Session, user, body) -> dict:
     #  ai-CR-137 (13.1): một dòng sổ ý định — nhãn con theo công cụ đã gọi, KHÔNG lưu nguyên văn câu hỏi.
     intent_ledger.record(db, user_id=user.id, channel=intent_ledger.Channel.WEB, scope=CONV_WEB, scope_key=str(conv.id),
                          intent=intent_ledger.Intent.ASK, tool_calls=result.get("tool_calls"), question=body.message,
-                         answer=str(result.get("text") or ""))
+                         answer=str(result.get("text") or ""), message_id=int(asked.id or 0))
     result["conversation_id"] = conv.id
     result["title"] = conv.title
     return result
