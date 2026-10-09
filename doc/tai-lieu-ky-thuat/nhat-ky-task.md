@@ -13132,7 +13132,7 @@ Mã nguồn: backend/app/modules/agent_hub/service.py (may_use_bot) · controlle
 Deploy: dev 08/10 (Agent 1 gộp 0696c86a, dựng lại stack agent-hub và erp); prod giữ lại.
 
 ## ai-CR-132 | Cho thêm người nhận tin vận hành của bot bằng quyền ở màn Phân quyền
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Trước đây mọi tin hệ thống của bot, như máy sửa mã mất liên lạc, Zalo mất kết nối, tình hình máy, sự cố và thẻ các việc sửa mã,
 chỉ gửi về đúng một chat Telegram của đại ca. Nay có quyền mới «Nhận tin vận hành của bot» ở màn Phân quyền: ai được tick thì
@@ -13141,3 +13141,4 @@ lệnh sửa mã vẫn chỉ đại ca làm. Câu trả lời riêng của đạ
 Tài khoản quản trị tự có quyền này. Bài kiểm máy chủ và giao diện chạy xanh.
 
 Mã nguồn: backend/app/core/permissions.py + scoping.py (agent_ops) · seed.py · agent_hub/service.py (ops_recipients, _copy_to_ops, reply) · poller.py · frontend-v2 permission-types.ts, permission-groups.ts · test/backend/test_agent_hub.py
+Deploy: dev 09/10 (Agent 1 gộp 7d5ededc, dựng lại ERP api, erp và stack agent-hub); prod giữ lại.
