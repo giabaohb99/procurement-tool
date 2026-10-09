@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-145 | Bước lập kế hoạch của bot tự dùng model mạnh khi có khóa
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca muốn đổi model lập kế hoạch sang loại mạnh hơn và hỏi khóa hiện tại dùng được DeepSeek bản nào. Em thử trên dev: khóa
 của đại ca qua trạm modelapi.vn chỉ mở đúng một model là DeepSeek bản flash; gọi thử các bản DeepSeek khác, Claude hay GPT đều bị
@@ -13204,6 +13204,7 @@ bot vẫn dùng DeepSeek bản flash với lưới đọc kế hoạch đã sử
 AI, không phải chờ deploy lại. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/user_keys.py (prefer) · manager.py (run_plan, _plan_model, _model_for) · core/config.py (AGENT_PLAN_PROVIDERS, AGENT_PLAN_MODEL) · test/backend/test_agent_hub_ke_hoach_json.py
+Deploy: dev 09/10 (Agent 1 gộp e9b9dd54, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-144 | Sửa lỗi bot gửi thẻ kế hoạch trắng rồi không nhận duyệt (việc AI-0006)
 - status: xong
