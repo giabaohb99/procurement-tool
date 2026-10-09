@@ -71,7 +71,7 @@ chưa thì là ứng viên cho §5.
 
 | Chức năng | Trạng thái | IDA |
 |---|---|---|
-| Hỏi số liệu ERP dưới đúng quyền của người hỏi (66 công cụ, lọc phạm vi) | Xong | chưa (nối ERP là giai đoạn sau) |
+| Hỏi số liệu ERP dưới đúng quyền của người hỏi (68 công cụ, lọc phạm vi) | Xong | chưa (nối ERP là giai đoạn sau) |
 | Soạn nháp + tạo + gửi duyệt phiếu từ chat (YCMH, YCBG, nghỉ phép, phiếu hỗ trợ, việc Dự án) | Xong | không cần |
 | Chuông ERP (phiếu chờ duyệt, việc được giao) đẩy sang chat | Xong | chưa |
 | Sửa dữ liệu bằng lời qua cổng duyệt (ai-CR-073) | Xong | không cần |

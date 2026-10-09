@@ -69,6 +69,18 @@ function memory(over: Partial<BotMemory> = {}): BotMemory {
   }
 }
 
+/** Tab gọi hai cửa: trí nhớ và bản tin (ai-CR-140). */
+const BRIEFS = {
+  items: [
+    { id: 0, kind: 1, enabled: false, hour: 7, minute: 30, days: 127, topic: '', sub_code: '', implicit: true,
+      label: 'Bản tin sáng', when: '07:30 · mọi ngày' },
+  ],
+}
+
+function mockGet(mem: BotMemory) {
+  apiGet.mockImplementation((url: string) => Promise.resolve(url.endsWith('/me/briefs') ? BRIEFS : mem))
+}
+
 function renderTab() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
@@ -88,7 +100,7 @@ describe('ProfileMemoryTab', () => {
   })
 
   it('reads only the self-service endpoint and marks auto-extracted lines', async () => {
-    apiGet.mockResolvedValue(memory())
+    mockGet(memory())
     renderTab()
     expect(await screen.findByText('Muốn trả lời ngắn gọn')).toBeInTheDocument()
     expect(apiGet).toHaveBeenCalledWith('/api/agent-hub/me/memory')
@@ -100,7 +112,7 @@ describe('ProfileMemoryTab', () => {
   })
 
   it('edits by sending the exact old line text as the key', async () => {
-    apiGet.mockResolvedValue(memory())
+    mockGet(memory())
     apiPatch.mockResolvedValue(memory())
     renderTab()
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa: Muốn trả lời ngắn gọn' }))
@@ -117,7 +129,7 @@ describe('ProfileMemoryTab', () => {
   })
 
   it('keeps the typed text when saving a new line fails', async () => {
-    apiGet.mockResolvedValue(memory())
+    mockGet(memory())
     apiPost.mockRejectedValue(new Error('em không ghi mật khẩu'))
     renderTab()
     const box = await screen.findByRole('textbox', { name: 'Thêm dòng vào Sở thích' })
@@ -127,7 +139,7 @@ describe('ProfileMemoryTab', () => {
   })
 
   it('does not fire twice on a double click', async () => {
-    apiGet.mockResolvedValue(memory())
+    mockGet(memory())
     let release: (v: BotMemory) => void = () => {}
     apiDelete.mockImplementation(() => new Promise<BotMemory>((r) => (release = r)))
     renderTab()
@@ -139,7 +151,7 @@ describe('ProfileMemoryTab', () => {
   })
 
   it('deletes a line and wipes everything only after confirmation', async () => {
-    apiGet.mockResolvedValue(memory())
+    mockGet(memory())
     apiPost.mockResolvedValue(memory())
     apiDelete.mockResolvedValue(memory({ sections: memory().sections.map((s) => ({ ...s, lines: [] })) }))
     renderTab()
@@ -155,7 +167,7 @@ describe('ProfileMemoryTab', () => {
   })
 
   it('says plainly when the bot remembers nothing', async () => {
-    apiGet.mockResolvedValue(
+    mockGet(
       memory({ sections: memory().sections.map((s) => ({ ...s, lines: [] })), watching: [], habits: [] }),
     )
     renderTab()

@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 
 /**
  * «Bot đang nhớ gì về tôi» (ai-CR-138, phase 13.4). Mọi cửa lấy người dùng từ phiên đăng nhập — không có tham số chọn
@@ -87,4 +87,42 @@ export const botMemoryApi = {
   dropWatching: (id: number) => apiDelete<BotMemory>(`/api/agent-hub/me/memory/watching/${id}`),
   deleteNote: (id: number) => apiDelete<BotMemory>(`/api/agent-hub/me/memory/notes/${id}`),
   wipe: () => apiDelete<BotMemory>('/api/agent-hub/me/memory'),
+}
+
+/** Bản tin bot tự gửi (ai-CR-140). `kind` 1 = bản tin sáng · 2 = bản tin chủ đề. `days` mặt nạ thứ (thứ hai = 1 … chủ
+ *  nhật = 64). `implicit` = bản tin sáng ngầm của người đã nối Google mà chưa tự đặt (id 0). */
+export interface BriefItem {
+  id: number
+  kind: 1 | 2
+  enabled: boolean
+  hour: number
+  minute: number
+  days: number
+  topic: string
+  sub_code: string
+  implicit: boolean
+  label: string
+  when: string
+}
+
+export interface BriefList {
+  items: BriefItem[]
+}
+
+export interface BriefTopicInput {
+  question: string
+  hour: number
+  minute: number
+  days: number
+  sub_code?: string
+}
+
+export const botBriefApi = {
+  list: () => apiGet<BriefList>('/api/agent-hub/me/briefs'),
+  setDaily: (body: { enabled: boolean; hour?: number; minute?: number; days?: number }) =>
+    apiPut<BriefList>('/api/agent-hub/me/briefs/daily', body),
+  addTopic: (body: BriefTopicInput) => apiPost<BriefList>('/api/agent-hub/me/briefs/topics', body),
+  toggle: ({ id, enabled }: { id: number; enabled: boolean }) =>
+    apiPatch<BriefList>(`/api/agent-hub/me/briefs/${id}`, { enabled }),
+  remove: (id: number) => apiDelete<BriefList>(`/api/agent-hub/me/briefs/${id}`),
 }

@@ -31,7 +31,7 @@ from .constants import (
 )
 from .model import AgentMessage, AgentRun, AgentTask, AgentTaskItem
 from .timeutil import now_local, to_local
-from app.modules.employee.field_limits import Str20, Str80, Str200, Str600
+from app.modules.employee.field_limits import Str20, Str80, Str200, Str255, Str600
 
 router = APIRouter(prefix="/api/agent-hub", tags=["agent-hub"])
 
@@ -447,6 +447,84 @@ def delete_memory_note(note_id: int, user=Depends(get_current_user), db: Session
     if not memory_view.delete_note(db, user.id, note_id):
         raise HTTPException(404, "Không tìm thấy ghi chú")
     return success(memory_view.snapshot(db, user.id), "Đã xóa ghi chú")
+
+
+# ---------------------------------------------------------------------------
+# Bản tin của CHÍNH MÌNH (ai-CR-140) — cùng cách gác với trí nhớ: người dùng lấy từ phiên, không chọn được người khác.
+# ---------------------------------------------------------------------------
+class BriefDailyIn(BaseModel):
+    enabled: bool
+    hour: int | None = None
+    minute: int | None = None
+    days: int | None = None
+
+
+class BriefTopicIn(BaseModel):
+    question: Str255
+    hour: int = 7
+    minute: int = 30
+    days: int = 127
+    sub_code: Str20 = ""
+
+
+class BriefToggleIn(BaseModel):
+    enabled: bool
+
+
+def _check_time(hour: int | None, minute: int | None, days: int | None) -> None:
+    if hour is not None and not 0 <= hour <= 23:
+        raise HTTPException(400, "Giờ phải từ 0 đến 23")
+    if minute is not None and not 0 <= minute <= 59:
+        raise HTTPException(400, "Phút phải từ 0 đến 59")
+    if days is not None and not 1 <= days <= 127:
+        raise HTTPException(400, "Chọn ít nhất một thứ trong tuần")
+
+
+@router.get("/me/briefs")
+def my_briefs(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import brief_subs
+
+    return success({"items": brief_subs.list_for(db, user.id)})
+
+
+@router.put("/me/briefs/daily")
+def set_my_daily_brief(body: BriefDailyIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import brief_subs
+
+    _check_time(body.hour, body.minute, body.days)
+    brief_subs.set_daily(db, user.id, enabled=body.enabled, hour=body.hour, minute=body.minute, days=body.days)
+    return success({"items": brief_subs.list_for(db, user.id)}, "Đã lưu bản tin sáng")
+
+
+@router.post("/me/briefs/topics")
+def add_my_topic_brief(body: BriefTopicIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import brief_subs
+
+    _check_time(body.hour, body.minute, body.days)
+    try:
+        brief_subs.add_topic(db, user.id, body.question, hour=body.hour, minute=body.minute, days=body.days,
+                             sub_code=body.sub_code)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from None
+    return success({"items": brief_subs.list_for(db, user.id)}, "Đã bật bản tin")
+
+
+@router.patch("/me/briefs/{sub_id}")
+def toggle_my_brief(sub_id: int, body: BriefToggleIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import brief_subs
+
+    if not brief_subs.set_enabled(db, user.id, sub_id, body.enabled):
+        raise HTTPException(404, "Không tìm thấy bản tin")
+    return success({"items": brief_subs.list_for(db, user.id)}, "Đã bật" if body.enabled else "Đã tắt")
+
+
+@router.delete("/me/briefs/{sub_id}")
+def delete_my_brief(sub_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import brief_subs
+
+    if not brief_subs.remove(db, user.id, sub_id):
+        raise HTTPException(404, "Không tìm thấy bản tin")
+    return success({"items": brief_subs.list_for(db, user.id)}, "Đã bỏ bản tin")
 
 
 @router.delete("/me/memory")

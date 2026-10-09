@@ -500,16 +500,31 @@ def pull_tickets_task() -> dict:
         db.close()
 
 
-@celery_app.task(name="agent.morning_brief")
-def morning_brief_task() -> dict:
-    """ai-CR-064 (T-08): 7h30 sáng, mỗi người đã nối Telegram + Google nhận lịch hôm nay + việc chờ duyệt."""
+@celery_app.task(name="agent.briefs_due")
+def briefs_due_task() -> dict:
+    """ai-CR-140: mỗi 5 phút — bản tin sáng / bản tin chủ đề nào tới giờ (giờ + thứ mỗi người tự đặt trong chat) thì gửi."""
     if (off := _off()) is not None:
         return off
-    from . import briefs
+    from . import brief_subs
 
     db = SessionLocal()
     try:
-        return {"status": "success", "sent": briefs.send_morning_briefs(db)}
+        return {"status": "success", **brief_subs.tick(db)}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.morning_brief")
+def morning_brief_task() -> dict:
+    """ai-CR-064 (T-08) — tên cũ, GIỮ cho lượt còn nằm hàng đợi lúc nâng cấp. Từ ai-CR-140 lịch dùng `agent.briefs_due`;
+    gọi tên này cũng đi đúng vòng mới (chặn gửi hai lần bằng `last_sent_on`), không gửi kiểu cũ nữa."""
+    if (off := _off()) is not None:
+        return off
+    from . import brief_subs
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **brief_subs.tick(db)}
     except Exception as e:  # noqa: BLE001
         db.rollback()
         log.exception("agent_hub: bản tin sáng hỏng")

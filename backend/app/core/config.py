@@ -188,6 +188,11 @@ class Settings(BaseSettings):
     # Sau mỗi buổi chat RIÊNG đã tóm tắt, một lượt model rẻ rút điều bền về người đó; nhắc lại ≥ 3 lần trên ≥ 2 ngày mới
     # ghi vào lõi sổ nhớ (đuôi «tự rút»). Tắt thì sổ ý định vẫn ghi, chỉ thôi rút.
     AGENT_AUTO_MEMORY_ENABLED: bool = True
+    # ai-CR-141: quay lại DB bot qua thẻ duyệt Telegram — đường dẫn TRÊN VPS (máy sửa mã ssh vào chạy).
+    # Trống = "$HOME/agent-hub/backend/scripts/agent_restore.sh" và stack "$HOME/agent-hub".
+    AGENT_RESTORE_SCRIPT: str = ""
+    AGENT_RESTORE_STACK_DIR: str = ""
+    AGENT_RESTORE_HEALTH_URL: str = ""
 
     # --- Tìm kiếm vector loại B: HDSD + FAQ (Phase 3) ---
     # Tắt mặc định. Bật thì tool `search_docs` mới hiện ra cho bot và hook nạp lại chỉ mục mới

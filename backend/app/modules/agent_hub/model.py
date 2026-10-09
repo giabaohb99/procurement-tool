@@ -645,3 +645,24 @@ class AgentDbBackup(Base, AuditMixin):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
     __table_args__ = (Index("ix_agent_db_backup_kind", "kind", "status", "id"),)
+
+
+class AgentBriefSub(Base, AuditMixin):
+    """Đăng ký BẢN TIN của một người (ai-CR-140) — bật / tắt ngay trong chat. `kind` 1 = bản tin sáng (lịch, việc riêng,
+    việc Dự án tới hạn, chờ duyệt — không tốn lượt model) · 2 = bản tin theo CHỦ ĐỀ (một câu hỏi chạy qua Trợ lý AI bằng
+    khóa của chính người đó, vd «công nợ quá hạn của DEGO»). `days` = mặt nạ thứ trong tuần (thứ hai = 1, … chủ nhật =
+    64; 127 = mọi ngày). `last_sent_on` = ngày (giờ VN) đã gửi, chặn gửi hai lần. Mã số ở `brief_subs.py`."""
+
+    __tablename__ = "tab_agent_brief_sub"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    kind: Mapped[int] = mapped_column(SmallInteger, default=1)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    hour: Mapped[int] = mapped_column(SmallInteger, default=7)
+    minute: Mapped[int] = mapped_column(SmallInteger, default=30)
+    days: Mapped[int] = mapped_column(SmallInteger, default=127)
+    topic: Mapped[str] = mapped_column(String(300), default="")
+    sub_code: Mapped[str] = mapped_column(String(40), default="")
+    last_sent_on: Mapped[str] = mapped_column(String(10), default="")
+
+    __table_args__ = (Index("ix_agent_brief_sub_user", "user_id", "kind"),)

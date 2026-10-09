@@ -86,6 +86,7 @@ class Sub(IntEnum):
     LOOKUP_TICKET = 35
     LOOKUP_GUIDE = 36
     LOOKUP_ANALYTICS = 37
+    LOOKUP_WORK = 38
     LOOKUP_OTHER = 49
     MAKE_PURCHASE_REQUEST = 50
     MAKE_SURVEY_REQUEST = 51
@@ -100,6 +101,7 @@ class Sub(IntEnum):
     FEEDBACK = 60
     MEETING_MINUTES = 61
     BOT_TASK_ACTION = 62
+    WRITE_BRIEF = 63
     WRITE_OTHER = 79
     RESEARCH_WEB = 80
     RESEARCH_LINK = 81
@@ -128,6 +130,7 @@ SUB_CODES: dict[Sub, tuple[str, str]] = {
     Sub.LOOKUP_TICKET: ("tra_cuu.ho_tro", "Phiếu hỗ trợ"),
     Sub.LOOKUP_GUIDE: ("tra_cuu.huong_dan", "Hướng dẫn, thuật ngữ"),
     Sub.LOOKUP_ANALYTICS: ("tra_cuu.phan_tich", "Phân tích số liệu"),
+    Sub.LOOKUP_WORK: ("tra_cuu.viec", "Việc Dự án của tôi"),
     Sub.LOOKUP_OTHER: ("tra_cuu.khac", "Tra cứu khác"),
     Sub.MAKE_PURCHASE_REQUEST: ("thao_tac.tao_ycmh", "Soạn YCMH"),
     Sub.MAKE_SURVEY_REQUEST: ("thao_tac.tao_ycbg", "Soạn YCBG"),
@@ -142,6 +145,7 @@ SUB_CODES: dict[Sub, tuple[str, str]] = {
     Sub.FEEDBACK: ("thao_tac.gop_y", "Góp thuật ngữ, báo thiếu chức năng"),
     Sub.MEETING_MINUTES: ("thao_tac.bien_ban", "Biên bản họp"),
     Sub.BOT_TASK_ACTION: ("thao_tac.viec_bot", "Thao tác trên việc của bot"),
+    Sub.WRITE_BRIEF: ("thao_tac.ban_tin", "Bật / tắt bản tin"),
     Sub.WRITE_OTHER: ("thao_tac.khac", "Thao tác khác"),
     Sub.RESEARCH_WEB: ("nghien_cuu.web", "Tìm trên mạng"),
     Sub.RESEARCH_LINK: ("nghien_cuu.link", "Đọc link"),
@@ -177,6 +181,8 @@ TOOL_SUB: dict[str, Sub] = {
     "my_tickets": Sub.LOOKUP_TICKET,
     "search_docs": Sub.LOOKUP_GUIDE, "glossary_lookup": Sub.LOOKUP_GUIDE,
     "analytics_query": Sub.LOOKUP_ANALYTICS,
+    "my_work_tasks": Sub.LOOKUP_WORK,
+    "manage_briefs": Sub.WRITE_BRIEF,
     "draft_purchase_request": Sub.MAKE_PURCHASE_REQUEST, "draft_survey_request": Sub.MAKE_SURVEY_REQUEST,
     "draft_payment_request": Sub.MAKE_PAYMENT_REQUEST, "draft_leave_request": Sub.MAKE_LEAVE,
     "draft_work_task": Sub.MAKE_WORK_TASK, "ticket_create": Sub.MAKE_TICKET,

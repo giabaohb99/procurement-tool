@@ -96,7 +96,17 @@ Thiếu quyền thì lượt khôi phục thử đầu tiên báo lỗi «Access
 
 **Quay lại DB — `backend/scripts/agent_restore.sh`** (chạy trên VPS, ngoài container; bản sao lưu tải từ màn Sao lưu hoặc
 từ R2 về máy trước). Script in kế hoạch rồi bắt gõ đúng một cụm xác nhận; gõ sai / không gõ thì thoát mã 3 TRƯỚC khi đụng
-docker hay DB. `--yes` bỏ bước gõ — chỉ dùng khi đã được duyệt (vd qua thẻ duyệt thao tác VPS, chưa nối sẵn).
+docker hay DB. `--yes` bỏ bước gõ — chỉ dùng khi đã được duyệt.
+
+**Qua thẻ duyệt trên Telegram (ai-CR-141, đại ca chốt 09/10)** — chat chủ bot, cần `AGENT_OPS_ENABLED`:
+`sao lưu db bot` (liệt kê bản thành công, có số) → `quay lại db bot dev bản #12` (toàn bộ) hoặc
+`lấy lại tab_agent_memory của db bot dev bản #12: user_id = 7` (một phần; điều kiện chỉ là phép so sánh đơn giản, chặn
+`;`, `--`, `/*`) → thẻ «đúng / thôi» như mọi thao tác VPS (loại `OP_BOT_DB_RESTORE`). Khi tạo thẻ, bot ký sẵn link tải
+bản sao lưu trên R2 (26 giờ) cất trong `params` của dòng sổ — KHÔNG in lên thẻ / nhật ký; «đúng» thì máy sửa mã ssh vào
+VPS: tải về tệp tạm → `agent_restore.sh … --yes </dev/null` → xóa tệp tạm; xong một phần thì xóa link khỏi sổ. Quay lại
+TOÀN BỘ làm mất chính dòng sổ của lượt đó (bản sao lưu có trước nó) — máy sửa mã bỏ kết nối cũ, ghi LẠI một dòng sổ
+mới rồi báo. Đường dẫn trên VPS: `AGENT_RESTORE_SCRIPT` (mặc định `~/agent-hub/backend/scripts/agent_restore.sh`),
+`AGENT_RESTORE_STACK_DIR` (`~/agent-hub`), `AGENT_RESTORE_HEALTH_URL` (trống = bỏ bước kiểm health).
 
 (a) **Quay lại TOÀN BỘ về bản X** — mất mọi thay đổi sau giờ của bản X:
 
@@ -194,6 +204,5 @@ Báo tài nguyên 07:35 mỗi sáng (cùng nội dung «tình hình máy»). B�
 - **O-03 «chạy lại migration dở»** không có thao tác riêng: khởi động lại `api` đã chạy lại `alembic upgrade head` trong
   `start.prod.sh`.
 - Dev và prod chung một VPS: VPS chết hẳn thì bot (cũng ở trên đó) không báo được gì.
-- **Quay lại DB bot qua thẻ duyệt trên Telegram** (ai-CR-139): script `agent_restore.sh` đã có bước xác nhận + `--yes`, chưa
-  nối thành thao tác VPS có duyệt (ai-CR-068). Qdrant không sao lưu (dựng lại được từ DB + HDSD).
+- Qdrant không sao lưu (dựng lại được từ DB + HDSD). Quay lại DB bot qua thẻ duyệt đã có từ ai-CR-141.
 - **V-07 preview** chờ tên miền + token Cloudflare Tunnel; **V-08** chờ VPS 2 + tài khoản Claude công ty.

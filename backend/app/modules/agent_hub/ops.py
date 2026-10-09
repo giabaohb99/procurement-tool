@@ -44,6 +44,7 @@ from .constants import (
     INC_STATUS_LABELS,
     INC_WAITING,
     OP_ACTION,
+    OP_BOT_DB_RESTORE,
     OP_DATA_PLAN,
     OP_DEPLOY,
     OP_KIND_LABELS,
@@ -332,6 +333,17 @@ def _card(op: AgentOp, env: AgentEnv) -> str:
                   f"<i>Hoàn tác: «hoàn tác thao tác #{op.id}» deploy lại commit trước.</i>")
     elif op.kind == OP_SHELL_WRITE:
         safety = "<b>Lưu ý:</b> lệnh tự do — <i>không có cách hoàn tác tự động</i>, em chỉ ghi nhật ký kết quả."
+    elif op.kind == OP_BOT_DB_RESTORE:
+        p = op.params or {}
+        if p.get("mode") == "full":
+            safety = (f"<b>Bản sao lưu:</b> {esc(p.get('file') or '?')} ({esc(p.get('taken') or '?')})\n"
+                      "<b>Sẽ:</b> dừng bot vài phút → dump bản HIỆN TẠI vào <code>restore-safety/</code> (để quay ngược) → "
+                      "nạp thử vào DB tạm, kiểm → thay DB bot → khởi động lại.\n"
+                      "<i>MẤT mọi tin nhắn, trí nhớ, sổ việc ghi SAU giờ của bản sao lưu.</i>")
+        else:
+            safety = (f"<b>Bản sao lưu:</b> {esc(p.get('file') or '?')} ({esc(p.get('taken') or '?')})\n"
+                      f"<b>Sẽ:</b> chép lại các dòng của <code>{esc(p.get('table') or '')}</code> khớp "
+                      f"<code>{esc(p.get('where') or '')}</code> bằng REPLACE — dòng khác không đụng, bot không dừng.")
     if safety:
         blocks.append(safety)
     if is_prod(env):
@@ -404,6 +416,58 @@ def undo(db: Session, op: AgentOp, chat_id: str) -> tuple[AgentOp | None, str]:
     op.undone_by_op_id = new.id
     db.commit()
     return new, ""
+
+
+# ---------------------------------------------------------------------------
+# Quay lại DB bot (ai-CR-141)
+# ---------------------------------------------------------------------------
+def bot_backup_listing(db: Session, limit: int = 10) -> str:
+    from . import db_backup
+    from .model import AgentDbBackup
+
+    rows = list(db.scalars(select(AgentDbBackup).where(AgentDbBackup.kind == db_backup.Kind.BACKUP,
+                                                       AgentDbBackup.status == db_backup.Status.SUCCESS)
+                           .order_by(AgentDbBackup.id.desc()).limit(limit)))
+    if not rows:
+        return "Chưa có bản sao lưu DB bot nào thành công."
+    lines = ["<b>BẢN SAO LƯU DB BOT</b> (mới nhất trước)"]
+    for r in rows:
+        lines.append(f"#{r.id} · {_fmt_time(r.started_at)} · {int(r.size_bytes or 0) // 1024} KB")
+    lines.append("")
+    lines.append("<i>Quay lại toàn bộ: «quay lại db bot dev bản #12». Lấy lại vài dòng: "
+                 "«lấy lại tab_agent_memory của db bot dev bản #12: user_id = 7». Cả hai đều qua thẻ «đúng».</i>")
+    return "\n".join(lines)
+
+
+def new_bot_restore_op(db: Session, env: AgentEnv, backup_id: int, chat_id: str, *, table: str = "",
+                       where: str = "") -> tuple[AgentOp | None, str]:
+    """Thẻ duyệt quay lại DB bot. Link tải bản sao lưu (R2, ký sẵn BOT_RESTORE_URL_TTL giây) nằm trong `params`, KHÔNG
+    nằm trong `command` (thứ in ra thẻ / nhật ký); chạy xong máy sửa mã xóa link khỏi sổ."""
+    from app.core.storage import presigned_url
+
+    from . import db_backup
+    from .model import AgentDbBackup
+
+    src = db.get(AgentDbBackup, int(backup_id))
+    if src is None or src.kind != db_backup.Kind.BACKUP or src.status != db_backup.Status.SUCCESS or not src.file_key:
+        return None, f"Không có bản sao lưu DB bot #{backup_id} thành công. Xem «sao lưu db bot»."
+    part = bool(table)
+    if part:
+        if not re.fullmatch(r"tab_[a-z0-9_]+", table):
+            return None, "Tên bảng lạ."
+        if not _WHERE_OK.match(where or "") or "--" in where or "/*" in where:
+            return None, "Điều kiện chỉ được là phép so sánh đơn giản, vd «user_id = 7» (không «;», không chú thích)."
+    name = src.file_key.rsplit("/", 1)[-1]
+    taken = _fmt_time(src.started_at)
+    url = presigned_url(src.file_key, expires=BOT_RESTORE_URL_TTL)
+    mode = "part" if part else "full"
+    title = (f"Lấy lại {table} ({where[:80]}) từ bản sao lưu DB bot #{src.id}" if part
+             else f"Quay lại TOÀN BỘ DB bot về bản sao lưu #{src.id} ({taken})")
+    command = f"agent_restore.sh {name} " + (f"--table {table} --where \"{where}\"" if part else "--full") + " --yes"
+    op = new_op(db, env, OP_BOT_DB_RESTORE, title=title, command=command,
+                params={"backup_id": src.id, "file": name, "taken": taken, "url": url, "mode": mode,
+                        "table": table, "where": where}, chat_id=chat_id)
+    return op, ""
 
 
 def _fmt_time(dt: datetime | None) -> str:
@@ -671,7 +735,15 @@ _P = {
     "approve_id": re.compile(rf"^(đúng|chạy|duyệt)\s+thao tác\s+#?(?P<n>\d+){_TAIL}$"),
     "cancel_id": re.compile(rf"^(bỏ|hủy|thôi)\s+thao tác\s+#?(?P<n>\d+){_TAIL}$"),
     "incidents": re.compile(rf"^(sổ sự cố|các sự cố|lịch sử sự cố|sự cố)(\s+(?P<env>[a-z0-9-]+))?{_TAIL}$"),
+    #  ai-CR-141: quay lại DB bot (agent_hub) từ bản sao lưu R2 — qua thẻ «đúng».
+    "bot_backups": re.compile(rf"^(các bản |danh sách |xem )?sao lưu db bot{_TAIL}$"),
+    "bot_restore": re.compile(rf"^quay lại db bot\s+(?P<env>[a-z0-9-]+)\s+(về\s+)?bản\s+#?(?P<n>\d+){_TAIL}$"),
+    "bot_restore_part": re.compile(r"^lấy lại\s+(?P<table>tab_[a-z0-9_]+)\s+(của\s+)?db bot\s+(?P<env>[a-z0-9-]+)\s+bản\s+"
+                                   r"#?(?P<n>\d+)\s*:\s*(?P<where>.+)$", re.DOTALL),
 }
+#  Điều kiện lấy lại một phần: chỉ ký tự của một biểu thức so sánh đơn giản — không «;», không chú thích SQL.
+_WHERE_OK = re.compile(r"^[A-Za-z0-9_ =<>!'.,()%-]{1,300}$")
+BOT_RESTORE_URL_TTL = 26 * 3600
 #  SQL / shell giữ NGUYÊN chữ hoa-thường của đại ca, nên khớp trên chữ gốc (không hạ chữ).
 _SQL = re.compile(r"^\s*sql\s+(?P<env>[A-Za-z0-9-]+)\s*:\s*(?P<body>.+)$", re.DOTALL | re.IGNORECASE)
 _SHELL = re.compile(r"^\s*(chạy|shell)\s+(?P<env>[A-Za-z0-9-]+)\s*:\s*(?P<body>.+)$", re.DOTALL | re.IGNORECASE)
@@ -693,6 +765,9 @@ def parse(text: str) -> dict | None:
             if op == "env_add":
                 rest_m = re.match(r"^\s*thêm môi trường\s+[A-Za-z0-9-]+\s*:?\s*(.*)$", raw, re.DOTALL | re.IGNORECASE)
                 d["rest"] = rest_m.group(1) if rest_m else d.get("rest", "")
+            if op == "bot_restore_part":
+                w_m = re.match(r"^[^:]*:\s*(.+)$", raw, re.DOTALL)
+                d["where"] = w_m.group(1).strip() if w_m else d["where"]
             if op == "diagnose" and "q" in d:
                 q_m = re.match(r"^[^:]*:\s*(.+)$", raw, re.DOTALL)
                 d["q"] = q_m.group(1).strip() if q_m else d["q"]
@@ -790,6 +865,8 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
                    "Không có máy sửa mã nào được thao tác VPS (cờ deploy) để đọc tài nguyên.")
     if op_name == "history":
         return say(op_listing(db, env, deploy_only=parsed.get("what") == "deploy"))
+    if op_name == "bot_backups":
+        return say(bot_backup_listing(db))
     if op_name == "incidents":
         return say(incident_listing(db, env))
     if op_name in ("detail", "undo", "approve_id", "cancel_id"):
@@ -858,6 +935,11 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
         op = new_op(db, env, OP_ACTION, title="Quay về bản trước lần deploy gần nhất của bot",
                     command=describe_action(env, "rollback_last_deploy", []),
                     params={"action": "rollback_last_deploy", "services": []}, chat_id=chat_id)
+    elif op_name in ("bot_restore", "bot_restore_part"):
+        op, err = new_bot_restore_op(db, env, int(parsed["n"]), chat_id, table=parsed.get("table", ""),
+                                     where=parsed.get("where", ""))
+        if op is None:
+            return say(esc(err))
     elif op_name == "sql":
         kind, reason, _ = guardrails.classify_sql(parsed["body"])
         if kind == guardrails.SQL_DENIED:

@@ -103,3 +103,50 @@ DRAFT_WORK_TASK_SPEC = ToolSpec(
         "required": ["title"]},
     handler=_draft_work_task,
 )
+
+
+def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
+    """ai-CR-140: việc ĐANG MỞ mình phụ trách (hoặc theo dõi) ở phân hệ Dự án, hạn tới `until` (mặc định hôm nay) —
+    gồm cả việc quá hạn. Chỉ trong các dự án người hỏi thấy được; bỏ việc đã xóa mềm."""
+    from datetime import date
+
+    from app.modules.work.membership_service import resolve_actor, visible_list_ids
+    from app.modules.work.model import WorkAssigneeKind, WorkList, WorkTaskStatus
+    from app.modules.work.task_model import WorkTask, WorkTaskAssignee
+
+    if not ctx.can("work_task", "read"):
+        return denied("xem công việc ở phân hệ Dự án")
+    actor = resolve_actor(ctx.db, ctx.user)
+    if not actor.employee_id:
+        return {"total": 0, "items": [], "note": "tài khoản chưa gắn hồ sơ nhân sự nên không có việc Dự án"}
+    today = date.today().isoformat()
+    until = str(args.get("until") or "").strip() or today
+    if not _DATE.match(until):
+        return {"error": "until phải dạng YYYY-MM-DD"}
+    kinds = [int(WorkAssigneeKind.PIC)] + ([int(WorkAssigneeKind.FOLLOWER)] if args.get("include_following") else [])
+    lists = visible_list_ids(ctx.db, actor.employee_id)
+    if not lists:
+        return {"total": 0, "items": []}
+    q = (ctx.db.query(WorkTask, WorkList.name)
+         .join(WorkTaskAssignee, WorkTaskAssignee.task_id == WorkTask.id)
+         .join(WorkList, WorkList.id == WorkTask.list_id)
+         .filter(WorkTaskAssignee.employee_id == actor.employee_id, WorkTaskAssignee.kind.in_(kinds),
+                 WorkTask.status == int(WorkTaskStatus.OPEN), WorkTask.deleted_at.is_(None),
+                 WorkTask.list_id.in_(lists), WorkTask.due_date != "", WorkTask.due_date <= until)
+         .order_by(WorkTask.due_date, WorkTask.id))
+    rows = q.limit(int(args.get("limit") or 30)).all()
+    items = [{"id": t.id, "title": t.title, "project": name, "due_date": t.due_date,
+              "overdue": t.due_date < today, "subtask": t.parent_id is not None} for t, name in rows]
+    return {"total": len(items), "today": today, "items": items}
+
+
+MY_WORK_TASKS_SPEC = ToolSpec(
+    name="my_work_tasks",
+    description=("Liệt kê VIỆC ĐANG MỞ người hỏi PHỤ TRÁCH ở phân hệ Dự án có hạn tới một ngày (mặc định hôm nay), gồm cả "
+                 "việc quá hạn: 'hôm nay anh có việc gì', 'việc nào sắp tới hạn', 'việc quá hạn của tôi'."),
+    parameters={"type": "object", "properties": {
+        "until": {"type": "string", "description": "Lấy việc có hạn tới ngày này (YYYY-MM-DD, giờ VN); bỏ trống = hôm nay."},
+        "include_following": {"type": "boolean", "description": "Gồm cả việc mình chỉ theo dõi (mặc định không)."},
+        "limit": {"type": "integer", "description": "Tối đa bao nhiêu việc (mặc định 30)."}}},
+    handler=_my_work_tasks,
+)

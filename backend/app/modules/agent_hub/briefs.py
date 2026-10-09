@@ -50,7 +50,8 @@ def _hhmm(iso: str) -> str:
         return ""
 
 
-def morning_text(db: Session, user, events: list[dict]) -> str:
+def morning_text(db: Session, user, events: list[dict] | None) -> str:
+    """`events` None = chưa nối Google (ai-CR-140: bản tin sáng không còn đòi Google) — bỏ hẳn mục lịch."""
     from . import erp
 
     esc = telegram.esc
@@ -61,7 +62,7 @@ def morning_text(db: Session, user, events: list[dict]) -> str:
             when = "cả ngày" if ev.get("all_day") else _hhmm(str(ev.get("start") or ""))
             loc = f" · {esc(ev['location'])}" if ev.get("location") else ""
             lines.append(f"• {when} {esc(ev['title'])}{loc}")
-    else:
+    elif events is not None:
         lines.append("Hôm nay lịch trống.")
     #  ai-CR-103: lịch trình riêng + số món cần mua trong thẻ cá nhân.
     from . import personal_items
@@ -71,15 +72,31 @@ def morning_text(db: Session, user, events: list[dict]) -> str:
         lines.append("")
         lines.append("<b>Việc riêng</b>")
         lines.extend(f"• {esc(x)}" for x in own)
+    #  ai-CR-140: việc Dự án mình phụ trách tới hạn hôm nay + quá hạn.
+    try:
+        work = erp.run_tool(db, user, "my_work_tasks", {"limit": 10})
+        items = work.get("items") or []
+        if items:
+            lines.append("")
+            lines.append(f"<b>Việc Dự án tới hạn</b> ({work.get('total') or len(items)}):")
+            for t in items[:8]:
+                late = " · quá hạn" if t.get("overdue") else ""
+                lines.append(f"• {esc(str(t.get('title') or ''))[:80]} ({esc(str(t.get('project') or ''))[:40]}, "
+                             f"hạn {esc(str(t.get('due_date') or ''))}{late})")
+    except Exception:  # noqa: BLE001 — thiếu quyền / tool lỗi thì bỏ mục này
+        pass
     try:
         tasks = erp.run_tool(db, user, "my_approval_tasks", {"limit": 10})
         items = tasks.get("items") or []
         if items:
+            lines.append("")
             lines.append(f"Chờ anh/chị duyệt ({tasks.get('total') or len(items)}):")
             for t in items[:5]:
                 lines.append(f"• {esc(str(t.get('doc_code') or t.get('code') or ''))} {esc(str(t.get('title') or t.get('subject') or ''))[:60]}")
     except Exception:  # noqa: BLE001 — thiếu quyền hay tool lỗi thì bỏ mục này, bản tin vẫn đi
         pass
+    if len(lines) == 1:
+        lines.append("Hôm nay chưa có lịch, việc tới hạn hay phiếu chờ duyệt nào.")
     return "\n".join(lines)
 
 

@@ -530,6 +530,8 @@ export const queryKeys = {
     aiKey: () => ['system', 'ai-key'] as const,
     /** Trí nhớ bot giữ về CHÍNH MÌNH (ai-CR-138). */
     botMemory: () => ['system', 'bot-memory'] as const,
+    /** Bản tin bot tự gửi của CHÍNH MÌNH (ai-CR-140). */
+    botBriefs: () => ['system', 'bot-briefs'] as const,
     /** Khóa AI công ty (ai-CR-098). */
     companyAiKeys: () => ['system', 'ai-key', 'company'] as const,
     /** Khóa MCP cá nhân (ai-CR-063). */

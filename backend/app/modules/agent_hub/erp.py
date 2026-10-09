@@ -29,7 +29,7 @@ log = logging.getLogger("app.agent_hub.erp")
 TIMEOUT = 30
 TOOL_TIMEOUT = 90
 #  Công cụ chạy NGAY trong dịch vụ AI (dữ liệu riêng từng người: sổ nhớ, thẻ, nhóm, họp, Google) — mọi tên khác chạy ở ERP.
-LOCAL_TOOL_MODULES = ("personal_tool", "group_tool", "meeting_tool", "google_tool")
+LOCAL_TOOL_MODULES = ("personal_tool", "group_tool", "meeting_tool", "google_tool", "brief_tool")
 
 
 class ErpError(RuntimeError):

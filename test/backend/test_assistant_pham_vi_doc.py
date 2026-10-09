@@ -59,6 +59,8 @@ TOOL_CHUNG_TU = {
     "employee_lookup": "employee",
     "my_leave_summary": "leave_request",
     "my_tickets": "ticket",
+    #  ai-CR-140: việc Dự án mình PHỤ TRÁCH trong các dự án mình thấy (visible_list_ids).
+    "my_work_tasks": "work_task",
 }
 
 #  DANH MỤC / THỐNG KÊ dùng chung toàn công ty: không có cột chủ sở hữu để lọc, phạm vi
@@ -127,6 +129,8 @@ TOOL_KHONG_PHAM_VI = {
     "rewrite_meeting_minutes": "viết lại biên bản cuộc họp của chính người hỏi",
     "save_meeting_template": "lưu mẫu biên bản riêng vào sổ ghi nhớ của chính người hỏi",
     "latest_meeting_report": "cuộc họp mới nhất của chính người hỏi + thư mục «Họp» trên Drive của chính họ",
+    #  ai-CR-140: đăng ký bản tin — tab_agent_brief_sub lọc cứng theo ctx.user.id, không đọc bản ghi nghiệp vụ.
+    "manage_briefs": "bật / tắt / hẹn bản tin của chính người hỏi",
 }
 
 
@@ -142,7 +146,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 66, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 68, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)
@@ -170,6 +174,7 @@ CA_O_TEP_KHAC = {
     "my_leave_summary": "test_assistant_leave_tool::test_only_own_requests_not_ones_filed_for_others",
     "my_approval_tasks": "test_assistant_approval_tool::test_cho_toi_duyet_khong_thay_viec_cua_nguoi_khac",
     "my_requests_status": "test_assistant_approval_tool::test_phieu_cua_toi_khong_lan_phieu_nguoi_khac_va_loc_only_open",
+    "my_work_tasks": "test_agent_hub_ban_tin::test_viec_du_an_toi_han_cua_toi",
 }
 
 #  Tool đọc chứng từ CHƯA có ca rò rỉ ở BẤT KỲ đâu. Để trống là mục tiêu; còn dòng nào thì

@@ -1062,6 +1062,10 @@ def revoke_user_access(db: Session, user_id: int, *, now: datetime | None = None
     from . import memory_view
 
     memory_view.wipe(db, int(user_id))
+    #  ai-CR-140: bản tin của người nghỉ — bỏ hết (câu hỏi chủ đề là dữ liệu của họ).
+    from .model import AgentBriefSub
+
+    db.query(AgentBriefSub).filter(AgentBriefSub.user_id == int(user_id)).delete(synchronize_session=False)
     return n
 
 
@@ -1274,6 +1278,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
         return
     if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
             or _reminder_by_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text) \
+            or _brief_by_text(db, chat_id, row, text) \
             or _keys_by_text(db, chat_id, row, text):     # ai-CR-095/098: sổ nhớ + «còn khóa nào» cho mọi người
         return
     if _over_daily_cap(db, chat_id, row):
@@ -1391,6 +1396,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
             or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
+            or _brief_by_text(db, chat_id, row, text)
             or _ghi_viec_by_text(db, chat_id, row, text) or _keys_by_text(db, chat_id, row, text)
             or _glossary_by_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
@@ -2516,6 +2522,88 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
              "«ghi chú: tiêu đề | nội dung» vào kho · «xuất sổ nhớ» lấy tệp. Cuối mỗi buổi chat (im lặng 30 phút) "
              "em tự tóm tắt vào kho. Xem, sửa, xóa từng dòng: ERP › Trang cá nhân › «Bot nhớ gì về tôi».</i>")
     reply(db, chat_id, body, scope=SCOPE_PERSONAL)
+    return True
+
+
+#  ai-CR-140: bản tin bật / tắt ngay trong chat. So trên chữ ĐÃ BỎ DẤU. Câu tự nhiên dài hơn («sáng thứ hai gửi anh công
+#  nợ quá hạn của DEGO») đi Trợ lý AI — model gọi tool `manage_briefs`.
+_BRIEF_SHOW = re.compile(r"^(?:ban tin cua (?:toi|anh|chi|em|minh)|xem ban tin|danh sach ban tin)\s*\??$")
+_BRIEF_NOW = re.compile(r"^(?:ban tin hom nay|(?:danh sach )?viec hom nay|hom nay (?:anh |chi |toi |em |minh )?co "
+                        r"(?:nhung )?viec gi)\s*\??$")
+_BRIEF_ALL_OFF = re.compile(r"^tat (?:het|tat ca|moi) ban tin$")
+_BRIEF_NTH = re.compile(r"^(bat|tat) ban tin (?:so )?(\d{1,2})$")
+_BRIEF_DAILY = re.compile(r"^(bat|tat) ban tin(?: sang| hang ngay| moi ngay)?(?P<rest>(?: (?:luc|vao|ngay|thu|tu) .*)?)$")
+_BRIEF_TIME = re.compile(r"^(?:dat |doi )?ban tin(?: sang)? (?:luc|vao) (?P<rest>.+)$")
+
+
+def _brief_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«bật bản tin» · «tắt bản tin» · «bản tin lúc 6h45» · «bản tin hôm nay» · «bản tin của tôi» · «tắt bản tin 2» ·
+    «tắt hết bản tin». Bản tin là của TÀI KHOẢN ERP gắn với chat."""
+    from app.modules.assistant.glossary import fold
+
+    from . import brief_subs
+
+    f = " ".join(fold((text or "").strip().rstrip(".!")).split())
+    m_nth, m_daily, m_time = _BRIEF_NTH.match(f), _BRIEF_DAILY.match(f), _BRIEF_TIME.match(f)
+    show, now, all_off = _BRIEF_SHOW.match(f), _BRIEF_NOW.match(f), _BRIEF_ALL_OFF.match(f)
+    if not (m_nth or m_daily or m_time or show or now or all_off):
+        return False
+    row.action = ACT_COMMAND
+    row.scope = SCOPE_PERSONAL
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None:
+        reply(db, chat_id, "Chat này chưa đăng nhập tài khoản ERP nên chưa có bản tin riêng. " + _LINK_HELP,
+              scope=SCOPE_PERSONAL)
+        return True
+    uid = link.user_id
+    if now:
+        db.commit()
+        brief_subs.send_one(db, uid, None, chat_id=chat_id)
+        return True
+    if all_off:
+        n = brief_subs.disable_all(db, uid)
+        reply(db, chat_id, f"Đã tắt {n} bản tin.\n\n" + brief_subs.render_list(db, uid), scope=SCOPE_PERSONAL)
+        return True
+    if m_nth:
+        items = brief_subs.list_for(db, uid)
+        n = int(m_nth.group(2))
+        if not 1 <= n <= len(items):
+            reply(db, chat_id, f"Không có bản tin số {n}.\n\n" + brief_subs.render_list(db, uid), scope=SCOPE_PERSONAL)
+            return True
+        it = items[n - 1]
+        on = m_nth.group(1) == "bat"
+        if it["kind"] == brief_subs.Kind.DAILY:
+            brief_subs.set_daily(db, uid, enabled=on)
+        else:
+            brief_subs.set_enabled(db, uid, it["id"], on)
+        reply(db, chat_id, ("Đã bật" if on else "Đã tắt") + f" bản tin số {n}.\n\n" + brief_subs.render_list(db, uid),
+              scope=SCOPE_PERSONAL)
+        return True
+    if show:
+        reply(db, chat_id, brief_subs.render_list(db, uid), scope=SCOPE_PERSONAL)
+        return True
+    on = True if m_time else m_daily.group(1) == "bat"
+    rest = (m_time or m_daily).group("rest") or ""
+    when = brief_subs.parse_time(rest)
+    days = None
+    if "ngay thuong" in rest or "thu 2 den thu 6" in rest or "thu hai den thu sau" in rest:
+        days = 31
+    elif "thu 2 den thu 7" in rest or "thu hai den thu bay" in rest:
+        days = brief_subs.WORKDAYS
+    elif "moi ngay" in rest or "hang ngay" in rest:
+        days = brief_subs.ALL_DAYS
+    if rest.strip() and when is None and days is None:
+        reply(db, chat_id, "Em chưa đọc được giờ. Nhắn kiểu «bản tin lúc 6h45» hoặc «bật bản tin lúc 7h ngày thường».",
+              scope=SCOPE_PERSONAL)
+        return True
+    st = brief_subs.set_daily(db, uid, enabled=on, hour=when[0] if when else None, minute=when[1] if when else None,
+                              days=days)
+    if on:
+        msg = (f"Đã bật bản tin sáng lúc {st['hour']:02d}:{st['minute']:02d}, {brief_subs.days_text(st['days'])}: lịch, "
+               "việc riêng, việc Dự án tới hạn, phiếu chờ duyệt. Muốn xem ngay: «bản tin hôm nay».")
+    else:
+        msg = "Đã tắt bản tin sáng. Bật lại: «bật bản tin»."
+    reply(db, chat_id, msg + "\n\n" + brief_subs.render_list(db, uid), scope=SCOPE_PERSONAL)
     return True
 
 
@@ -3796,7 +3884,7 @@ UNSURE_HINT = "_(Nếu đây là việc sửa phần mềm thì nhắn «ghi vi�
 
 
 def answer_question(db: Session, chat_id: str, question: str, *, before_id: int = 0, hint: str = "",
-                    kind: str = "general", intent: str = "") -> None:
+                    kind: str = "general", intent: str = "", ledger: bool = True) -> None:
     """Chuyển câu hỏi cho Trợ lý AI và nhắn lại câu trả lời.
 
     `before_id` = id tin đang hỏi, để mạch hội thoại lấy các tin TRƯỚC nó (không thì
@@ -3856,8 +3944,9 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         reply(db, chat_id, user_keys.key_problem(str(e)) or ai_keys.short_error(str(e)))
-        _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True,
-                message_id=before_id)
+        if ledger:
+            _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True,
+                    message_id=before_id)
         return
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.
@@ -3876,8 +3965,9 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
             out.tool_used = True                # ai-CR-136: nén hội thoại lược câu trả lời rút từ công cụ trước
             db.commit()
     deliver_tool_results(db, chat_id, user, tool_calls)
-    _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), tool_calls=tool_calls, question=question,
-            answer=str(result.get("text") or ""), message_id=before_id)
+    if ledger:      # ai-CR-140: bản tin chủ đề do bot tự hỏi hộ — không đếm vào thói quen, kẻo tự nuôi đề xuất
+        _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), tool_calls=tool_calls, question=question,
+                answer=str(result.get("text") or ""), message_id=before_id)
 
 
 def _ledger(db: Session, chat_id: str, intent: str, *, user_id: int = 0, **kw) -> None:

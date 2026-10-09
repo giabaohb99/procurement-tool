@@ -295,10 +295,12 @@ OP_SHELL_WRITE = 6   # lệnh shell ngoài danh sách chỉ đọc
 OP_DEPLOY = 7        # deploy.sh lên một commit
 OP_RESTORE = 8       # nạp lại bản sao lưu bảng (hoàn tác một OP_SQL_WRITE)
 OP_DATA_PLAN = 9     # ai-CR-073: đại ca nhờ sửa dữ liệu bằng lời → máy sửa mã tra + soạn lệnh (chỉ đọc), đẻ ra OP_SQL_WRITE
+OP_BOT_DB_RESTORE = 10   # ai-CR-141: quay lại DB của bot (agent_hub) từ bản sao lưu R2 — toàn bộ hoặc vài dòng
 OP_KIND_LABELS = {
     OP_DATA_PLAN: "soạn lệnh sửa dữ liệu",
     OP_VIEW: "xem", OP_SQL_READ: "SQL đọc", OP_SHELL_READ: "lệnh đọc", OP_ACTION: "thao tác",
     OP_SQL_WRITE: "SQL sửa", OP_SHELL_WRITE: "lệnh sửa", OP_DEPLOY: "deploy", OP_RESTORE: "khôi phục",
+    OP_BOT_DB_RESTORE: "quay lại DB bot",
 }
 #  Loại CHỈ ĐỌC: trên dev chạy luôn, trên prod vẫn phải «đúng» (đại ca chốt 05/10/2026).
 OP_READ_KINDS = (OP_VIEW, OP_SQL_READ, OP_SHELL_READ, OP_DATA_PLAN)

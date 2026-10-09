@@ -218,10 +218,11 @@ if settings.AGENT_HUB_ENABLED and not settings.agent_is_erp:
         #  ai-CR-064: bản tin sáng 07:30 giờ VN và nhắc trước họp mỗi 5 phút. Beat chạy theo giờ VN
         #  (`timezone="Asia/Ho_Chi_Minh"`, `enable_utc=False`) nên ghi thẳng 7 giờ — bản đầu ghi hour=0 tưởng
         #  là UTC, thành 00:30 đêm (sửa ở ai-CR-070).
-        "agent-morning-brief": {
-            "task": "agent.morning_brief",
-            "schedule": crontab(minute="30", hour="7"),
-            "options": {"expires": 1800},
+        #  ai-CR-140: bản tin bật / tắt trong chat, giờ + thứ mỗi người tự đặt → vòng 5 phút thay lịch cứng 07:30.
+        "agent-briefs-due": {
+            "task": "agent.briefs_due",
+            "schedule": crontab(minute="*/5"),
+            "options": {"expires": 240},
         },
         "agent-meeting-reminders": {
             "task": "agent.meeting_reminders",

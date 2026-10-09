@@ -52,6 +52,9 @@ case "$FILE" in *.sql.gz) ;; *) echo "Tệp phải là .sql.gz (bản sao lưu c
 if [ "$MODE" = "part" ]; then
   [[ "$TABLE" =~ ^tab_[a-z0-9_]+$ ]] || { echo "Tên bảng không hợp lệ: '$TABLE'" >&2; exit 2; }
   [ -n "$WHERE" ] || { echo "Lấy lại một phần phải có --where (không chép cả bảng bằng đường này)" >&2; exit 2; }
+  case "$WHERE" in
+    *";"*|*"--"*|*"/*"*|*'`'*|*'$('*) echo "Điều kiện --where chỉ được là phép so sánh đơn giản" >&2; exit 2 ;;
+  esac
 fi
 
 MYSQL_CONTAINER="${MYSQL_CONTAINER:-procurement-mysql}"

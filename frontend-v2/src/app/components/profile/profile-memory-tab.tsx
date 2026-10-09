@@ -1,12 +1,13 @@
-import { Check, Eye, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { BellPlus, Check, Eye, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import {
+  botBriefApi,
   botMemoryApi,
   type MemoryLine,
   type MemorySection,
 } from '@/modules/system/api/bot-memory-api'
-import { useBotMemory, useBotMemoryAction } from '@/modules/system/hooks/use-bot-memory'
+import { useBotBriefAction, useBotMemory, useBotMemoryAction } from '@/modules/system/hooks/use-bot-memory'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
@@ -15,6 +16,8 @@ import { Input } from '@/shared/ui/input'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDate } from '@/shared/utils/format-date'
+
+import { ProfileBriefCard } from './profile-brief-card'
 
 /**
  * Tab «Bot nhớ gì về tôi» ở Trang cá nhân (ai-CR-138, phase 13.4).
@@ -28,6 +31,8 @@ export function ProfileMemoryTab() {
   const { data, isLoading } = useBotMemory()
   const busy = useRef(false)
   const addLine = useBotMemoryAction(botMemoryApi.addLine, 'Đã ghi vào sổ.')
+  //  ai-CR-140: đề xuất chủ động (13.5) bấm «Bật» là thành bản tin chủ đề — bot vẫn không tự bật thay người dùng.
+  const addBrief = useBotBriefAction(botBriefApi.addTopic, 'Đã bật bản tin.')
   const editLine = useBotMemoryAction(botMemoryApi.editLine, 'Đã sửa.')
   const deleteLine = useBotMemoryAction(botMemoryApi.deleteLine, 'Đã xóa dòng.')
   const dropWatching = useBotMemoryAction(botMemoryApi.dropWatching, 'Em sẽ không để ý điều này nữa.')
@@ -149,16 +154,40 @@ export function ProfileMemoryTab() {
               </p>
             )}
             {data.suggestions.map((s) => (
-              <div key={`${s.sub}-${s.weekday}`} className="rounded-md border border-dashed px-3 py-2">
-                {s.text}
+              <div
+                key={`${s.sub}-${s.weekday}`}
+                className="flex items-center justify-between gap-2 rounded-md border border-dashed px-3 py-2"
+              >
+                <span>{s.text}</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-label={`Bật bản tin: ${s.label}`}
+                  onClick={() =>
+                    once(() =>
+                      addBrief.mutateAsync({
+                        question: `Tóm tắt nhanh ${s.label.toLowerCase()} của tôi`,
+                        hour: 7,
+                        minute: 30,
+                        days: 1 << s.weekday,
+                        sub_code: s.sub,
+                      }),
+                    )
+                  }
+                >
+                  <BellPlus className="mr-1 size-4" /> Bật
+                </Button>
               </div>
             ))}
             {data.suggestions.length > 0 && (
-              <p className="text-muted-foreground">Chỉ là đề xuất — bot không tự gửi gì khi bạn chưa bật.</p>
+              <p className="text-muted-foreground">Chỉ là đề xuất — bot không tự gửi gì khi bạn chưa bấm Bật.</p>
             )}
           </CardContent>
         </Card>
       )}
+
+      <ProfileBriefCard />
 
       <Card>
         <CardHeader>

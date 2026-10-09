@@ -109,6 +109,14 @@ SECTIONS: tuple[Section, ...] = (
         ("có đúng là … không", "kiểm chứng một thông tin"),
         ("xuất Word", "bản Word của lần tìm vừa rồi"),
     )),
+    Section("ban_tin", "Bản tin tự gửi", ("ban tin", "viec hom nay"), (
+        ("bản tin hôm nay", "gửi ngay: lịch, việc riêng, việc Dự án tới hạn, phiếu chờ duyệt"),
+        ("bật bản tin", "mỗi sáng 7h30 em tự gửi bản tin trên"),
+        ("bản tin lúc 6h45 ngày thường", "đổi giờ, chọn thứ"),
+        ("sáng thứ hai gửi anh công nợ quá hạn của DEGO", "bản tin theo chủ đề, em tự hỏi hộ theo lịch"),
+        ("bản tin của tôi", "xem các bản tin đang bật, có đánh số"),
+        ("tắt bản tin 2", "tắt một bản tin theo số; tắt hết bản tin để tắt cả"),
+    )),
     Section("chuong", "Chuông ERP", ("chuong", "thong bao"), (
         ("", "Mặc định em chuyển chuông chờ duyệt và việc giao cho anh/chị từ ERP sang đây"),
         ("tắt chuông", ""),
@@ -126,6 +134,9 @@ SECTIONS: tuple[Section, ...] = (
         ("tình hình máy", "RAM, CPU, đĩa, việc kẹt"),
         ("sự cố", ""),
         ("lịch sử deploy dev", ""),
+        ("sao lưu db bot", "các bản sao lưu DB của bot, có đánh số"),
+        ("quay lại db bot dev bản #12", "quay lại toàn bộ DB bot — qua thẻ duyệt"),
+        ("lấy lại tab_agent_memory của db bot dev bản #12: user_id = 7", "lấy lại vài dòng, không dừng bot"),
         ("deploy dev mới nhất", ""),
         ("tháng này bot tốn bao nhiêu", ""),
         ("/zalo", "tình trạng tài khoản Zalo công ty; «/zalo dangnhap» lấy mã QR, «/zalo nhom» đồng bộ nhóm, "
@@ -178,7 +189,8 @@ def _block(sec: Section) -> str:
 #  Câu gọi riêng từng nhóm, hiện ở cuối mỗi nhóm trong bản tóm tắt.
 ASK = {"tai_khoan": "hướng dẫn tài khoản", "erp": "hướng dẫn phiếu", "so_nho": "hướng dẫn sổ nhớ",
        "viec_rieng": "hướng dẫn chi tiêu", "lich": "hướng dẫn lịch", "bien_ban": "hướng dẫn biên bản",
-       "tep": "hướng dẫn tệp", "nhom": "hướng dẫn nhóm", "mang": "hướng dẫn tra mạng", "chuong": "hướng dẫn chuông",
+       "tep": "hướng dẫn tệp", "nhom": "hướng dẫn nhóm", "mang": "hướng dẫn tra mạng", "ban_tin": "hướng dẫn bản tin",
+       "chuong": "hướng dẫn chuông",
        "sua_ma": "hướng dẫn sửa mã"}
 SUMMARY_ITEMS = 2          # bản tóm tắt: mỗi nhóm 2 câu tiêu biểu, gọn trong một tin
 

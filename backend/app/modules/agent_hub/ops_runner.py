@@ -43,6 +43,7 @@ from .constants import (
     OP_DEPLOY,
     OP_KIND_LABELS,
     OP_RESTORE,
+    OP_BOT_DB_RESTORE,
     OP_SHELL_READ,
     OP_SHELL_WRITE,
     OP_SQL_READ,
@@ -70,6 +71,9 @@ _NAME = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 _COMPOSE = re.compile(r"^[A-Za-z0-9_.\-/= ]{0,255}$")
 _DIR = re.compile(r"^[A-Za-z0-9_.\-/~]{1,255}$")
 _BACKUP_FILE = re.compile(r"^op\d+-[a-z0-9-]+-\d{8}-\d{6}(-[a-z]+)?\.sql\.gz$")
+
+
+BOT_RESTORE_TIMEOUT = 1800       # ai-CR-141: tải bản sao lưu + quay lại DB bot
 
 
 class OpsError(RuntimeError):
@@ -347,6 +351,57 @@ def _run_backup(db: Session, op: AgentOp, env: AgentEnv, tables: list[str], *, t
     return m.group(1)
 
 
+def bot_restore_script(p: dict) -> str:
+    """ai-CR-141: tải bản sao lưu DB bot từ link R2 ký sẵn về tệp tạm trên VPS, chạy `agent_restore.sh --yes`, xóa tệp.
+    Script đi qua stdin của ssh — `</dev/null` để `docker exec -i` bên trong không nuốt phần còn lại của script."""
+    mode = str(p.get("mode") or "")
+    url = str(p.get("url") or "")
+    if mode not in ("full", "part") or not url.startswith("https://"):
+        raise OpsError("thẻ quay lại DB bot thiếu link tải hoặc kiểu")
+    script = settings.AGENT_RESTORE_SCRIPT or "~/agent-hub/backend/scripts/agent_restore.sh"
+    stack = settings.AGENT_RESTORE_STACK_DIR or "~/agent-hub"
+    if not _DIR.match(script) or not _DIR.match(stack):
+        raise OpsError("đường dẫn script / stack lạ")
+    args = ["--full"] if mode == "full" else ["--table", str(p.get("table") or ""), "--where", str(p.get("where") or "")]
+    if mode == "part" and not re.fullmatch(r"tab_[a-z0-9_]+", args[1]):
+        raise OpsError("tên bảng lạ")
+    env_vars = f"STACK_DIR={_path_expr(stack)} MYSQL_CONTAINER={_q(_db_container())}"
+    if settings.AGENT_RESTORE_HEALTH_URL:
+        env_vars += f" HEALTH_URL={_q(settings.AGENT_RESTORE_HEALTH_URL)}"
+    return "\n".join([
+        "set -euo pipefail",
+        'F="$(mktemp --suffix=.sql.gz /tmp/agent_hub-restore-XXXXXX)"',
+        "trap 'rm -f \"$F\"' EXIT",
+        f'curl -fsS --max-time 900 -o "$F" {_q(url)}',
+        'test -s "$F"',
+        f'{env_vars} bash {_path_expr(script)} "$F" {" ".join(_q(a) for a in args)} --yes </dev/null',
+    ]) + "\n"
+
+
+def _after_full_bot_restore(snapshot: dict, status: int, out: str, error: str) -> None:
+    """DB bot vừa bị THAY bằng bản sao lưu: dòng sổ thao tác này không còn (bản sao lưu có trước nó), kết nối cũ trỏ vào
+    DB đã xóa. Bỏ hết kết nối, mở phiên mới, ghi LẠI một dòng sổ cho lượt này rồi báo."""
+    from app.core.database import SessionLocal, engine
+
+    engine.dispose()
+    db2 = SessionLocal()
+    try:
+        env = db2.get(AgentEnv, snapshot["env_id"])
+        params = {k: v for k, v in (snapshot.get("params") or {}).items() if k != "url"}
+        params["rewritten"] = True
+        new = AgentOp(env_id=snapshot["env_id"], kind=OP_BOT_DB_RESTORE, status=status, title=snapshot["title"],
+                      command=snapshot["command"], params=params, undo_params={}, chat_id=snapshot["chat_id"],
+                      auto=False, incident_id=0, approved_at=snapshot.get("approved_at"),
+                      started_at=snapshot.get("started_at"), finished_at=now_utc(),
+                      output=guardrails.mask_secrets(out or "")[-OUTPUT_KEEP:], error=guardrails.mask_secrets(error)[:1000],
+                      backup_ref="", created_by=0, updated_by=0)
+        db2.add(new)
+        db2.commit()
+        send_result(db2, new, env)
+    finally:
+        db2.close()
+
+
 def execute(db: Session, op: AgentOp) -> dict:
     """Chạy MỘT dòng sổ đã ở trạng thái chờ máy. Không ném lỗi nghiệp vụ: mọi lỗi thành `OPS_FAILED` + tin báo."""
     env = db.get(AgentEnv, op.env_id)
@@ -391,6 +446,23 @@ def execute(db: Session, op: AgentOp) -> dict:
             out = _deploy(db, op, env, p)
         elif op.kind == OP_DATA_PLAN:
             out = plan_data(db, op, env)
+        elif op.kind == OP_BOT_DB_RESTORE:
+            if p.get("mode") == "full":
+                snapshot = {"env_id": op.env_id, "title": op.title, "command": op.command, "params": dict(p),
+                            "chat_id": op.chat_id, "approved_at": op.approved_at, "started_at": op.started_at}
+                db.commit()
+                try:
+                    out = _ssh(bot_restore_script(p), env, timeout=BOT_RESTORE_TIMEOUT)
+                except (OpsError, coder.CoderError, subprocess.TimeoutExpired, OSError) as e:
+                    err = str(e) if not isinstance(e, subprocess.TimeoutExpired) else "quá giờ chờ — có thể còn chạy dở"
+                    db.rollback()
+                    _after_full_bot_restore(snapshot, OPS_FAILED, str(getattr(e, "output", "") or ""), err)
+                    return {"status": "error", "op": 0, "error": err[:300]}
+                db.rollback()
+                _after_full_bot_restore(snapshot, OPS_OK, out, "")
+                return {"status": "ok", "op": 0, "error": ""}
+            out = _ssh(bot_restore_script(p), env, timeout=BOT_RESTORE_TIMEOUT)
+            op.params = {k: v for k, v in p.items() if k != "url"}      # link tải xong việc thì bỏ khỏi sổ
         else:
             raise OpsError(f"loại thao tác lạ {op.kind}")
         if op.kind in (OP_SHELL_READ, OP_SHELL_WRITE) and re.search(r"^RC=(\d+)\s*$", out, re.MULTILINE):

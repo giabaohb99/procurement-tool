@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
-import { botMemoryApi, type BotMemory } from '../api/bot-memory-api'
+import { botBriefApi, botMemoryApi, type BotMemory, type BriefList } from '../api/bot-memory-api'
 
 /** Trí nhớ bot giữ về chính mình (ai-CR-138) — tab «Bot nhớ gì về tôi» ở Trang cá nhân. */
 export function useBotMemory() {
@@ -19,6 +19,25 @@ export function useBotMemoryAction<TArgs>(fn: (args: TArgs) => Promise<BotMemory
     mutationFn: fn,
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.system.botMemory(), data)
+      toast.success(done)
+    },
+  })
+}
+
+/** Bản tin của chính mình (ai-CR-140) — bật / tắt cũng làm được ngay trong chat với bot. */
+export function useBotBriefs() {
+  return useQuery({
+    queryKey: queryKeys.system.botBriefs(),
+    queryFn: () => botBriefApi.list(),
+  })
+}
+
+export function useBotBriefAction<TArgs>(fn: (args: TArgs) => Promise<BriefList>, done: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.system.botBriefs(), data)
       toast.success(done)
     },
   })
