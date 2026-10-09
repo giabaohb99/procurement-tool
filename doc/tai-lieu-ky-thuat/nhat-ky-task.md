@@ -13157,7 +13157,7 @@ Mã nguồn: backend/app/modules/agent_hub/web_search.py (find_urls, fetch_artic
 Deploy: dev 09/10 (Agent 1 gộp 933033d4, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-134 | Bot đọc tệp tài liệu và bài báo khoa học gửi qua đường link
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca hỏi nếu gửi một tệp tài liệu hay bài báo khoa học qua đường link thì bot có tổng hợp được không. Trước đó bot chỉ đọc được
 trang web. Nay link tới tệp PDF, Word, Excel hay văn bản được tải về và đọc như khi gửi tệp thẳng vào chat; link bài trên arXiv
@@ -13167,3 +13167,4 @@ rõ cách bật. Câu gõ kèm link được coi là câu hỏi về tệp, khô
 mạng nội bộ. Em thử thật với bài «Attention Is All You Need» trên arXiv, bot đọc đủ cả bài. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/web_search.py (fetch_resource) · service.py (_answer_document_bytes, _link_by_text) · user_guide.py · test/backend/test_agent_hub.py
+Deploy: dev 09/10 (Agent 1 gộp e7b3d71c, dựng lại stack agent-hub); prod giữ lại.
