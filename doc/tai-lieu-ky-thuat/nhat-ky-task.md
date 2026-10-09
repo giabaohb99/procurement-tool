@@ -13193,6 +13193,16 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-146 | Khóa Claude mua qua trạm trung gian cũng được bước lập kế hoạch ưu tiên
+- status: dang-lam
+- date: 2026-10-09
+Đại ca hỏi nên chọn nhóm nào trên trạm modelapi.vn. Trạm này bán Claude dưới dạng khóa kiểu OpenAI, nên khi dán vào ERP khóa mang
+hãng trạm tùy chỉnh chứ không mang hãng Claude, và bước lập kế hoạch ưu tiên Claude của ai-CR-145 sẽ bỏ qua nó. Nay bot nhận ra
+hãng theo tên model: khóa trạm tùy chỉnh có model Claude được tính là Claude, model GPT hay Codex được tính là OpenAI. Bài kiểm của
+bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/user_keys.py (prefer) · test/backend/test_agent_hub_ke_hoach_json.py
+
 ## ai-CR-145 | Bước lập kế hoạch của bot tự dùng model mạnh khi có khóa
 - status: xong
 - date: 2026-10-09

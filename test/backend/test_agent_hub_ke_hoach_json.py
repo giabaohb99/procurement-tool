@@ -100,3 +100,18 @@ def test_lap_ke_hoach_uu_tien_khoa_claude_neu_co(monkeypatch):
     with user_keys.use_chain([ds, gm]):
         manager.run_plan("t", "s", [])
     assert seen[0][0] == "openai_compat"
+
+
+def test_khoa_claude_qua_tram_tuy_chinh_cung_duoc_uu_tien(monkeypatch):
+    """ai-CR-146: khóa modelapi.vn nhóm «claude» khai là openai_compat + model claude-… → vẫn được ưu tiên lập kế hoạch."""
+    from app.core.config import settings
+    from app.modules.agent_hub import user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+
+    ds = KeyRef(provider="openai_compat", key="k1", model="deepseek-v4.1-flash", base_url="https://x/v1")
+    cl = KeyRef(provider="openai_compat", key="k2", model="claude-sonnet-4-5", base_url="https://x/v1")
+    monkeypatch.setattr(settings, "AGENT_PLAN_PROVIDERS", "claude,openai")
+    with user_keys.use_chain([ds, cl]):
+        with user_keys.prefer(["claude", "openai"]):
+            assert user_keys.active_ref().model == "claude-sonnet-4-5"
+        assert user_keys.active_ref().model == "deepseek-v4.1-flash"

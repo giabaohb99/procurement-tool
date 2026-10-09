@@ -116,8 +116,19 @@ def prefer(providers: list[str] | tuple[str, ...]):
         return
     refs = list(_ctx_chain.get())[_ctx_idx.get():]
     rank = {p: i for i, p in enumerate(providers)}
-    first = sorted((r for r in refs if r.provider in rank), key=lambda r: rank[r.provider])
-    rest = [r for r in refs if r.provider not in rank]
+
+    def family(r: KeyRef) -> str:
+        #  ai-CR-146: khóa trạm tùy chỉnh (openai_compat, vd modelapi.vn nhóm «claude») mang model Claude / GPT thì tính
+        #  theo HÃNG CỦA MODEL — không thì khóa Claude mua qua trạm không bao giờ được ưu tiên.
+        m = (r.model or "").lower()
+        if r.provider == "openai_compat" and m.startswith("claude"):
+            return "claude"
+        if r.provider == "openai_compat" and m.startswith(("gpt", "codex", "o3", "o4")):
+            return "openai"
+        return r.provider
+
+    first = sorted((r for r in refs if family(r) in rank), key=lambda r: rank[family(r)])
+    rest = [r for r in refs if family(r) not in rank]
     tokens = (_ctx_chain.set(tuple(first + rest)), _ctx_idx.set(0))
     try:
         yield
