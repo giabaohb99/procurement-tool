@@ -107,6 +107,19 @@ nguy hiểm hơn một con bot dở.
 (ai-CR-014), do mã của hub làm chứ không phải lượt `claude`; và đã gộp thì phải có đường
 «Thu hồi» (`git revert -m 1`), không xóa lịch sử.
 
+**C11. Bot chạy tách khỏi ERP — mọi lối vào dữ liệu ERP đi qua cổng B** (ai-CR-153). Ở dev và
+prod, `agent_hub/` chạy với `AGENT_MODE=service` và DB riêng, không có bảng phiếu. Mã phía bot
+muốn đọc hay ghi dữ liệu ERP phải viết ở `agent_hub/erp.py` (cả `_Local` lẫn `_Remote`) và có
+đường tương ứng ở `agent_gateway/controller.py`. Bài kiểm `test_agent_hub_ranh_gioi_erp.py` đọc mã
+và đỏ ngay khi có import thẳng; cổng kiểm của runner tự chạy bài đó cùng
+`test_agent_hub_tach_dich_vu.py` mỗi khi việc đụng `agent_hub/`, `assistant/` hay `agent_gateway/`.
+Lý do: ai-CR-152 — nút xác nhận sửa phiếu trên Telegram ghi vào DB của bot, mọi bài kiểm khác vẫn
+xanh vì chạy chung một DB.
+
+**Điều kiện xong** (ai-CR-153): lượt rà soát ghi 2-4 câu *xong thì người dùng làm được gì* bằng lời
+thường; câu đó hiện trên thẻ xác nhận, và đề bài sửa mã bắt mỗi câu có ít nhất một bài kiểm đi qua
+đường thật người dùng đi.
+
 ---
 
 ## §D. Khi nào phải dừng và leo thang

@@ -362,6 +362,12 @@ Tên hàm/biến/hằng tiếng Anh, chuỗi và chú thích tiếng Việt, kh�
 C8. Không dọn dẹp, không đổi tên, không định dạng lại thứ không liên quan tới việc này.
 C9. Tổng kết TRUNG THỰC: chưa chạy được thì nói chưa chạy, test đỏ thì nói đỏ.
 C10. KHÔNG commit, KHÔNG git push, KHÔNG git merge, KHÔNG đổi nhánh — runner tự commit sau.
+C11. Bot (`backend/app/modules/agent_hub/`) chạy TÁCH khỏi ERP ở dev và prod: `AGENT_MODE=service`, DB riêng, KHÔNG \
+có bảng phiếu của ERP. Mã phía bot muốn đọc hay ghi dữ liệu ERP phải đi qua `agent_hub/erp.py` (viết cả bản `_Local` \
+lẫn `_Remote`) và một đường cổng B ở `agent_gateway/controller.py`; KHÔNG import thẳng service / model / tool ghi \
+của phân hệ ERP. Đụng `agent_hub/`, `assistant/` hay `agent_gateway/` thì tự chạy thêm \
+`test/backend/test_agent_hub_ranh_gioi_erp.py` và `test/backend/test_agent_hub_tach_dich_vu.py` (mô phỏng bot và \
+ERP tách nhau) — chạy chung một DB thì bài kiểm khác vẫn xanh dù lỗi này có thật (ai-CR-152).
 
 ## Khi nào phải dừng và ghi lý do thay vì cố làm (§D)
 Kế hoạch mâu thuẫn với mã thật · phải đụng tệp cấm ở C4 · cần thay đổi \
@@ -441,6 +447,12 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
             "số tệp; tệp cấm vẫn cấm)"]),
         "",
     ]
+    if outcomes := outcomes_of(task):
+        lines += ["## Điều kiện xong (đại ca đã duyệt trên thẻ xác nhận, ai-CR-153)",
+                  *[f"{i}. {o}" for i, o in enumerate(outcomes, start=1)],
+                  "MỖI câu trên phải có ít nhất MỘT bài kiểm chạy đúng tình huống đó, đi qua đường thật người dùng đi "
+                  "(tool của trợ lý / đường API / nút xác nhận), không gọi tắt vào hàm bên trong. Trong TỔNG KẾT mục 2, "
+                  "ghi tên bài kiểm cạnh số thứ tự từng câu. Câu nào chưa làm được thì ghi rõ ở mục 4.", ""]
     if task.test_plan:
         lines += ["## Kiểm thử dự kiến", task.test_plan, ""]
     if task.related_docs:
@@ -683,10 +695,24 @@ def _head_of(worktree: str) -> str:
     return heads[0] if len(heads) == 1 else ""
 
 
+#  ai-CR-153: đụng phần bot / trợ lý / cổng B thì cổng kiểm chạy thêm hai bài canh «bot tách khỏi ERP». AI-0006 xanh
+#  hết mà nút xác nhận trên Telegram vẫn hỏng ở dev, vì bài kiểm của nó chạy bot và ERP chung một DB.
+BOUNDARY_PATHS = ("backend/app/modules/agent_hub/", "backend/app/modules/assistant/",
+                  "backend/app/modules/agent_gateway/")
+BOUNDARY_TESTS = ("test/backend/test_agent_hub_ranh_gioi_erp.py", "test/backend/test_agent_hub_tach_dich_vu.py")
+
+
+def gate_tests(worktree: str, touched: list[str]) -> list[str]:
+    """Bài kiểm backend cổng kiểm sẽ chạy: tệp bài kiểm vừa đụng + (ai-CR-153) bài canh ranh giới khi đụng bot."""
+    tests = {f for f in touched
+             if f.startswith("test/backend/") and f.rsplit("/", 1)[-1].startswith("test_") and f.endswith(".py")}
+    if any(f.startswith(BOUNDARY_PATHS) for f in touched):
+        tests |= {t for t in BOUNDARY_TESTS if (Path(worktree) / t).is_file()}
+    return sorted(tests)
+
+
 def _run_backend_gate(worktree: str, touched: list[str]) -> dict:
-    tests = sorted(f for f in touched
-                   if f.startswith("test/backend/") and f.rsplit("/", 1)[-1].startswith("test_")
-                   and f.endswith(".py"))
+    tests = gate_tests(worktree, touched)
     if not tests:
         return {"status": "none", "tests": [], "output": ""}
     cmd = ["python", "-m", "pytest", *tests, "-q", "-p", "no:cacheprovider"]
@@ -2649,8 +2675,12 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
         "bảng, KHÔNG tiêu đề `#`. Câu cần đại ca quyết thì đưa vào `questions` của khối JSON.",
         "Phần 2, ở CUỐI CÙNG, đúng MỘT khối ```json gồm: "
         '{"already_fixed": "chỗ nào đã sửa rồi, hoặc rỗng", "root_cause": "một câu", '
-        '"files": ["đường/dẫn/đầy/đủ"], "risk_level": 1, "questions": []}. '
-        "`risk_level` = 3 nếu dính tiền, công nợ, phân quyền, cấu trúc cơ sở dữ liệu.",
+        '"files": ["đường/dẫn/đầy/đủ"], "risk_level": 1, "questions": [], "outcomes": []}. '
+        "`risk_level` = 3 nếu dính tiền, công nợ, phân quyền, cấu trúc cơ sở dữ liệu. "
+        "`outcomes` (ai-CR-153): 2-4 câu NGƯỜI DÙNG làm được sau khi xong, viết bằng lời thường như câu họ sẽ nhắn bot "
+        "hay thao tác họ sẽ làm trên màn hình (ví dụ: nhắn bot sửa lý do đơn nghỉ NP011 rồi bấm Xác nhận). MỖI ý trong "
+        "Yêu cầu của đại ca phải có ít nhất một câu; không ghi tên tệp, tên hàm. Câu này hiện trên thẻ xác nhận để đại "
+        "ca thấy ngay việc còn thiếu.",
     ]
     return "\n".join(lines)
 
@@ -2690,9 +2720,26 @@ def parse_scan(text: str) -> tuple[str, dict]:
     if not isinstance(info, dict):
         info = {}
     info["questions"] = [str(q).strip() for q in info.get("questions") or [] if str(q).strip()]
+    info["outcomes"] = [str(o).strip()[:OUTCOME_MAX_CHARS] for o in info.get("outcomes") or []
+                        if str(o).strip()][:OUTCOMES_MAX]
     files = [str(f).strip() for f in info.get("files") or [] if str(f).strip()]
     info["files"] = [f for f in files if not is_banned_path(f)]
     return message, info
+
+
+OUTCOMES_MAX = 5
+OUTCOME_MAX_CHARS = 200
+
+
+def outcomes_of(task: AgentTask) -> list[str]:
+    """ai-CR-153: các câu «xong thì người dùng làm được gì» của lượt rà soát gần nhất — rỗng nếu chưa có."""
+    from sqlalchemy.orm import object_session
+
+    db = object_session(task)
+    run = latest_scan_run(db, task) if db is not None else None
+    art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+    info = art.get("info") if isinstance(art.get("info"), dict) else {}
+    return [str(o) for o in info.get("outcomes") or [] if str(o).strip()][:OUTCOMES_MAX]
 
 
 def latest_scan_run(db: Session, task: AgentTask) -> AgentRun | None:

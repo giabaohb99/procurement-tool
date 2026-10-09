@@ -66,6 +66,37 @@ def test_sua_dong_ycmh_them_bo_doi_so_luong_roi_xac_nhan(db, seed, cap_quyen):
     assert dong[1].required_date == "2026-10-20"              # dòng mới mang ngày cần hàng đầu phiếu
 
 
+def test_bam_lai_the_cu_thi_khong_them_trung_dong(db, seed, cap_quyen):
+    """ai-CR-153 — tải lại trang web rồi bấm lại thẻ thêm dòng (token còn hạn 15 phút) từng thêm trùng dòng."""
+    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    pr = _tao_ycmh(db, seed, created_by=seed.u_req_id)
+    out = _goi(db, seed.u_req_id, "propose_document_update", {
+        "entity": "purchase_request", "code": "YCMH-AI6-1",
+        "line_ops": [{"op": "add", "product_name": "Kẹp giấy", "qty": 5, "unit": "hộp"}]})
+    token = out["proposal"]["confirm_token"]
+    user = db.get(User, seed.u_req_id)
+    confirm_update(db, user, token)
+    assert len(_dong_ycmh(db, pr.id)) == 3
+    with pytest.raises(HTTPException) as ei:
+        confirm_update(db, user, token)
+    assert ei.value.status_code == 409 and "đã dùng rồi" in ei.value.detail
+    assert len(_dong_ycmh(db, pr.id)) == 3
+
+
+def test_phieu_bi_sua_xen_giua_hai_buoc_thi_409(db, seed, cap_quyen):
+    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    pr = _tao_ycmh(db, seed, created_by=seed.u_req_id)
+    out = _goi(db, seed.u_req_id, "propose_document_update", {
+        "entity": "purchase_request", "code": "YCMH-AI6-1", "changes": {"purpose": "Mua giấy in"}})
+    pr.note = "người khác vừa ghi chú"
+    db.commit()
+    with pytest.raises(HTTPException) as ei:
+        confirm_update(db, db.get(User, seed.u_req_id), out["proposal"]["confirm_token"])
+    assert ei.value.status_code == 409
+    db.refresh(pr)
+    assert pr.purpose == "Mua văn phòng phẩm"
+
+
 def test_sua_dong_so_dong_khong_ton_tai_bi_chan(db, seed, cap_quyen):
     cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     _tao_ycmh(db, seed, created_by=seed.u_req_id)
@@ -119,7 +150,8 @@ def test_dong_da_bi_xoa_giua_hai_buoc_thi_400(db, seed, cap_quyen):
     db.commit()
     with pytest.raises(HTTPException) as ei:
         confirm_update(db, db.get(User, seed.u_req_id), out["proposal"]["confirm_token"])
-    assert ei.value.status_code == 400
+    assert ei.value.status_code == 409          # ai-CR-153: dấu trạng thái lệch chặn trước cả bước dựng dòng
+    assert [float(r.qty) for r in _dong_ycmh(db, pr.id)] == [10.0]
 
 
 def test_token_gia_mang_thao_tac_dong_sai_hinh_bi_chan(db, seed, cap_quyen):

@@ -275,6 +275,20 @@ def _old_value(db, entity: str, doc, field: str) -> str:
     return str(value or "")
 
 
+def _state_sig(db, entity: str, doc) -> str:
+    """Dấu trạng thái phiếu lúc đề xuất (ai-CR-153): giá trị hiện tại của mọi ô sửa được + (id, số lượng) từng dòng.
+
+    Token chỉ có hạn 15 phút, không nhớ đã dùng hay chưa: tải lại trang web rồi bấm lại thẻ «thêm dòng» là thêm trùng
+    dòng. Bấm xác nhận thì so dấu này — đã ghi một lần (giá trị đã đổi) hay có người sửa phiếu xen giữa đều lệch dấu,
+    trả 409, không ghi. Không cần bảng hay bộ nhớ đệm nào."""
+    rules = _ENTITY_RULES[entity]
+    state: dict = {f: _old_value(db, entity, doc, f) for f in rules["fields"]}
+    if rules.get("lines"):
+        state["_lines"] = [[r.id, _line_qty(entity, r)] for r in _current_lines(db, entity, doc.id)]
+    raw = json.dumps(state, ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(raw.encode()).hexdigest()[:24]
+
+
 def _clean_changes(entity: str, raw, allow_empty: bool = False) -> tuple[dict, str | None]:
     """Lọc changes theo whitelist của entity + chuẩn hóa giá trị. Trả (fields, lỗi)."""
     rules = _ENTITY_RULES[entity]
@@ -565,7 +579,8 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
                          "xác nhận lại với người dùng."}
 
     payload = {"u": ctx.user.id, "e": entity, "id": doc.id,
-               "ch": {k: v for k, v in fields.items() if k in kept}}
+               "ch": {k: v for k, v in fields.items() if k in kept},
+               "s": _state_sig(ctx.db, entity, doc)}
     if ops:
         payload["ln"] = ops
     token = _fernet().encrypt(json.dumps(payload, ensure_ascii=False).encode()).decode()
@@ -835,6 +850,9 @@ def confirm_update(db, user, token: str) -> dict:
         _, leave_error = _check_leave_change(db, doc, fields)
         if leave_error:
             raise HTTPException(400, leave_error)
+    if payload.get("s") != _state_sig(db, entity, doc):
+        raise HTTPException(409, "Đề xuất này đã dùng rồi, hoặc phiếu đã đổi sau lúc đề xuất — nhờ trợ lý soạn lại "
+                                 "đề xuất mới.")
 
     if entity == "purchase_request":
         from app.modules.purchase_request.schema import PRUpdate

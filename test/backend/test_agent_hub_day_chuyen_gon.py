@@ -25,7 +25,7 @@ def flow(db, monkeypatch):
     return service, coder, task, sent, dispatched
 
 
-def _scan(db, coder, task, *, questions=(), files=()):
+def _scan(db, coder, task, *, questions=(), files=(), outcomes=()):
     from datetime import datetime
 
     from app.modules.agent_hub.model import AgentRun
@@ -33,7 +33,8 @@ def _scan(db, coder, task, *, questions=(), files=()):
     db.add(AgentRun(task_id=task.id, stage=coder.STAGE_SCAN, provider=coder.PROVIDER, model="m", status=coder.RUN_OK,
                     started_at=datetime.now(), artifact={"message": "Cần thêm tool update_leave_request gọi "
                                                                     "request_service.update.",
-                                                         "info": {"files": list(files), "questions": list(questions)}}))
+                                                         "info": {"files": list(files), "questions": list(questions),
+                                                                  "outcomes": list(outcomes)}}))
     db.commit()
 
 
@@ -152,3 +153,34 @@ def test_bo_the_suy_nghi_lot_vao_cau_tra_loi(raw, expected):
     from app.modules.assistant.provider.openai_compat import clean_reply
 
     assert clean_reply(raw) == expected
+
+
+def test_the_xac_nhan_va_de_bai_co_dieu_kien_xong(db, flow):
+    """ai-CR-153 — AI-0006 thiếu đúng phần sửa lý do nghỉ mà thẻ xác nhận chỉ liệt kê tệp nên không ai thấy. Thẻ nay ghi
+    các câu người dùng làm được sau khi xong; đề bài sửa mã bắt mỗi câu có một bài kiểm."""
+    service, coder, task, sent, dispatched = flow
+    outcomes = ["Nhắn bot sửa lý do đơn nghỉ NP011 rồi bấm Xác nhận", "Nhắn bot đổi ngày nghỉ sang thứ ba"]
+    _scan(db, coder, task, files=["backend/app/modules/assistant/tools/update_tool.py"], outcomes=outcomes)
+    service._plan_task(db, task)
+    card = sent[-1]
+    assert "Xong việc này, đại ca làm được" in card and outcomes[0] in card and outcomes[1] in card
+    brief = coder.build_brief(task, [])
+    assert "## Điều kiện xong" in brief and f"1. {outcomes[0]}" in brief and "ít nhất MỘT bài kiểm" in brief
+    assert "C11." in brief and "test_agent_hub_ranh_gioi_erp.py" in brief
+
+
+def test_ra_soat_khong_ghi_dieu_kien_xong_thi_the_nhu_cu(db, flow):
+    service, coder, task, sent, dispatched = flow
+    _scan(db, coder, task)
+    service._plan_task(db, task)
+    assert "Xong việc này" not in sent[-1] and "## Điều kiện xong" not in coder.build_brief(task, [])
+
+
+def test_doc_dieu_kien_xong_tu_ket_qua_ra_soat():
+    from app.modules.agent_hub import coder
+
+    text = ("**Kết luận:** thiếu tool sửa lý do.\n```json\n"
+            '{"files": [], "questions": [], "outcomes": ["  sửa lý do đơn nghỉ  ", "", "x", "y", "z", "w", "v"]}'
+            "\n```")
+    _, info = coder.parse_scan(text)
+    assert info["outcomes"][0] == "sửa lý do đơn nghỉ" and len(info["outcomes"]) == coder.OUTCOMES_MAX

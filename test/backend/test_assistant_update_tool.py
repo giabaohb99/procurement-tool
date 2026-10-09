@@ -119,6 +119,7 @@ def test_de_xuat_thanh_cong_tra_proposal_va_token_dung_chu(db, seed, cap_quyen):
     assert "CHƯA bị sửa" in out["reminder"]
 
     payload = json.loads(_fernet().decrypt(p["confirm_token"].encode()))
+    assert payload.pop("s")                       # ai-CR-153: dấu trạng thái phiếu lúc đề xuất
     assert payload == {"u": seed.u_req_id, "e": "purchase_request", "id": pr.id,
                        "ch": {"purpose": "Mua giấy A5"}}
     db.refresh(pr)

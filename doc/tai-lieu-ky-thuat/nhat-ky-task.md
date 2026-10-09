@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-153 | Claude Code làm chắc tay hơn và chặn bấm lại thẻ đề xuất cũ
+- status: dang-lam
+- date: 2026-10-09
+Đại ca duyệt ba cải tiến để việc giao cho Claude Code ít lọt lỗi hơn. Thứ nhất, thẻ xác nhận nay ghi bằng lời thường những
+việc đại ca làm được khi xong, để thấy ngay ý còn thiếu trước khi nhắn ok, và Claude Code phải viết bài kiểm cho từng câu đó.
+Thứ hai, có luật và bài kiểm canh ranh giới: mã phía bot không được ghi thẳng vào ERP mà phải đi qua cổng chung, đúng loại lỗi
+đã làm hỏng nút xác nhận trên Telegram. Thứ ba, khi việc đụng phần bot hay trợ lý, bước kiểm tự chạy thêm nhóm bài kiểm mô
+phỏng bot và ERP chạy tách nhau. Kèm theo, mỗi thẻ đề xuất sửa phiếu nay chỉ dùng được một lần: bấm lại thẻ cũ sau khi đã ghi,
+hoặc khi phiếu vừa bị người khác sửa, hệ thống báo soạn lại đề xuất mới chứ không thêm trùng dòng. Bài kiểm liên quan chạy xanh.
+
+Mã nguồn: agent_hub/coder.py (outcomes_of, gate_tests, luật C11) · agent_hub/service.py (_send_confirm_card) · assistant/tools/update_tool.py (_state_sig) · test/backend/test_agent_hub_ranh_gioi_erp.py
+
 ## ai-CR-152 | Rà lại bản vá sửa và xóa phiếu của bot, vá nút xác nhận trên Telegram ở dev
 - status: xong
 - date: 2026-10-09

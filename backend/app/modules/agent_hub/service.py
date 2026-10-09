@@ -5119,6 +5119,10 @@ def _send_confirm_card(db: Session, task: AgentTask, lines: list[str]) -> None:
     """ai-CR-149: thẻ xác nhận gọn — em hiểu việc thế nào · tệp dự kiến · trả lời ok / sửa / bỏ."""
     esc = telegram.esc
     lines += ["<b>Em hiểu việc:</b>", _card_md(task.plan or task.summary or "", limit=700), ""]
+    if outcomes := coder.outcomes_of(task):
+        #  ai-CR-153: lời thường, để đại ca thấy ngay việc còn thiếu trước khi nhắn ok (AI-0006 thiếu sửa lý do nghỉ).
+        lines += ["<b>Xong việc này, đại ca làm được:</b>"] + [f"• {esc(o)}" for o in outcomes]
+        lines += ["<i>Thiếu ý nào thì nhắn sửa: … trước khi ok.</i>", ""]
     files = [f for f in (task.plan_files or []) if isinstance(f, str) and f.strip()]
     if files:
         shown = files[:5]
