@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-155 | Bot tự đưa bản sửa lên dev thì dựng lại cả chính con bot khi bản sửa đụng mã của bot
+- status: dang-lam
+- date: 2026-10-09
+Trước đây khi bot tự gộp và đưa bản sửa lên dev, chỉ hệ thống ERP dev được dựng lại; nếu bản sửa đụng phần bot hay trợ lý AI
+thì dev trông như đã xong nhưng bot vẫn chạy mã cũ. Nay sau khi ERP dev lên, nếu bản sửa đụng mã chạy trong bot, bot tự dựng
+lại cụm máy của chính nó bằng đúng kịch bản đưa lên có sẵn, có khóa chống chồng lượt và tự quay về bản trước nếu kiểm sức khỏe
+hỏng. Khi đang có việc khác chạy dở, bot chờ tối đa mười phút rồi mới dựng, vẫn bận thì báo trên thẻ để đại ca nhắn dựng lại
+sau. Thu hồi một bản sửa cũng đưa bot về bản trước. Dựng bot hỏng thì phần ERP vẫn giữ, thẻ kết quả ghi rõ để dựng tay. Toàn bộ
+bài kiểm của bot chạy xanh.
+
+Mã nguồn: core/config.py (AGENT_DEPLOY_BOT_STACK, AGENT_DEPLOY_BOT_WAIT_SEC) · agent_hub/coder.py (deploy_bot_stack, bot_stack_services_for, merge_and_deploy, revert_and_deploy)
+
 ## ai-CR-156 | Phiếu yêu cầu mua hàng và yêu cầu báo giá dùng lại được phiếu nháp cũ
 - status: dang-lam
 - date: 2026-10-09

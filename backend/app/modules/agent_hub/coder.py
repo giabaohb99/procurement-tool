@@ -2006,6 +2006,62 @@ _GIT_IDENTITY_ENV = {
 }
 
 
+#  ai-CR-155: mã chạy TRONG bot (stack `~/agent-hub`, AGENT_MODE=service). Đụng một trong các chỗ này thì deploy dev dựng
+#  lại cả stack bot. `agent_gateway/` chạy phía ERP nên không nằm đây.
+BOT_STACK_PREFIXES = (
+    "backend/app/modules/agent_hub/", "backend/app/modules/assistant/", "backend/app/core/",
+    "backend/migrations_agent/", "backend/requirements", "backend/start.agent.sh", "backend/alembic_agent.ini",
+    "docker/", "docker-compose.agent-hub.yml",
+)
+BOT_STACK_SERVICES = ("agent-api", "agent-worker", "agent-beat", "agent-poller")
+BOT_BUSY_POLL_SEC = 30
+
+
+def bot_stack_services_for(paths: list[str]) -> list[str]:
+    """Service của stack bot cần dựng lại cho các tệp vừa đổi; rỗng = bản gộp không đụng bot."""
+    out: list[str] = []
+    if any(p.startswith(BOT_STACK_PREFIXES) for p in paths):
+        out += list(BOT_STACK_SERVICES)
+    if any(p.startswith("zalo-listener/") for p in paths):
+        out.append("zalo-listener")
+    return out
+
+
+def _bot_busy(db: Session, task: AgentTask) -> list[str]:
+    """Mã các việc KHÁC đang chạy (rà soát / sửa mã / CI / gộp) — dựng lại bot giữa chừng thì tin báo của chúng có thể
+    rơi mất."""
+    from .constants import ST_CI, ST_CODE, ST_SCANNING
+
+    rows = (db.query(AgentTask.code)
+            .filter(AgentTask.id != task.id, AgentTask.status.in_((ST_SCANNING, ST_CODE, ST_CI, ST_DEPLOYING)))
+            .all())
+    return [r.code for r in rows]
+
+
+def deploy_bot_stack(db: Session, task: AgentTask, paths: list[str]) -> str:
+    """ai-CR-155: sau khi ERP dev đã lên, dựng lại stack bot nếu bản gộp đụng mã của bot. Trả MỘT dòng cho thẻ kết quả
+    (rỗng = không cần). Hỏng ở đây KHÔNG làm hỏng lượt deploy ERP (đã lên rồi) — chỉ báo để dựng tay."""
+    services = bot_stack_services_for(paths)
+    if not services or not settings.AGENT_DEPLOY_BOT_STACK:
+        return ""
+    waited = 0
+    while (busy := _bot_busy(db, task)) and waited < settings.AGENT_DEPLOY_BOT_WAIT_SEC:
+        time.sleep(BOT_BUSY_POLL_SEC)
+        waited += BOT_BUSY_POLL_SEC
+        db.expire_all()
+    if busy:
+        return ("Bot: CHƯA dựng lại vì đang có việc " + ", ".join(busy[:3])
+                + " chạy; xong việc đó nhắn deploy dev " + task.code + " để em dựng lại bot.")
+    try:
+        out = run_ssh(deploy_script(services, target="agent", env_vars={"DEPLOY_BRANCH": settings.AGENT_BASE_BRANCH}))
+        _raise_on_deploy_result(out)
+    except (CoderError, subprocess.TimeoutExpired, OSError) as e:
+        log.warning("agent_hub.coder: dựng lại stack bot hỏng: %s", e)
+        return f"Bot: dựng lại HỎNG ({str(e)[:200]}) — ERP dev vẫn đã lên; cần dựng tay ~/agent-hub."
+    health = parse_deploy_output(out).get("health", "")
+    return f"Bot: đã dựng lại {', '.join(services)}" + (f" · health {health}" if health else "") + "."
+
+
 def deploy_services_for(paths: list[str]) -> list[str]:
     """Đụng thư mục nào thì build lại service đó (bảng ánh xạ §C quy trình deploy). Thứ tự cố định."""
     picked: list[str] = []
@@ -2359,15 +2415,16 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
         err = str(e) if not isinstance(e, subprocess.TimeoutExpired) else \
             f"deploy quá {DEPLOY_TIMEOUT_SEC // 60} phút chưa xong"
         return _fail_deploy(db, task, run, err, pushed=pushed)
+    bot_note = deploy_bot_stack(db, task, paths)       # ai-CR-155
 
     task.status = ST_PROD
     task.deployed_dev_at = datetime.now()
     _close_run(run, status=RUN_OK, artifact={
         **art, "merged": True, "merge_sha": sha, "services": services, "health": health,
-        "deployed_head": head, "ssh_tail": out[-1500:],
+        "deployed_head": head, "ssh_tail": out[-1500:], "bot_note": bot_note,
     })
     db.commit()
-    send_deploy_card(db, task, sha=sha, services=services, health=health, reverted=False)
+    send_deploy_card(db, task, sha=sha, services=services, health=health, reverted=False, bot_note=bot_note)
     return {"status": "ok", "merge_sha": sha, "services": services, "health": health}
 
 
@@ -2470,8 +2527,10 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
         _push_base_branch(wt)
         pushed = True
         #  Dev chưa từng lên bản này (chỉ gộp, ai-CR-029) thì thu hồi cũng chỉ ở nhánh nền.
+        bot_paths: list[str] = []
         if task.deployed_dev_at:
-            services = deploy_services_for(changed_paths_of_head(wt))
+            bot_paths = changed_paths_of_head(wt)
+            services = deploy_services_for(bot_paths)
             out = run_ssh(deploy_script(services))
             _raise_on_deploy_result(out)
             health = _health_from(out)
@@ -2483,6 +2542,7 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
         #  Thu hồi hỏng: bản gộp vẫn sống (chưa đẩy) hoặc đã revert nhưng VPS chưa lên — cả hai
         #  đều là "mã ở nhánh nền, dev lệch", nên để ở PROD với nút thu hồi lại.
         return _fail_deploy(db, task, run, "thu hồi: " + err, pushed=True)
+    bot_note = deploy_bot_stack(db, task, bot_paths)   # ai-CR-155: thu hồi mã bot thì bot cũng về bản trước
 
     task.status = ST_NEEDS_INPUT
     task.deployed_dev_at = None
@@ -2493,12 +2553,12 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
         "ssh_tail": out[-1500:],
     })
     db.commit()
-    send_deploy_card(db, task, sha=revert_sha, services=services, health=health, reverted=True)
+    send_deploy_card(db, task, sha=revert_sha, services=services, health=health, reverted=True, bot_note=bot_note)
     return {"status": "ok", "revert_sha": revert_sha, "services": services, "health": health}
 
 
 def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[str], health: int,
-                     reverted: bool) -> None:
+                     reverted: bool, bot_note: str = "") -> None:
     from . import service
 
     esc = telegram.esc
@@ -2541,6 +2601,8 @@ def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[s
                          "và deploy lại bản trước, hoặc nhắn sửa gì để bot làm tiếp."]
         buttons = [("Thu hồi khỏi erp-v2 + dev", f"rv:{task.id}"),
                    ("Hỏi thêm về bản vá", f"ask:{task.id}"), ("Xong, đóng việc", f"done:{task.id}")]
+    if bot_note:
+        head.insert(min(3, len(head)), esc(bot_note))      # ai-CR-155
     service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(head), task_id=task.id,
                   buttons=buttons)
 

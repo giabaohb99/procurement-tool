@@ -104,3 +104,38 @@ def test_cong_kiem_chay_them_bai_canh_khi_dung_phan_bot(tmp_path):
                                               "test/backend/test_agent_hub.py"])
     assert picked == sorted({"test/backend/test_agent_hub.py", *coder.BOUNDARY_TESTS})
     assert coder.gate_tests(str(tmp_path), ["backend/app/modules/leave/service.py"]) == []
+
+
+def test_ban_gop_dung_ma_bot_thi_dung_lai_ca_stack_bot(db, monkeypatch):
+    """ai-CR-155 — bot tự đưa bản sửa lên dev trước đây chỉ dựng lại ERP dev; việc sửa chính bot thì bot vẫn chạy mã cũ."""
+    from app.core.config import settings
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.constants import ST_CODE, ST_DEPLOYING
+    from app.modules.agent_hub.model import AgentTask
+
+    assert coder.bot_stack_services_for(["frontend-v2/src/x.tsx", "backend/app/modules/leave/service.py"]) == []
+    assert coder.bot_stack_services_for(["backend/app/modules/agent_hub/service.py"]) == list(coder.BOT_STACK_SERVICES)
+    assert coder.bot_stack_services_for(["zalo-listener/index.js"]) == ["zalo-listener"]
+
+    me = AgentTask(code="AI-0100", title="x", summary="", status=ST_DEPLOYING, created_by=0, updated_by=0)
+    db.add(me)
+    db.commit()
+    scripts: list[str] = []
+    monkeypatch.setattr(coder, "run_ssh", lambda script, **kw: scripts.append(script) or "HEALTH=200\nRESULT=ok\n")
+    note = coder.deploy_bot_stack(db, me, ["backend/app/modules/assistant/service.py"])
+    assert "đã dựng lại agent-api" in note and "set -- 'agent' 'latest' 'agent-api'" in scripts[-1]
+    assert coder.deploy_bot_stack(db, me, ["frontend-v2/src/a.tsx"]) == "" and len(scripts) == 1
+
+    other = AgentTask(code="AI-0101", title="y", summary="", status=ST_CODE, created_by=0, updated_by=0)
+    db.add(other)
+    db.commit()
+    monkeypatch.setattr(settings, "AGENT_DEPLOY_BOT_WAIT_SEC", 0)
+    note = coder.deploy_bot_stack(db, me, ["backend/app/modules/agent_hub/service.py"])
+    assert "CHƯA dựng lại" in note and "AI-0101" in note and len(scripts) == 1      # việc khác đang chạy: không dựng
+
+    other.status = 8
+    db.commit()
+    monkeypatch.setattr(coder, "run_ssh", lambda script, **kw: "ERR=docker compose up hỏng\nRESULT=rolled_back\n")
+    assert "HỎNG" in coder.deploy_bot_stack(db, me, ["backend/app/core/config.py"])
+    monkeypatch.setattr(settings, "AGENT_DEPLOY_BOT_STACK", False)
+    assert coder.deploy_bot_stack(db, me, ["backend/app/core/config.py"]) == ""
