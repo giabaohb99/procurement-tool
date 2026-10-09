@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-148 | Nhắn bot phát triển tính năng thì thành việc sửa phần mềm, không còn bị từ chối
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca hỏi bot sửa đơn nghỉ phép được chưa, bot nói tool chưa làm được; đại ca nhắn «oke phát triển tính năng» rồi «em bắt đầu
 sửa luôn chưa» thì bot lại trả lời mình không phải bên sửa phần mềm và chỉ ghi đề xuất. Nay ở chat chủ bot và chat của người được
@@ -13203,9 +13203,10 @@ phần mềm, kèm câu hỏi và câu trả lời ngay trước đó làm mô t
 việc sửa phần mềm nữa, và bộ phân loại có thêm ví dụ cho tình huống này. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_dev_request_by_text, _can_order_code) · constants.py (BOT_CODE_FACT) · manager.py (INTENT_SYSTEM) · test/backend/test_agent_hub_giao_viec_phat_trien.py
+Deploy: dev 09/10 (Agent 1 gộp 76cb3091, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-147 | Dòng chi phí ghi đúng model đang chạy và có giá DeepSeek
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca thấy phần chi tiết việc ghi chi phí Gemini dù bot đang chạy DeepSeek, và nhờ kiểm hệ số giá của trạm có thật khác nhau
 không. Nay dòng chi phí ghi chi phí AI kèm tên model đã chạy, cả ở chi tiết việc lẫn lệnh xem chi phí, và bảng giá có thêm bốn
@@ -13214,9 +13215,10 @@ nhưng tính ra thực tế bản v4 flash nhóm deepseek đắt hơn bản cũ 
 hơn v4 flash khoảng 3 lần. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/constants.py (MODEL_PRICES_USD) · service.py (_models_of, cost_report, chi tiết việc) · test/backend/test_agent_hub.py · test_agent_hub_ke_hoach_json.py
+Deploy: dev 09/10 (Agent 1 gộp 76cb3091, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-146 | Khóa Claude mua qua trạm trung gian cũng được bước lập kế hoạch ưu tiên
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca hỏi nên chọn nhóm nào trên trạm modelapi.vn. Trạm này bán Claude dưới dạng khóa kiểu OpenAI, nên khi dán vào ERP khóa mang
 hãng trạm tùy chỉnh chứ không mang hãng Claude, và bước lập kế hoạch ưu tiên Claude của ai-CR-145 sẽ bỏ qua nó. Nay bot nhận ra
@@ -13227,6 +13229,7 @@ phần suy nghĩ. Ô model cũ của khóa không còn trong nhóm mới nên bo
 deploy. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/user_keys.py (prefer) · test/backend/test_agent_hub_ke_hoach_json.py
+Deploy: dev 09/10 (Agent 1 gộp 29e3c326, đặt AGENT_PLAN_MODEL=deepseek-v4-pro, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-145 | Bước lập kế hoạch của bot tự dùng model mạnh khi có khóa
 - status: xong
