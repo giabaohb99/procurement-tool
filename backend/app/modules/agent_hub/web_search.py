@@ -180,3 +180,92 @@ def gather(query: str) -> tuple[list[dict], str]:
         blocks.append(f"[{i}] {r['title']} — {r['url']}\nTóm tắt kết quả tìm: {r['snippet']}"
                       + (f"\nNội dung trang: {body}" if body else ""))
     return [{"title": r["title"], "url": r["url"]} for r in results], "\n\n".join(blocks)
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-133: đọc MỘT bài viết theo đường link người dùng gửi («tóm tắt bài này giúp anh»)
+# ---------------------------------------------------------------------------
+#  Đường link do NGƯỜI DÙNG đưa → chặn kỹ hơn `fetch`: tự đi theo chuyển hướng từng bước, bước nào cũng phải là địa chỉ
+#  công khai (chống trỏ vòng vào mạng nội bộ / máy chủ của chính mình).
+_URL_IN_TEXT = re.compile(r"https?://[^\s<>\"'«»]+", re.I)
+_META_TAG = re.compile(r"<meta\b[^>]*>", re.I)
+_ATTR = re.compile(r'([a-zA-Z:_-]+)\s*=\s*"([^"]*)"|([a-zA-Z:_-]+)\s*=\s*\'([^\']*)\'')
+_TITLE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
+ARTICLE_CHARS = 20_000
+MAX_REDIRECTS = 4
+#  Trang mạng xã hội trả trang đăng nhập cho trình duyệt thường, nhưng vẫn trả phần XEM TRƯỚC (og:…) cho máy đọc link
+#  của mạng xã hội — đúng phần Telegram hiện dưới link. Chữ thân bài ít quá thì thử lại bằng tên máy đọc đó.
+PREVIEW_UA = "facebookexternalhit/1.1"
+LOGIN_WALL_HOSTS = ("facebook.com", "fb.com", "fb.watch", "instagram.com", "threads.net", "tiktok.com", "x.com",
+                    "twitter.com", "linkedin.com")
+
+
+def find_urls(text: str) -> list[str]:
+    out = []
+    for m in _URL_IN_TEXT.finditer(text or ""):
+        url = m.group(0).rstrip(".,;:!?)]}…")
+        if url not in out:
+            out.append(url)
+    return out
+
+
+def _meta(html_text: str) -> dict[str, str]:
+    found: dict[str, str] = {}
+    for tag in _META_TAG.findall(html_text[:300_000]):
+        attrs = {}
+        for a in _ATTR.finditer(tag):
+            key = (a.group(1) or a.group(3) or "").lower()
+            attrs[key] = a.group(2) if a.group(1) else (a.group(4) or "")
+        name = (attrs.get("property") or attrs.get("name") or "").lower()
+        if name in ("og:title", "og:description", "description", "twitter:title", "twitter:description") \
+                and attrs.get("content") and name not in found:
+            found[name] = unescape(attrs["content"]).strip()
+    return found
+
+
+def _get_public(url: str, ua: str) -> tuple[str, str]:
+    """(địa chỉ cuối, HTML) — tự theo chuyển hướng, mỗi bước đều phải công khai. Hỏng → ("", "")."""
+    for _ in range(MAX_REDIRECTS + 1):
+        if not public_url(url):
+            return "", ""
+        try:
+            r = requests.get(url, headers={"User-Agent": ua, "Accept-Language": "vi,en;q=0.8"}, timeout=PAGE_TIMEOUT,
+                             stream=True, allow_redirects=False)
+        except requests.RequestException:
+            return "", ""
+        with r:
+            if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("location"):
+                from urllib.parse import urljoin
+
+                url = urljoin(url, r.headers["location"])
+                continue
+            if r.status_code != 200 or "html" not in (r.headers.get("content-type") or "text/html"):
+                return "", ""
+            data = b""
+            for chunk in r.iter_content(64 * 1024):
+                data += chunk
+                if len(data) > PAGE_MAX_BYTES:
+                    break
+            return url, data.decode(r.encoding or "utf-8", errors="replace")
+    return "", ""
+
+
+def fetch_article(url: str) -> dict:
+    """{url, title, description, text, preview_only} của một bài viết công khai. Không đọc được thì `text` rỗng."""
+    host = (urlparse(url).hostname or "").lower()
+    wall = any(host == h or host.endswith("." + h) for h in LOGIN_WALL_HOSTS)
+    final, html_text = _get_public(url, UA)
+    text = page_text(html_text)[:ARTICLE_CHARS] if html_text else ""
+    meta = _meta(html_text) if html_text else {}
+    if wall or len(text) < 400:
+        f2, h2 = _get_public(url, PREVIEW_UA)
+        if h2:
+            meta = _meta(h2) or meta
+            final = final or f2
+            if wall:
+                text = ""                              # thân trang mạng xã hội là chữ của trang đăng nhập — bỏ
+    m = _TITLE.search(html_text or "")
+    title = meta.get("og:title") or meta.get("twitter:title") or (unescape(m.group(1)).strip() if m else "")
+    desc = meta.get("og:description") or meta.get("description") or meta.get("twitter:description") or ""
+    return {"url": final or url, "title": title[:300], "description": desc[:2000], "text": text,
+            "preview_only": bool(wall or len(text) < 400)}

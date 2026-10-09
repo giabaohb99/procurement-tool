@@ -9666,3 +9666,94 @@ def test_ban_sao_tin_van_hanh_chi_cho_nguoi_co_quyen_va_khong_sao_tin_rieng(db, 
     service.reply(db, "12345", "AI-0001: em vẫn đang làm", task_id=task.id, action=service.ACT_HEARTBEAT)
     service.reply(db, "555", "trả lời riêng", task_id=task.id)
     assert [c[0] for c in calls] == ["12345", "12345", "555"]
+
+
+# --- ai-CR-133: đọc + tóm tắt bài viết theo đường link ------------------------------------------------------------
+def test_doc_bai_viet_theo_link_lay_noi_dung_va_chan_dia_chi_noi_bo(monkeypatch):
+    """09/10 đại ca gửi link VnExpress / Facebook nhờ tóm tắt, bot trả lời «không có công cụ mở link»."""
+    from app.modules.agent_hub import web_search as ws
+
+    assert ws.find_urls("tóm tắt https://vnexpress.net/a-1.html, và (https://x.com/p/1).") == [
+        "https://vnexpress.net/a-1.html", "https://x.com/p/1"]
+    meta = ws._meta('<meta content="Mô tả &amp; thêm" property="og:description"><meta property="og:title" content="Tựa">')
+    assert meta == {"og:description": "Mô tả & thêm", "og:title": "Tựa"}
+    #  Trang thường: lấy thân bài.
+    article = "<html><title>Chữ ký số</title><body><nav>menu</nav><p>" + "Bước 1 mở VNeID. " * 60 + "</p></body></html>"
+    monkeypatch.setattr(ws, "_get_public", lambda url, ua: (url, article))
+    got = ws.fetch_article("https://vnexpress.net/a.html")
+    assert got["title"] == "Chữ ký số" and "Bước 1 mở VNeID" in got["text"] and "menu" not in got["text"]
+    assert got["preview_only"] is False
+    #  Mạng xã hội: thân trang là trang đăng nhập → bỏ, chỉ lấy phần xem trước của máy đọc link.
+    pages = {ws.UA: "<html><body>Đăng nhập Facebook " + "x " * 500 + "</body></html>",
+             ws.PREVIEW_UA: '<meta property="og:title" content="Duy Luân"><meta property="og:description" '
+                            'content="Từ đầu năm mình đưa agent vào 3 hệ thống">'}
+    monkeypatch.setattr(ws, "_get_public", lambda url, ua: (url, pages[ua]))
+    fb = ws.fetch_article("https://www.facebook.com/share/p/19UepT1fUZ/")
+    assert fb["text"] == "" and fb["preview_only"] and fb["description"].startswith("Từ đầu năm")
+
+
+def test_link_nguoi_dung_gui_khong_duoc_tro_vao_mang_noi_bo(monkeypatch):
+    from app.modules.agent_hub import web_search as ws
+
+    class R:
+        def __init__(self, status, location=""):
+            self.status_code, self.headers = status, {"location": location} if location else {"content-type": "text/html"}
+            self.encoding = "utf-8"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def iter_content(self, n):
+            yield b"<p>noi bo</p>"
+
+    hops: list[str] = []
+    monkeypatch.setattr(ws, "public_url", lambda u: not u.startswith("http://127.") and not u.startswith("http://10."))
+    monkeypatch.setattr(ws.requests, "get", lambda url, **kw: hops.append(url) or R(302, "http://127.0.0.1:8000/admin"))
+    assert ws._get_public("https://bao.vn/x", ws.UA) == ("", "")
+    assert hops == ["https://bao.vn/x"]                      # bước chuyển hướng vào nội bộ không được gọi
+    assert ws._get_public("http://10.0.0.5/", ws.UA) == ("", "") and len(hops) == 1
+
+
+def test_tin_co_link_nho_tom_tat_thi_doc_bai_khong_thi_di_duong_cu(db, bot, monkeypatch):
+    service, sent, asked = bot
+    _fake_intent(monkeypatch, service, "hoi")
+    runs: list[tuple[str, str]] = []
+    monkeypatch.setattr(service, "run_research", lambda db, chat_id, q, mode: runs.append((q, mode)))
+    #  Chỉ dán link → đọc luôn; link kèm câu nhờ tóm tắt → đọc.
+    service.handle_message(db, _msg("https://vnexpress.net/cach-tao-chu-ky-so-5129343.html"))
+    service.handle_message(db, _msg("tom tat bai nay giup anh https://www.facebook.com/share/p/19UepT1fUZ/"))
+    assert [m for _, m in runs] == [service.research.MODE_LINK] * 2
+    assert "facebook.com" in runs[1][0]
+    #  Link nằm trong câu báo lỗi / hỏi việc: không phải nhờ đọc bài.
+    service.handle_message(db, _msg("màn này lỗi https://deverp.degoholding.vn/po/12 sao vậy"))
+    assert len(runs) == 2
+    #  Link Drive có đường riêng.
+    service.handle_message(db, _msg("tóm tắt https://drive.google.com/file/d/abc/view"))
+    assert len(runs) == 2
+
+
+def test_nho_tom_tat_ngay_sau_tin_chi_co_link(db, bot, monkeypatch):
+    """Đại ca gửi link (Telegram hiện xem trước) rồi mới nhắn «Tóm tắt link bài viết này giúp anh nhé»."""
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, asked = bot
+    _fake_intent(monkeypatch, service, "hoi")
+    runs: list[str] = []
+
+    def fake_run(db, chat_id, q, mode):
+        runs.append(q)
+        service.reply(db, chat_id, "tóm tắt…", action=service.ACT_RESEARCH)
+
+    monkeypatch.setattr(service, "run_research", fake_run)
+    #  Tin chỉ có link nhưng đi đường cũ trước bản này: ghi sổ thẳng như một tin đã xử, chưa có bản tóm tắt nào sau nó.
+    db.add(AgentMessage(direction=service.DIR_IN, chat_id="12345", body="https://vnexpress.net/a.html", action="hoi",
+                        created_by=0, updated_by=0))
+    db.commit()
+    service.handle_message(db, _msg("Tóm tắt link bài viết này giúp anh nhé"))
+    assert len(runs) == 1 and "https://vnexpress.net/a.html" in runs[0]
+    #  Đã tóm tắt rồi: câu nhờ tóm tắt tiếp theo không đọc lại link cũ.
+    service.handle_message(db, _msg("tóm tắt bài này"))
+    assert len(runs) == 1

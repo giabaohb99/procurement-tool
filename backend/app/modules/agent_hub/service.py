@@ -1125,6 +1125,73 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     return True
 
 
+# ---------------------------------------------------------------------------
+# ai-CR-133: «tóm tắt bài viết này giúp anh» kèm (hoặc ngay sau) một đường link — đọc trang rồi tóm tắt
+# ---------------------------------------------------------------------------
+#  09/10 đại ca gửi link Facebook / VnExpress, bot trả lời «em không có công cụ mở link». Trước đây không có đường nào đọc
+#  một trang theo địa chỉ; tra mạng chỉ TÌM theo câu hỏi.
+_LINK_ASK = re.compile(r"(?<!\w)(tom tat|doc|tom luoc|phan tich|xem giup|noi dung|y chinh|bai (viet|bao|nay)|link nay|"
+                       r"trang nay|summary|summarize)(?!\w)")
+_LINK_LOOKBACK = timedelta(minutes=15)
+#  Link vào chính ERP / Google Drive có đường riêng (Trợ lý tra ERP, biên bản họp / đọc tệp Drive) — không đọc như bài báo.
+_LINK_SKIP_HOSTS = ("drive.google.com", "docs.google.com", "meet.google.com")
+
+
+def _readable_links(text: str) -> list[str]:
+    from urllib.parse import urlparse
+
+    from . import web_search
+
+    #  Tên miền của chính công ty (ERP, trợ giúp…): lấy hai nhãn cuối của địa chỉ ERP — `degoholding.vn`.
+    own = {".".join((urlparse(u).hostname or "").split(".")[-2:]) for u in (settings.AGENT_ERP_URL, settings.FRONTEND_URL)
+           if u}
+    skip = tuple(h for h in (*_LINK_SKIP_HOSTS, *own) if h)
+    out = []
+    for url in web_search.find_urls(text):
+        host = (urlparse(url).hostname or "").lower()
+        if host and not any(host == h or host.endswith("." + h) for h in skip):
+            out.append(url)
+    return out
+
+
+def _link_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Tin có link + (không kèm chữ gì, hoặc nhờ tóm tắt / đọc) → đọc bài. Tin nhờ tóm tắt mà KHÔNG có link → dùng link
+    trong tin gần nhất (≤ 15 phút) chưa được tóm tắt. Trả True nếu đã nhận."""
+    from app.modules.assistant.glossary import fold
+
+    from . import web_search
+
+    links = _readable_links(text)
+    asked = bool(_LINK_ASK.search(fold(text)))
+    if links:
+        rest = text
+        for u in web_search.find_urls(text):
+            rest = rest.replace(u, " ")
+        if rest.strip() and not asked:
+            return False                            # link nằm trong một câu khác (báo lỗi, hỏi việc…) — đi đường cũ
+        question = text
+    else:
+        if not asked or web_search.find_urls(text):
+            return False                            # không nhờ đọc, hoặc câu đã có link riêng (Drive, ERP…) — đi đường cũ
+        since = (row.created_at or datetime.now()) - _LINK_LOOKBACK
+        prev = db.scalar(select(AgentMessage).where(
+            AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN, AgentMessage.id < row.id,
+            AgentMessage.created_at >= since, AgentMessage.body.contains("http")).order_by(AgentMessage.id.desc()).limit(1))
+        prev_links = _readable_links(prev.body) if prev is not None else []
+        if not prev_links:
+            return False
+        done = db.scalar(select(AgentMessage.id).where(
+            AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_OUT, AgentMessage.id > prev.id,
+            AgentMessage.action == ACT_RESEARCH).limit(1))
+        if done is not None:
+            return False                            # link đó đã được tóm tắt rồi — câu này là chuyện khác
+        question = f"{text}\n{' '.join(prev_links)}"
+    row.action = ACT_RESEARCH
+    db.commit()
+    run_research(db, chat_id, question, research.MODE_LINK)
+    return True
+
+
 def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
     """Tin chữ thường của người đã liên kết (ai-CR-045): hiểu bằng chữ, không bắt gõ lệnh.
 
@@ -1147,6 +1214,8 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
         #  ai-CR-098: chuỗi khóa = khóa cá nhân → khóa công ty khai trong sổ; cả hai trống mới tới đây.
         row.action = ACT_COMMAND
         reply(db, chat_id, user_keys.NO_KEY_HELP)
+        return
+    if _link_by_text(db, chat_id, row, text):           # ai-CR-133: tóm tắt bài viết theo link
         return
     run = start_run(db, 0, STAGE_INTENT)
     try:
@@ -1240,6 +1309,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     if _doc_followup(db, chat_id, row, text):
         return
     if _guide_by_text(db, chat_id, row, text):          # ai-CR-120: «hướng dẫn», «bot làm được gì»
+        return
+    if _link_by_text(db, chat_id, row, text):           # ai-CR-133: tóm tắt bài viết theo link
         return
     #  Bot vừa mời hẹn giờ gộp + deploy (ai-CR-014): tin kế là giờ hẹn, không đi phân loại.
     if task_id := _deploy_time_target(db, chat_id, row):

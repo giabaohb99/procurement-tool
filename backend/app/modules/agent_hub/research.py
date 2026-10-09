@@ -31,8 +31,9 @@ log = logging.getLogger("app.agent_hub.research")
 MODE_WEB = "web"
 MODE_VERIFY = "kiem_chung"
 MODE_DOCS = "tai_lieu"
-MODES = (MODE_WEB, MODE_VERIFY, MODE_DOCS)
-MODE_LABELS = {MODE_WEB: "Tìm hiểu", MODE_VERIFY: "Kiểm chứng", MODE_DOCS: "Tài liệu nội bộ"}
+MODE_LINK = "doc_link"        # ai-CR-133: đọc + tóm tắt bài viết theo đường link người dùng gửi
+MODES = (MODE_WEB, MODE_VERIFY, MODE_DOCS, MODE_LINK)
+MODE_LABELS = {MODE_WEB: "Tìm hiểu", MODE_VERIFY: "Kiểm chứng", MODE_DOCS: "Tài liệu nội bộ", MODE_LINK: "Đọc bài viết"}
 MAX_SOURCES = 6
 
 _COMMON = (
@@ -59,6 +60,39 @@ _SYSTEMS = {
     MODE_DOCS: _COMMON + " Chỉ trả lời từ các đoạn TÀI LIỆU NỘI BỘ được đưa kèm, dẫn tên tệp khi dùng. "
     "Đoạn kèm không nói tới thì trả lời là tài liệu chưa có, đừng tự bịa.",
 }
+
+
+_SYSTEMS[MODE_LINK] = _COMMON + (
+    " Nhiệm vụ: tóm tắt BÀI VIẾT được đưa kèm (chỉ dựa vào nội dung đó, không thêm điều bài không nói). Dòng đầu là ý "
+    "chính của bài; các nhóm theo nội dung bài (vd **I. Bối cảnh**, **II. Các bước / ý chính**, **III. Lưu ý**); bài hướng "
+    "dẫn thì giữ đủ các bước theo thứ tự. Bài chỉ có phần XEM TRƯỚC (mạng xã hội cần đăng nhập) thì nói rõ là mới đọc được "
+    "đoạn đầu.") + _ANALYSIS
+LINK_PREVIEW_NOTE = ("\n\n_Em chỉ đọc được phần xem trước của bài (trang này cần đăng nhập mới xem đủ). Muốn tóm tắt đủ "
+                     "thì anh/chị dán nội dung bài hoặc gửi ảnh chụp màn hình vào đây._")
+
+
+def read_link(question: str) -> tuple[str, list[dict], ChatResult | None]:
+    """Đọc 1–2 đường link trong câu rồi tóm tắt. Không đọc được gì thì trả câu giải thích, không gọi model."""
+    from . import web_search
+
+    urls = web_search.find_urls(question)[:2]
+    pages = [web_search.fetch_article(u) for u in urls]
+    usable = [p for p in pages if p["text"] or p["description"]]
+    if not usable:
+        return ("Em không đọc được nội dung trang này (trang cần đăng nhập, chặn máy đọc, hoặc không phải trang web "
+                "công khai). Anh/chị dán nội dung bài hoặc gửi ảnh chụp màn hình vào đây, em tóm tắt ngay."), [], None
+    blocks = []
+    for i, p in enumerate(usable, 1):
+        body = p["text"] or "(chỉ có phần xem trước)"
+        blocks.append(f"[{i}] {p['title']}\nĐịa chỉ: {p['url']}\nMô tả: {p['description']}\nNội dung:\n{body}")
+    result = manager.get_provider().ask(
+        [ChatMessage(role="user", content=f"YÊU CẦU: {question}\n\nBÀI VIẾT:\n" + "\n\n".join(blocks))],
+        system=_SYSTEMS[MODE_LINK], max_tokens=2000, temperature=0.2)
+    text = (result.text or "").strip()
+    if any(p["preview_only"] for p in usable):
+        text += LINK_PREVIEW_NOTE
+    sources = [{"title": p["title"] or p["url"], "url": p["url"]} for p in usable]
+    return text, sources, result
 
 
 def _sources_of(candidate: dict) -> list[dict]:
@@ -153,6 +187,8 @@ def run(question: str, mode: str) -> tuple[str, list[dict], ChatResult | None]:
 
     if mode == MODE_DOCS:
         return answer_from_docs(question)
+    if mode == MODE_LINK:
+        return read_link(question)
     mode = mode if mode in MODES else MODE_WEB
     if user_keys.gemini_key():
         try:

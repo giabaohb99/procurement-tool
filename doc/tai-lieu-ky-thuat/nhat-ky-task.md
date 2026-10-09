@@ -13142,3 +13142,15 @@ Tài khoản quản trị tự có quyền này. Bài kiểm máy chủ và giao
 
 Mã nguồn: backend/app/core/permissions.py + scoping.py (agent_ops) · seed.py · agent_hub/service.py (ops_recipients, _copy_to_ops, reply) · poller.py · frontend-v2 permission-types.ts, permission-groups.ts · test/backend/test_agent_hub.py
 Deploy: dev 09/10 (Agent 1 gộp 7d5ededc, dựng lại ERP api, erp và stack agent-hub); prod giữ lại.
+
+## ai-CR-133 | Bot đọc và tóm tắt bài viết khi người dùng gửi đường link
+- status: dang-lam
+- date: 2026-10-09
+Đại ca gửi link bài Facebook và VnExpress nhờ tóm tắt thì bot trả lời không mở được link, vì trước giờ bot chỉ biết tìm trên mạng
+theo câu hỏi chứ không đọc một trang theo địa chỉ. Nay gửi link không kèm chữ, hoặc kèm câu nhờ tóm tắt, hoặc gửi link rồi mới
+nhắn «tóm tắt bài này», bot tự tải trang công khai, đọc tựa và thân bài rồi tóm tắt theo kiểu trình bày đã chốt, có nguồn và
+xuất Word được. Bot chặn mọi đường dẫn trỏ vào mạng nội bộ, kể cả khi trang chuyển hướng. Với Facebook và các mạng xã hội cần
+đăng nhập, bot chỉ đọc được phần xem trước nên nói rõ điều đó và nhờ dán nội dung hoặc ảnh chụp. Link ERP của công ty, Google
+Drive và link nằm trong câu báo lỗi vẫn đi đường cũ. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/web_search.py (find_urls, fetch_article) · research.py (MODE_LINK, read_link) · service.py (_link_by_text) · user_guide.py · test/backend/test_agent_hub.py
