@@ -269,3 +269,135 @@ def fetch_article(url: str) -> dict:
     desc = meta.get("og:description") or meta.get("description") or meta.get("twitter:description") or ""
     return {"url": final or url, "title": title[:300], "description": desc[:2000], "text": text,
             "preview_only": bool(wall or len(text) < 400)}
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-134: TỆP qua đường link — PDF / Word / Excel / văn bản, Google Drive / Docs công khai, bài báo khoa học
+# ---------------------------------------------------------------------------
+#  Đại ca 09/10: «đưa một file tài liệu qua link, hoặc bài báo khoa học, nhờ bot tổng hợp / nghiên cứu». Trang HTML đã
+#  đọc được (ai-CR-133); đây là phần TỆP — tải về (cùng chốt chặn địa chỉ nội bộ) rồi đưa cho bộ đọc tệp `doc_text`.
+DOC_TYPES = {
+    "application/pdf": ".pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/msword": ".doc",
+    "text/plain": ".txt",
+    "text/csv": ".csv",
+}
+_DOC_EXT = (".pdf", ".docx", ".xlsx", ".doc", ".txt", ".csv")
+_ARXIV = re.compile(r"^https?://(?:www\.)?arxiv\.org/(?:abs|pdf)/([^?#]+?)(?:\.pdf)?(?:[?#].*)?$", re.I)
+_DRIVE_FILE = re.compile(r"/file/d/([A-Za-z0-9_-]{10,})|[?&]id=([A-Za-z0-9_-]{10,})")
+_GDOC = re.compile(r"docs\.google\.com/(document|spreadsheets|presentation)/d/([A-Za-z0-9_-]{10,})")
+_FILENAME = re.compile(r"filename\*?=(?:UTF-8'')?\"?([^\";]+)", re.I)
+
+
+def _download(url: str, ua: str, max_bytes: int) -> tuple[str, str, str, bytes]:
+    """(địa chỉ cuối, content-type, content-disposition, nội dung) — tự theo chuyển hướng, bước nào cũng phải công khai.
+    Hỏng / quá trần → ("", "", "", b"")."""
+    from urllib.parse import urljoin
+
+    for _ in range(MAX_REDIRECTS + 1):
+        if not public_url(url):
+            return "", "", "", b""
+        try:
+            r = requests.get(url, headers={"User-Agent": ua, "Accept-Language": "vi,en;q=0.8"}, timeout=30,
+                             stream=True, allow_redirects=False)
+        except requests.RequestException:
+            return "", "", "", b""
+        with r:
+            if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("location"):
+                url = urljoin(url, r.headers["location"])
+                continue
+            if r.status_code != 200:
+                return "", "", "", b""
+            data = b""
+            for chunk in r.iter_content(256 * 1024):
+                data += chunk
+                if len(data) > max_bytes:
+                    return url, "too_large", "", b""
+            ctype = (r.headers.get("content-type") or "").split(";")[0].strip().lower()
+            return url, ctype, r.headers.get("content-disposition") or "", data
+    return "", "", "", b""
+
+
+def _doc_name(url: str, ctype: str, disposition: str, title: str = "") -> str:
+    m = _FILENAME.search(disposition or "")
+    name = unquote(m.group(1)).strip() if m else ""
+    if not name:
+        name = unquote(urlparse(url).path.rstrip("/").rsplit("/", 1)[-1] or "")
+    if title:                                       # bài báo khoa học: tựa bài dễ nhận hơn tên tệp kiểu «thep.pdf»
+        name = re.sub(r'[\\/:*?"<>|]+', " ", title).strip()[:120]
+    ext = DOC_TYPES.get(ctype, "")
+    if ext and not name.lower().endswith(ext):
+        name = (name or "tai-lieu") + ext
+    return name or "tai-lieu"
+
+
+def _is_doc(url: str, ctype: str) -> bool:
+    return ctype in DOC_TYPES or (ctype in ("application/octet-stream", "binary/octet-stream", "")
+                                  and urlparse(url).path.lower().endswith(_DOC_EXT))
+
+
+def _drive_targets(url: str) -> list[tuple[str, str]]:
+    """Đường tải CÔNG KHAI của một link Google Drive / Docs (chỉ chạy khi tệp chia sẻ «Bất kỳ ai có đường liên kết")."""
+    m = _GDOC.search(url)
+    if m:
+        kind, fid = m.group(1), m.group(2)
+        if kind == "document":
+            return [(f"https://docs.google.com/document/d/{fid}/export?format=txt", "text/plain")]
+        if kind == "spreadsheets":
+            return [(f"https://docs.google.com/spreadsheets/d/{fid}/export?format=csv", "text/csv")]
+        return [(f"https://docs.google.com/presentation/d/{fid}/export/txt", "text/plain")]
+    m = _DRIVE_FILE.search(url)
+    if m and "drive.google.com" in url:
+        fid = m.group(1) or m.group(2)
+        return [(f"https://drive.google.com/uc?export=download&id={fid}", "")]
+    return []
+
+
+def is_google_file(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host in ("drive.google.com", "docs.google.com")
+
+
+def fetch_resource(url: str, *, max_bytes: int) -> dict:
+    """Đọc một link: {"kind": "doc", url, name, mime, data} cho tệp; {"kind": "page"} cho trang web (để `fetch_article`
+    đọc); {"kind": "none", "reason": …} khi không đọc được (private / quá trần / hỏng)."""
+    if is_google_file(url):
+        for target, mime in _drive_targets(url):
+            final, ctype, disp, data = _download(target, UA, max_bytes)
+            if ctype == "too_large":
+                return {"kind": "none", "reason": "too_large"}
+            if data and ctype != "text/html":
+                ctype = mime or ctype
+                return {"kind": "doc", "url": url, "name": _doc_name(final, ctype, disp), "mime": ctype, "data": data}
+        return {"kind": "none", "reason": "drive_private"}
+    m = _ARXIV.match(url)
+    if m:
+        url = f"https://arxiv.org/pdf/{m.group(1)}"
+    final, ctype, disp, data = _download(url, UA, max_bytes)
+    if ctype == "too_large":
+        return {"kind": "none", "reason": "too_large"}
+    if not final:
+        return {"kind": "page"}                     # thử lại kiểu trang (máy đọc link mạng xã hội…)
+    if _is_doc(final, ctype):
+        return {"kind": "doc", "url": final, "name": _doc_name(final, ctype, disp), "mime": ctype, "data": data}
+    if "html" in ctype or not ctype:
+        meta = {}
+        html_text = data.decode("utf-8", errors="replace")
+        for tag in _META_TAG.findall(html_text[:300_000]):
+            attrs = {(a.group(1) or a.group(3) or "").lower(): (a.group(2) if a.group(1) else a.group(4) or "")
+                     for a in _ATTR.finditer(tag)}
+            name = (attrs.get("name") or attrs.get("property") or "").lower()
+            if name in ("citation_pdf_url", "citation_title") and attrs.get("content") and name not in meta:
+                meta[name] = unescape(attrs["content"]).strip()
+        #  Trang bài báo khoa học (Springer, Elsevier, MDPI, IEEE…) khai `citation_pdf_url` — bản PDF mở thì đọc đủ bài.
+        pdf = meta.get("citation_pdf_url", "")
+        if pdf:
+            from urllib.parse import urljoin
+
+            f2, c2, d2, data2 = _download(urljoin(final, pdf), UA, max_bytes)
+            if data2 and _is_doc(f2, c2):
+                return {"kind": "doc", "url": f2, "name": _doc_name(f2, c2, d2, meta.get("citation_title", "")),
+                        "mime": c2, "data": data2}
+    return {"kind": "page"}

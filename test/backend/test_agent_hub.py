@@ -9722,6 +9722,9 @@ def test_tin_co_link_nho_tom_tat_thi_doc_bai_khong_thi_di_duong_cu(db, bot, monk
     _fake_intent(monkeypatch, service, "hoi")
     runs: list[tuple[str, str]] = []
     monkeypatch.setattr(service, "run_research", lambda db, chat_id, q, mode: runs.append((q, mode)))
+    from app.modules.agent_hub import web_search as ws
+
+    monkeypatch.setattr(ws, "fetch_resource", lambda url, max_bytes: {"kind": "page"})     # trang web, không phải tệp
     #  Chỉ dán link → đọc luôn; link kèm câu nhờ tóm tắt → đọc.
     service.handle_message(db, _msg("https://vnexpress.net/cach-tao-chu-ky-so-5129343.html"))
     service.handle_message(db, _msg("tom tat bai nay giup anh https://www.facebook.com/share/p/19UepT1fUZ/"))
@@ -9730,9 +9733,9 @@ def test_tin_co_link_nho_tom_tat_thi_doc_bai_khong_thi_di_duong_cu(db, bot, monk
     #  Link nằm trong câu báo lỗi / hỏi việc: không phải nhờ đọc bài.
     service.handle_message(db, _msg("màn này lỗi https://deverp.degoholding.vn/po/12 sao vậy"))
     assert len(runs) == 2
-    #  Link Drive có đường riêng.
-    service.handle_message(db, _msg("tóm tắt https://drive.google.com/file/d/abc/view"))
-    assert len(runs) == 2
+    #  ai-CR-134: link Drive đọc như tệp (tệp chia sẻ công khai) — không còn bỏ qua.
+    service.handle_message(db, _msg("tóm tắt https://drive.google.com/file/d/abcdefghijk/view"))
+    assert len(runs) == 3
 
 
 def test_nho_tom_tat_ngay_sau_tin_chi_co_link(db, bot, monkeypatch):
@@ -9748,6 +9751,9 @@ def test_nho_tom_tat_ngay_sau_tin_chi_co_link(db, bot, monkeypatch):
         service.reply(db, chat_id, "tóm tắt…", action=service.ACT_RESEARCH)
 
     monkeypatch.setattr(service, "run_research", fake_run)
+    from app.modules.agent_hub import web_search as ws
+
+    monkeypatch.setattr(ws, "fetch_resource", lambda url, max_bytes: {"kind": "page"})
     #  Tin chỉ có link nhưng đi đường cũ trước bản này: ghi sổ thẳng như một tin đã xử, chưa có bản tóm tắt nào sau nó.
     db.add(AgentMessage(direction=service.DIR_IN, chat_id="12345", body="https://vnexpress.net/a.html", action="hoi",
                         created_by=0, updated_by=0))
@@ -9757,3 +9763,64 @@ def test_nho_tom_tat_ngay_sau_tin_chi_co_link(db, bot, monkeypatch):
     #  Đã tóm tắt rồi: câu nhờ tóm tắt tiếp theo không đọc lại link cũ.
     service.handle_message(db, _msg("tóm tắt bài này"))
     assert len(runs) == 1
+
+
+# --- ai-CR-134: TỆP qua link — PDF / Word / Excel, Google Drive / Docs, bài báo khoa học -----------------------------
+def test_link_toi_tep_tai_ve_va_doc_nhu_tep_gui_thang(monkeypatch):
+    """Đại ca 09/10: «đưa một file tài liệu qua link, hoặc bài báo khoa học, nhờ bot tổng hợp / nghiên cứu»."""
+    from app.modules.agent_hub import web_search as ws
+
+    calls: list[str] = []
+    pdf = b"%PDF-1.4 ..."
+    responses = {
+        "https://arxiv.org/pdf/2401.01234v2": ("https://arxiv.org/pdf/2401.01234v2", "application/pdf", "", pdf),
+        "https://bao.vn/bai": ("https://bao.vn/bai", "text/html", "",
+                               ('<meta name="citation_title" content="Thép xanh 2026">'
+                                '<meta name="citation_pdf_url" content="/files/thep.pdf">').encode()),
+        "https://bao.vn/files/thep.pdf": ("https://bao.vn/files/thep.pdf", "application/pdf", "", pdf),
+        "https://docs.google.com/document/d/ABCDEFGHIJKL/export?format=txt": ("https://docs.google.com/x", "text/plain",
+                                                                             "", "Biên bản".encode()),
+        "https://drive.google.com/uc?export=download&id=PRIVATEFILE12": ("https://accounts.google.com/x", "text/html", "",
+                                                                         b"<html>Dang nhap</html>"),
+        "https://cty.vn/bao-cao.xlsx": ("https://cty.vn/bao-cao.xlsx", "application/octet-stream",
+                                        'attachment; filename="Bao cao Q3.xlsx"', b"PK.."),
+        "https://to.vn/big.pdf": ("https://to.vn/big.pdf", "too_large", "", b""),
+    }
+    monkeypatch.setattr(ws, "_download", lambda url, ua, max_bytes: calls.append(url) or responses[url])
+    #  arXiv trang tóm tắt → tải bản PDF đầy đủ.
+    got = ws.fetch_resource("https://arxiv.org/abs/2401.01234v2", max_bytes=10)
+    assert got["kind"] == "doc" and got["mime"] == "application/pdf" and calls[-1] == "https://arxiv.org/pdf/2401.01234v2"
+    #  Trang bài báo khai `citation_pdf_url` → đọc bản PDF, tên tệp theo tựa bài.
+    got = ws.fetch_resource("https://bao.vn/bai", max_bytes=10)
+    assert got["kind"] == "doc" and got["name"] == "Thép xanh 2026.pdf"
+    #  Google Docs công khai → xuất chữ; Drive chưa chia sẻ (trả trang đăng nhập) → báo riêng.
+    got = ws.fetch_resource("https://docs.google.com/document/d/ABCDEFGHIJKL/edit", max_bytes=10)
+    assert got["kind"] == "doc" and got["mime"] == "text/plain" and got["data"] == "Biên bản".encode()
+    assert ws.fetch_resource("https://drive.google.com/file/d/PRIVATEFILE12/view", max_bytes=10) == {
+        "kind": "none", "reason": "drive_private"}
+    #  Máy chủ trả kiểu chung chung nhưng đuôi là tệp → vẫn là tệp, tên lấy từ content-disposition.
+    got = ws.fetch_resource("https://cty.vn/bao-cao.xlsx", max_bytes=10)
+    assert got["kind"] == "doc" and got["name"] == "Bao cao Q3.xlsx"
+    assert ws.fetch_resource("https://to.vn/big.pdf", max_bytes=10) == {"kind": "none", "reason": "too_large"}
+
+
+def test_tin_co_link_tep_thi_doc_ca_tep_theo_cau_hoi(db, bot, monkeypatch):
+    from app.modules.agent_hub import web_search as ws
+
+    service, sent, asked = bot
+    _fake_intent(monkeypatch, service, "hoi")
+    docs: list[tuple] = []
+    monkeypatch.setattr(service, "_answer_document_bytes",
+                        lambda db, chat_id, name, mime, data, q, before_id, source="": docs.append((name, q, source)))
+    monkeypatch.setattr(service, "run_research", lambda *a, **k: pytest.fail("tệp không đi đường tóm tắt trang"))
+    monkeypatch.setattr(ws, "fetch_resource", lambda url, max_bytes: {
+        "kind": "doc", "url": url, "name": "bai-bao.pdf", "mime": "application/pdf", "data": b"%PDF"})
+    service.handle_message(db, _msg("https://arxiv.org/abs/2401.01234"))
+    service.handle_message(db, _msg("phân tích phương pháp trong bài này https://arxiv.org/abs/2401.01234"))
+    assert docs[0][1] == service.DOC_DEFAULT_QUESTION and docs[1][1] == "phân tích phương pháp trong bài này"
+    assert docs[0][2] == "https://arxiv.org/abs/2401.01234"
+    #  Không đọc được (Drive chưa chia sẻ) → nói rõ cách làm.
+    monkeypatch.setattr(ws, "fetch_resource", lambda url, max_bytes: {"kind": "none", "reason": "drive_private"})
+    service.handle_message(db, _msg("tóm tắt https://drive.google.com/file/d/PRIVATEFILE12/view"))
+    assert "chưa chia sẻ công khai" in sent[-1]
+

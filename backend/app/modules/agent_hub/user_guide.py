@@ -98,6 +98,8 @@ SECTIONS: tuple[Section, ...] = (
     Section("mang", "Tra cứu trên mạng", ("tra mang", "tim", "mang", "kiem chung", "web"), (
         ("giá vàng hôm nay", "hỏi thẳng, em tìm và ghi nguồn"),
         ("tóm tắt bài này https://…", "dán link bài báo / bài viết, em đọc rồi tóm tắt (mạng xã hội chỉ đọc được phần xem trước)"),
+        ("phân tích phương pháp trong bài này https://arxiv.org/abs/…", "link tệp PDF / Word / Excel, Google Drive / Docs "
+                                                                         "chia sẻ công khai, bài báo khoa học — em đọc cả tệp"),
         ("có đúng là … không", "kiểm chứng một thông tin"),
         ("xuất Word", "bản Word của lần tìm vừa rồi"),
     )),

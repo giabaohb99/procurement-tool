@@ -476,19 +476,31 @@ def _claim_doc(db: Session, row_id: int) -> bool:
 
 
 def _answer_document(db: Session, chat_id: str, info: dict, question: str, before_id: int) -> None:
-    from . import doc_text
-
     name, mime = str(info.get("name") or "tệp"), str(info.get("mime") or "")
     telegram.send_chat_action(chat_id)
     try:
         data, _ = telegram.download_file(str(info.get("file_id") or ""), max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
-        content = doc_text.extract(name, mime, data)
-    except (telegram.TelegramError, doc_text.DocTextError) as e:
+    except telegram.TelegramError as e:
         reply(db, chat_id, f"Em chưa đọc được tệp «{telegram.esc(name)}»: {telegram.esc(str(e))}.")
         db.commit()
         return
-    answer_question(db, chat_id, f"{question}\n\n{DOC_GUIDE}\n\nNỘI DUNG TỆP «{name}»:\n{content}", before_id=before_id,
-                    kind="document")
+    _answer_document_bytes(db, chat_id, name, mime, data, question, before_id)
+
+
+def _answer_document_bytes(db: Session, chat_id: str, name: str, mime: str, data: bytes, question: str,
+                           before_id: int, *, source: str = "") -> None:
+    """Bóc chữ một tệp (gửi thẳng hoặc tải qua link — ai-CR-134) rồi để Trợ lý trả lời theo câu hỏi."""
+    from . import doc_text
+
+    try:
+        content = doc_text.extract(name, mime, data)
+    except doc_text.DocTextError as e:
+        reply(db, chat_id, f"Em chưa đọc được tệp «{telegram.esc(name)}»: {telegram.esc(str(e))}.")
+        db.commit()
+        return
+    origin = f" (tải từ {source})" if source else ""
+    answer_question(db, chat_id, f"{question}\n\n{DOC_GUIDE}\n\nNỘI DUNG TỆP «{name}»{origin}:\n{content}",
+                    before_id=before_id, kind="document")
 
 
 def flush_pending_doc(db: Session, row_id: int) -> bool:
@@ -1133,8 +1145,14 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
 _LINK_ASK = re.compile(r"(?<!\w)(tom tat|doc|tom luoc|phan tich|xem giup|noi dung|y chinh|bai (viet|bao|nay)|link nay|"
                        r"trang nay|summary|summarize)(?!\w)")
 _LINK_LOOKBACK = timedelta(minutes=15)
-#  Link vào chính ERP / Google Drive có đường riêng (Trợ lý tra ERP, biên bản họp / đọc tệp Drive) — không đọc như bài báo.
-_LINK_SKIP_HOSTS = ("drive.google.com", "docs.google.com", "meet.google.com")
+#  Link vào chính ERP có đường riêng (Trợ lý tra ERP). ai-CR-134: link Google Drive / Docs nay đọc được (tệp chia sẻ công
+#  khai); link Drive kèm chữ «họp / biên bản» vẫn đi đường biên bản họp (xét trước ở `_meeting_by_message`).
+_LINK_SKIP_HOSTS = ("meet.google.com",)
+_LINK_FAIL = {
+    "drive_private": ("Em không mở được tệp Google này: tệp chưa chia sẻ công khai. Anh/chị bật chia sẻ «Bất kỳ ai có "
+                      "đường liên kết» (quyền Người xem), hoặc tải tệp về rồi gửi thẳng vào đây, em đọc ngay."),
+    "too_large": "Tệp qua link lớn hơn {mb} MB, em chưa đọc được. Anh/chị gửi bản nhỏ hơn hoặc phần cần đọc.",
+}
 
 
 def _readable_links(text: str) -> list[str]:
@@ -1186,8 +1204,28 @@ def _link_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
         if done is not None:
             return False                            # link đó đã được tóm tắt rồi — câu này là chuyện khác
         question = f"{text}\n{' '.join(prev_links)}"
+        links = prev_links
     row.action = ACT_RESEARCH
     db.commit()
+    #  ai-CR-134: link tới TỆP (PDF / Word / Excel, Google Drive / Docs, bài báo khoa học có bản PDF) → đọc cả tệp như
+    #  khi gửi tệp thẳng vào chat; còn lại là trang web → tóm tắt bài (ai-CR-133).
+    telegram.send_chat_action(chat_id)
+    max_bytes = settings.AGENT_FILE_MAX_MB * 1024 * 1024
+    res = web_search.fetch_resource(links[0], max_bytes=max_bytes)
+    if res["kind"] == "doc":
+        ask = question
+        for u in web_search.find_urls(question):
+            ask = ask.replace(u, " ")
+        ask = " ".join(ask.split()) or DOC_DEFAULT_QUESTION
+        row.scope = SCOPE_PERSONAL
+        db.commit()
+        _answer_document_bytes(db, chat_id, res["name"], res["mime"], res["data"], ask, row.id, source=res["url"])
+        return True
+    if res["kind"] == "none":
+        reply(db, chat_id, _LINK_FAIL.get(res["reason"], _LINK_FAIL["drive_private"]).format(
+            mb=settings.AGENT_FILE_MAX_MB), action=ACT_RESEARCH)
+        db.commit()
+        return True
     run_research(db, chat_id, question, research.MODE_LINK)
     return True
 
