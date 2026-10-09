@@ -4508,8 +4508,6 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
     """
     from fastapi import HTTPException
 
-    from app.modules.assistant.tools.update_tool import confirm_update
-
     row = db.get(AgentMessage, msg_id) if msg_id else None
     if row is None or row.direction != DIR_OUT:
         telegram.answer_callback(cb_id, "Không tìm thấy đề xuất này trong sổ")
@@ -4540,7 +4538,7 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
     #  (bao-CR-463), và dấu chưa chốt thì nút bấm lại lần nữa vẫn ghi lần nữa.
     db.commit()
     try:
-        done = confirm_update(db, user, str(proposal.get("confirm_token") or ""))
+        done = erp.confirm_proposal(db, user, str(proposal.get("confirm_token") or ""))   # ai-CR-151: qua cổng B
     except HTTPException as e:
         db.rollback()
         row = db.get(AgentMessage, msg_id)

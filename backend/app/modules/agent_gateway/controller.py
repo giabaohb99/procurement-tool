@@ -223,6 +223,21 @@ def draft_delete(body: DraftDeleteIn, user=Depends(gateway_user), db: Session = 
     return success(L.delete_my_drafts(db, user, [i.model_dump() for i in body.items]))
 
 
+#  ai-CR-151: nút «Xác nhận sửa / xóa» trên Telegram. Token Fernet do ERP cấp lúc chạy tool đề xuất; ở đây ERP kiểm
+#  lại TOÀN BỘ (token, hạn, đúng người, quyền, phạm vi, trạng thái) đúng như nút trên web.
+class ProposalConfirmIn(BaseModel):
+    token: str = Field(min_length=1, max_length=8000)
+
+
+@router.post("/proposal/confirm")
+def proposal_confirm(body: ProposalConfirmIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    try:
+        return success(L.confirm_proposal(db, user, body.token))
+    except HTTPException as e:
+        db.rollback()
+        return success({"error": str(e.detail), "status": e.status_code})
+
+
 @router.get("/draft/details")
 def draft_details(kind: str = Query(max_length=20), id: int = Query(ge=1), _: int = Depends(gateway_signed),
                   db: Session = Depends(get_db)):

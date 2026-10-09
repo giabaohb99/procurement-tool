@@ -345,3 +345,39 @@ def test_so_thuat_ngu_va_cho_thieu_chuc_nang_di_qua_cong_o_dich_vu_ai(db, gatewa
     with pytest.raises(erp.ErpError):
         erp.setting_raw_put(db, "ai_daily_msg_limit", "0", 1)
 
+
+
+def test_nut_xac_nhan_sua_phieu_di_qua_cong_b(db, seed, gateway, cap_quyen):
+    """ai-CR-151 — chế độ service: nút «Xác nhận sửa / xóa» trên Telegram phải nhờ ERP ghi phiếu qua cổng B. Trước đây
+    `_resolve_proposal` gọi thẳng `confirm_update` trên DB của bot (không có bảng phiếu) nên bấm là báo lỗi."""
+    from datetime import date
+
+    from fastapi import HTTPException
+
+    from app.modules.agent_hub import erp
+    from app.modules.leave.catalog_model import LeaveType
+    from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
+
+    cap_quyen(seed.u_req_id, "leave_request", scope="own", read=True, write=True)
+    phep = LeaveType(code="ANNUAL", name="Phép năm", counts_balance=False, is_active=True, sort_order=1)
+    db.add(phep)
+    db.flush()
+    don = LeaveRequest(code="NP-GW-1", company_id=seed.company_id, department_id=seed.dept_id,
+                       employee_id=seed.emp_req_id, leave_type_id=phep.id, from_date=date(2026, 10, 12),
+                       to_date=date(2026, 10, 12), total_days=1, status=1, reason="Việc riêng",
+                       created_by=seed.u_req_id)
+    db.add(don)
+    db.flush()
+    db.add(LeaveRequestLine(request_id=don.id, leave_type_id=phep.id, days=1, sort_order=1))
+    db.commit()
+    u = erp.user_by_id(db, seed.u_req_id)
+    out = erp.run_tool(db, u, "propose_document_update", {
+        "entity": "leave_request", "code": "NP-GW-1", "changes": {"reason": "đi khám nghĩa vụ"}})
+    token = out["proposal"]["confirm_token"]
+    done = erp.confirm_proposal(db, u, token)
+    assert done["code"] == "NP-GW-1" and ("POST", "/api/agent-gw/proposal/confirm") in gateway
+    db.refresh(don)
+    assert don.reason == "đi khám nghĩa vụ" and float(don.total_days) == 1.0
+    with pytest.raises(HTTPException) as e:           # token của người khác → lỗi nghiệp vụ đi nguyên về
+        erp.confirm_proposal(db, erp.user_by_id(db, seed.u_nstm_id), token)
+    assert e.value.status_code == 403

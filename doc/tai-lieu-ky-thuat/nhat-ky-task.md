@@ -13193,8 +13193,20 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
-## ai-CR-151 | Bot sửa được lý do, ngày, loại nghỉ của đơn nghỉ phép và xóa được phiếu nháp của mình
+## ai-CR-152 | Rà lại bản vá sửa và xóa phiếu của bot, vá nút xác nhận trên Telegram ở dev
 - status: dang-lam
+- date: 2026-10-09
+Đại ca nhờ em kiểm lại mã của bản vá sửa và xóa phiếu do Claude Code viết. Phần lõi ổn: sửa dòng hàng giữ đúng mã dòng nên ảnh
+đối chiếu không mồ côi, lúc bấm xác nhận hệ thống kiểm lại quyền, phạm vi và trạng thái từ đầu, xóa phải đủ ba điều kiện. Em tìm
+ra một lỗi chặn: ở dev bot chạy tách khỏi ERP, nút xác nhận sửa hoặc xóa trên Telegram lại ghi thẳng vào cơ sở dữ liệu của bot
+nên bấm là báo lỗi; nay nút đó nhờ ERP ghi qua cổng chung có chữ ký. Em cũng giữ nguyên số ngày nghỉ khi chỉ sửa lý do, để đơn
+đã chỉnh tay số ngày không bị tính lại ngầm vào quỹ phép. Năm trăm lẻ ba bài kiểm chạy xanh, riêng một bài về cờ DEV_MODE đỏ do
+môi trường máy em.
+
+Mã nguồn: agent_hub/erp.py (confirm_proposal) · agent_gateway/controller.py (/proposal/confirm) · agent_hub/service.py (_resolve_proposal) · assistant/tools/update_tool.py (_update_leave)
+
+## ai-CR-151 | Bot sửa được lý do, ngày, loại nghỉ của đơn nghỉ phép và xóa được phiếu nháp của mình
+- status: xong
 - date: 2026-10-09
 Đại ca nhờ bot sửa lý do đơn nghỉ ngày thứ hai tuần sau nhưng bot trả lời không sửa được, đầu tin còn lộ dòng thẻ suy nghĩ
 của model. Việc AI-0006 giao Claude Code đã làm xong phần sửa và xóa phiếu, các bài kiểm xanh, nhưng tự dừng không commit vì
@@ -13206,6 +13218,7 @@ lời của bot không còn lộ thẻ suy nghĩ. Năm trăm bài kiểm backend
 DEV_MODE đỏ do môi trường máy em đang bật cờ đó.
 
 Mã nguồn: assistant/tools/update_tool.py (propose_document_update, propose_document_delete, confirm_update) · assistant/provider/openai_compat.py (clean_reply) · agent_hub/coder.py (check_drift, _c1_rule) · agent_hub/user_guide.py · frontend-v2 update-proposal-card.tsx
+Deploy: dev 09/10 cả ERP lẫn bot, commit 2774b479 trên erp-v2.
 
 ## ai-CR-150 | Nhắn sửa nó đi sau khi xem chi tiết việc là bot giao việc đó luôn
 - status: xong

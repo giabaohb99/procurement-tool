@@ -36,6 +36,7 @@ from pydantic import ValidationError
 from app.core.auth import get_perm_profile, user_has_permission
 from app.core.config import settings as _env
 from app.core.scoping import apply_scope, get_scoped
+from app.modules.leave.constants import EDITABLE_STATUSES
 
 from .approval_tool import _detail_url
 from .base import ToolContext, ToolSpec
@@ -48,8 +49,8 @@ CONFIRM_TTL_SECONDS = 15 * 60   # đề xuất sửa chỉ sống 15 phút — q
 #  update_request), không nới thêm: YCTT chỉ mở vì payload gói mỗi print_texts (CR-149).
 _DRAFT_STATUSES = ("draft", "rejected")
 _PRINT_TEXT_STATUSES = ("draft", "submitted", "approved")
-#  Đơn nghỉ phép: Nháp (1) / Trả về chỉnh sửa (5) — đúng `leave.constants.EDITABLE_STATUSES`.
-_LEAVE_EDITABLE = (1, 5)
+#  Đơn nghỉ phép: Nháp / Trả về chỉnh sửa — lấy thẳng từ phân hệ nghỉ phép, đừng chép số (ai-CR-151).
+_LEAVE_EDITABLE = EDITABLE_STATUSES
 
 #  Khóa phẳng cho model (dễ điền hơn dict lồng nhau) — 3 khóa print_* map về print_texts.
 _PRINT_KEY_MAP = {"print_content": "content", "print_line_desc": "line_desc",
@@ -887,6 +888,10 @@ def _update_leave(db, user, doc, fields: dict) -> None:
         values["leave_type_id"] = found.id
     if "reason" in fields:
         values["reason"] = fields["reason"]
+    if not values.keys() & {"from_date", "to_date", "leave_type_id"}:
+        #  Chỉ sửa lý do: giữ đúng số ngày đang có. Không gửi `total_days` thì service tính lại từ khoảng ngày —
+        #  đơn đã chỉnh tay số ngày sẽ bị đổi ngầm, tức sửa vào quỹ phép chỉ vì sửa một câu chữ.
+        values["total_days"] = float(doc.total_days or 0)
     obj = request_service.update(db, doc, LeaveRequestUpdate(**values), user)
     audit_record(db, user.id, "leave_request", obj.id, "update", f"Sửa đơn nghỉ phép {obj.code}")
 
