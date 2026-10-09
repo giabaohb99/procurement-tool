@@ -309,6 +309,10 @@ class Settings(BaseSettings):
     # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
     # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc
     # AGENT_PLAN_MODEL khi khóa để trống.
+    # ai-CR-149 (đại ca 09/10: «kế hoạch code thì thằng Claude CLI ở local mới biết … làm gọn lại, hỏi xác nhận vài câu okee
+    # thì làm thôi»): BỎ bước model quản lý viết kế hoạch. Rà soát (Claude Code, chỉ đọc) → thẻ xác nhận (kèm câu hỏi của
+    # rà soát nếu có) → «ok» → Claude Code tự lập kế hoạch và sửa. Tắt = dây chuyền cũ.
+    AGENT_CODE_FLOW_SIMPLE: bool = True
     AGENT_PLAN_PROVIDERS: str = "claude,openai"
     AGENT_PLAN_MODEL: str = ""
     # ai-CR-106: model DỰ PHÒNG khi model chính quá tải (503 / treo). Trống = model Gemini của Trợ lý web

@@ -7,6 +7,14 @@ import pytest
 from app.modules.agent_hub import manager
 from app.modules.assistant.provider.base import ChatResult
 
+@pytest.fixture(autouse=True)
+def _old_code_flow(monkeypatch):
+    """ai-CR-149: dây chuyền gọn (không model quản lý viết kế hoạch) bật mặc định; các bài ở tệp này canh dây chuyền CŨ
+    (vẫn còn khi tắt AGENT_CODE_FLOW_SIMPLE). Dây chuyền gọn canh ở test_agent_hub_day_chuyen_gon.py."""
+    from app.core.config import settings as _s
+
+    monkeypatch.setattr(_s, "AGENT_CODE_FLOW_SIMPLE", False)
+
 PLAN = {"plan": "1. Thêm tool xóa nháp.", "plan_files": ["backend/app/modules/agent_hub/draft_create.py"],
         "test_plan": "- xóa đúng phiếu", "risk_level": 2, "needs_clarification": False, "questions": [],
         "assumptions": []}

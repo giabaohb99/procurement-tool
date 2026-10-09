@@ -180,7 +180,7 @@ def approve_gate(task: AgentTask) -> str:
     Kiểm ở đây rẻ và tức thì; kiểm sau khi bot chạy xong 20 phút thì đã đốt tiền rồi.
     """
     files = [f for f in (task.plan_files or []) if isinstance(f, str) and f.strip()]
-    if not files:
+    if not files and not settings.AGENT_CODE_FLOW_SIMPLE:
         return "kế hoạch chưa có phạm vi tệp (luật B2) — bấm Sửa lại rồi /gom để lập lại"
     banned = [f for f in files if is_banned_path(f)]
     if banned:
@@ -438,7 +438,9 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
         "## Yêu cầu gốc", task.summary or "(không có)", "",
         "## Kế hoạch đã duyệt", task.plan or "(không có)", "",
         "## Phạm vi tệp",
-        *[f"- {f}" for f in (task.plan_files or [])],
+        *([f"- {f}" for f in (task.plan_files or [])] or [
+            "(chưa chốt — ai-CR-149: TỰ lập kế hoạch ngắn từ lượt rà soát rồi sửa; đụng ít tệp nhất có thể, trong trần "
+            "số tệp; tệp cấm vẫn cấm)"]),
         "",
     ]
     if task.test_plan:
@@ -627,6 +629,8 @@ def check_drift(touched: list[str], plan_files: list[str], *, max_files: int) ->
     #  ai-CR-015): sửa tài liệu cho khớp mã là việc nên làm, không phải đi lạc. Trần tổng số
     #  tệp ở trên vẫn đếm chúng. CLAUDE.md và .claude/ đã bị chặn ở bước tệp cấm phía trên.
     counted = [f for f in touched if not _is_test_file(f) and not f.lower().endswith(".md")]
+    if not plan_files:
+        return ""       # ai-CR-149: chưa chốt phạm vi tệp (Claude Code tự xác định) — chỉ còn trần số tệp + tệp cấm
     outside = [f for f in counted if not is_in_plan(f, plan_files or [])]
     if counted and len(outside) / len(counted) > DRIFT_RATIO:
         return (f"{len(outside)}/{len(counted)} tệp ngoài kế hoạch (>30%, luật C1): "

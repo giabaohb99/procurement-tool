@@ -1408,7 +1408,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         return
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
-    if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
+    if (_ok_by_text(db, chat_id, row, text)          # ai-CR-149: «ok» sau thẻ xác nhận = làm luôn
+            or _grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
             or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
             or _brief_by_text(db, chat_id, row, text)
             or _ghi_viec_by_text(db, chat_id, row, text) or _dev_request_by_text(db, chat_id, row, text)
@@ -4820,7 +4821,25 @@ def plan_task(db: Session, task: AgentTask) -> None:
         _plan_task(db, task)
 
 
+def _confirm_from_scan(db: Session, task: AgentTask) -> None:
+    """ai-CR-149: dây chuyền gọn — KHÔNG gọi model quản lý viết kế hoạch. Lấy đoạn hiểu việc + tệp + câu hỏi từ lượt rà
+    soát của Claude Code; còn câu hỏi thì hỏi (tối đa 3), không thì một thẻ xác nhận «ok». Claude Code tự lập kế hoạch
+    lúc sửa."""
+    run = coder.latest_scan_run(db, task)
+    art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+    task.plan = str(art.get("message") or "").strip()[:4000] or (task.summary or "")
+    task.plan_files = _scan_files(db, task)
+    task.questions = merge_questions(_scan_questions(db, task))[:3]
+    task.status = ST_NEEDS_INPUT if task.questions else ST_PLAN
+    db.commit()
+    send_plan_card(db, task)
+    db.commit()
+
+
 def _plan_task(db: Session, task: AgentTask) -> None:
+    if settings.AGENT_CODE_FLOW_SIMPLE:
+        _confirm_from_scan(db, task)
+        return
     docs = memory.recall(f"{task.title}\n{task.summary}")
     #  Luật 3 của sổ quyết định (ai-CR-015): việc rủi ro cao không được nạp sổ, cấm giả định.
     strict = int(task.risk_level or 0) >= RISK_HIGH
@@ -5088,6 +5107,53 @@ def _card_md(text: str, limit: int = 3000) -> str:
     return rendered if len(rendered) <= limit else telegram.esc(text or "")
 
 
+def _send_confirm_card(db: Session, task: AgentTask, lines: list[str]) -> None:
+    """ai-CR-149: thẻ xác nhận gọn — em hiểu việc thế nào · tệp dự kiến · trả lời ok / sửa / bỏ."""
+    esc = telegram.esc
+    lines += ["<b>Em hiểu việc:</b>", _card_md(task.plan or task.summary or "", limit=700), ""]
+    files = [f for f in (task.plan_files or []) if isinstance(f, str) and f.strip()]
+    if files:
+        shown = files[:5]
+        lines += ["<b>Tệp dự kiến:</b>"] + [f"• <code>{esc(f)}</code>" for f in shown]
+        if len(files) > 5:
+            lines.append(f"… và {len(files) - 5} tệp nữa")
+    else:
+        lines.append("<i>Claude Code tự xác định tệp khi sửa.</i>")
+    lines += ["", f"Rủi ro: <b>{RISK_LABELS.get(task.risk_level, '?')}</b>", "", "<b>Trả lời:</b>",
+              "• <code>ok</code> — em giao Claude Code làm luôn (tự lập kế hoạch khi sửa)",
+              "• <code>sửa: …</code> — nói thêm điều cần đổi, em rà lại",
+              "• <code>bỏ việc này</code>"]
+    reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id,
+          buttons=[("Làm", f"ok:{task.id}"), ("Sửa lại", f"fix:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
+
+
+#  ai-CR-149: «ok» / «oke» / «làm đi» ngay sau thẻ xác nhận của MỘT việc = duyệt việc đó (không qua bộ phân loại).
+_OK_CONFIRM = re.compile(r"^(ok|oke|okay|okee|ok em|uh|ừ|ừm|được|đồng ý|làm đi|làm luôn|triển|triển đi|chốt)"
+                         r"(\s+(đi|luôn|nhé|nha|em|làm|thôi|rồi))*[.!]*$")
+OK_CONFIRM_WINDOW = timedelta(minutes=60)
+
+
+def _ok_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Tin bot gần nhất (không tính bản sao vận hành) là thẻ xác nhận của việc đang chờ duyệt → «ok» là duyệt."""
+    if not settings.AGENT_CODE_FLOW_SIMPLE or not _OK_CONFIRM.match(text.strip().lower()):
+        return False
+    last = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_OUT, AgentMessage.id < row.id,
+        AgentMessage.action.not_in(("ban_sao_vh", ACT_HEARTBEAT, ACT_ACK))).order_by(AgentMessage.id.desc()).limit(1))
+    if last is None or not last.task_id or (row.created_at and last.created_at
+                                             and row.created_at - last.created_at > OK_CONFIRM_WINDOW):
+        return False
+    task = db.get(AgentTask, int(last.task_id))
+    if task is None or task.status != ST_PLAN:
+        return False
+    row.action = ACT_COMMAND
+    row.task_id = task.id
+    db.commit()
+    approve_task(db, chat_id, "", task)
+    db.commit()
+    return True
+
+
 def send_plan_card(db: Session, task: AgentTask) -> None:
     lines = [f"<b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}", ""]
     if task.questions:
@@ -5102,6 +5168,9 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
               buttons=[("Trả lời câu hỏi", f"ans:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
         return
 
+    if settings.AGENT_CODE_FLOW_SIMPLE:
+        _send_confirm_card(db, task, lines)
+        return
     #  Kế hoạch do model viết là Markdown (`tệp`, **đậm**, 1. 2.): đổi sang HTML Telegram như
     #  câu trả lời của Trợ lý AI, không in thô dấu nháy và dấu sao (đại ca báo 23/09/2026).
     lines += [_card_md(task.plan, limit=900), ""]      # ai-CR-086: gọn — đọc trên điện thoại

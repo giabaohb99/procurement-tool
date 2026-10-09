@@ -145,6 +145,14 @@ def _fake_bot_env(monkeypatch):
     monkeypatch.setattr(settings, "AGENT_HUB_ENABLED", True)
 
 
+@pytest.fixture(autouse=True)
+def _old_code_flow(monkeypatch):
+    """ai-CR-149: dây chuyền gọn (không model quản lý viết kế hoạch) bật mặc định; các bài ở tệp này canh dây chuyền CŨ
+    (vẫn còn khi tắt AGENT_CODE_FLOW_SIMPLE). Dây chuyền gọn canh ở test_agent_hub_day_chuyen_gon.py."""
+    from app.core.config import settings as _s
+
+    monkeypatch.setattr(_s, "AGENT_CODE_FLOW_SIMPLE", False)
+
 @pytest.fixture
 def bot(monkeypatch):
     """Cắm bot vào chỗ trống: chặn mọi lượt gọi mạng, ghi lại thứ bot định gửi."""

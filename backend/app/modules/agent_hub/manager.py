@@ -124,8 +124,15 @@ class AgentGeminiProvider(GeminiProvider):
             else:
                 fn = getattr(_DELEGATES.get(ref.provider) or _DELEGATES["claude"], method)
             try:
-                return fn(*args, model=self._model_for(ref, model), **kw)
+                return fn(*args, model=_MODEL_SWAP.get(ref.row_id) or self._model_for(ref, model), **kw)
             except ProviderError as e:
+                swap = _swap_missing_model(ref, str(e))
+                if swap:
+                    #  ai-CR-149: khóa trạm tùy chỉnh ghi model trạm không còn bán (đại ca đổi nhóm trên modelapi.vn) →
+                    #  lấy model trạm đang có, cùng họ trước — bot không chết chỉ vì ô Model cũ.
+                    log.warning("agent_hub: trạm không có model %s, dùng tạm %s (khóa …%s)", ref.model, swap, ref.hint)
+                    _MODEL_SWAP[ref.row_id] = swap
+                    continue
                 if ai_keys.is_transient(str(e)) and not retried:
                     #  ai-CR-099: 07/10 «alo how are u» chết vì Gemini 503 «high demand» → thẻ hỏi lại vô duyên.
                     #  ai-CR-106: Gemini thì đổi sang model DỰ PHÒNG (model chính đang quá tải, thử lại y nguyên vẫn treo).
@@ -155,6 +162,26 @@ class AgentGeminiProvider(GeminiProvider):
         return self._call("run_tools", messages, tools=tools, execute=execute, model=model, system=system,
                           max_tokens=max_tokens, temperature=temperature, thinking=thinking,
                           cache_system=cache_system, max_iters=max_iters)
+
+
+#  ai-CR-149: id khóa → model thay thế khi model ghi trên khóa không còn ở trạm (sống tới lúc tiến trình khởi động lại).
+_MODEL_SWAP: dict[int, str] = {}
+
+
+def _swap_missing_model(ref, error: str) -> str:
+    """Lỗi «model_not_found» của khóa trạm tùy chỉnh → model trạm đang có (cùng họ trước). Rỗng nếu không đổi được."""
+    from . import ai_keys
+    from .user_keys import model_family
+
+    if ref.provider != "openai_compat" or "model_not_found" not in error or ref.row_id in _MODEL_SWAP:
+        return ""
+    try:
+        models = ai_keys.custom_models(ref.base_url, ref.key)
+    except Exception:  # noqa: BLE001
+        return ""
+    wanted = model_family(ref.model or "")
+    same = [m for m in models if model_family(m) == wanted and m != ref.model]
+    return (same or [m for m in models if m != ref.model] or [""])[0]
 
 
 class _AgentGeminiOnly(AgentGeminiProvider):

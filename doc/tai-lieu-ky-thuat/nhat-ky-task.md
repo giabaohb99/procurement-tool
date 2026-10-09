@@ -13193,6 +13193,19 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-149 | Làm gọn dây chuyền sửa phần mềm: Claude Code rà soát rồi hỏi xác nhận, nhắn ok là làm
+- status: dang-lam
+- date: 2026-10-09
+Đại ca muốn bỏ bớt lớp trong dây chuyền sửa phần mềm: kế hoạch thì để Claude Code trên máy sửa mã tự lo, bot chỉ hỏi xác nhận
+vài câu rồi làm. Nay bot không còn gọi model quản lý viết kế hoạch riêng. Sau khi Claude Code đọc mã, bot gửi một thẻ ngắn gồm
+cách hiểu việc, các tệp dự kiến và mức rủi ro; nếu Claude Code còn câu cần đại ca quyết thì bot hỏi tối đa ba câu trước. Đại ca
+nhắn ok, oke hay làm đi là việc được giao cho Claude Code ngay, Claude tự lập kế hoạch khi sửa; muốn đổi thì nhắn sửa kèm điều
+cần đổi, không làm thì nhắn bỏ việc này. Việc chưa chốt được tệp vẫn giao được, các chốt chặn tệp cấm và trần số tệp vẫn giữ. Thêm
+nữa, khi đại ca đổi nhóm trên trạm modelapi.vn làm ô model cũ không còn, bot tự chọn model trạm đang có thay vì ngừng trả lời. Bài
+kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (_confirm_from_scan, _send_confirm_card, _ok_by_text) · coder.py (approve_gate, check_drift, đề bài) · manager.py (_swap_missing_model) · core/config.py (AGENT_CODE_FLOW_SIMPLE) · test/backend/test_agent_hub_day_chuyen_gon.py
+
 ## ai-CR-148 | Nhắn bot phát triển tính năng thì thành việc sửa phần mềm, không còn bị từ chối
 - status: xong
 - date: 2026-10-09
