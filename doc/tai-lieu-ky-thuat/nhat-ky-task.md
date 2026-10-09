@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-153 | Claude Code làm chắc tay hơn và chặn bấm lại thẻ đề xuất cũ
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca duyệt ba cải tiến để việc giao cho Claude Code ít lọt lỗi hơn. Thứ nhất, thẻ xác nhận nay ghi bằng lời thường những
 việc đại ca làm được khi xong, để thấy ngay ý còn thiếu trước khi nhắn ok, và Claude Code phải viết bài kiểm cho từng câu đó.
@@ -13204,6 +13204,7 @@ phỏng bot và ERP chạy tách nhau. Kèm theo, mỗi thẻ đề xuất sửa
 hoặc khi phiếu vừa bị người khác sửa, hệ thống báo soạn lại đề xuất mới chứ không thêm trùng dòng. Bài kiểm liên quan chạy xanh.
 
 Mã nguồn: agent_hub/coder.py (outcomes_of, gate_tests, luật C11) · agent_hub/service.py (_send_confirm_card) · assistant/tools/update_tool.py (_state_sig) · test/backend/test_agent_hub_ranh_gioi_erp.py
+Deploy: dev 09/10, ERP api trước rồi tới bot, commit 20af8059 trên erp-v2; máy sửa mã ở máy đại ca dựng lại lúc 17:06.
 
 ## ai-CR-152 | Rà lại bản vá sửa và xóa phiếu của bot, vá nút xác nhận trên Telegram ở dev
 - status: xong
