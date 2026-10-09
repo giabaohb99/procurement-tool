@@ -4355,10 +4355,11 @@ def test_hoi_chi_phi_bang_chu_tach_tien_that_va_goi_thue_bao(db, bot, monkeypatc
     task = _task_with_plan(db, service, ["backend/app/x.py"])
     _cost_runs(db, service, coder, task)
     service.handle_message(db, _msg(f"{task.code} tốn bao nhiêu vậy em"))
-    assert "Gemini (tiền thật): $0.02 (≈ 1.000 đ)" in sent[-1]
+    #  ai-CR-147: ghi tên model đã chạy thay vì cứng «Gemini».
+    assert "AI theo khóa (m, tiền thật): $0.02 (≈ 1.000 đ)" in sent[-1] and "Gemini" not in sent[-1]
     assert "Claude Code (gói thuê bao, ước để so): $3.00 (≈ 78.000 đ)" in sent[-1]
     service.handle_message(db, _msg("tháng này bot tốn bao nhiêu"))
-    assert "30 ngày: Gemini $0.03" in sent[-1] and task.code in sent[-1]
+    assert "30 ngày: AI theo khóa $0.03" in sent[-1] and task.code in sent[-1]
     service.handle_message(db, _msg("/chiphi"))
     assert "Chi phí ước của bot" in sent[-1]
 

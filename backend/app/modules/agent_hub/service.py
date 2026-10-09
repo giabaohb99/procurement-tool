@@ -85,6 +85,7 @@ from .constants import (
     ACT_RUNNER_DONE,
     ACT_RUNNER_DROPPED,
     ACT_RUNNER_WAIT,
+    BOT_CODE_FACT,
     BOT_DRAFT_FACTS,
     BOT_LOGIN_FACTS,
     BOT_NAME,
@@ -942,6 +943,15 @@ def _cost_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
     return True
 
 
+def _models_of(runs) -> str:
+    """Tên các model AI theo khóa đã chạy cho một việc (không tính Claude Code), theo số lượt nhiều trước."""
+    count: dict[str, int] = {}
+    for r in runs:
+        if r.provider != coder.PROVIDER and (r.model or "").strip():
+            count[r.model] = count.get(r.model, 0) + 1
+    return ", ".join(m for m, _ in sorted(count.items(), key=lambda x: -x[1])[:3])
+
+
 def _money(usd: float) -> str:
     vnd = round(usd * settings.AGENT_USD_VND / 1000) * 1000
     return f"${usd:.2f} (≈ {vnd:,.0f} đ)".replace(",", ".")
@@ -960,7 +970,7 @@ def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | N
     if owner_id:
         runs = db.scalars(select(AgentRun).where(AgentRun.owner_id == owner_id, AgentRun.started_at >= now - timedelta(days=30))).all()
         today = to_utc(now_local().replace(hour=0, minute=0, second=0, microsecond=0))
-        lines = ["<b>Chi phí Gemini bằng khóa của anh/chị</b> (tiền thật, ước theo bảng giá)"]
+        lines = ["<b>Chi phí AI bằng khóa của anh/chị</b> (tiền thật, ước theo bảng giá)"]
         for label, since in (("Hôm nay", today), ("7 ngày", now - timedelta(days=7)), ("30 ngày", now - timedelta(days=30))):
             lines.append(f"{label}: {_money(sum(float(r.cost_usd or 0) for r in runs if r.started_at and r.started_at >= since))}")
         lines.append(rate_note)
@@ -970,7 +980,7 @@ def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | N
         gem = sum(float(r.cost_usd or 0) for r in runs if r.provider != coder.PROVIDER)
         cc = sum(float(r.cost_usd or 0) for r in runs if r.provider == coder.PROVIDER)
         return (f"<b>{esc(task.code)}</b> · {esc(task.title)}\n"
-                f"Gemini (tiền thật): {_money(gem)}\n"
+                f"AI theo khóa ({esc(_models_of(runs) or 'chưa gọi model')}, tiền thật): {_money(gem)}\n"
                 f"Claude Code (gói thuê bao, ước để so): {_money(cc)}\n{rate_note}")
     today = to_utc(now_local().replace(hour=0, minute=0, second=0, microsecond=0))
     since30 = now - timedelta(days=30)
@@ -982,7 +992,7 @@ def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | N
 
     lines = ["<b>Chi phí ước của bot</b>"]
     for label, since in (("Hôm nay", today), ("7 ngày", now - timedelta(days=7)), ("30 ngày", since30)):
-        lines.append(f"{label}: Gemini {_money(total(since, gemini=True))} · Claude Code ước "
+        lines.append(f"{label}: AI theo khóa {_money(total(since, gemini=True))} · Claude Code ước "
                      f"{_money(total(since, gemini=False))}")
     per_task: dict[int, float] = {}
     for r in runs:
@@ -993,7 +1003,8 @@ def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | N
         tasks = {t.id: t for t in db.scalars(select(AgentTask).where(AgentTask.id.in_([t for t, _c in top])))}
         lines.append("Tốn nhất 30 ngày: " + " · ".join(
             f"<b>{esc(tasks[t].code)}</b> {_money(c)}" for t, c in top if t in tasks))
-    lines.append("Gemini là tiền thật; Claude Code chạy gói thuê bao nên không trả thêm. " + rate_note)
+    lines.append("AI theo khóa (Gemini, DeepSeek…) là tiền thật; Claude Code chạy gói thuê bao nên không trả thêm. "
+                 + rate_note)
     return "\n".join(lines)
 
 
@@ -1281,7 +1292,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
         return
     if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
             or _reminder_by_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text) \
-            or _brief_by_text(db, chat_id, row, text) \
+            or _brief_by_text(db, chat_id, row, text) or _dev_request_by_text(db, chat_id, row, text) \
             or _keys_by_text(db, chat_id, row, text):     # ai-CR-095/098: sổ nhớ + «còn khóa nào» cho mọi người
         return
     if _over_daily_cap(db, chat_id, row):
@@ -1400,7 +1411,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     if (_grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
             or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
             or _brief_by_text(db, chat_id, row, text)
-            or _ghi_viec_by_text(db, chat_id, row, text) or _keys_by_text(db, chat_id, row, text)
+            or _ghi_viec_by_text(db, chat_id, row, text) or _dev_request_by_text(db, chat_id, row, text)
+            or _keys_by_text(db, chat_id, row, text)
             or _glossary_by_text(db, chat_id, row, text)
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or meeting_actions.handle_text(db, chat_id, row, text)      # ai-CR-114: thẻ việc / lịch từ biên bản
@@ -2621,6 +2633,50 @@ def _ghi_viec_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     if not m:
         return False
     row.body = m.group("body").strip()
+    row.scope = SCOPE_COMPANY
+    ack_task_message(db, chat_id, row)
+    return True
+
+
+#  ai-CR-148: «oke phát triển tính năng», «làm tính năng này đi», «em bắt đầu sửa luôn chưa» ngay sau khi bot vừa nói chưa
+#  có tính năng → GIAO VIỆC sửa phần mềm, mô tả lấy từ mạch trước. So trên chữ ĐÃ BỎ DẤU.
+_DEV_REQUEST = re.compile(
+    r"^(?:(?:ok|oke|okay|ok e|uh|u|vang|duoc|dong y|the thi|vay thi)\s+)*(?:em\s+)?"
+    r"(?:(?:phat trien|lam|code|bo sung|them|viet)\s+(?:luon\s+)?(?:tinh nang|chuc nang)(?:\s+.*)?"
+    r"|(?:bat dau|tien hanh)\s+(?:sua|lam|code|phat trien)(?:\s+.*)?"
+    r"|(?:phat trien|code)\s+(?:luon|di|nhe|nha)(?:\s+.*)?)$")
+DEV_CONTEXT_WINDOW = timedelta(minutes=30)
+
+
+def _can_order_code(db: Session, chat_id: str) -> bool:
+    """Chat chủ bot, hoặc chat của người được cấp quyền sửa mã (`grants`)."""
+    if telegram.is_allowed_chat(chat_id):
+        return True
+    link = chat_link.get_active_link(db, chat_id)
+    return bool(link is not None and grants.level_for(db, link.user_id))
+
+
+def _dev_request_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Câu ngắn nhờ phát triển tính năng → tin vào INBOX cho vòng gom, kèm câu hỏi + câu trả lời gần nhất làm mô tả
+    (một mình «oke phát triển tính năng» thì vòng gom không biết tính năng nào)."""
+    from app.modules.assistant.glossary import fold
+
+    f = " ".join(fold(text).split())
+    if len(f.split()) > 25 or not _DEV_REQUEST.match(f) or not _can_order_code(db, chat_id):
+        return False
+    since = (row.created_at or datetime.now()) - DEV_CONTEXT_WINDOW
+    prev = list(db.scalars(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.id < row.id, AgentMessage.created_at >= since,
+        AgentMessage.action.in_((ACT_ASKED, ACT_ANSWER))).order_by(AgentMessage.id.desc()).limit(6)))
+    asked = next((m.body for m in prev if m.direction == DIR_IN and m.action == ACT_ASKED), "")
+    answered = next((m.body for m in prev if m.direction == DIR_OUT and m.action == ACT_ANSWER), "")
+    context = []
+    if asked:
+        context.append(f"- Câu hỏi trước: {' '.join(asked.split())[:600]}")
+    if answered:
+        context.append(f"- Bot vừa trả lời: {' '.join(answered.split())[:1500]}")
+    if context:
+        row.body = f"{text.strip()}\n\nNgữ cảnh ngay trước đó:\n" + "\n".join(context)
     row.scope = SCOPE_COMPANY
     ack_task_message(db, chat_id, row)
     return True
@@ -3942,6 +3998,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
                                        kind=kind,
                                        system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}"
+                                              + (f" {BOT_CODE_FACT}" if _can_order_code(db, chat_id) else "")
                                               + (f"\n\n{memory_block}" if memory_block else "")
                                               + (f"\n\n{habits}" if habits else "")
                                               + (f"\n\n{summary_note}" if summary_note else ""))
@@ -5145,7 +5202,9 @@ def show_task(db: Session, chat_id: str, arg: str) -> None:
         head.append(esc(timing))
     gem = sum(float(r.cost_usd or 0) for r in runs if r.provider != coder.PROVIDER)
     if gem or runs:
-        head.append(f"Chi phí Gemini (tiền thật): {_money(gem)} · chi tiết: /chiphi {esc(task.code)}")
+        #  ai-CR-147: ghi đúng model đã chạy (trước ghi cứng «Gemini» dù bot đang chạy DeepSeek).
+        head.append(f"Chi phí AI ({esc(_models_of(runs) or 'chưa gọi model')}, tiền thật): {_money(gem)} · chi tiết: "
+                    f"/chiphi {esc(task.code)}")
     parts = ["\n".join(head)]
     if runs:
         parts.append("<b>Các bước đã chạy</b>\n" + _runs_table(runs))

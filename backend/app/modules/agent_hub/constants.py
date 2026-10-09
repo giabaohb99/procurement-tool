@@ -349,6 +349,14 @@ MODEL_PRICES_USD = {
     "gemini-2.5-flash": (0.30, 2.50),
     "gemini-flash-lite-latest": (0.10, 0.40),
     "gemini-2.5-flash-lite": (0.10, 0.40),
+    #  ai-CR-147: DeepSeek qua trạm modelapi.vn (đọc /api/pricing 09/10/2026). Trạm tính quota = (vào + ra × completion_ratio)
+    #  × model_ratio × group_ratio, 500.000 quota = 1 USD của trạm → USD/1 triệu token = 2 × model_ratio × group_ratio.
+    #  GIÁ PHỤ THUỘC NHÓM của khóa — hiện mỗi tên model chỉ thuộc một nhóm: v4.1-flash ở «deepseek_tự_host» (×7), các bản
+    #  v4 ở «deepseek» (×43,2). Trạm có giảm giá phần vào trùng bộ đệm nên số thật có thể thấp hơn.
+    "deepseek-v4.1-flash": (2.10, 8.40),
+    "deepseek-flash": (6.48, 25.92),
+    "deepseek-v4-flash": (9.50, 28.51),
+    "deepseek-v4-pro": (28.51, 85.54),
 }
 
 
@@ -409,6 +417,14 @@ BOT_DRAFT_FACTS = (
     "«tạo» để lưu Nháp, «tạo và gửi duyệt» để gửi duyệt luôn, «thôi» để bỏ. Có cảnh báo (quỹ phép không đủ, trùng "
     "ngày…) thì vẫn nói rõ cảnh báo đó. Khi GỌI công cụ soạn nháp, mọi chữ tiếng Việt điền vào (lý do, mục "
     "đích, chủ đề, nội dung, tên hàng) phải viết CÓ DẤU đầy đủ như người dùng gõ — không bỏ dấu."
+)
+#  ai-CR-148 (đại ca 09/10: «oke phát triển tính năng» → bot trả «em không phải bên sửa phần mềm»): chat GIAO ĐƯỢC việc sửa
+#  mã (chat chủ bot / người được cấp quyền) thì bot CÓ máy sửa mã — không được chối.
+BOT_CODE_FACT = (
+    "Chat này giao được việc SỬA / PHÁT TRIỂN PHẦN MỀM cho máy sửa mã của bot. Người dùng muốn thêm, sửa, phát triển "
+    "một tính năng thì KHÔNG nói «em không sửa được phần mềm» hay «chỉ ghi đề xuất» — nói ngắn: em ghi thành việc sửa "
+    "phần mềm ngay, lập kế hoạch rồi gửi thẻ để duyệt; họ chỉ cần nhắn «phát triển tính năng» hoặc «ghi việc: <mô tả>». "
+    "Đừng gọi report_missing_feature cho trường hợp này."
 )
 BOT_LOGIN_FACTS = (
     "Chỉ dùng đoạn này khi người dùng hỏi CÁCH đăng nhập / đổi tài khoản (ai-CR-042). "

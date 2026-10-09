@@ -142,3 +142,14 @@ def test_lap_ke_hoach_dung_ban_manh_cung_ho_con_chat_dung_ban_nhanh(monkeypatch)
     with user_keys.use_chain([ds]):
         manager.run_plan("t", "s", [])
     assert seen == ["deepseek-v4-pro"]
+
+
+def test_bang_gia_deepseek_qua_tram_khong_con_tinh_0():
+    """ai-CR-147: «/chiphi» báo $0.00 vì bảng giá chỉ có Gemini. Nay có giá DeepSeek qua modelapi.vn (theo nhóm của trạm)."""
+    from app.modules.agent_hub.constants import estimate_cost_usd
+
+    assert estimate_cost_usd("deepseek-v4-flash", 1_000_000, 0) == pytest.approx(9.50)
+    assert estimate_cost_usd("deepseek-v4-pro", 0, 1_000_000) == pytest.approx(85.54)
+    assert estimate_cost_usd("deepseek-v4.1-flash", 1_000_000, 1_000_000) == pytest.approx(10.50)
+    #  Bản v4 nhóm «deepseek» đắt hơn bản v4.1 nhóm tự host khoảng 4,5 lần mỗi token vào.
+    assert estimate_cost_usd("deepseek-v4-flash", 1000, 0) / estimate_cost_usd("deepseek-v4.1-flash", 1000, 0) > 4

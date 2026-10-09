@@ -652,6 +652,8 @@ Vài ca dễ nhầm:
 - "Giá thép Hòa Phát" -> tra_cuu, kind web, query "giá thép Hòa Phát hiện nay" (cụm chủ đề ngoài ERP, không hỏi lại).
 - "công nợ Hòa Phát" -> hoi (dữ liệu ERP).
 - "gán vị trí chức vụ Nhân viên (Demo) cho nhân sự nào có (CR-414) trong tên" -> du_lieu, env dev.
+- Bot vừa nói "chưa có tính năng X / tool chưa làm được" và người ta nhắn "oke phát triển tính năng", "làm luôn đi",
+  "em bắt đầu sửa luôn chưa" -> viec (giao việc sửa phần mềm theo mạch trước), KHÔNG phải hoi.
 
 Nếu có MẠCH TRƯỚC ĐÓ thì phải đọc nó trước khi phán: một tin ngắn cụt đứng ngay sau
 câu hỏi của bot thường là câu nối tiếp (-> hoi), không phải mo_ho.
