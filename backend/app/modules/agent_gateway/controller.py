@@ -185,6 +185,44 @@ def draft_submit(body: DraftSubmitIn, user=Depends(gateway_user), db: Session = 
     return success({"ok": True})
 
 
+#  ai-CR-143: đơn nháp của CHÍNH người gọi (chữ ký mang user_id) — xem / dùng lại đơn nghỉ cùng ngày / xóa bớt.
+@router.get("/draft/mine")
+def draft_mine(user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.my_drafts(db, user))
+
+
+class DraftUpdateIn(BaseModel):
+    kind: str = Field(max_length=20)
+    id: int
+    draft: dict
+
+
+@router.post("/draft/update")
+def draft_update(body: DraftUpdateIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    from app.modules.agent_hub.draft_create import DraftError
+
+    if body.kind != "leave":
+        return success({"error": "chỉ đơn nghỉ phép dùng lại được bản nháp cũ"})
+    try:
+        return success({"code": L.update_leave_draft(db, user, body.id, body.draft)})
+    except DraftError as e:
+        return success({"error": str(e)})
+
+
+class DraftRef(BaseModel):
+    kind: str = Field(max_length=20)
+    id: int
+
+
+class DraftDeleteIn(BaseModel):
+    items: list[DraftRef] = Field(default_factory=list, max_length=30)
+
+
+@router.post("/draft/delete")
+def draft_delete(body: DraftDeleteIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.delete_my_drafts(db, user, [i.model_dump() for i in body.items]))
+
+
 @router.get("/draft/details")
 def draft_details(kind: str = Query(max_length=20), id: int = Query(ge=1), _: int = Depends(gateway_signed),
                   db: Session = Depends(get_db)):

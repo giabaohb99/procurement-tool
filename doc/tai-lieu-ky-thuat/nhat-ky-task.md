@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-143 | Dùng lại đơn nghỉ nháp trùng ngày và xem, xóa bớt phiếu nháp ngay trong chat
+- status: dang-lam
+- date: 2026-10-09
+Đại ca chốt bot chỉ làm xin nghỉ phép, không làm thủ tục nghỉ việc hẳn, và lo mỗi lần nhắn tạo lại sinh thêm một đơn nháp. Nay
+khi nhắn tạo cho bản nháp đơn nghỉ phép mà đã có đơn nghỉ nháp của chính mình trùng ngày, bot sửa đè đơn nháp cũ thay vì lập đơn
+mới và báo rõ là đã cập nhật đơn nào. Nhắn «đơn nháp của tôi» để xem các phiếu nháp do mình lập gồm đơn nghỉ phép, yêu cầu mua
+hàng và yêu cầu báo giá, có đánh số; nhắn «xóa đơn nháp 2 3» hay «xóa hết đơn nháp» thì bot gửi thẻ hỏi lại, nhắn đúng mới xóa.
+Bot chỉ xóa phiếu còn ở trạng thái nháp do chính người đó lập, xóa bằng đúng cách xóa trên web; phiếu khác thì bỏ qua và nói lý
+do. Câu «nghỉ việc ngày X» được hiểu là xin nghỉ phép ngày đó. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/draft_create.py (list_mine, same_days_leave, update_leave, delete_mine) · erp.py · service.py (_my_drafts_by_text) · constants.py · user_guide.py · agent_gateway/controller.py · assistant/tools/draft_tool.py · test/backend/test_agent_hub_don_nhap.py
+
 ## ai-CR-142 | Bot hỏi lại cho đủ thông tin trước khi soạn phiếu, thẻ nháp dễ đọc và bỏ ngoặc kép góc
 - status: xong
 - date: 2026-10-09

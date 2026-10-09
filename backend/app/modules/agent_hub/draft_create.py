@@ -440,3 +440,129 @@ def created_details(db: Session, kind: str, oid: int) -> list[str]:
         return [f"Mã: {t.code} · Trạng thái: {_TICKET_STATUS.get(t.status, t.status)}",
                 f"Chủ đề: {t.subject}", f"Ưu tiên: {t.priority}"]
     return []
+
+
+# ---------------------------------------------------------------------------
+# Đơn nháp của CHÍNH MÌNH: xem · dùng lại · xóa bớt (ai-CR-143 — đại ca 09/10/2026: «tạo nhiều như vậy thì ra nhiều đơn
+# nháp lắm đúng không, có thể tận dụng nó, hoặc anh nhắn là xóa bớt đơn nháp đi»)
+# ---------------------------------------------------------------------------
+MINE_MAX = 30
+
+
+def list_mine(db: Session, user, limit: int = MINE_MAX) -> list[dict]:
+    """Phiếu đang NHÁP do chính người này lập: đơn nghỉ phép · YCMH · YCBG. Mới nhất trước."""
+    from app.modules.leave.constants import LR_DRAFT
+    from app.modules.leave.request_model import LeaveRequest
+    from app.modules.purchase_request.model import PurchaseRequest
+    from app.modules.survey_request.model import SurveyRequest
+
+    uid = int(getattr(user, "id", 0) or 0)
+    out: list[dict] = []
+    for r in (db.query(LeaveRequest).filter(LeaveRequest.created_by == uid, LeaveRequest.status == LR_DRAFT,
+                                            LeaveRequest.is_deleted.is_(False))
+              .order_by(LeaveRequest.id.desc()).limit(limit)):
+        span = f"{r.from_date:%d/%m}" + (f"–{r.to_date:%d/%m}" if r.to_date and r.to_date != r.from_date else "")
+        out.append({"kind": "leave", "id": r.id, "code": r.code or f"#{r.id}",
+                    "title": f"Nghỉ {span} · {(r.reason or '').strip()[:60] or 'chưa có lý do'}",
+                    "from_date": r.from_date.isoformat() if r.from_date else "",
+                    "to_date": r.to_date.isoformat() if r.to_date else "", "created_at": r.created_at})
+    for r in (db.query(PurchaseRequest).filter(PurchaseRequest.created_by == uid, PurchaseRequest.status == "draft",
+                                               PurchaseRequest.is_deleted.is_(False))
+              .order_by(PurchaseRequest.id.desc()).limit(limit)):
+        out.append({"kind": "purchase", "id": r.id, "code": r.code or f"#{r.id}",
+                    "title": (r.purpose or "").strip()[:80] or "YCMH chưa có mục đích", "created_at": r.created_at})
+    for r in (db.query(SurveyRequest).filter(SurveyRequest.created_by == uid, SurveyRequest.status == "draft")
+              .order_by(SurveyRequest.id.desc()).limit(limit)):
+        out.append({"kind": "survey", "id": r.id, "code": r.code or f"#{r.id}",
+                    "title": (r.purpose or "").strip()[:80] or "YCBG chưa có mục đích", "created_at": r.created_at})
+    out.sort(key=lambda x: (x["created_at"] is not None, x["created_at"]), reverse=True)
+    for x in out:
+        x["created_at"] = x["created_at"].isoformat() if x["created_at"] else ""
+    return out[:limit]
+
+
+def same_days_leave(mine: list[dict], draft: dict) -> dict | None:
+    """Đơn nghỉ NHÁP của mình trùng khoảng ngày với bản nháp mới → dùng lại đơn đó thay vì lập đơn thứ hai."""
+    lo, hi = str(draft.get("from_date") or ""), str(draft.get("to_date") or draft.get("from_date") or "")
+    for x in mine:
+        if x["kind"] == "leave" and x.get("from_date") and x["from_date"] <= hi and lo <= (x.get("to_date") or ""):
+            return x
+    return None
+
+
+def update_leave(db: Session, user, oid: int, draft: dict) -> str:
+    """Ghi bản nháp mới ĐÈ lên đơn nghỉ nháp cũ của chính mình (bằng đúng `request_service.update` của web)."""
+    from fastapi import HTTPException
+
+    from app.core.audit import record as audit_record
+    from app.modules.leave import request_service
+    from app.modules.leave.constants import LR_DRAFT
+    from app.modules.leave.request_model import LeaveRequest
+    from app.modules.leave.schema import LeaveLineItem, LeaveRequestUpdate
+
+    obj = db.get(LeaveRequest, int(oid))
+    if obj is None or obj.is_deleted or obj.created_by != int(user.id) or obj.status != LR_DRAFT:
+        raise DraftError("Đơn nháp đó không còn (đã gửi duyệt hoặc đã xóa).")
+    _check_permission(db, user, "leave")
+    data = LeaveRequestUpdate(
+        lines=[LeaveLineItem(leave_type_id=int(ln.get("leave_type_id") or 0), days=float(ln.get("days") or 0))
+               for ln in draft.get("lines") or []],
+        from_date=date.fromisoformat(str(draft.get("from_date"))),
+        to_date=date.fromisoformat(str(draft.get("to_date") or draft.get("from_date"))),
+        from_session=int(draft.get("from_session") or 1), to_session=int(draft.get("to_session") or 1),
+        from_time=_as_time(draft.get("from_time")), to_time=_as_time(draft.get("to_time")),
+        reason=str(draft.get("reason") or "")[:1000], contact_phone=str(draft.get("contact_phone") or "")[:30],
+    )
+    try:
+        obj = request_service.update(db, obj, data, user)
+    except HTTPException as e:
+        db.rollback()
+        raise DraftError(str(e.detail)) from None
+    audit_record(db, user.id, "leave_request", obj.id, "update", f"Sửa đơn nghỉ phép nháp {obj.code} (qua Telegram)")
+    return obj.code
+
+
+def delete_mine(db: Session, user, items: list[dict]) -> dict:
+    """Xóa các phiếu NHÁP do chính mình lập, bằng đúng hàm xóa của web. Phiếu không phải của mình / không còn nháp /
+    thiếu quyền xóa thì bỏ qua và kể lại. Trả {deleted: [mã], skipped: [câu]}."""
+    from fastapi import HTTPException
+
+    from app.core.audit import record as audit_record
+    from app.core.auth import user_has_permission
+    from app.modules.leave import request_service
+    from app.modules.leave.constants import LR_DRAFT
+    from app.modules.leave.request_model import LeaveRequest
+    from app.modules.purchase_request import service as pr_service
+    from app.modules.purchase_request.model import PurchaseRequest
+    from app.modules.survey_request import service as sr_service
+    from app.modules.survey_request.model import SurveyRequest
+
+    uid = int(user.id)
+    deleted, skipped = [], []
+    for it in items[:MINE_MAX]:
+        kind, oid = str(it.get("kind") or ""), int(it.get("id") or 0)
+        model, ok_status = {"leave": (LeaveRequest, LR_DRAFT), "purchase": (PurchaseRequest, "draft"),
+                            "survey": (SurveyRequest, "draft")}.get(kind, (None, None))
+        obj = db.get(model, oid) if model is not None else None
+        if obj is None or getattr(obj, "is_deleted", False) or obj.created_by != uid or obj.status != ok_status:
+            skipped.append(f"{kind} #{oid}: không phải phiếu nháp của anh/chị")
+            continue
+        if not user_has_permission(db, user, ENTITIES[kind], "delete"):
+            skipped.append(f"{obj.code}: tài khoản không có quyền xóa {LABELS[kind]}")
+            continue
+        code = obj.code or f"#{oid}"
+        try:
+            if kind == "leave":
+                request_service.soft_delete(db, obj, user)
+            elif kind == "purchase":
+                pr_service.delete_pr(db, oid, uid)
+            else:
+                sr_service.delete_sr(db, oid, uid)
+        except HTTPException as e:
+            db.rollback()
+            skipped.append(f"{code}: {e.detail}")
+            continue
+        audit_record(db, uid, ENTITIES[kind], oid, "delete", f"Xóa {LABELS[kind]} nháp {code} (qua Telegram)")
+        deleted.append(code)
+    db.commit()
+    return {"deleted": deleted, "skipped": skipped}

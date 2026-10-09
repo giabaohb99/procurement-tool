@@ -43,6 +43,8 @@ SECTIONS: tuple[Section, ...] = (
         ("tạo", "lưu bản nháp vừa soạn"),
         ("tạo và gửi duyệt", "lưu và gửi duyệt luôn"),
         ("xuất Excel", "tệp của lần tra vừa rồi (hoặc xuất Word)"),
+        ("đơn nháp của tôi", "các phiếu nháp mình lập (đơn nghỉ, YCMH, YCBG), có đánh số"),
+        ("xóa đơn nháp 2 3", "xóa phiếu nháp theo số; xóa hết đơn nháp để xóa tất cả"),
         ("công nợ tháng này", "hỏi tắt thiếu pháp nhân / NCC thì em dùng cái anh/chị hay hỏi và nói rõ em đang hiểu là "
                               "cái nào"),
     )),

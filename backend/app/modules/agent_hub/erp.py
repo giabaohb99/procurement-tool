@@ -212,6 +212,25 @@ class _Local:
 
         return draft_create.created_details(db, kind, oid)
 
+    #  ai-CR-143: đơn nháp của chính mình — xem / dùng lại / xóa bớt.
+    @staticmethod
+    def my_drafts(db, user) -> list[dict]:
+        from . import draft_create
+
+        return draft_create.list_mine(db, user)
+
+    @staticmethod
+    def update_leave_draft(db, user, oid: int, draft: dict) -> str:
+        from . import draft_create
+
+        return draft_create.update_leave(db, user, oid, draft)
+
+    @staticmethod
+    def delete_my_drafts(db, user, items: list[dict]) -> dict:
+        from . import draft_create
+
+        return draft_create.delete_mine(db, user, items)
+
     # --- phiếu hỗ trợ ------------------------------------------------------------------------------------------------
     @staticmethod
     def ticket_info(db, t) -> dict:
@@ -494,6 +513,32 @@ class _Remote:
         except ErpError:
             return []
 
+    def my_drafts(self, db, user) -> list[dict]:
+        try:
+            return list(self._call("GET", "/draft/mine", user_id=_uid(user)) or [])
+        except ErpError:
+            return []
+
+    def update_leave_draft(self, db, user, oid: int, draft: dict) -> str:
+        from .draft_create import DraftError
+
+        try:
+            out = self._call("POST", "/draft/update", user_id=_uid(user), body={"kind": "leave", "id": int(oid),
+                                                                              "draft": draft})
+        except ErpError as e:
+            raise DraftError(str(e)) from None
+        if out.get("error"):
+            raise DraftError(str(out["error"]))
+        return str(out.get("code") or "")
+
+    def delete_my_drafts(self, db, user, items: list[dict]) -> dict:
+        from .draft_create import DraftError
+
+        try:
+            return dict(self._call("POST", "/draft/delete", user_id=_uid(user), body={"items": items}) or {})
+        except ErpError as e:
+            raise DraftError(str(e)) from None
+
     # --- phiếu hỗ trợ ---
     def tickets_open(self, db, statuses: list[str], exclude_ids: list[int], *, limit: int = 200) -> list[dict]:
         return list(self._call("POST", "/tickets/open", body={"statuses": statuses, "exclude_ids": exclude_ids,
@@ -653,6 +698,18 @@ def create_draft(db, user, kind: str, draft: dict) -> tuple[str, int]:
 
 def submit_draft(db, user, kind: str, oid: int) -> None:
     _impl().submit_draft(db, user, kind, oid)
+
+
+def my_drafts(db, user) -> list[dict]:
+    return _impl().my_drafts(db, user)
+
+
+def update_leave_draft(db, user, oid: int, draft: dict) -> str:
+    return _impl().update_leave_draft(db, user, oid, draft)
+
+
+def delete_my_drafts(db, user, items: list[dict]) -> dict:
+    return _impl().delete_my_drafts(db, user, items)
 
 
 def created_details(db, kind: str, oid: int) -> list[str]:

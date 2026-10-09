@@ -530,6 +530,7 @@ _LEAVE_PARAMS = {
 
 _LEAVE_DESC = (
     "SOẠN SẴN dữ liệu cho ĐƠN NGHỈ PHÉP của CHÍNH người hỏi, ở phân hệ Nhân sự ▸ Nghỉ phép. "
+    "Người dùng nói «nghỉ việc ngày X» là XIN NGHỈ PHÉP ngày đó (hệ không làm thủ tục thôi việc — đại ca chốt 09/10). "
     "KHÔNG tạo đơn — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form đơn nghỉ phép đã "
     "điền sẵn để người dùng rà lại và tự bấm Lưu. Form TỰ điền người nghỉ theo hồ sơ người "
     "hỏi — ĐỪNG hỏi lại. Gọi khi người dùng muốn xin nghỉ / lập đơn nghỉ phép và đã cho biết "

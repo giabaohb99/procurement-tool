@@ -71,6 +71,8 @@ from .constants import (
     ACT_WAIT_PLAN_ANSWER,
     ACT_DRAFT_DONE,
     ACT_DENIED,
+    ACT_DRAFT_DEL_DONE,
+    ACT_DRAFT_DEL_WAIT,
     ACT_DRAFT_DROPPED,
     ACT_DOC_WAIT,
     ACT_DRAFT_WAIT,
@@ -1274,6 +1276,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     if (_doc_followup(db, chat_id, row, text) or _guide_by_text(db, chat_id, row, text)
             or meeting_actions.handle_text(db, chat_id, row, text)
             or meeting_drive.handle_text(db, chat_id, row, text)
+            or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
         return
     if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
@@ -1402,6 +1405,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or meeting_actions.handle_text(db, chat_id, row, text)      # ai-CR-114: thẻ việc / lịch từ biên bản
             or meeting_drive.handle_text(db, chat_id, row, text)        # ai-CR-116: tệp họp mới trên Drive
+            or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
             or _word_by_text(db, chat_id, row, text)
@@ -4104,6 +4108,103 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
     db.commit()
 
 
+#  ai-CR-143: đơn nháp của chính mình — xem, xóa bớt (so trên chữ ĐÃ BỎ DẤU).
+_MY_DRAFTS = re.compile(r"^(?:xem |danh sach )?(?:don|phieu) nhap(?: cua (?:toi|anh|chi|em|minh))?\s*\??$")
+_DEL_DRAFTS = re.compile(r"^(?:xoa|bo|don)(?: bot| het| tat ca| sach)? (?:cac )?(?:don|phieu) nhap(?P<rest>(?: .*)?)$")
+DRAFT_DEL_WINDOW = timedelta(minutes=15)
+
+
+def _my_drafts_text(items: list[dict]) -> str:
+    esc = telegram.esc
+    if not items:
+        return "Anh/chị không có phiếu nháp nào (đơn nghỉ phép, YCMH, YCBG) do mình lập."
+    lines = [f"<b>PHIẾU NHÁP CỦA ANH/CHỊ</b> ({len(items)})"]
+    for i, x in enumerate(items, 1):
+        lines.append(f"{i}. <b>{esc(x['code'])}</b> · {esc(draft_create.LABELS.get(x['kind'], ''))} · {esc(x['title'])}")
+    lines += ["", "<b>Trả lời:</b>", "• <code>xóa đơn nháp 2 3</code> — xóa các số đó",
+              "• <code>xóa hết đơn nháp</code> — xóa tất cả"]
+    return "\n".join(lines)
+
+
+def _my_drafts_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«đơn nháp của tôi» · «xóa đơn nháp 2 3» · «xóa hết đơn nháp» → thẻ xác nhận → «đúng» / «thôi». Chỉ phiếu NHÁP do
+    chính mình lập; xóa bằng đúng hàm xóa của web."""
+    from app.modules.assistant.glossary import fold
+
+    low = text.strip().lower()
+    f = " ".join(fold(text).split())
+    pending = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_DEL_WAIT, AgentMessage.id < row.id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    live = pending is not None and not (row.created_at and pending.created_at
+                                        and row.created_at - pending.created_at > DRAFT_DEL_WINDOW)
+    newer_card = live and db.scalar(select(AgentMessage.id).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_WAIT, AgentMessage.id > pending.id).limit(1))
+    if live and not newer_card and (_YES.match(low) or _NO.match(low)):
+        row.action = ACT_COMMAND
+        pending.action = ACT_DRAFT_DEL_DONE
+        db.commit()
+        if _NO.match(low):
+            reply(db, chat_id, "Dạ, em không xóa gì.")
+            return True
+        info = json.loads(pending.body or "{}")
+        user = _assistant_user(db, chat_id)
+        if user is None or user.id != int(info.get("user_id") or 0):
+            reply(db, chat_id, "Tài khoản của chat này đã đổi, em không xóa.")
+            return True
+        try:
+            out = erp.delete_my_drafts(db, user, info.get("items") or [])
+        except draft_create.DraftError as e:
+            reply(db, chat_id, f"Chưa xóa được: {telegram.esc(str(e)[:300])}")
+            return True
+        msg = f"Đã xóa {len(out.get('deleted') or [])} phiếu nháp" + (
+            f": {telegram.esc(', '.join(out['deleted']))}." if out.get("deleted") else ".")
+        if out.get("skipped"):
+            msg += "\nBỏ qua: " + telegram.esc("; ".join(out["skipped"][:5]))
+        reply(db, chat_id, msg)
+        return True
+    show, m_del = _MY_DRAFTS.match(f), _DEL_DRAFTS.match(f)
+    if not (show or m_del):
+        return False
+    row.action = ACT_COMMAND
+    user = _assistant_user(db, chat_id)
+    if user is None:
+        reply(db, chat_id, "Chat này chưa đăng nhập ERP. " + _LINK_HELP)
+        return True
+    items = erp.my_drafts(db, user)
+    if show:
+        reply(db, chat_id, _my_drafts_text(items))
+        return True
+    rest = m_del.group("rest") or ""
+    picks = [int(n) for n in re.findall(r"\d+", rest)]
+    everything = any(w in f for w in (" het ", " tat ca ", " sach ")) or f.startswith(("xoa het", "xoa tat ca"))
+    if picks:
+        bad = [n for n in picks if not 1 <= n <= len(items)]
+        if bad:
+            reply(db, chat_id, f"Không có phiếu nháp số {', '.join(map(str, bad))}.\n\n" + _my_drafts_text(items))
+            return True
+        chosen = [items[n - 1] for n in dict.fromkeys(picks)]
+    elif everything:
+        chosen = items
+    else:
+        #  «xóa bớt đơn nháp» chưa nói số nào → đưa danh sách để chọn, chưa xóa gì.
+        reply(db, chat_id, _my_drafts_text(items))
+        return True
+    if not chosen:
+        reply(db, chat_id, _my_drafts_text(items))
+        return True
+    esc = telegram.esc
+    lines = [f"<b>XÓA {len(chosen)} PHIẾU NHÁP?</b>"] + [f"• {esc(x['code'])} · {esc(x['title'])}" for x in chosen[:15]]
+    if len(chosen) > 15:
+        lines.append(f"… và {len(chosen) - 15} phiếu nữa")
+    lines += ["", "<b>Trả lời:</b>", "• <code>đúng</code> — xóa", "• <code>thôi</code> — không xóa"]
+    reply(db, chat_id, "\n".join(lines))
+    log_message(db, DIR_OUT, chat_id, 0, json.dumps({"user_id": user.id, "items": [
+        {"kind": x["kind"], "id": x["id"]} for x in chosen]}), action=ACT_DRAFT_DEL_WAIT)
+    db.commit()
+    return True
+
+
 def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """«tạo» / «thôi» cho bản nháp đang chờ của chat này (trong DRAFT_WINDOW)."""
     low = text.strip().lower()
@@ -4147,8 +4248,14 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     #  Chốt dấu TRƯỚC khi ghi phiếu: service có thể rollback, và dấu chưa chốt thì «tạo» lần hai tạo lần hai.
     pending.action = ACT_DRAFT_DONE
     db.commit()
+    #  ai-CR-143: đã có đơn nghỉ NHÁP của chính mình trùng ngày → sửa đè đơn đó, không lập đơn thứ hai.
+    reuse = draft_create.same_days_leave(erp.my_drafts(db, user), info.get("draft") or {}) if kind == "leave" else None
     try:
-        code, oid = erp.create_draft(db, user, kind, info.get("draft") or {})
+        if reuse is not None:
+            oid = int(reuse["id"])
+            code = erp.update_leave_draft(db, user, oid, info.get("draft") or {}) or reuse["code"]
+        else:
+            code, oid = erp.create_draft(db, user, kind, info.get("draft") or {})
     except draft_create.DraftError as e:
         pending.action = ACT_DRAFT_DROPPED
         db.commit()
@@ -4161,7 +4268,9 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
         _submit_and_report(db, chat_id, user, kind, oid, code, pending)
         return True
     tail = "Nhắn «gửi duyệt» để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
-    _reply_created(db, chat_id, kind, oid, f"Đã tạo {label}.", tail)
+    head = (f"Đã cập nhật {label} nháp {code} (trùng ngày với đơn nháp cũ nên em sửa đơn đó, không lập đơn mới)."
+            if reuse is not None else f"Đã tạo {label}.")
+    _reply_created(db, chat_id, kind, oid, head, tail)
     return True
 
 
