@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-137 | Bot ghi sổ ý định và tự rút ghi nhớ khi người dùng nhắc lại nhiều lần (phase 13 đợt A)
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca duyệt phase 13 «Hiểu ý định và tự ghi nhớ», Agent 1 giao làm đợt A. Nay mỗi câu hỏi gửi bot trên Telegram, Zalo riêng hay
 Trợ lý AI trên web được ghi một dòng vào sổ ý định: ai hỏi, trên kênh nào, thuộc nhóm nghiệp vụ nào (ví dụ tra công nợ, soạn yêu
@@ -13209,6 +13209,7 @@ Bot không ghi mật khẩu, số tài khoản, không ghi trùng điều ngư�
 thích. Tài liệu mới gom toàn bộ cách bot nhớ và thứ tự nạp vào mỗi lượt gọi model. Bài kiểm của bot và Trợ lý chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/intent_ledger.py (mới) · auto_memory.py (mới) · personal_memory.py · sessions.py · service.py (_ledger, answer_question) · model.py (AgentIntent, AgentMemoryCandidate) · tasks.py · assistant/conversation.py · assistant/tools/personal_tool.py · core/config.py + app_settings.py · migrations grp05 + agent0005 · doc/agent-hub/17-tri-nho-va-y-dinh.md · test/backend/test_agent_hub_y_dinh_tu_nho.py
+Deploy: dev 09/10 (Agent 1 gộp d33fc799, dựng lại ERP api + celery + web + erp rồi stack agent-hub); prod giữ lại.
 
 ## duoc-CR-612 | Báo cáo thực hiện có thêm dạng Bảng, sửa nội dung ngay trên từng hàng
 - status: xong
