@@ -108,6 +108,25 @@ def use_chain(refs: list[KeyRef], owner: int = 0):
 
 
 @contextmanager
+def prefer(providers: list[str] | tuple[str, ...]):
+    """ai-CR-145: trong khối này, khóa của các hãng `providers` (theo thứ tự) đứng ĐẦU chuỗi; các khóa còn lại giữ thứ
+    tự cũ làm dự phòng. Không có khóa nào của hãng đó thì chuỗi y nguyên. Dùng cho bước cần model mạnh (lập kế hoạch)."""
+    if not _ctx_open.get() or not providers:
+        yield
+        return
+    refs = list(_ctx_chain.get())[_ctx_idx.get():]
+    rank = {p: i for i, p in enumerate(providers)}
+    first = sorted((r for r in refs if r.provider in rank), key=lambda r: rank[r.provider])
+    rest = [r for r in refs if r.provider not in rank]
+    tokens = (_ctx_chain.set(tuple(first + rest)), _ctx_idx.set(0))
+    try:
+        yield
+    finally:
+        _ctx_idx.reset(tokens[1])
+        _ctx_chain.reset(tokens[0])
+
+
+@contextmanager
 def use(key: str, owner: int = 0):
     """Tương thích cũ: một khóa Gemini lẻ."""
     refs = [KeyRef(provider=PROVIDER_GEMINI, key=key, owner_id=int(owner or 0), source="manual")] if key else []

@@ -67,3 +67,36 @@ def test_can_hoi_ma_khong_co_cau_hoi_thi_van_hoi_khong_moi_duyet(db, monkeypatch
     db.refresh(task)
     assert task.status == ST_NEEDS_INPUT and task.questions
     assert "đang hỏi lại" in sent[-1] and "duyệt" not in sent[-1].lower().replace("chưa đủ", "")
+
+
+def test_lap_ke_hoach_uu_tien_khoa_claude_neu_co(monkeypatch):
+    """ai-CR-145: chuỗi khóa có Claude thì bước lập kế hoạch dùng Claude trước (DeepSeek flash xả suy nghĩ ra chữ);
+    không có thì giữ chuỗi cũ. Ngoài bước lập kế hoạch, thứ tự chuỗi không đổi."""
+    from app.core.config import settings
+    from app.modules.agent_hub import user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+
+    ds = KeyRef(provider="openai_compat", key="k1", model="deepseek-v4.1-flash", base_url="https://x/v1")
+    gm = KeyRef(provider="gemini", key="k2")
+    cl = KeyRef(provider="claude", key="k3")
+    monkeypatch.setattr(settings, "AGENT_PLAN_PROVIDERS", "claude,openai")
+    monkeypatch.setattr(settings, "AGENT_PLAN_MODEL", "claude-sonnet-5-5")
+    seen: list[tuple] = []
+
+    class P:
+        def ask(self, messages, **kw):
+            ref = user_keys.active_ref()
+            seen.append((ref.provider, kw.get("model")))
+            return _res(json.dumps(PLAN))
+
+    monkeypatch.setattr(manager, "get_provider", lambda: P())
+    with user_keys.use_chain([ds, gm, cl]):
+        manager.run_plan("t", "s", [])
+        assert user_keys.active_ref().provider == "openai_compat"          # ra khỏi bước kế hoạch: chuỗi như cũ
+    assert seen == [("claude", "claude-sonnet-5-5")]
+    assert manager.AgentGeminiProvider._model_for(cl, "claude-sonnet-5-5") == "claude-sonnet-5-5"
+    assert manager.AgentGeminiProvider._model_for(cl, "gemini-flash-latest") is None
+    seen.clear()
+    with user_keys.use_chain([ds, gm]):
+        manager.run_plan("t", "s", [])
+    assert seen[0][0] == "openai_compat"

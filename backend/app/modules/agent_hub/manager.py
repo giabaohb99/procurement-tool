@@ -105,7 +105,10 @@ class AgentGeminiProvider(GeminiProvider):
     def _model_for(ref, model: str | None) -> str | None:
         if ref.model:
             return ref.model
-        return model if ref.provider == "gemini" else None
+        if ref.provider == "gemini":
+            return model
+        #  ai-CR-145: tên model KHÔNG phải Gemini (vd AGENT_PLAN_MODEL cho Claude) thì chuyển tiếp; tên Gemini thì không.
+        return model if model and not model.startswith("gemini") else None
 
     def _call(self, method: str, *args, model: str | None = None, **kw):
         from . import ai_keys, user_keys
@@ -454,9 +457,31 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
     elif playbook:
         parts += ["", "SỔ QUYẾT ĐỊNH CỦA ĐẠI CA (tra trước khi hỏi, trích đúng số QĐ):", playbook]
 
+    from . import user_keys
+
+    #  ai-CR-145: lập kế hoạch ưu tiên khóa hãng mạnh (Claude…) nếu chuỗi khóa có — DeepSeek flash xả suy nghĩ ra chữ.
+    with user_keys.prefer(plan_providers()):
+        return _run_plan(parts, review, docs)
+
+
+def plan_providers() -> list[str]:
+    return [p.strip() for p in (settings.AGENT_PLAN_PROVIDERS or "").split(",") if p.strip()]
+
+
+def _plan_model() -> str:
+    """Khóa hãng khác Gemini mà để trống ô Model → dùng AGENT_PLAN_MODEL (nếu khai); còn lại như cũ."""
+    from . import user_keys
+
+    ref = user_keys.active_ref()
+    if ref is not None and ref.provider != "gemini" and not ref.model and settings.AGENT_PLAN_MODEL:
+        return settings.AGENT_PLAN_MODEL
+    return settings.AGENT_MANAGER_MODEL
+
+
+def _run_plan(parts: list[str], review: str, docs: list[dict]) -> tuple[dict, ChatResult]:
     result = get_provider().ask(
         [ChatMessage(role="user", content="\n".join(parts))],
-        model=settings.AGENT_MANAGER_MODEL,
+        model=_plan_model(),
         system=PLAN_SYSTEM.replace("__BOT_NAME__", BOT_NAME),
         #  Trần cho PHẦN CHỮ; phần suy nghĩ có trần riêng THINKING_BUDGET cộng thêm (ai-CR-021).
         max_tokens=4096,
@@ -471,7 +496,7 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
         log.warning("agent_hub: kế hoạch không ra JSON có «plan» (%s), thử lại", (result.text or "")[:120])
         result = get_provider().ask(
             [ChatMessage(role="user", content="\n".join(parts) + _JSON_ONLY)],
-            model=settings.AGENT_MANAGER_MODEL, system=PLAN_SYSTEM.replace("__BOT_NAME__", BOT_NAME),
+            model=_plan_model(), system=PLAN_SYSTEM.replace("__BOT_NAME__", BOT_NAME),
             max_tokens=4096, temperature=0.2, thinking=False,
         )
         data = extract_json_with(result.text, "plan")

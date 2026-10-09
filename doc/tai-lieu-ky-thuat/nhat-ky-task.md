@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-145 | Bước lập kế hoạch của bot tự dùng model mạnh khi có khóa
+- status: dang-lam
+- date: 2026-10-09
+Đại ca muốn đổi model lập kế hoạch sang loại mạnh hơn và hỏi khóa hiện tại dùng được DeepSeek bản nào. Em thử trên dev: khóa
+của đại ca qua trạm modelapi.vn chỉ mở đúng một model là DeepSeek bản flash; gọi thử các bản DeepSeek khác, Claude hay GPT đều bị
+trạm báo không có. Khóa Gemini của đại ca đang hết tiền. Nay bước lập kế hoạch của bot sửa mã tự ưu tiên khóa Claude hoặc
+OpenAI nếu đại ca có dán, các khóa còn lại giữ làm dự phòng; các bước khác vẫn dùng chuỗi khóa như cũ. Chưa có khóa Claude thì
+bot vẫn dùng DeepSeek bản flash với lưới đọc kế hoạch đã sửa ở ai-CR-144. Đại ca chỉ cần dán khóa Claude ở Trang cá nhân, mục Khóa
+AI, không phải chờ deploy lại. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/user_keys.py (prefer) · manager.py (run_plan, _plan_model, _model_for) · core/config.py (AGENT_PLAN_PROVIDERS, AGENT_PLAN_MODEL) · test/backend/test_agent_hub_ke_hoach_json.py
+
 ## ai-CR-144 | Sửa lỗi bot gửi thẻ kế hoạch trắng rồi không nhận duyệt (việc AI-0006)
 - status: xong
 - date: 2026-10-09

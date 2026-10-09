@@ -306,6 +306,11 @@ class Settings(BaseSettings):
     # theo, mà lúc đó không ai biết vì sao.
     AGENT_GEMINI_API_KEY: str = ""
     AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
+    # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
+    # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc
+    # AGENT_PLAN_MODEL khi khóa để trống.
+    AGENT_PLAN_PROVIDERS: str = "claude,openai"
+    AGENT_PLAN_MODEL: str = ""
     # ai-CR-106: model DỰ PHÒNG khi model chính quá tải (503 / treo). Trống = model Gemini của Trợ lý web
     # (`ai_gemini_model` trong cấu hình hệ thống), không có nữa thì gemini-flash-lite-latest.
     AGENT_FALLBACK_MODEL: str = ""
