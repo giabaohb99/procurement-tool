@@ -460,8 +460,18 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
     from . import user_keys
 
     #  ai-CR-145: lập kế hoạch ưu tiên khóa hãng mạnh (Claude…) nếu chuỗi khóa có — DeepSeek flash xả suy nghĩ ra chữ.
-    with user_keys.prefer(plan_providers()):
+    with user_keys.prefer(plan_providers(), model=plan_model_setting()):
         return _run_plan(parts, review, docs)
+
+
+def plan_model_setting() -> str:
+    """AGENT_PLAN_MODEL — đổi trên sổ cấu hình (`agent_plan_model`) không cần deploy."""
+    from app.core import app_settings
+
+    try:
+        return str(app_settings.get("agent_plan_model") or "").strip()
+    except Exception:  # noqa: BLE001
+        return settings.AGENT_PLAN_MODEL
 
 
 def plan_providers() -> list[str]:
@@ -473,8 +483,8 @@ def _plan_model() -> str:
     from . import user_keys
 
     ref = user_keys.active_ref()
-    if ref is not None and ref.provider != "gemini" and not ref.model and settings.AGENT_PLAN_MODEL:
-        return settings.AGENT_PLAN_MODEL
+    if ref is not None and ref.provider != "gemini" and not ref.model and plan_model_setting():
+        return plan_model_setting()
     return settings.AGENT_MANAGER_MODEL
 
 

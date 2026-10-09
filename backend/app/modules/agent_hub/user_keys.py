@@ -107,14 +107,26 @@ def use_chain(refs: list[KeyRef], owner: int = 0):
         _ctx_open.reset(tokens[0])
 
 
+def model_family(model: str) -> str:
+    """'deepseek-v4-flash' → 'deepseek', 'claude-sonnet-4-5' → 'claude'."""
+    return (model or "").lower().split("-", 1)[0]
+
+
 @contextmanager
-def prefer(providers: list[str] | tuple[str, ...]):
+def prefer(providers: list[str] | tuple[str, ...], *, model: str = ""):
     """ai-CR-145: trong khối này, khóa của các hãng `providers` (theo thứ tự) đứng ĐẦU chuỗi; các khóa còn lại giữ thứ
-    tự cũ làm dự phòng. Không có khóa nào của hãng đó thì chuỗi y nguyên. Dùng cho bước cần model mạnh (lập kế hoạch)."""
-    if not _ctx_open.get() or not providers:
+    tự cũ làm dự phòng. Không có khóa nào của hãng đó thì chuỗi y nguyên. Dùng cho bước cần model mạnh (lập kế hoạch).
+    ai-CR-146: `model` (vd `deepseek-v4-pro`) thay model của khóa trạm tùy chỉnh CÙNG HỌ model (deepseek-v4-flash →
+    deepseek-v4-pro) trong khối này — chat hằng ngày vẫn dùng bản nhanh ghi ở ô Model, riêng lập kế hoạch dùng bản mạnh."""
+    if not _ctx_open.get() or (not providers and not model):
         yield
         return
     refs = list(_ctx_chain.get())[_ctx_idx.get():]
+    if model:
+        from dataclasses import replace
+
+        refs = [replace(r, model=model) if r.provider == "openai_compat" and r.model
+                and model_family(r.model) == model_family(model) else r for r in refs]
     rank = {p: i for i, p in enumerate(providers)}
 
     def family(r: KeyRef) -> str:

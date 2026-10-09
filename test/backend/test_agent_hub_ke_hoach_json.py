@@ -115,3 +115,30 @@ def test_khoa_claude_qua_tram_tuy_chinh_cung_duoc_uu_tien(monkeypatch):
         with user_keys.prefer(["claude", "openai"]):
             assert user_keys.active_ref().model == "claude-sonnet-4-5"
         assert user_keys.active_ref().model == "deepseek-v4.1-flash"
+
+
+def test_lap_ke_hoach_dung_ban_manh_cung_ho_con_chat_dung_ban_nhanh(monkeypatch):
+    """ai-CR-146: khóa modelapi.vn ghi deepseek-v4-flash (chat nhanh, rẻ); riêng bước lập kế hoạch dùng deepseek-v4-pro.
+    Khóa khác họ (Claude qua trạm) không bị đổi model."""
+    from app.modules.agent_hub import user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+
+    ds = KeyRef(provider="openai_compat", key="k1", model="deepseek-v4-flash", base_url="https://x/v1")
+    cl = KeyRef(provider="openai_compat", key="k2", model="claude-sonnet-4-5", base_url="https://x/v1")
+    with user_keys.use_chain([ds, cl]):
+        with user_keys.prefer([], model="deepseek-v4-pro"):
+            assert [r.model for r in user_keys.chain()] == ["deepseek-v4-pro", "claude-sonnet-4-5"]
+        assert user_keys.active_ref().model == "deepseek-v4-flash"
+    monkeypatch.setattr(manager, "plan_model_setting", lambda: "deepseek-v4-pro")
+    monkeypatch.setattr(manager, "plan_providers", lambda: ["claude", "openai"])
+    seen: list = []
+
+    class P:
+        def ask(self, messages, **kw):
+            seen.append(user_keys.active_ref().model)
+            return _res(json.dumps(PLAN))
+
+    monkeypatch.setattr(manager, "get_provider", lambda: P())
+    with user_keys.use_chain([ds]):
+        manager.run_plan("t", "s", [])
+    assert seen == ["deepseek-v4-pro"]

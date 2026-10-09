@@ -13198,8 +13198,11 @@ Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agen
 - date: 2026-10-09
 Đại ca hỏi nên chọn nhóm nào trên trạm modelapi.vn. Trạm này bán Claude dưới dạng khóa kiểu OpenAI, nên khi dán vào ERP khóa mang
 hãng trạm tùy chỉnh chứ không mang hãng Claude, và bước lập kế hoạch ưu tiên Claude của ai-CR-145 sẽ bỏ qua nó. Nay bot nhận ra
-hãng theo tên model: khóa trạm tùy chỉnh có model Claude được tính là Claude, model GPT hay Codex được tính là OpenAI. Bài kiểm của
-bot chạy xanh.
+hãng theo tên model: khóa trạm tùy chỉnh có model Claude được tính là Claude, model GPT hay Codex được tính là OpenAI. Sau đó đại
+ca đổi khóa sang nhóm DeepSeek có bản cao; em thử thấy trạm mở ba bản flash, v4 flash và v4 pro, cả ba trả kết quả gọn không lẫn
+phần suy nghĩ. Ô model cũ của khóa không còn trong nhóm mới nên bot của đại ca đang không trả lời được; theo lựa chọn của đại ca, em
+đổi ô model thành bản v4 flash cho chat hằng ngày và thêm cấu hình để riêng bước lập kế hoạch dùng bản v4 pro, đổi được không cần
+deploy. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/user_keys.py (prefer) · test/backend/test_agent_hub_ke_hoach_json.py
 
