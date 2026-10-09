@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-149 | Làm gọn dây chuyền sửa phần mềm: Claude Code rà soát rồi hỏi xác nhận, nhắn ok là làm
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca muốn bỏ bớt lớp trong dây chuyền sửa phần mềm: kế hoạch thì để Claude Code trên máy sửa mã tự lo, bot chỉ hỏi xác nhận
 vài câu rồi làm. Nay bot không còn gọi model quản lý viết kế hoạch riêng. Sau khi Claude Code đọc mã, bot gửi một thẻ ngắn gồm
@@ -13204,7 +13204,8 @@ cần đổi, không làm thì nhắn bỏ việc này. Việc chưa chốt đư
 nữa, khi đại ca đổi nhóm trên trạm modelapi.vn làm ô model cũ không còn, bot tự chọn model trạm đang có thay vì ngừng trả lời. Bài
 kiểm của bot chạy xanh.
 
-Mã nguồn: backend/app/modules/agent_hub/service.py (_confirm_from_scan, _send_confirm_card, _ok_by_text) · coder.py (approve_gate, check_drift, đề bài) · manager.py (_swap_missing_model) · core/config.py (AGENT_CODE_FLOW_SIMPLE) · test/backend/test_agent_hub_day_chuyen_gon.py
+Mã nguồn: backend/app/modules/agent_hub/service.py (_confirm_from_scan, _send_confirm_card, _ok_by_text) · coder.py (approve_gate, check_drift, đề bài) · manager.py (_swap_missing_model) · core/config.py (AGENT_CODE_FLOW_SIMPLE) · test/backend/test_agent_hub_day_chuyen_gon.py · doc/agent-hub/16 §3.1, §3.3 · doc/agent-hub/01 §4
+Deploy: dev 09/10 (Agent 1 gộp eddfd4b4, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-148 | Nhắn bot phát triển tính năng thì thành việc sửa phần mềm, không còn bị từ chối
 - status: xong

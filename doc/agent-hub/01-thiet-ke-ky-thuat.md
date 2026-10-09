@@ -121,7 +121,7 @@ Telegram, ba cái bảng sổ, và con `agent-runner`.
 |---|---|---|---|
 | 1 | **INBOX** | hệ thống | Ticket mới rơi vào sổ, chưa ai đọc |
 | 2 | **TRIAGE** | Gemini | Gom nhóm ticket cùng loại + tóm tắt → **chạy thẳng sang PLAN**, không nhắn thẻ riêng (`ai-CR-005`) |
-| 3 | **PLAN** | Gemini | Bản đề xuất cách sửa → Telegram: *Duyệt · Sửa · Bỏ* |
+| 3 | **PLAN** | Claude Code (rà soát) | Từ ai-CR-149 (cờ `AGENT_CODE_FLOW_SIMPLE`, mặc định bật): KHÔNG còn model quản lý viết kế hoạch — rà soát của Claude Code → thẻ xác nhận (hoặc tối đa 3 câu cần quyết) → đại ca nhắn *ok* là giao sửa; *sửa: …* · *bỏ việc này*. Claude tự lập kế hoạch lúc sửa. Cờ tắt = bản cũ: Gemini / DeepSeek viết kế hoạch → *Duyệt · Sửa · Bỏ* |
 | 4 | **CODE** | Claude Code | Sửa mã + bài kiểm + chạy cổng của phần vừa sửa |
 | 5 | **CI** | GitHub Actions | Chạy lại cổng trên máy sạch, mở/cập nhật PR |
 | 6 | **REVIEW** | Gemini | Tổng hợp diff + kết quả kiểm + link dev → Telegram |

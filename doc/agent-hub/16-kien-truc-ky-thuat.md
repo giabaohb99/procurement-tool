@@ -243,9 +243,9 @@ Trạng thái lưu `tab_agent_task.status` (SMALLINT, `agent_hub/constants.py`):
 |---|---|---|---|---|
 | 1 | `ST_INBOX` | Tin «việc» nằm hàng đợi (`tab_agent_message.task_id = 0`) | Poller sau phân loại `viec`, phiếu hỗ trợ ERP (`agent.pull_tickets`), sự cố lặp (`SRC_INCIDENT=3`), thiếu chức năng (`SRC_GAP=4`) | Lặng `AGENT_TRIAGE_DELAY_SEC` (10 giây) → `agent.triage_inbox` gom |
 | 2 | `ST_TRIAGE` | Đã gom + tóm tắt (lượt Gemini/khóa người chat) | Worker | Chạy liền sang rà soát (ai-CR-005, 017) |
-| 13 | `ST_SCANNING` | Claude Code **chỉ đọc** rà mã thật trên `erp-v2` mới nhất (+ so `origin/main`), lượt `STAGE_SCAN = 25` | Worker giao `agent.scan_task` cho máy sửa mã | Máy lập kế hoạch ngay (`manager.run_plan(review=…)`); rà hỏng / máy tắt / quá 45 phút → lập kế hoạch theo tài liệu |
-| 3 | `ST_PLAN` | Có kế hoạch + `plan_files` | Máy / worker | Rủi ro ≤ 2 và không còn câu hỏi → **tự duyệt** («em làm luôn», ai-CR-086); rủi ro 3 → thẻ kế hoạch chờ «duyệt» |
-| 11 | `ST_NEEDS_INPUT` | Đang hỏi lại đại ca | Kế hoạch có câu hỏi; bot đi lạc / đụng tệp cấm / không sửa được tệp nào; sau «Thu hồi» | Đại ca trả lời (gắn vào việc, lập lại kế hoạch) |
+| 13 | `ST_SCANNING` | Claude Code **chỉ đọc** rà mã thật trên `erp-v2` mới nhất (+ so `origin/main`), lượt `STAGE_SCAN = 25`; trả đoạn hiểu việc + tệp liên quan + câu cần đại ca quyết | Worker giao `agent.scan_task` cho máy sửa mã | `_plan_task` → **`_confirm_from_scan`** (ai-CR-149): KHÔNG gọi model quản lý; còn câu hỏi → NEEDS_INPUT, không → PLAN + thẻ xác nhận. Rà hỏng / máy tắt / quá 45 phút → thẻ xác nhận lấy theo yêu cầu gốc |
+| 3 | `ST_PLAN` | Có đoạn hiểu việc (từ rà soát); `plan_files` có thể rỗng — Claude Code tự xác định khi sửa | Máy / worker | Thẻ xác nhận gọn (Em hiểu việc · Tệp dự kiến · Rủi ro); đại ca nhắn **`ok` / `oke` / `làm đi`** (`_ok_by_text`) hoặc bấm «Làm» → giao sửa mã; `sửa: …` → rà lại; `bỏ việc này` |
+| 11 | `ST_NEEDS_INPUT` | Đang hỏi lại đại ca | Rà soát còn câu cần quyết (tối đa 3 câu trên thẻ); bot đi lạc / đụng tệp cấm / không sửa được tệp nào; sau «Thu hồi» | Đại ca trả lời (gắn vào việc) → thẻ xác nhận |
 | 4 | `ST_CODE` | Máy sửa mã đang chạy `claude -p` | `coder.approve_gate` → `dispatch` → `agent.code_task` | Cổng kiểm xong → REVIEW, hoặc NEEDS_INPUT |
 | 5 | `ST_CI` | (Thiết kế: GitHub Actions) | **Không chỗ nào trong mã đặt trạng thái này**; kho cũng chưa có `.github/workflows` | — |
 | 6 | `ST_REVIEW` | Có thẻ kết quả + tệp `.diff`, chờ đại ca | Máy sửa mã | «Gộp erp-v2 + deploy dev» → «Đồng ý» / «Hẹn giờ» |
@@ -253,13 +253,21 @@ Trạng thái lưu `tab_agent_task.status` (SMALLINT, `agent_hub/constants.py`):
 | 7 | `ST_PROD` | Đã lên dev, chờ «Xong» (lên prod không có đường tự động) | Máy sửa mã | «Xong» → DONE; «Thu hồi» (`git revert -m 1` + deploy lại) → NEEDS_INPUT |
 | 8 / 9 / 10 | `ST_DONE` / `ST_CANCELLED` / `ST_FAILED` | Đóng (`CLOSED_STATUSES`) | Đại ca / bot chịu thua | Tin gắn vào được thả cho lượt gom sau |
 
+**Dây chuyền gọn (ai-CR-149, đại ca 09/10/2026, cờ `AGENT_CODE_FLOW_SIMPLE`, mặc định BẬT):** bỏ lượt model quản lý
+(DeepSeek / Gemini) viết kế hoạch — «kế hoạch code thì Claude CLI ở máy mới biết». Rà soát (Claude Code) → thẻ xác nhận
+hoặc tối đa 3 câu hỏi → «ok» → Claude Code tự lập kế hoạch ngắn rồi sửa trong cùng phiên. `approve_gate` cho giao khi
+chưa chốt tệp; `check_drift` không tính lệch phạm vi khi `plan_files` rỗng — **tệp cấm và trần số tệp vẫn giữ**. Không còn
+tự duyệt theo mức rủi ro: mọi việc qua đúng MỘT lần «ok». Tắt cờ = dây chuyền cũ bên dưới (model quản lý viết kế hoạch
+qua `manager.run_plan`, `AGENT_PLAN_PROVIDERS` / `AGENT_PLAN_MODEL`, tự duyệt rủi ro ≤ 2 của ai-CR-086).
+
 **Làn:** `LANE_QUICK` (việc nhỏ rõ, ≤ `QUICK_MAX_FILES = 3` tệp, rủi ro 1) bỏ rà soát riêng, kế hoạch gọn rồi sửa luôn;
 «làm kỹ» ép làn đầy đủ, «làm luôn» ép làn tắt. Model của `claude -p` theo làn: `AGENT_CODER_MODEL_QUICK` /
 `AGENT_CODER_MODEL` trong `.env.runner`.
 
 **Chỗ dừng bắt buộc chờ đại ca (hiện nay, theo mã + doc 09):**
 
-1. Kế hoạch rủi ro **cao** (tiền, công nợ, phân quyền, cấu trúc DB, `main`) → «duyệt».
+1. **Xác nhận trước khi sửa** — dây chuyền gọn: MỌI việc một lần `ok` trên thẻ xác nhận (trả lời các câu rà soát nêu
+   trước nếu có). Dây chuyền cũ (cờ tắt): kế hoạch rủi ro **cao** (tiền, công nợ, phân quyền, cấu trúc DB, `main`) → «duyệt».
 2. **Gộp vào `erp-v2` + deploy dev** → «Đồng ý» trên thẻ, từ đúng chat chủ bot hoặc người được cấp cấp «gộp dev».
 3. **Prod**: không có đường nào từ việc sửa mã lên prod; lệnh «deploy prod <commit>» là thao tác VPS riêng, phải «đúng»
    (OTP tạm bỏ theo lệnh đại ca).
@@ -294,9 +302,9 @@ Một phase có thể thêm tính năng mà không đổi bậc.
 
 | Bậc | Bot được làm | Tình trạng |
 |---|---|---|
-| 1 | Gom việc, lập kế hoạch, nhắn Telegram, ghi sổ. Không đụng mã | Xong 18/09 |
+| 1 | Gom việc, rà soát, nhắn Telegram, ghi sổ. Không đụng mã | Xong 18/09 (từ ai-CR-149 kế hoạch do Claude Code tự lập lúc sửa) |
 | 2 | Sửa mã trong worktree, kiểm, đẩy nhánh `bot/*`, mở PR; **gộp `erp-v2` + deploy dev chỉ khi đại ca «Đồng ý»** | **Đang ở đây** (GĐ1, 2a, 2b, 3 xong 22–23/09) |
-| 3 | Tự gộp `erp-v2` khi CI xanh + tự lên dev | Chưa — kho chưa có CI; tự duyệt kế hoạch rủi ro thấp/vừa (ai-CR-086) là nới ở **bước kế hoạch**, không phải bậc 3 |
+| 3 | Tự gộp `erp-v2` khi CI xanh + tự lên dev | Chưa — kho chưa có CI. Hai chốt duyệt hiện nay: **«ok» trước khi sửa** + **«gộp» / «Đồng ý» trước khi lên dev** (ai-CR-149) |
 | 4 | Cổng prod: đại ca ra lệnh → môi trường GitHub có người duyệt → sao lưu DB → phát hành | Chưa. Lệnh «deploy prod» qua thao tác VPS có «đúng» là đường vận hành, không gắn với việc sửa mã |
 
 ### 3.4 Rủi ro và rào chắn chính
