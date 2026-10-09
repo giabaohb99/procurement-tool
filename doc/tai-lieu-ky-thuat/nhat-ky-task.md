@@ -13208,7 +13208,7 @@ DEV_MODE đỏ do môi trường máy em đang bật cờ đó.
 Mã nguồn: assistant/tools/update_tool.py (propose_document_update, propose_document_delete, confirm_update) · assistant/provider/openai_compat.py (clean_reply) · agent_hub/coder.py (check_drift, _c1_rule) · agent_hub/user_guide.py · frontend-v2 update-proposal-card.tsx
 
 ## ai-CR-150 | Nhắn sửa nó đi sau khi xem chi tiết việc là bot giao việc đó luôn
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca xem chi tiết việc AI-0006 rồi nhắn sửa nó đi em, nhưng bot hiểu thành câu hỏi thường và trả lời mình không sửa được; việc
 thì vẫn nằm chờ hỏi lại từ lượt kế hoạch rỗng trước đó. Em đã chạy lại việc AI-0006 trên dev theo dây chuyền gọn, bot đã gửi thẻ
@@ -13217,6 +13217,7 @@ ngay sau thẻ xác nhận hoặc tin chi tiết của một việc sẽ giao vi
 tự quyết theo những gì đã bàn. Chữ ok trơn khi bot đang hỏi lại vẫn không bỏ qua câu hỏi. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_GO_CONFIRM, _ok_by_text) · test/backend/test_agent_hub_day_chuyen_gon.py
+Deploy: dev 09/10 lúc 16:14, commit d316ad50 trên erp-v2.
 
 ## ai-CR-149 | Làm gọn dây chuyền sửa phần mềm: Claude Code rà soát rồi hỏi xác nhận, nhắn ok là làm
 - status: xong
