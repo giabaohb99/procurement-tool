@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-144 | Sửa lỗi bot gửi thẻ kế hoạch trắng rồi không nhận duyệt (việc AI-0006)
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca giao bot việc AI-0006 phát triển tính năng sửa và xóa; sau khi đại ca trả lời câu hỏi, bot gửi thẻ kế hoạch trống trơn
 mời nhắn duyệt, nhưng nhắn duyệt thì bot báo không có việc nào ở bước đó. Đọc sổ trên dev thấy model lập kế hoạch đã viết cả
@@ -13204,6 +13204,7 @@ hỏng thì thử lại một lần với lời dặn chỉ trả kết quả, v
 Khi bot cần hỏi thêm thì thẻ luôn có câu hỏi, không còn rơi sang dạng mời duyệt. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (extract_json_with, run_plan) · service.py (_plan_task) · test/backend/test_agent_hub_ke_hoach_json.py
+Deploy: dev 09/10 (Agent 1 gộp 55c924dd, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-143 | Dùng lại đơn nghỉ nháp trùng ngày và xem, xóa bớt phiếu nháp ngay trong chat
 - status: xong
