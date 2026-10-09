@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-143 | Dùng lại đơn nghỉ nháp trùng ngày và xem, xóa bớt phiếu nháp ngay trong chat
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca chốt bot chỉ làm xin nghỉ phép, không làm thủ tục nghỉ việc hẳn, và lo mỗi lần nhắn tạo lại sinh thêm một đơn nháp. Nay
 khi nhắn tạo cho bản nháp đơn nghỉ phép mà đã có đơn nghỉ nháp của chính mình trùng ngày, bot sửa đè đơn nháp cũ thay vì lập đơn
@@ -13204,6 +13204,7 @@ Bot chỉ xóa phiếu còn ở trạng thái nháp do chính người đó lậ
 do. Câu «nghỉ việc ngày X» được hiểu là xin nghỉ phép ngày đó. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/draft_create.py (list_mine, same_days_leave, update_leave, delete_mine) · erp.py · service.py (_my_drafts_by_text) · constants.py · user_guide.py · agent_gateway/controller.py · assistant/tools/draft_tool.py · test/backend/test_agent_hub_don_nhap.py
+Deploy: dev 09/10 (Agent 1 gộp 2b25542d, dựng ERP api trước rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-142 | Bot hỏi lại cho đủ thông tin trước khi soạn phiếu, thẻ nháp dễ đọc và bỏ ngoặc kép góc
 - status: xong
