@@ -13144,7 +13144,7 @@ Mã nguồn: backend/app/core/permissions.py + scoping.py (agent_ops) · seed.py
 Deploy: dev 09/10 (Agent 1 gộp 7d5ededc, dựng lại ERP api, erp và stack agent-hub); prod giữ lại.
 
 ## ai-CR-133 | Bot đọc và tóm tắt bài viết khi người dùng gửi đường link
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca gửi link bài Facebook và VnExpress nhờ tóm tắt thì bot trả lời không mở được link, vì trước giờ bot chỉ biết tìm trên mạng
 theo câu hỏi chứ không đọc một trang theo địa chỉ. Nay gửi link không kèm chữ, hoặc kèm câu nhờ tóm tắt, hoặc gửi link rồi mới
@@ -13154,3 +13154,4 @@ xuất Word được. Bot chặn mọi đường dẫn trỏ vào mạng nội b
 Drive và link nằm trong câu báo lỗi vẫn đi đường cũ. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/web_search.py (find_urls, fetch_article) · research.py (MODE_LINK, read_link) · service.py (_link_by_text) · user_guide.py · test/backend/test_agent_hub.py
+Deploy: dev 09/10 (Agent 1 gộp 933033d4, dựng lại stack agent-hub); prod giữ lại.
