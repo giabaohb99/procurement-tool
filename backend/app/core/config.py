@@ -313,6 +313,10 @@ class Settings(BaseSettings):
     # thì làm thôi»): BỎ bước model quản lý viết kế hoạch. Rà soát (Claude Code, chỉ đọc) → thẻ xác nhận (kèm câu hỏi của
     # rà soát nếu có) → «ok» → Claude Code tự lập kế hoạch và sửa. Tắt = dây chuyền cũ.
     AGENT_CODE_FLOW_SIMPLE: bool = True
+    # ai-CR-154 — đại ca 09/10/2026: «em cảnh báo trước mà anh vẫn chấp nhận làm thì có thể đẩy code luôn». Dây chuyền
+    # gọn: «ok» trên thẻ xác nhận (thẻ đã nói trước rủi ro + việc sẽ tự đẩy) là đồng ý luôn bước gộp erp-v2 + deploy dev
+    # khi cổng kiểm không đỏ. Tắt = như cũ, sửa xong chờ đại ca nhắn «gộp và deploy dev».
+    AGENT_AUTO_DEPLOY_AFTER_OK: bool = True
     AGENT_PLAN_PROVIDERS: str = "claude,openai"
     AGENT_PLAN_MODEL: str = ""
     # ai-CR-106: model DỰ PHÒNG khi model chính quá tải (503 / treo). Trống = model Gemini của Trợ lý web

@@ -3194,6 +3194,22 @@ def _confirm_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> N
     ])
 
 
+def _auto_deploy_on() -> bool:
+    return bool(settings.AGENT_CODE_FLOW_SIMPLE and settings.AGENT_AUTO_DEPLOY_AFTER_OK
+                and settings.AGENT_DEPLOY_ENABLED)
+
+
+def auto_deploy_after_code(db: Session, task: AgentTask, gate: dict) -> bool:
+    """ai-CR-154: sửa xong + đã commit + cổng kiểm không đỏ → tự gộp + deploy dev, vì «ok» trên thẻ xác nhận đã đồng
+    ý bước này (thẻ nói trước). Đỏ thì dừng ở thẻ kết quả như cũ (đại ca nhắn «sửa cho xanh»). Trả True nếu đã giao."""
+    if not _auto_deploy_on() or task.status != ST_REVIEW or (gate or {}).get("status") == "fail":
+        return False
+    if _deploy_blocker(db, task):
+        return False
+    _dispatch_deploy(db, settings.AGENT_TELEGRAM_CHAT_ID, "", task)
+    return True
+
+
 def _dispatch_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask, *, deploy: bool = True) -> None:
     """Nút «Đồng ý» / lệnh chữ: ghi dòng sổ rồi giao runner. Đây là lần DUY NHẤT lệnh gộp được phát.
     `deploy=False` = chỉ gộp vào nhánh nền (ai-CR-029); nút bấm cũ ghi «Gộp + deploy dev» nên mặc định True."""
@@ -5131,7 +5147,15 @@ def _send_confirm_card(db: Session, task: AgentTask, lines: list[str]) -> None:
             lines.append(f"… và {len(files) - 5} tệp nữa")
     else:
         lines.append("<i>Claude Code tự xác định tệp khi sửa.</i>")
-    lines += ["", f"Rủi ro: <b>{RISK_LABELS.get(task.risk_level, '?')}</b>", "", "<b>Trả lời:</b>",
+    lines += ["", f"Rủi ro: <b>{RISK_LABELS.get(task.risk_level, '?')}</b>"]
+    if int(task.risk_level or 0) >= RISK_HIGH:
+        lines.append("<b>Cảnh báo:</b> việc này dính tiền, công nợ, phân quyền hoặc cấu trúc bảng. Nhắn ok là đại ca "
+                     "chấp nhận rủi ro đó.")
+    if _auto_deploy_on():
+        lines.append(f"<i>Nhắn ok là đồng ý cả bước sau: sửa xong, bài kiểm không đỏ thì em tự gộp vào "
+                     f"{esc(settings.AGENT_BASE_BRANCH)} và đưa lên dev luôn, không hỏi lại. Lên dev rồi vẫn thu hồi "
+                     "được.</i>")
+    lines += ["", "<b>Trả lời:</b>",
               "• <code>ok</code> — em giao Claude Code làm luôn (tự lập kế hoạch khi sửa)",
               "• <code>sửa: …</code> — nói thêm điều cần đổi, em rà lại",
               "• <code>bỏ việc này</code>"]

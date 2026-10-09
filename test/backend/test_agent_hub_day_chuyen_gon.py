@@ -184,3 +184,30 @@ def test_doc_dieu_kien_xong_tu_ket_qua_ra_soat():
             "\n```")
     _, info = coder.parse_scan(text)
     assert info["outcomes"][0] == "sửa lý do đơn nghỉ" and len(info["outcomes"]) == coder.OUTCOMES_MAX
+
+
+def test_ok_tren_the_la_dong_y_luon_buoc_gop_va_dua_len_dev(db, flow, monkeypatch):
+    """ai-CR-154 — đại ca 09/10: «em cảnh báo trước mà anh vẫn chấp nhận làm thì có thể đẩy code luôn». Thẻ xác nhận nói
+    trước; sửa xong mà bài kiểm không đỏ thì tự gộp + deploy dev, đỏ thì dừng ở thẻ kết quả như cũ."""
+    from app.modules.agent_hub.constants import ST_REVIEW
+
+    service, coder, task, sent, dispatched = flow
+    monkeypatch.setattr(settings, "AGENT_DEPLOY_ENABLED", True)
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
+    task.risk_level = 3
+    db.commit()
+    _scan(db, coder, task, files=["backend/app/modules/assistant/tools/update_tool.py"])
+    service._plan_task(db, task)
+    card = sent[-1]
+    assert "tự gộp vào" in card and "không hỏi lại" in card and "Cảnh báo:" in card
+
+    deploys: list[int] = []
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat_id, cb_id, t, **kw: deploys.append(t.id))
+    task.status = ST_REVIEW
+    db.commit()
+    assert service.auto_deploy_after_code(db, task, {"status": "fail"}) is False and deploys == []
+    assert service.auto_deploy_after_code(db, task, {"status": "pass"}) is True and deploys == [task.id]
+    monkeypatch.setattr(settings, "AGENT_AUTO_DEPLOY_AFTER_OK", False)
+    assert service.auto_deploy_after_code(db, task, {"status": "pass"}) is False and len(deploys) == 1
+    service._plan_task(db, task)
+    assert "tự gộp vào" not in sent[-1]

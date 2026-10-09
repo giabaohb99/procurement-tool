@@ -13193,6 +13193,17 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-154 | Đại ca nhắn ok trên thẻ xác nhận là bot tự đưa bản sửa lên dev khi bài kiểm không đỏ
+- status: dang-lam
+- date: 2026-10-09
+Đại ca chốt: bot đã cảnh báo trước mà đại ca vẫn đồng ý làm thì cứ đẩy code luôn, không cần hỏi lại lần hai. Thẻ xác nhận nay
+ghi rõ mức rủi ro, có dòng cảnh báo riêng khi việc dính tiền, công nợ, phân quyền hay cấu trúc bảng, và nói trước rằng nhắn ok
+là đồng ý cả bước gộp vào nhánh dev và đưa lên dev. Claude Code sửa xong, bài kiểm không đỏ thì bot tự gộp và đưa lên dev; bài
+kiểm đỏ thì vẫn dừng ở thẻ kết quả để đại ca nhắn sửa cho xanh. Bản trên dev lúc nào cũng thu hồi được, prod không bao giờ tự đẩy.
+Có công tắc để tắt khi cần. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: core/config.py (AGENT_AUTO_DEPLOY_AFTER_OK) · agent_hub/service.py (auto_deploy_after_code, _send_confirm_card) · agent_hub/coder.py (run_code_task, _run_phases)
+
 ## ai-CR-153 | Claude Code làm chắc tay hơn và chặn bấm lại thẻ đề xuất cũ
 - status: xong
 - date: 2026-10-09

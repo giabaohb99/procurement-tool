@@ -1596,6 +1596,8 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
 
     send_review_card(db, task, run, files=files, gate=gate, escalation=escalation,
                      report=report, data=data, pr=pr)
+    if not escalation and not carry:
+        service.auto_deploy_after_code(db, task, gate)        # ai-CR-154: ok trên thẻ xác nhận đã đồng ý bước này
     if carry and not escalation:
         service.reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b> · còn {len(carry['phases_left'])} phần chưa làm"
                       f"\n\n<i>Nhắn «làm tiếp {telegram.esc(task.code)}» để em làm phần còn lại.</i>", task_id=task.id)
@@ -1746,6 +1748,10 @@ def _run_phases(db: Session, task: AgentTask, run: AgentRun, *, worktree: str, b
     })
     db.commit()
     send_review_card(db, task, run, files=files, gate=gate, escalation=escalation, report=report, data=data, pr=pr)
+    if not left and not escalation:
+        from . import service
+
+        service.auto_deploy_after_code(db, task, gate)        # ai-CR-154
     if left and not escalation:
         from . import service
 

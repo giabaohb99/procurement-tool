@@ -105,7 +105,10 @@ nguy hiểm hơn một con bot dở.
 **C10. Không tự merge, không `--force` lên nhánh nền, không `git push` lên `main`.** Gộp vào
 `erp-v2` chỉ xảy ra sau khi đại ca bấm «Đồng ý» (hoặc hẹn giờ) trên thẻ hỏi ở Telegram
 (ai-CR-014), do mã của hub làm chứ không phải lượt `claude`; và đã gộp thì phải có đường
-«Thu hồi» (`git revert -m 1`), không xóa lịch sử.
+«Thu hồi» (`git revert -m 1`), không xóa lịch sử. Từ ai-CR-154 (dây chuyền gọn,
+`AGENT_AUTO_DEPLOY_AFTER_OK`), chữ *ok* trên thẻ xác nhận là đồng ý luôn bước gộp + deploy dev:
+thẻ nói trước rủi ro và việc sẽ tự đẩy; sửa xong mà cổng kiểm không đỏ thì hub tự gộp, đỏ thì
+dừng ở thẻ kết quả như cũ. Prod vẫn không bao giờ tự đẩy.
 
 **C11. Bot chạy tách khỏi ERP — mọi lối vào dữ liệu ERP đi qua cổng B** (ai-CR-153). Ở dev và
 prod, `agent_hub/` chạy với `AGENT_MODE=service` và DB riêng, không có bảng phiếu. Mã phía bot
