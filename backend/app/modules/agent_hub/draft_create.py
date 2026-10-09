@@ -74,19 +74,44 @@ def payment_link(draft: dict) -> str:
             + (f"&offsets={','.join(offsets)}" if offsets else ""))
 
 
+_WEEKDAY = ("thứ hai", "thứ ba", "thứ tư", "thứ năm", "thứ sáu", "thứ bảy", "chủ nhật")
+
+
+def _vn_date(iso: str) -> str:
+    """'2026-10-12' → '12/10/2026 (thứ hai)'. Sai dạng thì trả nguyên."""
+    from datetime import date
+
+    try:
+        d = date.fromisoformat(str(iso or "")[:10])
+    except ValueError:
+        return str(iso or "")
+    return f"{d:%d/%m/%Y} ({_WEEKDAY[d.weekday()]})"
+
+
+def _days(n) -> str:
+    try:
+        return f"{float(n):g} ngày"
+    except (TypeError, ValueError):
+        return ""
+
+
 def summarize(kind: str, draft: dict) -> list[str]:
-    """Vài dòng tóm tắt bản nháp để người dùng đọc trước khi nhắn «tạo»."""
+    """Dòng «Nhãn: giá trị» tóm tắt bản nháp để người dùng đọc trước khi nhắn tạo (thẻ in đậm phần nhãn)."""
     if kind == "leave":
         lines = draft.get("lines") or []
         types = ", ".join(f"{ln.get('leave_type') or 'loại #' + str(ln.get('leave_type_id'))}"
-                          + (f" {ln.get('days')} ngày" if ln.get("days") else "") for ln in lines)
-        span = draft.get("from_date", "")
-        if draft.get("to_date") and draft.get("to_date") != span:
-            span += f" → {draft.get('to_date')}"
-        return [f"Ngày nghỉ: {span} ({SESSION_LABELS.get(draft.get('from_session'), '')}"
-                + (f" → {SESSION_LABELS.get(draft.get('to_session'), '')}"
-                   if draft.get("to_session") not in (None, draft.get("from_session")) else "") + ")",
-                f"Loại: {types or 'chưa rõ'}", f"Lý do: {draft.get('reason') or '(trống)'}"]
+                          + (f" · {_days(ln.get('days'))}" if ln.get("days") else "") for ln in lines)
+        span = _vn_date(draft.get("from_date", ""))
+        if draft.get("to_date") and draft.get("to_date") != draft.get("from_date"):
+            span += f" → {_vn_date(draft.get('to_date'))}"
+        session = SESSION_LABELS.get(draft.get("from_session"), "")
+        if draft.get("to_session") not in (None, draft.get("from_session")):
+            session += f" → {SESSION_LABELS.get(draft.get('to_session'), '')}"
+        out = [f"Ngày nghỉ: {span}", f"Buổi: {session or 'cả ngày'}", f"Loại nghỉ: {types or 'chưa rõ'}",
+               f"Lý do: {draft.get('reason') or '(trống)'}"]
+        if draft.get("contact_phone"):
+            out.append(f"Liên hệ: {draft['contact_phone']}")
+        return out
     if kind == "ticket":
         return [f"Chủ đề: {draft.get('subject', '')}", f"Bộ phận: {draft.get('department') or '(trống)'}",
                 f"Nội dung: {(draft.get('body') or '')[:300]}"]
@@ -94,7 +119,7 @@ def summarize(kind: str, draft: dict) -> list[str]:
         people = ", ".join(p.get("name", "?") for p in draft.get("assignees") or []) or "(chưa giao ai)"
         out = [f"Việc: {draft.get('title', '')}", f"Dự án: {draft.get('list_name', '?')}", f"Người phụ trách: {people}"]
         if draft.get("due_date"):
-            out.append(f"Hạn: {draft['due_date']}")
+            out.append(f"Hạn: {_vn_date(draft['due_date'])}")
         if draft.get("description"):
             out.append(f"Mô tả: {draft['description'][:300]}")
         return out

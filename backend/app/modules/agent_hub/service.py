@@ -4057,6 +4057,27 @@ def _loose_confirm(low: str) -> bool:
     return len(low.split()) <= 8 and bool(_LOOSE_YES.search(low)) and not _LOOSE_BLOCK.search(low)
 
 
+def draft_card(kind: str, draft: dict, *, replaced: bool = False) -> str:
+    """Thẻ bản nháp (đại ca 09/10: bỏ ngoặc «», làm lại cho dễ đọc): tiêu đề in hoa · nhãn in đậm · điều em TỰ HIỂU
+    (người dùng chưa nói) tách riêng để xác nhận · các câu trả lời dạng mã (chạm là chép) mỗi câu một dòng."""
+    esc = telegram.esc
+    out = [f"<b>BẢN NHÁP {esc(draft_create.LABELS[kind].upper())}</b>" + (" <i>(thay bản nháp trước)</i>" if replaced else "")]
+    for line in draft_create.summarize(kind, draft):
+        label, sep, value = line.partition(": ")
+        out.append(f"<b>{esc(label)}:</b> {esc(value)}" if sep and len(label) <= 30 else esc(line))
+    assumed = [str(a) for a in draft.get("assumptions") or [] if str(a).strip()]
+    if assumed:
+        out += ["", "<b>Em đang hiểu là</b> (sai thì nhắn lại để em sửa):"] + [f"• {esc(a)}" for a in assumed[:5]]
+    if kind in draft_create.SUBMITTABLE:
+        actions = [("tạo", "lưu nháp"), ("tạo và gửi duyệt", "lưu và gửi duyệt luôn"), ("thôi", "bỏ bản nháp")]
+    elif kind == "work_task":
+        actions = [("tạo", "tạo việc và báo chuông cho người được giao"), ("thôi", "bỏ bản nháp")]
+    else:
+        actions = [("tạo", "gửi phiếu cho nhóm hỗ trợ"), ("thôi", "bỏ bản nháp")]
+    out += ["", "<b>Trả lời:</b>"] + [f"• <code>{esc(cmd)}</code> — {esc(note)}" for cmd, note in actions]
+    return "\n".join(out)
+
+
 def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
     """Tool vừa soạn nháp: tóm tắt + chờ «tạo». Đề nghị thanh toán thì gửi link form web điền sẵn."""
     esc = telegram.esc
@@ -4075,15 +4096,7 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
                                                      AgentMessage.action == ACT_DRAFT_WAIT)):
         old.action = ACT_DRAFT_DROPPED
         replaced += 1
-    lines = [f"<b>Bản nháp {esc(draft_create.LABELS[kind])}</b>" + (" (thay bản nháp trước)" if replaced else "")]
-    lines += [esc(x) for x in draft_create.summarize(kind, draft)]
-    if kind in draft_create.SUBMITTABLE:
-        lines += ["", "Nhắn «tạo» để lưu Nháp, «tạo và gửi duyệt» để gửi duyệt luôn, «thôi» để bỏ."]
-    elif kind == "work_task":
-        lines += ["", "Nhắn «tạo» để em tạo việc và báo chuông cho người được giao, «thôi» để bỏ."]
-    else:
-        lines += ["", "Nhắn «tạo» để em gửi phiếu cho nhóm hỗ trợ, «thôi» để bỏ."]
-    reply(db, chat_id, "\n".join(lines))
+    reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced)))
     log_message(db, DIR_OUT, chat_id, 0, json.dumps({"tool": call.get("name"), "kind": kind,
                                                      "user_id": getattr(user, "id", 0), "draft": draft},
                                                     ensure_ascii=False, default=str),

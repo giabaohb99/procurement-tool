@@ -4566,7 +4566,9 @@ def test_nhan_tao_thi_tao_that_dung_mot_lan(db, bot, monkeypatch):
     service, sent, asked = bot
     me, created = _draft_setup(db, monkeypatch, service)
     service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
-    assert "Bản nháp đơn nghỉ phép" in sent[-1] and "buổi chiều" in sent[-1] and "Nhắn «tạo»" in sent[-1]
+    #  09/10/2026: thẻ nháp bỏ ngoặc «», câu trả lời dạng mã mỗi dòng một câu.
+    assert "BẢN NHÁP ĐƠN NGHỈ PHÉP" in sent[-1] and "buổi chiều" in sent[-1] and "<code>tạo</code>" in sent[-1]
+    assert "«" not in sent[-1]
     service.handle_message(db, _msg("tạo đi em"))
     assert created == [(7, "leave", "Đi khám bệnh")]
     assert "<b>Đã tạo đơn nghỉ phép.</b>" in sent[-1] and "/hr/leave-requests/42" in sent[-1]
@@ -4681,7 +4683,7 @@ def test_tao_va_gui_duyet_mot_cau(db, bot, monkeypatch):
     me, created = _draft_setup(db, monkeypatch, service)
     submitted = _submit_setup(monkeypatch, service)
     service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
-    assert "«tạo và gửi duyệt»" in sent[-1]
+    assert "<code>tạo và gửi duyệt</code>" in sent[-1]
     service.handle_message(db, _msg("tạo và gửi duyệt"))
     assert len(created) == 1 and submitted == [("leave", 42)]
     assert "<b>Đã tạo và gửi duyệt đơn nghỉ phép.</b>" in sent[-1]
@@ -4771,7 +4773,7 @@ def test_co_ban_nhap_thi_khong_gui_cau_bam_nut_cua_tro_ly(db, monkeypatch):
 
     monkeypatch.setattr(assistant_service, "ask", fake_ask)
     service.answer_question(db, "12345", "tạo đơn nghỉ chiều mai")
-    assert len(sent) == 1 and "Bản nháp đơn nghỉ phép" in sent[0] and "bấm nút" not in sent[0]
+    assert len(sent) == 1 and "BẢN NHÁP ĐƠN NGHỈ PHÉP" in sent[0] and "bấm nút" not in sent[0]
     #  Câu của Trợ lý vẫn vào sổ để giữ mạch hội thoại, chỉ không gửi đi.
     assert db.query(AgentMessage).filter_by(action=service.ACT_ANSWER, tg_message_id=0).count() == 1
     assert "CÓ DẤU" in seen["system"]

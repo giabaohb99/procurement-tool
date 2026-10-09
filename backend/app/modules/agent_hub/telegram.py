@@ -320,6 +320,22 @@ def _button(label: str, data: str) -> dict:
     return {"text": label, "callback_data": data}
 
 
+#  Đại ca chốt (ai-CR-121, nhắc lại 09/10/2026): KHÔNG để ngoặc «» trong tin bot gửi — khó đọc. Hàng trăm câu cũ trong
+#  mã dùng «lệnh» để chỉ chữ cần nhắn; đổi tại MỘT cửa ra (mọi tin Telegram / Zalo đi qua `send` / `edit_text`) thành
+#  chữ đậm, khỏi sửa từng câu và câu mới lỡ tay cũng không lọt. Không đụng phần trong <pre> / <code>.
+_GUILLEMET = re.compile(r"«([^«»\n<>]{1,160})»")
+_RAW_BLOCK = re.compile(r"(<pre>.*?</pre>|<code>.*?</code>)", re.DOTALL)
+
+
+def polish(text: str) -> str:
+    if not text or "«" not in text:
+        return text
+    parts = _RAW_BLOCK.split(text)
+    for i in range(0, len(parts), 2):          # phần lẻ là khối <pre> / <code> — giữ nguyên
+        parts[i] = _GUILLEMET.sub(r"<b>\1</b>", parts[i]).replace("«", "").replace("»", "")
+    return "".join(parts)
+
+
 def send(text: str, *, buttons: list[tuple[str, str]] | None = None,
          chat_id: str = "") -> int:
     """Gửi một tin. `buttons` là [(nhãn, mã hành động)]. Trả `message_id`, lỗi thì 0.
@@ -329,6 +345,7 @@ def send(text: str, *, buttons: list[tuple[str, str]] | None = None,
     ai-CR-111: chat Zalo (`zl:…`) rẽ sang `zalo.send` — nút bấm thành danh sách lựa chọn nhắn lại bằng chữ. Máy sửa mã
     (không token) vẫn gửi vòng qua worker như cũ; worker thấy tiền tố `zl:` thì gửi bằng Zalo.
     """
+    text = polish(text)
     if channels.is_zalo_account(chat_id) and not relaying():
         from . import zalo_account
 
@@ -457,7 +474,7 @@ def edit_text(chat_id: str, message_id: int, text: str) -> bool:
         return False                    # Zalo không cho sửa tin đã gửi
     try:
         _call("editMessageText", {
-            "chat_id": chat_id, "message_id": message_id, "text": _clip(text),
+            "chat_id": chat_id, "message_id": message_id, "text": _clip(polish(text)),
             "parse_mode": "HTML", "disable_web_page_preview": True,
         })
         return True

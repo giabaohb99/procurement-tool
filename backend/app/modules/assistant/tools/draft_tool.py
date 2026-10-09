@@ -17,6 +17,7 @@ from app.modules.leave.constants import (SESSION_AFTERNOON as LEAVE_SESSION_AFTE
                                          SESSION_HOURLY as LEAVE_SESSION_HOURLY,
                                          SESSION_MORNING as LEAVE_SESSION_MORNING)
 
+from . import confirm_fields
 from .base import ToolContext, ToolSpec
 
 MAX_LINES = 20          # phiếu do trợ lý soạn không cần dài hơn — dài hơn thì tự lập tay
@@ -27,8 +28,10 @@ _PARAMS = {
     "properties": {
         "purpose": {
             "type": "string",
-            "description": "Mục đích khảo sát / lý do cần mua — bắt buộc, nêu ngắn gọn.",
+            "description": "Mục đích khảo sát / lý do cần mua — ĐÚNG lời người dùng; họ chưa nói thì để trống, tool "
+                           "nhắc hỏi. Không tự nghĩ ra.",
         },
+        "asked_fields": confirm_fields.ASKED_PARAM,
         "note": {
             "type": "string",
             "description": "Ghi chú chung cho phiếu (nếu có).",
@@ -160,16 +163,36 @@ def _apply_company(ctx: ToolContext, args: dict, result: dict) -> None:
                                "(companies) để người dùng chọn đúng pháp nhân.")
 
 
+def _ask_purpose_qty(user_text: str, asked: set[str], purpose: str, items: list[tuple[str, object]]) -> list[dict]:
+    """Mục đích model tự nghĩ (người dùng chưa nói) / dòng chưa có số lượng → câu hỏi cho `confirm_fields.need`."""
+    out: list[dict] = []
+    if "purpose" not in asked and (not purpose or not confirm_fields.stated(user_text, purpose)):
+        out.append({"field": "purpose", "question": "Mua / khảo sát để làm gì (mục đích)?"})
+    no_qty = [name or "?" for name, qty in items if _clean_number(qty) <= 0]
+    if no_qty and "qty" not in asked:
+        out.append({"field": "qty", "question": "Số lượng (kèm đơn vị) cho: " + ", ".join(no_qty[:8]) + "?"})
+    return out
+
+
 def _run(ctx: ToolContext, args: dict) -> dict:
     # Người không có quyền tạo YCBG thì đừng soạn hộ — model sẽ báo lại đúng lý do.
     if not ctx.can("survey_request", "create"):
         return {"denied": True,
                 "error": "Người dùng không có quyền tạo Yêu cầu báo giá (survey_request.create)."}
 
+    user_text, asked = confirm_fields.take_context(args)
     purpose = _clean_text(args.get("purpose"), 500)
     raw_lines = args.get("lines")
-    if not purpose or not isinstance(raw_lines, list) or not raw_lines:
-        return {"error": "Thiếu purpose hoặc lines — hỏi người dùng bổ sung rồi gọi lại."}
+    if not isinstance(raw_lines, list) or not raw_lines:
+        return {"error": "Thiếu lines — hỏi người dùng mặt hàng cần khảo sát rồi gọi lại."}
+    #  Đại ca 09/10: mục đích / số lượng người dùng chưa nói thì hỏi lại một lượt, không tự điền.
+    missing = _ask_purpose_qty(user_text, asked, purpose,
+                               [(_clean_text(r.get("requirement_detail"), 80), r.get("request_qty"))
+                                for r in raw_lines if isinstance(r, dict)])
+    if missing:
+        return confirm_fields.need(missing)
+    if not purpose:
+        return {"error": "Thiếu purpose — hỏi người dùng mục đích khảo sát rồi gọi lại."}
 
     # Ô ĐVT / Phân loại trên form là ô CHỌN theo danh mục — chuẩn hóa chính tả cho khớp.
     from app.modules.catalog.model import ItemGroup, Unit
@@ -245,8 +268,9 @@ _PR_PARAMS = {
     "properties": {
         "purpose": {
             "type": "string",
-            "description": "Mục đích mua hàng — bắt buộc, nêu ngắn gọn.",
+            "description": "Mục đích mua hàng — ĐÚNG lời người dùng; họ chưa nói thì để trống, tool nhắc hỏi.",
         },
+        "asked_fields": confirm_fields.ASKED_PARAM,
         "note": {"type": "string", "description": "Ghi chú chung cho phiếu (nếu có)."},
         "need_date": {
             "type": "string",
@@ -343,10 +367,28 @@ def _run_purchase(ctx: ToolContext, args: dict) -> dict:
         return {"denied": True,
                 "error": "Người dùng không có quyền tạo Yêu cầu mua hàng (purchase_request.create)."}
 
+    user_text, asked = confirm_fields.take_context(args)
     purpose = _clean_text(args.get("purpose"), 500)
     raw_lines = args.get("lines")
-    if not purpose or not isinstance(raw_lines, list) or not raw_lines:
-        return {"error": "Thiếu purpose hoặc lines — hỏi người dùng bổ sung rồi gọi lại."}
+    if not isinstance(raw_lines, list) or not raw_lines:
+        return {"error": "Thiếu lines — hỏi người dùng mặt hàng cần mua rồi gọi lại."}
+    #  Đại ca 09/10: mục đích, số lượng, ngày cần hàng, kho nhận — thiếu thì hỏi MỘT lượt trước khi soạn.
+    good = [r for r in raw_lines if isinstance(r, dict)]
+    missing = _ask_purpose_qty(user_text, asked, purpose,
+                               [(_clean_text(r.get("product"), 80), r.get("qty")) for r in good])
+    if not _clean_text(args.get("need_date"), 10) and not any(_clean_text(r.get("required_date"), 10) for r in good) \
+            and "need_date" not in asked:
+        missing.append({"field": "need_date", "question": "Ngày cần hàng là ngày nào?"})
+    if any(not _clean_text(r.get("warehouse"), 255) for r in good) and "warehouse" not in asked:
+        from app.modules.catalog.model import Warehouse
+
+        names = [n for (n,) in ctx.db.query(Warehouse.name).filter(Warehouse.is_active.is_(True))
+                 .order_by(Warehouse.name).limit(8).all() if n]
+        missing.append({"field": "warehouse", "question": "Nhận hàng ở kho nào?", "options": names})
+    if missing:
+        return confirm_fields.need(missing)
+    if not purpose:
+        return {"error": "Thiếu purpose — hỏi người dùng mục đích mua rồi gọi lại."}
 
     from app.modules.catalog.model import Unit
 
@@ -446,13 +488,15 @@ _LEAVE_PARAMS = {
             "description": "Ngày kết thúc nghỉ, YYYY-MM-DD — bắt buộc. Nghỉ một ngày thì "
                            "bằng from_date.",
         },
-        "reason": {"type": "string", "description": "Lý do nghỉ — bắt buộc, nêu ngắn gọn."},
+        "reason": {"type": "string", "description": "Lý do nghỉ — ĐÚNG lời người dùng nói. Họ chưa nói thì BỎ "
+                                                    "TRỐNG (tool sẽ nhắc hỏi), TUYỆT ĐỐI không tự nghĩ ra."},
         "leave_type": {
             "type": "string",
             "description": "MÃ loại nghỉ trong danh mục của công ty (annual = phép năm, "
-                           "unpaid = không lương, sick = ốm đau...). Không rõ thì bỏ trống — "
-                           "tool tự lấy phép năm. Đừng bịa mã ngoài danh mục.",
+                           "unpaid = không lương, sick = ốm đau...). Người dùng chưa nói loại nào thì BỎ "
+                           "TRỐNG — tool trả danh sách để hỏi. Đừng bịa mã ngoài danh mục.",
         },
+        "asked_fields": confirm_fields.ASKED_PARAM,
         "from_session": {
             "type": "string",
             "enum": list(_SESSION_BY_NAME),
@@ -481,7 +525,7 @@ _LEAVE_PARAMS = {
         },
         "contact_phone": {"type": "string", "description": "SĐT liên hệ khi nghỉ (nếu có)."},
     },
-    "required": ["from_date", "to_date", "reason"],
+    "required": ["from_date", "to_date"],
 }
 
 _LEAVE_DESC = (
@@ -489,8 +533,9 @@ _LEAVE_DESC = (
     "KHÔNG tạo đơn — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form đơn nghỉ phép đã "
     "điền sẵn để người dùng rà lại và tự bấm Lưu. Form TỰ điền người nghỉ theo hồ sơ người "
     "hỏi — ĐỪNG hỏi lại. Gọi khi người dùng muốn xin nghỉ / lập đơn nghỉ phép và đã cho biết "
-    "tối thiểu: NGÀY nghỉ (từ ngày - đến ngày) và LÝ DO; thiếu thì hỏi cho đủ rồi mới gọi, "
-    "nghỉ nửa ngày thì hỏi buổi nào. Đủ thông tin thì PHẢI gọi ngay trong lượt trả lời — nút "
+    "NGÀY nghỉ. Lý do / loại nghỉ người dùng chưa nói thì cứ gọi với ô đó TRỐNG — tool trả `need_info` để "
+    "hỏi lại một lượt (kèm danh sách loại nghỉ); không tự điền thay họ. Nghỉ nửa ngày thì hỏi buổi nào. "
+    "Đủ thông tin thì PHẢI gọi ngay trong lượt trả lời — nút "
     "'Tạo đơn nghỉ phép' chỉ xuất hiện khi tool được gọi. Sau khi gọi: tóm tắt bản đề xuất, "
     "nói rõ đơn CHƯA được tạo và CHƯA gửi duyệt, và đọc nguyên các cảnh báo trong `warnings` "
     "nếu có (trùng đơn cũ, không đủ quỹ phép). ĐỪNG dùng tool này để tạo văn bản «Giấy nghỉ "
@@ -565,12 +610,28 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
                          "nghỉ phép được — báo họ liên hệ phòng Nhân sự."}
     emp = ctx.db.get(Employee, emp_id)
 
+    user_text, asked = confirm_fields.take_context(args)
     from_date = _iso_date(args.get("from_date"))
     to_date = _iso_date(args.get("to_date"))
     reason = _clean_text(args.get("reason"), 500)
-    if not from_date or not to_date or not reason:
+    if not from_date or not to_date or (not reason and not user_text):
         return {"error": "Thiếu hoặc sai from_date / to_date (cần YYYY-MM-DD) hoặc reason — "
                          "hỏi người dùng bổ sung rồi gọi lại."}
+    #  Đại ca 09/10: lý do / loại nghỉ người dùng CHƯA nói thì hỏi lại, không tự điền (lớp 1 + 2 của confirm_fields).
+    missing: list[dict] = []
+    if reason and not confirm_fields.stated(user_text, reason) and "reason" not in asked:
+        reason = ""
+    if not reason and "reason" not in asked:
+        missing.append({"field": "reason", "question": "Lý do nghỉ là gì?"})
+    if not _clean_text(args.get("leave_type"), 50) and "leave_type" not in asked:
+        from app.modules.leave.catalog_model import LeaveType
+
+        names = [n for (n,) in ctx.db.query(LeaveType.name).filter(LeaveType.is_active.is_(True))
+                 .order_by(LeaveType.sort_order, LeaveType.id).limit(8).all() if n]
+        missing.append({"field": "leave_type", "question": "Nghỉ loại nào?", "options": names})
+    if missing:
+        return confirm_fields.need(missing)
+    reason = reason or "Việc cá nhân"
     if to_date < from_date:
         return {"error": "«Đến ngày» đang trước «Từ ngày» — xác nhận lại ngày nghỉ với "
                          "người dùng rồi gọi lại."}
@@ -581,6 +642,12 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         return _SESSION_BY_NAME.get(_clean_text(value, 20).lower(), LEAVE_SESSION_FULL)
 
     from_session, to_session = _session(args.get("from_session")), _session(args.get("to_session"))
+    assumptions: list[str] = []
+    if from_session == LEAVE_SESSION_FULL and to_session == LEAVE_SESSION_FULL and not confirm_fields.mentions(
+            user_text, "ca ngay", "nua ngay", "buoi sang", "buoi chieu", "sang", "chieu", "theo gio", "gio"):
+        assumptions.append("nghỉ cả ngày")
+    if "reason" in asked and reason == "Việc cá nhân" and not confirm_fields.stated(user_text, reason):
+        assumptions.append("lý do «Việc cá nhân» (anh/chị chưa nêu lý do)")
     if (from_date == to_date and from_session == LEAVE_SESSION_AFTERNOON
             and to_session == LEAVE_SESSION_MORNING):
         #  Cùng câu chặn với `request_service.check_date_range` — một luật, một câu báo.
@@ -681,6 +748,7 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
             "to_time": to_time,
             "reason": reason,
             "contact_phone": _clean_text(args.get("contact_phone"), 30),
+            "assumptions": assumptions,
         },
         "leave_type_label": leave_type.name,
         "from_session_label": LEAVE_SESSION_LABELS.get(from_session, ""),

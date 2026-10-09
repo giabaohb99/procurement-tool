@@ -13193,6 +13193,19 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-142 | Bot hỏi lại cho đủ thông tin trước khi soạn phiếu, thẻ nháp dễ đọc và bỏ ngoặc kép góc
+- status: dang-lam
+- date: 2026-10-09
+Đại ca nhắn «tạo đơn nghỉ việc vào ngày thứ 2 tuần sau» thì bot soạn luôn đơn loại Phép năm với lý do Việc cá nhân, dù đại ca
+chưa nói hai điều đó, và thẻ nháp vẫn còn ngoặc kép góc khó đọc. Nay khi soạn đơn nghỉ phép, yêu cầu mua hàng, yêu cầu báo giá
+hay việc ở phân hệ Dự án, ô nào quan trọng mà người dùng chưa nói, hoặc bot tự nghĩ ra, thì bot hỏi lại một tin gồm đủ các ý,
+có kèm danh sách để chọn như loại nghỉ hay kho nhận; ý nào người dùng bảo bỏ qua thì không hỏi lần hai. Những điều bot tự hiểu
+như nghỉ cả ngày hay chưa đặt hạn được ghi riêng trên thẻ để người dùng xác nhận khi nhắn tạo. Thẻ nháp được làm lại: tiêu đề in
+hoa, nhãn in đậm, ngày ghi kèm thứ, các câu trả lời mỗi câu một dòng dạng chạm là chép. Mọi tin bot gửi lên Telegram và Zalo
+không còn ngoặc kép góc nữa, chữ trong ngoặc được in đậm. Bài kiểm của bot và Trợ lý chạy xanh.
+
+Mã nguồn: backend/app/modules/assistant/tools/confirm_fields.py (mới) · draft_tool.py · work_tool.py · assistant/service.py · agent_hub/service.py (draft_card) · agent_hub/draft_create.py · agent_hub/telegram.py (polish) · test/backend/test_agent_hub_hoi_lai_du_thong_tin.py
+
 ## ai-CR-141 | Duyệt việc quay lại cơ sở dữ liệu của bot bằng thẻ trên Telegram
 - status: xong
 - date: 2026-10-09

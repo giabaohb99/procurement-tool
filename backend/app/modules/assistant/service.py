@@ -242,6 +242,17 @@ def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None,
     return "\n\n".join(parts) if parts else None
 
 
+def _with_user_text(name: str, args: dict, message, history) -> dict:
+    """Tool soạn nháp nhận thêm lời người dùng (tham số ẩn) để biết ô nào người dùng THẬT SỰ đã nói — xem
+    `tools/confirm_fields.py`. Model không thấy, không điền được tham số này."""
+    from .tools import confirm_fields
+
+    if name not in confirm_fields.TOOLS_WITH_USER_TEXT or not isinstance(args, dict):
+        return args
+    text = message if isinstance(message, str) else ""
+    return {**args, confirm_fields.USER_TEXT_ARG: confirm_fields.recent_user_text(text, history)}
+
+
 def ask(
     message: str,
     *,
@@ -313,7 +324,7 @@ def ask(
         result = prov.run_tools(
             msgs,
             tools=erp.tool_defs(db, user),
-            execute=lambda name, args: erp.run_tool(db, user, name, args),
+            execute=lambda name, args: erp.run_tool(db, user, name, _with_user_text(name, args, message, history)),
             **common,
         )
     else:

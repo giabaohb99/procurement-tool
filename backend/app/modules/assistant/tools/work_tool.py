@@ -12,6 +12,7 @@ import re
 
 from sqlalchemy import or_
 
+from . import confirm_fields
 from .base import ToolContext, ToolSpec, denied
 
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -52,9 +53,13 @@ def _find_people(ctx: ToolContext, names: list) -> tuple[list[dict], list[str]]:
 def _draft_work_task(ctx: ToolContext, args: dict) -> dict:
     if not ctx.can("work_task", "create"):
         return denied("tạo công việc ở phân hệ Dự án")
+    user_text, asked = confirm_fields.take_context(args)
     title = " ".join(str(args.get("title") or "").split())[:500]
     if not title:
         return {"error": "thiếu tên công việc"}
+    #  Đại ca 09/10: giao cho ai mà người dùng chưa nói thì hỏi lại một lượt, không mặc định.
+    if not [n for n in args.get("assignees") or [] if str(n).strip()] and "assignees" not in asked:
+        return confirm_fields.need([{"field": "assignees", "question": "Giao việc này cho ai (hay chính anh/chị)?"}])
     lists = _visible_lists(ctx)
     if not lists:
         return {"error": "Người hỏi chưa là thành viên dự án nào nên không tạo việc được."}
@@ -79,7 +84,9 @@ def _draft_work_task(ctx: ToolContext, args: dict) -> dict:
     for label, val in (("due_date", due), ("start_date", start)):
         if val and not _DATE.match(val):
             return {"error": f"{label} phải dạng YYYY-MM-DD"}
-    draft = {"list_id": lst.id, "list_name": lst.name, "title": title,
+    no_due = not (due or "due_date" in asked or confirm_fields.mentions(user_text, "han", "deadline"))
+    assumptions = ["chưa đặt hạn"] if no_due else []
+    draft = {"list_id": lst.id, "list_name": lst.name, "title": title, "assumptions": assumptions,
              "description": str(args.get("description") or "")[:4000], "due_date": due, "start_date": start,
              "assignees": people}
     return {"draft": draft,
@@ -99,7 +106,8 @@ DRAFT_WORK_TASK_SPEC = ToolSpec(
                       "description": "Người phụ trách: tên hoặc mã nhân sự."},
         "due_date": {"type": "string", "description": "Hạn chót YYYY-MM-DD (tùy chọn)."},
         "start_date": {"type": "string", "description": "Ngày bắt đầu YYYY-MM-DD (tùy chọn)."},
-        "description": {"type": "string", "description": "Mô tả thêm (tùy chọn)."}},
+        "description": {"type": "string", "description": "Mô tả thêm (tùy chọn)."},
+        "asked_fields": confirm_fields.ASKED_PARAM},
         "required": ["title"]},
     handler=_draft_work_task,
 )
