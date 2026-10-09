@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-141 | Duyệt việc quay lại cơ sở dữ liệu của bot bằng thẻ trên Telegram
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca chốt việc quay lại cơ sở dữ liệu của bot phải duyệt bằng thẻ trên Telegram. Nay trong chat chủ bot, nhắn «sao lưu db bot»
 để xem các bản sao lưu có đánh số; nhắn «quay lại db bot dev bản số mấy» để quay lại toàn bộ, hoặc «lấy lại bảng nào của db bot
@@ -13204,9 +13204,10 @@ không hiện trên thẻ hay trong nhật ký. Điều kiện lấy lại một
 lệnh. Quay lại toàn bộ thì bot ghi lại dòng nhật ký của chính lượt đó sau khi cơ sở dữ liệu được thay. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py (bot_backup_listing, new_bot_restore_op) · ops_runner.py (bot_restore_script, _after_full_bot_restore) · constants.py (OP_BOT_DB_RESTORE) · user_guide.py · core/config.py · backend/scripts/agent_restore.sh · test/backend/test_agent_hub_quay_lai_db_bot.py · doc/agent-hub/08-van-hanh-vps.md
+Deploy: dev 09/10 (Agent 1 gộp 7e4ef15c, dựng lại ERP api + erp v2 rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-140 | Bản tin bật tắt ngay trong chat: bản tin sáng có danh sách việc hôm nay và bản tin theo chủ đề
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca muốn nhắn ngay trong bot để bật bản tin hằng ngày hoặc danh sách việc hôm nay, và bật tắt được trong lúc chat. Nay mỗi
 người nhắn «bật bản tin» để mỗi sáng nhận bản tin gồm lịch hôm nay nếu đã nối Google, việc riêng, việc ở phân hệ Dự án tới hạn
@@ -13218,6 +13219,7 @@ tôi» có thẻ bản tin để bật tắt nhanh, và các gợi ý chủ đ�
 trong các dự án mình thấy. Sổ hướng dẫn của bot có thêm nhóm Bản tin. Bài kiểm của bot, Trợ lý và giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/brief_subs.py (mới) · briefs.py · service.py (_brief_by_text) · controller.py (/me/briefs) · model.py (AgentBriefSub) · tasks.py (agent.briefs_due) · intent_ledger.py · erp.py · user_guide.py · assistant/tools/brief_tool.py (mới) · assistant/tools/work_tool.py (my_work_tasks) · core/celery_app.py · migrations grp08 + agent0008 · frontend-v2/src/app/components/profile/profile-brief-card.tsx · profile-memory-tab.tsx · modules/system/api/bot-memory-api.ts · hooks/use-bot-memory.ts · test/backend/test_agent_hub_ban_tin.py
+Deploy: dev 09/10 (Agent 1 gộp 7e4ef15c, dựng lại ERP api + erp v2 rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-139 | Sao lưu tự động DB của bot, cảnh báo, khôi phục thử hằng tuần và quy trình quay lại
 - status: xong
