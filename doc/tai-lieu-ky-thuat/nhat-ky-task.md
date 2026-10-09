@@ -13191,3 +13191,41 @@ lần sau tóm nối tiếp chứ không tóm lại từ đầu; quá nữa mớ
 cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào sổ như mọi lượt. Bài kiểm của bot và Trợ lý chạy xanh.
 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
+
+## duoc-CR-612 | Báo cáo thực hiện có thêm dạng Bảng, sửa nội dung ngay trên từng hàng
+- status: xong
+- date: 2026-10-09
+Đại ca đề xuất khối Báo cáo thực hiện trên đơn mua hàng hiển thị thành dạng bảng và cho cập nhật nội dung ngay trên hàng. Nay khối
+có dạng xem thứ ba tên Bảng ở cả bản mới lẫn bản cũ, áp cho cả yêu cầu báo giá và đơn mua hàng: mỗi hồ sơ một hàng, xếp theo thứ tự
+giai đoạn, bấm vào ô là sửa được tên, giai đoạn, dòng hàng, bắt buộc, trạng thái, người thực hiện, ba mốc ngày, mô tả, kết quả và
+tệp; nhấn Enter hoặc rời ô là lưu, Esc là bỏ, mỗi lần lưu chỉ gửi đúng ô vừa đổi. Hồ sơ tiên quyết vẫn sửa trong hộp sửa đầy đủ. Hàng
+cuối cho gõ tên rồi Enter để thêm hồ sơ mới, ba cột đầu đứng yên khi cuộn ngang. Bảng là dạng mặc định trên màn rộng, điện thoại vẫn
+mở dạng Xem tổng. Vòng rà soát mã tìm ra và đã vá: sửa trên hàng rồi mở hộp sửa đầy đủ thì hộp ghi đè mất chỉnh sửa vừa làm (nay hộp
+chỉ gửi trường đổi trong hộp); các lần lưu nay xếp hàng chạy lần lượt để kết quả về sai thứ tự không đè nhau; ô đổi ngay khi lưu và
+lưu hỏng thì mở lại ô với chữ đã gõ; phím Enter chốt chữ của bộ gõ tiếng Việt không bị tính là lưu; bấm lại ngày đang chọn trong lịch
+không còn xóa ngày. Bài kiểm của giao diện chạy xanh, đã bấm thử cả hai bản trên máy, chưa đưa lên dev.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components/survey-report/survey-report-doc-sheet-table.tsx · survey-report-doc-sheet-row.tsx · survey-report-doc-sheet-add-row.tsx · survey-report-doc-sheet-layout.ts · survey-report-inline-cells.tsx · survey-report-doc-status-select.tsx · survey-report-card.tsx · survey-report-doc-dialog.tsx · hooks/use-survey-request-report.ts · utils/survey-report-helpers.ts · shared/ui/date-picker.tsx · frontend/src/components/SurveyReportCard.tsx · SurveyReportSheetTable.tsx · SurveyReportSheetRow.tsx · SurveyReportInlineCell.tsx · frontend/src/index.css
+
+## duoc-CR-613 | Bản cũ có thêm nút Thêm hồ sơ đầu tiên khi khối Báo cáo thực hiện còn trống
+- status: xong
+- date: 2026-10-09
+Đại ca yêu cầu đưa sang bản cũ chức năng bản mới đã có mà bản cũ chưa có: khi khối Báo cáo thực hiện còn trống thì có nút Thêm hồ
+sơ, mở hộp Thêm hồ sơ đầu tiên. Nay ở bản cũ, khối trống có nút đó; hộp cho chọn dòng hàng, giai đoạn và tên hồ sơ, hệ thống dựng sẵn
+năm giai đoạn cùng nút cho từng dòng hàng mà không đổ bộ hồ sơ mẫu, rồi thêm đúng hồ sơ vừa nhập và sổ sẵn dòng hàng của nó. Nhấn
+Enter nhiều lần liền chỉ ra một hồ sơ, và hộp tự báo khi không tải được danh sách dòng hàng. Đã bấm thử trên máy, chưa đưa lên dev.
+
+Mã nguồn: frontend/src/components/SurveyReportFirstDocDialog.tsx · SurveyReportModal.tsx · SurveyReportCard.tsx
+
+## duoc-CR-614 | Báo cáo thực hiện cho chọn mẫu khi khởi tạo, thêm mẫu tiến độ kế hoạch công việc nhập khẩu
+- status: xong
+- date: 2026-10-09
+Đại ca yêu cầu cho người dùng chọn mẫu khi khởi tạo khối Báo cáo thực hiện, thêm mẫu báo cáo tiến độ kế hoạch công việc nhập khẩu
+theo file Excel của Phòng Thu mua, và khởi tạo xong thì hiện luôn dạng Bảng để sửa. Nay ở cả bản mới lẫn bản cũ, nút Khởi tạo báo
+cáo mẫu mở hộp chọn một trong hai mẫu: mẫu chung hồ sơ nhập khẩu năm giai đoạn như trước, hoặc mẫu tiến độ kế hoạch gồm 21 việc từ
+tìm nhà cung cấp nước ngoài tới theo dõi thanh toán công nợ, gom vào một giai đoạn, mô tả mỗi việc ghi số ngày xử lý theo file
+Excel, ngày để trống cho người dùng tự điền. Khởi tạo xong khối tự chuyển sang dạng Bảng. Hệ thống ghi nhớ mẫu đã chọn để nút Tạo
+mẫu trên từng dòng hàng về sau đổ đúng mẫu đó. Bài kiểm của backend và giao diện chạy xanh, đã bấm thử cả hai bản trên máy, chưa
+đưa lên dev; khi deploy phải chạy migration.
+
+Mã nguồn: backend/app/modules/survey_request/report_constants.py · report_model.py · report_service.py · report_schema.py · report_controller.py · migrations/versions/rpttpl01_mau_khoi_tao_bao_cao_thuc_hien.py · frontend-v2/src/modules/procurement/components/survey-report/survey-report-init-dialog.tsx · survey-report-card.tsx · frontend/src/components/SurveyReportInitDialog.tsx · SurveyReportCard.tsx · test/backend/test_bao_cao_thuc_hien_chon_mau_cr614.py

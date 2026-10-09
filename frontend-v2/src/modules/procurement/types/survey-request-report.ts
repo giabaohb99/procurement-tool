@@ -83,6 +83,19 @@ export interface ReportFirstDocOptions {
   phases: { order: number; name: string; location: string }[]
 }
 
+/**
+ * Một MẪU khởi tạo (duoc-CR-614) — `GET .../templates`. Sổ mẫu nằm ở backend
+ * (`report_constants.REPORT_TEMPLATES`); FE không gõ tay danh sách.
+ */
+export interface ReportTemplateOption {
+  /** Mã số mẫu (1 = mẫu chung, 2 = tiến độ kế hoạch nhập khẩu…) — gửi lại khi khởi tạo. */
+  id: number
+  name: string
+  description: string
+  phase_count: number
+  doc_count: number
+}
+
 export interface ReportFirstDocPayload {
   title: string
   /** 0 = Chung (cả phiếu / cả đơn). */

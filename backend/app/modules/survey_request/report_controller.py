@@ -17,7 +17,7 @@ báo cáo mới — FE thay cache một lượt, không vá tay.
 from dataclasses import dataclass
 from typing import Callable
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -29,11 +29,11 @@ from app.modules.purchase_order.controller import _in_scope as po_in_scope
 
 from . import report_service
 from .controller import _in_scope as sr_in_scope
-from .report_constants import DEFAULT_PHASES
+from .report_constants import DEFAULT_PHASES, REPORT_TEMPLATES
 from .report_model import (REPORT_OWNER_PURCHASE_ORDER, REPORT_OWNER_SURVEY_REQUEST,
                            SurveyReportItem, SurveyReportPhase)
 from .report_schema import (ReportDocBulkDeleteIn, ReportDocIn, ReportDocPatch, ReportFirstDocIn,
-                            ReportItemIn, ReportPhaseIn,
+                            ReportInitIn, ReportItemIn, ReportPhaseIn,
                             ReportTemplateApplyIn)
 
 report_router = APIRouter(prefix="/api/execution-report/{entity}/{owner_id}",
@@ -149,18 +149,28 @@ def get_report_(entity: str, owner_id: int, db: Session = Depends(get_db),
     return success(report_service.get_report_payload(db, report_id))
 
 
+@report_router.get("/templates")
+def list_templates_(entity: str, owner_id: int, db: Session = Depends(get_db),
+                    user=Depends(_require_owner("write"))):
+    """Ô chọn mẫu của hộp «Khởi tạo báo cáo mẫu» (duoc-CR-614). Gác như thao tác ghi: chỉ
+    người khởi tạo được mới cần danh sách này. Không dựng đầu báo cáo."""
+    _rule_of(entity).load(db, owner_id, user, _rule_of(entity).write_scope_action)
+    return success(report_service.list_templates())
+
+
 @report_router.post("/init")
-def init_report_(entity: str, owner_id: int, db: Session = Depends(get_db),
-                 user=Depends(_require_owner("write"))):
+def init_report_(entity: str, owner_id: int,
+                 data: ReportInitIn = Body(default_factory=ReportInitIn),
+                 db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
     parent, report_id = _writable(db, entity, owner_id, user)
     lines = _rule_of(entity).lines(db, parent)
-    added = report_service.init_report(db, report_id, lines, user.id)
+    added = report_service.init_report(db, report_id, lines, user.id, data.template)
     if added < 0:
         # Đã có khung rồi thì trả nguyên trạng — bấm hai lần không nhân đôi.
         db.commit()
         return success(report_service.get_report_payload(db, report_id))
     return _done(db, entity, parent, report_id, user,
-                 f"Báo cáo: khởi tạo theo mẫu chung ({added} hồ sơ)")
+                 f"Báo cáo: khởi tạo theo mẫu «{REPORT_TEMPLATES[data.template][0]}» ({added} hồ sơ)")
 
 
 @report_router.post("/apply-template")
@@ -179,7 +189,7 @@ def apply_template_(entity: str, owner_id: int, data: ReportTemplateApplyIn,
         # Mẫu đã có đủ ở đó — không ghi lịch sử cho một thao tác không đổi gì.
         db.commit()
         return success(report_service.get_report_payload(db, report_id),
-                       f"Mẫu chung đã có đủ ở {target}")
+                       f"Mẫu đã có đủ ở {target}")
     return _done(db, entity, parent, report_id, user,
                  f"Báo cáo: tạo mẫu vào {target} (+{added} hồ sơ)")
 

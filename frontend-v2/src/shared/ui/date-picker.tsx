@@ -108,6 +108,14 @@ export function DatePicker({
           selected={selected}
           defaultMonth={selected}
           onSelect={(date) => {
+            //  Bấm lại đúng ngày đang chọn thì lịch «bỏ chọn» (`date` rỗng). Ô có nút ✕ thì
+            //  xóa ngày là việc của nút ✕ — bấm trùng ngày chỉ đóng lịch, không xóa: ô ngày
+            //  trong bảng lưu ngay khi đổi (duoc-CR-612) nên xóa nhầm là ghi thẳng xuống DB.
+            if (!date && clearable) {
+              setOpen(false)
+              onClose?.()
+              return
+            }
             onChange(date ? toDateInputValue(date) : '')
             setOpen(false)
             onClose?.()

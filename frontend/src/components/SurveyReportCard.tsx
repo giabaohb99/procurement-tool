@@ -6,6 +6,11 @@ import { useAuth } from '../auth/AuthContext'
 import { fmtDateStr } from '../utils/datetime'
 import SearchSelect from './SearchSelect'
 import DateInput from './DateInput'
+import SurveyReportSheetTable from './SurveyReportSheetTable'
+import SurveyReportFirstDocDialog, { type ReportFirstDocPayload } from './SurveyReportFirstDocDialog'
+import SurveyReportInitDialog from './SurveyReportInitDialog'
+import { ReportModal, useCancel } from './SurveyReportModal'
+import type { InlineChanges } from './SurveyReportSheetRow'
 import {
   COMMON_ROW_ID, REPORT_DOC_DOING, REPORT_DOC_DONE, REPORT_DOC_IDLE, REPORT_DOC_STATUS_BADGE,
   REPORT_DOC_STATUS_LABELS, REPORT_FILTER_ALL, REPORT_STATUS_FILTER_ALL,
@@ -29,7 +34,7 @@ import {
  * xem được báo cáo — phiếu CHƯA có báo cáo thì khối tự ẩn với người chỉ xem.
  */
 
-type ViewMode = 'phase' | 'item'
+type ViewMode = 'phase' | 'item' | 'table'
 const VIEW_KEY = 'erp.survey-report.view'
 const EXPIRY_SOON_DAYS = 7
 
@@ -70,8 +75,35 @@ function isLink(text: string): boolean {
   return /^https?:\/\//i.test(text.trim())
 }
 
+/**
+ * duoc-CR-612: chưa lưu gì thì màn rộng mở «Bảng», màn hẹp (< 1024px, bảng 2100px cuộn ngang
+ * khó dùng) mở «Xem tổng». Đã chọn thì theo lựa chọn.
+ */
 function readViewMode(): ViewMode {
-  try { return localStorage.getItem(VIEW_KEY) === 'item' ? 'item' : 'phase' } catch { return 'phase' }
+  let stored: string | null = null
+  try { stored = localStorage.getItem(VIEW_KEY) } catch { /* private mode */ }
+  if (stored === 'item' || stored === 'phase' || stored === 'table') return stored
+  try { return window.matchMedia('(max-width: 1023px)').matches ? 'phase' : 'table' } catch { return 'phase' }
+}
+
+/** Chỉ các trường THỰC SỰ khác giữa hai bản — hộp «Sửa hồ sơ» không được ghi đè ô vừa sửa ngoài bảng bằng ảnh cũ. */
+function changedDocFields(initial: SurveyReportDocPayload, next: SurveyReportDocPayload): Partial<SurveyReportDocPayload> {
+  const changes: Record<string, unknown> = {}
+  for (const key of Object.keys(next) as (keyof SurveyReportDocPayload)[]) {
+    if (JSON.stringify(next[key]) !== JSON.stringify(initial[key])) changes[key] = next[key]
+  }
+  return changes as Partial<SurveyReportDocPayload>
+}
+
+/** Áp `changes` vào đúng hồ sơ — nhãn trạng thái đi theo mã để ô đổi chữ ngay. */
+function applyDocChanges(report: SurveyRequestReport, docId: number, changes: InlineChanges): SurveyRequestReport {
+  return {
+    ...report,
+    docs: report.docs.map((d) => d.id !== docId ? d : {
+      ...d, ...changes,
+      status_label: changes.status === undefined ? d.status_label : (REPORT_DOC_STATUS_LABELS[changes.status] ?? d.status_label),
+    }),
+  }
 }
 
 const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function SurveyReportCard(
@@ -85,6 +117,10 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   const [report, setReport] = useState<SurveyRequestReport | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
+  //  duoc-CR-612: MỌI lệnh ghi của thẻ chạy LẦN LƯỢT qua một hàng đợi (ô «Bảng» bắn PATCH liên tục;
+  //  về sai thứ tự thì bản cũ đè bản mới). `pendingWrites` đếm cả lượt đang chạy.
+  const writeTail = useRef<Promise<unknown>>(Promise.resolve())
+  const pendingWrites = useRef(0)
   const [open, setOpen] = useState(false)
   const [viewMode, setViewModeState] = useState<ViewMode>(readViewMode)
   const [itemFilter, setItemFilter] = useState<number>(REPORT_FILTER_ALL)
@@ -95,6 +131,10 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   const [docDialog, setDocDialog] = useState<DocDialogState | null>(null)
   const [itemDialog, setItemDialog] = useState<ItemDialogState | null>(null)
   const [phaseDialog, setPhaseDialog] = useState<PhaseDialogState | null>(null)
+  /** Hộp «Thêm hồ sơ đầu tiên» của khối còn TRỐNG (duoc-CR-613, v2: duoc-CR-611). */
+  const [firstDocOpen, setFirstDocOpen] = useState(false)
+  /** Hộp CHỌN MẪU của «Khởi tạo báo cáo mẫu» (duoc-CR-614). */
+  const [initOpen, setInitOpen] = useState(false)
 
   function setViewMode(mode: ViewMode) {
     setViewModeState(mode)
@@ -130,15 +170,37 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     return () => { alive = false }
   }, [ownerId, entity])
 
-  /** Chạy một mutation: khối mới thay vào state, toast, báo cha nạp lại lịch sử. */
-  async function mutate(run: () => Promise<any>, message?: string | ((next: SurveyRequestReport) => string | null)): Promise<boolean> {
-    if (busy) return false
-    setBusy(true)
-    try {
+  /**
+   * Xếp một lệnh ghi vào hàng đợi, trả về khối mới (ném lỗi nếu hỏng). Khối trả về chỉ thay vào
+   * state khi KHÔNG còn lệnh ghi nào xếp phía sau — lệnh sau trả khối mới hơn, ghi bản này là
+   * làm giá trị tạm của lệnh sau chớp về cũ.
+   */
+  async function runQueued(run: () => Promise<any>): Promise<SurveyRequestReport> {
+    pendingWrites.current += 1
+    const previous = writeTail.current
+    const job = (async () => {
+      await previous
       const r = await run()
       const next: SurveyRequestReport = r.data.data
-      setReport(next)
-      onReport?.(next)
+      if (pendingWrites.current <= 1) { setReport(next); onReport?.(next) }
+      return next
+    })()
+    writeTail.current = job.then(() => undefined, () => undefined)
+    try { return await job } finally { pendingWrites.current -= 1 }
+  }
+
+  /**
+   * Chạy một mutation: khối mới thay vào state, toast, báo cha nạp lại lịch sử.
+   * Mặc định bị cổng `busy` chặn (thao tác nặng: xóa, khởi tạo…); `force` bỏ cổng + không bật
+   * `busy` — dùng cho ô sửa tại chỗ của dạng «Bảng» để sửa nhanh liên tiếp không bị rớt.
+   */
+  async function mutate(run: () => Promise<any>, message?: string | ((next: SurveyRequestReport) => string | null), force = false): Promise<boolean> {
+    if (!force) {
+      if (busy) return false
+      setBusy(true)
+    }
+    try {
+      const next = await runQueued(run)
       const text = typeof message === 'function' ? message(next) : message
       if (text) toast.success(text)
       onChanged?.()
@@ -146,12 +208,62 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     } catch {
       return false   // client.ts đã toast lỗi cho request không phải GET
     } finally {
-      setBusy(false)
+      if (!force) setBusy(false)
     }
   }
 
+  async function refetchReport() {
+    try {
+      const r = await api.get(base, { _silent: true } as any)
+      if (pendingWrites.current === 0) { setReport(r.data.data); onReport?.(r.data.data) }
+    } catch { /* giữ nguyên ảnh hiện có */ }
+  }
+
+  /**
+   * Sửa MỘT/vài trường của hồ sơ ngay trên dòng: chỉ PATCH đúng trường đổi, áp lạc quan vào
+   * state, hỏng thì trả đúng các trường đó về giá trị cũ rồi nạp lại từ máy chủ. Từ chối (reject)
+   * khi hỏng để ô chữ biết mà mở lại với chữ đã gõ.
+   */
+  async function patchDocInline(doc: SurveyReportDoc, changes: InlineChanges): Promise<boolean> {
+    const before: Record<string, unknown> = {}
+    for (const k of Object.keys(changes)) before[k] = (doc as any)[k]
+    setReport((r) => (r ? applyDocChanges(r, doc.id, changes) : r))
+    const ok = await mutate(() => api.patch(`${base}/docs/${doc.id}`, changes), undefined, true)
+    if (!ok) {
+      setReport((r) => (r ? applyDocChanges(r, doc.id, before as InlineChanges) : r))
+      void refetchReport()
+      throw new Error('inline-save-failed')
+    }
+    return true
+  }
+
   // --- hành động ---
-  const initReport = () => mutate(() => api.post(`${base}/init`), 'Đã khởi tạo báo cáo theo mẫu chung')
+  //  duoc-CR-614 — khởi tạo theo MẪU ĐÃ CHỌN; xong thì mở khối ở dạng «Bảng» để sửa ngay (đại ca 09/10).
+  async function initReport(template: number): Promise<boolean> {
+    const ok = await mutate(() => api.post(`${base}/init`, { template }), 'Đã khởi tạo báo cáo theo mẫu đã chọn')
+    if (ok) {
+      setInitOpen(false)
+      setOpen(true)
+      setViewMode('table')
+    }
+    return ok
+  }
+  //  duoc-CR-613 — hồ sơ ĐẦU TIÊN khi khối còn trống: backend dựng khung (5 giai đoạn + nút theo
+  //  dòng, không đổ mẫu) rồi thêm đúng hồ sơ đó; khối đã có nội dung thì backend trả 400.
+  async function createFirstDoc(payload: ReportFirstDocPayload): Promise<boolean> {
+    let itemId = COMMON_ROW_ID
+    const ok = await mutate(() => api.post(`${base}/first-doc`, payload), (next) => {
+      itemId = next.docs[0]?.item_id ?? COMMON_ROW_ID
+      return 'Đã thêm hồ sơ đầu tiên'
+    })
+    if (ok) {
+      setFirstDocOpen(false)
+      setOpen(true)
+      //  Đang xem theo dòng hàng thì sổ đúng dòng của hồ sơ vừa thêm — gập lại là tưởng chưa thêm.
+      setExpandedItems((s) => new Set(s).add(itemId))
+    }
+    return ok
+  }
   const restoreReport = () => mutate(() => api.post(`${base}/restore`), 'Đã hoàn tác — khôi phục báo cáo thực hiện')
   async function applyTemplate(itemId: number, phaseId: number | null) {
     const before = report?.docs.length ?? 0
@@ -159,8 +271,9 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
       () => api.post(`${base}/apply-template`, { item_id: itemId, phase_id: phaseId }),
       (next) => {
         const added = next.docs.length - before
-        if (added > 0) return `Đã tạo ${added} hồ sơ theo mẫu chung`
-        toast.info('Mẫu chung đã có đủ ở đây — không thêm hồ sơ nào')
+        //  «Tạo mẫu» đổ MẪU CỦA KHỐI (chọn lúc khởi tạo, duoc-CR-614), không phải luôn mẫu chung.
+        if (added > 0) return `Đã tạo ${added} hồ sơ theo mẫu của báo cáo`
+        toast.info('Mẫu đã có đủ ở đây — không thêm hồ sơ nào')
         return null
       },
     )
@@ -183,12 +296,16 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     if (status === doc.status) return
     await mutate(() => api.patch(`${base}/docs/${doc.id}`, { status }))
   }
-  async function saveDoc(docId: number | null, payload: SurveyReportDocPayload): Promise<boolean> {
+  //  Sửa: payload CHỈ gồm trường đổi trong hộp (DocDialog tự so); thêm: đủ bộ trường.
+  async function saveDoc(docId: number | null, payload: Partial<SurveyReportDocPayload>): Promise<boolean> {
     return mutate(
       () => docId ? api.patch(`${base}/docs/${docId}`, payload) : api.post(`${base}/docs`, payload),
       'Đã lưu hồ sơ',
     )
   }
+  //  Hàng «+ Thêm hồ sơ» của dạng Bảng: xếp hàng như mọi lệnh ghi nhưng không bị cổng `busy` làm rớt.
+  const createDocInline = (payload: SurveyReportDocPayload) =>
+    mutate(() => api.post(`${base}/docs`, payload), 'Đã thêm hồ sơ', true)
   async function deleteDoc(doc: SurveyReportDoc): Promise<boolean> {
     const ok = await askConfirm({ title: 'Xóa hồ sơ', message: `Xóa hồ sơ "${doc.title}"?`, confirmText: 'Xóa', danger: true })
     if (!ok) return false
@@ -404,7 +521,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
                 {canEdit && (
                   <>
                     <button type="button" className="srp-ibtn" title="Thêm hồ sơ vào giai đoạn" onClick={() => openCreateDoc({ phase_id: phase.id, item_id: itemFilter === REPORT_FILTER_ALL ? COMMON_ROW_ID : itemFilter })}><i className="ti ti-plus" /></button>
-                    <button type="button" className="srp-ibtn" title="Tạo mẫu chung vào giai đoạn này" disabled={busy} onClick={() => applyTemplate(COMMON_ROW_ID, phase.id)}><i className="ti ti-sparkles" /></button>
+                    <button type="button" className="srp-ibtn" title="Tạo mẫu vào giai đoạn này" disabled={busy} onClick={() => applyTemplate(COMMON_ROW_ID, phase.id)}><i className="ti ti-sparkles" /></button>
                     <button type="button" className="srp-ibtn" title="Sửa giai đoạn" onClick={() => setPhaseDialog({ phase })}><i className="ti ti-pencil" /></button>
                   </>
                 )}
@@ -606,7 +723,9 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
               {report.restorable && (
                 <button type="button" className="btn secondary" disabled={busy} onClick={restoreReport}><i className="ti ti-arrow-back-up" /> Hoàn tác xóa</button>
               )}
-              <button type="button" className="btn" disabled={busy} onClick={initReport}><i className="ti ti-sparkles" /> Khởi tạo báo cáo mẫu</button>
+              <button type="button" className="btn" disabled={busy} onClick={() => setInitOpen(true)}><i className="ti ti-sparkles" /> Khởi tạo báo cáo mẫu</button>
+              {/* duoc-CR-613 — ghi đúng MỘT hồ sơ cho một dòng hàng mà không phải đổ cả mẫu. */}
+              <button type="button" className="btn ghost" disabled={busy} onClick={() => setFirstDocOpen(true)}><i className="ti ti-plus" /> Thêm hồ sơ</button>
               <button type="button" className="btn ghost" onClick={() => setPhaseDialog({ phase: null })}><i className="ti ti-plus" /> Thêm giai đoạn</button>
             </div>
           )}
@@ -619,6 +738,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
             <span className="srp-seg">
               <button type="button" className={viewMode === 'phase' ? 'on' : ''} onClick={() => setViewMode('phase')}><i className="ti ti-layout-list" /> Xem tổng</button>
               <button type="button" className={viewMode === 'item' ? 'on' : ''} onClick={() => setViewMode('item')}><i className="ti ti-table" /> Theo dòng hàng</button>
+              <button type="button" className={viewMode === 'table' ? 'on' : ''} onClick={() => setViewMode('table')}><i className="ti ti-layout-grid" /> Bảng</button>
             </span>
             <input
               className="srp-search"
@@ -632,12 +752,12 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
                 <option key={s} value={s}>{REPORT_DOC_STATUS_LABELS[s]}</option>
               ))}
             </select>
-            {/* duoc-CR-607: chỉ còn biểu tượng (chữ ở `title`) để cả thanh nằm MỘT hàng. */}
-            <button type="button" className="srp-ibtn srp-ibtn-lg" onClick={toggleAll}
+            {/* duoc-CR-607: chỉ còn biểu tượng (chữ ở `title`) để cả thanh nằm MỘT hàng. Dạng Bảng không gấp/sổ. */}
+            {viewMode !== 'table' && <button type="button" className="srp-ibtn srp-ibtn-lg" onClick={toggleAll}
               title={viewMode === 'item' ? (expandedItems.size ? 'Thu gọn' : 'Mở tất cả') : (allCollapsed ? 'Mở tất cả' : 'Thu gọn')}
               aria-label={viewMode === 'item' ? (expandedItems.size ? 'Thu gọn' : 'Mở tất cả') : (allCollapsed ? 'Mở tất cả' : 'Thu gọn')}>
               <i className={`ti ti-${viewMode === 'item' ? (expandedItems.size ? 'fold' : 'fold-down') : (allCollapsed ? 'fold-down' : 'fold')}`} />
-            </button>
+            </button>}
             {canEdit && (
               <>
                 <button type="button" className="btn ghost sm" onClick={() => setPhaseDialog({ phase: null })}><i className="ti ti-plus" /> Thêm giai đoạn</button>
@@ -649,7 +769,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
             )}
           </div>
 
-          {viewMode === 'phase' && report.items.length > 0 && (
+          {viewMode !== 'item' && report.items.length > 0 && (
             <div className="srp-chips" style={{ marginBottom: 12 }}>
               <button type="button" className={`srp-chip${itemFilter === REPORT_FILTER_ALL ? ' on' : ''}`} onClick={() => setItemFilter(REPORT_FILTER_ALL)}>Tất cả</button>
               {report.items.map((it, idx) => (
@@ -669,7 +789,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
             </div>
           )}
 
-          <div className="srp-layout">
+          <div className={`srp-layout${viewMode === 'table' ? ' single' : ''}`}>
             <div style={{ minWidth: 0 }}>
               <div className="srp-summary">
                 <div className="srp-tile">
@@ -701,7 +821,23 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
                 </div>
               </div>
 
-              {viewMode === 'phase' ? renderPhaseView() : renderItemView()}
+              {viewMode === 'phase' ? renderPhaseView() : viewMode === 'item' ? renderItemView() : (
+                <SurveyReportSheetTable
+                  report={report}
+                  docs={visibleDocs}
+                  docsById={docsById}
+                  hasDocFilter={filtering || itemFilter !== REPORT_FILTER_ALL}
+                  canEdit={canEdit}
+                  busy={busy}
+                  ownerLabel={ownerLabel}
+                  today={today}
+                  defaultAssigneeId={Number((user as any)?.employee_id || 0)}
+                  onPatchDoc={patchDocInline}
+                  onEditDoc={openEditDoc}
+                  onDeleteDoc={(d) => { void deleteDoc(d) }}
+                  onCreateDoc={createDocInline}
+                />
+              )}
 
               {!visibleDocs.length && scopedDocs.length > 0 && filtering && viewMode === 'phase' && (
                 <div style={{ color: 'var(--muted)', fontSize: 12.5, marginTop: 6 }}>Không có hồ sơ nào khớp bộ lọc / từ khóa.</div>
@@ -710,11 +846,28 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
                 <i className="ti ti-lock" /> hồ sơ khóa = chờ hồ sơ tiên quyết hoàn thành trước
               </div>
             </div>
-            {renderTracking()}
+            {viewMode !== 'table' && renderTracking()}
           </div>
         </div>
       )}
 
+      {initOpen && (
+        <SurveyReportInitDialog
+          base={base}
+          busy={busy}
+          onConfirm={initReport}
+          onClose={() => setInitOpen(false)}
+        />
+      )}
+      {firstDocOpen && (
+        <SurveyReportFirstDocDialog
+          base={base}
+          ownerLabel={ownerLabel}
+          busy={busy}
+          onSave={createFirstDoc}
+          onClose={() => setFirstDocOpen(false)}
+        />
+      )}
       {docDialog && (
         <DocDialog
           report={report}
@@ -756,47 +909,6 @@ export default SurveyReportCard
 // KHÔNG bọc <form> để Enter trong ô con không submit form cha của trang)
 // ============================================================================
 
-function ReportModal({ title, dirty, width = 680, onClose, footer, children }: {
-  title: string
-  dirty: boolean
-  width?: number
-  onClose: () => void
-  footer: React.ReactNode
-  children: React.ReactNode
-}) {
-  async function requestClose() {
-    if (dirty) {
-      const ok = await askConfirm({ title: 'Đóng hộp thoại', message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ thay đổi?', confirmText: 'Đóng', danger: true })
-      if (!ok) return
-    }
-    onClose()
-  }
-  return (
-    <div className="srp-modal-overlay">
-      <div className="card srp-modal" style={{ width }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 className="sec-title" style={{ margin: 0, border: 0, padding: 0 }}>{title}</h3>
-          <span className="clickable" style={{ color: '#94a3b8', fontSize: 18 }} onClick={requestClose}><i className="ti ti-x" /></span>
-        </div>
-        {children}
-        <div className="srp-modal-foot">
-          {footer}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function useCancel(dirty: boolean, onClose: () => void) {
-  return async () => {
-    if (dirty) {
-      const ok = await askConfirm({ title: 'Đóng hộp thoại', message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ thay đổi?', confirmText: 'Đóng', danger: true })
-      if (!ok) return
-    }
-    onClose()
-  }
-}
-
 // --- Hồ sơ ---
 function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onDelete, onClose }: {
   report: SurveyRequestReport
@@ -804,7 +916,7 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
   defaults?: Partial<SurveyReportDocPayload>
   defaultAssigneeId: number
   busy: boolean
-  onSave: (payload: SurveyReportDocPayload) => Promise<boolean>
+  onSave: (payload: Partial<SurveyReportDocPayload>) => Promise<boolean>
   onDelete?: () => Promise<void>
   onClose: () => void
 }) {
@@ -839,7 +951,15 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
     if (!form.title.trim()) { toast.error('Nhập tiêu đề hồ sơ'); return }
     if (!form.phase_id) { toast.error('Chọn giai đoạn'); return }
     savingRef.current = true
-    try { await onSave({ ...form, title: form.title.trim() }) } finally { savingRef.current = false }
+    try {
+      const next = { ...form, title: form.title.trim() }
+      if (!doc) { await onSave(next); return }
+      //  duoc-CR-612: sửa hồ sơ chỉ gửi trường ĐỔI TRONG HỘP — gửi nguyên bộ thì ảnh chụp cũ của hộp
+      //  đè mất ô vừa sửa ngoài bảng trong lúc hộp đang mở.
+      const changes = changedDocFields(initial, next)
+      if (Object.keys(changes).length === 0) { onClose(); return }   // không đổi gì: khỏi request + dòng lịch sử rỗng
+      await onSave(changes)
+    } finally { savingRef.current = false }
   }
 
   // Ép nhân sự đang gắn vào danh sách nếu API không trả (ngoài phạm vi) — để không mất tên

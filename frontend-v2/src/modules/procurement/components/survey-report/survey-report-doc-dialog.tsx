@@ -31,6 +31,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 import { durationDays } from '../../utils/survey-report-helpers'
 import type { ReportDocPayload } from '../../api/survey-request-report-api'
+import type { SaveReportDocVars } from '../../hooks/use-survey-request-report'
 import {
   REPORT_DOC_IDLE,
   REPORT_DOC_STATUS_LABELS,
@@ -50,7 +51,12 @@ interface SurveyReportDocDialogProps {
   /** Nhân sự điền sẵn cho hồ sơ MỚI = người đang đăng nhập (đổi được). */
   defaultAssigneeId: number
   pending: boolean
-  onSave: (docId: number | undefined, payload: ReportDocPayload) => Promise<unknown>
+  /**
+   * Thêm mới gửi đủ trường; SỬA chỉ gửi trường đã đổi trong hộp (duoc-CR-612): hộp nạp
+   * ảnh hồ sơ lúc mở, mà ô vừa sửa trên dạng «Bảng» có thể còn đang lưu — gửi nguyên
+   * ảnh cũ là đè mất chỉnh sửa đó.
+   */
+  onSave: (vars: SaveReportDocVars) => Promise<unknown>
   onDelete: (docId: number) => Promise<unknown>
 }
 
@@ -159,7 +165,14 @@ export function SurveyReportDocDialog({
         toast.error('Nhập tiêu đề hồ sơ')
         return
       }
-      await onSave(doc?.id, { ...draft, title: draft.title.trim() })
+      const next = { ...draft, title: draft.title.trim() }
+      if (doc) {
+        const changes = changedDocFields(initial, next)
+        //  Không đổi gì: đóng luôn, khỏi một request + một dòng Lịch sử thao tác rỗng.
+        if (Object.keys(changes).length > 0) await onSave({ docId: doc.id, payload: changes })
+      } else {
+        await onSave({ payload: next })
+      }
       onOpenChange(false)
     })
 
@@ -426,4 +439,18 @@ function DurationNote({ start, planned }: { start: string; planned: string }) {
       {formatDate(start)} đến {formatDate(planned)})
     </p>
   )
+}
+
+/** Các trường của `next` khác `initial` — `depends` so theo nội dung, không theo tham chiếu. */
+function changedDocFields(
+  initial: ReportDocPayload,
+  next: ReportDocPayload,
+): Partial<ReportDocPayload> {
+  const changes: Partial<ReportDocPayload> = {}
+  for (const key of Object.keys(next) as (keyof ReportDocPayload)[]) {
+    if (JSON.stringify(next[key]) !== JSON.stringify(initial[key])) {
+      Object.assign(changes, { [key]: next[key] })
+    }
+  }
+  return changes
 }

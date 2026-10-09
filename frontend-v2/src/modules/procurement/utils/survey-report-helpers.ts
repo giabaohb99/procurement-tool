@@ -3,6 +3,7 @@
  * khóa theo hồ sơ tiên quyết, đếm phần trăm hoàn thành. Tách khỏi component để
  * test được — khóa nhầm là người dùng không bấm được ✓ mà không hiểu vì sao.
  */
+import { parseLocalDate } from '@/shared/utils/format-date'
 import {
   REPORT_DOC_DONE,
   type SurveyReportDoc,
@@ -253,4 +254,29 @@ export function trackingMarkers(report: SurveyRequestReport, itemFilter: number)
     label: group.length === 1 ? String(group[0].index) : `+${group.length}`,
     names: group.map((entry) => entry.name),
   }))
+}
+
+/** Mức khẩn của một ngày hết hiệu lực, suy từ số ngày còn lại tới HÔM NAY. */
+export type ExpiryTone = 'overdue' | 'soon' | 'normal'
+
+export interface ExpiryMeta {
+  tone: ExpiryTone
+  note: string
+}
+
+/**
+ * Diễn giải ngày hết hiệu lực: quá hạn / sắp hết (≤7 ngày) / còn xa. `null` khi
+ * chuỗi rỗng hay sai định dạng. So theo NGÀY địa phương (đặt giờ về 0) — lệch
+ * múi giờ làm lệch một ngày, đúng bẫy của `parseLocalDate`.
+ */
+export function expiryMeta(expiry: string): ExpiryMeta | null {
+  const date = parseLocalDate(expiry)
+  if (!date) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const days = Math.round((date.getTime() - today.getTime()) / 86_400_000)
+  if (days < 0) return { tone: 'overdue', note: `Quá hạn ${-days} ngày` }
+  if (days === 0) return { tone: 'soon', note: 'Hết hạn hôm nay' }
+  if (days <= 7) return { tone: 'soon', note: `Còn ${days} ngày` }
+  return { tone: 'normal', note: `Còn ${days} ngày` }
 }

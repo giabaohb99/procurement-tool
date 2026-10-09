@@ -3,6 +3,7 @@ import type {
   ReportFirstDocOptions,
   ReportFirstDocPayload,
   ReportOwnerEntity,
+  ReportTemplateOption,
   SurveyRequestReport,
 } from '../types/survey-request-report'
 
@@ -42,8 +43,14 @@ export function executionReportApi(entity: ReportOwnerEntity) {
   return {
     get: (id: number) => apiGet<SurveyRequestReport>(base(entity, id)),
 
-    /** Khởi tạo theo mẫu chung: 5 giai đoạn + hồ sơ chung của mẫu + nút theo dòng hàng. Idempotent. */
-    init: (id: number) => apiPost<SurveyRequestReport>(`${base(entity, id)}/init`, {}),
+    /**
+     * Khởi tạo theo MẪU ĐÃ CHỌN (duoc-CR-614): giai đoạn + hồ sơ chung của mẫu + nút theo
+     * dòng hàng. Idempotent — khối đã có nội dung thì trả nguyên trạng.
+     */
+    init: (id: number, template: number) =>
+      apiPost<SurveyRequestReport>(`${base(entity, id)}/init`, { template }),
+    /** Ô chọn mẫu của hộp khởi tạo — chỉ đọc. */
+    templates: (id: number) => apiGet<ReportTemplateOption[]>(`${base(entity, id)}/templates`),
     /**
      * «Tạo mẫu»: đổ mẫu chung vào một nút dòng hàng (`0` = Chung), hoặc chỉ vào
      * một giai đoạn. CỘNG THÊM — hồ sơ trùng tiêu đề đã có thì bỏ qua, nên bấm hai

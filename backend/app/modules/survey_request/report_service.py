@@ -14,8 +14,8 @@ from sqlalchemy.orm import Session
 from app.modules.employee.model import Employee
 
 from .model import SurveyRequestLine
-from .report_constants import (DEFAULT_PHASES, DEFAULT_TEMPLATE_DOCS, MAX_DEPENDS,
-                               RD_DONE, REPORT_DOC_STATUS_LABELS)
+from .report_constants import (DEFAULT_PHASES, MAX_DEPENDS, RD_DONE, REPORT_DOC_STATUS_LABELS,
+                               REPORT_TEMPLATES, RT_COMMON)
 from .report_model import (REPORT_OWNER_ENTITIES, ExecReport, SurveyReportDoc,
                            SurveyReportItem, SurveyReportPhase, SurveyReportTrash)
 
@@ -140,7 +140,11 @@ def snapshot_report(db: Session, report_id: int) -> dict:
     Không dùng `get_report_payload` (nó lọc id chết, thêm nhãn dẫn xuất) — snapshot
     cần dữ liệu THÔ và trung thực để khôi phục nguyên trạng.
     """
+    head = db.get(ExecReport, report_id)
     return {
+        #  Mẫu của khối (duoc-CR-614) — hoàn tác phải trả cả mẫu, không thì «Tạo mẫu»
+        #  sau hoàn tác đổ nhầm mẫu của lần khởi tạo xen giữa.
+        "template": head.template if head else RT_COMMON,
         "items": [{"id": r.id, "name": r.name, "line_id": r.line_id, "sort_order": r.sort_order}
                   for r in _rows_of(db, SurveyReportItem, report_id)],
         "phases": [{"id": r.id, "name": r.name, "location": r.location, "sort_order": r.sort_order}
@@ -192,6 +196,11 @@ def restore_latest(db: Session, report_id: int, user_id: int) -> SurveyReportTra
         trash.updated_by = user_id
         return trash
     snap = trash.snapshot or {}
+    head = db.get(ExecReport, report_id)
+    #  Ảnh chụp trước duoc-CR-614 không có khóa này — giữ nguyên mẫu đang ghi trên đầu khối.
+    if head and snap.get("template") in REPORT_TEMPLATES:
+        head.template = snap["template"]
+        head.updated_by = user_id
     phase_map: dict[int, int] = {}
     for p in snap.get("phases", []):
         row = SurveyReportPhase(report_id=report_id, name=p["name"],
@@ -272,9 +281,11 @@ def survey_request_lines(db: Session, sid: int) -> list[LineRef]:
     return [(line.id, _line_item_name(line, index)) for index, line in enumerate(lines)]
 
 
-def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int) -> int:
-    """Khởi tạo báo cáo mẫu: 5 giai đoạn + một nút cho mỗi dòng hàng + bộ hồ sơ
-    CHUNG của mẫu (`apply_template`). Trả về số hồ sơ đã dựng.
+def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int,
+                template: int = RT_COMMON) -> int:
+    """Khởi tạo báo cáo theo MẪU ĐÃ CHỌN (duoc-CR-614): giai đoạn của mẫu + một nút cho
+    mỗi dòng hàng + bộ hồ sơ CHUNG của mẫu (`apply_template`). Mẫu ghi lên đầu khối để
+    «Tạo mẫu» về sau đổ đúng mẫu đó. Trả về số hồ sơ đã dựng.
 
     Idempotent: khối đã có giai đoạn hoặc nút thì KHÔNG đụng gì (trả -1) — bấm
     hai lần không nhân đôi khung. Muốn thêm hồ sơ mẫu vào khối đang có thì đi
@@ -282,8 +293,32 @@ def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int)
     """
     if not is_report_empty(db, report_id):
         return -1
-    _build_skeleton(db, report_id, lines, user_id)
+    if template not in REPORT_TEMPLATES:
+        raise HTTPException(400, "Mẫu báo cáo không hợp lệ")
+    _set_template(db, report_id, template, user_id)
+    _build_skeleton(db, report_id, lines, user_id, REPORT_TEMPLATES[template][2])
     return apply_template(db, report_id, item_id=0, phase_id=None, user_id=user_id)
+
+
+def _set_template(db: Session, report_id: int, template: int, user_id: int) -> None:
+    head = db.get(ExecReport, report_id)
+    if head.template != template:
+        head.template = template
+        head.updated_by = user_id
+
+
+def template_of(db: Session, report_id: int) -> int:
+    """Mẫu của khối; mã lạ (mẫu đã gỡ khỏi mã nguồn) rơi về mẫu chung thay vì vỡ."""
+    head = db.get(ExecReport, report_id)
+    code = head.template if head else RT_COMMON
+    return code if code in REPORT_TEMPLATES else RT_COMMON
+
+
+def list_templates() -> list[dict]:
+    """Ô chọn mẫu của hộp «Khởi tạo báo cáo mẫu» — đọc từ sổ mẫu, FE không gõ tay danh sách."""
+    return [{"id": code, "name": name, "description": description,
+             "phase_count": len(phases), "doc_count": len(docs)}
+            for code, (name, description, phases, docs) in REPORT_TEMPLATES.items()]
 
 
 def is_report_empty(db: Session, report_id: int) -> bool:
@@ -293,9 +328,11 @@ def is_report_empty(db: Session, report_id: int) -> bool:
                 or db.query(SurveyReportDoc.id).filter_by(report_id=report_id).first())
 
 
-def _build_skeleton(db: Session, report_id: int, lines: list[LineRef], user_id: int) -> None:
-    """KHUNG của khối: 5 giai đoạn mặc định + một nút cho mỗi dòng hàng, CHƯA có hồ sơ."""
-    for order, (name, location) in enumerate(DEFAULT_PHASES):
+def _build_skeleton(db: Session, report_id: int, lines: list[LineRef], user_id: int,
+                    phases=DEFAULT_PHASES) -> None:
+    """KHUNG của khối: giai đoạn của mẫu (mặc định 5 giai đoạn của mẫu chung) + một nút cho
+    mỗi dòng hàng, CHƯA có hồ sơ."""
+    for order, (name, location) in enumerate(phases):
         db.add(SurveyReportPhase(report_id=report_id, name=name, location=location,
                                  sort_order=order, created_by=user_id, updated_by=user_id))
     for order, (line_id, name) in enumerate(lines):
@@ -347,8 +384,8 @@ def _norm_name(value: str | None) -> str:
 
 def apply_template(db: Session, report_id: int, item_id: int, phase_id: int | None,
                    user_id: int) -> int:
-    """Đổ MẪU CHUNG (`DEFAULT_TEMPLATE_DOCS`) vào một nút dòng hàng, hoặc chỉ vào
-    một giai đoạn của nút đó. KHÔNG commit. Trả về số hồ sơ THÊM MỚI.
+    """Đổ MẪU CỦA KHỐI (`ExecReport.template`, duoc-CR-614) vào một nút dòng hàng, hoặc
+    chỉ vào một giai đoạn của nút đó. KHÔNG commit. Trả về số hồ sơ THÊM MỚI.
 
     - `item_id` 0 = hồ sơ Chung; khác 0 phải là nút của khối.
     - `phase_id` None = mọi giai đoạn của mẫu: giai đoạn TRÙNG TÊN thì dùng lại,
@@ -361,23 +398,24 @@ def apply_template(db: Session, report_id: int, item_id: int, phase_id: int | No
     Mẫu đang nằm trong mã nguồn; có quản lý mẫu thì thay nguồn ở đây, chữ ký giữ.
     """
     _check_refs(db, report_id, phase_id, item_id)
+    template_name, _, template_phases, template_docs = REPORT_TEMPLATES[template_of(db, report_id)]
     phases = _rows_of(db, SurveyReportPhase, report_id)
     phase_of_no: dict[int, SurveyReportPhase] = {}
     if phase_id is not None:
         target = next(p for p in phases if p.id == phase_id)
-        for no, (name, _) in enumerate(DEFAULT_PHASES, start=1):
+        for no, (name, _) in enumerate(template_phases, start=1):
             if _norm_name(name) == _norm_name(target.name):
                 phase_of_no[no] = target
                 break
         if not phase_of_no:
-            names = " · ".join(n for n, _ in DEFAULT_PHASES)
-            raise HTTPException(400, f"Giai đoạn '{target.name}' không có trong mẫu chung "
-                                     f"(mẫu chỉ có: {names})")
+            names = " · ".join(n for n, _ in template_phases)
+            raise HTTPException(400, f"Giai đoạn '{target.name}' không có trong mẫu "
+                                     f"«{template_name}» (mẫu chỉ có: {names})")
     else:
         by_name: dict[str, SurveyReportPhase] = {}
         for p in phases:
             by_name.setdefault(_norm_name(p.name), p)
-        for no, (name, location) in enumerate(DEFAULT_PHASES, start=1):
+        for no, (name, location) in enumerate(template_phases, start=1):
             row = by_name.get(_norm_name(name))
             if row is None:
                 row = create_phase(db, report_id, name, location, user_id)
@@ -388,7 +426,7 @@ def apply_template(db: Session, report_id: int, item_id: int, phase_id: int | No
     id_of_no: dict[int, int] = {}                 # số thứ tự trong mẫu → id hồ sơ
     created: list[tuple[SurveyReportDoc, list[int]]] = []
     for no, (phase_no, title, description, required, depends) in enumerate(
-            DEFAULT_TEMPLATE_DOCS, start=1):
+            template_docs, start=1):
         phase = phase_of_no.get(phase_no)
         if phase is None:
             continue
@@ -642,6 +680,9 @@ def create_first_doc(db: Session, report_id: int, lines: list[LineRef], data,
         raise HTTPException(400, "Báo cáo đã có nội dung — tải lại rồi dùng nút «Thêm hồ sơ»")
     if data.line_id and data.line_id not in {line_id for line_id, _ in lines}:
         raise HTTPException(404, "Dòng hàng không còn trên chứng từ — tải lại rồi chọn lại")
+    #  Khung ở đây là 5 giai đoạn của MẪU CHUNG → ghi đúng mẫu đó lên đầu khối (đầu khối có
+    #  thể còn mã của lần khởi tạo trước đã bị xóa — «Tạo mẫu» sẽ đổ nhầm mẫu).
+    _set_template(db, report_id, RT_COMMON, user_id)
     _build_skeleton(db, report_id, lines, user_id)
     phase = (db.query(SurveyReportPhase)
              .filter_by(report_id=report_id, sort_order=data.phase_order).one())

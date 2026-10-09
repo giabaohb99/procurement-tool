@@ -106,6 +106,9 @@ export const queryKeys = {
     /** Ô chọn dòng hàng + giai đoạn của hộp «Thêm hồ sơ» khi khối còn trống (duoc-CR-611). */
     executionReportFirstDocOptions: (entity: string, id: number) =>
       ['procurement', 'execution-report', entity, id, 'first-doc-options'] as const,
+    /** Ô chọn MẪU của hộp «Khởi tạo báo cáo mẫu» (duoc-CR-614). */
+    executionReportTemplates: (entity: string, id: number) =>
+      ['procurement', 'execution-report', entity, id, 'templates'] as const,
     /** Bảng "Kết quả khảo sát đã duyệt" chọn được cho MỘT dòng của khung xử lý. */
     surveyRequestAvailableLines: (id: number, lineId: number, params?: Record<string, unknown>) =>
       ['procurement', 'survey-requests', id, 'process', 'available', lineId, params ?? {}] as const,

@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   Rows3,
+  Sheet,
   Sparkles,
   Trash2,
 } from 'lucide-react'
@@ -55,8 +56,11 @@ import {
   type SurveyRequestReport,
 } from '../../types/survey-request-report'
 import {
+  type ExpiryMeta,
+  type ExpiryTone,
   REPORT_FILTER_ALL,
   REPORT_STATUS_FILTER_ALL,
+  expiryMeta,
   isReportDocDone,
   isReportDocLocked,
   latestPlannedDate,
@@ -70,20 +74,13 @@ import {
 } from '../../utils/survey-report-helpers'
 import { SurveyReportDocDialog } from './survey-report-doc-dialog'
 import { SurveyReportDocSelectionBar } from './survey-report-doc-selection-bar'
+import { ReportDocSheetTable } from './survey-report-doc-sheet-table'
+import { ReportDocStatusSelect } from './survey-report-doc-status-select'
 import { SurveyReportFirstDocDialog } from './survey-report-first-doc-dialog'
+import { SurveyReportInitDialog } from './survey-report-init-dialog'
 import { SurveyReportItemDialog } from './survey-report-item-dialog'
 import { SurveyReportPhaseDialog } from './survey-report-phase-dialog'
 import { SurveyReportTracking } from './survey-report-tracking'
-
-//  Màu pill theo mã trạng thái hồ sơ (0..3). Dải màu ở MÉP TRÁI mỗi dòng đã bỏ
-//  (12/09/2026): trạng thái đã nói bằng ô tick và bằng chữ trên pill, thêm một
-//  cột màu nữa chỉ là nhiễu — mắt đọc dải màu trước cả tiêu đề hồ sơ.
-const STATUS_PILL: Record<number, string> = {
-  0: 'bg-muted text-muted-foreground',
-  1: 'bg-warning/15 text-warning',
-  2: 'bg-primary/10 text-primary',
-  3: 'bg-success/15 text-success',
-}
 
 /** Id của dòng «Chung» trong bảng — trùng `item_id = 0` của hồ sơ chung. */
 const COMMON_ROW_ID = 0
@@ -91,23 +88,35 @@ const COMMON_ROW_ID = 0
 const ITEM_TABLE_COLUMNS = 6
 
 /**
- * Hai cách đọc cùng một khối, người dùng chọn — không cách nào thay được cách kia:
+ * Ba cách đọc cùng một khối, người dùng chọn — không cách nào thay được cách kia:
  * - `phase` (TỔNG): toàn bộ hồ sơ xếp theo giai đoạn, mỗi hồ sơ gắn tag dòng hàng.
  *   Đọc theo TRÌNH TỰ thời gian của thương vụ — "giờ đang vướng khâu nào".
  * - `item` (THEO DÒNG HÀNG): bảng mỗi dòng hàng một dòng, bấm sổ hồ sơ của nó.
  *   Đọc theo MẶT HÀNG — "riêng KNO₃ còn thiếu giấy gì".
  */
-type ReportViewMode = 'phase' | 'item'
+type ReportViewMode = 'phase' | 'item' | 'table'
 
 const VIEW_STORAGE_KEY = 'erp.survey-report.view'
 
-/** Dạng xem lần trước của người dùng. Hỏng/không có thì về «tổng». */
+/**
+ * Dạng xem MẶC ĐỊNH: «Bảng» trên màn rộng (duoc-CR-612 — mở ra là thấy bảng sửa được
+ * ngay). Màn hẹp (< 1024px) về «Xem tổng»: bảng ~2100px mà ba cột ghim đã chiếm 312px
+ * thì điện thoại 390px chỉ còn một khe cuộn ngang.
+ */
+function defaultViewMode(): ReportViewMode {
+  return window.matchMedia?.('(max-width: 1023px)').matches ? 'phase' : 'table'
+}
+
+/** Dạng xem lần trước của người dùng. Chưa chọn lần nào / giá trị hỏng thì về mặc định. */
 function readViewMode(): ReportViewMode {
   try {
-    return localStorage.getItem(VIEW_STORAGE_KEY) === 'item' ? 'item' : 'phase'
+    const stored = localStorage.getItem(VIEW_STORAGE_KEY)
+    return stored === 'item' || stored === 'phase' || stored === 'table'
+      ? stored
+      : defaultViewMode()
   } catch {
     //  Trình duyệt chặn localStorage (chế độ riêng tư) — mất trí nhớ chứ không vỡ màn.
-    return 'phase'
+    return defaultViewMode()
   }
 }
 
@@ -185,6 +194,8 @@ export function SurveyReportCard({
   const [phaseDialog, setPhaseDialog] = useState<{ phase: SurveyReportPhase | null } | null>(null)
   /** Hộp «Thêm hồ sơ» của khối còn TRỐNG (duoc-CR-611). */
   const [firstDocOpen, setFirstDocOpen] = useState(false)
+  /** Hộp CHỌN MẪU của «Khởi tạo báo cáo mẫu» (duoc-CR-614). */
+  const [initOpen, setInitOpen] = useState(false)
 
   const changeViewMode = (mode: ReportViewMode) => {
     setViewMode(mode)
@@ -297,8 +308,9 @@ export function SurveyReportCard({
     const before = report?.docs.length ?? 0
     const next = await actions.applyTemplate.mutateAsync({ itemId, phaseId })
     const added = next.docs.length - before
-    if (added > 0) toast.success(`Đã tạo ${added} hồ sơ theo mẫu chung`)
-    else toast.info('Mẫu chung đã có đủ ở đây — không thêm hồ sơ nào')
+    //  «Tạo mẫu» đổ MẪU CỦA KHỐI (mẫu chọn lúc khởi tạo, duoc-CR-614), không phải luôn mẫu chung.
+    if (added > 0) toast.success(`Đã tạo ${added} hồ sơ theo mẫu của báo cáo`)
+    else toast.info('Mẫu đã có đủ ở đây — không thêm hồ sơ nào')
   }
 
   if (isLoading) {
@@ -462,6 +474,13 @@ export function SurveyReportCard({
                 icon={<Rows3 className="size-3.5" />}
                 onClick={() => changeViewMode('item')}
               />
+              <ViewModeButton
+                active={viewMode === 'table'}
+                label="Bảng"
+                title="Dạng bảng: mỗi hồ sơ một hàng, bấm vào ô để sửa ngay trên hàng"
+                icon={<Sheet className="size-3.5" />}
+                onClick={() => changeViewMode('table')}
+              />
             </div>
             <SearchField
               value={query}
@@ -487,9 +506,12 @@ export function SurveyReportCard({
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={toggleAll}>
-              {allOpen ? 'Thu gọn' : 'Mở tất cả'}
-            </Button>
+            {/* Dạng bảng không gấp / sổ gì — nút này chỉ có nghĩa ở hai dạng kia. */}
+            {viewMode !== 'table' && (
+              <Button variant="outline" size="sm" onClick={toggleAll}>
+                {allOpen ? 'Thu gọn' : 'Mở tất cả'}
+              </Button>
+            )}
             {canEdit && (
               <>
                 <Button
@@ -532,13 +554,14 @@ export function SurveyReportCard({
           {isEmpty ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Chưa có báo cáo cho {ownerLabel} này. Khởi tạo theo mẫu chung (5 giai đoạn + bộ hồ
-                sơ chung + nút theo dòng hàng) rồi chỉnh lại cho hợp, hoặc tự thêm giai đoạn từ
-                đầu. Mỗi dòng hàng / giai đoạn có nút «Tạo mẫu» riêng để đổ thêm sau.
+                Chưa có báo cáo cho {ownerLabel} này. Khởi tạo theo một mẫu có sẵn (mẫu chung hồ sơ
+                nhập khẩu, hoặc tiến độ kế hoạch công việc nhập khẩu) rồi chỉnh lại cho hợp, hoặc tự
+                thêm giai đoạn từ đầu. Mỗi dòng hàng / giai đoạn có nút «Tạo mẫu» riêng để đổ thêm
+                sau.
                 {itemsLocked && ' Nút dòng hàng bám theo dòng của đơn: thêm/bớt dòng trên đơn là khối tự theo.'}
               </p>
               <div className="flex gap-2">
-                <Button disabled={busy} onClick={() => actions.init.mutate()}>
+                <Button disabled={busy} onClick={() => setInitOpen(true)}>
                   <Sparkles />
                   Khởi tạo báo cáo mẫu
                 </Button>
@@ -574,7 +597,28 @@ export function SurveyReportCard({
                   thái, giống khung tracking: số tổng không đổi theo từ khóa đang gõ. */}
               <ReportSummary docs={report.docs} />
 
-              {/* Cột trái: thân báo cáo (theo dạng xem) · cột phải: khung tracking */}
+              {/* Dạng «Bảng» (duoc-CR-612) chiếm TRỌN bề ngang, không kèm khung tracking: bảng
+                  15 cột, chừa 215px bên phải là bắt người dùng cuộn ngang sớm hơn. */}
+              {viewMode === 'table' ? (
+                <ReportDocSheetTable
+                  report={report}
+                  docs={visibleDocs}
+                  docsById={docsById}
+                  hasDocFilter={hasDocFilter}
+                  canEdit={canEdit}
+                  busy={busy}
+                  ownerLabel={ownerLabel}
+                  defaultAssigneeId={defaultAssigneeId}
+                  onToggleDoc={handleToggleDoc}
+                  onPatchDoc={(doc, changes) =>
+                    actions.patchDoc.mutateAsync({ docId: doc.id, changes })
+                  }
+                  onEditDoc={(doc) => setDocDialog({ doc, itemId: doc.item_id })}
+                  onDeleteDoc={handleDeleteDoc}
+                  onCreateDoc={(payload) => actions.saveDoc.mutateAsync({ payload })}
+                />
+              ) : (
+              /* Cột trái: thân báo cáo (theo dạng xem) · cột phải: khung tracking */
               <div className="gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_215px]">
                 <div className="space-y-3">
                   {viewMode === 'phase' ? (
@@ -639,6 +683,7 @@ export function SurveyReportCard({
                   className="hidden lg:block"
                 />
               </div>
+              )}
             </>
           )}
         </CardContent>
@@ -655,8 +700,22 @@ export function SurveyReportCard({
         defaultItemId={docDialog?.itemId ?? COMMON_ROW_ID}
         defaultAssigneeId={defaultAssigneeId}
         pending={actions.saveDoc.isPending || actions.deleteDoc.isPending}
-        onSave={(docId, payload) => actions.saveDoc.mutateAsync({ docId, payload })}
+        onSave={(vars) => actions.saveDoc.mutateAsync(vars)}
         onDelete={(docId) => actions.deleteDoc.mutateAsync({ docId })}
+      />
+
+      <SurveyReportInitDialog
+        open={initOpen}
+        onOpenChange={setInitOpen}
+        ownerId={ownerId}
+        entity={entity}
+        pending={actions.init.isPending}
+        onConfirm={async (template) => {
+          await actions.init.mutateAsync(template)
+          //  Đại ca 09/10: khởi tạo xong hiện NGAY dạng Bảng để sửa trên hàng.
+          setCardOpen(true)
+          changeViewMode('table')
+        }}
       />
 
       <SurveyReportFirstDocDialog
@@ -1331,31 +1390,6 @@ function ReportRowDetail({
   )
 }
 
-/** Mức khẩn của một ngày hết hiệu lực, suy từ số ngày còn lại tới HÔM NAY. */
-type ExpiryTone = 'overdue' | 'soon' | 'normal'
-
-interface ExpiryMeta {
-  tone: ExpiryTone
-  note: string
-}
-
-/**
- * Diễn giải ngày hết hiệu lực: quá hạn / sắp hết (≤7 ngày) / còn xa. `null` khi
- * chuỗi rỗng hay sai định dạng. So theo NGÀY địa phương (đặt giờ về 0) — lệch
- * múi giờ làm lệch một ngày, đúng bẫy của `parseLocalDate`.
- */
-function expiryMeta(expiry: string): ExpiryMeta | null {
-  const date = parseLocalDate(expiry)
-  if (!date) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const days = Math.round((date.getTime() - today.getTime()) / 86_400_000)
-  if (days < 0) return { tone: 'overdue', note: `Quá hạn ${-days} ngày` }
-  if (days === 0) return { tone: 'soon', note: 'Hết hạn hôm nay' }
-  if (days <= 7) return { tone: 'soon', note: `Còn ${days} ngày` }
-  return { tone: 'normal', note: `Còn ${days} ngày` }
-}
-
 /**
  * Diễn giải mốc DỰ ĐỊNH HOÀN TẤT của cả khối (bao-CR-392): trễ n ngày / đến hạn
  * hôm nay / còn n ngày; xong hết rồi thì không còn gì để trễ. `null` khi rỗng.
@@ -1747,46 +1781,13 @@ function ReportDocRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        {canEdit ? (
-          //  Ô chọn trạng thái NGAY TRÊN DÒNG — mang màu pill để liếc vẫn đọc được trạng thái.
-          //  Hồ sơ đang KHÓA (chờ tiên quyết) không chọn được «Hoàn thành», cùng luật với nút ✓.
-          <Select
-            value={String(doc.status)}
-            onValueChange={(value) => onStatusChange(Number(value))}
-            disabled={busy}
-          >
-            <SelectTrigger
-              size="sm"
-              aria-label={`Trạng thái hồ sơ "${doc.title}"`}
-              className={cn(
-                'h-6 shrink-0 gap-1 rounded-full border-0 px-2.5 text-[11px] font-semibold shadow-none',
-                STATUS_PILL[doc.status] ?? STATUS_PILL[0],
-              )}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
-                <SelectItem
-                  key={code}
-                  value={code}
-                  disabled={locked && Number(code) === REPORT_DOC_DONE}
-                >
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <span
-            className={cn(
-              'shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
-              STATUS_PILL[doc.status] ?? STATUS_PILL[0],
-            )}
-          >
-            {doc.status_label}
-          </span>
-        )}
+        <ReportDocStatusSelect
+          doc={doc}
+          locked={locked}
+          readOnly={!canEdit}
+          disabled={busy}
+          onChange={onStatusChange}
+        />
         {canEdit && (
           <>
             <Button

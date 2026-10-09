@@ -9,7 +9,7 @@ from datetime import date
 from pydantic import BaseModel, Field, field_validator
 
 from .report_constants import (DEFAULT_PHASES, MAX_BULK_DELETE_DOCS, MAX_DEPENDS,
-                               REPORT_DOC_STATUS_LABELS)
+                               REPORT_DOC_STATUS_LABELS, REPORT_TEMPLATES, RT_COMMON)
 
 
 def _validate_iso_date(v: str | None) -> str | None:
@@ -53,6 +53,20 @@ class ReportPhaseIn(BaseModel):
         v = v.strip()
         if not v:
             raise ValueError("Tên giai đoạn không được để trống")
+        return v
+
+
+class ReportInitIn(BaseModel):
+    """«Khởi tạo báo cáo mẫu» — chọn mẫu (duoc-CR-614). Không gửi = mẫu chung, để client
+    cũ (gửi thân rỗng) vẫn chạy như trước."""
+
+    template: int = Field(default=RT_COMMON)
+
+    @field_validator("template")
+    @classmethod
+    def known_template(cls, v: int) -> int:
+        if v not in REPORT_TEMPLATES:
+            raise ValueError("Mẫu báo cáo không hợp lệ")
         return v
 
 

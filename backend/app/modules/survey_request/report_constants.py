@@ -103,6 +103,73 @@ DEFAULT_TEMPLATE_DOCS = (
      True, [18]),
 )
 
+#  ─── MẪU KHỞI TẠO (duoc-CR-614) ───────────────────────────────────────────────
+#  Người dùng CHỌN mẫu lúc bấm «Khởi tạo báo cáo mẫu»; mẫu đã chọn LƯU ở
+#  `ExecReport.template` (SMALLINT, R2) để nút «Tạo mẫu» trên từng dòng hàng /
+#  giai đoạn về sau đổ đúng mẫu của khối đó, không mặc định quay về mẫu chung.
+#  Số đã cấp KHÔNG đổi, KHÔNG tái dùng — khối cũ lưu số này trong DB.
+RT_COMMON = 1       # Mẫu chung hồ sơ nhập khẩu — 5 giai đoạn (bao-CR-388/391/393)
+RT_IMPORT_PLAN = 2  # Tiến độ kế hoạch công việc nhập khẩu — 1 giai đoạn, 21 việc
+
+#  Mẫu «Tiến độ kế hoạch công việc nhập khẩu» — chép file Excel cùng tên của Phòng
+#  Thu mua (đại ca gửi 09/10/2026): danh sách PHẲNG 21 việc (STT 0–20), không chia
+#  giai đoạn → gom vào MỘT giai đoạn (đại ca chốt). Excel tính «Ngày dự kiến hoàn
+#  thành = ngày bắt đầu + Time xử lý (Ngày)»; đại ca chốt KHÔNG đặt ngày lúc khởi
+#  tạo, chỉ ghi số ngày xử lý vào mô tả — người dùng tự điền ngày trên dạng Bảng.
+#  Cột «Người/Đơn vị phụ trách» (Nguyên · Tiên · Ngân) không chép: người thực hiện
+#  là nhân sự thật, chọn trên dạng Bảng. Trạng thái «Hủy» của Excel không có — việc
+#  bị hủy thì xóa dòng (đại ca chốt). Mỗi dòng: (tên việc, số ngày xử lý, bắt buộc).
+IMPORT_PLAN_PHASES = (
+    ("Kế hoạch công việc nhập khẩu", "Theo mẫu báo cáo tiến độ của Phòng Thu mua"),
+)
+IMPORT_PLAN_TASKS = (
+    ("Tìm NCC nước ngoài", 1, True),
+    ("Lấy mẫu", 0, True),
+    ("Deal giá + hình thức thanh toán công nợ", 5, True),
+    ("Duyệt giá", 1, True),
+    ("Chốt PO Ký hợp đồng", 1, True),
+    ("Dự trù tài chính", 1, True),
+    ("NCC sắp xếp hàng hóa trước mỗi sáng Thứ 6", 7, True),
+    ("Chuẩn bị hàng", 7, True),
+    ("Vận chuyển hàng từ Nhà máy -> cảng", 5, True),
+    ("Đóng hàng lên tàu, Tàu chạy", 3, True),
+    ("Hàng về cập cảng + Tờ khai hàng nhập", 3, True),
+    #  Việc DỰ PHÒNG — chỉ làm khi trễ lịch, nên không bắt buộc.
+    ("Phương án không kịp thời gian", 1, False),
+    ("Đóng thuế", 2, True),
+    ("Kéo hàng về kho", 2, True),
+    ("Lấy mẫu kiểm dịch", 1, True),
+    ("Chờ kết quả kiểm dịch", 7, True),
+    ("Có kết quả", 1, True),
+    ("Thông Quan", 1, True),
+    ("Đưa hàng vào sản xuất", 1, True),
+    ("Lấy mẫu check đối chiếu", 7, True),
+    ("Theo dõi thanh toán công nợ", 90, True),
+)
+#  Cùng hình dạng với `DEFAULT_TEMPLATE_DOCS` để `apply_template` đọc chung một đường.
+IMPORT_PLAN_DOCS = tuple(
+    (1, title, f"Thời gian xử lý: {days} ngày", required, [])
+    for title, days, required in IMPORT_PLAN_TASKS
+)
+
+#  Sổ mẫu: mã → (tên hiển thị, mô tả ngắn, giai đoạn, hồ sơ). Thứ tự khai = thứ tự
+#  trong ô chọn của hộp khởi tạo; mẫu đầu là mặc định.
+REPORT_TEMPLATES = {
+    RT_COMMON: (
+        "Mẫu chung hồ sơ nhập khẩu",
+        "5 giai đoạn (Pháp lý → Nhận hàng & về kho), bộ hồ sơ chứng từ nhập khẩu có tiên quyết.",
+        DEFAULT_PHASES,
+        DEFAULT_TEMPLATE_DOCS,
+    ),
+    RT_IMPORT_PLAN: (
+        "Tiến độ kế hoạch công việc nhập khẩu",
+        "21 việc từ Tìm NCC nước ngoài tới Theo dõi thanh toán công nợ, gom một giai đoạn; "
+        "mô tả ghi số ngày xử lý, ngày tự điền.",
+        IMPORT_PLAN_PHASES,
+        IMPORT_PLAN_DOCS,
+    ),
+}
+
 #  Trần số hồ sơ tiên quyết của MỘT hồ sơ — đủ rộng cho mọi quy trình thật,
 #  đồng thời chặn payload rác (cột JSON không tự chặn gì cả, xem duoc-CR-316).
 MAX_DEPENDS = 30

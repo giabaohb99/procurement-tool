@@ -3,10 +3,11 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { executionReportApi, type ReportDocPayload } from '../api/survey-request-report-api'
-import type {
-  ReportFirstDocPayload,
-  ReportOwnerEntity,
-  SurveyRequestReport,
+import {
+  REPORT_DOC_STATUS_LABELS,
+  type ReportFirstDocPayload,
+  type ReportOwnerEntity,
+  type SurveyRequestReport,
 } from '../types/survey-request-report'
 
 /**
@@ -38,21 +39,73 @@ export function useReportFirstDocOptions(
 }
 
 /**
+ * Khóa của MỌI mutation trên một khối báo cáo — vừa làm khóa xếp hàng (`scope`) vừa để
+ * đếm số lượt đang chờ. Chỉ hook này dùng, không ai invalidate theo nó nên để tại chỗ
+ * thay vì đưa vào `query-keys.ts` (đúng ngoại lệ ghi ở `naming.md`).
+ */
+const reportMutationKey = (entity: ReportOwnerEntity, id: number) =>
+  ['execution-report-mutation', entity, id] as const
+
+/** Trộn `changes` vào đúng hồ sơ trong cache — để ô vừa sửa đổi NGAY, không chờ máy chủ. */
+type ReportOptimisticPatch<TVars> = (
+  report: SurveyRequestReport,
+  vars: TVars,
+) => SurveyRequestReport
+
+/**
+ * Ô chọn mẫu của hộp «Khởi tạo báo cáo mẫu» (duoc-CR-614). Chỉ gọi khi hộp MỞ, và
+ * danh sách mẫu nằm trong mã nguồn backend nên giữ lâu không cần tải lại.
+ */
+export function useReportTemplates(id: number, entity: ReportOwnerEntity, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.procurement.executionReportTemplates(entity, id),
+    queryFn: () => executionReportApi(entity).templates(id),
+    enabled: enabled && id > 0,
+    staleTime: Infinity,
+  })
+}
+
+/**
  * Mọi mutation của khối báo cáo trả về NGUYÊN khối mới → ghi thẳng vào cache
  * thay vì invalidate: đỡ một lượt GET, và màn hình đổi ngay khi bấm ✓.
+ *
+ * duoc-CR-612 — dạng «Bảng» bắn PATCH liên tục (mỗi ô một lượt), nên:
+ * - Mọi lượt của CÙNG khối chạy LẦN LƯỢT (`scope`): ✓, sửa ô, hộp sửa, xóa… về sai thứ
+ *   tự thì bản cũ đè bản mới (ô vừa sửa nhảy về giá trị cũ, ✓ đảo sai chiều).
+ * - Còn lượt khác đang chờ phía sau thì KHÔNG ghi cache: lượt sau trả khối mới hơn, ghi
+ *   bản này là xóa mất giá trị tạm của lượt sau trong một khoảnh khắc.
+ * - `optimistic` (tùy chọn) sửa cache ngay khi bấm; hỏng thì trả lại ảnh cũ và tải lại
+ *   khối từ máy chủ cho chắc.
  */
 function useReportMutation<TVars>(
   entity: ReportOwnerEntity,
   id: number,
   mutationFn: (vars: TVars) => Promise<SurveyRequestReport>,
   successMessage?: string,
+  optimistic?: ReportOptimisticPatch<TVars>,
 ) {
   const queryClient = useQueryClient()
+  const reportKey = queryKeys.procurement.executionReport(entity, id)
+  const mutationKey = reportMutationKey(entity, id)
   return useMutation({
+    mutationKey,
     mutationFn,
+    scope: { id: mutationKey.join(':') },
+    onMutate: async (vars: TVars) => {
+      if (!optimistic) return { previous: undefined }
+      await queryClient.cancelQueries({ queryKey: reportKey })
+      const previous = queryClient.getQueryData<SurveyRequestReport>(reportKey)
+      if (previous) queryClient.setQueryData(reportKey, optimistic(previous, vars))
+      return { previous }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(reportKey, context.previous)
+      void queryClient.invalidateQueries({ queryKey: reportKey })
+    },
     onSuccess: (data) => {
       if (successMessage) toast.success(successMessage)
-      queryClient.setQueryData(queryKeys.procurement.executionReport(entity, id), data)
+      //  Lượt đang chạy cũng còn tính là «đang chờ» lúc này nên mốc là 1.
+      if (queryClient.isMutating({ mutationKey }) <= 1) queryClient.setQueryData(reportKey, data)
       //  Mọi thao tác báo cáo đều ghi Lịch sử thao tác của chứng từ cha — làm mới
       //  nó để dòng mới hiện ngay (nhất là dòng «Xóa» có nút Hoàn tác).
       void queryClient.invalidateQueries({ queryKey: ['audit-logs', entity, id] })
@@ -60,15 +113,43 @@ function useReportMutation<TVars>(
   })
 }
 
+/** Áp `changes` vào một hồ sơ trong khối — nhãn trạng thái đi theo mã cho pill đổi chữ luôn. */
+function mergeDocChanges(
+  report: SurveyRequestReport,
+  docId: number,
+  changes: Partial<ReportDocPayload>,
+): SurveyRequestReport {
+  return {
+    ...report,
+    docs: report.docs.map((doc) =>
+      doc.id === docId
+        ? {
+            ...doc,
+            ...changes,
+            status_label:
+              changes.status === undefined
+                ? doc.status_label
+                : (REPORT_DOC_STATUS_LABELS[changes.status] ?? doc.status_label),
+          }
+        : doc,
+    ),
+  }
+}
+
+/** Thêm mới (`docId` bỏ trống, đủ trường) hoặc sửa (chỉ gửi trường đổi) một hồ sơ. */
+export type SaveReportDocVars =
+  | { docId: number; payload: Partial<ReportDocPayload> }
+  | { docId?: undefined; payload: ReportDocPayload }
+
 /** Toàn bộ thao tác ghi của khối báo cáo — backend gác theo cửa ghi của chứng từ cha. */
 export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = 'survey_request') {
   const api = executionReportApi(entity)
   return {
-    init: useReportMutation<void>(
+    init: useReportMutation(
       entity,
       id,
-      () => api.init(id),
-      'Đã khởi tạo báo cáo theo mẫu chung',
+      (template: number) => api.init(id, template),
+      'Đã khởi tạo báo cáo theo mẫu đã chọn',
     ),
     /**
      * «Tạo mẫu» vào một nút / một giai đoạn. Không toast ở đây: có thêm mấy hồ
@@ -112,8 +193,10 @@ export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = '
     saveDoc: useReportMutation(
       entity,
       id,
-      ({ docId, payload }: { docId?: number; payload: ReportDocPayload }) =>
-        docId ? api.updateDoc(id, docId, payload) : api.createDoc(id, payload),
+      (vars: SaveReportDocVars) =>
+        vars.docId === undefined
+          ? api.createDoc(id, vars.payload)
+          : api.updateDoc(id, vars.docId, vars.payload),
       'Đã lưu hồ sơ',
     ),
     /** Nút ✓ — chỉ đổi trạng thái, không toast để bấm liên tiếp không dội thông báo. */
@@ -122,6 +205,21 @@ export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = '
       id,
       ({ docId, status }: { docId: number; status: number }) =>
         api.updateDoc(id, docId, { status }),
+      undefined,
+      (report, { docId, status }) => mergeDocChanges(report, docId, { status }),
+    ),
+    /**
+     * Sửa MỘT ô ngay trên dòng của dạng «Bảng» (duoc-CR-612): chỉ gửi trường vừa đổi,
+     * không toast — mỗi ô một lần lưu, báo thành công từng ô thì dội thông báo.
+     * Lỗi vẫn hiện qua lớp báo lỗi chung của `@/core/api`.
+     */
+    patchDoc: useReportMutation(
+      entity,
+      id,
+      ({ docId, changes }: { docId: number; changes: Partial<ReportDocPayload> }) =>
+        api.updateDoc(id, docId, changes),
+      undefined,
+      (report, { docId, changes }) => mergeDocChanges(report, docId, changes),
     ),
     deleteDoc: useReportMutation(
       entity,

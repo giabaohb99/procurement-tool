@@ -3252,6 +3252,71 @@ input,
   border-bottom: 0;
   background: #f8fafc;
 }
+/* duoc-CR-612 (09/10/2026) — dạng xem «Bảng» của khối Báo cáo thực hiện: mỗi hồ sơ một hàng, sửa tại chỗ.
+   Bảng `table-layout: fixed` + min-width inline (cộng bề rộng cột); KHÔNG đặt width cứng cho <table> —
+   khung hẹp thì cuộn ngang. Ba cột đầu (✓ · # · Hồ sơ) GHIM khi cuộn ngang, nền đặc để chữ cột cuộn
+   qua bên dưới không lộ ra. Phải thắng luật `table/thead th/tbody td` toàn cục (padding 14px 18px, hover !important). */
+.srp-layout.single { grid-template-columns: minmax(0, 1fr); }
+.srp-sheet-scroll { overflow-x: auto; border: 1px solid #e9edf7; border-radius: 10px; }
+.srp-sheet { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.srp-sheet thead th {
+  padding: 8px; font-size: 11.5px; text-transform: none; letter-spacing: 0; white-space: nowrap;
+  background: #f4f7fe; border-bottom: 1px solid #e9edf7;
+}
+.srp-sheet tbody td {
+  padding: 6px 8px; font-size: 12px; vertical-align: top; background: #fff;
+  border-bottom: 1px solid #f1f5f9; font-weight: 500;
+}
+.srp-sheet tbody tr:nth-child(even) { background: transparent; }
+.srp-sheet tbody tr:hover { background: transparent !important; }
+.srp-sheet tbody tr:hover td { background: #f5f9ff; }
+.srp-sheet .stk { position: sticky; z-index: 2; }
+.srp-sheet thead th.stk { z-index: 3; }
+.srp-sheet .stk0 { left: 0; }
+.srp-sheet .stk1 { left: 36px; }
+.srp-sheet .stk2 { left: 72px; box-shadow: inset -1px 0 0 #e9edf7; }
+.srp-sheet td.center { text-align: center; }
+.srp-sheet-no { color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 9px !important; }
+.srp-sheet-empty td { text-align: center; color: var(--muted); padding: 22px 8px !important; }
+.srp-sheet-row.done .srp-sheet-title { color: var(--muted); text-decoration: line-through; }
+.srp-sheet-title { font-weight: 600; }
+.srp-sheet-titlebox, .srp-sheet-filebox { display: flex; align-items: flex-start; gap: 4px; min-width: 0; }
+.srp-sheet-titlebox > :first-child, .srp-sheet-filebox > :last-child { flex: 1 1 auto; min-width: 0; }
+.srp-sheet-lock { color: var(--red); margin-top: 6px; flex: none; }
+.srp-sheet-actions { display: flex; align-items: center; gap: 2px; }
+.srp-sheet-note { font-size: 10px; font-weight: 700; margin-top: 2px; }
+.srp-sheet-note.overdue { color: var(--red); }
+.srp-sheet-note.soon { color: var(--amber); }
+.srp-sheet-date { display: flex; align-items: center; gap: 2px; }
+.srp-sheet-clear {
+  flex: none; width: 18px; height: 18px; border: 0; border-radius: 4px; background: transparent;
+  color: #94a3b8; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 12px;
+}
+.srp-sheet-clear:hover { background: var(--red-bg); color: var(--red); }
+/* Ô nhập nhỏ: thắng `input,select { height: 40px; padding: 0 16px }` toàn cục. */
+.srp-sheet input.srp-sheet-input, .srp-sheet select.srp-sheet-input {
+  height: 28px; padding: 0 6px; border-radius: 8px; font-size: 12px;
+}
+.srp-sheet-date input.srp-sheet-input { padding-right: 28px; }
+.srp-sheet input[type="checkbox"] { cursor: pointer; }
+.srp-sheet select.srp-sheet-status {
+  width: 118px; height: 24px; padding: 0 20px 0 10px; border: 0; border-radius: 999px;
+  font-size: 11px; font-weight: 700; cursor: pointer; box-shadow: none; text-transform: none;
+}
+/* Ô chữ bấm-để-sửa: nút phẳng, hover mới lộ nền. Cắt 3 dòng đặt ở thẻ TRONG (nút có đệm trên/dưới nên dòng 4 lấp ló). */
+.srp-cell-btn {
+  display: block; width: calc(100% + 12px); margin: -2px -6px; padding: 2px 6px; border: 0; border-radius: 6px;
+  background: transparent; text-align: left; font: inherit; color: inherit; cursor: text;
+}
+.srp-cell-btn:hover { background: #eef2f8; }
+.srp-cell-btn:focus-visible { outline: 2px solid rgba(0, 174, 239, 0.45); }
+.srp-cell-btn.empty { color: #b6c0d3; }
+.srp-cell-text { display: block; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.4; }
+.srp-cell-text.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.srp-cell-text.empty { color: var(--muted); }
+.srp-cell-text.srp-cell-oneline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srp-sheet textarea.srp-cell-input { min-height: 64px; padding: 5px 8px; font-size: 12px; border-radius: 8px; }
+.srp-sheet input.srp-cell-input { height: 30px; padding: 0 8px; font-size: 12px; border-radius: 8px; }
 .srp-item-detail {
   background: #fbfcfe;
   padding: 8px 12px 10px 44px !important;
@@ -3281,6 +3346,21 @@ input,
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+/* duoc-CR-614 — ô chọn mẫu trong hộp «Khởi tạo báo cáo mẫu». */
+.srp-tpl-list { display: flex; flex-direction: column; gap: 8px; }
+.srp-tpl {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.srp-tpl.on { border-color: var(--teal); background: rgba(14, 165, 233, 0.06); }
+.srp-tpl input[type="radio"] { margin-top: 3px; flex: none; }
+.srp-tpl b { display: block; font-size: 13.5px; color: var(--navy); }
+.srp-tpl small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
 .srp-deps {
   display: flex;
   flex-direction: column;

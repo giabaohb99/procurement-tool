@@ -43,6 +43,10 @@ class ExecReport(Base, AuditMixin):
 
     owner_entity: Mapped[str] = mapped_column(String(32), default=REPORT_OWNER_SURVEY_REQUEST)
     owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    #  Mẫu đã chọn lúc «Khởi tạo báo cáo mẫu» (duoc-CR-614) — mã `RT_*` ở
+    #  `report_constants.REPORT_TEMPLATES`. Nút «Tạo mẫu» đọc lại cột này để đổ ĐÚNG mẫu
+    #  của khối. Khối cũ (trước CR) = 1 = mẫu chung, đúng với thứ chúng đã được đổ.
+    template: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")
 
 
 class SurveyReportItem(Base, AuditMixin):
