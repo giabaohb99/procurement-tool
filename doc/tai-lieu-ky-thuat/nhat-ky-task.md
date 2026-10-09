@@ -13193,6 +13193,17 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-150 | Nhắn sửa nó đi sau khi xem chi tiết việc là bot giao việc đó luôn
+- status: dang-lam
+- date: 2026-10-09
+Đại ca xem chi tiết việc AI-0006 rồi nhắn sửa nó đi em, nhưng bot hiểu thành câu hỏi thường và trả lời mình không sửa được; việc
+thì vẫn nằm chờ hỏi lại từ lượt kế hoạch rỗng trước đó. Em đã chạy lại việc AI-0006 trên dev theo dây chuyền gọn, bot đã gửi thẻ
+xác nhận với mười hai tệp dự kiến, đại ca nhắn ok là Claude Code bắt đầu sửa. Nay những câu giục như sửa nó đi, làm đi, chạy đi
+ngay sau thẻ xác nhận hoặc tin chi tiết của một việc sẽ giao việc đó luôn; nếu việc đang hỏi lại thì các câu còn mở để Claude Code
+tự quyết theo những gì đã bàn. Chữ ok trơn khi bot đang hỏi lại vẫn không bỏ qua câu hỏi. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/service.py (_GO_CONFIRM, _ok_by_text) · test/backend/test_agent_hub_day_chuyen_gon.py
+
 ## ai-CR-149 | Làm gọn dây chuyền sửa phần mềm: Claude Code rà soát rồi hỏi xác nhận, nhắn ok là làm
 - status: xong
 - date: 2026-10-09

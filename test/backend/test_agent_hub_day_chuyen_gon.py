@@ -105,3 +105,23 @@ def test_o_model_cu_khong_con_o_tram_thi_tu_doi_model_cung_ho(monkeypatch):
         out = manager.get_provider().ask([], max_tokens=5)
     assert out.text == "ok" and used == ["deepseek-v4-flash", "deepseek-v4.1-flash"]
     manager._MODEL_SWAP.clear()
+
+
+def test_giuc_sua_no_di_sau_chi_tiet_viec_la_lam_luon(db, flow):
+    """ai-CR-150: «chi tiết AI-0006» rồi «sửa nó đi em» → bot từng trả «em không sửa được». Nay là giao việc đó luôn,
+    kể cả khi việc đang ở «đang hỏi lại» (các câu còn mở để Claude tự quyết theo mạch đã bàn)."""
+    from app.modules.agent_hub.constants import DIR_IN, ST_NEEDS_INPUT
+
+    service, coder, task, sent, dispatched = flow
+    _scan(db, coder, task, questions=["Sửa được loại nghỉ không?"], files=["backend/app/x.py"])
+    task.status = ST_NEEDS_INPUT
+    task.questions = ["Sửa được loại nghỉ không?"]
+    db.commit()
+    service.reply(db, "12345", "<b>AI-0042</b> · chi tiết …", task_id=task.id)
+    row = service.log_message(db, DIR_IN, "12345", 90, "sửa nó đi em")
+    db.commit()
+    assert service._ok_by_text(db, "12345", row, "sửa nó đi em")
+    assert dispatched == [task.id] and task.questions == [] and task.plan_files == ["backend/app/x.py"]
+    for text in ("sửa đơn NP011 giúp anh", "làm sao để sửa", "sửa: thêm phần xóa"):
+        row = service.log_message(db, DIR_IN, "12345", 91, text)
+        assert service._ok_by_text(db, "12345", row, text) is False, text

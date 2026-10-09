@@ -5130,12 +5130,17 @@ def _send_confirm_card(db: Session, task: AgentTask, lines: list[str]) -> None:
 #  ai-CR-149: «ok» / «oke» / «làm đi» ngay sau thẻ xác nhận của MỘT việc = duyệt việc đó (không qua bộ phân loại).
 _OK_CONFIRM = re.compile(r"^(ok|oke|okay|okee|ok em|uh|ừ|ừm|được|đồng ý|làm đi|làm luôn|triển|triển đi|chốt)"
                          r"(\s+(đi|luôn|nhé|nha|em|làm|thôi|rồi))*[.!]*$")
+#  ai-CR-150 (đại ca 09/10, ngay sau «chi tiết AI-0006»: «sửa nó đi em» → Trợ lý trả «em không sửa được»): câu GIỤC làm
+#  việc vừa xem — sửa / làm / chạy / code nó đi — cũng là «ok» cho việc đó.
+_GO_CONFIRM = re.compile(r"^(sửa|làm|chạy|code|triển khai|tiếp tục|bắt đầu)(\s+(nó|việc này|việc đó|luôn|tiếp))*"
+                         r"(\s+(đi|luôn|nhé|nha|em|thôi|giúp anh|giùm))+[.!]*$")
 OK_CONFIRM_WINDOW = timedelta(minutes=60)
 
 
 def _ok_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """Tin bot gần nhất (không tính bản sao vận hành) là thẻ xác nhận của việc đang chờ duyệt → «ok» là duyệt."""
-    if not settings.AGENT_CODE_FLOW_SIMPLE or not _OK_CONFIRM.match(text.strip().lower()):
+    low = text.strip().lower()
+    if not settings.AGENT_CODE_FLOW_SIMPLE or not (_OK_CONFIRM.match(low) or _GO_CONFIRM.match(low)):
         return False
     last = db.scalar(select(AgentMessage).where(
         AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_OUT, AgentMessage.id < row.id,
@@ -5144,11 +5149,26 @@ def _ok_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
                                              and row.created_at - last.created_at > OK_CONFIRM_WINDOW):
         return False
     task = db.get(AgentTask, int(last.task_id))
-    if task is None or task.status != ST_PLAN:
+    if task is None or task.status not in (ST_PLAN, ST_NEEDS_INPUT):
         return False
+    if task.status == ST_NEEDS_INPUT and not _GO_CONFIRM.match(low):
+        return False        # đang hỏi lại: «ok» trơn có thể là câu trả lời — chỉ câu GIỤC làm mới vượt qua câu hỏi
     row.action = ACT_COMMAND
     row.task_id = task.id
     db.commit()
+    if task.status == ST_NEEDS_INPUT:
+        #  Đang hỏi lại mà đại ca giục làm: coi các câu còn mở là để Claude tự quyết theo mạch đã bàn, rồi giao luôn.
+        scan = coder.latest_scan_run(db, task)
+        if scan is not None and isinstance(scan.artifact, dict):
+            scan.artifact = {**scan.artifact, "answered": True}
+        if not task.plan:
+            run = coder.latest_scan_run(db, task)
+            art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+            task.plan = str(art.get("message") or "").strip()[:4000] or (task.summary or "")
+            task.plan_files = _scan_files(db, task)
+        task.questions = []
+        task.status = ST_PLAN
+        db.commit()
     approve_task(db, chat_id, "", task)
     db.commit()
     return True
