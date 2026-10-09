@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-152 | Rà lại bản vá sửa và xóa phiếu của bot, vá nút xác nhận trên Telegram ở dev
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca nhờ em kiểm lại mã của bản vá sửa và xóa phiếu do Claude Code viết. Phần lõi ổn: sửa dòng hàng giữ đúng mã dòng nên ảnh
 đối chiếu không mồ côi, lúc bấm xác nhận hệ thống kiểm lại quyền, phạm vi và trạng thái từ đầu, xóa phải đủ ba điều kiện. Em tìm
@@ -13204,6 +13204,7 @@ nên bấm là báo lỗi; nay nút đó nhờ ERP ghi qua cổng chung có ch�
 môi trường máy em.
 
 Mã nguồn: agent_hub/erp.py (confirm_proposal) · agent_gateway/controller.py (/proposal/confirm) · agent_hub/service.py (_resolve_proposal) · assistant/tools/update_tool.py (_update_leave)
+Deploy: dev 09/10, ERP api dựng trước rồi tới bot, commit f2db3005 trên erp-v2.
 
 ## ai-CR-151 | Bot sửa được lý do, ngày, loại nghỉ của đơn nghỉ phép và xóa được phiếu nháp của mình
 - status: xong
