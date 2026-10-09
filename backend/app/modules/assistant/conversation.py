@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import attachments as attach
-from . import service, usage
+from . import compaction, service, usage
 from .model import AssistantConversation, AssistantMessage, MessageRole
 
 # Số lượt gần nhất nạp lại làm ngữ cảnh khi hỏi tiếp (chặn phình token + chi phí).
@@ -95,12 +95,21 @@ def _recent_history(db: Session, conv_id: int) -> list[dict]:
 
     Tin có tệp đính kèm: `ATTACH_REPLAY_WINDOW` tin cuối được nạp lại tệp thật (content
     thành list block), cũ hơn thì thay bằng dòng chữ "[Đã gửi kèm tệp: ...]".
+    ai-CR-136: đây là CỬA SỔ TRƯỢT CŨ — nay chỉ dùng khi nén hội thoại tắt hoặc lượt tóm tắt hỏng.
     """
+    return [t.as_message() for t in _history_turns(db, conv_id, limit=HISTORY_LIMIT)]
+
+
+#  ai-CR-136: nén hội thoại đọc tối đa bấy nhiêu tin SAU mốc đã tóm (phần trước mốc nằm trong bản tóm tắt).
+COMPACT_SCAN_LIMIT = 200
+
+
+def _history_turns(db: Session, conv_id: int, *, limit: int, after_id: int = 0) -> list[compaction.Turn]:
     stmt = (
         select(AssistantMessage)
-        .where(AssistantMessage.conversation_id == conv_id)
+        .where(AssistantMessage.conversation_id == conv_id, AssistantMessage.id > after_id)
         .order_by(AssistantMessage.id.desc())
-        .limit(HISTORY_LIMIT)
+        .limit(limit)
     )
     rows = list(db.execute(stmt).scalars().all())
     rows.reverse()
@@ -119,8 +128,29 @@ def _recent_history(db: Session, conv_id: int) -> list[dict]:
             else:
                 mark = attach.placeholder_text(meta)
                 content = f"{m.content}\n{mark}" if m.content else mark
-        out.append({"role": role, "content": content})
+        out.append(compaction.Turn(role, content, int(m.id or 0), bool(getattr(m, "tool_used", False))))
     return out
+
+
+def _compacted_history(db: Session, user, conv_id: int, message: str) -> compaction.Plan:
+    """ai-CR-136: tóm tắt phần đầu hội thoại + các lượt gần nhất, theo ngân sách token (xem `compaction`)."""
+    from app.core import app_settings
+    from app.modules.agent_hub.constants import CONV_WEB
+
+    from .provider import get_provider
+    from .provider.base import ChatMessage
+
+    row = compaction.load(db, CONV_WEB, str(conv_id))
+    turns = _history_turns(db, conv_id, limit=COMPACT_SCAN_LIMIT, after_id=int(row.upto_id or 0) if row else 0)
+
+    def summarize(system: str, prompt: str):
+        return get_provider().ask([ChatMessage(role="user", content=prompt)], system=system,
+                                  model=app_settings.get("ai_lookup_model") or None, max_tokens=900, temperature=0.2)
+
+    return compaction.compact(db, scope=CONV_WEB, key=str(conv_id), user_id=int(user.id), turns=turns,
+                              question=message or "", summarize=summarize,
+                              fallback=lambda: _recent_history(db, conv_id),
+                              on_cost=lambda result: compaction.record_cost(db, result, channel="web"))
 
 
 def chat(db: Session, user, body) -> dict:
@@ -147,8 +177,12 @@ def chat(db: Session, user, body) -> dict:
     files = attachment_meta
 
     # Ngữ cảnh: hội thoại cũ -> lấy từ DB; hội thoại mới -> dùng history client gửi (nếu có).
+    # ai-CR-136: hội thoại cũ đi qua nén hội thoại — bản tóm tắt phần đầu vào phần luật, các lượt gần nhất giữ nguyên.
+    summary_note = ""
     if conv is not None:
-        history = _recent_history(db, conv.id)
+        plan = _compacted_history(db, user, conv.id, body.message)
+        history = plan.turns
+        summary_note = compaction.summary_block(plan.summary)
     else:
         history = [h.model_dump() for h in body.history] if body.history else None
 
@@ -159,7 +193,7 @@ def chat(db: Session, user, body) -> dict:
         provider=body.provider,
         model=body.model,
         kind=body.kind,
-        system=body.system,
+        system="\n\n".join(x for x in (body.system, summary_note) if x) or None,
         history=history,
         attachments=blocks,
     )
@@ -202,6 +236,7 @@ def chat(db: Session, user, body) -> dict:
         thinking_tokens=usage_data.get("thinking_tokens", 0),
         cache_read_tokens=usage_data.get("cache_read_tokens", 0),
         cache_write_tokens=usage_data.get("cache_write_tokens", 0),
+        tool_used=bool(result.get("tool_calls")),
         created_by=user.id, updated_by=user.id,
     ))
     db.commit()
@@ -219,6 +254,9 @@ def delete_conversation(db: Session, user, conv_id: int) -> bool:
     db.query(AssistantMessage).filter(
         AssistantMessage.conversation_id == conv_id
     ).delete(synchronize_session=False)
+    from app.modules.agent_hub.constants import CONV_WEB
+
+    compaction.forget(db, CONV_WEB, str(conv_id))       # ai-CR-136: bản tóm tắt đi theo hội thoại
     db.delete(conv)
     db.commit()
     return True

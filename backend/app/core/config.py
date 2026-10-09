@@ -168,6 +168,22 @@ class Settings(BaseSettings):
     # Lưu ý: phải là model CÙNG nhà với AI_DEFAULT_PROVIDER đang dùng.
     AI_LOOKUP_MODEL: str = ""
 
+    # --- Nén hội thoại (ai-CR-136, phase 14 doc/agent-hub/15) ---
+    # Ngân sách token cho PHẦN HỘI THOẠI gửi model mỗi lượt (bản tóm tắt + các lượt + câu mới; KHÔNG tính luật / định nghĩa
+    # công cụ). Đặt hẳn một con số để giữ chi phí, không lấy cả cửa sổ của model. Ba mức theo % ngân sách:
+    #   CLEAR  → lược kết quả công cụ cũ, chỉ giữ nguyên ở KEEP_TURNS lượt gần nhất;
+    #   SUMMARY → tóm các lượt cũ (một lượt model rẻ), lưu bản tóm tắt + mốc theo từng cuộc, lần sau tóm NỐI TIẾP;
+    #   DROP   → mới bỏ lượt cũ nhất.
+    AI_COMPACT_ENABLED: bool = True
+    AI_CONTEXT_BUDGET_TOKENS: int = 12000
+    AI_COMPACT_CLEAR_PCT: int = 50
+    AI_COMPACT_SUMMARY_PCT: int = 70
+    AI_COMPACT_DROP_PCT: int = 90
+    AI_COMPACT_KEEP_TURNS: int = 3
+    AI_COMPACT_TIMEOUT_SEC: int = 25
+    # Telegram / Zalo không có «cuộc hội thoại» như web: tin cách tin trước quá chừng này giờ là cuộc mới (bỏ tóm tắt cũ).
+    AI_COMPACT_SESSION_HOURS: int = 12
+
     # --- Tìm kiếm vector loại B: HDSD + FAQ (Phase 3) ---
     # Tắt mặc định. Bật thì tool `search_docs` mới hiện ra cho bot và hook nạp lại chỉ mục mới
     # chạy khi sửa HDSD/FAQ. Bật ở môi trường ĐÃ dựng service qdrant.

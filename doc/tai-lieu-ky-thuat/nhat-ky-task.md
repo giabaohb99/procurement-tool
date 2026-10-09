@@ -13178,3 +13178,16 @@ thì đại ca nhắn «/zalo» hoặc xem thẻ Zalo trên màn Nhóm chat. Bà
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_report_zalo_status) · test/backend/test_agent_hub.py
 Deploy: dev 09/10 (Agent 1 gộp 9578cd72, dựng lại stack agent-hub); prod giữ lại.
+
+## ai-CR-136 | Nén hội thoại để bot không quên đầu câu chuyện dài (phase 14)
+- status: dang-lam
+- date: 2026-10-09
+Trước đây Trợ lý AI trên web chỉ nhớ hai mươi lượt, còn bot Telegram và Zalo nhớ tám lượt trong hai giờ; quá thì cắt bỏ nên việc
+dài nhiều bước quên mất phần đầu. Nay mỗi cuộc trò chuyện, gồm từng hội thoại trên web và từng chat riêng trên Telegram hay Zalo,
+có một bản tóm tắt riêng, không bao giờ đọc chéo sang người khác. Khi cuộc trò chuyện dài dần theo một ngân sách đặt trong cài
+đặt, bot làm ba bậc: trước hết lược bớt các kết quả tra cứu cũ và giữ nguyên ba lượt gần nhất; dài nữa thì tóm các lượt cũ bằng
+một lượt gọi model rẻ, giữ điều người dùng đã chốt, đối tượng đang bàn như nhà cung cấp, pháp nhân, mã chứng từ và việc còn dở,
+lần sau tóm nối tiếp chứ không tóm lại từ đầu; quá nữa mới bỏ lượt cũ nhất. Lượt tóm hỏng hay quá giờ thì bot quay về cách nhớ
+cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào sổ như mọi lượt. Bài kiểm của bot và Trợ lý chạy xanh.
+
+Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py

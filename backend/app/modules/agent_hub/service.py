@@ -3692,6 +3692,48 @@ HISTORY_WINDOW = timedelta(hours=2)
 HISTORY_MAX_CHARS = 6000
 
 
+def _compacted_turns(db: Session, chat_id: str, before_id: int, question: str, user_id: int):
+    """ai-CR-136: nén hội thoại cho một chat riêng Telegram / Zalo — mỗi chat một cuộc, không đọc chéo. Cuộc = các tin
+    hỏi-đáp trong AI_COMPACT_SESSION_HOURS giờ tính từ tin đang hỏi; bản tóm tắt cũ hơn thế là chuyện đã qua → bỏ.
+    Tóm hỏng → cửa sổ trượt cũ (`_recent_turns`)."""
+    from app.modules.assistant import compaction
+    from app.modules.assistant.provider.base import ChatMessage
+
+    from .constants import CONV_CHAT
+
+    key = str(chat_id)
+    current = db.get(AgentMessage, before_id) if before_id else None
+    anchor = current.created_at if current is not None and current.created_at else None
+    session = timedelta(hours=max(1, int(settings.AI_COMPACT_SESSION_HOURS)))
+    row = compaction.load(db, CONV_CHAT, key)
+    if row is not None and anchor and row.updated_at and anchor - row.updated_at > session:
+        compaction.forget(db, CONV_CHAT, key)
+        db.commit()
+        row = None
+    q = (select(AgentMessage)
+         .where(AgentMessage.chat_id == chat_id, AgentMessage.action.in_((ACT_ASKED, ACT_ANSWER, ACT_RESEARCH)),
+                AgentMessage.id > (int(row.upto_id or 0) if row is not None else 0))
+         .order_by(AgentMessage.id.desc()).limit(120))
+    if before_id:
+        q = q.where(AgentMessage.id < before_id)
+    turns = []
+    for r in db.scalars(q):
+        if anchor and r.created_at and anchor - r.created_at > session:
+            break
+        turns.append(compaction.Turn("user" if r.direction == DIR_IN else "assistant", r.body, int(r.id),
+                                     bool(r.tool_used) or r.action == ACT_RESEARCH))
+    turns.reverse()
+
+    def summarize(system: str, prompt: str):
+        return manager.get_provider().ask([ChatMessage(role="user", content=prompt)], model=settings.AGENT_MANAGER_MODEL,
+                                          system=system, max_tokens=900, temperature=0.2)
+
+    return compaction.compact(db, scope=CONV_CHAT, key=key, user_id=int(user_id or 0), turns=turns, question=question,
+                              summarize=summarize, fallback=lambda: _recent_turns(db, chat_id, before_id),
+                              on_cost=lambda result: compaction.record_cost(db, result,
+                                                                           channel=channels.channel_of(chat_id)))
+
+
 def _recent_turns(db: Session, chat_id: str, before_id: int) -> list[dict]:
     """Các lượt hỏi-đáp gần đây của chat này, dạng `[{role, content}]` cho `ask()`.
 
@@ -3761,7 +3803,13 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         reply(db, chat_id, user_keys.NO_KEY_HELP)
         return
 
-    history = _recent_turns(db, chat_id, before_id)
+    #  ai-CR-136: nén hội thoại — bản tóm tắt phần đầu cuộc chat + các lượt gần nhất (thay cửa sổ 8 lượt / 2 giờ).
+    from app.modules.assistant import compaction
+
+    link_now = chat_link.get_active_link(db, chat_id)
+    plan = _compacted_turns(db, chat_id, before_id, question, link_now.user_id if link_now is not None else 0)
+    history = plan.turns
+    summary_note = compaction.summary_block(plan.summary)
     #  Chốt dấu `hoi` trên tin trước khi giao cho Trợ lý AI: tool bên trong có thể
     #  rollback session (bao-CR-463), và dấu chưa chốt thì tin quay lại INBOX.
     db.commit()
@@ -3779,7 +3827,8 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
                                        kind=kind,
                                        system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}"
-                                              + (f"\n\n{memory_block}" if memory_block else ""))
+                                              + (f"\n\n{memory_block}" if memory_block else "")
+                                              + (f"\n\n{summary_note}" if summary_note else ""))
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         reply(db, chat_id, user_keys.key_problem(str(e)) or ai_keys.short_error(str(e)))
@@ -3795,8 +3844,11 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         log_message(db, DIR_OUT, chat_id, 0, result.get("text") or "", action=ACT_ANSWER)
         db.commit()
     else:
-        reply(db, chat_id, (result.get("text") or "(không có câu trả lời)") + (f"\n\n{hint}" if hint else ""),
-              markdown=True, action=ACT_ANSWER, scope=_scope_of(db, before_id))
+        out = reply(db, chat_id, (result.get("text") or "(không có câu trả lời)") + (f"\n\n{hint}" if hint else ""),
+                    markdown=True, action=ACT_ANSWER, scope=_scope_of(db, before_id))
+        if out is not None and tool_calls:
+            out.tool_used = True                # ai-CR-136: nén hội thoại lược câu trả lời rút từ công cụ trước
+            db.commit()
     deliver_tool_results(db, chat_id, user, tool_calls)
 
 
@@ -4924,7 +4976,7 @@ def _copy_to_ops(db: Session, wire: str, *, task_id: int) -> None:
 
 def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
           buttons: list[tuple[str, str]] | None = None,
-          markdown: bool = False, action: str = "", scope: int = 0) -> None:
+          markdown: bool = False, action: str = "", scope: int = 0) -> AgentMessage:
     """Gửi Telegram VÀ ghi vào sổ (luật F3). Gửi hỏng thì vẫn ghi, kèm lý do.
 
     `text` mặc định là HTML đã thoát sẵn (các câu của chính bot). `markdown=True` cho
@@ -4938,7 +4990,7 @@ def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
     except telegram.TelegramError as e:
         log.exception("agent_hub: gửi Telegram hỏng")
         mid, text = 0, f"[KHÔNG GỬI ĐƯỢC: {e}] {text}"
-    log_message(db, DIR_OUT, chat_id, mid, text, task_id=task_id, action=action, scope=scope)
+    row = log_message(db, DIR_OUT, chat_id, mid, text, task_id=task_id, action=action, scope=scope)
     #  ai-CR-132: tin HỆ THỐNG gửi chat chủ bot (thẻ việc AI-xxxx, tin vận hành) → bản sao cho người nhận tin vận hành.
     #  Câu trả lời riêng của đại ca (không gắn việc, không phải tin vận hành) không bao giờ bị sao.
     if (str(chat_id) == str(settings.AGENT_TELEGRAM_CHAT_ID or "") and (task_id or action == ACT_OPS)
@@ -4947,6 +4999,7 @@ def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
             _copy_to_ops(db, wire, task_id=task_id)
         except Exception:  # noqa: BLE001
             log.exception("agent_hub: sao tin vận hành hỏng")
+    return row
 
 
 def log_message(db: Session, direction: int, chat_id: str, tg_message_id: int,

@@ -174,6 +174,8 @@ class AgentMessage(Base, AuditMixin):
     files: Mapped[list | None] = mapped_column(JSON, default=list, nullable=True)
     #  ai-CR-095 (C-06): 0 chưa phân · 1 việc công ty · 2 việc cá nhân — bộ phân loại ý định gán.
     scope: Mapped[int] = mapped_column(SmallInteger, default=0)
+    #  ai-CR-136: câu trả lời này rút từ kết quả công cụ (tra ERP, tra mạng…) — nén hội thoại lược trước khi tóm.
+    tool_used: Mapped[bool] = mapped_column(Boolean, default=False)
 
     __table_args__ = (
         #  Vòng gom hỏi "tin ĐẾN nào chưa thuộc task nào, cũ hơn N giây" mỗi phút.
@@ -431,6 +433,23 @@ class AgentGroupView(Base, AuditMixin):
     group_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     user_id: Mapped[int] = mapped_column(BigInteger, default=0)
     what: Mapped[str] = mapped_column(String(40), default="")
+
+
+class AgentConvSummary(Base, AuditMixin):
+    """Bản tóm tắt phần đầu MỘT cuộc hội thoại (ai-CR-136): web = một hội thoại, Telegram / Zalo = một chat, nhóm = một
+    nhóm. `upto_id` = id tin cuối đã tóm vào — lần sau chỉ tóm phần SAU mốc này (nối tiếp, không tóm lại từ đầu).
+    Không bao giờ đọc chéo: khóa là (scope, scope_key)."""
+
+    __tablename__ = "tab_agent_conv_summary"
+
+    scope: Mapped[int] = mapped_column(SmallInteger, default=0)
+    scope_key: Mapped[str] = mapped_column(String(80), default="")
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    upto_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    folded_turns: Mapped[int] = mapped_column(Integer, default=0)
+
+    __table_args__ = (Index("ux_agent_conv_summary_key", "scope", "scope_key", unique=True),)
 
 
 class AgentReminder(Base, AuditMixin):

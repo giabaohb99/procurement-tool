@@ -6,7 +6,7 @@ Mỗi hội thoại thuộc về MỘT tài khoản (created_by); danh sách/chi
 from datetime import datetime
 from enum import IntEnum
 
-from sqlalchemy import BigInteger, DateTime, Integer, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, Integer, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -51,3 +51,5 @@ class AssistantMessage(Base, AuditMixin):
     thinking_tokens: Mapped[int] = mapped_column(Integer, default=0)
     cache_read_tokens: Mapped[int] = mapped_column(Integer, default=0)
     cache_write_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    # ai-CR-136: câu trả lời rút từ kết quả công cụ — nén hội thoại lược trước (mức 50%).
+    tool_used: Mapped[bool] = mapped_column(Boolean, default=False)

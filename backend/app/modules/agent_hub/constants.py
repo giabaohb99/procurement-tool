@@ -164,6 +164,8 @@ STAGE_VOICE = 27
 STAGE_SESSION = 28
 #  Chép lời ghi âm / video họp (ai-CR-104, phase 10).
 STAGE_MEETING = 29
+#  Tóm tắt nối tiếp phần đầu một cuộc hội thoại (ai-CR-136, nén hội thoại).
+STAGE_COMPACT = 30
 #  Nhãn bước cho màn Việc của bot (ai-CR-036).
 STAGE_LABELS = {
     STAGE_TRIAGE: "Gom việc",
@@ -179,6 +181,7 @@ STAGE_LABELS = {
     STAGE_RULE: "Đề xuất ghi sổ",
     STAGE_SCAN: "Rà soát mã",
     STAGE_RESEARCH: "Nghiên cứu",
+    STAGE_COMPACT: "Tóm tắt hội thoại",
 }
 
 # ---------------------------------------------------------------------------
@@ -432,3 +435,12 @@ GROUP_CATEGORY_LABELS = {
     GROUP_CAT_MANAGEMENT: "Điều hành",
     GROUP_CAT_OTHER: "Khác",
 }
+
+
+# ---------------------------------------------------------------------------
+# Nén hội thoại (ai-CR-136) — `tab_agent_conv_summary.scope`: đơn vị nén là TỪNG cuộc, không gộp
+# ---------------------------------------------------------------------------
+CONV_WEB = 1        # một hội thoại Trợ lý AI trên web (khóa = id hội thoại)
+CONV_CHAT = 2       # một chat riêng Telegram / Zalo (khóa = mã chat)
+CONV_GROUP = 3      # một nhóm chat khi bot trả lời trong nhóm (khóa = mã chat nhóm) — chưa bật trả lời trong nhóm
+

@@ -47,6 +47,13 @@ REGISTRY = {
     "ai_gemini_model": ("str", "AI_GEMINI_MODEL"),
     "ai_daily_msg_limit": ("int", "AI_DAILY_MSG_LIMIT"),
     "ai_lookup_model": ("str", "AI_LOOKUP_MODEL"),
+    #  ai-CR-136: nén hội thoại — ngân sách + ba ngưỡng chỉnh được trên màn Cấu hình mà không phải deploy.
+    "ai_compact_enabled": ("bool", "AI_COMPACT_ENABLED"),
+    "ai_context_budget_tokens": ("int", "AI_CONTEXT_BUDGET_TOKENS"),
+    "ai_compact_clear_pct": ("int", "AI_COMPACT_CLEAR_PCT"),
+    "ai_compact_summary_pct": ("int", "AI_COMPACT_SUMMARY_PCT"),
+    "ai_compact_drop_pct": ("int", "AI_COMPACT_DROP_PCT"),
+    "ai_compact_keep_turns": ("int", "AI_COMPACT_KEEP_TURNS"),
     #  Cụm đồng bộ app đặt xe / duyệt dấu CŨ (bao-CR-429 nhịp 3). Đây đúng là chỗ
     #  cần sửa nóng nhất: khi đường máy-gọi-máy giữa hai hệ trục trặc thì thứ phải
     #  làm ngay là TẮT nó, mà tắt bằng `.env` nghĩa là sửa tệp rồi dựng lại dịch vụ.
