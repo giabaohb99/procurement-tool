@@ -13170,10 +13170,11 @@ Mã nguồn: backend/app/modules/agent_hub/web_search.py (fetch_resource) · ser
 Deploy: dev 09/10 (Agent 1 gộp e7b3d71c, dựng lại stack agent-hub); prod giữ lại.
 
 ## ai-CR-135 | Tin Zalo mất kết nối chỉ báo một lần
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Mỗi lần máy chủ bot được dựng lại, tiến trình Zalo khởi động lại, thử phiên đăng nhập cũ đã hỏng rồi lại báo «Zalo mất kết nối»,
 nên đại ca nhận cùng một tin nhiều lần. Nay bot chỉ báo mất kết nối một lần cho tới khi Zalo nối lại được; muốn biết tình trạng
 thì đại ca nhắn «/zalo» hoặc xem thẻ Zalo trên màn Nhóm chat. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_report_zalo_status) · test/backend/test_agent_hub.py
+Deploy: dev 09/10 (Agent 1 gộp 9578cd72, dựng lại stack agent-hub); prod giữ lại.
