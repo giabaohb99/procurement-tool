@@ -231,6 +231,12 @@ class _Local:
 
         return draft_create.delete_mine(db, user, items)
 
+    @staticmethod
+    def update_doc_draft(db, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
+        from . import draft_create
+
+        return draft_create.update_doc_draft(db, user, kind, oid, draft, mode)
+
     #  ai-CR-151: nút «Xác nhận sửa / xóa» của thẻ đề xuất. Ghi phiếu là việc của ERP — ở chế độ service phải đi qua
     #  cổng B, không được gọi `confirm_update` trên DB của bot (DB đó không có bảng phiếu).
     @staticmethod
@@ -547,6 +553,18 @@ class _Remote:
         except ErpError as e:
             raise DraftError(str(e)) from None
 
+    def update_doc_draft(self, db, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
+        from .draft_create import DraftError
+
+        try:
+            out = dict(self._call("POST", "/draft/reuse", user_id=_uid(user),
+                                  body={"kind": kind, "id": int(oid), "draft": draft, "mode": mode}) or {})
+        except ErpError as e:
+            raise DraftError(str(e)) from None
+        if out.get("error"):
+            raise DraftError(str(out["error"]))
+        return out
+
     def confirm_proposal(self, db, user, token: str) -> dict:
         """Cổng trả lỗi nghiệp vụ dưới dạng `{error, status}` → ném lại HTTPException như bản chạy chung, để người gọi
         xử một đường."""
@@ -732,6 +750,10 @@ def delete_my_drafts(db, user, items: list[dict]) -> dict:
 
 def confirm_proposal(db, user, token: str) -> dict:
     return _impl().confirm_proposal(db, user, token)
+
+
+def update_doc_draft(db, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
+    return _impl().update_doc_draft(db, user, kind, oid, draft, mode)
 
 
 def created_details(db, kind: str, oid: int) -> list[str]:

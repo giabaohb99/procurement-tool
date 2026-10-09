@@ -137,3 +137,77 @@ def test_tao_lai_don_nghi_trung_ngay_thi_sua_don_nhap_cu(db, monkeypatch):
     db.commit()
     assert service._draft_by_text(db, "12345", row, "tạo")
     assert calls == [("update", 11)] and "Đã cập nhật đơn nghỉ phép nháp NP001" in sent[-1]
+
+
+def test_dung_lai_ycmh_nhap_them_dong_va_ghi_de(db, seed, cap_quyen):
+    """ai-CR-156 — đại ca 09/10: YCMH / YCBG cũng tận dụng phiếu nháp cũ như đơn nghỉ. Thêm vào: dòng y hệt thì bỏ qua,
+    đầu phiếu giữ nguyên. Ghi đè: thay cả đầu phiếu lẫn dòng, giữ mã."""
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+    from app.modules.user.model import User
+
+    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True, create=True)
+    me = db.get(User, seed.u_req_id)
+    pr = PurchaseRequest(code="YCMH-R1", company_id=seed.company_id, department_id=seed.dept_id, purpose="mua giấy",
+                         status="draft", created_by=me.id, updated_by=me.id)
+    db.add(pr)
+    db.flush()
+    db.add(PurchaseRequestItem(pr_id=pr.id, product_name="Giấy A4", qty=10, unit="ram", created_by=me.id))
+    db.commit()
+    draft = {"purpose": "mua văn phòng phẩm", "lines": [{"product_name": "giấy a4", "qty": 10, "unit": "Ram"},
+                                                        {"product_name": "Bút bi", "qty": 5, "unit": "cây"}]}
+    out = dc.update_doc_draft(db, me, "purchase", pr.id, draft, "append")
+    assert out == {"code": "YCMH-R1", "skipped": 1}
+    db.refresh(pr)
+    rows = db.query(PurchaseRequestItem).filter_by(pr_id=pr.id).order_by(PurchaseRequestItem.id).all()
+    assert [r.product_name for r in rows] == ["Giấy A4", "Bút bi"] and pr.purpose == "mua giấy"
+    out = dc.update_doc_draft(db, me, "purchase", pr.id, {"purpose": "mua mực in",
+                                                          "lines": [{"product_name": "Mực in", "qty": 2}]}, "replace")
+    db.refresh(pr)
+    rows = db.query(PurchaseRequestItem).filter_by(pr_id=pr.id).all()
+    assert out["code"] == "YCMH-R1" and [r.product_name for r in rows] == ["Mực in"] and pr.purpose == "mua mực in"
+    other = db.get(User, seed.u_nstm_id)
+    with pytest.raises(dc.DraftError):
+        dc.update_doc_draft(db, other, "purchase", pr.id, draft, "append")        # phiếu người khác
+    pr.status = "submitted"
+    db.commit()
+    with pytest.raises(dc.DraftError):
+        dc.update_doc_draft(db, me, "purchase", pr.id, draft, "append")           # không còn nháp
+
+
+def test_the_nhap_ycmh_moi_dung_lai_phieu_cu_qua_chat(db, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.core.config import settings
+    from app.modules.agent_hub import erp, service
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    me = SimpleNamespace(id=7)
+    monkeypatch.setattr(service, "_assistant_user", lambda db, chat_id="": me)
+    sent: list[str] = []
+    monkeypatch.setattr(service, "reply", lambda db, chat_id, text, **kw: sent.append(text))
+    monkeypatch.setattr(erp, "my_drafts", lambda db, user: [
+        {"kind": "leave", "id": 3, "code": "NP001", "title": "x"},
+        {"kind": "purchase", "id": 21, "code": "YCMH001", "title": "mua giấy A4"}])
+    calls: list = []
+    monkeypatch.setattr(erp, "update_doc_draft", lambda db, user, kind, oid, draft, mode: calls.append(
+        (kind, oid, mode)) or {"code": "YCMH001", "skipped": 0})
+    monkeypatch.setattr(erp, "create_draft", lambda *a, **k: pytest.fail("không được lập phiếu mới"))
+    monkeypatch.setattr(erp, "created_details", lambda db, kind, oid: [])
+    draft = {"purpose": "mua bút", "lines": [{"product_name": "Bút bi", "qty": 5, "unit": "cây"}]}
+    service._offer_draft(db, "12345", me, {"name": "draft_purchase_request", "draft": draft})
+    card = sent[-1]
+    assert "YCMH001" in card and "NP001" not in card and "<code>thêm vào 1</code>" in card and "ghi đè 1" in card
+    assert _say_draft(db, service, "thêm vào 3") and "Không có" in sent[-1] and calls == []
+    assert _say_draft(db, service, "thêm vào 1") and calls == [("purchase", 21, "append")]
+    assert "Đã thêm dòng vào" in sent[-1]
+    assert not _say_draft(db, service, "thêm vào 1") and len(calls) == 1          # thẻ đã dùng, không ghi lần hai
+    service._offer_draft(db, "12345", me, {"name": "draft_purchase_request", "draft": draft})
+    assert _say_draft(db, service, "ghi đè 1") and calls[-1] == ("purchase", 21, "replace")
+
+
+def _say_draft(db, service, text):
+    from app.modules.agent_hub.constants import DIR_IN
+
+    row = service.log_message(db, DIR_IN, "12345", 1, text)
+    db.commit()
+    return service._draft_by_text(db, "12345", row, text)

@@ -209,6 +209,24 @@ def draft_update(body: DraftUpdateIn, user=Depends(gateway_user), db: Session = 
         return success({"error": str(e)})
 
 
+class DraftReuseIn(BaseModel):
+    kind: str = Field(max_length=20)
+    id: int
+    draft: dict
+    mode: str = Field(max_length=10)
+
+
+#  ai-CR-156: dùng lại phiếu nháp YCMH / YCBG của chính người gọi (thêm dòng vào / ghi đè).
+@router.post("/draft/reuse")
+def draft_reuse(body: DraftReuseIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    from app.modules.agent_hub.draft_create import DraftError
+
+    try:
+        return success(L.update_doc_draft(db, user, body.kind, body.id, body.draft, body.mode))
+    except DraftError as e:
+        return success({"error": str(e)})
+
+
 class DraftRef(BaseModel):
     kind: str = Field(max_length=20)
     id: int

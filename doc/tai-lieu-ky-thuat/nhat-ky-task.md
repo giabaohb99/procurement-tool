@@ -13193,6 +13193,17 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-156 | Phiếu yêu cầu mua hàng và yêu cầu báo giá dùng lại được phiếu nháp cũ
+- status: dang-lam
+- date: 2026-10-09
+Đại ca đồng ý cho yêu cầu mua hàng và yêu cầu báo giá tận dụng phiếu nháp cũ như đơn nghỉ phép, để không sinh ra nhiều phiếu
+nháp. Khi bot soạn một phiếu mới mà người dùng đang có phiếu nháp cùng loại, thẻ nháp liệt kê các phiếu đó và cho hai lựa chọn:
+thêm các dòng mới vào một phiếu cũ, dòng nào đã có y hệt thì bỏ qua, hoặc ghi đè phiếu cũ bằng bản mới mà vẫn giữ mã phiếu.
+Khác với đơn nghỉ trùng ngày được sửa đè tự động, ở đây người dùng tự chọn vì hai phiếu mua hàng rất dễ nhầm nhau. Bot chỉ
+đụng phiếu nháp của chính người hỏi và ghi bằng đúng hàm sửa của màn hình. Bài kiểm liên quan chạy xanh.
+
+Mã nguồn: agent_hub/draft_create.py (update_doc_draft, same_kind_drafts) · agent_hub/service.py (_reuse_draft, draft_card) · agent_hub/erp.py · agent_gateway/controller.py (/draft/reuse)
+
 ## ai-CR-154 | Đại ca nhắn ok trên thẻ xác nhận là bot tự đưa bản sửa lên dev khi bài kiểm không đỏ
 - status: xong
 - date: 2026-10-09

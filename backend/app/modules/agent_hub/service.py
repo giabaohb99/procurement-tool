@@ -4135,7 +4135,7 @@ def _loose_confirm(low: str) -> bool:
     return len(low.split()) <= 8 and bool(_LOOSE_YES.search(low)) and not _LOOSE_BLOCK.search(low)
 
 
-def draft_card(kind: str, draft: dict, *, replaced: bool = False) -> str:
+def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[dict] | None = None) -> str:
     """Thẻ bản nháp (đại ca 09/10: bỏ ngoặc «», làm lại cho dễ đọc): tiêu đề in hoa · nhãn in đậm · điều em TỰ HIỂU
     (người dùng chưa nói) tách riêng để xác nhận · các câu trả lời dạng mã (chạm là chép) mỗi câu một dòng."""
     esc = telegram.esc
@@ -4152,6 +4152,12 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False) -> str:
         actions = [("tạo", "tạo việc và báo chuông cho người được giao"), ("thôi", "bỏ bản nháp")]
     else:
         actions = [("tạo", "gửi phiếu cho nhóm hỗ trợ"), ("thôi", "bỏ bản nháp")]
+    if reuse:
+        #  ai-CR-156: dùng lại phiếu nháp cùng loại thay vì lập thêm.
+        out += ["", f"<b>Anh/chị đang có {len(reuse)} {esc(draft_create.LABELS[kind])} nháp:</b>"]
+        out += [f"{i}. <b>{esc(x['code'])}</b> · {esc(x.get('title') or '')}" for i, x in enumerate(reuse, 1)]
+        actions = actions[:1] + [("thêm vào 1", "thêm các dòng này vào phiếu nháp số 1"),
+                                 ("ghi đè 1", "thay nội dung phiếu nháp số 1 bằng bản này")] + actions[1:]
     out += ["", "<b>Trả lời:</b>"] + [f"• <code>{esc(cmd)}</code> — {esc(note)}" for cmd, note in actions]
     return "\n".join(out)
 
@@ -4174,9 +4180,12 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
                                                      AgentMessage.action == ACT_DRAFT_WAIT)):
         old.action = ACT_DRAFT_DROPPED
         replaced += 1
-    reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced)))
+    #  ai-CR-156: đã có phiếu nháp YCMH / YCBG cùng loại → mời dùng lại thay vì lập thêm phiếu.
+    reuse = draft_create.same_kind_drafts(erp.my_drafts(db, user), kind) if user is not None else []
+    reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced), reuse=reuse))
     log_message(db, DIR_OUT, chat_id, 0, json.dumps({"tool": call.get("name"), "kind": kind,
-                                                     "user_id": getattr(user, "id", 0), "draft": draft},
+                                                     "user_id": getattr(user, "id", 0), "draft": draft,
+                                                     "reuse": [{"id": x["id"], "code": x["code"]} for x in reuse]},
                                                     ensure_ascii=False, default=str),
                 action=ACT_DRAFT_WAIT)
     db.commit()
@@ -4279,6 +4288,57 @@ def _my_drafts_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     return True
 
 
+#  ai-CR-156: «thêm vào 1» / «gộp vào phiếu 2» / «ghi đè 1» / «thay phiếu 1» trên thẻ nháp YCMH / YCBG.
+_REUSE_DRAFT = re.compile(r"^(?P<verb>thêm vào|gộp vào|ghi đè|đè|thay)(?:\s+(?:lên|vào))?\s*(?:phiếu|đơn)?\s*(?:số)?\s*"
+                          r"(?P<n>\d+)[.! ]*$")
+
+
+def _reuse_draft(db: Session, chat_id: str, row: AgentMessage, pending: AgentMessage, m: re.Match) -> bool:
+    esc = telegram.esc
+    row.action = ACT_COMMAND
+    try:
+        info = json.loads(pending.body or "{}")
+    except ValueError:
+        info = {}
+    kind, label = info.get("kind", ""), draft_create.LABELS.get(info.get("kind", ""), "phiếu")
+    choices = info.get("reuse") or []
+    n = int(m.group("n"))
+    if not choices or not 1 <= n <= len(choices):
+        db.commit()
+        reply(db, chat_id, f"Không có {esc(label)} nháp số {n} để dùng lại. Nhắn <code>tạo</code> để lập phiếu mới.")
+        return True
+    user = _assistant_user(db, chat_id)
+    if user is None or user.id != int(info.get("user_id") or 0):
+        pending.action = ACT_DRAFT_DROPPED
+        db.commit()
+        reply(db, chat_id, "Tài khoản của chat này đã đổi so với lúc soạn nháp, em không ghi. Đại ca nhờ soạn lại giúp em.")
+        return True
+    mode = "append" if m.group("verb") in ("thêm vào", "gộp vào") else "replace"
+    target = choices[n - 1]
+    #  Chốt dấu TRƯỚC khi ghi phiếu: «thêm vào 1» lần hai không được thêm lần hai.
+    pending.action = ACT_DRAFT_DONE
+    db.commit()
+    try:
+        out = erp.update_doc_draft(db, user, kind, int(target["id"]), info.get("draft") or {}, mode)
+    except draft_create.DraftError as e:
+        pending.action = ACT_DRAFT_DROPPED
+        db.commit()
+        reply(db, chat_id, f"Chưa ghi được vào {esc(target.get('code') or '')}: {esc(str(e)[:400])}")
+        return True
+    code = out.get("code") or target.get("code") or ""
+    pending.body = json.dumps({**info, "created": {"id": int(target["id"]), "code": code}}, ensure_ascii=False,
+                              default=str)
+    db.commit()
+    if mode == "append":
+        head = f"Đã thêm dòng vào {label} nháp {code}"
+        head += (f" (bỏ qua {out['skipped']} dòng đã có sẵn)." if out.get("skipped") else ".")
+    else:
+        head = f"Đã ghi đè {label} nháp {code} bằng bản mới (giữ mã phiếu cũ)."
+    tail = "Nhắn «gửi duyệt» để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
+    _reply_created(db, chat_id, kind, int(target["id"]), head, tail)
+    return True
+
+
 def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """«tạo» / «thôi» cho bản nháp đang chờ của chat này (trong DRAFT_WINDOW)."""
     low = text.strip().lower()
@@ -4290,6 +4350,9 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     want_submit = bool(_CREATE_SUBMIT.match(low)) or (live and _loose_confirm(low) and "gửi duyệt" in low)
     yes = want_submit or bool(_CREATE_YES.match(low)) or (live and _loose_confirm(low))
     no = bool(_NO.match(low))
+    m_reuse = _REUSE_DRAFT.match(low) if live else None
+    if m_reuse:
+        return _reuse_draft(db, chat_id, row, pending, m_reuse)
     if not (yes or no):
         return (not live) and _detail_recent(db, chat_id, row, low)
     if not live:

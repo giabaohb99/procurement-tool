@@ -381,3 +381,14 @@ def test_nut_xac_nhan_sua_phieu_di_qua_cong_b(db, seed, gateway, cap_quyen):
     with pytest.raises(HTTPException) as e:           # token của người khác → lỗi nghiệp vụ đi nguyên về
         erp.confirm_proposal(db, erp.user_by_id(db, seed.u_nstm_id), token)
     assert e.value.status_code == 403
+
+
+def test_dung_lai_phieu_nhap_di_qua_cong_b(db, seed, gateway):
+    """ai-CR-156: thêm vào / ghi đè phiếu nháp YCMH đi qua cổng B; lỗi nghiệp vụ về thành DraftError."""
+    from app.modules.agent_hub import erp
+    from app.modules.agent_hub.draft_create import DraftError
+
+    u = erp.user_by_id(db, seed.u_req_id)
+    with pytest.raises(DraftError) as e:
+        erp.update_doc_draft(db, u, "purchase", 999999, {"lines": [{"product_name": "x", "qty": 1}]}, "append")
+    assert "không còn" in str(e.value) and ("POST", "/api/agent-gw/draft/reuse") in gateway

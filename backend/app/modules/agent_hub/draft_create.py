@@ -522,6 +522,94 @@ def update_leave(db: Session, user, oid: int, draft: dict) -> str:
     return obj.code
 
 
+REUSE_KINDS = ("purchase", "survey")
+REUSE_MODES = ("append", "replace")
+REUSE_OFFER_MAX = 5
+
+
+def same_kind_drafts(mine: list[dict], kind: str) -> list[dict]:
+    """ai-CR-156: phiếu nháp CÙNG LOẠI của mình (YCMH / YCBG) để đưa lên thẻ nháp mới — mới nhất trước."""
+    if kind not in REUSE_KINDS:
+        return []
+    return [x for x in mine if x.get("kind") == kind][:REUSE_OFFER_MAX]
+
+
+def _line_key(kind: str, ln) -> tuple:
+    get = (lambda k: ln.get(k)) if isinstance(ln, dict) else (lambda k: getattr(ln, k, None))
+    name = get("product_name") if kind == "purchase" else get("requirement_detail")
+    qty = get("qty") if kind == "purchase" else get("request_qty")
+    unit = get("unit") if kind == "purchase" else get("uom")
+    return (" ".join(str(name or "").lower().split()), float(qty or 0), str(unit or "").strip().lower())
+
+
+def update_doc_draft(db: Session, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
+    """ai-CR-156: dùng lại phiếu NHÁP YCMH / YCBG của chính mình thay vì lập phiếu mới.
+
+    `append` = thêm các dòng của bản nháp mới vào phiếu cũ (dòng y hệt tên + số lượng + đơn vị thì bỏ qua, tránh nhắn
+    lại một yêu cầu thành hai dòng), đầu phiếu giữ nguyên, chỉ điền ô đang trống. `replace` = thay cả đầu phiếu lẫn
+    dòng hàng bằng bản mới (phiếu giữ mã cũ). Ghi bằng đúng `update_pr` / `update_sr` của form. Trả {code, skipped}."""
+    from fastapi import HTTPException
+
+    from app.core.audit import record as audit_record
+    from app.core.auth import get_perm_profile, user_has_permission
+    from app.modules.assistant.tools.update_tool import _row_to_input
+
+    if kind not in REUSE_KINDS or mode not in REUSE_MODES:
+        raise DraftError("Chỉ dùng lại được phiếu nháp YCMH hoặc YCBG.")
+    if kind == "purchase":
+        from app.modules.purchase_request import service as svc
+        from app.modules.purchase_request.model import PurchaseRequest as model
+        from app.modules.purchase_request.schema import PRItemIn as line_cls
+        from app.modules.purchase_request.schema import PRUpdate as update_cls
+    else:
+        from app.modules.survey_request import service as svc
+        from app.modules.survey_request.model import SurveyRequest as model
+        from app.modules.survey_request.schema import SurveyRequestLineIn as line_cls
+        from app.modules.survey_request.schema import SurveyRequestUpdate as update_cls
+    obj = db.get(model, int(oid))
+    if obj is None or getattr(obj, "is_deleted", False) or obj.created_by != int(user.id) or obj.status != "draft":
+        raise DraftError("Phiếu nháp đó không còn (đã gửi duyệt hoặc đã xóa).")
+    if not user_has_permission(db, user, ENTITIES[kind], "write"):
+        raise DraftError(f"Tài khoản này không có quyền sửa {LABELS[kind]}.")
+    keys = set(line_cls.model_fields) - {"id"}
+    new_lines = [line_cls(**{k: v for k, v in ln.items() if k in keys}) for ln in draft.get("lines") or []]
+    if not new_lines:
+        raise DraftError(f"{LABELS[kind]} nháp mới chưa có dòng nào.")
+    if kind == "purchase":
+        old_rows = svc.items_of(db, obj.id)
+    else:
+        old_rows = svc.lines_of(db, obj.id)
+    skipped = 0
+    if mode == "append":
+        lines = [_row_to_input(line_cls, r) for r in old_rows]
+        seen = {_line_key(kind, r) for r in old_rows}
+        for ln in new_lines:
+            if _line_key(kind, ln) in seen:
+                skipped += 1
+                continue
+            lines.append(ln)
+        header = {k: str(draft.get(k) or "") for k in ("purpose", "note") if not (getattr(obj, k, "") or "").strip()
+                  and str(draft.get(k) or "").strip()}
+    else:
+        lines = new_lines
+        header = {k: str(draft.get(k) or "") for k in ("purpose", "note") if k in draft}
+        if kind == "purchase" and draft.get("need_date"):
+            header["need_date"] = str(draft["need_date"])
+    try:
+        if kind == "purchase":
+            svc.update_pr(db, obj.id, update_cls(**header, items=lines), user.id)
+        else:
+            svc.update_sr(db, obj.id, update_cls(**header, lines=lines), user.id, user=user,
+                          profile=get_perm_profile(db, user))
+    except HTTPException as e:
+        db.rollback()
+        raise DraftError(str(e.detail)) from None
+    how = "thêm dòng vào" if mode == "append" else "ghi đè"
+    audit_record(db, user.id, ENTITIES[kind], obj.id, "update", f"{how.capitalize()} {LABELS[kind]} nháp {obj.code} (qua Telegram)")
+    db.commit()
+    return {"code": obj.code, "skipped": skipped}
+
+
 def delete_mine(db: Session, user, items: list[dict]) -> dict:
     """Xóa các phiếu NHÁP do chính mình lập, bằng đúng hàm xóa của web. Phiếu không phải của mình / không còn nháp /
     thiếu quyền xóa thì bỏ qua và kể lại. Trả {deleted: [mã], skipped: [câu]}."""
