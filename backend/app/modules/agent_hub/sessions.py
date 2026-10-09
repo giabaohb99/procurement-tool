@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.assistant.provider.base import ChatMessage
 
-from . import personal_memory, user_keys
+from . import auto_memory, intent_ledger, personal_memory, user_keys
 from .constants import DIR_IN, DIR_OUT, STAGE_SESSION
 from .model import AgentChatLink, AgentMessage
 from .timeutil import now_utc, to_local
@@ -96,7 +96,7 @@ def summarize(db: Session, chat_id: str, user_id: int, rows: list[AgentMessage])
             return {"ok": False, "reason": "model không trả chữ"}
         out = personal_memory.add_note(db, user_id, title, text)
         db.commit()
-        return {"ok": bool(out.get("ok")), "note_id": out.get("note_id"), "reason": out.get("message", "")}
+        return {"ok": bool(out.get("ok")), "note_id": out.get("note_id"), "reason": out.get("message", ""), "text": text}
 
 
 def tick(db: Session, *, now=None) -> dict:
@@ -105,6 +105,8 @@ def tick(db: Session, *, now=None) -> dict:
     done = skipped = 0
     links = db.scalars(select(AgentChatLink).where(AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None)))
     for link in links:
+        if intent_ledger.is_group_chat(link.chat_id):
+            continue                    # ai-CR-137: không bao giờ tóm tắt / rút ghi nhớ từ tin nhóm
         rows = pending_rows(db, link.chat_id)
         if not rows or rows[-1].created_at is None or now - rows[-1].created_at < SESSION_GAP:
             continue
@@ -118,6 +120,12 @@ def tick(db: Session, *, now=None) -> dict:
         _mark(db, link.chat_id, rows[-1].id, note_id=res.get("note_id"), error="" if res.get("ok") else res.get("reason"))
         if res.get("ok"):
             done += 1
+            #  ai-CR-137 (13.3): buổi RIÊNG vừa tóm tắt → rút điều bền về người đó (đếm lặp lại, đủ ngưỡng mới ghi).
+            try:
+                auto_memory.extract(db, link.chat_id, link.user_id, res.get("text") or "")
+            except Exception:  # noqa: BLE001 — rút hỏng không được chặn vòng tóm tắt các chat khác
+                db.rollback()
+                log.exception("agent_hub: tự rút ghi nhớ hỏng ở chat %s", link.chat_id)
         else:
             skipped += 1
             log.info("agent_hub: chưa tóm tắt được buổi của chat %s: %s", link.chat_id, res.get("reason"))

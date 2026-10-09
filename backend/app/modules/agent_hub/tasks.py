@@ -809,14 +809,16 @@ def doc_wait_task(row_id: int) -> dict:
 
 @celery_app.task(name="agent.group_purge")
 def group_purge_task() -> dict:
-    """ai-CR-105: mỗi ngày dọn tin nhóm Telegram quá AGENT_GROUP_RETENTION_DAYS ngày."""
+    """ai-CR-105: mỗi ngày dọn tin nhóm Telegram quá AGENT_GROUP_RETENTION_DAYS ngày.
+    ai-CR-137: cùng vòng dọn sổ ý định quá 180 ngày + cho hết hạn điều tự rút không gặp lại."""
     if (off := _off()) is not None:
         return off
-    from . import groups
+    from . import auto_memory, groups, intent_ledger
 
     db = SessionLocal()
     try:
-        return {"status": "success", "deleted": groups.purge(db)}
+        return {"status": "success", "deleted": groups.purge(db), "intents_deleted": intent_ledger.purge(db),
+                "memory_expired": auto_memory.expire(db)}
     finally:
         db.close()
 

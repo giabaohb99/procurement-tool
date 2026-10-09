@@ -166,6 +166,8 @@ STAGE_SESSION = 28
 STAGE_MEETING = 29
 #  Tóm tắt nối tiếp phần đầu một cuộc hội thoại (ai-CR-136, nén hội thoại).
 STAGE_COMPACT = 30
+#  Tự rút ghi nhớ sau buổi chat riêng (ai-CR-137, phase 13.3).
+STAGE_MEMORY = 31
 #  Nhãn bước cho màn Việc của bot (ai-CR-036).
 STAGE_LABELS = {
     STAGE_TRIAGE: "Gom việc",
@@ -182,6 +184,7 @@ STAGE_LABELS = {
     STAGE_SCAN: "Rà soát mã",
     STAGE_RESEARCH: "Nghiên cứu",
     STAGE_COMPACT: "Tóm tắt hội thoại",
+    STAGE_MEMORY: "Tự rút ghi nhớ",
 }
 
 # ---------------------------------------------------------------------------

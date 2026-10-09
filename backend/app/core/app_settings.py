@@ -54,6 +54,8 @@ REGISTRY = {
     "ai_compact_summary_pct": ("int", "AI_COMPACT_SUMMARY_PCT"),
     "ai_compact_drop_pct": ("int", "AI_COMPACT_DROP_PCT"),
     "ai_compact_keep_turns": ("int", "AI_COMPACT_KEEP_TURNS"),
+    #  ai-CR-137: tự rút ghi nhớ sau buổi chat riêng — tắt bằng sổ cấu hình (tab_setting), không phải deploy.
+    "agent_auto_memory_enabled": ("bool", "AGENT_AUTO_MEMORY_ENABLED"),
     #  Cụm đồng bộ app đặt xe / duyệt dấu CŨ (bao-CR-429 nhịp 3). Đây đúng là chỗ
     #  cần sửa nóng nhất: khi đường máy-gọi-máy giữa hai hệ trục trặc thì thứ phải
     #  làm ngay là TẮT nó, mà tắt bằng `.env` nghĩa là sửa tệp rồi dựng lại dịch vụ.

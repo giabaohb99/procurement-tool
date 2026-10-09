@@ -186,17 +186,28 @@ def chat(db: Session, user, body) -> dict:
     else:
         history = [h.model_dump() for h in body.history] if body.history else None
 
-    result = service.ask(
-        body.message,
-        db=db,
-        user=user,
-        provider=body.provider,
-        model=body.model,
-        kind=body.kind,
-        system="\n\n".join(x for x in (body.system, summary_note) if x) or None,
-        history=history,
-        attachments=blocks,
-    )
+    from app.modules.agent_hub import intent_ledger
+    from app.modules.agent_hub.constants import CONV_WEB
+
+    try:
+        result = service.ask(
+            body.message,
+            db=db,
+            user=user,
+            provider=body.provider,
+            model=body.model,
+            kind=body.kind,
+            system="\n\n".join(x for x in (body.system, summary_note) if x) or None,
+            history=history,
+            attachments=blocks,
+        )
+    except Exception:
+        #  ai-CR-137: sổ ý định ghi cả lượt hỏng (kết cục «lỗi») rồi để lỗi đi tiếp như cũ.
+        db.rollback()
+        intent_ledger.record(db, user_id=user.id, channel=intent_ledger.Channel.WEB, scope=CONV_WEB,
+                             scope_key=str(conv.id) if conv is not None else "", intent=intent_ledger.Intent.ASK,
+                             question=body.message, error=True)
+        raise
 
     now = datetime.now()
     if conv is None:
@@ -241,6 +252,10 @@ def chat(db: Session, user, body) -> dict:
     ))
     db.commit()
 
+    #  ai-CR-137 (13.1): một dòng sổ ý định — nhãn con theo công cụ đã gọi, KHÔNG lưu nguyên văn câu hỏi.
+    intent_ledger.record(db, user_id=user.id, channel=intent_ledger.Channel.WEB, scope=CONV_WEB, scope_key=str(conv.id),
+                         intent=intent_ledger.Intent.ASK, tool_calls=result.get("tool_calls"), question=body.message,
+                         answer=str(result.get("text") or ""))
     result["conversation_id"] = conv.id
     result["title"] = conv.title
     return result

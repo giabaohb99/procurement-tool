@@ -4149,7 +4149,7 @@ def test_dang_nhap_bang_ma_roi_hoi_duoi_quyen_cua_minh(db, bot, monkeypatch):
     lan = _erp_user(db)
     seen_users: list[str] = []
     monkeypatch.setattr(service, "answer_question",
-                        lambda db, chat_id, q, before_id=0: seen_users.append(
+                        lambda db, chat_id, q, before_id=0, **kw: seen_users.append(
                             (chat_id, q, service._assistant_user(db, chat_id).email)))
     code, _exp = chat_link.issue_code(db, lan.id)
     service.handle_message(db, _other_msg(f"/dangnhap {code}"))
@@ -7699,6 +7699,11 @@ def test_tom_tat_cuoi_buoi_khi_im_lang_30_phut(db, bot, seed, monkeypatch):
     service_db[:] = [db]
     pm.clear_cache()
     _owner_link(db, seed.u_req_id)
+    #  ai-CR-137: tự rút ghi nhớ là lượt model THỨ HAI sau tóm tắt — bài này chỉ đếm lượt tóm tắt, phần rút kiểm ở
+    #  test_agent_hub_y_dinh_tu_nho.py.
+    from app.modules.agent_hub import auto_memory
+
+    monkeypatch.setattr(auto_memory, "enabled", lambda: False)
     monkeypatch.setattr(service.user_keys, "active_key", lambda: "k")
     monkeypatch.setattr(pm, "_embedder", lambda: None)
     asked: list[str] = []
@@ -8403,7 +8408,7 @@ def test_zalo_dang_nhap_bang_ma_roi_hoi_cung_loi_voi_telegram(db, bot, monkeypat
     lan = _erp_user(db)
     seen: list[tuple] = []
     monkeypatch.setattr(service, "answer_question",
-                        lambda db, chat_id, q, before_id=0: seen.append((chat_id, q, service._assistant_user(db, chat_id).email)))
+                        lambda db, chat_id, q, before_id=0, **kw: seen.append((chat_id, q, service._assistant_user(db, chat_id).email)))
     code, _ = chat_link.issue_code(db, lan.id)
     queue = [[_zl_update(f"/dangnhap {code}", mid="m1")],
              [_zl_update("công nợ tháng này", mid="m2"), _zl_update("công nợ tháng này", mid="m2")]]

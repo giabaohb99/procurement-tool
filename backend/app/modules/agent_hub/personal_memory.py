@@ -264,6 +264,10 @@ def forget(db: Session, user_id: int, needle: str) -> list[str]:
         sections[key] = keep
     if removed:
         _save_core(db, uid, render(sections))
+    #  ai-CR-137: điều bot tự rút khớp câu «quên» thành bia mộ — không rút lại ngay buổi sau (kể cả điều chưa vào lõi).
+    from . import auto_memory
+
+    auto_memory.tombstone(db, uid, needle, removed)
     return removed
 
 

@@ -869,6 +869,7 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
         finish_run(db, run, error=str(e))
         db.commit()
         reply(db, chat_id, _research_error_text(str(e)), action=ACT_RESEARCH)
+        _ledger(db, chat_id, manager.INTENT_RESEARCH, mode=mode, error=True)
         return
     if result is not None:
         finish_run(db, run, result=result)
@@ -880,6 +881,7 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
     db.commit()
     reply(db, chat_id, (text or "(không có câu trả lời)") + research.sources_markdown(sources)
           + "\n\n_Muốn bản Word: nhắn_ `xuất Word`", markdown=True, action=ACT_RESEARCH)
+    _ledger(db, chat_id, manager.INTENT_RESEARCH, mode=mode)
 
 
 #  «xuất word giúp anh», «gửi bản word», «cho file word» — chỉ khi chat này VỪA tra xong (trong
@@ -1242,11 +1244,13 @@ def _link_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
         row.scope = SCOPE_PERSONAL
         db.commit()
         _answer_document_bytes(db, chat_id, res["name"], res["mime"], res["data"], ask, row.id, source=res["url"])
+        _ledger(db, chat_id, manager.INTENT_RESEARCH, mode="doc")
         return True
     if res["kind"] == "none":
         reply(db, chat_id, _LINK_FAIL.get(res["reason"], _LINK_FAIL["drive_private"]).format(
             mb=settings.AGENT_FILE_MAX_MB), action=ACT_RESEARCH)
         db.commit()
+        _ledger(db, chat_id, manager.INTENT_RESEARCH, mode="doc_link", error=True)
         return True
     run_research(db, chat_id, question, research.MODE_LINK)
     return True
@@ -1294,7 +1298,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
         run_research(db, chat_id, data.get("query") or text,
                      research.MODE_WEB if kind == research.MODE_DOCS else kind)
         return
-    answer_question(db, chat_id, text, before_id=row.id)
+    answer_question(db, chat_id, text, before_id=row.id, intent=data["intent"])
 
 
 def _run_command(db: Session, chat_id: str, text: str) -> None:
@@ -1444,9 +1448,10 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         #  sai thì rẻ; bắt đại ca chọn «làm luôn / ghi việc» cho «Giá thép Hòa Phát» là phiền. Thẻ hai nút chỉ còn
         #  dùng khi bộ phân loại HỎNG (không có gì để đoán).
         row.action = ACT_ASKED
-        answer_question(db, chat_id, text, before_id=row.id, hint=UNSURE_HINT)
+        answer_question(db, chat_id, text, before_id=row.id, hint=UNSURE_HINT, intent=manager.INTENT_UNSURE)
     elif data["intent"] == manager.INTENT_ACT:
         _act_by_intent(db, chat_id, row, text, data)
+        _ledger(db, chat_id, manager.INTENT_ACT, question=text)
     elif data["intent"] == manager.INTENT_RESEARCH:
         row.action = ACT_ASKED      # ai-CR-100: nằm trong mạch hỏi đáp để «trả lời cho tao» nối được
         db.commit()
@@ -1459,15 +1464,17 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             db.commit()
             reply(db, chat_id, ops.start_data_change(db, chat_id, data.get("request") or text, data.get("env") or "dev"))
             db.commit()
+            _ledger(db, chat_id, manager.INTENT_DATA, question=text)
         else:
             row.action = ACT_ASKED
-            answer_question(db, chat_id, text, before_id=row.id)
+            answer_question(db, chat_id, text, before_id=row.id, intent=manager.INTENT_DATA)
     #  GIAO VIỆC: để `action` rỗng, tin nằm lại INBOX và vòng gom lo tiếp.
     #  ai-CR-021: đại ca muốn biết ngay là bot đã nhận — nhắn MỘT câu báo nhận cho cả chùm tin
     #  liên tiếp (không phải mỗi câu một tiếng chuông, lý do bản cũ im lặng hẳn).
     else:
         row.action = ""          # ai-CR-109: trả tin về INBOX cho vòng gom
         ack_task_message(db, chat_id, row)
+        _ledger(db, chat_id, manager.INTENT_TASK, question=text)
     if row.action == ACT_READING:
         row.action = ACT_COMMAND     # nhánh nào quên đóng dấu thì cũng không để vòng gom nhặt nhầm
 
@@ -3777,7 +3784,7 @@ UNSURE_HINT = "_(Nếu đây là việc sửa phần mềm thì nhắn «ghi vi�
 
 
 def answer_question(db: Session, chat_id: str, question: str, *, before_id: int = 0, hint: str = "",
-                    kind: str = "general") -> None:
+                    kind: str = "general", intent: str = "") -> None:
     """Chuyển câu hỏi cho Trợ lý AI và nhắn lại câu trả lời.
 
     `before_id` = id tin đang hỏi, để mạch hội thoại lấy các tin TRƯỚC nó (không thì
@@ -3832,6 +3839,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         reply(db, chat_id, user_keys.key_problem(str(e)) or ai_keys.short_error(str(e)))
+        _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True)
         return
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.
@@ -3850,6 +3858,26 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
             out.tool_used = True                # ai-CR-136: nén hội thoại lược câu trả lời rút từ công cụ trước
             db.commit()
     deliver_tool_results(db, chat_id, user, tool_calls)
+    _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), tool_calls=tool_calls, question=question,
+            answer=str(result.get("text") or ""))
+
+
+def _ledger(db: Session, chat_id: str, intent: str, *, user_id: int = 0, **kw) -> None:
+    """ai-CR-137 (13.1): một dòng sổ ý định cho câu vừa xử lý — KHÔNG lưu nguyên văn câu hỏi. Không bao giờ ném lỗi."""
+    from . import intent_ledger
+
+    try:
+        uid = int(user_id or 0)
+        if not uid:
+            link = chat_link.get_active_link(db, chat_id)
+            uid = link.user_id if link is not None else 0
+        if not uid:
+            user = _assistant_user(db, chat_id)
+            uid = int(getattr(user, "id", 0) or 0)
+        intent_ledger.record(db, user_id=uid, channel=intent_ledger.channel_of(chat_id), scope_key=chat_id,
+                             intent=intent, **kw)
+    except Exception:  # noqa: BLE001
+        log.exception("agent_hub: không ghi được sổ ý định")
 
 
 _NO_ASSISTANT_USER = (

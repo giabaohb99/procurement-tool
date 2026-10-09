@@ -13193,6 +13193,23 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-137 | Bot ghi sổ ý định và tự rút ghi nhớ khi người dùng nhắc lại nhiều lần (phase 13 đợt A)
+- status: dang_lam
+- date: 2026-10-09
+Đại ca duyệt phase 13 «Hiểu ý định và tự ghi nhớ», Agent 1 giao làm đợt A. Nay mỗi câu hỏi gửi bot trên Telegram, Zalo riêng hay
+Trợ lý AI trên web được ghi một dòng vào sổ ý định: ai hỏi, trên kênh nào, thuộc nhóm nghiệp vụ nào (ví dụ tra công nợ, soạn yêu
+cầu mua hàng), nhắc tới nhà cung cấp, pháp nhân, phòng ban hay mã chứng từ nào, đã dùng công cụ gì và bot trả lời được, phải hỏi
+lại hay bị lỗi. Sổ không lưu nguyên văn câu hỏi hay câu trả lời, không ghi tin trong nhóm và tự xóa sau 180 ngày. Nhóm nghiệp vụ
+suy ra cố định từ công cụ bot đã gọi chứ không nhờ model đoán; thêm công cụ mới mà quên khai nhóm thì bài kiểm báo đỏ.
+Sau mỗi buổi chat riêng đã được tóm tắt, bot đọc bản tóm tắt cùng thói quen hỏi trong sổ ý định rồi đề xuất vài điều bền về người
+đó, như vai trò, cách muốn được trả lời hay pháp nhân hay làm việc. Một điều chỉ được ghi vào sổ nhớ khi được nhắc lại từ ba lần
+trên hai ngày khác nhau, ghi kèm chữ «tự rút» và tự bỏ sau 120 ngày nếu không nhắc lại; điều nói một lần không bao giờ vào sổ.
+Bot không ghi mật khẩu, số tài khoản, không ghi trùng điều người dùng đã tự ghi, không bao giờ rút từ tin nhóm. Người dùng nhắn
+«quên: …» thì dòng đó bị xóa và bot không rút lại điều đó trong 90 ngày. Lần đầu bot tự ghi cho ai, bot nhắn người đó một tin giải
+thích. Tài liệu mới gom toàn bộ cách bot nhớ và thứ tự nạp vào mỗi lượt gọi model. Bài kiểm của bot và Trợ lý chạy xanh.
+
+Mã nguồn: backend/app/modules/agent_hub/intent_ledger.py (mới) · auto_memory.py (mới) · personal_memory.py · sessions.py · service.py (_ledger, answer_question) · model.py (AgentIntent, AgentMemoryCandidate) · tasks.py · assistant/conversation.py · assistant/tools/personal_tool.py · core/config.py + app_settings.py · migrations grp05 + agent0005 · doc/agent-hub/17-tri-nho-va-y-dinh.md · test/backend/test_agent_hub_y_dinh_tu_nho.py
+
 ## duoc-CR-612 | Báo cáo thực hiện có thêm dạng Bảng, sửa nội dung ngay trên từng hàng
 - status: xong
 - date: 2026-10-09

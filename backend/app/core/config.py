@@ -184,6 +184,11 @@ class Settings(BaseSettings):
     # Telegram / Zalo không có «cuộc hội thoại» như web: tin cách tin trước quá chừng này giờ là cuộc mới (bỏ tóm tắt cũ).
     AI_COMPACT_SESSION_HOURS: int = 12
 
+    # --- Hiểu ý định + tự ghi nhớ (ai-CR-137, phase 13 doc/agent-hub/17) ---
+    # Sau mỗi buổi chat RIÊNG đã tóm tắt, một lượt model rẻ rút điều bền về người đó; nhắc lại ≥ 3 lần trên ≥ 2 ngày mới
+    # ghi vào lõi sổ nhớ (đuôi «tự rút»). Tắt thì sổ ý định vẫn ghi, chỉ thôi rút.
+    AGENT_AUTO_MEMORY_ENABLED: bool = True
+
     # --- Tìm kiếm vector loại B: HDSD + FAQ (Phase 3) ---
     # Tắt mặc định. Bật thì tool `search_docs` mới hiện ra cho bot và hook nạp lại chỉ mục mới
     # chạy khi sửa HDSD/FAQ. Bật ở môi trường ĐÃ dựng service qdrant.

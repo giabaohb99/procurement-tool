@@ -452,6 +452,51 @@ class AgentConvSummary(Base, AuditMixin):
     __table_args__ = (Index("ux_agent_conv_summary_key", "scope", "scope_key", unique=True),)
 
 
+class AgentIntent(Base, AuditMixin):
+    """Sổ ý định (ai-CR-137, phase 13.1): MỘT dòng mỗi câu hỏi — nhãn lớn, nhãn con theo nghiệp vụ, đối tượng nhắc tới,
+    công cụ đã gọi, kết cục. KHÔNG có cột nguyên văn câu hỏi. Giữ 180 ngày. Mã số khai ở `intent_ledger.py`
+    (`Intent` · `Sub` · `Channel` · `Outcome`)."""
+
+    __tablename__ = "tab_agent_intent"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    channel: Mapped[int] = mapped_column(SmallInteger, default=0)
+    scope: Mapped[int] = mapped_column(SmallInteger, default=0)
+    scope_key: Mapped[str] = mapped_column(String(80), default="")
+    intent: Mapped[int] = mapped_column(SmallInteger, default=0)
+    sub_intent: Mapped[int] = mapped_column(SmallInteger, default=0)
+    entities: Mapped[list] = mapped_column(JSON, default=list)
+    tools: Mapped[list] = mapped_column(JSON, default=list)
+    outcome: Mapped[int] = mapped_column(SmallInteger, default=0)
+
+    __table_args__ = (Index("ix_agent_intent_user", "user_id", "created_at"),
+                      Index("ix_agent_intent_created", "created_at"))
+
+
+class AgentMemoryCandidate(Base, AuditMixin):
+    """Điều bot TỰ RÚT về một người (ai-CR-137, phase 13.3), đang đếm số lần gặp lại. Đủ `hits` ≥ 3 trên ≥ 2 ngày thì
+    ghi vào lõi sổ nhớ (`status` 2); không gặp lại thì hết hạn (3); người dùng «quên» thì thành bia mộ (4) — không rút
+    lại trong một thời gian. `section` 1..4 = bốn mục của lõi. `key_hash` = sha1 của dòng đã bỏ dấu (khử trùng)."""
+
+    __tablename__ = "tab_agent_memory_candidate"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    section: Mapped[int] = mapped_column(SmallInteger, default=1)
+    line: Mapped[str] = mapped_column(String(300), default="")
+    key_hash: Mapped[str] = mapped_column(String(40), default="")
+    hits: Mapped[int] = mapped_column(Integer, default=0)
+    day_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_day: Mapped[str] = mapped_column(String(10), default="")
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    status: Mapped[int] = mapped_column(SmallInteger, default=1)
+    source: Mapped[int] = mapped_column(SmallInteger, default=1)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    written_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+    __table_args__ = (Index("ux_agent_memory_candidate_key", "user_id", "key_hash", unique=True),)
+
+
 class AgentReminder(Base, AuditMixin):
     """Lời nhắc đặt bằng câu nói (ai-CR-060, T-10): tới `due_at` (UTC) thì bot nhắn lại đúng `chat_id`."""
 

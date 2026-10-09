@@ -34,8 +34,7 @@ def _remember_fact(ctx: ToolContext, args: dict) -> dict:
 
 def _forget_fact(ctx: ToolContext, args: dict) -> dict:
     removed = pm.forget(ctx.db, _uid(ctx), str(args.get("text") or ""))
-    if removed:
-        ctx.db.commit()
+    ctx.db.commit()             # ai-CR-137: cả khi lõi không có dòng nào, điều tự rút đang đếm vẫn thành bia mộ
     return {"ok": bool(removed), "removed": removed,
             "message": "đã quên" if removed else "không thấy dòng nào khớp trong sổ"}
 
