@@ -92,8 +92,8 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
       //  nhóm «Khác» — cùng một mối quan tâm với hai khóa nhật ký, xếp chung.
       //  `sync_log` là sổ đồng bộ với hệ ngoài, cùng họ nhật ký.
       'login_session', 'audit', 'change_log', 'sync_log',
-      //  Việc của bot Agent Hub (ai-CR-036).
-      'agent_task'],
+      //  Việc của bot Agent Hub (ai-CR-036) + nhận tin vận hành của bot (ai-CR-132).
+      'agent_task', 'agent_ops'],
   },
 ]
 

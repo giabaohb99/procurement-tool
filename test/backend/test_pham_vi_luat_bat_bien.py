@@ -116,6 +116,7 @@ BB3_PUBLIC_CO_LY_DO = {
     "agent_task": "sổ việc + chi phí model của bot Agent Hub (ai-CR-036): việc của QUẢN TRỊ HỆ THỐNG, "
                   "không thuộc pháp nhân/phòng ban nào — khóa nằm trong _SYS_ENTITIES của seed, "
                   "giấu thì tắt bằng QUYỀN agent_task.read",
+    "agent_ops": "cờ nhận bản sao tin vận hành của bot (ai-CR-132) — không có dữ liệu thuộc pháp nhân/phòng nào để lọc",
     "agent_group": "nhóm chat bot đang ở (ai-CR-123): không thuộc pháp nhân/phòng ban nào — người thường chỉ thấy "
                    "nhóm mình là thành viên (groups.can_read), khóa agent_group.read mở mọi nhóm cho quản lý bot AI",
     "doc_type": "danh mục nền Văn thư, tách khóa là để phân quyền theo MÀN HÌNH (CR-157)",

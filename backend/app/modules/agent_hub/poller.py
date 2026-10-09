@@ -86,6 +86,24 @@ def run_zalo(*, session_factory: Callable, should_stop: Callable[[], bool] = lam
 LISTENER_DOWN_ALERT_SEC = 300
 
 
+def _ops_note(session_factory: Callable, text: str) -> None:
+    """Tin vận hành từ vòng kéo (ai-CR-132): về chat chủ bot + bản sao cho người nhận tin vận hành."""
+    from app.core.config import settings
+
+    from . import service
+    from .constants import ACT_OPS
+
+    db = session_factory()
+    try:
+        service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, text, action=ACT_OPS)
+        db.commit()
+    except Exception:  # noqa: BLE001 — báo hỏng không được làm chết vòng kéo
+        log.warning("agent_hub: gửi tin vận hành từ poller hỏng", exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
+
+
 def run_zalo_account(*, session_factory: Callable, should_stop: Callable[[], bool] = lambda: False,
                      sleep: Callable[[float], None] = time.sleep, timeout: int | None = None,
                      clock: Callable[[], float] = time.monotonic) -> int:
@@ -106,7 +124,7 @@ def run_zalo_account(*, session_factory: Callable, should_stop: Callable[[], boo
             service.poll_zalo_account_once(db, timeout=poll_timeout)
             db.commit()
             if alerted:
-                telegram.send("Tiến trình zalo-listener đã trả lời lại, kênh Zalo tài khoản công ty chạy tiếp.")
+                _ops_note(session_factory, "Tiến trình zalo-listener đã trả lời lại, kênh Zalo tài khoản công ty chạy tiếp.")
             failing_since, alerted = None, False
         except Exception as e:  # noqa: BLE001 - vòng kéo không được chết vì một lượt hỏng
             db.rollback()
@@ -114,11 +132,8 @@ def run_zalo_account(*, session_factory: Callable, should_stop: Callable[[], boo
             failing_since = failing_since if failing_since is not None else clock()
             if not alerted and clock() - failing_since >= LISTENER_DOWN_ALERT_SEC:
                 alerted = True
-                try:
-                    telegram.send("Tiến trình zalo-listener không trả lời hơn 5 phút — tin Zalo nhóm đang KHÔNG được "
-                                  "ghi. Kiểm container zalo-listener trong stack agent-hub.")
-                except Exception:  # noqa: BLE001
-                    pass
+                _ops_note(session_factory, "Tiến trình zalo-listener không trả lời hơn 5 phút — tin Zalo nhóm đang KHÔNG "
+                                           "được ghi. Kiểm container zalo-listener trong stack agent-hub.")
             sleep(ERROR_SLEEP)
         finally:
             db.close()

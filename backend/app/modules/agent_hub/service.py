@@ -40,6 +40,7 @@ from .constants import (
     ACT_ACK,
     ACT_ANSWER,
     ACT_HEARTBEAT,
+    ACT_OPS,
     ACT_ASKED,
     ACT_BELL,
     ACT_BRIEF,
@@ -262,7 +263,7 @@ def _handle_zalo_account_event(db: Session, ev: dict) -> None:
     elif kind == zalo_account.EV_QR:
         _send_zalo_qr(ev)
     elif kind == zalo_account.EV_STATUS:
-        _report_zalo_status(ev)
+        _report_zalo_status(db, ev)
 
 
 def _send_zalo_qr(ev: dict) -> None:
@@ -294,7 +295,7 @@ _ZALO_STATE_TEXT = {
 }
 
 
-def _report_zalo_status(ev: dict) -> None:
+def _report_zalo_status(db: Session, ev: dict) -> None:
     import html as _html
 
     admin = (settings.AGENT_TELEGRAM_CHAT_ID or "").strip()
@@ -304,7 +305,7 @@ def _report_zalo_status(ev: dict) -> None:
         return
     who = f" ({_html.escape(str(ev['name']))})" if ev.get("name") else ""
     why = f": {_html.escape(str(ev['reason'])[:200])}" if ev.get("reason") else ""
-    telegram.send(tpl.format(who=who, why=why), chat_id=admin)
+    reply(db, admin, tpl.format(who=who, why=why), action=ACT_OPS)
 
 
 def zalo_account_report() -> str:
@@ -4743,6 +4744,53 @@ def send_task_list(db: Session, chat_id: str) -> None:
 # ---------------------------------------------------------------------------
 # Ghi sổ
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# ai-CR-132: bản sao tin vận hành cho người có quyền «Nhận tin vận hành của bot»
+# ---------------------------------------------------------------------------
+OPS_ENTITY = "agent_ops"
+OPS_CACHE_SEC = 120
+ACT_OPS_COPY = "ban_sao_vh"
+#  Tin «em vẫn đang làm» được SỬA số phút liên tục trên chat chủ bot — bản sao không sửa theo được, bỏ cho đỡ rác.
+_OPS_SKIP_ACTIONS = {ACT_HEARTBEAT}
+_OPS_CACHE: dict = {}
+
+
+def ops_recipients(db: Session) -> list[str]:
+    """Chat Telegram (đã nối, còn hạn) của những tài khoản có `agent_ops.read`, trừ chat chủ bot. Nhớ 2 phút."""
+    import time
+
+    hit = _OPS_CACHE.get("v")
+    if hit and time.monotonic() - hit[0] < OPS_CACHE_SEC:
+        return list(hit[1])
+    owner = str(settings.AGENT_TELEGRAM_CHAT_ID or "").strip()
+    by_user: dict[int, list[str]] = {}
+    for link in chat_link.list_all_links(db):
+        cid = str(link.chat_id or "")
+        if cid and cid != owner and channels.is_telegram(cid):
+            by_user.setdefault(int(link.user_id or 0), []).append(cid)
+    out: list[str] = []
+    for uid, chats in by_user.items():
+        try:
+            user = erp.user_by_id(db, uid)
+            if user is not None and getattr(user, "is_active", False) and erp.can(db, user, OPS_ENTITY, "read"):
+                out.extend(chats)
+        except Exception:  # noqa: BLE001 — hỏi quyền hỏng thì bỏ người đó lượt này, không chặn tin của chủ bot
+            log.warning("agent_hub: không hỏi được quyền nhận tin vận hành của #%s", uid, exc_info=True)
+    _OPS_CACHE["v"] = (time.monotonic(), out)
+    return out
+
+
+def _copy_to_ops(db: Session, wire: str, *, task_id: int) -> None:
+    """Gửi bản sao (KHÔNG nút bấm — duyệt / ra lệnh vẫn chỉ chat chủ bot) tới người nhận tin vận hành."""
+    for cid in ops_recipients(db):
+        try:
+            mid = telegram.send(wire, chat_id=cid)
+        except telegram.TelegramError as e:
+            log.warning("agent_hub: gửi bản sao tin vận hành tới %s hỏng: %s", chat_link.mask_chat(cid), e)
+            mid = 0
+        log_message(db, DIR_OUT, cid, mid, wire, task_id=task_id, action=ACT_OPS_COPY)
+
+
 def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
           buttons: list[tuple[str, str]] | None = None,
           markdown: bool = False, action: str = "", scope: int = 0) -> None:
@@ -4760,6 +4808,14 @@ def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
         log.exception("agent_hub: gửi Telegram hỏng")
         mid, text = 0, f"[KHÔNG GỬI ĐƯỢC: {e}] {text}"
     log_message(db, DIR_OUT, chat_id, mid, text, task_id=task_id, action=action, scope=scope)
+    #  ai-CR-132: tin HỆ THỐNG gửi chat chủ bot (thẻ việc AI-xxxx, tin vận hành) → bản sao cho người nhận tin vận hành.
+    #  Câu trả lời riêng của đại ca (không gắn việc, không phải tin vận hành) không bao giờ bị sao.
+    if (str(chat_id) == str(settings.AGENT_TELEGRAM_CHAT_ID or "") and (task_id or action == ACT_OPS)
+            and action not in _OPS_SKIP_ACTIONS and not scope):
+        try:
+            _copy_to_ops(db, wire, task_id=task_id)
+        except Exception:  # noqa: BLE001
+            log.exception("agent_hub: sao tin vận hành hỏng")
 
 
 def log_message(db: Session, direction: int, chat_id: str, tg_message_id: int,

@@ -321,6 +321,8 @@ SCOPE_FIELDS = {
     #  ai-CR-123: nhóm chat của bot không thuộc pháp nhân / phòng nào; người thường xem nhóm mình là thành viên (lọc ở
     #  `agent_hub/groups.can_read`), khóa `agent_group.read` mở MỌI nhóm cho người quản lý bot AI.
     "agent_group":      PUBLIC,
+    #  ai-CR-132: chỉ là cờ «nhận bản sao tin vận hành» — không có dữ liệu để lọc.
+    "agent_ops":        PUBLIC,
 }
 
 

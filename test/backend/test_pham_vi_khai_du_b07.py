@@ -189,9 +189,10 @@ def test_du_55_entity():
     + mẫu hợp đồng (`labor_contract_template`, scope company); cả hai nằm trong `_SYS_ENTITIES`.
     74 → 75 ngày 08/10/2026 (ai-CR-123): quản lý nhóm chat của bot (`agent_group`) — PUBLIC vì nhóm chat không thuộc
     pháp nhân / phòng nào (người thường lọc theo thành viên ở `groups.can_read`); nằm trong `_SYS_ENTITIES`.
+    75 → 76 cùng ngày (ai-CR-132): nhận tin vận hành của bot (`agent_ops`) — chỉ là cờ nhận bản sao tin, PUBLIC.
     """
-    assert len(ENTITIES) == 75
-    assert len(SCOPE_FIELDS) == 75
+    assert len(ENTITIES) == 76
+    assert len(SCOPE_FIELDS) == 76
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

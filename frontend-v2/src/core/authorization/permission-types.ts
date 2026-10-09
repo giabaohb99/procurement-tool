@@ -168,6 +168,8 @@ export const ENTITIES = [
   'agent_task',
   // Quản lý nhóm chat của bot (ai-CR-123) — màn «Nhóm chat» của Trợ lý AI.
   'agent_group',
+  // Nhận bản sao tin vận hành của bot qua Telegram (ai-CR-132).
+  'agent_ops',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

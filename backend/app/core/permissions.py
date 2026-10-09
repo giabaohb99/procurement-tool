@@ -168,6 +168,10 @@ ENTITIES = [
     # là thành viên mà không cần khóa này; `read` = thấy MỌI nhóm bot đang ở kể cả nội dung (đại ca chốt 08/10: quản
     # lý AI thấy hết, có nhật ký xem) · `write` = phân loại, ngừng ghi nhóm, đăng nhập Zalo công ty.
     "agent_group",
+    # Nhận tin vận hành của bot (ai-CR-132): ai có `read` thì nhận BẢN SAO các tin vận hành vốn chỉ gửi chat chủ bot (máy
+    # sửa mã, Zalo, tình hình máy, sự cố, thẻ việc AI-xxxx…) qua chat Telegram họ đã nối. Duyệt thao tác VPS và ra lệnh
+    # sửa mã vẫn chỉ chat chủ bot.
+    "agent_ops",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -253,6 +257,7 @@ ENTITY_LABELS = {
     "purchase_cost_type": "Danh mục Loại chi phí thu mua",
     "agent_task": "Trợ lý Telegram › Việc của bot",
     "agent_group": "Trợ lý AI › Quản lý nhóm chat của bot",
+    "agent_ops": "Trợ lý Telegram › Nhận tin vận hành của bot",
 }
 
 ACTION_LABELS = {

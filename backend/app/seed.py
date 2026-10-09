@@ -262,6 +262,8 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "agent_task",
                  #  ai-CR-123: quản lý nhóm chat của bot — đọc được NỘI DUNG mọi nhóm, đại ca tick tay.
                  "agent_group",
+                 #  ai-CR-132: nhận tin vận hành của bot — đại ca tick tay cho người phụ trách kỹ thuật.
+                 "agent_ops",
                  #  Thư mục văn bản (rà soát 23/09/2026, code-reviewer C2):
                  #  `doc_folder.write` scope "all" nghĩa là QUẢN LÝ (bỏ qua cả
                  #  ACL cấm — bước 4 của `folder_access_service.effective_levels`)
