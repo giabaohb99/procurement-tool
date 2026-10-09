@@ -1221,6 +1221,8 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "pending_procurement_approvals": "apply_scope + ctx.can(entity, approve)",
     "my_procurement_requests": "apply_scope + lọc chính chủ",
     "propose_document_update": "get_scoped(action='write') — đường GHI",
+    "propose_document_delete": "apply_scope(read) để trả link + get_scoped(action='delete') "
+                               "— đường XÓA (AI-0006)",
     "document_search": "access_service.visible_condition + giấu bản riêng",
     "document_read": "access_service.visible_condition",
     "my_documents": "văn bản của CHÍNH người hỏi",
@@ -1293,6 +1295,8 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "draft_purchase_request": "ctx.can(purchase_request, create) — chỉ soạn nháp",
     "draft_leave_request": "ctx.can(leave_request, create) — chỉ soạn nháp",
     "draft_work_task": "ctx.can(work_task, create) — chỉ soạn nháp, bước «tạo» mới ghi (ai-CR-080)",
+    "my_work_tasks": "ctx.can(work_task, read) + visible_list_ids + người phụ trách = chính người hỏi (ai-CR-140)",
+    "manage_briefs": "brief_subs theo ctx.user.id — chỉ lịch bản tin của chính người hỏi (ai-CR-140)",
     "propose_glossary_term": "chỉ ghi đề xuất thuật ngữ chờ duyệt; sửa thẳng chỉ khi chính là chủ từ điển (ai-CR-078)",
     "report_missing_feature": "chỉ ghi phản hồi «thiếu chức năng» kèm user_id người báo (ai-CR-078)",
     "propose_account_setup": "ctx.can(user/role…) + apply_scope(Employee) + get_scoped "

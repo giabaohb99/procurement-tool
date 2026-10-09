@@ -82,9 +82,11 @@ Model soạn câu trả lời từ kết quả đã lọc. Nếu là soạn phi�
 
 Ba tính chất vận hành đáng chú ý:
 
-- **Chỉ đọc tuyệt đối.** Không tool nào ghi/sửa/xóa dữ liệu. Nhóm tool "soạn phiếu" (`draft_*`)
+- **Tool không tự ghi.** Không tool nào tự ghi/sửa/xóa dữ liệu. Nhóm tool "soạn phiếu" (`draft_*`)
   cũng chỉ trả về một bản nháp JSON để điền form — việc tạo phiếu thật đi qua đúng API tạo phiếu
-  bình thường, với đúng kiểm quyền của API đó, và do người dùng bấm nút.
+  bình thường, với đúng kiểm quyền của API đó, và do người dùng bấm nút. Sửa và (từ AI-0006,
+  đại ca chốt 09/10/2026) **xóa phiếu nháp của chính mình** cũng chỉ là ĐỀ XUẤT: người dùng bấm
+  *Xác nhận* thì `confirm-update` mới kiểm lại từ đầu rồi ghi / xóa qua service của form.
 - **Có hạn mức và thống kê sử dụng.** Mỗi người bị chặn số câu/ngày (`AI_DAILY_MSG_LIMIT`);
   màn thống kê tiêu dùng token theo người đòi quyền `assistant.export`.
 - **Bật/tắt theo quyền.** Không cấp quyền `assistant.read` cho một vai trò thì vai trò đó không
@@ -221,6 +223,8 @@ sánh cũ/mới.
 | Tool | Việc | Điều kiện |
 |------|------|-----------|
 | `propose_document_update` | Đề xuất sửa đầu phiếu YCMH (mục đích / ngày cần hàng / ghi chú), YCBG (mục đích / ghi chú), YCTT (bộ chữ bản in `print_texts` — tái dùng khe PATCH CR-149 nên submitted/approved vẫn sửa được đúng luật form). Trả BẢN ĐỀ XUẤT kèm `confirm_token`, không ghi DB | `entity.write` + `apply_scope(action="write")` (ngoài phạm vi = "không tìm thấy") + trạng thái còn sửa được + whitelist trường — trường lạ bị chặn kèm danh sách hợp lệ, giá trị trùng giá trị cũ bị loại |
+| `propose_document_update` — mở rộng AI-0006 | Thêm: dòng hàng YCMH/YCBG (`line_ops` thêm / bỏ / đổi số lượng, tối đa 20 thao tác) và đơn nghỉ phép (từ ngày / đến ngày / loại nghỉ) | Dòng chuyển sang ID ngay lúc đề xuất; lúc bấm dựng lại ĐỦ danh sách dòng từ sổ rồi đưa qua `update_pr` / `update_sr` — dòng nêu trong token đã mất = 400. Phiếu phải còn ≥ 1 dòng, số lượng > 0. Loại nghỉ khớp ĐÚNG mã/tên (không lùi về phép năm); đơn nhiều loại nghỉ không đổi loại qua trợ lý; đơn nghỉ đi qua `request_service.update` + dòng nhật ký như màn hình |
+| `propose_document_delete` (AI-0006) | Đề xuất XÓA YCMH / YCBG / đơn nghỉ phép / việc Dự án. YCTT và phiếu hỗ trợ: từ chối, trả link | `entity.delete` + **chính người hỏi lập** + Nháp/Bị trả lại (việc Dự án: mình tạo, đang mở) + `get_scoped(action="delete")`. Thiếu điều kiện → lỗi kèm `url` cho người dùng tự mở / nhờ người có quyền. Token `a = delete`; lúc bấm kiểm lại cả bốn điều kiện rồi gọi `delete_pr` / `delete_sr` / `request_service.soft_delete` / `work.task_service.delete_task` |
 | *(endpoint)* `POST /api/assistant/confirm-update` | Ghi thật các thay đổi đã đề xuất, đi qua đúng service của form (validation + audit ăn nguyên, `updated_by` là người bấm) | Token Fernet gắn user (sai chủ = 403), hạn 15 phút (quá hạn = 400); rồi backend **KIỂM LẠI TOÀN BỘ** không tin đề xuất cũ: `require(entity, write)` + `apply_scope(action="write")` + trạng thái còn sửa + whitelist trường lần nữa — token giả nhét trường ngoài whitelist (kể cả `status`) vẫn bị chặn |
 | `payment_request_read` | Đọc chi tiết một YCTT theo mã: đầu phiếu, dòng (mã ĐMH / hóa đơn / số tiền), `print_texts` đã parse, `url` | `payment_request.read` + `apply_scope` (ngoài phạm vi = "không tìm thấy") |
 | `ticket_create` | Soạn NHÁP phiếu hỗ trợ (không ghi DB) — FE mở dialog tạo phiếu điền sẵn, người dùng tự bấm gửi; nhóm tiếp nhận / mức ưu tiên lạ do model bịa bị quy về mặc định của form | `ticket.create` |

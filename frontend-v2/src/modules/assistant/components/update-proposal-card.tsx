@@ -1,4 +1,4 @@
-import { Check, Loader2, MoveRight, PencilLine, X } from 'lucide-react'
+import { Check, Loader2, MoveRight, PencilLine, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -25,6 +25,9 @@ export function UpdateProposalCard({ proposal, onDismiss, onNavigate }: UpdatePr
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState<ConfirmUpdateResult | null>(null)
+  // AI-0006: đề xuất XÓA đi chung thẻ này, chỉ khác chữ và màu nút.
+  const deleting = proposal.action === 'delete'
+  const verb = deleting ? 'xóa' : 'sửa'
 
   const handleConfirm = async () => {
     setSaving(true)
@@ -41,6 +44,17 @@ export function UpdateProposalCard({ proposal, onDismiss, onNavigate }: UpdatePr
   const openDocument = (url: string) => {
     onNavigate?.()
     navigate(url)
+  }
+
+  if (done?.deleted) {
+    return (
+      <div className="flex items-center gap-1.5 border-t bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
+        <Check className="size-4 shrink-0 text-success" />
+        <span className="truncate">
+          Đã xóa {done.entity_label} {done.code}.
+        </span>
+      </div>
+    )
   }
 
   if (done) {
@@ -62,32 +76,48 @@ export function UpdateProposalCard({ proposal, onDismiss, onNavigate }: UpdatePr
   return (
     <div className="border-t bg-muted/40 px-4 py-2.5">
       <div className="flex items-center gap-1.5 text-xs font-medium">
-        <PencilLine className="size-3.5 text-primary" />
+        {deleting ? (
+          <Trash2 className="size-3.5 text-destructive" />
+        ) : (
+          <PencilLine className="size-3.5 text-primary" />
+        )}
         <span>
-          Đề xuất sửa {proposal.entity_label} {proposal.code}
+          Đề xuất {verb} {proposal.entity_label} {proposal.code}
           <span className="font-normal text-muted-foreground"> ({proposal.doc_status_label})</span>
         </span>
       </div>
 
-      <ul className="mt-1.5 space-y-1">
-        {proposal.changes.map((change) => (
-          <li key={change.field} className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">{change.label}:</span>
-            <span className="break-all line-through opacity-60">{change.old || '(trống)'}</span>
-            <MoveRight className="size-3 shrink-0 text-muted-foreground" />
-            <span className="break-all font-medium">{change.new}</span>
-          </li>
-        ))}
-      </ul>
+      {deleting ? (
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Phiếu chưa bị xóa — chỉ xóa khi bạn bấm Xác nhận xóa.
+        </p>
+      ) : (
+        <ul className="mt-1.5 space-y-1">
+          {proposal.changes.map((change) => (
+            <li key={change.field} className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">{change.label}:</span>
+              <span className="break-all line-through opacity-60">{change.old || '(trống)'}</span>
+              <MoveRight className="size-3 shrink-0 text-muted-foreground" />
+              <span className="break-all font-medium">{change.new}</span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="mt-2 flex items-center justify-end gap-2">
         <Button type="button" size="sm" variant="ghost" disabled={saving} onClick={onDismiss}>
           <X />
           Bỏ qua
         </Button>
-        <Button type="button" size="sm" disabled={saving} onClick={() => void handleConfirm()}>
+        <Button
+          type="button"
+          size="sm"
+          variant={deleting ? 'destructive' : 'default'}
+          disabled={saving}
+          onClick={() => void handleConfirm()}
+        >
           {saving ? <Loader2 className="animate-spin" /> : <Check />}
-          Xác nhận sửa
+          Xác nhận {verb}
         </Button>
       </div>
     </div>

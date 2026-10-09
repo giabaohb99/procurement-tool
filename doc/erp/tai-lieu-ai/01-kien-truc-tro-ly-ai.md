@@ -291,6 +291,8 @@ ngoài allowlist, và mọi tool ghi tự đòi đúng khóa **trước khi làm
 |---|---|---|
 | `propose_document_update` | `<entity>.write` | `update_tool.py` `_run_propose` |
 | `confirm_update` (nút Xác nhận) | `<entity>.write` — **kiểm lại từ đầu** | `update_tool.py` `confirm_update` |
+| `propose_document_delete` (AI-0006) | `<entity>.delete` + phạm vi xóa + **chính người hỏi lập** + Nháp/Bị trả lại (việc Dự án: mình tạo, đang mở). YCTT, phiếu hỗ trợ: không xóa, chỉ trả link | `update_tool.py` `_run_propose_delete` |
+| nút Xác nhận xóa (token `a = delete`, cùng `confirm-update`) | như trên — **kiểm lại từ đầu** rồi gọi đúng service xóa của form | `update_tool.py` `_confirm_delete` |
 | `draft_purchase_request` · `draft_survey_request` · `draft_leave_request` | `<entity>.create` | `draft_tool.py` |
 | `draft_payment_request` | `payment_request.create` | `payable_tool.py` |
 | `ticket_create` | `ticket.create` | `ticket_tool.py` |
@@ -301,7 +303,8 @@ ngoài allowlist, và mọi tool ghi tự đòi đúng khóa **trước khi làm
 phiếu nhưng nó chỉ trả bản nháp để giao diện mở form điền sẵn. Rà cả lớp `tools/`: chỗ
 duy nhất `db.commit()` là `export_tool` ghi một dòng `StoredFile` cho tệp người dùng vừa
 xuất. **Cả phân hệ chỉ có HAI đường ghi, đều là endpoint, đều chỉ chạy khi NGƯỜI bấm nút
-Xác nhận:** `/api/assistant/confirm-update` (sửa đầu phiếu) và
+Xác nhận:** `/api/assistant/confirm-update` (sửa phiếu — đầu phiếu, dòng hàng YCMH/YCBG, ngày
+và loại nghỉ của đơn nghỉ — và từ AI-0006 cả **xóa phiếu nháp của chính mình**) và
 `/api/assistant/confirm-account-setup` (gán vai trò có sẵn + phạm vi, bao-CR-435). Model
 không có nút nào để bấm.
 

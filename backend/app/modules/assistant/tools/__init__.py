@@ -37,7 +37,7 @@ from .procurement_doc_tool import (MY_PROCUREMENT_REQUESTS_SPEC,
                                    PROCUREMENT_DOC_READ_SPEC)
 from .rag_tool import SEARCH_DOCS_SPEC
 from .ticket_tool import MY_TICKETS_SPEC, TICKET_CREATE_SPEC
-from .update_tool import PROPOSE_DOCUMENT_UPDATE_SPEC
+from .update_tool import PROPOSE_DOCUMENT_DELETE_SPEC, PROPOSE_DOCUMENT_UPDATE_SPEC
 from .account_setup_tool import PROPOSE_ACCOUNT_SETUP_SPEC
 from .customs_tool import (CUSTOMS_BUY_TIMING_SPEC, CUSTOMS_LEGAL_CHECK_SPEC, CUSTOMS_MARKET_SPEC,
                           CUSTOMS_PRICE_STATS_SPEC)
@@ -66,6 +66,7 @@ def _active_specs() -> list:
                            TICKET_CREATE_SPEC, MY_TICKETS_SPEC,
                            MY_LEAVE_SUMMARY_SPEC, EMPLOYEE_LOOKUP_SPEC,
                            PROPOSE_DOCUMENT_UPDATE_SPEC,
+                           PROPOSE_DOCUMENT_DELETE_SPEC,   # AI-0006: xóa phiếu nháp của chính mình, có xác nhận
                            PROPOSE_ACCOUNT_SETUP_SPEC,
                            CUSTOMS_PRICE_STATS_SPEC, CUSTOMS_BUY_TIMING_SPEC,
                            CUSTOMS_MARKET_SPEC, CUSTOMS_LEGAL_CHECK_SPEC,

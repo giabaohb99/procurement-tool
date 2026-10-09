@@ -340,9 +340,7 @@ def prepare_worktree(task: AgentTask) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 _RULES_BRIEF = """\
 ## Luật bắt buộc (bộ quy tắc bot, doc/agent-hub/02 — bản rút gọn)
-C1. Chỉ sửa trong phạm vi tệp ở trên. Cần đụng thêm tệp thì được, nhưng quá 30% số tệp ngoài \
-kế hoạch hoặc quá {max_files} tệp là DỪNG, không làm nữa, ghi rõ lý do trong tổng kết. Tệp bài kiểm \
-và tài liệu `.md` không tính vào 30% đó — sửa tài liệu cho khớp mã là nên làm.
+{c1_rule}
 C3. ĐƯỢC đổi cấu trúc bảng khi việc cần (ai-CR-076): sửa model.py (model mới thì thêm vào app/core/all_models.py) \
 VÀ viết tay MỘT tệp migration mới trong backend/migrations/versions/ có cả upgrade lẫn downgrade, \
 `down_revision = '{migration_head}'` (đầu hiện tại của nhánh nền — KHÔNG nối vào revision khác). Ưu tiên THÊM \
@@ -472,6 +470,7 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
             "toàn nhất, dễ đảo lại, và ghi «Em giả định: …». Trừ khi chỗ đó dính tiền, công nợ, phân "
             "quyền — thì dừng và hỏi.")
     lines += [_RULES_BRIEF.format(max_files=settings.AGENT_MAX_FILES_TOUCHED, hard_extra=hard_extra,
+                                  c1_rule=_c1_rule(),
                                   soft_rule=soft_rule, migration_head=migration_head or "<đầu hiện tại>")]
     #  ai-CR-023: AI-0007 tiêu 61/80 lượt vào đọc thư viện dùng chung và màn khác rồi hết lượt.
     lines += ["", "## Ngân sách lượt",
@@ -618,8 +617,15 @@ def is_in_plan(path: str, plan_files: list[str]) -> bool:
     return False
 
 
-def check_drift(touched: list[str], plan_files: list[str], *, max_files: int) -> str:
-    """Trả lý do leo thang, rỗng nếu trong phạm vi cho phép."""
+def check_drift(touched: list[str], plan_files: list[str], *, max_files: int, ratio: bool | None = None) -> str:
+    """Trả lý do leo thang, rỗng nếu trong phạm vi cho phép.
+
+    `ratio` (ai-CR-151): có xét luật «lệch quá 30% so với kế hoạch» không. Mặc định theo dây chuyền: dây chuyền gọn
+    (`AGENT_CODE_FLOW_SIMPLE`) KHÔNG xét — danh sách tệp ở bước rà soát chỉ là dự kiến; AI-0006 làm xong, xanh, mà
+    bị dừng vì 4 tệp nhỏ ngoài dự kiến. Tệp cấm và trần số tệp thì luôn xét.
+    """
+    if ratio is None:
+        ratio = not settings.AGENT_CODE_FLOW_SIMPLE
     banned = [f for f in touched if is_banned_path(f)]
     if banned:
         return "bot đã đụng tệp cấm: " + ", ".join(banned[:5])
@@ -629,13 +635,23 @@ def check_drift(touched: list[str], plan_files: list[str], *, max_files: int) ->
     #  ai-CR-015): sửa tài liệu cho khớp mã là việc nên làm, không phải đi lạc. Trần tổng số
     #  tệp ở trên vẫn đếm chúng. CLAUDE.md và .claude/ đã bị chặn ở bước tệp cấm phía trên.
     counted = [f for f in touched if not _is_test_file(f) and not f.lower().endswith(".md")]
-    if not plan_files:
+    if not plan_files or not ratio:
         return ""       # ai-CR-149: chưa chốt phạm vi tệp (Claude Code tự xác định) — chỉ còn trần số tệp + tệp cấm
     outside = [f for f in counted if not is_in_plan(f, plan_files or [])]
     if counted and len(outside) / len(counted) > DRIFT_RATIO:
         return (f"{len(outside)}/{len(counted)} tệp ngoài kế hoạch (>30%, luật C1): "
                 + ", ".join(outside[:5]))
     return ""
+
+
+def _c1_rule() -> str:
+    max_files = settings.AGENT_MAX_FILES_TOUCHED
+    if settings.AGENT_CODE_FLOW_SIMPLE:
+        return ("C1. Danh sách tệp ở trên là DỰ KIẾN. Cần đụng thêm tệp để việc chạy đúng thì cứ sửa, ghi tên và lý do "
+                f"trong tổng kết. Quá {max_files} tệp là DỪNG, không làm nữa, ghi rõ lý do trong tổng kết.")
+    return ("C1. Chỉ sửa trong phạm vi tệp ở trên. Cần đụng thêm tệp thì được, nhưng quá 30% số tệp ngoài "
+            f"kế hoạch hoặc quá {max_files} tệp là DỪNG, không làm nữa, ghi rõ lý do trong tổng kết. Tệp bài kiểm "
+            "và tài liệu `.md` không tính vào 30% đó — sửa tài liệu cho khớp mã là nên làm.")
 
 
 # ---------------------------------------------------------------------------

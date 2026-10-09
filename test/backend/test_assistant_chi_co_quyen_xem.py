@@ -87,7 +87,8 @@ def test_chi_co_quyen_xem_thi_khong_tao_phieu_ho_tro_duoc(db, seed, cap_quyen):
 
 
 def test_khong_ton_tai_tool_nao_xoa_du_lieu(db):
-    """Không có đường XÓA nào cho trợ lý — chặn bằng cách KHÔNG CÓ tool, chắc hơn gác quyền.
+    """Không có đường XÓA nào cho trợ lý ngoài các tool đã giải trình bên dưới — chặn bằng
+    cách KHÔNG CÓ tool, chắc hơn gác quyền.
 
     Ai thêm tool xóa thì bài này đỏ và phải giải trình: xóa là thao tác không lùi được,
     mà lời người dùng gõ cho model thì luôn mơ hồ ("bỏ cái phiếu kia đi" là hủy, là xóa
@@ -95,10 +96,13 @@ def test_khong_ton_tai_tool_nao_xoa_du_lieu(db):
     """
     ten = {d.name for d in T.tool_defs()}
     xau = [n for n in ten if any(k in n for k in ("delete", "remove", "destroy", "xoa"))
-           and n not in TOOL_XOA_NGOAI_ERP]
+           and n not in TOOL_XOA_NGOAI_ERP and n not in TOOL_XOA_ERP_CO_XAC_NHAN]
     assert xau == [], f"xuất hiện tool xóa dữ liệu: {xau}"
-    #  Miễn trừ chỉ dành cho tool ghi ra NGOÀI ERP — tool xóa dữ liệu ERP không bao giờ được miễn.
+    #  Miễn trừ chỉ dành cho tool ghi ra NGOÀI ERP, hoặc tool xóa ERP CHỈ ĐỀ XUẤT (người bấm
+    #  nút mới xóa) và đã khai khóa quyền ở TOOL_GHI — không có miễn trừ nào khác.
     assert set(TOOL_XOA_NGOAI_ERP) <= set(TOOL_GHI_NGOAI_ERP)
+    assert set(TOOL_XOA_ERP_CO_XAC_NHAN) <= set(TOOL_GHI)
+    assert all(TOOL_GHI[n][1] == "delete" for n in TOOL_XOA_ERP_CO_XAC_NHAN)
 
 
 #  Giải trình cho bài trên (AI-0003, đại ca giao «công cụ hủy sự kiện»): xóa sự kiện trên lịch Google của CHÍNH
@@ -106,6 +110,15 @@ def test_khong_ton_tai_tool_nao_xoa_du_lieu(db):
 #  (canh ở `test_huy_lich_xoa_dung_su_kien_va_hoi_lai_khi_mo_ho` trong test_agent_hub).
 TOOL_XOA_NGOAI_ERP = {
     "delete_calendar_event": "hủy sự kiện trên lịch Google của chính người hỏi",
+}
+
+#  Giải trình (AI-0006, đại ca chốt 09/10/2026 «có thể bỏ luật xóa dữ liệu đi»): tool XÓA dữ liệu
+#  ERP đầu tiên. Vẫn giữ tinh thần luật cũ ở chỗ quan trọng: tool CHỈ trả đề xuất, NGƯỜI bấm
+#  «Xác nhận xóa» mới xóa (confirm-update kiểm lại từ đầu), và chỉ xóa phiếu CHÍNH người hỏi lập,
+#  còn Nháp / Bị trả lại, đủ quyền `delete` + phạm vi xóa. Đề nghị thanh toán và phiếu hỗ trợ
+#  không xóa. Canh ở `test_assistant_update_tool.py` (nhóm propose_document_delete).
+TOOL_XOA_ERP_CO_XAC_NHAN = {
+    "propose_document_delete": "xóa phiếu nháp của chính người hỏi, sau khi họ bấm xác nhận",
 }
 
 
@@ -169,6 +182,9 @@ TOOL_GHI = {
     "propose_document_update": ("purchase_request", "write",
                                 {"entity": "purchase_request", "code": "YCMH-BAT-KY",
                                  "changes": {"purpose": "Đổi mục đích"}}),
+    #  AI-0006 — chỉ đề xuất xóa; xóa thật khi người dùng bấm «Xác nhận xóa».
+    "propose_document_delete": ("purchase_request", "delete",
+                                {"entity": "purchase_request", "code": "YCMH-BAT-KY"}),
     #  bao-CR-435 — chỉ đề xuất, nhưng dẫn tới gán vai trò + phạm vi khi bấm Xác nhận.
     #  Nửa ĐỌC (hồ sơ nhân sự, tài khoản đích) đã lọc bằng apply_scope('employee') +
     #  get_scoped('user', 'write'), canh ở test_assistant_account_setup_tool.

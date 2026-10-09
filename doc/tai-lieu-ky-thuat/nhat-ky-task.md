@@ -13193,6 +13193,20 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-151 | Bot sửa được lý do, ngày, loại nghỉ của đơn nghỉ phép và xóa được phiếu nháp của mình
+- status: dang-lam
+- date: 2026-10-09
+Đại ca nhờ bot sửa lý do đơn nghỉ ngày thứ hai tuần sau nhưng bot trả lời không sửa được, đầu tin còn lộ dòng thẻ suy nghĩ
+của model. Việc AI-0006 giao Claude Code đã làm xong phần sửa và xóa phiếu, các bài kiểm xanh, nhưng tự dừng không commit vì
+đụng bốn tệp nhỏ ngoài danh sách dự kiến. Em lấy bản vá đó về rà lại, thêm phần sửa lý do nghỉ mà bản vá còn thiếu, nên nay bot
+sửa được ngày, loại nghỉ, lý do của đơn nghỉ và dòng hàng của yêu cầu mua hàng, yêu cầu báo giá khi phiếu còn Nháp hoặc Bị trả
+lại. Bot cũng xóa được phiếu nháp do chính mình lập khi có quyền xóa; mọi thao tác đều qua thẻ cũ sang mới và chỉ ghi khi người
+dùng bấm xác nhận. Dây chuyền giao việc gọn không còn dừng vì tệp ngoài dự kiến, chỉ còn chặn tệp cấm và trần số tệp. Câu trả
+lời của bot không còn lộ thẻ suy nghĩ. Năm trăm bài kiểm backend và sáu mươi tám bài giao diện chạy xanh, riêng một bài về cờ
+DEV_MODE đỏ do môi trường máy em đang bật cờ đó.
+
+Mã nguồn: assistant/tools/update_tool.py (propose_document_update, propose_document_delete, confirm_update) · assistant/provider/openai_compat.py (clean_reply) · agent_hub/coder.py (check_drift, _c1_rule) · agent_hub/user_guide.py · frontend-v2 update-proposal-card.tsx
+
 ## ai-CR-150 | Nhắn sửa nó đi sau khi xem chi tiết việc là bot giao việc đó luôn
 - status: dang-lam
 - date: 2026-10-09

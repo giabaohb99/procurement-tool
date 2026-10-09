@@ -670,6 +670,42 @@ def test_de_xuat_sua_phieu_thanh_the_hai_nut_va_so_giu_token(db, monkeypatch):
     assert row.tg_message_id == 5
 
 
+def test_de_xuat_xoa_phieu_thanh_the_nut_xoa_va_bam_thi_bao_da_xoa(db, bot, monkeypatch):
+    """AI-0006: đề xuất XÓA đi chung thẻ + nút với đề xuất sửa, nhưng chữ phải nói XÓA —
+    nút «Xác nhận sửa» trên thẻ xóa là người dùng tưởng chỉ đổi một trường."""
+    import json
+
+    from app.modules.agent_hub import service as svc
+    from app.modules.assistant.tools import update_tool
+
+    service, sent, _asked = bot
+    _bot_user(db, monkeypatch)
+    cards: list[tuple[str, list]] = []
+    monkeypatch.setattr(svc.telegram, "send",
+                        lambda text, **kw: cards.append((text, kw.get("buttons") or [])) or 5)
+    proposal = {"kind": "update_proposal", "action": "delete", "entity": "purchase_request",
+                "entity_label": "Yêu cầu mua hàng", "code": "PR001", "doc_status_label": "Nháp",
+                "changes": [{"field": "delete", "label": "Thao tác", "old": "PR001", "new": "Xóa phiếu"}],
+                "confirm_token": "tk-xoa", "url": "/procurement/purchase-requests/1"}
+    svc._send_proposal_card(db, "12345", proposal)
+    row = db.query(svc.AgentMessage).filter_by(action="de_xuat").one()
+    assert cards[0][1] == [("Xác nhận xóa", f"sua:{row.id}"), ("Không xóa", f"khong_sua:{row.id}")]
+    assert "Đề xuất XÓA" in cards[0][0] and "CHƯA</b> xóa" in cards[0][0]
+    assert json.loads(row.body)["action"] == "delete"
+    db.commit()
+
+    toasts: list[str] = []
+    monkeypatch.setattr(update_tool, "confirm_update", lambda db_, user, token: {
+        "entity": "purchase_request", "entity_label": "Yêu cầu mua hàng", "code": "PR001",
+        "updated_fields": ["Đã xóa phiếu"], "deleted": True, "url": ""})
+    monkeypatch.setattr(service.telegram, "answer_callback", lambda cb, text="": toasts.append(text))
+    monkeypatch.setattr(service.telegram, "clear_buttons", lambda *a, **kw: None)
+    service.handle_callback(db, _callback(f"sua:{row.id}"))
+
+    assert toasts == ["Đã xóa"]
+    assert any("Đã xóa <b>Yêu cầu mua hàng PR001</b>" in text for text, _ in cards[1:])
+
+
 def _callback(data: str) -> dict:
     return {"id": "cb1", "data": data, "message": {"chat": {"id": "12345"}, "message_id": 5}}
 

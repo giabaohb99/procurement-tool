@@ -4463,14 +4463,18 @@ def _send_proposal_card(db: Session, chat_id: str, proposal: dict) -> None:
     """
     row = log_message(db, DIR_OUT, chat_id, 0, json.dumps(proposal, ensure_ascii=False),
                       action=ACT_PROPOSAL)
+    #  AI-0006: đề xuất XÓA (`propose_document_delete`) đi chung thẻ + nút, chỉ khác chữ.
+    deleting = proposal.get("action") == "delete"
+    verb = "xóa" if deleting else "sửa"
     lines = [
-        f"<b>Đề xuất sửa {telegram.esc(proposal.get('entity_label') or 'phiếu')} "
+        f"<b>Đề xuất {'XÓA' if deleting else 'sửa'} "
+        f"{telegram.esc(proposal.get('entity_label') or 'phiếu')} "
         f"{telegram.esc(proposal.get('code') or '')}</b>"
         + (f" · {telegram.esc(proposal.get('doc_status_label'))}"
            if proposal.get("doc_status_label") else ""),
     ]
     for ch in proposal.get("changes") or []:
-        if not isinstance(ch, dict):
+        if not isinstance(ch, dict) or deleting:
             continue
         old = telegram.esc(ch.get("old") or "") or "(trống)"
         new = telegram.esc(ch.get("new") or "") or "(trống)"
@@ -4478,7 +4482,7 @@ def _send_proposal_card(db: Session, chat_id: str, proposal: dict) -> None:
                      f"<s>{old}</s> → <b>{new}</b>")
     lines += [
         "",
-        "Phiếu <b>CHƯA</b> sửa. Bấm <b>Xác nhận sửa</b> trong 15 phút, quá hạn phải nhờ "
+        f"Phiếu <b>CHƯA</b> {verb}. Bấm <b>Xác nhận {verb}</b> trong 15 phút, quá hạn phải nhờ "
         "trợ lý soạn lại.",
     ]
     if proposal.get("url"):
@@ -4486,7 +4490,7 @@ def _send_proposal_card(db: Session, chat_id: str, proposal: dict) -> None:
     try:
         row.tg_message_id = telegram.send(
             "\n".join(lines), chat_id=chat_id,
-            buttons=[("Xác nhận sửa", f"sua:{row.id}"), ("Không sửa", f"khong_sua:{row.id}")],
+            buttons=[(f"Xác nhận {verb}", f"sua:{row.id}"), (f"Không {verb}", f"khong_sua:{row.id}")],
         )
     except telegram.TelegramError as e:
         #  Thẻ không tới tay thì không ai bấm được — đóng luôn, đừng để một đề xuất treo
@@ -4518,12 +4522,13 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
     except ValueError:
         proposal = {}
     code = telegram.esc(proposal.get("code") or "")
+    verb = "xóa" if proposal.get("action") == "delete" else "sửa"   # AI-0006
     log_message(db, DIR_IN, chat_id, 0, f"{action}:{msg_id}", action=ACT_COMMAND)
 
     if action == "khong_sua":
         row.action = ACT_PROPOSAL_DROPPED
         telegram.answer_callback(cb_id, "Đã bỏ")
-        reply(db, chat_id, f"Rồi, không sửa <b>{code}</b>. Phiếu giữ nguyên.")
+        reply(db, chat_id, f"Rồi, không {verb} <b>{code}</b>. Phiếu giữ nguyên.")
         return
 
     user = _assistant_user(db, chat_id)
@@ -4540,8 +4545,8 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
         db.rollback()
         row = db.get(AgentMessage, msg_id)
         row.action = ACT_PROPOSAL_DROPPED
-        telegram.answer_callback(cb_id, "Không sửa được")
-        reply(db, chat_id, f"Không sửa được <b>{code}</b>: {telegram.esc(str(e.detail))}")
+        telegram.answer_callback(cb_id, f"Không {verb} được")
+        reply(db, chat_id, f"Không {verb} được <b>{code}</b>: {telegram.esc(str(e.detail))}")
         return
     except Exception as e:  # noqa: BLE001 - lỗi lạ cũng phải thành câu trả lời, không nuốt
         log.exception("agent_hub: xác nhận sửa phiếu hỏng")
@@ -4549,9 +4554,14 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
         row = db.get(AgentMessage, msg_id)
         row.action = ACT_PROPOSAL_DROPPED
         telegram.answer_callback(cb_id, "Lỗi")
-        reply(db, chat_id, f"Sửa <b>{code}</b> gặp lỗi: {telegram.esc(str(e)[:300])}")
+        reply(db, chat_id, f"{verb.capitalize()} <b>{code}</b> gặp lỗi: {telegram.esc(str(e)[:300])}")
         return
     row.action = ACT_PROPOSAL_DONE
+    if done.get("deleted"):
+        telegram.answer_callback(cb_id, "Đã xóa")
+        reply(db, chat_id, f"Đã xóa <b>{telegram.esc(done.get('entity_label') or '')} "
+                           f"{telegram.esc(done.get('code') or code)}</b>.")
+        return
     telegram.answer_callback(cb_id, "Đã sửa")
     fields = ", ".join(telegram.esc(x) for x in (done.get("updated_fields") or []))
     text = (f"Đã sửa <b>{telegram.esc(done.get('entity_label') or '')} "

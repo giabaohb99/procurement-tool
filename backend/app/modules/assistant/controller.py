@@ -79,6 +79,8 @@ def confirm_document_update(body: ConfirmUpdateIn,
     from .tools.update_tool import confirm_update
 
     result = confirm_update(db, user, body.token)
+    if result.get("deleted"):   # AI-0006: thẻ đề xuất XÓA dùng chung nút + endpoint này
+        return success(result, message=f"Đã xóa {result['entity_label']} {result['code']}")
     fields = ", ".join(result["updated_fields"])
     return success(result, message=f"Đã sửa phiếu {result['code']}: {fields}")
 

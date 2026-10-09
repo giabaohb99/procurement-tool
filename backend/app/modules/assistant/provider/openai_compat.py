@@ -39,7 +39,10 @@ def _wire_content(content):
     return out
 
 
-_THINK_BLOCK = re.compile(r"<think>.*?</think>\s*", re.S | re.I)
+#  ai-CR-151: 09/10 đại ca thấy tin bot mở đầu bằng «<thinking> </thinking>» — model đổi tên thẻ. Bắt cả think /
+#  thinking / reasoning, và thẻ lẻ (mở không đóng hoặc ngược lại) còn sót sau khi bỏ khối.
+_THINK_BLOCK = re.compile(r"<(think|thinking|reasoning)>.*?</\1>\s*", re.S | re.I)
+_THINK_TAG = re.compile(r"</?(?:think|thinking|reasoning)>\s*", re.I)
 #  Dấu chuyển sang câu trả lời thật: «Final answer:», «Final:», «Final?» ở đầu dòng (cho phép vài ký hiệu đứng trước).
 _FINAL_MARK = re.compile(r"(?:^|\n)[^\w\n]{0,6}final(?: answer)?\s*[:?]", re.I)
 
@@ -54,7 +57,7 @@ def clean_reply(text: str) -> str:
     """
     if not text:
         return text
-    out = _THINK_BLOCK.sub("", text)
+    out = _THINK_TAG.sub("", _THINK_BLOCK.sub("", text))
     marks = list(_FINAL_MARK.finditer(out))
     if marks:
         tail = out[marks[-1].end():]

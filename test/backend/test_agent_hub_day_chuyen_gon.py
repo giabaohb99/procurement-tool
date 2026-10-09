@@ -125,3 +125,30 @@ def test_giuc_sua_no_di_sau_chi_tiet_viec_la_lam_luon(db, flow):
     for text in ("sửa đơn NP011 giúp anh", "làm sao để sửa", "sửa: thêm phần xóa"):
         row = service.log_message(db, DIR_IN, "12345", 91, text)
         assert service._ok_by_text(db, "12345", row, text) is False, text
+
+
+def test_day_chuyen_gon_khong_dung_vi_tep_ngoai_du_kien():
+    """ai-CR-151 — AI-0006 làm xong, xanh, mà dừng không commit vì 4 tệp nhỏ ngoài danh sách dự kiến. Dây chuyền gọn
+    chỉ còn chặn tệp cấm và trần số tệp."""
+    from app.modules.agent_hub import coder
+
+    plan = ["backend/app/a.py"]
+    touched = ["backend/app/a.py", "backend/app/b.py", "backend/app/c.py"]
+    assert coder.check_drift(touched, plan, max_files=25) == ""
+    assert "ngoài kế hoạch" in coder.check_drift(touched, plan, max_files=25, ratio=True)
+    assert "cấm" in coder.check_drift(touched + [".env"], plan, max_files=25)
+    assert "vượt trần" in coder.check_drift([f"backend/a{i}.py" for i in range(30)], plan, max_files=25)
+    assert "DỰ KIẾN" in coder._c1_rule() and "30%" not in coder._c1_rule()
+
+
+@pytest.mark.parametrize("raw,expected", [
+    ("<thinking> </thinking>\nĐại ca ơi, em sửa rồi", "Đại ca ơi, em sửa rồi"),
+    ("<think>nháp\nnháp</think>Trả lời", "Trả lời"),
+    ("<reasoning>x</reasoning> Có", "Có"),
+    ("</thinking>Còn thẻ lẻ", "Còn thẻ lẻ"),
+    ("Câu bình thường", "Câu bình thường"),
+])
+def test_bo_the_suy_nghi_lot_vao_cau_tra_loi(raw, expected):
+    from app.modules.assistant.provider.openai_compat import clean_reply
+
+    assert clean_reply(raw) == expected

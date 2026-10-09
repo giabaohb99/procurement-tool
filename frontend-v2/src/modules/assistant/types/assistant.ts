@@ -92,6 +92,8 @@ export interface UpdateProposalChange {
  */
 export interface UpdateProposal {
   kind: 'update_proposal'
+  /** AI-0006: `delete` = đề xuất XÓA (tool `propose_document_delete`), cùng nút + endpoint. */
+  action?: 'delete'
   entity: string
   entity_label: string
   code: string
@@ -107,6 +109,8 @@ export interface ConfirmUpdateResult {
   entity_label: string
   code: string
   updated_fields: string[]
+  /** AI-0006: phiếu đã bị xóa — không còn gì để mở, `url` rỗng. */
+  deleted?: boolean
   url: string
 }
 

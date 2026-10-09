@@ -192,6 +192,7 @@ TOOL_SUB: dict[str, Sub] = {
     "add_personal_item": Sub.WRITE_MEMORY, "mark_personal_item": Sub.WRITE_MEMORY,
     "export_excel_file": Sub.EXPORT_FILE, "export_report_file": Sub.EXPORT_FILE,
     "propose_document_update": Sub.PROPOSE_CHANGE, "propose_account_setup": Sub.PROPOSE_CHANGE,
+    "propose_document_delete": Sub.PROPOSE_CHANGE,   # AI-0006
     "propose_glossary_term": Sub.FEEDBACK, "report_missing_feature": Sub.FEEDBACK,
     "rewrite_meeting_minutes": Sub.MEETING_MINUTES, "save_meeting_template": Sub.MEETING_MINUTES,
 }

@@ -34,7 +34,7 @@ INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy 
 #  hai tool đó xác nhận bằng nút trên web/Telegram, cổng này chưa có nút.
 WRITE_PREFIXES = ("draft_",)
 WRITE_NAMES = {"ticket_create", "export_report_file", "export_excel_file"}
-HIDDEN = {"propose_document_update", "propose_account_setup"}
+HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account_setup"}
 
 CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
