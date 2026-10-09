@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-142 | Bot hỏi lại cho đủ thông tin trước khi soạn phiếu, thẻ nháp dễ đọc và bỏ ngoặc kép góc
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca nhắn «tạo đơn nghỉ việc vào ngày thứ 2 tuần sau» thì bot soạn luôn đơn loại Phép năm với lý do Việc cá nhân, dù đại ca
 chưa nói hai điều đó, và thẻ nháp vẫn còn ngoặc kép góc khó đọc. Nay khi soạn đơn nghỉ phép, yêu cầu mua hàng, yêu cầu báo giá
@@ -13205,6 +13205,7 @@ hoa, nhãn in đậm, ngày ghi kèm thứ, các câu trả lời mỗi câu m�
 không còn ngoặc kép góc nữa, chữ trong ngoặc được in đậm. Bài kiểm của bot và Trợ lý chạy xanh.
 
 Mã nguồn: backend/app/modules/assistant/tools/confirm_fields.py (mới) · draft_tool.py · work_tool.py · assistant/service.py · agent_hub/service.py (draft_card) · agent_hub/draft_create.py · agent_hub/telegram.py (polish) · test/backend/test_agent_hub_hoi_lai_du_thong_tin.py
+Deploy: dev 09/10 (Agent 1 gộp d32ea68a, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-141 | Duyệt việc quay lại cơ sở dữ liệu của bot bằng thẻ trên Telegram
 - status: xong
