@@ -1,0 +1,69 @@
+"""ai-CR-144 — AI-0006 (09/10/2026): model rẻ xả suy nghĩ tiếng Anh ra phần chữ, trong đó có mảnh «{…}» lẻ → kế hoạch
+rỗng mà vẫn đi tiếp: thẻ trắng kèm «nhắn duyệt», việc kẹt ở «đang hỏi lại», đại ca nhắn duyệt thì bot báo không có việc."""
+import json
+
+import pytest
+
+from app.modules.agent_hub import manager
+from app.modules.assistant.provider.base import ChatResult
+
+PLAN = {"plan": "1. Thêm tool xóa nháp.", "plan_files": ["backend/app/modules/agent_hub/draft_create.py"],
+        "test_plan": "- xóa đúng phiếu", "risk_level": 2, "needs_clarification": False, "questions": [],
+        "assumptions": []}
+LEAK = ('Let me analyze this task. The rule says {"needs_clarification": true} when unsure. Hmm, {} maybe. '
+        "Actually let me reconsider...")
+
+
+def _res(text):
+    return ChatResult(text=text, provider="openai_compat", model="deepseek-v4.1-flash", input_tokens=1, output_tokens=1)
+
+
+def test_lay_dung_object_co_khoa_plan_giua_doan_suy_nghi():
+    assert manager.extract_json_with(LEAK, "plan") is None                      # mảnh lẻ không có «plan» → không nhận
+    text = LEAK + "\n```json\n" + json.dumps(PLAN, ensure_ascii=False) + "\n```\nDone."
+    assert manager.extract_json_with(text, "plan")["plan_files"] == PLAN["plan_files"]
+    assert manager.extract_json_with('{"plan": ""}', "plan") is None
+
+
+def test_xa_suy_nghi_thi_thu_lai_mot_lan_roi_bao_loi(monkeypatch):
+    calls: list[str] = []
+
+    class P:
+        def __init__(self, outputs):
+            self.outputs = outputs
+
+        def ask(self, messages, **kw):
+            calls.append(messages[0].content)
+            return _res(self.outputs.pop(0))
+
+    monkeypatch.setattr(manager, "get_provider", lambda: prov)
+    prov = P([LEAK, json.dumps(PLAN)])
+    data, _ = manager.run_plan("Phát triển sửa và xóa", "mô tả", [])
+    assert data["plan"] == PLAN["plan"] and len(calls) == 2 and "CHỈ trả MỘT object JSON" in calls[1]
+    calls.clear()
+    prov = P([LEAK, LEAK])
+    with pytest.raises(manager.ProviderError, match="không trả kế hoạch"):
+        manager.run_plan("Phát triển sửa và xóa", "mô tả", [])
+
+
+def test_can_hoi_ma_khong_co_cau_hoi_thi_van_hoi_khong_moi_duyet(db, monkeypatch):
+    from app.core.config import settings
+    from app.modules.agent_hub import service
+    from app.modules.agent_hub.constants import ST_NEEDS_INPUT
+    from app.modules.agent_hub.model import AgentTask
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    task = AgentTask(code="AI-0099", title="Phát triển sửa và xóa", summary="x", status=1, risk_level=2,
+                     created_by=0, updated_by=0)
+    db.add(task)
+    db.commit()
+    plan = dict(PLAN, plan_files=[], related_docs=[])
+    monkeypatch.setattr(service.manager, "run_plan", lambda *a, **k: (dict(plan, needs_clarification=True), _res("x")))
+    monkeypatch.setattr(service.memory, "recall", lambda q: [])
+    monkeypatch.setattr(service.coder, "scan_message_for", lambda t: "")
+    sent: list[str] = []
+    monkeypatch.setattr(service, "reply", lambda db, chat_id, text, **kw: sent.append(text))
+    service._plan_task(db, task)
+    db.refresh(task)
+    assert task.status == ST_NEEDS_INPUT and task.questions
+    assert "đang hỏi lại" in sent[-1] and "duyệt" not in sent[-1].lower().replace("chưa đủ", "")

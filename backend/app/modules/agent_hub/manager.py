@@ -262,6 +262,33 @@ def parse_json(text: str) -> dict:
     return data
 
 
+def extract_json_with(text: str, key: str) -> dict | None:
+    """Object JSON CUỐI CÙNG trong `text` có khóa `key` khác rỗng, hoặc None.
+
+    ai-CR-144 (AI-0006, 09/10/2026): model rẻ (DeepSeek flash qua openai_compat) xả cả đoạn suy nghĩ tiếng Anh vào phần
+    chữ, trong đó có mảnh `{…}` lẻ — `parse_json` cắt từ `{` đầu tới `}` cuối ra một object RỖNG, kế hoạch thành chuỗi
+    rỗng mà vẫn đi tiếp: thẻ trắng trơn kèm «nhắn duyệt», còn việc thì kẹt ở «đang hỏi lại» nên «duyệt» báo không có
+    việc nào. Nay đọc từng object, chỉ nhận object có đúng khóa cần."""
+    raw = _FENCE.sub("", text or "")
+    dec = json.JSONDecoder()
+    found = None
+    i = raw.find("{")
+    while i >= 0:
+        try:
+            obj, end = dec.raw_decode(raw, i)
+        except ValueError:
+            i = raw.find("{", i + 1)
+            continue
+        if isinstance(obj, dict) and str(obj.get(key) or "").strip():
+            found = obj
+        i = raw.find("{", end)
+    return found
+
+
+_JSON_ONLY = ("\n\nCHỈ trả MỘT object JSON đúng khuôn đã dặn, bắt đầu bằng { và kết thúc bằng }. KHÔNG viết phân tích, "
+              "suy nghĩ hay câu dẫn nào ngoài JSON.")
+
+
 # ---------------------------------------------------------------------------
 # Trạm TRIAGE — gom tin nhắn cùng loại thành đầu việc
 # ---------------------------------------------------------------------------
@@ -438,17 +465,20 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
         #  kế hoạch — tắt suy nghĩ, khỏi trả tiền nghĩ lại lần hai (ai-CR-022).
         thinking=not review,
     )
-    try:
-        data = parse_json(result.text)
-    except ProviderError as e:
-        #  Vẫn cụt (hoặc model trả rác): thử lại MỘT lần, tắt suy nghĩ để cả trần dành cho chữ.
-        log.warning("agent_hub: kế hoạch không ra JSON (%s), thử lại không suy nghĩ", str(e)[:120])
+    data = extract_json_with(result.text, "plan")
+    if data is None:
+        #  Cụt, rác, hoặc model xả suy nghĩ ra phần chữ: thử lại MỘT lần, tắt suy nghĩ, dặn thẳng chỉ trả JSON.
+        log.warning("agent_hub: kế hoạch không ra JSON có «plan» (%s), thử lại", (result.text or "")[:120])
         result = get_provider().ask(
-            [ChatMessage(role="user", content="\n".join(parts))],
+            [ChatMessage(role="user", content="\n".join(parts) + _JSON_ONLY)],
             model=settings.AGENT_MANAGER_MODEL, system=PLAN_SYSTEM.replace("__BOT_NAME__", BOT_NAME),
-            max_tokens=4096, temperature=0.3, thinking=False,
+            max_tokens=4096, temperature=0.2, thinking=False,
         )
-        data = parse_json(result.text)
+        data = extract_json_with(result.text, "plan")
+    if data is None:
+        #  Ném lỗi để người gọi báo «lập kế hoạch lỗi» kèm nút lập lại — KHÔNG đi tiếp với kế hoạch rỗng.
+        raise ProviderError("model không trả kế hoạch đúng khuôn JSON hai lần liền (có thể đang xả suy nghĩ ra chữ); "
+                            f"đầu câu trả lời: {(result.text or '')[:160]}")
     files = [str(f) for f in data.get("plan_files") or [] if str(f).strip()]
     questions = [str(q) for q in data.get("questions") or [] if str(q).strip()]
     assumptions = [str(a).strip() for a in data.get("assumptions") or [] if str(a).strip()]

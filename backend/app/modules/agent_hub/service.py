@@ -4814,6 +4814,11 @@ def _plan_task(db: Session, task: AgentTask) -> None:
         elif missing:
             task.plan = (task.plan or "").rstrip() + "\n\n**Còn chờ đại ca quyết:**\n" + \
                 "\n".join(f"- {q}" for q in missing)
+    #  ai-CR-144 (AI-0006): «cần hỏi» mà không có câu hỏi nào (vd `plan_files` rỗng) thì thẻ rơi sang dạng duyệt — mời
+    #  «duyệt» một việc đang ở «đang hỏi lại», đại ca nhắn duyệt thì bot báo không có việc nào. Luôn có ít nhất một câu.
+    if needs and not task.questions:
+        task.questions = ["Em chưa chốt được phạm vi tệp cần sửa cho việc này. Đại ca nói rõ thêm phần nào cần làm "
+                          "trước (hoặc nhắn «sửa: lập lại kế hoạch» để em thử lại)."]
     #  `plan_files` rỗng = bot không viết nổi phạm vi cụ thể = CẤM đi tiếp (luật B2).
     #  Đây là chỗ thi hành luật đó, không phải câu nhắc gửi cho model.
     task.status = ST_NEEDS_INPUT if needs else ST_PLAN
