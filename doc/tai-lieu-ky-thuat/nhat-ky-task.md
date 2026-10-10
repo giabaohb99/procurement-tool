@@ -13193,6 +13193,17 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-159 | Bài hướng dẫn sử dụng về tạo, sửa, xóa phiếu và xem quyền bằng Trợ lý AI
+- status: dang-lam
+- date: 2026-10-10
+Đại ca nhờ viết bài trên Trung tâm hướng dẫn sử dụng cho các phần bot mới làm được. Bài mới nằm dưới bài Trợ lý AI, hướng dẫn
+người dùng đăng nhập bot trên Telegram, nhắn quyền của tôi để biết mình dùng được chức năng nào, soạn phiếu nháp và dùng lại phiếu
+nháp cũ, sửa phiếu còn ở bước Nháp, xóa phiếu nháp của chính mình cùng các điều kiện được làm, và cách xử lý khi trợ lý báo thiếu
+quyền hay thẻ hết hạn. Bài được dựng bằng một script chạy lại nhiều lần vẫn ra đúng một bài, đã chạy thử trên máy em và hiện
+đúng trên trang hướng dẫn. Còn chờ chạy trên dev rồi nạp lại chỉ mục tìm kiếm để Trợ lý AI tra được bài này.
+
+Mã nguồn: backend/scripts/seed_help_tro_ly_ai_phieu_va_quyen.py
+
 ## ai-CR-158 | Hỏi chi phí của một biên bản họp thì bot trả đúng biên bản đó
 - status: xong
 - date: 2026-10-10
