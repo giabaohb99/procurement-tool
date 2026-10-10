@@ -226,8 +226,8 @@ Tiến độ đợt 09-10/10/2026. Mọi dòng dưới đây đã **lên DEV**, 
 | G-15 | Hỏi chi phí token của một biên bản họp: từng bước chép lời / viết biên bản / rút việc | XONG DEV (ai-CR-158) |
 | G-16 | Biên bản họp không bịa từ tệp không có tiếng; báo lỗi từng bước, tự thử lại, lệnh thử lại biên bản | XONG DEV (ai-CR-162) |
 | G-17 | Biên bản sạch chữ thừa, tóm hai tầng khi họp dài, thẻ Ai là ai, bản chép lời .txt riêng | XONG DEV (ai-CR-164) |
-| G-19 | Tin biên bản trong chat chỉ gửi bản rút gọn một màn (tóm tắt, đã chốt, việc, còn mở); chi tiết nằm trong Word; bớt trích nguyên văn | Chờ dev (ai-CR-165) |
-| G-18 | Phase 22: đọc video YouTube công khai thành biên bản / tóm tắt (Gemini theo link, không tải video) + ước tính chi phí trước cho mọi tệp họp, từ 1 USD hoặc dài hơn 2 giờ thì hỏi ok | Chờ dev (ai-CR-163) |
+| G-19 | Tin biên bản trong chat chỉ gửi bản rút gọn một màn (tóm tắt, đã chốt, việc, còn mở); chi tiết nằm trong Word; bớt trích nguyên văn | XONG DEV (ai-CR-165) |
+| G-18 | Phase 22: đọc video YouTube công khai thành biên bản / tóm tắt (Gemini theo link, không tải video) + ước tính chi phí trước cho mọi tệp họp, từ 1 USD hoặc dài hơn 2 giờ thì hỏi ok | XONG DEV (ai-CR-163) |
 | G-13 | Bài Help Center cho phần sửa / xóa phiếu, dùng lại nháp, xem quyền | XONG DEV (ai-CR-159, bài id 112) |
 | G-14 | Dùng Claude Sonnet cho việc sửa mã nhỏ; cảnh báo khi máy sửa mã chạy bản cũ | Đại ca gác lại 09/10 |
 

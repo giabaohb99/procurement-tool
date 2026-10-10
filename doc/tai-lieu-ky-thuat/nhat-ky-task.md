@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-165 | Tin biên bản trong chat chỉ gửi bản rút gọn vừa một màn điện thoại
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca thấy tin biên bản gửi trong Telegram quá dài, đọc không hết, và còn nhiều câu trích nguyên văn lời nói. Nay tin trong chat
 chỉ còn bản rút gọn khoảng một màn điện thoại gồm tóm tắt nhanh, các điều đã chốt, việc cần làm theo dạng việc, người, hạn và
@@ -13204,9 +13204,10 @@ giữa chừng. Lời dặn viết biên bản cũng yêu cầu viết thành ý
 bài kiểm của bot và trợ lý chạy xanh.
 
 Mã nguồn: agent_hub/meetings.py (chat_summary, recap_message, RECAP_SYSTEM, CHUNK_SYSTEM)
+Deploy: dev 10/10, commit 49c33984 trên erp-v2.
 
 ## ai-CR-163 | Phase 22: đọc video YouTube thành biên bản hoặc tóm tắt, và báo chi phí trước khi làm
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca giao làm cho bot đọc được video YouTube thành báo cáo và chốt ba điều: không đặt trần độ dài, không làm chế độ đọc hình,
 và luôn ước tính chi phí trước khi chạy. Người dùng gửi link YouTube công khai kèm chữ tóm tắt, biên bản hay báo cáo thì bot đưa
@@ -13218,6 +13219,7 @@ rồi chờ người dùng nhắn ok hoặc thôi. Chạy xong bot so chi phí t
 trợ lý chạy xanh.
 
 Mã nguồn: agent_hub/meetings.py (youtube_url, youtube_template, youtube_tokens, _process_youtube, estimate_cost, needs_ok, ask_cost_ok, cost_ok_by_text, check_estimate) · agent_hub/service.py (_meeting_by_message) · agent_hub/meeting_drive.py
+Deploy: dev 10/10, commit 07eea2a8 trên erp-v2.
 
 ## ai-CR-164 | Biên bản họp sạch chữ thừa, đủ ý khi họp dài, hỏi ai là ai và gửi bản chép lời riêng
 - status: xong
