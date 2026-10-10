@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-158 | Hỏi chi phí của một biên bản họp thì bot trả đúng biên bản đó
+- status: dang-lam
+- date: 2026-10-10
+Đại ca hỏi chi phí token của biên bản vừa làm nhưng bot trả chi phí chung của cả bot trong bảy và ba mươi ngày. Nguyên nhân là
+bot chỉ ghi sổ bước chép lời, còn bước viết biên bản và bước rút việc không được ghi, và cũng không gắn lượt nào vào cuộc họp.
+Nay cả ba bước đều được ghi sổ và gắn vào đúng cuộc họp, kể cả khi viết lại biên bản theo mẫu khác. Người dùng hỏi chi phí
+của biên bản, recap hay cuộc họp thì bot trả biên bản mới nhất của chính người đó: từng bước dùng model nào, bao nhiêu token
+vào và ra, bao nhiêu tiền, rồi tổng cộng. Biên bản làm trước bản sửa này chỉ có số của bước chép lời và bot ghi rõ điều đó.
+Toàn bộ bài kiểm của bot chạy xanh.
+
+Mã nguồn: agent_hub/meetings.py (tag_run, runs_of, cost_text, _write) · agent_hub/meeting_actions.py (extract) · agent_hub/service.py (_meeting_cost_by_text, _cost_by_text)
+
 ## ai-CR-157 | Hướng dẫn dùng bot cho phần phiếu và câu hỏi quyền của tôi
 - status: xong
 - date: 2026-10-10

@@ -105,17 +105,26 @@ def normalize(data: dict) -> list[dict]:
 
 def extract(db: Session, row: AgentMeeting, *, today: date | None = None) -> list[dict]:
     """Một lượt model (bộ định tuyến khóa của người gửi). Hỏng thì [] — biên bản đã gửi, không chặn gì."""
-    from . import manager
+    from . import manager, meetings, service
+    from .constants import RUN_OK, STAGE_MEETING
 
     day = today or (row.finished_at or now_local().replace(tzinfo=None)).date()
     content = (f"NGÀY HỌP: {WEEKDAYS[day.weekday()]} {day.isoformat()}\n\nBIÊN BẢN:\n{row.recap[:20000]}\n\n"
                f"BẢN CHÉP LỜI:\n{row.transcript[:60000]}")
+    run = service.start_run(db, 0, STAGE_MEETING)      # ai-CR-158: ghi sổ, gắn vào phiên họp
     try:
         result = manager.get_provider().ask([ChatMessage(role="user", content=content)], system=EXTRACT_SYSTEM,
                                             max_tokens=8000, temperature=0.0)
+        service.finish_run(db, run, result=result)
+        meetings.tag_run(run, row, meetings.Step.EXTRACT)
+        db.commit()
         return normalize(manager.parse_json(result.text or ""))
     except Exception as e:  # noqa: BLE001 — rút việc hỏng không được làm hỏng phiên biên bản
         log.warning("agent_hub: rút việc từ biên bản %s hỏng: %s", row.id, str(e)[:200])
+        if run.status != RUN_OK:
+            service.finish_run(db, run, error=str(e))
+            meetings.tag_run(run, row, meetings.Step.EXTRACT)
+        db.commit()
         return []
 
 

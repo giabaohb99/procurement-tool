@@ -811,7 +811,7 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
 # ---------------------------------------------------------------------------
 #  Chỉ bắt câu nói về tiền CỦA BOT: «chi phí» đứng một mình là từ nghiệp vụ ERP (chi phí thu mua).
 _COST_Q = re.compile(
-    r"(?<!\w)(chi phí|tốn|hết)(?!\w).{0,30}(?<!\w)(bot|token|gemini|claude|đậu đậu|ai[-\s]?\d+)(?!\w)"
+    r"(?<!\w)(chi phí|tốn|hết)(?!\w).{0,30}(?<!\w)(bot|token|gemini|claude|đậu đậu|ai[-\s]?\d+|recap|biên bản)(?!\w)"
     r"|(?<!\w)(bot|đậu đậu|ai[-\s]?\d+)(?!\w).{0,20}(?<!\w)(tốn|chi phí|hết bao nhiêu)(?!\w)")
 
 
@@ -929,10 +929,36 @@ def export_research_word(db: Session, chat_id: str) -> None:
     db.commit()
 
 
+#  ai-CR-158: hỏi chi phí của một biên bản họp («chi phí token cho cái recap này», «biên bản vừa rồi tốn bao nhiêu»).
+_MEETING_WORDS = re.compile(r"(?<!\w)(recap|biên bản|cuộc họp|buổi họp|chép lời)(?!\w)")
+
+
+def _meeting_cost_by_text(db: Session, chat_id: str, row: AgentMessage) -> bool:
+    """Chi phí biên bản MỚI NHẤT của chính người hỏi trong chat này. Không có biên bản nào thì để câu đi đường cũ."""
+    from . import meetings
+    from .model import AgentMeeting
+
+    user = _assistant_user(db, chat_id)
+    uid = int(getattr(user, "id", 0) or 0)
+    if not uid:
+        return False
+    meeting = db.scalar(select(AgentMeeting).where(AgentMeeting.user_id == uid, AgentMeeting.chat_id == chat_id,
+                                                   AgentMeeting.status == int(meetings.MeetingStatus.DONE))
+                        .order_by(AgentMeeting.id.desc()).limit(1))
+    if meeting is None:
+        return False
+    row.action = ACT_COMMAND
+    db.commit()
+    reply(db, chat_id, meetings.cost_text(db, meeting), action=ACT_ANSWER)
+    return True
+
+
 def _cost_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     low = text.strip().lower()
     if len(low.split()) > 25 or not _COST_Q.search(low):
         return False
+    if _MEETING_WORDS.search(low) and _meeting_cost_by_text(db, chat_id, row):
+        return True
     code_m = _CODE_IN_TEXT.search(low)
     task = db.scalar(select(AgentTask).where(AgentTask.code == f"AI-{int(code_m.group(1)):04d}")) if code_m else None
     row.action = ACT_COMMAND

@@ -7971,6 +7971,48 @@ def test_bien_ban_hop_tu_tep_telegram_chay_tron(db, bot, seed, monkeypatch):
     assert mt.process(db, row.id) == {"status": "skipped"}
 
 
+def test_hoi_chi_phi_token_cua_bien_ban_vua_lam(db, bot, seed, monkeypatch):
+    """ai-CR-158 — đại ca 10/10 hỏi «chi phí token cho cái recap này là bao nhiêu» thì bot trả chi phí CHUNG của bot.
+    Nay mỗi lượt model của phiên họp (chép lời, viết biên bản, rút việc) gắn vào phiên; câu hỏi trả đúng biên bản mới nhất."""
+    from app.modules.agent_hub import meetings as mt, personal_memory as pm
+    from app.modules.agent_hub.constants import DIR_IN
+    from app.modules.agent_hub.model import AgentMeeting
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, _ = bot
+    pm.clear_cache()
+    _owner_link(db, seed.u_req_id)
+    monkeypatch.setattr(pm, "_embedder", lambda: None)
+    monkeypatch.setattr(service.user_keys, "gemini_key", lambda: "AIzaSy-k")
+    _fake_meeting_env(monkeypatch, mt)
+    monkeypatch.setattr(mt.telegram, "send_document", lambda chat, fn, data, **kw: 1)
+
+    class P:
+        def ask(self, messages, **kw):
+            return ChatResult(text="## Kết luận\n- Mua thép", provider="deepseek", model="deepseek-v4.1-flash",
+                              input_tokens=3000, output_tokens=500)
+
+    monkeypatch.setattr(service.manager, "get_provider", lambda: P())
+    monkeypatch.setattr(mt, "dispatch", lambda mid: None)
+    row = AgentMeeting(user_id=seed.u_req_id, chat_id="12345", source_kind=1, source_ref="AUD1", title="giao ban giá",
+                       mime="audio/mp4", status=int(mt.MeetingStatus.QUEUED), created_by=0, updated_by=0)
+    db.add(row)
+    db.commit()
+    assert mt.process(db, row.id)["status"] == "done"
+    q = "chi phí token cho cái recap này là bao nhiêu vậy"
+    msg = service.log_message(db, DIR_IN, "12345", 9, q)
+    db.commit()
+    assert service._cost_by_text(db, "12345", msg, q)
+    text = sent[-1]
+    assert "Chi phí biên bản: giao ban giá" in text and "Chép lời" in text and "Viết biên bản" in text
+    assert "Rút việc và lịch" in text and "1.000 token vào" in text and "3.000 token vào" in text
+    assert "Chi phí ước của bot" not in text
+    #  Câu chi phí không nhắc biên bản vẫn đi đường cũ.
+    msg = service.log_message(db, DIR_IN, "12345", 10, "tháng này bot tốn bao nhiêu")
+    db.commit()
+    assert service._cost_by_text(db, "12345", msg, "tháng này bot tốn bao nhiêu") and "Biên bản" not in sent[-1][:40]
+
+
 def test_bien_ban_hop_dai_cat_doan_va_loi_khong_khoa(db, bot, seed, monkeypatch):
     from app.modules.agent_hub import meetings as mt, personal_memory as pm
     from app.modules.assistant.provider.base import ChatResult

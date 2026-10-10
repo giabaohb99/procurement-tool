@@ -799,6 +799,7 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
         raise
     service.finish_run(db, run, result=ChatResult(text="", provider="gemini", model=used_model, input_tokens=usage_in,
                                                   output_tokens=usage_out))
+    tag_run(run, row, Step.TRANSCRIBE)
     transcript = "\n".join(p for p in pieces if p).strip()
     if not transcript:
         raise MeetingError("Em không nghe ra lời nói nào trong tệp.")
@@ -806,6 +807,78 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
     db.commit()
     out = _write(db, row)
     return {**out, "segments": len(segments)}
+
+
+# ---------------------------------------------------------------------------
+# Chi phí từng biên bản (ai-CR-158) — đại ca 10/10: «chi phí token cho cái recap này là bao nhiêu»
+# ---------------------------------------------------------------------------
+class Step(IntEnum):
+    TRANSCRIBE = 1      # chép lời
+    WRITE = 2           # viết biên bản (cả lần viết lại theo mẫu khác)
+    EXTRACT = 3         # rút việc + lịch
+
+
+STEP_LABELS = {Step.TRANSCRIBE: "Chép lời", Step.WRITE: "Viết biên bản", Step.EXTRACT: "Rút việc và lịch"}
+
+
+def tag_run(run, row: AgentMeeting, step: Step) -> None:
+    """Gắn một dòng sổ gọi model vào phiên họp (`finish_run` ghi đè artifact nên gắn SAU nó)."""
+    art = dict(run.artifact) if isinstance(run.artifact, dict) else {}
+    art.pop("text", None)                    # bản chép / biên bản đã nằm ở tab_agent_meeting, không chép lần hai
+    run.artifact = {**art, "meeting_id": int(row.id), "step": int(step)}
+
+
+def runs_of(db: Session, row: AgentMeeting) -> list:
+    """Các lượt model của một phiên họp. Phiên làm TRƯỚC ai-CR-158 chưa gắn: lấy lượt chép lời trong khoảng chạy của
+    phiên (lượt viết biên bản hồi đó không ghi sổ)."""
+    from datetime import timedelta
+
+    from .constants import STAGE_MEETING
+    from .model import AgentRun
+
+    since = (row.started_at or row.created_at or datetime.now()) - timedelta(minutes=5)
+    rows = (db.query(AgentRun).filter(AgentRun.stage == STAGE_MEETING, AgentRun.started_at >= since)
+            .order_by(AgentRun.id).limit(500).all())
+    mine = [r for r in rows if isinstance(r.artifact, dict) and int(r.artifact.get("meeting_id") or 0) == row.id]
+    if mine:
+        return mine
+    until = row.finished_at or datetime.now()
+    return [r for r in rows if not (isinstance(r.artifact, dict) and r.artifact.get("meeting_id"))
+            and r.started_at and r.started_at <= until and r.owner_id in (0, user_keys.active_owner())][:1]
+
+
+def cost_text(db: Session, row: AgentMeeting) -> str:
+    """Tin trả lời: token vào / ra + tiền ước từng bước của MỘT biên bản."""
+    from . import service
+    from .constants import RUN_OK
+
+    esc = telegram.esc
+    runs = runs_of(db, row)
+    minutes = int((row.duration_sec or 0) // 60)
+    lines = [f"<b>Chi phí biên bản: {esc(row.title or f'#{row.id}')}</b>" + (f" ({minutes} phút ghi âm)" if minutes else "")]
+    if not runs:
+        lines.append("Em không tìm thấy lượt gọi model nào của biên bản này trong sổ.")
+        return "\n".join(lines)
+    tagged = any(isinstance(r.artifact, dict) and r.artifact.get("meeting_id") for r in runs)
+    total_in = total_out = 0
+    total_usd = 0.0
+    for r in runs:
+        step = int((r.artifact or {}).get("step") or Step.TRANSCRIBE) if isinstance(r.artifact, dict) else 1
+        label = next((v for k, v in STEP_LABELS.items() if int(k) == step), "Lượt khác")
+        total_in += int(r.input_tokens or 0)
+        total_out += int(r.output_tokens or 0)
+        total_usd += float(r.cost_usd or 0)
+        state = "" if r.status == RUN_OK else " · <i>hỏng</i>"
+        lines.append(f"• {esc(label)}: {esc(r.model or '?')} · {int(r.input_tokens or 0):,} token vào / "
+                     f"{int(r.output_tokens or 0):,} ra · {service._money(float(r.cost_usd or 0))}{state}"
+                     .replace(",", "."))
+    lines.append(f"<b>Tổng:</b> {total_in + total_out:,} token · {service._money(total_usd)}".replace(",", "."))
+    if not tagged:
+        lines.append("<i>Biên bản này làm trước 10/10 nên em chỉ có số của bước chép lời; lượt viết biên bản hồi đó "
+                     "chưa được ghi sổ.</i>")
+    lines.append(f"Tiền thật trả theo khóa AI, ước theo bảng giá. Tỷ giá tạm {settings.AGENT_USD_VND:,} đ/USD."
+                 .replace(",", "."))
+    return "\n".join(lines)
 
 
 def _author_of(db: Session, user_id: int) -> str:
@@ -828,12 +901,21 @@ def _write(db: Session, row: AgentMeeting) -> dict:
     row.error = ""
     db.commit()
     tpl = template_for_row(row)
+    from .constants import STAGE_MEETING
+
+    run = service.start_run(db, 0, STAGE_MEETING)      # ai-CR-158: lượt viết biên bản cũng ghi sổ, gắn với phiên họp
     try:
         result = manager.get_provider().ask(
             [ChatMessage(role="user", content=f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n{row.transcript[:RECAP_MAX_CHARS]}")],
             system=RECAP_SYSTEM, max_tokens=RECAP_MAX_TOKENS, temperature=0.2)
     except Exception as e:  # noqa: BLE001
+        service.finish_run(db, run, error=str(e))
+        tag_run(run, row, Step.WRITE)
+        db.commit()
         raise MeetingError(ai_keys.short_error(str(e))) from None
+    service.finish_run(db, run, result=result)
+    tag_run(run, row, Step.WRITE)
+    db.commit()
     recap = (result.text or "").strip()
     if not recap:
         raise MeetingError("Model không viết được biên bản, thử lại giúp em.")
