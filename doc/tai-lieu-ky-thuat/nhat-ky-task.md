@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-159 | Bài hướng dẫn sử dụng về tạo, sửa, xóa phiếu và xem quyền bằng Trợ lý AI
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca nhờ viết bài trên Trung tâm hướng dẫn sử dụng cho các phần bot mới làm được. Bài mới nằm dưới bài Trợ lý AI, hướng dẫn
 người dùng đăng nhập bot trên Telegram, nhắn quyền của tôi để biết mình dùng được chức năng nào, soạn phiếu nháp và dùng lại phiếu
@@ -13203,6 +13203,7 @@ quyền hay thẻ hết hạn. Bài được dựng bằng một script chạy l
 đúng trên trang hướng dẫn. Còn chờ chạy trên dev rồi nạp lại chỉ mục tìm kiếm để Trợ lý AI tra được bài này.
 
 Mã nguồn: backend/scripts/seed_help_tro_ly_ai_phieu_va_quyen.py
+Deploy: dev 10/10, commit 4ab6f0aa trên erp-v2; chạy seed trên dev (bài id 112) và nạp lại chỉ mục tìm kiếm hướng dẫn.
 
 ## ai-CR-158 | Hỏi chi phí của một biên bản họp thì bot trả đúng biên bản đó
 - status: xong
