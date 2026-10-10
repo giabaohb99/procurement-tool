@@ -328,10 +328,16 @@ def ask(
         "cache_system": True,   # gói tri thức đứng yên -> cache prefix, lượt sau rẻ
     }
 
+    import time as _time
+
+    started = _time.monotonic()
+    offered = 0
     if tool_on:
+        tool_defs = erp.tool_defs(db, user)
+        offered = len(tool_defs)       # ai-CR-160 (16.1): đo số khai báo công cụ gửi kèm mỗi câu
         result = prov.run_tools(
             msgs,
-            tools=erp.tool_defs(db, user),
+            tools=tool_defs,
             execute=lambda name, args: erp.run_tool(db, user, name, _with_user_text(name, args, message, history)),
             **common,
         )
@@ -356,5 +362,9 @@ def ask(
             "thinking_tokens": result.thinking_tokens,
             "cache_write_tokens": result.cache_write_tokens,
             "cache_read_tokens": result.cache_read_tokens,
+            #  ai-CR-160 (16.1): đo cho sổ ý định — tên model, thời gian trả lời, số khai báo công cụ đã gửi.
+            "model": result.model,
+            "duration_ms": int((_time.monotonic() - started) * 1000),
+            "tools_offered": offered,
         },
     }

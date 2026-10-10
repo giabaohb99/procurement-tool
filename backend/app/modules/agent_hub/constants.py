@@ -168,6 +168,9 @@ STAGE_MEETING = 29
 STAGE_COMPACT = 30
 #  Tự rút ghi nhớ sau buổi chat riêng (ai-CR-137, phase 13.3).
 STAGE_MEMORY = 31
+#  Một lượt Trợ lý AI trả lời câu hỏi trên Telegram / Zalo (ai-CR-160, phase 16.1). Trước đây lượt này KHÔNG ghi sổ nên
+#  báo chi phí «AI theo khóa» thiếu hẳn phần lớn nhất.
+STAGE_ANSWER = 32
 #  Nhãn bước cho màn Việc của bot (ai-CR-036).
 STAGE_LABELS = {
     STAGE_TRIAGE: "Gom việc",
@@ -185,6 +188,7 @@ STAGE_LABELS = {
     STAGE_RESEARCH: "Nghiên cứu",
     STAGE_COMPACT: "Tóm tắt hội thoại",
     STAGE_MEMORY: "Tự rút ghi nhớ",
+    STAGE_ANSWER: "Trả lời câu hỏi",
 }
 
 # ---------------------------------------------------------------------------

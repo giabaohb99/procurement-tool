@@ -313,9 +313,21 @@ def outcome_of(text: str, *, error: bool = False, tools: list[str] | None = None
     return Outcome.OK
 
 
+def usage_fields(usage: dict | None) -> dict:
+    """ai-CR-160 (16.1): cột chi phí / tốc độ từ khối `usage` mà `assistant.service.ask` trả về. Rỗng → toàn số 0."""
+    from .constants import estimate_cost_usd
+
+    u = usage or {}
+    model = str(u.get("model") or "")[:80]
+    tin, tout = int(u.get("input_tokens") or 0), int(u.get("output_tokens") or 0) + int(u.get("thinking_tokens") or 0)
+    return {"model": model, "tokens_in": tin, "tokens_out": tout, "cache_read": int(u.get("cache_read_tokens") or 0),
+            "cost_usd": float(estimate_cost_usd(model, tin, tout)) if model else 0.0,
+            "duration_ms": int(u.get("duration_ms") or 0), "tools_offered": min(int(u.get("tools_offered") or 0), 32000)}
+
+
 def record(db: Session, *, user_id: int, channel: Channel, scope_key: str, intent, scope: int = CONV_CHAT,
            tool_calls=None, mode: str = "", question: str = "", answer: str = "", error: bool = False,
-           message_id: int = 0) -> AgentIntent | None:
+           message_id: int = 0, usage: dict | None = None) -> AgentIntent | None:
     """Ghi MỘT dòng. `question` chỉ dùng để dò mã chứng từ, KHÔNG lưu. Hỏng thì nuốt lỗi — câu trả lời đã đi rồi."""
     uid = int(user_id or 0)
     if uid <= 0 or (scope == CONV_CHAT and is_group_chat(scope_key)):
@@ -327,7 +339,7 @@ def record(db: Session, *, user_id: int, channel: Channel, scope_key: str, inten
             user_id=uid, channel=int(channel), scope=int(scope), scope_key=str(scope_key or "")[:80],
             intent=int(big), sub_intent=int(sub_of(big, tools, mode)), entities=entities_of(tool_calls, question),
             tools=tools, outcome=int(outcome_of(answer, error=error, tools=tools)), message_id=int(message_id or 0),
-            created_by=uid, updated_by=uid)
+            created_by=uid, updated_by=uid, **usage_fields(usage))
         db.add(row)
         db.commit()
         return row

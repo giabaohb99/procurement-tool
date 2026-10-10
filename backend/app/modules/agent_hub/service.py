@@ -118,6 +118,7 @@ from .constants import (
     ST_REVIEW,
     ST_SCANNING,
     ST_TRIAGE,
+    STAGE_ANSWER,
     STAGE_DEPLOY,
     STAGE_INTENT,
     STAGE_PLAN,
@@ -4039,6 +4040,8 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     plan = _compacted_turns(db, chat_id, before_id, question, link_now.user_id if link_now is not None else 0)
     history = plan.turns
     summary_note = compaction.summary_block(plan.summary)
+    #  ai-CR-160 (16.1): lượt trả lời cũng ghi sổ chi phí (trước đây không — báo chi phí thiếu phần lớn nhất).
+    answer_run = start_run(db, 0, STAGE_ANSWER)
     #  Chốt dấu `hoi` trên tin trước khi giao cho Trợ lý AI: tool bên trong có thể
     #  rollback session (bao-CR-463), và dấu chưa chốt thì tin quay lại INBOX.
     db.commit()
@@ -4066,11 +4069,13 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
                                               + (f"\n\n{summary_note}" if summary_note else ""))
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
+        _close_answer_run(db, answer_run, None, error=str(e))
         reply(db, chat_id, user_keys.key_problem(str(e)) or ai_keys.short_error(str(e)))
         if ledger:
             _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True,
                     message_id=before_id)
         return
+    _close_answer_run(db, answer_run, result)
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.
     tool_calls = result.get("tool_calls") or []
@@ -4090,7 +4095,29 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     deliver_tool_results(db, chat_id, user, tool_calls)
     if ledger:      # ai-CR-140: bản tin chủ đề do bot tự hỏi hộ — không đếm vào thói quen, kẻo tự nuôi đề xuất
         _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), tool_calls=tool_calls, question=question,
-                answer=str(result.get("text") or ""), message_id=before_id)
+                answer=str(result.get("text") or ""), message_id=before_id, usage=result.get("usage"))
+
+
+def _close_answer_run(db: Session, run: AgentRun, result: dict | None, *, error: str = "") -> None:
+    """ai-CR-160: đóng dòng sổ của lượt trả lời. KHÔNG giữ chữ câu trả lời trong sổ (sổ ý định cũng không giữ nguyên
+    văn) — chỉ tên công cụ + số khai báo đã gửi. Hỏng ở đây không được làm hỏng câu trả lời."""
+    try:
+        run = db.get(AgentRun, run.id) or run      # tool bên trong có thể đã rollback phiên
+        if result is None:
+            finish_run(db, run, error=error)
+        else:
+            u = result.get("usage") or {}
+            finish_run(db, run, result=ChatResult(
+                text="", provider=str(result.get("provider") or ""), model=str(result.get("model") or ""),
+                input_tokens=int(u.get("input_tokens") or 0), output_tokens=int(u.get("output_tokens") or 0),
+                thinking_tokens=int(u.get("thinking_tokens") or 0)))
+            run.artifact = {"tools": [str(c.get("name") or "") for c in result.get("tool_calls") or []
+                                      if isinstance(c, dict)][:20],
+                            "tools_offered": int(u.get("tools_offered") or 0)}
+        db.commit()
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: không ghi được sổ lượt trả lời")
 
 
 def _ledger(db: Session, chat_id: str, intent: str, *, user_id: int = 0, **kw) -> None:

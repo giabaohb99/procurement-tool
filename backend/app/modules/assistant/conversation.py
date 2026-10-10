@@ -258,7 +258,8 @@ def chat(db: Session, user, body) -> dict:
     #  ai-CR-137 (13.1): một dòng sổ ý định — nhãn con theo công cụ đã gọi, KHÔNG lưu nguyên văn câu hỏi.
     intent_ledger.record(db, user_id=user.id, channel=intent_ledger.Channel.WEB, scope=CONV_WEB, scope_key=str(conv.id),
                          intent=intent_ledger.Intent.ASK, tool_calls=result.get("tool_calls"), question=body.message,
-                         answer=str(result.get("text") or ""), message_id=int(asked.id or 0))
+                         answer=str(result.get("text") or ""), message_id=int(asked.id or 0),
+                         usage=result.get("usage"))
     result["conversation_id"] = conv.id
     result["title"] = conv.title
     return result

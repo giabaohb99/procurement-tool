@@ -471,6 +471,15 @@ class AgentIntent(Base, AuditMixin):
     #  ai-CR-138 (13.6): id TIN câu hỏi (`tab_agent_message` / `tab_assistant_message`) — chỉ là con trỏ để gắn nhãn tay
     #  trên dev; sổ ý định vẫn không chép chữ. Tin bị xóa / dọn thì con trỏ thành mồ côi, không sao.
     message_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  ai-CR-160 (phase 16.1): chi phí + tốc độ của lượt trả lời — để đo theo người / nhãn ý định / ngày, và so trước-sau
+    #  khi nạp công cụ theo nhu cầu (16.2). `tools_offered` = số khai báo công cụ đã gửi kèm câu hỏi.
+    model: Mapped[str] = mapped_column(String(80), default="")
+    tokens_in: Mapped[int] = mapped_column(Integer, default=0)
+    tokens_out: Mapped[int] = mapped_column(Integer, default=0)
+    cache_read: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    tools_offered: Mapped[int] = mapped_column(SmallInteger, default=0)
 
     __table_args__ = (Index("ix_agent_intent_user", "user_id", "created_at"),
                       Index("ix_agent_intent_created", "created_at"))

@@ -13193,6 +13193,17 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-160 | Phase 16.1: ghi sổ đủ chi phí và tốc độ của từng lượt trả lời
+- status: dang-lam
+- date: 2026-10-10
+Đại ca duyệt làm phase 16 phần đo và giảm chi phí trước. Bước đầu là ghi sổ cho đủ: mỗi câu hỏi trên web, Telegram hay Zalo nay
+ghi lại model đã dùng, số token vào và ra, phần token đọc lại từ bộ đệm, tiền ước, thời gian trả lời và số khai báo công cụ đã
+gửi kèm. Em phát hiện lượt trả lời trên Telegram trước giờ không được ghi vào sổ chi phí nên con số chi phí của bot thiếu hẳn
+phần lớn nhất; nay đã ghi, và sổ không giữ chữ câu trả lời. Đo trên dev cho thấy mỗi câu hỏi đang gửi kèm 69 khai báo công cụ,
+khoảng sáu mươi chín nghìn ký tự, là chỗ sẽ giảm ở bước tiếp theo. Bài kiểm của bot và trợ lý chạy xanh.
+
+Mã nguồn: agent_hub/intent_ledger.py (usage_fields, record) · agent_hub/service.py (_close_answer_run, STAGE_ANSWER) · assistant/service.py (ask) · assistant/conversation.py · migration grp09 + agent0009
+
 ## ai-CR-159 | Bài hướng dẫn sử dụng về tạo, sửa, xóa phiếu và xem quyền bằng Trợ lý AI
 - status: xong
 - date: 2026-10-10
