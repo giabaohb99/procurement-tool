@@ -205,6 +205,27 @@ hỏi «lên lịch trình ăn + đi lại» thì nói chưa có công cụ rồ
 | R-03 | Tìm tài liệu nội bộ: kho tài liệu đã nạp + thư mục Drive | M | **Xong phần kho tài liệu** ai-CR-044 (`/tailieu`); phần Drive chờ N-03 |
 | R-04 | Xuất báo cáo nghiên cứu ra Word lên Drive | S | **Xong phần Word gửi qua Telegram** ai-CR-044 (`/word`); lên Drive chờ N-03 |
 
+## Nhóm G — Phiếu qua bot và dây chuyền sửa mã gọn (09-10/10/2026)
+
+Tiến độ đợt 09-10/10/2026. Mọi dòng dưới đây đã **lên DEV**, prod chưa (đang tạm dừng deploy prod).
+
+| Mã | Tính năng | Trạng thái |
+|---|---|---|
+| G-01 | Tạo phiếu nháp hỏi lại khi thiếu ý quan trọng; điều bot tự hiểu ghi riêng trên thẻ để xác nhận; bỏ ký tự « » trong tin bot | XONG DEV (ai-CR-142) |
+| G-02 | Phiếu nháp của tôi, xóa phiếu nháp qua chat; đơn nghỉ trùng ngày tự sửa đè đơn nháp cũ | XONG DEV (ai-CR-143) |
+| G-03 | YCMH / YCBG dùng lại phiếu nháp cũ: *thêm vào N* (gộp dòng, bỏ dòng trùng), *ghi đè N* (giữ mã) | XONG DEV (ai-CR-156) |
+| G-04 | Sửa phiếu Nháp / Bị trả lại qua thẻ cũ → mới: đơn nghỉ (ngày, loại nghỉ, lý do), dòng hàng YCMH / YCBG; xóa phiếu nháp của mình (YCMH, YCBG, đơn nghỉ, việc Dự án) | XONG DEV (AI-0006 gom tay vào ai-CR-151) |
+| G-05 | Nút xác nhận sửa / xóa trên Telegram đi qua cổng ERP; mỗi thẻ chỉ dùng một lần; chỉ sửa lý do thì giữ số ngày nghỉ | XONG DEV (ai-CR-152, ai-CR-153) |
+| G-06 | Hướng dẫn bot tách nhóm *phiếu* / *sửa phiếu*; câu *quyền của tôi* trả bảng chức năng theo ma trận quyền ERP; bot gợi ý khi thiếu quyền | XONG DEV (ai-CR-157) |
+| G-07 | Dây chuyền sửa mã gọn: Claude Code rà mã → thẻ xác nhận (em hiểu việc, *xong thì làm được gì*, rủi ro) → *ok* | XONG DEV (ai-CR-149, ai-CR-153) |
+| G-08 | Câu giục *sửa nó đi* sau thẻ / chi tiết là giao làm luôn; bỏ luật dừng lệch 30% tệp | XONG DEV (ai-CR-150, ai-CR-151) |
+| G-09 | Canh ranh giới bot / ERP: luật C11 + bài kiểm đọc mã; cổng kiểm tự chạy bài tách dịch vụ khi đụng bot | XONG DEV (ai-CR-153) |
+| G-10 | *ok* trên thẻ = đồng ý luôn gộp + đưa lên dev khi bài kiểm không đỏ; prod không bao giờ tự đẩy | XONG DEV (ai-CR-154) |
+| G-11 | Đưa lên dev dựng lại cả cụm bot khi bản sửa đụng mã bot (chờ việc dở, khóa chống đè, tự quay về) | XONG DEV (ai-CR-155) |
+| G-12 | Lọc thẻ suy nghĩ `<thinking>` của model khỏi câu trả lời | XONG DEV (ai-CR-151) |
+| G-13 | Bài Help Center cho phần sửa / xóa phiếu, dùng lại nháp, xem quyền | CHỜ đại ca quyết |
+| G-14 | Dùng Claude Sonnet cho việc sửa mã nhỏ; cảnh báo khi máy sửa mã chạy bản cũ | Đại ca gác lại 09/10 |
+
 ## Lộ trình theo phase (viết lại 05/10/2026)
 
 > **Bảng này dừng ở 05/10/2026.** Trạng thái mới nhất, kiến trúc đích A2A và việc kế tiếp xem [`13-lo-trinh.md`](13-lo-trinh.md).
