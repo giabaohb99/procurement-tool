@@ -17,6 +17,8 @@ cứng. Bản rà đọc mã `backend/app/modules/` + `core/` trên nhánh `agen
 
 ## 2. Rủi ro cao — vá trước (đợt 1)
 
+**Tiến độ:** cả 7 mục đã vá ở ai-CR-169 (10/10). Hợp đồng «nháp» = chưa ký và chưa tới ngày bắt đầu, hoặc đã hủy (model không có trạng thái nháp riêng — muốn chặt hơn sửa `delete_block_reason`). Phiếu nhập / phát sinh kho chưa chặn vì không có cột cho biết đã có giao dịch kế tiếp.
+
 | # | Chỗ | Vấn đề |
 |---|---|---|
 | 1 | `contract/controller.py` `delete_` + `bulk_delete_contracts` | **Không kiểm trạng thái**: xóa được hợp đồng đang hiệu lực / đã ký, kèm tệp |
@@ -28,6 +30,8 @@ cứng. Bản rà đọc mã `backend/app/modules/` + `core/` trên nhánh `agen
 | 7 | `agent_hub/ops_runner.py` | Bot vận hành chạy được một câu `UPDATE/INSERT/DELETE … WHERE` do AI viết lên bảng ERP sau thẻ duyệt |
 
 ## 3. Chứng từ chính đang xóa cứng — chuyển sang xóa mềm (đợt 2)
+
+**Tiến độ:** đợt 2a (ai-CR-170, 10/10) đã làm `SoftDeleteMixin` + lọc tập trung ở `apply_scope` / `get_scoped` và áp cho **YCBG** (migration grp11). Còn lại đợt 2b: ĐMH · YCTT · PKS · hợp đồng NCC · văn bản nháp · HĐLĐ · hồ sơ · báo cáo thực hiện.
 
 Yêu cầu báo giá (YCBG) · Đơn mua hàng (ĐMH) · Yêu cầu thanh toán (YCTT) · Phiếu khảo sát (PKS) · Hợp đồng NCC · Văn bản
 (bản nháp) · Hợp đồng lao động · Hồ sơ (dossier, qua CRUD chung) · báo cáo thực hiện (mục / giai đoạn / tài liệu).

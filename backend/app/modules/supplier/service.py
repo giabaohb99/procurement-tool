@@ -50,8 +50,54 @@ def update_supplier(db: Session, sid: int, data: SupplierUpdate, user_id: int) -
     return obj
 
 
+def count_references(db: Session, code: str) -> list[tuple[str, int]]:
+    """ai-CR-169: số chứng từ đang trỏ tới NCC theo chuỗi `supplier_code` (không có FK nào).
+
+    ⚠️ KHÔNG lọc theo phạm vi dữ liệu, cố ý: đây là chốt TOÀN VẸN, người chỉ thấy phòng mình
+    vẫn không được xóa NCC mà phòng khác đang có đơn.
+    """
+    from app.modules.contract.model import Contract
+    from app.modules.payable.model import Payable
+    from app.modules.payment_request.model import PaymentRequest
+    from app.modules.purchase_history.model import PurchaseHistory
+    from app.modules.purchase_order.model import POCost, PurchaseOrder
+    from app.modules.purchase_request.model import PurchaseRequestItemOption
+    from app.modules.survey.model import SurveyProductLine, SurveySupplierLine
+    from app.modules.survey_request.model import SurveyRequestOption
+
+    if not code:
+        return []
+    checks = [
+        ("đơn mua hàng", db.query(PurchaseOrder).filter(PurchaseOrder.supplier_code == code)),
+        ("dòng chi phí đơn mua hàng", db.query(POCost).filter(POCost.supplier_code == code)),
+        ("khoản công nợ", db.query(Payable).filter(Payable.supplier_code == code)),
+        ("yêu cầu thanh toán", db.query(PaymentRequest).filter(PaymentRequest.supplier_code == code)),
+        ("lịch sử mua hàng", db.query(PurchaseHistory).filter(PurchaseHistory.supplier_code == code)),
+        ("phương án yêu cầu mua hàng",
+         db.query(PurchaseRequestItemOption).filter(PurchaseRequestItemOption.supplier_code == code)),
+        ("phương án yêu cầu báo giá",
+         db.query(SurveyRequestOption).filter(SurveyRequestOption.supplier_code == code)),
+        ("dòng khảo sát", db.query(SurveySupplierLine).filter(SurveySupplierLine.supplier_code == code)),
+        ("dòng khảo sát sản phẩm", db.query(SurveyProductLine).filter(SurveyProductLine.supplier_code == code)),
+        ("hợp đồng", db.query(Contract).filter(Contract.party_type == "supplier", Contract.party_code == code)),
+    ]
+    return [(label, n) for label, q in checks if (n := q.count())]
+
+
+def ensure_deletable(db: Session, obj: Supplier) -> None:
+    """Còn chứng từ tham chiếu thì KHÔNG xóa — chỉ có thể bỏ tick «Đang dùng» (`is_active`)."""
+    refs = count_references(db, obj.code)
+    if refs:
+        total = sum(n for _, n in refs)
+        detail = ", ".join(f"{n} {label}" for label, n in refs)
+        raise HTTPException(
+            400, f"Nhà cung cấp «{obj.code}» đang được dùng ở {total} chứng từ ({detail}), "
+                 "chỉ có thể ngưng dùng (bỏ tick «Đang dùng») chứ không xóa được.")
+
+
 def delete_supplier(db: Session, sid: int, user_id: int) -> None:
     obj = get_supplier(db, sid)
+    ensure_deletable(db, obj)
     db.delete(obj)
     db.commit()
     record(db, user_id, ENTITY, sid, "delete")

@@ -176,6 +176,17 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
         return {"ok": False, "message": "Không có bản ghi snapshot để hoàn tác"}
 
     from . import catalog_import, doc_import
+    #  ai-CR-169: kiểm TỪNG chứng từ TRƯỚC khi xóa gì — còn đúng trạng thái lúc nhập và chưa phát
+    #  sinh gì (phương án, đơn, công nợ đã trả, lịch sử duyệt…). Có một phiếu đã đổi là từ chối cả
+    #  lượt với danh sách mã + lý do, không đụng phiếu nào.
+    if doc_import.is_doc_module(batch.module):
+        problems = doc_import.revert_blockers(db, batch.module, changes)
+        if batch.module == ImportModule.PURCHASE_ORDER:
+            problems += _po_payment_blockers(db, changes)
+        if problems:
+            shown = "; ".join(problems[:10]) + (f"; … và {len(problems) - 10} phiếu nữa" if len(problems) > 10 else "")
+            return {"ok": False, "problems": problems,
+                    "message": "Không hoàn tác được vì có chứng từ đã được xử lý sau khi nhập — " + shown}
     #  Khảo sát / ĐMH revert qua hàm chuyên dụng (dọn đủ 2 loại dòng KS / cascade GR-công
     #  nợ của ĐMH) — kể cả batch tạo bằng mẫu chuẩn mới (was_new=1 -> xoá đúng).
     if batch.module == ImportModule.PURCHASE_ORDER:
@@ -227,22 +238,27 @@ def _revert_survey(db: Session, changes, user_id: int):
     return deleted, restored
 
 
-def _delete_po_payments(db, po):
-    """Xoá các YCTT (do import tạo) tham chiếu công nợ của đơn này — trước khi xoá/khôi phục đơn."""
+def _po_payment_blockers(db, changes) -> list[str]:
+    """ai-CR-169: đơn (mới hay cũ bị sửa) mà công nợ đã có tiền trả / đã có YCTT trỏ tới thì không hoàn tác.
+
+    Trước đây `_delete_po_payments` xóa cứng MỌI yêu cầu thanh toán trỏ vào công nợ của đơn
+    rồi mới hoàn tác — YCTT đã duyệt / đã chi cũng mất. Nay chặn, người dùng hủy YCTT trước.
+    """
     from app.modules.payable.model import Payable
-    from app.modules.payment_request.model import (PaymentRequest,
-                                                    PaymentRequestLine)
-    pay_ids = [p.id for p in db.query(Payable).filter(Payable.po_id == po.id).all()]
-    if not pay_ids:
-        return
-    req_ids = {ln.request_id for ln in
-               db.query(PaymentRequestLine).filter(PaymentRequestLine.payable_id.in_(pay_ids)).all()}
-    for rid in req_ids:
-        db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
-        req = db.get(PaymentRequest, rid)
-        if req:
-            db.delete(req)
-    db.flush()
+    from app.modules.payable.service import payment_block_reason
+    from app.modules.purchase_order.model import PurchaseOrder
+    problems: list[str] = []
+    for ch in changes:
+        if ch.was_new:
+            continue      # đơn mới đã kiểm ở `doc_import.revert_blockers`
+        po = db.get(PurchaseOrder, ch.survey_id)
+        if not po:
+            continue
+        reasons = [reason for p in db.query(Payable).filter(Payable.po_id == po.id).all()
+                   if (reason := payment_block_reason(db, p))]
+        if reasons:
+            problems.append(f"{po.code}: công nợ {', '.join(reasons)}")
+    return problems
 
 
 def _revert_po(db: Session, changes, user_id: int):
@@ -254,7 +270,6 @@ def _revert_po(db: Session, changes, user_id: int):
         po = db.get(PurchaseOrder, ch.survey_id)   # survey_id dùng chung = po_id
         if not po:
             continue
-        _delete_po_payments(db, po)
         if ch.was_new:
             po_service.delete_po(db, po.id, user_id)   # cascade GR/tồn/công nợ + dòng + lần giao
             deleted += 1

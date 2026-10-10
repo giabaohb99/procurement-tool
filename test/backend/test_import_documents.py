@@ -81,7 +81,8 @@ def test_ma_da_ton_tai_thi_bo_qua(db):
     assert db.query(PurchaseRequest).filter(PurchaseRequest.code == "PYCDUP").first().requester == "Cũ"
 
 
-def test_revert_xoa_ca_phieu_va_dong(db):
+def test_revert_xoa_mem_phieu_giu_dong(db):
+    """ai-CR-169: YCMH đã có xóa mềm nên hoàn tác = `is_deleted`, dòng giữ nguyên để còn khôi phục."""
     wb = _wb(_PR, [
         {"code": "PYCR", "product_name": "SP A", "qty": 1},
         {"code": "PYCR", "product_name": "SP B", "qty": 2},
@@ -92,9 +93,10 @@ def test_revert_xoa_ca_phieu_va_dong(db):
     assert db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == p.id).count() == 2
 
     res = service.revert_batch(db, b, user_id=1)
-    assert res["ok"] is True
-    assert db.query(PurchaseRequest).filter(PurchaseRequest.code == "PYCR").count() == 0
-    assert db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == p.id).count() == 0
+    assert res["ok"] is True and res["deleted"] == 1
+    p = db.query(PurchaseRequest).filter(PurchaseRequest.code == "PYCR").one()
+    assert p.is_deleted is True
+    assert db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == p.id).count() == 2
 
 
 def test_ycbg_gom_dong(db):

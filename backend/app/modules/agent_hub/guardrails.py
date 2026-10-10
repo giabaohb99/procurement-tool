@@ -104,7 +104,12 @@ SQL_READ = "read"
 SQL_WRITE = "write"
 SQL_DENIED = "denied"
 _SQL_READ_HEAD = re.compile(r"^\s*(select|show|describe|desc|explain|with)\b", re.IGNORECASE)
-_SQL_WRITE_HEAD = re.compile(r"^\s*(update|insert|delete|replace)\b", re.IGNORECASE)
+_SQL_WRITE_HEAD = re.compile(r"^\s*(update|insert)\b", re.IGNORECASE)
+#  ai-CR-169 (10/10/2026): bot KHÔNG xóa dữ liệu ERP bằng lệnh — DELETE và REPLACE (= xóa rồi chèn lại)
+#  bị từ chối thẳng, kể cả có WHERE, kể cả sau thẻ duyệt. Xóa phiếu thì xóa mềm trên màn hình.
+_SQL_DELETE_HEAD = re.compile(r"^\s*(delete|replace)\b", re.IGNORECASE)
+SQL_NO_DELETE_REASON = ("em không xóa dữ liệu ERP bằng lệnh (DELETE / REPLACE) — nhờ đại ca xóa mềm trên màn hình, "
+                        "bot chỉ chạy UPDATE / INSERT có WHERE")
 _SQL_DENY = re.compile(r"\b(drop|truncate|grant|revoke|create\s+user|alter\s+user|set\s+password|"
                        r"rename\s+table|into\s+outfile|into\s+dumpfile|load_file|load\s+data|shutdown|"
                        r"lock\s+tables|kill)\b", re.IGNORECASE)
@@ -119,7 +124,8 @@ def _strip_sql_literals(sql: str) -> str:
 
 def classify_sql(sql: str) -> tuple[str, str, list[str]]:
     """(loại, lý do, bảng). Một câu một lần (dấu `;` giữa câu = từ chối). DDL / phân quyền MySQL / ghi tệp
-    = từ chối. UPDATE / DELETE không có WHERE = từ chối (đại ca muốn cả bảng thì gõ `WHERE 1=1` cho rõ ý)."""
+    = từ chối. DELETE / REPLACE = từ chối hẳn (ai-CR-169). UPDATE không có WHERE = từ chối (đại ca muốn cả
+    bảng thì gõ `WHERE 1=1` cho rõ ý)."""
     text = (sql or "").strip().rstrip(";").strip()
     if not text:
         return SQL_DENIED, "câu SQL trống", []
@@ -139,13 +145,15 @@ def classify_sql(sql: str) -> tuple[str, str, list[str]]:
                                                      bare, re.IGNORECASE):
             return SQL_DENIED, "câu này đọc cột bí mật (mật khẩu / token / khóa) — chọn đúng cột cần xem", tables
         return SQL_READ, "", tables
+    if _SQL_DELETE_HEAD.match(bare):
+        return SQL_DENIED, SQL_NO_DELETE_REASON, tables
     if _SQL_WRITE_HEAD.match(bare):
-        if re.match(r"^\s*(update|delete)\b", bare, re.IGNORECASE) and not re.search(r"\bwhere\b", bare, re.IGNORECASE):
-            return SQL_DENIED, "UPDATE / DELETE thiếu WHERE — muốn cả bảng thì ghi rõ `WHERE 1=1`", tables
+        if re.match(r"^\s*update\b", bare, re.IGNORECASE) and not re.search(r"\bwhere\b", bare, re.IGNORECASE):
+            return SQL_DENIED, "UPDATE thiếu WHERE — muốn cả bảng thì ghi rõ `WHERE 1=1`", tables
         if not tables:
             return SQL_DENIED, "em không đọc ra được bảng nào để sao lưu trước", []
         return SQL_WRITE, "", tables
-    return SQL_DENIED, "chỉ nhận SELECT / SHOW / EXPLAIN và UPDATE / INSERT / DELETE / REPLACE", []
+    return SQL_DENIED, "chỉ nhận SELECT / SHOW / EXPLAIN và UPDATE / INSERT (không DELETE)", []
 
 
 # ---------------------------------------------------------------------------

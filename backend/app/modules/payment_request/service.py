@@ -615,7 +615,8 @@ def delete_request(db: Session, rid: int, user_id: int):
     if req.status != "draft":
         raise HTTPException(400, "Chỉ xóa được phiếu yêu cầu thanh toán ở trạng thái Nháp")
     from app.modules.attachment.service import delete_attachments_for
-    delete_attachments_for(db, [("payment_request", rid)])
+    # commit=False (ai-CR-169 mục 7): tệp + dòng + phiếu đi CHUNG một giao dịch.
+    delete_attachments_for(db, [("payment_request", rid)], commit=False)
     db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
     db.delete(req)
     db.commit()

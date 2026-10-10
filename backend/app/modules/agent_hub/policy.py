@@ -27,7 +27,11 @@ OPS_RULES = {
 
 #  Sửa dữ liệu bằng lời (ai-CR-073): bước TRA để soạn lệnh là đọc — làm luôn, kể cả trên prod, vì chính câu nhờ
 #  sửa của đại ca đã là lời cho phép đọc phần cần sửa. Bước GHI luôn CONFIRM.
+#  ai-CR-169 (10/10/2026): «sửa» chỉ gồm UPDATE (có WHERE) / INSERT. Bot KHÔNG xóa dữ liệu ERP bằng lệnh — DELETE /
+#  REPLACE / DROP / TRUNCATE bị lan can (`guardrails.classify_sql`) từ chối thẳng, không có mức duyệt nào mở được;
+#  đại ca nhờ xóa thì bot chỉ sang xóa mềm trên màn hình.
 DATA_PLAN_READ = ACT
+DATA_WRITE_VERBS = ("UPDATE", "INSERT")
 #  Trần số dòng một lệnh sửa dữ liệu được đụng. Quá trần = REFUSE, đại ca chia nhỏ hoặc giao thành việc sửa mã.
 DATA_MAX_ROWS = 500
 #  Bảng bot KHÔNG sửa bằng lệnh dữ liệu, dù đại ca nhờ: tài khoản / phân quyền / nhật ký / sổ của chính bot.

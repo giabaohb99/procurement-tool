@@ -172,11 +172,43 @@ def update_(cid: int, data: ContractUpdate, db: Session = Depends(get_db), user=
     return success(_out(c), "Đã cập nhật")
 
 
+def delete_block_reason(c: Contract, today: str | None = None) -> str:
+    """ai-CR-169: lý do KHÔNG cho xóa hợp đồng; rỗng = xóa được.
+
+    Hợp đồng không có trạng thái «nháp» riêng (mặc định tạo ra là `active`, chưa ký), nên
+    «nháp / chưa hiệu lực» hiểu là: chưa ký VÀ chưa tới ngày bắt đầu (hoặc đã bị đánh Hủy).
+    Đã ký, đang hiệu lực theo ngày, hết hạn, thanh lý → chỉ được đổi trạng thái, không xóa —
+    xóa cứng là mất luôn tệp hợp đồng thật đính kèm.
+    """
+    if c.signed:
+        return "đã ký"
+    if c.status == "expired":
+        return "đã hết hạn"
+    if c.status == "liquidated":
+        return "đã thanh lý"
+    if c.status == "active" and c.start_date:
+        today = today or datetime.now().date().isoformat()
+        if c.start_date <= today:
+            return "đang hiệu lực"
+    return ""
+
+
+def _ensure_deletable(rows: list[Contract]) -> None:
+    """Kiểm CẢ LÔ trước khi xóa dòng nào — một dòng sai là từ chối cả lượt (khuôn `ensure_all_draft`)."""
+    blocked = [f"{c.code or c.id} ({reason})" for c in rows if (reason := delete_block_reason(c))]
+    if blocked:
+        raise HTTPException(
+            400, "Chỉ xóa được hợp đồng chưa ký và chưa hiệu lực. Không xóa được: " + ", ".join(blocked)
+                 + ". Hợp đồng đã ký / đang hiệu lực / đã hết hạn thì đổi trạng thái (Thanh lý, Hủy) thay vì xóa.")
+
+
 @router.delete("/{cid}")
 def delete_(cid: int, db: Session = Depends(get_db), user=Depends(require("contract", "delete"))):
     c = _in_scope(db, cid, user, "delete")
+    _ensure_deletable([c])
     from app.modules.attachment.service import delete_attachments_for
-    delete_attachments_for(db, [("contract", cid)])
+    # commit=False: tệp đính kèm và hợp đồng đi CHUNG một giao dịch (ai-CR-169 mục 7).
+    delete_attachments_for(db, [("contract", cid)], commit=False)
     db.delete(c)
     db.commit()
     record(db, user.id, "contract", cid, "delete")
@@ -193,13 +225,17 @@ def bulk_delete_contracts(ids: str, db: Session = Depends(get_db), user=Depends(
     # id là xóa được hợp đồng của công ty khác.
     rows = apply_scope(db.query(Contract).filter(Contract.id.in_(id_list)),
                        Contract, "contract", user, get_perm_profile(db, user), "delete").all()
-    for c in rows:
-        cid = c.id
-        delete_attachments_for(db, [("contract", cid)])
-        db.delete(c)
-        record(db, user.id, "contract", cid, "delete")
-    db.commit()
     if not rows:
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    # ai-CR-169: kiểm từng dòng TRƯỚC, có dòng không được thì không xóa dòng nào.
+    _ensure_deletable(rows)
+    deleted_ids = [c.id for c in rows]
+    for c in rows:
+        delete_attachments_for(db, [("contract", c.id)], commit=False)
+        db.delete(c)
+    db.commit()
+    # `record` tự commit — ghi SAU khi cả lô đã xóa xong để lô là một giao dịch.
+    for cid in deleted_ids:
+        record(db, user.id, "contract", cid, "delete")
     # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
     return success(None, f"Đã xóa {len(rows)} bản ghi")

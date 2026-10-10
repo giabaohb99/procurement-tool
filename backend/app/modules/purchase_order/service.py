@@ -1703,7 +1703,9 @@ def delete_po(db: Session, pid: int, user_id: int):
         # Đơn nháp/từ chối chưa từng sinh nợ chi phí; có sót thì gỡ theo (chặn nếu đã chi).
         block_delete_paid_import_cost(db, row)
         db.delete(row)
-    delete_attachments_for(db, pairs)
+    # commit=False (ai-CR-169 mục 7): tệp đính kèm đi CHUNG giao dịch với đơn — trước đây
+    # hàm này tự commit giữa chừng, đơn xóa hỏng ở bước sau thì tệp đã mất rồi.
+    delete_attachments_for(db, pairs, commit=False)
     _pr_code = po.pr_code
     db.delete(po)
     db.commit()

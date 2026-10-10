@@ -138,13 +138,16 @@ def test_import_document_dedupe_skips_existing_code(db):
     assert db.query(VehicleBooking).filter(VehicleBooking.code == "DX901").one().purpose == "giữ nguyên"
 
 
-def test_revert_document_deletes_new(db):
+def test_revert_document_soft_deletes_new(db):
+    """ai-CR-169: Đặt xe đã có xóa mềm nên hoàn tác = `is_deleted`, không xóa cứng."""
     wb = _doc_wb(ImportModule.VEHICLE_BOOKING, [{"code": "DX902", "purpose": "z"}])
     b = _batch(db, ImportModule.VEHICLE_BOOKING)
     doc_import.run(db, b, wb, apply=True)
     assert db.query(VehicleBooking).filter(VehicleBooking.code == "DX902").count() == 1
-    service.revert_batch(db, b, user_id=1)
-    assert db.query(VehicleBooking).filter(VehicleBooking.code == "DX902").count() == 0
+    res = service.revert_batch(db, b, user_id=1)
+    assert res["ok"] is True
+    bk = db.query(VehicleBooking).filter(VehicleBooking.code == "DX902").one()
+    assert bk.is_deleted is True
     assert b.status == ImportStatus.REVERTED
 
 
@@ -238,8 +241,12 @@ def test_import_seal_creates_attachment_placeholder_and_revert_cleans_it(db):
                                      FileLink.entity_id == req.id).one()
     assert db.get(StoredFile, link.file_id).filename == "AV-ABA.pdf"
 
-    #  Revert xoá cả phiếu, bảng nối công ty lẫn tệp giữ chỗ.
-    service.revert_batch(db, b, user_id=1)
-    assert db.query(SealRequest).filter(SealRequest.code == "DD010").count() == 0
+    #  ai-CR-169: Duyệt dấu có xóa mềm -> hoàn tác chỉ đánh `is_deleted`, giữ bảng nối công ty và tệp
+    #  giữ chỗ (phiếu còn khôi phục được). Trạng thái từ file (Hoàn thành) đã ghi vào snapshot nên
+    #  không bị coi là «đã đổi».
+    res = service.revert_batch(db, b, user_id=1)
+    assert res["ok"] is True, res
+    req = db.query(SealRequest).filter(SealRequest.code == "DD010").one()
+    assert req.is_deleted is True
     assert db.query(FileLink).filter(FileLink.entity == "seal_request",
-                                     FileLink.entity_id == req.id).count() == 0
+                                     FileLink.entity_id == req.id).count() == 1

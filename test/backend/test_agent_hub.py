@@ -5985,6 +5985,20 @@ def test_lan_can_sql():
         assert g.classify_sql(sql)[0] == g.SQL_DENIED, sql
 
 
+def test_lan_can_sql_chan_han_delete_ke_ca_co_where():
+    """ai-CR-169: bot KHÔNG xóa dữ liệu ERP bằng lệnh — DELETE / REPLACE bị từ chối thẳng, kể cả có WHERE."""
+    from app.modules.agent_hub import guardrails as g
+
+    for sql in ("DELETE FROM tab_po WHERE id = 5", "delete from tab_employee where code='X'",
+                "REPLACE INTO tab_po (id, note) VALUES (1, 'x')"):
+        kind, reason, _ = g.classify_sql(sql)
+        assert kind == g.SQL_DENIED and reason == g.SQL_NO_DELETE_REASON, sql
+    assert "xóa mềm" in g.SQL_NO_DELETE_REASON
+    #  UPDATE / INSERT vẫn đi qua như cũ.
+    assert g.classify_sql("UPDATE tab_po SET is_deleted=1 WHERE id = 5")[0] == g.SQL_WRITE
+    assert g.classify_sql("INSERT INTO tab_x (a) VALUES (1)")[0] == g.SQL_WRITE
+
+
 def test_che_bi_mat_trong_ket_qua():
     from app.modules.agent_hub.guardrails import mask_secrets
 
@@ -6174,10 +6188,50 @@ def test_sao_luu_hong_thi_khong_chay_sql(db, bot, monkeypatch):
     dev = ops.env_by_name(db, "dev")
     _ops_on(monkeypatch)
     calls = _fake_ssh(monkeypatch, [("mysqldump", "mysqldump: lỗi\n")])
-    op = ops.new_op(db, dev, OP_SQL_WRITE, title="SQL", command="DELETE FROM tab_po WHERE id=1", chat_id="12345")
+    op = ops.new_op(db, dev, OP_SQL_WRITE, title="SQL", command="UPDATE tab_po SET note='x' WHERE id=1",
+                    chat_id="12345")
     ops.approve(db, op, "12345")
     ops_runner.execute(db, op)
     assert op.status == OPS_FAILED and "KHÔNG chạy" in op.error and len(calls) == 1
+
+
+def test_thao_tac_delete_da_duyet_van_khong_chay(db, bot, monkeypatch):
+    """ai-CR-169: thao tác sửa dữ liệu mang câu DELETE (tạo trước khi luật đổi / đường vòng) — chạy là
+    lan can kiểm lại và từ chối, KHÔNG sao lưu, KHÔNG chạm VPS."""
+    from app.modules.agent_hub import ops, ops_runner
+    from app.modules.agent_hub.constants import OP_SQL_WRITE, OPS_FAILED
+
+    _envs(db)
+    dev = ops.env_by_name(db, "dev")
+    _ops_on(monkeypatch)
+    calls = _fake_ssh(monkeypatch, [("mysqldump", "BACKUP=/h/x.sql.gz\n"), ("exec -T api python", "ROWCOUNT=1\n")])
+    op = ops.new_op(db, dev, OP_SQL_WRITE, title="SQL", command="DELETE FROM tab_po WHERE id=1", chat_id="12345")
+    ops.approve(db, op, "12345")
+    ops_runner.execute(db, op)
+    assert op.status == OPS_FAILED and "không xóa dữ liệu ERP bằng lệnh" in op.error and calls == []
+
+
+def test_soan_lenh_ra_delete_thi_tra_loi_xoa_mem(db, bot, monkeypatch):
+    """ai-CR-169: máy soạn ra DELETE -> không tạo thao tác chờ duyệt, trả lời rõ «xóa mềm trên màn hình»."""
+    from app.modules.agent_hub import ops, ops_runner
+    from app.modules.agent_hub.constants import OP_DATA_PLAN, OP_SQL_WRITE, OPS_OK
+    from app.modules.agent_hub.model import AgentOp
+
+    _, sent, _ = bot
+    dev, _ = _envs(db)
+    _ops_on(monkeypatch)
+    _fake_claude_rounds(monkeypatch, [{"summary": "Xóa phiếu PR001", "sql": "DELETE FROM tab_purchase_request WHERE code='PR001'",
+                                       "count_sql": "SELECT COUNT(*) FROM tab_purchase_request WHERE code='PR001'",
+                                       "preview_sql": ""}])
+    monkeypatch.setattr(ops_runner, "_ssh", lambda *a, **kw: pytest.fail("không được chạm VPS"))
+    plan = ops.new_op(db, dev, OP_DATA_PLAN, title="t", command="xóa phiếu PR001", params={"request": "xóa phiếu PR001"},
+                      chat_id="12345")
+    ops_runner.execute(db, plan)
+    assert plan.status == OPS_OK
+    assert "không xóa dữ liệu ERP bằng lệnh" in sent[-1] and "xóa mềm" in sent[-1]
+    assert db.query(AgentOp).filter_by(kind=OP_SQL_WRITE).count() == 0
+    #  Lời dặn cho máy soạn lệnh cũng đã nói rõ: không DELETE.
+    assert "KHÔNG DELETE" in ops_runner._DATA_BRIEF
 
 
 def test_deploy_prod_sao_luu_ca_db_va_hoan_tac_ve_commit_truoc(db, bot, monkeypatch):

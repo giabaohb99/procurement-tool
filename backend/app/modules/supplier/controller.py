@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.audit import record
+from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
+from app.core.scoping import apply_scope, get_scoped
 
 from . import service
 from .model import Supplier
@@ -56,23 +58,34 @@ def update_supplier(
 def delete_supplier(
     sid: int, db: Session = Depends(get_db), user=Depends(require("supplier", "delete"))
 ):
-    service.delete_supplier(db, sid, user.id)
+    # ai-CR-169: lấy một dòng phải qua phạm vi (`get_scoped`), như mọi controller khác.
+    obj = get_scoped(db, Supplier, "supplier", sid, user, get_perm_profile(db, user), "delete")
+    if not obj:
+        raise HTTPException(404, "Không tìm thấy nhà cung cấp")
+    service.delete_supplier(db, obj.id, user.id)
     return success(None, "Đã xóa")
 
 
 @router.delete("")
 def bulk_delete_suppliers(ids: str, db: Session = Depends(get_db), user=Depends(require("supplier", "delete"))):
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
-    from fastapi import HTTPException
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
-    from .model import Supplier
-    db.query(Supplier).filter(Supplier.id.in_(id_list)).delete(synchronize_session=False)
+    # ai-CR-169: lọc phạm vi TRƯỚC, rồi kiểm từng NCC còn chứng từ tham chiếu không —
+    # có một NCC đang dùng là từ chối cả lô, không xóa dòng nào.
+    rows = apply_scope(db.query(Supplier).filter(Supplier.id.in_(id_list)),
+                       Supplier, "supplier", user, get_perm_profile(db, user), "delete").all()
+    if not rows:
+        raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    for obj in rows:
+        service.ensure_deletable(db, obj)
+    deleted_ids = [obj.id for obj in rows]
+    for obj in rows:
+        db.delete(obj)
     db.commit()
-    from app.core.audit import record
-    for oid in id_list:
+    for oid in deleted_ids:
         record(db, user.id, "supplier", oid, "delete")
-    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+    return success(None, f"Đã xóa {len(deleted_ids)} bản ghi")
 
 
 @router.get("/export/csv")
@@ -162,7 +175,13 @@ def import_suppliers_csv(
 
         if existing:
             if action in ["xóa", "delete"]:
-                db.delete(existing)
+                # ai-CR-169: nhập file cũng không được xóa NCC còn chứng từ — hạ xuống
+                # «ngưng dùng» (đếm vào cột ẩn), không chặn cả file vì một dòng.
+                if service.count_references(db, existing.code):
+                    existing.is_active = False
+                    existing.updated_by = user.id
+                else:
+                    db.delete(existing)
                 deleted += 1
             else:
                 existing.name = name

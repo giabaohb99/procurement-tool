@@ -418,7 +418,11 @@ def execute(db: Session, op: AgentOp) -> dict:
         elif op.kind == OP_SQL_READ:
             out = _ssh(sql_script(env, op.command, write=False), env, timeout=SQL_TIMEOUT)
         elif op.kind == OP_SQL_WRITE:
-            _, _, tables = guardrails.classify_sql(op.command)
+            kind, reason, tables = guardrails.classify_sql(op.command)
+            #  ai-CR-169: kiểm LẠI ngay trước khi chạy — thao tác tạo trước khi luật đổi, hay tạo
+            #  bằng đường vòng, vẫn không được xóa dữ liệu ERP bằng lệnh.
+            if kind != guardrails.SQL_WRITE:
+                raise OpsError(f"lệnh không qua lan can: {reason}")
             path = _run_backup(db, op, env, tables)
             op.backup_ref = path[-255:]
             op.undo_params = {"kind": OP_RESTORE, "path": path, "tables": tables}
@@ -862,7 +866,7 @@ Mỗi lượt trả lời ĐÚNG một khối JSON, không chữ nào ngoài kh�
    {{"lookups": ["SELECT ...", "..."]}}
 2. Lệnh cuối:
    {{"summary": "MỘT câu ngắn (dưới 140 ký tự) bằng lời nghiệp vụ: đổi gì cho ai. KHÔNG tên bảng, tên cột, id, tên hàm",
-     "sql": "MỘT câu UPDATE / INSERT / DELETE, có WHERE, không chú thích, chuỗi tiếng Việt viết đúng dấu",
+     "sql": "MỘT câu UPDATE (có WHERE) hoặc INSERT, không chú thích, chuỗi tiếng Việt viết đúng dấu — KHÔNG DELETE",
      "count_sql": "SELECT COUNT(*) ... cùng điều kiện, đếm số dòng sẽ bị đổi",
      "preview_sql": "SELECT 2-3 cột người đọc hiểu (mã, tên, giá trị HIỆN TẠI của thứ sẽ đổi), đặt bí danh tiếng Việt
                      bằng dấu huyền (vd `Mã`, `Họ tên`, `Chức vụ hiện tại`), KHÔNG cột id, cùng điều kiện, LIMIT 10",
@@ -873,7 +877,9 @@ Mỗi lượt trả lời ĐÚNG một khối JSON, không chữ nào ngoài kh�
    {{"cannot": "lý do ngắn bằng tiếng Việt, và nên làm cách nào"}}
 
 Luật: KHÔNG hỏi lại đại ca — yêu cầu mơ hồ thì chọn cách hợp lý nhất và ghi vào assumptions. Không DDL, không
-TRUNCATE/DROP. Không đụng bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình hệ thống, bảng tab_agent_*.
+TRUNCATE/DROP. KHÔNG DELETE / REPLACE: bot không xóa dữ liệu ERP bằng lệnh — đại ca nhờ xóa thì trả "cannot" và
+chỉ sang xóa mềm trên màn hình (hoặc UPDATE cột is_deleted / is_active nếu bảng có cột đó và đại ca nói rõ).
+Không đụng bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình hệ thống, bảng tab_agent_*.
 Khớp chuỗi theo đúng chữ đại ca đưa (LIKE với % hai đầu khi đại ca nói «có trong tên»). Tối đa {max_rows} dòng.
 """
 
@@ -974,6 +980,13 @@ def plan_data(db: Session, op: AgentOp, env: AgentEnv) -> str:
         raise OpsError("máy sửa mã không soạn ra được lệnh sau nhiều lượt tra")
     kind, reason, tables = guardrails.classify_sql(sql)
     if kind != guardrails.SQL_WRITE:
+        #  ai-CR-169: máy soạn ra DELETE / DROP / TRUNCATE thì KHÔNG phải lỗi kỹ thuật — trả lời đại ca
+        #  rõ ràng rằng bot không xóa dữ liệu ERP bằng lệnh, nhờ xóa mềm trên màn hình.
+        if reason == guardrails.SQL_NO_DELETE_REASON or re.match(r"^\s*(drop|truncate)\b", sql, re.IGNORECASE):
+            _reply(db, chat, "Yêu cầu này cần XÓA dữ liệu — em không xóa dữ liệu ERP bằng lệnh (kể cả sau duyệt). "
+                   "Nhờ đại ca xóa mềm trên màn hình ERP (nút Xóa của phiếu / bỏ tick «Đang dùng» của danh mục); "
+                   "em chỉ nhận UPDATE / INSERT.")
+            return "\n".join(log_lines + ["từ chối: lệnh xóa dữ liệu", sql])
         raise OpsError(f"lệnh soạn ra không qua lan can: {reason or 'không phải lệnh sửa'}")
     denied = [t for t in tables if policy.data_table_denied(t)]
     if denied:

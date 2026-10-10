@@ -213,6 +213,11 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
 
                 if existing:
                     if action in ["xóa", "delete"]:
+                        # ai-CR-169: nhập file là đường vòng để XÓA, phải qua đúng chốt
+                        # `before_delete` như nút xóa — không thì loại hồ sơ / chức vụ /
+                        # mức mật đang có người dùng vẫn bị xóa qua một dòng CSV.
+                        if before_delete:
+                            before_delete(db, existing)
                         db.delete(existing)
                         deleted += 1
                     else:

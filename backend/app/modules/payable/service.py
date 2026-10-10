@@ -249,11 +249,32 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
     return p
 
 
+def payment_block_reason(db: Session, p: Payable) -> str:
+    """ai-CR-169: lý do KHÔNG cho xóa một khoản công nợ; rỗng = xóa được.
+
+    Nợ đã có tiền trả (`paid_amount > 0`) hoặc đã có phiếu yêu cầu thanh toán trỏ vào thì xóa
+    là số đã trả mất chỗ đối chiếu và YCTT thành mồ côi.
+    """
+    from app.modules.payment_request.model import PaymentRequestLine
+    if float(p.paid_amount or 0) > 0:
+        return f"đã trả {float(p.paid_amount):,.0f} đ"
+    n_req = db.query(PaymentRequestLine).filter(PaymentRequestLine.payable_id == p.id).count()
+    if n_req:
+        return f"đang có {n_req} dòng yêu cầu thanh toán trỏ tới"
+    return ""
+
+
 def remove(db: Session, source_type: str, ref_id: int, ref_type: str = "delivery"):
     p = db.query(Payable).filter(
         Payable.source_type == source_type, Payable.ref_type == ref_type, Payable.ref_id == ref_id
     ).first()
     if p:
+        if reason := payment_block_reason(db, p):
+            from fastapi import HTTPException
+            label = "công nợ hàng" if source_type == "goods" else f"công nợ {source_type}"
+            raise HTTPException(
+                400, f"Khoản {label} {p.po_code or ''} (hóa đơn {p.invoice_no or '-'}) {reason} — không gỡ "
+                     "được lần giao này. Hủy / điều chỉnh thanh toán và yêu cầu thanh toán trước rồi mới sửa.")
         db.delete(p)
         db.flush()
 

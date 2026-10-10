@@ -13205,6 +13205,37 @@ không nút bấm cho chat đã gửi yêu cầu tạo việc, người chỉ ra
 Mã nguồn: agent_hub/service.py (requester_chat, _copy_to_ops, ops_recipients)
 Deploy: dev 10/10, commit e723f3e4 trên erp-v2; dựng lại cụm bot.
 
+## ai-CR-169 | Chống mất dữ liệu do xóa cứng, đợt 1: bảy chỗ rủi ro cao
+- status: dang-lam
+- date: 2026-10-10
+Theo bản rà xóa cứng, bảy chỗ có thể làm mất dữ liệu thật đã được chặn. Hợp đồng đã ký, đang hiệu lực, hết hạn hoặc đã thanh lý
+không xóa được nữa; xóa nhiều thì kiểm cả lô trước. Hoàn tác một lô nhập từ Excel chỉ được khi mọi phiếu của lô còn đúng trạng
+thái lúc nhập và chưa phát sinh gì (chưa có phương án, chưa sinh phiếu kế tiếp, chưa có công nợ đã trả), nếu không thì báo rõ mã
+và lý do, lô giữ nguyên; phiếu có cột xóa mềm thì hoàn tác bằng xóa mềm. Khoản công nợ đã trả hoặc đang có yêu cầu thanh toán trỏ
+tới không bị gỡ ngầm khi sửa đơn mua hàng. Nhà cung cấp và sản phẩm đang được chứng từ dùng thì chỉ cho ngưng dùng, không xóa; xóa
+một hay nhiều đều kiểm phạm vi. Nhập CSV danh mục với hành động xóa đi qua cùng rào chắn với nút xóa. Bot vận hành không chạy lệnh
+xóa dữ liệu ERP nữa, kể cả có điều kiện, và trả lời rõ khi máy soạn ra lệnh như vậy. Xóa phiếu kèm tệp đính kèm nay là một giao
+dịch. Bài kiểm mới 17 bài, các bài cũ giả định xóa cứng được sửa; chạy chung với ai-CR-170 618 bài xanh.
+
+Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_import.py (revert_blockers), payable/service.py
+(payment_block_reason), supplier/service.py + product/service.py (count_references, ensure_deletable), core/crud.py,
+agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
+
+## ai-CR-170 | Xóa mềm dùng chung cho chứng từ, áp trước cho yêu cầu báo giá
+- status: dang-lam
+- date: 2026-10-10
+Đại ca chốt chuyển xóa phiếu sang xóa mềm: giữ bản ghi, chỉ đánh cờ đã xóa kèm thời điểm và người xóa, và kiểm còn chỗ nào xóa
+cứng. Đợt này làm lớp dùng chung và áp cho yêu cầu báo giá. Lớp dùng chung là một mixin ba cột gắn vào model; tầng phạm vi dữ liệu
+tự loại bản ghi đã xóa cho mọi model có cột này (kể cả người thấy tất), nên màn danh sách, màn chi tiết, trang chủ, tiến độ, xuất
+Excel, công cụ Trợ lý đều ẩn phiếu đã xóa mà không phải sửa từng truy vấn; các chỗ đọc thẳng không qua phạm vi được lọc tay theo
+danh sách rà sẵn. Yêu cầu báo giá xóa thì chỉ đánh cờ, dòng, phương án, tệp đính kèm, bình luận và nhật ký giữ nguyên; mã phiếu
+không tái dùng; nhập từ Excel trúng mã phiếu đã xóa thì báo rõ và bỏ qua thay vì lỗi trùng khóa. Một migration thêm ba cột cho
+bảng yêu cầu báo giá, đã chạy thử lên xuống trên DB dev. Bốn bài kiểm cũ giả định xóa cứng được sửa, thêm chín bài kiểm mới; 171 bài
+chạy xanh. Hoàn tác lô nhập vẫn xóa cứng, xử lý ở ai-CR-169.
+
+Mã nguồn: core/base_model.py (SoftDeleteMixin, mark_deleted), core/scoping.py (not_deleted_cond, exclude_deleted, apply_scope,
+get_scoped), survey_request/service.py (delete_sr); migration grp11_ycbg_xoa_mem; bài kiểm test_ycbg_xoa_mem.py
+
 ## ai-CR-173 | Trợ lý tìm giá và link sản phẩm trên web, đặt cạnh giá mua gần nhất trong ERP
 - status: xong
 - date: 2026-10-10
