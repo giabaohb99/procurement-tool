@@ -52,6 +52,7 @@ thì dùng số mới.
 | 19 | Kho tri thức cấp công ty | mới | Kế hoạch |
 | 20 | Lõi mở (gọi MCP ngoài, A2A, giao việc tính ngân sách) | phase 8 | Ghi nhận |
 | 21 | Nhiều kênh, nhiều bot (Zalo OA, bot riêng từng người) | phase 9 | Ghi nhận |
+| 23 | Nghiên cứu sâu + tìm nguồn hàng (tổng hợp tài liệu, điểm báo, giá + link sản phẩm, NCC tốt nhất) | mới | Đề xuất 10/10, chờ đại ca chốt |
 | **22** | **Đọc video YouTube thành biên bản / tóm tắt** | mới | **Xong dev 10/10** — ai-CR-163 (kèm luật ước tính chi phí cho mọi tệp họp) |
 
 **«Bậc 1–4» không phải phase**: đó là **mức tự chủ** của bot sửa phần mềm (1 chỉ lập kế hoạch · 2 sửa + PR, gộp khi đại
@@ -205,6 +206,26 @@ mỗi ngày, gói trả tiền không giới hạn độ dài; độ phân giả
 (tiếng 32; YouTube thêm khung hình theo độ phân giải thấp) × giá model + lượt viết biên bản (hai tầng nếu họp dài). **Dưới 1 USD
 chạy luôn, không hỏi. Từ 1 USD, hoặc dài hơn 2 giờ: báo số tiền (USD + VND) + thời lượng và hỏi `ok` / `thôi`.** Chạy xong so
 chi phí thật trong sổ với ước tính, lệch hơn 2 lần thì ghi log để chỉnh hệ số.
+
+### Phase 23 — Nghiên cứu sâu và tìm nguồn hàng (đề xuất 10/10/2026, chờ chốt)
+
+Đại ca hỏi 10/10: bot đi research, tổng hợp tài liệu, đọc báo để gom thông tin cần; tìm giá sản phẩm, link sản phẩm, NCC tốt
+nhất theo AI đánh giá. **Đã có** (nhóm R, ai-CR-044/105/133/134): tìm Google một lượt rồi tóm tắt kèm nguồn, kiểm chứng một
+nhận định, đọc bài / tệp theo link, hỏi tài liệu nội bộ, xuất Word; trong ERP có giá mua cũ theo mã hàng, NCC từng bán, NCC mua
+nhiều nhất, giá hải quan. **Chưa có:** nghiên cứu NHIỀU bước, điểm báo định kỳ, tìm giá + link trên thị trường, chấm điểm NCC.
+
+| Việc | Cách làm |
+|---|---|
+| 23.1 Nghiên cứu sâu | Một câu hỏi → bot tự lập 3–6 câu tìm con → tìm, đọc nguồn → gộp thành báo cáo có trích nguồn từng ý, phần còn tranh cãi, kết luận; xuất Word + Drive. Báo trước chi phí như biên bản (≥ 1 USD hỏi ok) |
+| 23.2 Tổng hợp tài liệu | Gửi nhiều link / tệp / thư mục Drive → một báo cáo so sánh, gom ý chung, chỉ chỗ mâu thuẫn |
+| 23.3 Điểm báo theo chủ đề | Gắn vào bản tin (ai-CR-140): *mỗi sáng gửi anh tin giá thép, phân bón*; chỉ tin mới trong 24 giờ, mỗi tin 1–2 câu + link, bỏ trùng |
+| 23.4 Tìm giá + link sản phẩm | Tìm trên web (trang hãng, nhà phân phối, sàn TMĐT) → bảng: tên · quy cách · giá · đơn vị · nơi bán · link · ngày thấy giá; đặt cạnh **giá mua gần nhất trong ERP** và giá hải quan (nếu có) để thấy đắt / rẻ. Chỉ đọc trang công khai, không đăng nhập, không vượt chặn bot |
+| 23.5 NCC tốt nhất (AI đánh giá) | Chấm điểm minh bạch, ghi rõ trọng số: dữ liệu ERP (giá, số lần mua, giao đúng hạn, hợp đồng còn hạn) + thông tin web (năng lực, chứng nhận, đánh giá công khai). Bảng điểm kèm lý do từng điểm; NCC chưa có trong ERP thì đánh dấu *ứng viên mới*. AI chỉ GỢI Ý, không tự chọn NCC trên phiếu |
+| 23.6 Rào | Mỗi ý có nguồn; ghi ngày thu thập giá; giá web chỉ để tham khảo; đọc nhiều trang thì báo chi phí trước; ghi sổ chi phí (ai-CR-160) |
+
+Câu chờ đại ca chốt: (1) làm phần nào trước (em đề xuất 23.4 tìm giá + 23.5 NCC — sát việc thu mua nhất); (2) nguồn web ưu
+tiên / cấm (vd chỉ trang hãng + nhà phân phối, có lấy sàn TMĐT không); (3) trọng số chấm NCC (giá / chất lượng / giao hàng /
+pháp lý); (4) điểm báo gửi giờ nào, chủ đề nào.
 
 ## 4. Định hướng về sau
 
