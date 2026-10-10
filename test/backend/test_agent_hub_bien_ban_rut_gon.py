@@ -24,7 +24,7 @@ RECAP = "\n".join([
 
 
 def test_tin_chat_rut_gon_du_bon_muc_va_vua_mot_man():
-    row = type("R", (), {"title": "Giao ban giá thép", "recap": RECAP})()
+    row = type("R", (), {"title": "Giao ban giá thép", "recap": RECAP, "template": "dego"})()
     msg = mt.recap_message(row, "Recap DEGO", 102)
     assert len(msg) <= mt.RECAP_CHAT_MAX
     for head in ("**TÓM TẮT NHANH**", "**ĐÃ CHỐT**", "**VIỆC CẦN LÀM**"):

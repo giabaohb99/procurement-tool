@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-166 | Tóm tắt video YouTube sạch chữ thừa của model và đúng khuôn tệp Word
+- status: dang-lam
+- date: 2026-10-10
+Đại ca gửi tệp Word tóm tắt video YouTube đầu tiên và chỉ ra nhiều lỗi: tệp lọt cả đoạn suy nghĩ bằng tiếng Anh của model xen
+giữa các mục, bị cắt dở vì model dùng hết chỗ cho phần suy nghĩ, các chương đều mang mốc 00:00, tệp lại mang đầu trang của
+biên bản họp, tiêu đề chỉ ghi Video YouTube, và bot còn hỏi ai là ai dù chỉ có một người dẫn. Nay bot lọc bỏ các dòng suy nghĩ
+tiếng Anh và dấu cắt, bị cắt thì tự viết lại một lần với lời dặn chỉ in kết quả; khi chép lời video, bot bắt model ghi mốc giờ
+thật cho từng lượt nói và ghi tên video ở dòng đầu để lấy làm tiêu đề; tệp Word của video có đầu trang và ghi chú riêng; thẻ ai
+là ai chỉ gửi khi có từ hai người nói trở lên và không gửi cho tóm tắt video. Toàn bộ bài kiểm của bot và trợ lý chạy xanh.
+
+Mã nguồn: agent_hub/meetings.py (clean_recap, _is_model_chatter, was_cut, build_docx kind, YOUTUBE_PROMPT, offer_speakers, name_hints)
+
 ## ai-CR-165 | Tin biên bản trong chat chỉ gửi bản rút gọn vừa một màn điện thoại
 - status: xong
 - date: 2026-10-10

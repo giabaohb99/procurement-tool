@@ -81,6 +81,9 @@ class SourceKind(IntEnum):
     YOUTUBE = 3             # ai-CR-163 (phase 22): link YouTube CÔNG KHAI — Gemini tự xem / nghe, bot không tải video
 
 
+SOURCE_LABELS = {1: "Telegram", 2: "Google Drive", 3: "YouTube"}
+
+
 class MeetingError(RuntimeError):
     """Lỗi nói được cho người dùng (một câu tiếng Việt, không có URL / khóa)."""
 
@@ -124,7 +127,8 @@ BUILTIN: dict[str, Template] = {t.key: t for t in (
     Template("tom_tat_video", "Tóm tắt video",
              "Viết TÓM TẮT VIDEO bằng Markdown, đúng các mục: ## TÓM TẮT NHANH (3–6 gạch đầu dòng) · ## CÁC CHƯƠNG — mỗi "
              "chương một mục «### [mm:ss] Tên chương» kèm ý chính, giữ đủ số liệu / tên / mốc · ## SỐ LIỆU ĐÁNG CHÚ Ý · "
-             "## VIỆC NÊN LÀM (nếu video có gợi ý). Không viết mục người tham dự hay đã chốt.",
+             "## VIỆC NÊN LÀM (nếu video có gợi ý). Không viết mục người tham dự hay đã chốt. Bản chép không có mốc giờ "
+             "riêng cho từng đoạn thì tiêu đề chương KHÔNG ghi mốc («### Tên chương»), không lặp [00:00], không tự đặt mốc.",
              ("tóm tắt video", "bài giảng", "video hướng dẫn", "webinar")),
     Template("theo_gio", "Đầy đủ theo giờ",
              "Viết diễn biến theo mốc giờ [mm:ss]: ai nói gì (tóm ý từng đoạn), kết thúc bằng Kết luận và Việc cần làm.",
@@ -601,6 +605,8 @@ COMPANY_LINE = "DEGO HOLDING · Cần Thơ, Việt Nam"
 FOOTER_CENTER = "Tài liệu nội bộ · Lưu hành hạn chế"
 AI_NOTE = ("Biên bản tổng hợp tự động từ bản ghi âm bằng Trợ lý AI — tên riêng, thuật ngữ và số liệu nên đối chiếu lại "
            "với bản chép lời gửi kèm (tệp .txt, cùng thư mục trên Drive).")
+AI_NOTE_VIDEO = ("Tóm tắt tự động từ lời nói trong video bằng Trợ lý AI — chỉ dựa trên phần nghe được, không xem hình; tên "
+                 "riêng, thuật ngữ và số liệu nên đối chiếu lại với bản chép lời gửi kèm.")
 
 
 def _html(text: str) -> str:
@@ -749,7 +755,8 @@ def _md_body(doc, md: str) -> None:
 
 
 def build_docx(title: str, when: datetime | None, recap: str, transcript: str, *, label: str = "",
-               minutes: int = 0, author: str = "", formal: bool = False, code: str = "", source: str = "") -> bytes:
+               minutes: int = 0, author: str = "", formal: bool = False, code: str = "", source: str = "",
+               kind: str = "meeting") -> bytes:
     """Biên bản / recap Word theo chuẩn DEGO (ai-CR-116, STD-RECAP-DEGO-v1.0 qua `dego_docx`): đầu trang logo + mã văn
     bản, tiêu đề, bảng thông tin, TL;DR, các thanh mục teal, bảng việc, (mẫu chính thức: khối XÉT DUYỆT ký), phụ lục bản
     chép lời, chân trang lặp mọi trang có số trang."""
@@ -761,15 +768,18 @@ def build_docx(title: str, when: datetime | None, recap: str, transcript: str, *
 
     when = when or datetime.now()
     doc = D.new_document()
-    head = ["BIÊN BẢN HỌP", "MEETING MINUTES"] if formal else ["RECAP HỌP", "MEETING RECAP"]
+    #  ai-CR-166: tóm tắt video có đầu trang / phụ đề riêng, không gọi là «recap họp».
+    video = kind == "video"
+    head = (["TÓM TẮT VIDEO", "VIDEO SUMMARY"] if video else
+            ["BIÊN BẢN HỌP", "MEETING MINUTES"] if formal else ["RECAP HỌP", "MEETING RECAP"])
     D.header(doc, head + [f"Mã văn bản: {code or f'RECAP-{when:%Y.%m.%d}'}", "Phiên bản: v1.0"])
-    D.title(doc, (title or "Cuộc họp")[:150].upper())
-    D.subtitle(doc, f"{label or 'Biên bản'} · tổng hợp từ bản ghi âm")
+    D.title(doc, (title or ("Video" if video else "Cuộc họp"))[:150].upper())
+    D.subtitle(doc, f"{label or 'Biên bản'} · " + ("tổng hợp từ lời nói trong video" if video else "tổng hợp từ bản ghi âm"))
     people = _participants(recap)
     D.meta_table(doc, [("Ngày lập", f"{when:%d/%m/%Y %H:%M}", "Thời lượng", f"{minutes} phút" if minutes else "—"),
                        ("Người ghi", author or "Trợ lý AI", "Nguồn", (source or "tệp ghi âm")[:80])],
                  full=[("Thành phần", _html(people))] if people else None)
-    D.note(doc, AI_NOTE)
+    D.note(doc, AI_NOTE_VIDEO if video else AI_NOTE)
     _md_body(doc, recap)
     if formal:
         D.section_bar(doc, "XÉT DUYỆT")
@@ -1194,6 +1204,12 @@ def _write(db: Session, row: AgentMeeting) -> dict:
         text = _ask_logged(db, row, RECAP_SYSTEM,
                            f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n{row.transcript[:RECAP_MAX_CHARS]}",
                            max_tokens=RECAP_MAX_TOKENS)
+    if was_cut(text) or not clean_recap(text):
+        #  ai-CR-166: model tiêu hết trần vào phần «nghĩ» → lượt hai dặn chỉ in kết quả, trần cao hơn.
+        text = _ask_logged(db, row, RECAP_SYSTEM + " CHỈ in biên bản, KHÔNG in suy nghĩ hay kế hoạch viết.",
+                           content if len(chunks) > 1 else f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n"
+                                                           f"{row.transcript[:RECAP_MAX_CHARS]}",
+                           max_tokens=RECAP_MAX_TOKENS * 2, model=settings.AGENT_MEETING_COMPOSE_MODEL or None)
     recap = clean_recap(text)
     if not recap:
         raise MeetingError("Model không viết được biên bản, thử lại giúp em.")
@@ -1259,14 +1275,45 @@ _PREAMBLE = re.compile(r"^(below is|here is|here's|sure|certainly|of course|dư�
 _OUTRO = re.compile(r"^(let me know|hope this|if you need|nếu (anh|chị|bạn) cần|hy vọng)", re.IGNORECASE)
 
 
+#  ai-CR-166: model suy luận (DeepSeek qua trạm) in cả đoạn «nghĩ» bằng tiếng Anh xen giữa biên bản (dev 10/10, tóm tắt
+#  video YouTube): dòng tiếng Anh không dấu, nhiều từ nối. Tiếng Việt có dấu nên nhận ra được bằng chữ.
+_EN_WORDS = re.compile(r"\b(the|maybe|let's|lets|need|should|could|would|user|format|hmm|wait|okay|i think|we can|not "
+                       r"allowed|instruction|evaluator|draft|chapters?|timestamps?|fine|good|ugly|acceptable|penalize"
+                       r"|on|of|for|with|and|this|that|to|is|are|can|so|but|if|it|focus|content)\b", re.IGNORECASE)
+_VI_MARK = re.compile(r"[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]", re.IGNORECASE)
+CUT_MARK = re.compile(r"_?\(Câu trả lời chạm trần độ dài.*?\)_?", re.S)
+
+
+def _is_model_chatter(line: str) -> bool:
+    """Dòng «nghĩ» của model: văn tiếng Anh (không dấu tiếng Việt, ≥ 2 từ nối), hoặc câu tự nói với mình."""
+    t = line.strip()
+    if not t or t.startswith(("#", "|")):
+        return False
+    body = re.sub(r"^([-*•+]|\d+[.)])\s+", "", t)
+    if _VI_MARK.search(body):
+        return bool(re.match(r"^(ok|okay|hmm|wait|let's|lets)\b", body, re.IGNORECASE))
+    return len(body.split()) >= 4 and len(_EN_WORDS.findall(body)) >= 2
+
+
 def clean_recap(text: str) -> str:
-    """ai-CR-164: bỏ chữ của model lọt vào biên bản — rào ```markdown, câu dạo đầu / kết («Below is…», «Here is…»,
-    «Dưới đây là…»), đoạn chữ thường đứng TRƯỚC tiêu đề / gạch đầu dòng đầu tiên."""
-    lines = [ln for ln in (text or "").strip().splitlines() if not ln.strip().startswith("```")]
+    """ai-CR-164/166: bỏ chữ của model lọt vào biên bản — rào ```markdown, câu dạo đầu / kết, đoạn «nghĩ» tiếng Anh,
+    dấu cắt của trạm; có tiêu đề «## » thì chỉ lấy từ tiêu đề đầu tiên trở đi."""
+    text = CUT_MARK.sub("", text or "")
+    lines = [ln for ln in text.strip().splitlines() if not ln.strip().startswith("```")]
     lines = [ln for ln in lines if not (_PREAMBLE.match(ln.strip()) and len(ln.strip()) < 300)]
     lines = [ln for ln in lines if not _OUTRO.match(ln.strip())]
-    first = next((i for i, ln in enumerate(lines) if re.match(r"\s*(#|[-*•]\s|\d+[.)]\s|\|)", ln)), 0)
-    return "\n".join(lines[first:]).strip()
+    lines = [ln for ln in lines if not _is_model_chatter(ln)]
+    heads = [i for i, ln in enumerate(lines) if re.match(r"\s*##?\s", ln)]
+    if heads:
+        lines = lines[heads[0]:]
+    else:
+        first = next((i for i, ln in enumerate(lines) if re.match(r"\s*(#|[-*•]\s|\d+[.)]\s|\|)", ln)), 0)
+        lines = lines[first:]
+    return "\n".join(lines).strip()
+
+
+def was_cut(text: str) -> bool:
+    return bool(CUT_MARK.search(text or ""))
 
 
 def transcript_file(row: AgentMeeting) -> tuple[str, bytes]:
@@ -1294,7 +1341,9 @@ def _deliver(db: Session, row: AgentMeeting) -> dict:
         filename, data = _with_retry(lambda: word_of(db, row), Progress.SEND_WORD)
     if not _has(row, Progress.SEND_WORD):
         _with_retry(lambda: telegram.send_document(row.chat_id, filename, data,
-                                                   caption="Biên bản kèm phụ lục bản chép lời"), Progress.SEND_WORD)
+                                                   caption="Tóm tắt video (Word)" if tpl.key == "tom_tat_video"
+                                                   else "Biên bản (Word) — bản chép lời gửi riêng bên dưới"),
+                    Progress.SEND_WORD)
         _done(row, Progress.SEND_WORD)
         db.commit()
     txt_name, txt_data = transcript_file(row)
@@ -1336,8 +1385,10 @@ def word_of(db: Session, row: AgentMeeting) -> tuple[str, bytes]:
     data = build_docx(row.title, when, row.recap, "", label=tpl.label,
                       minutes=int((row.duration_sec or 0) // 60), author=_author_of(db, row.user_id),
                       formal=(tpl.key == "chinh_thuc"), code=f"RECAP-{when:%Y.%m.%d}-{row.id}",
-                      source="Google Drive" if row.source_kind == int(SourceKind.DRIVE) else "Telegram")
-    filename = re.sub(r"[^\w\- ]+", "", f"bien-ban {row.title} {tpl.label}")[:90].strip() + ".docx"
+                      source=SOURCE_LABELS.get(int(row.source_kind or 0), "Telegram"),
+                      kind="video" if tpl.key == "tom_tat_video" else "meeting")
+    prefix = "tom-tat" if tpl.key == "tom_tat_video" else "bien-ban"
+    filename = re.sub(r"[^\w\- ]+", "", f"{prefix} {row.title} {tpl.label}")[:90].strip() + ".docx"
     return filename, data
 
 
@@ -1349,7 +1400,7 @@ def resend(db: Session, row: AgentMeeting) -> None:
     minutes = int((row.duration_sec or 0) // 60)
     service.reply(db, row.chat_id, recap_message(row, tpl.label, minutes), markdown=True)     # ai-CR-165
     filename, data = word_of(db, row)
-    telegram.send_document(row.chat_id, filename, data, caption="Biên bản kèm phụ lục bản chép lời")
+    telegram.send_document(row.chat_id, filename, data, caption="Biên bản (Word)")
     db.commit()
     meeting_actions.offer(db, row)
 
@@ -1493,7 +1544,8 @@ def chat_summary(recap: str) -> str:
 
 def recap_message(row: AgentMeeting, label: str, minutes: int) -> str:
     """Tin biên bản trong chat = bản RÚT GỌN (≤ ~1.800 ký tự) + dòng chỉ chỗ bản đầy đủ. Không còn cắt giữa chừng."""
-    head = f"**BIÊN BẢN — {row.title}** ({minutes} phút, {label.lower()})\n\n"
+    kind = "TÓM TẮT VIDEO" if (row.template or "") == "tom_tat_video" else "BIÊN BẢN"
+    head = f"**{kind} — {row.title}** ({minutes} phút, {label.lower()})\n\n"
     body = chat_summary(row.recap or "")
     budget = RECAP_CHAT_MAX - len(head) - len(FULL_LINE) - 4
     while len(body) > budget and "\n- " in body:
@@ -1528,14 +1580,16 @@ def name_hints(transcript: str) -> list[str]:
     count: dict[str, int] = {}
     for name in _ADDRESSED.findall(transcript or ""):
         count[name] = count.get(name, 0) + 1
-    return [n for n, _ in sorted(count.items(), key=lambda x: -x[1])[:8]]
+    #  ai-CR-166: tên không dấu (kiểu tên game, tên hãng) phải gặp từ 2 lần trở lên mới gợi ý.
+    return [n for n, c in sorted(count.items(), key=lambda x: -x[1]) if c >= 2 or _VI_MARK.search(n)][:8]
 
 
 def offer_speakers(db: Session, row: AgentMeeting) -> bool:
     from . import service
 
     speakers = speakers_of(row.transcript)
-    if not speakers:
+    #  ai-CR-166: video thường (một người dẫn) không cần hỏi; chỉ hỏi khi có từ 2 người trở lên.
+    if not speakers or len(speakers) < 2 or (row.template or "") == "tom_tat_video":
         return False
     esc = telegram.esc
     lines = ["<b>AI LÀ AI?</b>", f"Biên bản <b>{esc(row.title)}</b> đang ghi người nói là Người 1, Người 2… Nhắn tên để em "
@@ -1756,7 +1810,10 @@ def check_estimate(db: Session, row: AgentMeeting, estimate: dict) -> None:
 # Video YouTube (ai-CR-163, phase 22) — đường chính thức: đưa link công khai vào Gemini, bot không tải video / tiếng
 # ---------------------------------------------------------------------------
 YOUTUBE_PROMPT = TRANSCRIBE_PROMPT.replace("đoạn ghi âm cuộc họp này", "video này").replace(
-    "Nếu đoạn ghi âm", "Nếu video") + " Bỏ qua hình ảnh, chỉ chép lời nói."
+    "Nếu đoạn ghi âm", "Nếu video") + (
+    " Bỏ qua hình ảnh, chỉ chép lời nói. Mốc [mm:ss] của MỖI lượt nói lấy theo thời gian thật trong video, không gộp cả "
+    "video vào một mốc. Dòng ĐẦU TIÊN ghi «TIÊU ĐỀ: tên video» rồi mới tới bản chép.")
+_YT_TITLE = re.compile(r"^\s*TIÊU ĐỀ:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 _YT_CONFIG = {"mediaResolution": "MEDIA_RESOLUTION_LOW"}
 
 
@@ -1822,6 +1879,9 @@ def _process_youtube(db: Session, row: AgentMeeting, key: str) -> dict:
             used_model = str(usage.get("model") or model)
             if NO_SPEECH in text and len(text) < 200:
                 continue
+            if (m := _YT_TITLE.search(text)) and row.title in ("", "Video YouTube"):
+                row.title = m.group(1)[:200]              # ai-CR-166: tên video lên tiêu đề Word / tin chat
+            text = _YT_TITLE.sub("", text, count=1)
             pieces.append(_shift_stamps(text.replace(NO_SPEECH, "").strip(), i * SEGMENT_SEC if count > 1 else 0))
     except MeetingError as e:
         service.finish_run(db, run, error=str(e))

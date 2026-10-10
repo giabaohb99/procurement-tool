@@ -109,3 +109,64 @@ def test_tra_loi_ai_la_ai_thay_ten_roi_viet_lai(db, monkeypatch):
     msg = service.log_message(db, DIR_IN, "12345", 4, "Người 1 = Bảo")
     db.commit()
     assert not mt.speakers_by_text(db, "12345", msg, "Người 1 = Bảo")    # thẻ đã trả lời rồi
+
+
+def test_bo_doan_nghi_tieng_anh_xen_giua_va_dau_cat(db):
+    """ai-CR-166 — dev 10/10, tóm tắt video YouTube: model suy luận in cả đoạn nghĩ tiếng Anh xen giữa các mục, và trạm
+    gắn dấu «chạm trần độ dài»; tất cả lọt vào Word."""
+    raw = "\n".join([
+        "Need maybe 7 chapters. Since no timestamps, I can use [00:00] for all? Let's decide.",
+        "## TÓM TẮT NHANH",
+        "- Hãng công bố trailer **2 phút** ngày 20/08",
+        "Maybe I can label chapters and then for subsequent repeated. That is ugly. Hmm.",
+        "- Trailer thứ hai dài **15 phút**",
+        "## CÁC CHƯƠNG",
+        "### Bối cảnh",
+        "- Nội dung chương một",
+        "Let's focus on content.",
+        "_(Câu trả lời chạm trần độ dài nên bị cắt — nhắn «viết tiếp» để em viết nốt.)_",
+    ])
+    out = mt.clean_recap(raw)
+    assert out.startswith("## TÓM TẮT NHANH")
+    for bad in ("Need maybe", "ugly", "Let's focus", "chạm trần"):
+        assert bad not in out, bad
+    assert "- Trailer thứ hai dài **15 phút**" in out and "- Nội dung chương một" in out
+    assert mt.was_cut(raw) and not mt.was_cut(out)
+    #  Dòng tiếng Việt không dấu kiểu tên hàng vẫn giữ.
+    assert mt.clean_recap("## A\n- Ram giay A4 Double A 80gsm") == "## A\n- Ram giay A4 Double A 80gsm"
+
+
+def test_word_tom_tat_video_co_dau_trang_rieng():
+    import io
+    import zipfile
+
+    data = mt.build_docx("Review trailer", None, "## TÓM TẮT NHANH\n- x", "", label="Tóm tắt video", minutes=14,
+                         source="YouTube", kind="video")
+    xml = zipfile.ZipFile(io.BytesIO(data)).read("word/document.xml").decode("utf-8")
+    assert "TÓM TẮT VIDEO" in xml and "RECAP HỌP" not in xml and "YouTube" in xml and "lời nói trong video" in xml
+
+
+def test_youtube_lay_tieu_de_tu_ban_chep(db, monkeypatch):
+    from app.modules.agent_hub import meeting_actions, service
+    from app.modules.agent_hub.model import AgentMeeting
+
+    sent: list[str] = []
+    monkeypatch.setattr(service, "reply", lambda db, chat_id, text, **kw: sent.append(text))
+    monkeypatch.setattr(mt.user_keys, "gemini_key", lambda: "AIza-k")
+    monkeypatch.setattr(mt.telegram, "send_document", lambda *a, **k: 1)
+    monkeypatch.setattr(mt, "_upload_word", lambda *a, **k: "")
+    monkeypatch.setattr(meeting_actions, "offer", lambda db, row: 0)
+    monkeypatch.setattr(mt.personal_memory, "add_note", lambda *a, **k: {"note_id": 1})
+    monkeypatch.setattr(mt, "_ask_logged", lambda db, row, system, content, **kw: "## TÓM TẮT NHANH\n- ok")
+    monkeypatch.setattr(mt, "youtube_tokens", lambda key, url, model: int(300 * mt.YT_TOKENS_PER_SEC))
+    monkeypatch.setattr(mt, "gemini_transcribe", lambda *a, **k: (
+        "TIÊU ĐỀ: Giới thiệu máy in màu A3\n[00:05] Người 1: chào\n[02:10] Người 1: giá 12 triệu", {"model": "g"}))
+    row = AgentMeeting(user_id=7, chat_id="12345", source_kind=3, source_ref="https://www.youtube.com/watch?v=abc",
+                       title="Video YouTube", mime="video/youtube", status=1, template="tom_tat_video",
+                       created_by=0, updated_by=0)
+    db.add(row)
+    db.commit()
+    assert mt.process(db, row.id)["status"] == "done"
+    db.refresh(row)
+    assert row.title == "Giới thiệu máy in màu A3" and row.transcript.startswith("[00:05]")
+    assert "Mốc [mm:ss] của MỖI lượt nói" in mt.YOUTUBE_PROMPT
