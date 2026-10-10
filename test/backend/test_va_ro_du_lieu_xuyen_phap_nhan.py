@@ -408,9 +408,11 @@ def sr_world(world):
 
 
 def con_lai(db) -> set[int]:
+    """Phiếu CÒN SỐNG. ai-CR-170: YCBG xóa MỀM — phiếu đã xóa vẫn nằm trong bảng, mang cờ."""
     from app.modules.survey_request.model import SurveyRequest
 
-    return {row.id for row in db.query(SurveyRequest).all()}
+    return {row.id for row in db.query(SurveyRequest)
+            .filter(SurveyRequest.is_deleted == False).all()}  # noqa: E712
 
 
 def test_18_xoa_hang_loat_ycbg_bo_qua_id_ngoai_pham_vi(world, sr_world):
@@ -428,6 +430,9 @@ def test_18_xoa_hang_loat_ycbg_bo_qua_id_ngoai_pham_vi(world, sr_world):
                                           db=world.db, user=world.actor("a1").user)
     assert message(ket_qua) == "Đã xóa 1 bản ghi"
     assert con_lai(world.db) == {sr_world["B"]}
+    from app.modules.survey_request.model import SurveyRequest
+    assert world.db.get(SurveyRequest, sr_world["A"]).is_deleted is True, "xóa mềm: phiếu còn trong bảng, mang cờ"
+    assert world.db.get(SurveyRequest, sr_world["B"]).is_deleted is False
 
 
 def test_18_xoa_hang_loat_ycbg_toan_id_ngoai_pham_vi_thi_403(world, sr_world):

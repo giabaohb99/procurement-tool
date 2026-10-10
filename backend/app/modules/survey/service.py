@@ -65,12 +65,15 @@ def list_surveys(db: Session, base_query, pg: dict):
 def _reconcile_sr_link(db: Session, s: Survey) -> None:
     """Đồng bộ liên kết YCKS: điền cái còn thiếu (survey_request_id <-> sr_code) từ cái đã có."""
     from app.modules.survey_request.model import SurveyRequest
+    #  ai-CR-170: YCBG đã xóa mềm coi như không có — không điền liên kết từ nó.
     if s.survey_request_id and not s.sr_code:
         sr = db.get(SurveyRequest, s.survey_request_id)
-        if sr:
+        if sr and not sr.is_deleted:
             s.sr_code = sr.code
     elif s.sr_code and not s.survey_request_id:
-        sr = db.query(SurveyRequest).filter(SurveyRequest.code == s.sr_code).first()
+        sr = (db.query(SurveyRequest)
+              .filter(SurveyRequest.code == s.sr_code, SurveyRequest.is_deleted == False)  # noqa: E712
+              .first())
         if sr:
             s.survey_request_id = sr.id
 
@@ -211,7 +214,8 @@ def delete_survey(db: Session, sid: int, user_id: int):
     from app.modules.attachment.service import delete_attachments_for
     line_ids = ([ln.id for ln in supplier_lines_of(db, sid)]
                 + [ln.id for ln in product_lines_of(db, sid)])
-    delete_attachments_for(db, [("survey", sid)] + [("survey_line", lid) for lid in line_ids])
+    # commit=False (ai-CR-169 mục 7): tệp + dòng + phiếu đi CHUNG một giao dịch.
+    delete_attachments_for(db, [("survey", sid)] + [("survey_line", lid) for lid in line_ids], commit=False)
     db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == sid).delete()
     db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == sid).delete()
     db.delete(s)

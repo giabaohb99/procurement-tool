@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, user_has_permission
 from app.core.file_registry import policy, read_parent
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, exclude_deleted
 
 #  Nhật ký từ chối. `06` H4(b) dặn: thu nhật ký đủ rồi mới chặn, không thì có
 #  người đang dùng hợp lệ mà bị khóa không hiểu vì sao. Ở đây chặn ngay (đợt này
@@ -75,8 +75,13 @@ def parent_records(db: Session, entity: str, entity_id: int):
         return Survey, ids
 
     if entity == "survey_request":
+        #  ai-CR-170: YCBG xóa mềm → id không còn → 404 «Chứng từ của tệp không còn tồn tại»
+        #  (tệp vẫn nằm trong DB, chỉ không còn cửa mở). `survey_request_line` đi qua
+        #  `apply_scope` ở `ensure_in_scope` nên tự lọc, không cần tra lại ở đây.
         from app.modules.survey_request.model import SurveyRequest
-        return SurveyRequest, [entity_id]
+        ids = [i for (i,) in db.query(SurveyRequest.id)
+               .filter(SurveyRequest.id == entity_id, SurveyRequest.is_deleted == False)]  # noqa: E712
+        return SurveyRequest, ids
     if entity == "survey_request_line":
         from app.modules.survey_request.model import (SurveyRequest,
                                                       SurveyRequestLine)
@@ -305,7 +310,8 @@ def reachable_from_scoped_po(db: Session, user, entity: str, entity_id: int) -> 
     model, ids = parent_records(db, entity, entity_id)
     if model is None or not ids:
         return False
-    codes = [c for (c,) in db.query(model.code).filter(model.id.in_(ids)) if c]
+    #  ai-CR-170: chứng từ cha đã xóa mềm không còn mã để lùi theo chuỗi.
+    codes = [c for (c,) in exclude_deleted(db.query(model.code).filter(model.id.in_(ids)), model) if c]
     if not codes:
         return False
 

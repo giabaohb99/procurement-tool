@@ -458,7 +458,9 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
                 groups.append(("survey_product_line", spl_ids, "PKS", sv.code))
                 groups.append(("survey_line", spl_ids, "PKS", sv.code))
             if sv.sr_code:
-                sr = db.query(SurveyRequest).filter(SurveyRequest.code == sv.sr_code).first()
+                sr = (db.query(SurveyRequest)
+                      .filter(SurveyRequest.code == sv.sr_code, SurveyRequest.is_deleted == False)  # noqa: E712
+                      .first())   # ai-CR-170: YCBG đã xóa mềm không bày trong chuỗi
                 if sr:
                     groups.append(("survey_request", [sr.id], "YCKS", sr.code))
                     srl_ids = _ids(SurveyRequestLine.id, SurveyRequestLine.survey_request_id, sr.id)

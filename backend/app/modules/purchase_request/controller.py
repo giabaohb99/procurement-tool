@@ -335,7 +335,8 @@ def _linked_survey_requests(db: Session, pr) -> list[dict]:
 
     rows = (db.query(SurveyRequest.id, SurveyRequest.code, SurveyRequest.status,
                      SurveyRequest.request_date, SurveyRequest.requester)
-            .filter(SurveyRequest.id.in_(sr_ids)).all())
+            .filter(SurveyRequest.id.in_(sr_ids),
+                    SurveyRequest.is_deleted == False).all())   # noqa: E712 — ai-CR-170: YCBG xóa mềm = không có
     by_id = {int(r[0]): r for r in rows}
     out: list[dict] = []
     for sid in sr_ids:

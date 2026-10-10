@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, String, func
+from sqlalchemy import BigInteger, Boolean, DateTime, String, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -18,6 +18,33 @@ class AuditMixin:
         DateTime, server_default=func.now(), onupdate=func.now()
     )
     updated_by: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class SoftDeleteMixin:
+    """Xóa MỀM dùng chung cho chứng từ (ai-CR-170, đại ca chốt 10/10/2026).
+
+    Ba cột: `is_deleted` 0/1 · `deleted_at` thời điểm xóa · `deleted_by` id tài khoản xóa.
+    Model gắn mixin này thì `core/scoping.apply_scope` / `get_scoped` TỰ thêm điều kiện
+    «chưa xóa» — chỗ đọc đi qua phạm vi không phải lọc tay. Chỗ đọc thẳng (`db.get`,
+    `db.query(Model).filter(code == ...)`) vẫn phải tự lọc, xem `doc/erp/20-ra-soat-xoa-cung.md` §5.
+
+    Dòng con / đính kèm / bình luận / nhật ký của phiếu đã xóa GIỮ NGUYÊN; mã phiếu không tái
+    dùng (hàm sinh mã đếm cả phiếu đã xóa).
+    """
+
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"),
+                                             index=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    deleted_by: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+def mark_deleted(obj, user_id: int) -> None:
+    """Đánh dấu xóa mềm một bản ghi có `SoftDeleteMixin` (chưa commit — nơi gọi tự commit)."""
+    obj.is_deleted = True
+    obj.deleted_at = datetime.utcnow()
+    obj.deleted_by = int(user_id or 0)
+    if hasattr(obj, "updated_by"):
+        obj.updated_by = int(user_id or 0)
 
 
 class LegacyIdMixin:

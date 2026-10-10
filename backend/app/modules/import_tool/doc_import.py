@@ -487,7 +487,16 @@ def run(db: Session, batch, wb, apply: bool) -> None:
         groups.setdefault(code, []).append(r)
 
     for code, rows in groups.items():
-        if db.query(header_model).filter(header_model.code == code).first():
+        existing = db.query(header_model).filter(header_model.code == code).first()
+        if existing is not None and getattr(existing, "is_deleted", False):
+            #  ai-CR-170: phiếu cùng mã ĐÃ XÓA MỀM coi như không có, nhưng cột `code` UNIQUE
+            #  nên không tạo lại được — báo rõ thay vì rơi vào lỗi khóa trùng của DB.
+            counts["skipped"] += len(rows)
+            log(rows[0], LogLevel.ERROR, "doc_deleted",
+                f"Mã phiếu '{code}' thuộc phiếu đã xóa — mã không tái dùng, bỏ qua cả phiếu",
+                ref_key=code)
+            continue
+        if existing is not None:
             counts["skipped"] += len(rows)
             log(rows[0], LogLevel.WARNING, "doc_exists",
                 f"Mã phiếu '{code}' đã tồn tại — bỏ qua cả phiếu", ref_key=code)
@@ -549,7 +558,11 @@ def run(db: Session, batch, wb, apply: bool) -> None:
                 db.flush()
 
         counts["created"] += 1
-        changes.append({"target_id": header.id, "was_new": True, "snapshot": ""})
+        #  ai-CR-169: ghi lại TRẠNG THÁI lúc nhập (Đặt xe / Duyệt dấu nhập cả lịch sử nên trạng thái
+        #  đến từ file, không phải «nháp»). Hoàn tác so với giá trị này: khác = phiếu đã được xử lý
+        #  sau khi nhập, không hoàn tác nữa.
+        snapshot = json.dumps({"status": getattr(header, "status", None)}) if hasattr(header, "status") else ""
+        changes.append({"target_id": header.id, "was_new": True, "snapshot": snapshot})
         line_note = f" với {nlines} dòng" if line_model is not None else ""
         log(rows[0], LogLevel.INFO, "doc_created",
             f"Tạo {adapter['label']} '{code}'{line_note}", ref_key=code, target_code=code)
@@ -573,9 +586,108 @@ def _resolve_ref(db, f, code, row_no, code_for_log, log) -> int:
     return 0
 
 
+#  ai-CR-169 — trạng thái «lúc nhập» của các chứng từ mà import KHÔNG đọc trạng thái từ file: luôn là nháp.
+#  Đặt xe / Duyệt dấu nhập cả lịch sử (trạng thái từ file) nên không có trong bảng này — lô mới ghi trạng thái
+#  vào `ImportChange.snapshot`, lô cũ (snapshot rỗng) chỉ kiểm phát sinh.
+_INITIAL_STATUS: dict[type, str] = {SurveyRequest: "draft", PurchaseRequest: "draft", Survey: "draft",
+                                    PurchaseOrder: "draft"}
+_UNKNOWN = object()
+
+
+def _imported_status(ch, header_model):
+    if ch.snapshot:
+        try:
+            return json.loads(ch.snapshot).get("status", _UNKNOWN)
+        except ValueError:
+            pass
+    return _INITIAL_STATUS.get(header_model, _UNKNOWN)
+
+
+def _doc_side_effects(db: Session, header_model, h) -> list[str]:
+    """Những gì đã PHÁT SINH từ phiếu sau khi nhập — có là không hoàn tác được nữa."""
+    from app.modules.approval import instance_service
+    from app.modules.purchase_request.model import PurchaseRequestItemOption
+    from app.modules.survey.model import SurveyProductLine
+    from app.modules.survey_request.model import SurveyRequestOption, SurveyRequestPr
+
+    found: list[str] = []
+
+    def _count(label: str, query) -> None:
+        n = query.count()
+        if n:
+            found.append(f"{label} ({n})")
+
+    if header_model is SurveyRequest:
+        line_ids = [i for (i,) in db.query(SurveyRequestLine.id).filter(SurveyRequestLine.survey_request_id == h.id)]
+        if line_ids:
+            _count("đã có phương án", db.query(SurveyRequestOption).filter(
+                SurveyRequestOption.survey_request_line_id.in_(line_ids)))
+        _count("đã sinh yêu cầu mua hàng", db.query(SurveyRequestPr).filter(SurveyRequestPr.survey_request_id == h.id))
+        _count("đã có phiếu khảo sát", db.query(Survey).filter(Survey.survey_request_id == h.id))
+    elif header_model is PurchaseRequest:
+        _count("đã có đơn mua hàng", db.query(PurchaseOrder).filter(PurchaseOrder.pr_code == h.code))
+        item_ids = [i for (i,) in db.query(PurchaseRequestItem.id).filter(PurchaseRequestItem.pr_id == h.id)]
+        if item_ids:
+            _count("đã có phương án nhà cung cấp", db.query(PurchaseRequestItemOption).filter(
+                PurchaseRequestItemOption.pr_item_id.in_(item_ids)))
+    elif header_model is Survey:
+        prod_ids = [i for (i,) in db.query(SurveyProductLine.id).filter(SurveyProductLine.survey_id == h.id)]
+        q = db.query(SurveyRequestOption).filter(SurveyRequestOption.supplier_survey_id == h.id)
+        if prod_ids:
+            q = db.query(SurveyRequestOption).filter(
+                (SurveyRequestOption.supplier_survey_id == h.id)
+                | SurveyRequestOption.product_survey_line_id.in_(prod_ids))
+        _count("đã được chọn làm phương án yêu cầu báo giá", q)
+        if h.survey_request_id:
+            found.append("đã gắn vào yêu cầu báo giá")
+    elif header_model is PurchaseOrder:
+        from app.modules.payable.model import Payable
+        from app.modules.payable.service import payment_block_reason
+        for p in db.query(Payable).filter(Payable.po_id == h.id).all():
+            if reason := payment_block_reason(db, p):
+                found.append(f"công nợ {reason}")
+    elif header_model is VehicleBooking:
+        if instance_service.latest_instance(db, "vehicle_booking", h.id) is not None:
+            found.append("đã có lịch sử duyệt")
+    elif header_model is SealRequest:
+        if instance_service.latest_instance(db, "seal_request", h.id) is not None:
+            found.append("đã có lịch sử duyệt")
+    return found
+
+
+def revert_blockers(db: Session, module: int, changes) -> list[str]:
+    """ai-CR-169: lý do TỪNG phiếu do lô tạo không hoàn tác được — rỗng = hoàn tác cả lô được.
+
+    Trước đây hoàn tác xóa cứng mọi phiếu của lô ở MỌI trạng thái (kể cả đã duyệt, đã có đơn /
+    công nợ sau khi nhập). Nay: phiếu phải còn đúng trạng thái lúc nhập và chưa phát sinh gì;
+    một phiếu sai là từ chối cả lượt, không xóa phiếu nào.
+    """
+    header_model = DOC_ADAPTERS[module]["header_model"]
+    problems: list[str] = []
+    for ch in changes:
+        if not ch.was_new:
+            continue
+        h = db.get(header_model, ch.survey_id)
+        #  Phiếu đã mất / đã xóa mềm rồi -> coi như hoàn tác xong phần nó, không chặn.
+        if h is None or getattr(h, "is_deleted", False):
+            continue
+        reasons = _doc_side_effects(db, header_model, h)
+        expected = _imported_status(ch, header_model)
+        if expected is not _UNKNOWN and getattr(h, "status", None) != expected:
+            label = getattr(h, "status_label", None) or str(h.status)
+            reasons.insert(0, f"trạng thái đã đổi thành «{label}»")
+        if reasons:
+            problems.append(f"{h.code}: {', '.join(reasons)}")
+    return problems
+
+
 def revert(db: Session, module: int, changes, user_id: int) -> tuple[int, int]:
     """Hoàn tác: xoá phiếu do batch tạo (kèm dòng / bảng nối công ty / tệp giữ chỗ).
-    v1 create-only nên không có khôi phục."""
+    v1 create-only nên không có khôi phục.
+
+    ai-CR-169: người gọi (`service.revert_batch`) đã chạy `revert_blockers` trước — tới đây mọi phiếu
+    đều còn nguyên như lúc nhập. Chứng từ ĐÃ có xóa mềm (YCMH, Đặt xe, Duyệt dấu) thì hoàn tác bằng
+    `is_deleted = True`, giữ nguyên dòng / bảng nối / tệp để còn khôi phục được."""
     from app.modules.seal_request.model import SealRequestCompany
     adapter = DOC_ADAPTERS[module]
     header_model = adapter["header_model"]
@@ -583,12 +695,19 @@ def revert(db: Session, module: int, changes, user_id: int) -> tuple[int, int]:
     line_fk = adapter.get("line_fk")
     attach = adapter.get("attachment")
     is_seal = header_model is SealRequest
+    soft = hasattr(header_model, "is_deleted")
     deleted = 0
     for ch in changes:
         if not ch.was_new:
             continue
         h = db.get(header_model, ch.survey_id)   # survey_id dùng chung = header id
         if not h:
+            continue
+        if soft:
+            if not h.is_deleted:
+                h.is_deleted = True
+                h.updated_by = user_id
+                deleted += 1
             continue
         if line_model is not None:
             db.query(line_model).filter(getattr(line_model, line_fk) == h.id).delete(synchronize_session=False)

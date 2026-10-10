@@ -471,7 +471,8 @@ def list_mine(db: Session, user, limit: int = MINE_MAX) -> list[dict]:
               .order_by(PurchaseRequest.id.desc()).limit(limit)):
         out.append({"kind": "purchase", "id": r.id, "code": r.code or f"#{r.id}",
                     "title": (r.purpose or "").strip()[:80] or "YCMH chưa có mục đích", "created_at": r.created_at})
-    for r in (db.query(SurveyRequest).filter(SurveyRequest.created_by == uid, SurveyRequest.status == "draft")
+    for r in (db.query(SurveyRequest).filter(SurveyRequest.created_by == uid, SurveyRequest.status == "draft",
+                                             SurveyRequest.is_deleted.is_(False))     # ai-CR-170
               .order_by(SurveyRequest.id.desc()).limit(limit)):
         out.append({"kind": "survey", "id": r.id, "code": r.code or f"#{r.id}",
                     "title": (r.purpose or "").strip()[:80] or "YCBG chưa có mục đích", "created_at": r.created_at})

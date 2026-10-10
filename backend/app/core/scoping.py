@@ -833,8 +833,33 @@ def scope_condition(model, entity: str, user, profile: dict, action: str = "read
     return or_(*conds)
 
 
+def not_deleted_cond(model):
+    """Điều kiện «chưa xóa mềm» của model, hoặc `None` nếu model không có cột `is_deleted`.
+
+    ai-CR-170: một chỗ chung cho mọi model gắn `SoftDeleteMixin` (và các model đã có sẵn
+    cột `is_deleted` từ trước: YCMH, nghỉ phép, đặt phòng, duyệt dấu, đặt xe). Chỗ đọc
+    thẳng không qua `apply_scope` thì gọi hàm này thay vì gõ tay `Model.is_deleted == False`.
+    """
+    col = getattr(model, "is_deleted", None)
+    if col is None:
+        return None
+    return col == False  # noqa: E712 — SQLAlchemy cần so sánh ==, không dùng `is False`
+
+
+def exclude_deleted(query, model):
+    """Gắn điều kiện «chưa xóa mềm» vào query nếu model có cột `is_deleted`; không thì trả nguyên."""
+    cond = not_deleted_cond(model)
+    return query if cond is None else query.filter(cond)
+
+
 def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read"):
-    """Lọc query theo HỢP các grant có quyền `action` trên entity."""
+    """Lọc query theo HỢP các grant có quyền `action` trên entity.
+
+    ai-CR-170: model có cột `is_deleted` thì TỰ loại phiếu đã xóa mềm — kể cả khi phạm vi là
+    «thấy tất» (`cond is None`). Phiếu đã xóa chỉ còn đọc được bằng truy vấn thẳng, cố ý
+    (vd dọn dữ liệu, giữ mã không tái dùng).
+    """
+    query = exclude_deleted(query, model)
     cond = scope_condition(model, entity, user, profile, action)
     return query if cond is None else query.filter(cond)
 
@@ -846,8 +871,13 @@ def get_scoped(db, model, entity: str, oid: int, user, profile: dict, action: st
     chính nên bỏ qua sạch phần lọc phạm vi — danh sách giấu đúng, nhưng gõ thẳng id vào URL
     là ra. Nơi gọi cứ trả **404 "Không tìm thấy"** như với id không tồn tại: người ngoài
     phạm vi không cần biết bản ghi đó có thật hay không, và cũng không phải thêm mã lỗi mới.
+
+    ai-CR-170: bản ghi đã xóa mềm (`is_deleted`) cũng trả `None` — cùng một cửa với
+    `apply_scope`, để màn chi tiết không mở được thứ danh sách đã giấu.
     """
     cond = scope_condition(model, entity, user, profile, action)
-    if cond is None:
+    deleted = not_deleted_cond(model)
+    if cond is None and deleted is None:
         return db.get(model, oid)
-    return db.query(model).filter(model.id == oid, cond).first()
+    parts = [c for c in (cond, deleted) if c is not None]
+    return db.query(model).filter(model.id == oid, *parts).first()

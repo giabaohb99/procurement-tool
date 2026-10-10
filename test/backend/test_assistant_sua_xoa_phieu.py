@@ -389,7 +389,14 @@ def test_xoa_ycbg_nhap_cua_minh(db, seed, cap_quyen):
     out = _goi(db, seed.u_req_id, "propose_document_delete",
                {"entity": "survey_request", "code": "YCBG-AI6-2"})
     confirm_update(db, db.get(User, seed.u_req_id), out["proposal"]["confirm_token"])
-    assert db.get(SurveyRequest, sid) is None
+    #  ai-CR-170: xóa MỀM — phiếu còn trong DB, mang cờ `is_deleted` + thời điểm + người xóa.
+    sr = db.get(SurveyRequest, sid)
+    assert sr is not None and sr.is_deleted is True
+    assert sr.deleted_at is not None and sr.deleted_by == seed.u_req_id
+    #  Trợ lý không còn thấy phiếu đó nữa: đề xuất xóa lần hai phải báo không tìm thấy.
+    lai = _goi(db, seed.u_req_id, "propose_document_delete",
+               {"entity": "survey_request", "code": "YCBG-AI6-2"})
+    assert lai.get("error")
 
 
 def test_xoa_don_nghi_nhap_cua_minh(db, seed, cap_quyen):

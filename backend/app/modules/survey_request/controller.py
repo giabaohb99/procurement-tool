@@ -13,7 +13,7 @@ from app.core.central_purchasing import get_central_dept_id, is_central_dept, no
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import (apply_scope, approves_only_in_dept_proc, holds_handling_dept,
-                              scope_condition)
+                              not_deleted_cond, scope_condition)
 
 from . import service
 from . import line_state
@@ -71,7 +71,8 @@ def _in_scope(db: Session, sid: int, user, action: str) -> SurveyRequest:
     404 cho cả "không có" lẫn "ngoài phạm vi", cùng mã lỗi `service.get_sr` vẫn trả.
     """
     cond = _scope_with_named_head(user, get_perm_profile(db, user), action)
-    q = db.query(SurveyRequest).filter(SurveyRequest.id == sid)
+    #  ai-CR-170: không đi qua `apply_scope` (vì vế TBP đích danh) nên tự lọc phiếu đã xóa mềm.
+    q = db.query(SurveyRequest).filter(SurveyRequest.id == sid, not_deleted_cond(SurveyRequest))
     sr = (q if cond is None else q.filter(cond)).first()
     if not sr:
         raise HTTPException(404, "Không tìm thấy phiếu yêu cầu báo giá")
@@ -293,7 +294,10 @@ def _list_query(request: Request, db: Session, user):
     # `code` chỉ bị loại khỏi lọc TRẦN (nhường cho ô tìm kiếm đa trường), bộ lọc điều kiện
     # `code__contains=...` vẫn phải chạy -> truyền FILTERABLE đầy đủ cho vế operator.
     filterable = [f for f in service.FILTERABLE if f != "code"]
-    q = apply_filters(db.query(SurveyRequest), SurveyRequest, request, filterable,
+    #  ai-CR-170: danh sách + xuất Excel bỏ phiếu đã xóa mềm (lọc tay vì phạm vi ở đây đi qua
+    #  `_scope_with_named_head`, không qua `apply_scope`).
+    q = apply_filters(db.query(SurveyRequest).filter(not_deleted_cond(SurveyRequest)),
+                      SurveyRequest, request, filterable,
                       operator_filterable=service.FILTERABLE)
     q = apply_ref_filters(q, SurveyRequest, request, db)      # CR-088
     q = apply_range_filters(q, SurveyRequest, request, ["request_date"])
@@ -380,7 +384,7 @@ def export_xlsx(request: Request, ids: str = "", cols: str = "",
 def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
     prof = get_perm_profile(db, user)
     cond = _scope_with_named_head(user, prof)
-    q = db.query(SurveyRequest).filter(SurveyRequest.id == sid)
+    q = db.query(SurveyRequest).filter(SurveyRequest.id == sid, not_deleted_cond(SurveyRequest))
     s = (q if cond is None else q.filter(cond)).first()
     if not s:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")

@@ -667,8 +667,8 @@ def test_s3_sua_ycbg_trong_va_ngoai_pham_vi(world, docs):
 def test_s4_xoa_ycbg_va_xoa_hang_loat_deu_loc_pham_vi(world, docs):
     """`DELETE /{sid}` và `DELETE ""` — đã VÁ (phạm vi `delete`, lọc trước vòng lặp).
 
-    Nặng hơn YCMH: `service.delete_sr` xóa CỨNG (`db.delete`) cả phiếu lẫn dòng lẫn phương
-    án — không có `is_deleted` để khôi phục.
+    ai-CR-170: `service.delete_sr` nay xóa MỀM (`is_deleted`) như YCMH — phiếu còn trong DB,
+    chỉ phiếu trong phạm vi mới bị đánh dấu.
     """
     from app.modules.survey_request import controller as sr_ctl
     from app.modules.survey_request.model import SurveyRequest
@@ -686,8 +686,12 @@ def test_s4_xoa_ycbg_va_xoa_hang_loat_deu_loc_pham_vi(world, docs):
     resp = sr_ctl.bulk_delete_survey_requests(f"{docs['sr_a']},{docs['sr_b']}",
                                               world.db, a1.user)
     assert json.loads(resp.body)["message"] == "Đã xóa 1 bản ghi"
-    assert {x.id for x in world.db.query(SurveyRequest).all()} == {docs["sr_b"]}, (
-        "chỉ phiếu trong phạm vi bị xóa")
+    assert {x.id for x in world.db.query(SurveyRequest).all()} == {docs["sr_a"], docs["sr_b"]}, (
+        "xóa mềm: cả hai phiếu vẫn nằm trong bảng")
+    assert world.db.get(SurveyRequest, docs["sr_a"]).is_deleted is True, "phiếu trong phạm vi bị đánh dấu xóa"
+    assert world.db.get(SurveyRequest, docs["sr_b"]).is_deleted is False, "phiếu ngoài phạm vi không bị đụng"
+    assert {x.id for x in world.db.query(SurveyRequest)
+            .filter(SurveyRequest.is_deleted == False).all()} == {docs["sr_b"]}  # noqa: E712
 
 
 def test_s5_tra_don_ycbg_di_theo_pham_vi_duyet(world, docs):

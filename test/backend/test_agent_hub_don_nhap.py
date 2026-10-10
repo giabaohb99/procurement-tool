@@ -12,6 +12,7 @@ def _rows(db, me: int, other: int):
     from app.modules.leave.constants import LR_DRAFT
     from app.modules.leave.request_model import LeaveRequest
     from app.modules.purchase_request.model import PurchaseRequest
+    from app.modules.survey_request.model import SurveyRequest
 
     rows = [
         LeaveRequest(code="NP001", from_date=date(2026, 10, 12), to_date=date(2026, 10, 12), reason="khám bệnh",
@@ -24,6 +25,9 @@ def _rows(db, me: int, other: int):
                      status=LR_DRAFT, created_by=other, updated_by=other),
         PurchaseRequest(code="YCMH001", purpose="mua giấy A4", status="draft", created_by=me, updated_by=me),
         PurchaseRequest(code="YCMH002", purpose="đã duyệt", status="approved", created_by=me, updated_by=me),
+        SurveyRequest(code="YCBG001", purpose="khảo sát bàn ghế", status="draft", created_by=me, updated_by=me),
+        SurveyRequest(code="YCBG002", purpose="đã xóa mềm", status="draft", created_by=me, updated_by=me,
+                      is_deleted=True),                                                     # ai-CR-170
     ]
     db.add_all(rows)
     db.commit()
@@ -35,7 +39,7 @@ def test_chi_liet_ke_phieu_nhap_cua_chinh_minh(db, seed):
 
     rows = _rows(db, seed.u_req_id, seed.u_nstm_id)
     mine = dc.list_mine(db, SimpleNamespace(id=seed.u_req_id))
-    assert sorted(x["code"] for x in mine) == ["NP001", "NP002", "YCMH001"]
+    assert sorted(x["code"] for x in mine) == ["NP001", "NP002", "YCBG001", "YCMH001"]   # YCBG002 đã xóa mềm: ẩn
     hit = dc.same_days_leave(mine, {"from_date": "2026-10-12", "to_date": "2026-10-12"})
     assert hit is not None and hit["code"] == "NP001"
     assert dc.same_days_leave(mine, {"from_date": "2026-10-15", "to_date": "2026-10-15"}) is None
@@ -47,6 +51,7 @@ def test_xoa_chi_phieu_nhap_cua_minh(db, seed, monkeypatch):
     import app.core.auth as auth
     from app.modules.leave.request_model import LeaveRequest
     from app.modules.purchase_request.model import PurchaseRequest
+    from app.modules.survey_request.model import SurveyRequest
     from app.modules.user.model import User
 
     monkeypatch.setattr(auth, "user_has_permission", lambda db, user, entity, action="read": True)
@@ -57,9 +62,14 @@ def test_xoa_chi_phieu_nhap_cua_minh(db, seed, monkeypatch):
                                   {"kind": "leave", "id": rows["NP004"].id},       # của người khác
                                   {"kind": "purchase", "id": rows["YCMH001"].id},
                                   {"kind": "purchase", "id": rows["YCMH002"].id},  # đã duyệt
+                                  {"kind": "survey", "id": rows["YCBG001"].id},
+                                  {"kind": "survey", "id": rows["YCBG002"].id},    # đã xóa mềm từ trước
                                   {"kind": "la", "id": 1}])
-    assert out["deleted"] == ["NP001", "YCMH001"] and len(out["skipped"]) == 4
+    assert out["deleted"] == ["NP001", "YCMH001", "YCBG001"] and len(out["skipped"]) == 5
     assert db.get(LeaveRequest, rows["NP001"].id).is_deleted is True
+    #  ai-CR-170: YCBG xóa MỀM — còn trong DB, mang cờ.
+    assert db.get(SurveyRequest, rows["YCBG001"].id) is not None
+    assert db.get(SurveyRequest, rows["YCBG001"].id).is_deleted is True
     assert db.get(LeaveRequest, rows["NP004"].id).is_deleted is False
     assert db.get(PurchaseRequest, rows["YCMH002"].id).is_deleted is False
 

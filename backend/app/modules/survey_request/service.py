@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.base_model import mark_deleted
 from app.core.central_purchasing import get_central_dept_id, normalize_handler_dept_id
 from app.core.text_limits import ensure_model_fits
 from app.core.utils import assert_unique_product_codes
@@ -35,8 +36,9 @@ def _stamp_result_date(ln: SurveyRequestLine) -> None:
 
 
 def get_sr(db: Session, sid: int) -> SurveyRequest:
+    """Nạp phiếu theo id. ai-CR-170: phiếu đã xóa mềm coi như không có (404)."""
     o = db.get(SurveyRequest, sid)
-    if not o:
+    if not o or o.is_deleted:
         raise HTTPException(404, "Không tìm thấy phiếu yêu cầu báo giá")
     return o
 
@@ -78,7 +80,9 @@ def valid_options_of(db: Session, line_id: int):
 def _gen_code(db: Session) -> str:
     ddmmyy = datetime.now().strftime("%d%m%y")
     prefix = f"YCBG{ddmmyy}"
-    # Lấy MAX hậu tố hiện có + 1 (không dùng count để tránh trùng khi có khoảng trống do xóa)
+    # Lấy MAX hậu tố hiện có + 1 (không dùng count để tránh trùng khi có khoảng trống do xóa).
+    # ai-CR-170: CỐ Ý đếm cả phiếu đã xóa mềm — mã phiếu không tái dùng (cột `code` UNIQUE,
+    # và nhật ký / đính kèm của phiếu đã xóa vẫn trỏ theo mã đó).
     mx = 0
     for (c,) in db.query(SurveyRequest.code).filter(SurveyRequest.code.like(prefix + "%")).all():
         suf = (c or "")[len(prefix):]
@@ -294,16 +298,17 @@ def clone_sr(db: Session, sid: int, user, profile: dict) -> SurveyRequest:
 
 
 def delete_sr(db: Session, sid: int, user_id: int):
+    """Xóa MỀM phiếu (ai-CR-170): chỉ đánh dấu `is_deleted` + thời điểm + người xóa.
+
+    Dòng / phương án / dây nối YCMH / đính kèm GIỮ NGUYÊN — phiếu chỉ biến mất khỏi danh sách,
+    màn chi tiết, báo cáo, tool Trợ lý (lọc tập trung ở `core/scoping` + các chỗ đọc thẳng).
+    Luật trạng thái giữ như cũ: Nháp / Bị trả lại / Đã từ chối."""
     s = get_sr(db, sid)
     if s.status not in ("draft", "rejected", "cancelled"):
         raise HTTPException(400, "Chỉ xóa được phiếu ở trạng thái Nháp, Bị trả lại hoặc Đã từ chối")
-    line_ids = [ln.id for ln in lines_of(db, sid)]
-    if line_ids:
-        db.query(SurveyRequestOption).filter(SurveyRequestOption.survey_request_line_id.in_(line_ids)).delete(synchronize_session=False)
-    db.query(SurveyRequestLine).filter(SurveyRequestLine.survey_request_id == sid).delete()
-    db.delete(s)
+    mark_deleted(s, user_id)
     db.commit()
-    record(db, user_id, ENTITY, sid, "delete")
+    record(db, user_id, ENTITY, sid, "delete", f"Xóa mềm phiếu {s.code}")
 
 
 def set_status(db: Session, sid: int, status: str, user_id: int, reason: str = "") -> SurveyRequest:
@@ -960,7 +965,7 @@ def _auto_complete_sr(db: Session, sid: int, user_id: int = 0) -> None:
     YCMH đã xóa không tính (bao-CR-580) — bình thường dây nối của nó đã gỡ, đây chỉ là lưới đỡ."""
     from app.modules.purchase_request.model import PurchaseRequest
     s = db.get(SurveyRequest, sid)
-    if not s or s.status != "pr_created":
+    if not s or s.is_deleted or s.status != "pr_created":
         return
     pr_ids = [r[0] for r in db.query(SurveyRequestPr.pr_id)
               .filter(SurveyRequestPr.survey_request_id == sid).distinct().all()]
@@ -1016,8 +1021,8 @@ def unlink_deleted_pr(db: Session, pr, user_id: int) -> list[int]:
     db.commit()
     for sid in sorted(sr_ids):
         s = db.get(SurveyRequest, sid)
-        if not s:
-            continue
+        if not s or s.is_deleted:
+            continue   # ai-CR-170: YCBG đã xóa mềm thì không đổi trạng thái / không ghi sổ nữa
         has_live = bool(db.query(SurveyRequestPr.id).filter(SurveyRequestPr.survey_request_id == sid).first()
                         or db.query(SurveyRequestLine.id).filter(SurveyRequestLine.survey_request_id == sid,
                                                                  SurveyRequestLine.pr_code != "").first())

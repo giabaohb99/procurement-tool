@@ -106,9 +106,8 @@ def _limit(args: dict, default: int) -> int:
 
 def _fetch_scoped(ctx: ToolContext, model, entity: str, code: str, doc_id):
     """Lấy MỘT phiếu trong phạm vi dữ liệu người hỏi — tuyệt đối không `db.get` trần."""
+    #  ai-CR-170: `apply_scope` tự loại phiếu xóa mềm (YCMH, YCBG, ...) — không lọc tay nữa.
     q = apply_scope(ctx.db.query(model), model, entity, ctx.user, ctx.profile)
-    if entity == "purchase_request":
-        q = q.filter(model.is_deleted == False)  # noqa: E712 - SQLAlchemy cần so sánh ==
     if code:
         q = q.filter(model.code == code)
     if doc_id:
@@ -477,9 +476,7 @@ def _run_pending(ctx: ToolContext, args: dict) -> dict:
             denied.append(_ENTITY_LABELS[entity])
             continue
         q = apply_scope(ctx.db.query(model), model, entity, ctx.user, ctx.profile) \
-            .filter(model.status == "submitted")
-        if entity == "purchase_request":
-            q = q.filter(model.is_deleted == False)  # noqa: E712
+            .filter(model.status == "submitted")   # phiếu xóa mềm đã bị `apply_scope` loại (ai-CR-170)
         pending = q.count()
         #  Phiếu trình SỚM NHẤT lên đầu — người chờ lâu nhất được duyệt trước.
         rows = q.order_by(model.id.asc()).limit(limit).all()
@@ -574,9 +571,7 @@ def _run_my_requests(ctx: ToolContext, args: dict) -> dict:
             denied.append(_ENTITY_LABELS[entity])
             continue
         q = _filter_mine(apply_scope(ctx.db.query(model), model, entity, ctx.user, ctx.profile),
-                     model, ctx.user)
-        if entity == "purchase_request":
-            q = q.filter(model.is_deleted == False)  # noqa: E712
+                     model, ctx.user)   # phiếu xóa mềm đã bị `apply_scope` loại (ai-CR-170)
         total = q.count()
         rows = q.order_by(model.id.desc()).limit(limit).all()  # phiếu mới nhất trước
         ids = [r.id for r in rows]

@@ -204,15 +204,19 @@ def _model_of(entity: str):
     return PaymentRequest
 
 
+#  Phiếu có cột `is_deleted` (xóa mềm): YCMH · YCBG (ai-CR-170) · nghỉ phép.
+_SOFT_DELETE_ENTITIES = ("purchase_request", "survey_request", "leave_request")
+
+
 def _soft_deleted(entity: str, doc) -> bool:
-    return entity in ("purchase_request", "leave_request") and bool(getattr(doc, "is_deleted", False))
+    return entity in _SOFT_DELETE_ENTITIES and bool(getattr(doc, "is_deleted", False))
 
 
 def _fetch_by_code(db, entity: str, code: str, user, profile, action: str = "write"):
     """Tìm phiếu theo mã TRONG phạm vi `action` của người hỏi — ngoài phạm vi coi như không có."""
     model = _model_of(entity)
     q = db.query(model).filter(model.code == code)
-    if entity in ("purchase_request", "leave_request"):
+    if entity in _SOFT_DELETE_ENTITIES:
         q = q.filter(model.is_deleted.is_(False))
     q = apply_scope(q, model, entity, user, profile, action=action)
     return q.first()

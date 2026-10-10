@@ -1,7 +1,7 @@
 from sqlalchemy import BigInteger, Boolean, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 # Trạng thái DÒNG khảo sát — lưu bằng slug tiếng Anh cho khớp cột `status` của cùng bảng
 # (draft/submitted/approved/...). Nhãn tiếng Việt để ở tầng hiển thị, xem LINE_STATUS_LABEL.
@@ -10,9 +10,12 @@ LS_COMPLETED = "completed"    # hoàn thành
 LINE_STATUSES = ("", LS_RESURVEY, LS_COMPLETED)
 
 
-class SurveyRequest(Base, AuditMixin):
+class SurveyRequest(Base, AuditMixin, SoftDeleteMixin):
     """Phiếu YÊU CẦU KHẢO SÁT (Task 5). Người YC lập để nhờ thu mua khảo sát sản phẩm/NCC,
-    sau khi hoàn thành sẽ chọn option (ẩn NCC) và sinh Phiếu Yêu cầu mua hàng (PYC)."""
+    sau khi hoàn thành sẽ chọn option (ẩn NCC) và sinh Phiếu Yêu cầu mua hàng (PYC).
+
+    ai-CR-170: xóa MỀM (`SoftDeleteMixin`, migration `grp11`). Dòng / phương án / dây nối YCMH /
+    đính kèm của phiếu đã xóa giữ nguyên trong DB; `apply_scope` / `get_scoped` tự giấu phiếu."""
 
     __tablename__ = "tab_survey_request"
 

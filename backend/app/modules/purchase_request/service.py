@@ -312,7 +312,9 @@ def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
         return int(emp.department_id), emp.department_name or ""
 
     for model, key in ((PurchaseRequest, "purchase_request"), (SurveyRequest, "survey_request")):
-        for row in db.query(model).filter(model.handler_dept_id.in_(central_values)).all():
+        #  ai-CR-170: cả hai model đều xóa mềm — phiếu đã xóa không đụng tới.
+        for row in db.query(model).filter(model.handler_dept_id.in_(central_values),
+                                          model.is_deleted == False).all():   # noqa: E712
             dept_id = int(row.department_id or 0)
             if not dept_id:
                 dept_id, dept_name = _dept_of_requester(getattr(row, "requester_id", 0))

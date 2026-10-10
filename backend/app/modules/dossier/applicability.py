@@ -258,9 +258,15 @@ def _lines_of_survey_request(db, doc_id: int) -> list[dict]:
     phẩm rốt cuộc không mua. Hệ quả phải nói ra ở giao diện: điều kiện theo SẢN
     PHẨM **im lặng không khớp** trên YCBG cho tới lúc chốt phương án.
     """
-    from app.modules.survey_request.model import (SurveyRequestLine,
+    from app.modules.survey_request.model import (SurveyRequest,
+                                                  SurveyRequestLine,
                                                   SurveyRequestOption)
 
+    #  ai-CR-170: phiếu đã xóa mềm = «không tồn tại» → rỗng (nơi gọi đã qua `get_scoped`,
+    #  đây là lưới đỡ cho đường gọi thẳng).
+    sr = db.get(SurveyRequest, doc_id)
+    if sr is None or sr.is_deleted:
+        return []
     lines = (
         db.query(SurveyRequestLine.id, SurveyRequestLine.item_group,
                  SurveyRequestLine.requirement_detail)
