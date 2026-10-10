@@ -223,6 +223,7 @@ Tiến độ đợt 09-10/10/2026. Mọi dòng dưới đây đã **lên DEV**, 
 | G-10 | *ok* trên thẻ = đồng ý luôn gộp + đưa lên dev khi bài kiểm không đỏ; prod không bao giờ tự đẩy | XONG DEV (ai-CR-154) |
 | G-11 | Đưa lên dev dựng lại cả cụm bot khi bản sửa đụng mã bot (chờ việc dở, khóa chống đè, tự quay về) | XONG DEV (ai-CR-155) |
 | G-12 | Lọc thẻ suy nghĩ `<thinking>` của model khỏi câu trả lời | XONG DEV (ai-CR-151) |
+| G-15 | Hỏi chi phí token của một biên bản họp: từng bước chép lời / viết biên bản / rút việc | XONG DEV (ai-CR-158) |
 | G-13 | Bài Help Center cho phần sửa / xóa phiếu, dùng lại nháp, xem quyền | CHỜ đại ca quyết |
 | G-14 | Dùng Claude Sonnet cho việc sửa mã nhỏ; cảnh báo khi máy sửa mã chạy bản cũ | Đại ca gác lại 09/10 |
 

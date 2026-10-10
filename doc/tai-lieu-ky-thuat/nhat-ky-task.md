@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-158 | Hỏi chi phí của một biên bản họp thì bot trả đúng biên bản đó
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca hỏi chi phí token của biên bản vừa làm nhưng bot trả chi phí chung của cả bot trong bảy và ba mươi ngày. Nguyên nhân là
 bot chỉ ghi sổ bước chép lời, còn bước viết biên bản và bước rút việc không được ghi, và cũng không gắn lượt nào vào cuộc họp.
@@ -13204,6 +13204,7 @@ vào và ra, bao nhiêu tiền, rồi tổng cộng. Biên bản làm trước b
 Toàn bộ bài kiểm của bot chạy xanh.
 
 Mã nguồn: agent_hub/meetings.py (tag_run, runs_of, cost_text, _write) · agent_hub/meeting_actions.py (extract) · agent_hub/service.py (_meeting_cost_by_text, _cost_by_text)
+Deploy: dev 10/10, commit a2b9cd7f trên erp-v2; dựng lại cụm bot.
 
 ## ai-CR-157 | Hướng dẫn dùng bot cho phần phiếu và câu hỏi quyền của tôi
 - status: xong
