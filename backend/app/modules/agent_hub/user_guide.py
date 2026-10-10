@@ -43,6 +43,13 @@ SECTIONS: tuple[Section, ...] = (
                               "cái nào"),
         ("xuất Excel", "tệp của lần tra vừa rồi (hoặc xuất Word)"),
         ("cách tạo đơn nghỉ phép trên ERP", "hỏi cách dùng một màn hình ERP, em tra sổ hướng dẫn sử dụng"),
+        #  ai-CR-173/174 (phase 23.4/23.5): tìm giá trên web + chấm điểm NCC.
+        ("giá thị trường thép phi 10 hiện nay", "em tìm giá và link trên web (trang hãng, nhà phân phối, sàn TMĐT), "
+                                                 "đặt cạnh giá mình mua gần nhất trong ERP; giá web chỉ tham khảo, có ghi "
+                                                 "ngày thấy giá"),
+        ("NCC nào tốt nhất cho giấy A4", "em chấm điểm NCC từ dữ liệu ERP (giá 40, số lần mua 20, giao đúng hạn 20, hợp "
+                                          "đồng còn hạn 20), ghi rõ lý do và chỗ thiếu dữ liệu; em chỉ gợi ý, anh/chị "
+                                          "chọn NCC trên phiếu"),
     )),
     #  ai-CR-157: tạo phiếu và sửa / xóa phiếu tách thành hai nhóm riêng, đủ các câu của ai-CR-142/143/151/156.
     Section("phieu", "Tạo phiếu nháp", ("phieu", "tao phieu", "nhap", "don nhap", "nghi phep", "ycmh", "ycbg"), (

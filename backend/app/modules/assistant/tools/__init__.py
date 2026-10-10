@@ -41,6 +41,7 @@ from .update_tool import PROPOSE_DOCUMENT_DELETE_SPEC, PROPOSE_DOCUMENT_UPDATE_S
 from .account_setup_tool import PROPOSE_ACCOUNT_SETUP_SPEC
 from .customs_tool import (CUSTOMS_BUY_TIMING_SPEC, CUSTOMS_LEGAL_CHECK_SPEC, CUSTOMS_MARKET_SPEC,
                           CUSTOMS_PRICE_STATS_SPEC)
+from .market_tool import MARKET_SPECS
 
 log = logging.getLogger("app.assistant.tools")
 
@@ -77,7 +78,8 @@ def _active_specs() -> list:
                            MANAGE_BRIEFS_SPEC,    # ai-CR-140: bật / tắt / hẹn bản tin trong chat
                            *PERSONAL_SPECS,       # ai-CR-095: sổ ghi nhớ riêng từng người (C-02)
                            *GROUP_SPECS,          # ai-CR-105: đọc nhóm Telegram bot đang ở
-                           *MEETING_SPECS]        # ai-CR-112: viết lại biên bản họp theo mẫu, mẫu riêng
+                           *MEETING_SPECS,        # ai-CR-112: viết lại biên bản họp theo mẫu, mẫu riêng
+                           *MARKET_SPECS]         # ai-CR-173/174: giá + link trên web, chấm điểm NCC (phase 23.4/23.5)
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs

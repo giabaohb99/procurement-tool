@@ -13205,6 +13205,30 @@ không nút bấm cho chat đã gửi yêu cầu tạo việc, người chỉ ra
 Mã nguồn: agent_hub/service.py (requester_chat, _copy_to_ops, ops_recipients)
 Deploy: dev 10/10, commit e723f3e4 trên erp-v2; dựng lại cụm bot.
 
+## ai-CR-173 | Trợ lý tìm giá và link sản phẩm trên web, đặt cạnh giá mua gần nhất trong ERP
+- status: dang-lam
+- date: 2026-10-10
+Đại ca muốn bot đi tìm giá sản phẩm và link mua trên thị trường. Nay Trợ lý có công cụ tìm giá: hỏi giá thị trường một mặt hàng
+thì bot tìm trên web một hai lượt, đọc bốn trang đầu, trả cho người hỏi bảng tên hàng, quy cách, giá, đơn vị, nơi bán, link và
+ngày thấy giá; sàn thương mại điện tử được gắn nhãn để tự lọc. Bên cạnh là giá mình mua gần nhất và giá tốt nhất trong ERP theo
+mã hàng (không có mã thì dò theo tên, nhiều kết quả thì hỏi lại), và giá hải quan nếu có quyền. Bot chỉ đọc trang công khai,
+không gọi thêm model, giá web chỉ để tham khảo và có ghi ngày. Cần quyền xem sản phẩm; chưa có quyền thì không tốn lượt tìm.
+Hướng dẫn và sổ ý định có thêm mục cho câu hỏi giá thị trường. Bài kiểm chạy xanh.
+
+Mã nguồn: assistant/tools/market_tool.py (market_price_search), assistant/tool_router.py, agent_hub/intent_ledger.py,
+agent_hub/user_guide.py; bài kiểm test_assistant_market_tool.py
+
+## ai-CR-174 | Trợ lý chấm điểm nhà cung cấp tốt nhất cho một mặt hàng từ dữ liệu ERP
+- status: dang-lam
+- date: 2026-10-10
+Đại ca muốn hỏi bot nhà cung cấp nào tốt nhất theo AI đánh giá. Nay Trợ lý có công cụ chấm điểm nhà cung cấp cho một mặt hàng
+hoặc một nhóm nhà cung cấp trong kỳ mười hai tháng gần nhất: giá bốn mươi điểm, số lần mua hai mươi, giao đúng hạn hai mươi,
+hợp đồng còn hạn hai mươi. Mỗi nhà cung cấp trả điểm từng phần, số liệu, lý do và chỗ còn thiếu dữ liệu; phần không có quyền
+xem (đơn mua hàng, hợp đồng) hoặc chưa có dữ liệu thì chấm không điểm và ghi rõ thay vì giấu. Bot chỉ gợi ý, người dùng vẫn tự
+chọn nhà cung cấp trên phiếu. Phần đánh giá từ thông tin web về nhà cung cấp chưa làm. Bài kiểm chạy xanh.
+
+Mã nguồn: assistant/tools/market_tool.py (supplier_scorecard, SCORE_WEIGHTS); bài kiểm test_assistant_market_tool.py
+
 ## ai-CR-168 | Video YouTube chia đoạn mười phút để chương tóm tắt có mốc giờ thật
 - status: xong
 - date: 2026-10-10

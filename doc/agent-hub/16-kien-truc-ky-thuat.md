@@ -128,6 +128,7 @@ viết sẵn, model chỉ chọn công cụ và điền tham số theo khuôn.
 | Văn bản, luồng phê duyệt | `document_tool.py` | ERP |
 | Danh bạ, nghỉ phép, phiếu hỗ trợ, việc Dự án | `employee_tool.py`, `leave_tool.py`, `ticket_tool.py`, `work_tool.py` | ERP |
 | Hải quan (giá thị trường, thời điểm mua, pháp lý) | `customs_tool.py` | ERP |
+| Giá + link sản phẩm trên web, chấm điểm NCC (phase 23.4/23.5, ai-CR-173/174) | `market_tool.py` → `agent_hub/web_search.py` | ERP |
 | HDSD (Qdrant `kb_docs`) | `rag_tool.py` → `assistant/rag/` | ERP |
 | Soạn nháp YCBG / YCMH / nghỉ phép / YCTT | `draft_tool.py` | ERP |
 | Đề xuất sửa phiếu, lập bộ tài khoản | `update_tool.py`, `account_setup_tool.py` | ERP |

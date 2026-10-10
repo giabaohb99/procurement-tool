@@ -88,6 +88,10 @@ TOOL_DANH_MUC = {
     #  ai-CR-078 — tên phòng ban / pháp nhân / chức vụ (+ NCC khi có supplier.read); số phiếu theo tên phòng chỉ khi có
     #  quyền xem loại phiếu đó; không trả nội dung phiếu nào.
     "glossary_lookup": "dò nghĩa từ nội bộ trong danh mục dùng chung",
+    #  ai-CR-173/174 (phase 23.4/23.5): nguồn web công khai không có chủ sở hữu; phần ERP đi lại đúng các hàm
+    #  lịch sử giá ở trên (product/supplier.read); giao hàng và hợp đồng của scorecard có apply_scope theo người hỏi.
+    "market_price_search": "giá + link sản phẩm trên web công khai, kèm giá mua gần nhất theo mã hàng",
+    "supplier_scorecard": "chấm điểm NCC từ lịch sử mua (+ ĐMH / hợp đồng đã gác phạm vi)",
 }
 
 #  CỐ Ý không lọc phạm vi — mỗi dòng phải nói được lý do, nếu không thì nó là lỗ hổng
@@ -146,8 +150,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    #  69 = 68 + `propose_document_delete` (AI-0006 / ai-CR-151).
-    assert len(thuc_te) == 69, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  71 = 69 + `market_price_search` + `supplier_scorecard` (ai-CR-173/174, phase 23.4/23.5).
+    assert len(thuc_te) == 71, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

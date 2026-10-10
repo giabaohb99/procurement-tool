@@ -87,6 +87,7 @@ class Sub(IntEnum):
     LOOKUP_GUIDE = 36
     LOOKUP_ANALYTICS = 37
     LOOKUP_WORK = 38
+    LOOKUP_MARKET = 39     # ai-CR-173: giá + link sản phẩm trên web (phase 23.4)
     LOOKUP_OTHER = 49
     MAKE_PURCHASE_REQUEST = 50
     MAKE_SURVEY_REQUEST = 51
@@ -131,6 +132,7 @@ SUB_CODES: dict[Sub, tuple[str, str]] = {
     Sub.LOOKUP_GUIDE: ("tra_cuu.huong_dan", "Hướng dẫn, thuật ngữ"),
     Sub.LOOKUP_ANALYTICS: ("tra_cuu.phan_tich", "Phân tích số liệu"),
     Sub.LOOKUP_WORK: ("tra_cuu.viec", "Việc Dự án của tôi"),
+    Sub.LOOKUP_MARKET: ("tra_cuu.gia_thi_truong", "Giá, link sản phẩm trên web"),
     Sub.LOOKUP_OTHER: ("tra_cuu.khac", "Tra cứu khác"),
     Sub.MAKE_PURCHASE_REQUEST: ("thao_tac.tao_ycmh", "Soạn YCMH"),
     Sub.MAKE_SURVEY_REQUEST: ("thao_tac.tao_ycbg", "Soạn YCBG"),
@@ -163,7 +165,8 @@ TOOL_SUB: dict[str, Sub] = {
     "pending_procurement_approvals": Sub.LOOKUP_APPROVAL, "my_approval_tasks": Sub.LOOKUP_APPROVAL,
     "approval_flow_lookup": Sub.LOOKUP_APPROVAL,
     "supplier_search": Sub.LOOKUP_SUPPLIER, "suppliers_for_product": Sub.LOOKUP_SUPPLIER,
-    "top_suppliers_by_purchase": Sub.LOOKUP_SUPPLIER,
+    "top_suppliers_by_purchase": Sub.LOOKUP_SUPPLIER, "supplier_scorecard": Sub.LOOKUP_SUPPLIER,   # ai-CR-174
+    "market_price_search": Sub.LOOKUP_MARKET,   # ai-CR-173
     "supplier_contracts": Sub.LOOKUP_CONTRACT, "contract_count_by_status": Sub.LOOKUP_CONTRACT,
     "contract_list_by_expiry": Sub.LOOKUP_CONTRACT,
     "product_search": Sub.LOOKUP_PRODUCT, "product_best_price": Sub.LOOKUP_PRODUCT,

@@ -1255,6 +1255,13 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "customs_market": "ctx.can(customs_price, read) — dữ liệu hải quan, PUBLIC (bao-CR-481)",
     "customs_legal_check": "ctx.can(customs_price, read) — tra danh mục pháp lý dùng chung "
                            "(customs_regulation cũng PUBLIC), không tra dữ liệu của ai (bao-CR-481)",
+    # (a-quater) ai-CR-173/174 (phase 23.4/23.5): web công khai + bảng lịch sử giá + ĐMH / hợp đồng đã gác phạm vi
+    "market_price_search": "ctx.can(product) — nguồn web công khai (không phải dữ liệu của ai) + giá ERP đi qua đúng "
+                           "catalog.product_purchase_history / product_best_price (ctx.can(product)+supplier); "
+                           "giá hải quan chỉ khi ctx.can(customs_price)",
+    "supplier_scorecard": "ctx.can(supplier) + ctx.can(product) — bảng lịch sử giá; giao hàng qua "
+                          "apply_scope(PurchaseOrder, 'purchase_order') khi có purchase_order.read; hợp đồng qua "
+                          "catalog._scoped_contracts khi có contract.read; thiếu khóa nào thì phần đó vào data_gaps",
     # (b) dữ liệu của CHÍNH người hỏi — lọc bằng employee_id/user_id, không phải phạm vi
     # (b-bis) Google CÁ NHÂN (ai-CR-064): token lấy từ `google_link.get_link(db, ctx.user.id)`
     #  — kết nối của chính người hỏi; không nối thì tool trả lời «chưa nối Google». Dữ liệu là

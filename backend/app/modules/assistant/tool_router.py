@@ -30,9 +30,13 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
         "recent_purchase_orders", "recent_purchases", "my_procurement_requests", "procurement_doc_read",
         "pending_procurement_approvals", "purchase_report", "product_search", "product_best_price",
         "product_purchase_history", "supplier_search", "suppliers_for_product", "top_suppliers_by_purchase",
-        "supplier_contracts", "contract_count_by_status", "contract_list_by_expiry", "analytics_query"}),
+        "supplier_contracts", "contract_count_by_status", "contract_list_by_expiry", "analytics_query",
+        #  ai-CR-173/174 (phase 23.4/23.5): giá + link trên web, chấm điểm NCC.
+        "market_price_search", "supplier_scorecard"}),
      r"mua hang|don mua|dmh|\bpo\d*|ycmh|yeu cau mua|phieu mua|bao gia|ycbg|khao sat|\bncc\b|nha cung cap|san pham"
-     r"|mat hang|\bgia\b|hop dong|nhap kho|thu mua|vat tu|dat hang|giao hang|tien do"),
+     r"|mat hang|\bgia\b|hop dong|nhap kho|thu mua|vat tu|dat hang|giao hang|tien do"
+     r"|gia thi truong|tim gia|gia web|gia tren mang|link (mua|san pham)|ncc tot nhat|cham diem|danh gia ncc"
+     r"|xep hang ncc|nha cung cap tot|nen mua( .{1,40})? cua ai|so ncc"),
     ("make_purchase", frozenset({"draft_purchase_request", "draft_survey_request"}),
      r"(len|tao|lap|soan|lam)( giup| giup anh| giup em)? (phieu|ycmh|ycbg|yeu cau|don)|can mua|dat mua|xin mua"
      r"|de xuat mua|phieu bao gia"),
