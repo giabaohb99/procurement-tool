@@ -13206,7 +13206,7 @@ Mã nguồn: agent_hub/service.py (requester_chat, _copy_to_ops, ops_recipients)
 Deploy: dev 10/10, commit e723f3e4 trên erp-v2; dựng lại cụm bot.
 
 ## ai-CR-169 | Chống mất dữ liệu do xóa cứng, đợt 1: bảy chỗ rủi ro cao
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Theo bản rà xóa cứng, bảy chỗ có thể làm mất dữ liệu thật đã được chặn. Hợp đồng đã ký, đang hiệu lực, hết hạn hoặc đã thanh lý
 không xóa được nữa; xóa nhiều thì kiểm cả lô trước. Hoàn tác một lô nhập từ Excel chỉ được khi mọi phiếu của lô còn đúng trạng
@@ -13220,9 +13220,10 @@ dịch. Bài kiểm mới 17 bài, các bài cũ giả định xóa cứng đư�
 Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_import.py (revert_blockers), payable/service.py
 (payment_block_reason), supplier/service.py + product/service.py (count_references, ensure_deletable), core/crud.py,
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
+Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-170 | Xóa mềm dùng chung cho chứng từ, áp trước cho yêu cầu báo giá
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca chốt chuyển xóa phiếu sang xóa mềm: giữ bản ghi, chỉ đánh cờ đã xóa kèm thời điểm và người xóa, và kiểm còn chỗ nào xóa
 cứng. Đợt này làm lớp dùng chung và áp cho yêu cầu báo giá. Lớp dùng chung là một mixin ba cột gắn vào model; tầng phạm vi dữ liệu
@@ -13235,6 +13236,7 @@ chạy xanh. Hoàn tác lô nhập vẫn xóa cứng, xử lý ở ai-CR-169.
 
 Mã nguồn: core/base_model.py (SoftDeleteMixin, mark_deleted), core/scoping.py (not_deleted_cond, exclude_deleted, apply_scope,
 get_scoped), survey_request/service.py (delete_sr); migration grp11_ycbg_xoa_mem; bài kiểm test_ycbg_xoa_mem.py
+Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-173 | Trợ lý tìm giá và link sản phẩm trên web, đặt cạnh giá mua gần nhất trong ERP
 - status: xong
