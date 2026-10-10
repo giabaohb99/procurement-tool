@@ -201,6 +201,8 @@ class Settings(BaseSettings):
     # ai-CR-161 (phase 16.2): nạp công cụ theo nhu cầu — chỉ gửi nhóm lõi + nhóm nghiệp vụ câu hỏi chạm tới; không khớp
     # nhóm nào hoặc model báo thiếu công cụ thì gửi đủ. Tắt = gửi đủ mọi lượt như cũ.
     AI_TOOL_ROUTING: bool = True
+    # ai-CR-164: model cho bước GỘP biên bản họp dài (tóm hai tầng). Trống = model mặc định của khóa người gửi.
+    AGENT_MEETING_COMPOSE_MODEL: str = ""
     QDRANT_URL: str = "http://qdrant:6333"
     # Model nhúng của Gemini. Đổi model => vector cũ vô nghĩa, PHẢI reindex toàn bộ.
     AI_EMBED_MODEL: str = "gemini-embedding-001"

@@ -13193,8 +13193,21 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
-## ai-CR-162 | Biên bản họp không bịa nội dung từ tệp không có tiếng nói, và báo lỗi nói rõ đã xong gì chưa xong gì
+## ai-CR-164 | Biên bản họp sạch chữ thừa, đủ ý khi họp dài, hỏi ai là ai và gửi bản chép lời riêng
 - status: dang-lam
+- date: 2026-10-10
+Đại ca xem biên bản một cuộc họp dài 102 phút trên dev và góp năm điểm. Bot nay bỏ hết câu dạo đầu hay câu kết của model, ví dụ
+câu tiếng Anh từng lọt vào tệp Word. Họp dài hơn ba mươi phút được tóm hai tầng: tóm từng đoạn khoảng hai mươi phút giữ đủ số
+liệu, tên, điều đã chốt và việc, rồi gộp thành một biên bản, nên không còn sơ sài; mục việc cần làm quét cả cuộc họp. Sau khi
+gửi biên bản, nếu người nói còn ghi là Người 1, Người 2, bot gửi thẻ hỏi ai là ai kèm câu trích và các tên nghe được trong cuộc
+họp; người dùng nhắn tên thì bot viết lại biên bản với tên thật mà không chép lời lại. Tệp Word không còn phụ lục bản chép lời;
+bản chép lời có mốc giờ được gửi riêng thành tệp chữ và lưu cùng thư mục trên Drive. Tin biên bản dài quá thì ghi rõ bản đầy đủ
+nằm trong tệp Word đính kèm và trên Drive. Toàn bộ bài kiểm của bot và trợ lý chạy xanh.
+
+Mã nguồn: agent_hub/meetings.py (clean_recap, transcript_chunks, _ask_logged, transcript_file, recap_message, offer_speakers, speakers_by_text, rename) · agent_hub/meeting_drive.py · core/config.py (AGENT_MEETING_COMPOSE_MODEL)
+
+## ai-CR-162 | Biên bản họp không bịa nội dung từ tệp không có tiếng nói, và báo lỗi nói rõ đã xong gì chưa xong gì
+- status: xong
 - date: 2026-10-10
 Trên dev, đại ca gửi một video quay màn hình không có lời nói nhưng bot vẫn chép ra hơn mười hai nghìn ký tự hội thoại bịa và
 viết thành biên bản 45 phút; sau đó một bước phía sau hỏng vì lúc đó ERP đang dựng lại, mà tin báo lại nói chưa làm được biên
@@ -13206,9 +13219,10 @@ bước hỏng. Lỗi lạ thì có tin báo cho người vận hành. Khi đưa
 Tám trăm ba mươi mốt bài kiểm của bot và trợ lý chạy xanh.
 
 Mã nguồn: agent_hub/meetings.py (audio_streams, speech_check, plausible_transcript, Progress, _deliver, failure_text, retry) · agent_hub/coder.py (meetings_running, _wait_meetings) · agent_hub/erp.py (_not_connected) · migration grp10 + agent0010
+Deploy: dev 10/10, commit fa080d9c trên erp-v2; migration grp10 và agent0010; đã dọn bản chép và biên bản bịa của phiên họp số 4 trên dev.
 
 ## ai-CR-161 | Phase 16.2 và 16.3: chỉ gửi công cụ cần cho từng câu hỏi và xếp lời dặn để đọc lại từ bộ đệm
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đo trên dev, mỗi lượt trả lời trên web tốn trung bình khoảng tám mươi lăm nghìn token vào vì câu nào cũng gửi kèm đủ 69 khai
 báo công cụ. Nay bot chọn trước bằng cách so chữ trong câu hỏi, không tốn thêm lượt gọi model: luôn gửi sáu công cụ lõi, cộng
@@ -13219,6 +13233,7 @@ theo từng câu đứng sau, để hãng AI tính giá rẻ cho phần lặp l�
 bot và trợ lý chạy xanh.
 
 Mã nguồn: assistant/tool_router.py (select, recent_tools, NEED_MORE_TOOLS) · assistant/service.py (ask, _extra_system) · core/config.py (AI_TOOL_ROUTING)
+Deploy: dev 10/10, commit df5f53fa trên erp-v2.
 
 ## ai-CR-160 | Phase 16.1: ghi sổ đủ chi phí và tốc độ của từng lượt trả lời
 - status: xong

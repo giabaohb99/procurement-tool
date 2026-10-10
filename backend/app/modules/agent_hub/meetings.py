@@ -145,7 +145,19 @@ TRANSCRIBE_PROMPT = (
 )
 RECAP_SYSTEM = (
     "Bạn là thư ký cuộc họp. Từ bản chép lời bên dưới, viết biên bản tiếng Việt có dấu theo yêu cầu. Chỉ dùng thông tin có "
-    "trong bản chép, không bịa tên, số, hạn. Dùng Markdown đơn giản (tiêu đề ngắn, gạch đầu dòng)."
+    "trong bản chép, không bịa tên, số, hạn. Dùng Markdown đơn giản (tiêu đề ngắn, gạch đầu dòng). "
+    #  ai-CR-164: đại ca 10/10 — Word lọt câu «Below is a Vietnamese meeting recap…»; biên bản họp 102 phút quá sơ sài.
+    "Bắt đầu NGAY bằng tiêu đề mục đầu tiên: không câu dạo đầu, không câu kết, không bọc trong ```. Mỗi chủ đề ghi đủ: bối "
+    "cảnh, ý chính (giữ đủ số liệu, tên, mốc thời gian), đã chốt, việc (người — hạn), còn mở. Mục việc cần làm phải quét "
+    "TOÀN BỘ cuộc họp, không chỉ phần cuối. Người nói ghi «Người n» thì giữ nguyên, không tự đặt tên."
+)
+#  ai-CR-164: họp dài tóm HAI TẦNG — từng đoạn ~20 phút trước (giữ đủ chi tiết), rồi gộp thành biên bản cuối.
+LONG_MEETING_SEC = 1800
+CHUNK_SEC = 1200
+CHUNK_SYSTEM = (
+    "Bạn là thư ký cuộc họp. Tóm tắt ĐOẠN bản chép lời bên dưới thành ghi chú chi tiết bằng tiếng Việt: các chủ đề được bàn; "
+    "với mỗi chủ đề ghi bối cảnh, ý chính kèm ĐỦ số liệu / tên / mốc thời gian, điều đã chốt, việc giao (việc — người — hạn), "
+    "câu hỏi còn mở. Không bỏ chi tiết có số. Không câu dạo đầu. Chỉ dùng thông tin trong đoạn."
 )
 
 
@@ -550,7 +562,7 @@ _PEOPLE_HEAD = re.compile(r"(NGƯỜI THAM DỰ|THÀNH PHẦN)", re.I)
 COMPANY_LINE = "DEGO HOLDING · Cần Thơ, Việt Nam"
 FOOTER_CENTER = "Tài liệu nội bộ · Lưu hành hạn chế"
 AI_NOTE = ("Biên bản tổng hợp tự động từ bản ghi âm bằng Trợ lý AI — tên riêng, thuật ngữ và số liệu nên đối chiếu lại "
-           "với bản chép lời ở phụ lục.")
+           "với bản chép lời gửi kèm (tệp .txt, cùng thư mục trên Drive).")
 
 
 def _html(text: str) -> str:
@@ -724,12 +736,7 @@ def build_docx(title: str, when: datetime | None, recap: str, transcript: str, *
     if formal:
         D.section_bar(doc, "XÉT DUYỆT")
         D.signoff(doc, [("THƯ KÝ", ""), ("CHỦ TRÌ", "")])
-    if transcript:
-        doc.add_page_break()
-        D.section_bar(doc, "PHỤ LỤC — BẢN CHÉP LỜI")
-        for line in transcript.splitlines()[:5000]:
-            if line.strip():
-                D.para(doc, _html(line.strip()), size=9, space_after=2)
+    #  ai-CR-164: bản chép lời KHÔNG còn nằm trong Word (đại ca 10/10) — gửi riêng tệp .txt (`transcript_file`).
     D.footer(doc, COMPANY_LINE, FOOTER_CENTER, "Trang ", sub="Bản recap tạo tự động · Trợ lý AI DEGO")
     fp = doc.sections[0].footer.paragraphs[0]
     run = fp.add_run()
@@ -799,12 +806,15 @@ class Progress(IntEnum):
     WRITE = 3
     SEND_TEXT = 4
     SEND_WORD = 5
+    SEND_TRANSCRIPT = 8
     DRIVE = 6
     ACTIONS = 7
+    SPEAKERS = 9
 
 
 PROGRESS_LABELS = {Progress.AUDIO: "tách tiếng", Progress.TRANSCRIBE: "chép lời", Progress.WRITE: "viết biên bản",
                    Progress.SEND_TEXT: "gửi biên bản vào chat", Progress.SEND_WORD: "gửi tệp Word",
+                   Progress.SEND_TRANSCRIPT: "gửi bản chép lời", Progress.SPEAKERS: "hỏi ai là ai",
                    Progress.DRIVE: "lưu lên Drive", Progress.ACTIONS: "rút việc và lịch"}
 NO_AUDIO_MSG = "Video không có tiếng (không có luồng âm thanh) — em không làm biên bản được."
 RETRY_WAITS = (30, 60)          # lỗi tạm ở bước gửi: thử lại sau 30 giây rồi 60 giây
@@ -1121,19 +1131,50 @@ def _author_of(db: Session, user_id: int) -> str:
 
 def _write(db: Session, row: AgentMeeting) -> dict:
     """Viết biên bản theo mẫu của phiên từ bản chép đã có, gửi chữ + Word, lưu kho, đẩy Drive."""
-    from . import ai_keys, manager, service
-
     row.status = int(MeetingStatus.WRITING)
     row.error = ""
     db.commit()
     tpl = template_for_row(row)
+    chunks = transcript_chunks(row.transcript) if (row.duration_sec or 0) > LONG_MEETING_SEC else []
+    if len(chunks) > 1:
+        #  ai-CR-164: họp dài — tóm từng đoạn trước, rồi gộp. Bước gộp dùng model mạnh nếu có khai.
+        notes = [_ask_logged(db, row, CHUNK_SYSTEM, f"ĐOẠN {i}/{len(chunks)} ({label}):\n{text}", max_tokens=4000)
+                 for i, (label, text) in enumerate(chunks, 1)]
+        source = "\n\n".join(f"### Đoạn {i} ({chunks[i - 1][0]})\n{n}" for i, n in enumerate(notes, 1))
+        content = (f"YÊU CẦU: {tpl.prompt}\n\nGHI CHÚ CHI TIẾT TỪNG ĐOẠN CỦA CUỘC HỌP ({len(chunks)} đoạn, gộp lại "
+                   f"thành MỘT biên bản, không lặp ý, không bỏ số liệu / việc nào):\n{source}")
+        text = _ask_logged(db, row, RECAP_SYSTEM, content, max_tokens=RECAP_MAX_TOKENS,
+                           model=settings.AGENT_MEETING_COMPOSE_MODEL or None)
+    else:
+        text = _ask_logged(db, row, RECAP_SYSTEM,
+                           f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n{row.transcript[:RECAP_MAX_CHARS]}",
+                           max_tokens=RECAP_MAX_TOKENS)
+    recap = clean_recap(text)
+    if not recap:
+        raise MeetingError("Model không viết được biên bản, thử lại giúp em.")
+    row.recap = recap
+    note = personal_memory.add_note(db, row.user_id, f"Họp: {row.title} — {tpl.label}"[:200], f"{tpl.label}\n\n{recap}")
+    row.note_id = int(note.get("note_id") or 0)
+    row.status = int(MeetingStatus.DONE)
+    row.finished_at = datetime.now()
+    #  Viết lại theo mẫu khác: các bước gửi chạy lại cho bản mới (thẻ việc / Ai là ai đã gửi thì giữ, không gửi lần hai).
+    keep = (int(Progress.AUDIO), int(Progress.TRANSCRIBE), int(Progress.ACTIONS), int(Progress.SPEAKERS))
+    row.steps = [s for s in (row.steps or []) if s in keep]
+    _done(row, Progress.WRITE)
+    db.commit()
+    return _deliver(db, row)
+
+
+def _ask_logged(db: Session, row: AgentMeeting, system: str, content: str, *, max_tokens: int,
+                model: str | None = None) -> str:
+    """Một lượt model của bước viết, ghi sổ và gắn vào phiên họp (ai-CR-158)."""
+    from . import ai_keys, manager, service
     from .constants import STAGE_MEETING
 
-    run = service.start_run(db, 0, STAGE_MEETING)      # ai-CR-158: lượt viết biên bản cũng ghi sổ, gắn với phiên họp
+    run = service.start_run(db, 0, STAGE_MEETING)
     try:
-        result = manager.get_provider().ask(
-            [ChatMessage(role="user", content=f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n{row.transcript[:RECAP_MAX_CHARS]}")],
-            system=RECAP_SYSTEM, max_tokens=RECAP_MAX_TOKENS, temperature=0.2)
+        result = manager.get_provider().ask([ChatMessage(role="user", content=content)], system=system,
+                                            max_tokens=max_tokens, temperature=0.2, model=model)
     except Exception as e:  # noqa: BLE001
         service.finish_run(db, run, error=str(e))
         tag_run(run, row, Step.WRITE)
@@ -1142,19 +1183,52 @@ def _write(db: Session, row: AgentMeeting) -> dict:
     service.finish_run(db, run, result=result)
     tag_run(run, row, Step.WRITE)
     db.commit()
-    recap = (result.text or "").strip()
-    if not recap:
-        raise MeetingError("Model không viết được biên bản, thử lại giúp em.")
-    row.recap = recap
-    note = personal_memory.add_note(db, row.user_id, f"Họp: {row.title} — {tpl.label}"[:200], f"{tpl.label}\n\n{recap}")
-    row.note_id = int(note.get("note_id") or 0)
-    row.status = int(MeetingStatus.DONE)
-    row.finished_at = datetime.now()
-    #  Viết lại theo mẫu khác: các bước gửi chạy lại từ đầu cho bản mới.
-    row.steps = [s for s in (row.steps or []) if s in (int(Progress.AUDIO), int(Progress.TRANSCRIBE))]
-    _done(row, Progress.WRITE)
-    db.commit()
-    return _deliver(db, row)
+    return result.text or ""
+
+
+_STAMP_LINE = re.compile(r"^\s*\[(?:(\d+):)?(\d{1,2}):(\d{2})\]")
+
+
+def transcript_chunks(transcript: str, seconds: int = CHUNK_SEC) -> list[tuple[str, str]]:
+    """Cắt bản chép theo mốc giờ thành các đoạn ~`seconds` giây: [(nhãn «mm:ss–mm:ss», chữ)]."""
+    chunks: list[tuple[int, list[str]]] = []
+    for line in (transcript or "").splitlines():
+        m = _STAMP_LINE.match(line)
+        at = int(m.group(1) or 0) * 3600 + int(m.group(2)) * 60 + int(m.group(3)) if m else None
+        if not chunks or (at is not None and at >= chunks[-1][0] + seconds):
+            chunks.append((at if at is not None else 0, []))
+        chunks[-1][1].append(line)
+
+    def stamp(sec: int) -> str:
+        return f"{sec // 3600}:{sec % 3600 // 60:02d}:{sec % 60:02d}" if sec >= 3600 else f"{sec // 60:02d}:{sec % 60:02d}"
+
+    out = []
+    for i, (start, lines) in enumerate(chunks):
+        end = chunks[i + 1][0] if i + 1 < len(chunks) else start + seconds
+        out.append((f"{stamp(start)}–{stamp(end)}", "\n".join(lines).strip()))
+    return [c for c in out if c[1]]
+
+
+_PREAMBLE = re.compile(r"^(below is|here is|here's|sure|certainly|of course|dưới đây là|sau đây là|đây là (bản|biên bản))",
+                       re.IGNORECASE)
+_OUTRO = re.compile(r"^(let me know|hope this|if you need|nếu (anh|chị|bạn) cần|hy vọng)", re.IGNORECASE)
+
+
+def clean_recap(text: str) -> str:
+    """ai-CR-164: bỏ chữ của model lọt vào biên bản — rào ```markdown, câu dạo đầu / kết («Below is…», «Here is…»,
+    «Dưới đây là…»), đoạn chữ thường đứng TRƯỚC tiêu đề / gạch đầu dòng đầu tiên."""
+    lines = [ln for ln in (text or "").strip().splitlines() if not ln.strip().startswith("```")]
+    lines = [ln for ln in lines if not (_PREAMBLE.match(ln.strip()) and len(ln.strip()) < 300)]
+    lines = [ln for ln in lines if not _OUTRO.match(ln.strip())]
+    first = next((i for i, ln in enumerate(lines) if re.match(r"\s*(#|[-*•]\s|\d+[.)]\s|\|)", ln)), 0)
+    return "\n".join(lines[first:]).strip()
+
+
+def transcript_file(row: AgentMeeting) -> tuple[str, bytes]:
+    """ai-CR-164: bản chép lời thành tệp .txt riêng (có mốc giờ) — gửi kèm chat và lưu Drive cạnh tệp Word."""
+    base = re.sub(r"[^\w\- ]+", "", row.title or "cuoc hop")[:80].strip() or "cuoc hop"
+    head = f"BẢN CHÉP LỜI — {row.title}\nThời lượng: {int((row.duration_sec or 0) // 60)} phút\n\n"
+    return f"{base} - ban chep loi.txt", (head + (row.transcript or "")).encode("utf-8")
 
 
 def _deliver(db: Session, row: AgentMeeting) -> dict:
@@ -1166,8 +1240,7 @@ def _deliver(db: Session, row: AgentMeeting) -> dict:
     tpl = template_for_row(row)
     minutes = int((row.duration_sec or 0) // 60)
     if not _has(row, Progress.SEND_TEXT):
-        _with_retry(lambda: service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, "
-                                                           f"{tpl.label.lower()})\n\n{row.recap}", markdown=True),
+        _with_retry(lambda: service.reply(db, row.chat_id, recap_message(row, tpl.label, minutes), markdown=True),
                     Progress.SEND_TEXT)
         _done(row, Progress.SEND_TEXT)
         db.commit()
@@ -1179,16 +1252,34 @@ def _deliver(db: Session, row: AgentMeeting) -> dict:
                                                    caption="Biên bản kèm phụ lục bản chép lời"), Progress.SEND_WORD)
         _done(row, Progress.SEND_WORD)
         db.commit()
+    txt_name, txt_data = transcript_file(row)
+    if not _has(row, Progress.SEND_TRANSCRIPT) and row.transcript:
+        _with_retry(lambda: telegram.send_document(row.chat_id, txt_name, txt_data,
+                                                   caption="Bản chép lời có mốc giờ", content_type="text/plain"),
+                    Progress.SEND_TRANSCRIPT)
+        _done(row, Progress.SEND_TRANSCRIPT)
+        db.commit()
     if not _has(row, Progress.DRIVE):
         drive_link = _upload_word(db, row, filename, data)
+        if drive_link and row.transcript:
+            _upload_file(db, row, txt_name, txt_data, "text/plain")
         if drive_link:
-            service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục «{DRIVE_FOLDER}»: {telegram.esc(drive_link)}")
+            service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục «{DRIVE_FOLDER}» (Word + bản chép lời): "
+                                           f"{telegram.esc(drive_link)}")
         _done(row, Progress.DRIVE)
         db.commit()
     if not _has(row, Progress.ACTIONS):
         #  ai-CR-114 (bước 10.3): rút việc + lịch hẹn thành MỘT thẻ duyệt.
         _with_retry(lambda: meeting_actions.offer(db, row), Progress.ACTIONS)
         _done(row, Progress.ACTIONS)
+        db.commit()
+    if not _has(row, Progress.SPEAKERS):
+        #  ai-CR-164: «Ai là ai?» — chỉ khi bản chép còn «Người n». Hỏng thì thôi, biên bản đã gửi đủ.
+        try:
+            offer_speakers(db, row)
+        except Exception:  # noqa: BLE001
+            log.exception("agent_hub: gửi thẻ Ai là ai hỏng")
+        _done(row, Progress.SPEAKERS)
         db.commit()
     return {"status": "done", "meeting_id": row.id, "minutes": minutes, "template": tpl.label}
 
@@ -1197,7 +1288,7 @@ def word_of(db: Session, row: AgentMeeting) -> tuple[str, bytes]:
     """(tên tệp, nội dung) Word của một phiên đã viết xong — dùng khi gửi lần đầu và khi gửi lại."""
     tpl = template_for_row(row)
     when = row.finished_at or datetime.now()
-    data = build_docx(row.title, when, row.recap, row.transcript, label=tpl.label,
+    data = build_docx(row.title, when, row.recap, "", label=tpl.label,
                       minutes=int((row.duration_sec or 0) // 60), author=_author_of(db, row.user_id),
                       formal=(tpl.key == "chinh_thuc"), code=f"RECAP-{when:%Y.%m.%d}-{row.id}",
                       source="Google Drive" if row.source_kind == int(SourceKind.DRIVE) else "Telegram")
@@ -1250,6 +1341,22 @@ def find(db: Session, user_id: int, ref: str) -> AgentMeeting | None:
     return hits[0] if hits else None
 
 
+def _upload_file(db: Session, row: AgentMeeting, filename: str, data: bytes, mime: str) -> str:
+    """Đẩy một tệp nữa vào thư mục biên bản trên Drive (bản chép lời .txt). Hỏng thì thôi."""
+    from . import google_link
+
+    link = google_link.get_link(db, row.user_id)
+    if link is None:
+        return ""
+    try:
+        folder = google_link.ensure_folder(db, link, DRIVE_FOLDER)
+        info = google_link.upload_file(db, link, filename, data, mime, parent=folder)
+    except Exception as e:  # noqa: BLE001
+        log.warning("agent_hub: đẩy bản chép lời lên Drive hỏng: %s", e)
+        return ""
+    return str(info.get("webViewLink") or "")
+
+
 def _upload_word(db: Session, row: AgentMeeting, filename: str, data: bytes) -> str:
     from . import google_link
 
@@ -1273,3 +1380,129 @@ def describe(row: AgentMeeting) -> dict:
             "minutes": int((row.duration_sec or 0) // 60), "template": template_for_row(row).label,
             "error": row.error or None,
             "info": json.dumps({"note_id": row.note_id}) if row.note_id else None}
+
+
+# ---------------------------------------------------------------------------
+# Tin biên bản trong chat + thẻ «Ai là ai?» (ai-CR-164)
+# ---------------------------------------------------------------------------
+RECAP_CHAT_MAX = 3600
+
+
+def recap_message(row: AgentMeeting, label: str, minutes: int) -> str:
+    """Tin biên bản trong chat. Dài quá một tin Telegram thì cắt ở ranh dòng và nói rõ bản ĐẦY ĐỦ ở tệp Word + Drive."""
+    head = f"**BIÊN BẢN — {row.title}** ({minutes} phút, {label.lower()})\n\n"
+    body = row.recap or ""
+    if len(head) + len(body) <= RECAP_CHAT_MAX:
+        return head + body
+    cut = body[:RECAP_CHAT_MAX - len(head) - 200]
+    cut = cut[:cut.rfind("\n")] if "\n" in cut else cut
+    return head + cut + "\n\n_… Tin dài nên em cắt ở đây. Bản đầy đủ nằm trong tệp Word đính kèm ngay dưới và trên Drive._"
+
+
+SPEAKER_WAIT = "ai_la_ai"
+SPEAKER_DONE = "ai_la_ai_xong"
+SPEAKER_WINDOW_MIN = 30
+_SPEAKER = re.compile(r"\bNgười (\d{1,2})\b")
+_ADDRESSED = re.compile(r"\b(?:anh|chị|em|bạn|ông|bà|cô|chú|sếp)\s+([A-ZĐÂĂÊÔƠƯÁÀẢÃẠ][a-zà-ỹđ]{1,12})\b")
+_LINE_SPEAKER = re.compile(r"^\s*\[[\d:]+\]\s*Người (\d{1,2}):\s*(.+)$")
+
+
+def speakers_of(transcript: str) -> list[tuple[str, list[str]]]:
+    """[(«Người n», 1–2 câu trích dài nhất của người đó)] theo thứ tự xuất hiện."""
+    quotes: dict[str, list[str]] = {}
+    for line in (transcript or "").splitlines():
+        m = _LINE_SPEAKER.match(line)
+        if m:
+            quotes.setdefault(f"Người {m.group(1)}", []).append(m.group(2).strip())
+    out = []
+    for who, said in quotes.items():
+        best = sorted({q for q in said if 25 <= len(q) <= 160}, key=len, reverse=True)[:2] or said[:1]
+        out.append((who, [q[:160] for q in best]))
+    return out
+
+
+def name_hints(transcript: str) -> list[str]:
+    """Tên được gọi trong cuộc họp («anh Dũng», «chị Ngân») — gợi ý cho thẻ Ai là ai."""
+    count: dict[str, int] = {}
+    for name in _ADDRESSED.findall(transcript or ""):
+        count[name] = count.get(name, 0) + 1
+    return [n for n, _ in sorted(count.items(), key=lambda x: -x[1])[:8]]
+
+
+def offer_speakers(db: Session, row: AgentMeeting) -> bool:
+    from . import service
+
+    speakers = speakers_of(row.transcript)
+    if not speakers:
+        return False
+    esc = telegram.esc
+    lines = ["<b>AI LÀ AI?</b>", f"Biên bản <b>{esc(row.title)}</b> đang ghi người nói là Người 1, Người 2… Nhắn tên để em "
+             "viết lại biên bản với tên thật (dùng lại bản chép, không chép lời lại).", ""]
+    for who, said in speakers[:8]:
+        lines.append(f"<b>{esc(who)}</b>: " + " / ".join(f"<i>{esc(q)}</i>" for q in said))
+    hints = name_hints(row.transcript)
+    if hints:
+        lines += ["", "Tên nghe được trong cuộc họp: " + esc(", ".join(hints))]
+    lines += ["", "<b>Trả lời</b> (trong 30 phút):", "• <code>Người 1 = Ngân, Người 3 = Phú</code>",
+              "• <code>bỏ qua</code> — giữ Người 1, Người 2…"]
+    service.reply(db, row.chat_id, "\n".join(lines))
+    service.log_message(db, service.DIR_OUT, row.chat_id, 0, json.dumps({"meeting_id": row.id}), action=SPEAKER_WAIT)
+    db.commit()
+    return True
+
+
+_PAIR = re.compile(r"(?:người\s*)?(\d{1,2})\s*(?:=|là|:)\s*([^,;\n]{1,40})", re.IGNORECASE)
+_SKIP = re.compile(r"^\s*(bỏ qua|thôi|không cần|giữ nguyên)\s*[.!]*\s*$", re.IGNORECASE)
+
+
+def speakers_by_text(db: Session, chat_id: str, msg_row, text: str) -> bool:
+    """Trả lời thẻ Ai là ai: «Người 1 = Ngân, Người 3 = Phú» → thay tên trong bản chép rồi viết lại biên bản."""
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from . import service
+    from .model import AgentMessage
+
+    card = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action == SPEAKER_WAIT,
+                                                AgentMessage.id < msg_row.id).order_by(AgentMessage.id.desc()).limit(1))
+    if card is None or (msg_row.created_at and card.created_at
+                        and msg_row.created_at - card.created_at > timedelta(minutes=SPEAKER_WINDOW_MIN)):
+        return False
+    skip = bool(_SKIP.match(text or ""))
+    pairs = {int(n): name.strip(" .") for n, name in _PAIR.findall(text or "") if name.strip(" .")}
+    if not skip and not pairs:
+        return False
+    msg_row.action = service.ACT_COMMAND
+    card.action = SPEAKER_DONE
+    db.commit()
+    if skip:
+        service.reply(db, chat_id, "Dạ, em giữ Người 1, Người 2… như biên bản đã gửi.")
+        return True
+    try:
+        mid = int(json.loads(card.body or "{}").get("meeting_id") or 0)
+    except ValueError:
+        mid = 0
+    row = db.get(AgentMeeting, mid) if mid else None
+    if row is None or not row.transcript:
+        service.reply(db, chat_id, "Biên bản đó không còn bản chép lời để viết lại.")
+        return True
+    rename(db, row, pairs)
+    names = ", ".join(f"Người {n} = {v}" for n, v in sorted(pairs.items()))
+    service.reply(db, chat_id, f"Dạ, em viết lại biên bản với tên: {telegram.esc(names)}. Xong em gửi lại.")
+    return True
+
+
+def rename(db: Session, row: AgentMeeting, pairs: dict[int, str]) -> None:
+    """Thay «Người n» bằng tên trong bản chép (và trong việc đã rút), rồi viết lại biên bản. Thẻ việc không gửi lại."""
+    def sub(text: str) -> str:
+        return _SPEAKER.sub(lambda m: pairs.get(int(m.group(1)), m.group(0)), text or "")
+
+    row.transcript = sub(row.transcript)
+    if row.actions:
+        row.actions = json.loads(sub(json.dumps(row.actions, ensure_ascii=False)))
+    keep = (int(Progress.AUDIO), int(Progress.TRANSCRIBE), int(Progress.ACTIONS), int(Progress.SPEAKERS))
+    row.steps = [s for s in (row.steps or []) if s in keep]
+    row.status = int(MeetingStatus.QUEUED)
+    db.commit()
+    dispatch(row.id)

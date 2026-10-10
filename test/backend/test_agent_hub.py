@@ -8035,7 +8035,9 @@ def test_bien_ban_hop_dai_cat_doan_va_loi_khong_khoa(db, bot, seed, monkeypatch)
     row = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="F", title="Họp dài")
     db.commit()
     assert mt.process(db, row.id)["segments"] == 2 and calls["upload"] == 2 and calls["delete"] == 2
-    assert "[00:10] A: ý một" in seen[0] and "[30:10] A: ý một" in seen[0]     # đoạn 2 cộng mốc 30 phút
+    #  đoạn 2 cộng mốc 30 phút; họp 50 phút nên viết HAI tầng (ai-CR-164) — bản chép nằm rải trong các lượt tóm từng đoạn.
+    every = "\n".join(seen)
+    assert "[00:10] A: ý một" in every and "[30:10] A: ý một" in every
     #  Không có khóa Gemini: phiên hỏng, nhắn một câu, không gọi Gemini.
     monkeypatch.setattr(service.user_keys, "gemini_key", lambda: "")
     row2 = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="G", title="Họp 2")
@@ -8598,7 +8600,8 @@ def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monke
     monkeypatch.setattr(pm, "_embedder", lambda: None)
     monkeypatch.setattr(mt.requests, "post", lambda *a, **kw: pytest.fail("viết lại không được chép lời lại"))
     docs: list[bytes] = []
-    monkeypatch.setattr(mt.telegram, "send_document", lambda chat, fn, data, **kw: docs.append(data) or 1)
+    monkeypatch.setattr(mt.telegram, "send_document",
+                        lambda chat, fn, data, **kw: docs.append(data) if fn.endswith(".docx") else None)
     prompts: list[str] = []
 
     class P:
@@ -8623,9 +8626,10 @@ def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monke
     assert row.status == mt.MeetingStatus.DONE and row.template == "chinh_thuc" and "BIÊN BẢN" in sent[-1]
     word = Document(io.BytesIO(docs[-1]))
     text = "\n".join(p.text for p in word.paragraphs) + "\n".join(c.text for t in word.tables for r in t.rows for c in r.cells)
-    #  ai-CR-116: Word theo chuẩn DEGO — đầu trang «BIÊN BẢN HỌP» + mã văn bản, khối XÉT DUYỆT ký, phụ lục chép lời.
+    #  ai-CR-116: Word theo chuẩn DEGO — đầu trang «BIÊN BẢN HỌP» + mã văn bản, khối XÉT DUYỆT ký.
     assert "BIÊN BẢN HỌP" in text and f"RECAP-" in text and "THƯ KÝ" in text and "21 phút" in text
-    assert "PHỤ LỤC — BẢN CHÉP LỜI" in text and "**" not in text and "DEGO HOLDING" in word.sections[0].footer.paragraphs[0].text
+    #  ai-CR-164: bản chép lời không còn là phụ lục trong Word, gửi riêng tệp .txt.
+    assert "PHỤ LỤC — BẢN CHÉP LỜI" not in text and "**" not in text and "DEGO HOLDING" in word.sections[0].footer.paragraphs[0].text
     assert any(c.text == "Đặt hàng" for t in word.tables for r in t.rows for c in r.cells)      # bảng Markdown → bảng Word
     assert any(r.bold and r.text == "20 tấn" for p in word.paragraphs for r in p.runs)          # **đậm** → chữ đậm
     #  Người khác không viết lại được cuộc họp của mình; cuộc họp chưa chép lời thì báo lỗi.
@@ -9009,7 +9013,7 @@ def test_word_bien_ban_theo_chuan_dego():
     assert "NỘI DUNG CUỘC HỌP" in cells and "1. Đơn hàng thép Hòa Phát" in cells    # thanh mục + đề mục con
     assert "Ý CHÍNH" in paras and any(p.startswith("✓") for p in paras)            # nhãn + dòng đã chốt
     assert ["STT", "Việc", "Người", "Hạn", "Ưu tiên"] == cells[cells.index("STT"):cells.index("STT") + 5]
-    assert "PHỤ LỤC — BẢN CHÉP LỜI" in cells and "**" not in alltext
+    assert "PHỤ LỤC — BẢN CHÉP LỜI" not in cells and "**" not in alltext       # ai-CR-164: chép lời gửi tệp .txt riêng
     assert doc.inline_shapes and "DEGO HOLDING" in doc.sections[0].footer.paragraphs[0].text   # logo + chân trang
     assert "PAGE" in doc.sections[0].footer.paragraphs[0]._p.xml                               # số trang
     #  Mẫu chính thức: «BIÊN BẢN HỌP» + khối XÉT DUYỆT.

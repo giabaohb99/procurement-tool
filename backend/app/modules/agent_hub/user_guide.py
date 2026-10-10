@@ -109,6 +109,7 @@ SECTIONS: tuple[Section, ...] = (
         ("report cuộc họp mới nhất", "gửi lại biên bản + Word + việc"),
         ("biên bản vừa rồi tốn bao nhiêu", "token và tiền của từng bước: chép lời, viết biên bản, rút việc"),
         ("thử lại biên bản", "biên bản hỏng giữa chừng: làm tiếp từ bước hỏng, không chép lời lại"),
+        ("Người 1 = Ngân, Người 3 = Phú", "trả lời thẻ Ai là ai: em viết lại biên bản với tên thật"),
         ("", "Tệp không có tiếng nói (video quay màn hình, im lặng) thì em báo và không làm biên bản, để khỏi bịa nội dung"),
         ("tạo hết", "tạo mọi việc / lịch rút từ biên bản"),
         ("tạo 1 3 dự án 2", "chỉ tạo mục 1 và 3, việc vào dự án số 2"),

@@ -119,7 +119,7 @@ def test_hong_sau_khi_da_gui_bien_ban_thi_noi_dung_su_that_va_tu_thu_lai(db, env
     monkeypatch.setattr(meeting_actions, "offer", flaky)
     out = mt.process(db, row.id)
     db.refresh(row)
-    assert out["status"] == "done" and tries["n"] == 2 and docs and row.steps == [1, 2, 3, 4, 5, 6, 7]
+    assert out["status"] == "done" and tries["n"] == 2 and docs and row.steps == [1, 2, 3, 4, 5, 6, 7, 8, 9]
     #  Lỗi tạm mãi không hết → báo đúng: biên bản đã gửi, bước nào chưa xong, lý do dễ hiểu; không báo vận hành.
     row.steps = [1, 2, 3, 4]
     row.status = int(mt.MeetingStatus.FAILED)

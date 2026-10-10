@@ -259,7 +259,7 @@ def _md_inline(line: str) -> str:
 def _clip(text: str) -> str:
     if len(text) <= MAX_TEXT:
         return text
-    return text[:MAX_TEXT] + "\n\n… (đã cắt bớt, xem đầy đủ trong sổ)"
+    return text[:MAX_TEXT] + "\n\n… (tin quá dài nên em cắt bớt)"
 
 
 def fetch_updates(offset: int, *, timeout: int = POLL_TIMEOUT) -> list[dict]:
