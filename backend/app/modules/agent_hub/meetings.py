@@ -1814,6 +1814,14 @@ YOUTUBE_PROMPT = TRANSCRIBE_PROMPT.replace("đoạn ghi âm cuộc họp này", 
     " Bỏ qua hình ảnh, chỉ chép lời nói. Mốc [mm:ss] của MỖI lượt nói lấy theo thời gian thật trong video, không gộp cả "
     "video vào một mốc. Dòng ĐẦU TIÊN ghi «TIÊU ĐỀ: tên video» rồi mới tới bản chép.")
 _YT_TITLE = re.compile(r"^\s*TIÊU ĐỀ:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
+YT_SEGMENT_SEC = 600            # ai-CR-168: 10 phút một đoạn — mốc đầu đoạn là mốc thật, chi phí token không đổi
+
+
+def _ensure_stamp(text: str, start_sec: int) -> str:
+    """Đoạn không có mốc [mm:ss] nào → đặt mốc đầu đoạn (tính theo giây trong ĐOẠN, `_shift_stamps` cộng thêm sau)."""
+    if not text or _STAMP.search(text):
+        return text
+    return f"[00:00] {text}" if start_sec >= 0 else text
 _YT_CONFIG = {"mediaResolution": "MEDIA_RESOLUTION_LOW"}
 
 
@@ -1859,7 +1867,9 @@ def _process_youtube(db: Session, row: AgentMeeting, key: str) -> dict:
     estimate = estimate_cost(duration, youtube=True, input_tokens=tokens)
     if needs_ok(row, estimate, duration):
         return ask_cost_ok(db, row, estimate, duration)
-    count = -(-int(duration) // SEGMENT_SEC) if duration > SPLIT_OVER_SEC else 1     # chia lên, không thừa đoạn rỗng
+    #  ai-CR-168: Gemini trả cả video thành MỘT dòng với một mốc [00:00] dù đã dặn (dev 10/10, video 14 phút) → chia video
+    #  thành đoạn YT_SEGMENT_SEC để mỗi đoạn có ít nhất mốc đầu đoạn thật; chương trong tóm tắt bám được mốc đó.
+    count = -(-int(duration) // YT_SEGMENT_SEC) if duration > YT_SEGMENT_SEC else 1
     run = service.start_run(db, 0, STAGE_MEETING)
     db.commit()
     pieces: list[str] = []
@@ -1869,9 +1879,9 @@ def _process_youtube(db: Session, row: AgentMeeting, key: str) -> dict:
         for i in range(count):
             meta: dict = {"fps": YT_FPS}
             if count > 1:
-                meta.update(start_offset=f"{i * SEGMENT_SEC}s", end_offset=f"{(i + 1) * SEGMENT_SEC}s")
+                meta.update(start_offset=f"{i * YT_SEGMENT_SEC}s", end_offset=f"{(i + 1) * YT_SEGMENT_SEC}s")
             part = {"file_data": {"file_uri": url}, "video_metadata": meta}
-            seg_sec = min(SEGMENT_SEC, duration) if count > 1 else duration
+            seg_sec = min(YT_SEGMENT_SEC, duration) if count > 1 else duration
             text, usage = gemini_transcribe(key, "", "", model, audio_sec=seg_sec, fallback=manager.fallback_model(),
                                             part=part, prompt=YOUTUBE_PROMPT, extra_config=_YT_CONFIG)
             usage_in += int(usage.get("promptTokenCount") or 0)
@@ -1882,7 +1892,8 @@ def _process_youtube(db: Session, row: AgentMeeting, key: str) -> dict:
             if (m := _YT_TITLE.search(text)) and row.title in ("", "Video YouTube"):
                 row.title = m.group(1)[:200]              # ai-CR-166: tên video lên tiêu đề Word / tin chat
             text = _YT_TITLE.sub("", text, count=1)
-            pieces.append(_shift_stamps(text.replace(NO_SPEECH, "").strip(), i * SEGMENT_SEC if count > 1 else 0))
+            pieces.append(_shift_stamps(_ensure_stamp(text.replace(NO_SPEECH, "").strip(), i * YT_SEGMENT_SEC),
+                                        i * YT_SEGMENT_SEC if count > 1 else 0))
     except MeetingError as e:
         service.finish_run(db, run, error=str(e))
         tag_run(run, row, Step.TRANSCRIBE)

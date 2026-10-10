@@ -118,7 +118,7 @@ def test_dat_hon_nguong_thi_hoi_ok_roi_moi_chay(db, env, monkeypatch):
     db.refresh(row)
     assert row.status == mt.MeetingStatus.QUEUED and mt._has(row, mt.Progress.COST_OK)
     out = mt.process(db, row.id)
-    assert out["status"] == "done" and len(transcribed) == 6           # 3 giờ = 6 đoạn 30 phút
+    assert out["status"] == "done" and len(transcribed) == 18          # 3 giờ = 18 đoạn 10 phút (ai-CR-168)
     #  «thôi» trên thẻ khác → bỏ phiên, không chạy.
     row2 = _row(db)
     mt.process(db, row2.id)
@@ -146,3 +146,16 @@ def test_nhan_link_youtube_trong_chat(db, monkeypatch):
 
     row = db.get(AgentMeeting, dispatched[0])
     assert row.source_kind == mt.SourceKind.YOUTUBE and row.template == "tom_tat_video"
+
+
+def test_video_chia_doan_10_phut_va_moi_doan_co_moc_dau(db, env, monkeypatch):
+    """ai-CR-168 — Gemini trả cả video thành một dòng với mốc [00:00] duy nhất; chia 10 phút một đoạn để chương có mốc thật."""
+    monkeypatch.setattr(mt, "youtube_tokens", lambda key, url, model: int(1500 * mt.YT_TOKENS_PER_SEC))   # 25 phút
+    calls: list[dict] = []
+    monkeypatch.setattr(mt, "gemini_transcribe", lambda *a, **k: calls.append(k["part"]["video_metadata"]) or (
+        "Người 1: nói liền một mạch không có mốc", {"model": "g"}))
+    row = _row(db, template="tom_tat_video")
+    assert mt.process(db, row.id)["status"] == "done"
+    db.refresh(row)
+    assert len(calls) == 3 and calls[1]["start_offset"] == "600s" and calls[2]["end_offset"] == "1800s"
+    assert "[00:00] Người 1" in row.transcript and "[10:00] Người 1" in row.transcript and "[20:00] Người 1" in row.transcript
