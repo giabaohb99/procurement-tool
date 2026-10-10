@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-168 | Video YouTube chia đoạn mười phút để chương tóm tắt có mốc giờ thật
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Bản tóm tắt video thứ hai trên dev đã sạch và đúng tiêu đề, nhưng các chương không có mốc giờ vì Gemini trả cả video thành một
 dòng với một mốc duy nhất dù đã dặn ghi mốc từng lượt. Nay bot chia video thành từng đoạn mười phút rồi chép lời từng đoạn; đoạn
@@ -13202,6 +13202,7 @@ nào model không ghi mốc thì bot đặt mốc đầu đoạn theo giờ th�
 Chi phí không đổi vì mỗi đoạn chỉ xử lý phần của nó. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: agent_hub/meetings.py (_process_youtube, _ensure_stamp, YT_SEGMENT_SEC)
+Deploy: dev 10/10, commit 74a869e4 trên erp-v2; dựng lại cụm bot.
 
 ## ai-CR-166 | Tóm tắt video YouTube sạch chữ thừa của model và đúng khuôn tệp Word
 - status: xong
