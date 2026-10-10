@@ -133,10 +133,15 @@ _PERSONAL_RE = re.compile(r"^\s*Mẫu biên bản\s*«([^»]{1,40})»\s*:\s*(.+)
 _ADHOC_RE = re.compile(r"(?:theo\s+)?(?:mẫu|yêu cầu|cách viết)\s*:\s*(.{8,})", re.IGNORECASE | re.S)
 TEMPLATE_PROMPT_MAX = 1500
 
+#  ai-CR-162: dev 10/10 — video quay màn hình KHÔNG có lời nói mà model «nghe ra» 12.800 ký tự hội thoại bịa. Lời dặn
+#  này chỉ là một lớp; lớp chính là đo phần có tiếng bằng ffmpeg trước khi gọi model (`speech_check`) và kiểm hợp lý sau.
+NO_SPEECH = "[KHONG_CO_LOI_NOI]"
 TRANSCRIBE_PROMPT = (
     "Chép lại NGUYÊN VĂN lời nói tiếng Việt trong đoạn ghi âm cuộc họp này. Mỗi lượt nói một dòng dạng "
     "«[mm:ss] Người nói: lời nói». Phân biệt người nói bằng tên nếu nghe được, không thì «Người 1», «Người 2»… giữ "
-    "nhất quán. Bỏ tiếng ậm ừ, không tóm tắt, không thêm lời bình. Đoạn không nghe rõ ghi «[không rõ]»."
+    "nhất quán. Bỏ tiếng ậm ừ, không tóm tắt, không thêm lời bình. Đoạn không nghe rõ ghi «[không rõ]». "
+    f"Nếu đoạn ghi âm KHÔNG có lời nói của người (chỉ im lặng, nhạc, tiếng máy, tiếng ồn) thì CHỈ trả đúng chuỗi "
+    f"{NO_SPEECH}. TUYỆT ĐỐI không đoán hay bịa lời nói."
 )
 RECAP_SYSTEM = (
     "Bạn là thư ký cuộc họp. Từ bản chép lời bên dưới, viết biên bản tiếng Việt có dấu theo yêu cầu. Chỉ dùng thông tin có "
@@ -323,6 +328,67 @@ def _run(cmd: list[str], timeout: int = FFMPEG_TIMEOUT) -> str:
     if proc.returncode != 0:
         raise MeetingError(f"Không đọc được tệp âm thanh / video ({(proc.stderr or '').strip()[-160:]}).")
     return proc.stdout
+
+
+def audio_streams(path: Path) -> int:
+    """Số luồng âm thanh trong tệp (ai-CR-162). Video quay màn hình thường KHÔNG có luồng nào."""
+    out = _run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0",
+                str(path)], timeout=120)
+    return len([ln for ln in out.splitlines() if ln.strip()])
+
+
+#  Ngưỡng «có tiếng»: dưới -35 dB coi như im lặng; phải có ít nhất 20 giây VÀ 3% thời lượng có tiếng mới chép lời.
+SILENCE_DB = -35
+SILENCE_MIN_SEC = 1.5
+MIN_VOICED_SEC = 20
+MIN_VOICED_RATIO = 0.03
+#  Nói nhanh nhất ~ 20 ký tự / giây; quá 30 ký tự cho mỗi giây có tiếng là model đã bịa thêm.
+MAX_CHARS_PER_VOICED_SEC = 30
+_SILENCE_END = re.compile(r"silence_duration:\s*([\d.]+)")
+_SILENCE_START = re.compile(r"silence_start:\s*([\d.]+)")
+_SILENCE_FINISH = re.compile(r"silence_end:\s*([\d.]+)")
+
+
+def voiced_seconds(path: Path, duration: float) -> float:
+    """Số giây CÓ TIẾNG (không im lặng) — ffmpeg silencedetect, không gọi model."""
+    try:
+        proc = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-af",
+                               f"silencedetect=noise={SILENCE_DB}dB:d={SILENCE_MIN_SEC}", "-f", "null", "-"],
+                              capture_output=True, text=True, timeout=FFMPEG_TIMEOUT)
+    except FileNotFoundError:
+        raise MeetingError("Máy chủ chưa cài ffmpeg (cần dựng lại image api).") from None
+    except subprocess.TimeoutExpired:
+        raise MeetingError("Xử lý âm thanh quá lâu, em đã dừng.") from None
+    log_text = proc.stderr or ""
+    silent = sum(float(x) for x in _SILENCE_END.findall(log_text))
+    starts, ends = _SILENCE_START.findall(log_text), _SILENCE_FINISH.findall(log_text)
+    if len(starts) > len(ends):          # im lặng kéo tới hết tệp: ffmpeg không in silence_end cho đoạn cuối
+        silent += max(0.0, duration - float(starts[-1]))
+    return max(0.0, duration - silent)
+
+
+def speech_check(path: Path, duration: float) -> float:
+    """Chặn TRƯỚC khi gọi model: gần như không có tiếng thì dừng, báo rõ. Trả số giây có tiếng."""
+    voiced = voiced_seconds(path, duration)
+    if voiced < max(MIN_VOICED_SEC, MIN_VOICED_RATIO * duration):
+        raise MeetingError(f"Tệp gần như không có tiếng nói (chỉ khoảng {int(voiced)} giây có tiếng trên "
+                           f"{int(duration // 60)} phút) — em không làm biên bản để khỏi bịa nội dung.")
+    return voiced
+
+
+_STAMP = re.compile(r"\[(?:(\d+):)?(\d{1,2}):(\d{2})\]")
+
+
+def plausible_transcript(text: str, duration: float, voiced: float) -> str:
+    """Rào SAU chép lời: dài quá phần có tiếng, hoặc mốc giờ vượt thời lượng tệp → model đã bịa. Trả lý do, rỗng = ổn."""
+    if len(text) > MAX_CHARS_PER_VOICED_SEC * max(voiced, 1.0):
+        return (f"bản chép dài {len(text)} ký tự mà tệp chỉ có khoảng {int(voiced)} giây có tiếng")
+    last = 0
+    for h, m, s in _STAMP.findall(text):
+        last = max(last, int(h or 0) * 3600 + int(m) * 60 + int(s))
+    if duration and last > duration + 120:
+        return f"bản chép có mốc giờ {last // 60} phút, vượt độ dài tệp {int(duration // 60)} phút"
+    return ""
 
 
 def probe_duration(path: Path) -> float:
@@ -693,43 +759,185 @@ def process(db: Session, meeting_id: int) -> dict:
     row = db.get(AgentMeeting, int(meeting_id))
     if row is None or row.status not in (int(MeetingStatus.QUEUED), int(MeetingStatus.FAILED)):
         return {"status": "skipped"}
-    if row.transcript:
-        #  ai-CR-112: đã có bản chép (viết lại theo mẫu khác, hoặc lần trước hỏng ở bước viết) → chỉ viết lại.
-        with user_keys.for_chat(db, row.chat_id):
-            try:
-                return _write(db, row)
-            except MeetingError as e:
-                row.status = int(MeetingStatus.FAILED)
-                row.error = str(e)[:500]
-                db.commit()
-                service.reply(db, row.chat_id, f"Em chưa viết lại được biên bản «{telegram.esc(row.title)}»: "
-                                               f"{telegram.esc(str(e))}")
-                db.commit()
-                return {"status": "error", "reason": str(e)[:300]}
-    row.started_at = datetime.now()
     workdir = Path(tempfile.mkdtemp(prefix="meet_"))
     try:
         with user_keys.for_chat(db, row.chat_id):
-            out = _process(db, row, workdir)
-        return out
-    except MeetingError as e:
+            if row.recap and _has(row, Progress.WRITE):
+                #  ai-CR-162: «thử lại biên bản» sau khi đã viết — chỉ làm tiếp các bước gửi còn thiếu.
+                row.status = int(MeetingStatus.DONE)
+                db.commit()
+                return _deliver(db, row)
+            if row.transcript:
+                #  ai-CR-112: đã có bản chép (viết lại theo mẫu khác, hoặc lần trước hỏng ở bước viết) → chỉ viết lại.
+                return _write(db, row)
+            row.started_at = datetime.now()
+            return _process(db, row, workdir)
+    except Exception as e:  # noqa: BLE001 — mọi lỗi thành MỘT tin nói rõ đã xong gì / chưa xong gì / vì sao
+        db.rollback()
+        row = db.get(AgentMeeting, int(meeting_id)) or row
+        if not isinstance(e, MeetingError):
+            log.exception("agent_hub: biên bản họp hỏng")
         row.status = int(MeetingStatus.FAILED)
-        row.error = str(e)[:500]
+        row.error = f"{type(e).__name__}: {e}"[:500]
         db.commit()
-        service.reply(db, row.chat_id, f"Em chưa làm được biên bản «{telegram.esc(row.title)}»: {telegram.esc(str(e))}")
+        service.reply(db, row.chat_id, failure_text(row, e))
         db.commit()
-        return {"status": "error", "reason": str(e)[:300]}
-    except Exception as e:  # noqa: BLE001 — lỗi lạ cũng phải thành một câu
-        log.exception("agent_hub: biên bản họp hỏng")
-        row.status = int(MeetingStatus.FAILED)
-        row.error = str(e)[:500]
-        db.commit()
-        service.reply(db, row.chat_id, f"Em chưa làm được biên bản «{telegram.esc(row.title)}» (lỗi hệ thống). Gửi lại "
-                                       "giúp em; lặp lại thì báo quản trị xem sổ.")
-        db.commit()
+        cause = e.cause if isinstance(e, StepError) else e
+        if not isinstance(cause, MeetingError) and not is_transient(cause):
+            _ops_alert(db, row, e)      # lỗi lạ mới báo vận hành; lỗi tạm đã tự thử lại và đã nói rõ cho người dùng
         return {"status": "error", "reason": str(e)[:300]}
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# Tiến độ từng bước + báo lỗi dễ hiểu (ai-CR-162)
+# ---------------------------------------------------------------------------
+class Progress(IntEnum):
+    AUDIO = 1
+    TRANSCRIBE = 2
+    WRITE = 3
+    SEND_TEXT = 4
+    SEND_WORD = 5
+    DRIVE = 6
+    ACTIONS = 7
+
+
+PROGRESS_LABELS = {Progress.AUDIO: "tách tiếng", Progress.TRANSCRIBE: "chép lời", Progress.WRITE: "viết biên bản",
+                   Progress.SEND_TEXT: "gửi biên bản vào chat", Progress.SEND_WORD: "gửi tệp Word",
+                   Progress.DRIVE: "lưu lên Drive", Progress.ACTIONS: "rút việc và lịch"}
+NO_AUDIO_MSG = "Video không có tiếng (không có luồng âm thanh) — em không làm biên bản được."
+RETRY_WAITS = (30, 60)          # lỗi tạm ở bước gửi: thử lại sau 30 giây rồi 60 giây
+
+
+class StepError(Exception):
+    def __init__(self, step: Progress, cause: Exception):
+        super().__init__(str(cause))
+        self.step, self.cause = step, cause
+
+
+def _done(row: AgentMeeting, step: Progress) -> None:
+    row.steps = sorted({*(row.steps or []), int(step)})
+
+
+def _has(row: AgentMeeting, step: Progress) -> bool:
+    return int(step) in (row.steps or [])
+
+
+def is_transient(e: Exception) -> bool:
+    """Lỗi tạm: ERP đang khởi động lại, mất kết nối, quá giờ chờ, máy chủ 5xx — thử lại là được."""
+    from . import erp
+
+    text = str(e)
+    return (isinstance(e, (erp.ErpError, requests.ConnectionError, requests.Timeout, subprocess.TimeoutExpired))
+            or "ConnectionError" in text or "Không gọi được ERP" in text
+            or bool(re.search(r"\b50[0234]\b", text)))
+
+
+def _with_retry(fn, step: Progress):
+    for wait in (*RETRY_WAITS, None):
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001
+            if wait is None or not is_transient(e):
+                raise StepError(step, e) from e
+            log.warning("agent_hub: biên bản bước %s lỗi tạm, thử lại sau %ss: %s", step.name, wait, e)
+            time.sleep(wait)
+    return None
+
+
+def friendly_reason(e: Exception) -> str:
+    """Lỗi kỹ thuật → câu thường cho người dùng."""
+    from . import ai_keys
+
+    cause = e.cause if isinstance(e, StepError) else e
+    if isinstance(cause, MeetingError):
+        return str(cause)
+    text = str(cause)
+    if is_transient(cause) and ("ERP" in text or type(cause).__name__ == "ErpError"):
+        return "hệ thống ERP đang khởi động lại hoặc mất kết nối"
+    if isinstance(cause, (requests.Timeout, subprocess.TimeoutExpired)) or "timeout" in text.lower():
+        return "mạng chậm, quá thời gian chờ"
+    if problem := ai_keys.key_problem(text, "gemini"):
+        return problem
+    if isinstance(cause, telegram.TelegramError):
+        return "Telegram không nhận tin (có thể tệp quá lớn hoặc mạng chập chờn)"
+    if is_transient(cause):
+        return "máy chủ tạm thời không trả lời"
+    return "lỗi hệ thống chưa rõ (em đã báo người vận hành)"
+
+
+def failure_text(row: AgentMeeting, e: Exception) -> str:
+    esc = telegram.esc
+    done = [PROGRESS_LABELS[p] for p in Progress if _has(row, p)]
+    todo = [PROGRESS_LABELS[p] for p in Progress if not _has(row, p)]
+    title = esc(row.title or "cuộc họp")
+    if _has(row, Progress.SEND_TEXT):
+        head = f"Biên bản <b>{title}</b> đã gửi ở trên, nhưng còn bước chưa xong."
+    elif isinstance(e, MeetingError) and not _has(row, Progress.TRANSCRIBE):
+        head = f"Em không làm biên bản <b>{title}</b>."
+    else:
+        head = f"Em chưa làm xong biên bản <b>{title}</b>."
+    lines = [head]
+    if done:
+        lines.append("Đã xong: " + esc(", ".join(done)) + ".")
+    if todo and _has(row, Progress.TRANSCRIBE):
+        lines.append("Chưa xong: " + esc(", ".join(todo)) + ".")
+    lines.append("Lý do: " + esc(friendly_reason(e)) + ".")
+    if _has(row, Progress.TRANSCRIBE) or not isinstance(e, MeetingError):
+        lines.append("Nhắn <code>thử lại biên bản</code> để em làm tiếp từ bước hỏng, không chép lời lại.")
+    return "\n".join(lines)
+
+
+def _ops_alert(db: Session, row: AgentMeeting, e: Exception) -> None:
+    """Lỗi lạ (không phải lỗi đã lường) → tin vận hành cho chủ bot + người có agent_ops."""
+    from . import db_backup
+
+    step = e.step.name if isinstance(e, StepError) else "?"
+    cause = e.cause if isinstance(e, StepError) else e
+    db_backup.alert(db, f"Biên bản họp #{row.id} hỏng ở bước {step}: {type(cause).__name__}: {str(cause)[:200]}")
+
+
+_RETRY_ASK = re.compile(r"^(thu lai|lam lai|lam tiep|chay lai) (bien ban|recap)( hop)?( vua roi| moi nhat| nhe| di| giup anh)*\s*$")
+
+
+def retry_by_text(db: Session, chat_id: str, msg_row, text: str) -> bool:
+    """«thử lại biên bản» → biên bản HỎNG gần nhất của chính người hỏi trong chat này."""
+    from sqlalchemy import select
+
+    from app.modules.assistant.glossary import fold
+
+    from . import chat_link, service
+
+    if not _RETRY_ASK.match(" ".join(fold(text or "").split())):
+        return False
+    msg_row.action = service.ACT_COMMAND
+    link = chat_link.get_active_link(db, chat_id)
+    uid = int(link.user_id) if link is not None else 0
+    row = db.scalar(select(AgentMeeting).where(AgentMeeting.chat_id == chat_id, AgentMeeting.user_id == uid)
+                    .order_by(AgentMeeting.id.desc()).limit(1)) if uid else None
+    if row is None:
+        db.commit()
+        service.reply(db, chat_id, "Em không thấy biên bản nào của anh/chị trong chat này để thử lại.")
+        return True
+    service.reply(db, chat_id, retry(db, row))
+    db.commit()
+    return True
+
+
+def retry(db: Session, row: AgentMeeting) -> str:
+    """«thử lại biên bản»: làm tiếp từ bước hỏng. Trả câu báo cho người dùng."""
+    if row.status != int(MeetingStatus.FAILED):
+        return "Biên bản gần nhất không ở trạng thái hỏng, không có gì để thử lại."
+    row.status = int(MeetingStatus.QUEUED)
+    row.error = ""
+    db.commit()
+    dispatch(row.id)
+    if _has(row, Progress.WRITE):
+        return "Dạ, em làm tiếp các bước gửi còn thiếu của biên bản, không viết lại."
+    if _has(row, Progress.TRANSCRIBE):
+        return "Dạ, em viết lại biên bản từ bản chép lời đã có, không chép lời lại."
+    return "Dạ, em làm lại biên bản từ đầu."
 
 
 def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
@@ -755,19 +963,28 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
                     row.title = Path(name).stem[:200] or row.title
                 row.mime = mime[:80]
             part = workdir / f"part_{i}.mp3"
+            if not audio_streams(src):
+                src.unlink(missing_ok=True)
+                continue                 # ai-CR-162: phần không có luồng tiếng thì bỏ, không để ffmpeg báo lỗi mù mờ
             to_audio(src, part)
             src.unlink(missing_ok=True)
             parts.append(part)
+        if not parts:
+            raise MeetingError(NO_AUDIO_MSG)
         concat_audio(parts, audio)
     else:
         src = workdir / "source.bin"
         _download_telegram(row.source_ref, src)
+        if not audio_streams(src):
+            raise MeetingError(NO_AUDIO_MSG)
         to_audio(src, audio)
         src.unlink(missing_ok=True)
     duration = probe_duration(audio)
     row.duration_sec = int(duration)
     if duration > MAX_DURATION_SEC:
         raise MeetingError("Ghi âm dài hơn 6 giờ — cắt bớt giúp em.")
+    voiced = speech_check(audio, duration)
+    _done(row, Progress.AUDIO)
     db.commit()
 
     run = service.start_run(db, 0, STAGE_MEETING)
@@ -792,7 +1009,9 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
             usage_in += int(usage.get("promptTokenCount") or 0)
             usage_out += int(usage.get("candidatesTokenCount") or 0)
             used_model = str(usage.get("model") or model)
-            pieces.append(_shift_stamps(text, i * SEGMENT_SEC if len(segments) > 1 else 0))
+            if NO_SPEECH in text and len(text) < 200:
+                continue                 # ai-CR-162: đoạn model báo không có lời nói thì bỏ
+            pieces.append(_shift_stamps(text.replace(NO_SPEECH, "").strip(), i * SEGMENT_SEC if len(segments) > 1 else 0))
     except MeetingError as e:
         service.finish_run(db, run, error=str(e))
         db.commit()
@@ -802,8 +1021,12 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
     tag_run(run, row, Step.TRANSCRIBE)
     transcript = "\n".join(p for p in pieces if p).strip()
     if not transcript:
-        raise MeetingError("Em không nghe ra lời nói nào trong tệp.")
+        raise MeetingError("Em không nghe ra lời nói nào trong tệp — không làm biên bản.")
+    if why := plausible_transcript(transcript, duration, voiced):
+        raise MeetingError(f"Bản chép lời không khớp với phần có tiếng của tệp ({why}) — nghi model nghe nhầm, em không "
+                           "viết biên bản để khỏi bịa nội dung.")
     row.transcript = transcript
+    _done(row, Progress.TRANSCRIBE)
     db.commit()
     out = _write(db, row)
     return {**out, "segments": len(segments)}
@@ -884,7 +1107,10 @@ def cost_text(db: Session, row: AgentMeeting) -> str:
 def _author_of(db: Session, user_id: int) -> str:
     from . import erp, service
 
-    user = erp.user_by_id(db, int(user_id or 0))
+    try:
+        user = erp.user_by_id(db, int(user_id or 0))
+    except Exception:  # noqa: BLE001 — ai-CR-162: ERP đang khởi động lại không được làm hỏng tệp Word
+        return ""
     if user is None:
         return ""
     try:
@@ -924,21 +1150,46 @@ def _write(db: Session, row: AgentMeeting) -> dict:
     row.note_id = int(note.get("note_id") or 0)
     row.status = int(MeetingStatus.DONE)
     row.finished_at = datetime.now()
+    #  Viết lại theo mẫu khác: các bước gửi chạy lại từ đầu cho bản mới.
+    row.steps = [s for s in (row.steps or []) if s in (int(Progress.AUDIO), int(Progress.TRANSCRIBE))]
+    _done(row, Progress.WRITE)
     db.commit()
+    return _deliver(db, row)
 
+
+def _deliver(db: Session, row: AgentMeeting) -> dict:
+    """ai-CR-162: các bước SAU khi đã có biên bản — gửi chữ, gửi Word, lưu Drive, rút việc. Bước nào xong rồi (theo
+    `row.steps`) thì bỏ qua, nên «thử lại biên bản» làm tiếp đúng chỗ hỏng. Lỗi tạm (ERP khởi động lại, mạng chậm) thì tự
+    thử lại vài lần trước khi báo hỏng."""
+    from . import meeting_actions, service
+
+    tpl = template_for_row(row)
     minutes = int((row.duration_sec or 0) // 60)
-    service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, {tpl.label.lower()})\n\n{recap}",
-                  markdown=True)
-    filename, data = word_of(db, row)
-    telegram.send_document(row.chat_id, filename, data, caption="Biên bản kèm phụ lục bản chép lời")
-    drive_link = _upload_word(db, row, filename, data)
-    if drive_link:
-        service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục «{DRIVE_FOLDER}»: {telegram.esc(drive_link)}")
-    db.commit()
-    #  ai-CR-114 (bước 10.3): rút việc + lịch hẹn thành MỘT thẻ duyệt; hỏng thì thôi, biên bản đã gửi.
-    from . import meeting_actions
-
-    meeting_actions.offer(db, row)
+    if not _has(row, Progress.SEND_TEXT):
+        _with_retry(lambda: service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, "
+                                                           f"{tpl.label.lower()})\n\n{row.recap}", markdown=True),
+                    Progress.SEND_TEXT)
+        _done(row, Progress.SEND_TEXT)
+        db.commit()
+    filename, data = "", b""
+    if not _has(row, Progress.SEND_WORD) or not _has(row, Progress.DRIVE):
+        filename, data = _with_retry(lambda: word_of(db, row), Progress.SEND_WORD)
+    if not _has(row, Progress.SEND_WORD):
+        _with_retry(lambda: telegram.send_document(row.chat_id, filename, data,
+                                                   caption="Biên bản kèm phụ lục bản chép lời"), Progress.SEND_WORD)
+        _done(row, Progress.SEND_WORD)
+        db.commit()
+    if not _has(row, Progress.DRIVE):
+        drive_link = _upload_word(db, row, filename, data)
+        if drive_link:
+            service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục «{DRIVE_FOLDER}»: {telegram.esc(drive_link)}")
+        _done(row, Progress.DRIVE)
+        db.commit()
+    if not _has(row, Progress.ACTIONS):
+        #  ai-CR-114 (bước 10.3): rút việc + lịch hẹn thành MỘT thẻ duyệt.
+        _with_retry(lambda: meeting_actions.offer(db, row), Progress.ACTIONS)
+        _done(row, Progress.ACTIONS)
+        db.commit()
     return {"status": "done", "meeting_id": row.id, "minutes": minutes, "template": tpl.label}
 
 
@@ -972,6 +1223,7 @@ def rewrite(db: Session, row: AgentMeeting, tpl: Template) -> None:
     """Viết lại biên bản một phiên đã chép lời theo mẫu khác — chạy nền, không chép lời lại."""
     apply_template(row, tpl)
     row.status = int(MeetingStatus.QUEUED)
+    row.steps = [s for s in (row.steps or []) if s in (int(Progress.AUDIO), int(Progress.TRANSCRIBE))]
     db.commit()
     dispatch(row.id)
 

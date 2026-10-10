@@ -13193,6 +13193,20 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-162 | Biên bản họp không bịa nội dung từ tệp không có tiếng nói, và báo lỗi nói rõ đã xong gì chưa xong gì
+- status: dang-lam
+- date: 2026-10-10
+Trên dev, đại ca gửi một video quay màn hình không có lời nói nhưng bot vẫn chép ra hơn mười hai nghìn ký tự hội thoại bịa và
+viết thành biên bản 45 phút; sau đó một bước phía sau hỏng vì lúc đó ERP đang dựng lại, mà tin báo lại nói chưa làm được biên
+bản. Nay bot đo bằng công cụ xử lý âm thanh trước khi gọi model: tệp không có luồng tiếng, hoặc gần như im lặng, thì dừng và
+báo rõ, không gọi model; sau khi chép lời còn kiểm độ dài bản chép so với phần có tiếng và mốc giờ so với độ dài tệp, lệch thì
+không viết biên bản. Mỗi phiên ghi lại các bước đã xong, nên khi hỏng tin báo nói đúng phần nào đã gửi, phần nào chưa và vì sao
+bằng lời thường; lỗi tạm như ERP đang khởi động lại thì bot tự thử lại, người dùng cũng nhắn thử lại biên bản để làm tiếp từ
+bước hỏng. Lỗi lạ thì có tin báo cho người vận hành. Khi đưa bản mới lên dev, bot chờ biên bản đang chạy xong rồi mới dựng lại.
+Tám trăm ba mươi mốt bài kiểm của bot và trợ lý chạy xanh.
+
+Mã nguồn: agent_hub/meetings.py (audio_streams, speech_check, plausible_transcript, Progress, _deliver, failure_text, retry) · agent_hub/coder.py (meetings_running, _wait_meetings) · agent_hub/erp.py (_not_connected) · migration grp10 + agent0010
+
 ## ai-CR-161 | Phase 16.2 và 16.3: chỉ gửi công cụ cần cho từng câu hỏi và xếp lời dặn để đọc lại từ bộ đệm
 - status: dang-lam
 - date: 2026-10-10

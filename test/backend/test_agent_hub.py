@@ -7961,7 +7961,8 @@ def test_bien_ban_hop_tu_tep_telegram_chay_tron(db, bot, seed, monkeypatch):
     assert row.title == "họp giao ban sáng nay" and row.user_id == seed.u_req_id
     out = mt.process(db, row.id)
     assert out["status"] == "done" and out["minutes"] == 20 and out["segments"] == 1
-    assert calls["ffmpeg"] == ["ffmpeg", "ffprobe"] and calls["upload"] == 1 and calls["delete"] == 1
+    #  ai-CR-162: ffprobe đếm luồng tiếng TRƯỚC khi tách tiếng.
+    assert calls["ffmpeg"] == ["ffprobe", "ffmpeg", "ffprobe"] and calls["upload"] == 1 and calls["delete"] == 1
     assert "chốt mua thép 20 tấn" in asked[0]
     assert row.status == mt.MeetingStatus.DONE and "Mua 20 tấn thép" in row.recap
     assert "BIÊN BẢN" in sent[-1] and docs and docs[0].endswith(".docx")

@@ -2035,7 +2035,28 @@ def _bot_busy(db: Session, task: AgentTask) -> list[str]:
     rows = (db.query(AgentTask.code)
             .filter(AgentTask.id != task.id, AgentTask.status.in_((ST_SCANNING, ST_CODE, ST_CI, ST_DEPLOYING)))
             .all())
-    return [r.code for r in rows]
+    return [r.code for r in rows] + meetings_running(db)
+
+
+def meetings_running(db: Session) -> list[str]:
+    """ai-CR-162: biên bản họp đang chép lời / viết — dựng lại bot (worker) là giết luôn phiên đó; dựng lại ERP thì lời
+    gọi cổng B hỏng giữa chừng (dev 10/10: meeting #4)."""
+    from .meetings import MeetingStatus
+    from .model import AgentMeeting
+
+    rows = (db.query(AgentMeeting.id)
+            .filter(AgentMeeting.status.in_((int(MeetingStatus.TRANSCRIBING), int(MeetingStatus.WRITING)))).all())
+    return [f"biên bản họp #{r.id}" for r in rows]
+
+
+def _wait_meetings(db: Session) -> None:
+    """Trước khi dựng lại ERP dev: chờ biên bản họp đang chạy xong (tối đa AGENT_DEPLOY_BOT_WAIT_SEC). Hết giờ vẫn dựng —
+    các bước gửi của biên bản tự thử lại khi ERP khởi động lại (ai-CR-162)."""
+    waited = 0
+    while meetings_running(db) and waited < settings.AGENT_DEPLOY_BOT_WAIT_SEC:
+        time.sleep(BOT_BUSY_POLL_SEC)
+        waited += BOT_BUSY_POLL_SEC
+        db.expire_all()
 
 
 def deploy_bot_stack(db: Session, task: AgentTask, paths: list[str]) -> str:
@@ -2397,6 +2418,8 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
             #  Gộp từ lượt trước, nay mới deploy: HEAD của worktree gộp không còn là bản gộp này.
             paths = [f["path"] for f in _code_artifact(db, task).get("files") or []]
         services = deploy_services_for(paths)
+        if services:
+            _wait_meetings(db)
         if any(schema_change.is_migration(p) for p in paths):
             art["db_backup"] = backup_dev_db(db, task)
             run.artifact = art

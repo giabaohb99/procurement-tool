@@ -278,8 +278,10 @@ def parse_reply(text: str, n_files: int) -> tuple[str, list[int], str] | None:
 
 
 def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> bool:
-    from . import service
+    from . import meetings, service
 
+    if meetings.retry_by_text(db, chat_id, msg_row, text):     # ai-CR-162: «thử lại biên bản»
+        return True
     card = pending_ask(db, chat_id, msg_row.id)
     if card is None:
         return False

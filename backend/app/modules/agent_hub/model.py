@@ -362,6 +362,9 @@ class AgentMeeting(Base, AuditMixin):
     template_prompt: Mapped[str] = mapped_column(Text, default="")
     #  ai-CR-114: việc + lịch rút từ biên bản, đánh số cho thẻ duyệt; mỗi mục ghi trạng thái (ActionState) và chỗ đã tạo.
     actions: Mapped[list | None] = mapped_column(JSON, default=None, nullable=True)
+    #  ai-CR-162: các bước đã xong (`meetings.Progress`) — hỏng giữa chừng thì báo đúng cái gì đã xong / chưa xong, và
+    #  «thử lại biên bản» làm tiếp từ bước hỏng, không chép lời / viết lại.
+    steps: Mapped[list | None] = mapped_column(JSON, default=None, nullable=True)
     duration_sec: Mapped[int] = mapped_column(Integer, default=0)
     transcript: Mapped[str] = mapped_column(Text().with_variant(mysql.MEDIUMTEXT(), "mysql"), default="")
     recap: Mapped[str] = mapped_column(Text, default="")

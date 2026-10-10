@@ -32,6 +32,21 @@ TOOL_TIMEOUT = 90
 LOCAL_TOOL_MODULES = ("personal_tool", "group_tool", "meeting_tool", "google_tool", "brief_tool")
 
 
+#  ai-CR-162: chờ ERP khởi động lại khi kết nối bị từ chối — tổng ~45 giây (một lần dựng lại api dev ~30-40 giây).
+CONNECT_RETRY_WAITS = (3, 12, 30)
+
+
+def _not_connected(e: Exception) -> bool:
+    """Lỗi xảy ra TRƯỚC khi yêu cầu tới được ERP (từ chối kết nối, không phân giải được tên, hết giờ chờ kết nối)."""
+    if isinstance(e, requests.ConnectTimeout):
+        return True
+    if not isinstance(e, requests.ConnectionError) or isinstance(e, requests.ReadTimeout):
+        return False
+    text = repr(e)
+    return any(k in text for k in ("NewConnectionError", "Connection refused", "Name or service not known",
+                                   "Temporary failure in name resolution", "Failed to establish"))
+
+
 class ErpError(RuntimeError):
     """Cổng ERP hỏng (mạng, chữ ký, ERP trả lỗi) — một câu nói được."""
 
@@ -392,11 +407,19 @@ class _Remote:
             raise ErpError(str(e)) from None
         if data:
             headers["content-type"] = "application/json"
-        try:
-            resp = requests.request(method, f"{base}{full}", params=params, data=data or None, headers=headers,
-                                    timeout=timeout)
-        except requests.RequestException as e:
-            raise ErpError(f"Không gọi được ERP ({type(e).__name__})") from None
+        resp = None
+        for wait in (*CONNECT_RETRY_WAITS, None):
+            try:
+                resp = requests.request(method, f"{base}{full}", params=params, data=data or None, headers=headers,
+                                        timeout=timeout)
+                break
+            except requests.RequestException as e:
+                #  ai-CR-162: ERP đang khởi động lại (deploy) thì kết nối bị từ chối vài chục giây — thử lại. Chỉ thử lại
+                #  khi CHƯA kết nối được (yêu cầu chưa tới ERP), không thử lại khi đã gửi mà chờ quá giờ.
+                if wait is None or not _not_connected(e):
+                    raise ErpError(f"Không gọi được ERP ({type(e).__name__})") from None
+                log.warning("agent_hub erp: ERP chưa nhận kết nối, thử lại sau %ss", wait)
+                time.sleep(wait)
         if raw:
             if resp.status_code >= 400:
                 raise ErpError(f"ERP trả lỗi {resp.status_code}")
