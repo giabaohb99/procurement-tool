@@ -198,6 +198,9 @@ class Settings(BaseSettings):
     # Tắt mặc định. Bật thì tool `search_docs` mới hiện ra cho bot và hook nạp lại chỉ mục mới
     # chạy khi sửa HDSD/FAQ. Bật ở môi trường ĐÃ dựng service qdrant.
     AI_RAG_ENABLED: bool = False
+    # ai-CR-161 (phase 16.2): nạp công cụ theo nhu cầu — chỉ gửi nhóm lõi + nhóm nghiệp vụ câu hỏi chạm tới; không khớp
+    # nhóm nào hoặc model báo thiếu công cụ thì gửi đủ. Tắt = gửi đủ mọi lượt như cũ.
+    AI_TOOL_ROUTING: bool = True
     QDRANT_URL: str = "http://qdrant:6333"
     # Model nhúng của Gemini. Đổi model => vector cũ vô nghĩa, PHẢI reindex toàn bộ.
     AI_EMBED_MODEL: str = "gemini-embedding-001"

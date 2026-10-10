@@ -234,19 +234,27 @@ def _caller_context(db, user) -> str | None:
 
 
 def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None,
-                  terms: str | None = None) -> str | None:
+                  terms: str | None = None, *, routed_note: bool = False) -> str | None:
+    """ai-CR-161 (16.3): xếp từ CỐ ĐỊNH tới HAY ĐỔI — hướng dẫn công cụ · ngày · chân dung người hỏi · lời dặn của kênh
+    (luật cố định trước, sổ nhớ / thói quen sau) · thuật ngữ của riêng câu này · lời dặn lọc công cụ. Đoạn đầu giống nhau
+    giữa các lượt thì hãng AI tính giá đọc lại từ bộ đệm. Trước đây thuật ngữ (đổi theo TỪNG câu) đứng trước chân dung và
+    lời dặn của kênh nên phần sau nó lượt nào cũng tính lại."""
+    from .tool_router import ROUTED_NOTE
+
     parts = []
     if tool_on:
-        # Ngày hôm nay đặt TRƯỚC guide để model quy đổi "năm nay/quý 1/..." sang date_from/date_to.
-        parts.append(f"Hôm nay là {date.today().isoformat()} (định dạng YYYY-MM-DD).")
         parts.append(TOOL_GUIDE)
-    if terms:
-        #  ai-CR-077: sổ thuật ngữ — chỉ những từ có trong câu hỏi đang xét.
-        parts.append(terms)
+        # Ngày hôm nay để model quy đổi "năm nay/quý 1/..." sang date_from/date_to.
+        parts.append(f"Hôm nay là {date.today().isoformat()} (định dạng YYYY-MM-DD).")
     if profile:
         parts.append(profile)
     if caller:
         parts.append(caller)
+    if terms:
+        #  ai-CR-077: sổ thuật ngữ — chỉ những từ có trong câu hỏi đang xét.
+        parts.append(terms)
+    if routed_note:
+        parts.append(ROUTED_NOTE)
     return "\n\n".join(parts) if parts else None
 
 
@@ -303,7 +311,20 @@ def ask(
     profile = erp.caller_context(db, user) if tool_on else None
     recent = [str(h.get("content") or "") for h in (history or [])[-2:] if h.get("role") == "user"]
     terms = erp.glossary_block(db, [message, *recent]) if tool_on else None
-    full_system = build_system(extra=_extra_system(tool_on, system, profile, terms))
+    #  ai-CR-161 (16.2): nạp công cụ theo nhu cầu. `routed` = None → gửi đủ.
+    from . import tool_router
+
+    all_defs: list = []
+    routed: set[str] | None = None
+    if tool_on:
+        #  ai-CR-161 (16.3): thứ tự cố định theo tên — cùng một bộ công cụ thì cùng một đoạn đầu, hãng AI đọc lại từ
+        #  bộ đệm (giá rẻ) thay vì tính lại.
+        all_defs = sorted(erp.tool_defs(db, user), key=lambda d: d.name)
+        if settings.AI_TOOL_ROUTING:
+            routed = tool_router.select(message if isinstance(message, str) else "",
+                                        tool_router.recent_tools(db, getattr(user, "id", 0)))
+    full_system = build_system(extra=_extra_system(tool_on, system, profile, terms,
+                                                   routed_note=routed is not None))
 
     msgs: list[ChatMessage] = []
     for h in history or []:
@@ -332,8 +353,9 @@ def ask(
 
     started = _time.monotonic()
     offered = 0
+    retried = False
     if tool_on:
-        tool_defs = erp.tool_defs(db, user)
+        tool_defs = all_defs if routed is None else [d for d in all_defs if d.name in routed]
         offered = len(tool_defs)       # ai-CR-160 (16.1): đo số khai báo công cụ gửi kèm mỗi câu
         result = prov.run_tools(
             msgs,
@@ -341,6 +363,16 @@ def ask(
             execute=lambda name, args: erp.run_tool(db, user, name, _with_user_text(name, args, message, history)),
             **common,
         )
+        if routed is not None and tool_router.NEED_MORE_TOOLS in (result.text or ""):
+            #  Model báo thiếu công cụ trong bộ đã lọc → hỏi lại MỘT lần với đủ công cụ, bỏ lời dặn lọc.
+            retried = True
+            offered = len(all_defs)
+            result = prov.run_tools(
+                msgs,
+                tools=all_defs,
+                execute=lambda name, args: erp.run_tool(db, user, name, _with_user_text(name, args, message, history)),
+                **{**common, "system": build_system(extra=_extra_system(tool_on, system, profile, terms))},
+            )
     else:
         result = prov.ask(msgs, **common)
 
@@ -366,5 +398,6 @@ def ask(
             "model": result.model,
             "duration_ms": int((_time.monotonic() - started) * 1000),
             "tools_offered": offered,
+            "tools_retried": retried,
         },
     }
