@@ -13223,7 +13223,7 @@ agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_c
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-175 | Trợ lý cá nhân: việc Dự án theo dự án và nhắc hạn ba mốc cho người được giao
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca chốt hướng trợ lý cá nhân: mỗi người chỉ nhận việc của mình, không nhận tin hệ thống. Nay hỏi bot việc của tôi thì
 danh sách gom theo dự án; hỏi một dự án còn gì thì ra mọi việc đang mở của dự án đó kèm người phụ trách, tên dự án mơ hồ thì
@@ -13235,6 +13235,7 @@ cá nhân tạm bỏ qua theo lời đại ca. Không tốn lượt model. Bài 
 Mã nguồn: agent_hub/work_due.py (tick, classify, compose, parse_command), assistant/tools/work_tool.py (my_work_tasks),
 agent_hub/briefs.py (morning_text), agent_hub/service.py (_work_due_by_text), core/celery_app.py (agent-work-due);
 bài kiểm test_agent_hub_nhac_han_viec.py
+Deploy: dev 10/10, commit e69e53d8 trên erp-v2; dựng ERP api rồi cụm bot (worker + beat).
 
 ## ai-CR-170 | Xóa mềm dùng chung cho chứng từ, áp trước cho yêu cầu báo giá
 - status: xong
