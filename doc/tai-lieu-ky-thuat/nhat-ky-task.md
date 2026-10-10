@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-157 | Hướng dẫn dùng bot cho phần phiếu và câu hỏi quyền của tôi
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca muốn người dùng hỏi được, hoặc được bot gợi ý, để xem hướng dẫn và biết tài khoản của mình dùng được chức năng nào. Sổ
 hướng dẫn của bot nay tách phần ERP thành ba nhóm: hỏi số liệu, tạo phiếu nháp, và sửa hay xóa phiếu đã có, ghi đủ các câu mới như
@@ -13204,9 +13204,10 @@ chức năng nào được thì kèm câu nhắn mẫu, chưa được thì ghi 
 tạo phiếu bị chặn vì thiếu quyền, và khi trợ lý gặp chức năng bị chặn quyền. Toàn bộ bài kiểm của bot chạy xanh.
 
 Mã nguồn: agent_hub/user_guide.py (SECTIONS, CAPABILITY_GROUPS, render_permissions, is_permission_question) · agent_hub/service.py (_send_permissions, _guide_by_text) · agent_hub/policy.py
+Deploy: dev 10/10, commit 37a5fbdb trên erp-v2; dựng lại cụm bot.
 
 ## ai-CR-155 | Bot tự đưa bản sửa lên dev thì dựng lại cả chính con bot khi bản sửa đụng mã của bot
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Trước đây khi bot tự gộp và đưa bản sửa lên dev, chỉ hệ thống ERP dev được dựng lại; nếu bản sửa đụng phần bot hay trợ lý AI
 thì dev trông như đã xong nhưng bot vẫn chạy mã cũ. Nay sau khi ERP dev lên, nếu bản sửa đụng mã chạy trong bot, bot tự dựng
@@ -13216,9 +13217,10 @@ sau. Thu hồi một bản sửa cũng đưa bot về bản trước. Dựng bot
 bài kiểm của bot chạy xanh.
 
 Mã nguồn: core/config.py (AGENT_DEPLOY_BOT_STACK, AGENT_DEPLOY_BOT_WAIT_SEC) · agent_hub/coder.py (deploy_bot_stack, bot_stack_services_for, merge_and_deploy, revert_and_deploy)
+Deploy: dev 10/10, commit 95f705c1 trên erp-v2; ERP api và cụm bot dựng lại, máy sửa mã dựng lại 09/10 lúc 17:30.
 
 ## ai-CR-156 | Phiếu yêu cầu mua hàng và yêu cầu báo giá dùng lại được phiếu nháp cũ
-- status: dang-lam
+- status: xong
 - date: 2026-10-09
 Đại ca đồng ý cho yêu cầu mua hàng và yêu cầu báo giá tận dụng phiếu nháp cũ như đơn nghỉ phép, để không sinh ra nhiều phiếu
 nháp. Khi bot soạn một phiếu mới mà người dùng đang có phiếu nháp cùng loại, thẻ nháp liệt kê các phiếu đó và cho hai lựa chọn:
@@ -13227,6 +13229,7 @@ Khác với đơn nghỉ trùng ngày được sửa đè tự động, ở đâ
 đụng phiếu nháp của chính người hỏi và ghi bằng đúng hàm sửa của màn hình. Bài kiểm liên quan chạy xanh.
 
 Mã nguồn: agent_hub/draft_create.py (update_doc_draft, same_kind_drafts) · agent_hub/service.py (_reuse_draft, draft_card) · agent_hub/erp.py · agent_gateway/controller.py (/draft/reuse)
+Deploy: dev 10/10, commit 9ee4ea7c trên erp-v2; ERP api dựng trước rồi tới cụm bot.
 
 ## ai-CR-154 | Đại ca nhắn ok trên thẻ xác nhận là bot tự đưa bản sửa lên dev khi bài kiểm không đỏ
 - status: xong
