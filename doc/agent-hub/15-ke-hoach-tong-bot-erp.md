@@ -36,11 +36,11 @@ thì dùng số mới.
 | 3 | Bot lên dev (Lạc Lạc, máy sửa mã tách rời) | phase 2 | Xong 25/09 |
 | 4 | Trợ lý từng người (chuông, nhắc việc, tin thoại) | phase 3 | Xong 25/09 |
 | 5 | Cổng MCP | phase 4 | Xong 25/09, chưa ai dùng thật |
-| 6 | Google cá nhân (Lịch, Drive) | phase 5 | Xong mã, chờ đại ca cấu hình Google |
+| 6 | Google cá nhân (Lịch, Drive) | phase 5 | **Xong** — đại ca đã cấu hình và dùng (10/10); mở cho nhiều người: xem §Cập nhật 10/10 |
 | 7 | Quy trình code hai máy chủ | phase 6 | Phần chính xong 05/10; còn xem thử qua tunnel, chờ VPS |
 | 8 | Tự vận hành (OPS / HEAL) | phase 7 | Xong 05/10, công tắc mặc định TẮT |
 | 9 | Trợ lý cá nhân (sổ nhớ, tóm tắt buổi, thẻ cá nhân) | phase 7b | Xong 06–07/10 |
-| 10 | Thư ký biên bản họp | phase 10 | Phần lớn xong; chờ thử tệp họp thật |
+| 10 | Thư ký biên bản họp | phase 10 | **Xong** — đại ca thử tệp họp thật 10/10 |
 | 11 | Tách dịch vụ AI khỏi ERP (DB riêng, cổng B) | phase S (S-0…S-6) | S-0…S-4 xong dev 08/10; S-5 / S-6 chờ VPS AI |
 | 12 | Kênh Zalo công ty, màn Nhóm chat, đọc link / tệp, quyền dùng bot | (gom ai-CR-120…135) | Xong dev 08–09/10 |
 | **13** | **Hiểu ý định + tự ghi nhớ** | mới | **Xong dev 09/10** — ai-CR-137 (đợt A) + ai-CR-138 (đợt B); logic ở `17-tri-nho-va-y-dinh.md` |
@@ -68,6 +68,10 @@ ca đồng ý — đang ở đây · 3 tự gộp khi kiểm xanh · 4 lên prod
 - **Phase 15 (duyệt chung) làm được một phần:** sửa / xóa phiếu đã đi chung một kiểu thẻ *cũ → mới → Xác nhận*, kiểm lại
   từ đầu lúc bấm, mỗi thẻ dùng một lần. Còn thiếu: gom thẻ nháp «tạo» và cổng sửa hàng loạt về cùng lớp, nhật ký có
   **hoàn tác một chạm**.
+- **Phase 6 và 10 xong** (đại ca 10/10): Google đã cấu hình và đọc được tệp họp; biên bản họp thử tệp thật xong.
+  Mở Google cho nhiều người: mỗi người tự **Nối Google** ở Trang cá nhân; ứng dụng Google đang ở chế độ *Testing* thì
+  từng Gmail phải nằm trong danh sách Test users (tối đa 100) và cứ 7 ngày phải nối lại — muốn bỏ thì *Publish app*
+  (chưa xác minh, dưới 100 người) hoặc chuyển *Internal* nếu công ty dùng Google Workspace.
 - **Dây chuyền sửa mã gọn** (bot tự sửa phần mềm): rà mã → thẻ xác nhận có *xong thì làm được gì* → ok → Claude Code làm →
   bài kiểm không đỏ thì tự gộp + lên dev, dựng lại cả bot khi cần (149, 150, 153, 154, 155); bỏ luật lệch 30%, thêm canh
   ranh giới bot / ERP.
