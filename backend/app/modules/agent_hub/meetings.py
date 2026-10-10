@@ -949,7 +949,7 @@ def failure_text(row: AgentMeeting, e: Exception) -> str:
 
 
 def _ops_alert(db: Session, row: AgentMeeting, e: Exception) -> None:
-    """Lỗi lạ (không phải lỗi đã lường) → tin vận hành cho chủ bot + người có agent_ops."""
+    """Lỗi lạ (không phải lỗi đã lường) → tin vận hành cho chủ bot."""
     from . import db_backup
 
     step = e.step.name if isinstance(e, StepError) else "?"

@@ -13193,6 +13193,17 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-167 | Tin vận hành của bot chỉ gửi cho chat của đại ca, tin việc sửa mã gửi thêm cho người yêu cầu
+- status: dang-lam
+- date: 2026-10-10
+Đại ca thấy tin máy sửa mã mất liên lạc được gửi cho cả tài khoản Telegram khác. Nguyên nhân là bot chép tin vận hành và thẻ
+việc cho mọi tài khoản có quyền nhận tin vận hành, mà vai trò quản trị hệ thống tự có quyền đó nên cả ba tài khoản quản trị đang
+nối Telegram đều nhận. Đại ca chốt chỉ mình đại ca nhận tin vận hành, ai gửi yêu cầu sửa phần mềm thì nhận tin về việc của
+người đó. Nay bot bỏ hẳn bản sao theo quyền; tin vận hành chỉ về chat của đại ca; tin về một việc sửa mã gửi thêm một bản sao
+không nút bấm cho chat đã gửi yêu cầu tạo việc, người chỉ ra lệnh trên việc không tính. Bài kiểm của bot chạy xanh.
+
+Mã nguồn: agent_hub/service.py (requester_chat, _copy_to_ops, ops_recipients)
+
 ## ai-CR-168 | Video YouTube chia đoạn mười phút để chương tóm tắt có mốc giờ thật
 - status: xong
 - date: 2026-10-10

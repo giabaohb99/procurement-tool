@@ -9734,34 +9734,45 @@ def test_dung_bot_can_quyen_tro_ly_ai(db, bot, seed, monkeypatch, cap_quyen):
     assert db.query(AgentChatLink).filter_by(chat_id="777", revoked_at=None).count() == 0
 
 
-# --- ai-CR-132: người có quyền «Nhận tin vận hành của bot» nhận bản sao tin hệ thống của chat chủ bot ----------------
-def test_ban_sao_tin_van_hanh_chi_cho_nguoi_co_quyen_va_khong_sao_tin_rieng(db, bot, seed, monkeypatch, cap_quyen):
+# --- ai-CR-132 → ai-CR-167: tin vận hành CHỈ chat chủ bot; tin về một việc sửa mã sao thêm cho chat đã yêu cầu việc đó ----
+def test_tin_van_hanh_chi_chu_bot_va_tin_viec_sao_cho_nguoi_yeu_cau(db, bot, seed, monkeypatch, cap_quyen):
+    """Đại ca 10/10: «chỉ anh nhận thôi, của người nào yêu cầu sửa thì nhận tin của người đó» — trước đó mọi admin nối
+    Telegram đều nhận bản sao thẻ việc sửa mã vì vai trò admin tự có quyền agent_ops."""
     from datetime import datetime, timedelta
 
+    from app.modules.agent_hub.constants import DIR_IN
     from app.modules.agent_hub.model import AgentChatLink, AgentMessage
 
     service, _, _ = bot
     calls: list[tuple[str, str, object]] = []
     monkeypatch.setattr(service.telegram, "send",
                         lambda text, buttons=None, chat_id="": calls.append((chat_id, text, buttons)) or 1)
-    service._OPS_CACHE.clear()
     for uid, chat in ((seed.u_req_id, "555"), (seed.u_nstm_id, "666")):
         db.add(AgentChatLink(user_id=uid, chat_id=chat, linked_at=datetime.now(),
                              expires_at=datetime.now() + timedelta(days=30), created_by=0, updated_by=0))
-    db.add(AgentChatLink(user_id=seed.u_req_id, chat_id="zu:u1", linked_at=datetime.now(),
-                         expires_at=datetime.now() + timedelta(days=30), created_by=0, updated_by=0))
     db.commit()
-    cap_quyen(seed.u_req_id, "agent_ops", read=True)
+    cap_quyen(seed.u_req_id, "agent_ops", read=True)          # có quyền cũng KHÔNG còn nhận bản sao tin vận hành
     task = _task_with_plan(db, service, [])
-    #  Tin vận hành + thẻ việc: chủ bot nhận đủ (có nút); người có quyền nhận bản sao KHÔNG nút, chỉ qua Telegram.
     service.reply(db, "12345", "Máy sửa mã mất liên lạc", action=service.ACT_OPS)
     service.reply(db, "12345", f"Kế hoạch {task.code}", task_id=task.id, buttons=[("Duyệt", f"ok:{task.id}")])
-    assert [(c[0], c[1]) for c in calls] == [("12345", "Máy sửa mã mất liên lạc"), ("555", "Máy sửa mã mất liên lạc"),
-                                             ("12345", f"Kế hoạch {task.code}"), ("555", f"Kế hoạch {task.code}")]
-    assert calls[2][2] and calls[3][2] is None
-    assert db.query(AgentMessage).filter_by(chat_id="555", action=service.ACT_OPS_COPY).count() == 2
+    assert [c[0] for c in calls] == ["12345", "12345"]        # việc do chủ bot giao: không ai khác nhận
     calls.clear()
-    #  Không sao: câu trả lời riêng của đại ca, tin «em vẫn đang làm», tin gửi chat khác.
+    #  Việc do chat 666 gửi yêu cầu (tin gom thành việc): thẻ việc có bản sao không nút về 666; tin vận hành vẫn chỉ chủ bot.
+    from app.modules.agent_hub.constants import SRC_TELEGRAM
+    from app.modules.agent_hub.model import AgentTaskItem
+
+    origin = service.log_message(db, DIR_IN, "666", 9, "màn công nợ lọc sai ngày", task_id=task.id)
+    db.add(AgentTaskItem(task_id=task.id, source=SRC_TELEGRAM, ref_id=origin.id, created_by=0, updated_by=0))
+    db.commit()
+    service.reply(db, "12345", f"Kết quả {task.code}", task_id=task.id, buttons=[("Gộp", f"mg:{task.id}")])
+    service.reply(db, "12345", "Sao lưu DB bot hỏng", action=service.ACT_OPS)
+    assert [(c[0], c[1]) for c in calls] == [("12345", f"Kết quả {task.code}"), ("666", f"Kết quả {task.code}"),
+                                             ("12345", "Sao lưu DB bot hỏng")]
+    assert calls[0][2] and calls[1][2] is None
+    assert db.query(AgentMessage).filter_by(chat_id="666", action=service.ACT_OPS_COPY).count() == 1
+    assert db.query(AgentMessage).filter_by(chat_id="555", action=service.ACT_OPS_COPY).count() == 0
+    calls.clear()
+    #  Không sao: câu trả lời riêng, tin «em vẫn đang làm», tin gửi chat khác.
     service.reply(db, "12345", "Giá vàng hôm nay …")
     service.reply(db, "12345", "AI-0001: em vẫn đang làm", task_id=task.id, action=service.ACT_HEARTBEAT)
     service.reply(db, "555", "trả lời riêng", task_id=task.id)

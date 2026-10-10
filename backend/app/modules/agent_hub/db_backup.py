@@ -12,7 +12,7 @@ Bốn việc:
                      STALE_HOURS mới tính).
   · `restore_test` — mỗi tuần: nạp bản mới nhất vào DB tạm `<DB>_restore_test`, kiểm `alembic_version` + số bảng + đếm dòng
                      vài bảng chính so với DB đang chạy, rồi XÓA DB tạm (kể cả khi hỏng). Hỏng thì báo.
-  · Báo = tin vận hành vào chat chủ bot, tự chép cho người có quyền `agent_ops` (`service.reply(..., action=ACT_OPS)`).
+  · Báo = tin vận hành vào chat chủ bot (`service.reply(..., action=ACT_OPS)`; từ ai-CR-167 không còn bản sao cho ai khác).
 
 KHÔNG có đường khôi phục trên web. Quay lại DB: `backend/scripts/agent_restore.sh` (runbook ở doc/agent-hub/08 §sao lưu).
 """
@@ -104,7 +104,7 @@ def object_key(started: datetime) -> str:
 # Báo
 # ---------------------------------------------------------------------------
 def alert(db: Session, text_: str) -> None:
-    """Tin vận hành: chat chủ bot + bản sao cho người có quyền agent_ops. Không có chat chủ thì chỉ ghi log."""
+    """Tin vận hành: chỉ chat chủ bot (ai-CR-167). Không có chat chủ thì chỉ ghi log."""
     log.warning("agent_hub: %s", text_)
     owner = str(settings.AGENT_TELEGRAM_CHAT_ID or "")
     if not owner:

@@ -5528,40 +5528,40 @@ _OPS_SKIP_ACTIONS = {ACT_HEARTBEAT}
 _OPS_CACHE: dict = {}
 
 
-def ops_recipients(db: Session) -> list[str]:
-    """Chat Telegram (đã nối, còn hạn) của những tài khoản có `agent_ops.read`, trừ chat chủ bot. Nhớ 2 phút."""
-    import time
+#  ai-CR-167 (đại ca chốt 10/10/2026): «chỉ anh nhận thôi, của người nào yêu cầu sửa thì nhận tin của người đó». Bỏ hẳn
+#  bản sao theo quyền `agent_ops.read` (ai-CR-132) — vai trò admin tự có quyền đó nên mọi admin nối Telegram đều nhận cả
+#  thẻ việc sửa mã. Nay: tin vận hành CHỈ chat chủ bot; tin về một việc sửa mã (`task_id`) gửi thêm MỘT bản sao không nút
+#  cho chat đã gửi yêu cầu đó (khi không phải chat chủ bot).
+def ops_recipients(db: Session) -> list[tuple[str, int]]:
+    """Giữ tên cho chỗ gọi cũ — không còn ai nhận bản sao tin vận hành ngoài chat chủ bot."""
+    return []
 
-    hit = _OPS_CACHE.get("v")
-    if hit and time.monotonic() - hit[0] < OPS_CACHE_SEC:
-        return list(hit[1])
+
+def requester_chat(db: Session, task_id: int) -> str:
+    """Chat đã GỬI YÊU CẦU tạo việc (tin Telegram gom thành việc, `tab_agent_task_item`); rỗng nếu là chat chủ bot hoặc
+    việc không đến từ Telegram. Người chỉ ra lệnh trên việc (K-04) không tính là người yêu cầu."""
+    if not task_id:
+        return ""
     owner = str(settings.AGENT_TELEGRAM_CHAT_ID or "").strip()
-    by_user: dict[int, list[str]] = {}
-    for link in chat_link.list_all_links(db):
-        cid = str(link.chat_id or "")
-        if cid and cid != owner and channels.is_telegram(cid):
-            by_user.setdefault(int(link.user_id or 0), []).append(cid)
-    out: list[str] = []
-    for uid, chats in by_user.items():
-        try:
-            user = erp.user_by_id(db, uid)
-            if user is not None and getattr(user, "is_active", False) and erp.can(db, user, OPS_ENTITY, "read"):
-                out.extend(chats)
-        except Exception:  # noqa: BLE001 — hỏi quyền hỏng thì bỏ người đó lượt này, không chặn tin của chủ bot
-            log.warning("agent_hub: không hỏi được quyền nhận tin vận hành của #%s", uid, exc_info=True)
-    _OPS_CACHE["v"] = (time.monotonic(), out)
-    return out
+    cid = db.scalar(select(AgentMessage.chat_id)
+                    .join(AgentTaskItem, AgentTaskItem.ref_id == AgentMessage.id)
+                    .where(AgentTaskItem.task_id == int(task_id), AgentTaskItem.source == SRC_TELEGRAM)
+                    .order_by(AgentMessage.id.asc()).limit(1))
+    cid = str(cid or "")
+    return cid if cid and cid != owner else ""
 
 
 def _copy_to_ops(db: Session, wire: str, *, task_id: int) -> None:
-    """Gửi bản sao (KHÔNG nút bấm — duyệt / ra lệnh vẫn chỉ chat chủ bot) tới người nhận tin vận hành."""
-    for cid in ops_recipients(db):
-        try:
-            mid = telegram.send(wire, chat_id=cid)
-        except telegram.TelegramError as e:
-            log.warning("agent_hub: gửi bản sao tin vận hành tới %s hỏng: %s", chat_link.mask_chat(cid), e)
-            mid = 0
-        log_message(db, DIR_OUT, cid, mid, wire, task_id=task_id, action=ACT_OPS_COPY)
+    """Bản sao (KHÔNG nút bấm — duyệt / ra lệnh vẫn chỉ chat chủ bot) về chat đã yêu cầu việc sửa mã đó."""
+    cid = requester_chat(db, task_id)
+    if not cid or not channels.is_telegram(cid):
+        return
+    try:
+        mid = telegram.send(wire, chat_id=cid)
+    except telegram.TelegramError as e:
+        log.warning("agent_hub: gửi bản sao tin việc tới %s hỏng: %s", chat_link.mask_chat(cid), e)
+        mid = 0
+    log_message(db, DIR_OUT, cid, mid, wire, task_id=task_id, action=ACT_OPS_COPY)
 
 
 def reply(db: Session, chat_id: str, text: str, *, task_id: int = 0,
