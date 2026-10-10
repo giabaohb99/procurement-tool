@@ -58,6 +58,20 @@ ca đồng ý — đang ở đây · 3 tự gộp khi kiểm xanh · 4 lên prod
 
 ---
 
+## Cập nhật 10/10/2026 — đợt 09-10/10 (ai-CR-139 … 159, tất cả DEV)
+
+- **Phase 13, 14 xong**, thêm sao lưu DB bot (139), bản tin bật/tắt trong chat (140), quay lại DB bot qua thẻ (141).
+- **Phiếu qua bot** (bảng tiến độ: nhóm G ở `04-danh-sach-tinh-nang.md`): hỏi lại khi thiếu ý (142), phiếu nháp của tôi +
+  xóa nháp (143), dùng lại YCMH/YCBG nháp (156), sửa phiếu (lý do / ngày / loại nghỉ, dòng hàng) + xóa phiếu nháp của mình
+  (151, gom AI-0006), nút xác nhận qua cổng B (152), thẻ dùng một lần (153), *quyền của tôi* + hướng dẫn mới (157), chi
+  phí từng biên bản họp (158), bài Help Center (159).
+- **Phase 15 (duyệt chung) làm được một phần:** sửa / xóa phiếu đã đi chung một kiểu thẻ *cũ → mới → Xác nhận*, kiểm lại
+  từ đầu lúc bấm, mỗi thẻ dùng một lần. Còn thiếu: gom thẻ nháp «tạo» và cổng sửa hàng loạt về cùng lớp, nhật ký có
+  **hoàn tác một chạm**.
+- **Dây chuyền sửa mã gọn** (bot tự sửa phần mềm): rà mã → thẻ xác nhận có *xong thì làm được gì* → ok → Claude Code làm →
+  bài kiểm không đỏ thì tự gộp + lên dev, dựng lại cả bot khi cần (149, 150, 153, 154, 155); bỏ luật lệch 30%, thêm canh
+  ranh giới bot / ERP.
+
 ## 1. Đã làm (10 mảng)
 
 | # | Mảng | Đã có | CR chính |
