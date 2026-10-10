@@ -72,11 +72,13 @@ class MeetingStatus(IntEnum):
     WRITING = 3
     DONE = 4
     FAILED = 5
+    WAITING_OK = 6          # ai-CR-163: ước tính chi phí ≥ ngưỡng (hoặc tệp quá dài) — chờ người gửi nhắn ok / thôi
 
 
 class SourceKind(IntEnum):
     TELEGRAM = 1
     DRIVE = 2
+    YOUTUBE = 3             # ai-CR-163 (phase 22): link YouTube CÔNG KHAI — Gemini tự xem / nghe, bot không tải video
 
 
 class MeetingError(RuntimeError):
@@ -118,6 +120,12 @@ BUILTIN: dict[str, Template] = {t.key: t for t in (
              "Chỉ liệt kê việc cần làm rút ra từ cuộc họp: mỗi dòng «việc — người làm — hạn», nhóm theo người làm; cuối cùng "
              "là các câu hỏi còn bỏ ngỏ.",
              ("danh sách việc", "việc cần làm", "giao việc")),
+    #  ai-CR-163: video thường (hướng dẫn, bài giảng, webinar) — không ép thành «người tham dự / đã chốt».
+    Template("tom_tat_video", "Tóm tắt video",
+             "Viết TÓM TẮT VIDEO bằng Markdown, đúng các mục: ## TÓM TẮT NHANH (3–6 gạch đầu dòng) · ## CÁC CHƯƠNG — mỗi "
+             "chương một mục «### [mm:ss] Tên chương» kèm ý chính, giữ đủ số liệu / tên / mốc · ## SỐ LIỆU ĐÁNG CHÚ Ý · "
+             "## VIỆC NÊN LÀM (nếu video có gợi ý). Không viết mục người tham dự hay đã chốt.",
+             ("tóm tắt video", "bài giảng", "video hướng dẫn", "webinar")),
     Template("theo_gio", "Đầy đủ theo giờ",
              "Viết diễn biến theo mốc giờ [mm:ss]: ai nói gì (tóm ý từng đoạn), kết thúc bằng Kết luận và Việc cần làm.",
              ("theo giờ", "đầy đủ", "diễn biến")),
@@ -167,6 +175,31 @@ CHUNK_SYSTEM = (
 def drive_file_id(text: str) -> str:
     m = _DRIVE_ID.search(text or "")
     return m.group(1) if m else ""
+
+
+_YOUTUBE = re.compile(r"https?://(?:www\.|m\.)?(?:youtube\.com/(?:watch\?(?:[^\s#]*&)?v=|shorts/|live/)|youtu\.be/)"
+                      r"([\w-]{11})")
+_YOUTUBE_WORDS = re.compile(r"(họp|hội thảo|biên bản|recap|tóm tắt|báo cáo|chép lời|meeting|summary)", re.IGNORECASE)
+_MEETING_KIND = re.compile(r"(họp|hội thảo|biên bản|meeting|giao ban)", re.IGNORECASE)
+
+
+def youtube_url(text: str) -> str:
+    """Link YouTube chuẩn hóa về watch?v= (nhận watch?v=, youtu.be/, /shorts/, /live/). Rỗng nếu không có."""
+    m = _YOUTUBE.search(text or "")
+    return f"https://www.youtube.com/watch?v={m.group(1)}" if m else ""
+
+
+def wants_youtube(text: str) -> bool:
+    """Tin có link YouTube + chữ nhờ tóm tắt / biên bản / báo cáo (link trơn thì đi đường đọc link cũ)."""
+    return bool(youtube_url(text)) and bool(_YOUTUBE_WORDS.search(text or ""))
+
+
+def youtube_template(db: Session | None, user_id: int, text: str) -> Template:
+    """Video có chữ họp / hội thảo / biên bản → mẫu biên bản như tệp họp; còn lại → «Tóm tắt video»."""
+    tpl = resolve_template(db, user_id, text)
+    if tpl.key == DEFAULT_TEMPLATE and not _MEETING_KIND.search(text or ""):
+        return BUILTIN["tom_tat_video"]
+    return tpl
 
 
 def wants_meeting(text: str) -> bool:
@@ -497,13 +530,14 @@ def transcribe_timeout(audio_sec: float) -> int:
 
 
 def gemini_transcribe(key: str, file_uri: str, mime: str, model: str, *, audio_sec: float = 0,
-                      fallback: str = "") -> tuple[str, dict]:
+                      fallback: str = "", part: dict | None = None, prompt: str = "",
+                      extra_config: dict | None = None) -> tuple[str, dict]:
     """Chép lời một đoạn. Model chính quá tải (5xx) hoặc treo quá `transcribe_timeout` thì thử MỘT lần bằng model dự phòng
     (cùng khóa). `usage["model"]` = model đã chép được."""
     payload = {
-        "contents": [{"role": "user", "parts": [{"file_data": {"mime_type": mime, "file_uri": file_uri}},
-                                                {"text": TRANSCRIBE_PROMPT}]}],
-        "generationConfig": {"temperature": 0.0, "maxOutputTokens": TRANSCRIBE_MAX_TOKENS},
+        "contents": [{"role": "user", "parts": [part or {"file_data": {"mime_type": mime, "file_uri": file_uri}},
+                                                {"text": prompt or TRANSCRIBE_PROMPT}]}],
+        "generationConfig": {"temperature": 0.0, "maxOutputTokens": TRANSCRIBE_MAX_TOKENS, **(extra_config or {})},
     }
     timeout = transcribe_timeout(audio_sec)
     models = [model] + ([fallback] if fallback and fallback != model else [model])
@@ -810,6 +844,7 @@ class Progress(IntEnum):
     DRIVE = 6
     ACTIONS = 7
     SPEAKERS = 9
+    COST_OK = 10            # ai-CR-163: người gửi đã nhắn ok cho mức chi phí ước tính
 
 
 PROGRESS_LABELS = {Progress.AUDIO: "tách tiếng", Progress.TRANSCRIBE: "chép lời", Progress.WRITE: "viết biên bản",
@@ -879,8 +914,8 @@ def friendly_reason(e: Exception) -> str:
 
 def failure_text(row: AgentMeeting, e: Exception) -> str:
     esc = telegram.esc
-    done = [PROGRESS_LABELS[p] for p in Progress if _has(row, p)]
-    todo = [PROGRESS_LABELS[p] for p in Progress if not _has(row, p)]
+    done = [PROGRESS_LABELS[p] for p in WORK_STEPS if _has(row, p)]
+    todo = [PROGRESS_LABELS[p] for p in WORK_STEPS if not _has(row, p)]
     title = esc(row.title or "cuộc họp")
     if _has(row, Progress.SEND_TEXT):
         head = f"Biên bản <b>{title}</b> đã gửi ở trên, nhưng còn bước chưa xong."
@@ -959,6 +994,8 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
         raise MeetingError("Chép lời họp chỉ chạy bằng Gemini — thêm một khóa Gemini ở ERP → Trang cá nhân → Khóa AI.")
     row.status = int(MeetingStatus.TRANSCRIBING)
     db.commit()
+    if row.source_kind == int(SourceKind.YOUTUBE):
+        return _process_youtube(db, row, key)
     audio = workdir / "audio.mp3"
     if row.source_kind == int(SourceKind.DRIVE):
         #  ai-CR-116 (bước 10.4): nhiều tệp Drive của CÙNG một cuộc họp (ghi thành nhiều phần) — `source_ref` = các id
@@ -996,6 +1033,9 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
     voiced = speech_check(audio, duration)
     _done(row, Progress.AUDIO)
     db.commit()
+    estimate = estimate_cost(duration)
+    if needs_ok(row, estimate, duration):
+        return ask_cost_ok(db, row, estimate, duration)
 
     run = service.start_run(db, 0, STAGE_MEETING)
     db.commit()
@@ -1039,6 +1079,7 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
     _done(row, Progress.TRANSCRIBE)
     db.commit()
     out = _write(db, row)
+    check_estimate(db, row, estimate)
     return {**out, "segments": len(segments)}
 
 
@@ -1506,3 +1547,238 @@ def rename(db: Session, row: AgentMeeting, pairs: dict[int, str]) -> None:
     row.status = int(MeetingStatus.QUEUED)
     db.commit()
     dispatch(row.id)
+
+
+#  Các bước hiện trong tin báo hỏng (bỏ bước phụ: hỏi ai là ai, đồng ý chi phí).
+WORK_STEPS = (Progress.AUDIO, Progress.TRANSCRIBE, Progress.WRITE, Progress.SEND_TEXT, Progress.SEND_WORD,
+              Progress.SEND_TRANSCRIPT, Progress.DRIVE, Progress.ACTIONS)
+
+
+# ---------------------------------------------------------------------------
+# Ước tính chi phí trước khi chạy (ai-CR-163) — đại ca 10/10: dưới 1 USD chạy luôn; từ 1 USD, hoặc tệp dài hơn 2 giờ,
+# thì báo số tiền + thời lượng và hỏi ok / thôi. Áp cho MỌI nguồn: Telegram, Drive, YouTube.
+# ---------------------------------------------------------------------------
+COST_CONFIRM_USD = 1.0
+LONG_WARN_SEC = 2 * 3600
+COST_OK_WAIT = "cho_ok_bien_ban"
+COST_OK_DONE = "ok_bien_ban_xong"
+COST_OK_WINDOW_MIN = 120
+#  Theo tài liệu Gemini (10/2026): tiếng 32 token / giây; khung hình 66 token ở độ phân giải thấp. Video YouTube lấy mẫu
+#  YT_FPS khung / giây vì chỉ cần lời nói. Giá phần TIẾNG của Gemini Flash cao hơn chữ (~1 USD / 1 triệu token vào).
+AUDIO_TOKENS_PER_SEC = 32
+YT_FPS = 0.2
+YT_TOKENS_PER_SEC = 66 * YT_FPS + AUDIO_TOKENS_PER_SEC + 2
+AUDIO_INPUT_USD_PER_M = 1.0
+TRANSCRIPT_TOKENS_PER_SEC = 5          # ~ lời nói tiếng Việt ra chữ
+CHUNK_NOTE_TOKENS = 1500
+RECAP_OUT_TOKENS = 6000
+_FALLBACK_PRICE = (0.30, 2.50)
+_RATIO_WARN = 2.0                     # lệch hơn 2 lần so với ước tính thì ghi log để chỉnh hệ số
+
+
+def _price(model: str) -> tuple[float, float]:
+    from .constants import MODEL_PRICES_USD
+
+    if model in MODEL_PRICES_USD:
+        return MODEL_PRICES_USD[model]
+    for name, p in MODEL_PRICES_USD.items():
+        if model and model.startswith(name):
+            return p
+    return _FALLBACK_PRICE
+
+
+def estimate_cost(duration: float, *, youtube: bool = False, input_tokens: int = 0) -> dict:
+    """Ước chi phí trọn phiên (chép lời + viết biên bản) — chỉ để quyết hỏi hay không, số thật ghi sổ sau."""
+    sec = max(0.0, float(duration))
+    t_in, t_out = _price(settings.AGENT_MANAGER_MODEL)
+    audio_tok = sec * AUDIO_TOKENS_PER_SEC
+    total_in = float(input_tokens) if input_tokens else sec * (YT_TOKENS_PER_SEC if youtube else AUDIO_TOKENS_PER_SEC)
+    frames_tok = max(0.0, total_in - audio_tok)
+    words = sec * TRANSCRIPT_TOKENS_PER_SEC
+    transcribe = (audio_tok * AUDIO_INPUT_USD_PER_M + frames_tok * t_in + words * t_out) / 1_000_000
+    ref = user_keys.active_ref()
+    w_in, w_out = _price(getattr(ref, "model", "") or settings.AGENT_MANAGER_MODEL)
+    if sec > LONG_MEETING_SEC:
+        chunks = max(1, int(sec // CHUNK_SEC) + 1)
+        write = ((words + chunks * CHUNK_NOTE_TOKENS + 2000) * w_in
+                 + (chunks * CHUNK_NOTE_TOKENS + RECAP_OUT_TOKENS) * w_out) / 1_000_000
+    else:
+        write = ((words + 2000) * w_in + RECAP_OUT_TOKENS * w_out) / 1_000_000
+    usd = round(transcribe + write, 4)
+    return {"usd": usd, "vnd": int(round(usd * settings.AGENT_USD_VND / 1000) * 1000), "minutes": int(sec // 60),
+            "input_tokens": int(total_in)}
+
+
+def needs_ok(row: AgentMeeting, estimate: dict, duration: float) -> bool:
+    if _has(row, Progress.COST_OK):
+        return False
+    return estimate["usd"] >= COST_CONFIRM_USD or duration > LONG_WARN_SEC
+
+
+def ask_cost_ok(db: Session, row: AgentMeeting, estimate: dict, duration: float) -> dict:
+    from . import service
+
+    esc = telegram.esc
+    hours = f"{int(duration // 3600)} giờ {int(duration % 3600 // 60)} phút" if duration >= 3600 else \
+        f"{int(duration // 60)} phút"
+    lines = [f"<b>Ước tính chi phí</b> cho <b>{esc(row.title or 'tệp họp')}</b>",
+             f"Thời lượng: <b>{hours}</b> · chi phí khoảng <b>${estimate['usd']:.2f}</b> "
+             f"(≈ {estimate['vnd']:,} đ)".replace(",", ".")]
+    if duration > LONG_WARN_SEC:
+        lines.append("<i>Tệp dài hơn 2 giờ: chép lời và viết biên bản sẽ lâu hơn bình thường.</i>")
+    lines += ["", "<b>Trả lời:</b>", "• <code>ok</code> — em làm", "• <code>thôi</code> — bỏ"]
+    row.status = int(MeetingStatus.WAITING_OK)
+    db.commit()
+    service.reply(db, row.chat_id, "\n".join(lines))
+    service.log_message(db, service.DIR_OUT, row.chat_id, 0, json.dumps({"meeting_id": row.id}), action=COST_OK_WAIT)
+    db.commit()
+    return {"status": "waiting", "meeting_id": row.id, "usd": estimate["usd"]}
+
+
+_OK = re.compile(r"^\s*(ok|oke|okay|ok em|đồng ý|làm đi|làm|được|ừ|chạy đi)\s*[.!]*\s*$", re.IGNORECASE)
+_NO = re.compile(r"^\s*(thôi|bỏ|không|ko|hủy|không làm)\s*[.!]*\s*$", re.IGNORECASE)
+
+
+def cost_ok_by_text(db: Session, chat_id: str, msg_row, text: str) -> bool:
+    """Trả lời thẻ ước tính chi phí: ok → chạy tiếp; thôi → bỏ phiên."""
+    from datetime import timedelta
+
+    from sqlalchemy import select
+
+    from . import service
+    from .model import AgentMessage
+
+    yes, no = bool(_OK.match(text or "")), bool(_NO.match(text or ""))
+    if not (yes or no):
+        return False
+    card = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action == COST_OK_WAIT,
+                                                AgentMessage.id < msg_row.id).order_by(AgentMessage.id.desc()).limit(1))
+    if card is None or (msg_row.created_at and card.created_at
+                        and msg_row.created_at - card.created_at > timedelta(minutes=COST_OK_WINDOW_MIN)):
+        return False
+    try:
+        mid = int(json.loads(card.body or "{}").get("meeting_id") or 0)
+    except ValueError:
+        mid = 0
+    row = db.get(AgentMeeting, mid) if mid else None
+    if row is None or row.status != int(MeetingStatus.WAITING_OK):
+        return False
+    msg_row.action = service.ACT_COMMAND
+    card.action = COST_OK_DONE
+    if no:
+        row.status = int(MeetingStatus.FAILED)
+        row.error = "Người gửi không làm (chi phí ước tính)"
+        db.commit()
+        service.reply(db, chat_id, "Dạ, em bỏ, không làm biên bản tệp này.")
+        return True
+    _done(row, Progress.COST_OK)
+    row.status = int(MeetingStatus.QUEUED)
+    db.commit()
+    service.reply(db, chat_id, "Dạ, em làm luôn. Xong em gửi biên bản.")
+    dispatch(row.id)
+    return True
+
+
+def check_estimate(db: Session, row: AgentMeeting, estimate: dict) -> None:
+    """Sau khi chạy: chi phí thật (sổ, ai-CR-158/160) lệch nhiều so với ước tính thì ghi log để chỉnh hệ số."""
+    try:
+        actual = sum(float(r.cost_usd or 0) for r in runs_of(db, row))
+    except Exception:  # noqa: BLE001
+        return
+    est = float(estimate.get("usd") or 0)
+    if est > 0 and actual > 0 and (actual / est > _RATIO_WARN or est / actual > _RATIO_WARN):
+        log.warning("agent_hub: chi phí biên bản #%s lệch ước tính: ước $%.4f, thật $%.4f (%s phút)", row.id, est,
+                    actual, estimate.get("minutes"))
+
+
+# ---------------------------------------------------------------------------
+# Video YouTube (ai-CR-163, phase 22) — đường chính thức: đưa link công khai vào Gemini, bot không tải video / tiếng
+# ---------------------------------------------------------------------------
+YOUTUBE_PROMPT = TRANSCRIBE_PROMPT.replace("đoạn ghi âm cuộc họp này", "video này").replace(
+    "Nếu đoạn ghi âm", "Nếu video") + " Bỏ qua hình ảnh, chỉ chép lời nói."
+_YT_CONFIG = {"mediaResolution": "MEDIA_RESOLUTION_LOW"}
+
+
+def _yt_error(resp) -> MeetingError:
+    text = (resp.text or "")[:400] if resp is not None else ""
+    low = text.lower()
+    if any(k in low for k in ("private", "unlisted", "not public", "permission", "unavailable", "not found")):
+        return MeetingError("Video không công khai, riêng tư hoặc không còn — em chỉ đọc được video YouTube CÔNG KHAI.")
+    if "live" in low:
+        return MeetingError("Video đang phát trực tiếp — chờ phát xong rồi gửi lại giúp em.")
+    return _gem_error(resp)
+
+
+def youtube_tokens(key: str, url: str, model: str) -> int:
+    """Đếm token video (độ phân giải thấp) bằng countTokens — vừa ra thời lượng, vừa ra số để ước chi phí."""
+    part = {"file_data": {"file_uri": url}, "video_metadata": {"fps": YT_FPS}}
+    body = {"generateContentRequest": {"model": f"models/{model}",
+                                       "contents": [{"role": "user", "parts": [part]}],
+                                       "generationConfig": _YT_CONFIG}}
+    try:
+        resp = requests.post(f"{GEM_BASE}/v1beta/models/{model}:countTokens", headers={"x-goog-api-key": key},
+                             json=body, timeout=120)
+    except requests.RequestException as e:
+        raise MeetingError(f"Không gọi được Gemini ({type(e).__name__}).") from None
+    if resp.status_code >= 400:
+        raise _yt_error(resp)
+    return int((resp.json() or {}).get("totalTokens") or 0)
+
+
+def _process_youtube(db: Session, row: AgentMeeting, key: str) -> dict:
+    from . import manager, service
+    from .constants import STAGE_MEETING
+
+    model = settings.AGENT_MANAGER_MODEL
+    url = row.source_ref
+    tokens = youtube_tokens(key, url, model)
+    duration = tokens / YT_TOKENS_PER_SEC if tokens else 0.0
+    if duration <= 0:
+        raise MeetingError("Em không đọc được độ dài video — kiểm lại link YouTube giúp em.")
+    row.duration_sec = int(duration)
+    _done(row, Progress.AUDIO)
+    db.commit()
+    estimate = estimate_cost(duration, youtube=True, input_tokens=tokens)
+    if needs_ok(row, estimate, duration):
+        return ask_cost_ok(db, row, estimate, duration)
+    count = -(-int(duration) // SEGMENT_SEC) if duration > SPLIT_OVER_SEC else 1     # chia lên, không thừa đoạn rỗng
+    run = service.start_run(db, 0, STAGE_MEETING)
+    db.commit()
+    pieces: list[str] = []
+    usage_in = usage_out = 0
+    used_model = model
+    try:
+        for i in range(count):
+            meta: dict = {"fps": YT_FPS}
+            if count > 1:
+                meta.update(start_offset=f"{i * SEGMENT_SEC}s", end_offset=f"{(i + 1) * SEGMENT_SEC}s")
+            part = {"file_data": {"file_uri": url}, "video_metadata": meta}
+            seg_sec = min(SEGMENT_SEC, duration) if count > 1 else duration
+            text, usage = gemini_transcribe(key, "", "", model, audio_sec=seg_sec, fallback=manager.fallback_model(),
+                                            part=part, prompt=YOUTUBE_PROMPT, extra_config=_YT_CONFIG)
+            usage_in += int(usage.get("promptTokenCount") or 0)
+            usage_out += int(usage.get("candidatesTokenCount") or 0)
+            used_model = str(usage.get("model") or model)
+            if NO_SPEECH in text and len(text) < 200:
+                continue
+            pieces.append(_shift_stamps(text.replace(NO_SPEECH, "").strip(), i * SEGMENT_SEC if count > 1 else 0))
+    except MeetingError as e:
+        service.finish_run(db, run, error=str(e))
+        tag_run(run, row, Step.TRANSCRIBE)
+        db.commit()
+        raise
+    service.finish_run(db, run, result=ChatResult(text="", provider="gemini", model=used_model, input_tokens=usage_in,
+                                                  output_tokens=usage_out))
+    tag_run(run, row, Step.TRANSCRIBE)
+    transcript = "\n".join(p for p in pieces if p).strip()
+    if not transcript:
+        raise MeetingError("Video không có lời nói — em không làm biên bản / tóm tắt để khỏi bịa nội dung.")
+    #  Không đo được phần có tiếng của video YouTube: chỉ chặn mốc giờ vượt xa độ dài video.
+    if why := plausible_transcript(transcript, duration * 1.5, max(duration, 1.0)):
+        raise MeetingError(f"Bản chép lời không khớp video ({why}) — nghi model nghe nhầm, em không viết.")
+    row.transcript = transcript
+    _done(row, Progress.TRANSCRIBE)
+    db.commit()
+    out = _write(db, row)
+    check_estimate(db, row, estimate)
+    return {**out, "segments": count}

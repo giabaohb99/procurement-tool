@@ -224,6 +224,9 @@ Tiến độ đợt 09-10/10/2026. Mọi dòng dưới đây đã **lên DEV**, 
 | G-11 | Đưa lên dev dựng lại cả cụm bot khi bản sửa đụng mã bot (chờ việc dở, khóa chống đè, tự quay về) | XONG DEV (ai-CR-155) |
 | G-12 | Lọc thẻ suy nghĩ `<thinking>` của model khỏi câu trả lời | XONG DEV (ai-CR-151) |
 | G-15 | Hỏi chi phí token của một biên bản họp: từng bước chép lời / viết biên bản / rút việc | XONG DEV (ai-CR-158) |
+| G-16 | Biên bản họp không bịa từ tệp không có tiếng; báo lỗi từng bước, tự thử lại, lệnh thử lại biên bản | XONG DEV (ai-CR-162) |
+| G-17 | Biên bản sạch chữ thừa, tóm hai tầng khi họp dài, thẻ Ai là ai, bản chép lời .txt riêng | XONG DEV (ai-CR-164) |
+| G-18 | Phase 22: đọc video YouTube công khai thành biên bản / tóm tắt (Gemini theo link, không tải video) + ước tính chi phí trước cho mọi tệp họp, từ 1 USD hoặc dài hơn 2 giờ thì hỏi ok | Chờ dev (ai-CR-163) |
 | G-13 | Bài Help Center cho phần sửa / xóa phiếu, dùng lại nháp, xem quyền | XONG DEV (ai-CR-159, bài id 112) |
 | G-14 | Dùng Claude Sonnet cho việc sửa mã nhỏ; cảnh báo khi máy sửa mã chạy bản cũ | Đại ca gác lại 09/10 |
 

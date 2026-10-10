@@ -133,3 +133,13 @@ Drive, em nhận thông tin và hỏi anh, hoặc anh nói cần report cuộc h
 | Q7 | Video: chỉ lấy tiếng (rẻ), hay đọc cả hình để bắt chữ trên slide? | Chỉ lấy tiếng; cần slide thì làm sau |
 | Q8 | Biên bản lưu ở đâu, ai xem: chỉ người gửi, hay chia cho người dự họp có tên trong ERP? | Chỉ người gửi; muốn chia thì gửi tay |
 | Q9 | Việc rút ra: tạo vào dự án nào trong phân hệ Công việc? | Bot hỏi một câu kèm danh sách dự án của người gửi |
+
+## 8. Bổ sung 10/10/2026 (ai-CR-162, 164, 163)
+
+- **Không bịa từ tệp không có tiếng (ai-CR-162):** đo luồng tiếng và phần có tiếng bằng ffmpeg trước khi gọi model; rào sau
+  chép lời; báo lỗi nói rõ đã xong / chưa xong; tự thử lại lỗi tạm; lệnh *thử lại biên bản*.
+- **Chất lượng (ai-CR-164):** bỏ chữ thừa của model; họp > 30 phút tóm hai tầng; thẻ *Ai là ai?*; Word bỏ phụ lục, bản chép
+  lời gửi tệp .txt riêng.
+- **Ước tính chi phí trước khi chạy (ai-CR-163, đại ca chốt — áp cho tệp Telegram, Drive và video YouTube):** dưới 1 USD chạy
+  luôn; từ 1 USD hoặc dài hơn 2 giờ thì báo số tiền + thời lượng và hỏi `ok` / `thôi`. Không còn trần độ dài cho YouTube; tệp
+  tải lên vẫn giữ trần 6 giờ cũ. Chi tiết: phase 22 ở `15-ke-hoach-tong-bot-erp.md`.

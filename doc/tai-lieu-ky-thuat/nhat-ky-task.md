@@ -13193,8 +13193,22 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
-## ai-CR-164 | Biên bản họp sạch chữ thừa, đủ ý khi họp dài, hỏi ai là ai và gửi bản chép lời riêng
+## ai-CR-163 | Phase 22: đọc video YouTube thành biên bản hoặc tóm tắt, và báo chi phí trước khi làm
 - status: dang-lam
+- date: 2026-10-10
+Đại ca giao làm cho bot đọc được video YouTube thành báo cáo và chốt ba điều: không đặt trần độ dài, không làm chế độ đọc hình,
+và luôn ước tính chi phí trước khi chạy. Người dùng gửi link YouTube công khai kèm chữ tóm tắt, biên bản hay báo cáo thì bot đưa
+link cho Gemini tự nghe theo đường chính thức của Google, bot không tải video về. Video có chữ họp hay hội thảo thì ra biên bản
+như tệp họp, còn lại ra bản tóm tắt video có chương theo mốc giờ, ý chính và số liệu. Video riêng tư, không công khai hay đang
+phát trực tiếp thì bot báo rõ; video không có lời nói thì dừng, không bịa. Với mọi tệp họp gửi qua Telegram, Drive hay link
+YouTube, bot ước tính chi phí trước: dưới một đô la thì làm luôn, từ một đô la hoặc dài hơn hai giờ thì báo số tiền và thời lượng
+rồi chờ người dùng nhắn ok hoặc thôi. Chạy xong bot so chi phí thật với ước tính để chỉnh dần hệ số. Toàn bộ bài kiểm của bot và
+trợ lý chạy xanh.
+
+Mã nguồn: agent_hub/meetings.py (youtube_url, youtube_template, youtube_tokens, _process_youtube, estimate_cost, needs_ok, ask_cost_ok, cost_ok_by_text, check_estimate) · agent_hub/service.py (_meeting_by_message) · agent_hub/meeting_drive.py
+
+## ai-CR-164 | Biên bản họp sạch chữ thừa, đủ ý khi họp dài, hỏi ai là ai và gửi bản chép lời riêng
+- status: xong
 - date: 2026-10-10
 Đại ca xem biên bản một cuộc họp dài 102 phút trên dev và góp năm điểm. Bot nay bỏ hết câu dạo đầu hay câu kết của model, ví dụ
 câu tiếng Anh từng lọt vào tệp Word. Họp dài hơn ba mươi phút được tóm hai tầng: tóm từng đoạn khoảng hai mươi phút giữ đủ số
@@ -13205,6 +13219,7 @@ bản chép lời có mốc giờ được gửi riêng thành tệp chữ và l
 nằm trong tệp Word đính kèm và trên Drive. Toàn bộ bài kiểm của bot và trợ lý chạy xanh.
 
 Mã nguồn: agent_hub/meetings.py (clean_recap, transcript_chunks, _ask_logged, transcript_file, recap_message, offer_speakers, speakers_by_text, rename) · agent_hub/meeting_drive.py · core/config.py (AGENT_MEETING_COMPOSE_MODEL)
+Deploy: dev 10/10, commit d40a9e9b trên erp-v2.
 
 ## ai-CR-162 | Biên bản họp không bịa nội dung từ tệp không có tiếng nói, và báo lỗi nói rõ đã xong gì chưa xong gì
 - status: xong

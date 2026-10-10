@@ -52,6 +52,7 @@ thì dùng số mới.
 | 19 | Kho tri thức cấp công ty | mới | Kế hoạch |
 | 20 | Lõi mở (gọi MCP ngoài, A2A, giao việc tính ngân sách) | phase 8 | Ghi nhận |
 | 21 | Nhiều kênh, nhiều bot (Zalo OA, bot riêng từng người) | phase 9 | Ghi nhận |
+| **22** | **Đọc video YouTube thành biên bản / tóm tắt** | mới | **Xong dev 10/10** — ai-CR-163 (kèm luật ước tính chi phí cho mọi tệp họp) |
 
 **«Bậc 1–4» không phải phase**: đó là **mức tự chủ** của bot sửa phần mềm (1 chỉ lập kế hoạch · 2 sửa + PR, gộp khi đại
 ca đồng ý — đang ở đây · 3 tự gộp khi kiểm xanh · 4 lên prod có người duyệt). Giữ tên «bậc» để khỏi lẫn với phase.
@@ -181,6 +182,29 @@ trả lời trích đúng tài liệu. Kết hợp sổ thuật ngữ (077–079
 → gợi ý tài liệu nên viết thêm).
 
 ---
+
+### Phase 22 — Đọc video YouTube (ai-CR-163, xong dev 10/10)
+
+Đại ca giao 10/10 (qua Agent 1), chốt ba câu cùng ngày. Làm SAU bản vá biên bản họp (ai-CR-162) vì dùng lại đúng các rào đó.
+
+**Hướng kỹ thuật (đã chốt):** KHÔNG tự tải video / tiếng YouTube (yt-dlp, youtube-transcript-api… trái điều khoản YouTube);
+KHÔNG dùng YouTube Data API captions (chỉ tải được phụ đề video của chính chủ kênh). DÙNG đường chính thức: đưa link YouTube
+CÔNG KHAI vào Gemini (`file_data.file_uri` = URL). Google tự xem / nghe, bot chỉ nhận chữ, bằng khóa Gemini của người gửi.
+Tài liệu Gemini (kiểm 10/10): chỉ video công khai (không riêng tư / không công khai); gói miễn phí tối đa 8 giờ video YouTube
+mỗi ngày, gói trả tiền không giới hạn độ dài; độ phân giải thấp 66 token / khung + 32 token / giây tiếng.
+
+| Việc | Đã làm |
+|---|---|
+| 22.1 Nhận link | `meetings.youtube_url`: watch?v=, youtu.be/, /shorts/, /live/ (chuẩn hóa về watch?v=). Chỉ nhận khi kèm chữ tóm tắt / recap / biên bản / báo cáo / họp; link trơn đi đường đọc link cũ. Video riêng tư / không công khai / đang phát trực tiếp → báo rõ. Gọi qua công cụ của Trợ lý: CHƯA làm |
+| 22.2 Hai kiểu đầu ra | Video có chữ họp / hội thảo / biên bản → mẫu biên bản như tệp họp; còn lại → mẫu mới *Tóm tắt video* (chương có mốc giờ, ý chính, số liệu, việc nên làm). Dùng lại toàn bộ pipeline: Word chuẩn DEGO, bản chép .txt, Drive, kho ghi chú, rút việc, thẻ Ai là ai |
+| 22.3 Chế độ đọc hình | **BỎ** (đại ca chốt): chỉ tiếng → chữ. Lời dặn chỉ chép lời nói, bỏ qua hình; `mediaResolution = LOW`, lấy mẫu 0,2 khung / giây để bớt token hình |
+| 22.4 Rào | Không có lời nói → dừng, không viết (mã `[KHONG_CO_LOI_NOI]`, rào mốc giờ); không trần độ dài, dài hơn 2 giờ thì CẢNH BÁO + hỏi; ước tính chi phí trước (countTokens); chỉ người dùng được bot (quyền `assistant.read`); chi phí thật ghi sổ (ai-CR-158/160) |
+| 22.5 Bài kiểm | `test_agent_hub_youtube_va_uoc_chi_phi.py`: các dạng link, riêng tư, không lời nói, hỏi ok khi đắt / dài, chọn mẫu |
+
+**Luật ước tính chi phí (áp cho MỌI nguồn: Telegram, Drive, YouTube):** luôn ước trước khi chạy = thời lượng × token / giây
+(tiếng 32; YouTube thêm khung hình theo độ phân giải thấp) × giá model + lượt viết biên bản (hai tầng nếu họp dài). **Dưới 1 USD
+chạy luôn, không hỏi. Từ 1 USD, hoặc dài hơn 2 giờ: báo số tiền (USD + VND) + thời lượng và hỏi `ok` / `thôi`.** Chạy xong so
+chi phí thật trong sổ với ước tính, lệch hơn 2 lần thì ghi log để chỉnh hệ số.
 
 ## 4. Định hướng về sau
 

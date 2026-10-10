@@ -284,6 +284,8 @@ def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> 
         return True
     if meetings.speakers_by_text(db, chat_id, msg_row, text):  # ai-CR-164: «Người 1 = Ngân, Người 3 = Phú»
         return True
+    if meetings.cost_ok_by_text(db, chat_id, msg_row, text):   # ai-CR-163: ok / thôi cho thẻ ước tính chi phí
+        return True
     card = pending_ask(db, chat_id, msg_row.id)
     if card is None:
         return False

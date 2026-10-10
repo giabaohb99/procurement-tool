@@ -411,7 +411,8 @@ def _meeting_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool
         return False
     media = meetings.telegram_media(msg)
     drive_id = meetings.drive_file_id(text) if not media and meetings.wants_meeting(text) else ""
-    if not media and not drive_id:
+    yt = meetings.youtube_url(text) if not media and not drive_id and meetings.wants_youtube(text) else ""
+    if not media and not drive_id and not yt:
         return False
     link = chat_link.get_active_link(db, chat_id)
     if link is None and not telegram.is_allowed_chat(chat_id):
@@ -426,6 +427,11 @@ def _meeting_by_message(db: Session, msg: dict, chat_id: str, text: str) -> bool
         title = (text.split("\n")[0][:120] if text else "") or media["name"]
         row = meetings.create(db, user_id=link.user_id, chat_id=chat_id, kind=meetings.SourceKind.TELEGRAM,
                               ref=media["file_id"], title=title, mime=media["mime"], template=template)
+    elif yt:
+        #  ai-CR-163 (phase 22): video YouTube công khai — Gemini tự xem / nghe theo link, bot không tải video.
+        row = meetings.create(db, user_id=link.user_id, chat_id=chat_id, kind=meetings.SourceKind.YOUTUBE, ref=yt,
+                              title="Video YouTube", mime="video/youtube",
+                              template=meetings.youtube_template(db, link.user_id, text))
     else:
         row = meetings.create(db, user_id=link.user_id, chat_id=chat_id, kind=meetings.SourceKind.DRIVE,
                               ref=drive_id, title="Cuộc họp", template=template)

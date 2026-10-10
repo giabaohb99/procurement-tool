@@ -101,6 +101,8 @@ SECTIONS: tuple[Section, ...] = (
     Section("bien_ban", "Biên bản họp", ("bien ban", "hop", "recap", "ghi am", "mau bien ban"), (
         ("", "Gửi tệp ghi âm / video (≤ 20 MB) vào chat, hoặc thả vào thư mục Họp trên Drive — em báo rồi chờ anh/chị bảo"),
         ("làm biên bản", "làm biên bản tệp vừa báo (mặc định mẫu Recap DEGO)"),
+        ("tóm tắt video này https://youtu.be/…", "video YouTube công khai: em nghe rồi tóm tắt (có chữ họp thì ra biên bản)"),
+        ("", "Trước khi làm em ước tính chi phí: dưới 1 USD làm luôn; từ 1 USD hoặc dài hơn 2 giờ em hỏi, nhắn ok hoặc thôi"),
         ("làm biên bản chính thức", "chọn mẫu: chính thức, danh sách việc, theo giờ, tóm tắt nhanh"),
         ("làm tệp 2", "chỉ làm một tệp trong số tệp mới"),
         ("bỏ qua", "không làm"),
