@@ -113,11 +113,31 @@ DRAFT_WORK_TASK_SPEC = ToolSpec(
 )
 
 
+def _pick_lists(ctx: ToolContext, want: str, lists: list[int]) -> tuple[list[int], str, dict | None]:
+    """ai-CR-175: lọc dự án theo tên trong các dự án người hỏi thấy được. Trả (id dự án, tên khớp, lỗi / lựa chọn)."""
+    from app.modules.work.model import WorkList
+
+    rows = list(ctx.db.query(WorkList).filter(WorkList.id.in_(lists), WorkList.is_archived == 0).order_by(WorkList.name))
+    hit = [w for w in rows if want in (w.name or "").lower()]
+    if len(hit) == 1:
+        return [hit[0].id], hit[0].name, None
+    if not hit:
+        return [], "", {"error": f"không thấy dự án «{want}» trong các dự án anh/chị tham gia",
+                        "options": [w.name for w in rows][:10]}
+    return [], "", {"need_choice": "project", "options": [w.name for w in hit][:8],
+                    "note": "Hỏi người dùng MỘT câu: ý là dự án nào (đưa danh sách đánh số)."}
+
+
 def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
     """ai-CR-140: việc ĐANG MỞ mình phụ trách (hoặc theo dõi) ở phân hệ Dự án, hạn tới `until` (mặc định hôm nay) —
-    gồm cả việc quá hạn. Chỉ trong các dự án người hỏi thấy được; bỏ việc đã xóa mềm."""
+    gồm cả việc quá hạn. Chỉ trong các dự án người hỏi thấy được; bỏ việc đã xóa mềm.
+
+    ai-CR-175 (đại ca 10/10: trợ lý cá nhân liệt kê việc THEO DỰ ÁN): thêm `project` (lọc một dự án theo tên),
+    `all_open` (mọi việc đang mở, kể cả chưa đặt hạn — cho câu «dự án X còn gì»), `only_mine=false` (việc của cả dự án,
+    kèm tên người phụ trách); kết quả luôn có `by_project` gom theo dự án để model in theo nhóm."""
     from datetime import date
 
+    from app.modules.employee.model import Employee
     from app.modules.work.membership_service import resolve_actor, visible_list_ids
     from app.modules.work.model import WorkAssigneeKind, WorkList, WorkTaskStatus
     from app.modules.work.task_model import WorkTask, WorkTaskAssignee
@@ -126,35 +146,72 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
         return denied("xem công việc ở phân hệ Dự án")
     actor = resolve_actor(ctx.db, ctx.user)
     if not actor.employee_id:
-        return {"total": 0, "items": [], "note": "tài khoản chưa gắn hồ sơ nhân sự nên không có việc Dự án"}
+        return {"total": 0, "items": [], "by_project": [],
+                "note": "tài khoản chưa gắn hồ sơ nhân sự nên không có việc Dự án"}
     today = date.today().isoformat()
     until = str(args.get("until") or "").strip() or today
     if not _DATE.match(until):
         return {"error": "until phải dạng YYYY-MM-DD"}
+    only_mine = args.get("only_mine", True) is not False
+    all_open = bool(args.get("all_open"))
     kinds = [int(WorkAssigneeKind.PIC)] + ([int(WorkAssigneeKind.FOLLOWER)] if args.get("include_following") else [])
     lists = visible_list_ids(ctx.db, actor.employee_id)
     if not lists:
-        return {"total": 0, "items": []}
-    q = (ctx.db.query(WorkTask, WorkList.name)
-         .join(WorkTaskAssignee, WorkTaskAssignee.task_id == WorkTask.id)
-         .join(WorkList, WorkList.id == WorkTask.list_id)
-         .filter(WorkTaskAssignee.employee_id == actor.employee_id, WorkTaskAssignee.kind.in_(kinds),
-                 WorkTask.status == int(WorkTaskStatus.OPEN), WorkTask.deleted_at.is_(None),
-                 WorkTask.list_id.in_(lists), WorkTask.due_date != "", WorkTask.due_date <= until)
-         .order_by(WorkTask.due_date, WorkTask.id))
-    rows = q.limit(int(args.get("limit") or 30)).all()
-    items = [{"id": t.id, "title": t.title, "project": name, "due_date": t.due_date,
-              "overdue": t.due_date < today, "subtask": t.parent_id is not None} for t, name in rows]
-    return {"total": len(items), "today": today, "items": items}
+        return {"total": 0, "items": [], "by_project": []}
+    project = ""
+    want = " ".join(str(args.get("project") or "").split()).lower()
+    if want:
+        lists, project, problem = _pick_lists(ctx, want, lists)
+        if problem:
+            return problem
+    q = (ctx.db.query(WorkTask, WorkList.name).join(WorkList, WorkList.id == WorkTask.list_id)
+         .filter(WorkTask.status == int(WorkTaskStatus.OPEN), WorkTask.deleted_at.is_(None), WorkTask.list_id.in_(lists)))
+    if only_mine:
+        q = q.join(WorkTaskAssignee, WorkTaskAssignee.task_id == WorkTask.id).filter(
+            WorkTaskAssignee.employee_id == actor.employee_id, WorkTaskAssignee.kind.in_(kinds))
+    if not all_open:
+        q = q.filter(WorkTask.due_date != "", WorkTask.due_date <= until)
+    #  Việc chưa đặt hạn (chuỗi rỗng) xếp cuối; có hạn thì theo hạn.
+    rows = q.order_by(WorkTask.due_date == "", WorkTask.due_date, WorkTask.id).limit(min(int(args.get("limit") or 30), 100)).all()
+    pics: dict[int, list[str]] = {}
+    if rows and not only_mine:
+        for tid, name in (ctx.db.query(WorkTaskAssignee.task_id, Employee.full_name)
+                          .join(Employee, Employee.id == WorkTaskAssignee.employee_id)
+                          .filter(WorkTaskAssignee.task_id.in_([t.id for t, _n in rows]),
+                                  WorkTaskAssignee.kind == int(WorkAssigneeKind.PIC))):
+            pics.setdefault(int(tid), []).append(name)
+    items = []
+    for t, name in rows:
+        it = {"id": t.id, "title": t.title, "project": name, "due_date": t.due_date,
+              "overdue": bool(t.due_date) and t.due_date < today, "subtask": t.parent_id is not None}
+        if not only_mine:
+            it["assignees"] = pics.get(t.id, [])
+        items.append(it)
+    groups: dict[str, list[dict]] = {}
+    for it in items:
+        groups.setdefault(it["project"], []).append(it)
+    out = {"total": len(items), "today": today, "items": items,
+           "by_project": [{"project": p, "count": len(v), "items": v} for p, v in groups.items()]}
+    if project:
+        out["project"] = project
+    if not only_mine:
+        out["note"] = "Việc của cả dự án (không chỉ của người hỏi); `assignees` = người phụ trách."
+    return out
 
 
 MY_WORK_TASKS_SPEC = ToolSpec(
     name="my_work_tasks",
-    description=("Liệt kê VIỆC ĐANG MỞ người hỏi PHỤ TRÁCH ở phân hệ Dự án có hạn tới một ngày (mặc định hôm nay), gồm cả "
-                 "việc quá hạn: 'hôm nay anh có việc gì', 'việc nào sắp tới hạn', 'việc quá hạn của tôi'."),
+    description=("Liệt kê VIỆC ĐANG MỞ ở phân hệ Dự án, gom theo dự án (`by_project`). Mặc định: việc người hỏi PHỤ TRÁCH "
+                 "có hạn tới một ngày (mặc định hôm nay), gồm cả quá hạn: 'hôm nay anh có việc gì', 'việc nào sắp tới hạn', "
+                 "'việc quá hạn của tôi', 'việc của tôi theo dự án'. Hỏi về MỘT dự án ('dự án X còn gì', 'việc dự án X') → "
+                 "`project` = tên dự án, `all_open` = true (kể cả chưa đặt hạn), `only_mine` = false (việc của cả dự án, kèm "
+                 "người phụ trách). Tool trả `need_choice` khi tên dự án khớp nhiều → hỏi người dùng MỘT câu."),
     parameters={"type": "object", "properties": {
         "until": {"type": "string", "description": "Lấy việc có hạn tới ngày này (YYYY-MM-DD, giờ VN); bỏ trống = hôm nay."},
+        "project": {"type": "string", "description": "Tên (một phần) của dự án muốn xem; bỏ trống = mọi dự án mình thấy."},
+        "all_open": {"type": "boolean", "description": "true = mọi việc đang mở kể cả chưa đặt hạn (bỏ qua `until`)."},
+        "only_mine": {"type": "boolean", "description": "false = việc của cả dự án, không chỉ việc mình phụ trách (mặc định true)."},
         "include_following": {"type": "boolean", "description": "Gồm cả việc mình chỉ theo dõi (mặc định không)."},
-        "limit": {"type": "integer", "description": "Tối đa bao nhiêu việc (mặc định 30)."}}},
+        "limit": {"type": "integer", "description": "Tối đa bao nhiêu việc (mặc định 30, tối đa 100)."}}},
     handler=_my_work_tasks,
 )

@@ -49,7 +49,7 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("leave", frozenset({"my_leave_summary", "draft_leave_request"}),
      r"nghi phep|\bphep\b|xin nghi|don nghi|nghi (thu|ngay|sang|chieu|ca)|\bnp\d+|quy phep|ngay nghi"),
     ("work", frozenset({"my_work_tasks", "draft_work_task"}),
-     r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)"),
+     r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)|con gi|qua han"),
     ("ticket", frozenset({"my_tickets", "ticket_create"}),
      r"ho tro|ticket|bao loi|su co|\bit\b|may in|phieu ho tro"),
     ("edit", frozenset({"propose_document_update", "propose_document_delete", "procurement_doc_read"}),

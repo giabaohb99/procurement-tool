@@ -79,10 +79,19 @@ def morning_text(db: Session, user, events: list[dict] | None) -> str:
         if items:
             lines.append("")
             lines.append(f"<b>Việc Dự án tới hạn</b> ({work.get('total') or len(items)}):")
-            for t in items[:8]:
-                late = " · quá hạn" if t.get("overdue") else ""
-                lines.append(f"• {esc(str(t.get('title') or ''))[:80]} ({esc(str(t.get('project') or ''))[:40]}, "
-                             f"hạn {esc(str(t.get('due_date') or ''))}{late})")
+            #  ai-CR-175: gom theo dự án (tên dự án một dòng nghiêng, việc bên dưới) khi có từ hai dự án.
+            groups = work.get("by_project") or [{"project": "", "items": items}]
+            shown = 0
+            for g in groups:
+                if shown >= 8:
+                    break
+                if len(groups) > 1:
+                    lines.append(f"<i>{esc(str(g.get('project') or ''))[:40]}</i>")
+                for t in (g.get("items") or [])[:8 - shown]:
+                    late = " · quá hạn" if t.get("overdue") else ""
+                    where = "" if len(groups) > 1 else f"{esc(str(t.get('project') or ''))[:40]}, "
+                    lines.append(f"• {esc(str(t.get('title') or ''))[:80]} ({where}hạn {esc(str(t.get('due_date') or ''))}{late})")
+                    shown += 1
     except Exception:  # noqa: BLE001 — thiếu quyền / tool lỗi thì bỏ mục này
         pass
     try:

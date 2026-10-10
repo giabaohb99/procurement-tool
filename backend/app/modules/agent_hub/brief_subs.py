@@ -42,9 +42,10 @@ _DAY_NAMES = ("thứ hai", "thứ ba", "thứ tư", "thứ năm", "thứ sáu", 
 class Kind(IntEnum):
     DAILY = 1
     TOPIC = 2
+    WORK_DUE = 3       # ai-CR-175: nhắc hạn việc Dự án — vòng riêng ở `work_due.py`, không phải bản tin
 
 
-KIND_LABELS = {Kind.DAILY: "Bản tin sáng", Kind.TOPIC: "Bản tin chủ đề"}
+KIND_LABELS = {Kind.DAILY: "Bản tin sáng", Kind.TOPIC: "Bản tin chủ đề", Kind.WORK_DUE: "Nhắc hạn việc Dự án"}
 
 
 def day_bit(weekday: int) -> int:
@@ -241,6 +242,10 @@ def render_list(db: Session, user_id: int) -> str:
         state = "đang bật" if it["enabled"] else "đang tắt"
         what = it["label"] if it["kind"] == Kind.DAILY else f"«{esc(it['topic'])}»"
         lines.append(f"{i}. {what} · {it['when']} · {state}")
+    from . import work_due
+
+    lines.append("")
+    lines.append(work_due.state_text(db, user_id).split(" — ")[0])     # ai-CR-175: một dòng trạng thái
     lines.append("")
     lines.append("<i>Nhắn: bật bản tin · tắt bản tin · bản tin lúc 6h45 · bản tin hôm nay · tắt bản tin 2 · "
                  "hoặc nói tự nhiên «sáng thứ hai gửi anh công nợ quá hạn».</i>")
@@ -290,7 +295,7 @@ def _bell_on(db: Session, user_id: int) -> bool:
 def _candidates(db: Session) -> list[tuple[int, object]]:
     """(user_id, dòng hoặc trạng thái ngầm). Ngầm = người đã nối Google mà chưa có dòng bản tin sáng."""
     out: list[tuple[int, object]] = [(r.user_id, r) for r in db.scalars(select(AgentBriefSub).where(
-        AgentBriefSub.enabled.is_(True)))]
+        AgentBriefSub.enabled.is_(True), AgentBriefSub.kind.in_([int(Kind.DAILY), int(Kind.TOPIC)])))]
     with_daily = {int(r.user_id) for r in db.scalars(select(AgentBriefSub).where(AgentBriefSub.kind == Kind.DAILY))}
     for g in db.scalars(select(AgentGoogleLink).where(AgentGoogleLink.revoked_at.is_(None))):
         if int(g.user_id) not in with_daily:

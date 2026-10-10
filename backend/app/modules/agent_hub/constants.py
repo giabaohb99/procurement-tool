@@ -262,6 +262,8 @@ ACT_VOICE = "thoai"
 #  ai-CR-064: bản tin sáng (T-08) và nhắc trước họp (T-09); body của nhắc họp giữ id sự kiện để không nhắc hai lần.
 ACT_BRIEF = "ban_tin"
 ACT_MEETING = "nhac_hop"
+#  ai-CR-175: tin nhắc hạn việc Dự án (T-14); body giữ mã [vh:<id việc>:<mốc>] để mỗi mốc chỉ nhắc một lần.
+ACT_WORK_DUE = "nhac_han_viec"
 #  ai-CR-054: thẻ hỏi lại «thêm / tắt máy sửa mã?» của đại ca; `body` = JSON {op, name, owner_user_id, runner_id}.
 ACT_RUNNER_WAIT = "cho_may"
 ACT_RUNNER_DONE = "da_may"

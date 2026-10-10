@@ -1344,7 +1344,8 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
         return
     if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
             or _reminder_by_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text) \
-            or _brief_by_text(db, chat_id, row, text) or _dev_request_by_text(db, chat_id, row, text) \
+            or _brief_by_text(db, chat_id, row, text) or _work_due_by_text(db, chat_id, row, text) \
+            or _dev_request_by_text(db, chat_id, row, text) \
             or _keys_by_text(db, chat_id, row, text):     # ai-CR-095/098: sổ nhớ + «còn khóa nào» cho mọi người
         return
     if _over_daily_cap(db, chat_id, row):
@@ -1463,7 +1464,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     if (_ok_by_text(db, chat_id, row, text)          # ai-CR-149: «ok» sau thẻ xác nhận = làm luôn
             or _grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
             or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
-            or _brief_by_text(db, chat_id, row, text)
+            or _brief_by_text(db, chat_id, row, text) or _work_due_by_text(db, chat_id, row, text)
             or _ghi_viec_by_text(db, chat_id, row, text) or _dev_request_by_text(db, chat_id, row, text)
             or _keys_by_text(db, chat_id, row, text)
             or _glossary_by_text(db, chat_id, row, text)
@@ -2603,6 +2604,39 @@ _BRIEF_ALL_OFF = re.compile(r"^tat (?:het|tat ca|moi) ban tin$")
 _BRIEF_NTH = re.compile(r"^(bat|tat) ban tin (?:so )?(\d{1,2})$")
 _BRIEF_DAILY = re.compile(r"^(bat|tat) ban tin(?: sang| hang ngay| moi ngay)?(?P<rest>(?: (?:luc|vao|ngay|thu|tu) .*)?)$")
 _BRIEF_TIME = re.compile(r"^(?:dat |doi )?ban tin(?: sang)? (?:luc|vao) (?P<rest>.+)$")
+
+
+def _work_due_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """ai-CR-175: «tắt nhắc hạn việc» · «bật nhắc hạn việc» · «nhắc hạn việc lúc 7h» · «nhắc hạn việc hôm nay» ·
+    «nhắc hạn việc» (xem trạng thái). Của TÀI KHOẢN ERP gắn với chat."""
+    from . import brief_subs, work_due
+
+    cmd = work_due.parse_command(text)
+    if cmd is None:
+        return False
+    row.action = ACT_COMMAND
+    row.scope = SCOPE_PERSONAL
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None:
+        reply(db, chat_id, "Chat này chưa đăng nhập tài khoản ERP nên chưa có việc Dự án để nhắc. " + _LINK_HELP,
+              scope=SCOPE_PERSONAL)
+        return True
+    uid = link.user_id
+    if cmd["op"] == "now":
+        db.commit()
+        if not work_due.send_for_user(db, uid, chat_id, force=True):
+            reply(db, chat_id, "Anh/chị không có việc Dự án nào tới hạn ngày mai, hôm nay hay quá hạn.", scope=SCOPE_PERSONAL)
+        return True
+    if cmd["op"] in ("on", "off"):
+        work_due.set_state(db, uid, enabled=cmd["op"] == "on")
+    elif cmd["op"] == "at":
+        when = brief_subs.parse_time(cmd["rest"])
+        if when is None:
+            reply(db, chat_id, "Em chưa đọc được giờ. Ví dụ: «nhắc hạn việc lúc 7h30».", scope=SCOPE_PERSONAL)
+            return True
+        work_due.set_state(db, uid, enabled=True, hour=when[0], minute=when[1])
+    reply(db, chat_id, work_due.state_text(db, uid), scope=SCOPE_PERSONAL)
+    return True
 
 
 def _brief_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:

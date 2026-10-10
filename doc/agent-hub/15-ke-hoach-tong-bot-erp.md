@@ -172,8 +172,9 @@ lại prod.**
 
 ### Phase 18 — Nhóm chat + nhắc việc (phần còn treo ở doc 13)
 
-Tin cần để ý trong nhóm (G-2), tìm tin nhóm (G-3), đồng hồ chờ trả lời (G-4), bản tin cuối ngày, nhắc hạn 3 mốc
-(T-14), khuôn báo cáo tuần / tháng. Một phần đã làm ở bot IDA (cảnh báo, đồng hồ chờ, ticket) — làm phía ERP thì chép
+Tin cần để ý trong nhóm (G-2), tìm tin nhóm (G-3), đồng hồ chờ trả lời (G-4), bản tin cuối ngày, khuôn báo cáo
+tuần / tháng. **Nhắc hạn 3 mốc (T-14) đã làm — ai-CR-175, DEV 10/10** cùng việc theo dự án (hướng trợ lý cá nhân
+đại ca chốt 10/10: cá nhân chỉ nhận việc của mình; to-do cá nhân tạm bỏ qua). Một phần đã làm ở bot IDA (cảnh báo, đồng hồ chờ, ticket) — làm phía ERP thì chép
 cách, không viết lại từ đầu.
 
 ### Phase 19 — Kho tri thức cấp công ty

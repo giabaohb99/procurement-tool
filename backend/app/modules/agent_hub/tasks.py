@@ -569,6 +569,25 @@ def fire_reminders_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.work_due")
+def work_due_task() -> dict:
+    """ai-CR-175 (T-14): mỗi 5 phút — tới giờ của ai (mặc định 08:00) thì nhắc việc Dự án người đó phụ trách sắp tới hạn /
+    tới hạn hôm nay / vừa quá hạn; mỗi mốc một lần."""
+    if (off := _off()) is not None:
+        return off
+    from . import work_due
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **work_due.tick(db)}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: nhắc hạn việc hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.forward_bells")
 def forward_bells_task() -> dict:
     """ai-CR-059 (P-01): chuông ERP mới -> Telegram của người đã liên kết, mỗi phút."""

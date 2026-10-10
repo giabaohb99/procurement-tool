@@ -229,6 +229,12 @@ if settings.AGENT_HUB_ENABLED and not settings.agent_is_erp:
             "schedule": crontab(minute="*/5"),
             "options": {"expires": 240},
         },
+        #  ai-CR-175 (T-14): nhắc hạn việc Dự án cho người được giao — trước 1 ngày, ngày hạn, quá hạn; mỗi mốc một lần.
+        "agent-work-due": {
+            "task": "agent.work_due",
+            "schedule": crontab(minute="*/5"),
+            "options": {"expires": 240},
+        },
         #  ai-CR-069 (O-01): theo dõi health từng môi trường mỗi phút; ai-CR-068 (V-06): báo tài nguyên 07:35.
         #  Cả hai tự bỏ qua khi AGENT_OPS_ENABLED tắt.
         "agent-health-check": {

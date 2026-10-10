@@ -97,6 +97,11 @@ SECTIONS: tuple[Section, ...] = (
         ("thứ 7 đưa con đi khám 9h", "việc / hẹn riêng"),
         ("lịch riêng hôm nay", ""),
         ("nhắc anh 3h gọi NCC X", "lời nhắc đúng giờ"),
+        #  ai-CR-175: việc Dự án theo dự án + nhắc hạn ba mốc.
+        ("việc của tôi theo dự án", "việc đang mở anh/chị phụ trách, gom theo dự án"),
+        ("dự án X còn gì", "mọi việc đang mở của một dự án, kèm người phụ trách"),
+        ("", "Mặc định 8h sáng em nhắc việc Dự án anh/chị phụ trách: trước hạn 1 ngày, ngày hạn, khi quá hạn — mỗi mốc "
+             "một lần. «tắt nhắc hạn việc» · «nhắc hạn việc lúc 7h» · «nhắc hạn việc hôm nay»"),
     )),
     Section("lich", "Lịch Google, Drive", ("lich", "google", "drive", "hop online"), (
         ("hôm nay anh có họp gì", ""),
