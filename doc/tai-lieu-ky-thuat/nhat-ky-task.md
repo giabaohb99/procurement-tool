@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-165 | Tin biên bản trong chat chỉ gửi bản rút gọn vừa một màn điện thoại
+- status: dang-lam
+- date: 2026-10-10
+Đại ca thấy tin biên bản gửi trong Telegram quá dài, đọc không hết, và còn nhiều câu trích nguyên văn lời nói. Nay tin trong chat
+chỉ còn bản rút gọn khoảng một màn điện thoại gồm tóm tắt nhanh, các điều đã chốt, việc cần làm theo dạng việc, người, hạn và
+tối đa ba vấn đề còn mở, cuối tin ghi bản đầy đủ nằm trong tệp Word đính kèm và trên Drive. Phần chi tiết theo từng chủ đề chỉ
+nằm trong tệp Word. Bot rút bản ngắn trực tiếp từ biên bản đầy đủ nên không tốn thêm lượt gọi model, và không còn phải cắt tin
+giữa chừng. Lời dặn viết biên bản cũng yêu cầu viết thành ý, chỉ giữ nguyên văn con số, tên riêng và câu chốt quyết định. Toàn bộ
+bài kiểm của bot và trợ lý chạy xanh.
+
+Mã nguồn: agent_hub/meetings.py (chat_summary, recap_message, RECAP_SYSTEM, CHUNK_SYSTEM)
+
 ## ai-CR-163 | Phase 22: đọc video YouTube thành biên bản hoặc tóm tắt, và báo chi phí trước khi làm
 - status: dang-lam
 - date: 2026-10-10

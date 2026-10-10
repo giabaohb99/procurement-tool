@@ -157,7 +157,10 @@ RECAP_SYSTEM = (
     #  ai-CR-164: đại ca 10/10 — Word lọt câu «Below is a Vietnamese meeting recap…»; biên bản họp 102 phút quá sơ sài.
     "Bắt đầu NGAY bằng tiêu đề mục đầu tiên: không câu dạo đầu, không câu kết, không bọc trong ```. Mỗi chủ đề ghi đủ: bối "
     "cảnh, ý chính (giữ đủ số liệu, tên, mốc thời gian), đã chốt, việc (người — hạn), còn mở. Mục việc cần làm phải quét "
-    "TOÀN BỘ cuộc họp, không chỉ phần cuối. Người nói ghi «Người n» thì giữ nguyên, không tự đặt tên."
+    "TOÀN BỘ cuộc họp, không chỉ phần cuối. Người nói ghi «Người n» thì giữ nguyên, không tự đặt tên. "
+    #  ai-CR-165: đại ca 10/10 — bớt trích nguyên văn.
+    "Viết thành Ý, KHÔNG chép lại câu nói («Người 1 cho rằng…», cụm in đậm trích từ lời thoại); chỉ giữ nguyên văn khi là "
+    "con số, tên riêng hoặc câu chốt quyết định. Bản chép lời đã gửi riêng cho ai cần tra."
 )
 #  ai-CR-164: họp dài tóm HAI TẦNG — từng đoạn ~20 phút trước (giữ đủ chi tiết), rồi gộp thành biên bản cuối.
 LONG_MEETING_SEC = 1800
@@ -165,7 +168,8 @@ CHUNK_SEC = 1200
 CHUNK_SYSTEM = (
     "Bạn là thư ký cuộc họp. Tóm tắt ĐOẠN bản chép lời bên dưới thành ghi chú chi tiết bằng tiếng Việt: các chủ đề được bàn; "
     "với mỗi chủ đề ghi bối cảnh, ý chính kèm ĐỦ số liệu / tên / mốc thời gian, điều đã chốt, việc giao (việc — người — hạn), "
-    "câu hỏi còn mở. Không bỏ chi tiết có số. Không câu dạo đầu. Chỉ dùng thông tin trong đoạn."
+    "câu hỏi còn mở. Không bỏ chi tiết có số. Không câu dạo đầu. Chỉ dùng thông tin trong đoạn. Viết thành ý, không chép "
+    "lại câu nói nguyên văn trừ con số, tên riêng, câu chốt quyết định."
 )
 
 
@@ -1343,8 +1347,7 @@ def resend(db: Session, row: AgentMeeting) -> None:
 
     tpl = template_for_row(row)
     minutes = int((row.duration_sec or 0) // 60)
-    service.reply(db, row.chat_id, f"**BIÊN BẢN — {row.title}** ({minutes} phút, {tpl.label.lower()})\n\n{row.recap}",
-                  markdown=True)
+    service.reply(db, row.chat_id, recap_message(row, tpl.label, minutes), markdown=True)     # ai-CR-165
     filename, data = word_of(db, row)
     telegram.send_document(row.chat_id, filename, data, caption="Biên bản kèm phụ lục bản chép lời")
     db.commit()
@@ -1426,18 +1429,76 @@ def describe(row: AgentMeeting) -> dict:
 # ---------------------------------------------------------------------------
 # Tin biên bản trong chat + thẻ «Ai là ai?» (ai-CR-164)
 # ---------------------------------------------------------------------------
-RECAP_CHAT_MAX = 3600
+#  ai-CR-165: đại ca 10/10 — tin biên bản trong chat quá dài, đọc không hết. Chat chỉ gửi bản RÚT GỌN cỡ một màn điện
+#  thoại; các mục chi tiết theo chủ đề chỉ nằm trong Word.
+RECAP_CHAT_MAX = 1800
+CHAT_LIMITS = {"tldr": 7, "decided": 6, "tasks": 8, "open": 3}
+FULL_LINE = "_Bản đầy đủ: tệp Word đính kèm ngay dưới + link Drive (nếu đã nối Google)._"
+_HEAD_LINE = re.compile(r"^\s*#{1,6}\s*(.+?)\s*$")
+_BULLET = re.compile(r"^\s*(?:[-*•+]|\d+[.)])\s+(.+)$")
+_DECIDED = re.compile(r"^\s*(?:[-*•+]\s*)?✓\s*(.+)$")
+
+
+def _sections(recap: str) -> dict[str, list[str]]:
+    """Gom dòng theo tiêu đề cấp 2 (đã bỏ dấu, chữ thường) — để rút bản ngắn mà không gọi model."""
+    from app.modules.assistant.glossary import fold
+
+    out: dict[str, list[str]] = {}
+    current = ""
+    for line in (recap or "").splitlines():
+        m = _HEAD_LINE.match(line)
+        if m and not line.lstrip().startswith("###"):
+            current = fold(m.group(1))
+            out.setdefault(current, [])
+            continue
+        out.setdefault(current, []).append(line)
+    return out
+
+
+def _pick(sections: dict[str, list[str]], *keys: str) -> list[str]:
+    for name, lines in sections.items():
+        if any(k in name for k in keys):
+            return lines
+    return []
+
+
+def _short(text: str, limit: int = 160) -> str:
+    text = re.sub(r"\s+", " ", text).strip()
+    return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
+
+
+def chat_summary(recap: str) -> str:
+    """Bản rút gọn: tóm tắt nhanh · đã chốt · việc (việc · người · hạn) · còn mở — rút từ biên bản đầy đủ, không gọi model.
+    Biên bản không theo khuôn (mẫu riêng) thì lấy các gạch đầu dòng đầu tiên."""
+    secs = _sections(recap)
+    tldr = [_short(m.group(1)) for ln in _pick(secs, "tom tat", "tl;dr", "tldr") if (m := _BULLET.match(ln))]
+    decided = [_short(m.group(1)) for ln in (recap or "").splitlines() if (m := _DECIDED.match(ln))]
+    tasks: list[str] = []
+    for ln in _pick(secs, "cong viec", "viec can lam"):
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")] if ln.strip().startswith("|") else []
+        if len(cells) >= 2 and not set("".join(cells)) <= set("-: ") and cells[0].lower() not in ("việc", "stt"):
+            tasks.append(_short(" · ".join(c for c in cells[:3] if c), 140))
+        elif (m := _BULLET.match(ln)):
+            tasks.append(_short(m.group(1), 140))
+    still_open = [_short(m.group(1)) for ln in _pick(secs, "con mo", "bo ngo") if (m := _BULLET.match(ln))]
+    if not (tldr or decided or tasks):
+        tldr = [_short(m.group(1)) for ln in (recap or "").splitlines() if (m := _BULLET.match(ln))]
+    parts: list[str] = []
+    for title, items, key in (("TÓM TẮT NHANH", tldr, "tldr"), ("ĐÃ CHỐT", decided, "decided"),
+                              ("VIỆC CẦN LÀM", tasks, "tasks"), ("CÒN MỞ", still_open, "open")):
+        if items:
+            parts.append(f"**{title}**\n" + "\n".join(f"- {x}" for x in items[:CHAT_LIMITS[key]]))
+    return "\n\n".join(parts)
 
 
 def recap_message(row: AgentMeeting, label: str, minutes: int) -> str:
-    """Tin biên bản trong chat. Dài quá một tin Telegram thì cắt ở ranh dòng và nói rõ bản ĐẦY ĐỦ ở tệp Word + Drive."""
+    """Tin biên bản trong chat = bản RÚT GỌN (≤ ~1.800 ký tự) + dòng chỉ chỗ bản đầy đủ. Không còn cắt giữa chừng."""
     head = f"**BIÊN BẢN — {row.title}** ({minutes} phút, {label.lower()})\n\n"
-    body = row.recap or ""
-    if len(head) + len(body) <= RECAP_CHAT_MAX:
-        return head + body
-    cut = body[:RECAP_CHAT_MAX - len(head) - 200]
-    cut = cut[:cut.rfind("\n")] if "\n" in cut else cut
-    return head + cut + "\n\n_… Tin dài nên em cắt ở đây. Bản đầy đủ nằm trong tệp Word đính kèm ngay dưới và trên Drive._"
+    body = chat_summary(row.recap or "")
+    budget = RECAP_CHAT_MAX - len(head) - len(FULL_LINE) - 4
+    while len(body) > budget and "\n- " in body:
+        body = body[:body.rfind("\n- ")]          # bớt từng ý cuối cho vừa một màn
+    return head + body + "\n\n" + FULL_LINE
 
 
 SPEAKER_WAIT = "ai_la_ai"

@@ -80,7 +80,7 @@ def test_hop_dai_tom_hai_tang_word_khong_phu_luc_gui_txt_va_hoi_ai_la_ai(db, mon
     xml = zipfile.ZipFile(io.BytesIO(word)).read("word/document.xml").decode("utf-8")
     assert "PHỤ LỤC" not in xml and "Người 1: anh Phú" not in xml
     biên_bản = next(t for t in sent if t.startswith("**BIÊN BẢN"))
-    assert "trong tệp Word đính kèm" in biên_bản and "sổ" not in biên_bản.split("_…")[-1]
+    assert "tệp Word đính kèm" in biên_bản and "sổ" not in biên_bản      # ai-CR-165: bản rút gọn + dòng chỉ bản đầy đủ
     card = next(t for t in sent if "AI LÀ AI?" in t)
     assert "Người 1" in card and "Phú" in card and "Ngân" in card
 
