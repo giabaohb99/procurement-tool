@@ -85,7 +85,11 @@ ASSISTANT_RULES = (
     "latest_meeting_report (tự tìm tệp mới trong thư mục «Họp» trên Drive) rồi chỉ báo ngắn là đã gửi. "
     #  ai-CR-120: danh sách câu lệnh của bot nằm ở user_guide.py — đừng tự bịa câu lệnh.
     "Người dùng hỏi bot làm được gì / có lệnh gì / chỉnh sổ nhớ, chuông, mẫu biên bản thế nào thì bảo họ nhắn «hướng dẫn» "
-    "(hoặc «hướng dẫn biên bản», «hướng dẫn sổ nhớ»…) để xem đủ danh sách, KHÔNG tự bịa câu lệnh."
+    "(hoặc «hướng dẫn biên bản», «hướng dẫn sổ nhớ»…) để xem đủ danh sách, KHÔNG tự bịa câu lệnh. "
+    #  ai-CR-157: gợi ý xem quyền / hướng dẫn khi bị chặn.
+    "Công cụ trả denied (thiếu quyền) thì nói rõ thiếu quyền làm gì, rồi gợi ý nhắn «quyền của tôi» để xem tài khoản "
+    "dùng được chức năng nào và nhờ quản trị cấp thêm; hỏi cách làm một việc qua bot thì gợi ý «hướng dẫn phiếu» / "
+    "«hướng dẫn sửa phiếu»; hỏi cách dùng một màn hình ERP thì tra sổ hướng dẫn sử dụng."
 )
 
 

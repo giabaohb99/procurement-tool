@@ -34,22 +34,40 @@ SECTIONS: tuple[Section, ...] = (
         ("/taikhoan", "chat đang dùng tài khoản nào"),
         ("/dangxuat", "đăng xuất"),
         ("còn khóa nào", "các khóa AI đang dùng, hạn mức hôm nay"),
+        ("quyền của tôi", "anh/chị dùng được chức năng nào của bot, theo quyền trên ERP"),
     )),
-    Section("erp", "Hỏi số liệu ERP và tạo phiếu", ("erp", "phieu", "so lieu", "tao phieu"), (
-        ("3 đơn mua hàng gần nhất", "hỏi thẳng, em tra theo quyền của anh/chị"),
+    Section("erp", "Hỏi số liệu ERP", ("erp", "so lieu", "tra cuu", "cong no"), (
+        ("3 đơn mua hàng gần nhất", "hỏi thẳng, em tra theo quyền và phạm vi dữ liệu của anh/chị"),
         ("phiếu nào đang chờ anh duyệt", ""),
-        ("xin nghỉ thứ 6 cả ngày", "em soạn nháp phiếu"),
-        ("lên task gọi NCC X cho anh Được hạn thứ 6", "em soạn nháp việc ở phân hệ Dự án"),
-        ("tạo", "lưu bản nháp vừa soạn"),
-        ("tạo và gửi duyệt", "lưu và gửi duyệt luôn"),
-        ("xuất Excel", "tệp của lần tra vừa rồi (hoặc xuất Word)"),
-        ("đơn nháp của tôi", "các phiếu nháp mình lập (đơn nghỉ, YCMH, YCBG), có đánh số"),
-        ("xóa đơn nháp 2 3", "xóa phiếu nháp theo số; xóa hết đơn nháp để xóa tất cả"),
-        ("thêm vào 1", "đang có YCMH/YCBG nháp cùng loại thì gộp dòng vào phiếu đó; ghi đè 1 để thay bằng bản mới"),
-        ("sửa lý do đơn NP011 thành đi khám", "sửa phiếu Nháp/Bị trả lại: đơn nghỉ (ngày, loại nghỉ, lý do), dòng hàng "
-                                             "YCMH/YCBG; em đưa thẻ cũ → mới, bấm Xác nhận mới ghi"),
         ("công nợ tháng này", "hỏi tắt thiếu pháp nhân / NCC thì em dùng cái anh/chị hay hỏi và nói rõ em đang hiểu là "
                               "cái nào"),
+        ("xuất Excel", "tệp của lần tra vừa rồi (hoặc xuất Word)"),
+        ("cách tạo đơn nghỉ phép trên ERP", "hỏi cách dùng một màn hình ERP, em tra sổ hướng dẫn sử dụng"),
+    )),
+    #  ai-CR-157: tạo phiếu và sửa / xóa phiếu tách thành hai nhóm riêng, đủ các câu của ai-CR-142/143/151/156.
+    Section("phieu", "Tạo phiếu nháp", ("phieu", "tao phieu", "nhap", "don nhap", "nghi phep", "ycmh", "ycbg"), (
+        ("xin nghỉ thứ 6 cả ngày", "đơn nghỉ phép"),
+        ("lên phiếu mua 10 ram giấy A4 cho kho Cần Thơ", "yêu cầu mua hàng (YCMH); yêu cầu báo giá (YCBG) cũng vậy"),
+        ("lên task gọi NCC X cho anh Được hạn thứ 6", "việc ở phân hệ Dự án"),
+        ("", "Thiếu ý quan trọng (lý do, loại nghỉ, số lượng, kho…) em hỏi lại một lượt; điều em tự hiểu được ghi riêng "
+             "trên thẻ nháp để anh/chị xác nhận"),
+        ("tạo", "lưu bản nháp vừa soạn"),
+        ("tạo và gửi duyệt", "lưu và gửi duyệt luôn"),
+        ("thêm vào 1", "đang có YCMH / YCBG nháp cùng loại: gộp dòng vào phiếu số 1, dòng đã có y hệt thì bỏ qua"),
+        ("ghi đè 1", "thay nội dung phiếu nháp số 1 bằng bản mới, giữ mã phiếu"),
+        ("", "Đơn nghỉ trùng ngày với một đơn nháp đang có thì em sửa đè đơn đó, không lập đơn thứ hai"),
+        ("đơn nháp của tôi", "các phiếu nháp mình lập (đơn nghỉ, YCMH, YCBG), có đánh số"),
+        ("xóa đơn nháp 2 3", "xóa phiếu nháp theo số; xóa hết đơn nháp để xóa tất cả"),
+    )),
+    Section("sua_phieu", "Sửa, xóa phiếu đã có", ("sua phieu", "xoa phieu", "sua don", "xoa don"), (
+        ("sửa lý do đơn NP011 thành đi khám", "đơn nghỉ phép: sửa ngày, loại nghỉ, lý do"),
+        ("thêm 5 hộp kẹp giấy vào YCMH00012", "YCMH / YCBG: thêm dòng, bỏ dòng, đổi số lượng"),
+        ("đổi số lượng dòng 2 của YCMH00012 thành 20", ""),
+        ("xóa phiếu YCMH00012", "xóa YCMH, YCBG, đơn nghỉ, việc Dự án"),
+        ("", "Chỉ phiếu Nháp hoặc Bị trả lại, do chính anh/chị lập, và tài khoản có quyền sửa / xóa. Em gửi thẻ cũ → mới, "
+             "bấm Xác nhận trong 15 phút mới ghi; mỗi thẻ chỉ dùng được một lần"),
+        ("", "Yêu cầu thanh toán chỉ sửa được câu chữ bản in; đề nghị thanh toán và phiếu hỗ trợ em không xóa, em gửi "
+             "link để anh/chị tự mở"),
     )),
     Section("so_nho", "Sổ ghi nhớ riêng", ("so nho", "ghi nho", "nho", "xung ho", "ghi chu", "tri nho", "tu rut"), (
         ("nhớ: anh ở Cần Thơ", "thêm một dòng vào sổ"),
@@ -129,11 +147,15 @@ SECTIONS: tuple[Section, ...] = (
         ("chuông tất cả", "nhận mọi thông báo"),
     )),
     Section("sua_ma", "Sửa phần mềm (chỉ người được cấp quyền)", ("sua ma", "sua phan mem", "code", "deploy", "viec ai"), (
-        ("", "Kể lỗi / yêu cầu bình thường — em gom thành việc AI-xxxx, lập kế hoạch rồi gửi thẻ duyệt"),
+        ("", "Kể lỗi / yêu cầu bình thường — em gom thành việc AI-xxxx, Claude Code rà mã rồi gửi thẻ xác nhận: em hiểu "
+             "việc thế nào, xong thì làm được gì, rủi ro"),
         ("ghi việc: màn công nợ lọc sai ngày", "chắc chắn ghi thành việc"),
-        ("AI-0007 xong chưa", ""),
-        ("duyệt", "duyệt kế hoạch của việc đang hỏi"),
-        ("gộp AI-0007", ""),
+        ("ok", "trên thẻ xác nhận: giao Claude Code làm; sửa xong, bài kiểm không đỏ thì em tự gộp và đưa lên dev"),
+        ("sửa: thêm cả phần sửa lý do", "bổ sung ý trước khi ok, em rà lại"),
+        ("chi tiết AI-0007", "xem việc; nhắn sửa nó đi ngay sau đó là giao làm luôn"),
+        ("sửa cho xanh AI-0007", "bài kiểm đỏ thì nhờ Claude Code sửa cho xanh"),
+        ("thu hồi AI-0007", "gỡ khỏi nhánh dev và đưa dev về bản trước"),
+        ("xong AI-0007", "đóng việc sau khi thử ổn trên dev"),
         ("bỏ việc này", ""),
         ("/ds", "danh sách việc"),
         ("tình hình máy", "RAM, CPU, đĩa, việc kẹt"),
@@ -144,8 +166,8 @@ SECTIONS: tuple[Section, ...] = (
         ("lấy lại tab_agent_memory của db bot dev bản #12: user_id = 7", "lấy lại vài dòng, không dừng bot"),
         ("deploy dev mới nhất", ""),
         ("tháng này bot tốn bao nhiêu", ""),
-        ("/zalo", "tình trạng tài khoản Zalo công ty; «/zalo dangnhap» lấy mã QR, «/zalo nhom» đồng bộ nhóm, "
-                  "«/zalo dangxuat» đăng xuất / đổi tài khoản"),
+        ("/zalo", "tình trạng tài khoản Zalo công ty; /zalo dangnhap lấy mã QR, /zalo nhom đồng bộ nhóm, "
+                  "/zalo dangxuat đăng xuất / đổi tài khoản"),
     ), admin_only=True),
 )
 
@@ -174,10 +196,13 @@ def _section_for(topic: str) -> Section | None:
     if not topic:
         return None
     #  So NGUYÊN TỪ: «nhom» không được khớp «nho» của nhóm Sổ ghi nhớ (lỗi bản đầu: «hướng dẫn nhóm» ra sổ nhớ).
+    #  ai-CR-157: nhiều nhóm cùng khớp («sua phieu» khớp cả «phieu») thì lấy nhóm có chữ khớp DÀI nhất.
+    best, size = None, 0
     for sec in SECTIONS:
-        if any(re.search(rf"(?<!\w){re.escape(w)}(?!\w)", topic) for w in sec.words):
-            return sec
-    return None
+        for w in sec.words:
+            if len(w) > size and re.search(rf"(?<!\w){re.escape(w)}(?!\w)", topic):
+                best, size = sec, len(w)
+    return best
 
 
 def _line(cmd: str, note: str) -> str:
@@ -192,12 +217,83 @@ def _block(sec: Section) -> str:
 
 
 #  Câu gọi riêng từng nhóm, hiện ở cuối mỗi nhóm trong bản tóm tắt.
-ASK = {"tai_khoan": "hướng dẫn tài khoản", "erp": "hướng dẫn phiếu", "so_nho": "hướng dẫn sổ nhớ",
+ASK = {"tai_khoan": "hướng dẫn tài khoản", "erp": "hướng dẫn số liệu", "phieu": "hướng dẫn phiếu",
+       "sua_phieu": "hướng dẫn sửa phiếu", "so_nho": "hướng dẫn sổ nhớ",
        "viec_rieng": "hướng dẫn chi tiêu", "lich": "hướng dẫn lịch", "bien_ban": "hướng dẫn biên bản",
        "tep": "hướng dẫn tệp", "nhom": "hướng dẫn nhóm", "mang": "hướng dẫn tra mạng", "ban_tin": "hướng dẫn bản tin",
        "chuong": "hướng dẫn chuông",
        "sua_ma": "hướng dẫn sửa mã"}
 SUMMARY_ITEMS = 2          # bản tóm tắt: mỗi nhóm 2 câu tiêu biểu, gọn trong một tin
+
+
+# ---------------------------------------------------------------------------
+# Quyền của tôi (ai-CR-157): chức năng nào của bot tài khoản này dùng được, theo đúng ma trận quyền ERP
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Capability:
+    label: str
+    entity: str
+    action: str
+    sample: str = ""        # câu nhắn mẫu khi ĐƯỢC dùng
+
+
+CAPABILITY_GROUPS: tuple[tuple[str, tuple[Capability, ...]], ...] = (
+    ("Tạo phiếu nháp qua bot", (
+        Capability("Đơn nghỉ phép", "leave_request", "create", "xin nghỉ thứ 6 cả ngày"),
+        Capability("Yêu cầu mua hàng (YCMH)", "purchase_request", "create", "lên phiếu mua 10 ram giấy A4"),
+        Capability("Yêu cầu báo giá (YCBG)", "survey_request", "create", "lên phiếu báo giá máy in màu"),
+        Capability("Việc ở phân hệ Dự án", "work_task", "create", "lên task gọi NCC X hạn thứ 6"),
+        Capability("Phiếu hỗ trợ", "ticket", "create", "báo lỗi máy in phòng kế toán"),
+    )),
+    ("Sửa phiếu nháp của mình", (
+        Capability("Đơn nghỉ phép", "leave_request", "write", "sửa lý do đơn NP011 thành đi khám"),
+        Capability("YCMH", "purchase_request", "write", "thêm 5 hộp kẹp giấy vào YCMH00012"),
+        Capability("YCBG", "survey_request", "write", ""),
+        Capability("Câu chữ bản in yêu cầu thanh toán", "payment_request", "write", ""),
+    )),
+    ("Xóa phiếu nháp của mình", (
+        Capability("Đơn nghỉ phép", "leave_request", "delete", "xóa đơn nháp 2"),
+        Capability("YCMH", "purchase_request", "delete", ""),
+        Capability("YCBG", "survey_request", "delete", ""),
+        Capability("Việc ở phân hệ Dự án", "work_task", "delete", ""),
+    )),
+    ("Tra cứu", (
+        Capability("Công nợ nhà cung cấp", "payable", "read", "công nợ tháng này"),
+        Capability("Đơn mua hàng", "purchase_order", "read", "3 đơn mua hàng gần nhất"),
+        Capability("Yêu cầu thanh toán", "payment_request", "read", ""),
+        Capability("Nhập kho", "goods_receipt", "read", ""),
+        Capability("Trợ lý AI trên web ERP", "assistant", "read", ""),
+    )),
+)
+
+_PERM_ASK = re.compile(
+    r"^\s*/?(?:xem |kiem tra |check )?(?:"
+    r"quyen(?: han)?(?: cua)? (?:toi|anh|chi|em|minh)"
+    r"|(?:toi|anh|chi|minh) (?:co )?(?:duoc )?(?:co )?quyen (?:gi|nao|nhung gi)"
+    r"|(?:toi|anh|chi|minh) (?:dung|lam) duoc (?:chuc nang )?(?:gi|nhung gi|nhung chuc nang nao)"
+    r"|quyen|quyencuatoi)\s*\??\s*$")
+
+
+def is_permission_question(text: str) -> bool:
+    return bool(_PERM_ASK.match(fold(text or "")))
+
+
+def render_permissions(can, *, who: str = "") -> str:
+    """`can(entity, action) -> bool` hỏi đúng ma trận quyền của tài khoản. Chỉ nói chức năng bot làm được; phạm vi dữ
+    liệu (phiếu của mình, phòng mình…) do quản trị đặt và em tra theo đúng phạm vi đó."""
+    out = ["<b>Anh/chị dùng được gì qua bot</b>" + (f" · {html.escape(who)}" if who else "")]
+    for title, caps in CAPABILITY_GROUPS:
+        out += ["", f"<b>{html.escape(title)}</b>"]
+        for c in caps:
+            ok = bool(can(c.entity, c.action))
+            line = f"• {html.escape(c.label)}: " + ("<b>được</b>" if ok else "<i>chưa được cấp</i>")
+            if ok and c.sample:
+                line += f" — <code>{html.escape(c.sample)}</code>"
+            out.append(line)
+    out += ["", "<i>Em chỉ tra và sửa trong phạm vi dữ liệu quản trị đã đặt cho tài khoản (phiếu của mình, phòng mình…).</i>",
+            "Thiếu quyền nào thì nhờ quản trị cấp ở ERP → Phân quyền tài khoản. Xem câu mẫu: "
+            "<code>hướng dẫn phiếu</code>, <code>hướng dẫn sửa phiếu</code>."]
+    return "\n".join(out)
 
 
 def render(topic: str = "", *, admin: bool = False, bot_name: str = "Lạc Lạc") -> str:
@@ -207,7 +303,8 @@ def render(topic: str = "", *, admin: bool = False, bot_name: str = "Lạc Lạc
         return _block(sec)
     out = [f"<b>Hướng dẫn dùng {html.escape(bot_name)}</b>",
            "Cứ nhắn bình thường, em tự hiểu. Mỗi nhóm có vài câu mẫu — chạm vào câu để chép; "
-           "nhắn câu sau chữ «Xem thêm» để thấy đủ nhóm đó."]
+           "nhắn câu sau chữ Xem thêm để thấy đủ nhóm đó. Nhắn <code>quyền của tôi</code> để xem anh/chị dùng được "
+           "chức năng nào."]
     for s in visible:
         cmds = [(c, n) for c, n in s.items if c][:SUMMARY_ITEMS]
         out.append("")

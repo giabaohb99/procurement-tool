@@ -1096,9 +1096,28 @@ def _send_guide(db: Session, chat_id: str, topic: str, user_id: int = 0) -> None
     reply(db, chat_id, user_guide.render(topic, admin=admin, bot_name=BOT_NAME), action=ACT_ANSWER)
 
 
+def _send_permissions(db: Session, chat_id: str) -> None:
+    """ai-CR-157: chức năng nào của bot tài khoản của chat này dùng được — hỏi đúng ma trận quyền ERP (qua cổng B ở chế
+    độ service)."""
+    from . import user_guide
+
+    user = _assistant_user(db, chat_id)
+    if user is None:
+        reply(db, chat_id, "Chat này chưa đăng nhập ERP nên em chưa biết quyền của anh/chị. " + _LINK_HELP,
+              action=ACT_ANSWER)
+        return
+    who = erp.describe(db, user)[0]
+    reply(db, chat_id, user_guide.render_permissions(lambda e, a: erp.can(db, user, e, a), who=who),
+          action=ACT_ANSWER)
+
+
 def _guide_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     from . import user_guide
 
+    if user_guide.is_permission_question(text):         # ai-CR-157: «quyền của tôi», «tôi dùng được gì»
+        row.action = ACT_COMMAND
+        _send_permissions(db, chat_id)
+        return True
     hit, topic = user_guide.match(text)
     if not hit:
         return False
@@ -4396,7 +4415,9 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     except draft_create.DraftError as e:
         pending.action = ACT_DRAFT_DROPPED
         db.commit()
-        reply(db, chat_id, f"Chưa tạo được {label}: {telegram.esc(str(e)[:400])}")
+        hint = ("\nNhắn <code>quyền của tôi</code> để xem anh/chị dùng được chức năng nào."
+                if "quyền" in str(e) else "")
+        reply(db, chat_id, f"Chưa tạo được {label}: {telegram.esc(str(e)[:400])}{hint}")
         return True
     #  Nhớ phiếu vừa tạo trên chính dòng sổ nháp, để «gửi duyệt luôn» nhắn sau vẫn biết phiếu nào.
     pending.body = json.dumps({**info, "created": {"id": oid, "code": code}}, ensure_ascii=False, default=str)

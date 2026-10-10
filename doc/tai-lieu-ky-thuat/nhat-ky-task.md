@@ -13193,6 +13193,18 @@ cũ, vẫn trả lời bình thường; chi phí lượt tóm được ghi vào 
 Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/conversation.py · agent_hub/service.py (_compacted_turns, answer_question) · model tool_used + AgentConvSummary · core/config.py + app_settings.py · migrations grp04 + agent0004 · test/backend/test_agent_hub_nen_hoi_thoai.py
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
+## ai-CR-157 | Hướng dẫn dùng bot cho phần phiếu và câu hỏi quyền của tôi
+- status: dang-lam
+- date: 2026-10-10
+Đại ca muốn người dùng hỏi được, hoặc được bot gợi ý, để xem hướng dẫn và biết tài khoản của mình dùng được chức năng nào. Sổ
+hướng dẫn của bot nay tách phần ERP thành ba nhóm: hỏi số liệu, tạo phiếu nháp, và sửa hay xóa phiếu đã có, ghi đủ các câu mới như
+thêm vào phiếu nháp cũ, ghi đè, sửa lý do đơn nghỉ, xóa phiếu nháp cùng điều kiện được làm. Nhóm sửa phần mềm cũng ghi lại theo
+cách làm gọn mới. Người dùng nhắn quyền của tôi hoặc tôi dùng được gì thì bot trả bảng các chức năng theo đúng quyền trên ERP,
+chức năng nào được thì kèm câu nhắn mẫu, chưa được thì ghi rõ để nhờ quản trị cấp. Bot tự gợi ý câu này ở đầu bản hướng dẫn, khi
+tạo phiếu bị chặn vì thiếu quyền, và khi trợ lý gặp chức năng bị chặn quyền. Toàn bộ bài kiểm của bot chạy xanh.
+
+Mã nguồn: agent_hub/user_guide.py (SECTIONS, CAPABILITY_GROUPS, render_permissions, is_permission_question) · agent_hub/service.py (_send_permissions, _guide_by_text) · agent_hub/policy.py
+
 ## ai-CR-155 | Bot tự đưa bản sửa lên dev thì dựng lại cả chính con bot khi bản sửa đụng mã của bot
 - status: dang-lam
 - date: 2026-10-09
