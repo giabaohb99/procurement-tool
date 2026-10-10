@@ -13194,7 +13194,7 @@ Mã nguồn: backend/app/modules/assistant/compaction.py (mới) · assistant/co
 Deploy: dev 09/10 (Agent 1 gộp 84faee30, dựng lại ERP api rồi stack agent-hub); prod giữ lại.
 
 ## ai-CR-166 | Tóm tắt video YouTube sạch chữ thừa của model và đúng khuôn tệp Word
-- status: dang-lam
+- status: xong
 - date: 2026-10-10
 Đại ca gửi tệp Word tóm tắt video YouTube đầu tiên và chỉ ra nhiều lỗi: tệp lọt cả đoạn suy nghĩ bằng tiếng Anh của model xen
 giữa các mục, bị cắt dở vì model dùng hết chỗ cho phần suy nghĩ, các chương đều mang mốc 00:00, tệp lại mang đầu trang của
@@ -13204,6 +13204,7 @@ thật cho từng lượt nói và ghi tên video ở dòng đầu để lấy l
 là ai chỉ gửi khi có từ hai người nói trở lên và không gửi cho tóm tắt video. Toàn bộ bài kiểm của bot và trợ lý chạy xanh.
 
 Mã nguồn: agent_hub/meetings.py (clean_recap, _is_model_chatter, was_cut, build_docx kind, YOUTUBE_PROMPT, offer_speakers, name_hints)
+Deploy: dev 10/10, commit b4d6a950 trên erp-v2; dựng lại cụm bot.
 
 ## ai-CR-165 | Tin biên bản trong chat chỉ gửi bản rút gọn vừa một màn điện thoại
 - status: xong
