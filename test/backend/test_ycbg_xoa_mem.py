@@ -214,8 +214,8 @@ def test_ma_phieu_khong_tai_dung_sau_khi_xoa(world, actor):
 # ── 7: lọc tập trung ở core/scoping ────────────────────────────────────────────────────────
 
 def test_apply_scope_tu_loc_model_co_is_deleted_ke_ca_pham_vi_thay_tat(world, actor, phieu):
+    from app.modules.payable.model import Payable
     from app.modules.purchase_request.model import PurchaseRequest
-    from app.modules.survey.model import Survey
 
     db, user, prof = world.db, actor.user, actor.profile()
     sr_service.delete_sr(db, phieu["xoa"], user.id)
@@ -243,11 +243,12 @@ def test_apply_scope_tu_loc_model_co_is_deleted_ke_ca_pham_vi_thay_tat(world, ac
                                       "purchase_request", user, prof).all()} == {pr_live.id}
     assert get_scoped(db, PurchaseRequest, "purchase_request", pr_dead.id, user, prof) is None
 
-    # Model KHÔNG có cột `is_deleted` (PKS) → không thêm điều kiện nào, query giữ nguyên.
-    assert not_deleted_cond(Survey) is None
-    actor.grant("survey", scope="all", actions=("read",))
-    q = db.query(Survey)
-    assert str(apply_scope(q, Survey, "survey", user, actor.profile())) == str(q)
+    # Model KHÔNG có cột `is_deleted` (công nợ — PKS đã sang xóa mềm ở ai-CR-176) → không thêm điều
+    # kiện nào, query giữ nguyên.
+    assert not_deleted_cond(Payable) is None
+    actor.grant("payable", scope="all", actions=("read",))
+    q = db.query(Payable)
+    assert str(apply_scope(q, Payable, "payable", user, actor.profile())) == str(q)
 
 
 def test_get_scoped_pham_vi_hep_van_loc_co_xoa(world, phieu):

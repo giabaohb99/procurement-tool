@@ -87,7 +87,8 @@ def real_po_ids(db: Session, po_ids: set[int]) -> set[int]:
     if not po_ids:
         return set()
     return {pid for pid, st in db.query(PurchaseOrder.id, PurchaseOrder.status)
-            .filter(PurchaseOrder.id.in_(po_ids)).all() if st in REAL_PO_STATUSES}
+            .filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.is_deleted.is_(False)).all()   # ai-CR-176
+            if st in REAL_PO_STATUSES}
 
 
 #  Cột PurchaseOrder/POItem THẬT SỰ cần cho `_resolve_po_context` — `load_only` khỏi kéo cả

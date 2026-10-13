@@ -1,11 +1,14 @@
 from sqlalchemy import BigInteger, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 
-class PaymentRequest(Base, AuditMixin):
-    """Phiếu yêu cầu thanh toán — CHỈ 1 NCC/phiếu, gom nhiều khoản nợ (nhiều PO). In được."""
+class PaymentRequest(Base, AuditMixin, SoftDeleteMixin):
+    """Phiếu yêu cầu thanh toán — CHỈ 1 NCC/phiếu, gom nhiều khoản nợ (nhiều PO). In được.
+
+    ai-CR-176: xóa MỀM (`SoftDeleteMixin`, migration `grp12`). Dòng đề nghị chi / đính kèm của
+    phiếu đã xóa giữ nguyên trong DB; `apply_scope` / `get_scoped` tự giấu phiếu."""
 
     __tablename__ = "tab_payment_request"
 

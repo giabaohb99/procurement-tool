@@ -14,6 +14,8 @@ from .model import ReportSnapshot
 
 # "Đơn hàng thật" = đã duyệt trở đi (bỏ nháp/chờ duyệt/hủy/từ chối) — dùng cho mọi thống kê đặt hàng
 _REAL_PO = ("approved", "partial", "received", "completed")
+#  ai-CR-176: mọi truy vấn ĐMH của báo cáo đi kèm điều kiện này — đơn đã xóa mềm không vào số liệu.
+_PO_LIVE = PurchaseOrder.is_deleted.is_(False)
 
 
 def _mk(s):
@@ -52,7 +54,7 @@ def _rate(part, whole):
 
 def compute(db: Session, year: str, company_id, full_detail: bool = False) -> dict:
     """full_detail=True: KHÔNG cắt shipping_detail[:300] (dùng cho xuất Excel)."""
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.status.in_(_REAL_PO))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.status.in_(_REAL_PO), _PO_LIVE)
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     if year and year != "all":
@@ -220,7 +222,7 @@ def compute_nspt_range(db: Session, date_from: str, date_to: str, company_id) ->
     po_ids = list({d.po_id for d in delivs})
     if not po_ids:
         return []
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO), _PO_LIVE)
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     po_by = {p.id: p for p in poq.all()}
@@ -259,7 +261,7 @@ def compute_ig_range(db: Session, date_from: str, date_to: str, company_id) -> l
     po_ids = list({d.po_id for d in delivs})
     if not po_ids:
         return []
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO), _PO_LIVE)
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     ok_po = {p.id for p in poq.all()}
@@ -291,7 +293,7 @@ def compute_sup_range(db: Session, date_from: str, date_to: str, company_id) -> 
     po_ids = list({d.po_id for d in delivs})
     if not po_ids:
         return []
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids), PurchaseOrder.status.in_(_REAL_PO), _PO_LIVE)
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     po_by = {p.id: p for p in poq.all()}
@@ -320,7 +322,7 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
     poq = db.query(PurchaseOrder).filter(
         PurchaseOrder.order_date >= date_from,
         PurchaseOrder.order_date <= date_to,
-        PurchaseOrder.status.in_(_REAL_PO),
+        PurchaseOrder.status.in_(_REAL_PO), _PO_LIVE,
     )
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
@@ -633,7 +635,7 @@ def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_
 def compute_shipping_detail(db, year, company_id, carrier=None, month=None, page=1, page_size=50) -> dict:
     """Chi tiết chi phí vận chuyển theo từng đơn hàng — PHÂN TRANG phía server (tránh tải full lag trang).
     Trả kèm danh sách đơn vị VC + tháng (để đổ dropdown lọc) tính trên toàn bộ dữ liệu năm/công ty."""
-    poq = db.query(PurchaseOrder).filter(PurchaseOrder.status.in_(_REAL_PO))
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.status.in_(_REAL_PO), _PO_LIVE)
     if company_id:
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
     if year and year != "all":

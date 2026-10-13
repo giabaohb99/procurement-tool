@@ -147,7 +147,8 @@ def dev_delete_surveys(ids: str = Query(""), all_imported: bool = Query(False),
         sids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
     n = 0
     for sid in sids:
-        if db.get(Survey, sid):
+        s = db.get(Survey, sid)
+        if s is not None and not s.is_deleted:   # ai-CR-176: phiếu đã xóa mềm bỏ qua
             survey_service.delete_survey(db, sid, user.id); n += 1
     return success({"deleted": n, "ids": sids}, f"Đã xóa {n} phiếu (dev)")
 

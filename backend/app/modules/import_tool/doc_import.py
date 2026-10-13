@@ -623,9 +623,11 @@ def _doc_side_effects(db: Session, header_model, h) -> list[str]:
             _count("đã có phương án", db.query(SurveyRequestOption).filter(
                 SurveyRequestOption.survey_request_line_id.in_(line_ids)))
         _count("đã sinh yêu cầu mua hàng", db.query(SurveyRequestPr).filter(SurveyRequestPr.survey_request_id == h.id))
-        _count("đã có phiếu khảo sát", db.query(Survey).filter(Survey.survey_request_id == h.id))
+        _count("đã có phiếu khảo sát", db.query(Survey).filter(Survey.survey_request_id == h.id,
+                                                                Survey.is_deleted.is_(False)))   # ai-CR-176
     elif header_model is PurchaseRequest:
-        _count("đã có đơn mua hàng", db.query(PurchaseOrder).filter(PurchaseOrder.pr_code == h.code))
+        _count("đã có đơn mua hàng", db.query(PurchaseOrder).filter(PurchaseOrder.pr_code == h.code,
+                                                                     PurchaseOrder.is_deleted.is_(False)))   # ai-CR-176
         item_ids = [i for (i,) in db.query(PurchaseRequestItem.id).filter(PurchaseRequestItem.pr_id == h.id)]
         if item_ids:
             _count("đã có phương án nhà cung cấp", db.query(PurchaseRequestItemOption).filter(

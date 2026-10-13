@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, user_has_permission
 from app.core.file_registry import policy, read_parent
-from app.core.scoping import apply_scope, exclude_deleted
+from app.core.scoping import apply_scope, exclude_deleted, not_deleted_cond
 
 #  Nhật ký từ chối. `06` H4(b) dặn: thu nhật ký đủ rồi mới chặn, không thì có
 #  người đang dùng hợp lệ mà bị khóa không hiểu vì sao. Ở đây chặn ngay (đợt này
@@ -54,6 +54,15 @@ def parent_records(db: Session, entity: str, entity_id: int):
     def _fk(col, parent_model, key_col):
         return parent_model, [i for (i,) in db.query(col).filter(key_col == entity_id)]
 
+    def _live(parent_model, ids):
+        """ai-CR-176: bỏ id của chứng từ cha đã xóa mềm (PKS · ĐMH · YCTT) — không còn id nào
+        thì `ensure_in_scope` trả 404 «Chứng từ của tệp không còn tồn tại», cùng cửa với YCBG."""
+        cond = not_deleted_cond(parent_model)
+        if cond is None or not ids:
+            return parent_model, ids
+        return parent_model, [i for (i,) in db.query(parent_model.id)
+                              .filter(parent_model.id.in_(ids), cond)]
+
     if entity in ("purchase_request", "purchase_request_quote"):
         from app.modules.purchase_request.model import PurchaseRequest
         return PurchaseRequest, [entity_id]
@@ -64,7 +73,7 @@ def parent_records(db: Session, entity: str, entity_id: int):
 
     if entity == "survey":
         from app.modules.survey.model import Survey
-        return Survey, [entity_id]
+        return _live(Survey, [entity_id])
     if entity == "survey_line":
         from app.modules.survey.model import (Survey, SurveyProductLine,
                                               SurveySupplierLine)
@@ -72,7 +81,7 @@ def parent_records(db: Session, entity: str, entity_id: int):
                .filter(SurveySupplierLine.id == entity_id)]
         ids += [i for (i,) in db.query(SurveyProductLine.survey_id)
                 .filter(SurveyProductLine.id == entity_id)]
-        return Survey, ids
+        return _live(Survey, ids)
 
     if entity == "survey_request":
         #  ai-CR-170: YCBG xóa mềm → id không còn → 404 «Chứng từ của tệp không còn tồn tại»
@@ -89,17 +98,17 @@ def parent_records(db: Session, entity: str, entity_id: int):
 
     if entity == "purchase_order":
         from app.modules.purchase_order.model import PurchaseOrder
-        return PurchaseOrder, [entity_id]
+        return _live(PurchaseOrder, [entity_id])
     if entity == "delivery":
         from app.modules.purchase_order.model import PODelivery, PurchaseOrder
-        return _fk(PODelivery.po_id, PurchaseOrder, PODelivery.id)
+        return _live(*_fk(PODelivery.po_id, PurchaseOrder, PODelivery.id))
 
     if entity == "contract":
         from app.modules.contract.model import Contract
-        return Contract, [entity_id]
+        return _live(Contract, [entity_id])      # ai-CR-177: hợp đồng đã xóa mềm → 404
     if entity == "payment_request":
         from app.modules.payment_request.model import PaymentRequest
-        return PaymentRequest, [entity_id]
+        return _live(PaymentRequest, [entity_id])
 
     if entity == "seal_request":
         #  Đính kèm treo thẳng vào phiếu (entity_id = id phiếu). Phạm vi ăn theo
@@ -126,7 +135,7 @@ def parent_records(db: Session, entity: str, entity_id: int):
         #  pháp nhân khác miễn đoán đúng id. Đúng lỗ N-13 mà cả tệp này sinh ra
         #  để bịt — `test_pham_vi_dinh_kem_b08.py` canh từng dòng `FILE_POLICY`.
         from app.modules.dossier.model import Dossier
-        return Dossier, [entity_id]
+        return _live(Dossier, [entity_id])       # ai-CR-177: hồ sơ đã xóa mềm → 404
 
     if entity == "leave_request":
         #  Tệp treo thẳng vào tờ đơn (`entity_id` = id đơn). Khai ở đây cho đủ bộ
@@ -178,7 +187,7 @@ def _ensure_document(db: Session, user, version_id: int, action: str):
 
     version = db.get(DocumentVersion, version_id)
     doc = db.get(Document, version.document_id) if version else None
-    if not doc:
+    if not doc or doc.is_deleted:      # ai-CR-177: tệp của văn bản đã xóa mềm không mở được
         raise HTTPException(404, "Không tìm thấy văn bản")
     access_service.ensure_can(db, doc, user, get_perm_profile(db, user),
                               "read" if action == "read" else "write")
@@ -321,7 +330,8 @@ def reachable_from_scoped_po(db: Session, user, entity: str, entity_id: int) -> 
         cond = PurchaseOrder.survey_code.in_(codes)
     else:
         #  YCKS lùi hai chặng: yêu cầu → phiếu khảo sát → đơn.
-        sv_codes = [c for (c,) in db.query(Survey.code).filter(Survey.sr_code.in_(codes)) if c]
+        sv_codes = [c for (c,) in exclude_deleted(db.query(Survey.code).filter(Survey.sr_code.in_(codes)),
+                                                  Survey) if c]   # ai-CR-176: PKS đã xóa không nối chuỗi
         if not sv_codes:
             return False
         cond = PurchaseOrder.survey_code.in_(sv_codes)

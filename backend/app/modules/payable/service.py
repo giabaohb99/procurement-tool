@@ -196,7 +196,7 @@ def resync_departments_from_orders(db: Session, dry_run: bool = False) -> int:
 
     rows = (db.query(Payable, PurchaseOrder.handler_dept_id)
             .join(PurchaseOrder, PurchaseOrder.id == Payable.po_id)
-            .filter(Payable.po_id > 0).all())
+            .filter(Payable.po_id > 0, PurchaseOrder.is_deleted.is_(False)).all())   # ai-CR-176
     changed = 0
     for p, handler in rows:
         want = normalize_handler_dept_id(db, handler)   # bao-CR-524: `0` → phòng thu mua mặc định

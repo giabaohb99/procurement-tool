@@ -138,7 +138,7 @@ def _pick_orders(db: Session, po_ids: list[int], codes: list[str],
     đường vào cho tab báo cáo. Nháp và đơn đã hủy/từ chối vẫn LẤY khi được gọi đích danh —
     giá vốn của đơn nháp chính là thứ thu mua cần xem trước khi trình.
     """
-    q = db.query(PurchaseOrder)
+    q = db.query(PurchaseOrder).filter(PurchaseOrder.is_deleted.is_(False))   # ai-CR-176
     if not include_domestic:
         q = q.filter(PurchaseOrder.order_type == int(OrderType.IMPORT))
     if po_ids:

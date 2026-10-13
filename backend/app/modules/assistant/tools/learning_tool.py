@@ -57,6 +57,7 @@ def _glossary_lookup(ctx: ToolContext, args: dict) -> dict:
         if not ctx.can(entity):
             continue
         rows = db.query(model.department, func.count(model.id)).filter(model.department.ilike(like)) \
+            .filter(model.is_deleted.is_(False)) \
             .group_by(model.department).order_by(func.count(model.id).desc()).limit(3).all()
         cands += [{"kind": label, "name": name, "count": int(n)} for name, n in rows if name]
     out["candidates"] = cands[:MAX_CANDIDATES]

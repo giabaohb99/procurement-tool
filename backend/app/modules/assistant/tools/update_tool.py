@@ -204,8 +204,8 @@ def _model_of(entity: str):
     return PaymentRequest
 
 
-#  Phiếu có cột `is_deleted` (xóa mềm): YCMH · YCBG (ai-CR-170) · nghỉ phép.
-_SOFT_DELETE_ENTITIES = ("purchase_request", "survey_request", "leave_request")
+#  Phiếu có cột `is_deleted` (xóa mềm): YCMH · YCBG (ai-CR-170) · YCTT (ai-CR-176) · nghỉ phép.
+_SOFT_DELETE_ENTITIES = ("purchase_request", "survey_request", "payment_request", "leave_request")
 
 
 def _soft_deleted(entity: str, doc) -> bool:

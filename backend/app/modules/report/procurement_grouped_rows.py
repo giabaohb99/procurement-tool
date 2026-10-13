@@ -66,7 +66,8 @@ def grouped_po_rows(db: Session, company_id: int | None, ranges: list[tuple[date
          .select_from(POItem)
          .join(PurchaseOrder, POItem.po_id == PurchaseOrder.id)
          .outerjoin(dlv, dlv.c.po_item_id == POItem.id)
-         .filter(PurchaseOrder.status.in_(REAL_PO_STATUSES), _ranges_cond(PurchaseOrder.order_date, ranges)))
+         .filter(PurchaseOrder.status.in_(REAL_PO_STATUSES), PurchaseOrder.is_deleted.is_(False),   # ai-CR-176
+                 _ranges_cond(PurchaseOrder.order_date, ranges)))
     if company_id:
         q = q.filter(PurchaseOrder.company_id == company_id)
     q = q.order_by(POItem.id)

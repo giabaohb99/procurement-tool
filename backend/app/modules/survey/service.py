@@ -3,6 +3,7 @@ from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.base_model import mark_deleted
 from app.core.text_limits import ensure_model_fits
 
 from .model import Survey, SurveyProductLine, SurveySupplierLine
@@ -19,8 +20,9 @@ HEADER_FIELDS = ["pr_code", "survey_request_id", "sr_code", "received_date", "re
 
 
 def get_survey(db: Session, sid: int) -> Survey:
+    """Nạp phiếu theo id. ai-CR-176: phiếu đã xóa mềm coi như không có (404)."""
     o = db.get(Survey, sid)
-    if not o:
+    if not o or o.is_deleted:
         raise HTTPException(404, "Không tìm thấy phiếu khảo sát")
     return o
 
@@ -210,17 +212,16 @@ def approve_lines(db: Session, sid: int, data, user_id: int) -> Survey:
 
 
 def delete_survey(db: Session, sid: int, user_id: int):
+    """Xóa MỀM phiếu khảo sát (ai-CR-176): chỉ đánh dấu `is_deleted` + thời điểm + người xóa.
+
+    Dòng NCC / dòng SP / đính kèm GIỮ NGUYÊN — phiếu chỉ biến mất khỏi danh sách, chi tiết, báo cáo,
+    tool Trợ lý (lọc tập trung ở `core/scoping` + các chỗ đọc thẳng). Luật trạng thái (Nháp / Bị trả
+    lại / Đã hủy) vẫn kiểm ở controller như cũ; đường dev `dev_delete_surveys` xóa phiếu nhập ở mọi
+    trạng thái nên không kiểm ở đây."""
     s = get_survey(db, sid)
-    from app.modules.attachment.service import delete_attachments_for
-    line_ids = ([ln.id for ln in supplier_lines_of(db, sid)]
-                + [ln.id for ln in product_lines_of(db, sid)])
-    # commit=False (ai-CR-169 mục 7): tệp + dòng + phiếu đi CHUNG một giao dịch.
-    delete_attachments_for(db, [("survey", sid)] + [("survey_line", lid) for lid in line_ids], commit=False)
-    db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == sid).delete()
-    db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == sid).delete()
-    db.delete(s)
+    mark_deleted(s, user_id)
     db.commit()
-    record(db, user_id, ENTITY, sid, "delete")
+    record(db, user_id, ENTITY, sid, "delete", f"Xóa mềm phiếu {s.code}")
 
 
 MISSING = "Thiếu thông tin"

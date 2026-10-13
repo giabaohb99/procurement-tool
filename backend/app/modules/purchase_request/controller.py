@@ -765,6 +765,7 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
     rows = (db.query(POItem.product_code, func.coalesce(func.sum(POItem.qty_order), 0))
             .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
             .filter(PurchaseOrder.pr_code == pr.code,
+                    PurchaseOrder.is_deleted.is_(False),   # ai-CR-176: đơn đã xóa mềm = không có
                     PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]),
                     POItem.progress_status.notin_([po_service.PROG_NOT_ORDERED,
                                                    po_service.PROG_CANCELLED]))

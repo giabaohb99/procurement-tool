@@ -259,12 +259,13 @@ def test_don_da_duyet_van_chan_sua_o_khac(db, seed):
         service.block_edit_approved_order(db, po, POUpdate(supplier_code="KHAC"))
 
 
-# ── Xóa đơn thì dọn luôn bảng chi phí ───────────────────────────────────────────
-def test_xoa_don_thi_xoa_ca_dong_chi_phi(db, seed):
+# ── Xóa đơn (xóa MỀM, ai-CR-176) thì dòng chi phí GIỮ NGUYÊN theo đơn ─────────────
+def test_xoa_don_xoa_mem_giu_dong_chi_phi(db, seed):
     po = _make_po(db, seed, code="PO-NK-004")
     service._save_import_costs(db, po, [_cost_in()], user_id=1)
     db.commit()
     pid = po.id
 
     service.delete_po(db, pid, user_id=1)
-    assert db.query(POCost).filter(POCost.po_id == pid).count() == 0
+    assert db.get(PurchaseOrder, pid).is_deleted is True
+    assert db.query(POCost).filter(POCost.po_id == pid).count() == 1

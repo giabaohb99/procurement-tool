@@ -325,7 +325,8 @@ def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
             counts[key] += 1
             if not dry_run:
                 row.handler_dept_id = dept_id
-    for po in db.query(PurchaseOrder).filter(PurchaseOrder.handler_dept_id.in_(central_values)).all():
+    for po in db.query(PurchaseOrder).filter(PurchaseOrder.handler_dept_id.in_(central_values),
+                                             PurchaseOrder.is_deleted == False).all():   # noqa: E712 — ai-CR-176
         dept_id = int(po.department_id or 0)
         if not dept_id and (po.pr_code or "").strip():
             src = db.query(PurchaseRequest).filter(PurchaseRequest.code == po.pr_code).first()
@@ -556,6 +557,7 @@ def _misa_covered_codes(db: Session, pr_code: str) -> set[str]:
     rows = (db.query(POItem.product_code)
             .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
             .filter(PurchaseOrder.pr_code == pr_code,
+                    PurchaseOrder.is_deleted.is_(False),   # ai-CR-176
                     PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]),
                     func.trim(func.coalesce(PurchaseOrder.misa_code, "")) != "",
                     # B-06: erp-v2 lưu MÃ (PO_PROGRESS_STATUS) — bản main so "Hủy đơn" tiếng Việt.
@@ -653,8 +655,10 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
         return
     from sqlalchemy import func
     from app.modules.purchase_order.model import PurchaseOrder, POItem, PODelivery
+    #  ai-CR-176: đơn đã xóa mềm không tính ở cả hai rổ — xóa đơn nháp xong dòng YCMH quay về `no_po`.
     lines = (db.query(POItem).join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
              .filter(PurchaseOrder.pr_code == pr_code,
+                     PurchaseOrder.is_deleted.is_(False),
                      PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]))
              .all())
     # CR-074: rổ RỘNG HƠN `lines` — chỉ để trả lời "sản phẩm này đã có ai lập đơn chưa".
@@ -662,6 +666,7 @@ def sync_from_purchase_orders(db: Session, pr_code: str) -> None:
     created_prods = {r[0] for r in
                      db.query(POItem.product_code).join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
                      .filter(PurchaseOrder.pr_code == pr_code,
+                             PurchaseOrder.is_deleted.is_(False),
                              PurchaseOrder.status != "cancelled",
                              POItem.progress_status != _PROG_CANCELLED).distinct().all()}
     # Tổng SL đã nhận theo từng dòng ĐMH (gom các lần giao).

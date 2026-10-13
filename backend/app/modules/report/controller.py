@@ -47,9 +47,11 @@ def daily(request: Request, db: Session = Depends(get_db), user=Depends(require(
     # LOẠI TRỪ công nợ thuộc ĐMH nháp/chờ duyệt/hủy/từ chối — khớp biểu đồ "Chi phí mua theo tháng".
     pay_po_ids = {p.po_id for p in pays if p.po_id}
     if pay_po_ids:
-        bad_po_ids = {pid for pid, st in db.query(PurchaseOrder.id, PurchaseOrder.status)
+        #  ai-CR-176: đơn đã xóa mềm cũng là «đơn không thật».
+        bad_po_ids = {pid for pid, st, gone in
+                      db.query(PurchaseOrder.id, PurchaseOrder.status, PurchaseOrder.is_deleted)
                       .filter(PurchaseOrder.id.in_(pay_po_ids)).all()
-                      if st not in REAL_PO_STATUSES}
+                      if gone or st not in REAL_PO_STATUSES}
         if bad_po_ids:
             pays = [p for p in pays if p.po_id not in bad_po_ids]
     agg = {}
@@ -340,7 +342,7 @@ def procurement(request: Request, db: Session = Depends(get_db),
     month = (request.query_params.get("month") or "").strip()   # 'YYYY-MM' — lọc phụ theo tháng (tab Tổng quan)
     today = datetime.now().date().strftime("%Y-%m-%d")
 
-    poq = db.query(PurchaseOrder)
+    poq = db.query(PurchaseOrder).filter(PurchaseOrder.is_deleted.is_(False))   # ai-CR-176
     payq = db.query(Payable)
     invq_rows = db.query(Inventory)
     if company_id:
@@ -353,12 +355,13 @@ def procurement(request: Request, db: Session = Depends(get_db),
     pos_year = poq.all()
     pays_year = payq.all()
     # LOẠI TRỪ công nợ thuộc ĐMH nháp/chờ duyệt/hủy/từ chối — chỉ tính "đơn thật" (approved trở đi).
-    # (ĐMH không có soft-delete; "xóa" = hủy/từ chối, đã nằm ngoài REAL_PO_STATUSES.)
+    # ai-CR-176: ĐMH nay có xóa mềm — đơn đã xóa cũng loại.
     pay_po_ids = {p.po_id for p in pays_year if p.po_id}
     if pay_po_ids:
-        bad_po_ids = {pid for pid, st in db.query(PurchaseOrder.id, PurchaseOrder.status)
+        bad_po_ids = {pid for pid, st, gone in
+                      db.query(PurchaseOrder.id, PurchaseOrder.status, PurchaseOrder.is_deleted)
                       .filter(PurchaseOrder.id.in_(pay_po_ids)).all()
-                      if st not in REAL_PO_STATUSES}
+                      if gone or st not in REAL_PO_STATUSES}
         if bad_po_ids:
             pays_year = [p for p in pays_year if p.po_id not in bad_po_ids]
     # Lọc phụ theo THÁNG: thu hẹp các chỉ số tổng quan (thẻ số / trạng thái / tiến độ giao) về 1 tháng.

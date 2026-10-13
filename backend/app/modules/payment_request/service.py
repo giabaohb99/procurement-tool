@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.base_model import mark_deleted
 from app.modules.payable.model import Payable
 from app.modules.payable.service import recalc_status
 from app.modules.supplier.model import Supplier
@@ -60,8 +61,9 @@ def parse_print_texts(raw) -> dict:
 
 
 def get_request(db: Session, rid: int) -> PaymentRequest:
+    """Nạp phiếu theo id. ai-CR-176: phiếu đã xóa mềm coi như không có (404)."""
     obj = db.get(PaymentRequest, rid)
-    if not obj:
+    if not obj or obj.is_deleted:
         raise HTTPException(404, "Không tìm thấy phiếu yêu cầu thanh toán")
     return obj
 
@@ -614,13 +616,10 @@ def delete_request(db: Session, rid: int, user_id: int):
     #  Phiếu đã gửi đi mà không dùng nữa thì Từ chối, không xóa.
     if req.status != "draft":
         raise HTTPException(400, "Chỉ xóa được phiếu yêu cầu thanh toán ở trạng thái Nháp")
-    from app.modules.attachment.service import delete_attachments_for
-    # commit=False (ai-CR-169 mục 7): tệp + dòng + phiếu đi CHUNG một giao dịch.
-    delete_attachments_for(db, [("payment_request", rid)], commit=False)
-    db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
-    db.delete(req)
+    #  ai-CR-176: xóa MỀM — dòng đề nghị chi / đính kèm giữ nguyên, chỉ đánh cờ + mốc + người xóa.
+    mark_deleted(req, user_id)
     db.commit()
-    record(db, user_id, ENTITY, rid, "delete")
+    record(db, user_id, ENTITY, rid, "delete", f"Xóa mềm phiếu {req.code}")
 
 
 #  bao-CR-511 — trạng thái NGUỒN hợp lệ cho từng đích, khớp đúng các nút trên hai màn:
@@ -721,7 +720,7 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
             from app.modules.purchase_order.model import PurchaseOrder
             for po_id in affected_po_ids:
                 po = db.get(PurchaseOrder, po_id)
-                if po:
+                if po and not po.is_deleted:   # ai-CR-176
                     po_service.apply_auto_progress(db, po, user_id)
         except Exception:
             db.rollback()

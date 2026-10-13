@@ -265,7 +265,8 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     def get_survey(survey_key: str, hdr: dict) -> Survey:
         if survey_key in survey_cache:
             return survey_cache[survey_key]
-        s = db.query(Survey).filter(Survey.import_key == survey_key).first()
+        s = db.query(Survey).filter(Survey.import_key == survey_key,
+                                    Survey.is_deleted.is_(False)).first()   # ai-CR-176
         was_new = s is None
         if not s:
             s = Survey(import_key=survey_key, survey_type="combined", status="approved",

@@ -1,11 +1,14 @@
 from sqlalchemy import BigInteger, Boolean, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 
-class Survey(Base, AuditMixin):
-    """Phiếu khảo sát (header) — dùng chung NCC & SP (survey_type)."""
+class Survey(Base, AuditMixin, SoftDeleteMixin):
+    """Phiếu khảo sát (header) — dùng chung NCC & SP (survey_type).
+
+    ai-CR-176: xóa MỀM (`SoftDeleteMixin`, migration `grp12`). Dòng NCC / dòng SP / đính kèm của
+    phiếu đã xóa giữ nguyên trong DB; `apply_scope` / `get_scoped` tự giấu phiếu."""
     __tablename__ = "tab_survey"
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")

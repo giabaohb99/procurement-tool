@@ -3,7 +3,7 @@ from enum import IntEnum
 from sqlalchemy import BigInteger, Boolean, Index, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 # Đồng tiền mặc định của cả hệ. Đơn thường vẫn ghi "VND" + tỷ giá 1 để mọi dòng có cùng
 # một cách đọc số tiền — không có dòng nào "không loại tiền".
@@ -155,8 +155,11 @@ ALLOCATION_METHOD_LABELS = {
 }
 
 
-class PurchaseOrder(Base, AuditMixin):
-    """Đơn mua hàng (PO) — header. Là module trung tâm của vòng đời mua hàng."""
+class PurchaseOrder(Base, AuditMixin, SoftDeleteMixin):
+    """Đơn mua hàng (PO) — header. Là module trung tâm của vòng đời mua hàng.
+
+    ai-CR-176: xóa MỀM (`SoftDeleteMixin`, migration `grp12`). Dòng hàng / lần giao / chi phí /
+    đính kèm của đơn đã xóa giữ nguyên trong DB; `apply_scope` / `get_scoped` tự giấu đơn."""
 
     __tablename__ = "tab_purchase_order"
     # created_by nằm ở AuditMixin — index qua __table_args__ (apply_scope lọc theo cột này ở MỌI list)

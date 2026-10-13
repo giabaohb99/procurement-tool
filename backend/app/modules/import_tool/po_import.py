@@ -210,7 +210,9 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
         return json.dumps(data, ensure_ascii=False, default=str)
 
     def upsert_po(misa, d) -> tuple:
-        po = db.query(PurchaseOrder).filter(PurchaseOrder.misa_code == misa).first()
+        #  ai-CR-176: đơn cùng mã Misa đã xóa mềm coi như không có — tạo đơn mới, không ghi đè lên đơn đã xóa.
+        po = db.query(PurchaseOrder).filter(PurchaseOrder.misa_code == misa,
+                                            PurchaseOrder.is_deleted.is_(False)).first()
         was_new = po is None
         sup = db.query(Supplier).filter(Supplier.code == d["supplier"]).first()
         fields = dict(misa_code=misa, supplier_code=d["supplier"],

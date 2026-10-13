@@ -31,7 +31,7 @@ from app.core.report_export import report_xlsx
 from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, exclude_deleted
 from app.modules.report_access.guard import require_report
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 
@@ -256,6 +256,7 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
                            "purchase_request", user, prof)
         codes = [c for (c,) in pr_q.all() if c]
         q = q.filter(PurchaseOrder.pr_code.in_(codes)) if codes else q.filter(PurchaseOrder.id == -1)
+        q = exclude_deleted(q, PurchaseOrder)   # ai-CR-176: nhánh này không qua apply_scope(ĐMH)
 
     # ----- Sort -----
     # Cột do người dùng chọn (nếu là cột thật) đứng trước, thứ tự mặc định làm tiebreak

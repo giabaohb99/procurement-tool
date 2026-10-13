@@ -446,7 +446,8 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
                 groups.append(("purchase_request_item", pri_ids, "PYC", pr.code))
 
     if po.survey_code:
-        sv = db.query(Survey).filter(Survey.code == po.survey_code).first()
+        sv = (db.query(Survey).filter(Survey.code == po.survey_code, Survey.is_deleted == False)  # noqa: E712
+              .first())   # ai-CR-176: PKS đã xóa mềm không bày trong chuỗi
         if sv:
             groups.append(("survey", [sv.id], "PKS", sv.code))
             ssl_ids = _ids(SurveySupplierLine.id, SurveySupplierLine.survey_id, sv.id)

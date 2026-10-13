@@ -565,6 +565,7 @@ def available_survey_lines(db: Session, supplier_code: "str | list[str]" = "",
     q = (db.query(SurveyProductLine)
          .join(Survey, Survey.id == SurveyProductLine.survey_id)
          .filter(SurveyProductLine.line_approve == "Đã duyệt",
+                 Survey.is_deleted.is_(False),   # ai-CR-176: dòng của PKS đã xóa mềm không gợi ý
                  Survey.status.notin_(["cancelled"])))
     supplier_codes = normalize_filter_values(supplier_code)
     item_groups = normalize_filter_values(item_group)
@@ -624,6 +625,8 @@ def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: in
     if len(options_of(db, line.id)) >= MAX_OPTIONS_PER_LINE:
         raise HTTPException(400, f"Mỗi sản phẩm chỉ được tối đa {MAX_OPTIONS_PER_LINE} phương án khảo sát")
     survey = db.get(Survey, psl.survey_id)
+    if survey is not None and survey.is_deleted:   # ai-CR-176
+        raise HTTPException(400, "Phiếu khảo sát của dòng này đã bị xóa")
     public_id = len(options_of(db, line.id)) + 1
     o = SurveyRequestOption(
         survey_request_line_id=line.id,
@@ -683,6 +686,7 @@ def sync_options_from_surveys(db: Session, sid: int, user_id: int = 0) -> int:
     # chỉ cần DÒNG được duyệt (line_approve='Đã duyệt'). Bỏ phiếu đã hủy/bị từ chối.
     surveys = (db.query(Survey)
                .filter(Survey.survey_request_id == sid,
+                       Survey.is_deleted.is_(False),   # ai-CR-176
                        Survey.status.notin_(["cancelled"])).all())
     if not surveys:
         return 0

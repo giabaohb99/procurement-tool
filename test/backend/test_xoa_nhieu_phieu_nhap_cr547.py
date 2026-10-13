@@ -78,7 +78,8 @@ def test_payment_request_single_delete_only_draft(world):
                 status="draft", total=100)
     delete_(rid=nhap.id, db=world.db, user=a1.user)
     world.db.expire_all()
-    assert world.db.get(PaymentRequest, nhap.id) is None
+    #  ai-CR-176: xóa MỀM — phiếu còn trong DB, chỉ mang cờ `is_deleted`.
+    assert world.db.get(PaymentRequest, nhap.id).is_deleted is True
 
 
 def test_payment_request_bulk_is_all_or_nothing(world):
@@ -93,8 +94,8 @@ def test_payment_request_bulk_is_all_or_nothing(world):
         bulk_delete_requests(ids=f"{nhap.id},{duyet.id}", db=world.db, user=a1.user)
     assert err.value.status_code == 400 and "YCTT_D1" in err.value.detail
     world.db.expire_all()
-    assert world.db.get(PaymentRequest, nhap.id) is not None, "phiếu Nháp đứng trước cũng KHÔNG được xóa"
-    assert world.db.get(PaymentRequest, duyet.id) is not None
+    assert world.db.get(PaymentRequest, nhap.id).is_deleted is False, "phiếu Nháp đứng trước cũng KHÔNG được xóa"
+    assert world.db.get(PaymentRequest, duyet.id).is_deleted is False
 
 
 def test_purchase_order_bulk_only_draft_but_single_delete_keeps_old_rule(world):
@@ -116,7 +117,8 @@ def test_purchase_order_bulk_only_draft_but_single_delete_keeps_old_rule(world):
     bulk_delete_pos(ids=str(nhap.id), db=world.db, user=a1.user)
     delete_po(pid=tu_choi.id, db=world.db, user=a1.user)
     world.db.expire_all()
-    assert world.db.query(PurchaseOrder).filter(PurchaseOrder.id.in_([nhap.id, tu_choi.id])).count() == 0
+    #  ai-CR-176: xóa MỀM — hai đơn còn trong DB, cùng mang cờ `is_deleted`.
+    assert all(world.db.get(PurchaseOrder, i).is_deleted for i in (nhap.id, tu_choi.id))
 
 
 def test_purchase_request_bulk_rejects_cancelled_and_deletes_drafts(world):

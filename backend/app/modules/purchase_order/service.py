@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.base_model import mark_deleted
 from app.core.central_purchasing import normalize_handler_dept_id
 from app.core.status_codes import PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
 from app.core.text_limits import column_limit, ensure_max_length
@@ -120,8 +121,9 @@ PROG_CANCELLED = "cancelled"
 
 
 def get_po(db: Session, pid: int) -> PurchaseOrder:
+    """Nạp đơn theo id. ai-CR-176: đơn đã xóa mềm coi như không có (404)."""
     obj = db.get(PurchaseOrder, pid)
-    if not obj:
+    if not obj or obj.is_deleted:
         raise HTTPException(404, "Không tìm thấy đơn mua hàng")
     return obj
 
@@ -1615,6 +1617,7 @@ def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> Purch
     ).filter(
         PaymentRequestLine.po_code == (po.code or ""),
         PaymentRequest.status != "cancelled",
+        PaymentRequest.is_deleted.is_(False),   # ai-CR-176: YCTT đã xóa mềm không còn chặn
     ).first()
     if linked_payment_lines:
         raise HTTPException(400, "Đơn đã có yêu cầu thanh toán — không hủy duyệt được. "
@@ -1688,31 +1691,22 @@ def set_document_status(db: Session, pid: int, value: str, user_id: int) -> Purc
 
 
 def delete_po(db: Session, pid: int, user_id: int):
+    """Xóa MỀM đơn (ai-CR-176): chỉ đánh dấu `is_deleted` + thời điểm + người xóa.
+
+    Dòng hàng / lần giao / chi phí nhập khẩu / đính kèm GIỮ NGUYÊN, không dọn phiếu nhập – tồn –
+    công nợ kế tiếp nữa (đơn Nháp / Bị từ chối chưa sinh gì; có sót mà đã chi thì vẫn chặn như cũ
+    ở `block_delete_paid_import_cost`). Luật trạng thái giữ như cũ."""
     po = get_po(db, pid)
     if po.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ xóa được đơn ở trạng thái Nháp hoặc Bị từ chối. Đơn đã duyệt/xử lý hãy dùng Hủy đơn.")
-    from app.modules.attachment.service import delete_attachments_for
-    pairs = [("purchase_order", pid)]
-    for it in items_of(db, pid):
-        for d in deliveries_of(db, it.id):
-            pairs.append(("delivery", d.id))
-            _cleanup_delivery(db, d.id)
-            db.delete(d)
-        db.delete(it)
     for row in import_costs_of(db, pid):
-        # Đơn nháp/từ chối chưa từng sinh nợ chi phí; có sót thì gỡ theo (chặn nếu đã chi).
         block_delete_paid_import_cost(db, row)
-        db.delete(row)
-    # commit=False (ai-CR-169 mục 7): tệp đính kèm đi CHUNG giao dịch với đơn — trước đây
-    # hàm này tự commit giữa chừng, đơn xóa hỏng ở bước sau thì tệp đã mất rồi.
-    delete_attachments_for(db, pairs, commit=False)
-    _pr_code = po.pr_code
-    db.delete(po)
+    mark_deleted(po, user_id)
     db.commit()
-    # CR-074: xóa đơn xong thì dòng YCMH phải quay lại `no_po` nếu không còn
-    # đơn nào khác — nên phải đồng bộ lại, lấy mã YCMH trước khi xóa.
-    _sync_pr(db, _pr_code)
-    record(db, user_id, ENTITY, pid, "delete")
+    # CR-074: xóa đơn xong thì dòng YCMH phải quay lại `no_po` nếu không còn đơn nào khác —
+    # `sync_from_purchase_orders` đã bỏ đơn xóa mềm nên đồng bộ lại là đủ.
+    _sync_pr(db, po.pr_code)
+    record(db, user_id, ENTITY, pid, "delete", f"Xóa mềm đơn {po.code}")
 
 
 def reopen_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:

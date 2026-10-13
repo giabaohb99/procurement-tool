@@ -213,16 +213,19 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
 
 
 def _revert_survey(db: Session, changes, user_id: int):
+    """Hoàn tác lô Khảo sát. ai-CR-176: phiếu MỚI do lô tạo → xóa MỀM (giữ dòng để còn khôi phục);
+    phiếu cũ bị sửa → trả lại bản chụp như trước. Phiếu đã xóa mềm rồi thì bỏ qua."""
+    from app.core.base_model import mark_deleted
     from app.modules.survey.model import (Survey, SurveyProductLine,
                                            SurveySupplierLine)
     deleted = restored = 0
     for ch in changes:
         s = db.get(Survey, ch.survey_id)
+        if s is not None and s.is_deleted:
+            continue
         if ch.was_new:
             if s:
-                db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == s.id).delete()
-                db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == s.id).delete()
-                db.delete(s); deleted += 1
+                mark_deleted(s, user_id); deleted += 1
             continue
         if not s or not ch.snapshot:
             continue
@@ -252,7 +255,7 @@ def _po_payment_blockers(db, changes) -> list[str]:
         if ch.was_new:
             continue      # đơn mới đã kiểm ở `doc_import.revert_blockers`
         po = db.get(PurchaseOrder, ch.survey_id)
-        if not po:
+        if not po or po.is_deleted:   # ai-CR-176: đơn đã xóa mềm không còn gì để chặn
             continue
         reasons = [reason for p in db.query(Payable).filter(Payable.po_id == po.id).all()
                    if (reason := payment_block_reason(db, p))]
@@ -268,10 +271,10 @@ def _revert_po(db: Session, changes, user_id: int):
     deleted = restored = 0
     for ch in changes:
         po = db.get(PurchaseOrder, ch.survey_id)   # survey_id dùng chung = po_id
-        if not po:
+        if not po or po.is_deleted:   # ai-CR-176: đơn đã xóa mềm coi như hoàn tác xong phần nó
             continue
         if ch.was_new:
-            po_service.delete_po(db, po.id, user_id)   # cascade GR/tồn/công nợ + dòng + lần giao
+            po_service.delete_po(db, po.id, user_id)   # ai-CR-176: xóa MỀM, giữ dòng + lần giao
             deleted += 1
             continue
         # đơn cũ: xoá dòng+lần giao hiện tại (dọn side-effect) rồi dựng lại từ snapshot + recompute

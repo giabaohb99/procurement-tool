@@ -975,8 +975,9 @@ def test_c6b_nguoi_TRONG_pham_vi_van_lam_du_moi_thao_tac_yctt(world, two_company
     delete_(rid=xoa_a.id, db=world.db, user=a1.user)
     bulk_delete_requests(ids=str(hang_loat_a.id), db=world.db, user=a1.user)
     world.db.expire_all()
-    assert world.db.get(PaymentRequest, xoa_a.id) is None
-    assert world.db.get(PaymentRequest, hang_loat_a.id) is None
+    #  ai-CR-176: xóa MỀM — phiếu còn trong DB với cờ `is_deleted`, không còn `None`.
+    assert world.db.get(PaymentRequest, xoa_a.id).is_deleted is True
+    assert world.db.get(PaymentRequest, hang_loat_a.id).is_deleted is True
 
 
 def test_c6c_moi_cua_yctt_soi_DUNG_action_cua_no(world, two_company_data):
