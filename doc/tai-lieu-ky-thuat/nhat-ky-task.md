@@ -13273,7 +13273,7 @@ Bài kiểm mới năm bài; chạy cùng bài router, nháp, công cụ xanh.
 Mã nguồn: assistant/knowledge.py (PACK_TOPICS, load_pack, omitted_titles), assistant/tool_router.py (select, pack_topics,
 PACK_NOTE), assistant/service.py (ask stop_on_draft), assistant/provider/*.py (run_tools stop_when), agent_hub/service.py
 (answer_question); bài kiểm test_assistant_gon_luot_cr183.py
-Deploy: dev 13/10, commit 2b331c1a trên erp-v2 (VPS mới); dựng ERP api rồi cụm bot. Số đo sau điền khi có.
+Deploy: dev 13/10, commit 2b331c1a trên erp-v2 (VPS mới); dựng ERP api rồi cụm bot. Số đo sau điền khi có. Vá 15:20 cùng ngày: provider của bot quên nhận tham số dừng sớm nên mọi lượt Telegram báo lỗi; tin lỗi nay kèm mã lượt và loại lỗi.
 
 ## ai-CR-181 | Bot biết cột kanban của dự án khi tạo việc và khi hỏi về dự án
 - status: xong
