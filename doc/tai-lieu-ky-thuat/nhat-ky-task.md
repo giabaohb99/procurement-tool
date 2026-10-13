@@ -13301,8 +13301,54 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
-## ai-CR-193 | Tra nhanh giá, tỷ giá, thời tiết trả bản ngắn; hết hạn mức Google Search thì bỏ qua mười phút
+## ai-CR-189 | Sổ đăng ký chung chặn xóa danh mục đang được dùng
+- status: xong
+- date: 2026-10-13
+Đại ca chốt đợt 3 xóa mềm: danh mục đang được chứng từ hay cấu hình tham chiếu thì không xóa, chỉ cho ngưng dùng; chưa ai dùng
+thì xóa được. Nay có một sổ đăng ký chung: mỗi danh mục khai các chỗ tham chiếu, hàm chốt đếm hết và báo cùng một câu cho mọi
+danh mục; lớp CRUD dùng chung tự gọi chốt ở nút xóa và dòng xóa trong tệp CSV nên danh mục chung chỉ cần đăng ký. Bài kiểm hai bài.
+
+Mã nguồn: core/reference_guard.py (register, ensure_deletable), core/crud.py; bài kiểm test_chot_xoa_danh_muc_cr189.py
+Deploy: dev 13/10, commit f67eb6d3 trên erp-v2 (cùng lượt ai-CR-192).
+
+## ai-CR-190 | Chặn xóa công ty, phòng ban, nhân sự, người dùng, vai trò đang được dùng
 - status: dang-lam
+- date: 2026-10-13
+Cụm tổ chức của đợt 3. Mỗi danh mục khai đầy đủ chỗ tham chiếu: công ty bốn mươi bảy chỗ, phòng ban ba mươi, nhân sự năm mươi
+ba, người dùng hai, vai trò năm; xóa một hay xóa nhiều đều kiểm trước, một dòng vướng thì không xóa dòng nào, dòng xóa trong
+tệp CSV cũng qua chốt. Nhân sự đang là quản lý trực tiếp của người khác nay bị chặn thay vì tự gỡ; kiêm nhiệm được dọn kèm khi
+xóa hồ sơ; tài khoản còn hồ sơ gắn không tính là tham chiếu để tránh bế tắc hai chiều. Vai trò không thêm cờ ngưng dùng, còn
+người giữ thì chặn. Bài kiểm mới mười bảy bài, hai bài cũ sửa; hơn một nghìn bảy trăm bài liên quan xanh.
+
+Mã nguồn: company/references.py, department/references.py, employee/references.py, user/references.py, role/references.py;
+bài kiểm test_chot_xoa_to_chuc_cr190.py
+
+## ai-CR-191 | Chặn xóa danh mục chung và cấu hình đang được dùng
+- status: dang-lam
+- date: 2026-10-13
+Cụm danh mục chung và cấu hình của đợt 3: kho, đơn vị tính, nhóm hàng, loại văn bản, đối tác ngoài, thư mục mặc định, sổ văn bản,
+quy tắc đánh số, quy tắc quan hệ, luồng duyệt, loại con dấu, xe, tài xế, chức vụ đều khai chỗ tham chiếu; đường xóa riêng gọi
+chốt chung. Thương hiệu, ngày lễ, danh mục hải quan không ai trỏ tới nên xóa tự do. Xe và tài xế chưa có cờ ngưng dùng, để đợt
+sau. Bài kiểm mới mười bảy bài; gần hai nghìn bài liên quan xanh.
+
+Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/references.py, seal_request/references.py,
+vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
+
+## ai-CR-194 | Tắt bước đọc ý định, báo nhận tức thì, bản dài làm mặc định
+- status: dang-lam
+- date: 2026-10-13
+Đại ca thấy bot vẫn chậm sau các đợt gọn và nhớ hồi đầu tháng trả lời gần như lập tức; số đo theo ngày cho thấy độ trễ trung
+bình từ gần sáu giây lên hơn hai mươi giây, phần lớn vì mỗi tin phải qua hai lần gọi model. Đại ca chốt: tắt bước đọc ý định
+để tin đi thẳng Trợ lý một lần gọi model, nhãn ý định sau này do người dùng tự gắn; mọi tin phải được báo nhận ngay rồi xóa tin
+báo khi đã trả lời; bản trả lời đầy đủ là mặc định, bản ngắn chỉ khi người dùng xin. Nay có công tắc tắt bước đọc ý định (dev
+tắt), đường tắt cho tra nhanh và xã giao, tin báo nhận tức thì, bản dài mặc định, lời nhắc phân loại rút gọn còn hai phần ba.
+Bài kiểm mới sáu bài, bộ bài bot xanh.
+
+Mã nguồn: agent_hub/service.py (_fast_path, _instant_ack), agent_hub/manager.py (INTENT_SYSTEM), agent_hub/research.py
+(is_quick, wants_brief), agent_hub/telegram.py (delete_message), core/config.py; bài kiểm test_agent_hub_duong_tat_cr194.py
+
+## ai-CR-193 | Tra nhanh giá, tỷ giá, thời tiết trả bản ngắn; hết hạn mức Google Search thì bỏ qua mười phút
+- status: xong
 - date: 2026-10-13
 Đại ca hỏi giá bitcoin hôm nay mất ba mươi mốt giây vì bot viết nguyên một báo cáo bốn mục bảy nguồn cho một câu chỉ cần con số.
 Nay câu tra nhanh kiểu giá, tỷ giá, thời tiết, lãi suất hôm nay trả bản ngắn: con số in đậm, dòng cập nhật, tối đa ba gạch đầu
@@ -13310,6 +13356,7 @@ dòng và hai ba nguồn, không chia mục, không nhận định; muốn đầ
 Gemini hết hạn mức thì bot nhớ và bỏ qua mười phút thay vì thử lại mỗi lượt. Bài kiểm mới ba bài, chạy cùng bài bot xanh.
 
 Mã nguồn: agent_hub/research.py (is_quick, _system_for, run); bài kiểm test_agent_hub_tra_nhanh_cr193.py
+Deploy: dev 13/10, commit 013fe222 trên erp-v2. Bản ngắn mặc định bị đảo lại ở ai-CR-194 theo đại ca.
 
 ## ai-CR-192 | Trợ lý trả lời nhanh hơn đợt hai: bước đọc ý định không chờ lâu khi Gemini quá tải, câu xã giao không nạp công cụ và gói tri thức
 - status: xong
