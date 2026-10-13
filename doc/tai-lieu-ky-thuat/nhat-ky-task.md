@@ -13243,7 +13243,7 @@ agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_c
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-182 | Sổ thay đổi do bot ghi vào ERP và hoàn tác trong hai mươi bốn giờ, phần lõi
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Đại ca chốt phase 15: mọi thứ bot ghi vào ERP phải có sổ và rút lại được trong hai mươi bốn giờ. Nay mỗi lần bot tạo, sửa, xóa,
 gửi duyệt phiếu, dùng lại nháp hay lập bộ tài khoản đều ghi một dòng vào sổ thay đổi trong cơ sở dữ liệu ERP, có ảnh trước và
@@ -13256,6 +13256,7 @@ kiểm mới hai mươi hai bài, chạy cùng hơn hai trăm bài liên quan xa
 Mã nguồn: assistant/change_service.py (record_change, can_undo, undo, restore_soft_deleted), assistant/change_model.py,
 assistant/change_controller.py, assistant/tools/update_tool.py (write_doc, delete_doc), agent_hub/draft_create.py (log_change),
 agent_hub/erp.py (my_changes, undo_change); migration grp14_so_thay_doi_bot; bài kiểm test_assistant_so_thay_doi_hoan_tac.py
+Deploy: dev 13/10, commit a5231f62 trên erp-v2 (VPS mới); ERP api lên grp14 rồi dựng cụm bot.
 
 ## ai-CR-183 | Trợ lý trả lời nhanh và rẻ hơn: gói tri thức nạp theo chủ đề, giữ nhóm công cụ cho câu nối tiếp, dừng sớm khi đã có nháp
 - status: xong
