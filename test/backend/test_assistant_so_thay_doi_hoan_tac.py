@@ -460,6 +460,8 @@ def test_list_for_chi_cua_minh_quan_ly_thay_het(db, seed, cap_quyen):
     cap_quyen(other.id, "agent_group", scope="all", read=True)
     everyone = cs.list_for(db, other, all_users=True)
     assert sorted(x["entity"] for x in everyone) == ["leave_request", "purchase_request"]
+    #  ai-CR-185: cột «Người» của màn web — tên nhân sự / email, không phải «#id» trần.
+    assert all(x["user_name"] and not x["user_name"].startswith("#") for x in everyone)
     assert [x["entity"] for x in cs.list_for(db, other)] == ["purchase_request"]
 
 

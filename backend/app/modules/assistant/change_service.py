@@ -221,12 +221,27 @@ def url_of(entity: str, entity_id: int) -> str:
     return ""
 
 
+def user_name_of(db, user_id: int) -> str:
+    """ai-CR-185: tên hiện trên cột «Người» của màn web (chế độ xem mọi người): họ tên nhân sự, không có thì email, không
+    có nữa thì #id. Không có giá trị bí mật nào."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    u = db.get(User, int(user_id or 0)) if user_id else None
+    if u is None:
+        return f"#{int(user_id or 0)}"
+    emp = db.get(Employee, u.employee_id) if getattr(u, "employee_id", 0) else None
+    if emp is not None and (emp.full_name or "").strip():
+        return emp.full_name.strip()
+    return (getattr(u, "email", "") or "").strip() or f"#{u.id}"
+
+
 def serialize(db, user, row: AssistantChange, *, detail: bool = False) -> dict:
     ok, reason = can_undo(db, user, row)
     action = int(row.action or 0)
     out = {
         "id": int(row.id), "when": row.created_at.isoformat() if row.created_at else "",
-        "user_id": int(row.user_id or 0),
+        "user_id": int(row.user_id or 0), "user_name": user_name_of(db, int(row.user_id or 0)),
         "entity": row.entity, "entity_label": ENTITY_LABELS.get(row.entity, row.entity),
         "doc_code": row.doc_code or "", "entity_id": int(row.entity_id or 0),
         "action": action, "action_label": ACTION_LABELS.get(action, str(action)),

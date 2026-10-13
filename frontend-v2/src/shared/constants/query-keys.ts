@@ -532,6 +532,13 @@ export const queryKeys = {
     botMemory: () => ['system', 'bot-memory'] as const,
     /** Bản tin bot tự gửi của CHÍNH MÌNH (ai-CR-140). */
     botBriefs: () => ['system', 'bot-briefs'] as const,
+    /**
+     * Sổ thay đổi do bot ghi (ai-CR-185) — gốc chung để hoàn tác xong làm tươi cả danh sách
+     * (của mình / của mọi người) lẫn chi tiết đang mở: dòng gốc đổi `undo_status`, có thêm dòng ngược.
+     */
+    botChangesAll: () => ['system', 'bot-changes'] as const,
+    botChanges: (params: { limit: number; all: boolean }) => ['system', 'bot-changes', 'list', params] as const,
+    botChange: (id: number) => ['system', 'bot-changes', 'detail', id] as const,
     /** Khóa AI công ty (ai-CR-098). */
     companyAiKeys: () => ['system', 'ai-key', 'company'] as const,
     /** Khóa MCP cá nhân (ai-CR-063). */

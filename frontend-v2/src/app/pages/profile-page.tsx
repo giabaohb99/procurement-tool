@@ -3,6 +3,7 @@ import {
   Bell,
   Brain,
   CheckSquare,
+  ClipboardList,
   FileCheck2,
   History,
   KeyRound,
@@ -17,6 +18,7 @@ import { useSearchParams } from 'react-router-dom'
 
 import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
 import { ProfileAiKeyTab } from '@/app/components/profile/profile-ai-key-tab'
+import { ProfileChangesTab } from '@/app/components/profile/profile-changes-tab'
 import { ProfileContactCard } from '@/app/components/profile/profile-contact-card'
 import { ProfileDevicesTab } from '@/app/components/profile/profile-devices-tab'
 import { ProfileEmergencyContacts } from '@/app/components/profile/profile-emergency-contacts'
@@ -109,6 +111,8 @@ export function ProfilePage() {
                     ? 'ai-key'
                   : rawTab === 'bot-memory'
                     ? 'bot-memory'
+                  : rawTab === 'bot-changes'
+                    ? 'bot-changes'
                   : rawTab === 'tickets' && canReadTickets
                     ? 'tickets'
                     : 'info'
@@ -252,6 +256,12 @@ export function ProfilePage() {
                 <Brain className="size-4" />
                 <span>Bot nhớ gì về tôi</span>
               </TabsTrigger>
+              {/* ai-CR-185 — bot đã ghi gì vào ERP thay mình + nút Hoàn tác 24 giờ. Không gác quyền ở tab:
+                  mặc định là sổ của CHÍNH MÌNH; công tắc «mọi người» bên trong tự gác `agent_group.read`. */}
+              <TabsTrigger value="bot-changes" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                <ClipboardList className="size-4" />
+                <span>Bot đã ghi gì</span>
+              </TabsTrigger>
               <TabsTrigger value="appearance" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Palette className="size-4" />
                 <span>Giao diện</span>
@@ -385,6 +395,10 @@ export function ProfilePage() {
 
             <TabsContent value="bot-memory" className="space-y-4">
               <ProfileMemoryTab />
+            </TabsContent>
+
+            <TabsContent value="bot-changes" className="space-y-4">
+              <ProfileChangesTab />
             </TabsContent>
 
             <TabsContent value="login-history" className="space-y-4">
