@@ -44,6 +44,7 @@ Mọi deploy hiện tại (dev, prod) vẫn là `embedded` cho tới khi làm b�
 | `POST /attachments/blocks {ids}` | có | {blocks, meta} | tệp đính kèm của Trợ lý web |
 | `GET /files/{id}` | có | byte + `X-Filename` | gửi tệp báo cáo công cụ xuất |
 | `GET /employees/match?name` · `GET /projects` | —/có | nhân sự khớp / dự án tạo việc được | thẻ việc từ biên bản |
+| `GET /plan/overview?list_id` · `POST /plan/reply {task_id, action, text, pct, score}` | có | cây việc của kế hoạch (chỉ thành viên bảng) / kết quả ghi câu trả lời | bot điều phối việc theo kế hoạch (bao-CR-616, phase 24.1): hỏi nhận việc, nút Nhận / Giờ khác / Từ chối, «xong việc N», tiến độ |
 
 Công cụ chạy **tại dịch vụ AI** (không qua cổng): `personal_tool`, `group_tool`, `meeting_tool`, `google_tool` — sổ nhớ,
 thẻ cá nhân, nhóm, biên bản, Lịch / Drive Google. Mọi tên khác chạy ở ERP. Danh sách công cụ model thấy = cá nhân + ERP, bằng

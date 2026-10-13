@@ -380,3 +380,24 @@ def employees_match(name: str = Query("", max_length=120), _: int = Depends(gate
 @router.get("/projects")
 def projects(user=Depends(gateway_user), db: Session = Depends(get_db)):
     return success(L.projects_for(db, user))
+
+
+# --- kế hoạch việc (bao-CR-616, phase 24.1) --------------------------------------------------------------------------
+@router.get("/plan/overview")
+def plan_overview(list_id: int = Query(ge=1), user=Depends(gateway_user), db: Session = Depends(get_db)):
+    """Cây việc của một kế hoạch, chỉ thành viên bảng mới đọc được (kiểm trong `work_plan.overview`)."""
+    return success(L.plan_overview(db, user, list_id))
+
+
+class PlanReplyIn(BaseModel):
+    task_id: int = Field(ge=1)
+    action: str = Field(max_length=20)
+    text: str = Field("", max_length=1000)
+    pct: int | None = Field(None, ge=0, le=100)
+    score: int | None = Field(None, ge=0, le=10)
+
+
+@router.post("/plan/reply")
+def plan_reply(body: PlanReplyIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    """Người làm trả lời (nhận / giờ khác / từ chối / xong / tiến độ) — ghi dưới quyền chính người đó."""
+    return success(L.plan_reply(db, user, body.task_id, body.action, text=body.text, pct=body.pct, score=body.score))

@@ -406,6 +406,20 @@ class _Local:
 
         return [{"id": int(p.id), "name": p.name} for p in _projects_local(db, user)]
 
+    #  bao-CR-616 (phase 24.1): kế hoạch việc — lớp ERP của `work_plan` (đọc cây việc, ghi câu trả lời người làm).
+    @staticmethod
+    def plan_overview(db, user, list_id: int) -> dict:
+        from . import work_plan
+
+        return work_plan.overview(db, user, int(list_id))
+
+    @staticmethod
+    def plan_reply(db, user, task_id: int, action: str, text: str = "", pct: int | None = None,
+                   score: int | None = None) -> dict:
+        from . import work_plan
+
+        return work_plan.reply(db, user, int(task_id), action, text=text, pct=pct, score=score)
+
 
 # ===========================================================================
 # Chạy ở dịch vụ AI: gọi cổng B
@@ -694,6 +708,21 @@ class _Remote:
         except ErpError:
             return []
 
+    def plan_overview(self, db, user, list_id: int) -> dict:
+        try:
+            return dict(self._call("GET", "/plan/overview", user_id=_uid(user), params={"list_id": int(list_id)}) or {})
+        except ErpError as e:
+            return {"error": str(e)}
+
+    def plan_reply(self, db, user, task_id: int, action: str, text: str = "", pct: int | None = None,
+                   score: int | None = None) -> dict:
+        try:
+            return dict(self._call("POST", "/plan/reply", user_id=_uid(user),
+                                   body={"task_id": int(task_id), "action": action, "text": text, "pct": pct,
+                                         "score": score}) or {})
+        except ErpError as e:
+            return {"error": str(e)}
+
 
 # ===========================================================================
 # Mặt tiền
@@ -873,3 +902,12 @@ def match_employee(db, name: str) -> dict | None:
 
 def projects_for(db, user) -> list[dict]:
     return _impl().projects_for(db, user)
+
+
+def plan_overview(db, user, list_id: int) -> dict:
+    return _impl().plan_overview(db, user, list_id)
+
+
+def plan_reply(db, user, task_id: int, action: str, text: str = "", pct: int | None = None,
+               score: int | None = None) -> dict:
+    return _impl().plan_reply(db, user, task_id, action, text=text, pct=pct, score=score)

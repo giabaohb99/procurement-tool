@@ -115,7 +115,12 @@ Mã nguồn: `agent_hub/plan_policy.py` (mới), `agent_hub/work_plan.py` (mới
 `core/app_settings.py` + `setting/service.py` (khóa `agent_plan_policy`), `assistant/tool_router.py`.
 Kiểm: 6 bài mới `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài canh tool, nhắc hạn, bản tin, kanban xanh. 6 bài ở
 `test_agent_hub.py` về biên bản họp và Excel đỏ sẵn trên máy local vì thiếu ffmpeg, không liên quan.
-Commit: c4e428fd trên erp-v2 (13/10, đại ca cho commit). Deploy: đã nhờ Agent 1 đẩy lên dev; prod chưa.
+Sửa ngay sau khi lên dev lần đầu: dịch vụ AI trên dev chạy tách với DB riêng, mà phần hỏi nhận việc và nhận câu trả
+lời bản đầu đọc thẳng bảng Dự án nên sẽ hỏng. Em tách mô-đun thành hai lớp: lớp ERP (dựng kế hoạch, đọc cây việc, ghi
+câu trả lời) mở qua cổng B bằng hai đường mới GET /plan/overview và POST /plan/reply (ghi vào doc 14), lớp bot chỉ gọi
+cổng và đụng bảng của bot; thêm bài kiểm chạy đúng chế độ tách.
+Commit: c4e428fd (bản đầu) trên erp-v2, Agent 1 đã đưa lên dev 13/10 (ERP api c4e428fd, dịch vụ AI 5dfca275); bản sửa
+hai lớp chờ commit và đẩy dev lại. Prod chưa.
 
 ---
 

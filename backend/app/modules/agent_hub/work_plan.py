@@ -1,15 +1,18 @@
 """Bot điều phối việc theo kế hoạch — phase 24.1 (bao-CR-616, `doc/agent-hub/18`).
 
-Đợt 1 CHỈ ghi nhận việc trong phân hệ Dự án, chưa nối phân hệ nào khác:
-  * `build`: từ bản nháp của tool `draft_work_plan` tạo MỘT bảng Dự án (kế hoạch) → mỗi giai đoạn một cột kanban →
-    việc cha → việc con, bằng đúng các hàm service của web (kiểm quyền thành viên như web). Người được giao mà chưa là
-    thành viên thì mời vào bảng (vai thành viên) để họ thấy và cập nhật việc của mình.
-  * Các ô của kế hoạch là TRƯỜNG TÙY BIẾN của bảng (không thêm cột cứng, không migration): «Độ ưu tiên» (có sẵn,
-    P1/P2/P3), «Tiêu chí», «Nhận việc», «Tiến độ %», «Tự chấm (1-10)», «Ghi nhận». Sếp sửa ngay trên màn Dự án.
-  * `ask_assignees`: sau khi tạo, nhắn riêng từng người làm (đã liên kết Telegram) một tin cho mỗi việc, NHÂN DANH chủ
-    kế hoạch, ba nút: Nhận · Giờ khác · Từ chối. Người chưa liên kết → ô «Nhận việc» = «Nhắn không được» và báo chủ.
-  * `handle_callback` / `handle_text`: ghi câu trả lời vào việc, báo lại chủ kế hoạch; người làm nhắn «xong việc N»
-    hoặc «việc N 80% 7 điểm …» là bot cập nhật việc và ghi giờ.
+Đợt 1 CHỈ ghi nhận việc trong phân hệ Dự án, chưa nối phân hệ nào khác. Tệp này có HAI LỚP, vì dịch vụ AI chạy tách
+(phase 11) với DB riêng, không đọc thẳng bảng Dự án:
+
+  * **Lớp ERP** (chạy trong ERP, mở qua cổng B `/api/agent-gw/plan/*`, gọi từ bot bằng `erp.plan_overview` /
+    `erp.plan_reply`): `build` dựng một bảng Dự án (kế hoạch) → mỗi giai đoạn một cột kanban → việc cha → việc con,
+    bằng đúng các hàm service của web (kiểm quyền thành viên như web); `overview` trả cây việc + người làm + tài khoản
+    của họ; `reply` ghi câu trả lời của người làm (nhận / giờ khác / từ chối / xong / tiến độ) vào việc.
+    Các ô của kế hoạch là TRƯỜNG TÙY BIẾN của bảng (không cột cứng, không migration): «Độ ưu tiên» có sẵn (P1/P2/P3),
+    «Tiêu chí», «Nhận việc», «Tiến độ %», «Tự chấm (1-10)», «Ghi nhận». Sếp sửa ngay trên màn Dự án.
+  * **Lớp bot** (chạy ở dịch vụ AI, chỉ đụng bảng của bot `AgentChatLink` / `AgentMessage` + Telegram):
+    `ask_assignees` nhắn riêng từng người làm đã liên kết, mỗi việc một tin NHÂN DANH chủ kế hoạch, ba nút
+    Nhận · Giờ khác · Từ chối; người chưa liên kết → ô «Nhận việc» = «Nhắn không được» và báo chủ.
+    `handle_callback` / `handle_text` nhận nút / câu chữ, gọi `erp.plan_reply`, báo lại chủ kế hoạch.
 
 Luật nới nguyên tắc trợ lý cá nhân (doc 18 §11): tin ở đây là tin NHÂN DANH chủ kế hoạch, không phải tin hệ thống; mọi
 tin gửi người khác đều ghi sổ `AgentMessage` với `action` riêng để truy vết và tránh gửi trùng.
@@ -40,13 +43,17 @@ PLAN_MARK = "[kế hoạch do bot lập]"       # đuôi mô tả bảng — đ�
 
 CB_YES, CB_LATER, CB_NO = "kh_ok", "kh_khac", "kh_tc"
 CALLBACK_ACTIONS = frozenset({CB_YES, CB_LATER, CB_NO})
+#  Hành động của `reply` (lớp ERP). Nút → hành động: kh_ok → accept, kh_khac → later, kh_tc → decline.
+A_ACCEPT, A_LATER, A_DECLINE, A_NOTE, A_DONE, A_PROGRESS, A_UNREACHABLE = (
+    "accept", "later", "decline", "note", "done", "progress", "unreachable")
+_CB_TO_ACTION = {CB_YES: A_ACCEPT, CB_LATER: A_LATER, CB_NO: A_DECLINE}
 MAX_ASK_PER_PERSON = 10
 REPLY_WINDOW = timedelta(hours=48)
 
 
-# ---------------------------------------------------------------------------
-# Trường tùy biến của bảng kế hoạch
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# LỚP ERP — chạy trong ERP (embedded hoặc qua cổng B)
+# ===========================================================================
 def _fields(db: Session, list_id: int) -> dict:
     from app.modules.work.label_model import WorkLabelField
 
@@ -71,6 +78,10 @@ def ensure_fields(db: Session, actor, list_id: int) -> dict:
             for j, (opt, color) in enumerate(ACCEPT_OPTIONS):
                 cfg.create_label_option(db, actor, int(out["id"]), LabelOptionIn(name=opt, color=color, sort_order=j))
     return _fields(db, list_id)
+
+
+def _priority_field(fields: dict):
+    return next((f for f in fields.values() if getattr(f, "system_key", "") == "priority"), None)
 
 
 def _option(db: Session, field, name: str):
@@ -115,16 +126,13 @@ def _label_text(db: Session, field, task_id: int) -> str:
     return row.value_text or ""
 
 
-# ---------------------------------------------------------------------------
-# Tạo cả cây kế hoạch
-# ---------------------------------------------------------------------------
 def build(db: Session, user, draft: dict) -> tuple[str, int]:
     """Tạo bảng + cột + việc cha / con + trường + thành viên. Trả (mã, id bảng). Ném HTTPException / ValueError như
     các hàm web (`draft_create.create` đổi thành DraftError)."""
     from app.modules.work import list_config_service as cfg
     from app.modules.work import list_service, task_service
     from app.modules.work.membership_service import require_employee, resolve_actor
-    from app.modules.work.model import WorkMemberRole, WorkListMember
+    from app.modules.work.model import WorkListMember, WorkMemberRole
     from app.modules.work.schema import ListCreate, MemberIn, SectionIn, TaskCreate
     from app.modules.work.task_model import WorkSection
     from .plan_policy import PRIORITY_TO_OPTION
@@ -159,7 +167,7 @@ def build(db: Session, user, draft: dict) -> tuple[str, int]:
         cfg.delete_section(db, actor, extra.id, None)
 
     fields = ensure_fields(db, actor, list_id)
-    priority_field = next((f for f in fields.values() if getattr(f, "system_key", "") == "priority"), None)
+    priority_field = _priority_field(fields)
     members = {m.employee_id for m in db.query(WorkListMember).filter(WorkListMember.list_id == list_id)}
 
     def _invite(people: list[dict]) -> list[int]:
@@ -220,6 +228,133 @@ def details(db: Session, list_id: int) -> list[str]:
             f"Người làm: {', '.join(names) or '(chưa giao ai)'}"]
 
 
+def _users_of_employees(db: Session, employee_ids: set[int]) -> dict[int, list[int]]:
+    from app.modules.user.model import User
+
+    out: dict[int, list[int]] = {}
+    if not employee_ids:
+        return out
+    for u in db.query(User).filter(User.employee_id.in_(employee_ids), User.is_active == True):  # noqa: E712
+        out.setdefault(int(u.employee_id), []).append(int(u.id))
+    return out
+
+
+def _owner_member(db: Session, list_id: int):
+    from app.modules.work.model import WorkListMember, WorkMemberRole
+
+    return db.query(WorkListMember).filter(WorkListMember.list_id == int(list_id),
+                                           WorkListMember.role == int(WorkMemberRole.OWNER)).first()
+
+
+def overview(db: Session, user, list_id: int) -> dict:
+    """Cây việc của kế hoạch cho lớp bot: bảng, chủ, từng việc kèm nhãn và người làm (có id tài khoản để tìm chat).
+    Chỉ thành viên thấy bảng mới đọc được; ngoài ra trả `error`."""
+    from app.modules.employee.model import Employee
+    from app.modules.work.membership_service import resolve_actor, visible_list_ids
+    from app.modules.work.model import WorkList
+    from app.modules.work.task_model import WorkTask, WorkTaskAssignee
+
+    lst = db.get(WorkList, int(list_id))
+    if lst is None:
+        return {"error": "không thấy kế hoạch"}
+    actor = resolve_actor(db, user)
+    if not actor.employee_id or lst.id not in visible_list_ids(db, actor.employee_id):
+        return {"error": "anh/chị không ở trong bảng kế hoạch này"}
+    fields = _fields(db, lst.id)
+    pr = _priority_field(fields)
+    tasks = (db.query(WorkTask).filter(WorkTask.list_id == lst.id, WorkTask.deleted_at.is_(None))
+             .order_by(WorkTask.parent_id.is_(None).desc(), WorkTask.id).all())
+    assign: dict[int, list[int]] = {}
+    for a in db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id.in_([t.id for t in tasks] or [-1])):
+        assign.setdefault(int(a.task_id), []).append(int(a.employee_id))
+    emp_ids = {e for v in assign.values() for e in v}
+    owner = _owner_member(db, lst.id)
+    if owner:
+        emp_ids.add(int(owner.employee_id))
+    names = {e.id: e.full_name for e in db.query(Employee).filter(Employee.id.in_(emp_ids or [-1]))}
+    users = _users_of_employees(db, emp_ids)
+    out_tasks = []
+    for t in tasks:
+        out_tasks.append({
+            "id": t.id, "title": t.title, "parent_id": t.parent_id, "status": int(t.status),
+            "start_date": t.start_date or "", "due_date": t.due_date or "", "description": (t.description or "")[:300],
+            "priority": _label_text(db, pr, t.id), "criteria": _label_text(db, fields.get(FIELD_CRITERIA), t.id),
+            "accept": _label_text(db, fields.get(FIELD_ACCEPT), t.id),
+            "assignees": [{"employee_id": e, "name": names.get(e, f"#{e}"), "user_ids": users.get(e, [])}
+                          for e in assign.get(t.id, [])]})
+    oe = int(owner.employee_id) if owner else 0
+    return {"id": lst.id, "name": lst.name,
+            "owner": {"employee_id": oe, "name": names.get(oe, "chủ kế hoạch"), "user_ids": users.get(oe, [])},
+            "tasks": out_tasks}
+
+
+def reply(db: Session, user, task_id: int, action: str, text: str = "", pct: int | None = None,
+          score: int | None = None) -> dict:
+    """Ghi câu trả lời của người làm vào việc. `action` ∈ A_*. Người gọi phải là người được giao việc đó (hoặc chủ
+    bảng với `unreachable`). Trả thông tin để lớp bot soạn tin; lỗi thì `error`."""
+    from app.modules.employee.model import Employee
+    from app.modules.work import task_service
+    from app.modules.work.membership_service import resolve_actor
+    from app.modules.work.model import WorkList, WorkTaskStatus
+    from app.modules.work.schema import TaskUpdate
+    from app.modules.work.task_model import WorkTask, WorkTaskAssignee
+
+    t = db.get(WorkTask, int(task_id or 0)) if task_id else None
+    if t is None or t.deleted_at is not None:
+        return {"error": "không thấy việc"}
+    eid = int(getattr(user, "employee_id", 0) or 0)
+    owner = _owner_member(db, t.list_id)
+    is_owner = owner is not None and int(owner.employee_id) == eid
+    assigned = bool(db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id == t.id,
+                                                      WorkTaskAssignee.employee_id == eid).first())
+    if action == A_UNREACHABLE:
+        if not is_owner:
+            return {"error": "chỉ chủ kế hoạch mới đánh dấu được"}
+    elif not assigned:
+        return {"error": "việc này không giao cho anh/chị"}
+    lst = db.get(WorkList, t.list_id)
+    fields = _fields(db, t.list_id)
+    me = db.get(Employee, eid)
+    oe = int(owner.employee_id) if owner else 0
+    out = {"ok": True, "task_id": t.id, "title": t.title, "list_id": t.list_id, "list_name": lst.name if lst else "",
+           "person": me.full_name if me else "Người làm", "kind": "",
+           "owner_user_ids": _users_of_employees(db, {oe}).get(oe, []) if oe else []}
+    uid = int(getattr(user, "id", 0) or 0)
+    if action in (A_ACCEPT, A_LATER, A_DECLINE, A_UNREACHABLE):
+        label = {A_ACCEPT: ACCEPT_YES, A_LATER: ACCEPT_LATER, A_DECLINE: ACCEPT_NO, A_UNREACHABLE: ACCEPT_UNREACHABLE}[action]
+        _set_option(db, fields.get(FIELD_ACCEPT), t.id, label, uid)
+        out["kind"] = label
+    elif action == A_NOTE:
+        _set(db, fields.get(FIELD_NOTE), t.id, f"{text}".strip()[:500], uid)
+        out["kind"] = _label_text(db, fields.get(FIELD_ACCEPT), t.id)
+    elif action == A_DONE:
+        if t.status == int(WorkTaskStatus.DONE):
+            return {**out, "already_done": True}
+        task_service.update_task(db, resolve_actor(db, user), t.id, TaskUpdate(status=int(WorkTaskStatus.DONE)))
+        _set(db, fields.get(FIELD_PROGRESS), t.id, 100, uid)
+        if score is not None:
+            _set(db, fields.get(FIELD_SCORE), t.id, max(0, min(int(score), 10)), uid)
+        if text.strip():
+            _set(db, fields.get(FIELD_NOTE), t.id, text.strip()[:500], uid)
+        out["when"] = datetime.now().strftime("%H:%M %d/%m")
+    elif action == A_PROGRESS:
+        if pct is not None:
+            out["pct"] = max(0, min(int(pct), 100))
+            _set(db, fields.get(FIELD_PROGRESS), t.id, out["pct"], uid)
+        if score is not None:
+            out["score"] = max(0, min(int(score), 10))
+            _set(db, fields.get(FIELD_SCORE), t.id, out["score"], uid)
+        if text.strip():
+            _set(db, fields.get(FIELD_NOTE), t.id, text.strip()[:500], uid)
+    else:
+        return {"error": f"hành động lạ: {action}"}
+    db.commit()
+    return out
+
+
+# ===========================================================================
+# LỚP BOT — chạy ở dịch vụ AI, chỉ đụng bảng của bot + Telegram, gọi ERP qua `erp`
+# ===========================================================================
 def summary_lines(draft: dict) -> list[str]:
     """Dòng tóm tắt bản nháp cho thẻ «BẢN NHÁP» trên Telegram (tối đa 8 việc cha, mỗi việc kèm số việc con)."""
     c = draft.get("counts") or {}
@@ -244,37 +379,16 @@ def summary_lines(draft: dict) -> list[str]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Hỏi nhận việc
-# ---------------------------------------------------------------------------
-def _chat_of_employee(db: Session, employee_id: int, now: datetime | None = None) -> tuple[str, int]:
-    """(chat Telegram riêng đang liên kết, user_id) của một nhân sự; ("", 0) nếu chưa nối hoặc đã tắt chuông."""
-    from app.modules.user.model import User
-
+def _chat_of_users(db: Session, user_ids: list[int], now: datetime | None = None) -> tuple[str, int]:
+    """(chat Telegram riêng đang liên kết, user_id) của một trong các tài khoản; ("", 0) nếu chưa nối / đã tắt chuông."""
     now = now or datetime.now()
-    users = db.query(User).filter(User.employee_id == int(employee_id), User.is_active == True).all()  # noqa: E712
-    for u in users:
+    for uid in user_ids or []:
         link = db.scalar(select(AgentChatLink).where(
-            AgentChatLink.user_id == u.id, AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None),
+            AgentChatLink.user_id == int(uid), AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None),
             AgentChatLink.expires_at > now).order_by(AgentChatLink.id.desc()).limit(1))
         if link is not None and int(link.notify_mode or NOTIFY_OFF) != NOTIFY_OFF:
-            return str(link.chat_id), int(u.id)
+            return str(link.chat_id), int(uid)
     return "", 0
-
-
-def _owner(db: Session, list_id: int):
-    from app.modules.work.model import WorkListMember, WorkMemberRole
-
-    return db.query(WorkListMember).filter(WorkListMember.list_id == int(list_id),
-                                           WorkListMember.role == int(WorkMemberRole.OWNER)).first()
-
-
-def _owner_name(db: Session, list_id: int) -> str:
-    from app.modules.employee.model import Employee
-
-    m = _owner(db, list_id)
-    e = db.get(Employee, m.employee_id) if m else None
-    return e.full_name if e else "chủ kế hoạch"
 
 
 def _send(db: Session, chat_id: str, text: str, *, action: str, body: dict | None = None,
@@ -299,61 +413,52 @@ def _vn(iso: str) -> str:
         return str(iso or "")
 
 
-def _task_card(db: Session, task, lst, owner: str, fields: dict) -> str:
+def _task_card(task: dict, plan_name: str, owner: str) -> str:
     from . import telegram
 
     esc = telegram.esc
-    span = " → ".join(_vn(x) for x in (task.start_date, task.due_date) if x) or "chưa đặt hạn"
-    pr = _label_text(db, next((f for f in fields.values() if getattr(f, "system_key", "") == "priority"), None), task.id)
-    crit = _label_text(db, fields.get(FIELD_CRITERIA), task.id)
-    lines = [f"<b>Theo kế hoạch «{esc(lst.name)}» của {esc(owner)}</b>",
-             f"Việc: <b>{esc(task.title)}</b> (#{task.id})", f"Thời gian: {esc(span)}" + (f" · {esc(pr)}" if pr else "")]
-    if crit:
-        lines.append(f"Tiêu chí: {esc(crit)}")
-    if task.description:
-        lines.append(f"Ghi chú: {esc(task.description[:300])}")
+    span = " → ".join(_vn(x) for x in (task.get("start_date"), task.get("due_date")) if x) or "chưa đặt hạn"
+    lines = [f"<b>Theo kế hoạch «{esc(plan_name)}» của {esc(owner)}</b>",
+             f"Việc: <b>{esc(task['title'])}</b> (#{task['id']})",
+             f"Thời gian: {esc(span)}" + (f" · {esc(task['priority'])}" if task.get("priority") else "")]
+    if task.get("criteria"):
+        lines.append(f"Tiêu chí: {esc(task['criteria'])}")
+    if task.get("description"):
+        lines.append(f"Ghi chú: {esc(task['description'][:300])}")
     lines.append("Anh/chị nhận việc này không? Bấm nút, hoặc nhắn lại bằng chữ.")
     return "\n".join(lines)
 
 
 def ask_assignees(db: Session, owner_user, list_id: int) -> dict:
     """Nhắn từng người làm một tin cho mỗi việc (cha + con) của kế hoạch. Trả {asked, unreachable, tasks}."""
-    from app.modules.employee.model import Employee
-    from app.modules.work.membership_service import resolve_actor
-    from app.modules.work.model import WorkList
-    from app.modules.work.task_model import WorkTask, WorkTaskAssignee
+    from . import erp
 
-    lst = db.get(WorkList, int(list_id))
-    if lst is None:
-        return {"asked": [], "unreachable": [], "tasks": 0}
-    actor = resolve_actor(db, owner_user)
-    fields = ensure_fields(db, actor, lst.id)
-    owner = _owner_name(db, lst.id)
-    tasks = (db.query(WorkTask).filter(WorkTask.list_id == lst.id, WorkTask.deleted_at.is_(None))
-             .order_by(WorkTask.parent_id.is_(None).desc(), WorkTask.id).all())
-    by_person: dict[int, list] = {}
-    for t in tasks:
-        for a in db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id == t.id):
-            by_person.setdefault(int(a.employee_id), []).append(t)
+    ov = erp.plan_overview(db, owner_user, int(list_id))
+    if not isinstance(ov, dict) or ov.get("error"):
+        raise RuntimeError(str((ov or {}).get("error") or "không đọc được kế hoạch"))
+    owner = (ov.get("owner") or {}).get("name") or "chủ kế hoạch"
+    by_person: dict[int, tuple[str, list[int], list[dict]]] = {}
+    for t in ov.get("tasks") or []:
+        for a in t.get("assignees") or []:
+            eid = int(a.get("employee_id") or 0)
+            entry = by_person.setdefault(eid, (a.get("name") or f"#{eid}", list(a.get("user_ids") or []), []))
+            entry[2].append(t)
     asked, unreachable, n = [], [], 0
-    for eid, items in by_person.items():
-        emp = db.get(Employee, eid)
-        name = emp.full_name if emp else f"#{eid}"
-        chat_id, uid = _chat_of_employee(db, eid)
+    for eid, (name, user_ids, items) in by_person.items():
+        chat_id, uid = _chat_of_users(db, user_ids)
         if not chat_id:
             for t in items:
-                _set_option(db, fields.get(FIELD_ACCEPT), t.id, ACCEPT_UNREACHABLE, actor.user_id)
-            db.commit()
+                erp.plan_reply(db, owner_user, int(t["id"]), A_UNREACHABLE)
             unreachable.append(name)
             continue
         for t in items[:MAX_ASK_PER_PERSON]:
-            _send(db, chat_id, _task_card(db, t, lst, owner, fields), action=ACT_PLAN_ASK,
-                  body={"task_id": t.id, "list_id": lst.id, "employee_id": eid, "user_id": uid, "title": t.title},
-                  buttons=[("Nhận", f"{CB_YES}:{t.id}"), ("Nhận nhưng giờ khác", f"{CB_LATER}:{t.id}"),
-                           ("Từ chối", f"{CB_NO}:{t.id}")])
+            _send(db, chat_id, _task_card(t, ov.get("name") or "", owner), action=ACT_PLAN_ASK,
+                  body={"task_id": t["id"], "list_id": ov["id"], "employee_id": eid, "user_id": uid, "title": t["title"]},
+                  buttons=[("Nhận", f"{CB_YES}:{t['id']}"), ("Nhận nhưng giờ khác", f"{CB_LATER}:{t['id']}"),
+                           ("Từ chối", f"{CB_NO}:{t['id']}")])
             n += 1
         if len(items) > MAX_ASK_PER_PERSON:
-            _send(db, chat_id, f"… và {len(items) - MAX_ASK_PER_PERSON} việc nữa trong kế hoạch «{lst.name}», "
+            _send(db, chat_id, f"… và {len(items) - MAX_ASK_PER_PERSON} việc nữa trong kế hoạch «{ov.get('name', '')}», "
                   "xem ở phân hệ Dự án.", action=ACT_PLAN_ASK)
         asked.append(name)
     return {"asked": asked, "unreachable": unreachable, "tasks": n}
@@ -374,9 +479,6 @@ def ask_summary_text(out: dict) -> str:
     return "\n".join(parts)
 
 
-# ---------------------------------------------------------------------------
-# Người làm trả lời
-# ---------------------------------------------------------------------------
 def _user_of_chat(db: Session, chat_id: str):
     from . import chat_link, erp
 
@@ -384,25 +486,8 @@ def _user_of_chat(db: Session, chat_id: str):
     return erp.user_by_id(db, link.user_id) if link is not None else None
 
 
-def _my_task(db: Session, user, task_id: int):
-    """Việc đang mở của kế hoạch mà chính người này được giao; None nếu không phải của họ."""
-    from app.modules.work.model import WorkTaskStatus
-    from app.modules.work.task_model import WorkTask, WorkTaskAssignee
-
-    t = db.get(WorkTask, int(task_id or 0)) if task_id else None
-    if t is None or t.deleted_at is not None or user is None:
-        return None
-    eid = int(getattr(user, "employee_id", 0) or 0)
-    if not db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id == t.id, WorkTaskAssignee.employee_id == eid).first():
-        return None
-    return t if t.status == int(WorkTaskStatus.OPEN) or True else None
-
-
-def notify_owner(db: Session, list_id: int, text: str, *, except_user: int = 0) -> None:
-    m = _owner(db, list_id)
-    if m is None:
-        return
-    chat_id, uid = _chat_of_employee(db, m.employee_id)
+def _notify_owner(db: Session, out: dict, text: str, *, except_user: int = 0) -> None:
+    chat_id, uid = _chat_of_users(db, list(out.get("owner_user_ids") or []))
     if chat_id and uid != int(except_user or 0):
         _send(db, chat_id, text, action=ACT_PLAN_NOTIFY)
 
@@ -413,40 +498,29 @@ def _reply(db: Session, chat_id: str, text: str) -> None:
 
 def handle_callback(db: Session, chat_id: str, cb_id: str, action: str, task_id: int) -> None:
     """Nút trên tin hỏi nhận việc: kh_ok · kh_khac · kh_tc."""
-    from app.modules.work.model import WorkList
-    from . import telegram
+    from . import erp, telegram
 
-    user = _user_of_chat(db, chat_id)
-    t = _my_task(db, user, task_id)
-    if t is None:
-        telegram.answer_callback(cb_id, "Việc này không còn giao cho anh/chị")
-        return
-    lst = db.get(WorkList, t.list_id)
-    fields = _fields(db, t.list_id)
     esc = telegram.esc
-    if action == CB_YES:
-        _set_option(db, fields.get(FIELD_ACCEPT), t.id, ACCEPT_YES, user.id)
-        db.commit()
-        telegram.answer_callback(cb_id, "Đã ghi nhận")
-        _reply(db, chat_id, f"Đã ghi: anh/chị <b>nhận</b> việc «{esc(t.title)}». Xong thì nhắn <code>xong việc {t.id}</code>.")
-        notify_owner(db, t.list_id, f"{esc(_person_name(db, user))} đã <b>nhận</b> việc «{esc(t.title)}» "
-                     f"(kế hoạch «{esc(lst.name if lst else '')}»).", except_user=user.id)
+    user = _user_of_chat(db, chat_id)
+    if user is None or action not in _CB_TO_ACTION:
+        telegram.answer_callback(cb_id, "Chat này chưa đăng nhập ERP")
         return
-    label = ACCEPT_LATER if action == CB_LATER else ACCEPT_NO
-    _set_option(db, fields.get(FIELD_ACCEPT), t.id, label, user.id)
-    db.commit()
+    out = erp.plan_reply(db, user, int(task_id or 0), _CB_TO_ACTION[action])
+    if not isinstance(out, dict) or out.get("error"):
+        telegram.answer_callback(cb_id, str((out or {}).get("error") or "Không ghi được"))
+        return
+    title, label = out.get("title", ""), out.get("kind", "")
+    if action == CB_YES:
+        telegram.answer_callback(cb_id, "Đã ghi nhận")
+        _reply(db, chat_id, f"Đã ghi: anh/chị <b>nhận</b> việc «{esc(title)}». Xong thì nhắn <code>xong việc {out['task_id']}</code>.")
+        _notify_owner(db, out, f"{esc(out.get('person', ''))} đã <b>nhận</b> việc «{esc(title)}» "
+                      f"(kế hoạch «{esc(out.get('list_name', ''))}»).", except_user=user.id)
+        return
     telegram.answer_callback(cb_id, "Đã ghi, chờ anh/chị nhắn thêm")
     ask = ("Anh/chị làm được lúc nào? Nhắn giờ hoặc ngày (ví dụ «chiều mai», «15/10 sáng»)."
            if action == CB_LATER else "Lý do từ chối là gì? Nhắn một câu để em báo lại.")
-    _send(db, chat_id, f"Đã ghi: <b>{esc(label)}</b> việc «{esc(t.title)}». {ask}", action=ACT_PLAN_ASK_WAIT,
-          body={"task_id": t.id, "list_id": t.list_id, "kind": label, "user_id": user.id})
-
-
-def _person_name(db: Session, user) -> str:
-    from app.modules.employee.model import Employee
-
-    e = db.get(Employee, int(getattr(user, "employee_id", 0) or 0)) if user is not None else None
-    return e.full_name if e else "Người làm"
+    _send(db, chat_id, f"Đã ghi: <b>{esc(label)}</b> việc «{esc(title)}». {ask}", action=ACT_PLAN_ASK_WAIT,
+          body={"task_id": out["task_id"], "list_id": out.get("list_id"), "kind": label, "user_id": user.id})
 
 
 _DONE = re.compile(r"^(?:da |em |toi )?(?:lam )?(?:xong|hoan thanh|hoan tat)(?: roi)?(?: viec)?\s*#?(?P<id>\d+)\s*(?P<rest>.*)$")
@@ -458,11 +532,7 @@ _SCORE = re.compile(r"(\d{1,2})\s*(?:diem|/10)")
 def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """Tin chữ của người làm: (1) giờ khác / lý do sau khi bấm nút · (2) «xong việc N …» · (3) «việc N 80% 7 điểm …»."""
     from app.modules.assistant.glossary import fold
-    from app.modules.work import task_service
-    from app.modules.work.membership_service import resolve_actor
-    from app.modules.work.model import WorkTaskStatus
-    from app.modules.work.schema import TaskUpdate
-    from . import telegram
+    from . import erp, telegram
 
     esc = telegram.esc
     user = _user_of_chat(db, chat_id)
@@ -478,70 +548,53 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
             info = json.loads(pending.body or "{}")
         except ValueError:
             info = {}
-        t = _my_task(db, user, int(info.get("task_id") or 0))
-        if t is not None and int(info.get("user_id") or 0) == user.id:
-            fields = _fields(db, t.list_id)
-            note = f"{info.get('kind', '')}: {text.strip()}"[:500]
-            _set(db, fields.get(FIELD_NOTE), t.id, note, user.id)
-            pending.action = ACT_COMMAND
-            row.action = ACT_PLAN_REPLY
-            db.commit()
-            _reply(db, chat_id, f"Đã ghi lại cho việc «{esc(t.title)}»: {esc(text.strip()[:200])}. Em báo chủ kế hoạch.")
-            notify_owner(db, t.list_id, f"{esc(_person_name(db, user))} — việc «{esc(t.title)}»: <b>{esc(info.get('kind', ''))}</b>"
-                         f" — {esc(text.strip()[:300])}", except_user=user.id)
-            return True
+        if int(info.get("user_id") or 0) == user.id:
+            out = erp.plan_reply(db, user, int(info.get("task_id") or 0), A_NOTE,
+                                 text=f"{info.get('kind', '')}: {text.strip()}")
+            if isinstance(out, dict) and out.get("ok"):
+                pending.action = ACT_COMMAND
+                row.action = ACT_PLAN_REPLY
+                db.commit()
+                _reply(db, chat_id, f"Đã ghi lại cho việc «{esc(out['title'])}»: {esc(text.strip()[:200])}. Em báo chủ kế hoạch.")
+                _notify_owner(db, out, f"{esc(out.get('person', ''))} — việc «{esc(out['title'])}»: "
+                              f"<b>{esc(info.get('kind', ''))}</b> — {esc(text.strip()[:300])}", except_user=user.id)
+                return True
     f = " ".join(fold(text).split())
-    m = _DONE.match(f) or None
+    m = _DONE.match(f)
     if m:
-        t = _my_task(db, user, int(m.group("id")))
-        if t is None:
-            _reply(db, chat_id, f"Việc #{m.group('id')} không phải việc đang giao cho anh/chị.")
-            row.action = ACT_COMMAND
-            db.commit()
-            return True
-        if t.status == int(WorkTaskStatus.DONE):
-            _reply(db, chat_id, f"Việc «{esc(t.title)}» đã ghi xong từ trước rồi.")
-            row.action = ACT_COMMAND
-            db.commit()
-            return True
-        actor = resolve_actor(db, user)
-        task_service.update_task(db, actor, t.id, TaskUpdate(status=int(WorkTaskStatus.DONE)))
-        fields = _fields(db, t.list_id)
-        _set(db, fields.get(FIELD_PROGRESS), t.id, 100, user.id)
         rest = m.group("rest").strip()
         sc = _SCORE.search(rest)
-        if sc:
-            _set(db, fields.get(FIELD_SCORE), t.id, int(sc.group(1)), user.id)
-        if rest:
-            _set(db, fields.get(FIELD_NOTE), t.id, text.strip()[:500], user.id)
+        out = erp.plan_reply(db, user, int(m.group("id")), A_DONE, text=text.strip() if rest else "",
+                             score=int(sc.group(1)) if sc else None)
+        row.action = ACT_COMMAND
+        db.commit()
+        if not isinstance(out, dict) or out.get("error"):
+            _reply(db, chat_id, f"Việc #{m.group('id')}: {esc(str((out or {}).get('error') or 'không ghi được'))}.")
+            return True
+        if out.get("already_done"):
+            _reply(db, chat_id, f"Việc «{esc(out['title'])}» đã ghi xong từ trước rồi.")
+            return True
         row.action = ACT_PLAN_REPLY
         db.commit()
-        when = datetime.now().strftime("%H:%M %d/%m")
-        _reply(db, chat_id, f"Đã ghi <b>xong</b> việc «{esc(t.title)}» lúc {when}" + (f", tự chấm {sc.group(1)}/10" if sc else "") + ".")
-        notify_owner(db, t.list_id, f"{esc(_person_name(db, user))} đã <b>xong</b> việc «{esc(t.title)}» lúc {when}"
-                     + (f", tự chấm {sc.group(1)}/10" if sc else "") + ".", except_user=user.id)
+        tail = f", tự chấm {sc.group(1)}/10" if sc else ""
+        _reply(db, chat_id, f"Đã ghi <b>xong</b> việc «{esc(out['title'])}» lúc {out.get('when', '')}{tail}.")
+        _notify_owner(db, out, f"{esc(out.get('person', ''))} đã <b>xong</b> việc «{esc(out['title'])}» lúc "
+                      f"{out.get('when', '')}{tail}.", except_user=user.id)
         return True
     m = _PROGRESS.match(f)
     #  `fold` bỏ cả dấu % nên phần trăm bắt trên CÂU GỐC; «điểm» bắt trên bản bỏ dấu.
     pct = _PCT.search(text) if m else None
     sc = _SCORE.search(m.group("rest")) if m else None
     if m and (pct or sc):
-        t = _my_task(db, user, int(m.group("id")))
-        if t is None:
+        out = erp.plan_reply(db, user, int(m.group("id")), A_PROGRESS, text=text.strip(),
+                             pct=int(pct.group(1)) if pct else None, score=int(sc.group(1)) if sc else None)
+        if not isinstance(out, dict) or out.get("error"):
             return False
-        fields = _fields(db, t.list_id)
-        bits = []
-        if pct:
-            _set(db, fields.get(FIELD_PROGRESS), t.id, min(int(pct.group(1)), 100), user.id)
-            bits.append(f"{min(int(pct.group(1)), 100)}%")
-        if sc:
-            _set(db, fields.get(FIELD_SCORE), t.id, min(int(sc.group(1)), 10), user.id)
-            bits.append(f"tự chấm {min(int(sc.group(1)), 10)}/10")
-        _set(db, fields.get(FIELD_NOTE), t.id, text.strip()[:500], user.id)
+        bits = ([f"{out['pct']}%"] if "pct" in out else []) + ([f"tự chấm {out['score']}/10"] if "score" in out else [])
         row.action = ACT_PLAN_REPLY
         db.commit()
-        _reply(db, chat_id, f"Đã ghi tiến độ việc «{esc(t.title)}»: {esc(', '.join(bits))}.")
-        notify_owner(db, t.list_id, f"{esc(_person_name(db, user))} — việc «{esc(t.title)}»: {esc(', '.join(bits))}"
-                     + (f" — {esc(m.group('rest').strip()[:200])}" if m.group("rest").strip() else ""), except_user=user.id)
+        _reply(db, chat_id, f"Đã ghi tiến độ việc «{esc(out['title'])}»: {esc(', '.join(bits))}.")
+        _notify_owner(db, out, f"{esc(out.get('person', ''))} — việc «{esc(out['title'])}»: {esc(', '.join(bits))}"
+                      + (f" — {esc(m.group('rest').strip()[:200])}" if m.group("rest").strip() else ""), except_user=user.id)
         return True
     return False

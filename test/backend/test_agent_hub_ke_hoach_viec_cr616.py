@@ -209,3 +209,74 @@ def test_luat_lap_ke_hoach_doc_tu_cau_hinh_json_va_chiu_json_hong(db, monkeypatc
     assert plan_policy.current()["max_subtasks"] == plan_policy.DEFAULTS["max_subtasks"]
     monkeypatch.setattr(app_settings, "get", lambda key: json.dumps({"default_priority": "Sai"}))
     assert plan_policy.current()["default_priority"] == plan_policy.DEFAULTS["default_priority"]
+
+
+
+# ---------------------------------------------------------------------------------------------------------------
+#  Chế độ DỊCH VỤ TÁCH (phase S): bot không đọc bảng Dự án — mọi lượt đi qua cổng B có chữ ký. Lỗi lần lên dev đầu
+#  13/10: bản đầu đọc thẳng bảng Dự án từ dịch vụ AI (DB riêng) → hỏng; bài này canh để không tái diễn.
+# ---------------------------------------------------------------------------------------------------------------
+@pytest.fixture
+def gateway(db, monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.core.config import settings
+    from app.core.database import get_db
+    from app.modules.agent_gateway.controller import router as gw_router
+    from app.modules.agent_hub import erp
+
+    gw = FastAPI()
+    gw.include_router(gw_router)
+    gw.dependency_overrides[get_db] = lambda: db
+    client = TestClient(gw)
+    monkeypatch.setattr(settings, "AGENT_SERVICE_SECRET", "khoa-ky-thu-nghiem")
+    monkeypatch.setattr(settings, "AGENT_GATEWAY_URL", "http://erp.test")
+    monkeypatch.setattr(settings, "AGENT_MODE", "service")
+    monkeypatch.setattr(erp, "_remote", None)
+    calls: list[tuple[str, str]] = []
+
+    def fake_request(method, url, params=None, data=None, headers=None, timeout=0, **kw):
+        path = url.replace("http://erp.test", "")
+        calls.append((method, path))
+        return client.request(method, path, params=params, content=data, headers=headers)
+
+    monkeypatch.setattr(erp.requests, "request", fake_request)
+    erp._impl()._tool_defs = (0.0, [])
+    yield calls
+    monkeypatch.setattr(erp, "_remote", None)
+
+
+def test_che_do_dich_vu_tach_moi_luot_di_qua_cong_b(db, world, gateway):
+    from app.modules.agent_hub import erp
+    from app.modules.work.label_model import WorkLabelField
+    from app.modules.work.model import WorkTaskStatus
+    from app.modules.work.task_model import WorkTask
+
+    #  Dựng kế hoạch ở phía ERP (như cổng /draft/create làm), rồi mọi việc còn lại chạy ở «dịch vụ AI».
+    d = _draft(db, world["boss"], _args())["draft"]
+    _, list_id = draft_create.create(db, world["boss"], "work_plan", d)
+    boss = erp.user_by_id(db, world["boss"].id)          # ErpUser qua cổng, không phải ORM
+    assert isinstance(boss, erp.ErpUser)
+    out = work_plan.ask_assignees(db, boss, list_id)
+    assert out["asked"] == ["Trần Văn An"] and out["unreachable"] == ["Lê Thị Bình"]
+    assert ("GET", "/api/agent-gw/plan/overview") in gateway
+    assert sum(1 for m, p in gateway if p == "/api/agent-gw/plan/reply") == 1      # Bình: đánh dấu Nhắn không được
+    fields = {f.name: f for f in db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id)}
+    xe = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Xe đưa đón").one()
+    assert work_plan._label_text(db, fields[work_plan.FIELD_ACCEPT], xe.id) == work_plan.ACCEPT_UNREACHABLE
+    an = erp.user_by_id(db, world["u_an"].id)
+    #  Nút Nhận + «xong việc» của An đi qua POST /plan/reply, ghi đúng vào việc, báo chủ.
+    tam_ung = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Tạm ứng chi phí").one()
+    world["sent"].clear()
+    work_plan.handle_callback(db, "chat-an", "cb1", work_plan.CB_YES, tam_ung.id)
+    assert work_plan._label_text(db, fields[work_plan.FIELD_ACCEPT], tam_ung.id) == work_plan.ACCEPT_YES
+    assert [s[0] for s in world["sent"]] == ["chat-an", "chat-boss"]
+    row = _incoming(db, "chat-an", f"xong việc {tam_ung.id} 9 điểm")
+    assert work_plan.handle_text(db, "chat-an", row, row.body) is True
+    db.expire_all()
+    assert db.get(WorkTask, tam_ung.id).status == int(WorkTaskStatus.DONE)
+    assert work_plan._label_text(db, fields[work_plan.FIELD_SCORE], tam_ung.id) == "9"
+    assert sum(1 for m, p in gateway if p == "/api/agent-gw/plan/reply") == 3
+    #  Không phải chủ bảng thì không đánh dấu «Nhắn không được» được qua cổng.
+    assert erp.plan_reply(db, an, xe.id, work_plan.A_UNREACHABLE).get("error")
