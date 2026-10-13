@@ -246,6 +246,13 @@ ACT_DRAFT_DONE = "da_tao"
 ACT_DRAFT_DROPPED = "bo_tao"
 ACT_DRAFT_DEL_WAIT = "cho_xoa_nhap"     # ai-CR-143: thẻ «xóa N phiếu nháp?» đang chờ đúng / thôi
 ACT_DRAFT_DEL_DONE = "da_xoa_nhap"
+#  ai-CR-184: sổ thay đổi do bot ghi + hoàn tác 24 giờ (phase 15.2). Hai dòng sổ ẩn (không gửi Telegram):
+#  `ds_thay_doi` giữ JSON {user_id, ids} = thứ tự dòng của thẻ «bot vừa làm gì» vừa liệt kê, để «hoàn tác 2» trỏ đúng dòng;
+#  `cho_hoan_tac` = thẻ xác nhận «Rút lại: …?» đang chờ đúng / thôi, body JSON {user_id, change_id, summary}; dùng một lần.
+ACT_CHANGES_LIST = "ds_thay_doi"
+ACT_UNDO_WAIT = "cho_hoan_tac"
+ACT_UNDO_DONE = "da_hoan_tac"
+ACT_UNDO_DROPPED = "bo_hoan_tac"
 #  ai-CR-178 (phase 23.1 / 23.2): nghiên cứu sâu + tổng hợp tài liệu chạy nền. Dòng sổ ẩn (không gửi Telegram) giữ
 #  trạng thái việc trong `body` (JSON: kind, question, queries, items, status, steps…); thẻ ước tính chi phí chờ ok / thôi.
 ACT_RESEARCH_JOB = "nghien_cuu_sau"
@@ -285,6 +292,7 @@ ACT_GLOSS_DONE = "da_thuat_ngu"
 ACT_GLOSS_DROPPED = "bo_thuat_ngu"
 NOISE_ACTIONS = (ACT_GLOSS_WAIT, ACT_GLOSS_DONE, ACT_GLOSS_DROPPED, ACT_OP_WAIT, ACT_OP_DONE, ACT_OP_DROPPED, ACT_OPS, ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
                  ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED,
+                 ACT_CHANGES_LIST, ACT_UNDO_WAIT, ACT_UNDO_DONE, ACT_UNDO_DROPPED,
                  ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED,
                  ACT_RUNNER_WAIT, ACT_RUNNER_DONE, ACT_RUNNER_DROPPED, ACT_BELL, ACT_REMINDER, ACT_REMIND_WAIT)
 

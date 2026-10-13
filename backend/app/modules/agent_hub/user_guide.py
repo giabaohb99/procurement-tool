@@ -66,7 +66,8 @@ SECTIONS: tuple[Section, ...] = (
         ("đơn nháp của tôi", "các phiếu nháp mình lập (đơn nghỉ, YCMH, YCBG), có đánh số"),
         ("xóa đơn nháp 2 3", "xóa phiếu nháp theo số; xóa hết đơn nháp để xóa tất cả"),
     )),
-    Section("sua_phieu", "Sửa, xóa phiếu đã có", ("sua phieu", "xoa phieu", "sua don", "xoa don"), (
+    Section("sua_phieu", "Sửa, xóa phiếu đã có", ("sua phieu", "xoa phieu", "sua don", "xoa don", "hoan tac", "rut lai",
+                                                   "so thay doi"), (
         ("sửa lý do đơn NP011 thành đi khám", "đơn nghỉ phép: sửa ngày, loại nghỉ, lý do"),
         ("thêm 5 hộp kẹp giấy vào YCMH00012", "YCMH / YCBG: thêm dòng, bỏ dòng, đổi số lượng"),
         ("đổi số lượng dòng 2 của YCMH00012 thành 20", ""),
@@ -75,6 +76,11 @@ SECTIONS: tuple[Section, ...] = (
              "bấm Xác nhận trong 15 phút mới ghi; mỗi thẻ chỉ dùng được một lần"),
         ("", "Yêu cầu thanh toán chỉ sửa được câu chữ bản in; đề nghị thanh toán và phiếu hỗ trợ em không xóa, em gửi "
              "link để anh/chị tự mở"),
+        ("bot vừa làm gì", "sổ những gì em đã tạo / sửa / xóa qua chat cho anh/chị, 10 dòng mới nhất có đánh số"),
+        ("hoàn tác", "rút lại dòng mới nhất trong 24 giờ; hoàn tác 2 để rút lại dòng số 2 của sổ vừa xem. Em hỏi lại một "
+                     "câu, nhắn đúng mới làm"),
+        ("", "Chỉ rút lại được khi phiếu còn Nháp / Bị trả lại và chưa ai sửa chen; đã gửi duyệt hay lập bộ tài khoản thì "
+             "em chỉ ghi sổ, không hoàn tác"),
     )),
     Section("so_nho", "Sổ ghi nhớ riêng", ("so nho", "ghi nho", "nho", "xung ho", "ghi chu", "tri nho", "tu rut"), (
         ("nhớ: anh ở Cần Thơ", "thêm một dòng vào sổ"),

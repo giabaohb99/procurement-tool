@@ -4176,7 +4176,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         #  Đại ca 13/10: «Em gặp lỗi khi gọi AI» chung chung quá — kèm mã lượt + loại lỗi để gửi lại cho người sửa.
         text = user_keys.key_problem(str(e)) or ai_keys.short_error(str(e))
         if not user_keys.key_problem(str(e)) and not ai_keys.is_transient(str(e)):
-            text += f"\n<i>Mã lượt #{answer_run.id} · {telegram.esc(type(e).__name__)}: {telegram.esc(str(e)[:120])}</i>"
+            text += f"\n<i>Mã lượt #{answer_run.id} · {telegram.esc(type(e).__name__)}</i>"      # không in chữ lỗi thô (bài persona)
         reply(db, chat_id, text)
         if ledger:
             _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True,
@@ -4527,7 +4527,7 @@ def _reuse_draft(db: Session, chat_id: str, row: AgentMessage, pending: AgentMes
         head += (f" (bỏ qua {out['skipped']} dòng đã có sẵn)." if out.get("skipped") else ".")
     else:
         head = f"Đã ghi đè {label} nháp {code} bằng bản mới (giữ mã phiếu cũ)."
-    tail = "Nhắn «gửi duyệt» để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
+    tail = "Nhắn <code>gửi duyệt</code> để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
     _reply_created(db, chat_id, kind, int(target["id"]), head, tail)
     return True
 
@@ -4599,7 +4599,7 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     if want_submit and kind in draft_create.SUBMITTABLE:
         _submit_and_report(db, chat_id, user, kind, oid, code, pending)
         return True
-    tail = "Nhắn «gửi duyệt» để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
+    tail = "Nhắn <code>gửi duyệt</code> để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
     head = (f"Đã cập nhật {label} nháp {code} (trùng ngày với đơn nháp cũ nên em sửa đơn đó, không lập đơn mới)."
             if reuse is not None else f"Đã tạo {label}.")
     _reply_created(db, chat_id, kind, oid, head, tail)
@@ -4629,7 +4629,7 @@ def _reply_created(db: Session, chat_id: str, kind: str, oid: int, head: str, ta
     lines += [telegram.esc(x) for x in erp.created_details(db, kind, oid)]
     lines.append(_doc_link_html(kind, oid))
     if tail:
-        lines.append(telegram.esc(tail))
+        lines.append(tail)      # HTML sẵn (ai-CR-184: câu lệnh in kiểu <code>, không dùng « »)
     if undo:
         lines.append(change_undo.UNDO_FOOTER)
     reply(db, chat_id, "\n".join(lines), action=ACT_ANSWER)

@@ -704,6 +704,7 @@ def test_de_xuat_xoa_phieu_thanh_the_nut_xoa_va_bam_thi_bao_da_xoa(db, bot, monk
 
     assert toasts == ["Đã xóa"]
     assert any("Đã xóa <b>Yêu cầu mua hàng PR001</b>" in text for text, _ in cards[1:])
+    assert any("Rút lại trong 24 giờ" in text for text, _ in cards[1:])      # ai-CR-184: xóa mềm rút lại được
 
 
 def _callback(data: str) -> dict:
@@ -4617,6 +4618,7 @@ def test_nhan_tao_thi_tao_that_dung_mot_lan(db, bot, monkeypatch):
     service.handle_message(db, _msg("tạo đi em"))
     assert created == [(7, "leave", "Đi khám bệnh")]
     assert "<b>Đã tạo đơn nghỉ phép.</b>" in sent[-1] and "/hr/leave-requests/42" in sent[-1]
+    assert "Rút lại trong 24 giờ" in sent[-1] and "«" not in sent[-1]       # ai-CR-184: chân thẻ hoàn tác
     _fake_intent(monkeypatch, service, "hoi")
     service.handle_message(db, _msg("tạo"))                        # không còn bản nháp chờ: không tạo lần hai
     assert len(created) == 1
@@ -4732,6 +4734,7 @@ def test_tao_va_gui_duyet_mot_cau(db, bot, monkeypatch):
     service.handle_message(db, _msg("tạo và gửi duyệt"))
     assert len(created) == 1 and submitted == [("leave", 42)]
     assert "<b>Đã tạo và gửi duyệt đơn nghỉ phép.</b>" in sent[-1]
+    assert "Rút lại trong 24 giờ" not in sent[-1]       # ai-CR-184: gửi duyệt chỉ ghi sổ, không có chân thẻ hoàn tác
 
 
 def test_tao_truoc_roi_gui_duyet_luon_chi_mot_lan(db, bot, monkeypatch):
@@ -4740,7 +4743,7 @@ def test_tao_truoc_roi_gui_duyet_luon_chi_mot_lan(db, bot, monkeypatch):
     submitted = _submit_setup(monkeypatch, service)
     service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
     service.handle_message(db, _msg("tạo"))
-    assert "Nhắn «gửi duyệt»" in sent[-1] and submitted == []
+    assert "Nhắn <code>gửi duyệt</code>" in sent[-1] and submitted == []     # ai-CR-184: bỏ « », in kiểu mã
     service.handle_message(db, _msg("gửi duyệt luôn"))
     assert submitted == [("leave", 42)]
     _fake_intent(monkeypatch, service, "hoi")
