@@ -107,7 +107,7 @@ Nối vào doc 15 là phase 24 và danh sách đọc ở README. Chưa có mã.
 
 Cùng ngày viết thêm bản tổng hợp yêu cầu dạng Markdown (doc 19) để đại ca gửi lãnh đạo duyệt phạm vi.
 Rà ảnh hưởng khi chèn phase 24 vào kế hoạch AI (doc 18 mục 11): nới nguyên tắc trợ lý cá nhân thành có tin nhân danh chủ
-kế hoạch gửi người khác, chi phí tính vào khóa chủ kế hoạch; không thêm nút bot; đợt 24.1 làm sau 15.2, đợt 24.2 gộp với
+kế hoạch gửi người khác, chi phí tính vào khóa chủ kế hoạch; không thêm nút bot; đợt 24.1 làm song song 15.2 (đại ca chốt), đợt 24.2 gộp với
 G-4 của phase 18; phase 16 đo thêm theo kế hoạch; quyền mới agent_plan. Ghi vào doc 15 và doc 13.
 Commit: 21f9e97f (doc 18, 19) trên erp-v2; phần rà ảnh hưởng commit sau. Prod: đại ca sẽ nhờ Agent 1 đẩy sau khi Agent 4 xong.
 
