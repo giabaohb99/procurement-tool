@@ -219,12 +219,12 @@ nhiều nhất, giá hải quan. **Chưa có:** nghiên cứu NHIỀU bước, �
 |---|---|
 | 23.1 Nghiên cứu sâu | Một câu hỏi → bot tự lập 3–6 câu tìm con → tìm, đọc nguồn → gộp thành báo cáo có trích nguồn từng ý, phần còn tranh cãi, kết luận; xuất Word + Drive. Báo trước chi phí như biên bản (≥ 1 USD hỏi ok) |
 | 23.2 Tổng hợp tài liệu | Gửi nhiều link / tệp / thư mục Drive → một báo cáo so sánh, gom ý chung, chỉ chỗ mâu thuẫn |
-| 23.3 Điểm báo theo chủ đề | Gắn vào bản tin (ai-CR-140): *mỗi sáng gửi anh tin giá thép, phân bón*; chỉ tin mới trong 24 giờ, mỗi tin 1–2 câu + link, bỏ trùng |
+| 23.3 Điểm báo theo chủ đề — **ĐÃ LÀM** `news_digest.py` (ai-CR-179): kiểu con của bản tin chủ đề `sub_code="news"`, chỉ tin mới 24 giờ, bỏ trùng 7 ngày, một lượt model / điểm báo | Gắn vào bản tin (ai-CR-140): *mỗi sáng gửi anh tin giá thép, phân bón*; chỉ tin mới trong 24 giờ, mỗi tin 1–2 câu + link, bỏ trùng |
 | 23.4 Tìm giá + link sản phẩm — **ĐÃ LÀM** `market_price_search` (ai-CR-173) | Tìm trên web (trang hãng, nhà phân phối, sàn TMĐT) → bảng: tên · quy cách · giá · đơn vị · nơi bán · link · ngày thấy giá; đặt cạnh **giá mua gần nhất trong ERP** và giá hải quan (nếu có) để thấy đắt / rẻ. Chỉ đọc trang công khai, không đăng nhập, không vượt chặn bot |
-| 23.5 NCC tốt nhất (AI đánh giá) — **ĐÃ LÀM phần ERP** `supplier_scorecard` (ai-CR-174), phần web về NCC chưa | Chấm điểm minh bạch, ghi rõ trọng số: dữ liệu ERP (giá, số lần mua, giao đúng hạn, hợp đồng còn hạn) + thông tin web (năng lực, chứng nhận, đánh giá công khai). Bảng điểm kèm lý do từng điểm; NCC chưa có trong ERP thì đánh dấu *ứng viên mới*. AI chỉ GỢI Ý, không tự chọn NCC trên phiếu |
+| 23.5 NCC tốt nhất (AI đánh giá) — **ĐÃ LÀM** `supplier_scorecard` (ai-CR-174) + `with_web` / `candidates` (ai-CR-179): web chỉ tham khảo, không cộng điểm | Chấm điểm minh bạch, ghi rõ trọng số: dữ liệu ERP (giá, số lần mua, giao đúng hạn, hợp đồng còn hạn) + thông tin web (năng lực, chứng nhận, đánh giá công khai). Bảng điểm kèm lý do từng điểm; NCC chưa có trong ERP thì đánh dấu *ứng viên mới*. AI chỉ GỢI Ý, không tự chọn NCC trên phiếu |
 | 23.6 Rào | Mỗi ý có nguồn; ghi ngày thu thập giá; giá web chỉ để tham khảo; đọc nhiều trang thì báo chi phí trước; ghi sổ chi phí (ai-CR-160) |
 
-Đại ca chốt 10/10: làm 23.4 + 23.5 trước (xong, chia agent). Mặc định em tự chọn, đổi được sau: lấy cả sàn TMĐT nhưng gắn nhãn; trọng số 40/20/20/20 (`SCORE_WEIGHTS`). Câu còn chờ: (2) nguồn web ưu
+Đại ca chốt 10/10: làm 23.4 + 23.5 trước (xong, chia agent). Mặc định em tự chọn, đổi được sau: lấy cả sàn TMĐT nhưng gắn nhãn; trọng số 40/20/20/20 (`SCORE_WEIGHTS`); 13/10 đại ca chốt làm tiếp 23.1–23.3 giữ mặc định. Điểm báo: giờ + chủ đề người dùng tự chọn khi tạo (mặc định 07:30 mọi ngày). Câu còn chờ: (2) nguồn web ưu
 tiên / cấm (vd chỉ trang hãng + nhà phân phối, có lấy sàn TMĐT không); (3) trọng số chấm NCC (giá / chất lượng / giao hàng /
 pháp lý); (4) điểm báo gửi giờ nào, chủ đề nào.
 

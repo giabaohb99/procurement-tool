@@ -1,6 +1,8 @@
 """Tool BẢN TIN (ai-CR-140) — người dùng bật / tắt / hẹn bản tin bằng câu tự nhiên trong chat.
 
 «sáng thứ hai gửi anh công nợ quá hạn của DEGO lúc 8h», «tắt bản tin công nợ», «bản tin sáng đổi sang 6h45 ngày thường».
+ai-CR-179: «mỗi sáng gửi anh tin giá thép, phân bón» → ĐIỂM BÁO (`add_news`, hoặc `add_topic` mà câu hỏi là xin tin tức
+thì tự chuyển): tìm tin mới trên web, bỏ trùng, không chạy cả Trợ lý — xem `agent_hub/news_digest.py`.
 Câu ngắn kiểu «bật bản tin» / «tắt bản tin» bot đã bắt bằng lệnh chữ trước khi tới Trợ lý (`service._brief_by_text`).
 `user_id` luôn là người đang hỏi — model không chọn được người khác. Chạy trong dịch vụ AI (bảng ở DB bot).
 """
@@ -30,10 +32,20 @@ def _manage_briefs(ctx: ToolContext, args: dict) -> dict:
                          days=days)
         elif action == "disable_daily":
             bs.set_daily(ctx.db, uid, enabled=False)
-        elif action == "add_topic":
+        elif action in ("add_topic", "add_news"):
+            from app.modules.agent_hub import news_digest
+
             hour, minute = when or (bs.DEFAULT_HOUR, bs.DEFAULT_MINUTE)
-            bs.add_topic(ctx.db, uid, str(args.get("question") or ""), hour=hour, minute=minute,
-                         days=days if days is not None else bs.ALL_DAYS)
+            day_mask = days if days is not None else bs.ALL_DAYS
+            topics = args.get("topics")
+            topics = ", ".join(str(t) for t in topics) if isinstance(topics, list) else str(topics or "")
+            question = str(args.get("question") or "")
+            if action == "add_topic" and not topics:
+                topics = news_digest.detect_topics(question)        # «tin giá thép, phân bón» → điểm báo
+            if action == "add_news" or topics:
+                bs.add_news(ctx.db, uid, topics or question, hour=hour, minute=minute, days=day_mask)
+            else:
+                bs.add_topic(ctx.db, uid, question, hour=hour, minute=minute, days=day_mask)
         elif action in ("disable", "enable", "remove"):
             sid = int(args.get("id") or 0)
             ok = bs.remove(ctx.db, uid, sid) if action == "remove" else bs.set_enabled(ctx.db, uid, sid,
@@ -55,11 +67,15 @@ MANAGE_BRIEFS_SPEC = ToolSpec(
     description=("Xem / bật / tắt / hẹn BẢN TIN tự gửi của chính người hỏi. Bản tin sáng (lịch, việc riêng, việc Dự án tới "
                  "hạn, phiếu chờ duyệt) dùng enable_daily / disable_daily. Bản tin CHỦ ĐỀ là một câu hỏi bot tự hỏi hộ "
                  "theo lịch ('sáng thứ hai gửi anh công nợ quá hạn của DEGO') dùng add_topic với question viết như người "
-                 "dùng tự hỏi. Tắt / bật / xóa một bản tin theo id lấy từ action list."),
+                 "dùng tự hỏi. ĐIỂM BÁO là tin MỚI trên web theo chủ đề, gửi theo lịch, chỉ tin chưa gửi ('mỗi sáng gửi "
+                 "anh tin giá thép, phân bón', 'điểm báo về tỷ giá USD', 'tin tức ngành phân bón hằng ngày') dùng "
+                 "add_news với topics là danh sách chủ đề ngắn. Tắt / bật / xóa một bản tin theo id lấy từ action list."),
     parameters={"type": "object", "properties": {
-        "action": {"type": "string", "enum": ["list", "enable_daily", "disable_daily", "add_topic", "enable", "disable",
-                                              "remove", "disable_all"]},
+        "action": {"type": "string", "enum": ["list", "enable_daily", "disable_daily", "add_topic", "add_news", "enable",
+                                              "disable", "remove", "disable_all"]},
         "question": {"type": "string", "description": "add_topic: câu hỏi bot sẽ tự hỏi hộ, vd 'công nợ quá hạn của DEGO'."},
+        "topics": {"type": "array", "items": {"type": "string"}, "maxItems": 5,
+                   "description": "add_news: các chủ đề điểm báo, mỗi mục 1–4 từ, vd ['giá thép', 'phân bón'] (tối đa 5)."},
         "time": {"type": "string", "description": "Giờ gửi, vd '7h30' (giờ VN). Bỏ trống = 07:30."},
         "days": {"type": "array", "items": {"type": "string"},
                  "description": "Thứ gửi: 'thứ hai'…'chủ nhật', 'ngày thường', 'mọi ngày'. Bỏ trống = mọi ngày."},

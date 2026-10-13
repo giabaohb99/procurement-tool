@@ -7,6 +7,9 @@ Hai loại, mỗi người tự đăng ký (`tab_agent_brief_sub`):
   · BẢN TIN CHỦ ĐỀ (`Kind.TOPIC`, tối đa MAX_TOPICS): một câu hỏi chạy qua Trợ lý AI như người đó tự hỏi, bằng khóa của
     chính họ, vào giờ + thứ đã chọn — vd «sáng thứ hai gửi anh công nợ quá hạn của DEGO». Nguồn: lệnh chat (model gọi tool
     `manage_briefs`) hoặc nút «Bật» trên đề xuất chủ động của 13.5.
+  · ĐIỂM BÁO (ai-CR-179, phase 23.3) là KIỂU CON của bản tin chủ đề: `sub_code == news_digest.NEWS_CODE`, `topic` = các
+    chủ đề cách nhau bởi dấu phẩy («giá thép, phân bón»). Tới giờ không chạy Trợ lý mà tìm tin mới trên web, bỏ trùng
+    với tin đã gửi, tóm bằng MỘT lượt model (không khóa thì gửi bản thô) — xem `news_digest.py`.
 
 Người đã nối Google mà CHƯA có dòng bản tin sáng = đang bật 07:30 mọi ngày (giữ đúng hành vi cũ của ai-CR-064). Tắt là ghi
 một dòng `enabled = False`.
@@ -181,6 +184,25 @@ def add_topic(db: Session, user_id: int, question: str, *, hour: int = DEFAULT_H
     return row
 
 
+def add_news(db: Session, user_id: int, topics: str, *, hour: int = DEFAULT_HOUR, minute: int = DEFAULT_MINUTE,
+             days: int = ALL_DAYS) -> AgentBriefSub:
+    """Điểm báo theo chủ đề (ai-CR-179): một dòng bản tin chủ đề mang `sub_code = NEWS_CODE`, `topic` = chủ đề cách
+    nhau bởi dấu phẩy. Không có chủ đề nào đọc được → ValueError."""
+    from . import news_digest
+
+    parts = news_digest.parse_topics(topics)
+    if not parts:
+        raise ValueError("chưa có chủ đề nào cho điểm báo (vd: giá thép, phân bón)")
+    return add_topic(db, user_id, ", ".join(parts), hour=hour, minute=minute, days=days, sub_code=news_digest.NEWS_CODE)
+
+
+def is_news(row_or_dict) -> bool:
+    from . import news_digest
+
+    code = row_or_dict.get("sub_code") if isinstance(row_or_dict, dict) else getattr(row_or_dict, "sub_code", "")
+    return str(code or "") == news_digest.NEWS_CODE
+
+
 def set_enabled(db: Session, user_id: int, sub_id: int, enabled: bool) -> bool:
     row = db.get(AgentBriefSub, int(sub_id))
     if row is None or int(row.user_id) != int(user_id):
@@ -225,6 +247,11 @@ def serialize(row_or_state) -> dict:
         d = {"id": r.id, "kind": int(r.kind), "enabled": bool(r.enabled), "hour": r.hour, "minute": r.minute,
              "days": r.days, "topic": r.topic, "sub_code": r.sub_code, "implicit": False,
              "label": KIND_LABELS.get(Kind(r.kind), "")}
+        if is_news(r):
+            from . import news_digest
+
+            d["label"] = news_digest.NEWS_LABEL
+            d["news"] = True
     d["when"] = f"{d['hour']:02d}:{d['minute']:02d} · {days_text(d['days'])}"
     return d
 
@@ -240,7 +267,12 @@ def render_list(db: Session, user_id: int) -> str:
     lines = ["<b>BẢN TIN CỦA ANH/CHỊ</b>"]
     for i, it in enumerate(items, 1):
         state = "đang bật" if it["enabled"] else "đang tắt"
-        what = it["label"] if it["kind"] == Kind.DAILY else f"«{esc(it['topic'])}»"
+        if it["kind"] == Kind.DAILY:
+            what = it["label"]
+        elif it.get("news"):
+            what = f"<b>{it['label']}</b> (tin mới trên web): <i>{esc(it['topic'])}</i>"
+        else:
+            what = f"«{esc(it['topic'])}»"
         lines.append(f"{i}. {what} · {it['when']} · {state}")
     from . import work_due
 
@@ -248,7 +280,8 @@ def render_list(db: Session, user_id: int) -> str:
     lines.append(work_due.state_text(db, user_id).split(" — ")[0])     # ai-CR-175: một dòng trạng thái
     lines.append("")
     lines.append("<i>Nhắn: bật bản tin · tắt bản tin · bản tin lúc 6h45 · bản tin hôm nay · tắt bản tin 2 · "
-                 "hoặc nói tự nhiên «sáng thứ hai gửi anh công nợ quá hạn».</i>")
+                 "hoặc nói tự nhiên «sáng thứ hai gửi anh công nợ quá hạn». Điểm báo tin mới trên web: nhắn kiểu mỗi "
+                 "sáng gửi anh tin giá thép, phân bón.</i>")
     return "\n".join(lines)
 
 
@@ -303,7 +336,8 @@ def _candidates(db: Session) -> list[tuple[int, object]]:
     return out
 
 
-def send_one(db: Session, user_id: int, row: AgentBriefSub | None, chat_id: str = "") -> bool:
+def send_one(db: Session, user_id: int, row: AgentBriefSub | None, chat_id: str = "", *,
+             now: datetime | None = None) -> bool:
     """Gửi một bản tin ngay (vòng nền hoặc lệnh «bản tin hôm nay»). Trả True nếu đã gửi."""
     from . import erp, groups, service, user_keys
     from .constants import ACT_BRIEF
@@ -318,6 +352,10 @@ def send_one(db: Session, user_id: int, row: AgentBriefSub | None, chat_id: str 
         service.reply(db, chat, daily_text(db, user), action=ACT_BRIEF)
         db.commit()
         return True
+    if is_news(row):
+        from . import news_digest
+
+        return news_digest.send(db, user, row, chat, now=now)     # ai-CR-179: điểm báo — không chạy Trợ lý
     from .telegram import esc
 
     service.reply(db, chat, f"<b>Bản tin:</b> {esc(row.topic)}", action=ACT_BRIEF)
@@ -351,7 +389,7 @@ def tick(db: Session, *, now: datetime | None = None) -> dict:
         row.last_sent_on = today            # đánh dấu TRƯỚC: gửi hỏng cũng không lặp lại cả ngày
         db.commit()
         try:
-            if send_one(db, uid, row):
+            if send_one(db, uid, row, now=now):
                 sent += 1
         except Exception:  # noqa: BLE001 — một bản tin hỏng không được chặn người khác
             db.rollback()

@@ -9,6 +9,11 @@ Hai tool, cùng tinh thần «AI chỉ gợi ý, người quyết»:
 * `supplier_scorecard` (ai-CR-174) — chấm điểm NCC 0–100 từ dữ liệu ERP với trọng số khai ở `SCORE_WEIGHTS` (đại ca
   chưa chốt, đổi hằng số là đổi cả bảng): giá 40 · ổn định (số lần mua) 20 · giao đúng hạn 20 · pháp lý (hợp đồng còn
   hạn) 20. Mỗi phần ghi lý do ngắn; thiếu dữ liệu phần nào thì ghi vào `data_gaps` thay vì đoán.
+  ai-CR-179 (phần web của 23.5): `with_web=true` → với tối đa WEB_MAX_SUPPLIERS NCC đầu bảng, tìm web MỘT lượt theo tên
+  (+ mã số thuế nếu có), đọc 1–2 trang công khai, trả `web` = {site, summary_sources, signals: {co_website, chung_nhan,
+  nam_hoat_dong, danh_gia_cong_khai}} — chỉ TRÍCH đoạn có từ khóa (ISO 9001, HACCP, GMP…), KHÔNG chấm điểm từ web,
+  không gọi model; điểm vẫn 100% từ ERP. NCC người dùng nêu tên (`supplier_names`) mà ERP chưa có → `candidates`
+  với `is_candidate: true`, chỉ có phần web.
 
 Tìm web dùng lại `agent_hub/web_search.py` (DuckDuckGo / Bing + đọc trang công khai, không cần khóa Gemini) — không
 viết bộ tìm mới. Chỉ đọc trang công khai, không đăng nhập, không vượt chặn bot (`web_search.fetch` tự bỏ trang không
@@ -72,6 +77,34 @@ MARKET_NOTE = ("Giá web chỉ để THAM KHẢO, chưa gồm vận chuyển / V
 SCORECARD_NOTE = ("AI chỉ GỢI Ý theo dữ liệu ERP và trọng số mặc định ở `weights`; KHÔNG tự chọn NCC trên phiếu — người "
                   "mua quyết định. NCC chưa có trong ERP thì tìm thêm trên web bằng market_price_search (ứng viên mới). "
                   "Phần nào ghi trong data_gaps là CHƯA có dữ liệu, không phải NCC kém.")
+WEB_NOTE = ("Thông tin web (`web`) chỉ để THAM KHẢO: trích từ trang công khai theo từ khóa, chưa kiểm chứng, KHÔNG cộng "
+            "vào điểm — điểm vẫn tính từ dữ liệu ERP. Mỗi tín hiệu kèm nguồn ở summary_sources.")
+
+# ── Web về NCC (ai-CR-179, phần web của 23.5) ───────────────────────────────────────────
+WEB_MAX_SUPPLIERS = 5          # chỉ tra web cho bấy nhiêu NCC đầu bảng — mỗi NCC một lượt tìm + 1–2 trang
+WEB_FETCH_PAGES = 2
+WEB_SOURCES = 5
+_WEB_SNIPPET = 160
+#  Trang danh bạ / tra cứu MST / mạng xã hội / sàn — không coi là website riêng của NCC.
+_DIRECTORY_HOSTS = ("masothue.com", "thongtincongty.com", "infodoanhnghiep.com", "tratencongty.com", "hosocongty.vn",
+                    "yellowpages.vn", "trangvangvietnam.com", "doanhnghiep.biz", "congtydoanhnghiep.com",
+                    "facebook.com", "linkedin.com", "youtube.com", "tiktok.com", "wikipedia.org", "google.com",
+                    "shopee.vn", "lazada.vn", "tiki.vn", "sendo.vn", "alibaba.com", "1688.com", "vietnamcredit.com.vn",
+                    "dangkykinhdoanh.gov.vn", "masothue.vn", "timcongty.com", "congty.net")
+#  Chứng nhận hay gặp: tên chuẩn → mẫu tìm trong chữ (không phân biệt hoa thường).
+CERT_PATTERNS = {
+    "ISO 9001": r"\biso\s*[-:]?\s*9001\b", "ISO 14001": r"\biso\s*[-:]?\s*14001\b", "ISO 45001": r"\biso\s*[-:]?\s*45001\b",
+    "ISO 22000": r"\biso\s*[-:]?\s*22000\b", "ISO 13485": r"\biso\s*[-:]?\s*13485\b", "ISO 27001": r"\biso\s*[-:]?\s*27001\b",
+    "ISO/IEC 17025": r"\biso(?:/iec)?\s*[-:]?\s*17025\b", "OHSAS 18001": r"\bohsas\s*[-:]?\s*18001\b",
+    "HACCP": r"\bhaccp\b", "GMP": r"\bgmp\b", "FSSC 22000": r"\bfssc\s*22000\b", "BRC": r"\bbrc(?:gs)?\b",
+    "Halal": r"\bhalal\b", "VietGAP": r"\bvietgap\b", "GlobalGAP": r"\bglobal\s*g\.?a\.?p\b", "SA 8000": r"\bsa\s*8000\b",
+    "FDA": r"\bfda\b", "CE": r"\b(?:ce\s+marking|chứng nhận ce|chung nhan ce|đạt chuẩn ce)\b",
+}
+_CERT_RX = {name: re.compile(rx, re.IGNORECASE) for name, rx in CERT_PATTERNS.items()}
+_YEARS_RX = re.compile(r"((?:thành lập|hoạt động|kinh nghiệm|ra đời|established|founded|since)[^.;\n]{0,50}?"
+                       r"(?:(?:19|20)\d{2}|\d{1,2}\s*(?:năm|years?)))", re.IGNORECASE)
+_RATING_RX = re.compile(r"(\d(?:[.,]\d)?\s*/\s*5(?:\s*(?:sao|điểm|stars?))?|\d(?:[.,]\d)?\s*(?:sao|stars?)\b"
+                        r"(?:\s*\(?\s*\d+\s*(?:đánh giá|reviews?)\)?)?|\d+\s*(?:đánh giá|reviews?)\b)", re.IGNORECASE)
 
 
 # ── Tiện ích ──────────────────────────────────────────────────────────────────────────
@@ -261,6 +294,91 @@ def market_price_search(ctx: ToolContext, args: dict) -> dict:
     return out
 
 
+# ── Web về NCC (ai-CR-179) ──────────────────────────────────────────────────────────────
+def _is_directory(host: str) -> bool:
+    return any(host == d or host.endswith("." + d) for d in _DIRECTORY_HOSTS)
+
+
+def _clip(text: str, n: int = _WEB_SNIPPET) -> str:
+    text = " ".join((text or "").split())
+    return text if len(text) <= n else text[:n].rsplit(" ", 1)[0] + "…"
+
+
+def supplier_web_profile(name: str, tax_code: str = "") -> dict:
+    """Hồ sơ web công khai của MỘT NCC: một lượt tìm theo tên (+ MST), đọc 1–2 trang đầu, TRÍCH đoạn có từ khóa.
+
+    Trả {query, site, summary_sources: [{title, url, snippet}], signals: {co_website, chung_nhan, nam_hoat_dong?,
+    danh_gia_cong_khai?}, note}. Không chấm điểm, không gọi model; tìm hỏng → nguồn rỗng, vẫn trả cấu trúc.
+    """
+    from app.modules.agent_hub import web_search
+
+    name = " ".join(str(name or "").split())
+    tax_code = str(tax_code or "").strip()
+    query = f'"{name}" {tax_code}'.strip() if name else tax_code
+    out: dict = {"query": query, "site": "", "summary_sources": [],
+                 "signals": {"co_website": False, "chung_nhan": []}, "note": WEB_NOTE}
+    if not query:
+        return out
+    try:
+        results = web_search.search(query, limit=WEB_SOURCES + 2)
+    except Exception:  # noqa: BLE001 — máy tìm hỏng: không có web, không làm sập bảng điểm
+        results = []
+    sources: list[dict] = []
+    seen: set[str] = set()
+    for r in results:
+        url = str(r.get("url") or "")
+        key = _dedupe_key(url)
+        if not url.startswith("http") or key in seen:
+            continue
+        seen.add(key)
+        host = _host(url)
+        sources.append({"title": (r.get("title") or "").strip() or host, "url": url,
+                        "snippet": _clip(r.get("snippet") or ""), "host": host})
+        if not out["site"] and host and not _is_directory(host):
+            out["site"] = host
+        if len(sources) >= WEB_SOURCES:
+            break
+    texts: list[str] = []
+    top = sources[:WEB_FETCH_PAGES]
+    if top:
+        with ThreadPoolExecutor(max_workers=len(top)) as pool:
+            texts = list(pool.map(lambda s: _safe_fetch(web_search, s["url"]), top))
+    corpus_parts = [f"{s['title']} {s['snippet']}" for s in sources] + texts
+    corpus = " ".join(p for p in corpus_parts if p)
+    certs = sorted(cname for cname, rx in _CERT_RX.items() if rx.search(corpus))
+    signals: dict = {"co_website": bool(out["site"]), "chung_nhan": certs}
+    m = _YEARS_RX.search(corpus)
+    if m:
+        signals["nam_hoat_dong"] = _clip(m.group(1), 120)
+    m = _RATING_RX.search(corpus)
+    if m:
+        signals["danh_gia_cong_khai"] = _clip(m.group(1), 80)
+    for s in sources:
+        s.pop("host", None)
+    out["summary_sources"] = sources
+    out["signals"] = signals
+    return out
+
+
+def _resolve_supplier_names(ctx: ToolContext, names: list[str]) -> tuple[list[str], list[str]]:
+    """Tên NCC người dùng nêu → (mã NCC có trong ERP, tên CHƯA có trong ERP = ứng viên mới)."""
+    codes: list[str] = []
+    unknown: list[str] = []
+    for raw in names:
+        nm = " ".join(str(raw or "").split())
+        if not nm:
+            continue
+        row = (ctx.db.query(Supplier)
+               .filter(or_(Supplier.code == nm, Supplier.name == nm, Supplier.name.like(f"%{nm}%")))
+               .order_by(Supplier.id).first())
+        if row is not None:
+            if row.code not in codes:
+                codes.append(row.code)
+        elif nm.lower() not in {u.lower() for u in unknown}:
+            unknown.append(nm)
+    return codes, unknown
+
+
 # ── supplier_scorecard (23.5) ──────────────────────────────────────────────────────────
 def _window_from(months: int) -> str:
     return (date.today() - timedelta(days=30 * months)).isoformat()
@@ -424,8 +542,26 @@ def supplier_scorecard(ctx: ToolContext, args: dict) -> dict:
     product = catalog._need(args, "product")
     product_code = catalog._need(args, "product_code")
     wanted = [str(c).strip() for c in (args.get("supplier_codes") or []) if str(c).strip()][:MAX_SUPPLIERS]
+    with_web = bool(args.get("with_web"))
+    #  ai-CR-179: tên NCC người dùng nêu — có trong ERP thì chấm như supplier_codes, chưa có thì là ỨNG VIÊN MỚI (chỉ web).
+    names = [str(n).strip() for n in (args.get("supplier_names") or []) if str(n).strip()][:MAX_SUPPLIERS]
+    named_codes, unknown_names = _resolve_supplier_names(ctx, names) if names else ([], [])
+    for c in named_codes:
+        if c not in wanted:
+            wanted.append(c)
+    if not (product or product_code or wanted or unknown_names):
+        return {"error": "Cần một trong: product (tên hàng), product_code (mã hàng), supplier_codes (mã NCC) hoặc "
+                         "supplier_names (tên NCC)."}
+    candidates = [{"name": nm, "is_candidate": True, "score": None,
+                   "note": "Ứng viên mới — chưa có trong danh mục / lịch sử mua ERP nên không có điểm; chỉ có thông tin web."
+                   } for nm in unknown_names]
+    if with_web:
+        for cand in candidates[:WEB_MAX_SUPPLIERS]:
+            cand["web"] = supplier_web_profile(cand["name"])
     if not (product or product_code or wanted):
-        return {"error": "Cần một trong: product (tên hàng), product_code (mã hàng) hoặc supplier_codes (danh sách mã NCC)."}
+        return {"items": [], "count": 0, "candidates": candidates, "weights": SCORE_WEIGHTS, "note": SCORECARD_NOTE,
+                "web_note": WEB_NOTE if with_web else "", "with_web": with_web,
+                "data_gaps": ["Không NCC nào trong số được nêu có trong ERP — chỉ có phần web của ứng viên mới."]}
     months = catalog._clamp(args.get("months"), DEFAULT_MONTHS, hi=MAX_MONTHS)
     today = date.today().isoformat()
     since = _window_from(months)
@@ -470,10 +606,14 @@ def supplier_scorecard(ctx: ToolContext, args: dict) -> dict:
         agg.setdefault(code, {"supplier_code": code, "supplier_name": "", "times": 0, "qty": 0.0, "value": 0.0,
                               "last_order_date": "", "units": set()})
     if not agg:
-        return {"items": [], "count": 0, "months": months, "window_from": since, "products": codes,
-                "weights": SCORE_WEIGHTS, "note": SCORECARD_NOTE,
-                "data_gaps": ["Chưa có NCC nào từng bán mặt hàng này trong ERP — tìm ứng viên mới trên web bằng "
-                              "market_price_search."]}
+        out_empty = {"items": [], "count": 0, "months": months, "window_from": since, "products": codes,
+                     "weights": SCORE_WEIGHTS, "note": SCORECARD_NOTE,
+                     "data_gaps": ["Chưa có NCC nào từng bán mặt hàng này trong ERP — tìm ứng viên mới trên web bằng "
+                                   "market_price_search."]}
+        if candidates:
+            out_empty["candidates"] = candidates
+            out_empty["web_note"] = WEB_NOTE if with_web else ""
+        return out_empty
 
     supplier_codes = [c for c in agg if c]
     sup_rows = {s.code: s for s in ctx.db.query(Supplier).filter(Supplier.code.in_(supplier_codes))}
@@ -504,11 +644,24 @@ def supplier_scorecard(ctx: ToolContext, args: dict) -> dict:
     if len(units) > 1:
         global_gaps.append(f"Đơn vị tính lẫn nhau ({', '.join(sorted(units))}) — điểm giá so đơn giá thô, chưa quy đổi.")
 
-    return {
+    out = {
         "items": items, "count": len(items), "months": months, "window_from": since, "as_of_date": today,
         "products": codes, "weights": SCORE_WEIGHTS, "weight_labels": SCORE_WEIGHT_LABELS,
-        "data_gaps": global_gaps, "note": SCORECARD_NOTE,
+        "data_gaps": global_gaps, "note": SCORECARD_NOTE, "with_web": with_web,
     }
+    #  ai-CR-179: web về NCC — chỉ khi được bật, chỉ WEB_MAX_SUPPLIERS NCC đầu bảng, mỗi NCC một lượt tìm. Tham khảo,
+    #  không đổi điểm.
+    if with_web:
+        for it in items[:WEB_MAX_SUPPLIERS]:
+            s = sup_rows.get(it["supplier_code"])
+            label = it["name"] or (s.name if s is not None else "") or it["supplier_code"]
+            it["web"] = supplier_web_profile(label, s.tax_code if s is not None else "")
+        if len(items) > WEB_MAX_SUPPLIERS:
+            global_gaps.append(f"Chỉ tra web cho {WEB_MAX_SUPPLIERS} NCC đầu bảng; các NCC còn lại không có phần web.")
+        out["web_note"] = WEB_NOTE
+    if candidates:
+        out["candidates"] = candidates
+    return out
 
 
 # ── Khai báo cho model ─────────────────────────────────────────────────────────────────
@@ -543,12 +696,23 @@ SUPPLIER_SCORECARD_SPEC = ToolSpec(
         "product (tên) hoặc product_code, hoặc supplier_codes để so các NCC cụ thể. Khi trả lời: bảng điểm theo `items` "
         "(score + từng phần `parts` + `reasons`), nêu `weights` để người đọc biết cách chấm, liệt kê `data_gaps` là CHƯA CÓ "
         "DỮ LIỆU chứ không phải NCC kém, và LUÔN nhắc `note`: AI chỉ gợi ý, không tự chọn NCC trên phiếu; NCC chưa có "
-        "trong ERP thì gọi market_price_search để tìm ứng viên mới."),
+        "trong ERP thì gọi market_price_search để tìm ứng viên mới. Bật with_web=true (tốn lượt tìm web, mặc định tắt) "
+        "khi người dùng muốn 'tìm hiểu thêm trên web', hỏi 'NCC này uy tín không', 'có chứng nhận ISO không', 'năng lực "
+        "/ đánh giá công khai của NCC': mỗi NCC đầu bảng có thêm `web` (site, summary_sources, signals: co_website, "
+        "chung_nhan, nam_hoat_dong, danh_gia_cong_khai) — CHỈ THAM KHẢO, không cộng vào điểm, luôn dẫn nguồn. Người "
+        "dùng nêu TÊN NCC (kể cả chưa có trong ERP) thì truyền supplier_names: tên chưa có trong ERP về ở `candidates` "
+        "với is_candidate=true (ứng viên mới, chỉ có web, không điểm)."),
     parameters={"type": "object", "properties": {
         "product": {"type": "string", "description": "Tên mặt hàng (khớp một phần tên trong danh mục / lịch sử mua)."},
         "product_code": {"type": "string", "description": "Mã hàng ERP chính xác (ưu tiên hơn product)."},
         "supplier_codes": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_SUPPLIERS,
                            "description": "Chỉ chấm các NCC này (mã NCC). Bỏ trống = mọi NCC từng bán mặt hàng."},
+        "supplier_names": {"type": "array", "items": {"type": "string"}, "maxItems": MAX_SUPPLIERS,
+                           "description": "Tên NCC người dùng nêu (không biết mã). Có trong ERP thì chấm điểm; chưa có "
+                                          "thì là ứng viên mới ở `candidates`."},
+        "with_web": {"type": "boolean", "description": "true = tra thêm web công khai về từng NCC (tối đa 5 NCC đầu "
+                                                        "bảng): website, chứng nhận ISO / HACCP / GMP…, năm hoạt động, "
+                                                        "đánh giá công khai. Mặc định false."},
         "months": {"type": "integer", "minimum": 1, "maximum": MAX_MONTHS,
                    "description": f"Kỳ xét lịch sử mua / giao hàng, tính bằng tháng (mặc định {DEFAULT_MONTHS})."},
     }},

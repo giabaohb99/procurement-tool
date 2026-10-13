@@ -269,3 +269,99 @@ def test_nhan_con_so_y_dinh():
     assert il.TOOL_SUB["market_price_search"] == il.Sub.LOOKUP_MARKET
     assert il.TOOL_SUB["supplier_scorecard"] == il.Sub.LOOKUP_SUPPLIER
     assert il.SUB_CODES[il.Sub.LOOKUP_MARKET][0] == "tra_cuu.gia_thi_truong"
+
+
+# ── ai-CR-179: web về NCC trong supplier_scorecard (with_web) ────────────────────────────
+@pytest.fixture
+def web_ncc(monkeypatch):
+    """Máy tìm giả theo tên NCC: NX có website riêng + trang MST; «Thép Việt Mới» (ứng viên) ra một trang; NCC khác trống."""
+    asked: list[str] = []
+
+    def fake_search(q, limit=8, **kw):
+        asked.append(q)
+        if "Nhà Xuất NX" in q:
+            return [{"title": "Tra cứu MST Nhà Xuất NX", "url": "https://masothue.com/0301234567-nha-xuat-nx",
+                     "snippet": "Công ty Nhà Xuất NX, mã số thuế 0301234567, thành lập năm 2009"},
+                    {"title": "Nhà Xuất NX - Trang chủ", "url": "https://www.nhaxuatnx.vn/",
+                     "snippet": "Nhà cung cấp giấy và văn phòng phẩm, chứng nhận ISO 9001:2015"},
+                    {"title": "Nhà Xuất NX | Facebook", "url": "https://facebook.com/nhaxuatnx", "snippet": "fanpage"}]
+        if "Thép Việt Mới" in q:
+            return [{"title": "Thép Việt Mới - nhà máy thép", "url": "https://thepvietmoi.com/gioi-thieu",
+                     "snippet": "Thành lập năm 2015, đạt chứng nhận ISO 14001 và ISO 9001"}]
+        return []
+
+    def fake_fetch(url):
+        if "nhaxuatnx.vn" in url:
+            return ("Nhà Xuất NX hoạt động từ năm 2009 với hơn 15 năm kinh nghiệm. Hệ thống quản lý chất lượng đạt "
+                    "ISO 9001:2015 và HACCP. Khách hàng đánh giá 4,8/5 (120 đánh giá). " + "Sản phẩm giấy A4. " * 20)
+        return ""
+
+    monkeypatch.setattr(web_search, "search", fake_search)
+    monkeypatch.setattr(web_search, "fetch", fake_fetch)
+    return asked
+
+
+def test_with_web_tat_mac_dinh_khong_ton_luot_tim_va_khong_co_khoi_web(db, seed, cap_quyen, hang, web_ncc):
+    _cap_du(seed, cap_quyen)
+    out = _hoi(db, seed, "supplier_scorecard", {"product_code": "GA4"})
+    assert web_ncc == [] and out["with_web"] is False
+    assert all("web" not in it for it in out["items"]) and "web_note" not in out and "candidates" not in out
+
+
+def test_with_web_trich_tin_hieu_tu_trang_cong_khai_khong_doi_diem(db, seed, cap_quyen, hang, web_ncc):
+    _cap_du(seed, cap_quyen)
+    db.query(Supplier).filter(Supplier.code == "NX").update({"tax_code": "0301234567"})
+    db.commit()
+    out = _hoi(db, seed, "supplier_scorecard", {"product_code": "GA4", "with_web": True})
+
+    assert out["with_web"] is True and "THAM KHẢO" in out["web_note"] and "KHÔNG cộng" in out["web_note"]
+    assert web_ncc[0] == '"Nhà Xuất NX" 0301234567', "một lượt tìm theo tên + mã số thuế"
+    assert len(web_ncc) == 3, "mỗi NCC trong bảng đúng một lượt tìm"
+    nx = out["items"][0]
+    assert nx["supplier_code"] == "NX" and nx["score"] == 100.0 and nx["parts"]["gia"] == 40.0, "web không đổi điểm"
+    web = nx["web"]
+    assert web["site"] == "nhaxuatnx.vn", "trang MST / Facebook không được coi là website riêng"
+    assert web["signals"]["co_website"] is True
+    assert web["signals"]["chung_nhan"] == ["HACCP", "ISO 9001"]
+    assert "2009" in web["signals"]["nam_hoat_dong"]
+    assert web["signals"]["danh_gia_cong_khai"].startswith("4,8/5")
+    assert [s["url"] for s in web["summary_sources"]][:2] == ["https://masothue.com/0301234567-nha-xuat-nx",
+                                                             "https://www.nhaxuatnx.vn/"]
+    assert all(set(s) == {"title", "url", "snippet"} for s in web["summary_sources"])
+    #  NCC không ra kết quả web: vẫn có khối web rỗng, không lỗi, không bịa.
+    b = out["items"][1]
+    assert b["web"]["site"] == "" and b["web"]["signals"] == {"co_website": False, "chung_nhan": []}
+    assert b["web"]["summary_sources"] == [] and b["score"] == 43.7
+
+
+def test_with_web_ten_ncc_chua_co_trong_erp_la_ung_vien_moi_chi_co_web(db, seed, cap_quyen, hang, web_ncc):
+    _cap_du(seed, cap_quyen)
+    out = _hoi(db, seed, "supplier_scorecard", {"product_code": "GA4", "supplier_names": ["NCC B", "Thép Việt Mới"],
+                                                "with_web": True})
+    #  «NCC B» có trong ERP → chấm như supplier_codes; «Thép Việt Mới» chưa có → ứng viên mới.
+    assert [i["supplier_code"] for i in out["items"]] == ["NCCB"]
+    assert out["items"][0]["web"]["summary_sources"] == []
+    cand = out["candidates"]
+    assert len(cand) == 1 and cand[0]["is_candidate"] is True and cand[0]["name"] == "Thép Việt Mới"
+    assert cand[0]["score"] is None and "parts" not in cand[0]
+    assert cand[0]["web"]["signals"]["chung_nhan"] == ["ISO 14001", "ISO 9001"]
+    assert cand[0]["web"]["site"] == "thepvietmoi.com" and "2015" in cand[0]["web"]["signals"]["nam_hoat_dong"]
+
+    #  Chỉ nêu tên chưa có trong ERP, không có mặt hàng: không lỗi, bảng điểm trống, có ứng viên; tắt web thì không tìm.
+    web_ncc.clear()
+    out = _hoi(db, seed, "supplier_scorecard", {"supplier_names": ["Thép Việt Mới"]})
+    assert out["count"] == 0 and out["candidates"][0]["is_candidate"] is True and "web" not in out["candidates"][0]
+    assert web_ncc == []
+    assert "error" in _hoi(db, seed, "supplier_scorecard", {"supplier_names": ["  "]})
+
+
+def test_ho_so_web_ncc_khong_goi_model_va_may_tim_hong_khong_sap(monkeypatch):
+    monkeypatch.setattr(web_search, "search", lambda q, limit=8, **kw: (_ for _ in ()).throw(RuntimeError("chết")))
+    out = mt.supplier_web_profile("Công ty X", "0100")
+    assert out["query"] == '"Công ty X" 0100' and out["summary_sources"] == []
+    assert out["signals"] == {"co_website": False, "chung_nhan": []} and out["site"] == ""
+    assert mt.supplier_web_profile("", "")["summary_sources"] == []
+    assert mt._is_directory("masothue.com") and mt._is_directory("m.facebook.com") and not mt._is_directory("nhaxuatnx.vn")
+    assert "with_web" in mt.SUPPLIER_SCORECARD_SPEC.parameters["properties"]
+    assert "supplier_names" in mt.SUPPLIER_SCORECARD_SPEC.parameters["properties"]
+    assert "uy tín" in mt.SUPPLIER_SCORECARD_SPEC.description

@@ -13222,6 +13222,22 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-179 | Điểm báo theo chủ đề và thông tin web về nhà cung cấp trong bảng điểm
+- status: dang-lam
+- date: 2026-10-13
+Đại ca chốt làm tiếp phase 23. Nay người dùng dặn bot kiểu mỗi sáng gửi tin giá thép, phân bón thì bot lập một điểm báo:
+tới giờ đã hẹn, bot tìm tin mới trong hai mươi bốn giờ qua cho từng chủ đề, ưu tiên báo tiếng Việt, mỗi chủ đề tối đa năm
+tin, mỗi tin có tiêu đề, link và một hai câu tóm; tin đã gửi lần trước không gửi lại; không có tin mới thì nói rõ. Có khóa AI
+thì một lượt model tóm cả điểm báo, không có khóa vẫn gửi bản thô. Điểm báo nằm chung bảng bản tin nên bật tắt, đổi giờ bằng
+các câu nhắn cũ. Bảng điểm nhà cung cấp có thêm tùy chọn tra web: website, chứng nhận chất lượng, năm hoạt động, đánh giá công
+khai của từng nhà cung cấp, chỉ để tham khảo, không cộng vào điểm; nhà cung cấp người dùng nêu tên mà chưa có trong ERP được
+đánh dấu ứng viên mới. Máy tìm có thêm tham số chỉ lấy kết quả hai mươi bốn giờ qua. Bài kiểm mới mười một bài, chạy cùng bài
+bản tin và công cụ xanh.
+
+Mã nguồn: agent_hub/news_digest.py, agent_hub/brief_subs.py (add_news, send_one), agent_hub/web_search.py (search recent),
+assistant/tools/brief_tool.py (add_news), assistant/tools/market_tool.py (with_web, supplier_names); bài kiểm
+test_agent_hub_diem_bao.py, test_assistant_market_tool.py
+
 ## ai-CR-175 | Trợ lý cá nhân: việc Dự án theo dự án và nhắc hạn ba mốc cho người được giao
 - status: xong
 - date: 2026-10-10

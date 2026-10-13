@@ -38,8 +38,9 @@ def _clean(html: str) -> str:
 # ---------------------------------------------------------------------------
 # Tìm
 # ---------------------------------------------------------------------------
-def _ddg(query: str) -> list[dict]:
-    r = requests.post("https://html.duckduckgo.com/html/", data={"q": query, "kl": "vn-vi"},
+def _ddg(query: str, recent: bool = False) -> list[dict]:
+    #  ai-CR-179: `recent` = chỉ tin 24 giờ qua (điểm báo); df=d của DuckDuckGo.
+    r = requests.post("https://html.duckduckgo.com/html/", data={"q": query, "kl": "vn-vi", **({"df": "d"} if recent else {})},
                       headers={"User-Agent": UA}, timeout=SEARCH_TIMEOUT)
     if r.status_code != 200:
         return []
@@ -57,8 +58,10 @@ def _ddg(query: str) -> list[dict]:
     return out
 
 
-def _bing(query: str) -> list[dict]:
-    r = requests.get("https://www.bing.com/search", params={"q": query, "setlang": "vi", "cc": "VN"},
+def _bing(query: str, recent: bool = False) -> list[dict]:
+    #  ai-CR-179: ex1:"ez1" = 24 giờ qua của Bing.
+    r = requests.get("https://www.bing.com/search", params={"q": query, "setlang": "vi", "cc": "VN",
+                                                             **({"filters": 'ex1:"ez1"'} if recent else {})},
                      headers={"User-Agent": UA}, timeout=SEARCH_TIMEOUT)
     if r.status_code != 200:
         return []
@@ -72,12 +75,12 @@ def _bing(query: str) -> list[dict]:
     return out
 
 
-def search(query: str, limit: int = MAX_RESULTS) -> list[dict]:
-    """[{title, url, snippet}] — bỏ trùng tên miền + đường dẫn."""
+def search(query: str, limit: int = MAX_RESULTS, recent: bool = False) -> list[dict]:
+    """[{title, url, snippet}] — bỏ trùng tên miền + đường dẫn. `recent` (ai-CR-179): chỉ kết quả 24 giờ qua."""
     results: list[dict] = []
     for engine in (_ddg, _bing):
         try:
-            results = engine(query)
+            results = engine(query, recent)
         except requests.RequestException as e:
             log.info("agent_hub: %s hỏng: %s", engine.__name__, e)
             results = []
