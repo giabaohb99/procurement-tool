@@ -240,13 +240,15 @@ nhiều nhất, giá hải quan. **Chưa có:** nghiên cứu NHIỀU bước, �
 tiên / cấm (vd chỉ trang hãng + nhà phân phối, có lấy sàn TMĐT không); (3) trọng số chấm NCC (giá / chất lượng / giao hàng /
 pháp lý); (4) điểm báo gửi giờ nào, chủ đề nào.
 
-### Phase 24 — Bot điều phối việc theo kế hoạch cho sếp (đề xuất 13/10/2026, thiết kế ở doc 18)
+### Phase 24 — Bot điều phối việc theo kế hoạch cho sếp (đề xuất 13/10/2026, thiết kế ở doc 18) — 24.1 xong mã 13/10 (bao-CR-616), 24.2–24.7 chưa
 
 Sếp đưa danh sách việc → bot lập kế hoạch (giai đoạn, việc cha/con, người làm, tiêu chí, mốc) ghi vào Dự án → hỏi
 nhận việc và hỏi tiến độ qua Zalo (ưu tiên) / Telegram → xếp lại khi có người báo giờ khác → báo cáo kết thúc so sánh
 kế hoạch với thực tế (Word/Excel) → bài học cho lần sau. Bảy đợt 24.1–24.7 (đợt 1 chỉ ghi nhận việc trong Dự án, chưa
 nối phân hệ), chi tiết và bộ tiêu chí nháp ở [`18-dieu-phoi-viec-theo-ke-hoach.md`](18-dieu-phoi-viec-theo-ke-hoach.md);
-bản gọn cho người ngoài ở doc 19. Chưa có mã.
+bản gọn cho người ngoài ở doc 19. **Tiến độ:** 24.1 xong mã **13/10/2026** (bao-CR-616, làm trong 1 ngày, song song
+15.2): lập kế hoạch → bảng Dự án → hỏi nhận việc 3 nút → ghi xong / tiến độ qua chat → bản tin «Đang làm hôm nay»; chờ
+deploy dev. 24.2–24.7 chưa.
 
 Chèn vào kế hoạch này thì đổi (doc 18 §11): nới nguyên tắc *trợ lý cá nhân* thành có **tin nhân danh chủ kế hoạch** gửi
 cho người khác, chi phí tính vào khóa của chủ kế hoạch; không thêm nút bot, chỉ thêm bộ lập lịch gửi tin trong nút A;

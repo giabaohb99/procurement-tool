@@ -37,9 +37,13 @@ class Milestone(IntEnum):
     BEFORE = 1        # hạn ngày mai
     TODAY = 2         # hạn hôm nay
     OVERDUE = 3       # đã quá hạn
+    #  bao-CR-616 (phase 24.1): LỊCH TRÌNH hôm nay — việc đã bắt đầu, chưa tới hạn (hạn xa hơn ngày mai hoặc chưa
+    #  đặt hạn). Không có dấu «đã nhắc»: ngày nào còn đang làm thì bản tin ngày đó vẫn kể.
+    ACTIVE = 4
 
 
-HEADINGS = {Milestone.BEFORE: "Hạn ngày mai", Milestone.TODAY: "Hạn hôm nay", Milestone.OVERDUE: "Đã quá hạn"}
+HEADINGS = {Milestone.BEFORE: "Hạn ngày mai", Milestone.TODAY: "Hạn hôm nay", Milestone.OVERDUE: "Đã quá hạn",
+            Milestone.ACTIVE: "Đang làm hôm nay"}
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +101,10 @@ def classify(items: list[dict], today: date) -> dict[Milestone, list[dict]]:
     t, tm = today.isoformat(), (today + timedelta(days=1)).isoformat()
     for it in items:
         due = str(it.get("due_date") or "")
-        if not due:
+        start = str(it.get("start_date") or "")
+        if not due or due > tm:
+            if start and start <= t:
+                out[Milestone.ACTIVE].append(it)
             continue
         if due == tm:
             out[Milestone.BEFORE].append(it)
@@ -146,7 +153,8 @@ def compose(groups: dict[Milestone, list[dict]], today: date) -> tuple[str, str]
                     late = 0
                 extra = f", hạn {esc(_dmy(str(it.get('due_date'))))}, trễ {late} ngày"
             lines.append(f"• {esc(str(it.get('title') or ''))[:90]} ({esc(str(it.get('project') or ''))[:40]}{extra})")
-            marks.append(f"[vh:{int(it.get('id') or 0)}:{int(m)}]")
+            if m != Milestone.ACTIVE:
+                marks.append(f"[vh:{int(it.get('id') or 0)}:{int(m)}]")
         if len(items) > MAX_LINES:
             lines.append(f"… và {len(items) - MAX_LINES} việc khác, xem ở phân hệ Dự án.")
         lines.append("")
@@ -196,7 +204,15 @@ def items_for(db: Session, user, today: date) -> list[dict]:
     out = erp.run_tool(db, user, "my_work_tasks", {"until": (today + timedelta(days=1)).isoformat(), "limit": 100})
     if not isinstance(out, dict) or out.get("error") or out.get("denied"):
         return []
-    return list(out.get("items") or [])
+    items = list(out.get("items") or [])
+    #  bao-CR-616: thêm việc ĐANG LÀM (đã bắt đầu, hạn xa hơn ngày mai hoặc chưa đặt hạn) để bản tin là lịch trình.
+    seen = {int(it.get("id") or 0) for it in items}
+    more = erp.run_tool(db, user, "my_work_tasks", {"until": (today + timedelta(days=1)).isoformat(), "all_open": True, "limit": 100})
+    if isinstance(more, dict) and not (more.get("error") or more.get("denied")):
+        for it in more.get("items") or []:
+            if int(it.get("id") or 0) not in seen and str(it.get("start_date") or "") and str(it["start_date"]) <= today.isoformat():
+                items.append(it)
+    return items
 
 
 def send_for_user(db: Session, user_id: int, chat_id: str, *, now: datetime | None = None, force: bool = False) -> bool:

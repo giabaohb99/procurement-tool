@@ -66,6 +66,14 @@ FIELDS = [
              "BẬT: quay lại luật cũ — quá ngày đó thì không ai mở hay tải tệp được nữa, kể cả "
              "bằng đường dẫn cũ. Ngày đã khai trên từng văn bản KHÔNG mất khi tắt, bật lại là "
              "có hiệu lực ngay, không cần deploy."},
+    #  bao-CR-616 (phase 24.1): luật lập kế hoạch của bot điều phối việc. Chuỗi JSON; khóa nào không khai thì lấy
+    #  mặc định trong mã (`agent_hub/plan_policy.DEFAULTS`); JSON hỏng cũng rơi về mặc định, không làm bot ngừng.
+    {"key": "agent_plan_policy", "group": "ai", "type": "str",
+     "label": "Bot điều phối việc: bộ luật lập kế hoạch (JSON)",
+     "hint": "Để trống = luật nháp trong mã: ưu tiên 3 mức (Gấp · Ưu tiên · Thường, mặc định Thường), mỗi việc cha "
+             "tối đa 7 việc con, việc con tối đa 2 ngày công, không xếp hạn Chủ nhật, trả lời nhận việc trong 4 giờ, "
+             "hỏi tiến độ 15:00 ngày hạn và 08:00 ngày sau hạn, bản tin 08:30. Ví dụ đổi một khóa: "
+             "{\"max_subtasks\": 5, \"default_priority\": \"Ưu tiên\"}. Có hiệu lực ngay, không cần deploy."},
     {"key": "ai_enabled", "group": "ai", "type": "bool", "label": "Bật trợ lý AI",
      "hint": "TẮT thì mọi đường /api/assistant trả 403 và ô chat biến mất khỏi giao diện. "
              "Bật mà chưa dán key nào thì trợ lý vẫn báo chưa cấu hình."},

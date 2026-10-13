@@ -246,6 +246,11 @@ ACT_DRAFT_DONE = "da_tao"
 ACT_DRAFT_DROPPED = "bo_tao"
 ACT_DRAFT_DEL_WAIT = "cho_xoa_nhap"     # ai-CR-143: thẻ «xóa N phiếu nháp?» đang chờ đúng / thôi
 ACT_DRAFT_DEL_DONE = "da_xoa_nhap"
+#  bao-CR-616 (phase 24.1) — bot điều phối việc theo kế hoạch: tin hỏi nhận việc nhân danh chủ kế hoạch.
+ACT_PLAN_ASK = "hoi_nhan_viec"          # Tin bot gửi người làm: «việc X, nhận không?», body = JSON {task_id, list_id…}
+ACT_PLAN_ASK_WAIT = "cho_ly_do_viec"    # Tin bot: đã bấm Giờ khác / Từ chối, chờ người làm nhắn giờ hoặc lý do
+ACT_PLAN_REPLY = "tra_loi_nhan_viec"    # Tin người làm: câu trả lời đã ghi vào việc
+ACT_PLAN_NOTIFY = "bao_chu_ke_hoach"    # Tin bot gửi chủ kế hoạch: ai nhận / từ chối / xong việc gì
 #  ai-CR-184: sổ thay đổi do bot ghi + hoàn tác 24 giờ (phase 15.2). Hai dòng sổ ẩn (không gửi Telegram):
 #  `ds_thay_doi` giữ JSON {user_id, ids} = thứ tự dòng của thẻ «bot vừa làm gì» vừa liệt kê, để «hoàn tác 2» trỏ đúng dòng;
 #  `cho_hoan_tac` = thẻ xác nhận «Rút lại: …?» đang chờ đúng / thôi, body JSON {user_id, change_id, summary}; dùng một lần.

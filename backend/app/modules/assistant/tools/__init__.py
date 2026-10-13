@@ -27,7 +27,7 @@ from .learning_tool import LEARNING_SPECS
 from .personal_tool import PERSONAL_SPECS
 from .group_tool import GROUP_SPECS
 from .meeting_tool import MEETING_SPECS
-from .work_tool import DRAFT_WORK_TASK_SPEC, MY_WORK_TASKS_SPEC
+from .work_tool import DRAFT_WORK_PLAN_SPEC, DRAFT_WORK_TASK_SPEC, MY_WORK_TASKS_SPEC
 from .brief_tool import MANAGE_BRIEFS_SPEC
 from .leave_tool import MY_LEAVE_SUMMARY_SPEC
 from .payable_tool import (DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC,
@@ -76,6 +76,7 @@ def _active_specs() -> list:
                            *LEARNING_SPECS,  # ai-CR-078: dò nghĩa từ nội bộ, đề xuất thuật ngữ, báo thiếu chức năng
                            DRAFT_WORK_TASK_SPEC,  # ai-CR-080: soạn nháp việc ở phân hệ Dự án
                            MY_WORK_TASKS_SPEC,    # ai-CR-140: việc Dự án tới hạn / quá hạn của tôi
+                           DRAFT_WORK_PLAN_SPEC,  # bao-CR-616: lập kế hoạch việc (giai đoạn · việc cha / con) — phase 24.1
                            MANAGE_BRIEFS_SPEC,    # ai-CR-140: bật / tắt / hẹn bản tin trong chat
                            *PERSONAL_SPECS,       # ai-CR-095: sổ ghi nhớ riêng từng người (C-02)
                            *GROUP_SPECS,          # ai-CR-105: đọc nhóm Telegram bot đang ở

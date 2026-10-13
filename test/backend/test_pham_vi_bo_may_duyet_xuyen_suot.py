@@ -1306,6 +1306,8 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "draft_purchase_request": "ctx.can(purchase_request, create) — chỉ soạn nháp",
     "draft_leave_request": "ctx.can(leave_request, create) — chỉ soạn nháp",
     "draft_work_task": "ctx.can(work_task, create) — chỉ soạn nháp, bước «tạo» mới ghi (ai-CR-080)",
+    "draft_work_plan": "ctx.can(work_task, create) — chỉ soạn nháp cả cây kế hoạch; «tạo» qua draft_create → work_plan.build "
+                       "dùng đúng list/task_service của web (thành viên dự án), người lạ không đọc gì (bao-CR-616)",
     "my_work_tasks": "ctx.can(work_task, read) + visible_list_ids + người phụ trách = chính người hỏi (ai-CR-140)",
     "manage_briefs": "brief_subs theo ctx.user.id — chỉ lịch bản tin của chính người hỏi (ai-CR-140)",
     "propose_glossary_term": "chỉ ghi đề xuất thuật ngữ chờ duyệt; sửa thẳng chỉ khi chính là chủ từ điển (ai-CR-078)",
