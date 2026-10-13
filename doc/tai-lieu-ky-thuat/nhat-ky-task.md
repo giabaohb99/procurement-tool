@@ -13243,7 +13243,7 @@ agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_c
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-183 | Trợ lý trả lời nhanh và rẻ hơn: gói tri thức nạp theo chủ đề, giữ nhóm công cụ cho câu nối tiếp, dừng sớm khi đã có nháp
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Đại ca thấy bot trả lời chậm, mỗi lượt soạn nháp việc mất khoảng bốn mươi giây. Đo trên dev cho thấy một lượt Trợ lý gửi
 đi từ một trăm năm mươi đến hai trăm nghìn token, tốn gần nửa đô la, vì toàn bộ bảy gói tri thức (riêng gói nhà máy đã bốn mươi
@@ -13257,6 +13257,7 @@ Bài kiểm mới năm bài; chạy cùng bài router, nháp, công cụ xanh.
 Mã nguồn: assistant/knowledge.py (PACK_TOPICS, load_pack, omitted_titles), assistant/tool_router.py (select, pack_topics,
 PACK_NOTE), assistant/service.py (ask stop_on_draft), assistant/provider/*.py (run_tools stop_when), agent_hub/service.py
 (answer_question); bài kiểm test_assistant_gon_luot_cr183.py
+Deploy: dev 13/10, commit 2b331c1a trên erp-v2 (VPS mới); dựng ERP api rồi cụm bot. Số đo sau điền khi có.
 
 ## ai-CR-181 | Bot biết cột kanban của dự án khi tạo việc và khi hỏi về dự án
 - status: xong
