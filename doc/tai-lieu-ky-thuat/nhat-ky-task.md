@@ -13268,7 +13268,7 @@ agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_c
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-184 | Hoàn tác và xem bot vừa ghi gì ngay trên Telegram
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Phần bot của phase 15. Nhắn bot vừa làm gì thì bot liệt kê mười dòng mới nhất bot đã ghi cho mình kèm trạng thái hoàn tác
 được hay không và lý do. Nhắn hoàn tác thì bot nhắm dòng mới nhất, hoàn tác số n thì nhắm đúng dòng trên thẻ vừa liệt kê; bot
@@ -13279,9 +13279,10 @@ lượt với loại lỗi, không in chữ lỗi thô. Bài kiểm mới mườ
 
 Mã nguồn: agent_hub/change_undo.py (handle_text, render_list, with_undo_footer), agent_hub/service.py; bài kiểm
 test_agent_hub_hoan_tac_qua_chat.py
+Deploy: dev 13/10, commit f25815f0 trên erp-v2 (VPS mới); dựng cụm bot, ERP api và giao diện erp dev.
 
 ## ai-CR-185 | Tab Bot đã ghi gì trên ERP v2 với nút hoàn tác
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Phần màn hình của phase 15. Trang cá nhân trên ERP v2 có thêm tab Bot đã ghi gì cạnh tab Bot nhớ gì về tôi: bảng các lần bot
 ghi vào ERP cho mình với thời điểm, phiếu có link, hành động, tóm tắt, kênh, trạng thái và nút Hoàn tác chỉ bật khi còn hoàn
@@ -13291,6 +13292,7 @@ không lỗi, tám mươi bài kiểm cụm trang cá nhân xanh.
 
 Mã nguồn: frontend-v2/src/app/components/profile/profile-changes-tab.tsx, modules/system/api/bot-changes-api.ts,
 modules/system/hooks/use-bot-changes.ts, assistant/change_service.py (user_name_of)
+Deploy: dev 13/10, commit f25815f0 trên erp-v2 (VPS mới); dựng cụm bot, ERP api và giao diện erp dev.
 
 ## ai-CR-182 | Sổ thay đổi do bot ghi vào ERP và hoàn tác trong hai mươi bốn giờ, phần lõi
 - status: xong
