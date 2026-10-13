@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import get_perm_profile, require
+from app.core.base_model import mark_deleted
 from app.core.base_controller import apply_filters, apply_range_filters, apply_sort_from_request, pagination
 from app.core.contract_types import CONTRACT_TYPE_LABEL, CONTRACT_TYPES
 from app.core.status_codes import (CONTRACT_EXPIRY, CONTRACT_PARTY_TYPE,
@@ -70,8 +71,9 @@ def _in_scope(db: Session, cid: int, user, action: str = "read") -> Contract:
                     Contract, "contract", user, get_perm_profile(db, user), action).first()
     if not c:
         # Phân biệt "không có" với "có nhưng ngoài phạm vi" — 404 cho cái đầu để người dùng
-        # biết là gõ nhầm mã, 403 cho cái sau.
-        if db.get(Contract, cid) is None:
+        # biết là gõ nhầm mã, 403 cho cái sau. ai-CR-177: hợp đồng đã xóa mềm coi như không có.
+        raw = db.get(Contract, cid)
+        if raw is None or raw.is_deleted:
             raise HTTPException(404, "Không tìm thấy hợp đồng")
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
     return c
@@ -204,14 +206,16 @@ def _ensure_deletable(rows: list[Contract]) -> None:
 
 @router.delete("/{cid}")
 def delete_(cid: int, db: Session = Depends(get_db), user=Depends(require("contract", "delete"))):
+    """Xóa MỀM một hợp đồng (ai-CR-177): đánh cờ `is_deleted` + mốc + người xóa.
+
+    Luật được xóa hay không GIỮ nguyên `delete_block_reason` (ai-CR-169). Tệp đính kèm KHÔNG
+    xóa nữa — hợp đồng chỉ biến khỏi danh sách / chi tiết / cảnh báo / tool Trợ lý.
+    """
     c = _in_scope(db, cid, user, "delete")
     _ensure_deletable([c])
-    from app.modules.attachment.service import delete_attachments_for
-    # commit=False: tệp đính kèm và hợp đồng đi CHUNG một giao dịch (ai-CR-169 mục 7).
-    delete_attachments_for(db, [("contract", cid)], commit=False)
-    db.delete(c)
+    mark_deleted(c, user.id)
     db.commit()
-    record(db, user.id, "contract", cid, "delete")
+    record(db, user.id, "contract", cid, "delete", f"Xóa mềm hợp đồng {c.code}")
     return success(None, "Đã xóa")
 
 
@@ -220,7 +224,6 @@ def bulk_delete_contracts(ids: str, db: Session = Depends(get_db), user=Depends(
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
-    from app.modules.attachment.service import delete_attachments_for
     # Lọc phạm vi TRƯỚC vòng lặp: xóa hàng loạt mà chỉ `db.get` theo id thì gửi đại một dãy
     # id là xóa được hợp đồng của công ty khác.
     rows = apply_scope(db.query(Contract).filter(Contract.id.in_(id_list)),
@@ -229,13 +232,12 @@ def bulk_delete_contracts(ids: str, db: Session = Depends(get_db), user=Depends(
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
     # ai-CR-169: kiểm từng dòng TRƯỚC, có dòng không được thì không xóa dòng nào.
     _ensure_deletable(rows)
-    deleted_ids = [c.id for c in rows]
+    # ai-CR-177: xóa MỀM cả lô — một commit cho cả lô, tệp đính kèm giữ nguyên.
     for c in rows:
-        delete_attachments_for(db, [("contract", c.id)], commit=False)
-        db.delete(c)
+        mark_deleted(c, user.id)
     db.commit()
     # `record` tự commit — ghi SAU khi cả lô đã xóa xong để lô là một giao dịch.
-    for cid in deleted_ids:
-        record(db, user.id, "contract", cid, "delete")
+    for c in rows:
+        record(db, user.id, "contract", c.id, "delete", f"Xóa mềm hợp đồng {c.code}")
     # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
     return success(None, f"Đã xóa {len(rows)} bản ghi")

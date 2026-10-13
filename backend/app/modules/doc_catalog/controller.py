@@ -29,7 +29,9 @@ def _guard_doc_type(db, obj, values: dict):
         from fastapi import HTTPException
 
         from app.modules.document.model import Document
-        if db.query(Document.id).filter(Document.doc_type_id == obj.id).first():
+        #  ai-CR-177: bản nháp đã xóa mềm không tính là «loại đã có văn bản».
+        if db.query(Document.id).filter(Document.doc_type_id == obj.id,
+                                        Document.is_deleted == False).first():  # noqa: E712
             raise HTTPException(400, "Loại đã có văn bản, không đổi được kiểu định danh")
 
 

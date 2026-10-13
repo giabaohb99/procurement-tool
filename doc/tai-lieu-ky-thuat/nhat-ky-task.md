@@ -13222,6 +13222,35 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-176 | Xóa mềm đợt 2b cụm thu mua: đơn mua hàng, yêu cầu thanh toán, phiếu khảo sát
+- status: dang-lam
+- date: 2026-10-13
+Đại ca chốt làm trước đợt 2b xóa mềm. Đơn mua hàng, yêu cầu thanh toán và phiếu khảo sát nay xóa là đánh cờ đã xóa kèm thời
+điểm và người xóa; dòng hàng, lần giao, chi phí, dòng chi, tệp đính kèm giữ nguyên; luật chỉ xóa phiếu nháp hay bị trả giữ như
+cũ. Tầng phạm vi tự ẩn phiếu đã xóa khỏi danh sách, chi tiết, trang chủ, cảnh báo, xuất và công cụ Trợ lý; các chỗ đọc thẳng
+như chuỗi chứng từ, nhập từ Excel, hoàn tác lô, đồng bộ dòng yêu cầu mua hàng, phương án báo giá từ phiếu khảo sát, báo cáo thu
+mua, tiến độ mua hàng, công nợ được lọc tay. Mã phiếu không tái dùng. Một migration thêm ba cột cho ba bảng, đã chạy thử lên
+xuống. Bài kiểm mới mười bảy bài, năm bài cũ sửa giả định xóa cứng; chạy chung với ai-CR-177 722 bài xanh.
+
+Mã nguồn: purchase_order/service.py (delete_po), payment_request/service.py (delete_request), survey/service.py
+(delete_survey), core/attachment_scope.py (_live), report/service.py (_PO_LIVE); migration grp12_thu_mua_xoa_mem;
+bài kiểm test_thu_mua_xoa_mem_cr176.py
+
+## ai-CR-177 | Xóa mềm đợt 2b cụm văn thư và nhân sự: hợp đồng, văn bản nháp, hợp đồng lao động, hồ sơ
+- status: dang-lam
+- date: 2026-10-13
+Cùng đợt 2b. Hợp đồng nhà cung cấp, văn bản còn nháp, hợp đồng lao động và hồ sơ nay xóa là đánh cờ; phiên bản, tệp, quan hệ,
+liên kết thư mục, phiếu duyệt đã đóng giữ nguyên làm lịch sử nhưng không bày ra nữa; luật chặn xóa hợp đồng đang hiệu lực và
+luật chỉ xóa nháp giữ như cũ. Lớp CRUD dùng chung tự rẽ: model có cột xóa mềm thì đánh cờ, không có thì xóa cứng như cũ, kể cả
+dòng xóa trong tệp CSV. Văn bản có một cửa truy vấn chung nên danh sách, tìm toàn văn, báo cáo, Trợ lý đều ẩn văn bản đã xóa;
+chỉ mục tìm kiếm được gỡ. Tệp của văn bản đã xóa không mở được nữa; nhà cung cấp chỉ còn hợp đồng đã xóa không bị chặn xóa. Báo
+cáo thực hiện yêu cầu báo giá giữ cách cũ vì đã có thùng rác hoàn tác. Một migration thêm ba cột cho bốn bảng, đã chạy thử lên
+xuống. Bài kiểm mới mười hai bài, bốn bài cũ sửa; cụm văn bản 675 bài và cụm nhân sự hợp đồng 807 bài xanh.
+
+Mã nguồn: core/crud.py (remove_or_mark_deleted), document/query.py (documents_query), document/service.py
+(delete_document), contract/controller.py, labor_contract/service.py, dossier/service.py; migration
+grp13_van_thu_nhan_su_xoa_mem; bài kiểm test_van_thu_nhan_su_xoa_mem_cr177.py
+
 ## ai-CR-178 | Bot nghiên cứu sâu nhiều bước và tổng hợp nhiều tài liệu thành báo cáo có nguồn
 - status: dang-lam
 - date: 2026-10-13

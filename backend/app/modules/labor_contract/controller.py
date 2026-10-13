@@ -112,8 +112,8 @@ def delete_contract(cid: int, db: Session = Depends(get_db), user=Depends(requir
     profile = get_perm_profile(db, user)
     row = _scoped(db, cid, user, profile, "delete", lock=True)
     code = row.code
-    service.delete(db, row)
-    audit_record(db, user.id, ENTITY, cid, "delete", "Xóa hợp đồng lao động", doc_code=code)
+    service.delete(db, row, user.id)
+    audit_record(db, user.id, ENTITY, cid, "delete", "Xóa mềm hợp đồng lao động", doc_code=code)
     return success(None, "Đã xóa hợp đồng lao động")
 
 

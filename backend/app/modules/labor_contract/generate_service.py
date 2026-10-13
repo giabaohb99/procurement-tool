@@ -51,7 +51,7 @@ def _pick_template(db: Session, row: LaborContract, template_id: int) -> LaborCo
 def generate(db: Session, user, contract_id: int, template_id: int) -> tuple[LaborContract, str]:
     """Sinh (hoặc sinh lại) tệp. Khóa dòng HĐ để hai người bấm cùng lúc không đè nhau."""
     row = db.query(LaborContract).filter(LaborContract.id == contract_id).with_for_update().first()
-    if row is None:
+    if row is None or row.is_deleted:   # ai-CR-177: HĐ đã xóa mềm coi như không có
         raise HTTPException(404, "Không tìm thấy hợp đồng")
     if int(row.status) != int(S.DRAFT):
         raise HTTPException(409, "Chỉ sinh được tệp khi hợp đồng ở trạng thái Nháp")

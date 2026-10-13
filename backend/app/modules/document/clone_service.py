@@ -87,12 +87,18 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
         #  UNIQUE(source_document_id, company_id) ở tầng dữ liệu cũng chặn, nhưng
         #  báo trước thì người dùng biết là clone cũ vẫn còn chứ không phải lỗi.
         existing = (
-            db.query(Document.id)
+            db.query(Document.id, Document.is_deleted)
             .filter(Document.source_document_id == source.id,
                     Document.company_id == company_id)
             .first()
         )
         if existing:
+            #  ai-CR-177: bản clone đã XÓA MỀM vẫn giữ chỗ trong UNIQUE(source, company) — nói
+            #  thẳng để người dùng không đi tìm một bản riêng không còn hiện ở đâu.
+            if existing[1]:
+                raise HTTPException(
+                    400, f"Pháp nhân «{company.name}» từng có bản clone của văn bản này nhưng đã xóa; "
+                         "hệ thống còn giữ lại nên không tạo lại được — báo quản trị nếu cần phục hồi")
             raise HTTPException(
                 400, f"Pháp nhân «{company.name}» đã có bản clone của văn bản này rồi"
             )
@@ -344,7 +350,8 @@ def _copy_scopes(db: Session, source_document_id: int, clone_document_id: int,
 def clones_of(db: Session, source_document_id: int) -> list[Document]:
     return (
         db.query(Document)
-        .filter(Document.source_document_id == source_document_id)
+        .filter(Document.source_document_id == source_document_id,
+                Document.is_deleted == False)  # noqa: E712 — ai-CR-177: bản riêng đã xóa không bày
         .order_by(Document.company_id.asc())
         .all()
     )

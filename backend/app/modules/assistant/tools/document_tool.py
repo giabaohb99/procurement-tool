@@ -237,7 +237,7 @@ def _run_my_documents(ctx: ToolContext, args: dict) -> dict:
     if not ids:
         return {"total": 0, "items": []}
 
-    query = db.query(Document).filter(Document.id.in_(ids))
+    query = documents_query(db).filter(Document.id.in_(ids))   # ai-CR-177: bỏ văn bản đã xóa mềm
     if keyword:
         like = f"%{keyword}%"
         query = query.filter(Document.title.like(like)

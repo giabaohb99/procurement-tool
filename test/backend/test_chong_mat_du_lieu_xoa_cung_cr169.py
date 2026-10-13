@@ -65,7 +65,9 @@ def test_hop_dong_chi_xoa_duoc_khi_chua_ky_chua_hieu_luc(db, seed, cap_quyen):
     assert db.query(FileLink).filter(FileLink.entity == "contract", FileLink.entity_id == signed.id).count() == 1
 
     contract_ctl.delete_(draft.id, db, user)
-    assert db.get(Contract, draft.id) is None
+    #  ai-CR-177: xóa MỀM — hàng còn trong DB với cờ, biến khỏi phạm vi đọc.
+    row = db.get(Contract, draft.id)
+    assert row is not None and row.is_deleted is True and row.deleted_by == user.id
 
 
 def test_hop_dong_xoa_nhieu_mot_dong_sai_la_khong_xoa_dong_nao(db, seed, cap_quyen):
@@ -81,8 +83,10 @@ def test_hop_dong_xoa_nhieu_mot_dong_sai_la_khong_xoa_dong_nao(db, seed, cap_quy
     assert db.query(Contract).filter(Contract.id.in_([a.id, b.id, c.id])).count() == 3
 
     contract_ctl.bulk_delete_contracts(f"{a.id},{c.id}", db, user)
-    assert db.query(Contract).filter(Contract.id.in_([a.id, c.id])).count() == 0
-    assert db.get(Contract, b.id) is not None
+    #  ai-CR-177: xóa MỀM cả lô — hai hàng còn trong DB nhưng mang cờ xóa; HD-B nguyên vẹn.
+    assert db.query(Contract).filter(Contract.id.in_([a.id, c.id]),
+                                     Contract.is_deleted == True).count() == 2  # noqa: E712
+    assert db.get(Contract, b.id).is_deleted is False
 
 
 # ──────────────────────────── 2. Hoàn tác lô nhập ────────────────────────────
@@ -310,48 +314,53 @@ def _assert_no_commit_before_parent_gone(db, monkeypatch, model, oid: int, run) 
     assert seen and all(n == 0 for n in seen), seen
 
 
-def test_xoa_don_mua_hang_khong_commit_tep_truoc(db, seed, monkeypatch):
+#  ai-CR-176: ĐMH / PKS / YCTT nay xóa MỀM — cha không rời DB, tệp đính kèm GIỮ NGUYÊN (không còn
+#  bước `delete_attachments_for`), nên câu hỏi «tệp có commit trước cha không» chỉ còn với hợp đồng.
+def test_xoa_don_mua_hang_xoa_mem_giu_tep(db, seed):
     from app.modules.purchase_order import service as po_service
 
     po = PurchaseOrder(code="PO-TEP", status="draft", created_by=1, updated_by=1)
     db.add(po)
     db.commit()
     _attach(db, "purchase_order", po.id)
-    _assert_no_commit_before_parent_gone(db, monkeypatch, PurchaseOrder, po.id,
-                                         lambda: po_service.delete_po(db, po.id, seed.u_req_id))
-    assert db.query(FileLink).filter(FileLink.entity == "purchase_order", FileLink.entity_id == po.id).count() == 0
+    po_service.delete_po(db, po.id, seed.u_req_id)
+    assert db.get(PurchaseOrder, po.id).is_deleted is True
+    assert db.query(FileLink).filter(FileLink.entity == "purchase_order", FileLink.entity_id == po.id).count() == 1
 
 
-def test_xoa_phieu_khao_sat_khong_commit_tep_truoc(db, seed, monkeypatch):
+def test_xoa_phieu_khao_sat_xoa_mem_giu_tep(db, seed):
     from app.modules.survey import service as sv_service
     from app.modules.survey.model import Survey
 
     sid = seed.sv_nhan_id
     _attach(db, "survey", sid)
-    _assert_no_commit_before_parent_gone(db, monkeypatch, Survey, sid,
-                                         lambda: sv_service.delete_survey(db, sid, seed.u_req_id))
-    assert db.query(FileLink).filter(FileLink.entity == "survey", FileLink.entity_id == sid).count() == 0
+    sv_service.delete_survey(db, sid, seed.u_req_id)
+    assert db.get(Survey, sid).is_deleted is True
+    assert db.query(FileLink).filter(FileLink.entity == "survey", FileLink.entity_id == sid).count() == 1
 
 
-def test_xoa_yctt_khong_commit_tep_truoc(db, seed, monkeypatch):
+def test_xoa_yctt_xoa_mem_giu_tep(db, seed):
     from app.modules.payment_request import service as pr_service
 
     req = PaymentRequest(code="YCTT-TEP", status="draft", created_by=1, updated_by=1)
     db.add(req)
     db.commit()
     _attach(db, "payment_request", req.id)
-    _assert_no_commit_before_parent_gone(db, monkeypatch, PaymentRequest, req.id,
-                                         lambda: pr_service.delete_request(db, req.id, seed.u_req_id))
+    pr_service.delete_request(db, req.id, seed.u_req_id)
+    assert db.get(PaymentRequest, req.id).is_deleted is True
+    assert db.query(FileLink).filter(FileLink.entity == "payment_request", FileLink.entity_id == req.id).count() == 1
 
 
-def test_xoa_hop_dong_khong_commit_tep_truoc(db, seed, cap_quyen, monkeypatch):
+def test_xoa_hop_dong_giu_nguyen_tep_dinh_kem(db, seed, cap_quyen):
+    """ai-CR-177: hợp đồng xóa MỀM nên không còn bước xóa tệp — tệp đính kèm GIỮ NGUYÊN trong DB
+    (mục 7 «một giao dịch» trước đây canh xóa cứng cha + tệp, nay không còn áp cho hợp đồng)."""
     user = _user(db, seed)
     cap_quyen(user.id, "contract", scope="all", read=True, delete=True)
     c = _contract(db, seed, "HD-TEP", signed=False, status="active")
     _attach(db, "contract", c.id)
-    _assert_no_commit_before_parent_gone(db, monkeypatch, Contract, c.id,
-                                         lambda: contract_ctl.delete_(c.id, db, user))
-    assert db.query(FileLink).filter(FileLink.entity == "contract", FileLink.entity_id == c.id).count() == 0
+    contract_ctl.delete_(c.id, db, user)
+    assert db.get(Contract, c.id).is_deleted is True
+    assert db.query(FileLink).filter(FileLink.entity == "contract", FileLink.entity_id == c.id).count() == 1
 
 
 def test_delete_block_reason_bang_lap(db, seed):

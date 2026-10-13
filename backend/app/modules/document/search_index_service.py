@@ -147,7 +147,9 @@ def reindex(db: Session, document_id: int) -> DocumentSearch | None:
     """
     doc = db.get(Document, document_id)
     row = db.get(DocumentSearch, document_id)
-    if doc is None:
+    #  ai-CR-177: văn bản đã XÓA MỀM coi như không còn — gỡ dòng chỉ mục để FULLTEXT không
+    #  trả về nó (lớp chặn thứ hai, ngoài `documents_query` ở tập ứng viên).
+    if doc is None or doc.is_deleted:
         if row is not None:
             db.delete(row)
             db.commit()

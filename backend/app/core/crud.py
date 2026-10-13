@@ -5,10 +5,26 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import require
+from app.core.base_model import mark_deleted
 from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_perm_profile, get_scoped
+
+
+def remove_or_mark_deleted(db: Session, obj, user_id: int) -> bool:
+    """Xóa một dòng danh mục theo ĐÚNG kiểu của model (ai-CR-177). KHÔNG commit.
+
+    Model gắn `SoftDeleteMixin` (có cột `is_deleted`, vd Hồ sơ) → đánh cờ xóa mềm + mốc + người;
+    model không có cột đó → `db.delete` như cũ. Trả `True` khi là xóa mềm. Rẽ ở đây MỘT lần cho cả
+    nút xóa lẫn dòng CSV hành động «xóa», để không danh mục nào phải viết tay lại bộ CRUD chỉ vì
+    muốn xóa mềm.
+    """
+    if getattr(type(obj), "is_deleted", None) is not None:
+        mark_deleted(obj, user_id)
+        return True
+    db.delete(obj)
+    return False
 
 
 def commit_or_conflict(db: Session, message: str) -> None:
@@ -48,6 +64,11 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
 
     Danh mục nào không cần thì bỏ trống — đừng vì một chốt chặn mà viết tay lại
     cả bộ CRUD.
+
+    **Xóa mềm (ai-CR-177).** Model gắn `SoftDeleteMixin` thì `delete_item` và dòng CSV
+    hành động «xóa» chỉ đánh cờ `is_deleted` (xem `remove_or_mark_deleted`); `get_scoped` /
+    `apply_scope` tự giấu bản ghi đã xóa nên xóa lần hai là 404. Model không có cột đó vẫn
+    xóa cứng như trước. Chốt trùng `unique_field` CỐ Ý đếm cả hàng đã xóa — mã không tái dùng.
 
     **Phạm vi dữ liệu (B-07).** Bộ sinh này trước đây CHỈ chặn theo hành động
     (`require`), không hề gọi `apply_scope` — nên mọi danh mục dựng bằng nó đều
@@ -132,9 +153,9 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             raise HTTPException(404, "Không tìm thấy")
         if before_delete:
             before_delete(db, o)
-        db.delete(o)
+        soft = remove_or_mark_deleted(db, o, user.id)
         db.commit()
-        record(db, user.id, entity, oid, "delete")
+        record(db, user.id, entity, oid, "delete", "Xóa mềm" if soft else "")
         return success(None, "Đã xóa")
 
     if csv_headers:
@@ -218,7 +239,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                         # mức mật đang có người dùng vẫn bị xóa qua một dòng CSV.
                         if before_delete:
                             before_delete(db, existing)
-                        db.delete(existing)
+                        remove_or_mark_deleted(db, existing, user.id)   # ai-CR-177: rẽ theo model
                         deleted += 1
                     else:
                         for k, v in data.items():

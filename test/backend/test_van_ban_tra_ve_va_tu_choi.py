@@ -213,11 +213,14 @@ def test_xoa_van_ban_thi_don_luon_phieu_duyet(db, doc):
 
     service.delete_document(db, doc)
 
+    #  ai-CR-177: xóa MỀM — văn bản còn trong bảng (cờ xóa) nên phiếu duyệt đã đóng KHÔNG mồ côi,
+    #  GIỮ NGUYÊN làm lịch sử; chỉ không mở xem được nữa (`approval_bridge._can_read_document`).
+    assert db.get(Document, doc_id).is_deleted is True
     con_phien = db.query(ApprovalInstance).filter(
         ApprovalInstance.entity == "document", ApprovalInstance.entity_id == doc_id).count()
     con_viec = db.query(ApprovalTask).filter(ApprovalTask.instance_id == phien_id).count()
     con_vet = db.query(ApprovalAction).filter(ApprovalAction.instance_id == phien_id).count()
-    assert (con_phien, con_viec, con_vet) == (0, 0, 0), "Xóa văn bản phải dọn sạch phiếu duyệt"
+    assert (con_phien, con_viec, con_vet) == (1, 1, 1), "Xóa mềm giữ nguyên lịch sử duyệt"
 
 
 def test_xoa_van_ban_thi_don_luon_QUAN_HE(db, doc):
@@ -244,10 +247,16 @@ def test_xoa_van_ban_thi_don_luon_QUAN_HE(db, doc):
 
     service.delete_document(db, doc)
 
+    #  ai-CR-177: xóa MỀM — dòng quan hệ GIỮ trong DB (cha còn hàng, không mồ côi), nhưng tab
+    #  «Quan hệ» của văn bản còn sống KHÔNG bày dòng trỏ vào văn bản đã xóa (cả hai chiều).
+    from app.modules.document import link_service
+
     con = (db.query(DocumentLink)
            .filter((DocumentLink.source_document_id == doc_id)
                    | (DocumentLink.target_document_id == doc_id)).count())
-    assert con == 0, "Xóa văn bản phải dọn quan hệ CẢ HAI CHIỀU"
+    assert con == 2, "Xóa mềm không dọn dòng quan hệ"
+    assert link_service.links_of(db, other.id) == []
+    assert link_service.links_to(db, other.id) == []
 
 
 
@@ -329,4 +338,6 @@ def test_tu_bo_duoc_ban_nhap_cua_minh_du_khong_co_quyen_xoa(db, doc):
     db.commit()
     doc_id = doc.id
     service.discard_own_draft(db, doc, actor=7)
-    assert db.get(Document, doc_id) is None
+    #  ai-CR-177: xóa MỀM, ghi đúng người bỏ nháp.
+    row = db.get(Document, doc_id)
+    assert row is not None and row.is_deleted is True and row.deleted_by == 7

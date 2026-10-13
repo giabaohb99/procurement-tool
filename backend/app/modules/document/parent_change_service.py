@@ -113,7 +113,7 @@ def impact_of(db: Session, parent: Document, *, obsolete: bool) -> list[dict]:
     result: list[dict] = []
     for link in _children_links(db, parent.id):
         child = db.get(Document, link.source_document_id)
-        if child is None or child.status == STATUS_EXPIRED:
+        if child is None or child.is_deleted or child.status == STATUS_EXPIRED:   # ai-CR-177
             continue
         action = _action(db, link, child, parent, columns, default)
         result.append({

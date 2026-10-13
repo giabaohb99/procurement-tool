@@ -6,8 +6,9 @@ HĐ cũ giữ pháp nhân cũ.
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.base_model import mark_deleted
 from app.core.labor_contract_codes import LaborContractStatus as S
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, not_deleted_cond
 from app.core.utils import generate_code
 from app.modules.employee.model import Employee
 
@@ -66,9 +67,10 @@ def _ensure_contract_no_unique(db: Session, company_id: int, contract_no: str,
                                exclude_id: int | None = None) -> None:
     if not contract_no:
         return
+    #  ai-CR-177: HĐ đã xóa mềm không giữ số — số in trên giấy của một bản nháp đã bỏ dùng lại được.
     q = db.query(LaborContract.id).filter(
         LaborContract.company_id == company_id, LaborContract.contract_no == contract_no,
-        LaborContract.status != int(S.CANCELLED))
+        LaborContract.status != int(S.CANCELLED), not_deleted_cond(LaborContract))
     if exclude_id:
         q = q.filter(LaborContract.id != exclude_id)
     if q.first():
@@ -127,13 +129,15 @@ def update(db: Session, user, row: LaborContract,
     return row, rules.duration_warnings(row.contract_type, row.start_date, row.end_date)
 
 
-def delete(db: Session, row: LaborContract) -> None:
+def delete(db: Session, row: LaborContract, user_id: int = 0) -> None:
+    """Xóa MỀM (ai-CR-177): đánh cờ `is_deleted` + mốc + người xóa, GIỮ tệp sinh / tệp đã ký.
+
+    Luật trạng thái giữ như cũ: chỉ Nháp hoặc Đã hủy. HĐ đã xóa biến khỏi danh sách theo nhân sự,
+    màn chi tiết, các đường tải tệp (`get_scoped` tự giấu) và không giữ số `contract_no` nữa."""
     if int(row.status) not in _CLOSED:
         raise HTTPException(409, "Chỉ xóa được hợp đồng Nháp hoặc Đã hủy")
-    file_ids = [row.generated_file_id, row.signed_file_id]
-    db.delete(row)
+    mark_deleted(row, user_id)
     db.commit()
-    delete_files_after_commit(db, *[f for f in file_ids if f])
 
 
 def transition(db: Session, user, row: LaborContract, data: TransitionIn) -> LaborContract:
@@ -166,8 +170,12 @@ def delete_all_of(db: Session, eid: int) -> None:
     """Dọn HĐ Nháp/Đã hủy + tệp của người này. KHÔNG commit — chung giao dịch với nơi gọi."""
     from app.modules.attachment.service import delete_stored_file
 
+    #  ai-CR-177: cha (hồ sơ nhân sự) bị xóa CỨNG thì dọn luôn cả HĐ đã xóa mềm của người đó —
+    #  để lại là hàng mồ côi trỏ vào nhân sự không còn. HĐ đã ký / đã chấm dứt vẫn chặn ở
+    #  `ensure_employee_deletable` (chúng không bao giờ ở trạng thái xóa mềm).
     rows = db.query(LaborContract).filter(LaborContract.employee_id == eid,
-                                          LaborContract.status.in_(_CLOSED)).all()
+                                          (LaborContract.status.in_(_CLOSED))
+                                          | (LaborContract.is_deleted == True)).all()  # noqa: E712
     for r in rows:
         for fid in (r.generated_file_id, r.signed_file_id):
             if fid:

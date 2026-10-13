@@ -48,7 +48,7 @@ def list_legacy_pending(db: Session, user, profile: dict) -> list[dict]:
     query = (db.query(Document, DocumentVersion)
              .join(DocumentVersion, and_(DocumentVersion.document_id == Document.id,
                                          DocumentVersion.status == VERSION_SUBMITTED))
-             .filter(~running))
+             .filter(~running, Document.is_deleted == False))  # noqa: E712 — ai-CR-177
     visible = access_service.visible_condition(user, profile)
     if visible is not None:
         query = query.filter(visible)
@@ -111,6 +111,7 @@ def list_legacy_decisions(db: Session, user, days: int) -> list[dict]:
     rows = (db.query(AuditLog, Document)
             .join(Document, Document.id == AuditLog.entity_id)
             .filter(AuditLog.entity == ENTITY,
+                    Document.is_deleted == False,  # noqa: E712 — ai-CR-177
                     AuditLog.created_by == user.id,
                     AuditLog.created_at >= datetime.now() - timedelta(days=days),
                     or_(AuditLog.action == "approve",

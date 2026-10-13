@@ -79,7 +79,8 @@ def count_references(db: Session, code: str) -> list[tuple[str, int]]:
          db.query(SurveyRequestOption).filter(SurveyRequestOption.supplier_code == code)),
         ("dòng khảo sát", db.query(SurveySupplierLine).filter(SurveySupplierLine.supplier_code == code)),
         ("dòng khảo sát sản phẩm", db.query(SurveyProductLine).filter(SurveyProductLine.supplier_code == code)),
-        ("hợp đồng", db.query(Contract).filter(Contract.party_type == "supplier", Contract.party_code == code)),
+        ("hợp đồng", db.query(Contract).filter(Contract.party_type == "supplier", Contract.party_code == code,
+                                                Contract.is_deleted == False)),   # noqa: E712 — ai-CR-177
     ]
     return [(label, n) for label, q in checks if (n := q.count())]
 

@@ -23,7 +23,7 @@ from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Date,
                         UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import AuditMixin, Base
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 #  Nguồn gốc bản ghi. Bản 1 chỉ sinh ra loại 1; hai loại kia khai sẵn để sau
 #  nạp văn bản pháp luật / văn bản đến vào cùng bảng mà không phải ALTER nóng.
@@ -126,7 +126,12 @@ CONTENT_MODE_LABELS = {
 ALIVE_STATUSES = (STATUS_APPROVED, STATUS_EFFECTIVE)
 
 
-class Document(Base, AuditMixin):
+class Document(Base, AuditMixin, SoftDeleteMixin):
+    """ai-CR-177: xóa MỀM (`SoftDeleteMixin`, migration `grp13`). Chỉ bản nháp / bị trả về
+    chưa cấp số mới xóa được (`service.delete_document`); phiên bản, tệp, quan hệ, liên kết thư
+    mục, phiếu duyệt đã đóng của văn bản đã xóa GIỮ NGUYÊN. Mọi đường đọc đi qua
+    `query.documents_query` nên tự giấu; chỗ `db.get` thẳng phải tự kiểm `is_deleted`."""
+
     __tablename__ = "tab_document"
     __table_args__ = (
         #  Văn bản nội bộ BẮT BUỘC có loại và pháp nhân ban hành. Ba cột này để

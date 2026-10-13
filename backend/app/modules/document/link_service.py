@@ -49,8 +49,7 @@ def allowed_targets(db: Session, rule: DocTypeLinkRule, exclude_document_id: int
     Lọc đúng loại đích cho phép và **chỉ văn bản đang còn hiệu lực** — người soạn
     không phải nhớ quy tắc, và không lỡ tay trỏ vào một văn bản đã bãi bỏ.
     """
-    query = db.query(Document).filter(
-        Document.origin == 1,
+    query = documents_query(db).filter(   # ai-CR-177: `documents_query` = origin nội bộ + bỏ đã xóa
         Document.status.in_(ALIVE_STATUSES),
         Document.id != exclude_document_id,
     )
@@ -61,20 +60,27 @@ def allowed_targets(db: Session, rule: DocTypeLinkRule, exclude_document_id: int
 
 
 def links_of(db: Session, document_id: int) -> list[DocumentLink]:
-    """Quan hệ mà văn bản này là NGUỒN — "tôi hướng dẫn cho ai"."""
+    """Quan hệ mà văn bản này là NGUỒN — "tôi hướng dẫn cho ai".
+
+    ai-CR-177: bỏ dòng mà văn bản ĐÍCH đã xóa mềm — dòng quan hệ vẫn nằm trong DB (xóa mềm không
+    dọn), nhưng bày ra là một dòng trỏ vào văn bản không mở được."""
     return (
         db.query(DocumentLink)
-        .filter(DocumentLink.source_document_id == document_id)
+        .join(Document, Document.id == DocumentLink.target_document_id)
+        .filter(DocumentLink.source_document_id == document_id,
+                Document.is_deleted == False)  # noqa: E712
         .order_by(DocumentLink.relation.asc(), DocumentLink.id.asc())
         .all()
     )
 
 
 def links_to(db: Session, document_id: int) -> list[DocumentLink]:
-    """Quan hệ mà văn bản này là ĐÍCH — "ai hướng dẫn cho tôi"."""
+    """Quan hệ mà văn bản này là ĐÍCH — "ai hướng dẫn cho tôi". Bỏ nguồn đã xóa mềm (ai-CR-177)."""
     return (
         db.query(DocumentLink)
-        .filter(DocumentLink.target_document_id == document_id)
+        .join(Document, Document.id == DocumentLink.source_document_id)
+        .filter(DocumentLink.target_document_id == document_id,
+                Document.is_deleted == False)  # noqa: E712
         .order_by(DocumentLink.relation.asc(), DocumentLink.id.asc())
         .all()
     )

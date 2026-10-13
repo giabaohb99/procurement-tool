@@ -47,7 +47,9 @@ def _count_documents(db: Session, level: SecurityLevel) -> int:
     from app.modules.document.model import Document
 
     columns = Document.secrecy_level if level.kind == KIND_CONFIDENTIAL else Document.urgency
-    return db.query(Document.id).filter(columns == level.value).count()
+    #  ai-CR-177: bản nháp đã xóa mềm không giữ chân mức mật / độ khẩn.
+    return db.query(Document.id).filter(columns == level.value,
+                                        Document.is_deleted == False).count()  # noqa: E712
 
 
 def _count_doc_types(db: Session, level: SecurityLevel) -> int:

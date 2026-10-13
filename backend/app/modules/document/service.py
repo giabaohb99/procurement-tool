@@ -12,10 +12,10 @@ import logging
 from datetime import date
 
 from fastapi import HTTPException
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import user_has_permission
+from app.core.base_model import mark_deleted
 
 from app.modules.attachment.model import FileLink
 from app.modules.doc_catalog.model import DocType
@@ -431,11 +431,17 @@ def update_issue_number(
     return doc, previous
 
 
-def delete_document(db: Session, doc: Document):
-    """Xóa — CHỈ khi còn là nháp chưa cấp số.
+def delete_document(db: Session, doc: Document, actor: int = 0):
+    """Xóa MỀM — CHỈ khi còn là nháp chưa cấp số (ai-CR-177 đổi từ xóa cứng).
 
     Đã cấp số thì số đó đã nằm trong sổ; xóa bản ghi đi là sổ thủng một lỗ không
     giải thích được. Cách đúng là bãi bỏ, giữ nguyên dòng.
+
+    Xóa mềm = đánh cờ `is_deleted` + mốc + người xóa. Phiên bản, tệp đính kèm, quan hệ hai
+    chiều, liên kết thư mục, phiếu duyệt đã đóng của văn bản GIỮ NGUYÊN trong DB — chúng chỉ
+    biến mất cùng văn bản vì mọi cửa đọc đi qua `query.documents_query` (tự giấu) hoặc tự kiểm
+    `is_deleted`. Dòng chỉ mục tìm toàn văn thì XÓA (`search_index_service.reindex` coi văn
+    bản đã xóa như không còn) để FULLTEXT không trả về nó.
     """
     #  Cả «Trả về»: bản đó chưa từng được ban hành nên chưa có gì trong sổ để mà
     #  thủng. Bắt người soạn giữ lại một bản nháp bị trả mà họ đã quyết định bỏ
@@ -445,54 +451,18 @@ def delete_document(db: Session, doc: Document):
     if doc.doc_code or doc.issue_number:
         raise HTTPException(400, "Văn bản đã cấp số, không xóa được. Hãy bãi bỏ văn bản.")
 
-    #  Dọn PHIẾU DUYỆT trước khi xóa văn bản, trong cùng giao dịch. Văn bản ở
-    #  «Trả về» thì gần như luôn CÓ một phiếu duyệt đã đóng — không dọn thì nó
-    #  nằm lại trỏ vào một văn bản không còn tồn tại (lỗi dựng lại được
-    #  24/08/2026 trên đúng đường hợp lệ: tạo → gửi duyệt → bị trả về → Xóa).
-    from app.modules.approval import instance_service
-
-    instance_service.delete_by_entity(db, "document", doc.id)
-
-    #  Và dọn QUAN HỆ — cả hai chiều. Cùng một loại lỗi, tìm ra ngay sau đó khi
-    #  soi dữ liệu dev: hai dòng quan hệ mồ côi có từ 19/08 và 21/08. Văn bản
-    #  còn sống mở tab «Quan hệ» ra thì thấy một dòng *Có kèm theo* trỏ vào chỗ
-    #  trống (`document: null`) — người đọc không biết nó từng là cái gì, mà cũng
-    #  không bấm vào đâu được.
-    from .link_model import DocumentLink
-
-    db.query(DocumentLink).filter(
-        or_(DocumentLink.source_document_id == doc.id,
-            DocumentLink.target_document_id == doc.id)
-    ).delete(synchronize_session=False)
-
-    #  Dọn LIÊN KẾT THƯ MỤC — cùng lý do dọn `DocumentLink` ở trên: không FK nên
-    #  không ai dọn hộ, để lại là dòng nối mồ côi trỏ vào một văn bản không còn.
-    from app.modules.doc_catalog.folder_link_model import DocumentFolderLink
-
-    db.query(DocumentFolderLink).filter(DocumentFolderLink.document_id == doc.id).delete(
-        synchronize_session=False)
-
-    version_ids = [
-        row[0] for row in
-        db.query(DocumentVersion.id).filter(DocumentVersion.document_id == doc.id).all()
-    ]
-    if version_ids:
-        db.query(FileLink).filter(FileLink.entity == ATTACH_ENTITY,
-                                  FileLink.entity_id.in_(version_ids)).delete(
-                                      synchronize_session=False)
-    db.query(DocumentVersion).filter(DocumentVersion.document_id == doc.id).delete(
-        synchronize_session=False)
-    document_id = doc.id
-    db.delete(doc)
+    #  Trước ai-CR-177 chỗ này dọn cứng phiếu duyệt đã đóng, quan hệ hai chiều, liên kết thư
+    #  mục, tệp và phiên bản (vì bản ghi cha sắp mất, để lại là hàng mồ côi). Nay cha còn nằm
+    #  trong bảng với cờ xóa nên các dòng đó KHÔNG mồ côi — giữ nguyên; chỗ đọc quan hệ / cây
+    #  tài liệu / thư mục tự bỏ qua văn bản đã xóa (`link_service.links_of`, `link_serializer`,
+    #  `folder_tree_service`…).
+    mark_deleted(doc, actor)
     db.commit()
 
-    #  Chỉ mục TÌM KIẾM TOÀN VĂN (phase 07, duoc-CR-477) — văn bản không còn,
-    #  `queue_reindex`/`reindex` tự nhận ra và XÓA dòng chỉ mục tương ứng
-    #  (không phải dựng lại). `document_id` phải lấy TRƯỚC vào biến riêng ở
-    #  trên: sau `db.delete(doc)` + `db.commit()`, đọc `doc.id` là chạm vào một
-    #  object ORM đã bị xóa khỏi session.
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (phase 07, duoc-CR-477) — `reindex` coi văn bản đã xóa mềm
+    #  như không còn và XÓA dòng chỉ mục (không dựng lại), để tìm toàn văn không ra nó.
     from . import search_index_service
-    search_index_service.queue_reindex(db, document_id)
+    search_index_service.queue_reindex(db, doc.id)
 
 
 def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
@@ -516,7 +486,7 @@ def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
         raise HTTPException(400, "Chỉ bỏ được văn bản đang ở trạng thái nháp")
     if doc.created_by != actor:
         raise HTTPException(403, "Chỉ người tạo mới bỏ được bản nháp này")
-    delete_document(db, doc)
+    delete_document(db, doc, actor)
 
 
 def _ensure_submittable_content(db: Session, doc: Document, version) -> None:

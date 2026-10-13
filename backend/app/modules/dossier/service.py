@@ -151,4 +151,9 @@ def count_by_type(db: Session, type_id: int) -> int:
     thì người chỉ thấy phòng mình sẽ đọc được «0 hồ sơ» và xóa mất loại mà phòng
     khác đang dùng.
     """
-    return db.query(Dossier).filter(Dossier.dossier_type_id == type_id).count()
+    #  ai-CR-177: hồ sơ đã XÓA MỀM không tính — người dùng không còn thấy tờ đó ở đâu, bắt họ
+    #  giữ loại vì một hồ sơ vô hình là «còn 1 hồ sơ dùng» mà không chỉ ra được tờ nào.
+    #  Nhãn loại đã chép sẵn vào `dossier_type_name` nên tờ đã xóa không mất tên loại.
+    return (db.query(Dossier)
+            .filter(Dossier.dossier_type_id == type_id, Dossier.is_deleted == False)  # noqa: E712
+            .count())

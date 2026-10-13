@@ -144,7 +144,9 @@ def test_xoa_hang_loat_chi_xoa_phan_trong_pham_vi(ba_hop_dong, gia_lap_ho_so):
 
     ct.bulk_delete_contracts(ids, ba_hop_dong, user)
 
-    assert sorted(c.code for c in ba_hop_dong.query(Contract).all()) == ["HD-B1"]
+    #  ai-CR-177: xóa MỀM — hàng còn trong DB, chỉ hàng chưa xóa mới «còn».
+    assert sorted(c.code for c in ba_hop_dong.query(Contract)
+                  .filter(Contract.is_deleted == False).all()) == ["HD-B1"]  # noqa: E712
 
 
 def test_xoa_hang_loat_toan_id_ngoai_pham_vi_thi_403(ba_hop_dong, gia_lap_ho_so):

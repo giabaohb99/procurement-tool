@@ -483,8 +483,8 @@ def delete_document(
     user=Depends(require("document", "delete")),
 ):
     doc = _load(db, document_id, user, "delete")
-    service.delete_document(db, doc)
-    record(db, user.id, "document", document_id, "delete")
+    service.delete_document(db, doc, user.id)
+    record(db, user.id, "document", document_id, "delete", "Xóa mềm văn bản")
     return success(None, "Đã xóa văn bản")
 
 

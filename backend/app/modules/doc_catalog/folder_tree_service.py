@@ -100,7 +100,8 @@ def _document_counts(db: Session, user, folders: list[DocFolder]) -> tuple[dict[
     q = (
         db.query(DocumentFolderLink.folder_id, DocumentFolderLink.document_id)
         .join(Document, Document.id == DocumentFolderLink.document_id)
-        .filter(DocumentFolderLink.folder_id.in_(folder_ids))
+        .filter(DocumentFolderLink.folder_id.in_(folder_ids),
+                Document.is_deleted == False)  # noqa: E712 — ai-CR-177: văn bản đã xóa không đếm
     )
     if visible is not None:
         q = q.filter(visible)

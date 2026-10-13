@@ -31,7 +31,7 @@ cứng. Bản rà đọc mã `backend/app/modules/` + `core/` trên nhánh `agen
 
 ## 3. Chứng từ chính đang xóa cứng — chuyển sang xóa mềm (đợt 2)
 
-**Tiến độ:** đợt 2a (ai-CR-170, 10/10) đã làm `SoftDeleteMixin` + lọc tập trung ở `apply_scope` / `get_scoped` và áp cho **YCBG** (migration grp11). Còn lại đợt 2b: ĐMH · YCTT · PKS · hợp đồng NCC · văn bản nháp · HĐLĐ · hồ sơ · báo cáo thực hiện.
+**Tiến độ:** đợt 2a (ai-CR-170, 10/10) đã làm `SoftDeleteMixin` + lọc tập trung ở `apply_scope` / `get_scoped` và áp cho **YCBG** (migration grp11). Đợt 2b (13/10): **ĐMH · YCTT · PKS** xong ở ai-CR-176 (grp12); **hợp đồng NCC · văn bản nháp · HĐLĐ · hồ sơ** xong ở ai-CR-177 (grp13, kèm `core/crud.remove_or_mark_deleted` cho CRUD chung). Báo cáo thực hiện YCBG GIỮ cách cũ (đã có `SurveyReportTrash` hoàn tác; xóa mục / giai đoạn là dòng con của khối báo cáo). Còn đợt 3 (§4 danh mục).
 
 Yêu cầu báo giá (YCBG) · Đơn mua hàng (ĐMH) · Yêu cầu thanh toán (YCTT) · Phiếu khảo sát (PKS) · Hợp đồng NCC · Văn bản
 (bản nháp) · Hợp đồng lao động · Hồ sơ (dossier, qua CRUD chung) · báo cáo thực hiện (mục / giai đoạn / tài liệu).

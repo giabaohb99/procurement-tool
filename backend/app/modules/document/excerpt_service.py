@@ -139,7 +139,7 @@ def mark_excerpts_for_review(db: Session, source: Document, reason: str) -> int:
     count = 0
     for link in excerpts_of(db, source.id):
         excerpt = db.get(Document, link.source_document_id)
-        if excerpt is None or excerpt.status == STATUS_EXPIRED:
+        if excerpt is None or excerpt.is_deleted or excerpt.status == STATUS_EXPIRED:   # ai-CR-177
             continue
         excerpt.needs_review = True
         excerpt.needs_review_note = reason
@@ -152,7 +152,7 @@ def expire_excerpts(db: Session, source: Document) -> int:
     count = 0
     for link in excerpts_of(db, source.id):
         excerpt = db.get(Document, link.source_document_id)
-        if excerpt is None or excerpt.status == STATUS_EXPIRED:
+        if excerpt is None or excerpt.is_deleted or excerpt.status == STATUS_EXPIRED:   # ai-CR-177
             continue
         excerpt.status = STATUS_EXPIRED
         excerpt.needs_review = True

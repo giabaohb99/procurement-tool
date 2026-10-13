@@ -248,7 +248,7 @@ def _on_approved(db: Session, document_id: int, instance) -> None:
     from . import service
 
     doc = db.get(Document, document_id)
-    if doc is None:
+    if doc is None or doc.is_deleted:   # ai-CR-177: văn bản đã xóa mềm không đổi trạng thái nữa
         return
 
     if not _auto_issue(db, doc):
@@ -287,7 +287,7 @@ def _on_rejected(db: Session, document_id: int, instance) -> None:
     from . import service
 
     doc = db.get(Document, document_id)
-    if doc is not None:
+    if doc is not None and not doc.is_deleted:
         reason = _reason(instance, "Bị từ chối")
         service.reject(db, doc, reason, instance.updated_by or 0)
         _write_log(db, document_id, instance, "rejected", reason)
@@ -303,7 +303,7 @@ def _on_returned(db: Session, document_id: int, instance) -> None:
     from . import service
 
     doc = db.get(Document, document_id)
-    if doc is not None:
+    if doc is not None and not doc.is_deleted:
         reason = _reason(instance, "Bị trả về")
         service.send_back(db, doc, reason, instance.updated_by or 0)
         _write_log(db, document_id, instance, "returned", reason)
@@ -325,7 +325,7 @@ def _on_withdrawn(db: Session, document_id: int, instance) -> None:
     from . import service
 
     doc = db.get(Document, document_id)
-    if doc is not None:
+    if doc is not None and not doc.is_deleted:
         reason = _reason(instance, "")
         service.withdraw_document(db, doc, reason, instance.updated_by or 0)
         _write_log(db, document_id, instance, "withdrawn", reason or "Người nộp tự rút")
@@ -347,7 +347,7 @@ def _context_by_id(db: Session, document_id: int) -> dict:
     người quản trị đang đứng ở màn Luồng duyệt chứ không mở văn bản nào.
     """
     doc = db.get(Document, document_id)
-    return entity_context(doc) if doc else {}
+    return entity_context(doc) if doc and not doc.is_deleted else {}
 
 
 entity_hooks.register_subject(ENTITY, _context_by_id)
@@ -365,7 +365,9 @@ def _can_read_document(db: Session, document_id: int, user) -> bool:
     from . import access_service
 
     doc = db.get(Document, document_id)
-    if doc is None:
+    #  ai-CR-177: văn bản đã xóa mềm → phiếu duyệt (đã đóng) của nó không còn mở xem được, cùng
+    #  cửa với `/api/documents/{id}` trả 404.
+    if doc is None or doc.is_deleted:
         return False
     return access_service.can(db, doc, user, get_perm_profile(db, user), "read")
 

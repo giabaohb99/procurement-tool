@@ -13,18 +13,26 @@ hết các endpoint danh sách để canh việc này.
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Query, Session
 
+from app.core.scoping import not_deleted_cond
+
 from .model import ORIGIN_INTERNAL, Document
 
 
-def documents_query(db: Session, origin: int = ORIGIN_INTERNAL) -> Query:
-    """Truy vấn văn bản đã lọc sẵn `origin`. Truyền `origin=None` để lấy tất cả.
+def documents_query(db: Session, origin: int = ORIGIN_INTERNAL,
+                    include_deleted: bool = False) -> Query:
+    """Truy vấn văn bản đã lọc sẵn `origin` VÀ bỏ văn bản đã xóa mềm (ai-CR-177).
 
-    `origin=None` chỉ dành cho việc quản trị nội bộ (dọn dữ liệu, thống kê toàn
-    bảng) — **không dùng cho endpoint nào người dùng gọi được.**
+    Truyền `origin=None` để lấy mọi nguồn gốc. `origin=None` chỉ dành cho việc quản
+    trị nội bộ (dọn dữ liệu, thống kê toàn bảng) — **không dùng cho endpoint nào
+    người dùng gọi được.** `include_deleted=True` cũng vậy: chỉ cho dọn dữ liệu / đối
+    soát mã; mọi đường người dùng gọi (danh sách, chi tiết, tìm, báo cáo, tool Trợ lý)
+    phải để mặc định để văn bản đã xóa không lộ ra.
     """
     q = db.query(Document)
     if origin is not None:
         q = q.filter(Document.origin == origin)
+    if not include_deleted:
+        q = q.filter(not_deleted_cond(Document))
     return q
 
 

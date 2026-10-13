@@ -243,7 +243,8 @@ def test_khong_tai_scan_khi_da_huy_hoac_da_cham_dut_409(setup):
         assert res.status_code == 409
 
 
-def test_xoa_hd_nhap_don_ca_hai_tep(setup, db):
+def test_xoa_hd_nhap_giu_ca_hai_tep(setup, db):
+    """ai-CR-177: xóa MỀM — HĐ biến khỏi API (404) nhưng tệp sinh + tệp đã ký GIỮ NGUYÊN."""
     world, a1, _, storage, tid = setup
     base = len(storage)
     cid = make_contract(a1, world.emp["a2"])["id"]
@@ -251,7 +252,11 @@ def test_xoa_hd_nhap_don_ca_hai_tep(setup, db):
     a1.put(f"{CT_URL}/{cid}/signed-file", files={"file": ("s.pdf", PDF_BYTES, "application/pdf")})
     assert len(storage) == base + 2
     assert a1.delete(f"{CT_URL}/{cid}").status_code == 200
-    assert len(storage) == base and db.query(StoredFile).count() == 1
+    assert a1.get(f"{CT_URL}/{cid}").status_code == 404
+    assert a1.get(f"{CT_URL}/{cid}/document").status_code == 404
+    assert len(storage) == base + 2 and db.query(StoredFile).count() == 3
+    row = db.get(LaborContract, cid)
+    assert row.is_deleted is True and row.generated_file_id and row.signed_file_id
 
 
 # ── Tên tệp: chặn header injection / path traversal ───────────────────────────────────

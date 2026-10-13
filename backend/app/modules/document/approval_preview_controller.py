@@ -130,7 +130,8 @@ def preview_approval(
         from .model import Document
 
         source_doc = db.get(Document, data.source_document_id)
-        if source_doc is None or not access_service.can(db, source_doc, user, profile, "read"):
+        if (source_doc is None or source_doc.is_deleted
+                or not access_service.can(db, source_doc, user, profile, "read")):
             raise HTTPException(400, "Không tìm thấy văn bản gốc này, hoặc bạn không có quyền xem")
 
     result = preview_flow(

@@ -16,15 +16,20 @@ from datetime import date
 from sqlalchemy import JSON, BigInteger, Date, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base_model import AuditMixin, Base
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 from .constants import (DOSSIER_DRAFT, DOSSIER_STATUS_LABELS,
                         EXPIRY_STATE_LABELS)
 from .expiry import expiry_state as calc_expiry_state
 
 
-class Dossier(Base, AuditMixin):
-    """Một bộ hồ sơ."""
+class Dossier(Base, AuditMixin, SoftDeleteMixin):
+    """Một bộ hồ sơ.
+
+    ai-CR-177: xóa MỀM (`SoftDeleteMixin`, migration `grp13`). Đi qua `make_crud_router`:
+    `core/crud.delete_item` thấy cột `is_deleted` thì đánh cờ thay vì `db.delete`. Bản scan,
+    tiến độ theo chứng từ của hồ sơ đã xóa giữ nguyên; `apply_scope` / `get_scoped` tự giấu.
+    Mã `HS0001`… cấp bằng `generate_code` (MAX toàn bảng, kể cả hàng đã xóa) nên không tái dùng."""
 
     __tablename__ = "tab_dossier"
 

@@ -323,6 +323,7 @@ def has_visible_clone(db: Session, source_document_id: int, user,
     visible = visible_condition(user, profile, "read")
     query = db.query(Document.id).filter(
         Document.source_document_id == source_document_id,
+        Document.is_deleted == False,  # noqa: E712 — ai-CR-177: bản clone đã xóa không mở quyền đọc gốc
     )
     if visible is not None:
         query = query.filter(visible)

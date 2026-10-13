@@ -7,16 +7,20 @@ KHÔNG lẫn với `modules/contract` (hợp đồng NCC / khách).
 `company_id` / `department_id` là SNAPSHOT lúc lập (phục vụ phạm vi dữ liệu).
 ⚠️ Tiền = đồng NGUYÊN (BigInteger), không lẻ. Lương nằm sau khóa quyền riêng `labor_contract`.
 ⚠️ Trạng thái EXPIRED không ghi DB — suy ra từ SIGNED + end_date < hôm nay.
+⚠️ Xóa là xóa MỀM (ai-CR-177) — xem docstring lớp.
 """
 from datetime import date, datetime
 
 from sqlalchemy import BigInteger, Date, DateTime, Index, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import AuditMixin, Base
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 
-class LaborContract(Base, AuditMixin):
+class LaborContract(Base, AuditMixin, SoftDeleteMixin):
+    """ai-CR-177: xóa MỀM (`SoftDeleteMixin`, migration `grp13`) — chỉ Nháp / Đã hủy
+    (`service.delete`). Tệp sinh / tệp đã ký của HĐ đã xóa giữ nguyên; `get_scoped` tự giấu."""
+
     __tablename__ = "tab_labor_contract"
     __table_args__ = (
         Index("ix_labor_contract_emp_start", "employee_id", "start_date"),

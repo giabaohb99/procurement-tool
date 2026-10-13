@@ -43,7 +43,9 @@ def check_depends(db: Session, dossier_id: int, depends: list[int]) -> list[int]
     #  ⚠️ Đọc CẢ KHO chứ không chỉ mấy tờ được trỏ tới: dò vòng phải đi hết
     #  chuỗi, mà bước thứ hai trở đi là những tờ không có trong `depends`.
     #  Kho hồ sơ cỡ trăm dòng — một truy vấn, không phải chỗ cần tối ưu.
-    rows = db.query(Dossier.id, Dossier.depends).all()
+    #  ai-CR-177: hồ sơ đã xóa mềm KHÔNG còn là tiên quyết hợp lệ — trỏ vào nó báo «không tồn tại»
+    #  như id chết; id đã xóa còn nằm trong cột JSON của tờ khác thì `depends_names` tự lọc khi bày.
+    rows = db.query(Dossier.id, Dossier.depends).filter(Dossier.is_deleted == False).all()  # noqa: E712
     graph = {rid: list(deps or []) for rid, deps in rows}
 
     thieu = [i for i in depends if i not in graph]
@@ -84,7 +86,7 @@ def depends_names(db: Session, depends: list[int]) -> list[dict]:
         return []
     rows = (
         db.query(Dossier.id, Dossier.code, Dossier.name)
-        .filter(Dossier.id.in_(depends))
+        .filter(Dossier.id.in_(depends), Dossier.is_deleted == False)  # noqa: E712 — ai-CR-177
         .all()
     )
     theo_id = {rid: {"id": rid, "code": code, "name": name} for rid, code, name in rows}

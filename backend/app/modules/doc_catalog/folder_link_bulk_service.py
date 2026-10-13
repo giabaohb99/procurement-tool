@@ -134,6 +134,7 @@ def move_documents(db: Session, doc_ids: list[int], folder_id: int, mode: str, u
     `replace` (thay hẳn danh sách thư mục hiện có bằng đúng thư mục này)."""
     from app.modules.document import access_service
     from app.modules.document.model import Document
+    from app.modules.document.query import documents_query
 
     folder = db.get(DocFolder, folder_id)
     if not folder:
@@ -143,8 +144,9 @@ def move_documents(db: Session, doc_ids: list[int], folder_id: int, mode: str, u
     #  Nạp văn bản MỘT LƯỢT bằng `IN` (M5, rà soát 23/09/2026) — trước đó
     #  `db.get` từng dòng trong vòng lặp là một query riêng cho mỗi id; `mode`
     #  bị chặn ≤ `MAX_BULK_IDS` (schema) nên đây là MỘT truy vấn có trần.
+    #  `documents_query` (ai-CR-177): văn bản đã xóa mềm → «Không tìm thấy».
     ids = list(dict.fromkeys(doc_ids or []))
-    docs_by_id = {d.id: d for d in db.query(Document).filter(Document.id.in_(ids)).all()} if ids else {}
+    docs_by_id = {d.id: d for d in documents_query(db).filter(Document.id.in_(ids)).all()} if ids else {}
 
     moved: list[int] = []
     denied: list[dict] = []
@@ -171,15 +173,16 @@ def bulk_unlink(db: Session, doc_ids: list[int], folder_id: int, user, profile: 
                 actor: int) -> dict:
     from app.modules.document import access_service
     from app.modules.document.model import Document
+    from app.modules.document.query import documents_query
 
     folder = db.get(DocFolder, folder_id)
     if not folder:
         raise HTTPException(404, "Không tìm thấy thư mục")
     folder_access_service.ensure_level(db, user, folder, int(FolderAccessLevel.CONTRIBUTE), profile)
 
-    #  Nạp văn bản MỘT LƯỢT bằng `IN` — cùng lý do với `move_documents` (M5).
+    #  Nạp văn bản MỘT LƯỢT bằng `IN` — cùng lý do với `move_documents` (M5); bỏ đã xóa (ai-CR-177).
     ids = list(dict.fromkeys(doc_ids or []))
-    docs_by_id = {d.id: d for d in db.query(Document).filter(Document.id.in_(ids)).all()} if ids else {}
+    docs_by_id = {d.id: d for d in documents_query(db).filter(Document.id.in_(ids)).all()} if ids else {}
 
     moved: list[int] = []
     denied: list[dict] = []

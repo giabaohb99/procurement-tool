@@ -151,7 +151,9 @@ def update_meta(db: Session, user, row: LaborContractTemplate, data: TemplateUpd
 
 
 def delete_template(db: Session, row: LaborContractTemplate) -> None:
-    used = db.query(LaborContract.id).filter(LaborContract.template_id == row.id).count()
+    #  ai-CR-177: HĐ đã xóa mềm không giữ mẫu — tệp đã sinh là bản riêng (`generated_file_id`), không trỏ về mẫu.
+    used = db.query(LaborContract.id).filter(LaborContract.template_id == row.id,
+                                            LaborContract.is_deleted == False).count()  # noqa: E712
     if used:
         raise HTTPException(
             409, f"Mẫu đang được {used} hợp đồng tham chiếu — không xóa được, hãy chọn «Ngừng dùng».")

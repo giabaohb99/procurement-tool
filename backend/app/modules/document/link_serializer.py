@@ -125,7 +125,7 @@ def _children(db: Session, document_id: int, depth: int, seen: set[int]) -> list
         if link.source_document_id in seen or link.source_document_id in private_copy_ids:
             continue
         child = db.get(Document, link.source_document_id)
-        if child is None:
+        if child is None or child.is_deleted:   # ai-CR-177
             continue
         seen.add(child.id)
         node = summary_of(db, child) or {}

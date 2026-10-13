@@ -1,13 +1,17 @@
 from sqlalchemy import BigInteger, Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
 
 
-class Contract(Base, AuditMixin):
+class Contract(Base, AuditMixin, SoftDeleteMixin):
     """Hợp đồng tổng quát — dùng cho nhiều đối tượng (Nhà cung cấp, Khách hàng…).
 
     Đơn giản: chỉ để biết đối tượng đã ký với công ty nào + đính kèm file HĐ thật.
+
+    ai-CR-177: xóa MỀM (`SoftDeleteMixin`, migration `grp13`). Tệp đính kèm của hợp đồng đã xóa
+    giữ nguyên trong DB; `apply_scope` / `get_scoped` tự giấu. Luật được xóa hay không vẫn ở
+    `controller.delete_block_reason` (ai-CR-169). Mã `HD{id:05d}` sinh từ id nên không tái dùng.
     """
 
     __tablename__ = "tab_contract"
