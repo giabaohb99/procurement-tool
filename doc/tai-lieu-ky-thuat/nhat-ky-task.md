@@ -13243,7 +13243,7 @@ agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_c
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-181 | Bot biết cột kanban của dự án khi tạo việc và khi hỏi về dự án
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Đại ca nhờ bot tạo việc với trạng thái todo thì bot thú thật không tra được cột của dự án. Nay khi soạn nháp việc, người dùng nói
 tên cột thì việc vào đúng cột đó, so không dấu nên gõ todo hay Todo đều được; cột không có thì bot hỏi lại kèm đúng danh sách
@@ -13253,6 +13253,7 @@ dùng sửa trước khi tạo. Thẻ nháp có dòng Cột. Hỏi dự án X c�
 
 Mã nguồn: assistant/tools/work_tool.py (_sections_of, _pick_section, draft_work_task, my_work_tasks),
 agent_hub/draft_create.py (_create_work_task); bài kiểm test_agent_hub_cot_kanban.py
+Deploy: dev 13/10 (VPS AZDIGI mới), merge 5f455385 trên erp-v2; dựng ERP api rồi cụm bot.
 
 ## ai-CR-180 | Xác nhận bản nháp chịu được gõ thiếu dấu, bộ phân loại biết đang có nháp chờ
 - status: xong
