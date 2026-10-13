@@ -73,7 +73,10 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("personal", frozenset({"add_personal_item", "list_personal_items", "mark_personal_item", "save_note",
                             "search_notes"}),
      r"chi tieu|\bchi \d|mua gi|ghi chu|viec rieng|\bnhac\b|di cho|danh sach mua|so nho|\bnho\b"),
-    ("brief", frozenset({"manage_briefs"}), r"ban tin"),
+    ("brief", frozenset({"manage_briefs"}), r"ban tin|diem bao|tin tuc|moi sang gui|hang ngay gui"),   # ai-CR-179 điểm báo
+    #  ai-CR-178 (phase 23.1): nghiên cứu sâu nhiều nguồn, chạy nền, kết quả về chat riêng.
+    ("research", frozenset({"deep_research"}),
+     r"nghien cuu (sau|ky|ki|chi tiet|toan dien|day du|nhieu nguon)|bao cao nghien cuu|deep research"),
     ("export", frozenset({"export_excel_file", "export_report_file"}),
      r"xuat|excel|\bword\b|bao cao|tai ve|\bfile\b|\btep\b"),
     ("glossary", frozenset({"propose_glossary_term"}), r"thuat ngu|goi la|nghia la|viet tat"),

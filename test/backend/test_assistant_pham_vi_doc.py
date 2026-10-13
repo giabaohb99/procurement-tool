@@ -135,6 +135,9 @@ TOOL_KHONG_PHAM_VI = {
     "latest_meeting_report": "cuộc họp mới nhất của chính người hỏi + thư mục «Họp» trên Drive của chính họ",
     #  ai-CR-140: đăng ký bản tin — tab_agent_brief_sub lọc cứng theo ctx.user.id, không đọc bản ghi nghiệp vụ.
     "manage_briefs": "bật / tắt / hẹn bản tin của chính người hỏi",
+    #  ai-CR-178 (phase 23.1): nguồn là web CÔNG KHAI (không của ai), kết quả về chat riêng của chính người hỏi
+    #  (meeting_drive.private_chat(ctx.user.id)); không đọc bản ghi nghiệp vụ nào.
+    "deep_research": "nghiên cứu sâu nhiều nguồn web công khai, chạy nền, kết quả về chat riêng của chính người hỏi",
 }
 
 
@@ -150,8 +153,9 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    #  71 = 69 + `market_price_search` + `supplier_scorecard` (ai-CR-173/174, phase 23.4/23.5).
-    assert len(thuc_te) == 71, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  72 = 69 + `market_price_search` + `supplier_scorecard` (ai-CR-173/174, phase 23.4/23.5) + `deep_research`
+    #  (ai-CR-178, phase 23.1).
+    assert len(thuc_te) == 72, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

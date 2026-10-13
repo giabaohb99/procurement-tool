@@ -1289,6 +1289,10 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "rewrite_meeting_minutes": "meetings.find chỉ trong phiên của ctx.user.id",
     "save_meeting_template": "ghi vào sổ ghi nhớ của chính ctx.user.id",
     "latest_meeting_report": "meetings.recent(ctx.user.id) + Drive của chính người hỏi (google_link.get_link(user.id))",
+    #  ai-CR-178 (phase 23.1): KHÔNG đọc bảng ERP nào — nguồn là web CÔNG KHAI (không của ai, PUBLIC như market_price_search);
+    #  chỉ khởi động việc nền và gửi kết quả về chat riêng của chính người hỏi (meeting_drive.private_chat(ctx.user.id)).
+    "deep_research": "không đọc dữ liệu ERP — web công khai (PUBLIC) + chat riêng của chính người hỏi qua "
+                     "meeting_drive.private_chat(ctx.user.id); Word lên Drive của chính họ (google_link.get_link(user.id))",
     "my_approval_tasks": "task_service.my_tasks(employee_id) — hộp việc của chính mình",
     "my_requests_status": "lọc theo started_by_employee_id — phiếu chính mình trình",
     "my_tickets": "lọc theo created_by/requester_id + ctx.can(ticket, read)",

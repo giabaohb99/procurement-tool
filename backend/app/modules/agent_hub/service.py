@@ -936,6 +936,38 @@ def export_research_word(db: Session, chat_id: str) -> None:
     db.commit()
 
 
+def _deep_research_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """ai-CR-178 (phase 23.1 / 23.2): «nghiên cứu sâu: …» / «báo cáo nghiên cứu về …» → nhiều câu tìm con + báo cáo có
+    trích nguồn; «tổng hợp / so sánh các tài liệu này» kèm link / tệp → bản tổng hợp. Cũng nhận «ok» / «thôi» cho thẻ ước
+    tính chi phí của chính nó. Đứng TRƯỚC `_doc_followup` vì câu «tổng hợp các tài liệu này» phải gom HẾT tệp vừa gửi,
+    không phải chỉ tệp đang chờ. Chỉ chat đã đăng nhập ERP và có khóa AI; thiếu thì câu hướng dẫn sẵn có."""
+    from . import deep_research
+
+    if deep_research.cost_ok_by_text(db, chat_id, row, text):
+        return True
+    parsed = deep_research.parse_command(text)
+    if parsed is None:
+        return False
+    kind, question = parsed
+    items: list[dict] = []
+    if kind == deep_research.KIND_DOCS:
+        items = deep_research.collect_items(db, chat_id, row.id, text)
+        if not items:
+            return False                        # «tổng hợp báo cáo công nợ» không kèm tài liệu — việc của Trợ lý ERP
+    row.action = ACT_COMMAND
+    row.scope = SCOPE_PERSONAL
+    db.commit()
+    user = _assistant_user(db, chat_id)
+    if user is None:
+        reply(db, chat_id, _NO_ASSISTANT_USER)
+        return True
+    if not user_keys.active_key():
+        reply(db, chat_id, user_keys.NO_KEY_HELP)
+        return True
+    deep_research.start(db, chat_id, int(user.id), kind, question, items=items)
+    return True
+
+
 #  ai-CR-158: hỏi chi phí của một biên bản họp («chi phí token cho cái recap này», «biên bản vừa rồi tốn bao nhiêu»).
 _MEETING_WORDS = re.compile(r"(?<!\w)(recap|biên bản|cuộc họp|buổi họp|chép lời)(?!\w)")
 
@@ -1336,7 +1368,8 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     dự án KHÔNG mở cho họ, hạ về tìm web); mọi ý định khác → Trợ lý ERP dưới quyền của chính họ. Họ
     không giao được việc sửa mã và không thao tác được việc của bot, nên «viec» / «thao_tac» cũng về Trợ lý.
     """
-    if (_doc_followup(db, chat_id, row, text) or _guide_by_text(db, chat_id, row, text)
+    if (_deep_research_by_text(db, chat_id, row, text)      # ai-CR-178: trước _doc_followup — gom hết tệp vừa gửi
+            or _doc_followup(db, chat_id, row, text) or _guide_by_text(db, chat_id, row, text)
             or meeting_actions.handle_text(db, chat_id, row, text)
             or meeting_drive.handle_text(db, chat_id, row, text)
             or _my_drafts_by_text(db, chat_id, row, text)
@@ -1445,6 +1478,10 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     nhánh mập mờ. Bản trước rơi về giao việc — tức một câu hỏi gặp lúc Gemini 429 là
     thành một thẻ việc 90 giây sau; tin vẫn không mất, nhưng nay đại ca là người chốt.
     """
+    #  ai-CR-178: «nghiên cứu sâu: …» / «tổng hợp các tài liệu này» (+ ok / thôi cho thẻ chi phí của nó) — đi trước
+    #  _doc_followup vì câu tổng hợp phải gom HẾT tệp vừa gửi, không chỉ tệp đang chờ.
+    if _deep_research_by_text(db, chat_id, row, text):
+        return
     #  ai-CR-115: tin chữ ngay sau một tệp chưa kèm câu hỏi = câu hỏi về tệp đó — đi trước mọi đường khác.
     if _doc_followup(db, chat_id, row, text):
         return

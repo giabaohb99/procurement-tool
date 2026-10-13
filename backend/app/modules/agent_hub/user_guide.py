@@ -149,12 +149,19 @@ SECTIONS: tuple[Section, ...] = (
                                                                          "chia sẻ công khai, bài báo khoa học — em đọc cả tệp"),
         ("có đúng là … không", "kiểm chứng một thông tin"),
         ("xuất Word", "bản Word của lần tìm vừa rồi"),
+        ("nghiên cứu sâu: giá thép xây dựng quý 4", "em lập 3–6 câu tìm con, đọc nhiều trang, viết báo cáo có trích "
+                                                      "nguồn từng ý + tệp Word + Drive; chạy nền vài phút, từ 1 USD em hỏi "
+                                                      "ok trước"),
+        ("tổng hợp các tài liệu này", "gửi nhiều link / tệp (PDF, Word, Excel, Drive, bài báo) rồi nhắn câu này — em so "
+                                      "sánh, chỉ chỗ mâu thuẫn, ra bản tổng hợp Word"),
     )),
     Section("ban_tin", "Bản tin tự gửi", ("ban tin", "viec hom nay"), (
         ("bản tin hôm nay", "gửi ngay: lịch, việc riêng, việc Dự án tới hạn, phiếu chờ duyệt"),
         ("bật bản tin", "mỗi sáng 7h30 em tự gửi bản tin trên"),
         ("bản tin lúc 6h45 ngày thường", "đổi giờ, chọn thứ"),
         ("sáng thứ hai gửi anh công nợ quá hạn của DEGO", "bản tin theo chủ đề, em tự hỏi hộ theo lịch"),
+        ("mỗi sáng gửi anh tin giá thép, phân bón", "điểm báo: tin mới trên web trong 24 giờ, mỗi tin 1–2 câu + link, "
+                                                     "không gửi lại tin cũ"),      # ai-CR-179
         ("bản tin của tôi", "xem các bản tin đang bật, có đánh số"),
         ("tắt bản tin 2", "tắt một bản tin theo số; tắt hết bản tin để tắt cả"),
     )),

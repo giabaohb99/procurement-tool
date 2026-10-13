@@ -13222,6 +13222,22 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-178 | Bot nghiên cứu sâu nhiều bước và tổng hợp nhiều tài liệu thành báo cáo có nguồn
+- status: dang-lam
+- date: 2026-10-13
+Đại ca chốt làm tiếp phase 23. Nay nhắn bot nghiên cứu sâu một chủ đề thì bot tự lập ba đến sáu câu tìm con, báo trước chi phí
+ước tính (dưới một đô la chạy luôn, từ một đô la hỏi ok hay thôi như biên bản họp), rồi tìm và đọc nguồn công khai cho từng câu,
+gộp thành báo cáo theo khuôn cố định: tóm tắt, phát hiện chính có trích nguồn từng ý, chỗ các nguồn mâu thuẫn, kết luận và
+khuyến nghị, danh mục nguồn kèm ngày thu thập. Trong chat chỉ gửi bản rút gọn, bản đầy đủ là tệp Word theo bộ nhận diện công ty,
+tải lên Drive nếu người đó đã nối Google. Gửi nhiều tệp hay link rồi nhắn tổng hợp các tài liệu này thì bot đọc từng tài liệu và
+ra báo cáo điểm chung, điểm khác và mâu thuẫn dạng bảng, tóm tắt từng tài liệu, kết luận. Việc chạy nền, hỏng giữa chừng báo rõ
+bước đã xong; chi phí từng lượt ghi sổ, báo chi phí thật khi đáng kể. Trợ lý web cũng gọi được, kết quả về chat riêng. Bài kiểm
+mới hai mươi bảy bài, chạy cùng các bài ranh giới, công cụ xanh.
+
+Mã nguồn: agent_hub/deep_research.py (start, run_job, deliver, estimate_web, estimate_docs), agent_hub/service.py
+(_deep_research_by_text), agent_hub/tasks.py (agent.deep_research), assistant/tools/research_tool.py (deep_research);
+bài kiểm test_agent_hub_nghien_cuu_sau.py
+
 ## ai-CR-179 | Điểm báo theo chủ đề và thông tin web về nhà cung cấp trong bảng điểm
 - status: dang-lam
 - date: 2026-10-13

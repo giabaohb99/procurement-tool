@@ -827,6 +827,21 @@ def meeting_drive_scan_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.deep_research", time_limit=3600, acks_late=False)
+def deep_research_task(job_id: int) -> dict:
+    """ai-CR-178 (phase 23.1 / 23.2): một việc nghiên cứu sâu / tổng hợp tài liệu (tìm + đọc nguồn → viết báo cáo → gửi
+    rút gọn + Word + Drive). `job_id` = id dòng sổ `ACT_RESEARCH_JOB`."""
+    if (off := _off()) is not None:
+        return off
+    from . import deep_research
+
+    db = SessionLocal()
+    try:
+        return deep_research.run_job(db, job_id)
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.doc_wait", acks_late=False)
 def doc_wait_task(row_id: int) -> dict:
     """ai-CR-115: tệp gửi riêng không kèm câu hỏi, hết giờ chờ mà không có tin chữ nào → tự tóm tắt."""

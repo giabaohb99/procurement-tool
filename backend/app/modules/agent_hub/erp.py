@@ -29,7 +29,8 @@ log = logging.getLogger("app.agent_hub.erp")
 TIMEOUT = 30
 TOOL_TIMEOUT = 90
 #  Công cụ chạy NGAY trong dịch vụ AI (dữ liệu riêng từng người: sổ nhớ, thẻ, nhóm, họp, Google) — mọi tên khác chạy ở ERP.
-LOCAL_TOOL_MODULES = ("personal_tool", "group_tool", "meeting_tool", "google_tool", "brief_tool")
+LOCAL_TOOL_MODULES = ("personal_tool", "group_tool", "meeting_tool", "google_tool", "brief_tool",
+                      "research_tool")      # ai-CR-178: nghiên cứu sâu chạy ở dịch vụ AI, không đọc ERP
 
 
 #  ai-CR-162: chờ ERP khởi động lại khi kết nối bị từ chối — tổng ~45 giây (một lần dựng lại api dev ~30-40 giây).

@@ -167,6 +167,7 @@ TOOL_SUB: dict[str, Sub] = {
     "supplier_search": Sub.LOOKUP_SUPPLIER, "suppliers_for_product": Sub.LOOKUP_SUPPLIER,
     "top_suppliers_by_purchase": Sub.LOOKUP_SUPPLIER, "supplier_scorecard": Sub.LOOKUP_SUPPLIER,   # ai-CR-174
     "market_price_search": Sub.LOOKUP_MARKET,   # ai-CR-173
+    "deep_research": Sub.RESEARCH_WEB,          # ai-CR-178: nghiên cứu sâu nhiều nguồn (phase 23.1), chạy nền về chat riêng
     "supplier_contracts": Sub.LOOKUP_CONTRACT, "contract_count_by_status": Sub.LOOKUP_CONTRACT,
     "contract_list_by_expiry": Sub.LOOKUP_CONTRACT,
     "product_search": Sub.LOOKUP_PRODUCT, "product_best_price": Sub.LOOKUP_PRODUCT,
@@ -202,7 +203,9 @@ TOOL_SUB: dict[str, Sub] = {
 
 #  Chế độ nghiên cứu (`research.MODE_*`) → nhãn con; "doc" = link tới TỆP đọc như tệp gửi thẳng (ai-CR-134).
 _RESEARCH_SUB = {"web": Sub.RESEARCH_WEB, "kiem_chung": Sub.RESEARCH_WEB, "doc_link": Sub.RESEARCH_LINK,
-                 "tai_lieu": Sub.RESEARCH_DOCUMENT, "doc": Sub.RESEARCH_DOCUMENT}
+                 "tai_lieu": Sub.RESEARCH_DOCUMENT, "doc": Sub.RESEARCH_DOCUMENT,
+                 #  ai-CR-178 (phase 23.1 / 23.2): nghiên cứu sâu nhiều nguồn; tổng hợp nhiều tài liệu.
+                 "deep": Sub.RESEARCH_WEB, "deep_docs": Sub.RESEARCH_DOCUMENT}
 _NO_TOOL_SUB = {Intent.ASK: Sub.ASK_GENERAL, Intent.UNSURE: Sub.ASK_GENERAL, Intent.TASK: Sub.BOT_TASK,
                 Intent.ACT: Sub.BOT_TASK_ACTION, Intent.DATA: Sub.DATA_CHANGE, Intent.RESEARCH: Sub.RESEARCH_WEB}
 

@@ -129,6 +129,7 @@ viết sẵn, model chỉ chọn công cụ và điền tham số theo khuôn.
 | Danh bạ, nghỉ phép, phiếu hỗ trợ, việc Dự án | `employee_tool.py`, `leave_tool.py`, `ticket_tool.py`, `work_tool.py` | ERP |
 | Hải quan (giá thị trường, thời điểm mua, pháp lý) | `customs_tool.py` | ERP |
 | Giá + link sản phẩm trên web, chấm điểm NCC (phase 23.4/23.5, ai-CR-173/174) | `market_tool.py` → `agent_hub/web_search.py` | ERP |
+| Nghiên cứu sâu nhiều nguồn, chạy nền về chat riêng (phase 23.1, ai-CR-178) | `research_tool.py` → `agent_hub/deep_research.py` | **Dịch vụ AI** (cần thêm `research_tool` vào `erp.LOCAL_TOOL_MODULES`) |
 | HDSD (Qdrant `kb_docs`) | `rag_tool.py` → `assistant/rag/` | ERP |
 | Soạn nháp YCBG / YCMH / nghỉ phép / YCTT | `draft_tool.py` | ERP |
 | Đề xuất sửa phiếu, lập bộ tài khoản | `update_tool.py`, `account_setup_tool.py` | ERP |
@@ -400,6 +401,7 @@ stack đã tách (S-1), chưa có runbook riêng cho prod (doc 14 chỉ viết c
 | Thuật ngữ, vòng tự học, thiếu chức năng | `assistant/glossary.py`, `agent_hub/learning.py`, `assistant/feedback.py` |
 | Nhóm chat, đọc tệp | `agent_hub/groups.py`, `doc_text.py`; màn ERP v2: `frontend-v2/src/modules/assistant/pages/chat-group-*.tsx`, `bot-user-list-page.tsx` |
 | Tra mạng, đọc link, chặn địa chỉ nội bộ | `agent_hub/web_search.py`, `research.py` |
+| Nghiên cứu sâu (3–6 câu tìm con → báo cáo trích nguồn), tổng hợp nhiều tài liệu, thẻ ước chi phí của nó, Word + Drive (ai-CR-178, phase 23.1/23.2) | `agent_hub/deep_research.py`; lệnh chat: `service._deep_research_by_text`; việc nền `tasks.deep_research_task`; tool web: `assistant/tools/research_tool.py` |
 | Biên bản họp | `agent_hub/meetings.py`, `meeting_actions.py`, `meeting_drive.py`, `dego_docx.py` |
 | Chuông, nhắc, bản tin sáng, Google | `agent_hub/bells.py`, `reminders.py`, `briefs.py`, `google_link.py` |
 | Cổng MCP | `agent_hub/mcp.py`, `mcp_keys.py` |

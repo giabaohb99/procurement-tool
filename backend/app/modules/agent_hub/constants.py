@@ -246,6 +246,11 @@ ACT_DRAFT_DONE = "da_tao"
 ACT_DRAFT_DROPPED = "bo_tao"
 ACT_DRAFT_DEL_WAIT = "cho_xoa_nhap"     # ai-CR-143: thẻ «xóa N phiếu nháp?» đang chờ đúng / thôi
 ACT_DRAFT_DEL_DONE = "da_xoa_nhap"
+#  ai-CR-178 (phase 23.1 / 23.2): nghiên cứu sâu + tổng hợp tài liệu chạy nền. Dòng sổ ẩn (không gửi Telegram) giữ
+#  trạng thái việc trong `body` (JSON: kind, question, queries, items, status, steps…); thẻ ước tính chi phí chờ ok / thôi.
+ACT_RESEARCH_JOB = "nghien_cuu_sau"
+ACT_RESEARCH_WAIT = "cho_ok_nghien_cuu"
+ACT_RESEARCH_OK_DONE = "ok_nghien_cuu_xong"
 #  ai-CR-051: thẻ hỏi lại «cấp cho X cấp Y?» của đại ca; `body` = JSON {op, user_id, level}.
 ACT_GRANT_WAIT = "cho_cap_quyen"
 ACT_GRANT_DONE = "da_cap_quyen"
