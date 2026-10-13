@@ -3100,6 +3100,28 @@ def _is_follow_up(db: Session, chat_id: str, row: AgentMessage) -> bool:
     return True
 
 
+def _pending_draft_note(db: Session, chat_id: str, before_id: int) -> str:
+    """ai-CR-180: đang có BẢN NHÁP chờ «tạo» (trong DRAFT_WINDOW) thì nói cho trạm phân loại biết — tin «tạo task đó»,
+    «ok làm đi» ngay sau là câu trả lời cho thẻ nháp (hoi), không phải việc sửa phần mềm."""
+    pending = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_WAIT, AgentMessage.id < before_id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    if pending is None:
+        return ""
+    current = db.get(AgentMessage, before_id) if before_id else None
+    if current is not None and current.created_at and pending.created_at \
+            and current.created_at - pending.created_at > DRAFT_WINDOW:
+        return ""
+    try:
+        info = json.loads(pending.body or "{}")
+    except ValueError:
+        info = {}
+    label = draft_create.LABELS.get(str(info.get("kind") or ""), "phiếu")
+    title = str((info.get("draft") or {}).get("title") or "")[:80]
+    return (f"Bot: (đang chờ người dùng nhắn «tạo» hoặc «thôi» cho bản nháp {label}"
+            + (f" «{title}»" if title else "") + " vừa soạn — nhắn «tạo …» là đồng ý tạo, KHÔNG phải sửa phần mềm)")
+
+
 def _intent_context(db: Session, chat_id: str, before_id: int) -> str:
     """Lượt hỏi-đáp gần nhất, dạng chữ thường, cho trạm phân loại đọc kèm tin mới."""
     turns = _recent_turns(db, chat_id, before_id)[-INTENT_CONTEXT_TURNS:]
@@ -3107,6 +3129,8 @@ def _intent_context(db: Session, chat_id: str, before_id: int) -> str:
     for t in turns:
         who = "Người dùng" if t["role"] == "user" else "Bot"
         lines.append(f"{who}: {t['content'][:INTENT_CONTEXT_CHARS]}")
+    if note := _pending_draft_note(db, chat_id, before_id):
+        lines.append(note)
     return "\n".join(lines)
 
 
@@ -4276,12 +4300,23 @@ _CREATE_YES = re.compile(r"^(tạo|lưu|ok|oke|okay|đồng ý|đúng|ừ|đư�
 
 _LOOSE_YES = re.compile(r"(?<!\w)(tạo|lưu|ok|oke|okay|đồng ý|được|làm đi|link|gửi|nháp|xác nhận)(?!\w)")
 _LOOSE_BLOCK = re.compile(r"\d|(?<!\w)(khác|thêm|sửa|đổi|thành|không|thôi|đừng|hủy|bỏ|chưa)(?!\w)")
+#  ai-CR-180 (13/10): «vậy tao task đó igups anh đi nhé» — gõ thiếu dấu nên «tao» không khớp «tạo», tin rơi xuống bộ phân
+#  loại và thành việc sửa mã AI-0007. So thêm trên chữ ĐÃ BỎ DẤU; «tao» chỉ tính là «tạo» khi đứng trước một vật
+#  («tao task / việc / phiếu / đơn / nó / đi / luôn…») — «trả lời cho tao» (ai-CR-100) thì không.
+_LOOSE_YES_FOLD = re.compile(r"(?<!\w)(?:tao|luu)\s+(?:task|viec|phieu|don|nhap|no|cai|do|nay|di|luon|gium|giup|cho|"
+                             r"lun|nhe|nha|em)(?!\w)|(?<!\w)(?:xac nhan|dong y|duoc roi)(?!\w)")
+_LOOSE_WORDS_MAX = 10
 
 
 def _loose_confirm(low: str) -> bool:
     """ai-CR-048: đang có nháp chờ thì «oke tạo đơn nháp đi», «gửi cho anh cái link» cũng là xác nhận.
-    Câu dài, có số, hoặc có ý đổi («khác», «sửa», «thêm»…) thì KHÔNG — đó là nhờ soạn lại."""
-    return len(low.split()) <= 8 and bool(_LOOSE_YES.search(low)) and not _LOOSE_BLOCK.search(low)
+    Câu dài, có số, hoặc có ý đổi («khác», «sửa», «thêm»…) thì KHÔNG — đó là nhờ soạn lại.
+    ai-CR-180: chịu được gõ thiếu dấu / sai chính tả vài chữ («tao task đó igups anh đi nhé»)."""
+    from app.modules.assistant.glossary import fold
+
+    if len(low.split()) > _LOOSE_WORDS_MAX or _LOOSE_BLOCK.search(low):
+        return False
+    return bool(_LOOSE_YES.search(low)) or bool(_LOOSE_YES_FOLD.search(" ".join(fold(low).split())))
 
 
 def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[dict] | None = None) -> str:

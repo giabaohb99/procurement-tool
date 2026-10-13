@@ -13222,6 +13222,19 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-180 | Xác nhận bản nháp chịu được gõ thiếu dấu, bộ phân loại biết đang có nháp chờ
+- status: dang-lam
+- date: 2026-10-13
+Đại ca nhờ bot tạo một việc ở phân hệ Dự án, bot soạn nháp xong, đại ca hỏi xen một câu rồi nhắn tạo task đó nhưng gõ thiếu
+dấu; bot không nhận ra là đồng ý, đem câu đi phân loại và vì có chữ task nên ghi thành một việc sửa phần mềm. Nay câu xác nhận
+nháp được so cả trên chữ bỏ dấu, chữ tao chỉ tính là tạo khi đứng trước một vật như task, việc, phiếu, đó, đi để không nhầm
+với cách xưng tao; bộ phân loại được báo rõ đang có bản nháp chờ tạo nên câu kế là trả lời thẻ nháp chứ không phải sửa phần
+mềm; lời dặn phân loại có thêm ví dụ lên task, giao việc là việc ở phân hệ Dự án. Bài kiểm mới bốn bài, chạy cùng bài đơn nháp,
+dây chuyền gọn và bài bot xanh.
+
+Mã nguồn: agent_hub/service.py (_loose_confirm, _pending_draft_note, _intent_context), agent_hub/manager.py (INTENT_SYSTEM);
+bài kiểm test_agent_hub_xac_nhan_nhap_khong_dau.py
+
 ## ai-CR-176 | Xóa mềm đợt 2b cụm thu mua: đơn mua hàng, yêu cầu thanh toán, phiếu khảo sát
 - status: xong
 - date: 2026-10-13

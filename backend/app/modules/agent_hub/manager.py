@@ -670,6 +670,11 @@ Vài ca dễ nhầm:
 - "3 đơn mua hàng gần nhất" -> hoi (đòi số liệu).
 - "tạo cho anh đơn nghỉ phép thứ 6 tuần này" -> hoi (nhờ làm nghiệp vụ, Trợ lý AI có
   công cụ làm được; KHÔNG phải sửa phần mềm).
+- "lên task gọi NCC Hòa Phát cho anh Được hạn thứ 6", "tạo cho anh 1 task trong dự án ERP v2", "giao việc X cho Y"
+  -> hoi. Chữ «task» / «việc» / «công việc» ở đây là MỘT VIỆC Ở PHÂN HỆ DỰ ÁN (có dự án, người phụ trách, hạn) mà
+  Trợ lý AI soạn nháp được; chỉ là "viec" khi người ta nói về PHẦN MỀM (lỗi, tính năng, màn hình, cách tính).
+- Bot vừa đưa BẢN NHÁP công việc / phiếu và người ta nhắn "vậy tạo task đó giúp anh đi", "tao task do di" (gõ thiếu
+  dấu) -> hoi (đang đồng ý thẻ nháp), KHÔNG phải viec.
 - Bot vừa hỏi "nghỉ ngày nào, lý do gì?" và người ta nhắn "thứ 6, đi du lịch" -> hoi
   (đang trả lời bot).
 - "màn đơn mua hàng không lọc được theo ngày" -> viec (báo chỗ chạy sai).
