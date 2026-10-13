@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import require
+from app.core import reference_guard
 from app.core.base_model import mark_deleted
 from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
@@ -153,6 +154,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             raise HTTPException(404, "Không tìm thấy")
         if before_delete:
             before_delete(db, o)
+        reference_guard.ensure_deletable(db, entity, o)      # ai-CR-189: đang được tham chiếu → chỉ ngưng dùng
         soft = remove_or_mark_deleted(db, o, user.id)
         db.commit()
         record(db, user.id, entity, oid, "delete", "Xóa mềm" if soft else "")
@@ -239,6 +241,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                         # mức mật đang có người dùng vẫn bị xóa qua một dòng CSV.
                         if before_delete:
                             before_delete(db, existing)
+                        reference_guard.ensure_deletable(db, entity, existing)   # ai-CR-189
                         remove_or_mark_deleted(db, existing, user.id)   # ai-CR-177: rẽ theo model
                         deleted += 1
                     else:
