@@ -105,6 +105,13 @@ tiến độ 100, tự chấm; nhắn việc N 60 phần trăm 7 điểm thì gh
 (việc đã bắt đầu, chưa tới hạn) để thành lịch trình trong ngày. Bộ luật lưu ở khóa cấu hình agent_plan_policy dạng JSON
 trên màn Cấu hình hệ thống, thiếu hay hỏng thì dùng mặc định trong mã.
 
+Thử trên dev chiều 13/10 với ba dòng việc giao anh Được: bot gán đúng người, hạn, ưu tiên nhưng chép y câu sếp, không
+việc con, không tiêu chí tự đặt (đại ca chấm chừng 60 phần trăm). Em chỉnh ba chỗ: lời dặn tool và bộ luật bắt bot tự
+chia mỗi việc cha thành 2 tới 7 việc con và tự đặt tiêu chí đo được kể cả khi người dùng chỉ gõ một dòng; thêm chốt
+chặn ở tool, việc cha nào thiếu việc con hay tiêu chí thì trả need_refine bắt Trợ lý soạn lại một lần với cờ refined rồi
+mới ra nháp (không bắt vòng lần hai); thẻ nháp in thêm từng việc con kèm hạn và tiêu chí để sếp duyệt phần bot nghĩ ra
+trước khi tạo. Thêm một bài kiểm cho ba chỗ này.
+
 Khai thêm tool draft_work_plan vào bốn bảng canh của bộ kiểm (tool ghi, cửa gác, nhóm công cụ, số tool 72 thành 73).
 Chưa làm trong đợt này: nhắc mốc tự động và hỏi tiến độ theo giờ (24.2), Zalo (24.3), báo cáo kết thúc (24.4), xếp lại
 kế hoạch (24.5), nối Đặt xe, thanh toán (24.6), quyền agent_plan riêng (tạm dùng quyền tạo việc Dự án).
@@ -113,7 +120,7 @@ Mã nguồn: `agent_hub/plan_policy.py` (mới), `agent_hub/work_plan.py` (mới
 (`draft_work_plan`), `agent_hub/draft_create.py` (loại `work_plan`), `agent_hub/service.py` (nút kh_ok/kh_khac/kh_tc,
 `_after_plan_created`, chuỗi `work_plan.handle_text`), `agent_hub/work_due.py` (mục Đang làm hôm nay), `agent_hub/constants.py`,
 `core/app_settings.py` + `setting/service.py` (khóa `agent_plan_policy`), `assistant/tool_router.py`.
-Kiểm: 6 bài mới `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài canh tool, nhắc hạn, bản tin, kanban xanh. 6 bài ở
+Kiểm: 8 bài `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài canh tool, nhắc hạn, bản tin, kanban xanh. 6 bài ở
 `test_agent_hub.py` về biên bản họp và Excel đỏ sẵn trên máy local vì thiếu ffmpeg, không liên quan.
 Sửa ngay sau khi lên dev lần đầu: dịch vụ AI trên dev chạy tách với DB riêng, mà phần hỏi nhận việc và nhận câu trả
 lời bản đầu đọc thẳng bảng Dự án nên sẽ hỏng. Em tách mô-đun thành hai lớp: lớp ERP (dựng kế hoạch, đọc cây việc, ghi

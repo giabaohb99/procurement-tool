@@ -15,6 +15,7 @@ import logging
 log = logging.getLogger("app.agent_hub.plan_policy")
 
 SETTING_KEY = "agent_plan_policy"
+MIN_SUBTASKS = 2                     # mỗi việc cha phải chia ít nhất chừng này việc con (tool bắt soạn lại nếu thiếu)
 
 PRIORITY_URGENT, PRIORITY_HIGH, PRIORITY_NORMAL = "Gấp", "Ưu tiên", "Thường"
 PRIORITY_LEVELS = (PRIORITY_URGENT, PRIORITY_HIGH, PRIORITY_NORMAL)
@@ -80,9 +81,11 @@ def describe(policy: dict | None = None) -> str:
     """Luật viết thành câu ngắn để Trợ lý đọc trước khi lập kế hoạch (nhét vào kết quả tool, không phải mã)."""
     p = policy or current()
     return (f"Ưu tiên 3 mức: {PRIORITY_URGENT} (trong ngày) · {PRIORITY_HIGH} (trong 3 ngày) · {PRIORITY_NORMAL} "
-            f"(theo kế hoạch), mặc định {p['default_priority']}. Mỗi việc cha tối đa {p['max_subtasks']} việc con; "
-            f"việc con tối đa {p['max_task_days']} ngày công, dài hơn thì chia tiếp. Mỗi việc con 1–3 tiêu chí đo được, "
-            f"thiếu thì dùng: {p['default_criteria']}. "
+            f"(theo kế hoạch), mặc định {p['default_priority']}. MỖI việc cha PHẢI tự chia thành {MIN_SUBTASKS}–"
+            f"{p['max_subtasks']} việc con (các bước làm cụ thể, kể cả khi người dùng chỉ ghi một dòng); việc con tối đa "
+            f"{p['max_task_days']} ngày công, dài hơn thì chia tiếp. MỖI việc cha và việc con PHẢI có 1–3 tiêu chí đo được "
+            f"do bot tự đặt (kết quả nhìn thấy được: tệp / tin nhắn / số lượng / mốc giờ), không chép lại tên việc; "
+            f"người dùng không nêu thì tự đặt, chỉ khi không nghĩ ra mới dùng: {p['default_criteria']}. "
             + ("Không xếp hạn vào Chủ nhật. " if p.get("no_sunday") else "")
             + "Chọn người theo phòng ban, chức vụ; không rõ ai thì để trống và hỏi.")
 

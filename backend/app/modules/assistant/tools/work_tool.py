@@ -301,7 +301,7 @@ _ASSUMPTION_TEXT = {
     "no_assignee": "chưa giao ai — anh/chị chỉ định hoặc để em hỏi sau",
     "swapped": "hạn trước ngày bắt đầu nên em đảo lại",
     "sunday": "có hạn rơi vào Chủ nhật — anh/chị xem có dời không",
-    "long": "kéo dài hơn mức ngày công của luật — nên chia nhỏ",
+    "long": "kéo dài hơn mức ngày công của luật mà chưa chia được thêm — anh/chị xem có tách không",
     "trimmed": "có quá nhiều việc con, em giữ đúng số tối đa của luật",
 }
 
@@ -361,7 +361,8 @@ def _plan_task(ctx: ToolContext, raw: dict, policy: dict, assumptions: dict, pro
         _note(assumptions, "no_criteria", title)
     out = {"title": title, "assignees": people, "start_date": start, "due_date": due,
            "priority": _plan_priority(str(raw.get("priority") or ""), str(policy.get("default_priority"))),
-           "criteria": criteria, "description": str(raw.get("description") or "")[:2000]}
+           "criteria": criteria, "description": str(raw.get("description") or "")[:2000],
+           "_own_criteria": bool(raw.get("criteria"))}
     if allow_sub:
         subs_raw = raw.get("subtasks") or []
         if not isinstance(subs_raw, list):
@@ -414,6 +415,21 @@ def _draft_work_plan(ctx: ToolContext, args: dict) -> dict:
                 "note": "Hỏi người dùng MỘT câu để chọn đúng người / sửa ngày (đưa lựa chọn đánh số), rồi gọi lại tool."}
     if not phases:
         return {"error": "kế hoạch chưa có việc nào có tên"}
+    #  Chốt chặn (sau thử dev 13/10): sếp muốn bot TỰ chia việc con và TỰ đặt tiêu chí, không chép lại câu người dùng.
+    #  Việc cha nào thiếu một trong hai thì bắt Trợ lý soạn lại MỘT lần (`refined`) trước khi đưa thẻ nháp.
+    weak = _weak_tasks(phases, policy)
+    if weak and not args.get("refined"):
+        return {"need_refine": weak[:12],
+                "note": (f"CHƯA soạn nháp. Gọi lại draft_work_plan NGAY (không hỏi người dùng) với refined=true, giữ nguyên "
+                         f"các việc đã có và bổ sung cho từng việc nêu trên: {plan_policy.MIN_SUBTASKS}–"
+                         f"{policy.get('max_subtasks')} việc con là các bước làm cụ thể (mỗi việc con có người làm, hạn, "
+                         "1–3 tiêu chí) và 1–3 tiêu chí đo được cho việc cha (kết quả nhìn thấy được: tệp, tin nhắn, số "
+                         "lượng, mốc giờ). Chỉ dùng tiêu chí mặc định khi thật sự không nghĩ ra.")}
+    for p in phases:
+        for t in p["tasks"]:
+            t.pop("_own_criteria", None)
+            for s in t.get("subtasks") or []:
+                s.pop("_own_criteria", None)
     n_tasks = sum(len(p["tasks"]) for p in phases)
     n_subs = sum(len(t.get("subtasks") or []) for p in phases for t in p["tasks"])
     deadline = str(args.get("deadline") or "").strip()
@@ -426,6 +442,23 @@ def _draft_work_plan(ctx: ToolContext, args: dict) -> dict:
     return {"draft": draft,
             "note": ("Đã soạn nháp kế hoạch. Trên Telegram bot tự gửi bản tóm tắt để người dùng nhắn «tạo» (tạo bảng "
                      "trong Dự án rồi hỏi từng người nhận việc). Đừng tự báo là đã tạo.")}
+
+
+def _weak_tasks(phases: list[dict], policy: dict) -> list[str]:
+    """Việc cha chưa đạt luật: thiếu việc con (< MIN_SUBTASKS) hoặc chưa có tiêu chí tự đặt. Trả câu mô tả từng việc."""
+    from app.modules.agent_hub import plan_policy
+
+    out = []
+    for p in phases:
+        for t in p["tasks"]:
+            lack = []
+            if len(t.get("subtasks") or []) < plan_policy.MIN_SUBTASKS:
+                lack.append(f"mới {len(t.get('subtasks') or [])} việc con")
+            if not t.get("_own_criteria"):
+                lack.append("chưa có tiêu chí")
+            if lack:
+                out.append(f"«{t['title']}»: {', '.join(lack)}")
+    return out
 
 
 _SUB_SCHEMA = {"type": "object", "properties": {
@@ -454,8 +487,11 @@ DRAFT_WORK_PLAN_SPEC = ToolSpec(
     description=("SOẠN NHÁP CẢ KẾ HOẠCH VIỆC ở phân hệ Dự án từ một danh sách việc hoặc một mục tiêu ('lập kế hoạch tiếp "
                  "khách Trung Quốc ngày mai', 'lên plan cho việc X', 'chia việc này ra cho đội'). Tự chia thành giai đoạn → "
                  "việc cha → việc con, mỗi việc có người làm (tên / mã nhân sự), ngày bắt đầu, hạn (YYYY-MM-DD giờ VN), "
-                 "mức ưu tiên (Gấp · Ưu tiên · Thường) và 1–3 tiêu chí đánh giá đo được. Luật: " + _plan_rules_text() +
-                 " Người chưa rõ → tool trả lựa chọn, hỏi người dùng MỘT câu. Một việc lẻ thì dùng draft_work_task."),
+                 "mức ưu tiên (Gấp · Ưu tiên · Thường) và 1–3 tiêu chí đánh giá đo được. Người dùng chỉ liệt kê việc "
+                 "thì BẠN vẫn phải tự nghĩ ra các bước làm (việc con) và tiêu chí cho từng việc — đó là phần việc của "
+                 "bot, không chép lại câu người dùng. Luật: " + _plan_rules_text() +
+                 " Người chưa rõ → tool trả lựa chọn, hỏi người dùng MỘT câu. Việc cha nào thiếu việc con / tiêu chí → "
+                 "tool trả need_refine, gọi lại ngay với refined=true. Một việc lẻ thì dùng draft_work_task."),
     parameters={"type": "object", "properties": {
         "title": {"type": "string", "description": "Tên kế hoạch (thành tên bảng trong Dự án)."},
         "description": {"type": "string", "description": "Mục tiêu / bối cảnh (tùy chọn)."},
@@ -465,6 +501,8 @@ DRAFT_WORK_PLAN_SPEC = ToolSpec(
                        "name": {"type": "string"},
                        "tasks": {"type": "array", "items": _TASK_SCHEMA}},
                        "required": ["name", "tasks"]}},
+        "refined": {"type": "boolean", "description": "true khi gọi lại sau need_refine (đã tự chia việc con và đặt "
+                                                       "tiêu chí cho từng việc). Lần đầu để trống."},
         "asked_fields": confirm_fields.ASKED_PARAM},
         "required": ["title", "phases"]},
     handler=_draft_work_plan,

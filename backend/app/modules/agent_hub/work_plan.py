@@ -36,8 +36,13 @@ MAX_ASK_PER_PERSON = 10
 REPLY_WINDOW = timedelta(hours=48)
 
 
+def _crit_text(item: dict) -> str:
+    return "; ".join(str(x) for x in (item.get("criteria") or []) if str(x).strip())[:160]
+
+
 def summary_lines(draft: dict) -> list[str]:
-    """Dòng tóm tắt bản nháp cho thẻ «BẢN NHÁP» trên Telegram (tối đa 8 việc cha, mỗi việc kèm số việc con)."""
+    """Dòng tóm tắt bản nháp cho thẻ «BẢN NHÁP» trên Telegram: tối đa 8 việc cha, mỗi việc kèm người, hạn, ưu tiên, rồi
+    các việc con (tên · hạn) và tiêu chí — để sếp duyệt phần bot tự nghĩ ra TRƯỚC khi tạo (sau thử dev 13/10)."""
     c = draft.get("counts") or {}
     out = [f"Kế hoạch: {draft.get('title', '')}",
            f"Quy mô: {c.get('phases', 0)} giai đoạn · {c.get('tasks', 0)} việc · {c.get('subtasks', 0)} việc con"]
@@ -51,8 +56,13 @@ def summary_lines(draft: dict) -> list[str]:
                 break
             who = ", ".join(p.get("name", "?") for p in t.get("assignees") or []) or "chưa giao"
             span = " → ".join(x for x in (t.get("start_date"), t.get("due_date")) if x)
-            subs = f", {len(t.get('subtasks') or [])} việc con" if t.get("subtasks") else ""
-            out.append(f"- {t.get('title', '')} ({who}{', ' + span if span else ''}, {t.get('priority', '')}{subs})")
+            out.append(f"- {t.get('title', '')} ({who}{', ' + span if span else ''}, {t.get('priority', '')})")
+            subs = [s for s in (t.get("subtasks") or []) if isinstance(s, dict)]
+            for s in subs[:7]:
+                due = f" · {_vn(s['due_date'])}" if s.get("due_date") else ""
+                out.append(f"    + {s.get('title', '')}{due}")
+            if _crit_text(t):
+                out.append(f"    Tiêu chí: {_crit_text(t)}")
             shown += 1
     total = int(c.get("tasks") or 0)
     if total > shown:

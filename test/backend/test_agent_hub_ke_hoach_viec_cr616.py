@@ -42,7 +42,7 @@ def world(db, seed, cap_quyen, monkeypatch):
 
 
 def _args():
-    return {"title": "Tiếp khách Trung Quốc 14/10", "deadline": "2026-10-16", "phases": [
+    return {"title": "Tiếp khách Trung Quốc 14/10", "deadline": "2026-10-16", "refined": True, "phases": [
         {"name": "Chuẩn bị", "tasks": [
             {"title": "Tạm ứng chi phí", "assignees": ["NV-AN"], "start_date": "2026-10-13", "due_date": "2026-10-13",
              "priority": "gấp", "criteria": ["Tiền tới tay trước 7:30"],
@@ -94,6 +94,41 @@ def test_tool_hoi_lai_khi_nguoi_mo_ho_hoac_thieu_giai_doan(db, world):
     out = _draft(db, world["boss"], args)
     assert out["need_choice"] == "assignee" and "khớp nhiều người" in out["problems"][0]
     assert "need_info" in _draft(db, world["boss"], {"title": "X", "phases": []})
+
+
+def test_chep_cau_nguoi_dung_thi_bat_soan_lai_co_viec_con_va_tieu_chi(db, world):
+    """Thử dev 13/10: sếp gõ 3 dòng, bot chép y nguyên (0 việc con, tiêu chí mặc định). Sếp muốn bot TỰ chia bước và TỰ
+    đặt tiêu chí → tool trả need_refine kể tên việc thiếu; gọi lại refined=true thì mới ra nháp. Thẻ nháp in việc con
+    + tiêu chí để sếp duyệt phần bot nghĩ ra."""
+    flat = {"title": "Thử bot điều phối", "deadline": "2026-10-15", "phases": [{"name": "Thực hiện", "tasks": [
+        {"title": "Gửi báo giá máy in cho phòng kế toán", "assignees": ["NV-AN"], "due_date": "2026-10-14", "priority": "gấp"},
+        {"title": "Dọn kho tài liệu tầng 2", "assignees": ["NV-AN"], "due_date": "2026-10-15", "criteria": ["kho trống kệ số 3"]},
+    ]}]}
+    out = _draft(db, world["boss"], flat)
+    assert "draft" not in out and len(out["need_refine"]) == 2
+    assert "«Gửi báo giá máy in cho phòng kế toán»: mới 0 việc con, chưa có tiêu chí" in out["need_refine"]
+    assert "«Dọn kho tài liệu tầng 2»: mới 0 việc con" == out["need_refine"][1]       # tiêu chí người dùng đã có
+    assert "refined=true" in out["note"] and "không hỏi người dùng" in out["note"]
+    #  Trợ lý gọi lại đủ việc con + tiêu chí.
+    flat["refined"] = True
+    t1, t2 = flat["phases"][0]["tasks"]
+    t1["criteria"] = ["Kế toán nhận được báo giá qua email trước 16:00 14/10"]
+    t1["subtasks"] = [{"title": "Xin báo giá 2 hãng", "assignees": ["NV-AN"], "due_date": "2026-10-13",
+                       "criteria": ["Có 2 báo giá PDF"]},
+                      {"title": "Gửi email cho kế toán", "assignees": ["NV-AN"], "due_date": "2026-10-14"}]
+    t2["subtasks"] = [{"title": "Phân loại hồ sơ"}, {"title": "Chuyển hồ sơ cũ xuống kho lưu"}]
+    out = _draft(db, world["boss"], flat)
+    d = out["draft"]
+    assert d["counts"] == {"phases": 1, "tasks": 2, "subtasks": 4}
+    assert all("_own_criteria" not in t for t in d["phases"][0]["tasks"])
+    lines = work_plan.summary_lines(d)
+    assert "    + Xin báo giá 2 hãng · 13/10" in lines and "    + Phân loại hồ sơ" in lines
+    assert any(l.startswith("    Tiêu chí: Kế toán nhận được báo giá") for l in lines)
+    assert any(l.startswith("    Tiêu chí: kho trống kệ số 3") for l in lines)
+    #  Vẫn thiếu sau khi soạn lại thì không bắt vòng nữa — ra nháp, ghi giả định.
+    t2["subtasks"] = []
+    out = _draft(db, world["boss"], flat)
+    assert "draft" in out and out["draft"]["counts"]["subtasks"] == 2
 
 
 def test_tao_dung_ca_cay_trong_du_an(db, world):

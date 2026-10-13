@@ -45,10 +45,10 @@ Lưu ở bảng cấu hình `tab_agent_plan_policy` (một dòng JSON, có phiê
 | Nhóm | Quy tắc nháp |
 |---|---|
 | Ưu tiên | 3 mức: *Gấp* (làm trong ngày), *Ưu tiên* (trong 3 ngày), *Thường* (theo kế hoạch). Bot gán mặc định *Thường*, sếp đổi. |
-| Chia việc | Mỗi việc cha ≤ 7 việc con; việc con ≤ 2 ngày công; việc nào > 2 ngày thì chia tiếp. |
+| Chia việc | Mỗi việc cha **2–7 việc con do bot tự nghĩ ra** (các bước làm cụ thể, kể cả khi sếp chỉ gõ một dòng); việc con ≤ 2 ngày công; việc nào > 2 ngày thì chia tiếp. Sửa 13/10 sau thử dev: bot chép y câu sếp, 0 việc con → tool bắt Trợ lý soạn lại một lần (`need_refine` → `refined=true`) trước khi đưa thẻ nháp. |
 | Người làm | Chọn theo phòng ban và chức vụ trên hồ sơ nhân sự; ưu tiên người đang có ít việc mở nhất trong Dự án. Không có ai phù hợp thì để trống và hỏi sếp. |
 | Mốc thời gian | Việc con có *ngày bắt đầu* và *hạn*; việc cha lấy hạn muộn nhất của con; giai đoạn lấy hạn muộn nhất của việc cha. Không xếp việc vào Chủ nhật. |
-| Tiêu chí đánh giá | Mỗi việc con có 1–3 tiêu chí đo được (ví dụ: *đã có tệp đính kèm*, *được người X xác nhận*, *số lượng ≥ n*). Thiếu thì bot sinh tiêu chí *hoàn thành đúng hạn và được người giao xác nhận*. |
+| Tiêu chí đánh giá | Mỗi việc cha và việc con có 1–3 tiêu chí đo được **do bot tự đặt** (kết quả nhìn thấy được: tệp, tin nhắn, số lượng, mốc giờ; không chép tên việc); thẻ nháp in việc con + tiêu chí để sếp duyệt trước khi tạo (ví dụ: *đã có tệp đính kèm*, *được người X xác nhận*, *số lượng ≥ n*). Thiếu thì bot sinh tiêu chí *hoàn thành đúng hạn và được người giao xác nhận*. |
 | Hỏi nhận việc | Gửi ngay sau khi sếp duyệt kế hoạch. Người nhận trả lời trong 4 giờ làm việc; quá thì nhắc một lần; quá 1 ngày làm việc thì báo sếp. |
 | Phản hồi | Ba lựa chọn: **Nhận** · **Nhận nhưng giờ khác** (ghi giờ) · **Từ chối** (bắt buộc lý do). Trả lời tự do thì bot hiểu rồi hỏi lại một câu để chốt. |
 | Hỏi tiến độ | Đúng ngày hạn 15:00 và ngày sau hạn 08:00. Hỏi: xong chưa; chưa thì bao nhiêu % và tự chấm 1–10; chưa làm thì lý do. |
