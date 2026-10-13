@@ -2,12 +2,14 @@ from fastapi import HTTPException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
+from app.core import reference_guard
 from app.core.audit import record
 from app.core.utils import generate_code
 
 from app.modules.department.model import Department
 
 from . import position_service
+from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
@@ -488,6 +490,10 @@ def delete_employee(db: Session, eid: int, user_id: int) -> int:
     #  HĐLĐ đã ký / đã chấm dứt là chứng từ pháp lý → CHẶN 409 (trước `detach_users` để không
     #  khóa tài khoản rồi mới báo lỗi). HĐ Nháp / Đã hủy thì dọn kèm tệp ở dưới.
     labor_contract_service.ensure_employee_deletable(db, eid)
+    #  ai-CR-190: còn phiếu / phân công / thành viên / đang là quản lý của ai / trưởng bộ phận… thì CHẶN 400,
+    #  chỉ cho «ngưng dùng» (bỏ tick Đang dùng hoặc chuyển nghỉ việc). Danh sách chỗ đếm ở `references.py`;
+    #  tài khoản gắn hồ sơ KHÔNG tính (xem lý do ở đó) — vẫn tự khóa + gỡ ở `detach_users` bên dưới.
+    reference_guard.ensure_deletable(db, ENTITY, obj)
     locked = detach_users(db, eid, user_id)
     #  Hai bảng con mang dữ liệu cá nhân của NGƯỜI THỨ BA (cha mẹ, vợ chồng,
     #  con). Xóa hồ sơ mà để chúng lại là giữ hồ sơ CCCD của những người chưa
@@ -498,10 +504,11 @@ def delete_employee(db: Session, eid: int, user_id: int) -> int:
     #  của người này, cùng lý lẽ với hai bảng con ngay trên.
     work_history_service.delete_all_of(db, eid)
     labor_contract_service.delete_all_of(db, eid)
-    #  ⚠️ Người này đang là quản lý trực tiếp của ai đó thì ô `manager_id` bên
-    #  kia thành con số trỏ vào hư không, và bộ máy duyệt lùi về trưởng bộ phận
-    #  một cách IM LẶNG. Gỡ tường minh về `0` — cùng nghĩa "chưa gán", nhưng màn
-    #  danh sách có cảnh báo cho `0` (K5) còn cho id chết thì không.
+    #  Kiêm nhiệm phòng ban là bảng con của chính hồ sơ (ai-CR-190: dọn kèm, không đếm làm tham chiếu).
+    from .department_model import EmployeeDepartment
+    db.query(EmployeeDepartment).filter(EmployeeDepartment.employee_id == eid).delete(synchronize_session=False)
+    #  Người này đang là quản lý trực tiếp của ai đó → đã bị `ensure_deletable` chặn ở trên (ai-CR-190);
+    #  dòng gỡ về `0` giữ lại làm lưới an toàn cho dữ liệu cũ lọt khe.
     db.query(Employee).filter(Employee.manager_id == eid).update(
         {Employee.manager_id: 0, Employee.updated_by: user_id}, synchronize_session=False)
     db.delete(obj)

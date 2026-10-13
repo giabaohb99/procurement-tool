@@ -1,11 +1,13 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
 from app.core.audit import record
 from app.core.auth import hash_password, perm_cache_clear
 from app.core.password_policy import validate_password
 from app.modules.employee.model import Employee
 
+from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import User, UserRole, UserScope
 from .schema import RoleAssign, ScopeUpdate, UserProvision
 
@@ -244,7 +246,10 @@ def delete_user(db: Session, user_id: int, actor_id: int) -> None:
     if refs:
         raise HTTPException(400, "Tài khoản đã tạo dữ liệu trên hệ thống (" + ", ".join(refs[:5])
                                  + ") — hãy khóa tài khoản thay vì xóa.")
+    #  ai-CR-190: tài khoản còn được TRỎ TỚI (phiếu hỗ trợ đang xử lý, tài xế liên kết…) → chỉ khóa, không xóa.
+    reference_guard.ensure_deletable(db, "user", user)
 
+    from app.modules.login_session.model import LoginSession
     from app.modules.notification.model import Notification
     from app.modules.push.model import PushSubscription
 
@@ -255,6 +260,8 @@ def delete_user(db: Session, user_id: int, actor_id: int) -> None:
     db.query(UserScope).filter(UserScope.user_id == user_id).delete()
     db.query(Notification).filter(Notification.user_id == user_id).delete()
     db.query(PushSubscription).filter(PushSubscription.user_id == user_id).delete()
+    #  Phiên đăng nhập là vé, không phải dữ liệu nghiệp vụ — xóa cứng kèm (ai-CR-190, Giả định ghi ở references.py).
+    db.query(LoginSession).filter(LoginSession.user_id == user_id).delete()
     db.delete(user)
     db.commit()
     perm_cache_clear(user_id)

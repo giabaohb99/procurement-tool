@@ -160,16 +160,22 @@ def test_nonexistent_manager_is_blocked(db):
         emp_service.update_employee(db, emp.id, EmployeeUpdate(manager_id=999999), 1)
 
 
-def test_deleting_a_manager_clears_the_field_on_reports(db):
-    """Xóa hồ sơ đang là quản lý của ai đó → ô `manager_id` bên kia về `0`.
+def test_deleting_a_manager_is_blocked_until_reports_are_reassigned(db):
+    """Xóa hồ sơ đang là quản lý của ai đó → ai-CR-190: CHẶN 400 (chỉ ngưng dùng), ô `manager_id` bên kia giữ nguyên.
 
-    Để nguyên là một id trỏ vào hư không, và bộ máy duyệt lùi về trưởng bộ phận
-    một cách IM LẶNG. `0` thì màn danh sách có cảnh báo, id chết thì không.
+    Trước ai-CR-190 hệ gỡ ô đó về `0` hộ người dùng; nay coi «đang là quản lý của X» là một tham chiếu như mọi
+    danh mục khác — gỡ xong (đổi quản lý cho cấp dưới) thì xóa như cũ.
     """
     sep, nv = _emp(db, "NS001"), _emp(db, "NS002")
     emp_service.update_employee(db, nv.id, EmployeeUpdate(manager_id=sep.id), 1)
+    with pytest.raises(HTTPException) as e:
+        emp_service.delete_employee(db, sep.id, 1)
+    assert e.value.status_code == 400 and "nhân sự do người này quản lý" in e.value.detail
+    assert db.get(Employee, nv.id).manager_id == sep.id and db.get(Employee, sep.id) is not None
+
+    emp_service.update_employee(db, nv.id, EmployeeUpdate(manager_id=0), 1)
     emp_service.delete_employee(db, sep.id, 1)
-    assert db.get(Employee, nv.id).manager_id == 0
+    assert db.get(Employee, sep.id) is None
 
 
 # ── 4. Hai bảng con ─────────────────────────────────────────────────────────

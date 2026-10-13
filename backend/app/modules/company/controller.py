@@ -145,9 +145,12 @@ def bulk_delete_companies(ids: str, db: Session = Depends(get_db), user=Depends(
     cond = scope_condition(Company, "company", user, get_perm_profile(db, user), "delete")
     if cond is not None:
         q = q.filter(cond)
-    deletable_ids = [i for (i,) in q.with_entities(Company.id).all()]
-    if not deletable_ids:
+    rows = q.all()
+    if not rows:
         raise HTTPException(404, "Không tìm thấy công ty nào trong phạm vi của bạn")
+    # ai-CR-190: kiểm cả lô TRƯỚC — một công ty còn được tham chiếu thì không xóa dòng nào.
+    service.ensure_companies_deletable(db, rows)
+    deletable_ids = [c.id for c in rows]
     db.query(Company).filter(Company.id.in_(deletable_ids)).delete(synchronize_session=False)
     db.commit()
     from app.core.audit import record

@@ -4,9 +4,11 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
 from app.core.audit import record
 from app.core.auth import perm_cache_clear
 from app.core.permissions import ACTIONS
+from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Permission, Role
 from .schema import PermissionUpdate, RoleCreate, RoleUpdate
 
@@ -106,15 +108,11 @@ def delete_role(db: Session, rid: int, user_id: int) -> None:
     #  Chặn chứ không tự gỡ gán: gỡ hộ là quyết định thay người quản trị về việc
     #  «những người này từ nay không còn vai trò nào» — cùng lẽ với chỗ chặn xóa
     #  luồng duyệt còn phiếu đang chạy.
-    from app.modules.user.model import UserRole, UserScope
+    #  ai-CR-190: phép đếm dời về sổ chung `reference_guard` (tài khoản + chặng duyệt theo vai trò + quyền xem
+    #  văn bản / thư mục / báo cáo cấp cho vai trò) — cùng một câu 400 với mọi danh mục.
+    from app.modules.user.model import UserScope
 
-    still_in_use = db.query(UserRole).filter(UserRole.role_id == rid).count()
-    if still_in_use:
-        raise HTTPException(
-            400,
-            f"Vai trò này đang gán cho {still_in_use} tài khoản nên chưa xóa được. "
-            "Gỡ vai trò khỏi các tài khoản đó trước — hoặc để nguyên nếu chỉ muốn "
-            "ngừng dùng.")
+    reference_guard.ensure_deletable(db, "role", obj)
 
     #  Đọc tên TRƯỚC khi xóa: sau `db.delete` + `commit` thì `obj` là bản ghi đã
     #  hết hạn, đụng vào thuộc tính nào cũng ném `ObjectDeletedError`.

@@ -210,6 +210,9 @@ def import_departments_csv(
                 continue
         if existing:
             if status_str in ["xóa", "delete"]:
+                #  ai-CR-190: dòng CSV «xóa» ăn đúng chốt của nút xóa — còn tham chiếu thì 400, cả tệp không ghi.
+                from app.core import reference_guard
+                reference_guard.ensure_deletable(db, service.ENTITY, existing)
                 db.delete(existing)
                 deleted += 1
             else:
