@@ -76,9 +76,10 @@ def confirm_document_update(body: ConfirmUpdateIn,
     diện chat; quyền GHI thật (`<entity>.write`) kiểm bên trong.
     """
     _guard()
+    from .change_model import ChangeSource
     from .tools.update_tool import confirm_update
 
-    result = confirm_update(db, user, body.token)
+    result = confirm_update(db, user, body.token, source=int(ChangeSource.WEB))   # ai-CR-182: ghi sổ kênh web
     if result.get("deleted"):   # AI-0006: thẻ đề xuất XÓA dùng chung nút + endpoint này
         return success(result, message=f"Đã xóa {result['entity_label']} {result['code']}")
     fields = ", ".join(result["updated_fields"])
@@ -98,9 +99,10 @@ def confirm_account_setup_proposal(body: ConfirmUpdateIn,
     Cùng lý do với `/confirm-update`: gác `assistant.read`, quyền GHI thật kiểm bên trong.
     """
     _guard()
+    from .change_model import ChangeSource
     from .tools.account_setup_tool import confirm_account_setup
 
-    result = confirm_account_setup(db, user, body.token)
+    result = confirm_account_setup(db, user, body.token, source=int(ChangeSource.WEB))
     what = ", ".join(result["updated"]) if result["updated"] else "không có gì đổi"
     return success(result, message=f"Bộ tài khoản {result['target_label']}: {what}")
 

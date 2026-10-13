@@ -86,6 +86,12 @@ def _uid(user) -> int:
     return int(getattr(user, "id", 0) or 0)
 
 
+def _src(source: int) -> dict:
+    """ai-CR-182: chỉ truyền `source` xuống hàm ghi khi có kênh thật (khác 0) — 0 là mặc định của chính hàm đó,
+    và các bản giả trong bài kiểm cũ vẫn gọi được theo chữ ký cũ."""
+    return {"source": int(source)} if source else {}
+
+
 # ===========================================================================
 # Chạy THẲNG trong ERP (embedded) — và là mã của cổng B
 # ===========================================================================
@@ -210,17 +216,19 @@ class _Local:
         db.commit()
 
     # --- tạo phiếu từ nháp ---------------------------------------------------------------------------------------
+    #  `source` (ai-CR-182): kênh người dùng xác nhận (`assistant.change_model.ChangeSource`) — chỉ để ghi sổ thay đổi.
+    #  Cổng B truyền 1 (Telegram); chạy chung tiến trình không biết kênh thì để 0.
     @staticmethod
-    def create_draft(db, user, kind: str, draft: dict) -> tuple[str, int]:
+    def create_draft(db, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
         from . import draft_create
 
-        return draft_create.create(db, user, kind, draft)
+        return draft_create.create(db, user, kind, draft, **_src(source))
 
     @staticmethod
-    def submit_draft(db, user, kind: str, oid: int) -> None:
+    def submit_draft(db, user, kind: str, oid: int, source: int = 0) -> None:
         from . import draft_create
 
-        draft_create.submit(db, user, kind, oid)
+        draft_create.submit(db, user, kind, oid, **_src(source))
 
     @staticmethod
     def created_details(db, kind: str, oid: int) -> list[str]:
@@ -236,30 +244,43 @@ class _Local:
         return draft_create.list_mine(db, user)
 
     @staticmethod
-    def update_leave_draft(db, user, oid: int, draft: dict) -> str:
+    def update_leave_draft(db, user, oid: int, draft: dict, source: int = 0) -> str:
         from . import draft_create
 
-        return draft_create.update_leave(db, user, oid, draft)
+        return draft_create.update_leave(db, user, oid, draft, **_src(source))
 
     @staticmethod
-    def delete_my_drafts(db, user, items: list[dict]) -> dict:
+    def delete_my_drafts(db, user, items: list[dict], source: int = 0) -> dict:
         from . import draft_create
 
-        return draft_create.delete_mine(db, user, items)
+        return draft_create.delete_mine(db, user, items, **_src(source))
 
     @staticmethod
-    def update_doc_draft(db, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
+    def update_doc_draft(db, user, kind: str, oid: int, draft: dict, mode: str, source: int = 0) -> dict:
         from . import draft_create
 
-        return draft_create.update_doc_draft(db, user, kind, oid, draft, mode)
+        return draft_create.update_doc_draft(db, user, kind, oid, draft, mode, **_src(source))
 
     #  ai-CR-151: nút «Xác nhận sửa / xóa» của thẻ đề xuất. Ghi phiếu là việc của ERP — ở chế độ service phải đi qua
     #  cổng B, không được gọi `confirm_update` trên DB của bot (DB đó không có bảng phiếu).
     @staticmethod
-    def confirm_proposal(db, user, token: str) -> dict:
+    def confirm_proposal(db, user, token: str, source: int = 0) -> dict:
         from app.modules.assistant.tools.update_tool import confirm_update
 
-        return confirm_update(db, user, token)
+        return confirm_update(db, user, token, **_src(source))
+
+    #  ai-CR-182: sổ thay đổi do bot ghi + hoàn tác 24 giờ (`assistant/change_service.py`) — bảng ở DB ERP.
+    @staticmethod
+    def my_changes(db, user, limit: int = 20) -> list[dict]:
+        from app.modules.assistant import change_service
+
+        return change_service.list_for(db, user, limit=limit)
+
+    @staticmethod
+    def undo_change(db, user, change_id: int, source: int = 0) -> dict:
+        from app.modules.assistant import change_service
+
+        return change_service.undo(db, user, change_id, source=source)
 
     # --- phiếu hỗ trợ ------------------------------------------------------------------------------------------------
     @staticmethod
@@ -524,7 +545,7 @@ class _Remote:
             return {"error": f"Không gọi được công cụ ERP: {e}"}
 
     # --- tạo phiếu ---
-    def create_draft(self, db, user, kind: str, draft: dict) -> tuple[str, int]:
+    def create_draft(self, db, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
         from .draft_create import DraftError
 
         try:
@@ -535,7 +556,7 @@ class _Remote:
             raise DraftError(str(out["error"]))
         return str(out.get("code") or ""), int(out.get("id") or 0)
 
-    def submit_draft(self, db, user, kind: str, oid: int) -> None:
+    def submit_draft(self, db, user, kind: str, oid: int, source: int = 0) -> None:
         from .draft_create import DraftError
 
         try:
@@ -557,7 +578,7 @@ class _Remote:
         except ErpError:
             return []
 
-    def update_leave_draft(self, db, user, oid: int, draft: dict) -> str:
+    def update_leave_draft(self, db, user, oid: int, draft: dict, source: int = 0) -> str:
         from .draft_create import DraftError
 
         try:
@@ -569,7 +590,7 @@ class _Remote:
             raise DraftError(str(out["error"]))
         return str(out.get("code") or "")
 
-    def delete_my_drafts(self, db, user, items: list[dict]) -> dict:
+    def delete_my_drafts(self, db, user, items: list[dict], source: int = 0) -> dict:
         from .draft_create import DraftError
 
         try:
@@ -577,7 +598,7 @@ class _Remote:
         except ErpError as e:
             raise DraftError(str(e)) from None
 
-    def update_doc_draft(self, db, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
+    def update_doc_draft(self, db, user, kind: str, oid: int, draft: dict, mode: str, source: int = 0) -> dict:
         from .draft_create import DraftError
 
         try:
@@ -589,12 +610,28 @@ class _Remote:
             raise DraftError(str(out["error"]))
         return out
 
-    def confirm_proposal(self, db, user, token: str) -> dict:
+    def confirm_proposal(self, db, user, token: str, source: int = 0) -> dict:
         """Cổng trả lỗi nghiệp vụ dưới dạng `{error, status}` → ném lại HTTPException như bản chạy chung, để người gọi
-        xử một đường."""
+        xử một đường. `source` do cổng B tự đặt (kênh bot), không gửi qua."""
         from fastapi import HTTPException
 
         out = dict(self._call("POST", "/proposal/confirm", user_id=_uid(user), body={"token": token}) or {})
+        if out.get("error"):
+            raise HTTPException(int(out.get("status") or 400), str(out["error"]))
+        return out
+
+    # --- sổ thay đổi + hoàn tác (ai-CR-182) ---
+    def my_changes(self, db, user, limit: int = 20) -> list[dict]:
+        try:
+            return list(self._call("GET", "/changes/mine", user_id=_uid(user), params={"limit": int(limit)}) or [])
+        except ErpError as e:
+            log.warning("agent_hub erp: không đọc được sổ thay đổi: %s", e)
+            return []
+
+    def undo_change(self, db, user, change_id: int, source: int = 0) -> dict:
+        from fastapi import HTTPException
+
+        out = dict(self._call("POST", "/changes/undo", user_id=_uid(user), body={"id": int(change_id)}) or {})
         if out.get("error"):
             raise HTTPException(int(out.get("status") or 400), str(out["error"]))
         return out
@@ -752,32 +789,42 @@ def settings_snapshot(db=None) -> dict:
     return _Local.settings_snapshot(db)
 
 
-def create_draft(db, user, kind: str, draft: dict) -> tuple[str, int]:
-    return _impl().create_draft(db, user, kind, draft)
+def create_draft(db, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
+    return _impl().create_draft(db, user, kind, draft, source)
 
 
-def submit_draft(db, user, kind: str, oid: int) -> None:
-    _impl().submit_draft(db, user, kind, oid)
+def submit_draft(db, user, kind: str, oid: int, source: int = 0) -> None:
+    _impl().submit_draft(db, user, kind, oid, source)
 
 
 def my_drafts(db, user) -> list[dict]:
     return _impl().my_drafts(db, user)
 
 
-def update_leave_draft(db, user, oid: int, draft: dict) -> str:
-    return _impl().update_leave_draft(db, user, oid, draft)
+def update_leave_draft(db, user, oid: int, draft: dict, source: int = 0) -> str:
+    return _impl().update_leave_draft(db, user, oid, draft, source)
 
 
-def delete_my_drafts(db, user, items: list[dict]) -> dict:
-    return _impl().delete_my_drafts(db, user, items)
+def delete_my_drafts(db, user, items: list[dict], source: int = 0) -> dict:
+    return _impl().delete_my_drafts(db, user, items, source)
 
 
-def confirm_proposal(db, user, token: str) -> dict:
-    return _impl().confirm_proposal(db, user, token)
+def confirm_proposal(db, user, token: str, source: int = 0) -> dict:
+    return _impl().confirm_proposal(db, user, token, source)
 
 
-def update_doc_draft(db, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
-    return _impl().update_doc_draft(db, user, kind, oid, draft, mode)
+def update_doc_draft(db, user, kind: str, oid: int, draft: dict, mode: str, source: int = 0) -> dict:
+    return _impl().update_doc_draft(db, user, kind, oid, draft, mode, source)
+
+
+def my_changes(db, user, limit: int = 20) -> list[dict]:
+    """ai-CR-182: sổ thay đổi bot đã ghi của CHÍNH người này (mới nhất trước), mỗi dòng kèm can_undo + undo_reason."""
+    return _impl().my_changes(db, user, limit)
+
+
+def undo_change(db, user, change_id: int, source: int = 0) -> dict:
+    """ai-CR-182: hoàn tác một dòng sổ — ERP kiểm lại từ đầu; lỗi nghiệp vụ ném HTTPException (như confirm_proposal)."""
+    return _impl().undo_change(db, user, change_id, source)
 
 
 def created_details(db, kind: str, oid: int) -> list[str]:

@@ -77,6 +77,8 @@ from app.modules.seal_request import model as _seal_request  # noqa: F401
 from app.modules.seal_clerk import model as _seal_clerk  # noqa: F401
 from app.modules.vehicle_booking import model as _vehicle_booking  # noqa: F401
 from app.modules.assistant import model as _assistant  # noqa: F401
+# Sổ thay đổi do bot ghi + hoàn tác (ai-CR-182) — bảng ở DB ERP, không phải bảng của dịch vụ AI.
+from app.modules.assistant import change_model as _assistant_change  # noqa: F401
 from app.modules.forum import model as _forum  # noqa: F401
 from app.modules.user_preference import model as _user_preference  # noqa: F401
 # Phân hệ Công việc (CR-216) — ba tệp model, phải nạp ĐỦ CẢ BA hoặc

@@ -349,9 +349,17 @@ PROPOSE_ACCOUNT_SETUP_SPEC = ToolSpec(
 
 # ── Bước 2: người bấm Xác nhận ────────────────────────────────────────────────────────────
 
-def confirm_account_setup(db, user, token: str) -> dict:
+def _account_snapshot(db, target_id: int, role_ids: list[int]) -> dict:
+    """Ảnh vai trò + phạm vi của một tài khoản để ghi sổ thay đổi (ai-CR-182)."""
+    names = user_service._role_names(db, role_ids)
+    return {"roles": names,
+            "scopes": {name: user_service.get_user_scope(db, target_id, rid) for name, rid in zip(names, role_ids)}}
+
+
+def confirm_account_setup(db, user, token: str, source: int = 0) -> dict:
     """Ghi thật. Kiểm lại TẤT CẢ tại lúc bấm: token còn hạn + đúng chủ + đúng loại; quyền;
-    phạm vi tài khoản; L1/L2; vai trò còn tồn tại — rồi mới gọi hai service của màn Phân quyền."""
+    phạm vi tài khoản; L1/L2; vai trò còn tồn tại — rồi mới gọi hai service của màn Phân quyền.
+    `source` (ai-CR-182): kênh người bấm — chỉ để ghi sổ thay đổi (ACCOUNT, không hoàn tác tự động)."""
     try:
         payload = json.loads(_fernet().decrypt(token.encode(), ttl=CONFIRM_TTL_SECONDS))
     except (InvalidToken, ValueError, TypeError) as e:
@@ -375,8 +383,10 @@ def confirm_account_setup(db, user, token: str) -> dict:
     privilege_escalation.block_role_escalation(db, user, final_ids)
     _block_admin_removal(db, user, target_id, final_ids)
 
+    old_ids = user_service._role_ids(db, target_id)
+    before = _account_snapshot(db, target_id, old_ids)
     updated = []
-    if user_service._role_ids(db, target_id) != sorted(final_ids):
+    if old_ids != sorted(final_ids):
         user_service.assign_roles(db, target_id, RoleAssign(role_ids=final_ids), user.id)
         updated.append("vai trò")
 
@@ -391,8 +401,19 @@ def confirm_account_setup(db, user, token: str) -> dict:
         role_name = (user_service._role_names(db, [role_id]) or [f"#{role_id}"])[0]
         updated.append(f"phạm vi {role_name}")
 
+    target_label = user_service.user_label(db, target_id)
+    if updated:
+        #  ai-CR-182: ghi sổ thay đổi (chỉ khi có gì đổi). ACCOUNT không hoàn tác tự động — sửa tay ở Phân quyền.
+        from app.modules.assistant import change_service
+        change_service.record_change(
+            db, user, entity="account_setup", entity_id=target_id, doc_code=target_label[:50],
+            action=change_service.ChangeAction.ACCOUNT,
+            summary=f"Lập bộ tài khoản {target_label}: {', '.join(updated)}",
+            before=before, after=_account_snapshot(db, target_id, user_service._role_ids(db, target_id)),
+            after_sig="", source=source)
+
     return {
-        "target_label": user_service.user_label(db, target_id),
+        "target_label": target_label,
         "roles": user_service._role_names(db, final_ids),
         "updated": updated,
         "url": USER_PERMISSION_URL.format(user_id=target_id),

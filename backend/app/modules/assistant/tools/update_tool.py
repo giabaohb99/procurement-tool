@@ -805,7 +805,7 @@ PROPOSE_DOCUMENT_DELETE_SPEC = ToolSpec(
 
 # ── Bước 2: người dùng bấm Xác nhận — controller gọi hàm này ─────────────────────────────
 
-def confirm_update(db, user, token: str) -> dict:
+def confirm_update(db, user, token: str, source: int = 0) -> dict:
     """Ghi thay đổi SAU KHI người dùng bấm Xác nhận trên thẻ đề xuất.
 
     Kiểm lại toàn bộ từ đầu (token là đề xuất, không phải giấy thông hành):
@@ -815,6 +815,7 @@ def confirm_update(db, user, token: str) -> dict:
     4. Trạng thái còn sửa được + trường còn trong whitelist đợt này.
     Rồi ghi qua ĐÚNG service của form để validate + audit đi chung một đường với sửa tay.
     Token xóa (`a = delete`, AI-0006) rẽ sang `_confirm_delete` — cùng một nút, một endpoint.
+    `source` (ai-CR-182): kênh người dùng bấm (`change_model.ChangeSource`) — chỉ để ghi sổ thay đổi.
     """
     try:
         payload = json.loads(_fernet().decrypt(token.encode(), ttl=CONFIRM_TTL_SECONDS))
@@ -824,7 +825,7 @@ def confirm_update(db, user, token: str) -> dict:
     if not isinstance(payload, dict) or payload.get("u") != user.id:
         raise HTTPException(403, "Đề xuất sửa không thuộc về bạn.")
     if payload.get("a") == "delete":
-        return _confirm_delete(db, user, payload)
+        return _confirm_delete(db, user, payload, source=source)
     entity = payload.get("e")
     rules = _ENTITY_RULES.get(entity)
     if rules is None:
@@ -858,17 +859,47 @@ def confirm_update(db, user, token: str) -> dict:
         raise HTTPException(409, "Đề xuất này đã dùng rồi, hoặc phiếu đã đổi sau lúc đề xuất — nhờ trợ lý soạn lại "
                                  "đề xuất mới.")
 
+    #  ai-CR-182: chụp ảnh TRƯỚC (chỉ trường sắp đổi + dòng nếu có sửa dòng) để ghi sổ thay đổi.
+    from app.modules.assistant import change_service
+    before = change_service.snapshot(db, entity, doc, fields=list(fields), lines=bool(ops))
+
+    lines = _apply_line_ops(db, entity, doc, ops) if ops else None
+    write_doc(db, user, profile, entity, doc, fields, lines)
+
+    updated = [rules["fields"][f] for f in fields]
+    if ops:
+        updated.append("Dòng hàng")
+    db.refresh(doc)
+    change_service.record_change(
+        db, user, entity=entity, entity_id=doc.id, doc_code=doc.code, action=change_service.ChangeAction.UPDATE,
+        summary=f"Sửa {rules['label']} {doc.code}: {', '.join(updated)}",
+        before=before, after=change_service.snapshot(db, entity, doc, fields=list(fields), lines=bool(ops)),
+        after_sig=change_service.state_sig(db, entity, doc), source=source)
+    return {
+        "entity": entity,
+        "entity_label": rules["label"],
+        "code": doc.code,
+        "updated_fields": updated,
+        "url": _url_of(entity, doc.id),
+    }
+
+
+def write_doc(db, user, profile, entity: str, doc, fields: dict, lines: list | None) -> None:
+    """Ghi các trường (+ danh sách dòng ĐẦY ĐỦ nếu có) lên phiếu qua ĐÚNG service của form.
+
+    Dùng chung cho nút Xác nhận sửa và cho HOÀN TÁC (ai-CR-182, `change_service.undo` ghi lại ảnh
+    TRƯỚC): `fields` là khóa phẳng của `_ENTITY_RULES[entity]["fields"]` (ngày dạng ISO, loại nghỉ
+    theo mã / tên), `lines` là danh sách `PRItemIn` / `SurveyRequestLineIn` hoặc None = không đụng dòng.
+    """
     if entity == "purchase_request":
         from app.modules.purchase_request.schema import PRUpdate
         from app.modules.purchase_request.service import update_pr
-        items = _apply_line_ops(db, entity, doc, ops) if ops else None
-        update_pr(db, doc.id, PRUpdate(**fields, items=items) if ops else PRUpdate(**fields),
-                  user.id)
+        data = PRUpdate(**fields, items=lines) if lines is not None else PRUpdate(**fields)
+        update_pr(db, doc.id, data, user.id)
     elif entity == "survey_request":
         from app.modules.survey_request.schema import SurveyRequestUpdate
         from app.modules.survey_request.service import update_sr
-        lines = _apply_line_ops(db, entity, doc, ops) if ops else None
-        data = SurveyRequestUpdate(**fields, lines=lines) if ops else SurveyRequestUpdate(**fields)
+        data = SurveyRequestUpdate(**fields, lines=lines) if lines is not None else SurveyRequestUpdate(**fields)
         update_sr(db, doc.id, data, user.id, user=user, profile=profile)
     elif entity == "leave_request":
         _update_leave(db, user, doc, fields)
@@ -880,17 +911,6 @@ def confirm_update(db, user, token: str) -> dict:
         merged = parse_print_texts(doc.print_texts)
         merged.update({_PRINT_KEY_MAP[k]: v for k, v in fields.items()})
         update_request(db, doc.id, PRequestUpdate(print_texts=merged), user.id)
-
-    updated = [rules["fields"][f] for f in fields]
-    if ops:
-        updated.append("Dòng hàng")
-    return {
-        "entity": entity,
-        "entity_label": rules["label"],
-        "code": doc.code,
-        "updated_fields": updated,
-        "url": _url_of(entity, doc.id),
-    }
 
 
 def _update_leave(db, user, doc, fields: dict) -> None:
@@ -907,6 +927,8 @@ def _update_leave(db, user, doc, fields: dict) -> None:
         values["to_date"] = date.fromisoformat(fields["to_date"])
     if "leave_type" in fields:
         found, _ = _find_leave_type(db, fields["leave_type"])
+        if found is None:
+            raise HTTPException(409, f"Loại nghỉ {fields['leave_type']} không còn trong danh mục đang bật.")
         values["leave_type_id"] = found.id
     if "reason" in fields:
         values["reason"] = fields["reason"]
@@ -918,10 +940,12 @@ def _update_leave(db, user, doc, fields: dict) -> None:
     audit_record(db, user.id, "leave_request", obj.id, "update", f"Sửa đơn nghỉ phép {obj.code}")
 
 
-def _confirm_delete(db, user, payload: dict) -> dict:
+def _confirm_delete(db, user, payload: dict, source: int = 0) -> dict:
     """Xóa SAU KHI người dùng bấm 'Xác nhận xóa' — kiểm lại quyền `delete`, phạm vi xóa,
-    người lập, trạng thái rồi gọi ĐÚNG service xóa của form (xóa mềm ở YCMH / đơn nghỉ /
-    việc Dự án; YCBG xóa hẳn như nút Xóa của màn hình)."""
+    người lập, trạng thái rồi gọi ĐÚNG service xóa của form (xóa mềm ở YCMH / YCBG / đơn nghỉ /
+    việc Dự án). Ghi sổ thay đổi (ai-CR-182) kèm ảnh phiếu TRƯỚC khi xóa để hoàn tác được."""
+    from app.modules.assistant import change_service
+
     entity = payload.get("e")
     label = _DELETE_RULES.get(entity)
     if label is None:
@@ -938,7 +962,13 @@ def _confirm_delete(db, user, payload: dict) -> dict:
         if block:
             raise HTTPException(*block)
         shown = f"#{doc.id} {doc.title}"
+        before = change_service.snapshot(db, entity, doc)
         delete_task(db, actor, doc_id)
+        db.refresh(doc)
+        change_service.record_change(
+            db, user, entity=entity, entity_id=doc.id, doc_code=f"#{doc.id}",
+            action=change_service.ChangeAction.DELETE, summary=f"Xóa {label} {shown}",
+            before=before, after=None, after_sig=change_service.state_sig(db, entity, doc), source=source)
         return {"entity": entity, "entity_label": label, "code": shown,
                 "updated_fields": ["Đã xóa (vào thùng rác của dự án)"], "deleted": True,
                 "url": ""}
@@ -951,16 +981,32 @@ def _confirm_delete(db, user, payload: dict) -> dict:
     if block:
         raise HTTPException(*block)
     code = doc.code
+    before = change_service.snapshot(db, entity, doc)
+    delete_doc(db, user, entity, doc)
+    db.refresh(doc)
+    change_service.record_change(
+        db, user, entity=entity, entity_id=doc.id, doc_code=code, action=change_service.ChangeAction.DELETE,
+        summary=f"Xóa {label} {code}", before=before, after=None,
+        after_sig=change_service.state_sig(db, entity, doc), source=source)
+    return {"entity": entity, "entity_label": label, "code": code,
+            "updated_fields": ["Đã xóa phiếu"], "deleted": True, "url": ""}
+
+
+def delete_doc(db, user, entity: str, doc) -> None:
+    """Xóa MỀM một phiếu YCMH / YCBG / đơn nghỉ / YCTT qua ĐÚNG hàm xóa của form (kèm nhật ký).
+    Dùng chung cho nút Xác nhận xóa và cho hoàn tác «tạo» (ai-CR-182)."""
     if entity == "purchase_request":
         from app.modules.purchase_request.service import delete_pr
         delete_pr(db, doc.id, user.id)
     elif entity == "survey_request":
         from app.modules.survey_request.service import delete_sr
         delete_sr(db, doc.id, user.id)
+    elif entity == "payment_request":
+        from app.modules.payment_request.service import delete_request
+        delete_request(db, doc.id, user.id)
     else:
         from app.core.audit import record as audit_record
         from app.modules.leave import request_service
+        code = doc.code
         request_service.soft_delete(db, doc, user)
-        audit_record(db, user.id, "leave_request", doc_id, "delete", f"Xóa đơn nghỉ phép {code}")
-    return {"entity": entity, "entity_label": label, "code": code,
-            "updated_fields": ["Đã xóa phiếu"], "deleted": True, "url": ""}
+        audit_record(db, user.id, "leave_request", doc.id, "delete", f"Xóa đơn nghỉ phép {code}")

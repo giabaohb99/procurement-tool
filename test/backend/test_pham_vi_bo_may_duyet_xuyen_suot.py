@@ -1393,7 +1393,9 @@ def test_e3_goi_tri_thuc_di_vao_moi_cau_hoi_khong_phan_biet_phap_nhan():
     from app.modules.assistant import knowledge
 
     tham_so = set(inspect.signature(knowledge.build_system).parameters)
-    assert tham_so == {"extra"}, (
+    #  ai-CR-183 (13/10/2026): thêm `topics` — gói nạp theo CHỦ ĐỀ câu hỏi để bớt token, KHÔNG phải theo pháp nhân;
+    #  `load_pack()` không tham số vẫn là một gói dùng chung cho mọi người.
+    assert tham_so == {"extra", "topics"}, (
         "`build_system` nay có tham số mới — nếu là `user`/`company_id` thì gói tri thức "
         "đã tách theo pháp nhân, cập nhật lại bài kiểm này.")
 

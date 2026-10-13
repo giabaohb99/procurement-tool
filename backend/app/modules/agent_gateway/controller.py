@@ -20,8 +20,13 @@ from app.core import agent_signature
 from app.core.database import get_db
 from app.core.response import success
 from app.modules.agent_hub.erp import _Local as L
+from app.modules.assistant.change_model import ChangeSource
 
 log = logging.getLogger("app.agent_gateway")
+#  ai-CR-182: kênh ghi vào sổ thay đổi cho mọi lượt ghi đi qua cổng B. Dịch vụ AI hiện chỉ nhận lệnh từ Telegram
+#  (Zalo hướng B còn chờ — đại ca chốt 09/10 «Telegram trước, Zalo sau»); khi mở Zalo thì thêm header kênh ở
+#  `agent_hub/erp._Remote._call` rồi đọc ở đây thay hằng số.
+GATEWAY_SOURCE = int(ChangeSource.TELEGRAM)
 router = APIRouter(prefix="/api/agent-gw", tags=["agent-gateway"])
 
 
@@ -163,7 +168,7 @@ def draft_create_(body: DraftCreateIn, user=Depends(gateway_user), db: Session =
     from app.modules.agent_hub.draft_create import DraftError
 
     try:
-        code, oid = L.create_draft(db, user, body.kind, body.draft)
+        code, oid = L.create_draft(db, user, body.kind, body.draft, source=GATEWAY_SOURCE)
     except DraftError as e:
         return success({"error": str(e)})
     return success({"code": code, "id": oid})
@@ -179,7 +184,7 @@ def draft_submit(body: DraftSubmitIn, user=Depends(gateway_user), db: Session = 
     from app.modules.agent_hub.draft_create import DraftError
 
     try:
-        L.submit_draft(db, user, body.kind, body.id)
+        L.submit_draft(db, user, body.kind, body.id, source=GATEWAY_SOURCE)
     except DraftError as e:
         return success({"error": str(e)})
     return success({"ok": True})
@@ -204,7 +209,7 @@ def draft_update(body: DraftUpdateIn, user=Depends(gateway_user), db: Session = 
     if body.kind != "leave":
         return success({"error": "chỉ đơn nghỉ phép dùng lại được bản nháp cũ"})
     try:
-        return success({"code": L.update_leave_draft(db, user, body.id, body.draft)})
+        return success({"code": L.update_leave_draft(db, user, body.id, body.draft, source=GATEWAY_SOURCE)})
     except DraftError as e:
         return success({"error": str(e)})
 
@@ -222,7 +227,7 @@ def draft_reuse(body: DraftReuseIn, user=Depends(gateway_user), db: Session = De
     from app.modules.agent_hub.draft_create import DraftError
 
     try:
-        return success(L.update_doc_draft(db, user, body.kind, body.id, body.draft, body.mode))
+        return success(L.update_doc_draft(db, user, body.kind, body.id, body.draft, body.mode, source=GATEWAY_SOURCE))
     except DraftError as e:
         return success({"error": str(e)})
 
@@ -238,7 +243,7 @@ class DraftDeleteIn(BaseModel):
 
 @router.post("/draft/delete")
 def draft_delete(body: DraftDeleteIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
-    return success(L.delete_my_drafts(db, user, [i.model_dump() for i in body.items]))
+    return success(L.delete_my_drafts(db, user, [i.model_dump() for i in body.items], source=GATEWAY_SOURCE))
 
 
 #  ai-CR-151: nút «Xác nhận sửa / xóa» trên Telegram. Token Fernet do ERP cấp lúc chạy tool đề xuất; ở đây ERP kiểm
@@ -250,7 +255,29 @@ class ProposalConfirmIn(BaseModel):
 @router.post("/proposal/confirm")
 def proposal_confirm(body: ProposalConfirmIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
     try:
-        return success(L.confirm_proposal(db, user, body.token))
+        return success(L.confirm_proposal(db, user, body.token, source=GATEWAY_SOURCE))
+    except HTTPException as e:
+        db.rollback()
+        return success({"error": str(e.detail), "status": e.status_code})
+
+
+# --- sổ thay đổi do bot ghi + hoàn tác (ai-CR-182) ------------------------------------------------------------------
+#  Của CHÍNH người gọi (chữ ký mang user_id). Hợp đồng: doc/agent-hub/18-so-thay-doi-va-hoan-tac.md.
+@router.get("/changes/mine")
+def changes_mine(limit: int = Query(20, ge=1, le=100), user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.my_changes(db, user, limit))
+
+
+class ChangeUndoIn(BaseModel):
+    id: int = Field(ge=1)
+
+
+@router.post("/changes/undo")
+def changes_undo(body: ChangeUndoIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    """ERP kiểm lại TOÀN BỘ (hạn 24 giờ, chủ, quyền, phạm vi, trạng thái, dấu phiếu); lỗi nghiệp vụ trả
+    `{error, status}` như `/proposal/confirm` để dịch vụ AI ném lại HTTPException."""
+    try:
+        return success(L.undo_change(db, user, body.id, source=GATEWAY_SOURCE))
     except HTTPException as e:
         db.rollback()
         return success({"error": str(e.detail), "status": e.status_code})

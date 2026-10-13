@@ -167,29 +167,72 @@ def _as_time(value) -> time | None:
         return None
 
 
-def create(db: Session, user, kind: str, draft: dict) -> tuple[str, int]:
-    """Tạo thật; trả (mã phiếu, id). Ném DraftError với câu đọc được khi không tạo được."""
+def _doc_of(db: Session, kind: str, oid: int):
+    """Bản ghi phiếu theo loại nháp (đọc thẳng — chỉ dùng để chụp ảnh ghi sổ thay đổi)."""
+    if kind == "leave":
+        from app.modules.leave.request_model import LeaveRequest as model
+    elif kind == "ticket":
+        from app.modules.ticket.model import Ticket as model
+    elif kind == "survey":
+        from app.modules.survey_request.model import SurveyRequest as model
+    elif kind == "purchase":
+        from app.modules.purchase_request.model import PurchaseRequest as model
+    elif kind == "work_task":
+        from app.modules.work.task_model import WorkTask as model
+    else:
+        return None
+    return db.get(model, int(oid or 0)) if oid else None
+
+
+def log_change(db: Session, user, kind: str, oid: int, code: str, action, summary: str, before: dict | None,
+               source: int = 0) -> None:
+    """ai-CR-182: ghi MỘT dòng sổ thay đổi SAU khi phiếu đã ghi xong (ảnh SAU + dấu đọc lại từ chính bản ghi).
+    Không ném lỗi ra ngoài — sổ hỏng không được làm hỏng phiếu đã tạo."""
+    from app.modules.assistant import change_service
+
+    try:
+        doc = _doc_of(db, kind, oid)
+        if doc is None:
+            return
+        entity = ENTITIES[kind]
+        after = None if int(action) == int(change_service.ChangeAction.DELETE) else change_service.snapshot(db, entity, doc)
+        change_service.record_change(db, user, entity=entity, entity_id=int(oid), doc_code=(code or f"#{oid}")[:50],
+                                     action=action, summary=summary, before=before, after=after,
+                                     after_sig=change_service.state_sig(db, entity, doc), source=source)
+    except Exception:  # noqa: BLE001
+        import logging
+        logging.getLogger("app.agent_hub").exception("agent_hub: ghi sổ thay đổi hỏng (%s #%s)", kind, oid)
+
+
+def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
+    """Tạo thật; trả (mã phiếu, id). Ném DraftError với câu đọc được khi không tạo được.
+    `source` (ai-CR-182): kênh người dùng xác nhận — chỉ để ghi sổ thay đổi."""
     from fastapi import HTTPException
+
+    from app.modules.assistant.change_model import ChangeAction
 
     if kind not in DETAIL_PATHS:
         raise DraftError(f"Loại {LABELS.get(kind, kind)} không tạo được từ chat.")
     _check_permission(db, user, kind)
     try:
         if kind == "leave":
-            return _create_leave(db, user, draft)
-        if kind == "ticket":
-            return _create_ticket(db, user, draft)
-        if kind == "survey":
-            return _create_survey(db, user, draft)
-        if kind == "work_task":
-            return _create_work_task(db, user, draft)
-        return _create_purchase(db, user, draft)
+            code, oid = _create_leave(db, user, draft)
+        elif kind == "ticket":
+            code, oid = _create_ticket(db, user, draft)
+        elif kind == "survey":
+            code, oid = _create_survey(db, user, draft)
+        elif kind == "work_task":
+            code, oid = _create_work_task(db, user, draft)
+        else:
+            code, oid = _create_purchase(db, user, draft)
     except HTTPException as e:
         db.rollback()
         raise DraftError(str(e.detail)) from None
     except (ValueError, TypeError) as e:
         db.rollback()
         raise DraftError(f"Bản nháp chưa đủ dữ liệu: {str(e)[:300]}") from None
+    log_change(db, user, kind, oid, code, ChangeAction.CREATE, f"Tạo {LABELS[kind]} {code}", None, source)
+    return code, oid
 
 
 def _create_leave(db: Session, user, draft: dict) -> tuple[str, int]:
@@ -335,17 +378,21 @@ def missing_for_submit(kind: str, draft: dict) -> str:
     return ""
 
 
-def submit(db: Session, user, kind: str, obj_id: int) -> None:
+def submit(db: Session, user, kind: str, obj_id: int, source: int = 0) -> None:
     """Gửi duyệt bằng ĐÚNG hàm của đường API web (trình bộ máy duyệt, giữ chỗ quỹ phép, chốt cờ đơn gấp,
     báo trưởng bộ phận…), chạy luôn các tác vụ nền nó xếp (email, đẩy thông báo). Ném DraftError."""
     from fastapi import BackgroundTasks, HTTPException
 
     from app.core.auth import user_has_permission
+    from app.modules.assistant.change_model import ChangeAction
 
     if kind not in SUBMITTABLE:
         raise DraftError(f"{LABELS.get(kind, kind).capitalize()} không có bước gửi duyệt.")
     if not user_has_permission(db, user, ENTITIES[kind], _SUBMIT_ACTION[kind]):
         raise DraftError(f"Tài khoản này không có quyền gửi duyệt {LABELS[kind]}.")
+    doc = _doc_of(db, kind, obj_id)
+    before = {"status": str(doc.status)} if doc is not None else None
+    code = (getattr(doc, "code", "") or f"#{obj_id}") if doc is not None else f"#{obj_id}"
     tasks = BackgroundTasks()
     try:
         if kind == "leave":
@@ -366,6 +413,8 @@ def submit(db: Session, user, kind: str, obj_id: int) -> None:
         except Exception:  # noqa: BLE001 — email / thông báo đẩy hỏng không làm hỏng phiếu đã gửi duyệt
             import logging
             logging.getLogger("app.agent_hub").exception("agent_hub: tác vụ nền sau gửi duyệt hỏng")
+    #  ai-CR-182: ghi sổ (SUBMIT không hoàn tác tự động — chỉ để người dùng thấy bot đã gửi phiếu nào).
+    log_change(db, user, kind, obj_id, code, ChangeAction.SUBMIT, f"Gửi duyệt {LABELS[kind]} {code}", before, source)
 
 
 # ---------------------------------------------------------------------------
@@ -494,11 +543,12 @@ def same_days_leave(mine: list[dict], draft: dict) -> dict | None:
     return None
 
 
-def update_leave(db: Session, user, oid: int, draft: dict) -> str:
+def update_leave(db: Session, user, oid: int, draft: dict, source: int = 0) -> str:
     """Ghi bản nháp mới ĐÈ lên đơn nghỉ nháp cũ của chính mình (bằng đúng `request_service.update` của web)."""
     from fastapi import HTTPException
 
     from app.core.audit import record as audit_record
+    from app.modules.assistant import change_service
     from app.modules.leave import request_service
     from app.modules.leave.constants import LR_DRAFT
     from app.modules.leave.request_model import LeaveRequest
@@ -508,6 +558,7 @@ def update_leave(db: Session, user, oid: int, draft: dict) -> str:
     if obj is None or obj.is_deleted or obj.created_by != int(user.id) or obj.status != LR_DRAFT:
         raise DraftError("Đơn nháp đó không còn (đã gửi duyệt hoặc đã xóa).")
     _check_permission(db, user, "leave")
+    before = change_service.snapshot(db, "leave_request", obj)
     data = LeaveRequestUpdate(
         lines=[LeaveLineItem(leave_type_id=int(ln.get("leave_type_id") or 0), days=float(ln.get("days") or 0))
                for ln in draft.get("lines") or []],
@@ -523,6 +574,8 @@ def update_leave(db: Session, user, oid: int, draft: dict) -> str:
         db.rollback()
         raise DraftError(str(e.detail)) from None
     audit_record(db, user.id, "leave_request", obj.id, "update", f"Sửa đơn nghỉ phép nháp {obj.code} (qua Telegram)")
+    log_change(db, user, "leave", obj.id, obj.code, change_service.ChangeAction.REUSE,
+               f"Sửa đè đơn nghỉ phép nháp {obj.code} (trùng ngày)", before, source)
     return obj.code
 
 
@@ -546,7 +599,7 @@ def _line_key(kind: str, ln) -> tuple:
     return (" ".join(str(name or "").lower().split()), float(qty or 0), str(unit or "").strip().lower())
 
 
-def update_doc_draft(db: Session, user, kind: str, oid: int, draft: dict, mode: str) -> dict:
+def update_doc_draft(db: Session, user, kind: str, oid: int, draft: dict, mode: str, source: int = 0) -> dict:
     """ai-CR-156: dùng lại phiếu NHÁP YCMH / YCBG của chính mình thay vì lập phiếu mới.
 
     `append` = thêm các dòng của bản nháp mới vào phiếu cũ (dòng y hệt tên + số lượng + đơn vị thì bỏ qua, tránh nhắn
@@ -556,6 +609,7 @@ def update_doc_draft(db: Session, user, kind: str, oid: int, draft: dict, mode: 
 
     from app.core.audit import record as audit_record
     from app.core.auth import get_perm_profile, user_has_permission
+    from app.modules.assistant import change_service
     from app.modules.assistant.tools.update_tool import _row_to_input
 
     if kind not in REUSE_KINDS or mode not in REUSE_MODES:
@@ -583,6 +637,7 @@ def update_doc_draft(db: Session, user, kind: str, oid: int, draft: dict, mode: 
         old_rows = svc.items_of(db, obj.id)
     else:
         old_rows = svc.lines_of(db, obj.id)
+    before = change_service.snapshot(db, ENTITIES[kind], obj)       # ai-CR-182: đầu phiếu + dòng trước khi dùng lại
     skipped = 0
     if mode == "append":
         lines = [_row_to_input(line_cls, r) for r in old_rows]
@@ -611,16 +666,19 @@ def update_doc_draft(db: Session, user, kind: str, oid: int, draft: dict, mode: 
     how = "thêm dòng vào" if mode == "append" else "ghi đè"
     audit_record(db, user.id, ENTITIES[kind], obj.id, "update", f"{how.capitalize()} {LABELS[kind]} nháp {obj.code} (qua Telegram)")
     db.commit()
+    log_change(db, user, kind, obj.id, obj.code, change_service.ChangeAction.REUSE,
+               f"{how.capitalize()} {LABELS[kind]} nháp {obj.code}", before, source)
     return {"code": obj.code, "skipped": skipped}
 
 
-def delete_mine(db: Session, user, items: list[dict]) -> dict:
+def delete_mine(db: Session, user, items: list[dict], source: int = 0) -> dict:
     """Xóa các phiếu NHÁP do chính mình lập, bằng đúng hàm xóa của web. Phiếu không phải của mình / không còn nháp /
     thiếu quyền xóa thì bỏ qua và kể lại. Trả {deleted: [mã], skipped: [câu]}."""
     from fastapi import HTTPException
 
     from app.core.audit import record as audit_record
     from app.core.auth import user_has_permission
+    from app.modules.assistant import change_service
     from app.modules.leave import request_service
     from app.modules.leave.constants import LR_DRAFT
     from app.modules.leave.request_model import LeaveRequest
@@ -643,6 +701,7 @@ def delete_mine(db: Session, user, items: list[dict]) -> dict:
             skipped.append(f"{obj.code}: tài khoản không có quyền xóa {LABELS[kind]}")
             continue
         code = obj.code or f"#{oid}"
+        before = change_service.snapshot(db, ENTITIES[kind], obj)   # ai-CR-182: ảnh để hoàn tác xóa
         try:
             if kind == "leave":
                 request_service.soft_delete(db, obj, user)
@@ -655,6 +714,8 @@ def delete_mine(db: Session, user, items: list[dict]) -> dict:
             skipped.append(f"{code}: {e.detail}")
             continue
         audit_record(db, uid, ENTITIES[kind], oid, "delete", f"Xóa {LABELS[kind]} nháp {code} (qua Telegram)")
+        log_change(db, user, kind, oid, code, change_service.ChangeAction.DELETE, f"Xóa {LABELS[kind]} nháp {code}",
+                   before, source)
         deleted.append(code)
     db.commit()
     return {"deleted": deleted, "skipped": skipped}

@@ -150,6 +150,10 @@ không phải nén hội thoại. Bản tóm tắt của một cuộc riêng KH�
 
 ### Phase 15 — Một lớp duyệt chung cho mọi thao tác ghi
 
+**Tiến độ 13/10/2026 (đại ca chốt: hạn 24 giờ · xem của mình, quản lý bot AI xem hết · không hoàn tác khi đã gửi duyệt):**
+15.1 sổ thay đổi + hoàn tác phía ERP xong — ai-CR-182 (`tab_assistant_change`, grp14, doc 18). 15.2 bot Telegram (lệnh
+*bot vừa làm gì* / *hoàn tác*, chân thẻ sau mỗi lần ghi) và 15.3 tab *Bot đã ghi gì* trên ERP v2 — ai-CR-184 / 185.
+
 Mọi công cụ ghi (tạo / sửa / gửi duyệt / xóa) đi qua một lớp: bot đưa **bản xem thay đổi** (trước → sau) → người dùng
 duyệt → ghi + **nhật ký thay đổi có hoàn tác một chạm**. Gom ba kiểu duyệt hiện có về một. Làm xong mới mở thêm công cụ
 ghi mới (hóa đơn, công nợ…).

@@ -101,6 +101,8 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
         "submitted", "approved", "processing", "rejected", "cancelled",
         "done", "survey_done"),
     "modules/survey_request/service.py::choose_option": ("choose_option", "unchoose_option"),
+    #  HĐLĐ: `_audit(db, user, row, action, message)` nhận mã qua tham số — ba mã đọc từ các lời gọi tới nó.
+    "modules/labor_contract/controller.py::_audit": ("create", "update", "document_status"),
     "modules/ticket/service.py::assign": ("assign", "unassign"),
     "modules/ticket/service.py::set_status": ("open", "in_progress", "answered", "closed"),
     "modules/user/service.py::set_active": ("activate", "deactivate"),
@@ -132,6 +134,10 @@ def _called_name(call: ast.Call) -> str:
     if isinstance(func, ast.Name):
         return func.id
     if isinstance(func, ast.Attribute):
+        #  ai-CR-137/160: `intent_ledger.record(...)` là SỔ Ý ĐỊNH của bot (tham số `intent`, không có mã hành động) —
+        #  không phải dòng dấu vết; bỏ qua để khỏi bị đếm là «chỗ truyền mã động».
+        if isinstance(func.value, ast.Name) and func.value.id == "intent_ledger":
+            return ""
         return func.attr
     return ""
 

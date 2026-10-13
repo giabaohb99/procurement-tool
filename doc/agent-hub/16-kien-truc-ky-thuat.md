@@ -395,6 +395,7 @@ stack đã tách (S-1), chưa có runbook riêng cho prod (doc 14 chỉ viết c
 | Lời nhắc chung Trợ lý, routing loại câu | `assistant/service.py` (`ROUTING`, `TOOL_GUIDE`); gói tri thức: `assistant/packs/`; lịch sử web: `assistant/conversation.py`; trần ngày web: `assistant/usage.py` |
 | Thêm / sửa công cụ | `assistant/tools/<nhóm>_tool.py` + đăng ký ở `tools/__init__.py`; khung gác quyền: `tools/base.py`; nhóm chạy ở dịch vụ AI: `erp.LOCAL_TOOL_MODULES` |
 | Tạo phiếu thật từ nháp (bot, MCP) | `agent_hub/draft_create.py` |
+| Sổ thay đổi do bot ghi + hoàn tác 24 giờ (ai-CR-182, phase 15.1) | `assistant/change_service.py` (luật + hoàn tác), `change_model.py` (bảng `tab_assistant_change`, DB ERP), `change_controller.py` (web `/api/assistant/changes*`); cổng B `/changes/mine` · `/changes/undo`; móc ghi sổ ở `update_tool.confirm_update`, `draft_create.*`, `account_setup_tool`; hợp đồng: `doc/agent-hub/18-so-thay-doi-va-hoan-tac.md` |
 | Cổng B (ERP mở cho dịch vụ AI) | `agent_gateway/controller.py`; phía gọi: `agent_hub/erp.py` (`_Local` / `_Remote`) |
 | Chuyển tiếp web → dịch vụ AI | `agent_gateway/proxy.py`; ứng dụng dịch vụ AI: `app/agent_main.py`; danh tính: `core/agent_identity.py`; chữ ký: `core/agent_signature.py` |
 | Sổ nhớ, tóm tắt buổi, thẻ cá nhân | `agent_hub/personal_memory.py`, `sessions.py`, `personal_items.py` |
@@ -430,6 +431,7 @@ stack đã tách (S-1), chưa có runbook riêng cho prod (doc 14 chỉ viết c
 | `doc/agent-hub/07-quy-trinh-va-so-do.md` | Sơ đồ tổ chức, vai trò, các luồng (mermaid) |
 | `doc/agent-hub/08-van-hanh-vps.md` | Sổ môi trường, câu lệnh VPS, lan can, sao lưu / hoàn tác, `deploy.sh`, tự vận hành |
 | `doc/agent-hub/09-quy-dinh-hoi-va-lam.md` | Bảng «làm luôn / hỏi / không làm», sửa dữ liệu bằng lời |
+| `doc/agent-hub/18-so-thay-doi-va-hoan-tac.md` | Sổ thay đổi do bot ghi + hoàn tác 24 giờ: bảng, luật, hợp đồng API cho bot Telegram và màn web (ai-CR-182) |
 | `doc/agent-hub/10` … `12` | Nối Google; biên bản họp; tóm tắt nhóm Telegram / Zalo |
 | `doc/agent-hub/13-lo-trinh.md` | Lộ trình theo phase, bộ 44 chức năng, kiến trúc đích A2A bốn nút, phase S |
 | `doc/agent-hub/14-cong-erp-api.md` | Hợp đồng cổng B, `AGENT_MODE`, runbook dựng dịch vụ AI trên dev, Zalo B, màn Nhóm chat, ai-CR-124 |

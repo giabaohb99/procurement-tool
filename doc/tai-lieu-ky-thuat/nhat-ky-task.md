@@ -13242,6 +13242,21 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-182 | Sổ thay đổi do bot ghi vào ERP và hoàn tác trong hai mươi bốn giờ, phần lõi
+- status: dang-lam
+- date: 2026-10-13
+Đại ca chốt phase 15: mọi thứ bot ghi vào ERP phải có sổ và rút lại được trong hai mươi bốn giờ. Nay mỗi lần bot tạo, sửa, xóa,
+gửi duyệt phiếu, dùng lại nháp hay lập bộ tài khoản đều ghi một dòng vào sổ thay đổi trong cơ sở dữ liệu ERP, có ảnh trước và
+sau, ai bấm, từ kênh nào, và dấu trạng thái của phiếu ngay sau khi ghi. Hoàn tác kiểm lại từ đầu lúc bấm: còn trong hạn, chưa
+hoàn tác, đúng chủ hoặc quản lý bot AI với quyền hiện tại, phiếu còn nháp hoặc bị trả, không ai sửa chen; rồi làm ngược qua
+đúng đường của màn hình: sửa thì trả ảnh trước, tạo thì xóa mềm, xóa thì khôi phục; đã gửi duyệt hay lập bộ tài khoản thì chỉ ghi
+sổ. Có đường API cho màn web và cổng cho bot, hợp đồng ghi ở tài liệu 18. Hai bài kiểm canh cửa bị đỏ sẵn cũng được vá. Bài
+kiểm mới hai mươi hai bài, chạy cùng hơn hai trăm bài liên quan xanh. Hai phần còn lại là lệnh trên Telegram và tab trên ERP v2.
+
+Mã nguồn: assistant/change_service.py (record_change, can_undo, undo, restore_soft_deleted), assistant/change_model.py,
+assistant/change_controller.py, assistant/tools/update_tool.py (write_doc, delete_doc), agent_hub/draft_create.py (log_change),
+agent_hub/erp.py (my_changes, undo_change); migration grp14_so_thay_doi_bot; bài kiểm test_assistant_so_thay_doi_hoan_tac.py
+
 ## ai-CR-183 | Trợ lý trả lời nhanh và rẻ hơn: gói tri thức nạp theo chủ đề, giữ nhóm công cụ cho câu nối tiếp, dừng sớm khi đã có nháp
 - status: xong
 - date: 2026-10-13

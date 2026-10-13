@@ -365,6 +365,11 @@ app.include_router(faq_router)
 app.include_router(ticket_router)
 app.include_router(comment_router)
 app.include_router(forum_router)
+#  ai-CR-182: sổ thay đổi do bot ghi + hoàn tác — bảng ở DB ERP nên luôn phục vụ tại ERP (cả khi đã tách),
+#  và phải đứng TRƯỚC router chuyển tiếp `/api/assistant/*` của cổng B.
+from app.modules.assistant.change_controller import router as assistant_change_router  # noqa: E402
+
+app.include_router(assistant_change_router)
 if settings.agent_is_erp:
     from app.modules.assistant.controller import erp_local_router as assistant_local_router  # noqa: E402
 
