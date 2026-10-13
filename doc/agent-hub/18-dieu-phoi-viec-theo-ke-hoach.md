@@ -119,7 +119,7 @@ Trạng thái mới theo luật R2: SMALLINT + IntEnum, khai ở `modules/work/m
 
 | Đợt | Nội dung | Điều kiện |
 |---|---|---|
-| 24.1 | **Chỉ việc, chưa nối phân hệ.** Sếp đưa danh sách việc → bot lập kế hoạch và ghi thành việc cha/con trong Dự án (sếp sửa trực tiếp trên màn Dự án hoặc nhắn bot sửa) → hỏi từng người nhận việc → sếp duyệt và khóa → bot báo bắt đầu. Mỗi việc **xác nhận xong ngay trên bot** bằng một câu hoặc một nút; bot ghi giờ bắt đầu, giờ xong, phần trăm, điểm tự chấm, lý do. Bản tin sáng: kế hoạch và lịch trình hôm nay. Kênh: Telegram. | Không |
+| 24.1 (song song 15.2) | **Chỉ việc, chưa nối phân hệ.** Sếp đưa danh sách việc → bot lập kế hoạch và ghi thành việc cha/con trong Dự án (sếp sửa trực tiếp trên màn Dự án hoặc nhắn bot sửa) → hỏi từng người nhận việc → sếp duyệt và khóa → bot báo bắt đầu. Mỗi việc **xác nhận xong ngay trên bot** bằng một câu hoặc một nút; bot ghi giờ bắt đầu, giờ xong, phần trăm, điểm tự chấm, lý do. Bản tin sáng: kế hoạch và lịch trình hôm nay. Kênh: Telegram. | Không |
 | 24.2 | Nhắc mốc và hỏi tiến độ tự động; nhãn Nhắn không được; bản tin sáng cho từng người có việc. | 24.1 |
 | 24.3 | Kênh Zalo cho 24.1–24.2; tìm Zalo theo số điện thoại hồ sơ. | **Quét QR tài khoản Zalo công ty** |
 | 24.4 | Báo cáo kết thúc: kế hoạch so với thực tế, Word / Excel, đẩy Drive; bài học vào sổ ghi nhớ. | 24.1 |
@@ -180,7 +180,7 @@ không cản đường đó vì mọi tin đi qua sổ outreach chứ không g�
 
 | Phase có sẵn | Phase 24 dùng gì | Hệ quả |
 |---|---|---|
-| 15 — lớp duyệt chung + sổ thay đổi, hoàn tác 24 giờ (15.1 xong ai-CR-182; 15.2/15.3 đang làm) | Tạo cả cây kế hoạch và mỗi lần xếp lại là **một bản ghi thay đổi** có hoàn tác | Đợt 24.1 bắt đầu **sau 15.2** để khỏi viết cơ chế duyệt riêng |
+| 15 — lớp duyệt chung + sổ thay đổi, hoàn tác 24 giờ (15.1 xong ai-CR-182; 15.2/15.3 đang làm) | Tạo cả cây kế hoạch và mỗi lần xếp lại là **một bản ghi thay đổi** có hoàn tác | Đợt 24.1 làm **song song** với 15.2 (đại ca chốt 13/10): dùng thẻ duyệt `draft_create` đang có, ghi thay đổi qua `tab_assistant_change` của 15.1 (đã có); khi 15.2 lên dev thì nối lệnh *hoàn tác* vào, không viết cơ chế duyệt riêng |
 | 18 — nhóm chat + nhắc việc (G-4 đồng hồ chờ trả lời, bản tin cuối ngày) | 24.2 chính là G-4 áp cho việc trong kế hoạch | Gộp 24.2 với phần nhắc việc của phase 18, không làm hai lần |
 | 13 — hiểu ý định + tự nhớ (xong 09/10) | Hiểu câu trả lời tự do của người làm; bài học ghi vào sổ ghi nhớ của chủ kế hoạch | Thêm 4 nhãn ý định: *nhận việc*, *báo tiến độ*, *xin dời*, *từ chối* |
 
@@ -188,9 +188,10 @@ không cản đường đó vì mọi tin đi qua sổ outreach chứ không g�
 với 3 người như ví dụ doc 19 ≈ 40–60 lượt trong hai ngày. Bảng chi phí phase 16 phải thêm chiều *theo kế hoạch* để sếp
 thấy một kế hoạch tốn bao nhiêu.
 
-**Thứ tự đề xuất sau khi chèn:** 15.2 → 24.1 → 24.2 (gộp G-4 của 18) → 16 (đo thêm theo kế hoạch) → 24.4 → 17 (lên
-prod, mang theo 24.1–24.2) → 24.3 khi có QR Zalo → 24.5 → 24.6 → 24.7. Phase 19 (kho tri thức) và 20/21 (bot riêng,
-A2A) không đổi.
+**Thứ tự sau khi chèn (đại ca chốt 13/10: làm song song):** 24.1 chạy **song song** 15.2 → 24.2 (gộp G-4 của 18) → 16 (đo
+thêm theo kế hoạch) → 24.4 → 17 (lên prod, mang theo 24.1–24.2) → 24.3 khi có QR Zalo → 24.5 → 24.6 → 24.7. Phase 19
+(kho tri thức) và 20/21 (bot riêng, A2A) không đổi. Điểm ráp giữa 24.1 và 15.2: mọi lần bot ghi vào Dự án đều đi qua
+`tab_assistant_change` (có sẵn từ 15.1), nên khi 15.2 xong, lệnh *hoàn tác* tự áp cho kế hoạch mà không sửa 24.1.
 
 **Quyền mới:** `agent_plan` (ENTITIES + SCOPE_FIELDS theo luật B-07, một vai trò = một chức năng). Chủ kế hoạch cần
 `agent_plan.create`; người xem báo cáo của kế hoạch người khác cần `agent_plan.read` phạm vi `dept` hoặc `all`.

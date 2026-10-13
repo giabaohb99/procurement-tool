@@ -245,8 +245,9 @@ bản gọn cho người ngoài ở doc 19. Chưa có mã.
 
 Chèn vào kế hoạch này thì đổi (doc 18 §11): nới nguyên tắc *trợ lý cá nhân* thành có **tin nhân danh chủ kế hoạch** gửi
 cho người khác, chi phí tính vào khóa của chủ kế hoạch; không thêm nút bot, chỉ thêm bộ lập lịch gửi tin trong nút A;
-24.1 làm **sau 15.2** để dùng lớp duyệt chung; 24.2 **gộp với G-4** của phase 18; phase 16 đo thêm chiều *theo kế hoạch*;
-quyền mới `agent_plan`. Thứ tự: 15.2 → 24.1 → 24.2 → 16 → 24.4 → 17 → 24.3 (QR Zalo) → 24.5 → 24.6 → 24.7.
+24.1 làm **song song 15.2** (đại ca chốt 13/10), ghi thay đổi qua `tab_assistant_change` có sẵn rồi nối *hoàn tác* khi
+15.2 xong; 24.2 **gộp với G-4** của phase 18; phase 16 đo thêm chiều *theo kế hoạch*; quyền mới `agent_plan`. Thứ tự:
+24.1 ∥ 15.2 → 24.2 → 16 → 24.4 → 17 → 24.3 (QR Zalo) → 24.5 → 24.6 → 24.7.
 
 ## 4. Định hướng về sau
 
