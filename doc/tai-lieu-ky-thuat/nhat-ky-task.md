@@ -120,7 +120,7 @@ lời bản đầu đọc thẳng bảng Dự án nên sẽ hỏng. Em tách mô
 câu trả lời) mở qua cổng B bằng hai đường mới GET /plan/overview và POST /plan/reply (ghi vào doc 14), lớp bot chỉ gọi
 cổng và đụng bảng của bot; thêm bài kiểm chạy đúng chế độ tách.
 Commit: c4e428fd (bản đầu) trên erp-v2, Agent 1 đã đưa lên dev 13/10 (ERP api c4e428fd, dịch vụ AI 5dfca275); bản sửa
-hai lớp chờ commit và đẩy dev lại. Prod chưa.
+hai lớp: commit 9a92d841 trên erp-v2, đã nhờ Agent 1 dựng lại dev (ERP api + dịch vụ AI). Prod chưa.
 
 ---
 
