@@ -142,6 +142,8 @@ chưa thì là ứng viên cho §5.
 Đếm: **8 nhóm · 44 chức năng · 31 Xong · 2 Xong mã chờ bật · 1 Để sau · 10 Chưa.** Mười việc «Chưa» nằm gọn ở nhóm 2.7
 (nhóm) và 2.4 (nhắc hạn, bản tin cuối ngày) — đúng chỗ IDA đang làm (phase 5–7 của IDA), nên §5 mượn lại thứ tự.
 
+**Thêm 13/10/2026 — phase 24 (doc 18):** chức năng *điều phối việc nhân danh chủ kế hoạch* — bot lập kế hoạch vào Dự án, nhắn người khác hỏi nhận việc / tiến độ, bản tin sáng lịch trình, báo cáo kế hoạch so với thực tế. Đây là chức năng đầu tiên bot nói chuyện với người thứ ba; luật nới ở doc 18 §11.
+
 ## 3. Kiến trúc đích: nhiều bot nói chuyện với nhau (A2A)
 
 Đại ca 08/10: *"bot cá nhân ở VPS khác, bot phần dữ liệu công ty ERP ở VPS chính, bot code ở một chỗ khác, tin nhắn

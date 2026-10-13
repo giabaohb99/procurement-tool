@@ -156,3 +156,41 @@ Trạng thái mới theo luật R2: SMALLINT + IntEnum, khai ở `modules/work/m
 + việc) · kế toán tạm ứng (việc + nháp đề nghị thanh toán, xác nhận trên web) · xe đưa đón (tra xe, tài xế trống theo
 `tab_vehicle_booking`, nháp phiếu Đặt xe, sếp duyệt → luồng duyệt cấu hình) · xác nhận với từng người. Thiếu: mẫu nháp
 Đặt xe trong `draft_create.py` (thêm ở đợt 24.6; đợt 24.1 cả 4 việc chỉ ghi nhận xong trên bot).
+
+## 11. Chèn vào kế hoạch AI hiện tại thì đổi gì (rà 13/10/2026)
+
+**Một nguyên tắc nền phải nới.** Từ 06/10 bot là *trợ lý cá nhân*: chỉ nói chuyện với người đang chat, chạy bằng khóa AI
+của người đó, và từ 10/10 *cá nhân không nhận tin hệ thống* (ai-CR-167). Phase 24 là lần đầu bot **nhắn người khác nhân
+danh một người** (chủ kế hoạch). Nới như sau, không bỏ nguyên tắc:
+- Tin hỏi nhận việc / hỏi tiến độ là **tin nhân danh chủ kế hoạch**, không phải tin hệ thống: ghi rõ *theo kế hoạch X của
+  anh/chị Y* ở đầu tin; người nhận tắt được theo từng kế hoạch, không tắt được toàn bộ khi còn việc mở.
+- Chi phí model của mọi lượt hỏi đáp trong một kế hoạch tính vào **khóa AI của chủ kế hoạch**, kể cả câu trả lời của
+  người làm. Người làm không cần khóa riêng, không cần đăng nhập ERP qua bot; chỉ cần có Telegram liên kết hoặc Zalo.
+- Thêm vào doc 09 (quy định hỏi và làm) một luật: bot chỉ nhắn người thứ ba khi kế hoạch **đã duyệt**, và chỉ về phần
+  việc của người đó.
+
+**Kiến trúc 4 nút (doc 13 §3) giữ nguyên, không thêm nút.** Phase 24 nằm ở **A** (hội thoại, lập kế hoạch, nhắn người
+làm, bản tin) và gọi **B** để ghi / đọc Dự án qua cổng ERP có lọc phạm vi. Phần mới duy nhất về hạ tầng là một **bộ lập
+lịch gửi tin tới người khác** trong A (mở rộng `work_due.py` từ *gửi cho chính mình* sang *gửi cho danh sách người của
+kế hoạch*), có sổ `tab_agent_outreach` để tránh gửi trùng và để truy vết. Khi tách bot riêng từng người (phase 20/21),
+bộ lập lịch này thành một **bot điều phối** riêng, nói chuyện với bot cá nhân của từng người qua A2A; thiết kế hiện tại
+không cản đường đó vì mọi tin đi qua sổ outreach chứ không gọi thẳng kênh.
+
+**Mượn 3 phase đang có, đổi thứ tự một chút:**
+
+| Phase có sẵn | Phase 24 dùng gì | Hệ quả |
+|---|---|---|
+| 15 — lớp duyệt chung + sổ thay đổi, hoàn tác 24 giờ (15.1 xong ai-CR-182; 15.2/15.3 đang làm) | Tạo cả cây kế hoạch và mỗi lần xếp lại là **một bản ghi thay đổi** có hoàn tác | Đợt 24.1 bắt đầu **sau 15.2** để khỏi viết cơ chế duyệt riêng |
+| 18 — nhóm chat + nhắc việc (G-4 đồng hồ chờ trả lời, bản tin cuối ngày) | 24.2 chính là G-4 áp cho việc trong kế hoạch | Gộp 24.2 với phần nhắc việc của phase 18, không làm hai lần |
+| 13 — hiểu ý định + tự nhớ (xong 09/10) | Hiểu câu trả lời tự do của người làm; bài học ghi vào sổ ghi nhớ của chủ kế hoạch | Thêm 4 nhãn ý định: *nhận việc*, *báo tiến độ*, *xin dời*, *từ chối* |
+
+**Đụng tới số đo của phase 16.** Mỗi người làm trả lời là một lượt model tính cho chủ kế hoạch; kế hoạch 16 việc con
+với 3 người như ví dụ doc 19 ≈ 40–60 lượt trong hai ngày. Bảng chi phí phase 16 phải thêm chiều *theo kế hoạch* để sếp
+thấy một kế hoạch tốn bao nhiêu.
+
+**Thứ tự đề xuất sau khi chèn:** 15.2 → 24.1 → 24.2 (gộp G-4 của 18) → 16 (đo thêm theo kế hoạch) → 24.4 → 17 (lên
+prod, mang theo 24.1–24.2) → 24.3 khi có QR Zalo → 24.5 → 24.6 → 24.7. Phase 19 (kho tri thức) và 20/21 (bot riêng,
+A2A) không đổi.
+
+**Quyền mới:** `agent_plan` (ENTITIES + SCOPE_FIELDS theo luật B-07, một vai trò = một chức năng). Chủ kế hoạch cần
+`agent_plan.create`; người xem báo cáo của kế hoạch người khác cần `agent_plan.read` phạm vi `dept` hoặc `all`.

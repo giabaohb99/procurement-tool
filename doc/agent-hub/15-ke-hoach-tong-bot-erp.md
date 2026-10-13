@@ -239,8 +239,14 @@ pháp lý); (4) điểm báo gửi giờ nào, chủ đề nào.
 
 Sếp đưa danh sách việc → bot lập kế hoạch (giai đoạn, việc cha/con, người làm, tiêu chí, mốc) ghi vào Dự án → hỏi
 nhận việc và hỏi tiến độ qua Zalo (ưu tiên) / Telegram → xếp lại khi có người báo giờ khác → báo cáo kết thúc so sánh
-kế hoạch với thực tế (Word/Excel) → bài học cho lần sau. Sáu đợt 24.1–24.6, chi tiết và bộ tiêu chí nháp ở
-[`18-dieu-phoi-viec-theo-ke-hoach.md`](18-dieu-phoi-viec-theo-ke-hoach.md). Chưa có mã.
+kế hoạch với thực tế (Word/Excel) → bài học cho lần sau. Bảy đợt 24.1–24.7 (đợt 1 chỉ ghi nhận việc trong Dự án, chưa
+nối phân hệ), chi tiết và bộ tiêu chí nháp ở [`18-dieu-phoi-viec-theo-ke-hoach.md`](18-dieu-phoi-viec-theo-ke-hoach.md);
+bản gọn cho người ngoài ở doc 19. Chưa có mã.
+
+Chèn vào kế hoạch này thì đổi (doc 18 §11): nới nguyên tắc *trợ lý cá nhân* thành có **tin nhân danh chủ kế hoạch** gửi
+cho người khác, chi phí tính vào khóa của chủ kế hoạch; không thêm nút bot, chỉ thêm bộ lập lịch gửi tin trong nút A;
+24.1 làm **sau 15.2** để dùng lớp duyệt chung; 24.2 **gộp với G-4** của phase 18; phase 16 đo thêm chiều *theo kế hoạch*;
+quyền mới `agent_plan`. Thứ tự: 15.2 → 24.1 → 24.2 → 16 → 24.4 → 17 → 24.3 (QR Zalo) → 24.5 → 24.6 → 24.7.
 
 ## 4. Định hướng về sau
 
