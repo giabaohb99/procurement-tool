@@ -247,8 +247,8 @@ nhận việc và hỏi tiến độ qua Zalo (ưu tiên) / Telegram → xếp l
 kế hoạch với thực tế (Word/Excel) → bài học cho lần sau. Bảy đợt 24.1–24.7 (đợt 1 chỉ ghi nhận việc trong Dự án, chưa
 nối phân hệ), chi tiết và bộ tiêu chí nháp ở [`18-dieu-phoi-viec-theo-ke-hoach.md`](18-dieu-phoi-viec-theo-ke-hoach.md);
 bản gọn cho người ngoài ở doc 19. **Tiến độ:** 24.1 xong mã **13/10/2026** (bao-CR-616, làm trong 1 ngày, song song
-15.2): lập kế hoạch → bảng Dự án → hỏi nhận việc 3 nút → ghi xong / tiến độ qua chat → bản tin «Đang làm hôm nay»; chờ
-deploy dev. 24.2–24.7 chưa.
+15.2): lập kế hoạch → bảng Dự án → hỏi nhận việc 3 nút → ghi xong / tiến độ qua chat → bản tin «Đang làm hôm nay»; **DEV
+13/10** (959bb14b + bản dời lớp ERP sang `work/plan_service.py`), prod chưa duyệt. 24.2–24.7 chưa.
 
 Chèn vào kế hoạch này thì đổi (doc 18 §11): nới nguyên tắc *trợ lý cá nhân* thành có **tin nhân danh chủ kế hoạch** gửi
 cho người khác, chi phí tính vào khóa của chủ kế hoạch; không thêm nút bot, chỉ thêm bộ lập lịch gửi tin trong nút A;

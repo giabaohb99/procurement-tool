@@ -109,7 +109,7 @@ Khai thêm tool draft_work_plan vào bốn bảng canh của bộ kiểm (tool g
 Chưa làm trong đợt này: nhắc mốc tự động và hỏi tiến độ theo giờ (24.2), Zalo (24.3), báo cáo kết thúc (24.4), xếp lại
 kế hoạch (24.5), nối Đặt xe, thanh toán (24.6), quyền agent_plan riêng (tạm dùng quyền tạo việc Dự án).
 
-Mã nguồn: `agent_hub/plan_policy.py` (mới), `agent_hub/work_plan.py` (mới), `assistant/tools/work_tool.py`
+Mã nguồn: `agent_hub/plan_policy.py` (mới), `agent_hub/work_plan.py` (mới, lớp bot), `work/plan_service.py` (mới, lớp ERP), `assistant/tools/work_tool.py`
 (`draft_work_plan`), `agent_hub/draft_create.py` (loại `work_plan`), `agent_hub/service.py` (nút kh_ok/kh_khac/kh_tc,
 `_after_plan_created`, chuỗi `work_plan.handle_text`), `agent_hub/work_due.py` (mục Đang làm hôm nay), `agent_hub/constants.py`,
 `core/app_settings.py` + `setting/service.py` (khóa `agent_plan_policy`), `assistant/tool_router.py`.
@@ -118,9 +118,15 @@ Kiểm: 6 bài mới `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài can
 Sửa ngay sau khi lên dev lần đầu: dịch vụ AI trên dev chạy tách với DB riêng, mà phần hỏi nhận việc và nhận câu trả
 lời bản đầu đọc thẳng bảng Dự án nên sẽ hỏng. Em tách mô-đun thành hai lớp: lớp ERP (dựng kế hoạch, đọc cây việc, ghi
 câu trả lời) mở qua cổng B bằng hai đường mới GET /plan/overview và POST /plan/reply (ghi vào doc 14), lớp bot chỉ gọi
-cổng và đụng bảng của bot; thêm bài kiểm chạy đúng chế độ tách.
+cổng và đụng bảng của bot; thêm bài kiểm chạy đúng chế độ tách. Lần tách đầu vẫn để lớp ERP trong tệp
+agent_hub/work_plan.py nên bài canh ranh giới bot và ERP (test_agent_hub_ranh_gioi_erp.py) đỏ, Agent 4 và Agent 1 báo lại;
+em dời hẳn lớp ERP sang phân hệ Dự án ở tệp work/plan_service.py, hằng dùng chung (tên trường, nhãn Nhận việc, mã hành
+động) sang plan_policy.py, phía bot không còn import bảng Dự án. Bài canh ranh giới, 7 bài kế hoạch và 514 bài cụm
+nháp phiếu xanh (6 bài biên bản họp thiếu ffmpeg và 1 bài DEV_MODE đỏ sẵn trên máy local).
 Commit: c4e428fd (bản đầu) trên erp-v2, Agent 1 đã đưa lên dev 13/10 (ERP api c4e428fd, dịch vụ AI 5dfca275); bản sửa
-hai lớp: commit 9a92d841 trên erp-v2, đã nhờ Agent 1 dựng lại dev (ERP api + dịch vụ AI). Prod chưa.
+hai lớp: commit 9a92d841 trên erp-v2.
+Deploy: Agent 1 dựng lại dev 13/10 ở 959bb14b cả hai bên (ERP api + celery và cụm dịch vụ AI), migration grp14, sức khỏe
+hai cổng đều 200; sau đó bản dời lớp ERP sang work/plan_service.py nhờ Agent 1 dựng lại lần nữa. Prod chưa duyệt.
 
 ---
 

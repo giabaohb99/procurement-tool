@@ -85,3 +85,21 @@ def describe(policy: dict | None = None) -> str:
             f"thiếu thì dùng: {p['default_criteria']}. "
             + ("Không xếp hạn vào Chủ nhật. " if p.get("no_sunday") else "")
             + "Chọn người theo phòng ban, chức vụ; không rõ ai thì để trống và hỏi.")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+#  Hằng dùng chung cho HAI phía của kế hoạch (bao-CR-616): phía ERP (`modules/work/plan_service.py`) và phía bot
+#  (`agent_hub/work_plan.py`). Để ở đây vì tệp này thuần luật, không đụng bảng — phía bot import được mà không vi phạm
+#  ranh giới bot / ERP (`test_agent_hub_ranh_gioi_erp.py`).
+# ---------------------------------------------------------------------------------------------------------------------
+FIELD_ACCEPT = "Nhận việc"
+ACCEPT_NOT_ASKED, ACCEPT_YES, ACCEPT_LATER, ACCEPT_NO, ACCEPT_UNREACHABLE = (
+    "Chưa hỏi", "Nhận", "Nhận giờ khác", "Từ chối", "Nhắn không được")
+ACCEPT_OPTIONS = ((ACCEPT_NOT_ASKED, "slate"), (ACCEPT_YES, "green"), (ACCEPT_LATER, "orange"),
+                  (ACCEPT_NO, "red"), (ACCEPT_UNREACHABLE, "slate"))
+FIELD_CRITERIA, FIELD_PROGRESS, FIELD_SCORE, FIELD_NOTE = "Tiêu chí", "Tiến độ %", "Tự chấm (1-10)", "Ghi nhận"
+PLAN_MARK = "[kế hoạch do bot lập]"       # đuôi mô tả bảng — để nhận ra bảng là kế hoạch
+
+#  Hành động của `plan_service.reply`. Nút Telegram → hành động: kh_ok → accept, kh_khac → later, kh_tc → decline.
+A_ACCEPT, A_LATER, A_DECLINE, A_NOTE, A_DONE, A_PROGRESS, A_UNREACHABLE = (
+    "accept", "later", "decline", "note", "done", "progress", "unreachable")
