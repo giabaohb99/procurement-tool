@@ -53,6 +53,12 @@ main() {
       fi ;;
   esac
   : "${DEPLOY_HEALTH:=}"
+  #  ai-CR-186 (13/10): dev trên VPS 2 có thêm `docker-compose.dev.override.yml` đặt trần RAM từng container (api 1g,
+  #  celery 768m / 256m, qdrant 512m) — compose BỎ QUA override mặc định khi đã có -f, nên phải nối tay; tệp không có
+  #  (máy khác) thì thôi. Chỉ áp cho đích dev.
+  if [ "$target" = dev ] && [ -f "$DEPLOY_DIR/docker-compose.dev.override.yml" ] \n     && [[ "$DEPLOY_COMPOSE" != *docker-compose.dev.override.yml* ]]; then
+    DEPLOY_COMPOSE="$DEPLOY_COMPOSE -f docker-compose.dev.override.yml"
+  fi
   DEPLOY_TARGET="$target"
   DEPLOY_DIR="${DEPLOY_DIR/#\~/$HOME}"   # sổ môi trường ghi «~/…»: biến trong ngoặc kép không tự nở dấu ~
   : "${DEPLOY_ROLLBACK:=1}"

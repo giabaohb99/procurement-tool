@@ -34,6 +34,7 @@ celerybeat-schedule*
 # Trần dùng chung nằm ngay trong docker-compose.yml; cách dùng ở
 # doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md
 docker-compose.override.yml
+docker-compose.dev.override.yml
 
 # Bản xuất dữ liệu để đồng bộ môi trường — sinh bằng
 # `scripts/export-van-thu-phe-duyet.sh`. KHÔNG đẩy lên git: tệp chứa dữ liệu
