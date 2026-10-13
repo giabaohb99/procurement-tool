@@ -165,8 +165,10 @@ def answer_from_docs(question: str) -> tuple[str, list[dict], ChatResult | None]
 #  ai-CR-193 (13/10, đại ca hỏi «giá bitcoin hôm nay» mất 31 s — bot viết nguyên báo cáo 4 mục + 7 nguồn, 3.290 token ra):
 #  câu TRA NHANH kiểu «giá X hôm nay / tỷ giá / thời tiết / bao nhiêu» → trả bản NGẮN, muốn đủ thì hỏi kèm «chi tiết» hoặc
 #  «xuất Word». So trên chữ đã bỏ dấu, chỉ khi câu ngắn (≤ 12 chữ) và không có «chi tiết / phân tích / so sánh / vì sao».
-_QUICK = re.compile(r"^(?:cho (?:anh|em|toi|chi) (?:hoi|biet) )?(?:gia|ty gia|gia vang|gia xang|gia dien|gia usd|thoi tiet|nhiet do|"
-                    r"lai suat|chi so|ket qua|bao nhieu|may gio|ngay may|hom nay la|lich)\b")
+#  ai-CR-194: chỉ những thứ chắc chắn NGOÀI ERP (đường tắt bỏ bước đọc ý định) — «giá thép Hòa Phát» có thể là giá trong hệ
+#  thống nên KHÔNG nằm đây.
+_QUICK = re.compile(r"^(?:cho (?:anh|em|toi|chi) (?:hoi|biet) )?(?:ty gia|thoi tiet|nhiet do|lai suat(?: ngan hang)?|vn-?index|"
+                    r"chung khoan|gia (?:vang|bac|xang|dau|dien|bitcoin|btc|eth|usd|do la|euro|yen|coin|crypto|co phieu))\b")
 _QUICK_BLOCK = re.compile(r"chi tiet|phan tich|so sanh|vi sao|tai sao|nhan dinh|bao cao|xu huong|lich su|du bao")
 QUICK_MAX_TOKENS = 600
 QUICK_RULE = (" TRẢ LỜI NGẮN: dòng đầu là con số / kết luận in **đậm**, dòng «Cập nhật: …», rồi tối đa 3 gạch đầu dòng và 2–3 "
@@ -185,9 +187,19 @@ def is_quick(question: str) -> bool:
     return len(f.split()) <= 12 and bool(_QUICK.match(f)) and not _QUICK_BLOCK.search(f)
 
 
+_BRIEF = re.compile(r"\b(?:nhanh|ngan gon|van tat|tom tat ngan|tra loi ngan)\b")
+
+
+def wants_brief(question: str) -> bool:
+    """ai-CR-194 (đại ca 13/10 16:55): bản dài là MẶC ĐỊNH; bản ngắn chỉ khi người dùng nói «nhanh / ngắn gọn»."""
+    from app.modules.assistant.glossary import fold
+
+    return bool(_BRIEF.search(" " + " ".join(fold(question or "").split()) + " "))
+
+
 def _system_for(question: str, mode: str) -> tuple[str, int]:
-    """(lời dặn, trần token ra) — tra nhanh thì ngắn, còn lại như cũ."""
-    if mode == MODE_WEB and is_quick(question):
+    """(lời dặn, trần token ra) — người dùng xin ngắn thì ngắn, còn lại đầy đủ như cũ."""
+    if mode == MODE_WEB and wants_brief(question):
         return _COMMON + QUICK_RULE, QUICK_MAX_TOKENS
     return _SYSTEMS[mode], 0
 

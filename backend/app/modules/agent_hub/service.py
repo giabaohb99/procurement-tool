@@ -22,6 +22,7 @@ Bấm Duyệt: ghi `approved_at`, rồi nếu cờ `AGENT_CODER_ENABLED` bật t
 (`TIER1_MAX_STATUS`) và nói rõ là đang tắt.
 """
 import html as html_lib
+import contextlib
 import json
 import logging
 import re
@@ -646,7 +647,25 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
         return
 
     _adopt_pending_photos(db, chat_id, row)
-    _route_plain_text(db, chat_id, row, text)
+    with _instant_ack(chat_id, text):
+        _route_plain_text(db, chat_id, row, text)
+
+
+@contextlib.contextmanager
+def _instant_ack(chat_id: str, text: str):
+    """ai-CR-194 (đại ca 13/10): mọi tin chữ được báo nhận NGAY («Em nhận rồi, đang xử lý…») trước khi gọi model; xong thì
+    xóa tin đó (câu trả lời tự đứng). Không ghi sổ (tin tạm, cùng loại «đang soạn tin»). Gửi hỏng thì bỏ qua."""
+    mid = 0
+    if settings.AGENT_ACK_ENABLED and text and not text.startswith("/") and channels.is_telegram(chat_id):
+        try:
+            mid = telegram.send("Em nhận rồi, đang xử lý…", chat_id=chat_id)
+        except Exception:  # noqa: BLE001
+            mid = 0
+    try:
+        yield
+    finally:
+        if mid:
+            telegram.delete_message(chat_id, mid)
 
 
 # ---------------------------------------------------------------------------
@@ -1262,7 +1281,8 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     #  rồi» trơn không được phép đóng việc nào. Đủ cấp hay không do `_grant_allows` xét.
     if grants.level_for(db, link.user_id) and _CODE_IN_TEXT.search(low) and route_task_command(db, chat_id, row, text):
         return True
-    _route_linked_text(db, chat_id, row, text)
+    with _instant_ack(chat_id, text):
+        _route_linked_text(db, chat_id, row, text)
     return True
 
 
@@ -1361,6 +1381,28 @@ def _link_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
     return True
 
 
+def _fast_path(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """ai-CR-194 (13/10, đại ca: «hồi trước trả lời gần như tức thì» — 06/10 trung bình 5,8 s, 13/10 23,8 s): hai loại câu
+    không cần bước đọc ý định (một lượt model 2–12 s): TRA NHANH «giá X hôm nay / tỷ giá / thời tiết…» → tra mạng luôn;
+    XÃ GIAO «chào / cảm ơn / ok» → Trợ lý trả lời luôn với nhóm công cụ lõi. Thẻ chờ / lệnh chữ đã được xử trước đó."""
+    from app.modules.assistant.tool_router import is_smalltalk
+
+    if "\n" in (text or ""):
+        return False          # tin có phần trích dẫn («trả lời cho tao» trích «giá vàng hôm nay») → để bước đọc ý định xử
+    if research.is_quick(text):
+        row.action = ACT_ASKED
+        row.scope = SCOPE_PERSONAL
+        db.commit()
+        run_research(db, chat_id, text, research.MODE_WEB)      # tự ghi sổ ý định bên trong
+        return True
+    if is_smalltalk(text):
+        row.action = ACT_ASKED
+        db.commit()
+        answer_question(db, chat_id, text, before_id=row.id)
+        return True
+    return False
+
+
 def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
     """Tin chữ thường của người đã liên kết (ai-CR-045): hiểu bằng chữ, không bắt gõ lệnh.
 
@@ -1391,6 +1433,13 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
         reply(db, chat_id, user_keys.NO_KEY_HELP)
         return
     if _link_by_text(db, chat_id, row, text):           # ai-CR-133: tóm tắt bài viết theo link
+        return
+    if _fast_path(db, chat_id, row, text):      # ai-CR-194
+        return
+    if not settings.AGENT_INTENT_ENABLED:
+        row.action = ACT_ASKED
+        db.commit()
+        answer_question(db, chat_id, text, before_id=row.id)
         return
     run = start_run(db, 0, STAGE_INTENT)
     try:
@@ -1538,6 +1587,15 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  ai-CR-109: 07/10 «đơn hàng gần nhất» — đọc ý mất > 10 s (model chính quá tải, sang model dự phòng), vòng gom
     #  nhặt tin còn dấu rỗng thành việc AI-0004 trong khi Trợ lý vẫn trả lời. Đóng dấu «đang đọc» trước khi gọi model;
     #  chỉ nhánh GIAO VIỆC mới trả về dấu rỗng cho vòng gom.
+    if _fast_path(db, chat_id, row, text):      # ai-CR-194: tra nhanh / xã giao đi thẳng, khỏi một lượt model
+        return
+    if not settings.AGENT_INTENT_ENABLED:
+        #  ai-CR-194: đại ca tắt bước đọc ý định — mọi tin chữ còn lại đi thẳng Trợ lý (một lần gọi model). Việc sửa mã
+        #  thì nhắn «ghi việc: …» (ai-CR-096) hoặc câu phát triển tính năng (ai-CR-148) — hai đường đó đứng trước.
+        row.action = ACT_ASKED
+        db.commit()
+        answer_question(db, chat_id, text, before_id=row.id)
+        return
     row.action = ACT_READING
     db.commit()
     run = start_run(db, 0, STAGE_INTENT)
@@ -2072,7 +2130,7 @@ def _choice_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
 #  thì lượt phân loại SẴN CÓ đọc thêm danh sách việc đang mở + tin bot vừa nhắn, và trả thêm một
 #  loại «thao_tac». Chắc thì làm; chưa chắc thì hỏi lại một câu, và câu «đúng» sau đó chạy bằng
 #  dấu đã ghi chứ không hỏi model lần nữa.
-TASK_CONTEXT_LIMIT = 8
+TASK_CONTEXT_LIMIT = 5          # ai-CR-194: 8 → 5 dòng việc trong lời nhắc phân loại (bớt token, bớt chờ)
 _YES = re.compile(r"^(đúng|đúng rồi|ừ|ừm|ờ|ok|oke|okay|được|đồng ý|phải|chuẩn|chính xác|làm đi|triển"
                   r"|có)(\s+(rồi|đó|luôn|đi|nhé|nha|em|vậy|á))*[.! ]*$")
 _NO = re.compile(r"^(không|ko|khong|sai|thôi|đừng|chưa)(\s+(phải|đúng|làm|đâu|rồi|nhé|nha|em|đi))*[.! ]*$")

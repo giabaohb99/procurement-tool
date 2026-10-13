@@ -62,7 +62,13 @@ def count_references(db: Session, entity: str, obj) -> list[tuple[str, int]]:
 
 def deletable_error(entity: str, obj, refs: list[tuple[str, int]]) -> str:
     label = _LABELS.get(entity, "danh mục")
-    name = getattr(obj, "code", None) or getattr(obj, "name", None) or getattr(obj, "id", "")
+    #  ai-CR-190/191: tài khoản không có code / name → email; xe → biển số; nhân sự → họ tên; cuối cùng mới tới id.
+    name = None
+    for attr in ("code", "name", "full_name", "email", "license_plate", "plate", "title"):
+        if getattr(obj, attr, None):
+            name = getattr(obj, attr)
+            break
+    name = name or getattr(obj, "id", "")
     total = sum(n for _, n in refs)
     detail = ", ".join(f"{n} {lbl}" for lbl, n in refs)
     return (f"{label} «{name}» đang được dùng ở {total} chỗ ({detail}), chỉ có thể ngưng dùng "
