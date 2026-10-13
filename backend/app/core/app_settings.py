@@ -58,6 +58,9 @@ REGISTRY = {
     "agent_auto_memory_enabled": ("bool", "AGENT_AUTO_MEMORY_ENABLED"),
     #  ai-CR-146: model riêng cho bước lập kế hoạch (vd deepseek-v4-pro), đổi không cần deploy.
     "agent_plan_model": ("str", "AGENT_PLAN_MODEL"),
+    #  bao-CR-616 (phase 24.1): bộ luật lập kế hoạch việc của bot điều phối — JSON, sếp sửa trên màn Cấu hình;
+    #  khóa thiếu / JSON hỏng rơi về mặc định ở `agent_hub/plan_policy.py`.
+    "agent_plan_policy": ("str", "AGENT_PLAN_POLICY"),
     #  Cụm đồng bộ app đặt xe / duyệt dấu CŨ (bao-CR-429 nhịp 3). Đây đúng là chỗ
     #  cần sửa nóng nhất: khi đường máy-gọi-máy giữa hai hệ trục trặc thì thứ phải
     #  làm ngay là TẮT nó, mà tắt bằng `.env` nghĩa là sửa tệp rồi dựng lại dịch vụ.

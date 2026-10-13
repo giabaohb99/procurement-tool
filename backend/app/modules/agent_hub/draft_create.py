@@ -30,6 +30,7 @@ KIND_BY_TOOL = {
     "draft_purchase_request": "purchase",
     "draft_payment_request": "payment",
     "draft_work_task": "work_task",      # ai-CR-080
+    "draft_work_plan": "work_plan",      # bao-CR-616 (phase 24.1): cả cây kế hoạch → một bảng Dự án
 }
 LABELS = {
     "leave": "đơn nghỉ phép",
@@ -38,7 +39,10 @@ LABELS = {
     "purchase": "yêu cầu mua hàng (YCMH)",
     "payment": "đề nghị thanh toán",
     "work_task": "công việc (Dự án)",
+    "work_plan": "kế hoạch việc (Dự án)",
 }
+#  Khóa QUYỀN để tạo từng loại (kế hoạch = quyền tạo việc Dự án).
+PERM_ENTITIES = {"work_plan": "work_task"}
 ENTITIES = {
     "leave": "leave_request",
     "ticket": "ticket",
@@ -46,6 +50,9 @@ ENTITIES = {
     "purchase": "purchase_request",
     "payment": "payment_request",
     "work_task": "work_task",
+    #  Sổ thay đổi ghi theo bảng (không hoàn tác được — `change_service` từ chối loại lạ), còn quyền kiểm theo
+    #  `PERM_ENTITIES`.
+    "work_plan": "work_list",
 }
 DETAIL_PATHS = {
     "leave": "/hr/leave-requests/{id}",
@@ -53,6 +60,7 @@ DETAIL_PATHS = {
     "survey": "/procurement/survey-requests/{id}",
     "purchase": "/procurement/purchase-requests/{id}",
     "work_task": "/project/tasks/{id}",
+    "work_plan": "/project/lists/{id}",
 }
 SESSION_LABELS = {1: "cả ngày", 2: "buổi sáng", 3: "buổi chiều", 4: "theo giờ"}
 
@@ -125,6 +133,10 @@ def summarize(kind: str, draft: dict) -> list[str]:
         if draft.get("description"):
             out.append(f"Mô tả: {draft['description'][:300]}")
         return out
+    if kind == "work_plan":
+        from . import work_plan
+
+        return work_plan.summary_lines(draft)
     if kind in ("survey", "purchase"):
         items = draft.get("lines") or []
         out = [f"Mục đích: {draft.get('purpose') or '(trống)'}", f"{len(items)} dòng:"]
@@ -142,7 +154,7 @@ def summarize(kind: str, draft: dict) -> list[str]:
 def _check_permission(db: Session, user, kind: str) -> None:
     from app.core.auth import user_has_permission
 
-    if not user_has_permission(db, user, ENTITIES[kind], "create"):
+    if not user_has_permission(db, user, PERM_ENTITIES.get(kind, ENTITIES[kind]), "create"):
         raise DraftError(f"Tài khoản này không có quyền tạo {LABELS[kind]}.")
 
 
@@ -179,6 +191,8 @@ def _doc_of(db: Session, kind: str, oid: int):
         from app.modules.purchase_request.model import PurchaseRequest as model
     elif kind == "work_task":
         from app.modules.work.task_model import WorkTask as model
+    elif kind == "work_plan":
+        from app.modules.work.model import WorkList as model
     else:
         return None
     return db.get(model, int(oid or 0)) if oid else None
@@ -223,6 +237,10 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
             code, oid = _create_survey(db, user, draft)
         elif kind == "work_task":
             code, oid = _create_work_task(db, user, draft)
+        elif kind == "work_plan":
+            from . import work_plan
+
+            code, oid = work_plan.build(db, user, draft)
         else:
             code, oid = _create_purchase(db, user, draft)
     except HTTPException as e:
@@ -432,6 +450,10 @@ def _vn_num(value: float) -> str:
 
 def created_details(db: Session, kind: str, oid: int) -> list[str]:
     """Các dòng thông tin của phiếu vừa tạo / vừa gửi duyệt, đọc từ DB (trạng thái thật sau gửi duyệt)."""
+    if kind == "work_plan":
+        from . import work_plan
+
+        return work_plan.details(db, oid)
     if kind == "work_task":
         from app.modules.employee.model import Employee
         from app.modules.work.model import WorkList

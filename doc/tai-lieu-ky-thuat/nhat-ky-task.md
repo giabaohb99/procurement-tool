@@ -90,6 +90,35 @@ và bot ra khỏi máy chủ prod đang gần hết RAM. Trong ngày đã làm x
 Tài liệu: bản đồ một trang và mục B của quy-trinh-nhanh-va-deploy.md đã ghi địa chỉ hai máy.
 Deploy: dev + AI + bot IDA chạy trên 45.252.248.229 từ 13:50 ngày 13/10/2026; prod không đổi.
 
+## bao-CR-616 | Phase 24.1: bot lập kế hoạch việc vào Dự án, hỏi nhận việc, ghi xong qua chat
+- status: xong
+- date: 2026-10-13
+Đại ca chốt làm đợt 24.1 song song với 15.2 (doc 18). Đợt này chỉ ghi nhận việc trong phân hệ Dự án, chưa nối phân hệ
+nào khác. Người quản lý nhắn bot danh sách việc, bot soạn nháp cả cây kế hoạch theo bộ luật (ưu tiên 3 mức, mỗi việc cha
+tối đa 7 việc con, tiêu chí đo được, không rõ người thì hỏi lại một câu), người dùng nhắn tạo thì bot dựng một bảng Dự án:
+mỗi giai đoạn một cột kanban, việc cha, việc con, mời người làm vào bảng, các ô của kế hoạch là trường tùy biến của bảng
+(Độ ưu tiên có sẵn, Tiêu chí, Nhận việc, Tiến độ phần trăm, Tự chấm, Ghi nhận) nên không cần migration và sếp sửa ngay
+trên màn Dự án. Tạo xong bot nhắn riêng từng người làm đã liên kết Telegram, mỗi việc một tin nhân danh chủ kế hoạch với ba
+nút Nhận, Nhận giờ khác, Từ chối; người chưa liên kết thì ô Nhận việc ghi Nhắn không được và báo chủ. Người làm bấm nút
+hoặc nhắn chữ, bot ghi vào việc và báo lại chủ kế hoạch; nhắn xong việc N kèm điểm thì việc chuyển Hoàn thành, ghi giờ,
+tiến độ 100, tự chấm; nhắn việc N 60 phần trăm 7 điểm thì ghi tiến độ. Bản tin sáng 08:00 có thêm mục Đang làm hôm nay
+(việc đã bắt đầu, chưa tới hạn) để thành lịch trình trong ngày. Bộ luật lưu ở khóa cấu hình agent_plan_policy dạng JSON
+trên màn Cấu hình hệ thống, thiếu hay hỏng thì dùng mặc định trong mã.
+
+Khai thêm tool draft_work_plan vào bốn bảng canh của bộ kiểm (tool ghi, cửa gác, nhóm công cụ, số tool 72 thành 73).
+Chưa làm trong đợt này: nhắc mốc tự động và hỏi tiến độ theo giờ (24.2), Zalo (24.3), báo cáo kết thúc (24.4), xếp lại
+kế hoạch (24.5), nối Đặt xe, thanh toán (24.6), quyền agent_plan riêng (tạm dùng quyền tạo việc Dự án).
+
+Mã nguồn: `agent_hub/plan_policy.py` (mới), `agent_hub/work_plan.py` (mới), `assistant/tools/work_tool.py`
+(`draft_work_plan`), `agent_hub/draft_create.py` (loại `work_plan`), `agent_hub/service.py` (nút kh_ok/kh_khac/kh_tc,
+`_after_plan_created`, chuỗi `work_plan.handle_text`), `agent_hub/work_due.py` (mục Đang làm hôm nay), `agent_hub/constants.py`,
+`core/app_settings.py` + `setting/service.py` (khóa `agent_plan_policy`), `assistant/tool_router.py`.
+Kiểm: 6 bài mới `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài canh tool, nhắc hạn, bản tin, kanban xanh. 6 bài ở
+`test_agent_hub.py` về biên bản họp và Excel đỏ sẵn trên máy local vì thiếu ffmpeg, không liên quan.
+Deploy: chưa commit, chưa deploy.
+
+---
+
 ## bao-CR-615 | Thiết kế phase 24: bot điều phối việc theo kế hoạch cho sếp
 - status: xong
 - date: 2026-10-13

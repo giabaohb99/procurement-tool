@@ -189,7 +189,7 @@ TOOL_SUB: dict[str, Sub] = {
     "manage_briefs": Sub.WRITE_BRIEF,
     "draft_purchase_request": Sub.MAKE_PURCHASE_REQUEST, "draft_survey_request": Sub.MAKE_SURVEY_REQUEST,
     "draft_payment_request": Sub.MAKE_PAYMENT_REQUEST, "draft_leave_request": Sub.MAKE_LEAVE,
-    "draft_work_task": Sub.MAKE_WORK_TASK, "ticket_create": Sub.MAKE_TICKET,
+    "draft_work_task": Sub.MAKE_WORK_TASK, "draft_work_plan": Sub.MAKE_WORK_TASK, "ticket_create": Sub.MAKE_TICKET,
     "create_calendar_event": Sub.WRITE_CALENDAR, "update_calendar_event": Sub.WRITE_CALENDAR,
     "delete_calendar_event": Sub.WRITE_CALENDAR,
     "remember_fact": Sub.WRITE_MEMORY, "forget_fact": Sub.WRITE_MEMORY, "save_note": Sub.WRITE_MEMORY,

@@ -227,6 +227,7 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
     items = []
     for t, name, section in rows:
         it = {"id": t.id, "title": t.title, "project": name, "section": section or "", "due_date": t.due_date,
+              "start_date": t.start_date or "",      # bao-CR-616: bản tin sáng gom «đang làm hôm nay»
               "overdue": bool(t.due_date) and t.due_date < today, "subtask": t.parent_id is not None}
         if not only_mine:
             it["assignees"] = pics.get(t.id, [])
@@ -262,4 +263,209 @@ MY_WORK_TASKS_SPEC = ToolSpec(
         "include_following": {"type": "boolean", "description": "Gồm cả việc mình chỉ theo dõi (mặc định không)."},
         "limit": {"type": "integer", "description": "Tối đa bao nhiêu việc (mặc định 30, tối đa 100)."}}},
     handler=_my_work_tasks,
+)
+
+
+#  ---------------------------------------------------------------------------------------------------------------
+#  bao-CR-616 (phase 24.1, doc/agent-hub/18) — SOẠN NHÁP CẢ CÂY KẾ HOẠCH: giai đoạn → việc cha → việc con, mỗi việc
+#  có người làm, khung ngày, mức ưu tiên, tiêu chí đánh giá. Tool chỉ chuẩn hóa theo bộ luật (`plan_policy`) và ghi
+#  điều tự hiểu vào `assumptions`; tạo thật là việc của `agent_hub/work_plan.build` sau khi người dùng nhắn «tạo».
+#  ---------------------------------------------------------------------------------------------------------------
+_PRIORITY_WORDS = {
+    "gap": "Gấp", "khan": "Gấp", "p1": "Gấp", "urgent": "Gấp",
+    "uu tien": "Ưu tiên", "cao": "Ưu tiên", "p2": "Ưu tiên", "high": "Ưu tiên",
+    "thuong": "Thường", "vua": "Thường", "p3": "Thường", "normal": "Thường", "thap": "Thường", "p4": "Thường",
+}
+_MAX_PHASES, _MAX_TASKS_PER_PHASE, _MAX_CRITERIA = 12, 30, 3
+
+
+def _plan_priority(raw: str, default: str) -> str:
+    from app.modules.assistant.glossary import fold
+
+    key = " ".join(fold(str(raw or "")).split())
+    if not key:
+        return default
+    for k, v in _PRIORITY_WORDS.items():
+        if key == k or key.startswith(k + " ") or key.startswith(k + "-"):
+            return v
+    return default
+
+
+def _note(assumptions: dict, key: str, label: str) -> None:
+    """Giả định gom theo NHÓM (thiếu tiêu chí, chưa giao ai…) kèm tên việc — thẻ nháp in mỗi nhóm một dòng."""
+    assumptions.setdefault(key, []).append(label)
+
+
+_ASSUMPTION_TEXT = {
+    "no_criteria": "chưa có tiêu chí, em dùng tiêu chí mặc định",
+    "no_assignee": "chưa giao ai — anh/chị chỉ định hoặc để em hỏi sau",
+    "swapped": "hạn trước ngày bắt đầu nên em đảo lại",
+    "sunday": "có hạn rơi vào Chủ nhật — anh/chị xem có dời không",
+    "long": "kéo dài hơn mức ngày công của luật — nên chia nhỏ",
+    "trimmed": "có quá nhiều việc con, em giữ đúng số tối đa của luật",
+}
+
+
+def _assumption_lines(assumptions: dict) -> list[str]:
+    out = []
+    for key, titles in assumptions.items():
+        names = ", ".join(f"«{t}»" for t in titles[:3]) + (f" và {len(titles) - 3} việc nữa" if len(titles) > 3 else "")
+        out.append(f"{names}: {_ASSUMPTION_TEXT.get(key, key)}")
+    return out[:8]
+
+
+def _plan_dates(item: dict, label: str, assumptions: dict, policy: dict) -> tuple[str, str, str]:
+    """(ngày bắt đầu, hạn, lỗi). Hạn trước ngày bắt đầu thì đảo lại; hạn rơi Chủ nhật thì ghi giả định (không tự dời)."""
+    from datetime import date
+
+    start = str(item.get("start_date") or "").strip()
+    due = str(item.get("due_date") or "").strip()
+    for name, val in (("start_date", start), ("due_date", due)):
+        if val and not _DATE.match(val):
+            return "", "", f"{name} của «{label}» phải dạng YYYY-MM-DD"
+    if start and due and due < start:
+        start, due = due, start
+        _note(assumptions, "swapped", label)
+    if due and policy.get("no_sunday"):
+        try:
+            if date.fromisoformat(due).weekday() == 6:
+                _note(assumptions, "sunday", label)
+        except ValueError:
+            pass
+    if start and due and item.get("subtasks") is None:
+        try:
+            span = (date.fromisoformat(due) - date.fromisoformat(start)).days + 1
+            limit = int(policy.get("max_task_days") or 0)
+            if limit and span > limit:
+                _note(assumptions, "long", label)
+        except ValueError:
+            pass
+    return start, due, ""
+
+
+def _plan_task(ctx: ToolContext, raw: dict, policy: dict, assumptions: dict, problems: list[str],
+               allow_sub: bool) -> dict | None:
+    title = " ".join(str(raw.get("title") or "").split())[:500]
+    if not title:
+        return None
+    people, bad = _find_people(ctx, raw.get("assignees") or [])
+    problems.extend(bad)
+    if not people and not bad:
+        _note(assumptions, "no_assignee", title)
+    start, due, err = _plan_dates(raw, title, assumptions, policy)
+    if err:
+        problems.append(err)
+    criteria = [" ".join(str(c).split())[:300] for c in (raw.get("criteria") or []) if str(c).strip()][:_MAX_CRITERIA]
+    if not criteria:
+        criteria = [str(policy.get("default_criteria") or "")]
+        _note(assumptions, "no_criteria", title)
+    out = {"title": title, "assignees": people, "start_date": start, "due_date": due,
+           "priority": _plan_priority(str(raw.get("priority") or ""), str(policy.get("default_priority"))),
+           "criteria": criteria, "description": str(raw.get("description") or "")[:2000]}
+    if allow_sub:
+        subs_raw = raw.get("subtasks") or []
+        if not isinstance(subs_raw, list):
+            subs_raw = []
+        limit = int(policy.get("max_subtasks") or 7)
+        if len(subs_raw) > limit:
+            _note(assumptions, "trimmed", f"{title} ({len(subs_raw)} → {limit})")
+            subs_raw = subs_raw[:limit]
+        subs = []
+        for s in subs_raw:
+            if isinstance(s, dict):
+                s = dict(s)
+                s.pop("subtasks", None)      # phân hệ Dự án chỉ hai tầng (C-05)
+                sub = _plan_task(ctx, s, policy, assumptions, problems, allow_sub=False)
+                if sub:
+                    subs.append(sub)
+        out["subtasks"] = subs
+    return out
+
+
+def _draft_work_plan(ctx: ToolContext, args: dict) -> dict:
+    from app.modules.agent_hub import plan_policy
+
+    if not ctx.can("work_task", "create"):
+        return denied("lập kế hoạch việc ở phân hệ Dự án")
+    user_text, asked = confirm_fields.take_context(args)
+    title = " ".join(str(args.get("title") or "").split())[:200]
+    if not title:
+        return {"error": "thiếu tên kế hoạch"}
+    phases_raw = args.get("phases") or []
+    if not isinstance(phases_raw, list) or not [p for p in phases_raw if isinstance(p, dict)]:
+        return confirm_fields.need([{"field": "phases",
+                                     "question": "Kế hoạch gồm những giai đoạn nào, mỗi giai đoạn có việc gì, ai làm, hạn khi nào?"}])
+    policy = plan_policy.current()
+    assumptions: dict = {}
+    problems: list[str] = []
+    phases: list[dict] = []
+    for i, ph in enumerate([p for p in phases_raw if isinstance(p, dict)][:_MAX_PHASES]):
+        name = " ".join(str(ph.get("name") or "").split())[:100] or f"Giai đoạn {i + 1}"
+        tasks = []
+        for t in (ph.get("tasks") or [])[:_MAX_TASKS_PER_PHASE]:
+            if isinstance(t, dict):
+                task = _plan_task(ctx, t, policy, assumptions, problems, allow_sub=True)
+                if task:
+                    tasks.append(task)
+        if tasks:
+            phases.append({"name": name, "tasks": tasks})
+    if problems:
+        return {"need_choice": "assignee", "problems": problems[:8],
+                "note": "Hỏi người dùng MỘT câu để chọn đúng người / sửa ngày (đưa lựa chọn đánh số), rồi gọi lại tool."}
+    if not phases:
+        return {"error": "kế hoạch chưa có việc nào có tên"}
+    n_tasks = sum(len(p["tasks"]) for p in phases)
+    n_subs = sum(len(t.get("subtasks") or []) for p in phases for t in p["tasks"])
+    deadline = str(args.get("deadline") or "").strip()
+    if deadline and not _DATE.match(deadline):
+        return {"error": "deadline phải dạng YYYY-MM-DD"}
+    draft = {"title": title, "description": str(args.get("description") or "")[:2000], "deadline": deadline,
+             "phases": phases, "assumptions": _assumption_lines(assumptions),
+             "counts": {"phases": len(phases), "tasks": n_tasks, "subtasks": n_subs},
+             "policy": plan_policy.describe(policy)}
+    return {"draft": draft,
+            "note": ("Đã soạn nháp kế hoạch. Trên Telegram bot tự gửi bản tóm tắt để người dùng nhắn «tạo» (tạo bảng "
+                     "trong Dự án rồi hỏi từng người nhận việc). Đừng tự báo là đã tạo.")}
+
+
+_SUB_SCHEMA = {"type": "object", "properties": {
+    "title": {"type": "string"},
+    "assignees": {"type": "array", "items": {"type": "string"}, "description": "Tên hoặc mã nhân sự."},
+    "start_date": {"type": "string", "description": "YYYY-MM-DD"},
+    "due_date": {"type": "string", "description": "YYYY-MM-DD"},
+    "priority": {"type": "string", "description": "Gấp · Ưu tiên · Thường"},
+    "criteria": {"type": "array", "items": {"type": "string"}, "description": "1–3 tiêu chí đo được."},
+    "description": {"type": "string"}},
+    "required": ["title"]}
+_TASK_SCHEMA = {"type": "object", "properties": {**_SUB_SCHEMA["properties"],
+                                                 "subtasks": {"type": "array", "items": _SUB_SCHEMA,
+                                                              "description": "Việc con (tối đa 7, không lồng thêm)."}},
+                "required": ["title"]}
+
+
+def _plan_rules_text() -> str:
+    from app.modules.agent_hub import plan_policy
+
+    return plan_policy.describe(plan_policy.DEFAULTS)
+
+
+DRAFT_WORK_PLAN_SPEC = ToolSpec(
+    name="draft_work_plan",
+    description=("SOẠN NHÁP CẢ KẾ HOẠCH VIỆC ở phân hệ Dự án từ một danh sách việc hoặc một mục tiêu ('lập kế hoạch tiếp "
+                 "khách Trung Quốc ngày mai', 'lên plan cho việc X', 'chia việc này ra cho đội'). Tự chia thành giai đoạn → "
+                 "việc cha → việc con, mỗi việc có người làm (tên / mã nhân sự), ngày bắt đầu, hạn (YYYY-MM-DD giờ VN), "
+                 "mức ưu tiên (Gấp · Ưu tiên · Thường) và 1–3 tiêu chí đánh giá đo được. Luật: " + _plan_rules_text() +
+                 " Người chưa rõ → tool trả lựa chọn, hỏi người dùng MỘT câu. Một việc lẻ thì dùng draft_work_task."),
+    parameters={"type": "object", "properties": {
+        "title": {"type": "string", "description": "Tên kế hoạch (thành tên bảng trong Dự án)."},
+        "description": {"type": "string", "description": "Mục tiêu / bối cảnh (tùy chọn)."},
+        "deadline": {"type": "string", "description": "Hạn chót cả kế hoạch YYYY-MM-DD (tùy chọn)."},
+        "phases": {"type": "array", "description": "Các giai đoạn theo thứ tự; mỗi giai đoạn thành một cột kanban.",
+                   "items": {"type": "object", "properties": {
+                       "name": {"type": "string"},
+                       "tasks": {"type": "array", "items": _TASK_SCHEMA}},
+                       "required": ["name", "tasks"]}},
+        "asked_fields": confirm_fields.ASKED_PARAM},
+        "required": ["title", "phases"]},
+    handler=_draft_work_plan,
 )

@@ -31,6 +31,7 @@
 | **S** | **Tách dịch vụ AI thành nhiều bot nói chuyện với nhau (A2A)** — §3 | **Xong mã S-0…S-4** 08/10 (ai-CR-119), chờ Agent 1 dựng trên dev theo doc 14 §4; S-5/S-6 là runbook | |
 | G-5 | Màn «Nhóm chat» trên ERP v2: theo kênh / loại, tin, tệp, bản tóm tắt, quyền quản lý AI thấy hết (doc 12 §9) | **Xong** DEV 08/10 (ai-CR-123) | chờ đại ca xem bằng tài khoản admin |
 | Z-3/Z-4 | Zalo hướng B: tài khoản Zalo công ty ghi lặng nhóm, đọc nhóm Zalo, chat riêng | **Xong** DEV 08/10 (ai-CR-122) | chờ đại ca quét QR bằng số Zalo công ty (khác số bot IDA) |
+| 24 | Bot điều phối việc theo kế hoạch cho sếp (doc 18, 19) | **Một phần**: 24.1 xong mã **13/10** (bao-CR-616, 1 ngày) | 24.2 nhắc + hỏi tiến độ · 24.3 Zalo (chờ QR) · 24.4 báo cáo · 24.5 xếp lại · 24.6 nối Đặt xe / thanh toán · 24.7 email — chưa |
 
 **Một câu:** phần «trợ lý cá nhân hỏi gì đáp nấy» (ERP, sổ nhớ, khóa AI riêng, lịch, Drive, biên bản họp, đọc báo cáo,
 tóm tắt nhóm Telegram) đã chạy thật trên dev cho mọi người đã đăng nhập; phần «bot tự theo dõi, tự báo» (tin quan trọng

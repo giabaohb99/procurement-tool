@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, change_undo, channels, chat_link, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
+from . import ai_keys, bells, change_undo, channels, chat_link, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -1373,6 +1373,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
             or meeting_actions.handle_text(db, chat_id, row, text)
             or meeting_drive.handle_text(db, chat_id, row, text)
             or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
+            or work_plan.handle_text(db, chat_id, row, text)            # bao-CR-616: người làm trả lời kế hoạch, «xong việc N»
             or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
         return
@@ -1510,6 +1511,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             or meeting_actions.handle_text(db, chat_id, row, text)      # ai-CR-114: thẻ việc / lịch từ biên bản
             or meeting_drive.handle_text(db, chat_id, row, text)        # ai-CR-116: tệp họp mới trên Drive
             or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
+            or work_plan.handle_text(db, chat_id, row, text)            # bao-CR-616: người làm trả lời kế hoạch, «xong việc N»
             or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
@@ -3725,6 +3727,13 @@ def _handle_callback(db: Session, cb: dict, chat_id: str) -> None:
         _resolve_proposal(db, chat_id, cb_id, action, int(raw_id) if raw_id.isdigit() else 0)
         return
 
+    #  bao-CR-616: ba nút của tin hỏi nhận việc (kế hoạch) trỏ vào một VIỆC DỰ ÁN, không phải việc của bot.
+    if action in work_plan.CALLBACK_ACTIONS:
+        telegram.clear_buttons(chat_id, int((cb.get("message") or {}).get("message_id") or 0))
+        log_message(db, DIR_IN, chat_id, 0, data, action=action)
+        work_plan.handle_callback(db, chat_id, cb_id, action, int(raw_id) if raw_id.isdigit() else 0)
+        return
+
     task = db.get(AgentTask, int(raw_id)) if raw_id.isdigit() else None
     if task is None:
         telegram.answer_callback(cb_id, "Không tìm thấy việc này trong sổ")
@@ -4341,6 +4350,8 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[di
         actions = [("tạo", "lưu nháp"), ("tạo và gửi duyệt", "lưu và gửi duyệt luôn"), ("thôi", "bỏ bản nháp")]
     elif kind == "work_task":
         actions = [("tạo", "tạo việc và báo chuông cho người được giao"), ("thôi", "bỏ bản nháp")]
+    elif kind == "work_plan":
+        actions = [("tạo", "tạo bảng kế hoạch trong Dự án rồi nhắn hỏi từng người nhận việc"), ("thôi", "bỏ bản nháp")]
     else:
         actions = [("tạo", "gửi phiếu cho nhóm hỗ trợ"), ("thôi", "bỏ bản nháp")]
     if reuse:
@@ -4603,7 +4614,20 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     head = (f"Đã cập nhật {label} nháp {code} (trùng ngày với đơn nháp cũ nên em sửa đơn đó, không lập đơn mới)."
             if reuse is not None else f"Đã tạo {label}.")
     _reply_created(db, chat_id, kind, oid, head, tail)
+    if kind == "work_plan":
+        _after_plan_created(db, chat_id, user, oid)
     return True
+
+
+def _after_plan_created(db: Session, chat_id: str, user, list_id: int) -> None:
+    """bao-CR-616: tạo xong kế hoạch thì nhắn hỏi từng người nhận việc và báo chủ kế hoạch ai nhắn được / không."""
+    try:
+        out = work_plan.ask_assignees(db, user, int(list_id))
+    except Exception as e:  # noqa: BLE001 — hỏi nhận việc hỏng không được làm mất kế hoạch đã tạo
+        log.exception("agent_hub: hỏi nhận việc cho kế hoạch #%s hỏng", list_id)
+        reply(db, chat_id, f"Kế hoạch đã tạo nhưng chưa nhắn hỏi nhận việc được: {telegram.esc(str(e)[:200])}")
+        return
+    reply(db, chat_id, work_plan.ask_summary_text(out))
 
 
 def _doc_link_html(kind: str, oid: int) -> str:

@@ -195,3 +195,10 @@ thêm theo kế hoạch) → 24.4 → 17 (lên prod, mang theo 24.1–24.2) → 
 
 **Quyền mới:** `agent_plan` (ENTITIES + SCOPE_FIELDS theo luật B-07, một vai trò = một chức năng). Chủ kế hoạch cần
 `agent_plan.create`; người xem báo cáo của kế hoạch người khác cần `agent_plan.read` phạm vi `dept` hoặc `all`.
+
+## 12. Tiến độ
+
+| Đợt | Trạng thái | Ghi chú |
+|---|---|---|
+| 24.1 | **Mã xong 13/10/2026 (bao-CR-616), chưa commit / deploy** | Tool `draft_work_plan` → thẻ nháp → «tạo» dựng bảng Dự án (cột = giai đoạn, việc cha / con, trường tùy biến, mời thành viên) → hỏi nhận việc từng người (3 nút) → ghi câu trả lời, «xong việc N 8 điểm», «việc N 60% 7 điểm» → báo chủ kế hoạch. Bản tin 08:00 thêm «Đang làm hôm nay». Luật ở khóa `agent_plan_policy`. Khác thiết kế §6: KHÔNG thêm cột / bảng mới — mọi ô của kế hoạch là trường tùy biến của bảng; quyền tạm dùng `work_task.create`, khóa `agent_plan` để đợt sau. |
+| 24.2 … 24.7 | Chưa | |
