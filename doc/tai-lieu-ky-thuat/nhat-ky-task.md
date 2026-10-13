@@ -70,6 +70,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-VPS-20261013 | Hạ tầng: dời dev ERP, dịch vụ AI và bot IDA sang máy chủ AZDIGI mới
+- status: xong
+- date: 2026-10-13
+- pic: NSU209
+Đại ca mua máy chủ mới trên AZDIGI (sv.degoholding.com, 4 CPU, 8 GB RAM, 55 GB ổ) để tách phần dev
+và bot ra khỏi máy chủ prod đang gần hết RAM. Trong ngày đã làm xong:
+- Cứng hóa máy mới như máy cũ: tài khoản vận hành riêng, SSH chỉ bằng khóa trên cổng 51252, cấm root,
+  tường lửa chỉ mở 51252/80/443, chặn dò mật khẩu, tự cập nhật bản vá, cài Docker chính hãng.
+- Đường hầm Cloudflare riêng cho máy mới (đại ca tạo trên Zero Trust); bốn tên miền devthumua, deverp,
+  devhelp, botida chuyển sang đường hầm này.
+- Dời bot IDA trước (sao lưu DB, chép kho + cấu hình, quét lại QR Zalo), rồi dời dev ERP + dịch vụ AI:
+  MySQL 8.4 riêng với mật khẩu cấp mới, đổ lại hai cơ sở dữ liệu procurement_dev và agent_hub, chép
+  các volume qdrant / tệp AI / lịch nền / phiên Zalo công ty. Máy sửa mã trên máy đại ca trỏ sang máy mới.
+- Dọn máy cũ: xóa container, volume, ảnh, cache build của dev + AI + bot IDA + dego-pm, xóa hai DB đã
+  dời; bật lại kế toán và NetBird. Ổ máy cũ từ 33 GB còn 16 GB. Máy cũ từ nay chỉ còn prod.
+- Sửa dữ liệu dev: email nhân sự NSU209 trên dev đổi theo prod để đăng nhập Google trên deverp chạy
+  (lỗi 403 sau dời là do dữ liệu lệch, không phải do dời máy).
+Tài liệu: bản đồ một trang và mục B của quy-trinh-nhanh-va-deploy.md đã ghi địa chỉ hai máy.
+Deploy: dev + AI + bot IDA chạy trên 45.252.248.229 từ 13:50 ngày 13/10/2026; prod không đổi.
+
 ## duoc-CR-589 | Nhân sự: Lịch làm việc (mẫu lịch tuần, gán 4 cấp, tính ngày nghỉ theo lịch, màn xem lịch)
 - status: xong
 - date: 2026-10-05

@@ -10,6 +10,7 @@
 | | **PROD** | **DEV** |
 |---|---|---|
 | Nhánh git | **`main`** | **`erp-v2`** |
+| **Máy chủ (từ 13/10/2026)** | VPS cũ `180.93.2.176`, SSH cổng 51251 — helper `D:\vps_deploy\vps_ssh.py` | **VPS AZDIGI `45.252.248.229`, SSH cổng 51252** — helper `D:\vps_deploy\vps2_ssh.py` (dev + dịch vụ AI `~/agent-hub` + bot IDA `~/bot-tro-ly` đều ở đây; MySQL 8.4 riêng `~/procurement-db`) |
 | Thư mục trên VPS | `~/procurement-tool` | `~/procurement-tool-dev` |
 | Thư mục ở máy local | `D:\New folder\thuthapykien\procurement-main` | `D:\New folder\thuthapykien\procurement-tool` |
 | File compose | `docker-compose.production.yml` | `docker-compose.dev.yml` + `--env-file .env.dev` |
@@ -154,8 +155,11 @@ MSYS_NO_PATHCONV=1 GIT_SSH_COMMAND="C:/Windows/System32/OpenSSH/ssh.exe -i D:/pe
 
 ## B. DEPLOY PROD (nhánh `main`)
 
-Vào VPS: `python D:\vps_deploy\vps_ssh.py '<lệnh bash>'`
+Vào VPS prod: `python D:\vps_deploy\vps_ssh.py '<lệnh bash>'`
 (hoặc `ssh -i D:\pem\id_ed25519_vps -p 51251 degosysadmin@180.93.2.176`).
+Vào VPS dev (từ 13/10/2026 dev nằm ở máy AZDIGI): `python D:\vps_deploy\vps2_ssh.py '<lệnh bash>'`
+(hoặc `ssh -i D:\pem\id_ed25519_vps -p 51252 degosysadmin@45.252.248.229`). Hai script dựng dev
+`~/bot-tro-ly-upload/deploy_erp_api.sh` và `deploy_agent_hub.sh` cũng nằm ở máy dev.
 
 ### B.1. Kiểm trước khi deploy — 3 câu hỏi
 
