@@ -13267,6 +13267,31 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-184 | Hoàn tác và xem bot vừa ghi gì ngay trên Telegram
+- status: dang-lam
+- date: 2026-10-13
+Phần bot của phase 15. Nhắn bot vừa làm gì thì bot liệt kê mười dòng mới nhất bot đã ghi cho mình kèm trạng thái hoàn tác
+được hay không và lý do. Nhắn hoàn tác thì bot nhắm dòng mới nhất, hoàn tác số n thì nhắm đúng dòng trên thẻ vừa liệt kê; bot
+hỏi lại một thẻ xác nhận dùng một lần, trả lời đúng mới rút lại qua đường hoàn tác của ERP và báo kết quả kèm link phiếu, trả
+lời thôi thì giữ nguyên. Sau mỗi lần bot tạo, sửa, xóa phiếu, tin báo có thêm dòng nhắc rút lại được trong hai mươi bốn giờ.
+Cùng đợt em hoàn tất tệp bị sót ở một commit trước khiến cụm bot dev dừng khoảng hai mươi phút, và sửa tin lỗi gọi AI chỉ in mã
+lượt với loại lỗi, không in chữ lỗi thô. Bài kiểm mới mười lăm bài, bộ bài bot 419 bài xanh.
+
+Mã nguồn: agent_hub/change_undo.py (handle_text, render_list, with_undo_footer), agent_hub/service.py; bài kiểm
+test_agent_hub_hoan_tac_qua_chat.py
+
+## ai-CR-185 | Tab Bot đã ghi gì trên ERP v2 với nút hoàn tác
+- status: dang-lam
+- date: 2026-10-13
+Phần màn hình của phase 15. Trang cá nhân trên ERP v2 có thêm tab Bot đã ghi gì cạnh tab Bot nhớ gì về tôi: bảng các lần bot
+ghi vào ERP cho mình với thời điểm, phiếu có link, hành động, tóm tắt, kênh, trạng thái và nút Hoàn tác chỉ bật khi còn hoàn
+tác được, tắt thì ghi lý do; bấm hoàn tác có hộp xác nhận rồi báo kết quả; bấm một dòng xem ảnh trước và sau. Người quản lý
+bot AI có công tắc xem của mọi người, có cột tên người. Cổng kiểm giao diện chạy qua image sẵn có: kiểm kiểu không lỗi, lint
+không lỗi, tám mươi bài kiểm cụm trang cá nhân xanh.
+
+Mã nguồn: frontend-v2/src/app/components/profile/profile-changes-tab.tsx, modules/system/api/bot-changes-api.ts,
+modules/system/hooks/use-bot-changes.ts, assistant/change_service.py (user_name_of)
+
 ## ai-CR-182 | Sổ thay đổi do bot ghi vào ERP và hoàn tác trong hai mươi bốn giờ, phần lõi
 - status: xong
 - date: 2026-10-13
