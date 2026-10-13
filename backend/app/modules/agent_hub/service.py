@@ -4161,7 +4161,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
 
         habits = intent_ledger.habit_block(db, link.user_id if link is not None else 0)
         result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
-                                       kind=kind,
+                                       kind=kind, stop_on_draft=True,       # ai-CR-183: thẻ nháp bot tự gửi, khỏi lượt chốt
                                        system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
                                               f"{_account_fact(db, chat_id, user)}"
                                               + (f" {BOT_CODE_FACT}" if _can_order_code(db, chat_id) else "")
@@ -4185,7 +4185,8 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     if has_draft:
         #  ai-CR-048: tool soạn nháp dặn model «mời người dùng bấm nút mở form» (đúng cho web), nên câu chữ
         #  của Trợ lý nói ngược thẻ tóm tắt của bot. Chỉ GHI SỔ câu đó (giữ mạch hội thoại), không gửi.
-        log_message(db, DIR_OUT, chat_id, 0, result.get("text") or "", action=ACT_ANSWER)
+        #  ai-CR-183: dừng sớm nên thường không còn câu chữ — ghi một dòng ngắn để mạch hội thoại vẫn có lượt bot.
+        log_message(db, DIR_OUT, chat_id, 0, result.get("text") or "(đã soạn bản nháp, xem thẻ bên dưới)", action=ACT_ANSWER)
         db.commit()
     else:
         out = reply(db, chat_id, (result.get("text") or "(không có câu trả lời)") + (f"\n\n{hint}" if hint else ""),

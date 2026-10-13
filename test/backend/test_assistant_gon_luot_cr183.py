@@ -86,3 +86,35 @@ def test_ask_truyen_stop_on_draft_va_ghi_chu_goi_chua_nap(db, seed, monkeypatch)
     assert "# Nghỉ phép" in s["system"] and FACTORY not in s["system"] and "CHƯA nạp" in s["system"]
     service.ask("chào em", db=db, user=user)
     assert seen[-1]["stop"] is None and FACTORY in seen[-1]["system"] and "CHƯA nạp" not in seen[-1]["system"]
+
+
+def test_telegram_goi_ask_voi_stop_on_draft(db, monkeypatch):
+    """Kênh Telegram tự gửi thẻ nháp nên luôn xin dừng sớm; tool soạn nháp không còn câu chữ thì sổ vẫn có một dòng bot."""
+    from types import SimpleNamespace
+
+    from app.core.config import settings
+    from app.modules.agent_hub import chat_link, service
+    from app.modules.agent_hub.constants import ACT_ANSWER, DIR_IN
+    from app.modules.agent_hub.model import AgentMessage
+    from app.modules.assistant import service as assistant_service
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setattr(service, "_assistant_user", lambda db, chat_id="": SimpleNamespace(id=7, is_active=True))
+    monkeypatch.setattr(chat_link, "get_active_link", lambda db, chat_id: SimpleNamespace(user_id=7))
+    monkeypatch.setattr(service.user_keys, "active_key", lambda: "k")
+    monkeypatch.setattr(service.telegram, "send_chat_action", lambda chat_id: None)
+    monkeypatch.setattr(service, "reply", lambda db, chat_id, text, **kw: None)
+    monkeypatch.setattr(service, "deliver_tool_results", lambda db, chat_id, user, calls: None)
+    seen: list[dict] = []
+
+    def fake_ask(question, **kw):
+        seen.append(kw)
+        return {"text": "", "tool_calls": [{"name": "draft_work_task", "args": {}, "draft": {"title": "A"}}], "usage": {}}
+
+    monkeypatch.setattr(assistant_service, "ask", fake_ask)
+    row = service.log_message(db, DIR_IN, "12345", 1, "tạo task A")
+    db.commit()
+    service.answer_question(db, "12345", "tạo task A", before_id=row.id, ledger=False)
+    assert seen and seen[-1].get("stop_on_draft") is True
+    logged = db.query(AgentMessage).filter(AgentMessage.action == ACT_ANSWER).order_by(AgentMessage.id.desc()).first()
+    assert logged is not None and "đã soạn bản nháp" in logged.body
