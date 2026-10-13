@@ -122,6 +122,14 @@ main() {
   if [ -n "$DEPLOY_HEALTH" ] && [ "$code" != "200" ]; then
     rollback "$prev" "$sha" "${services[@]}"; return 1
   fi
+  #  ai-CR-187: api vừa recreate thì đổi IP; nginx của erp / web / help (ảnh cũ ghim IP) trả 502 tới khi restart. Ảnh mới
+  #  đã phân giải lại tên (resolver), nhưng restart vẫn vô hại — chỉ ở đích dev, chỉ khi có dựng api.
+  if [ "$target" = dev ] && printf '%s
+' "${services[@]}" | grep -qx api; then
+    for c in erp-dev procurement-web-dev procurement-help-dev; do
+      docker ps --format '{{.Names}}' | grep -qx "$c" && docker restart "$c" >/dev/null 2>&1 && echo "RESTART=$c"
+    done
+  fi
   echo "RESULT=ok"
   return 0
 }
