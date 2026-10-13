@@ -1,16 +1,18 @@
 # MÁY SỬA MÃ chạy NGAY TRÊN VPS 2 (V-08, ai-CR-186 — đại ca chốt 13/10/2026: dời máy sửa mã lên VPS, tắt hẳn máy đại ca).
 #
-# Khác bản `docker-compose.runner.yml` (máy ngoài): KHÔNG có container `tunnel` — DB và Redis dev nằm cùng máy, runner
-# dùng mạng host và trỏ thẳng vào hai cổng chuyển tiếp chỉ nghe 127.0.0.1 (socat db-forward 13306, redis-agent-forward
-# 16379 của stack dev). Deploy dev = ssh vào CHÍNH máy (AGENT_VPS_HOST=127.0.0.1, cổng SSH của VPS) bằng khóa riêng của
-# runner, cùng đường như máy ngoài nên mã không đổi.
+# Khác bản `docker-compose.runner.yml` (máy ngoài): KHÔNG có container `tunnel`. Runner vào thẳng hai mạng Docker có sẵn
+# trên VPS 2 (mạng MySQL `dego-db` và mạng nội bộ của cụm bot `agent-hub_agent-internal`), nên trong `.env.runner`:
+#   DB_HOST=procurement-mysql  DB_PORT=3306        REDIS_URL=redis://redis-agent:6379/<ngăn cũ>
+# Deploy dev = ssh ra MÁY CHỦ (host) bằng khóa riêng của runner: AGENT_VPS_HOST=host.docker.internal (map sẵn bên dưới),
+# AGENT_VPS_PORT=<cổng SSH VPS>; khóa chỉ được phép chạy script deploy (authorized_keys restrict,command=).
+# Tên máy giữ nguyên định danh đã đăng ký của máy đại ca (AGENT_RUNNER_NAME / TOKEN cũ) để bot khỏi đổi máy mặc định
+# và cờ deploy; muốn đổi tên hiển thị thì đăng ký máy mới qua bot («thêm máy vps-2») rồi «tắt máy may-dai-ca».
 #
-#   cp .env.runner.example .env.runner   # điền theo doc/agent-hub/05-may-sua-ma.md mục 6 (DB_PORT=13306, REDIS 16379)
 #   docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.vps.yml up -d --build
 #   docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.vps.yml logs -f
 #
-# Tài nguyên (đo 13/10 trên máy đại ca): rảnh ~150 MB; chạy Claude Code + pytest / tsc 1–2,5 GB, 1–2 nhân trong vài phút
-# mỗi việc. VPS 2 rảnh còn ~4 GB → trần 2,5 GB / 2 nhân, kèm swap 2 GB làm đệm (doc 05 §6).
+# Tài nguyên (đo 13/10): rảnh ~150 MB; Claude Code + pytest / tsc 1–2,5 GB, 1–2 nhân vài phút mỗi việc. VPS 2 rảnh ~4 GB
+# + swap 2 GB → trần 2,5 GB / 2 nhân (đổi bằng AGENT_RUNNER_MEM_LIMIT / AGENT_RUNNER_CPUS trong .env.runner).
 services:
   agent-runner:
     build:
@@ -21,12 +23,17 @@ services:
       AGENT_LONG_POLL: "true"
       C_FORCE_ROOT: "1"
       AGENT_REPO_SOURCE: ${AGENT_REPO_SOURCE:-https://github.com/giabaohb99/procurement-tool.git}
-    network_mode: host
+    networks:
+      - dego-db
+      - agent-internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     mem_limit: ${AGENT_RUNNER_MEM_LIMIT:-2560m}
     cpus: ${AGENT_RUNNER_CPUS:-2}
     volumes:
+      # Bản clone + worktree từng việc + phiên Claude Code (`/worktrees/.claude`) — sống qua các lần dựng lại.
       - agent_runner_worktrees:/worktrees
-      # Khóa SSH để deploy dev vào chính máy này (authorized_keys giới hạn lệnh như doc 05 §1.3 / §6).
+      # Khóa SSH riêng của runner để deploy dev ra máy chủ (authorized_keys giới hạn lệnh — doc 05 §6).
       - type: bind
         source: ${AGENT_VPS_SSH_KEY_FILE:-./docker/vps_ssh_key.placeholder}
         target: /root/vps_ssh_key
@@ -34,6 +41,14 @@ services:
     command: ["sh", "/app/start.runner.sh"]
     stop_grace_period: 60s
     restart: unless-stopped
+
+networks:
+  dego-db:
+    external: true
+    name: ${AGENT_DB_NETWORK:-dego-db}
+  agent-internal:
+    external: true
+    name: ${AGENT_BOT_NETWORK:-agent-hub_agent-internal}
 
 volumes:
   agent_runner_worktrees:

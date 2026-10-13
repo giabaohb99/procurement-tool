@@ -211,34 +211,29 @@ khóa SSH VPS của đại ca. Tệp `.env.runner` nằm trong `.gitignore`.
 
 Từ 13/10 dev ERP + cụm bot + bot IDA cùng ở VPS 2 (AZDIGI, 4 nhân / 7,8 GB / 55 GB), nên máy sửa mã cũng về đó: chạy
 24/7, không còn phụ thuộc máy đại ca bật, bỏ được đường hầm SSH. Tệp compose riêng `docker-compose.runner.vps.yml`
-(không có `tunnel`, mạng host, trần 2,5 GB / 2 nhân). Số đo tài nguyên 13/10: rảnh ~150 MB; lúc làm việc 1–2,5 GB,
-1–2 nhân trong vài phút mỗi việc; đĩa ~2,7 GB (ảnh 1,44 GB + worktree 1,2 GB). VPS 2 rảnh còn ~4 GB, đỉnh khi dựng
-dev ~5,5 GB, CHƯA có swap.
+(không có `tunnel`; runner vào thẳng mạng MySQL `dego-db` + mạng nội bộ cụm bot `agent-hub_agent-internal`; trần
+2,5 GB / 2 nhân). Số đo 13/10: runner rảnh ~150 MB, làm việc 1–2,5 GB + 1–2 nhân vài phút mỗi việc, đĩa ~2,7 GB; VPS 2
+dùng 3,9 / 7,9 GB, trống ~4 GB, đỉnh khi dựng dev ~5,5 GB → Agent 1 đã bật swap 2 GB và đặt trần RAM cho api / celery /
+qdrant / mysql.
 
-### 6.1 Trên VPS, làm một lần (Agent 1 / người có SSH quản trị)
+### 6.1 Dựng trên VPS 2 (Agent 1; đại ca đã xác nhận trực tiếp 13/10)
 
-1. Bật swap 2 GB làm đệm (`fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`
-   + dòng `/etc/fstab`); đặt `mem_limit` cho `procurement-mysql` (1,2 GB) và `dev-api` (1 GB) để OOM không giết nhầm runner.
-2. Khóa SSH riêng của runner để deploy vào CHÍNH máy: `ssh-keygen -t ed25519 -N "" -f ~/.ssh/agent_runner_vps2`; thêm
-   phần công khai vào `~/.ssh/authorized_keys` **với giới hạn lệnh** như §1.3 (chỉ cho chạy các script deploy ở
-   `~/bot-tro-ly-upload/deploy_*.sh` / `backend/scripts/deploy/deploy.sh`, không mở shell).
-3. Tài khoản MySQL `agent_runner` (§1.2) — đã có từ máy đại ca, dùng lại; cổng chuyển tiếp 13306 / 16379 đã có.
-4. `git clone` kho vào `~/agent-runner` (nhánh erp-v2), `cp .env.runner.example .env.runner`, điền:
-   `AGENT_RUNNER_NAME=vps2` + `AGENT_RUNNER_TOKEN` (bot cấp, §2.1 — đại ca nhắn «thêm máy vps2»);
-   `DB_HOST=127.0.0.1`, **`DB_PORT=13306`**, `DB_USER=agent_runner`, `DB_PASSWORD`, `DB_NAME=procurement_dev`;
-   **`REDIS_URL=redis://127.0.0.1:16379/<ngăn của dịch vụ AI>`**; `JWT_SECRET` của dev; `AGENT_TELEGRAM_CHAT_ID`;
-   `AGENT_GITHUB_TOKEN` = PAT **riêng cho máy** (fine-grained, đúng kho, Contents RW); `AGENT_DEPLOY_ENABLED=true`,
-   `AGENT_VPS_HOST=127.0.0.1`, `AGENT_VPS_PORT=<cổng SSH VPS>`, `AGENT_VPS_USER`, `AGENT_VPS_SSH_KEY_FILE=~/.ssh/agent_runner_vps2`;
-   `AGENT_OPS_ENABLED` / `AGENT_HEAL_ENABLED` theo cờ đang dùng. Các biến `AGENT_TUNNEL_*` để trống (không dùng).
-5. `CLAUDE_CODE_OAUTH_TOKEN`: đại ca chạy `claude setup-token` trên máy mình, **dán tay** vào `.env.runner` trên VPS
-   (không gửi qua chat / không ghi vào kho). Token là gói của đại ca → dùng chung hạn mức với phiên Claude Code của đại
-   ca; khi có tài khoản Claude công ty thì thay.
-6. Dựng: `docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.vps.yml up -d --build`; nhật ký
-   phải thấy `celery@vps2 ready`. Đại ca nhắn «cho máy vps2 được deploy», hỏi «máy nào đang bật» thấy *vps2 đang bật*;
-   đặt `AGENT_DEFAULT_RUNNER=vps2` trong `.env.agent` của cụm bot rồi dựng lại worker.
-7. Máy đại ca: «tắt máy may-dai-ca» với bot, `docker compose -p agentrunner down` tại máy, xóa dòng `authorized_keys`
-   của khóa đường hầm máy đó (§1.3). Từ đây đổi `coder.py` không cần ai dựng lại runner bằng tay: máy tự cập nhật
-   (`runner_update.py`, ai-CR-124), chỉ dựng lại khi đổi `Dockerfile.runner`.
+1. Nền `.env.runner`: chép từ máy đại ca (đã có `AGENT_RUNNER_NAME` / `AGENT_RUNNER_TOKEN` của máy đã đăng ký,
+   `CLAUDE_CODE_OAUTH_TOKEN` — gói của đại ca, `AGENT_GITHUB_TOKEN`, `JWT_SECRET`, `DB_PASSWORD` của `agent_runner`) —
+   GIỮ định danh máy cũ để bot khỏi đổi máy mặc định và cờ deploy. Sửa: `DB_HOST=procurement-mysql`, `DB_PORT=3306`,
+   `REDIS_URL=redis://redis-agent:6379/<ngăn cũ>`; `AGENT_TUNNEL_*` để trống; `AGENT_VPS_HOST=host.docker.internal`,
+   `AGENT_VPS_PORT=<cổng SSH VPS>`, `AGENT_VPS_USER=degosysadmin`, `AGENT_VPS_SSH_KEY_FILE=<khóa mới ở bước 2>`.
+2. Khóa SSH deploy: tạo cặp khóa MỚI trên VPS cho runner (`ssh-keygen -t ed25519 -N "" -f ~/agent-runner/keys/agent_runner_vps2`),
+   KHÔNG chép khóa riêng của đại ca lên; thêm phần công khai vào `authorized_keys` của `degosysadmin` với
+   `restrict,command="<script chỉ cho phép chạy deploy_erp_api.sh / deploy_agent_hub.sh / deploy.sh>"`.
+3. `docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.vps.yml up -d --build` (ảnh ~1,4 GB,
+   ~5 phút). Nhật ký phải thấy `celery@<tên máy> ready`; đại ca hỏi bot «máy nào đang bật» thấy máy *đang bật*.
+4. Recreate `procurement-mysql` với `mem_limit` và áp override trần RAM cho dev ở lần deploy kế.
+5. Máy đại ca: `docker compose -p agentrunner down` (xong bước 3 mới tắt); xóa dòng `authorized_keys` của khóa đường hầm
+   máy đại ca (§1.3). Muốn đổi tên hiển thị: «thêm máy vps-2» → điền tên / token mới vào `.env.runner` → dựng lại →
+   «cho máy vps-2 được deploy» → `AGENT_DEFAULT_RUNNER=vps-2` → «tắt máy may-dai-ca».
+6. Từ đây đổi `coder.py` không cần dựng lại runner bằng tay: máy tự cập nhật (`runner_update.py`, ai-CR-124); chỉ dựng
+   lại khi đổi `Dockerfile.runner`.
 
 ### 6.2 Lưu ý vận hành
 
