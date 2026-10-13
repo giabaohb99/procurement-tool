@@ -13268,7 +13268,7 @@ agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_c
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-187 | Nginx của ba giao diện không ghim địa chỉ api nữa, hết 502 sau mỗi lần dựng lại api
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Khi dựng lại dịch vụ api trên dev, địa chỉ nội bộ của nó đổi còn nginx của ba giao diện (ERP v2, bản cũ, Help Center) chỉ phân
 giải tên api một lần lúc khởi động nên trả lỗi 502 vài phút cho tới khi khởi động lại. Nay ba tệp cấu hình nginx dùng máy phân
@@ -13276,6 +13276,7 @@ giải tên nội bộ của Docker và biến để phân giải lại mỗi m�
 lại ba giao diện sau khi api lên để chắc chắn trong lúc ảnh cũ chưa được dựng lại. Cấu hình đã kiểm cú pháp bằng nginx -t.
 
 Mã nguồn: docker/nginx.erp.prod.conf, docker/nginx.help.prod.conf, docker/nginx.prod.conf, backend/scripts/deploy/deploy.sh
+Deploy: dev 13/10, commit 22b68c86 trên erp-v2; dựng lại ba ảnh giao diện dev.
 
 ## ai-CR-186 | Dời máy sửa mã lên VPS 2, tắt hẳn máy đại ca
 - status: xong
