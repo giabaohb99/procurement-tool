@@ -235,6 +235,13 @@ nhiều nhất, giá hải quan. **Chưa có:** nghiên cứu NHIỀU bước, �
 tiên / cấm (vd chỉ trang hãng + nhà phân phối, có lấy sàn TMĐT không); (3) trọng số chấm NCC (giá / chất lượng / giao hàng /
 pháp lý); (4) điểm báo gửi giờ nào, chủ đề nào.
 
+### Phase 24 — Bot điều phối việc theo kế hoạch cho sếp (đề xuất 13/10/2026, thiết kế ở doc 18)
+
+Sếp đưa danh sách việc → bot lập kế hoạch (giai đoạn, việc cha/con, người làm, tiêu chí, mốc) ghi vào Dự án → hỏi
+nhận việc và hỏi tiến độ qua Zalo (ưu tiên) / Telegram → xếp lại khi có người báo giờ khác → báo cáo kết thúc so sánh
+kế hoạch với thực tế (Word/Excel) → bài học cho lần sau. Sáu đợt 24.1–24.6, chi tiết và bộ tiêu chí nháp ở
+[`18-dieu-phoi-viec-theo-ke-hoach.md`](18-dieu-phoi-viec-theo-ke-hoach.md). Chưa có mã.
+
 ## 4. Định hướng về sau
 
 - **Một nền tảng AI cho nhiều công ty / nhiều bot**: dịch vụ AI đã tách (phase 11) là nền. Về sau gom bot IDA về đây,
