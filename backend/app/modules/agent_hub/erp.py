@@ -406,19 +406,19 @@ class _Local:
 
         return [{"id": int(p.id), "name": p.name} for p in _projects_local(db, user)]
 
-    #  bao-CR-616 (phase 24.1): kế hoạch việc — lớp ERP của `work_plan` (đọc cây việc, ghi câu trả lời người làm).
+    #  bao-CR-616 (phase 24.1): kế hoạch việc — lớp ERP ở `work/plan_service` (đọc cây việc, ghi câu trả lời người làm).
     @staticmethod
     def plan_overview(db, user, list_id: int) -> dict:
-        from . import work_plan
+        from app.modules.work import plan_service
 
-        return work_plan.overview(db, user, int(list_id))
+        return plan_service.overview(db, user, int(list_id))
 
     @staticmethod
     def plan_reply(db, user, task_id: int, action: str, text: str = "", pct: int | None = None,
                    score: int | None = None) -> dict:
-        from . import work_plan
+        from app.modules.work import plan_service
 
-        return work_plan.reply(db, user, int(task_id), action, text=text, pct=pct, score=score)
+        return plan_service.reply(db, user, int(task_id), action, text=text, pct=pct, score=score)
 
 
 # ===========================================================================

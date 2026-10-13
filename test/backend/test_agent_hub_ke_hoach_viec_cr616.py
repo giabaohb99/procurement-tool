@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import pytest
 
 from app.modules.agent_hub import draft_create, work_plan
+from app.modules.agent_hub.plan_policy import A_UNREACHABLE
+from app.modules.work import plan_service
 from app.modules.agent_hub.constants import ACT_PLAN_ASK, ACT_PLAN_ASK_WAIT, DIR_IN
 from app.modules.agent_hub.model import AgentChatLink, AgentMessage
 from app.modules.user.model import User
@@ -103,7 +105,7 @@ def test_tao_dung_ca_cay_trong_du_an(db, world):
     code, list_id = draft_create.create(db, world["boss"], "work_plan", d)
     lst = db.get(WorkList, list_id)
     assert code == f"kế hoạch #{list_id}" and lst.name == "Tiếp khách Trung Quốc 14/10"
-    assert work_plan.PLAN_MARK in lst.description and "Hạn chót: 2026-10-16" in lst.description
+    assert plan_service.PLAN_MARK in lst.description and "Hạn chót: 2026-10-16" in lst.description
     #  Cột = giai đoạn (ba cột mặc định đổi tên / bỏ bớt).
     sections = db.query(WorkSection).filter(WorkSection.list_id == list_id).order_by(WorkSection.sort_order).all()
     assert [s.name for s in sections] == ["Chuẩn bị", "Ngày tiếp khách"]
@@ -118,13 +120,13 @@ def test_tao_dung_ca_cay_trong_du_an(db, world):
     assert {a.employee_id for a in db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id == xe.id)} == {world["binh"].id}
     #  Trường tùy biến + giá trị.
     fields = {f.name: f for f in db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id)}
-    assert {work_plan.FIELD_ACCEPT, work_plan.FIELD_CRITERIA, work_plan.FIELD_PROGRESS, work_plan.FIELD_SCORE,
-            work_plan.FIELD_NOTE} <= set(fields)
+    assert {plan_service.FIELD_ACCEPT, plan_service.FIELD_CRITERIA, plan_service.FIELD_PROGRESS, plan_service.FIELD_SCORE,
+            plan_service.FIELD_NOTE} <= set(fields)
     tam_ung = next(t for t in parents if t.title == "Tạm ứng chi phí")
-    assert work_plan._label_text(db, fields[work_plan.FIELD_CRITERIA], tam_ung.id) == "Tiền tới tay trước 7:30"
-    assert work_plan._label_text(db, fields[work_plan.FIELD_ACCEPT], tam_ung.id) == work_plan.ACCEPT_NOT_ASKED
+    assert plan_service._label_text(db, fields[plan_service.FIELD_CRITERIA], tam_ung.id) == "Tiền tới tay trước 7:30"
+    assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], tam_ung.id) == plan_service.ACCEPT_NOT_ASKED
     pr = next(f for f in fields.values() if f.system_key == "priority")
-    assert work_plan._label_text(db, pr, tam_ung.id).startswith("P1") and work_plan._label_text(db, pr, xe.id).startswith("P2")
+    assert plan_service._label_text(db, pr, tam_ung.id).startswith("P1") and plan_service._label_text(db, pr, xe.id).startswith("P2")
     assert "3 việc cha, 9 việc con" in " ".join(draft_create.created_details(db, "work_plan", list_id))
 
 
@@ -141,8 +143,8 @@ def test_hoi_nhan_viec_nguoi_co_telegram_va_danh_dau_nguoi_khong(db, world):
     assert "của Người YC" in asks[0][1] or "Theo kế hoạch" in asks[0][1]
     assert db.query(AgentMessage).filter(AgentMessage.action == ACT_PLAN_ASK, AgentMessage.chat_id == "chat-an").count() == 3
     xe = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Xe đưa đón").one()
-    accept = db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id, WorkLabelField.name == work_plan.FIELD_ACCEPT).one()
-    assert work_plan._label_text(db, accept, xe.id) == work_plan.ACCEPT_UNREACHABLE
+    accept = db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id, WorkLabelField.name == plan_service.FIELD_ACCEPT).one()
+    assert plan_service._label_text(db, accept, xe.id) == plan_service.ACCEPT_UNREACHABLE
     assert "Lê Thị Bình" in work_plan.ask_summary_text(out) and "Nhắn không được" in work_plan.ask_summary_text(out)
 
 
@@ -167,7 +169,7 @@ def test_nguoi_lam_bam_nut_va_nhan_xong_viec(db, world):
     world["sent"].clear()
     #  Nhận → ghi «Nhận», báo chủ kế hoạch (chat-boss), trả lời An.
     work_plan.handle_callback(db, "chat-an", "cb1", work_plan.CB_YES, tam_ung.id)
-    assert work_plan._label_text(db, fields[work_plan.FIELD_ACCEPT], tam_ung.id) == work_plan.ACCEPT_YES
+    assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], tam_ung.id) == plan_service.ACCEPT_YES
     assert [s[0] for s in world["sent"]] == ["chat-an", "chat-boss"] and "đã <b>nhận</b>" in world["sent"][1][1]
     #  Từ chối → chờ lý do; câu kế tiếp thành Ghi nhận và báo chủ.
     world["sent"].clear()
@@ -175,24 +177,24 @@ def test_nguoi_lam_bam_nut_va_nhan_xong_viec(db, world):
     assert db.query(AgentMessage).filter(AgentMessage.action == ACT_PLAN_ASK_WAIT).count() == 1
     row = _incoming(db, "chat-an", "Em bận đi công tác, nhờ chị Bình chuyển giúp")
     assert work_plan.handle_text(db, "chat-an", row, row.body) is True
-    assert work_plan._label_text(db, fields[work_plan.FIELD_NOTE], con.id).startswith("Từ chối: Em bận")
+    assert plan_service._label_text(db, fields[plan_service.FIELD_NOTE], con.id).startswith("Từ chối: Em bận")
     assert any(s[0] == "chat-boss" and "Từ chối" in s[1] for s in world["sent"])
     #  Người lạ bấm nút việc không phải của mình → không ghi gì.
     world["sent"].clear()
     work_plan.handle_callback(db, "chat-boss", "cb3", work_plan.CB_YES, con.id)
-    assert work_plan._label_text(db, fields[work_plan.FIELD_ACCEPT], con.id) == work_plan.ACCEPT_NO and not world["sent"]
+    assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], con.id) == plan_service.ACCEPT_NO and not world["sent"]
     #  «xong việc N 8 điểm» → trạng thái xong, tiến độ 100, tự chấm 8, có giờ; báo chủ.
     row = _incoming(db, "chat-an", f"xong việc {tam_ung.id} 8 điểm, tiền đã chuyển")
     assert work_plan.handle_text(db, "chat-an", row, row.body) is True
     db.refresh(tam_ung)
     assert tam_ung.status == int(WorkTaskStatus.DONE) and tam_ung.completed_at is not None
-    assert work_plan._label_text(db, fields[work_plan.FIELD_PROGRESS], tam_ung.id) == "100"
-    assert work_plan._label_text(db, fields[work_plan.FIELD_SCORE], tam_ung.id) == "8"
+    assert plan_service._label_text(db, fields[plan_service.FIELD_PROGRESS], tam_ung.id) == "100"
+    assert plan_service._label_text(db, fields[plan_service.FIELD_SCORE], tam_ung.id) == "8"
     assert any(s[0] == "chat-boss" and "<b>xong</b>" in s[1] for s in world["sent"])
     #  Tiến độ giữa chừng: «việc N 60% 7 điểm».
     row = _incoming(db, "chat-an", f"việc {con.id} 60% 7 điểm còn chờ kế toán")
     assert work_plan.handle_text(db, "chat-an", row, row.body) is True
-    assert work_plan._label_text(db, fields[work_plan.FIELD_PROGRESS], con.id) == "60"
+    assert plan_service._label_text(db, fields[plan_service.FIELD_PROGRESS], con.id) == "60"
     #  Câu không liên quan → không bắt.
     row = _incoming(db, "chat-an", "hôm nay trời đẹp")
     assert work_plan.handle_text(db, "chat-an", row, row.body) is False
@@ -264,19 +266,19 @@ def test_che_do_dich_vu_tach_moi_luot_di_qua_cong_b(db, world, gateway):
     assert sum(1 for m, p in gateway if p == "/api/agent-gw/plan/reply") == 1      # Bình: đánh dấu Nhắn không được
     fields = {f.name: f for f in db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id)}
     xe = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Xe đưa đón").one()
-    assert work_plan._label_text(db, fields[work_plan.FIELD_ACCEPT], xe.id) == work_plan.ACCEPT_UNREACHABLE
+    assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], xe.id) == plan_service.ACCEPT_UNREACHABLE
     an = erp.user_by_id(db, world["u_an"].id)
     #  Nút Nhận + «xong việc» của An đi qua POST /plan/reply, ghi đúng vào việc, báo chủ.
     tam_ung = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Tạm ứng chi phí").one()
     world["sent"].clear()
     work_plan.handle_callback(db, "chat-an", "cb1", work_plan.CB_YES, tam_ung.id)
-    assert work_plan._label_text(db, fields[work_plan.FIELD_ACCEPT], tam_ung.id) == work_plan.ACCEPT_YES
+    assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], tam_ung.id) == plan_service.ACCEPT_YES
     assert [s[0] for s in world["sent"]] == ["chat-an", "chat-boss"]
     row = _incoming(db, "chat-an", f"xong việc {tam_ung.id} 9 điểm")
     assert work_plan.handle_text(db, "chat-an", row, row.body) is True
     db.expire_all()
     assert db.get(WorkTask, tam_ung.id).status == int(WorkTaskStatus.DONE)
-    assert work_plan._label_text(db, fields[work_plan.FIELD_SCORE], tam_ung.id) == "9"
+    assert plan_service._label_text(db, fields[plan_service.FIELD_SCORE], tam_ung.id) == "9"
     assert sum(1 for m, p in gateway if p == "/api/agent-gw/plan/reply") == 3
     #  Không phải chủ bảng thì không đánh dấu «Nhắn không được» được qua cổng.
-    assert erp.plan_reply(db, an, xe.id, work_plan.A_UNREACHABLE).get("error")
+    assert erp.plan_reply(db, an, xe.id, A_UNREACHABLE).get("error")

@@ -385,7 +385,7 @@ def projects(user=Depends(gateway_user), db: Session = Depends(get_db)):
 # --- kế hoạch việc (bao-CR-616, phase 24.1) --------------------------------------------------------------------------
 @router.get("/plan/overview")
 def plan_overview(list_id: int = Query(ge=1), user=Depends(gateway_user), db: Session = Depends(get_db)):
-    """Cây việc của một kế hoạch, chỉ thành viên bảng mới đọc được (kiểm trong `work_plan.overview`)."""
+    """Cây việc của một kế hoạch, chỉ thành viên bảng mới đọc được (kiểm trong `work/plan_service.overview`)."""
     return success(L.plan_overview(db, user, list_id))
 
 

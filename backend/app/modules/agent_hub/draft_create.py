@@ -238,9 +238,9 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
         elif kind == "work_task":
             code, oid = _create_work_task(db, user, draft)
         elif kind == "work_plan":
-            from . import work_plan
+            from app.modules.work import plan_service
 
-            code, oid = work_plan.build(db, user, draft)
+            code, oid = plan_service.build(db, user, draft)
         else:
             code, oid = _create_purchase(db, user, draft)
     except HTTPException as e:
@@ -451,9 +451,9 @@ def _vn_num(value: float) -> str:
 def created_details(db: Session, kind: str, oid: int) -> list[str]:
     """Các dòng thông tin của phiếu vừa tạo / vừa gửi duyệt, đọc từ DB (trạng thái thật sau gửi duyệt)."""
     if kind == "work_plan":
-        from . import work_plan
+        from app.modules.work import plan_service
 
-        return work_plan.details(db, oid)
+        return plan_service.details(db, oid)
     if kind == "work_task":
         from app.modules.employee.model import Employee
         from app.modules.work.model import WorkList
