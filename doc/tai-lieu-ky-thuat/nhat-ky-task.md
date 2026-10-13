@@ -90,6 +90,27 @@ và bot ra khỏi máy chủ prod đang gần hết RAM. Trong ngày đã làm x
 Tài liệu: bản đồ một trang và mục B của quy-trinh-nhanh-va-deploy.md đã ghi địa chỉ hai máy.
 Deploy: dev + AI + bot IDA chạy trên 45.252.248.229 từ 13:50 ngày 13/10/2026; prod không đổi.
 
+## bao-CR-615 | Thiết kế phase 24: bot điều phối việc theo kế hoạch cho sếp
+- status: xong
+- date: 2026-10-13
+Cấp trên đưa ý tưởng một trợ lý AI quản lý công việc: nhận danh sách việc, lập kế hoạch theo giai đoạn với việc cha,
+việc con, người làm, tiêu chí đánh giá và mốc thời gian; nhắn từng người hỏi nhận việc; theo dõi và hỏi tiến độ; xếp lại
+kế hoạch khi có người báo giờ khác; báo cáo kết thúc so sánh kế hoạch với thực tế; rút bài học cho lần sau. Đại ca chốt
+cùng ngày: kênh ưu tiên Zalo tài khoản bot công ty, Telegram phụ; email công việc cấp quyền đọc không xóa khi cấp trên
+duyệt; danh sách người nhận việc có Zalo hoặc số điện thoại, nhắn không được thì ghi lên việc; viết bộ tiêu chí nháp
+trước, sếp sửa sau.
+
+Em viết tài liệu thiết kế doc 18 trong cụm Agent Hub: cái đã có dùng lại (Dự án, nhắc hạn việc, Zalo hướng B, Telegram,
+Google OAuth, xuất Word), bộ tiêu chí nháp dạng dữ liệu để sếp sửa không cần sửa mã, đường đi 7 bước, 4 bảng dữ liệu
+cần thêm, quyền và an toàn (Gmail chỉ đọc qua OAuth, không cầm mật khẩu), lộ trình 6 đợt, chỗ dễ hỏng, 3 câu chờ chốt.
+Nối vào doc 15 là phase 24 và danh sách đọc ở README. Chưa có mã.
+
+Cùng ngày viết thêm bản tổng hợp yêu cầu dạng Markdown (doc 19) để đại ca gửi lãnh đạo duyệt phạm vi.
+
+Mã nguồn: `doc/agent-hub/18-dieu-phoi-viec-theo-ke-hoach.md`, `doc/agent-hub/19-tong-hop-yeu-cau-dieu-phoi-viec.md`, `doc/agent-hub/15-ke-hoach-tong-bot-erp.md`, `doc/agent-hub/README.md`.
+
+---
+
 ## duoc-CR-589 | Nhân sự: Lịch làm việc (mẫu lịch tuần, gán 4 cấp, tính ngày nghỉ theo lịch, màn xem lịch)
 - status: xong
 - date: 2026-10-05
