@@ -118,3 +118,48 @@ def test_telegram_goi_ask_voi_stop_on_draft(db, monkeypatch):
     assert seen and seen[-1].get("stop_on_draft") is True
     logged = db.query(AgentMessage).filter(AgentMessage.action == ACT_ANSWER).order_by(AgentMessage.id.desc()).first()
     assert logged is not None and "đã soạn bản nháp" in logged.body
+
+
+def test_provider_cua_bot_nhan_stop_when(monkeypatch):
+    """Vá 13/10 15:20: AgentGeminiProvider (provider Telegram) quên nối `stop_when` → mọi lượt chết TypeError."""
+    import inspect
+
+    from app.modules.agent_hub import manager
+
+    p = manager.AgentGeminiProvider()
+    seen: list[dict] = []
+    monkeypatch.setattr(p, "_call", lambda method, *a, **kw: seen.append({"method": method, **kw}) or "ok")
+    marker = lambda n, r: True
+    assert p.run_tools([], tools=[], execute=lambda n, a: {}, stop_when=marker) == "ok"
+    assert seen[-1]["method"] == "run_tools" and seen[-1]["stop_when"] is marker
+    #  Mọi provider thật cũng phải nhận tham số này — khỏi quên lần nữa.
+    from app.modules.assistant.provider import claude, gemini, openai_compat
+
+    for cls in (claude.ClaudeProvider, gemini.GeminiProvider, openai_compat.OpenAICompatProvider, manager.AgentGeminiProvider):
+        assert "stop_when" in inspect.signature(cls.run_tools).parameters, cls.__name__
+
+
+def test_loi_goi_ai_kem_ma_luot_va_loai_loi(db, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.core.config import settings
+    from app.modules.agent_hub import chat_link, service
+    from app.modules.agent_hub.constants import DIR_IN
+    from app.modules.assistant import service as assistant_service
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setattr(service, "_assistant_user", lambda db, chat_id="": SimpleNamespace(id=7, is_active=True))
+    monkeypatch.setattr(chat_link, "get_active_link", lambda db, chat_id: SimpleNamespace(user_id=7))
+    monkeypatch.setattr(service.user_keys, "active_key", lambda: "k")
+    monkeypatch.setattr(service.telegram, "send_chat_action", lambda chat_id: None)
+    sent: list[str] = []
+    monkeypatch.setattr(service, "reply", lambda db, chat_id, text, **kw: sent.append(text))
+
+    def boom(question, **kw):
+        raise TypeError("run_tools() got an unexpected keyword argument 'stop_when'")
+
+    monkeypatch.setattr(assistant_service, "ask", boom)
+    row = service.log_message(db, DIR_IN, "12345", 1, "tạo task A")
+    db.commit()
+    service.answer_question(db, "12345", "tạo task A", before_id=row.id, ledger=False)
+    assert "Em gặp lỗi khi gọi AI" in sent[-1] and "Mã lượt #" in sent[-1] and "TypeError" in sent[-1]

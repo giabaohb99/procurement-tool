@@ -158,10 +158,11 @@ class AgentGeminiProvider(GeminiProvider):
                           temperature=temperature, thinking=thinking, cache_system=cache_system)
 
     def run_tools(self, messages, *, tools, execute, model=None, system=None, max_tokens=1024, temperature=0.3,
-                  thinking=False, cache_system=False, max_iters=6):
+                  thinking=False, cache_system=False, max_iters=6, stop_when=None):
+        #  ai-CR-183 (vá 13/10 15:20): quên nối `stop_when` ở provider của bot → mọi lượt Telegram chết TypeError.
         return self._call("run_tools", messages, tools=tools, execute=execute, model=model, system=system,
                           max_tokens=max_tokens, temperature=temperature, thinking=thinking,
-                          cache_system=cache_system, max_iters=max_iters)
+                          cache_system=cache_system, max_iters=max_iters, stop_when=stop_when)
 
 
 #  ai-CR-149: id khóa → model thay thế khi model ghi trên khóa không còn ở trạm (sống tới lúc tiến trình khởi động lại).

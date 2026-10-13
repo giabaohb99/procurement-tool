@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, channels, chat_link, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
+from . import ai_keys, bells, change_undo, channels, chat_link, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -1372,6 +1372,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
             or _doc_followup(db, chat_id, row, text) or _guide_by_text(db, chat_id, row, text)
             or meeting_actions.handle_text(db, chat_id, row, text)
             or meeting_drive.handle_text(db, chat_id, row, text)
+            or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
             or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
         return
@@ -1508,6 +1509,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
             or meeting_actions.handle_text(db, chat_id, row, text)      # ai-CR-114: thẻ việc / lịch từ biên bản
             or meeting_drive.handle_text(db, chat_id, row, text)        # ai-CR-116: tệp họp mới trên Drive
+            or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
             or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
@@ -4171,7 +4173,11 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         _close_answer_run(db, answer_run, None, error=str(e))
-        reply(db, chat_id, user_keys.key_problem(str(e)) or ai_keys.short_error(str(e)))
+        #  Đại ca 13/10: «Em gặp lỗi khi gọi AI» chung chung quá — kèm mã lượt + loại lỗi để gửi lại cho người sửa.
+        text = user_keys.key_problem(str(e)) or ai_keys.short_error(str(e))
+        if not user_keys.key_problem(str(e)) and not ai_keys.is_transient(str(e)):
+            text += f"\n<i>Mã lượt #{answer_run.id} · {telegram.esc(type(e).__name__)}: {telegram.esc(str(e)[:120])}</i>"
+        reply(db, chat_id, text)
         if ledger:
             _ledger(db, chat_id, intent or "hoi", user_id=getattr(user, "id", 0), question=question, error=True,
                     message_id=before_id)
@@ -4429,6 +4435,8 @@ def _my_drafts_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
             f": {telegram.esc(', '.join(out['deleted']))}." if out.get("deleted") else ".")
         if out.get("skipped"):
             msg += "\nBỏ qua: " + telegram.esc("; ".join(out["skipped"][:5]))
+        if out.get("deleted"):
+            msg = change_undo.with_undo_footer(msg)      # ai-CR-184: xóa mềm → rút lại được trong 24 giờ
         reply(db, chat_id, msg)
         return True
     show, m_del = _MY_DRAFTS.match(f), _DEL_DRAFTS.match(f)
@@ -4611,14 +4619,19 @@ def _doc_link_html(kind: str, oid: int) -> str:
     return f"Mở trên máy chạy bot: <code>{telegram.esc(url)}</code>"
 
 
-def _reply_created(db: Session, chat_id: str, kind: str, oid: int, head: str, tail: str = "") -> None:
+def _reply_created(db: Session, chat_id: str, kind: str, oid: int, head: str, tail: str = "", *,
+                   undo: bool = True) -> None:
     """Báo phiếu vừa tạo / gửi duyệt KÈM thông tin đọc lại từ DB + link (ai-CR-049). Ghi dấu câu trả lời
-    để lượt hỏi sau Trợ lý biết phiếu ĐÃ tạo — không thì «cho chi tiết phiếu» lại bị soạn nháp lần nữa."""
+    để lượt hỏi sau Trợ lý biết phiếu ĐÃ tạo — không thì «cho chi tiết phiếu» lại bị soạn nháp lần nữa.
+    ai-CR-184: `undo` = tin báo một lần ghi hoàn tác được (tạo / sửa đè / thêm dòng) → thêm chân «Rút lại trong 24 giờ»;
+    gửi duyệt chỉ ghi sổ, không hoàn tác được, nên truyền False."""
     lines = [f"<b>{telegram.esc(head)}</b>"]
     lines += [telegram.esc(x) for x in erp.created_details(db, kind, oid)]
     lines.append(_doc_link_html(kind, oid))
     if tail:
         lines.append(telegram.esc(tail))
+    if undo:
+        lines.append(change_undo.UNDO_FOOTER)
     reply(db, chat_id, "\n".join(lines), action=ACT_ANSWER)
 
 
@@ -4635,7 +4648,7 @@ def _submit_and_report(db: Session, chat_id: str, user, kind: str, oid: int, cod
     info["submitted"] = True
     pending.body = json.dumps(info, ensure_ascii=False, default=str)
     db.commit()
-    _reply_created(db, chat_id, kind, oid, f"Đã tạo và gửi duyệt {label}.")
+    _reply_created(db, chat_id, kind, oid, f"Đã tạo và gửi duyệt {label}.", undo=False)   # ai-CR-184: gửi duyệt không rút lại
 
 
 def _submit_recent(db: Session, chat_id: str, row: AgentMessage) -> bool:
@@ -4823,8 +4836,8 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
     row.action = ACT_PROPOSAL_DONE
     if done.get("deleted"):
         telegram.answer_callback(cb_id, "Đã xóa")
-        reply(db, chat_id, f"Đã xóa <b>{telegram.esc(done.get('entity_label') or '')} "
-                           f"{telegram.esc(done.get('code') or code)}</b>.")
+        reply(db, chat_id, change_undo.with_undo_footer(
+            f"Đã xóa <b>{telegram.esc(done.get('entity_label') or '')} {telegram.esc(done.get('code') or code)}</b>."))
         return
     telegram.answer_callback(cb_id, "Đã sửa")
     fields = ", ".join(telegram.esc(x) for x in (done.get("updated_fields") or []))
@@ -4833,7 +4846,7 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
             + (f": {fields}." if fields else "."))
     if done.get("url"):
         text += f"\nXem phiếu: {telegram.esc(telegram.absolute_url(str(done['url'])))}"
-    reply(db, chat_id, text)
+    reply(db, chat_id, change_undo.with_undo_footer(text))      # ai-CR-184
 
 
 # ---------------------------------------------------------------------------
