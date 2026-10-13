@@ -50,6 +50,31 @@ def _find_people(ctx: ToolContext, names: list) -> tuple[list[dict], list[str]]:
     return found, problems
 
 
+def _sections_of(ctx: ToolContext, list_id: int) -> list[dict]:
+    """ai-CR-181: các CỘT kanban của một dự án, theo thứ tự trên bảng (tên do từng dự án tự đặt: Todo, Đang làm…)."""
+    from app.modules.work.task_model import WorkSection
+
+    rows = (ctx.db.query(WorkSection).filter(WorkSection.list_id == int(list_id))
+            .order_by(WorkSection.sort_order, WorkSection.id).all())
+    return [{"id": s.id, "name": s.name} for s in rows]
+
+
+def _pick_section(sections: list[dict], want: str) -> tuple[dict | None, dict | None]:
+    """Tên cột người dùng nói («todo», «đang làm») → đúng MỘT cột (so không dấu, khớp trọn tên trước, rồi chứa)."""
+    from app.modules.assistant.glossary import fold
+
+    f = " ".join(fold(want).split())
+    if not f:
+        return None, None
+    exact = [s for s in sections if " ".join(fold(s["name"]).split()) == f]
+    hit = exact or [s for s in sections if f in " ".join(fold(s["name"]).split())]
+    if len(hit) == 1:
+        return hit[0], None
+    return None, {"need_choice": "section", "options": [s["name"] for s in sections][:10],
+                  "note": ("Hỏi người dùng MỘT câu: việc này vào cột nào (đưa đúng tên các cột của dự án, đánh số)."
+                           if hit else f"Dự án không có cột «{want}». Hỏi người dùng chọn một trong các cột (đánh số).")}
+
+
 def _draft_work_task(ctx: ToolContext, args: dict) -> dict:
     if not ctx.can("work_task", "create"):
         return denied("tạo công việc ở phân hệ Dự án")
@@ -86,9 +111,22 @@ def _draft_work_task(ctx: ToolContext, args: dict) -> dict:
             return {"error": f"{label} phải dạng YYYY-MM-DD"}
     no_due = not (due or "due_date" in asked or confirm_fields.mentions(user_text, "han", "deadline"))
     assumptions = ["chưa đặt hạn"] if no_due else []
+    #  ai-CR-181 (đại ca 13/10): «trạng thái là todo» = CỘT kanban của dự án. Nói tên cột thì vào đúng cột; không nói
+    #  thì cột đầu của dự án và ghi vào «em đang hiểu là» để người dùng sửa trước khi «tạo».
+    sections = _sections_of(ctx, lst.id)
+    section = None
+    if want_section := " ".join(str(args.get("section") or "").split()):
+        section, problem = _pick_section(sections, want_section)
+        if problem:
+            return problem
+    elif sections:
+        section = sections[0]
+        assumptions.append(f"vào cột {section['name']} (cột đầu của dự án; các cột: "
+                           + ", ".join(s["name"] for s in sections[:8]) + ")")
     draft = {"list_id": lst.id, "list_name": lst.name, "title": title, "assumptions": assumptions,
              "description": str(args.get("description") or "")[:4000], "due_date": due, "start_date": start,
-             "assignees": people}
+             "assignees": people, "section_id": int(section["id"]) if section else 0,
+             "section_name": section["name"] if section else ""}
     return {"draft": draft,
             "note": ("Đã soạn nháp. Trên Telegram bot tự gửi bản tóm tắt để người dùng nhắn «tạo»; trên web hãy nói người "
                      "dùng tạo ở màn Dự án hoặc nhắn qua Telegram. Đừng tự báo là đã tạo.")}
@@ -98,10 +136,13 @@ DRAFT_WORK_TASK_SPEC = ToolSpec(
     name="draft_work_task",
     description=("SOẠN NHÁP một CÔNG VIỆC ở phân hệ Dự án ('lên task gọi NCC X cho anh Được hạn thứ 6', 'giao việc …', 'tạo "
                  "task …'). Tìm dự án theo tên trong các dự án người hỏi thấy được, người phụ trách theo tên / mã nhân sự. "
-                 "Chưa rõ dự án hay người → tool trả lựa chọn, hỏi người dùng MỘT câu. Ngày dạng YYYY-MM-DD theo giờ VN."),
+                 "Chưa rõ dự án hay người → tool trả lựa chọn, hỏi người dùng MỘT câu. Ngày dạng YYYY-MM-DD theo giờ VN. "
+                 "Người dùng nói 'trạng thái là todo' / 'vào cột Đang làm' → `section` = tên cột (cột kanban do từng dự án "
+                 "tự đặt; trạng thái hệ thống của việc luôn là Đang mở khi tạo)."),
     parameters={"type": "object", "properties": {
         "title": {"type": "string", "description": "Tên việc, ngắn gọn."},
         "project": {"type": "string", "description": "Tên (một phần) của dự án / danh sách việc; bỏ trống nếu chưa nói."},
+        "section": {"type": "string", "description": "Tên cột kanban muốn đặt việc vào (Todo, Đang làm…); bỏ trống = cột đầu."},
         "assignees": {"type": "array", "items": {"type": "string"},
                       "description": "Người phụ trách: tên hoặc mã nhân sự."},
         "due_date": {"type": "string", "description": "Hạn chót YYYY-MM-DD (tùy chọn)."},
@@ -164,7 +205,10 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
         lists, project, problem = _pick_lists(ctx, want, lists)
         if problem:
             return problem
-    q = (ctx.db.query(WorkTask, WorkList.name).join(WorkList, WorkList.id == WorkTask.list_id)
+    from app.modules.work.task_model import WorkSection
+
+    q = (ctx.db.query(WorkTask, WorkList.name, WorkSection.name).join(WorkList, WorkList.id == WorkTask.list_id)
+         .outerjoin(WorkSection, WorkSection.id == WorkTask.section_id)
          .filter(WorkTask.status == int(WorkTaskStatus.OPEN), WorkTask.deleted_at.is_(None), WorkTask.list_id.in_(lists)))
     if only_mine:
         q = q.join(WorkTaskAssignee, WorkTaskAssignee.task_id == WorkTask.id).filter(
@@ -177,12 +221,12 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
     if rows and not only_mine:
         for tid, name in (ctx.db.query(WorkTaskAssignee.task_id, Employee.full_name)
                           .join(Employee, Employee.id == WorkTaskAssignee.employee_id)
-                          .filter(WorkTaskAssignee.task_id.in_([t.id for t, _n in rows]),
+                          .filter(WorkTaskAssignee.task_id.in_([t.id for t, _n, _s in rows]),
                                   WorkTaskAssignee.kind == int(WorkAssigneeKind.PIC))):
             pics.setdefault(int(tid), []).append(name)
     items = []
-    for t, name in rows:
-        it = {"id": t.id, "title": t.title, "project": name, "due_date": t.due_date,
+    for t, name, section in rows:
+        it = {"id": t.id, "title": t.title, "project": name, "section": section or "", "due_date": t.due_date,
               "overdue": bool(t.due_date) and t.due_date < today, "subtask": t.parent_id is not None}
         if not only_mine:
             it["assignees"] = pics.get(t.id, [])
@@ -194,6 +238,8 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
            "by_project": [{"project": p, "count": len(v), "items": v} for p, v in groups.items()]}
     if project:
         out["project"] = project
+        #  ai-CR-181: hỏi về MỘT dự án thì trả luôn danh sách cột kanban («dự án X có cột nào»).
+        out["sections"] = [s["name"] for s in _sections_of(ctx, lists[0])]
     if not only_mine:
         out["note"] = "Việc của cả dự án (không chỉ của người hỏi); `assignees` = người phụ trách."
     return out
@@ -205,7 +251,9 @@ MY_WORK_TASKS_SPEC = ToolSpec(
                  "có hạn tới một ngày (mặc định hôm nay), gồm cả quá hạn: 'hôm nay anh có việc gì', 'việc nào sắp tới hạn', "
                  "'việc quá hạn của tôi', 'việc của tôi theo dự án'. Hỏi về MỘT dự án ('dự án X còn gì', 'việc dự án X') → "
                  "`project` = tên dự án, `all_open` = true (kể cả chưa đặt hạn), `only_mine` = false (việc của cả dự án, kèm "
-                 "người phụ trách). Tool trả `need_choice` khi tên dự án khớp nhiều → hỏi người dùng MỘT câu."),
+                 "người phụ trách). Hỏi về một dự án thì kết quả có `sections` = các CỘT kanban của dự án ('dự án X có cột "
+                 "nào') và mỗi việc có `section` = cột đang nằm. Tool trả `need_choice` khi tên dự án khớp nhiều → hỏi người "
+                 "dùng MỘT câu."),
     parameters={"type": "object", "properties": {
         "until": {"type": "string", "description": "Lấy việc có hạn tới ngày này (YYYY-MM-DD, giờ VN); bỏ trống = hôm nay."},
         "project": {"type": "string", "description": "Tên (một phần) của dự án muốn xem; bỏ trống = mọi dự án mình thấy."},

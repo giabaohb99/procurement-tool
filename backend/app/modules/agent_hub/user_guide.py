@@ -100,6 +100,8 @@ SECTIONS: tuple[Section, ...] = (
         #  ai-CR-175: việc Dự án theo dự án + nhắc hạn ba mốc.
         ("việc của tôi theo dự án", "việc đang mở anh/chị phụ trách, gom theo dự án"),
         ("dự án X còn gì", "mọi việc đang mở của một dự án, kèm người phụ trách"),
+        ("dự án X có cột nào", "các cột kanban của dự án (Todo, Đang làm…)"),     # ai-CR-181
+        ("tạo task gọi NCC X cho anh Được, vào cột Đang làm", "nói tên cột thì việc vào đúng cột; không nói thì cột đầu"),
         ("", "Mặc định 8h sáng em nhắc việc Dự án anh/chị phụ trách: trước hạn 1 ngày, ngày hạn, khi quá hạn — mỗi mốc "
              "một lần. «tắt nhắc hạn việc» · «nhắc hạn việc lúc 7h» · «nhắc hạn việc hôm nay»"),
     )),

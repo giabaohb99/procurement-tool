@@ -118,6 +118,8 @@ def summarize(kind: str, draft: dict) -> list[str]:
     if kind == "work_task":
         people = ", ".join(p.get("name", "?") for p in draft.get("assignees") or []) or "(chưa giao ai)"
         out = [f"Việc: {draft.get('title', '')}", f"Dự án: {draft.get('list_name', '?')}", f"Người phụ trách: {people}"]
+        if draft.get("section_name"):
+            out.append(f"Cột: {draft['section_name']}")        # ai-CR-181
         if draft.get("due_date"):
             out.append(f"Hạn: {_vn_date(draft['due_date'])}")
         if draft.get("description"):
@@ -223,7 +225,8 @@ def _create_work_task(db: Session, user, draft: dict) -> tuple[str, int]:
     pics = [int(p["employee_id"]) for p in draft.get("assignees") or [] if p.get("employee_id")]
     data = TaskCreate(list_id=int(draft.get("list_id") or 0), title=str(draft.get("title") or ""),
                       description=str(draft.get("description") or ""), due_date=str(draft.get("due_date") or ""),
-                      start_date=str(draft.get("start_date") or ""), assignee_ids=pics)
+                      start_date=str(draft.get("start_date") or ""), assignee_ids=pics,
+                      section_id=int(draft.get("section_id") or 0) or None)      # ai-CR-181: cột kanban đã chọn
     task = task_service.create_task(db, actor, data)
     tid = int(task["id"])
     me = getattr(user, "employee_id", 0) or 0
