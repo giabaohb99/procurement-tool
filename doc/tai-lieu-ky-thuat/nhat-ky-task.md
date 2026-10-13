@@ -13301,6 +13301,16 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-193 | Tra nhanh giá, tỷ giá, thời tiết trả bản ngắn; hết hạn mức Google Search thì bỏ qua mười phút
+- status: dang-lam
+- date: 2026-10-13
+Đại ca hỏi giá bitcoin hôm nay mất ba mươi mốt giây vì bot viết nguyên một báo cáo bốn mục bảy nguồn cho một câu chỉ cần con số.
+Nay câu tra nhanh kiểu giá, tỷ giá, thời tiết, lãi suất hôm nay trả bản ngắn: con số in đậm, dòng cập nhật, tối đa ba gạch đầu
+dòng và hai ba nguồn, không chia mục, không nhận định; muốn đầy đủ thì hỏi kèm chi tiết hoặc nhắn xuất Word. Google Search của
+Gemini hết hạn mức thì bot nhớ và bỏ qua mười phút thay vì thử lại mỗi lượt. Bài kiểm mới ba bài, chạy cùng bài bot xanh.
+
+Mã nguồn: agent_hub/research.py (is_quick, _system_for, run); bài kiểm test_agent_hub_tra_nhanh_cr193.py
+
 ## ai-CR-192 | Trợ lý trả lời nhanh hơn đợt hai: bước đọc ý định không chờ lâu khi Gemini quá tải, câu xã giao không nạp công cụ và gói tri thức
 - status: dang-lam
 - date: 2026-10-13

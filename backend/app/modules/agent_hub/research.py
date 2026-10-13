@@ -114,11 +114,13 @@ def search_web(question: str, *, mode: str = MODE_WEB) -> tuple[str, list[dict],
     """Một lượt Gemini có công cụ `google_search`. Trả (câu trả lời Markdown, nguồn, số đo token)."""
     provider = manager.gemini_provider()      # ai-CR-098: tìm Google chỉ Gemini có; khóa Gemini trong chuỗi
     model = settings.AGENT_MANAGER_MODEL
+    system, quick_tokens = _system_for(question, mode)
+    max_out = quick_tokens or 2048
     payload = {
         "contents": [{"role": "user", "parts": [{"text": question}]}],
-        "systemInstruction": {"parts": [{"text": _SYSTEMS[mode]}]},
+        "systemInstruction": {"parts": [{"text": system}]},
         "tools": [{"google_search": {}}],
-        "generationConfig": provider._gen_config(model, 2048, 0.3, False),
+        "generationConfig": provider._gen_config(model, max_out, 0.3, False),
     }
     try:
         data = provider._post(model, payload)
@@ -131,7 +133,7 @@ def search_web(question: str, *, mode: str = MODE_WEB) -> tuple[str, list[dict],
         alt = manager.fallback_model()
         if alt != model:
             model = alt
-            payload["generationConfig"] = provider._gen_config(model, 2048, 0.3, False)
+            payload["generationConfig"] = provider._gen_config(model, max_out, 0.3, False)
         else:
             time.sleep(manager.TRANSIENT_WAIT_SEC)   # ai-CR-099
         data = provider._post(model, payload)
@@ -160,6 +162,36 @@ def answer_from_docs(question: str) -> tuple[str, list[dict], ChatResult | None]
     return (result.text or "").strip(), sources, result
 
 
+#  ai-CR-193 (13/10, đại ca hỏi «giá bitcoin hôm nay» mất 31 s — bot viết nguyên báo cáo 4 mục + 7 nguồn, 3.290 token ra):
+#  câu TRA NHANH kiểu «giá X hôm nay / tỷ giá / thời tiết / bao nhiêu» → trả bản NGẮN, muốn đủ thì hỏi kèm «chi tiết» hoặc
+#  «xuất Word». So trên chữ đã bỏ dấu, chỉ khi câu ngắn (≤ 12 chữ) và không có «chi tiết / phân tích / so sánh / vì sao».
+_QUICK = re.compile(r"^(?:cho (?:anh|em|toi|chi) (?:hoi|biet) )?(?:gia|ty gia|gia vang|gia xang|gia dien|gia usd|thoi tiet|nhiet do|"
+                    r"lai suat|chi so|ket qua|bao nhieu|may gio|ngay may|hom nay la|lich)\b")
+_QUICK_BLOCK = re.compile(r"chi tiet|phan tich|so sanh|vi sao|tai sao|nhan dinh|bao cao|xu huong|lich su|du bao")
+QUICK_MAX_TOKENS = 600
+QUICK_RULE = (" TRẢ LỜI NGẮN: dòng đầu là con số / kết luận in **đậm**, dòng «Cập nhật: …», rồi tối đa 3 gạch đầu dòng và 2–3 "
+              "nguồn. KHÔNG chia nhóm La Mã, KHÔNG nhận định, tổng không quá 8 dòng. Kết bằng một dòng nghiêng: _Muốn đầy đủ: "
+              "hỏi lại kèm «chi tiết» hoặc nhắn «xuất Word»._")
+#  Google Search của Gemini trả 429 (hết hạn mức) thì mỗi lượt vẫn thử rồi mới rơi về tìm web riêng — tốn thêm một lượt gọi
+#  cho MỌI câu. Nhớ mốc 429 và bỏ qua Google Search trong SEARCH_429_COOLDOWN_SEC.
+SEARCH_429_COOLDOWN_SEC = 600
+_search_blocked_until = 0.0
+
+
+def is_quick(question: str) -> bool:
+    from app.modules.assistant.glossary import fold
+
+    f = " ".join(fold(question or "").split())
+    return len(f.split()) <= 12 and bool(_QUICK.match(f)) and not _QUICK_BLOCK.search(f)
+
+
+def _system_for(question: str, mode: str) -> tuple[str, int]:
+    """(lời dặn, trần token ra) — tra nhanh thì ngắn, còn lại như cũ."""
+    if mode == MODE_WEB and is_quick(question):
+        return _COMMON + QUICK_RULE, QUICK_MAX_TOKENS
+    return _SYSTEMS[mode], 0
+
+
 FALLBACK_RULE = (
     " Bạn KHÔNG tự tìm được: bên dưới là kết quả tìm kiếm và nội dung vài trang đã tải, đánh số [n]. Chỉ dùng thông tin "
     "trong đó, ghi số nguồn [n] ở CUỐI gạch đầu dòng (một lần, không rải giữa câu). Không có số liệu điều được hỏi thì nói "
@@ -174,9 +206,10 @@ def search_web_any(question: str, *, mode: str = MODE_WEB) -> tuple[str, list[di
     sources, context = web_search.gather(question)
     if not sources:
         raise RuntimeError("không tìm được kết quả nào trên mạng (máy tìm kiếm không trả lời)")
+    system, quick_tokens = _system_for(question, mode)
     result = manager.get_provider().ask(
         [ChatMessage(role="user", content=f"CÂU HỎI: {question}\n\nKẾT QUẢ TÌM KIẾM:\n{context}")],
-        system=_SYSTEMS[mode] + FALLBACK_RULE, max_tokens=1500, temperature=0.2)
+        system=system + FALLBACK_RULE, max_tokens=quick_tokens or 1500, temperature=0.2)
     return (result.text or "").strip(), sources[:MAX_SOURCES], result
 
 
@@ -190,11 +223,18 @@ def run(question: str, mode: str) -> tuple[str, list[dict], ChatResult | None]:
     if mode == MODE_LINK:
         return read_link(question)
     mode = mode if mode in MODES else MODE_WEB
-    if user_keys.gemini_key():
+    global _search_blocked_until
+    if user_keys.gemini_key() and time.time() >= _search_blocked_until:
         try:
             return search_web(question, mode=mode)
         except Exception as e:  # noqa: BLE001 — rơi về tìm web riêng
-            log.info("agent_hub: Google Search của Gemini hỏng (%s), tìm web riêng", str(e)[:120])
+            err = str(e)
+            if "429" in err or "quota" in err.lower() or "resource_exhausted" in err.lower():
+                #  ai-CR-193: hết hạn mức tìm kiếm — khỏi thử lại mỗi lượt trong 10 phút.
+                _search_blocked_until = time.time() + SEARCH_429_COOLDOWN_SEC
+                log.warning("agent_hub: Google Search của Gemini 429, bỏ qua %s giây", SEARCH_429_COOLDOWN_SEC)
+            else:
+                log.info("agent_hub: Google Search của Gemini hỏng (%s), tìm web riêng", err[:120])
     return search_web_any(question, mode=mode)
 
 
