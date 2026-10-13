@@ -13312,7 +13312,7 @@ Gemini hết hạn mức thì bot nhớ và bỏ qua mười phút thay vì th�
 Mã nguồn: agent_hub/research.py (is_quick, _system_for, run); bài kiểm test_agent_hub_tra_nhanh_cr193.py
 
 ## ai-CR-192 | Trợ lý trả lời nhanh hơn đợt hai: bước đọc ý định không chờ lâu khi Gemini quá tải, câu xã giao không nạp công cụ và gói tri thức
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Anh Được nhắn bot trên dev thấy chậm: câu chào mất bảy mươi giây. Đo cho thấy bước đọc ý định chờ Gemini quá tải đủ hai mươi
 lăm giây mới đổi model, và câu chào vẫn nạp đủ bảy mươi ba công cụ với bảy gói tri thức. Nay bước đọc ý định có trần chờ riêng
@@ -13323,6 +13323,7 @@ người không có khóa riêng dùng. Bài kiểm mới bốn bài, chạy cù
 
 Mã nguồn: assistant/provider/base.py (with_timeout, request_timeout), agent_hub/manager.py (run_intent), assistant/tool_router.py
 (is_smalltalk), assistant/service.py (ask); bài kiểm test_assistant_gon_luot_dot2_cr192.py
+Deploy: dev 13/10, commit f67eb6d3 trên erp-v2; dựng ERP api rồi cụm bot.
 
 ## ai-CR-187 | Nginx của ba giao diện không ghim địa chỉ api nữa, hết 502 sau mỗi lần dựng lại api
 - status: xong
