@@ -15,6 +15,7 @@ from app.core.database import get_db
 from app.core.export_xlsx import Col, check_row_limit, xlsx_response
 from app.core.response import success
 
+from . import references  # noqa: F401  — ai-CR-191: đăng ký chỗ tham chiếu của xe / tài xế
 from . import service
 from .model import Driver, Vehicle
 from .schema import (

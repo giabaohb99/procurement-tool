@@ -16,9 +16,11 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.crud import make_crud_router
+from app.core.reference_guard import Reference, register
 
 from . import position_service
 from .position_model import JobPosition
+from .work_history_model import EmployeeWorkHistory
 from .position_schema import (JobPositionCreate, JobPositionResponse,
                               JobPositionUpdate)
 
@@ -39,6 +41,14 @@ def _propagate_rename(db: Session, obj: JobPosition, values: dict) -> None:
     """
     if "name" in values:
         position_service.propagate_rename(db, obj, (values["name"] or "").strip())
+
+
+#  ai-CR-191: chốt `before_delete` bên dưới đếm hồ sơ ĐANG giữ; quá trình công tác (`tab_employee_work_history`)
+#  cũng ghi `position_id` — một chức vụ không còn ai giữ nhưng từng có người giữ vẫn phải GIỮ dòng,
+#  bản in quá trình công tác đọc tên theo id. Sổ chung tự chạy sau `before_delete`.
+register("job_position", "Chức vụ", [
+    Reference(EmployeeWorkHistory, "position_id", "dòng quá trình công tác"),
+])
 
 
 def _block_delete_position_in_use(db: Session, obj: JobPosition) -> None:

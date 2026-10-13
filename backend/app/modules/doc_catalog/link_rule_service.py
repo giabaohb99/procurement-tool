@@ -8,6 +8,8 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
+
 from .link_rule_model import (EXCERPT_LOCKED_FIELDS, RELATION_EXCERPT,
                               RELATION_LABELS, DocTypeLinkRule)
 from .link_rule_schema import DocTypeLinkRuleCreate, DocTypeLinkRuleUpdate
@@ -93,9 +95,11 @@ def update_rule(db: Session, rule: DocTypeLinkRule, data: DocTypeLinkRuleUpdate,
 
 
 def delete_rule(db: Session, rule: DocTypeLinkRule):
-    #  Quan hệ đã khai vẫn còn (`tab_document_link.rule_id` cho phép rỗng) — xóa
-    #  quy tắc chỉ nghĩa là từ nay không khai thêm được nữa, không phải xóa dữ
-    #  liệu lịch sử.
+    #  ai-CR-191: liên kết văn bản đã khai theo quy tắc này (`tab_document_link.rule_id`) thì
+    #  CHẶN xóa, chỉ cho ngưng dùng (bỏ tick «Đang dùng») — xóa là liên kết mất tên luật sinh ra nó.
+    #  Trước CR này cho xóa và để `rule_id` trỏ vào khoảng không. Sổ khai ở `references.py`.
+    from . import references  # noqa: F401
+    reference_guard.ensure_deletable(db, "doc_link_rule", rule)
     db.delete(rule)
     db.commit()
 

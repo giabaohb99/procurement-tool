@@ -3,6 +3,8 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
+
 from .book_model import DocumentBook, NumberSequence
 from .model import DocType
 from .numbering_rule_model import (DocumentNumberingRule,
@@ -189,6 +191,9 @@ def delete_rule(db: Session, rule_id: int) -> None:
             400,
             "Quy tắc đã cấp số, không xóa được. Hãy chuyển sang Ngừng dùng.",
         )
+    #  ai-CR-191: văn bản còn ghi `numbering_rule_id` thì chặn (sổ khai ở `references.py`).
+    from . import references  # noqa: F401
+    reference_guard.ensure_deletable(db, "doc_numbering_rule", rule)
     db.query(DocumentNumberingRuleDocType).filter(
         DocumentNumberingRuleDocType.rule_id == rule.id
     ).delete(synchronize_session=False)
