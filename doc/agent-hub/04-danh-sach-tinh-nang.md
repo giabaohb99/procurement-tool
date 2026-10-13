@@ -137,7 +137,7 @@ công ty (gói ~$100); máy đại ca tạm đóng vai VPS 2 cho tới khi có m
 | V-04 | **OTP cho mọi thay đổi prod**; lệnh lên prod phát từ VPS 1, không từ VPS 2 | S | **Tạm bỏ OTP** (đại ca 05/10). Lệnh prod hiện chạy từ máy sửa mã có cờ deploy; chuyển về VPS 1 khi có VPS 2 thật |
 | V-05 | **Ba luật tự cải thiện**: bot code không sửa sổ quyền, phần OTP / lệnh prod, danh sách tệp cấm của chính nó | S | **Xong** ai-CR-067 — danh sách cấm dời sang `guardrails.py`, khóa `grants.py`, `runners.py`, `ops.py`, `ops_runner.py`, `scripts/deploy/*`, `guardrails.py` |
 | V-06 | **Báo tài nguyên hằng ngày**: RAM / CPU / đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; «tình hình máy» | S | **Xong** ai-CR-068 — 07:35 mỗi sáng + «tình hình máy» |
-| V-07 | **Preview đầy đủ từng việc**: be + fe + worker + redis + MySQL + qdrant riêng, dữ liệu tự seed, `ai-xxxx.preview.<tên miền>` qua Cloudflare Tunnel; 1 bộ một lúc trên máy hiện tại, 2–3 trên VPS preview 16 GB; tự tắt sau 24 giờ | L | Chờ tên miền + token tunnel |
+| V-07 | ~~Preview đầy đủ từng việc~~ | L | **BỎ 13/10/2026 (đại ca)**: không làm bộ xem thử riêng — việc xong thì đẩy lên dev, đại ca test thẳng trên dev. Có bàn `preview.degoholding.vn` + dữ liệu mẫu rồi rút lại ngay, chưa viết dòng mã nào |
 | V-08 | **Chuyển bot code sang VPS 2 thật** khi mua máy (cài theo `05` §6, đổi tên máy trong sổ) | S | **XONG 13/10 (ai-CR-186)**: runner chạy trên VPS 2 (giữ tên may-dai-ca), máy đại ca tắt; gói Claude của đại ca tới khi có tài khoản công ty |
 | V-09 | Chép DB dev sang preview để test với dữ liệu thật | M | **Để sau** (đại ca 05/10) |
 
