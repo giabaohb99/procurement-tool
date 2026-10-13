@@ -207,6 +207,47 @@ khóa SSH VPS của đại ca. Tệp `.env.runner` nằm trong `.gitignore`.
 - «cho máy may-duoc được deploy dev» · «cấm máy may-duoc deploy»
 - «AI-0012 xong chưa» — dòng tình trạng ghi thêm «Máy X (đang bật/tắt)»
 
+## 6. Máy sửa mã chạy NGAY TRÊN VPS 2 (V-08, ai-CR-186 — đại ca chốt 13/10/2026, tắt hẳn máy đại ca)
+
+Từ 13/10 dev ERP + cụm bot + bot IDA cùng ở VPS 2 (AZDIGI, 4 nhân / 7,8 GB / 55 GB), nên máy sửa mã cũng về đó: chạy
+24/7, không còn phụ thuộc máy đại ca bật, bỏ được đường hầm SSH. Tệp compose riêng `docker-compose.runner.vps.yml`
+(không có `tunnel`, mạng host, trần 2,5 GB / 2 nhân). Số đo tài nguyên 13/10: rảnh ~150 MB; lúc làm việc 1–2,5 GB,
+1–2 nhân trong vài phút mỗi việc; đĩa ~2,7 GB (ảnh 1,44 GB + worktree 1,2 GB). VPS 2 rảnh còn ~4 GB, đỉnh khi dựng
+dev ~5,5 GB, CHƯA có swap.
+
+### 6.1 Trên VPS, làm một lần (Agent 1 / người có SSH quản trị)
+
+1. Bật swap 2 GB làm đệm (`fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`
+   + dòng `/etc/fstab`); đặt `mem_limit` cho `procurement-mysql` (1,2 GB) và `dev-api` (1 GB) để OOM không giết nhầm runner.
+2. Khóa SSH riêng của runner để deploy vào CHÍNH máy: `ssh-keygen -t ed25519 -N "" -f ~/.ssh/agent_runner_vps2`; thêm
+   phần công khai vào `~/.ssh/authorized_keys` **với giới hạn lệnh** như §1.3 (chỉ cho chạy các script deploy ở
+   `~/bot-tro-ly-upload/deploy_*.sh` / `backend/scripts/deploy/deploy.sh`, không mở shell).
+3. Tài khoản MySQL `agent_runner` (§1.2) — đã có từ máy đại ca, dùng lại; cổng chuyển tiếp 13306 / 16379 đã có.
+4. `git clone` kho vào `~/agent-runner` (nhánh erp-v2), `cp .env.runner.example .env.runner`, điền:
+   `AGENT_RUNNER_NAME=vps2` + `AGENT_RUNNER_TOKEN` (bot cấp, §2.1 — đại ca nhắn «thêm máy vps2»);
+   `DB_HOST=127.0.0.1`, **`DB_PORT=13306`**, `DB_USER=agent_runner`, `DB_PASSWORD`, `DB_NAME=procurement_dev`;
+   **`REDIS_URL=redis://127.0.0.1:16379/<ngăn của dịch vụ AI>`**; `JWT_SECRET` của dev; `AGENT_TELEGRAM_CHAT_ID`;
+   `AGENT_GITHUB_TOKEN` = PAT **riêng cho máy** (fine-grained, đúng kho, Contents RW); `AGENT_DEPLOY_ENABLED=true`,
+   `AGENT_VPS_HOST=127.0.0.1`, `AGENT_VPS_PORT=<cổng SSH VPS>`, `AGENT_VPS_USER`, `AGENT_VPS_SSH_KEY_FILE=~/.ssh/agent_runner_vps2`;
+   `AGENT_OPS_ENABLED` / `AGENT_HEAL_ENABLED` theo cờ đang dùng. Các biến `AGENT_TUNNEL_*` để trống (không dùng).
+5. `CLAUDE_CODE_OAUTH_TOKEN`: đại ca chạy `claude setup-token` trên máy mình, **dán tay** vào `.env.runner` trên VPS
+   (không gửi qua chat / không ghi vào kho). Token là gói của đại ca → dùng chung hạn mức với phiên Claude Code của đại
+   ca; khi có tài khoản Claude công ty thì thay.
+6. Dựng: `docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.vps.yml up -d --build`; nhật ký
+   phải thấy `celery@vps2 ready`. Đại ca nhắn «cho máy vps2 được deploy», hỏi «máy nào đang bật» thấy *vps2 đang bật*;
+   đặt `AGENT_DEFAULT_RUNNER=vps2` trong `.env.agent` của cụm bot rồi dựng lại worker.
+7. Máy đại ca: «tắt máy may-dai-ca» với bot, `docker compose -p agentrunner down` tại máy, xóa dòng `authorized_keys`
+   của khóa đường hầm máy đó (§1.3). Từ đây đổi `coder.py` không cần ai dựng lại runner bằng tay: máy tự cập nhật
+   (`runner_update.py`, ai-CR-124), chỉ dựng lại khi đổi `Dockerfile.runner`.
+
+### 6.2 Lưu ý vận hành
+
+- Một máy gánh cả dev + bot + runner: khi dựng dev (vite ~1,5 GB) cùng lúc runner chạy pytest có thể chạm trần — swap
+  là đệm; `deploy.sh` có flock và runner chờ việc bận nên hiếm khi trùng.
+- Worktree cũ tự dọn theo `cleanup_task`; đĩa 39 GB trống là dư.
+- Khóa trên máy này: PAT GitHub của máy, OAuth Claude của đại ca, khóa SSH deploy vào chính nó — tất cả trong
+  `.env.runner` / `~/.ssh`, không có token Telegram hay khóa Gemini.
+
 ## 5. Vì sao thiết kế như vậy
 
 - **Máy tự nối LÊN, dev không gọi xuống**: máy ở nhà/công ty nằm sau NAT, không có địa chỉ công khai.

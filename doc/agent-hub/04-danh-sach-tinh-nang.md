@@ -138,7 +138,7 @@ công ty (gói ~$100); máy đại ca tạm đóng vai VPS 2 cho tới khi có m
 | V-05 | **Ba luật tự cải thiện**: bot code không sửa sổ quyền, phần OTP / lệnh prod, danh sách tệp cấm của chính nó | S | **Xong** ai-CR-067 — danh sách cấm dời sang `guardrails.py`, khóa `grants.py`, `runners.py`, `ops.py`, `ops_runner.py`, `scripts/deploy/*`, `guardrails.py` |
 | V-06 | **Báo tài nguyên hằng ngày**: RAM / CPU / đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; «tình hình máy» | S | **Xong** ai-CR-068 — 07:35 mỗi sáng + «tình hình máy» |
 | V-07 | **Preview đầy đủ từng việc**: be + fe + worker + redis + MySQL + qdrant riêng, dữ liệu tự seed, `ai-xxxx.preview.<tên miền>` qua Cloudflare Tunnel; 1 bộ một lúc trên máy hiện tại, 2–3 trên VPS preview 16 GB; tự tắt sau 24 giờ | L | Chờ tên miền + token tunnel |
-| V-08 | **Chuyển bot code sang VPS 2 thật** khi mua máy (cài theo `05`, đổi tên máy trong sổ) | S | Chờ VPS + tài khoản Claude công ty |
+| V-08 | **Chuyển bot code sang VPS 2 thật** khi mua máy (cài theo `05` §6, đổi tên máy trong sổ) | S | **Đang làm 13/10 (ai-CR-186)**: compose VPS + doc xong, chờ Agent 1 dựng; dùng gói Claude của đại ca (`setup-token`) tới khi có tài khoản công ty |
 | V-09 | Chép DB dev sang preview để test với dữ liệu thật | M | **Để sau** (đại ca 05/10) |
 
 ## Nhóm O — Tự vận hành: AI tự phát hiện sự cố và khôi phục (thêm 05/10/2026)

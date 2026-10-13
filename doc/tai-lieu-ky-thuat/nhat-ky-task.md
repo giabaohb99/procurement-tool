@@ -13267,6 +13267,18 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-186 | Dời máy sửa mã lên VPS 2, tắt hẳn máy đại ca
+- status: dang-lam
+- date: 2026-10-13
+Đại ca chốt dời máy sửa mã (Claude Code sửa mã theo vé của bot) từ máy đại ca lên VPS 2 và tắt hẳn máy đại ca. Số đo
+cho thấy máy này rảnh chỉ tốn khoảng một trăm năm mươi MB, lúc làm việc một đến hai phẩy năm GB trong vài phút, VPS 2 còn
+trống khoảng bốn GB nên đủ chỗ với trần hai phẩy năm GB và hai nhân, thêm swap hai GB làm đệm. Em soạn tệp compose riêng cho
+VPS không cần đường hầm SSH, mạng host trỏ thẳng cổng chuyển tiếp cơ sở dữ liệu và Redis, deploy vào chính máy; và viết bảy
+bước dựng trong tài liệu 05. Mã bot không đổi. Phần dựng trên VPS do Agent 1 làm sau khi đại ca xác nhận trực tiếp; token
+Claude đại ca dán tay.
+
+Mã nguồn: docker-compose.runner.vps.yml; doc/agent-hub/05-may-sua-ma.md mục 6
+
 ## ai-CR-184 | Hoàn tác và xem bot vừa ghi gì ngay trên Telegram
 - status: xong
 - date: 2026-10-13
