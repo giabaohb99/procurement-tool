@@ -159,7 +159,7 @@ class OpenAICompatProvider(Provider):
     def run_tools(self, messages: list[ChatMessage], *, tools: list[ToolDef], execute: ToolExecutor,
                   model: str | None = None, system: str | None = None, max_tokens: int = 1024,
                   temperature: float = 0.3, thinking: bool = False, cache_system: bool = False,
-                  max_iters: int = 6) -> ChatResult:
+                  max_iters: int = 6, stop_when=None) -> ChatResult:
         if not self.is_configured():
             raise ProviderError(f"Chưa có khóa {self.name}.")
         used_model = model or self.default_model
@@ -195,6 +195,8 @@ class OpenAICompatProvider(Provider):
                     if isinstance(result.get(k), dict):
                         call[k] = result[k]
                 tool_calls.append(call)
+                if stop_when is not None and stop_when(fname, result):      # ai-CR-183: kết quả tool là câu trả lời
+                    return self._result(data, used_model, "", tool_calls, acc)
                 msgs.append({"role": "tool", "tool_call_id": tc.get("id"),
                              "content": json.dumps(result, ensure_ascii=False)})
         #  Hết vòng: ép một lượt chốt không kèm tool.

@@ -166,6 +166,7 @@ class ClaudeProvider(Provider):
         thinking: bool = False,
         cache_system: bool = False,
         max_iters: int = 6,
+        stop_when=None,
     ) -> ChatResult:
         if not self.is_configured():
             raise ProviderError(NO_KEY_MSG)
@@ -217,6 +218,8 @@ class ClaudeProvider(Provider):
                 if isinstance(result.get("proposal"), dict):
                     call["proposal"] = result["proposal"]
                 tool_calls.append(call)
+                if stop_when is not None and stop_when(fname, result):      # ai-CR-183
+                    return self._tool_result(data, used_model, [], tool_calls, acc)
                 results.append({
                     "type": "tool_result",
                     "tool_use_id": tool_use.get("id"),

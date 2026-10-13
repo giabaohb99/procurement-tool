@@ -33,14 +33,55 @@ Nguyên tắc bắt buộc:
 
 KNOWLEDGE_HEADER = "\n\n===== GÓI TRI THỨC =====\n"
 
+#  ai-CR-183 (phase 16.4): gói nào đi với CHỦ ĐỀ nào. Đo 13/10/2026: cả 7 gói ≈ 77.000 ký tự gửi kèm MỌI câu (riêng nhà
+#  máy 46.000) → mỗi lượt Trợ lý 150k–200k token. Nay `tool_router.pack_topics` chọn chủ đề theo câu hỏi; gói không có
+#  chủ đề (None) = tri thức nền, LUÔN nạp. Không khớp chủ đề nào → nạp đủ như cũ (an toàn hơn đoán).
+PACK_TOPICS: dict[str, str | None] = {
+    "10-quy-trinh-thu-mua.md": None,
+    "20-van-thu-van-ban.md": "document",
+    "30-du-an-cong-viec.md": "work",
+    "40-nghi-phep.md": "leave",
+    "50-dat-phong-hop.md": "room",
+    "60-nhan-su-ho-so.md": "employee",
+    "nhamay-tri-thuc-co-dong.md": "factory",
+}
 
-def load_pack() -> str:
-    """Ghép nội dung mọi tệp .md trong packs/ (trừ README) theo thứ tự tên tệp."""
+
+def _pack_paths():
     if not PACKS_DIR.is_dir():
-        return ""
+        return []
+    return [p for p in sorted(PACKS_DIR.glob("*.md")) if p.name.lower() != "readme.md"]
+
+
+def pack_title(path) -> str:
+    """Dòng tiêu đề đầu tệp (bỏ dấu #) — để nói cho model biết gói nào CHƯA nạp."""
+    try:
+        with path.open(encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    return line.strip().lstrip("#").strip()[:80]
+    except OSError:
+        pass
+    return path.stem
+
+
+def omitted_titles(topics) -> list[str]:
+    """Tiêu đề các gói KHÔNG nạp với bộ chủ đề này (None = nạp đủ → rỗng)."""
+    if topics is None:
+        return []
+    want = set(topics)
+    return [pack_title(p) for p in _pack_paths()
+            if PACK_TOPICS.get(p.name, None) is not None and PACK_TOPICS[p.name] not in want]
+
+
+def load_pack(topics=None) -> str:
+    """Ghép nội dung các tệp .md trong packs/ (trừ README) theo thứ tự tên tệp. `topics` = tập chủ đề cần (None = tất
+    cả); gói chưa khai trong PACK_TOPICS coi như tri thức nền (luôn nạp)."""
     parts: list[str] = []
-    for path in sorted(PACKS_DIR.glob("*.md")):
-        if path.name.lower() == "readme.md":
+    want = None if topics is None else set(topics)
+    for path in _pack_paths():
+        topic = PACK_TOPICS.get(path.name, None)
+        if want is not None and topic is not None and topic not in want:
             continue
         try:
             text = path.read_text(encoding="utf-8").strip()
@@ -51,12 +92,12 @@ def load_pack() -> str:
     return "\n\n".join(parts)
 
 
-def build_system(extra: str | None = None) -> str:
+def build_system(extra: str | None = None, topics=None) -> str:
     """System prompt hoàn chỉnh = định nghĩa vai trò + gói tri thức (+ ghi đè tùy chọn).
 
-    `extra` để test/nâng cao chèn thêm; None thì bỏ qua.
+    `extra` để test/nâng cao chèn thêm; None thì bỏ qua. `topics` (ai-CR-183): chỉ nạp gói của các chủ đề này.
     """
-    pack = load_pack()
+    pack = load_pack(topics)
     system = DEFINITION
     if pack:
         system += KNOWLEDGE_HEADER + pack

@@ -109,11 +109,14 @@ class Provider:
         thinking: bool = False,
         cache_system: bool = False,
         max_iters: int = 6,
+        stop_when=None,
     ) -> ChatResult:
         """Vòng lặp tool-calling (loại A): model chọn tool -> `execute` chạy dưới quyền người
         hỏi -> trả kết quả lại cho model -> lặp tới khi model chốt câu trả lời chữ.
 
         `max_iters` chặn vòng lặp vô hạn. Tổng token cộng dồn qua các vòng vào ChatResult.
+        `stop_when(name, result)` (ai-CR-183): trả True thì DỪNG ngay sau tool đó, không gọi model thêm lượt chốt —
+        dùng khi kết quả tool đã là câu trả lời (thẻ nháp bot tự gửi), tiết kiệm một lượt model.
         Nhà chưa cài thì `supports_tools=False` và service tự lùi về `ask` không tool.
         """
         raise NotImplementedError

@@ -19,6 +19,9 @@ from app.modules.assistant.glossary import fold
 NEED_MORE_TOOLS = "[CAN_THEM_CONG_CU]"
 ROUTED_NOTE = (f"Bộ công cụ của lượt này đã được lọc theo câu hỏi. Nếu cần một công cụ KHÔNG có trong danh sách để trả "
                f"lời đúng, CHỈ trả lời đúng chuỗi {NEED_MORE_TOOLS} và không viết gì khác.")
+#  ai-CR-183: gói tri thức cũng được lọc — nói rõ gói nào CHƯA nạp để model xin thêm thay vì bịa.
+PACK_NOTE = ("Gói tri thức của lượt này cũng đã được lọc; các mảng CHƯA nạp: {titles}. Nếu câu hỏi thuộc một mảng đó, "
+             f"CHỈ trả lời đúng chuỗi {NEED_MORE_TOOLS}.")
 
 #  Nhóm lõi: nhẹ, dùng ở mọi loại câu.
 CORE = frozenset({"search_docs", "glossary_lookup", "remember_fact", "forget_fact", "search_chat_history",
@@ -96,6 +99,33 @@ def groups_of_tools(names) -> list[str]:
     return [name for name, tools, _rx in _COMPILED if tools & used]
 
 
+#  ai-CR-183: chủ đề GÓI TRI THỨC (`knowledge.PACK_TOPICS`) — theo nhóm công cụ đã chọn hoặc từ khóa riêng.
+PACK_RULES: tuple[tuple[str, frozenset[str], str], ...] = (
+    ("document", frozenset({"document"}), r"van ban|van thu|cong van|ban hanh|so ky hieu|luu tru|ho so luu"),
+    ("work", frozenset({"work"}), r"du an|cong viec|\btask\b|kanban"),
+    ("leave", frozenset({"leave"}), r"nghi phep|\bphep\b|quy phep|ngay nghi"),
+    ("room", frozenset(), r"phong hop|dat phong|meeting room"),
+    ("employee", frozenset({"employee", "account"}), r"ho so nhan su|chuc vu|ly lich|nhan su|hop dong lao dong|hdld"),
+    ("factory", frozenset(), r"nha may|organic|qd\.ht|hd\.ht|he thong cong viec|cai tien|san xuat|\bxuong\b|ca lam|"
+                              r"quy dinh he thong|giao thuc|tro ly ai nha may"),
+)
+_PACK_COMPILED = tuple((topic, groups, re.compile(rx)) for topic, groups, rx in PACK_RULES)
+
+
+def pack_topics(message: str, picked_groups, recent_text: str = "") -> set[str] | None:
+    """Chủ đề gói tri thức cho câu này. `picked_groups` None (gửi đủ công cụ) → None = nạp đủ gói. Có nhóm công cụ →
+    chủ đề của các nhóm đó + chủ đề khớp từ khóa trong câu (và 2 câu người dùng gần nhất)."""
+    if picked_groups is None:
+        return None
+    groups = set(picked_groups)
+    t = " " + fold((message or "") + " " + (recent_text or "")) + " "
+    return {topic for topic, g, rx in _PACK_COMPILED if (g & groups) or rx.search(t)}
+
+
+def groups_selected(message: str, recent_tools=None) -> set[str]:
+    return set(groups_for(message)) | set(groups_of_tools(recent_tools))
+
+
 RECENT_WINDOW_MIN = 15
 
 
@@ -117,11 +147,14 @@ def recent_tools(db, user_id: int) -> list[str]:
 
 
 def select(message: str, recent_tools=None) -> set[str] | None:
-    """Tên công cụ gửi kèm câu này; None = gửi đủ (không khớp nhóm nào — an toàn hơn đoán)."""
-    picked = set(groups_for(message))
+    """Tên công cụ gửi kèm câu này; None = gửi đủ (không khớp nhóm nào — an toàn hơn đoán).
+
+    ai-CR-183: không khớp nhóm nào nhưng người này VỪA dùng công cụ (≤ 15 phút) → câu nối tiếp («hạn là thứ 6 tuần
+    sau, em tạo luôn nhé») đi với lõi + nhóm cũ, không gửi đủ 72 công cụ (đo 13/10: 9 → 72 giữa hai câu cùng một việc
+    làm prompt phình và mất bộ đệm)."""
+    picked = set(groups_for(message)) | set(groups_of_tools(recent_tools))
     if not picked:
         return None
-    picked |= set(groups_of_tools(recent_tools))
     out = set(CORE)
     for name, tools, _rx in _COMPILED:
         if name in picked:

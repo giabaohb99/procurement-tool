@@ -14,9 +14,11 @@ nhồi thẳng tài liệu đứng yên vào ngữ cảnh.
 
 ## Giới hạn Phase 1
 
-- Toàn bộ gói đi vào MỌI câu hỏi. Gói càng to, token nạp càng nhiều — nhờ prompt
-  caching (Claude) / cache ngầm (Gemini 2.5+) nên lượt sau rẻ, nhưng vẫn nên giữ gói
-  gọn, đúng trọng tâm.
+- ~~Toàn bộ gói đi vào MỌI câu hỏi.~~ **Từ ai-CR-183 (13/10/2026) gói nạp theo CHỦ ĐỀ**: `knowledge.PACK_TOPICS` gắn
+  mỗi tệp một chủ đề (document · work · leave · room · employee · factory); `tool_router.pack_topics` chọn chủ đề theo nhóm
+  công cụ đã chọn + từ khóa trong câu; tệp không có chủ đề (`None`, như `10-quy-trinh-thu-mua.md`) là tri thức nền, LUÔN
+  nạp; câu không khớp nhóm nào → nạp đủ như cũ. Thêm gói mới thì khai vào `PACK_TOPICS` + luật ở `tool_router.PACK_RULES`,
+  không khai = luôn nạp (tốn token mọi câu).
 - "Quyền theo gói" (mỗi nhóm người dùng thấy gói khác nhau) là việc của Phase sau —
   hiện mọi người có quyền `assistant.read` dùng chung một gói.
 

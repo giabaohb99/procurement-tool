@@ -6,6 +6,7 @@
 
 Routing quyết định: bật/tắt suy nghĩ + trần token + có mở tool hay không theo loại câu.
 """
+import json
 from datetime import date
 
 from app.core import app_settings
@@ -234,7 +235,7 @@ def _caller_context(db, user) -> str | None:
 
 
 def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None,
-                  terms: str | None = None, *, routed_note: bool = False) -> str | None:
+                  terms: str | None = None, *, routed_note: bool = False, pack_note: str = "") -> str | None:
     """ai-CR-161 (16.3): xếp từ CỐ ĐỊNH tới HAY ĐỔI — hướng dẫn công cụ · ngày · chân dung người hỏi · lời dặn của kênh
     (luật cố định trước, sổ nhớ / thói quen sau) · thuật ngữ của riêng câu này · lời dặn lọc công cụ. Đoạn đầu giống nhau
     giữa các lượt thì hãng AI tính giá đọc lại từ bộ đệm. Trước đây thuật ngữ (đổi theo TỪNG câu) đứng trước chân dung và
@@ -255,6 +256,8 @@ def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None,
         parts.append(terms)
     if routed_note:
         parts.append(ROUTED_NOTE)
+    if pack_note:
+        parts.append(pack_note)         # ai-CR-183: gói tri thức chưa nạp
     return "\n\n".join(parts) if parts else None
 
 
@@ -280,8 +283,12 @@ def ask(
     system: str | None = None,
     history: list[dict] | None = None,
     attachments: list[dict] | None = None,
+    stop_on_draft: bool = False,
 ) -> dict:
     """Hỏi một câu, trả về dict đã chuẩn hóa (dùng cho endpoint /chat).
+
+    `stop_on_draft` (ai-CR-183): tool soạn nháp trả `draft` thì DỪNG, không gọi model viết câu chốt — kênh Telegram tự
+    gửi thẻ nháp nên câu chốt của model chỉ được ghi sổ chứ không gửi (lãng phí một lượt ≈ 10–15 giây).
 
     Có `db`+`user` (đi từ endpoint) thì mở lớp tool loại A; gọi trực tiếp không kèm ngữ cảnh
     người dùng (vd test provider) thì lùi về đường không tool.
@@ -316,15 +323,24 @@ def ask(
 
     all_defs: list = []
     routed: set[str] | None = None
+    topics: set[str] | None = None
     if tool_on:
         #  ai-CR-161 (16.3): thứ tự cố định theo tên — cùng một bộ công cụ thì cùng một đoạn đầu, hãng AI đọc lại từ
         #  bộ đệm (giá rẻ) thay vì tính lại.
         all_defs = sorted(erp.tool_defs(db, user), key=lambda d: d.name)
         if settings.AI_TOOL_ROUTING:
-            routed = tool_router.select(message if isinstance(message, str) else "",
-                                        tool_router.recent_tools(db, getattr(user, "id", 0)))
+            recent_tools = tool_router.recent_tools(db, getattr(user, "id", 0))
+            text_msg = message if isinstance(message, str) else ""
+            routed = tool_router.select(text_msg, recent_tools)
+            #  ai-CR-183 (16.4): gói tri thức nạp theo chủ đề như công cụ; không khớp gì thì nạp đủ.
+            topics = tool_router.pack_topics(text_msg, tool_router.groups_selected(text_msg, recent_tools) if routed
+                                             is not None else None, " ".join(recent))
+    from . import knowledge
+
+    omitted = knowledge.omitted_titles(topics)
+    pack_note = tool_router.PACK_NOTE.format(titles="; ".join(omitted)) if omitted else ""
     full_system = build_system(extra=_extra_system(tool_on, system, profile, terms,
-                                                   routed_note=routed is not None))
+                                                   routed_note=routed is not None, pack_note=pack_note), topics=topics)
 
     msgs: list[ChatMessage] = []
     for h in history or []:
@@ -354,13 +370,29 @@ def ask(
     started = _time.monotonic()
     offered = 0
     retried = False
+    stop_when = None
+    if stop_on_draft:
+        from app.modules.agent_hub import draft_create
+
+        stop_when = (lambda name, result: bool(draft_create.kind_of(name)) and isinstance(result, dict)
+                     and isinstance(result.get("draft"), dict))
     if tool_on:
         tool_defs = all_defs if routed is None else [d for d in all_defs if d.name in routed]
         offered = len(tool_defs)       # ai-CR-160 (16.1): đo số khai báo công cụ gửi kèm mỗi câu
+        #  ai-CR-183: một dòng đo kích thước lời nhắc — để biết lượt này gửi gì, nặng ở đâu.
+        import logging as _logging
+
+        _logging.getLogger("app.assistant.service").info(
+            "assistant.ask: system=%d ký tự · công cụ=%d/%d (%d ký tự) · gói tri thức=%s · lịch sử=%d lượt (%d ký tự)",
+            len(full_system), offered, len(all_defs),
+            sum(len(json.dumps({"n": d.name, "d": d.description, "p": d.parameters}, ensure_ascii=False)) for d in tool_defs),
+            "đủ" if topics is None else ",".join(sorted(topics)) or "nền",
+            len(history or []), sum(len(str(h.get("content") or "")) for h in (history or [])))
         result = prov.run_tools(
             msgs,
             tools=tool_defs,
             execute=lambda name, args: erp.run_tool(db, user, name, _with_user_text(name, args, message, history)),
+            stop_when=stop_when,
             **common,
         )
         if routed is not None and tool_router.NEED_MORE_TOOLS in (result.text or ""):
@@ -371,6 +403,7 @@ def ask(
                 msgs,
                 tools=all_defs,
                 execute=lambda name, args: erp.run_tool(db, user, name, _with_user_text(name, args, message, history)),
+                stop_when=stop_when,
                 **{**common, "system": build_system(extra=_extra_system(tool_on, system, profile, terms))},
             )
     else:

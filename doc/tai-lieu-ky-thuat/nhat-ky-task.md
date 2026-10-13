@@ -13242,6 +13242,22 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-183 | Trợ lý trả lời nhanh và rẻ hơn: gói tri thức nạp theo chủ đề, giữ nhóm công cụ cho câu nối tiếp, dừng sớm khi đã có nháp
+- status: dang-lam
+- date: 2026-10-13
+Đại ca thấy bot trả lời chậm, mỗi lượt soạn nháp việc mất khoảng bốn mươi giây. Đo trên dev cho thấy một lượt Trợ lý gửi
+đi từ một trăm năm mươi đến hai trăm nghìn token, tốn gần nửa đô la, vì toàn bộ bảy gói tri thức (riêng gói nhà máy đã bốn mươi
+sáu nghìn ký tự) và cả bảy mươi hai khai báo công cụ đi kèm mọi câu hỏi, câu nối tiếp lại không được xếp nhóm nên gửi đủ công
+cụ và mất bộ đệm, và tool soạn nháp xong bot vẫn gọi model thêm một lượt viết câu chốt mà không gửi. Nay gói tri thức chỉ nạp
+theo chủ đề của câu hỏi như công cụ, gói nền luôn có, không rõ chủ đề thì nạp đủ như cũ, và model được báo gói nào chưa nạp
+để xin thêm thay vì bịa; câu nối tiếp giữ nhóm công cụ của câu trước; tool soạn nháp trả nháp thì dừng ngay vì thẻ nháp bot tự
+gửi. Mỗi lượt có một dòng log kích thước lời nhắc để theo dõi. Số đo sau khi lên dev lấy ở sổ lượt chạy để so với số đo trước.
+Bài kiểm mới năm bài; chạy cùng bài router, nháp, công cụ xanh.
+
+Mã nguồn: assistant/knowledge.py (PACK_TOPICS, load_pack, omitted_titles), assistant/tool_router.py (select, pack_topics,
+PACK_NOTE), assistant/service.py (ask stop_on_draft), assistant/provider/*.py (run_tools stop_when), agent_hub/service.py
+(answer_question); bài kiểm test_assistant_gon_luot_cr183.py
+
 ## ai-CR-181 | Bot biết cột kanban của dự án khi tạo việc và khi hỏi về dự án
 - status: xong
 - date: 2026-10-13
