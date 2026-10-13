@@ -271,6 +271,14 @@ def test_xoa_ho_so_thi_moi_dong_va_link_mat(world):
     lk1, _f1 = _attach_fake_file(world.db, row1.id)
     _attach_fake_file(world.db, row2.id)
 
+    #  ai-CR-190: a3 đang là trưởng bộ phận của một phòng trong thế giới mẫu → hồ sơ còn tham chiếu thì CHẶN
+    #  (chỉ ngưng dùng). Gỡ chức trưởng phòng trước — bài này kiểm việc dọn dòng + tệp khi xóa THẬT.
+    from app.modules.department.model import Department, DepartmentCompany
+    world.db.query(Department).filter(Department.manager_id == world.emp["a3"]).update({Department.manager_id: 0})
+    world.db.query(DepartmentCompany).filter(DepartmentCompany.manager_employee_id == world.emp["a3"]).update(
+        {DepartmentCompany.manager_employee_id: None})
+    world.db.commit()
+
     employee_service.delete_employee(world.db, world.emp["a3"], ACTOR)
 
     assert world.db.query(EmployeeWorkHistory).filter(

@@ -173,6 +173,9 @@ ghi mới (hóa đơn, công nợ…).
 - **16.5 đợt 2 (ai-CR-192, 13/10):** trần chờ 10 s cho bước đọc ý định (Gemini quá tải → đổi model / khóa ngay); xã giao → lõi
   + không gói; không khớp nhóm → đủ công cụ, gói theo từ khóa. Còn lại là việc vận hành: khóa Gemini công ty 429 → thêm khóa
   DeepSeek mức công ty (đại ca). Bảng chi phí / chất lượng (16.5 gốc) chưa làm.
+- **16.5 đợt 3 (ai-CR-193/194, 13/10 16:55 đại ca chốt):** TẮT bước đọc ý định trên dev (`AGENT_INTENT_ENABLED=false`,
+  một lần gọi model; nhãn ý định sau này người dùng gắn tay), báo nhận tức thì rồi xóa, bản dài mặc định (ngắn khi xin
+  «nhanh»), đường tắt tra nhanh / xã giao. Số đo theo ngày (Agent 1): 06/10 5,8 s → 13/10 23,8 s trước đợt này.
 
 Ước lượng: 2 ngày.
 

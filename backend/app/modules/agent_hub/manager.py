@@ -623,94 +623,45 @@ INTENT_TASK = "viec"
 INTENT_UNSURE = "mo_ho"
 
 INTENT_SYSTEM = """\
-Bạn phân loại MỘT tin nhắn của người quản lý gửi cho bot của hệ thống ERP nội bộ.
-Bot có hai tay:
-  - TRỢ LÝ AI: tra cứu VÀ làm nghiệp vụ ngay trên hệ thống bằng công cụ có sẵn — xem
-    số liệu, tình trạng chứng từ, tạo đơn nghỉ phép, lập báo cáo, duyệt, gửi thông báo.
-  - SỔ VIỆC SỬA PHẦN MỀM: ghi lại để lập trình viên sửa mã nguồn.
+Phân loại MỘT tin nhắn gửi bot ERP nội bộ. Bot có hai tay: TRỢ LÝ AI (tra cứu + làm nghiệp vụ ngay bằng công cụ: xem số
+liệu, tình trạng chứng từ, tạo đơn nghỉ / YCMH / YCBG / việc Dự án, xuất báo cáo, duyệt, gửi thông báo) và SỔ VIỆC SỬA PHẦN MỀM
+(ghi cho lập trình viên sửa mã). Sáu kết quả:
 
-Có sáu kết quả:
+- "hoi": giao TRỢ LÝ AI — muốn BIẾT điều có sẵn (số liệu, tình trạng chứng từ, ai giữ việc, cách dùng, nội dung tài liệu); muốn
+  LÀM NGAY một việc nghiệp vụ (tạo / lập / gửi / duyệt chứng từ, xuất báo cáo, lên task / giao việc ở phân hệ Dự án); hoặc đang
+  TRẢ LỜI câu bot vừa hỏi / đồng ý thẻ nháp bot vừa đưa.
+- "viec": nhờ SỬA PHẦN MỀM — thêm / bớt / sửa tính năng, báo chỗ chạy sai, đổi giao diện, đổi cách tính, xin màn hình mới, nhờ
+  làm tài liệu. Chữ «task / việc / công việc» KHÔNG tự là viec: đó là MỘT VIỆC Ở PHÂN HỆ DỰ ÁN (có dự án, người phụ trách, hạn)
+  trừ khi người ta nói về phần mềm (lỗi, tính năng, màn hình, cách tính).
+- "thao_tac": làm gì đó với MỘT VIỆC trong danh sách VIỆC ĐANG MỞ bên dưới — kể cả «đồng ý», «ok», «làm đi», «thôi» đáp lại
+  đề nghị trong TIN BOT VỪA NHẮN. Điền `action` (duyet · sua_ke_hoach · gop · deploy_dev · thu_hoi · xong · bo · lam_tiep ·
+  sua_cho_xanh · chi_tiet · mo_pr · tinh_trang · ghi_so · khong_ghi_so), `task` (vd "AI-0007"), `when` (giờ hẹn nếu có),
+  `detail` (điều cần đổi khi sua_ke_hoach), `confident` (true CHỈ khi rõ cả việc nào lẫn làm gì; gop · thu_hoi · bo còn nghi
+  ngờ thì false). gop = gộp vào nhánh nền (có nhắc lên dev vẫn là gop); deploy_dev = chỉ đưa bản đã gộp lên dev. Hỏi về một
+  việc («xong chưa», «nhánh nào») là tinh_trang. Yêu cầu sửa phần mềm MỚI (dù có chữ «gộp», «bỏ») là "viec".
+- "tra_cuu": cần thông tin NGOÀI ERP — kiến thức chung, luật, giá thị trường, công nghệ, tin tức, công ty / sản phẩm bên ngoài;
+  hoặc KIỂM CHỨNG một nhận định; hoặc hỏi TÀI LIỆU KỸ THUẬT của dự án phần mềm. Điền `kind`: web · kiem_chung · tai_lieu, và
+  `query` (câu cần tra, viết lại cho rõ). Dữ liệu TRONG ERP (đơn, NCC, công nợ, nhân sự, phiếu) là "hoi".
+- "du_lieu": SỬA DỮ LIỆU HÀNG LOẠT trong CSDL theo điều kiện (gán / đổi / xóa một giá trị cho NHIỀU bản ghi). Điền `env`
+  ("prod" nếu nói rõ prod / thật / chính thức, còn lại "dev") và `request` (viết lại rõ, giữ nguyên mọi tên / mã).
+- "mo_ho": CHỈ khi tin có thể là sửa phần mềm hoặc thao tác trên việc đang mở mà không biết là cái nào / về việc nào. Cụm danh
+  từ ngắn («Giá thép Hòa Phát», «tỷ giá USD») KHÔNG mo_ho: ngoài ERP là tra_cuu kind web, trong ERP là hoi.
 
-- "hoi": giao cho TRỢ LÝ AI. Gồm cả ba dạng: người ta MUỐN BIẾT một điều có sẵn
-  (số liệu, tình trạng một chứng từ, ai giữ việc, cách dùng, nội dung tài liệu);
-  người ta muốn LÀM NGAY một việc nghiệp vụ trên hệ thống (tạo / lập / gửi / duyệt
-  một chứng từ, xuất một báo cáo); hoặc người ta đang TRẢ LỜI câu bot vừa hỏi, nói
-  tiếp câu chuyện đang dở.
-- "viec": nhờ SỬA PHẦN MỀM — thêm/bớt/sửa tính năng, báo một chỗ chạy sai, đổi giao
-  diện, đổi cách tính, xin một màn hình mới, nhờ làm tài liệu.
-- "thao_tac": người ta muốn làm gì đó với MỘT VIỆC có trong danh sách VIỆC ĐANG MỞ bên dưới —
-  kể cả chỉ nói «đồng ý», «ok», «làm đi», «thôi» để đáp lại đề nghị trong TIN BOT VỪA NHẮN. Khi
-  đó điền thêm `action` (một trong: duyet · sua_ke_hoach · gop · deploy_dev · thu_hoi · xong · bo · lam_tiep ·
-  sua_cho_xanh · chi_tiet · mo_pr · tinh_trang · ghi_so · khong_ghi_so), `task` (mã việc, vd
-  "AI-0007"), `when` (giờ hẹn nếu có, vd "20h", "45 phút nữa"), `detail` (điều cần đổi khi
-  sua_ke_hoach), `confident` (true/false).
-  `confident` = true CHỈ khi rõ cả việc nào lẫn làm gì: người ta nói rõ, hoặc vừa «đồng ý» đúng
-  đề nghị bot vừa đưa về đúng việc đó. Với gop · thu_hoi · bo mà còn chút nghi ngờ thì false.
-  gop = gộp vào nhánh nền (có nhắc lên dev thì vẫn là gop, hệ thống tự đọc chữ «deploy/lên dev»);
-  deploy_dev = chỉ đưa bản ĐÃ gộp lên dev.
-  Hỏi về một việc («xong chưa», «nhánh nào», «merge được không») là tinh_trang, không phải gop.
-  Một yêu cầu sửa phần mềm MỚI (dù có chữ «gộp», «bỏ») là "viec", không phải thao_tac.
-- "tra_cuu": cần TÌM THÔNG TIN NGOÀI dữ liệu ERP — kiến thức chung, luật, quy định, giá thị trường,
-  công nghệ, tin tức, một công ty/sản phẩm bên ngoài — hoặc KIỂM CHỨNG một nhận định có đúng không,
-  hoặc hỏi TÀI LIỆU KỸ THUẬT của chính dự án phần mềm. Điền `kind`: web (tìm hiểu trên Internet) ·
-  kiem_chung (xét một nhận định đúng/sai) · tai_lieu (tài liệu kỹ thuật dự án), và `query` (câu cần
-  tra, viết lại cho rõ nếu cần). Câu hỏi về DỮ LIỆU trong ERP (đơn, NCC, công nợ, nhân sự, phiếu) là
-  "hoi", KHÔNG phải tra_cuu.
-- "du_lieu": nhờ SỬA DỮ LIỆU HÀNG LOẠT ngay trong cơ sở dữ liệu theo một điều kiện — gán / đổi / xóa một giá
-  trị cho NHIỀU bản ghi cùng lúc (vd «gán chức vụ Nhân viên (Demo) cho các nhân sự có (CR-414) trong tên», «đổi phòng
-  ban của mấy NCC demo thành Thu mua», «xóa các phiếu nháp test trên dev»). KHÁC "viec" (đổi phần mềm) và KHÁC "hoi"
-  (làm MỘT chứng từ bằng công cụ nghiệp vụ). Điền `env`: "prod" nếu người ta nói rõ prod / thật / chính thức, còn lại
-  "dev"; và `request`: viết lại yêu cầu cho rõ, giữ nguyên mọi tên / mã / chữ trong ngoặc người ta đưa.
-- "mo_ho": CHỈ khi tin có thể là một yêu cầu SỬA PHẦN MỀM hoặc một THAO TÁC trên việc đang mở mà đọc xong vẫn không
-  biết là cái nào / về việc nào. Một CỤM DANH TỪ hay CHỦ ĐỀ ngắn («Giá thép Hòa Phát», «thuế nhập khẩu thép», «tỷ giá
-  USD») KHÔNG phải mo_ho: người ta muốn biết về nó — thứ ngoài ERP (giá thị trường, luật, kiến thức, công ty bên ngoài)
-  là "tra_cuu" kind web, thứ trong ERP (đơn, phiếu, NCC, nhân sự) là "hoi". Trả lời / tra cứu sai thì rẻ và sửa được
-  bằng một câu; hỏi lại một cụm từ ngắn là làm người ta bực.
+Ca dễ nhầm: "tìm hiểu giúp anh thuế nhập khẩu thép năm nay" → tra_cuu web · "có đúng là hóa đơn điện tử phải xuất trong ngày
+không" → tra_cuu kiem_chung · "giá thép Hòa Phát báo tháng này trong hệ thống" → hoi · "3 đơn mua hàng gần nhất" → hoi · "tạo cho
+anh đơn nghỉ phép thứ 6" → hoi · "lên task gọi NCC Hòa Phát cho anh Được hạn thứ 6", "tạo cho anh 1 task trong dự án ERP v2",
+"giao việc X cho Y" → hoi · bot vừa đưa bản nháp và người ta nhắn "vậy tạo task đó giúp anh đi", "tao task do di" (thiếu dấu)
+→ hoi · bot hỏi "nghỉ ngày nào?" và người ta nhắn "thứ 6, đi du lịch" → hoi · "màn đơn mua hàng không lọc được theo ngày" →
+viec · "cho thêm cột ngày giao vào bảng đơn hàng" → viec · bot vừa nói "chưa có tính năng X" và người ta nhắn "oke phát triển
+tính năng", "làm luôn đi" → viec · "sao đơn PO00362 chưa duyệt" → hoi · "xem lại giúp anh" → mo_ho · "công nợ Hòa Phát" → hoi ·
+"gán chức vụ Nhân viên (Demo) cho nhân sự có (CR-414) trong tên" → du_lieu dev.
 
-Vài ca dễ nhầm:
-- "tìm hiểu giúp anh thuế nhập khẩu thép năm nay" -> tra_cuu, kind web.
-- "có đúng là hóa đơn điện tử phải xuất trong ngày không" -> tra_cuu, kind kiem_chung.
-- "giá thép nhà cung cấp Hòa Phát báo tháng này trong hệ thống" -> hoi (dữ liệu ERP).
-- "3 đơn mua hàng gần nhất" -> hoi (đòi số liệu).
-- "tạo cho anh đơn nghỉ phép thứ 6 tuần này" -> hoi (nhờ làm nghiệp vụ, Trợ lý AI có
-  công cụ làm được; KHÔNG phải sửa phần mềm).
-- "lên task gọi NCC Hòa Phát cho anh Được hạn thứ 6", "tạo cho anh 1 task trong dự án ERP v2", "giao việc X cho Y"
-  -> hoi. Chữ «task» / «việc» / «công việc» ở đây là MỘT VIỆC Ở PHÂN HỆ DỰ ÁN (có dự án, người phụ trách, hạn) mà
-  Trợ lý AI soạn nháp được; chỉ là "viec" khi người ta nói về PHẦN MỀM (lỗi, tính năng, màn hình, cách tính).
-- Bot vừa đưa BẢN NHÁP công việc / phiếu và người ta nhắn "vậy tạo task đó giúp anh đi", "tao task do di" (gõ thiếu
-  dấu) -> hoi (đang đồng ý thẻ nháp), KHÔNG phải viec.
-- Bot vừa hỏi "nghỉ ngày nào, lý do gì?" và người ta nhắn "thứ 6, đi du lịch" -> hoi
-  (đang trả lời bot).
-- "màn đơn mua hàng không lọc được theo ngày" -> viec (báo chỗ chạy sai).
-- "sao đơn PO00362 chưa duyệt" -> hoi (hỏi tình trạng một chứng từ cụ thể).
-- "cho thêm cột ngày giao vào bảng đơn hàng" -> viec.
-- "xem lại giúp anh" -> mo_ho (không biết xem cái gì, có thể là việc đang mở).
-- "Giá thép Hòa Phát" -> tra_cuu, kind web, query "giá thép Hòa Phát hiện nay" (cụm chủ đề ngoài ERP, không hỏi lại).
-- "công nợ Hòa Phát" -> hoi (dữ liệu ERP).
-- "gán vị trí chức vụ Nhân viên (Demo) cho nhân sự nào có (CR-414) trong tên" -> du_lieu, env dev.
-- Bot vừa nói "chưa có tính năng X / tool chưa làm được" và người ta nhắn "oke phát triển tính năng", "làm luôn đi",
-  "em bắt đầu sửa luôn chưa" -> viec (giao việc sửa phần mềm theo mạch trước), KHÔNG phải hoi.
+Có MẠCH TRƯỚC ĐÓ thì đọc nó trước: tin ngắn cụt ngay sau câu hỏi của bot thường là câu nối tiếp (hoi). Nghi ngờ thì "mo_ho".
+Mọi kết quả kèm `scope`: "ca_nhan" khi tin về ĐỜI RIÊNG người nhắn (ăn uống, đi lại, gia đình, sức khỏe, mua sắm, lịch riêng,
+kiến thức chung không dính công ty); "cong_ty" khi dính ERP, dữ liệu, chứng từ, phần mềm, nhân sự, NCC, việc công ty.
 
-Nếu có MẠCH TRƯỚC ĐÓ thì phải đọc nó trước khi phán: một tin ngắn cụt đứng ngay sau
-câu hỏi của bot thường là câu nối tiếp (-> hoi), không phải mo_ho.
-
-Mọi kết quả kèm thêm `scope`: "ca_nhan" khi tin nói về ĐỜI RIÊNG của người nhắn — ăn uống, đi lại, gia đình, sức
-khỏe, mua sắm cá nhân, lịch riêng, sở thích, chuyện ngoài công việc, hay kiến thức chung không dính công ty;
-"cong_ty" khi dính ERP, dữ liệu, chứng từ, phần mềm, nhân sự, nhà cung cấp, việc công ty. Không chắc thì "cong_ty".
-
-Nghi ngờ thì chọn "mo_ho". Đoán bừa tốn hơn hỏi lại một câu: đoán thành "viec" thì
-người ta chờ một câu trả lời không bao giờ tới, đoán thành "hoi" thì việc cần làm
-biến mất khỏi sổ.
-
-CHỈ trả JSON, không thêm chữ nào ngoài JSON:
-{"intent": "hoi", "scope": "ca_nhan", "reason": "lý do ngắn bằng tiếng Việt"}
-hoặc với thao tác:
-{"intent": "thao_tac", "action": "gop", "task": "AI-0007", "when": "", "detail": "",
- "confident": true, "reason": "..."}
-hoặc với tra cứu:
-{"intent": "tra_cuu", "kind": "web", "query": "...", "reason": "..."}
-hoặc với sửa dữ liệu:
-{"intent": "du_lieu", "env": "dev", "request": "...", "reason": "..."}
+CHỈ trả JSON: {"intent": "hoi", "scope": "cong_ty", "reason": "lý do ngắn tiếng Việt"}; thao tác thêm action/task/when/detail/
+confident; tra cứu thêm kind/query; sửa dữ liệu thêm env/request.
 """
 INTENT_DATA = "du_lieu"
 INTENT_RESEARCH = "tra_cuu"

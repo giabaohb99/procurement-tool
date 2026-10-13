@@ -8,6 +8,7 @@ cần list/get/create/update/delete + audit, không có nghiệp vụ riêng.
 """
 from app.core.crud import make_crud_router
 
+from . import references  # noqa: F401  — ai-CR-191: đăng ký chỗ tham chiếu (loại văn bản / đối tác ngoài / thư mục / sổ / quy tắc)
 from .issue_code_guard import ensure_doc_type_code_free
 from .model import DocType, ExternalParty
 from .schema import (DocTypeCreate, DocTypeOut, DocTypeUpdate,

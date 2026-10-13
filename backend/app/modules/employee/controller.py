@@ -737,6 +737,10 @@ def import_employees_csv(
 
         if existing:
             if action in ["xóa", "delete"]:
+                #  ai-CR-190: dòng CSV «xóa» ăn đúng chốt của nút xóa — còn tham chiếu thì 400, cả tệp không ghi.
+                #  Kiểm TRƯỚC `detach_users` để không khóa tài khoản rồi mới báo lỗi.
+                from app.core import reference_guard
+                reference_guard.ensure_deletable(db, service.ENTITY, existing)
                 service.detach_users(db, existing.id, user.id)   # CR-023: khoá tài khoản kèm theo
                 db.delete(existing)
                 deleted += 1

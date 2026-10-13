@@ -2,12 +2,16 @@ from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
+from app.core import reference_guard
+
+from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Department, DepartmentCompany
 from .schema import (DepartmentCompanyInput, DepartmentCreate,
                      DepartmentUpdate)
 
 
 FILTERABLE = ["code", "name", "issue_code", "kind", "company_id", "is_active"]
+ENTITY = "department"
 
 
 def dept_id_by_name(db: Session, name: str, company_id: int = 0) -> int:
@@ -213,6 +217,7 @@ def update_department(db: Session, did: int, data: DepartmentUpdate, user_id: in
 
 def delete_department(db: Session, did: int, user_id: int) -> None:
     obj = get_department(db, did)
+    reference_guard.ensure_deletable(db, ENTITY, obj)     # ai-CR-190: còn tham chiếu → chỉ ngưng dùng
     db.delete(obj)
     db.commit()
 

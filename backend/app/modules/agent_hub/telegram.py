@@ -482,6 +482,17 @@ def edit_text(chat_id: str, message_id: int, text: str) -> bool:
         return False
 
 
+def delete_message(chat_id: str, message_id: int) -> bool:
+    """ai-CR-194: xóa tin báo nhận tạm sau khi đã trả lời. Hỏng (quá 48 giờ, không phải Telegram) thì thôi."""
+    if not message_id or not channels.is_telegram(chat_id):
+        return False
+    try:
+        _call("deleteMessage", {"chat_id": chat_id, "message_id": message_id})
+        return True
+    except TelegramError:
+        return False
+
+
 def clear_buttons(chat_id: str, message_id: int) -> None:
     """Gỡ hàng nút khỏi một tin đã gửi, sau khi đại ca bấm xong.
 

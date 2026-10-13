@@ -1,5 +1,6 @@
 from app.core.crud import make_crud_router
 
+from . import references  # noqa: F401  — ai-CR-191: đăng ký chỗ tham chiếu (kho / ĐVT / nhóm hàng)
 from .model import Brand, ItemGroup, Unit, Warehouse
 from .schema import (BrandCreate, BrandOut, BrandUpdate, ItemGroupCreate,
                      ItemGroupOut, ItemGroupUpdate, UnitCreate, UnitOut,

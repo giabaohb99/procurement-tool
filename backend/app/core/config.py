@@ -313,6 +313,11 @@ class Settings(BaseSettings):
     AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
     #  ai-CR-192: trần chờ MỖI lượt HTTP của bước đọc ý định (giây) — quá tải thì đổi model / khóa ngay.
     AGENT_INTENT_TIMEOUT: int = 10
+    #  ai-CR-194 (đại ca 13/10 16:55): TẮT bước đọc ý định → tin vào đi thẳng Trợ lý, MỘT lần gọi model. Nhãn ý định về sau
+    #  do người dùng gắn tay. Mặc định mã = bật (giữ hành vi cũ); dev đặt false trong .env.agent.
+    AGENT_INTENT_ENABLED: bool = True
+    #  ai-CR-194: tin «Em nhận rồi, đang xử lý…» gửi NGAY khi nhận tin chữ, xóa khi đã trả lời.
+    AGENT_ACK_ENABLED: bool = True
     # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
     # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc
     # AGENT_PLAN_MODEL khi khóa để trống.

@@ -5,6 +5,7 @@ tự gác `require`, phân trang/sắp xếp/lọc, audit, kèm CSV. Khóa tự 
 """
 from app.core.crud import make_crud_router
 
+from . import references  # noqa: F401  — ai-CR-191: đăng ký chỗ tham chiếu của loại con dấu
 from .model import SealType
 from .schema import SealTypeCreate, SealTypeResponse, SealTypeUpdate
 

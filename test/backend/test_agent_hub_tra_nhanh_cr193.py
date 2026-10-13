@@ -6,12 +6,17 @@ from app.modules.agent_hub import research as rs
 
 
 def test_nhan_cau_tra_nhanh():
+    """ai-CR-194: đường tắt chỉ cho thứ chắc chắn NGOÀI ERP (tỷ giá, vàng, xăng, crypto, thời tiết, lãi suất, chứng khoán)."""
     for q in ("giá vàng hôm nay", "Giá bitcoin hôm nay", "tỷ giá USD hiện nay", "thời tiết Cần Thơ", "cho anh hỏi giá xăng hôm nay",
               "lãi suất ngân hàng tháng này bao nhiêu"):
         assert rs.is_quick(q), q
     for q in ("giá vàng hôm nay, phân tích xu hướng tuần tới", "giá thép chi tiết theo từng nhà máy", "vì sao giá vàng tăng",
-              "tìm hiểu giúp anh thuế nhập khẩu thép năm nay", "so sánh giá xăng Việt Nam và Thái Lan"):
+              "tìm hiểu giúp anh thuế nhập khẩu thép năm nay", "so sánh giá xăng Việt Nam và Thái Lan", "Giá thép Hòa Phát",
+              "giá thép hôm nay", "công nợ Hòa Phát"):
         assert not rs.is_quick(q), q
+    #  Bản ngắn chỉ khi người dùng xin (đại ca 13/10 16:55: bản dài là mặc định).
+    assert rs.wants_brief("giá vàng hôm nay, nhanh thôi") and rs.wants_brief("ngắn gọn giúp anh tỷ giá usd")
+    assert not rs.wants_brief("giá vàng hôm nay")
 
 
 def test_tra_nhanh_dung_loi_dan_ngan_va_tran_token(monkeypatch):
@@ -29,9 +34,9 @@ def test_tra_nhanh_dung_loi_dan_ngan_va_tran_token(monkeypatch):
 
     monkeypatch.setattr(manager, "get_provider", lambda: P())
     monkeypatch.setattr(web_search, "gather", lambda q: ([{"title": "t", "url": "https://x.vn"}], "[1] giá 2.600"))
-    rs.search_web_any("giá vàng hôm nay")
+    rs.search_web_any("giá vàng hôm nay, nhanh thôi")
     assert seen[-1]["max_tokens"] == rs.QUICK_MAX_TOKENS and "TRẢ LỜI NGẮN" in seen[-1]["system"] and "La Mã" in seen[-1]["system"]
-    rs.search_web_any("phân tích giá vàng tuần tới")
+    rs.search_web_any("giá vàng hôm nay")                      # mặc định: bản đầy đủ như trước ai-CR-193
     assert seen[-1]["max_tokens"] == 1500 and "TRẢ LỜI NGẮN" not in seen[-1]["system"]
 
 

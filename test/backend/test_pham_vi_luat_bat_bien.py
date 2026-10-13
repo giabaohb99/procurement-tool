@@ -212,6 +212,10 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 BB4_CONTROLLER_MIEN_TRU = {
     # -- gác bằng hàm tự viết trong thân hàm, grep không thấy --
     "import_tool/controller.py": "gác bằng `_guard` → user_has_permission(..., 'import')",
+    "assistant/change_controller.py": "ai-CR-182: sổ thay đổi do bot ghi — danh sách lọc theo `user_id` của CHÍNH người "
+                                      "đăng nhập (`change_service.list_for`), xem của mọi người chỉ khi có "
+                                      "`agent_group.read` (quản lý bot AI, entity PUBLIC); hoàn tác kiểm lại quyền + "
+                                      "phạm vi phiếu qua get_scoped trong `change_service._check_undo`",
     "survey_request/report_controller.py": "bao-CR-602: khối Báo cáo thực hiện dùng chung YCBG + ĐMH, "
                                            "entity nằm trên URL nên route gác bằng `_require_owner` → "
                                            "user_has_permission theo `_OWNER_RULES`; MỌI đường nạp chứng từ "
@@ -329,8 +333,7 @@ BB4_CONTROLLER_MIEN_TRU = {
     "legacy_datxe/controller.py": "webhook app đặt xe cũ — không phiên, không vai trò; gác bằng "
                                   "chữ ký HMAC `verify_signature` (SYNC_SHARED_SECRET) + ghim "
                                   "nguồn SOURCE_DATXE, sai chữ ký thì 401 không ghi gì",
-    "product/controller.py": "product — PUBLIC (D-025)",
-    "supplier/controller.py": "supplier — PUBLIC, giấu NCC bằng quyền supplier.read",
+    #  ai-CR-169 (13/10): product/ supplier/ controller nay gọi get_scoped / apply_scope ở đường xóa — rút khỏi danh sách.
     "category_assignee/controller.py": "category_assignee — PUBLIC",
     "seal_clerk/controller.py": "phân công VĂN THƯ theo công ty — danh mục cấu hình admin "
                                 "(quản bằng require(seal_type)); dữ liệu không thuộc pháp nhân "

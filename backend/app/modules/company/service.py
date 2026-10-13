@@ -2,9 +2,11 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
 from app.core.audit import record
 from app.core.utils import generate_code
 
+from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Company
 from .schema import CompanyCreate, CompanyUpdate
 
@@ -138,8 +140,23 @@ def update_company(db: Session, cid: int, data: CompanyUpdate, user_id: int) -> 
     return obj
 
 
+def ensure_companies_deletable(db: Session, rows: list[Company]) -> None:
+    """ai-CR-190: kiểm CẢ LÔ trước khi xóa dòng nào — một công ty còn được tham chiếu là từ chối cả lượt
+    (khuôn `contract._ensure_deletable`). Câu báo liệt kê mã + lý do từng dòng vướng."""
+    blocked = []
+    for row in rows:
+        refs = reference_guard.count_references(db, ENTITY, row)
+        if refs:
+            blocked.append(f"{row.code or row.id} ({', '.join(f'{n} {lbl}' for lbl, n in refs)})")
+    if blocked:
+        raise HTTPException(
+            400, "Công ty đang được dùng, chỉ có thể ngưng dùng (bỏ tick «Đang dùng») chứ không xóa được: "
+                 + "; ".join(blocked) + ". Không xóa dòng nào trong lượt này.")
+
+
 def delete_company(db: Session, cid: int, user_id: int):
     obj = get_company(db, cid)
+    reference_guard.ensure_deletable(db, ENTITY, obj)     # ai-CR-190: còn tham chiếu → chỉ ngưng dùng
     db.delete(obj)
     db.commit()
     record(db, user_id, ENTITY, cid, "delete")

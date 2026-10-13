@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AfterValidator, BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
 from app.core.audit import record
 from app.core.auth import require
 from app.core.database import get_db
@@ -17,6 +18,7 @@ from app.core.scoping import (apply_scope, get_perm_profile, get_scoped,
                               has_global_scope)
 
 from . import entity_hooks, flow_service, flow_sync_service, serializer
+from . import references  # noqa: F401  — ai-CR-191: đăng ký chỗ tham chiếu của luồng duyệt
 from .flow_model import (APPROVER_KIND_LABELS, MULTI_MODE_LABELS,
                          NODE_KIND_LABELS, NO_APPROVER_CHOICES,
                          NO_APPROVER_LABELS, ROLE_LABELS,
@@ -223,6 +225,8 @@ def delete_flow(flow_id: int, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "delete"))):
     flow = _load(db, flow_id, user, "delete")
     _block_while_running(db, flow.id)
+    #  ai-CR-191: phiếu đã xong / loại văn bản lấy làm mặc định vẫn giữ chân luồng — chỉ ngưng dùng.
+    reference_guard.ensure_deletable(db, "approval_flow", flow)
     db.query(ApprovalNode).filter(ApprovalNode.flow_id == flow.id).delete()
     db.delete(flow)
     db.commit()

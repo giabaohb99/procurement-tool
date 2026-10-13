@@ -9,6 +9,7 @@ from datetime import date
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
 from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
@@ -126,6 +127,10 @@ def delete_book(db: Session, book_id: int):
         raise HTTPException(404, "Không tìm thấy sổ")
     if issued_count(db, book):
         raise HTTPException(400, "Sổ đã cấp số, không xóa được. Hãy chuyển sang Ngừng dùng.")
+    #  ai-CR-191: văn bản / quy tắc đánh số còn trỏ `book_id` thì chặn — bộ đếm có thể đã về 0
+    #  (sổ không reset đếm theo năm khác) mà văn bản mang số của sổ vẫn còn. Sổ khai ở `references.py`.
+    from . import references  # noqa: F401
+    reference_guard.ensure_deletable(db, "document_book", book)
 
     db.query(DocumentBookMember).filter(DocumentBookMember.book_id == book_id).delete(
         synchronize_session=False

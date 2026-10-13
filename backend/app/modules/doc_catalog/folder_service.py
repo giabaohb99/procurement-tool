@@ -17,6 +17,7 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core import reference_guard
 from app.core.audit import record
 
 from .folder_constants import (
@@ -193,6 +194,10 @@ def _guard_deletable(db: Session, folder: DocFolder) -> None:
         raise HTTPException(400, "Thư mục công ty do hệ thống quản lý, không xóa được")
     if db.query(DocFolder.id).filter(DocFolder.parent_id == folder.id).first():
         raise HTTPException(400, "Thư mục còn thư mục con, không xóa được")
+    #  ai-CR-191: loại văn bản còn lấy thư mục này làm mặc định thì chặn (văn bản TRONG thư mục
+    #  không chặn — xóa là gỡ/chuyển, xem `delete_folder`). Sổ khai ở `references.py`.
+    from . import references  # noqa: F401
+    reference_guard.ensure_deletable(db, "doc_folder", folder)
 
 
 def _split_documents(db: Session, folder_id: int) -> tuple[list, list[int]]:

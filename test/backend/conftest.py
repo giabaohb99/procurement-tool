@@ -86,6 +86,15 @@ def _isolate_app_settings():
 
 # ── Cache báo cáo: TẮT mặc định trong mọi test (M6, code review phân quyền báo cáo) ────
 @pytest.fixture(autouse=True)
+def _tat_bao_nhan_tuc_thi(monkeypatch):
+    """ai-CR-194: tin «Em nhận rồi, đang xử lý…» gửi trước mọi tin chữ sẽ làm các bài bot đếm `telegram.send` lệch một tin —
+    tắt mặc định trong bộ kiểm; bài riêng của ai-CR-194 tự bật."""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "AGENT_ACK_ENABLED", False)
+
+
+@pytest.fixture(autouse=True)
 def _tat_cache_bao_cao(monkeypatch):
     """`core.report_cache.ReportSummaryCacheMiddleware` bọc cả app THẬT (`app.main.app`,
     nạp ở đầu tệp này) và đi hỏi REDIS THẬT — container `redis` của docker-compose, không
