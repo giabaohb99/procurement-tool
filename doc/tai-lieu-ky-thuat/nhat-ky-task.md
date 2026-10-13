@@ -13223,7 +13223,7 @@ agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_c
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
 ## ai-CR-176 | Xóa mềm đợt 2b cụm thu mua: đơn mua hàng, yêu cầu thanh toán, phiếu khảo sát
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Đại ca chốt làm trước đợt 2b xóa mềm. Đơn mua hàng, yêu cầu thanh toán và phiếu khảo sát nay xóa là đánh cờ đã xóa kèm thời
 điểm và người xóa; dòng hàng, lần giao, chi phí, dòng chi, tệp đính kèm giữ nguyên; luật chỉ xóa phiếu nháp hay bị trả giữ như
@@ -13235,9 +13235,10 @@ xuống. Bài kiểm mới mười bảy bài, năm bài cũ sửa giả định
 Mã nguồn: purchase_order/service.py (delete_po), payment_request/service.py (delete_request), survey/service.py
 (delete_survey), core/attachment_scope.py (_live), report/service.py (_PO_LIVE); migration grp12_thu_mua_xoa_mem;
 bài kiểm test_thu_mua_xoa_mem_cr176.py
+Deploy: dev 13/10, commit 6fa995ef trên erp-v2; ERP api lên grp13 rồi dựng cụm bot (worker + beat).
 
 ## ai-CR-177 | Xóa mềm đợt 2b cụm văn thư và nhân sự: hợp đồng, văn bản nháp, hợp đồng lao động, hồ sơ
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Cùng đợt 2b. Hợp đồng nhà cung cấp, văn bản còn nháp, hợp đồng lao động và hồ sơ nay xóa là đánh cờ; phiên bản, tệp, quan hệ,
 liên kết thư mục, phiếu duyệt đã đóng giữ nguyên làm lịch sử nhưng không bày ra nữa; luật chặn xóa hợp đồng đang hiệu lực và
@@ -13250,9 +13251,10 @@ xuống. Bài kiểm mới mười hai bài, bốn bài cũ sửa; cụm văn b�
 Mã nguồn: core/crud.py (remove_or_mark_deleted), document/query.py (documents_query), document/service.py
 (delete_document), contract/controller.py, labor_contract/service.py, dossier/service.py; migration
 grp13_van_thu_nhan_su_xoa_mem; bài kiểm test_van_thu_nhan_su_xoa_mem_cr177.py
+Deploy: dev 13/10, commit 6fa995ef trên erp-v2; ERP api lên grp13 rồi dựng cụm bot (worker + beat).
 
 ## ai-CR-178 | Bot nghiên cứu sâu nhiều bước và tổng hợp nhiều tài liệu thành báo cáo có nguồn
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Đại ca chốt làm tiếp phase 23. Nay nhắn bot nghiên cứu sâu một chủ đề thì bot tự lập ba đến sáu câu tìm con, báo trước chi phí
 ước tính (dưới một đô la chạy luôn, từ một đô la hỏi ok hay thôi như biên bản họp), rồi tìm và đọc nguồn công khai cho từng câu,
@@ -13266,9 +13268,10 @@ mới hai mươi bảy bài, chạy cùng các bài ranh giới, công cụ xanh
 Mã nguồn: agent_hub/deep_research.py (start, run_job, deliver, estimate_web, estimate_docs), agent_hub/service.py
 (_deep_research_by_text), agent_hub/tasks.py (agent.deep_research), assistant/tools/research_tool.py (deep_research);
 bài kiểm test_agent_hub_nghien_cuu_sau.py
+Deploy: dev 13/10, commit 6fa995ef trên erp-v2; ERP api lên grp13 rồi dựng cụm bot (worker + beat).
 
 ## ai-CR-179 | Điểm báo theo chủ đề và thông tin web về nhà cung cấp trong bảng điểm
-- status: dang-lam
+- status: xong
 - date: 2026-10-13
 Đại ca chốt làm tiếp phase 23. Nay người dùng dặn bot kiểu mỗi sáng gửi tin giá thép, phân bón thì bot lập một điểm báo:
 tới giờ đã hẹn, bot tìm tin mới trong hai mươi bốn giờ qua cho từng chủ đề, ưu tiên báo tiếng Việt, mỗi chủ đề tối đa năm
@@ -13282,6 +13285,7 @@ bản tin và công cụ xanh.
 Mã nguồn: agent_hub/news_digest.py, agent_hub/brief_subs.py (add_news, send_one), agent_hub/web_search.py (search recent),
 assistant/tools/brief_tool.py (add_news), assistant/tools/market_tool.py (with_web, supplier_names); bài kiểm
 test_agent_hub_diem_bao.py, test_assistant_market_tool.py
+Deploy: dev 13/10, commit 6fa995ef trên erp-v2; ERP api lên grp13 rồi dựng cụm bot (worker + beat).
 
 ## ai-CR-175 | Trợ lý cá nhân: việc Dự án theo dự án và nhắc hạn ba mốc cho người được giao
 - status: xong
