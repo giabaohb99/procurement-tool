@@ -169,7 +169,7 @@ ghi mới (hóa đơn, công nợ…).
   theo ngày.
 - **16.4 (ai-CR-183, 13/10) — kéo lên làm ngay theo lệnh đại ca:** gói tri thức nạp theo chủ đề (`PACK_TOPICS`), câu nối
   tiếp giữ nhóm công cụ cũ, dừng sớm khi tool soạn nháp đã trả nháp. Số đo trước: 157k–203k token / lượt, 28–32 s, 0,35–0,44
-  USD. Số đo sau: điền khi có trên dev (`tab_agent_run` stage 32).
+  USD. **Số đo sau (15:46 13/10): 23,7k token, 14,9 s, 0,057 USD — giảm ~87 % token / 85 % tiền, nhanh gấp đôi.**
 
 Ước lượng: 2 ngày.
 
