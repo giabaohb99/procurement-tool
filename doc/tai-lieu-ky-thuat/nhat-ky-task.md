@@ -13267,6 +13267,19 @@ Mã nguồn: contract/controller.py (delete_block_reason), import_tool/doc_impor
 agent_hub/guardrails.py (classify_sql); bài kiểm test_chong_mat_du_lieu_xoa_cung_cr169.py
 Deploy: dev 10/10, commit 46d2a451 trên erp-v2; ERP api lên grp11 rồi dựng cụm bot.
 
+## ai-CR-192 | Trợ lý trả lời nhanh hơn đợt hai: bước đọc ý định không chờ lâu khi Gemini quá tải, câu xã giao không nạp công cụ và gói tri thức
+- status: dang-lam
+- date: 2026-10-13
+Anh Được nhắn bot trên dev thấy chậm: câu chào mất bảy mươi giây. Đo cho thấy bước đọc ý định chờ Gemini quá tải đủ hai mươi
+lăm giây mới đổi model, và câu chào vẫn nạp đủ bảy mươi ba công cụ với bảy gói tri thức. Nay bước đọc ý định có trần chờ riêng
+mười giây mỗi lượt, quá thì đổi model hoặc khóa kế ngay; câu xã giao chỉ nạp nhóm công cụ lõi và không gói tri thức; câu không
+rõ chủ đề vẫn gửi đủ công cụ cho an toàn nhưng gói tri thức chỉ nạp theo từ khóa của câu, model được báo gói nào chưa nạp để xin
+thêm. Nguyên nhân gốc còn lại là khóa Gemini công ty dùng chung đang bị giới hạn: đại ca nên thêm khóa DeepSeek mức công ty để
+người không có khóa riêng dùng. Bài kiểm mới bốn bài, chạy cùng các bài router, bot, nháp 476 bài xanh.
+
+Mã nguồn: assistant/provider/base.py (with_timeout, request_timeout), agent_hub/manager.py (run_intent), assistant/tool_router.py
+(is_smalltalk), assistant/service.py (ask); bài kiểm test_assistant_gon_luot_dot2_cr192.py
+
 ## ai-CR-187 | Nginx của ba giao diện không ghim địa chỉ api nữa, hết 502 sau mỗi lần dựng lại api
 - status: xong
 - date: 2026-10-13

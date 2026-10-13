@@ -311,6 +311,8 @@ class Settings(BaseSettings):
     # theo, mà lúc đó không ai biết vì sao.
     AGENT_GEMINI_API_KEY: str = ""
     AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
+    #  ai-CR-192: trần chờ MỖI lượt HTTP của bước đọc ý định (giây) — quá tải thì đổi model / khóa ngay.
+    AGENT_INTENT_TIMEOUT: int = 10
     # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
     # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc
     # AGENT_PLAN_MODEL khi khóa để trống.

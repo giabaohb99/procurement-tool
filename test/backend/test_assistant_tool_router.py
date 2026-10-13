@@ -56,6 +56,7 @@ def test_model_bao_thieu_cong_cu_thi_hoi_lai_voi_du(db, seed, monkeypatch):
     from app.modules.user.model import User
 
     calls: list[tuple[int, str]] = []
+    plain: list[bool] = []          # ai-CR-192: bật thì model trả lời ngay, không đòi thêm công cụ
 
     class P:
         name = "fake"
@@ -63,7 +64,7 @@ def test_model_bao_thieu_cong_cu_thi_hoi_lai_voi_du(db, seed, monkeypatch):
 
         def run_tools(self, msgs, *, tools, execute, system, **kw):
             calls.append((len(tools), system))
-            text = tr.NEED_MORE_TOOLS if len(calls) == 1 else "Đây là câu trả lời"
+            text = tr.NEED_MORE_TOOLS if (len(calls) == 1 and not plain) else "Đây là câu trả lời"
             return ChatResult(text=text, provider="fake", model="m", input_tokens=10, output_tokens=1)
 
     monkeypatch.setattr(service, "get_provider", lambda name=None: P())
@@ -73,8 +74,13 @@ def test_model_bao_thieu_cong_cu_thi_hoi_lai_voi_du(db, seed, monkeypatch):
     assert out["text"] == "Đây là câu trả lời" and out["usage"]["tools_retried"] is True
     assert out["usage"]["tools_offered"] == calls[1][0]
     calls.clear()
+    plain.append(True)
+    #  ai-CR-192: câu xã giao → chỉ nhóm lõi (có lời dặn lọc); câu không rõ nhóm → đủ công cụ, không lời dặn lọc.
     out = service.ask("chào em", db=db, user=db.get(User, seed.u_req_id))
-    assert len(calls) == 1 and tr.ROUTED_NOTE not in calls[0][1] and out["usage"]["tools_retried"] is False
+    assert len(calls) == 1 and calls[0][0] == len(tr.CORE) and tr.ROUTED_NOTE in calls[0][1] and out["usage"]["tools_retried"] is False
+    calls.clear()
+    out = service.ask("cho anh hỏi cái này được không", db=db, user=db.get(User, seed.u_req_id))
+    assert len(calls) == 1 and calls[0][0] > 40 and tr.ROUTED_NOTE not in calls[0][1]
 
 
 def test_thu_tu_loi_dan_co_dinh_truoc_thay_doi_sau():

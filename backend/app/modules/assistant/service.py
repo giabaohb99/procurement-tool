@@ -332,9 +332,18 @@ def ask(
             recent_tools = tool_router.recent_tools(db, getattr(user, "id", 0))
             text_msg = message if isinstance(message, str) else ""
             routed = tool_router.select(text_msg, recent_tools)
-            #  ai-CR-183 (16.4): gói tri thức nạp theo chủ đề như công cụ; không khớp gì thì nạp đủ.
-            topics = tool_router.pack_topics(text_msg, tool_router.groups_selected(text_msg, recent_tools) if routed
-                                             is not None else None, " ".join(recent))
+            if routed is None and tool_router.is_smalltalk(text_msg):
+                #  ai-CR-192: chào hỏi / cảm ơn → chỉ nhóm lõi, không gói tri thức (lời dặn lọc vẫn cho xin thêm).
+                routed = set(tool_router.CORE)
+                topics = set()
+            else:
+                #  ai-CR-183 (16.4): gói tri thức nạp theo chủ đề như công cụ. ai-CR-192: không khớp nhóm nào thì vẫn gửi
+                #  ĐỦ công cụ (an toàn) nhưng KHÔNG nạp gói chủ đề — model thấy danh sách gói chưa nạp và xin thêm nếu cần.
+                topics = tool_router.pack_topics(text_msg, tool_router.groups_selected(text_msg, recent_tools) if routed
+                                                 is not None else None, " ".join(recent))
+                if topics is None:
+                    #  Không khớp nhóm công cụ: vẫn chọn gói theo TỪ KHÓA riêng của câu (vd «nhà máy», «phòng họp»).
+                    topics = tool_router.pack_topics(text_msg, set(), " ".join(recent)) or set()
     from . import knowledge
 
     omitted = knowledge.omitted_titles(topics)
@@ -395,7 +404,7 @@ def ask(
             stop_when=stop_when,
             **common,
         )
-        if routed is not None and tool_router.NEED_MORE_TOOLS in (result.text or ""):
+        if (routed is not None or pack_note) and tool_router.NEED_MORE_TOOLS in (result.text or ""):   # ai-CR-192: cả khi chỉ lọc gói
             #  Model báo thiếu công cụ trong bộ đã lọc → hỏi lại MỘT lần với đủ công cụ, bỏ lời dặn lọc.
             retried = True
             offered = len(all_defs)

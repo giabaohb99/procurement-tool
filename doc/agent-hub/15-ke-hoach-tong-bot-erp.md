@@ -170,6 +170,9 @@ ghi mới (hóa đơn, công nợ…).
 - **16.4 (ai-CR-183, 13/10) — kéo lên làm ngay theo lệnh đại ca:** gói tri thức nạp theo chủ đề (`PACK_TOPICS`), câu nối
   tiếp giữ nhóm công cụ cũ, dừng sớm khi tool soạn nháp đã trả nháp. Số đo trước: 157k–203k token / lượt, 28–32 s, 0,35–0,44
   USD. **Số đo sau (15:46 13/10): 23,7k token, 14,9 s, 0,057 USD — giảm ~87 % token / 85 % tiền, nhanh gấp đôi.**
+- **16.5 đợt 2 (ai-CR-192, 13/10):** trần chờ 10 s cho bước đọc ý định (Gemini quá tải → đổi model / khóa ngay); xã giao → lõi
+  + không gói; không khớp nhóm → đủ công cụ, gói theo từ khóa. Còn lại là việc vận hành: khóa Gemini công ty 429 → thêm khóa
+  DeepSeek mức công ty (đại ca). Bảng chi phí / chất lượng (16.5 gốc) chưa làm.
 
 Ước lượng: 2 ngày.
 

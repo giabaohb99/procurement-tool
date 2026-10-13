@@ -1,7 +1,29 @@
 """Giao diện chung cho mọi nhà cung cấp model + kiểu dữ liệu trao đổi."""
+import contextlib
+import contextvars
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
+
+#  ai-CR-192 (13/10/2026): trần chờ HTTP theo LƯỢT. Bước đọc ý định chỉ cần vài giây; khi Gemini quá tải, chờ đủ 25 s
+#  rồi mới đổi model làm một câu «hello» mất 70 s (đo dev 16:27). Provider đọc biến này trước khi lấy trần mặc định.
+REQUEST_TIMEOUT: contextvars.ContextVar = contextvars.ContextVar("ai_request_timeout", default=None)
+
+
+def request_timeout(default: int | float) -> int | float:
+    """Trần chờ cho lượt hiện tại: giá trị đặt bằng `with_timeout(...)` nếu có, không thì `default` của provider."""
+    value = REQUEST_TIMEOUT.get()
+    return default if value is None else min(float(value), float(default))
+
+
+@contextlib.contextmanager
+def with_timeout(seconds: int | float):
+    """`with with_timeout(10): provider.ask(...)` — mọi lượt HTTP bên trong chờ tối đa `seconds` (không vượt trần provider)."""
+    token = REQUEST_TIMEOUT.set(seconds)
+    try:
+        yield
+    finally:
+        REQUEST_TIMEOUT.reset(token)
 
 
 class ProviderError(Exception):

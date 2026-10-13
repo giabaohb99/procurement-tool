@@ -84,8 +84,10 @@ def test_ask_truyen_stop_on_draft_va_ghi_chu_goi_chua_nap(db, seed, monkeypatch)
     assert s["stop"] is not None and s["stop"]("draft_leave_request", {"draft": {}}) and not s["stop"]("payable_lookup", {"draft": {}})
     FACTORY = "Bản cô đọng để trợ lý AI tra cứu nhanh"
     assert "# Nghỉ phép" in s["system"] and FACTORY not in s["system"] and "CHƯA nạp" in s["system"]
+    #  ai-CR-192: «chào em» là xã giao → không gói chủ đề, có ghi chú gói chưa nạp; câu lạ không khớp nhóm cũng không nạp gói.
     service.ask("chào em", db=db, user=user)
-    assert seen[-1]["stop"] is None and FACTORY in seen[-1]["system"] and "CHƯA nạp" not in seen[-1]["system"]
+    assert seen[-1]["stop"] is None and FACTORY not in seen[-1]["system"] and "CHƯA nạp" in seen[-1]["system"]
+    assert seen[-1]["n"] == len(__import__("app.modules.assistant.tool_router", fromlist=["CORE"]).CORE)
 
 
 def test_telegram_goi_ask_voi_stop_on_draft(db, monkeypatch):

@@ -13,6 +13,7 @@ import requests
 
 from app.core import app_settings
 
+from .base import request_timeout
 from .base import ChatMessage, ChatResult, Provider, ProviderError, ToolDef, ToolExecutor
 
 TIMEOUT = 90
@@ -107,7 +108,7 @@ class OpenAICompatProvider(Provider):
     def _post(self, payload: dict) -> dict:
         try:
             resp = requests.post(f"{self.base_url}/chat/completions", json=payload, headers=self._headers(),
-                                 timeout=TIMEOUT)
+                                 timeout=request_timeout(TIMEOUT))     # ai-CR-192: trần theo lượt
         except requests.RequestException as e:
             raise ProviderError(f"Lỗi gọi {self.name}: {e}") from e
         if resp.status_code != 200:

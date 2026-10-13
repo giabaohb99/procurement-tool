@@ -64,7 +64,10 @@ class AgentGeminiProvider(GeminiProvider):
         import requests
 
         try:
-            return requests.post(url, json=payload, headers=headers, timeout=settings.AGENT_GEMINI_TIMEOUT)
+            from app.modules.assistant.provider.base import request_timeout
+
+            return requests.post(url, json=payload, headers=headers,
+                                 timeout=request_timeout(settings.AGENT_GEMINI_TIMEOUT))   # ai-CR-192
         except requests.RequestException as e:
             raise ProviderError(f"Lỗi gọi Gemini: {e}") from e
 
@@ -742,13 +745,18 @@ def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, 
         parts.append(f"MẠCH TRƯỚC ĐÓ:\n{context}")
     parts.append(f"Tin nhắn mới:\n{text}" if parts else f"Tin nhắn:\n{text}")
     content = "\n\n".join(parts)
-    result = get_provider().ask(
-        [ChatMessage(role="user", content=content)],
-        model=settings.AGENT_MANAGER_MODEL,
-        system=INTENT_SYSTEM,
-        max_tokens=320,
-        temperature=0.0,
-    )
+    #  ai-CR-192: bước đọc ý định chờ tối đa AGENT_INTENT_TIMEOUT giây mỗi lượt HTTP — quá thì provider ném lỗi «timeout»
+    #  (là lỗi tạm) và `_call` đổi sang model dự phòng / khóa kế ngay, thay vì ngồi chờ hết 25 s.
+    from app.modules.assistant.provider.base import with_timeout
+
+    with with_timeout(settings.AGENT_INTENT_TIMEOUT):
+        result = get_provider().ask(
+            [ChatMessage(role="user", content=content)],
+            model=settings.AGENT_MANAGER_MODEL,
+            system=INTENT_SYSTEM,
+            max_tokens=320,
+            temperature=0.0,
+        )
     data = parse_json(result.text)
     intent = str(data.get("intent") or "").strip().lower()
     if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE, INTENT_ACT, INTENT_RESEARCH, INTENT_DATA):

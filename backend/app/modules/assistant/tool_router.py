@@ -126,6 +126,17 @@ def groups_selected(message: str, recent_tools=None) -> set[str]:
     return set(groups_for(message)) | set(groups_of_tools(recent_tools))
 
 
+#  ai-CR-192: câu XÃ GIAO (chào, cảm ơn, ok…) — không cần công cụ nghiệp vụ lẫn gói tri thức; đo dev 16:27: «hello» nạp
+#  đủ 73 công cụ + 7 gói = 56k token. So trên chữ đã bỏ dấu, chỉ khi CẢ câu là xã giao.
+SMALLTALK = re.compile(r"^(?:(?:a+\s*)?l[oô]+|hello|hi|hey|chao(?: em| anh| chi| bot| ban| ca nha| lac lac| buoi sang| buoi chieu)?|"
+                       r"cam on(?: em| anh| chi| nhe| nha| nhieu)*|thanks?|thank you|ok|oke|okay|tot|hay|duoc|good|bye|tam biet|"
+                       r"ngu ngon|chuc .{0,30}|em oi|oi|test|ping)[\s.!?,~]*$")
+
+
+def is_smalltalk(text: str) -> bool:
+    return bool(SMALLTALK.match(" ".join(fold(text or "").split())))
+
+
 RECENT_WINDOW_MIN = 15
 
 

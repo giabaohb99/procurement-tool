@@ -14,6 +14,7 @@ import requests
 
 from app.core import app_settings
 
+from .base import request_timeout
 from .base import (
     ChatMessage,
     ChatResult,
@@ -126,7 +127,7 @@ class GeminiProvider(Provider):
     @staticmethod
     def _send(url: str, payload: dict, headers: dict):
         try:
-            return requests.post(url, json=payload, headers=headers, timeout=TIMEOUT)
+            return requests.post(url, json=payload, headers=headers, timeout=request_timeout(TIMEOUT))
         except requests.RequestException as e:
             raise ProviderError(f"Lỗi gọi Gemini: {e}") from e
 
