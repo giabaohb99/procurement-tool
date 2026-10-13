@@ -115,7 +115,7 @@ Mã nguồn: `agent_hub/plan_policy.py` (mới), `agent_hub/work_plan.py` (mới
 `core/app_settings.py` + `setting/service.py` (khóa `agent_plan_policy`), `assistant/tool_router.py`.
 Kiểm: 6 bài mới `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài canh tool, nhắc hạn, bản tin, kanban xanh. 6 bài ở
 `test_agent_hub.py` về biên bản họp và Excel đỏ sẵn trên máy local vì thiếu ffmpeg, không liên quan.
-Deploy: chưa commit, chưa deploy.
+Commit: c4e428fd trên erp-v2 (13/10, đại ca cho commit). Deploy: đã nhờ Agent 1 đẩy lên dev; prod chưa.
 
 ---
 
