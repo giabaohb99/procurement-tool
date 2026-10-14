@@ -164,11 +164,18 @@ class AgentGeminiProvider(GeminiProvider):
                                     ref.provider, ref.hint)
                         retried, last, model = False, e, None
                         continue
-                if ai_keys.is_key_problem(str(e)) and user_keys.advance():
-                    log.warning("agent_hub: khóa %s …%s hỏng (%s), nhảy sang khóa kế", ref.provider, ref.hint,
-                                str(e)[:80])
-                    last = e
-                    continue
+                if ai_keys.is_key_problem(str(e)):
+                    from . import key_alerts
+
+                    #  ai-CR-200: báo chủ khóa (gom theo trạm + loại lỗi, 3 giờ một lần) — 14/10 ví trạm âm tiền, bot
+                    #  lặng lẽ rơi xuống Gemini lite và không ai biết.
+                    moved = user_keys.advance()
+                    key_alerts.notify(ref, str(e), has_next=moved)
+                    if moved:
+                        log.warning("agent_hub: khóa %s …%s hỏng (%s), nhảy sang khóa kế", ref.provider, ref.hint,
+                                    str(e)[:80])
+                        last = e
+                        continue
                 raise
 
     def ask(self, messages, *, model=None, system=None, max_tokens=1024, temperature=0.3, thinking=False,

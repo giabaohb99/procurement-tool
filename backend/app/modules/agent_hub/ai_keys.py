@@ -348,7 +348,9 @@ def key_problem(error: str, provider: str = "") -> str:
     e = (error or "").lower()
     label = PROVIDER_LABELS.get(provider, "AI") if provider else "Gemini"
     site = PROVIDER_SITES.get(provider or PROVIDER_GEMINI, "")
-    if "402" in e or "depleted" in e or "prepayment" in e or "billing" in e or "insufficient" in e:
+    #  ai-CR-200: trạm kiểu new-api (modelapi.vn) báo hết tiền bằng tiếng Trung «用户额度不足, 剩余额度: $-0.03» với mã 403.
+    if ("402" in e or "depleted" in e or "prepayment" in e or "billing" in e or "insufficient" in e
+            or "额度不足" in e or "余额不足" in e):
         return (f"Khóa {label} của đại ca <b>hết tiền</b> (hãng báo 402). Nạp thêm ở {site} rồi nhắn lại câu vừa rồi; "
                 "hoặc thêm khóa khác ở ERP → Trang cá nhân → Khóa AI.")
     if "429" in e or "resource_exhausted" in e or "quota" in e or "rate limit" in e:
