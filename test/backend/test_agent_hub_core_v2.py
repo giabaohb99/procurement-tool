@@ -376,3 +376,28 @@ def test_lich_15_ngay_dung_thu():
     assert "thứ Tư 14/10/2026 (hôm nay)" in block and "thứ Năm 15/10/2026 (mai)" in block
     assert "thứ Sáu 16/10/2026" in block and "thứ Bảy 17/10/2026" in block
     assert date(2026, 10, 17).weekday() == 5
+
+
+def test_doc_bao_va_tim_web_la_cong_cu_cua_loi(db, chat, monkeypatch):
+    """Đại ca 14/10: «giờ bot đọc báo được chưa, hoặc tổng hợp thông tin» — lõi mới phải có công cụ đọc tin / tìm web."""
+    from app.modules.agent_hub import news_digest, web_search
+
+    monkeypatch.setattr(news_digest, "fresh_items", lambda topic, now, su, st, tk: [
+        {"title": f"Giá {topic} tăng", "snippet": "tăng 2%", "site": "vnexpress.net", "url": "https://vnexpress.net/a",
+         "age_hours": 5}])
+    monkeypatch.setattr(web_search, "gather", lambda q: ([{"title": "Trang A", "url": "https://a.vn"}], "[1] Trang A — nội dung"))
+    row = _incoming(db, "đọc báo hôm nay về thép giúp anh")
+    seen = {}
+
+    def script(msgs, tools, execute):
+        assert {"news_today", "search_web", "my_saved_drafts"} <= {t.name for t in tools}
+        seen["news"] = execute("news_today", {"topics": ["thép", "phân bón"]})
+        seen["web"] = execute("search_web", {"query": "giá thép"})
+        return _result("Hôm nay giá thép tăng 2% [vnexpress].")
+    _install(monkeypatch, script)
+
+    core_v2.handle(db, CHAT, row, "đọc báo hôm nay về thép giúp anh")
+
+    assert seen["news"]["tin"]["thép"][0]["link"] == "https://vnexpress.net/a"
+    assert seen["web"]["nguon"][0]["url"] == "https://a.vn"
+    assert "giá thép tăng" in chat.sent[-1]

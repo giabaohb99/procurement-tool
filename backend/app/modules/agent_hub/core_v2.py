@@ -88,7 +88,8 @@ DRAFT_FACTS = (
     "NHÁP CHỨNG TỪ / VIỆC (đại ca 14/10: «cho vào chat thôi, dễ đọc dễ xác nhận»): bot KHÔNG gửi thẻ riêng nữa. Gọi công cụ "
     "draft_* hoặc update_draft xong thì CHÍNH câu trả lời của bạn là bản nháp: mở bằng một câu ngắn, rồi mỗi ô một dòng "
     "lấy ĐÚNG giá trị ở trường «tom_tat_se_luu» công cụ trả về (không tự tính lại ngày, không thêm ô không có), cuối cùng "
-    "MỘT câu hỏi: muốn đổi gì không, ưng thì nhắn «tạo» hoặc bảo em tạo luôn. Không gọi công cụ thì không có nháp nào — "
+    "MỘT câu hỏi: muốn đổi gì không, ưng thì nhắn «tạo» hoặc bảo em tạo luôn. Người dùng hỏi xem lại nháp («nháp đâu», "
+    "«cho anh xem bản nháp») thì trình bày lại đúng nháp ở mục ĐANG DỞ; hỏi phiếu nháp đã lưu trên ERP thì gọi my_saved_drafts. Không gọi công cụ thì không có nháp nào — "
     "không viết như thể đã soạn. Cần hỏi thêm thì viết thẳng câu hỏi (kèm 2–3 lựa chọn). Đủ tên việc thì cứ soạn với giá trị "
     "hợp lý cho ô còn thiếu rồi hỏi đổi. Nháp đang chờ nằm ở mục ĐANG DỞ. Đồng ý → commit_draft (submit=true nếu bảo gửi "
     "duyệt luôn); sửa → update_draft đúng ô cần đổi; thôi → drop_draft. Chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
@@ -101,6 +102,23 @@ PHANTOM_FIX = ("(Hệ thống: tin vừa rồi nói tới một thẻ nhưng ch�
                "hoặc gọi công cụ soạn nháp ngay, hoặc hỏi thẳng câu cần hỏi trong tin — không nhắc tới thẻ.)")
 
 LOCAL_TOOLS: tuple[ToolDef, ...] = (
+    ToolDef(name="search_web",
+            description="Tìm trên mạng và đọc các trang đầu (bài báo, trang tin, trang hãng). Dùng cho câu hỏi cần thông tin "
+                        "ngoài ERP: tin tức, giá thị trường, thông tin doanh nghiệp, quy định. Trả về nội dung các trang "
+                        "đánh số [n] kèm đường link — tổng hợp lại bằng lời của bạn và ghi nguồn [n].",
+            parameters={"type": "object", "properties": {"query": {"type": "string", "description": "Câu tìm, tiếng Việt"}},
+                        "required": ["query"]}),
+    ToolDef(name="news_today",
+            description="Đọc báo: tin MỚI (trong ~48 giờ) theo từng chủ đề, đã bỏ tin trùng, ưu tiên báo tiếng Việt. Dùng khi "
+                        "người dùng hỏi «hôm nay có tin gì về…», «đọc báo giúp anh…», «điểm tin…». Trả về tiêu đề, đoạn trích, "
+                        "trang, link — tổng hợp thành vài ý chính mỗi chủ đề kèm link.",
+            parameters={"type": "object", "properties": {"topics": {"type": "array", "items": {"type": "string"},
+                                                                    "description": "1–4 chủ đề, ví dụ [\"giá thép\", \"phân bón\"]"}},
+                        "required": ["topics"]}),
+    ToolDef(name="my_saved_drafts",
+            description="Các phiếu / đơn NHÁP người dùng đã lưu trên ERP (chưa gửi duyệt): mã, loại, tên. Nháp đang chờ trong "
+                        "chat thì đã có ở mục ĐANG DỞ, không cần gọi công cụ này.",
+            parameters={"type": "object", "properties": {}, "required": []}),
     ToolDef(name="update_draft",
             description="Sửa bản nháp đang chờ của chat này (nháp mới nhất trong 15 phút) theo lời người dùng, rồi gửi "
                         "lại thẻ. Chỉ truyền các ô cần đổi; ô không nhắc thì giữ nguyên.",
@@ -130,19 +148,23 @@ HEAVY_TEXT = re.compile(r"(?<!\w)(?:lap ke hoach|len ke hoach|ke hoach (?:viec|t
                         r"bao cao (?:tong|chi tiet|ket thuc)|phan tich|so sanh .{0,40} va |nghien cuu sau|viet lai bien ban|"
                         r"soan (?:van ban|hop dong|de xuat|to trinh))(?!\w)")
 HEAVY_TEXT_CHARS = 600
+#  «đọc báo / điểm tin / tổng hợp tin» cần công cụ news_today của lõi (nhiều chủ đề, bỏ trùng, có link), không đi đường tra
+#  nhanh một câu.
+NEWS_TEXT = re.compile(r"(?<!\w)(?:doc bao|diem (?:bao|tin)|tong hop (?:tin|thong tin|bao)|tin tuc|co tin gi|ban tin)(?!\w)")
 
 
 def lane_of(text: str, tool_names: set[str] | None = None) -> str:
     """ai-CR-199: chọn luồng model bằng LUẬT, không gọi model (bước đọc ý định đã bỏ vì tốn 5–10 s)."""
+    from app.modules.assistant.glossary import fold
+
     from . import research
 
     if _is_smalltalk(text):
         return LANE_SMALLTALK
-    if "\n" not in (text or "") and research.is_quick(text):
+    folded = " ".join(fold(text or "").split())
+    if "\n" not in (text or "") and research.is_quick(text) and not NEWS_TEXT.search(folded):
         return LANE_QUICK
-    from app.modules.assistant.glossary import fold
-
-    if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(" ".join(fold(text or "").split())):
+    if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(folded):
         return LANE_HEAVY
     return LANE_NORMAL
 
@@ -239,8 +261,9 @@ def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
         label = draft_create.LABELS.get(str(info.get("kind") or ""), "phiếu")
         draft = info.get("draft") or {}
         age = int((now - pending.created_at).total_seconds() // 60) if now and pending.created_at else 0
-        lines.append(f"- Nháp {label} đang chờ người dùng quyết (soạn {age} phút trước): "
-                     f"{json.dumps(draft, ensure_ascii=False, default=str)[:900]}")
+        summary = _summary(str(info.get("tool") or ""), draft)
+        lines.append(f"- Nháp {label} đang chờ người dùng quyết (soạn {age} phút trước), sẽ lưu đúng như sau: "
+                     + ("; ".join(summary) if summary else json.dumps(draft, ensure_ascii=False, default=str)[:900]))
     waits = db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id,
                                                   AgentMessage.action == ACT_PLAN_ASK_WAIT, AgentMessage.id < before_id)
                        .order_by(AgentMessage.id.desc()).limit(3))
@@ -371,12 +394,46 @@ def select_tools(db: Session, user, text: str) -> list[ToolDef]:
     return defs + [t for t in LOCAL_TOOLS if t.name not in names]
 
 
+NEWS_TOPICS_MAX = 4
+
+
+def _search_web(query: str) -> dict:
+    from . import web_search
+
+    sources, context = web_search.gather(query)
+    if not sources:
+        return {"error": "Máy tìm kiếm không trả kết quả nào lúc này."}
+    return {"noi_dung": context[:9000], "nguon": [{"n": i, "title": s_.get("title"), "url": s_.get("url")}
+                                                   for i, s_ in enumerate(sources[:8], 1)]}
+
+
+def _news_today(topics: list) -> dict:
+    from . import news_digest
+
+    now = now_local()
+    seen_u, seen_t, taken = set(), set(), []
+    out = {}
+    for t in [str(x).strip() for x in topics or [] if str(x).strip()][:NEWS_TOPICS_MAX]:
+        items = news_digest.fresh_items(t, now, seen_u, seen_t, taken)
+        out[t] = [{"tieu_de": i["title"], "trich": i["snippet"], "trang": i["site"], "link": i["url"],
+                   "cach_day_gio": None if i.get("age_hours") is None else round(i["age_hours"])} for i in items]
+    if not any(out.values()):
+        return {"error": "Không tìm được tin mới nào trong ~48 giờ cho các chủ đề này.", "chu_de": list(out)}
+    return {"tin": out}
+
+
 def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, args: dict) -> dict:
     """Ba công cụ nháp của lõi: dùng lại nguyên đường «tạo» / «thôi» của service để không lệch luật (quyền, gửi duyệt,
     hỏi nhận việc sau kế hoạch…)."""
     from . import service
 
     now = row.created_at
+    if name == "search_web":
+        return _search_web(str(args.get("query") or ""))
+    if name == "news_today":
+        return _news_today(args.get("topics") or [])
+    if name == "my_saved_drafts":
+        return {"nhap_da_luu": erp.my_drafts(db, user)[:20]}
     if name == "update_draft":
         pending, info = _pending_draft(db, chat_id, row.id, now)
         if pending is None:
