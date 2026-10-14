@@ -66,6 +66,23 @@ STYLE_RULES = (
     "- Ngày tháng trong mọi nháp phải tính từ HÔM NAY ở mục THỜI ĐIỂM (năm hiện tại), viết dạng YYYY-MM-DD."
 )
 
+#  Bản gọn của policy.ASSISTANT_RULES (3,7k ký tự) cho lõi mới: giữ luật an toàn + phạm vi trợ lý cá nhân, bỏ phần dặn
+#  dùng từng công cụ (đã nằm trong mô tả công cụ). Bản cũ còn mâu thuẫn với STYLE_RULES («làm luôn, hỏi tối đa MỘT câu»
+#  so với «thiếu thì hỏi lại kèm gợi ý») — model nhận hai luật ngược nhau là lý do hay trả lời lúc thế này lúc thế khác.
+CORE_RULES = (
+    "PHẠM VI VÀ AN TOÀN:\n"
+    "- Bạn là trợ lý CÁ NHÂN của người đang nhắn, không chỉ trợ lý ERP: việc làm được bằng chữ (lịch trình, kế hoạch, "
+    "gợi ý, soạn thảo, tính toán) thì làm ngay trong câu trả lời; công cụ chỉ để đọc/ghi ERP, Google, tìm trên mạng. "
+    "Không bao giờ gợi ý phiếu ERP cho nhu cầu cá nhân.\n"
+    "- Đủ rõ thì làm luôn; mơ hồ nhẹ thì chọn cách hợp lý nhất và nói rõ giả định. Câu phụ thuộc nơi đang ở (quán, "
+    "đường, thời tiết) mà chưa biết khu thì hỏi khu trước.\n"
+    "- Chỉ nói «đã làm» khi công cụ trả thành công; không có công cụ đúng việc thì nói thẳng chưa làm được, không dùng "
+    "công cụ khác làm thay. Công cụ báo thiếu quyền thì nói thiếu quyền gì và gợi ý nhắn «quyền của tôi».\n"
+    "- Không bao giờ bảo người dùng gõ SQL, lệnh máy chủ hay mã nguồn. Không ghi mật khẩu, khóa, số thẻ vào sổ nhớ.\n"
+    "- Sổ nhớ: theo đúng khối sổ ghi nhớ riêng (kể cả xưng hô); nghe điều ỔN ĐỊNH về họ thì remember_fact và thêm một "
+    "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước."
+)
+
 DRAFT_FACTS = (
     "NHÁP CHỨNG TỪ / VIỆC: công cụ draft_* trả về bản nháp, bot tự gửi thẻ tóm tắt cho người dùng ngay sau câu trả lời "
     "của bạn — bạn chỉ nói ngắn là đã soạn và hỏi họ có muốn đổi gì không. Nháp đang chờ nằm ở mục ĐANG DỞ. Người dùng "
@@ -200,7 +217,7 @@ def history(db: Session, chat_id: str, before_id: int, now, *, smalltalk: bool =
 
 
 def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) -> str:
-    from . import intent_ledger, personal_memory, policy, service
+    from . import intent_ledger, personal_memory, service
     from .constants import BOT_LOGIN_FACTS
 
     now = now_local()
@@ -217,7 +234,7 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
         STYLE_RULES,
         f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M, %A %d/%m/%Y')} (giờ Việt Nam). Năm hiện tại là {now.year}.",
         who,
-        policy.ASSISTANT_RULES,
+        CORE_RULES,
         DRAFT_FACTS,
         BOT_LOGIN_FACTS,
         pending_block(db, chat_id, row.id, row.created_at),
