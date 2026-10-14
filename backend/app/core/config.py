@@ -327,7 +327,9 @@ class Settings(BaseSettings):
     #  ai-CR-199 (đại ca 14/10: «cần một chỗ xác nhận nội dung là gì mà gọi model tương ứng»): bảng phân luồng model —
     #  luồng=hãng ưu tiên (thứ tự), ngăn bằng «;». Chọn luồng bằng LUẬT (không gọi model). Hãng: deepseek · kimi · claude
     #  · openai · gemini · openai_compat. Khóa hãng đó hỏng / không có thì tự rơi về các khóa còn lại theo thứ tự màn Khóa AI.
-    AGENT_CORE_V2_ROUTES: str = ("xa_giao=deepseek,kimi;tra_nhanh=deepseek,kimi;thuong=kimi,deepseek,claude;"
+    #  14/10 16:55 đo lại: Kimi K3 qua trạm KHÔNG gọi công cụ (nói «đã soạn nháp» mà không soạn), Claude gọi đúng
+    #  draft_work_task / update_draft → luồng thường và việc nặng dùng Claude; Kimi / DeepSeek chỉ cho câu không cần công cụ.
+    AGENT_CORE_V2_ROUTES: str = ("xa_giao=deepseek,kimi,claude;tra_nhanh=deepseek,kimi,claude;thuong=claude,kimi,deepseek;"
                                  "nang=claude,kimi,deepseek")
     # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
     # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc

@@ -257,7 +257,7 @@ def test_phan_luong_model_bang_luat():
     assert core_v2.lane_of("tạo cho anh task nghiên cứu luồng agent", {"draft_work_plan", "draft_work_task"}) == core_v2.LANE_NORMAL
     assert core_v2.lane_of("x " * 400) == core_v2.LANE_HEAVY
     assert core_v2.route_providers(core_v2.LANE_SMALLTALK)[0] == "deepseek"
-    assert core_v2.route_providers(core_v2.LANE_NORMAL)[0] == "kimi"
+    assert core_v2.route_providers(core_v2.LANE_NORMAL)[0] == "claude"
     assert core_v2.route_providers(core_v2.LANE_HEAVY)[0] == "claude"
 
 
@@ -271,7 +271,7 @@ def test_prefer_tach_kimi_deepseek_claude_cung_mot_tram():
              KeyRef(provider="openai_compat", key="k-kimi-0002", model="kimi-k3", base_url=tram, row_id=2),
              KeyRef(provider="openai_compat", key="k-claude-0003", model="claude-sonnet-5-5", base_url=tram, row_id=3)]
     with user_keys.use_chain(chain, 238):
-        for lane, first in ((core_v2.LANE_SMALLTALK, "deepseek-v4.1-flash"), (core_v2.LANE_NORMAL, "kimi-k3"),
+        for lane, first in ((core_v2.LANE_SMALLTALK, "deepseek-v4.1-flash"), (core_v2.LANE_NORMAL, "claude-sonnet-5-5"),
                             (core_v2.LANE_HEAVY, "claude-sonnet-5-5")):
             with user_keys.prefer(core_v2.route_providers(lane)):
                 assert user_keys.active_ref().model == first, lane
@@ -332,3 +332,14 @@ def test_co_nhap_that_thi_noi_toi_the_khong_bi_viet_lai():
     ok = _result("Em soạn xong, anh xem thẻ bên dưới.", [{"name": "draft_work_task", "draft": {"title": "A"}}])
     assert not core_v2._phantom_card(ok)
     assert core_v2._phantom_card(_result("Em đang hỏi lại ở thẻ dưới."))
+
+
+def test_lich_su_bo_tin_cu_noi_toi_the(db):
+    """Đường cũ ghi «(đã soạn bản nháp, xem thẻ bên dưới)» thay cho thẻ; Kimi chép lại câu đó thay vì gọi công cụ."""
+    service.log_message(db, DIR_IN, CHAT, 0, "tạo task A", action=ACT_ASKED)
+    service.log_message(db, DIR_OUT, CHAT, 0, "(đã soạn bản nháp, xem thẻ bên dưới)", action=ACT_ANSWER)
+    service.log_message(db, DIR_OUT, CHAT, 0, "Em đã soạn nháp công việc này rồi.", action=ACT_ANSWER)
+    db.commit()
+    row = _incoming(db, "hello")
+    assert [t["content"] for t in core_v2.history(db, CHAT, row.id, row.created_at)] == ["tạo task A"]
+    assert core_v2._phantom_card(_result("Em đã soạn nháp công việc này với thông tin gợi ý sẵn."))

@@ -94,7 +94,8 @@ DRAFT_FACTS = (
 )
 #  14/10 16:41–16:43 (lượt #211, #212, Kimi): bot hai lần viết «em đang hỏi lại ở thẻ dưới» mà không gọi công cụ nào → đại
 #  ca chờ một thẻ không bao giờ tới. Nói tới thẻ mà lượt này không có nháp → bắt model viết lại một lần.
-PHANTOM_CARD = re.compile(r"(?<!\w)(?:the|o the|xem the)\s+(?:ben\s+)?(?:duoi|nhap)(?!\w)")
+PHANTOM_CARD = re.compile(r"(?<!\w)(?:(?:the|o the|xem the)\s+(?:ben\s+)?(?:duoi|nhap)|"
+                          r"da soan (?:xong )?(?:ban )?nhap|em soan (?:xong|roi) (?:ban )?nhap)(?!\w)")
 PHANTOM_FIX = ("(Hệ thống: tin vừa rồi nói tới một thẻ nhưng chưa có công cụ nào chạy nên KHÔNG có thẻ nào. Viết lại: "
                "hoặc gọi công cụ soạn nháp ngay, hoặc hỏi thẳng câu cần hỏi trong tin — không nhắc tới thẻ.)")
 
@@ -143,6 +144,12 @@ def lane_of(text: str, tool_names: set[str] | None = None) -> str:
     if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(" ".join(fold(text or "").split())):
         return LANE_HEAVY
     return LANE_NORMAL
+
+
+def _card_talk(text: str) -> bool:
+    from app.modules.assistant.glossary import fold
+
+    return bool(PHANTOM_CARD.search(" ".join(fold(text or "").split())))
 
 
 def _phantom_card(result) -> bool:
@@ -256,6 +263,10 @@ def history(db: Session, chat_id: str, before_id: int, now, *, smalltalk: bool =
         if now and r.created_at and now - r.created_at > HISTORY_WINDOW:
             break
         body = r.body or ""
+        if r.direction != DIR_IN and _card_talk(body):
+            #  Tin cũ của bot kiểu «(đã soạn bản nháp, xem thẻ bên dưới)» (đường cũ ghi thay cho thẻ) hay «em hỏi lại ở thẻ
+            #  dưới»: model CHÉP LẠI câu đó thay vì gọi công cụ (đo 14/10 16:50, Kimi). Thay bằng ghi chú trung tính.
+            continue                  # bỏ hẳn: thay bằng ghi chú thì Kimi chép nguyên ghi chú (đo 14/10 16:55)
         if len(body) > HISTORY_MSG_CHARS:
             body = body[:HISTORY_MSG_CHARS] + " …(đã rút gọn)"
         total += len(body)
