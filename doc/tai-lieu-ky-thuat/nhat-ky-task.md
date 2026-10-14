@@ -141,7 +141,8 @@ Commit: c4e428fd (bản đầu) trên erp-v2, Agent 1 đã đưa lên dev 13/10 
 hai lớp: commit 9a92d841 trên erp-v2.
 Deploy: Agent 1 dựng lại dev 13/10 ở 959bb14b cả hai bên (ERP api + celery và cụm dịch vụ AI), migration grp14, sức khỏe
 hai cổng đều 200; sau đó bản dời lớp ERP sang work/plan_service.py (commit a5112b88 trên erp-v2) Agent 1 dựng lại dev cùng ngày: ERP api + celery a5112b88, cụm dịch vụ AI 23273cdf; bản chỉnh chia việc
-con và tiêu chí 2264d157 lên dev cả hai bên cùng chiều, sức khỏe hai cổng 200. Prod chưa duyệt.
+con và tiêu chí 2264d157 lên dev cả hai bên cùng chiều, sức khỏe hai cổng 200; bản mở cổng nút bấm 9216e061 lên cụm
+dịch vụ AI dev sáng 14/10. Prod chưa duyệt.
 
 ---
 
