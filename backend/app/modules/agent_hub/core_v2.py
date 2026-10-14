@@ -15,6 +15,7 @@ Bước B1 (tệp này): vòng tác tử + ngữ cảnh đủ + prompt phong cá
 from __future__ import annotations
 
 import json
+import re
 import logging
 import time
 from datetime import timedelta
@@ -114,8 +115,11 @@ LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS)
 # ---------------------------------------------------------------------------
 LANE_SMALLTALK, LANE_QUICK, LANE_NORMAL, LANE_HEAVY = "xa_giao", "tra_nhanh", "thuong", "nang"
 LANE_LABELS = {LANE_SMALLTALK: "xã giao", LANE_QUICK: "tra nhanh", LANE_NORMAL: "thường", LANE_HEAVY: "việc nặng"}
-#  Công cụ mà có mặt trong lượt thì là việc nặng (lập kế hoạch nhiều việc, viết báo cáo, nghiên cứu).
-HEAVY_TOOLS = frozenset({"draft_work_plan", "export_report_file", "rewrite_meeting_minutes", "deep_research"})
+#  Việc nặng nhận bằng CHỮ của câu (đã bỏ dấu), không bằng công cụ được đưa — nhóm «work» luôn kèm draft_work_plan nên
+#  đo 14/10 «tạo task …» bị đẩy nhầm sang Claude.
+HEAVY_TEXT = re.compile(r"(?<!\w)(?:lap ke hoach|len ke hoach|ke hoach (?:viec|thu|chi tiet|tuan|thang)|viet bao cao|"
+                        r"bao cao (?:tong|chi tiet|ket thuc)|phan tich|so sanh .{0,40} va |nghien cuu sau|viet lai bien ban|"
+                        r"soan (?:van ban|hop dong|de xuat|to trinh))(?!\w)")
 HEAVY_TEXT_CHARS = 600
 
 
@@ -127,7 +131,9 @@ def lane_of(text: str, tool_names: set[str] | None = None) -> str:
         return LANE_SMALLTALK
     if "\n" not in (text or "") and research.is_quick(text):
         return LANE_QUICK
-    if len(text or "") >= HEAVY_TEXT_CHARS or (tool_names and tool_names & HEAVY_TOOLS):
+    from app.modules.assistant.glossary import fold
+
+    if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(" ".join(fold(text or "").split())):
         return LANE_HEAVY
     return LANE_NORMAL
 

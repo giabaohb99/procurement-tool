@@ -251,7 +251,10 @@ def test_phan_luong_model_bang_luat():
     assert core_v2.lane_of("hello em") == core_v2.LANE_SMALLTALK
     assert core_v2.lane_of("giá vàng hôm nay") == core_v2.LANE_QUICK
     assert core_v2.lane_of("tạo cho anh task nghiên cứu luồng agent") == core_v2.LANE_NORMAL
-    assert core_v2.lane_of("lập kế hoạch thử bot", {"draft_work_plan"}) == core_v2.LANE_HEAVY
+    assert core_v2.lane_of("lập kế hoạch thử bot, hạn 15/10") == core_v2.LANE_HEAVY
+    assert core_v2.lane_of("viết báo cáo tổng kết tuần") == core_v2.LANE_HEAVY
+    #  14/10: nhóm công cụ «work» luôn kèm draft_work_plan — không được đẩy câu tạo task thường sang Claude.
+    assert core_v2.lane_of("tạo cho anh task nghiên cứu luồng agent", {"draft_work_plan", "draft_work_task"}) == core_v2.LANE_NORMAL
     assert core_v2.lane_of("x " * 400) == core_v2.LANE_HEAVY
     assert core_v2.route_providers(core_v2.LANE_SMALLTALK)[0] == "deepseek"
     assert core_v2.route_providers(core_v2.LANE_NORMAL)[0] == "kimi"
