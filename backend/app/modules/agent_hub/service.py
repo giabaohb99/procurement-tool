@@ -58,6 +58,7 @@ from .constants import (
     ACT_PATCH_Q,
     ACT_PLAN_ANSWER,
     ACT_REPLAN_RESUME,
+    ACT_OP_WAIT,
     ACT_PROPOSAL,
     ACT_PROPOSAL_DONE,
     ACT_PROPOSAL_DROPPED,
@@ -1416,6 +1417,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
             or meeting_drive.handle_text(db, chat_id, row, text)
             or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
             or work_plan.handle_text(db, chat_id, row, text)            # bao-CR-616: người làm trả lời kế hoạch, «xong việc N»
+            or _proposal_by_text(db, chat_id, row, text)      # ai-CR-196: xác nhận thẻ sửa / xóa bằng chữ
             or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
         return
@@ -1561,6 +1563,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             or meeting_drive.handle_text(db, chat_id, row, text)        # ai-CR-116: tệp họp mới trên Drive
             or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
             or work_plan.handle_text(db, chat_id, row, text)            # bao-CR-616: người làm trả lời kế hoạch, «xong việc N»
+            or _proposal_by_text(db, chat_id, row, text)      # ai-CR-196
             or _my_drafts_by_text(db, chat_id, row, text)
             or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
@@ -4812,6 +4815,40 @@ def _send_report_file(db: Session, chat_id: str, user, meta: dict) -> None:
         return
     log_message(db, DIR_OUT, chat_id, mid, f"[tệp] {f['filename']} ({f['size']} byte)",
                 action=ACT_FILE)
+
+
+#  ai-CR-196 (14/10, Agent 1 phát hiện khi kiểm 616): nút bấm từ chat KHÔNG phải đại ca bị `_handle_callback` bỏ im lặng →
+#  người đã liên kết (anh Được) không bao giờ xác nhận được thẻ sửa / xóa phiếu. Agent 2 vá cửa nút; bên này thêm ĐƯỜNG CHỮ cho
+#  thẻ đề xuất (ai-CR-027: mọi nút đều có câu chữ tương đương): «xác nhận» / «xác nhận sửa» / «đồng ý» → ghi; «không sửa» /
+#  «thôi» / «bỏ» → bỏ. Chỉ nhận trong 15 phút sau thẻ, thẻ dùng một lần (`_resolve_proposal` tự chốt dấu).
+_PROPOSAL_YES = re.compile(r"^(?:ok|oke|okay|dong y|xac nhan|chot|duoc)(?:\s+(?:sua|xoa|di|luon|nhe|nha|em|anh|phieu|don))*[.! ]*$")
+_PROPOSAL_NO = re.compile(r"^(?:khong|ko|thoi|bo|huy|dung)(?:\s+(?:sua|xoa|di|nua|nhe|nha|em|phieu|don|lam))*[.! ]*$")
+PROPOSAL_TEXT_WINDOW = timedelta(minutes=15)
+
+
+def _proposal_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    from app.modules.assistant.glossary import fold
+
+    f = " ".join(fold((text or "").strip()).split())
+    yes, no = bool(_PROPOSAL_YES.match(f)), bool(_PROPOSAL_NO.match(f))
+    if not (yes or no):
+        return False
+    card = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_OUT, AgentMessage.action == ACT_PROPOSAL,
+        AgentMessage.id < row.id).order_by(AgentMessage.id.desc()).limit(1))
+    if card is None or (row.created_at and card.created_at and row.created_at - card.created_at > PROPOSAL_TEXT_WINDOW):
+        return False
+    #  Có thẻ chờ KHÁC mới hơn (nháp, xóa nháp, hoàn tác, cấp quyền…) thì «đúng / thôi» thuộc về thẻ đó, không phải thẻ này.
+    newer = db.scalar(select(AgentMessage.id).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.id > card.id, AgentMessage.id < row.id,
+        AgentMessage.action.in_((ACT_DRAFT_WAIT, ACT_DRAFT_DEL_WAIT, ACT_GRANT_WAIT, ACT_OP_WAIT, ACT_RUNNER_WAIT,
+                                 ACT_GLOSS_WAIT, ACT_REMIND_WAIT, "cho_hoan_tac", "cho_ok_nghien_cuu"))).limit(1))
+    if newer is not None:
+        return False
+    row.action = ACT_COMMAND
+    db.commit()
+    _resolve_proposal(db, chat_id, "", "sua" if yes else "khong_sua", int(card.id))
+    return True
 
 
 def _send_proposal_card(db: Session, chat_id: str, proposal: dict) -> None:
