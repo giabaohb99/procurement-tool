@@ -382,9 +382,10 @@ def test_doc_bao_va_tim_web_la_cong_cu_cua_loi(db, chat, monkeypatch):
     """Đại ca 14/10: «giờ bot đọc báo được chưa, hoặc tổng hợp thông tin» — lõi mới phải có công cụ đọc tin / tìm web."""
     from app.modules.agent_hub import news_digest, web_search
 
-    monkeypatch.setattr(news_digest, "fresh_items", lambda topic, now, su, st, tk: [
-        {"title": f"Giá {topic} tăng", "snippet": "tăng 2%", "site": "vnexpress.net", "url": "https://vnexpress.net/a",
-         "age_hours": 5}])
+    monkeypatch.setattr(news_digest, "_search", lambda q: [
+        {"title": f"Giá {q.split(' tin')[0]} tăng", "snippet": "tăng 2%", "url": f"https://vnexpress.net/{len(q)}"}])
+    monkeypatch.setattr(news_digest, "age_hours", lambda it, now: 5)
+    monkeypatch.setattr(web_search, "fetch", lambda url: "Nội dung bài: giá tăng 2% so với tuần trước.")
     monkeypatch.setattr(web_search, "gather", lambda q: ([{"title": "Trang A", "url": "https://a.vn"}], "[1] Trang A — nội dung"))
     row = _incoming(db, "đọc báo hôm nay về thép giúp anh")
     seen = {}
@@ -398,6 +399,14 @@ def test_doc_bao_va_tim_web_la_cong_cu_cua_loi(db, chat, monkeypatch):
 
     core_v2.handle(db, CHAT, row, "đọc báo hôm nay về thép giúp anh")
 
-    assert seen["news"]["tin"]["thép"][0]["link"] == "https://vnexpress.net/a"
+    first = seen["news"]["tin"]["thép"][0]
+    assert first["link"].startswith("https://vnexpress.net/") and "giá tăng 2%" in first["noi_dung"]   # có nội dung bài
     assert seen["web"]["nguon"][0]["url"] == "https://a.vn"
     assert "giá thép tăng" in chat.sent[-1]
+
+
+def test_doc_bao_di_luong_viec_nang_va_noi_da_lam_ma_khong_co_cong_cu_thi_viet_lai():
+    """14/10 17:16: tin tổng hợp hời hợt; 17:17 Gemini lite «em đã bỏ task đó rồi» mà không gọi drop_draft."""
+    assert core_v2.lane_of("tổng hợp tin về thị trường phân bón tuần này") == core_v2.LANE_HEAVY
+    assert core_v2._phantom_card(_result("Dạ, em đã bỏ task nghiên cứu đó rồi đại ca."))
+    assert not core_v2._phantom_card(_result("Dạ, em đã bỏ rồi.", [{"name": "drop_draft", "result": {"ok": True}}]))

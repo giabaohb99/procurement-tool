@@ -94,12 +94,24 @@ DRAFT_FACTS = (
     "hợp lý cho ô còn thiếu rồi hỏi đổi. Nháp đang chờ nằm ở mục ĐANG DỞ. Đồng ý → commit_draft (submit=true nếu bảo gửi "
     "duyệt luôn); sửa → update_draft đúng ô cần đổi; thôi → drop_draft. Chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
 )
+NEWS_RULES = (
+    "TỔNG HỢP TIN / THÔNG TIN: viết như chuyên viên phân tích cho ban giám đốc một công ty phân bón, nông nghiệp, thu mua "
+    "(DEGO). Chỉ dùng dữ liệu công cụ trả về. Bố cục: (1) Tóm tắt 2–3 câu nêu xu hướng chính; (2) Số liệu then chốt — con "
+    "số, % tăng giảm, mốc thời gian, ai công bố; (3) Diễn biến theo nhóm (giá, cung cầu, chính sách, doanh nghiệp, quốc tế) "
+    "— mỗi ý một dòng, có nguồn [n]; (4) Ý nghĩa với DEGO nếu liên quan (giá đầu vào, thời điểm mua, rủi ro); (5) Nguồn: "
+    "[n] trang — link. Ít nguồn hoặc nguồn cũ thì nói rõ. Không viết chung chung kiểu «thị trường có nhiều biến động»."
+)
+
 #  14/10 16:41–16:43 (lượt #211, #212, Kimi): bot hai lần viết «em đang hỏi lại ở thẻ dưới» mà không gọi công cụ nào → đại
 #  ca chờ một thẻ không bao giờ tới. Nói tới thẻ mà lượt này không có nháp → bắt model viết lại một lần.
 PHANTOM_CARD = re.compile(r"(?<!\w)(?:(?:the|o the|xem the)\s+(?:ben\s+)?(?:duoi|nhap)|"
                           r"da soan (?:xong )?(?:ban )?nhap|em soan (?:xong|roi) (?:ban )?nhap)(?!\w)")
-PHANTOM_FIX = ("(Hệ thống: tin vừa rồi nói tới một thẻ nhưng chưa có công cụ nào chạy nên KHÔNG có thẻ nào. Viết lại: "
-               "hoặc gọi công cụ soạn nháp ngay, hoặc hỏi thẳng câu cần hỏi trong tin — không nhắc tới thẻ.)")
+#  14/10 17:17 (Gemini lite): «em đã bỏ task nghiên cứu đó rồi» — không gọi drop_draft nào. Nói đã làm mà lượt này không
+#  có công cụ nào chạy → viết lại một lần.
+CLAIMED_DONE = re.compile(r"(?<!\w)(?:em )?da (?:bo|tao|xoa|huy|gui|luu|cap nhat|doi|sua)(?: xong| roi)?(?!\w)")
+PHANTOM_FIX = ("(Hệ thống: tin vừa rồi nói như đã làm / đã có thẻ, nhưng lượt này CHƯA có công cụ nào chạy. Viết lại: "
+               "muốn làm thì gọi đúng công cụ (drop_draft, commit_draft, update_draft, draft_*…) rồi mới báo; chưa làm "
+               "được thì hỏi thẳng hoặc nói rõ chưa làm.)")
 
 LOCAL_TOOLS: tuple[ToolDef, ...] = (
     ToolDef(name="search_web",
@@ -113,7 +125,8 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
                         "người dùng hỏi «hôm nay có tin gì về…», «đọc báo giúp anh…», «điểm tin…». Trả về tiêu đề, đoạn trích, "
                         "trang, link — tổng hợp thành vài ý chính mỗi chủ đề kèm link.",
             parameters={"type": "object", "properties": {"topics": {"type": "array", "items": {"type": "string"},
-                                                                    "description": "1–4 chủ đề, ví dụ [\"giá thép\", \"phân bón\"]"}},
+                                                                    "description": "1–4 chủ đề, ví dụ [\"giá thép\", \"phân bón\"]"},
+                                         "days": {"type": "integer", "description": "Số ngày gần nhất: 2 mặc định, «tuần này» = 7"}},
                         "required": ["topics"]}),
     ToolDef(name="my_saved_drafts",
             description="Các phiếu / đơn NHÁP người dùng đã lưu trên ERP (chưa gửi duyệt): mã, loại, tên. Nháp đang chờ trong "
@@ -164,7 +177,7 @@ def lane_of(text: str, tool_names: set[str] | None = None) -> str:
     folded = " ".join(fold(text or "").split())
     if "\n" not in (text or "") and research.is_quick(text) and not NEWS_TEXT.search(folded):
         return LANE_QUICK
-    if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(folded):
+    if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(folded) or NEWS_TEXT.search(folded):
         return LANE_HEAVY
     return LANE_NORMAL
 
@@ -199,7 +212,10 @@ def _phantom_card(result) -> bool:
 
     has_draft = any(isinstance(c, dict) and (isinstance(c.get("draft"), dict) or c.get("name") in LOCAL_TOOL_NAMES)
                     for c in (result.tool_calls or []))
-    return not has_draft and bool(PHANTOM_CARD.search(" ".join(fold(result.text or "").split())))
+    folded = " ".join(fold(result.text or "").split())
+    if not (result.tool_calls or []) and CLAIMED_DONE.search(folded):
+        return True
+    return not has_draft and bool(PHANTOM_CARD.search(folded))
 
 
 def route_providers(lane: str) -> list[str]:
@@ -351,6 +367,7 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
         who,
         CORE_RULES,
         DRAFT_FACTS,
+        NEWS_RULES,
         BOT_LOGIN_FACTS,
         pending_block(db, chat_id, row.id, row.created_at),
     ]
@@ -407,19 +424,51 @@ def _search_web(query: str) -> dict:
                                                    for i, s_ in enumerate(sources[:8], 1)]}
 
 
-def _news_today(topics: list) -> dict:
-    from . import news_digest
+NEWS_PER_TOPIC = 6
+NEWS_FETCH_PER_TOPIC = 3
+NEWS_ARTICLE_CHARS = 1800
+
+
+def _news_today(topics: list, days: int = 2) -> dict:
+    """Tin theo chủ đề trong `days` ngày (tuần = 7), bỏ trùng, kèm NỘI DUNG 3 bài đầu mỗi chủ đề — 14/10 bản chỉ có tiêu
+    đề + đoạn trích 400 ký tự cho ra bản tổng hợp hời hợt «như nói chuyện với con nít» (đại ca)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from . import news_digest, web_search
 
     now = now_local()
+    max_hours = max(1, min(int(days or 2), 14)) * 24
     seen_u, seen_t, taken = set(), set(), []
     out = {}
     for t in [str(x).strip() for x in topics or [] if str(x).strip()][:NEWS_TOPICS_MAX]:
-        items = news_digest.fresh_items(t, now, seen_u, seen_t, taken)
+        items = []
+        for r in news_digest._search(f"{t} tin tức"):
+            url, title = str(r.get("url") or ""), " ".join(str(r.get("title") or "").split())
+            if not url.startswith("http") or not title:
+                continue
+            uh, th = news_digest.url_hash(url), news_digest.title_hash(title)
+            if uh in seen_u or th in seen_t or any(news_digest.similar_title(title, x) for x in taken):
+                continue
+            it = {"title": title[:200], "url": url, "snippet": " ".join(str(r.get("snippet") or "").split())[:400],
+                  "site": news_digest._host(url)}
+            it["age_hours"] = news_digest.age_hours(it, now)
+            if it["age_hours"] is not None and it["age_hours"] > max_hours:
+                continue
+            seen_u.add(uh)
+            seen_t.add(th)
+            taken.append(title)
+            items.append(it)
+        items.sort(key=news_digest._rank)
+        items = items[:NEWS_PER_TOPIC]
+        with ThreadPoolExecutor(max_workers=NEWS_FETCH_PER_TOPIC) as pool:
+            bodies = list(pool.map(lambda i: web_search.fetch(i["url"]), items[:NEWS_FETCH_PER_TOPIC]))
         out[t] = [{"tieu_de": i["title"], "trich": i["snippet"], "trang": i["site"], "link": i["url"],
-                   "cach_day_gio": None if i.get("age_hours") is None else round(i["age_hours"])} for i in items]
+                   "cach_day_gio": None if i.get("age_hours") is None else round(i["age_hours"]),
+                   **({"noi_dung": bodies[k][:NEWS_ARTICLE_CHARS]} if k < len(bodies) and bodies[k] else {})}
+                  for k, i in enumerate(items)]
     if not any(out.values()):
-        return {"error": "Không tìm được tin mới nào trong ~48 giờ cho các chủ đề này.", "chu_de": list(out)}
-    return {"tin": out}
+        return {"error": f"Không tìm được tin nào trong {max_hours // 24} ngày cho các chủ đề này.", "chu_de": list(out)}
+    return {"tin": out, "khoang_ngay": max_hours // 24}
 
 
 def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, args: dict) -> dict:
@@ -431,7 +480,7 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
     if name == "search_web":
         return _search_web(str(args.get("query") or ""))
     if name == "news_today":
-        return _news_today(args.get("topics") or [])
+        return _news_today(args.get("topics") or [], int(args.get("days") or 2))
     if name == "my_saved_drafts":
         return {"nhap_da_luu": erp.my_drafts(db, user)[:20]}
     if name == "update_draft":
