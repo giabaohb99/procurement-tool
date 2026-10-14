@@ -264,12 +264,22 @@ def add_key(db: Session, *, owner_type: int, owner_id: int, provider: str, raw: 
         elif provider not in PROVIDERS:
             raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
     rows = active_rows(db, owner_type, owner_id)
+
+    #  Hãng tùy chỉnh: một trạm có thể bán nhiều gói (Claude, Kimi, Gemini… mỗi gói một khóa), nên «cùng hãng» chỉ
+    #  là cùng trạm + cùng model — khóa Kimi thêm sau KHÔNG được thay khóa Claude (đại ca gặp 14/10/2026).
+    def _same(r: AiKey) -> bool:
+        if r.provider != provider:
+            return False
+        if provider != PROVIDER_CUSTOM:
+            return True
+        return (r.base_url or "") == base_url and (r.model or "") == (model or "")
+
     if priority <= 0:
-        same = [r for r in rows if r.provider == provider]
+        same = [r for r in rows if _same(r)]
         priority = int(same[0].priority) if same else (max((int(r.priority) for r in rows), default=0) + 1)
     now = datetime.now()
     for old in rows:
-        if old.provider == provider and int(old.priority) == priority:
+        if _same(old) and int(old.priority) == priority:
             old.revoked_at = now
     row = AiKey(owner_type=owner_type, owner_id=int(owner_id), provider=provider, model=(model or "")[:80],
                 base_url=base_url,

@@ -13358,6 +13358,18 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-197 | Một trạm AI thêm được nhiều gói model (Claude, Kimi, Gemini) không thay nhau
+- status: xong
+- date: 2026-10-14
+- pic: NSU209
+Đại ca thêm khóa gói Claude của trạm modelapi.vn vào màn Khóa AI thì khóa DeepSeek cũ bị đóng, không thêm được gói mới. Nguyên
+nhân: sổ khóa coi mọi gói của một trạm là cùng một hãng nên khóa sau thay khóa trước. Nay với trạm tùy chỉnh, chỉ khi cùng trạm
+và cùng model mới thay khóa; khác model thì thêm dòng mới và xếp ưu tiên nối tiếp. Hãng thường vẫn thay khóa như cũ. Câu hướng
+dẫn trên màn Khóa AI nói rõ luật này. Bốn bài kiểm mới xanh, hai mươi chín bài sổ khóa cũ vẫn xanh.
+
+Mã nguồn: agent_hub/ai_keys.py (add_key); frontend-v2 ai-key-list-card.tsx; bài kiểm test_agent_hub_khoa_tram_nhieu_goi_cr197.py
+Deploy: dev 14/10 (ERP api + giao diện erp + cụm dịch vụ AI)
+
 ## ai-CR-196 | Xác nhận thẻ sửa, xóa phiếu bằng chữ cho người đã liên kết
 - status: dang-lam
 - date: 2026-10-14
