@@ -186,3 +186,31 @@ def test_khong_khoa_thi_huong_dan_khong_goi_model(db, chat, monkeypatch):
     core_v2.handle(db, CHAT, row, "hello")
 
     assert not prov.seen and chat.sent and "khóa AI" in chat.sent[-1]
+
+
+def test_tram_tra_500_hai_lan_thi_nhay_sang_khoa_ke(monkeypatch):
+    """ai-CR-198 (14/10 15:36): khóa Gemini-trạm ở ưu tiên 1 trả 500 «upstream error» hai lần → bot báo lỗi dù đại ca còn
+    Kimi / Claude / DeepSeek phía sau. Quá tải SAU khi đã thử lại thì phải nhảy khóa kế."""
+    from app.modules.agent_hub import manager, user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider.base import ChatMessage, ProviderError
+
+    monkeypatch.setattr(manager, "TRANSIENT_WAIT_SEC", 0)
+    seen = []
+
+    class Flaky:
+        def ask(self, msgs, *, model=None, **kw):
+            key = user_keys.active_key()
+            seen.append((key[-4:], model))
+            if key.endswith("1111"):
+                raise ProviderError('openai_compat trả lỗi 500: {"error":{"message":"upstream error: do request failed"}}')
+            return _result("chào anh")
+    monkeypatch.setitem(manager._DELEGATES, "openai_compat", Flaky())
+    chain = [KeyRef(provider="openai_compat", key="sk-tram-gemini-lite-1111", model="gemini-3.1-flash-lite", row_id=8,
+                    hint="1111", base_url="https://modelapi.vn/v1"),
+             KeyRef(provider="openai_compat", key="sk-tram-kimi-2222", model="kimi-k3", row_id=9, hint="2222",
+                    base_url="https://modelapi.vn/v1")]
+    with user_keys.use_chain(chain, 238):
+        out = manager.get_provider().ask([ChatMessage(role="user", content="hello em")])
+    assert out.text == "chào anh"
+    assert [k for k, _ in seen] == ["1111", "1111", "2222"]        # thử lại một lần rồi nhảy khóa

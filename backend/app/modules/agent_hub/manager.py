@@ -34,6 +34,13 @@ THINKING_BUDGET = 4096
 TRANSIENT_WAIT_SEC = 2      # ai-CR-099: chờ trước khi thử lại một lần khi hãng quá tải
 
 
+def _server_side(error: str) -> bool:
+    """ai-CR-198: lỗi do HÃNG / TRẠM (5xx, quá tải, upstream) — khác lỗi mạng phía mình (timeout)."""
+    e = (error or "").lower()
+    return any(k in e for k in (" 500:", " 502", " 503", " 504", "lỗi 503", "unavailable", "overloaded",
+                                "high demand", "upstream"))
+
+
 def fallback_model() -> str:
     """ai-CR-106: model Gemini dự phòng khi model chính quá tải."""
     from app.core import app_settings
@@ -113,7 +120,7 @@ class AgentGeminiProvider(GeminiProvider):
         #  ai-CR-145: tên model KHÔNG phải Gemini (vd AGENT_PLAN_MODEL cho Claude) thì chuyển tiếp; tên Gemini thì không.
         return model if model and not model.startswith("gemini") else None
 
-    def _call(self, method: str, *args, model: str | None = None, **kw):
+    def _call(self, method: str, *args, model: str | None = None, **kw):  # noqa: C901
         from . import ai_keys, user_keys
 
         last: ProviderError | None = None
@@ -136,18 +143,27 @@ class AgentGeminiProvider(GeminiProvider):
                     log.warning("agent_hub: trạm không có model %s, dùng tạm %s (khóa …%s)", ref.model, swap, ref.hint)
                     _MODEL_SWAP[ref.row_id] = swap
                     continue
-                if ai_keys.is_transient(str(e)) and not retried:
-                    #  ai-CR-099: 07/10 «alo how are u» chết vì Gemini 503 «high demand» → thẻ hỏi lại vô duyên.
-                    #  ai-CR-106: Gemini thì đổi sang model DỰ PHÒNG (model chính đang quá tải, thử lại y nguyên vẫn treo).
-                    retried = True
-                    current = self._model_for(ref, model) or ""
-                    if ref.provider == "gemini" and not ref.model and fallback_model() != current:
-                        model = fallback_model()
-                        log.warning("agent_hub: gemini %s quá tải, chuyển sang %s", current or "mặc định", model)
+                if ai_keys.is_transient(str(e)):
+                    if not retried:
+                        #  ai-CR-099: 07/10 «alo how are u» chết vì Gemini 503 «high demand» → thẻ hỏi lại vô duyên.
+                        #  ai-CR-106: Gemini thì đổi sang model DỰ PHÒNG (model chính đang quá tải, thử lại y nguyên vẫn treo).
+                        retried = True
+                        current = self._model_for(ref, model) or ""
+                        if ref.provider == "gemini" and not ref.model and fallback_model() != current:
+                            model = fallback_model()
+                            log.warning("agent_hub: gemini %s quá tải, chuyển sang %s", current or "mặc định", model)
+                            continue
+                        log.warning("agent_hub: %s quá tải, thử lại sau %ss", ref.provider, TRANSIENT_WAIT_SEC)
+                        time.sleep(TRANSIENT_WAIT_SEC)
                         continue
-                    log.warning("agent_hub: %s quá tải, thử lại sau %ss", ref.provider, TRANSIENT_WAIT_SEC)
-                    time.sleep(TRANSIENT_WAIT_SEC)
-                    continue
+                    #  ai-CR-198 (14/10): khóa Gemini-trạm trả 500 «upstream error» hai lần liền → trước đây ném lỗi luôn
+                    #  dù đại ca còn 3 khóa khác phía sau. HÃNG quá tải (5xx, «overloaded», «upstream») SAU khi đã thử lại
+                    #  thì nhảy sang khóa kế. Lỗi mạng phía mình (timeout) vẫn KHÔNG nhảy — đổi khóa không chữa được.
+                    if _server_side(str(e)) and user_keys.advance():
+                        log.warning("agent_hub: %s …%s vẫn quá tải sau khi thử lại, nhảy sang khóa kế",
+                                    ref.provider, ref.hint)
+                        retried, last, model = False, e, None
+                        continue
                 if ai_keys.is_key_problem(str(e)) and user_keys.advance():
                     log.warning("agent_hub: khóa %s …%s hỏng (%s), nhảy sang khóa kế", ref.provider, ref.hint,
                                 str(e)[:80])

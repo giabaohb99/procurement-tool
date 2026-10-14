@@ -224,6 +224,9 @@ def select_tools(db: Session, user, text: str) -> list[ToolDef]:
     """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi."""
     from app.modules.assistant import tool_router
 
+    #  Câu xã giao («hello em», «cảm ơn») không cần 70+ công cụ ERP — hôm 14/10 «hello em» nạp 76 công cụ.
+    if tool_router.is_smalltalk(text):
+        return list(LOCAL_TOOLS)
     try:
         defs = list(erp.tool_defs(db, user) or [])
     except Exception:  # noqa: BLE001
