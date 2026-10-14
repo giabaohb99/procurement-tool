@@ -358,6 +358,12 @@ def key_problem(error: str, provider: str = "") -> str:
             or "invalid_api_key" in e or "authentication_error" in e):
         return (f"Khóa {label} của đại ca <b>không còn hợp lệ</b> (hãng từ chối). Lấy khóa mới ở {site} rồi dán lại "
                 "ở ERP → Trang cá nhân → Khóa AI.")
+    #  ai-CR-199 (14/10 lượt #209): trạm trung gian báo gói của khóa này không chạy được («unknown provider for model»,
+    #  «no available channel», «model not supported») dù trạm vẫn liệt kê model — chuyện của KHÓA/GÓI, không phải câu hỏi.
+    if ("unknown provider" in e or "no available channel" in e or "model not supported" in e
+            or "does not exist or you do not have access" in e):
+        return (f"Gói {label} trên trạm của khóa này <b>đang không chạy</b> (trạm báo không có kênh cho model). Kiểm lại "
+                "nhóm / gói trên trang trạm, hoặc để khóa khác làm trước ở ERP → Trang cá nhân → Khóa AI.")
     return ""
 
 

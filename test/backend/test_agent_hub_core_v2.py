@@ -285,3 +285,26 @@ def test_tra_nhanh_di_duong_tra_mang_tren_model_nhanh(db, chat, monkeypatch):
     _install(monkeypatch, lambda *a: pytest.fail("tra nhanh không qua vòng tác tử"))
     core_v2.handle(db, CHAT, row, "giá vàng hôm nay")
     assert seen["text"] == "giá vàng hôm nay" and row.action == ACT_ASKED
+
+
+def test_tram_bao_khong_co_kenh_cho_model_thi_nhay_khoa_ke(monkeypatch):
+    """Lượt #209 (14/10 16:34): khóa DeepSeek trạm trả 400 «unknown provider for model deepseek-v4.1-flash» → bot báo lỗi
+    dù Kimi / Claude phía sau vẫn chạy."""
+    from app.modules.agent_hub import manager, user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider.base import ChatMessage, ProviderError
+
+    class Relay:
+        def ask(self, msgs, *, model=None, **kw):
+            if user_keys.active_key().endswith("0001"):
+                raise ProviderError('openai_compat trả lỗi 400: {"error":{"message":"unknown provider for model '
+                                    'deepseek-v4.1-flash","type":"invalid_request_error"}}')
+            return _result("chào anh")
+    monkeypatch.setitem(manager._DELEGATES, "openai_compat", Relay())
+    tram = "https://modelapi.vn/v1"
+    chain = [KeyRef(provider="openai_compat", key="k-deepseek-0001", model="deepseek-v4.1-flash", base_url=tram, row_id=1,
+                    hint="0001"),
+             KeyRef(provider="openai_compat", key="k-kimi-0002", model="kimi-k3", base_url=tram, row_id=2, hint="0002")]
+    with user_keys.use_chain(chain, 238):
+        out = manager.get_provider().ask([ChatMessage(role="user", content="hello em")])
+        assert out.text == "chào anh" and user_keys.active_ref().model == "kimi-k3"
