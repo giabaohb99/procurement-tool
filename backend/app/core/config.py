@@ -318,6 +318,12 @@ class Settings(BaseSettings):
     AGENT_INTENT_ENABLED: bool = True
     #  ai-CR-194: tin «Em nhận rồi, đang xử lý…» gửi NGAY khi nhận tin chữ, xóa khi đã trả lời.
     AGENT_ACK_ENABLED: bool = True
+    #  ai-CR-198 (doc/agent-hub/20, đại ca 14/10: «đập đi xây lại… ổn định và con người hơn»): LÕI HỘI THOẠI MỚI chạy
+    #  song song dưới cờ — tin chữ đi vào một vòng tác tử (model + công cụ nhiều vòng), không qua regex / bước đọc ý định.
+    #  AGENT_CORE_V2_CHATS: danh sách chat_id (phẩy) được bật; rỗng = mọi chat khi cờ bật.
+    AGENT_CORE_V2_ENABLED: bool = False
+    AGENT_CORE_V2_CHATS: str = ""
+    AGENT_CORE_V2_HISTORY_TURNS: int = 40
     # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
     # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc
     # AGENT_PLAN_MODEL khi khóa để trống.

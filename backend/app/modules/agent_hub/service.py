@@ -35,7 +35,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, change_undo, channels, chat_link, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
+from . import ai_keys, bells, change_undo, channels, chat_link, core_v2, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -649,7 +649,11 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
 
     _adopt_pending_photos(db, chat_id, row)
     with _instant_ack(chat_id, text):
-        _route_plain_text(db, chat_id, row, text)
+        #  ai-CR-198: lõi hội thoại mới (doc/agent-hub/20) — bật theo cờ, chạy song song với đường cũ.
+        if core_v2.enabled_for(chat_id):
+            core_v2.handle(db, chat_id, row, text)
+        else:
+            _route_plain_text(db, chat_id, row, text)
 
 
 @contextlib.contextmanager
@@ -1283,7 +1287,10 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     if grants.level_for(db, link.user_id) and _CODE_IN_TEXT.search(low) and route_task_command(db, chat_id, row, text):
         return True
     with _instant_ack(chat_id, text):
-        _route_linked_text(db, chat_id, row, text)
+        if core_v2.enabled_for(chat_id):      # ai-CR-198: lõi hội thoại mới, xem doc/agent-hub/20
+            core_v2.handle(db, chat_id, row, text)
+        else:
+            _route_linked_text(db, chat_id, row, text)
     return True
 
 
