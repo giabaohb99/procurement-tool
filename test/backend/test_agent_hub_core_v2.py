@@ -230,3 +230,17 @@ def test_hello_em_la_xa_giao_khong_nap_cong_cu_erp():
 
     for t in ("hello em", "hi em", "chào em", "alo em", "em ơi", "cảm ơn em nhé"):
         assert tool_router.is_smalltalk(t), t
+
+
+def test_lich_su_cat_tin_dai_va_xa_giao_chi_6_luot(db):
+    """Lượt #206: «hello em» nạp 39k token vì lịch sử chứa nguyên các bản tra giá dài."""
+    for i in range(10):
+        service.log_message(db, DIR_IN, CHAT, 0, f"hỏi {i}", action=ACT_ASKED)
+        service.log_message(db, DIR_OUT, CHAT, 0, "báo cáo dài " + "x" * 5000, action=ACT_ANSWER)
+    db.commit()
+    row = _incoming(db, "hello em")
+    full = core_v2.history(db, CHAT, row.id, row.created_at)
+    assert all(len(t["content"]) <= core_v2.HISTORY_MSG_CHARS + 20 for t in full)
+    assert sum(len(t["content"]) for t in full) <= core_v2.HISTORY_MAX_CHARS
+    small = core_v2.history(db, CHAT, row.id, row.created_at, smalltalk=True)
+    assert len(small) == core_v2.SMALLTALK_TURNS

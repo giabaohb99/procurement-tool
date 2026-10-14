@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from datetime import timedelta
 
 from sqlalchemy import select
@@ -33,7 +34,12 @@ from .timeutil import fmt_local, now_local
 log = logging.getLogger("app.agent_hub.core_v2")
 
 HISTORY_WINDOW = timedelta(hours=24)
-HISTORY_MAX_CHARS = 24_000
+#  14/10 lượt #206: «hello em» nạp 39.211 token vì 17 lượt lịch sử chứa nguyên các bản tra giá dài (vàng, bitcoin)
+#  → trạm không có prompt caching nên mỗi lượt đọc lại hết, chờ ~7 s. Nay mỗi tin cũ cắt ngắn, tổng trần 12k ký tự;
+#  câu xã giao chỉ mang 6 lượt.
+HISTORY_MAX_CHARS = 12_000
+HISTORY_MSG_CHARS = 900
+SMALLTALK_TURNS = 6
 DRAFT_WINDOW = timedelta(minutes=15)
 PLAN_WAIT_WINDOW = timedelta(hours=48)
 MAX_ITERS = 6
@@ -160,11 +166,12 @@ def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
     return "ĐANG DỞ (việc chưa khép của cuộc này):\n" + ("\n".join(lines) if lines else "- (không có)")
 
 
-def history(db: Session, chat_id: str, before_id: int, now) -> list[dict]:
-    """30–40 lượt gần nhất trong 24 giờ, trần 24k ký tự (doc 20 §3.3). Chỉ lấy hỏi / trả lời / nghiên cứu."""
+def history(db: Session, chat_id: str, before_id: int, now, *, smalltalk: bool = False) -> list[dict]:
+    """Tối đa 40 lượt trong 24 giờ, mỗi tin cắt còn HISTORY_MSG_CHARS, tổng trần HISTORY_MAX_CHARS (doc 20 §3.3).
+    Chỉ lấy hỏi / trả lời / nghiên cứu."""
     from . import service
 
-    turns_max = max(4, int(settings.AGENT_CORE_V2_HISTORY_TURNS or 40))
+    turns_max = SMALLTALK_TURNS if smalltalk else max(4, int(settings.AGENT_CORE_V2_HISTORY_TURNS or 40))
     q = (select(AgentMessage)
          .where(AgentMessage.chat_id == chat_id,
                 AgentMessage.action.in_((ACT_ASKED, ACT_ANSWER, service.ACT_RESEARCH)),
@@ -175,10 +182,13 @@ def history(db: Session, chat_id: str, before_id: int, now) -> list[dict]:
     for r in db.scalars(q):
         if now and r.created_at and now - r.created_at > HISTORY_WINDOW:
             break
-        total += len(r.body or "")
+        body = r.body or ""
+        if len(body) > HISTORY_MSG_CHARS:
+            body = body[:HISTORY_MSG_CHARS] + " …(đã rút gọn)"
+        total += len(body)
         if total > HISTORY_MAX_CHARS:
             break
-        turns.append({"role": "user" if r.direction == DIR_IN else "assistant", "content": r.body})
+        turns.append({"role": "user" if r.direction == DIR_IN else "assistant", "content": body})
     turns.reverse()
     return turns
 
@@ -307,9 +317,13 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
     run = service.start_run(db, 0, STAGE_ANSWER)
     db.commit()                                  # giữ dòng sổ kể cả khi lượt hỏng phải rollback
     try:
+        from app.modules.assistant import tool_router
+
+        t0 = time.monotonic()
         system = build_system(db, chat_id, row, user, text)
-        turns = history(db, chat_id, row.id, row.created_at)
+        turns = history(db, chat_id, row.id, row.created_at, smalltalk=tool_router.is_smalltalk(text))
         tools = select_tools(db, user, text)
+        log.info("core_v2: dựng ngữ cảnh %.1f s", time.monotonic() - t0)
         msgs = [ChatMessage(role=t["role"], content=t["content"]) for t in turns] + [ChatMessage(role="user", content=text)]
         log.info("core_v2: system=%d ký tự · công cụ=%d · lịch sử=%d lượt", len(system), len(tools), len(turns))
 
