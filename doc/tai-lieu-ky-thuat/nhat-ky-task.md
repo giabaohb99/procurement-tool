@@ -112,6 +112,13 @@ chặn ở tool, việc cha nào thiếu việc con hay tiêu chí thì trả ne
 mới ra nháp (không bắt vòng lần hai); thẻ nháp in thêm từng việc con kèm hạn và tiêu chí để sếp duyệt phần bot nghĩ ra
 trước khi tạo. Thêm một bài kiểm cho ba chỗ này.
 
+Sáng 14/10 anh Được bấm Nhận và Từ chối trên tám tin hỏi nhận việc mà bot im lặng, không ghi gì. Agent 1 soi sổ tin:
+không có lượt nào tới cổng B. Nguyên nhân: cổng nhận nút bấm của bot (_handle_callback) chặn mọi chat không phải chat
+quản trị ngay đầu hàm, bỏ im không trả lời, nên nút của người làm không bao giờ tới nhánh kế hoạch. Em sửa: chat đã liên
+kết ERP được bấm các nút dành cho họ (hiện là ba nút kế hoạch, khai ở LINKED_CHAT_CALLBACKS để nhóm khác thêm nút của
+mình), chat chưa liên kết hay bấm nút quản trị thì bot trả lời ngắn trên nút thay vì im. Nút trên tám tin cũ vẫn còn,
+anh Được bấm lại là ghi nhận. Thêm một bài kiểm cho ba trường hợp.
+
 Khai thêm tool draft_work_plan vào bốn bảng canh của bộ kiểm (tool ghi, cửa gác, nhóm công cụ, số tool 72 thành 73).
 Chưa làm trong đợt này: nhắc mốc tự động và hỏi tiến độ theo giờ (24.2), Zalo (24.3), báo cáo kết thúc (24.4), xếp lại
 kế hoạch (24.5), nối Đặt xe, thanh toán (24.6), quyền agent_plan riêng (tạm dùng quyền tạo việc Dự án).
@@ -120,7 +127,7 @@ Mã nguồn: `agent_hub/plan_policy.py` (mới), `agent_hub/work_plan.py` (mới
 (`draft_work_plan`), `agent_hub/draft_create.py` (loại `work_plan`), `agent_hub/service.py` (nút kh_ok/kh_khac/kh_tc,
 `_after_plan_created`, chuỗi `work_plan.handle_text`), `agent_hub/work_due.py` (mục Đang làm hôm nay), `agent_hub/constants.py`,
 `core/app_settings.py` + `setting/service.py` (khóa `agent_plan_policy`), `assistant/tool_router.py`.
-Kiểm: 8 bài `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài canh tool, nhắc hạn, bản tin, kanban xanh. 6 bài ở
+Kiểm: 9 bài `test_agent_hub_ke_hoach_viec_cr616.py` xanh; các bài canh tool, nhắc hạn, bản tin, kanban xanh. 6 bài ở
 `test_agent_hub.py` về biên bản họp và Excel đỏ sẵn trên máy local vì thiếu ffmpeg, không liên quan.
 Sửa ngay sau khi lên dev lần đầu: dịch vụ AI trên dev chạy tách với DB riêng, mà phần hỏi nhận việc và nhận câu trả
 lời bản đầu đọc thẳng bảng Dự án nên sẽ hỏng. Em tách mô-đun thành hai lớp: lớp ERP (dựng kế hoạch, đọc cây việc, ghi
@@ -134,7 +141,8 @@ Commit: c4e428fd (bản đầu) trên erp-v2, Agent 1 đã đưa lên dev 13/10 
 hai lớp: commit 9a92d841 trên erp-v2.
 Deploy: Agent 1 dựng lại dev 13/10 ở 959bb14b cả hai bên (ERP api + celery và cụm dịch vụ AI), migration grp14, sức khỏe
 hai cổng đều 200; sau đó bản dời lớp ERP sang work/plan_service.py (commit a5112b88 trên erp-v2) Agent 1 dựng lại dev cùng ngày: ERP api + celery a5112b88, cụm dịch vụ AI 23273cdf; bản chỉnh chia việc
-con và tiêu chí 2264d157 lên dev cả hai bên cùng chiều, sức khỏe hai cổng 200. Prod chưa duyệt.
+con và tiêu chí 2264d157 lên dev cả hai bên cùng chiều, sức khỏe hai cổng 200; bản mở cổng nút bấm 9216e061 lên cụm
+dịch vụ AI dev sáng 14/10. Prod chưa duyệt.
 
 ---
 

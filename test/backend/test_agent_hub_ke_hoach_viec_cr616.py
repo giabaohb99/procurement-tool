@@ -131,6 +131,38 @@ def test_chep_cau_nguoi_dung_thi_bat_soan_lai_co_viec_con_va_tieu_chi(db, world)
     assert "draft" in out and out["draft"]["counts"]["subtasks"] == 2
 
 
+def test_nut_tu_chat_nguoi_lam_di_qua_cong_callback(db, world, monkeypatch):
+    """Lỗi thử dev 14/10: anh Được bấm Nhận mà bot im lặng — `_handle_callback` chặn mọi chat không phải chat quản trị
+    trước khi tới nhánh kế hoạch. Chat đã liên kết phải bấm được ba nút kế hoạch; chat lạ và nút quản trị thì bị từ
+    chối CÓ trả lời (answer_callback) chứ không im."""
+    from app.modules.agent_hub import service
+    from app.modules.work.label_model import WorkLabelField
+    from app.modules.work.task_model import WorkTask
+
+    d = _draft(db, world["boss"], _args())["draft"]
+    _, list_id = draft_create.create(db, world["boss"], "work_plan", d)
+    work_plan.ask_assignees(db, world["boss"], list_id)
+    tam_ung = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Tạm ứng chi phí").one()
+    accept = db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id, WorkLabelField.name == plan_service.FIELD_ACCEPT).one()
+    answers: list[tuple[str, str]] = []
+    monkeypatch.setattr(service.telegram, "is_allowed_chat", lambda chat_id: str(chat_id) == "chat-boss")
+    monkeypatch.setattr(service.telegram, "answer_callback", lambda cb_id, text="": answers.append((cb_id, text)))
+    monkeypatch.setattr(service.telegram, "clear_buttons", lambda chat_id, mid: None)
+
+    def press(chat, cb_id, data):
+        service._handle_callback(db, {"id": cb_id, "data": data, "message": {"message_id": 7}}, chat)
+
+    press("chat-la", "c0", f"{work_plan.CB_YES}:{tam_ung.id}")                 # chưa liên kết
+    assert answers[-1][0] == "c0" and "chưa đăng nhập" in answers[-1][1]
+    assert plan_service._label_text(db, accept, tam_ung.id) == plan_service.ACCEPT_NOT_ASKED
+    press("chat-an", "c1", f"ask:{tam_ung.id}")                                 # nút quản trị từ chat thường
+    assert answers[-1] == ("c1", "Nút này chỉ dành cho chat quản trị bot")
+    world["sent"].clear()
+    press("chat-an", "c2", f"{work_plan.CB_YES}:{tam_ung.id}")                  # nút kế hoạch: ghi + báo chủ
+    assert plan_service._label_text(db, accept, tam_ung.id) == plan_service.ACCEPT_YES
+    assert answers[-1] == ("c2", "Đã ghi nhận") and [s[0] for s in world["sent"]] == ["chat-an", "chat-boss"]
+
+
 def test_tao_dung_ca_cay_trong_du_an(db, world):
     from app.modules.work.label_model import WorkLabelField
     from app.modules.work.model import WorkList, WorkListMember
