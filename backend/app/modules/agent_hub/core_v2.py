@@ -112,6 +112,34 @@ LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS)
 # ---------------------------------------------------------------------------
 # Cờ bật
 # ---------------------------------------------------------------------------
+LANE_SMALLTALK, LANE_QUICK, LANE_NORMAL, LANE_HEAVY = "xa_giao", "tra_nhanh", "thuong", "nang"
+LANE_LABELS = {LANE_SMALLTALK: "xã giao", LANE_QUICK: "tra nhanh", LANE_NORMAL: "thường", LANE_HEAVY: "việc nặng"}
+#  Công cụ mà có mặt trong lượt thì là việc nặng (lập kế hoạch nhiều việc, viết báo cáo, nghiên cứu).
+HEAVY_TOOLS = frozenset({"draft_work_plan", "export_report_file", "rewrite_meeting_minutes", "deep_research"})
+HEAVY_TEXT_CHARS = 600
+
+
+def lane_of(text: str, tool_names: set[str] | None = None) -> str:
+    """ai-CR-199: chọn luồng model bằng LUẬT, không gọi model (bước đọc ý định đã bỏ vì tốn 5–10 s)."""
+    from . import research
+
+    if _is_smalltalk(text):
+        return LANE_SMALLTALK
+    if "\n" not in (text or "") and research.is_quick(text):
+        return LANE_QUICK
+    if len(text or "") >= HEAVY_TEXT_CHARS or (tool_names and tool_names & HEAVY_TOOLS):
+        return LANE_HEAVY
+    return LANE_NORMAL
+
+
+def route_providers(lane: str) -> list[str]:
+    for part in str(settings.AGENT_CORE_V2_ROUTES or "").split(";"):
+        name, _, provs = part.partition("=")
+        if name.strip() == lane:
+            return [p.strip() for p in provs.split(",") if p.strip()]
+    return []
+
+
 def _is_smalltalk(text: str) -> bool:
     from app.modules.assistant import tool_router
 
@@ -340,6 +368,13 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
     if not user_keys.active_key():
         service.reply(db, chat_id, user_keys.NO_KEY_HELP)
         return
+    if lane_of(text) == LANE_QUICK:
+        #  Tra nhanh (giá, tỷ giá, thời tiết…) đi đường tra mạng đã kiểm kỹ (ai-CR-193/194), trên model nhanh.
+        from . import research
+
+        with user_keys.prefer(route_providers(LANE_QUICK)):
+            service.run_research(db, chat_id, text, research.MODE_WEB)
+        return
     run = service.start_run(db, 0, STAGE_ANSWER)
     db.commit()                                  # giữ dòng sổ kể cả khi lượt hỏng phải rollback
     try:
@@ -362,16 +397,20 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                 log.exception("core_v2: công cụ %s hỏng", name)
                 return {"error": f"Công cụ {name} lỗi: {type(e).__name__}: {str(e)[:200]}"}
 
-        result = manager.get_provider().run_tools(
-            msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
-            max_iters=MAX_ITERS, cache_system=True)
+        lane = lane_of(text, {t.name for t in tools})
+        with user_keys.prefer(route_providers(lane)):
+            ref = user_keys.active_ref()
+            log.info("core_v2: luồng %s → %s", lane, getattr(ref, "model", "") or getattr(ref, "provider", ""))
+            result = manager.get_provider().run_tools(
+                msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
+                max_iters=MAX_ITERS, cache_system=True)
+            service.finish_run(db, run, result=result)
         answer = (result.text or "").strip() or "Em đã làm xong phần đó."
         service.reply(db, chat_id, answer, markdown=True, action=ACT_ANSWER)
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]
         service.deliver_tool_results(db, chat_id, user, calls)
-        service.finish_run(db, run, result=result)
-        run.artifact = {"core": "v2", "tools": [str(c.get("name") or "") for c in (result.tool_calls or [])
-                                                if isinstance(c, dict)][:20], "tools_offered": len(tools)}
+        run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in (result.tool_calls or [])
+                                                              if isinstance(c, dict)][:20], "tools_offered": len(tools)}
         db.commit()
     except Exception as e:  # noqa: BLE001
         db.rollback()

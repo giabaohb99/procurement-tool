@@ -244,3 +244,41 @@ def test_lich_su_cat_tin_dai_va_xa_giao_chi_6_luot(db):
     assert sum(len(t["content"]) for t in full) <= core_v2.HISTORY_MAX_CHARS
     small = core_v2.history(db, CHAT, row.id, row.created_at, smalltalk=True)
     assert len(small) == 2 * core_v2.SMALLTALK_TURNS          # 6 lượt hỏi–đáp = 12 tin
+
+
+def test_phan_luong_model_bang_luat():
+    """ai-CR-199: chọn luồng bằng luật, không gọi model."""
+    assert core_v2.lane_of("hello em") == core_v2.LANE_SMALLTALK
+    assert core_v2.lane_of("giá vàng hôm nay") == core_v2.LANE_QUICK
+    assert core_v2.lane_of("tạo cho anh task nghiên cứu luồng agent") == core_v2.LANE_NORMAL
+    assert core_v2.lane_of("lập kế hoạch thử bot", {"draft_work_plan"}) == core_v2.LANE_HEAVY
+    assert core_v2.lane_of("x " * 400) == core_v2.LANE_HEAVY
+    assert core_v2.route_providers(core_v2.LANE_SMALLTALK)[0] == "deepseek"
+    assert core_v2.route_providers(core_v2.LANE_NORMAL)[0] == "kimi"
+    assert core_v2.route_providers(core_v2.LANE_HEAVY)[0] == "claude"
+
+
+def test_prefer_tach_kimi_deepseek_claude_cung_mot_tram():
+    """Ba gói cùng trạm (openai_compat) phải xếp được theo hãng của MODEL."""
+    from app.modules.agent_hub import user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+
+    tram = "https://modelapi.vn/v1"
+    chain = [KeyRef(provider="openai_compat", key="k-deepseek-0001", model="deepseek-v4.1-flash", base_url=tram, row_id=1),
+             KeyRef(provider="openai_compat", key="k-kimi-0002", model="kimi-k3", base_url=tram, row_id=2),
+             KeyRef(provider="openai_compat", key="k-claude-0003", model="claude-sonnet-5-5", base_url=tram, row_id=3)]
+    with user_keys.use_chain(chain, 238):
+        for lane, first in ((core_v2.LANE_SMALLTALK, "deepseek-v4.1-flash"), (core_v2.LANE_NORMAL, "kimi-k3"),
+                            (core_v2.LANE_HEAVY, "claude-sonnet-5-5")):
+            with user_keys.prefer(core_v2.route_providers(lane)):
+                assert user_keys.active_ref().model == first, lane
+                assert len(user_keys.chain()) == 3                 # các khóa còn lại vẫn làm dự phòng
+
+
+def test_tra_nhanh_di_duong_tra_mang_tren_model_nhanh(db, chat, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(service, "run_research", lambda db_, chat_id, text, mode: seen.update(text=text))
+    row = _incoming(db, "giá vàng hôm nay")
+    _install(monkeypatch, lambda *a: pytest.fail("tra nhanh không qua vòng tác tử"))
+    core_v2.handle(db, CHAT, row, "giá vàng hôm nay")
+    assert seen["text"] == "giá vàng hôm nay" and row.action == ACT_ASKED

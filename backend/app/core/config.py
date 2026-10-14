@@ -324,6 +324,11 @@ class Settings(BaseSettings):
     AGENT_CORE_V2_ENABLED: bool = False
     AGENT_CORE_V2_CHATS: str = ""
     AGENT_CORE_V2_HISTORY_TURNS: int = 40
+    #  ai-CR-199 (đại ca 14/10: «cần một chỗ xác nhận nội dung là gì mà gọi model tương ứng»): bảng phân luồng model —
+    #  luồng=hãng ưu tiên (thứ tự), ngăn bằng «;». Chọn luồng bằng LUẬT (không gọi model). Hãng: deepseek · kimi · claude
+    #  · openai · gemini · openai_compat. Khóa hãng đó hỏng / không có thì tự rơi về các khóa còn lại theo thứ tự màn Khóa AI.
+    AGENT_CORE_V2_ROUTES: str = ("xa_giao=deepseek,kimi;tra_nhanh=deepseek,kimi;thuong=kimi,deepseek,claude;"
+                                 "nang=claude,kimi,deepseek")
     # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
     # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc
     # AGENT_PLAN_MODEL khi khóa để trống.
