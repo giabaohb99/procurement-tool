@@ -95,6 +95,12 @@ LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS)
 # ---------------------------------------------------------------------------
 # Cờ bật
 # ---------------------------------------------------------------------------
+def _is_smalltalk(text: str) -> bool:
+    from app.modules.assistant import tool_router
+
+    return tool_router.is_smalltalk(text)
+
+
 def enabled_for(chat_id: str) -> bool:
     if not settings.AGENT_CORE_V2_ENABLED:
         return False
@@ -217,7 +223,10 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
         pending_block(db, chat_id, row.id, row.created_at),
     ]
     for fn in (lambda: erp.caller_context(db, user), lambda: erp.glossary_block(db, [text]),
-               lambda: personal_memory.prompt_block(db, user.id, text), lambda: intent_ledger.habit_block(db, user.id)):
+               #  Tìm ghi chú theo câu hỏi tốn ~1,8 s (gọi nhúng véc-tơ) — câu xã giao chỉ cần phần lõi sổ nhớ.
+               (lambda: personal_memory.load_core(db, user.id)) if _is_smalltalk(text)
+               else (lambda: personal_memory.prompt_block(db, user.id, text)),
+               lambda: intent_ledger.habit_block(db, user.id)):
         try:
             block = fn()
         except Exception:  # noqa: BLE001
