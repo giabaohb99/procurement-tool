@@ -13359,7 +13359,7 @@ vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
 ## ai-CR-196 | Xác nhận thẻ sửa, xóa phiếu bằng chữ cho người đã liên kết
-- status: dang-lam
+- status: xong
 - date: 2026-10-14
 Agent 1 phát hiện cửa nhận nút bấm của bot bỏ im lặng mọi nút từ chat không phải đại ca, nên người đã liên kết như anh Được chưa
 bao giờ xác nhận được thẻ sửa hay xóa phiếu bằng nút; Agent 2 vá cửa nút. Phía bot em thêm đường chữ cho thẻ đề xuất: trong mười
@@ -13367,6 +13367,7 @@ lăm phút sau thẻ, nhắn xác nhận hay đồng ý là ghi, nhắn không s
 thẻ dùng một lần. Đúng luật mọi nút đều có câu chữ tương đương. Bài kiểm mới ba bài, bộ bài bot 418 bài xanh.
 
 Mã nguồn: agent_hub/service.py (_proposal_by_text); bài kiểm test_agent_hub_xac_nhan_de_xuat_bang_chu_cr196.py
+Deploy: dev 14/10, commit 0f8c050a trên erp-v2; dựng lại cụm bot.
 
 ## ai-CR-194 | Tắt bước đọc ý định, báo nhận tức thì, bản dài làm mặc định
 - status: xong
