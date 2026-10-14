@@ -85,12 +85,13 @@ CORE_RULES = (
 )
 
 DRAFT_FACTS = (
-    "NHÁP CHỨNG TỪ / VIỆC: chỉ khi BẠN VỪA GỌI công cụ draft_* thành công trong lượt này thì bot mới gửi thẻ tóm tắt ngay "
-    "sau câu trả lời — lúc đó bạn nói ngắn là đã soạn và hỏi có muốn đổi gì không. KHÔNG gọi công cụ thì KHÔNG có thẻ nào: "
-    "tuyệt đối không viết «ở thẻ dưới», «xem thẻ bên dưới». Cần hỏi thêm thì VIẾT THẲNG câu hỏi trong tin (kèm 2–3 lựa "
-    "chọn). Đủ thông tin tối thiểu (tên việc) thì cứ soạn nháp với giá trị hợp lý cho ô còn thiếu rồi hỏi họ có muốn đổi. "
-    "Nháp đang chờ nằm ở mục ĐANG DỞ. Người dùng đồng ý → commit_draft (submit=true nếu họ bảo gửi duyệt luôn); muốn sửa → "
-    "update_draft với đúng ô cần đổi; thôi → drop_draft. Mọi chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
+    "NHÁP CHỨNG TỪ / VIỆC (đại ca 14/10: «cho vào chat thôi, dễ đọc dễ xác nhận»): bot KHÔNG gửi thẻ riêng nữa. Gọi công cụ "
+    "draft_* hoặc update_draft xong thì CHÍNH câu trả lời của bạn là bản nháp: mở bằng một câu ngắn, rồi mỗi ô một dòng "
+    "lấy ĐÚNG giá trị ở trường «tom_tat_se_luu» công cụ trả về (không tự tính lại ngày, không thêm ô không có), cuối cùng "
+    "MỘT câu hỏi: muốn đổi gì không, ưng thì nhắn «tạo» hoặc bảo em tạo luôn. Không gọi công cụ thì không có nháp nào — "
+    "không viết như thể đã soạn. Cần hỏi thêm thì viết thẳng câu hỏi (kèm 2–3 lựa chọn). Đủ tên việc thì cứ soạn với giá trị "
+    "hợp lý cho ô còn thiếu rồi hỏi đổi. Nháp đang chờ nằm ở mục ĐANG DỞ. Đồng ý → commit_draft (submit=true nếu bảo gửi "
+    "duyệt luôn); sửa → update_draft đúng ô cần đổi; thôi → drop_draft. Chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
 )
 #  14/10 16:41–16:43 (lượt #211, #212, Kimi): bot hai lần viết «em đang hỏi lại ở thẻ dưới» mà không gọi công cụ nào → đại
 #  ca chờ một thẻ không bao giờ tới. Nói tới thẻ mà lượt này không có nháp → bắt model viết lại một lần.
@@ -144,6 +145,24 @@ def lane_of(text: str, tool_names: set[str] | None = None) -> str:
     if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(" ".join(fold(text or "").split())):
         return LANE_HEAVY
     return LANE_NORMAL
+
+
+def _chat_draft(tool_name) -> bool:
+    """Nháp trình bày trong chat được (đề nghị thanh toán vẫn đi link form web như cũ)."""
+    from . import draft_create
+
+    kind = draft_create.kind_of(str(tool_name or ""))
+    return bool(kind) and kind != "payment"
+
+
+def _summary(tool_name: str, draft: dict) -> list[str]:
+    from . import draft_create
+
+    kind = draft_create.kind_of(str(tool_name or ""))
+    try:
+        return list(draft_create.summarize(kind, draft)) if kind else []
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def _card_talk(text: str) -> bool:
@@ -277,6 +296,18 @@ def history(db: Session, chat_id: str, before_id: int, now, *, smalltalk: bool =
     return turns
 
 
+WEEKDAYS_VI = ("thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật")
+
+
+def calendar_block(now) -> str:
+    """Hôm nay + 14 ngày tới kèm thứ. 14/10 model ghi «hạn thứ Sáu (17/10)» trong khi 17/10/2026 là thứ Bảy — model tự
+    tính thứ là sai, phải đưa sẵn lịch."""
+    days = [now.date() + timedelta(days=i) for i in range(15)]
+    cells = [f"{WEEKDAYS_VI[d.weekday()]} {d:%d/%m/%Y}" + (" (hôm nay)" if i == 0 else " (mai)" if i == 1 else "")
+             for i, d in enumerate(days)]
+    return "giờ Việt Nam. LỊCH (dùng đúng bảng này khi đổi «thứ sáu», «tuần sau»… ra ngày): " + "; ".join(cells) + "."
+
+
 def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) -> str:
     from . import intent_ledger, personal_memory, service
     from .constants import BOT_LOGIN_FACTS
@@ -293,7 +324,7 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
     parts = [
         service._persona(chat_id),
         STYLE_RULES,
-        f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M, %A %d/%m/%Y')} (giờ Việt Nam). Năm hiện tại là {now.year}.",
+        f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M')} {calendar_block(now)}",
         who,
         CORE_RULES,
         DRAFT_FACTS,
@@ -355,8 +386,9 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
             return {"error": "Chưa có ô nào cần đổi."}
         draft = dict(info.get("draft") or {})
         draft.update(changes)
-        service._offer_draft(db, chat_id, user, {"name": info.get("tool") or "", "draft": draft})
-        return {"ok": True, "draft": draft, "note": "Đã gửi lại thẻ nháp mới cho người dùng; không cần lặp lại nội dung."}
+        service._offer_draft(db, chat_id, user, {"name": info.get("tool") or "", "draft": draft}, silent=True)
+        return {"ok": True, "draft": draft, "tom_tat_se_luu": _summary(info.get("tool") or "", draft),
+                "note": "Đã sửa nháp. Trình bày lại bản nháp trong câu trả lời theo tom_tat_se_luu."}
     if name in ("commit_draft", "drop_draft"):
         pending, info = _pending_draft(db, chat_id, row.id, now)
         if pending is None:
@@ -425,7 +457,10 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
             try:
                 if name in LOCAL_TOOL_NAMES:
                     return _run_local(db, chat_id, row, user, name, args or {})
-                return erp.run_tool(db, user, name, args or {})
+                out = erp.run_tool(db, user, name, args or {})
+                if isinstance(out, dict) and isinstance(out.get("draft"), dict):
+                    out = {**out, "tom_tat_se_luu": _summary(name, out["draft"])}
+                return out
             except Exception as e:  # noqa: BLE001
                 log.exception("core_v2: công cụ %s hỏng", name)
                 return {"error": f"Công cụ {name} lỗi: {type(e).__name__}: {str(e)[:200]}"}
@@ -451,7 +486,10 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         answer = (result.text or "").strip() or "Em đã làm xong phần đó."
         service.reply(db, chat_id, answer, markdown=True, action=ACT_ANSWER)
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]
-        service.deliver_tool_results(db, chat_id, user, calls)
+        drafts = [c for c in calls if isinstance(c.get("draft"), dict) and _chat_draft(c.get("name"))]
+        for c in drafts:                     # nháp đã nằm trong câu trả lời — chỉ ghi dòng chờ «tạo», không gửi thẻ
+            service._offer_draft(db, chat_id, user, c, silent=True)
+        service.deliver_tool_results(db, chat_id, user, [c for c in calls if c not in drafts])
         run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in (result.tool_calls or [])
                                                               if isinstance(c, dict)][:20], "tools_offered": len(tools)}
         db.commit()

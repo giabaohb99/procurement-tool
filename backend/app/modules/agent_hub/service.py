@@ -4444,7 +4444,7 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[di
     return "\n".join(out)
 
 
-def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
+def _offer_draft(db: Session, chat_id: str, user, call: dict, *, silent: bool = False) -> None:
     """Tool vừa soạn nháp: tóm tắt + chờ «tạo». Đề nghị thanh toán thì gửi link form web điền sẵn."""
     esc = telegram.esc
     kind = draft_create.kind_of(str(call.get("name") or ""))
@@ -4464,7 +4464,10 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
         replaced += 1
     #  ai-CR-156: đã có phiếu nháp YCMH / YCBG cùng loại → mời dùng lại thay vì lập thêm phiếu.
     reuse = draft_create.same_kind_drafts(erp.my_drafts(db, user), kind) if user is not None else []
-    reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced), reuse=reuse))
+    if not silent:
+        #  ai-CR-198 (đại ca 14/10: «cho nó vào chat thôi, dễ đọc dễ xác nhận hơn»): lõi mới tự trình bày nháp trong câu
+        #  trả lời, không gửi thẻ riêng — chỉ ghi dòng chờ «tạo» bên dưới.
+        reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced), reuse=reuse))
     log_message(db, DIR_OUT, chat_id, 0, json.dumps({"tool": call.get("name"), "kind": kind,
                                                      "user_id": getattr(user, "id", 0), "draft": draft,
                                                      "reuse": [{"id": x["id"], "code": x["code"]} for x in reuse]},

@@ -93,7 +93,8 @@ def test_model_nhin_thay_ngay_nguoi_va_dang_do_lich_su_du(db, chat, monkeypatch)
     core_v2.handle(db, CHAT, row, "tạo cho anh task nghiên cứu luồng agent")
 
     sysm = prov.seen["system"]
-    assert f"Năm hiện tại là {datetime.now().year}" in sysm                 # hôm 14/10 model ghi hạn năm 2025 vì thiếu ngày
+    assert f"{datetime.now():%d/%m/%Y} (hôm nay)" in sysm                  # hôm 14/10 model ghi hạn năm 2025 vì thiếu ngày
+    assert "LỊCH" in sysm and "(mai)" in sysm                              # và tính sai thứ sáu = 17/10
     assert "Trần Minh Được" in sysm and "KHÔNG gọi «đại ca»" in sysm       # biết đang nói với ai
     assert "ĐANG DỞ" in sysm and "(không có)" in sysm
     assert "KHÔNG dùng emoji" in sysm
@@ -150,7 +151,7 @@ def test_update_draft_gui_lai_the_voi_o_da_doi(db, chat, monkeypatch):
     db.commit()
     row = _incoming(db, "đổi hạn thứ năm 16/10")
     offered = {}
-    monkeypatch.setattr(service, "_offer_draft", lambda db_, chat_id, user, call: offered.update(call))
+    monkeypatch.setattr(service, "_offer_draft", lambda db_, chat_id, user, call, **kw: offered.update(call, **kw))
 
     def script(msgs, tools, execute):
         out = execute("update_draft", {"changes": {"due_date": "2026-10-16"}})
@@ -161,6 +162,7 @@ def test_update_draft_gui_lai_the_voi_o_da_doi(db, chat, monkeypatch):
     core_v2.handle(db, CHAT, row, "đổi hạn thứ năm 16/10")
 
     assert offered["name"] == "draft_work_task" and offered["draft"]["due_date"] == "2026-10-16"
+    assert offered["silent"] is True                                        # nháp nằm trong chat, không gửi thẻ
     assert offered["draft"]["title"] == "Việc A"
 
 
@@ -343,3 +345,34 @@ def test_lich_su_bo_tin_cu_noi_toi_the(db):
     row = _incoming(db, "hello")
     assert [t["content"] for t in core_v2.history(db, CHAT, row.id, row.created_at)] == ["tạo task A"]
     assert core_v2._phantom_card(_result("Em đã soạn nháp công việc này với thông tin gợi ý sẵn."))
+
+
+def test_nhap_moi_trinh_bay_trong_chat_khong_gui_the(db, chat, monkeypatch):
+    """Đại ca 14/10 16:58: «sao có 2 dòng chat… cho nó vào chat thôi» — một tin duy nhất, dòng chờ «tạo» ghi im lặng."""
+    row = _incoming(db, "tạo task A, ERP v2, giao Được, hạn thứ sáu")
+    monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: {
+        "draft": {"title": "A", "due_date": "2026-10-16"}})
+    seen = {}
+
+    def script(msgs, tools, execute):
+        out = execute("draft_work_task", {"title": "A"})
+        seen["out"] = out
+        return _result("Em soạn xong:\nViệc: A\nHạn: 16/10/2026 (thứ Sáu)\nĐổi gì không ạ?",
+                       [{"name": "draft_work_task", "draft": out["draft"]}])
+    _install(monkeypatch, script)
+
+    core_v2.handle(db, CHAT, row, "tạo task A, ERP v2, giao Được, hạn thứ sáu")
+
+    assert seen["out"]["tom_tat_se_luu"]                                    # model nhận đúng bản tóm tắt sẽ lưu
+    assert len(chat.sent) == 1 and "Việc: A" in chat.sent[0] and "BẢN NHÁP" not in chat.sent[0]
+    pending = db.query(AgentMessage).filter(AgentMessage.action == ACT_DRAFT_WAIT).one()
+    assert json.loads(pending.body)["draft"]["title"] == "A"
+
+
+def test_lich_15_ngay_dung_thu():
+    from datetime import date
+
+    block = core_v2.calendar_block(datetime(2026, 10, 14, 9, 0))
+    assert "thứ Tư 14/10/2026 (hôm nay)" in block and "thứ Năm 15/10/2026 (mai)" in block
+    assert "thứ Sáu 16/10/2026" in block and "thứ Bảy 17/10/2026" in block
+    assert date(2026, 10, 17).weekday() == 5
