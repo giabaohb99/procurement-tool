@@ -3764,13 +3764,25 @@ def handle_callback(db: Session, cb: dict) -> None:
         _handle_callback(db, cb, chat_id)
 
 
+#  Nút mà chat ĐÃ LIÊN KẾT ERP (không phải chat quản trị bot) được bấm. Mọi nút khác (ý định, đề xuất sửa phiếu, sổ việc
+#  của bot) vẫn chỉ chat quản trị. Thêm nút cho người dùng thường thì khai vào đây KÈM kiểm chủ tin ở hàm xử lý.
+LINKED_CHAT_CALLBACKS = frozenset(work_plan.CALLBACK_ACTIONS)
+
+
 def _handle_callback(db: Session, cb: dict, chat_id: str) -> None:
     data = str(cb.get("data") or "")
     cb_id = str(cb.get("id") or "")
-    if not telegram.is_allowed_chat(chat_id):
-        return
-
     action, _, raw_id = data.partition(":")
+    if not telegram.is_allowed_chat(chat_id):
+        #  bao-CR-616 (lỗi thử dev 14/10): người làm bấm Nhận / Từ chối trên tin hỏi nhận việc mà bot im lặng, vì
+        #  cổng này trước đây chỉ cho chat quản trị. Chat đã liên kết ERP được bấm các nút dành cho họ; mọi nhánh
+        #  trả sớm đều answer_callback để Telegram thôi xoay.
+        if chat_link.get_active_link(db, chat_id) is None:
+            telegram.answer_callback(cb_id, "Chat này chưa đăng nhập ERP — nhắn «đăng nhập» trước")
+            return
+        if action not in LINKED_CHAT_CALLBACKS:
+            telegram.answer_callback(cb_id, "Nút này chỉ dành cho chat quản trị bot")
+            return
 
     #  Hai nút của nhánh mập mờ trỏ vào một TIN NHẮN, không phải một task — phải rẽ
     #  trước khi đi tra sổ việc, không thì nó tra id tin trong bảng task và báo
