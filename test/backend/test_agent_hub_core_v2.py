@@ -308,3 +308,27 @@ def test_tram_bao_khong_co_kenh_cho_model_thi_nhay_khoa_ke(monkeypatch):
     with user_keys.use_chain(chain, 238):
         out = manager.get_provider().ask([ChatMessage(role="user", content="hello em")])
         assert out.text == "chào anh" and user_keys.active_ref().model == "kimi-k3"
+
+
+def test_noi_toi_the_ma_khong_co_nhap_thi_viet_lai(db, chat, monkeypatch):
+    """Lượt #211/#212 (14/10 16:41): Kimi viết «em đang hỏi lại ở thẻ dưới» mà không gọi công cụ → không có thẻ nào."""
+    row = _incoming(db, "tạo cho anh task nghiên cứu luồng agent")
+    calls = []
+
+    def script(msgs, tools, execute):
+        calls.append([m.content for m in msgs])
+        if len(calls) == 1:
+            return _result("Còn giao ai và hạn bao giờ thì em đang hỏi lại ở thẻ dưới.")
+        return _result("Anh giao cho ai làm, và hạn ngày nào ạ — thứ sáu 17/10 được không?")
+    _install(monkeypatch, script)
+
+    core_v2.handle(db, CHAT, row, "tạo cho anh task nghiên cứu luồng agent")
+
+    assert len(calls) == 2 and calls[1][-1] == core_v2.PHANTOM_FIX
+    assert "thẻ" not in chat.sent[-1] and "giao cho ai" in chat.sent[-1]
+
+
+def test_co_nhap_that_thi_noi_toi_the_khong_bi_viet_lai():
+    ok = _result("Em soạn xong, anh xem thẻ bên dưới.", [{"name": "draft_work_task", "draft": {"title": "A"}}])
+    assert not core_v2._phantom_card(ok)
+    assert core_v2._phantom_card(_result("Em đang hỏi lại ở thẻ dưới."))

@@ -85,11 +85,18 @@ CORE_RULES = (
 )
 
 DRAFT_FACTS = (
-    "NHÁP CHỨNG TỪ / VIỆC: công cụ draft_* trả về bản nháp, bot tự gửi thẻ tóm tắt cho người dùng ngay sau câu trả lời "
-    "của bạn — bạn chỉ nói ngắn là đã soạn và hỏi họ có muốn đổi gì không. Nháp đang chờ nằm ở mục ĐANG DỞ. Người dùng "
-    "đồng ý → commit_draft (submit=true nếu họ bảo gửi duyệt luôn); muốn sửa → update_draft với đúng ô cần đổi; thôi → "
-    "drop_draft. Mọi chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
+    "NHÁP CHỨNG TỪ / VIỆC: chỉ khi BẠN VỪA GỌI công cụ draft_* thành công trong lượt này thì bot mới gửi thẻ tóm tắt ngay "
+    "sau câu trả lời — lúc đó bạn nói ngắn là đã soạn và hỏi có muốn đổi gì không. KHÔNG gọi công cụ thì KHÔNG có thẻ nào: "
+    "tuyệt đối không viết «ở thẻ dưới», «xem thẻ bên dưới». Cần hỏi thêm thì VIẾT THẲNG câu hỏi trong tin (kèm 2–3 lựa "
+    "chọn). Đủ thông tin tối thiểu (tên việc) thì cứ soạn nháp với giá trị hợp lý cho ô còn thiếu rồi hỏi họ có muốn đổi. "
+    "Nháp đang chờ nằm ở mục ĐANG DỞ. Người dùng đồng ý → commit_draft (submit=true nếu họ bảo gửi duyệt luôn); muốn sửa → "
+    "update_draft với đúng ô cần đổi; thôi → drop_draft. Mọi chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
 )
+#  14/10 16:41–16:43 (lượt #211, #212, Kimi): bot hai lần viết «em đang hỏi lại ở thẻ dưới» mà không gọi công cụ nào → đại
+#  ca chờ một thẻ không bao giờ tới. Nói tới thẻ mà lượt này không có nháp → bắt model viết lại một lần.
+PHANTOM_CARD = re.compile(r"(?<!\w)(?:the|o the|xem the)\s+(?:ben\s+)?(?:duoi|nhap)(?!\w)")
+PHANTOM_FIX = ("(Hệ thống: tin vừa rồi nói tới một thẻ nhưng chưa có công cụ nào chạy nên KHÔNG có thẻ nào. Viết lại: "
+               "hoặc gọi công cụ soạn nháp ngay, hoặc hỏi thẳng câu cần hỏi trong tin — không nhắc tới thẻ.)")
 
 LOCAL_TOOLS: tuple[ToolDef, ...] = (
     ToolDef(name="update_draft",
@@ -136,6 +143,15 @@ def lane_of(text: str, tool_names: set[str] | None = None) -> str:
     if len(text or "") >= HEAVY_TEXT_CHARS or HEAVY_TEXT.search(" ".join(fold(text or "").split())):
         return LANE_HEAVY
     return LANE_NORMAL
+
+
+def _phantom_card(result) -> bool:
+    """Câu trả lời nói tới «thẻ dưới / thẻ nháp» mà lượt này không có công cụ nào trả nháp."""
+    from app.modules.assistant.glossary import fold
+
+    has_draft = any(isinstance(c, dict) and (isinstance(c.get("draft"), dict) or c.get("name") in LOCAL_TOOL_NAMES)
+                    for c in (result.tool_calls or []))
+    return not has_draft and bool(PHANTOM_CARD.search(" ".join(fold(result.text or "").split())))
 
 
 def route_providers(lane: str) -> list[str]:
@@ -410,6 +426,16 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
             result = manager.get_provider().run_tools(
                 msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
                 max_iters=MAX_ITERS, cache_system=True)
+            if _phantom_card(result):
+                log.warning("core_v2: model nói tới thẻ mà không có nháp — viết lại một lần")
+                first = result
+                result = manager.get_provider().run_tools(
+                    msgs + [ChatMessage(role="assistant", content=result.text or ""),
+                            ChatMessage(role="user", content=PHANTOM_FIX)],
+                    tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
+                    max_iters=MAX_ITERS, cache_system=True)
+                result.input_tokens += first.input_tokens
+                result.output_tokens += first.output_tokens
             service.finish_run(db, run, result=result)
         answer = (result.text or "").strip() or "Em đã làm xong phần đó."
         service.reply(db, chat_id, answer, markdown=True, action=ACT_ANSWER)
