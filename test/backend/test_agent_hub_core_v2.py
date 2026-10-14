@@ -243,4 +243,4 @@ def test_lich_su_cat_tin_dai_va_xa_giao_chi_6_luot(db):
     assert all(len(t["content"]) <= core_v2.HISTORY_MSG_CHARS + 20 for t in full)
     assert sum(len(t["content"]) for t in full) <= core_v2.HISTORY_MAX_CHARS
     small = core_v2.history(db, CHAT, row.id, row.created_at, smalltalk=True)
-    assert len(small) == core_v2.SMALLTALK_TURNS
+    assert len(small) == 2 * core_v2.SMALLTALK_TURNS          # 6 lượt hỏi–đáp = 12 tin
