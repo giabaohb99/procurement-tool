@@ -214,3 +214,19 @@ def test_tram_tra_500_hai_lan_thi_nhay_sang_khoa_ke(monkeypatch):
         out = manager.get_provider().ask([ChatMessage(role="user", content="hello em")])
     assert out.text == "chào anh"
     assert [k for k, _ in seen] == ["1111", "1111", "2222"]        # thử lại một lần rồi nhảy khóa
+
+
+def test_claude_the_he_5_qua_tram_khong_gui_temperature():
+    """ai-CR-198 lượt #205: trạm trả 400 «claude-sonnet-5-5 does not support non-default temperature»."""
+    from app.modules.assistant.provider.openai_compat import _no_temperature
+
+    assert _no_temperature("claude-sonnet-5-5") and _no_temperature("claude-opus-5-5") and _no_temperature("gpt-5-mini")
+    assert not _no_temperature("kimi-k3") and not _no_temperature("deepseek-v4.1-flash")
+
+
+def test_hello_em_la_xa_giao_khong_nap_cong_cu_erp():
+    """«hello em» lượt #205 vẫn nạp 76 công cụ."""
+    from app.modules.assistant import tool_router
+
+    for t in ("hello em", "hi em", "chào em", "alo em", "em ơi", "cảm ơn em nhé"):
+        assert tool_router.is_smalltalk(t), t

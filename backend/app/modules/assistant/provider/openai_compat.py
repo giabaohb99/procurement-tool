@@ -71,8 +71,12 @@ def clean_reply(text: str) -> str:
 
 
 def _no_temperature(model: str) -> bool:
-    """Dòng model suy luận của OpenAI (gpt-5*, o*) từ chối `temperature` khác 1 — bỏ tham số cho nó."""
+    """Dòng model suy luận của OpenAI (gpt-5*, o*) từ chối `temperature` khác 1 — bỏ tham số cho nó.
+    ai-CR-198 (14/10): Claude thế hệ 5 qua trạm OpenAI-compat cũng từ chối («claude-sonnet-5-5 does not support
+    non-default temperature», lượt #205) — bỏ luôn cho họ claude-*-5*."""
     m = (model or "").lower()
+    if m.startswith("claude-") and any(f"-{v}" in m for v in ("5", "6", "7")):
+        return True
     return m.startswith(("gpt-5", "o1", "o3", "o4"))
 
 
