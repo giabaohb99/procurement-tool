@@ -40,8 +40,6 @@ def _result(text, tool_calls=None):
 @pytest.fixture
 def chat(db, monkeypatch):
     """Chat đã liên kết, khóa sẵn, mọi đường ra ngoài (Telegram, ERP) đều giả."""
-    monkeypatch.setattr(settings, "AGENT_CORE_V2_ENABLED", True)
-    monkeypatch.setattr(settings, "AGENT_CORE_V2_CHATS", "")
     monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
     user = SimpleNamespace(id=275, is_active=True, email="duoc@dego.com", name="Trần Minh Được")
     monkeypatch.setattr(service, "_assistant_user", lambda db_, chat_id="": user)
@@ -69,15 +67,6 @@ def _install(monkeypatch, script):
     monkeypatch.setattr(core_v2.manager, "get_provider", lambda: prov)
     return prov
 
-
-def test_enabled_for_theo_co_va_danh_sach_chat(monkeypatch):
-    monkeypatch.setattr(settings, "AGENT_CORE_V2_ENABLED", False)
-    assert not core_v2.enabled_for("1")
-    monkeypatch.setattr(settings, "AGENT_CORE_V2_ENABLED", True)
-    monkeypatch.setattr(settings, "AGENT_CORE_V2_CHATS", "")
-    assert core_v2.enabled_for("1")
-    monkeypatch.setattr(settings, "AGENT_CORE_V2_CHATS", " 12345, 5551 ")
-    assert core_v2.enabled_for("5551") and not core_v2.enabled_for("999")
 
 
 def test_model_nhin_thay_ngay_nguoi_va_dang_do_lich_su_du(db, chat, monkeypatch):
@@ -1011,3 +1000,54 @@ def test_boi_canh_luot_co_tran_tung_khoi(db, chat, monkeypatch):
     ctx = core_v2.turn_context(db, CHAT, row, chat.user, "hỏi chút", sizes)
     assert sizes["glossary"] <= core_v2.CONTEXT_BUDGET["glossary"] + 60 and "pending" in sizes and "time" in sizes
     assert len(ctx) < 4000
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-206 — bỏ đường cũ: mọi chat đi lõi mới; các phần đường cũ còn đáng giữ đã dời vào lõi
+# ---------------------------------------------------------------------------
+def test_moi_chat_deu_di_loi_moi(db, monkeypatch):
+    """Đại ca 15/10: «bỏ cái cũ luôn, sử dụng luồng mới». Không còn cờ / danh sách chat; tin chữ nào cũng tới core_v2."""
+    from app.modules.agent_hub import chat_link
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setattr(settings, "AGENT_HUB_ENABLED", True)
+    monkeypatch.setattr(settings, "AGENT_ACK_ENABLED", False)
+    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: 1)
+    monkeypatch.setattr(service.telegram, "send_chat_action", lambda *a, **k: None)
+    seen: list = []
+    monkeypatch.setattr(core_v2, "handle", lambda db_, chat_id, row, text: seen.append((chat_id, text)))
+    msg = {"message_id": 7, "chat": {"id": 12345, "type": "private"}, "from": {"id": 1}, "text": "chào em", "date": 0}
+    service.handle_message(db, msg)
+    assert seen == [("12345", "chào em")]
+    assert not hasattr(core_v2, "enabled_for") and not hasattr(service, "_route_plain_text") \
+        and not hasattr(service, "_route_linked_text") and not hasattr(service.manager, "run_intent")
+
+
+def test_loi_khoa_noi_thang_kem_ma_luot(db, chat, monkeypatch):
+    """Dời từ đường cũ (ai-CR-097): khóa hết tiền / hạn mức thì nói thẳng chuyện khóa, không «gọi AI bị lỗi» chung chung."""
+    from app.modules.assistant.provider.base import ProviderError
+
+    def boom(msgs, tools, execute):
+        raise ProviderError("modelapi trả lỗi 403: 用户额度不足, 剩余额度: $-0.03")
+    _install(monkeypatch, boom)
+    core_v2.handle(db, CHAT, _incoming(db, "công nợ tháng này"), "công nợ tháng này")
+    assert "hết tiền" in chat.sent[-1] and "mã lượt #" in chat.sent[-1]
+
+
+def test_sua_du_lieu_bang_loi_chi_chu_bot_khi_bat_thao_tac(db, chat, monkeypatch):
+    """Dời từ đường cũ (ý định «du_lieu», ai-CR-073): công cụ request_data_change chỉ cho chat chủ bot khi bật ops."""
+    from app.modules.agent_hub import ops
+
+    monkeypatch.setattr(ops, "start_data_change", lambda db_, chat_id, text, env="": f"<b>Thẻ sửa dữ liệu</b> {env}: {text}")
+    monkeypatch.setattr(ops, "enabled", lambda: True)
+    tools = {t.name for t in core_v2.select_tools(db, chat.user, "đổi email NV X trên dev", CHAT)}
+    assert "request_data_change" not in tools                                # CHAT không phải chat chủ bot
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", CHAT)
+    tools = {t.name for t in core_v2.select_tools(db, chat.user, "đổi email NV X trên dev", CHAT)}
+    assert "request_data_change" in tools
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: StopProvider([("request_data_change",
+                        {"yeu_cau": "đổi email NV X", "moi_truong": "dev"})]))
+    core_v2.handle(db, CHAT, _incoming(db, "đổi email NV X trên dev"), "đổi email NV X trên dev")
+    assert chat.sent[-1] == "<b>Thẻ sửa dữ liệu</b> dev: đổi email NV X"
+    monkeypatch.setattr(ops, "enabled", lambda: False)
+    assert "error" in core_v2._run_local(db, CHAT, _incoming(db, "x"), chat.user, "request_data_change", {"yeu_cau": "x"})

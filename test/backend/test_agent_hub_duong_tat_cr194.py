@@ -4,15 +4,6 @@ ngữ cảnh việc tối đa 5 dòng."""
 from types import SimpleNamespace
 
 
-def test_loi_dan_phan_loai_gon_ma_du_y():
-    from app.modules.agent_hub import manager
-
-    s = manager.INTENT_SYSTEM
-    assert len(s) <= 4500
-    for must in ('"hoi"', '"viec"', '"thao_tac"', '"tra_cuu"', '"du_lieu"', '"mo_ho"', "lên task gọi NCC", "PHÂN HỆ DỰ ÁN",
-                 "tao task do di", "scope", "CHỈ trả JSON", "kiem_chung", "sua_ke_hoach"):
-        assert must in s, must
-
 
 def _chat(db, monkeypatch, service):
     from app.core.config import settings
@@ -31,55 +22,6 @@ def _chat(db, monkeypatch, service):
                                                        thinking_tokens=0, cache_read_tokens=0)))
     return calls
 
-
-def test_tra_nhanh_va_xa_giao_bo_qua_buoc_doc_y_dinh(db, monkeypatch):
-    from app.modules.agent_hub import service
-    from app.modules.agent_hub.constants import ACT_ASKED, DIR_IN
-
-    calls = _chat(db, monkeypatch, service)
-
-    def say(text):
-        row = service.log_message(db, DIR_IN, "12345", 1, text)
-        db.commit()
-        service._route_plain_text(db, "12345", row, text)
-        return row
-
-    row = say("giá vàng hôm nay")
-    assert calls["research"] == [("giá vàng hôm nay", "web")] and calls["intent"] == [] and row.action == ACT_ASKED
-    row = say("chào em")
-    assert calls["answer"] == ["chào em"] and calls["intent"] == [] and row.action == ACT_ASKED
-    say("công nợ Hòa Phát còn bao nhiêu")
-    assert calls["intent"] == ["công nợ Hòa Phát còn bao nhiêu"]        # câu thường vẫn qua bước đọc ý định
-
-
-def test_chat_nguoi_lien_ket_cung_di_duong_tat(db, monkeypatch):
-    from app.modules.agent_hub import service
-    from app.modules.agent_hub.constants import DIR_IN
-
-    calls = _chat(db, monkeypatch, service)
-    monkeypatch.setattr(service.telegram, "is_allowed_chat", lambda chat_id: False)
-    row = service.log_message(db, DIR_IN, "999", 1, "tỷ giá USD hôm nay")
-    db.commit()
-    service._route_linked_text(db, "999", row, "tỷ giá USD hôm nay")
-    assert calls["research"] == [("tỷ giá USD hôm nay", "web")] and calls["intent"] == []
-
-
-def test_tat_buoc_doc_y_dinh_thi_di_thang_tro_ly(db, monkeypatch):
-    from app.core.config import settings
-    from app.modules.agent_hub import service
-    from app.modules.agent_hub.constants import ACT_ASKED, DIR_IN
-
-    calls = _chat(db, monkeypatch, service)
-    monkeypatch.setattr(settings, "AGENT_INTENT_ENABLED", False)
-    row = service.log_message(db, DIR_IN, "12345", 1, "công nợ Hòa Phát còn bao nhiêu")
-    db.commit()
-    service._route_plain_text(db, "12345", row, "công nợ Hòa Phát còn bao nhiêu")
-    assert calls["intent"] == [] and calls["answer"] == ["công nợ Hòa Phát còn bao nhiêu"] and row.action == ACT_ASKED
-    monkeypatch.setattr(service.telegram, "is_allowed_chat", lambda chat_id: False)
-    row = service.log_message(db, DIR_IN, "999", 2, "đơn nghỉ của tôi")
-    db.commit()
-    service._route_linked_text(db, "999", row, "đơn nghỉ của tôi")
-    assert calls["intent"] == [] and calls["answer"][-1] == "đơn nghỉ của tôi"
 
 
 def test_bao_nhan_tuc_thi_roi_xoa(monkeypatch):

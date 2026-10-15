@@ -13358,6 +13358,17 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-206 | Bỏ hẳn lõi hội thoại cũ, bot chỉ còn một lõi
+- status: dang-lam
+- date: 2026-10-15
+Đại ca hỏi vì sao bot có hai lõi; đó là cách chuyển dần cho an toàn, không phải ý định giữ hai bản. Vì hiện chỉ đại ca
+dùng bot, đại ca chốt bỏ luôn lõi cũ cho mã gọn. Nay mọi tin nhắn của mọi người đều đi lõi mới, phần lõi cũ (bước đoán ý
+định rồi rẽ nhánh) đã xóa cùng các công tắc bật theo từng chat. Hai việc lõi cũ làm mà lõi mới chưa có được dời sang: báo
+thẳng khi khóa AI hết tiền hay hết hạn mức, và nhờ sửa dữ liệu trên máy chủ bằng lời. Mã nguồn giảm hơn một nghìn dòng;
+các bài kiểm canh hành vi riêng của lõi cũ được bỏ, bài còn lại chạy qua lõi mới và xanh.
+
+Mã nguồn: agent_hub/service.py, manager.py, core_v2.py, core/config.py
+
 ## ai-CR-205 | Nghiên cứu sâu của bot viết bằng Claude thay vì DeepSeek
 - status: dang-lam
 - date: 2026-10-15

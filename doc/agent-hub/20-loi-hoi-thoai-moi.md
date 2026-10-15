@@ -245,7 +245,8 @@ trong chat (không thẻ riêng, `_offer_draft(silent=True)`); chặn «thẻ ma
   `docker exec agent-hub-agent-api-1 python scripts/eval_core_v2.py` (`--only 03 05`, `--no-judge`). Thử 4 mẫu: 109k token,
   23 s; mẫu 13 / 20 đạt, 01 / 03 trượt do model chấm khắt khe + tin nháp lặp ô → đã sửa. Chạy đủ lần 1: 14/20 → vá vé sửa
   mã phải xác nhận, chèn lời người dùng cho công cụ soạn nháp, nháp trùng nháp đang chờ (319c189e…).
-- 15/10 — việc 4: thẻ nháp đường cũ kết bằng câu tự nhiên (không còn «Trả lời: tạo / thôi»), cùng ai-CR-203. Việc 4 (dòng cuối tự nhiên) xong luôn cho lõi
+- 15/10 — việc 4: thẻ nháp đường cũ kết bằng câu tự nhiên (không còn «Trả lời: tạo / thôi»), cùng ai-CR-203.
+- 15/10 — **ai-CR-206**: đại ca chốt bỏ đường cũ — mọi chat đi lõi mới, xóa `_route_plain_text` / `_route_linked_text` / bước đọc ý định / cờ `AGENT_CORE_V2_*`; lỗi khóa nói thẳng + sửa dữ liệu bằng lời dời vào lõi. Việc 4 (dòng cuối tự nhiên) xong luôn cho lõi
   mới; đường cũ còn «Trả lời: tạo / thôi».
 
 **Agent 1 làm:** gộp `agent-hub-bac-1` → erp-v2, dựng ERP api (nếu đổi `assistant/*`) rồi `~/agent-hub` trên VPS 2

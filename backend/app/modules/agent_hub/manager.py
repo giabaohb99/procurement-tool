@@ -23,7 +23,7 @@ from app.modules.assistant.provider.gemini import GeminiProvider
 from app.modules.assistant.provider.openai_compat import (DeepSeekProvider, OpenAICompatProvider, OpenRouterProvider,
                                                          XaiProvider)
 
-from .constants import BOT_NAME, SCOPE_COMPANY, SCOPE_PERSONAL
+from .constants import BOT_NAME
 
 log = logging.getLogger("app.agent_hub.manager")
 
@@ -666,120 +666,10 @@ INTENT_ASK = "hoi"
 INTENT_TASK = "viec"
 INTENT_UNSURE = "mo_ho"
 
-INTENT_SYSTEM = """\
-Phân loại MỘT tin nhắn gửi bot ERP nội bộ. Bot có hai tay: TRỢ LÝ AI (tra cứu + làm nghiệp vụ ngay bằng công cụ: xem số
-liệu, tình trạng chứng từ, tạo đơn nghỉ / YCMH / YCBG / việc Dự án, xuất báo cáo, duyệt, gửi thông báo) và SỔ VIỆC SỬA PHẦN MỀM
-(ghi cho lập trình viên sửa mã). Sáu kết quả:
-
-- "hoi": giao TRỢ LÝ AI — muốn BIẾT điều có sẵn (số liệu, tình trạng chứng từ, ai giữ việc, cách dùng, nội dung tài liệu); muốn
-  LÀM NGAY một việc nghiệp vụ (tạo / lập / gửi / duyệt chứng từ, xuất báo cáo, lên task / giao việc ở phân hệ Dự án); hoặc đang
-  TRẢ LỜI câu bot vừa hỏi / đồng ý thẻ nháp bot vừa đưa.
-- "viec": nhờ SỬA PHẦN MỀM — thêm / bớt / sửa tính năng, báo chỗ chạy sai, đổi giao diện, đổi cách tính, xin màn hình mới, nhờ
-  làm tài liệu. Chữ «task / việc / công việc» KHÔNG tự là viec: đó là MỘT VIỆC Ở PHÂN HỆ DỰ ÁN (có dự án, người phụ trách, hạn)
-  trừ khi người ta nói về phần mềm (lỗi, tính năng, màn hình, cách tính).
-- "thao_tac": làm gì đó với MỘT VIỆC trong danh sách VIỆC ĐANG MỞ bên dưới — kể cả «đồng ý», «ok», «làm đi», «thôi» đáp lại
-  đề nghị trong TIN BOT VỪA NHẮN. Điền `action` (duyet · sua_ke_hoach · gop · deploy_dev · thu_hoi · xong · bo · lam_tiep ·
-  sua_cho_xanh · chi_tiet · mo_pr · tinh_trang · ghi_so · khong_ghi_so), `task` (vd "AI-0007"), `when` (giờ hẹn nếu có),
-  `detail` (điều cần đổi khi sua_ke_hoach), `confident` (true CHỈ khi rõ cả việc nào lẫn làm gì; gop · thu_hoi · bo còn nghi
-  ngờ thì false). gop = gộp vào nhánh nền (có nhắc lên dev vẫn là gop); deploy_dev = chỉ đưa bản đã gộp lên dev. Hỏi về một
-  việc («xong chưa», «nhánh nào») là tinh_trang. Yêu cầu sửa phần mềm MỚI (dù có chữ «gộp», «bỏ») là "viec".
-- "tra_cuu": cần thông tin NGOÀI ERP — kiến thức chung, luật, giá thị trường, công nghệ, tin tức, công ty / sản phẩm bên ngoài;
-  hoặc KIỂM CHỨNG một nhận định; hoặc hỏi TÀI LIỆU KỸ THUẬT của dự án phần mềm. Điền `kind`: web · kiem_chung · tai_lieu, và
-  `query` (câu cần tra, viết lại cho rõ). Dữ liệu TRONG ERP (đơn, NCC, công nợ, nhân sự, phiếu) là "hoi".
-- "du_lieu": SỬA DỮ LIỆU HÀNG LOẠT trong CSDL theo điều kiện (gán / đổi / xóa một giá trị cho NHIỀU bản ghi). Điền `env`
-  ("prod" nếu nói rõ prod / thật / chính thức, còn lại "dev") và `request` (viết lại rõ, giữ nguyên mọi tên / mã).
-- "mo_ho": CHỈ khi tin có thể là sửa phần mềm hoặc thao tác trên việc đang mở mà không biết là cái nào / về việc nào. Cụm danh
-  từ ngắn («Giá thép Hòa Phát», «tỷ giá USD») KHÔNG mo_ho: ngoài ERP là tra_cuu kind web, trong ERP là hoi.
-
-Ca dễ nhầm: "tìm hiểu giúp anh thuế nhập khẩu thép năm nay" → tra_cuu web · "có đúng là hóa đơn điện tử phải xuất trong ngày
-không" → tra_cuu kiem_chung · "giá thép Hòa Phát báo tháng này trong hệ thống" → hoi · "3 đơn mua hàng gần nhất" → hoi · "tạo cho
-anh đơn nghỉ phép thứ 6" → hoi · "lên task gọi NCC Hòa Phát cho anh Được hạn thứ 6", "tạo cho anh 1 task trong dự án ERP v2",
-"giao việc X cho Y" → hoi · bot vừa đưa bản nháp và người ta nhắn "vậy tạo task đó giúp anh đi", "tao task do di" (thiếu dấu)
-→ hoi · bot hỏi "nghỉ ngày nào?" và người ta nhắn "thứ 6, đi du lịch" → hoi · "màn đơn mua hàng không lọc được theo ngày" →
-viec · "cho thêm cột ngày giao vào bảng đơn hàng" → viec · bot vừa nói "chưa có tính năng X" và người ta nhắn "oke phát triển
-tính năng", "làm luôn đi" → viec · "sao đơn PO00362 chưa duyệt" → hoi · "xem lại giúp anh" → mo_ho · "công nợ Hòa Phát" → hoi ·
-"gán chức vụ Nhân viên (Demo) cho nhân sự có (CR-414) trong tên" → du_lieu dev.
-
-Có MẠCH TRƯỚC ĐÓ thì đọc nó trước: tin ngắn cụt ngay sau câu hỏi của bot thường là câu nối tiếp (hoi). Nghi ngờ thì "mo_ho".
-Mọi kết quả kèm `scope`: "ca_nhan" khi tin về ĐỜI RIÊNG người nhắn (ăn uống, đi lại, gia đình, sức khỏe, mua sắm, lịch riêng,
-kiến thức chung không dính công ty); "cong_ty" khi dính ERP, dữ liệu, chứng từ, phần mềm, nhân sự, NCC, việc công ty.
-
-CHỈ trả JSON: {"intent": "hoi", "scope": "cong_ty", "reason": "lý do ngắn tiếng Việt"}; thao tác thêm action/task/when/detail/
-confident; tra cứu thêm kind/query; sửa dữ liệu thêm env/request.
-"""
 INTENT_DATA = "du_lieu"
 INTENT_RESEARCH = "tra_cuu"
-RESEARCH_KINDS = ("web", "kiem_chung", "tai_lieu")
 
 INTENT_ACT = "thao_tac"
-#  Nhãn thao tác của model -> tên thao tác nội bộ của `service._run_task_command` (ai-CR-028).
-ACTIONS = {
-    "duyet": "approve", "sua_ke_hoach": "replan", "gop": "merge", "deploy_dev": "deploy", "thu_hoi": "revert",
-    "xong": "done",
-    "bo": "cancel", "lam_tiep": "continue", "sua_cho_xanh": "fixgate", "chi_tiet": "detail",
-    "mo_pr": "pr", "tinh_trang": "status", "ghi_so": "rule_yes", "khong_ghi_so": "rule_no",
-}
-
-
-def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, ChatResult]:
-    """Đọc một tin và nói nó là việc cho Trợ lý AI hay một đầu việc sửa mã.
-
-    Một lượt gọi RẺ (vài trăm token) đứng trước mỗi tin chữ thường, để đại ca khỏi
-    phải nhớ gõ tiền tố `/hoi`. Model trả kiểu lạ thì hạ xuống "mo_ho" — nhánh mập
-    mờ là nhánh hỏi lại, tức chỗ an toàn nhất để rơi vào.
-
-    `context` = vài lượt hỏi-đáp ngay trước đó (ai-CR-007). Không có nó, model chỉ thấy
-    một câu trơ trọi: *"cho anh nghỉ thứ 6, lý do đi du lịch"* đọc rời thì giống một
-    lời nhờ, đọc sau câu *"anh muốn nghỉ ngày nào?"* của bot thì rõ là câu trả lời.
-    """
-    parts = []
-    if tasks:
-        #  ai-CR-028: việc đang mở + tin bot vừa nhắn, để «đồng ý» được hiểu theo ngữ cảnh.
-        parts.append(tasks)
-    if context:
-        parts.append(f"MẠCH TRƯỚC ĐÓ:\n{context}")
-    parts.append(f"Tin nhắn mới:\n{text}" if parts else f"Tin nhắn:\n{text}")
-    content = "\n\n".join(parts)
-    #  ai-CR-192: bước đọc ý định chờ tối đa AGENT_INTENT_TIMEOUT giây mỗi lượt HTTP — quá thì provider ném lỗi «timeout»
-    #  (là lỗi tạm) và `_call` đổi sang model dự phòng / khóa kế ngay, thay vì ngồi chờ hết 25 s.
-    from app.modules.assistant.provider.base import with_timeout
-
-    with with_timeout(settings.AGENT_INTENT_TIMEOUT):
-        result = get_provider().ask(
-            [ChatMessage(role="user", content=content)],
-            model=settings.AGENT_MANAGER_MODEL,
-            system=INTENT_SYSTEM,
-            max_tokens=320,
-            temperature=0.0,
-        )
-    data = parse_json(result.text)
-    intent = str(data.get("intent") or "").strip().lower()
-    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE, INTENT_ACT, INTENT_RESEARCH, INTENT_DATA):
-        log.warning("agent_hub: phân loại trả ý định lạ %r, coi như mập mờ", intent)
-        intent = INTENT_UNSURE
-    out = {"intent": intent, "reason": str(data.get("reason") or "")[:200]}
-    #  ai-CR-095 (C-06): dấu công ty / cá nhân. Việc sửa mã, sửa dữ liệu, thao tác trên việc LUÔN là công ty.
-    personal = str(data.get("scope") or "").strip().lower() == "ca_nhan" and intent in (INTENT_ASK, INTENT_RESEARCH,
-                                                                                         INTENT_UNSURE)
-    out["scope"] = SCOPE_PERSONAL if personal else SCOPE_COMPANY
-    if intent == INTENT_ACT:
-        action = ACTIONS.get(str(data.get("action") or "").strip().lower(), "")
-        if not action:
-            #  Thao tác lạ: hạ về mập mờ (hỏi lại), đừng đoán một thao tác có thể là gộp mã.
-            out["intent"] = INTENT_UNSURE
-        else:
-            out.update(action=action, task=str(data.get("task") or "").strip().upper(),
-                       when=str(data.get("when") or "").strip(), detail=str(data.get("detail") or "").strip(),
-                       confident=bool(data.get("confident")))
-    if intent == INTENT_DATA:
-        env = str(data.get("env") or "dev").strip().lower()
-        out.update(env=env if env in ("dev", "prod") else "dev",
-                   request=str(data.get("request") or "").strip() or text)
-    if intent == INTENT_RESEARCH:
-        kind = str(data.get("kind") or "").strip().lower()
-        out.update(kind=kind if kind in RESEARCH_KINDS else "web",
-                   query=str(data.get("query") or "").strip() or text)
-    return out, result
 
 
 VOICE_SYSTEM = ("Bạn là bộ chép lời. Nghe đoạn ghi âm tiếng Việt và chép lại ĐÚNG lời nói thành chữ có dấu, "

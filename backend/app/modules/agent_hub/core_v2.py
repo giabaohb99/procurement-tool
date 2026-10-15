@@ -5,7 +5,7 @@ Một tin chữ vào = MỘT vòng tác tử: model nhìn thấy ngày giờ, ng
 hỏi, hoàn tác chờ, vé sửa mã) và 30–40 lượt gần nhất; tự quyết hỏi lại, gợi ý, gọi công cụ nhiều vòng, hay ghi. Không
 còn regex làm cổng chính, không còn bước đọc ý định, không cắt sau khi soạn nháp.
 
-Chạy song song với đường cũ dưới cờ `AGENT_CORE_V2_ENABLED` (+ `AGENT_CORE_V2_CHATS` để bật theo từng chat thử).
+ai-CR-206 (15/10): đường cũ (đọc ý định + Trợ lý theo regex) đã xóa — mọi tin chữ của mọi chat đi lõi này.
 Đường cũ không đụng: `service.py` chỉ rẽ ở hai chỗ gọi `_route_*_text`. Mọi thứ ghi xuống ERP vẫn đi qua các công cụ
 và `erp.py` (cổng B) như cũ — lõi mới chỉ thay cách NÓI CHUYỆN và cách QUYẾT ĐỊNH.
 
@@ -205,7 +205,16 @@ def _more_tools_tool() -> ToolDef:
                     "required": ["nhom"]})
 
 
-LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS) | {CODE_TASK_TOOL.name, MORE_TOOLS}
+#  ai-CR-206: dời từ đường cũ (ý định «du_lieu», ai-CR-073) — đại ca nhờ SỬA DỮ LIỆU trên máy chủ bằng lời. Chỉ chat chủ
+#  bot và khi thao tác máy chủ bật (AGENT_OPS_ENABLED); máy sửa mã soạn lệnh, đại ca duyệt thẻ rồi mới chạy.
+DATA_CHANGE_TOOL = ToolDef(
+    name="request_data_change",
+    description="Đại ca nhờ SỬA / BỔ SUNG DỮ LIỆU trên máy chủ (dev hoặc prod) mà màn hình không làm được — vd «đổi email "
+                "của NV X trên dev», «xóa 3 dòng tồn kho rác ở prod». Ghi yêu cầu cho máy sửa mã soạn lệnh để đại ca DUYỆT; "
+                "không tự viết SQL. Việc làm được bằng công cụ ERP thường (soạn nháp, sửa phiếu) thì dùng công cụ đó.",
+    parameters={"type": "object", "properties": {"yeu_cau": {"type": "string"}, "moi_truong": {"type": "string",
+                "enum": ["dev", "prod"]}}, "required": ["yeu_cau"]})
+LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS) | {CODE_TASK_TOOL.name, MORE_TOOLS, DATA_CHANGE_TOOL.name}
 
 
 # ---------------------------------------------------------------------------
@@ -298,12 +307,6 @@ def _is_smalltalk(text: str) -> bool:
 
     return tool_router.is_smalltalk(text)
 
-
-def enabled_for(chat_id: str) -> bool:
-    if not settings.AGENT_CORE_V2_ENABLED:
-        return False
-    chats = {c.strip() for c in str(settings.AGENT_CORE_V2_CHATS or "").split(",") if c.strip()}
-    return not chats or str(chat_id).strip() in chats
 
 
 # ---------------------------------------------------------------------------
@@ -702,6 +705,10 @@ def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: 
                 out.append(CODE_TASK_TOOL)
         except Exception:  # noqa: BLE001
             pass
+        from . import ops
+
+        if telegram.is_allowed_chat(chat_id) and ops.enabled():
+            out.append(DATA_CHANGE_TOOL)
     return out
 
 
@@ -834,6 +841,16 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
                 "link": telegram.absolute_url(url) if url else ""}
     if name == "set_reminder":
         return _set_reminder(db, chat_id, str(args.get("luc") or ""), str(args.get("viec") or ""), said=row.body or "")
+    if name == DATA_CHANGE_TOOL.name:
+        from . import ops
+
+        if not (telegram.is_allowed_chat(chat_id) and ops.enabled()):
+            return {"error": "Chỉ chat chủ bot và khi thao tác máy chủ đang bật mới sửa dữ liệu bằng lời được."}
+        request = " ".join(str(args.get("yeu_cau") or "").split()) or (row.body or "")
+        env = str(args.get("moi_truong") or "dev").strip().lower()
+        msg = ops.start_data_change(db, chat_id, request, env if env in ("dev", "prod") else "dev")
+        db.commit()
+        return {"ok": True, "tra_loi": msg}
     if name == "create_code_task":
         if service._can_order_code(db, chat_id) and not _code_task_confirmed(db, chat_id, row):   # quyền xét trước
             return {"error": CODE_TASK_NOT_CONFIRMED}
@@ -1008,6 +1025,8 @@ def _stop_after(name: str, result) -> bool:
         return False
     if name == "set_reminder":
         return bool(result.get("ok"))       # câu báo giờ nhắc do bot dựng (reminder_reply)
+    if name == DATA_CHANGE_TOOL.name:
+        return bool(result.get("ok"))       # câu trả lời là thẻ của ops.start_data_change
     if name in ("update_draft", "commit_draft", "drop_draft"):
         return bool(result.get("ok"))
     return isinstance(result.get("draft"), dict) and _chat_draft(name) and bool(result.get("tom_tat_se_luu"))
@@ -1221,8 +1240,6 @@ def _add_usage(result, first) -> None:
 
 
 def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
-    from app.modules.assistant.provider.base import ChatMessage
-
     from . import service
 
     #  ai-CR-201: lối tắt chữ của đường cũ chạy TRƯỚC (không tốn model). Chúng tự đóng dấu tin («lenh», hay để trống cho
@@ -1249,6 +1266,16 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         with user_keys.prefer(route_providers(LANE_QUICK), model=lane_model(LANE_QUICK)):
             service.run_research(db, chat_id, text, research.MODE_WEB)
         return
+    _answer(db, chat_id, row, text, user)
+
+
+def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> None:
+    """Phần gọi model của một lượt (vòng tác tử). Tách khỏi `handle` (ai-CR-206) để bài kiểm của các luồng quanh nó —
+    lối tắt, chưa liên kết, chưa có khóa, tra nhanh — thay được riêng phần model."""
+    from app.modules.assistant.provider.base import ChatMessage
+
+    from . import service
+
     run = service.start_run(db, 0, STAGE_ANSWER)
     db.commit()                                  # giữ dòng sổ kể cả khi lượt hỏng phải rollback
     try:
@@ -1335,10 +1362,13 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                                        same=True)
             elif stopped.get("name") == "set_reminder":
                 answer = reminder_reply(chat_id, stopped["result"])
+            elif stopped.get("name") == DATA_CHANGE_TOOL.name:
+                answer = str(stopped["result"].get("tra_loi") or "")
             else:
                 answer = (draft_reply(chat_id, stopped["name"], stopped["result"]) if stopped
                           else (result.text or "").strip())
-            service.reply(db, chat_id, answer or "Em đã làm xong phần đó.", markdown=True, action=ACT_ANSWER)
+            service.reply(db, chat_id, answer or "Em đã làm xong phần đó.", action=ACT_ANSWER,
+                          markdown=stopped.get("name") != DATA_CHANGE_TOOL.name)     # thẻ ops đã là HTML
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]
         drafts = [c for c in calls if isinstance(c.get("draft"), dict) and _chat_draft(c.get("name"))]
         for c in drafts:                     # nháp đã nằm trong câu trả lời — chỉ ghi dòng chờ «tạo», không gửi thẻ
@@ -1363,5 +1393,9 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
             db.commit()
         except Exception:  # noqa: BLE001
             db.rollback()
+        if problem := user_keys.key_problem(str(e)):
+            #  ai-CR-206 (dời từ đường cũ, ai-CR-097): lỗi do KHÓA (hết tiền / hạn mức / khóa sai) thì nói thẳng.
+            service.reply(db, chat_id, f"{problem} (mã lượt #{run.id})")
+            return
         service.reply(db, chat_id, f"Em gọi AI bị lỗi (mã lượt #{run.id} · {telegram.esc(type(e).__name__)}). "
                                    "Anh/chị nhắn lại sau một phút giúp em; lặp lại thì báo em xem sổ chạy.")

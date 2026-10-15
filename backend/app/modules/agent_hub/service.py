@@ -1,17 +1,10 @@
 """Luồng của Agent Hub — nơi Telegram, sổ và bot quản lý gặp nhau.
 
-Một tin nhắn đi qua đây theo hai đường, rẽ ở ngay dòng đầu:
-
-  hỏi / nhờ làm nghiệp vụ / nói tiếp câu chuyện
-               -> chuyển cho TRỢ LÝ AI sẵn có (có tool), trả lời tại chỗ, KHÔNG tạo task.
-  nhờ sửa phần mềm
-               -> ghi vào `tab_agent_message` với `task_id = 0` (đó là hàng đợi INBOX),
-                  chờ lặng đủ `AGENT_TRIAGE_DELAY_SEC` rồi một vòng gom biến cả lô
-                  thành các task, mỗi task một thẻ Telegram có nút.
-
-Chỗ rẽ là `_route_plain_text`: bot vừa hỏi lại thì tin kế là câu trả lời (không cần
-đoán); còn lại một lượt Gemini phân loại, có kèm mạch trước đó. Mặc định nghiêng về
-Trợ lý AI — vào sổ việc là chuyện hiếm hơn và có người duyệt phía sau.
+Mọi tin chữ (chủ bot lẫn người đã liên kết) đi LÕI HỘI THOẠI `core_v2.handle` (ai-CR-206, 15/10/2026 — đường cũ
+«đọc ý định rồi rẽ» đã xóa): lối tắt chữ chạy trước (lệnh trên việc, nhắc, hoàn tác, thẻ chờ…), còn lại một vòng tác tử
+model + công cụ trả lời tại chỗ. Nhờ sửa phần mềm thì lõi (công cụ `create_code_task`, sau khi người dùng xác nhận cách
+hiểu) ghi tin vào `tab_agent_message` với `task_id = 0` (hàng đợi INBOX); vòng gom biến lô tin đó thành task, mỗi task một
+thẻ Telegram có nút. Tệp này giữ các lối tắt chữ, thẻ, vòng gom, dây chuyền sửa mã mà lõi gọi tới.
 
 Vì sao hai đường trong một bot: trò chuyện và giao việc sửa mã là hai nhu cầu khác
 nhau nhưng cùng đi qua một cái điện thoại. Tách làm hai bot thì đại ca phải nhớ mình
@@ -35,7 +28,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, change_undo, channels, chat_link, core_v2, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
+from . import ai_keys, bells, change_undo, channels, chat_link, core_v2, erp, coder, draft_create, grants, manager, memory, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -63,7 +56,6 @@ from .constants import (
     ACT_PROPOSAL_DONE,
     ACT_PROPOSAL_DROPPED,
     ACT_WAIT_CHOICE,
-    ACT_READING,
     ACT_WAIT_CONFIRM,
     ACT_PHOTO_ACK,
     ACT_PHOTO_USED,
@@ -649,11 +641,9 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
 
     _adopt_pending_photos(db, chat_id, row)
     with _instant_ack(chat_id, text):
-        #  ai-CR-198: lõi hội thoại mới (doc/agent-hub/20) — bật theo cờ, chạy song song với đường cũ.
-        if core_v2.enabled_for(chat_id):
-            core_v2.handle(db, chat_id, row, text)
-        else:
-            _route_plain_text(db, chat_id, row, text)
+        #  ai-CR-206 (đại ca 15/10: «bỏ cái cũ luôn, sử dụng luồng mới cho code nó gọn lại»): mọi tin chữ đi lõi hội thoại
+        #  mới (doc/agent-hub/20); đường cũ (đọc ý định + Trợ lý) đã xóa.
+        core_v2.handle(db, chat_id, row, text)
 
 
 @contextlib.contextmanager
@@ -1287,10 +1277,7 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     if grants.level_for(db, link.user_id) and _CODE_IN_TEXT.search(low) and route_task_command(db, chat_id, row, text):
         return True
     with _instant_ack(chat_id, text):
-        if core_v2.enabled_for(chat_id):      # ai-CR-198: lõi hội thoại mới, xem doc/agent-hub/20
-            core_v2.handle(db, chat_id, row, text)
-        else:
-            _route_linked_text(db, chat_id, row, text)
+        core_v2.handle(db, chat_id, row, text)        # ai-CR-206: một lõi duy nhất
     return True
 
 
@@ -1389,86 +1376,6 @@ def _link_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
     return True
 
 
-def _fast_path(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """ai-CR-194 (13/10, đại ca: «hồi trước trả lời gần như tức thì» — 06/10 trung bình 5,8 s, 13/10 23,8 s): hai loại câu
-    không cần bước đọc ý định (một lượt model 2–12 s): TRA NHANH «giá X hôm nay / tỷ giá / thời tiết…» → tra mạng luôn;
-    XÃ GIAO «chào / cảm ơn / ok» → Trợ lý trả lời luôn với nhóm công cụ lõi. Thẻ chờ / lệnh chữ đã được xử trước đó."""
-    from app.modules.assistant.tool_router import is_smalltalk
-
-    if "\n" in (text or ""):
-        return False          # tin có phần trích dẫn («trả lời cho tao» trích «giá vàng hôm nay») → để bước đọc ý định xử
-    if research.is_quick(text):
-        row.action = ACT_ASKED
-        row.scope = SCOPE_PERSONAL
-        db.commit()
-        run_research(db, chat_id, text, research.MODE_WEB)      # tự ghi sổ ý định bên trong
-        return True
-    if is_smalltalk(text):
-        row.action = ACT_ASKED
-        db.commit()
-        answer_question(db, chat_id, text, before_id=row.id)
-        return True
-    return False
-
-
-def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
-    """Tin chữ thường của người đã liên kết (ai-CR-045): hiểu bằng chữ, không bắt gõ lệnh.
-
-    «Xuất Word» sau một lần tra → gửi Word; ý định `tra_cuu` → tìm web / kiểm chứng (tài liệu kỹ thuật
-    dự án KHÔNG mở cho họ, hạ về tìm web); mọi ý định khác → Trợ lý ERP dưới quyền của chính họ. Họ
-    không giao được việc sửa mã và không thao tác được việc của bot, nên «viec» / «thao_tac» cũng về Trợ lý.
-    """
-    if (_deep_research_by_text(db, chat_id, row, text)      # ai-CR-178: trước _doc_followup — gom hết tệp vừa gửi
-            or _doc_followup(db, chat_id, row, text) or _guide_by_text(db, chat_id, row, text)
-            or meeting_actions.handle_text(db, chat_id, row, text)
-            or meeting_drive.handle_text(db, chat_id, row, text)
-            or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
-            or work_plan.handle_text(db, chat_id, row, text)            # bao-CR-616: người làm trả lời kế hoạch, «xong việc N»
-            or _proposal_by_text(db, chat_id, row, text)      # ai-CR-196: xác nhận thẻ sửa / xóa bằng chữ
-            or _my_drafts_by_text(db, chat_id, row, text)
-            or _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text)):
-        return
-    if _cost_by_text(db, chat_id, row, text) or _bell_by_text(db, chat_id, row, text) \
-            or _reminder_by_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text) \
-            or _brief_by_text(db, chat_id, row, text) or _work_due_by_text(db, chat_id, row, text) \
-            or _dev_request_by_text(db, chat_id, row, text) \
-            or _keys_by_text(db, chat_id, row, text):     # ai-CR-095/098: sổ nhớ + «còn khóa nào» cho mọi người
-        return
-    if _over_daily_cap(db, chat_id, row):
-        return
-    if not user_keys.active_key():
-        #  ai-CR-098: chuỗi khóa = khóa cá nhân → khóa công ty khai trong sổ; cả hai trống mới tới đây.
-        row.action = ACT_COMMAND
-        reply(db, chat_id, user_keys.NO_KEY_HELP)
-        return
-    if _link_by_text(db, chat_id, row, text):           # ai-CR-133: tóm tắt bài viết theo link
-        return
-    if _fast_path(db, chat_id, row, text):      # ai-CR-194
-        return
-    if not settings.AGENT_INTENT_ENABLED:
-        row.action = ACT_ASKED
-        db.commit()
-        answer_question(db, chat_id, text, before_id=row.id)
-        return
-    run = start_run(db, 0, STAGE_INTENT)
-    try:
-        data, result = manager.run_intent(text, context=_intent_context(db, chat_id, row.id))
-    except Exception as e:  # noqa: BLE001 — phân loại hỏng thì cứ để Trợ lý trả lời
-        finish_run(db, run, error=str(e))
-        db.commit()
-        log.warning("agent_hub: phân loại tin người liên kết hỏng, chuyển Trợ lý")
-        answer_question(db, chat_id, text, before_id=row.id)
-        return
-    finish_run(db, run, result=result)
-    row.action = ACT_ASKED      # ai-CR-100: câu hỏi / tra cứu là hội thoại — câu sau («trả lời đi») nối được
-    db.commit()
-    if data["intent"] == manager.INTENT_RESEARCH:
-        kind = data.get("kind") or research.MODE_WEB
-        run_research(db, chat_id, data.get("query") or text,
-                     research.MODE_WEB if kind == research.MODE_DOCS else kind)
-        return
-    answer_question(db, chat_id, text, before_id=row.id, intent=data["intent"])
-
 
 def _run_command(db: Session, chat_id: str, text: str) -> None:
     """Các lệnh `/` — nay chỉ là ĐƯỜNG TẮT cho ai quen gõ, không còn bắt buộc."""
@@ -1509,163 +1416,7 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
 #  đem đi phân loại nữa. Quá khoảng này thì coi như chuyện mới. Cũng là ranh mà mạch
 #  hỏi-đáp của Trợ lý AI đủ ngắn để câu trả lời còn dính vào câu hỏi.
 FOLLOW_UP_WINDOW = timedelta(minutes=10)
-#  Mạch đưa cho trạm phân loại: chỉ cần lượt hỏi-đáp gần nhất, cắt ngắn — đây là lượt
-#  gọi rẻ, đưa cả 6000 ký tự lịch sử vào là biến nó thành lượt gọi đắt.
-INTENT_CONTEXT_TURNS = 2
-INTENT_CONTEXT_CHARS = 600
 
-
-def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
-    """Tin chữ thường: đưa cho TRỢ LÝ AI hay ghi thành VIỆC SỬA MÃ (ai-CR-003, ai-CR-007).
-
-    Trước đây phải gõ `/hoi` mới được trả lời — đại ca nói đúng là vô lý, vì Trợ lý AI
-    trong ERP hỏi phát trả lời luôn chứ có lệnh nào đâu. Nay mỗi tin chữ thường đi qua
-    một lượt Gemini rẻ tiền để phân loại trước khi rẽ.
-
-    Hai chốt của ai-CR-007, sau ca AI-0004: Trợ lý hỏi *"nghỉ ngày nào, lý do gì?"*,
-    đại ca đáp *"thứ 6, đi du lịch"*, và câu đáp đó bị phân loại rời thành một đầu
-    việc sửa mã tên "Xử lý yêu cầu xin nghỉ phép".
-      1. Bot vừa hỏi lại (tin ra gần nhất là câu trả lời của Trợ lý AI có dấu hỏi,
-         trong `FOLLOW_UP_WINDOW`) thì tin kế là câu trả lời — nối thẳng, không tốn
-         lượt phân loại, và không phụ thuộc hạn mức Gemini.
-      2. Còn lại thì phân loại NHƯNG đưa kèm lượt hỏi-đáp gần nhất, để model đọc câu
-         mới trong mạch chứ không trơ trọi.
-
-    Ba nhánh, và nhánh nào cũng phải ĐÓNG DẤU vào `action` trừ nhánh giao việc — vòng
-    gom nhặt đúng những tin còn dấu rỗng, nên để rỗng chính là cách xếp tin vào INBOX.
-
-    Phân loại hỏng (mạng, hết hạn mức, model trả rác) thì HỎI LẠI kèm hai nút, y như
-    nhánh mập mờ. Bản trước rơi về giao việc — tức một câu hỏi gặp lúc Gemini 429 là
-    thành một thẻ việc 90 giây sau; tin vẫn không mất, nhưng nay đại ca là người chốt.
-    """
-    #  ai-CR-178: «nghiên cứu sâu: …» / «tổng hợp các tài liệu này» (+ ok / thôi cho thẻ chi phí của nó) — đi trước
-    #  _doc_followup vì câu tổng hợp phải gom HẾT tệp vừa gửi, không chỉ tệp đang chờ.
-    if _deep_research_by_text(db, chat_id, row, text):
-        return
-    #  ai-CR-115: tin chữ ngay sau một tệp chưa kèm câu hỏi = câu hỏi về tệp đó — đi trước mọi đường khác.
-    if _doc_followup(db, chat_id, row, text):
-        return
-    if _guide_by_text(db, chat_id, row, text):          # ai-CR-120: «hướng dẫn», «bot làm được gì»
-        return
-    if _link_by_text(db, chat_id, row, text):           # ai-CR-133: tóm tắt bài viết theo link
-        return
-    #  Bot vừa mời hẹn giờ gộp + deploy (ai-CR-014): tin kế là giờ hẹn, không đi phân loại.
-    if task_id := _deploy_time_target(db, chat_id, row):
-        _schedule_deploy(db, chat_id, row, text, task_id)
-        return
-    if task_id := _patch_question_target(db, chat_id, row):
-        _ask_patch(db, chat_id, row, text, task_id)
-        return
-    #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
-    #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
-    if (_ok_by_text(db, chat_id, row, text)          # ai-CR-149: «ok» sau thẻ xác nhận = làm luôn
-            or _grant_by_text(db, chat_id, row, text) or _runner_by_text(db, chat_id, row, text)
-            or ops.handle_text(db, chat_id, row, text) or _memory_by_text(db, chat_id, row, text)
-            or _brief_by_text(db, chat_id, row, text) or _work_due_by_text(db, chat_id, row, text)
-            or _ghi_viec_by_text(db, chat_id, row, text) or _dev_request_by_text(db, chat_id, row, text)
-            or _keys_by_text(db, chat_id, row, text)
-            or _glossary_by_text(db, chat_id, row, text)
-            or _bell_by_text(db, chat_id, row, text) or _reminder_by_text(db, chat_id, row, text)
-            or meeting_actions.handle_text(db, chat_id, row, text)      # ai-CR-114: thẻ việc / lịch từ biên bản
-            or meeting_drive.handle_text(db, chat_id, row, text)        # ai-CR-116: tệp họp mới trên Drive
-            or change_undo.handle_text(db, chat_id, row, text)          # ai-CR-184: «bot vừa làm gì» / «hoàn tác n»
-            or work_plan.handle_text(db, chat_id, row, text)            # bao-CR-616: người làm trả lời kế hoạch, «xong việc N»
-            or _proposal_by_text(db, chat_id, row, text)      # ai-CR-196
-            or _my_drafts_by_text(db, chat_id, row, text)
-            or _draft_by_text(db, chat_id, row, text)
-            or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
-            or _word_by_text(db, chat_id, row, text)
-            or _cost_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text)):
-        return
-    #  Trạm kế hoạch vừa hỏi lại (ai-CR-015): tin kế là câu trả lời CỦA VIỆC ĐÓ, không phải việc mới. ai-CR-125: lời
-    #  chào trơn («lô») không phải câu trả lời — 08/10 bot gắn «lô» vào AI-0005 rồi hỏi lại «lô là gì».
-    if not is_greeting(text) and (task_id := _plan_answer_target(db, chat_id, row)):
-        _answer_plan(db, chat_id, row, text, task_id)
-        return
-
-    if _is_follow_up(db, chat_id, row):
-        row.action = ACT_ASKED
-        row.scope = _last_scope(db, chat_id, row.id)      # ai-CR-095: câu nối tiếp theo dấu của câu trước
-        answer_question(db, chat_id, text, before_id=row.id)
-        return
-    if not user_keys.active_key():
-        #  ai-CR-053: trên dev đại ca cũng dùng khóa cá nhân; chưa dán thì bot nói thẳng, không đoán.
-        row.action = ACT_COMMAND
-        reply(db, chat_id, user_keys.NO_KEY_HELP)
-        return
-
-    #  ai-CR-109: 07/10 «đơn hàng gần nhất» — đọc ý mất > 10 s (model chính quá tải, sang model dự phòng), vòng gom
-    #  nhặt tin còn dấu rỗng thành việc AI-0004 trong khi Trợ lý vẫn trả lời. Đóng dấu «đang đọc» trước khi gọi model;
-    #  chỉ nhánh GIAO VIỆC mới trả về dấu rỗng cho vòng gom.
-    if _fast_path(db, chat_id, row, text):      # ai-CR-194: tra nhanh / xã giao đi thẳng, khỏi một lượt model
-        return
-    if not settings.AGENT_INTENT_ENABLED:
-        #  ai-CR-194: đại ca tắt bước đọc ý định — mọi tin chữ còn lại đi thẳng Trợ lý (một lần gọi model). Việc sửa mã
-        #  thì nhắn «ghi việc: …» (ai-CR-096) hoặc câu phát triển tính năng (ai-CR-148) — hai đường đó đứng trước.
-        row.action = ACT_ASKED
-        db.commit()
-        answer_question(db, chat_id, text, before_id=row.id)
-        return
-    row.action = ACT_READING
-    db.commit()
-    run = start_run(db, 0, STAGE_INTENT)
-    try:
-        data, result = manager.run_intent(text, context=_intent_context(db, chat_id, row.id),
-                                          tasks=_task_context(db, chat_id, row.id))
-    except Exception as e:  # noqa: BLE001 - phân loại hỏng không được làm mất tin
-        finish_run(db, run, error=str(e))
-        if problem := user_keys.key_problem(str(e)):
-            #  ai-CR-097: lỗi do KHÓA (hết tiền / hạn mức / khóa sai) thì nói thẳng, không hỏi «làm luôn hay ghi việc».
-            row.action = ACT_COMMAND
-            log.warning("agent_hub: phân loại hỏng vì khóa AI (%s)", str(e)[:120])
-            reply(db, chat_id, problem)
-            return
-        #  ai-CR-099: 07/10 «alo how are u» gặp Gemini 503 → thẻ «làm luôn hay ghi việc». Trả lời luôn kèm dòng gợi
-        #  ý (như mo_ho, ai-CR-096); việc sửa phần mềm thì đại ca nhắn «ghi việc: …».
-        log.warning("agent_hub: phân loại ý định hỏng (%s), trả lời luôn", str(e)[:120])
-        row.action = ACT_ASKED
-        answer_question(db, chat_id, text, before_id=row.id, hint=UNSURE_HINT)
-        return
-    finish_run(db, run, result=result)
-    row.scope = int(data.get("scope") or SCOPE_COMPANY)     # ai-CR-095 (C-06)
-
-    if data["intent"] == manager.INTENT_ASK:
-        row.action = ACT_ASKED
-        answer_question(db, chat_id, text, before_id=row.id)
-    elif data["intent"] == manager.INTENT_UNSURE:
-        #  ai-CR-096: không chắc thì TRẢ LỜI luôn kèm một dòng «nếu là việc sửa phần mềm thì nhắn ghi việc: …» — trả lời
-        #  sai thì rẻ; bắt đại ca chọn «làm luôn / ghi việc» cho «Giá thép Hòa Phát» là phiền. Thẻ hai nút chỉ còn
-        #  dùng khi bộ phân loại HỎNG (không có gì để đoán).
-        row.action = ACT_ASKED
-        answer_question(db, chat_id, text, before_id=row.id, hint=UNSURE_HINT, intent=manager.INTENT_UNSURE)
-    elif data["intent"] == manager.INTENT_ACT:
-        _act_by_intent(db, chat_id, row, text, data)
-        _ledger(db, chat_id, manager.INTENT_ACT, question=text)
-    elif data["intent"] == manager.INTENT_RESEARCH:
-        row.action = ACT_ASKED      # ai-CR-100: nằm trong mạch hỏi đáp để «trả lời cho tao» nối được
-        db.commit()
-        run_research(db, chat_id, data.get("query") or text, data.get("kind") or research.MODE_WEB)
-    elif data["intent"] == manager.INTENT_DATA:
-        #  ai-CR-073: sửa dữ liệu bằng lời — CHỈ chat đại ca và khi thao tác VPS bật; người khác / tắt thì để
-        #  Trợ lý AI trả lời như một câu hỏi thường (nó có công cụ nghiệp vụ, đi đúng quyền của người hỏi).
-        if telegram.is_allowed_chat(chat_id) and ops.enabled():
-            row.action = ACT_COMMAND
-            db.commit()
-            reply(db, chat_id, ops.start_data_change(db, chat_id, data.get("request") or text, data.get("env") or "dev"))
-            db.commit()
-            _ledger(db, chat_id, manager.INTENT_DATA, question=text)
-        else:
-            row.action = ACT_ASKED
-            answer_question(db, chat_id, text, before_id=row.id, intent=manager.INTENT_DATA)
-    #  GIAO VIỆC: để `action` rỗng, tin nằm lại INBOX và vòng gom lo tiếp.
-    #  ai-CR-021: đại ca muốn biết ngay là bot đã nhận — nhắn MỘT câu báo nhận cho cả chùm tin
-    #  liên tiếp (không phải mỗi câu một tiếng chuông, lý do bản cũ im lặng hẳn).
-    else:
-        row.action = ""          # ai-CR-109: trả tin về INBOX cho vòng gom
-        ack_task_message(db, chat_id, row)
-        _ledger(db, chat_id, manager.INTENT_TASK, question=text)
-    if row.action == ACT_READING:
-        row.action = ACT_COMMAND     # nhánh nào quên đóng dấu thì cũng không để vòng gom nhặt nhầm
 
 
 # ---------------------------------------------------------------------------
@@ -2157,69 +1908,10 @@ _ACTION_LABELS = {
 _RISKY_ACTIONS = ("merge", "deploy", "revert", "cancel")
 
 
-def _task_context(db: Session, chat_id: str, before_id: int) -> str:
-    """Việc đang mở + tin bot vừa nhắn, dạng chữ trơn cho trạm phân loại."""
-    rows = db.scalars(select(AgentTask).where(AgentTask.status.not_in(CLOSED_STATUSES))
-                      .order_by(AgentTask.updated_at.desc()).limit(TASK_CONTEXT_LIMIT)).all()
-    parts = []
-    if rows:
-        lines = [_strip_tags(task_status_line(db, t)) for t in rows]
-        parts.append("VIỆC ĐANG MỞ:\n" + "\n".join(f"- {line}" for line in lines))
-    last = db.scalar(select(AgentMessage)
-                     .where(AgentMessage.chat_id == chat_id, AgentMessage.id < before_id,
-                            AgentMessage.direction == DIR_OUT, AgentMessage.action.not_in(NOISE_ACTIONS))
-                     .order_by(AgentMessage.id.desc()).limit(1))
-    if last is not None and last.body:
-        parts.append("TIN BOT VỪA NHẮN:\n" + _strip_tags(last.body)[:INTENT_CONTEXT_CHARS])
-    return "\n\n".join(parts)
-
 
 def _strip_tags(html: str) -> str:
     return re.sub(r"\s+", " ", html_lib.unescape(re.sub(r"<[^>]+>", "", html or ""))).strip()
 
-
-def _act_by_intent(db: Session, chat_id: str, row: AgentMessage, text: str, data: dict) -> None:
-    """Model đọc ra một thao tác trên việc: chắc thì làm, chưa chắc thì hỏi lại một câu."""
-    action = data["action"]
-    if action in ("rule_yes", "rule_no"):
-        if not _rule_by_text(db, chat_id, row, action):
-            row.action = ACT_COMMAND
-            reply(db, chat_id, "Không có đề xuất ghi sổ nào đang chờ.")
-        return
-    task = None
-    if data.get("task"):
-        task = db.scalar(select(AgentTask).where(AgentTask.code == data["task"]))
-    if task is None:
-        found = _candidates(db, action)
-        if len(found) != 1:
-            row.action = ACT_COMMAND
-            if not found:
-                reply(db, chat_id, f"Em hiểu là đại ca muốn {_ACTION_LABELS[action]}, nhưng không có việc nào "
-                      "đang ở bước đó. Nhắn kèm mã việc giúp em.")
-            else:
-                listing = " · ".join(f"<b>{telegram.esc(t.code)}</b>" for t in found[:4])
-                reply(db, chat_id, f"Đại ca muốn {_ACTION_LABELS[action]} việc nào: {listing}?")
-            return
-        task = found[0]
-    sure = bool(data.get("confident"))
-    if sure and action in _RISKY_ACTIONS:
-        states = _OPEN_FOR.get(action)
-        sure = task in _candidates(db, action) if states else task.status not in CLOSED_STATUSES
-    cmd_text = text
-    if action in ("merge", "deploy") and data.get("when"):
-        #  Giữ chữ «deploy/lên dev» của câu gốc: nó quyết định có lên dev hay chỉ gộp (ai-CR-029).
-        cmd_text = f"gộp {data['when']}" + (" deploy dev" if action == "deploy" or _DEPLOY_WORDS.search(text.lower())
-                                             else "")
-    row.action = ACT_COMMAND
-    row.task_id = task.id
-    if not sure:
-        db.commit()
-        reply(db, chat_id, f"Ý đại ca là <b>{_ACTION_LABELS[action]}</b> việc <b>{telegram.esc(task.code)}</b> "
-              f"({telegram.esc(task.title[:50])}) phải không? Nhắn «đúng» để em làm.",
-              task_id=task.id, action=ACT_WAIT_CONFIRM + action)
-        return
-    db.commit()
-    _run_intent_action(db, chat_id, row, task, action, cmd_text, data.get("detail") or "")
 
 
 def _run_intent_action(db: Session, chat_id: str, row: AgentMessage, task: AgentTask, action: str,
@@ -2929,11 +2621,6 @@ def _scope_of(db: Session, msg_id: int) -> int:
     return int(row.scope or 0) if row is not None else 0
 
 
-def _last_scope(db: Session, chat_id: str, before_id: int) -> int:
-    prev = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN,
-                                                AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
-    return int(prev.scope or 0) if prev is not None else 0
-
 
 def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """«ghi nhớ: nhà máy là phòng Dego Organic» · «thuật ngữ» · «quên thuật ngữ nhà máy». Chỉ chat đại ca.
@@ -3146,31 +2833,6 @@ def _ask_intent_choice(db: Session, chat_id: str, row: AgentMessage) -> None:
                    ("Ghi thành việc sửa mã", f"viec:{row.id}")])
 
 
-def _is_follow_up(db: Session, chat_id: str, row: AgentMessage) -> bool:
-    """Tin này có phải câu trả lời cho câu bot vừa hỏi không.
-
-    Ba điều kiện, thiếu một là không: tin hội thoại gần nhất của chat là câu TRẢ LỜI
-    của Trợ lý AI (dấu `tra_loi`), câu đó có dấu hỏi, và cách tin này chưa quá
-    `FOLLOW_UP_WINDOW`. Dấu hỏi là chốt hẹp cố ý: bot trả lời xuôi một câu rồi đại ca
-    nhắn *"màn đơn hàng lỗi lọc ngày"* thì đó là việc mới, phải đi phân loại; chỉ khi
-    bot đang CHỜ một câu trả lời thì tin kế mới được nối thẳng.
-
-    So thời gian bằng chính cột `created_at` của hai tin (đồng hồ DB), không so với
-    đồng hồ Python: container chạy UTC, máy đại ca UTC+7.
-    """
-    last = db.scalar(
-        select(AgentMessage)
-        .where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id,
-               AgentMessage.action.in_((ACT_ASKED, ACT_ANSWER)))
-        .order_by(AgentMessage.id.desc())
-        .limit(1)
-    )
-    if last is None or last.direction != DIR_OUT or "?" not in last.body:
-        return False
-    if row.created_at and last.created_at and row.created_at - last.created_at > FOLLOW_UP_WINDOW:
-        return False
-    return True
-
 
 def _pending_draft_note(db: Session, chat_id: str, before_id: int) -> str:
     """ai-CR-180: đang có BẢN NHÁP chờ «tạo» (trong DRAFT_WINDOW) thì nói cho trạm phân loại biết — tin «tạo task đó»,
@@ -3193,17 +2855,6 @@ def _pending_draft_note(db: Session, chat_id: str, before_id: int) -> str:
     return (f"Bot: (đang chờ người dùng nhắn «tạo» hoặc «thôi» cho bản nháp {label}"
             + (f" «{title}»" if title else "") + " vừa soạn — nhắn «tạo …» là đồng ý tạo, KHÔNG phải sửa phần mềm)")
 
-
-def _intent_context(db: Session, chat_id: str, before_id: int) -> str:
-    """Lượt hỏi-đáp gần nhất, dạng chữ thường, cho trạm phân loại đọc kèm tin mới."""
-    turns = _recent_turns(db, chat_id, before_id)[-INTENT_CONTEXT_TURNS:]
-    lines = []
-    for t in turns:
-        who = "Người dùng" if t["role"] == "user" else "Bot"
-        lines.append(f"{who}: {t['content'][:INTENT_CONTEXT_CHARS]}")
-    if note := _pending_draft_note(db, chat_id, before_id):
-        lines.append(note)
-    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -4194,8 +3845,6 @@ def _recent_turns(db: Session, chat_id: str, before_id: int) -> list[dict]:
     turns.reverse()
     return turns
 
-
-UNSURE_HINT = "_(Nếu đây là việc sửa phần mềm thì nhắn «ghi việc: …»)_"
 
 
 def answer_question(db: Session, chat_id: str, question: str, *, before_id: int = 0, hint: str = "",

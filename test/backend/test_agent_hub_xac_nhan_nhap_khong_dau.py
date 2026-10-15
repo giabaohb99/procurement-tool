@@ -59,22 +59,3 @@ def test_tao_khong_dau_sau_the_nhap_thi_tao_viec(db, chat):
     assert created == [("work_task", {"title": "Nghiên cứu luồng agent 2 agent"})] and "Đã tạo" in sent[-1]
 
 
-def test_mach_phan_loai_biet_dang_co_nhap_cho(db, chat):
-    row = _say(db, "vậy tao task đó igups anh đi nhé.", 3)
-    assert "nháp" not in service._intent_context(db, "12345", row.id)
-    _card(db)
-    row = _say(db, "vậy tao task đó igups anh đi nhé.", 4)
-    ctx = service._intent_context(db, "12345", row.id)
-    assert "đang chờ người dùng nhắn «tạo»" in ctx and "Nghiên cứu luồng agent 2 agent" in ctx and "KHÔNG phải sửa phần mềm" in ctx
-    from app.modules.agent_hub.constants import ACT_DRAFT_DONE
-
-    pending = db.query(service.AgentMessage).filter(service.AgentMessage.action == "cho_tao").one()
-    pending.action = ACT_DRAFT_DONE
-    db.commit()
-    assert "nháp" not in service._intent_context(db, "12345", row.id)      # thẻ đã dùng: không nhắc nữa
-
-
-def test_loi_dan_phan_loai_co_vi_du_task_du_an():
-    from app.modules.agent_hub import manager
-
-    assert "lên task gọi NCC" in manager.INTENT_SYSTEM and "PHÂN HỆ DỰ ÁN" in manager.INTENT_SYSTEM

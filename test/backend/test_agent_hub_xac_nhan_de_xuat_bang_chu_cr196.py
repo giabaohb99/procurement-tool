@@ -66,5 +66,8 @@ def test_chat_lien_ket_di_qua_chuoi_lenh(db, monkeypatch):
     monkeypatch.setattr(service, "_resolve_proposal", lambda *a: resolved.append(a))
     _card(db)
     row = _say(db, "xác nhận")
-    service._route_linked_text(db, "999", row, "xác nhận")
+    from app.modules.agent_hub import core_v2
+
+    #  ai-CR-206: đường cũ đã xóa — chuỗi lệnh chữ của người liên kết nay là `core_v2.shortcut` (chạy trước model).
+    assert core_v2.shortcut(db, "999", row, "xác nhận")
     assert len(resolved) == 1 and resolved[0][3] and answered == []

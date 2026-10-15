@@ -20,22 +20,6 @@ def test_tran_cho_theo_luot():
     assert base.request_timeout(60) == 60
 
 
-def test_buoc_y_dinh_cho_toi_da_theo_cau_hinh(monkeypatch):
-    from app.core.config import settings
-    from app.modules.agent_hub import manager
-    from app.modules.assistant.provider.base import ChatResult
-
-    seen: list = []
-
-    def fake_ask(self, messages, **kw):
-        seen.append(base.REQUEST_TIMEOUT.get())
-        return ChatResult(text='{"intent": "hoi", "scope": "cong_ty", "reason": "x"}', provider="p", model="m")
-
-    monkeypatch.setattr(manager.AgentGeminiProvider, "ask", fake_ask)
-    monkeypatch.setattr(settings, "AGENT_INTENT_TIMEOUT", 7)
-    manager.run_intent("công nợ Hòa Phát")
-    assert seen == [7] and base.REQUEST_TIMEOUT.get() is None
-
 
 def test_khong_khop_nhom_thi_du_cong_cu_nhung_khong_goi_va_xin_them_duoc(db, seed, monkeypatch):
     from app.modules.assistant import service

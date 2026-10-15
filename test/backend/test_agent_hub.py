@@ -146,6 +146,15 @@ def _fake_bot_env(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _khong_con_doc_y_dinh(monkeypatch):
+    """ai-CR-206: bước đọc ý định (`manager.run_intent`) đã xóa cùng đường cũ. Bài cũ còn đè hàm này để dựng tình huống —
+    đặt chỗ trống để lệnh đè không vỡ; lõi mới không bao giờ gọi nó."""
+    from app.modules.agent_hub import manager as _m
+
+    monkeypatch.setattr(_m, "run_intent", lambda *a, **k: pytest.fail("đường cũ đã xóa"), raising=False)
+
+
+@pytest.fixture(autouse=True)
 def _old_code_flow(monkeypatch):
     """ai-CR-149: dây chuyền gọn (không model quản lý viết kế hoạch) bật mặc định; các bài ở tệp này canh dây chuyền CŨ
     (vẫn còn khi tắt AGENT_CODE_FLOW_SIMPLE). Dây chuyền gọn canh ở test_agent_hub_day_chuyen_gon.py."""
@@ -189,6 +198,27 @@ def bot(monkeypatch):
                         lambda chat_id="", action="typing": typing.append(chat_id))
     monkeypatch.setattr(service, "answer_question",
                         lambda db, chat_id, q, **kw: asked.append(q))
+    #  ai-CR-206: đường cũ (đọc ý định → Trợ lý) đã xóa, mọi tin chữ đi lõi mới (`core_v2.handle`: lối tắt chữ → chưa liên
+    #  kết / chưa khóa → tra nhanh → model). Bài ở tệp này thay RIÊNG phần model (`core_v2._answer`) bằng «model giả»:
+    #  nhắn tạo / thôi / gửi duyệt với nháp đang chờ (hay phiếu vừa tạo) → như model gọi commit_draft / drop_draft; còn lại =
+    #  «tới tay Trợ lý» → answer_question (giả ở trên, ghi vào `asked`).
+    from app.modules.agent_hub import core_v2
+
+    def _model(db, chat_id, row, text, user):
+        if service._draft_by_text(db, chat_id, row, text):
+            row.action = service.ACT_ASKED
+            db.commit()
+            return
+        service.answer_question(db, chat_id, text, before_id=row.id)
+    monkeypatch.setattr(core_v2, "_answer", _model)
+    #  Đường cũ đưa thẳng tin chủ bot cho Trợ lý (Trợ lý tự lo tài khoản); lõi mới đòi tài khoản ERP trước. Chat chủ bot
+    #  trong bài chưa liên kết / chưa khai AGENT_ASSISTANT_USER → cho một tài khoản giả, chat khác giữ luật thật.
+    from types import SimpleNamespace as _NS
+
+    _real_user = service._assistant_user
+    monkeypatch.setattr(service, "_assistant_user_real", _real_user, raising=False)     # bài canh luật thật dùng bản này
+    monkeypatch.setattr(service, "_assistant_user", lambda db, chat_id="": _real_user(db, chat_id) or (
+        _NS(id=0, is_active=True) if service.telegram.is_allowed_chat(chat_id) else None))
     service._typing_log = typing  # bài kiểm ai-CR-008 đọc qua đây
     return service, sent, asked
 
@@ -214,18 +244,6 @@ def test_hoi_khong_can_go_tien_to(db, bot, monkeypatch):
     #  Đóng dấu = rút khỏi INBOX. Quên là câu hỏi vừa được trả lời lại thành một đầu việc.
     assert row.action == "hoi"
 
-
-def test_giao_viec_van_nam_lai_inbox(db, bot, monkeypatch):
-    service, _sent, asked = bot
-    _fake_intent(monkeypatch, service, "viec")
-
-    service.handle_message(db, _msg("cho thêm cột ngày giao vào bảng đơn hàng"))
-
-    assert asked == []
-    assert db.query(service.AgentMessage).filter_by(direction=service.DIR_IN).one().action == ""
-    #  ai-CR-021: kèm một câu báo nhận (dấu riêng, không phải lượt hội thoại).
-    assert db.query(service.AgentMessage).filter_by(direction=service.DIR_OUT).one().action == \
-        service.ACT_ACK
 
 
 def test_map_mo_thi_tra_loi_luon_kem_goi_y_ghi_viec(db, bot, monkeypatch):
@@ -330,43 +348,6 @@ def test_bot_vua_hoi_lai_thi_tin_ke_la_cau_tra_loi(db, bot, monkeypatch):
     assert moi.action == "hoi"
 
 
-def test_bot_hoi_lai_qua_lau_thi_la_chuyen_moi(db, bot, monkeypatch):
-    """Câu hỏi của bot từ nửa tiếng trước không còn 'đang chờ' — tin mới phải đi phân loại."""
-    from datetime import datetime, timedelta
-
-    service, _sent, asked = bot
-    out = _cuoc_hoi_dap(service, db, "Anh muốn nghỉ ngày nào?")
-    out.created_at = datetime.now() - timedelta(minutes=30)
-    db.commit()
-    _fake_intent(monkeypatch, service, "viec")
-
-    service.handle_message(db, _msg("màn đơn hàng không lọc được theo ngày"))
-
-    assert asked == []
-    assert db.query(service.AgentMessage).filter_by(tg_message_id=7).one().action == ""
-
-
-def test_bot_tra_loi_xuoi_thi_van_phan_loai_nhung_kem_mach(db, bot, monkeypatch):
-    """Bot trả lời xuôi (không hỏi) thì tin kế vẫn phân loại, nhưng model được đọc mạch trước đó."""
-    from app.modules.assistant.provider.base import ChatResult
-
-    service, _sent, asked = bot
-    _cuoc_hoi_dap(service, db, "Đã tạo đơn NP012 cho anh.")
-    seen: dict = {}
-
-    def phan_loai(text, **kw):
-        seen["context"] = kw.get("context")
-        return ({"intent": "hoi", "reason": ""},
-                ChatResult(text="", provider="agent_gemini", model="x",
-                           input_tokens=0, output_tokens=0))
-
-    monkeypatch.setattr(service.manager, "run_intent", phan_loai)
-    service.handle_message(db, _msg("còn bao nhiêu ngày phép?"))
-
-    assert asked == ["còn bao nhiêu ngày phép?"]
-    assert seen["context"] == ("Người dùng: tạo đơn nghỉ phép cho anh\n"
-                               "Bot: Đã tạo đơn NP012 cho anh.")
-
 
 # --- Như Trợ lý AI trên web, nhưng ở Telegram (ai-CR-006) -------------------
 def test_markdown_ra_html_telegram(monkeypatch):
@@ -464,26 +445,6 @@ def test_con_tro_khong_troi_khi_tool_rollback(db, bot, monkeypatch):
     assert service.get_cursor(db).value == 42
     assert db.query(service.AgentMessage).filter_by(direction=2).count() == 1
 
-
-# --- Bot chậm: giữ kết nối chờ tin + báo đang soạn (ai-CR-008) -----------------
-def test_nhan_tin_la_bao_dang_soan_truoc_khi_hoi_model(db, bot, monkeypatch):
-    """Đại ca phải thấy "đang soạn tin..." NGAY khi bot nhận tin, trước lượt phân loại."""
-    service, _sent, asked = bot
-    thu_tu: list[str] = []
-    monkeypatch.setattr(service.telegram, "send_chat_action",
-                        lambda chat_id="", action="typing": thu_tu.append("typing"))
-
-    def phan_loai(text, **kw):
-        thu_tu.append("intent")
-        from app.modules.assistant.provider.base import ChatResult
-        return ({"intent": "hoi", "reason": ""},
-                ChatResult(text="", provider="agent_gemini", model="x",
-                           input_tokens=0, output_tokens=0))
-
-    monkeypatch.setattr(service.manager, "run_intent", phan_loai)
-    service.handle_message(db, _msg("3 đơn gần nhất"))
-    assert thu_tu == ["typing", "intent"]
-    assert asked == ["3 đơn gần nhất"]
 
 
 def test_chat_la_thi_khong_bao_dang_soan(db, bot):
@@ -2875,27 +2836,6 @@ def test_lenh_xem_ke_ca_viec_da_bo(db, bot, monkeypatch):
 
 
 
-# ---------------------------------------------------------------------------
-# ai-CR-021: báo nhận ngay + báo đang chạy khi im quá 90 giây
-# ---------------------------------------------------------------------------
-def test_tin_giao_viec_duoc_bao_nhan_mot_lan_cho_ca_chum(db, bot, monkeypatch):
-    from app.modules.agent_hub.model import AgentMessage
-
-    service, _, _ = bot
-    sent = _capture_send(monkeypatch, service)
-    _fake_intent(monkeypatch, service, "viec")
-    service.handle_message(db, _msg("màn công nợ lọc sai"))
-    first = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
-    assert first.action == "" and first.task_id == 0          # vẫn nằm INBOX cho vòng gom
-    assert sent[-1][0] == "Em nhận rồi, đang xử lý."
-    assert service._kick_log == [1]                           # ai-CR-091: hẹn gom ngay, không đợi beat
-    acks = db.query(AgentMessage).filter_by(action=service.ACT_ACK).count()
-    assert acks == 1
-    #  Câu thứ hai trong cùng chùm (tin trước còn chờ gom): không kêu chuông thêm.
-    n = len(sent)
-    service.handle_message(db, _msg("cả màn yêu cầu thanh toán nữa"))
-    assert len(sent) == n and db.query(AgentMessage).filter_by(action=service.ACT_ACK).count() == 1
-
 
 def test_bao_dang_chay_sau_90_giay_roi_sua_chinh_tin_do(db, bot, monkeypatch):
     from datetime import timedelta as _td
@@ -3494,22 +3434,6 @@ def test_cau_hoi_ve_viec_chi_tra_loi_tinh_trang_khong_lam_gi(db, bot, monkeypatc
     assert "bot/x" in text and task.code in text and f"«gộp {task.code}»" in text
 
 
-def test_yeu_cau_moi_co_chu_bo_hay_gop_khong_bi_hieu_nham_la_lenh(db, bot, monkeypatch):
-    from app.modules.agent_hub import coder
-    from app.modules.agent_hub.model import AgentMessage
-
-    service, _, _ = bot
-    _compact(monkeypatch)
-    _capture_send(monkeypatch, service)
-    _fake_intent(monkeypatch, service, "viec")
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("không được gộp"))
-    task = _task_with_session(db, service, coder)
-    for msg in ("bỏ nút tạo mới trên màn công nợ", "gộp hai cột ngày giao và ngày nhận", "bỏ ô từ đến"):
-        service.handle_message(db, _msg(msg))
-        row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
-        assert row.action == "" and row.task_id == 0, msg        # vẫn là việc MỚI chờ gom
-    assert task.status == service.ST_REVIEW
-
 
 def test_nhieu_viec_thi_hoi_lai_viec_nao(db, bot, monkeypatch):
     from app.modules.agent_hub import coder
@@ -3580,112 +3504,6 @@ def _fake_act(monkeypatch, service, seen=None, **data):
 
     monkeypatch.setattr(service.manager, "run_intent", fake)
 
-
-def test_dong_y_sau_de_nghi_gop_thi_gop_luon(db, bot, monkeypatch):
-    from app.modules.agent_hub import coder
-
-    service, _, _ = bot
-    _compact(monkeypatch)
-    _capture_send(monkeypatch, service)
-    merged: list[str] = []
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task, deploy=True: merged.append(task.code))
-    task = _task_with_session(db, service, coder)
-    service.reply(db, "12345", f"Gộp được: nhắn «gộp {task.code}».", task_id=task.id)
-    seen: list[dict] = []
-    _fake_act(monkeypatch, service, seen, action="merge", task=task.code, confident=True)
-    service.handle_message(db, _msg("đồng ý"))
-    assert merged == [task.code]
-    #  Model được đọc cả việc đang mở lẫn tin bot vừa nhắn, chữ trơn không thẻ HTML.
-    ctx = seen[0]["tasks"]
-    assert task.code in ctx and "TIN BOT VỪA NHẮN" in ctx and "<b>" not in ctx
-
-
-def test_chua_chac_thi_hoi_lai_roi_dung_moi_lam(db, bot, monkeypatch):
-    from app.modules.agent_hub import coder
-    from app.modules.agent_hub.model import AgentMessage
-
-    service, _, _ = bot
-    _compact(monkeypatch)
-    sent = _capture_send(monkeypatch, service)
-    merged: list[str] = []
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task, deploy=True: merged.append(task.code))
-    task = _task_with_session(db, service, coder)
-    _fake_act(monkeypatch, service, action="merge", task=task.code, confident=False)
-    service.handle_message(db, _msg("đẩy cái đó lên luôn đi em"))
-    assert merged == [] and "phải không" in sent[-1][0] and task.code in sent[-1][0]
-    #  «đúng» chạy bằng dấu đã ghi, không hỏi model lần hai.
-    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("không hỏi lại model"))
-    service.handle_message(db, _msg("đúng rồi"))
-    assert merged == [task.code]
-    #  «đúng» lần nữa không gộp lần hai.
-    _fake_intent(monkeypatch, service, "hoi")
-    service.handle_message(db, _msg("đúng"))
-    assert merged == [task.code]
-    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
-    assert row.action != service.ACT_COMMAND
-
-
-def test_khong_thi_khong_lam(db, bot, monkeypatch):
-    from app.modules.agent_hub import coder
-
-    service, _, _ = bot
-    _compact(monkeypatch)
-    sent = _capture_send(monkeypatch, service)
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("đại ca đã nói không"))
-    task = _task_with_session(db, service, coder)
-    _fake_act(monkeypatch, service, action="merge", task=task.code, confident=False)
-    service.handle_message(db, _msg("cho nó lên dev nhé"))
-    service.handle_message(db, _msg("không"))
-    assert "không làm" in sent[-1][0] and task.status == service.ST_REVIEW
-
-
-def test_model_chac_nhung_viec_sai_buoc_thi_van_hoi_lai(db, bot, monkeypatch):
-    """Gộp / thu hồi / bỏ: model nói chắc mà việc không ở bước hợp lệ thì vẫn hỏi, không làm."""
-    service, _, _ = bot
-    _compact(monkeypatch)
-    sent = _capture_send(monkeypatch, service)
-    monkeypatch.setattr(service, "_dispatch_revert", lambda *a: pytest.fail("chưa gộp thì không thu hồi"))
-    plan = _task_with_plan(db, service, ["backend/app/x.py"])
-    _fake_act(monkeypatch, service, action="revert", task=plan.code, confident=True)
-    service.handle_message(db, _msg("rút cái đó lại đi"))
-    assert "phải không" in sent[-1][0]
-
-
-def test_dong_y_duyet_ke_hoach_khong_can_ma_viec(db, bot, monkeypatch, tmp_path):
-    service, _, _ = bot
-    _compact(monkeypatch)
-    _so_tam(monkeypatch, tmp_path)
-    _capture_send(monkeypatch, service)
-    approved: list[str] = []
-    monkeypatch.setattr(service, "_dispatch_coder", lambda db, chat, task: approved.append(task.code))
-    plan = _task_with_plan(db, service, ["backend/app/x.py"])
-    _fake_act(monkeypatch, service, action="approve", task="", confident=True)
-    service.handle_message(db, _msg("ok em làm theo kế hoạch đó đi"))
-    assert approved == [plan.code]
-
-
-def test_run_intent_doc_thao_tac_va_ha_nhan_la_ve_mo_ho(monkeypatch):
-    from app.modules.agent_hub import manager
-    from app.modules.assistant.provider.base import ChatResult
-
-    replies = iter([
-        '{"intent":"thao_tac","action":"gop","task":"ai-0007","confident":true,"when":"20h"}',
-        '{"intent":"thao_tac","action":"xoa_nhanh","task":"AI-0007","confident":true}',
-    ])
-    seen: list[str] = []
-
-    class Fake:
-        def ask(self, messages, **kw):
-            seen.append(messages[0].content)
-            return ChatResult(text=next(replies), provider="p", model="m", input_tokens=0, output_tokens=0)
-
-    monkeypatch.setattr(manager, "get_provider", lambda: Fake())
-    data, _ = manager.run_intent("đồng ý", tasks="VIỆC ĐANG MỞ:\n- AI-0007")
-    assert data["intent"] == "thao_tac" and data["action"] == "merge"
-    assert data["task"] == "AI-0007" and data["confident"] is True and data["when"] == "20h"
-    assert "VIỆC ĐANG MỞ" in seen[0] and "Tin nhắn mới:\nđồng ý" in seen[0]
-    data, _ = manager.run_intent("xóa nhánh đi")
-    assert data["intent"] == "mo_ho"
 
 
 # ---------------------------------------------------------------------------
@@ -3925,50 +3743,6 @@ def _last_in(db, service):
     from app.modules.agent_hub.model import AgentMessage
     return db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
 
-
-def test_anh_kem_chu_thich_la_mot_yeu_cau_co_anh(db, bot, monkeypatch, tmp_path):
-    service, _, _ = bot
-    _compact(monkeypatch)
-    _capture_send(monkeypatch, service)
-    got = _fake_download(monkeypatch, service, tmp_path)
-    _fake_intent(monkeypatch, service, "viec")
-    service.handle_message(db, _photo(21, caption="màn công nợ lệch tổng như ảnh"))
-    row = _last_in(db, service)
-    assert got == ["big21"] and row.body == "màn công nợ lệch tổng như ảnh" and row.action == ""
-    path = row.files[0]["path"]
-    assert path.endswith("12345_21.png") and open(path, "rb").read().startswith(b"\x89PNG")
-
-
-def test_anh_khong_chu_cho_mo_ta_roi_ghep_vao_viec(db, bot, monkeypatch, tmp_path):
-    from app.modules.agent_hub import coder
-    from app.modules.assistant.provider.base import ChatResult
-
-    service, _, _ = bot
-    _compact(monkeypatch)
-    sent = _capture_send(monkeypatch, service)
-    _fake_download(monkeypatch, service, tmp_path)
-    service.handle_message(db, _photo(31, group="alb"))
-    assert _last_in(db, service).action == service.ACT_PHOTO_WAIT and "nhắn thêm mô tả" in sent[-1][0]
-    n = len(sent)
-    service.handle_message(db, _photo(32, group="alb"))          # cùng album: ghép, không báo lại
-    assert len(sent) == n and _last_in(db, service).action == service.ACT_PHOTO_USED
-    _fake_intent(monkeypatch, service, "viec")
-    service.handle_message(db, _msg("nút lưu ở màn này bị mờ"))
-    row = _last_in(db, service)
-    assert [f["path"].rsplit("_", 1)[-1] for f in row.files] == ["31.png", "32.png"]
-    #  Gom thành việc: mô tả ghi số ảnh, đề bài runner liệt kê ảnh.
-    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
-    monkeypatch.setattr(service.manager, "run_triage", lambda msgs: (
-        {"groups": [{"title": "Nút lưu bị mờ", "summary": "Nút lưu mờ", "risk_level": 1,
-                     "message_ids": [row.id]}]}, ket_qua))
-    monkeypatch.setattr(service, "start_scan", lambda db, task: None)
-    assert service.triage_inbox(db, force=True) == 1
-    task = db.get(service.AgentTask, row.task_id)
-    assert "(Kèm 2 ảnh chụp màn hình" in task.summary
-    images = coder.task_images(db, task)
-    assert len(images) == 2
-    brief = coder.build_brief(task, [], images=images)
-    assert "## Ảnh chụp đại ca gửi kèm" in brief and images[0] in brief
 
 
 def test_anh_tai_hong_thi_bao_gui_lai(db, bot, monkeypatch, tmp_path):
@@ -4259,14 +4033,14 @@ def test_chat_dai_ca_lien_ket_thi_hoi_duoi_tai_khoan_that_con_khong_thi_tai_khoa
     shared = _erp_user(db, "bot@dego.vn")
     lan = _erp_user(db)
     monkeypatch.setattr(settings, "AGENT_ASSISTANT_USER", "bot@dego.vn")
-    assert service._assistant_user(db, "12345").id == shared.id
-    assert service._assistant_user(db, "777") is None                # chat lạ không lùi về tài khoản chung
+    assert service._assistant_user_real(db, "12345").id == shared.id
+    assert service._assistant_user_real(db, "777") is None                # chat lạ không lùi về tài khoản chung
     code, _ = chat_link.issue_code(db, lan.id)
     service.handle_message(db, _msg(f"/dangnhap {code}"))
-    assert service._assistant_user(db, "12345").id == lan.id
+    assert service._assistant_user_real(db, "12345").id == lan.id
     lan.is_active = False
     db.commit()
-    assert service._assistant_user(db, "12345") is None               # tài khoản khóa: không chạy
+    assert service._assistant_user_real(db, "12345") is None               # tài khoản khóa: không chạy
 
 
 def test_api_lay_ma_va_go_lien_ket_cua_chinh_minh(db, bot, cap_quyen):
@@ -4472,20 +4246,6 @@ def test_kiem_chung_goi_google_search_tra_ket_luan_va_nguon(db, bot, monkeypatch
     assert run.input_tokens == 100 and run.artifact["chat_id"] == "12345" and run.artifact["mode"] == "kiem_chung"
 
 
-def test_cau_tu_nhien_duoc_phan_loai_tra_cuu_thi_di_nghien_cuu(db, bot, monkeypatch):
-    from app.modules.agent_hub import research
-    from app.modules.assistant.provider.base import ChatResult
-
-    service, sent, asked = bot
-    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
-    monkeypatch.setattr(service.manager, "run_intent", lambda text, **kw: (
-        {"intent": "tra_cuu", "kind": "web", "query": "thuế nhập khẩu thép 2026", "reason": ""}, ket_qua))
-    seen: list[dict] = []
-    _fake_gemini_search(monkeypatch, research, text="Thuế suất MFN 0-15%.", seen=seen)
-    service.handle_message(db, _msg("tìm hiểu giúp anh thuế nhập khẩu thép năm nay"))
-    assert seen[0]["contents"][0]["parts"][0]["text"] == "thuế nhập khẩu thép 2026" and asked == []
-    assert "Thuế suất MFN" in sent[-1]
-
 
 def test_word_xuat_lan_tra_gan_nhat_cua_chinh_chat_do(db, bot, monkeypatch):
     import io as _io
@@ -4565,28 +4325,6 @@ def test_cau_co_chu_word_cua_nghiep_vu_erp_khong_bi_bat_nham(db, bot, monkeypatc
     service.handle_message(db, _msg("xuất word báo cáo công nợ nhà cung cấp tháng 9 theo từng pháp nhân"))
     assert docs == [] and len(asked) == 2
 
-
-def test_nguoi_lien_ket_nhan_binh_thuong_cung_duoc_tra_cuu(db, bot, monkeypatch):
-    from app.modules.agent_hub import chat_link, research
-    from app.modules.assistant.provider.base import ChatResult
-
-    service, sent, asked = bot
-    lan = _erp_user(db)
-    code, _ = chat_link.issue_code(db, lan.id)
-    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
-    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
-    intents = iter([
-        ({"intent": "tra_cuu", "kind": "tai_lieu", "query": "quy trình duyệt"}, ket_qua),   # tài liệu kỹ thuật -> hạ về web
-        ({"intent": "viec", "reason": ""}, ket_qua),                                           # không giao việc được -> Trợ lý
-    ])
-    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: next(intents))
-    seen: list[dict] = []
-    _fake_gemini_search(monkeypatch, research, text="Tóm tắt.", seen=seen)
-    service.handle_message(db, _other_msg("tìm hiểu giúp em quy trình duyệt"))
-    assert seen and seen[0]["tools"] == [{"google_search": {}}] and "Tóm tắt." in sent[-1]
-    service.handle_message(db, _other_msg("thêm cột ngày vào màn công nợ"))
-    assert asked == ["thêm cột ngày vào màn công nợ"]
-    assert not db.query(service.AgentTask).count()                                      # không đẻ việc sửa mã
 
 
 # ---------------------------------------------------------------------------
@@ -5086,37 +4824,6 @@ def test_nguoi_lien_ket_chua_gan_khoa_thi_bot_khong_goi_gemini_ma_chi_nhac(db, b
     assert "lan@dego.vn" in sent[-1]
 
 
-def test_nguoi_lien_ket_co_khoa_thi_moi_luot_gemini_di_bang_khoa_cua_ho(db, bot, monkeypatch):
-    from app.modules.agent_hub import chat_link, user_keys
-    from app.modules.agent_hub.model import AgentRun
-    from app.modules.assistant.provider.base import ChatResult
-
-    service, sent, _ = bot
-    monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "khoa-env-cua-may-bot")
-    monkeypatch.setattr(user_keys, "_probe", lambda raw: 200)
-    lan = _erp_user(db)
-    user_keys.set_key(db, lan.id, "AIzaSy-khoa-cua-lan-abcdefgh-1111")
-    code, _ = chat_link.issue_code(db, lan.id)
-    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
-    seen: dict = {}
-
-    def fake_intent(text, **kw):
-        seen["intent_key"] = service.manager.get_provider()._api_key()
-        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="agent_gemini", model="x",
-                                                          input_tokens=1, output_tokens=1)
-
-    monkeypatch.setattr(service.manager, "run_intent", fake_intent)
-    service.handle_message(db, _other_msg("3 đơn mua hàng gần nhất"))
-    assert seen["intent_key"] == "AIzaSy-khoa-cua-lan-abcdefgh-1111"
-    run = db.query(AgentRun).filter_by(stage=service.STAGE_INTENT).order_by(AgentRun.id.desc()).first()
-    assert run.owner_id == lan.id                                              # chi phí ghi cho khóa của Lan
-    #  Ngoài ngữ cảnh chat (bài kiểm, script): provider lùi về khóa `.env` như trước.
-    assert service.manager.get_provider()._api_key() == "khoa-env-cua-may-bot"
-    assert service.manager.get_provider().is_configured() is False           # web không bao giờ chọn nhầm nhà này
-    #  «tốn bao nhiêu» của người thường chỉ ra tiền của KHÓA MÌNH.
-    service.handle_message(db, _other_msg("tháng này bot tốn bao nhiêu"))
-    assert "bằng khóa của anh/chị" in sent[-1] and "Claude Code" not in sent[-1]
-
 
 def test_chat_dai_ca_lui_ve_khoa_env_khi_chua_co_khoa_ca_nhan_con_co_thi_dung_khoa_ca_nhan(db, bot, monkeypatch):
     from app.modules.agent_hub import chat_link, user_keys
@@ -5125,13 +4832,13 @@ def test_chat_dai_ca_lui_ve_khoa_env_khi_chua_co_khoa_ca_nhan_con_co_thi_dung_kh
     monkeypatch.setattr(settings, "AGENT_GEMINI_API_KEY", "khoa-env-cua-may-bot")
     seen: list[str] = []
 
-    def fake_intent(text, **kw):
-        from app.modules.assistant.provider.base import ChatResult
-        seen.append(service.manager.get_provider()._api_key())
-        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="agent_gemini", model="x",
-                                                          input_tokens=0, output_tokens=0)
+    from app.modules.agent_hub import core_v2
 
-    monkeypatch.setattr(service.manager, "run_intent", fake_intent)
+    def fake_model(db_, chat_id, row, text, user):          # ai-CR-206: lượt model của lõi mới (thay bước đọc ý định)
+        seen.append(service.manager.get_provider()._api_key())
+        service.answer_question(db_, chat_id, text, before_id=row.id)
+
+    monkeypatch.setattr(core_v2, "_answer", fake_model)
     service.handle_message(db, _msg("3 đơn mua hàng gần nhất"))
     assert seen == ["khoa-env-cua-may-bot"] and asked == ["3 đơn mua hàng gần nhất"]
     #  Đại ca tự /dangnhap và dán khóa cá nhân → khóa cá nhân thắng; việc nền (gom tin) cũng dùng khóa đó.
@@ -6477,29 +6184,6 @@ def test_quy_dinh_hoi_va_lam_la_nguon_duy_nhat():
     assert "trợ lý CÁ NHÂN" in policy.ASSISTANT_RULES and "KHÔNG BAO GIỜ gợi ý tạo phiếu hỗ trợ" in policy.ASSISTANT_RULES
 
 
-def test_cau_noi_sua_du_lieu_di_may_sua_ma_khong_bay_sql(db, bot, monkeypatch):
-    from app.modules.agent_hub.constants import OP_DATA_PLAN, OPS_QUEUED
-    from app.modules.agent_hub.model import AgentOp
-
-    service, sent, asked = bot
-    _envs(db)
-    tasks = _ops_on(monkeypatch)
-    from app.modules.assistant.provider.base import ChatResult
-
-    res = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
-    monkeypatch.setattr(service.manager, "run_intent", lambda text, **kw: (
-        {"intent": "du_lieu", "env": "dev", "request": "gán chức vụ Nhân viên (Demo) cho nhân sự có (CR-414) trong tên",
-         "reason": ""}, res))
-    service.handle_message(db, _msg("gán vị trí chức vụ là nhân viên (demo) cho nhân sự có (CR-414) trong tên"))
-    op = db.query(AgentOp).one()
-    assert op.kind == OP_DATA_PLAN and op.status == OPS_QUEUED and tasks == [("agent.run_op", [op.id])]
-    assert "soạn lệnh" in sent[-1] and "SELECT" not in sent[-1] and asked == []
-
-    #  Chat người khác / thao tác tắt → Trợ lý AI trả lời như câu hỏi thường.
-    monkeypatch.setattr(settings, "AGENT_OPS_ENABLED", False)
-    service.handle_message(db, {**_msg("gán chức vụ X cho nhân sự Y"), "message_id": 8})
-    assert asked and db.query(AgentOp).count() == 1
-
 
 def _fake_claude_rounds(monkeypatch, replies):
     import json as _json
@@ -7391,28 +7075,6 @@ def test_lenh_nho_quen_so_nho_tren_telegram(db, bot, seed):
     assert pm.load_core(db, seed.u_req_id) == ""
 
 
-def test_tin_ca_nhan_duoc_dong_dau_cong_ty_hay_ca_nhan(db, bot, seed, monkeypatch):
-    from app.modules.agent_hub import manager
-    from app.modules.agent_hub.model import AgentMessage
-    from app.modules.assistant.provider.base import ChatResult
-
-    service, sent, asked = bot
-    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
-    real_run_intent = manager.run_intent
-    monkeypatch.setattr(service.manager, "run_intent",
-                        lambda text, **kw: ({"intent": "hoi", "scope": service.SCOPE_PERSONAL, "reason": ""}, ket_qua))
-    service.handle_message(db, _msg("chỗ ăn chiều nay"))
-    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
-    assert row.scope == service.SCOPE_PERSONAL and asked == ["chỗ ăn chiều nay"]
-    #  Bộ phân loại: việc sửa mã LUÔN là công ty dù model ghi ca_nhan; câu hỏi thường thì theo model.
-    monkeypatch.setattr(manager, "get_provider", lambda: type("P", (), {"ask": lambda self, *a, **k: ket_qua})())
-    monkeypatch.setattr(manager, "parse_json", lambda t: {"intent": "viec", "scope": "ca_nhan"})
-    assert real_run_intent("sửa màn đơn hàng")[0]["scope"] == service.SCOPE_COMPANY
-    monkeypatch.setattr(manager, "parse_json", lambda t: {"intent": "hoi", "scope": "ca_nhan"})
-    assert real_run_intent("quán cà phê gần đây")[0]["scope"] == service.SCOPE_PERSONAL
-    monkeypatch.setattr(manager, "parse_json", lambda t: {"intent": "hoi"})
-    assert real_run_intent("đơn PO1 sao chưa duyệt")[0]["scope"] == service.SCOPE_COMPANY
-
 
 def test_cau_tra_loi_nap_so_rieng_cua_nguoi_da_dang_nhap(db, seed, monkeypatch):
     """Không dùng fixture `bot` (nó thay `answer_question`). Sổ riêng của người đã /dangnhap đi vào system."""
@@ -7444,20 +7106,6 @@ def test_cau_tra_loi_nap_so_rieng_cua_nguoi_da_dang_nhap(db, seed, monkeypatch):
     assert out.scope == service.SCOPE_PERSONAL and sent[-1].startswith("Quanh Ninh Kiều")
 
 
-def test_tra_loi_map_mo_co_dong_goi_y_ghi_viec(db, seed, monkeypatch):
-    from app.modules.agent_hub import service
-    from app.modules.assistant import service as assistant_service
-
-    sent: list[str] = []
-    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: sent.append(text) or 1)
-    monkeypatch.setattr(service.telegram, "send_chat_action", lambda *a, **kw: None)
-    monkeypatch.setattr(service.user_keys, "active_key", lambda: "k")
-    monkeypatch.setattr(assistant_service, "ask", lambda q, **kw: {"text": "Thép Hòa Phát khoảng 18.500đ/kg."})
-    _owner_link(db, seed.u_req_id)
-    moi = service.log_message(db, service.DIR_IN, "12345", 3, "Giá thép Hòa Phát", action="hoi")
-    service.answer_question(db, "12345", "Giá thép Hòa Phát", before_id=moi.id, hint=service.UNSURE_HINT)
-    assert sent[-1].startswith("Thép Hòa Phát") and "ghi việc" in sent[-1]
-
 
 def test_ghi_viec_bang_chu_di_thang_vao_so_viec(db, bot, monkeypatch):
     from app.modules.agent_hub.model import AgentMessage
@@ -7470,25 +7118,6 @@ def test_ghi_viec_bang_chu_di_thang_vao_so_viec(db, bot, monkeypatch):
     assert asked == [] and sent[-1] == "Em nhận rồi, đang xử lý."
 
 
-def test_khoa_gemini_het_tien_thi_noi_thang_khong_hoi_lam_luon_hay_ghi_viec(db, bot, monkeypatch):
-    """ai-CR-097: 06/10 «Giá thép Hòa Phát» → Gemini 402 depleted → bot hỏi «làm luôn hay ghi việc» (vô nghĩa)."""
-    from app.modules.agent_hub.model import AgentMessage
-
-    service, sent, asked = bot
-
-    def boom(text, **kw):
-        raise RuntimeError('Gemini trả lỗi 402: {"error": {"code": 402, "message": "Your prepayment credits are depleted."}}')
-
-    monkeypatch.setattr(service.manager, "run_intent", boom)
-    service.handle_message(db, _msg("Giá thép Hòa Phát"))
-    assert "hết tiền" in sent[-1] and "402" in sent[-1] and "làm luôn" not in sent[-1]
-    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
-    assert row.action == service.ACT_COMMAND and asked == []
-    #  Lỗi khác (mạng) vẫn đi thẻ hai nút như cũ.
-    monkeypatch.setattr(service.manager, "run_intent", lambda text, **kw: (_ for _ in ()).throw(RuntimeError("timeout")))
-    service.handle_message(db, {**_msg("xem lại giúp anh"), "message_id": 8})
-    assert asked == ["xem lại giúp anh"]       # ai-CR-099: lỗi khác thì trả lời luôn, không hỏi lại
-    assert service.user_keys.key_problem("429 RESOURCE_EXHAUSTED") and not service.user_keys.key_problem("timeout")
 
 # ---------------------------------------------------------------------------
 # ai-CR-098 — sổ khóa AI một bảng (công ty + cá nhân), nhiều hãng, ưu tiên, tự nhảy khóa, trần riêng (C-04)
@@ -7699,37 +7328,6 @@ def test_gemini_qua_tai_thi_thu_lai_mot_lan_va_tra_cuu_khong_do_json(db, bot, mo
     service.run_research(db, "12345", "giá vàng hôm nay", research.MODE_WEB)
     assert "hết hạn mức tìm Google" in sent[-1] and "{" not in sent[-1] and "RESOURCE_EXHAUSTED" not in sent[-1]
 
-
-def test_tra_loi_trich_tin_va_mach_khong_keo_chuyen_hom_qua(db, bot, monkeypatch):
-    """ai-CR-100: 07/10 10:28 đại ca bấm «Trả lời» tin «giá vàng hôm nay», nhắn «trả lời cho tao» → bot trả lời cuộc
-    «lên lịch trình» hôm 06/10. Hai lỗi: không đọc câu được trích; mạch lấy mốc là tin lịch sử mới nhất (hôm qua)."""
-    from datetime import datetime, timedelta
-
-    from app.modules.agent_hub.model import AgentMessage
-
-    service, sent, asked = bot
-    seen: list[str] = []
-
-    def fake_intent(text, **kw):
-        from app.modules.assistant.provider.base import ChatResult
-        seen.append(text)
-        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="agent_gemini", model="x",
-                                                          input_tokens=0, output_tokens=0)
-
-    monkeypatch.setattr(service.manager, "run_intent", fake_intent)
-    #  Cuộc hỏi đáp hôm qua.
-    old_q = service.log_message(db, service.DIR_IN, "12345", 1, "lên lịch trình ăn uống", action=service.ACT_ASKED)
-    old_a = service.log_message(db, service.DIR_OUT, "12345", 2, "Lịch trình ngày cơ bản…", action=service.ACT_ANSWER)
-    old_q.created_at = old_a.created_at = datetime.now() - timedelta(hours=20)
-    db.commit()
-    msg = {**_msg("trả lời cho tao"), "reply_to_message": {"message_id": 159, "text": "giá vàng hôm nay"}}
-    service.handle_message(db, msg)
-    assert seen[-1] == "giá vàng hôm nay\n(trả lời cho tao)" and asked[-1] == "giá vàng hôm nay\n(trả lời cho tao)"
-    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
-    assert service._recent_turns(db, "12345", row.id) == []          # chuyện 20 giờ trước không vào mạch
-    #  Lệnh `/` không bị ghép.
-    service.handle_message(db, {**_msg("/taikhoan"), "message_id": 9, "reply_to_message": {"text": "abc"}})
-    assert not any("abc" in t for t in seen[1:])
 
 
 # ---------------------------------------------------------------------------
@@ -8367,35 +7965,6 @@ def test_khoa_tram_tuy_chinh_kieu_openai(db, monkeypatch):
     assert posts == [("https://modelapi.vn/v1/chat/completions", "deepseek-v4.1-flash", True)]
 
 
-def test_dang_doc_y_thi_vong_gom_khong_nhat_va_viec_da_bo_khong_lap_ke_hoach(db, bot, monkeypatch):
-    """ai-CR-109: 07/10 «đơn hàng gần nhất» vừa được trả lời vừa thành việc AI-0004 (vòng gom nhặt lúc đang đọc ý)."""
-    from app.modules.agent_hub.model import AgentMessage
-    from app.modules.assistant.provider.base import ChatResult
-
-    service, sent, asked = bot
-    seen_actions = []
-
-    def slow_intent(text, **kw):
-        row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
-        seen_actions.append(row.action)
-        #  Đúng lúc này vòng gom chạy: không được nhặt tin đang đọc ý.
-        monkeypatch.setattr(service.manager, "run_triage", lambda *a, **k: pytest.fail("không được gom tin đang đọc"))
-        assert service.triage_inbox(db, force=True) == 0
-        return {"intent": "hoi", "reason": ""}, ChatResult(text="", provider="x", model="x", input_tokens=0,
-                                                          output_tokens=0)
-
-    monkeypatch.setattr(service.manager, "run_intent", slow_intent)
-    service.handle_message(db, _msg("alooo, đơn hàng gần nhất"))
-    assert seen_actions == [service.ACT_READING] and asked == ["alooo, đơn hàng gần nhất"]
-    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).one()
-    assert row.action == service.ACT_ASKED and row.task_id == 0
-    #  Việc đã bỏ: lập kế hoạch không chạy, không nhắn gì.
-    task = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_CANCELLED)
-    n = len(sent)
-    monkeypatch.setattr(service, "_plan_task", lambda *a, **k: pytest.fail("việc đã bỏ không lập kế hoạch"))
-    service.plan_task(db, task)
-    assert len(sent) == n
-
 
 def test_tra_mang_khong_can_gemini(db, bot, monkeypatch):
     """ai-CR-110: khóa Gemini hết hạn mức tìm Google → tìm DuckDuckGo/Bing + đọc trang, model đang dùng tóm tắt kèm nguồn."""
@@ -8981,7 +8550,6 @@ def test_tep_khong_ai_hoi_thi_het_gio_tu_tom_tat(db, bot, seed, monkeypatch):
     assert service.flush_pending_doc(db, service._doc_wait_log[-1]) is True
     assert len(asked) == 1 and asked[0].startswith("Tóm tắt tệp này")
     #  Tin chữ tới sau khi đã tự tóm tắt: là câu hỏi thường, không đọc lại tệp lần nữa.
-    monkeypatch.setattr(service, "_route_linked_text", lambda *a, **kw: None)
     assert service._doc_followup(db, "12345", service.log_message(db, service.DIR_IN, "12345", 22, "x"), "x") is False
     #  Tệp kèm chú thích: trả lời ngay, không chờ.
     n = len(service._doc_wait_log)
