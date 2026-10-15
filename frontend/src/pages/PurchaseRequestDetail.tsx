@@ -28,6 +28,7 @@ import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
 import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { newDupCodes } from '../utils/lines'
+import { describeOrdered, EMPTY_PROGRESS, type LineProgress, type OrderProgress } from '../utils/over-order'
 import { prLineStatusLabel } from '../utils/statusLabels'
 
 const API = '/api/purchase-requests'
@@ -140,6 +141,7 @@ export default function PurchaseRequestDetail() {
   const [notFound, setNotFound] = useState(false)
   const [pos, setPos] = useState<any[] | null>(null)   // ĐMH tạo từ phiếu này (cùng mã PYC); null = chưa tải/không quyền → ẩn khối
   const [orderedMap, setOrderedMap] = useState<Record<string, number>>({})   // SL đã đặt theo mã hàng (gộp mọi ĐMH cùng PYC)
+  const [orderProgress, setOrderProgress] = useState<OrderProgress>(EMPTY_PROGRESS)   // bao-CR-619: + đơn chưa duyệt, từng đơn theo mã
   const [poExceed, setPoExceed] = useState<{ msg: string; normal: any[]; all: any[] } | null>(null)   // popup cảnh báo đặt vượt
   const [showPoModal, setShowPoModal] = useState(false)   // popup danh sách ĐMH liên quan
   const [origImgs, setOrigImgs] = useState<any[]>([])        // ảnh GỐC của SP (từ catalog) trong popup chi tiết
@@ -192,8 +194,12 @@ export default function PurchaseRequestDetail() {
       .catch(() => setPos(null))
     // SL đã đặt theo mã hàng → prefill 'còn thiếu' + cảnh báo đặt vượt khi tạo ĐMH
     api.get(`${API}/${id}/order-progress`, { _silent: true } as any)
-      .then((r) => setOrderedMap(r.data.data.ordered || {}))
-      .catch(() => setOrderedMap({}))
+      .then((r) => {
+        const d = r.data.data || {}
+        setOrderedMap(d.ordered || {})
+        setOrderProgress({ ordered: d.ordered || {}, pending: d.pending || {}, orders: d.orders || {} })
+      })
+      .catch(() => { setOrderedMap({}); setOrderProgress(EMPTY_PROGRESS) })
   }, [isNew, pr.code])
 
   // bao-CR-376: chờ DS nhân sự trả lời XONG rồi mới điền, và bỏ chốt `isStaff` ở nhánh
@@ -706,6 +712,21 @@ export default function PurchaseRequestDetail() {
     catch { /* interceptor đã toast lỗi */ }
   }
 
+  // bao-CR-619: số đã đặt / đang chờ duyệt / từng đơn của mỗi mã — form ĐMH dùng để nhắc đặt vượt
+  function lineProgressOf(): Record<string, LineProgress> {
+    const out: Record<string, LineProgress> = {}
+    for (const it of (pr.items || [])) {
+      const code = (it.product_code || '').trim()
+      if (!code || !it.product_name || (it.line_status || LS_NO_PO) === LS_CANCELLED) continue
+      out[code] = {
+        name: it.product_name, requested: Number(it.qty) || 0,
+        ordered: Number(orderProgress.ordered[code] || 0), pending: Number(orderProgress.pending[code] || 0),
+        orders: orderProgress.orders[code] || [],
+      }
+    }
+    return out
+  }
+
   // Điều hướng sang form ĐMH mới với header từ phiếu + danh sách dòng đã tính sẵn
   function goPO(items: any[]) {
     // NSPT = người phụ trách dòng ở YCMH. Lấy từ pr.items (có 'assignee'); items truyền vào
@@ -723,6 +744,7 @@ export default function PurchaseRequestDetail() {
       is_urgent: !!pr.is_urgent,
       note: pr.note || '',
       items,
+      progress: lineProgressOf(),
     }
     navigate('/purchase-orders/new', { state: { fromPr } })
   }
@@ -743,14 +765,21 @@ export default function PurchaseRequestDetail() {
     const normal: any[] = [], exceeded: any[] = [], exceededMsg: string[] = []
     for (const it of lines) {
       const req = Number(it.qty) || 0
-      const ordered = Number(orderedMap[it.product_code] || 0)
-      const remaining = req - ordered
+      const code = it.product_code
+      const ordered = Number(orderedMap[code] || 0)
+      // bao-CR-619: đơn nháp / chờ duyệt / bị trả lại cũng đã "giữ" số lượng — không tính là đặt trùng
+      const pending = Number(orderProgress.pending[code] || 0)
+      const remaining = req - ordered - pending
       if (remaining > 0) normal.push(mk(it, remaining))
-      else { exceeded.push(mk(it, req)); exceededMsg.push(`${it.product_name} (đã đặt ${fmt(ordered)}/${fmt(req)})`) }
+      else {
+        exceeded.push(mk(it, req))   // đại ca chốt 15/10: vẫn điền đủ số yêu cầu, người lập tự sửa ở form
+        exceededMsg.push(`• ${it.product_name}${code ? ` (${code})` : ''} — yêu cầu ${fmt(req)} · `
+          + describeOrdered({ ordered, pending, orders: orderProgress.orders[code] || [] }))
+      }
     }
     if (exceeded.length === 0) { goPO(normal); return }
     // Có dòng đã đặt đủ/vượt → cảnh báo, cho chọn mua thêm hay chỉ SP còn thiếu
-    setPoExceed({ msg: exceededMsg.join('; '), normal, all: [...normal, ...exceeded] })
+    setPoExceed({ msg: exceededMsg.join('\n'), normal, all: [...normal, ...exceeded] })
   }
 
   // CR-026: YCMH bị trả lại / từ chối → mở màn tạo Yêu cầu báo giá điền sẵn từ phiếu này.
@@ -961,7 +990,8 @@ export default function PurchaseRequestDetail() {
       <ConfirmModal
         open={!!poExceed}
         title="Số lượng đã đặt đủ/vượt"
-        message={`Các sản phẩm sau đã đặt đủ hoặc vượt số lượng yêu cầu: ${poExceed?.msg || ''}. Bạn vẫn muốn tạo đơn mua hàng?`}
+        message={`Các sản phẩm sau đã đặt đủ hoặc vượt số lượng yêu cầu (tính cả đơn chưa duyệt):\n${poExceed?.msg || ''}\n\n`
+          + 'Bấm "Vẫn mua thêm" thì form tạo đơn điền đủ số yêu cầu — sửa lại số cần mua thêm trước khi tạo. Bạn vẫn muốn tạo đơn mua hàng?'}
         confirmText="Vẫn mua thêm"
         cancelText="Chỉ SP còn thiếu"
         variant="info"

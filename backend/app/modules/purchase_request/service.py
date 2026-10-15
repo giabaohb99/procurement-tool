@@ -566,6 +566,62 @@ def _misa_covered_codes(db: Session, pr_code: str) -> set[str]:
     return {r[0] for r in rows}
 
 
+#  bao-CR-619: đơn CÒN SỐNG nhưng chưa duyệt — chưa tính là «đã đặt», nhưng tạo thêm đơn mà không
+#  thấy chúng là đặt trùng. «Bị trả lại» (rejected) vẫn sửa rồi trình lại được nên cũng nằm đây;
+#  «Đã từ chối» (cancelled) là điểm cuối, không tính.
+PO_PENDING_STATUSES = ("draft", "submitted", "rejected")
+PO_DEAD_STATUSES = ("cancelled",)
+PO_STATUS_LABELS = {
+    "draft": "Nháp", "submitted": "Chờ duyệt", "rejected": "Bị trả lại", "approved": "Đã duyệt",
+    "partial": "Đã nhận một phần", "received": "Đã nhận đủ", "completed": "Hoàn thành",
+    "processing": "Đang xử lý",
+}
+
+
+def order_progress(db: Session, pr_code: str) -> dict:
+    """Số đã đặt theo mã hàng của một YCMH, gộp từ mọi ĐMH cùng mã PYC.
+
+    - `ordered`: CHỈ ĐMH đã duyệt trở đi, bỏ dòng «Chưa đặt hàng» / «Hủy đơn» — giữ nguyên nghĩa cũ
+      (prefill «còn thiếu», khớp `sync_from_purchase_orders`).
+    - `pending` (bao-CR-619): số trên đơn nháp / chờ duyệt / bị trả lại (bỏ dòng Hủy đơn).
+    - `orders` (bao-CR-619): theo mã hàng, từng đơn còn sống kèm trạng thái + SL đặt + SL đã nhận,
+      để cảnh báo đặt vượt nói được «đã đặt ở đơn nào, đơn đó tới đâu»."""
+    from app.modules.purchase_order.model import PurchaseOrder, POItem
+    from app.modules.purchase_order import service as po_service
+
+    out: dict = {"ordered": {}, "pending": {}, "orders": {}}
+    if not pr_code:
+        return out
+    rows = (db.query(PurchaseOrder.id, PurchaseOrder.code, PurchaseOrder.status, POItem.product_code,
+                     POItem.qty_order, POItem.qty_received, POItem.progress_status)
+            .join(POItem, POItem.po_id == PurchaseOrder.id)
+            .filter(PurchaseOrder.pr_code == pr_code,
+                    PurchaseOrder.is_deleted.is_(False),   # ai-CR-176: đơn đã xóa mềm = không có
+                    PurchaseOrder.status.notin_(PO_DEAD_STATUSES),
+                    POItem.progress_status != po_service.PROG_CANCELLED)
+            .order_by(PurchaseOrder.id.asc()).all())
+    per_po: dict[tuple[str, int], dict] = {}
+    for po_id, po_code, status, code, qty, received, progress in rows:
+        if not code:
+            continue
+        qty, received = float(qty or 0), float(received or 0)
+        pending = status in PO_PENDING_STATUSES
+        if pending:
+            out["pending"][code] = out["pending"].get(code, 0.0) + qty
+        elif progress != po_service.PROG_NOT_ORDERED:
+            out["ordered"][code] = out["ordered"].get(code, 0.0) + qty
+        entry = per_po.get((code, po_id))
+        if entry is None:
+            entry = {"id": po_id, "code": po_code, "status": status,
+                     "status_label": PO_STATUS_LABELS.get(status, status),
+                     "pending": pending, "qty": 0.0, "received": 0.0}
+            per_po[(code, po_id)] = entry
+            out["orders"].setdefault(code, []).append(entry)
+        entry["qty"] += qty
+        entry["received"] += received
+    return out
+
+
 def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     """Tự suy trạng thái phiếu từ trạng thái các dòng (chỉ khi đã điều phối trở đi).
 

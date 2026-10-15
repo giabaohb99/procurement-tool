@@ -537,7 +537,7 @@ export function PurchaseRequestDetailPage() {
   /** Sang màn tạo ĐMH với dòng hàng điền sẵn — chưa ghi gì vào DB. */
   function goToNewPurchaseOrder(items: PurchaseOrderItem[]) {
     navigate(appRoutes.procurement.purchaseOrderNew, {
-      state: { fromPurchaseRequest: toDraftFromRequest(loadedData, items) },
+      state: { fromPurchaseRequest: toDraftFromRequest(loadedData, items, progress) },
     })
   }
 
@@ -545,6 +545,8 @@ export function PurchaseRequestDetailPage() {
     const { remaining, exceeded, exceededMessages } = buildPurchaseOrderLines(
       loadedData.items,
       progress?.ordered,
+      progress?.pending,
+      progress?.orders,
     )
     // Không có dòng nào đã đặt đủ/vượt thì đi thẳng, khỏi hỏi.
     if (!exceeded.length) {
@@ -552,7 +554,7 @@ export function PurchaseRequestDetailPage() {
       return
     }
     setOrderedWarning({
-      message: exceededMessages.join('; '),
+      message: exceededMessages.join('\n'),
       remaining,
       all: [...remaining, ...exceeded],
     })
@@ -1128,9 +1130,10 @@ export function PurchaseRequestDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Có sản phẩm đã đặt đủ hoặc vượt số yêu cầu</AlertDialogTitle>
-            <AlertDialogDescription>
-              {orderedWarning?.message}. Chọn "Chỉ SP còn thiếu" để bỏ qua các dòng này, hoặc
-              "Mua thêm" nếu vẫn muốn đặt tiếp.
+            <AlertDialogDescription className="whitespace-pre-line">
+              {`Tính cả đơn chưa duyệt:\n${orderedWarning?.message ?? ''}\n\n`}
+              Chọn "Chỉ SP còn thiếu" để bỏ qua các dòng này, hoặc "Mua thêm" nếu vẫn muốn đặt
+              tiếp — form tạo đơn sẽ điền đủ số yêu cầu, sửa lại số cần mua thêm trước khi tạo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
