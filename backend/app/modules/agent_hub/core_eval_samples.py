@@ -28,7 +28,8 @@ SAMPLES: tuple[Sample, ...] = (
         Turn("tao task đó igups anh đi nhé", "Hiểu là đồng ý → tạo theo nháp.", commit=True))),
     Sample("05", "Gửi lại y câu khi nháp đang chờ (run #227)", (
         Turn(TASK, "Soạn nháp việc.", must_call=DRAFT_TOOLS, commit=False),
-        Turn(TASK, "KHÔNG tạo thật. Hỏi tạo luôn nháp đang chờ hay soạn lại, hoặc soạn lại nháp.", commit=False))),
+        Turn(TASK, "KHÔNG tạo thật. Nói rõ nháp cũ vẫn đang chờ (chưa tạo) và hỏi tạo luôn hay đổi gì.", commit=False,
+             contains=("đang chờ",)))),
     Sample("06", "Bỏ nháp (run #232)", (
         Turn(TASK, "Soạn nháp việc.", must_call=DRAFT_TOOLS, commit=False),
         Turn("thôi bỏ nháp đó đi em", "Bỏ nháp, báo ngắn đã bỏ.", drop=True, commit=False))),
@@ -53,7 +54,8 @@ SAMPLES: tuple[Sample, ...] = (
              must_not_call=("more_tools",)),)),
     Sample("12", "Lập YCMH (run #223)", (
         Turn("tạo YCMH mua 10 thùng giấy A4 cho phòng IT, cần trước thứ sáu",
-             "Soạn nháp YCMH hoặc hỏi MỘT lượt các ô còn thiếu (mục đích, kho, quy cách). Không tạo phiếu hỗ trợ IT.",
+             "Hỏi MỘT lượt các ô còn thiếu (kho nhận, có thể kèm quy cách giấy) — hiểu ngày cần hàng là thứ Sáu gần nhất; "
+             "hoặc soạn nháp có đủ ngày cần hàng + kho. Không tạo phiếu hỗ trợ IT.",
              any_call=("draft_purchase_request", "product_search"), must_not_call=("ticket_create",), commit=False),)),
     Sample("13", "Bot vừa làm gì (lối tắt)", (
         Turn("bot vừa làm gì", "Liệt kê các lần bot ghi gần đây (hoặc nói chưa có), kèm cách hoàn tác.", no_model=True,
@@ -78,7 +80,9 @@ SAMPLES: tuple[Sample, ...] = (
     Sample("19", "Yêu cầu sửa phần mềm", (
         Turn("sửa giúp anh màn YCMH thêm cột ngày cần hàng ở danh sách",
              "Nhắc lại cách hiểu (màn nào, thêm gì) và hỏi xác nhận TRƯỚC; chưa ghi yêu cầu sửa phần mềm ở lượt này.",
-             must_not_call=("create_code_task",)),)),
+             must_not_write=("create_code_task",)),
+        Turn("đúng rồi em", "Ghi yêu cầu sửa phần mềm, báo ngắn đã ghi và máy sẽ gửi kế hoạch để duyệt.",
+             must_write=("create_code_task",)))),
     Sample("20", "Chat chưa liên kết", (
         Turn("cho anh xem công nợ tháng này", "Hướng dẫn liên kết tài khoản (/dangnhap + mã ở Trang cá nhân), không im lặng.",
              contains=("dangnhap",)),), unlinked=True),

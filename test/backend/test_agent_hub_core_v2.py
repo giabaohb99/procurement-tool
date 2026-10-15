@@ -554,14 +554,20 @@ def test_cong_cu_ve_sua_ma_chi_cho_chat_duoc_giao(db, chat, monkeypatch):
     row = _incoming(db, "màn đơn mua hàng thêm ô lọc ngày giao giúp anh")
     core_v2.handle(db, CHAT, row, row.body)
     assert "create_code_task" not in out["tools"] and "chưa được cấp quyền" in out["res"]["error"]
-    #  Chat chủ bot: có công cụ, ghi một tin INBOX (dấu rỗng) cho vòng gom tạo vé.
+    #  Chat chủ bot: có công cụ. Bộ mẫu ai-CR-203 (mẫu 19): lượt đầu bị chặn — phải nhắc lại cách hiểu, chờ xác nhận.
     monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", CHAT)
     monkeypatch.setattr(service, "_ok_by_text", lambda *a: False)
     row = _incoming(db, "màn đơn mua hàng thêm ô lọc ngày giao giúp anh, sửa mã luôn")
     core_v2.handle(db, CHAT, row, row.body)
-    assert "create_code_task" in out["tools"] and out["res"]["ok"]
+    assert "create_code_task" in out["tools"] and "CHƯA ghi vé" in out["res"]["error"]
+    #  Bot đã trả lời (nhắc lại cách hiểu) → «đúng rồi em» mới ghi một tin INBOX (dấu rỗng) cho vòng gom tạo vé.
+    row = _incoming(db, "đúng rồi em")
+    core_v2.handle(db, CHAT, row, row.body)
+    assert out["res"]["ok"]
     msg = db.get(AgentMessage, out["res"]["tin"])
     assert msg.direction == DIR_IN and msg.action == "" and "ô lọc theo ngày giao" in msg.body
+    service.log_message(db, DIR_OUT, CHAT, 0, "Em hiểu là …, đúng không ạ?", action=ACT_ANSWER)
+    row = _incoming(db, "ok em")
     assert core_v2._run_local(db, CHAT, row, chat.user, "create_code_task", {"mo_ta": "ngắn"})["error"].startswith("Mô tả quá ngắn")
 
 
@@ -854,3 +860,32 @@ def test_tin_nhap_bo_y_tam_hieu_trung_o_da_hien():
                                      "giao cho người hỏi vì chưa nói người nhận, cứ đổi nếu cần giao người khác nhé đại ca"]}}
     msg = core_v2.draft_reply(CHAT, "draft_work_task", res)
     assert "vào cột" not in msg and "Em tạm hiểu: giao cho người hỏi" in msg and "…." not in msg
+
+
+def test_tin_nhap_ycmh_dong_hang_thut_vao_va_co_ngay_kho():
+    """Bộ mẫu mẫu 12: «• 1 dòng:» rồi «• - Thùng giấy A4» (hai dấu đầu dòng), không thấy ngày cần hàng / kho."""
+    from app.modules.agent_hub import draft_create
+
+    lines = draft_create.summarize("purchase", {"purpose": "Giấy in", "need_date": "2026-10-16", "lines": [
+        {"product_name": "Giấy A4", "qty": 10, "unit": "Thùng", "warehouse": "Kho Cần Thơ"}]})
+    assert "Ngày cần hàng: 16/10/2026" in " ".join(lines) and any("(kho Kho Cần Thơ)" in x for x in lines)
+    bullets = core_v2._bullets(lines)
+    assert "- **1 dòng:**" in bullets and any(b.startswith("    – Giấy A4") for b in bullets)
+    assert not any(b.startswith("- - ") for b in bullets)
+
+
+def test_soan_lai_y_het_nhap_dang_cho_thi_noi_nhap_cu_van_cho(db, chat, monkeypatch):
+    """Bộ mẫu mẫu 05: gửi lại y câu → model soạn lại nháp y hệt → trước đây trình như nháp mới."""
+    draft = {"title": "A", "due_date": "2026-10-16"}
+    service.log_message(db, DIR_OUT, CHAT, 0, json.dumps({"tool": "draft_work_task", "kind": "work_task", "user_id": 275,
+                                                          "draft": draft}, ensure_ascii=False), action=ACT_DRAFT_WAIT)
+    db.commit()
+    seen: list = []
+    monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: seen.append(args) or {"draft": dict(draft)})
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: StopProvider([("draft_work_task", {"title": "A"})]))
+    core_v2.handle(db, CHAT, _incoming(db, "tạo task A hạn thứ sáu"), "tạo task A hạn thứ sáu")
+    assert "vẫn đang chờ, em chưa tạo" in chat.sent[-1] and "<b>tạo</b>" in chat.sent[-1]
+    #  Công cụ soạn nháp nhận lời người dùng (tham số ẩn) như Trợ lý web — để còn hỏi ô thiếu (mẫu 12).
+    from app.modules.assistant.tools import confirm_fields
+
+    assert "tạo task A hạn thứ sáu" in seen[0][confirm_fields.USER_TEXT_ARG]

@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from unittest import mock
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -48,6 +48,8 @@ class Turn:
     dates: tuple[str, ...] = ()                      # cụm «thứ sáu», «thứ sáu tuần sau» → ngày dd/mm/yyyy phải có trong tin
     contains: tuple[str, ...] = ()                   # chữ phải có (không phân biệt hoa thường, đã bỏ thẻ HTML)
     no_model: bool = False                           # lối tắt: không được gọi model
+    must_write: tuple[str, ...] = ()                 # phải THẬT SỰ ghi (qua được chốt chặn) — tên trong TurnLog.blocked
+    must_not_write: tuple[str, ...] = ()             # cấm ghi (gọi mà bị chốt chặn từ chối thì không tính)
 
 
 @dataclass(frozen=True)
@@ -111,6 +113,12 @@ def check_turn(turn: Turn, log: TurnLog, today: date) -> list[str]:
     for name in turn.must_not_call:
         if name in called:
             out.append(f"không được gọi {name}")
+    for name in turn.must_write:
+        if name not in log.blocked:
+            out.append(f"phải ghi {name} mà không ghi")
+    for name in turn.must_not_write:
+        if name in log.blocked:
+            out.append(f"GHI {name} khi chưa được phép")
     committed = any(p != "thôi" for p in log.commits)
     if turn.commit is True and not committed:
         out.append("phải ghi nháp mà không ghi")
@@ -145,6 +153,7 @@ class Sandbox:
         self.owner_user = owner_user
         self.unlinked = unlinked
         self.log: TurnLog | None = None
+        self.run_ids: list[int] = []                     # run do lồng thử mở (service.start_run)
         self._msg_id = 900_000
 
     # -- bắt lại ------------------------------------------------------------
@@ -178,6 +187,12 @@ class Sandbox:
         from . import change_undo, core_v2, erp, ops, service, telegram  # noqa: F401  (change_undo: nạp sẵn)
 
         real_run_tool = erp.run_tool
+        real_start_run = service.start_run
+
+        def start_run(db, task_id, stage):
+            run = real_start_run(db, task_id, stage)
+            self.run_ids.append(run.id)
+            return run
         real_run_local = core_v2._run_local
         real_more = core_v2._more_tools_result
 
@@ -215,6 +230,7 @@ class Sandbox:
         zero = lambda *a, **k: 0        # noqa: E731
         patches = [
             mock.patch.object(settings, "AGENT_ACK_ENABLED", False),
+            mock.patch.object(service, "start_run", start_run),
             mock.patch.object(telegram, "send", self._send),
             mock.patch.object(telegram, "send_chat_action", lambda *a, **k: None),
             mock.patch.object(telegram, "send_document", self._send_document),
@@ -250,12 +266,6 @@ class Sandbox:
 # ---------------------------------------------------------------------------
 # Chạy
 # ---------------------------------------------------------------------------
-def _last_run_id(db: Session) -> int:
-    from .model import AgentRun
-
-    return int(db.scalar(select(func.max(AgentRun.id))) or 0)
-
-
 def run_turn(db: Session, box: Sandbox, chat_id: str, text: str) -> TurnLog:
     from . import core_v2, service, user_keys
     from .constants import DIR_IN
@@ -263,7 +273,7 @@ def run_turn(db: Session, box: Sandbox, chat_id: str, text: str) -> TurnLog:
 
     log = TurnLog(text=text)
     box.log = log
-    before = _last_run_id(db)
+    start = len(box.run_ids)
     t0 = time.monotonic()
     row = service.log_message(db, DIR_IN, chat_id, 0, text, action="")
     db.commit()
@@ -275,10 +285,27 @@ def run_turn(db: Session, box: Sandbox, chat_id: str, text: str) -> TurnLog:
         db.rollback()
         log.error = f"{type(e).__name__}: {e}"[:300]
     log.seconds = round(time.monotonic() - t0, 1)
-    runs = db.scalars(select(AgentRun).where(AgentRun.id > before)).all()
+    #  Chỉ đếm / đóng run do CHÍNH lượt thử mở (bot thật vẫn chạy song song trên cùng DB).
+    ids = box.run_ids[start:]
+    runs = db.scalars(select(AgentRun).where(AgentRun.id.in_(ids))).all() if ids else []
+    _close_dangling(db, runs, log)
     log.runs = len(runs)
     log.input_tokens = sum(int(r.input_tokens or 0) for r in runs)
     return log
+
+
+def _close_dangling(db: Session, runs, log: TurnLog) -> None:
+    """Agent 1 15/10: lần chạy thử bỏ dở để lại run #248 «đang chạy» → chặn deploy (deploy chờ hết việc dở). Lượt nào
+    ném lỗi giữa chừng thì đóng run của nó ngay."""
+    from .constants import RUN_ERROR, RUN_RUNNING
+
+    open_runs = [r for r in runs if r.status == RUN_RUNNING]
+    if not open_runs:
+        return
+    for r in open_runs:
+        r.status = RUN_ERROR
+        r.error = f"eval: lượt thử dừng giữa chừng ({log.error or 'không rõ'})"[:2000]
+    db.commit()
 
 
 def cleanup(db: Session, prefix: str) -> None:
@@ -295,7 +322,8 @@ JUDGE_SYSTEM = (
     "từng lượt có Ý MONG ĐỢI và câu trả lời THẬT của bot (kèm công cụ bot đã gọi). Chấm theo Ý, không cần nguyên văn. "
     "Trượt khi: không đạt ý chính; bịa số liệu / ngày; nói đã làm mà không có công cụ tương ứng; trả lời lạc đề; dài "
     "dòng vô ích; dùng emoji. Tin «Đã tạo theo nháp …» / «Em bỏ nháp rồi …» là hệ thống tự báo sau khi ghi / bỏ — coi là "
-    "đúng. Chỉ trả JSON một dòng: {\"dat\": true|false, \"diem\": 0-10, \"ly_do\": \"tối đa 2 câu\"}."
+    "đúng. Dấu • là gạch đầu dòng, KHÔNG phải emoji. Chào lại ngắn kèm MỘT câu hỏi cần giúp gì (có thể nêu 2–3 việc "
+    "hay làm) là đạt, không phải kể lể. Ngày giờ hiện tại ghi ở đầu bài chấm — dùng nó khi xét ngày. Chỉ trả JSON một dòng: {\"dat\": true|false, \"diem\": 0-10, \"ly_do\": \"tối đa 2 câu\"}."
 )
 
 
@@ -305,7 +333,10 @@ def judge(sample: Sample, logs: list[TurnLog]) -> dict:
 
     from . import core_v2, manager, user_keys
 
-    parts = [f"MẪU: {sample.title}"]
+    from .timeutil import now_local
+
+    now = now_local()
+    parts = [f"BÂY GIỜ: {now:%H:%M} ngày {now:%d/%m/%Y} (giờ Việt Nam)", f"MẪU: {sample.title}"]
     for i, (turn, log) in enumerate(zip(sample.turns, logs), 1):
         said = "\n".join(plain(r) for r in log.replies) or "(không trả lời)"
         parts.append(f"--- Lượt {i}\nNGƯỜI DÙNG: {turn.text}\nÝ MONG ĐỢI: {turn.expect}\n"
@@ -345,6 +376,12 @@ def run_sample(db: Session, sample: Sample, *, owner_chat: str, owner_user, tag:
                 except Exception as e:  # noqa: BLE001
                     verdict = {"dat": False, "diem": 0, "ly_do": f"model chấm lỗi: {type(e).__name__}: {e}"[:200]}
     finally:
+        from .model import AgentRun
+
+        db.rollback()
+        if box.run_ids:
+            _close_dangling(db, db.scalars(select(AgentRun).where(AgentRun.id.in_(box.run_ids))).all(),
+                            TurnLog(text="", error="mẫu dừng giữa chừng"))
         cleanup(db, chat_id)
     return SampleResult(sample=sample, turns=logs, failures=failures, judge=verdict)
 

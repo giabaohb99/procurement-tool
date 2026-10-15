@@ -139,12 +139,22 @@ def summarize(kind: str, draft: dict) -> list[str]:
         return work_plan.summary_lines(draft)
     if kind in ("survey", "purchase"):
         items = draft.get("lines") or []
-        out = [f"Mục đích: {draft.get('purpose') or '(trống)'}", f"{len(items)} dòng:"]
+        out = [f"Mục đích: {draft.get('purpose') or '(trống)'}"]
+        #  Bộ mẫu ai-CR-203 (mẫu 12): tóm tắt không nêu ngày cần hàng / kho nhận nên người dùng không biết ô nào trống.
+        if kind == "purchase":
+            need = draft.get("need_date") or next((ln.get("required_date") for ln in items if ln.get("required_date")), "")
+            out.append(f"Ngày cần hàng: {_vn_date(need) if need else '(trống)'}")
+        elif draft.get("result_due_date"):
+            out.append(f"Cần kết quả: {_vn_date(draft['result_due_date'])}")
+        out.append(f"{len(items)} dòng:")
         for ln in items[:8]:
             name = ln.get("product_name") or ln.get("requirement_detail") or "?"
             qty = ln.get("qty", ln.get("request_qty", 0))
             unit = ln.get("unit", ln.get("uom", ""))
-            out.append(f"- {name} × {qty:g} {unit}".rstrip() if isinstance(qty, (int, float)) else f"- {name}")
+            text = f"- {name} × {qty:g} {unit}".rstrip() if isinstance(qty, (int, float)) else f"- {name}"
+            if kind == "purchase" and ln.get("warehouse"):
+                text += f" (kho {ln['warehouse']})"
+            out.append(text)
         if len(items) > 8:
             out.append(f"… và {len(items) - 8} dòng nữa")
         return out

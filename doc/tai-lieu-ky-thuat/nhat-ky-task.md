@@ -13365,7 +13365,10 @@ Theo mục 10 tài liệu 20, em dựng bộ hội thoại mẫu chạy tự đ�
 thật và dữ liệu thật nhưng không ghi gì thật và không gửi tin Telegram nào; chạy xong thì xóa tin thử. Mỗi lượt được chấm
 bằng luật cứng (phải gọi đúng công cụ, không được tạo thật khi chưa đồng ý, ngày theo thứ phải đúng) và bằng model chấm theo
 ý mong đợi. Hai mươi mẫu đầu lấy phần lớn từ các lỗi Agent 1 đo được hôm nay để lỗi không quay lại. Chạy thử bốn mẫu trên
-dev đã lộ một lỗi hiển thị nhỏ ở tin nháp (dòng tạm hiểu lặp lại ô cột), đã sửa.
+dev đã lộ một lỗi hiển thị nhỏ ở tin nháp (dòng tạm hiểu lặp lại ô cột), đã sửa. Agent 1 chạy đủ hai mươi mẫu: đạt mười
+bốn. Em sửa các lỗi thật lộ ra: bot ghi yêu cầu sửa phần mềm ngay mà không nhắc lại cách hiểu; công cụ soạn yêu cầu mua
+hàng không bao giờ hỏi ngày cần hàng và kho vì thiếu lời người dùng; gửi lại y câu thì bot trình như nháp mới; tin nháp
+mua hàng hai dấu đầu dòng chồng nhau. Lồng thử nay tự đóng lượt chạy dở để không chặn việc dựng bot.
 
 Mã nguồn: agent_hub/core_eval.py, core_eval_samples.py, scripts/eval_core_v2.py; bài kiểm test_agent_hub_core_eval.py
 

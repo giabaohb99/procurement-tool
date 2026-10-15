@@ -773,6 +773,8 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
     if name == "set_reminder":
         return _set_reminder(db, chat_id, str(args.get("luc") or ""), str(args.get("viec") or ""))
     if name == "create_code_task":
+        if service._can_order_code(db, chat_id) and not _code_task_confirmed(db, chat_id, row):   # quyền xét trước
+            return {"error": CODE_TASK_NOT_CONFIRMED}
         return _create_code_task(db, chat_id, str(args.get("mo_ta") or ""))
     return {"error": f"Công cụ lạ {name}"}
 
@@ -795,6 +797,25 @@ def _set_reminder(db: Session, chat_id: str, luc: str, viec: str) -> dict:
     db.commit()
     return {"ok": True, "luc": fmt_local(to_utc(when)), "viec": what,
             "note": "Đã đặt. Báo lại một câu ngắn giờ nhắc; xem / bỏ nhắc: nhắn «nhắc gì»."}
+
+
+#  Bộ mẫu ai-CR-203 (mẫu 19): «sửa giúp anh màn YCMH thêm cột …» → model gọi create_code_task NGAY, không nhắc lại cách
+#  hiểu (doc 20 §3c bắt buộc). Chỉ ghi vé khi tin hiện tại là lời xác nhận ngắn VÀ ngay trước đó bot đã trả lời (nhắc
+#  lại cách hiểu) trong 30 phút.
+CODE_CONFIRM_CUE = re.compile(r"(?<!\w)(?:ok|oke|okay|dung|dung roi|phai|chuan|chinh xac|dong y|uh|u|yes|lam di|tao di|"
+                              r"ghi di|vay di|duoc|chot)(?!\w)")
+CODE_TASK_NOT_CONFIRMED = ("CHƯA ghi vé. Trước hết nhắc lại cách hiểu trong MỘT câu (màn nào, đang thế nào, muốn thế nào) "
+                           "rồi hỏi «đúng không ạ?»; người dùng xác nhận ở tin SAU thì mới gọi create_code_task.")
+
+
+def _code_task_confirmed(db: Session, chat_id: str, row: AgentMessage) -> bool:
+    folded = _folded(row.body or "")
+    if not folded or len(folded.split()) > COMMIT_MAX_WORDS or not CODE_CONFIRM_CUE.search(folded):
+        return False
+    prev = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id)
+                     .order_by(AgentMessage.id.desc()).limit(1))
+    return (prev is not None and prev.direction == DIR_OUT and prev.action == ACT_ANSWER
+            and (row.created_at is None or prev.created_at is None or row.created_at - prev.created_at <= timedelta(minutes=30)))
 
 
 def _create_code_task(db: Session, chat_id: str, mo_ta: str) -> dict:
@@ -924,6 +945,21 @@ def _bold_label(line: str) -> str:
     return f"**{label}:** {value}" if sep and len(label) <= 30 else str(line)
 
 
+def _bullets(summary: list) -> list[str]:
+    """Mỗi ô một gạch đầu dòng; dòng hàng («- Giấy A4 × 10 Thùng») thụt vào dưới ô «n dòng:» — bộ mẫu ai-CR-203 thấy
+    «• - Thùng giấy A4» (hai dấu đầu dòng chồng nhau)."""
+    out = []
+    for x in summary:
+        x = str(x)
+        if x.startswith("- "):
+            out.append("    – " + x[2:])
+        elif x.endswith(":"):
+            out.append(f"- **{x[:-1]}:**")
+        else:
+            out.append(f"- {_bold_label(x)}")
+    return out
+
+
 def draft_reply(chat_id: str, name: str, result: dict) -> str:
     """Tin nháp do bot dựng (không gọi model lần hai): một câu mở, mỗi ô một dòng, điều em tự hiểu, lưu ý, một câu hỏi."""
     from . import draft_create
@@ -932,7 +968,7 @@ def draft_reply(chat_id: str, name: str, result: dict) -> str:
     label = draft_create.LABELS.get(draft_create.kind_of(tool), "phiếu")
     draft = result.get("draft") or {}
     head = f"Em sửa nháp {label} rồi:" if name == "update_draft" else f"Em soạn nháp {label} như sau:"
-    lines = [head] + [f"- {_bold_label(x)}" for x in result.get("tom_tat_se_luu") or []]
+    lines = [head] + _bullets(result.get("tom_tat_se_luu") or [])
     #  Bộ mẫu ai-CR-203 (15/10): «Em tạm hiểu: vào cột Cần làm (…các cột…)» lặp ô «Cột: Cần làm» ngay trên → bỏ ý mà
     #  giá trị đã hiện ở một ô.
     shown = [v.strip().lower() for v in (str(x).partition(": ")[2] for x in result.get("tom_tat_se_luu") or [])
@@ -950,14 +986,28 @@ def draft_reply(chat_id: str, name: str, result: dict) -> str:
     return "\n".join(lines)
 
 
-def confirm_reply(chat_id: str, result: dict) -> str:
-    """Người dùng gửi lại y câu đã sinh nháp: hỏi một câu thay vì tạo thật (run #227) hay gọi model lần hai (run #231)."""
+def _same_as_pending(waiting: dict, name: str, result: dict) -> bool:
+    """Nháp vừa soạn trùng y nháp đang chờ (cùng công cụ, cùng các ô sẽ lưu)."""
+    if not waiting or name in ("update_draft", "commit_draft", "drop_draft"):
+        return False
+    tool = str(result.get("tool") or name)
+    return (waiting.get("tool") == tool
+            and _summary(tool, waiting.get("draft") or {}) == list(result.get("tom_tat_se_luu") or []))
+
+
+def confirm_reply(chat_id: str, result: dict, *, same: bool = False) -> str:
+    """Người dùng gửi lại y câu đã sinh nháp: hỏi một câu thay vì tạo thật (run #227) hay gọi model lần hai (run #231).
+    `same`: model đã soạn lại y hệt nháp đang chờ — chỉ còn hỏi tạo luôn không."""
     from . import draft_create
 
     label = draft_create.LABELS.get(draft_create.kind_of(str(result.get("tool") or "")), "phiếu")
     who = "đại ca" if telegram.is_allowed_chat(chat_id) else "anh/chị"
-    lines = [f"Nháp {label} này đang chờ, em chưa tạo:"] + [f"- {_bold_label(x)}" for x in result.get("tom_tat_se_luu") or []]
-    lines += ["", f"Em tạo luôn nháp này, hay {who} muốn em soạn lại?"]
+    lines = [f"Nháp {label} này đang chờ, em chưa tạo:"] + _bullets(result.get("tom_tat_se_luu") or [])
+    if same:
+        lines[0] = f"Nháp {label} này vẫn đang chờ, em chưa tạo:"
+        lines += ["", f"{who[0].upper() + who[1:]} nhắn **tạo** là em tạo luôn, hoặc nói chỗ cần đổi."]
+    else:
+        lines += ["", f"Em tạo luôn nháp này, hay {who} muốn em soạn lại?"]
     return "\n".join(lines)
 
 
@@ -1024,6 +1074,17 @@ def _clean_args(name: str, args: dict) -> dict:
     return out
 
 
+def _with_user_text(name: str, args: dict, text: str, turns: list[dict]) -> dict:
+    """Bộ mẫu ai-CR-203 (mẫu 12): công cụ soạn nháp không nhận lời người dùng thì coi MỌI ô là «đã hỏi» và không bao giờ
+    hỏi ngày cần hàng / kho nhận. Web Trợ lý chèn tham số ẩn này từ lâu (`assistant.service._with_user_text`); lõi mới
+    làm y vậy."""
+    from app.modules.assistant.tools import confirm_fields
+
+    if name not in confirm_fields.TOOLS_WITH_USER_TEXT:
+        return args
+    return {**args, confirm_fields.USER_TEXT_ARG: confirm_fields.recent_user_text(text, turns)}
+
+
 def _more_tools_result(args: dict, offered: set[str]) -> dict:
     """Run #244: nhóm employee đã nạp sẵn mà model vẫn xin more_tools('employee') rồi tra lại (66,7 s). Nhóm đã có đủ công
     cụ thì không chạy lại — trả lỗi chỉ ra công cụ hiện có."""
@@ -1083,6 +1144,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         t0 = time.monotonic()
         system = build_system(db, chat_id, row, user, text)
         turns = history(db, chat_id, row.id, row.created_at, smalltalk=tool_router.is_smalltalk(text))
+        waiting = _pending_draft(db, chat_id, row.id, row.created_at)[1]      # nháp đang chờ TRƯỚC lượt này
         tools = select_tools(db, user, text, chat_id)
         log.info("core_v2: dựng ngữ cảnh %.1f s", time.monotonic() - t0)
         context = turn_context(db, chat_id, row, user, text)
@@ -1096,7 +1158,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                     return _more_tools_result(args or {}, {t.name for t in tools})
                 if name in LOCAL_TOOL_NAMES:
                     return _run_local(db, chat_id, row, user, name, args or {})
-                out = erp.run_tool(db, user, name, _clean_args(name, args or {}))
+                out = erp.run_tool(db, user, name, _with_user_text(name, _clean_args(name, args or {}), text, turns))
                 if isinstance(out, dict) and isinstance(out.get("draft"), dict):
                     out = {**out, "tom_tat_se_luu": _summary(name, out["draft"])}
                 return out
@@ -1152,8 +1214,14 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                                 "(em đã tạo xong theo nháp)" if stopped["name"] == "commit_draft" else "(em đã bỏ nháp)",
                                 action=ACT_ANSWER)
         else:
-            answer = (draft_reply(chat_id, stopped["name"], stopped["result"]) if stopped
-                      else (result.text or "").strip())
+            if stopped and _same_as_pending(waiting, stopped["name"], stopped["result"]):
+                #  Bộ mẫu ai-CR-203 (mẫu 05): gửi lại y câu → model soạn lại nháp Y HỆT nháp đang chờ. Nói rõ là nháp cũ vẫn
+                #  chờ, chưa tạo, thay vì trình như nháp mới.
+                answer = confirm_reply(chat_id, {**stopped["result"], "tool": stopped["result"].get("tool") or stopped["name"]},
+                                       same=True)
+            else:
+                answer = (draft_reply(chat_id, stopped["name"], stopped["result"]) if stopped
+                          else (result.text or "").strip())
             service.reply(db, chat_id, answer or "Em đã làm xong phần đó.", markdown=True, action=ACT_ANSWER)
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]
         drafts = [c for c in calls if isinstance(c.get("draft"), dict) and _chat_draft(c.get("name"))]
