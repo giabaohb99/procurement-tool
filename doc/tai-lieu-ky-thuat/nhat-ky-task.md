@@ -13372,7 +13372,8 @@ mua hàng hai dấu đầu dòng chồng nhau. Lồng thử nay tự đóng lư�
 mười: thẻ nháp ở đường cũ thôi liệt kê khối trả lời tạo hay thôi, cuối thẻ là một câu tự nhiên mời nhắn tạo hoặc thôi.
 Lần chạy thứ hai đạt mười lăm trên hai mươi; em sửa tiếp: bot tự thêm sự kiện lịch khi chỉ được nhờ lên lịch trình, nháp
 kế hoạch hiển thị chồng dấu đầu dòng, bot tự chọn dự án mà không nói là tạm chọn. Lần ba đạt mười sáu trên hai mươi và lộ
-lỗi thật: nhờ nhắc lúc ba giờ chiều nay thì bot báo ba giờ chiều mai; nay bot tự tính và tự báo đúng ngày nhắc.
+lỗi thật: nhờ nhắc lúc ba giờ chiều nay thì bot báo ba giờ chiều mai; nay bot tự tính và tự báo đúng ngày nhắc. Về tốc
+độ: yêu cầu sửa phần mềm không còn kéo theo các công cụ mua hàng, và mỗi lần tra mạng ghi lại thời gian từng khâu.
 
 Mã nguồn: agent_hub/core_eval.py, core_eval_samples.py, scripts/eval_core_v2.py; bài kiểm test_agent_hub_core_eval.py
 

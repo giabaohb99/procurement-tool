@@ -908,3 +908,40 @@ def test_tin_nhap_ke_hoach_viec_con_thut_vao_khong_chong_dau():
                             "    Tiêu chí: Đã test 5 chức năng"])
     assert out == ["- **Kế hoạch:** Thử bot", "- **Thực hiện:**", "    – Việc 1 (Được, Ưu tiên)", "        · Việc con · 17/10",
                    "        **Tiêu chí:** Đã test 5 chức năng"]
+
+
+def test_yeu_cau_sua_phan_mem_chi_nap_cong_cu_loi(db, monkeypatch):
+    """Bộ mẫu (mẫu 19, 244k token): «sửa màn YCMH thêm cột …» kéo cả nhóm thu mua + sửa phiếu."""
+    from app.modules.assistant import tool_router
+    from app.modules.assistant.provider.base import ToolDef
+
+    names = set().union(*(tools for _n, tools, _p in tool_router.GROUPS)) | set(tool_router.CORE)
+    monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: [ToolDef(name=n, description="x", parameters={})
+                                                                       for n in sorted(names)])
+    monkeypatch.setattr(service, "_can_order_code", lambda db_, chat_id: True)
+    got = {t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), "sửa giúp anh màn YCMH thêm cột ngày cần hàng ở danh sách", CHAT)}
+    assert "create_code_task" in got and not got & {"draft_purchase_request", "propose_document_update", "recent_purchase_orders"}
+    #  Sửa NỘI DUNG một phiếu vẫn là việc ERP.
+    got = {t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), "sửa mục đích YCMH-0012 thành mua cho kho Cần Thơ", CHAT)}
+    assert "propose_document_update" in got
+    #  Chat không được giao sửa mã: giữ như cũ.
+    monkeypatch.setattr(service, "_can_order_code", lambda db_, chat_id: False)
+    got = {t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), "sửa giúp anh màn YCMH thêm cột ngày cần hàng", CHAT)}
+    assert "create_code_task" not in got
+
+
+def test_tra_mang_ghi_thoi_gian_tung_khau(monkeypatch):
+    from app.modules.agent_hub import research as rs, web_search
+    from app.modules.assistant.provider.base import ChatResult
+
+    class P:
+        name = "p"
+
+        def ask(self, messages, **kw):
+            return ChatResult(text="**2.600 USD**", provider="p", model="m")
+
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: P())
+    monkeypatch.setattr(web_search, "gather", lambda q: ([{"title": "t", "url": "https://x.vn"}], "[1] giá"))
+    monkeypatch.setattr(core_v2.user_keys, "gemini_key", lambda: "")
+    rs.run("giá vàng hôm nay", rs.MODE_WEB)
+    assert set(rs.last_timing()) == {"gather", "model"}

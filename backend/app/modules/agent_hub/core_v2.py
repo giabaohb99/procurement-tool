@@ -594,6 +594,20 @@ CORE_GROUP_HINTS: tuple[tuple[re.Pattern, tuple[str, ...]], ...] = (
 )
 
 
+SOFTWARE_RX = re.compile(r"(?<!\w)(man hinh|man (?:danh sach|chi tiet|tao|sua|ycmh|ycbg|dmh|yctt|bao cao)|giao dien|"
+                         r"them (?:cot|nut|o loc|truong|tinh nang)|tinh nang moi|sua (?:code|ma nguon|phan mem|loi phan mem)|"
+                         r"loi (?:phan mem|giao dien|man hinh))(?!\w)")
+
+
+def _can_order_code(db: Session, chat_id: str) -> bool:
+    from . import service
+
+    try:
+        return bool(service._can_order_code(db, chat_id))
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: list[str] | None = None) -> list[ToolDef]:
     """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi. `extra_groups`: nhóm model xin
     thêm qua more_tools (lượt chạy lại) — khi đó không đưa more_tools nữa."""
@@ -614,6 +628,11 @@ def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: 
     keep = set(picked or ()) | set(tool_router.CORE)        # không khớp nhóm nào: chỉ CORE (trước: nạp đủ 73)
     groups = list(extra_groups or ())
     folded = " " + _folded(text) + " "
+    if extra_groups is None and SOFTWARE_RX.search(folded) and chat_id and _can_order_code(db, chat_id):
+        #  Bộ mẫu (mẫu 19, 244k token): «sửa màn YCMH thêm cột …» kéo cả nhóm thu mua + sửa phiếu (chữ «YCMH», «sửa»)
+        #  dù đây là yêu cầu SỬA PHẦN MỀM — chỉ cần công cụ lõi + create_code_task.
+        keep = set(tool_router.CORE)
+        folded = ""                              # bỏ luôn gợi ý nhóm của lõi
     for rx, names in CORE_GROUP_HINTS:        # cách nói thường gặp mà tool_router chưa bắt — đi thẳng, khỏi more_tools
         if rx.search(folded):
             groups += [n for n in names if n not in groups]

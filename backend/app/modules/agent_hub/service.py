@@ -911,7 +911,7 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
         finish_run(db, run, result=ChatResult(text=text, provider="agent_gemini", model=run.model,
                                               input_tokens=0, output_tokens=0))
     run.artifact = {"chat_id": chat_id, "mode": mode, "question": question[:500], "text": text[:8000],
-                    "sources": sources}
+                    "sources": sources, "timing": research.last_timing()}
     db.commit()
     reply(db, chat_id, (text or "(không có câu trả lời)") + research.sources_markdown(sources)
           + "\n\n_Muốn bản Word: nhắn_ `xuất Word`", markdown=True, action=ACT_RESEARCH)

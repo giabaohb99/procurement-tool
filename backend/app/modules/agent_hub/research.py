@@ -211,17 +211,33 @@ FALLBACK_RULE = (
 )
 
 
+#  Bộ mẫu ai-CR-203 (mẫu 08): «giá vàng hôm nay» một lần mất 108,8 s, thử lại chỉ 14 s — không biết chậm ở khâu nào. Ghi
+#  thời gian từng khâu (Google Search Gemini · tìm + tải trang · model tóm tắt) vào `last_timing()` → artifact của run.
+_timing: dict = {}
+
+
+def last_timing() -> dict:
+    return dict(_timing)
+
+
+def _mark(stage: str, t0: float) -> None:
+    _timing[stage] = round(time.monotonic() - t0, 1)
+
+
 def search_web_any(question: str, *, mode: str = MODE_WEB) -> tuple[str, list[dict], ChatResult]:
     """ai-CR-110: tìm web bằng DuckDuckGo / Bing + tải trang, model ĐANG DÙNG (bộ định tuyến khóa — DeepSeek…) tóm tắt."""
     from . import web_search
 
+    t0 = time.monotonic()
     sources, context = web_search.gather(question)
+    _mark("gather", t0)
     if not sources:
         raise RuntimeError("không tìm được kết quả nào trên mạng (máy tìm kiếm không trả lời)")
     system, quick_tokens = _system_for(question, mode)
     result = manager.get_provider().ask(
         [ChatMessage(role="user", content=f"CÂU HỎI: {question}\n\nKẾT QUẢ TÌM KIẾM:\n{context}")],
         system=system + FALLBACK_RULE, max_tokens=quick_tokens or 1500, temperature=0.2)
+    _mark("model", t0)
     return (result.text or "").strip(), sources[:MAX_SOURCES], result
 
 
@@ -236,10 +252,15 @@ def run(question: str, mode: str) -> tuple[str, list[dict], ChatResult | None]:
         return read_link(question)
     mode = mode if mode in MODES else MODE_WEB
     global _search_blocked_until
+    _timing.clear()
     if user_keys.gemini_key() and time.time() >= _search_blocked_until:
+        t0 = time.monotonic()
         try:
-            return search_web(question, mode=mode)
+            out = search_web(question, mode=mode)
+            _mark("google", t0)
+            return out
         except Exception as e:  # noqa: BLE001 — rơi về tìm web riêng
+            _mark("google_loi", t0)
             err = str(e)
             if "429" in err or "quota" in err.lower() or "resource_exhausted" in err.lower():
                 #  ai-CR-193: hết hạn mức tìm kiếm — khỏi thử lại mỗi lượt trong 10 phút.
