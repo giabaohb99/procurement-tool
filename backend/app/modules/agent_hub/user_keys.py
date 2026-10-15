@@ -137,6 +137,11 @@ def prefer(providers: list[str] | tuple[str, ...], *, model: str = ""):
             return "claude"
         if r.provider == "openai_compat" and m.startswith(("gpt", "codex", "o3", "o4")):
             return "openai"
+        #  ai-CR-199: một trạm bán nhiều gói (ai-CR-197) → phân luồng model (core v2) cần tách Kimi / DeepSeek.
+        if r.provider == "openai_compat" and m.startswith(("kimi", "moonshot")):
+            return "kimi"
+        if r.provider == "openai_compat" and m.startswith("deepseek"):
+            return "deepseek"
         return r.provider
 
     first = sorted((r for r in refs if family(r) in rank), key=lambda r: rank[family(r)])

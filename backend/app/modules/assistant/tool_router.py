@@ -130,7 +130,9 @@ def groups_selected(message: str, recent_tools=None) -> set[str]:
 #  đủ 73 công cụ + 7 gói = 56k token. So trên chữ đã bỏ dấu, chỉ khi CẢ câu là xã giao.
 SMALLTALK = re.compile(r"^(?:(?:a+\s*)?l[oô]+|hello|hi|hey|chao(?: em| anh| chi| bot| ban| ca nha| lac lac| buoi sang| buoi chieu)?|"
                        r"cam on(?: em| anh| chi| nhe| nha| nhieu)*|thanks?|thank you|ok|oke|okay|tot|hay|duoc|good|bye|tam biet|"
-                       r"ngu ngon|chuc .{0,30}|em oi|oi|test|ping)[\s.!?,~]*$")
+                       r"ngu ngon|chuc .{0,30}|em oi|oi|test|ping)"
+                       #  ai-CR-198: «hello em», «hi anh», «alo bot nhé» — lời gọi đứng sau vẫn là xã giao.
+                       r"(?: (?:em|anh|chi|ban|bot|oi|nhe|nha|a|ah|lac lac))*[\s.!?,~]*$")
 
 
 def is_smalltalk(text: str) -> bool:

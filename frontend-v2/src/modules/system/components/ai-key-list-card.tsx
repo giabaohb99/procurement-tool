@@ -252,7 +252,7 @@ export function AiKeyListCard({
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Hệ thống gọi thử hãng một lượt không tốn token rồi mới lưu (đã mã hóa). Cùng hãng thì khóa mới thay khóa cũ.
+              Hệ thống gọi thử hãng một lượt không tốn token rồi mới lưu (đã mã hóa). Cùng hãng (với trạm tùy chỉnh: cùng trạm và cùng model) thì khóa mới thay khóa cũ; khác model thì thêm dòng mới.
               Không bao giờ dán khóa vào khung chat.
             </p>
           </div>

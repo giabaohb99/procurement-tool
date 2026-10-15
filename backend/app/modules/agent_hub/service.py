@@ -35,7 +35,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import ai_keys, bells, change_undo, channels, chat_link, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
+from . import ai_keys, bells, change_undo, channels, chat_link, core_v2, erp, meeting_actions, meeting_drive, coder, draft_create, grants, manager, memory, ops, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -649,7 +649,11 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
 
     _adopt_pending_photos(db, chat_id, row)
     with _instant_ack(chat_id, text):
-        _route_plain_text(db, chat_id, row, text)
+        #  ai-CR-198: lõi hội thoại mới (doc/agent-hub/20) — bật theo cờ, chạy song song với đường cũ.
+        if core_v2.enabled_for(chat_id):
+            core_v2.handle(db, chat_id, row, text)
+        else:
+            _route_plain_text(db, chat_id, row, text)
 
 
 @contextlib.contextmanager
@@ -1283,7 +1287,10 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     if grants.level_for(db, link.user_id) and _CODE_IN_TEXT.search(low) and route_task_command(db, chat_id, row, text):
         return True
     with _instant_ack(chat_id, text):
-        _route_linked_text(db, chat_id, row, text)
+        if core_v2.enabled_for(chat_id):      # ai-CR-198: lõi hội thoại mới, xem doc/agent-hub/20
+            core_v2.handle(db, chat_id, row, text)
+        else:
+            _route_linked_text(db, chat_id, row, text)
     return True
 
 
@@ -4437,7 +4444,7 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[di
     return "\n".join(out)
 
 
-def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
+def _offer_draft(db: Session, chat_id: str, user, call: dict, *, silent: bool = False) -> None:
     """Tool vừa soạn nháp: tóm tắt + chờ «tạo». Đề nghị thanh toán thì gửi link form web điền sẵn."""
     esc = telegram.esc
     kind = draft_create.kind_of(str(call.get("name") or ""))
@@ -4457,7 +4464,10 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
         replaced += 1
     #  ai-CR-156: đã có phiếu nháp YCMH / YCBG cùng loại → mời dùng lại thay vì lập thêm phiếu.
     reuse = draft_create.same_kind_drafts(erp.my_drafts(db, user), kind) if user is not None else []
-    reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced), reuse=reuse))
+    if not silent:
+        #  ai-CR-198 (đại ca 14/10: «cho nó vào chat thôi, dễ đọc dễ xác nhận hơn»): lõi mới tự trình bày nháp trong câu
+        #  trả lời, không gửi thẻ riêng — chỉ ghi dòng chờ «tạo» bên dưới.
+        reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced), reuse=reuse))
     log_message(db, DIR_OUT, chat_id, 0, json.dumps({"tool": call.get("name"), "kind": kind,
                                                      "user_id": getattr(user, "id", 0), "draft": draft,
                                                      "reuse": [{"id": x["id"], "code": x["code"]} for x in reuse]},

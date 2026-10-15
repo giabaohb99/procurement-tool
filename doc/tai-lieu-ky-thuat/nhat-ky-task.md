@@ -13358,6 +13358,34 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-198 | Lõi hội thoại mới của bot, bước 1: nói chuyện như người, chạy song song dưới cờ
+- status: dang-lam
+- date: 2026-10-14
+- pic: NSU209
+Đại ca thấy bot cứng như máy: không hỏi lại khi thiếu, không gợi ý, không hiểu cách nói tự nhiên, mỗi tính năng một kiểu;
+chốt đập đi xây lại lõi hội thoại, chấp nhận model tốt hơn, ưu tiên ổn định rồi tự nhiên (kế hoạch ở tài liệu 20 Agent
+Hub). Bước một làm xong: tin chữ đi vào một vòng tác tử duy nhất — model được cho biết giờ hiện tại, đang nói với ai, sổ
+nhớ, việc đang dở (nháp chờ, việc kế hoạch chờ, hoàn tác chờ, vé sửa mã) và bốn mươi lượt gần nhất; tự quyết hỏi lại,
+gợi ý, gọi công cụ nhiều vòng hay ghi; mười hai luật phong cách (hỏi đúng cái thiếu kèm gợi ý, sửa bằng lời, hiểu đồng ý
+mọi cách nói, không biểu tượng cảm xúc, không câu mẫu, nói thật khi lỗi). Ba công cụ nháp mới dùng lại nguyên đường tạo
+và bỏ của bot cũ nên luật quyền không đổi. Lỗi model thì báo một câu kèm mã lượt. Bật theo từng chat thử bằng cờ, đường
+cũ giữ nguyên cho chat chưa bật. Sáu bài kiểm mới, bốn bộ bài cũ liên quan vẫn xanh.
+
+Mã nguồn: agent_hub/core_v2.py (mới); agent_hub/service.py hai chỗ rẽ; core/config.py; bài kiểm test_agent_hub_core_v2.py
+Deploy: dev 14/10, bật cho chat đại ca trước; bước 2 dời kế hoạch việc, hoàn tác, sửa mã lên lõi
+
+## ai-CR-197 | Một trạm AI thêm được nhiều gói model (Claude, Kimi, Gemini) không thay nhau
+- status: xong
+- date: 2026-10-14
+- pic: NSU209
+Đại ca thêm khóa gói Claude của trạm modelapi.vn vào màn Khóa AI thì khóa DeepSeek cũ bị đóng, không thêm được gói mới. Nguyên
+nhân: sổ khóa coi mọi gói của một trạm là cùng một hãng nên khóa sau thay khóa trước. Nay với trạm tùy chỉnh, chỉ khi cùng trạm
+và cùng model mới thay khóa; khác model thì thêm dòng mới và xếp ưu tiên nối tiếp. Hãng thường vẫn thay khóa như cũ. Câu hướng
+dẫn trên màn Khóa AI nói rõ luật này. Bốn bài kiểm mới xanh, hai mươi chín bài sổ khóa cũ vẫn xanh.
+
+Mã nguồn: agent_hub/ai_keys.py (add_key); frontend-v2 ai-key-list-card.tsx; bài kiểm test_agent_hub_khoa_tram_nhieu_goi_cr197.py
+Deploy: dev 14/10 (ERP api + giao diện erp + cụm dịch vụ AI)
+
 ## ai-CR-196 | Xác nhận thẻ sửa, xóa phiếu bằng chữ cho người đã liên kết
 - status: xong
 - date: 2026-10-14

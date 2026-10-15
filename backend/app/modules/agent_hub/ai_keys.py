@@ -264,12 +264,22 @@ def add_key(db: Session, *, owner_type: int, owner_id: int, provider: str, raw: 
         elif provider not in PROVIDERS:
             raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
     rows = active_rows(db, owner_type, owner_id)
+
+    #  Hãng tùy chỉnh: một trạm có thể bán nhiều gói (Claude, Kimi, Gemini… mỗi gói một khóa), nên «cùng hãng» chỉ
+    #  là cùng trạm + cùng model — khóa Kimi thêm sau KHÔNG được thay khóa Claude (đại ca gặp 14/10/2026).
+    def _same(r: AiKey) -> bool:
+        if r.provider != provider:
+            return False
+        if provider != PROVIDER_CUSTOM:
+            return True
+        return (r.base_url or "") == base_url and (r.model or "") == (model or "")
+
     if priority <= 0:
-        same = [r for r in rows if r.provider == provider]
+        same = [r for r in rows if _same(r)]
         priority = int(same[0].priority) if same else (max((int(r.priority) for r in rows), default=0) + 1)
     now = datetime.now()
     for old in rows:
-        if old.provider == provider and int(old.priority) == priority:
+        if _same(old) and int(old.priority) == priority:
             old.revoked_at = now
     row = AiKey(owner_type=owner_type, owner_id=int(owner_id), provider=provider, model=(model or "")[:80],
                 base_url=base_url,
@@ -338,7 +348,9 @@ def key_problem(error: str, provider: str = "") -> str:
     e = (error or "").lower()
     label = PROVIDER_LABELS.get(provider, "AI") if provider else "Gemini"
     site = PROVIDER_SITES.get(provider or PROVIDER_GEMINI, "")
-    if "402" in e or "depleted" in e or "prepayment" in e or "billing" in e or "insufficient" in e:
+    #  ai-CR-200: trạm kiểu new-api (modelapi.vn) báo hết tiền bằng tiếng Trung «用户额度不足, 剩余额度: $-0.03» với mã 403.
+    if ("402" in e or "depleted" in e or "prepayment" in e or "billing" in e or "insufficient" in e
+            or "额度不足" in e or "余额不足" in e):
         return (f"Khóa {label} của đại ca <b>hết tiền</b> (hãng báo 402). Nạp thêm ở {site} rồi nhắn lại câu vừa rồi; "
                 "hoặc thêm khóa khác ở ERP → Trang cá nhân → Khóa AI.")
     if "429" in e or "resource_exhausted" in e or "quota" in e or "rate limit" in e:
@@ -348,6 +360,12 @@ def key_problem(error: str, provider: str = "") -> str:
             or "invalid_api_key" in e or "authentication_error" in e):
         return (f"Khóa {label} của đại ca <b>không còn hợp lệ</b> (hãng từ chối). Lấy khóa mới ở {site} rồi dán lại "
                 "ở ERP → Trang cá nhân → Khóa AI.")
+    #  ai-CR-199 (14/10 lượt #209): trạm trung gian báo gói của khóa này không chạy được («unknown provider for model»,
+    #  «no available channel», «model not supported») dù trạm vẫn liệt kê model — chuyện của KHÓA/GÓI, không phải câu hỏi.
+    if ("unknown provider" in e or "no available channel" in e or "model not supported" in e
+            or "does not exist or you do not have access" in e):
+        return (f"Gói {label} trên trạm của khóa này <b>đang không chạy</b> (trạm báo không có kênh cho model). Kiểm lại "
+                "nhóm / gói trên trang trạm, hoặc để khóa khác làm trước ở ERP → Trang cá nhân → Khóa AI.")
     return ""
 
 
