@@ -284,7 +284,16 @@ export default function PurchaseRequestDetail() {
   // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng).
   // CR-074: phải tính CẢ hai nhãn "chưa động tới", nếu không thì vừa lập đơn Nháp là nút
   // "Tạo ĐMH" biến mất, trong khi dòng đó vẫn có thể cần thêm đơn cho NCC khác.
-  const hasUnorderedItem = (pr.items || []).some((it: any) => [LS_NO_PO, 'not_ordered'].includes(it.line_status || LS_NO_PO))
+  // bao-CR-618: dòng đã có ĐMH nhưng mới đặt MỘT PHẦN số lượng (vd YCMH 221: KCl yêu cầu 2.000.000,
+  // đặt 50 → nhãn «Đã đặt hàng») cũng còn phải mua tiếp — trước đây chỉ xét nhãn nên nút biến mất.
+  // Cùng luật với bản v2 (`purchase-request-detail-page.tsx`): còn thiếu = yêu cầu − đã đặt > 0.
+  const hasUnorderedItem = (pr.items || []).some((it: any) => {
+    const status = it.line_status || LS_NO_PO
+    if (status === LS_CANCELLED || !it.product_name) return false
+    if ([LS_NO_PO, 'not_ordered'].includes(status)) return true
+    const ordered = Number(orderedMap[it.product_code] ?? it.qty_ordered ?? 0)
+    return (Number(it.qty) || 0) - ordered > 0
+  })
   // Chỉ cho Hoàn thành phiếu khi MỌI dòng đã ở điểm cuối (Hoàn thành/Hủy đơn)
   const allItemsDone = (pr.items || []).length > 0 && (pr.items || []).every((it: any) => ['completed', LS_CANCELLED].includes(it.line_status || LS_NO_PO))
   // Cột/trường "NSTM phụ trách" chỉ cho phía thu mua (is_purchaser = có quyền xử lý khảo sát).
