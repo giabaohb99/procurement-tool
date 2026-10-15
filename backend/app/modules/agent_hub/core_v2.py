@@ -933,9 +933,15 @@ def draft_reply(chat_id: str, name: str, result: dict) -> str:
     draft = result.get("draft") or {}
     head = f"Em sửa nháp {label} rồi:" if name == "update_draft" else f"Em soạn nháp {label} như sau:"
     lines = [head] + [f"- {_bold_label(x)}" for x in result.get("tom_tat_se_luu") or []]
-    assumed = [str(a) for a in draft.get("assumptions") or [] if str(a).strip()]
+    #  Bộ mẫu ai-CR-203 (15/10): «Em tạm hiểu: vào cột Cần làm (…các cột…)» lặp ô «Cột: Cần làm» ngay trên → bỏ ý mà
+    #  giá trị đã hiện ở một ô.
+    shown = [v.strip().lower() for v in (str(x).partition(": ")[2] for x in result.get("tom_tat_se_luu") or [])
+             if len(v.strip()) >= 4]
+    assumed = [str(a) for a in draft.get("assumptions") or []
+               if str(a).strip() and not any(v in str(a).lower() for v in shown)]
     if assumed:                              # Agent 1 15/10: câu này dài — tối đa 3 ý, mỗi ý 80 ký tự
-        lines += ["", "Em tạm hiểu: " + "; ".join(_clip_line(a, 80) for a in assumed[:3]) + "."]
+        text = "; ".join(_clip_line(a, 80) for a in assumed[:3])
+        lines += ["", "Em tạm hiểu: " + text + ("" if text.endswith("…") else ".")]
     warns = [str(w) for w in result.get("warnings") or [] if str(w).strip()]
     if warns:
         lines += ["", "Lưu ý: " + " ".join(warns[:4])]

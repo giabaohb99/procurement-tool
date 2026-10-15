@@ -13358,6 +13358,17 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-203 | Bộ hai mươi hội thoại mẫu tự chạy để kiểm bot trước mỗi lần đẩy
+- status: dang-lam
+- date: 2026-10-15
+Theo mục 10 tài liệu 20, em dựng bộ hội thoại mẫu chạy tự động: mỗi mẫu là một cuộc chat thử riêng, bot trả lời bằng model
+thật và dữ liệu thật nhưng không ghi gì thật và không gửi tin Telegram nào; chạy xong thì xóa tin thử. Mỗi lượt được chấm
+bằng luật cứng (phải gọi đúng công cụ, không được tạo thật khi chưa đồng ý, ngày theo thứ phải đúng) và bằng model chấm theo
+ý mong đợi. Hai mươi mẫu đầu lấy phần lớn từ các lỗi Agent 1 đo được hôm nay để lỗi không quay lại. Chạy thử bốn mẫu trên
+dev đã lộ một lỗi hiển thị nhỏ ở tin nháp (dòng tạm hiểu lặp lại ô cột), đã sửa.
+
+Mã nguồn: agent_hub/core_eval.py, core_eval_samples.py, scripts/eval_core_v2.py; bài kiểm test_agent_hub_core_eval.py
+
 ## ai-CR-202 | Lõi hội thoại mới: soạn nháp chỉ còn một lần gọi model, mô tả công cụ ngắn lại cho chat
 - status: xong
 - date: 2026-10-15

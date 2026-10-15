@@ -845,3 +845,12 @@ def test_xin_nhom_da_nap_thi_khong_chay_lai():
     assert mixed == {"ok": True, "nhom": ["leave"]} and core_v2._stop_after(core_v2.MORE_TOOLS, mixed)
     #  Nhóm work thiếu draft_work_plan (chỉ nạp khi nói «kế hoạch») vẫn tính là đã có.
     assert "error" in core_v2._more_tools_result({"nhom": ["work"]}, {"my_work_tasks", "draft_work_task"})
+
+
+def test_tin_nhap_bo_y_tam_hieu_trung_o_da_hien():
+    """Bộ mẫu ai-CR-203: «Em tạm hiểu: vào cột Cần làm (… các cột …)» lặp ô «Cột: Cần làm», còn cụt thành «…."."""
+    res = {"tool": "draft_work_task", "tom_tat_se_luu": ["Việc: A", "Cột: Cần làm"],
+           "draft": {"assumptions": ["vào cột Cần làm (cột đầu của dự án; các cột: Cần làm, Đang làm, Xong)",
+                                     "giao cho người hỏi vì chưa nói người nhận, cứ đổi nếu cần giao người khác nhé đại ca"]}}
+    msg = core_v2.draft_reply(CHAT, "draft_work_task", res)
+    assert "vào cột" not in msg and "Em tạm hiểu: giao cho người hỏi" in msg and "…." not in msg

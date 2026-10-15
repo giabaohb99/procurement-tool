@@ -239,7 +239,11 @@ trong chat (không thẻ riêng, `_offer_draft(silent=True)`); chặn «thẻ ma
   Trạm có cache (Anthropic Messages): system nay tĩnh, phần đổi mỗi lượt ở khối BỐI CẢNH đầu tin mới nhất
   (`turn_context`); `openai_compat` đọc `billing_usage.claude_usage`, `artifact` có `cache_read` / `cache_write`.
   Vá thêm theo đo của Agent 1: commit_draft chỉ khi lời đồng ý ngắn; không khớp nhóm → chỉ công cụ lõi + `more_tools`;
-  `CORE_GROUP_HINTS`; `resolve_weekdays` (NGÀY ĐÃ TÍNH); bỏ xưng hô khi tra tên. Đã lên dev hết (9e68b39f) — xong. Việc 4 (dòng cuối tự nhiên) xong luôn cho lõi
+  `CORE_GROUP_HINTS`; `resolve_weekdays` (NGÀY ĐÃ TÍNH); bỏ xưng hô khi tra tên. Đã lên dev hết (9e68b39f) — xong.
+- 15/10 — việc 3 (bộ mẫu): **ai-CR-203** — `core_eval.py` (lồng thử: model thật, không ghi thật, chat `eval-…` xóa sau
+  khi chạy) + `core_eval_samples.py` (20 mẫu) + `scripts/eval_core_v2.py`. Chạy trong container agent-hub ở dev:
+  `docker exec agent-hub-agent-api-1 python scripts/eval_core_v2.py` (`--only 03 05`, `--no-judge`). Thử 4 mẫu: 109k token,
+  23 s; mẫu 13 / 20 đạt, 01 / 03 trượt do model chấm khắt khe + tin nháp lặp ô → đã sửa. Việc 4 (dòng cuối tự nhiên) xong luôn cho lõi
   mới; đường cũ còn «Trả lời: tạo / thôi».
 
 **Agent 1 làm:** gộp `agent-hub-bac-1` → erp-v2, dựng ERP api (nếu đổi `assistant/*`) rồi `~/agent-hub` trên VPS 2
