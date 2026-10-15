@@ -659,3 +659,21 @@ def test_cong_cu_hoi_them_thi_khong_dung_vong():
     assert not core_v2._stop_after("draft_payment_request", {"draft": {"payable_ids": [1]}, "tom_tat_se_luu": ["x"]})
     assert core_v2._stop_after("draft_work_task", {"draft": {"title": "A"}, "tom_tat_se_luu": ["Việc: A"]})
     assert core_v2._stop_after("update_draft", {"ok": True}) and not core_v2._stop_after("update_draft", {"error": "x"})
+
+
+def test_cau_lap_ycmh_chi_nap_cong_cu_nhap(db, monkeypatch):
+    """Run #223 (15/10): «tạo YCMH … phòng IT» nạp 37 công cụ → 83k token một lần gọi. Câu lập phiếu thuần chỉ giữ nháp."""
+    from app.modules.assistant import tool_router
+    from app.modules.assistant.provider.base import ToolDef
+
+    names = set().union(*(tools for _n, tools, _p in tool_router.GROUPS)) | set(tool_router.CORE)
+    monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: [ToolDef(name=n, description="x", parameters={})
+                                                                       for n in names])
+    pick = lambda text: {t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), text)}
+    plain = pick("tạo YCMH mua 10 thùng giấy A4 cho phòng IT, cần trước thứ sáu")
+    assert {"draft_purchase_request", "product_search"} <= plain
+    assert not plain & {"supplier_scorecard", "market_price_search", "analytics_query", "ticket_create", "recent_purchase_orders"}
+    asks = pick("tạo YCMH mua giấy A4, lần trước mua của NCC nào giá bao nhiêu")
+    assert {"draft_purchase_request", "product_purchase_history", "supplier_search"} <= asks
+    assert "ticket_create" in pick("tạo phiếu hỗ trợ máy in phòng IT bị lỗi, cần mua mực")
+    assert "supplier_scorecard" in pick("chấm điểm NCC giấy A4")                        # câu tra cứu thuần: như cũ

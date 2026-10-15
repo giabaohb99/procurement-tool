@@ -416,6 +416,32 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
 # Công cụ
 # ---------------------------------------------------------------------------
 PLAN_ONLY_TOOLS = frozenset({"draft_work_plan"})
+#  ai-CR-202 (Agent 1 đo 15/10, run #223): «tạo YCMH mua 10 thùng giấy A4 cho phòng IT» nạp 37 công cụ (26k ký tự) →
+#  83k token cho MỘT lần gọi, gấp đôi câu «tạo task» (17 công cụ, 44k) — trạm tính nặng theo SỐ công cụ. Câu LẬP phiếu mua
+#  thì chỉ giữ công cụ nháp + vài công cụ tra cứu cần khi soạn; nhóm tra cứu thu mua (16 công cụ) chỉ nạp khi câu còn hỏi
+#  thêm giá / NCC / lịch sử…; «phòng IT» không kéo theo nhóm phiếu hỗ trợ.
+DRAFT_PURCHASE_KEEP = frozenset({"product_search", "my_procurement_requests"})
+PURCHASE_LOOKUP = re.compile(r"gia|ncc|nha cung cap|lich su|so sanh|cham diem|bao nhieu|tot nhat|re nhat|hop dong"
+                             r"|da mua|lan truoc|thong ke|top")
+TICKET_WORDS = re.compile(r"ho tro|ticket|bao loi|su co|may in|hong|loi")
+
+
+def _focus_draft_tools(text: str, defs: list[ToolDef]) -> list[ToolDef]:
+    """Câu lập YCMH / YCBG mà không hỏi thêm gì: bỏ nhóm tra cứu thu mua (trừ DRAFT_PURCHASE_KEEP) và nhóm hỗ trợ IT."""
+    from app.modules.assistant import tool_router
+    from app.modules.assistant.glossary import fold
+
+    groups = set(tool_router.groups_for(text))
+    if "make_purchase" not in groups:
+        return defs
+    folded = " " + " ".join(fold(text or "").split()) + " "
+    drop: set[str] = set()
+    by_group = {name: tools for name, tools, _rx in tool_router.GROUPS}
+    if not PURCHASE_LOOKUP.search(folded):
+        drop |= set(by_group.get("purchase", ())) - DRAFT_PURCHASE_KEEP - set(by_group.get("make_purchase", ()))
+    if "ticket" in groups and not TICKET_WORDS.search(folded):
+        drop |= set(by_group.get("ticket", ()))
+    return [d for d in defs if d.name not in drop]
 #  Ghi chú riêng liên quan câu hỏi: 14/10 khối này 2,6k ký tự (tóm tắt nguyên các buổi chat cũ) — giữ phần đầu.
 MEMORY_BLOCK_CHARS = 1200
 
@@ -450,6 +476,7 @@ def select_tools(db: Session, user, text: str, chat_id: str = "") -> list[ToolDe
 
     if "ke hoach" not in " ".join(fold(text or "").split()):
         defs = [d for d in defs if d.name not in PLAN_ONLY_TOOLS]
+    defs = _focus_draft_tools(text, defs)
     defs = compact_defs(defs)                    # ai-CR-202: mô tả viết cho chat + tham số còn câu đầu
     names = {d.name for d in defs}
     out = defs + [t for t in LOCAL_TOOLS if t.name not in names]
@@ -722,6 +749,11 @@ def _stop_after(name: str, result) -> bool:
     return isinstance(result.get("draft"), dict) and _chat_draft(name) and bool(result.get("tom_tat_se_luu"))
 
 
+def _clip_line(text: str, limit: int) -> str:
+    text = " ".join(str(text).split()).rstrip(".")
+    return text if len(text) <= limit else text[:limit - 1].rsplit(" ", 1)[0] + "…"
+
+
 def _bold_label(line: str) -> str:
     label, sep, value = str(line).partition(": ")
     return f"**{label}:** {value}" if sep and len(label) <= 30 else str(line)
@@ -737,8 +769,8 @@ def draft_reply(chat_id: str, name: str, result: dict) -> str:
     head = f"Em sửa nháp {label} rồi:" if name == "update_draft" else f"Em soạn nháp {label} như sau:"
     lines = [head] + [f"- {_bold_label(x)}" for x in result.get("tom_tat_se_luu") or []]
     assumed = [str(a) for a in draft.get("assumptions") or [] if str(a).strip()]
-    if assumed:
-        lines += ["", "Em đang tạm hiểu: " + "; ".join(assumed[:5]) + "."]
+    if assumed:                              # Agent 1 15/10: câu này dài — tối đa 3 ý, mỗi ý 80 ký tự
+        lines += ["", "Em tạm hiểu: " + "; ".join(_clip_line(a, 80) for a in assumed[:3]) + "."]
     warns = [str(w) for w in result.get("warnings") or [] if str(w).strip()]
     if warns:
         lines += ["", "Lưu ý: " + " ".join(warns[:4])]

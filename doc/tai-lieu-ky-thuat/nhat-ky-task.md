@@ -13367,7 +13367,10 @@ mỗi ô một dòng, điều bot đang tạm hiểu, lưu ý và một câu h�
 vốn viết cho Trợ lý trên web (bảo người dùng bấm nút trên form) nay có bản ngắn viết riêng cho chat, mô tả từng ô chỉ giữ
 câu đầu; tổng độ dài công cụ giảm từ khoảng bảy mươi tư nghìn xuống sáu mươi lăm nghìn ký tự, riêng chín công cụ lớn giảm
 một phần ba. Sổ lượt chạy ghi thêm độ dài lời nhắc và công cụ để đo trước sau. Bài kiểm lõi mới thêm bốn bài, bốn mươi mốt
-bài xanh.
+bài xanh. Agent 1 đo trên dev: câu tạo task từ tám mươi tám nghìn còn bốn mươi bốn nghìn token, thời gian từ mười lăm giây
+còn tám giây. Câu lập yêu cầu mua hàng vẫn nạp ba mươi bảy công cụ, tốn tám mươi ba nghìn token cho một lần gọi, nên em vá
+thêm: câu chỉ lập phiếu mua mà không hỏi giá, nhà cung cấp hay lịch sử thì bỏ nhóm công cụ tra cứu thu mua, chữ IT trong
+tên phòng không kéo theo nhóm phiếu hỗ trợ; còn mười chín công cụ, độ dài giảm hơn một nửa. Dòng bot tạm hiểu rút còn ba ý.
 
 Mã nguồn: agent_hub/core_v2.py (V2_TOOL_DESC, compact_defs, _stop_after, draft_reply); bài kiểm test_agent_hub_core_v2.py
 
