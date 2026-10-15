@@ -191,3 +191,42 @@ Bộ đầy đủ 20–30 mẫu do đại ca + anh Được góp trong tuần 1;
    chỉ đạt được với API chính thức; với trạm, mục tiêu thực tế là ≤ 8 s một lượt + báo nhận ngay.
 2. **Gác**: luật khóa công ty / cá nhân và hội thoại với người nhận việc (điểm giao thoa trừ token) — kế hoạch riêng sau.
 3. Còn chờ đại ca: đóng băng tính năng mới 2 tuần; danh sách 3–5 người thử; bật thanh toán Gemini chính thức.
+
+## 10. Bàn giao cho Agent 4 (15/10/2026, đại ca chốt: «đưa việc này cho Agent 4, Agent 1 nhận việc đồng bộ lên dev»)
+
+Từ 15/10: **Agent 4 làm mã lõi hội thoại** (doc này), **Agent 1 chỉ gộp + dựng dev + đo**. Agent 4 đẩy `agent-hub-bac-1`
+như mọi CR (fetch erp-v2 ngay trước khi đẩy), báo Agent 1 dựng.
+
+**Hiện trạng trên dev (erp-v2 3a6742b9):** `backend/app/modules/agent_hub/core_v2.py` bật cho chat đại ca
+(`AGENT_CORE_V2_ENABLED=true`, `AGENT_CORE_V2_CHATS` = chat đại ca trong `~/agent-hub/.env.agent` VPS 2). Đã có: vòng tác
+tử; khối ngữ cảnh (nhân cách + STYLE_RULES + CORE_RULES + lịch 15 ngày có thứ + người đang nhắn + DRAFT_FACTS + NEWS_RULES
++ ĐANG DỞ + sổ nhớ cắt 1,2k + thói quen); lịch sử 40 lượt / 24 h / 12k ký tự, bỏ tin bot nói tới thẻ; phân luồng model
+bằng luật (`lane_of`, `AGENT_CORE_V2_ROUTES`: xã giao / tra nhanh → DeepSeek, thường + việc nặng → Claude); công cụ lõi
+`update_draft` / `commit_draft` / `drop_draft` / `search_web` / `news_today` / `my_saved_drafts`; nháp trình bày ngay
+trong chat (không thẻ riêng, `_offer_draft(silent=True)`); chặn «thẻ ma» và «em đã làm» khi không gọi công cụ
+(`PHANTOM_CARD`, `CLAIMED_DONE`); cảnh báo khóa hết tiền (`key_alerts.py`, ai-CR-200). Bài kiểm:
+`test_agent_hub_core_v2.py` (23 bài), `test_agent_hub_canh_bao_khoa_cr200.py`.
+
+**Bài học đo được (đừng lặp lại):**
+- Kimi K3 qua trạm **không gọi công cụ** trong ngữ cảnh thật (nói «đã soạn nháp» mà không soạn) → chỉ dùng cho câu không
+  cần công cụ. Claude gọi đúng.
+- Claude qua trạm modelapi.vn: trạm chèn **~14k token ẩn mỗi lần gọi**, bỏ qua `max_tokens`, không có prompt caching,
+  không nhận `temperature` (Claude đời 5). Một lượt soạn nháp = 2 lần gọi model → ~88k token báo về (2 × (14k trạm +
+  ~30k của mình)). Ví 3 khóa trạm dùng chung — ví âm thì cả 3 hỏng cùng lúc.
+- Tiếng Việt trên Claude ~1 token / ký tự. Phần lớn nhất của mình: mô tả công cụ (~12k ký tự với 15 công cụ;
+  `draft_work_plan` 3,5k — nay chỉ nạp khi câu nói «kế hoạch»), lời dặn hệ thống ~10k.
+- Mô hình chép câu cũ trong lịch sử thay vì gọi công cụ — mọi câu «giả» ghi vào lịch sử (ví dụ «(đã soạn bản nháp, xem
+  thẻ bên dưới)» của đường cũ, `service.py` ~4284) phải lọc.
+
+**Việc giao Agent 4 (theo thứ tự):**
+1. **B2 — nối nốt tính năng cũ vào lõi:** đăng ký bản tin sáng (`manage_briefs`), «nghiên cứu sâu: …» (`deep_research`,
+   có thẻ chờ ok), biên bản họp, nhắc việc, hoàn tác («bot vừa làm gì», «hoàn tác n»), sửa mã (`code_task.create` nhắc lại
+   cách hiểu trước khi tạo vé; trạng thái vé đã có trong ĐANG DỞ), kế hoạch việc phía sếp (24.1 — phía người nhận GÁC).
+   Mỗi cái: một bài kiểm hội thoại trong `test_agent_hub_core_v2.py`.
+2. **Gọn token tiếp:** rút mô tả 10 công cụ lớn nhất; cân nhắc gộp hai lần gọi (tool + trả lời) khi công cụ trả nháp
+   (model tự trình bày từ `tom_tat_se_luu` ngay lượt hai — đang tốn gấp đôi); đo trước / sau ở `tab_agent_run`.
+3. **Bộ hội thoại mẫu tự chạy** (§7) — 20 mẫu, chấm bằng model, chạy trước mỗi lần đẩy.
+4. Đổi dòng cuối nháp thành câu tự nhiên (đã làm trong core v2; đường cũ còn «Trả lời: tạo / thôi»).
+
+**Agent 1 làm:** gộp `agent-hub-bac-1` → erp-v2, dựng ERP api (nếu đổi `assistant/*`) rồi `~/agent-hub` trên VPS 2
+(`vps2_ssh.py`, kiểm việc dở + flock), đo lượt thật ở `tab_agent_run` (`artifact.core = v2`, `artifact.lane`), báo đại ca.
