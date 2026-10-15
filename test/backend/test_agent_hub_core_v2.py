@@ -781,7 +781,9 @@ def test_khong_khop_nhom_thi_chi_nap_cong_cu_loi(db, monkeypatch):
     #  Run #237–239: các câu này từng đi more_tools (2–3 lần gọi) — nay gắn nhóm ngay ở lõi.
     pick = lambda text: {t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), text)}
     assert "my_leave_summary" in pick("anh off được thêm mấy hôm nữa")
-    assert "my_requests_status" in pick("đơn của anh tới đâu rồi")
+    #  Run #243: chỉ my_requests_status thì đơn nghỉ phép không ra (bộ máy duyệt không chứa đơn nghỉ) → kèm cả hai.
+    assert {"my_requests_status", "my_leave_summary"} <= pick("đơn của anh tới đâu rồi")
+    assert {"employee_lookup", "my_requests_status"} <= pick("ai đang giữ hồ sơ của chị Mi")
     assert "employee_lookup" in pick("ai đang giữ hồ sơ của chị Mi")
     assert "my_leave_summary" not in pick("thôi bỏ nháp đó đi em")
 
@@ -833,3 +835,13 @@ def test_tra_ten_bo_xung_ho(db, chat, monkeypatch):
     _install(monkeypatch, script)
     core_v2.handle(db, CHAT, _incoming(db, "ai đang giữ hồ sơ của chị Mi"), "ai đang giữ hồ sơ của chị Mi")
     assert [a["query"] for a in seen] == ["Mi", "Được", "Mi", "chị"]
+
+
+def test_xin_nhom_da_nap_thi_khong_chay_lai():
+    """Run #244: nhóm employee đã nạp mà model vẫn xin more_tools('employee') rồi tra lại → 66,7 s."""
+    have = core_v2._more_tools_result({"nhom": ["employee"]}, {"employee_lookup", "search_docs"})
+    assert "error" in have and "employee_lookup" in have["error"] and not core_v2._stop_after(core_v2.MORE_TOOLS, have)
+    mixed = core_v2._more_tools_result({"nhom": ["employee", "leave"]}, {"employee_lookup"})
+    assert mixed == {"ok": True, "nhom": ["leave"]} and core_v2._stop_after(core_v2.MORE_TOOLS, mixed)
+    #  Nhóm work thiếu draft_work_plan (chỉ nạp khi nói «kế hoạch») vẫn tính là đã có.
+    assert "error" in core_v2._more_tools_result({"nhom": ["work"]}, {"my_work_tasks", "draft_work_task"})

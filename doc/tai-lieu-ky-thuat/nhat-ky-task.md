@@ -13382,6 +13382,8 @@ sáu gần nhất tính từ mai, có chữ tuần sau mới sang tuần kế) v
 chỉ giữ dòng đầu. Việc xin thêm công cụ chạy đúng nhưng tốn hai ba lần gọi, nên các cách nói hay gặp như off, đơn của anh
 tới đâu rồi, hồ sơ của ai được gắn sẵn nhóm công cụ; số liệu đổi theo ngày như ngày phép, công nợ luôn phải tra lại.
 Bot được dặn gọi cùng lúc các công cụ không phụ thuộc nhau, và tự bỏ xưng hô như chị, anh trước khi tra tên người.
+Câu hỏi đơn của anh tới đâu phải tra cả phiếu qua bộ máy duyệt lẫn đơn nghỉ phép, vì đơn nghỉ không đi bộ máy đó; bot
+không được xin lại nhóm công cụ đã có sẵn.
 
 Mã nguồn: agent_hub/core_v2.py (V2_TOOL_DESC, compact_defs, _stop_after, draft_reply); bài kiểm test_agent_hub_core_v2.py
 

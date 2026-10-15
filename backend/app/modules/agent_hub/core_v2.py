@@ -83,7 +83,8 @@ CORE_RULES = (
     "- Số liệu ERP đổi theo ngày (ngày phép còn, công nợ, trạng thái đơn / phiếu, tồn kho, việc) LUÔN tra công cụ ở lượt "
     "này; không lấy từ sổ nhớ, ghi chú hay lịch sử chat. Chưa có công cụ thì gọi more_tools.\n"
     "- Cần nhiều công cụ không phụ thuộc nhau thì gọi CÙNG LÚC trong một lượt (mỗi vòng gọi tốn vài giây). Một công cụ đã "
-    "trả đủ thì đừng gọi thêm công cụ trùng nội dung (my_requests_status đã gồm đơn nghỉ phép).\n"
+    "trả đủ thì đừng gọi thêm công cụ trùng nội dung. «Đơn / phiếu của tôi tới đâu»: gọi CÙNG LÚC my_requests_status "
+    "(phiếu qua bộ máy duyệt) và my_leave_summary (đơn nghỉ phép KHÔNG đi bộ máy đó).\n"
     "- Sổ nhớ: theo đúng khối sổ ghi nhớ riêng (kể cả xưng hô); nghe điều ỔN ĐỊNH về họ thì remember_fact và thêm một "
     "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước."
 )
@@ -580,8 +581,10 @@ CORE_GROUP_HINTS: tuple[tuple[re.Pattern, tuple[str, ...]], ...] = (
     (re.compile(r"ke hoach"), ("work",)),     # «lập kế hoạch …» cần draft_work_plan
     (re.compile(r"(?<!\w)off(?!\w)|nghi them|may (hom|bua|ngay) (nghi|off)|nghi duoc|con may (hom|bua)"), ("leave",)),
     (re.compile(r"(?<!\w)(don|phieu|de xuat|yeu cau)(?!\w).{0,40}(toi dau|sao roi|the nao|duyet chua|xong chua|"
-                r"den dau)|(?<!\w)(don|phieu) cua (anh|em|toi|chi|minh)(?!\w)"), ("approval",)),   # my_requests_status gồm cả đơn nghỉ
-    (re.compile(r"ho so (cua|nhan su|nhan vien)|ai dang (giu|phu trach|lo)"), ("employee",)),
+                r"den dau)|(?<!\w)(don|phieu) cua (anh|em|toi|chi|minh)(?!\w)"), ("approval", "leave")),
+    #  Run #243: chỉ approval thì đơn nghỉ phép không ra (my_requests_status chỉ đọc bộ máy duyệt) → giữ cả leave.
+    (re.compile(r"ho so (cua|nhan su|nhan vien)|ai dang (giu|phu trach|lo)"), ("employee", "approval")),
+    #  «ai đang giữ hồ sơ …» có thể là người / phiếu đang chờ ai (waiting_on của my_requests_status), không chỉ danh bạ.
 )
 
 
@@ -725,8 +728,6 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         return {"ok": True, "tool": info.get("tool") or "", "draft": draft,
                 "tom_tat_se_luu": _summary(info.get("tool") or "", draft),
                 "note": "Đã sửa nháp. Trình bày lại bản nháp trong câu trả lời theo tom_tat_se_luu."}
-    if name == MORE_TOOLS:
-        return {"ok": True, "nhom": [str(g) for g in (args.get("nhom") or []) if str(g).strip()][:4]}
     if name in ("commit_draft", "drop_draft"):
         pending, info = _pending_draft(db, chat_id, row.id, now)
         if pending is None:
@@ -1017,6 +1018,21 @@ def _clean_args(name: str, args: dict) -> dict:
     return out
 
 
+def _more_tools_result(args: dict, offered: set[str]) -> dict:
+    """Run #244: nhóm employee đã nạp sẵn mà model vẫn xin more_tools('employee') rồi tra lại (66,7 s). Nhóm đã có đủ công
+    cụ thì không chạy lại — trả lỗi chỉ ra công cụ hiện có."""
+    from app.modules.assistant import tool_router
+
+    by_group = {name: tools for name, tools, _rx in tool_router.GROUPS}
+    asked = [str(g) for g in (args.get("nhom") or []) if str(g).strip()][:4]
+    new = [g for g in asked if not set(by_group.get(g, ())) - PLAN_ONLY_TOOLS <= offered]
+    if not new:
+        have = sorted({t for g in asked for t in by_group.get(g, ()) if t in offered})
+        return {"error": f"Nhóm {', '.join(asked) or '(trống)'} đã có sẵn trong lượt này — dùng công cụ hiện có "
+                         f"({', '.join(have) or 'không có'}); không có công cụ đúng việc thì nói thẳng chưa làm được."}
+    return {"ok": True, "nhom": new}
+
+
 def _add_usage(result, first) -> None:
     result.input_tokens += first.input_tokens
     result.output_tokens += first.output_tokens
@@ -1070,6 +1086,8 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
 
         def execute(name: str, args: dict) -> dict:
             try:
+                if name == MORE_TOOLS:
+                    return _more_tools_result(args or {}, {t.name for t in tools})
                 if name in LOCAL_TOOL_NAMES:
                     return _run_local(db, chat_id, row, user, name, args or {})
                 out = erp.run_tool(db, user, name, _clean_args(name, args or {}))
