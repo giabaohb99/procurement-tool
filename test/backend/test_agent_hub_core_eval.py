@@ -115,6 +115,8 @@ def test_luat_cung():
     assert any("update_draft" in f for f in fails) and any("GHI NHÁP" in f for f in fails)
     assert any("16/10/2026" in f for f in fails) and any("« »" in f for f in fails)
     assert check_turn(Turn("x", "y", no_model=True), TurnLog(text="x", replies=["ok"], runs=1), date(2026, 10, 15))
+    assert any("emoji" in f for f in check_turn(Turn("x", "y"), TurnLog(text="x", replies=["Dạ 😊"]), date(2026, 10, 15)))
+    assert not check_turn(Turn("x", "y"), TurnLog(text="x", replies=["• dòng một"]), date(2026, 10, 15))
 
 
 def test_bo_mau_du_20_ma_khong_trung():

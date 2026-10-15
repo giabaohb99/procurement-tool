@@ -87,6 +87,7 @@ class SampleResult:
 
 
 _TAG = re.compile(r"<[^>]+>")
+EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F000-\U0001F2FF\U0000FE0F]")
 
 
 def plain(text: str) -> str:
@@ -139,6 +140,8 @@ def check_turn(turn: Turn, log: TurnLog, today: date) -> list[str]:
         out.append("lẽ ra đi lối tắt, không gọi model")
     if "«" in said or "»" in said:
         out.append("dùng ngoặc « » trong tin (luật: in đậm / in nghiêng)")
+    if EMOJI.search(said):
+        out.append("dùng emoji")             # luật cứng — model chấm từng coi dấu • là emoji (bộ mẫu lần 4, mẫu 10)
     return out
 
 
@@ -337,8 +340,9 @@ def cleanup(db: Session, prefix: str) -> None:
 JUDGE_SYSTEM = (
     "Bạn chấm một trợ lý chat tiếng Việt của công ty (bot Telegram, gọi người dùng là «đại ca» khi đó là chủ bot). Với "
     "từng lượt có Ý MONG ĐỢI và câu trả lời THẬT của bot (kèm công cụ bot đã gọi). Chấm theo Ý, không cần nguyên văn. "
-    "Trượt khi: không đạt ý chính; bịa số liệu / ngày; nói đã làm mà không có công cụ tương ứng; trả lời lạc đề; dùng "
-    "emoji. Dài dòng / văn phong chưa gọn thì chỉ GHI vào ly_do và trừ điểm, KHÔNG làm trượt (Agent 1 15/10: model chấm "
+    "Trượt khi: không đạt ý chính; bịa số liệu / ngày; nói đã làm mà không có công cụ tương ứng; trả lời lạc đề. "
+    "KHÔNG xét emoji / ký hiệu (luật cứng đã kiểm riêng). Số dòng «(n dòng)» ở kết quả công cụ là số mục công cụ trả, "
+    "bot nêu đủ các mục đó là đủ. Dài dòng / văn phong chưa gọn thì chỉ GHI vào ly_do và trừ điểm, KHÔNG làm trượt (Agent 1 15/10: model chấm "
     "dao động ở điểm này). Tin «Đã tạo theo nháp …» / «Em bỏ nháp rồi …» là hệ thống tự báo sau khi ghi / bỏ — coi là "
     "đúng. Dấu • là gạch đầu dòng, KHÔNG phải emoji. Chào lại ngắn kèm MỘT câu hỏi cần giúp gì (có thể nêu 2–3 việc "
     "hay làm) là đạt, không phải kể lể. Ngày giờ hiện tại ghi ở đầu bài chấm — dùng nó khi xét ngày. Chỉ trả JSON một dòng: {\"dat\": true|false, \"diem\": 0-10, \"ly_do\": \"tối đa 2 câu\"}."
@@ -356,7 +360,8 @@ def judge(sample: Sample, logs: list[TurnLog]) -> dict:
     now = now_local()
     parts = [f"BÂY GIỜ: {now:%H:%M} ngày {now:%d/%m/%Y} (giờ Việt Nam)", f"MẪU: {sample.title}"]
     for i, (turn, log) in enumerate(zip(sample.turns, logs), 1):
-        said = "\n".join(plain(r) for r in log.replies) or "(không trả lời)"
+        #  Dấu • (md_to_html đổi từ «- ») đưa cho model chấm thành «-»: nó cứ coi • là emoji (bộ mẫu lần 4, mẫu 10).
+        said = "\n".join(plain(r) for r in log.replies).replace("•", "-") or "(không trả lời)"
         parts.append(f"--- Lượt {i}\nNGƯỜI DÙNG: {turn.text}\nÝ MONG ĐỢI: {turn.expect}\n"
                      f"CÔNG CỤ BOT GỌI (→ kết quả): {'; '.join(log.notes) or ', '.join(log.tools) or '(không)'}\n"
                      f"GHI THẬT: {', '.join(log.commits + log.blocked) or '(không ghi gì)'}\n"

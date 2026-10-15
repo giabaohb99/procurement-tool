@@ -49,8 +49,8 @@ SAMPLES: tuple[Sample, ...] = (
              must_call=("my_requests_status", "my_leave_summary")),)),
     Sample("11", "Hồ sơ của chị Mi (run #242/#244)", (
         Turn("ai đang giữ hồ sơ của chị Mi",
-             "Tìm đúng người tên Mi (bỏ xưng hô khi tra); câu mơ hồ thì hỏi lại muốn xem hồ sơ nhân sự hay phiếu chị trình "
-             "đang chờ ai. Không xin lại nhóm công cụ đã có.", must_call=("employee_lookup",),
+             "Câu hai nghĩa: HỎI LẠI kèm hai nghĩa (hồ sơ nhân sự hay phiếu chị Mi trình đang chờ ai) — có thể tra tên trước "
+             "(bỏ xưng hô) hoặc hỏi luôn. Không xin thêm công cụ, không nói «chưa có công cụ».",
              must_not_call=("more_tools",)),)),
     Sample("12", "Lập YCMH (run #223)", (
         Turn("tạo YCMH mua 10 thùng giấy A4 cho phòng IT, cần trước thứ sáu",
