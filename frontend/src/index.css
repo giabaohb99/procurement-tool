@@ -3254,7 +3254,7 @@ input,
 }
 /* duoc-CR-612 (09/10/2026) — dạng xem «Bảng» của khối Báo cáo thực hiện: mỗi hồ sơ một hàng, sửa tại chỗ.
    Bảng `table-layout: fixed` + min-width inline (cộng bề rộng cột); KHÔNG đặt width cứng cho <table> —
-   khung hẹp thì cuộn ngang. Ba cột đầu (✓ · # · Hồ sơ) GHIM khi cuộn ngang, nền đặc để chữ cột cuộn
+   khung hẹp thì cuộn ngang. Hai cột đầu (# · Hồ sơ) GHIM khi cuộn ngang (cột ô tick ✓ bỏ ở duoc-CR-617), nền đặc để chữ cột cuộn
    qua bên dưới không lộ ra. Phải thắng luật `table/thead th/tbody td` toàn cục (padding 14px 18px, hover !important). */
 .srp-layout.single { grid-template-columns: minmax(0, 1fr); }
 .srp-sheet-scroll { overflow-x: auto; border: 1px solid #e9edf7; border-radius: 10px; }
@@ -3264,7 +3264,9 @@ input,
   background: #f4f7fe; border-bottom: 1px solid #e9edf7;
 }
 .srp-sheet tbody td {
-  padding: 6px 8px; font-size: 12px; vertical-align: top; background: #fff;
+  /* Căn GIỮA theo chiều dọc: hàng cao theo ô dài nhất (tên / giai đoạn xuống dòng) thì chữ, ô tick,
+     ô chọn của mọi cột vẫn thẳng một đường, không ô dính mép trên ô nằm giữa. */
+  padding: 6px 8px; font-size: 12px; vertical-align: middle; background: #fff;
   border-bottom: 1px solid #f1f5f9; font-weight: 500;
 }
 .srp-sheet tbody tr:nth-child(even) { background: transparent; }
@@ -3273,16 +3275,15 @@ input,
 .srp-sheet .stk { position: sticky; z-index: 2; }
 .srp-sheet thead th.stk { z-index: 3; }
 .srp-sheet .stk0 { left: 0; }
-.srp-sheet .stk1 { left: 36px; }
-.srp-sheet .stk2 { left: 72px; box-shadow: inset -1px 0 0 #e9edf7; }
+.srp-sheet .stk1 { left: 36px; box-shadow: inset -1px 0 0 #e9edf7; }
 .srp-sheet td.center { text-align: center; }
-.srp-sheet-no { color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 9px !important; }
+.srp-sheet-no { color: var(--muted); font-variant-numeric: tabular-nums; }
 .srp-sheet-empty td { text-align: center; color: var(--muted); padding: 22px 8px !important; }
 .srp-sheet-row.done .srp-sheet-title { color: var(--muted); text-decoration: line-through; }
 .srp-sheet-title { font-weight: 600; }
-.srp-sheet-titlebox, .srp-sheet-filebox { display: flex; align-items: flex-start; gap: 4px; min-width: 0; }
+.srp-sheet-titlebox, .srp-sheet-filebox { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .srp-sheet-titlebox > :first-child, .srp-sheet-filebox > :last-child { flex: 1 1 auto; min-width: 0; }
-.srp-sheet-lock { color: var(--red); margin-top: 6px; flex: none; }
+.srp-sheet-lock { color: var(--red); flex: none; }
 .srp-sheet-actions { display: flex; align-items: center; gap: 2px; }
 .srp-sheet-note { font-size: 10px; font-weight: 700; margin-top: 2px; }
 .srp-sheet-note.overdue { color: var(--red); }
@@ -3300,8 +3301,12 @@ input,
 .srp-sheet-date input.srp-sheet-input { padding-right: 28px; }
 .srp-sheet input[type="checkbox"] { cursor: pointer; }
 .srp-sheet select.srp-sheet-status {
-  width: 118px; height: 24px; padding: 0 20px 0 10px; border: 0; border-radius: 999px;
-  font-size: 11px; font-weight: 700; cursor: pointer; box-shadow: none; text-transform: none;
+  width: 118px; height: 24px; padding: 0 22px 0 10px; border: 0; border-radius: 999px;
+  font-size: 11px; font-weight: 700; line-height: 24px; cursor: pointer; box-shadow: none; text-transform: none;
+  /* Bỏ giao diện gốc của <select>: trên macOS ô gốc cao 24px đẩy chữ lệch lên trên. Tự vẽ mũi tên. */
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
 }
 /* Ô chữ bấm-để-sửa: nút phẳng, hover mới lộ nền. Cắt 3 dòng đặt ở thẻ TRONG (nút có đệm trên/dưới nên dòng 4 lấp ló). */
 .srp-cell-btn {

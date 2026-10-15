@@ -14169,3 +14169,16 @@ mẫu trên từng dòng hàng về sau đổ đúng mẫu đó. Bài kiểm c�
 đưa lên dev; khi deploy phải chạy migration.
 
 Mã nguồn: backend/app/modules/survey_request/report_constants.py · report_model.py · report_service.py · report_schema.py · report_controller.py · migrations/versions/rpttpl01_mau_khoi_tao_bao_cao_thuc_hien.py · frontend-v2/src/modules/procurement/components/survey-report/survey-report-init-dialog.tsx · survey-report-card.tsx · frontend/src/components/SurveyReportInitDialog.tsx · SurveyReportCard.tsx · test/backend/test_bao_cao_thuc_hien_chon_mau_cr614.py
+
+## duoc-CR-617 | Báo cáo thực hiện dạng bảng căn giữa chiều dọc, ô chọn không che chữ, bỏ ô tick đầu hàng
+- status: xong
+- date: 2026-10-15
+Đại ca báo bảng Báo cáo thực hiện trên đơn mua hàng bị lệch: các ô không căn giữa theo chiều dọc và ô chọn bị che mất chữ, yêu cầu
+sửa ở cả bản cũ lẫn bản mới. Ở bản cũ, tên hồ sơ, số thứ tự và ô tick dính lên mép trên trong khi ô chọn nằm giữa; nay mọi ô của
+bảng căn giữa theo chiều dọc. Ô trạng thái của bản cũ chữ bị đẩy lệch lên trên, nay vẽ lại để chữ nằm giữa. Ô chọn giai đoạn ở cả
+hai bản cắt cụt tên dài như «Kế hoạch công việc nhập khẩu», nay tên dài tự xuống dòng giống ô dòng hàng bên cạnh; hàng thêm hồ sơ
+mới ở cuối bảng cũng sửa theo. Sau đó đại ca bảo bỏ ô tick ở đầu mỗi hàng của dạng bảng: nay đánh dấu hoàn thành chỉ qua cột
+trạng thái, vẫn khóa lựa chọn hoàn thành khi hồ sơ còn chờ hồ sơ tiên quyết; hai dạng xem còn lại giữ nguyên ô tick. Bài kiểm giao
+diện chạy xanh, đã bấm thử cả hai bản trên máy, chưa đưa lên dev.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components/survey-report/survey-report-doc-sheet-layout.ts · survey-report-doc-sheet-row.tsx · survey-report-doc-sheet-add-row.tsx · survey-report-doc-sheet-table.tsx · survey-report-doc-status-select.tsx · survey-report-card.tsx · frontend/src/components/SurveyReportSheetRow.tsx · SurveyReportSheetTable.tsx · frontend/src/index.css

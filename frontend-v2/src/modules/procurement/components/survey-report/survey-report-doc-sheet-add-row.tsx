@@ -17,10 +17,15 @@ import { TableCell, TableRow } from '@/shared/ui/table'
 import type { ReportDocPayload } from '../../api/survey-request-report-api'
 import { REPORT_DOC_IDLE } from '../../types/survey-request-report'
 import { cn } from '@/shared/utils/cn'
-import { COMMON_ITEM_VALUE, STICKY_CELL, type SelectOption } from './survey-report-doc-sheet-layout'
+import {
+  COMMON_ITEM_VALUE,
+  STICKY_CELL,
+  WRAP_SELECT_TRIGGER,
+  type SelectOption,
+} from './survey-report-doc-sheet-layout'
 
 interface ReportDocSheetAddRowProps {
-  /** Số cột ô nút «Thêm» trải ra — phần còn lại của bảng sau 5 cột đầu. */
+  /** Số cột ô nút «Thêm» trải ra — phần còn lại của bảng sau 4 cột đầu. */
   restColSpan: number
   phaseOptions: SelectOption[]
   itemOptions: SelectOption[]
@@ -94,10 +99,9 @@ export function ReportDocSheetAddRow({
       <TableCell className={cn('bg-card px-2 py-2 text-muted-foreground', STICKY_CELL[0])}>
         <Plus className="size-4" />
       </TableCell>
-      <TableCell className={cn('bg-card', STICKY_CELL[1])} />
       {/* Tên đứng ở cột ghim, cùng chỗ với tên các hồ sơ phía trên — gõ tên trước,
           giai đoạn / dòng hàng điền sẵn bên phải, đổi được. */}
-      <TableCell className={cn('bg-card px-2 py-1.5', STICKY_CELL[2])}>
+      <TableCell className={cn('bg-card px-2 py-1.5', STICKY_CELL[1])}>
         <Input
           value={title}
           maxLength={255}
@@ -120,7 +124,7 @@ export function ReportDocSheetAddRow({
           <SelectTrigger
             size="sm"
             aria-label="Giai đoạn của hồ sơ mới"
-            className="h-7 w-full px-2 text-xs"
+            className={WRAP_SELECT_TRIGGER}
           >
             <SelectValue />
           </SelectTrigger>

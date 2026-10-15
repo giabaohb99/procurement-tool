@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { toast } from './toast'
+import SearchSelect from './SearchSelect'
 import SurveyReportSheetRow, { type InlineChanges, type SheetOption } from './SurveyReportSheetRow'
 import {
   COMMON_ROW_ID, REPORT_DOC_IDLE,
@@ -16,7 +17,6 @@ import {
  * <table> — khung hẹp thì cuộn ngang chứ không bóp cột tên còn một chữ mỗi dòng.
  */
 const COLUMNS: { key: string; label: string; width: number }[] = [
-  { key: 'done', label: '', width: 36 },
   { key: 'no', label: '#', width: 36 },
   { key: 'title', label: 'Hồ sơ', width: 240 },
   { key: 'phase', label: 'Giai đoạn', width: 190 },
@@ -91,7 +91,7 @@ export default function SurveyReportSheetTable({
         <colgroup>{COLUMNS.map((c) => <col key={c.key} style={{ width: c.width }} />)}</colgroup>
         <thead>
           <tr>
-            {COLUMNS.map((c, i) => <th key={c.key} className={i < 3 ? `stk stk${i}` : undefined}>{c.label}</th>)}
+            {COLUMNS.map((c, i) => <th key={c.key} className={i < 2 ? `stk stk${i}` : undefined}>{c.label}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -114,7 +114,7 @@ export default function SurveyReportSheetTable({
           ))}
           {canEdit && report.phases.length > 0 && (
             <AddRow
-              colSpanRest={COLUMNS.length - 5}
+              colSpanRest={COLUMNS.length - 4}
               phaseOptions={phaseOptions} itemOptions={itemOptions}
               defaultAssigneeId={defaultAssigneeId} onCreate={onCreateDoc}
             />
@@ -164,8 +164,7 @@ function AddRow({ colSpanRest, phaseOptions, itemOptions, defaultAssigneeId, onC
   return (
     <tr className="srp-sheet-add">
       <td className="stk stk0"><i className="ti ti-plus" style={{ color: 'var(--muted)' }} /></td>
-      <td className="stk stk1" />
-      <td className="stk stk2">
+      <td className="stk stk1">
         <input
           ref={inputRef} type="text" className="srp-sheet-input" value={name} maxLength={255}
           placeholder="Thêm hồ sơ — gõ tên rồi Enter" aria-label="Tên hồ sơ mới"
@@ -177,14 +176,17 @@ function AddRow({ colSpanRest, phaseOptions, itemOptions, defaultAssigneeId, onC
         />
       </td>
       <td>
-        <select className="srp-sheet-input" aria-label="Giai đoạn của hồ sơ mới" value={phaseValue} onChange={(e) => setPhaseId(e.target.value)}>
-          {phaseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        {/* Cùng ô chọn xuống dòng với các hàng phía trên — ô gốc cắt cụt tên dài. */}
+        <SearchSelect
+          variant="table" wrap autoSelectSingle={false}
+          value={phaseValue} options={phaseOptions} onChange={(v) => { if (v) setPhaseId(v) }}
+        />
       </td>
       <td>
-        <select className="srp-sheet-input" aria-label="Dòng hàng của hồ sơ mới" value={itemValue} onChange={(e) => setItemId(e.target.value)}>
-          {itemOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <SearchSelect
+          variant="table" wrap autoSelectSingle={false}
+          value={itemValue} options={itemOptions} onChange={(v) => { if (v !== '') setItemId(v) }}
+        />
       </td>
       <td colSpan={colSpanRest}>
         <button type="button" className="btn secondary sm" disabled={!name.trim()} onClick={() => void add()}>

@@ -1,6 +1,6 @@
 // duoc-CR-612 — MỘT hàng hồ sơ của dạng «Bảng» trong khối Báo cáo thực hiện: mọi ô sửa
-// tại chỗ trừ tiên quyết (sửa qua hộp ✎). Người không có quyền sửa thấy chữ thường.
-import { Check, Lock, Paperclip, Pencil, Trash2 } from 'lucide-react'
+// tại chỗ trừ tiên quyết (sửa qua hộp ✎). Đánh dấu xong = chọn «Hoàn thành» ở cột Trạng thái. Người không có quyền sửa thấy chữ thường.
+import { Lock, Paperclip, Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -27,6 +27,7 @@ import {
 import { ReportDocStatusSelect } from './survey-report-doc-status-select'
 import {
   STICKY_CELL,
+  WRAP_SELECT_TRIGGER,
   type ReportDocInlineChanges,
   type SelectOption,
 } from './survey-report-doc-sheet-layout'
@@ -42,7 +43,6 @@ interface ReportDocSheetRowProps {
   today: string
   canEdit: boolean
   busy: boolean
-  onToggle: () => void
   /** Trả Promise của lần lưu — ô chữ cần biết lưu hỏng để mở lại với chữ đã gõ. */
   onPatch: (changes: ReportDocInlineChanges) => Promise<unknown>
   onEdit: () => void
@@ -59,7 +59,6 @@ export function ReportDocSheetRow({
   today,
   canEdit,
   busy,
-  onToggle,
   onPatch,
   onEdit,
   onDelete,
@@ -124,29 +123,11 @@ export function ReportDocSheetRow({
   )
 
   return (
-    <TableRow className="align-top">
-      <TableCell className={cn('bg-card px-2 py-2', STICKY_CELL[0])}>
-        <button
-          type="button"
-          aria-label={done ? `Mở lại hồ sơ "${doc.title}"` : `Đánh dấu hoàn thành "${doc.title}"`}
-          title={locked ? 'Chờ hồ sơ tiên quyết hoàn thành trước' : ''}
-          disabled={readOnly || locked}
-          className={cn(
-            'grid size-5 place-items-center rounded-md border-2 transition-colors',
-            done
-              ? 'border-success bg-success text-white'
-              : 'border-input bg-muted/50 text-transparent hover:border-success/60',
-            (readOnly || locked) && 'cursor-not-allowed',
-          )}
-          onClick={onToggle}
-        >
-          <Check className="size-3.5" />
-        </button>
-      </TableCell>
-      <TableCell className={cn('bg-card px-2 py-2.5 text-muted-foreground tabular-nums', STICKY_CELL[1])}>
+    <TableRow>
+      <TableCell className={cn('bg-card px-2 py-2.5 text-muted-foreground tabular-nums', STICKY_CELL[0])}>
         {no}
       </TableCell>
-      <TableCell className={cn('bg-card px-2 py-1.5', STICKY_CELL[2])}>
+      <TableCell className={cn('bg-card px-2 py-1.5', STICKY_CELL[1])}>
         <div className="flex items-start gap-1">
           <InlineTextCell
             value={doc.title}
@@ -184,7 +165,7 @@ export function ReportDocSheetRow({
             <SelectTrigger
               size="sm"
               aria-label={`Giai đoạn của hồ sơ "${doc.title}"`}
-              className="h-7 w-full px-2 text-xs"
+              className={WRAP_SELECT_TRIGGER}
             >
               <SelectValue />
             </SelectTrigger>

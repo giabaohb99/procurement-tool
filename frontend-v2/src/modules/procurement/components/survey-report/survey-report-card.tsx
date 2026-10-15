@@ -598,7 +598,7 @@ export function SurveyReportCard({
               <ReportSummary docs={report.docs} />
 
               {/* Dạng «Bảng» (duoc-CR-612) chiếm TRỌN bề ngang, không kèm khung tracking: bảng
-                  15 cột, chừa 215px bên phải là bắt người dùng cuộn ngang sớm hơn. */}
+                  14 cột, chừa 215px bên phải là bắt người dùng cuộn ngang sớm hơn. */}
               {viewMode === 'table' ? (
                 <ReportDocSheetTable
                   report={report}
@@ -609,7 +609,6 @@ export function SurveyReportCard({
                   busy={busy}
                   ownerLabel={ownerLabel}
                   defaultAssigneeId={defaultAssigneeId}
-                  onToggleDoc={handleToggleDoc}
                   onPatchDoc={(doc, changes) =>
                     actions.patchDoc.mutateAsync({ docId: doc.id, changes })
                   }
