@@ -24,12 +24,11 @@ import {
 } from './survey-report-doc-sheet-layout'
 import { ReportDocSheetRow } from './survey-report-doc-sheet-row'
 
-//  Ba cột đầu (✓ · # · Hồ sơ) GHIM khi cuộn ngang — bảng rộng ~2100px, cuộn sang cột
+//  Hai cột đầu (# · Hồ sơ) GHIM khi cuộn ngang — bảng rộng ~2100px, cuộn sang cột
 //  ngày / kết quả mà mất tên hồ sơ thì không biết đang sửa hàng nào. Bề rộng từng cột (px). Bảng `table-fixed` + `min-w` tổng: khung hẹp thì cuộn ngang
 //  chứ không bóp cột tên còn một chữ mỗi dòng. KHÔNG đặt `width` cứng cho `<table>`
 //  (bẫy CR-102) — `min-w` đủ giữ cột, `w-full` cho bảng giãn khi khung rộng hơn.
 const COLUMNS = [
-  { key: 'done', label: '', srLabel: 'Hoàn thành', width: 36 },
   { key: 'no', label: '#', width: 36 },
   { key: 'title', label: 'Hồ sơ', width: 240 },
   { key: 'phase', label: 'Giai đoạn', width: 190 },
@@ -60,7 +59,6 @@ interface ReportDocSheetTableProps {
   ownerLabel: string
   /** Người thực hiện điền sẵn cho hồ sơ thêm từ hàng cuối = người đang đăng nhập. */
   defaultAssigneeId: number
-  onToggleDoc: (doc: SurveyReportDoc) => void
   onPatchDoc: (doc: SurveyReportDoc, changes: ReportDocInlineChanges) => Promise<unknown>
   onEditDoc: (doc: SurveyReportDoc) => void
   onDeleteDoc: (doc: SurveyReportDoc) => void
@@ -80,7 +78,6 @@ export function ReportDocSheetTable({
   busy,
   ownerLabel,
   defaultAssigneeId,
-  onToggleDoc,
   onPatchDoc,
   onEditDoc,
   onDeleteDoc,
@@ -164,7 +161,6 @@ export function ReportDocSheetTable({
               today={today}
               canEdit={canEdit}
               busy={busy}
-              onToggle={() => onToggleDoc(doc)}
               onPatch={(changes) => onPatchDoc(doc, changes)}
               onEdit={() => onEditDoc(doc)}
               onDelete={() => onDeleteDoc(doc)}
@@ -172,7 +168,7 @@ export function ReportDocSheetTable({
           ))}
           {canEdit && report.phases.length > 0 && (
             <ReportDocSheetAddRow
-              restColSpan={COLUMNS.length - 5}
+              restColSpan={COLUMNS.length - 4}
               phaseOptions={phaseOptions}
               itemOptions={itemOptions}
               defaultAssigneeId={defaultAssigneeId}

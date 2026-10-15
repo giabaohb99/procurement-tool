@@ -3,6 +3,7 @@
 // backend: PATCH thừa trường là ghi đè trường người khác vừa sửa; PATCH nhầm id là sửa nhầm hồ sơ.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SurveyReportDoc, SurveyRequestReport } from '../../types/survey-request-report'
@@ -189,12 +190,15 @@ describe('SurveyReportCard — table view with inline editing', () => {
     expect(apiPatch.mock.calls[1]).toEqual([`${BASE}/docs/1`, { required: true }])
   })
 
-  it('blocks ticking a locked doc as done and shows what it waits for', async () => {
+  //  duoc-CR-617 bỏ cột ô tick ✓ đầu bảng — luật «chờ tiên quyết thì chưa được Hoàn thành»
+  //  nay chỉ còn gác ở ô Trạng thái, nên phải kiểm ngay trên ô đó.
+  it('blocks choosing "Hoàn thành" for a locked doc and shows what it waits for', async () => {
+    const user = userEvent.setup()
     renderCard()
     await openCard()
-    expect(
-      screen.getByRole('button', { name: 'Đánh dấu hoàn thành "Giấy CN lưu hành"' }),
-    ).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /^Đánh dấu hoàn thành/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('combobox', { name: 'Trạng thái hồ sơ "Giấy CN lưu hành"' }))
+    expect(screen.getByRole('option', { name: 'Hoàn thành' })).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByTitle('Chờ hồ sơ tiên quyết: Giấy phép nhập khẩu')).toBeInTheDocument()
   })
 
@@ -256,7 +260,8 @@ describe('SurveyReportCard — table view with inline editing', () => {
     expect(screen.queryByRole('button', { name: /Xóa hồ sơ/ })).not.toBeInTheDocument()
     //  «Bắt buộc» là chữ, không phải ô tick mờ `disabled` (luật ô chỉ xem).
     expect(within(table).queryAllByRole('checkbox')).toHaveLength(0)
-    expect(screen.getByRole('button', { name: 'Đánh dấu hoàn thành "Hợp đồng nắp"' })).toBeDisabled()
+    //  Trạng thái là pill chữ, không phải ô chọn.
+    expect(screen.queryByRole('combobox', { name: /^Trạng thái hồ sơ/ })).not.toBeInTheDocument()
     //  Người chỉ xem không cần danh bạ — gọi là ăn 403 khi thiếu quyền nhân sự.
     expect(apiGet.mock.calls.some(([url]) => String(url).startsWith('/api/employees'))).toBe(false)
   })
@@ -281,8 +286,10 @@ describe('SurveyReportCard — table view with inline editing', () => {
     expect(apiPatch.mock.calls[1]).toEqual([`${BASE}/docs/3`, { file_note: 'hd.pdf' }])
   })
 
-  //  Lỗi rà soát H2: ✓ đi đường mutation KHÁC ô sửa — trước đây không xếp hàng chung.
-  it('queues the done tick behind a pending inline edit', async () => {
+  //  Lỗi rà soát H2: đổi trạng thái phải xếp hàng chung với ô sửa đang chờ (trước đây ✓ đi
+  //  đường mutation khác nên vượt lên). Cột ✓ bỏ ở duoc-CR-617 — kiểm qua ô Trạng thái.
+  it('queues a status change behind a pending inline edit', async () => {
+    const user = userEvent.setup()
     let releaseFirst: (value: SurveyRequestReport) => void = () => {}
     apiPatch
       .mockReset()
@@ -293,7 +300,8 @@ describe('SurveyReportCard — table view with inline editing', () => {
     renderCard()
     await openCard()
     fireEvent.click(screen.getByRole('checkbox', { name: 'Hồ sơ "Hợp đồng nắp" bắt buộc' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Đánh dấu hoàn thành "Giấy phép nhập khẩu"' }))
+    await user.click(screen.getByRole('combobox', { name: 'Trạng thái hồ sơ "Giấy phép nhập khẩu"' }))
+    await user.click(screen.getByRole('option', { name: 'Hoàn thành' }))
     await waitFor(() => expect(apiPatch).toHaveBeenCalledTimes(1))
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(apiPatch).toHaveBeenCalledTimes(1)

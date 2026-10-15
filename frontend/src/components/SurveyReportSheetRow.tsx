@@ -29,7 +29,8 @@ type Props = {
   onDelete: () => void
 }
 
-/** Một HÀNG hồ sơ của dạng «Bảng»: mọi ô sửa tại chỗ trừ tiên quyết. Người chỉ xem thấy chữ thường. */
+/** Một HÀNG hồ sơ của dạng «Bảng»: mọi ô sửa tại chỗ trừ tiên quyết. Người chỉ xem thấy chữ thường.
+ *  Không có ô tick ✓ đầu hàng (bỏ ở duoc-CR-617) — đánh dấu xong chọn «Hoàn thành» ở cột Trạng thái. */
 export default function SurveyReportSheetRow({
   no, doc, docsById, phaseOptions, itemOptions, employeeOptions, today, canEdit, busy, onPatch, onEdit, onDelete,
 }: Props) {
@@ -81,20 +82,8 @@ export default function SurveyReportSheetRow({
 
   return (
     <tr className={`srp-sheet-row${done ? ' done' : ''}`}>
-      <td className="stk stk0">
-        <button
-          type="button"
-          className={`srp-check${done ? ' done' : ''}`}
-          disabled={readOnly || locked}
-          aria-label={done ? `Mở lại hồ sơ "${doc.title}"` : `Đánh dấu hoàn thành "${doc.title}"`}
-          title={locked ? 'Chờ hồ sơ tiên quyết hoàn thành trước' : done ? 'Đánh dấu Đang làm' : 'Đánh dấu Hoàn thành'}
-          onClick={() => save({ status: done ? REPORT_DOC_DOING : REPORT_DOC_DONE })}
-        >
-          <i className="ti ti-check" />
-        </button>
-      </td>
-      <td className="stk stk1 srp-sheet-no">{no}</td>
-      <td className="stk stk2">
+      <td className="stk stk0 srp-sheet-no">{no}</td>
+      <td className="stk stk1">
         <div className="srp-sheet-titlebox">
           <SurveyReportInlineCell
             value={doc.title} label={`tên hồ sơ "${doc.title}"`} maxLength={255} required readOnly={readOnly}
@@ -107,14 +96,13 @@ export default function SurveyReportSheetRow({
       </td>
       <td>
         {readOnly ? <span>{phaseLabel}</span> : (
-          <select
-            className="srp-sheet-input"
-            aria-label={`Giai đoạn của hồ sơ "${doc.title}"`}
-            value={doc.phase_id}
-            onChange={(e) => { const v = Number(e.target.value); if (v && v !== doc.phase_id) save({ phase_id: v }) }}
-          >
-            {phaseOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          //  Ô chọn gốc của trình duyệt không xuống dòng được → tên giai đoạn dài bị cắt («…nhậ»).
+          //  Dùng cùng ô chọn với cột «Dòng hàng» bên cạnh để nhãn hiện đủ chữ.
+          <SearchSelect
+            variant="table" wrap autoSelectSingle={false}
+            value={String(doc.phase_id)} options={phaseOptions}
+            onChange={(v) => { const n = Number(v); if (n && n !== doc.phase_id) save({ phase_id: n }) }}
+          />
         )}
       </td>
       <td>

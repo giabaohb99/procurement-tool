@@ -75,7 +75,7 @@ export function ReportDocStatusSelect({
         size="sm"
         aria-label={`Trạng thái hồ sơ "${doc.title}"`}
         className={cn(
-          'h-6 shrink-0 gap-1 rounded-full border-0 px-2.5 text-[11px] font-semibold shadow-none',
+          'h-6 shrink-0 gap-1 rounded-full border-0 px-2.5 text-[11px] font-semibold shadow-none data-[size=sm]:h-6',
           pill,
           className,
         )}
