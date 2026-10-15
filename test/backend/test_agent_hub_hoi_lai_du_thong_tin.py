@@ -110,6 +110,9 @@ def test_the_nhap_khong_con_ngoac_va_hien_dieu_tu_hieu():
     assert "<b>Loại nghỉ:</b> Phép năm · 1 ngày" in card
     assert "Em đang hiểu là" in card and "• nghỉ cả ngày" in card
     assert "<code>tạo và gửi duyệt</code>" in card
+    #  Doc 20 §10 việc 4: dòng cuối là câu tự nhiên, không còn khối «Trả lời: • tạo — …».
+    assert "Trả lời:" not in card and card.rstrip().endswith("hoặc <code>thôi</code> để bỏ bản nháp.")
+    assert "Muốn đổi gì thì cứ nhắn em; ưng thì nhắn <code>tạo</code> để lưu nháp," in card
 
 
 @pytest.mark.parametrize("raw,expected", [

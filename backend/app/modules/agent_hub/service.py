@@ -4440,7 +4440,11 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[di
         out += [f"{i}. <b>{esc(x['code'])}</b> · {esc(x.get('title') or '')}" for i, x in enumerate(reuse, 1)]
         actions = actions[:1] + [("thêm vào 1", "thêm các dòng này vào phiếu nháp số 1"),
                                  ("ghi đè 1", "thay nội dung phiếu nháp số 1 bằng bản này")] + actions[1:]
-    out += ["", "<b>Trả lời:</b>"] + [f"• <code>{esc(cmd)}</code> — {esc(note)}" for cmd, note in actions]
+    #  Doc 20 §10 việc 4 (ai-CR-203): dòng cuối thành câu tự nhiên thay cho khối «Trả lời: • tạo — … • thôi — …»; giữ
+    #  <code> để chạm là chép.
+    asks = [f"<code>{esc(cmd)}</code> để {esc(note)}" for cmd, note in actions]
+    joined = asks[0] if len(asks) == 1 else ", ".join(asks[:-1]) + ", hoặc " + asks[-1]
+    out += ["", f"Muốn đổi gì thì cứ nhắn em; ưng thì nhắn {joined}."]
     return "\n".join(out)
 
 
