@@ -27,8 +27,8 @@ from app.core.config import settings
 from app.modules.assistant.provider.base import ToolDef
 
 from . import erp, manager, telegram, user_keys
-from .constants import (ACT_ANSWER, ACT_ASKED, ACT_DRAFT_WAIT, ACT_PLAN_ASK_WAIT, ACT_UNDO_WAIT, DIR_IN, SRC_TELEGRAM,
-                        ST_DONE, STAGE_ANSWER)
+from .constants import (ACT_ANSWER, ACT_ASKED, ACT_DRAFT_WAIT, ACT_PLAN_ASK_WAIT, ACT_RESEARCH_WAIT, ACT_UNDO_WAIT, DIR_IN,
+                        SCOPE_COMPANY, SRC_TELEGRAM, ST_DONE, STAGE_ANSWER)
 from .model import AgentMessage, AgentTask, AgentTaskItem
 from .timeutil import fmt_local, now_local
 
@@ -146,8 +146,30 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
     ToolDef(name="drop_draft",
             description="Người dùng không muốn tạo nữa: bỏ bản nháp đang chờ.",
             parameters={"type": "object", "properties": {}, "required": []}),
+    #  ai-CR-201 (B2, doc 20 §10): nối hoàn tác / nhắc việc / sửa mã vào lõi — model gọi bằng lời tự nhiên.
+    ToolDef(name="bot_changes",
+            description="Các lần bot đã ghi vào ERP cho người dùng (mới nhất trước): id, phiếu, việc, tóm tắt, còn hoàn tác "
+                        "được không (24 giờ). Dùng khi hỏi «bot vừa làm gì», «em đã ghi gì», hoặc trước khi hoàn tác.",
+            parameters={"type": "object", "properties": {}, "required": []}),
+    ToolDef(name="undo_change",
+            description="Rút lại (hoàn tác) MỘT lần bot ghi, theo id lấy từ bot_changes. CHỈ gọi sau khi người dùng đã xác "
+                        "nhận rút lại đúng dòng đó.",
+            parameters={"type": "object", "properties": {"change_id": {"type": "integer"}}, "required": ["change_id"]}),
+    ToolDef(name="set_reminder",
+            description="Đặt lời nhắc: đúng giờ bot nhắn lại vào chat này. luc = giờ theo lời người dùng («15h», «8h sáng "
+                        "mai», «30 phút nữa»); viec = nội dung nhắc.",
+            parameters={"type": "object", "properties": {"luc": {"type": "string"}, "viec": {"type": "string"}},
+                        "required": ["luc", "viec"]}),
 )
-LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS)
+#  Chỉ đưa cho chat được giao việc sửa mã (chủ bot + người được cấp quyền).
+CODE_TASK_TOOL = ToolDef(
+    name="create_code_task",
+    description="Ghi một yêu cầu SỬA PHẦN MỀM (vé AI-xxxx gửi máy sửa mã; máy sẽ gửi kế hoạch để duyệt). CHỈ gọi khi người "
+                "dùng nói rõ muốn sửa / thêm tính năng phần mềm VÀ đã đồng ý với câu bạn nhắc lại cách hiểu («em hiểu là "
+                "sửa màn X để Y, đúng không?»). mo_ta: đầy đủ màn nào, sai gì, muốn gì. Việc nghiệp vụ (task Dự án, phiếu) "
+                "KHÔNG phải sửa phần mềm.",
+    parameters={"type": "object", "properties": {"mo_ta": {"type": "string"}}, "required": ["mo_ta"]})
+LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS) | {CODE_TASK_TOOL.name}
 
 
 # ---------------------------------------------------------------------------
@@ -296,6 +318,11 @@ def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
                                                 AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
     if undo is not None and now and undo.created_at and now - undo.created_at <= DRAFT_WINDOW:
         lines.append("- Đang chờ người dùng xác nhận một lệnh hoàn tác («đúng» / «thôi»).")
+    research = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id,
+                                                    AgentMessage.action == ACT_RESEARCH_WAIT,
+                                                    AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
+    if research is not None and now and research.created_at and now - research.created_at <= timedelta(hours=2):
+        lines.append("- Đang chờ người dùng đồng ý chi phí một lượt nghiên cứu sâu («ok» / «thôi»).")
     for t in _open_code_tasks(db, chat_id):
         try:
             lines.append(f"- Vé sửa phần mềm {t.code}: {service.task_status_line(db, t)[:300]}")
@@ -398,7 +425,7 @@ def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[:limit].rsplit("\n", 1)[0] + "\n…(còn nữa, hỏi search_notes nếu cần)"
 
 
-def select_tools(db: Session, user, text: str) -> list[ToolDef]:
+def select_tools(db: Session, user, text: str, chat_id: str = "") -> list[ToolDef]:
     """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi."""
     from app.modules.assistant import tool_router
 
@@ -424,7 +451,16 @@ def select_tools(db: Session, user, text: str) -> list[ToolDef]:
     if "ke hoach" not in " ".join(fold(text or "").split()):
         defs = [d for d in defs if d.name not in PLAN_ONLY_TOOLS]
     names = {d.name for d in defs}
-    return defs + [t for t in LOCAL_TOOLS if t.name not in names]
+    out = defs + [t for t in LOCAL_TOOLS if t.name not in names]
+    if chat_id:
+        from . import service
+
+        try:
+            if service._can_order_code(db, chat_id):
+                out.append(CODE_TASK_TOOL)
+        except Exception:  # noqa: BLE001
+            pass
+    return out
 
 
 NEWS_TOPICS_MAX = 4
@@ -532,7 +568,102 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         else:
             done["note"] = "Bot đã báo «không tạo»; bạn chỉ cần một câu ngắn."
         return done
+    if name == "bot_changes":
+        keep = ("id", "when", "entity_label", "doc_code", "action_label", "summary", "can_undo", "undo_reason",
+                "undo_status_label")
+        return {"thay_doi": [{k: r.get(k) for k in keep} for r in (erp.my_changes(db, user, 10) or [])]}
+    if name == "undo_change":
+        from fastapi import HTTPException
+
+        try:
+            out = erp.undo_change(db, user, int(args.get("change_id") or 0))
+        except HTTPException as e:
+            return {"error": f"Không hoàn tác được: {e.detail}"}
+        url = str(out.get("url") or "")
+        return {"ok": True, "da_hoan_tac": out.get("summary"), "phieu": out.get("doc_code"),
+                "link": telegram.absolute_url(url) if url else ""}
+    if name == "set_reminder":
+        return _set_reminder(db, chat_id, str(args.get("luc") or ""), str(args.get("viec") or ""))
+    if name == "create_code_task":
+        return _create_code_task(db, chat_id, str(args.get("mo_ta") or ""))
     return {"error": f"Công cụ lạ {name}"}
+
+
+def _set_reminder(db: Session, chat_id: str, luc: str, viec: str) -> dict:
+    """ai-CR-201: «nhắc anh 3h chiều gọi NCC» nói vòng mà lối tắt chữ không bắt được → model gọi công cụ này."""
+    from . import chat_link, reminders, service
+    from .timeutil import to_utc
+
+    what = " ".join(viec.split())[:300]
+    if not what:
+        return {"error": "Chưa có nội dung cần nhắc."}
+    when = service.parse_schedule_time(luc, now_local())
+    if when is None:
+        return {"error": f"Chưa đọc được giờ «{luc}». Hỏi lại người dùng giờ cụ thể (vd 15h, 8h sáng mai)."}
+    if len(reminders.open_for_chat(db, chat_id)) >= reminders.MAX_OPEN:
+        return {"error": f"Chat này đã có {reminders.MAX_OPEN} lời nhắc chờ; bảo người dùng bỏ bớt («nhắc gì»)."}
+    link = chat_link.get_active_link(db, chat_id)
+    reminders.create(db, chat_id, link.user_id if link else 0, what, when)
+    db.commit()
+    return {"ok": True, "luc": fmt_local(to_utc(when)), "viec": what,
+            "note": "Đã đặt. Báo lại một câu ngắn giờ nhắc; xem / bỏ nhắc: nhắn «nhắc gì»."}
+
+
+def _create_code_task(db: Session, chat_id: str, mo_ta: str) -> dict:
+    """ai-CR-201 (doc 20 §3c): ghi yêu cầu sửa phần mềm thành một tin INBOX — vòng gom (triage) tạo vé AI-xxxx và
+    máy sửa mã gửi kế hoạch như đường cũ «ghi việc: …» (ai-CR-096). Chỉ chat được giao việc sửa mã."""
+    from . import service
+
+    if not service._can_order_code(db, chat_id):
+        return {"error": "Tài khoản này chưa được cấp quyền giao việc sửa phần mềm; nói người dùng nhờ đại ca cấp quyền."}
+    desc = " ".join(mo_ta.split())[:3000]
+    if len(desc) < 15:
+        return {"error": "Mô tả quá ngắn — hỏi rõ màn nào, sai gì, muốn gì rồi gọi lại."}
+    msg = service.log_message(db, DIR_IN, chat_id, 0, desc, action="", scope=SCOPE_COMPANY)
+    db.commit()
+    return {"ok": True, "tin": int(msg.id),
+            "note": "Đã ghi yêu cầu. Máy sửa mã sẽ gom thành vé AI-xxxx và gửi kế hoạch để duyệt trong ít phút; báo "
+                    "người dùng một câu, không bịa mã vé."}
+
+
+# ---------------------------------------------------------------------------
+# Lối tắt chữ (B2)
+# ---------------------------------------------------------------------------
+def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """ai-CR-201 (doc 20 §4: regex giữ làm LỐI TẮT không bắt buộc). B1 rẽ cả chat sang lõi mới nên mọi câu lệnh /
+    thẻ chờ của đường cũ (bản tin, nhắc việc, hoàn tác, nghiên cứu sâu, biên bản họp, kế hoạch việc, vé sửa mã, xác nhận
+    đề xuất, đúng / thôi của các thẻ…) không còn ai nhận. Chạy đúng chuỗi của đường cũ, BỎ `_draft_by_text` (nháp do
+    model quyết qua commit_draft) và bỏ bước đọc ý định. Trả True nếu đã xử xong, không gọi model."""
+    from . import change_undo, meeting_actions, meeting_drive, ops, service as s, work_plan
+
+    if telegram.is_allowed_chat(chat_id):
+        if (s._deep_research_by_text(db, chat_id, row, text) or s._doc_followup(db, chat_id, row, text)
+                or s._guide_by_text(db, chat_id, row, text) or s._link_by_text(db, chat_id, row, text)):
+            return True
+        if task_id := s._deploy_time_target(db, chat_id, row):
+            s._schedule_deploy(db, chat_id, row, text, task_id)
+            return True
+        if task_id := s._patch_question_target(db, chat_id, row):
+            s._ask_patch(db, chat_id, row, text, task_id)
+            return True
+        chain = (s._ok_by_text, s._grant_by_text, s._runner_by_text, ops.handle_text, s._memory_by_text, s._brief_by_text,
+                 s._work_due_by_text, s._ghi_viec_by_text, s._dev_request_by_text, s._keys_by_text, s._glossary_by_text,
+                 s._bell_by_text, s._reminder_by_text, meeting_actions.handle_text, meeting_drive.handle_text,
+                 change_undo.handle_text, work_plan.handle_text, s._proposal_by_text, s._my_drafts_by_text,
+                 s._choice_by_text, s._confirm_by_text, s._word_by_text, s._cost_by_text, s.route_task_command)
+        if any(fn(db, chat_id, row, text) for fn in chain):
+            return True
+        if not s.is_greeting(text) and (task_id := s._plan_answer_target(db, chat_id, row)):
+            s._answer_plan(db, chat_id, row, text, task_id)
+            return True
+        return False
+    chain = (s._deep_research_by_text, s._doc_followup, s._guide_by_text, meeting_actions.handle_text,
+             meeting_drive.handle_text, change_undo.handle_text, work_plan.handle_text, s._proposal_by_text,
+             s._my_drafts_by_text, s._word_by_text, s._cost_by_text, s._bell_by_text, s._reminder_by_text,
+             s._memory_by_text, s._brief_by_text, s._work_due_by_text, s._dev_request_by_text, s._keys_by_text)
+    if any(fn(db, chat_id, row, text) for fn in chain):
+        return True
+    return bool(s._over_daily_cap(db, chat_id, row) or s._link_by_text(db, chat_id, row, text))
 
 
 # ---------------------------------------------------------------------------
@@ -543,6 +674,11 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
 
     from . import service
 
+    #  ai-CR-201: lối tắt chữ của đường cũ chạy TRƯỚC (không tốn model). Chúng tự đóng dấu tin («lenh», hay để trống cho
+    #  vòng gom như «ghi việc: …»), nên phải chạy khi tin còn dấu rỗng.
+    if shortcut(db, chat_id, row, text):
+        db.commit()
+        return
     #  Đường cũ ghi tin chủ bot với action="" (để gom việc). Lõi mới KHÔNG gom việc từ tin thường → đóng dấu «hỏi» ngay,
     #  kẻo _triage_inbox biến mỗi câu chào thành một vé sửa mã.
     row.action = ACT_ASKED
@@ -570,7 +706,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         t0 = time.monotonic()
         system = build_system(db, chat_id, row, user, text)
         turns = history(db, chat_id, row.id, row.created_at, smalltalk=tool_router.is_smalltalk(text))
-        tools = select_tools(db, user, text)
+        tools = select_tools(db, user, text, chat_id)
         log.info("core_v2: dựng ngữ cảnh %.1f s", time.monotonic() - t0)
         msgs = [ChatMessage(role=t["role"], content=t["content"]) for t in turns] + [ChatMessage(role="user", content=text)]
         log.info("core_v2: system=%d ký tự · công cụ=%d · lịch sử=%d lượt", len(system), len(tools), len(turns))

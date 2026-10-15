@@ -228,5 +228,9 @@ trong chat (không thẻ riêng, `_offer_draft(silent=True)`); chặn «thẻ ma
 3. **Bộ hội thoại mẫu tự chạy** (§7) — 20 mẫu, chấm bằng model, chạy trước mỗi lần đẩy.
 4. Đổi dòng cuối nháp thành câu tự nhiên (đã làm trong core v2; đường cũ còn «Trả lời: tạo / thôi»).
 
+**Tiến độ Agent 4:**
+- 15/10 — việc 1 (B2) phần nối: **ai-CR-201** — `core_v2.shortcut` chạy lại chuỗi lối tắt chữ của đường cũ trước vòng tác tử
+  (bỏ `_draft_by_text` + đọc ý định); công cụ lõi mới `bot_changes`, `undo_change`, `set_reminder`, `create_code_task`.
+
 **Agent 1 làm:** gộp `agent-hub-bac-1` → erp-v2, dựng ERP api (nếu đổi `assistant/*`) rồi `~/agent-hub` trên VPS 2
 (`vps2_ssh.py`, kiểm việc dở + flock), đo lượt thật ở `tab_agent_run` (`artifact.core = v2`, `artifact.lane`), báo đại ca.

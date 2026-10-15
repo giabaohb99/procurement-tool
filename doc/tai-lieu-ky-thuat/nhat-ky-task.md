@@ -13358,6 +13358,20 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-201 | Lõi hội thoại mới bước 2: nối lại các tính năng cũ bị bỏ quên khi chuyển sang lõi mới
+- status: dang-lam
+- date: 2026-10-15
+Đại ca giao em làm tiếp lõi hội thoại mới theo mục 10 tài liệu 20. Đọc mã thấy khi bật lõi mới, mọi câu lệnh và thẻ chờ của
+đường cũ không còn ai nhận: bật bản tin, nhắc việc, bot vừa làm gì, hoàn tác, nghiên cứu sâu kèm thẻ hỏi chi phí, biên bản họp,
+kế hoạch việc, ok hay bỏ việc sửa mã, ghi việc, xác nhận thẻ sửa phiếu, xóa nháp, cấp quyền. Nay lõi mới chạy đúng chuỗi lối tắt
+chữ của đường cũ trước, khớp thì xử luôn không tốn lượt model; riêng xác nhận nháp vẫn để model quyết. Model có thêm bốn công cụ
+để hiểu cách nói tự nhiên: xem bot vừa ghi gì, rút lại một lần ghi sau khi người dùng xác nhận, đặt lời nhắc theo giờ nói vòng,
+và ghi yêu cầu sửa phần mềm cho máy sửa mã (chỉ người được giao việc sửa mã, phải nhắc lại cách hiểu trước). Bài kiểm của lõi mới
+tăng từ hai mươi ba lên ba mươi bảy bài, bộ bài bot và bài canh ranh giới xanh.
+
+Mã nguồn: agent_hub/core_v2.py (shortcut, bot_changes, undo_change, set_reminder, create_code_task); bài kiểm
+test_agent_hub_core_v2.py
+
 ## ai-CR-198 | Lõi hội thoại mới của bot, bước 1: nói chuyện như người, chạy song song dưới cờ
 - status: dang-lam
 - date: 2026-10-14

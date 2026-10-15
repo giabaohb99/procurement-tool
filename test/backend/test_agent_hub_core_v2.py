@@ -426,3 +426,145 @@ def test_cong_cu_ke_hoach_chi_khi_cau_noi_ke_hoach(db, monkeypatch):
     assert "draft_work_plan" not in task_tools and "draft_work_task" in task_tools
     assert "draft_work_plan" in plan_tools
     assert len(core_v2._clip("a\n" * 2000, 1200)) < 1300
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-201 — B2: nối tính năng cũ vào lõi (lối tắt chữ chạy trước + công cụ mới cho lời nói tự nhiên)
+# ---------------------------------------------------------------------------
+def _no_model(monkeypatch):
+    called: list = []
+    _install(monkeypatch, lambda msgs, tools, execute: called.append(1) or _result("không được gọi"))
+    return called
+
+
+def test_bot_vua_lam_gi_di_loi_tat_hoan_tac_khong_goi_model(db, chat, monkeypatch):
+    called = _no_model(monkeypatch)
+    sent: list[str] = []
+    monkeypatch.setattr(service, "reply", lambda db_, chat_id, text, **kw: sent.append(text))
+    monkeypatch.setattr(core_v2.erp, "my_changes", lambda db_, u, limit=20: [
+        {"id": 9, "when": "2026-10-15T08:00:00", "entity": "leave_request", "entity_label": "Đơn nghỉ phép", "doc_code": "NP011",
+         "action": 2, "action_label": "Sửa", "summary": "Sửa lý do NP011", "can_undo": True, "undo_reason": "",
+         "undo_status": 0, "undo_status_label": "", "url": "/hr/leave-requests/11"}])
+    row = _incoming(db, "bot vừa làm gì")
+    core_v2.handle(db, CHAT, row, row.body)
+    assert called == [] and sent and "NP011" in sent[-1]
+
+
+@pytest.mark.parametrize("owner,fn,text", [
+    (True, "_brief_by_text", "bật bản tin lúc 6h45"),
+    (True, "_reminder_by_text", "nhắc anh 15h gọi NCC Hòa Phát"),
+    (True, "_deep_research_by_text", "nghiên cứu sâu: giá phân bón quý 4"),
+    (True, "_ok_by_text", "ok"),
+    (True, "_proposal_by_text", "xác nhận sửa"),
+    (True, "route_task_command", "bỏ việc AI-0007"),
+    (False, "_brief_by_text", "bản tin của tôi"),
+    (False, "_reminder_by_text", "nhắc gì"),
+    (False, "_deep_research_by_text", "tổng hợp các tài liệu này"),
+])
+def test_loi_tat_chu_chay_truoc_vong_tac_tu(db, chat, monkeypatch, owner, fn, text):
+    if owner:
+        monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", CHAT)
+    called = _no_model(monkeypatch)
+    hit: list[str] = []
+
+    def fake(db_, chat_id, row, t):
+        hit.append(t)
+        row.action = "lenh"
+        return True
+
+    monkeypatch.setattr(service, fn, fake)
+    row = _incoming(db, text)
+    core_v2.handle(db, CHAT, row, row.body)
+    assert hit == [text] and called == [] and row.action == "lenh"
+
+
+def test_khong_khop_loi_tat_thi_vao_mo_hinh(db, chat, monkeypatch):
+    prov = _install(monkeypatch, lambda msgs, tools, execute: _result("Dạ, em xem rồi."))
+    row = _incoming(db, "công nợ Hòa Phát tháng này còn bao nhiêu")
+    core_v2.handle(db, CHAT, row, row.body)
+    assert prov.seen and row.action == ACT_ASKED
+
+
+def test_cong_cu_hoan_tac_va_so_thay_doi(db, chat, monkeypatch):
+    from fastapi import HTTPException
+
+    monkeypatch.setattr(core_v2.erp, "my_changes", lambda db_, u, limit=20: [
+        {"id": 9, "entity_label": "Đơn nghỉ phép", "doc_code": "NP011", "action_label": "Sửa", "summary": "Sửa lý do",
+         "can_undo": True, "undo_reason": "", "undo_status_label": "", "url": "/x", "when": "t"}])
+    undone: list[int] = []
+
+    def fake_undo(db_, u, change_id, source=0):
+        if change_id != 9:
+            raise HTTPException(409, "Phiếu đã đổi sau lúc bot ghi")
+        undone.append(change_id)
+        return {"summary": "Sửa lý do", "doc_code": "NP011", "url": "/hr/leave-requests/11"}
+
+    monkeypatch.setattr(core_v2.erp, "undo_change", fake_undo)
+    out: dict = {}
+
+    def script(msgs, tools, execute):
+        out["list"] = execute("bot_changes", {})
+        out["ok"] = execute("undo_change", {"change_id": 9})
+        out["bad"] = execute("undo_change", {"change_id": 3})
+        return _result("Em rút lại rồi.", [{"name": "undo_change", "args": {"change_id": 9}}])
+
+    prov = _install(monkeypatch, script)
+    row = _incoming(db, "rút lại cái sửa đơn nghỉ lúc nãy giúp anh")
+    core_v2.handle(db, CHAT, row, row.body)
+    assert {"bot_changes", "undo_change", "set_reminder"} <= set(prov.seen["tools"])
+    assert out["list"]["thay_doi"][0]["doc_code"] == "NP011" and "url" not in out["list"]["thay_doi"][0]
+    assert out["ok"]["ok"] and undone == [9] and out["ok"]["link"].endswith("/hr/leave-requests/11")
+    assert "Không hoàn tác được" in out["bad"]["error"] and "đã đổi" in out["bad"]["error"]
+
+
+def test_cong_cu_dat_loi_nhac(db, chat, monkeypatch):
+    from app.modules.agent_hub import chat_link
+    from app.modules.agent_hub.model import AgentReminder
+
+    monkeypatch.setattr(chat_link, "get_active_link", lambda db_, chat_id: SimpleNamespace(user_id=275))
+    out: dict = {}
+
+    def script(msgs, tools, execute):
+        out["ok"] = execute("set_reminder", {"luc": "15h", "viec": "gọi NCC Hòa Phát về giá thép"})
+        out["bad"] = execute("set_reminder", {"luc": "lúc nào đó", "viec": "x"})
+        return _result("Dạ, 15h em nhắc anh.", [{"name": "set_reminder", "args": {}}])
+
+    _install(monkeypatch, script)
+    row = _incoming(db, "chiều nay nhớ réo anh gọi Hòa Phát hỏi giá thép nhé, tầm 3 giờ")
+    core_v2.handle(db, CHAT, row, row.body)
+    rem = db.query(AgentReminder).filter(AgentReminder.chat_id == CHAT).one()
+    assert out["ok"]["ok"] and rem.text == "gọi NCC Hòa Phát về giá thép" and rem.user_id == 275
+    assert "Chưa đọc được giờ" in out["bad"]["error"]
+
+
+def test_cong_cu_ve_sua_ma_chi_cho_chat_duoc_giao(db, chat, monkeypatch):
+    out: dict = {}
+
+    def script(msgs, tools, execute):
+        out["tools"] = list(t.name for t in tools)
+        out["res"] = execute("create_code_task", {"mo_ta": "Màn danh sách đơn mua hàng: thêm ô lọc theo ngày giao hàng"})
+        return _result("Em ghi yêu cầu rồi.", [{"name": "create_code_task", "args": {}}])
+
+    #  Người liên kết không được cấp quyền: không có công cụ, gọi thẳng cũng bị chặn.
+    _install(monkeypatch, script)
+    row = _incoming(db, "màn đơn mua hàng thêm ô lọc ngày giao giúp anh")
+    core_v2.handle(db, CHAT, row, row.body)
+    assert "create_code_task" not in out["tools"] and "chưa được cấp quyền" in out["res"]["error"]
+    #  Chat chủ bot: có công cụ, ghi một tin INBOX (dấu rỗng) cho vòng gom tạo vé.
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", CHAT)
+    monkeypatch.setattr(service, "_ok_by_text", lambda *a: False)
+    row = _incoming(db, "màn đơn mua hàng thêm ô lọc ngày giao giúp anh, sửa mã luôn")
+    core_v2.handle(db, CHAT, row, row.body)
+    assert "create_code_task" in out["tools"] and out["res"]["ok"]
+    msg = db.get(AgentMessage, out["res"]["tin"])
+    assert msg.direction == DIR_IN and msg.action == "" and "ô lọc theo ngày giao" in msg.body
+    assert core_v2._run_local(db, CHAT, row, chat.user, "create_code_task", {"mo_ta": "ngắn"})["error"].startswith("Mô tả quá ngắn")
+
+
+def test_dang_do_co_the_cho_ok_nghien_cuu(db, chat):
+    from app.modules.agent_hub.constants import ACT_RESEARCH_WAIT
+
+    service.log_message(db, DIR_OUT, CHAT, 1, "{}", action=ACT_RESEARCH_WAIT)
+    db.commit()
+    row = _incoming(db, "x")
+    assert "nghiên cứu sâu" in core_v2.pending_block(db, CHAT, row.id, row.created_at)
