@@ -80,6 +80,8 @@ CORE_RULES = (
     "- Chỉ nói «đã làm» khi công cụ trả thành công; không có công cụ đúng việc thì nói thẳng chưa làm được, không dùng "
     "công cụ khác làm thay. Công cụ báo thiếu quyền thì nói thiếu quyền gì và gợi ý nhắn «quyền của tôi».\n"
     "- Không bao giờ bảo người dùng gõ SQL, lệnh máy chủ hay mã nguồn. Không ghi mật khẩu, khóa, số thẻ vào sổ nhớ.\n"
+    "- Số liệu ERP đổi theo ngày (ngày phép còn, công nợ, trạng thái đơn / phiếu, tồn kho, việc) LUÔN tra công cụ ở lượt "
+    "này; không lấy từ sổ nhớ, ghi chú hay lịch sử chat. Chưa có công cụ thì gọi more_tools.\n"
     "- Sổ nhớ: theo đúng khối sổ ghi nhớ riêng (kể cả xưng hô); nghe điều ỔN ĐỊNH về họ thì remember_fact và thêm một "
     "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước."
 )
@@ -570,6 +572,17 @@ def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[:limit].rsplit("\n", 1)[0] + "\n…(còn nữa, hỏi search_notes nếu cần)"
 
 
+#  Agent 1 đo 15/10 (run #237–239): câu không khớp nhóm đi qua more_tools tốn 2–3 lần gọi, 82–132k token, 15–24 s. Cách
+#  nói thường gặp thì gắn nhóm ngay ở lõi (không sửa tool_router dùng chung với Trợ lý web).
+CORE_GROUP_HINTS: tuple[tuple[re.Pattern, tuple[str, ...]], ...] = (
+    (re.compile(r"ke hoach"), ("work",)),     # «lập kế hoạch …» cần draft_work_plan
+    (re.compile(r"(?<!\w)off(?!\w)|nghi them|may (hom|bua|ngay) (nghi|off)|nghi duoc|con may (hom|bua)"), ("leave",)),
+    (re.compile(r"(?<!\w)(don|phieu|de xuat|yeu cau)(?!\w).{0,40}(toi dau|sao roi|the nao|duyet chua|xong chua|"
+                r"den dau)|(?<!\w)(don|phieu) cua (anh|em|toi|chi|minh)(?!\w)"), ("approval", "leave")),
+    (re.compile(r"ho so (cua|nhan su|nhan vien)|ai dang (giu|phu trach|lo)"), ("employee",)),
+)
+
+
 def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: list[str] | None = None) -> list[ToolDef]:
     """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi. `extra_groups`: nhóm model xin
     thêm qua more_tools (lượt chạy lại) — khi đó không đưa more_tools nữa."""
@@ -589,8 +602,10 @@ def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: 
         picked = None
     keep = set(picked or ()) | set(tool_router.CORE)        # không khớp nhóm nào: chỉ CORE (trước: nạp đủ 73)
     groups = list(extra_groups or ())
-    if "ke hoach" in _folded(text):
-        groups.append("work")                 # «lập kế hoạch …» không khớp nhóm nào của tool_router nhưng cần draft_work_plan
+    folded = " " + _folded(text) + " "
+    for rx, names in CORE_GROUP_HINTS:        # cách nói thường gặp mà tool_router chưa bắt — đi thẳng, khỏi more_tools
+        if rx.search(folded):
+            groups += [n for n in names if n not in groups]
     asked = set()
     for name, tools, _rx in tool_router.GROUPS:
         if name in groups:
@@ -1059,12 +1074,14 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                 msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
                 max_iters=MAX_ITERS, cache_system=True, stop_when=stop_when)
             more: list[str] = []
+            prior_calls: list = []                # công cụ của lần chạy đầu (more_tools) — gộp vào artifact
             if stopped.get("name") == MORE_TOOLS:
                 #  Model xin thêm nhóm công cụ: nạp nhóm đó, chạy lại MỘT lần (không đưa more_tools nữa).
                 more = list(stopped["result"].get("nhom") or [])
                 log.info("core_v2: model xin thêm nhóm %s", more)
                 stopped.clear()
                 first = result
+                prior_calls = list(first.tool_calls or [])
                 tools = select_tools(db, user, text, chat_id, extra_groups=more)
                 result = manager.get_provider().run_tools(
                     msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
@@ -1097,8 +1114,8 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         for c in drafts:                     # nháp đã nằm trong câu trả lời — chỉ ghi dòng chờ «tạo», không gửi thẻ
             service._offer_draft(db, chat_id, user, c, silent=True)
         service.deliver_tool_results(db, chat_id, user, [c for c in calls if c not in drafts])
-        run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in (result.tool_calls or [])
-                                                              if isinstance(c, dict)][:20], "tools_offered": len(tools),
+        run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in prior_calls + list(
+                            result.tool_calls or []) if isinstance(c, dict)][:20], "tools_offered": len(tools),
                         "stopped": stopped.get("name") or "", "more": more, "system_chars": len(system), "context_chars": len(context),
                         "cache_read": int(result.cache_read_tokens or 0), "cache_write": int(result.cache_write_tokens or 0),
                         "tools_chars": sum(len(t.description) + len(json.dumps(t.parameters, ensure_ascii=False)) for t in tools)}

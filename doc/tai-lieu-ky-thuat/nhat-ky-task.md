@@ -13379,7 +13379,8 @@ bot tạo thật một việc (đã hoàn tác); nay bot chỉ tạo khi tin là
 Gửi lại y câu thì bot tự hỏi tạo luôn hay soạn lại mà không gọi model thêm. Câu không thuộc nhóm nào trước đây nạp cả bảy
 mươi ba công cụ, nay chỉ nạp bộ lõi và để model xin thêm nhóm khi cần. Bot tự đổi thứ trong tuần ra ngày (thứ sáu là thứ
 sáu gần nhất tính từ mai, có chữ tuần sau mới sang tuần kế) vì model từng ghi nhầm sang tuần sau. Tin nháp cũ trong lịch sử
-chỉ giữ dòng đầu.
+chỉ giữ dòng đầu. Việc xin thêm công cụ chạy đúng nhưng tốn hai ba lần gọi, nên các cách nói hay gặp như off, đơn của anh
+tới đâu rồi, hồ sơ của ai được gắn sẵn nhóm công cụ; số liệu đổi theo ngày như ngày phép, công nợ luôn phải tra lại.
 
 Mã nguồn: agent_hub/core_v2.py (V2_TOOL_DESC, compact_defs, _stop_after, draft_reply); bài kiểm test_agent_hub_core_v2.py
 
