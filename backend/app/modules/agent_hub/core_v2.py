@@ -28,7 +28,7 @@ from app.modules.assistant.provider.base import ToolDef
 
 from . import erp, manager, telegram, user_keys
 from .constants import (ACT_ANSWER, ACT_ASKED, ACT_DRAFT_WAIT, ACT_PLAN_ASK_WAIT, ACT_RESEARCH_WAIT, ACT_UNDO_WAIT, DIR_IN,
-                        SCOPE_COMPANY, SRC_TELEGRAM, ST_DONE, STAGE_ANSWER)
+                        DIR_OUT, SCOPE_COMPANY, SRC_TELEGRAM, ST_DONE, STAGE_ANSWER)
 from .model import AgentMessage, AgentTask, AgentTaskItem
 from .timeutil import fmt_local, now_local
 
@@ -450,6 +450,7 @@ def select_tools(db: Session, user, text: str, chat_id: str = "") -> list[ToolDe
 
     if "ke hoach" not in " ".join(fold(text or "").split()):
         defs = [d for d in defs if d.name not in PLAN_ONLY_TOOLS]
+    defs = compact_defs(defs)                    # ai-CR-202: mô tả viết cho chat + tham số còn câu đầu
     names = {d.name for d in defs}
     out = defs + [t for t in LOCAL_TOOLS if t.name not in names]
     if chat_id:
@@ -545,7 +546,8 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         draft = dict(info.get("draft") or {})
         draft.update(changes)
         service._offer_draft(db, chat_id, user, {"name": info.get("tool") or "", "draft": draft}, silent=True)
-        return {"ok": True, "draft": draft, "tom_tat_se_luu": _summary(info.get("tool") or "", draft),
+        return {"ok": True, "tool": info.get("tool") or "", "draft": draft,
+                "tom_tat_se_luu": _summary(info.get("tool") or "", draft),
                 "note": "Đã sửa nháp. Trình bày lại bản nháp trong câu trả lời theo tom_tat_se_luu."}
     if name in ("commit_draft", "drop_draft"):
         pending, info = _pending_draft(db, chat_id, row.id, now)
@@ -624,6 +626,125 @@ def _create_code_task(db: Session, chat_id: str, mo_ta: str) -> dict:
     return {"ok": True, "tin": int(msg.id),
             "note": "Đã ghi yêu cầu. Máy sửa mã sẽ gom thành vé AI-xxxx và gửi kế hoạch để duyệt trong ít phút; báo "
                     "người dùng một câu, không bịa mã vé."}
+
+
+# ---------------------------------------------------------------------------
+# Gọn token (ai-CR-202, doc 20 §10 việc 2)
+# ---------------------------------------------------------------------------
+#  Mô tả công cụ ERP viết cho Trợ lý WEB («giao diện hiện nút mở form… báo người dùng bấm nút») — sai với chat (nháp nằm
+#  trong chat, ghi bằng commit_draft) và là phần lớn nhất của lời nhắc (~12k ký tự với 15 công cụ). Lõi mới dùng bản
+#  ngắn viết cho chat; web giữ nguyên bản cũ.
+V2_TOOL_DESC: dict[str, str] = {
+    "draft_purchase_request": (
+        "Soạn NHÁP Yêu cầu mua hàng (YCMH) — chưa ghi gì. Người yêu cầu, phòng, công ty nhận hóa đơn tự điền theo hồ sơ (đừng "
+        "hỏi). Phải có mặt hàng, số lượng (+ đơn vị), mục đích; thiếu thì hỏi MỘT lượt kèm luôn ngày cần hàng, kho nhận, thông "
+        "số, có mua cho pháp nhân khác không (có thì điền company). Không bịa giá trị chưa nói. Đủ thì gọi ngay."),
+    "draft_survey_request": (
+        "Soạn NHÁP Yêu cầu báo giá (YCBG) — chưa ghi gì. Người yêu cầu, phòng, công ty tự điền (đừng hỏi). Phải có mặt hàng cần "
+        "hỏi giá, số lượng dự kiến (+ đơn vị; chưa biết thì 0), mục đích; thiếu thì hỏi MỘT lượt kèm ngày cần kết quả "
+        "(result_due_date), thông số, yêu cầu khác, pháp nhân khác. Không bịa. Đủ thì gọi ngay."),
+    "draft_leave_request": (
+        "Soạn NHÁP đơn nghỉ phép của CHÍNH người hỏi — chưa ghi gì. «nghỉ việc ngày X» = xin nghỉ phép ngày đó. Gọi khi đã biết "
+        "NGÀY nghỉ; lý do / loại nghỉ chưa nói thì để trống, tool trả need_info để hỏi một lượt. Nửa ngày thì hỏi buổi. Có "
+        "warnings (trùng đơn, thiếu quỹ phép) thì đọc nguyên. Không dùng cho Giấy nghỉ phép ở Văn thư (hệ tự sinh)."),
+    "draft_payment_request": (
+        "Soạn NHÁP Yêu cầu thanh toán (YCTT) từ khoản CÔNG NỢ CÒN PHẢI TRẢ — không tạo trong chat; bot gửi link form web điền "
+        "sẵn. Đã gọi payable_lookup thì truyền payable_ids; chưa thì truyền supplier (+ company + một cặp ngày: due_from/due_to "
+        "= hạn trả, invoice_from/invoice_to = ngày hóa đơn, date_from/date_to = ngày phát sinh). NCC có tiền trả trước treo "
+        "thì nháp chia sẵn phần cấn trừ."),
+    "propose_document_update": (
+        "ĐỀ XUẤT sửa một phiếu ĐÃ CÓ — chưa ghi; bot gửi thẻ cũ → mới, người dùng nhắn «xác nhận» (hoặc bấm nút) mới ghi. Sửa "
+        "được: YCMH mục đích / ngày cần hàng / ghi chú; YCBG mục đích / ghi chú; dòng hàng YCMH, YCBG qua line_ops; đơn nghỉ từ "
+        "ngày / đến ngày / loại / lý do (chỉ Nháp hoặc Bị trả lại); YCTT 3 câu chữ bản in. KHÔNG sửa giá, NCC, số tiền, trạng "
+        "thái, hạn chi — nói rõ phải sửa tay trên form. Chỉ điền trường được đổi với giá trị MỚI; thiếu thì hỏi."),
+    "export_report_file": (
+        "Xuất nội dung đã tổng hợp thành tệp Word (.docx) chuẩn DEGO, bot gửi tệp vào chat. Muốn Excel thì export_excel_file. "
+        "Chỉ đổ số liệu THẬT đã tra trong hội thoại vào sections; được dùng <strong> và <br>."),
+    "payable_lookup": (
+        "Tra CÔNG NỢ PHẢI TRẢ nhà cung cấp. Mặc định chỉ khoản CÒN PHẢI TRẢ; summary tính trên toàn bộ kết quả lọc; mỗi khoản "
+        "có payable_id (cho draft_payment_request). Ba cặp ngày: date_from/date_to = ngày PHÁT SINH; due_from/due_to = HẠN TRẢ "
+        "(«cần trả tháng này»); invoice_from/invoice_to = NGÀY HÓA ĐƠN. «Bao nhiêu NCC / ai nợ nhiều nhất» → group_by="
+        "supplier|company, đừng tự đếm danh sách. Có prepay_hanging thì đọc hint gợi ý cấn trừ."),
+    "supplier_scorecard": (
+        "CHẤM ĐIỂM nhà cung cấp 0–100 cho một mặt hàng từ dữ liệu ERP (giá 40 · ổn định 20 · giao đúng hạn 20 · pháp lý 20). "
+        "Truyền product / product_code, hoặc supplier_codes / supplier_names để so NCC cụ thể. Trả lời: bảng điểm từ items, "
+        "nêu weights, data_gaps là thiếu dữ liệu chứ không phải NCC kém, luôn nhắc note (AI chỉ gợi ý). with_web=true khi muốn "
+        "tìm hiểu thêm trên web (uy tín, ISO) — chỉ tham khảo, không cộng điểm, dẫn nguồn."),
+    "customs_buy_timing": (
+        "Tư vấn THỜI ĐIỂM MUA một mặt hàng / hoạt chất theo giá nhập khẩu từng tháng (tờ khai hải quan). Trả lời bắt buộc: giá "
+        "tháng gần nhất thấp / trung bình / cao so các tháng và xu hướng 3 tháng (now.*); now.reliable=false thì lấy "
+        "now.reference_month; now.stale thì nói dữ liệu cũ; chỉ đề xuất recommended_month; nhắc caveat + confidence (thấp thì "
+        "không khẳng định mùa vụ); nói đây chỉ là góc nhìn giá, chưa xét tồn kho / nhu cầu; nêu alerts."),
+}
+PARAM_DESC_MAX = 120
+
+
+def _short_param(desc: str) -> str:
+    """Mô tả tham số: giữ câu đầu, trần PARAM_DESC_MAX ký tự."""
+    desc = " ".join(str(desc or "").split())
+    if len(desc) <= PARAM_DESC_MAX:
+        return desc
+    for sep in (". ", " — ", "; "):
+        head = desc.split(sep, 1)[0]
+        if 20 <= len(head) <= PARAM_DESC_MAX:
+            return head
+    return desc[:PARAM_DESC_MAX - 1].rsplit(" ", 1)[0] + "…"
+
+
+def _compact_schema(node):
+    if isinstance(node, dict):
+        out = {}
+        for k, v in node.items():
+            if k == "description" and isinstance(v, str):
+                out[k] = _short_param(v)
+            else:
+                out[k] = _compact_schema(v)
+        return out
+    if isinstance(node, list):
+        return [_compact_schema(x) for x in node]
+    return node
+
+
+def compact_defs(defs: list[ToolDef]) -> list[ToolDef]:
+    """Bản ngắn cho lõi mới: mô tả viết riêng cho chat (V2_TOOL_DESC) + mô tả tham số còn câu đầu."""
+    return [ToolDef(name=d.name, description=V2_TOOL_DESC.get(d.name, d.description),
+                    parameters=_compact_schema(d.parameters)) for d in defs]
+
+
+def _stop_after(name: str, result) -> bool:
+    """ai-CR-202: dừng vòng công cụ NGAY sau khi soạn / sửa / ghi / bỏ nháp — câu trả lời do bot dựng từ tom_tat_se_luu
+    (soạn, sửa) hoặc đường cũ đã báo kết quả (ghi, bỏ). Trước đây model được gọi thêm một lượt chỉ để chép lại bản tóm tắt
+    — một lượt soạn nháp tốn 2 × (14k token trạm + ~30k của mình)."""
+    if not isinstance(result, dict) or result.get("error") or result.get("need_info"):
+        return False
+    if name in ("update_draft", "commit_draft", "drop_draft"):
+        return bool(result.get("ok"))
+    return isinstance(result.get("draft"), dict) and _chat_draft(name) and bool(result.get("tom_tat_se_luu"))
+
+
+def _bold_label(line: str) -> str:
+    label, sep, value = str(line).partition(": ")
+    return f"**{label}:** {value}" if sep and len(label) <= 30 else str(line)
+
+
+def draft_reply(chat_id: str, name: str, result: dict) -> str:
+    """Tin nháp do bot dựng (không gọi model lần hai): một câu mở, mỗi ô một dòng, điều em tự hiểu, lưu ý, một câu hỏi."""
+    from . import draft_create
+
+    tool = str(result.get("tool") or name)
+    label = draft_create.LABELS.get(draft_create.kind_of(tool), "phiếu")
+    draft = result.get("draft") or {}
+    head = f"Em sửa nháp {label} rồi:" if name == "update_draft" else f"Em soạn nháp {label} như sau:"
+    lines = [head] + [f"- {_bold_label(x)}" for x in result.get("tom_tat_se_luu") or []]
+    assumed = [str(a) for a in draft.get("assumptions") or [] if str(a).strip()]
+    if assumed:
+        lines += ["", "Em đang tạm hiểu: " + "; ".join(assumed[:5]) + "."]
+    warns = [str(w) for w in result.get("warnings") or [] if str(w).strip()]
+    if warns:
+        lines += ["", "Lưu ý: " + " ".join(warns[:4])]
+    who = "Đại ca" if telegram.is_allowed_chat(chat_id) else "Anh/chị"
+    lines += ["", f"{who} muốn đổi gì không? Ưng thì nhắn **tạo**, hoặc bảo em tạo luôn."]
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -723,14 +844,22 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                 log.exception("core_v2: công cụ %s hỏng", name)
                 return {"error": f"Công cụ {name} lỗi: {type(e).__name__}: {str(e)[:200]}"}
 
+        stopped: dict = {}
+
+        def stop_when(name: str, res) -> bool:
+            if _stop_after(name, res):
+                stopped.update(name=name, result=res)
+                return True
+            return False
+
         lane = lane_of(text, {t.name for t in tools})
         with user_keys.prefer(route_providers(lane)):
             ref = user_keys.active_ref()
             log.info("core_v2: luồng %s → %s", lane, getattr(ref, "model", "") or getattr(ref, "provider", ""))
             result = manager.get_provider().run_tools(
                 msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
-                max_iters=MAX_ITERS, cache_system=True)
-            if _phantom_card(result):
+                max_iters=MAX_ITERS, cache_system=True, stop_when=stop_when)
+            if not stopped and _phantom_card(result):
                 log.warning("core_v2: model nói tới thẻ mà không có nháp — viết lại một lần")
                 first = result
                 result = manager.get_provider().run_tools(
@@ -741,15 +870,25 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                 result.input_tokens += first.input_tokens
                 result.output_tokens += first.output_tokens
             service.finish_run(db, run, result=result)
-        answer = (result.text or "").strip() or "Em đã làm xong phần đó."
-        service.reply(db, chat_id, answer, markdown=True, action=ACT_ANSWER)
+        #  Đã dừng sau công cụ nháp thì chữ model (nếu có) chỉ là câu dạo trước khi gọi — bỏ, bot tự dựng tin.
+        if stopped.get("name") in ("commit_draft", "drop_draft"):
+            #  Đường cũ đã báo «Đã tạo …» / «không tạo» — chỉ ghi một dòng sổ để lịch sử còn lượt của bot.
+            service.log_message(db, DIR_OUT, chat_id, 0,
+                                "(em đã tạo xong theo nháp)" if stopped["name"] == "commit_draft" else "(em đã bỏ nháp)",
+                                action=ACT_ANSWER)
+        else:
+            answer = (draft_reply(chat_id, stopped["name"], stopped["result"]) if stopped
+                      else (result.text or "").strip())
+            service.reply(db, chat_id, answer or "Em đã làm xong phần đó.", markdown=True, action=ACT_ANSWER)
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]
         drafts = [c for c in calls if isinstance(c.get("draft"), dict) and _chat_draft(c.get("name"))]
         for c in drafts:                     # nháp đã nằm trong câu trả lời — chỉ ghi dòng chờ «tạo», không gửi thẻ
             service._offer_draft(db, chat_id, user, c, silent=True)
         service.deliver_tool_results(db, chat_id, user, [c for c in calls if c not in drafts])
         run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in (result.tool_calls or [])
-                                                              if isinstance(c, dict)][:20], "tools_offered": len(tools)}
+                                                              if isinstance(c, dict)][:20], "tools_offered": len(tools),
+                        "stopped": stopped.get("name") or "", "system_chars": len(system),
+                        "tools_chars": sum(len(t.description) + len(json.dumps(t.parameters, ensure_ascii=False)) for t in tools)}
         db.commit()
     except Exception as e:  # noqa: BLE001
         db.rollback()

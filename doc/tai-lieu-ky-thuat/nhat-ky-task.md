@@ -13358,8 +13358,21 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
-## ai-CR-201 | Lõi hội thoại mới bước 2: nối lại các tính năng cũ bị bỏ quên khi chuyển sang lõi mới
+## ai-CR-202 | Lõi hội thoại mới: soạn nháp chỉ còn một lần gọi model, mô tả công cụ ngắn lại cho chat
 - status: dang-lam
+- date: 2026-10-15
+Agent 1 đo thấy mỗi lần bot soạn nháp phải gọi model hai lần, lần sau chỉ để chép lại bản tóm tắt, mỗi lần mang theo
+khoảng bốn mươi bốn nghìn token. Nay bot dừng ngay sau khi soạn, sửa, tạo hoặc bỏ nháp, rồi tự dựng tin nháp: một câu mở,
+mỗi ô một dòng, điều bot đang tạm hiểu, lưu ý và một câu hỏi cuối tự nhiên mời nhắn tạo. Mô tả của chín công cụ dài nhất
+vốn viết cho Trợ lý trên web (bảo người dùng bấm nút trên form) nay có bản ngắn viết riêng cho chat, mô tả từng ô chỉ giữ
+câu đầu; tổng độ dài công cụ giảm từ khoảng bảy mươi tư nghìn xuống sáu mươi lăm nghìn ký tự, riêng chín công cụ lớn giảm
+một phần ba. Sổ lượt chạy ghi thêm độ dài lời nhắc và công cụ để đo trước sau. Bài kiểm lõi mới thêm bốn bài, bốn mươi mốt
+bài xanh.
+
+Mã nguồn: agent_hub/core_v2.py (V2_TOOL_DESC, compact_defs, _stop_after, draft_reply); bài kiểm test_agent_hub_core_v2.py
+
+## ai-CR-201 | Lõi hội thoại mới bước 2: nối lại các tính năng cũ bị bỏ quên khi chuyển sang lõi mới
+- status: xong
 - date: 2026-10-15
 Đại ca giao em làm tiếp lõi hội thoại mới theo mục 10 tài liệu 20. Đọc mã thấy khi bật lõi mới, mọi câu lệnh và thẻ chờ của
 đường cũ không còn ai nhận: bật bản tin, nhắc việc, bot vừa làm gì, hoàn tác, nghiên cứu sâu kèm thẻ hỏi chi phí, biên bản họp,
@@ -13367,10 +13380,11 @@ kế hoạch việc, ok hay bỏ việc sửa mã, ghi việc, xác nhận thẻ
 chữ của đường cũ trước, khớp thì xử luôn không tốn lượt model; riêng xác nhận nháp vẫn để model quyết. Model có thêm bốn công cụ
 để hiểu cách nói tự nhiên: xem bot vừa ghi gì, rút lại một lần ghi sau khi người dùng xác nhận, đặt lời nhắc theo giờ nói vòng,
 và ghi yêu cầu sửa phần mềm cho máy sửa mã (chỉ người được giao việc sửa mã, phải nhắc lại cách hiểu trước). Bài kiểm của lõi mới
-tăng từ hai mươi ba lên ba mươi bảy bài, bộ bài bot và bài canh ranh giới xanh.
+tăng từ hai mươi ba lên ba mươi bảy bài, bộ bài bot và bài canh ranh giới xanh. Agent 1 đã dựng lên dev ngày 15/10.
 
 Mã nguồn: agent_hub/core_v2.py (shortcut, bot_changes, undo_change, set_reminder, create_code_task); bài kiểm
 test_agent_hub_core_v2.py
+Commit: ddbd020c
 
 ## ai-CR-198 | Lõi hội thoại mới của bot, bước 1: nói chuyện như người, chạy song song dưới cờ
 - status: dang-lam

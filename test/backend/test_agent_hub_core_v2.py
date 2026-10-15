@@ -568,3 +568,94 @@ def test_dang_do_co_the_cho_ok_nghien_cuu(db, chat):
     db.commit()
     row = _incoming(db, "x")
     assert "nghiên cứu sâu" in core_v2.pending_block(db, CHAT, row.id, row.created_at)
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-202 — gọn token: mô tả công cụ viết riêng cho chat + dừng vòng ngay sau công cụ nháp
+# ---------------------------------------------------------------------------
+class StopProvider(FakeProvider):
+    """Như provider thật: gọi `stop_when` sau mỗi công cụ; True thì trả kết quả rỗng chữ, không gọi model lượt hai."""
+
+    def __init__(self, calls):
+        super().__init__(None)
+        self.calls = calls                   # [(tên, tham số)] model gọi lần lượt
+        self.rounds = 0
+
+    def run_tools(self, msgs, *, tools, execute, system=None, stop_when=None, **kw):
+        self.seen = {"system": system or "", "tools": [t.name for t in tools]}
+        done = []
+        for name, args in self.calls:
+            self.rounds += 1
+            res = execute(name, args)
+            done.append({"name": name, **({"draft": res["draft"]} if isinstance(res.get("draft"), dict) else {})})
+            if stop_when is not None and stop_when(name, res):
+                return _result("Dạ để em soạn.", done)       # chữ dạo trước khi gọi công cụ — phải bị bỏ
+        self.rounds += 1
+        return _result("Câu trả lời của model.", done)
+
+
+def test_mo_ta_gon_cho_chat_khong_dung_ban_web(db, monkeypatch):
+    from app.modules.assistant.provider.base import ToolDef
+
+    long_param = "Mã nhà cung cấp cần tra. " + "Giải thích rất dài cho Trợ lý web, " * 10
+    web = [ToolDef(name="draft_purchase_request", description="Giao diện hiện nút mở form. " * 40,
+                   parameters={"type": "object", "properties": {"supplier": {"type": "string", "description": long_param},
+                                                                "items": {"type": "array", "items": {"type": "object",
+                                                                "properties": {"qty": {"description": long_param}}}}}}),
+           ToolDef(name="my_work_tasks", description="Việc của tôi.", parameters={})]
+    monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: web)
+    out = {t.name: t for t in core_v2.select_tools(db, SimpleNamespace(id=1), "tạo yêu cầu mua hàng 5 thùng giấy A4")}
+    pr = out["draft_purchase_request"]
+    assert pr.description == core_v2.V2_TOOL_DESC["draft_purchase_request"] and "nút mở form" not in pr.description
+    assert pr.parameters["properties"]["supplier"]["description"] == "Mã nhà cung cấp cần tra"
+    assert len(pr.parameters["properties"]["items"]["items"]["properties"]["qty"]["description"]) <= core_v2.PARAM_DESC_MAX
+    assert core_v2.compact_defs([web[1]])[0].description == "Việc của tôi."           # công cụ không có bản ngắn: giữ
+    assert web[0].parameters["properties"]["supplier"]["description"] == long_param      # bản web không bị đụng
+    size = lambda d: len(d.description) + len(json.dumps(d.parameters, ensure_ascii=False))
+    assert size(pr) < size(web[0]) / 3
+
+
+def test_soan_nhap_dung_vong_va_bot_tu_dung_tin(db, chat, monkeypatch):
+    """Trước: một lượt soạn nháp = 2 lần gọi model (lần hai chỉ chép tom_tat_se_luu). Nay một lần, tin do bot dựng."""
+    row = _incoming(db, "tạo task A, ERP v2, hạn thứ sáu")
+    monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: {
+        "draft": {"title": "A", "due_date": "2026-10-16", "assumptions": ["giao cho anh"]}})
+    monkeypatch.setattr(core_v2, "_summary", lambda tool, draft: ["Việc: A", "Hạn: 16/10/2026 (thứ Sáu)"])
+    prov = StopProvider([("draft_work_task", {"title": "A"}), ("my_work_tasks", {})])
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: prov)
+
+    core_v2.handle(db, CHAT, row, "tạo task A, ERP v2, hạn thứ sáu")
+
+    assert prov.rounds == 1                                                   # không gọi công cụ thứ hai, không lượt chốt
+    assert len(chat.sent) == 1
+    msg = chat.sent[0]
+    assert "Em soạn nháp công việc (Dự án)" in msg and "<b>Việc:</b> A" in msg and "Dạ để em soạn" not in msg
+    assert "giao cho anh" in msg and "<b>tạo</b>" in msg and "Trả lời: tạo" not in msg
+    assert db.query(AgentMessage).filter(AgentMessage.action == ACT_DRAFT_WAIT).count() == 1
+    run = db.query(AgentRun).order_by(AgentRun.id.desc()).first()
+    assert run.artifact["stopped"] == "draft_work_task" and run.artifact["tools_chars"] >= 0
+
+
+def test_ghi_nhap_khong_gui_them_cau_model(db, chat, monkeypatch):
+    service.log_message(db, DIR_OUT, CHAT, 0, json.dumps({
+        "tool": "draft_work_task", "kind": "work_task", "user_id": 275, "draft": {"title": "A"}}, ensure_ascii=False),
+        action=ACT_DRAFT_WAIT)
+    db.commit()
+    row = _incoming(db, "ok tạo đi")
+    monkeypatch.setattr(service, "_draft_by_text", lambda db_, chat_id, row_, phrase: True)
+    prov = StopProvider([("commit_draft", {})])
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: prov)
+
+    core_v2.handle(db, CHAT, row, "ok tạo đi")
+
+    assert prov.rounds == 1 and chat.sent == []                     # đường cũ (giả) tự báo «Đã tạo»; lõi không nói thêm
+    note = db.query(AgentMessage).filter(AgentMessage.action == ACT_ANSWER).one()
+    assert "tạo xong" in note.body
+
+
+def test_cong_cu_hoi_them_thi_khong_dung_vong():
+    assert not core_v2._stop_after("draft_leave_request", {"need_info": [{"field": "reason"}], "note": "hỏi"})
+    assert not core_v2._stop_after("draft_work_task", {"error": "thiếu quyền"})
+    assert not core_v2._stop_after("draft_payment_request", {"draft": {"payable_ids": [1]}, "tom_tat_se_luu": ["x"]})
+    assert core_v2._stop_after("draft_work_task", {"draft": {"title": "A"}, "tom_tat_se_luu": ["Việc: A"]})
+    assert core_v2._stop_after("update_draft", {"ok": True}) and not core_v2._stop_after("update_draft", {"error": "x"})

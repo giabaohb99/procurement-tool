@@ -231,6 +231,11 @@ trong chat (không thẻ riêng, `_offer_draft(silent=True)`); chặn «thẻ ma
 **Tiến độ Agent 4:**
 - 15/10 — việc 1 (B2) phần nối: **ai-CR-201** — `core_v2.shortcut` chạy lại chuỗi lối tắt chữ của đường cũ trước vòng tác tử
   (bỏ `_draft_by_text` + đọc ý định); công cụ lõi mới `bot_changes`, `undo_change`, `set_reminder`, `create_code_task`.
+  Đã lên dev 15/10 (ddbd020c).
+- 15/10 — việc 2 (gọn token): **ai-CR-202** — `V2_TOOL_DESC` + `compact_defs` (9 công cụ lớn −34%, 73 công cụ 74,3k → 65,1k
+  ký tự); `stop_when` dừng vòng sau soạn / sửa / ghi / bỏ nháp, tin nháp do bot dựng (`draft_reply`) → lượt soạn nháp còn
+  MỘT lần gọi model. `artifact` thêm `stopped`, `system_chars`, `tools_chars`. Việc 4 (dòng cuối tự nhiên) xong luôn cho lõi
+  mới; đường cũ còn «Trả lời: tạo / thôi».
 
 **Agent 1 làm:** gộp `agent-hub-bac-1` → erp-v2, dựng ERP api (nếu đổi `assistant/*`) rồi `~/agent-hub` trên VPS 2
 (`vps2_ssh.py`, kiểm việc dở + flock), đo lượt thật ở `tab_agent_run` (`artifact.core = v2`, `artifact.lane`), báo đại ca.
