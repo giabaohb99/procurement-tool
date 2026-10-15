@@ -97,6 +97,7 @@ import {
   toPurchaseOrderPayload,
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
+import { describeOrdered, findOverOrders, formatQty } from '../utils/over-order'
 import { duplicatePurchaseOrderCodes, validatePurchaseOrder } from '../utils/required-fields'
 import {
   displayLineBaseAmount,
@@ -185,6 +186,16 @@ export function PurchaseOrderDetailPage() {
             ?.fromPurchaseRequest,
         )
       : null,
+  )
+  // bao-CR-619: tạo từ YCMH → nhắc mã nào làm tổng đặt (đã đặt + đang chờ duyệt + đơn này) vượt số
+  // yêu cầu. Chỉ nhắc, không chặn — đại ca chốt 15/10: người lập tự sửa số, không sửa vẫn lưu được.
+  const requestProgress = isNew
+    ? (location.state as { fromPurchaseRequest?: PurchaseOrderDraftFromRequest } | null)
+        ?.fromPurchaseRequest?.progress
+    : undefined
+  const overOrders = useMemo(
+    () => findOverOrders(draft?.items ?? [], requestProgress),
+    [draft?.items, requestProgress],
   )
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
   const [progressFor, setProgressFor] = useState<{
@@ -741,6 +752,24 @@ export function PurchaseOrderDetailPage() {
             )}
           </CardHeader>
           <CardContent className="space-y-4 px-4">
+            {overOrders.length > 0 && (
+              <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+                <p className="flex items-center gap-1.5 font-medium">
+                  <AlertTriangle className="size-3.5" />
+                  Số lượng đặt vượt yêu cầu của YCMH {data.pr_code} — chỉ là nhắc, vẫn tạo đơn được
+                </p>
+                {overOrders.map((line) => (
+                  <p key={line.code}>
+                    {line.progress.name} ({line.code}): yêu cầu {formatQty(line.progress.requested)} ·{' '}
+                    {describeOrdered(line.progress)} · đơn này {formatQty(line.qty)} →{' '}
+                    <b>tổng vượt {formatQty(line.over)}</b>
+                  </p>
+                ))}
+                <p className="text-muted-foreground">
+                  Chỉ cần mua thêm phần thiếu thì sửa lại cột SL đặt NCC trước khi bấm Tạo.
+                </p>
+              </div>
+            )}
             {afterApproveEditable && (
               <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
                 Đơn đã duyệt — nội dung đã ký khóa lại. Mở nút bút chì ở cột Hành động để sửa:{' '}

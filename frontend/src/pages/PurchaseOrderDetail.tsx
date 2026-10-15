@@ -23,6 +23,7 @@ import SurveyReportCard, { type SurveyReportCardHandle } from '../components/Sur
 import { lineReportProgress, type SurveyRequestReport } from '../utils/surveyReportHelpers'
 import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
+import { describeOrdered, fmtQty, overOrderLines } from '../utils/over-order'
 import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { fmtDateStr } from '../utils/datetime'
 import { poDeliveryStatusLabel, poProgressStatusLabel } from '../utils/statusLabels'
@@ -412,6 +413,11 @@ export default function PurchaseOrderDetail() {
   // Mã hàng đang lưu trên server — mốc để chỉ chặn TRÙNG MỚI (xem utils/lines.newDupCodes)
   const savedCodes = useRef<string[]>([])
   const dupCodes = useMemo(() => newDupCodes(items.map((it: any) => it.product_code || ''), savedCodes.current), [items])
+  // bao-CR-619: tạo từ YCMH → nhắc dòng nào làm tổng đặt (đã đặt + đang chờ duyệt + đơn này) vượt số
+  // yêu cầu. Chỉ nhắc, không chặn — đại ca chốt 15/10: người lập tự sửa số, không sửa thì vẫn lưu.
+  const prProgress = isNew ? (location.state as any)?.fromPr?.progress : undefined
+  const overOrders = useMemo(() => overOrderLines(items, prProgress), [items, prProgress])
+  const overCodes = useMemo(() => new Set(overOrders.map((x) => x.code)), [overOrders])
   const setItem = (i: number, patch: any) =>
     setPo((s: any) => recalcUrgent({ ...s, items: s.items.map((it: any, idx: number) => idx === i ? { ...it, ...patch } : it) }))
   const addItems = (n = 1) => setPo((s: any) => recalcUrgent({ ...s, items: [...(s.items || []), ...Array.from({ length: n }, () => ({ ...emptyItem }))] }))
@@ -1346,6 +1352,21 @@ export default function PurchaseOrderDetail() {
                 <div style={{ marginTop: 2, opacity: .85 }}>Bấm <i className="ti ti-pencil" /> ở cột Hành động để mở Chi tiết dòng và điền.</div>
               </div>
             )}
+            {overOrders.length > 0 && (
+              <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: '#fffbeb',
+                border: '1px solid #fcd34d', color: '#92400e', fontSize: 12.5 }}>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                  <i className="ti ti-alert-triangle" /> Số lượng đặt vượt yêu cầu của YCMH {po.pr_code} — chỉ là nhắc, vẫn tạo đơn được
+                </div>
+                {overOrders.map((x) => (
+                  <div key={x.code}>
+                    {x.lp.name} ({x.code}): yêu cầu {fmtQty(x.lp.requested)} · {describeOrdered(x.lp)} · đơn này {fmtQty(x.qty)}
+                    {' '}→ <b>tổng vượt {fmtQty(x.over)}</b>
+                  </div>
+                ))}
+                <div style={{ marginTop: 2, opacity: .85 }}>Chỉ cần mua thêm phần thiếu thì sửa lại cột SL đặt NCC trước khi bấm Tạo.</div>
+              </div>
+            )}
             {/* CR-108: nói rõ vì sao bảng bị khóa và mở lại bằng cách nào — nếu không,
                 người dùng tưởng hỏng màn hình rồi gọi hỗ trợ. */}
             {afterApproveEditable && (
@@ -1433,7 +1454,10 @@ export default function PurchaseOrderDetail() {
                           <option value="">—</option>{units.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
-                      <td>{num(i, 'qty_order', 80)}</td>
+                      <td style={overCodes.has((it.product_code || '').trim()) ? { background: '#fef3c7', boxShadow: 'inset 3px 0 0 #f59e0b' } : undefined}
+                        title={overCodes.has((it.product_code || '').trim()) ? 'Tổng đặt của mã này vượt số yêu cầu trên YCMH — xem nhắc phía trên bảng' : undefined}>
+                        {num(i, 'qty_order', 80)}
+                      </td>
                       <td>{num(i, 'price', 95)}</td>
                       {showCurrency && (
                         <td style={{ textAlign: 'center', fontSize: 12 }}>

@@ -760,18 +760,9 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
                      PurchaseRequest, "purchase_request", user, profile).first()
     if not pr:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
-    from app.modules.purchase_order.model import PurchaseOrder, POItem
-    from app.modules.purchase_order import service as po_service
-    rows = (db.query(POItem.product_code, func.coalesce(func.sum(POItem.qty_order), 0))
-            .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
-            .filter(PurchaseOrder.pr_code == pr.code,
-                    PurchaseOrder.is_deleted.is_(False),   # ai-CR-176: đơn đã xóa mềm = không có
-                    PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]),
-                    POItem.progress_status.notin_([po_service.PROG_NOT_ORDERED,
-                                                   po_service.PROG_CANCELLED]))
-            .group_by(POItem.product_code).all())
-    ordered = {code: float(qty or 0) for code, qty in rows if code}
-    return success({"ordered": ordered})
+    # bao-CR-619: thêm `pending` (đơn nháp / chờ duyệt / bị trả lại) + `orders` (từng đơn theo mã) cho
+    # cảnh báo đặt vượt; `ordered` giữ nguyên nghĩa cũ.
+    return success(service.order_progress(db, pr.code))
 
 
 @router.post("")

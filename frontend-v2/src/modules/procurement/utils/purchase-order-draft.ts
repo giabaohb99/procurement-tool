@@ -12,6 +12,7 @@ import type {
   PurchaseOrderImportCost,
   PurchaseOrderItem,
 } from '../types/purchase-order-detail'
+import { describeOrdered, formatQty, type LineProgress, type OrderProgress } from './over-order'
 import {
   ALLOCATION_BY_VALUE,
   DEFAULT_CURRENCY,
@@ -33,6 +34,8 @@ export interface PurchaseOrderDraftFromRequest {
   is_urgent: boolean
   note: string
   items: PurchaseOrderItem[]
+  /** bao-CR-619: tình hình đặt theo mã hàng của YCMH nguồn — form ĐMH dùng để nhắc đặt vượt. */
+  progress?: Record<string, LineProgress>
 }
 
 /** Đơn trống cho màn tạo mới; có `from` thì điền sẵn theo phiếu YCMH nguồn. */
@@ -219,6 +222,8 @@ export interface PurchaseOrderLinesFromRequest {
 export function buildPurchaseOrderLines(
   items: PurchaseRequestItem[],
   orderedByCode: Record<string, number> = {},
+  pendingByCode: Record<string, number> = {},
+  ordersByCode: OrderProgress['orders'] = {},
 ): PurchaseOrderLinesFromRequest {
   const remaining: PurchaseOrderItem[] = []
   const exceeded: PurchaseOrderItem[] = []
@@ -229,13 +234,20 @@ export function buildPurchaseOrderLines(
 
     const requested = Number(item.qty) || 0
     const ordered = Number(orderedByCode[item.product_code] || 0)
-    const left = requested - ordered
+    // bao-CR-619: đơn nháp / chờ duyệt / bị trả lại đã giữ số lượng — không tính là đặt trùng.
+    const pending = Number(pendingByCode[item.product_code] || 0)
+    const left = requested - ordered - pending
 
     if (left > 0) {
       remaining.push(toOrderLine(item, left))
     } else {
+      // Đại ca chốt 15/10: vẫn điền đủ số yêu cầu, người lập tự sửa ở form tạo đơn.
       exceeded.push(toOrderLine(item, requested))
-      exceededMessages.push(`${item.product_name} (đã đặt ${ordered}/${requested})`)
+      const orders = ordersByCode?.[item.product_code] ?? []
+      exceededMessages.push(
+        `• ${item.product_name}${item.product_code ? ` (${item.product_code})` : ''} — yêu cầu ` +
+          `${formatQty(requested)} · ${describeOrdered({ ordered, pending, orders })}`,
+      )
     }
   }
 
@@ -314,6 +326,7 @@ function agreedSupplier(items: PurchaseRequestItem[]): { code: string; name: str
 export function toDraftFromRequest(
   request: PurchaseRequestDetail,
   items: PurchaseOrderItem[],
+  orderProgress?: OrderProgress,
 ): PurchaseOrderDraftFromRequest {
   const supplier = agreedSupplier(request.items)
   return {
@@ -331,5 +344,26 @@ export function toDraftFromRequest(
     is_urgent: !!request.is_urgent,
     note: request.note || '',
     items,
+    progress: orderProgress ? lineProgressOf(request.items, orderProgress) : undefined,
   }
+}
+
+/** bao-CR-619: số yêu cầu / đã đặt / đang chờ duyệt / từng đơn của mỗi mã hàng trên YCMH. */
+export function lineProgressOf(
+  items: PurchaseRequestItem[],
+  orderProgress: OrderProgress,
+): Record<string, LineProgress> {
+  const out: Record<string, LineProgress> = {}
+  for (const item of items) {
+    const code = (item.product_code || '').trim()
+    if (!code || !item.product_name || item.line_status === 'cancelled') continue
+    out[code] = {
+      name: item.product_name,
+      requested: Number(item.qty) || 0,
+      ordered: Number(orderProgress.ordered?.[code] || 0),
+      pending: Number(orderProgress.pending?.[code] || 0),
+      orders: orderProgress.orders?.[code] ?? [],
+    }
+  }
+  return out
 }
