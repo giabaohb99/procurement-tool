@@ -82,6 +82,8 @@ CORE_RULES = (
     "- Không bao giờ bảo người dùng gõ SQL, lệnh máy chủ hay mã nguồn. Không ghi mật khẩu, khóa, số thẻ vào sổ nhớ.\n"
     "- Số liệu ERP đổi theo ngày (ngày phép còn, công nợ, trạng thái đơn / phiếu, tồn kho, việc) LUÔN tra công cụ ở lượt "
     "này; không lấy từ sổ nhớ, ghi chú hay lịch sử chat. Chưa có công cụ thì gọi more_tools.\n"
+    "- Cần nhiều công cụ không phụ thuộc nhau thì gọi CÙNG LÚC trong một lượt (mỗi vòng gọi tốn vài giây). Một công cụ đã "
+    "trả đủ thì đừng gọi thêm công cụ trùng nội dung (my_requests_status đã gồm đơn nghỉ phép).\n"
     "- Sổ nhớ: theo đúng khối sổ ghi nhớ riêng (kể cả xưng hô); nghe điều ỔN ĐỊNH về họ thì remember_fact và thêm một "
     "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước."
 )
@@ -578,7 +580,7 @@ CORE_GROUP_HINTS: tuple[tuple[re.Pattern, tuple[str, ...]], ...] = (
     (re.compile(r"ke hoach"), ("work",)),     # «lập kế hoạch …» cần draft_work_plan
     (re.compile(r"(?<!\w)off(?!\w)|nghi them|may (hom|bua|ngay) (nghi|off)|nghi duoc|con may (hom|bua)"), ("leave",)),
     (re.compile(r"(?<!\w)(don|phieu|de xuat|yeu cau)(?!\w).{0,40}(toi dau|sao roi|the nao|duyet chua|xong chua|"
-                r"den dau)|(?<!\w)(don|phieu) cua (anh|em|toi|chi|minh)(?!\w)"), ("approval", "leave")),
+                r"den dau)|(?<!\w)(don|phieu) cua (anh|em|toi|chi|minh)(?!\w)"), ("approval",)),   # my_requests_status gồm cả đơn nghỉ
     (re.compile(r"ho so (cua|nhan su|nhan vien)|ai dang (giu|phu trach|lo)"), ("employee",)),
 )
 
@@ -995,6 +997,26 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
 # ---------------------------------------------------------------------------
 # Vòng tác tử
 # ---------------------------------------------------------------------------
+#  Run #242 (15/10): model truyền nguyên «chị Mi» vào employee_lookup → «không tìm thấy»; lần trước truyền «Mi» thì ra đúng.
+HONORIFIC = re.compile(r"^(?:anh|chị|chi|em|cô|co|chú|chu|bác|bac|ông|ong|bà|ba|bạn|ban|sếp|sep|mr\.?|ms\.?|mrs\.?)\s+",
+                       re.IGNORECASE)
+NAME_ARGS = {"employee_lookup": ("query",)}
+
+
+def _clean_args(name: str, args: dict) -> dict:
+    """Bỏ xưng hô đứng đầu tên người trước khi tra («chị Mi» → «Mi»)."""
+    keys = NAME_ARGS.get(name)
+    if not keys:
+        return args
+    out = dict(args)
+    for k in keys:
+        value = str(out.get(k) or "").strip()
+        cleaned = HONORIFIC.sub("", value).strip()
+        if value and cleaned:
+            out[k] = cleaned
+    return out
+
+
 def _add_usage(result, first) -> None:
     result.input_tokens += first.input_tokens
     result.output_tokens += first.output_tokens
@@ -1050,7 +1072,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
             try:
                 if name in LOCAL_TOOL_NAMES:
                     return _run_local(db, chat_id, row, user, name, args or {})
-                out = erp.run_tool(db, user, name, args or {})
+                out = erp.run_tool(db, user, name, _clean_args(name, args or {}))
                 if isinstance(out, dict) and isinstance(out.get("draft"), dict):
                     out = {**out, "tom_tat_se_luu": _summary(name, out["draft"])}
                 return out

@@ -781,7 +781,7 @@ def test_khong_khop_nhom_thi_chi_nap_cong_cu_loi(db, monkeypatch):
     #  Run #237–239: các câu này từng đi more_tools (2–3 lần gọi) — nay gắn nhóm ngay ở lõi.
     pick = lambda text: {t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), text)}
     assert "my_leave_summary" in pick("anh off được thêm mấy hôm nữa")
-    assert {"my_requests_status", "my_leave_summary"} <= pick("đơn của anh tới đâu rồi")
+    assert "my_requests_status" in pick("đơn của anh tới đâu rồi")
     assert "employee_lookup" in pick("ai đang giữ hồ sơ của chị Mi")
     assert "my_leave_summary" not in pick("thôi bỏ nháp đó đi em")
 
@@ -819,3 +819,17 @@ def test_lich_su_luoc_tin_nhap_cu_con_dong_dau(db):
     row = _incoming(db, "đổi hạn")
     turns = core_v2.history(db, CHAT, row.id, datetime.now())
     assert turns[-1]["content"] == "Em soạn nháp công việc (Dự án) như sau: (chi tiết nháp đã lược)"
+
+
+def test_tra_ten_bo_xung_ho(db, chat, monkeypatch):
+    """Run #242: model truyền «chị Mi» → employee_lookup không tìm thấy; lần trước «Mi» thì ra Lê Thị Ngọc Mi."""
+    seen: list = []
+    monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: seen.append(args) or {"rows": []})
+
+    def script(msgs, tools, execute):
+        for q in ("chị Mi", "Anh Được", "Mi", "chị"):
+            execute("employee_lookup", {"query": q})
+        return _result("Dạ.")
+    _install(monkeypatch, script)
+    core_v2.handle(db, CHAT, _incoming(db, "ai đang giữ hồ sơ của chị Mi"), "ai đang giữ hồ sơ của chị Mi")
+    assert [a["query"] for a in seen] == ["Mi", "Được", "Mi", "chị"]
