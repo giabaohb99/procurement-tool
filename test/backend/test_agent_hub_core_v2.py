@@ -734,4 +734,81 @@ def test_commit_chi_khi_la_loi_dong_y_ngan(db, chat, monkeypatch, again, ok):
     assert bool(committed) is ok
     assert ("error" in out) is (not ok)
     if not ok:
-        assert "KHÔNG phải lời đồng ý" in out["error"] and not core_v2._stop_after("commit_draft", out)
+        assert "KHÔNG phải lời đồng ý" in out["error"]
+        #  Gửi lại y câu đã sinh nháp → dừng vòng, bot tự hỏi (run #231); câu yêu cầu khác → model soạn lại.
+        repeat = again == first
+        assert bool(out.get("ask_confirm")) is repeat and core_v2._stop_after("commit_draft", out) is repeat
+        if repeat:
+            msg = core_v2.confirm_reply(CHAT, out)
+            assert "em chưa tạo" in msg and "Nghiên cứu luồng agent" in msg and "soạn lại?" in msg
+
+
+@pytest.mark.parametrize("text, want", [
+    ("hạn thứ sáu", "16/10/2026"),                  # Agent 1 15/10: thứ Năm nói «thứ sáu» → model ghi 23/10
+    ("hạn thứ 6", "16/10/2026"),
+    ("họp thứ năm", "22/10/2026"),                  # nói đúng thứ hôm nay → tuần sau
+    ("thứ sáu tuần sau", "23/10/2026"),
+    ("thứ hai tuần tới", "19/10/2026"),
+    ("chủ nhật", "18/10/2026"),
+    ("thứ ba tuần này", "13/10/2026"),
+])
+def test_doi_thu_ra_ngay_tinh_tu_mai(text, want):
+    from datetime import date
+
+    days = core_v2.resolve_weekdays(text, date(2026, 10, 15))          # thứ Năm
+    assert days and f"{days[0][1]:%d/%m/%Y}" == want
+
+
+def test_ngay_da_tinh_nam_trong_boi_canh(db, chat, monkeypatch):
+    prov = _install(monkeypatch, lambda msgs, tools, execute: _result("Dạ."))
+    core_v2.handle(db, CHAT, _incoming(db, "tạo task A hạn thứ sáu"), "tạo task A hạn thứ sáu")
+    assert "NGÀY ĐÃ TÍNH" in prov.seen["msgs"][-1].content and "GẦN NHẤT tính từ mai" in prov.seen["system"]
+
+
+def test_khong_khop_nhom_thi_chi_nap_cong_cu_loi(db, monkeypatch):
+    """Run #232: «thôi bỏ nháp đó đi em» không khớp nhóm → nạp đủ 73 công cụ (230k token). Nay chỉ CORE + lõi + more_tools."""
+    from app.modules.assistant import tool_router
+    from app.modules.assistant.provider.base import ToolDef
+
+    names = set().union(*(tools for _n, tools, _p in tool_router.GROUPS)) | set(tool_router.CORE)
+    monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: [ToolDef(name=n, description="x", parameters={})
+                                                                       for n in sorted(names)])
+    got = [t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), "thôi bỏ nháp đó đi em")]
+    assert set(got) <= set(tool_router.CORE) | core_v2.LOCAL_TOOL_NAMES and core_v2.MORE_TOOLS in got
+    again = [t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), "thôi bỏ nháp đó đi em", extra_groups=["leave"])]
+    assert "draft_leave_request" in again and core_v2.MORE_TOOLS not in again
+    assert "draft_work_plan" in {t.name for t in core_v2.select_tools(db, SimpleNamespace(id=1), "lập kế hoạch thử bot")}
+
+
+def test_model_xin_them_nhom_thi_chay_lai_mot_lan(db, chat, monkeypatch):
+    from app.modules.assistant.provider.base import ToolDef
+
+    monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: [
+        ToolDef(name=n, description="x", parameters={}) for n in ("my_leave_summary", "draft_leave_request", "search_docs")])
+    offered: list[list[str]] = []
+
+    class P(FakeProvider):
+        def run_tools(self, msgs, *, tools, execute, system=None, stop_when=None, **kw):
+            offered.append([t.name for t in tools])
+            if len(offered) == 1:
+                res = execute(core_v2.MORE_TOOLS, {"nhom": ["leave"]})
+                assert stop_when(core_v2.MORE_TOOLS, res)
+                return _result("", [{"name": core_v2.MORE_TOOLS}])
+            return _result("Anh còn 5 ngày phép.")
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: P(None))
+
+    core_v2.handle(db, CHAT, _incoming(db, "anh còn mấy bữa off"), "anh còn mấy bữa off")
+
+    assert len(offered) == 2 and "my_leave_summary" not in offered[0] and "my_leave_summary" in offered[1]
+    assert chat.sent == ["Anh còn 5 ngày phép."]
+    run = db.query(AgentRun).order_by(AgentRun.id.desc()).first()
+    assert run.artifact["more"] == ["leave"] and run.input_tokens == 240
+
+
+def test_lich_su_luoc_tin_nhap_cu_con_dong_dau(db):
+    service.log_message(db, DIR_IN, CHAT, 0, "tạo task A", action=ACT_ASKED)
+    service.log_message(db, DIR_OUT, CHAT, 0, "Em soạn nháp công việc (Dự án) như sau:\n- Việc: A\n- Hạn: 16/10/2026",
+                        action=ACT_ANSWER)
+    row = _incoming(db, "đổi hạn")
+    turns = core_v2.history(db, CHAT, row.id, datetime.now())
+    assert turns[-1]["content"] == "Em soạn nháp công việc (Dự án) như sau: (chi tiết nháp đã lược)"

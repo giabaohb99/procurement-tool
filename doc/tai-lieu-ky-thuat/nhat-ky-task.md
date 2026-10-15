@@ -13376,6 +13376,10 @@ ghi bộ nhớ đệm; phần lời nhắc cố định giữ nguyên giữa cá
 đầu tin nhắn mới nhất để trạm đọc lại phần cố định từ bộ nhớ đệm với giá một phần mười. Agent 1 đo trên dev thấy sáu mươi
 bảy tới tám mươi ba phần trăm đầu vào được đọc từ bộ nhớ đệm. Cũng lúc đo, gửi lại nguyên câu yêu cầu khi nháp đang chờ làm
 bot tạo thật một việc (đã hoàn tác); nay bot chỉ tạo khi tin là lời đồng ý ngắn và không trùng câu đã sinh ra nháp.
+Gửi lại y câu thì bot tự hỏi tạo luôn hay soạn lại mà không gọi model thêm. Câu không thuộc nhóm nào trước đây nạp cả bảy
+mươi ba công cụ, nay chỉ nạp bộ lõi và để model xin thêm nhóm khi cần. Bot tự đổi thứ trong tuần ra ngày (thứ sáu là thứ
+sáu gần nhất tính từ mai, có chữ tuần sau mới sang tuần kế) vì model từng ghi nhầm sang tuần sau. Tin nháp cũ trong lịch sử
+chỉ giữ dòng đầu.
 
 Mã nguồn: agent_hub/core_v2.py (V2_TOOL_DESC, compact_defs, _stop_after, draft_reply); bài kiểm test_agent_hub_core_v2.py
 

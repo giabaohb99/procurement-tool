@@ -169,7 +169,29 @@ CODE_TASK_TOOL = ToolDef(
                 "sửa màn X để Y, đúng không?»). mo_ta: đầy đủ màn nào, sai gì, muốn gì. Việc nghiệp vụ (task Dự án, phiếu) "
                 "KHÔNG phải sửa phần mềm.",
     parameters={"type": "object", "properties": {"mo_ta": {"type": "string"}}, "required": ["mo_ta"]})
-LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS) | {CODE_TASK_TOOL.name}
+#  ai-CR-202 (Agent 1 đo run #232): «thôi bỏ nháp đó đi em» không khớp nhóm nào → tool_router trả None → nạp ĐỦ 73 công cụ
+#  (66k ký tự, 230k token). Nay không khớp nhóm thì chỉ nạp CORE + công cụ lõi; model cần thêm thì gọi more_tools, lõi nạp
+#  nhóm đó rồi chạy lại MỘT lần.
+MORE_TOOLS = "more_tools"
+
+
+def _more_tools_tool() -> ToolDef:
+    from app.modules.assistant import tool_router
+
+    groups = [name for name, _tools, _rx in tool_router.GROUPS]
+    return ToolDef(
+        name=MORE_TOOLS,
+        description="Bộ công cụ lượt này đã lọc theo câu. Cần tra / tạo thứ chưa có công cụ thì gọi với nhóm cần — hệ thống "
+                    "nạp thêm rồi chạy lại. Nhóm: purchase (tra mua hàng, NCC, giá), make_purchase (lập YCMH / YCBG), "
+                    "payable (công nợ, thanh toán), approval (duyệt), leave (nghỉ phép), work (việc Dự án), ticket (hỗ "
+                    "trợ IT), edit (sửa / xóa phiếu), account (tài khoản, quyền), employee (nhân sự), customs (hải quan), "
+                    "document (văn bản), google (lịch, Drive), meeting (biên bản), group (nhóm chat), personal (việc "
+                    "riêng, ghi chú), brief (bản tin), research (nghiên cứu sâu), export (xuất tệp), analytics (thống kê).",
+        parameters={"type": "object", "properties": {"nhom": {"type": "array", "items": {"type": "string", "enum": groups}}},
+                    "required": ["nhom"]})
+
+
+LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS) | {CODE_TASK_TOOL.name, MORE_TOOLS}
 
 
 # ---------------------------------------------------------------------------
@@ -287,16 +309,25 @@ NOT_A_CONFIRM = ("Tin này KHÔNG phải lời đồng ý (là câu yêu cầu �
                  "nháp thì soạn lại (update_draft hoặc draft_* mới).")
 
 
-def _is_commit_reply(db: Session, chat_id: str, pending: AgentMessage, text: str) -> bool:
+def _folded(text: str) -> str:
     from app.modules.assistant.glossary import fold
 
-    folded = " ".join(fold(text or "").split())
-    if not folded or len(folded.split()) > COMMIT_MAX_WORDS or not COMMIT_CUE.search(folded):
-        return False
+    return " ".join(fold(text or "").split())
+
+
+def _is_repeat(db: Session, chat_id: str, pending: AgentMessage, text: str) -> bool:
+    """Tin này trùng câu người dùng gửi ngay trước khi nháp được soạn (gửi lại y nguyên)."""
     asked = db.scalar(select(AgentMessage.body).where(AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN,
                                                       AgentMessage.id < pending.id)
                       .order_by(AgentMessage.id.desc()).limit(1))
-    return " ".join(fold(asked or "").split()) != folded
+    return bool(asked) and _folded(asked) == _folded(text)
+
+
+def _is_commit_reply(db: Session, chat_id: str, pending: AgentMessage, text: str) -> bool:
+    folded = _folded(text)
+    if not folded or len(folded.split()) > COMMIT_MAX_WORDS or not COMMIT_CUE.search(folded):
+        return False
+    return not _is_repeat(db, chat_id, pending, text)
 
 
 def _open_code_tasks(db: Session, chat_id: str) -> list[AgentTask]:
@@ -355,6 +386,9 @@ def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
     return "ĐANG DỞ (việc chưa khép của cuộc này):\n" + ("\n".join(lines) if lines else "- (không có)")
 
 
+DRAFT_HEADS = ("Em soạn nháp ", "Em sửa nháp ")
+
+
 def history(db: Session, chat_id: str, before_id: int, now, *, smalltalk: bool = False) -> list[dict]:
     """Tối đa 40 lượt trong 24 giờ, mỗi tin cắt còn HISTORY_MSG_CHARS, tổng trần HISTORY_MAX_CHARS (doc 20 §3.3).
     Chỉ lấy hỏi / trả lời / nghiên cứu."""
@@ -376,6 +410,10 @@ def history(db: Session, chat_id: str, before_id: int, now, *, smalltalk: bool =
             #  Tin cũ của bot kiểu «(đã soạn bản nháp, xem thẻ bên dưới)» (đường cũ ghi thay cho thẻ) hay «em hỏi lại ở thẻ
             #  dưới»: model CHÉP LẠI câu đó thay vì gọi công cụ (đo 14/10 16:50, Kimi). Thay bằng ghi chú trung tính.
             continue                  # bỏ hẳn: thay bằng ghi chú thì Kimi chép nguyên ghi chú (đo 14/10 16:55)
+        if r.direction != DIR_IN and (body.startswith(DRAFT_HEADS) or "đang chờ, em chưa tạo:" in body.split("\n", 1)[0]):
+            #  ai-CR-202: tin nháp cũ chỉ giữ dòng đầu — nội dung nháp còn chờ đã có ở khối ĐANG DỞ; giữ nguyên thì mỗi
+            #  lượt trạm phải ghi lại cache cho cả đoạn dài (Agent 1 đo YCMH: ~15k token ghi mỗi lượt).
+            body = body.split("\n", 1)[0] + " (chi tiết nháp đã lược)"
         if len(body) > HISTORY_MSG_CHARS:
             body = body[:HISTORY_MSG_CHARS] + " …(đã rút gọn)"
         total += len(body)
@@ -395,7 +433,33 @@ def calendar_block(now) -> str:
     days = [now.date() + timedelta(days=i) for i in range(15)]
     cells = [f"{WEEKDAYS_VI[d.weekday()]} {d:%d/%m/%Y}" + (" (hôm nay)" if i == 0 else " (mai)" if i == 1 else "")
              for i, d in enumerate(days)]
-    return "giờ Việt Nam. LỊCH (dùng đúng bảng này khi đổi «thứ sáu», «tuần sau»… ra ngày): " + "; ".join(cells) + "."
+    return ("giờ Việt Nam. LỊCH (dùng đúng bảng này khi đổi «thứ sáu», «tuần sau»… ra ngày): " + "; ".join(cells) + ". "
+            "«thứ X» không kèm «tuần sau / tuần tới» = ngày thứ X GẦN NHẤT tính từ mai; có «tuần sau» mới sang tuần kế. "
+            "Tin có khối NGÀY ĐÃ TÍNH thì dùng đúng ngày trong đó.")
+
+
+WEEKDAY_NUM = {"hai": 0, "2": 0, "ba": 1, "3": 1, "tu": 2, "4": 2, "nam": 3, "5": 3, "sau": 4, "6": 4, "bay": 5, "7": 5}
+WEEKDAY_RX = re.compile(r"(?<!\w)(?:thu (hai|ba|tu|nam|sau|bay|[2-7])|(chu nhat))(?!\w)(?: (tuan (?:sau|toi|nay)))?")
+
+
+def resolve_weekdays(text: str, today) -> list[tuple[str, object]]:
+    """«thứ sáu» → ngày cụ thể (Agent 1 15/10: hôm thứ Năm 15/10 model ghi «hạn thứ sáu» = 23/10). Luật: không kèm tuần
+    = thứ đó GẦN NHẤT tính từ mai; «tuần sau / tuần tới» = thứ đó của tuần lịch kế tiếp; «tuần này» = thứ đó tuần này."""
+    out: list[tuple[str, object]] = []
+    for m in WEEKDAY_RX.finditer(_folded(text)):
+        wd = 6 if m.group(2) else WEEKDAY_NUM[m.group(1)]
+        week = m.group(3) or ""
+        monday = today - timedelta(days=today.weekday())
+        if week in ("tuan sau", "tuan toi"):
+            day = monday + timedelta(days=7 + wd)
+        elif week == "tuan nay":
+            day = monday + timedelta(days=wd)
+        else:
+            day = today + timedelta(days=(wd - today.weekday() - 1) % 7 + 1)
+        label = (f"thứ {m.group(1)}" if m.group(1) else "chủ nhật") + (f" {week}" if week else "")
+        if (label, day) not in out:
+            out.append((label, day))
+    return out[:4]
 
 
 CONTEXT_HEAD = "[BỐI CẢNH LƯỢT NÀY — hệ thống chèn, không phải lời người dùng]"
@@ -448,6 +512,10 @@ def turn_context(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
     now = now_local()
     parts = [f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M')} ngày {now:%d/%m/%Y}.",
              pending_block(db, chat_id, row.id, row.created_at)]
+    days = resolve_weekdays(text, now.date())
+    if days:
+        parts.append("NGÀY ĐÃ TÍNH (theo chữ trong tin, dùng đúng): " + "; ".join(
+            f"{label} = {WEEKDAYS_VI[d.weekday()]} {d:%d/%m/%Y}" for label, d in days) + ".")
     for fn in (lambda: erp.glossary_block(db, [text]),
                #  Tìm ghi chú theo câu hỏi tốn ~1,8 s (gọi nhúng véc-tơ) — câu xã giao chỉ cần phần lõi sổ nhớ.
                (lambda: personal_memory.load_core(db, user.id)) if _is_smalltalk(text)
@@ -502,8 +570,9 @@ def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[:limit].rsplit("\n", 1)[0] + "\n…(còn nữa, hỏi search_notes nếu cần)"
 
 
-def select_tools(db: Session, user, text: str, chat_id: str = "") -> list[ToolDef]:
-    """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi."""
+def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: list[str] | None = None) -> list[ToolDef]:
+    """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi. `extra_groups`: nhóm model xin
+    thêm qua more_tools (lượt chạy lại) — khi đó không đưa more_tools nữa."""
     from app.modules.assistant import tool_router
 
     #  Câu xã giao («hello em», «cảm ơn») không cần 70+ công cụ ERP — hôm 14/10 «hello em» nạp 76 công cụ.
@@ -518,9 +587,16 @@ def select_tools(db: Session, user, text: str, chat_id: str = "") -> list[ToolDe
         picked = tool_router.select(text, tool_router.recent_tools(db, getattr(user, "id", 0)))
     except Exception:  # noqa: BLE001
         picked = None
-    if picked is not None:
-        keep = set(picked) | set(tool_router.CORE)
-        defs = [d for d in defs if d.name in keep]
+    keep = set(picked or ()) | set(tool_router.CORE)        # không khớp nhóm nào: chỉ CORE (trước: nạp đủ 73)
+    groups = list(extra_groups or ())
+    if "ke hoach" in _folded(text):
+        groups.append("work")                 # «lập kế hoạch …» không khớp nhóm nào của tool_router nhưng cần draft_work_plan
+    asked = set()
+    for name, tools, _rx in tool_router.GROUPS:
+        if name in groups:
+            asked |= set(tools)
+    all_defs = defs
+    defs = [d for d in defs if d.name in keep]
     #  draft_work_plan (3,5k ký tự mô tả — công cụ lớn nhất) chỉ khi câu thật sự nói «kế hoạch»: nhóm «work» luôn kèm nó
     #  nên 14/10 câu «tạo task …» nào cũng gánh thêm.
     from app.modules.assistant.glossary import fold
@@ -528,9 +604,14 @@ def select_tools(db: Session, user, text: str, chat_id: str = "") -> list[ToolDe
     if "ke hoach" not in " ".join(fold(text or "").split()):
         defs = [d for d in defs if d.name not in PLAN_ONLY_TOOLS]
     defs = _focus_draft_tools(text, defs)
+    if asked:
+        have = {d.name for d in defs}
+        defs += [d for d in all_defs if d.name in asked and d.name not in have]
     defs = compact_defs(defs)                    # ai-CR-202: mô tả viết cho chat + tham số còn câu đầu
     names = {d.name for d in defs}
     out = defs + [t for t in LOCAL_TOOLS if t.name not in names]
+    if extra_groups is None:
+        out.append(_more_tools_tool())
     if chat_id:
         from . import service
 
@@ -627,13 +708,20 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         return {"ok": True, "tool": info.get("tool") or "", "draft": draft,
                 "tom_tat_se_luu": _summary(info.get("tool") or "", draft),
                 "note": "Đã sửa nháp. Trình bày lại bản nháp trong câu trả lời theo tom_tat_se_luu."}
+    if name == MORE_TOOLS:
+        return {"ok": True, "nhom": [str(g) for g in (args.get("nhom") or []) if str(g).strip()][:4]}
     if name in ("commit_draft", "drop_draft"):
         pending, info = _pending_draft(db, chat_id, row.id, now)
         if pending is None:
             return {"error": "Không còn bản nháp nào đang chờ."}
         if name == "commit_draft" and not _is_commit_reply(db, chat_id, pending, row.body or ""):
-            return {"error": NOT_A_CONFIRM}
-        phrase = "thôi" if name == "drop_draft" else ("tạo và gửi duyệt" if args.get("submit") else "tạo")
+            out = {"error": NOT_A_CONFIRM}
+            if _is_repeat(db, chat_id, pending, row.body or ""):
+                #  Gửi lại y câu cũ: bot tự hỏi «tạo luôn hay soạn lại» (dừng vòng, không gọi model lần hai — run #231 21 s).
+                tool = info.get("tool") or ""
+                out.update(ask_confirm=True, tool=tool, tom_tat_se_luu=_summary(tool, info.get("draft") or {}))
+            return out
+        phrase ="thôi" if name == "drop_draft" else ("tạo và gửi duyệt" if args.get("submit") else "tạo")
         ok = bool(service._draft_by_text(db, chat_id, row, phrase))
         row.action = ACT_ASKED                       # _draft_by_text đổi thành lệnh; giữ mạch hội thoại
         db.commit()
@@ -795,7 +883,13 @@ def _stop_after(name: str, result) -> bool:
     """ai-CR-202: dừng vòng công cụ NGAY sau khi soạn / sửa / ghi / bỏ nháp — câu trả lời do bot dựng từ tom_tat_se_luu
     (soạn, sửa) hoặc đường cũ đã báo kết quả (ghi, bỏ). Trước đây model được gọi thêm một lượt chỉ để chép lại bản tóm tắt
     — một lượt soạn nháp tốn 2 × (14k token trạm + ~30k của mình)."""
-    if not isinstance(result, dict) or result.get("error") or result.get("need_info"):
+    if not isinstance(result, dict):
+        return False
+    if name == "commit_draft" and result.get("ask_confirm"):
+        return True                          # gửi lại y câu cũ → bot tự hỏi tạo luôn hay soạn lại (confirm_reply)
+    if name == MORE_TOOLS:
+        return bool(result.get("nhom"))      # nạp thêm nhóm rồi chạy lại
+    if result.get("error") or result.get("need_info"):
         return False
     if name in ("update_draft", "commit_draft", "drop_draft"):
         return bool(result.get("ok"))
@@ -829,6 +923,17 @@ def draft_reply(chat_id: str, name: str, result: dict) -> str:
         lines += ["", "Lưu ý: " + " ".join(warns[:4])]
     who = "Đại ca" if telegram.is_allowed_chat(chat_id) else "Anh/chị"
     lines += ["", f"{who} muốn đổi gì không? Ưng thì nhắn **tạo**, hoặc bảo em tạo luôn."]
+    return "\n".join(lines)
+
+
+def confirm_reply(chat_id: str, result: dict) -> str:
+    """Người dùng gửi lại y câu đã sinh nháp: hỏi một câu thay vì tạo thật (run #227) hay gọi model lần hai (run #231)."""
+    from . import draft_create
+
+    label = draft_create.LABELS.get(draft_create.kind_of(str(result.get("tool") or "")), "phiếu")
+    who = "đại ca" if telegram.is_allowed_chat(chat_id) else "anh/chị"
+    lines = [f"Nháp {label} này đang chờ, em chưa tạo:"] + [f"- {_bold_label(x)}" for x in result.get("tom_tat_se_luu") or []]
+    lines += ["", f"Em tạo luôn nháp này, hay {who} muốn em soạn lại?"]
     return "\n".join(lines)
 
 
@@ -875,6 +980,13 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
 # ---------------------------------------------------------------------------
 # Vòng tác tử
 # ---------------------------------------------------------------------------
+def _add_usage(result, first) -> None:
+    result.input_tokens += first.input_tokens
+    result.output_tokens += first.output_tokens
+    result.cache_read_tokens += first.cache_read_tokens
+    result.cache_write_tokens += first.cache_write_tokens
+
+
 def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
     from app.modules.assistant.provider.base import ChatMessage
 
@@ -946,6 +1058,18 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
             result = manager.get_provider().run_tools(
                 msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
                 max_iters=MAX_ITERS, cache_system=True, stop_when=stop_when)
+            more: list[str] = []
+            if stopped.get("name") == MORE_TOOLS:
+                #  Model xin thêm nhóm công cụ: nạp nhóm đó, chạy lại MỘT lần (không đưa more_tools nữa).
+                more = list(stopped["result"].get("nhom") or [])
+                log.info("core_v2: model xin thêm nhóm %s", more)
+                stopped.clear()
+                first = result
+                tools = select_tools(db, user, text, chat_id, extra_groups=more)
+                result = manager.get_provider().run_tools(
+                    msgs, tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
+                    max_iters=MAX_ITERS, cache_system=True, stop_when=stop_when)
+                _add_usage(result, first)
             if not stopped and _phantom_card(result):
                 log.warning("core_v2: model nói tới thẻ mà không có nháp — viết lại một lần")
                 first = result
@@ -954,13 +1078,12 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                             ChatMessage(role="user", content=PHANTOM_FIX)],
                     tools=tools, execute=execute, system=system, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
                     max_iters=MAX_ITERS, cache_system=True)
-                result.input_tokens += first.input_tokens
-                result.output_tokens += first.output_tokens
-                result.cache_read_tokens += first.cache_read_tokens
-                result.cache_write_tokens += first.cache_write_tokens
+                _add_usage(result, first)
             service.finish_run(db, run, result=result)
         #  Đã dừng sau công cụ nháp thì chữ model (nếu có) chỉ là câu dạo trước khi gọi — bỏ, bot tự dựng tin.
-        if stopped.get("name") in ("commit_draft", "drop_draft"):
+        if stopped.get("name") == "commit_draft" and stopped["result"].get("ask_confirm"):
+            service.reply(db, chat_id, confirm_reply(chat_id, stopped["result"]), markdown=True, action=ACT_ANSWER)
+        elif stopped.get("name") in ("commit_draft", "drop_draft"):
             #  Đường cũ đã báo «Đã tạo …» / «không tạo» — chỉ ghi một dòng sổ để lịch sử còn lượt của bot.
             service.log_message(db, DIR_OUT, chat_id, 0,
                                 "(em đã tạo xong theo nháp)" if stopped["name"] == "commit_draft" else "(em đã bỏ nháp)",
@@ -976,7 +1099,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         service.deliver_tool_results(db, chat_id, user, [c for c in calls if c not in drafts])
         run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in (result.tool_calls or [])
                                                               if isinstance(c, dict)][:20], "tools_offered": len(tools),
-                        "stopped": stopped.get("name") or "", "system_chars": len(system), "context_chars": len(context),
+                        "stopped": stopped.get("name") or "", "more": more, "system_chars": len(system), "context_chars": len(context),
                         "cache_read": int(result.cache_read_tokens or 0), "cache_write": int(result.cache_write_tokens or 0),
                         "tools_chars": sum(len(t.description) + len(json.dumps(t.parameters, ensure_ascii=False)) for t in tools)}
         db.commit()
