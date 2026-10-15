@@ -383,7 +383,8 @@ MODEL_PRICES_USD = {
     "deepseek-v4-pro": (28.51, 85.54),
     #  ai-CR-203 (15/10, ví trạm trừ 27 USD / 24 giờ mà sổ ghi 0): Claude qua trạm, đọc /api/pricing 15/10/2026 — nhóm
     #  «claude» ×2 → USD/1 triệu = 2 × model_ratio × 2; ra = vào × completion_ratio (5). Phần ĐỌC bộ đệm tính theo
-    #  MODEL_CACHE_RATIO, phần GHI bộ đệm ước 1,25 × giá vào (giá Anthropic; trạm không công bố).
+    #  MODEL_CACHE_RATIO, phần GHI bộ đệm theo MODEL_CACHE_WRITE_RATIO (create_cache_ratio của trạm — Agent 1 đọc 15/10:
+    #  Sonnet / Opus ×2, Haiku ×1,25). 24 giờ 14–15/10: GHI bộ đệm chiếm ~60% tiền Claude.
     "claude-sonnet-5-5": (4.0, 20.0),
     "claude-sonnet-5": (4.0, 20.0),
     "claude-opus-5-5": (8.0, 40.0),
@@ -392,7 +393,9 @@ MODEL_PRICES_USD = {
 }
 MODEL_CACHE_RATIO = {"claude-sonnet-5-5": 0.1, "claude-sonnet-5": 0.1, "claude-opus-5-5": 0.05, "claude-haiku-5-5": 1.0,
                      "kimi-k3": 0.1}
-CACHE_WRITE_FACTOR = 1.25
+MODEL_CACHE_WRITE_RATIO = {"claude-sonnet-5-5": 2.0, "claude-sonnet-5": 2.0, "claude-opus-5-5": 2.0,
+                           "claude-haiku-5-5": 1.25}
+CACHE_WRITE_FACTOR = 1.25                  # model chưa khai create_cache_ratio
 
 
 def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int, *, cache_read: int = 0,
@@ -417,7 +420,8 @@ def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int, *, cach
     if ratio is None:
         cache_read = cache_write = 0          # model không khai giá bộ đệm: tính cả như vào thường (như trước)
     plain = max(0, input_tokens - cache_read - cache_write)
-    cost_in = plain * in_rate + cache_read * in_rate * (ratio or 1) + cache_write * in_rate * CACHE_WRITE_FACTOR
+    write = next((r for name, r in MODEL_CACHE_WRITE_RATIO.items() if model and model.startswith(name)), CACHE_WRITE_FACTOR)
+    cost_in = plain * in_rate + cache_read * in_rate * (ratio or 1) + cache_write * in_rate * write
     return round((cost_in + output_tokens * out_rate) / 1_000_000, 6)
 
 

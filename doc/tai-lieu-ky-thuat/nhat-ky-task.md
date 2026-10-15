@@ -13358,6 +13358,19 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-204 | Đợt nén nội dung và chuyển câu thường của bot sang model rẻ
+- status: dang-lam
+- date: 2026-10-15
+Ví trạm model bị trừ hai mươi bảy đô la trong một ngày, phần lớn vì bộ hội thoại mẫu và vì mỗi câu chat gửi kèm quá nhiều
+nội dung. Đại ca chốt câu thường dùng Claude Haiku (rẻ hơn khoảng hai mươi lần), việc nặng như lập kế hoạch vẫn dùng
+Claude Sonnet, và tạm dừng hẳn bộ mẫu. Em nén nội dung gửi kèm: lịch sử chỉ lấy phiên đang nói và ngắn đi một nửa, cắt theo
+khối để phần đầu giữ nguyên giữa các lượt; mỗi phần bối cảnh có trần độ dài; kết quả công cụ quá dài được gọt. Sổ chi phí
+nay tính đúng giá trạm kể cả phần ghi bộ đệm, và sổ lượt chạy ghi độ dài từng phần để đo. Bộ mẫu chỉ chạy khi có lệnh
+đồng ý rõ ràng.
+
+Mã nguồn: agent_hub/core_v2.py (history, turn_context, trim_result, lane_model), constants.py, core/config.py,
+scripts/eval_core_v2.py
+
 ## ai-CR-203 | Bộ hai mươi hội thoại mẫu tự chạy để kiểm bot trước mỗi lần đẩy
 - status: dang-lam
 - date: 2026-10-15

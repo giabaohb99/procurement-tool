@@ -262,7 +262,8 @@ def test_phan_luong_model_bang_luat():
     #  14/10: nhóm công cụ «work» luôn kèm draft_work_plan — không được đẩy câu tạo task thường sang Claude.
     assert core_v2.lane_of("tạo cho anh task nghiên cứu luồng agent", {"draft_work_plan", "draft_work_task"}) == core_v2.LANE_NORMAL
     assert core_v2.lane_of("x " * 400) == core_v2.LANE_HEAVY
-    assert core_v2.route_providers(core_v2.LANE_SMALLTALK)[0] == "deepseek"
+    assert core_v2.route_providers(core_v2.LANE_SMALLTALK)[0] == "claude"            # đợt nén 15/10: Haiku rẻ hơn DeepSeek
+    assert core_v2.lane_model(core_v2.LANE_NORMAL) == "claude-haiku-5-5" and core_v2.lane_model(core_v2.LANE_HEAVY) == ""
     assert core_v2.route_providers(core_v2.LANE_NORMAL)[0] == "claude"
     assert core_v2.route_providers(core_v2.LANE_HEAVY)[0] == "claude"
 
@@ -277,9 +278,10 @@ def test_prefer_tach_kimi_deepseek_claude_cung_mot_tram():
              KeyRef(provider="openai_compat", key="k-kimi-0002", model="kimi-k3", base_url=tram, row_id=2),
              KeyRef(provider="openai_compat", key="k-claude-0003", model="claude-sonnet-5-5", base_url=tram, row_id=3)]
     with user_keys.use_chain(chain, 238):
-        for lane, first in ((core_v2.LANE_SMALLTALK, "deepseek-v4.1-flash"), (core_v2.LANE_NORMAL, "claude-sonnet-5-5"),
+        #  Đại ca 15/10: «Haiku thường, Sonnet việc nặng» — cùng một khóa Claude, model đổi theo luồng.
+        for lane, first in ((core_v2.LANE_SMALLTALK, "claude-haiku-5-5"), (core_v2.LANE_NORMAL, "claude-haiku-5-5"),
                             (core_v2.LANE_HEAVY, "claude-sonnet-5-5")):
-            with user_keys.prefer(core_v2.route_providers(lane)):
+            with user_keys.prefer(core_v2.route_providers(lane), model=core_v2.lane_model(lane)):
                 assert user_keys.active_ref().model == first, lane
                 assert len(user_keys.chain()) == 3                 # các khóa còn lại vẫn làm dự phòng
 
@@ -956,6 +958,56 @@ def test_chi_phi_claude_qua_tram_tinh_ca_bo_dem():
 
     #  100k vào (70k đọc bộ đệm, 10k ghi bộ đệm, 20k thường) + 1k ra.
     cost = estimate_cost_usd("claude-sonnet-5-5", 100_000, 1_000, cache_read=70_000, cache_write=10_000)
-    assert cost == round((20_000 * 4 + 70_000 * 0.4 + 10_000 * 5 + 1_000 * 20) / 1_000_000, 6)
+    assert cost == round((20_000 * 4 + 70_000 * 0.4 + 10_000 * 8 + 1_000 * 20) / 1_000_000, 6)    # ghi bộ đệm ×2
+    assert estimate_cost_usd("claude-haiku-5-5", 100_000, 1_000, cache_read=50_000) == round((100_000 * 0.2 + 1_000) / 1_000_000, 6)
     assert estimate_cost_usd("claude-sonnet-5-5", 100_000, 0) == 0.4
     assert estimate_cost_usd("deepseek-v4.1-flash", 1_000_000, 0, cache_read=500_000) == 2.1     # chưa khai bộ đệm: như cũ
+
+
+# ---------------------------------------------------------------------------
+# Đợt nén 15/10 (ví trạm trừ 27 USD / ngày; GHI bộ đệm ~60% tiền)
+# ---------------------------------------------------------------------------
+def _say(db, direction, text, minutes_ago):
+    r = service.log_message(db, direction, CHAT, 0, text, action=ACT_ASKED if direction == DIR_IN else ACT_ANSWER)
+    r.created_at = datetime.now() - timedelta(minutes=minutes_ago)
+    return r
+
+
+def test_lich_su_chi_phien_hien_tai_va_bo_theo_khoi(db):
+    _say(db, DIR_IN, "chuyện sáng nay", 200)                 # cách > SESSION_GAP → phiên cũ, bỏ
+    _say(db, DIR_OUT, "trả lời sáng nay", 199)
+    for i in range(12):
+        _say(db, DIR_IN, f"hỏi {i} " + "y" * 590, 40 - i)
+        _say(db, DIR_OUT, f"đáp {i} " + "z" * 590, 40 - i)
+    db.commit()
+    row = _incoming(db, "tiếp nhé")
+    first = core_v2.history(db, CHAT, row.id, row.created_at)
+    assert not any("sáng nay" in t["content"] for t in first)
+    assert sum(len(t["content"]) for t in first) <= core_v2.HISTORY_MAX_CHARS
+    #  Thêm MỘT lượt: tiền tố lịch sử (các tin đầu) giữ nguyên → trạm đọc lại bộ đệm thay vì ghi lại cả đoạn.
+    _say(db, DIR_IN, "tiếp nhé", 0)
+    _say(db, DIR_OUT, "dạ", 0)
+    db.commit()
+    row2 = _incoming(db, "còn gì nữa")
+    second = core_v2.history(db, CHAT, row2.id, row2.created_at)
+    assert second[:len(first)] == first
+
+
+def test_ket_qua_cong_cu_qua_dai_bi_got():
+    big = {"rows": [{"code": f"NP{i:03d}", "note": "x" * 2000} for i in range(50)], "total": 50}
+    out = core_v2.trim_result(big)
+    assert len(out["rows"]) == core_v2.TOOL_LIST_MAX + 1 and "còn 30 mục" in out["rows"][-1]
+    assert len(out["rows"][0]["note"]) <= core_v2.TOOL_TEXT_MAX + 1 and out["total"] == 50
+    small = {"rows": [1, 2, 3]}
+    assert core_v2.trim_result(small) is small
+    draft = {"draft": {"lines": list(range(100))}}
+    assert core_v2.trim_result(draft) is draft                      # nháp giữ nguyên
+
+
+def test_boi_canh_luot_co_tran_tung_khoi(db, chat, monkeypatch):
+    monkeypatch.setattr(core_v2.erp, "glossary_block", lambda db_, texts: "THUẬT NGỮ " + "g" * 5000)
+    sizes: dict = {}
+    row = _incoming(db, "hỏi chút")
+    ctx = core_v2.turn_context(db, CHAT, row, chat.user, "hỏi chút", sizes)
+    assert sizes["glossary"] <= core_v2.CONTEXT_BUDGET["glossary"] + 60 and "pending" in sizes and "time" in sizes
+    assert len(ctx) < 4000

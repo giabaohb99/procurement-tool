@@ -366,7 +366,7 @@ def judge(sample: Sample, logs: list[TurnLog]) -> dict:
                      f"CÔNG CỤ BOT GỌI (→ kết quả): {'; '.join(log.notes) or ', '.join(log.tools) or '(không)'}\n"
                      f"GHI THẬT: {', '.join(log.commits + log.blocked) or '(không ghi gì)'}\n"
                      f"BOT TRẢ LỜI:\n{said[:2500]}")
-    with user_keys.prefer(core_v2.route_providers(core_v2.LANE_NORMAL)):
+    with user_keys.prefer(core_v2.route_providers(core_v2.LANE_NORMAL), model=core_v2.lane_model(core_v2.LANE_NORMAL)):
         res = manager.get_provider().ask([ChatMessage(role="user", content="\n\n".join(parts))], system=JUDGE_SYSTEM,
                                          max_tokens=300, temperature=0.0)
     m = re.search(r"\{.*\}", res.text or "", re.S)

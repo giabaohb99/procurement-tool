@@ -38,8 +38,11 @@ HISTORY_WINDOW = timedelta(hours=24)
 #  14/10 lượt #206: «hello em» nạp 39.211 token vì 17 lượt lịch sử chứa nguyên các bản tra giá dài (vàng, bitcoin)
 #  → trạm không có prompt caching nên mỗi lượt đọc lại hết, chờ ~7 s. Nay mỗi tin cũ cắt ngắn, tổng trần 12k ký tự;
 #  câu xã giao chỉ mang 6 lượt.
-HISTORY_MAX_CHARS = 12_000
-HISTORY_MSG_CHARS = 900
+#  Đợt nén 15/10 (ví trạm trừ 27 USD / ngày): 12k → 6k ký tự, mỗi tin 900 → 600; chỉ phiên hiện tại; bỏ theo khối.
+HISTORY_MAX_CHARS = 6_000
+HISTORY_MSG_CHARS = 600
+HISTORY_BLOCK = 8
+SESSION_GAP = timedelta(minutes=60)
 SMALLTALK_TURNS = 6
 DRAFT_WINDOW = timedelta(minutes=15)
 PLAN_WAIT_WINDOW = timedelta(hours=48)
@@ -281,6 +284,15 @@ def route_providers(lane: str) -> list[str]:
     return []
 
 
+def lane_model(lane: str) -> str:
+    """Model Claude theo luồng (AGENT_CORE_V2_LANE_MODELS); "" = model ghi ở khóa."""
+    for part in str(settings.AGENT_CORE_V2_LANE_MODELS or "").split(";"):
+        name, _, model = part.partition("=")
+        if name.strip() == lane:
+            return model.strip()
+    return ""
+
+
 def _is_smalltalk(text: str) -> bool:
     from app.modules.assistant import tool_router
 
@@ -411,28 +423,46 @@ def history(db: Session, chat_id: str, before_id: int, now, *, smalltalk: bool =
                 AgentMessage.action.in_((ACT_ASKED, ACT_ANSWER, service.ACT_RESEARCH)),
                 AgentMessage.id < before_id)
          .order_by(AgentMessage.id.desc()).limit(turns_max * 2))
-    turns: list[dict] = []
-    total = 0
-    for r in db.scalars(q):
+    rows = []
+    newer_at = now
+    for r in db.scalars(q):                   # mới → cũ
         if now and r.created_at and now - r.created_at > HISTORY_WINDOW:
             break
-        body = r.body or ""
-        if r.direction != DIR_IN and _card_talk(body):
-            #  Tin cũ của bot kiểu «(đã soạn bản nháp, xem thẻ bên dưới)» (đường cũ ghi thay cho thẻ) hay «em hỏi lại ở thẻ
-            #  dưới»: model CHÉP LẠI câu đó thay vì gọi công cụ (đo 14/10 16:50, Kimi). Thay bằng ghi chú trung tính.
-            continue                  # bỏ hẳn: thay bằng ghi chú thì Kimi chép nguyên ghi chú (đo 14/10 16:55)
-        if r.direction != DIR_IN and (body.startswith(DRAFT_HEADS) or "đang chờ, em chưa tạo:" in body.split("\n", 1)[0]):
-            #  ai-CR-202: tin nháp cũ chỉ giữ dòng đầu — nội dung nháp còn chờ đã có ở khối ĐANG DỞ; giữ nguyên thì mỗi
-            #  lượt trạm phải ghi lại cache cho cả đoạn dài (Agent 1 đo YCMH: ~15k token ghi mỗi lượt).
-            body = body.split("\n", 1)[0] + " (chi tiết nháp đã lược)"
-        if len(body) > HISTORY_MSG_CHARS:
-            body = body[:HISTORY_MSG_CHARS] + " …(đã rút gọn)"
-        total += len(body)
-        if total > HISTORY_MAX_CHARS:
-            break
-        turns.append({"role": "user" if r.direction == DIR_IN else "assistant", "content": body})
-    turns.reverse()
-    return turns
+        if newer_at and r.created_at and newer_at - r.created_at > SESSION_GAP:
+            break                             # đợt nén 15/10: chỉ lấy PHIÊN hiện tại (ngắt quá SESSION_GAP là chuyện khác)
+        newer_at = r.created_at or newer_at
+        rows.append(r)
+    rows.reverse()                            # cũ → mới
+    items: list[dict] = []
+    for r in rows:
+        body = _history_body(r)
+        if body is not None:
+            items.append({"role": "user" if r.direction == DIR_IN else "assistant", "content": body})
+    if smalltalk:
+        return items[-2 * SMALLTALK_TURNS:]
+    #  Đợt nén 15/10 (Agent 1: mỗi lượt GHI bộ đệm 20–40k token): bản cũ bỏ tin cũ nhất MỖI lượt khi chạm trần → tiền tố
+    #  lịch sử đổi mỗi lượt, trạm ghi lại cả đoạn. Nay bỏ theo KHỐI HISTORY_BLOCK tin tính từ đầu phiên: tiền tố chỉ đổi
+    #  khi rơi cả một khối.
+    while len(items) > HISTORY_BLOCK and sum(len(t["content"]) for t in items) > HISTORY_MAX_CHARS:
+        items = items[HISTORY_BLOCK:]
+    return items
+
+
+def _history_body(r: AgentMessage) -> str | None:
+    """Nội dung một tin trong lịch sử — CHỈ phụ thuộc chính tin đó (không theo vị trí), để tiền tố ổn định giữa các lượt."""
+    body = r.body or ""
+    if r.direction != DIR_IN and _card_talk(body):
+        #  Tin cũ của bot kiểu «(đã soạn bản nháp, xem thẻ bên dưới)» (đường cũ ghi thay cho thẻ) hay «em hỏi lại ở thẻ
+        #  dưới»: model CHÉP LẠI câu đó thay vì gọi công cụ (đo 14/10 16:50, Kimi). Bỏ hẳn (ghi chú thay thì Kimi chép).
+        return None
+    if r.direction != DIR_IN and (body.startswith(DRAFT_HEADS) or "đang chờ, em chưa tạo:" in body.split("\n", 1)[0]):
+        #  ai-CR-202: tin nháp cũ chỉ giữ dòng đầu — nội dung nháp còn chờ đã có ở khối ĐANG DỞ.
+        return body.split("\n", 1)[0] + " (chi tiết nháp đã lược)"
+    if len(body) > HISTORY_MSG_CHARS:
+        #  Đợt nén: tin dài của bot (bảng số liệu, bản tra giá) là kết quả công cụ cũ — giữ phần đầu là đủ cho mạch chuyện;
+        #  cần số liệu mới thì tra lại (luật «số liệu đổi theo ngày luôn tra công cụ»).
+        return body[:HISTORY_MSG_CHARS] + " …(đã rút gọn)"
+    return body
 
 
 WEEKDAYS_VI = ("thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật")
@@ -515,30 +545,37 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
     return "\n\n".join(p for p in parts if p)
 
 
-def turn_context(db: Session, chat_id: str, row: AgentMessage, user, text: str) -> str:
+#  Đợt nén 15/10: ngân sách CỐ ĐỊNH (ký tự) cho từng khối của bối cảnh lượt; vượt thì cắt — đo theo khối ở artifact.blocks.
+CONTEXT_BUDGET = {"pending": 1500, "glossary": 800, "memory": 1200, "habit": 600}   # memory = MEMORY_BLOCK_CHARS
+
+
+def turn_context(db: Session, chat_id: str, row: AgentMessage, user, text: str, sizes: dict | None = None) -> str:
     """Phần ĐỔI mỗi lượt (giờ, ĐANG DỞ, thuật ngữ + ghi nhớ theo câu, thói quen) — chèn vào ĐẦU tin người dùng mới nhất,
-    sau toàn bộ phần tĩnh, để tiền tố công cụ → system → lịch sử vẫn trúng cache."""
+    sau toàn bộ phần tĩnh, để tiền tố công cụ → system → lịch sử vẫn trúng cache. `sizes`: nhận độ dài từng khối."""
     from . import intent_ledger, personal_memory
 
     now = now_local()
-    parts = [f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M')} ngày {now:%d/%m/%Y}.",
-             pending_block(db, chat_id, row.id, row.created_at)]
+    blocks: list[tuple[str, str]] = [("time", f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M')} ngày {now:%d/%m/%Y}.")]
     days = resolve_weekdays(text, now.date())
     if days:
-        parts.append("NGÀY ĐÃ TÍNH (theo chữ trong tin, dùng đúng): " + "; ".join(
-            f"{label} = {WEEKDAYS_VI[d.weekday()]} {d:%d/%m/%Y}" for label, d in days) + ".")
-    for fn in (lambda: erp.glossary_block(db, [text]),
-               #  Tìm ghi chú theo câu hỏi tốn ~1,8 s (gọi nhúng véc-tơ) — câu xã giao chỉ cần phần lõi sổ nhớ.
-               (lambda: personal_memory.load_core(db, user.id)) if _is_smalltalk(text)
-               else (lambda: _clip(personal_memory.prompt_block(db, user.id, text), MEMORY_BLOCK_CHARS)),
-               lambda: intent_ledger.habit_block(db, user.id)):
+        blocks.append(("days", "NGÀY ĐÃ TÍNH (theo chữ trong tin, dùng đúng): " + "; ".join(
+            f"{label} = {WEEKDAYS_VI[d.weekday()]} {d:%d/%m/%Y}" for label, d in days) + "."))
+    makers = (("pending", lambda: pending_block(db, chat_id, row.id, row.created_at)),
+              ("glossary", lambda: erp.glossary_block(db, [text])),
+              #  Tìm ghi chú theo câu hỏi tốn ~1,8 s (gọi nhúng véc-tơ) — câu xã giao chỉ cần phần lõi sổ nhớ.
+              ("memory", (lambda: personal_memory.load_core(db, user.id)) if _is_smalltalk(text)
+               else (lambda: personal_memory.prompt_block(db, user.id, text))),
+              ("habit", lambda: intent_ledger.habit_block(db, user.id)))
+    for name, fn in makers:
         try:
-            block = fn()
+            block = str(fn() or "")
         except Exception:  # noqa: BLE001
             block = ""
         if block:
-            parts.append(str(block))
-    body = "\n\n".join(p for p in parts if p)
+            blocks.append((name, _clip(block, CONTEXT_BUDGET[name])))
+    if sizes is not None:
+        sizes.update({name: len(b) for name, b in blocks})
+    body = "\n\n".join(b for _name, b in blocks if b)
     return f"{CONTEXT_HEAD}\n{body}\n{CONTEXT_TAIL}\n\n"
 
 
@@ -1145,6 +1182,36 @@ def _more_tools_result(args: dict, offered: set[str]) -> dict:
     return {"ok": True, "nhom": new}
 
 
+#  Đợt nén 15/10: kết quả công cụ đi vào lượt gọi model thứ hai (và lượt sau nữa). Trần cho một kết quả: danh sách dài
+#  giữ TOOL_LIST_MAX mục đầu, chuỗi dài giữ TOOL_TEXT_MAX ký tự — chỉ khi cả kết quả vượt TOOL_RESULT_CHARS.
+TOOL_RESULT_CHARS = 8000
+TOOL_LIST_MAX = 20
+TOOL_TEXT_MAX = 1200
+
+
+def trim_result(out):
+    if not isinstance(out, dict) or isinstance(out.get("draft"), dict):
+        return out                                 # nháp giữ nguyên (lưu đúng thứ model soạn)
+    try:
+        if len(json.dumps(out, ensure_ascii=False, default=str)) <= TOOL_RESULT_CHARS:
+            return out
+    except (TypeError, ValueError):
+        return out
+
+    def cut(v, depth=0):
+        if isinstance(v, str):
+            return v if len(v) <= TOOL_TEXT_MAX else v[:TOOL_TEXT_MAX] + "…"
+        if isinstance(v, list):
+            head = [cut(x, depth + 1) for x in v[:TOOL_LIST_MAX]]
+            if len(v) > TOOL_LIST_MAX:
+                head.append(f"(… còn {len(v) - TOOL_LIST_MAX} mục — bot lược; cần thì lọc hẹp hơn)")
+            return head
+        if isinstance(v, dict) and depth < 4:
+            return {k: cut(x, depth + 1) for k, x in v.items()}
+        return v
+    return cut(out)
+
+
 def _add_usage(result, first) -> None:
     result.call_secs = list(first.call_secs or []) + list(result.call_secs or [])
     result.input_tokens += first.input_tokens
@@ -1179,7 +1246,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         #  Tra nhanh (giá, tỷ giá, thời tiết…) đi đường tra mạng đã kiểm kỹ (ai-CR-193/194), trên model nhanh.
         from . import research
 
-        with user_keys.prefer(route_providers(LANE_QUICK)):
+        with user_keys.prefer(route_providers(LANE_QUICK), model=lane_model(LANE_QUICK)):
             service.run_research(db, chat_id, text, research.MODE_WEB)
         return
     run = service.start_run(db, 0, STAGE_ANSWER)
@@ -1193,7 +1260,8 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         waiting = _pending_draft(db, chat_id, row.id, row.created_at)[1]      # nháp đang chờ TRƯỚC lượt này
         tools = select_tools(db, user, text, chat_id)
         log.info("core_v2: dựng ngữ cảnh %.1f s", time.monotonic() - t0)
-        context = turn_context(db, chat_id, row, user, text)
+        sizes: dict = {}
+        context = turn_context(db, chat_id, row, user, text, sizes)
         msgs = [ChatMessage(role=t["role"], content=t["content"]) for t in turns] + [
             ChatMessage(role="user", content=context + text)]
         log.info("core_v2: system=%d ký tự · công cụ=%d · lịch sử=%d lượt", len(system), len(tools), len(turns))
@@ -1207,7 +1275,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                 out = erp.run_tool(db, user, name, _with_user_text(name, _clean_args(name, args or {}), text, turns))
                 if isinstance(out, dict) and isinstance(out.get("draft"), dict):
                     out = {**out, "tom_tat_se_luu": _summary(name, out["draft"])}
-                return out
+                return trim_result(out)
             except Exception as e:  # noqa: BLE001
                 log.exception("core_v2: công cụ %s hỏng", name)
                 return {"error": f"Công cụ {name} lỗi: {type(e).__name__}: {str(e)[:200]}"}
@@ -1221,7 +1289,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
             return False
 
         lane = lane_of(text, {t.name for t in tools})
-        with user_keys.prefer(route_providers(lane)):
+        with user_keys.prefer(route_providers(lane), model=lane_model(lane)):
             ref = user_keys.active_ref()
             log.info("core_v2: luồng %s → %s", lane, getattr(ref, "model", "") or getattr(ref, "provider", ""))
             result = manager.get_provider().run_tools(
@@ -1279,6 +1347,9 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in prior_calls + list(
                             result.tool_calls or []) if isinstance(c, dict)][:20], "tools_offered": len(tools),
                         "stopped": stopped.get("name") or "", "more": more, "system_chars": len(system), "context_chars": len(context),
+                        "blocks": {**sizes, "history": sum(len(str(t.get("content") or "")) for t in turns),
+                                   "history_msgs": len(turns)},
+                        "model": result.model or "",
                         "calls": len(result.call_secs or []), "call_secs": list(result.call_secs or [])[:10],
                         "cache_read": int(result.cache_read_tokens or 0), "cache_write": int(result.cache_write_tokens or 0),
                         "tools_chars": sum(len(t.description) + len(json.dumps(t.parameters, ensure_ascii=False)) for t in tools)}
