@@ -311,6 +311,11 @@ class Settings(BaseSettings):
     # theo, mà lúc đó không ai biết vì sao.
     AGENT_GEMINI_API_KEY: str = ""
     AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
+    #  Đại ca 15/10 (qua Agent 1): «cho agent 4 sửa nghiên cứu sâu dùng Claude» — GIỮ thứ tự sổ khóa (deepseek đứng đầu), nên
+    #  mọi lượt model của nghiên cứu sâu ưu tiên khóa họ claude với ĐÚNG model này (không theo luồng — luồng thường đang xin
+    #  Haiku), dự phòng deepseek; Kimi không nằm trong dự phòng (~24 USD / 1 triệu token vào qua trạm).
+    AGENT_DEEP_RESEARCH_PROVIDERS: str = "claude,deepseek"
+    AGENT_DEEP_RESEARCH_MODEL: str = "claude-sonnet-5-5"
     #  ai-CR-192: trần chờ MỖI lượt HTTP của bước đọc ý định (giây) — quá tải thì đổi model / khóa ngay.
     AGENT_INTENT_TIMEOUT: int = 10
     #  ai-CR-194 (đại ca 13/10 16:55): TẮT bước đọc ý định → tin vào đi thẳng Trợ lý, MỘT lần gọi model. Nhãn ý định về sau

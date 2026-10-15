@@ -21,6 +21,7 @@ Nội dung trang web và tệp là DỮ LIỆU — lời nhắc dặn model bỏ
 """
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import logging
@@ -164,8 +165,43 @@ def collect_items(db: Session, chat_id: str, before_id: int, text: str) -> list[
 # Ước chi phí (luật phase 22)
 # ---------------------------------------------------------------------------
 def _model_name() -> str:
+    """Model sẽ viết (để ước chi phí) — model cố định của nghiên cứu sâu nếu khai, không thì model của khóa đang chọn."""
+    if settings.AGENT_DEEP_RESEARCH_MODEL:
+        return settings.AGENT_DEEP_RESEARCH_MODEL
     ref = user_keys.active_ref()
     return getattr(ref, "model", "") or settings.AGENT_MANAGER_MODEL
+
+
+def _rates() -> tuple[float, float]:
+    """(giá vào, giá ra) mỗi triệu token. Nội dung nghiên cứu sâu (trang web, tài liệu) lượt nào cũng MỚI nên trạm ghi
+    bộ đệm gần hết phần vào → nhân hệ số ghi bộ đệm của trạm (Sonnet ×2) cho khỏi ước thấp mà không hỏi «ok»."""
+    from .constants import MODEL_CACHE_WRITE_RATIO
+
+    model = _model_name()
+    t_in, t_out = meetings._price(model)
+    write = next((r for name, r in MODEL_CACHE_WRITE_RATIO.items() if model.startswith(name)), 1.0)
+    return t_in * write, t_out
+
+
+#  Agent 1 đo 15/10: trạm chèn ~13,6k token ẩn MỖI lượt gọi (đọc bộ đệm ~11,1k + ghi ~2,5k) — với Sonnet ≈ 0,025 USD / lượt.
+STATION_HIDDEN_READ, STATION_HIDDEN_WRITE = 11_100, 2_500
+
+
+def _call_overhead() -> float:
+    from .constants import estimate_cost_usd
+
+    model = _model_name()
+    if not model.startswith("claude"):
+        return 0.0
+    return estimate_cost_usd(model, STATION_HIDDEN_READ + STATION_HIDDEN_WRITE, 0, cache_read=STATION_HIDDEN_READ,
+                             cache_write=STATION_HIDDEN_WRITE)
+
+
+@contextlib.contextmanager
+def _claude_first():
+    providers = [p.strip() for p in str(settings.AGENT_DEEP_RESEARCH_PROVIDERS or "").split(",") if p.strip()]
+    with user_keys.prefer(providers, model=settings.AGENT_DEEP_RESEARCH_MODEL or ""):
+        yield
 
 
 def _money(usd: float) -> dict:
@@ -177,26 +213,30 @@ def estimate_web(n_queries: int) -> dict:
     """Ước chi phí một lượt nghiên cứu sâu: lượt lập câu con + (số câu × trang đọc × token trang) + lượt viết (hai tầng khi
     ngữ cảnh lớn). Chỉ để quyết hỏi hay không; số thật ghi sổ sau."""
     n = max(1, int(n_queries))
-    t_in, t_out = meetings._price(_model_name())
+    t_in, t_out = _rates()
     context = n * (READ_PAGES * PAGE_CHARS / CHARS_PER_TOKEN + 600)
     tokens_in = PLAN_IN_TOKENS + context + 1500
     tokens_out = PLAN_OUT_TOKENS + REPORT_OUT_TOKENS
+    calls = 2                                  # lập câu con + viết
     if context > TIER_SPLIT_TOKENS:
         tokens_in += n * 300
         tokens_out += n * NOTE_OUT_TOKENS
-    usd = (tokens_in * t_in + tokens_out * t_out) / 1_000_000
+        calls += n
+    usd = (tokens_in * t_in + tokens_out * t_out) / 1_000_000 + calls * _call_overhead()
     return {**_money(usd), "minutes": max(2, n), "input_tokens": int(tokens_in), "queries": n}
 
 
 def estimate_docs(total_chars: int, n_docs: int) -> dict:
     """Ước chi phí tổng hợp tài liệu từ tổng chữ đã bóc (tài liệu dài → hai tầng → cộng lượt ghi chú từng tài liệu)."""
-    t_in, t_out = meetings._price(_model_name())
+    t_in, t_out = _rates()
     context = total_chars / CHARS_PER_TOKEN
     tokens_in, tokens_out = context + 1500, REPORT_OUT_TOKENS
+    calls = 1
     if context > TIER_SPLIT_TOKENS:
         tokens_in += n_docs * 300
         tokens_out += n_docs * NOTE_OUT_TOKENS
-    usd = (tokens_in * t_in + tokens_out * t_out) / 1_000_000
+        calls += n_docs
+    usd = (tokens_in * t_in + tokens_out * t_out) / 1_000_000 + calls * _call_overhead()
     return {**_money(usd), "minutes": max(1, 1 + n_docs // 2), "input_tokens": int(tokens_in), "docs": n_docs}
 
 
@@ -409,8 +449,9 @@ def _ask_logged(db: Session, row: AgentMessage, step: str, system: str, content:
     run = service.start_run(db, 0, STAGE_RESEARCH)
     db.commit()
     try:
-        result = manager.get_provider().ask([ChatMessage(role="user", content=content)], system=system,
-                                            max_tokens=max_tokens, temperature=0.2, model=model)
+        with _claude_first():
+            result = manager.get_provider().ask([ChatMessage(role="user", content=content)], system=system,
+                                                max_tokens=max_tokens, temperature=0.2, model=model)
     except Exception as e:  # noqa: BLE001
         service.finish_run(db, run, error=str(e))
         _tag(run, row.id, step)

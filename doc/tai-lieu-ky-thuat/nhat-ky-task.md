@@ -13358,6 +13358,16 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-205 | Nghiên cứu sâu của bot viết bằng Claude thay vì DeepSeek
+- status: dang-lam
+- date: 2026-10-15
+Đại ca thấy báo cáo nghiên cứu sâu đang do DeepSeek viết vì khóa DeepSeek đứng đầu sổ khóa, mà đại ca muốn giữ nguyên thứ
+tự sổ. Nay mọi lượt model của nghiên cứu sâu và tổng hợp tài liệu ưu tiên khóa Claude với model Sonnet, hỏng thì mới lùi về
+DeepSeek. Ước chi phí trước khi chạy tính theo giá Claude qua trạm, kể cả phần trạm tự chèn mỗi lượt gọi, để thẻ hỏi đồng ý
+hiện đúng khi chi phí từ một đô la trở lên.
+
+Mã nguồn: agent_hub/deep_research.py (_claude_first, _rates, _call_overhead), core/config.py
+
 ## ai-CR-204 | Đợt nén nội dung và chuyển câu thường của bot sang model rẻ
 - status: dang-lam
 - date: 2026-10-15

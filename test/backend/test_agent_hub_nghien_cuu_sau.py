@@ -379,3 +379,24 @@ def test_so_y_dinh_va_huong_dan():
     text = json.dumps([list(s.items) for s in user_guide.SECTIONS], ensure_ascii=False) if hasattr(user_guide, "SECTIONS") \
         else open(user_guide.__file__, encoding="utf-8").read()
     assert "nghiên cứu sâu" in text and "tổng hợp các tài liệu này" in text
+
+
+def test_nghien_cuu_sau_uu_tien_claude_sonnet_du_so_khoa_deepseek_dung_dau(monkeypatch):
+    """Đại ca 15/10: báo cáo nghiên cứu sâu đang do DeepSeek viết (khóa DeepSeek đứng đầu sổ, GIỮ thứ tự sổ). Mọi lượt
+    model của nghiên cứu sâu ưu tiên khóa Claude với Sonnet — kể cả khi đang trong luồng thường xin Haiku; không Kimi."""
+    from app.modules.agent_hub import user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+
+    tram = "https://modelapi.vn/v1"
+    chain = [KeyRef(provider="openai_compat", key="k1", model="deepseek-v4.1-flash", base_url=tram, row_id=1),
+             KeyRef(provider="openai_compat", key="k2", model="kimi-k3", base_url=tram, row_id=2),
+             KeyRef(provider="openai_compat", key="k3", model="claude-sonnet-5-5", base_url=tram, row_id=3)]
+    with user_keys.use_chain(chain, 238):
+        with user_keys.prefer(["claude"], model="claude-haiku-5-5"):          # như luồng thường của lõi mới
+            with dr._claude_first():
+                assert user_keys.active_ref().model == "claude-sonnet-5-5"
+                assert [r.model for r in user_keys.chain()][:2] == ["claude-sonnet-5-5", "deepseek-v4.1-flash"]
+    #  Ước chi phí theo giá Claude qua trạm (vào 4 × ghi bộ đệm 2 / ra 20), không theo giá DeepSeek.
+    est = dr.estimate_web(5)
+    t_in, t_out = dr._rates()
+    assert (t_in, t_out) == (8.0, 20.0) and est["usd"] > 0
