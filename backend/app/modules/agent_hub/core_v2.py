@@ -374,8 +374,17 @@ def calendar_block(now) -> str:
     return "giờ Việt Nam. LỊCH (dùng đúng bảng này khi đổi «thứ sáu», «tuần sau»… ra ngày): " + "; ".join(cells) + "."
 
 
+CONTEXT_HEAD = "[BỐI CẢNH LƯỢT NÀY — hệ thống chèn, không phải lời người dùng]"
+CONTEXT_TAIL = "[HẾT BỐI CẢNH — dưới đây là tin người dùng]"
+CONTEXT_RULE = (f"Tin người dùng mới nhất mở đầu bằng khối {CONTEXT_HEAD} (giờ hiện tại, việc ĐANG DỞ, ghi nhớ, thuật "
+                "ngữ liên quan) do hệ thống chèn: dùng như sự thật, đừng nhắc lại hay trích nó trong câu trả lời.")
+
+
 def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) -> str:
-    from . import intent_ledger, personal_memory, service
+    """Phần TĨNH của lời nhắc — giống hệt nhau giữa các lượt cùng ngày của một người để trạm đọc lại từ cache (ai-CR-202:
+    trạm đi qua Anthropic Messages, cache theo tiền tố công cụ → system → lịch sử; đổi một chữ ở system là ghi lại cả
+    ~20k token công cụ + system giá 1,25×, đọc cache chỉ 0,1×). Phần đổi mỗi lượt nằm ở `turn_context`."""
+    from . import service
     from .constants import BOT_LOGIN_FACTS
 
     now = now_local()
@@ -390,15 +399,32 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
     parts = [
         service._persona(chat_id),
         STYLE_RULES,
-        f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M')} {calendar_block(now)}",
+        f"NGÀY: {calendar_block(now)}",
         who,
         CORE_RULES,
         DRAFT_FACTS,
         NEWS_RULES,
         BOT_LOGIN_FACTS,
-        pending_block(db, chat_id, row.id, row.created_at),
+        CONTEXT_RULE,
     ]
-    for fn in (lambda: erp.caller_context(db, user), lambda: erp.glossary_block(db, [text]),
+    try:
+        profile = erp.caller_context(db, user)          # chân dung người hỏi — không đổi giữa các lượt
+    except Exception:  # noqa: BLE001
+        profile = ""
+    if profile:
+        parts.append(str(profile))
+    return "\n\n".join(p for p in parts if p)
+
+
+def turn_context(db: Session, chat_id: str, row: AgentMessage, user, text: str) -> str:
+    """Phần ĐỔI mỗi lượt (giờ, ĐANG DỞ, thuật ngữ + ghi nhớ theo câu, thói quen) — chèn vào ĐẦU tin người dùng mới nhất,
+    sau toàn bộ phần tĩnh, để tiền tố công cụ → system → lịch sử vẫn trúng cache."""
+    from . import intent_ledger, personal_memory
+
+    now = now_local()
+    parts = [f"THỜI ĐIỂM: bây giờ là {fmt_local(now, '%H:%M')} ngày {now:%d/%m/%Y}.",
+             pending_block(db, chat_id, row.id, row.created_at)]
+    for fn in (lambda: erp.glossary_block(db, [text]),
                #  Tìm ghi chú theo câu hỏi tốn ~1,8 s (gọi nhúng véc-tơ) — câu xã giao chỉ cần phần lõi sổ nhớ.
                (lambda: personal_memory.load_core(db, user.id)) if _is_smalltalk(text)
                else (lambda: _clip(personal_memory.prompt_block(db, user.id, text), MEMORY_BLOCK_CHARS)),
@@ -409,7 +435,8 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
             block = ""
         if block:
             parts.append(str(block))
-    return "\n\n".join(p for p in parts if p)
+    body = "\n\n".join(p for p in parts if p)
+    return f"{CONTEXT_HEAD}\n{body}\n{CONTEXT_TAIL}\n\n"
 
 
 # ---------------------------------------------------------------------------
@@ -421,9 +448,9 @@ PLAN_ONLY_TOOLS = frozenset({"draft_work_plan"})
 #  thì chỉ giữ công cụ nháp + vài công cụ tra cứu cần khi soạn; nhóm tra cứu thu mua (16 công cụ) chỉ nạp khi câu còn hỏi
 #  thêm giá / NCC / lịch sử…; «phòng IT» không kéo theo nhóm phiếu hỗ trợ.
 DRAFT_PURCHASE_KEEP = frozenset({"product_search", "my_procurement_requests"})
-PURCHASE_LOOKUP = re.compile(r"gia|ncc|nha cung cap|lich su|so sanh|cham diem|bao nhieu|tot nhat|re nhat|hop dong"
-                             r"|da mua|lan truoc|thong ke|top")
-TICKET_WORDS = re.compile(r"ho tro|ticket|bao loi|su co|may in|hong|loi")
+PURCHASE_LOOKUP = re.compile(r"\bgia\b|\bncc\b|nha cung cap|lich su|so sanh|cham diem|bao nhieu|tot nhat|re nhat|hop dong"
+                             r"|da mua|lan truoc|thong ke|\btop\b")
+TICKET_WORDS = re.compile(r"ho tro|ticket|bao loi|su co|may in|\bhong\b|\bloi\b")
 
 
 def _focus_draft_tools(text: str, defs: list[ToolDef]) -> list[ToolDef]:
@@ -861,7 +888,9 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         turns = history(db, chat_id, row.id, row.created_at, smalltalk=tool_router.is_smalltalk(text))
         tools = select_tools(db, user, text, chat_id)
         log.info("core_v2: dựng ngữ cảnh %.1f s", time.monotonic() - t0)
-        msgs = [ChatMessage(role=t["role"], content=t["content"]) for t in turns] + [ChatMessage(role="user", content=text)]
+        context = turn_context(db, chat_id, row, user, text)
+        msgs = [ChatMessage(role=t["role"], content=t["content"]) for t in turns] + [
+            ChatMessage(role="user", content=context + text)]
         log.info("core_v2: system=%d ký tự · công cụ=%d · lịch sử=%d lượt", len(system), len(tools), len(turns))
 
         def execute(name: str, args: dict) -> dict:
@@ -901,6 +930,8 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                     max_iters=MAX_ITERS, cache_system=True)
                 result.input_tokens += first.input_tokens
                 result.output_tokens += first.output_tokens
+                result.cache_read_tokens += first.cache_read_tokens
+                result.cache_write_tokens += first.cache_write_tokens
             service.finish_run(db, run, result=result)
         #  Đã dừng sau công cụ nháp thì chữ model (nếu có) chỉ là câu dạo trước khi gọi — bỏ, bot tự dựng tin.
         if stopped.get("name") in ("commit_draft", "drop_draft"):
@@ -919,7 +950,8 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         service.deliver_tool_results(db, chat_id, user, [c for c in calls if c not in drafts])
         run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in (result.tool_calls or [])
                                                               if isinstance(c, dict)][:20], "tools_offered": len(tools),
-                        "stopped": stopped.get("name") or "", "system_chars": len(system),
+                        "stopped": stopped.get("name") or "", "system_chars": len(system), "context_chars": len(context),
+                        "cache_read": int(result.cache_read_tokens or 0), "cache_write": int(result.cache_write_tokens or 0),
                         "tools_chars": sum(len(t.description) + len(json.dumps(t.parameters, ensure_ascii=False)) for t in tools)}
         db.commit()
     except Exception as e:  # noqa: BLE001

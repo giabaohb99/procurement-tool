@@ -13371,6 +13371,9 @@ bài xanh. Agent 1 đo trên dev: câu tạo task từ tám mươi tám nghìn c
 còn tám giây. Câu lập yêu cầu mua hàng vẫn nạp ba mươi bảy công cụ, tốn tám mươi ba nghìn token cho một lần gọi, nên em vá
 thêm: câu chỉ lập phiếu mua mà không hỏi giá, nhà cung cấp hay lịch sử thì bỏ nhóm công cụ tra cứu thu mua, chữ IT trong
 tên phòng không kéo theo nhóm phiếu hỗ trợ; còn mười chín công cụ, độ dài giảm hơn một nửa. Dòng bot tạm hiểu rút còn ba ý.
+Trạm model nay có bộ nhớ đệm và báo số token theo kiểu mới, nên bot đọc đúng số token trạm tính tiền, ghi riêng phần đọc và
+ghi bộ nhớ đệm; phần lời nhắc cố định giữ nguyên giữa các lượt, phần đổi mỗi lượt (giờ, việc đang dở, ghi nhớ) dời xuống
+đầu tin nhắn mới nhất để trạm đọc lại phần cố định từ bộ nhớ đệm với giá một phần mười.
 
 Mã nguồn: agent_hub/core_v2.py (V2_TOOL_DESC, compact_defs, _stop_after, draft_reply); bài kiểm test_agent_hub_core_v2.py
 

@@ -96,11 +96,15 @@ def test_model_nhin_thay_ngay_nguoi_va_dang_do_lich_su_du(db, chat, monkeypatch)
     assert f"{datetime.now():%d/%m/%Y} (hôm nay)" in sysm                  # hôm 14/10 model ghi hạn năm 2025 vì thiếu ngày
     assert "LỊCH" in sysm and "(mai)" in sysm                              # và tính sai thứ sáu = 17/10
     assert "Trần Minh Được" in sysm and "KHÔNG gọi «đại ca»" in sysm       # biết đang nói với ai
-    assert "ĐANG DỞ" in sysm and "(không có)" in sysm
     assert "KHÔNG dùng emoji" in sysm
+    #  ai-CR-202: phần đổi mỗi lượt (giờ, ĐANG DỞ) nằm ở đầu tin mới nhất — system giữ nguyên để trạm đọc cache.
+    last = prov.seen["msgs"][-1].content
+    assert last.startswith(core_v2.CONTEXT_HEAD) and "ĐANG DỞ" in last and "(không có)" in last and "THỜI ĐIỂM" in last
+    assert "ĐANG DỞ (việc chưa khép" not in sysm and "bây giờ là" not in sysm
     #  Lịch sử: 2 lượt gần + câu hiện tại; câu hôm kia bị bỏ.
     contents = [m.content for m in prov.seen["msgs"]]
-    assert contents == ["nháp hồi nãy đâu", "Em còn giữ, anh muốn đổi gì?", "tạo cho anh task nghiên cứu luồng agent"]
+    assert contents[:2] == ["nháp hồi nãy đâu", "Em còn giữ, anh muốn đổi gì?"] and len(contents) == 3
+    assert last.endswith(core_v2.CONTEXT_TAIL + "\n\ntạo cho anh task nghiên cứu luồng agent")
     assert set(prov.seen["tools"]) >= {"update_draft", "commit_draft", "drop_draft"}
     #  Tin vào đóng dấu «hỏi» (không thành vé sửa mã), trả lời ghi «tra_loi», sổ chạy đóng OK và đánh dấu lõi v2.
     assert row.action == ACT_ASKED
@@ -137,8 +141,8 @@ def test_nhap_dang_cho_xuat_hien_trong_dang_do_va_commit_qua_duong_cu(db, chat, 
 
     core_v2.handle(db, CHAT, row, "tao task đó giúp anh đi")
 
-    assert "Nháp việc Dự án đang chờ" in prov.seen["system"] or "Nháp" in prov.seen["system"]
-    assert "Kiểm tra tài khoản ERP dev" in prov.seen["system"]
+    last = prov.seen["msgs"][-1].content
+    assert "Nháp" in last and "Kiểm tra tài khoản ERP dev" in last
     assert called["phrase"] == "tạo"
     assert row.action == ACT_ASKED
 
@@ -677,3 +681,30 @@ def test_cau_lap_ycmh_chi_nap_cong_cu_nhap(db, monkeypatch):
     assert {"draft_purchase_request", "product_purchase_history", "supplier_search"} <= asks
     assert "ticket_create" in pick("tạo phiếu hỗ trợ máy in phòng IT bị lỗi, cần mua mực")
     assert "supplier_scorecard" in pick("chấm điểm NCC giấy A4")                        # câu tra cứu thuần: như cũ
+    #  Từ ngắn đứng riêng (giá, NCC, top, hỏng, lỗi) phải khớp nguyên từ — 7d10adcd lỡ ghi ký tự backspace thay cho \b.
+    assert "product_best_price" in pick("tạo YCMH mua giấy A4, giá tầm 50 nghìn")
+    assert "ticket_create" in pick("tạo yêu cầu mua chuột mới, chuột phòng IT hỏng rồi")
+    assert not core_v2.PURCHASE_LOOKUP.search(" mua giay a4 cho phong it ") and "\x08" not in core_v2.PURCHASE_LOOKUP.pattern
+
+
+def test_system_khong_doi_giua_hai_luot_de_trung_cache(db, chat, monkeypatch):
+    """ai-CR-202: trạm cache theo tiền tố công cụ → system → lịch sử. Giờ / ĐANG DỞ / ghi nhớ đổi mỗi lượt phải ở tin cuối."""
+    prov = _install(monkeypatch, lambda msgs, tools, execute: _result("Dạ."))
+    systems = []
+    for text in ("anh hỏi chút", "thế còn việc kia"):
+        core_v2.handle(db, CHAT, _incoming(db, text), text)
+        systems.append(prov.seen["system"])
+    assert systems[0] == systems[1] and core_v2.CONTEXT_RULE in systems[0]
+
+
+def test_usage_tram_qua_anthropic_doc_claude_usage():
+    from app.modules.assistant.provider.openai_compat import OpenAICompatProvider
+
+    acc = {"input": 0, "output": 0, "thinking": 0, "cache_read": 0}
+    OpenAICompatProvider._accumulate(acc, {"prompt_tokens": 2, "completion_tokens": 9, "billing_usage": {
+        "source": "claude_messages", "claude_usage": {"input_tokens": 25, "cache_creation_input_tokens": 5115,
+                                                      "cache_read_input_tokens": 15513, "output_tokens": 9}}})
+    assert acc["input"] == 25 + 5115 + 15513 and acc["cache_read"] == 15513 and acc["cache_write"] == 5115
+    OpenAICompatProvider._accumulate(acc, {"prompt_tokens": 100, "completion_tokens": 5,
+                                           "prompt_tokens_details": {"cached_tokens": 40}})      # hãng OpenAI thường
+    assert acc["input"] == 20653 + 100 and acc["cache_read"] == 15553 and acc["output"] == 14

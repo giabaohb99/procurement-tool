@@ -135,14 +135,31 @@ class OpenAICompatProvider(Provider):
             text += CUT_NOTE
         return ChatResult(text=text, provider=self.name, model=data.get("model", used_model),
                           input_tokens=acc["input"], output_tokens=acc["output"], thinking_tokens=acc["thinking"],
-                          cache_read_tokens=acc["cache_read"], tool_calls=tool_calls, raw=data)
+                          cache_read_tokens=acc["cache_read"], cache_write_tokens=acc.get("cache_write", 0),
+                          tool_calls=tool_calls, raw=data)
 
     @staticmethod
     def _accumulate(acc: dict, usage: dict) -> None:
-        acc["input"] += int(usage.get("prompt_tokens") or 0)
-        acc["output"] += int(usage.get("completion_tokens") or 0)
+        #  ai-CR-202 (15/10): trạm modelapi.vn nay đi qua Anthropic Messages, kèm `billing_usage.claude_usage` (số trạm tính
+        #  tiền: input + ghi cache + đọc cache). `prompt_tokens` có lúc trả sai (Agent 1 thấy 2 / 112 / 384 cho lời nhắc
+        #  ~10k ký tự) → có claude_usage thì lấy số lớn hơn, ghi riêng phần ghi / đọc cache.
+        claude = ((usage.get("billing_usage") or {}).get("claude_usage") or {}) if isinstance(usage, dict) else {}
+        details = usage.get("prompt_tokens_details") or {}
+        prompt = int(usage.get("prompt_tokens") or 0)
+        output = int(usage.get("completion_tokens") or 0)
+        cache_read = int(details.get("cached_tokens") or 0)
+        cache_write = int(details.get("cache_write_tokens") or 0)
+        if claude:
+            c_read = int(claude.get("cache_read_input_tokens") or 0)
+            c_write = int(claude.get("cache_creation_input_tokens") or 0)
+            prompt = max(prompt, int(claude.get("input_tokens") or 0) + c_read + c_write)
+            output = max(output, int(claude.get("output_tokens") or 0))
+            cache_read, cache_write = c_read, c_write
+        acc["input"] += prompt
+        acc["output"] += output
         acc["thinking"] += int(((usage.get("completion_tokens_details") or {}).get("reasoning_tokens")) or 0)
-        acc["cache_read"] += int(((usage.get("prompt_tokens_details") or {}).get("cached_tokens")) or 0)
+        acc["cache_read"] += cache_read
+        acc["cache_write"] = acc.get("cache_write", 0) + cache_write
 
     @staticmethod
     def _message_of(data: dict) -> dict:
