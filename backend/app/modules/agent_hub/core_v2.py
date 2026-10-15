@@ -140,8 +140,8 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
                                                                                        "ví dụ {\"due_date\": \"2026-10-16\", \"assignee\": \"Nguyễn Văn A\"}"}},
                         "required": ["changes"]}),
     ToolDef(name="commit_draft",
-            description="Người dùng đã đồng ý: tạo thật bản nháp đang chờ (lưu Nháp trên ERP). submit=true khi họ muốn "
-                        "gửi duyệt luôn.",
+            description="Người dùng đã đồng ý (tin ngắn kiểu «ok», «tạo đi», «chốt»): tạo thật bản nháp đang chờ (lưu Nháp "
+                        "trên ERP). Câu yêu cầu đầy đủ gửi lại KHÔNG phải đồng ý. submit=true khi họ muốn gửi duyệt luôn.",
             parameters={"type": "object", "properties": {"submit": {"type": "boolean"}}, "required": []}),
     ToolDef(name="drop_draft",
             description="Người dùng không muốn tạo nữa: bỏ bản nháp đang chờ.",
@@ -273,6 +273,30 @@ def _pending_draft(db: Session, chat_id: str, before_id: int, now) -> tuple[Agen
         return row, json.loads(row.body or "{}")
     except ValueError:
         return row, {}
+
+
+#  Agent 1 đo 15/10 (run #227): gửi lại NGUYÊN câu «tạo cho anh task nghiên cứu luồng agent, dự án ERP v2, giao Được, hạn
+#  thứ sáu» khi nháp đang chờ → model hiểu là «đồng ý», gọi commit_draft, TẠO THẬT việc #788 + báo chuông người được giao.
+#  Ghi thật chỉ khi tin là lời đồng ý NGẮN («ok», «tạo đi», «chốt», «tạo task đó giúp anh đi»…) và không phải câu yêu cầu
+#  đã sinh ra nháp gửi lại.
+COMMIT_MAX_WORDS = 10
+COMMIT_CUE = re.compile(r"(?<!\w)(?:ok|oke|okay|okie|chot|dong y|duoc|uh|um|u|yes|tao|lam|gui|luu|ghi|di|luon|nhe|xac nhan|"
+                        r"chuan|dung roi|vay di|the di)(?!\w)")
+NOT_A_CONFIRM = ("Tin này KHÔNG phải lời đồng ý (là câu yêu cầu đầy đủ, hoặc gửi lại đúng câu đã sinh ra nháp) — CHƯA ghi gì. "
+                 "Đừng ghi. Nếu tin khớp nháp đang chờ thì hỏi một câu: tạo luôn nháp đang chờ hay soạn lại; nếu tin khác "
+                 "nháp thì soạn lại (update_draft hoặc draft_* mới).")
+
+
+def _is_commit_reply(db: Session, chat_id: str, pending: AgentMessage, text: str) -> bool:
+    from app.modules.assistant.glossary import fold
+
+    folded = " ".join(fold(text or "").split())
+    if not folded or len(folded.split()) > COMMIT_MAX_WORDS or not COMMIT_CUE.search(folded):
+        return False
+    asked = db.scalar(select(AgentMessage.body).where(AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN,
+                                                      AgentMessage.id < pending.id)
+                      .order_by(AgentMessage.id.desc()).limit(1))
+    return " ".join(fold(asked or "").split()) != folded
 
 
 def _open_code_tasks(db: Session, chat_id: str) -> list[AgentTask]:
@@ -607,6 +631,8 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         pending, info = _pending_draft(db, chat_id, row.id, now)
         if pending is None:
             return {"error": "Không còn bản nháp nào đang chờ."}
+        if name == "commit_draft" and not _is_commit_reply(db, chat_id, pending, row.body or ""):
+            return {"error": NOT_A_CONFIRM}
         phrase = "thôi" if name == "drop_draft" else ("tạo và gửi duyệt" if args.get("submit") else "tạo")
         ok = bool(service._draft_by_text(db, chat_id, row, phrase))
         row.action = ACT_ASKED                       # _draft_by_text đổi thành lệnh; giữ mạch hội thoại

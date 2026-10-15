@@ -13373,7 +13373,9 @@ thêm: câu chỉ lập phiếu mua mà không hỏi giá, nhà cung cấp hay l
 tên phòng không kéo theo nhóm phiếu hỗ trợ; còn mười chín công cụ, độ dài giảm hơn một nửa. Dòng bot tạm hiểu rút còn ba ý.
 Trạm model nay có bộ nhớ đệm và báo số token theo kiểu mới, nên bot đọc đúng số token trạm tính tiền, ghi riêng phần đọc và
 ghi bộ nhớ đệm; phần lời nhắc cố định giữ nguyên giữa các lượt, phần đổi mỗi lượt (giờ, việc đang dở, ghi nhớ) dời xuống
-đầu tin nhắn mới nhất để trạm đọc lại phần cố định từ bộ nhớ đệm với giá một phần mười.
+đầu tin nhắn mới nhất để trạm đọc lại phần cố định từ bộ nhớ đệm với giá một phần mười. Agent 1 đo trên dev thấy sáu mươi
+bảy tới tám mươi ba phần trăm đầu vào được đọc từ bộ nhớ đệm. Cũng lúc đo, gửi lại nguyên câu yêu cầu khi nháp đang chờ làm
+bot tạo thật một việc (đã hoàn tác); nay bot chỉ tạo khi tin là lời đồng ý ngắn và không trùng câu đã sinh ra nháp.
 
 Mã nguồn: agent_hub/core_v2.py (V2_TOOL_DESC, compact_defs, _stop_after, draft_reply); bài kiểm test_agent_hub_core_v2.py
 

@@ -708,3 +708,30 @@ def test_usage_tram_qua_anthropic_doc_claude_usage():
     OpenAICompatProvider._accumulate(acc, {"prompt_tokens": 100, "completion_tokens": 5,
                                            "prompt_tokens_details": {"cached_tokens": 40}})      # hãng OpenAI thường
     assert acc["input"] == 20653 + 100 and acc["cache_read"] == 15553 and acc["output"] == 14
+
+
+@pytest.mark.parametrize("again, ok", [
+    ("tạo cho anh task nghiên cứu luồng agent, dự án ERP v2, giao Được, hạn thứ sáu", False),   # run #227: gửi lại y câu
+    ("tạo task nghiên cứu luồng agent", False),                                             # câu yêu cầu đã sinh nháp
+    ("tạo cho anh task khác: rà soát quyền phòng kế toán, dự án ERP v2, giao Bảo, hạn thứ hai tuần sau", False),
+    ("ok tạo đi em", True),
+    ("chốt", True),
+])
+def test_commit_chi_khi_la_loi_dong_y_ngan(db, chat, monkeypatch, again, ok):
+    """Agent 1 15/10: gửi lại nguyên câu yêu cầu khi nháp đang chờ → model gọi commit_draft → tạo thật việc #788."""
+    first = "tạo cho anh task nghiên cứu luồng agent, dự án ERP v2, giao Được, hạn thứ sáu"
+    if again == "tạo task nghiên cứu luồng agent":
+        first = again
+    _incoming(db, first)
+    service.log_message(db, DIR_OUT, CHAT, 0, json.dumps({
+        "tool": "draft_work_task", "kind": "work_task", "user_id": 275, "draft": {"title": "Nghiên cứu luồng agent"}},
+        ensure_ascii=False), action=ACT_DRAFT_WAIT)
+    db.commit()
+    row = _incoming(db, again)
+    committed: list = []
+    monkeypatch.setattr(service, "_draft_by_text", lambda db_, chat_id, row_, phrase: committed.append(phrase) or True)
+    out = core_v2._run_local(db, CHAT, row, chat.user, "commit_draft", {})
+    assert bool(committed) is ok
+    assert ("error" in out) is (not ok)
+    if not ok:
+        assert "KHÔNG phải lời đồng ý" in out["error"] and not core_v2._stop_after("commit_draft", out)
