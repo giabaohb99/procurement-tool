@@ -13359,7 +13359,7 @@ vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
 ## ai-CR-202 | Lõi hội thoại mới: soạn nháp chỉ còn một lần gọi model, mô tả công cụ ngắn lại cho chat
-- status: dang-lam
+- status: xong
 - date: 2026-10-15
 Agent 1 đo thấy mỗi lần bot soạn nháp phải gọi model hai lần, lần sau chỉ để chép lại bản tóm tắt, mỗi lần mang theo
 khoảng bốn mươi bốn nghìn token. Nay bot dừng ngay sau khi soạn, sửa, tạo hoặc bỏ nháp, rồi tự dựng tin nháp: một câu mở,

@@ -237,7 +237,9 @@ trong chat (không thẻ riêng, `_offer_draft(silent=True)`); chặn «thẻ ma
   MỘT lần gọi model. `artifact` thêm `stopped`, `system_chars`, `tools_chars`. Đo dev: «tạo task» 88k → 43,7k token,
   15,3 → 7,8 s. Vá sau đo: câu lập YCMH / YCBG thuần bỏ nhóm tra cứu thu mua (`_focus_draft_tools`, 37 → 19 công cụ).
   Trạm có cache (Anthropic Messages): system nay tĩnh, phần đổi mỗi lượt ở khối BỐI CẢNH đầu tin mới nhất
-  (`turn_context`); `openai_compat` đọc `billing_usage.claude_usage`, `artifact` có `cache_read` / `cache_write`. Việc 4 (dòng cuối tự nhiên) xong luôn cho lõi
+  (`turn_context`); `openai_compat` đọc `billing_usage.claude_usage`, `artifact` có `cache_read` / `cache_write`.
+  Vá thêm theo đo của Agent 1: commit_draft chỉ khi lời đồng ý ngắn; không khớp nhóm → chỉ công cụ lõi + `more_tools`;
+  `CORE_GROUP_HINTS`; `resolve_weekdays` (NGÀY ĐÃ TÍNH); bỏ xưng hô khi tra tên. Đã lên dev hết (9e68b39f) — xong. Việc 4 (dòng cuối tự nhiên) xong luôn cho lõi
   mới; đường cũ còn «Trả lời: tạo / thôi».
 
 **Agent 1 làm:** gộp `agent-hub-bac-1` → erp-v2, dựng ERP api (nếu đổi `assistant/*`) rồi `~/agent-hub` trên VPS 2
