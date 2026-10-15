@@ -374,7 +374,7 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
     for fn in (lambda: erp.caller_context(db, user), lambda: erp.glossary_block(db, [text]),
                #  Tìm ghi chú theo câu hỏi tốn ~1,8 s (gọi nhúng véc-tơ) — câu xã giao chỉ cần phần lõi sổ nhớ.
                (lambda: personal_memory.load_core(db, user.id)) if _is_smalltalk(text)
-               else (lambda: personal_memory.prompt_block(db, user.id, text)),
+               else (lambda: _clip(personal_memory.prompt_block(db, user.id, text), MEMORY_BLOCK_CHARS)),
                lambda: intent_ledger.habit_block(db, user.id)):
         try:
             block = fn()
@@ -388,6 +388,16 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
 # ---------------------------------------------------------------------------
 # Công cụ
 # ---------------------------------------------------------------------------
+PLAN_ONLY_TOOLS = frozenset({"draft_work_plan"})
+#  Ghi chú riêng liên quan câu hỏi: 14/10 khối này 2,6k ký tự (tóm tắt nguyên các buổi chat cũ) — giữ phần đầu.
+MEMORY_BLOCK_CHARS = 1200
+
+
+def _clip(text: str, limit: int) -> str:
+    text = str(text or "")
+    return text if len(text) <= limit else text[:limit].rsplit("\n", 1)[0] + "\n…(còn nữa, hỏi search_notes nếu cần)"
+
+
 def select_tools(db: Session, user, text: str) -> list[ToolDef]:
     """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi."""
     from app.modules.assistant import tool_router
@@ -407,6 +417,12 @@ def select_tools(db: Session, user, text: str) -> list[ToolDef]:
     if picked is not None:
         keep = set(picked) | set(tool_router.CORE)
         defs = [d for d in defs if d.name in keep]
+    #  draft_work_plan (3,5k ký tự mô tả — công cụ lớn nhất) chỉ khi câu thật sự nói «kế hoạch»: nhóm «work» luôn kèm nó
+    #  nên 14/10 câu «tạo task …» nào cũng gánh thêm.
+    from app.modules.assistant.glossary import fold
+
+    if "ke hoach" not in " ".join(fold(text or "").split()):
+        defs = [d for d in defs if d.name not in PLAN_ONLY_TOOLS]
     names = {d.name for d in defs}
     return defs + [t for t in LOCAL_TOOLS if t.name not in names]
 

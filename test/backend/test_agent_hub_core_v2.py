@@ -410,3 +410,19 @@ def test_doc_bao_di_luong_viec_nang_va_noi_da_lam_ma_khong_co_cong_cu_thi_viet_l
     assert core_v2.lane_of("tổng hợp tin về thị trường phân bón tuần này") == core_v2.LANE_HEAVY
     assert core_v2._phantom_card(_result("Dạ, em đã bỏ task nghiên cứu đó rồi đại ca."))
     assert not core_v2._phantom_card(_result("Dạ, em đã bỏ rồi.", [{"name": "drop_draft", "result": {"ok": True}}]))
+
+
+def test_cong_cu_ke_hoach_chi_khi_cau_noi_ke_hoach(db, monkeypatch):
+    """Soi 88k token 15/10: draft_work_plan (3,5k ký tự) đi kèm mọi câu «tạo task» vì cùng nhóm work."""
+    from types import SimpleNamespace as NS
+
+    from app.modules.assistant.provider.base import ToolDef
+
+    defs = [ToolDef(name=n, description="x", parameters={}) for n in ("draft_work_task", "draft_work_plan", "my_work_tasks")]
+    monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: defs)
+    user = NS(id=1)
+    task_tools = {t.name for t in core_v2.select_tools(db, user, "tạo cho anh task nghiên cứu luồng agent")}
+    plan_tools = {t.name for t in core_v2.select_tools(db, user, "lập kế hoạch thử bot tuần này")}
+    assert "draft_work_plan" not in task_tools and "draft_work_task" in task_tools
+    assert "draft_work_plan" in plan_tools
+    assert len(core_v2._clip("a\n" * 2000, 1200)) < 1300
