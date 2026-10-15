@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
+import type { OrderProgress } from '../utils/over-order'
 import type {
   DeptHeadCandidate,
   PurchaseRequestDetail,
@@ -161,7 +162,9 @@ export const purchaseRequestApi = {
   getDeptHeadCandidates: (id: number) =>
     apiGet<{ items: DeptHeadCandidate[] }>(`${BASE_URL}/${id}/dept-head-candidates`),
 
-  /** Số lượng ĐÃ ĐẶT theo mã hàng, gộp mọi ĐMH sinh từ phiếu này. */
-  getOrderProgress: (id: number) =>
-    apiGet<{ ordered: Record<string, number> }>(`${BASE_URL}/${id}/order-progress`),
+  /**
+   * Số lượng ĐÃ ĐẶT theo mã hàng, gộp mọi ĐMH sinh từ phiếu này. bao-CR-619: kèm số đang chờ
+   * duyệt (`pending`) và từng đơn theo mã (`orders`) cho cảnh báo đặt vượt.
+   */
+  getOrderProgress: (id: number) => apiGet<OrderProgress>(`${BASE_URL}/${id}/order-progress`),
 }
