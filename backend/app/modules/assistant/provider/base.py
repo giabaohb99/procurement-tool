@@ -82,6 +82,8 @@ class ChatResult:
     # Vết các tool đã gọi trong lượt này (để audit + hiển thị minh bạch): [{name, args, rows}].
     tool_calls: list[dict] = field(default_factory=list)
     raw: dict = field(default_factory=dict)
+    # Giây của TỪNG lượt gọi model trong lượt này (ai-CR-203; hiện chỉ openai_compat ghi) — số lượt = len(call_secs).
+    call_secs: list[float] = field(default_factory=list)
 
 
 class Provider:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 
 import requests
 
@@ -110,6 +111,7 @@ class OpenAICompatProvider(Provider):
         return h
 
     def _post(self, payload: dict) -> dict:
+        t0 = time.monotonic()
         try:
             resp = requests.post(f"{self.base_url}/chat/completions", json=payload, headers=self._headers(),
                                  timeout=request_timeout(TIMEOUT))     # ai-CR-192: trần theo lượt
@@ -117,7 +119,10 @@ class OpenAICompatProvider(Provider):
             raise ProviderError(f"Lỗi gọi {self.name}: {e}") from e
         if resp.status_code != 200:
             raise ProviderError(f"{self.name} trả lỗi {resp.status_code}: {resp.text[:500]}")
-        return resp.json()
+        data = resp.json()
+        if isinstance(data, dict):
+            data["_elapsed"] = round(time.monotonic() - t0, 1)      # ai-CR-203: giây của lượt gọi này (đo trạm)
+        return data
 
     def _payload(self, model: str, msgs: list[dict], system: str | None, max_tokens: int, temperature: float) -> dict:
         #  ai-CR-115: model suy luận (DeepSeek v4, gpt-5, o*…) tính cả phần «nghĩ» vào trần đầu ra — trần 1536 của Trợ lý
@@ -136,10 +141,11 @@ class OpenAICompatProvider(Provider):
         return ChatResult(text=text, provider=self.name, model=data.get("model", used_model),
                           input_tokens=acc["input"], output_tokens=acc["output"], thinking_tokens=acc["thinking"],
                           cache_read_tokens=acc["cache_read"], cache_write_tokens=acc.get("cache_write", 0),
+                          call_secs=list(acc.get("secs") or []),
                           tool_calls=tool_calls, raw=data)
 
     @staticmethod
-    def _accumulate(acc: dict, usage: dict) -> None:
+    def _accumulate(acc: dict, usage: dict, elapsed: float | None = None) -> None:
         #  ai-CR-202 (15/10): trạm modelapi.vn nay đi qua Anthropic Messages, kèm `billing_usage.claude_usage` (số trạm tính
         #  tiền: input + ghi cache + đọc cache). `prompt_tokens` có lúc trả sai (Agent 1 thấy 2 / 112 / 384 cho lời nhắc
         #  ~10k ký tự) → có claude_usage thì lấy số lớn hơn, ghi riêng phần ghi / đọc cache.
@@ -160,6 +166,8 @@ class OpenAICompatProvider(Provider):
         acc["thinking"] += int(((usage.get("completion_tokens_details") or {}).get("reasoning_tokens")) or 0)
         acc["cache_read"] += cache_read
         acc["cache_write"] = acc.get("cache_write", 0) + cache_write
+        if elapsed is not None:
+            acc.setdefault("secs", []).append(elapsed)
 
     @staticmethod
     def _message_of(data: dict) -> dict:
@@ -175,7 +183,7 @@ class OpenAICompatProvider(Provider):
         msgs = [{"role": m.role, "content": _wire_content(m.content)} for m in messages]
         data = self._post(self._payload(used_model, msgs, system, max_tokens, temperature))
         acc = {"input": 0, "output": 0, "thinking": 0, "cache_read": 0}
-        self._accumulate(acc, data.get("usage") or {})
+        self._accumulate(acc, data.get("usage") or {}, data.get("_elapsed"))
         return self._result(data, used_model, clean_reply(str(self._message_of(data).get("content") or "")), [], acc)
 
     def run_tools(self, messages: list[ChatMessage], *, tools: list[ToolDef], execute: ToolExecutor,
@@ -195,7 +203,7 @@ class OpenAICompatProvider(Provider):
             payload = self._payload(used_model, msgs, system, max_tokens, temperature)
             payload["tools"] = tool_decl
             data = self._post(payload)
-            self._accumulate(acc, data.get("usage") or {})
+            self._accumulate(acc, data.get("usage") or {}, data.get("_elapsed"))
             message = self._message_of(data)
             calls = message.get("tool_calls") or []
             if not calls:
@@ -223,7 +231,7 @@ class OpenAICompatProvider(Provider):
                              "content": json.dumps(result, ensure_ascii=False)})
         #  Hết vòng: ép một lượt chốt không kèm tool.
         data = self._post(self._payload(used_model, msgs, system, max_tokens, temperature))
-        self._accumulate(acc, data.get("usage") or {})
+        self._accumulate(acc, data.get("usage") or {}, data.get("_elapsed"))
         return self._result(data, used_model, clean_reply(str(self._message_of(data).get("content") or "")), tool_calls, acc)
 
 

@@ -725,6 +725,9 @@ def test_usage_tram_qua_anthropic_doc_claude_usage():
     OpenAICompatProvider._accumulate(acc, {"prompt_tokens": 100, "completion_tokens": 5,
                                            "prompt_tokens_details": {"cached_tokens": 40}})      # hãng OpenAI thường
     assert acc["input"] == 20653 + 100 and acc["cache_read"] == 15553 and acc["output"] == 14
+    #  Agent 1 15/10: số lượt model + giây từng lượt (khỏi suy từ token).
+    OpenAICompatProvider._accumulate(acc, {"prompt_tokens": 1}, 7.5)
+    assert acc["secs"] == [7.5]
 
 
 @pytest.mark.parametrize("again, ok", [

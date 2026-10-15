@@ -1146,6 +1146,7 @@ def _more_tools_result(args: dict, offered: set[str]) -> dict:
 
 
 def _add_usage(result, first) -> None:
+    result.call_secs = list(first.call_secs or []) + list(result.call_secs or [])
     result.input_tokens += first.input_tokens
     result.output_tokens += first.output_tokens
     result.cache_read_tokens += first.cache_read_tokens
@@ -1278,6 +1279,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
         run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in prior_calls + list(
                             result.tool_calls or []) if isinstance(c, dict)][:20], "tools_offered": len(tools),
                         "stopped": stopped.get("name") or "", "more": more, "system_chars": len(system), "context_chars": len(context),
+                        "calls": len(result.call_secs or []), "call_secs": list(result.call_secs or [])[:10],
                         "cache_read": int(result.cache_read_tokens or 0), "cache_write": int(result.cache_write_tokens or 0),
                         "tools_chars": sum(len(t.description) + len(json.dumps(t.parameters, ensure_ascii=False)) for t in tools)}
         db.commit()
