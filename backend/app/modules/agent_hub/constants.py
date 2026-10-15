@@ -381,10 +381,22 @@ MODEL_PRICES_USD = {
     "deepseek-flash": (6.48, 25.92),
     "deepseek-v4-flash": (9.50, 28.51),
     "deepseek-v4-pro": (28.51, 85.54),
+    #  ai-CR-203 (15/10, ví trạm trừ 27 USD / 24 giờ mà sổ ghi 0): Claude qua trạm, đọc /api/pricing 15/10/2026 — nhóm
+    #  «claude» ×2 → USD/1 triệu = 2 × model_ratio × 2; ra = vào × completion_ratio (5). Phần ĐỌC bộ đệm tính theo
+    #  MODEL_CACHE_RATIO, phần GHI bộ đệm ước 1,25 × giá vào (giá Anthropic; trạm không công bố).
+    "claude-sonnet-5-5": (4.0, 20.0),
+    "claude-sonnet-5": (4.0, 20.0),
+    "claude-opus-5-5": (8.0, 40.0),
+    "claude-haiku-5-5": (0.2, 1.0),
+    "kimi-k3": (24.0, 120.0),          # nhóm «kimi» ×1,2, model_ratio 10
 }
+MODEL_CACHE_RATIO = {"claude-sonnet-5-5": 0.1, "claude-sonnet-5": 0.1, "claude-opus-5-5": 0.05, "claude-haiku-5-5": 1.0,
+                     "kimi-k3": 0.1}
+CACHE_WRITE_FACTOR = 1.25
 
 
-def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
+def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int, *, cache_read: int = 0,
+                      cache_write: int = 0) -> float:
     """Ước chi phí một lượt gọi. Model lạ -> 0.0 (xem ghi chú ở MODEL_PRICES_USD).
 
     Token "suy nghĩ" tính giá như output, nên nơi gọi phải cộng nó vào
@@ -401,10 +413,12 @@ def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> floa
     if not price:
         return 0.0
     in_rate, out_rate = price
-    return round(
-        (input_tokens * in_rate + output_tokens * out_rate) / 1_000_000,
-        6,
-    )
+    ratio = next((r for name, r in MODEL_CACHE_RATIO.items() if model and model.startswith(name)), None)
+    if ratio is None:
+        cache_read = cache_write = 0          # model không khai giá bộ đệm: tính cả như vào thường (như trước)
+    plain = max(0, input_tokens - cache_read - cache_write)
+    cost_in = plain * in_rate + cache_read * in_rate * (ratio or 1) + cache_write * in_rate * CACHE_WRITE_FACTOR
+    return round((cost_in + output_tokens * out_rate) / 1_000_000, 6)
 
 
 # ---------------------------------------------------------------------------

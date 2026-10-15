@@ -948,3 +948,14 @@ def test_tra_mang_ghi_thoi_gian_tung_khau(monkeypatch):
     monkeypatch.setattr(core_v2.user_keys, "gemini_key", lambda: "")
     rs.run("giá vàng hôm nay", rs.MODE_WEB)
     assert set(rs.last_timing()) == {"gather", "model"}
+
+
+def test_chi_phi_claude_qua_tram_tinh_ca_bo_dem():
+    """15/10: ví trạm trừ 27 USD / 24 giờ mà cost_usd của claude-sonnet-5-5 toàn 0."""
+    from app.modules.agent_hub.constants import estimate_cost_usd
+
+    #  100k vào (70k đọc bộ đệm, 10k ghi bộ đệm, 20k thường) + 1k ra.
+    cost = estimate_cost_usd("claude-sonnet-5-5", 100_000, 1_000, cache_read=70_000, cache_write=10_000)
+    assert cost == round((20_000 * 4 + 70_000 * 0.4 + 10_000 * 5 + 1_000 * 20) / 1_000_000, 6)
+    assert estimate_cost_usd("claude-sonnet-5-5", 100_000, 0) == 0.4
+    assert estimate_cost_usd("deepseek-v4.1-flash", 1_000_000, 0, cache_read=500_000) == 2.1     # chưa khai bộ đệm: như cũ

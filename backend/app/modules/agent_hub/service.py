@@ -5892,5 +5892,7 @@ def finish_run(db: Session, run: AgentRun, *, result=None, error: str = "") -> N
         run.provider = result.provider      # ai-CR-098: hãng thật đã trả lời (gemini / claude / openai / openrouter)
     ref = user_keys.active_ref()
     run.key_id = ref.row_id if ref is not None else 0
-    run.cost_usd = estimate_cost_usd(run.model, run.input_tokens, run.output_tokens)
+    run.cost_usd = estimate_cost_usd(run.model, run.input_tokens, run.output_tokens,
+                                     cache_read=int(getattr(result, "cache_read_tokens", 0) or 0),
+                                     cache_write=int(getattr(result, "cache_write_tokens", 0) or 0))
     run.artifact = {"text": (result.text or "")[:8000]}
