@@ -108,6 +108,37 @@ def test_o_model_cu_khong_con_o_tram_thi_tu_doi_model_cung_ho(monkeypatch):
     manager._MODEL_SWAP.clear()
 
 
+def test_haiku_chua_co_o_tram_chi_doi_rieng_haiku_va_het_han(monkeypatch):
+    """ai-CR-204 (15/10): trạm bày giá claude-haiku-5-5 mà gọi trả model_not_found. Bản cũ đổi model cho CẢ KHÓA tới khi
+    khởi động lại (cả việc nặng) và có thể rơi vào Opus. Nay đổi theo (khóa, model xin), chọn bản ô Model / rẻ nhất, hết hạn."""
+    from app.modules.agent_hub import ai_keys, manager, user_keys
+    from app.modules.agent_hub.ai_keys import KeyRef
+    from app.modules.assistant.provider.base import ChatResult, ProviderError
+
+    manager._MODEL_SWAP.clear()
+    ref = KeyRef(provider="openai_compat", key="k", model="claude-sonnet-5-5", base_url="https://x/v1", row_id=10)
+    monkeypatch.setattr(ai_keys, "custom_models", lambda base, key: ["claude-opus-5-5", "claude-haiku-5-5", "claude-sonnet-5-5"])
+    used: list[str] = []
+
+    def fake_ask(messages, model=None, **kw):
+        used.append(model)
+        if model == "claude-haiku-5-5":
+            raise ProviderError('404 {"error":{"code":"model_not_found"}}')
+        return ChatResult(text="ok", provider="openai_compat", model=model, input_tokens=1, output_tokens=1)
+
+    monkeypatch.setattr(manager._DELEGATES["openai_compat"], "ask", fake_ask)
+    with user_keys.use_chain([ref]):
+        with user_keys.prefer(["claude"], model="claude-haiku-5-5"):
+            manager.get_provider().ask([], max_tokens=5)
+            manager.get_provider().ask([], max_tokens=5)                  # lần hai đi thẳng model thay
+        manager.get_provider().ask([], max_tokens=5)                      # việc nặng: model của khóa, không bị đổi
+    assert used == ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-sonnet-5-5", "claude-sonnet-5-5"]
+    key = (10, "claude-haiku-5-5")
+    manager._MODEL_SWAP[key] = (manager._MODEL_SWAP[key][0], 0)           # hết hạn → lần sau thử lại Haiku
+    assert manager._swapped(ref, "claude-haiku-5-5") == "" and key not in manager._MODEL_SWAP
+    manager._MODEL_SWAP.clear()
+
+
 def test_giuc_sua_no_di_sau_chi_tiet_viec_la_lam_luon(db, flow):
     """ai-CR-150: «chi tiết AI-0006» rồi «sửa nó đi em» → bot từng trả «em không sửa được». Nay là giao việc đó luôn,
     kể cả khi việc đang ở «đang hỏi lại» (các câu còn mở để Claude tự quyết theo mạch đã bàn)."""

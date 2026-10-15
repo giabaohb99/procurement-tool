@@ -332,8 +332,8 @@ class Settings(BaseSettings):
     #  Đợt nén 15/10 (ví trạm trừ 27 USD / ngày; đại ca chốt «Haiku thường, Sonnet việc nặng»): claude đứng đầu mọi luồng,
     #  model Claude theo luồng ở AGENT_CORE_V2_LANE_MODELS (Haiku 5.5 vào 0,2 / ra 1 USD mỗi triệu — rẻ hơn DeepSeek
     #  v4.1 flash qua trạm và rẻ hơn Sonnet 5.5 ~20 lần).
-    AGENT_CORE_V2_ROUTES: str = ("xa_giao=claude,deepseek,kimi;tra_nhanh=claude,deepseek,kimi;thuong=claude,kimi,deepseek;"
-                                 "nang=claude,kimi,deepseek")
+    AGENT_CORE_V2_ROUTES: str = ("xa_giao=claude,deepseek,kimi;tra_nhanh=claude,deepseek,kimi;thuong=claude,deepseek,kimi;"
+                                 "nang=claude,deepseek,kimi")   # Kimi K3 qua trạm ~24 USD/1M vào — dự phòng cuối
     #  luồng=model thay cho model ghi ở khóa CÙNG HỌ (vd khóa Claude ghi claude-sonnet-5-5 → luồng thường dùng
     #  claude-haiku-5-5). Luồng không khai = model của khóa (việc nặng giữ Sonnet).
     AGENT_CORE_V2_LANE_MODELS: str = "xa_giao=claude-haiku-5-5;tra_nhanh=claude-haiku-5-5;thuong=claude-haiku-5-5"

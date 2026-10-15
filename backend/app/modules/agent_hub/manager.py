@@ -134,14 +134,15 @@ class AgentGeminiProvider(GeminiProvider):
             else:
                 fn = getattr(_DELEGATES.get(ref.provider) or _DELEGATES["claude"], method)
             try:
-                return fn(*args, model=_MODEL_SWAP.get(ref.row_id) or self._model_for(ref, model), **kw)
+                wanted = self._model_for(ref, model)
+                return fn(*args, model=_swapped(ref, wanted) or wanted, **kw)
             except ProviderError as e:
-                swap = _swap_missing_model(ref, str(e))
+                swap = _swap_missing_model(ref, str(e), self._model_for(ref, model))
                 if swap:
                     #  ai-CR-149: khóa trạm tùy chỉnh ghi model trạm không còn bán (đại ca đổi nhóm trên modelapi.vn) →
                     #  lấy model trạm đang có, cùng họ trước — bot không chết chỉ vì ô Model cũ.
                     log.warning("agent_hub: trạm không có model %s, dùng tạm %s (khóa …%s)", ref.model, swap, ref.hint)
-                    _MODEL_SWAP[ref.row_id] = swap
+                    _MODEL_SWAP[(ref.row_id, self._model_for(ref, model))] = (swap, time.time() + MODEL_SWAP_TTL_SEC)
                     continue
                 if ai_keys.is_transient(str(e)):
                     if not retried:
@@ -192,23 +193,43 @@ class AgentGeminiProvider(GeminiProvider):
 
 
 #  ai-CR-149: id khóa → model thay thế khi model ghi trên khóa không còn ở trạm (sống tới lúc tiến trình khởi động lại).
-_MODEL_SWAP: dict[int, str] = {}
+#  (khóa, model được xin) → (model thay, hết hạn). ai-CR-204 (15/10): trạm bày giá claude-haiku-5-5 nhưng nhóm «claude» chưa
+#  có tài khoản nguồn → 404 model_not_found. Bản cũ gắn theo KHÓA và sống tới khi khởi động lại: một lần Haiku hỏng là
+#  MỌI lượt của khóa đó (cả việc nặng) đổi model, và trạm mở Haiku rồi cũng không thử lại. Nay gắn theo (khóa, model xin),
+#  hết hạn sau MODEL_SWAP_TTL_SEC; model thay chọn bản RẺ NHẤT đã biết giá cùng họ (tránh rơi vào Opus).
+MODEL_SWAP_TTL_SEC = 3600
+_MODEL_SWAP: dict[tuple[int, str], tuple[str, float]] = {}
 
 
-def _swap_missing_model(ref, error: str) -> str:
-    """Lỗi «model_not_found» của khóa trạm tùy chỉnh → model trạm đang có (cùng họ trước). Rỗng nếu không đổi được."""
+def _swapped(ref, wanted: str) -> str:
+    hit = _MODEL_SWAP.get((ref.row_id, wanted))
+    if not hit:
+        return ""
+    if hit[1] < time.time():
+        _MODEL_SWAP.pop((ref.row_id, wanted), None)
+        return ""
+    return hit[0]
+
+
+def _swap_missing_model(ref, error: str, wanted: str = "") -> str:
+    """Lỗi «model_not_found» của khóa trạm tùy chỉnh → model trạm đang có (cùng họ, rẻ nhất đã biết giá trước). Rỗng nếu
+    không đổi được."""
     from . import ai_keys
+    from .constants import MODEL_PRICES_USD
     from .user_keys import model_family
 
-    if ref.provider != "openai_compat" or "model_not_found" not in error or ref.row_id in _MODEL_SWAP:
+    wanted = wanted or ref.model or ""
+    if ref.provider != "openai_compat" or "model_not_found" not in error or _swapped(ref, wanted):
         return ""
     try:
         models = ai_keys.custom_models(ref.base_url, ref.key)
     except Exception:  # noqa: BLE001
         return ""
-    wanted = model_family(ref.model or "")
-    same = [m for m in models if model_family(m) == wanted and m != ref.model]
-    return (same or [m for m in models if m != ref.model] or [""])[0]
+    family = model_family(wanted)
+    same = [m for m in models if model_family(m) == family and m != wanted]
+    #  Ưu tiên model của khóa (ô Model) nếu cùng họ, rồi tới bản rẻ nhất đã biết giá; chưa biết giá xếp cuối.
+    same.sort(key=lambda m: (m != ref.model, (MODEL_PRICES_USD.get(m) or (1e9, 0))[0]))
+    return (same or [m for m in models if m != wanted] or [""])[0]
 
 
 class _AgentGeminiOnly(AgentGeminiProvider):
