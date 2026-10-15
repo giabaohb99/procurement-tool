@@ -541,6 +541,17 @@ def test_cong_cu_dat_loi_nhac(db, chat, monkeypatch):
     assert "Chưa đọc được giờ" in out["bad"]["error"]
 
 
+def test_nhac_chieu_nay_khong_thanh_mai_va_bot_tu_bao_gio(db, chat, monkeypatch):
+    """Bộ mẫu lần 3 (mẫu 14): 11 giờ sáng nói «3 giờ chiều nay nhắc anh…» → bot báo «15:00 mai»."""
+    monkeypatch.setattr(core_v2, "now_local", lambda: datetime(2026, 10, 15, 11, 0))
+    res = core_v2._set_reminder(db, CHAT, "15h mai", "gọi NCC giấy", said="3 giờ chiều nay nhắc anh gọi NCC giấy nhé")
+    assert res["ngay"] == "hôm nay (15/10)" and res["gio"] == "15:00"
+    assert core_v2._set_reminder(db, CHAT, "8h mai", "họp", said="mai 8h nhắc anh họp")["ngay"] == "mai (16/10)"
+    assert core_v2._stop_after("set_reminder", res)
+    msg = core_v2.reminder_reply(CHAT, res)
+    assert "15:00 hôm nay (15/10)" in msg and "gọi NCC giấy" in msg and "«" not in msg
+
+
 def test_cong_cu_ve_sua_ma_chi_cho_chat_duoc_giao(db, chat, monkeypatch):
     out: dict = {}
 

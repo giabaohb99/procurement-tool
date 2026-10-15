@@ -86,7 +86,10 @@ CORE_RULES = (
     "này; không lấy từ sổ nhớ, ghi chú hay lịch sử chat. Chưa có công cụ thì gọi more_tools.\n"
     "- Cần nhiều công cụ không phụ thuộc nhau thì gọi CÙNG LÚC trong một lượt (mỗi vòng gọi tốn vài giây). Một công cụ đã "
     "trả đủ thì đừng gọi thêm công cụ trùng nội dung. «Đơn / phiếu của tôi tới đâu»: gọi CÙNG LÚC my_requests_status "
-    "(phiếu qua bộ máy duyệt) và my_leave_summary (đơn nghỉ phép KHÔNG đi bộ máy đó).\n"
+    "(phiếu qua bộ máy duyệt) và my_leave_summary (đơn nghỉ phép KHÔNG đi bộ máy đó). Trả lời nêu ĐỦ từng đơn / phiếu "
+    "công cụ trả: đang chờ ai, BỊ TRẢ VỀ / từ chối kèm lý do, nháp — không lược mục nào.\n"
+    "- Câu mơ hồ hai nghĩa (vd «ai đang giữ hồ sơ của chị X»: hồ sơ nhân sự hay phiếu chị trình đang chờ ai) thì HỎI LẠI "
+    "một câu kèm các nghĩa, đừng gọi more_tools hay nói «chưa có công cụ».\n"
     "- Sổ nhớ: theo đúng khối sổ ghi nhớ riêng (kể cả xưng hô); nghe điều ỔN ĐỊNH về họ thì remember_fact và thêm một "
     "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước."
 )
@@ -774,7 +777,7 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         return {"ok": True, "da_hoan_tac": out.get("summary"), "phieu": out.get("doc_code"),
                 "link": telegram.absolute_url(url) if url else ""}
     if name == "set_reminder":
-        return _set_reminder(db, chat_id, str(args.get("luc") or ""), str(args.get("viec") or ""))
+        return _set_reminder(db, chat_id, str(args.get("luc") or ""), str(args.get("viec") or ""), said=row.body or "")
     if name == "create_code_task":
         if service._can_order_code(db, chat_id) and not _code_task_confirmed(db, chat_id, row):   # quyền xét trước
             return {"error": CODE_TASK_NOT_CONFIRMED}
@@ -782,15 +785,21 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
     return {"error": f"Công cụ lạ {name}"}
 
 
-def _set_reminder(db: Session, chat_id: str, luc: str, viec: str) -> dict:
-    """ai-CR-201: «nhắc anh 3h chiều gọi NCC» nói vòng mà lối tắt chữ không bắt được → model gọi công cụ này."""
+def _set_reminder(db: Session, chat_id: str, luc: str, viec: str, *, said: str = "") -> dict:
+    """ai-CR-201: «nhắc anh 3h chiều gọi NCC» nói vòng mà lối tắt chữ không bắt được → model gọi công cụ này.
+
+    Bộ mẫu lần 3 (mẫu 14): «3 giờ chiều nay nhắc anh…» lúc 11 giờ → bot báo «15:00 mai». Người dùng không nói «mai» thì
+    bỏ chữ «mai» model tự thêm; câu báo lại do bot dựng (`reminder_reply`), không để model tự diễn đạt ngày."""
     from . import chat_link, reminders, service
     from .timeutil import to_utc
 
     what = " ".join(viec.split())[:300]
     if not what:
         return {"error": "Chưa có nội dung cần nhắc."}
-    when = service.parse_schedule_time(luc, now_local())
+    if said and "mai" in _folded(luc).split() and "mai" not in _folded(said).split():
+        luc = " ".join(w for w in luc.split() if _folded(w) != "mai")
+    now = now_local()
+    when = service.parse_schedule_time(luc, now)
     if when is None:
         return {"error": f"Chưa đọc được giờ «{luc}». Hỏi lại người dùng giờ cụ thể (vd 15h, 8h sáng mai)."}
     if len(reminders.open_for_chat(db, chat_id)) >= reminders.MAX_OPEN:
@@ -798,8 +807,16 @@ def _set_reminder(db: Session, chat_id: str, luc: str, viec: str) -> dict:
     link = chat_link.get_active_link(db, chat_id)
     reminders.create(db, chat_id, link.user_id if link else 0, what, when)
     db.commit()
-    return {"ok": True, "luc": fmt_local(to_utc(when)), "viec": what,
-            "note": "Đã đặt. Báo lại một câu ngắn giờ nhắc; xem / bỏ nhắc: nhắn «nhắc gì»."}
+    day = ("hôm nay" if when.date() == now.date() else "mai" if when.date() == now.date() + timedelta(days=1)
+           else WEEKDAYS_VI[when.weekday()])
+    return {"ok": True, "luc": fmt_local(to_utc(when)), "ngay": f"{day} ({when:%d/%m})", "gio": f"{when:%H:%M}",
+            "viec": what, "note": "Đã đặt. Báo lại một câu ngắn giờ nhắc; xem / bỏ nhắc: nhắn «nhắc gì»."}
+
+
+def reminder_reply(chat_id: str, result: dict) -> str:
+    who = "đại ca" if telegram.is_allowed_chat(chat_id) else "anh/chị"
+    return (f"Em đặt nhắc rồi: **{result.get('gio', '')} {result.get('ngay', '')}** em nhắn {who} {result.get('viec', '')}. "
+            "Muốn xem hay bỏ thì nhắn nhắc gì.")
 
 
 #  Bộ mẫu ai-CR-203 (mẫu 19): «sửa giúp anh màn YCMH thêm cột …» → model gọi create_code_task NGAY, không nhắc lại cách
@@ -933,6 +950,8 @@ def _stop_after(name: str, result) -> bool:
         return bool(result.get("nhom"))      # nạp thêm nhóm rồi chạy lại
     if result.get("error") or result.get("need_info"):
         return False
+    if name == "set_reminder":
+        return bool(result.get("ok"))       # câu báo giờ nhắc do bot dựng (reminder_reply)
     if name in ("update_draft", "commit_draft", "drop_draft"):
         return bool(result.get("ok"))
     return isinstance(result.get("draft"), dict) and _chat_draft(name) and bool(result.get("tom_tat_se_luu"))
@@ -1226,6 +1245,8 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
                 #  chờ, chưa tạo, thay vì trình như nháp mới.
                 answer = confirm_reply(chat_id, {**stopped["result"], "tool": stopped["result"].get("tool") or stopped["name"]},
                                        same=True)
+            elif stopped.get("name") == "set_reminder":
+                answer = reminder_reply(chat_id, stopped["result"])
             else:
                 answer = (draft_reply(chat_id, stopped["name"], stopped["result"]) if stopped
                           else (result.text or "").strip())

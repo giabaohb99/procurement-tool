@@ -62,7 +62,7 @@ SAMPLES: tuple[Sample, ...] = (
              commit=False),)),
     Sample("14", "Đặt lời nhắc", (
         Turn("3 giờ chiều nay nhắc anh gọi NCC giấy nhé", "Xác nhận đã đặt lời nhắc đúng giờ 15:00 với nội dung gọi NCC giấy.",
-             contains=("15",)),)),
+             contains=("15:00", "hôm nay")),)),
     Sample("15", "Kế hoạch việc", (
         Turn("lập kế hoạch thử bot, hạn 20/10, 2 việc giao Được",
              "Hỏi 1–2 câu làm rõ hoặc soạn nháp kế hoạch (tự chia việc con + tiêu chí, nói rõ phần tự nghĩ). Chưa tạo thật.",

@@ -67,6 +67,7 @@ class TurnLog:
     tools: list[str] = field(default_factory=list)
     commits: list[str] = field(default_factory=list)      # cụm đường cũ nhận: «tạo», «thôi»…
     blocked: list[str] = field(default_factory=list)       # công cụ ghi bị chặn (coi như xong)
+    notes: list[str] = field(default_factory=list)         # «tên → kết quả ngắn» cho model chấm
     runs: int = 0
     input_tokens: int = 0
     seconds: float = 0.0
@@ -166,6 +167,19 @@ class Sandbox:
         self._msg_id += 1
         return self._msg_id
 
+    def _note(self, name: str, result):
+        """Bộ mẫu lần 3: model chấm chỉ thấy TÊN công cụ nên tưởng commit_draft bị từ chối là «đã tạo» (mẫu 05)."""
+        if isinstance(result, dict):
+            if result.get("error"):
+                brief = "lỗi / từ chối: " + str(result["error"])[:140]
+            elif result.get("need_info"):
+                brief = "hỏi thêm: " + ", ".join(str(x.get("field", "")) for x in result["need_info"] if isinstance(x, dict))
+            else:
+                n = next((result[k] for k in ("total", "count") if isinstance(result.get(k), int)), None)
+                brief = "ok" + (f" ({n} dòng)" if n is not None else "")
+            self.log.notes.append(f"{name} → {brief}")
+        return result
+
     def _send_document(self, chat_id, filename, data, *, caption="", **kw):
         if self.log is not None:
             self.log.replies.append(f"[tệp {filename}] {caption}")
@@ -204,11 +218,11 @@ class Sandbox:
             if name in WRITE_TOOLS:
                 self.log.blocked.append(name)
                 return {"ok": True, "note": "(đã làm)"}
-            return real_run_tool(db, user, name, args)
+            return self._note(name, real_run_tool(db, user, name, args))
 
         def run_local(db, chat_id, row, user, name, args):
             self.log.tools.append(name)
-            return real_run_local(db, chat_id, row, user, name, args)
+            return self._note(name, real_run_local(db, chat_id, row, user, name, args))
 
         def more(args, offered):
             self.log.tools.append(core_v2.MORE_TOOLS)
@@ -344,7 +358,9 @@ def judge(sample: Sample, logs: list[TurnLog]) -> dict:
     for i, (turn, log) in enumerate(zip(sample.turns, logs), 1):
         said = "\n".join(plain(r) for r in log.replies) or "(không trả lời)"
         parts.append(f"--- Lượt {i}\nNGƯỜI DÙNG: {turn.text}\nÝ MONG ĐỢI: {turn.expect}\n"
-                     f"CÔNG CỤ BOT GỌI: {', '.join(log.tools) or '(không)'}\nBOT TRẢ LỜI:\n{said[:2500]}")
+                     f"CÔNG CỤ BOT GỌI (→ kết quả): {'; '.join(log.notes) or ', '.join(log.tools) or '(không)'}\n"
+                     f"GHI THẬT: {', '.join(log.commits + log.blocked) or '(không ghi gì)'}\n"
+                     f"BOT TRẢ LỜI:\n{said[:2500]}")
     with user_keys.prefer(core_v2.route_providers(core_v2.LANE_NORMAL)):
         res = manager.get_provider().ask([ChatMessage(role="user", content="\n\n".join(parts))], system=JUDGE_SYSTEM,
                                          max_tokens=300, temperature=0.0)
