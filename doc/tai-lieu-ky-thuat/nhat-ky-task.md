@@ -13370,6 +13370,8 @@ bốn. Em sửa các lỗi thật lộ ra: bot ghi yêu cầu sửa phần mềm
 hàng không bao giờ hỏi ngày cần hàng và kho vì thiếu lời người dùng; gửi lại y câu thì bot trình như nháp mới; tin nháp
 mua hàng hai dấu đầu dòng chồng nhau. Lồng thử nay tự đóng lượt chạy dở để không chặn việc dựng bot. Kèm việc bốn của mục
 mười: thẻ nháp ở đường cũ thôi liệt kê khối trả lời tạo hay thôi, cuối thẻ là một câu tự nhiên mời nhắn tạo hoặc thôi.
+Lần chạy thứ hai đạt mười lăm trên hai mươi; em sửa tiếp: bot tự thêm sự kiện lịch khi chỉ được nhờ lên lịch trình, nháp
+kế hoạch hiển thị chồng dấu đầu dòng, bot tự chọn dự án mà không nói là tạm chọn.
 
 Mã nguồn: agent_hub/core_eval.py, core_eval_samples.py, scripts/eval_core_v2.py; bài kiểm test_agent_hub_core_eval.py
 

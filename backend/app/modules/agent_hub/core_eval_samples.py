@@ -75,8 +75,10 @@ SAMPLES: tuple[Sample, ...] = (
              any_call=("my_work_tasks",)),)),
     Sample("18", "Việc cá nhân không phải ERP", (
         Turn("lên giúp anh lịch trình đi Đà Lạt 2 ngày cuối tuần này",
-             "Làm luôn lịch trình 2 ngày bằng chữ; KHÔNG gợi ý phiếu ERP, không soạn nháp nào.",
-             must_not_call=("draft_work_task", "draft_purchase_request", "draft_work_plan"), commit=False),)),
+             "Viết luôn lịch trình CHI TIẾT 2 ngày bằng chữ ngay trong tin (sáng / chiều / tối: điểm đến, ăn uống); có thể "
+             "hỏi thêm ở cuối có muốn ghi vào lịch không. KHÔNG tự tạo sự kiện lịch, không gợi ý phiếu ERP, không soạn nháp.",
+             must_not_call=("draft_work_task", "draft_purchase_request", "draft_work_plan"),
+             must_not_write=("create_calendar_event",), commit=False),)),
     Sample("19", "Yêu cầu sửa phần mềm", (
         Turn("sửa giúp anh màn YCMH thêm cột ngày cần hàng ở danh sách",
              "Nhắc lại cách hiểu (màn nào, thêm gì) và hỏi xác nhận TRƯỚC; chưa ghi yêu cầu sửa phần mềm ở lượt này.",

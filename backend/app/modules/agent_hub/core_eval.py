@@ -158,8 +158,11 @@ class Sandbox:
 
     # -- bắt lại ------------------------------------------------------------
     def _send(self, text, buttons=None, chat_id="", **kw):
+        from . import telegram
+
         if self.log is not None:
-            self.log.replies.append(str(text))
+            #  Như telegram.send thật: polish đổi «…» thành in đậm trước khi gửi (bộ mẫu lần 2, mẫu 15 trượt oan).
+            self.log.replies.append(telegram.polish(str(text)))
         self._msg_id += 1
         return self._msg_id
 
@@ -320,8 +323,9 @@ def cleanup(db: Session, prefix: str) -> None:
 JUDGE_SYSTEM = (
     "Bạn chấm một trợ lý chat tiếng Việt của công ty (bot Telegram, gọi người dùng là «đại ca» khi đó là chủ bot). Với "
     "từng lượt có Ý MONG ĐỢI và câu trả lời THẬT của bot (kèm công cụ bot đã gọi). Chấm theo Ý, không cần nguyên văn. "
-    "Trượt khi: không đạt ý chính; bịa số liệu / ngày; nói đã làm mà không có công cụ tương ứng; trả lời lạc đề; dài "
-    "dòng vô ích; dùng emoji. Tin «Đã tạo theo nháp …» / «Em bỏ nháp rồi …» là hệ thống tự báo sau khi ghi / bỏ — coi là "
+    "Trượt khi: không đạt ý chính; bịa số liệu / ngày; nói đã làm mà không có công cụ tương ứng; trả lời lạc đề; dùng "
+    "emoji. Dài dòng / văn phong chưa gọn thì chỉ GHI vào ly_do và trừ điểm, KHÔNG làm trượt (Agent 1 15/10: model chấm "
+    "dao động ở điểm này). Tin «Đã tạo theo nháp …» / «Em bỏ nháp rồi …» là hệ thống tự báo sau khi ghi / bỏ — coi là "
     "đúng. Dấu • là gạch đầu dòng, KHÔNG phải emoji. Chào lại ngắn kèm MỘT câu hỏi cần giúp gì (có thể nêu 2–3 việc "
     "hay làm) là đạt, không phải kể lể. Ngày giờ hiện tại ghi ở đầu bài chấm — dùng nó khi xét ngày. Chỉ trả JSON một dòng: {\"dat\": true|false, \"diem\": 0-10, \"ly_do\": \"tối đa 2 câu\"}."
 )

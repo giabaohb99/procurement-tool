@@ -889,3 +889,11 @@ def test_soan_lai_y_het_nhap_dang_cho_thi_noi_nhap_cu_van_cho(db, chat, monkeypa
     from app.modules.assistant.tools import confirm_fields
 
     assert "tạo task A hạn thứ sáu" in seen[0][confirm_fields.USER_TEXT_ARG]
+
+
+def test_tin_nhap_ke_hoach_viec_con_thut_vao_khong_chong_dau():
+    """Bộ mẫu lần 2 (mẫu 15): «• + Test …» và «• <b>    Tiêu chí:</b>» — việc con / tiêu chí bị gắn thêm dấu đầu dòng."""
+    out = core_v2._bullets(["Kế hoạch: Thử bot", "Thực hiện:", "- Việc 1 (Được, Ưu tiên)", "    + Việc con · 17/10",
+                            "    Tiêu chí: Đã test 5 chức năng"])
+    assert out == ["- **Kế hoạch:** Thử bot", "- **Thực hiện:**", "    – Việc 1 (Được, Ưu tiên)", "        · Việc con · 17/10",
+                   "        **Tiêu chí:** Đã test 5 chức năng"]

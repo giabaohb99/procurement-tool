@@ -80,6 +80,8 @@ CORE_RULES = (
     "- Chỉ nói «đã làm» khi công cụ trả thành công; không có công cụ đúng việc thì nói thẳng chưa làm được, không dùng "
     "công cụ khác làm thay. Công cụ báo thiếu quyền thì nói thiếu quyền gì và gợi ý nhắn «quyền của tôi».\n"
     "- Không bao giờ bảo người dùng gõ SQL, lệnh máy chủ hay mã nguồn. Không ghi mật khẩu, khóa, số thẻ vào sổ nhớ.\n"
+    "- Chỉ GHI (tạo lịch, ghi chú, phiếu, việc) khi người dùng bảo làm đúng việc đó; «lên lịch trình / gợi ý / lập danh "
+    "sách» là việc bằng chữ — làm ngay trong câu trả lời, muốn ghi vào lịch thì hỏi sau.\n"
     "- Số liệu ERP đổi theo ngày (ngày phép còn, công nợ, trạng thái đơn / phiếu, tồn kho, việc) LUÔN tra công cụ ở lượt "
     "này; không lấy từ sổ nhớ, ghi chú hay lịch sử chat. Chưa có công cụ thì gọi more_tools.\n"
     "- Cần nhiều công cụ không phụ thuộc nhau thì gọi CÙNG LÚC trong một lượt (mỗi vòng gọi tốn vài giây). Một công cụ đã "
@@ -96,7 +98,8 @@ DRAFT_FACTS = (
     "MỘT câu hỏi: muốn đổi gì không, ưng thì nhắn «tạo» hoặc bảo em tạo luôn. Người dùng hỏi xem lại nháp («nháp đâu», "
     "«cho anh xem bản nháp») thì trình bày lại đúng nháp ở mục ĐANG DỞ; hỏi phiếu nháp đã lưu trên ERP thì gọi my_saved_drafts. Không gọi công cụ thì không có nháp nào — "
     "không viết như thể đã soạn. Cần hỏi thêm thì viết thẳng câu hỏi (kèm 2–3 lựa chọn). Đủ tên việc thì cứ soạn với giá trị "
-    "hợp lý cho ô còn thiếu rồi hỏi đổi. Nháp đang chờ nằm ở mục ĐANG DỞ. Đồng ý → commit_draft (submit=true nếu bảo gửi "
+    "hợp lý cho ô còn thiếu rồi hỏi đổi — ô người dùng CHƯA nói mà bạn tự chọn (dự án, người nhận, hạn) phải ghi rõ «em tạm "
+    "chọn …», không trình như thể họ đã nói. Nháp đang chờ nằm ở mục ĐANG DỞ. Đồng ý → commit_draft (submit=true nếu bảo gửi "
     "duyệt luôn); sửa → update_draft đúng ô cần đổi; thôi → drop_draft. Chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
 )
 NEWS_RULES = (
@@ -951,7 +954,11 @@ def _bullets(summary: list) -> list[str]:
     out = []
     for x in summary:
         x = str(x)
-        if x.startswith("- "):
+        if x[:1].isspace():
+            #  Bộ mẫu lần 2 (mẫu 15): kế hoạch có việc con «    + …» và «    Tiêu chí: …» — trước bị gắn thêm «• ».
+            inner = x.strip()
+            out.append("        · " + inner[2:] if inner.startswith("+ ") else "        " + _bold_label(inner))
+        elif x.startswith("- "):
             out.append("    – " + x[2:])
         elif x.endswith(":"):
             out.append(f"- **{x[:-1]}:**")
