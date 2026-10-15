@@ -883,7 +883,35 @@ def _set_reminder(db: Session, chat_id: str, luc: str, viec: str, *, said: str =
     day = ("hôm nay" if when.date() == now.date() else "mai" if when.date() == now.date() + timedelta(days=1)
            else WEEKDAYS_VI[when.weekday()])
     return {"ok": True, "luc": fmt_local(to_utc(when)), "ngay": f"{day} ({when:%d/%m})", "gio": f"{when:%H:%M}",
-            "viec": what, "note": "Đã đặt. Báo lại một câu ngắn giờ nhắc; xem / bỏ nhắc: nhắn «nhắc gì»."}
+            "viec": what, "note": "Đã đặt — bot TỰ báo giờ nhắc ở đầu tin. Đừng nhắc lại giờ / ngày; chỉ trả lời phần còn "
+                                  "lại của câu người dùng (nếu có)."}
+
+
+#  Đại ca 15/10 17:25: «nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ» → lối tắt nhắc nuốt cả câu (nội dung nhắc
+#  dính luôn câu hỏi) và không ai trả lời «nên tập gì». Câu vừa nhờ vừa HỎI thì để model làm: gọi set_reminder với nội dung
+#  gọn + trả lời phần hỏi.
+QUESTION_END = re.compile(r"(?<!\w)(nhi|khong|chua|sao|nao|gi|dau|ha|hen|ta|the|vay)\s*$")
+QUESTION_ANY = re.compile(r"(?<!\w)(the nao|bao nhieu|co nen|nen .{0,30}(gi|nao|khong)|tai sao|vi sao|la gi|o dau|"
+                          r"khi nao|lam sao|lam gi|an gi|tap gi|mac gi)(?!\w)")
+
+
+def has_question(text: str) -> bool:
+    """Tin có kèm câu HỎI (dấu ?, hoặc mệnh đề kết bằng nhỉ / không / gì… hay chứa «thế nào, bao nhiêu, nên … gì…»)."""
+    if "?" in (text or ""):
+        return True
+    folded = _folded(text)
+    if QUESTION_ANY.search(folded):
+        return True
+    return any(QUESTION_END.search(part.strip()) for part in re.split(r"[,.;!\n]", folded) if part.strip())
+
+
+def _reminder_shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Lối tắt nhắc của đường cũ — trừ khi tin còn kèm câu hỏi (khi đó model gọi set_reminder + trả lời)."""
+    from . import reminders, service
+
+    if reminders.parse_command(text) is None and has_question(text):
+        return False
+    return service._reminder_by_text(db, chat_id, row, text)
 
 
 def reminder_reply(chat_id: str, result: dict) -> str:
@@ -1134,7 +1162,7 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
             return True
         chain = (s._ok_by_text, s._grant_by_text, s._runner_by_text, ops.handle_text, s._memory_by_text, s._brief_by_text,
                  s._work_due_by_text, s._ghi_viec_by_text, s._dev_request_by_text, s._keys_by_text, s._glossary_by_text,
-                 s._bell_by_text, s._reminder_by_text, meeting_actions.handle_text, meeting_drive.handle_text,
+                 s._bell_by_text, _reminder_shortcut, meeting_actions.handle_text, meeting_drive.handle_text,
                  change_undo.handle_text, work_plan.handle_text, s._proposal_by_text, s._my_drafts_by_text,
                  s._choice_by_text, s._confirm_by_text, s._word_by_text, s._cost_by_text, s.route_task_command)
         if any(fn(db, chat_id, row, text) for fn in chain):
@@ -1145,7 +1173,7 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
         return False
     chain = (s._deep_research_by_text, s._doc_followup, s._guide_by_text, meeting_actions.handle_text,
              meeting_drive.handle_text, change_undo.handle_text, work_plan.handle_text, s._proposal_by_text,
-             s._my_drafts_by_text, s._word_by_text, s._cost_by_text, s._bell_by_text, s._reminder_by_text,
+             s._my_drafts_by_text, s._word_by_text, s._cost_by_text, s._bell_by_text, _reminder_shortcut,
              s._memory_by_text, s._brief_by_text, s._work_due_by_text, s._dev_request_by_text, s._keys_by_text)
     if any(fn(db, chat_id, row, text) for fn in chain):
         return True
@@ -1309,7 +1337,14 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
 
         stopped: dict = {}
 
+        reminders_set: list = []
+        mixed = has_question(text)
+
         def stop_when(name: str, res) -> bool:
+            if name == "set_reminder" and isinstance(res, dict) and res.get("ok"):
+                reminders_set.append(res)
+                if mixed:
+                    return False            # câu vừa nhờ nhắc vừa hỏi: model trả lời tiếp phần hỏi
             if _stop_after(name, res):
                 stopped.update(name=name, result=res)
                 return True
@@ -1367,6 +1402,11 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
             else:
                 answer = (draft_reply(chat_id, stopped["name"], stopped["result"]) if stopped
                           else (result.text or "").strip())
+                if reminders_set and not stopped:
+                    #  Đại ca 15/10: «nhắc anh 5h30 chiều đi tập gym, a nên tập gì em nhỉ» — đặt nhắc + trả lời câu hỏi.
+                    #  Giờ nhắc do bot báo (model từng nói nhầm ngày), phần hỏi do model trả lời.
+                    head = "\n".join(reminder_reply(chat_id, r) for r in reminders_set[-3:])
+                    answer = f"{head}\n\n{answer}" if answer else head
             service.reply(db, chat_id, answer or "Em đã làm xong phần đó.", action=ACT_ANSWER,
                           markdown=stopped.get("name") != DATA_CHANGE_TOOL.name)     # thẻ ops đã là HTML
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]

@@ -1051,3 +1051,42 @@ def test_sua_du_lieu_bang_loi_chi_chu_bot_khi_bat_thao_tac(db, chat, monkeypatch
     assert chat.sent[-1] == "<b>Thẻ sửa dữ liệu</b> dev: đổi email NV X"
     monkeypatch.setattr(ops, "enabled", lambda: False)
     assert "error" in core_v2._run_local(db, CHAT, _incoming(db, "x"), chat.user, "request_data_change", {"yeu_cau": "x"})
+
+
+@pytest.mark.parametrize("text, mixed", [
+    ("nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ", True),     # đại ca 15/10 17:25
+    ("3 giờ chiều nhắc anh gọi NCC giấy nhé", False),
+    ("nhắc anh 15h gọi NCC Hòa Phát", False),
+    ("nhắc anh 8h mai họp, mà họp ở đâu vậy?", True),
+    ("nhắc gì", False),
+])
+def test_nhan_cau_vua_nhac_vua_hoi(text, mixed):
+    assert core_v2.has_question(text) is mixed or text == "nhắc gì"
+
+
+def test_vua_nho_nhac_vua_hoi_thi_dat_nhac_va_tra_loi(db, chat, monkeypatch):
+    """Đại ca 15/10: «nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ» → bot chỉ đặt nhắc (nuốt cả câu hỏi vào nội
+    dung nhắc), không trả lời. Nay: lối tắt nhường model; model đặt nhắc gọn + trả lời; dòng giờ nhắc do bot dựng."""
+    from app.modules.agent_hub import chat_link, service as s
+    from app.modules.agent_hub.model import AgentReminder
+
+    monkeypatch.setattr(chat_link, "get_active_link", lambda db_, chat_id: SimpleNamespace(user_id=275))
+    monkeypatch.setattr(core_v2, "now_local", lambda: datetime(2026, 10, 15, 17, 25))
+    text = "nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ"
+    shortcut_hits: list = []
+    monkeypatch.setattr(s, "_reminder_by_text", lambda *a: shortcut_hits.append(1) or True)
+
+    class P(FakeProvider):
+        def run_tools(self, msgs, *, tools, execute, system=None, stop_when=None, **kw):
+            res = execute("set_reminder", {"luc": "17h30", "viec": "đi tập gym"})
+            assert stop_when("set_reminder", res) is False                      # còn phần hỏi → không dừng
+            return _result("Hôm nay anh tập ngực + tay sau 45 phút là vừa.", [{"name": "set_reminder"}])
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: P(None))
+
+    core_v2.handle(db, CHAT, _incoming(db, text), text)
+
+    assert shortcut_hits == []
+    rem = db.query(AgentReminder).filter(AgentReminder.chat_id == CHAT).one()
+    assert rem.text == "đi tập gym"
+    msg = chat.sent[-1]
+    assert msg.index("17:30 hôm nay (15/10)") < msg.index("ngực + tay")

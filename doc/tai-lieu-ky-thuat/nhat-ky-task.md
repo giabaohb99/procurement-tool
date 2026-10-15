@@ -13366,6 +13366,8 @@ dùng bot, đại ca chốt bỏ luôn lõi cũ cho mã gọn. Nay mọi tin nh�
 định rồi rẽ nhánh) đã xóa cùng các công tắc bật theo từng chat. Hai việc lõi cũ làm mà lõi mới chưa có được dời sang: báo
 thẳng khi khóa AI hết tiền hay hết hạn mức, và nhờ sửa dữ liệu trên máy chủ bằng lời. Mã nguồn giảm hơn một nghìn dòng;
 các bài kiểm canh hành vi riêng của lõi cũ được bỏ, bài còn lại chạy qua lõi mới và xanh.
+Đại ca thử trên dev thấy câu vừa nhờ nhắc vừa hỏi (nhắc tập gym, hỏi nên tập gì) chỉ được đặt nhắc, câu hỏi
+bị bỏ qua và dính vào nội dung nhắc; nay bot đặt nhắc với nội dung gọn và trả lời luôn câu hỏi.
 
 Mã nguồn: agent_hub/service.py, manager.py, core_v2.py, core/config.py
 
