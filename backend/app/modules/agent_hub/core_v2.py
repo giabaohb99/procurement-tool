@@ -379,7 +379,7 @@ def _open_code_tasks(db: Session, chat_id: str) -> list[AgentTask]:
 
 def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
     """Khối ĐANG DỞ — thứ model phải nhìn thấy để không trả lời «không có dấu vết» như hôm 14/10."""
-    from . import draft_create, service
+    from . import draft_create
 
     lines: list[str] = []
     pending, info = _pending_draft(db, chat_id, before_id, now)
@@ -411,11 +411,12 @@ def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
                                                     AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
     if research is not None and now and research.created_at and now - research.created_at <= timedelta(hours=2):
         lines.append("- Đang chờ người dùng đồng ý chi phí một lượt nghiên cứu sâu («ok» / «thôi»).")
-    for t in _open_code_tasks(db, chat_id):
-        try:
-            lines.append(f"- Vé sửa phần mềm {t.code}: {service.task_status_line(db, t)[:300]}")
-        except Exception:  # noqa: BLE001
-            lines.append(f"- Vé sửa phần mềm {t.code}: {t.title[:120]}")
+    #  Đợt nén (Agent 1 16/10: khối ĐANG DỞ ~950 ký tự mỗi lượt): vé sửa mã chỉ còn mã · tên · trạng thái — dòng trạng thái
+    #  đầy đủ (nhánh, máy, cổng kiểm, lệnh gợi ý, HTML) model tra khi cần bằng lối tắt «chi tiết AI-xxxx».
+    from .constants import TASK_STATUS_LABELS
+
+    for t in _open_code_tasks(db, chat_id)[:3]:
+        lines.append(f"- Vé sửa phần mềm {t.code}: {t.title[:70]} · {TASK_STATUS_LABELS.get(t.status, t.status)}")
     return "ĐANG DỞ (việc chưa khép của cuộc này):\n" + ("\n".join(lines) if lines else "- (không có)")
 
 
