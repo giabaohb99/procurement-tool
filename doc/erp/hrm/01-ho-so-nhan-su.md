@@ -655,8 +655,7 @@ Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-
 | Thấp | U5 ở tầng dữ liệu | Cột chưa có ràng buộc duy nhất — hai lượt cấp cùng lúc có thể ra hai tài khoản |
 | Chờ chính sách | Người có `employee.write` phạm vi «tất cả» đặt được mật khẩu của người quyền cao hơn | Ghi chú tự nêu trong `_block_set_password_out_of_scope` |
 
-Các bước lớn tiếp theo của phân hệ (ngoài tài liệu này) đều **chưa bắt đầu hoặc làm dở**: Hợp đồng lao động
-(V1-5), Quyết định điều chuyển/bổ nhiệm **đầy đủ (V1-8)** — bản gọn đã có (duoc-CR-585), còn phiếu nhiều người · tờ trình · duyệt · thay thế cho, Sơ đồ tổ chức (V2-6) — tình trạng từng mục của lộ
+Các bước lớn tiếp theo của phân hệ (ngoài tài liệu này) đều **chưa bắt đầu hoặc làm dở**: Quyết định điều chuyển/bổ nhiệm **đầy đủ (V1-8)** — bản gọn đã có (duoc-CR-585), còn phiếu nhiều người · tờ trình · duyệt · thay thế cho, Sơ đồ tổ chức (V2-6) — tình trạng từng mục của lộ
 trình xem [`tham-khao-hrm/10-de-xuat-ap-dung.md` §0](../tham-khao-hrm/10-de-xuat-ap-dung.md).
 
 ### 7.11. Quá trình công tác nhân sự — bản gọn của V1-8 (duoc-CR-585, 03/10/2026)

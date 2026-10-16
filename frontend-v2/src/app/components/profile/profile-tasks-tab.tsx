@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
+  ContactRound,
   Eye,
   EyeOff,
   FileSignature,
@@ -115,6 +116,14 @@ const TASK_META: Record<
     colorClass: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400',
     icon: ScrollText,
   },
+  //  duoc-CR-620 — HĐ lao động sắp / đã hết hạn. Tách khỏi `contract` (HĐ nhà cung cấp): hai
+  //  nhóm người xử lý khác nhau (Nhân sự · Thu mua), gộp một ô lọc là ai cũng phải lọc tay.
+  labor_contract: {
+    label: 'HĐ lao động hết hạn',
+    short: 'HĐ lao động',
+    colorClass: 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+    icon: ContactRound,
+  },
 }
 
 function normalizeTaskLink(link: string): string {
@@ -133,6 +142,10 @@ function normalizeTaskLink(link: string): string {
   }
   if (link.startsWith('/contracts')) {
     return link.replace('/contracts', '/production/contracts')
+  }
+  //  Cảnh báo HĐLĐ (duoc-CR-620) ghi đường v1 `/employees/{id}?tab=labor-contracts`.
+  if (link.startsWith('/employees')) {
+    return link.replace('/employees', '/hr/employees')
   }
   return link
 }

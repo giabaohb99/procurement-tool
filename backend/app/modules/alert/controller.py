@@ -1,4 +1,5 @@
-"""Cảnh báo (Phase 3) — tính tại chỗ: giao trễ/sắp tới hạn, công nợ đến hạn/quá hạn, HĐ sắp hết hạn.
+"""Cảnh báo (Phase 3) — tính tại chỗ: giao trễ/sắp tới hạn, công nợ đến hạn/quá hạn, HĐ sắp hết hạn,
+HĐ lao động sắp hết hạn (duoc-CR-620).
 
 Endpoint GET /api/alerts cho chuông/badge. Worker (Celery) sẽ gọi cùng logic để tạo notification + email (bước sau)."""
 from datetime import datetime, timedelta
@@ -11,8 +12,10 @@ from app.core.auth import get_current_user, get_perm_profile, user_has_permissio
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope
+from app.core.vn_time import vn_today
 from app.modules.contract.model import Contract
 from app.modules.dashboard.service import load_dismissed_keys
+from app.modules.labor_contract.expiry_service import find_expiring as find_expiring_labor_contracts
 from app.modules.payable.due_alerts import group_due_payables
 from app.modules.payable.model import Payable
 from app.modules.payable.service import ST_PAID
@@ -40,6 +43,7 @@ def build(db: Session, user=None) -> dict:
     see_delivery = user is None or user_has_permission(db, user, "purchase_order", "read")
     see_payable = user is None or user_has_permission(db, user, "payable", "read")
     see_contract = user is None or user_has_permission(db, user, "contract", "read")
+    see_labor_contract = user is None or user_has_permission(db, user, "labor_contract", "read")
     profile = get_perm_profile(db, user) if user is not None else None
     dismissed = load_dismissed_keys(db, user) if user is not None else set()
 
@@ -98,6 +102,15 @@ def build(db: Session, user=None) -> dict:
                 push(f"contract:{c.id}:danger", {"type": "contract", "level": "danger", "title": f"Hợp đồng HẾT HẠN: {c.code} · {who} ({c.end_date})", "link": link})
             elif d_le(c.end_date, 30):
                 push(f"contract:{c.id}:warn", {"type": "contract", "level": "warn", "title": f"HĐ sắp hết hạn: {c.code} · {who} ({c.end_date})", "link": link})
+
+    # 4) Hợp đồng LAO ĐỘNG sắp hết / đã hết hạn (duoc-CR-620) — luật lọc nằm ở `expiry_service`,
+    #    dùng chung với thẻ Tổng quan Nhân sự. Key kèm mức: «vàng» đã ẩn vẫn nổi lại khi sang «đỏ».
+    #    ⚠️ `vn_today()` chứ không phải `today` ở trên: container chạy UTC, `datetime.now()` lệch
+    #    một ngày từ 00:00–06:59 giờ VN — thẻ Tổng quan đếm theo giờ VN, chuông phải đếm cùng.
+    if see_labor_contract:
+        for c in find_expiring_labor_contracts(db, vn_today(), user=user, profile=profile):
+            push(f"labor_contract:{c.id}:{c.level}",
+                 {"type": "labor_contract", "level": c.level, "title": c.alert_title(), "link": c.alert_link()})
 
     danger = sum(1 for x in items if x["level"] == "danger")
     return {"total": len(items), "danger": danger, "warn": len(items) - danger, "items": items}

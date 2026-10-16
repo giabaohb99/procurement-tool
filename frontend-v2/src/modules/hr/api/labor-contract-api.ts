@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut, downloadFile } from '@/core/api'
 import type {
+  ExpiringLaborContractList,
   LaborContract,
   LaborContractGeneratePayload,
   LaborContractListResult,
@@ -33,6 +34,9 @@ export const laborContractApi = {
     apiPost<LaborContractSaveResult>(`${EMPLOYEE_URL}/${employeeId}/labor-contracts`, payload),
 
   getById: (id: number) => apiGet<LaborContract>(`${CONTRACT_URL}/${id}`),
+
+  /** HĐLĐ sắp hết / đã hết hạn trong phạm vi người xem (duoc-CR-620), hết hạn sớm nhất lên đầu. */
+  listExpiring: () => apiGet<ExpiringLaborContractList>(`${CONTRACT_URL}/expiring`),
 
   update: (id: number, payload: LaborContractUpdatePayload) =>
     apiPatch<LaborContractSaveResult>(`${CONTRACT_URL}/${id}`, payload),

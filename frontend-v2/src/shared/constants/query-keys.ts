@@ -230,6 +230,8 @@ export const queryKeys = {
     laborContractTemplateContent: (id: number) => ['hr', 'labor-contract-template', id, 'content'] as const,
     /** HĐLĐ của MỘT hồ sơ (tab «Hợp đồng»). Nằm DƯỚI khóa hồ sơ nên `hr.all` quét luôn. */
     employeeLaborContracts: (id: number) => ['hr', 'employees', id, 'labor-contracts'] as const,
+    /** HĐLĐ sắp hết hạn của cả phạm vi (thẻ Tổng quan Nhân sự, duoc-CR-620). Mọi lệnh ghi HĐLĐ quét lại. */
+    laborContractsExpiring: () => ['hr', 'labor-contracts', 'expiring'] as const,
     /** Mẫu chọn được cho hồ sơ này (theo pháp nhân hiện tại + loại HĐ; 0 = mọi loại). */
     employeeLaborContractTemplates: (id: number, contractType: number) =>
       ['hr', 'employees', id, 'labor-contract-templates', contractType] as const,

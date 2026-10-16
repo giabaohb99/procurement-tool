@@ -577,6 +577,18 @@ def build_my_tasks(db: Session, user, prof) -> list[dict]:
             elif c.end_date <= warn_until:
                 tasks.append({"key": f"contract:{c.id}:warn", "label": "HĐ sắp hết hạn", **base})
 
+    if can("labor_contract"):
+        # duoc-CR-620: CÙNG hàm, CÙNG key với chuông — thiếu khối này thì cảnh báo HĐLĐ trên chuông
+        # không có chỗ nào ẩn được («Đánh dấu làm hết» chỉ gom key từ danh sách này).
+        from app.core.vn_time import vn_today
+        from app.modules.labor_contract.expiry_service import find_expiring
+        for c in find_expiring(db, vn_today(), user=user, profile=prof):
+            tasks.append({"key": f"labor_contract:{c.id}:{c.level}", "type": "labor_contract",
+                          "label": "HĐLĐ đã hết hạn" if c.days_left < 0 else "HĐLĐ sắp hết hạn",
+                          "code": c.contract_no or c.code, "title": c.employee_name,
+                          "subtitle": c.alert_title(), "date": c.end_date.isoformat(),
+                          "link": c.alert_link()})
+
     dismissed = load_dismissed_keys(db, user)
     for t in tasks:
         t["dismissed"] = t["key"] in dismissed

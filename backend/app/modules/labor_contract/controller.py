@@ -14,8 +14,9 @@ from app.core.auth import get_current_user, get_perm_profile, require
 from app.core.database import get_db
 from app.core.labor_contract_codes import LABOR_CONTRACT_STATUS_LABELS, LaborContractStatus
 from app.core.response import success
+from app.core.vn_time import vn_today
 
-from . import access, generate_service, service
+from . import access, expiry_service, generate_service, service
 from .file_response import DOCX_MIME, download_response, load_bytes
 from .model import LaborContract
 from .schema import GenerateIn, LaborContractCreate, LaborContractUpdate, TransitionIn
@@ -84,6 +85,22 @@ def create_contract(eid: int, data: LaborContractCreate, db: Session = Depends(g
 
 
 # ---- Theo id HĐ -----------------------------------------------------------------------------
+@router.get("/api/labor-contracts/expiring")
+def list_expiring_contracts(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
+    """HĐLĐ sắp hết / đã hết hạn trong phạm vi người xem (duoc-CR-620) — thẻ Tổng quan Nhân sự.
+
+    ⚠️ Phải khai TRƯỚC `/api/labor-contracts/{cid}`: không thì «expiring» rơi vào `{cid}` và ăn 422.
+    Không trả lương — chỉ người, mã, loại, ngày kết thúc."""
+    profile = get_perm_profile(db, user)
+    rows = expiry_service.find_expiring(db, vn_today(), user=user, profile=profile)
+    items = [{"id": c.id, "code": c.code, "contract_no": c.contract_no, "contract_type": c.contract_type,
+              "employee_id": c.employee_id, "employee_code": c.employee_code,
+              "employee_name": c.employee_name, "end_date": c.end_date.isoformat(),
+              "days_left": c.days_left, "level": c.level} for c in rows]
+    return success({"items": items, "danger": sum(1 for c in rows if c.level == "danger"),
+                    "warn_days": expiry_service.WARN_DAYS, "danger_days": expiry_service.DANGER_DAYS})
+
+
 @router.get("/api/labor-contracts/{cid}")
 def get_contract(cid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     profile = get_perm_profile(db, user)

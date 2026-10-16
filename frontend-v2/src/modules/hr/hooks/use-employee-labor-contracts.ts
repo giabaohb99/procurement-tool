@@ -47,11 +47,17 @@ export function notifySaveWarnings(result: LaborContractSaveResult, message: str
   for (const warning of result.warnings ?? []) toast.warning(warning)
 }
 
-/** Mọi lệnh ghi quét cả nhánh hồ sơ của người này — danh sách + ô chọn mẫu cùng mới. */
+/**
+ * Mọi lệnh ghi quét cả nhánh hồ sơ của người này — danh sách + ô chọn mẫu cùng mới — và
+ * thẻ «Hợp đồng sắp hết hạn» (ký HĐ nối tiếp / chấm dứt là HĐ cũ phải rời thẻ ngay).
+ */
 function useInvalidateContracts(employeeId: number) {
   const queryClient = useQueryClient()
   return () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.hr.employeeLaborContracts(employeeId) })
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.employeeLaborContracts(employeeId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.laborContractsExpiring() }),
+    ])
 }
 
 export function useSaveLaborContract(employeeId: number) {

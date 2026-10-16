@@ -14611,3 +14611,19 @@ Kèm theo, trong log còn thấy Claude Desktop chưa đọc được biến mô
 đại ca khởi động lại.
 
 Mã nguồn: docker/nginx.erp.prod.conf
+
+## duoc-CR-620 | Cảnh báo hợp đồng lao động sắp hết hạn và đã hết hạn
+- status: xong
+- date: 2026-10-16
+Sau buổi đối chiếu tài liệu phân hệ Nhân sự với mã nguồn, đại ca chốt không làm chấm công và lương, và giao làm cảnh báo hợp
+đồng lao động sắp hết hạn. Nay hợp đồng đã ký nào hết hạn trong ba mươi ngày tới hoặc đã quá hạn sẽ hiện trên chuông cảnh báo
+và trong tab Việc cần làm của người có quyền xem hợp đồng lao động, chỉ trong phạm vi pháp nhân, phòng ban mà người đó được xem;
+còn từ mười lăm ngày trở xuống hoặc đã quá hạn thì hiện màu đỏ, vì luật lao động buộc báo trước cho người lao động ít nhất mười
+lăm ngày. Trang Tổng quan Nhân sự có thêm thẻ «Hợp đồng lao động sắp hết hạn» liệt kê đủ danh sách, hết hạn sớm nhất lên đầu,
+bấm vào là mở thẳng tab Hợp đồng của người đó. Hợp đồng của người đã nghỉ việc, hoặc người đã được lập hợp đồng nối tiếp, không
+bị báo nữa; riêng bản nháp nối tiếp chỉ tính khi hợp đồng cũ chưa hết hạn, vì hết hạn rồi mà nháp vẫn chưa ký thì người đó
+đang đi làm không có hợp đồng. Cảnh báo ẩn được bằng nút đánh dấu đã làm ở tab Việc cần làm như các cảnh báo khác. Cảnh báo tính ngay lúc mở xem, không gửi email. Tài liệu lộ trình nhân sự đã ghi mục hợp đồng
+lao động là xong, chấm công và lương là không làm. Bài kiểm chạy xanh, đã bấm thử trên máy với hai hợp đồng tạm rồi xóa đi,
+chưa đưa lên dev.
+
+Mã nguồn: backend/app/modules/labor_contract/expiry_service.py · labor_contract/controller.py · alert/controller.py · dashboard/controller.py · frontend-v2/src/app/components/profile/profile-tasks-tab.tsx · frontend-v2/src/modules/hr/components/expiring-labor-contracts-card.tsx · hooks/use-expiring-labor-contracts.ts · utils/labor-contract-expiry.ts · pages/hr-dashboard-page.tsx · test/backend/test_hdld_canh_bao_het_han_cr620.py

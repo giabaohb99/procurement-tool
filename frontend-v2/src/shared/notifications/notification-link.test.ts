@@ -17,6 +17,11 @@ describe('toAppPath', () => {
   it('dịch link kiểu app cũ sang đường dẫn phân hệ', () => {
     expect(toAppPath('/purchase-orders/12')).toBe('/procurement/purchase-orders/12')
     expect(toAppPath('/employees')).toBe('/hr/employees')
+    //  Cảnh báo HĐLĐ sắp hết hạn (duoc-CR-620): backend ghi đường v1 để chạy cả hai giao
+    //  diện — dịch xong phải GIỮ `?tab=` thì mới mở thẳng tab Hợp đồng, không về tab Chung.
+    expect(toAppPath('/employees/23?tab=labor-contracts')).toBe(
+      '/hr/employees/23?tab=labor-contracts',
+    )
     //  Thông báo phiếu hỗ trợ: backend vẫn ghi `/tickets/{id}`, phải rơi đúng
     //  vào chi tiết phiếu ở phân hệ Hỗ trợ chứ không trả null.
     expect(toAppPath('/tickets/12')).toBe('/support/tickets/12')

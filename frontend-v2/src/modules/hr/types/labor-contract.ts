@@ -163,3 +163,27 @@ export interface LaborContractTransitionPayload {
   /** Bắt buộc cho ->5 (hủy) và ->4 (chấm dứt). */
   reason?: string
 }
+
+/** Một HĐLĐ sắp hết / đã hết hạn (duoc-CR-620) — KHÔNG có lương, chỉ đủ để biết đi xử ai. */
+export interface ExpiringLaborContract {
+  id: number
+  code: string
+  contract_no: string
+  contract_type: number
+  employee_id: number
+  employee_code: string
+  employee_name: string
+  end_date: string
+  /** Âm = đã quá hạn bấy nhiêu ngày. */
+  days_left: number
+  level: 'danger' | 'warn'
+}
+
+export interface ExpiringLaborContractList {
+  items: ExpiringLaborContract[]
+  /** Số dòng mức đỏ (còn ≤ `danger_days` ngày hoặc đã quá hạn). */
+  danger: number
+  /** Cửa sổ báo trước (ngày) — backend là chuẩn, giao diện chỉ đọc để viết câu mô tả. */
+  warn_days: number
+  danger_days: number
+}

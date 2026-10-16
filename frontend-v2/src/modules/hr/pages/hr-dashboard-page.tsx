@@ -1,3 +1,4 @@
+import { usePermission } from '@/core/authorization/use-permission'
 import { BarList } from '@/shared/ui/bar-list'
 import { ChartCard } from '@/shared/ui/chart'
 import { DonutChart } from '@/shared/ui/donut-chart'
@@ -5,6 +6,7 @@ import { HorizontalBarChart } from '@/shared/ui/horizontal-bar-chart'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { AccountCoverageCard } from '../components/account-coverage-card'
+import { ExpiringLaborContractsCard } from '../components/expiring-labor-contracts-card'
 import { HrOverviewStats } from '../components/hr-overview-stats'
 import { LeaveGlanceCard } from '../components/leave-glance-card'
 import { ProfileGapsCard } from '../components/profile-gaps-card'
@@ -31,6 +33,7 @@ export function HrDashboardPage() {
   const overview = useHrOverview()
   const leave = useHrLeaveGlance()
   const room = useHrRoomGlance()
+  const { can } = usePermission()
   //  Chốt "bây giờ" MỘT LẦN cho cả lượt vẽ rồi truyền xuống: để mỗi dòng tự gọi
   //  `new Date()` thì hai cuộc họp sát nhau có thể rơi vào hai phía của cùng
   //  một mốc kết thúc, và dấu «Đang họp» hiện ở hai dòng liền.
@@ -51,10 +54,12 @@ export function HrDashboardPage() {
 
         - **13 inch** (`lg`, 3 cột):
               [ theo phòng ban        ×2 ][ hồ sơ cần bổ sung ]
+              [ hợp đồng lao động sắp hết hạn               ×3 ]  ← chỉ khi có quyền HĐLĐ
               [ nghỉ phép ][ lịch họp ][ cơ cấu ]
               [ tài khoản ][ theo pháp nhân          ×2 ]
         - **15 inch trở lên** (`2xl`, từ 1536px — 4 cột):
               [ theo phòng ban   ×2 ][ hồ sơ cần bổ sung ×2 ]
+              [ hợp đồng lao động sắp hết hạn         ×4 ]  ← chỉ khi có quyền HĐLĐ
               [ nghỉ phép        ×2 ][ lịch họp          ×2 ]
               [ cơ cấu ][ tài khoản ][ theo pháp nhân    ×2 ]
 
@@ -93,6 +98,13 @@ export function HrDashboardPage() {
           loading={overview.isLoading}
           canRead={overview.canReadEmployees}
         />
+
+        {/* Trọn MỘT HÀNG ở cả hai mốc (3 / 4 cột) nên có hay không có thẻ này lưới
+            vẫn kín — không phải tính lại tổng span. Chỉ dựng khi có quyền HĐLĐ
+            (hợp đồng mang lương), người khác không thấy cả cái khung. */}
+        {can('labor_contract', 'read') && (
+          <ExpiringLaborContractsCard className="lg:col-span-3 2xl:col-span-4" />
+        )}
 
         <LeaveGlanceCard className="2xl:col-span-2" glance={leave} />
 
