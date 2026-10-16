@@ -2769,7 +2769,11 @@ def _create_reminder(db: Session, chat_id: str, what: str, when_local) -> bool:
         return True
     link = chat_link.get_active_link(db, chat_id)
     reminders.create(db, chat_id, link.user_id if link else 0, what, when_local)
-    reply(db, chat_id, f"Được, em nhắc lúc <b>{fmt_local(to_utc(when_local))}</b>: {telegram.esc(what)}. Xem lại: «nhắc gì».")
+    text = f"Được, em nhắc lúc <b>{fmt_local(to_utc(when_local))}</b>: {telegram.esc(what)}. Xem lại: «nhắc gì»."
+    #  ai-CR-206: nhắc kiểu cuộc hẹn + đã nối Google → hỏi tạo luôn lịch (đại ca 16/10).
+    if offer := core_v2.calendar_offer(db, chat_id, what, when_local):
+        text += "\n" + telegram.md_to_html(offer)
+    reply(db, chat_id, text)
     db.commit()
     return True
 

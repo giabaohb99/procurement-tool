@@ -274,6 +274,9 @@ ACT_BELL = "chuong"
 #  ai-CR-060: tin bot gửi = lời nhắc tới giờ (T-10); thẻ hỏi lại «lúc mấy giờ?» giữ nội dung nhắc trong body.
 ACT_REMINDER = "nhac"
 ACT_REMIND_WAIT = "cho_gio_nhac"
+#  ai-CR-206 (đại ca 16/10: «hẹn 6h chiều nay đi cafe» chỉ được đặt nhắc — «sao không tạo lịch luôn… hoặc hỏi lại để a xác
+#  nhận»): sau khi đặt nhắc kiểu cuộc hẹn mà người dùng đã nối Google, bot hỏi tạo luôn lịch; dòng sổ ẩn giữ việc + giờ.
+ACT_CALENDAR_OFFER = "moi_tao_lich"
 #  ai-CR-061: tin thoại đã chép thành chữ (T-07).
 ACT_VOICE = "thoai"
 #  ai-CR-064: bản tin sáng (T-08) và nhắc trước họp (T-09); body của nhắc họp giữ id sự kiện để không nhắc hai lần.

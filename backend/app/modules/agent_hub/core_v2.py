@@ -27,7 +27,7 @@ from app.core.config import settings
 from app.modules.assistant.provider.base import ToolDef
 
 from . import erp, manager, telegram, user_keys
-from .constants import (ACT_ANSWER, ACT_ASKED, ACT_DRAFT_WAIT, ACT_PLAN_ASK_WAIT, ACT_RESEARCH_WAIT, ACT_UNDO_WAIT, DIR_IN,
+from .constants import (ACT_ANSWER, ACT_ASKED, ACT_CALENDAR_OFFER, ACT_DRAFT_WAIT, ACT_PLAN_ASK_WAIT, ACT_RESEARCH_WAIT, ACT_UNDO_WAIT, DIR_IN,
                         DIR_OUT, SCOPE_COMPANY, SRC_TELEGRAM, ST_DONE, STAGE_ANSWER)
 from .model import AgentMessage, AgentTask, AgentTaskItem
 from .timeutil import fmt_local, now_local
@@ -891,6 +891,7 @@ def _set_reminder(db: Session, chat_id: str, luc: str, viec: str, *, said: str =
     day = ("hôm nay" if when.date() == now.date() else "mai" if when.date() == now.date() + timedelta(days=1)
            else WEEKDAYS_VI[when.weekday()])
     return {"ok": True, "luc": fmt_local(to_utc(when)), "ngay": f"{day} ({when:%d/%m})", "gio": f"{when:%H:%M}",
+            "when_iso": when.replace(second=0, microsecond=0).isoformat(),
             "viec": what, "note": "Đã đặt — bot TỰ báo giờ nhắc ở đầu tin. Đừng nhắc lại giờ / ngày; chỉ trả lời phần còn "
                                   "lại của câu người dùng (nếu có)."}
 
@@ -920,6 +921,83 @@ def _reminder_shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) 
     if reminders.parse_command(text) is None and has_question(text):
         return False
     return service._reminder_by_text(db, chat_id, row, text)
+
+
+#  Đại ca 16/10: «hẹn 6h chiều nay đi cafe em nhé» → bot chỉ đặt nhắc. Lời nhắc kiểu CUỘC HẸN / sự kiện (không phải việc
+#  phải làm như «gọi NCC») mà người dùng đã nối Google → hỏi luôn có tạo lịch không; «ok» là tạo, không tốn lượt model.
+APPOINTMENT_RX = re.compile(r"(?<!\w)(hen|gap|hop|cafe|ca phe|uong|an (trua|toi|sang|com|uong)|nhau|kham|don|"
+                            r"tiec|sinh nhat|di choi|di xem|xem phim|bay|chuyen bay|du lich|tap|gym|da bong|phong van)(?!\w)")
+CALENDAR_OFFER_WINDOW = timedelta(minutes=30)
+CALENDAR_YES = re.compile(r"(?<!\w)(ok|oke|okay|co|duoc|tao (lich|di|luon)|them lich|dong y|u|uh|yes|chot)(?!\w)")
+CALENDAR_NO = re.compile(r"(?<!\w)(thoi|khong can|khoi|khong|ko|k can|nhac thoi|chi nhac)(?!\w)")
+
+
+def calendar_offer(db: Session, chat_id: str, what: str, when_local) -> str:
+    """Câu hỏi «tạo luôn lịch Google?» (rỗng nếu không hợp) + dòng sổ ẩn để «ok» kế tiếp tạo được lịch."""
+    from . import chat_link, google_link, service
+
+    if not what or not APPOINTMENT_RX.search(" " + _folded(what) + " "):
+        return ""
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None or google_link.get_link(db, int(link.user_id)) is None:
+        return ""
+    service.log_message(db, DIR_OUT, chat_id, 0, json.dumps(
+        {"title": what[:120], "start": when_local.replace(second=0, microsecond=0).isoformat()}, ensure_ascii=False),
+        action=ACT_CALENDAR_OFFER)
+    who = "Đại ca" if telegram.is_allowed_chat(chat_id) else "Anh/chị"
+    return f"{who} muốn em tạo luôn lịch **{what[:80]}** trên Google Calendar không? Nhắn **ok** là em tạo."
+
+
+def calendar_offer_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«ok» / «tạo lịch đi» ngay sau câu hỏi tạo lịch → tạo lịch Google (60 phút); «thôi / không cần» → chỉ nhắc."""
+    from . import service
+
+    offers = db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id)
+                        .order_by(AgentMessage.id.desc()).limit(3)).all()
+    offer = next((m for m in offers if m.action == ACT_CALENDAR_OFFER), None)
+    if offer is None or (row.created_at and offer.created_at and row.created_at - offer.created_at > CALENDAR_OFFER_WINDOW):
+        return False
+    folded = _folded(text)
+    if len(folded.split()) > 8:
+        return False
+    if CALENDAR_NO.search(folded) and not CALENDAR_YES.search(folded.replace("khong", "")):
+        offer.action = "moi_tao_lich_bo"
+        row.action = ACT_ANSWER
+        service.reply(db, chat_id, "Dạ, em chỉ nhắc thôi, không tạo lịch.", action=ACT_ANSWER)
+        return True
+    if not CALENDAR_YES.search(folded):
+        return False
+    try:
+        info = json.loads(offer.body or "{}")
+    except ValueError:
+        return False
+    offer.action = "moi_tao_lich_xong"
+    row.action = ACT_ANSWER
+    user = service._assistant_user(db, chat_id)
+    try:
+        out = erp.run_tool(db, user, "create_calendar_event",
+                           {"title": info.get("title") or "Lịch hẹn", "start": info.get("start"), "duration_minutes": 60})
+    except Exception as e:  # noqa: BLE001
+        out = {"error": f"{type(e).__name__}: {e}"[:200]}
+    if isinstance(out, dict) and not out.get("error"):
+        when = str(info.get("start") or "")[11:16]
+        service.reply(db, chat_id, f"Đã tạo lịch **{info.get('title')}** lúc {when} trên Google Calendar (1 tiếng).",
+                      markdown=True, action=ACT_ANSWER)
+    else:
+        service.reply(db, chat_id, f"Em chưa tạo được lịch: {telegram.esc(str((out or {}).get('error') or 'lỗi lạ'))[:200]}",
+                      action=ACT_ANSWER)
+    return True
+
+
+def _with_calendar_offer(db: Session, chat_id: str, answer: str, result: dict) -> str:
+    from datetime import datetime as _dt
+
+    try:
+        when = _dt.fromisoformat(str(result.get("when_iso") or ""))
+    except ValueError:
+        return answer
+    offer = calendar_offer(db, chat_id, str(result.get("viec") or ""), when)
+    return f"{answer}\n{offer}" if offer else answer
 
 
 def reminder_reply(chat_id: str, result: dict) -> str:
@@ -1159,7 +1237,8 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     from . import change_undo, meeting_actions, meeting_drive, ops, service as s, work_plan
 
     if telegram.is_allowed_chat(chat_id):
-        if (s._deep_research_by_text(db, chat_id, row, text) or s._doc_followup(db, chat_id, row, text)
+        if (calendar_offer_by_text(db, chat_id, row, text)
+                or s._deep_research_by_text(db, chat_id, row, text) or s._doc_followup(db, chat_id, row, text)
                 or s._guide_by_text(db, chat_id, row, text) or s._link_by_text(db, chat_id, row, text)):
             return True
         if task_id := s._deploy_time_target(db, chat_id, row):
@@ -1179,7 +1258,7 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
             s._answer_plan(db, chat_id, row, text, task_id)
             return True
         return False
-    chain = (s._deep_research_by_text, s._doc_followup, s._guide_by_text, meeting_actions.handle_text,
+    chain = (calendar_offer_by_text, s._deep_research_by_text, s._doc_followup, s._guide_by_text, meeting_actions.handle_text,
              meeting_drive.handle_text, change_undo.handle_text, work_plan.handle_text, s._proposal_by_text,
              s._my_drafts_by_text, s._word_by_text, s._cost_by_text, s._bell_by_text, _reminder_shortcut,
              s._memory_by_text, s._brief_by_text, s._work_due_by_text, s._dev_request_by_text, s._keys_by_text)
@@ -1404,7 +1483,7 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                 answer = confirm_reply(chat_id, {**stopped["result"], "tool": stopped["result"].get("tool") or stopped["name"]},
                                        same=True)
             elif stopped.get("name") == "set_reminder":
-                answer = reminder_reply(chat_id, stopped["result"])
+                answer = _with_calendar_offer(db, chat_id, reminder_reply(chat_id, stopped["result"]), stopped["result"])
             elif stopped.get("name") == DATA_CHANGE_TOOL.name:
                 answer = str(stopped["result"].get("tra_loi") or "")
             else:
@@ -1413,7 +1492,8 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                 if reminders_set and not stopped:
                     #  Đại ca 15/10: «nhắc anh 5h30 chiều đi tập gym, a nên tập gì em nhỉ» — đặt nhắc + trả lời câu hỏi.
                     #  Giờ nhắc do bot báo (model từng nói nhầm ngày), phần hỏi do model trả lời.
-                    head = "\n".join(reminder_reply(chat_id, r) for r in reminders_set[-3:])
+                    head = _with_calendar_offer(db, chat_id, "\n".join(reminder_reply(chat_id, r) for r in reminders_set[-3:]),
+                                                reminders_set[-1])
                     answer = f"{head}\n\n{answer}" if answer else head
             service.reply(db, chat_id, answer or "Em đã làm xong phần đó.", action=ACT_ANSWER,
                           markdown=stopped.get("name") != DATA_CHANGE_TOOL.name)     # thẻ ops đã là HTML

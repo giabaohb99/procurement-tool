@@ -1090,3 +1090,41 @@ def test_vua_nho_nhac_vua_hoi_thi_dat_nhac_va_tra_loi(db, chat, monkeypatch):
     assert rem.text == "đi tập gym"
     msg = chat.sent[-1]
     assert msg.index("17:30 hôm nay (15/10)") < msg.index("ngực + tay")
+
+
+def test_nhac_cuoc_hen_thi_hoi_tao_lich_ok_la_tao(db, chat, monkeypatch):
+    """Đại ca 16/10: «hẹn 6h chiều nay đi cafe em nhé» chỉ được đặt nhắc — «sao không tạo lịch luôn… hoặc hỏi lại để a xác
+    nhận». Nay: đặt nhắc + hỏi tạo lịch (đã nối Google); «ok» → tạo lịch Google, không gọi model."""
+    from app.modules.agent_hub import chat_link, google_link
+
+    monkeypatch.setattr(chat_link, "get_active_link", lambda db_, chat_id: SimpleNamespace(user_id=275))
+    monkeypatch.setattr(google_link, "get_link", lambda db_, uid: SimpleNamespace(id=1))
+    monkeypatch.setattr(core_v2, "now_local", lambda: datetime(2026, 10, 16, 9, 10))
+    calls: list = []
+    monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: calls.append((name, args)) or {"ok": True})
+    monkeypatch.setattr(core_v2.manager, "get_provider", lambda: StopProvider([("set_reminder", {"luc": "18h", "viec": "đi cafe"})]))
+    core_v2.handle(db, CHAT, _incoming(db, "hẹn 6h chiều nay đi cafe em nhé"), "hẹn 6h chiều nay đi cafe em nhé")
+    assert "18:00 hôm nay (16/10)" in chat.sent[-1] and "Google Calendar" in chat.sent[-1]
+    no_model = _no_model(monkeypatch)
+    core_v2.handle(db, CHAT, _incoming(db, "ok em"), "ok em")
+    assert no_model == [] and calls == [("create_calendar_event",
+                                          {"title": "đi cafe", "start": "2026-10-16T18:00:00", "duration_minutes": 60})]
+    assert "Đã tạo lịch" in chat.sent[-1]
+    #  Lời nhắc việc phải làm (không phải cuộc hẹn) thì không hỏi lịch; chưa nối Google cũng không hỏi.
+    assert core_v2.calendar_offer(db, CHAT, "gọi NCC giấy", datetime(2026, 10, 16, 15)) == ""
+    monkeypatch.setattr(google_link, "get_link", lambda db_, uid: None)
+    assert core_v2.calendar_offer(db, CHAT, "đi cafe", datetime(2026, 10, 16, 18)) == ""
+
+
+def test_hoi_tao_lich_tra_loi_thoi_thi_chi_nhac(db, chat, monkeypatch):
+    from app.modules.agent_hub import chat_link, google_link
+
+    monkeypatch.setattr(chat_link, "get_active_link", lambda db_, chat_id: SimpleNamespace(user_id=275))
+    monkeypatch.setattr(google_link, "get_link", lambda db_, uid: SimpleNamespace(id=1))
+    assert core_v2.calendar_offer(db, CHAT, "họp NCC", datetime(2026, 10, 16, 14))
+    db.commit()
+    calls: list = []
+    monkeypatch.setattr(core_v2.erp, "run_tool", lambda *a: calls.append(a) or {"ok": True})
+    row = _incoming(db, "thôi không cần đâu")
+    assert core_v2.calendar_offer_by_text(db, CHAT, row, "thôi không cần đâu") and calls == []
+    assert "chỉ nhắc" in chat.sent[-1]
