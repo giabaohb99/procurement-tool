@@ -1128,3 +1128,33 @@ def test_hoi_tao_lich_tra_loi_thoi_thi_chi_nhac(db, chat, monkeypatch):
     row = _incoming(db, "thôi không cần đâu")
     assert core_v2.calendar_offer_by_text(db, CHAT, row, "thôi không cần đâu") and calls == []
     assert "chỉ nhắc" in chat.sent[-1]
+
+
+def test_tao_lich_phai_trinh_ban_du_kien_va_cho_xac_nhan(db, chat, monkeypatch):
+    """Đại ca 16/10 9:44: «hẹn 7h tối nay ăn tối với khách» → model TỰ tạo lịch Google 1,5 tiếng. «1,5 tiếng ở đâu ra… hỏi
+    xác nhận lại rồi có kế hoạch chi tiết chứ». Lượt đầu bị chặn (model trình bản lịch); «ok» lượt sau mới tạo."""
+    from app.modules.assistant.provider.base import ToolDef
+
+    monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: [
+        ToolDef(name=n, description="x", parameters={}) for n in ("create_calendar_event", "my_calendar_events")])
+    created: list = []
+    monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: created.append(name) or {"ok": True})
+    seen: dict = {}
+
+    def first(msgs, tools, execute):
+        seen["first"] = execute("create_calendar_event", {"title": "Ăn tối với khách", "start": "2026-10-16T19:00:00",
+                                                          "duration_minutes": 90})
+        return _result("Em lên lịch dự kiến: Ăn tối với khách, 19:00–20:30 hôm nay (em tạm tính 1,5 tiếng), nhắc trước "
+                       "30 phút. Ưng thì nhắn ok.")
+    _install(monkeypatch, first)
+    core_v2.handle(db, CHAT, _incoming(db, "hẹn 7h tối nay ăn tối với khách em nhé"), "hẹn 7h tối nay ăn tối với khách em nhé")
+    assert "CHƯA tạo" in seen["first"]["error"] and created == []
+
+    def second(msgs, tools, execute):
+        seen["tools"] = [t.name for t in tools]
+        seen["second"] = execute("create_calendar_event", {"title": "Ăn tối với khách", "start": "2026-10-16T19:00:00"})
+        return _result("Đã tạo lịch.", [{"name": "create_calendar_event"}])
+    _install(monkeypatch, second)
+    core_v2.handle(db, CHAT, _incoming(db, "ok em"), "ok em")
+    assert seen["second"] == {"ok": True} and created == ["create_calendar_event"]
+    assert "create_calendar_event" in seen["tools"]                        # «ok» vẫn có công cụ lịch, khỏi more_tools

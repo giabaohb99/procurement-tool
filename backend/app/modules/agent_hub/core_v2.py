@@ -656,13 +656,26 @@ def _can_order_code(db: Session, chat_id: str) -> bool:
         return False
 
 
+def _calendar_confirm(db: Session, chat_id: str, text: str) -> bool:
+    """«ok» ngắn ngay sau khi bot trình bản lịch (CONFIRM_FIRST_TOOLS): câu không khớp nhóm nào (còn bị coi là xã giao)
+    mà cần công cụ lịch Google."""
+    folded = _folded(text)
+    if not chat_id or db is None or not folded or len(folded.split()) > COMMIT_MAX_WORDS \
+            or not CODE_CONFIRM_CUE.search(folded):
+        return False
+    last = db.scalar(select(AgentMessage.body).where(AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_ANSWER)
+                     .order_by(AgentMessage.id.desc()).limit(1))
+    return bool(last) and "lich" in _folded(last)
+
+
 def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: list[str] | None = None) -> list[ToolDef]:
     """Công cụ ERP theo nhóm của câu (tool_router, ai-CR-183/192) + công cụ nháp của lõi. `extra_groups`: nhóm model xin
     thêm qua more_tools (lượt chạy lại) — khi đó không đưa more_tools nữa."""
     from app.modules.assistant import tool_router
 
     #  Câu xã giao («hello em», «cảm ơn») không cần 70+ công cụ ERP — hôm 14/10 «hello em» nạp 76 công cụ.
-    if tool_router.is_smalltalk(text):
+    calendar_yes = _calendar_confirm(db, chat_id, text)
+    if tool_router.is_smalltalk(text) and not calendar_yes:
         return list(LOCAL_TOOLS)
     try:
         defs = list(erp.tool_defs(db, user) or [])
@@ -684,6 +697,8 @@ def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: 
     for rx, names in CORE_GROUP_HINTS:        # cách nói thường gặp mà tool_router chưa bắt — đi thẳng, khỏi more_tools
         if rx.search(folded):
             groups += [n for n in names if n not in groups]
+    if calendar_yes and "google" not in groups:
+        groups.append("google")
     asked = set()
     for name, tools, _rx in tool_router.GROUPS:
         if name in groups:
@@ -1016,13 +1031,33 @@ CODE_TASK_NOT_CONFIRMED = ("CHƯA ghi vé. Trước hết nhắc lại cách hi�
 
 
 def _code_task_confirmed(db: Session, chat_id: str, row: AgentMessage) -> bool:
+    return _confirmed_turn(db, chat_id, row)
+
+
+def _confirmed_turn(db: Session, chat_id: str, row: AgentMessage) -> bool:
+    """Tin hiện tại là lời xác nhận NGẮN cho câu trả lời bot vừa gửi (trong 30 phút, không có tin người dùng chen giữa)."""
     folded = _folded(row.body or "")
     if not folded or len(folded.split()) > COMMIT_MAX_WORDS or not CODE_CONFIRM_CUE.search(folded):
         return False
-    prev = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id)
-                     .order_by(AgentMessage.id.desc()).limit(1))
-    return (prev is not None and prev.direction == DIR_OUT and prev.action == ACT_ANSWER
-            and (row.created_at is None or prev.created_at is None or row.created_at - prev.created_at <= timedelta(minutes=30)))
+    for prev in db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id)
+                           .order_by(AgentMessage.id.desc()).limit(4)):
+        if prev.direction == DIR_IN:
+            return False
+        if prev.action == ACT_ANSWER:
+            return (row.created_at is None or prev.created_at is None
+                    or row.created_at - prev.created_at <= timedelta(minutes=30))
+    return False
+
+
+#  Đại ca 16/10 9:44: «hẹn 7h tối nay ăn tối với khách em nhé» → model TỰ tạo lịch Google, tự đặt 1,5 tiếng. «1,5 tiếng ở
+#  đâu ra… như kế hoạch dị á hỏi xác nhận lại rồi có kế hoạch chi tiết chứ… cứng nhắc». Tạo / hủy lịch Google chỉ chạy khi
+#  tin hiện tại là lời xác nhận bản lịch bot vừa trình; chưa thì trả lời dặn model trình bản lịch chi tiết trước.
+CONFIRM_FIRST_TOOLS = frozenset({"create_calendar_event", "delete_calendar_event"})
+CALENDAR_NOT_CONFIRMED = (
+    "CHƯA tạo / hủy gì. Trình bày BẢN LỊCH DỰ KIẾN để người dùng xác nhận: tên, ngày + giờ bắt đầu – kết thúc, địa điểm, "
+    "người mời, có nhắc trước không (gợi ý 30 phút). Ô người dùng CHƯA nói (thời lượng, địa điểm…) ghi rõ «em tạm tính …» "
+    "hoặc hỏi luôn; có thể gợi ý 1–2 việc chuẩn bị (đặt bàn, mang tài liệu). Kết bằng MỘT câu: ưng thì nhắn ok, cần đổi gì "
+    "thì nói. Người dùng đồng ý ở tin SAU thì mới gọi lại công cụ với đúng các giá trị đã chốt.")
 
 
 def _create_code_task(db: Session, chat_id: str, mo_ta: str) -> dict:
@@ -1414,6 +1449,8 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                     return _more_tools_result(args or {}, {t.name for t in tools})
                 if name in LOCAL_TOOL_NAMES:
                     return _run_local(db, chat_id, row, user, name, args or {})
+                if name in CONFIRM_FIRST_TOOLS and not _confirmed_turn(db, chat_id, row):
+                    return {"error": CALENDAR_NOT_CONFIRMED}
                 out = erp.run_tool(db, user, name, _with_user_text(name, _clean_args(name, args or {}), text, turns))
                 if isinstance(out, dict) and isinstance(out.get("draft"), dict):
                     out = {**out, "tom_tat_se_luu": _summary(name, out["draft"])}
