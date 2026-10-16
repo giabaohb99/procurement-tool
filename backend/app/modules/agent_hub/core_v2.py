@@ -176,7 +176,9 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
             parameters={"type": "object", "properties": {"change_id": {"type": "integer"}}, "required": ["change_id"]}),
     ToolDef(name="set_reminder",
             description="Đặt lời nhắc: đúng giờ bot nhắn lại vào chat này. luc = giờ theo lời người dùng («15h», «8h sáng "
-                        "mai», «30 phút nữa»); viec = nội dung nhắc.",
+                        "mai», «30 phút nữa»); viec = nội dung nhắc (gọn, không kèm câu hỏi). Câu có GIỜ + chữ nhắc — kể "
+                        "cả gõ sai «hắc / nhác / nhăc», hay «réo / gọi anh lúc…» — là nhờ nhắc: GỌI công cụ này rồi mới "
+                        "trả lời phần còn lại. Lịch Google (create_calendar_event) chỉ khi người dùng nói tạo lịch.",
             parameters={"type": "object", "properties": {"luc": {"type": "string"}, "viec": {"type": "string"}},
                         "required": ["luc", "viec"]}),
 )
