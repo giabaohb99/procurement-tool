@@ -14,6 +14,16 @@ from app.modules.purchase_history.model import PurchaseHistory
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 
 
+@pytest.fixture(autouse=True)
+def _da_giao_xem_bao_cao(monkeypatch):
+    """ai-CR-207: tool báo cáo (purchase_report, analytics_query, top_suppliers_by_purchase) nay đòi thêm quyền xem báo
+    cáo (report_access). Tệp này canh LOGIC tool + quyền vai trò → coi như đã được giao; lớp báo cáo canh riêng ở
+    test_agent_hub_cong_mcp_cr207.py."""
+    from app.modules.report_access import service as ra
+
+    monkeypatch.setattr(ra, "can_view_report", lambda *a, **k: True)
+
+
 @pytest.fixture
 def contracts(db):
     """3 hợp đồng NCC: 1 còn hạn, 1 hết hạn, 1 KHÔNG ghi ngày (unknown)."""

@@ -234,6 +234,40 @@ def download_report_file(file_id: int, user=Depends(require("assistant", "read")
                              f"attachment; filename*=UTF-8''{quote(f.filename)}"})
 
 
+@router.get("/files/dl/{token}")
+def download_report_file_once(token: str, db: Session = Depends(get_db)):
+    """ai-CR-207: tải tệp báo cáo bằng đường ký HMAC dùng MỘT lần, 15 phút, KHÔNG cần đăng nhập — cho ứng dụng AI ngoài
+    (Claude Desktop qua cổng MCP) không có JWT web. Vẫn chỉ tệp `assistant-report/` của đúng chủ đã ký; lượt tải ghi audit
+    và chính dòng audit đó là dấu «đã dùng» (nonce)."""
+    _guard()
+    from urllib.parse import quote
+
+    from app.core.audit import record
+    from app.core.storage import download_bytes
+    from app.modules.attachment.model import StoredFile
+    from app.modules.audit.model import AuditLog
+
+    from .download_tokens import AUDIT_ACTION, AUDIT_ENTITY, read_token
+
+    parsed = read_token(token)
+    if parsed is None:
+        raise HTTPException(status_code=410, detail="Đường tải đã hết hạn hoặc không hợp lệ")
+    fid, uid, nonce = parsed
+    used = db.query(AuditLog.id).filter(AuditLog.entity == AUDIT_ENTITY, AuditLog.entity_id == fid,
+                                        AuditLog.action == AUDIT_ACTION,
+                                        AuditLog.message.like(f"%nonce={nonce}%")).first()
+    if used is not None:
+        raise HTTPException(status_code=410, detail="Đường tải này đã dùng rồi — xuất lại tệp để có đường mới")
+    f = db.get(StoredFile, fid)
+    if not f or f.created_by != uid or "/assistant-report/" not in (f.file_key or ""):
+        raise HTTPException(status_code=404, detail="Không tìm thấy tệp")
+    data = download_bytes(f.file_key)
+    record(db, uid, AUDIT_ENTITY, fid, AUDIT_ACTION, f"Tải tệp {f.filename} qua đường một lần (MCP) nonce={nonce}")
+    db.commit()
+    return Response(content=data, media_type=f.content_type or "application/octet-stream",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(f.filename)}"})
+
+
 @router.get("/rag/index-status")
 def rag_index_status(user=Depends(require("help_article", "write")),
                      db: Session = Depends(get_db)):
@@ -294,6 +328,7 @@ def rag_reindex(mode: str = "all", user=Depends(require("help_article", "write")
 #  ai-CR-119: ERP đã tách (`AGENT_MODE=erp`) chỉ giữ lại các đường đụng KHO TỆP và Trung tâm HDSD của chính nó; phần còn
 #  lại chuyển tiếp sang dịch vụ AI (`agent_gateway/proxy.py`). Lọc theo đường dẫn để không chép mã.
 ERP_LOCAL_PATHS = {"/api/assistant/uploads", "/api/assistant/uploads/{file_id}", "/api/assistant/files/{file_id}/download",
+                   "/api/assistant/files/dl/{token}",
                    "/api/assistant/rag/index-status", "/api/assistant/rag/reindex"}
 erp_local_router = APIRouter(tags=["assistant"])
 erp_local_router.routes.extend(r for r in router.routes if getattr(r, "path", "") in ERP_LOCAL_PATHS)

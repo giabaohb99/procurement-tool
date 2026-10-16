@@ -102,6 +102,29 @@ def tool_defs(db=None) -> list[ToolDef]:
     return defs
 
 
+#  ai-CR-207 (đại ca 16/10 qua Agent 1): lớp gác thứ ba — quyền xem TỪNG báo cáo (duoc-CR-562, `report_access`) — trước
+#  chỉ gác đường /summary của phân hệ Báo cáo, còn tool Trợ lý / bot / MCP trả cùng số liệu thì không. Tool nào tổng hợp
+#  đúng dữ liệu của một báo cáo thì đòi cùng khóa báo cáo đó.
+def _tool_report_keys() -> dict:
+    from app.core.report_keys import ReportKey
+
+    return {"purchase_report": ReportKey.PURCHASE_REPORT, "analytics_query": ReportKey.PURCHASE_REPORT,
+            "top_suppliers_by_purchase": ReportKey.PURCHASE_REPORT}
+
+
+def _report_denied(db, user, name: str) -> dict | None:
+    key = _tool_report_keys().get(name)
+    if key is None:
+        return None
+    from app.core.report_keys import REPORT_META
+    from app.modules.report_access.service import can_view_report
+
+    if can_view_report(db, user, key):
+        return None
+    return {"denied": True, "error": f"Chưa được giao xem báo cáo «{REPORT_META[key][0]}» — nhờ quản trị gán ở Phân quyền "
+                                     "tài khoản → tab Báo cáo. Đừng thử công cụ khác để lấy cùng số liệu."}
+
+
 def run_tool(db, user, name: str, args: dict) -> dict:
     """Chạy một tool theo tên, gác allowlist + ghi audit. Trả dict JSON-hóa được.
 
@@ -113,6 +136,9 @@ def run_tool(db, user, name: str, args: dict) -> dict:
         # Tên tool lạ = model bịa hoặc bị chèn — không chạy gì, báo lại để model tự sửa.
         return {"error": f"Không có công cụ tên '{name}'."}
 
+    if denied := _report_denied(db, user, name):
+        _audit(db, user, name, args, denied)
+        return denied
     ctx = ToolContext(db=db, user=user)
     try:
         result = spec.handler(ctx, args or {})

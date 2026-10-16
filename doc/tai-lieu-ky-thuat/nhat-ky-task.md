@@ -13358,6 +13358,19 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-207 | Vá bốn lỗi cổng nối ERP với ứng dụng AI bên ngoài (MCP)
+- status: dang-lam
+- date: 2026-10-16
+Agent 1 thử cổng cho ứng dụng AI bên ngoài như Claude Desktop nối vào ERP và tìm ra bốn lỗi, đại ca duyệt vá luôn. Danh
+sách công cụ trả về thiếu hết các công cụ ERP vì không kèm người dùng; nay đã kèm. Khóa chỉ đọc vẫn thấy các công cụ có ghi
+như tạo lịch, ghi sổ nhớ, nghiên cứu sâu tốn tiền; nay khóa chỉ đọc chỉ thấy một danh sách công cụ tra cứu được khai rõ,
+công cụ mới mặc định coi là có ghi. Các công cụ tổng hợp số liệu mua hàng nay đòi đúng quyền xem báo cáo mua hàng như màn
+báo cáo, áp chung cho trợ lý trên web, bot và cổng này. Tệp báo cáo xuất ra nay có đường tải dùng một lần trong mười lăm
+phút, không cần đăng nhập, mỗi lượt tải được ghi nhật ký.
+
+Mã nguồn: agent_hub/mcp.py, assistant/tools/__init__.py, assistant/tools/export_tool.py, assistant/download_tokens.py,
+assistant/controller.py
+
 ## ai-CR-206 | Bỏ hẳn lõi hội thoại cũ, bot chỉ còn một lõi
 - status: dang-lam
 - date: 2026-10-15

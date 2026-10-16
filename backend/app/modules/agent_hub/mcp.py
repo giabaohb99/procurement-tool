@@ -30,11 +30,28 @@ SERVER_INFO = {"name": "dego-erp", "version": "1.0"}
 INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy dưới quyền của chủ khóa: dữ liệu trả về đã lọc theo "
                 "phạm vi người đó được xem. Muốn tạo phiếu: gọi tool draft_* để có bản nháp, đưa người dùng xem, rồi gọi "
                 "confirm_draft với đúng bản nháp đó (submit=true để gửi duyệt luôn). Báo lỗi hệ thống: report_issue.")
-#  Tool GHI: chỉ khóa «được ghi» mới thấy. Đề xuất sửa phiếu / lập bộ tài khoản (propose_*) cố ý KHÔNG mở qua MCP:
-#  hai tool đó xác nhận bằng nút trên web/Telegram, cổng này chưa có nút.
-WRITE_PREFIXES = ("draft_",)
-WRITE_NAMES = {"ticket_create", "export_report_file", "export_excel_file"}
-HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account_setup"}
+#  ai-CR-207 (đại ca 16/10 qua Agent 1: «vá 4 lỗi đó luôn»): khóa CHỈ ĐỌC trước đây lọc theo danh sách ĐEN (draft_* + 3 tên)
+#  nên vẫn thấy tạo / sửa / xóa lịch, ghi / quên sổ nhớ, ghi chú, bản tin, viết lại biên bản, nghiên cứu sâu (tốn tiền ví
+#  công ty)… Nay ĐẢO LUẬT: khóa chỉ đọc chỉ thấy tool trong danh sách TRẮNG dưới đây; tool mới mặc định là «ghi» cho tới khi
+#  được khai vào đây (bài kiểm canh: mọi tool khóa đọc thấy phải thuộc READ_TOOLS).
+READ_TOOLS = frozenset({
+    "analytics_query", "approval_flow_lookup", "contract_count_by_status", "contract_list_by_expiry",
+    "customs_buy_timing", "customs_legal_check", "customs_market", "customs_price_stats",
+    "document_read", "document_search", "drive_read", "drive_search", "employee_lookup", "glossary_lookup",
+    "latest_meeting_report", "list_my_groups", "list_my_meetings", "list_personal_items", "market_price_search",
+    "my_approval_tasks", "my_calendar_events", "my_documents", "my_leave_summary", "my_procurement_requests",
+    "my_requests_status", "my_tickets", "my_work_tasks", "payable_lookup", "payment_request_read",
+    "pending_procurement_approvals", "procurement_doc_read", "product_best_price", "product_purchase_history",
+    "product_search", "purchase_report", "read_group_file", "read_group_messages", "recent_purchase_orders",
+    "recent_purchases", "search_chat_history", "search_docs", "search_notes", "supplier_contracts",
+    "supplier_scorecard", "supplier_search", "suppliers_for_product", "top_suppliers_by_purchase",
+})
+#  Đề xuất sửa phiếu / lập bộ tài khoản / thuật ngữ (propose_*) cố ý KHÔNG mở qua MCP: xác nhận bằng nút trên web /
+#  Telegram, cổng này chưa có nút. report_missing_feature trùng việc với report_issue của cổng.
+HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account_setup", "propose_glossary_term",
+          "report_missing_feature"}
+#  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).
+DOWNLOAD_TTL_SEC = 15 * 60
 
 CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
@@ -58,14 +75,17 @@ REPORT_ISSUE_DEF = {
 
 
 def is_write_tool(name: str) -> bool:
-    return name.startswith(WRITE_PREFIXES) or name in WRITE_NAMES
+    """Mọi tool KHÔNG nằm trong danh sách trắng chỉ đọc đều tính là ghi (an toàn khi thêm tool mới)."""
+    return name not in READ_TOOLS
 
 
-def list_tools(db: Session, scope: int) -> list[dict]:
+def list_tools(db: Session, user, scope: int) -> list[dict]:
     from . import erp
 
     out = []
-    for d in erp.tool_defs(db):
+    #  ai-CR-207 lỗi 1: trước gọi erp.tool_defs(db) KHÔNG kèm người dùng → chế độ tách dịch vụ gọi cổng B GET /tools với
+    #  user_id rỗng → «Tài khoản không tồn tại» → danh sách chỉ còn tool cục bộ (mất purchase_report, payable_lookup…).
+    for d in erp.tool_defs(db, user):
         if d.name in HIDDEN:
             continue
         if scope != mcp_keys.SCOPE_WRITE and is_write_tool(d.name):
@@ -90,7 +110,19 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
         return _confirm_draft(db, user, args)
     if name in HIDDEN or (scope != mcp_keys.SCOPE_WRITE and is_write_tool(name)):
         return {"error": f"Công cụ '{name}' không mở cho khóa này."}
-    return erp.run_tool(db, user, name, args or {})
+    return _absolute_downloads(erp.run_tool(db, user, name, args or {}))
+
+
+def _absolute_downloads(result):
+    """ai-CR-207 lỗi 4: tệp xuất (export_*) trả đường tải TƯƠNG ĐỐI cần đăng nhập web → ứng dụng AI ngoài không tải được.
+    Tool ERP trả kèm `download_once_path` (ký HMAC, một lần, 15 phút) — ở đây nối thành đường tuyệt đối."""
+    from . import telegram
+
+    f = result.get("file") if isinstance(result, dict) else None
+    if isinstance(f, dict) and f.get("download_once_path"):
+        f["download_url"] = telegram.absolute_url(str(f["download_once_path"]))
+        f["note"] = "Đường tải dùng được MỘT lần, hết hạn sau 15 phút, không cần đăng nhập."
+    return result
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -155,7 +187,7 @@ def handle(db: Session, user, key, msg: dict) -> dict | None:
     if method == "ping":
         return _ok(rid, {})
     if method == "tools/list":
-        return _ok(rid, {"tools": list_tools(db, int(key.scope or 0))})
+        return _ok(rid, {"tools": list_tools(db, user, int(key.scope or 0))})
     if method == "tools/call":
         name = str(params.get("name") or "")
         args = params.get("arguments") if isinstance(params.get("arguments"), dict) else {}

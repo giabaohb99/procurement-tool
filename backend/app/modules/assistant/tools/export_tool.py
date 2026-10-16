@@ -184,6 +184,8 @@ def _store_report_file(ctx: ToolContext, data: bytes, raw_filename, ext: str, mi
     from app.core.storage import dated_key, safe_name, upload_fileobj
     from app.modules.attachment.model import StoredFile
 
+    from ..download_tokens import once_path
+
     base = safe_name(_clean(raw_filename, 80) or "bao-cao-tro-ly-ai")
     filename = base if base.lower().endswith(ext) else f"{base}{ext}"
     #  Tạo bản ghi trước (flush lấy id) để đặt key theo cấu trúc chung của storage —
@@ -204,6 +206,8 @@ def _store_report_file(ctx: ToolContext, data: bytes, raw_filename, ext: str, mi
             "filename": filename,
             "size": len(data),
             "download_url": f"/api/assistant/files/{sf.id}/download",
+            #  ai-CR-207: đường tải một lần, ký HMAC, 15 phút, không cần đăng nhập (cho ứng dụng AI ngoài qua MCP).
+            "download_once_path": once_path(sf.id, ctx.user.id),
         },
         "total": total,
         # Nhắc model khỏi tự chế link markdown — nút tải do giao diện chat dựng.
