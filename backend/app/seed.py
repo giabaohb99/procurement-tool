@@ -266,6 +266,8 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "agent_ops",
                  #  bao-CR-621: Kho skill AI — soạn cẩm nang cho AI của cả công ty, gán vai trò riêng.
                  "ai_skill",
+                 #  ai-CR-212: phát / thu hồi khóa kết nối AI hộ nhân sự.
+                 "ai_mcp_key_admin",
                  #  Thư mục văn bản (rà soát 23/09/2026, code-reviewer C2):
                  #  `doc_folder.write` scope "all" nghĩa là QUẢN LÝ (bỏ qua cả
                  #  ACL cấm — bước 4 của `folder_access_service.effective_levels`)
@@ -746,9 +748,13 @@ STD_ROLES["market_lookup"] = {"name": "Tra cứu thị trường", "perms": {
 #  Quản trị: mọi bộ skill toàn công ty. Biên tập: soạn + xuất bản bộ của PHÒNG MÌNH (phạm vi `dept`).
 STD_ROLES["ai_skill_admin"] = {"name": "Quản trị kho skill AI", "perms": {
     "ai_skill": (["read", "create", "write", "delete", "approve"], "all"),
+    #  ai-CR-212 (Agent 1 chuyển yêu cầu K4 17/10): phát / thu hồi khóa kết nối AI hộ — toàn công ty.
+    "ai_mcp_key_admin": (["read", "create", "delete"], "all"),
 }}
 STD_ROLES["ai_skill_editor"] = {"name": "Biên tập skill AI phòng ban", "perms": {
     "ai_skill": (["read", "create", "write", "approve"], "dept"),
+    #  ai-CR-212: phát / thu hồi khóa AI hộ nhân sự PHÒNG MÌNH (phạm vi trên hồ sơ nhân sự của chủ khóa).
+    "ai_mcp_key_admin": (["read", "create", "delete"], "dept"),
 }}
 
 
@@ -825,8 +831,8 @@ ROLE_DESCRIPTIONS = {
     "coffee_admin": "Quản trị Điểm cà phê: chính sách, thành viên, chốt cấp phát kỳ.",
     "coffee_counter": "Quầy cà phê: chỉ tra cứu số dư của thành viên.",
     "market_lookup": "Tra cứu thị trường: xem, nạp và cấu hình dữ liệu giá tờ khai hải quan.",
-    "ai_skill_admin": "Quản trị kho skill AI: soạn, xuất bản và gán quyền đọc mọi bộ skill.",
-    "ai_skill_editor": "Biên tập skill AI cho phòng mình: soạn, xuất bản, gán quyền đọc bộ của phòng.",
+    "ai_skill_admin": "Quản trị kho skill AI: soạn, xuất bản và gán quyền đọc mọi bộ skill; phát / thu hồi khóa AI hộ.",
+    "ai_skill_editor": "Biên tập skill AI cho phòng mình: soạn, xuất bản, gán quyền đọc bộ của phòng; phát khóa AI hộ phòng mình.",
 }
 
 

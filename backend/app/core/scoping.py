@@ -325,6 +325,8 @@ SCOPE_FIELDS = {
     "agent_ops":        PUBLIC,
     #  bao-CR-621: BỘ skill thuộc pháp nhân + phòng CHỦ QUẢN — trưởng phòng (dept) soạn bộ của phòng mình.
     "ai_skill":         {"company": "company_id", "dept_id": "owner_department_id", "owner": "created_by"},
+    #  ai-CR-212: phát / thu hồi khóa AI hộ — lọc trên HỒ SƠ NHÂN SỰ của chủ khóa (như `employee`).
+    "ai_mcp_key_admin": {"company": "company_id", "dept_id": "department_id", "self": "id"},
 }
 
 

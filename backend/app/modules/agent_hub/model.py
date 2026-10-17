@@ -539,6 +539,13 @@ class AgentMcpKey(Base, AuditMixin):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    #  ai-CR-212 (K4 doc/erp/21 §4.3 + §5.3): khóa PHÁT HỘ. `issued_by` = người phát (0 = tự tạo); `claimed_at` = lúc
+    #  chủ khóa bấm Nhận (chưa nhận thì khóa CHƯA dùng được); `raw_sealed` = khóa thô mã hóa Fernet, CHỈ giữ tới khi
+    #  nhận, nhận xong xóa trắng; `batch_id` = mã một lượt phát (cả phòng một lượt) để thu hồi cả lượt.
+    issued_by: Mapped[int] = mapped_column(BigInteger, default=0)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    raw_sealed: Mapped[str] = mapped_column(Text, default="")
+    batch_id: Mapped[str] = mapped_column(String(32), default="", index=True)
 
 
 class AgentMcpCall(Base):

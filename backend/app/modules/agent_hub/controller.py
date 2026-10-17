@@ -331,6 +331,171 @@ def remove_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session =
     return success(None, "Đã gỡ khóa MCP")
 
 
+@router.get("/mcp-keys/pending")
+def list_my_pending_mcp_keys(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-212: khóa quản trị phát hộ đang chờ mình bấm Nhận."""
+    return success({"items": [mcp_keys.serialize(k) for k in mcp_keys.pending_for_user(db, user.id)]})
+
+
+@router.post("/mcp-keys/{key_id}/claim")
+def claim_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-212: nhận khóa phát hộ — khóa thô hiện ĐÚNG một lần; lần sau / khóa của người khác → 404."""
+    raw = mcp_keys.claim(db, user.id, key_id)
+    if raw is None:
+        raise HTTPException(404, "Không có khóa chờ nhận này (đã nhận rồi, đã thu hồi, hết hạn hoặc không phải của bạn)")
+    row = next(k for k in mcp_keys.list_for_user(db, user.id) if k.id == key_id)
+    return success({**mcp_keys.serialize(row), "key": raw}, "Đã nhận khóa. Chép ngay: khóa chỉ hiện một lần.")
+
+
+# ---------------------------------------------------------------------------
+# Phát / thu hồi khóa HỘ (ai-CR-212, K4 doc/erp/21 §5.3) — quyền `ai_mcp_key_admin` (read · create · delete), phạm vi
+# tính ở ERP trên hồ sơ nhân sự của CHỦ KHÓA (`erp.key_admin_people`). Không gửi email / Telegram — chỉ chuông (§7.1).
+# ---------------------------------------------------------------------------
+KEY_ADMIN_ENTITY = "ai_mcp_key_admin"
+MY_AI_LINK = "/me?tab=ai-key"
+
+
+def _key_admin_people(db: Session, user, action: str, **kw) -> list[dict]:
+    from . import erp
+
+    people = erp.key_admin_people(db, user, action, **kw)
+    if people is None:
+        raise HTTPException(403, f"Không có quyền: {action} {KEY_ADMIN_ENTITY}")
+    return people
+
+
+@router.get("/mcp-key-admin/meta")
+def key_admin_meta(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.core.auth import user_has_permission
+
+    return success({
+        "days": list(mcp_keys.ISSUE_DAYS), "batch_max": mcp_keys.BATCH_MAX, "max_keys": mcp_keys.MAX_KEYS,
+        "states": [{"value": int(k), "label": v} for k, v in mcp_keys.STATE_LABELS.items()],
+        "can_read": user_has_permission(db, user, KEY_ADMIN_ENTITY, "read"),
+        "can_create": user_has_permission(db, user, KEY_ADMIN_ENTITY, "create"),
+        "can_delete": user_has_permission(db, user, KEY_ADMIN_ENTITY, "delete"),
+    })
+
+
+@router.get("/mcp-key-admin/keys")
+def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Query(None, ge=1, le=4),
+                   user_id: int | None = Query(None, ge=1), batch_id: str = Query("", max_length=32),
+                   page: int = Query(1, ge=1, le=10_000), size: int = Query(50, ge=1, le=200),
+                   user=Depends(get_current_user), db: Session = Depends(get_db)):
+    owners = mcp_keys.owner_ids(db)
+    if user_id is not None:
+        owners &= {int(user_id)}
+    people = {p["user_id"]: p for p in _key_admin_people(db, user, "read", user_ids=sorted(owners),
+                                                         department_id=department_id)} if owners else {}
+    rows = mcp_keys.keys_of_users(db, set(people))
+    if batch_id:
+        rows = [r for r in rows if r.batch_id == batch_id]
+    if state is not None:
+        rows = [r for r in rows if int(mcp_keys.state_of(r)) == state]
+    total = len(rows)
+    page_rows = rows[(page - 1) * size: page * size]
+    issuers = _user_labels(db, [r.issued_by for r in page_rows if r.issued_by])
+    items = []
+    for r in page_rows:
+        p = people[int(r.user_id)]
+        items.append({**mcp_keys.serialize(r), "owner_label": p["label"], "department_id": p["department_id"],
+                      "department": p["department"], "issued_by_label": issuers.get(r.issued_by, "")})
+    return success({"total": total, "page": page, "size": size, "has_more": page * size < total, "items": items})
+
+
+class KeyIssueIn(BaseModel):
+    user_ids: list[int] = []
+    department_id: int = 0
+    days: int = 90
+    name: Str80 = ""
+
+
+@router.post("/mcp-key-admin/issue")
+def key_admin_issue(body: KeyIssueIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Phát hộ khóa CHỈ ĐỌC cho một / nhiều người hoặc cả phòng (≤ 50 người một lượt). Người ngoài phạm vi → 403 cả lượt;
+    người đã đủ khóa còn hiệu lực thì bỏ qua (có trong `skipped`)."""
+    import uuid
+
+    from . import erp
+
+    if body.days not in mcp_keys.ISSUE_DAYS:
+        raise HTTPException(400, f"Hạn khóa chỉ chọn: {', '.join(map(str, mcp_keys.ISSUE_DAYS))} ngày.")
+    wanted = sorted({int(i) for i in body.user_ids if i})
+    if not wanted and not body.department_id:
+        raise HTTPException(400, "Chọn người nhận hoặc một phòng ban.")
+    if len(wanted) > mcp_keys.BATCH_MAX:
+        raise HTTPException(400, f"Tối đa {mcp_keys.BATCH_MAX} người một lượt phát.")
+    people = _key_admin_people(db, user, "create", user_ids=wanted or None, department_id=body.department_id,
+                               limit=mcp_keys.BATCH_MAX + 1)
+    if wanted:
+        outside = set(wanted) - {p["user_id"] for p in people}
+        if outside:
+            raise HTTPException(403, f"{len(outside)} người nằm ngoài phạm vi bạn được phát khóa hộ (hoặc tài khoản đã khóa"
+                                     " / chưa gắn hồ sơ nhân sự). Chưa phát khóa nào.")
+    elif not people:
+        raise HTTPException(404, "Phòng này không có nhân sự nào trong phạm vi bạn được phát khóa hộ.")
+    if len(people) > mcp_keys.BATCH_MAX:
+        raise HTTPException(400, f"Phòng có hơn {mcp_keys.BATCH_MAX} người — chọn từng nhóm người, tối đa "
+                                 f"{mcp_keys.BATCH_MAX} người một lượt.")
+    batch_id = uuid.uuid4().hex[:16]
+    issued, skipped = [], []
+    for p in people:
+        try:
+            row = mcp_keys.issue(db, p["user_id"], user.id, days=body.days, name=body.name, batch_id=batch_id)
+            issued.append({"user_id": p["user_id"], "label": p["label"], "key_id": row.id})
+        except ValueError as e:
+            skipped.append({"user_id": p["user_id"], "label": p["label"], "reason": str(e)})
+    db.commit()
+    if issued:
+        issuer = erp.describe(db, user)[0] or "Quản trị"
+        try:
+            erp.notify_users(db, [i["user_id"] for i in issued], title="Bạn có khóa kết nối AI chờ nhận",
+                             body=f"{issuer} đã phát cho bạn một khóa kết nối AI (chỉ đọc, hạn {body.days} ngày). Vào Trang "
+                                  "cá nhân → AI của tôi, bấm Nhận khóa để xem và chép — khóa chỉ hiện một lần.",
+                             link=MY_AI_LINK, by_user_id=user.id)
+        except Exception:  # noqa: BLE001 — chuông hỏng không được làm mất khóa đã phát
+            import logging
+
+            logging.getLogger("app.agent_hub").warning("phát khóa hộ: không gửi được chuông", exc_info=True)
+    return success({"batch_id": batch_id, "issued": issued, "skipped": skipped},
+                   f"Đã phát {len(issued)} khóa, mỗi người sẽ nhận thông báo để lấy khóa.")
+
+
+class KeyRevokeIn(BaseModel):
+    key_ids: list[int] = []
+    user_id: int = 0
+    batch_id: Str20 = ""
+
+
+@router.post("/mcp-key-admin/revoke")
+def key_admin_revoke(body: KeyRevokeIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Thu hồi: các khóa chỉ định, mọi khóa của một người, hoặc cả một lượt phát. Khóa của người ngoài phạm vi → 403 cả
+    lệnh (không thu hồi lẻ một phần). Dòng giữ lại với trạng thái «Đã thu hồi»."""
+    from sqlalchemy import or_ as _or, select as _select
+
+    from .model import AgentMcpKey
+
+    conds = []
+    if body.key_ids:
+        conds.append(AgentMcpKey.id.in_({int(i) for i in body.key_ids}))
+    if body.user_id:
+        conds.append(AgentMcpKey.user_id == int(body.user_id))
+    if body.batch_id:
+        conds.append(AgentMcpKey.batch_id == body.batch_id)
+    if not conds:
+        raise HTTPException(400, "Chọn khóa, một người hoặc một lượt phát để thu hồi.")
+    rows = [r for r in db.scalars(_select(AgentMcpKey).where(_or(*conds))) if r.revoked_at is None]
+    if not rows:
+        return success({"revoked": 0}, "Không có khóa nào đang hiệu lực để thu hồi.")
+    owners = {int(r.user_id) for r in rows}
+    allowed = {p["user_id"] for p in _key_admin_people(db, user, "delete", user_ids=sorted(owners))}
+    if owners - allowed:
+        raise HTTPException(403, f"{len(owners - allowed)} chủ khóa nằm ngoài phạm vi bạn được thu hồi hộ. Chưa thu hồi khóa "
+                                 "nào.")
+    n = mcp_keys.revoke_rows(db, rows, by_user_id=user.id)
+    return success({"revoked": n}, f"Đã thu hồi {n} khóa.")
+
+
 # ---------------------------------------------------------------------------
 # Nhật ký lượt gọi MCP (ai-CR-209, K3 doc/erp/21 §5.4) — cho màn G1 / G6. Ai cũng xem được nhật ký của CHÍNH MÌNH;
 # xem người khác cần quyền quản lý bot AI. Tạm dùng `agent_group.read` (Agent 1 đề xuất 17/10) — khi khai entity

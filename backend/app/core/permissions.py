@@ -176,6 +176,9 @@ ENTITIES = [
     # (qua cổng MCP). Phạm vi QUẢN TRỊ theo pháp nhân + phòng chủ quản của BỘ skill; quyền ĐỌC nội dung là bảng
     # `tab_ai_skill_access` riêng, không đi qua khóa này. `approve` = xuất bản phiên bản.
     "ai_skill",
+    # Phát / thu hồi khóa kết nối AI (MCP) HỘ người khác (ai-CR-212, doc/erp/21 §5.3). Phạm vi tính trên hồ sơ nhân
+    # sự của CHỦ KHÓA (pháp nhân + phòng ban); bảng khóa nằm ở DB dịch vụ AI, hỏi phạm vi qua cổng B.
+    "ai_mcp_key_admin",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -263,6 +266,7 @@ ENTITY_LABELS = {
     "agent_group": "Trợ lý AI › Quản lý nhóm chat của bot",
     "agent_ops": "Trợ lý Telegram › Nhận tin vận hành của bot",
     "ai_skill": "Kho skill AI",
+    "ai_mcp_key_admin": "Trợ lý AI › Phát / thu hồi khóa kết nối AI hộ nhân sự",
 }
 
 ACTION_LABELS = {

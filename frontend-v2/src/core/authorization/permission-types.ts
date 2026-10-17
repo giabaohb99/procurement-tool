@@ -172,6 +172,8 @@ export const ENTITIES = [
   'agent_ops',
   // Kho skill AI — soạn / xuất bản / gán quyền đọc cẩm nang cho AI riêng của nhân sự (bao-CR-621).
   'ai_skill',
+  // Phát / thu hồi khóa kết nối AI hộ nhân sự (ai-CR-212).
+  'ai_mcp_key_admin',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

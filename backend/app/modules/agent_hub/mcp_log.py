@@ -45,6 +45,7 @@ CALL_STATUS_LABELS = {CallStatus.OK: "Thành công", CallStatus.DENIED: "Bị t�
 REASON_BAD_KEY = "Khóa sai"
 REASON_EXPIRED = "Khóa đã hết hạn"
 REASON_REVOKED = "Khóa đã bị thu hồi"
+REASON_UNCLAIMED = "Khóa phát hộ chưa được chủ khóa nhận"
 REASON_INACTIVE = "Tài khoản đã bị khóa"
 REASON_RATE_KEY = "Quá tần suất (khóa)"
 REASON_RATE_IP = "Quá tần suất (IP)"

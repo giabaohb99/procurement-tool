@@ -384,6 +384,20 @@ class _Local:
         db.commit()
         return {"id": int(t.id), "code": t.code}
 
+    # --- phát khóa AI hộ (ai-CR-212) ------------------------------------------------------------------------------
+    @staticmethod
+    def key_admin_people(db, admin, action: str, *, user_ids: list[int] | None = None, department_id: int = 0,
+                         limit: int = 2000) -> list[dict] | None:
+        from app.modules.agent_gateway.key_admin import people_in_scope
+
+        return people_in_scope(db, admin, action, user_ids=user_ids, department_id=department_id, limit=limit)
+
+    @staticmethod
+    def notify_users(db, user_ids: list[int], *, title: str, body: str, link: str, by_user_id: int = 0) -> int:
+        from app.modules.agent_gateway.key_admin import notify
+
+        return notify(db, user_ids, title=title, body=body, link=link, by_user_id=by_user_id)
+
     # --- chuông ------------------------------------------------------------------------------------------------------
     @staticmethod
     def notifications_after(db, after_id: int, limit: int) -> list[dict]:
@@ -717,6 +731,19 @@ class _Remote:
         return dict(self._call("POST", "/tickets", user_id=_uid(user),
                                body={"subject": subject, "department": department, "body": body}) or {})
 
+    # --- phát khóa AI hộ (ai-CR-212) ---
+    def key_admin_people(self, db, admin, action: str, *, user_ids: list[int] | None = None, department_id: int = 0,
+                         limit: int = 2000) -> list[dict] | None:
+        out = self._call("POST", "/key-admin/people", user_id=_uid(admin),
+                         body={"action": action, "user_ids": user_ids, "department_id": int(department_id or 0),
+                               "limit": int(limit)}) or {}
+        return list(out.get("people") or []) if out.get("allowed") else None
+
+    def notify_users(self, db, user_ids: list[int], *, title: str, body: str, link: str, by_user_id: int = 0) -> int:
+        out = self._call("POST", "/key-admin/notify", user_id=int(by_user_id or 0),
+                         body={"user_ids": [int(i) for i in user_ids], "title": title, "body": body, "link": link}) or {}
+        return int(out.get("sent") or 0)
+
     # --- chuông ---
     def notifications_after(self, db, after_id: int, limit: int) -> list[dict]:
         return list(self._call("GET", "/notifications", params={"after_id": int(after_id), "limit": int(limit)}) or [])
@@ -946,6 +973,17 @@ def notifications_after(db, after_id: int, limit: int) -> list[dict]:
 
 def notifications_max_id(db) -> int:
     return _impl().notifications_max_id(db)
+
+
+def key_admin_people(db, admin, action: str, *, user_ids: list[int] | None = None, department_id: int = 0,
+                     limit: int = 2000) -> list[dict] | None:
+    """ai-CR-212: người (tài khoản đang hoạt động, có hồ sơ nhân sự) trong phạm vi `ai_mcp_key_admin.<action>` của
+    `admin`; None = không có quyền."""
+    return _impl().key_admin_people(db, admin, action, user_ids=user_ids, department_id=department_id, limit=limit)
+
+
+def notify_users(db, user_ids: list[int], *, title: str, body: str, link: str, by_user_id: int = 0) -> int:
+    return _impl().notify_users(db, user_ids, title=title, body=body, link=link, by_user_id=by_user_id)
 
 
 def attachment_blocks(db, user, ids: list[int]) -> tuple[list | None, list[dict]]:

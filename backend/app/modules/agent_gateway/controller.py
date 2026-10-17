@@ -357,6 +357,34 @@ def ticket_create(body: TicketCreateIn, user=Depends(gateway_user), db: Session 
     return success(L.create_ticket(db, user, subject=body.subject, department=body.department, body=body.body))
 
 
+# --- phát khóa AI hộ (ai-CR-212, K4 doc/erp/21 §5.3) ---------------------------------------------------------------
+class KeyAdminPeopleIn(BaseModel):
+    action: str = Field(pattern="^(read|create|delete)$")
+    user_ids: list[int] | None = Field(default=None, max_length=2000)
+    department_id: int = Field(default=0, ge=0)
+    limit: int = Field(default=2000, ge=1, le=2000)
+
+
+@router.post("/key-admin/people")
+def key_admin_people(body: KeyAdminPeopleIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    people = L.key_admin_people(db, user, body.action, user_ids=body.user_ids, department_id=body.department_id,
+                                limit=body.limit)
+    return success({"allowed": people is not None, "people": people or []})
+
+
+class KeyAdminNotifyIn(BaseModel):
+    user_ids: list[int] = Field(default_factory=list, max_length=50)
+    title: str = Field(max_length=255)
+    body: str = Field(default="", max_length=2000)
+    link: str = Field(default="", max_length=500)
+
+
+@router.post("/key-admin/notify")
+def key_admin_notify(body: KeyAdminNotifyIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success({"sent": L.notify_users(db, body.user_ids, title=body.title, body=body.body, link=body.link,
+                                           by_user_id=int(user.id))})
+
+
 # --- chuông ----------------------------------------------------------------------------------------------------------
 @router.get("/notifications")
 def notifications(after_id: int = Query(0, ge=0), limit: int = Query(200, ge=1, le=500),

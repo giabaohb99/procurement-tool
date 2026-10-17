@@ -90,6 +90,7 @@ ENTITY_MODEL_PATHS = {
     "login_session": ("app.modules.login_session.model", "LoginSession"),
     "dossier": ("app.modules.dossier.model", "Dossier"),
     "ai_skill": ("app.modules.ai_skill.model", "AiSkillSet"),
+    "ai_mcp_key_admin": ("app.modules.employee.model", "Employee"),
     "labor_contract": ("app.modules.labor_contract.model", "LaborContract"),
     "labor_contract_template": ("app.modules.labor_contract.template_model", "LaborContractTemplate"),
 }

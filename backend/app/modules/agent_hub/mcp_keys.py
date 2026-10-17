@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 from datetime import datetime, timedelta
+from enum import IntEnum
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -58,6 +59,8 @@ def authenticate(db: Session, raw: str, *, now: datetime | None = None) -> Agent
     row = db.scalar(select(AgentMcpKey).where(AgentMcpKey.token_hash == hash_token(raw), AgentMcpKey.revoked_at.is_(None)))
     if row is None or (row.expires_at is not None and row.expires_at <= now):
         return None
+    if is_unclaimed(row):          # ai-CR-212: khóa phát hộ chưa nhận thì chưa dùng được
+        return None
     return row
 
 
@@ -76,6 +79,10 @@ def why_rejected(db: Session, raw: str, *, now: datetime | None = None) -> tuple
         return int(row.id), REASON_REVOKED
     if row.expires_at is not None and row.expires_at <= (now or datetime.now()):
         return int(row.id), REASON_EXPIRED
+    if is_unclaimed(row):
+        from .mcp_log import REASON_UNCLAIMED
+
+        return int(row.id), REASON_UNCLAIMED
     return int(row.id), REASON_BAD_KEY
 
 
@@ -85,22 +92,117 @@ def touch(db: Session, row: AgentMcpKey) -> None:
 
 
 def revoke(db: Session, row: AgentMcpKey) -> None:
-    row.revoked_at = datetime.now()
-    db.commit()
+    revoke_rows(db, [row])
 
 
 def revoke_all(db: Session, user_id: int) -> int:
+    return revoke_rows(db, list_for_user(db, user_id))
+
+
+def serialize(row: AgentMcpKey) -> dict:
+    iso = lambda d: d.isoformat(timespec="seconds") if d else None  # noqa: E731
+    st = state_of(row)
+    return {"id": row.id, "name": row.name, "hint": f"…{row.key_hint}", "scope": int(row.scope or 0),
+            "scope_label": SCOPE_LABELS.get(int(row.scope or 0), "?"), "expires_at": iso(row.expires_at),
+            "last_used_at": iso(row.last_used_at), "created_at": iso(row.created_at),
+            "state": int(st), "state_label": STATE_LABELS[st], "issued_by": int(row.issued_by or 0),
+            "claimed_at": iso(row.claimed_at), "batch_id": row.batch_id or "", "user_id": int(row.user_id or 0)}
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# ai-CR-212 (K4 doc/erp/21 §5.3): PHÁT KHÓA HỘ — quản trị phát cho một người / cả phòng, khóa «chờ nhận» tới khi chủ khóa
+# bấm Nhận ở Trang cá nhân (xem được đúng MỘT lần). Chỉ phát mức CHỈ ĐỌC (khóa được ghi chỉ người dùng tự tạo — Q5).
+# ---------------------------------------------------------------------------------------------------------------------
+class KeyState(IntEnum):
+    PENDING = 1      # chờ nhận
+    ACTIVE = 2       # đang dùng
+    EXPIRED = 3      # hết hạn
+    REVOKED = 4      # đã thu hồi (giữ dòng để đối soát)
+
+
+STATE_LABELS = {KeyState.PENDING: "Chờ nhận", KeyState.ACTIVE: "Đang dùng", KeyState.EXPIRED: "Hết hạn",
+                KeyState.REVOKED: "Đã thu hồi"}
+ISSUE_DAYS = (7, 30, 90, 180, 365)
+BATCH_MAX = 50
+
+
+def is_unclaimed(row: AgentMcpKey) -> bool:
+    return bool(row.issued_by) and row.claimed_at is None
+
+
+def state_of(row: AgentMcpKey, now: datetime | None = None) -> KeyState:
+    if row.revoked_at is not None:
+        return KeyState.REVOKED
+    if row.expires_at is not None and row.expires_at <= (now or datetime.now()):
+        return KeyState.EXPIRED
+    return KeyState.PENDING if is_unclaimed(row) else KeyState.ACTIVE
+
+
+def live_count(db: Session, user_id: int, now: datetime | None = None) -> int:
+    """Số khóa còn hiệu lực (đang dùng + chờ nhận) — trần `MAX_KEYS` tính trên số này."""
+    return sum(1 for k in list_for_user(db, user_id) if state_of(k, now) in (KeyState.PENDING, KeyState.ACTIVE))
+
+
+def issue(db: Session, owner_id: int, issued_by: int, *, days: int, name: str = "", batch_id: str = "") -> AgentMcpKey:
+    """Phát hộ một khóa CHỈ ĐỌC ở trạng thái chờ nhận. Khóa thô chỉ nằm trong `raw_sealed` (Fernet) tới khi nhận."""
+    from app.core import app_settings
+
+    if int(days) not in ISSUE_DAYS:
+        raise ValueError(f"Hạn khóa chỉ chọn: {', '.join(map(str, ISSUE_DAYS))} ngày.")
+    if live_count(db, owner_id) >= MAX_KEYS:
+        raise ValueError(f"đã đủ {MAX_KEYS} khóa còn hiệu lực")
+    raw = PREFIX + secrets.token_urlsafe(30)
+    row = AgentMcpKey(user_id=owner_id, name=(name or "").strip()[:80] or "Khóa AI do quản trị phát",
+                      token_hash=hash_token(raw), key_hint=raw[-4:], scope=SCOPE_READ,
+                      expires_at=datetime.now() + timedelta(days=int(days)), issued_by=int(issued_by),
+                      raw_sealed=app_settings.encrypt(raw), batch_id=(batch_id or "")[:32],
+                      created_by=int(issued_by), updated_by=int(issued_by))
+    db.add(row)
+    db.flush()
+    return row
+
+
+def pending_for_user(db: Session, user_id: int) -> list[AgentMcpKey]:
+    return [k for k in list_for_user(db, user_id) if state_of(k) == KeyState.PENDING]
+
+
+def claim(db: Session, user_id: int, key_id: int) -> str | None:
+    """Chủ khóa nhận khóa phát hộ: trả KHÓA THÔ đúng một lần, xóa trắng bản niêm phong. Lần hai / không phải của mình /
+    hết hạn / thu hồi → None."""
+    from app.core import app_settings
+
+    row = db.get(AgentMcpKey, int(key_id))
+    if row is None or int(row.user_id) != int(user_id) or state_of(row) != KeyState.PENDING or not row.raw_sealed:
+        return None
+    raw = app_settings._decrypt(row.raw_sealed)
+    if not raw:
+        return None
+    row.claimed_at = datetime.now()
+    row.raw_sealed = ""
+    row.updated_by = int(user_id)
+    db.commit()
+    return raw
+
+
+def revoke_rows(db: Session, rows: list[AgentMcpKey], by_user_id: int = 0) -> int:
     n = 0
-    for row in list_for_user(db, user_id):
-        row.revoked_at = datetime.now()
-        n += 1
+    now = datetime.now()
+    for row in rows:
+        if row.revoked_at is None:
+            row.revoked_at = now
+            row.raw_sealed = ""            # khóa chưa nhận mà bị thu hồi: bỏ luôn bản niêm phong
+            row.updated_by = int(by_user_id)
+            n += 1
     if n:
         db.commit()
     return n
 
 
-def serialize(row: AgentMcpKey) -> dict:
-    iso = lambda d: d.isoformat(timespec="seconds") if d else None  # noqa: E731
-    return {"id": row.id, "name": row.name, "hint": f"…{row.key_hint}", "scope": int(row.scope or 0),
-            "scope_label": SCOPE_LABELS.get(int(row.scope or 0), "?"), "expires_at": iso(row.expires_at),
-            "last_used_at": iso(row.last_used_at), "created_at": iso(row.created_at)}
+def keys_of_users(db: Session, user_ids: set[int]) -> list[AgentMcpKey]:
+    if not user_ids:
+        return []
+    return list(db.scalars(select(AgentMcpKey).where(AgentMcpKey.user_id.in_(user_ids)).order_by(AgentMcpKey.id.desc())))
+
+
+def owner_ids(db: Session) -> set[int]:
+    return {int(u) for u in db.scalars(select(AgentMcpKey.user_id).distinct())}

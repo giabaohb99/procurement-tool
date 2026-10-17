@@ -13412,8 +13412,26 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
-## ai-CR-211 | Ứng dụng AI mở được danh sách và chi tiết phiếu, danh mục ERP đúng quyền người hỏi
+## ai-CR-212 | Quản trị phát khóa kết nối AI hộ nhân sự, người nhận tự bấm nhận mới dùng được
 - status: dang-lam
+- date: 2026-10-17
+Việc đầu tiên của đợt hai cổng nối ERP với ứng dụng AI. Trước nay mỗi người phải tự tạo khóa kết nối AI ở Trang cá nhân;
+nay quản trị phát hộ được cho một người, nhiều người hoặc cả phòng, tối đa năm mươi người một lượt, chọn hạn bảy ngày tới một
+năm. Khóa phát hộ chỉ là khóa chỉ đọc, ở trạng thái chờ nhận và chưa dùng được; người nhận được báo bằng chuông, vào Trang cá
+nhân bấm Nhận khóa thì khóa hiện đúng một lần để chép. Người đã đủ năm khóa thì được bỏ qua. Quản trị xem được danh sách khóa
+của những người trong phạm vi mình, lọc theo phòng và trạng thái, thu hồi một khóa, mọi khóa của một người hoặc cả một lượt
+phát; khóa thu hồi vẫn giữ dòng để đối soát. Quyền này là một quyền mới, phạm vi tính theo phòng ban của người được phát; hai
+vai trò kho skill AI được thêm quyền này (toàn công ty và phòng mình). Không gửi email hay Telegram.
+Bài kiểm phát ngoài phạm vi bị chặn, nhận hai lần thì lần hai không thấy khóa, khóa chưa nhận không dùng được đều đạt. Chờ
+Agent 1 dựng lên dev.
+
+Mã nguồn: agent_hub/mcp_keys.py, agent_hub/controller.py, agent_hub/model.py, agent_hub/erp.py, agent_gateway/key_admin.py,
+agent_gateway/controller.py, core/permissions.py, core/scoping.py, seed.py, frontend-v2 permission-types + permission-groups
+Migration: mcpkey02 (DB ERP) + agent0012 (DB dịch vụ AI)
+Bài kiểm: test_agent_hub_phat_khoa_ho_cr212.py
+
+## ai-CR-211 | Ứng dụng AI mở được danh sách và chi tiết phiếu, danh mục ERP đúng quyền người hỏi
+- status: xong
 - date: 2026-10-17
 Việc cuối của đợt dữ liệu cho ứng dụng AI. Nay ứng dụng AI đọc được danh sách và chi tiết của yêu cầu mua hàng, yêu cầu báo
 giá, đơn mua hàng, phiếu nhận hàng, nhà cung cấp, sản phẩm và hợp đồng, ví dụ mở chi tiết một đơn hay xem các phiếu đang chờ
@@ -13422,7 +13440,8 @@ duyệt của một phòng. Danh sách đi qua đúng đường mà màn web dù
 cùng một câu với phiếu không có thật, để không lộ phiếu tồn tại. Kết quả gọn: chỉ trường cần thiết, có nhãn trạng thái tiếng
 Việt, đường dẫn mở màn chi tiết, đơn vị tiền; người không có quyền xem nhà cung cấp thì không thấy tên nhà cung cấp trên đơn.
 Đọc chi tiết yêu cầu mua hàng không đi qua đường của màn web vì đường đó có ghi ngầm một bản ghi phương án.
-Bài kiểm danh sách trắng, phạm vi, phân trang, không ghi dữ liệu đều đạt. Chờ Agent 1 dựng lên dev.
+Bài kiểm danh sách trắng, phạm vi, phân trang, không ghi dữ liệu đều đạt. Agent 1 đã dựng lên dev ngày 17/10 và thử đạt:
+phân trang đúng, đường dẫn đầy đủ, người không có quyền nhận cùng một câu từ chối.
 
 Mã nguồn: assistant/tools/erp_read_tool.py, assistant/tools/route_call.py, assistant/tools/__init__.py,
 assistant/tool_router.py, agent_hub/mcp.py
