@@ -404,6 +404,12 @@ class _Local:
 
         return skill_stats(db)
 
+    @staticmethod
+    def key_admin_employees(db, admin, action: str, employee_ids: list[int]) -> dict | None:
+        from app.modules.agent_gateway.key_admin import employee_accounts
+
+        return employee_accounts(db, admin, action, employee_ids)
+
     # --- chuông ------------------------------------------------------------------------------------------------------
     @staticmethod
     def notifications_after(db, after_id: int, limit: int) -> list[dict]:
@@ -753,6 +759,13 @@ class _Remote:
     def skill_stats(self, db) -> dict:
         return dict(self._call("GET", "/ai-skill/stats") or {})
 
+    def key_admin_employees(self, db, admin, action: str, employee_ids: list[int]) -> dict | None:
+        out = self._call("POST", "/key-admin/employees", user_id=_uid(admin),
+                         body={"action": action, "employee_ids": [int(i) for i in employee_ids]}) or {}
+        if not out.get("allowed"):
+            return None
+        return {k: list(out.get(k) or []) for k in ("people", "no_account", "outside")}
+
     # --- chuông ---
     def notifications_after(self, db, after_id: int, limit: int) -> list[dict]:
         return list(self._call("GET", "/notifications", params={"after_id": int(after_id), "limit": int(limit)}) or [])
@@ -998,6 +1011,11 @@ def notify_users(db, user_ids: list[int], *, title: str, body: str, link: str, b
 def skill_stats(db) -> dict:
     """ai-CR-213: {skill_sets, skills} đang dùng ở Kho skill AI (ERP)."""
     return _impl().skill_stats(db)
+
+
+def key_admin_employees(db, admin, action: str, employee_ids: list[int]) -> dict | None:
+    """ai-CR-215: phát khóa theo hồ sơ nhân sự — {people, no_account, outside}; None = không có quyền."""
+    return _impl().key_admin_employees(db, admin, action, employee_ids)
 
 
 def attachment_blocks(db, user, ids: list[int]) -> tuple[list | None, list[dict]]:

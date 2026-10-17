@@ -13450,6 +13450,18 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-215 | Phát khóa kết nối AI hộ theo hồ sơ nhân sự, bỏ qua người chưa có tài khoản
+- status: dang-lam
+- date: 2026-10-17
+Agent 3 dựng màn Khóa nhân sự thì thấy danh sách nhân sự trên màn không có mã tài khoản, còn trưởng phòng thường không có
+quyền tra danh sách tài khoản. Nay phát khóa hộ chọn thẳng theo hồ sơ nhân sự được: hệ thống tự tìm tài khoản của từng
+người; người chưa có tài khoản ERP hoặc tài khoản đã bị khóa thì được bỏ qua và báo lại lý do; có người ngoài phạm vi thì
+cả lượt bị chặn, không phát khóa nào. Chọn theo tài khoản như cũ vẫn dùng được, chọn trùng một người cũng chỉ phát một khóa.
+Bài kiểm đều đạt. Chờ Agent 1 dựng lên dev.
+
+Mã nguồn: agent_gateway/key_admin.py, agent_gateway/controller.py, agent_hub/controller.py, agent_hub/erp.py
+Bài kiểm: test_agent_hub_phat_khoa_ho_cr212.py
+
 ## ai-CR-214 | Khung demo tự chạy theo chương và kịch bản chín chương giới thiệu Kho skill AI
 - status: xong
 - date: 2026-10-17

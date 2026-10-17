@@ -385,6 +385,18 @@ def key_admin_notify(body: KeyAdminNotifyIn, user=Depends(gateway_user), db: Ses
                                            by_user_id=int(user.id))})
 
 
+class KeyAdminEmployeesIn(BaseModel):
+    action: str = Field(pattern="^(read|create|delete)$")
+    employee_ids: list[int] = Field(default_factory=list, max_length=200)
+
+
+@router.post("/key-admin/employees")
+def key_admin_employees(body: KeyAdminEmployeesIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    """ai-CR-215: hồ sơ nhân sự → tài khoản trong phạm vi phát khóa hộ (+ ai chưa có tài khoản, ai ngoài phạm vi)."""
+    out = L.key_admin_employees(db, user, body.action, body.employee_ids)
+    return success({"allowed": out is not None, **(out or {"people": [], "no_account": [], "outside": []})})
+
+
 @router.get("/ai-skill/stats")
 def ai_skill_stats(_: int = Depends(gateway_signed), db: Session = Depends(get_db)):
     """ai-CR-213: số bộ / skill đang dùng cho màn Tổng quan (chỉ con số, không nội dung)."""

@@ -103,7 +103,7 @@ skill_id, status, status_label, deny_reason, duration_ms, ip}`.
 | `GET mcp-calls/top?by=tool\|user&days=14&limit=10` | như trên | | `{by, days, items: [{key, calls, label?}]}` |
 | `GET mcp-key-admin/meta` | — | — | `{days: [7,30,90,180,365], batch_max: 50, max_keys: 5, states: [{value, label}], can_read, can_create, can_delete}` |
 | `GET mcp-key-admin/keys` | `ai_mcp_key_admin.read` | `department_id, state, user_id, batch_id, page, size≤200` | `{total, page, size, has_more, items: [Key + {owner_label, department_id, department, issued_by_label}]}` — chỉ khóa của người trong phạm vi |
-| `POST mcp-key-admin/issue` | `ai_mcp_key_admin.create` | `{user_ids: [int] \| department_id, days ∈ days, name}` | `{batch_id, issued: [{user_id, label, key_id}], skipped: [{user_id, label, reason}]}` — chỉ mức chỉ đọc; có người ngoài phạm vi → 403 cả lượt; > 50 người → 400; người đủ 5 khóa → `skipped` |
+| `POST mcp-key-admin/issue` | `ai_mcp_key_admin.create` | `{user_ids: [int] \| employee_ids: [int] \| department_id, days ∈ days, name}` — có `employee_ids` thì bỏ qua `department_id` (ai-CR-215) | `{batch_id, issued: [{user_id, employee_id, label, key_id}], skipped: [{user_id, employee_id, label, reason}]}` — chỉ mức chỉ đọc; có người / nhân sự ngoài phạm vi (hoặc id nhân sự không có thật) → 403 cả lượt; tổng > 50 người → 400; người đủ 5 khóa → `skipped`; nhân sự chưa có tài khoản / tài khoản đã khóa → `skipped` với `user_id = 0` |
 | `POST mcp-key-admin/revoke` | `ai_mcp_key_admin.delete` | `{key_ids: [int]} \| {user_id} \| {batch_id}` | `{revoked: n}` — chủ khóa ngoài phạm vi → 403 cả lệnh |
 
 ### 6.3 Trần ở cổng `/api/mcp` (ai-CR-209, 213)

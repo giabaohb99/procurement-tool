@@ -200,3 +200,55 @@ def test_cong_b_va_ban_goi_tu_xa(db, org, monkeypatch):
     assert remote.key_admin_people(db, org.admin, "read") is None
     monkeypatch.setattr(remote, "_call", lambda *a, **k: {"allowed": True, "people": [{"user_id": 3}]})
     assert remote.key_admin_people(db, org.admin, "read") == [{"user_id": 3}]
+
+
+# ── ai-CR-215: phát theo hồ sơ nhân sự (employee_ids) ─────────────────────────
+
+def test_phat_theo_ho_so_nhan_su_bo_qua_nguoi_chua_co_tai_khoan(db, seed, org):
+    no_user = Employee(code="CHUATK", full_name="Chưa có TK", company_id=seed.company_id, department_id=seed.dept_id,
+                       is_active=True)
+    db.add(no_user)
+    db.commit()
+    locked = _person(db, "KHOATK", seed.company_id, seed.dept_id)
+    locked.is_active = False
+    db.commit()
+    out = _issue(db, org.admin, employee_ids=[org.mate.employee_id, no_user.id, locked.employee_id], days=30)
+    assert [(i["user_id"], i["employee_id"]) for i in out["issued"]] == [(org.mate.id, org.mate.employee_id)]
+    reasons = {s["employee_id"]: s["reason"] for s in out["skipped"]}
+    assert reasons == {no_user.id: "chưa có tài khoản ERP", locked.employee_id: "tài khoản ERP đã bị khóa"}
+    assert all(s["user_id"] == 0 for s in out["skipped"])
+    #  Gộp chung user_ids + employee_ids trỏ cùng một người thì không phát hai khóa.
+    out2 = _issue(db, org.admin, user_ids=[org.admin.id], employee_ids=[org.admin.employee_id], days=7)
+    assert [i["user_id"] for i in out2["issued"]] == [org.admin.id]
+
+
+def test_phat_theo_ho_so_ngoai_pham_vi_hoac_khong_co_that_bi_chan(db, org):
+    for bad in ([org.outsider.employee_id], [org.mate.employee_id, 99999999]):
+        with pytest.raises(HTTPException) as e:
+            _issue(db, org.admin, employee_ids=bad, days=30)
+        assert e.value.status_code == 403 and "ngoài phạm vi" in e.value.detail
+    assert db.query(AgentMcpKey).count() == 0
+    with pytest.raises(HTTPException) as e:
+        _issue(db, org.mate, employee_ids=[org.admin.employee_id], days=30)          # không có quyền
+    assert e.value.status_code == 403
+    with pytest.raises(HTTPException) as e:
+        _issue(db, org.admin, user_ids=list(range(1, 30)), employee_ids=list(range(1, 30)), days=30)
+    assert e.value.status_code == 400                                                # tổng > 50 người
+
+
+def test_cong_b_ho_so_nhan_su_va_ban_goi_tu_xa(db, org, monkeypatch):
+    from app.modules.agent_gateway import controller as gw
+    from app.modules.agent_hub import erp
+
+    data = _json(gw.key_admin_employees(gw.KeyAdminEmployeesIn(action="create", employee_ids=[
+        org.mate.employee_id, org.outsider.employee_id]), user=org.admin, db=db))
+    assert data["allowed"] and [p["user_id"] for p in data["people"]] == [org.mate.id]
+    assert data["outside"] == [org.outsider.employee_id] and data["no_account"] == []
+    assert _json(gw.key_admin_employees(gw.KeyAdminEmployeesIn(action="create", employee_ids=[1]), user=org.mate,
+                                        db=db))["allowed"] is False
+    remote = erp._Remote()
+    monkeypatch.setattr(remote, "_call", lambda *a, **k: {"allowed": False})
+    assert remote.key_admin_employees(db, org.admin, "create", [1]) is None
+    monkeypatch.setattr(remote, "_call", lambda *a, **k: {"allowed": True, "people": [{"user_id": 3}], "outside": [9]})
+    assert remote.key_admin_employees(db, org.admin, "create", [1]) == {"people": [{"user_id": 3}], "no_account": [],
+                                                                         "outside": [9]}

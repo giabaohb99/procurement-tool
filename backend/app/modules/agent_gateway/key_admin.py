@@ -14,7 +14,7 @@ MAX_PEOPLE = 2000
 
 
 def people_in_scope(db: Session, admin, action: str, *, user_ids: list[int] | None = None, department_id: int = 0,
-                    limit: int = MAX_PEOPLE) -> list[dict] | None:
+                    limit: int = MAX_PEOPLE, employee_ids: list[int] | None = None) -> list[dict] | None:
     """Tài khoản ĐANG HOẠT ĐỘNG có hồ sơ nhân sự nằm trong phạm vi `action` của `admin`. None = không có quyền.
 
     Tài khoản chưa gắn nhân sự không có phòng ban để tính phạm vi → không bao giờ lọt vào (kể cả phạm vi «toàn hệ»)."""
@@ -34,6 +34,11 @@ def people_in_scope(db: Session, admin, action: str, *, user_ids: list[int] | No
         if not ids:
             return []
         q = q.filter(User.id.in_(ids))
+    if employee_ids is not None:
+        eids = {int(i) for i in employee_ids if i}
+        if not eids:
+            return []
+        q = q.filter(Employee.id.in_(eids))
     if department_id:
         q = q.filter(Employee.department_id == int(department_id))
     rows = q.order_by(Employee.full_name, User.id).limit(max(1, min(int(limit), MAX_PEOPLE))).all()
@@ -43,6 +48,32 @@ def people_in_scope(db: Session, admin, action: str, *, user_ids: list[int] | No
     return [{"user_id": int(uid), "employee_id": int(eid), "label": f"{name} ({code})" if code else (name or f"#{uid}"),
              "department_id": int(dept or 0), "department": names.get(dept, ""), "company_id": int(comp or 0)}
             for uid, eid, code, name, dept, comp in rows]
+
+
+def employee_accounts(db: Session, admin, action: str, employee_ids: list[int]) -> dict | None:
+    """ai-CR-215: phát khóa theo HỒ SƠ NHÂN SỰ (màn danh sách nhân sự không có user_id, trưởng phòng thường không có
+    `user.read`). Trả `people` (có tài khoản đang hoạt động, trong phạm vi), `no_account` (trong phạm vi nhưng chưa có tài
+    khoản / tài khoản đã khóa — kèm lý do) và `outside` (id ngoài phạm vi hoặc không có thật). None = không có quyền."""
+    from app.core.auth import get_perm_profile, user_has_permission
+    from app.core.scoping import apply_scope
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    if not user_has_permission(db, admin, ENTITY, action):
+        return None
+    ids = {int(i) for i in employee_ids if i}
+    if not ids:
+        return {"people": [], "no_account": [], "outside": []}
+    q = db.query(Employee.id, Employee.code, Employee.full_name).filter(Employee.id.in_(ids))
+    in_scope = {eid: (f"{name} ({code})" if code else (name or f"#{eid}"))
+                for eid, code, name in apply_scope(q, Employee, ENTITY, admin, get_perm_profile(db, admin), action=action)}
+    people = people_in_scope(db, admin, action, employee_ids=sorted(in_scope)) if in_scope else []
+    with_user = {p["employee_id"] for p in people}
+    rest = set(in_scope) - with_user
+    locked = {int(e) for (e,) in db.query(User.employee_id).filter(User.employee_id.in_(rest))} if rest else set()
+    no_account = [{"user_id": 0, "employee_id": eid, "label": in_scope[eid],
+                   "reason": "tài khoản ERP đã bị khóa" if eid in locked else "chưa có tài khoản ERP"} for eid in sorted(rest)]
+    return {"people": people, "no_account": no_account, "outside": sorted(ids - set(in_scope))}
 
 
 def skill_stats(db: Session) -> dict:

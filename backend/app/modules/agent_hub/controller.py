@@ -451,6 +451,9 @@ def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Quer
 
 class KeyIssueIn(BaseModel):
     user_ids: list[int] = []
+    #  ai-CR-215: phát theo HỒ SƠ NHÂN SỰ (màn danh sách nhân sự không có user_id). Có `employee_ids` thì bỏ qua
+    #  `department_id`; nhân sự chưa có tài khoản / tài khoản đã khóa nằm trong `skipped` kèm lý do.
+    employee_ids: list[int] = []
     department_id: int = 0
     days: int = 90
     name: Str80 = ""
@@ -467,30 +470,47 @@ def key_admin_issue(body: KeyIssueIn, user=Depends(get_current_user), db: Sessio
     if body.days not in mcp_keys.ISSUE_DAYS:
         raise HTTPException(400, f"Hạn khóa chỉ chọn: {', '.join(map(str, mcp_keys.ISSUE_DAYS))} ngày.")
     wanted = sorted({int(i) for i in body.user_ids if i})
-    if not wanted and not body.department_id:
+    wanted_emp = sorted({int(i) for i in body.employee_ids if i})
+    if not wanted and not wanted_emp and not body.department_id:
         raise HTTPException(400, "Chọn người nhận hoặc một phòng ban.")
-    if len(wanted) > mcp_keys.BATCH_MAX:
+    if len(wanted) + len(wanted_emp) > mcp_keys.BATCH_MAX:
         raise HTTPException(400, f"Tối đa {mcp_keys.BATCH_MAX} người một lượt phát.")
-    people = _key_admin_people(db, user, "create", user_ids=wanted or None, department_id=body.department_id,
-                               limit=mcp_keys.BATCH_MAX + 1)
-    if wanted:
-        outside = set(wanted) - {p["user_id"] for p in people}
-        if outside:
-            raise HTTPException(403, f"{len(outside)} người nằm ngoài phạm vi bạn được phát khóa hộ (hoặc tài khoản đã khóa"
-                                     " / chưa gắn hồ sơ nhân sự). Chưa phát khóa nào.")
-    elif not people:
-        raise HTTPException(404, "Phòng này không có nhân sự nào trong phạm vi bạn được phát khóa hộ.")
+    people: list[dict] = []
+    skipped: list[dict] = []
+    if wanted or (body.department_id and not wanted_emp):
+        people = _key_admin_people(db, user, "create", user_ids=wanted or None, department_id=body.department_id,
+                                   limit=mcp_keys.BATCH_MAX + 1)
+        if wanted:
+            outside = set(wanted) - {p["user_id"] for p in people}
+            if outside:
+                raise HTTPException(403, f"{len(outside)} người nằm ngoài phạm vi bạn được phát khóa hộ (hoặc tài khoản đã "
+                                         "khóa / chưa gắn hồ sơ nhân sự). Chưa phát khóa nào.")
+        elif not people:
+            raise HTTPException(404, "Phòng này không có nhân sự nào trong phạm vi bạn được phát khóa hộ.")
+    if wanted_emp:
+        res = erp.key_admin_employees(db, user, "create", wanted_emp)
+        if res is None:
+            raise HTTPException(403, f"Không có quyền: create {KEY_ADMIN_ENTITY}")
+        if res["outside"]:
+            raise HTTPException(403, f"{len(res['outside'])} nhân sự nằm ngoài phạm vi bạn được phát khóa hộ (hoặc không có "
+                                     "thật). Chưa phát khóa nào.")
+        seen = {p["user_id"] for p in people}
+        people += [p for p in res["people"] if p["user_id"] not in seen]
+        skipped += [{"user_id": 0, "employee_id": n["employee_id"], "label": n["label"], "reason": n["reason"]}
+                    for n in res["no_account"]]
     if len(people) > mcp_keys.BATCH_MAX:
         raise HTTPException(400, f"Phòng có hơn {mcp_keys.BATCH_MAX} người — chọn từng nhóm người, tối đa "
                                  f"{mcp_keys.BATCH_MAX} người một lượt.")
     batch_id = uuid.uuid4().hex[:16]
-    issued, skipped = [], []
+    issued = []
     for p in people:
         try:
             row = mcp_keys.issue(db, p["user_id"], user.id, days=body.days, name=body.name, batch_id=batch_id)
-            issued.append({"user_id": p["user_id"], "label": p["label"], "key_id": row.id})
+            issued.append({"user_id": p["user_id"], "employee_id": p.get("employee_id", 0), "label": p["label"],
+                           "key_id": row.id})
         except ValueError as e:
-            skipped.append({"user_id": p["user_id"], "label": p["label"], "reason": str(e)})
+            skipped.append({"user_id": p["user_id"], "employee_id": p.get("employee_id", 0), "label": p["label"],
+                            "reason": str(e)})
     db.commit()
     if issued:
         issuer = erp.describe(db, user)[0] or "Quản trị"
