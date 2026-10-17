@@ -13388,8 +13388,24 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
-## ai-CR-210 | Ứng dụng AI tự lập bảng số mua hàng, công nợ phải trả và yêu cầu thanh toán theo ý người hỏi
+## ai-CR-211 | Ứng dụng AI mở được danh sách và chi tiết phiếu, danh mục ERP đúng quyền người hỏi
 - status: dang-lam
+- date: 2026-10-17
+Việc cuối của đợt dữ liệu cho ứng dụng AI. Nay ứng dụng AI đọc được danh sách và chi tiết của yêu cầu mua hàng, yêu cầu báo
+giá, đơn mua hàng, phiếu nhận hàng, nhà cung cấp, sản phẩm và hợp đồng, ví dụ mở chi tiết một đơn hay xem các phiếu đang chờ
+duyệt của một phòng. Danh sách đi qua đúng đường mà màn web dùng nên cùng bộ lọc, cùng tìm kiếm và cùng phạm vi người đó
+được xem. Mỗi lượt đọc tối đa năm trang, mỗi trang một trăm dòng; còn nữa thì báo trang kế tiếp. Phiếu ngoài quyền xem trả
+cùng một câu với phiếu không có thật, để không lộ phiếu tồn tại. Kết quả gọn: chỉ trường cần thiết, có nhãn trạng thái tiếng
+Việt, đường dẫn mở màn chi tiết, đơn vị tiền; người không có quyền xem nhà cung cấp thì không thấy tên nhà cung cấp trên đơn.
+Đọc chi tiết yêu cầu mua hàng không đi qua đường của màn web vì đường đó có ghi ngầm một bản ghi phương án.
+Bài kiểm danh sách trắng, phạm vi, phân trang, không ghi dữ liệu đều đạt. Chờ Agent 1 dựng lên dev.
+
+Mã nguồn: assistant/tools/erp_read_tool.py, assistant/tools/route_call.py, assistant/tools/__init__.py,
+assistant/tool_router.py, agent_hub/mcp.py
+Bài kiểm: test_assistant_erp_read_cr211.py
+
+## ai-CR-210 | Ứng dụng AI tự lập bảng số mua hàng, công nợ phải trả và yêu cầu thanh toán theo ý người hỏi
+- status: xong
 - date: 2026-10-17
 Đại ca duyệt làm việc thứ hai của đợt dữ liệu cho ứng dụng AI. Trước nay chỉ có thống kê mua hàng làm sẵn vài kiểu; nay có
 một khuôn chung để khai từng bộ dữ liệu một lần: đo được gì, chia theo gì, lọc được gì. Ứng dụng AI chỉ chọn trong danh sách
@@ -13398,7 +13414,8 @@ vấn. Làm trước ba bộ: mua hàng, công nợ phải trả (còn nợ, đ�
 tháng) và yêu cầu thanh toán (số phiếu, số tiền theo nhà cung cấp, phòng, trạng thái, tháng). Mỗi lượt tối đa bốn chỉ số, hai
 chiều chia, năm trăm nhóm; nhiều hơn thì báo còn nữa và gợi ý lọc hẹp. Tiền ghi rõ đơn vị và trước hay sau VAT. Công cụ thống
 kê mua hàng cũ nay chạy trên khuôn mới, số không đổi. Nhân tiện vá một bài kiểm bị sót khai công cụ báo cáo của việc trước.
-Bài kiểm phạm vi từng bộ, trần nhóm và chặn tham số lạ đều đạt. Chờ Agent 1 dựng lên dev.
+Bài kiểm phạm vi từng bộ, trần nhóm và chặn tham số lạ đều đạt. Agent 1 đã dựng lên dev ngày 17/10 và thử đạt cả ba bộ,
+nhân viên không có quyền bị từ chối đúng.
 
 Mã nguồn: assistant/datasets/ (base.py, catalog.py, lookups.py), assistant/tools/dataset_tool.py, assistant/tools/catalog.py,
 assistant/tools/__init__.py, assistant/tool_router.py, agent_hub/mcp.py

@@ -97,6 +97,8 @@ TOOL_DANH_MUC = {
     "report_summary": "13 báo cáo gom sẵn của phân hệ Báo cáo",
     #  ai-CR-210 — sổ bộ dữ liệu: payable / payment_request qua apply_scope; purchase là bảng lịch sử giá (product.read).
     "dataset_query": "tổng hợp trên bộ dữ liệu khai sẵn (mua hàng, công nợ, YCTT)",
+    #  ai-CR-211 — danh sách qua đúng hàm route của màn web (require + apply_scope), chi tiết qua bộ đọc đã lọc phạm vi.
+    "erp_read": "đọc danh sách / chi tiết chứng từ và danh mục theo danh sách trắng",
 }
 
 #  CỐ Ý không lọc phạm vi — mỗi dòng phải nói được lý do, nếu không thì nó là lỗ hổng
@@ -160,8 +162,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     thuc_te = {d.name for d in T.tool_defs()}
     #  73 = 69 + `market_price_search` + `supplier_scorecard` (ai-CR-173/174, phase 23.4/23.5) + `deep_research`
     #  (ai-CR-178, phase 23.1) + `draft_work_plan` (bao-CR-616, phase 24.1 — doc/agent-hub/18).
-    #  74 = 73 + `report_summary` (ai-CR-208, K11 doc/erp/21); 75 = + `dataset_query` (ai-CR-210, K12).
-    assert len(thuc_te) == 75, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  74 = 73 + `report_summary` (ai-CR-208, K11 doc/erp/21); 75 = + `dataset_query` (ai-CR-210, K12); 76 = + `erp_read` (ai-CR-211, K13).
+    assert len(thuc_te) == 76, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

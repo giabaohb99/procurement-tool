@@ -30,7 +30,7 @@ CORE = frozenset({"search_docs", "glossary_lookup", "remember_fact", "forget_fac
 #  (tên nhóm, công cụ, mẫu chữ ĐÃ BỎ DẤU). Một công cụ có thể nằm ở nhiều nhóm.
 GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("purchase", frozenset({
-        "recent_purchase_orders", "recent_purchases", "my_procurement_requests", "procurement_doc_read",
+        "recent_purchase_orders", "recent_purchases", "my_procurement_requests", "procurement_doc_read", "erp_read",
         "pending_procurement_approvals", "purchase_report", "product_search", "product_best_price",
         "product_purchase_history", "supplier_search", "suppliers_for_product", "top_suppliers_by_purchase",
         "supplier_contracts", "contract_count_by_status", "contract_list_by_expiry", "analytics_query",

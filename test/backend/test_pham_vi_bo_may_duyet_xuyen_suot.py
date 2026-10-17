@@ -1236,6 +1236,9 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     #  ai-CR-210: bộ payable / payment_request qua apply_scope của entity cùng tên; bộ purchase = bảng lịch sử giá
     #  (product.read, chiều NCC đòi supplier.read) — khai ở assistant/datasets/catalog.py.
     "dataset_query": "datasets.base.run: ctx.can(entity) + apply_scope(model, scope_entity) (+ can_view_report)",
+    #  ai-CR-211: danh sách gọi hàm route list của màn web (require + apply_scope bên trong); chi tiết YCMH / YCBG / ĐMH
+    #  qua procurement_doc_tool._READERS (_fetch_scoped), hợp đồng qua route (_in_scope), nhận hàng apply_scope(GoodsReceipt).
+    "erp_read": "ctx.can(entity) + route list của màn web / _fetch_scoped / apply_scope(GoodsReceipt, 'goods_receipt')",
     # (a-bis) đọc `tab_purchase_history` — bảng LỊCH SỬ GIÁ, không có khóa phạm vi
     #  ⚠️ Bảng này CÓ `company_id` nhưng `purchase_history` không nằm trong
     #  `ENTITIES`, nên không entity nào để `apply_scope`. Cổng duy nhất là

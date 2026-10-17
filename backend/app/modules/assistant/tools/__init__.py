@@ -45,6 +45,7 @@ from .market_tool import MARKET_SPECS
 from .research_tool import RESEARCH_SPECS
 from .report_summary_tool import REPORT_SUMMARY_SPEC
 from .dataset_tool import DATASET_QUERY_SPEC
+from .erp_read_tool import ERP_READ_SPEC
 
 log = logging.getLogger("app.assistant.tools")
 
@@ -86,7 +87,8 @@ def _active_specs() -> list:
                            *MARKET_SPECS,         # ai-CR-173/174: giá + link trên web, chấm điểm NCC (phase 23.4/23.5)
                            *RESEARCH_SPECS,       # ai-CR-178: nghiên cứu sâu nhiều nguồn, chạy nền về chat riêng (phase 23.1)
                            REPORT_SUMMARY_SPEC,   # ai-CR-208: một cửa 13 báo cáo gom sẵn (K11 doc/erp/21 §T1)
-                           DATASET_QUERY_SPEC]    # ai-CR-210: sổ bộ dữ liệu — mua hàng, công nợ, YCTT (K12 doc/erp/21 §T2)
+                           DATASET_QUERY_SPEC,    # ai-CR-210: sổ bộ dữ liệu — mua hàng, công nợ, YCTT (K12 doc/erp/21 §T2)
+                           ERP_READ_SPEC]         # ai-CR-211: đọc danh sách / chi tiết theo danh sách trắng (K13 §T3)
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs

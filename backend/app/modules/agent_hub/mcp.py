@@ -38,7 +38,7 @@ INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy 
 READ_TOOLS = frozenset({
     "analytics_query", "approval_flow_lookup", "contract_count_by_status", "contract_list_by_expiry",
     "customs_buy_timing", "customs_legal_check", "customs_market", "customs_price_stats", "dataset_query",
-    "document_read", "document_search", "drive_read", "drive_search", "employee_lookup", "glossary_lookup",
+    "document_read", "document_search", "drive_read", "drive_search", "employee_lookup", "erp_read", "glossary_lookup",
     "latest_meeting_report", "list_my_groups", "list_my_meetings", "list_personal_items", "market_price_search",
     "my_approval_tasks", "my_calendar_events", "my_documents", "my_leave_summary", "my_procurement_requests",
     "my_requests_status", "my_tickets", "my_work_tasks", "payable_lookup", "payment_request_read",
@@ -131,6 +131,11 @@ def _absolute_downloads(result):
     #  ai-CR-208: `link` (màn ERP) của report_summary cũng trả tuyệt đối — §5.6 doc/erp/21.
     if isinstance(result, dict) and str(result.get("link") or "").startswith("/"):
         result["link"] = telegram.absolute_url(result["link"])
+    #  ai-CR-211: `url` từng dòng / bản ghi của erp_read cũng tuyệt đối.
+    rows = [result.get("item")] + list(result.get("items") or []) if isinstance(result, dict) else []
+    for row in rows:
+        if isinstance(row, dict) and str(row.get("url") or "").startswith("/"):
+            row["url"] = telegram.absolute_url(row["url"])
     return result
 
 
