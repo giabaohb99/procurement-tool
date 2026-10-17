@@ -13451,7 +13451,7 @@ vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
 ## ai-CR-216 | Quản trị bật tắt từng nhóm công cụ cho ứng dụng AI và chuẩn hóa kết quả các công cụ tra cứu cũ
-- status: dang-lam
+- status: xong
 - date: 2026-10-17
 Làm phần máy chủ cho màn Cấu hình của Kho skill AI. Quản trị bật hoặc tắt được từng nhóm công cụ mà ứng dụng AI bên ngoài
 được dùng, chỉnh trần số lượt gọi, ngân sách dữ liệu, số ngày giữ nhật ký và thêm một câu dặn riêng cho AI. Mặc định theo đúng
@@ -13460,7 +13460,9 @@ cùng các nhóm khác tắt cho tới khi quản trị bật. Nhóm đang tắt
 kèm tên nhóm. Ba công cụ báo cáo mua hàng cũ được gỡ khỏi cổng cho ứng dụng AI vì đã có đường mới thay thế; trợ lý trên web
 và bot vẫn giữ. Cùng đợt rà bốn mươi bảy công cụ tra cứu cũ và bổ sung loại tiền (đơn nhập khẩu không còn bị hiểu là tiền
 Việt), ghi rõ tiền trước hay sau VAT, nhãn trạng thái tiếng Việt, cờ báo còn dòng chưa trả, đường dẫn đầy đủ ở mọi chỗ.
-Bài kiểm đều đạt; hồi quy tám mươi tám tệp không có lỗi mới. Chờ Agent 1 dựng lên dev.
+Bài kiểm đều đạt; hồi quy tám mươi tám tệp không có lỗi mới. Agent 1 dựng lên dev ngày 17/10 thì bắt được một lỗi: khi chạy
+tách hai dịch vụ, ERP chưa cho lưu khóa cấu hình mới nên màn cấu hình không lưu được; đã vá cùng ngày và thử lại đạt.
+Cùng đợt viết lại tài liệu cổng nối AI (doc/agent-hub/06 bản 2.0) cho đủ một chỗ đọc mọi thay đổi từ ai-CR-207 tới 216.
 
 Mã nguồn: agent_hub/mcp_settings.py, agent_hub/mcp.py, agent_hub/controller.py, assistant/tools/catalog.py,
 assistant/tools/payable_tool.py, assistant/tools/procurement_doc_tool.py, assistant/tools/customs_tool.py
