@@ -277,3 +277,33 @@ def test_mcp_gan_has_more_khi_total_la_tong_that_va_bo_qua_link_help_center(monk
     out = mcp._absolute_downloads({"items": [{"url": "/articles/12"}, {"url": "/faq"}, {"url": "/hr/leave-requests/3"}]})
     assert [i["url"] for i in out["items"]] == ["/articles/12", "/faq",
                                                  "https://deverp.degoholding.vn/hr/leave-requests/3"]
+
+
+# ── Chế độ tách dịch vụ: cấu hình đi qua cổng B /settings/raw ─────────────────
+
+def test_luu_doc_cau_hinh_qua_cong_b_o_che_do_tach_dich_vu(db, monkeypatch):
+    """Lỗi gặp trên dev 17/10 (Agent 1): `agent_mcp_settings` chưa nằm trong SETTING_RAW_KEYS nên cổng B từ chối PUT
+    /settings/raw — màn G7 chỉ chạy được ở chế độ nhúng. Giả lập _Remote đi qua ĐÚNG hàm gác khóa của cổng B."""
+    from app.modules.agent_gateway import controller as gw
+    from app.modules.agent_hub import erp
+
+    store: dict = {}
+
+    def fake_call(method, path, *, user_id=0, body=None, params=None, **_):
+        assert path == "/settings/raw"
+        if method == "PUT":
+            store[gw._raw_key(body["key"])] = body["value"]
+            return None
+        return {"value": store.get(gw._raw_key(params["key"]), "")}
+
+    remote = erp._Remote()
+    monkeypatch.setattr(remote, "_call", fake_call)
+    monkeypatch.setattr(erp, "_impl", lambda: remote)
+    assert mcp_settings.SETTING_KEY in erp.SETTING_RAW_KEYS
+    mcp_settings.save(db, {"groups": {"purchase": True}, "rate_per_key": 50}, user_id=1)
+    mcp_settings.clear_cache()
+    cur = mcp_settings.current(db)
+    assert cur["groups"]["purchase"] is True and cur["rate_per_key"] == 50
+    #  Khóa lạ vẫn bị cổng B chặn — whitelist không bị nới rộng.
+    with pytest.raises(HTTPException):
+        gw._raw_key("jwt_secret")

@@ -901,7 +901,8 @@ def glossary_block(db, texts: list[str]) -> str | None:
 
 
 #  Chỉ những khóa này đi qua cổng — cổng B không phải cửa sửa cấu hình tùy ý.
-SETTING_RAW_KEYS = ("assistant_glossary", "assistant_glossary_pending", "assistant_feature_gaps")
+#  ai-CR-216: thêm `agent_mcp_settings` (cấu hình cổng MCP, màn G7) — thiếu thì chế độ tách dịch vụ không lưu / đọc được.
+SETTING_RAW_KEYS = ("assistant_glossary", "assistant_glossary_pending", "assistant_feature_gaps", "agent_mcp_settings")
 
 
 def setting_raw_get(db, key: str) -> str:
