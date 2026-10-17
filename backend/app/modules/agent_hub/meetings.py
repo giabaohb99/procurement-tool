@@ -1470,8 +1470,15 @@ def _upload_word(db: Session, row: AgentMeeting, filename: str, data: bytes) -> 
     return str(info.get("webViewLink") or "")
 
 
+#  ai-CR-216 (§5.6): nhãn trạng thái biên bản cho Trợ lý / cổng MCP — mã giữ như cũ, thêm nhãn bên cạnh.
+MEETING_STATUS_LABELS = {MeetingStatus.QUEUED: "Đang chờ xử lý", MeetingStatus.TRANSCRIBING: "Đang chép lời",
+                         MeetingStatus.WRITING: "Đang viết biên bản", MeetingStatus.DONE: "Đã xong",
+                         MeetingStatus.FAILED: "Lỗi", MeetingStatus.WAITING_OK: "Chờ người gửi đồng ý chi phí"}
+
+
 def describe(row: AgentMeeting) -> dict:
     return {"id": row.id, "title": row.title, "status": MeetingStatus(row.status).name.lower(),
+            "status_label": MEETING_STATUS_LABELS.get(MeetingStatus(row.status), ""),
             "minutes": int((row.duration_sec or 0) // 60), "template": template_for_row(row).label,
             "error": row.error or None,
             "info": json.dumps({"note_id": row.note_id}) if row.note_id else None}

@@ -120,7 +120,7 @@ def _run_stats(ctx: ToolContext, args: dict) -> dict:
         "alerts": _alerts(ctx, args),
         "price_note": "Giá USD trên một đơn vị tính; ưu tiên giá hải quan ĐIỀU CHỈNH, thiếu thì giá khai báo. "
                       "wavg = bình quân gia quyền theo lượng; p25–p75 = khoảng giá phổ biến (nửa số dòng ở giữa).",
-        "url": "/customs-prices",
+        "currency": "USD", "url": "/customs-prices",  # ai-CR-216: giá tờ khai là USD / đơn vị
     }
     if compare:
         out["compare"] = compare
@@ -162,7 +162,7 @@ def _run_timing(ctx: ToolContext, args: dict) -> dict:
         "not_known": "Tool chỉ biết GIÁ NHẬP KHẨU của thị trường. KHÔNG biết tồn kho, nhu cầu sản xuất, "
                      "hạn dùng, dòng tiền, giá chào của NCC của công ty — quyết định mua phải xét thêm các thứ đó.",
         "alerts": _alerts(ctx, args),
-        "url": "/customs-prices",
+        "currency": "USD", "url": "/customs-prices",  # ai-CR-216: giá tờ khai là USD / đơn vị
     }
 
 
@@ -180,7 +180,7 @@ def _run_market(ctx: ToolContext, args: dict) -> dict:
             "note": "Gộp nhà nhập khẩu theo MÃ SỐ THUẾ; thị phần tính theo LƯỢNG của đơn vị đang xem. "
                     "Mỗi dòng là một DÒNG HÀNG trên tờ khai, không phải một tờ khai.",
             "alerts": _alerts(ctx, args),
-            "url": "/customs-prices"}
+            "currency": "USD", "url": "/customs-prices"}
 
 
 def _run_legal(ctx: ToolContext, args: dict) -> dict:

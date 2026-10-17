@@ -166,6 +166,8 @@ def _grouped_out(ctx: ToolContext, q, overdue, total, group_by: str) -> dict:
 
     out = {
         "total": int(total[0]),
+        #  ai-CR-216 (§5.6): công nợ ghi bằng VND; `total` = tiền hàng + VAT (sau VAT), `remaining` = còn nợ.
+        "currency": "VND", "money_basis": "sau VAT",
         "summary": {"total": float(total[1]), "paid": float(total[2]),
                     "remaining": float(total[3]), "overdue": float(total[4])},
         "group_by": group_by,
@@ -253,9 +255,12 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
 
     out = {
         "total": int(total[0]),
+        #  ai-CR-216 (§5.6): công nợ ghi bằng VND; `total` = tiền hàng + VAT (sau VAT), `remaining` = còn nợ.
+        "currency": "VND", "money_basis": "sau VAT",
         "summary": {"total": float(total[1]), "paid": float(total[2]),
                     "remaining": float(total[3]), "overdue": float(total[4])},
         "items": [_payable_out(p, inv_dates.get(p.id, "")) for p in rows],
+        "has_more": int(total[0]) > len(rows),
     }
     if total[0] > limit:
         out["note"] = (f"Chỉ liệt kê {limit}/{total[0]} khoản tới hạn sớm nhất — summary vẫn "
@@ -558,6 +563,7 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
 
     out = {
         "code": req.code,
+        "currency": "VND",                   # ai-CR-216 (§5.6): số tiền đề nghị chi bằng VND (cùng số in trên phiếu)
         "status": req.status,
         "status_label": _label("payment_request", req.status),
         "supplier_code": req.supplier_code,

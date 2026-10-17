@@ -39,17 +39,25 @@ INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy 
 #  công ty)… Nay ĐẢO LUẬT: khóa chỉ đọc chỉ thấy tool trong danh sách TRẮNG dưới đây; tool mới mặc định là «ghi» cho tới khi
 #  được khai vào đây (bài kiểm canh: mọi tool khóa đọc thấy phải thuộc READ_TOOLS).
 READ_TOOLS = frozenset({
-    "analytics_query", "approval_flow_lookup", "contract_count_by_status", "contract_list_by_expiry",
+    "approval_flow_lookup", "contract_count_by_status", "contract_list_by_expiry",
     "customs_buy_timing", "customs_legal_check", "customs_market", "customs_price_stats", "dataset_query",
     "document_read", "document_search", "drive_read", "drive_search", "employee_lookup", "erp_read", "glossary_lookup",
     "latest_meeting_report", "list_my_groups", "list_my_meetings", "list_personal_items", "market_price_search",
     "my_approval_tasks", "my_calendar_events", "my_documents", "my_leave_summary", "my_procurement_requests",
     "my_requests_status", "my_tickets", "my_work_tasks", "payable_lookup", "payment_request_read",
     "pending_procurement_approvals", "procurement_doc_read", "product_best_price", "product_purchase_history",
-    "product_search", "purchase_report", "read_group_file", "read_group_messages", "recent_purchase_orders",
+    "product_search", "read_group_file", "read_group_messages", "recent_purchase_orders",
     "recent_purchases", "report_summary", "search_chat_history", "search_docs", "search_notes", "supplier_contracts",
-    "supplier_scorecard", "supplier_search", "suppliers_for_product", "top_suppliers_by_purchase",
+    "supplier_scorecard", "supplier_search", "suppliers_for_product",
 })
+#  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
+#  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,
+#  top_suppliers_by_purchase). Không liệt kê, gọi thì trả lỗi chỉ sang đường mới — với MỌI mức khóa.
+MCP_RETIRED = {
+    "purchase_report": "report_summary với report_key=purchase_report (hoặc dataset_query dataset=purchase)",
+    "analytics_query": "dataset_query với dataset=purchase",
+    "top_suppliers_by_purchase": "dataset_query với dataset=purchase, dimensions=[\"supplier\"], measures=[\"total_amount\", \"count\"]",
+}
 #  ai-CR-208: report_summary mở đủ 13 báo cáo; purchase_report / analytics_query / top_suppliers_by_purchase còn giữ
 #  tạm (Trợ lý web + bot đang dùng), dự kiến gỡ khỏi cổng khi app AI ngoài đã quen report_summary.
 #  Đề xuất sửa phiếu / lập bộ tài khoản / thuật ngữ (propose_*) cố ý KHÔNG mở qua MCP: xác nhận bằng nút trên web /
@@ -59,7 +67,7 @@ HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account
 #  ai-CR-213: tool đọc nhiều dòng — tính vào ngân sách dữ liệu mỗi phút mỗi khóa (`AGENT_MCP_ROW_BUDGET_PER_MIN`).
 ROW_BUDGET_TOOLS = frozenset({"erp_read"})
 #  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
-STRUCTURED_TOOLS = frozenset({"report_summary"})
+STRUCTURED_TOOLS = frozenset({"report_summary", "dataset_query", "erp_read"})
 #  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).
 DOWNLOAD_TTL_SEC = 15 * 60
 
@@ -116,13 +124,18 @@ def is_write_tool(name: str) -> bool:
 def list_tools(db: Session, user, scope: int) -> list[dict]:
     from . import erp
 
-    out = list(SKILL_TOOL_DEFS)       # bao-CR-622: cẩm nang công ty đứng đầu danh sách
+    from . import mcp_settings
+
+    #  ai-CR-216: nhóm tool đang tắt qua MCP (màn G7) thì không liệt kê.
+    out = [d for d in SKILL_TOOL_DEFS if mcp_settings.tool_listed(db, d["name"])]   # bao-CR-622: cẩm nang đứng đầu
     #  ai-CR-207 lỗi 1: trước gọi erp.tool_defs(db) KHÔNG kèm người dùng → chế độ tách dịch vụ gọi cổng B GET /tools với
     #  user_id rỗng → «Tài khoản không tồn tại» → danh sách chỉ còn tool cục bộ (mất purchase_report, payable_lookup…).
     for d in erp.tool_defs(db, user):
-        if d.name in HIDDEN:
+        if d.name in HIDDEN or d.name in MCP_RETIRED:
             continue
         if scope != mcp_keys.SCOPE_WRITE and is_write_tool(d.name):
+            continue
+        if not mcp_settings.tool_listed(db, d.name):
             continue
         out.append({"name": d.name, "description": d.description, "inputSchema": d.parameters})
     if scope == mcp_keys.SCOPE_WRITE:
@@ -136,8 +149,14 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
     """Trả dict kết quả (JSON-hóa được). Lỗi nghiệp vụ → {"error": ...}, không ném."""
     from . import erp
 
+    from . import mcp_settings
+
     if name == "report_issue":
         return _report_issue(db, user, args)
+    if name in MCP_RETIRED:
+        return {"error": f"Công cụ '{name}' không còn mở qua MCP — dùng {MCP_RETIRED[name]}."}
+    if blocked := mcp_settings.tool_blocked(db, name, args):
+        return {"denied": True, "error": blocked}
     if name in SKILL_TOOLS:
         return _skill_tool(db, user, name, args or {})
     if name == "confirm_draft":
@@ -147,7 +166,7 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
         return _confirm_draft(db, user, args)
     if name in HIDDEN or (scope != mcp_keys.SCOPE_WRITE and is_write_tool(name)):
         return {"denied": True, "error": f"Công cụ '{name}' không mở cho khóa này."}
-    return _absolute_downloads(erp.run_tool(db, user, name, args or {}))
+    return _mark_paging(_absolute_downloads(erp.run_tool(db, user, name, args or {})))
 
 
 def _absolute_downloads(result):
@@ -159,15 +178,43 @@ def _absolute_downloads(result):
     if isinstance(f, dict) and f.get("download_once_path"):
         f["download_url"] = telegram.absolute_url(str(f["download_once_path"]))
         f["note"] = "Đường tải dùng được MỘT lần, hết hạn sau 15 phút, không cần đăng nhập."
-    #  ai-CR-208: `link` (màn ERP) của report_summary cũng trả tuyệt đối — §5.6 doc/erp/21.
-    if isinstance(result, dict) and str(result.get("link") or "").startswith("/"):
-        result["link"] = telegram.absolute_url(result["link"])
-    #  ai-CR-211: `url` từng dòng / bản ghi của erp_read cũng tuyệt đối.
-    rows = [result.get("item")] + list(result.get("items") or []) if isinstance(result, dict) else []
-    for row in rows:
-        if isinstance(row, dict) and str(row.get("url") or "").startswith("/"):
-            row["url"] = telegram.absolute_url(row["url"])
+    #  ai-CR-208 / 211 / 216 (§5.6): MỌI đường dẫn màn ERP trong kết quả (khóa `url`, `link`, `*_url`, ở bất kỳ tầng nào —
+    #  đầu phiếu, từng dòng, danh sách lồng) nối thành tuyệt đối, khỏi sửa từng tool.
+    _absolutize(result, telegram.absolute_url)
     return result
+
+
+def _mark_paging(result):
+    """ai-CR-216 (§5.6): tool trả `items` + `total` là TỔNG THẬT mà chưa có `has_more` → gắn `has_more` để ứng dụng AI biết
+    còn dòng chưa trả (tool đã có cờ riêng thì giữ nguyên)."""
+    paged = (isinstance(result, dict) and isinstance(result.get("items"), list) and "has_more" not in result
+             and isinstance(result.get("total"), int))
+    if paged:
+        result["has_more"] = result["total"] > len(result["items"])
+    return result
+
+
+LINK_DEPTH = 6
+#  search_docs trả đường của Trung tâm hướng dẫn (`/articles/{id}`, `/faq`) — không phải màn ERP; nối gốc ERP vào là ra
+#  đường chết, nên giữ nguyên (chưa có biến cấu hình gốc Help Center cho dịch vụ AI).
+HELP_CENTER_ROOTS = frozenset({"articles", "faq"})
+
+
+def _absolutize(node, absolute, depth: int = 0) -> None:
+    if depth > LINK_DEPTH:
+        return
+    if isinstance(node, dict):
+        for k, v in node.items():
+            is_link = k in ("url", "link") or k.endswith("_url")
+            root = v.lstrip("/").split("/", 1)[0].split("?", 1)[0] if isinstance(v, str) else ""
+            if isinstance(v, str) and is_link and v.startswith("/") and not v.startswith("//") \
+                    and root not in HELP_CENTER_ROOTS:
+                node[k] = absolute(v)
+            elif isinstance(v, (dict, list)):
+                _absolutize(v, absolute, depth + 1)
+    elif isinstance(node, list):
+        for v in node:
+            _absolutize(v, absolute, depth + 1)
 
 
 def _skill_tool(db: Session, user, name: str, args: dict) -> dict:
@@ -249,8 +296,12 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         return None
     if method == "initialize":
         trace["client"] = mcp_log.client_from_initialize(params)
+        from . import mcp_settings
+
+        extra = mcp_settings.current(db)["extra_instructions"]          # ai-CR-216: câu dặn thêm của quản trị (G7)
+        instructions = f"{INSTRUCTIONS}\n\n{extra}" if extra else INSTRUCTIONS
         return _ok(rid, {"protocolVersion": PROTOCOL_VERSION, "capabilities": {"tools": {"listChanged": False}},
-                         "serverInfo": SERVER_INFO, "instructions": INSTRUCTIONS})
+                         "serverInfo": SERVER_INFO, "instructions": instructions})
     if method == "ping":
         return _ok(rid, {})
     if method == "tools/list":
@@ -262,7 +313,7 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         if not name:
             trace.update(status=mcp_log.CallStatus.ERROR, reason="Thiếu tên tool")
             return _err(rid, -32602, "Thiếu tên tool")
-        budget = int(settings.AGENT_MCP_ROW_BUDGET_PER_MIN)
+        budget = int(mcp_settings_now(db)["row_budget_per_min"])
         if name in ROW_BUDGET_TOOLS and budget > 0 and mcp_log.rows_spent(key.id) >= budget:
             #  ai-CR-213: ngân sách DỮ LIỆU mỗi phút mỗi khóa — chặn trước khi chạy, không tốn một truy vấn nào.
             result = {"denied": True, "error": (f"Đã đủ {budget} dòng dữ liệu trong phút này cho khóa này. Hãy lọc hẹp lại "
@@ -292,6 +343,13 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         return _ok(rid, out)
     trace.update(status=mcp_log.CallStatus.ERROR, reason=f"Không có phương thức '{method}'")
     return _err(rid, -32601, f"Không có phương thức '{method}'")
+
+
+def mcp_settings_now(db: Session) -> dict:
+    """ai-CR-216: trần đang hiệu lực (màn G7 đè lên biến môi trường AGENT_MCP_*)."""
+    from . import mcp_settings
+
+    return mcp_settings.current(db)
 
 
 router = APIRouter(prefix="/api/mcp", tags=["mcp"])
@@ -341,29 +399,30 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     body, msgs, broken = _parse(await request.body())
     method = _first_method(msgs)
     #  Lớp 1: theo IP — chặn trước cả khi tra khóa (dội khóa sai cũng tốn một truy vấn mỗi lượt).
-    if mcp_log.over_limit(f"ip:{ip}", int(settings.AGENT_MCP_RATE_PER_IP)):
+    limits = mcp_settings_now(db)
+    if mcp_log.over_limit(f"ip:{ip}", int(limits["rate_per_ip"])):
         if mcp_log.may_log(f"ip:{ip}"):
             mcp_log.save(db, [mcp_log.new_row(method=method, status=mcp_log.CallStatus.DENIED,
                                                reason=mcp_log.REASON_RATE_IP, ip=ip)])
-        return _too_many(msgs, int(settings.AGENT_MCP_RATE_PER_IP), "địa chỉ IP")
+        return _too_many(msgs, int(limits["rate_per_ip"]), "địa chỉ IP")
     key, user, (key_id, reason) = _auth(db, authorization)
     if key is None:
-        flood = mcp_log.over_limit(f"bad:{ip}", int(settings.AGENT_MCP_BAD_KEY_PER_IP))
+        flood = mcp_log.over_limit(f"bad:{ip}", int(limits["bad_key_per_ip"]))
         if mcp_log.may_log(f"bad:{ip}"):
             mcp_log.save(db, [mcp_log.new_row(key_id=key_id, method=method, status=mcp_log.CallStatus.DENIED,
                                                reason=mcp_log.REASON_RATE_BAD if flood else reason, ip=ip)])
         if flood:
-            return _too_many(msgs, int(settings.AGENT_MCP_BAD_KEY_PER_IP), "địa chỉ IP gửi khóa sai")
+            return _too_many(msgs, int(limits["bad_key_per_ip"]), "địa chỉ IP gửi khóa sai")
         return Response(status_code=401, content=json.dumps({"error": "Khóa MCP không hợp lệ hoặc đã hết hạn"}),
                         media_type="application/json", headers={"WWW-Authenticate": "Bearer"})
     person = mcp_log.who(db, user)
     #  Lớp 2: theo khóa.
-    if mcp_log.over_limit(f"key:{key.id}", int(settings.AGENT_MCP_RATE_PER_KEY)):
+    if mcp_log.over_limit(f"key:{key.id}", int(limits["rate_per_key"])):
         if mcp_log.may_log(f"key:{key.id}"):
             mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=mcp_log.client_of(db, key.id),
                                                method=method, status=mcp_log.CallStatus.DENIED,
                                                reason=mcp_log.REASON_RATE_KEY, ip=ip)])
-        return _too_many(msgs, int(settings.AGENT_MCP_RATE_PER_KEY), "khóa")
+        return _too_many(msgs, int(limits["rate_per_key"]), "khóa")
     mcp_keys.touch(db, key)
     if broken:
         mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=mcp_log.client_of(db, key.id),

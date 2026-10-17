@@ -185,6 +185,9 @@ TOOL_SUB: dict[str, Sub] = {
     "my_tickets": Sub.LOOKUP_TICKET,
     "search_docs": Sub.LOOKUP_GUIDE, "glossary_lookup": Sub.LOOKUP_GUIDE,
     "analytics_query": Sub.LOOKUP_ANALYTICS,
+    #  ai-CR-208 / 210 / 211: ba tool dữ liệu cho AI (báo cáo gom sẵn, bảng số tổng hợp, đọc danh sách / chi tiết phiếu).
+    "report_summary": Sub.LOOKUP_ANALYTICS, "dataset_query": Sub.LOOKUP_ANALYTICS,
+    "erp_read": Sub.LOOKUP_PURCHASE,
     "my_work_tasks": Sub.LOOKUP_WORK,
     "manage_briefs": Sub.WRITE_BRIEF,
     "draft_purchase_request": Sub.MAKE_PURCHASE_REQUEST, "draft_survey_request": Sub.MAKE_SURVEY_REQUEST,

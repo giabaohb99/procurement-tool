@@ -120,6 +120,28 @@ def _tat_cache_bao_cao(monkeypatch):
     monkeypatch.setattr(settings, "REPORT_CACHE_TTL", 0)
 
 
+@pytest.fixture(autouse=True)
+def _xoa_dem_cau_hinh_mcp():
+    """ai-CR-216: cấu hình cổng MCP (`agent_hub.mcp_settings`) có bộ đệm 60 giây trong tiến trình — không xóa thì cấu hình
+    một bài vừa lưu rò sang bài sau (mỗi bài một DB SQLite riêng)."""
+    from app.modules.agent_hub import mcp_settings
+
+    mcp_settings.clear_cache()
+    yield
+    mcp_settings.clear_cache()
+
+
+@pytest.fixture
+def mcp_all_groups(monkeypatch):
+    """ai-CR-216: bật MỌI nhóm tool qua MCP — cho bài kiểm cũ gọi tool Thu mua / Công nợ… (mặc định theo Q4 các nhóm đó
+    TẮT). Bài kiểm của chính phần bật / tắt nhóm (`test_agent_hub_cau_hinh_mcp_cr216.py`) không dùng fixture này."""
+    from app.modules.agent_hub import mcp_settings
+
+    real = mcp_settings.current
+    monkeypatch.setattr(mcp_settings, "current",
+                        lambda db: {**real(db), "groups": {g.key: True for g in mcp_settings.GROUPS}})
+
+
 # ── Fixture db ──────────────────────────────────────────────────────────────────
 @pytest.fixture(scope="function")
 def db():

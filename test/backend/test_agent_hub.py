@@ -5395,7 +5395,7 @@ def test_khoa_mcp_tao_bam_han_go(db):
         mcp_keys.create(db, lan.id, name="thừa")
 
 
-def test_cong_mcp_json_rpc_liet_ke_theo_muc_va_goi_tool_duoi_quyen_chu_khoa(db, monkeypatch):
+def test_cong_mcp_json_rpc_liet_ke_theo_muc_va_goi_tool_duoi_quyen_chu_khoa(db, monkeypatch, mcp_all_groups):
     from app.modules.agent_hub import mcp, mcp_keys
     from app.modules.assistant import tools as tool_registry
 

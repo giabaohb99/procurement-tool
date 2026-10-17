@@ -66,7 +66,7 @@ def owner(db, seed):
 
 # ── Ghi mọi lượt ──────────────────────────────────────────────────────────────
 
-def test_moi_luot_mot_dong_chup_nguoi_goi_va_ten_ung_dung(db, seed, owner, client, monkeypatch):
+def test_moi_luot_mot_dong_chup_nguoi_goi_va_ten_ung_dung(db, seed, owner, client, monkeypatch, mcp_all_groups):
     from app.modules.assistant import tools as tool_registry
 
     monkeypatch.setattr(tool_registry, "run_tool", lambda db_, u, name, args: {"total": 1, "items": ["x"]})
@@ -93,7 +93,7 @@ def test_ten_ung_dung_nho_qua_khoi_dong_lai_tien_trinh(db, owner, client, monkey
     assert _rows(db)[-1].client_name == "Cursor 0.50"
 
 
-def test_trang_thai_tu_choi_va_loi(db, owner, client, monkeypatch):
+def test_trang_thai_tu_choi_va_loi(db, owner, client, monkeypatch, mcp_all_groups):
     from app.modules.assistant import tools as tool_registry
 
     def fake(db_, u, name, args):

@@ -113,3 +113,15 @@ skill_id, status, status_label, deny_reason, duration_ms, ip}`.
   kèm lời dặn lọc hẹp, nhật ký ghi «Quá ngân sách dữ liệu (dòng / phút)». Mặc định `erp_read` một trang × 50 dòng;
   5 trang × 100 dòng chỉ khi AI xin rõ. Đo trên dev 17/10: một lượt ĐMH xin 5 × 100 (dev có 103 đơn) mất 33 ms phía
   máy chủ, trả 51,6 KB (~500 byte / dòng) — 500 dòng đầy đủ sẽ cỡ 250 KB gửi sang ứng dụng AI.
+
+### 6.4 Cấu hình cổng (G7, ai-CR-216)
+
+| Đường | Quyền | Vào | `data` |
+|---|---|---|---|
+| `GET mcp-settings` | `agent_group.read` | — | `{groups: [{key, label, enabled, default, tools: [str]}], limits: [{key, label, value, default, min, max}], extra_instructions, extra_max_len: 1000, can_write}` |
+| `PUT mcp-settings` | `agent_group.write` | một phần hay toàn bộ: `{groups?: {key: bool}, rate_per_key?, rate_per_ip?, bad_key_per_ip?, row_budget_per_min?, log_retention_days?, extra_instructions?}` | như GET (không có `can_write`); sai kiểu / ngoài dải → 400, không lưu gì |
+
+Mã nhóm: `mine`, `leave`, `directory`, `reports`, `skills` (mặc định bật) · `purchase`, `finance`, `document`, `work`,
+`customs`, `google`, `personal`, `ticket`, `research`, `export` (mặc định tắt). Nhóm tắt: tool không có trong `tools/list`,
+gọi thẳng thì `denied` kèm tên nhóm. `report_issue`, `confirm_draft` luôn mở. Ba tool `purchase_report`,
+`analytics_query`, `top_suppliers_by_purchase` không còn qua MCP (dùng `report_summary` / `dataset_query`).

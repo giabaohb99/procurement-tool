@@ -151,6 +151,9 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
         "misa_code": po.misa_code,
         "pr_code": po.pr_code,          # YCMH nguồn — tra tiếp được bằng chính tool này
         "order_date": po.order_date,
+        #  ai-CR-216 (§5.6): giá / thành tiền dòng ĐMH theo loại tiền của đơn (nhập khẩu không phải VND), thành tiền sau VAT.
+        "currency": po.currency or "VND",
+        "amount_basis": "thành tiền dòng sau VAT; đơn giá trước VAT",
         "status": po.status,
         "status_label": _label("purchase_order", po.status),
         "document_status_label": PO_DOCUMENT_STATUS.label_of(po.document_status,

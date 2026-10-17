@@ -5,6 +5,7 @@ luật hỏi-trước và dấu vết hội thoại; màn này để tra: bot đ
 bao lâu, tốn bao nhiêu. Khóa quyền riêng `agent_task` (PUBLIC ở `SCOPE_FIELDS`: việc của bot
 không thuộc người hay phòng nào).
 """
+import json
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -375,6 +376,39 @@ def ai_overview(user=Depends(get_current_user), db: Session = Depends(get_db)):
     if not user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "read"):
         raise HTTPException(403, f"Không có quyền: read {MCP_LOG_VIEW_ALL_ENTITY}")
     return success(ov.build(db, labels=_user_labels))
+
+
+@router.get("/mcp-settings")
+def get_mcp_settings(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-216 (G7): cấu hình cổng MCP — xem cần `agent_group.read`, sửa cần `agent_group.write` (quản lý bot AI, cấp
+    hệ thống; KHÔNG dùng `ai_skill.write` vì vai trò Biên tập skill phòng ban cũng có quyền đó mà cấu hình này áp cả công ty)."""
+    from app.core.auth import user_has_permission
+
+    from . import mcp_settings
+
+    if not user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "read"):
+        raise HTTPException(403, f"Không có quyền: read {MCP_LOG_VIEW_ALL_ENTITY}")
+    return success({**mcp_settings.describe(db),
+                    "can_write": user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "write")})
+
+
+@router.put("/mcp-settings")
+def put_mcp_settings(body: dict, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Lưu một phần hay toàn bộ: `{groups?: {mã: bool}, rate_per_key?, rate_per_ip?, bad_key_per_ip?, row_budget_per_min?,
+    log_retention_days?, extra_instructions?}`. Sai kiểu / ngoài dải → 400, không lưu gì."""
+    from app.core.auth import user_has_permission
+
+    from . import mcp_settings
+
+    if not user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "write"):
+        raise HTTPException(403, f"Không có quyền: write {MCP_LOG_VIEW_ALL_ENTITY}")
+    if not isinstance(body, dict) or len(json.dumps(body, ensure_ascii=False)) > 20_000:
+        raise HTTPException(400, "Thân yêu cầu phải là một đối tượng JSON gọn (tối đa 20 nghìn ký tự).")
+    try:
+        mcp_settings.save(db, body, user.id)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    return success(mcp_settings.describe(db), "Đã lưu cấu hình cổng MCP.")
 
 
 @router.get("/mcp-keys/pending")

@@ -14,6 +14,7 @@ from datetime import date
 from sqlalchemy import func, or_
 
 from app.core.scoping import apply_scope
+from app.core.status_codes import CONTRACT_STATUS
 from app.modules.contract.model import Contract
 from app.modules.product.model import Product
 from app.modules.purchase_history.model import PurchaseHistory
@@ -47,6 +48,23 @@ def _need(args: dict, key: str) -> str:
     return str(args.get(key) or "").strip()
 
 
+def _page(items: list, has_more: bool) -> dict:
+    """ai-CR-216 (§5.6): `total` = số dòng trả về (giữ nghĩa cũ cho Trợ lý web / bot), `has_more` = còn dòng ngoài
+    `limit` (tool xin thêm một dòng để biết)."""
+    out = {"items": items, "total": len(items), "has_more": bool(has_more)}
+    if has_more:
+        out["more_note"] = "Còn kết quả ngoài giới hạn — thu hẹp từ khóa / khoảng ngày hoặc tăng limit (trần 100)."
+    return out
+
+
+_SUPPLIER_TYPE_LABELS = {"goods": "NCC bán hàng", "transport": "Đơn vị vận chuyển"}
+_EXPIRY_LABELS = {"active": "Còn hạn", "expired": "Hết hạn", "unknown": "Không ghi ngày hết hạn"}
+#  Nhãn đầu phiếu ĐMH — cùng bộ chữ với procurement_doc_read (chép từ frontend-v2), không tra bộ mã được (QĐ-9).
+_PO_STATUS_LABELS = {"draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt", "partial": "Đã nhận một phần",
+                     "received": "Đã nhận đủ", "completed": "Hoàn thành", "rejected": "Bị trả lại",
+                     "cancelled": "Đã từ chối", "processing": "Đang xử lý"}
+
+
 def _expiry(end_date: str, as_of: str) -> str:
     """'active' còn hạn | 'expired' hết hạn | 'unknown' không ghi ngày."""
     if not end_date:
@@ -67,15 +85,15 @@ def product_search(ctx: ToolContext, args: dict) -> dict:
         ctx.db.query(Product)
         .filter(or_(Product.code.like(like), Product.name.like(like),
                     Product.hh_code.like(like), Product.hh_name.like(like)))
-        .limit(limit)
+        .limit(limit + 1)
         .all()
     )
     items = [
         {"code": r.code, "name": r.name, "item_group": r.item_group,
          "unit": r.unit, "hh_code": r.hh_code}
-        for r in rows
+        for r in rows[:limit]
     ]
-    return {"items": items, "total": len(items)}
+    return _page(items, len(rows) > limit)
 
 
 def supplier_search(ctx: ToolContext, args: dict) -> dict:
@@ -90,15 +108,17 @@ def supplier_search(ctx: ToolContext, args: dict) -> dict:
         ctx.db.query(Supplier)
         .filter(or_(Supplier.code.like(like), Supplier.name.like(like),
                     Supplier.tax_code.like(like)))
-        .limit(limit)
+        .limit(limit + 1)
         .all()
     )
     items = [
         {"code": r.code, "name": r.name, "tax_code": r.tax_code,
-         "supplier_type": r.supplier_type, "is_active": bool(r.is_active)}
-        for r in rows
+         "supplier_type": r.supplier_type,
+         "supplier_type_label": _SUPPLIER_TYPE_LABELS.get(r.supplier_type, r.supplier_type),
+         "is_active": bool(r.is_active)}
+        for r in rows[:limit]
     ]
-    return {"items": items, "total": len(items)}
+    return _page(items, len(rows) > limit)
 
 
 # ── Nhóm 1: hợp đồng NCC (T1, T2, T3) ─────────────────────────────────────────────────
@@ -111,7 +131,9 @@ def _contract_row(r: Contract, as_of: str) -> dict:
         "start_date": r.start_date,
         "end_date": r.end_date,
         "status": r.status,
+        "status_label": CONTRACT_STATUS.labels.get(r.status, r.status),
         "expiry": _expiry(r.end_date, as_of),
+        "expiry_label": _EXPIRY_LABELS[_expiry(r.end_date, as_of)],
     }
 
 
@@ -142,10 +164,9 @@ def contract_list_by_expiry(ctx: ToolContext, args: dict) -> dict:
     if supplier_code:
         q = q.filter(Contract.party_code == supplier_code)
     q = _filter_expiry(q, status, as_of)
-    rows = q.order_by(Contract.end_date.asc()).limit(limit).all()
+    rows = q.order_by(Contract.end_date.asc()).limit(limit + 1).all()
     return {
-        "items": [_contract_row(r, as_of) for r in rows],
-        "total": len(rows),
+        **_page([_contract_row(r, as_of) for r in rows[:limit]], len(rows) > limit),
         "as_of_date": as_of,
         "status_filter": status,
     }
@@ -347,11 +368,12 @@ def recent_purchases(ctx: ToolContext, args: dict) -> dict:
     q = _ph_in_range(ctx.db.query(PurchaseHistory), date_from, date_to)
     rows = (
         q.order_by(PurchaseHistory.order_date.desc(), PurchaseHistory.id.desc())
-        .limit(limit)
+        .limit(limit + 1)
         .all()
     )
+    has_more = len(rows) > limit
     items = []
-    for r in rows:
+    for r in rows[:limit]:
         row = {
             "order_date": r.order_date,
             "product_code": r.product_code,
@@ -359,6 +381,8 @@ def recent_purchases(ctx: ToolContext, args: dict) -> dict:
             "qty_order": _num(r.qty_order),
             "price": _num(r.price),
             "amount": _num(r.amount) or _num(r.qty_order) * _num(r.price),
+            #  ai-CR-216 (§5.6): dòng cũ để `amount = 0` thì thành tiền lùi về SL × đơn giá — TRƯỚC VAT; nói rõ từng dòng.
+            "amount_basis": "sau VAT" if _num(r.amount) else "trước VAT (số lượng × đơn giá)",
             "unit": r.unit,
             "po_code": r.po_code,
         }
@@ -366,7 +390,8 @@ def recent_purchases(ctx: ToolContext, args: dict) -> dict:
             row["supplier_code"] = r.supplier_code
             row["supplier_name"] = r.supplier_name
         items.append(row)
-    out = {"items": items, "total": len(items)}
+    out = _page(items, has_more)
+    out["price_basis"] = "trước VAT"
     if not see_supplier:
         out["note"] = "Ẩn NCC vì người hỏi không có quyền xem nhà cung cấp."
     return out
@@ -449,9 +474,11 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
         q = q.filter(PurchaseOrder.company_id.in_(comp_ids or [-1]))
     pos = (
         q.order_by(PurchaseOrder.order_date.desc(), PurchaseOrder.id.desc())
-        .limit(limit)
+        .limit(limit + 1)
         .all()
     )
+    has_more = len(pos) > limit
+    pos = pos[:limit]
     ids = [p.id for p in pos]
     totals: dict[int, float] = {}
     if ids:
@@ -482,7 +509,10 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
             "supplier_code": p.supplier_code,
             "supplier_name": p.supplier_name,
             "status": p.status,
+            "status_label": _PO_STATUS_LABELS.get(p.status, p.status),
             "amount": round(totals.get(p.id, 0.0), 2),
+            #  ai-CR-216 (§5.6): thành tiền dòng ĐMH là NGUYÊN TỆ của đơn, đã gồm VAT — đơn nhập khẩu không phải VND.
+            "currency": (getattr(p, "currency", "") or "VND"),
             #  Không có `url` thì model tự bịa `/purchase/orders/16` cho một đơn id 372 —
             #  system prompt cấm bịa nhưng Gemini vẫn bịa. Cùng khuôn với `_DETAIL_URLS`
             #  ở approval_tool.py.
@@ -491,7 +521,8 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
         if p.supplier_code in sup_ids:
             item["supplier_url"] = f"/production/suppliers/{sup_ids[p.supplier_code]}"
         items.append(item)
-    out = {"items": items, "total": len(items)}
+    out = _page(items, has_more)
+    out["amount_basis"] = "tổng thành tiền các dòng, sau VAT, theo loại tiền của từng đơn (currency)"
     if dept_note:
         out["note"] = dept_note
     return out

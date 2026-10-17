@@ -13450,14 +13450,30 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
-## ai-CR-215 | Phát khóa kết nối AI hộ theo hồ sơ nhân sự, bỏ qua người chưa có tài khoản
+## ai-CR-216 | Quản trị bật tắt từng nhóm công cụ cho ứng dụng AI và chuẩn hóa kết quả các công cụ tra cứu cũ
 - status: dang-lam
+- date: 2026-10-17
+Làm phần máy chủ cho màn Cấu hình của Kho skill AI. Quản trị bật hoặc tắt được từng nhóm công cụ mà ứng dụng AI bên ngoài
+được dùng, chỉnh trần số lượt gọi, ngân sách dữ liệu, số ngày giữ nhật ký và thêm một câu dặn riêng cho AI. Mặc định theo đúng
+quyết định đợt đầu: mở tra cứu của chính mình, nghỉ phép, danh bạ, báo cáo gom sẵn và Kho skill; nhóm công nợ và thanh toán
+cùng các nhóm khác tắt cho tới khi quản trị bật. Nhóm đang tắt thì ứng dụng AI không thấy công cụ, gọi thẳng cũng bị từ chối
+kèm tên nhóm. Ba công cụ báo cáo mua hàng cũ được gỡ khỏi cổng cho ứng dụng AI vì đã có đường mới thay thế; trợ lý trên web
+và bot vẫn giữ. Cùng đợt rà bốn mươi bảy công cụ tra cứu cũ và bổ sung loại tiền (đơn nhập khẩu không còn bị hiểu là tiền
+Việt), ghi rõ tiền trước hay sau VAT, nhãn trạng thái tiếng Việt, cờ báo còn dòng chưa trả, đường dẫn đầy đủ ở mọi chỗ.
+Bài kiểm đều đạt; hồi quy tám mươi tám tệp không có lỗi mới. Chờ Agent 1 dựng lên dev.
+
+Mã nguồn: agent_hub/mcp_settings.py, agent_hub/mcp.py, agent_hub/controller.py, assistant/tools/catalog.py,
+assistant/tools/payable_tool.py, assistant/tools/procurement_doc_tool.py, assistant/tools/customs_tool.py
+Bài kiểm: test_agent_hub_cau_hinh_mcp_cr216.py
+
+## ai-CR-215 | Phát khóa kết nối AI hộ theo hồ sơ nhân sự, bỏ qua người chưa có tài khoản
+- status: xong
 - date: 2026-10-17
 Agent 3 dựng màn Khóa nhân sự thì thấy danh sách nhân sự trên màn không có mã tài khoản, còn trưởng phòng thường không có
 quyền tra danh sách tài khoản. Nay phát khóa hộ chọn thẳng theo hồ sơ nhân sự được: hệ thống tự tìm tài khoản của từng
 người; người chưa có tài khoản ERP hoặc tài khoản đã bị khóa thì được bỏ qua và báo lại lý do; có người ngoài phạm vi thì
 cả lượt bị chặn, không phát khóa nào. Chọn theo tài khoản như cũ vẫn dùng được, chọn trùng một người cũng chỉ phát một khóa.
-Bài kiểm đều đạt. Chờ Agent 1 dựng lên dev.
+Bài kiểm đều đạt. Agent 1 đã dựng lên dev ngày 17/10.
 
 Mã nguồn: agent_gateway/key_admin.py, agent_gateway/controller.py, agent_hub/controller.py, agent_hub/erp.py
 Bài kiểm: test_agent_hub_phat_khoa_ho_cr212.py

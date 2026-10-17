@@ -195,7 +195,10 @@ def purge(db: Session, now: datetime | None = None) -> dict:
     """Gom dòng chi tiết quá hạn vào bảng đếm theo ngày rồi xóa. Chạy lại cũng không đếm trùng (cộng rồi xóa trong cùng
     một giao dịch, theo từng ngày)."""
     now = now or datetime.now()
-    cutoff = datetime.combine((now - timedelta(days=int(settings.AGENT_MCP_LOG_RETENTION_DAYS))).date(), datetime.min.time())
+    from .mcp_settings import current
+
+    keep_days = int(current(db)["log_retention_days"])        # ai-CR-216: màn G7 đè lên AGENT_MCP_LOG_RETENTION_DAYS
+    cutoff = datetime.combine((now - timedelta(days=keep_days)).date(), datetime.min.time())
     first = db.scalar(select(func.min(AgentMcpCall.created_at)).where(AgentMcpCall.created_at < cutoff))
     if first is None:
         return {"days": 0, "deleted": 0}

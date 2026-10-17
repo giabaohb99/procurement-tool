@@ -8,21 +8,21 @@ from app.modules.agent_hub import mcp, mcp_keys
 
 
 # 1) tools/list phải truyền chủ khóa xuống erp.tool_defs (chế độ tách dịch vụ: cổng B cần user_id).
-def test_liet_ke_tool_truyen_chu_khoa(db, monkeypatch):
+def test_liet_ke_tool_truyen_chu_khoa(db, monkeypatch, mcp_all_groups):
     from app.modules.agent_hub import erp
     from app.modules.assistant.provider.base import ToolDef
 
     seen: list = []
     monkeypatch.setattr(erp, "tool_defs", lambda db_, user=None: seen.append(user) or [
-        ToolDef(name="purchase_report", description="x", parameters={}),
+        ToolDef(name="product_search", description="x", parameters={}),
         ToolDef(name="payable_lookup", description="x", parameters={})])
     owner = SimpleNamespace(id=238, is_active=True)
     names = {t["name"] for t in mcp.list_tools(db, owner, mcp_keys.SCOPE_READ)}
-    assert seen == [owner] and {"purchase_report", "payable_lookup", "report_issue"} <= names
+    assert seen == [owner] and {"product_search", "payable_lookup", "report_issue"} <= names
 
 
 # 2) Khóa chỉ đọc: danh sách TRẮNG — mọi tool khóa đọc thấy phải thuộc READ_TOOLS.
-def test_khoa_chi_doc_chi_thay_tool_chi_doc():
+def test_khoa_chi_doc_chi_thay_tool_chi_doc(mcp_all_groups):
     from app.modules.assistant.tools import tool_defs
 
     owner = SimpleNamespace(id=1, is_active=True)
