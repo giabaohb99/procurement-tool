@@ -1,7 +1,7 @@
 """nhat ky luot goi cong MCP + bang dem theo ngay (ai-CR-209, K3 doc/erp/21 §4.3 + §5.4)
 
 Revision ID: mcplog01
-Revises: grp14
+Revises: aiskill01
 
 Hai bảng của DỊCH VỤ AI (tiền tố `tab_agent_`): ở chế độ nhúng nằm chung DB ERP (migration này), ở chế độ tách nằm ở DB
 `agent_hub` (cặp với `migrations_agent/versions/agent0011_nhat_ky_cong_mcp.py`). `status` = mcp_log.CallStatus
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "mcplog01"
-down_revision: Union[str, None] = "grp14"
+down_revision: Union[str, None] = "aiskill01"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
