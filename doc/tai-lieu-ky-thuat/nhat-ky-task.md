@@ -13358,6 +13358,21 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-208 | Một công cụ lấy số liệu tổng hợp của cả mười ba báo cáo cho ứng dụng AI bên ngoài
+- status: dang-lam
+- date: 2026-10-17
+Đại ca chốt ngày 17/10 chuyển việc chính sang cổng nối ERP với ứng dụng AI của người dùng, và đây là việc đầu tiên của đợt
+đó. Trước nay ứng dụng AI chỉ lấy được số liệu báo cáo mua hàng; nay có một công cụ chung mở đủ mười ba báo cáo của phân hệ
+Báo cáo, từ mua hàng, tiến độ báo giá, nghỉ phép, quỹ phép, đặt xe, đóng dấu, văn bản, phê duyệt tới công việc. Công cụ gọi
+đúng hàm tính của từng màn báo cáo nên số ra trùng với số trên web, không có phép tính thứ hai. Quyền giữ như màn web: người
+chưa được giao xem báo cáo đó bị từ chối, người được giao mà thiếu quyền ở phân hệ gốc cũng bị từ chối, kèm câu nói rõ thiếu
+gì. Kết quả có đường dẫn đầy đủ tới màn báo cáo, đơn vị tiền, nhãn từng chỉ số và căn cứ trước hay sau VAT ở chỗ đã soi công
+thức, danh sách nhóm dài thì cắt ở năm mươi và báo còn nữa. Ba công cụ báo cáo mua hàng cũ còn giữ tạm, sẽ gỡ sau.
+Bài kiểm so số với đường tổng hợp thật trên ba báo cáo mua hàng, nghỉ phép, công việc đều khớp. Chờ Agent 1 dựng lên dev.
+
+Mã nguồn: assistant/tools/report_summary_tool.py, assistant/tools/__init__.py, assistant/tool_router.py, agent_hub/mcp.py
+Bài kiểm: test_assistant_report_summary_cr208.py
+
 ## ai-CR-207 | Vá bốn lỗi cổng nối ERP với ứng dụng AI bên ngoài (MCP)
 - status: xong
 - date: 2026-10-16

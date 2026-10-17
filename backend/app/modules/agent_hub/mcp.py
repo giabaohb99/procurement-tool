@@ -43,13 +43,17 @@ READ_TOOLS = frozenset({
     "my_requests_status", "my_tickets", "my_work_tasks", "payable_lookup", "payment_request_read",
     "pending_procurement_approvals", "procurement_doc_read", "product_best_price", "product_purchase_history",
     "product_search", "purchase_report", "read_group_file", "read_group_messages", "recent_purchase_orders",
-    "recent_purchases", "search_chat_history", "search_docs", "search_notes", "supplier_contracts",
+    "recent_purchases", "report_summary", "search_chat_history", "search_docs", "search_notes", "supplier_contracts",
     "supplier_scorecard", "supplier_search", "suppliers_for_product", "top_suppliers_by_purchase",
 })
+#  ai-CR-208: report_summary mở đủ 13 báo cáo; purchase_report / analytics_query / top_suppliers_by_purchase còn giữ
+#  tạm (Trợ lý web + bot đang dùng), dự kiến gỡ khỏi cổng khi app AI ngoài đã quen report_summary.
 #  Đề xuất sửa phiếu / lập bộ tài khoản / thuật ngữ (propose_*) cố ý KHÔNG mở qua MCP: xác nhận bằng nút trên web /
 #  Telegram, cổng này chưa có nút. report_missing_feature trùng việc với report_issue của cổng.
 HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account_setup", "propose_glossary_term",
           "report_missing_feature"}
+#  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
+STRUCTURED_TOOLS = frozenset({"report_summary"})
 #  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).
 DOWNLOAD_TTL_SEC = 15 * 60
 
@@ -122,6 +126,9 @@ def _absolute_downloads(result):
     if isinstance(f, dict) and f.get("download_once_path"):
         f["download_url"] = telegram.absolute_url(str(f["download_once_path"]))
         f["note"] = "Đường tải dùng được MỘT lần, hết hạn sau 15 phút, không cần đăng nhập."
+    #  ai-CR-208: `link` (màn ERP) của report_summary cũng trả tuyệt đối — §5.6 doc/erp/21.
+    if isinstance(result, dict) and str(result.get("link") or "").startswith("/"):
+        result["link"] = telegram.absolute_url(result["link"])
     return result
 
 
@@ -199,7 +206,10 @@ def handle(db: Session, user, key, msg: dict) -> dict | None:
             log.exception("agent_hub mcp: tool %s hỏng", name)
             result = {"error": f"Lỗi khi chạy công cụ: {e}"}
         text = json.dumps(result, ensure_ascii=False, default=str)
-        return _ok(rid, {"content": [{"type": "text", "text": text}], "isError": bool(isinstance(result, dict) and result.get("error"))})
+        out = {"content": [{"type": "text", "text": text}], "isError": bool(isinstance(result, dict) and result.get("error"))}
+        if name in STRUCTURED_TOOLS and isinstance(result, dict) and not out["isError"]:
+            out["structuredContent"] = json.loads(text)     # MCP 2025-06-18: bản có cấu trúc, đi kèm bản chữ
+        return _ok(rid, out)
     return _err(rid, -32601, f"Không có phương thức '{method}'")
 
 

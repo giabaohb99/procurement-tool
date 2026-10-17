@@ -92,6 +92,9 @@ TOOL_DANH_MUC = {
     #  lịch sử giá ở trên (product/supplier.read); giao hàng và hợp đồng của scorecard có apply_scope theo người hỏi.
     "market_price_search": "giá + link sản phẩm trên web công khai, kèm giá mua gần nhất theo mã hàng",
     "supplier_scorecard": "chấm điểm NCC từ lịch sử mua (+ ĐMH / hợp đồng đã gác phạm vi)",
+    #  ai-CR-208 — gọi THẲNG hàm route /summary của 13 báo cáo (apply_scope nằm trong route) sau khi qua
+    #  can_view_report + dependency quyền vai trò của route; ca từ chối ở test_assistant_report_summary_cr208.py.
+    "report_summary": "13 báo cáo gom sẵn của phân hệ Báo cáo",
 }
 
 #  CỐ Ý không lọc phạm vi — mỗi dòng phải nói được lý do, nếu không thì nó là lỗ hổng
@@ -155,7 +158,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     thuc_te = {d.name for d in T.tool_defs()}
     #  73 = 69 + `market_price_search` + `supplier_scorecard` (ai-CR-173/174, phase 23.4/23.5) + `deep_research`
     #  (ai-CR-178, phase 23.1) + `draft_work_plan` (bao-CR-616, phase 24.1 — doc/agent-hub/18).
-    assert len(thuc_te) == 73, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  74 = 73 + `report_summary` (ai-CR-208, K11 doc/erp/21).
+    assert len(thuc_te) == 74, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

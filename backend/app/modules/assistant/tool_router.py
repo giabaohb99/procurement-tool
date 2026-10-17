@@ -84,6 +84,9 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
      r"xuat|excel|\bword\b|bao cao|tai ve|\bfile\b|\btep\b"),
     ("glossary", frozenset({"propose_glossary_term"}), r"thuat ngu|goi la|nghia la|viet tat"),
     ("analytics", frozenset({"analytics_query"}), r"thong ke|tong hop|bao nhieu|\btop\b|so sanh|xu huong"),
+    #  ai-CR-208: 13 báo cáo gom sẵn của phân hệ Báo cáo (mua hàng, nghỉ phép, đặt xe, công việc…).
+    ("report", frozenset({"report_summary"}),
+     r"bao cao|thong ke|tong hop|so lieu|ky truoc|thang nay|quy nay|nam nay|bien dong|tinh hinh"),
 )
 _COMPILED = tuple((name, tools, re.compile(pattern)) for name, tools, pattern in GROUPS)
 ALL_GROUPED = frozenset().union(CORE, *(tools for _n, tools, _p in GROUPS))
