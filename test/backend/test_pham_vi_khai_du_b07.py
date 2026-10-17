@@ -190,9 +190,11 @@ def test_du_55_entity():
     74 → 75 ngày 08/10/2026 (ai-CR-123): quản lý nhóm chat của bot (`agent_group`) — PUBLIC vì nhóm chat không thuộc
     pháp nhân / phòng nào (người thường lọc theo thành viên ở `groups.can_read`); nằm trong `_SYS_ENTITIES`.
     75 → 76 cùng ngày (ai-CR-132): nhận tin vận hành của bot (`agent_ops`) — chỉ là cờ nhận bản sao tin, PUBLIC.
+    76 → 77 ngày 17/10/2026 (bao-CR-621): Kho skill AI (`ai_skill`) — scope company / phòng chủ quản / người tạo trên
+    `tab_ai_skill_set`; nằm trong `_SYS_ENTITIES`.
     """
-    assert len(ENTITIES) == 76
-    assert len(SCOPE_FIELDS) == 76
+    assert len(ENTITIES) == 77
+    assert len(SCOPE_FIELDS) == 77
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

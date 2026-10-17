@@ -323,6 +323,8 @@ SCOPE_FIELDS = {
     "agent_group":      PUBLIC,
     #  ai-CR-132: chỉ là cờ «nhận bản sao tin vận hành» — không có dữ liệu để lọc.
     "agent_ops":        PUBLIC,
+    #  bao-CR-621: BỘ skill thuộc pháp nhân + phòng CHỦ QUẢN — trưởng phòng (dept) soạn bộ của phòng mình.
+    "ai_skill":         {"company": "company_id", "dept_id": "owner_department_id", "owner": "created_by"},
 }
 
 

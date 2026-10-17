@@ -170,6 +170,8 @@ export const ENTITIES = [
   'agent_group',
   // Nhận bản sao tin vận hành của bot qua Telegram (ai-CR-132).
   'agent_ops',
+  // Kho skill AI — soạn / xuất bản / gán quyền đọc cẩm nang cho AI riêng của nhân sự (bao-CR-621).
+  'ai_skill',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]
