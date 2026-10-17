@@ -7,7 +7,7 @@ import type { AiKeyInfo, AiKeyItem } from '@/modules/system/api/agent-hub-api'
 import { ProfileAiKeyTab } from './profile-ai-key-tab'
 
 /**
- * Tab «Khóa AI» ở Trang cá nhân (ai-CR-053).
+ * Mục «Khóa model AI» ở Trang cá nhân (ai-CR-053; tên cũ tab «Khóa AI»).
  *
  * Chỗ dễ lủng: khóa thô phải đi qua PUT `/api/agent-hub/ai-key` rồi ô nhập XÓA TRẮNG (không để khóa nằm lại
  * trên màn), màn chỉ hiện 4 ký tự cuối do backend trả, và ô nhập là `password`.
@@ -126,36 +126,6 @@ describe('ProfileAiKeyTab', () => {
   })
 })
 
-describe('ProfileAiKeyTab — khóa MCP (ai-CR-063)', () => {
-  beforeEach(() => {
-    apiGet.mockReset()
-    apiPost.mockReset()
-    apiDelete.mockReset()
-  })
-
-  it('creates an MCP key, shows it once with a ready-to-paste config', async () => {
-    mockKey()
-    apiPost.mockResolvedValue({ id: 3, name: 'Claude', hint: '…abcd', scope: 0, scope_label: 'chỉ đọc', expires_at: null, last_used_at: null, created_at: null, key: 'dego_mcp_xyz' })
-    renderTab()
-    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao: dùng Claude Desktop/ }))
-    await userEvent.type(await screen.findByLabelText(/Tên khóa/), 'Claude')
-    await userEvent.click(screen.getByRole('button', { name: /Tạo khóa MCP/ }))
-    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/api/agent-hub/mcp-keys', { name: 'Claude', scope: 0, days: 90 }))
-    expect(await screen.findByText('dego_mcp_xyz')).toBeInTheDocument()
-    expect(screen.getByText(/"url": "https:\/\/erp.test\/api\/mcp"/)).toBeInTheDocument()
-  })
-
-  it('revokes a key through its id', async () => {
-    mockKey({}, { items: [{ id: 7, name: 'Cursor', hint: '…9999', scope: 1, scope_label: 'được ghi', expires_at: null, last_used_at: null, created_at: null }] })
-    apiDelete.mockResolvedValue(null)
-    renderTab()
-    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao: dùng Claude Desktop/ }))
-    const row = (await screen.findByText('Cursor')).closest('li')!
-    await userEvent.click(row.querySelector('button')!)
-    await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/api/agent-hub/mcp-keys/7'))
-  })
-})
-
 describe('ProfileAiKeyTab — Google cá nhân (ai-CR-064)', () => {
   beforeEach(() => {
     apiGet.mockReset()
@@ -181,14 +151,15 @@ describe('ProfileAiKeyTab — dễ dùng (ai-CR-101)', () => {
     localStorage.clear()
   })
 
-  it('keeps the MCP card collapsed by default and puts the AI key card first', async () => {
+  it('puts the AI key card first and no longer carries the MCP block (moved out in P0 doc 21)', async () => {
     mockKey()
     renderTab()
-    const toggle = await screen.findByRole('button', { name: /Nâng cao: dùng Claude Desktop/ })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('button', { name: /Tạo khóa MCP/ })).not.toBeInTheDocument()
-    const headings = screen.getAllByText(/Khóa AI của bạn|Google của bạn/)
+    const headings = await screen.findAllByText(/Khóa AI của bạn|Google của bạn/)
     expect(headings[0]).toHaveTextContent(/Khóa AI của bạn/)
+    //  Khối MCP đã tách sang mục «Kết nối AI riêng»; còn sót ở đây là người dùng thấy hai chỗ tạo khóa kết nối.
+    expect(screen.queryByText(/Nâng cao: dùng Claude Desktop/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Tạo khóa/ })).not.toBeInTheDocument()
+    expect(apiGet).not.toHaveBeenCalledWith('/api/agent-hub/mcp-keys')
   })
 
   it('reads each key as one sentence and edits model and cap only after pressing Sửa', async () => {

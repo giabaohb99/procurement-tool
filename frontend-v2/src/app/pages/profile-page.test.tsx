@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -9,16 +10,17 @@ import type { EmployeeWorkHistory, EmployeeWorkHistoryListResult } from '@/modul
 import { ProfilePage } from './profile-page'
 
 /**
- * Hai tab chính «Quá trình công tác» / «Quyết định bổ nhiệm» (đại ca chốt
+ * Hai mục «Quá trình công tác» / «Quyết định bổ nhiệm» (đại ca chốt
  * 03/10/2026 — tách từ tab con lồng trong thẻ cuối tab «Thông tin cá nhân»,
- * không ai thấy). Bài kiểm chỉ nhắm đúng phần mới: tab xuất hiện/ẩn theo
- * `employee_id`, mỗi tab hiện đúng khu, không nút ghi.
+ * không ai thấy): mục xuất hiện/ẩn theo `employee_id`, mỗi mục hiện đúng khu,
+ * không nút ghi. Từ P0 doc 21 (17/10/2026) các mục nằm ở thanh bên trái 4 nhóm
+ * thay cho dải tab ngang — bài kiểm đọc thanh bên, không đọc `role=tab`.
  *
  * KHÔNG resolve `/api/auth/me` (giữ `null`, giống `user` rỗng trong store) để
- * tab «Thông tin cá nhân» chỉ dựng khung Skeleton — tránh phải dựng cả chuỗi
+ * mục «Thông tin cá nhân» chỉ dựng khung Skeleton — tránh phải dựng cả chuỗi
  * phụ thuộc của `ProfileInfoCard`/`SignatureCard`/`EmailNotificationCard` khi
- * đó không phải phần đang kiểm. `Tabs` của Radix không mount `TabsContent` ẩn,
- * nên tab «Thông tin cá nhân» không active thì các thẻ đó cũng không dựng.
+ * đó không phải phần đang kiểm. Trang chỉ dựng mục đang mở, nên mục «Thông
+ * tin cá nhân» không mở thì các thẻ đó cũng không dựng.
  */
 
 const state = vi.hoisted(() => ({
@@ -83,6 +85,11 @@ function renderPage(initialPath = '/me') {
   )
 }
 
+/** Nút của các mục trong thanh bên trái (khổ máy tính). */
+function navButtons() {
+  return within(screen.getByRole('navigation', { name: 'Các mục trang cá nhân' })).getAllByRole('button')
+}
+
 beforeEach(() => {
   state.myEmployee = null
   state.workHistory = { items: [], can_edit: false, can_open_files: true }
@@ -90,14 +97,14 @@ beforeEach(() => {
   useAuthStore.setState({ user: null })
 })
 
-describe('ProfilePage — hai tab chính quá trình công tác', () => {
-  it('tài khoản CÓ hồ sơ nhân sự: hai tab chính xuất hiện ngay sau «Thông tin cá nhân»', async () => {
+describe('ProfilePage — hai mục quá trình công tác', () => {
+  it('tài khoản CÓ hồ sơ nhân sự: hai mục xuất hiện ngay sau «Thông tin cá nhân»', async () => {
     state.myEmployee = employee()
 
     renderPage()
 
-    await screen.findByRole('tab', { name: /Quá trình công tác/ })
-    const tabs = screen.getAllByRole('tab').map((t) => t.textContent)
+    await screen.findByRole('button', { name: /Quá trình công tác/ })
+    const tabs = navButtons().map((t) => t.textContent)
     const infoIdx = tabs.findIndex((t) => t?.includes('Thông tin cá nhân'))
     const workIdx = tabs.findIndex((t) => t?.includes('Quá trình công tác'))
     const decisionIdx = tabs.findIndex((t) => t?.includes('Quyết định bổ nhiệm'))
@@ -114,9 +121,9 @@ describe('ProfilePage — hai tab chính quá trình công tác', () => {
 
     await screen.findByText('Nhân viên kinh doanh')
     expect(screen.queryByRole('button', { name: /Thêm dòng/ })).not.toBeInTheDocument()
-    //  Tab «Thông tin cá nhân» không active → không mount, không có khu quá
+    //  Mục «Thông tin cá nhân» không mở → không mount, không có khu quá
     //  trình công tác nào lẫn trong đó (khác bản cũ trước khi tách tab).
-    expect(screen.queryByRole('heading', { name: 'Quá trình công tác' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Quá trình công tác' }).length).toBeGreaterThan(0)
   })
 
   it('tab «Quyết định bổ nhiệm» CHỈ hiện dòng có decision_no, không nút ghi', async () => {
@@ -138,16 +145,16 @@ describe('ProfilePage — hai tab chính quá trình công tác', () => {
     expect(screen.queryByRole('button', { name: /Thêm quyết định/ })).not.toBeInTheDocument()
   })
 
-  it('tài khoản KHÔNG gắn hồ sơ nhân sự (employee_id = 0): ẨN hai tab chính', async () => {
+  it('tài khoản KHÔNG gắn hồ sơ nhân sự (employee_id = 0): ẨN hai mục', async () => {
     state.myEmployee = null
 
     renderPage()
 
     //  Chờ truy vấn `/api/employees/me` giải quyết xong rồi mới khẳng định ẨN —
     //  không thì bài kiểm có thể chạy trước khi `hasEmployeeProfile` cập nhật.
-    await screen.findByRole('tab', { name: 'Thông tin cá nhân' })
-    expect(screen.queryByRole('tab', { name: /Quá trình công tác/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('tab', { name: /Quyết định bổ nhiệm/ })).not.toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Thông tin cá nhân' })
+    expect(screen.queryByRole('button', { name: /Quá trình công tác/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Quyết định bổ nhiệm/ })).not.toBeInTheDocument()
   })
 
   it('tài khoản KHÔNG gắn hồ sơ: mở thẳng ?tab=work-history vẫn không vào được, rơi về Thông tin cá nhân', async () => {
@@ -155,8 +162,44 @@ describe('ProfilePage — hai tab chính quá trình công tác', () => {
 
     renderPage('/me?tab=work-history')
 
-    const infoTab = await screen.findByRole('tab', { name: 'Thông tin cá nhân' })
-    expect(infoTab).toHaveAttribute('aria-selected', 'true')
-    expect(screen.queryByRole('tab', { name: /Quá trình công tác/ })).not.toBeInTheDocument()
+    const infoButton = await screen.findByRole('button', { name: 'Thông tin cá nhân' })
+    expect(infoButton).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByRole('button', { name: /Quá trình công tác/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('ProfilePage — thanh bên 4 nhóm (P0 doc 21)', () => {
+  it('đặt «Kết nối AI riêng» đầu nhóm Trợ lý AI và mở được bằng ?tab=ai-connect', async () => {
+    renderPage('/me?tab=ai-connect')
+
+    const connect = await screen.findByRole('button', { name: 'Kết nối AI riêng' })
+    expect(connect).toHaveAttribute('aria-current', 'page')
+    const labels = navButtons().map((b) => b.textContent)
+    expect(labels.indexOf('Kết nối AI riêng')).toBe(labels.indexOf('Khóa model AI') - 1)
+    expect(screen.getByRole('heading', { level: 2, name: 'Kết nối AI riêng' })).toBeInTheDocument()
+  })
+
+  it('link cũ ?tab=ai-key (tab «Khóa AI») mở mục «Khóa model AI»', async () => {
+    renderPage('/me?tab=ai-key')
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Khóa model AI' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Khóa model AI' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('bấm một mục ở thanh bên thì đổi nội dung và chỉ một mục được đánh dấu đang mở', async () => {
+    renderPage()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Giao diện' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Giao diện' })).toBeInTheDocument()
+    const current = navButtons().filter((b) => b.getAttribute('aria-current') === 'page')
+    expect(current.map((b) => b.textContent)).toEqual(['Giao diện'])
+  })
+
+  it('có ô chọn mục cho điện thoại, ghi đúng mục đang mở', async () => {
+    renderPage('/me?tab=devices')
+
+    const select = await screen.findByRole('combobox', { name: 'Chọn mục trang cá nhân' })
+    expect(select).toHaveTextContent('Thiết bị của tôi')
   })
 })

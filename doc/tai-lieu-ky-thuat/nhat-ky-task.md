@@ -124,6 +124,44 @@ Mã nguồn: `backend/app/modules/ai_skill/` (constants, model, schema, access_s
 `main.py`, `seed.py`, `frontend-v2/src/core/authorization/permission-types.ts`,
 `modules/system/config/permission-groups.ts`, `test/backend/test_ai_skill_kho_k1.py`.
 
+## bao-CR-620 | Trang cá nhân: thanh bên bốn nhóm, đưa Kết nối AI riêng ra chỗ dễ thấy
+- status: xong
+- date: 2026-10-17
+Đại ca gật kế hoạch Kho skill AI qua MCP (doc 21 bản 1.3) và bảo bắt đầu làm; Agent 1 chia cho em phần P0 là sắp xếp
+lại Trang cá nhân. Trước đây trang có 13 tab nằm ngang một hàng, tràn hàng trên màn hẹp, các phần về AI rải rác, còn
+chỗ tạo khóa cho ứng dụng AI riêng (MCP, chuẩn kết nối để Claude, ChatGPT, Cursor đọc dữ liệu ERP) bị giấu trong mục
+Nâng cao cuối tab Khóa AI. Từ 17/10 đại ca chốt đó là đường chính để nhân sự dùng AI với ERP bằng gói AI của chính họ,
+nên phải đưa ra chỗ dễ thấy.
+
+Em đổi trang sang bố cục trang cài đặt có thanh bên trái gồm bốn nhóm, tổng 15 mục: Hồ sơ (Thông tin cá nhân, Quá trình
+công tác, Quyết định bổ nhiệm), Việc của tôi (Việc cần làm, Thông báo, Yêu cầu hỗ trợ, giữ nguyên số đếm), Trợ lý AI của
+tôi (Kết nối AI riêng đứng đầu, rồi Khóa model AI, Liên kết Telegram, Bot nhớ gì về tôi, Bot vừa làm gì) và Bảo mật và
+hiển thị (Đổi mật khẩu, Thiết bị của tôi, Lịch sử đăng nhập, Giao diện). Mục Kết nối AI riêng tách hẳn khỏi tab Khóa AI,
+viết lời dẫn ba bước cho nhân viên văn phòng, tiêu đề không dùng chữ MCP, giữ nguyên cách tạo và gỡ khóa cũ. Tab Khóa AI
+đổi tên Khóa model AI. Mục Đổi mật khẩu dùng lại hộp thoại cũ, nút trong thẻ Tài khoản vẫn giữ để người quen chỗ cũ
+không lạc. Trên điện thoại thanh bên thành một ô chọn mục có chia nhóm ở đầu trang.
+
+Mọi đường dẫn cũ dạng /me?tab=… vẫn mở đúng chỗ: giữ nguyên cả 13 tên tab cũ (link trong thông báo, nút quay lại của
+phiếu hỗ trợ, tin bot), thêm tên mới ai-connect, password và tên gọi khác mcp. Mục bị ẩn với người đang xem (chưa gắn hồ
+sơ nhân sự thì không có Quá trình công tác, Quyết định bổ nhiệm; thiếu quyền xem phiếu hỗ trợ thì không có Yêu cầu hỗ
+trợ) mà mở thẳng bằng link thì rơi về Thông tin cá nhân như bản cũ. Bài kiểm cố phá bằng chuỗi lạ trên thanh địa chỉ bắt
+được một lỗ ngay khi viết: gõ ?tab=__proto__ lọt qua phép kiểm vì bảng tên gọi khác là đối tượng thường, em đổi sang Map.
+Không đổi API, không đổi dữ liệu.
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn từ trước, không cái nào từ tệp vừa sửa); bài kiểm
+hai thư mục Trang cá nhân 103 trên 103 xanh (16 tệp, có 3 tệp mới). Mở trang thật trên trình duyệt bằng tài khoản mẫu
+TESTREQ: khổ máy tính đủ 15 mục trong bốn nhóm, thanh bên đứng yên khi cuộn; khổ điện thoại 375 điểm ảnh ô chọn mục
+chia nhóm chạy đúng; link cũ ?tab=ai-key mở mục Khóa model AI.
+
+Mã nguồn: `frontend-v2/src/app/pages/profile-page.tsx`, `src/app/components/profile/profile-sections.ts` (mới, khai
+mục, nhóm, cách đọc ?tab=), `profile-settings-nav.tsx` (mới, thanh bên và ô chọn điện thoại),
+`profile-ai-connect-section.tsx` (mới, tách từ `profile-ai-key-tab.tsx`), `profile-password-card.tsx` (mới); bài kiểm
+`profile-sections.test.ts`, `profile-ai-connect-section.test.tsx` (mới), `profile-ai-key-tab.test.tsx`,
+`profile-page.test.tsx`.
+Commit: chưa — chờ đại ca gật. Deploy: chưa, xong commit thì Agent 1 dựng dev.
+
+---
+
 ## bao-VPS-20261013 | Hạ tầng: dời dev ERP, dịch vụ AI và bot IDA sang máy chủ AZDIGI mới
 - status: xong
 - date: 2026-10-13
