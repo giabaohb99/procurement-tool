@@ -13450,8 +13450,23 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-214 | Khung demo tự chạy theo chương và kịch bản chín chương giới thiệu Kho skill AI
+- status: xong
+- date: 2026-10-17
+Đại ca thích kiểu trang giới thiệu có demo tự chạy theo từng chương như của CoreSkill. Nay có một khung demo dùng chung cho
+giao diện mới: phía trên là khung hình dựng bằng chính các thành phần giao diện thật với dữ liệu giả (không phải video), có
+con trỏ chuột giả di chuyển, bấm, gõ chữ, hộp thoại nổi trên nền mờ; phía dưới là dải chương đánh số, chương đang chạy có
+vạch tiến độ, bấm chương nào nhảy chương đó, có nút tạm dừng và chạy tiếp, kèm tiêu đề và một câu giải thích. Máy nào bật
+chế độ giảm chuyển động thì mỗi chương hiện thành ảnh tĩnh kèm chữ, không tự chạy. Kèm sẵn kịch bản chín chương giới thiệu Kho
+skill AI, từ chọn phòng ban, tạo bộ skill, soạn skill, gán người đọc, phát khóa, nối AI, hỏi AI một câu nghiệp vụ, xem ai
+dùng gì tới thu hồi khóa. Chưa gắn vào trang nào; Agent 3 sẽ gắn trang giới thiệu khi dựng xong màn Kho skill.
+Ba cổng kiểm tra giao diện đều đạt.
+
+Mã nguồn: frontend-v2/src/shared/ui/chapter-demo/ (chapter-demo.tsx, demo-stage.tsx, demo-cursor.tsx, chapter-timeline.ts,
+use-chapter-player.ts, scripts/ai-skill-intro.tsx)
+
 ## ai-CR-213 | Giảm tải công cụ đọc danh sách cho AI và chuẩn bị dữ liệu cho màn AI của tôi, màn Tổng quan
-- status: dang-lam
+- status: xong
 - date: 2026-10-17
 Đại ca lo công cụ đọc danh sách phiếu cho ứng dụng AI đọc tới năm trang một trăm dòng là nặng máy. Nay mặc định chỉ đọc một
 trang năm mươi dòng, đọc nhiều hơn chỉ khi AI xin rõ, và mỗi khóa chỉ được lấy tối đa ba nghìn dòng mỗi phút; quá thì AI
@@ -13461,7 +13476,8 @@ mỗi dòng. Cùng đợt làm sẵn phần máy chủ cho hai màn Agent 3 sẽ
 nhận (Claude Desktop phải đi qua cầu mcp-remote, Claude Code là một lệnh, Cursor và Gemini CLI là tệp cấu hình; claude.ai
 và ChatGPT nói rõ chưa nhận khóa), kiểm tra một khóa đã nối được chưa, và số liệu màn Tổng quan (lượt gọi bảy ngày so với
 tuần trước, từ chối và lỗi, người đã nối, công cụ và người dùng nhiều nhất, khóa sắp hết hạn, số skill đang dùng).
-Hợp đồng dữ liệu cho giao diện ghi ở doc/agent-hub/06 mục 6. Bài kiểm đều đạt. Chờ Agent 1 dựng lên dev.
+Hợp đồng dữ liệu cho giao diện ghi ở doc/agent-hub/06 mục 6. Bài kiểm đều đạt. Agent 1 đã dựng lên dev ngày 17/10; tên biến
+chứa khóa trong hướng dẫn Claude Desktop đổi thành DEGO_MCP_KEY cho khớp máy đại ca.
 
 Mã nguồn: agent_hub/mcp.py, agent_hub/mcp_log.py, agent_hub/mcp_setup.py, agent_hub/ai_overview.py, agent_hub/controller.py,
 agent_hub/erp.py, agent_gateway/key_admin.py, agent_gateway/controller.py, assistant/tools/erp_read_tool.py, core/config.py
