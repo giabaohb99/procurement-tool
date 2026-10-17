@@ -2,7 +2,7 @@
 
 Mỗi ứng dụng một khuôn riêng, viết ĐÚNG cách ứng dụng đó nhận:
 - Claude Desktop KHÔNG nhận `url` + `headers` trong `claude_desktop_config.json` (chỉ chạy lệnh cục bộ) → dùng cầu
-  `npx -y mcp-remote <url> --header Authorization:${DEGO_MCP_AUTH}`, khóa để trong `env` (khoảng trắng trong `args`
+  `npx -y mcp-remote <url> --header Authorization:${DEGO_MCP_KEY}`, khóa để trong `env` (khoảng trắng trong `args`
   làm hỏng lệnh trên Windows, nên `Bearer …` nằm ở biến môi trường). Cần Node.js 18+.
 - Claude Code: lệnh `claude mcp add --transport http … --header`.
 - Cursor: `~/.cursor/mcp.json` với `url` + `headers`. Gemini CLI: `~/.gemini/settings.json` với `httpUrl` + `headers`.
@@ -40,8 +40,8 @@ def build(client: str) -> dict | None:
                 "requires": ["Node.js 18 trở lên (nodejs.org, bản LTS)"],
                 "snippet": _json({"mcpServers": {SERVER_NAME: {
                     "command": "npx",
-                    "args": ["-y", "mcp-remote", url, "--header", "Authorization:${DEGO_MCP_AUTH}"],
-                    "env": {"DEGO_MCP_AUTH": bearer}}}}),
+                    "args": ["-y", "mcp-remote", url, "--header", "Authorization:${DEGO_MCP_KEY}"],
+                    "env": {"DEGO_MCP_KEY": bearer}}}}),
                 "steps": ["Cài Node.js bản LTS nếu máy chưa có (mở cửa sổ lệnh gõ `node -v` thấy số 18 trở lên là được).",
                           "Mở Claude Desktop → Settings → Developer → Edit Config.",
                           f"Dán đoạn dưới vào tệp; tệp đã có `mcpServers` thì chỉ thêm khối `{SERVER_NAME}` vào trong.",
@@ -49,7 +49,8 @@ def build(client: str) -> dict | None:
                           "Lưu tệp, THOÁT HẲN Claude Desktop (cả biểu tượng dưới khay) rồi mở lại.",
                           f"Trong ô chat bấm biểu tượng công cụ, thấy `{SERVER_NAME}` là đã nối."],
                 "note": "Claude Desktop không nhận địa chỉ máy chủ trực tiếp trong tệp cấu hình — phải đi qua cầu "
-                        "mcp-remote như đoạn dưới."}
+                        "mcp-remote như đoạn dưới. Đã đặt biến DEGO_MCP_KEY cho cả máy (Windows: setx DEGO_MCP_KEY "
+                        "\"Bearer <khóa>\") thì bỏ được khối env."}
     if client == "claude_code":
         return {"client": client, "label": "Claude Code", "supported": True, "format": "shell",
                 "snippet": f'claude mcp add --transport http --scope user {SERVER_NAME} {url} '

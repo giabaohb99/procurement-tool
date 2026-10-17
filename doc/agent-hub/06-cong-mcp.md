@@ -10,13 +10,20 @@ gắn khóa của mình; hệ thống chỉ cung cấp **công cụ** qua một 
 
 1. ERP → Trang cá nhân → tab **Khóa AI** → khối **Kết nối MCP** → đặt tên, chọn mức, **Tạo khóa MCP**.
 2. Khóa hiện **đúng một lần** (`dego_mcp_…`), kèm đoạn cấu hình sẵn. Dán vào ứng dụng:
-   - **Claude Desktop**: `claude_desktop_config.json` → `mcpServers`:
+   - **Claude Desktop** (đính chính 17/10, ai-CR-213): Claude Desktop KHÔNG nhận `url` + `headers` trong
+     `claude_desktop_config.json` — phải đi cầu `mcp-remote` (cần Node.js 18+). Settings → Developer → Edit Config:
      ```json
-     {"mcpServers": {"dego-erp": {"url": "https://deverp.degoholding.vn/api/mcp",
-                                  "headers": {"Authorization": "Bearer dego_mcp_…"}}}}
+     {"mcpServers": {"dego-erp": {"command": "npx",
+       "args": ["-y", "mcp-remote", "https://deverp.degoholding.vn/api/mcp", "--header", "Authorization:${DEGO_MCP_KEY}"],
+       "env": {"DEGO_MCP_KEY": "Bearer dego_mcp_…"}}}}
      ```
-   - **Cursor**: Settings → MCP → Add server (URL + header như trên).
-   - Ứng dụng nào nói MCP «Streamable HTTP» đều dùng được; cổng chỉ trả JSON, không cần luồng SSE.
+     Khóa để trong biến `DEGO_MCP_KEY` (khoảng trắng trong `args` làm hỏng lệnh trên Windows). Đã `setx DEGO_MCP_KEY
+     "Bearer dego_mcp_…"` cho cả máy thì bỏ được khối `env`. Lưu xong thoát hẳn Claude Desktop rồi mở lại.
+   - **Claude Code**: `claude mcp add --transport http --scope user dego-erp <url> --header "Authorization: Bearer …"`.
+   - **Cursor**: `~/.cursor/mcp.json` → `{"mcpServers": {"dego-erp": {"url": "<url>", "headers": {"Authorization": "Bearer …"}}}}`.
+   - **Gemini CLI**: `~/.gemini/settings.json` → như Cursor nhưng khóa `httpUrl` thay `url`.
+   - claude.ai (trình duyệt) và ChatGPT: kết nối tùy chỉnh chỉ đăng nhập OAuth, chưa nhận khóa ERP.
+   - Đoạn cấu hình đúng cho từng ứng dụng lấy ở `GET /api/agent-hub/mcp-setup?client=…` (§6.1) — màn AI của tôi dùng đường này.
 3. Hỏi ứng dụng như hỏi Trợ lý: «3 đơn mua hàng gần nhất», «giá atrazine 6 tháng qua», «soạn đơn nghỉ phép thứ 6».
 
 Khóa hết hạn sau 90 ngày (tối đa 365), gỡ được bất cứ lúc nào, mỗi lượt gọi ghi «dùng lần cuối». Tối đa 5 khóa

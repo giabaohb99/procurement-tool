@@ -4,7 +4,7 @@ Tổng quan (K6 doc/erp/21 §6.2 G1 / G8).
 Canh:
   - erp_read mặc định page_size 50; quá ngân sách dòng trong phút → denied + lời dặn lọc hẹp, nhật ký «Quá ngân sách dữ
     liệu», tool KHÔNG chạy; phút sau mở lại;
-  - mcp-setup: Claude Desktop đi cầu `npx -y mcp-remote … --header Authorization:${DEGO_MCP_AUTH}` (không url / headers
+  - mcp-setup: Claude Desktop đi cầu `npx -y mcp-remote … --header Authorization:${DEGO_MCP_KEY}` (không url / headers
     thẳng), Claude Code là lệnh `claude mcp add --transport http … --header`, Cursor / Gemini CLI đúng khóa tệp; claude.ai /
     ChatGPT nói rõ chưa nhận khóa; ứng dụng lạ → 404;
   - last-call: chỉ chủ khóa; `connected` chỉ khi có lượt thành công;
@@ -91,8 +91,8 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     desk = _setup("claude_desktop")
     server = json.loads(desk["snippet"])["mcpServers"]["dego-erp"]
     assert server["command"] == "npx" and server["args"] == ["-y", "mcp-remote", url, "--header",
-                                                             "Authorization:${DEGO_MCP_AUTH}"]
-    assert server["env"] == {"DEGO_MCP_AUTH": f"Bearer {desk['placeholder']}"} and "url" not in server
+                                                             "Authorization:${DEGO_MCP_KEY}"]
+    assert server["env"] == {"DEGO_MCP_KEY": f"Bearer {desk['placeholder']}"} and "url" not in server
     assert "headers" not in server and any("Node.js" in r for r in desk["requires"])
     assert "claude_desktop_config.json" in desk["files"]["windows"]
 
