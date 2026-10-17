@@ -332,6 +332,64 @@ def remove_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session =
 
 
 # ---------------------------------------------------------------------------
+# Nhật ký lượt gọi MCP (ai-CR-209, K3 doc/erp/21 §5.4) — cho màn G1 / G6. Ai cũng xem được nhật ký của CHÍNH MÌNH;
+# xem người khác cần quyền quản lý bot AI. Tạm dùng `agent_group.read` (Agent 1 đề xuất 17/10) — khi khai entity
+# `ai_usage_log` (§4.4) thì chỉ đổi hằng dưới đây.
+# ---------------------------------------------------------------------------
+MCP_LOG_VIEW_ALL_ENTITY = "agent_group"
+
+
+def _mcp_log_subject(db: Session, user, user_id: int | None) -> int | None:
+    """Người được xem: None = mọi người (chỉ người có quyền), còn lại một id. Người thường chỉ xem của mình."""
+    from app.core.auth import user_has_permission
+
+    if user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "read"):
+        return user_id
+    if user_id not in (None, int(user.id)):
+        raise HTTPException(403, "Chỉ xem được nhật ký MCP của chính mình")
+    return int(user.id)
+
+
+@router.get("/mcp-calls")
+def list_mcp_calls(date_from: date | None = None, date_to: date | None = None, user_id: int | None = Query(None, ge=1),
+                   key_id: int | None = Query(None, ge=0), tool: str = Query("", max_length=80),
+                   status: int | None = Query(None, ge=1, le=3), page: int = Query(1, ge=1, le=10_000),
+                   size: int = Query(50, ge=1, le=200), user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import mcp_log
+
+    subject = _mcp_log_subject(db, user, user_id)
+    total, rows = mcp_log.list_calls(db, page=page, size=size, user_id=subject, key_id=key_id, tool=tool.strip(),
+                                     status=status, d_from=date_from, d_to=date_to)
+    names = _user_labels(db, [r.user_id for r in rows])
+    items = [{**mcp_log.serialize(r), "user_label": names.get(r.user_id, "")} for r in rows]
+    return success({"total": total, "page": page, "size": size, "has_more": page * size < total, "items": items,
+                    "statuses": [{"value": int(k), "label": v} for k, v in mcp_log.CALL_STATUS_LABELS.items()]})
+
+
+@router.get("/mcp-calls/daily")
+def mcp_calls_daily(days: int = Query(14, ge=1, le=90), user_id: int | None = Query(None, ge=1),
+                    user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import mcp_log
+
+    subject = _mcp_log_subject(db, user, user_id)
+    return success({"days": days, "items": mcp_log.daily_totals(db, days=days, user_id=subject)})
+
+
+@router.get("/mcp-calls/top")
+def mcp_calls_top(by: str = Query("tool", pattern="^(tool|user)$"), days: int = Query(14, ge=1, le=90),
+                  limit: int = Query(10, ge=1, le=50), user_id: int | None = Query(None, ge=1),
+                  user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import mcp_log
+
+    subject = _mcp_log_subject(db, user, user_id)
+    items = mcp_log.top(db, by=by, days=days, limit=limit, user_id=subject)
+    if by == "user":
+        names = _user_labels(db, [i["key"] for i in items])
+        items = [{**i, "label": names.get(i["key"], "")} for i in items]
+    return success({"by": by, "days": days, "items": items})
+
+
+# ---------------------------------------------------------------------------
 # Google cá nhân (ai-CR-064, M-06) — tự phục vụ. Token chỉ nằm trong DB mã hóa, không cửa nào trả ra.
 # ---------------------------------------------------------------------------
 @router.get("/google")

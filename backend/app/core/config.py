@@ -479,6 +479,12 @@ class Settings(BaseSettings):
     # ai-CR-105: số ngày giữ tin các nhóm bot đang ở (vòng dọn hằng ngày). ai-CR-122: đại ca chốt 08/10 giữ 3 tháng,
     # áp chung Telegram + Zalo.
     AGENT_GROUP_RETENTION_DAYS: int = 90
+    # ai-CR-209 (K3 doc/erp/21 §5.4): trần tần suất cổng MCP mỗi phút — theo khóa, theo IP (cả công ty có thể chung một
+    # IP NAT nên rộng hơn), lượt khóa sai theo IP (chặt). 0 = không chặn. Nhật ký giữ chi tiết N ngày rồi gom theo ngày.
+    AGENT_MCP_RATE_PER_KEY: int = 120
+    AGENT_MCP_RATE_PER_IP: int = 600
+    AGENT_MCP_BAD_KEY_PER_IP: int = 30
+    AGENT_MCP_LOG_RETENTION_DAYS: int = 180
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
     AGENT_LOCAL_DOCS_DIR: str = ""

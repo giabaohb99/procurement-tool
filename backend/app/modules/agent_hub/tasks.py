@@ -872,6 +872,19 @@ def group_purge_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.mcp_log_purge")
+def mcp_log_purge_task() -> dict:
+    """ai-CR-209: nhật ký cổng MCP quá AGENT_MCP_LOG_RETENTION_DAYS ngày → gom vào bảng đếm theo ngày rồi xóa. Không gác
+    `_off()`: cổng MCP chạy cả khi bot Telegram tắt."""
+    from . import mcp_log
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **mcp_log.purge(db)}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.runner_watch")
 def runner_watch_task() -> dict:
     """ai-CR-072: mỗi phút xem máy sửa mã nào mất liên lạc / nối lại → báo đại ca một lần mỗi lần đổi."""

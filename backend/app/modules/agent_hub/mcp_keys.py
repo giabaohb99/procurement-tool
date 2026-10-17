@@ -61,6 +61,24 @@ def authenticate(db: Session, raw: str, *, now: datetime | None = None) -> Agent
     return row
 
 
+def why_rejected(db: Session, raw: str, *, now: datetime | None = None) -> tuple[int, str]:
+    """Khóa bị từ chối vì sao — cho nhật ký MCP (ai-CR-209). Trả (id khóa nếu có thật, lý do). Không nói gì cho người gọi:
+    câu trả về ngoài vẫn chung một câu, chỉ nhật ký biết khóa hết hạn hay bị thu hồi."""
+    from .mcp_log import REASON_BAD_KEY, REASON_EXPIRED, REASON_REVOKED
+
+    raw = (raw or "").strip()
+    if not raw.startswith(PREFIX):
+        return 0, REASON_BAD_KEY
+    row = db.scalar(select(AgentMcpKey).where(AgentMcpKey.token_hash == hash_token(raw)))
+    if row is None:
+        return 0, REASON_BAD_KEY
+    if row.revoked_at is not None:
+        return int(row.id), REASON_REVOKED
+    if row.expires_at is not None and row.expires_at <= (now or datetime.now()):
+        return int(row.id), REASON_EXPIRED
+    return int(row.id), REASON_BAD_KEY
+
+
 def touch(db: Session, row: AgentMcpKey) -> None:
     row.last_used_at = datetime.now()
     db.commit()

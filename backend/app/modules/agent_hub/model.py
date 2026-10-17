@@ -2,12 +2,13 @@
 
 Bộ mã số khai ở `constants.py` (R2/QĐ-11). Không cột trạng thái nào lưu chữ tiếng Việt.
 """
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
     JSON,
     BigInteger,
+    Date,
     DateTime,
     Float,
     Index,
@@ -538,6 +539,50 @@ class AgentMcpKey(Base, AuditMixin):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentMcpCall(Base):
+    """Nhật ký từng lượt JSON-RPC vào cổng MCP (ai-CR-209, K3 doc/erp/21 §4.3 + §5.4) — kể cả `initialize`, `tools/list`,
+    lượt khóa sai (`key_id = 0`) và lượt bị chặn vì quá tần suất. Phòng ban / pháp nhân CHỤP lúc gọi (đổi phòng sau đó
+    không đổi dòng cũ). `status` = `mcp_log.CallStatus`. Giữ chi tiết 180 ngày, quá hạn gom vào `AgentMcpCallDaily`."""
+
+    __tablename__ = "tab_agent_mcp_call"
+    __table_args__ = (Index("ix_agent_mcp_call_user_created", "user_id", "created_at"),
+                      Index("ix_agent_mcp_call_key_created", "key_id", "created_at"))
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    key_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    department_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    company_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    client_name: Mapped[str] = mapped_column(String(100), default="")
+    method: Mapped[str] = mapped_column(String(40), default="")
+    tool: Mapped[str] = mapped_column(String(80), default="")
+    skill_id: Mapped[int] = mapped_column(BigInteger, default=0)          # K2 (đọc skill) mới ghi; nay luôn 0
+    status: Mapped[int] = mapped_column(SmallInteger, default=1)
+    deny_reason: Mapped[str] = mapped_column(String(200), default="")
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    ip: Mapped[str] = mapped_column(String(45), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
+
+
+class AgentMcpCallDaily(Base):
+    """Bảng ĐẾM theo ngày của nhật ký MCP — dòng chi tiết quá hạn giữ được gom vào đây rồi xóa (ai-CR-209)."""
+
+    __tablename__ = "tab_agent_mcp_call_daily"
+    __table_args__ = (Index("ux_agent_mcp_call_daily", "day", "user_id", "key_id", "method", "tool", "status",
+                            unique=True),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    key_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    method: Mapped[str] = mapped_column(String(40), default="")
+    tool: Mapped[str] = mapped_column(String(80), default="")
+    status: Mapped[int] = mapped_column(SmallInteger, default=1)
+    calls: Mapped[int] = mapped_column(Integer, default=0)
+    total_ms: Mapped[int] = mapped_column(BigInteger, default=0)
 
 
 class AgentGoogleLink(Base, AuditMixin):

@@ -320,6 +320,15 @@ if settings.agent_is_service:
             "kwargs": {"source": 1, "actor_id": 0},
         }
 
+#  ai-CR-209: dọn nhật ký cổng MCP — chạy ở nơi giữ DB của dịch vụ AI (nhúng hoặc tách), KHÔNG phụ thuộc
+#  AGENT_HUB_ENABLED (cổng MCP sống cả khi bot Telegram tắt). Tên `agent-*` để sống qua dòng lọc của chế độ service.
+if not settings.agent_is_erp:
+    celery_app.conf.beat_schedule["agent-mcp-log-purge"] = {
+        "task": "agent.mcp_log_purge",
+        "schedule": crontab(hour=3, minute=40),
+        "options": {"expires": 3000},
+    }
+
 if settings.agent_is_service:
     celery_app.conf.beat_schedule = {k: v for k, v in celery_app.conf.beat_schedule.items() if k.startswith("agent-")}
     celery_app.conf.imports = ["app.modules.agent_hub.tasks"]

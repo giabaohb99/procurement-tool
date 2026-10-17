@@ -64,6 +64,8 @@ class ErpUser:
     detail: str = ""         # «phòng … · tên đăng nhập …»
     context: str = ""        # chân dung cho system prompt (assistant.service._caller_context)
     names: list[str] = field(default_factory=list)   # tên / mã để tìm người («cho anh Được quyền gộp»)
+    department_id: int = 0   # ai-CR-209: phòng ban / pháp nhân của hồ sơ nhân sự — nhật ký MCP chụp lúc gọi
+    company_id: int = 0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -75,7 +77,8 @@ class ErpUser:
         return cls(id=int(d.get("id") or 0), email=str(d.get("email") or ""), employee_id=int(d.get("employee_id") or 0),
                    is_active=bool(d.get("is_active", True)), label=str(d.get("label") or ""),
                    detail=str(d.get("detail") or ""), context=str(d.get("context") or ""),
-                   names=[str(x) for x in (d.get("names") or [])])
+                   names=[str(x) for x in (d.get("names") or [])], department_id=int(d.get("department_id") or 0),
+                   company_id=int(d.get("company_id") or 0))
 
 
 def is_remote() -> bool:
@@ -122,9 +125,19 @@ class _Local:
         if user is None:
             return None
         label, detail = cls.describe(db, user)
+        dept_id, comp_id = cls.org_of(db, user)
         return ErpUser(id=int(user.id), email=user.email or "", employee_id=int(user.employee_id or 0),
                        is_active=bool(user.is_active), label=label, detail=detail,
-                       context=_caller_context(db, user) or "", names=cls.names_of(db, user))
+                       context=_caller_context(db, user) or "", names=cls.names_of(db, user),
+                       department_id=dept_id, company_id=comp_id)
+
+    @staticmethod
+    def org_of(db, user) -> tuple[int, int]:
+        """(phòng ban, pháp nhân) theo hồ sơ nhân sự của tài khoản; chưa gắn nhân sự thì (0, 0)."""
+        from app.modules.employee.model import Employee
+
+        emp = db.get(Employee, user.employee_id) if getattr(user, "employee_id", 0) else None
+        return (int(getattr(emp, "department_id", 0) or 0), int(getattr(emp, "company_id", 0) or 0)) if emp else (0, 0)
 
     @staticmethod
     def user_by_id(db, user_id: int):

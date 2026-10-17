@@ -13358,8 +13358,26 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
-## ai-CR-208 | Một công cụ lấy số liệu tổng hợp của cả mười ba báo cáo cho ứng dụng AI bên ngoài
+## ai-CR-209 | Ghi nhật ký từng lượt ứng dụng AI bên ngoài gọi vào ERP và chặn gọi dồn dập
 - status: dang-lam
+- date: 2026-10-17
+Việc thứ ba của đợt cổng nối ERP với ứng dụng AI của người dùng. Nay mỗi lượt ứng dụng AI gọi vào đều được ghi một dòng
+nhật ký: ai gọi, thuộc phòng ban và pháp nhân nào lúc đó, dùng ứng dụng gì, gọi công cụ nào, thành công hay bị từ chối hay
+lỗi, mất bao lâu, từ địa chỉ nào. Cả lượt mở kết nối, lượt xin danh sách công cụ và lượt dùng khóa sai, khóa hết hạn, khóa đã
+thu hồi cũng được ghi. Mỗi khóa gọi tối đa 120 lượt một phút, mỗi địa chỉ mạng tối đa 600 lượt, gửi khóa sai quá 30 lần một
+phút thì bị chặn; vượt trần thì ứng dụng nhận câu báo rõ trần và số giây phải chờ. Lượt sai hàng loạt chỉ ghi mười dòng đầu
+mỗi phút để bảng không bị dội đầy. Nhật ký chi tiết giữ 180 ngày, quá hạn thì gom thành số đếm theo ngày rồi xóa, chạy mỗi
+đêm. Có sẵn đường đọc cho màn hình sau này: danh sách có lọc, tổng theo ngày 14 ngày, công cụ và người dùng nhiều nhất; người
+thường chỉ xem của mình, người quản lý bot AI xem được hết.
+Bài kiểm đủ các nhánh đều đạt. Chờ Agent 1 dựng lên dev.
+
+Mã nguồn: agent_hub/mcp_log.py, agent_hub/mcp.py, agent_hub/mcp_keys.py, agent_hub/model.py, agent_hub/controller.py,
+agent_hub/tasks.py, agent_hub/erp.py, core/config.py, core/celery_app.py
+Migration: mcplog01 (DB ERP) + agent0011 (DB dịch vụ AI)
+Bài kiểm: test_agent_hub_nhat_ky_mcp_cr209.py
+
+## ai-CR-208 | Một công cụ lấy số liệu tổng hợp của cả mười ba báo cáo cho ứng dụng AI bên ngoài
+- status: xong
 - date: 2026-10-17
 Đại ca chốt ngày 17/10 chuyển việc chính sang cổng nối ERP với ứng dụng AI của người dùng, và đây là việc đầu tiên của đợt
 đó. Trước nay ứng dụng AI chỉ lấy được số liệu báo cáo mua hàng; nay có một công cụ chung mở đủ mười ba báo cáo của phân hệ
@@ -13368,7 +13386,8 @@ Báo cáo, từ mua hàng, tiến độ báo giá, nghỉ phép, quỹ phép, đ
 chưa được giao xem báo cáo đó bị từ chối, người được giao mà thiếu quyền ở phân hệ gốc cũng bị từ chối, kèm câu nói rõ thiếu
 gì. Kết quả có đường dẫn đầy đủ tới màn báo cáo, đơn vị tiền, nhãn từng chỉ số và căn cứ trước hay sau VAT ở chỗ đã soi công
 thức, danh sách nhóm dài thì cắt ở năm mươi và báo còn nữa. Ba công cụ báo cáo mua hàng cũ còn giữ tạm, sẽ gỡ sau.
-Bài kiểm so số với đường tổng hợp thật trên ba báo cáo mua hàng, nghỉ phép, công việc đều khớp. Chờ Agent 1 dựng lên dev.
+Bài kiểm so số với đường tổng hợp thật trên ba báo cáo mua hàng, nghỉ phép, công việc đều khớp. Agent 1 đã dựng lên dev
+ngày 17/10 và thử đạt: số ra đúng, nhân viên chưa được giao bị từ chối đúng câu.
 
 Mã nguồn: assistant/tools/report_summary_tool.py, assistant/tools/__init__.py, assistant/tool_router.py, agent_hub/mcp.py
 Bài kiểm: test_assistant_report_summary_cr208.py

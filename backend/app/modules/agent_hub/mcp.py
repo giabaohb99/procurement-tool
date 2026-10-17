@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 
 from fastapi import APIRouter, Depends, Header, Request, Response
 from sqlalchemy.orm import Session
@@ -21,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 
-from . import draft_create, mcp_keys
+from . import draft_create, mcp_keys, mcp_log
 
 log = logging.getLogger("app.agent_hub.mcp")
 
@@ -110,10 +111,11 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
         return _report_issue(db, user, args)
     if name == "confirm_draft":
         if scope != mcp_keys.SCOPE_WRITE:
-            return {"error": "Khóa này chỉ đọc; tạo phiếu cần khóa «được ghi» (tạo ở Trang cá nhân → Khóa AI)."}
+            return {"denied": True,
+                    "error": "Khóa này chỉ đọc; tạo phiếu cần khóa «được ghi» (tạo ở Trang cá nhân → Khóa AI)."}
         return _confirm_draft(db, user, args)
     if name in HIDDEN or (scope != mcp_keys.SCOPE_WRITE and is_write_tool(name)):
-        return {"error": f"Công cụ '{name}' không mở cho khóa này."}
+        return {"denied": True, "error": f"Công cụ '{name}' không mở cho khóa này."}
     return _absolute_downloads(erp.run_tool(db, user, name, args or {}))
 
 
@@ -181,14 +183,20 @@ def _ok(rid, result) -> dict:
     return {"jsonrpc": "2.0", "id": rid, "result": result}
 
 
-def handle(db: Session, user, key, msg: dict) -> dict | None:
-    """Một thông điệp JSON-RPC → một trả lời (None với notification)."""
+def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict | None:
+    """Một thông điệp JSON-RPC → một trả lời (None với notification).
+
+    `trace` (ai-CR-209): nơi `handle` ghi lại method / tool / kết quả / tên ứng dụng cho nhật ký MCP — bên gọi đọc sau."""
+    trace = trace if trace is not None else {}
     if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0" or not isinstance(msg.get("method"), str):
+        trace.update(status=mcp_log.CallStatus.ERROR, reason="Không phải yêu cầu JSON-RPC 2.0 hợp lệ")
         return _err(msg.get("id") if isinstance(msg, dict) else None, -32600, "Không phải yêu cầu JSON-RPC 2.0 hợp lệ")
     method, rid, params = msg["method"], msg.get("id"), msg.get("params") or {}
+    trace["method"] = method
     if method.startswith("notifications/"):
         return None
     if method == "initialize":
+        trace["client"] = mcp_log.client_from_initialize(params)
         return _ok(rid, {"protocolVersion": PROTOCOL_VERSION, "capabilities": {"tools": {"listChanged": False}},
                          "serverInfo": SERVER_INFO, "instructions": INSTRUCTIONS})
     if method == "ping":
@@ -198,18 +206,25 @@ def handle(db: Session, user, key, msg: dict) -> dict | None:
     if method == "tools/call":
         name = str(params.get("name") or "")
         args = params.get("arguments") if isinstance(params.get("arguments"), dict) else {}
+        trace["tool"] = name
         if not name:
+            trace.update(status=mcp_log.CallStatus.ERROR, reason="Thiếu tên tool")
             return _err(rid, -32602, "Thiếu tên tool")
         try:
             result = call_tool(db, user, int(key.scope or 0), name, args)
         except Exception as e:  # noqa: BLE001 — lỗi tool không được thành 500 của cổng
             log.exception("agent_hub mcp: tool %s hỏng", name)
             result = {"error": f"Lỗi khi chạy công cụ: {e}"}
+        if isinstance(result, dict) and result.get("denied"):
+            trace.update(status=mcp_log.CallStatus.DENIED, reason=str(result.get("error") or result.get("reason") or ""))
+        elif isinstance(result, dict) and result.get("error"):
+            trace.update(status=mcp_log.CallStatus.ERROR, reason=str(result["error"]))
         text = json.dumps(result, ensure_ascii=False, default=str)
         out = {"content": [{"type": "text", "text": text}], "isError": bool(isinstance(result, dict) and result.get("error"))}
         if name in STRUCTURED_TOOLS and isinstance(result, dict) and not out["isError"]:
             out["structuredContent"] = json.loads(text)     # MCP 2025-06-18: bản có cấu trúc, đi kèm bản chữ
         return _ok(rid, out)
+    trace.update(status=mcp_log.CallStatus.ERROR, reason=f"Không có phương thức '{method}'")
     return _err(rid, -32601, f"Không có phương thức '{method}'")
 
 
@@ -217,31 +232,93 @@ router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
 
 def _auth(db: Session, authorization: str | None):
+    """(khóa, người dùng, (id khóa, lý do từ chối)). Khóa đúng thì phần lý do là (id, "")."""
     from . import erp
 
     raw = authorization.split(" ", 1)[1] if authorization and authorization.lower().startswith("bearer ") else ""
     key = mcp_keys.authenticate(db, raw) if raw else None
     if key is None:
-        return None, None
+        return None, None, (mcp_keys.why_rejected(db, raw) if raw else (0, mcp_log.REASON_BAD_KEY))
     user = erp.user_by_id(db, key.user_id)
     if user is None or not user.is_active:
-        return None, None
-    return key, user
+        return None, None, (int(key.id), mcp_log.REASON_INACTIVE)
+    return key, user, (int(key.id), "")
+
+
+def _parse(raw: bytes) -> tuple[object, list, bool]:
+    """(thân đã parse, danh sách thông điệp, JSON hỏng?)."""
+    try:
+        body = json.loads(raw or b"null")
+    except ValueError:
+        return None, [], True
+    return body, (body if isinstance(body, list) else [body]), False
+
+
+def _first_method(msgs: list) -> str:
+    m = msgs[0] if msgs else None
+    return str(m.get("method") or "")[:40] if isinstance(m, dict) else ""
+
+
+def _too_many(msgs: list, per_min: int, what: str) -> Response:
+    """ai-CR-209: vượt trần tần suất → HTTP 429 + lỗi JSON-RPC nói rõ trần, kèm Retry-After tới đầu phút sau."""
+    m = msgs[0] if msgs else None
+    rid = m.get("id") if isinstance(m, dict) else None
+    wait = max(1, mcp_log.WINDOW_SEC - int(time.time()) % mcp_log.WINDOW_SEC)
+    body = _err(rid, -32000, f"Quá tần suất: tối đa {per_min} lượt / phút cho mỗi {what}. Thử lại sau {wait} giây.")
+    return Response(status_code=429, content=json.dumps(body, ensure_ascii=False), media_type="application/json",
+                    headers={"Retry-After": str(wait)})
 
 
 @router.post("")
 async def mcp_endpoint(request: Request, authorization: str | None = Header(None), db: Session = Depends(get_db)):
-    key, user = _auth(db, authorization)
+    ip = mcp_log.client_ip(request)
+    body, msgs, broken = _parse(await request.body())
+    method = _first_method(msgs)
+    #  Lớp 1: theo IP — chặn trước cả khi tra khóa (dội khóa sai cũng tốn một truy vấn mỗi lượt).
+    if mcp_log.over_limit(f"ip:{ip}", int(settings.AGENT_MCP_RATE_PER_IP)):
+        if mcp_log.may_log(f"ip:{ip}"):
+            mcp_log.save(db, [mcp_log.new_row(method=method, status=mcp_log.CallStatus.DENIED,
+                                               reason=mcp_log.REASON_RATE_IP, ip=ip)])
+        return _too_many(msgs, int(settings.AGENT_MCP_RATE_PER_IP), "địa chỉ IP")
+    key, user, (key_id, reason) = _auth(db, authorization)
     if key is None:
+        flood = mcp_log.over_limit(f"bad:{ip}", int(settings.AGENT_MCP_BAD_KEY_PER_IP))
+        if mcp_log.may_log(f"bad:{ip}"):
+            mcp_log.save(db, [mcp_log.new_row(key_id=key_id, method=method, status=mcp_log.CallStatus.DENIED,
+                                               reason=mcp_log.REASON_RATE_BAD if flood else reason, ip=ip)])
+        if flood:
+            return _too_many(msgs, int(settings.AGENT_MCP_BAD_KEY_PER_IP), "địa chỉ IP gửi khóa sai")
         return Response(status_code=401, content=json.dumps({"error": "Khóa MCP không hợp lệ hoặc đã hết hạn"}),
                         media_type="application/json", headers={"WWW-Authenticate": "Bearer"})
-    try:
-        body = json.loads((await request.body()) or b"null")
-    except ValueError:
-        return Response(status_code=200, content=json.dumps(_err(None, -32700, "JSON hỏng")), media_type="application/json")
+    person = mcp_log.who(db, user)
+    #  Lớp 2: theo khóa.
+    if mcp_log.over_limit(f"key:{key.id}", int(settings.AGENT_MCP_RATE_PER_KEY)):
+        if mcp_log.may_log(f"key:{key.id}"):
+            mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=mcp_log.client_of(db, key.id),
+                                               method=method, status=mcp_log.CallStatus.DENIED,
+                                               reason=mcp_log.REASON_RATE_KEY, ip=ip)])
+        return _too_many(msgs, int(settings.AGENT_MCP_RATE_PER_KEY), "khóa")
     mcp_keys.touch(db, key)
-    msgs = body if isinstance(body, list) else [body]
-    out = [r for r in (handle(db, user, key, m) for m in msgs) if r is not None]
+    if broken:
+        mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=mcp_log.client_of(db, key.id),
+                                           status=mcp_log.CallStatus.ERROR, reason="JSON hỏng", ip=ip)])
+        return Response(status_code=200, content=json.dumps(_err(None, -32700, "JSON hỏng")), media_type="application/json")
+    out, traces = [], []
+    for m in msgs:
+        trace: dict = {}
+        t0 = time.monotonic()
+        r = handle(db, user, key, m, trace)
+        trace["ms"] = int((time.monotonic() - t0) * 1000)
+        traces.append(trace)
+        if r is not None:
+            out.append(r)
+    client = next((t["client"] for t in traces if t.get("client")), "")
+    if client:
+        mcp_log.remember_client(key.id, client)
+    client = client or mcp_log.client_of(db, key.id)
+    mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=client, method=t.get("method", ""),
+                                       tool=t.get("tool", ""), status=t.get("status", mcp_log.CallStatus.OK),
+                                       reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip) for t in traces])
     if not out:
         return Response(status_code=202)
     payload = out if isinstance(body, list) else out[0]
