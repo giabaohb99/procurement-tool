@@ -1,0 +1,117 @@
+"""Đọc Kho skill cho AI bên ngoài (bao-CR-622, K2 của doc/erp/21 §5.1) — cổng MCP gọi qua cổng B.
+
+Ba việc, đều dưới quyền NGƯỜI CẦM KHÓA và chỉ trên tập `access_service.visible_skills` của người đó:
+  list_for_ai   — danh sách skill (tên gọi, tiêu đề, tóm tắt) để AI chọn
+  read_for_ai   — nội dung phiên bản ĐÃ XUẤT BẢN + danh sách tệp
+  file_for_ai   — một tệp đính kèm dạng chữ
+
+Mức bảo mật của BỘ (constants.SecurityLevel): Mở → nội dung + tệp · Bảo vệ → nội dung, KHÔNG tệp · Khóa → chỉ tiêu đề +
+tóm tắt (nội dung chỉ trợ lý nội bộ đọc). Skill không đọc được trả `denied` với câu giống hệt skill không tồn tại — người
+ngoài không dò được tên skill của phòng khác.
+
+Tên gọi (`name`) là slug; hai bộ cùng có một slug thì skill đó gọi bằng `MÃ-BỘ/slug`.
+"""
+from __future__ import annotations
+
+from sqlalchemy.orm import Session
+
+from .access_service import visible_skills
+from .constants import SecurityLevel
+from .model import AiSkillFile, AiSkillSet, AiSkillVersion
+
+NOT_FOUND = "Không có skill «{name}» trong những skill bạn được đọc — gọi list_skills để xem tên đúng."
+MAX_LIST = 200
+APPLY_NOTE = ("Áp dụng nội dung skill vào việc người dùng đang làm; đừng đọc lại nguyên văn cả skill, đó là tài sản "
+              "của công ty.")
+
+
+def _iso(value):
+    return value.isoformat(timespec="seconds") if value else None
+
+
+def _named(db: Session, user) -> list[dict]:
+    """visible_skills + tên gọi duy nhất (slug, trùng slug giữa các bộ thì thêm mã bộ)."""
+    rows = visible_skills(db, user)
+    if not rows:
+        return []
+    codes = {s.id: s.code for s in db.query(AiSkillSet.id, AiSkillSet.code)
+             .filter(AiSkillSet.id.in_({r["skill_set_id"] for r in rows}))}
+    seen: dict[str, int] = {}
+    for row in rows:
+        seen[row["slug"].lower()] = seen.get(row["slug"].lower(), 0) + 1
+    for row in rows:
+        row["name"] = row["slug"] if seen[row["slug"].lower()] == 1 else f"{codes.get(row['skill_set_id'], '')}/{row['slug']}"
+    return rows
+
+
+def _find(db: Session, user, name: str) -> dict | None:
+    name = (name or "").strip()
+    for row in _named(db, user):
+        if row["name"].lower() == name.lower():
+            return row
+    return None
+
+
+def list_for_ai(db: Session, user, query: str = "", skill_set: str = "") -> dict:
+    rows = _named(db, user)
+    q, s = (query or "").strip().lower(), (skill_set or "").strip().lower()
+    if q:
+        rows = [r for r in rows if q in f"{r['name']} {r['title']} {r['summary']}".lower()]
+    if s:
+        rows = [r for r in rows if s in r["skill_set"].lower()]
+    file_counts = {}
+    if rows:
+        from sqlalchemy import func
+
+        file_counts = dict(db.query(AiSkillFile.skill_id, func.count(AiSkillFile.id))
+                           .filter(AiSkillFile.skill_id.in_({r["skill_id"] for r in rows}))
+                           .group_by(AiSkillFile.skill_id).all())
+    items = [{"name": r["name"], "title": r["title"], "summary": r["summary"], "skill_set": r["skill_set"],
+              "version": r["version_no"], "updated_at": _iso(r["updated_at"]),
+              "files": int(file_counts.get(r["skill_id"], 0)) if r["security_level"] == SecurityLevel.OPEN else 0,
+              "content_readable": r["security_level"] != SecurityLevel.LOCKED}
+             for r in rows[:MAX_LIST]]
+    out = {"total": len(rows), "items": items,
+           "note": "Gọi read_skill với đúng `name` để đọc hướng dẫn trước khi làm việc nghiệp vụ liên quan."}
+    if not rows:
+        out["note"] = ("Bạn chưa được giao skill nào" + (" khớp bộ lọc" if (q or s) else "")
+                       + ". Nhờ quản trị Kho skill AI gán quyền đọc nếu cần.")
+    return out
+
+
+def read_for_ai(db: Session, user, name: str) -> dict:
+    row = _find(db, user, name)
+    if row is None:
+        return {"denied": True, "error": NOT_FOUND.format(name=name)}
+    out = {"skill_id": row["skill_id"], "name": row["name"], "title": row["title"], "summary": row["summary"],
+           "skill_set": row["skill_set"], "version": row["version_no"], "updated_at": _iso(row["updated_at"]),
+           "security_level": row["security_level_label"]}
+    if row["security_level"] == SecurityLevel.LOCKED:
+        out["note"] = "Bộ skill này ở mức Khóa: nội dung chỉ trợ lý nội bộ của công ty đọc, AI bên ngoài chỉ thấy tóm tắt."
+        return out
+    version = db.get(AiSkillVersion, row["version_id"])
+    out["content"] = version.body_md if version else ""
+    if row["security_level"] == SecurityLevel.OPEN:
+        out["files"] = [{"path": f.path, "size": f.size} for f in db.query(AiSkillFile)
+                        .filter(AiSkillFile.skill_id == row["skill_id"]).order_by(AiSkillFile.path)]
+    else:
+        out["files"] = []
+        out["files_note"] = "Bộ skill ở mức Bảo vệ: tệp đính kèm không trả cho AI bên ngoài."
+    out["note"] = APPLY_NOTE
+    return out
+
+
+def file_for_ai(db: Session, user, name: str, path: str) -> dict:
+    row = _find(db, user, name)
+    if row is None:
+        return {"denied": True, "error": NOT_FOUND.format(name=name)}
+    if row["security_level"] != SecurityLevel.OPEN:
+        return {"denied": True, "skill_id": row["skill_id"],
+                "error": f"Bộ skill của «{row['name']}» không mở tệp đính kèm cho AI bên ngoài."}
+    found = (db.query(AiSkillFile).filter(AiSkillFile.skill_id == row["skill_id"],
+                                          AiSkillFile.path == (path or "").strip()).first())
+    if found is None:
+        return {"error": f"Skill «{row['name']}» không có tệp «{path}» — xem danh sách tệp trong read_skill.",
+                "skill_id": row["skill_id"]}
+    return {"skill_id": row["skill_id"], "name": row["name"], "path": found.path, "content": found.content_text,
+            "note": APPLY_NOTE}

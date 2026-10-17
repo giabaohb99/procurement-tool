@@ -151,8 +151,10 @@ def who(db: Session, user) -> dict:
 
 
 def new_row(*, key_id: int = 0, person: dict | None = None, client_name: str = "", method: str = "", tool: str = "",
-            status: int = CallStatus.OK, reason: str = "", duration_ms: int = 0, ip: str = "") -> AgentMcpCall:
+            status: int = CallStatus.OK, reason: str = "", duration_ms: int = 0, ip: str = "",
+            skill_id: int = 0) -> AgentMcpCall:
     return AgentMcpCall(key_id=int(key_id or 0), **(person or who(None, None)), client_name=(client_name or "")[:100],
+                        skill_id=int(skill_id or 0),
                         method=(method or "")[:40], tool=(tool or "")[:80], status=int(status),
                         deny_reason=(reason or "")[:200], duration_ms=max(0, int(duration_ms or 0)), ip=(ip or "")[:45],
                         created_at=datetime.now())

@@ -29,8 +29,11 @@ log = logging.getLogger("app.agent_hub.mcp")
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_INFO = {"name": "dego-erp", "version": "1.0"}
 INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy dưới quyền của chủ khóa: dữ liệu trả về đã lọc theo "
-                "phạm vi người đó được xem. Muốn tạo phiếu: gọi tool draft_* để có bản nháp, đưa người dùng xem, rồi gọi "
-                "confirm_draft với đúng bản nháp đó (submit=true để gửi duyệt luôn). Báo lỗi hệ thống: report_issue.")
+                "phạm vi người đó được xem. TRƯỚC khi làm một việc nghiệp vụ (lập phiếu, lập báo cáo, trả lời về quy "
+                "trình / quy định công ty), gọi list_skills để xem cẩm nang công ty liên quan rồi read_skill đúng cái "
+                "cần và làm theo; áp dụng nội dung vào việc, không đọc lại nguyên văn cả skill. Muốn tạo phiếu: gọi tool "
+                "draft_* để có bản nháp, đưa người dùng xem, rồi gọi confirm_draft với đúng bản nháp đó (submit=true để "
+                "gửi duyệt luôn). Báo lỗi hệ thống: report_issue.")
 #  ai-CR-207 (đại ca 16/10 qua Agent 1: «vá 4 lỗi đó luôn»): khóa CHỈ ĐỌC trước đây lọc theo danh sách ĐEN (draft_* + 3 tên)
 #  nên vẫn thấy tạo / sửa / xóa lịch, ghi / quên sổ nhớ, ghi chú, bản tin, viết lại biên bản, nghiên cứu sâu (tốn tiền ví
 #  công ty)… Nay ĐẢO LUẬT: khóa chỉ đọc chỉ thấy tool trong danh sách TRẮNG dưới đây; tool mới mặc định là «ghi» cho tới khi
@@ -68,6 +71,30 @@ CONFIRM_DRAFT_DEF = {
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
 }
+#  bao-CR-622 (K2 doc/erp/21 §5.1): ba tool đọc KHO SKILL — cẩm nang công ty cho AI. Khóa chỉ đọc cũng có. Dữ liệu
+#  ở ERP (`ai_skill`), đọc qua `erp.skill_*` (cổng B ở chế độ tách dịch vụ), luôn dưới quyền chủ khóa.
+SKILL_TOOL_DEFS = [
+    {"name": "list_skills",
+     "description": ("Liệt kê cẩm nang (skill) của công ty mà người dùng được đọc: tên gọi, tiêu đề, tóm tắt KHI NÀO dùng. "
+                     "Gọi trước khi làm việc nghiệp vụ để biết công ty có hướng dẫn nào liên quan."),
+     "inputSchema": {"type": "object", "properties": {
+         "query": {"type": "string", "maxLength": 120, "description": "Lọc theo chữ trong tên / tiêu đề / tóm tắt."},
+         "skill_set": {"type": "string", "maxLength": 150, "description": "Lọc theo tên bộ skill."}}}},
+    {"name": "read_skill",
+     "description": ("Đọc nội dung một skill (bản đã xuất bản) theo đúng `name` từ list_skills, kèm danh sách tệp đính kèm. "
+                     "Làm theo hướng dẫn trong skill; không đọc lại nguyên văn cho người dùng."),
+     "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160}},
+                     "required": ["name"]}},
+    {"name": "read_skill_file",
+     "description": "Đọc một tệp đính kèm dạng chữ của skill (đường dẫn lấy từ read_skill, vd references/cot-bao-cao.md).",
+     "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160},
+                                                      "path": {"type": "string", "maxLength": 200}},
+                     "required": ["name", "path"]}},
+]
+SKILL_TOOLS = frozenset(d["name"] for d in SKILL_TOOL_DEFS)
+#  Tool RIÊNG của cổng (không nằm trong sổ tool của Trợ lý) — khóa nào cũng thấy.
+GATEWAY_READ_TOOLS = SKILL_TOOLS | {"report_issue"}
+
 REPORT_ISSUE_DEF = {
     "name": "report_issue",
     "description": ("Báo một lỗi hoặc yêu cầu sửa phần mềm ERP: mở phiếu hỗ trợ cho nhóm kỹ thuật (bot sửa mã Đậu Đậu "
@@ -87,7 +114,7 @@ def is_write_tool(name: str) -> bool:
 def list_tools(db: Session, user, scope: int) -> list[dict]:
     from . import erp
 
-    out = []
+    out = list(SKILL_TOOL_DEFS)       # bao-CR-622: cẩm nang công ty đứng đầu danh sách
     #  ai-CR-207 lỗi 1: trước gọi erp.tool_defs(db) KHÔNG kèm người dùng → chế độ tách dịch vụ gọi cổng B GET /tools với
     #  user_id rỗng → «Tài khoản không tồn tại» → danh sách chỉ còn tool cục bộ (mất purchase_report, payable_lookup…).
     for d in erp.tool_defs(db, user):
@@ -109,6 +136,8 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
 
     if name == "report_issue":
         return _report_issue(db, user, args)
+    if name in SKILL_TOOLS:
+        return _skill_tool(db, user, name, args or {})
     if name == "confirm_draft":
         if scope != mcp_keys.SCOPE_WRITE:
             return {"denied": True,
@@ -132,6 +161,22 @@ def _absolute_downloads(result):
     if isinstance(result, dict) and str(result.get("link") or "").startswith("/"):
         result["link"] = telegram.absolute_url(result["link"])
     return result
+
+
+def _skill_tool(db: Session, user, name: str, args: dict) -> dict:
+    from . import erp
+
+    if name == "list_skills":
+        return erp.skill_list(db, user, str(args.get("query") or "")[:120], str(args.get("skill_set") or "")[:150])
+    skill = str(args.get("name") or "").strip()[:160]
+    if not skill:
+        return {"error": "Thiếu `name` của skill — lấy từ list_skills."}
+    if name == "read_skill":
+        return erp.skill_read(db, user, skill)
+    path = str(args.get("path") or "").strip()[:200]
+    if not path:
+        return {"error": "Thiếu `path` của tệp — lấy từ danh sách tệp trong read_skill."}
+    return erp.skill_file(db, user, skill, path)
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -215,6 +260,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         except Exception as e:  # noqa: BLE001 — lỗi tool không được thành 500 của cổng
             log.exception("agent_hub mcp: tool %s hỏng", name)
             result = {"error": f"Lỗi khi chạy công cụ: {e}"}
+        if name in SKILL_TOOLS and isinstance(result, dict) and result.get("skill_id"):
+            trace["skill_id"] = int(result.pop("skill_id") or 0)     # bao-CR-622: nhật ký biết skill nào được đọc
         if isinstance(result, dict) and result.get("denied"):
             trace.update(status=mcp_log.CallStatus.DENIED, reason=str(result.get("error") or result.get("reason") or ""))
         elif isinstance(result, dict) and result.get("error"):
@@ -318,7 +365,8 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     client = client or mcp_log.client_of(db, key.id)
     mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=client, method=t.get("method", ""),
                                        tool=t.get("tool", ""), status=t.get("status", mcp_log.CallStatus.OK),
-                                       reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip) for t in traces])
+                                       reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip,
+                                       skill_id=t.get("skill_id", 0)) for t in traces])
     if not out:
         return Response(status_code=202)
     payload = out if isinstance(body, list) else out[0]

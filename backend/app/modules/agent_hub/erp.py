@@ -195,6 +195,25 @@ class _Local:
 
         return run_tool(db, user, name, args or {})
 
+    # --- Kho skill AI (bao-CR-622, K2 doc/erp/21) ---
+    @staticmethod
+    def skill_list(db, user, query: str = "", skill_set: str = "") -> dict:
+        from app.modules.ai_skill import mcp_read
+
+        return mcp_read.list_for_ai(db, user, query, skill_set)
+
+    @staticmethod
+    def skill_read(db, user, name: str) -> dict:
+        from app.modules.ai_skill import mcp_read
+
+        return mcp_read.read_for_ai(db, user, name)
+
+    @staticmethod
+    def skill_file(db, user, name: str, path: str) -> dict:
+        from app.modules.ai_skill import mcp_read
+
+        return mcp_read.file_for_ai(db, user, name, path)
+
     @staticmethod
     def caller_context(db, user) -> str | None:
         from app.modules.assistant.service import _caller_context
@@ -571,6 +590,22 @@ class _Remote:
         except ErpError as e:
             return {"error": f"Không gọi được công cụ ERP: {e}"}
 
+    # --- Kho skill AI (bao-CR-622) — dữ liệu skill nằm ở ERP, chỉ đọc qua cổng B ---
+    def _skill_call(self, path: str, user, params: dict) -> dict:
+        try:
+            return self._call("GET", path, user_id=_uid(user), params=params, timeout=TOOL_TIMEOUT) or {}
+        except ErpError as e:
+            return {"error": f"Không đọc được Kho skill từ ERP: {e}"}
+
+    def skill_list(self, db, user, query: str = "", skill_set: str = "") -> dict:
+        return self._skill_call("/skills", user, {"query": query or "", "skill_set": skill_set or ""})
+
+    def skill_read(self, db, user, name: str) -> dict:
+        return self._skill_call("/skills/read", user, {"name": name or ""})
+
+    def skill_file(self, db, user, name: str, path: str) -> dict:
+        return self._skill_call("/skills/file", user, {"name": name or "", "path": path or ""})
+
     # --- tạo phiếu ---
     def create_draft(self, db, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
         from .draft_create import DraftError
@@ -798,6 +833,18 @@ def run_tool(db, user, name: str, args: dict) -> dict:
 
 def caller_context(db, user) -> str | None:
     return _impl().caller_context(db, user)
+
+
+def skill_list(db, user, query: str = "", skill_set: str = "") -> dict:
+    return _impl().skill_list(db, user, query, skill_set)
+
+
+def skill_read(db, user, name: str) -> dict:
+    return _impl().skill_read(db, user, name)
+
+
+def skill_file(db, user, name: str, path: str) -> dict:
+    return _impl().skill_file(db, user, name, path)
 
 
 def glossary_block(db, texts: list[str]) -> str | None:

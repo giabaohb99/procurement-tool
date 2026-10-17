@@ -26,7 +26,7 @@ def test_khoa_chi_doc_chi_thay_tool_chi_doc():
     from app.modules.assistant.tools import tool_defs
 
     owner = SimpleNamespace(id=1, is_active=True)
-    names = {t["name"] for t in mcp.list_tools(None, owner, mcp_keys.SCOPE_READ)} - {"report_issue"}
+    names = {t["name"] for t in mcp.list_tools(None, owner, mcp_keys.SCOPE_READ)} - mcp.GATEWAY_READ_TOOLS
     assert names and names <= mcp.READ_TOOLS
     for bad in ("create_calendar_event", "update_calendar_event", "delete_calendar_event", "remember_fact", "forget_fact",
                 "save_note", "add_personal_item", "mark_personal_item", "manage_briefs", "rewrite_meeting_minutes",

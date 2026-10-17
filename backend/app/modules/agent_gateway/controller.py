@@ -157,6 +157,24 @@ def tools_run(body: ToolRunIn, user=Depends(gateway_user), db: Session = Depends
         return success({"error": f"Lỗi khi chạy công cụ: {str(e)[:300]}"})
 
 
+# --- Kho skill AI (bao-CR-622, K2 doc/erp/21) — chỉ đọc, dưới quyền người cầm khóa MCP ---------------------------------
+@router.get("/skills")
+def skills_list(query: str = Query("", max_length=120), skill_set: str = Query("", max_length=150),
+                user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_list(db, user, query, skill_set))
+
+
+@router.get("/skills/read")
+def skills_read(name: str = Query(..., max_length=160), user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_read(db, user, name))
+
+
+@router.get("/skills/file")
+def skills_file(name: str = Query(..., max_length=160), path: str = Query(..., max_length=200),
+                user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_file(db, user, name, path))
+
+
 # --- tạo phiếu từ nháp ------------------------------------------------------------------------------------------------
 class DraftCreateIn(BaseModel):
     kind: str = Field(max_length=20)
