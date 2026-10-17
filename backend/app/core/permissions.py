@@ -172,6 +172,10 @@ ENTITIES = [
     # sửa mã, Zalo, tình hình máy, sự cố, thẻ việc AI-xxxx…) qua chat Telegram họ đã nối. Duyệt thao tác VPS và ra lệnh
     # sửa mã vẫn chỉ chat chủ bot.
     "agent_ops",
+    # Kho skill AI (bao-CR-621, doc/erp/21): soạn / xuất bản / gán quyền đọc cẩm nang cho AI riêng của nhân sự
+    # (qua cổng MCP). Phạm vi QUẢN TRỊ theo pháp nhân + phòng chủ quản của BỘ skill; quyền ĐỌC nội dung là bảng
+    # `tab_ai_skill_access` riêng, không đi qua khóa này. `approve` = xuất bản phiên bản.
+    "ai_skill",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -258,6 +262,7 @@ ENTITY_LABELS = {
     "agent_task": "Trợ lý Telegram › Việc của bot",
     "agent_group": "Trợ lý AI › Quản lý nhóm chat của bot",
     "agent_ops": "Trợ lý Telegram › Nhận tin vận hành của bot",
+    "ai_skill": "Kho skill AI",
 }
 
 ACTION_LABELS = {

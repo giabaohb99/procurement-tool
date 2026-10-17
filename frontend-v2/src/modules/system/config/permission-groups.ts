@@ -83,7 +83,7 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
   { id: 'report', title: 'Báo cáo', entities: ['report'] },
   { id: 'support', title: 'Hỗ trợ & Trợ giúp', entities: ['ticket', 'help_article'] },
   //  ai-CR-123: `agent_group` = quản lý nhóm chat của bot (thấy mọi nhóm, phân loại, đăng nhập Zalo công ty).
-  { id: 'assistant', title: 'Trợ lý AI', entities: ['assistant', 'agent_group'] },
+  { id: 'assistant', title: 'Trợ lý AI', entities: ['assistant', 'agent_group', 'ai_skill'] },
   {
     id: 'system',
     title: 'Hệ thống',

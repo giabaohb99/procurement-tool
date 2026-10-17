@@ -96,6 +96,7 @@ from app.modules.product.controller import router as product_router
 from app.modules.purchase_history.controller import router as purchase_history_router
 from app.modules.role.controller import router as role_router
 from app.modules.report_access.controller import router as report_access_router
+from app.modules.ai_skill.controller import router as ai_skill_router
 from app.modules.survey.controller import router as survey_router
 from app.modules.survey.controller import report_router as survey_report_router
 from app.modules.supplier.controller import router as supplier_router
@@ -281,6 +282,7 @@ app.include_router(supplier_router)
 app.include_router(product_router)
 app.include_router(role_router)
 app.include_router(report_access_router)
+app.include_router(ai_skill_router)   # bao-CR-621 Kho skill AI
 app.include_router(user_router)
 app.include_router(audit_router)
 app.include_router(login_session_router)   # bao-CR-395: màn Phiên đăng nhập (P3b)

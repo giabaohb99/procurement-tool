@@ -70,6 +70,36 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-621 | Kho skill AI đợt K1: nền dữ liệu ở ERP — bộ skill, phiên bản, tệp, ai được đọc
+- status: xong
+- date: 2026-10-17
+Đại ca gật thứ tự kế hoạch Kho skill AI qua MCP (doc 21 bản 1.3) và bảo bắt đầu làm. Em nhận đợt K1 là phần nền dữ
+liệu ở ERP, để đợt K2 nối được kho skill vào cổng MCP cho AI riêng của nhân sự đọc.
+
+Em dựng phân hệ backend mới với năm bảng: bộ skill (thuộc pháp nhân và phòng chủ quản, có trạng thái và mức bảo mật Mở,
+Bảo vệ, Khóa), skill (tên máy cho AI gọi, câu tóm tắt để AI chọn, bản nháp đang soạn), phiên bản đã xuất bản (chỉ thêm,
+không sửa bản cũ), tệp đính kèm dạng chữ, và bảng ai được đọc. Bảng ai được đọc theo đúng khuôn quyền xem báo cáo: gán
+cho người, phòng ban (tick kèm phòng con), pháp nhân, vai trò, thêm chức vụ và cấp bậc; cấm thắng cho phép; skill có
+dòng quyền riêng thì quyền riêng thay quyền của bộ; có hạn và thu hồi là đánh dấu. Một hàm duy nhất trả danh sách skill
+một người được đọc, chỉ lấy phiên bản đã xuất bản, đổi phòng là đổi skill ngay mà không phải phát khóa mới.
+
+Quản trị đi qua khóa quyền mới «Kho skill AI» với phạm vi theo pháp nhân và phòng chủ quản của bộ: trưởng phòng chỉ soạn
+được bộ của phòng mình, tạo hay đổi bộ sang phòng khác thì bị chặn. Xuất bản cần quyền duyệt và bắt buộc có tóm tắt cho
+AI. Nhập gói .zip hoặc .skill tìm tệp SKILL.md nông nhất, đọc tên và mô tả ở phần đầu tệp; tải lại gói cùng tên là thay
+toàn bộ tệp đính kèm. Đường dẫn tệp chặn leo thư mục, tệp ẩn và tệp không phải chữ. Thêm hai vai trò mẫu: Quản trị kho
+skill AI và Biên tập skill AI phòng ban. Chưa có giao diện — để đợt K5.
+
+Kiểm trên máy local: 31 bài kiểm mới xanh (kế thừa phòng con, phòng anh em không thấy, cấm thắng, thu hẹp theo skill,
+nháp và lưu trữ không lộ, chức vụ và cấp bậc, hết hạn và thu hồi, đổi phòng, trưởng phòng ngoài phạm vi, phiên bản chỉ
+thêm, tên skill bẩn, đường dẫn tệp xấu, nhập và thay gói); 89 bài canh luật chung xanh (đếm khóa quyền 77, bốn luật
+bất biến phạm vi, đồng bộ danh sách quyền với giao diện, seed và vai trò). Migration chạy lên rồi lùi rồi lên lại được
+trên MySQL local. Giao diện: typecheck 0 lỗi, lint 0 lỗi, 317 bài kiểm quyền và Quản trị xanh.
+
+Mã nguồn: `backend/app/modules/ai_skill/` (constants, model, schema, access_service, service, controller),
+`backend/migrations/versions/aiskill01_kho_skill_ai.py`, `core/permissions.py`, `core/scoping.py`, `core/all_models.py`,
+`main.py`, `seed.py`, `frontend-v2/src/core/authorization/permission-types.ts`,
+`modules/system/config/permission-groups.ts`, `test/backend/test_ai_skill_kho_k1.py`.
+
 ## bao-VPS-20261013 | Hạ tầng: dời dev ERP, dịch vụ AI và bot IDA sang máy chủ AZDIGI mới
 - status: xong
 - date: 2026-10-13
