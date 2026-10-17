@@ -427,7 +427,7 @@ stack đã tách (S-1), chưa có runbook riêng cho prod (doc 14 chỉ viết c
 | `doc/agent-hub/03-so-quyet-dinh.md` | Sổ quyết định đại ca (QĐ-xx) bot tra trước khi hỏi |
 | `doc/agent-hub/04-danh-sach-tinh-nang.md` | Mã tính năng chi tiết (A, N, P, M, K, D, V, O, L, T, R, C) |
 | `doc/agent-hub/05-may-sua-ma.md` | Cài và đăng ký máy sửa mã, tài khoản MySQL `agent_runner`, `authorized_keys` |
-| `doc/agent-hub/06-cong-mcp.md` | Cổng MCP: khóa, hai mức, `confirm_draft`, `report_issue` |
+| `doc/agent-hub/06-cong-mcp.md` | Cổng MCP (bản 2.0, 17/10): khóa + phát hộ, nhóm tool G7, ba tầng dữ liệu, nhật ký + trần, hợp đồng API cho giao diện |
 | `doc/agent-hub/07-quy-trinh-va-so-do.md` | Sơ đồ tổ chức, vai trò, các luồng (mermaid) |
 | `doc/agent-hub/08-van-hanh-vps.md` | Sổ môi trường, câu lệnh VPS, lan can, sao lưu / hoàn tác, `deploy.sh`, tự vận hành |
 | `doc/agent-hub/09-quy-dinh-hoi-va-lam.md` | Bảng «làm luôn / hỏi / không làm», sửa dữ liệu bằng lời |
