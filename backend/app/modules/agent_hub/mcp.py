@@ -37,7 +37,7 @@ INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy 
 #  được khai vào đây (bài kiểm canh: mọi tool khóa đọc thấy phải thuộc READ_TOOLS).
 READ_TOOLS = frozenset({
     "analytics_query", "approval_flow_lookup", "contract_count_by_status", "contract_list_by_expiry",
-    "customs_buy_timing", "customs_legal_check", "customs_market", "customs_price_stats",
+    "customs_buy_timing", "customs_legal_check", "customs_market", "customs_price_stats", "dataset_query",
     "document_read", "document_search", "drive_read", "drive_search", "employee_lookup", "glossary_lookup",
     "latest_meeting_report", "list_my_groups", "list_my_meetings", "list_personal_items", "market_price_search",
     "my_approval_tasks", "my_calendar_events", "my_documents", "my_leave_summary", "my_procurement_requests",

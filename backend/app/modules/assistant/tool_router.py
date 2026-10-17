@@ -43,7 +43,8 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("make_purchase", frozenset({"draft_purchase_request", "draft_survey_request"}),
      r"(len|tao|lap|soan|lam)( giup| giup anh| giup em)? (phieu|ycmh|ycbg|yeu cau|don)|can mua|dat mua|xin mua"
      r"|de xuat mua|phieu bao gia"),
-    ("payable", frozenset({"payable_lookup", "payment_request_read", "draft_payment_request", "analytics_query"}),
+    ("payable", frozenset({"payable_lookup", "payment_request_read", "draft_payment_request", "analytics_query",
+                          "dataset_query"}),
      r"cong no|con no|tien no|no qua han|thanh toan|yctt|de nghi thanh toan|chi tien|hoa don|tra tien|chuyen khoan"
      r"|qua han"),
     ("approval", frozenset({"my_approval_tasks", "my_requests_status", "approval_flow_lookup",
@@ -83,7 +84,7 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("export", frozenset({"export_excel_file", "export_report_file"}),
      r"xuat|excel|\bword\b|bao cao|tai ve|\bfile\b|\btep\b"),
     ("glossary", frozenset({"propose_glossary_term"}), r"thuat ngu|goi la|nghia la|viet tat"),
-    ("analytics", frozenset({"analytics_query"}), r"thong ke|tong hop|bao nhieu|\btop\b|so sanh|xu huong"),
+    ("analytics", frozenset({"analytics_query", "dataset_query"}), r"thong ke|tong hop|bao nhieu|\btop\b|so sanh|xu huong"),
     #  ai-CR-208: 13 báo cáo gom sẵn của phân hệ Báo cáo (mua hàng, nghỉ phép, đặt xe, công việc…).
     ("report", frozenset({"report_summary"}),
      r"bao cao|thong ke|tong hop|so lieu|ky truoc|thang nay|quy nay|nam nay|bien dong|tinh hinh"),

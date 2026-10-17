@@ -1231,6 +1231,11 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "contract_count_by_status": "apply_scope qua `catalog._scoped_contracts`",
     "supplier_contracts": "apply_scope qua `catalog._scoped_contracts`",
     "recent_purchase_orders": "apply_scope(PurchaseOrder, 'purchase_order')",
+    #  ai-CR-208: gọi hàm route /summary (apply_scope trong route) sau can_view_report + dependency quyền của route.
+    "report_summary": "can_view_report + dependency require(...) của route + apply_scope trong hàm route",
+    #  ai-CR-210: bộ payable / payment_request qua apply_scope của entity cùng tên; bộ purchase = bảng lịch sử giá
+    #  (product.read, chiều NCC đòi supplier.read) — khai ở assistant/datasets/catalog.py.
+    "dataset_query": "datasets.base.run: ctx.can(entity) + apply_scope(model, scope_entity) (+ can_view_report)",
     # (a-bis) đọc `tab_purchase_history` — bảng LỊCH SỬ GIÁ, không có khóa phạm vi
     #  ⚠️ Bảng này CÓ `company_id` nhưng `purchase_history` không nằm trong
     #  `ENTITIES`, nên không entity nào để `apply_scope`. Cổng duy nhất là

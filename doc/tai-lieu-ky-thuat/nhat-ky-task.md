@@ -13388,8 +13388,24 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
-## ai-CR-209 | Ghi nhật ký từng lượt ứng dụng AI bên ngoài gọi vào ERP và chặn gọi dồn dập
+## ai-CR-210 | Ứng dụng AI tự lập bảng số mua hàng, công nợ phải trả và yêu cầu thanh toán theo ý người hỏi
 - status: dang-lam
+- date: 2026-10-17
+Đại ca duyệt làm việc thứ hai của đợt dữ liệu cho ứng dụng AI. Trước nay chỉ có thống kê mua hàng làm sẵn vài kiểu; nay có
+một khuôn chung để khai từng bộ dữ liệu một lần: đo được gì, chia theo gì, lọc được gì. Ứng dụng AI chỉ chọn trong danh sách
+đã khai, máy chủ tự cộng trong đúng phạm vi người hỏi được xem rồi trả bảng nhỏ, không có đường nào để AI tự viết câu truy
+vấn. Làm trước ba bộ: mua hàng, công nợ phải trả (còn nợ, đã trả, quá hạn theo nhà cung cấp, pháp nhân, phòng, trạng thái,
+tháng) và yêu cầu thanh toán (số phiếu, số tiền theo nhà cung cấp, phòng, trạng thái, tháng). Mỗi lượt tối đa bốn chỉ số, hai
+chiều chia, năm trăm nhóm; nhiều hơn thì báo còn nữa và gợi ý lọc hẹp. Tiền ghi rõ đơn vị và trước hay sau VAT. Công cụ thống
+kê mua hàng cũ nay chạy trên khuôn mới, số không đổi. Nhân tiện vá một bài kiểm bị sót khai công cụ báo cáo của việc trước.
+Bài kiểm phạm vi từng bộ, trần nhóm và chặn tham số lạ đều đạt. Chờ Agent 1 dựng lên dev.
+
+Mã nguồn: assistant/datasets/ (base.py, catalog.py, lookups.py), assistant/tools/dataset_tool.py, assistant/tools/catalog.py,
+assistant/tools/__init__.py, assistant/tool_router.py, agent_hub/mcp.py
+Bài kiểm: test_assistant_bo_du_lieu_cr210.py
+
+## ai-CR-209 | Ghi nhật ký từng lượt ứng dụng AI bên ngoài gọi vào ERP và chặn gọi dồn dập
+- status: xong
 - date: 2026-10-17
 Việc thứ ba của đợt cổng nối ERP với ứng dụng AI của người dùng. Nay mỗi lượt ứng dụng AI gọi vào đều được ghi một dòng
 nhật ký: ai gọi, thuộc phòng ban và pháp nhân nào lúc đó, dùng ứng dụng gì, gọi công cụ nào, thành công hay bị từ chối hay
@@ -13399,7 +13415,8 @@ phút thì bị chặn; vượt trần thì ứng dụng nhận câu báo rõ tr
 mỗi phút để bảng không bị dội đầy. Nhật ký chi tiết giữ 180 ngày, quá hạn thì gom thành số đếm theo ngày rồi xóa, chạy mỗi
 đêm. Có sẵn đường đọc cho màn hình sau này: danh sách có lọc, tổng theo ngày 14 ngày, công cụ và người dùng nhiều nhất; người
 thường chỉ xem của mình, người quản lý bot AI xem được hết.
-Bài kiểm đủ các nhánh đều đạt. Chờ Agent 1 dựng lên dev.
+Bài kiểm đủ các nhánh đều đạt. Agent 1 đã dựng lên dev ngày 17/10 và thử gọi bằng khóa sai: đủ ba dòng nhật ký có lý do
+và địa chỉ.
 
 Mã nguồn: agent_hub/mcp_log.py, agent_hub/mcp.py, agent_hub/mcp_keys.py, agent_hub/model.py, agent_hub/controller.py,
 agent_hub/tasks.py, agent_hub/erp.py, core/config.py, core/celery_app.py

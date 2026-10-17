@@ -565,41 +565,18 @@ def purchase_report(ctx: ToolContext, args: dict) -> dict:
 
 
 # ── Nhóm 5: thống kê TÙY BIẾN (một công cụ, tham số rộng) ─────────────────────────────
-# "Rộng về câu hỏi, khóa về dữ liệu": chỉ số/chiều/lọc đều nằm trong danh sách khai sẵn dưới
-# đây, model KHÔNG sinh SQL và không chọn được bảng/cột ngoài luồng. Vẫn gác quyền như các tool
-# lịch sử mua (product.read; chia theo NCC thì cần thêm supplier.read).
-_METRICS = {
-    "total_amount": lambda: func.sum(_spend_expr()),
-    # count phải tham chiếu một cột của bảng để suy ra FROM khi dimension=none (query chỉ có
-    # mỗi func.count() thì SQLAlchemy không biết bảng nào -> ra 1 thay vì đếm dòng).
-    "count": lambda: func.count(PurchaseHistory.id),
-    "qty": lambda: func.sum(PurchaseHistory.qty_order),
-    "avg_price": lambda: func.avg(PurchaseHistory.price),
-}
-_METRIC_LABEL = {
-    "total_amount": "Tổng chi tiêu (đã gồm VAT)",
-    "count": "Số dòng mua",
-    "qty": "Tổng số lượng đặt",
-    "avg_price": "Đơn giá trung bình",
-}
-_DIMENSIONS = {
-    "supplier": (PurchaseHistory.supplier_code, PurchaseHistory.supplier_name),
-    "product": (PurchaseHistory.product_code, PurchaseHistory.product_name),
-    "month": (func.substr(PurchaseHistory.order_date, 1, 7), None),
-    "none": (None, None),
-}
-
-
-def _metric_value(metric: str, raw):
-    """count -> số nguyên; còn lại -> float làm tròn 2 số cho JSON."""
-    if metric == "count":
-        return int(raw or 0)
-    return round(_num(raw), 2)
+# ai-CR-210 (K12): nay là LỚP VỎ của bộ dữ liệu `purchase` ở `assistant/datasets/` — phép tính, cổng quyền (product.read;
+# chia theo NCC đòi thêm supplier.read) và danh sách chỉ số / chiều nằm ở khuôn chung. Giữ tên + tham số + hình dạng kết
+# quả cũ cho Trợ lý web / bot đang gọi; tool mới nên dùng `dataset_query`.
+_METRICS = ("total_amount", "count", "qty", "avg_price")
+_DIMENSIONS = ("supplier", "product", "month", "none")
 
 
 def analytics_query(ctx: ToolContext, args: dict) -> dict:
     """Thống kê mua hàng TÙY BIẾN: chọn chỉ số + chiều + khoảng ngày từ danh sách khai sẵn.
     Một công cụ phủ nhiều biến thể câu hỏi mà KHÔNG sinh SQL và vẫn gác quyền người hỏi."""
+    from app.modules.assistant import datasets
+
     if not ctx.can("product"):
         return denied("dữ liệu mua hàng")
     metric = (_need(args, "metric") or "total_amount").lower()
@@ -612,57 +589,25 @@ def analytics_query(ctx: ToolContext, args: dict) -> dict:
     if dimension == "supplier" and not ctx.can("supplier"):
         return denied("dữ liệu theo nhà cung cấp")
 
-    date_from = _need(args, "date_from")
-    date_to = _need(args, "date_to")
-    supplier_code = _need(args, "supplier_code")
-    product_code = _need(args, "product_code")
+    date_from, date_to = _need(args, "date_from"), _need(args, "date_to")
     sort = (_need(args, "sort") or "value_desc").lower()
-    top_n = _clamp(args.get("top_n"), 10, hi=50)
-
-    metric_expr = _METRICS[metric]()
-    dim_key, dim_name = _DIMENSIONS[dimension]
-
-    def _apply_filters(q):
-        q = _ph_in_range(q, date_from, date_to)
-        if supplier_code:
-            q = q.filter(PurchaseHistory.supplier_code == supplier_code)
-        if product_code:
-            q = q.filter(PurchaseHistory.product_code == product_code)
-        return q
-
-    out = {
-        "metric": metric,
-        "metric_label": _METRIC_LABEL[metric],
-        "dimension": dimension,
-        "date_from": date_from or None,
-        "date_to": date_to or None,
-    }
-
-    if dim_key is None:  # không chia chiều -> một con số tổng
-        raw = _apply_filters(ctx.db.query(metric_expr)).scalar()
-        out["value"] = _metric_value(metric, raw)
+    filters = {"date_from": date_from, "date_to": date_to, "supplier_code": _need(args, "supplier_code"),
+               "product_code": _need(args, "product_code")}
+    res = datasets.run(ctx, "purchase", {"measures": [metric], "dimensions": [] if dimension == "none" else [dimension],
+                                         "filters": filters, "sort": sort, "limit": _clamp(args.get("top_n"), 10, hi=50)})
+    if "error" in res:
+        return res
+    ds = datasets.registry()["purchase"]
+    out = {"metric": metric, "metric_label": ds.measure(metric).label + (" (đã gồm VAT)" if metric == "total_amount" else ""),
+           "dimension": dimension, "date_from": date_from or None, "date_to": date_to or None}
+    if dimension == "none":
+        out["value"] = res["totals"][metric]
         return out
-
-    cols = [dim_key, metric_expr] if dim_name is None else [dim_key, func.max(dim_name), metric_expr]
-    q = _apply_filters(ctx.db.query(*cols)).group_by(dim_key)
-    if sort == "value_asc":
-        q = q.order_by(metric_expr.asc())
-    elif sort == "dimension":
-        q = q.order_by(dim_key.asc())
-    else:
-        q = q.order_by(metric_expr.desc())
-    rows = q.limit(top_n).all()
-
-    items = []
-    for r in rows:
-        if dim_name is None:
-            key, name, value = r[0], None, r[1]
-        else:
-            key, name, value = r[0], r[1], r[2]
-        items.append({"group": key, "group_name": name, "value": _metric_value(metric, value)})
-    out["items"] = items
-    out["count"] = len(items)
-    out["sort"] = sort
+    #  Chiều tháng không có cột tên → group_name None như bản cũ.
+    out["items"] = [{"group": r[dimension], "group_name": r[f"{dimension}_label"] if dimension != "month" else None,
+                     "value": r[metric]} for r in res["rows"]]
+    out["count"] = len(out["items"])
+    out["sort"] = res["sort"]
     return out
 
 
