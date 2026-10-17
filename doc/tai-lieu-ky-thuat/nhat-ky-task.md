@@ -70,6 +70,30 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-622 | Kho skill AI đợt K2: AI riêng của nhân sự đọc được cẩm nang công ty qua cổng MCP
+- status: xong
+- date: 2026-10-17
+Đại ca bảo Agent 4 làm đợt K12 trước, nên em nhận đợt K2 để phần Kho skill không phải chờ. Sau K1 dữ liệu skill đã nằm
+ở ERP nhưng AI bên ngoài chưa đọc được; đợt này mở ba công cụ mới trên cổng MCP cho đúng việc đó.
+
+Ba công cụ đứng đầu danh sách và khóa chỉ đọc cũng có: liệt kê skill người dùng được đọc (tên gọi, tiêu đề, câu tóm tắt
+khi nào dùng, thuộc bộ nào, có mấy tệp), đọc nội dung một skill (chỉ bản đã xuất bản, kèm danh sách tệp), và đọc một tệp
+đính kèm dạng chữ. Mọi lượt đều chạy dưới quyền người cầm khóa trên đúng tập skill người đó được giao. Skill không được
+giao trả về cùng một câu với skill không tồn tại, nên người ngoài không dò được tên skill của phòng khác. Bộ ở mức Bảo
+vệ không trả tệp, mức Khóa chỉ trả tiêu đề và tóm tắt. Hai bộ trùng tên skill thì gọi bằng mã bộ ghép trước tên. Câu
+dặn của cổng bảo AI xem cẩm nang trước khi làm việc nghiệp vụ và áp dụng vào việc, không đọc lại nguyên văn. Nhật ký lượt
+gọi của K3 nay ghi thêm skill nào được đọc. Ở chế độ tách dịch vụ, dịch vụ AI đọc skill qua ba đường mới của cổng B.
+
+Kiểm trên máy local: 10 bài kiểm mới xanh (chỉ thấy skill được giao, đọc bản xuất bản chứ không đọc nháp, skill bị giấu và
+skill không có trả cùng câu, ba mức bảo mật, đường dẫn tệp sai và leo thư mục, trùng tên giữa hai bộ, skill thu hẹp cho
+một người, khóa chỉ đọc thấy ba công cụ, nhật ký ghi skill và không lộ mã skill cho người không được đọc); cùng 62 bài
+liên quan của K1, cổng MCP, nhật ký MCP, báo cáo gom sẵn và 80 bài tách dịch vụ, luật phạm vi xanh. Nạp mã được ở cả hai
+chế độ chạy.
+
+Mã nguồn: `backend/app/modules/ai_skill/mcp_read.py` (mới), `agent_hub/mcp.py`, `agent_hub/mcp_log.py`,
+`agent_hub/erp.py`, `agent_gateway/controller.py`, `test/backend/test_ai_skill_mcp_k2.py`,
+`test/backend/test_agent_hub_cong_mcp_cr207.py`.
+
 ## bao-CR-621 | Kho skill AI đợt K1: nền dữ liệu ở ERP — bộ skill, phiên bản, tệp, ai được đọc
 - status: xong
 - date: 2026-10-17
