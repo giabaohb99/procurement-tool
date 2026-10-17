@@ -46,6 +46,7 @@ REASON_BAD_KEY = "Khóa sai"
 REASON_EXPIRED = "Khóa đã hết hạn"
 REASON_REVOKED = "Khóa đã bị thu hồi"
 REASON_UNCLAIMED = "Khóa phát hộ chưa được chủ khóa nhận"
+REASON_ROW_BUDGET = "Quá ngân sách dữ liệu (dòng / phút)"
 REASON_INACTIVE = "Tài khoản đã bị khóa"
 REASON_RATE_KEY = "Quá tần suất (khóa)"
 REASON_RATE_IP = "Quá tần suất (IP)"
@@ -80,22 +81,34 @@ def _redis():
     return _redis_client
 
 
-def _count(bucket: str, now: float | None = None) -> int:
-    """Tăng bộ đếm của `bucket` trong phút hiện tại, trả giá trị sau khi tăng."""
+def _count(bucket: str, now: float | None = None, by: int = 1) -> int:
+    """Cộng `by` vào bộ đếm của `bucket` trong phút hiện tại, trả giá trị sau khi cộng (`by=0` = chỉ đọc)."""
     slot = int((now or time.time()) // WINDOW_SEC)
     key = f"mcp:rl:{bucket}:{slot}"
     try:
         r = _redis()
-        n = int(r.incr(key))
-        if n == 1:
+        if by <= 0:
+            return int(r.get(key) or 0)          # GET, không INCRBY 0 — khỏi đẻ khóa Redis không có hạn
+        n = int(r.incrby(key, by))
+        if n == by:
             r.expire(key, WINDOW_SEC + 5)
         return n
     except Exception:  # noqa: BLE001 — Redis hỏng: đếm trong tiến trình
         with _mem_lock:
             for k in [k for k in _mem if not k.endswith(f":{slot}")]:
                 del _mem[k]
-            _mem[key] = _mem.get(key, 0) + 1
-            return _mem[key]
+            if by > 0:
+                _mem[key] = _mem.get(key, 0) + by
+            return _mem.get(key, 0)
+
+
+def rows_spent(key_id: int, now: float | None = None) -> int:
+    """ai-CR-213: số dòng dữ liệu khóa này đã lấy trong phút hiện tại (ngân sách `AGENT_MCP_ROW_BUDGET_PER_MIN`)."""
+    return _count(f"rows:{int(key_id)}", now, by=0)
+
+
+def spend_rows(key_id: int, n: int, now: float | None = None) -> int:
+    return _count(f"rows:{int(key_id)}", now, by=int(n)) if n > 0 else rows_spent(key_id, now)
 
 
 def over_limit(bucket: str, limit: int, now: float | None = None) -> bool:

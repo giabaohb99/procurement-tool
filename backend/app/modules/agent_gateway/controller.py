@@ -385,6 +385,12 @@ def key_admin_notify(body: KeyAdminNotifyIn, user=Depends(gateway_user), db: Ses
                                            by_user_id=int(user.id))})
 
 
+@router.get("/ai-skill/stats")
+def ai_skill_stats(_: int = Depends(gateway_signed), db: Session = Depends(get_db)):
+    """ai-CR-213: số bộ / skill đang dùng cho màn Tổng quan (chỉ con số, không nội dung)."""
+    return success(L.skill_stats(db))
+
+
 # --- chuông ----------------------------------------------------------------------------------------------------------
 @router.get("/notifications")
 def notifications(after_id: int = Query(0, ge=0), limit: int = Query(200, ge=1, le=500),

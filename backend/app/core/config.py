@@ -485,6 +485,9 @@ class Settings(BaseSettings):
     AGENT_MCP_RATE_PER_IP: int = 600
     AGENT_MCP_BAD_KEY_PER_IP: int = 30
     AGENT_MCP_LOG_RETENTION_DAYS: int = 180
+    # ai-CR-213 (đại ca lo erp_read nặng máy): ngân sách DỮ LIỆU mỗi phút mỗi khóa cho tool đọc danh sách — đủ thì từ
+    # chối kèm lời dặn lọc hẹp, nhật ký ghi «Quá ngân sách dữ liệu». 0 = không chặn.
+    AGENT_MCP_ROW_BUDGET_PER_MIN: int = 3000
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
     AGENT_LOCAL_DOCS_DIR: str = ""

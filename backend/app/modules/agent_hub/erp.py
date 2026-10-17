@@ -398,6 +398,12 @@ class _Local:
 
         return notify(db, user_ids, title=title, body=body, link=link, by_user_id=by_user_id)
 
+    @staticmethod
+    def skill_stats(db) -> dict:
+        from app.modules.agent_gateway.key_admin import skill_stats
+
+        return skill_stats(db)
+
     # --- chuông ------------------------------------------------------------------------------------------------------
     @staticmethod
     def notifications_after(db, after_id: int, limit: int) -> list[dict]:
@@ -744,6 +750,9 @@ class _Remote:
                          body={"user_ids": [int(i) for i in user_ids], "title": title, "body": body, "link": link}) or {}
         return int(out.get("sent") or 0)
 
+    def skill_stats(self, db) -> dict:
+        return dict(self._call("GET", "/ai-skill/stats") or {})
+
     # --- chuông ---
     def notifications_after(self, db, after_id: int, limit: int) -> list[dict]:
         return list(self._call("GET", "/notifications", params={"after_id": int(after_id), "limit": int(limit)}) or [])
@@ -984,6 +993,11 @@ def key_admin_people(db, admin, action: str, *, user_ids: list[int] | None = Non
 
 def notify_users(db, user_ids: list[int], *, title: str, body: str, link: str, by_user_id: int = 0) -> int:
     return _impl().notify_users(db, user_ids, title=title, body=body, link=link, by_user_id=by_user_id)
+
+
+def skill_stats(db) -> dict:
+    """ai-CR-213: {skill_sets, skills} đang dùng ở Kho skill AI (ERP)."""
+    return _impl().skill_stats(db)
 
 
 def attachment_blocks(db, user, ids: list[int]) -> tuple[list | None, list[dict]]:

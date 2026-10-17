@@ -25,7 +25,7 @@ from app.core.status_codes import CONTRACT_STATUS, PO_DOCUMENT_STATUS
 from .base import ToolContext, ToolSpec
 
 MAX_PAGE_SIZE = 100
-DEFAULT_PAGE_SIZE = 20
+DEFAULT_PAGE_SIZE = 50      # ai-CR-213: mặc định MỘT trang × 50 dòng; 5 × 100 chỉ khi AI xin rõ (`pages`, `page_size`)
 MAX_PAGES = 5
 TEXT_MAX_LEN = 100
 
@@ -297,8 +297,9 @@ def _description() -> str:
     return ("Đọc DANH SÁCH hoặc CHI TIẾT (truyền id) chứng từ / danh mục ERP đúng như màn web, đúng phạm vi quyền người hỏi "
             "— dùng để đào sâu từng phiếu (vd mở chi tiết một ĐMH, phiếu đang chờ duyệt của một phòng). Số tổng hợp thì "
             "dùng report_summary / dataset_query. Resource: " + " | ".join(parts)
-            + f". Tối đa {MAX_PAGES} trang × {MAX_PAGE_SIZE} dòng mỗi lượt; còn nữa thì has_more + next_page. Ngày "
-              "YYYY-MM-DD; mỗi dòng có url mở màn chi tiết.")
+            + f". Mặc định một trang {DEFAULT_PAGE_SIZE} dòng; chỉ xin thêm (tối đa {MAX_PAGES} trang × {MAX_PAGE_SIZE} dòng) "
+              "khi thật cần đọc hết — lọc hẹp trước, mỗi khóa có ngân sách dòng mỗi phút. Còn nữa thì has_more + "
+              "next_page. Ngày YYYY-MM-DD; mỗi dòng có url mở màn chi tiết.")
 
 
 ERP_READ_SPEC = ToolSpec(

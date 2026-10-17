@@ -45,6 +45,19 @@ def people_in_scope(db: Session, admin, action: str, *, user_ids: list[int] | No
             for uid, eid, code, name, dept, comp in rows]
 
 
+def skill_stats(db: Session) -> dict:
+    """ai-CR-213: số bộ skill / skill ĐANG DÙNG (chưa xóa) cho màn Tổng quan Kho skill AI (G1)."""
+    from app.modules.ai_skill.constants import SkillSetStatus, SkillStatus
+    from app.modules.ai_skill.model import AiSkill, AiSkillSet
+
+    sets = db.query(AiSkillSet.id).filter(AiSkillSet.status == int(SkillSetStatus.ACTIVE),
+                                          AiSkillSet.is_deleted.is_(False)).count()
+    skills = (db.query(AiSkill.id).join(AiSkillSet, AiSkillSet.id == AiSkill.skill_set_id)
+              .filter(AiSkill.status == int(SkillStatus.ACTIVE), AiSkill.is_deleted.is_(False),
+                      AiSkillSet.status == int(SkillSetStatus.ACTIVE), AiSkillSet.is_deleted.is_(False)).count())
+    return {"skill_sets": int(sets), "skills": int(skills)}
+
+
 def notify(db: Session, user_ids: list[int], *, title: str, body: str, link: str, by_user_id: int = 0) -> int:
     """Chuông ERP cho từng người (không email, không Telegram — doc 21 §7.1)."""
     from app.modules.notification.model import Notification

@@ -56,6 +56,8 @@ READ_TOOLS = frozenset({
 #  Telegram, cổng này chưa có nút. report_missing_feature trùng việc với report_issue của cổng.
 HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account_setup", "propose_glossary_term",
           "report_missing_feature"}
+#  ai-CR-213: tool đọc nhiều dòng — tính vào ngân sách dữ liệu mỗi phút mỗi khóa (`AGENT_MCP_ROW_BUDGET_PER_MIN`).
+ROW_BUDGET_TOOLS = frozenset({"erp_read"})
 #  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
 STRUCTURED_TOOLS = frozenset({"report_summary"})
 #  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).
@@ -260,14 +262,26 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         if not name:
             trace.update(status=mcp_log.CallStatus.ERROR, reason="Thiếu tên tool")
             return _err(rid, -32602, "Thiếu tên tool")
-        try:
-            result = call_tool(db, user, int(key.scope or 0), name, args)
-        except Exception as e:  # noqa: BLE001 — lỗi tool không được thành 500 của cổng
-            log.exception("agent_hub mcp: tool %s hỏng", name)
-            result = {"error": f"Lỗi khi chạy công cụ: {e}"}
+        budget = int(settings.AGENT_MCP_ROW_BUDGET_PER_MIN)
+        if name in ROW_BUDGET_TOOLS and budget > 0 and mcp_log.rows_spent(key.id) >= budget:
+            #  ai-CR-213: ngân sách DỮ LIỆU mỗi phút mỗi khóa — chặn trước khi chạy, không tốn một truy vấn nào.
+            result = {"denied": True, "error": (f"Đã đủ {budget} dòng dữ liệu trong phút này cho khóa này. Hãy lọc hẹp lại "
+                                                "(kỳ ngắn hơn, một phòng / NCC / trạng thái) hoặc dùng report_summary / "
+                                                "dataset_query để lấy số tổng hợp; chờ sang phút sau nếu vẫn cần đọc tiếp.")}
+            trace["budget"] = True
+        else:
+            try:
+                result = call_tool(db, user, int(key.scope or 0), name, args)
+            except Exception as e:  # noqa: BLE001 — lỗi tool không được thành 500 của cổng
+                log.exception("agent_hub mcp: tool %s hỏng", name)
+                result = {"error": f"Lỗi khi chạy công cụ: {e}"}
+            if name in ROW_BUDGET_TOOLS and isinstance(result, dict):
+                mcp_log.spend_rows(key.id, len(result.get("items") or []) + (1 if result.get("item") else 0))
         if name in SKILL_TOOLS and isinstance(result, dict) and result.get("skill_id"):
             trace["skill_id"] = int(result.pop("skill_id") or 0)     # bao-CR-622: nhật ký biết skill nào được đọc
-        if isinstance(result, dict) and result.get("denied"):
+        if trace.pop("budget", False):
+            trace.update(status=mcp_log.CallStatus.DENIED, reason=mcp_log.REASON_ROW_BUDGET)
+        elif isinstance(result, dict) and result.get("denied"):
             trace.update(status=mcp_log.CallStatus.DENIED, reason=str(result.get("error") or result.get("reason") or ""))
         elif isinstance(result, dict) and result.get("error"):
             trace.update(status=mcp_log.CallStatus.ERROR, reason=str(result["error"]))

@@ -331,6 +331,52 @@ def remove_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session =
     return success(None, "Đã gỡ khóa MCP")
 
 
+@router.get("/mcp-setup")
+def mcp_setup(client: str = Query("", max_length=30), user=Depends(get_current_user)):
+    """ai-CR-213 (G8): đoạn cấu hình nối từng ứng dụng AI với ERP; bỏ trống `client` = danh sách ứng dụng."""
+    from . import mcp_setup as ms
+
+    if not client:
+        return success({"endpoint": ms.endpoint(), "placeholder": ms.KEY_PLACEHOLDER, "clients": ms.catalog()})
+    out = ms.build(client)
+    if out is None:
+        raise HTTPException(404, f"Chưa có hướng dẫn cho ứng dụng '{client}'. Chọn: {', '.join(ms.CLIENTS)}.")
+    return success({**out, "endpoint": ms.endpoint(), "placeholder": ms.KEY_PLACEHOLDER})
+
+
+@router.get("/mcp-keys/{key_id}/last-call")
+def my_mcp_key_last_call(key_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-213 (G8 bước 3 «Kiểm tra kết nối»): lượt gọi gần nhất của MỘT khóa của chính mình."""
+    from sqlalchemy import select as _select
+
+    from . import mcp_log
+    from .model import AgentMcpCall, AgentMcpKey
+
+    row = db.get(AgentMcpKey, key_id)
+    if row is None or int(row.user_id) != int(user.id):
+        raise HTTPException(404, "Không tìm thấy khóa")
+    last = db.scalar(_select(AgentMcpCall).where(AgentMcpCall.key_id == key_id).order_by(AgentMcpCall.id.desc()).limit(1))
+    ok = db.scalar(_select(AgentMcpCall).where(AgentMcpCall.key_id == key_id, AgentMcpCall.status == mcp_log.CallStatus.OK)
+                   .order_by(AgentMcpCall.id.desc()).limit(1))
+    pick = lambda c: None if c is None else {  # noqa: E731
+        "created_at": c.created_at.isoformat(timespec="seconds") if c.created_at else None, "client_name": c.client_name,
+        "method": c.method, "tool": c.tool, "status": int(c.status or 0),
+        "status_label": mcp_log.CALL_STATUS_LABELS.get(int(c.status or 0), "?"), "deny_reason": c.deny_reason}
+    return success({"key_id": key_id, "connected": ok is not None, "last_call": pick(last), "last_ok_call": pick(ok)})
+
+
+@router.get("/ai-overview")
+def ai_overview(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-213 (G1): số liệu màn Tổng quan Kho skill AI / cổng MCP — cùng cổng quyền với nhật ký xem hết."""
+    from app.core.auth import user_has_permission
+
+    from . import ai_overview as ov
+
+    if not user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "read"):
+        raise HTTPException(403, f"Không có quyền: read {MCP_LOG_VIEW_ALL_ENTITY}")
+    return success(ov.build(db, labels=_user_labels))
+
+
 @router.get("/mcp-keys/pending")
 def list_my_pending_mcp_keys(user=Depends(get_current_user), db: Session = Depends(get_db)):
     """ai-CR-212: khóa quản trị phát hộ đang chờ mình bấm Nhận."""

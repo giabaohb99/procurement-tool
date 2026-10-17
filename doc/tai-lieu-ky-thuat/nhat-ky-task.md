@@ -13450,8 +13450,25 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
-## ai-CR-212 | Quản trị phát khóa kết nối AI hộ nhân sự, người nhận tự bấm nhận mới dùng được
+## ai-CR-213 | Giảm tải công cụ đọc danh sách cho AI và chuẩn bị dữ liệu cho màn AI của tôi, màn Tổng quan
 - status: dang-lam
+- date: 2026-10-17
+Đại ca lo công cụ đọc danh sách phiếu cho ứng dụng AI đọc tới năm trang một trăm dòng là nặng máy. Nay mặc định chỉ đọc một
+trang năm mươi dòng, đọc nhiều hơn chỉ khi AI xin rõ, và mỗi khóa chỉ được lấy tối đa ba nghìn dòng mỗi phút; quá thì AI
+được dặn lọc hẹp lại hoặc dùng số tổng hợp, nhật ký ghi lại lượt bị chặn. Đo thật trên dev: đọc hết một trăm lẻ ba đơn mua
+hàng chỉ mất khoảng ba mươi ba phần nghìn giây ở máy chủ; phần nặng là cỡ dữ liệu gửi sang ứng dụng AI, khoảng năm trăm byte
+mỗi dòng. Cùng đợt làm sẵn phần máy chủ cho hai màn Agent 3 sẽ dựng: hướng dẫn nối từng ứng dụng AI đúng cách ứng dụng đó
+nhận (Claude Desktop phải đi qua cầu mcp-remote, Claude Code là một lệnh, Cursor và Gemini CLI là tệp cấu hình; claude.ai
+và ChatGPT nói rõ chưa nhận khóa), kiểm tra một khóa đã nối được chưa, và số liệu màn Tổng quan (lượt gọi bảy ngày so với
+tuần trước, từ chối và lỗi, người đã nối, công cụ và người dùng nhiều nhất, khóa sắp hết hạn, số skill đang dùng).
+Hợp đồng dữ liệu cho giao diện ghi ở doc/agent-hub/06 mục 6. Bài kiểm đều đạt. Chờ Agent 1 dựng lên dev.
+
+Mã nguồn: agent_hub/mcp.py, agent_hub/mcp_log.py, agent_hub/mcp_setup.py, agent_hub/ai_overview.py, agent_hub/controller.py,
+agent_hub/erp.py, agent_gateway/key_admin.py, agent_gateway/controller.py, assistant/tools/erp_read_tool.py, core/config.py
+Bài kiểm: test_agent_hub_ai_cua_toi_cr213.py
+
+## ai-CR-212 | Quản trị phát khóa kết nối AI hộ nhân sự, người nhận tự bấm nhận mới dùng được
+- status: xong
 - date: 2026-10-17
 Việc đầu tiên của đợt hai cổng nối ERP với ứng dụng AI. Trước nay mỗi người phải tự tạo khóa kết nối AI ở Trang cá nhân;
 nay quản trị phát hộ được cho một người, nhiều người hoặc cả phòng, tối đa năm mươi người một lượt, chọn hạn bảy ngày tới một
@@ -13460,8 +13477,8 @@ nhân bấm Nhận khóa thì khóa hiện đúng một lần để chép. Ngư�
 của những người trong phạm vi mình, lọc theo phòng và trạng thái, thu hồi một khóa, mọi khóa của một người hoặc cả một lượt
 phát; khóa thu hồi vẫn giữ dòng để đối soát. Quyền này là một quyền mới, phạm vi tính theo phòng ban của người được phát; hai
 vai trò kho skill AI được thêm quyền này (toàn công ty và phòng mình). Không gửi email hay Telegram.
-Bài kiểm phát ngoài phạm vi bị chặn, nhận hai lần thì lần hai không thấy khóa, khóa chưa nhận không dùng được đều đạt. Chờ
-Agent 1 dựng lên dev.
+Bài kiểm phát ngoài phạm vi bị chặn, nhận hai lần thì lần hai không thấy khóa, khóa chưa nhận không dùng được đều đạt.
+Agent 1 đã dựng lên dev ngày 17/10, giao diện kiểm đủ ba cổng đạt; quyền mới được gán tay cho hai vai trò trên dev.
 
 Mã nguồn: agent_hub/mcp_keys.py, agent_hub/controller.py, agent_hub/model.py, agent_hub/erp.py, agent_gateway/key_admin.py,
 agent_gateway/controller.py, core/permissions.py, core/scoping.py, seed.py, frontend-v2 permission-types + permission-groups
