@@ -679,6 +679,9 @@ export const queryKeys = {
     /** «AI của tôi» (K6). Danh sách khóa của chính mình dùng chung `system.mcpKeys()` với tab cũ. */
     setupClients: () => ['ai-skill', 'setup'] as const,
     setup: (client: string) => ['ai-skill', 'setup', client] as const,
+    /** Bản công khai (trang /connect-ai) — khóa riêng để không lẫn với bản đã đăng nhập. */
+    publicSetupClients: () => ['ai-skill', 'public-setup'] as const,
+    publicSetup: (client: string) => ['ai-skill', 'public-setup', client] as const,
     pendingKeys: () => ['ai-skill', 'pending-keys'] as const,
     lastCall: (keyId: number) => ['ai-skill', 'last-call', keyId] as const,
     visibleSkills: () => ['ai-skill', 'me'] as const,

@@ -38,6 +38,7 @@ const KEY_STATE_TONE: Record<number, StatusTone> = {
   [KEY_STATE.active]: 'done',
   [KEY_STATE.expired]: 'neutral',
   [KEY_STATE.revoked]: 'danger',
+  [KEY_STATE.disabled]: 'returned',
 }
 
 export function KeyStateBadge({ state, label }: { state: number; label: string }) {

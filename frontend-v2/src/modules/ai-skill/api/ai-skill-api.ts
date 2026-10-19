@@ -106,4 +106,10 @@ export const myAiApi = {
   lastCall: (id: number) => apiGet<McpLastCall>(`${HUB}/mcp-keys/${id}/last-call`),
   visibleSkills: () => apiGet<{ items: VisibleSkill[] }>(`${BASE}/me`),
   overview: () => apiGet<AiOverview>(`${HUB}/ai-overview`),
+  /** ai-CR-221: khóa đầy đủ của CHÍNH MÌNH. Mỗi lần gọi máy chủ ghi một dòng nhật ký — chỉ gọi khi người dùng bấm. */
+  revealKey: (id: number) => apiGet<MyMcpKey>(`${HUB}/mcp-keys/${id}/reveal`),
+  setKeyEnabled: (id: number, enabled: boolean) => apiPatch<MyMcpKey>(`${HUB}/mcp-keys/${id}`, { enabled }),
+  /** Hướng dẫn nối KHÔNG cần đăng nhập (trang /connect-ai) — cùng hình `mcp-setup`, không bao giờ có khóa. */
+  publicSetupClients: () => apiGet<McpSetupList>(`${HUB}/mcp-setup/public`),
+  publicSetup: (client: string) => apiGet<McpSetupDetail>(`${HUB}/mcp-setup/public`, { params: { client } }),
 }

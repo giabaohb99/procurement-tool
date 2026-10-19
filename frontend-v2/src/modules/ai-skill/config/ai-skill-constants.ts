@@ -51,7 +51,31 @@ export const JOB_LEVEL_SUBJECT_OPTIONS = JOB_LEVEL_FILTER_OPTIONS.filter((o) => 
 }))
 
 /** Trạng thái khóa kết nối (agent_hub `KeyState`). */
-export const KEY_STATE = { pending: 1, active: 2, expired: 3, revoked: 4 } as const
+export const KEY_STATE = { pending: 1, active: 2, expired: 3, revoked: 4, disabled: 5 } as const
+
+/** Khóa CÒN HIỆU LỰC (gỡ / thu hồi còn có nghĩa): chờ nhận, đang dùng, đang tắt (ai-CR-221 — tắt khác thu hồi). */
+export const LIVE_KEY_STATES: readonly number[] = [KEY_STATE.pending, KEY_STATE.active, KEY_STATE.disabled]
+
+/** Bật / tắt được: đang dùng hoặc đang tắt (chờ nhận / hết hạn máy chủ trả 409, thu hồi là hết). */
+export const TOGGLEABLE_KEY_STATES: readonly number[] = [KEY_STATE.active, KEY_STATE.disabled]
+
+/** Trang hướng dẫn nối AI công khai (bao-CR-638) — đường TIẾNG ANH theo ý đại ca, không cần đăng nhập. */
+export const CONNECT_AI_PATH = '/connect-ai'
+
+/**
+ * Đoạn cấu hình đã điền khóa: thay MỌI chỗ giữ khóa (một đoạn có thể nhắc khóa hai lần). Không có khóa, hoặc máy chủ không
+ * khai chỗ giữ, thì trả nguyên đoạn — tuyệt đối không tự đoán chỗ chèn.
+ */
+export function fillKeyInSnippet(snippet: string, placeholder: string, key: string | null | undefined): string {
+  if (!key || !placeholder) return snippet
+  return snippet.split(placeholder).join(key)
+}
+
+/** Ô khóa đang ẩn: 12 chấm + 4 ký tự cuối (máy chủ trả `hint` dạng «…abcd»). */
+export function maskKey(hint: string): string {
+  const tail = hint.replace(/^…+/, '')
+  return `${'•'.repeat(12)}${tail}`
+}
 
 /** Loại khóa (ai-CR-218): dán tay vào ứng dụng, hay kết nối OAuth do ứng dụng (ChatGPT, claude.ai) tự xin. */
 export const KEY_KIND = { manual: 1, oauth: 2 } as const

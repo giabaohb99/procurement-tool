@@ -1,5 +1,6 @@
-import { KeyRound, Plus, ShieldOff } from 'lucide-react'
+import { BookOpen, KeyRound, Link2, Plus, ShieldOff } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import { appConfig } from '@/core/config/app-config'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
@@ -7,17 +8,21 @@ import { DataTable, createSelectionColumn, type DataTableColumn } from '@/shared
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { SectionHeading } from '@/shared/ui/section-heading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
-import { KEY_KIND, KEY_STATE, upperFirst } from '../config/ai-skill-constants'
+import { KEY_KIND, LIVE_KEY_STATES, upperFirst } from '../config/ai-skill-constants'
 import { KeyStateBadge } from '../config/ai-skill-meta'
+import { ConnectGuide } from '../components/connect-guide'
 import { KeyIssueDialog } from '../components/key-issue-dialog'
 import { useKeyAdminKeys, useKeyAdminMeta, useRevokeKeys } from '../hooks/use-ai-usage'
 import type { AdminMcpKey } from '../types/ai-skill'
@@ -37,6 +42,7 @@ export function KeyAdminPage() {
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [page, setPage] = usePageResetOnFilterChange([departmentId, state])
   const [issueOpen, setIssueOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const selection = useRowSelection()
   const revoke = useRevokeKeys()
 
@@ -56,7 +62,7 @@ export function KeyAdminPage() {
   //  Khóa đã thu hồi / hết hạn không còn gì để thu hồi — đếm riêng số khóa CÒN HIỆU LỰC trong lượt chọn để hộp xác nhận
   //  nói đúng số sẽ đổi.
   const selectedLive = (rows ?? []).filter(
-    (k) => selection.selectedIds.has(k.id) && (k.state === KEY_STATE.pending || k.state === KEY_STATE.active),
+    (k) => selection.selectedIds.has(k.id) && LIVE_KEY_STATES.includes(k.state),
   )
 
   const { selectedIds, toggleRow, toggleAllOnPage } = selection
@@ -152,6 +158,10 @@ export function KeyAdminPage() {
                 Thu hồi ({selectedLive.length})
               </Button>
             )}
+            <Button variant="outline" className="xl:hidden" onClick={() => setGuideOpen(true)}>
+              <BookOpen className="size-4" />
+              Hướng dẫn kết nối
+            </Button>
             {canCreate && meta.data && (
               <Button onClick={() => setIssueOpen(true)}>
                 <Plus className="size-4" />
@@ -161,60 +171,108 @@ export function KeyAdminPage() {
           </>
         }
       />
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
-        <DataTable
-          fillHeight
-          columns={columns}
-          rows={rows}
-          getRowId={(k) => k.id}
-          isLoading={isLoading || meta.isLoading}
-          isError={isError}
-          emptyMessage={
-            filtering ? 'Không có khóa nào khớp bộ lọc.' : 'Chưa có khóa nào. Bấm Phát khóa để cấp cho một phòng.'
-          }
-          storageKey="ai-skill.keys"
-          pagination={{
-            page,
-            pageSize,
-            total: data?.total ?? 0,
-            onPageChange: setPage,
-            onPageSizeChange: setPageSize,
-            unitLabel: 'khóa',
-          }}
-          toolbar={
-            <>
-              <KeyRound className="hidden size-4 text-muted-foreground md:block" />
-              <Select value={departmentId} onValueChange={setDepartmentId}>
-                <SelectTrigger className="w-48" aria-label="Lọc phòng ban">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả phòng ban</SelectItem>
-                  {(departments?.items ?? []).map((d) => (
-                    <SelectItem key={d.id} value={String(d.id)}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={state} onValueChange={setState}>
-                <SelectTrigger className="w-44" aria-label="Lọc trạng thái">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                  {(meta.data?.states ?? []).map((s) => (
-                    <SelectItem key={s.value} value={String(s.value)}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          }
-        />
-      </Card>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
+        <Card className="flex min-h-0 min-w-0 flex-1 flex-col p-4">
+          <DataTable
+            fillHeight
+            columns={columns}
+            rows={rows}
+            getRowId={(k) => k.id}
+            isLoading={isLoading || meta.isLoading}
+            isError={isError}
+            emptyMessage={
+              filtering ? 'Không có khóa nào khớp bộ lọc.' : 'Chưa có khóa nào. Bấm Phát khóa để cấp cho một phòng.'
+            }
+            storageKey="ai-skill.keys"
+            pagination={{
+              page,
+              pageSize,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+              onPageSizeChange: setPageSize,
+              unitLabel: 'khóa',
+            }}
+            toolbar={
+              <>
+                <KeyRound className="hidden size-4 text-muted-foreground md:block" />
+                <Select value={departmentId} onValueChange={setDepartmentId}>
+                  <SelectTrigger className="w-48" aria-label="Lọc phòng ban">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>Tất cả phòng ban</SelectItem>
+                    {(departments?.items ?? []).map((d) => (
+                      <SelectItem key={d.id} value={String(d.id)}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={state} onValueChange={setState}>
+                  <SelectTrigger className="w-44" aria-label="Lọc trạng thái">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+                    {(meta.data?.states ?? []).map((s) => (
+                      <SelectItem key={s.value} value={String(s.value)}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            }
+          />
+        </Card>
+        {/*  bao-CR-638: hướng dẫn nối dùng chung với AI của tôi, nhưng KHÔNG có khóa — khóa mỗi người tự lấy. Màn hẹp thì
+            cột này chiếm hết chỗ của bảng (bảng co về 0), nên dưới xl chỉ mở bằng nút ở đầu trang. */}
+        <Card className="hidden min-h-0 p-4 xl:block xl:w-96 xl:shrink-0 xl:overflow-y-auto">
+          <GuidePanel />
+        </Card>
+      </div>
+      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Hướng dẫn kết nối</DialogTitle>
+            <DialogDescription>Cùng nội dung trang công khai gửi cho nhân viên — không có khóa.</DialogDescription>
+          </DialogHeader>
+          {guideOpen && <GuidePanel />}
+        </DialogContent>
+      </Dialog>
       {meta.data && <KeyIssueDialog open={issueOpen} onOpenChange={setIssueOpen} meta={meta.data} />}
     </PageContainer>
+  )
+}
+
+function GuidePanel() {
+  return (
+    <div className="space-y-3">
+      <SectionHeading>Hướng dẫn kết nối</SectionHeading>
+      <p className="text-sm text-muted-foreground">
+        Gửi nhân viên link hướng dẫn (không cần đăng nhập). Khóa mỗi người tự lấy ở Trang cá nhân → AI của tôi, hoặc
+        nhận khóa bạn phát hộ.
+      </p>
+      <ConnectGuide source="private" footer={<CopyGuideLinkButton />} />
+    </div>
+  )
+}
+
+/** Link trang công khai /connect-ai — gửi cho nhân viên; trang đó không bao giờ có khóa. */
+function CopyGuideLinkButton() {
+  async function copy() {
+    try {
+      if (!navigator.clipboard) throw new Error('clipboard unavailable')
+      await navigator.clipboard.writeText(`${window.location.origin}${appRoutes.connectAi}`)
+      toast.success('Đã chép link hướng dẫn.')
+    } catch {
+      toast.error('Không chép được link — mở trang Hướng dẫn kết nối rồi chép địa chỉ trên trình duyệt.')
+    }
+  }
+  return (
+    <Button type="button" variant="outline" size="sm" onClick={() => void copy()}>
+      <Link2 className="size-4" />
+      Sao chép link hướng dẫn
+    </Button>
   )
 }

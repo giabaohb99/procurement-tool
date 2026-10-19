@@ -70,6 +70,42 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-638 | Màn Khóa của bạn kiểu CoreSkill, cột Hướng dẫn kết nối ở Khóa nhân sự và trang công khai /connect-ai
+- status: xong
+- date: 2026-10-19
+Đại ca chốt lúc 11:20 qua Agent 1: làm lại phần khóa ở mục AI của tôi cho giống CoreSkill, dùng chung một khối hướng dẫn
+kết nối cho ba chỗ, và có một trang công khai để quản trị gửi link cho nhân viên. Phần máy chủ (xem lại khóa, bật tắt
+khóa, đường hướng dẫn công khai) Agent 4 đã làm ở ai-CR-221; đợt này chỉ làm giao diện ở frontend-v2.
+
+Ở bước 2 Khóa của bạn, mỗi khóa nay là một dòng: tên, trạng thái, công tắc bật tắt (tắt khác thu hồi, bật lại là chạy
+ngay, kết nối OAuth cũng tắt được), ô khóa đầy đủ mặc định che bằng chấm chỉ lộ bốn ký tự cuối, nút Hiện / Ẩn và Sao chép,
+mức, hạn, lần dùng cuối và nút Gỡ. Khóa tạo trước khi có tính năng xem lại thì ghi tạo lại để xem; kết nối OAuth ghi ứng
+dụng tự giữ mã. Bỏ hẳn câu khóa chỉ hiện một lần. Màn chỉ xin máy chủ khóa đầy đủ khi người dùng bấm Hiện hoặc Sao chép,
+mỗi khóa một lần (giữ trong bộ nhớ của màn), vì mỗi lần xin máy chủ ghi một dòng nhật ký; mở màn không bao giờ xin.
+
+Bước 1 dùng khối Hướng dẫn kết nối mới: chọn ứng dụng (Claude Desktop, Claude Code, Cursor, Gemini, ChatGPT và claude.ai
+nối bằng OAuth), xem các bước, rồi bấm Sao chép đoạn cấu hình: đoạn được điền khóa thật của dòng đang chọn ở bước 2. Cùng
+khối đó nằm ở cột phải màn Khóa nhân sự (màn hẹp thì mở bằng nút Hướng dẫn kết nối ở đầu trang) nhưng không có khóa, kèm
+nút Sao chép link hướng dẫn. Trang công khai /connect-ai (đường tiếng Anh theo ý đại ca) không cần đăng nhập, đứng ngoài
+khung ứng dụng, lấy nội dung từ đường hướng dẫn công khai và không bao giờ chứa khóa; thêm tham số client để mở sẵn đúng
+ứng dụng. Ở màn Khóa nhân sự, khóa đang tắt vẫn tính là còn hiệu lực khi thu hồi hàng loạt.
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn); bài kiểm phân hệ kho skill, Trang cá nhân, các trang,
+bộ định tuyến, hằng số và thông báo dùng chung 308 bài xanh trên 34 tệp. Bài mới: mở màn không xin khóa, Hiện xin một lần
+còn Ẩn rồi Hiện lại thì không, Sao chép đoạn cấu hình điền đúng khóa và chỉ xin một lần, khóa không xem lại được chép đoạn
+còn chỗ giữ khóa, công tắc gửi đúng lệnh và khóa hết hạn không có công tắc, trang công khai chỉ gọi đường công khai và
+không có chuỗi khóa nào kể cả khi trình duyệt còn phiên đăng nhập, khóa đang tắt được thu hồi, hàm điền khóa thay mọi chỗ
+giữ và không coi chỗ giữ là biểu thức. Đã mở thử trên trình duyệt máy local: tạo khóa, tắt, gỡ, trang công khai, màn Khóa
+nhân sự ở màn rộng và màn hẹp (bắt được và sửa lỗi cột hướng dẫn đè mất bảng khi màn hẹp).
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/components/connect-guide.tsx` (mới), `app/pages/connect-ai-page.tsx` (mới, kèm
+bài kiểm), `app/components/profile/profile-ai-connect-section.tsx` (+ bài kiểm), `modules/ai-skill/pages/key-admin-page.tsx`
+(+ bài kiểm), `config/ai-skill-constants.ts` (+ bài kiểm), `config/ai-skill-meta.tsx`, `api/ai-skill-api.ts`,
+`hooks/use-my-ai.ts`, `types/ai-skill.ts`, `app/router/app-router.tsx`, `shared/constants/app-routes.ts`, `query-keys.ts`.
+Commit: commit giao diện trên erp-v2 (đại ca gật 19/10). Deploy: Agent 1 dựng dev.
+
+---
+
 ## bao-CR-639 | Bước nối ChatGPT theo giao diện mới: Developer mode ở Security and login, tạo ở Plugins
 - status: xong
 - date: 2026-10-19
