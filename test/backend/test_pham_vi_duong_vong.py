@@ -164,19 +164,30 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
                      "nền thì không hỏi — chuyển cụm 07 xem xét"),
         (OK_DA_KIEM, "L333 `_load(ApprovalInstance)` — L336 `entity_hooks.can_read`"),
     ],
+    # ── Kho skill AI (bao-CR-621) ────────────────────────────────────────────
+    "ai_skill/controller.py": [
+        (OK_DA_KIEM, "L164 `revoke_access` `AiSkillAccess` — route gác require('ai_skill', 'write'), ngay sau get gọi "
+                     "`_check_target(db, row.target_kind, row.target_id, user, \"write\")` (phạm vi trên BỘ / skill "
+                     "đích); không có dòng → 404"),
+    ],
     # ── Bot Agent Hub ────────────────────────────────────────────────────────
     "agent_hub/controller.py": [
         (OK_KHONG_CAN, "L106 `AgentTask` — sổ việc của bot là entity PUBLIC `agent_task` "
                        "(không có chủ sở hữu, việc của quản trị hệ thống); cổng là "
                        "require('agent_task', 'read') ngay trên route, không có phạm vi để hỏi"),
-        (OK_KHONG_CAN, "L580 `AgentDbBackup` (tải tệp sao lưu DB dịch vụ AI, ai-CR-139) — bản sao lưu "
+        (OK_DA_KIEM, "L356 `AgentMcpKey` (lượt gọi gần nhất của khóa, ai-CR-213) — L357 `row.user_id != user.id` "
+                     "→ 404: khóa MCP của CHÍNH người hỏi, quyền sở hữu, không phải phạm vi"),
+        (OK_KHONG_CAN, "L903 `AgentDbBackup` (tải tệp sao lưu DB dịch vụ AI, ai-CR-139) — bản sao lưu "
                        "của cả hệ, không có chủ sở hữu; cổng là require('backup', 'read') ngay trên "
                        "route như màn Sao lưu của ERP, không có phạm vi để hỏi"),
     ],
     # ── Trợ lý AI ────────────────────────────────────────────────────────────
     "assistant/controller.py": [
-        (OK_DA_KIEM, "L198 `StoredFile` — L199 `f.created_by != user.id` + khóa thư mục "
+        (OK_DA_KIEM, "L228 `StoredFile` — L229 `f.created_by != user.id` + khóa thư mục "
                      "`/assistant-report/`; quyền SỞ HỮU, không phải phạm vi"),
+        (OK_DA_KIEM, "L261 `StoredFile` (tải một lần qua MCP, ai-CR-207) — chủ tệp lấy từ mã ký HMAC "
+                     "(`download_tokens.read_token`, không sửa được id / chủ / hạn); L262 `f.created_by != uid` + khóa "
+                     "thư mục `/assistant-report/`; dùng một lần (nonce trong audit); quyền SỞ HỮU, không phải phạm vi"),
     ],
     # ── Đính kèm ─────────────────────────────────────────────────────────────
     "attachment/controller.py": [
@@ -480,7 +491,10 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #  PATCH hồ sơ nay đổi thành `_employee_in_scope(..., "write")` — cửa đó trước giờ KHÔNG xét phạm vi.
     #  92 → 93 (10/10/2026, nợ từ ai-CR-139 khai muộn): `agent_hub/controller.py` +1 — tải tệp sao lưu DB
     #  dịch vụ AI, entity `backup` không có chủ sở hữu, cổng require ngay trên route.
-    assert sum(that.values()) == 93, f"tổng phải là 93, đang là {sum(that.values())}"
+    #  93 → 96 (19/10/2026, ai-CR-217 rà trước prod): `assistant/controller.py` +1 (tải tệp một lần qua MCP, ai-CR-207),
+    #  `agent_hub/controller.py` +1 (lượt gọi gần nhất của khóa MCP của chính mình, ai-CR-213), `ai_skill/controller.py`
+    #  +1 (thu hồi quyền đọc skill, bao-CR-621) — cả ba gác ngay sau get (sở hữu / `_check_target`).
+    assert sum(that.values()) == 96, f"tổng phải là 96, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
