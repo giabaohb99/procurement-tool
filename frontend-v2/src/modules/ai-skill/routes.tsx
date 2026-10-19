@@ -1,4 +1,4 @@
-import { BookOpen, KeyRound, LayoutDashboard, PlayCircle, ScrollText, Settings2 } from 'lucide-react'
+import { BookOpen, KeyRound, LayoutDashboard, PlayCircle, Plug, ScrollText, Settings2 } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -53,6 +53,14 @@ export const aiSkillModule: ErpModule = {
       entity: 'ai_mcp_key_admin',
     },
     {
+      //  bao-CR-635: ứng dụng tự đăng ký OAuth (ChatGPT, claude.ai…). Đường API gác `agent_group.read` như Cấu hình —
+      //  mục gác theo hai khóa của phân hệ, trang tự giải thích khi thiếu quyền quản lý bot AI.
+      label: 'Ứng dụng AI đã kết nối',
+      path: appRoutes.aiSkill.oauthClients,
+      icon: Plug,
+      entities: ['ai_skill', 'ai_mcp_key_admin'],
+    },
+    {
       //  Máy chủ tự giới hạn người thường chỉ xem lượt của mình — ai vào được phân hệ đều mở được.
       label: 'Nhật ký sử dụng',
       path: appRoutes.aiSkill.logs,
@@ -104,6 +112,12 @@ export const aiSkillModule: ErpModule = {
       path: appRoutes.aiSkill.keys,
       lazy: async () => ({
         Component: (await import('./pages/key-admin-page')).KeyAdminPage,
+      }),
+    },
+    {
+      path: appRoutes.aiSkill.oauthClients,
+      lazy: async () => ({
+        Component: (await import('./pages/oauth-clients-page')).OAuthClientsPage,
       }),
     },
     {

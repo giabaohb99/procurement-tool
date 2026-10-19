@@ -674,6 +674,8 @@ export const queryKeys = {
     keyAdminKeys: (params: Record<string, unknown>) => ['ai-skill', 'key-admin', 'keys', params] as const,
     calls: (params: Record<string, unknown>) => ['ai-skill', 'calls', params] as const,
     mcpSettings: () => ['ai-skill', 'mcp-settings'] as const,
+    /** Ứng dụng AI tự đăng ký OAuth (bao-CR-635). */
+    oauthClients: () => ['ai-skill', 'oauth-clients'] as const,
     /** «AI của tôi» (K6). Danh sách khóa của chính mình dùng chung `system.mcpKeys()` với tab cũ. */
     setupClients: () => ['ai-skill', 'setup'] as const,
     setup: (client: string) => ['ai-skill', 'setup', client] as const,

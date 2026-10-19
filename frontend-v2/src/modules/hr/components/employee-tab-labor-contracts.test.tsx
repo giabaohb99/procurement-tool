@@ -55,6 +55,13 @@ function renderTab() {
   )
 }
 
+
+/** duoc-CR-633: thao tác của dòng nằm trong menu «⋯» — mở menu rồi chọn mục theo CHỮ. */
+async function chooseAction(name: string) {
+  await userEvent.click(await screen.findByRole('button', { name: /Thao tác với hợp đồng/ }))
+  await userEvent.click(await screen.findByRole('menuitem', { name }))
+}
+
 describe('EmployeeTabLaborContracts', () => {
   it('danh sách rỗng: câu hướng dẫn; có nút «Lập hợp đồng» khi can_create', async () => {
     api.listByEmployee.mockResolvedValue({ items: [], can_create: true })
@@ -94,7 +101,7 @@ describe('EmployeeTabLaborContracts', () => {
   it('Ký: hộp chỉ hỏi ngày ký, gửi to_status=2 KHÔNG kèm tệp hay lý do', async () => {
     api.listByEmployee.mockResolvedValue({ items: [makeLaborContract({ id: 9 })], can_create: true })
     renderTab()
-    await userEvent.click(await screen.findByLabelText('Đánh dấu đã ký'))
+    await chooseAction('Đánh dấu đã ký')
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).queryByLabelText(/Lý do/)).not.toBeInTheDocument()
     await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }))
@@ -107,7 +114,7 @@ describe('EmployeeTabLaborContracts', () => {
   it('Hủy thiếu lý do: báo lỗi tại chỗ, KHÔNG gọi API', async () => {
     api.listByEmployee.mockResolvedValue({ items: [makeLaborContract()], can_create: true })
     renderTab()
-    await userEvent.click(await screen.findByLabelText('Hủy hợp đồng'))
+    await chooseAction('Hủy hợp đồng')
     const dialog = await screen.findByRole('dialog')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }))
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(/lý do/i)
@@ -118,7 +125,7 @@ describe('EmployeeTabLaborContracts', () => {
     api.listByEmployee.mockResolvedValue({ items: [makeLaborContract()], can_create: true })
     api.listTemplateOptionsForContract.mockResolvedValue([])
     renderTab()
-    await userEvent.click(await screen.findByLabelText('Sinh tệp hợp đồng'))
+    await chooseAction('Sinh tệp hợp đồng')
     const dialog = await screen.findByRole('dialog')
     expect(await within(dialog).findByText(/chưa có mẫu cho loại hợp đồng này/)).toBeInTheDocument()
     expect(within(dialog).getByRole('button', { name: 'Sinh tệp' })).toBeDisabled()
@@ -127,7 +134,7 @@ describe('EmployeeTabLaborContracts', () => {
   it('Sinh tệp với đúng một mẫu: chọn sẵn, gửi template_id của mẫu đó', async () => {
     api.listByEmployee.mockResolvedValue({ items: [makeLaborContract({ id: 3 })], can_create: true })
     renderTab()
-    await userEvent.click(await screen.findByLabelText('Sinh tệp hợp đồng'))
+    await chooseAction('Sinh tệp hợp đồng')
     const dialog = await screen.findByRole('dialog')
     const gen = within(dialog).getByRole('button', { name: 'Sinh tệp' })
     await waitFor(() => expect(gen).toBeEnabled())
@@ -143,7 +150,7 @@ describe('EmployeeTabLaborContracts', () => {
     api.listByEmployee.mockResolvedValue({ items: [makeLaborContract()], can_create: true })
     confirmMock.mockResolvedValue(false)
     renderTab()
-    await userEvent.click(await screen.findByLabelText('Xóa hợp đồng'))
+    await chooseAction('Xóa hợp đồng')
     await waitFor(() => expect(confirmMock).toHaveBeenCalled())
     expect(api.remove).not.toHaveBeenCalled()
   })
@@ -155,8 +162,8 @@ describe('EmployeeTabLaborContracts', () => {
     })
     api.downloadDocument.mockRejectedValue(new Error('403'))
     renderTab()
-    await userEvent.click(await screen.findByLabelText('Tải hợp đồng (.docx)'))
+    await chooseAction('Tải hợp đồng (.docx)')
     await waitFor(() => expect(api.downloadDocument).toHaveBeenCalled())
-    expect(screen.getByLabelText('Tải hợp đồng (.docx)')).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Thao tác với hợp đồng/ })).toBeEnabled()
   })
 })

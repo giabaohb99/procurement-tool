@@ -381,3 +381,27 @@ export type McpSettingsPatch = {
   groups?: Record<string, boolean>
   extra_instructions?: string
 } & { [limitKey: string]: number | string | Record<string, boolean> | undefined }
+
+/**
+ * Ứng dụng AI tự đăng ký OAuth (ai-CR-225, màn bao-CR-635): `GET /api/agent-hub/oauth-clients`. `client_name` là do ứng
+ * dụng TỰ KHAI — không tin; `redirect_hosts` là nơi quay về đã rút về hostname (máy cục bộ ghi «máy tính của bạn»),
+ * `trusted` = mọi host thuộc ứng dụng AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com) hoặc máy cục bộ.
+ */
+export interface OAuthClient {
+  id: number
+  client_id: string
+  client_name: string
+  redirect_hosts: string[]
+  trusted: boolean
+  auth_method: string
+  ip: string
+  created_at: string | null
+  last_used_at: string | null
+  /** Kết nối (mã truy cập) còn sống của ứng dụng — xóa ứng dụng là cắt hết. */
+  live_grants: number
+}
+
+export interface OAuthClientList {
+  items: OAuthClient[]
+  can_delete: boolean
+}
