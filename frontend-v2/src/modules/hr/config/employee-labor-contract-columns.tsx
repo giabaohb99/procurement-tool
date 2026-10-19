@@ -82,8 +82,8 @@ export function buildEmployeeLaborContractColumns(
     {
       key: 'actions',
       header: 'Thao tác',
-      //  MỘT nút «Thao tác ▾» mở menu icon + chữ (duoc-CR-633) — không còn dãy 7-8 icon trơn.
-      width: 130,
+      //  MỘT nút icon «⋯» mở menu icon + chữ (duoc-CR-633) — không còn dãy 7-8 icon trơn.
+      width: 80,
       hideable: false,
       stickyRight: true,
       cell: (r) => (

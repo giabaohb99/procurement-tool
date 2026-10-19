@@ -1,12 +1,12 @@
 import {
   Archive,
   Ban,
-  ChevronDown,
   CircleSlash,
   Download,
   FileCheck2,
   FileCog,
   Loader2,
+  MoreHorizontal,
   Pencil,
   PenLine,
   Trash2,
@@ -68,7 +68,7 @@ interface MenuEntry {
 }
 
 /**
- * Thao tác của MỘT dòng hợp đồng — MỘT nút «Thao tác ▾» mở menu, mỗi mục có ICON + CHỮ, chia nhóm
+ * Thao tác của MỘT dòng hợp đồng — MỘT nút icon «⋯» (gọn, cùng kiểu bảng Mẫu hợp đồng) mở menu, mỗi mục có ICON + CHỮ, chia nhóm
  * Xem / Soạn / Trạng thái, Xóa tách riêng cuối (duoc-CR-633, đại ca: «icon + chữ, dropdown tường minh
  * hơn» — dãy 8 icon trơn trước đây nhìn na ná nhau, phải rê chuột đoán).
  *
@@ -162,11 +162,9 @@ export function LaborContractRowActions({
       )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" disabled={busy}
-            aria-label={`Thao tác với hợp đồng ${row.contract_no || row.code}`}>
-            {busy ? <Loader2 className="size-4 animate-spin" aria-label="Đang xử lý" /> : null}
-            Thao tác
-            <ChevronDown className="size-4 opacity-60" />
+          <Button type="button" variant="ghost" size="icon" className="size-8" disabled={busy}
+            title="Thao tác" aria-label={`Thao tác với hợp đồng ${row.contract_no || row.code}`}>
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">

@@ -26,13 +26,13 @@ function renderActions(row = makeLaborContract(), busy = false) {
 
 const trigger = () => screen.getByRole('button', { name: /Thao tác với hợp đồng/ })
 
-/** Mở menu «Thao tác ▾» rồi trả về CHỮ của các mục (theo đúng thứ tự hiện). */
+/** Mở menu «⋯» rồi trả về CHỮ của các mục (theo đúng thứ tự hiện). */
 async function openMenu() {
   await userEvent.click(trigger())
   return (await screen.findAllByRole('menuitem')).map((m) => m.textContent)
 }
 
-//  duoc-CR-633: thao tác là MỘT nút «Thao tác ▾» mở menu icon + chữ, chia nhóm Xem / Soạn / Trạng thái, Xóa cuối.
+//  duoc-CR-633: thao tác là MỘT nút «⋯» mở menu icon + chữ, chia nhóm Xem / Soạn / Trạng thái, Xóa cuối.
 describe('LaborContractRowActions theo cờ backend', () => {
   it('DRAFT: menu có Sửa / Sinh tệp / Tải lên bản ký / Ký / Hủy / Xóa; chưa có tệp sinh thì KHÔNG có tải .docx', async () => {
     renderActions()

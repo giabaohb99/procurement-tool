@@ -14899,7 +14899,7 @@ Mã nguồn: frontend-v2/src/modules/hr/components/labor-contract-signed-file-fi
 - status: xong
 - date: 2026-10-19
 Đại ca thấy cột thao tác của hợp đồng lao động là một dãy tám biểu tượng trơn khó phân biệt nên muốn đổi thành dạng menu có biểu
-tượng kèm chữ cho rõ. Nay mỗi dòng hợp đồng chỉ còn một nút Thao tác, bấm vào mở menu chia ba nhóm Xem, Soạn và Trạng thái, mỗi mục
+tượng kèm chữ cho rõ. Nay mỗi dòng hợp đồng chỉ còn một nút nhỏ hình ba chấm, bấm vào mở menu chia ba nhóm Xem, Soạn và Trạng thái, mỗi mục
 có biểu tượng và tên đầy đủ, các thao tác nguy hiểm như hủy và xóa tô đỏ, xóa nằm riêng ở cuối; mục nào hiện vẫn theo đúng quyền và
 trạng thái của hợp đồng như trước. Đã chạy thử trọn một hợp đồng trên máy: lập đủ trường kèm bản scan, sinh tệp từ mẫu, tải tệp, xem
 và thay bản ký, mở bản lưu trữ bên Văn bản, sửa phụ cấp rồi sinh lại tệp, đánh dấu đã ký, chấm dứt, và với một hợp đồng khác thì hủy

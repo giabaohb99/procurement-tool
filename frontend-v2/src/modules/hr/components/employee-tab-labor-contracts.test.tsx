@@ -56,7 +56,7 @@ function renderTab() {
 }
 
 
-/** duoc-CR-633: thao tác của dòng nằm trong menu «Thao tác ▾» — mở menu rồi chọn mục theo CHỮ. */
+/** duoc-CR-633: thao tác của dòng nằm trong menu «⋯» — mở menu rồi chọn mục theo CHỮ. */
 async function chooseAction(name: string) {
   await userEvent.click(await screen.findByRole('button', { name: /Thao tác với hợp đồng/ }))
   await userEvent.click(await screen.findByRole('menuitem', { name }))
