@@ -1,3 +1,4 @@
+import { aiSkillModule } from '@/modules/ai-skill/routes'
 import { appearanceModule } from '@/modules/appearance/routes'
 import { approvalModule } from '@/modules/approval/routes'
 import { approvalSealModule } from '@/modules/approval-seal/routes'
@@ -52,6 +53,8 @@ export const allModules: ErpModule[] = [
   reportModule,
   supportModule,
   assistantModule,
+  //  Kho skill AI (doc/erp/21, bao-CR-623) — đứng cạnh Trợ lý AI cho dễ tìm.
+  aiSkillModule,
   forumModule,
   systemModule,
   //  Không phải phân hệ nghiệp vụ: tuỳ chọn hiển thị của chính người đang đăng

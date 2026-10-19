@@ -20,12 +20,21 @@ export function keyOfSubject(subject: MixedSubject): string {
   return `${subject.subject_kind}-${subject.subject_id}`
 }
 
-/** Gắn `key` + `kindLabel` lên từng dòng — `AccessSubjectPicker` chỉ lọc/tick trên dạng này. */
-export function toPickerOptions(options: SubjectOption[]): SubjectPickerOption[] {
+/**
+ * Gắn `key` + `kindLabel` lên từng dòng — `AccessSubjectPicker` chỉ lọc/tick trên dạng này.
+ *
+ * `labels` mặc định là bốn loại chung; nơi có thêm loại riêng (Kho skill AI có chức vụ, cấp bậc) truyền bảng nhãn
+ * của mình vào — KHÔNG nhét thêm loại vào `SUBJECT_KIND_LABELS` chung, vì hộp quyền văn bản lặp qua bảng đó để bày ô
+ * chọn loại và sẽ mọc ra hai loại văn bản không hỗ trợ.
+ */
+export function toPickerOptions(
+  options: SubjectOption[],
+  labels: Record<number, string> = SUBJECT_KIND_LABELS,
+): SubjectPickerOption[] {
   return options.map((option) => ({
     ...option,
     key: keyOfSubject(option),
-    kindLabel: SUBJECT_KIND_LABELS[option.subject_kind],
+    kindLabel: labels[option.subject_kind] ?? '',
   }))
 }
 
