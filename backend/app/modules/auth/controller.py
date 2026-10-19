@@ -134,6 +134,8 @@ def _me_payload(db: Session, user) -> dict:
         #  trước khi dữ liệu về, phải thêm trạng thái chờ ở nhiều nơi — một nguồn
         #  duy nhất ở đây thì không (xem phase 02 plan phân quyền báo cáo).
         "report_keys": sorted(viewable_keys(db, user)),
+        #  duoc-CR-641: công tắc thu sự kiện giao diện (hồ sơ cách làm việc) — FE bật/tắt bộ thu theo đây.
+        "usage_tracking": bool(app_settings.get("usage_tracking_enabled")),
         #  Tuỳ chọn hiển thị cá nhân (hiện có: bảng màu giao diện). Gửi kèm ở đây
         #  chứ không để client gọi thêm một vòng: nó cần NGAY ở khung hình đầu
         #  tiên, gọi sau thì người dùng thấy màu mặc định lóe lên rồi mới nhảy

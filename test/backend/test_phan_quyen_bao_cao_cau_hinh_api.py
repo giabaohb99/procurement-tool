@@ -1,6 +1,6 @@
 """Phase 03 — `/api/report-access` (GET danh sách, POST cấp, DELETE thu hồi).
 
-Canh: gác `role.read`/`role.write`; GET đủ 13 mục đúng thứ tự khóa, không có
+Canh: gác `role.read`/`role.write`; GET đủ mọi mục đúng thứ tự khóa, không có
 dòng thu hồi; POST trùng chủ thể+effect -> updated; chủ thể không tồn tại ->
 skipped; khóa lạ -> 404; trần 500 ký tự của `reason` (ValidationError, không
 tin SQLite); DELETE lần 2 -> 400; có audit; `/auth/me` có `report_keys` khớp
@@ -70,7 +70,7 @@ def test_post_delete_can_role_write(db, seed, cap_quyen, client_as, gan_bao_cao)
     assert resp.status_code == 403
 
 
-def test_get_tra_du_13_muc_dung_thu_tu_khong_co_dong_thu_hoi(db, seed, cap_quyen, client_as,
+def test_get_tra_du_muc_dung_thu_tu_khong_co_dong_thu_hoi(db, seed, cap_quyen, client_as,
                                                               gan_bao_cao):
     reader = _viewer(db, seed, cap_quyen, read=True)
     rows = gan_bao_cao(SUBJECT_COMPANY, seed.company_id, ReportKey.DOCUMENT)
@@ -81,7 +81,7 @@ def test_get_tra_du_13_muc_dung_thu_tu_khong_co_dong_thu_hoi(db, seed, cap_quyen
     resp = client_as(reader).get(ROOT)
     assert resp.status_code == 200
     items = resp.json()["data"]
-    assert len(items) == 13
+    assert len(items) == len(ReportKey)
     assert [it["key"] for it in items] == [int(k) for k in ReportKey]
     doc_item = next(it for it in items if it["key"] == int(ReportKey.DOCUMENT))
     assert doc_item["label"] and doc_item["group"]

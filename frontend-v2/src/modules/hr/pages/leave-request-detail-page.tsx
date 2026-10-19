@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { ArrowLeft, Ban, Check, Printer, Save, Send, Trash2, X } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -118,6 +120,7 @@ export function LeaveRequestDetailPage() {
   }
 
   const isNew = requestId === 0
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.LEAVE_REQUEST, isNew) // duoc-CR-641
   const editable = isNew || (request ? EDITABLE_LEAVE_STATUSES.includes(request.status) : false)
   const canWrite = can('leave_request', isNew ? 'create' : 'write')
   const canApprove = can('leave_request', 'approve')
@@ -128,6 +131,7 @@ export function LeaveRequestDetailPage() {
       { id: isNew ? undefined : requestId, values: toLeavePayload(form) },
       {
         onSuccess: (saved) => {
+          markSubmitted()
           if (isNew) navigate(appRoutes.hr.leaveRequestDetail(saved.id), { replace: true })
         },
       },

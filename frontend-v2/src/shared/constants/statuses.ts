@@ -194,6 +194,7 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "11", "label": "Báo cáo văn bản", "sort_order": 11, "is_terminal": false, "is_exception": false},
   {"value": "12", "label": "Báo cáo phê duyệt", "sort_order": 12, "is_terminal": false, "is_exception": false},
   {"value": "13", "label": "Công việc & Dự án", "sort_order": 13, "is_terminal": false, "is_exception": false},
+  {"value": "14", "label": "Hồ sơ cách làm việc", "sort_order": 14, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại hình pháp lý NCC */
@@ -202,6 +203,55 @@ export const SUPPLIER_LEGAL_TYPE: readonly StatusOption[] = [
   {"value": "individual", "label": "Cá nhân", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "partnership", "label": "Hợp danh", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "household", "label": "Hộ kinh doanh", "sort_order": 0, "is_terminal": false, "is_exception": false},
+]
+
+/** Loại sự kiện giao diện */
+export const UI_EVENT_TYPE: readonly StatusOption[] = [
+  {"value": "1", "label": "Xem màn hình", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Rời màn hình", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Mở biểu mẫu", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Gửi biểu mẫu", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Bỏ dở biểu mẫu", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Tìm kiếm", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "7", "label": "Lỗi giao diện", "sort_order": 7, "is_terminal": false, "is_exception": false},
+]
+
+/** Biểu mẫu có đo */
+export const UI_FORM: readonly StatusOption[] = [
+  {"value": "1", "label": "Yêu cầu mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Yêu cầu báo giá", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Đơn mua hàng", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Đơn nghỉ phép", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Hợp đồng lao động", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Hồ sơ nhân sự", "sort_order": 6, "is_terminal": false, "is_exception": false},
+]
+
+/** Nhóm so sánh */
+export const USAGE_COHORT_KIND: readonly StatusOption[] = [
+  {"value": "1", "label": "Cùng vai trò", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Cùng pháp nhân", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Toàn công ty", "sort_order": 3, "is_terminal": false, "is_exception": false},
+]
+
+/** Kiểu làm việc */
+export const USAGE_STYLE: readonly StatusOption[] = [
+  {"value": "1", "label": "Làm dồn", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Nút thắt duyệt", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Dùng Excel song song", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Người mới đang vướng", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Người thạo", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Hay đi lạc", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "7", "label": "Làm trên điện thoại", "sort_order": 7, "is_terminal": false, "is_exception": false},
+  {"value": "8", "label": "Phiếu kém chất lượng", "sort_order": 8, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Nhờ làm hộ", "sort_order": 9, "is_terminal": false, "is_exception": false},
+  {"value": "10", "label": "Ít dùng", "sort_order": 10, "is_terminal": false, "is_exception": false},
+]
+
+/** Lý do chưa đo được */
+export const USAGE_UNMEASURED_REASON: readonly StatusOption[] = [
+  {"value": "1", "label": "Chưa thu thập", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Dưới ngưỡng dữ liệu", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Không áp dụng", "sort_order": 3, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại ngày làm việc */
@@ -231,6 +281,27 @@ export const WORK_SCHEDULE_LEVEL: readonly StatusOption[] = [
   {"value": "4", "label": "Nhân sự", "sort_order": 4, "is_terminal": false, "is_exception": false},
 ]
 
+/** Loại sự kiện giao diện — khóa → mã gửi lên backend. */
+export const UI_EVENT_TYPE_CODE = {
+  PAGE_VIEW: 1,
+  PAGE_LEAVE: 2,
+  FORM_OPEN: 3,
+  FORM_SUBMIT: 4,
+  FORM_ABANDON: 5,
+  SEARCH: 6,
+  CLIENT_ERROR: 7,
+} as const
+
+/** Biểu mẫu có đo — khóa → mã gửi lên backend. */
+export const UI_FORM_CODE = {
+  PURCHASE_REQUEST: 1,
+  QUOTE_REQUEST: 2,
+  PURCHASE_ORDER: 3,
+  LEAVE_REQUEST: 4,
+  LABOR_CONTRACT: 5,
+  EMPLOYEE_PROFILE: 6,
+} as const
+
 /** Tra theo tên bộ, cho chỗ dựng ô chọn động. */
 export const STATUS_SETS = {
   contract_expiry: CONTRACT_EXPIRY,
@@ -254,6 +325,11 @@ export const STATUS_SETS = {
   pr_line_status: PR_LINE_STATUS,
   report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
+  ui_event_type: UI_EVENT_TYPE,
+  ui_form: UI_FORM,
+  usage_cohort_kind: USAGE_COHORT_KIND,
+  usage_style: USAGE_STYLE,
+  usage_unmeasured_reason: USAGE_UNMEASURED_REASON,
   work_day_kind: WORK_DAY_KIND,
   work_event_type: WORK_EVENT_TYPE,
   work_schedule_level: WORK_SCHEDULE_LEVEL,

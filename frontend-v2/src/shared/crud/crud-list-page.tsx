@@ -15,6 +15,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -143,7 +144,8 @@ function CrudListContent<T extends CrudRecord>({
     }
   }
 
-  const { data, isLoading, isError } = useCrudList<T>(config.apiPath, params)
+  const { data, isLoading, isError, isFetching } = useCrudList<T>(config.apiPath, params)
+  useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
   const handleRowClick = (row: T) => {
     // Mở popup Sửa tại chỗ, hoặc điều hướng sang trang chi tiết (mặc định).

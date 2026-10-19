@@ -23,6 +23,7 @@ import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Badge } from '@/shared/ui/badge'
@@ -165,7 +166,8 @@ function PurchaseRequestListContent() {
     params.sort_dir = sortDir
   }
 
-  const { data, isLoading, isError } = usePurchaseRequests(params)
+  const { data, isLoading, isError, isFetching } = usePurchaseRequests(params)
+  useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
   const handleExportExcel = async () => {
     await downloadFile('/api/purchase-requests/export/xlsx', 'yeu-cau-mua-hang.xlsx')

@@ -191,8 +191,10 @@ def test_tran_so_nhom(db, cap_quyen, gan_bao_cao, monkeypatch):
 
 
 def test_moi_khoa_bao_cao_deu_co_route_va_dung_khoa_gac():
-    """13 ReportKey đều mở; hàm route nạp được và chính là hàm đang gác đúng khóa đó trên app."""
-    assert {r.key for r in rs.REPORTS.values()} == set(ReportKey)
+    """Mọi ReportKey (trừ khóa cố ý không mở cho trợ lý) đều mở; hàm route nạp được và chính là hàm đang gác đúng khóa đó trên app."""
+    #  duoc-CR-641: «Hồ sơ cách làm việc» (khóa 14) là dữ liệu hành vi từng người, chỉ admin xem trên màn riêng;
+    #  KHÔNG đưa vào công cụ `report_summary` của trợ lý AI (pha 4 AI đọc hồ sơ là việc riêng, chưa làm).
+    assert {r.key for r in rs.REPORTS.values()} == set(ReportKey) - {ReportKey.USAGE_PROFILE}
     gated = {}
     for route in app.routes:
         for dep in getattr(route, "dependencies", []) or []:

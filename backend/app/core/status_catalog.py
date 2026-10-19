@@ -38,6 +38,9 @@ class Code:
     sort_order: int = 0
     is_terminal: bool = False
     is_exception: bool = False
+    # Tên khóa (IDENTIFIER) để `scripts/gen_status_ts.py` sinh thêm hằng `<TÊN_BỘ>_CODE = {KHÓA: giá trị}` cho giao diện
+    # — dành cho bộ mã mà giao diện GỬI số lên (sự kiện, biểu mẫu), khỏi chép tay. Bỏ trống = không sinh. Không vào `full_options`.
+    key: str = ""
 
 
 class CodeSet:

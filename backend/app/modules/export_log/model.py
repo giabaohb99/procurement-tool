@@ -3,7 +3,7 @@
 Chỉ lưu METADATA (ai xuất, bảng nào, định dạng, số dòng, tên file, dung lượng),
 KHÔNG lưu nội dung file — đủ để truy vết, không phình dung lượng.
 """
-from sqlalchemy import BigInteger, Integer, String, Text
+from sqlalchemy import BigInteger, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -13,6 +13,7 @@ class ExportLog(Base, AuditMixin):
     """1 lần xuất dữ liệu. created_by = người xuất; created_at = thời điểm xuất."""
 
     __tablename__ = "tab_export_log"
+    __table_args__ = (Index("ix_tab_export_log_created_at", "created_at"),)   # duoc-CR-641
 
     #  Khóa đối tượng đã xuất (trùng ENTITIES: 'employee', 'department', ...).
     entity: Mapped[str] = mapped_column(String(50), index=True)

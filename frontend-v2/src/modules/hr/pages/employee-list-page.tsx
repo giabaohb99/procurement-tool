@@ -17,6 +17,7 @@ import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-fil
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
@@ -126,7 +127,8 @@ function EmployeeListContent() {
     params.sort_dir = sortDir
   }
 
-  const { data, isLoading, isError } = useEmployees(params)
+  const { data, isLoading, isError, isFetching } = useEmployees(params)
+  useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
   //  Hai ô lọc dựng MỘT LẦN, bày ở HAI chỗ: hàng ngang của thanh công cụ từ
   //  `md`, tờ trượt lọc ở dưới ngưỡng đó. State nằm trên URL nên hai bản luôn

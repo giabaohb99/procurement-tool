@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -161,6 +163,7 @@ export function PurchaseRequestDetailPage() {
   // này route được gộp lại với route chi tiết.
   const isNew = !id || id === 'new'
   const purchaseRequestId = isNew ? 0 : Number(id)
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.PURCHASE_REQUEST, isNew) // duoc-CR-641
   const { user } = useAuth()
   const { can } = usePermission()
 
@@ -470,6 +473,7 @@ export function PurchaseRequestDetailPage() {
         items: loadedDraft.items.filter((item) => item.product_name.trim()),
       },
     })
+    markSubmitted()
     if (isNew) {
       if (submitAfterSave) {
         try {

@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { useAuthSync } from '@/core/auth/use-auth-sync'
+import { RouteTelemetry } from '@/core/telemetry/route-telemetry'
 import { appRoutes } from '@/shared/constants/app-routes'
 
 /**
@@ -22,5 +23,10 @@ export function ProtectedRoute() {
     return <Navigate to={appRoutes.login} replace state={{ from: location }} />
   }
 
-  return <Outlet />
+  return (
+    <>
+      <RouteTelemetry />
+      <Outlet />
+    </>
+  )
 }

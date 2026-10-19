@@ -82,6 +82,8 @@ REGISTRY = {
     "frontend_url": ("str", "FRONTEND_URL"),
     "notification_keep_days": ("int", "NOTIFICATION_KEEP_DAYS"),
     "backup_keep": ("int", "BACKUP_KEEP"),
+    #  duoc-CR-641: công tắc thu sự kiện giao diện cho hồ sơ cách làm việc (mặc định BẬT).
+    "usage_tracking_enabled": ("bool", "USAGE_TRACKING_ENABLED"),
 }
 
 #  BỐN khóa AI CỐ Ý ở lại `.env`, đừng dời theo cho đủ bộ:

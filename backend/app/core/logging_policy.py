@@ -58,6 +58,9 @@ SKIP_PATH_PREFIXES = (
     "/api/uploads",
     "/api/system-logs",
     "/api/audit-logs",
+    #  duoc-CR-641: lô sự kiện giao diện (FE gửi mỗi vài chục giây). Ghi nhật ký request cho chính
+    #  đường đo là mỗi lô đẻ thêm một dòng `tab_request_log` — NT-5, lớp tự động không ghi chính nó.
+    "/api/telemetry",
     "/docs",
     "/redoc",
     "/openapi.json",

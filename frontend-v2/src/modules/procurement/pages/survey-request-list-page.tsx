@@ -24,6 +24,7 @@ import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-fil
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Button } from '@/shared/ui/button'
@@ -153,7 +154,8 @@ function SurveyRequestListContent() {
     params.sort_dir = sortDir
   }
 
-  const { data, isLoading, isError } = useSurveyRequests(params)
+  const { data, isLoading, isError, isFetching } = useSurveyRequests(params)
+  useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
   const handleExportExcel = async () => {
     await downloadFile('/api/survey-requests/export/xlsx', 'yeu-cau-bao-gia.xlsx')

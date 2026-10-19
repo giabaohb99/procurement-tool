@@ -28,7 +28,7 @@ from app.core.status_catalog import Code, CodeSet, register
 
 
 class ReportKey(IntEnum):
-    """13 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
+    """14 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
     phase-02 của plan `261002-0836-phan-quyen-tung-bao-cao`."""
 
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
@@ -44,6 +44,7 @@ class ReportKey(IntEnum):
     DOCUMENT = 11             # Báo cáo văn bản (Hành chính)
     APPROVAL = 12             # Báo cáo phê duyệt (Hành chính)
     WORK = 13                 # Công việc & Dự án (Dự án)
+    USAGE_PROFILE = 14        # Hồ sơ cách làm việc (Quản trị) — duoc-CR-641
 
 
 #  {khóa: (nhãn, nhóm phân hệ)} — nhãn KHỚP `label`, nhóm KHỚP `group` ở danh
@@ -62,6 +63,7 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.DOCUMENT: ("Báo cáo văn bản", "Hành chính"),
     ReportKey.APPROVAL: ("Báo cáo phê duyệt", "Hành chính"),
     ReportKey.WORK: ("Công việc & Dự án", "Dự án"),
+    ReportKey.USAGE_PROFILE: ("Hồ sơ cách làm việc", "Quản trị"),
 }
 
 #  `value` là SỐ VIẾT DƯỚI DẠNG CHUỖI — khung `status_catalog` dùng mã chuỗi,

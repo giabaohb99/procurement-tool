@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, DateTime, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
@@ -8,12 +8,15 @@ from app.core.base_model import Base, AuditMixin
 class Notification(Base, AuditMixin):
     """In-app notifications."""
     __tablename__ = "tab_notification"
+    __table_args__ = (Index("ix_tab_notification_created_at", "created_at"),)   # duoc-CR-641
 
     user_id: Mapped[int] = mapped_column(BigInteger, index=True, nullable=True)
     title: Mapped[str] = mapped_column(String(255))
     body: Mapped[str] = mapped_column(Text)
     link: Mapped[str] = mapped_column(String(500), nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    #  duoc-CR-641: mốc đánh dấu đã đọc (chỉ từ ngày deploy, không bù) — đo «gửi → đọc mất bao lâu».
+    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class EmailLog(Base, AuditMixin):

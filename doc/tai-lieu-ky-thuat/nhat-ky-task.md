@@ -14923,3 +14923,21 @@ không ai xóa nhầm hay chiếm tệp của hợp đồng khác được; văn
 
 Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · access_service.py · controller.py · backend/app/modules/labor_contract/document_archive_files.py · frontend-v2/src/modules/document/config/document-action-gates.ts · pages/document-detail-page.tsx · test/backend/test_hdld_ban_luu_tru_sua_duoc_cr640.py
 
+
+## duoc-CR-641 | Hồ sơ cách làm việc từng người dựng từ các chỉ số tracking
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm muốn có hồ sơ cho thấy mỗi người làm việc trên hệ thống ra sao: giờ giấc, màn hay vào, cách lập và duyệt phiếu,
+mức thành thạo và an toàn tài khoản, dựa trên danh sách chỉ số đã liệt kê ở mục duoc-CR-626. Giao diện mới nay ghi lại việc
+chuyển màn, mở và gửi hay bỏ dở biểu mẫu, số kết quả tìm kiếm và lỗi trang, nhưng không ghi từ khóa tìm kiếm, không ghi từng phím
+gõ hay từng cú bấm, và gửi gộp nửa phút một lần nên không làm chậm máy. Máy chủ gom số liệu theo ngày lúc rạng sáng, tính giờ
+ngoài giờ theo lịch làm việc của từng người và trừ ngày lễ, ngày nghỉ phép đã duyệt, rồi mỗi thứ Hai dựng hồ sơ tuần kèm nhãn
+kiểu làm việc và so sánh với nhóm cùng vai trò. Màn «Hồ sơ cách làm việc» nằm trong phân hệ Báo cáo, mặc định chỉ quản trị xem
+được và quản trị có thể gán thêm người; chỉ số chưa đo được thì nêu lý do thay vì hiện số 0. Sự kiện thô giữ 90 ngày, số liệu
+gom theo ngày giữ ba năm. Công tắc thu thập mặc định bật theo quyết định của chủ sản phẩm; trước khi lên bản chạy thật cần bộ
+phận nhân sự duyệt thông báo cho nhân viên, trong đó nói rõ hồ sơ có thể được dùng tham khảo khi đánh giá. Đã đo trên trình
+duyệt: thêm một sự kiện tốn chưa tới một phần triệu giây, chuyển trang một trăm lần và mở đóng biểu mẫu hai mươi lần không làm
+rò bộ nhớ.
+
+Mã nguồn: backend/app/modules/usage_profile/ · backend/app/core/usage_codes.py · migration usgprof01 · frontend-v2/src/core/telemetry/ · frontend-v2/src/modules/report/pages/usage-profile-list-page.tsx · usage-profile-detail-page.tsx · test/backend/test_ho_so_lam_viec_*_cr641.py
+Deploy: chạy migration usgprof01, khởi động lại celery-worker và celery-beat, nạp bù 90 ngày bằng script backfill, quản trị đăng nhập lại để thấy menu.
