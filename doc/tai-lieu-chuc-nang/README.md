@@ -15,6 +15,7 @@ Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
 | [18-dat-phong-hop.md](18-dat-phong-hop.md) | Đặt phòng họp — lịch phòng · phiếu đặt chạy qua bộ máy duyệt · danh mục phòng (ERP v2, trong phân hệ Nhân sự) |
 | [19-bao-cao-thuc-hien-ycbg.md](19-bao-cao-thuc-hien-ycbg.md) | Báo cáo thực hiện — khối theo dõi tiến trình thương vụ trên chi tiết Yêu cầu báo giá (ERP v2). Xem thêm TDD kỹ thuật [`tdd-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
 | [21-lich-lam-viec.md](21-lich-lam-viec.md) | Lịch làm việc — mẫu lịch tuần · gán theo 4 cấp · tính ngày công · xem lịch (ERP v2, trong phân hệ Nhân sự) |
+| [22-ket-noi-ai-rieng-va-kho-skill.md](22-ket-noi-ai-rieng-va-kho-skill.md) | Kết nối AI riêng + Kho skill AI — khóa kết nối · nối Claude / Cursor / Gemini · công cụ và skill · quản trị kho skill · nhật ký và lỗi (ERP v2, Trang cá nhân + phân hệ Kho skill AI) |
 
 Danh sách đầy đủ ở [00-muc-luc.md](00-muc-luc.md); bảng trên chỉ liệt kê vài mục
 tiêu biểu, đừng coi là danh sách đủ.

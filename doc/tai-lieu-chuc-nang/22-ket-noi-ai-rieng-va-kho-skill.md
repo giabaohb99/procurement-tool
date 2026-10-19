@@ -1,0 +1,219 @@
+# Kết nối AI riêng và Kho skill AI
+
+| | |
+|---|---|
+| Bản | 1.0 — 19/10/2026 (bao-CR-631) |
+| CR | **bao-CR-631** — bài Trung tâm trợ giúp + tài liệu này; mã của cụm ở ai-CR-063, 207–216 (cổng MCP), bao-CR-620–625 (Trang cá nhân, Kho skill K1–K6) |
+| Giao diện | **chỉ có trên `frontend-v2/`**: Trang cá nhân ▸ *Trợ lý AI của tôi* ▸ *Kết nối AI riêng* (`/me?tab=ai-connect`, mọi người) · phân hệ **Kho skill AI** (`/ai-skill/*`, quản trị) |
+| Bài Help Center | `backend/scripts/seed_help_ket_noi_ai_mcp.py` — thẻ *Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI* + 6 bài theo tác vụ. **Nội dung ở đây và ở seed phải khớp nhau** |
+| Hợp đồng kỹ thuật | `doc/agent-hub/06-cong-mcp.md` (cổng, khóa, nhóm tool, trần, API giao diện) · `doc/erp/21-kho-skill-ai-mcp.md` (thiết kế kho skill) · `doc/erp/21a-kich-ban-thu-mcp-dev.md` (kịch bản thử) |
+| Nguồn bước nối ứng dụng | `backend/app/modules/agent_hub/mcp_setup.py` — màn *AI của tôi* đọc đúng tệp đó; đổi bước thì sửa seed + tài liệu này |
+
+---
+
+## 1. Chức năng này để làm gì
+
+Nhân sự dùng **ứng dụng AI của chính mình** (Claude Desktop, Claude Code, Cursor, Gemini CLI) để hỏi dữ liệu ERP và đọc
+cẩm nang công ty, **dưới đúng tài khoản và quyền của người đó**. Khác Trợ lý AI web / bot Telegram (công ty chạy model):
+ở đây **tiền model do người dùng trả**, ERP chỉ cung cấp dữ liệu và cẩm nang qua một cổng chuẩn MCP (đại ca chốt 17/10/2026:
+MCP là đường chính, bot Telegram đóng băng tính năng).
+
+Hai thứ người dùng gặp:
+
+| Thứ | Là gì | Ở đâu |
+|---|---|---|
+| **Khóa kết nối** | Chuỗi `dego_mcp_…` thay mật khẩu khi AI gọi vào ERP. Tự tạo, hiện đúng một lần, gỡ tức thì | Trang cá nhân ▸ *Kết nối AI riêng* |
+| **Kho skill AI** | Cẩm nang công ty viết cho AI đọc (quy trình, quy định, mẫu báo cáo). Soạn một lần, gán theo sơ đồ tổ chức | Phân hệ *Kho skill AI* (quản trị) · thẻ *Skill bạn được đọc* ở màn AI của tôi |
+
+Luật dùng chữ trên màn hình: lớp nhân sự **không** dùng «MCP», «JSON-RPC» — gọi là *Kết nối AI riêng*, *khóa kết nối*,
+*công cụ*, *skill*.
+
+## 2. Tạo khóa kết nối ở Trang cá nhân (bài a)
+
+Màn **AI của tôi** (`profile-ai-connect-section.tsx`) đi theo ba bước đánh số.
+
+**Bước 1 — Chọn ứng dụng AI**: ô *Ứng dụng AI* có 6 mục (`mcp_setup.CLIENTS`): Claude Desktop · Claude Code · Cursor ·
+Gemini CLI · claude.ai (trình duyệt) · ChatGPT. Chọn một mục → hiện bước cài, tệp cần sửa, điều kiện, đoạn cấu hình
+(`GET /api/agent-hub/mcp-setup?client=…`). Hai mục cuối `supported = false`, hiện câu *chưa nối được* + gợi ý. Đoạn mẫu
+mang chỗ giữ `<KHÓA_CỦA_BẠN>`; tạo khóa xong màn tự thay bằng khóa vừa hiện.
+
+**Bước 2 — Khóa của bạn**
+
+| Việc | Cách | Luật |
+|---|---|---|
+| Tạo khóa | *Tên khóa* (vd «Claude máy công ty») · *Mức* · **Tạo khóa** → khóa hiện **đúng một lần** | Hạn 90 ngày (tự tạo); tối đa **5 khóa còn hiệu lực** / tài khoản; mỗi lượt gọi ghi *dùng lần cuối*; nghỉ việc đóng cùng tài khoản |
+| Nhận khóa phát hộ | Chuông *«Bạn có khóa kết nối AI chờ nhận»* → khối *Khóa quản trị phát cho bạn, chờ nhận* → **Nhận khóa** (hiện một lần) | Chưa nhận thì cổng từ chối; khóa phát hộ luôn mức Chỉ đọc |
+| Gỡ khóa | Nút **Gỡ khóa** trên từng khóa | Hiệu lực tức thì; dùng khi đổi máy, nghi lộ |
+
+| Mức | AI làm được | Dùng khi |
+|---|---|---|
+| **Chỉ đọc** (mặc định) | Tra cứu trong danh sách trắng `READ_TOOLS` + 3 tool skill + `report_issue` | Lần đầu nối; máy dùng chung |
+| **Được ghi** | Thêm `draft_*`, `ticket_create`, ghi chú, `confirm_draft`. Tạo phiếu luôn **hai bước** nháp → xác nhận; đề nghị thanh toán chỉ tạo trên web | Nhờ AI lập phiếu |
+
+**Bước 3 — Kiểm tra kết nối**: mỗi khóa còn hiệu lực hiện *Đã nối, lượt thành công gần nhất lúc…* hoặc *Chưa thấy AI gọi
+lần nào* (`GET mcp-keys/{id}/last-call`, `connected` = có ít nhất một lượt thành công); nút **Kiểm tra lại**.
+
+Dưới cùng: thẻ **Skill bạn được đọc** (`visible_skills`) và **20 lượt AI tra cứu gần nhất** (`GET mcp-calls`, người thường
+chỉ của mình). Nút **Xem cách hoạt động** mở demo chín chương (dữ liệu giả).
+
+Ba mục cạnh nhau trong nhóm *Trợ lý AI của tôi*, không lẫn: *Kết nối AI riêng* (AI của bạn vào ERP) · *Khóa model AI*
+(khóa Gemini / Claude cho bot và Trợ lý công ty suy nghĩ) · *Liên kết Telegram*.
+
+## 3. Nối Claude Desktop (bài b)
+
+Claude Desktop **không nhận `url` + `headers`** trong `claude_desktop_config.json` (chỉ chạy lệnh cục bộ) → đi qua cầu
+`npx -y mcp-remote`. Điều kiện: **Node.js 18+** (`node -v`), đã có khóa.
+
+1. Màn AI của tôi chọn *Claude Desktop*, tạo khóa, chép đoạn cấu hình (đã điền khóa).
+2. Claude Desktop ▸ **Settings ▸ Developer ▸ Edit Config** → mở `%APPDATA%\Claude\claude_desktop_config.json`
+   (macOS `~/Library/Application Support/Claude/claude_desktop_config.json`).
+3. Dán khối dưới; tệp đã có `mcpServers` thì **chỉ thêm khối `dego-erp` vào trong**.
+4. Thay `<KHÓA_CỦA_BẠN>`, **giữ `Bearer ` phía trước**.
+5. Lưu, **THOÁT HẲN** Claude Desktop (Quit ở biểu tượng khay — đóng cửa sổ chưa phải thoát).
+6. Mở lại; ô chat bấm biểu tượng công cụ thấy `dego-erp` là đã nối; về ERP bấm *Kiểm tra lại*.
+
+```json
+{
+  "mcpServers": {
+    "dego-erp": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://erp.degoholding.vn/api/mcp", "--header", "Authorization:${DEGO_MCP_KEY}"],
+      "env": { "DEGO_MCP_KEY": "Bearer <KHÓA_CỦA_BẠN>" }
+    }
+  }
+}
+```
+
+Địa chỉ cổng lấy theo màn AI của tôi (`AGENT_ERP_URL` + `/api/mcp`; dev là `deverp.degoholding.vn`). Khóa nằm ở biến
+`DEGO_MCP_KEY` vì khoảng trắng trong `args` làm hỏng lệnh trên Windows; đặt `setx DEGO_MCP_KEY "Bearer …"` cho cả máy thì
+bỏ được khối `env`, nhưng `setx` chỉ có hiệu lực với tiến trình mở sau.
+
+Ba lỗi riêng của Claude Desktop:
+
+| Hiện tượng | Nguyên nhân | Làm gì |
+|---|---|---|
+| Tệp cấu hình trở lại như cũ sau khi sửa | Claude Desktop **ghi đè tệp** khi đang chạy | Thoát hẳn trước khi sửa, hoặc luôn sửa qua *Settings ▸ Developer ▸ Edit Config* rồi thoát hẳn |
+| Thấy `dego-erp` nhưng *Server disconnected*, không có công cụ | Thiếu Node.js · chưa thoát hẳn · dòng `Authorization` sai · khóa hết hạn / đã gỡ | `node -v`; xem lại dòng khóa; thoát hẳn; đọc `%LOCALAPPDATA%\Claude\logs\mcp-server-dego-erp.log` (che khóa khi gửi) |
+| Máy này nối được, máy khác không | Mỗi máy một tệp cấu hình, nên mỗi máy một khóa | Tạo thêm khóa (≤ 5), đặt tên theo máy |
+
+Liên quan vận hành: nginx của giao diện ERP phải trả **404** cho đường dò OAuth `/.well-known/*` để `mcp-remote` không
+tưởng cổng đòi OAuth (bao-CR-625).
+
+## 4. Nối Claude Code, Cursor, Gemini CLI (bài c)
+
+Ba ứng dụng nhận thẳng địa chỉ + dòng khóa.
+
+- **Claude Code**: `claude mcp add --transport http --scope user dego-erp https://erp.degoholding.vn/api/mcp --header "Authorization: Bearer <KHÓA_CỦA_BẠN>"`
+  → `claude mcp list` thấy `dego-erp` đã kết nối. `--scope user` dùng ở mọi thư mục. **Mẹo Windows:** trong PowerShell
+  gõ `claude` có thể bị chặn vì chính sách chạy tệp `.ps1` (execution policy) → gõ `claude.cmd mcp add …` hoặc dùng
+  Command Prompt; không cần đổi chính sách máy.
+- **Cursor**: Settings ▸ MCP ▸ Add new MCP server, hoặc `~/.cursor/mcp.json` (`.cursor/mcp.json` trong dự án nếu chỉ dùng
+  ở đó): `{"mcpServers": {"dego-erp": {"url": "<url>", "headers": {"Authorization": "Bearer <KHÓA_CỦA_BẠN>"}}}}` → chấm xanh.
+- **Gemini CLI**: `~/.gemini/settings.json`, như Cursor nhưng ô **`httpUrl`** thay `url` → chạy `gemini`, gõ `/mcp`.
+- **claude.ai (trình duyệt), ChatGPT**: kết nối tùy chỉnh chỉ đăng nhập OAuth, không nhận khóa dạng header → *chưa nối
+  được*; dùng Claude Desktop (cùng tài khoản claude.ai), Cursor hoặc Gemini CLI. Xem lại khi hai nơi đó đổi cách xác thực.
+
+## 5. AI làm được gì: công cụ và skill (bài d)
+
+| | Công cụ | Skill |
+|---|---|---|
+| Là gì | Hàm AI gọi vào ERP (`assistant.tools`, chung với Trợ lý web / bot) | Bài cẩm nang trong Kho skill AI |
+| Ai làm ra | Có sẵn; quản trị bật / tắt theo **nhóm** (`mcp_settings.GROUPS`) | Quản trị / trưởng phòng soạn, gán ai được đọc |
+| Số lượng | Tùy mức khóa + nhóm bật (dev 19/10: khóa Chỉ đọc, 7 nhóm bật ≈ 34 công cụ) | Tùy phòng ban, chức vụ, cấp bậc |
+
+Nhóm công cụ (doc 06 §4): mặc định **bật** `mine` việc của tôi · `leave` nghỉ phép · `directory` danh bạ, thuật ngữ, HDSD ·
+`reports` báo cáo gom sẵn (`report_summary`, 13 báo cáo, gác `require_report`) + bảng số (`dataset_query`) · `skills`;
+mặc định **tắt** `purchase` (gồm `erp_read`) · `finance` · `document` · `work` · `customs` · `google` · `personal`. Nhóm
+tắt: tool không có trong `tools/list`, gọi thẳng → `denied` kèm tên nhóm. `report_issue`, `confirm_draft` luôn mở.
+Mọi tool chạy **dưới quyền chủ khóa** (`require` + `apply_scope` + `require_report`): nhóm bật không có nghĩa thấy tất cả.
+
+Skill: cổng dặn AI *gọi `list_skills` trước việc nghiệp vụ, `read_skill` đúng cái cần, áp dụng vào việc chứ không đọc lại
+nguyên văn*. AI chỉ đọc skill **đã xuất bản** và **được gán** (`visible_skills`, tính lúc gọi — đổi phòng là đổi skill, khóa
+giữ nguyên). Skill không được gán trả cùng câu với skill không tồn tại. Mức *Bảo vệ* không trả tệp; *Khóa* chỉ tên + tóm tắt.
+AI không tự mở skill thì nhắc *«Hãy xem cẩm nang công ty trước khi trả lời»*.
+
+Câu mẫu: *Liệt kê các skill công ty mà bạn đọc được* · *Tôi còn bao nhiêu ngày phép?* · *Yêu cầu mua hàng tôi lập tuần
+trước đang ở bước nào?* · *Lập báo cáo mua hàng tháng 9 theo nhà cung cấp, xuất Excel* · khóa được ghi: *Soạn đơn nghỉ
+phép thứ Sáu tuần sau* → xem nháp → *tạo và gửi duyệt*.
+
+## 6. Quản trị Kho skill AI (bài e)
+
+Phân hệ *Kho skill AI* hiện với người có `ai_skill.read` hoặc `ai_mcp_key_admin.read`. Menu: Tổng quan · Bộ skill · Khóa
+nhân sự · Nhật ký sử dụng · Giới thiệu · Cấu hình.
+
+| Khái niệm | Bảng | Ghi chú |
+|---|---|---|
+| Bộ skill | `tab_ai_skill_set` | mã, tên, pháp nhân, **phòng chủ quản**, trạng thái Nháp / Đang dùng / Lưu trữ, mức bảo mật Mở / Bảo vệ / Khóa |
+| Skill | `tab_ai_skill` + `tab_ai_skill_version` + `tab_ai_skill_file` | `slug` 2–100 ký tự `[A-Za-z0-9][A-Za-z0-9_-]*`; *Tóm tắt cho AI* ≤ 500 ký tự bắt buộc khi xuất bản; phiên bản chỉ thêm; tệp chữ ≤ 2 MB |
+| Ai được đọc | `tab_ai_skill_access` | khuôn `tab_report_access` + chức vụ, cấp bậc; `include_children`; cấm thắng; dòng của skill **thay** quyền bộ |
+
+Màn **Bộ skill**: *Tạo bộ* · *Tải gói lên* (`.zip` / `.skill` có `SKILL.md` với `name` / `description`; tải lại gói cùng tên =
+thay toàn bộ tệp; thêm tệp = cộng dồn). **Chi tiết bộ**: tab *Skill* (Thêm skill, Tải gói lên, Xuất bản, xóa) · *Ai được đọc*
+(*Gán thêm*: phòng ban [kể cả phòng con] · chức vụ · cấp bậc · người · pháp nhân · vai trò; chiều Cho phép / Không cho phép
+tô đỏ; hạn; lý do; thu hồi hiệu lực ~1 phút) · *Lịch sử*. **Soạn skill**: hai cột Markdown / *Xem như AI đọc*; *Lưu nháp*
+hoặc Ctrl+S; rời trang chưa lưu thì hỏi; *Xuất bản* (cần `ai_skill.approve`) tự lưu nháp trước, kèm *Ghi chú thay đổi*;
+sau đó nháp mới hơn bản AI đọc được đánh dấu; tab *Tệp đi kèm* · *Phiên bản* (so hai bản) · *Ai được đọc* (riêng skill) ·
+*Lịch sử*.
+
+Luật đọc (doc 21 §4.2): bộ đọc được **và** skill không bị thu hẹp; phòng con kế thừa theo `parent`; cấm thắng; chỉ skill
+*Đang dùng* của bộ *Đang dùng* lộ ra MCP; một hàm `ai_skill.access_service.visible_skills(db, user)` dùng chung MCP /
+bot / Trợ lý web / màn AI của tôi.
+
+**Khóa nhân sự** (`ai_mcp_key_admin`, phạm vi theo hồ sơ **chủ khóa**): bảng khóa (Chờ nhận / Đang dùng / Hết hạn / Đã thu
+hồi), lọc phòng + trạng thái; **Phát khóa** cho người (theo danh sách nhân sự) hoặc cả phòng, ≤ 50 / lượt, hạn 7 / 30 / 90 /
+180 / 365, luôn Chỉ đọc; có người ngoài phạm vi → từ chối cả lượt; đủ 5 khóa / chưa có tài khoản / tài khoản khóa → bỏ qua
+kèm lý do; người nhận có **chuông** (không email, không Telegram). **Thu hồi**: tick → hộp chỉ đếm khóa còn hiệu lực; thu hồi
+theo khóa / người / lượt; dòng thu hồi giữ lại.
+
+**Cấu hình** (`agent_group.write`; `tab_setting.agent_mcp_settings`): bật / tắt nhóm; giới hạn `rate_per_key` 10–2000
+(mặc định 120) · `rate_per_ip` 0–20000 (600) · `bad_key_per_ip` 5–1000 (30) · `row_budget_per_min` 0–100000 (3000, 0 =
+không chặn) · `log_retention_days` 30–730 (180); *Câu dặn thêm cho AI* ≤ 1000 ký tự. Ô trống không hiểu là 0; ngoài dải
+chặn lưu; chỉ gửi phần đã đổi.
+
+**Tổng quan** (`agent_group.read`): bộ / skill, người đã nối AI, lượt 7 ngày so 7 ngày trước, từ chối + lỗi, biểu đồ 14
+ngày, top công cụ / người / skill, khóa sắp hết hạn.
+
+Quyền: `ai_skill` (read · create · write · delete · approve = xuất bản; phạm vi pháp nhân + phòng chủ quản) ·
+`ai_mcp_key_admin` (read · create · delete) · `agent_group` (Tổng quan, nhật ký người khác, Cấu hình). Hai vai trò seed
+*Quản trị kho skill AI* (toàn công ty) và *Biên tập skill AI phòng ban* (phòng mình); seed prod không ghi đè → tick tay ở
+*Nhân sự ▸ Phân quyền tài khoản*.
+
+Thứ tự dựng: tick quyền → tạo bộ cho một phòng, 2–3 skill, viết kỹ tóm tắt, xuất bản → gán phòng (kể cả phòng con) → phát
+khóa chỉ đọc cho vài người thử → đọc nhật ký một tuần rồi mới mở thêm nhóm công cụ.
+
+## 7. Nhật ký và lỗi thường gặp (bài f)
+
+Nhật ký (`tab_agent_mcp_call`): mỗi lượt JSON-RPC một dòng, kể cả `initialize`, khóa sai, quá tần suất (lượt sai hàng
+loạt chỉ ghi 10 dòng đầu / phút); người, nhân sự, phòng, pháp nhân chụp lúc gọi, ứng dụng (`clientInfo`), method, tool,
+`skill_id`, trạng thái (1 Thành công · 2 Bị từ chối · 3 Lỗi), lý do, thời gian, IP. Giữ 180 ngày, beat `agent-mcp-log-purge`
+gom vào `tab_agent_mcp_call_daily`. Người thường xem 20 lượt của mình ở màn AI của tôi; quản trị xem *Nhật ký sử dụng*
+(lọc ngày / công cụ / trạng thái, *Xuất CSV (trang hiện tại)*, chặn công thức Excel ở ô bắt đầu bằng `= + - @`).
+
+| Lý do trong nhật ký / câu AI nhận | Nghĩa | Làm gì |
+|---|---|---|
+| *Khóa sai* · *Khóa MCP không hợp lệ hoặc đã hết hạn* (401) | khóa chép sai / không tồn tại; câu trả ngoài chung một câu, lý do chỉ ở nhật ký | chép lại hoặc tạo khóa mới |
+| *Khóa đã hết hạn* | quá hạn | tạo khóa mới |
+| *Khóa đã bị thu hồi* | người dùng gỡ hoặc quản trị thu hồi | hỏi quản trị; tạo khóa mới |
+| *Khóa phát hộ chưa được chủ khóa nhận* | chưa bấm Nhận khóa / dán khóa của người khác | Trang cá nhân → Nhận khóa |
+| *Quá tần suất (khóa)* (429, JSON-RPC -32000, `Retry-After`) | > 120 lượt / phút / khóa | đợi một phút; mỗi máy một khóa |
+| *Quá tần suất (IP)* · *(khóa sai liên tục)* | > 600 lượt / phút / IP · > 30 khóa sai / phút / IP | đợi; báo quản trị nếu lặp |
+| `denied` kèm tên nhóm | nhóm tool bị tắt ở Cấu hình | xin bật nhóm |
+| *Khóa này chỉ đọc; tạo phiếu cần khóa «được ghi»* | nhờ tạo phiếu bằng khóa Chỉ đọc | tạo khóa Được ghi |
+| `denied` thiếu quyền / chưa được giao báo cáo | phạm vi dữ liệu như trên web | xin quyền / giao báo cáo |
+| *không có skill đó* | chưa xuất bản hoặc không gán — cùng câu với không tồn tại | hỏi người soạn |
+| bộ mức Bảo vệ không mở tệp | đúng thiết kế | — |
+| `has_more` / hết ngân sách dòng | ≤ 5 trang × 100 dòng / lượt, 3.000 dòng / phút / khóa | lọc hẹp hơn |
+
+Ứng dụng không thấy công cụ / *Server disconnected*: kiểm dòng `Authorization: Bearer <khóa>`, khóa còn hiệu lực (phát hộ
+phải Nhận), Claude Desktop thì Node.js + thoát hẳn + tệp không bị ghi đè + log `mcp-server-dego-erp.log`, địa chỉ cổng kết
+thúc `/api/mcp`; nhật ký **không có dòng nào** = ứng dụng chưa gọi tới ERP (lỗi ở máy người dùng), **có dòng Bị từ chối** =
+đọc lý do. Không phải lỗi: số công cụ khác nhau giữa hai người; AI không theo quy trình (chưa mở skill); *Kiểm tra kết nối*
+chưa thấy dù đã liệt kê công cụ (cần một lượt gọi thật); sửa skill mà AI như cũ (chưa Xuất bản). Báo lỗi: nhờ AI
+(`report_issue`, luôn mở) hoặc Trang cá nhân ▸ Yêu cầu hỗ trợ, kèm giờ thử, **che khóa**.
+
+## 8. Phạm vi chưa làm / ghi chú
+
+- Prod **chưa mở cổng MCP** (luật tạm dừng prod 19/09; doc 06 §5 liệt kê việc cần khi lên prod). Bài Help Center viết
+  địa chỉ `erp.degoholding.vn` làm ví dụ, luôn dặn lấy địa chỉ thật ở màn AI của tôi.
+- claude.ai web và ChatGPT: theo dõi khi họ đổi cách xác thực; sửa `mcp_setup.py` + seed + tài liệu này cùng lúc.
+- Bot Telegram đọc chung kho skill (K7) và quản trị qua bot (K9): gác (doc 21 §7.1).

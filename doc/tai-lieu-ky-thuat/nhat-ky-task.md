@@ -70,6 +70,35 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-631 | Bài Trung tâm trợ giúp cho cụm Kết nối AI riêng và Kho skill AI
+- status: xong
+- date: 2026-10-19
+Agent 1 chuyển lời đại ca: các Agent rảnh làm nốt phần MCP còn lại; em nhận việc viết hướng dẫn sử dụng cho cụm Kết nối
+AI riêng (khóa kết nối, nối ứng dụng AI của nhân sự vào ERP qua cổng MCP) và Kho skill AI, vì chưa có bài nào trong Trung
+tâm trợ giúp nói về cụm này dù dev đã có đủ màn từ bao-CR-620 tới 625.
+
+Em dựng một thẻ phân hệ trên trang chủ Trung tâm trợ giúp và sáu bài theo tác vụ: tạo khóa kết nối ở Trang cá nhân (mức
+Chỉ đọc và Được ghi, khóa hiện một lần, nhận khóa quản trị phát hộ, gỡ khóa, kiểm tra kết nối); nối Claude Desktop (cần
+Node.js, sửa tệp cấu hình qua Settings rồi Developer, đi qua cầu mcp-remote, khóa đặt ở biến môi trường, phải thoát hẳn
+ứng dụng rồi mở lại, ứng dụng ghi đè tệp khi đang chạy, chỗ đọc log); nối Claude Code (kèm mẹo PowerShell chặn tệp ps1
+thì gõ claude.cmd), Cursor và Gemini CLI, và vì sao claude.ai trên trình duyệt với ChatGPT chưa nối được; AI làm được gì
+(phân biệt công cụ với skill, nhóm công cụ quản trị bật tắt, khóa chỉ đọc thấy gì, khóa được ghi tạo phiếu hai bước, câu
+mẫu để hỏi); bài cho quản trị về Kho skill AI (bộ skill, soạn và xuất bản, tệp đi kèm, mức bảo mật, gán ai được đọc với
+bốn luật, phát và thu hồi khóa nhân sự, màn Cấu hình, quyền và vai trò, thứ tự dựng); và bài nhật ký lượt gọi cùng bảng
+tra câu từ chối (khóa sai, hết hạn, thu hồi, chưa nhận, quá tần suất, nhóm tắt, khóa chỉ đọc, Server disconnected).
+Từng bước nối ứng dụng chép đúng theo tệp mã sinh đoạn cấu hình cho màn AI của tôi, cùng tên máy chủ và cùng chỗ giữ
+khóa, không in khóa thật. Script seed kiểm tiêu đề trùng với bài có sẵn trước khi ghi, chạy lại được.
+
+Viết song song tài liệu chức năng số 22 cùng nội dung, thêm dòng vào mục lục và README của thư mục tài liệu chức năng.
+Chạy seed trên máy local hai lần để kiểm chạy lại được, rồi chép script vào container api dev, chạy seed và nạp lại chỉ
+mục tìm kiếm của Trợ lý AI (7 bài, 37 đoạn); mở devhelp.degoholding.vn thấy thẻ và sáu bài hiện đúng.
+
+Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py` (mới), `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`
+(mới), `doc/tai-lieu-chuc-nang/00-muc-luc.md`, `doc/tai-lieu-chuc-nang/README.md`.
+Commit: chưa, chờ Agent 1 gộp main xong rồi mới đẩy erp-v2. Deploy: đã seed trên dev 19/10; prod chưa.
+
+---
+
 ## bao-CR-623 | Kho skill AI đợt K5: các màn quản trị — bộ skill, soạn skill, khóa nhân sự, nhật ký
 - status: xong
 - date: 2026-10-17
