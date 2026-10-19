@@ -1,11 +1,9 @@
-import { Download, FilePenLine, Pencil, Power, Replace, Trash2 } from 'lucide-react'
-
 import type { DataTableColumn } from '@/shared/data-table'
 import { LABOR_CONTRACT_TYPE, labelOf } from '@/shared/constants/statuses'
 import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { formatFileSize } from '@/shared/utils/format-file-size'
+import { LaborContractTemplateRowActions } from '../components/labor-contract-template-row-actions'
 import type { LaborContractTemplate } from '../types/labor-contract'
 
 export interface LaborContractTemplateColumnActions {
@@ -97,89 +95,14 @@ export function buildLaborContractTemplateColumns(
     },
   ]
 
-  //  «Tải tệp» luôn có vì cả trang đã đòi `read`, nên cột Thao tác luôn dựng.
+  //  «Tải tệp» luôn có vì cả trang đã đòi `read`, nên cột Thao tác luôn dựng. duoc-CR-610: hai nút
+  //  hằng ngày nằm ngoài, bốn việc quản trị gom vào menu «⋯» — cột từ 240px còn 120px.
   columns.push({
-      key: 'actions',
-      header: 'Thao tác',
-      width: 240,
-      hideable: false,
-      cell: (t) => (
-        //  Chặn nổi bọt: bấm nút không được kích `onRowClick` (nếu sau này gắn).
-        <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            title="Tải tệp mẫu"
-            aria-label={`Tải tệp mẫu ${t.name}`}
-            onClick={() => actions.onDownload(t)}
-          >
-            <Download className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            title={actions.canWrite ? 'Soạn nội dung' : 'Xem nội dung'}
-            aria-label={`${actions.canWrite ? 'Soạn' : 'Xem'} nội dung mẫu ${t.name}`}
-            onClick={() => actions.onEditContent(t)}
-          >
-            <FilePenLine className="size-4" />
-          </Button>
-          {actions.canWrite && (
-            <>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                title="Sửa thông tin"
-                aria-label={`Sửa thông tin mẫu ${t.name}`}
-                onClick={() => actions.onEditInfo(t)}
-              >
-                <Pencil className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                title="Thay tệp mẫu"
-                aria-label={`Thay tệp mẫu ${t.name}`}
-                onClick={() => actions.onReplaceFile(t)}
-              >
-                <Replace className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                title={t.is_active ? 'Ngừng dùng' : 'Bật dùng'}
-                aria-label={`${t.is_active ? 'Ngừng dùng' : 'Bật dùng'} mẫu ${t.name}`}
-                onClick={() => actions.onToggleActive(t)}
-              >
-                <Power className="size-4" />
-              </Button>
-            </>
-          )}
-          {actions.canDelete && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 text-destructive hover:text-destructive"
-              title="Xóa mẫu"
-              aria-label={`Xóa mẫu ${t.name}`}
-              onClick={() => actions.onDelete(t)}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </div>
-      ),
+    key: 'actions',
+    header: 'Thao tác',
+    width: 120,
+    hideable: false,
+    cell: (t) => <LaborContractTemplateRowActions template={t} actions={actions} />,
   })
   return columns
 }

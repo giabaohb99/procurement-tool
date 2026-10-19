@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LaborContractTemplate } from '../types/labor-contract'
@@ -22,39 +23,59 @@ function renderActions(canWrite: boolean, canDelete: boolean, row = template) {
   return actions
 }
 
+/** Mở menu «⋯» của dòng rồi trả về tên các mục trong đó. */
+async function openMoreMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /Thao tác khác với mẫu/ }))
+  return (await screen.findAllByRole('menuitem')).map((item) => item.textContent)
+}
+
 describe('cột Thao tác của bảng Mẫu hợp đồng', () => {
-  it('chỉ có quyền đọc: còn Tải tệp và Xem nội dung, không có Sửa thông tin', () => {
+  //  duoc-CR-610: cột thu gọn — ngoài chỉ còn Soạn/Xem nội dung + Tải tệp, còn lại vào menu «⋯».
+  it('chỉ có quyền đọc: còn Tải tệp và Xem nội dung, không có menu «⋯»', () => {
     renderActions(false, false)
     expect(screen.getByRole('button', { name: /Tải tệp mẫu/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Xem nội dung mẫu/ })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Sửa thông tin/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Soạn nội dung/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Thay tệp/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Ngừng dùng|Bật dùng/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Xóa mẫu/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Thao tác khác/ })).toBeNull()
   })
 
-  it('có quyền sửa nhưng không xóa: thấy Thay tệp và Ngừng dùng, không thấy Xóa', () => {
+  it('việc quản trị không còn là nút rời trên dòng — chỉ hiện khi mở menu', () => {
+    renderActions(true, true)
+    expect(screen.getAllByRole('button')).toHaveLength(3)
+    expect(screen.queryByRole('menuitem')).toBeNull()
+  })
+
+  it('có quyền sửa nhưng không xóa: menu có Sửa thông tin, Thay tệp, Ngừng dùng, không có Xóa', async () => {
+    const user = userEvent.setup()
     renderActions(true, false)
-    expect(screen.getByRole('button', { name: /Thay tệp mẫu/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Ngừng dùng mẫu/ })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Xóa mẫu/ })).toBeNull()
+    expect(await openMoreMenu(user)).toEqual(['Sửa thông tin', 'Thay tệp mẫu', 'Ngừng dùng'])
   })
 
-  //  duoc-CR-606 — hai nút mới phải gọi ĐÚNG callback với ĐÚNG mẫu của dòng.
-  it('có quyền sửa: Soạn nội dung và Sửa thông tin gọi đúng callback với mẫu của dòng', () => {
+  it('chỉ có quyền xóa: menu chỉ có Xóa mẫu', async () => {
+    const user = userEvent.setup()
+    renderActions(false, true)
+    expect(await openMoreMenu(user)).toEqual(['Xóa mẫu'])
+  })
+
+  //  duoc-CR-606 — các nút phải gọi ĐÚNG callback với ĐÚNG mẫu của dòng.
+  it('Soạn nội dung và Sửa thông tin gọi đúng callback với mẫu của dòng', async () => {
+    const user = userEvent.setup()
     const actions = renderActions(true, false)
     fireEvent.click(screen.getByRole('button', { name: /Soạn nội dung mẫu Mẫu 12 tháng/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Sửa thông tin mẫu Mẫu 12 tháng/ }))
+    await openMoreMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Sửa thông tin' }))
     expect(actions.onEditContent).toHaveBeenCalledWith(template)
     expect(actions.onEditInfo).toHaveBeenCalledWith(template)
     expect(actions.onReplaceFile).not.toHaveBeenCalled()
   })
 
-  it('mẫu đã ngừng thì nút đổi thành Bật dùng; có quyền xóa thì có nút Xóa', () => {
-    renderActions(true, true, { ...template, is_active: false })
-    expect(screen.getByRole('button', { name: /Bật dùng mẫu/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Xóa mẫu/ })).toBeInTheDocument()
+  it('mẫu đã ngừng thì mục đổi thành Bật dùng; bấm Xóa gọi onDelete đúng mẫu', async () => {
+    const user = userEvent.setup()
+    const row = { ...template, is_active: false }
+    const actions = renderActions(true, true, row)
+    expect(await openMoreMenu(user)).toEqual(['Sửa thông tin', 'Thay tệp mẫu', 'Bật dùng', 'Xóa mẫu'])
+    await user.click(screen.getByRole('menuitem', { name: 'Xóa mẫu' }))
+    expect(actions.onDelete).toHaveBeenCalledWith(row)
   })
 })
 
