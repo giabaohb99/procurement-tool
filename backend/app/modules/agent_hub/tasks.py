@@ -44,6 +44,13 @@ def _off() -> dict | None:
     return None
 
 
+def _flag_off(flag: str) -> dict | None:
+    """ai-CR-229: vòng chạy nền tốn tiền model có cờ tắt riêng (prod đợt hai)."""
+    if not getattr(settings, flag, True):
+        return {"status": "skipped", "reason": f"{flag}=false"}
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Máy sửa mã tách rời (ai-CR-054)
 # ---------------------------------------------------------------------------
@@ -193,6 +200,8 @@ def poll_telegram_task() -> dict:
 def triage_inbox_task() -> dict:
     """Gom tin đã nằm yên đủ lâu thành task. Chạy mỗi phút."""
     if (off := _off()) is not None:
+        return off
+    if (off := _flag_off("AGENT_TRIAGE_ENABLED")) is not None:
         return off
     db = SessionLocal()
     try:
@@ -489,6 +498,8 @@ def pull_tickets_task() -> dict:
     """Vòng beat mỗi phút (ai-CR-037): phiếu hỗ trợ ERP thành việc của bot."""
     if (off := _off()) is not None:
         return off
+    if (off := _flag_off("AGENT_TRIAGE_ENABLED")) is not None:
+        return off
     db = SessionLocal()
     try:
         return {"status": "success", "tasks": service.pull_tickets(db)}
@@ -504,6 +515,8 @@ def pull_tickets_task() -> dict:
 def briefs_due_task() -> dict:
     """ai-CR-140: mỗi 5 phút — bản tin sáng / bản tin chủ đề nào tới giờ (giờ + thứ mỗi người tự đặt trong chat) thì gửi."""
     if (off := _off()) is not None:
+        return off
+    if (off := _flag_off("AGENT_BRIEFS_ENABLED")) is not None:
         return off
     from . import brief_subs
 
@@ -537,6 +550,8 @@ def morning_brief_task() -> dict:
 def meeting_reminders_task() -> dict:
     """ai-CR-064 (T-09): mỗi 5 phút, nhắc trước cuộc họp Google Calendar 15 phút cho người đã nối."""
     if (off := _off()) is not None:
+        return off
+    if (off := _flag_off("AGENT_BRIEFS_ENABLED")) is not None:
         return off
     from . import briefs
 
@@ -768,6 +783,8 @@ def learning_tick_task() -> dict:
     """ai-CR-078: mỗi 5 phút — nhắn đại ca đề xuất thuật ngữ mới; chỗ Trợ lý thiếu chức năng lặp lại → mở việc sửa mã."""
     if (off := _off()) is not None:
         return off
+    if (off := _flag_off("AGENT_TRIAGE_ENABLED")) is not None:
+        return off
     from . import learning
 
     db = SessionLocal()
@@ -785,6 +802,8 @@ def learning_tick_task() -> dict:
 def session_summary_task() -> dict:
     """ai-CR-102: mỗi 10 phút — buổi chat im lặng ≥ 30 phút thì tóm tắt vào kho ghi chú riêng của người đó."""
     if (off := _off()) is not None:
+        return off
+    if (off := _flag_off("AGENT_SESSION_SUMMARY_ENABLED")) is not None:
         return off
     from . import sessions
 

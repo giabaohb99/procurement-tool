@@ -13719,6 +13719,17 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-229 | Thêm công tắc tắt các việc chạy nền tốn tiền model của bot trước khi lên prod
+- status: dang-lam
+- date: 2026-10-19
+Đại ca chốt chiều nay đưa dịch vụ AI chạy riêng lên prod, chỉ bật chat, Trợ lý trên web, cổng nối AI và nhắc hạn việc,
+còn mọi việc chạy nền tốn tiền model phải tắt. Khi soát thì bản tin theo giờ, tóm tắt cuối buổi chat và vòng gom việc sửa
+mã chưa có công tắc riêng. Nay có ba công tắc riêng cho ba việc đó, mặc định vẫn bật để máy dev chạy như cũ, prod đặt tắt.
+Nhắc hạn việc, chuông và lời nhắc theo giờ không bị ảnh hưởng. Bài kiểm đều đạt.
+
+Mã nguồn: core/config.py, agent_hub/tasks.py
+Bài kiểm: test_agent_hub_co_tat_vong_ton_tien_cr229.py
+
 ## ai-CR-228 | ChatGPT đọc được cẩm nang dài bằng cách đọc từng trang
 - status: dang-lam
 - date: 2026-10-19
