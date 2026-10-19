@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import type { PermissionEntity } from '@/core/authorization/permission-types'
 import { usePermission } from '@/core/authorization/use-permission'
 import { LaborContractTemplateCatalog } from '@/modules/hr/components/labor-contract-template-catalog'
+import { LaborContractTemplateHeaderActions } from '@/modules/hr/components/labor-contract-template-header-actions'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
@@ -149,7 +150,10 @@ export function DocumentSettingsPage() {
         actions={
           // Tab chỉ đọc (mức mật / khẩn) không có gì để thêm — hiện nút rồi bấm
           // vào không đi đâu thì tệ hơn là không có nút.
-          current.newPath && !laborContract ? (
+          //  Mẫu HĐLĐ: «Danh sách biến» + «Tải lên mẫu» đứng đúng chỗ «Thêm mới» của các mục khác.
+          laborContract ? (
+            <LaborContractTemplateHeaderActions />
+          ) : current.newPath ? (
             //  ⚠️ Khổ hẹp nút chiếm TRỌN hàng — `w-full` chỉ ăn nhờ nhóm nút của
             //  `PageHeader` cũng `max-md:w-full`. Đứng lửng bên phải trên một
             //  hàng trống thì nó vừa khó với tới bằng ngón cái, vừa đọc ra như

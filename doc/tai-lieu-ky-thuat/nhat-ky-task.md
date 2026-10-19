@@ -15178,3 +15178,14 @@ rò bộ nhớ.
 
 Mã nguồn: backend/app/modules/usage_profile/ · backend/app/core/usage_codes.py · migration usgprof01 · frontend-v2/src/core/telemetry/ · frontend-v2/src/modules/report/pages/usage-profile-list-page.tsx · usage-profile-detail-page.tsx · test/backend/test_ho_so_lam_viec_*_cr641.py
 Deploy: chạy migration usgprof01, khởi động lại celery-worker và celery-beat, nạp bù 90 ngày bằng script backfill, quản trị đăng nhập lại để thấy menu.
+
+## duoc-CR-642 | Mục Mẫu hợp đồng lao động cùng bố cục với mục Văn bản mẫu
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm thấy giao diện mục Mẫu hợp đồng lao động trong Thiết lập văn bản chưa ổn so với mục Văn bản mẫu ngay bên cạnh.
+Nay hai nút Danh sách biến và Tải lên mẫu chuyển lên góc phải tiêu đề trang, đúng chỗ nút Thêm mới của các mục khác, thay vì nằm
+lửng giữa thanh lọc; nhãn Đang dùng đổi sang nhãn xanh đặc giống bảng Văn bản mẫu; cột ngày tạo tách hai dòng ngày và người tạo;
+cột thao tác chỉ còn một nút ba chấm mở menu có biểu tượng kèm chữ, chia nhóm Nội dung và Quản lý, nút Xóa tách riêng ở cuối, giống
+cột thao tác của bảng hợp đồng. Không đổi đường API và không đổi quyền.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/labor-contract-template-header-actions.tsx · labor-contract-template-row-actions.tsx · labor-contract-template-catalog.tsx · config/labor-contract-template-columns.tsx · frontend-v2/src/modules/document/pages/document-settings-page.tsx

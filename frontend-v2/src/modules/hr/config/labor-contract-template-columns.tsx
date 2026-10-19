@@ -78,29 +78,31 @@ export function buildLaborContractTemplateColumns(
       key: 'is_active',
       header: 'Trạng thái',
       width: 130,
-      cell: (t) =>
-        t.is_active ? <Badge variant="secondary">Đang dùng</Badge> : <Badge variant="outline">Ngừng</Badge>,
+      //  Cùng kiểu nhãn với bảng «Văn bản mẫu» ở tab bên cạnh (xanh đặc = đang dùng).
+      cell: (t) => <Badge variant={t.is_active ? 'default' : 'secondary'}>{t.is_active ? 'Đang dùng' : 'Ngừng'}</Badge>,
     },
     {
       //  Backend chỉ trả ngày tạo + người tạo (không có `updated_at`).
       key: 'created_at',
       header: 'Ngày tạo',
-      width: 200,
+      width: 170,
+      wrap: true,
+      //  Hai dòng như cột Pháp nhân: ngày ở trên, người tạo nhỏ bên dưới (gộp một dòng thì bị cắt cụt).
       cell: (t) => (
-        <span className="truncate">
+        <span>
           {formatDateTime(t.created_at)}
-          {t.created_by_name && <span className="ml-1 text-muted-foreground">· {t.created_by_name}</span>}
+          {t.created_by_name && <span className="block text-xs text-muted-foreground">{t.created_by_name}</span>}
         </span>
       ),
     },
   ]
 
-  //  «Tải tệp» luôn có vì cả trang đã đòi `read`, nên cột Thao tác luôn dựng. duoc-CR-610: hai nút
-  //  hằng ngày nằm ngoài, bốn việc quản trị gom vào menu «⋯» — cột từ 240px còn 120px.
+  //  «Tải tệp» luôn có vì cả trang đã đòi `read`, nên cột Thao tác luôn dựng. Một nút «⋯» mở menu icon +
+  //  chữ (cùng kiểu cột thao tác bảng hợp đồng, duoc-CR-633) — cột 240px (CR-610: 120px) nay còn 80px.
   columns.push({
     key: 'actions',
     header: 'Thao tác',
-    width: 120,
+    width: 80,
     hideable: false,
     cell: (t) => <LaborContractTemplateRowActions template={t} actions={actions} />,
   })

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/core/auth/auth-store'
 import type * as CoreApi from '@/core/api'
 import { LaborContractTemplateCatalog } from './labor-contract-template-catalog'
+import { LaborContractTemplateHeaderActions } from './labor-contract-template-header-actions'
 
 const apiGet = vi.hoisted(() => vi.fn())
 vi.mock('@/core/api', async (original) => ({
@@ -22,7 +23,16 @@ function renderAs(permissions: Record<string, Record<string, boolean>>) {
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/catalog']}>
         <Routes>
-          <Route path="/catalog" element={<LaborContractTemplateCatalog />} />
+          <Route
+            path="/catalog"
+            element={
+              //  Như trang «Thiết lập văn bản»: nút ở góc tiêu đề + bảng bên dưới.
+              <>
+                <LaborContractTemplateHeaderActions />
+                <LaborContractTemplateCatalog />
+              </>
+            }
+          />
           <Route path="/hr/labor-contract-templates/variables" element={<p>Trang danh sách biến</p>} />
         </Routes>
       </MemoryRouter>
@@ -41,6 +51,7 @@ describe('LaborContractTemplateCatalog — gác quyền', () => {
     renderAs({ labor_contract_template: {} })
     expect(screen.getByText('Bạn không có quyền xem màn này.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Tải lên mẫu/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Danh sách biến/ })).toBeNull()
     expect(apiGet).not.toHaveBeenCalled()
   })
 
