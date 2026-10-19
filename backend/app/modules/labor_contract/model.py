@@ -4,6 +4,7 @@ KHÔNG lẫn với `modules/contract` (hợp đồng NCC / khách).
 
 ⚠️ FK MỀM: `employee_id`, `company_id`, `department_id`, `template_id`, các `*_file_id`
 đều KHÔNG khai `ForeignKey` (khuôn `tab_employee_work_history`) — dọn ở tầng service.
+`template_id` trỏ `tab_document_template.id` của dòng `template_kind = 2` (mẫu HĐLĐ, duoc-CR-629b bước B; id giữ nguyên từ bảng mẫu cũ).
 `company_id` / `department_id` là SNAPSHOT lúc lập (phục vụ phạm vi dữ liệu).
 ⚠️ Tiền = đồng NGUYÊN (BigInteger), không lẻ. Lương nằm sau khóa quyền riêng `labor_contract`.
 ⚠️ Trạng thái EXPIRED không ghi DB — suy ra từ SIGNED + end_date < hôm nay.

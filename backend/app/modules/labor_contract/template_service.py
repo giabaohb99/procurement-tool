@@ -14,6 +14,7 @@ from app.core.file_registry import direct_policy
 from app.core.scoping import apply_scope
 from app.core.upload_guard import guard_upload
 from app.modules.company.model import Company
+from app.modules.document.labor_contract_archive_access import hdld_type_id
 
 from . import access, variable_registry
 from .docx_engine import inspect_template
@@ -102,7 +103,10 @@ def create_template(db: Session, user, profile: dict, data: TemplateCreateIn, fi
     _ensure_unique_name(db, data.company_id, data.name)
     file_bytes, placeholders = read_and_inspect(db, fileobj, filename)
 
+    #  duoc-CR-629b: mẫu HĐLĐ mang `doc_type_id` = loại HDLD (nếu loại đã có) cho đồng nhất với dòng
+    #  migration/seed điền; nhận diện mẫu luôn bằng `template_kind`, không bằng cột này.
     row = LaborContractTemplate(
+        doc_type_id=hdld_type_id(db) or 0,
         company_id=data.company_id, contract_type=data.contract_type, name=data.name, note=data.note,
         original_filename=filename.strip(), placeholders=placeholders, is_active=True,
         created_by=user.id, updated_by=user.id)

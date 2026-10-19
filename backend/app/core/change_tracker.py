@@ -245,13 +245,19 @@ def _should_aggregate(ctx) -> bool:
     return ctx.actor_kind == ACTOR_KIND_SCRIPT or _detail_count(ctx) >= MAX_DETAIL_CHANGES
 
 
+def _log_table_name(obj) -> str:
+    """Tên ghi vào `tab_change_log.table_name`: mặc định là bảng thật; model STI chung bảng có thể khai
+    `__change_log_table__` để lịch sử của lớp con không lẫn với lớp khác (vd mẫu HĐLĐ, CR-629b)."""
+    return getattr(obj, "__change_log_table__", None) or getattr(obj, "__tablename__", "")
+
+
 def _collect(session, ctx) -> None:
     """Duyệt `new` / `dirty` / `deleted`, gom vào `ctx.changes`."""
     owner = id(session)
     aggregate = _should_aggregate(ctx)
 
     for obj in session.new:
-        table_name = getattr(obj, "__tablename__", "")
+        table_name = _log_table_name(obj)
         if not table_name or table_name in NO_LOG_TABLES:
             continue
         if aggregate:
@@ -264,7 +270,7 @@ def _collect(session, ctx) -> None:
         ))
 
     for obj in session.deleted:
-        table_name = getattr(obj, "__tablename__", "")
+        table_name = _log_table_name(obj)
         if not table_name or table_name in NO_LOG_TABLES:
             continue
         if aggregate:
@@ -277,7 +283,7 @@ def _collect(session, ctx) -> None:
         ))
 
     for obj in session.dirty:
-        table_name = getattr(obj, "__tablename__", "")
+        table_name = _log_table_name(obj)
         if not table_name or table_name in NO_LOG_TABLES:
             continue
         if not session.is_modified(obj, include_collections=False):

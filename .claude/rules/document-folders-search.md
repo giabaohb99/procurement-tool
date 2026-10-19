@@ -51,4 +51,4 @@ paths:
   Bù HĐ cũ: `scripts/backfill_hdld_van_ban_luu_tru.py` (`--dry-run`, `--soft-delete-all` để rollback).
 - Triển khai: vai trò đang chạy **không tự có** `document.read` phạm vi «Của tôi» (D-018) — tick ở màn Phân quyền cho vai
   trò giữ `labor_contract`, hoặc `SEED_FORCE_SYNC=true` một lần (đè mọi vai trò, cân nhắc).
-
+- **Bảng mẫu dùng chung** (duoc-CR-629b bước B): `tab_document_template` chứa 2 loại mẫu bằng STI (`template_kind`: 1 `DocumentTemplate`, 2 `LaborContractTemplate`). **CẤM `query(TemplateRecord)`** / `TemplateRecord.__table__` / bulk `update()` không lọc loại ngoài migration — test `test_hdld_gop_bang_mau_cach_ly_cr629b.py::test_khong_ma_ung_dung_nao_truy_van_lop_goc` chặn; đó là lưới giữ mẫu HĐLĐ khỏi người chỉ có `doc_template`. Thêm loại mẫu mới = thêm lớp con STI + mã `DocumentTemplateKind` (số mới) + chạy `gen_status_ts.py`. Chuỗi `tab_document_template` / `.__table__` của lớp mẫu cũng CẤM ngoài `template_model.py` (test AST chặn). Lớp con STI chung bảng muốn lịch sử `tab_change_log` riêng thì khai `__change_log_table__` (mẫu HĐLĐ giữ tên cũ `tab_labor_contract_template`).

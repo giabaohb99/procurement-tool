@@ -38,7 +38,9 @@ def document_filename(db: Session, row: LaborContract) -> str:
 
 
 def _pick_template(db: Session, row: LaborContract, template_id: int) -> LaborContractTemplate:
-    tpl = db.get(LaborContractTemplate, template_id)
+    # Tường minh qua lớp con STI (chỉ kind=2) — id của mẫu văn bản thường ra None.
+    tpl = (db.query(LaborContractTemplate)
+           .filter(LaborContractTemplate.id == template_id).first())
     if tpl is None:
         raise HTTPException(400, "Mẫu hợp đồng không tồn tại")
     if not tpl.is_active:
