@@ -105,8 +105,15 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     assert gem["httpUrl"] == url and gem["headers"]["Authorization"].startswith("Bearer ")
     web = _setup("claude_ai")
     assert web["supported"] and web["auth"] == "oauth" and web["snippet"] == url and "Cho phép" in " ".join(web["steps"])
-    assert _setup("chatgpt")["format"] == "url" and "OAuth" in " ".join(_setup("chatgpt")["steps"])
-    assert "«" not in _setup("chatgpt")["note"] and "Connectors" in desk["note"]
+    gpt = _setup("chatgpt")
+    assert gpt["format"] == "url" and "OAuth" in " ".join(gpt["steps"])
+    assert "«" not in gpt["note"] and "Connectors" in desk["note"]
+    #  bao-CR-639: ChatGPT đổi giao diện 10/2026 — Developer mode ở Security and login, tạo ở Plugins → Create MCP App;
+    #  cần Plus / Pro. Bước «Apps & Connectors» cũ không được quay lại; bước Cho phép phải nhắc kiểm tên miền quay về.
+    steps = " ".join(gpt["steps"])
+    assert "Security and login" in steps and "Developer mode" in steps and "Create MCP App" in steps
+    assert "Apps & Connectors" not in steps and "chatgpt.com" in steps
+    assert any("Plus" in r for r in gpt["requires"])
     with pytest.raises(HTTPException) as e:
         _setup("notepad")
     assert e.value.status_code == 404

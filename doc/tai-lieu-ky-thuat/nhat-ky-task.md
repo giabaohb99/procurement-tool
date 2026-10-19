@@ -70,6 +70,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-639 | Bước nối ChatGPT theo giao diện mới: Developer mode ở Security and login, tạo ở Plugins
+- status: xong
+- date: 2026-10-19
+Đại ca thử nối ChatGPT theo bài hướng dẫn thì không tìm thấy mục Apps and Connectors vì ChatGPT vừa đổi giao diện. Agent 1
+tra tài liệu tháng này rồi giao em sửa ba nơi cùng lúc cho khớp: khối ChatGPT trong tệp sinh đoạn cấu hình cho màn AI
+của tôi, bài hướng dẫn Nối ChatGPT và claude.ai bằng đăng nhập ERP, và tài liệu chức năng 22.
+
+Bước mới gồm năm bước: vào Settings rồi Security and login bật Developer mode; mở Plugins (mục Integrations ở cột trái
+hoặc vào thẳng chatgpt.com/plugins) bấm Add rồi Create MCP App; đặt tên, dán địa chỉ cổng, chọn xác thực OAuth, để
+ChatGPT quét công cụ rồi tạo; trang ERP mở ra thì kiểm tên miền quay về là chatgpt.com hoặc openai.com, đăng nhập, chọn
+Chỉ đọc rồi bấm Cho phép; trong ô chat chọn DEGO ERP ở nút cộng. Ghi rõ cần tài khoản gói Plus hoặc Pro vì gói miễn phí
+không có Developer mode, và chú thích bản cũ gọi là Apps and Connectors để người đọc bản cũ không lạc. Bài kiểm của màn
+AI của tôi thêm bốn khẳng định khóa bước mới (có Security and login, Create MCP App, không còn Apps and Connectors, có
+yêu cầu gói Plus). Đại ca thử thật theo đúng các bước này, ChatGPT liệt kê đủ 12 skill, Agent 1 chốt nhãn.
+
+Kiểm trên máy local: 7 bài kiểm màn AI của tôi xanh; seed chạy lại ra 8 bài.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (khối chatgpt), `test/backend/test_agent_hub_ai_cua_toi_cr213.py`,
+`backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md` (bản 1.2).
+Commit: chờ đại ca gật. Deploy: dev chờ seed sau commit.
+
+---
+
 ## bao-CR-637 | Kho skill AI: sửa bốn điểm giao diện Agent 2 soi trên dev
 - status: xong
 - date: 2026-10-19

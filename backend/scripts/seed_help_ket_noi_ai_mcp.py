@@ -6,6 +6,8 @@ Dựng cây bài viết: 1 thẻ phân hệ (hiện ngoài trang chủ "Các Ph�
   (g) nối ChatGPT, claude.ai bằng đăng nhập ERP (OAuth) · (d) AI của bạn làm được gì: công cụ và skill ·
   (e) quản trị Kho skill AI · (f) nhật ký và lỗi thường gặp.
 
+bao-CR-639 (19/10, tối): ChatGPT đổi giao diện — bước nối theo Security and login → Developer mode; Plugins → Add → Create
+MCP App; cần Plus / Pro. Khớp khối chatgpt của `mcp_setup.py`.
 bao-CR-636 (19/10, chiều): thêm bài (g) OAuth (ai-CR-218/222/225); Claude Desktop có hai cách (Connectors hoặc mcp-remote);
 khóa xem lại được + bật / tắt tạm (ai-CR-221) — bỏ câu «chỉ hiện một lần»; quản trị có màn Ứng dụng AI đã kết nối
 (bao-CR-635) và bộ Cẩm nang hệ thống 7 skill (ai-CR-220). ⚠️ Nhãn nút Hiện / Tạm tắt ở màn Khóa của bạn viết theo hợp đồng
@@ -323,13 +325,15 @@ TREE = {
 <p>Gói Team / Enterprise: chủ tổ chức thêm kết nối trong <em>Organization settings</em> trước, rồi từng người mới bấm Connect. Claude Desktop làm y hệt ở <strong>Settings ▸ Connectors</strong> của ứng dụng.</p>
 
 <h2>ChatGPT</h2>
+<p>Cần tài khoản ChatGPT gói <strong>Plus</strong> hoặc <strong>Pro</strong> (gói miễn phí không có Developer mode).</p>
 <ol>
-<li>Mở ChatGPT ▸ <strong>Settings</strong> ▸ <strong>Apps &amp; Connectors</strong> ▸ <strong>Advanced settings</strong> ▸ bật <strong>Developer mode</strong>.</li>
-<li>Quay lại Apps &amp; Connectors ▸ <strong>Create</strong>: đặt tên <em>DEGO ERP</em>, dán địa chỉ cổng vào ô <strong>MCP Server URL</strong>, mục Authentication chọn <strong>OAuth</strong>, tick tin tưởng ứng dụng ▸ <strong>Create</strong>.</li>
-<li>Trang ERP mở ra — đăng nhập nếu chưa, chọn mức, bấm <strong>Cho phép</strong>.</li>
-<li>Trong ô chat chọn <em>DEGO ERP</em> ở nút <strong>+</strong> (Developer mode) rồi hỏi như bình thường.</li>
+<li>Mở ChatGPT ▸ <strong>Settings</strong> (Cài đặt) ▸ <strong>Security and login</strong> ▸ bật <strong>Developer mode</strong>.</li>
+<li>Mở <strong>Plugins</strong> (mục <em>Integrations</em> ở cột trái, hoặc vào thẳng <code>chatgpt.com/plugins</code>) ▸ <strong>Add</strong> ▸ <strong>Create MCP App</strong>.</li>
+<li>Đặt tên <em>DEGO ERP</em>, dán địa chỉ cổng vào ô <strong>URL</strong>, mục Authentication chọn <strong>OAuth</strong>, để ChatGPT quét công cụ rồi bấm tạo.</li>
+<li>Trang ERP mở ra — kiểm tên miền quay về là <em>chatgpt.com</em> hoặc <em>openai.com</em>, đăng nhập nếu chưa, chọn mức <strong>Chỉ đọc</strong> (hoặc Được ghi), bấm <strong>Cho phép</strong>.</li>
+<li>Trong ô chat chọn <em>DEGO ERP</em> ở nút <strong>+</strong> rồi hỏi như bình thường.</li>
 </ol>
-<p>Tên mục trong Cài đặt của ChatGPT đổi theo phiên bản; tìm chữ <em>Connector</em> hoặc <em>MCP</em> là ra.</p>
+<p>Tên mục trong Cài đặt của ChatGPT đổi theo phiên bản (bản cũ gọi là <em>Apps &amp; Connectors</em>); tìm chữ <em>Developer mode</em>, <em>Plugins</em> hoặc <em>MCP</em> là ra.</p>
 
 <h2>Màn Cho phép của ERP: đọc kỹ trước khi bấm</h2>
 <p>Trang ERP mở ra có tiêu đề <strong>Cho phép ứng dụng AI dùng ERP thay bạn</strong>, ghi tên ứng dụng xin kết nối, <strong>tên miền nơi dữ liệu sẽ quay về</strong> (ví dụ <em>chatgpt.com</em>, <em>claude.ai</em>, hoặc <em>máy tính của bạn</em> với ứng dụng cài trên máy) và tài khoản ERP đang đăng nhập.</p>
