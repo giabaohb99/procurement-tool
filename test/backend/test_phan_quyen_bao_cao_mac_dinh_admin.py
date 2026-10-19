@@ -19,13 +19,13 @@ def _admin_role(db) -> Role:
     return role
 
 
-def test_co_admin_chen_du_13_dong(db):
+def test_co_admin_chen_du_so_khoa(db):
     admin = _admin_role(db)
     n = ensure_report_access_defaults(db)
-    assert n == 13
+    assert n == len(ReportKey)
     rows = db.query(ReportAccess).filter(ReportAccess.subject_kind == SUBJECT_ROLE,
                                          ReportAccess.subject_id == admin.id).all()
-    assert len(rows) == 13
+    assert len(rows) == len(ReportKey)
     assert {r.report_key for r in rows} == {int(k) for k in ReportKey}
 
 
@@ -62,7 +62,7 @@ def test_khoa_co_dong_gan_cho_nguoi_khac_khong_chen_admin(db):
     db.commit()
 
     n = ensure_report_access_defaults(db)
-    assert n == 12   # 13 trừ WORK (đã có dòng, dù không phải admin)
+    assert n == len(ReportKey) - 1   # tổng số khóa trừ WORK (đã có dòng, dù không phải admin)
     admin_has_work = db.query(ReportAccess).filter(
         ReportAccess.report_key == int(ReportKey.WORK), ReportAccess.subject_kind == SUBJECT_ROLE,
         ReportAccess.subject_id == admin.id).count()
@@ -79,23 +79,23 @@ def test_khong_co_role_admin_tra_0_khong_no(db):
 def test_admin_va_administrator_cung_ton_tai_ca_hai_duoc_chen_du_lan_dau(db):
     """Chốt "quyết định theo trạng thái TRƯỚC khi chèn": nếu cài sai thành đọc lại
     `keys_with_any_row` GIỮA hai vòng vai trò, vai trò xử lý THỨ HAI sẽ thấy mọi khóa đã
-    "có dòng" (do vai trò thứ nhất vừa thêm) và bị skip hết — n sẽ ra 13 chứ không phải 26."""
+    "có dòng" (do vai trò thứ nhất vừa thêm) và bị skip hết — n sẽ ra len(ReportKey) chứ không phải gấp đôi."""
     admin = Role(code="admin", name="Quản trị hệ thống")
     legacy = Role(code="ADMINISTRATOR", name="Quản trị (đời cũ)")
     db.add_all([admin, legacy])
     db.commit()
 
     n = ensure_report_access_defaults(db)
-    assert n == 26   # 13 khóa × 2 vai trò quản trị
+    assert n == 2 * len(ReportKey)   # mọi khóa × 2 vai trò quản trị
 
     admin_rows = db.query(ReportAccess).filter(ReportAccess.subject_kind == SUBJECT_ROLE,
                                                ReportAccess.subject_id == admin.id).count()
     legacy_rows = db.query(ReportAccess).filter(ReportAccess.subject_kind == SUBJECT_ROLE,
                                                 ReportAccess.subject_id == legacy.id).count()
-    assert admin_rows == 13
-    assert legacy_rows == 13
+    assert admin_rows == len(ReportKey)
+    assert legacy_rows == len(ReportKey)
 
-    #  Chạy lại -> cả hai vai trò đã đủ 13 dòng mỗi bên, không chèn thêm.
+    #  Chạy lại -> cả hai vai trò đã đủ dòng mỗi bên, không chèn thêm.
     assert ensure_report_access_defaults(db) == 0
 
 
@@ -107,10 +107,10 @@ def test_chi_administrator_khong_co_admin_van_duoc_chen(db):
     db.commit()
 
     n = ensure_report_access_defaults(db)
-    assert n == 13
+    assert n == len(ReportKey)
     rows = db.query(ReportAccess).filter(ReportAccess.subject_kind == SUBJECT_ROLE,
                                          ReportAccess.subject_id == legacy.id).all()
-    assert len(rows) == 13
+    assert len(rows) == len(ReportKey)
 
 
 def test_report_key_lien_tuc_khong_trung():

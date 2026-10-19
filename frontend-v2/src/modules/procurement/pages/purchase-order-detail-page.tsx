@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -155,6 +157,7 @@ export function PurchaseOrderDetailPage() {
 
   const isNew = !id || id === 'new'
   const purchaseOrderId = isNew ? 0 : Number(id)
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.PURCHASE_ORDER, isNew) // duoc-CR-641
 
   const { data: serverData, isLoading, isError } = usePurchaseOrder(purchaseOrderId)
   //  bao-CR-602: khối Báo cáo thực hiện của đơn — cùng khóa cache với thẻ bên dưới nên
@@ -369,6 +372,7 @@ export function PurchaseOrderDetailPage() {
       id: isNew ? undefined : purchaseOrderId,
       payload: toPurchaseOrderPayload(data),
     })
+    markSubmitted()
     await flushPendingDeliveryFiles(saved)
     if (isNew) {
       navigate(appRoutes.procurement.purchaseOrderDetail(saved.id), { replace: true })

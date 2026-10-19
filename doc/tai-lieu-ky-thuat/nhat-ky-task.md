@@ -70,6 +70,49 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-645 | Nhật ký sử dụng Kho skill AI: cột Số ký tự kết quả, kèm trong tệp CSV
+- status: xong
+- date: 2026-10-19
+Agent 4 cho máy chủ ghi độ dài văn bản trả cho ứng dụng AI ở mỗi lượt gọi công cụ (ai-CR-228), vì kết quả quá dài thì
+ứng dụng AI có thể bỏ qua. Màn Nhật ký sử dụng của Kho skill AI nay có thêm cột Số ký tự kết quả, số viết dấu chấm hàng
+nghìn. Lượt không đo (khởi tạo kết nối, liệt kê công cụ, dòng cũ trước khi có trường này, hoặc máy chủ cũ chưa trả
+trường) để ô trống chứ không ghi 0, kẻo người đọc tưởng công cụ trả về rỗng. Cột ẩn hiện được qua menu Cột như các cột
+khác, và có mặt trong tệp CSV xuất trang hiện tại (lượt không đo cũng để trống).
+
+Đây là việc đầu tiên của bài thử hệ Agent chuyên gia: Agent 1 gọi Agent giao diện dựng theo vai giao-dien-v2 và quy
+trình them-man-v2 làm phần cột trên màn; em thêm cột vào CSV và ghi vào tài liệu bảng một bẫy Agent đó gặp: bảng dùng
+chung tự đổi ô chỉ có dấu gạch thành ô trống (luật từ CR-132).
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn); bài kiểm phân hệ kho skill 85 bài xanh trên 13
+tệp. Bài mới: ô bằng 0 để trống, số lớn có dấu chấm hàng nghìn, máy chủ cũ thiếu trường không in chữ undefined, ẩn được
+qua menu Cột, CSV ghi đúng số và để trống lượt không đo.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/pages/call-log-page.tsx` (+ bài kiểm mới), `utils/call-log-format.ts`
+(mới, + bài kiểm), `types/ai-skill.ts`; `frontend-v2/docs/ui/table.md` §1.
+Commit: commit giao diện trên erp-v2 (đại ca gật 19/10). Deploy: Agent 1 dựng dev.
+
+---
+
+## bao-CR-644 | Màn AI của tôi: gộp hai đoạn Không cần khóa ở mục ChatGPT và claude.ai thành một
+- status: xong
+- date: 2026-10-19
+Đại ca thấy mục ChatGPT ở màn AI của tôi in hai đoạn gần giống nhau, cùng mở đầu bằng Không cần khóa: một đoạn cố định
+của giao diện (mở trang ERP, bấm Cho phép, kết nối hiện trong danh sách khóa với nhãn Kết nối OAuth) và một đoạn ghi chú
+do máy chủ trả về (đăng nhập ERP thay bạn, dùng 90 ngày, gỡ ở đâu). Mục claude.ai bị y hệt. Em gộp thành một đoạn duy
+nhất: phần chung của mọi kết nối qua đăng nhập ERP (không cần khóa, dùng 90 ngày rồi kết nối lại, tắt hoặc gỡ ở danh sách
+khóa) do giao diện in, ghi chú của máy chủ chỉ còn ý riêng từng ứng dụng và nối vào cuối đoạn đó. ChatGPT còn câu hộp New
+Connector đang ghi Beta, tên mục có thể đổi; claude.ai còn câu gói Team / Enterprise thì chủ tổ chức thêm kết nối trước.
+Ghi chú cũ của claude.ai còn chỉ sai chỗ gỡ (Trang cá nhân, Khóa AI), nay bỏ luôn.
+
+Kiểm trên máy local: 27 bài kiểm backend (cấu hình MCP cr216 + OAuth cr218) xanh; 186 bài vitest của phân hệ Kho skill AI
+và khu Trang cá nhân xanh; typecheck và lint không lỗi; mở màn AI của tôi, chọn ChatGPT thấy đúng một đoạn.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (note của claude_ai và chatgpt),
+`frontend-v2/src/modules/ai-skill/components/connect-guide.tsx` (OAuthGuide).
+Commit: bao-CR-644 trên erp-v2 (đại ca gật đẩy 19/10). Deploy: dev chờ Agent 1 dựng lại api + erp.
+
+---
+
 ## bao-CR-638 | Màn Khóa của bạn kiểu CoreSkill, cột Hướng dẫn kết nối ở Khóa nhân sự và trang công khai /connect-ai
 - status: xong
 - date: 2026-10-19
@@ -130,7 +173,7 @@ Kiểm trên máy local: 7 bài kiểm màn AI của tôi xanh; seed chạy lạ
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (khối chatgpt), `test/backend/test_agent_hub_ai_cua_toi_cr213.py`,
 `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md` (bản 1.2).
-Commit: af4493e9 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 tối; ERP api dev chờ Agent 1 dựng lại.
+Commit: af4493e9 + đính chính 00418304 trên erp-v2 (đại ca gật 19/10). Deploy: dev seed + ERP api dựng 19/10; PROD 81632cd6 (đợt hai 17:25) + seed bài 17:4x.
 
 ---
 
@@ -186,7 +229,7 @@ dev; lên xong phải đối chiếu lại nhãn. Seed chạy lại trên máy l
 api dev, chạy seed và nạp lại chỉ mục Trợ lý AI.
 
 Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`.
-Commit: 4ae01899 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 chiều.
+Commit: 4ae01899 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 chiều; PROD seed 19/10 17:4x cùng 631/639.
 
 ---
 
@@ -281,7 +324,7 @@ mục tìm kiếm của Trợ lý AI (7 bài, 37 đoạn); mở devhelp.degohold
 
 Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py` (mới), `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`
 (mới), `doc/tai-lieu-chuc-nang/00-muc-luc.md`, `doc/tai-lieu-chuc-nang/README.md`.
-Commit: chưa, chờ Agent 1 gộp main xong rồi mới đẩy erp-v2. Deploy: đã seed trên dev 19/10; prod chưa.
+Commit: 6c79b7c3 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10; PROD seed + nạp lại chỉ mục 19/10 17:4x (đại ca gật, sau đợt prod hai 81632cd6).
 
 ---
 
@@ -15144,3 +15187,59 @@ rồi xóa; văn bản lưu trữ đổi trạng thái đúng theo từng bướ
 
 Mã nguồn: frontend-v2/src/modules/hr/components/labor-contract-row-actions.tsx · labor-contract-row-actions.test.tsx · employee-tab-labor-contracts.test.tsx · frontend-v2/src/modules/hr/config/employee-labor-contract-columns.tsx
 
+## duoc-CR-640 | Bản lưu trữ hợp đồng lao động ở phân hệ Văn bản sửa được như văn bản thường
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm muốn bản lưu trữ hợp đồng lao động bên phân hệ Văn bản sửa được như một văn bản thường, kể cả tải thêm các tệp mềm như
+phụ lục hay bản scan bổ sung. Nay người có quyền sửa hợp đồng lao động trong đúng phạm vi của hợp đồng đó sửa được thông tin chung,
+nội dung, tải thêm hoặc gỡ tệp và đặt thư mục cho bản lưu trữ; người chỉ được xem hợp đồng vẫn chỉ đọc, còn văn thư, quản trị Văn
+bản và người lao động không được thêm quyền nào. Những thao tác đẩy văn bản tới người khác vẫn bị chặn: chia sẻ, sao chép, trích,
+quan hệ, phạm vi áp dụng, gửi duyệt, ký, ban hành, bãi bỏ, đổi loại và xóa, vì sẽ làm lộ lương và căn cước. Việc đồng bộ từ hợp
+đồng không còn xóa tệp do người dùng tải lên: hệ thống đánh dấu những bản sao nó tự chép sang và chỉ thay đổi đúng các bản sao
+đó; khi có phiên bản mới thì bản cũ giữ nguyên bộ tệp. Trang chi tiết văn bản ẩn các nút bị chặn khi mở một bản lưu trữ. Vai trò
+Nhân sự mẫu được thêm quyền ghi Văn bản phạm vi «Của tôi»; hệ đang chạy phải tick tay quyền này. Sau rà soát: tên, tóm tắt, từ khóa, ngày hiệu lực và hết hạn, loại, sổ, pháp nhân, phòng ban, người chịu trách nhiệm của
+bản lưu trữ do hợp đồng quyết định nên hiện mờ và không sửa được ở Văn bản; dấu nhận lại văn bản mồ côi không còn làm danh tính nên
+không ai xóa nhầm hay chiếm tệp của hợp đồng khác được; văn bản chỉ gồm tệp đã có tệp nay vẫn có nút tải thêm và gỡ tệp.
+
+Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · access_service.py · controller.py · backend/app/modules/labor_contract/document_archive_files.py · frontend-v2/src/modules/document/config/document-action-gates.ts · pages/document-detail-page.tsx · test/backend/test_hdld_ban_luu_tru_sua_duoc_cr640.py
+
+
+## duoc-CR-641 | Hồ sơ cách làm việc từng người dựng từ các chỉ số tracking
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm muốn có hồ sơ cho thấy mỗi người làm việc trên hệ thống ra sao: giờ giấc, màn hay vào, cách lập và duyệt phiếu,
+mức thành thạo và an toàn tài khoản, dựa trên danh sách chỉ số đã liệt kê ở mục duoc-CR-626. Giao diện mới nay ghi lại việc
+chuyển màn, mở và gửi hay bỏ dở biểu mẫu, số kết quả tìm kiếm và lỗi trang, nhưng không ghi từ khóa tìm kiếm, không ghi từng phím
+gõ hay từng cú bấm, và gửi gộp nửa phút một lần nên không làm chậm máy. Máy chủ gom số liệu theo ngày lúc rạng sáng, tính giờ
+ngoài giờ theo lịch làm việc của từng người và trừ ngày lễ, ngày nghỉ phép đã duyệt, rồi mỗi thứ Hai dựng hồ sơ tuần kèm nhãn
+kiểu làm việc và so sánh với nhóm cùng vai trò. Màn «Hồ sơ cách làm việc» nằm trong phân hệ Báo cáo, mặc định chỉ quản trị xem
+được và quản trị có thể gán thêm người; chỉ số chưa đo được thì nêu lý do thay vì hiện số 0. Sự kiện thô giữ 90 ngày, số liệu
+gom theo ngày giữ ba năm. Công tắc thu thập mặc định bật theo quyết định của chủ sản phẩm; trước khi lên bản chạy thật cần bộ
+phận nhân sự duyệt thông báo cho nhân viên, trong đó nói rõ hồ sơ có thể được dùng tham khảo khi đánh giá. Đã đo trên trình
+duyệt: thêm một sự kiện tốn chưa tới một phần triệu giây, chuyển trang một trăm lần và mở đóng biểu mẫu hai mươi lần không làm
+rò bộ nhớ.
+
+Mã nguồn: backend/app/modules/usage_profile/ · backend/app/core/usage_codes.py · migration usgprof01 · frontend-v2/src/core/telemetry/ · frontend-v2/src/modules/report/pages/usage-profile-list-page.tsx · usage-profile-detail-page.tsx · test/backend/test_ho_so_lam_viec_*_cr641.py
+Deploy: chạy migration usgprof01, khởi động lại celery-worker và celery-beat, nạp bù 90 ngày bằng script backfill, quản trị đăng nhập lại để thấy menu.
+
+## duoc-CR-642 | Mục Mẫu hợp đồng lao động cùng bố cục với mục Văn bản mẫu
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm thấy giao diện mục Mẫu hợp đồng lao động trong Thiết lập văn bản chưa ổn so với mục Văn bản mẫu ngay bên cạnh.
+Nay hai nút Danh sách biến và Tải lên mẫu chuyển lên góc phải tiêu đề trang, đúng chỗ nút Thêm mới của các mục khác, thay vì nằm
+lửng giữa thanh lọc; nhãn Đang dùng đổi sang nhãn xanh đặc giống bảng Văn bản mẫu; cột ngày tạo tách hai dòng ngày và người tạo;
+cột thao tác chỉ còn một nút ba chấm mở menu có biểu tượng kèm chữ, chia nhóm Nội dung và Quản lý, nút Xóa tách riêng ở cuối, giống
+cột thao tác của bảng hợp đồng. Không đổi đường API và không đổi quyền.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/labor-contract-template-header-actions.tsx · labor-contract-template-row-actions.tsx · labor-contract-template-catalog.tsx · config/labor-contract-template-columns.tsx · frontend-v2/src/modules/document/pages/document-settings-page.tsx
+
+## duoc-CR-643 | Mẫu hợp đồng mở ngay trong phân hệ Nhân sự
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm bấm mục Mẫu hợp đồng ở phân hệ Nhân sự thì bị chuyển sang trang Thiết lập văn bản của phân hệ Văn bản, trong khi ý
+ban đầu là bấm vào thì danh sách mẫu hiện ngay tại chỗ. Nay mục đó mở một trang riêng trong phân hệ Nhân sự, menu trái và đường dẫn
+phía trên vẫn là Nhân sự, bảng mẫu và các nút giống hệt bên Văn bản vì dùng chung một bảng và một dữ liệu. Liên kết mở màn mẫu trong
+hộp lập hợp đồng và hộp sinh tệp cũng trỏ về trang này; nút quay lại của trình soạn mẫu và của danh sách biến trở về đúng trang
+người dùng vừa đứng. Tab mẫu hợp đồng bên phân hệ Văn bản vẫn giữ nguyên.
+
+Mã nguồn: frontend-v2/src/modules/hr/pages/labor-contract-template-list-page.tsx · frontend-v2/src/modules/hr/routes.tsx · labor-contract-template-editor-page.tsx · labor-contract-variables-page.tsx

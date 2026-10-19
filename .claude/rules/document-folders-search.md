@@ -40,8 +40,25 @@ paths:
 - Văn bản là bản lưu trữ HĐLĐ ⇔ có dòng `tab_labor_contract.document_id` trỏ tới nó (kể cả HĐ xóa mềm). Nhận diện bằng
   **liên kết**, KHÔNG bằng mã loại `HDLD` — đổi mã/tên loại trên giao diện không mở khóa. Quyền ĐỌC chỉ theo
   `labor_contract.read` trong phạm vi (`document/labor_contract_archive_access.py`); phạm vi `document` (kể cả *tất cả*),
-  chia đích danh, CẤM, sổ, duyệt, phạm vi áp dụng, clone, chủ/người tạo đều KHÔNG tính. Ghi/xóa luôn `False`; sao chép,
-  clone, trích, ký, duyệt, trả về, bỏ nháp → 409; tạo/đổi sang loại `HDLD` ở Văn bản → 400.
+  chia đích danh, CẤM, sổ, duyệt, phạm vi áp dụng, clone, chủ/người tạo đều KHÔNG tính. **SỬA (duoc-CR-640)** ⇔ đọc được HĐ
+  VÀ có `labor_contract.write` phủ HĐ VÀ `document.write` (`can_write`; HĐ xóa mềm thì chỉ đọc; `/permissions` khớp route): sửa ghi chú /
+  nơi lưu / nội dung / tải-gỡ tệp «mềm» / thư mục. Trường **do đồng bộ sở hữu** (`SYNC_OWNED_FIELDS`: title, summary, keywords,
+  effective_date, expire_date, doc_type_id, book_id, company_id, department_id, owner_employee_id) đổi qua PATCH → 409
+  (gửi lại đúng giá trị cũ thì qua); `company_id`/`doc_type_id` = null → 422. XÓA luôn `False`. Vẫn CHẶN 409 (`_load(..., derived=True)` / `ensure_not_archive`): sao chép, clone
+  (+kế hoạch/trạng thái), trích, ký, gửi duyệt / duyệt / trả về / ban hành / cấp số / bãi bỏ / xác nhận rà soát, chia sẻ và
+  thu hồi chia sẻ, quan hệ, phạm vi áp dụng, đổi loại, vào sổ; tạo/đổi sang loại `HDLD` → 400. Lớp 1 của sửa/tải tệp đòi
+  `document.write` — vai trò `hr_profile` seed `document: read+write` phạm vi `own` (không mở thêm văn bản thường nào).
+  `/permissions` trả thêm `is_archive` để giao diện ẩn các nút bị chặn.
+  `keywords = 'hdld:{id HĐ}'` chỉ là dấu nhận lại văn bản MỒ CÔI: `document_archive_sync._unlinked_marked` chỉ xét văn bản loại HDLD
+  chưa HĐ nào trỏ tới — danh tính văn bản↔HĐ luôn là `tab_labor_contract.document_id`, không bao giờ là `keywords`.
+  `role_level_cap`: chỉ `document.write` (không `document.create`/`doc_folder.*`) ⇒ trần ĐÓNG GÓP (gắn văn bản vào thư mục,
+  không hiện «+ Mới» / «Thêm thư mục con»).
+- **Tệp trên bản lưu trữ**: `document_archive_files.mirror` chỉ quản lý các bản sao do CHÍNH NÓ tạo (đánh dấu
+  `tab_file_link.doc_type = 'hdld_sync'`; bản sao trước CR-640 nhận ra qua thư mục lưu `labor-contract-archive`). Tệp người
+  dùng tải lên KHÔNG bao giờ bị đụng. Tạo phiên bản mới chép LIÊN KẾT (dùng chung file_id) — đồng bộ chỉ chỉnh phiên bản
+  hiện hành, bản cũ giữ nguyên bộ tệp, tệp chỉ bị xóa khi không còn liên kết nào. Người dùng xóa một bản sao đồng bộ ⇒ lần
+  đồng bộ sau có thể thêm lại. Bản lưu trữ chỉ có bản nháp 1.0 sửa được (không ai duyệt được nó) nên thực tế mọi sửa nội dung
+  đi vào bản nháp đó.
 - `visible_condition()` **không còn trả `None`** (luôn có vế loại bản lưu trữ). Chỗ nào gọi nó phải xử lý như điều kiện thật;
   đừng dùng `is None` làm tín hiệu «thấy tất cả».
 - Loại `HDLD` bị loại khỏi `tab_document_search` (`search_index_service.reindex`). Đường đọc văn bản mới KHÔNG đi qua

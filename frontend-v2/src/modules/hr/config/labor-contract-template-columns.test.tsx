@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -24,48 +24,47 @@ function renderActions(canWrite: boolean, canDelete: boolean, row = template) {
 }
 
 /** Mở menu «⋯» của dòng rồi trả về tên các mục trong đó. */
-async function openMoreMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /Thao tác khác với mẫu/ }))
+async function openMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /Thao tác với mẫu/ }))
   return (await screen.findAllByRole('menuitem')).map((item) => item.textContent)
 }
 
 describe('cột Thao tác của bảng Mẫu hợp đồng', () => {
-  //  duoc-CR-610: cột thu gọn — ngoài chỉ còn Soạn/Xem nội dung + Tải tệp, còn lại vào menu «⋯».
-  it('chỉ có quyền đọc: còn Tải tệp và Xem nội dung, không có menu «⋯»', () => {
-    renderActions(false, false)
-    expect(screen.getByRole('button', { name: /Tải tệp mẫu/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Xem nội dung mẫu/ })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Soạn nội dung/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Thao tác khác/ })).toBeNull()
-  })
-
-  it('việc quản trị không còn là nút rời trên dòng — chỉ hiện khi mở menu', () => {
+  //  Sau góp ý UI 19/10: một nút «⋯» như bảng hợp đồng (CR-633) — không còn icon trơn đứng ngoài.
+  it('mỗi dòng chỉ có MỘT nút «⋯», chưa mở thì không thấy mục nào', () => {
     renderActions(true, true)
-    expect(screen.getAllByRole('button')).toHaveLength(3)
+    expect(screen.getAllByRole('button')).toHaveLength(1)
     expect(screen.queryByRole('menuitem')).toBeNull()
   })
 
-  it('có quyền sửa nhưng không xóa: menu có Sửa thông tin, Thay tệp, Ngừng dùng, không có Xóa', async () => {
+  it('chỉ có quyền đọc: menu chỉ có Xem nội dung + Tải tệp mẫu', async () => {
+    const user = userEvent.setup()
+    renderActions(false, false)
+    expect(await openMenu(user)).toEqual(['Xem nội dung', 'Tải tệp mẫu'])
+  })
+
+  it('có quyền sửa nhưng không xóa: thêm Sửa thông tin, Thay tệp, Ngừng dùng, không có Xóa', async () => {
     const user = userEvent.setup()
     renderActions(true, false)
-    expect(await openMoreMenu(user)).toEqual(['Sửa thông tin', 'Thay tệp mẫu', 'Ngừng dùng'])
+    expect(await openMenu(user)).toEqual(['Soạn nội dung', 'Tải tệp mẫu', 'Sửa thông tin', 'Thay tệp mẫu', 'Ngừng dùng'])
   })
 
-  it('chỉ có quyền xóa: menu chỉ có Xóa mẫu', async () => {
+  it('chỉ có quyền xóa: Xóa mẫu nằm cuối, không có mục quản lý', async () => {
     const user = userEvent.setup()
     renderActions(false, true)
-    expect(await openMoreMenu(user)).toEqual(['Xóa mẫu'])
+    expect(await openMenu(user)).toEqual(['Xem nội dung', 'Tải tệp mẫu', 'Xóa mẫu'])
   })
 
-  //  duoc-CR-606 — các nút phải gọi ĐÚNG callback với ĐÚNG mẫu của dòng.
-  it('Soạn nội dung và Sửa thông tin gọi đúng callback với mẫu của dòng', async () => {
+  //  duoc-CR-606 — các mục phải gọi ĐÚNG callback với ĐÚNG mẫu của dòng.
+  it('Soạn nội dung và Tải tệp gọi đúng callback với mẫu của dòng', async () => {
     const user = userEvent.setup()
     const actions = renderActions(true, false)
-    fireEvent.click(screen.getByRole('button', { name: /Soạn nội dung mẫu Mẫu 12 tháng/ }))
-    await openMoreMenu(user)
-    await user.click(screen.getByRole('menuitem', { name: 'Sửa thông tin' }))
+    await openMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Soạn nội dung' }))
     expect(actions.onEditContent).toHaveBeenCalledWith(template)
-    expect(actions.onEditInfo).toHaveBeenCalledWith(template)
+    await openMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Tải tệp mẫu' }))
+    expect(actions.onDownload).toHaveBeenCalledWith(template)
     expect(actions.onReplaceFile).not.toHaveBeenCalled()
   })
 
@@ -73,7 +72,7 @@ describe('cột Thao tác của bảng Mẫu hợp đồng', () => {
     const user = userEvent.setup()
     const row = { ...template, is_active: false }
     const actions = renderActions(true, true, row)
-    expect(await openMoreMenu(user)).toEqual(['Sửa thông tin', 'Thay tệp mẫu', 'Bật dùng', 'Xóa mẫu'])
+    expect(await openMenu(user)).toEqual(['Soạn nội dung', 'Tải tệp mẫu', 'Sửa thông tin', 'Thay tệp mẫu', 'Bật dùng', 'Xóa mẫu'])
     await user.click(screen.getByRole('menuitem', { name: 'Xóa mẫu' }))
     expect(actions.onDelete).toHaveBeenCalledWith(row)
   })

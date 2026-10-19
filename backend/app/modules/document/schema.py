@@ -8,7 +8,7 @@ cáo được.
 """
 from datetime import date
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.modules.doc_catalog.folder_schema import MAX_BULK_IDS
 
@@ -104,6 +104,14 @@ class DocumentUpdate(BaseModel):
     owner_employee_id: int | None = None
     drafter_employee_id: int | None = None
     signer_employee_id: int | None = None
+
+    @field_validator("doc_type_id", "company_id", mode="before")
+    @classmethod
+    def _not_null_columns(cls, value):
+        """Hai cột NOT NULL: gửi `null` tường minh trước đây nổ 500 ở tầng DB — chặn 422 ngay ở cửa."""
+        if value is None:
+            raise ValueError("Không được để trống")
+        return value
 
     title: str | None = Field(default=None, min_length=1, max_length=500)
     summary: str | None = None

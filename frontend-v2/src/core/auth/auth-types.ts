@@ -39,6 +39,11 @@ export interface AuthUser {
    */
   report_keys?: number[]
   /**
+   * Công tắc thu thập hành vi (duoc-CR-641, `/api/auth/me`). Chỉ `false` mới tắt;
+   * thiếu trường = coi như BẬT (máy chủ vẫn có thể trả 204 khi tắt thật).
+   */
+  usage_tracking?: boolean
+  /**
    * Vai trò ĐANG GIỮ (id), không phải quyền — quyền nằm ở `permissions`.
    *
    * Màn Phân quyền dùng nó để khóa ma trận của chính vai trò mình đang giữ.

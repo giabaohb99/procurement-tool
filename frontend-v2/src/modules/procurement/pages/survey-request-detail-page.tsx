@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -164,6 +166,7 @@ export function SurveyRequestDetailPage() {
   // cả chuỗi 'new' để trang an toàn nếu sau này hai route được gộp.
   const isNew = !id || id === 'new'
   const surveyRequestId = isNew ? 0 : Number(id)
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.QUOTE_REQUEST, isNew) // duoc-CR-641
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
@@ -504,6 +507,7 @@ export function SurveyRequestDetailPage() {
     // Đã lưu xong: draft sạch trở lại, cho phép refetch sau invalidation nạp bản
     // server mới (có id dòng thật) vào draft.
     dirtyRef.current = false
+    markSubmitted()
     await flushPendingFiles(saved.lines ?? [])
     if (submitAfterSave) {
       try {

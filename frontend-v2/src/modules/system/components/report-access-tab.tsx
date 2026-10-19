@@ -17,12 +17,12 @@ interface ReportAccessTabProps {
 }
 
 /**
- * Tab «Báo cáo» của Phân quyền tài khoản — 13 báo cáo (`ReportKey`, backend),
+ * Tab «Báo cáo» của Phân quyền tài khoản — mọi báo cáo (`ReportKey`, backend),
  * mỗi dòng hiện chủ thể được CHO PHÉP / bị CẤM. Nhóm/nhãn đọc thẳng từ API
  * (`report.group` / `report.label`) — không import danh mục của `modules/report`
  * để `system` khỏi dính ruột phân hệ khác.
  *
- * 13 dòng cố định, không phân trang — `DataTable` chỉ lo hiển thị + ẩn/hiện cột.
+ * Số dòng cố định theo danh mục backend, không phân trang — `DataTable` chỉ lo hiển thị + ẩn/hiện cột.
  */
 export function ReportAccessTab({ canWrite }: ReportAccessTabProps) {
   const { data, isLoading, isError } = useReportAccessList()

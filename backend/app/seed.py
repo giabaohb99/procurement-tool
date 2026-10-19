@@ -320,7 +320,9 @@ STD_ROLES = {
         #  duoc-CR-629: danh sách Văn bản + tải tệp đòi `document.read` ở lớp 1. Phạm vi `own` (=
         #  người tạo) KHÔNG mở thêm văn bản thường nào; bản lưu trữ HĐLĐ mở bằng nhánh riêng theo
         #  `labor_contract.read` (document/labor_contract_archive_access.py).
-        "document": (["read"], "own"),
+        #  duoc-CR-640: bản lưu trữ HĐLĐ SỬA được bởi người có `labor_contract.write` — lớp 1 của sửa / tải tệp đòi
+        #  thêm `document.write`; phạm vi `own` (= người tạo) vẫn KHÔNG mở thêm văn bản thường nào.
+        "document": (["read", "write"], "own"),
         #  Tab «Tài khoản & thiết bị» trong hồ sơ (bao-CR-395): Nhân sự XEM phiên
         #  đang mở + lịch sử đăng nhập 90 ngày của mọi người. KHÔNG cấp `delete`
         #  (đá phiên là của admin); nút «Khóa tài khoản + đăng xuất mọi thiết bị»

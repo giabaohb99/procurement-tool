@@ -32,6 +32,11 @@ export function useDocumentTypes() {
  */
 export const SYSTEM_ONLY_DOC_TYPE_CODES: readonly string[] = ['HDLD']
 
+/** Văn bản thuộc loại do hệ thống giữ (bản lưu trữ hợp đồng lao động) — không chia sẻ / duyệt / ký được. */
+export function isSystemDocumentType(code: string | undefined): boolean {
+  return SYSTEM_ONLY_DOC_TYPE_CODES.includes((code ?? '').toUpperCase())
+}
+
 /** Loại đang bật và người dùng chọn được — dùng cho ô chọn loại khi tạo / sửa văn bản. */
 export function useActiveDocumentTypes(): DocumentType[] {
   const { items } = useDocumentTypes()

@@ -75,7 +75,7 @@ def save_clone_plan(
     Không sinh bản nháp nào ở đây — văn bản còn chưa ban hành thì chưa có phiên
     bản nào để chép. Xem `clone_plan_model` về lý do tách làm hai nhịp.
     """
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     rows = clone_service.set_plan(
         db, doc, data.company_ids, data.due_date, data.note, user.id,
     )
@@ -122,7 +122,7 @@ def update_clone_status(
     user=Depends(require("document", "write")),
 ):
     """Pháp nhân con cập nhật tình trạng xử lý bản clone của mình."""
-    clone = _load(db, document_id, user, "write")
+    clone = _load(db, document_id, user, "write", derived=True)
     clone = clone_service.mark_handled(db, clone, data.clone_status, user.id)
     record(db, user.id, "document", clone.id, "update",
            f"Bản clone: {clone_service.CLONE_STATUS_LABELS.get(clone.clone_status, '')}")

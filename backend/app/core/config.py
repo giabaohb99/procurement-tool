@@ -143,6 +143,11 @@ class Settings(BaseSettings):
     # (01:00) — dữ liệu dev đồng bộ từ prod nên không cần dày.
     BACKUP_ONCE_DAILY: bool = False
 
+    # --- Hồ sơ cách làm việc (duoc-CR-641) ---
+    # Công tắc thu sự kiện giao diện (POST /api/telemetry/ui-events). MẶC ĐỊNH BẬT (chủ sản phẩm chốt);
+    # tắt thì máy chủ nhận rồi bỏ lô (204), không ghi. Gom số từ bảng sẵn có thì luôn chạy.
+    USAGE_TRACKING_ENABLED: bool = True
+
     # --- Dọn dẹp ---
     NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa
 

@@ -85,9 +85,8 @@ def build(client: str) -> dict | None:
                           "Bấm Connect: trang ERP mở ra — đăng nhập ERP nếu chưa, chọn mức Chỉ đọc hoặc Được ghi, bấm "
                           "Cho phép.",
                           "Quay lại claude.ai, trong ô chat bật DEGO ERP ở nút công cụ là dùng được."],
-                "note": "Không cần khóa: claude.ai đăng nhập ERP thay bạn. Gói Team / Enterprise thì chủ tổ chức thêm kết "
-                        "nối trong Organization settings trước. Kết nối dùng 90 ngày, hết thì bấm Connect lại. Gỡ ở Trang cá "
-                        "nhân → Khóa AI (dòng Qua Claude)."}
+                #  Câu «Không cần khóa · 90 ngày · gỡ ở đâu» giao diện tự in (OAuthGuide) — note chỉ giữ ý riêng của ứng dụng.
+                "note": "Gói Team / Enterprise thì chủ tổ chức thêm kết nối trong Organization settings trước."}
     if client == "chatgpt":
         return {"client": client, "label": "ChatGPT", "supported": True, "auth": "oauth", "format": "url", "snippet": url,
                 #  bao-CR-639 (19/10, theo ảnh đại ca chụp): ChatGPT nối ở Settings → Connectors → hộp «New Connector (BETA)»:
@@ -102,9 +101,8 @@ def build(client: str) -> dict | None:
                           "Trang ERP mở ra — kiểm tên miền quay về là chatgpt.com hoặc openai.com, đăng nhập ERP nếu chưa, "
                           "chọn mức Chỉ đọc (hoặc Được ghi), bấm Cho phép.",
                           "Trong ô chat bấm nút + (hoặc Apps), bật DEGO ERP rồi hỏi như bình thường."],
-                "note": "Không cần khóa: ChatGPT đăng nhập ERP thay bạn. Hộp New Connector đang ghi Beta, tên mục có thể đổi "
-                        "theo phiên bản ChatGPT — tìm chữ Connectors hoặc MCP. Kết nối dùng 90 ngày, hết thì kết nối lại. Gỡ "
-                        "ở Trang cá nhân → Kết nối AI riêng (dòng Qua ChatGPT)."}
+                "note": "Hộp New Connector đang ghi Beta, tên mục có thể đổi theo phiên bản ChatGPT — tìm chữ Connectors "
+                        "hoặc MCP."}
     return None
 
 

@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
+import { SyncOwnedLock } from './sync-owned-lock'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -37,6 +38,8 @@ const STORAGE_LOCATION_LIST_ID = 'document-storage-locations'
 
 interface DocumentExtraInfoFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
+  /** Bản lưu trữ HĐLĐ: tóm tắt, từ khóa, ngày hiệu lực / hết hạn do hợp đồng đồng bộ — khóa (duoc-CR-640). */
+  syncOwned?: boolean
   /**
    * Công tắc TẠM TẮT hạn xem tệp (phase 09, duoc-CR-478, mặc định TẮT) — TẮT
    * thì ẩn hẳn ô «Xem tệp đính kèm tới ngày» thay vì để nó lên đó hứa suông
@@ -58,6 +61,7 @@ interface DocumentExtraInfoFieldsProps {
  */
 export function DocumentExtraInfoFields({
   form,
+  syncOwned = false,
   attachmentViewWindowEnabled = true,
 }: DocumentExtraInfoFieldsProps) {
   const confidentialLevels = useSecurityLevelOptions(SECURITY_LEVEL_KIND_CONFIDENTIAL)
@@ -256,6 +260,7 @@ export function DocumentExtraInfoFields({
         )}
       />
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="effective_date"
@@ -272,7 +277,9 @@ export function DocumentExtraInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="expire_date"
@@ -287,6 +294,7 @@ export function DocumentExtraInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
       {/*  HẠN XEM TỆP — khác hẳn «Hết hiệu lực» ở trên, nên đứng ngay cạnh nó để
            người khai nhìn thấy cả hai mà phân biệt: văn bản hết hiệu lực thì vẫn
@@ -316,6 +324,7 @@ export function DocumentExtraInfoFields({
         />
       )}
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="keywords"
@@ -332,7 +341,9 @@ export function DocumentExtraInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="summary"
@@ -346,6 +357,7 @@ export function DocumentExtraInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
     </div>
   )
 }

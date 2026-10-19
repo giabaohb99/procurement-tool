@@ -108,3 +108,5 @@ from app.modules.labor_contract import template_model as _labor_contract_templat
 from app.modules.labor_contract import variable_model as _labor_contract_variable  # noqa: F401
 # Kho skill AI (bao-CR-621, doc/erp/21) — `tab_ai_skill*`.
 from app.modules.ai_skill import model as _ai_skill  # noqa: F401
+# Hồ sơ cách làm việc (duoc-CR-641) — `tab_ui_event`, `tab_usage_daily`, `tab_user_usage_snapshot`, `tab_user_usage_label`.
+from app.modules.usage_profile import model as _usage_profile  # noqa: F401

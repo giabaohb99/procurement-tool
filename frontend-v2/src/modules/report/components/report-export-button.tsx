@@ -13,7 +13,8 @@ import { reportAnalyticsApi } from '../api/report-analytics-api'
 interface ReportExportButtonProps {
   endpoint: string
   entity: PermissionEntity
-  params: Record<string, string>
+  /** Giá trị mảng được lặp khóa (`label=1&label=2`) — xem `httpClient.paramsSerializer`. */
+  params: Record<string, string | string[]>
   filename: string
 }
 

@@ -46,6 +46,8 @@ GATED: dict[str, ReportKey] = {
     "/api/approvals/summary/export": ReportKey.APPROVAL,
     "/api/work/summary": ReportKey.WORK,
     "/api/work/summary/export": ReportKey.WORK,
+    "/api/usage-profiles/summary": ReportKey.USAGE_PROFILE,
+    "/api/usage-profiles/summary/export": ReportKey.USAGE_PROFILE,
 }
 
 #  KHÔNG thuộc phân hệ Báo cáo — đã grep, không gán khóa nào (bảng phase-02).
@@ -84,6 +86,9 @@ ROUTE_SPECS = [
      "/api/approvals/summary", "/api/approvals/summary/export"),
     (ReportKey.WORK, "work_task",
      "/api/work/summary", "/api/work/summary/export"),
+    #  duoc-CR-641: Hồ sơ cách làm việc gác `setting` (phân hệ Quản trị).
+    (ReportKey.USAGE_PROFILE, "setting",
+     "/api/usage-profiles/summary", "/api/usage-profiles/summary/export"),
 ]
 
 PRESET_QS = {"preset": "this_month", "compare": "none"}

@@ -62,6 +62,9 @@ celery_app.conf.update(
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
         "app.modules.legacy_datxe.outbound_tasks",  # Chiều ERP -> app cũ (P3, bao-CR-596)
         *(["app.modules.agent_hub.tasks"] if not settings.agent_is_erp else []),   # Agent Hub (bỏ ở ERP đã tách, ai-CR-119)
+        "app.modules.usage_profile.tasks_daily",     # Hồ sơ cách làm việc (duoc-CR-641): gom ngày 04:30
+        "app.modules.usage_profile.tasks_snapshot",  # ... snapshot tuần thứ Hai 05:15
+        "app.modules.usage_profile.tasks_cleanup",   # ... dọn sự kiện thô 90 ngày + số gom 3 năm 04:20
         "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
@@ -130,6 +133,20 @@ celery_app.conf.update(
         "purge-orphan-attachments": {
             "task": "attachment.purge_orphans",
             "schedule": crontab(hour=4, minute=10),  # 04:10 VN, mỗi ngày
+        },
+        #  Hồ sơ cách làm việc (duoc-CR-641). Lệch giờ backup (01:00/13:00), archive (03:00 ngày 1), dọn request_log
+        #  (03:40), system_log (03:50), attachment (04:10). Snapshot tuần chạy SAU gom ngày và tự lành ngày thiếu.
+        "usage-cleanup-ui-events": {
+            "task": "usage.cleanup_ui_events",
+            "schedule": crontab(hour=4, minute=20),  # 04:20 VN, mỗi ngày
+        },
+        "usage-aggregate-daily": {
+            "task": "usage.aggregate_daily",
+            "schedule": crontab(hour=4, minute=30),  # 04:30 VN, mỗi ngày (gom HÔM QUA)
+        },
+        "usage-build-weekly-snapshots": {
+            "task": "usage.build_weekly_snapshots",
+            "schedule": crontab(day_of_week=1, hour=5, minute=15),  # thứ Hai 05:15 VN (tuần vừa kết thúc)
         },
         # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/03 §4). Cầu dao
         # POS365_HARD_OFF: khi tắt thì không đưa các task này vào lịch beat.

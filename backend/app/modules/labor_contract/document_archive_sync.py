@@ -16,6 +16,7 @@ luật bãi bỏ `revoke_access`):
 """
 import logging
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.base_model import mark_deleted
@@ -77,6 +78,17 @@ def _active_doc_type(db: Session) -> DocType | None:
                                      DocType.is_active.is_(True)).first())
 
 
+def _unlinked_marked(db: Session, lc: LaborContract, marker: str):
+    """Văn bản loại HDLD, còn sống, mang dấu `marker` và CHƯA gắn với HĐ nào (kể cả HĐ khác) — tập duy nhất được nhận
+    lại / dọn dư. Sửa tay `keywords` bị chặn ở PATCH; dù có lọt, văn bản đã gắn HĐ khác không bao giờ lọt vào đây."""
+    linked_elsewhere = select(LaborContract.document_id).where(LaborContract.document_id > 0)
+    return (db.query(doc_model.Document)
+            .filter(doc_model.Document.doc_type_id.in_(select(DocType.id).where(DocType.code == LABOR_CONTRACT_DOC_TYPE)),
+                    doc_model.Document.keywords == marker,
+                    doc_model.Document.is_deleted == False,  # noqa: E712
+                    ~doc_model.Document.id.in_(linked_elsewhere)))
+
+
 def _ensure_document(db: Session, lc: LaborContract, actor_id: int) -> doc_model.Document | None:
     """Văn bản của HĐ; chưa có (hoặc đã bị xóa cứng) thì tạo. `None` nếu loại HDLD thiếu / tắt."""
     from app.modules.document import service as doc_service
@@ -87,12 +99,12 @@ def _ensure_document(db: Session, lc: LaborContract, actor_id: int) -> doc_model
         if doc is not None:
             if doc.is_deleted:
                 return None
-            #  Đã có văn bản chính thức: mọi bản dư mang dấu của HĐ này (do chạy đua) xóa mềm.
-            for extra in (db.query(doc_model.Document)
-                          .filter(doc_model.Document.keywords == marker, doc_model.Document.id != doc.id,
-                                  doc_model.Document.is_deleted == False)  # noqa: E712
-                          .all()):
-                mark_deleted(extra, actor_id)
+            #  Đã có văn bản chính thức: bản dư (do chạy đua) xóa mềm — CHỈ văn bản loại HDLD mà KHÔNG HĐ nào trỏ tới.
+            #  `keywords` là dấu nhận văn bản mồ côi chứ không phải danh tính: văn bản đã gắn với một HĐ (kể cả HĐ khác)
+            #  hay văn bản thường mang cùng chuỗi đều KHÔNG bị đụng.
+            for extra in _unlinked_marked(db, lc, marker).all():
+                if extra.id != doc.id:
+                    mark_deleted(extra, actor_id)
             return doc
     doc_type = _active_doc_type(db)
     if doc_type is None:
@@ -100,10 +112,7 @@ def _ensure_document(db: Session, lc: LaborContract, actor_id: int) -> doc_model
         return None
     #  Tự lành văn bản MỒ CÔI (review M1): lần tạo trước commit văn bản rồi chết trước khi ghi liên kết.
     #  Nhận lại bằng dấu `hdld:{id HĐ}` ở `keywords`; bản dư (do chạy đua) thì xóa mềm.
-    orphans = (db.query(doc_model.Document)
-               .filter(doc_model.Document.doc_type_id == doc_type.id, doc_model.Document.keywords == marker,
-                       doc_model.Document.is_deleted == False)  # noqa: E712
-               .order_by(doc_model.Document.id).with_for_update().all())
+    orphans = _unlinked_marked(db, lc, marker).order_by(doc_model.Document.id).with_for_update().all()
     if orphans:
         keep, extras = orphans[0], orphans[1:]
         for extra in extras:

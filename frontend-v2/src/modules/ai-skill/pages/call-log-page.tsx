@@ -21,6 +21,7 @@ import { CALL_STATUS } from '../config/ai-skill-constants'
 import { CallStatusBadge } from '../config/ai-skill-meta'
 import { useMcpCalls } from '../hooks/use-ai-usage'
 import type { McpCall, McpCallFilters } from '../types/ai-skill'
+import { formatResultChars } from '../utils/call-log-format'
 import { buildCsv, downloadCsv, type CsvColumn } from '../utils/csv-export'
 
 const ALL = 'all'
@@ -39,6 +40,8 @@ const CSV_COLUMNS: CsvColumn<McpCall>[] = [
   { header: 'Trạng thái', value: (c) => c.status_label },
   { header: 'Lý do từ chối', value: (c) => c.deny_reason },
   { header: 'Thời gian chạy (ms)', value: (c) => c.duration_ms },
+  //  0 / thiếu = lượt không đo (không phải tools/call, dòng trước ai-CR-228) — để ô trống như trên màn, không ghi 0
+  { header: 'Số ký tự kết quả', value: (c) => (c.result_chars && c.result_chars > 0 ? c.result_chars : '') },
   { header: 'Mã khóa', value: (c) => c.key_id },
   { header: 'IP', value: (c) => c.ip },
 ]
@@ -104,6 +107,14 @@ export function CallLogPage() {
         ),
       },
       { key: 'duration', header: 'Chạy (ms)', width: 100, align: 'right', cell: (c) => c.duration_ms },
+      //  ai-CR-228: kết quả quá dài thì ứng dụng AI có thể bỏ qua — cột này cho thấy lượt nào trả nhiều chữ.
+      {
+        key: 'result_chars',
+        header: 'Số ký tự kết quả',
+        width: 130,
+        align: 'right',
+        cell: (c) => formatResultChars(c.result_chars),
+      },
       { key: 'key_id', header: 'Mã khóa', width: 90, defaultHidden: true, cell: (c) => c.key_id || '—' },
       { key: 'ip', header: 'IP', width: 130, defaultHidden: true, cell: (c) => <span className="font-mono text-xs">{c.ip || '—'}</span> },
     ],

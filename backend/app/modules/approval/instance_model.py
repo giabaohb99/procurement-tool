@@ -156,6 +156,7 @@ class ApprovalTask(Base, AuditMixin):
         #  người mở trang chủ. Thiếu chỉ mục này là quét cả bảng việc mỗi lần.
         Index("ix_approval_task_assignee", "assignee_employee_id", "status"),
         Index("ix_approval_task_instance", "instance_id", "node_seq"),
+        Index("ix_approval_task_decided_at", "decided_at"),   # duoc-CR-641: thời gian xử lý của hồ sơ cách làm việc
     )
 
     instance_id: Mapped[int] = mapped_column(BigInteger)

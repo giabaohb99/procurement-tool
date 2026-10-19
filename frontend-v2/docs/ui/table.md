@@ -75,6 +75,9 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 - `columns` **phải** bọc `useMemo` — mảng dựng lại mỗi render sẽ làm bảng tính lại bố cục liên tục.
 - `storageKey` theo dạng `<module>.<entity>` (`hr.employees`, `document.records`).
 - Ô hành động: bọc `onClick={(e) => e.stopPropagation()}`, nếu không mỗi lần bấm nút sẽ mở luôn trang chi tiết vì `onRowClick` bắt được.
+- **Ô trả CHUỖI `'—'` hoặc `'-'` bị bảng đổi thành ô TRỐNG** (CR-132, `data-table.tsx` trong vòng vẽ hàng): cố ý để bảng
+  gọn, nên đừng viết bài kiểm tìm chữ `—` trong ô `DataTable` — sẽ không thấy. Muốn hiện gạch thật thì trả về phần tử
+  (`<span>—</span>`), không trả chuỗi trần.
 - Nội dung dài: bảng chạy `table-fixed` nên ô không tự nong ra, **mặc định đã cắt bằng `…`**. Cần đọc đủ chữ thì bật `wrap: true` ở cột — và **đừng gắn `truncate` trong `cell`**, class của ô con thắng lớp bọc của bảng nên gắn vào là `wrap` thành vô hiệu.
 
 ### Cột bắt buộc — khai bằng đuôi `" *"`

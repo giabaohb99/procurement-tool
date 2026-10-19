@@ -354,7 +354,12 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read", *
     if not _archive_checked:
         contract = archive_access.contract_of(db, doc)
         if contract is not None:
-            return action == "read" and archive_access.can_read(db, contract, user, profile)
+            #  duoc-CR-640: đọc = đọc được HĐ; SỬA = có `labor_contract.write` phủ HĐ; xóa luôn False (xóa ở Nhân sự).
+            if action == "read":
+                return archive_access.can_read(db, contract, user, profile)
+            if action == "write":
+                return archive_access.can_write(db, contract, user, profile)
+            return False
         #  Loại HDLD mà không HĐ nào trỏ tới (mồ côi) — không ai đọc, kể cả quản trị (review M1).
         if archive_access.is_orphan_archive_type(db, doc):
             return False

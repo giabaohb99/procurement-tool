@@ -807,6 +807,9 @@ export const queryKeys = {
      */
     analytics: (endpoint: string, params: Record<string, unknown>) =>
       ['report', 'analytics', endpoint, params] as const,
+    /** Hồ sơ cách làm việc (duoc-CR-641): danh sách và hồ sơ từng người. */
+    usageProfileList: (params: Record<string, unknown>) => ['report', 'usage-profile', 'list', params] as const,
+    usageProfile: (userId: number, weeks: number) => ['report', 'usage-profile', 'detail', userId, weeks] as const,
   },
   coffee: {
     all: ['coffee'] as const,

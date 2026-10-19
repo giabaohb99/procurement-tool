@@ -57,5 +57,13 @@ export const reportModule: ErpModule = {
       path: r.path,
       lazy: async () => ({ Component: await r.load() }),
     })),
+    //  Hồ sơ MỘT người: nằm DƯỚI đường của mục menu «Hồ sơ cách làm việc» để `canAccessRoute`
+    //  (khớp tiền tố dài nhất) áp đúng khóa quyền + khóa báo cáo 14. Route không có mục menu gác = mở cho mọi người.
+    {
+      path: appRoutes.report.usageProfileDetail(':userId'),
+      lazy: async () => ({
+        Component: (await import('./pages/usage-profile-detail-page')).UsageProfileDetailPage,
+      }),
+    },
   ],
 }

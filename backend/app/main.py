@@ -435,3 +435,8 @@ else:
 app.include_router(approval_flow_router)
 app.include_router(approval_router)
 app.include_router(delegation_router)
+#  Hồ sơ cách làm việc (duoc-CR-641): thu sự kiện giao diện + API đọc (gác ReportKey.USAGE_PROFILE).
+from app.modules.usage_profile.telemetry_controller import router as telemetry_router  # noqa: E402
+from app.modules.usage_profile.controller import router as usage_profile_router  # noqa: E402
+app.include_router(telemetry_router)
+app.include_router(usage_profile_router)

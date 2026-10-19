@@ -15,6 +15,8 @@ interface AppEnv {
   googleClientId: string
   isDev: boolean
   isProd: boolean
+  /** Chạy dưới Vitest — bộ thu hành vi (core/telemetry) tắt hẳn ở đây. */
+  isTest: boolean
 }
 
 export const env: AppEnv = {
@@ -23,4 +25,5 @@ export const env: AppEnv = {
   googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
   isDev: import.meta.env.DEV,
   isProd: import.meta.env.PROD,
+  isTest: import.meta.env.MODE === 'test',
 }

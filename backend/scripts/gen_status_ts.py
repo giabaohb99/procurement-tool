@@ -93,6 +93,17 @@ def render() -> str:
             f"export const {_const_name(name)}: readonly StatusOption[] = [\n{body},\n]\n"
         )
 
+    #  Hằng số kiểu `{KHÓA: số}` cho bộ mã mà giao diện GỬI lên (chỉ bộ nào khai `Code.key` cho mọi mã).
+    for name, cs in all_sets().items():
+        if cs.codes and all(c.key for c in cs.codes):
+            body = ",\n".join(
+                f"  {c.key}: {c.value if c.value.lstrip('-').isdigit() else json.dumps(c.value, ensure_ascii=False)}"
+                for c in cs.codes)
+            parts.append(
+                f"\n/** {cs.title} — khóa → mã gửi lên backend. */\n"
+                f"export const {_const_name(name)}_CODE = {{\n{body},\n}} as const\n"
+            )
+
     registry = ",\n".join(f"  {n}: {_const_name(n)}" for n in names)
     parts.append(
         "\n/** Tra theo tên bộ, cho chỗ dựng ô chọn động. */\n"

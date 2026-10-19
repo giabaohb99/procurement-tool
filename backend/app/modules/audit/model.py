@@ -1,4 +1,4 @@
-from sqlalchemy import BINARY, BigInteger, SmallInteger, String, Text
+from sqlalchemy import BINARY, BigInteger, Index, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -21,6 +21,8 @@ class AuditLog(Base, AuditMixin):
     """
 
     __tablename__ = "tab_audit_log"
+    #  duoc-CR-641: gom ngày của hồ sơ cách làm việc lọc theo `created_at`; thiếu chỉ mục này thì quét cả phân vùng năm.
+    __table_args__ = (Index("ix_tab_audit_log_created_at", "created_at"),)
 
     entity: Mapped[str] = mapped_column(String(50), index=True)
     entity_id: Mapped[int] = mapped_column(BigInteger, index=True)

@@ -10,6 +10,6 @@ import type { ReportAnalyticsResponse } from '../types/report-analytics'
 export const reportAnalyticsApi = {
   get: (endpoint: string, params: Record<string, string>) =>
     apiGet<ReportAnalyticsResponse>(endpoint, { params }),
-  export: (endpoint: string, params: Record<string, string>, filename: string) =>
+  export: (endpoint: string, params: Record<string, string | string[]>, filename: string) =>
     downloadFile(endpoint, filename, params),
 }

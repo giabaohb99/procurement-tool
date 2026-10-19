@@ -68,6 +68,7 @@ def mark_read(nid: int, db: Session = Depends(get_db), user=Depends(get_current_
     n = db.query(Notification).filter(Notification.id == nid, Notification.user_id == user.id).first()
     if n and not n.is_read:
         n.is_read = True
+        n.read_at = datetime.utcnow()   # duoc-CR-641: chỉ ghi mốc LẦN ĐẦU, đọc lại không ghi đè
         db.commit()
     return success(None)
 
@@ -75,7 +76,7 @@ def mark_read(nid: int, db: Session = Depends(get_db), user=Depends(get_current_
 @router.post("/read-all")
 def mark_all_read(db: Session = Depends(get_db), user=Depends(get_current_user)):
     db.query(Notification).filter(Notification.user_id == user.id, Notification.is_read == False)\
-        .update({"is_read": True}, synchronize_session=False)
+        .update({"is_read": True, "read_at": datetime.utcnow()}, synchronize_session=False)
     db.commit()
     return success(None, "Đã đánh dấu tất cả là đã đọc")
 

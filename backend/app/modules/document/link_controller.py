@@ -196,7 +196,7 @@ def add_link(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     link = link_service.add_link(
         db, doc, data.relation, data.target_document_id, data.note, user.id,
         user=user, profile=get_perm_profile(db, user),
@@ -215,7 +215,7 @@ def delete_link(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     link_service.delete_link(db, doc, link_id)
     record(db, user.id, "document", doc.id, "update")
     return success(None, "Đã gỡ quan hệ")

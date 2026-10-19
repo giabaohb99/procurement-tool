@@ -150,6 +150,13 @@ FIELDS = [
      "label": "Số bản sao lưu cơ sở dữ liệu giữ lại",
      "hint": "Giữ bấy nhiêu bản mới nhất, cũ hơn thì xóa cả tệp lẫn dòng ghi. Chạy hai lần mỗi "
              "ngày nên 30 bản là khoảng mười lăm ngày."},
+    #  duoc-CR-641 — hồ sơ cách làm việc.
+    {"key": "usage_tracking_enabled", "group": "system", "type": "bool",
+     "label": "Thu thập cách dùng giao diện (hồ sơ cách làm việc)",
+     "hint": "BẬT: giao diện gửi về máy chủ các sự kiện như màn hình đã mở, thời gian ở lại, mở/gửi/bỏ dở "
+             "biểu mẫu, số lần tìm kiếm và số kết quả (KHÔNG ghi từ khóa, KHÔNG ghi nội dung nhập), giữ 90 ngày. "
+             "Chỉ tài khoản được giao xem báo cáo «Hồ sơ cách làm việc» mới đọc được. Phải thông báo nhân viên "
+             "trước khi bật. TẮT: máy chủ bỏ mọi lô sự kiện, không ghi gì; số liệu gom từ nhật ký sẵn có vẫn chạy."},
 ]
 # Trường bí mật: NHẬP được (mã hóa lưu DB), KHÔNG hiển thị lại
 #

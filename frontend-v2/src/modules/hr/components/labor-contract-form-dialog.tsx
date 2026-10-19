@@ -1,6 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 
@@ -45,6 +47,7 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
   const canAttach = !row || row.can_upload_signed
   //  Chặn bấm đúp bằng ref (disabled theo state React chỉ đúng ở lần render sau).
   const submitting = useRef(false)
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.LABOR_CONTRACT, open && !row) // duoc-CR-641
 
   const form = useForm<LaborContractFormValues>({
     resolver: zodResolver(laborContractSchema),
@@ -89,6 +92,7 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
       { id: row?.id, payload: toLaborContractPayload(values, row ? 'edit' : 'create', activeFields) },
       {
         onSuccess: async (result) => {
+          markSubmitted()
           //  Hợp đồng đã lưu rồi mới tải tệp. Tải lỗi (httpClient tự báo) thì hợp đồng VẪN giữ — tải lại
           //  được ở nút «Tải lên bản đã ký» trên dòng; không mở lại hộp để khỏi lưu trùng lần hai.
           if (signedFile) {
@@ -115,7 +119,7 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
         {can('labor_contract_template', 'read') && (
           <>
             {' '}
-            <Link to={appRoutes.document.laborContractTemplates} className="font-medium underline">
+            <Link to={appRoutes.hr.laborContractTemplates} className="font-medium underline">
               Mở màn Mẫu hợp đồng
             </Link>
           </>

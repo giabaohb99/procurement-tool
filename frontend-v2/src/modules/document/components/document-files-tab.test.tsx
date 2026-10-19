@@ -53,6 +53,7 @@ vi.mock('./document-file-viewer-layout', () => ({
 vi.mock('../hooks/use-document-files', () => ({
   useDocumentFiles: vi.fn(),
   useUploadDocumentFile: vi.fn(),
+  useDeleteDocumentFile: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
 function file(overrides: Partial<DocumentVersionFile> = {}): DocumentVersionFile {
@@ -214,5 +215,41 @@ describe('DocumentFilesTab — tải tệp lên lúc rỗng', () => {
     await user.upload(input, picked)
 
     expect(uploadMutate).toHaveBeenCalledWith([picked])
+  })
+})
+
+describe('DocumentFilesTab — tải thêm / gỡ tệp khi đã có tệp (duoc-CR-640)', () => {
+  function renderTab(props: Partial<React.ComponentProps<typeof DocumentFilesTab>> = {}) {
+    return render(
+      <MemoryRouter>
+        <DocumentFilesTab documentId={9} currentVersionId={4} canWrite {...props} />
+      </MemoryRouter>,
+    )
+  }
+
+  it('1 tệp + có quyền sửa + bản chưa khóa → «Tải thêm tệp» và «Xóa tệp»', () => {
+    mockFiles([file()])
+    renderTab()
+    expect(screen.getByRole('button', { name: /Tải thêm tệp/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Xóa tệp/ })).toBeInTheDocument()
+  })
+
+  it('nhiều tệp (danh sách) → có «Tải thêm tệp», chưa chọn tệp nên chưa có «Xóa tệp»', () => {
+    mockFiles([file({ id: 1 }), file({ id: 2 })])
+    renderTab()
+    expect(screen.getByRole('button', { name: /Tải thêm tệp/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Xóa tệp/ })).not.toBeInTheDocument()
+  })
+
+  it('không có quyền sửa, hoặc phiên bản đã khóa, hoặc chưa có phiên bản → không có nút nào', () => {
+    mockFiles([file()])
+    const { unmount } = renderTab({ canWrite: false })
+    expect(screen.queryByRole('button', { name: /Tải thêm tệp|Xóa tệp/ })).not.toBeInTheDocument()
+    unmount()
+    const second = renderTab({ isLocked: true })
+    expect(screen.queryByRole('button', { name: /Tải thêm tệp|Xóa tệp/ })).not.toBeInTheDocument()
+    second.unmount()
+    renderTab({ currentVersionId: null })
+    expect(screen.queryByRole('button', { name: /Tải thêm tệp|Xóa tệp/ })).not.toBeInTheDocument()
   })
 })

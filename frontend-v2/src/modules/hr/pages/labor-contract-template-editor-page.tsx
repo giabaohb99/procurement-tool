@@ -71,7 +71,9 @@ export function LaborContractTemplateEditorPage() {
     if (dirty && !(await confirm({ title: 'Bỏ thay đổi?', message: 'Nội dung đã sửa chưa được lưu sẽ mất.', confirmLabel: 'Bỏ thay đổi' }))) {
       return
     }
-    navigate(appRoutes.document.laborContractTemplates)
+    //  Về đúng trang đã mở trình soạn (Nhân sự HAY Thiết lập văn bản); mở thẳng URL thì về trang mẫu của Nhân sự.
+    if ((window.history.state as { idx?: number } | null)?.idx) navigate(-1)
+    else navigate(appRoutes.hr.laborContractTemplates)
   }
 
   const insertToken = (token: string) => {

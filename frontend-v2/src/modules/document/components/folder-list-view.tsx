@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { cn } from '@/shared/utils/cn'
+import { isSystemDocumentType } from '../hooks/use-document-types'
 import type { FolderDragPayload } from '../helpers/folder-drag-payload'
 import { folderItemKey } from '../helpers/folder-item-id'
 import {
@@ -180,7 +181,9 @@ export function FolderListView({
             onViewDetails={() => onViewDocumentDetails(document)}
             onMoveTo={canWrite ? () => onMoveDocumentTo(document) : undefined}
             onManagePermissions={
-              canWrite && onShareDocument ? () => onShareDocument(document) : undefined
+              canWrite && onShareDocument && !isSystemDocumentType(document.doc_type_code)
+                ? () => onShareDocument(document)
+                : undefined
             }
             onRemove={canDelete ? () => void onRemoveDocument(document) : undefined}
             canWriteDocument={canWrite}

@@ -441,6 +441,10 @@ def update_document(
     user=Depends(require("document", "write")),
 ):
     doc = _load(db, document_id, user, "write")
+    #  duoc-CR-640: bản lưu trữ HĐLĐ sửa được ghi chú / nơi lưu / thư mục / nội dung / tệp, còn tiêu đề, tóm tắt, từ khóa,
+    #  ngày hiệu lực / hết hạn, loại, sổ, pháp nhân, phòng, chủ văn bản do HỢP ĐỒNG sở hữu (đồng bộ ghi đè) ⇒ 409.
+    if archive_access.contract_of(db, doc) is not None:
+        archive_access.ensure_no_sync_owned_change(doc, data.model_dump(exclude_unset=True))
     if data.doc_type_id is not None and data.doc_type_id != doc.doc_type_id:
         archive_access.ensure_not_system_type(db, data.doc_type_id)   # duoc-CR-629
     doc = service.update_document(db, doc, data, user.id, user=user)
@@ -456,7 +460,7 @@ def update_issue_number(
     user=Depends(require("document", "write")),
 ):
     """Văn thư sửa số khi chính quy tắc đã bật quyền, luôn ghi lý do vào nhật ký."""
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     doc, previous = service.update_issue_number(db, doc, data.issue_number, user.id)
     record(
         db,
@@ -504,7 +508,7 @@ def submit_document(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     doc = service.submit(db, doc, user.id)
     record(db, user.id, "document", doc.id, "update", "Gửi duyệt")
     return success(serializer.serialize(db, doc, user=user), "Đã gửi duyệt")
@@ -557,7 +561,7 @@ def issue_document(
       (`service.issue_without_approval`). Người bấm: người soạn / người chịu
       trách nhiệm, hoặc người có quyền Duyệt văn bản.
     """
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     mailbox = _selected_mailbox(db, data, user)
     apply_mode = data.apply_mode if data else None
     mailbox_id = mailbox.id if mailbox else None
@@ -693,7 +697,7 @@ def confirm_reviewed(
     được «đã đối chiếu, vẫn đúng» hay «đã sửa theo Chương II» — hai câu đó dẫn
     tới hai hành động khác hẳn nhau nếu về sau có tranh chấp.
     """
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     old_note = doc.needs_review_note
     doc = service.confirm_reviewed(db, doc, data.conclusion, user.id)
     record(db, user.id, "document", doc.id, "update",
@@ -711,7 +715,7 @@ def revoke_document(
 ):
     """Bãi bỏ văn bản ĐÃ ban hành. Đây là lối thoát duy nhất cho văn bản đã cấp
     số — `DELETE` từ chối những văn bản đó để không thủng sổ."""
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     doc = service.revoke(db, doc, data.reason, user.id)
     record(db, user.id, "document", doc.id, "cancel", f"Bãi bỏ: {data.reason}")
     return success(serializer.serialize(db, doc, user=user), "Đã bãi bỏ văn bản")
@@ -849,7 +853,7 @@ def grant_access(
     Cần quyền **sửa** trên chính văn bản đó: ai sửa được văn bản thì mới quyết
     được ai đọc nó.
     """
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     row = access_service.grant(db, doc, data, user.id)
     record(db, user.id, "document", doc.id, "update",
            f"Chia quyền cho đối tượng {row.subject_kind}:{row.subject_id}")
@@ -864,7 +868,7 @@ def revoke_access(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     row = access_service.revoke(db, doc, access_id, data.reason, user.id)
     record(db, user.id, "document", doc.id, "update",
            f"Thu hồi quyền của đối tượng {row.subject_kind}:{row.subject_id}")
@@ -887,6 +891,9 @@ def my_permissions(
     return success({
         action: access_service.can(db, doc, user, profile, action)
         for action in ("read", "write", "delete")
+    } | {
+        #  duoc-CR-640: bản lưu trữ HĐLĐ — giao diện ẩn các nút chia sẻ / quan hệ / duyệt / ký / ban hành / sao chép.
+        "is_archive": archive_access.contract_of(db, doc) is not None,
     })
 
 

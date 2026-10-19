@@ -1,0 +1,66 @@
+"""API đọc hồ sơ cách làm việc (duoc-CR-641, phase 05) — `prefix=/api/usage-profiles`.
+
+Gác KÉP như 13 báo cáo cũ: `require("setting", …)` (cửa quyền phân hệ Quản trị) VÀ `require_report(ReportKey.USAGE_PROFILE)`
+(chủ sản phẩm: mặc định chỉ admin; admin gán thêm ở Phân quyền → Báo cáo). Admin xem TẤT CẢ người (không `apply_scope`:
+khóa `setting` không có bảng để lọc). KHÔNG có đường «hồ sơ của tôi», không mở cho quản lý. Mỗi lần mở hồ sơ để lại một dòng
+`tab_request_log` (GET không bị loại) — đủ trả lời «ai đã xem hồ sơ ai».
+`/summary`, `/summary/export`, `/cohorts` khai TRƯỚC `/{user_id}` để không bị đường tham số nuốt.
+"""
+from datetime import date
+
+from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy.orm import Session
+
+from app.core.auth import require
+from app.core.database import get_db
+from app.core.report_keys import ReportKey
+from app.core.report_period import parse_period
+from app.core.response import success
+from app.modules.report_access.guard import require_report
+
+from . import cohort_service, list_export, list_service, profile_service
+from .schema import MAX_LABELS, MAX_PAGE_SIZE, MAX_Q_LEN, MAX_WEEKS, ListFilters, parse_sort, validate_labels
+
+router = APIRouter(prefix="/api/usage-profiles", tags=["usage-profile"])
+GUARD = [Depends(require_report(ReportKey.USAGE_PROFILE))]
+
+
+def _filters(request: Request, company_id, department_id, role_id, label, q, sort) -> ListFilters:
+    #  Dùng chung bộ kỳ của các báo cáo (preset / date_from / date_to); compare không dùng ở đây.
+    period = parse_period({**request.query_params, "compare": "none"})
+    parse_sort(sort)   # 422 sớm nếu cột lạ
+    return ListFilters(period.date_from, period.date_to, company_id, department_id, role_id,
+                       validate_labels(label), (q or "").strip(), sort)
+
+
+@router.get("/summary", dependencies=GUARD)
+def usage_summary(request: Request, company_id: int | None = Query(None, ge=1),
+                  department_id: int | None = Query(None, ge=1), role_id: int | None = Query(None, ge=1),
+                  label: list[int] | None = Query(None, max_length=MAX_LABELS), q: str | None = Query(None, max_length=MAX_Q_LEN),
+                  page: int = Query(1, ge=1, le=10000), page_size: int = Query(20, ge=1, le=MAX_PAGE_SIZE),
+                  sort: str = Query("full_name", max_length=40),
+                  db: Session = Depends(get_db), user=Depends(require("setting", "read"))):
+    f = _filters(request, company_id, department_id, role_id, label, q, sort)
+    return success(list_service.summary(db, f, page, page_size))
+
+
+@router.get("/summary/export", dependencies=GUARD)
+def usage_summary_export(request: Request, company_id: int | None = Query(None, ge=1),
+                         department_id: int | None = Query(None, ge=1), role_id: int | None = Query(None, ge=1),
+                         label: list[int] | None = Query(None, max_length=MAX_LABELS), q: str | None = Query(None, max_length=MAX_Q_LEN),
+                         sort: str = Query("full_name", max_length=40),
+                         db: Session = Depends(get_db), user=Depends(require("setting", "export"))):
+    f = _filters(request, company_id, department_id, role_id, label, q, sort)
+    return list_export.export_summary(db, user, f)
+
+
+@router.get("/cohorts", dependencies=GUARD)
+def usage_cohorts(week: date | None = Query(None), db: Session = Depends(get_db),
+                  user=Depends(require("setting", "read"))):
+    return success(cohort_service.list_cohorts(db, week))
+
+
+@router.get("/{user_id}", dependencies=GUARD)
+def usage_profile(user_id: int, weeks: int = Query(8, ge=1, le=MAX_WEEKS), db: Session = Depends(get_db),
+                  user=Depends(require("setting", "read"))):
+    return success(profile_service.get_profile(db, user_id, weeks))

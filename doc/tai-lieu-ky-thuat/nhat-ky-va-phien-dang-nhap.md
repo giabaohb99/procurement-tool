@@ -205,6 +205,7 @@ ra. Log của nginx / Cloudflare (lượt chưa tới API) **vẫn ở ngoài**,
 |---|---|---|
 | Máy dội máy (**chỉ bỏ GET**) | `/api/notifications` · `/api/alerts` | 4.427 trong 7.440 lượt GET một ngày trên prod — **59,5%** — chỉ để vẽ con số trên hình cái chuông. `PATCH /api/notifications/{id}` (bấm "đã đọc") **vẫn ghi**: đó là thao tác của người. |
 | Đường của chính nhật ký | `/api/system-logs` · `/api/audit-logs` | NT-5 — mở màn đọc nhật ký mà lại đẻ thêm dòng nhật ký để đọc |
+| Đường đo cách dùng giao diện (duoc-CR-641) | `/api/telemetry` | NT-5 — mỗi lô sự kiện giao diện (FE gửi theo lô vài chục giây một lần) mà đẻ thêm một dòng `tab_request_log` thì bảng nhật ký phình mà không thêm thông tin nào |
 | Hạ tầng | `/api/health` · `/api/uploads` · `/docs` · `/redoc` · `/openapi.json` | không phải thao tác nghiệp vụ |
 
 **Vì sao đảo luật cũ.** Ba lý do, lý do thứ hai mới là lý do nặng:
@@ -252,6 +253,10 @@ một lần đăng nhập chỉ có một dòng.
 
 Đánh đổi đã biết: hai máy Windows cùng chạy Chrome ra **cùng một dấu**. Cột này để **loại
 trừ** (*"dấu vẫn thế, khỏi xét"*), không phải để định danh máy.
+
+> **Ghi chú duoc-CR-641.** Bảng `tab_ui_event` (sự kiện giao diện thô cho «hồ sơ cách làm việc») giữ **90 ngày** và **KHÔNG chờ gói R2** như dòng GET dưới đây: nó là
+> dữ liệu ĐO để gom, không phải chứng cứ; bản bền của nó là `tab_usage_daily` (giữ 3 năm). Việc dọn `usage.cleanup_ui_events` 04:20, xóa theo lô 2.000 dòng. Cột
+> `tab_notification.read_at` (mốc đánh dấu đã đọc, chỉ từ ngày deploy) cũng thêm ở CR này. Chi tiết: [`tracking-nguoi-dung-ho-so-ca-nhan.md`](tracking-nguoi-dung-ho-so-ca-nhan.md).
 
 #### 4.1.1. Dọn dòng GET quá 90 ngày — điều kiện ĐI KÈM, không phải tối ưu
 

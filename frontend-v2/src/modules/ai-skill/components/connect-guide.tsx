@@ -215,12 +215,14 @@ function OAuthGuide({ detail }: { detail: McpSetupDetail }) {
           <code className="min-w-0 flex-1 rounded bg-muted p-2 text-xs break-all">{url}</code>
           <CopyButton value={url} label="địa chỉ kết nối" />
         </div>
+        {/* Một đoạn duy nhất: phần chung của mọi kết nối OAuth + ý riêng của ứng dụng (note) nối đuôi — trước đây hai
+            đoạn cùng mở đầu «Không cần khóa» in chồng nhau. */}
         <p className="text-xs text-muted-foreground">
-          Không cần khóa: {detail.label} sẽ mở trang ERP để bạn đăng nhập và bấm Cho phép. Kết nối hiện trong danh sách khóa
-          với nhãn Kết nối OAuth, tắt hoặc gỡ ở đó khi không dùng nữa.
+          Không cần khóa: {detail.label} sẽ mở trang ERP để bạn đăng nhập và bấm Cho phép. Kết nối dùng 90 ngày, hết thì
+          kết nối lại; nó hiện trong danh sách khóa với nhãn Kết nối OAuth, tắt hoặc gỡ ở đó khi không dùng nữa.
+          {detail.note && ` ${detail.note}`}
         </p>
       </div>
-      {detail.note && <p className="text-xs text-muted-foreground">{detail.note}</p>}
     </div>
   )
 }

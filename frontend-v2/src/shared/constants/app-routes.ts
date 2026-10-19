@@ -348,6 +348,9 @@ export const appRoutes = {
     document: '/report/document',
     approval: '/report/approval',
     work: '/report/work',
+    /** Hồ sơ cách làm việc (duoc-CR-641) — chỉ quản trị. Trang chi tiết PHẢI nằm dưới đường này để mục menu gác được nó. */
+    usageProfiles: '/report/usage-profiles',
+    usageProfileDetail: (userId: number | string) => `/report/usage-profiles/${userId}`,
   },
   system: {
     root: '/system',

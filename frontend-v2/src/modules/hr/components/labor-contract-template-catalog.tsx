@@ -1,4 +1,3 @@
-import { BookOpen, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -13,7 +12,6 @@ import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-fil
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { SearchField } from '@/shared/ui/search-field'
@@ -44,7 +42,6 @@ const ALL = 'all'
 export function LaborContractTemplateCatalog() {
   const { can } = usePermission()
   const canRead = can('labor_contract_template', 'read')
-  const canCreate = can('labor_contract_template', 'create')
   const canWrite = can('labor_contract_template', 'write')
   const canDelete = can('labor_contract_template', 'delete')
 
@@ -53,7 +50,6 @@ export function LaborContractTemplateCatalog() {
   const [contractType, setContractType] = useUrlParamState('contract_type', ALL)
   const [active, setActive] = useUrlParamState('is_active', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [uploadOpen, setUploadOpen] = useState(false)
   const [replacing, setReplacing] = useState<LaborContractTemplate | null>(null)
   const [editing, setEditing] = useState<LaborContractTemplate | null>(null)
   const navigate = useNavigate()
@@ -117,7 +113,7 @@ export function LaborContractTemplateCatalog() {
           emptyMessage={
             isFiltering
               ? 'Không có mẫu nào khớp bộ lọc.'
-              : 'Chưa có mẫu hợp đồng nào. Bấm «Tải lên mẫu» để thêm.'
+              : 'Chưa có mẫu hợp đồng nào. Bấm «Tải lên mẫu» ở góc trên để thêm.'
           }
           storageKey="hr.labor-contract-templates"
           pagination={{
@@ -159,24 +155,12 @@ export function LaborContractTemplateCatalog() {
                   <SelectItem value="false">Ngừng</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="flex gap-2 max-md:w-full md:ml-auto">
-                <Button type="button" variant="outline" onClick={() => navigate(appRoutes.hr.laborContractVariables)}>
-                  <BookOpen className="size-4" />
-                  Danh sách biến
-                </Button>
-                {canCreate && (
-                  <Button type="button" onClick={() => setUploadOpen(true)}>
-                    <Plus className="size-4" />
-                    Tải lên mẫu
-                  </Button>
-                )}
-              </div>
             </>
           }
         />
       </Card>
 
-      <LaborContractTemplateUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
+      {/*  «Danh sách biến» + «Tải lên mẫu» ở góc tiêu đề trang: `LaborContractTemplateHeaderActions`. */}
       <LaborContractTemplateUploadDialog
         open={replacing !== null}
         onOpenChange={(next) => !next && setReplacing(null)}

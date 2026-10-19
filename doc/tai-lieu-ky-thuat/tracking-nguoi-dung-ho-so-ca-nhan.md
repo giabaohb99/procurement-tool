@@ -1,6 +1,6 @@
 # TRACKING NGƯỜI DÙNG — HỒ SƠ CÁCH LÀM VIỆC CỦA TỪNG NGƯỜI
 
-**Bản:** 1.0 — 19/10/2026 · **CR:** duoc-CR-626 · **Trạng thái: ĐỀ XUẤT, chưa gõ mã.**
+**Bản:** 1.1 — 19/10/2026 · **CR:** duoc-CR-626 (thiết kế) → duoc-CR-641 (làm) · **Trạng thái: pha 1–3 ĐÃ LÀM (backend + màn admin). Pha 4 (AI đọc hồ sơ) chưa làm.**
 **Liên quan:** [`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md) (thiết kế các bảng nhật ký mà tài liệu này đọc lại).
 
 ---
@@ -191,18 +191,27 @@ Không có phần này thì mục 3.2 chỉ dừng ở mức phân hệ. Đề x
 
 ---
 
-## 8. Ai được xem và minh bạch
+## 8. Ai được xem và minh bạch (ĐÃ CHỐT — duoc-CR-641)
 
 | Người xem | Thấy gì |
 |---|---|
-| Chính người đó | toàn bộ hồ sơ của mình + gợi ý (nên mở cho xem trước tiên) |
-| Quản lý trực tiếp | hồ sơ người trong phòng mình |
-| Admin hệ thống | phần an toàn tài khoản của mọi người |
+| Admin hệ thống (và người admin chủ động giao thêm) | hồ sơ của MỌI người |
+| Chính người đó · quản lý trực tiếp · đồng nghiệp | **không thấy** — không có đường «hồ sơ của tôi» |
 
-- Gác bằng một `ReportKey` mới + `require_report` (luật duoc-CR-562) và phạm vi theo phòng ban.
-- **Thông báo cho nhân viên** là hệ thống có ghi lại cách dùng và ai xem được — đây là dữ liệu cá nhân.
-- Người đó có chỗ phản hồi "nhận xét này sai vì…".
-- Lưu ý khi dùng: biết bị đo theo số lượt vào thì người ta sẽ bấm cho có, chỉ số mất nghĩa. Nên đọc hồ sơ theo **kết quả** (thời gian xử lý, bị trả về, lỗi nhập) hơn là theo số lượt có mặt.
+- **Gác quyền theo mẫu báo cáo chuẩn:** `ReportKey.USAGE_PROFILE = 14` («Hồ sơ cách làm việc», nhóm «Quản trị») + `require_report` trên CẢ 4 đường
+  (`/summary`, `/summary/export`, `/cohorts`, `/{user_id}`), kèm `require("setting", "read"|"export")`. Chưa gán = ĐÓNG; vai trò `admin` /
+  `ADMINISTRATOR` được gán sẵn bởi `ensure_report_access_defaults` mỗi lần khởi động. Admin giao thêm cho người khác ở Phân quyền → tab «Báo cáo»
+  (người đó vẫn phải có `setting.read`). Không lọc phạm vi theo phòng ban.
+- **Mục đích sử dụng (chủ sản phẩm chốt):** hồ sơ **có thể được dùng làm một căn cứ tham khảo khi đánh giá hiệu quả làm việc**. Vì vậy văn bản
+  thông báo cho nhân viên (mục 12) phải nói rõ điều này, và hồ sơ luôn hiện kèm bằng chứng, nhóm đang so sánh, ngữ cảnh nghỉ phép / bấm hộ, và
+  danh sách chỉ số «chưa đo được». Khuyến nghị đọc theo **kết quả** (thời gian xử lý, bị trả về, lỗi nhập) hơn là theo số lượt có mặt; 4 tuần đầu coi nhãn
+  là thử nghiệm.
+- **Dấu vết xem:** mỗi lần admin mở hồ sơ để lại một dòng `tab_request_log` (GET không bị loại); xuất Excel còn ghi `tab_export_log` (entity `usage_profile`).
+- **Công tắc thu thập sự kiện giao diện** `usage_tracking_enabled` (Cấu hình hệ thống → Hệ thống), **mặc định BẬT**. Tắt: `POST /api/telemetry/ui-events`
+  nhận rồi bỏ (HTTP 204), không ghi gì; FE ngừng gửi (cờ `usage_tracking` ở `/api/auth/me`). Gom số từ nhật ký sẵn có (pha 1) luôn chạy.
+- **Giữ bao lâu:** `tab_ui_event` 90 ngày; `tab_usage_daily`, `tab_user_usage_snapshot`, `tab_user_usage_label` **3 năm** (việc dọn `usage.cleanup_ui_events` 04:20).
+- **Không ghi:** từ khóa tìm kiếm (chỉ màn + số kết quả), nội dung nhập vào biểu mẫu, id trong đường dẫn (route mẫu `/…/:id`), `query_string`/`request_body`/`response_body`.
+- Người đó có chỗ phản hồi «nhận xét này sai vì…»: **chưa làm** (gắn với pha 4 / quy trình HR).
 
 ---
 
@@ -217,14 +226,72 @@ Không có phần này thì mục 3.2 chỉ dừng ở mức phân hệ. Đề x
 
 ---
 
-## 10. Câu hỏi chưa chốt
+## 10. Câu hỏi đã chốt / còn mở
 
-1. Quản lý trực tiếp xem được hồ sơ người trong phòng, hay chỉ ban lãnh đạo/admin?
-2. Người dùng có được xem hồ sơ và nhận xét AI về chính mình không? (đề xuất: có)
-3. Hồ sơ có được dùng làm căn cứ đánh giá KPI/nhân sự không?
-4. Có cần thông báo bằng văn bản / xin đồng ý của nhân viên trước khi bật Pha 2 không? (hỏi pháp chế, nhân sự)
-5. Có ghi từ khóa tìm kiếm không?
-6. SLA xử lý cho từng loại phiếu là bao lâu? (để so "xử lý chậm")
-7. Giờ hành chính chuẩn, có tính thứ Bảy không? (để tính "ngoài giờ")
-8. Làm Pha 1 trước để có số ngay, hay làm luôn Pha 2?
-9. Dùng model AI nào, ngân sách AI mỗi tháng?
+1. ~~Quản lý trực tiếp xem được hồ sơ người trong phòng?~~ **Chốt: không.** Chỉ admin (và người admin giao thêm).
+2. ~~Người dùng xem hồ sơ về chính mình?~~ **Chốt: không** (không có đường «của tôi»). Minh bạch bằng văn bản thông báo (mục 12).
+3. ~~Hồ sơ làm căn cứ KPI / đánh giá?~~ **Chốt: CÓ THỂ dùng làm căn cứ tham khảo khi đánh giá** — phải nói rõ trong thông báo.
+4. **CÒN MỞ — cần pháp chế / nhân sự duyệt** văn bản thông báo (mục 12) và hình thức xác nhận của nhân viên **trước khi** để công tắc BẬT trên prod
+   (mặc định hiện là BẬT — xem rủi ro ở mục 13).
+5. ~~Ghi từ khóa tìm kiếm?~~ **Chốt: không.**
+6. SLA xử lý từng loại phiếu: **CÒN MỞ**. Tạm dùng «≥ 2× trung vị nhóm VÀ ≥ 8 giờ» cho nhãn Nút thắt duyệt (`label_thresholds.py`).
+7. ~~Giờ hành chính / T7?~~ **Chốt:** «ngoài giờ» theo **Lịch làm việc từng người** (mặc định hệ thống T2–T7 08:00–17:00), trừ ngày lễ; ngày nghỉ phép đã duyệt không tính vào mẫu số ngày làm việc.
+8. ~~Pha 1 trước hay Pha 2?~~ **Chốt:** làm cả pha 1–3 trong một CR.
+9. Model AI / ngân sách (pha 4): **CÒN MỞ**, ngoài phạm vi CR này.
+10. Thời hạn giữ số gom: **Chốt 3 năm** (`tab_usage_daily`, snapshot, nhãn).
+
+---
+
+## 11. Lệch so với thiết kế gốc (duoc-CR-641)
+
+| Thiết kế gốc | Bản làm | Lý do |
+|---|---|---|
+| Gửi lô bằng `navigator.sendBeacon` | `fetch(..., {keepalive: true})` kèm `Authorization: Bearer` | FE không dùng cookie phiên; `sendBeacon` không mang được header |
+| «Số phiên/ngày» theo phiên đăng nhập | **Phiên làm việc** = chuỗi lượt (request ∪ sự kiện giao diện) ngắt khi nghỉ > 30 phút | phiên đăng nhập sống 7 ngày nên không phản ánh «vào / ra» |
+| Bấm hộ theo `audit.on_behalf_of` | Phiếu có người đề nghị ≠ người tạo (nghỉ phép / YCMH / đóng dấu) + `tab_approval_action.on_behalf_of_id` | `audit.on_behalf_of` hiện không lời gọi nào điền (luôn 0) |
+| Mốc «tới lượt» = lúc tạo việc duyệt | Bước **lần lượt**: lúc người liền trước quyết định (đọc `flow_snapshot`) | việc lần lượt được tạo sẵn ở trạng thái chờ |
+| Giữ số gom «lâu dài» | 3 năm | chủ sản phẩm chốt |
+| Thu thập mặc định TẮT | mặc định **BẬT** (có công tắc) | chủ sản phẩm chốt |
+| Đường đi A→B→C trên toàn cửa sổ | chỉ **tuần cuối** của cửa sổ, từ sự kiện thô (còn trong 90 ngày) | giới hạn bộ nhớ job (~30k dòng/tuần) |
+| Chỉ số HOÃN / BỎ | xem `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md` và `metric_catalog.DEFERRED_METRICS`: duyệt YCMH/ĐMH ngoài bộ máy duyệt · tách bình luận mình/người khác · lỗi 422 theo trường · quyền 90 ngày không dùng · chủ đề hay hỏi trợ lý AI | thiếu nguồn tin cậy hoặc trái nguyên tắc §7.4 |
+
+Công thức và nguồn từng chỉ số: bảng ở `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`; mã: `backend/app/modules/usage_profile/` (`metric_catalog.py` là danh mục khóa cố định).
+
+---
+
+## 12. Văn bản thông báo cho nhân viên (BẢN NHÁP — HR / pháp chế duyệt trước khi gửi)
+
+> **Thông báo về việc ghi nhận cách sử dụng hệ thống ERP**
+>
+> Từ ngày …/…/…, hệ thống ERP của DEGO Holding ghi nhận **cách sử dụng hệ thống** của từng tài khoản nhằm cải tiến màn hình, hỗ trợ đào tạo
+> và **làm một căn cứ tham khảo khi đánh giá hiệu quả làm việc**.
+>
+> **Những gì được ghi:** màn hình đã mở và thời gian ở lại; số lần mở, lưu, bỏ dở biểu mẫu; số lần tìm kiếm và số kết quả tìm thấy
+> (**không ghi nội dung tìm kiếm**); lỗi hiển thị; giờ thao tác (trong / ngoài giờ làm việc theo lịch của bạn); loại thiết bị; số phiếu lập, gửi, duyệt, bị trả về;
+> thời gian xử lý các việc duyệt; số lần xuất dữ liệu. Hệ thống **không ghi nội dung bạn nhập vào biểu mẫu** và không ghi số hiệu chứng từ trong đường dẫn.
+>
+> **Ai xem được:** chỉ **quản trị hệ thống** và những người được quản trị hệ thống giao quyền xem báo cáo «Hồ sơ cách làm việc». Quản lý trực tiếp và đồng nghiệp
+> không tự xem được. Mỗi lần mở hồ sơ đều để lại dấu vết.
+>
+> **Dùng để làm gì:** (1) cải tiến phần mềm và hướng dẫn sử dụng; (2) hỗ trợ, đào tạo người dùng; (3) **tham khảo, cùng với kết quả công việc thực tế và đánh giá của quản lý,
+> khi xem xét hiệu quả làm việc**. Số liệu không phải căn cứ duy nhất để kết luận về cá nhân; ngày nghỉ phép đã duyệt được loại khỏi phần tính, và hệ thống
+> ghi rõ chỉ số nào chưa đo được.
+>
+> **Thời gian lưu:** dữ liệu chi tiết tự xóa sau **90 ngày**; số liệu tổng hợp theo ngày và theo tuần được giữ **3 năm** để xem xu hướng.
+>
+> **Quyền của bạn:** nếu thấy số liệu về mình chưa đúng, liên hệ phòng Nhân sự để được xem xét. Thắc mắc khác liên hệ phòng Nhân sự / bộ phận phụ trách hệ thống.
+
+**Khuyến nghị:** pháp chế và Nhân sự rà văn bản này (căn cứ pháp lý về dữ liệu cá nhân của người lao động, hình thức thông báo / xác nhận đã đọc, quy chế nội bộ) **trước khi** bật thu thập trên môi trường thật.
+Câu «làm một căn cứ tham khảo khi đánh giá» là ý chủ sản phẩm đã chốt; nên đối chiếu với nội quy lao động và quy chế đánh giá hiện hành.
+
+---
+
+## 13. Vận hành
+
+- **Việc nền (Celery, giờ VN):** `usage.cleanup_ui_events` 04:20 · `usage.aggregate_daily` 04:30 (gom HÔM QUA) · `usage.build_weekly_snapshots` thứ Hai 05:15 (tuần vừa kết thúc; tự gom bù ngày còn thiếu).
+- **Gom bù lịch sử:** `docker compose exec api python -m app.modules.usage_profile.backfill --days 90` (tuần tự, ngủ 0,2 giây giữa các ngày, lỗi một ngày không chặn ngày khác). Chỉ lùi được ≤ 90 ngày vì dòng GET của `tab_request_log` bị dọn sau 90 ngày.
+- **Dựng snapshot tay:** `celery call usage.build_weekly_snapshots --args '["2026-10-12"]'` (thứ Hai của tuần cần dựng).
+- **Migration:** `usgprof01` (4 bảng + `tab_notification.read_at` + 4 chỉ mục: `tab_notification.created_at`, `tab_audit_log.created_at`, `tab_export_log.created_at`, `tab_approval_task.decided_at`). `ADD INDEX` trên `tab_audit_log` (bảng phân vùng) chạy online, nên chạy giờ thấp điểm.
+- **Tắt khẩn cấp:** Cấu hình hệ thống → «Thu thập cách dùng giao diện» → TẮT (có hiệu lực ≤ 30 giây do bộ nhớ đệm cấu hình).
+- **Rủi ro cần biết:** công tắc mặc định BẬT — môi trường mới tạo sẽ thu thập ngay từ lần khởi động đầu. Muốn tắt sẵn cho prod trước khi HR gửi thông báo thì đặt `USAGE_TRACKING_ENABLED=false` ở `.env` hoặc tắt ở màn Cấu hình ngay sau khi deploy.
+- **Danh sách khóa API và hình dạng JSON:** xem `backend/app/modules/usage_profile/controller.py` và các tệp `list_service.py`, `profile_service.py`, `cohort_service.py` (có bài kiểm khóa từng trường ở `test/backend/test_ho_so_lam_viec_api_cr641.py`).

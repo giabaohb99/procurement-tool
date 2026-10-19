@@ -80,23 +80,13 @@ export const hrModule: ErpModule = {
       //  của route (gác điều hướng mặc định MỞ): thiếu mục này thì ai đăng nhập
       //  cũng gõ URL vào được. Trang còn tự kiểm `can(..., 'read')` một lần nữa.
       label: 'Mẫu hợp đồng',
-      //  duoc-CR-629b: màn nay nằm trong «Thư viện văn bản mẫu» của phân hệ Văn bản (lối tắt).
-      path: appRoutes.document.laborContractTemplates,
-      icon: FileSignature,
-      entity: 'labor_contract_template',
-      crossModule: true,
-      //  Đang ở trình soạn cũ (`/hr/labor-contract-templates/:id/edit`) thì mục vẫn sáng; cũng là đích trỏ của mục ẩn.
-      matchPaths: [appRoutes.hr.laborContractTemplates],
-      group: 'Danh mục',
-    },
-    {
-      //  Mục ẨN giữ hàng rào cho `/hr/labor-contract-templates/*` (link cũ + trình soạn CR-606):
-      //  gác điều hướng khớp theo path menu, route không có mục = MỞ cho mọi người đăng nhập.
-      label: 'Mẫu hợp đồng (đường cũ)',
+      //  duoc-CR-643: mở trang mẫu NGAY TRONG Nhân sự (CR-629b từng nhảy sang Thiết lập văn bản của
+      //  phân hệ Văn bản — người dùng bị đẩy khỏi Nhân sự). Mục này cũng là hàng rào cho cả
+      //  `/hr/labor-contract-templates/*` (trình soạn, danh sách biến) vì gác khớp theo ranh giới `/`.
       path: appRoutes.hr.laborContractTemplates,
       icon: FileSignature,
       entity: 'labor_contract_template',
-      hidden: true,
+      group: 'Danh mục',
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
     //  Submenu gồm 4 mục con trên sidebar bên trái:
@@ -359,8 +349,9 @@ export const hrModule: ErpModule = {
     },
     {
       path: appRoutes.hr.laborContractTemplates,
-      //  Đường cũ -> màn mới trong phân hệ Văn bản.
-      element: <Navigate replace to={appRoutes.document.laborContractTemplates} />,
+      lazy: async () => ({
+        Component: (await import('./pages/labor-contract-template-list-page')).LaborContractTemplateListPage,
+      }),
     },
     //  duoc-CR-630 — Danh sách biến của mẫu. Cũng nằm dưới `/hr/labor-contract-templates` nên chung hàng rào
     //  `labor_contract_template`; trang còn tự kiểm `can(..., 'read')`.
