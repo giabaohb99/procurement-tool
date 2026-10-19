@@ -1685,6 +1685,10 @@ def run():
         if n_updated:
             print(f"Đã điền hình thức thanh toán 'Công nợ 30 ngày' cho {n_updated} nhà cung cấp.")
 
+        from app.modules.ai_skill.handbook_seed import ensure_system_handbook
+
+        #  ai-CR-220: bộ «Cẩm nang hệ thống» cho trợ lý — gieo SAU pháp nhân (gán quyền theo từng pháp nhân), có rồi không đụng.
+        ensure_system_handbook(db)
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
     finally:
         db.close()

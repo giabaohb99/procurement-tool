@@ -19,13 +19,11 @@ from app.modules.assistant.glossary import fold
 NEED_MORE_TOOLS = "[CAN_THEM_CONG_CU]"
 ROUTED_NOTE = (f"Bộ công cụ của lượt này đã được lọc theo câu hỏi. Nếu cần một công cụ KHÔNG có trong danh sách để trả "
                f"lời đúng, CHỈ trả lời đúng chuỗi {NEED_MORE_TOOLS} và không viết gì khác.")
-#  ai-CR-183: gói tri thức cũng được lọc — nói rõ gói nào CHƯA nạp để model xin thêm thay vì bịa.
-PACK_NOTE = ("Gói tri thức của lượt này cũng đã được lọc; các mảng CHƯA nạp: {titles}. Nếu câu hỏi thuộc một mảng đó, "
-             f"CHỈ trả lời đúng chuỗi {NEED_MORE_TOOLS}.")
 
-#  Nhóm lõi: nhẹ, dùng ở mọi loại câu.
+#  Nhóm lõi: nhẹ, dùng ở mọi loại câu. ai-CR-220 (K7): ba tool đọc Kho skill thay gói tri thức nhồi sẵn — cẩm nang công
+#  ty phải đọc được ở MỌI câu (lời nhắc chỉ mang danh mục ngắn), nên nằm ở lõi chứ không theo nhóm chủ đề như gói cũ.
 CORE = frozenset({"search_docs", "glossary_lookup", "remember_fact", "forget_fact", "search_chat_history",
-                  "report_missing_feature"})
+                  "report_missing_feature", "list_skills", "read_skill", "read_skill_file"})
 
 #  (tên nhóm, công cụ, mẫu chữ ĐÃ BỎ DẤU). Một công cụ có thể nằm ở nhiều nhóm.
 GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
@@ -101,29 +99,6 @@ def groups_for(text: str) -> list[str]:
 def groups_of_tools(names) -> list[str]:
     used = {str(n) for n in names or []}
     return [name for name, tools, _rx in _COMPILED if tools & used]
-
-
-#  ai-CR-183: chủ đề GÓI TRI THỨC (`knowledge.PACK_TOPICS`) — theo nhóm công cụ đã chọn hoặc từ khóa riêng.
-PACK_RULES: tuple[tuple[str, frozenset[str], str], ...] = (
-    ("document", frozenset({"document"}), r"van ban|van thu|cong van|ban hanh|so ky hieu|luu tru|ho so luu"),
-    ("work", frozenset({"work"}), r"du an|cong viec|\btask\b|kanban"),
-    ("leave", frozenset({"leave"}), r"nghi phep|\bphep\b|quy phep|ngay nghi"),
-    ("room", frozenset(), r"phong hop|dat phong|meeting room"),
-    ("employee", frozenset({"employee", "account"}), r"ho so nhan su|chuc vu|ly lich|nhan su|hop dong lao dong|hdld"),
-    ("factory", frozenset(), r"nha may|organic|qd\.ht|hd\.ht|he thong cong viec|cai tien|san xuat|\bxuong\b|ca lam|"
-                              r"quy dinh he thong|giao thuc|tro ly ai nha may"),
-)
-_PACK_COMPILED = tuple((topic, groups, re.compile(rx)) for topic, groups, rx in PACK_RULES)
-
-
-def pack_topics(message: str, picked_groups, recent_text: str = "") -> set[str] | None:
-    """Chủ đề gói tri thức cho câu này. `picked_groups` None (gửi đủ công cụ) → None = nạp đủ gói. Có nhóm công cụ →
-    chủ đề của các nhóm đó + chủ đề khớp từ khóa trong câu (và 2 câu người dùng gần nhất)."""
-    if picked_groups is None:
-        return None
-    groups = set(picked_groups)
-    t = " " + fold((message or "") + " " + (recent_text or "")) + " "
-    return {topic for topic, g, rx in _PACK_COMPILED if (g & groups) or rx.search(t)}
 
 
 def groups_selected(message: str, recent_tools=None) -> set[str]:

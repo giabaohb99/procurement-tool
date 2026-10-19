@@ -1239,6 +1239,10 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     #  ai-CR-211: danh sách gọi hàm route list của màn web (require + apply_scope bên trong); chi tiết YCMH / YCBG / ĐMH
     #  qua procurement_doc_tool._READERS (_fetch_scoped), hợp đồng qua route (_in_scope), nhận hàng apply_scope(GoodsReceipt).
     "erp_read": "ctx.can(entity) + route list của màn web / _fetch_scoped / apply_scope(GoodsReceipt, 'goods_receipt')",
+    #  ai-CR-220 (K7): Kho skill — quyền đọc theo chủ thể ở `ai_skill.access_service.visible_skills` (cấm thắng, phòng con).
+    "list_skills": "ai_skill.mcp_read.list_for_ai → access_service.visible_skills của người hỏi",
+    "read_skill": "ai_skill.mcp_read.read_for_ai → chỉ skill trong visible_skills, ngoài tập trả câu giống skill không tồn tại",
+    "read_skill_file": "ai_skill.mcp_read.file_for_ai → chỉ tệp của skill trong visible_skills",
     # (a-bis) đọc `tab_purchase_history` — bảng LỊCH SỬ GIÁ, không có khóa phạm vi
     #  ⚠️ Bảng này CÓ `company_id` nhưng `purchase_history` không nằm trong
     #  `ENTITIES`, nên không entity nào để `apply_scope`. Cổng duy nhất là
@@ -1382,51 +1386,36 @@ def test_e2_tool_doc_bang_nghiep_vu_deu_co_apply_scope_trong_ma():
             "nên phải lọc theo phạm vi người hỏi.")
 
 
-def test_e3_goi_tri_thuc_di_vao_moi_cau_hoi_khong_phan_biet_phap_nhan():
-    """🔴 GHIM HÀNH VI — `packs/` là MỘT gói dùng chung cho mọi người đăng nhập.
+def test_e3_cam_nang_he_thong_gieo_cho_moi_phap_nhan_khong_mang_so_dinh_danh():
+    """🔴 GHIM HÀNH VI — bộ «Cẩm nang hệ thống» (ai-CR-220, thay `assistant/packs/`) gieo cho MỌI pháp nhân.
 
-    `knowledge.load_pack()` ghép mọi tệp `.md` trong `packs/` và `build_system()`
-    **không nhận** `user`/`company` (`assistant/knowledge.py:38-60`), nên mọi
-    người nhận đúng một gói. Chính README của thư mục ghi «Quyền theo gói … là
-    việc của Phase sau».
-
-    Hôm nay gói đó có `nhamay-tri-thuc-co-dong.md` — tri thức nội bộ của **một**
-    pháp nhân (Nhà máy DEGO Organic, Cần Thơ): tên Giám đốc/Phó Giám đốc, quyết
-    định của Ban điều hành tạm, mã văn bản nội bộ.
+    Trước K7, `packs/` là MỘT gói dùng chung nhồi vào mọi câu hỏi, không phân biệt pháp nhân. Nay cẩm nang là skill trong
+    Kho skill AI, có quyền đọc theo chủ thể — nhưng hạt giống vẫn gán CẢ CÔNG TY (mỗi pháp nhân một dòng) để giữ đúng
+    hành vi cũ. Skill nhà máy (`nha-may-he-thong-cong-viec`) chứa tri thức nội bộ của **một** pháp nhân (Nhà máy DEGO
+    Organic, Cần Thơ): tên Giám đốc/Phó Giám đốc, quyết định của Ban điều hành tạm, mã văn bản nội bộ.
 
     # QUYẾT ĐỊNH CHỜ: nội dung này có được xem là dùng chung toàn tập đoàn không?
-    # Nếu không thì phải tách gói theo pháp nhân (thêm tham số vào `build_system`)
-    # — chứ không phải xóa tệp, vì đúng những người ở nhà máy đó đang cần nó.
+    # Nếu không thì nay KHÔNG cần sửa mã: quản trị thu hẹp quyền đọc riêng skill đó về pháp nhân nhà máy ở màn Bộ skill.
     """
-    import inspect
+    import re
 
-    from app.modules.assistant import knowledge
+    from app.modules.ai_skill import handbook_seed
 
-    tham_so = set(inspect.signature(knowledge.build_system).parameters)
-    #  ai-CR-183 (13/10/2026): thêm `topics` — gói nạp theo CHỦ ĐỀ câu hỏi để bớt token, KHÔNG phải theo pháp nhân;
-    #  `load_pack()` không tham số vẫn là một gói dùng chung cho mọi người.
-    assert tham_so == {"extra", "topics"}, (
-        "`build_system` nay có tham số mới — nếu là `user`/`company_id` thì gói tri thức "
-        "đã tách theo pháp nhân, cập nhật lại bài kiểm này.")
+    goi = "\n".join(body for _slug, _title, _summary, body in handbook_seed.seed_files())
+    goi += "\n".join(text for _path, text in handbook_seed.factory_reference_files())
+    assert goi, "hạt giống cẩm nang rỗng — kiểm lại đường dẫn `ai_skill/seed_handbook/`"
+    assert "DEGO Organic" in goi, "hành vi HIỆN TẠI: cẩm nang dùng chung đang chứa tri thức nội bộ của một pháp nhân"
 
-    goi = knowledge.load_pack()
-    assert goi, "gói tri thức rỗng — kiểm lại đường dẫn `packs/`"
-    assert "DEGO Organic" in goi, (
-        "hành vi HIỆN TẠI: gói dùng chung đang chứa tri thức nội bộ của một pháp nhân")
-
-    #  Không có dãy 10–13 chữ số: đó là hình dạng của MÃ SỐ THUẾ và SỐ TÀI
-    #  KHOẢN. Gói này đi vào MỌI câu hỏi của MỌI người, nên một số định danh lọt
-    #  vào đây là lộ cho toàn hệ, không cách nào thu lại.
+    #  Không có dãy 10–13 chữ số: đó là hình dạng của MÃ SỐ THUẾ và SỐ TÀI KHOẢN. Hạt giống gán cho MỌI pháp nhân, nên
+    #  một số định danh lọt vào đây là lộ cho toàn hệ.
     #
     #  Ngưỡng 10 chứ không phải 9: mã phiếu của hệ là 9 chữ số
     #  (`YCBG260826001` — ngày + số thứ tự), nó là VÍ DỤ MINH HỌA trong tài liệu
     #  quy trình, không phải dữ liệu thật của ai.
-    import re
-
     so_dai = sorted(set(re.findall(r"\d{10,13}", goi)))
     assert so_dai == [], (
-        f"gói tri thức chứa dãy số dài {so_dai} — nghi mã số thuế / số tài khoản. "
-        "Gói này đi vào MỌI câu hỏi của MỌI người, không đưa số định danh vào đây.")
+        f"hạt giống cẩm nang chứa dãy số dài {so_dai} — nghi mã số thuế / số tài khoản. "
+        "Bộ này gán cho mọi pháp nhân, không đưa số định danh vào đây.")
 
 
 def test_e3_khoa_assistant_la_cong_quyen_khong_phai_cong_pham_vi():

@@ -2,33 +2,11 @@
 0,35–0,44 USD, 28–32 giây. Ba việc: (1) gói tri thức nạp theo chủ đề (cả 7 gói ≈ 77.000 ký tự, riêng nhà máy 46.000, trước
 đây đi kèm MỌI câu); (2) câu nối tiếp giữ nhóm công cụ cũ thay vì gửi đủ 72; (3) tool soạn nháp trả nháp thì dừng, không gọi
 model viết câu chốt (kênh Telegram tự gửi thẻ)."""
-from app.modules.assistant import knowledge as kn
 from app.modules.assistant import tool_router as tr
 
 
-def test_goi_tri_thuc_nap_theo_chu_de():
-    full = kn.build_system()
-    core = kn.build_system(topics=set())
-    assert len(core) < len(full) / 2                      # bỏ gói nhà máy + 5 gói phân hệ
-    assert "Quy trình thu mua" in core                     # tri thức nền luôn có
-    FACTORY = "Bản cô đọng để trợ lý AI tra cứu nhanh"       # câu trong thân gói nhà máy
-    DOC = "# Văn thư — quản lý văn bản"
-    assert FACTORY in full and FACTORY not in core
-    leave = kn.build_system(topics={"leave"})
-    assert "# Nghỉ phép" in leave and DOC not in leave and FACTORY not in leave
-    assert kn.build_system(topics=None) == full
-    titles = kn.omitted_titles({"leave"})
-    assert any("NHÀ MÁY" in t for t in titles) and not any("Nghỉ phép" in t for t in titles)
-    assert kn.omitted_titles(None) == []
-
-
-def test_chu_de_goi_theo_nhom_cong_cu_va_tu_khoa():
-    assert tr.pack_topics("cho anh nghỉ thứ 6", {"leave"}) == {"leave"}
-    assert tr.pack_topics("hôm nay anh có việc gì", {"work"}) == {"work"}
-    assert "factory" in tr.pack_topics("quy định hệ thống công việc nhà máy nói gì", {"document"})
-    assert tr.pack_topics("đặt phòng họp chiều nay", set()) == {"room"}
-    assert tr.pack_topics("chào em", None) is None                        # không rõ → nạp đủ như cũ
-    assert "work" in tr.pack_topics("em tạo luôn nhé", set(), recent_text="tạo task trong dự án ERP v2")
+#  ai-CR-220 (K7): hai bài «gói tri thức nạp theo chủ đề» + «chủ đề gói theo nhóm công cụ» bỏ cùng gói — cẩm nang nay đọc
+#  từ Kho skill (danh mục ngắn trong lời nhắc + tool read_skill), xem test_tro_ly_doc_kho_skill_cr220.py.
 
 
 def test_cau_noi_tiep_giu_nhom_cu_khong_gui_du():
@@ -62,7 +40,7 @@ def test_dung_som_khi_tool_soan_nhap_xong(monkeypatch):
     assert len(posts) == 2 and out.text == "Em soạn xong rồi" and out.input_tokens == 110
 
 
-def test_ask_truyen_stop_on_draft_va_ghi_chu_goi_chua_nap(db, seed, monkeypatch):
+def test_ask_truyen_stop_on_draft_va_chi_mang_danh_muc_cam_nang(db, seed, monkeypatch):
     from app.modules.assistant import service
     from app.modules.assistant.provider.base import ChatResult
     from app.modules.user.model import User
@@ -79,14 +57,18 @@ def test_ask_truyen_stop_on_draft_va_ghi_chu_goi_chua_nap(db, seed, monkeypatch)
 
     monkeypatch.setattr(service, "get_provider", lambda name=None: P())
     user = db.get(User, seed.u_req_id)
+    from app.modules.ai_skill.handbook_seed import ensure_system_handbook
+
+    ensure_system_handbook(db)
     service.ask("cho anh nghỉ thứ 6 tuần này", db=db, user=user, stop_on_draft=True)
     s = seen[-1]
     assert s["stop"] is not None and s["stop"]("draft_leave_request", {"draft": {}}) and not s["stop"]("payable_lookup", {"draft": {}})
+    #  ai-CR-220 (K7): không còn nhồi gói — lời nhắc chỉ mang DANH MỤC cẩm nang, nội dung đọc bằng read_skill.
     FACTORY = "Bản cô đọng để trợ lý AI tra cứu nhanh"
-    assert "# Nghỉ phép" in s["system"] and FACTORY not in s["system"] and "CHƯA nạp" in s["system"]
-    #  ai-CR-192: «chào em» là xã giao → không gói chủ đề, có ghi chú gói chưa nạp; câu lạ không khớp nhóm cũng không nạp gói.
+    assert "- nghi-phep:" in s["system"] and "# Nghỉ phép" not in s["system"] and FACTORY not in s["system"]
+    #  ai-CR-192: «chào em» là xã giao → chỉ nhóm lõi (nay gồm cả ba tool đọc cẩm nang).
     service.ask("chào em", db=db, user=user)
-    assert seen[-1]["stop"] is None and FACTORY not in seen[-1]["system"] and "CHƯA nạp" in seen[-1]["system"]
+    assert seen[-1]["stop"] is None and FACTORY not in seen[-1]["system"]
     assert seen[-1]["n"] == len(__import__("app.modules.assistant.tool_router", fromlist=["CORE"]).CORE)
 
 

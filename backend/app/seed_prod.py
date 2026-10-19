@@ -105,6 +105,12 @@ def run():
         if n_cost_types:
             print(f"Nạp {n_cost_types} loại chi phí thu mua còn thiếu vào danh mục.")
 
+        from app.modules.ai_skill.handbook_seed import ensure_system_handbook
+
+        n_handbook = ensure_system_handbook(db)   # ai-CR-220 — chỉ gieo khi CHƯA từng có bộ, có rồi không đụng
+        if n_handbook:
+            print(f"Gieo bộ skill «Cẩm nang hệ thống»: {n_handbook} skill.")
+
         print("Seed prod done (không nạp dữ liệu mẫu, không ghi đè dữ liệu đã có).")
     finally:
         db.close()

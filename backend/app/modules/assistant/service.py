@@ -56,7 +56,9 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   câu hỏi về nội dung bên trong ("quy định X nói gì về Y", mức chi, điều kiện...) thì
   tìm ra văn bản rồi BẮT BUỘC gọi document_read và trả lời bám theo toàn văn, nêu số
   hiệu; văn bản dài thì đọc tiếp bằng part, đừng suy đoán phần chưa đọc. Các câu này
-  GỌI TOOL chứ đừng trả lời chay theo gói tri thức.
+  GỌI TOOL chứ đừng trả lời chay theo trí nhớ.
+- Cẩm nang công ty (quy trình, quy định, cách dùng ERP): read_skill đúng tên trong danh mục
+  CẨM NANG CÔNG TY; danh mục bị cắt hay cần lọc thì list_skills (ai-CR-220).
 - Recap MỘT chứng từ thu mua: procurement_doc_read đọc chi tiết theo mã phiếu — ĐMH
   (purchase_order), YCMH (purchase_request), YCKS (survey_request); riêng YCTT (mã
   YCTT...) -> payment_request_read. Câu "đơn PO00123 tới
@@ -235,11 +237,12 @@ def _caller_context(db, user) -> str | None:
 
 
 def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None,
-                  terms: str | None = None, *, routed_note: bool = False, pack_note: str = "") -> str | None:
+                  terms: str | None = None, *, routed_note: bool = False, handbook: str = "") -> str | None:
     """ai-CR-161 (16.3): xếp từ CỐ ĐỊNH tới HAY ĐỔI — hướng dẫn công cụ · ngày · chân dung người hỏi · lời dặn của kênh
     (luật cố định trước, sổ nhớ / thói quen sau) · thuật ngữ của riêng câu này · lời dặn lọc công cụ. Đoạn đầu giống nhau
     giữa các lượt thì hãng AI tính giá đọc lại từ bộ đệm. Trước đây thuật ngữ (đổi theo TỪNG câu) đứng trước chân dung và
-    lời dặn của kênh nên phần sau nó lượt nào cũng tính lại."""
+    lời dặn của kênh nên phần sau nó lượt nào cũng tính lại. ai-CR-220: danh mục cẩm nang (theo người, chỉ đổi khi skill
+    đổi) đứng sau lời dặn của kênh, trước thuật ngữ của câu."""
     from .tool_router import ROUTED_NOTE
 
     parts = []
@@ -251,13 +254,13 @@ def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None,
         parts.append(profile)
     if caller:
         parts.append(caller)
+    if handbook:
+        parts.append(handbook)          # ai-CR-220: danh mục Kho skill thay gói tri thức nhồi sẵn
     if terms:
         #  ai-CR-077: sổ thuật ngữ — chỉ những từ có trong câu hỏi đang xét.
         parts.append(terms)
     if routed_note:
         parts.append(ROUTED_NOTE)
-    if pack_note:
-        parts.append(pack_note)         # ai-CR-183: gói tri thức chưa nạp
     return "\n\n".join(parts) if parts else None
 
 
@@ -323,7 +326,6 @@ def ask(
 
     all_defs: list = []
     routed: set[str] | None = None
-    topics: set[str] | None = None
     if tool_on:
         #  ai-CR-161 (16.3): thứ tự cố định theo tên — cùng một bộ công cụ thì cùng một đoạn đầu, hãng AI đọc lại từ
         #  bộ đệm (giá rẻ) thay vì tính lại.
@@ -333,23 +335,14 @@ def ask(
             text_msg = message if isinstance(message, str) else ""
             routed = tool_router.select(text_msg, recent_tools)
             if routed is None and tool_router.is_smalltalk(text_msg):
-                #  ai-CR-192: chào hỏi / cảm ơn → chỉ nhóm lõi, không gói tri thức (lời dặn lọc vẫn cho xin thêm).
+                #  ai-CR-192: chào hỏi / cảm ơn → chỉ nhóm lõi (lời dặn lọc vẫn cho xin thêm).
                 routed = set(tool_router.CORE)
-                topics = set()
-            else:
-                #  ai-CR-183 (16.4): gói tri thức nạp theo chủ đề như công cụ. ai-CR-192: không khớp nhóm nào thì vẫn gửi
-                #  ĐỦ công cụ (an toàn) nhưng KHÔNG nạp gói chủ đề — model thấy danh sách gói chưa nạp và xin thêm nếu cần.
-                topics = tool_router.pack_topics(text_msg, tool_router.groups_selected(text_msg, recent_tools) if routed
-                                                 is not None else None, " ".join(recent))
-                if topics is None:
-                    #  Không khớp nhóm công cụ: vẫn chọn gói theo TỪ KHÓA riêng của câu (vd «nhà máy», «phòng họp»).
-                    topics = tool_router.pack_topics(text_msg, set(), " ".join(recent)) or set()
     from . import knowledge
 
-    omitted = knowledge.omitted_titles(topics)
-    pack_note = tool_router.PACK_NOTE.format(titles="; ".join(omitted)) if omitted else ""
+    #  ai-CR-220 (K7): danh mục Kho skill của người hỏi thay 7 gói tri thức nhồi sẵn (ai-CR-183 lọc gói theo chủ đề — bỏ).
+    handbook = knowledge.handbook_block(db, user) if tool_on else ""
     full_system = build_system(extra=_extra_system(tool_on, system, profile, terms,
-                                                   routed_note=routed is not None, pack_note=pack_note), topics=topics)
+                                                   routed_note=routed is not None, handbook=handbook))
 
     msgs: list[ChatMessage] = []
     for h in history or []:
@@ -392,10 +385,10 @@ def ask(
         import logging as _logging
 
         _logging.getLogger("app.assistant.service").info(
-            "assistant.ask: system=%d ký tự · công cụ=%d/%d (%d ký tự) · gói tri thức=%s · lịch sử=%d lượt (%d ký tự)",
+            "assistant.ask: system=%d ký tự · công cụ=%d/%d (%d ký tự) · cẩm nang=%d ký tự · lịch sử=%d lượt (%d ký tự)",
             len(full_system), offered, len(all_defs),
             sum(len(json.dumps({"n": d.name, "d": d.description, "p": d.parameters}, ensure_ascii=False)) for d in tool_defs),
-            "đủ" if topics is None else ",".join(sorted(topics)) or "nền",
+            len(handbook),
             len(history or []), sum(len(str(h.get("content") or "")) for h in (history or [])))
         result = prov.run_tools(
             msgs,
@@ -404,7 +397,7 @@ def ask(
             stop_when=stop_when,
             **common,
         )
-        if (routed is not None or pack_note) and tool_router.NEED_MORE_TOOLS in (result.text or ""):   # ai-CR-192: cả khi chỉ lọc gói
+        if routed is not None and tool_router.NEED_MORE_TOOLS in (result.text or ""):
             #  Model báo thiếu công cụ trong bộ đã lọc → hỏi lại MỘT lần với đủ công cụ, bỏ lời dặn lọc.
             retried = True
             offered = len(all_defs)
@@ -413,7 +406,8 @@ def ask(
                 tools=all_defs,
                 execute=lambda name, args: erp.run_tool(db, user, name, _with_user_text(name, args, message, history)),
                 stop_when=stop_when,
-                **{**common, "system": build_system(extra=_extra_system(tool_on, system, profile, terms))},
+                **{**common, "system": build_system(extra=_extra_system(tool_on, system, profile, terms,
+                                                                        handbook=handbook))},
             )
     else:
         result = prov.ask(msgs, **common)

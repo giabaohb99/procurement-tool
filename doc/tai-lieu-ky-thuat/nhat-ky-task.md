@@ -13540,6 +13540,20 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-220 | Trợ lý AI trên web và bot đọc cẩm nang từ Kho skill thay cho gói tri thức cũ
+- status: dang-lam
+- date: 2026-10-19
+Trước nay trợ lý trên web và bot mang theo bảy gói tri thức viết sẵn trong mã, khoảng bảy mươi bảy nghìn ký tự, gửi kèm
+gần như mọi câu hỏi, muốn sửa nội dung phải sửa mã. Nay bảy gói đó được đưa vào Kho skill AI thành bộ Cẩm nang hệ thống,
+gieo sẵn cho mọi pháp nhân, quản trị sửa trực tiếp trên màn Bộ skill và lượt hỏi sau trợ lý đã đọc bản mới. Lời nhắc gửi
+cho AI chỉ còn một danh mục ngắn khoảng một nghìn ký tự gồm tên và tóm tắt các cẩm nang người hỏi được đọc; khi cần, trợ lý
+tự mở đúng cẩm nang bằng công cụ đọc skill. Trợ lý nội bộ đọc được cả cẩm nang ở mức Khóa, còn ứng dụng AI bên ngoài vẫn bị
+chặn như cũ. Lần gieo đầu tạo bộ, các lần chạy lại không ghi đè chỗ quản trị đã sửa. Bài kiểm đều đạt.
+
+Mã nguồn: ai_skill/handbook_seed.py, ai_skill/seed_handbook/, assistant/knowledge.py, assistant/tools/skill_tool.py,
+assistant/service.py, assistant/tool_router.py, agent_hub/core_v2.py, seed.py, seed_prod.py
+Bài kiểm: test_tro_ly_doc_kho_skill_cr220.py
+
 ## ai-CR-222 | Vá các lỗ bảo mật Agent 1 tìm ra khi rà phần nối ChatGPT và khóa kết nối AI
 - status: dang-lam
 - date: 2026-10-19

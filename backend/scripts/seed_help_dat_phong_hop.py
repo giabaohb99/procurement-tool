@@ -16,7 +16,7 @@ Idempotent: có thẻ gốc cũ thì xóa nguyên cây con (con trước, cha sa
 tham chiếu không cascade) rồi dựng lại.
 
 ⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/18-dat-phong-hop.md` và
-gói tri thức trợ lý `app/modules/assistant/packs/50-dat-phong-hop.md`. Ba nơi
+cẩm nang trợ lý (Kho skill, hạt giống `app/modules/ai_skill/seed_handbook/50-dat-phong-hop.md`). Ba nơi
 lệch nhau thì người dùng đọc một đằng, trợ lý trả lời một nẻo.
 
 ⚠️ Tiêu đề bài phải KHÁC mọi bài đang có trong Trung tâm trợ giúp: portal tra

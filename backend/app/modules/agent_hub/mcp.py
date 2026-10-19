@@ -131,7 +131,8 @@ def list_tools(db: Session, user, scope: int) -> list[dict]:
     #  ai-CR-207 lỗi 1: trước gọi erp.tool_defs(db) KHÔNG kèm người dùng → chế độ tách dịch vụ gọi cổng B GET /tools với
     #  user_id rỗng → «Tài khoản không tồn tại» → danh sách chỉ còn tool cục bộ (mất purchase_report, payable_lookup…).
     for d in erp.tool_defs(db, user):
-        if d.name in HIDDEN or d.name in MCP_RETIRED:
+        #  ai-CR-220: sổ tool của Trợ lý nay có bản NỘI BỘ của ba tool skill (đọc cả bộ Khóa) — cổng giữ bản riêng ở trên.
+        if d.name in HIDDEN or d.name in MCP_RETIRED or d.name in SKILL_TOOLS:
             continue
         if scope != mcp_keys.SCOPE_WRITE and is_write_tool(d.name):
             continue

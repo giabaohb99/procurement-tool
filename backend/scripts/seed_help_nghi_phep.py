@@ -18,7 +18,7 @@ Idempotent: có thẻ gốc cũ thì xóa nguyên cây con (con trước, cha sa
 tham chiếu không cascade) rồi dựng lại.
 
 ⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/17-nghi-phep.md` và gói
-tri thức trợ lý `app/modules/assistant/packs/40-nghi-phep.md`. Ba nơi lệch nhau
+cẩm nang trợ lý (Kho skill, hạt giống `app/modules/ai_skill/seed_handbook/40-nghi-phep.md`). Ba nơi lệch nhau
 thì người dùng đọc một đằng, trợ lý trả lời một nẻo.
 
 ⚠️ Câu báo lỗi trích trong bài *Gặp câu báo lỗi* lấy nguyên văn từ

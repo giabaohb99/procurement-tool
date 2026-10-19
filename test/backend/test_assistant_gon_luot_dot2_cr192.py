@@ -21,28 +21,29 @@ def test_tran_cho_theo_luot():
 
 
 
-def test_khong_khop_nhom_thi_du_cong_cu_nhung_khong_goi_va_xin_them_duoc(db, seed, monkeypatch):
+def test_khong_khop_nhom_thi_du_cong_cu_va_doc_cam_nang_bang_tool(db, seed, monkeypatch):
+    """ai-CR-220 (K7) thay bài «câu không khớp nhóm → đủ công cụ nhưng không gói, xin thêm được»: gói tri thức đã bỏ, nên
+    không còn đường «xin thêm gói». Câu không khớp nhóm nào → gửi ĐỦ công cụ MỘT lần (không hỏi lại), lời nhắc mang danh
+    mục cẩm nang và có sẵn read_skill để model tự đọc."""
+    from app.modules.ai_skill.handbook_seed import ensure_system_handbook
     from app.modules.assistant import service
     from app.modules.assistant.provider.base import ChatResult
     from app.modules.user.model import User
 
-    calls: list[tuple[int, str]] = []
-    FACTORY = "Bản cô đọng để trợ lý AI tra cứu nhanh"
+    ensure_system_handbook(db)
+    calls: list[tuple[set, str]] = []
 
     class P:
         name = "fake"
         supports_tools = True
 
         def run_tools(self, msgs, *, tools, execute, system, **kw):
-            calls.append((len(tools), system))
-            #  Model «cần gói nhà máy»: thiếu thì xin thêm, có thì trả lời.
-            return ChatResult(text="xong" if FACTORY in system else tr.NEED_MORE_TOOLS, provider="fake", model="m")
+            calls.append(({t.name for t in tools}, system))
+            return ChatResult(text="xong", provider="fake", model="m")
 
     monkeypatch.setattr(service, "get_provider", lambda name=None: P())
-    out = service.ask("cho anh hỏi quy định nhà máy về ca làm", db=db, user=db.get(User, seed.u_req_id))
-    #  Câu này khớp gói nhà máy theo từ khóa dù không khớp nhóm công cụ → gói nhà máy có, không cần xin thêm.
-    assert len(calls) == 1 and FACTORY in calls[0][1]
-    calls.clear()
     out = service.ask("cho anh hỏi cái này được không", db=db, user=db.get(User, seed.u_req_id))
-    assert FACTORY not in calls[0][1] and "CHƯA nạp" in calls[0][1] and calls[0][0] > 40
-    assert len(calls) == 2 and FACTORY in calls[1][1] and out["usage"]["tools_retried"] is True   # xin thêm → nạp đủ
+    assert len(calls) == 1 and out["usage"]["tools_retried"] is False
+    names, system = calls[0]
+    assert len(names) > 40 and {"read_skill", "list_skills"} <= names
+    assert "- nha-may-he-thong-cong-viec:" in system and "Bản cô đọng để trợ lý AI tra cứu nhanh" not in system

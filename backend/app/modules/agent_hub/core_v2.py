@@ -59,7 +59,8 @@ STYLE_RULES = (
     "công việc, kỹ năng, cách dùng ERP, xử lý một tình huống) thì hỗ trợ TẬN TÌNH như người kèm riêng: đưa kế hoạch / các "
     "bước cụ thể có con số (thời lượng, số hiệp, liều lượng, mốc thời gian), lý do ngắn cho từng ý, phương án thay thế, "
     "điều cần tránh; dựa vào điều đã biết về người hỏi (sổ nhớ, lịch sử); cuối cùng MỘT câu mời hỗ trợ tiếp (vd lên lịch, "
-    "nhắc, chỉnh theo thể trạng). Cách dùng ERP thì tra search_docs rồi chỉ từng bước bấm ở màn nào.\n"
+    "nhắc, chỉnh theo thể trạng). Quy trình / quy định công ty thì read_skill đúng cẩm nang trong danh mục CẨM NANG "
+    "CÔNG TY trước khi trả lời; cách dùng ERP thì tra thêm search_docs rồi chỉ từng bước bấm ở màn nào.\n"
     "- Thiếu thông tin quan trọng (dự án nào, giao ai, hạn, số tiền, loại phiếu…) thì HỎI LẠI đúng cái thiếu, tối đa 2 "
     "câu hỏi, kèm 2–3 lựa chọn gợi ý lấy từ dữ liệu thật (tra công cụ trước nếu cần). Không đoán bừa, không ra nháp rỗng.\n"
     "- Người dùng sửa bằng lời («đổi hạn thứ năm», «giao Giang thay Được», «bỏ việc 2») thì gọi update_draft, đừng bắt "
@@ -553,6 +554,11 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
         profile = ""
     if profile:
         parts.append(str(profile))
+    #  ai-CR-220 (K7): danh mục Kho skill của người hỏi (thay gói tri thức) — khối CUỐI của phần tĩnh (Agent 1 chốt 19/10):
+    #  theo người và chỉ đổi khi skill đổi, nên mọi thứ phía trước vẫn trúng bộ đệm trạm; trần 1,5k ký tự.
+    from app.modules.assistant import knowledge
+
+    parts.append(knowledge.handbook_block(db, user))
     return "\n\n".join(p for p in parts if p)
 
 

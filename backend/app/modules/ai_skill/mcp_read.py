@@ -10,6 +10,9 @@ tóm tắt (nội dung chỉ trợ lý nội bộ đọc). Skill không đọc �
 ngoài không dò được tên skill của phòng khác.
 
 Tên gọi (`name`) là slug; hai bộ cùng có một slug thì skill đó gọi bằng `MÃ-BỘ/slug`.
+
+ai-CR-220 (K7): Trợ lý web + bot (TRỢ LÝ NỘI BỘ) cũng đọc qua đây với `internal=True` — vẫn đúng tập `visible_skills` của
+người hỏi, nhưng mức bảo mật chỉ chặn AI BÊN NGOÀI: nội bộ đọc cả nội dung bộ Khóa lẫn tệp đính kèm bộ Bảo vệ.
 """
 from __future__ import annotations
 
@@ -52,7 +55,7 @@ def _find(db: Session, user, name: str) -> dict | None:
     return None
 
 
-def list_for_ai(db: Session, user, query: str = "", skill_set: str = "") -> dict:
+def list_for_ai(db: Session, user, query: str = "", skill_set: str = "", internal: bool = False) -> dict:
     rows = _named(db, user)
     q, s = (query or "").strip().lower(), (skill_set or "").strip().lower()
     if q:
@@ -68,8 +71,9 @@ def list_for_ai(db: Session, user, query: str = "", skill_set: str = "") -> dict
                            .group_by(AiSkillFile.skill_id).all())
     items = [{"name": r["name"], "title": r["title"], "summary": r["summary"], "skill_set": r["skill_set"],
               "version": r["version_no"], "updated_at": _iso(r["updated_at"]),
-              "files": int(file_counts.get(r["skill_id"], 0)) if r["security_level"] == SecurityLevel.OPEN else 0,
-              "content_readable": r["security_level"] != SecurityLevel.LOCKED}
+              "files": (int(file_counts.get(r["skill_id"], 0))
+                        if internal or r["security_level"] == SecurityLevel.OPEN else 0),
+              "content_readable": internal or r["security_level"] != SecurityLevel.LOCKED}
              for r in rows[:MAX_LIST]]
     out = {"total": len(rows), "items": items,
            "note": "Gọi read_skill với đúng `name` để đọc hướng dẫn trước khi làm việc nghiệp vụ liên quan."}
@@ -79,19 +83,19 @@ def list_for_ai(db: Session, user, query: str = "", skill_set: str = "") -> dict
     return out
 
 
-def read_for_ai(db: Session, user, name: str) -> dict:
+def read_for_ai(db: Session, user, name: str, internal: bool = False) -> dict:
     row = _find(db, user, name)
     if row is None:
         return {"denied": True, "error": NOT_FOUND.format(name=name)}
     out = {"skill_id": row["skill_id"], "name": row["name"], "title": row["title"], "summary": row["summary"],
            "skill_set": row["skill_set"], "version": row["version_no"], "updated_at": _iso(row["updated_at"]),
            "security_level": row["security_level_label"]}
-    if row["security_level"] == SecurityLevel.LOCKED:
+    if row["security_level"] == SecurityLevel.LOCKED and not internal:
         out["note"] = "Bộ skill này ở mức Khóa: nội dung chỉ trợ lý nội bộ của công ty đọc, AI bên ngoài chỉ thấy tóm tắt."
         return out
     version = db.get(AiSkillVersion, row["version_id"])
     out["content"] = version.body_md if version else ""
-    if row["security_level"] == SecurityLevel.OPEN:
+    if internal or row["security_level"] == SecurityLevel.OPEN:
         out["files"] = [{"path": f.path, "size": f.size} for f in db.query(AiSkillFile)
                         .filter(AiSkillFile.skill_id == row["skill_id"]).order_by(AiSkillFile.path)]
     else:
@@ -101,11 +105,11 @@ def read_for_ai(db: Session, user, name: str) -> dict:
     return out
 
 
-def file_for_ai(db: Session, user, name: str, path: str) -> dict:
+def file_for_ai(db: Session, user, name: str, path: str, internal: bool = False) -> dict:
     row = _find(db, user, name)
     if row is None:
         return {"denied": True, "error": NOT_FOUND.format(name=name)}
-    if row["security_level"] != SecurityLevel.OPEN:
+    if row["security_level"] != SecurityLevel.OPEN and not internal:
         return {"denied": True, "skill_id": row["skill_id"],
                 "error": f"Bộ skill của «{row['name']}» không mở tệp đính kèm cho AI bên ngoài."}
     found = (db.query(AiSkillFile).filter(AiSkillFile.skill_id == row["skill_id"],

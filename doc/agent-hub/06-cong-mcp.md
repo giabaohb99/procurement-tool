@@ -131,6 +131,20 @@ hệ thống» phải gán quyền đọc tay ở màn Bộ skill.
   `mcp-setup` nhưng không cần đăng nhập — chỉ địa chỉ cổng + hướng dẫn tĩnh, đoạn cấu hình mang chỗ giữ khóa.
 - Migration `mcpkey03` (ERP, sau `mcpoauth01`) + `agent0014` (DB agent_hub, sau `agent0013`): thêm `raw_view`, `disabled_at`.
 
+### 2.5 Trợ lý nội bộ đọc chung Kho skill (ai-CR-220, K7)
+
+- Trợ lý web + bot core_v2 KHÔNG còn nhồi 7 gói `assistant/packs/*.md` (≈ 77.000 ký tự, ai-CR-183 lọc theo chủ đề) vào lời
+  nhắc. Lời nhắc chỉ mang **danh mục** skill người hỏi đọc được (`knowledge.handbook_block`: tên gọi + tóm tắt, trần 1.500
+  ký tự, đo local 1.148 ký tự cho 7 skill), đặt CUỐI phần tĩnh (core_v2: khối cuối của system; web: sau lời dặn của kênh,
+  trước thuật ngữ của câu) để tiền tố vẫn trúng bộ đệm trạm.
+- Ba tool nội bộ cùng tên với cổng (`assistant/tools/skill_tool.py`: `list_skills`, `read_skill`, `read_skill_file`) ở nhóm
+  LÕI của bộ lọc công cụ; chạy `mcp_read.*(internal=True)` — vẫn đúng `visible_skills` của người hỏi, nhưng mức bảo mật chỉ
+  chặn AI bên ngoài (nội bộ đọc cả bộ Khóa / tệp bộ Bảo vệ). Cổng MCP bỏ bản nội bộ khỏi danh sách, giữ bản riêng của nó.
+- Bộ «Cẩm nang hệ thống» (mã `SYS-HANDBOOK`, mức Mở, Đang dùng): `ai_skill/handbook_seed.ensure_system_handbook` chạy ở
+  `seed.py` + `seed_prod.py` — chưa có bộ mã đó (kể cả bản xóa mềm) thì gieo 7 skill xuất bản v1 từ `ai_skill/seed_handbook/`
+  (+ 11 tệp gốc nhà máy làm `references/` của skill `nha-may-he-thong-cong-viec`) và mỗi pháp nhân một dòng cho phép; có
+  rồi thì KHÔNG đụng. Sửa cẩm nang = sửa skill trên màn Bộ skill, lượt sau trợ lý đã đọc bản mới.
+
 ## 3. Công cụ
 
 ### 3.1 Tool riêng của cổng
