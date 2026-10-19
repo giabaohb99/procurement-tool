@@ -14598,3 +14598,16 @@ trạng thái, vẫn khóa lựa chọn hoàn thành khi hồ sơ còn chờ h�
 diện chạy xanh, đã bấm thử cả hai bản trên máy, chưa đưa lên dev.
 
 Mã nguồn: frontend-v2/src/modules/procurement/components/survey-report/survey-report-doc-sheet-layout.ts · survey-report-doc-sheet-row.tsx · survey-report-doc-sheet-add-row.tsx · survey-report-doc-sheet-table.tsx · survey-report-doc-status-select.tsx · survey-report-card.tsx · frontend/src/components/SurveyReportSheetRow.tsx · SurveyReportSheetTable.tsx · frontend/src/index.css
+
+## bao-CR-625 | Nginx của giao diện ERP trả 404 cho đường dò OAuth để Claude Desktop nối được cổng MCP
+- status: xong
+- date: 2026-10-19
+Đại ca tạo khóa kết nối AI trên dev rồi gắn vào Claude Desktop, máy chủ báo ngắt kết nối ngay khi khởi động. Đọc log trên máy thấy
+cầu nối mcp-remote luôn dò hai đường chuẩn OAuth dưới thư mục .well-known trước khi nối; nginx của giao diện ERP trả trang chính của
+ứng dụng cho mọi đường lạ, nên cầu nối nhận HTML, đọc như JSON rồi chết. Lỗi này xảy ra với mọi người dùng Claude Desktop, cả dev
+lẫn prod, không phụ thuộc khóa đúng hay sai. Nay cấu hình nginx của bản ERP trả 404 cho hai mẫu đường đó; đã vá nóng trên dev và
+chạy lại cầu nối với khóa cố ý sai thì cầu nối đi tiếp tới bước xác thực đúng như mong đợi. Prod nhận bản vá trong đợt gộp trưa 19/10.
+Kèm theo, trong log còn thấy Claude Desktop chưa đọc được biến môi trường chứa khóa vì ứng dụng mở trước lúc đặt biến, đã hướng dẫn
+đại ca khởi động lại.
+
+Mã nguồn: docker/nginx.erp.prod.conf
