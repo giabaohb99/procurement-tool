@@ -70,6 +70,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-645 | Nhật ký sử dụng Kho skill AI: cột Số ký tự kết quả, kèm trong tệp CSV
+- status: xong
+- date: 2026-10-19
+Agent 4 cho máy chủ ghi độ dài văn bản trả cho ứng dụng AI ở mỗi lượt gọi công cụ (ai-CR-228), vì kết quả quá dài thì
+ứng dụng AI có thể bỏ qua. Màn Nhật ký sử dụng của Kho skill AI nay có thêm cột Số ký tự kết quả, số viết dấu chấm hàng
+nghìn. Lượt không đo (khởi tạo kết nối, liệt kê công cụ, dòng cũ trước khi có trường này, hoặc máy chủ cũ chưa trả
+trường) để ô trống chứ không ghi 0, kẻo người đọc tưởng công cụ trả về rỗng. Cột ẩn hiện được qua menu Cột như các cột
+khác, và có mặt trong tệp CSV xuất trang hiện tại (lượt không đo cũng để trống).
+
+Đây là việc đầu tiên của bài thử hệ Agent chuyên gia: Agent 1 gọi Agent giao diện dựng theo vai giao-dien-v2 và quy
+trình them-man-v2 làm phần cột trên màn; em thêm cột vào CSV và ghi vào tài liệu bảng một bẫy Agent đó gặp: bảng dùng
+chung tự đổi ô chỉ có dấu gạch thành ô trống (luật từ CR-132).
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn); bài kiểm phân hệ kho skill 85 bài xanh trên 13
+tệp. Bài mới: ô bằng 0 để trống, số lớn có dấu chấm hàng nghìn, máy chủ cũ thiếu trường không in chữ undefined, ẩn được
+qua menu Cột, CSV ghi đúng số và để trống lượt không đo.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/pages/call-log-page.tsx` (+ bài kiểm mới), `utils/call-log-format.ts`
+(mới, + bài kiểm), `types/ai-skill.ts`; `frontend-v2/docs/ui/table.md` §1.
+Commit: commit giao diện trên erp-v2 (đại ca gật 19/10). Deploy: Agent 1 dựng dev.
+
+---
+
 ## bao-CR-644 | Màn AI của tôi: gộp hai đoạn Không cần khóa ở mục ChatGPT và claude.ai thành một
 - status: xong
 - date: 2026-10-19

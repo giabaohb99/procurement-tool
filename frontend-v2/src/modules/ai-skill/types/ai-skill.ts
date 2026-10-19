@@ -227,6 +227,11 @@ export interface McpCall {
   status_label: string
   deny_reason: string
   duration_ms: number
+  /**
+   * ai-CR-228: độ dài văn bản trả cho ứng dụng AI ở lượt tools/call; lượt khác và dòng cũ là 0. Máy chủ trước
+   * ai-CR-228 chưa có trường thì coi như 0.
+   */
+  result_chars?: number
   ip: string
   user_label: string
 }
