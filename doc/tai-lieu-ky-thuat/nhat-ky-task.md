@@ -150,7 +150,7 @@ Kiểm trên máy local: 7 bài kiểm màn AI của tôi xanh; seed chạy lạ
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (khối chatgpt), `test/backend/test_agent_hub_ai_cua_toi_cr213.py`,
 `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md` (bản 1.2).
-Commit: af4493e9 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 tối; ERP api dev chờ Agent 1 dựng lại.
+Commit: af4493e9 + đính chính 00418304 trên erp-v2 (đại ca gật 19/10). Deploy: dev seed + ERP api dựng 19/10; PROD 81632cd6 (đợt hai 17:25) + seed bài 17:4x.
 
 ---
 
@@ -206,7 +206,7 @@ dev; lên xong phải đối chiếu lại nhãn. Seed chạy lại trên máy l
 api dev, chạy seed và nạp lại chỉ mục Trợ lý AI.
 
 Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`.
-Commit: 4ae01899 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 chiều.
+Commit: 4ae01899 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 chiều; PROD seed 19/10 17:4x cùng 631/639.
 
 ---
 
@@ -301,7 +301,7 @@ mục tìm kiếm của Trợ lý AI (7 bài, 37 đoạn); mở devhelp.degohold
 
 Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py` (mới), `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`
 (mới), `doc/tai-lieu-chuc-nang/00-muc-luc.md`, `doc/tai-lieu-chuc-nang/README.md`.
-Commit: chưa, chờ Agent 1 gộp main xong rồi mới đẩy erp-v2. Deploy: đã seed trên dev 19/10; prod chưa.
+Commit: 6c79b7c3 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10; PROD seed + nạp lại chỉ mục 19/10 17:4x (đại ca gật, sau đợt prod hai 81632cd6).
 
 ---
 
