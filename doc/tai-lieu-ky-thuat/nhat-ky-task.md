@@ -13597,6 +13597,19 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-227 | Lạc Lạc tạo lịch đúng theo tệp kế hoạch, không bịa link, không sai thứ
+- status: dang-lam
+- date: 2026-10-19
+Đại ca nhờ Lạc Lạc tạo lịch cho chuyến đi Phan Rang – Long Hải theo tệp kế hoạch thì bot tạo sai giờ và sai điểm dừng so
+với tệp, gắn các link bản đồ tự bịa không mở được, ghi sai thứ trong tuần và còn dùng biểu tượng. Nay máy tự đọc bảng giờ
+trong tệp thành danh sách sự kiện đánh số, có thứ tính sẵn và link bản đồ đúng như trong tệp; bot chỉ trình danh sách đó
+để duyệt và tạo đúng những mục được chọn sau khi người dùng đồng ý, không tự soạn lại. Trước khi gửi câu trả lời, máy bỏ
+các link không có nguồn, sửa thứ cho khớp ngày, lọc biểu tượng, và chặn tạo các sự kiện chồng giờ nhau. Khi nói khoảng cách
+hay thời gian chạy mà chưa tra bản đồ, bot phải ghi rõ đó là ước lượng. Bài kiểm đều đạt.
+
+Mã nguồn: agent_hub/plan_extract.py, agent_hub/reply_guard.py, agent_hub/core_v2.py
+Bài kiểm: test_agent_hub_lich_theo_tep_cr227.py
+
 ## ai-CR-226 | Nhật ký thao tác của bot không còn bị mất khi dịch vụ AI chạy tách riêng
 - status: dang-lam
 - date: 2026-10-19
