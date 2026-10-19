@@ -89,7 +89,7 @@ Kiểm trên máy local: 7 bài kiểm màn AI của tôi xanh; seed chạy lạ
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (khối chatgpt), `test/backend/test_agent_hub_ai_cua_toi_cr213.py`,
 `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md` (bản 1.2).
-Commit: chờ đại ca gật. Deploy: dev chờ seed sau commit.
+Commit: af4493e9 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 tối; ERP api dev chờ Agent 1 dựng lại.
 
 ---
 
