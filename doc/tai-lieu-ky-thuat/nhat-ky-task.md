@@ -14657,3 +14657,65 @@ panel khi đang sửa mô tả thì mô tả vẫn được lưu. Đường nh�
 
 Mã nguồn: backend/app/modules/employee/position_service.py · labor_contract/access.py · leave/balance_controller.py · leave/carryover_service.py · frontend-v2/src/modules/hr/pages/employee-detail-page.tsx · frontend-v2/src/modules/work/components (task-detail-sheet, field-edit-dialog, task-comments, task-attachments, task-description-field) · test/backend/test_danh_muc_chuc_vu.py · test/backend/test_hdld_khoa_dong_xoa_mem_cr627.py
 
+## duoc-CR-628 | Nhập Excel nhân sự ở màn Nhân sự, thay đường nhập CSV cũ
+- status: xong
+- date: 2026-10-19
+Đại ca giao làm đường nhập nhân sự bằng tệp Excel ngay ở màn Nhân sự bên giao diện mới, thay cho nút nhập CSV cũ vốn ghi thẳng vào
+bảng, bỏ qua các chốt của màn hồ sơ. Nay bấm «Nhập Excel», chọn tệp, hệ thống chạy thử trước, cho xem từng dòng báo gì, rồi mới ghi
+thật; ghi nhầm thì hoàn tác được cả lô. Tệp nhận đủ hồ sơ khoảng ba mươi tám cột, kể cả các cột nhạy cảm như ngày sinh, căn cước,
+tài khoản ngân hàng. Ô để trống nghĩa là giữ nguyên giá trị cũ, muốn xóa một ô thì ghi đúng chuỗi quy ước; hệ thống không xóa nhân
+sự qua tệp. Mỗi dòng đi qua cùng lõi ghi với màn hồ sơ nên vẫn bị chặn khi trùng email, tạo vòng quản lý, sai chức vụ, và khi chuyển
+sang nghỉ việc thì khóa luôn tài khoản đăng nhập; riêng lúc chạy thử thì chỉ báo «sẽ khóa» chứ không khóa thật. Người nhập chỉ ghi
+được trong phạm vi dữ liệu của mình, và thiếu quyền ghi thông tin nhạy cảm thì các cột đó bị bỏ qua kèm một cảnh báo. Gác quyền ở
+trang quản lý nhập tệp nay đòi cả quyền nhập lẫn quyền nhân sự, tải lại tệp gốc cần quyền xem thông tin nhạy cảm. Hai đường nhập
+CSV cũ của nhân sự và phòng ban đã tắt, trả lời rằng đã ngừng và chỉ sang nhập Excel; nút nhập CSV bên giao diện cũ được ẩn, nút xuất
+vẫn giữ. Chưa đổi quyền mẫu của các vai trò nên quản trị phải tự tick quyền nhập cho bộ phận nhân sự; bản chụp để hoàn tác đang giữ
+căn cước và tài khoản ngân hàng bản rõ, chưa có việc dọn định kỳ. Sau lượt rà soát mã, đã vá thêm: hoàn tác chỉ
+khôi phục đúng những ô lô đã đổi và từ chối cả lượt nếu có ô đã bị sửa về sau; hoàn tác kiểm quyền và phạm vi từng nhân sự,
+không xóa nhân sự mới nếu đã có dữ liệu thêm vào; một mã nhân viên chỉ được xuất hiện một lần trong tệp; lỗi cơ sở dữ liệu không
+còn để lộ số căn cước hay tài khoản ngân hàng ở nhật ký lô; bản chạy thử chỉ được ghi thật một lần; phòng ban cũng không xóa được
+qua Excel; và trang chi tiết lô tự tải lại nhật ký khi lô chạy xong, không cần bấm F5. Lượt rà soát thứ ba vá tiếp:
+bấm ghi thật hai lần liền không còn ghi đôi trên máy chủ thật; hoàn tác trả lại đúng tập phòng ban của nhân sự, kể cả phòng
+kiêm nhiệm, và không cho người hoàn tác vượt phạm vi của mình; hoàn tác nhận biết hồ sơ đã bị sửa sau lúc nhập chính xác
+bằng dấu thời gian thay vì cho trễ một phút; hoàn tác đưa nhân sự về nghỉ việc thì khóa lại tài khoản; mã nhân viên viết
+hoa thường khác nhau vẫn bị coi là trùng; lỗi tranh chấp khóa làm hỏng cả lô thay vì nuốt lặng; và thông báo lỗi khi hoàn tác
+bị từ chối chỉ hiện một lần.
+
+Mã nguồn: backend/app/modules/import_tool/employee_import.py · employee_import_fields.py · catalog_import.py · controller.py · service.py · backend/app/modules/employee/service.py · status_parse.py · controller.py · backend/app/modules/department/controller.py · frontend-v2/src/modules/hr/components/employee-import-button.tsx · frontend-v2/src/modules/hr/pages/employee-list-page.tsx · frontend/src/config/cruds.tsx · frontend/src/components/CrudList.tsx · test/backend/test_nhap_excel_nhan_su_cr628.py · test_nhap_excel_nhan_su_quyen_cr628.py · test_nhap_excel_nhan_su_review_cr628.py · backend/app/modules/import_tool/employee_import_revert.py · tasks.py · frontend-v2/src/modules/system/hooks/use-imports.ts
+
+## duoc-CR-629 | Lập hợp đồng lao động thì sinh bản lưu trữ ở phân hệ Văn bản, chỉ Nhân sự xem được
+- status: xong
+- date: 2026-10-19
+Đại ca muốn mỗi hợp đồng lao động lập ở phân hệ Nhân sự có thêm một bản lưu trữ bên phân hệ Văn bản, kèm tệp hợp đồng, mà chỉ người
+đang xem được hợp đồng đó mới đọc được. Nay bấm lập hợp đồng là hệ thống tự sinh một văn bản loại «Hợp đồng lao động»; tệp .docx đã
+sinh và bản scan đã ký được chép sang văn bản, trạng thái văn bản đi theo hợp đồng (nháp, có hiệu lực, hết hiệu lực, lưu trữ). Văn
+bản chỉ để xem: người lao động, văn thư và cả quản trị Văn bản không có quyền hợp đồng lao động đều không thấy ở danh sách, tìm kiếm,
+tổng quan, thư mục, trợ lý AI hay khi gõ thẳng đường dẫn, không sửa, xóa, chia sẻ, sao chép hay ký được, và tiêu đề không chứa lương.
+Việc đồng bộ chạy sau khi hợp đồng đã lưu xong nên có lỗi cũng không làm hỏng hợp đồng. Dòng hợp đồng trong hồ sơ nhân sự có nút mở
+bản lưu trữ. Vai trò Nhân sự mẫu được thêm quyền đọc Văn bản phạm vi «Của tôi»; hệ đang chạy phải tick tay quyền này hoặc bật đồng
+bộ vai trò một lần. Hợp đồng đã có từ trước được bù bằng script chạy tay, có chế độ chạy thử và chế độ gỡ để quay đầu; chưa chạy trên
+máy chủ nào. Sau đợt rà soát có vá thêm hai chỗ lộ: người không đọc được bản lưu trữ không còn dò ra tiêu đề bằng cách khai quan hệ
+tới nó, và dòng nhật ký thao tác của bản lưu trữ (tên tệp có số hợp đồng và họ tên) chỉ hiện cho người đọc được bản lưu trữ, kể cả
+quản trị. Văn bản loại hợp đồng lao động không gắn với hợp đồng nào bị ẩn với mọi người; loại này được đặt mức Mật; script bù mặc
+định chỉ chạy thử, muốn ghi phải thêm cờ xác nhận và có lệnh kiểm trước triển khai. Nếu máy chủ thật đã có sẵn loại văn bản mã HDLD
+do người dùng tự tạo thì phải dừng triển khai để xử lý trước. Đợt rà soát thứ ba vá nốt: nhật ký thao tác của bản lưu trữ và
+của chính hợp đồng giờ giấu vĩnh viễn với người không đọc được, kể cả sau khi hợp đồng nháp bị xóa hẳn cùng hồ sơ nhân sự; loại văn
+bản hợp đồng lao động bị khóa mọi thiết lập ở danh mục và hiện chỉ-xem trên giao diện; việc tạo văn bản lưu trữ và ghi liên kết
+nay làm trong cùng một giao dịch nên không còn văn bản mồ côi; cây quan hệ không hiện bản lưu trữ; script bù dọn sạch cả văn bản mồ côi
+khi quay đầu.
+
+Mã nguồn: backend/app/modules/labor_contract/document_archive_sync.py · document_archive_files.py · backend/app/modules/document/labor_contract_archive_access.py · access_service.py · backend/migrations/versions/lbrct02_hdld_van_ban_luu_tru.py · backend/scripts/backfill_hdld_van_ban_luu_tru.py · frontend-v2/src/modules/hr/components/labor-contract-row-actions.tsx · test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr629.py · test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr629.py
+
+## duoc-CR-629b | Gộp màn mẫu hợp đồng lao động vào tab «Thư viện văn bản mẫu» của phân hệ Văn bản
+- status: xong
+- date: 2026-10-19
+Đại ca muốn mẫu hợp đồng lao động nằm chung chỗ với thư viện văn bản mẫu. Bước đầu làm phần giao diện: màn quản lý mẫu hợp đồng
+chuyển sang tab «Thư viện văn bản mẫu» trong trang Thiết lập văn bản, ở địa chỉ có thêm tham số loại mẫu hợp đồng lao động. Người
+chỉ có quyền mẫu hợp đồng lao động (Nhân sự) vào được trang và chỉ thấy mẫu hợp đồng; văn thư không có quyền này thì không thấy mẫu
+nào, dù gõ thẳng địa chỉ; ai có cả hai quyền thì chuyển qua lại bằng một công tắc. Menu «Mẫu hợp đồng» của Nhân sự, hai hộp thoại
+lập hợp đồng và sinh tệp đều dẫn sang chỗ mới, đường cũ tự chuyển hướng, trình soạn mẫu trên web vẫn mở được bằng đường cũ. Dữ liệu,
+API và phân quyền mẫu giữ nguyên, nên hợp đồng đã sinh không bị ảnh hưởng. Việc gộp bảng dữ liệu mẫu (bước hai) chưa làm, sẽ lên kế
+hoạch riêng.
+
+Mã nguồn: frontend-v2/src/modules/document/config/document-settings-tabs.ts · document/pages/document-settings-page.tsx · document/routes.tsx · frontend-v2/src/modules/hr/components/labor-contract-template-catalog.tsx · hr/routes.tsx · frontend-v2/src/shared/constants/app-routes.ts
+
