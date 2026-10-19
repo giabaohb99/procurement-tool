@@ -50,6 +50,12 @@ export const CONTRACT_TYPE: readonly StatusOption[] = [
   {"value": "other", "label": "Khác", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Loại mẫu văn bản */
+export const DOCUMENT_TEMPLATE_KIND: readonly StatusOption[] = [
+  {"value": "1", "label": "Văn bản mẫu", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Mẫu hợp đồng lao động", "sort_order": 2, "is_terminal": false, "is_exception": false},
+]
+
 /** Trạng thái nhân sự */
 export const EMPLOYEE_STATUS: readonly StatusOption[] = [
   {"value": "official", "label": "Chính thức", "sort_order": 0, "is_terminal": false, "is_exception": false},
@@ -231,6 +237,7 @@ export const STATUS_SETS = {
   contract_party_type: CONTRACT_PARTY_TYPE,
   contract_status: CONTRACT_STATUS,
   contract_type: CONTRACT_TYPE,
+  document_template_kind: DOCUMENT_TEMPLATE_KIND,
   employee_status: EMPLOYEE_STATUS,
   forum_prefix: FORUM_PREFIX,
   labor_contract_status: LABOR_CONTRACT_STATUS,

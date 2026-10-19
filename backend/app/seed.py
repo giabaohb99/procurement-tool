@@ -1227,6 +1227,16 @@ def seed_document_phase1(db):
         existing_types[values["code"].upper()] = row
         changed += 1
 
+    #  duoc-CR-629b: mẫu HĐLĐ (template_kind=2) nằm chung bảng mẫu văn bản; migration `lbrct03` đặt
+    #  `doc_type_id` = loại HDLD nếu loại đã có lúc chạy, không thì 0. Điền bù Ở ĐÂY (insert-only: chỉ ô đang 0).
+    hdld = existing_types.get("HDLD")
+    if hdld is not None:
+        db.flush()
+        from app.modules.labor_contract.template_model import LaborContractTemplate
+        for tpl in db.query(LaborContractTemplate).filter(LaborContractTemplate.doc_type_id == 0).all():
+            tpl.doc_type_id = hdld.id
+            changed += 1
+
     #  Mức mật / độ khẩn. Insert-only theo `code`: bảy dòng gốc phải luôn có
     #  mặt (số trên `tab_document` mới tra ra tên), nhưng tên và mô tả thì quản
     #  trị sửa được trên giao diện — seed chạy lại ở mỗi lần deploy, ghi đè là

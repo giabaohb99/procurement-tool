@@ -18,6 +18,7 @@ from app.modules.document.model import Document
 from app.modules.document.recipient_model import DocumentRecipient
 from app.modules.document.request_model import DocumentRequest
 from app.modules.document.template_model import DocumentTemplate
+from app.modules.labor_contract.template_model import LaborContractTemplate
 
 from .link_rule_model import DocTypeLinkRule
 from .model import DocType
@@ -28,6 +29,7 @@ register("doc_type", "Loại văn bản", [
     Reference(Document, "doc_type_id", "văn bản"),
     Reference(DocumentRequest, "doc_type_id", "yêu cầu soạn văn bản"),
     Reference(DocumentTemplate, "doc_type_id", "mẫu văn bản"),
+    Reference(LaborContractTemplate, "doc_type_id", "mẫu hợp đồng lao động"),
     Reference(DocumentNumberingRuleDocType, "doc_type_id", "quy tắc đánh số"),
     Reference(DocTypeLinkRule, "source_type_id", "quy tắc quan hệ (loại nguồn)"),
     Reference(DocTypeLinkRule, "target_type_id", "quy tắc quan hệ (loại đích)"),

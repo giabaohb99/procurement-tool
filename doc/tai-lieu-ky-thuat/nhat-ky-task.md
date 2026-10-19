@@ -14857,3 +14857,15 @@ Giá trị biến được che khỏi nhật ký như lương. Hệ thống đan
 triển khai lên máy chủ nào. Sau đợt rà soát có vá thêm: hợp đồng chưa có mẫu khi ký chỉ bị chặn bởi biến bắt buộc của mẫu đang dùng thuộc chính pháp nhân của hợp đồng (trước đó bị chặn nhầm bởi biến của pháp nhân khác); dữ liệu biến lệch mã hệ thống không còn làm hỏng việc sinh tệp; đổi trạng thái biến phải xác nhận; số 0 được tính là một giá trị thật cho biến kiểu số và tiền; ký tự điều khiển bị bỏ khỏi giá trị chữ.
 
 Mã nguồn: backend/app/modules/labor_contract/variable_model.py · variable_rules.py · variable_registry.py · variable_seed.py · variable_service.py · variable_controller.py · contract_custom_values.py · backend/migrations/versions/lbvar01_bien_mau_hdld_cr630.py · frontend-v2/src/modules/hr/pages/labor-contract-variables-page.tsx · hr/components/labor-contract-variable-form-dialog.tsx · hr/components/labor-contract-custom-fields.tsx · test/backend/test_hdld_bien_mau_nen_cr630.py · test_hdld_bien_mau_api_cr630.py · test_hdld_bien_mau_sinh_tep_cr630.py
+
+## duoc-CR-629b-buoc-b | Gộp bảng dữ liệu mẫu hợp đồng lao động vào bảng văn bản mẫu
+- status: xong
+- date: 2026-10-19
+Bước hai của việc gộp mẫu: dữ liệu mẫu hợp đồng lao động nay nằm chung một bảng với văn bản mẫu, phân biệt bằng một cột loại mẫu. Người
+chỉ có quyền văn bản mẫu (mọi vai trò) không bao giờ thấy mẫu hợp đồng lao động ở bất kỳ chỗ nào: danh sách, ô chọn mẫu khi soạn,
+mở hay sửa hay xóa bằng số mẫu đều như không tồn tại; quyền xem mẫu hợp đồng vẫn đi qua quyền riêng theo pháp nhân như cũ. Số mẫu của
+mẫu hợp đồng được giữ nguyên nên hợp đồng đã lập vẫn sinh lại được từ đúng mẫu cũ; nếu số trùng với một văn bản mẫu thường thì văn bản mẫu
+thường được dời số, kèm lịch sử thao tác của nó. Bảng mẫu cũ chỉ đổi tên để đối chiếu và sẽ xóa ở lần phát hành sau. Migration có đường
+quay lại đầy đủ, đã diễn tập lên, xuống, lên trên MySQL local với số dòng và dấu kiểm khớp. Sau đợt rà soát lần hai đã vá thêm: bộ đếm số mẫu của bảng gộp được nâng theo bảng cũ nên số mẫu hợp đồng đã xóa không bị cấp lại; khi phải dời số mẫu văn bản thì mức dời vượt cả số lịch sử của mẫu đã xóa và lịch sử thay đổi cũng dời theo; lịch sử thay đổi của mẫu hợp đồng giữ tên bảng cũ để nhật ký vẫn ghi đủ các trường đã sửa; đường quay lại chạy được cả khi mọi mẫu hợp đồng đã bị xóa và chạy lại an toàn sau sự cố; đã thử chèn lỗi giữa chừng trên MySQL local. Chưa triển khai lên máy chủ nào.
+
+Mã nguồn: backend/app/core/change_tracker.py · backend/app/core/document_template_codes.py · backend/app/modules/document/template_model.py · template_service.py · backend/app/modules/labor_contract/template_model.py · generate_service.py · template_service.py · backend/app/modules/doc_catalog/references.py · backend/app/seed.py · backend/migrations/versions/lbrct03_gop_mau_hdld_vao_thu_vien_van_ban.py · test/backend/test_hdld_gop_bang_mau_migration_cr629b.py · test_hdld_gop_bang_mau_cach_ly_cr629b.py

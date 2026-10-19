@@ -731,6 +731,7 @@ lỗi chỉ ghi nhật ký, hợp đồng vẫn đi bình thường, sự kiện
 - **Quyền đọc** chỉ theo `labor_contract.read` trong phạm vi (xem `.claude/rules/document-folders-search.md`). Vai trò `hr_profile` được seed thêm `document.read` phạm vi «Của tôi» để mở danh sách / tải tệp (hệ đang chạy phải tick tay hoặc `SEED_FORCE_SYNC` một lần).
 - **Bù dữ liệu cũ:** `docker compose exec -T api python scripts/backfill_hdld_van_ban_luu_tru.py --dry-run` rồi chạy thật (idempotent); rollback: `--soft-delete-all`.
 - **Mẫu hợp đồng** (duoc-CR-629b bước A): màn quản lý mẫu chuyển sang `/document/settings?tab=templates&kind=labor-contract`; vẫn khóa `labor_contract_template`, API cũ.
+- **Bảng mẫu** (duoc-CR-629b bước B, migration `lbrct03`): mẫu hợp đồng nằm trong `tab_document_template` với `template_kind=2` (lớp `LaborContractTemplate`, single-table inheritance); `id` mẫu GIỮ NGUYÊN nên `tab_labor_contract.template_id` không đổi. Quyền không đổi (`labor_contract_template`, phạm vi pháp nhân). Bảng cũ còn tên `tab_labor_contract_template_bak629` tới lần phát hành sau (`lbrct04` xóa).
 
 ### Danh sách biến của mẫu hợp đồng (duoc-CR-630)
 

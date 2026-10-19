@@ -1,6 +1,6 @@
 # Phase 07 — CR-629b (bước B): gộp BẢNG mẫu HĐLĐ vào `tab_document_template` — schema, migration dữ liệu, backend
 
-**Sub-scope:** CR-629b bước B · **Ưu tiên:** P2 · **Trạng thái:** pending (đại ca đã chốt LÀM, 19/10/2026) · **Effort:** 6.5h
+**Sub-scope:** CR-629b bước B · **Ưu tiên:** P2 · **Trạng thái:** done 19/10/2026 (chưa deploy) · **Effort:** 6.5h
 **Phụ thuộc:** 01–06 đã commit (bước A đang CHƯA commit trong cây làm việc — commit trước khi bắt đầu); `alembic heads` = đúng 1 head `lbrct02` (kiểm lại ngay trước khi viết migration — plan CR-628 nhập Excel nhân sự có thể chen migration).
 **Tên tệp giữ `...-de-xuat-hoan.md`** cho link cũ không gãy; nội dung nay là phase đang làm.
 
@@ -134,3 +134,9 @@ docker compose exec -T api python -m pytest -q test/backend/test_hdld_van_ban_lu
 
 ## Bảo mật
 Không thêm entity/quyền; khóa `labor_contract_template` + phạm vi `company` giữ nguyên; schema xuất của `doc_template` không thêm trường (không lộ `company_id/file_id`). Tệp mẫu vẫn riêng tư, không `FileLink`.
+
+## Kết quả triển khai (19/10/2026) — lệch so với kế hoạch gốc
+- Migration `lbrct03` có `down_revision="lbvar01"` (CR-630 đã vào); downgrade về `lbvar01`.
+- 4 quyết định sản phẩm: (1) dời id mẫu văn bản ⇒ dời luôn `tab_audit_log.entity_id` của entity `document_template`; (2) mẫu HĐLĐ nhận `doc_type_id` = loại `HDLD` nếu có lúc migrate, không thì 0, `seed_document_phase1` điền bù ô đang 0, mẫu tạo mới gắn loại HDLD, chốt xóa loại văn bản (`doc_catalog/references.py`) đếm thêm `LaborContractTemplate`; (3) bảng `..._bak629` giữ 1 lần phát hành; (4) ca biên downgrade xử lý tay.
+- Downgrade dừng (RuntimeError) nếu còn mẫu HĐLĐ mà thiếu bảng bak, tránh mất dữ liệu im lặng.
+- Test: `test_hdld_gop_bang_mau_migration_cr629b.py` (13 ca), `test_hdld_gop_bang_mau_cach_ly_cr629b.py` (12 ca).

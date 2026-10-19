@@ -9,7 +9,9 @@ from .template_schema import DocumentTemplateCreate, DocumentTemplateUpdate
 
 
 def get_or_404(db: Session, template_id: int) -> DocumentTemplate:
-    template = db.get(DocumentTemplate, template_id)
+    # Truy vấn tường minh qua lớp con (STI tự thêm `template_kind = 1`) — mẫu HĐLĐ
+    # (kind=2) luôn ra 404 ở cửa này, không phụ thuộc chi tiết identity map của `db.get`.
+    template = db.query(DocumentTemplate).filter(DocumentTemplate.id == template_id).first()
     if not template:
         raise HTTPException(404, "Không tìm thấy văn bản mẫu")
     return template

@@ -44,8 +44,8 @@ archive_sync(lc)  ── best-effort, lỗi chỉ log; khóa dòng HĐ FOR UPDAT
 | 04 | [FE: nút «Văn bản lưu trữ»](phase-04-fe-nut-van-ban-luu-tru.md) | 1.5h | 03 (hợp đồng API) | done |
 | 05 | [Tài liệu, triển khai, bù dữ liệu](phase-05-tai-lieu-trien-khai-bu-du-lieu.md) | 1.5h | 02, 03, 04, 06 | done |
 | 06 | **CR-629b** [Bước A: gộp giao diện mẫu HĐLĐ vào «Thư viện văn bản mẫu»](phase-06-cr629b-gop-giao-dien-mau-hdld-vao-thu-vien.md) | 4h | CR-610 đã commit | done |
-| 07 | **CR-629b** [Bước B: gộp bảng mẫu — STI, migration `lbrct03`, backend, test](phase-07-cr629b-gop-du-lieu-mau-de-xuat-hoan.md) | 6.5h | 01–06 đã commit | pending |
-| 08 | **CR-629b** [Bước B: hồi quy FE, tài liệu, diễn tập + deploy, dọn bảng cũ](phase-08-cr629b-trien-khai-tai-lieu-don-bang-cu.md) | 2.5h | 07 | pending |
+| 07 | **CR-629b** [Bước B: gộp bảng mẫu — STI, migration `lbrct03`, backend, test](phase-07-cr629b-gop-du-lieu-mau-de-xuat-hoan.md) | 6.5h | 01–06 đã commit | done (chưa deploy) |
+| 08 | **CR-629b** [Bước B: hồi quy FE, tài liệu, diễn tập + deploy, dọn bảng cũ](phase-08-cr629b-trien-khai-tai-lieu-don-bang-cu.md) | 2.5h | 07 | code+docs+diễn tập local done; deploy/`lbrct04` chờ |
 
 **02 ∥ 03** chạy song song được: tệp không chồng nhau (02 = `document/*`, 03 = `labor_contract/*`).
 Hợp đồng giữa hai bên chỉ là: cột `tab_labor_contract.document_id` + hằng `LABOR_CONTRACT_DOC_TYPE` (phase 01).
