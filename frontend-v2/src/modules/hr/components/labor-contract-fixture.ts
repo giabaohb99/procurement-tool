@@ -39,6 +39,8 @@ export function makeLaborContract(overrides: Partial<LaborContract> = {}): Labor
     can_generate: true,
     can_print: false,
     can_upload_signed: true,
+    document_id: 0,
+    can_open_document: false,
     transitions: [2, 5],
     ...overrides,
   }

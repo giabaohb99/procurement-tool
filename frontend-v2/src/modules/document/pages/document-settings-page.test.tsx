@@ -25,13 +25,16 @@ vi.mock('../components/document-template-catalog', () => ({
 vi.mock('../components/security-level-catalog', () => ({
   SecurityLevelCatalog: () => <div>bảng mức mật</div>,
 }))
+vi.mock('@/modules/hr/components/labor-contract-template-catalog', () => ({
+  LaborContractTemplateCatalog: () => <div>bảng mẫu hợp đồng lao động</div>,
+}))
 vi.mock('../components/document-partner-catalog', () => ({
   DocumentPartnerCatalog: () => <div>bảng đơn vị gửi nhận</div>,
 }))
 
-function build() {
+function build(url = '/') {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <DocumentSettingsPage />
     </MemoryRouter>,
   )
@@ -70,5 +73,31 @@ describe('DocumentSettingsPage', () => {
 
     expect(screen.getByText(/không có quyền xem danh mục nền nào/i)).toBeInTheDocument()
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+  })
+
+  //  duoc-CR-629b: Nhân sự (chỉ có `labor_contract_template`) vào trang chỉ thấy mục mẫu HĐLĐ.
+  it('Nhân sự thuần: mở ?tab=types vẫn chỉ thấy mẫu hợp đồng lao động', () => {
+    canRead = ['labor_contract_template']
+    build('/?tab=types')
+
+    expect(screen.getByText('bảng mẫu hợp đồng lao động')).toBeInTheDocument()
+    expect(screen.queryByText('bảng loại văn bản')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('tab')).toHaveLength(1)
+  })
+
+  it('văn thư thiếu khóa HĐLĐ: ?kind=labor-contract cho ra thư viện thường, không dựng mục HĐLĐ', () => {
+    canRead = ['doc_template']
+    build('/?tab=templates&kind=labor-contract')
+
+    expect(screen.getByText('bảng thư viện mẫu')).toBeInTheDocument()
+    expect(screen.queryByText('bảng mẫu hợp đồng lao động')).not.toBeInTheDocument()
+  })
+
+  it('có cả hai quyền: công tắc hai mục, mặc định thư viện thường', () => {
+    canRead = ['labor_contract_template', 'doc_template']
+    build('/?tab=templates')
+
+    expect(screen.getByText('bảng thư viện mẫu')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Mẫu hợp đồng lao động' })).toBeInTheDocument()
   })
 })

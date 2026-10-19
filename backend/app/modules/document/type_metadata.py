@@ -23,6 +23,8 @@ from app.core.leave_codes import (END_DAY_WORK_CREDIT, START_DAY_WORK_CREDIT,
 
 #  Mã loại văn bản — dùng ở nhiều nơi nên đặt hằng, đừng gõ chuỗi rải rác.
 LEAVE_DOC_TYPE = "GNP"
+#  duoc-CR-629: bản lưu trữ Hợp đồng lao động — chỉ sinh từ phân hệ Nhân sự.
+LABOR_CONTRACT_DOC_TYPE = "HDLD"
 
 #  Loại nghỉ và buổi khai ở `core/leave_codes.py` để `gen_status_ts.py` sinh bản
 #  TypeScript — danh sách này tuyệt đối không gõ tay hai lần ở hai đầu.

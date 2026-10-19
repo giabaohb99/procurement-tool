@@ -30,7 +30,7 @@
 | Mảng | Đường dẫn mã nguồn | Đã có | Thiếu |
 |---|---|---|---|
 | **Import batch** | `backend/app/modules/import_tool/` | 3 bảng `ImportBatch·ImportLog·ImportChange`; dry-run (`mode=0`); revert (`POST /api/imports/{id}/revert`); Celery `run_import`; gác quyền entity `import` (read/create/delete) | Chỉ chạy cho **Khảo sát** + **Đơn mua hàng** (hai importer viết tay: `survey_import.py`, `po_import.py`). Chưa có màn v2 |
-| **Import CSV danh mục** | `backend/app/core/crud.py:129` (`POST /{prefix}/import/csv`) | Đồng bộ; cho 8 danh mục (company, supplier, product, employee, warehouse, unit, item_group, department); gác bằng `write` | **Không** batch, **không** dry-run, **không** revert, **không** log — ghi thẳng, không dấu vết |
+| **Import CSV danh mục** | `backend/app/core/crud.py:129` (`POST /{prefix}/import/csv`) | *(duoc-CR-628: riêng **Nhân sự** và **Phòng ban** đã NGỪNG — trả 410, chuyển sang Nhập Excel qua batch.)* Đồng bộ; cho 8 danh mục (company, supplier, product, employee, warehouse, unit, item_group, department); gác bằng `write` | **Không** batch, **không** dry-run, **không** revert, **không** log — ghi thẳng, không dấu vết |
 | **Export CSV** | `crud.py:109` + 4 controller thủ công (employee, product, supplier, department) | Gác bằng **`read`** | Không log |
 | **Export XLSX** | `purchase_order·purchase_request·survey_request·report·document/export.py` | Gác bằng **`export`** | Không log |
 | **Phân quyền** | `backend/app/core/permissions.py` | Có action `export`; có **entity** `import` | **Không có action `import`**; export gác không nhất quán (`read` vs `export`) |
@@ -75,7 +75,7 @@ Cột **Khoá trùng** = trường dùng để phân biệt "tạo mới" hay "c
 |---|---|---|---|---|---|---|
 | **P0** | `company` | Công ty | ✅ | ✓ | `code` / `tax_code` | Cây pháp nhân: `parent` map theo `code` |
 | **P0** | `department` | Phòng ban | ✅ | ✓ | `code` | `parent` + `company` map theo `code`; kiêm nhiệm không nằm ở đây |
-| **P0** | `employee` | Nhân sự | ✅ | ✓ | `code` (mã NV) | Map `company`/`department` theo `code`; **không** tạo tài khoản đăng nhập qua import |
+| **P0** | `employee` | Nhân sự | ✅ | ✓ | `code` (mã NV) | **duoc-CR-628:** đủ hồ sơ (~38 cột kể cả nhạy cảm), ghi qua lõi `employee.service`, **cấm xóa**, ô trống = giữ; tham chiếu theo **mã** (công ty nhận cả tên/MST). **Không** tạo tài khoản đăng nhập qua import |
 | P1 | `supplier` | Nhà cung cấp | ✓ | ✓ | `code` / `tax_code` | `vat` lưu **tỷ lệ** 0.08 không phải 8 (CR-058) |
 | P1 | `product` | Sản phẩm / VTBB | ✓ | ✓ | `product_code` | ⚠️ **CẤM đổi/tái dùng `product_code`** (D-025). Import chỉ tạo mới hoặc sửa thuộc tính, không đụng mã |
 | P1 | `warehouse` | Kho | ✓ | ✓ | `code` | — |
@@ -463,9 +463,33 @@ gắn `moduleId` trong `import-meta`, export lấy `module` từ backend registr
 (product/supplier/department ở controller từng entity — **vẫn đang rò phạm vi**; export TẬP TRUNG mới
 thì đã áp scope).
 
+### 9.3 duoc-CR-628 — Nhập Excel Nhân sự (19/10/2026)
+
+Nút «Nhập Excel» ở `/hr/employees` (frontend-v2) mở `ImportUploadDialog` khóa đối tượng Nhân sự →
+chạy thử → ghi thật → hoàn tác trên khung `import_tool`. Chi tiết kế hoạch:
+`plans/261019-0935-nhap-excel-nhan-su-cr628/`.
+
+- **Hook adapter** trong `catalog_import.ADAPTERS[...]` (tùy chọn, adapter không khai thì y cũ):
+  `allow_delete` · `prepare` · `apply_row` · `finalize` · `revert` · `revert_blockers` ·
+  `template_notes` · `template_action_col` · `max_rows`. Nhân sự là adapter đầu tiên dùng:
+  `import_tool/employee_import.py` (hook) + `employee_import_fields.py` (cột, parse ô).
+- **Ghi qua lõi dịch vụ:** mỗi dòng gọi `employee.service.create_employee_core` / `update_employee_core`
+  (flush, KHÔNG commit/audit) trong SAVEPOINT; audit + xóa cache quyền chạy ở `finalize` sau commit.
+  Dry-run không khóa tài khoản (`lock_users=False`) nhưng báo WARNING «sẽ khóa».
+- **Gác kép** (`import_tool/controller.py::_MODULE_GUARDS`): `import.*` VÀ quyền `employee`
+  (tạo lô/ghi thật: `create` hoặc `write`; hoàn tác: `write`; tải tệp gốc: `employee_sensitive.read`).
+  Worker chạy dưới quyền + phạm vi của người tạo lô (`get_scoped` trước và SAU khi ghi).
+- **Cột nhạy cảm** cần `employee_sensitive.write`; thiếu quyền → bỏ các cột đó + 1 cảnh báo (không chặn cả tệp).
+- **Đã ngừng:** `POST /api/employees/import/csv`, `POST /api/departments/import/csv` → 410; v1 ẩn nút Import CSV
+  (Export CSV giữ nguyên). Phòng ban nhập qua Quản trị → Quản lý Import → Phòng ban.
+
 ---
 
 ## 10. Rủi ro / bẫy đã biết
+
+- **Nhập Excel Nhân sự (CR-628):** ô TRỐNG = giữ nguyên (chỉ `__/empty_value/__` mới xóa); không xóa nhân sự
+  qua tệp; mã tự sinh khi thiếu Mã NV (nhập lại tệp không mã sẽ đẻ trùng nếu thiếu email); bản chụp hoàn tác
+  `tab_import_change.snapshot` và tệp gốc chứa CCCD/STK bản rõ; hoàn tác KHÔNG mở lại tài khoản đã khóa.
 
 - **`product_code` bất biến** (D-025): adapter product **cấm** cập nhật `product_code`; sửa mã = tạo
   bản ghi mới → cảnh báo, không tự làm.

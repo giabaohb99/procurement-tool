@@ -106,7 +106,11 @@ function itemAllowed(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): boo
   if (item.entity) baseOk = entityAllowed(item, item.entity, can)
   //  Mục gom nhiều màn con: có quyền trên BẤT KỲ khóa nào là hiện, phần không
   //  được xem do chính trang tự ẩn. Xem `ModuleNavItem.entities`.
-  else if (item.entities?.length) baseOk = item.entities.some((khoa) => entityAllowed(item, khoa, can))
+  else if (item.entities?.length || item.readEntities?.length) {
+    baseOk =
+      Boolean(item.entities?.some((khoa) => entityAllowed(item, khoa, can))) ||
+      Boolean(item.readEntities?.some((khoa) => can(khoa, 'read') || entityAllowed(item, khoa, can)))
+  }
   //  Không khai khóa nào = luôn hiện (chủ ý — xem chú thích ở visibleNavItems).
   else baseOk = true
   //  Hiện thêm khi đọc được khóa phụ — nhưng vẫn phải ĐỌC được `entity` chính. Xem

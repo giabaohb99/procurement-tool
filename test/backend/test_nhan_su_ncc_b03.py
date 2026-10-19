@@ -16,7 +16,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.status_codes import EMPLOYEE_STATUS, SUPPLIER_LEGAL_TYPE
-from app.modules.employee.controller import _status_code
+from app.modules.employee.status_parse import status_code_from_text as _status_code
 from app.modules.employee.model import Employee
 from app.modules.employee.schema import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from app.modules.supplier.model import Supplier

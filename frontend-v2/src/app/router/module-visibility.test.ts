@@ -752,3 +752,33 @@ describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên ph�
     ])
   })
 })
+
+//  duoc-CR-629b: mẫu HĐLĐ chuyển vào «Thiết lập văn bản» nhưng quyền vẫn là `labor_contract_template`.
+describe('mẫu hợp đồng lao động trong Thiết lập văn bản', () => {
+  const documentModule = moduleRegistry.find((m) => m.id === 'document') as ErpModule
+  const hrModule = moduleRegistry.find((m) => m.id === 'hr') as ErpModule
+  const can = (grant: Partial<Record<PermissionAction, boolean>>) => (entity: PermissionEntity, action: PermissionAction) =>
+    entity === 'labor_contract_template' && grant[action] === true
+
+  it('«Thiết lập văn bản» mở được cho người chỉ có quyền quản lý mẫu HĐLĐ', () => {
+    for (const action of ['create', 'write', 'delete'] as const) {
+      expect(canAccessRoute(documentModule, '/document/settings', can({ [action]: true }))).toBe(true)
+    }
+    expect(canAccessRoute(documentModule, '/document/settings', can({}))).toBe(false)
+  })
+
+  it('người chỉ ĐỌC mẫu HĐLĐ vẫn vào được Thiết lập văn bản (xem, không sửa)', () => {
+    expect(canAccessRoute(documentModule, '/document/settings', can({ read: true }))).toBe(true)
+  })
+
+  it('người chỉ đọc các danh mục Văn bản khác (không có khóa mẫu HĐLĐ) vẫn bị chặn', () => {
+    const readOnlyDocCatalog = (entity: PermissionEntity, action: PermissionAction) =>
+      entity === 'doc_template' && action === 'read'
+    expect(canAccessRoute(documentModule, '/document/settings', readOnlyDocCatalog)).toBe(false)
+  })
+
+  it('trình soạn cũ /hr/labor-contract-templates/:id/edit vẫn bị gác bằng khóa mẫu HĐLĐ', () => {
+    expect(canAccessRoute(hrModule, '/hr/labor-contract-templates/5/edit', can({}))).toBe(false)
+    expect(canAccessRoute(hrModule, '/hr/labor-contract-templates/5/edit', can({ read: true }))).toBe(true)
+  })
+})

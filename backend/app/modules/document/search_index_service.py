@@ -16,6 +16,7 @@ from app.core.text_fold import fold
 from app.modules.attachment.model import FileLink, StoredFile
 
 from . import search_extract
+from . import labor_contract_archive_access as archive_access
 from .model import Document
 from .search_model import DocumentSearch
 from .service import ATTACH_ENTITY
@@ -149,7 +150,9 @@ def reindex(db: Session, document_id: int) -> DocumentSearch | None:
     row = db.get(DocumentSearch, document_id)
     #  ai-CR-177: văn bản đã XÓA MỀM coi như không còn — gỡ dòng chỉ mục để FULLTEXT không
     #  trả về nó (lớp chặn thứ hai, ngoài `documents_query` ở tập ứng viên).
-    if doc is None or doc.is_deleted:
+    #  duoc-CR-629: bản lưu trữ HĐLĐ (có lương/CCCD) KHÔNG bao giờ vào chỉ mục toàn văn — chỉ mục là
+    #  dữ liệu dẫn xuất, tìm kiếm của văn thư không được thấy nó dù đi qua `visible_condition`.
+    if doc is None or doc.is_deleted or archive_access.is_archive_document(db, doc):
         if row is not None:
             db.delete(row)
             db.commit()

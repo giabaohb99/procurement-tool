@@ -1,6 +1,6 @@
 # Phase 04 — FE: nút «Văn bản lưu trữ»
 
-**Ưu tiên:** P3 · **Trạng thái:** pending · **Effort:** 1.5h · **Phụ thuộc:** 03 (chỉ cần hợp đồng API: `document_id`, `can_open_document`)
+**Ưu tiên:** P3 · **Trạng thái:** done · **Effort:** 1.5h · **Phụ thuộc:** 03 (chỉ cần hợp đồng API: `document_id`, `can_open_document`)
 **Sở hữu tệp:** `frontend-v2/src/modules/hr/{types/labor-contract.ts, components/labor-contract-row-actions*.tsx, components/labor-contract-fixture.ts}`
 
 ## Context

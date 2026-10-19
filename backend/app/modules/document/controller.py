@@ -32,6 +32,7 @@ from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
 from app.core.response import success
 
+from . import labor_contract_archive_access as archive_access
 from . import (access_service, approval_bridge, duplicate_service, import_service, numbering,
                serializer, service, version_service)
 from .model import ORIGIN_INTERNAL, Document
@@ -124,7 +125,8 @@ def doc_reader(user=Depends(get_current_user)):
     return user
 
 
-def _load(db: Session, document_id: int, user, action: str = "read") -> Document:
+def _load(db: Session, document_id: int, user, action: str = "read", *,
+          derived: bool = False) -> Document:
     """Lấy văn bản và kiểm quyền TRÊN CHÍNH nó.
 
     Mọi endpoint làm việc với một văn bản đều phải qua đây. `ensure_can` trả 404
@@ -133,6 +135,10 @@ def _load(db: Session, document_id: int, user, action: str = "read") -> Document
     """
     doc = service.get_or_404(db, document_id)
     access_service.ensure_can(db, doc, user, get_perm_profile(db, user), action)
+    #  duoc-CR-629: `derived=True` = thao tác chỉ cần quyền ĐỌC nhưng TẠO / ĐỔI TRẠNG THÁI văn bản
+    #  (sao chép, clone, trích, ký, duyệt, trả về, bỏ nháp) — bản lưu trữ HĐLĐ bị chặn 409.
+    if derived:
+        archive_access.ensure_not_archive(db, doc)
     return doc
 
 
@@ -404,6 +410,7 @@ def create_document(
     db: Session = Depends(get_db),
     user=Depends(require("document", "create")),
 ):
+    archive_access.ensure_not_system_type(db, data.doc_type_id)   # duoc-CR-629: loại HDLD chỉ do Nhân sự sinh
     doc = service.create_document(db, data, user.id, user=user)
     record(db, user.id, "document", doc.id, "create", f"Tạo văn bản {doc.title}")
     return success(serializer.serialize(db, doc, user=user), "Đã tạo văn bản", 201)
@@ -419,7 +426,7 @@ def duplicate_document(
 
     Đây KHÔNG phải API clone xuống pháp nhân con ở ``clone_controller``.
     """
-    source = _load(db, document_id, user)
+    source = _load(db, document_id, user, derived=True)
     copied = duplicate_service.duplicate(db, source, user.id)
     record(db, user.id, "document", copied.id, "create",
            f"Sao chép từ văn bản #{source.id}: {source.title}")
@@ -434,6 +441,8 @@ def update_document(
     user=Depends(require("document", "write")),
 ):
     doc = _load(db, document_id, user, "write")
+    if data.doc_type_id is not None and data.doc_type_id != doc.doc_type_id:
+        archive_access.ensure_not_system_type(db, data.doc_type_id)   # duoc-CR-629
     doc = service.update_document(db, doc, data, user.id, user=user)
     record(db, user.id, "document", doc.id, "update")
     return success(serializer.serialize(db, doc, user=user), "Đã cập nhật")
@@ -470,7 +479,7 @@ def discard_draft(
 
     Đi cùng `create` chứ không phải `delete`: xem `service.bo_ban_nhap_cua_minh`.
     """
-    doc = _load(db, document_id, user, "read")
+    doc = _load(db, document_id, user, "read", derived=True)
     service.discard_own_draft(db, doc, user.id)
     record(db, user.id, "document", document_id, "delete", "Bỏ bản nháp đang soạn dở")
     return success(None, "Đã bỏ bản nháp")
@@ -508,7 +517,7 @@ def approve_document(
     db: Session = Depends(get_db),
     user=Depends(require("document", "approve")),
 ):
-    doc = _load(db, document_id, user)
+    doc = _load(db, document_id, user, derived=True)
     #  ĐÃ KÝ ĐỦ, CHỜ BAN HÀNH — nhịp này là của NGƯỜI SOẠN THẢO, không phải của
     #  người có quyền duyệt. Kiểm trước `chan_duong_cu` để câu báo nói đúng
     #  chuyện đang xảy ra thay vì câu chung về luồng nhiều bước.
@@ -664,7 +673,7 @@ def reject_document(
     db: Session = Depends(get_db),
     user=Depends(require("document", "approve")),
 ):
-    doc = _load(db, document_id, user)
+    doc = _load(db, document_id, user, derived=True)
     approval_bridge.block_legacy_path(db, doc)
     doc = service.send_back(db, doc, data.reason, user.id)
     record(db, user.id, "document", doc.id, "update", f"Trả về: {data.reason}")

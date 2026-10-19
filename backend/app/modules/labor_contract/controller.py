@@ -16,7 +16,7 @@ from app.core.labor_contract_codes import LABOR_CONTRACT_STATUS_LABELS, LaborCon
 from app.core.response import success
 from app.core.vn_time import vn_today
 
-from . import access, expiry_service, generate_service, service
+from . import access, document_archive_sync, expiry_service, generate_service, service
 from .file_response import DOCX_MIME, download_response, load_bytes
 from .model import LaborContract
 from .schema import GenerateIn, LaborContractCreate, LaborContractUpdate, TransitionIn
@@ -33,6 +33,12 @@ def _scoped(db: Session, cid: int, user, profile: dict, action: str, lock: bool 
 
 def _item(db: Session, row: LaborContract, user, profile: dict) -> dict:
     return serialize_contracts(db, [row], user, profile)[0]
+
+
+def _archive(db: Session, row: LaborContract, user) -> None:
+    """duoc-CR-629: đồng bộ bản lưu trữ ở Văn bản SAU khi nghiệp vụ HĐ đã commit (best-effort, không ném lỗi)."""
+    document_archive_sync.archive_sync(db, row.id, user.id)
+    db.refresh(row)
 
 
 def _audit(db: Session, user, row: LaborContract, action: str, message: str) -> None:
@@ -79,6 +85,7 @@ def create_contract(eid: int, data: LaborContractCreate, db: Session = Depends(g
     profile = get_perm_profile(db, user)
     emp = service.get_employee_or_404(db, eid)
     row, warnings = service.create(db, user, profile, emp, data)
+    _archive(db, row, user)
     _audit(db, user, row, "create", f"Lập hợp đồng lao động cho {emp.full_name}")
     return success({"item": _item(db, row, user, profile), "warnings": warnings},
                    "Đã lập hợp đồng lao động", 201)
@@ -112,6 +119,7 @@ def update_contract(cid: int, data: LaborContractUpdate, db: Session = Depends(g
                     user=Depends(require(ENTITY, "write"))):
     profile = get_perm_profile(db, user)
     row, warnings = service.update(db, user, _scoped(db, cid, user, profile, "write", lock=True), data)
+    _archive(db, row, user)
     _audit(db, user, row, "update", "Sửa hợp đồng lao động")
     return success({"item": _item(db, row, user, profile), "warnings": warnings}, "Đã cập nhật")
 
@@ -130,6 +138,7 @@ def delete_contract(cid: int, db: Session = Depends(get_db), user=Depends(requir
     row = _scoped(db, cid, user, profile, "delete", lock=True)
     code = row.code
     service.delete(db, row, user.id)
+    document_archive_sync.archive_sync(db, cid, user.id)
     audit_record(db, user.id, ENTITY, cid, "delete", "Xóa mềm hợp đồng lao động", doc_code=code)
     return success(None, "Đã xóa hợp đồng lao động")
 
@@ -140,6 +149,7 @@ def generate_document(cid: int, data: GenerateIn, db: Session = Depends(get_db),
     profile = get_perm_profile(db, user)
     _scoped(db, cid, user, profile, "write")
     row, template_name = generate_service.generate(db, user, cid, data.template_id)
+    _archive(db, row, user)
     _audit(db, user, row, "update", f"Sinh tệp hợp đồng từ mẫu «{template_name}»")
     return success(_item(db, row, user, profile), "Đã sinh tệp hợp đồng")
 
@@ -160,6 +170,7 @@ def upload_signed_file(cid: int, file: UploadFile = File(...), db: Session = Dep
     profile = get_perm_profile(db, user)
     row = generate_service.save_signed_file(db, user, _scoped(db, cid, user, profile, "write", lock=True),
                                             file.file, file.filename or "")
+    _archive(db, row, user)
     _audit(db, user, row, "update", "Tải bản hợp đồng đã ký")
     return success(_item(db, row, user, profile), "Đã lưu bản đã ký")
 
@@ -178,5 +189,6 @@ def transition_contract(cid: int, data: TransitionIn, db: Session = Depends(get_
                         user=Depends(require(ENTITY, "write"))):
     profile = get_perm_profile(db, user)
     row = service.transition(db, user, _scoped(db, cid, user, profile, "write", lock=True), data)
+    _archive(db, row, user)
     _audit(db, user, row, "document_status", f"Chuyển trạng thái hợp đồng sang «{LABOR_CONTRACT_STATUS_LABELS[LaborContractStatus(int(row.status))]}»")
     return success(_item(db, row, user, profile), "Đã chuyển trạng thái")

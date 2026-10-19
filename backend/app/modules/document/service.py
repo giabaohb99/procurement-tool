@@ -166,7 +166,8 @@ def _existing_folder_ids(db: Session, document_id: int) -> set[int]:
 
 
 # ── Tạo / sửa / xóa ──────────────────────────────────────────────────────────
-def create_document(db: Session, data: DocumentCreate, actor: int, *, user=None) -> Document:
+def create_document(db: Session, data: DocumentCreate, actor: int, *, user=None,
+                    commit: bool = True) -> Document:
     """Tạo văn bản + phiên bản 1.0 trong CÙNG một transaction.
 
     Cùng transaction là bắt buộc chứ không phải cho gọn: nếu cấp số xong mà ghi
@@ -253,6 +254,12 @@ def create_document(db: Session, data: DocumentCreate, actor: int, *, user=None)
     #  cũng rollback sạch (H3).
     folder_link_service.stage_folders(db, doc, data.folder_ids, data.primary_folder_id, actor,
                                       user=user)
+
+    #  `commit=False` (duoc-CR-629): nơi gọi muốn ghi thêm một liên kết CÙNG giao dịch (HĐLĐ -> bản lưu
+    #  trữ) rồi tự commit; văn bản chưa hiện cho ai và KHÔNG xếp hàng chỉ mục (bản lưu trữ không vào chỉ mục).
+    if not commit:
+        db.flush()
+        return doc
 
     db.commit()
     db.refresh(doc)

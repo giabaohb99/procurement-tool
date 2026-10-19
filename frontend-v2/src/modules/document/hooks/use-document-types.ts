@@ -26,10 +26,22 @@ export function useDocumentTypes() {
   return { ...query, items }
 }
 
-/** Loại đang bật — dùng cho ô chọn loại khi tạo văn bản. */
+/**
+ * Loại do HỆ THỐNG sinh (bản lưu trữ hợp đồng lao động, duoc-CR-629) — backend từ chối tạo / đổi sang loại này
+ * (400) nên không đưa vào ô chọn loại.
+ */
+export const SYSTEM_ONLY_DOC_TYPE_CODES: readonly string[] = ['HDLD']
+
+/** Loại đang bật và người dùng chọn được — dùng cho ô chọn loại khi tạo / sửa văn bản. */
 export function useActiveDocumentTypes(): DocumentType[] {
   const { items } = useDocumentTypes()
-  return useMemo(() => items.filter((item) => item.is_active), [items])
+  return useMemo(
+    () =>
+      items.filter(
+        (item) => item.is_active && !SYSTEM_ONLY_DOC_TYPE_CODES.includes(item.code.toUpperCase()),
+      ),
+    [items],
+  )
 }
 
 export function useDocumentType(id?: number) {

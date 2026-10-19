@@ -8,10 +8,12 @@ import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { DetailPageShell } from '../components/detail-page-shell'
+import { DocumentSystemTypeView } from '../components/document-system-type-view'
 import { DocumentTypeForm } from '../components/document-type-form'
 import { DocumentTypeLinkRulesCard } from '../components/document-type-link-rules-card'
 import { useSaveDocumentLinkRules } from '../hooks/use-document-link-rules'
 import {
+  SYSTEM_ONLY_DOC_TYPE_CODES,
   useDeleteDocumentType,
   useDocumentType,
   useSaveDocumentType,
@@ -78,6 +80,11 @@ export function DocumentTypeDetailPage() {
         </Button>
       </ErrorState>
     )
+  }
+
+  // Loại hệ thống (HDLD): chỉ xem — backend khóa mọi cờ và không cho xóa (duoc-CR-629).
+  if (documentType && SYSTEM_ONLY_DOC_TYPE_CODES.includes(documentType.code.toUpperCase())) {
+    return <DocumentSystemTypeView documentType={documentType} onBack={backToList} />
   }
 
   return (

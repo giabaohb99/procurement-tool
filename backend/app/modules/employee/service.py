@@ -1,3 +1,5 @@
+from dataclasses import dataclass, field
+
 from fastapi import HTTPException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
@@ -210,7 +212,10 @@ def ensure_email_unique(db: Session, email: str, exclude_id: int = 0) -> str:
     return clean
 
 
-def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
+def create_employee_core(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
+    """Lõi tạo hồ sơ: kiểm + gán + `flush`. KHÔNG commit, KHÔNG `record()` (record luôn commit —
+    BM-013) — bên gọi tự quyết giao dịch. duoc-CR-628: nhập Excel gọi lõi này trong SAVEPOINT từng dòng
+    để dry-run rollback được; `create_employee` là vỏ commit + audit của màn hồ sơ."""
     if not data.code:
         data.code = generate_code(db, Employee, "NSU")
     elif db.query(Employee).filter(Employee.code == data.code).first():
@@ -232,6 +237,11 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
     db.add(obj)
     db.flush()
     _sync_primary_department(db, obj, user_id)
+    return obj
+
+
+def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
+    obj = create_employee_core(db, data, user_id)
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "create")
@@ -337,8 +347,23 @@ def _revoke_bot_access(db: Session, user_id: int) -> None:
     revoke_user(db, user_id)
 
 
-def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
-    obj = get_employee(db, eid)
+@dataclass
+class WriteOutcome:
+    """Kết quả lõi sửa hồ sơ — bên gọi tự quyết commit / audit / xóa cache (duoc-CR-628)."""
+    obj: Employee
+    notes: list[str] = field(default_factory=list)   # «Đổi pháp nhân — gỡ…», «Nghỉ việc — khóa N TK…»
+    left_company: bool = False                         # lần ghi này vừa đưa hồ sơ sang NGHỈ VIỆC
+    scope_changed: bool = False                        # (company_id, department_id) đổi → cần xóa cache quyền
+    locked_users: list = field(default_factory=list)
+
+
+def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_id: int, *,
+                         lock_users: bool = True) -> WriteOutcome:
+    """Lõi sửa hồ sơ: kiểm + gán + `flush`. KHÔNG commit/refresh/record/xóa cache — xem
+    `create_employee_core`. Lỗi thì ném ra, bên gọi lo rollback (hoặc savepoint).
+
+    `lock_users=False`: vẫn báo `left_company` nhưng KHÔNG khóa tài khoản/đá phiên/gọi dịch vụ AI —
+    dành cho chạy thử (dry-run) và hoàn tác lô."""
     old_email = (obj.email or "").strip()
     #  bao-CR-400: chụp hai ô "còn làm không" để biết lần lưu này có phải là lúc
     #  người ta nghỉ việc — xem `has_left_company`.
@@ -372,44 +397,24 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     if "department_id" in fields:
         _sync_primary_department(db, obj, user_id)
 
-    # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Ô ở màn Nhân sự nay là
-    # "Vị trí / Chức vụ" (`position`) — chỉ là chữ để hiển thị/in phiếu. Quyền thật của tài khoản
-    # chỉ gán ở màn "Phân quyền tài khoản" (tab_user_role), không có đường đồng bộ ngầm nào nữa.
+    # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Quyền thật của tài khoản
+    # chỉ gán ở màn "Phân quyền tài khoản" (tab_user_role).
 
-    # Đồng bộ email sang tài khoản đăng nhập (User.email) để đăng nhập bằng email được.
-    # CHỈ khớp trong 2 trường hợp an toàn (tránh ghi đè "handle đăng nhập" như admin/TESTREQ mà
-    # ai đó cố tình đặt khác email nhân sự):
-    #   (a) User.email đang RỖNG → điền email nhân sự (đúng ca bug: tạo TK khi chưa có email, sau đó
-    #       thêm email vào nhân sự — kể cả email đã nhập TRƯỚC bản vá, lần lưu sau tự khớp);
+    # Đồng bộ email sang tài khoản đăng nhập (User.email). CHỈ khớp trong 2 trường hợp an toàn:
+    #   (a) User.email đang RỖNG → điền email nhân sự;
     #   (b) admin THỰC SỰ đổi field email trong lần lưu này (old != new) → đẩy email mới sang.
     email_changed = "email" in fields and (obj.email or "").strip() != old_email
-    # bao-CR-368: TRƯỚC ĐÂY chỗ này nằm SAU `db.commit()`. Khi email đụng tài khoản khác,
-    # hàm dưới ném lỗi 400 — nhưng hồ sơ nhân sự thì đã ghi xong rồi: người dùng thấy báo đỏ mà
-    # dữ liệu vẫn đổi, tức là "lỗi nhưng không hoàn tác". Nay gom lại MỘT giao dịch: kiểm hết,
-    # gán hết, rồi mới commit một lần; vướng chỗ nào là trả cả lần lưu về nguyên trạng.
+    # bao-CR-368: kiểm hết, gán hết trong MỘT giao dịch rồi bên gọi mới commit một lần; vướng chỗ nào
+    # là trả cả lần lưu về nguyên trạng. Mọi bước ở đây chỉ `flush`, không tự commit.
     #
-    # ⚠️ Trên nhánh v2 lần lưu này còn kéo theo hai việc nữa (gỡ phòng ban của pháp nhân cũ,
-    # đồng bộ phòng chính) — cả hai chỉ `flush`, không tự commit — nên chúng phải nằm TRÊN
-    # chốt này để cùng chung một giao dịch. Đẩy `commit` lên sớm là hồ sơ đổi phòng ban xong
-    # mà email vẫn báo lỗi, đúng kiểu hỏng mà bao-CR-368 sinh ra để dẹp.
-    #
-    #  bao-CR-400: nghỉ việc thì KHÓA tài khoản + đá phiên ngay trong CÙNG giao dịch
-    #  này. Nằm trong `try` để email lỗi thì việc khóa cũng hoàn tác theo, không
-    #  có cảnh hồ sơ chưa lưu mà người ta đã bị văng ra. KHÔNG có chiều ngược:
-    #  mở lại hồ sơ không tự mở tài khoản — HR mở tay ở màn Tài khoản, vì "quay
-    #  lại làm" là một quyết định, còn "bấm nhầm trạng thái" thì không được phép
-    #  âm thầm trả lại quyền vào hệ thống.
-    locked_users = []
-    try:
-        _sync_user_email_from_employee(db, obj, email_changed)
-        if has_left_company(fields, obj, old_status, old_active):
-            from app.modules.login_session.constants import RevokeReason
-            locked_users = lock_linked_users(db, obj.id, user_id, RevokeReason.EMPLOYEE_RESIGNED)
-    except Exception:
-        db.rollback()
-        raise
-    db.commit()
-    db.refresh(obj)
+    #  bao-CR-400: nghỉ việc thì KHÓA tài khoản + đá phiên ngay trong CÙNG giao dịch. KHÔNG có chiều
+    #  ngược: mở lại hồ sơ không tự mở tài khoản — "quay lại làm" là một quyết định của HR.
+    _sync_user_email_from_employee(db, obj, email_changed)
+    left = has_left_company(fields, obj, old_status, old_active)
+    locked_users: list = []
+    if left and lock_users:
+        from app.modules.login_session.constants import RevokeReason
+        locked_users = lock_linked_users(db, obj.id, user_id, RevokeReason.EMPLOYEE_RESIGNED)
     #  Nói ra phòng nào bị gỡ. Gỡ âm thầm thì tháng sau không ai tra được vì sao
     #  một người mất phòng ban.
     notes = []
@@ -419,15 +424,30 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     if locked_users:
         notes.append(f"Nghỉ việc — khóa {len(locked_users)} tài khoản đăng nhập kèm theo "
                      f"và đăng xuất mọi thiết bị")
-    record(db, user_id, ENTITY, obj.id, "update", "; ".join(notes))
+    return WriteOutcome(
+        obj=obj, notes=notes, left_company=left,
+        scope_changed=(obj.company_id or 0, obj.department_id or 0) != old_scope,
+        locked_users=locked_users)
+
+
+def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
+    obj = get_employee(db, eid)
+    try:
+        out = update_employee_core(db, obj, data, user_id)
+    except Exception:
+        db.rollback()
+        raise
+    db.commit()
+    db.refresh(obj)
+    record(db, user_id, ENTITY, obj.id, "update", "; ".join(out.notes))
     #  Mỗi tài khoản một dòng riêng trên entity `user` — cùng khuôn với
     #  `user/service.set_active`, để màn Tài khoản tra được "ai khóa, khi nào".
-    for u in locked_users:
+    for u in out.locked_users:
         record(db, user_id, "user", u.id, "deactivate",
                f"Khóa tài khoản {u.email or u.id} vì hồ sơ nhân sự {obj.code} nghỉ việc")
     #  ⚠️ Sau `commit` chứ không trước: xóa cache rồi mới ghi thì một request khác
     #  chen vào giữa sẽ dựng lại hồ sơ CŨ và cache thêm 60 giây nữa.
-    if (obj.company_id or 0, obj.department_id or 0) != old_scope:
+    if out.scope_changed:
         clear_perm_cache_of(db, obj.id)
     return obj
 
@@ -481,7 +501,8 @@ def detach_users(db: Session, eid: int, actor_id: int) -> int:
     return len(users)
 
 
-def delete_employee(db: Session, eid: int, user_id: int) -> int:
+def delete_employee_core(db: Session, eid: int, user_id: int) -> int:
+    """Lõi xóa hồ sơ + dọn bảng con. KHÔNG commit/record. Trả số tài khoản đã khóa."""
     from app.modules.labor_contract import service as labor_contract_service
 
     from . import contact_service, work_history_service
@@ -512,6 +533,12 @@ def delete_employee(db: Session, eid: int, user_id: int) -> int:
     db.query(Employee).filter(Employee.manager_id == eid).update(
         {Employee.manager_id: 0, Employee.updated_by: user_id}, synchronize_session=False)
     db.delete(obj)
+    db.flush()
+    return locked
+
+
+def delete_employee(db: Session, eid: int, user_id: int) -> int:
+    locked = delete_employee_core(db, eid, user_id)
     db.commit()
     msg = f"Khoá {locked} tài khoản đăng nhập kèm theo" if locked else ""
     record(db, user_id, ENTITY, eid, "delete", msg)

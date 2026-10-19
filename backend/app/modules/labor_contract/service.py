@@ -176,7 +176,11 @@ def delete_all_of(db: Session, eid: int) -> None:
     rows = db.query(LaborContract).filter(LaborContract.employee_id == eid,
                                           (LaborContract.status.in_(_CLOSED))
                                           | (LaborContract.is_deleted == True)).all()  # noqa: E712
+    from .document_archive_sync import soft_delete_archive_of   # duoc-CR-629 (import cục bộ: tránh vòng)
+
     for r in rows:
+        #  Bản lưu trữ ở Văn bản: HĐ sắp mất nên xóa MỀM văn bản cùng giao dịch (bản sao tệp giữ nguyên).
+        soft_delete_archive_of(db, r, 0)
         for fid in (r.generated_file_id, r.signed_file_id):
             if fid:
                 delete_stored_file(db, fid)

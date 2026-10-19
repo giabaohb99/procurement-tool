@@ -16,14 +16,12 @@ import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
-import { PageContainer } from '@/shared/ui/page-container'
-import { PageHeader } from '@/shared/ui/page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { laborContractTemplateApi } from '../api/labor-contract-template-api'
-import { LaborContractPlaceholderGuideDialog } from '../components/labor-contract-placeholder-guide-dialog'
-import { LaborContractTemplateEditDialog } from '../components/labor-contract-template-edit-dialog'
-import { LaborContractTemplateUploadDialog } from '../components/labor-contract-template-upload-dialog'
+import { LaborContractPlaceholderGuideDialog } from './labor-contract-placeholder-guide-dialog'
+import { LaborContractTemplateEditDialog } from './labor-contract-template-edit-dialog'
+import { LaborContractTemplateUploadDialog } from './labor-contract-template-upload-dialog'
 import { buildLaborContractTemplateColumns } from '../config/labor-contract-template-columns'
 import { useCompanies } from '../hooks/use-companies'
 import {
@@ -32,14 +30,19 @@ import {
   useUpdateLaborContractTemplate,
 } from '../hooks/use-labor-contract-templates'
 import type { LaborContractTemplate } from '../types/labor-contract'
+import { SCROLL_TABS_TOOLBAR_STICKY } from '../utils/list-sticky'
 
 const ALL = 'all'
 
 /**
- * MẪU HỢP ĐỒNG LAO ĐỘNG theo pháp nhân (.docx).
- * Quyền thật do backend gác; ở đây ẩn nút theo `can()` và tự chặn khi thiếu quyền đọc.
+ * MẪU HỢP ĐỒNG LAO ĐỘNG theo pháp nhân (.docx) — thân bảng, đặt trong tab «Thư viện văn bản mẫu»
+ * của phân hệ Văn bản (duoc-CR-629b bước A). Tách riêng một tệp để bước gộp dữ liệu sau này (nếu có)
+ * chỉ phải đổi nguồn dữ liệu ở đây.
+ *
+ * Quyền thật do backend gác (`labor_contract_template`); ở đây ẩn nút theo `can()` và tự chặn khi
+ * thiếu quyền đọc (không gọi API).
  */
-export function LaborContractTemplateListPage() {
+export function LaborContractTemplateCatalog() {
   const { can } = usePermission()
   const canRead = can('labor_contract_template', 'read')
   const canCreate = can('labor_contract_template', 'create')
@@ -97,37 +100,14 @@ export function LaborContractTemplateListPage() {
   )
 
   if (!canRead) {
-    return (
-      <PageContainer>
-        <PageHeader title="Mẫu hợp đồng" description="Bạn không có quyền xem màn này." />
-      </PageContainer>
-    )
+    return <p className="text-sm text-muted-foreground">Bạn không có quyền xem màn này.</p>
   }
 
   const isFiltering =
     Boolean(debouncedValue) || companyId !== ALL || contractType !== ALL || active !== ALL
 
   return (
-    <PageContainer fill>
-      <PageHeader
-        title="Mẫu hợp đồng"
-        description="Mẫu Word (.docx) lập hợp đồng lao động của từng pháp nhân."
-        actions={
-          <div className="flex gap-2 max-md:w-full">
-            <Button type="button" variant="outline" onClick={() => setGuideOpen(true)}>
-              <BookOpen className="size-4" />
-              Danh sách biến
-            </Button>
-            {canCreate && (
-              <Button type="button" onClick={() => setUploadOpen(true)}>
-                <Plus className="size-4" />
-                Tải lên mẫu
-              </Button>
-            )}
-          </div>
-        }
-      />
-
+    <>
       <Card className="flex min-h-0 flex-1 flex-col p-4">
         <DataTable
           fillHeight
@@ -150,6 +130,7 @@ export function LaborContractTemplateListPage() {
             onPageSizeChange: setPageSize,
             unitLabel: 'mẫu',
           }}
+          toolbarClassName={SCROLL_TABS_TOOLBAR_STICKY}
           toolbar={
             <>
               <SearchField value={keyword} onChange={setKeyword} placeholder="Tìm theo tên mẫu…"
@@ -180,6 +161,18 @@ export function LaborContractTemplateListPage() {
                   <SelectItem value="false">Ngừng</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex gap-2 max-md:w-full md:ml-auto">
+                <Button type="button" variant="outline" onClick={() => setGuideOpen(true)}>
+                  <BookOpen className="size-4" />
+                  Danh sách biến
+                </Button>
+                {canCreate && (
+                  <Button type="button" onClick={() => setUploadOpen(true)}>
+                    <Plus className="size-4" />
+                    Tải lên mẫu
+                  </Button>
+                )}
+              </div>
             </>
           }
         />
@@ -193,6 +186,6 @@ export function LaborContractTemplateListPage() {
       />
       <LaborContractTemplateEditDialog template={editing} onOpenChange={(next) => !next && setEditing(null)} />
       <LaborContractPlaceholderGuideDialog open={guideOpen} onOpenChange={setGuideOpen} />
-    </PageContainer>
+    </>
   )
 }

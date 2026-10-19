@@ -245,6 +245,11 @@ export const appRoutes = {
     documentsTab: (tab: 'incoming' | 'outgoing') =>
       tab === 'outgoing' ? '/document/documents' : `/document/documents?tab=${tab}`,
     documentNew: '/document/documents/new',
+    /**
+     * Mẫu hợp đồng lao động (.docx) — nay nằm trong «Thư viện văn bản mẫu» (duoc-CR-629b bước A).
+     * Quyền vẫn là `labor_contract_template`, dữ liệu vẫn ở `/api/labor-contract-templates`.
+     */
+    laborContractTemplates: '/document/settings?tab=templates&kind=labor-contract',
     documentDetail: (id: number | string) => `/document/documents/${id}`,
     //  Bản in nằm NGOÀI khung phân hệ (không menu, không thanh tiêu đề) — cùng
     //  chỗ với bản in của Mua hàng.

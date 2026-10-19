@@ -38,6 +38,7 @@ from app.core.subject_match import (EFFECT_ALLOW, EFFECT_DENY, SUBJECT_COMPANY,
                                     still_live_condition)
 
 from .access_model import DocumentAccess
+from . import labor_contract_archive_access as archive_access
 from . import revoke_access
 from .model import Document
 
@@ -279,9 +280,10 @@ def visible_condition(user, profile: dict, action: str = "read"):
     if restriction is not None:
         direct = restriction if direct is None else and_(direct, restriction)
 
-    #  `None` = đã thấy tất cả, không cần cộng nguồn quyền nào. Các hành động
-    #  sửa / xóa tuyệt đối không được kéo theo từ bản clone sang bản gốc.
-    return direct
+    #  duoc-CR-629: BẢN LƯU TRỮ HĐLĐ — mọi nguồn quyền ở trên (phạm vi `document`, chia đích danh,
+    #  sổ, duyệt, clone) KHÔNG tính; chỉ `labor_contract.read` trong phạm vi mới thấy.
+    #  ⚠️ Từ nay hàm này KHÔNG còn trả `None` (luôn có vế loại bản lưu trữ).
+    return archive_access.wrap_visible(direct, user, profile, action)
 
 
 def approving_this_document(db: Session, document_id: int, employee_id: int | None) -> bool:
@@ -330,7 +332,8 @@ def has_visible_clone(db: Session, source_document_id: int, user,
     return query.first() is not None
 
 
-def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -> bool:
+def can(db: Session, doc: Document, user, profile: dict, action: str = "read", *,
+        _archive_checked: bool = False) -> bool:
     """Người này có được `action` trên ĐÚNG văn bản này không.
 
     ⚠️ **KHÔNG ĐỌC ĐƯỢC THÌ KHÔNG LÀM GÌ ĐƯỢC** (thêm 22/08/2026).
@@ -345,7 +348,18 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read") -
     Sửa thứ mình không mở được là vô nghĩa ở mọi tình huống, nên chặn một lần ở
     đây thay vì vá từng nguồn quyền.
     """
-    if action != "read" and not can(db, doc, user, profile, "read"):
+    #  duoc-CR-629: bản lưu trữ HĐLĐ — đặt TRƯỚC mọi thứ (cả lần đệ quy `read` bên dưới): chỉ
+    #  đọc, và chỉ người đọc được HĐ gốc. Không nguồn quyền nào của Văn bản được tính.
+    #  `_archive_checked`: lần gọi đệ quy `read` từ chính `can(write…)` — đã kiểm bản lưu trữ ở ngay trên, khỏi hỏi lại.
+    if not _archive_checked:
+        contract = archive_access.contract_of(db, doc)
+        if contract is not None:
+            return action == "read" and archive_access.can_read(db, contract, user, profile)
+        #  Loại HDLD mà không HĐ nào trỏ tới (mồ côi) — không ai đọc, kể cả quản trị (review M1).
+        if archive_access.is_orphan_archive_type(db, doc):
+            return False
+
+    if action != "read" and not can(db, doc, user, profile, "read", _archive_checked=True):
         return False
 
     #  ĐÃ BÃI BỎ thì chặn TRƯỚC mọi khe cấp quyền bên dưới — người duyệt cũ,

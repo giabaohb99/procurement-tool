@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
 import { extractErrorMessage } from '@/core/api'
@@ -24,14 +25,36 @@ export function useImports(params: ImportListParams) {
   })
 }
 
-/** Chi tiết một batch — auto-poll khi batch còn Chờ/Đang chạy. */
+/**
+ * Chi tiết một batch — auto-poll khi batch còn Chờ/Đang chạy. Khi batch CHUYỂN từ Chờ/Đang chạy sang
+ * trạng thái cuối (Xong/Lỗi) thì làm mới luôn nhật ký của nó: worker ghi log lúc kết thúc, trang đã mở
+ * từ trước chỉ có danh sách log rỗng cho tới khi người dùng F5.
+ */
 export function useImportBatch(id: number) {
-  return useQuery({
+  const queryClient = useQueryClient()
+  const query = useQuery({
     queryKey: queryKeys.system.importDetail(id),
     queryFn: () => importApi.get(id),
     enabled: Number.isFinite(id) && id > 0,
-    refetchInterval: (query) => (query.state.data && isImportRunning(query.state.data.status) ? 4000 : false),
+    refetchInterval: (q) => (q.state.data && isImportRunning(q.state.data.status) ? 4000 : false),
   })
+
+  const status = query.data?.status
+  const prevRunning = useRef<boolean | null>(null)
+  //  Đổi sang lô khác: quên trạng thái của lô trước, kẻo «đang chạy → xong» bị suy từ hai lô khác nhau.
+  useEffect(() => {
+    prevRunning.current = null
+  }, [id])
+  useEffect(() => {
+    if (status === undefined) return
+    const running = isImportRunning(status)
+    if (prevRunning.current === true && !running) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.importLogs(id) })
+    }
+    prevRunning.current = running
+  }, [status, id, queryClient])
+
+  return query
 }
 
 export function useImportLogs(id: number, params: ImportLogParams) {
@@ -66,7 +89,7 @@ export function useRevertImport() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.importDetail(batch.id) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.all })
     },
-    onError: (err) => toast.error(extractErrorMessage(err)),
+    //  Lỗi KHÔNG toast ở đây: `httpClient` đã toast mọi lỗi của POST/PATCH/DELETE — thêm lần nữa là hiện hai lần.
   })
 }
 
@@ -80,7 +103,7 @@ export function useCommitImport() {
       toast.success('Đang ghi thật dữ liệu — hệ thống sẽ báo khi xong')
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.all })
     },
-    onError: (err) => toast.error(extractErrorMessage(err)),
+    //  Lỗi đã được `httpClient` toast sẵn (POST) — không toast lần hai.
   })
 }
 

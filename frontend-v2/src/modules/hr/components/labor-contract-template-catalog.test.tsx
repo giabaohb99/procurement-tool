@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/core/auth/auth-store'
 import type * as CoreApi from '@/core/api'
-import { LaborContractTemplateListPage } from './labor-contract-template-list-page'
+import { LaborContractTemplateCatalog } from './labor-contract-template-catalog'
 
 const apiGet = vi.hoisted(() => vi.fn())
 vi.mock('@/core/api', async (original) => ({
@@ -20,7 +20,7 @@ function renderAs(permissions: Record<string, Record<string, boolean>>) {
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <LaborContractTemplateListPage />
+        <LaborContractTemplateCatalog />
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -31,7 +31,7 @@ afterEach(() => {
   apiGet.mockReset()
 })
 
-describe('màn Mẫu hợp đồng — gác quyền', () => {
+describe('LaborContractTemplateCatalog — gác quyền', () => {
   // Lỗi cần chống: gõ thẳng URL khi thiếu khóa không được thấy bảng, và không được gọi API.
   it('thiếu quyền đọc: báo thiếu quyền, không dựng bảng, không gọi API', () => {
     renderAs({ labor_contract_template: {} })

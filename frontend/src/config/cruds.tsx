@@ -60,6 +60,8 @@ export type CrudConfig = {
    *  màn hình chỉ có thanh lọc cơ bản. `name` PHẢI nằm trong FILTERABLE của controller. */
   condFilters?: FilterFieldDefinition[]
   importExport?: boolean
+  /** duoc-CR-628: ẩn nút «Import CSV» (backend đã trả 410) nhưng GIỮ «Export CSV». */
+  importDisabled?: boolean
   /** CR-068 — hiện nút "Xuất Excel": gọi GET {apiPath}/export/xlsx với bộ lọc + dòng đã tick +
    *  danh sách cột đang hiện. Backend phải có route đó và cấp hành động `export`.
    *  Bật cờ này cũng bật luôn CỘT TICK CHỌN dòng trên bảng. */
@@ -393,7 +395,7 @@ export const cruds: Record<string, CrudConfig> = {
   },
   employees: {
     slug: 'employees', entity: 'employee', apiPath: '/api/employees',
-    title: 'Nhân sự', importExport: true,
+    title: 'Nhân sự', importExport: true, importDisabled: true,
     detailHeader: (row) => (
       <EmployeeAvatar employeeId={row.id} fullName={row.full_name} avatar={row.avatar} hasAccount={!!row.user_id} />
     ),
@@ -688,7 +690,7 @@ export const cruds: Record<string, CrudConfig> = {
   },
   departments: {
     slug: 'departments', entity: 'department', apiPath: '/api/departments',
-    title: 'Phòng Ban', importExport: true,
+    title: 'Phòng Ban', importExport: true, importDisabled: true,
     // KHÔNG khai báo detailHeader: phòng ban không có ảnh/logo, thẻ danh tính chỉ
     // gồm tên + chip mô tả (khác trang Công ty có logo tải lên được).
     // KHÔNG bật detailTwoCols: bảng nhân sự thuộc phòng cần trọn chiều ngang,

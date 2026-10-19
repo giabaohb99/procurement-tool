@@ -1,6 +1,6 @@
 # Pha 06 — Kiểm thử đích + tài liệu
 
-**Ưu tiên:** P1 · **Trạng thái:** pending · **Công:** 0.5d · **Chặn bởi:** 01–05
+**Ưu tiên:** P1 · **Trạng thái:** completed · **Công:** 0.5d · **Chặn bởi:** 01–05
 (Test viết SONG SONG với pha 01/03/04; pha này là lượt chạy gom + tài liệu.)
 
 ## Test backend mới (pytest, SQLite — chỉ chạy đúng các tệp liệt kê)
@@ -73,11 +73,11 @@ Tài khoản HR có `import.read/create` + `employee.*` + `employee_sensitive.re
   `Mã nguồn:` / `Commit:`; `pic` NSU209.
 
 ## Todo
-- [ ] 2 tệp test mới (≈29 ca) + sửa test cũ (pha 01/03/04)
-- [ ] Lượt chạy gom ở trên xanh
-- [ ] Thử tay 2 tài khoản
-- [ ] 4 tài liệu
-- [ ] `code-reviewer` rà trước commit
+- [x] 2 tệp test mới (≈29 ca) + sửa test cũ (pha 01/03/04)
+- [x] Lượt chạy gom ở trên xanh
+- [ ] Thử tay 2 tài khoản (chưa làm — cần UI + celery, ghi trong báo cáo)
+- [x] 4 tài liệu
+- [ ] `code-reviewer` rà trước commit (để điều phối viên)
 
 ## Câu hỏi còn treo
 1. Có thêm `import: [read, create]` + `employee_sensitive: [write]` vào vai trò mẫu `hr_profile` ở `seed.py`

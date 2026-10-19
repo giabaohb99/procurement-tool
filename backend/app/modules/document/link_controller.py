@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
 from app.core.database import get_db
 from app.core.response import success
 from app.modules.doc_catalog.link_rule_model import RELATION_LABELS
@@ -199,6 +199,7 @@ def add_link(
     doc = _load(db, document_id, user, "write")
     link = link_service.add_link(
         db, doc, data.relation, data.target_document_id, data.note, user.id,
+        user=user, profile=get_perm_profile(db, user),
     )
     record(db, user.id, "document", doc.id, "update")
     return success(
@@ -232,7 +233,7 @@ def create_excerpt(
     Cần quyền ĐỌC bản gốc (không phải quyền sửa): người được chia một quy chế
     mật vẫn có thể cần tách phần việc của mình xuống nhà máy.
     """
-    source = _load(db, document_id, user)
+    source = _load(db, document_id, user, derived=True)
     excerpt = excerpt_service.create_excerpt(
         db, source, data.title, data.content_html, data.secrecy_level, data.note, user.id,
     )

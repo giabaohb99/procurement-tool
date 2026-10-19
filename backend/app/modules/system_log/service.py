@@ -29,6 +29,8 @@ from app.core.logging_codes import (ACTION_GROUP_LABELS, CHANGE_OP_LABELS, SOURC
 from app.core.request_context import request_id_text
 from app.modules.audit.model import AuditLog
 from app.modules.change_log.model import ChangeLog
+from app.modules.document.labor_contract_archive_access import (blocked_archive_doc_ids,
+                                                                blocked_contract_ids)
 from app.modules.login_session.history import resolve_user_names
 from app.modules.login_session.model import LoginSession
 from app.modules.request_log.model import RequestLog
@@ -274,7 +276,7 @@ def serialize_row(row: RequestLog, audit: AuditLog | None, table_count: int,
     }
 
 
-def build_page(db: Session, query, offset: int, limit: int) -> list[dict]:
+def build_page(db: Session, query, offset: int, limit: int, viewer=None) -> list[dict]:
     """Trang danh sách — số truy vấn KHÔNG phụ thuộc số dòng.
 
     Ba lượt trên ba bảng nhật ký: 1 trên `tab_request_log` (đã phân trang) + 1
@@ -293,6 +295,12 @@ def build_page(db: Session, query, offset: int, limit: int) -> list[dict]:
         return []
     ids = [bytes(r.request_id) for r in rows]
     audits = _first_audit_by_request(db, ids)
+    #  duoc-CR-629: dòng audit của bản lưu trữ HĐLĐ (tên tệp có số HĐ + họ tên) không hiện cho người không
+    #  đọc được nó — `viewer = (user, profile)`; thiếu ⇒ đóng (che mọi bản lưu trữ).
+    hidden_docs, hidden_contracts = _hidden_audit_targets(db, viewer, list(audits.values()))
+    for key, a in list(audits.items()):
+        if _is_hidden_audit(a, hidden_docs, hidden_contracts):
+            del audits[key]
     tables = _change_tables_by_request(db, ids)
     names = resolve_user_names(db, {r.user_id for r in rows})
     return [serialize_row(r, audits.get(bytes(r.request_id)), tables.get(bytes(r.request_id), 0),
@@ -337,7 +345,34 @@ def serialize_change(row: ChangeLog) -> dict:
     }
 
 
-def build_detail(db: Session, row: RequestLog, *, with_change_log: bool) -> dict:
+def _hidden_audit_targets(db: Session, viewer, audits) -> tuple[set[int], set[int]]:
+    """(id văn bản lưu trữ, id HĐLĐ) mà người xem KHÔNG đọc được trong các dòng audit này."""
+    return (blocked_archive_doc_ids(db, viewer, [a.entity_id for a in audits if a.entity == "document"]),
+            blocked_contract_ids(db, viewer, [a.entity_id for a in audits if a.entity == "labor_contract"]))
+
+
+def _is_hidden_audit(a: AuditLog, hidden_docs: set[int], hidden_contracts: set[int]) -> bool:
+    return ((a.entity == "document" and a.entity_id in hidden_docs)
+            or (a.entity == "labor_contract" and a.entity_id in hidden_contracts))
+
+
+def _hide_archive_changes(db: Session, changes: list[ChangeLog], viewer) -> list[ChangeLog]:
+    """Bỏ dòng thay đổi chạm HĐLĐ / bản lưu trữ của HĐ mà người xem không đọc được.
+
+    Lương, phụ cấp đã che theo cột; còn lại số HĐ, ghi chú, lý do chấm dứt (`tab_labor_contract`), tiêu đề và tóm
+    tắt (`tab_document`) và TÊN TỆP (`tab_file`, cùng lượt gọi với dòng của HĐ/văn bản bị chặn)."""
+    bad_contracts = blocked_contract_ids(db, viewer, [c.row_id for c in changes if c.table_name == "tab_labor_contract"])
+    bad_docs = blocked_archive_doc_ids(db, viewer, [c.row_id for c in changes if c.table_name == "tab_document"])
+    if not bad_contracts and not bad_docs:
+        return changes
+    hide_files = True   # lượt gọi đã chạm HĐ/văn bản bị chặn ⇒ tệp trong cùng lượt là bản sao của chúng
+    return [c for c in changes
+            if not ((c.table_name == "tab_labor_contract" and c.row_id in bad_contracts)
+                    or (c.table_name == "tab_document" and c.row_id in bad_docs)
+                    or (hide_files and c.table_name == "tab_file"))]
+
+
+def build_detail(db: Session, row: RequestLog, *, with_change_log: bool, viewer=None) -> dict:
     """Gói chi tiết cho ngăn bốn tab.
 
     `with_change_log = False` (người xem không có khóa `change_log`) thì **lược ở
@@ -348,6 +383,8 @@ def build_detail(db: Session, row: RequestLog, *, with_change_log: bool) -> dict
     audit_rows = (db.query(AuditLog)
                   .filter(AuditLog.request_id == row.request_id)
                   .order_by(AuditLog.id.asc()).all())
+    hidden_docs, hidden_contracts = _hidden_audit_targets(db, viewer, audit_rows)
+    audit_rows = [a for a in audit_rows if not _is_hidden_audit(a, hidden_docs, hidden_contracts)]
     names = resolve_user_names(db, {row.user_id} | {a.created_by for a in audit_rows})
 
     request_part = {
@@ -378,10 +415,9 @@ def build_detail(db: Session, row: RequestLog, *, with_change_log: bool) -> dict
 
     changes = []
     if with_change_log:
-        changes = [serialize_change(c) for c in
-                   (db.query(ChangeLog)
-                    .filter(ChangeLog.request_id == row.request_id)
-                    .order_by(ChangeLog.id.asc()).all())]
+        changes = [serialize_change(c) for c in _hide_archive_changes(
+            db, db.query(ChangeLog).filter(ChangeLog.request_id == row.request_id)
+            .order_by(ChangeLog.id.asc()).all(), viewer)]
 
     return {
         "request": request_part,

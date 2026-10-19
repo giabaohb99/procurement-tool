@@ -7,6 +7,10 @@ Cùng cơ chế với `survey_import` / `po_import`:
 - Mỗi thực thể khai một *adapter* (cột file → thuộc tính model, khoá trùng, tham chiếu).
   Thêm danh mục import mới về sau = thêm một adapter, không đụng thân khung.
 
+Điểm cắm tùy chọn trong `ADAPTERS[module]` (duoc-CR-628; adapter không khai thì hành vi y cũ):
+`allow_delete` · `prepare` · `apply_row` · `finalize` · `revert` · `revert_blockers` · `after_revert` ·
+`template_notes` · `template_action_col` · `max_rows`. Xem `employee_import.py` làm mẫu.
+
 Phạm vi v1 (Đ-13d): các cột cốt lõi 1 bảng. KHÔNG tạo tài khoản đăng nhập cho nhân sự,
 KHÔNG xử lý kiêm nhiệm nhiều phòng ban (chỉ set `department_id` chính), KHÔNG đụng
 người đại diện pháp luật của công ty — các thứ đó mở việc riêng.
@@ -27,6 +31,8 @@ from app.modules.seal_request.model import SealType
 from app.modules.supplier.model import Supplier
 from app.modules.vehicle_booking.model import Driver, Vehicle
 
+from .employee_import_fields import EMPLOYEE_FIELDS
+from .employee_import_fields import TEMPLATE_NOTES as EMPLOYEE_TEMPLATE_NOTES
 from .model import (ImportBatch, ImportChange, ImportLog, ImportModule,
                     ImportStatus, LogLevel)
 
@@ -209,6 +215,16 @@ def resolve_ref_obj(db: Session, ref: str, value, self_model=None):
         return _hit(left.strip()) or _hit(right.strip())
     return None
 
+def _employee_hook(name: str, module: str = "employee_import"):
+    """Hook Nhân sự nạp LƯỜI (employee_import import ngược catalog_import nên không import ở đầu tệp)."""
+    def call(*args, **kwargs):
+        import importlib
+        mod = importlib.import_module(f"{__package__}.{module}")
+        return getattr(mod, name)(*args, **kwargs)
+    call.__name__ = f"employee_{name}"
+    return call
+
+
 ADAPTERS: dict[int, dict] = {
     ImportModule.COMPANY: {
         "label": "Công ty",
@@ -233,6 +249,8 @@ ADAPTERS: dict[int, dict] = {
         "model": Department,
         "sheet": "Phong ban",
         "dedupe": "code",
+        "template_action_col": False,   # không xóa được qua file nên không có cột «Hành động» (L-F)
+        "allow_delete": False,      # duoc-CR-628 (M6): đường CSV cũ đã 410 và trỏ về đây — không mở lối xóa hàng loạt
         "fields": [
             _f("Mã *", "code", required=True),
             _f("Tên phòng ban *", "name", required=True),
@@ -249,17 +267,18 @@ ADAPTERS: dict[int, dict] = {
         "model": Employee,
         "sheet": "Nhan su",
         "dedupe": "code",
-        "fields": [
-            _f("Mã NV *", "code", required=True),
-            _f("Họ tên *", "full_name", required=True),
-            _f("Email", "email"),
-            _f("Điện thoại", "phone"),
-            _f("Công ty (mã)", "company_id", kind="ref", ref="company"),
-            _f("Phòng ban (mã)", "department_id", kind="ref", ref="department"),
-            _f("Chức vụ", "position"),
-            _f("Trạng thái (official/probation/…)", "status", default="official"),
-            _f("Hoạt động (1/0)", "is_active", kind="bool", default=True),
-        ],
+        #  duoc-CR-628: đủ hồ sơ, ghi qua lõi employee service (không setattr trần), cấm xóa, ô trống = giữ.
+        "fields": EMPLOYEE_FIELDS,
+        "allow_delete": False,
+        "template_action_col": False,
+        "template_notes": EMPLOYEE_TEMPLATE_NOTES,
+        "max_rows": 2000,
+        "prepare": _employee_hook("prepare"),
+        "apply_row": _employee_hook("apply_row"),
+        "finalize": _employee_hook("finalize"),
+        "revert": _employee_hook("revert", "employee_import_revert"),
+        "revert_blockers": _employee_hook("revert_blockers", "employee_import_revert"),
+        "after_revert": _employee_hook("after_revert", "employee_import_revert"),
     },
     ImportModule.SUPPLIER: {
         "label": "Nhà cung cấp",
@@ -409,6 +428,10 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             header_col[key] = col
     field_col = {f["attr"]: _match_col(header_col, f) for f in adapter["fields"]}
     ensure_file_matches(adapter["sheet"], adapter["fields"], field_col)
+    _ensure_max_rows(ws, adapter, field_col)
+    #  Hook `prepare`: dựng ngữ cảnh cả lô (người nhập, quyền…), được phép bỏ bớt cột khỏi `field_col`
+    #  (vd cột nhạy cảm khi thiếu quyền) và trả `ctx.pre_logs` = [(level, category, message)] để ghi dòng 0.
+    ctx = adapter["prepare"](db, batch, field_col, apply) if adapter.get("prepare") else None
 
     # Cột "Hành động" (tùy chọn) — không thuộc bộ trường, dò riêng theo tiêu đề.
     action_col = next((c for k, c in header_col.items() if k in _ACTION_HEADERS), None)
@@ -446,6 +469,9 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             f"«{header}» = '{code}' không có trong danh mục — để trống", ref_key=str(code))
         return 0
 
+    for lvl, cat, msg in (getattr(ctx, "pre_logs", None) or []):
+        log(0, lvl, cat, msg)
+
     total = 0
     max_row = ws.max_row or 0
     for r in range(DATA_START, max_row + 1):
@@ -458,6 +484,14 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         if not code and not action and not has_value:
             continue
         total += 1
+
+        #  Adapter cấm xóa qua file (Nhân sự) — báo lỗi dòng, không đụng bản ghi.
+        if action == DELETE_SENTINEL and not adapter.get("allow_delete", True):
+            counts["skipped"] += 1
+            log(r, LogLevel.ERROR, "delete_not_allowed",
+                f"Không xóa {adapter['label']} qua nhập Excel — chuyển Trạng thái/Đang dùng để ngưng",
+                ref_key=code, target_code=code)
+            continue
 
         # XÓA bản ghi: cột Hành động = __/delete/__, xác định theo Mã.
         if action == DELETE_SENTINEL:
@@ -489,6 +523,28 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                             "snapshot": json.dumps({"cols": snap}, ensure_ascii=False, default=str)})
             log(r, LogLevel.INFO, "deleted", f"Xóa {adapter['label']} '{code}'",
                 ref_key=code, target_code=code)
+            continue
+
+        #  Adapter tự xử lý dòng (hook `apply_row`) — bỏ nhánh sinh mã/kiểm bắt buộc/setattr chung.
+        if adapter.get("apply_row"):
+            raw = {f["attr"]: read(r, f["attr"]) for f in adapter["fields"] if field_col.get(f["attr"])}
+            res = adapter["apply_row"](db, ctx, r, code, raw, log)
+            outcome, rcode = res["outcome"], res.get("code") or code
+            if outcome == "error":
+                counts["skipped"] += 1
+            elif outcome == "unchanged":
+                log(r, LogLevel.INFO, "unchanged", f"Không đổi {adapter['label']} '{rcode}'",
+                    ref_key=rcode, target_code=rcode)
+            else:
+                created = outcome == "created"
+                counts["created" if created else "updated"] += 1
+                changes.append({"target_id": res["target_id"], "was_new": created,
+                                "snapshot": json.dumps({"cols": res["snapshot"]}, ensure_ascii=False, default=str)
+                                if res.get("snapshot") else ""})
+                log(r, LogLevel.INFO, outcome,
+                    ("Tạo" if created else "Cập nhật") + f" {adapter['label']} '{rcode}'"
+                    + (" (mã tự sinh)" if created and not code else ""),
+                    ref_key=rcode, target_code=rcode)
             continue
 
         # Dòng thiếu Mã: nếu bảng có KHÓA TỰ NHIÊN duy nhất (vd name) và đã tồn tại
@@ -583,9 +639,32 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
 
     if apply:
         db.commit()
+        if adapter.get("finalize"):
+            #  Việc SAU commit (audit, xóa cache quyền): lỗi ở đây không làm lô FAILED — dữ liệu đã đúng.
+            try:
+                adapter["finalize"](db, ctx)
+            except Exception as e:  # noqa: BLE001
+                db.rollback()
+                log(0, LogLevel.WARNING, "finalize_failed",
+                    f"Đã ghi dữ liệu nhưng bước hậu kỳ (nhật ký/xóa cache quyền) lỗi: {type(e).__name__}")
     else:
         db.rollback()
     _persist(db, batch, counts, logs, changes if apply else [], total, adapter["sheet"])
+
+
+def _ensure_max_rows(ws, adapter: dict, field_col: dict) -> None:
+    """Trần số dòng dữ liệu của adapter khai `max_rows` (luật trần danh sách, backend-input-limits)."""
+    cap = adapter.get("max_rows")
+    if not cap:
+        return
+    cols = [c for c in field_col.values() if c]
+    n = 0
+    for r in range(DATA_START, (ws.max_row or 0) + 1):
+        if any(_s(ws.cell(row=r, column=c).value) for c in cols):
+            n += 1
+            if n > cap:
+                raise ImportValidationError(
+                    f"Tệp có hơn {cap} dòng dữ liệu — tách thành nhiều tệp (mỗi tệp tối đa {cap} dòng).")
 
 
 def _persist(db, batch, counts, logs, changes, total_rows, sheet) -> None:
@@ -613,6 +692,8 @@ def revert(db: Session, module: int, changes, user_id: int) -> tuple[int, int]:
     """Hoàn tác batch danh mục: bản ghi MỚI -> xoá; bản ghi ĐÃ XÓA (was_new=2) ->
     tạo lại từ snapshot; bản ghi CŨ SỬA -> khôi phục cột đã đổi."""
     from .service import _apply_cols
+    if ADAPTERS[module].get("revert"):
+        return ADAPTERS[module]["revert"](db, changes, user_id)
     model = ADAPTERS[module]["model"]
     deleted = restored = 0
     for ch in changes:
@@ -653,9 +734,18 @@ def build_template(module: int) -> bytes:
         ws.cell(row=1, column=i, value=f["header"])
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = max(14, len(f["header"]) + 2)
     # Cột Hành động: để trống = thêm/sửa; ghi __/delete/__ = xóa dòng theo Mã.
-    ai = len(adapter["fields"]) + 1
-    ws.cell(row=1, column=ai, value="Hành động")
-    ws.column_dimensions[ws.cell(row=1, column=ai).column_letter].width = 16
+    if adapter.get("template_action_col", True):
+        ai = len(adapter["fields"]) + 1
+        ws.cell(row=1, column=ai, value="Hành động")
+        ws.column_dimensions[ws.cell(row=1, column=ai).column_letter].width = 16
+    #  Sheet hướng dẫn: (cột, giá trị nhận / ghi chú) — adapter nào có luật ô riêng thì khai.
+    if adapter.get("template_notes"):
+        gd = wb.create_sheet("Huong dan")
+        gd.append(["Cột", "Giá trị nhận / ghi chú"])
+        for name, note in adapter["template_notes"]:
+            gd.append([name, note])
+        gd.column_dimensions["A"].width = 34
+        gd.column_dimensions["B"].width = 100
     bio = BytesIO()
     wb.save(bio)
     return bio.getvalue()

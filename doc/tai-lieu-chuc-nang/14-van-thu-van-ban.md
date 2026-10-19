@@ -262,6 +262,15 @@ Hai chi tiết cố ý:
 
 Ngoại lệ: người đang (hoặc đã) có việc trong phiên duyệt của văn bản thì **luôn đọc được** — không ai ký một thứ họ không mở ra xem được.
 
+### 8.1 Bản lưu trữ hợp đồng lao động
+
+Khi Nhân sự lập hợp đồng lao động, hệ thống tự sinh một văn bản loại **«Hợp đồng lao động»** (`HDLD`) làm bản lưu trữ: tệp .docx đã sinh và bản đã ký được **chép sang** phiên bản hiện hành, trạng thái đi theo hợp đồng (Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực · Đã hủy hoặc đã xóa → Lưu trữ). Văn bản này **chỉ đọc**, không có số hiệu và không duyệt/ký.
+
+- **Ai xem được:** CHỈ người đang xem được hợp đồng đó ở phân hệ Nhân sự (`labor_contract.read` đúng phạm vi). Người lao động, văn thư, quản trị Văn bản không có quyền hợp đồng lao động thì **không thấy** ở danh sách, tìm kiếm, tổng quan, cây thư mục, trợ lý AI, ô chọn quan hệ; mở thẳng theo mã hoặc tải tệp đều ra 404. Chia sẻ đích danh, thành viên sổ, phạm vi áp dụng đều không mở khóa.
+- **Không làm được trên bản lưu trữ:** sửa, xóa, chia sẻ, sao chép, clone, trích, ký. Muốn đổi thì sửa hợp đồng ở Nhân sự — bản lưu trữ tự đồng bộ.
+- Không nằm trong tìm kiếm toàn văn (kể cả với người xem được).
+- Nút **«Mở bản lưu trữ ở Văn bản»** ở dòng hợp đồng trong hồ sơ nhân sự (cần thêm quyền đọc Văn bản).
+
 ---
 
 ## 9. Quan hệ giữa văn bản
@@ -471,6 +480,7 @@ Ca nghiệp vụ: nhân sự hành chính đăng nhập bằng tài khoản củ
 |---|---|
 | **Loại văn bản** | Mã, tên, nhóm, kiểu định danh, thời điểm cấp số, mức mật mặc định, chu kỳ rà soát, các cờ quy tắc áp dụng (kể cả **«Chờ người soạn ban hành»**, §14.2), và **quy tắc quan hệ** của loại |
 | **Thư viện văn bản mẫu** | Khung trắng theo từng loại; mọi chỗ phải điền để dấu chấm lửng, **không gán sẵn tên người hay số hiệu** |
+| **Mẫu hợp đồng lao động** (duoc-CR-629b) | Nằm cùng tab «Thư viện văn bản mẫu» của trang Thiết lập, địa chỉ `/document/settings?tab=templates&kind=labor-contract`. Mẫu là tệp .docx có biến, theo pháp nhân + loại hợp đồng. Chỉ người có khóa **`labor_contract_template`** thấy (Nhân sự); văn thư thiếu khóa này không thấy mẫu nào kể cả gõ thẳng địa chỉ. Dữ liệu và API (`/api/labor-contract-templates`) giữ nguyên; người có cả hai quyền có công tắc «Văn bản mẫu / Mẫu hợp đồng lao động». Menu Nhân sự «Mẫu hợp đồng» và đường cũ `/hr/labor-contract-templates` đều chuyển sang đây |
 | **Mức mật / độ khẩn** | Seed: Công khai · Nội bộ · Mật · Tuyệt mật; thường · khẩn · hỏa tốc. Thêm được bậc mới; bậc đã tạo chỉ sửa tên/mô tả/trạng thái |
 | **Đơn vị gửi nhận** | Cơ quan nhà nước · đối tác · khách hàng · đơn vị nội bộ · khác |
 

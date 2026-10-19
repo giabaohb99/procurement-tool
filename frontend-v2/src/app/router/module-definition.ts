@@ -27,6 +27,11 @@ export interface ModuleNavItem {
    */
   entities?: PermissionEntity[]
   /**
+   * Với mục khai `entities` + `manage`: các khóa chỉ cần **ĐỌC** là đủ mở mục (không cần create/write/delete).
+   * Sinh ra cho «Thiết lập văn bản»: người chỉ ĐỌC được mẫu hợp đồng lao động vẫn vào xem mẫu (duoc-CR-629b).
+   */
+  readEntities?: PermissionEntity[]
+  /**
    * **Hiện thêm khi ĐỌC được một trong các khóa này**, dù luật chính (`manage` /
    * `action`) không đạt — với điều kiện vẫn ĐỌC được `entity` chính. Nó chỉ nới
    * mức quyền, không mở màn cho người ngoài: chỉ có khóa phụ mà không đọc được

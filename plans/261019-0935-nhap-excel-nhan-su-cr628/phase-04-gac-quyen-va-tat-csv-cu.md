@@ -1,6 +1,6 @@
 # Pha 04 — Gác quyền ở import_tool + tắt Import CSV cũ
 
-**Ưu tiên:** P1 · **Trạng thái:** pending · **Công:** 0.5d · **Chặn bởi:** 03 (tắt CSV thì độc lập)
+**Ưu tiên:** P1 · **Trạng thái:** completed · **Công:** 0.5d · **Chặn bởi:** 03 (tắt CSV thì độc lập)
 
 ## Quyết định gác (Đ-13c chưa làm — `ACTIONS` không có `import`)
 Nhập Nhân sự = `import.<action>` **VÀ** quyền trên `employee`. Không thêm action mới, không migration.
@@ -34,9 +34,9 @@ Log/list batch giữ `import.read` (log không chứa giá trị nhạy cảm �
   test riêng qua `delete_employee`/nút xóa).
 
 ## Todo
-- [ ] `_guard_module` + 4 điểm gác
-- [ ] CSV nhân sự → 410; CSV phòng ban → 410
-- [ ] Sửa 2 test cr190
+- [x] `_guard_module` + 4 điểm gác
+- [x] CSV nhân sự → 410; CSV phòng ban → 410
+- [x] Sửa 2 test cr190
 
 ## Test (chỉ chạy)
 ```bash

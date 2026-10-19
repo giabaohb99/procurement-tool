@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import type { PermissionEntity } from '@/core/authorization/permission-types'
 import { usePermission } from '@/core/authorization/use-permission'
+import { LaborContractTemplateCatalog } from '@/modules/hr/components/labor-contract-template-catalog'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
@@ -13,10 +14,16 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
+import { canManageEntity } from '@/app/router/module-visibility'
 import { DocumentPartnerCatalog } from '../components/document-partner-catalog'
 import { DocumentTemplateCatalog } from '../components/document-template-catalog'
 import { DocumentTypeCatalog } from '../components/document-type-catalog'
 import { SecurityLevelCatalog } from '../components/security-level-catalog'
+import {
+  LABOR_CONTRACT_KIND,
+  resolveSettingsView,
+} from '../config/document-settings-tabs'
 
 interface CatalogTab {
   /** Giá trị ghi lên URL (`?tab=`) — đổi là hỏng link cũ, giữ nguyên. */
@@ -96,21 +103,24 @@ export function DocumentSettingsPage() {
   const navigate = useNavigate()
   const { can } = usePermission()
   const [tab, setTab] = useUrlParamState('tab', TABS[0].value)
+  const [kind, setKind] = useUrlParamState('kind', '')
 
   //  Dải ghim chỉ đổ bóng khi có nội dung trôi bên dưới — xem `list-sticky.ts`.
   //  Đo ở `Tabs` vì nó nằm cùng khung cuộn với cả hai dải ghim.
   const tabsRef = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled(tabsRef)
 
-  //  Mỗi tab một khóa riêng từ CR-157. Menu chỉ hỏi «có BẤT KỲ khóa nào không»,
-  //  nên vào tới đây rồi vẫn có thể thiếu khóa của vài tab — trang tự lọc.
-  const visibleTabs = TABS.filter((item) => can(item.entity, 'read'))
+  //  Mỗi tab một khóa riêng từ CR-157. Menu chỉ hỏi «có BẤT KỲ khóa nào không», nên vào tới đây rồi
+  //  vẫn có thể thiếu khóa của vài tab — trang tự lọc. `?tab=` trỏ vào tab không xem được thì rơi về
+  //  tab đầu xem được. Nhân sự (chỉ có `labor_contract_template`) chỉ thấy mục mẫu HĐLĐ — luật ở
+  //  `resolveSettingsView` (duoc-CR-629b).
+  const view = resolveSettingsView(TABS, can, (entity) => canManageEntity(entity, can), tab, kind)
+  const visibleTabs = TABS.filter((item) => view.visible.includes(item.value))
+  const current = visibleTabs.find((item) => item.value === view.current)
+  const laborContract = view.laborContract
+  const TabCatalog = laborContract ? LaborContractTemplateCatalog : current?.Catalog
 
-  //  `?tab=` trên URL có thể trỏ vào tab người này không được xem (link người
-  //  khác gửi, hoặc quyền vừa bị gỡ). Rơi về tab đầu tiên họ xem được.
-  const current = visibleTabs.find((item) => item.value === tab) ?? visibleTabs[0]
-
-  if (!current) {
+  if (!current || !TabCatalog) {
     return (
       <PageContainer>
         <PageHeader
@@ -131,11 +141,15 @@ export function DocumentSettingsPage() {
     <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Thiết lập văn bản"
-        description={current.description}
+        description={
+          laborContract
+            ? 'Mẫu Word (.docx) lập hợp đồng lao động của từng pháp nhân.'
+            : current.description
+        }
         actions={
           // Tab chỉ đọc (mức mật / khẩn) không có gì để thêm — hiện nút rồi bấm
           // vào không đi đâu thì tệ hơn là không có nút.
-          current.newPath ? (
+          current.newPath && !laborContract ? (
             //  ⚠️ Khổ hẹp nút chiếm TRỌN hàng — `w-full` chỉ ăn nhờ nhóm nút của
             //  `PageHeader` cũng `max-md:w-full`. Đứng lửng bên phải trên một
             //  hàng trống thì nó vừa khó với tới bằng ngón cái, vừa đọc ra như
@@ -190,7 +204,22 @@ export function DocumentSettingsPage() {
         {/* Chỉ dựng bảng của tab ĐANG mở: dựng sẵn cả bốn thì bốn bảng cùng đọc
             chung tham số tìm kiếm trên URL và cùng ghi lại layout cột. */}
         <TabsContent value={current.value} className="mt-4 flex min-h-0 flex-1 flex-col">
-          <current.Catalog />
+          {view.showKindSwitch && (
+            //  Chỉ người có CẢ HAI quyền mới thấy công tắc; Nhân sự thuần chỉ có mục HĐLĐ.
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={laborContract ? LABOR_CONTRACT_KIND : 'documents'}
+              onValueChange={(next) => next && setKind(next === LABOR_CONTRACT_KIND ? next : '')}
+              className="mb-3 self-start"
+              aria-label="Loại mẫu"
+            >
+              <ToggleGroupItem value="documents">Văn bản mẫu</ToggleGroupItem>
+              <ToggleGroupItem value={LABOR_CONTRACT_KIND}>Mẫu hợp đồng lao động</ToggleGroupItem>
+            </ToggleGroup>
+          )}
+          {TabCatalog && <TabCatalog />}
         </TabsContent>
       </Tabs>
     </PageContainer>
