@@ -13450,6 +13450,18 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-217 | Vá lỗi màn Cấu hình hệ thống và các bài kiểm đỏ trước đợt lên prod ngày 19/10
+- status: xong
+- date: 2026-10-19
+Trước đợt đưa cổng nối AI lên prod, Agent 1 chạy toàn bộ bài kiểm máy chủ và thấy hơn bảy mươi bài đỏ. Lỗi thật duy nhất:
+khóa cấu hình luật lập kế hoạch của bot được khai đọc từ một biến môi trường chưa từng có, nên mở bảng cấu hình là lỗi —
+màn Cấu hình hệ thống trên prod sẽ hỏng. Đã khai biến đó với giá trị trống, tức là dùng luật mặc định như ý ban đầu. Ba chỗ
+còn lại là bài kiểm sổ đăng ký chưa khai các mẫu nhập liệu và chỗ ghi nhật ký mới của cổng nối AI, cùng một bài điểm báo
+dùng ngày cứng nên đỏ khi lịch trôi; đã khai đủ và cho bài điểm báo dùng mốc giờ cố định. Gộp kèm phần Kho skill của Agent 1.
+
+Mã nguồn: core/config.py
+Bài kiểm: test_canh_do_dai_o_chu_cr538.py, test_bo_ma_hanh_dong_cr358.py, test_agent_hub_diem_bao.py
+
 ## ai-CR-216 | Quản trị bật tắt từng nhóm công cụ cho ứng dụng AI và chuẩn hóa kết quả các công cụ tra cứu cũ
 - status: xong
 - date: 2026-10-17

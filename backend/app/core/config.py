@@ -479,6 +479,10 @@ class Settings(BaseSettings):
     # ai-CR-105: số ngày giữ tin các nhóm bot đang ở (vòng dọn hằng ngày). ai-CR-122: đại ca chốt 08/10 giữ 3 tháng,
     # áp chung Telegram + Zalo.
     AGENT_GROUP_RETENTION_DAYS: int = 90
+    # bao-CR-616: luật lập kế hoạch của bot điều phối việc (chuỗi JSON). Màn Cấu hình hệ thống (`app_settings` khóa
+    # `agent_plan_policy`) đọc mặc định từ biến này — thiếu biến thì bảng cấu hình ném AttributeError (bắt được 19/10 khi
+    # chạy full test trước prod). Trống = luật mặc định trong mã (`agent_hub/plan_policy.DEFAULTS`).
+    AGENT_PLAN_POLICY: str = ""
     # ai-CR-209 (K3 doc/erp/21 §5.4): trần tần suất cổng MCP mỗi phút — theo khóa, theo IP (cả công ty có thể chung một
     # IP NAT nên rộng hơn), lượt khóa sai theo IP (chặt). 0 = không chặn. Nhật ký giữ chi tiết N ngày rồi gom theo ngày.
     AGENT_MCP_RATE_PER_KEY: int = 120

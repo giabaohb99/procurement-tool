@@ -211,7 +211,9 @@ def test_co_khoa_ai_thi_mot_luot_model_tom_ca_diem_bao(db, seed, sent, monkeypat
 
     monkeypatch.setattr(manager, "get_provider", lambda: FakeProvider())
     row = bs.add_news(db, uid, "giá thép, phân bón")
-    assert bs.send_one(db, uid, row)
+    #  Truyền mốc giờ cố định như các bài khác: thiếu `now` thì lấy hôm nay THẬT, tin giả ghi ngày 12/10 thành tin cũ và bị
+    #  lọc mất — bài này đỏ từ 13/10 chỉ vì lịch trôi (bắt được 19/10 khi chạy full test trước prod).
+    assert bs.send_one(db, uid, row, now=MONDAY_0732)
     assert len(prompts) == 1, "một lượt model cho cả điểm báo (hai chủ đề)"
     assert "Giá thép hôm nay 12/10" in prompts[0] and "Giá phân urê tăng" in prompts[0]
     text = out[-1][1]

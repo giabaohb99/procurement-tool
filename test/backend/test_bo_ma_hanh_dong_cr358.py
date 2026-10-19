@@ -67,6 +67,10 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     #  `f"tool:{name}"` — 34 công cụ của trợ lý AI, khai thành HỌ mã.
     "modules/assistant/tools/__init__.py::_audit": ("tool:list_purchase_orders",),
     "modules/category_assignee/service.py::bulk_upsert": ("create", "update"),
+    #  bao-CR-621: nhập gói skill — tạo mới hay thay gói cho skill trùng tên.
+    "modules/ai_skill/service.py::import_package": ("create", "update"),
+    #  ai-CR-207: tải tệp báo cáo qua đường dùng một lần — `download_tokens.AUDIT_ACTION` = "export".
+    "modules/assistant/controller.py::download_report_file_once": ("export",),
     #  duoc-CR-585: quá trình công tác ghi «Thêm» hay «Sửa» theo đường gọi.
     "modules/employee/work_history_controller.py::_audit": ("create", "update"),
     #  Bốn kết cục của luồng duyệt Văn thư.

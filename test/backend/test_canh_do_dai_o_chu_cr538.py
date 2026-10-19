@@ -31,7 +31,8 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "comment", "employee", "user", "setting", "user_preference",
            "report_access",
            "work_schedule",   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
-           "labor_contract"]
+           "labor_contract",
+           "ai_skill"]       # bao-CR-621 (17/10): Kho skill AI — 5 model, trần 50..500
 #  ↑ work_schedule: duoc-CR-589 (05/10) — Lịch làm việc, `name` 150 / `note` 500
 #  ↑ labor_contract: duoc-CR-606 (07/10) — Hợp đồng lao động; khai ở bao-CR-608 khi bài canh đỏ
 
@@ -127,6 +128,10 @@ TARGETS.update({
     **_same("role", "Permission", "PermissionItem"),
     **_same("agent_hub", "AgentUserKey", "AiKeyIn"),
     **_same("agent_hub", "AgentMcpKey", "McpKeyIn"),
+    #  ai-CR-212: phát / thu hồi khóa AI hộ — `name` 80, `batch_id` 32 (schema chặn 20, chặt hơn cột).
+    **_same("agent_hub", "AgentMcpKey", "KeyIssueIn", "KeyRevokeIn"),
+    #  ai-CR-140: bản tin theo chủ đề — `sub_code` 40 (schema chặn 20); `question` ghi vào cột `topic` 300.
+    **_same("agent_hub", "AgentBriefSub", "BriefTopicIn"),
     **_same("agent_hub", "AgentChatLink", "LinkNotifyIn"),
     **_same("employee", "Employee", "SelfContactUpdate"),
     **_same("user", "User", "NotifyEmailUpdate", "UserProvision"),
@@ -138,6 +143,12 @@ TARGETS.update({
     **_same("work_schedule", "WorkScheduleAssignment", "AssignmentCreate", "AssignmentUpdate", "_Fields"),
     #  duoc-CR-606 (07/10) — Hợp đồng lao động: mẫu Word + chuyển trạng thái (`reason` → `terminate_reason`)
     **_same("labor_contract", "LaborContractTemplate", "TemplateCreateIn", "TemplateUpdate"),
+    #  bao-CR-621 Kho skill AI: bộ / skill / phiên bản / tệp / ai được đọc
+    **_same("ai_skill", "AiSkillSet", "SkillSetIn", "SkillSetPatch"),
+    **_same("ai_skill", "AiSkill", "SkillIn", "SkillPatch"),
+    **_same("ai_skill", "AiSkillVersion", "PublishIn"),
+    **_same("ai_skill", "AiSkillFile", "SkillFileIn"),
+    **_same("ai_skill", "AiSkillAccess", "AccessGrantIn", "AccessSubjectIn", "AccessRevokeIn"),
     **_same("labor_contract", "LaborContract", "TransitionIn"),
 })
 
@@ -148,6 +159,11 @@ NO_TARGET = {
     "survey.LineApproveIn", "survey.LineApproveCombined", "survey_request.ReportTemplateApplyIn",
     "survey_request.ReportDocBulkDeleteIn",   # duoc-CR-611: chỉ mang danh sách id hồ sơ cần xóa
     "agent_hub.RevokeIn",   # ai-CR-119: ERP báo nhân sự nghỉ qua cổng máy-nói-máy — chỉ mang user_id
+    #  agent_hub: chỉ mang cờ / giờ / số (bật tắt bản tin, giờ gửi, số giờ tóm tắt nhóm, phân loại / ngừng ghi nhóm)
+    "agent_hub.BriefDailyIn", "agent_hub.BriefToggleIn", "agent_hub.GroupPatchIn", "agent_hub.GroupSummarizeIn",
+    #  ai-CR-138: sửa dòng sổ ghi nhớ — ghi vào một ô Text (memory_view), trần 600 ký tự nằm ở schema
+    "agent_hub.MemoryLineIn", "agent_hub.MemoryLineEdit",
+    "survey_request.ReportInitIn",   # duoc-CR-614: chỉ mang mã mẫu báo cáo (số)
     #  chỉ mang id / thứ tự / lệnh di chuyển — không ghi cột chữ nào
     "doc_catalog.DocumentFolderSetIn", "doc_catalog.FolderLinkIn", "doc_catalog.FolderUnlinkIn",
     "doc_catalog.FolderMoveIn", "doc_catalog.FolderReorderIn", "doc_catalog.FolderReorderItem",
