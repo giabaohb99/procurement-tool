@@ -105,8 +105,17 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     assert gem["httpUrl"] == url and gem["headers"]["Authorization"].startswith("Bearer ")
     web = _setup("claude_ai")
     assert web["supported"] and web["auth"] == "oauth" and web["snippet"] == url and "Cho phép" in " ".join(web["steps"])
-    assert _setup("chatgpt")["format"] == "url" and "OAuth" in " ".join(_setup("chatgpt")["steps"])
-    assert "«" not in _setup("chatgpt")["note"] and "Connectors" in desk["note"]
+    gpt = _setup("chatgpt")
+    assert gpt["format"] == "url" and "OAuth" in " ".join(gpt["steps"])
+    assert "«" not in gpt["note"] and "Connectors" in desk["note"]
+    #  bao-CR-639 (ảnh đại ca chụp 19/10): ChatGPT nối ở Settings → Connectors → hộp New Connector (MCP Server URL,
+    #  Authentication OAuth, tick I trust this application); Developer mode phải bật trước. Bước «Apps & Connectors» và
+    #  «Plugins → Create MCP App» (đoán sai lúc đầu) không được quay lại; bước Cho phép phải nhắc kiểm tên miền quay về.
+    steps = " ".join(gpt["steps"])
+    assert "Connectors" in steps and "New Connector" in steps and "Developer mode" in steps
+    assert "MCP Server URL" in steps and "I trust this application" in steps and "OAuth" in steps
+    assert "Apps & Connectors" not in steps and "Create MCP App" not in steps and "chatgpt.com" in steps
+    assert any("Plus" in r for r in gpt["requires"])
     with pytest.raises(HTTPException) as e:
         _setup("notepad")
     assert e.value.status_code == 404

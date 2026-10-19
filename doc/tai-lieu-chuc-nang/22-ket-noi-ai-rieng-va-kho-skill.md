@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.1 — 19/10/2026 (bao-CR-631; 1.1 bao-CR-636: OAuth ChatGPT / claude.ai, xem lại khóa + tạm tắt, màn Ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống) |
+| Bản | 1.2 — 19/10/2026 (bao-CR-631; 1.1 bao-CR-636; 1.2 bao-CR-639 bước ChatGPT mới: OAuth ChatGPT / claude.ai, xem lại khóa + tạm tắt, màn Ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống) |
 | CR | **bao-CR-631** + **bao-CR-636** — bài Trung tâm trợ giúp + tài liệu này; mã của cụm ở ai-CR-063, 207–225 (cổng MCP, OAuth, xem lại khóa), bao-CR-620–625 (Trang cá nhân, Kho skill K1–K6), bao-CR-635 (Ứng dụng AI đã kết nối) |
 | Giao diện | **chỉ có trên `frontend-v2/`**: Trang cá nhân ▸ *Trợ lý AI của tôi* ▸ *Kết nối AI riêng* (`/me?tab=ai-connect`, mọi người) · phân hệ **Kho skill AI** (`/ai-skill/*`, quản trị) |
 | Bài Help Center | `backend/scripts/seed_help_ket_noi_ai_mcp.py` — thẻ *Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI* + 7 bài theo tác vụ (a–g). **Nội dung ở đây và ở seed phải khớp nhau** |
@@ -134,9 +134,12 @@ Bước người dùng (từ `mcp_setup.py`):
 - **claude.ai** (và Claude Desktop ▸ Settings ▸ Connectors): Settings ▸ Connectors ▸ Add custom connector → đặt tên, dán địa
   chỉ cổng vào *Remote MCP server URL* → Add → Connect → trang ERP: đăng nhập, chọn Chỉ đọc / Được ghi, **Cho phép** → về
   claude.ai bật DEGO ERP ở nút công cụ. Team / Enterprise: chủ tổ chức thêm ở Organization settings trước.
-- **ChatGPT**: Settings ▸ Apps & Connectors ▸ Advanced settings ▸ bật Developer mode → Create: tên, *MCP Server URL*,
-  Authentication = OAuth, tick tin tưởng → Create → trang ERP Cho phép → chọn DEGO ERP ở nút + trong ô chat. Tên mục đổi theo
-  phiên bản ChatGPT.
+- **ChatGPT** (bao-CR-639, theo ảnh đại ca chụp 19/10/2026; cần gói trả phí Plus / Pro / Business): Settings ▸
+  **Connectors** (`chatgpt.com/#settings/Connectors`; chưa có nút tạo thì bật **Developer mode** ở Security and login hoặc
+  Connectors ▸ Advanced settings) ▸ **Create** → hộp **New Connector (Beta)**: Name, Description (tùy chọn), **MCP Server
+  URL** = `<gốc>/api/mcp`, **Authentication = OAuth**, tick **I trust this application** ▸ Create → trang ERP: kiểm tên
+  miền chatgpt.com / openai.com, Chỉ đọc, Cho phép → nút + / Apps trong ô chat bật DEGO ERP. Bản cũ gọi là *Apps &
+  Connectors*; bước «Plugins ▸ Create MCP App» ghi lúc đầu là đoán sai, đã bỏ.
 
 Màn Cho phép (`oauth-consent-page.tsx`, API `GET /api/agent-hub/oauth/request/{req}`, `POST …/approve | deny`): tiêu đề
 *Cho phép ứng dụng AI dùng ERP thay bạn*; ghi tên ứng dụng (TỰ KHAI) + **`redirect_host`** (hostname nơi quay về; máy cục bộ
