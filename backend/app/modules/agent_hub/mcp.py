@@ -93,13 +93,19 @@ SKILL_TOOL_DEFS = [
          "skill_set": {"type": "string", "maxLength": 150, "description": "Lọc theo tên bộ skill."}}}},
     {"name": "read_skill",
      "description": ("Đọc nội dung một skill (bản đã xuất bản) theo đúng `name` từ list_skills, kèm danh sách tệp đính kèm. "
-                     "Làm theo hướng dẫn trong skill; không đọc lại nguyên văn cho người dùng."),
-     "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160}},
+                     "Dùng nội dung để trả lời và làm việc cho người dùng (được tóm tắt, trích ý, áp dụng); chỉ không chép "
+                     "nguyên văn cả bài ra ngoài. Nội dung dài trả theo trang ~10k ký tự: có next_offset thì gọi lại với "
+                     "offset đó để đọc tiếp. Skill có files thì đọc chi tiết bằng read_skill_file."),
+     "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160},
+                                                      "offset": {"type": "integer", "minimum": 0,
+                                                                 "description": "Vị trí ký tự bắt đầu (mặc định 0)."}},
                      "required": ["name"]}},
     {"name": "read_skill_file",
-     "description": "Đọc một tệp đính kèm dạng chữ của skill (đường dẫn lấy từ read_skill, vd references/cot-bao-cao.md).",
+     "description": ("Đọc một tệp đính kèm dạng chữ của skill (đường dẫn lấy từ read_skill, vd references/cot-bao-cao.md). "
+                     "Tệp dài trả theo trang: có next_offset thì gọi lại với offset đó."),
      "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160},
-                                                      "path": {"type": "string", "maxLength": 200}},
+                                                      "path": {"type": "string", "maxLength": 200},
+                                                      "offset": {"type": "integer", "minimum": 0}},
                      "required": ["name", "path"]}},
 ]
 SKILL_TOOLS = frozenset(d["name"] for d in SKILL_TOOL_DEFS)
@@ -230,12 +236,21 @@ def _skill_tool(db: Session, user, name: str, args: dict) -> dict:
     skill = str(args.get("name") or "").strip()[:160]
     if not skill:
         return {"error": "Thiếu `name` của skill — lấy từ list_skills."}
+    offset = _offset(args)
     if name == "read_skill":
-        return erp.skill_read(db, user, skill)
+        return erp.skill_read(db, user, skill, offset)
     path = str(args.get("path") or "").strip()[:200]
     if not path:
         return {"error": "Thiếu `path` của tệp — lấy từ danh sách tệp trong read_skill."}
-    return erp.skill_file(db, user, skill, path)
+    return erp.skill_file(db, user, skill, path, offset)
+
+
+def _offset(args: dict) -> int:
+    """ai-CR-228: vị trí đọc tiếp của skill / tệp dài — số không âm, sai kiểu thì đọc từ đầu."""
+    try:
+        return min(max(0, int(args.get("offset") or 0)), 10_000_000)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
@@ -345,6 +360,7 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         elif isinstance(result, dict) and result.get("error"):
             trace.update(status=mcp_log.CallStatus.ERROR, reason=str(result["error"]))
         text = json.dumps(result, ensure_ascii=False, default=str)
+        trace["result_chars"] = len(text)        # ai-CR-228: kết quả quá dài thì ứng dụng AI có thể bỏ qua — nhật ký ghi lại
         out = {"content": [{"type": "text", "text": text}], "isError": bool(isinstance(result, dict) and result.get("error"))}
         if name in STRUCTURED_TOOLS and isinstance(result, dict) and not out["isError"]:
             out["structuredContent"] = json.loads(text)     # MCP 2025-06-18: bản có cấu trúc, đi kèm bản chữ
@@ -470,7 +486,8 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=client, method=t.get("method", ""),
                                        tool=t.get("tool", ""), status=t.get("status", mcp_log.CallStatus.OK),
                                        reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip,
-                                       skill_id=t.get("skill_id", 0)) for t in traces])
+                                       skill_id=t.get("skill_id", 0), result_chars=t.get("result_chars", 0))
+                       for t in traces])
     if not out:
         return Response(status_code=202)
     payload = out if isinstance(body, list) else out[0]

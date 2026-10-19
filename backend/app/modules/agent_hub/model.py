@@ -610,6 +610,8 @@ class AgentMcpCall(Base):
     client_name: Mapped[str] = mapped_column(String(100), default="")
     method: Mapped[str] = mapped_column(String(40), default="")
     tool: Mapped[str] = mapped_column(String(80), default="")
+    #  ai-CR-228: số ký tự kết quả trả cho ứng dụng AI ở lượt tools/call (0 = không phải tools/call / lượt bị chặn).
+    result_chars: Mapped[int] = mapped_column(Integer, default=0)
     skill_id: Mapped[int] = mapped_column(BigInteger, default=0)          # K2 (đọc skill) mới ghi; nay luôn 0
     status: Mapped[int] = mapped_column(SmallInteger, default=1)
     deny_reason: Mapped[str] = mapped_column(String(200), default="")

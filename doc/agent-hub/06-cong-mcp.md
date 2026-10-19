@@ -144,6 +144,16 @@ hệ thống» phải gán quyền đọc tay ở màn Bộ skill.
   `mcp-setup` nhưng không cần đăng nhập — chỉ địa chỉ cổng + hướng dẫn tĩnh, đoạn cấu hình mang chỗ giữ khóa.
 - Migration `mcpkey03` (ERP, sau `mcpoauth01`) + `agent0014` (DB agent_hub, sau `agent0013`): thêm `raw_view`, `disabled_at`.
 
+### 2.4b Đọc skill dài theo trang (ai-CR-228)
+
+ChatGPT (dev 19/10) đọc skill dài nhất kho (~35k ký tự) rồi báo «không trả về nội dung». `read_skill` / `read_skill_file`
+(cổng MCP lẫn công cụ nội bộ) nhận `offset` (mặc định 0) và trả `{content, offset, next_offset, total_chars, page_note?}` —
+mỗi trang ≤ 10.000 ký tự, cắt ở tiêu đề `#` > dòng trống > xuống dòng trong nửa sau trang (không có thì cắt cứng); ghép các
+trang = nguyên văn; `next_offset = null` là hết; offset quá cuối → nội dung rỗng + câu nhắc đọc lại từ 0. Câu dặn đổi thành
+«Dùng nội dung này để trả lời và làm việc cho người dùng (tóm tắt, trích ý, áp dụng); chỉ không chép nguyên văn cả bài ra
+ngoài» + nhắc đọc tệp đính kèm bằng `read_skill_file`. Nhật ký cổng có cột `result_chars` (số ký tự kết quả mỗi lượt
+`tools/call`; migration `mcplog02` ERP sau `lbrct03` + `agent0015`), `CallRow` thêm `result_chars`.
+
 ### 2.5 Trợ lý nội bộ đọc chung Kho skill (ai-CR-220, K7)
 
 - Trợ lý web + bot core_v2 KHÔNG còn nhồi 7 gói `assistant/packs/*.md` (≈ 77.000 ký tự, ai-CR-183 lọc theo chủ đề) vào lời

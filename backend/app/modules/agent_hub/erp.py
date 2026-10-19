@@ -203,16 +203,16 @@ class _Local:
         return mcp_read.list_for_ai(db, user, query, skill_set)
 
     @staticmethod
-    def skill_read(db, user, name: str) -> dict:
+    def skill_read(db, user, name: str, offset: int = 0) -> dict:
         from app.modules.ai_skill import mcp_read
 
-        return mcp_read.read_for_ai(db, user, name)
+        return mcp_read.read_for_ai(db, user, name, offset=offset)
 
     @staticmethod
-    def skill_file(db, user, name: str, path: str) -> dict:
+    def skill_file(db, user, name: str, path: str, offset: int = 0) -> dict:
         from app.modules.ai_skill import mcp_read
 
-        return mcp_read.file_for_ai(db, user, name, path)
+        return mcp_read.file_for_ai(db, user, name, path, offset=offset)
 
     # --- Nhật ký thao tác (ai-CR-226) ---
     @staticmethod
@@ -659,11 +659,11 @@ class _Remote:
     def skill_list(self, db, user, query: str = "", skill_set: str = "") -> dict:
         return self._skill_call("/skills", user, {"query": query or "", "skill_set": skill_set or ""})
 
-    def skill_read(self, db, user, name: str) -> dict:
-        return self._skill_call("/skills/read", user, {"name": name or ""})
+    def skill_read(self, db, user, name: str, offset: int = 0) -> dict:
+        return self._skill_call("/skills/read", user, {"name": name or "", "offset": int(offset or 0)})
 
-    def skill_file(self, db, user, name: str, path: str) -> dict:
-        return self._skill_call("/skills/file", user, {"name": name or "", "path": path or ""})
+    def skill_file(self, db, user, name: str, path: str, offset: int = 0) -> dict:
+        return self._skill_call("/skills/file", user, {"name": name or "", "path": path or "", "offset": int(offset or 0)})
 
     def audit(self, db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
         """ai-CR-226: chế độ tách — DB agent_hub KHÔNG có `tab_audit_log`, nên đẩy dòng nhật ký sang ERP qua cổng B.
@@ -950,12 +950,12 @@ def skill_list(db, user, query: str = "", skill_set: str = "") -> dict:
     return _impl().skill_list(db, user, query, skill_set)
 
 
-def skill_read(db, user, name: str) -> dict:
-    return _impl().skill_read(db, user, name)
+def skill_read(db, user, name: str, offset: int = 0) -> dict:
+    return _impl().skill_read(db, user, name, offset)
 
 
-def skill_file(db, user, name: str, path: str) -> dict:
-    return _impl().skill_file(db, user, name, path)
+def skill_file(db, user, name: str, path: str, offset: int = 0) -> dict:
+    return _impl().skill_file(db, user, name, path, offset)
 
 
 #  ai-CR-226 (Agent 1 đọc log dev 19/10): mọi dòng nhật ký thao tác do dịch vụ AI ghi phải qua đây — gọi thẳng

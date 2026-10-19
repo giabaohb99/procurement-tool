@@ -13691,6 +13691,20 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-228 | ChatGPT đọc được cẩm nang dài bằng cách đọc từng trang
+- status: dang-lam
+- date: 2026-10-19
+Đại ca nối ChatGPT vào ERP dev thành công, nhưng khi nhờ đọc chi tiết cẩm nang nhà máy (cẩm nang dài nhất, khoảng ba mươi
+lăm nghìn ký tự) thì ChatGPT báo không nhận được nội dung, trong khi Claude đọc cùng cẩm nang vẫn ra đủ. Nay cẩm nang và tệp
+đính kèm dài được trả từng trang khoảng mười nghìn ký tự, ngắt ở chỗ đầu mục hay hết đoạn, kèm vị trí để đọc tiếp; ghép các
+trang lại đúng nguyên bài. Câu dặn gửi kèm cũng được viết lại cho rõ là ứng dụng AI được dùng nội dung để trả lời, chỉ không
+chép nguyên bài ra ngoài, và nhắc đọc tệp đính kèm khi cần chi tiết. Nhật ký cổng nối AI ghi thêm độ dài kết quả mỗi lượt
+gọi công cụ để soi các ca tương tự. Bài kiểm đều đạt.
+
+Mã nguồn: ai_skill/mcp_read.py, agent_hub/mcp.py, agent_hub/mcp_log.py, agent_hub/erp.py, agent_gateway/controller.py
+Migration: mcplog02 (DB ERP) + agent0015 (DB dịch vụ AI)
+Bài kiểm: test_ai_skill_doc_theo_trang_cr228.py
+
 ## ai-CR-227 | Lạc Lạc tạo lịch đúng theo tệp kế hoạch, không bịa link, không sai thứ
 - status: dang-lam
 - date: 2026-10-19
