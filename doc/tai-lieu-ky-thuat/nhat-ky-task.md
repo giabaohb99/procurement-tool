@@ -13569,6 +13569,18 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-223 | Lạc Lạc không còn gửi nguyên đoạn suy nghĩ tiếng Anh khi được hỏi về tệp gửi kèm
+- status: dang-lam
+- date: 2026-10-19
+Trưa 19/10 đại ca gửi Lạc Lạc trên dev một tệp kế hoạch kèm câu hỏi, bot trả về nguyên một đoạn dài tiếng Anh là phần suy
+nghĩ của model chứ không phải câu trả lời. Nguyên nhân: câu hỏi về tệp gửi kèm đi đường cũ, không qua bộ chọn model của
+lõi hội thoại mới, nên rơi vào một model suy luận rẻ, model này nghĩ hết lượt mà chưa kịp trả lời. Nay câu hỏi về tệp chọn
+model theo đúng luật của lõi mới (Claude, bản nhanh cho câu thường). Thêm một lớp chặn: nếu câu trả về vẫn là đoạn suy
+nghĩ tiếng Anh thì bot không gửi đoạn đó mà xin lỗi kèm mã lượt để người dùng gửi lại. Bài kiểm đều đạt.
+
+Mã nguồn: agent_hub/service.py
+Bài kiểm: test_agent_hub_lo_doan_suy_nghi_cr223.py
+
 ## ai-CR-220 | Trợ lý AI trên web và bot đọc cẩm nang từ Kho skill thay cho gói tri thức cũ
 - status: dang-lam
 - date: 2026-10-19

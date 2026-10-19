@@ -3908,14 +3908,14 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         from . import intent_ledger
 
         habits = intent_ledger.habit_block(db, link.user_id if link is not None else 0)
-        result = assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
-                                       kind=kind, stop_on_draft=True,       # ai-CR-183: thẻ nháp bot tự gửi, khỏi lượt chốt
-                                       system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
-                                              f"{_account_fact(db, chat_id, user)}"
-                                              + (f" {BOT_CODE_FACT}" if _can_order_code(db, chat_id) else "")
-                                              + (f"\n\n{memory_block}" if memory_block else "")
-                                              + (f"\n\n{habits}" if habits else "")
-                                              + (f"\n\n{summary_note}" if summary_note else ""))
+        #  Vá 19/10 (đại ca thấy Lạc Lạc in nguyên đoạn suy nghĩ tiếng Anh, lượt #358): đường này (hỏi về TỆP gửi kèm,
+        #  biên bản Drive…) không đi core_v2 nên không có phân luồng model — chuỗi khóa rơi vào khóa trạm đầu tiên
+        #  (deepseek-v4.1-flash), model suy luận nghĩ hết 8192 token ra nội dung mà chưa kịp trả lời. Dùng ĐÚNG luật chọn
+        #  model của core_v2 (Claude đứng đầu, Haiku luồng thường) theo câu NGƯỜI DÙNG hỏi, không theo nội dung tệp.
+        lane = core_v2.lane_of(question.split(f"\n\n{DOC_GUIDE}", 1)[0])
+        with user_keys.prefer(core_v2.route_providers(lane), model=core_v2.lane_model(lane)):
+            result = _ask_routed(assistant_service, question, db=db, user=user, history=history, kind=kind,
+                                 chat_id=chat_id, memory_block=memory_block, habits=habits, summary_note=summary_note)
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         _close_answer_run(db, answer_run, None, error=str(e))
@@ -3929,6 +3929,43 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
                     message_id=before_id)
         return
     _close_answer_run(db, answer_run, result)
+    if looks_like_leaked_reasoning(result.get("text") or ""):
+        #  Lớp chặn thứ hai: model vẫn lỡ in đoạn suy nghĩ (tiếng Anh, không dấu câu trả lời) — KHÔNG gửi rác đó.
+        log.warning("agent_hub: lượt #%s trả đoạn suy nghĩ thay câu trả lời — không gửi", answer_run.id)
+        result = {**result, "text": LEAKED_REASONING_MSG.format(run=answer_run.id)}
+    return _deliver_answer(db, chat_id, user, result, question=question, before_id=before_id, hint=hint, intent=intent,
+                           ledger=ledger)
+
+
+#  Đoạn mở đầu kiểu «suy nghĩ thành tiếng» của model suy luận (DeepSeek / Kimi / Claude qua trạm) — chỉ xét ĐOẠN ĐẦU (tới
+#  dòng trống đầu tiên): đoạn đó mở kiểu suy nghĩ VÀ không có chữ tiếng Việt có dấu. Không xét cả 600 ký tự vì đoạn suy
+#  nghĩ hay trích lại lời người dùng tiếng Việt ngay sau (lượt #358); câu trả lời tiếng Việt bình thường không bị chặn.
+_REASONING_OPENER = re.compile(r"^\s*(?:the user\b|okay[,.]|ok[,.]|alright[,.]|let me\b|i need to\b|i should\b|we need to\b|"
+                               r"first,? i\b|so,? the user\b|hmm\b)", re.I)
+_VI_MARKS = re.compile(r"[ăâđêôơưàáạảãằắặẳẵầấậẩẫèéẹẻẽềếệểễìíịỉĩòóọỏõồốộổỗờớợởỡùúụủũừứựửữỳýỵỷỹ]", re.I)
+LEAKED_REASONING_MSG = ("Em xin lỗi, lượt này model trả về nháp suy nghĩ thay vì câu trả lời nên em không gửi. Anh/chị gửi lại "
+                        "giúp em nhé.\n<i>Mã lượt #{run}</i>")
+
+
+def looks_like_leaked_reasoning(text: str) -> bool:
+    head = (text or "").lstrip().split("\n\n", 1)[0][:400]
+    return bool(head) and bool(_REASONING_OPENER.match(head)) and not _VI_MARKS.search(head)
+
+
+def _ask_routed(assistant_service, question: str, *, db, user, history, kind: str, chat_id: str, memory_block: str,
+                habits: str, summary_note: str) -> dict:
+    return assistant_service.ask(question, db=db, user=user, history=history, provider=manager.AgentGeminiProvider.name,
+                                   kind=kind, stop_on_draft=True,       # ai-CR-183: thẻ nháp bot tự gửi, khỏi lượt chốt
+                                   system=f"{_persona(chat_id)} {policy.ASSISTANT_RULES} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
+                                          f"{_account_fact(db, chat_id, user)}"
+                                          + (f" {BOT_CODE_FACT}" if _can_order_code(db, chat_id) else "")
+                                          + (f"\n\n{memory_block}" if memory_block else "")
+                                          + (f"\n\n{habits}" if habits else "")
+                                          + (f"\n\n{summary_note}" if summary_note else ""))
+
+
+def _deliver_answer(db: Session, chat_id: str, user, result: dict, *, question: str, before_id: int, hint: str,
+                    intent: str, ledger: bool) -> None:
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.
     tool_calls = result.get("tool_calls") or []
