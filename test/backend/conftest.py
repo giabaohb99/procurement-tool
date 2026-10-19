@@ -7,6 +7,16 @@ conftest.py — SQLite in-memory fixtures cho backend pytest.
 - Fixture db (function-scope): SQLite in-memory, create_all, sessionmaker.
 - Fixture seed(db): dữ liệu tối thiểu, trả về namespace với các id cần thiết.
 """
+import os
+import time
+
+#  Ghim múi giờ UTC TRƯỚC khi nạp bất kỳ mã nào (19/10/2026, bộ kiểm full bản prod 81632cd6): SQLite ghi
+#  `CURRENT_TIMESTAMP` theo giờ UTC, máy chủ / container cũng chạy UTC (agent_hub/timeutil.py), nhưng `.env` máy local có
+#  TZ=Asia/Ho_Chi_Minh → `datetime.now()` lệch 7 giờ với created_at mặc định, hàng chục bài agent_hub đỏ giả.
+os.environ["TZ"] = "UTC"
+if hasattr(time, "tzset"):
+    time.tzset()
+
 import types
 from types import SimpleNamespace
 
