@@ -42,8 +42,15 @@ HISTORY_WINDOW = timedelta(hours=24)
 HISTORY_MAX_CHARS = 6_000
 HISTORY_MSG_CHARS = 600
 HISTORY_BLOCK = 8
-SESSION_GAP = timedelta(minutes=60)
+#  ai-CR-224 (đại ca 19/10: 12:31 bàn kế hoạch, 13:34 nhắn «oke tạo đi» → bot quên sạch, lịch sử 0 lượt): 60 phút → 6 giờ.
+#  Tiền không tăng đáng kể vì lịch sử vẫn chịu trần HISTORY_MAX_CHARS.
+SESSION_GAP = timedelta(hours=6)
 SMALLTALK_TURNS = 6
+#  ai-CR-224: tệp người dùng gửi vào chat — lượt sau đọc LẠI được bằng công cụ read_chat_file (trước chỉ lượt gửi tệp thấy
+#  nội dung; lượt sau chỉ còn dòng «[tệp …]»). Không lưu chữ: tải lại theo file_id của Telegram / Zalo.
+FILE_LOOKBACK = timedelta(hours=24)
+FILE_PART_CHARS = 20_000
+FILE_HINT = " (nội dung tệp: gọi read_chat_file nếu cần)"
 DRAFT_WINDOW = timedelta(minutes=15)
 PLAN_WAIT_WINDOW = timedelta(hours=48)
 MAX_ITERS = 6
@@ -182,6 +189,14 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
                         "trả lời phần còn lại. Lịch Google (create_calendar_event) chỉ khi người dùng nói tạo lịch.",
             parameters={"type": "object", "properties": {"luc": {"type": "string"}, "viec": {"type": "string"}},
                         "required": ["luc", "viec"]}),
+    #  ai-CR-224: đọc lại tệp đã gửi (kế hoạch, báo cáo…) — lịch sử chỉ giữ dòng «[tệp …]».
+    ToolDef(name="read_chat_file",
+            description="Đọc LẠI nội dung tệp người dùng đã gửi vào chat này trong 24 giờ (kế hoạch, báo cáo, bảng tính…). "
+                        "Gọi khi việc cần nội dung tệp — vd «tạo sự kiện theo kế hoạch anh gửi», «làm theo file lúc nãy» — "
+                        "vì lịch sử chỉ còn dòng [tệp …]. ten: một phần tên tệp (bỏ trống = tệp mới nhất); phan: phần thứ "
+                        "mấy khi tệp dài (mặc định 1).",
+            parameters={"type": "object", "properties": {"ten": {"type": "string"}, "phan": {"type": "integer"}},
+                        "required": []}),
 )
 #  Chỉ đưa cho chat được giao việc sửa mã (chủ bot + người được cấp quyền).
 CODE_TASK_TOOL = ToolDef(
@@ -470,6 +485,9 @@ def _history_body(r: AgentMessage) -> str | None:
     if r.direction != DIR_IN and (body.startswith(DRAFT_HEADS) or "đang chờ, em chưa tạo:" in body.split("\n", 1)[0]):
         #  ai-CR-202: tin nháp cũ chỉ giữ dòng đầu — nội dung nháp còn chờ đã có ở khối ĐANG DỞ.
         return body.split("\n", 1)[0] + " (chi tiết nháp đã lược)"
+    if r.direction == DIR_IN and r.files:
+        #  ai-CR-224: dòng «[tệp …]» — nhắc model đọc lại được (gợi ý cố định theo chính tin này, không phá tiền tố).
+        return body[:HISTORY_MSG_CHARS] + FILE_HINT
     if len(body) > HISTORY_MSG_CHARS:
         #  Đợt nén: tin dài của bot (bảng số liệu, bản tra giá) là kết quả công cụ cũ — giữ phần đầu là đủ cho mạch chuyện;
         #  cần số liệu mới thì tra lại (luật «số liệu đổi theo ngày luôn tra công cụ»).
@@ -801,6 +819,52 @@ def _news_today(topics: list, days: int = 2) -> dict:
     return {"tin": out, "khoang_ngay": max_hours // 24}
 
 
+def chat_files(db: Session, chat_id: str, row: AgentMessage) -> list[dict]:
+    """Tệp người dùng gửi vào chat này trong FILE_LOOKBACK tính tới tin `row` (mới → cũ): {name, mime, file_id, at}."""
+    since = row.created_at - FILE_LOOKBACK if row.created_at else None
+    q = (select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN,
+                                    AgentMessage.id <= row.id).order_by(AgentMessage.id.desc()).limit(200))
+    out: list[dict] = []
+    for r in db.scalars(q):
+        if since and r.created_at and r.created_at < since:
+            break
+        for f in r.files or []:
+            if isinstance(f, dict) and f.get("file_id") and f.get("kind", "doc") == "doc":
+                out.append({"name": str(f.get("name") or "tệp"), "mime": str(f.get("mime") or ""),
+                            "file_id": str(f["file_id"]), "at": r.created_at})
+    return out
+
+
+def read_chat_file(db: Session, chat_id: str, row: AgentMessage, name: str = "", part=None) -> dict:
+    """ai-CR-224: tải lại tệp đã gửi (theo file_id) rồi bóc chữ — chia phần FILE_PART_CHARS ký tự."""
+    from . import doc_text
+
+    files = chat_files(db, chat_id, row)
+    if not files:
+        return {"error": "Chat này không có tệp nào gửi trong 24 giờ qua — nhờ người dùng gửi lại tệp."}
+    want = (name or "").strip().lower()
+    pick = next((f for f in files if want in f["name"].lower()), None) if want else files[0]
+    if pick is None:
+        return {"error": f"Không thấy tệp tên có «{name}». Tệp gần đây: " + "; ".join(f["name"] for f in files[:10])}
+    try:
+        data, _ = telegram.download_file(pick["file_id"], max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
+        text = doc_text.extract(pick["name"], pick["mime"], data)
+    except Exception as e:  # noqa: BLE001 — tệp hết hạn bên Telegram / Zalo, hỏng định dạng…
+        return {"error": f"Không đọc lại được tệp «{pick['name']}» ({type(e).__name__}) — nhờ người dùng gửi lại."}
+    total = max(1, -(-len(text) // FILE_PART_CHARS))
+    try:
+        n = min(max(int(part or 1), 1), total)
+    except (TypeError, ValueError):
+        n = 1
+    out = {"ten": pick["name"], "phan": n, "so_phan": total,
+           "noi_dung": text[(n - 1) * FILE_PART_CHARS: n * FILE_PART_CHARS]}
+    if n < total:
+        out["note"] = f"Tệp còn {total - n} phần — gọi lại với phan={n + 1} nếu cần."
+    if len(files) > 1:
+        out["tep_khac"] = [f["name"] for f in files[1:10]]
+    return out
+
+
 def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, args: dict) -> dict:
     """Ba công cụ nháp của lõi: dùng lại nguyên đường «tạo» / «thôi» của service để không lệch luật (quyền, gửi duyệt,
     hỏi nhận việc sau kế hoạch…)."""
@@ -813,6 +877,8 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         return _news_today(args.get("topics") or [], int(args.get("days") or 2))
     if name == "my_saved_drafts":
         return {"nhap_da_luu": erp.my_drafts(db, user)[:20]}
+    if name == "read_chat_file":
+        return read_chat_file(db, chat_id, row, str(args.get("ten") or ""), args.get("phan"))
     if name == "update_draft":
         pending, info = _pending_draft(db, chat_id, row.id, now)
         if pending is None:

@@ -468,6 +468,7 @@ def _document_by_message(db: Session, msg: dict, chat_id: str, text: str) -> boo
         return True
     row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), f"[tệp {name}] {text}"[:4000],
                       action=ACT_ASKED)
+    row.files = [info]                 # ai-CR-224: lượt sau đọc lại được (core_v2.read_chat_file) — trước chỉ tệp KHÔNG kèm câu mới giữ
     row.scope = SCOPE_PERSONAL
     db.commit()
     _answer_document(db, chat_id, info, text, row.id)

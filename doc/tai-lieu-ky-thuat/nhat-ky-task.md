@@ -13569,6 +13569,19 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-224 | Lạc Lạc nhớ cuộc trò chuyện trong sáu giờ và đọc lại được tệp đã gửi
+- status: dang-lam
+- date: 2026-10-19
+Đại ca bàn với Lạc Lạc việc tạo hai mươi sáu sự kiện theo tệp kế hoạch, một tiếng sau nhắn tạo đi thì bot quên sạch. Có ba
+nguyên nhân và đã vá cả ba theo lời đại ca. Một: bot chỉ nhớ trong một phiên, nghỉ quá sáu mươi phút là sang phiên mới; nay
+nâng lên sáu giờ, chi phí gần như không đổi vì phần lịch sử vẫn có trần. Hai: nội dung tệp chỉ được đọc ở lượt gửi tệp,
+các lượt sau bot không còn thấy; nay bot có công cụ đọc lại tệp đã gửi vào chat trong hai mươi bốn giờ, tệp dài thì đọc
+từng phần. Ba: câu có chữ sự kiện chưa gọi được nhóm công cụ lịch nên bot nói sai là không xóa được sự kiện; nay đã nhận.
+Bài kiểm đều đạt.
+
+Mã nguồn: agent_hub/core_v2.py, agent_hub/service.py, assistant/tool_router.py
+Bài kiểm: test_agent_hub_nho_phien_doc_lai_tep_cr224.py
+
 ## ai-CR-223 | Lạc Lạc không còn gửi nguyên đoạn suy nghĩ tiếng Anh khi được hỏi về tệp gửi kèm
 - status: dang-lam
 - date: 2026-10-19

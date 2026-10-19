@@ -66,7 +66,7 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
      r"van ban|cong van|quyet dinh|to trinh|thong bao so|\bcv\d*|van thu|so cong van"),
     ("google", frozenset({"my_calendar_events", "create_calendar_event", "update_calendar_event",
                           "delete_calendar_event", "drive_read", "drive_search"}),
-     r"\blich\b|cuoc hop|buoi hop|di hop|lich hop|\bhop (luc|vao|voi|ncc|chieu|sang)|\bhen\b|drive|google"),
+     r"\blich\b|su kien|cuoc hop|buoi hop|di hop|lich hop|\bhop (luc|vao|voi|ncc|chieu|sang)|\bhen\b|drive|google"),
     ("meeting", frozenset({"latest_meeting_report", "list_my_meetings", "rewrite_meeting_minutes",
                            "save_meeting_template"}),
      r"bien ban|recap|cuoc hop|buoi hop|mau bien ban"),
