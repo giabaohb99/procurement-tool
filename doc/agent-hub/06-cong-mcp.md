@@ -1,6 +1,6 @@
 # AGENT HUB — CỔNG MCP: dùng AI của bạn với dữ liệu ERP
 
-**Bản 2.0 · 17/10/2026** — gộp ai-CR-063 (bản 1.0, 25/09) và đợt ai-CR-207 … 216 (doc/erp/21 Kho skill AI qua MCP, đại ca
+**Bản 2.1 · 19/10/2026** (2.1: OAuth cho ChatGPT / claude.ai — ai-CR-218, §2.3) — gộp ai-CR-063 (bản 1.0, 25/09) và đợt ai-CR-207 … 219 (doc/erp/21 Kho skill AI qua MCP, đại ca
 chốt 17/10: MCP là đường chính, người dùng tự trả tiền gói AI của họ). Một chỗ đọc đủ: người dùng làm gì, cổng mở gì, gác
 gì, và hợp đồng API cho giao diện (§7). Lịch sử từng thay đổi nằm ở `doc/tai-lieu-ky-thuat/change-log-ai.md`.
 
@@ -29,7 +29,9 @@ Telegram (`assistant.tools`) — không viết lại tool, không mở đường
    - **Claude Code**: `claude mcp add --transport http --scope user dego-erp <url> --header "Authorization: Bearer …"`.
    - **Cursor**: `~/.cursor/mcp.json` → `{"mcpServers": {"dego-erp": {"url": "<url>", "headers": {"Authorization": "Bearer …"}}}}`.
    - **Gemini CLI**: `~/.gemini/settings.json` → như Cursor nhưng khóa `httpUrl` thay `url`.
-   - **claude.ai (trình duyệt), ChatGPT**: kết nối tùy chỉnh chỉ đăng nhập OAuth, chưa nhận khóa ERP — dùng ứng dụng khác.
+   - **claude.ai (trình duyệt), ChatGPT** (ai-CR-218): thêm kết nối tùy chỉnh, dán địa chỉ `<gốc ERP>/api/mcp`, chọn OAuth →
+     trang ERP mở ra, đăng nhập, chọn mức, bấm **Cho phép** (§2.3). Không cần khóa. Claude Desktop cũng nối được kiểu này
+     qua Settings → Connectors (không cần Node.js).
 3. **Kiểm tra** — màn báo «đã nối» khi khóa có lượt gọi thành công (`mcp-keys/{id}/last-call`).
 4. **Hỏi** như hỏi Trợ lý: «quy trình mua gấp làm sao», «đơn PO00358 tới đâu», «nghỉ phép còn bao nhiêu ngày».
 
@@ -60,6 +62,38 @@ Không bao giờ mở qua MCP: `propose_*` (xác nhận bằng nút trên web / 
   trắng. Chưa nhận thì cổng từ chối (nhật ký ghi «Khóa phát hộ chưa được chủ khóa nhận»).
 - Thu hồi một khóa, mọi khóa của một người, hoặc cả một lượt phát (`batch_id`); chủ khóa ngoài phạm vi → từ chối cả lệnh.
   Dòng thu hồi giữ lại («Đã thu hồi») để đối soát. Chỉ báo bằng **chuông ERP** — không email, không Telegram (doc 21 §7.1).
+
+### 2.3 Kết nối OAuth (ai-CR-218, K14 — ChatGPT, claude.ai, Claude Desktop Connectors)
+
+ERP là máy chủ cấp quyền OAuth 2.1 tối thiểu theo đặc tả MCP 2025-06-18:
+
+1. Ứng dụng gọi `/api/mcp` không có token → 401 `WWW-Authenticate: Bearer resource_metadata="<gốc>/.well-known/oauth-protected-resource"`.
+2. Đọc `/.well-known/oauth-protected-resource` (RFC 9728; có cả dạng gắn đường `/.well-known/oauth-protected-resource/api/mcp`)
+   → `authorization_servers = [<gốc>]` → đọc `/.well-known/oauth-authorization-server` (RFC 8414).
+3. Tự đăng ký `POST /api/oauth/register` (RFC 7591): redirect_uri phải là https, http cục bộ (127.0.0.1 / localhost) hoặc
+   lược đồ riêng của ứng dụng cài máy; không `#`; tối đa 10. Mặc định ứng dụng công khai (`none` + PKCE); xin
+   `client_secret_post` / `client_secret_basic` thì nhận bí mật một lần. Trần 30 lượt đăng ký / phút / IP.
+4. Trình duyệt mở `GET /api/oauth/authorize` — PKCE **S256 bắt buộc**; ứng dụng lạ / redirect_uri lạ → trang lỗi, KHÔNG
+   chuyển hướng; lỗi khác trả về redirect_uri kèm `error`, `state`, `iss`. Hợp lệ → chuyển sang màn ERP v2
+   `/oauth/consent/<chuỗi ký HMAC, sống 10 phút>` (cần đăng nhập; chuỗi ở đường dẫn vì màn đăng nhập chỉ nhớ pathname).
+5. Màn đồng ý: tên ứng dụng (lúc đăng ký), tài khoản, chọn **Chỉ đọc** (mặc định theo mức ứng dụng xin) / **Được ghi**,
+   **Cho phép** → mã cấp quyền một lần (băm, 5 phút) → về ứng dụng; **Từ chối** → `error=access_denied`.
+6. `POST /api/oauth/token`: `authorization_code` (kiểm PKCE, redirect_uri, resource, mã chưa dùng, chưa hết hạn) hoặc
+   `refresh_token` (xoay vòng — mã làm mới cũ chết ngay). Trả `access_token` (tiền tố `dego_mcp_`, sống 1 giờ),
+   `refresh_token` (`dego_mcr_`), `scope` `mcp:read` / `mcp:read mcp:write`.
+7. `POST /api/oauth/revoke` (RFC 7009) — theo mã truy cập hoặc mã làm mới.
+
+Mỗi lần **Cho phép** = một dòng `tab_agent_mcp_key` loại `kind = 2` (Kết nối OAuth), tên `Qua <tên ứng dụng>`: cùng mức,
+nhật ký (ghi `client_name` lúc đăng ký), cùng màn Khóa của tôi / Khóa nhân sự; gỡ ở đó là chặn cả mã làm mới. Kết nối sống
+**90 ngày cố định** (làm mới không kéo dài — Agent 1 chốt 19/10), hết thì kết nối lại. Cấp lại cho cùng (người, ứng dụng) thì
+kết nối cũ chết. Không tính vào trần 5 khóa dán tay. Bảng: `tab_agent_oauth_client`, `tab_agent_oauth_code` + 4 cột trên khóa
+(`kind`, `oauth_client_id`, `access_expires_at`, `refresh_hash`) — migration `mcpoauth01` (ERP) / `agent0013` (DB agent_hub).
+
+Hạ tầng: nginx erp (`docker/nginx.erp.prod.conf`) chuyển `/.well-known/(oauth-|openid-configuration)` sang api (thay dòng
+404 của bao-CR-625); Vite dev cũng vậy; proxy ERP (chế độ tách) chuyển `/api/oauth/*` + `/.well-known/oauth-*` sang dịch vụ
+AI, giữ header `Authorization` (client_secret_basic). `AGENT_ERP_URL` PHẢI đặt đúng gốc công khai — `issuer` và mọi đường
+trong tài liệu mô tả lấy từ đó. mcp-remote có khóa header hợp lệ vẫn đi thẳng (chỉ vào OAuth khi 401). Chưa mở CORS cho
+công cụ chạy trên trình duyệt (vd MCP Inspector) — ChatGPT / claude.ai gọi từ phía máy chủ của họ.
 
 ## 3. Công cụ
 
@@ -158,7 +192,7 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 | Đường | Vào | `data` |
 |---|---|---|
 | `GET mcp-setup` | — | `{endpoint, placeholder, clients: [{client, label, supported}]}` — 6 ứng dụng: `claude_desktop`, `claude_code`, `cursor`, `gemini_cli`, `claude_ai`, `chatgpt` |
-| `GET mcp-setup?client=<mã>` | `client` | `{client, label, supported, format: "json"\|"shell"\|"", snippet, steps: [str], files?: {windows?, macos?, all?}, requires?: [str], note?, endpoint, placeholder}` — `snippet` chứa `placeholder` (`<KHÓA_CỦA_BẠN>`), màn thay bằng khóa vừa hiện. `supported=false` (claude.ai, ChatGPT) thì `snippet` rỗng, `note` nói lý do. Mã lạ → 404 |
+| `GET mcp-setup?client=<mã>` | `client` | `{client, label, supported, auth: "key"\|"oauth", format: "json"\|"shell"\|"url", snippet, steps: [str], files?: {windows?, macos?, all?}, requires?: [str], note?, endpoint, placeholder}` — `snippet` chứa `placeholder` (`<KHÓA_CỦA_BẠN>`), màn thay bằng khóa vừa hiện. `auth = "oauth"` (claude.ai, ChatGPT — ai-CR-218): `format = "url"`, `snippet` là địa chỉ cổng, KHÔNG cần khóa. Mã lạ → 404 |
 | `GET mcp-keys` | — | `{endpoint, items: [Key]}` |
 | `POST mcp-keys` | `{name, scope: 0\|1, days}` | `Key + {key}` (khóa thô, chỉ một lần) |
 | `DELETE mcp-keys/{id}` | — | `null` |
@@ -169,7 +203,7 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 | `GET mcp-calls/daily?days=14` | `days≤90` | `{days, items: [{day, total, ok, denied, error}]}` — đủ từng ngày |
 
 `Key` = `{id, name, hint: "…abcd", scope, scope_label, expires_at, last_used_at, created_at, state, state_label, issued_by,
-claimed_at, batch_id, user_id}`.
+claimed_at, batch_id, user_id, kind: 1\|2, kind_label}` — `kind = 2` «Kết nối OAuth» (tên `Qua ChatGPT`…, ai-CR-218).
 `Call` = `{created_at, client_name, method, tool, status, status_label, deny_reason}`.
 `CallRow` = `{id, created_at, key_id, user_id, user_label, employee_id, department_id, company_id, client_name, method, tool,
 skill_id, status, status_label, deny_reason, duration_ms, ip}`.
@@ -195,6 +229,17 @@ skill_id, status, status_label, deny_reason, duration_ms, ip}`.
 
 Dải: `rate_per_key` 10–2000 · `rate_per_ip` 0–20000 · `bad_key_per_ip` 5–1000 · `row_budget_per_min` 0–100000 (0 = không
 chặn) · `log_retention_days` 30–730. Mã nhóm ở §4.
+
+### 7.3b Màn đồng ý OAuth (ai-CR-218)
+
+| Đường | Vào | `data` |
+|---|---|---|
+| `GET /api/agent-hub/oauth/request/{req}` | — | `{client_name, redirect_host, requested_scope, grant_days: 90, scopes: [{value, label}], user_label}`; chuỗi ký sai / hết hạn → 400 |
+| `POST /api/agent-hub/oauth/approve` | `{req, scope: 0\|1}` | `{redirect_to}` — trình duyệt chuyển thẳng tới đó |
+| `POST /api/agent-hub/oauth/deny` | `{req}` | `{redirect_to}` (kèm `error=access_denied`) |
+
+Màn: `frontend-v2/src/app/pages/oauth-consent-page.tsx`, route `appRoutes.oauthConsent(':req')` trong `ProtectedRoute`, ngoài
+khung ứng dụng.
 
 ### 7.4 Khung demo theo chương (K8, ai-CR-214 — giao diện, không phải API)
 

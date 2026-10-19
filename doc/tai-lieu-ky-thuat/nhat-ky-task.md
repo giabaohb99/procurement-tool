@@ -13540,6 +13540,22 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-218 | ChatGPT và claude.ai nối được vào ERP bằng cách đăng nhập ERP và bấm Cho phép
+- status: dang-lam
+- date: 2026-10-19
+Đại ca chốt làm kết nối cho ChatGPT. Trước nay ChatGPT và claude.ai không nối được vì hai nơi này không dán khóa mà đòi đăng
+nhập theo chuẩn OAuth. Nay ERP đóng vai máy cấp quyền: người dùng thêm kết nối trong ChatGPT hoặc claude.ai, dán địa chỉ cổng
+ERP, một trang ERP mở ra để đăng nhập, chọn chỉ đọc hay được ghi rồi bấm Cho phép là xong, không phải chép khóa. Mỗi lần cho
+phép là một dòng kết nối hiện ở Trang cá nhân, phần Khóa AI, với tên ứng dụng; gỡ dòng đó là ứng dụng mất quyền ngay. Kết
+nối dùng chín mươi ngày rồi phải kết nối lại; mã truy cập bên trong tự đổi mỗi giờ. Các lớp bảo vệ theo chuẩn: bắt buộc mã
+chống đánh tráo, mã cấp quyền chỉ dùng một lần, ứng dụng lạ hay địa chỉ quay về lạ bị từ chối. Hướng dẫn nối trên màn AI của
+tôi nay có bước cho ChatGPT và claude.ai. Bài kiểm đều đạt. Chờ Agent 1 dựng lên dev rồi thử với ChatGPT của đại ca.
+
+Mã nguồn: agent_hub/oauth.py, agent_hub/oauth_controller.py, agent_hub/mcp.py, agent_hub/mcp_keys.py,
+agent_hub/mcp_setup.py, agent_gateway/proxy.py, docker/nginx.erp.prod.conf, frontend-v2 app/pages/oauth-consent-page.tsx
+Migration: mcpoauth01 (DB ERP) + agent0013 (DB dịch vụ AI)
+Bài kiểm: test_agent_hub_oauth_mcp_cr218.py, oauth-consent-page.test.tsx
+
 ## ai-CR-219 | Nhật ký cổng nối AI lọc riêng lượt gọi công cụ, số liệu Tổng quan khỏi lệch
 - status: xong
 - date: 2026-10-19

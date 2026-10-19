@@ -86,7 +86,8 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     url = "https://deverp.degoholding.vn/api/mcp"
     cat = _setup()
     assert cat["endpoint"] == url and len(cat["clients"]) == 6
-    assert {c["client"] for c in cat["clients"] if not c["supported"]} == {"claude_ai", "chatgpt"}
+    assert all(c["supported"] for c in cat["clients"])                       # ai-CR-218: claude.ai / ChatGPT qua OAuth
+    assert {c["client"] for c in cat["clients"] if c["auth"] == "oauth"} == {"claude_ai", "chatgpt"}
 
     desk = _setup("claude_desktop")
     server = json.loads(desk["snippet"])["mcpServers"]["dego-erp"]
@@ -102,7 +103,10 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     assert cur == {"url": url, "headers": {"Authorization": "Bearer <KHÓA_CỦA_BẠN>"}}
     gem = json.loads(_setup("gemini_cli")["snippet"])["mcpServers"]["dego-erp"]
     assert gem["httpUrl"] == url and gem["headers"]["Authorization"].startswith("Bearer ")
-    assert _setup("claude_ai")["supported"] is False and "OAuth" in _setup("chatgpt")["note"]
+    web = _setup("claude_ai")
+    assert web["supported"] and web["auth"] == "oauth" and web["snippet"] == url and "Cho phép" in " ".join(web["steps"])
+    assert _setup("chatgpt")["format"] == "url" and "OAuth" in " ".join(_setup("chatgpt")["steps"])
+    assert "«" not in _setup("chatgpt")["note"] and "Connectors" in desk["note"]
     with pytest.raises(HTTPException) as e:
         _setup("notepad")
     assert e.value.status_code == 404

@@ -16,6 +16,11 @@ export const appRoutes = {
    */
   notifications: '/notifications',
   me: '/me',
+  /**
+   * Màn đồng ý OAuth của cổng MCP (ai-CR-218): ChatGPT / claude.ai mở `/api/oauth/authorize`, máy chủ chuyển sang đây
+   * kèm chuỗi ký. Chuỗi nằm ở ĐƯỜNG DẪN vì màn đăng nhập chỉ nhớ `pathname` khi quay lại.
+   */
+  oauthConsent: (req: string) => `/oauth/consent/${req}`,
 
   sales: {
     root: '/sales',

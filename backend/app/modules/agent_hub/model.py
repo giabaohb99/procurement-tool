@@ -546,6 +546,46 @@ class AgentMcpKey(Base, AuditMixin):
     claimed_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     raw_sealed: Mapped[str] = mapped_column(Text, default="")
     batch_id: Mapped[str] = mapped_column(String(32), default="", index=True)
+    #  ai-CR-218 (K14 OAuth): `kind` 1 = khóa dán tay (tự tạo / phát hộ) · 2 = kết nối OAuth (ChatGPT, claude.ai…). Kết nối
+    #  OAuth: `token_hash` là mã truy cập HIỆN HÀNH (hạn ngắn ở `access_expires_at`), `refresh_hash` là mã làm mới hiện
+    #  hành (xoay vòng mỗi lần đổi), `expires_at` là hạn của cả kết nối, `oauth_client_id` trỏ `tab_agent_oauth_client`.
+    kind: Mapped[int] = mapped_column(SmallInteger, default=1)
+    oauth_client_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    access_expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    refresh_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+
+
+class AgentOAuthClient(Base, AuditMixin):
+    """Ứng dụng AI tự đăng ký với máy chủ cấp quyền OAuth của cổng MCP (RFC 7591, ai-CR-218): ChatGPT, claude.ai, Claude
+    Desktop… `client_secret_hash` chỉ có khi ứng dụng xin phương thức có bí mật; ứng dụng công khai dùng PKCE."""
+
+    __tablename__ = "tab_agent_oauth_client"
+
+    client_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    client_name: Mapped[str] = mapped_column(String(200), default="")
+    redirect_uris: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    token_endpoint_auth_method: Mapped[str] = mapped_column(String(30), default="none")
+    client_secret_hash: Mapped[str] = mapped_column(String(64), default="")
+    ip: Mapped[str] = mapped_column(String(45), default="")
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentOAuthCode(Base):
+    """Mã cấp quyền một lần (authorization code) — chỉ giữ băm, sống 5 phút, dùng xong ghi `used_at` (ai-CR-218)."""
+
+    __tablename__ = "tab_agent_oauth_code"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    code_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    client_pk: Mapped[int] = mapped_column(BigInteger, default=0)
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    redirect_uri: Mapped[str] = mapped_column(String(500), default="")
+    code_challenge: Mapped[str] = mapped_column(String(128), default="")
+    scope: Mapped[int] = mapped_column(SmallInteger, default=0)            # mcp_keys.SCOPE_READ / SCOPE_WRITE
+    resource: Mapped[str] = mapped_column(String(500), default="")
+    expires_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
 class AgentMcpCall(Base):

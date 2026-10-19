@@ -39,8 +39,9 @@ async def forward(request: Request, user_id: int) -> Response:
         headers.update(agent_signature.sign_headers(request.method, path, body, user_id))
     except ValueError as e:
         raise HTTPException(503, str(e)) from None
-    #  MCP xác thực bằng khóa riêng trong Authorization: giữ nguyên cho dịch vụ AI kiểm.
-    if path.startswith("/api/mcp") and request.headers.get("authorization"):
+    #  MCP xác thực bằng khóa riêng trong Authorization: giữ nguyên cho dịch vụ AI kiểm. ai-CR-218: đường token / revoke
+    #  của OAuth nhận bí mật ứng dụng qua `Authorization: Basic` (client_secret_basic) — cũng phải giữ.
+    if path.startswith(("/api/mcp", "/api/oauth/")) and request.headers.get("authorization"):
         headers["authorization"] = request.headers["authorization"]
     try:
         #  Gọi trong luồng phụ, KHÔNG chặn vòng sự kiện: dịch vụ AI có thể quay lại hỏi ERP qua cổng B (vd quyền
@@ -75,6 +76,20 @@ async def agent_hub(path: str, request: Request, user=Depends(get_current_user))
 @router.api_route("/api/assistant/{path:path}", methods=METHODS)
 async def assistant(path: str, request: Request, user=Depends(require("assistant", "read"))):
     return await forward(request, int(user.id))
+
+
+#  ai-CR-218 (K14): đường OAuth CÔNG KHAI của cổng MCP — ứng dụng AI gọi không có JWT web (đăng ký, đổi token, thu hồi,
+#  /authorize do trình duyệt mở). Chuyển nguyên sang dịch vụ AI như /api/mcp; màn đồng ý đi qua /api/agent-hub/oauth/* (JWT).
+@router.api_route("/api/oauth/{path:path}", methods=["GET", "POST", "OPTIONS"])
+async def mcp_oauth(path: str, request: Request):
+    return await forward(request, 0)
+
+
+@router.api_route("/.well-known/{name:path}", methods=["GET"])
+async def well_known(name: str, request: Request):
+    if not name.startswith(("oauth-authorization-server", "oauth-protected-resource")):
+        raise HTTPException(404, "Không có đường này")
+    return await forward(request, 0)
 
 
 @router.api_route("/api/mcp/{path:path}", methods=METHODS)

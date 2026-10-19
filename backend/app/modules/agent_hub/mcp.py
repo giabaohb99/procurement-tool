@@ -345,6 +345,20 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
     return _err(rid, -32601, f"Không có phương thức '{method}'")
 
 
+def _www_authenticate(request: Request, authorization: str | None) -> str:
+    """ai-CR-218 (MCP 2025-06-18 auth): 401 chỉ đường cho ứng dụng tự vào OAuth — `resource_metadata` trỏ tài liệu mô tả
+    tài nguyên (RFC 9728); có gửi token mà sai / hết hạn thì thêm `error="invalid_token"` để ứng dụng làm mới."""
+    from . import oauth
+
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    base = oauth.issuer(f"{proto}://{host}")
+    value = f'Bearer resource_metadata="{oauth.protected_resource_metadata_url(base)}"'
+    if authorization and authorization.lower().startswith("bearer "):
+        value += ', error="invalid_token"'
+    return value
+
+
 def mcp_settings_now(db: Session) -> dict:
     """ai-CR-216: trần đang hiệu lực (màn G7 đè lên biến môi trường AGENT_MCP_*)."""
     from . import mcp_settings
@@ -414,7 +428,7 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
         if flood:
             return _too_many(msgs, int(limits["bad_key_per_ip"]), "địa chỉ IP gửi khóa sai")
         return Response(status_code=401, content=json.dumps({"error": "Khóa MCP không hợp lệ hoặc đã hết hạn"}),
-                        media_type="application/json", headers={"WWW-Authenticate": "Bearer"})
+                        media_type="application/json", headers={"WWW-Authenticate": _www_authenticate(request, authorization)})
     person = mcp_log.who(db, user)
     #  Lớp 2: theo khóa.
     if mcp_log.over_limit(f"key:{key.id}", int(limits["rate_per_key"])):
@@ -440,7 +454,10 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     client = next((t["client"] for t in traces if t.get("client")), "")
     if client:
         mcp_log.remember_client(key.id, client)
-    client = client or mcp_log.client_of(db, key.id)
+    #  ai-CR-218: kết nối OAuth ghi tên ứng dụng lúc ĐĂNG KÝ (ChatGPT, claude.ai…) — đáng tin hơn clientInfo tự khai.
+    from . import oauth
+
+    client = oauth.client_name_of_key(db, key) or client or mcp_log.client_of(db, key.id)
     mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=client, method=t.get("method", ""),
                                        tool=t.get("tool", ""), status=t.get("status", mcp_log.CallStatus.OK),
                                        reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip,

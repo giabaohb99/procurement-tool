@@ -163,6 +163,8 @@ NO_TARGET = {
     "agent_hub.BriefDailyIn", "agent_hub.BriefToggleIn", "agent_hub.GroupPatchIn", "agent_hub.GroupSummarizeIn",
     #  ai-CR-138: sửa dòng sổ ghi nhớ — ghi vào một ô Text (memory_view), trần 600 ký tự nằm ở schema
     "agent_hub.MemoryLineIn", "agent_hub.MemoryLineEdit",
+    #  ai-CR-218: màn đồng ý OAuth — chỉ mang chuỗi ký yêu cầu (đọc lại, không ghi cột) + mức khóa (số)
+    "agent_hub.ConsentIn",
     "survey_request.ReportInitIn",   # duoc-CR-614: chỉ mang mã mẫu báo cáo (số)
     #  chỉ mang id / thứ tự / lệnh di chuyển — không ghi cột chữ nào
     "doc_catalog.DocumentFolderSetIn", "doc_catalog.FolderLinkIn", "doc_catalog.FolderUnlinkIn",

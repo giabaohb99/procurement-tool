@@ -47,3 +47,9 @@ from app.modules.department import model as _department_model  # noqa: E402,F401
 app.include_router(agent_hub_router)
 app.include_router(mcp_router)
 app.include_router(assistant_router)
+#  ai-CR-218 (K14): máy chủ cấp quyền OAuth cho cổng MCP — đường công khai + màn đồng ý.
+from app.modules.agent_hub.oauth_controller import public_router as mcp_oauth_public_router  # noqa: E402
+from app.modules.agent_hub.oauth_controller import router as mcp_oauth_router  # noqa: E402
+
+app.include_router(mcp_oauth_public_router)
+app.include_router(mcp_oauth_router)

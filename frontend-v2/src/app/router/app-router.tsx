@@ -52,6 +52,14 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
+            //  ai-CR-218: màn đồng ý OAuth của cổng MCP — cần đăng nhập nhưng đứng NGOÀI khung ứng dụng (như trang in).
+            path: appRoutes.oauthConsent(':req'),
+            lazy: async () => ({
+              Component: (await import('@/app/pages/oauth-consent-page')).OAuthConsentPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
             path: appRoutes.procurement.purchaseRequestPrint(':id'),
             lazy: async () => ({
               Component: (await import('@/modules/procurement/pages/purchase-request-print-page'))

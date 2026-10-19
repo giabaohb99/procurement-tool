@@ -423,6 +423,11 @@ else:
     app.include_router(agent_hub_router)
     from app.modules.agent_hub.mcp import router as mcp_router  # noqa: E402 — ai-CR-063 cổng MCP
     app.include_router(mcp_router)
+    #  ai-CR-218 (K14): máy chủ cấp quyền OAuth cho cổng MCP (chạy chung tiến trình ERP ở chế độ nhúng).
+    from app.modules.agent_hub.oauth_controller import public_router as mcp_oauth_public_router  # noqa: E402
+    from app.modules.agent_hub.oauth_controller import router as mcp_oauth_router  # noqa: E402
+    app.include_router(mcp_oauth_public_router)
+    app.include_router(mcp_oauth_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

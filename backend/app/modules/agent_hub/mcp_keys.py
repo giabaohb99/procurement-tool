@@ -26,6 +26,11 @@ DEFAULT_DAYS = 90
 MAX_DAYS = 365
 MAX_KEYS = 5
 PREFIX = "dego_mcp_"
+#  ai-CR-218 (K14 OAuth): loại khóa — dán tay (tự tạo / phát hộ) hay kết nối OAuth của một ứng dụng AI. Mã truy cập OAuth
+#  cũng mang tiền tố PREFIX nên cổng MCP phân giải chung một đường; trần MAX_KEYS chỉ tính khóa dán tay.
+KIND_MANUAL = 1
+KIND_OAUTH = 2
+KIND_LABELS = {KIND_MANUAL: "Khóa dán tay", KIND_OAUTH: "Kết nối OAuth"}
 
 
 def hash_token(raw: str) -> str:
@@ -39,7 +44,7 @@ def list_for_user(db: Session, user_id: int) -> list[AgentMcpKey]:
 
 def create(db: Session, user_id: int, *, name: str = "", scope: int = SCOPE_READ, days: int = DEFAULT_DAYS) -> tuple[AgentMcpKey, str]:
     """Tạo khóa, trả (dòng, KHÓA THÔ — chỉ hiện một lần)."""
-    if len(list_for_user(db, user_id)) >= MAX_KEYS:
+    if len([k for k in list_for_user(db, user_id) if int(k.kind or KIND_MANUAL) != KIND_OAUTH]) >= MAX_KEYS:
         raise ValueError(f"Mỗi tài khoản tối đa {MAX_KEYS} khóa MCP đang hiệu lực; gỡ bớt rồi tạo.")
     days = max(1, min(int(days or DEFAULT_DAYS), MAX_DAYS))
     raw = PREFIX + secrets.token_urlsafe(30)
@@ -60,6 +65,8 @@ def authenticate(db: Session, raw: str, *, now: datetime | None = None) -> Agent
     if row is None or (row.expires_at is not None and row.expires_at <= now):
         return None
     if is_unclaimed(row):          # ai-CR-212: khóa phát hộ chưa nhận thì chưa dùng được
+        return None
+    if oauth_access_expired(row, now):   # ai-CR-218: mã truy cập OAuth hạn ngắn, hết thì ứng dụng tự làm mới
         return None
     return row
 
@@ -83,6 +90,10 @@ def why_rejected(db: Session, raw: str, *, now: datetime | None = None) -> tuple
         from .mcp_log import REASON_UNCLAIMED
 
         return int(row.id), REASON_UNCLAIMED
+    if oauth_access_expired(row, now):
+        from .mcp_log import REASON_OAUTH_EXPIRED
+
+        return int(row.id), REASON_OAUTH_EXPIRED
     return int(row.id), REASON_BAD_KEY
 
 
@@ -106,7 +117,8 @@ def serialize(row: AgentMcpKey) -> dict:
             "scope_label": SCOPE_LABELS.get(int(row.scope or 0), "?"), "expires_at": iso(row.expires_at),
             "last_used_at": iso(row.last_used_at), "created_at": iso(row.created_at),
             "state": int(st), "state_label": STATE_LABELS[st], "issued_by": int(row.issued_by or 0),
-            "claimed_at": iso(row.claimed_at), "batch_id": row.batch_id or "", "user_id": int(row.user_id or 0)}
+            "claimed_at": iso(row.claimed_at), "batch_id": row.batch_id or "", "user_id": int(row.user_id or 0),
+            "kind": int(row.kind or KIND_MANUAL), "kind_label": KIND_LABELS.get(int(row.kind or KIND_MANUAL), "?")}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -130,6 +142,13 @@ def is_unclaimed(row: AgentMcpKey) -> bool:
     return bool(row.issued_by) and row.claimed_at is None
 
 
+def oauth_access_expired(row: AgentMcpKey, now: datetime | None = None) -> bool:
+    """Kết nối OAuth: mã truy cập hiện hành đã hết hạn (khác hạn của cả kết nối ở `expires_at`)."""
+    if int(row.kind or KIND_MANUAL) != KIND_OAUTH:
+        return False
+    return row.access_expires_at is None or row.access_expires_at <= (now or datetime.now())
+
+
 def state_of(row: AgentMcpKey, now: datetime | None = None) -> KeyState:
     if row.revoked_at is not None:
         return KeyState.REVOKED
@@ -140,7 +159,8 @@ def state_of(row: AgentMcpKey, now: datetime | None = None) -> KeyState:
 
 def live_count(db: Session, user_id: int, now: datetime | None = None) -> int:
     """Số khóa còn hiệu lực (đang dùng + chờ nhận) — trần `MAX_KEYS` tính trên số này."""
-    return sum(1 for k in list_for_user(db, user_id) if state_of(k, now) in (KeyState.PENDING, KeyState.ACTIVE))
+    return sum(1 for k in list_for_user(db, user_id)
+               if int(k.kind or KIND_MANUAL) != KIND_OAUTH and state_of(k, now) in (KeyState.PENDING, KeyState.ACTIVE))
 
 
 def issue(db: Session, owner_id: int, issued_by: int, *, days: int, name: str = "", batch_id: str = "") -> AgentMcpKey:
@@ -191,6 +211,7 @@ def revoke_rows(db: Session, rows: list[AgentMcpKey], by_user_id: int = 0) -> in
         if row.revoked_at is None:
             row.revoked_at = now
             row.raw_sealed = ""            # khóa chưa nhận mà bị thu hồi: bỏ luôn bản niêm phong
+            row.refresh_hash = ""          # ai-CR-218: kết nối OAuth bị thu hồi thì mã làm mới cũng chết ngay
             row.updated_by = int(by_user_id)
             n += 1
     if n:

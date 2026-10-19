@@ -51,6 +51,8 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api': { target: apiTarget, changeOrigin: true },
+        // ai-CR-218: tài liệu mô tả OAuth của cổng MCP (ChatGPT / claude.ai) — như nginx.erp.prod.conf.
+        '^/\\.well-known/(oauth-|openid-configuration)': { target: apiTarget, changeOrigin: true },
       },
     },
   }
