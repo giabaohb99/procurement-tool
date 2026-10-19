@@ -70,6 +70,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-644 | Màn AI của tôi: gộp hai đoạn Không cần khóa ở mục ChatGPT và claude.ai thành một
+- status: xong
+- date: 2026-10-19
+Đại ca thấy mục ChatGPT ở màn AI của tôi in hai đoạn gần giống nhau, cùng mở đầu bằng Không cần khóa: một đoạn cố định
+của giao diện (mở trang ERP, bấm Cho phép, kết nối hiện trong danh sách khóa với nhãn Kết nối OAuth) và một đoạn ghi chú
+do máy chủ trả về (đăng nhập ERP thay bạn, dùng 90 ngày, gỡ ở đâu). Mục claude.ai bị y hệt. Em gộp thành một đoạn duy
+nhất: phần chung của mọi kết nối qua đăng nhập ERP (không cần khóa, dùng 90 ngày rồi kết nối lại, tắt hoặc gỡ ở danh sách
+khóa) do giao diện in, ghi chú của máy chủ chỉ còn ý riêng từng ứng dụng và nối vào cuối đoạn đó. ChatGPT còn câu hộp New
+Connector đang ghi Beta, tên mục có thể đổi; claude.ai còn câu gói Team / Enterprise thì chủ tổ chức thêm kết nối trước.
+Ghi chú cũ của claude.ai còn chỉ sai chỗ gỡ (Trang cá nhân, Khóa AI), nay bỏ luôn.
+
+Kiểm trên máy local: 27 bài kiểm backend (cấu hình MCP cr216 + OAuth cr218) xanh; 186 bài vitest của phân hệ Kho skill AI
+và khu Trang cá nhân xanh; typecheck và lint không lỗi; mở màn AI của tôi, chọn ChatGPT thấy đúng một đoạn.
+
+Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (note của claude_ai và chatgpt),
+`frontend-v2/src/modules/ai-skill/components/connect-guide.tsx` (OAuthGuide).
+Commit: bao-CR-644 trên erp-v2 (đại ca gật đẩy 19/10). Deploy: dev chờ Agent 1 dựng lại api + erp.
+
+---
+
 ## bao-CR-638 | Màn Khóa của bạn kiểu CoreSkill, cột Hướng dẫn kết nối ở Khóa nhân sự và trang công khai /connect-ai
 - status: xong
 - date: 2026-10-19
