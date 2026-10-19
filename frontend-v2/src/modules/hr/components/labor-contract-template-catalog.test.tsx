@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/core/auth/auth-store'
@@ -19,8 +20,11 @@ function renderAs(permissions: Record<string, Record<string, boolean>>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <LaborContractTemplateCatalog />
+      <MemoryRouter initialEntries={['/catalog']}>
+        <Routes>
+          <Route path="/catalog" element={<LaborContractTemplateCatalog />} />
+          <Route path="/hr/labor-contract-templates/variables" element={<p>Trang danh sách biến</p>} />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -49,5 +53,12 @@ describe('LaborContractTemplateCatalog — gác quyền', () => {
   it('có quyền tạo: thấy nút Tải lên mẫu', async () => {
     renderAs({ labor_contract_template: { read: true, create: true } })
     expect(await screen.findByRole('button', { name: /Tải lên mẫu/ })).toBeInTheDocument()
+  })
+
+  //  duoc-CR-630: nút «Danh sách biến» không còn mở hộp thoại chỉ xem mà đi tới trang quản lý biến.
+  it('nút Danh sách biến điều hướng tới trang biến', async () => {
+    renderAs({ labor_contract_template: { read: true } })
+    await userEvent.click(await screen.findByRole('button', { name: /Danh sách biến/ }))
+    expect(await screen.findByText('Trang danh sách biến')).toBeInTheDocument()
   })
 })

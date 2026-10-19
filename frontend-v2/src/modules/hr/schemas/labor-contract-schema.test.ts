@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { makeLaborContract, laborContractEmployee } from '../components/labor-contract-fixture'
+import type { LaborContractInputField } from '../types/labor-contract-variable'
 import {
   MAX_MONEY,
   buildContractFormDefaults,
@@ -21,6 +22,7 @@ const base: LaborContractFormValues = {
   allowance: 0,
   allowance_note: '',
   note: '',
+  custom_values: {},
 }
 
 function firstError(values: Partial<LaborContractFormValues> | Record<string, unknown>) {
@@ -77,6 +79,10 @@ describe('laborContractSchema', () => {
   })
 })
 
+const field = (code: string, value_type: number, over: Partial<LaborContractInputField> = {}): LaborContractInputField => ({
+  code, label: code, description: '', value_type, default_value: '', is_required: false, is_active: true, sort_order: 0, ...over,
+})
+
 describe('toLaborContractPayload', () => {
   it('lúc SỬA, chức danh / địa điểm xóa trắng gửi "" (không phải null) để backend ghi đè được', () => {
     const p = toLaborContractPayload({ ...base, job_title: '  ', work_location: '' }, 'edit')
@@ -103,7 +109,38 @@ describe('toLaborContractPayload', () => {
   })
 })
 
+describe('toLaborContractPayload — biến tùy chỉnh (duoc-CR-630)', () => {
+  it('chưa biết danh sách biến -> KHÔNG gửi custom_values (backend giữ nguyên / tự sao mặc định)', () => {
+    expect('custom_values' in toLaborContractPayload({ ...base, custom_values: { a: '1' } })).toBe(false)
+  })
+  it('chỉ gửi khóa của biến ĐANG DÙNG; ô trống gửi "" để backend xóa khóa', () => {
+    const p = toLaborContractPayload(
+      { ...base, custom_values: { a_chu: 'xin chào', cu_da_ngung: 'giữ nguyên' } },
+      'edit',
+      [field('a_chu', 1), field('b_trong', 1)],
+    )
+    expect(p.custom_values).toEqual({ a_chu: 'xin chào', b_trong: '' })
+  })
+  it('kiểu Số: «1,5» -> «1.5», dấu thập phân treo cuối bị bỏ', () => {
+    const p = toLaborContractPayload({ ...base, custom_values: { he_so: '1,5', so_nguyen: '7,' } }, 'create', [field('he_so', 3), field('so_nguyen', 3)])
+    expect(p.custom_values).toEqual({ he_so: '1.5', so_nguyen: '7' })
+  })
+  it('giá trị ô không phải chuỗi bị schema từ chối', () => {
+    expect(firstError({ custom_values: { a: 5 } })?.path).toBe('custom_values.a')
+  })
+})
+
 describe('buildContractFormDefaults', () => {
+  it('sửa: custom_values chép từ dòng, KHÔNG dùng chung tham chiếu; dòng cũ thiếu trường -> {}', () => {
+    const row = makeLaborContract({ custom_values: { a: '1' } })
+    const d = buildContractFormDefaults(laborContractEmployee, row)
+    expect(d.custom_values).toEqual({ a: '1' })
+    expect(d.custom_values).not.toBe(row.custom_values)
+    const legacy = makeLaborContract()
+    delete (legacy as Partial<typeof legacy>).custom_values
+    expect(buildContractFormDefaults(laborContractEmployee, legacy).custom_values).toEqual({})
+    expect(buildContractFormDefaults(laborContractEmployee).custom_values).toEqual({})
+  })
   it('lập mới: điền chức danh + địa điểm từ hồ sơ, loại chưa chọn', () => {
     const d = buildContractFormDefaults(laborContractEmployee)
     expect(d).toMatchObject({ contract_type: 0, job_title: 'Chuyên viên', work_location: 'Hà Nội', base_salary: 0 })

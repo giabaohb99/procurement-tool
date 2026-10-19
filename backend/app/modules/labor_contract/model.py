@@ -11,7 +11,7 @@ KHÔNG lẫn với `modules/contract` (hợp đồng NCC / khách).
 """
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Date, DateTime, Index, SmallInteger, String
+from sqlalchemy import JSON, BigInteger, Date, DateTime, Index, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
@@ -59,6 +59,12 @@ class LaborContract(Base, AuditMixin, SoftDeleteMixin):
     #  Chính liên kết này (không phải mã loại) khóa quyền đọc văn bản: xem
     #  `document/labor_contract_archive_access.py`.
     document_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+
+    #  duoc-CR-630: giá trị các biến TÙY CHỈNH của mẫu, `{mã biến: chuỗi chuẩn của kiểu}` (`None` ≡ `{}`).
+    #  ⚠️ CHỈ gán dict MỚI (`row.custom_values = {...}`): không có `MutableDict`, sửa tại chỗ
+    #  (`row.custom_values[k] = v`) thì SQLAlchemy không thấy thay đổi và không ghi xuống DB.
+    #  Nhạy cảm như lương (che khỏi nhật ký request / change log) — xem `core/logging_policy.py`.
+    custom_values: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     terminated_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     terminate_reason: Mapped[str] = mapped_column(String(500), default="")

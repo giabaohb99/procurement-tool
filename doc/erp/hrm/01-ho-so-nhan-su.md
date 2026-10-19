@@ -732,3 +732,24 @@ lỗi chỉ ghi nhật ký, hợp đồng vẫn đi bình thường, sự kiện
 - **Bù dữ liệu cũ:** `docker compose exec -T api python scripts/backfill_hdld_van_ban_luu_tru.py --dry-run` rồi chạy thật (idempotent); rollback: `--soft-delete-all`.
 - **Mẫu hợp đồng** (duoc-CR-629b bước A): màn quản lý mẫu chuyển sang `/document/settings?tab=templates&kind=labor-contract`; vẫn khóa `labor_contract_template`, API cũ.
 
+### Danh sách biến của mẫu hợp đồng (duoc-CR-630)
+
+Nút «Danh sách biến» ở màn Mẫu hợp đồng mở trang `/hr/labor-contract-templates/variables` (API `/api/labor-contract-variables`,
+bảng `tab_labor_contract_variable`, migration `lbvar01`). Biến **toàn hệ thống**, dùng chung mọi pháp nhân.
+
+- **Hai loại biến.** *Hệ thống* (48 biến mã cứng ở `placeholder_catalog.py`): giá trị lấy từ hồ sơ, chỉ sửa được tên hiển thị, mô tả và
+  «Ẩn khỏi danh sách hướng dẫn» (biến ẩn vẫn dùng được trong mẫu); mã bất biến, không xóa. *Tùy chỉnh*: HR tự thêm, **nhập tay theo từng
+  hợp đồng** ở ô «Thông tin bổ sung cho mẫu» trong hộp Lập / Sửa hợp đồng.
+- **Kiểu giá trị** của biến tùy chỉnh: Chữ · Chữ nhiều dòng (xuống dòng thành ngắt dòng Word) · Số (không âm, tối đa 2 số lẻ, in `1.234,5`) ·
+  Ngày (in `dd/mm/yyyy`) · Tiền (đồng nguyên 0..10^12, in `15.000.000`; tự có thêm biến `{{ <mã>_bang_chu }}` đọc số thành chữ).
+- **Mã biến** `^[a-z][a-z0-9_]{1,39}$`, không `__`, không đuôi `_` hoặc `_bang_chu`, không trùng từ khóa bộ máy mẫu hay biến hệ thống. Tối đa 100 biến
+  tùy chỉnh; mỗi hợp đồng tối đa 100 khóa / 20 000 ký tự giá trị.
+- **Mặc định được SAO vào hợp đồng lúc lập** (hộp Lập điền sẵn). Đổi mặc định sau đó KHÔNG đổi hợp đồng đã lập.
+- **Bắt buộc** chặn *Sinh tệp* (chỉ biến mà mẫu thật sự dùng) và việc chuyển sang *Đã ký* (422 nêu NHÃN còn thiếu); lưu nháp không bao giờ bị chặn. Khi ký, hợp đồng còn mẫu thì xét biến của mẫu đó; không còn mẫu (chưa sinh, sửa sau khi sinh, ký bằng bản scan) thì xét biến của các mẫu đang dùng của CHÍNH pháp nhân hợp đồng (ưu tiên cùng loại hợp đồng, không có thì mọi loại; không mẫu nào thì không ép). Số 0 là giá trị thật cho kiểu Số / Tiền; chỉ ô để trống mới là «chưa nhập».
+- **Ngừng dùng** ≠ xóa. Ngừng dùng: biến mất ở ô nhập và khung «Chèn biến», mẫu mới không nhận được; mẫu cũ đã chứa nó vẫn sửa / sinh được, giá trị đã lưu
+  vẫn in và hiện CHỈ ĐỌC ở hộp Sửa hợp đồng. **Xóa** chỉ được khi không mẫu nào chứa và không hợp đồng nào (kể cả xóa mềm) giữ giá trị → 409 nêu số mẫu / hợp đồng
+  (chỉ liệt kê tên mẫu người xem thấy theo phạm vi + số mẫu còn lại). Biến đang dùng cũng bị khóa mã và kiểu.
+- **Quyền.** Xem = `labor_contract_template.read` (ô nhập trong hộp hợp đồng còn mở cho `labor_contract.create/write`). Thêm / sửa (cả nhãn biến hệ thống) = `write`, xóa = `delete`,
+  **và phải có phạm vi «tất cả pháp nhân»** (`variable_access.is_unrestricted`); HR một pháp nhân chỉ xem và dùng.
+- **Dữ liệu nhạy cảm.** `custom_values` che khỏi nhật ký request và nhật ký thay đổi như lương; tiêu đề / tóm tắt bản lưu trữ ở Văn bản không chứa giá trị biến.
+

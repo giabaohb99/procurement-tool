@@ -1,6 +1,6 @@
 # Phase 06 — Hồi quy, tài liệu, triển khai
 
-**Ưu tiên:** P2 · **Status:** pending · **Effort:** 1.5h · **Phụ thuộc:** 01–05
+**Ưu tiên:** P2 · **Status:** done · **Effort:** 1.5h · **Phụ thuộc:** 01–05
 
 ## Hồi quy (chỉ tệp liên quan — máy giới hạn tài nguyên, KHÔNG quét cả `test/backend`)
 ```bash
@@ -35,7 +35,7 @@ docker compose exec -T erp npx vitest run src/modules/hr src/modules/document sr
 1. Phase 07 CR-629b chưa lên ⇒ thứ tự migration `lbrct02 → lbvar01 (→ lbrct03)`; `alembic heads` = 1.
 2. Prod: `start.prod.sh` chạy `alembic upgrade head` rồi `seed_prod` ⇒ 50 dòng hệ thống tự chèn. Không cần `SEED_FORCE_SYNC` (không đổi quyền).
 3. Vai trò cũ: không đổi (tái dùng `labor_contract_template`).
-4. Sau deploy: mở trang biến (thấy 50 dòng hệ thống), tải lại 1 mẫu cũ (vẫn nhận), sinh lại 1 HĐ nháp (y như trước).
+4. Sau deploy: mở trang biến (thấy 48 dòng hệ thống), tải lại 1 mẫu cũ (vẫn nhận), sinh lại 1 HĐ nháp (y như trước).
 
 ## Rollback
 Revert FE (05, 04) → revert BE (03, 02, 01) → `alembic downgrade lbrct02`. Trước downgrade: `SELECT id, custom_values FROM tab_labor_contract WHERE custom_values IS NOT NULL` lưu ra tệp (downgrade mất cột). Mẫu đã dùng biến tùy chỉnh sẽ bị từ chối khi tải lại / sinh lỗi 422 sau khi revert ⇒ phải ngừng dùng các mẫu đó trước.

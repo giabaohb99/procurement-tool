@@ -1,4 +1,8 @@
-"""DANH MỤC BIẾN dùng trong mẫu HĐLĐ (.docx) — nguồn DUY NHẤT.
+"""DANH MỤC BIẾN HỆ THỐNG dùng trong mẫu HĐLĐ (.docx).
+
+duoc-CR-630: đây chỉ còn là nguồn biến HỆ THỐNG — mã, nhóm, ví dụ và NHÃN MẶC ĐỊNH (để seed vào
+`tab_labor_contract_variable`). Việc biến nào hợp lệ vẫn theo MÃ NGUỒN này; nhãn hiển thị người dùng sửa
+được nằm ở DB. Biến TÙY CHỈNH do HR thêm nằm hoàn toàn ở DB (`variable_registry.py`).
 
 Người soạn mẫu gõ `{{ ho_ten }}` trong Word. Chỉ biến có trong danh mục này được phép:
 biến lạ sẽ render ra RỖNG IM LẶNG nếu cho qua, nên `docx_engine` chặn lúc tải mẫu lên.

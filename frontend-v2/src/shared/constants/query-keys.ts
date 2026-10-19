@@ -224,6 +224,13 @@ export const queryKeys = {
       ['hr', 'labor-contract-templates', params ?? {}] as const,
     /** Danh mục biến của mẫu .docx — gần như bất biến, đọc từ backend. */
     laborContractPlaceholders: () => ['hr', 'labor-contract-placeholders'] as const,
+    /** Danh sách biến mẫu HĐLĐ (màn «Danh sách biến», duoc-CR-630). Dưới `hr.all` nên mọi lệnh ghi quét. */
+    laborContractVariables: (params?: Record<string, unknown>) =>
+      ['hr', 'labor-contract-variables', params ?? {}] as const,
+    laborContractVariable: (id: number) => ['hr', 'labor-contract-variable', id] as const,
+    /** Ô nhập biến tùy chỉnh trong hộp Lập / Sửa hợp đồng; `includeInactive` = hộp Sửa (hiện biến ngừng dùng chỉ-đọc). */
+    laborContractVariableInputFields: (includeInactive: boolean) =>
+      ['hr', 'labor-contract-variable-input-fields', includeInactive] as const,
     /** MỘT mẫu (trang soạn trên web). Dưới `hr.all` nên mọi lệnh ghi của HĐLĐ đều quét. */
     laborContractTemplate: (id: number) => ['hr', 'labor-contract-template', id] as const,
     /** Nội dung HTML của một mẫu để soạn trên web (duoc-CR-606). */

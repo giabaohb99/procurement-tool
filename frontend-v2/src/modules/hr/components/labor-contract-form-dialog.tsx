@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 
@@ -9,6 +9,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { useEmployeeLaborContractTemplates, useSaveLaborContract } from '../hooks/use-employee-labor-contracts'
+import { useLaborContractInputFields } from '../hooks/use-labor-contract-variables'
 import {
   buildContractFormDefaults,
   laborContractSchema,
@@ -17,6 +18,7 @@ import {
 } from '../schemas/labor-contract-schema'
 import type { EmployeeDetail } from '../types/employee'
 import type { LaborContract } from '../types/labor-contract'
+import { LaborContractCustomFields } from './labor-contract-custom-fields'
 import { LaborContractFormDialogFields } from './labor-contract-form-dialog-fields'
 
 interface LaborContractFormDialogProps {
@@ -44,6 +46,21 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ reset lúc MỞ / đổi dòng.
   }, [open, row])
 
+  //  duoc-CR-630: biến tùy chỉnh. `true` = lấy cả biến ngừng dùng (hộp Sửa hiện giá trị còn giữ, chỉ đọc).
+  const { data: inputFields } = useLaborContractInputFields(open, true)
+  const activeFields = useMemo(() => inputFields?.filter((f) => f.is_active), [inputFields])
+
+  //  LẬP MỚI: SAO giá trị mặc định vào ô (chỉ ô CHƯA có giá trị — ô người dùng đã xóa trắng giữ là «»; ô vừa đăng ký là `undefined`).
+  //  Sửa hợp đồng đã lập thì KHÔNG điền: mặc định đổi sau này không được đổi hợp đồng cũ.
+  useEffect(() => {
+    if (!open || row || !activeFields) return
+    const current = form.getValues('custom_values') ?? {}
+    const fill: Record<string, string> = {}
+    for (const f of activeFields) if (f.default_value && current[f.code] === undefined) fill[f.code] = f.default_value
+    if (Object.keys(fill).length > 0) form.setValue('custom_values', { ...current, ...fill })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ khi mở / nạp xong danh sách biến.
+  }, [open, row, activeFields])
+
   const contractType = form.watch('contract_type')
   const { data: templates, isSuccess } = useEmployeeLaborContractTemplates(
     employee.id,
@@ -56,7 +73,7 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
     if (submitting.current) return
     submitting.current = true
     saveMutation.mutate(
-      { id: row?.id, payload: toLaborContractPayload(values, row ? 'edit' : 'create') },
+      { id: row?.id, payload: toLaborContractPayload(values, row ? 'edit' : 'create', activeFields) },
       {
         onSuccess: () => onOpenChange(false),
         onSettled: () => {
@@ -92,6 +109,7 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
           onSubmit={onSubmit}
           companyName={companyName}
           templateHint={templateHint}
+          customFields={<LaborContractCustomFields form={form} fields={inputFields} />}
           footer={
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>

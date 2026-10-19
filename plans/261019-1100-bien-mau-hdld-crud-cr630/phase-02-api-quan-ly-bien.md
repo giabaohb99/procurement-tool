@@ -1,6 +1,6 @@
 # Phase 02 — API quản lý biến `/api/labor-contract-variables`
 
-**Ưu tiên:** P2 · **Status:** pending · **Effort:** 3h · **Phụ thuộc:** 01 · **Song song với:** 03
+**Ưu tiên:** P2 · **Status:** done · **Effort:** 3h · **Phụ thuộc:** 01 · **Song song với:** 03
 
 ## Quyền (PO chốt, không entity mới)
 | Đường | Gác |

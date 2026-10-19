@@ -21,9 +21,8 @@ from app.modules.document.docx_html import docx_to_html
 from app.modules.document.html_docx import html_to_docx
 
 from . import template_service
-from .docx_engine import inspect_template
 from .template_model import LaborContractTemplate
-from .template_schema import MARGIN_MAX_MM, MARGIN_MIN_MM, MAX_PLACEHOLDERS, TemplateContentIn
+from .template_schema import MARGIN_MAX_MM, MARGIN_MIN_MM, TemplateContentIn
 
 DEFAULT_LEFT_MM, DEFAULT_RIGHT_MM = 30, 20
 _TWIPS_PER_MM = 1440 / 25.4
@@ -70,9 +69,7 @@ def save_content(db: Session, user, row: LaborContractTemplate, data: TemplateCo
     _, max_mb = direct_policy(template_service.KIND)
     if len(file_bytes) > max_mb * 1024 * 1024:
         raise HTTPException(422, f"Mẫu sau khi lưu lớn hơn {max_mb} MB — bớt ảnh hoặc nén ảnh lại")
-    placeholders = inspect_template(file_bytes)
-    if len(placeholders) > MAX_PLACEHOLDERS:
-        raise HTTPException(422, "Mẫu dùng quá nhiều biến")
+    placeholders = template_service.inspect_with_catalog(db, file_bytes, keep=row.placeholders or [])
     filename = (row.original_filename or "").strip() or f"{row.name}.docx"
     if not filename.lower().endswith(".docx"):
         filename = f"{filename.rsplit('.', 1)[0]}.docx"

@@ -12,10 +12,9 @@ from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import error, success
 
-from . import access, template_service, template_web_editor
+from . import access, template_service, template_web_editor, variable_serializer
 from .docx_engine import TemplateRejected
 from .file_response import DOCX_MIME, download_response
-from .placeholder_catalog import PLACEHOLDERS
 from .template_model import LaborContractTemplate
 from .template_schema import TemplateContentIn, TemplateCreateIn, TemplateUpdate
 from .template_serializer import serialize_templates
@@ -43,8 +42,7 @@ def list_placeholders(db: Session = Depends(get_db), user=Depends(get_current_us
     profile = get_perm_profile(db, user)
     if not (access.has_perm(profile, ENTITY, "read") or access.has_perm(profile, "labor_contract", "create")):
         raise HTTPException(403, "Không có quyền xem danh mục biến của mẫu hợp đồng")
-    return success([{"key": p.key, "label": p.label, "group": p.group, "example": p.example}
-                    for p in PLACEHOLDERS])
+    return success(variable_serializer.guide_list(db))
 
 
 @router.get("")

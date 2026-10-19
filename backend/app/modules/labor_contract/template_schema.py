@@ -10,8 +10,8 @@ from app.core.labor_contract_codes import LaborContractType
 Name200 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 Note500 = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
 
-#  Trần số biến lưu vào cột JSON `placeholders` (danh mục hiện < 60 biến).
-MAX_PLACEHOLDERS = 200
+#  Trần số biến lưu vào cột JSON `placeholders`: 48 hệ thống + 100 tùy chỉnh + 100 `_bang_chu` (CR-630).
+MAX_PLACEHOLDERS = 300
 
 
 def check_contract_type(v: int) -> int:

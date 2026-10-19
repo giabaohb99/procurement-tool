@@ -105,5 +105,6 @@ from app.modules.work_schedule import model as _work_schedule  # noqa: F401
 # Hợp đồng lao động + mẫu hợp đồng theo pháp nhân — `tab_labor_contract*`.
 from app.modules.labor_contract import model as _labor_contract  # noqa: F401
 from app.modules.labor_contract import template_model as _labor_contract_template  # noqa: F401
+from app.modules.labor_contract import variable_model as _labor_contract_variable  # noqa: F401
 # Kho skill AI (bao-CR-621, doc/erp/21) — `tab_ai_skill*`.
 from app.modules.ai_skill import model as _ai_skill  # noqa: F401

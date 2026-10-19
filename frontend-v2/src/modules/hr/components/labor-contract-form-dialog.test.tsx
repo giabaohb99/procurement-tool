@@ -22,6 +22,10 @@ vi.mock('../api/labor-contract-api', () => ({
     create: (...a: unknown[]) => create(...a),
   },
 }))
+const inputFields = vi.fn()
+vi.mock('../api/labor-contract-variable-api', () => ({
+  laborContractVariableApi: { inputFields: (...a: unknown[]) => inputFields(...a) },
+}))
 const toastWarning = vi.fn()
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: (...a: unknown[]) => toastWarning(...a) },
@@ -31,6 +35,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   canMock.mockReturnValue(true)
   listTemplateOptions.mockResolvedValue([{ id: 1, name: 'Mẫu 1', contract_type: 2 }])
+  inputFields.mockResolvedValue([])
   update.mockResolvedValue({ item: makeLaborContract(), warnings: [] })
 })
 
@@ -130,5 +135,55 @@ describe('LaborContractFormDialog', () => {
     expect(await screen.findByText('Chọn loại hợp đồng')).toBeInTheDocument()
     expect(create).not.toHaveBeenCalled()
     expect(listTemplateOptions).not.toHaveBeenCalled()
+  })
+
+  // duoc-CR-630 ─ ô «Thông tin bổ sung cho mẫu»
+  const field = (code: string, over: Record<string, unknown> = {}) => ({
+    code, label: `Nhãn ${code}`, description: '', value_type: 1, default_value: '', is_required: false,
+    is_active: true, sort_order: 0, ...over,
+  })
+
+  it('có biến tùy chỉnh: ô hiện; Lưu (sửa) gửi custom_values, ô trống gửi "" và biến ngừng dùng KHÔNG được gửi', async () => {
+    inputFields.mockResolvedValue([field('a_chu'), field('b_cu', { is_active: false })])
+    renderDialog({ row: makeLaborContract({ custom_values: { a_chu: 'cũ', b_cu: 'giữ' } }) })
+    const box = await screen.findByRole('textbox', { name: 'Nhãn a_chu' })
+    expect(box).toHaveValue('cũ')
+    await userEvent.clear(box)
+    await userEvent.type(box, 'mới')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(update).toHaveBeenCalled())
+    expect(update.mock.calls[0][1].custom_values).toEqual({ a_chu: 'mới' })
+  })
+
+  it('lập mới: giá trị mặc định được SAO vào ô; sửa hợp đồng đã lập thì KHÔNG điền mặc định', async () => {
+    inputFields.mockResolvedValue([field('a_chu', { default_value: 'mặc định' })])
+    const { unmount } = render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+          <LaborContractFormDialog open onOpenChange={vi.fn()} employee={laborContractEmployee} row={null} />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    )
+    expect(await screen.findByDisplayValue('mặc định')).toBeInTheDocument()
+    unmount()
+    renderDialog({ row: makeLaborContract({ custom_values: {} }) })
+    expect(await screen.findByRole('textbox', { name: 'Nhãn a_chu' })).toHaveValue('')
+  })
+
+  it('lập mới: người dùng xóa trắng ô đã điền sẵn thì ô giữ TRỐNG (không bị sao lại mặc định)', async () => {
+    inputFields.mockResolvedValue([field('a_chu', { default_value: 'mặc định' })])
+    renderDialog({ row: null })
+    const box = await screen.findByDisplayValue('mặc định')
+    await userEvent.clear(box)
+    await userEvent.type(screen.getByLabelText(/Số hợp đồng/), 'HD-1')   // render lại form
+    expect(box).toHaveValue('')
+  })
+
+  it('không có biến tùy chỉnh: không vẽ khối bổ sung và payload không có custom_values', async () => {
+    renderDialog({ row: makeLaborContract() })
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(update).toHaveBeenCalled())
+    expect(screen.queryByText('Thông tin bổ sung cho mẫu')).toBeNull()
+    expect(update.mock.calls[0][1].custom_values).toEqual({})
   })
 })

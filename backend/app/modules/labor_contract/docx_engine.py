@@ -89,8 +89,13 @@ def _render_to_bytes(tpl: DocxTemplate, ctx: dict[str, str]) -> bytes:
     return out.getvalue()
 
 
-def inspect_template(data: bytes) -> list[str]:
-    """Kiểm mẫu lúc tải lên. Trả danh sách biến dùng (đã sắp); sai → TemplateRejected."""
+def inspect_template(data: bytes, allowed: frozenset[str] = KNOWN_KEYS, sample: dict[str, str] | None = None,
+                     inactive: frozenset[str] = frozenset()) -> list[str]:
+    """Kiểm mẫu lúc tải lên. Trả danh sách biến dùng (đã sắp); sai → TemplateRejected.
+
+    `allowed` mặc định = biến hệ thống; nơi gọi có DB (duoc-CR-630) truyền thêm biến tùy chỉnh đang dùng,
+    `sample` = dữ liệu render thử tương ứng, `inactive` = biến đã NGỪNG DÙNG (chỉ để báo câu riêng).
+    Hàm vẫn THUẦN: không biết DB là gì."""
     check_package(data)
     tpl = _open(data)
     try:
@@ -103,14 +108,19 @@ def inspect_template(data: bytes) -> list[str]:
         )
     except Exception:  # why: XML hỏng trong gói (lxml) lộ ra ở bước phân tích biến, không phải TemplateError
         raise TemplateRejected("Không đọc được nội dung tệp .docx (tệp hỏng hoặc sai cấu trúc).")
-    unknown = sorted(used - KNOWN_KEYS)
+    unknown = sorted(used - allowed)
     if unknown:
-        raise TemplateRejected(
-            "Mẫu dùng biến ngoài danh mục: " + ", ".join(unknown), unknown=unknown
-        )
+        stopped = [k for k in unknown if k in inactive]
+        outside = [k for k in unknown if k not in inactive]
+        parts = []
+        if stopped:
+            parts.append("Mẫu dùng biến đã ngừng dùng: " + ", ".join(stopped))
+        if outside:
+            parts.append("Mẫu dùng biến ngoài danh mục: " + ", ".join(outside))
+        raise TemplateRejected(". ".join(parts), unknown=unknown)
     #  Render thử bằng dữ liệu mẫu: bắt lỗi chỉ lộ lúc chạy (vd. biểu thức bị sandbox chặn).
     #  Dùng bản mở MỚI vì `render` thay đổi chính đối tượng.
-    _render_to_bytes(_open(data), sample_context())
+    _render_to_bytes(_open(data), sample or sample_context())
     return sorted(used)
 
 

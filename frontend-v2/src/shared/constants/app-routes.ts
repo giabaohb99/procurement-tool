@@ -459,6 +459,8 @@ export const appRoutes = {
     laborContractTemplates: '/hr/labor-contract-templates',
     /** Soạn nội dung mẫu trên web (duoc-CR-606) — nằm dưới mục menu «Mẫu hợp đồng» nên chung hàng rào quyền. */
     laborContractTemplateEditor: (id: number | string) => `/hr/labor-contract-templates/${id}/edit`,
+    /** Danh sách biến của mẫu hợp đồng (duoc-CR-630) — dưới mục menu «Mẫu hợp đồng» nên chung hàng rào quyền. */
+    laborContractVariables: '/hr/labor-contract-templates/variables',
     /**
      * Đường CŨ của màn Phân quyền tài khoản — nay chỉ còn route chuyển tiếp sang
      * `system.permissions` (duoc-CR-396). **Đừng dùng để dựng liên kết mới**;

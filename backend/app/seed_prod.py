@@ -33,6 +33,7 @@ from app.modules.role.model import Role, Permission  # noqa: F401
 from app.modules.user.model import User, UserRole
 
 from app.modules.report_access.seed_defaults import ensure_report_access_defaults
+from app.modules.labor_contract.variable_seed import ensure_system_variables
 from app.seed import (ensure_admin_role, force_resync_roles,
                       seed_cost_types, seed_document_phase1, seed_help_admin,
                       seed_help_home_sections, seed_standard_roles)
@@ -90,6 +91,11 @@ def run():
         _company = db.query(Company).order_by(Company.id).first()   # 4
         seed_help_admin(db, _company.id if _company else None)
         seed_help_home_sections(db)
+
+        n_lc_vars = ensure_system_variables(db)   # duoc-CR-630: 48 biến HĐLĐ hệ thống, insert-only
+        db.commit()
+        if n_lc_vars:
+            print(f"Nạp {n_lc_vars} biến mẫu hợp đồng lao động.")
 
         n_phase1 = seed_document_phase1(db)
         if n_phase1:

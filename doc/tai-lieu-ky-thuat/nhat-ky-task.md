@@ -14788,3 +14788,18 @@ hoạch riêng.
 
 Mã nguồn: frontend-v2/src/modules/document/config/document-settings-tabs.ts · document/pages/document-settings-page.tsx · document/routes.tsx · frontend-v2/src/modules/hr/components/labor-contract-template-catalog.tsx · hr/routes.tsx · frontend-v2/src/shared/constants/app-routes.ts
 
+## duoc-CR-630 | Quản lý danh sách biến của mẫu hợp đồng lao động, thêm biến nhập tay theo từng hợp đồng
+- status: xong
+- date: 2026-10-19
+Trước đây 48 biến trong mẫu Word hợp đồng lao động bị cố định trong mã nguồn, muốn thêm một thông tin riêng như số ngày phép hay mức
+thưởng thì phải nhờ lập trình viên. Nay nút «Danh sách biến» ở màn Mẫu hợp đồng mở một trang quản lý riêng: người có phạm vi «tất cả
+pháp nhân» thêm, sửa, ngừng dùng hoặc xóa được biến tùy chỉnh và sửa tên hiển thị, mô tả, ẩn hiện của biến hệ thống; người chỉ quản lý
+một pháp nhân chỉ xem và chép biến. Biến tùy chỉnh có năm kiểu là chữ, chữ nhiều dòng, số, ngày và tiền; biến tiền tự có thêm biến đọc
+số thành chữ. Khi lập hoặc sửa hợp đồng nháp, hộp thoại hiện thêm khối «Thông tin bổ sung cho mẫu» để nhập giá trị; giá trị mặc định
+được sao vào hợp đồng ngay lúc lập nên đổi mặc định sau này không làm đổi hợp đồng đã lập. Biến đặt «Bắt buộc» sẽ chặn bước sinh tệp
+và bước chuyển sang Đã ký, còn lưu nháp thì không bao giờ bị chặn. Biến đã dùng trong mẫu hoặc đã có hợp đồng nhập giá trị thì khóa mã
+và kiểu, không xóa được mà chỉ ngừng dùng; mẫu cũ chứa biến đã ngừng dùng vẫn sửa và sinh được, giá trị cũ hiện ở chế độ chỉ đọc.
+Giá trị biến được che khỏi nhật ký như lương. Hệ thống đang chạy cần chạy migration, bảng biến hệ thống tự nạp khi khởi động; chưa
+triển khai lên máy chủ nào. Sau đợt rà soát có vá thêm: hợp đồng chưa có mẫu khi ký chỉ bị chặn bởi biến bắt buộc của mẫu đang dùng thuộc chính pháp nhân của hợp đồng (trước đó bị chặn nhầm bởi biến của pháp nhân khác); dữ liệu biến lệch mã hệ thống không còn làm hỏng việc sinh tệp; đổi trạng thái biến phải xác nhận; số 0 được tính là một giá trị thật cho biến kiểu số và tiền; ký tự điều khiển bị bỏ khỏi giá trị chữ.
+
+Mã nguồn: backend/app/modules/labor_contract/variable_model.py · variable_rules.py · variable_registry.py · variable_seed.py · variable_service.py · variable_controller.py · contract_custom_values.py · backend/migrations/versions/lbvar01_bien_mau_hdld_cr630.py · frontend-v2/src/modules/hr/pages/labor-contract-variables-page.tsx · hr/components/labor-contract-variable-form-dialog.tsx · hr/components/labor-contract-custom-fields.tsx · test/backend/test_hdld_bien_mau_nen_cr630.py · test_hdld_bien_mau_api_cr630.py · test_hdld_bien_mau_sinh_tep_cr630.py

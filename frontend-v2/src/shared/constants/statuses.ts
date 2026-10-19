@@ -87,6 +87,21 @@ export const LABOR_CONTRACT_TYPE: readonly StatusOption[] = [
   {"value": "9", "label": "Khác", "sort_order": 9, "is_terminal": false, "is_exception": false},
 ]
 
+/** Nguồn biến mẫu hợp đồng lao động */
+export const LABOR_CONTRACT_VARIABLE_SOURCE: readonly StatusOption[] = [
+  {"value": "1", "label": "Hệ thống", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Tùy chỉnh", "sort_order": 2, "is_terminal": false, "is_exception": false},
+]
+
+/** Kiểu giá trị biến mẫu hợp đồng lao động */
+export const LABOR_CONTRACT_VARIABLE_TYPE: readonly StatusOption[] = [
+  {"value": "1", "label": "Chữ", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Chữ nhiều dòng", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Số", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Ngày", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Tiền", "sort_order": 5, "is_terminal": false, "is_exception": false},
+]
+
 /** Buổi nghỉ */
 export const LEAVE_SESSION: readonly StatusOption[] = [
   {"value": "full", "label": "Cả ngày", "sort_order": 0, "is_terminal": false, "is_exception": false},
@@ -220,6 +235,8 @@ export const STATUS_SETS = {
   forum_prefix: FORUM_PREFIX,
   labor_contract_status: LABOR_CONTRACT_STATUS,
   labor_contract_type: LABOR_CONTRACT_TYPE,
+  labor_contract_variable_source: LABOR_CONTRACT_VARIABLE_SOURCE,
+  labor_contract_variable_type: LABOR_CONTRACT_VARIABLE_TYPE,
   leave_session: LEAVE_SESSION,
   leave_type: LEAVE_TYPE,
   payable_status: PAYABLE_STATUS,

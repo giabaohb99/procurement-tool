@@ -777,6 +777,13 @@ describe('mẫu hợp đồng lao động trong Thiết lập văn bản', () =>
     expect(canAccessRoute(documentModule, '/document/settings', readOnlyDocCatalog)).toBe(false)
   })
 
+  //  duoc-CR-630: gác điều hướng mặc định MỞ — route thiếu mục menu gác thì ai đăng nhập cũng vào.
+  it('trang Danh sách biến /hr/labor-contract-templates/variables bị gác bằng khóa mẫu HĐLĐ', () => {
+    expect(canAccessRoute(hrModule, '/hr/labor-contract-templates/variables', can({}))).toBe(false)
+    expect(canAccessRoute(hrModule, '/hr/labor-contract-templates/variables', can({ write: true }))).toBe(false)
+    expect(canAccessRoute(hrModule, '/hr/labor-contract-templates/variables', can({ read: true }))).toBe(true)
+  })
+
   it('trình soạn cũ /hr/labor-contract-templates/:id/edit vẫn bị gác bằng khóa mẫu HĐLĐ', () => {
     expect(canAccessRoute(hrModule, '/hr/labor-contract-templates/5/edit', can({}))).toBe(false)
     expect(canAccessRoute(hrModule, '/hr/labor-contract-templates/5/edit', can({ read: true }))).toBe(true)

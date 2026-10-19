@@ -1,7 +1,7 @@
 ---
 title: "duoc-CR-630 — Quản lý «Danh sách biến» của mẫu HĐLĐ (CRUD + biến tùy chỉnh nhập tay)"
 description: "Biến mẫu HĐLĐ chuyển từ mã cứng sang bảng tab_labor_contract_variable: 50 biến hệ thống sửa nhãn/ẩn, biến tùy chỉnh nhập tay theo từng hợp đồng."
-status: pending
+status: completed
 priority: P2
 effort: 17h
 branch: erp-v2
@@ -11,7 +11,7 @@ created: 2026-10-19
 
 # duoc-CR-630 — Danh sách biến mẫu HĐLĐ
 
-Change-log: chưa đặt chỗ (agent khác đang sửa `change-log.md`) — phase 06 ghi dòng `duoc-CR-630-bien-mau-hdld-crud`.
+Change-log: dòng `duoc-CR-630-bien-mau-hdld-crud` (đã điền). **PO chốt 19/10 ghi đè plan:** biến TOÀN HỆ THỐNG; chỉ phạm vi «tất cả pháp nhân» mới ghi danh mục (kể cả nhãn biến hệ thống); mặc định SAO vào HĐ lúc lập (không áp lúc sinh); «Bắt buộc» chặn cả Sinh tệp lẫn chuyển «Đã ký»; giá trị biến ngừng dùng hiện chỉ-đọc ở hộp Sửa HĐ; còn lại theo đề xuất của plan (Q3 write, Q6 số ≥0 ≤2 lẻ, Q7 `_bang_chu` tự động, Q9 100/20 000).
 
 ## Luồng dữ liệu
 
@@ -34,12 +34,12 @@ Xóa biến ──► «đang dùng» = có trong tpl.placeholders của BẤT K
 
 | # | Phase | Effort | Phụ thuộc | Status |
 |---|---|---|---|---|
-| 01 | [Nền: mã số, bảng, migration `lbvar01`, seed, luật thuần, registry](phase-01-nen-du-lieu-bang-bien-migration.md) | 3h | CR-629 commit (head `lbrct02`) | pending |
-| 02 | [API quản lý biến](phase-02-api-quan-ly-bien.md) | 3h | 01 | pending |
-| 03 | [Tích hợp mẫu + giá trị theo HĐ + sinh tệp + che nhật ký](phase-03-tich-hop-mau-gia-tri-hop-dong-sinh-tep.md) | 3.5h | 01 | pending |
-| 04 | [FE: màn quản lý biến](phase-04-fe-man-quan-ly-bien.md) | 4h | 02 (hợp đồng API) | pending |
-| 05 | [FE: ô nhập biến trong hộp Lập/Sửa HĐ](phase-05-fe-o-nhap-bien-trong-hop-dong.md) | 2h | 03, 04 | pending |
-| 06 | [Hồi quy, tài liệu, triển khai](phase-06-hoi-quy-tai-lieu-trien-khai.md) | 1.5h | 01–05 | pending |
+| 01 | [Nền: mã số, bảng, migration `lbvar01`, seed, luật thuần, registry](phase-01-nen-du-lieu-bang-bien-migration.md) | 3h | CR-629 commit (head `lbrct02`) | done |
+| 02 | [API quản lý biến](phase-02-api-quan-ly-bien.md) | 3h | 01 | done |
+| 03 | [Tích hợp mẫu + giá trị theo HĐ + sinh tệp + che nhật ký](phase-03-tich-hop-mau-gia-tri-hop-dong-sinh-tep.md) | 3.5h | 01 | done |
+| 04 | [FE: màn quản lý biến](phase-04-fe-man-quan-ly-bien.md) | 4h | 02 (hợp đồng API) | done |
+| 05 | [FE: ô nhập biến trong hộp Lập/Sửa HĐ](phase-05-fe-o-nhap-bien-trong-hop-dong.md) | 2h | 03, 04 | done |
+| 06 | [Hồi quy, tài liệu, triển khai](phase-06-hoi-quy-tai-lieu-trien-khai.md) | 1.5h | 01–05 | done |
 
 **02 ∥ 03** (tệp tách bạch, hàm dùng chung nằm ở `variable_registry.py` của 01). **04 ∥ 03** (FE chỉ cần hợp đồng API của 02).
 

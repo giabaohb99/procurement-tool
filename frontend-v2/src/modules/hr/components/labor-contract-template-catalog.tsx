@@ -19,7 +19,6 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { laborContractTemplateApi } from '../api/labor-contract-template-api'
-import { LaborContractPlaceholderGuideDialog } from './labor-contract-placeholder-guide-dialog'
 import { LaborContractTemplateEditDialog } from './labor-contract-template-edit-dialog'
 import { LaborContractTemplateUploadDialog } from './labor-contract-template-upload-dialog'
 import { buildLaborContractTemplateColumns } from '../config/labor-contract-template-columns'
@@ -55,7 +54,6 @@ export function LaborContractTemplateCatalog() {
   const [active, setActive] = useUrlParamState('is_active', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [uploadOpen, setUploadOpen] = useState(false)
-  const [guideOpen, setGuideOpen] = useState(false)
   const [replacing, setReplacing] = useState<LaborContractTemplate | null>(null)
   const [editing, setEditing] = useState<LaborContractTemplate | null>(null)
   const navigate = useNavigate()
@@ -162,7 +160,7 @@ export function LaborContractTemplateCatalog() {
                 </SelectContent>
               </Select>
               <div className="flex gap-2 max-md:w-full md:ml-auto">
-                <Button type="button" variant="outline" onClick={() => setGuideOpen(true)}>
+                <Button type="button" variant="outline" onClick={() => navigate(appRoutes.hr.laborContractVariables)}>
                   <BookOpen className="size-4" />
                   Danh sách biến
                 </Button>
@@ -185,7 +183,6 @@ export function LaborContractTemplateCatalog() {
         replacing={replacing}
       />
       <LaborContractTemplateEditDialog template={editing} onOpenChange={(next) => !next && setEditing(null)} />
-      <LaborContractPlaceholderGuideDialog open={guideOpen} onOpenChange={setGuideOpen} />
     </>
   )
 }

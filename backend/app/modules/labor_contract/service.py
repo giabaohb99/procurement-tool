@@ -13,6 +13,7 @@ from app.core.utils import generate_code
 from app.modules.employee.model import Employee
 
 from . import access, rules
+from .contract_custom_values import ensure_required_filled, merge_custom_values, placeholders_for_signing
 from .file_response import delete_files_after_commit
 from .model import LaborContract
 from .schema import LaborContractCreate, LaborContractUpdate, TransitionIn
@@ -92,6 +93,8 @@ def create(db: Session, user, profile: dict, emp: Employee,
         work_location=data.work_location if data.work_location is not None else (emp.work_location or ""),
         base_salary=data.base_salary, insurance_salary=data.insurance_salary,
         allowance=data.allowance, allowance_note=data.allowance_note, note=data.note,
+        #  Mặc định của biến được SAO vào hợp đồng lúc lập (đổi mặc định sau này không đổi hợp đồng cũ).
+        custom_values=merge_custom_values(db, {}, data.custom_values, fill_defaults=True) or None,
         created_by=user.id, updated_by=user.id)
     db.add(row)
     access.ensure_created_in_scope(db, LaborContract, ENTITY, row, user, profile, OUT_OF_SCOPE)
@@ -106,6 +109,11 @@ def update(db: Session, user, row: LaborContract,
         raise HTTPException(409, "Chỉ sửa được hợp đồng ở trạng thái Nháp")
     values = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None
               or k == "end_date"}   # end_date=None là hợp lệ (gỡ ngày kết thúc); cột khác không nhận null
+    incoming = values.pop("custom_values", None)
+    if incoming is not None:   # gộp (khóa không gửi giữ nguyên); chỉ coi là «đổi» khi dict kết quả khác thật
+        merged_values = merge_custom_values(db, row.custom_values, incoming)
+        if merged_values != dict(row.custom_values or {}):
+            values["custom_values"] = merged_values
     merged = {k: values.get(k, getattr(row, k)) for k in ("contract_type", "start_date", "end_date")}
     try:
         rules.check_dates(merged["contract_type"], merged["start_date"], merged["end_date"])
@@ -146,6 +154,8 @@ def transition(db: Session, user, row: LaborContract, data: TransitionIn) -> Lab
                                      to_status=data.to_status, on_date=data.date, reason=data.reason)
     except rules.RuleViolation as exc:
         raise HTTPException(exc.status_code, exc.message)
+    if int(plan.status) == int(S.SIGNED):   # duoc-CR-630: biến «bắt buộc» còn trống chặn việc ký (lưu nháp thì không)
+        ensure_required_filled(db, row.custom_values, placeholders_for_signing(db, row), "chuyển sang Đã ký")
     row.status = plan.status
     for key, value in plan.changes.items():
         setattr(row, key, value)
