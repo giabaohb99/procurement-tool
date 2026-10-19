@@ -70,6 +70,96 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-623 | Kho skill AI đợt K5: các màn quản trị — bộ skill, soạn skill, khóa nhân sự, nhật ký
+- status: xong
+- date: 2026-10-17
+Agent 1 giao em đợt K5 của kế hoạch Kho skill AI (doc 21 §6.1 đến §6.3) sau khi phần nền dữ liệu (bao-CR-621), cổng
+đọc skill (bao-CR-622), nhật ký lượt gọi (ai-CR-209) và phát khóa hộ (ai-CR-212) đã có trên dev. Đợt này chỉ làm giao
+diện ở frontend-v2, không đổi API.
+
+Phân hệ mới tên Kho skill AI, đứng cạnh Trợ lý AI trên màn chọn phân hệ, hiện với người đọc được kho skill hoặc được
+giao quản lý khóa của nhân sự. Bên trong có năm màn. Màn Bộ skill liệt kê các bộ cẩm nang (tên, phòng chủ quản, số skill,
+mức bảo mật, trạng thái), có ô tìm và lọc trạng thái, nút Tạo bộ và Tải gói lên; chưa có bộ nào thì hiện câu gợi việc đầu
+tiên thay cho bảng trắng. Màn Chi tiết bộ có ba tab: Skill (bảng skill, thêm skill, tải gói, xóa), Ai được đọc (gán theo
+sáu loại đối tượng gồm người, phòng ban có tick kể cả phòng con, pháp nhân, vai trò, chức vụ, cấp bậc, chiều cho phép
+hoặc không cho phép, hạn và lý do; dòng không cho phép tô đỏ) và Lịch sử. Màn Soạn skill chia hai cột: bên trái soạn
+Markdown có thanh chèn nhanh tiêu đề, chữ đậm, danh sách, bảng; bên phải xem trước như AI đọc. Ô Tóm tắt cho AI bắt buộc
+khi xuất bản, có bộ đếm 500 ký tự và câu gợi ý viết. Lưu nháp bằng nút hoặc Ctrl+S, rời trang khi chưa lưu thì hỏi lại.
+Nút Xuất bản cần quyền duyệt, tự lưu nháp trước rồi mới xuất bản để AI không nhận bản cũ hơn cái đang thấy. Màn này còn
+có tab Tệp đi kèm (kéo thả hoặc gõ tay tệp chữ, tối đa 2 MB), tab Phiên bản so hai bản cạnh nhau có tô dòng thêm và bớt,
+tab Ai được đọc riêng cho từng skill và tab Lịch sử. Màn Khóa nhân sự liệt kê khóa kết nối AI trong phạm vi người xem,
+lọc theo phòng và trạng thái, phát khóa chỉ đọc cho từng người hoặc cả phòng, tick chọn để thu hồi hàng loạt; hộp xác
+nhận chỉ đếm và chỉ gửi những khóa còn hiệu lực. Màn Nhật ký sử dụng liệt kê lượt AI tra cứu ERP, lọc theo ngày, công cụ,
+trạng thái, xuất tệp CSV của trang đang xem. Mục Cấu hình mới chừa chỗ trên menu.
+
+Hai chỗ đáng lưu ý. Bộ chọn đối tượng dùng chung (người, phòng ban, pháp nhân, vai trò) được mở thêm tùy chọn để kho
+skill tự truyền hai loại chức vụ, cấp bậc; bảng nhãn chung giữ nguyên bốn loại vì hộp quyền văn bản đọc thẳng bảng đó.
+Phát khóa cho từng người chọn theo danh sách nhân sự và gửi mã nhân sự (Agent 1 mở cho backend nhận ở ai-CR-215), nên
+người quản lý khóa không cần quyền quản trị tài khoản. Tệp CSV chặn công thức Excel ở
+ô bắt đầu bằng dấu bằng, cộng, trừ, a còng vì tên ứng dụng AI trong nhật ký là chuỗi bên ngoài gửi vào.
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn, không thêm cái nào); bài kiểm các thư mục kho
+skill, bộ chọn đối tượng dùng chung, bảng đăng ký phân hệ, phân hệ Văn bản và Hệ thống: 1147 bài xanh trên 129 tệp
+(1 bài đánh dấu biết trước là đỏ, có sẵn). Bài mới: luật tên skill và tên tệp khớp backend, gói tải lên, so dòng, CSV,
+quyền hiện menu của phân hệ, trang soạn (lưu trước khi xuất bản, Ctrl+S, bấm đúp, người chỉ đọc) và màn khóa (chỉ thu
+hồi khóa còn hiệu lực). Chưa mở trên trình duyệt với dữ liệu thật vì máy local chưa có tài khoản mẫu được gán kho skill;
+Agent 1 kiểm trên dev.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/` (mới: routes, api, hooks, types, config, utils, components, pages),
+`app/router/module-registry.ts`, `shared/constants/app-routes.ts`, `shared/constants/query-keys.ts`,
+`shared/access-subject/access-subject-picker.tsx` và `access-subject-picker-options.ts` (thêm tùy chọn loại).
+Commit: cùng commit gộp K5 + K6 trên erp-v2 (đại ca gật 19/10). Deploy: Agent 1 gộp vào đợt prod trưa 19/10.
+
+---
+
+## bao-CR-624 | Kho skill AI đợt K6: màn AI của tôi ở Trang cá nhân, màn Tổng quan và trang Giới thiệu
+- status: xong
+- date: 2026-10-17
+Agent 1 giao em đợt K6 (doc 21 §6.4) nối tiếp K5. Đợt này chỉ làm giao diện ở frontend-v2, dùng các đường API Agent 1
+đã mở trên dev: danh sách ứng dụng AI kèm cách cài, khóa chờ nhận, nhận khóa, lượt gọi gần nhất của một khóa, skill mình
+được đọc và số liệu tổng quan.
+
+Mục Kết nối AI riêng ở Trang cá nhân được viết lại thành màn AI của tôi, ai đăng nhập cũng có, đi theo ba bước. Bước một
+chọn ứng dụng AI đang dùng (Claude, ChatGPT, Cursor...) rồi xem từng bước cài, tệp cần tải, điều kiện cần có và đoạn cấu
+hình mẫu; tạo khóa xong thì đoạn mẫu tự điền sẵn khóa để chép một lần. Bước hai là khóa của tôi: khóa người quản lý phát
+hộ đang chờ thì có nút Nhận khóa, khóa đang dùng có nút xóa, và ô tạo khóa mới. Bước ba kiểm tra kết nối: với mỗi khóa
+còn hiệu lực, hiện lần gọi gần nhất hoặc câu chưa thấy AI gọi lần nào, có nút Kiểm tra lại. Dưới ba bước là thẻ Skill bạn
+được đọc và thẻ 20 lượt AI tra cứu gần nhất. Góc trên có nút Xem cách hoạt động mở demo chín chương của Agent 4 trong một
+hộp thoại, vì nhân viên thường không vào được phân hệ Kho skill AI.
+
+Phân hệ Kho skill AI có thêm màn Tổng quan (mục đầu menu): bốn thẻ số (bộ và skill trong kho, người đã nối AI, lượt gọi 7
+ngày so với 7 ngày trước, số từ chối và lỗi), biểu đồ cột lượt gọi theo ngày, ba bảng xếp hạng công cụ, người dùng và skill
+được đọc nhiều (tên skill tra ra từ mã, tra không được thì in Skill kèm số), trạng thái khóa và khóa sắp hết hạn. Đường số
+liệu đòi quyền quản lý bot AI; người thiếu quyền đó mở màn thấy câu giải thích, không gọi API để ăn lỗi 403. Máy chủ ERP
+không trả số kho thì thẻ in gạch ngang chứ không in 0. Thêm mục Giới thiệu ở cuối menu, mở cùng demo chín chương.
+
+Màn Cấu hình (trước chỉ chừa chỗ) nay chạy thật theo hợp đồng Agent 1 mở ở ai-CR-216: bật tắt 15 nhóm công cụ ERP mà AI
+riêng được gọi (mỗi nhóm ghi số công cụ, tên công cụ và nhãn khác mặc định nếu đã đổi), năm ô giới hạn (lượt mỗi phút
+theo khóa và theo IP, khóa sai mỗi phút, số dòng dữ liệu mỗi phút, số ngày giữ nhật ký) kèm dải cho phép, và câu dặn thêm
+cho AI tối đa 1000 ký tự. Lưu chỉ gửi phần đã đổi để không đè lên thay đổi người khác vừa lưu; ô số bỏ trống, số âm,
+số lẻ hay ngoài dải thì báo ngay dưới ô và khóa nút lưu (ô trống không được hiểu thành 0, vì 0 nghĩa là không chặn).
+Người thiếu quyền quản lý bot AI mở màn thấy câu giải thích; có quyền đọc mà không có quyền ghi thì xem ở chế độ chỉ đọc.
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn, không thêm cái nào); bài kiểm các thư mục kho
+skill, Trang cá nhân, trang và bảng đăng ký phân hệ, bộ chọn đối tượng dùng chung, Văn bản, Hệ thống, hằng số dùng chung
+và demo chương: 1293 bài xanh trên 151 tệp (1 bài đánh dấu biết trước là đỏ, có sẵn). Bài mới: màn AI của tôi (8 bài:
+nhận khóa chờ, đoạn mẫu điền khóa, khóa chờ không lẫn vào khóa đang dùng, kiểm tra kết nối), màn Tổng quan (thiếu quyền
+không gọi API, tên skill tra không được, máy chủ không trả số), hàm mô tả mức tăng giảm (rỗng, không phải số, vô cực).
+Sau khi làm thêm màn Cấu hình: typecheck 0 lỗi, lint 0 lỗi, bài kiểm phân hệ kho skill và hằng số dùng chung 61 bài xanh
+trên 10 tệp, trong đó có bài mới cho bản nháp cấu hình (ô trống, số âm, số lẻ, dạng 1e3, hai đầu dải, chỉ gửi phần đổi)
+và cho màn (thiếu quyền không gọi API, chỉ đọc không có nút lưu, bấm đúp chỉ một lần gửi, ngoài dải thì chặn lưu).
+Chưa mở trên trình duyệt với dữ liệu thật; Agent 1 kiểm trên dev.
+
+Mã nguồn: `frontend-v2/src/app/components/profile/profile-ai-connect-section.tsx` (viết lại) và bài kiểm đi kèm,
+`modules/ai-skill/pages/ai-overview-page.tsx`, `ai-skill-intro-page.tsx`, `ai-skill-settings-page.tsx`,
+`hooks/use-my-ai.ts`, `hooks/use-ai-usage.ts`, `utils/overview-format.ts`, `utils/mcp-settings-form.ts`, `routes.tsx`, `types/ai-skill.ts`, `api/ai-skill-api.ts`; `shared/constants/app-routes.ts`,
+`query-keys.ts`, `shared/notifications/notification-link.ts` (thêm `/ai-skill` vào danh sách tiền tố v2, thiếu thì link
+thông báo trỏ vào phân hệ này bị coi là đường cũ và chết; Agent 1 bắt được khi chạy cả bộ kiểm 19/10). Màn khóa nhân sự
+(K5) đổi sang gửi mã nhân sự.
+Commit: cùng commit gộp K5 + K6 trên erp-v2 (đại ca gật 19/10). Deploy: Agent 1 gộp vào đợt prod trưa 19/10.
+
+---
+
 ## bao-CR-622 | Kho skill AI đợt K2: AI riêng của nhân sự đọc được cẩm nang công ty qua cổng MCP
 - status: xong
 - date: 2026-10-17
@@ -158,7 +248,7 @@ mục, nhóm, cách đọc ?tab=), `profile-settings-nav.tsx` (mới, thanh bên
 `profile-ai-connect-section.tsx` (mới, tách từ `profile-ai-key-tab.tsx`), `profile-password-card.tsx` (mới); bài kiểm
 `profile-sections.test.ts`, `profile-ai-connect-section.test.tsx` (mới), `profile-ai-key-tab.test.tsx`,
 `profile-page.test.tsx`.
-Commit: chưa — chờ đại ca gật. Deploy: chưa, xong commit thì Agent 1 dựng dev.
+Commit: cad1c738 trên erp-v2 (Agent 1 commit theo lệnh đại ca 17/10). Deploy: Agent 1 dựng erp-dev 17/10.
 
 ---
 

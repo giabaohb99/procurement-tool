@@ -1,0 +1,107 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/core/auth/auth-store'
+import { confirm } from '@/shared/ui/confirm-dialog'
+import type { AdminMcpKey, KeyAdminMeta } from '../types/ai-skill'
+import { KeyAdminPage } from './key-admin-page'
+
+/**
+ * Màn «Khóa nhân sự» (G5). Chỗ dễ lủng: tick chọn cả khóa đã thu hồi / hết hạn rồi bấm Thu hồi thì hộp xác nhận phải
+ * nói đúng số khóa CÒN HIỆU LỰC và chỉ gửi những khóa đó; quyền xem / phát / thu hồi lấy từ `meta` của máy chủ.
+ */
+
+const apiGet = vi.fn()
+const apiPost = vi.fn()
+
+vi.mock('@/core/api', () => ({
+  apiGet: (...args: unknown[]) => apiGet(...args),
+  apiPost: (...args: unknown[]) => apiPost(...args),
+  apiPatch: vi.fn(),
+  apiPut: vi.fn(),
+  apiDelete: vi.fn(),
+  httpClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+}))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('@/shared/ui/confirm-dialog', () => ({ confirm: vi.fn(() => Promise.resolve(true)) }))
+
+const META: KeyAdminMeta = {
+  days: [7, 30, 90], batch_max: 50, max_keys: 5,
+  states: [{ value: 1, label: 'Chờ nhận' }, { value: 2, label: 'Đang dùng' }, { value: 3, label: 'Hết hạn' }, { value: 4, label: 'Đã thu hồi' }],
+  can_read: true, can_create: true, can_delete: true,
+}
+
+function key(id: number, state: number, owner: string): AdminMcpKey {
+  return {
+    id, name: `Khóa ${id}`, hint: `…${id}`, scope: 0, scope_label: 'chỉ đọc', expires_at: null, last_used_at: null,
+    created_at: null, state, state_label: META.states[state - 1].label, issued_by: 1, claimed_at: null, batch_id: '',
+    user_id: id + 100, owner_label: owner, department_id: 3, department: 'Thu mua', issued_by_label: 'Quản trị',
+  }
+}
+
+function mockServer(meta: KeyAdminMeta, keys: AdminMcpKey[]) {
+  apiGet.mockImplementation((url: string) => {
+    if (url.endsWith('/mcp-key-admin/meta')) return Promise.resolve(meta)
+    if (url.endsWith('/mcp-key-admin/keys')) return Promise.resolve({ total: keys.length, page: 1, size: 20, has_more: false, items: keys })
+    return Promise.resolve({ items: [] })
+  })
+}
+
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <KeyAdminPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+beforeEach(() => {
+  apiGet.mockReset()
+  apiPost.mockReset()
+  vi.mocked(confirm).mockClear()
+  useAuthStore.setState({ user: { id: 1, permissions: {} } as never })
+})
+
+describe('KeyAdminPage', () => {
+  it('revokes only the live keys among the ticked rows and says that number', async () => {
+    mockServer(META, [key(1, 2, 'An'), key(2, 4, 'Bình'), key(3, 1, 'Chi')])
+    apiPost.mockResolvedValue({ revoked: 2 })
+    renderPage()
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Chọn khóa Khóa 1 của An/ }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /Chọn khóa Khóa 2 của Bình/ }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /Chọn khóa Khóa 3 của Chi/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Thu hồi \(2\)/ }))
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ confirmLabel: 'Thu hồi 2 khóa' }))
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/api/agent-hub/mcp-key-admin/revoke', { key_ids: [1, 3] }),
+    )
+  })
+
+  it('offers no revoke button when only dead keys are ticked', async () => {
+    mockServer(META, [key(2, 4, 'Bình'), key(4, 3, 'Dũng')])
+    renderPage()
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Chọn khóa Khóa 2 của Bình/ }))
+    expect(screen.queryByRole('button', { name: /Thu hồi/ })).not.toBeInTheDocument()
+  })
+
+  it('hides tick boxes and the issue button from someone who may only read', async () => {
+    mockServer({ ...META, can_create: false, can_delete: false }, [key(1, 2, 'An')])
+    renderPage()
+    expect(await screen.findByText('An')).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: /Chọn khóa/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Phát khóa/ })).not.toBeInTheDocument()
+  })
+
+  it('shows a clear refusal instead of an empty table when the server says no read right', async () => {
+    mockServer({ ...META, can_read: false }, [])
+    renderPage()
+    expect(await screen.findByText('Không có quyền')).toBeInTheDocument()
+    expect(apiGet).not.toHaveBeenCalledWith('/api/agent-hub/mcp-key-admin/keys', expect.anything())
+  })
+})

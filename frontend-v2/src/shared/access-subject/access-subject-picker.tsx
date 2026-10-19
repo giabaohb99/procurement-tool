@@ -23,6 +23,12 @@ interface AccessSubjectPickerProps {
   options: SubjectOption[]
   /** Hiện "Đang tải…" khi danh mục chưa về, thay vì "Không có ai khớp." gây hiểu nhầm. */
   loading?: boolean
+  /** Bảng nhãn loại — bỏ trống = bốn loại chung. Kho skill AI truyền thêm chức vụ, cấp bậc. */
+  kindLabels?: Record<number, string>
+  /** Thứ tự nút lọc theo loại — bỏ trống = bốn loại chung. */
+  kindOrder?: readonly number[]
+  /** Chữ trên ô mở danh sách. */
+  placeholder?: string
 }
 
 /**
@@ -48,12 +54,15 @@ export function AccessSubjectPicker({
   onChange,
   options,
   loading,
+  kindLabels = SUBJECT_KIND_LABELS,
+  kindOrder = KIND_FILTER_ORDER,
+  placeholder = 'Thêm người · phòng ban · pháp nhân · vai trò…',
 }: AccessSubjectPickerProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [kindFilter, setKindFilter] = useState<number | null>(null)
 
-  const allOptions = useMemo(() => toPickerOptions(options), [options])
+  const allOptions = useMemo(() => toPickerOptions(options, kindLabels), [options, kindLabels])
 
   const selectedKeys = useMemo(() => new Set(value.map(keyOfSubject)), [value])
   const selectedOptions = allOptions.filter((option) => selectedKeys.has(option.key))
@@ -87,7 +96,7 @@ export function AccessSubjectPicker({
             className="flex h-9 w-full items-center gap-2 rounded-md border bg-transparent px-3 text-sm text-muted-foreground shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             <Search className="size-4 shrink-0" />
-            Thêm người · phòng ban · pháp nhân · vai trò…
+            {placeholder}
           </button>
         </PopoverTrigger>
 
@@ -109,7 +118,7 @@ export function AccessSubjectPicker({
             aria-label="Lọc theo loại"
             className="flex flex-wrap gap-1 border-b p-1.5"
           >
-            {[null, ...KIND_FILTER_ORDER].map((kind) => {
+            {[null, ...kindOrder].map((kind) => {
               const active = kindFilter === kind
               const count = kind == null ? keywordMatches.length : countByKind(kind)
               return (
@@ -123,7 +132,7 @@ export function AccessSubjectPicker({
                     active && 'border-primary bg-accent font-medium text-foreground',
                   )}
                 >
-                  {kind == null ? 'Tất cả' : SUBJECT_KIND_LABELS[kind]} ({count})
+                  {kind == null ? 'Tất cả' : kindLabels[kind]} ({count})
                 </button>
               )
             })}

@@ -647,6 +647,33 @@ export const queryKeys = {
     zaloStatus: () => ['assistant', 'zalo-status'] as const,
   },
   /**
+   * Kho skill AI (bao-CR-623). Cây `sets → skills → skill` để sửa một skill làm tươi được cả bảng skill của bộ và số
+   * skill ở danh sách bộ bằng một tiền tố. Khóa phát hộ và nhật ký lượt gọi đi qua cổng dịch vụ AI nên tách nhánh riêng.
+   */
+  aiSkill: {
+    all: ['ai-skill'] as const,
+    sets: () => ['ai-skill', 'sets'] as const,
+    set: (id: number) => ['ai-skill', 'sets', id] as const,
+    skills: (setId: number) => ['ai-skill', 'sets', setId, 'skills'] as const,
+    skillsAll: () => ['ai-skill', 'skill'] as const,
+    skill: (id: number) => ['ai-skill', 'skill', id] as const,
+    versions: (skillId: number) => ['ai-skill', 'skill', skillId, 'versions'] as const,
+    version: (versionId: number) => ['ai-skill', 'version', versionId] as const,
+    access: (targetKind: number, targetId: number) => ['ai-skill', 'access', targetKind, targetId] as const,
+    keyAdminMeta: () => ['ai-skill', 'key-admin', 'meta'] as const,
+    keyAdminKeysAll: () => ['ai-skill', 'key-admin', 'keys'] as const,
+    keyAdminKeys: (params: Record<string, unknown>) => ['ai-skill', 'key-admin', 'keys', params] as const,
+    calls: (params: Record<string, unknown>) => ['ai-skill', 'calls', params] as const,
+    mcpSettings: () => ['ai-skill', 'mcp-settings'] as const,
+    /** «AI của tôi» (K6). Danh sách khóa của chính mình dùng chung `system.mcpKeys()` với tab cũ. */
+    setupClients: () => ['ai-skill', 'setup'] as const,
+    setup: (client: string) => ['ai-skill', 'setup', client] as const,
+    pendingKeys: () => ['ai-skill', 'pending-keys'] as const,
+    lastCall: (keyId: number) => ['ai-skill', 'last-call', keyId] as const,
+    visibleSkills: () => ['ai-skill', 'me'] as const,
+    overview: () => ['ai-skill', 'overview'] as const,
+  },
+  /**
    * Phân hệ Công việc (CR-216). `board` là khóa nặng nhất — mọi thao tác trên
    * thẻ (kéo cột, tick xong, đổi PIC, gắn nhãn) đều phải làm nó mới lại, nên
    * mutation nào của task cũng invalidate `board(listId)`.

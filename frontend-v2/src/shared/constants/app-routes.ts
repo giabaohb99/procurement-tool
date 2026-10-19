@@ -159,6 +159,22 @@ export const appRoutes = {
     /** Ai đang nối Telegram / Zalo với bot, còn quyền «Trợ lý AI» không (ai-CR-131). */
     botUsers: '/assistant/bot-users',
   },
+  /**
+   * Kho skill AI (doc/erp/21, K5 bao-CR-623): bộ skill → chi tiết bộ → soạn skill, cộng ba màn quản trị khóa kết nối
+   * AI của nhân sự, nhật ký lượt gọi và cấu hình. Màn «AI của tôi» của từng người nằm ở Trang cá nhân, không ở đây.
+   */
+  aiSkill: {
+    root: '/ai-skill',
+    /** G1 — số liệu sử dụng (K6). Mục menu đầu tiên nhưng KHÔNG phải trang gốc: số liệu cần quyền quản lý bot AI. */
+    overview: '/ai-skill/overview',
+    /** Demo 9 chương (K8 ai-CR-214). */
+    intro: '/ai-skill/intro',
+    setDetail: (id: number | string) => `/ai-skill/sets/${id}`,
+    skillEditor: (id: number | string) => `/ai-skill/skills/${id}`,
+    keys: '/ai-skill/keys',
+    logs: '/ai-skill/logs',
+    settings: '/ai-skill/settings',
+  },
   customer: {
     root: '/customer',
   },
