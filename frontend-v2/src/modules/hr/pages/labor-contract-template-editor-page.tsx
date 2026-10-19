@@ -71,7 +71,7 @@ export function LaborContractTemplateEditorPage() {
     if (dirty && !(await confirm({ title: 'Bỏ thay đổi?', message: 'Nội dung đã sửa chưa được lưu sẽ mất.', confirmLabel: 'Bỏ thay đổi' }))) {
       return
     }
-    navigate(appRoutes.hr.laborContractTemplates)
+    navigate(appRoutes.document.laborContractTemplates)
   }
 
   const insertToken = (token: string) => {

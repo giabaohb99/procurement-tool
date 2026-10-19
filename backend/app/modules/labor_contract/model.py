@@ -25,6 +25,8 @@ class LaborContract(Base, AuditMixin, SoftDeleteMixin):
     __table_args__ = (
         Index("ix_labor_contract_emp_start", "employee_id", "start_date"),
         Index("ix_labor_contract_company_status", "company_id", "status"),
+        #  duoc-CR-629: luật đọc bản lưu trữ ở Văn bản dùng `document_id IN/NOT IN (subquery)`.
+        Index("ix_labor_contract_document", "document_id"),
     )
 
     code: Mapped[str] = mapped_column(String(25), unique=True)       # HDLD001...
@@ -53,6 +55,10 @@ class LaborContract(Base, AuditMixin, SoftDeleteMixin):
     generated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     generated_by: Mapped[int] = mapped_column(BigInteger, default=0)
     signed_file_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  duoc-CR-629: FK MỀM tới `tab_document.id` — bản LƯU TRỮ của HĐ ở phân hệ Văn bản (0 = chưa có).
+    #  Chính liên kết này (không phải mã loại) khóa quyền đọc văn bản: xem
+    #  `document/labor_contract_archive_access.py`.
+    document_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
 
     terminated_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     terminate_reason: Mapped[str] = mapped_column(String(500), default="")

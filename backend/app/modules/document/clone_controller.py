@@ -95,7 +95,7 @@ def create_clones(
     user=Depends(require("document", "create")),
 ):
     """F06–F09 — sinh bản nháp cho từng pháp nhân con và báo cho họ."""
-    source = _load(db, document_id, user)
+    source = _load(db, document_id, user, derived=True)
     clones = clone_service.create_clones(
         db, source, data.company_ids, data.due_date, data.note, user.id,
     )

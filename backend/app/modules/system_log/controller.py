@@ -20,7 +20,7 @@ diện thì mở DevTools ra là đọc được — chỗ này không phải ch
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user, user_has_permission
+from app.core.auth import get_current_user, get_perm_profile, user_has_permission
 from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -100,7 +100,7 @@ def list_logs(
     q = _build_query(db, user_id, doc_code, route, ip, field, table,
                      from_time, to_time, status, action_group, source, method)
     total = q.count()
-    items = service.build_page(db, q, page["offset"], page["limit"])
+    items = service.build_page(db, q, page["offset"], page["limit"], viewer=(user, get_perm_profile(db, user)))
     return success({"total": total, "items": items,
                     "page": page["page"], "page_size": page["page_size"]})
 
@@ -151,4 +151,5 @@ def read_detail(
     row = service.find_request(db, raw)
     if row is None:
         raise HTTPException(404, "Không tìm thấy lượt gọi")
-    return success(service.build_detail(db, row, with_change_log=_can_read_changes(db, user)))
+    return success(service.build_detail(db, row, with_change_log=_can_read_changes(db, user),
+                                        viewer=(user, get_perm_profile(db, user))))

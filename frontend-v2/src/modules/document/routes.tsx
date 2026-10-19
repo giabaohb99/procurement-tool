@@ -123,7 +123,10 @@ export const documentModule: ErpModule = {
       label: 'Thiết lập văn bản',
       path: appRoutes.document.settings,
       icon: SlidersHorizontal,
+      //  duoc-CR-629b: `labor_contract_template` là CỬA của mục mẫu HĐLĐ trong tab Thư viện mẫu (Nhân sự).
       entities: ['doc_type', 'doc_template', 'security_level', 'external_party'],
+      //  Chỉ ĐỌC được mẫu HĐLĐ vẫn vào xem (nút sửa do trang ẩn theo `can()`); văn thư không có khóa này thì không.
+      readEntities: ['labor_contract_template'],
       manage: true,
       group: 'Danh mục',
     },

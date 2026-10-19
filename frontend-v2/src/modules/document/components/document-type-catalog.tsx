@@ -6,7 +6,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { DOCUMENT_TYPE_FILTER_FIELDS } from '../config/document-filter-fields'
-import { useDocumentTypes } from '../hooks/use-document-types'
+import { SYSTEM_ONLY_DOC_TYPE_CODES, useDocumentTypes } from '../hooks/use-document-types'
 import { useSecurityLevelLabel } from '../hooks/use-document-catalogs'
 import {
   DOCUMENT_TYPE_FLAGS,
@@ -58,7 +58,16 @@ function DocumentTypeCatalogContent() {
         header: 'Mã loại',
         width: 100,
         hideable: false,
-        cell: (row) => <span className="font-medium text-navy">{row.code}</span>,
+        cell: (row) => (
+          <span className="flex items-center gap-1 font-medium text-navy">
+            {row.code}
+            {SYSTEM_ONLY_DOC_TYPE_CODES.includes(row.code.toUpperCase()) ? (
+              <Badge variant="secondary" className="font-normal">
+                Hệ thống
+              </Badge>
+            ) : null}
+          </span>
+        ),
       },
       { key: 'name', header: 'Tên loại văn bản', width: 220, cell: (row) => row.name },
       {

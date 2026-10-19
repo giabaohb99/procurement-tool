@@ -1,6 +1,6 @@
 # Phase 06 — CR-628b (bước A): gộp GIAO DIỆN mẫu HĐLĐ vào «Thư viện văn bản mẫu»
 
-**Sub-scope:** «CR-628b gộp mẫu HĐLĐ vào Thư viện văn bản mẫu» · **Ưu tiên:** P2 · **Trạng thái:** pending · **Effort:** 4h
+**Sub-scope:** «CR-628b gộp mẫu HĐLĐ vào Thư viện văn bản mẫu» · **Ưu tiên:** P2 · **Trạng thái:** done · **Effort:** 4h
 **Phụ thuộc:** CR-610 đã commit (`labor-contract-template-row-actions.tsx` đang CHƯA commit trong cây làm việc — không được ghi đè/mất). Độc lập với 01–05 (không chung tệp với phase 04).
 **Sở hữu tệp:** xem «Tệp». Backend **không đổi**.
 

@@ -20,6 +20,7 @@ from app.modules.doc_catalog.link_rule_model import (RELATION_EXCERPT,
 from app.modules.doc_catalog.model import DocType
 
 from .link_model import DocumentLink
+from .labor_contract_archive_access import archive_ids
 from .model import ALIVE_STATUSES, Document
 from .query import documents_query
 
@@ -52,6 +53,8 @@ def allowed_targets(db: Session, rule: DocTypeLinkRule, exclude_document_id: int
     query = documents_query(db).filter(   # ai-CR-177: `documents_query` = origin nội bộ + bỏ đã xóa
         Document.status.in_(ALIVE_STATUSES),
         Document.id != exclude_document_id,
+        #  duoc-CR-629: hàm này KHÔNG lọc quyền — bản lưu trữ HĐLĐ (Đã ký = hiệu lực) sẽ lộ tiêu đề.
+        ~Document.id.in_(archive_ids()),
     )
     #  `target_type_id` rỗng nghĩa là loại nào cũng được (dòng "bất kỳ tham chiếu bất kỳ").
     if rule.target_type_id:
@@ -68,7 +71,8 @@ def links_of(db: Session, document_id: int) -> list[DocumentLink]:
         db.query(DocumentLink)
         .join(Document, Document.id == DocumentLink.target_document_id)
         .filter(DocumentLink.source_document_id == document_id,
-                Document.is_deleted == False)  # noqa: E712
+                Document.is_deleted == False,  # noqa: E712
+                ~Document.id.in_(archive_ids()))   # duoc-CR-629: không lộ bản lưu trữ HĐLĐ
         .order_by(DocumentLink.relation.asc(), DocumentLink.id.asc())
         .all()
     )
@@ -80,7 +84,8 @@ def links_to(db: Session, document_id: int) -> list[DocumentLink]:
         db.query(DocumentLink)
         .join(Document, Document.id == DocumentLink.source_document_id)
         .filter(DocumentLink.target_document_id == document_id,
-                Document.is_deleted == False)  # noqa: E712
+                Document.is_deleted == False,  # noqa: E712
+                ~Document.id.in_(archive_ids()))   # duoc-CR-629
         .order_by(DocumentLink.relation.asc(), DocumentLink.id.asc())
         .all()
     )
@@ -135,7 +140,7 @@ def would_cycle(db: Session, source_id: int, target_id: int, relation: int) -> b
 
 
 def add_link(db: Session, source: Document, relation: int, target_document_id: int,
-             note: str, actor: int) -> DocumentLink:
+             note: str, actor: int, *, user=None, profile: dict | None = None) -> DocumentLink:
     """Khai một quan hệ. Bốn phép kiểm, hỏng phép nào cũng từ chối ghi."""
     if relation not in RELATION_LABELS:
         raise HTTPException(400, "Loại quan hệ không hợp lệ")
@@ -149,6 +154,14 @@ def add_link(db: Session, source: Document, relation: int, target_document_id: i
     target = db.get(Document, target_document_id)
     if not target or target.origin != 1:
         raise HTTPException(404, "Không tìm thấy văn bản đích")
+    #  duoc-CR-629 (review H1): đích phải ĐỌC được (không thì gõ id là dò ra tiêu đề), và bản lưu trữ
+    #  HĐLĐ không bao giờ là đầu mối quan hệ — kẻo `supersede_service` ghi trạng thái lên nó.
+    if user is not None:
+        from . import access_service
+        access_service.ensure_can(db, target, user, profile or {}, "read")
+    from . import labor_contract_archive_access as archive_access
+    if archive_access.contract_of(db, target) is not None or archive_access.contract_of(db, source) is not None:
+        raise HTTPException(409, "Bản lưu trữ hợp đồng lao động không khai quan hệ được")
     if target.id == source.id:
         raise HTTPException(400, "Văn bản không thể có quan hệ với chính nó")
 
@@ -278,7 +291,8 @@ def _count_alive_of_type(db: Session, target_type_id: int | None) -> int:
     soạn thật sự chọn được. Đếm cả bản nháp thì cảnh báo im lặng trong đúng
     trường hợp cần nói — cha còn nằm trong ngăn kéo ai đó.
     """
-    query = documents_query(db).filter(Document.status.in_(ALIVE_STATUSES))
+    query = documents_query(db).filter(Document.status.in_(ALIVE_STATUSES),
+                                       ~Document.id.in_(archive_ids()))   # duoc-CR-629
     #  `target_type_id` rỗng = loại nào cũng được, khi đó chỉ cần trong kho có
     #  bất kỳ văn bản nào còn hiệu lực.
     if target_type_id:

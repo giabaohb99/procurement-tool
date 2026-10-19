@@ -718,3 +718,17 @@ POST   /api/employees/{eid}/work-history/{hid}/apply   (áp vào hồ sơ)
 
 
 **Bổ sung 03/10/2026 (đại ca xem bản đầu, rồi chốt tách tab):** bản đầu gộp hai khu vào MỘT tab «Quá trình công tác & Quyết định»; đại ca thấy gom một tab khó nhìn nên chốt TÁCH thành HAI TAB RIÊNG đứng cạnh nhau — «Quá trình công tác» (giá trị `work-history`, giữ nguyên để link cũ không gãy; mọi dòng, có thao tác) và «Quyết định bổ nhiệm» (giá trị `decisions`, chỉ dòng có `decision_no`, CHỈ XEM — rỗng thì có nút «Thêm ở tab Quá trình công tác» khi còn quyền sửa, bấm vào nhảy sang tab kia). Hai tab dùng CHUNG một truy vấn (`useEmployeeWorkHistory`) — TanStack Query cache theo key là đủ, không gọi API hai lần trong 30 giây. Mỗi tab tự có nút «Bảng | Dòng thời gian», giữ trên URL (`whView`/`decView`), mặc định Bảng. Một component dòng thời gian dùng chung cho cả hai tab (`hr/components/employee-work-history-timeline.tsx`); ở trang /me, hai khu nay là HAI TAB CON bên trong thẻ (`profile-work-history-card.tsx`), chỉ xem, không lưu lựa chọn vào URL. Backend không đổi.
+
+## HĐLĐ → bản lưu trữ ở phân hệ Văn bản (duoc-CR-629)
+
+Mỗi hợp đồng lao động (`tab_labor_contract`) có cột `document_id` trỏ tới một văn bản loại `HDLD` ở phân hệ Văn bản (0 = chưa có).
+Cầu nối `labor_contract/document_archive_sync.archive_sync` chạy sau khi lập / sửa / sinh tệp / tải bản ký / chuyển trạng thái / xóa;
+lỗi chỉ ghi nhật ký, hợp đồng vẫn đi bình thường, sự kiện sau tự lành.
+
+- **Trạng thái:** Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực (ngày hết = ngày chấm dứt) · Đã hủy / HĐ xóa mềm → Lưu trữ · hồ sơ nhân sự xóa cứng → văn bản xóa mềm.
+- **Tệp:** văn bản giữ BẢN SAO (chép byte sang `tab_file` riêng, so `sha256`) của .docx đã sinh và bản đã ký; sinh lại / thay bản ký thì bản sao cũ bị gỡ. Văn bản là **gương** của hợp đồng, không lưu lịch sử mọi bản ký.
+- **Tiêu đề / tóm tắt** chỉ có số hợp đồng + tên người + loại + ngày + trạng thái — KHÔNG lương, phụ cấp, CCCD, tài khoản.
+- **Quyền đọc** chỉ theo `labor_contract.read` trong phạm vi (xem `.claude/rules/document-folders-search.md`). Vai trò `hr_profile` được seed thêm `document.read` phạm vi «Của tôi» để mở danh sách / tải tệp (hệ đang chạy phải tick tay hoặc `SEED_FORCE_SYNC` một lần).
+- **Bù dữ liệu cũ:** `docker compose exec -T api python scripts/backfill_hdld_van_ban_luu_tru.py --dry-run` rồi chạy thật (idempotent); rollback: `--soft-delete-all`.
+- **Mẫu hợp đồng** (duoc-CR-629b bước A): màn quản lý mẫu chuyển sang `/document/settings?tab=templates&kind=labor-contract`; vẫn khóa `labor_contract_template`, API cũ.
+

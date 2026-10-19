@@ -117,6 +117,10 @@ export interface LaborContract {
   /** Có quyền `print` trong phạm vi VÀ đã có tệp sinh. */
   can_print: boolean
   can_upload_signed: boolean
+  /** duoc-CR-629: id văn bản lưu trữ ở phân hệ Văn bản (0 = chưa có). */
+  document_id: number
+  /** Có quyền mở văn bản lưu trữ (backend tính từ `document.read`). */
+  can_open_document: boolean
   /** Mã trạng thái ĐÍCH chuyển được (DRAFT -> [2,5]; SIGNED -> [4]). */
   transitions: number[]
 }

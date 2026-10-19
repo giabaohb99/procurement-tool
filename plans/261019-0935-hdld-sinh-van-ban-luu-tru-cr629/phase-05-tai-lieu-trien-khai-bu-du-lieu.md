@@ -1,6 +1,6 @@
 # Phase 05 — Tài liệu, triển khai, bù dữ liệu
 
-**Ưu tiên:** P2 · **Trạng thái:** pending · **Effort:** 1.5h · **Phụ thuộc:** 02, 03, 04
+**Ưu tiên:** P2 · **Trạng thái:** done · **Effort:** 1.5h · **Phụ thuộc:** 02, 03, 04
 **Sở hữu tệp:** `doc/**`, `.claude/rules/document-folders-search.md`, `.claude/rules/hr-employee-profile.md`
 
 ## Tài liệu cần sửa
@@ -11,6 +11,12 @@
 - `.claude/rules/document-folders-search.md` — 3 gạch: (1) bản lưu trữ HĐLĐ nhận diện bằng `tab_labor_contract.document_id`, quyền đọc chỉ theo `labor_contract.read`; (2) `visible_condition` không còn trả `None`; (3) loại `HDLD` bị loại khỏi `tab_document_search`.
 - `.claude/rules/hr-employee-profile.md` (hoặc rule HĐLĐ nếu có) — 1 gạch: mọi đường ghi HĐ mới phải gọi `archive_sync`.
 - **CR-628b:** thêm dòng `duoc-CR-629b-gop-mau-hdld-vao-thu-vien` ở `change-log.md` (đặt chỗ NGAY khi nhận việc) + mục sổ nhật ký mã riêng `duoc-CR-629b`; `14-van-thu-van-ban.md` mục thiết lập/thư viện mẫu: thêm «Mẫu hợp đồng lao động» (ai thấy, URL, quản lý bằng `labor_contract_template`); `doc/erp/hrm/01-ho-so-nhan-su.md`: đường mới của màn mẫu; `.claude/rules/frontend-v2-migration-status.md` nếu bảng màn có ghi `/hr/labor-contract-templates`.
+
+## ĐIỀU KIỆN DỪNG TRIỂN KHAI (review H3) — làm TRƯỚC khi deploy
+Dừng, KHÔNG deploy, nếu một trong các điều sau đúng (seed không tự sửa loại người dùng đã tạo):
+1. Prod đã có `tab_doc_type.code = 'HDLD'` không do seed CR-629 tạo (vd văn thư tự lập cho HĐ giấy): `SELECT id, name, is_personal, needs_approval, needs_signature, number_when, is_active FROM tab_doc_type WHERE code='HDLD'`.
+2. Có văn bản loại đó chưa gắn với HĐLĐ nào: loại `HDLD` bị ẨN với mọi người (kể cả quản trị) và bị loại khỏi tìm kiếm toàn văn.
+Kiểm bằng lệnh chỉ đọc: `docker compose exec -T api python scripts/backfill_hdld_van_ban_luu_tru.py --check` (thoát mã 2 + in «ĐIỀU KIỆN DỪNG TRIỂN KHAI» nếu không đạt). Seed cũng ghi log ERROR `app.seed` cùng nội dung mỗi lần chạy. Cách xử lý: đổi MÃ loại cũ (hoặc chuyển văn bản sang loại khác) rồi mới deploy — hỏi đại ca, không tự sửa.
 
 ## Triển khai (dev → prod)
 1. Kiểm prod trước: `SELECT id, code, name, is_active FROM tab_doc_type WHERE code='HDLD'` — có sẵn mà khác nghĩa ⇒ dừng, hỏi đại ca.

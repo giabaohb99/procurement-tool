@@ -122,3 +122,6 @@ class LaborContractOut(BaseModel):
     can_print: bool = False
     can_upload_signed: bool = False
     transitions: list[int] = []
+    #  duoc-CR-629: bản lưu trữ ở phân hệ Văn bản (0 = chưa có) + cờ mở được (người xem có `document.read`).
+    document_id: int = 0
+    can_open_document: bool = False

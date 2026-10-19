@@ -122,3 +122,25 @@ describe('chọn bản đã ký', () => {
     expect(h.onUploadSigned).not.toHaveBeenCalled()
   })
 })
+
+describe('Nút «Mở bản lưu trữ ở Văn bản» (duoc-CR-629)', () => {
+  const label = 'Mở bản lưu trữ ở Văn bản'
+
+  it('can_open_document + document_id>0: có nút, mở tab mới tới đúng văn bản', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    renderActions(makeLaborContract({ can_open_document: true, document_id: 12 }))
+    await userEvent.click(screen.getByLabelText(label))
+    expect(open).toHaveBeenCalledWith(expect.stringContaining('/12'), '_blank', 'noopener')
+    open.mockRestore()
+  })
+
+  it('không có quyền mở: không có nút', () => {
+    renderActions(makeLaborContract({ can_open_document: false, document_id: 12 }))
+    expect(screen.queryByLabelText(label)).not.toBeInTheDocument()
+  })
+
+  it('document_id = 0: không có nút dù có quyền', () => {
+    renderActions(makeLaborContract({ can_open_document: true, document_id: 0 }))
+    expect(screen.queryByLabelText(label)).not.toBeInTheDocument()
+  })
+})

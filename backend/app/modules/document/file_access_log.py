@@ -107,12 +107,22 @@ def _already_alerted_in_window(db: Session, user_id: int, since: datetime) -> bo
             .first()) is not None
 
 
+def _alert_label(db: Session, doc: Document) -> str:
+    """Nhãn văn bản đưa vào chuông cảnh báo. Bản lưu trữ HĐLĐ chỉ dùng `#id` — tiêu đề có số HĐ + họ tên
+    mà chuông gửi cho cả nhóm quản trị (duoc-CR-629)."""
+    from . import labor_contract_archive_access as archive_access
+
+    if archive_access.contract_of(db, doc) is not None:
+        return f"văn bản #{doc.id}"
+    return doc.doc_code or doc.issue_number or doc.title
+
+
 def _raise_alert(db: Session, doc: Document, user, access_count: int, minutes: int) -> None:
     name = resolve_actor(db, user.id)
     title = f"Bất thường: {name} mở {access_count} tệp trong {minutes} phút"
     body = (
         f"{name} vừa mở hoặc tải {access_count} tệp đính kèm văn bản trong {minutes} phút gần đây. "
-        f"Tệp gần nhất thuộc văn bản «{doc.doc_code or doc.issue_number or doc.title}». "
+        f"Tệp gần nhất thuộc văn bản «{_alert_label(db, doc)}». "
         f"Mở sổ nhật ký của văn bản để xem chi tiết."
     )
 

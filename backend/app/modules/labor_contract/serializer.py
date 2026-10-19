@@ -29,6 +29,7 @@ def serialize_contracts(db: Session, rows: list[LaborContract], user, profile: d
     templates = names_map(db, LaborContractTemplate, {r.template_id for r in rows})
     creators = user_names(db, {r.created_by for r in rows})
 
+    can_open_documents = access.has_perm(profile, "document", "read")   # duoc-CR-629: 1 lần cho cả trang
     out: list[dict] = []
     for r in rows:
         writable = r.id in can["write"]
@@ -54,5 +55,7 @@ def serialize_contracts(db: Session, rows: list[LaborContract], user, profile: d
             can_print=r.id in can["print"] and bool(r.generated_file_id),
             can_upload_signed=writable and int(r.status) in (int(S.DRAFT), int(S.SIGNED)),
             transitions=list(rules.allowed_transitions(r.status)) if writable else [],
+            document_id=int(r.document_id or 0),
+            can_open_document=can_open_documents and bool(r.document_id),
         ).model_dump())
     return out

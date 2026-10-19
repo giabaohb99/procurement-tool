@@ -1,4 +1,5 @@
 import {
+  Archive,
   Ban,
   CircleSlash,
   Download,
@@ -13,6 +14,7 @@ import {
 import { useRef } from 'react'
 import { toast } from 'sonner'
 
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import type { LaborContract } from '../types/labor-contract'
@@ -87,6 +89,14 @@ export function LaborContractRowActions({
     // Chặn nổi bọt: bấm nút không được kích `onRowClick` của bảng.
     <div className="flex flex-wrap items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
       {busy && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Đang xử lý" />}
+      {row.can_open_document && row.document_id > 0 && (
+        //  Mở TAB MỚI: tab Hợp đồng nằm trong <form> hồ sơ, điều hướng tại chỗ sẽ mất dữ liệu đang sửa.
+        <Button type="button" variant="ghost" size="icon" className={iconBtn} disabled={busy}
+          title="Mở bản lưu trữ ở Văn bản" aria-label="Mở bản lưu trữ ở Văn bản"
+          onClick={() => window.open(appRoutes.document.documentDetail(row.document_id), '_blank', 'noopener')}>
+          <Archive className="size-4" />
+        </Button>
+      )}
       {row.can_edit && (
         <Button type="button" variant="ghost" size="icon" className={iconBtn} disabled={busy}
           title="Sửa hợp đồng" aria-label="Sửa hợp đồng" onClick={() => onEdit(row)}>

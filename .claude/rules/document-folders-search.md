@@ -34,3 +34,21 @@ paths:
   cùng kết nối (mẫu: migration `83679db84fd1`). Kiểm: `--check-stopwords`, vá: `--fix-stopwords`
   của cùng script. Pytest chạy SQLite nên **không bắt được**.
 - `pypdf` mới trong `backend/requirements.txt` → deploy phải **dựng lại image `api`**.
+
+⚠️ **BẢN LƯU TRỮ HỢP ĐỒNG LAO ĐỘNG** (duoc-CR-629, 19/10/2026 — kế hoạch `plans/261019-0935-hdld-sinh-van-ban-luu-tru-cr629/`):
+
+- Văn bản là bản lưu trữ HĐLĐ ⇔ có dòng `tab_labor_contract.document_id` trỏ tới nó (kể cả HĐ xóa mềm). Nhận diện bằng
+  **liên kết**, KHÔNG bằng mã loại `HDLD` — đổi mã/tên loại trên giao diện không mở khóa. Quyền ĐỌC chỉ theo
+  `labor_contract.read` trong phạm vi (`document/labor_contract_archive_access.py`); phạm vi `document` (kể cả *tất cả*),
+  chia đích danh, CẤM, sổ, duyệt, phạm vi áp dụng, clone, chủ/người tạo đều KHÔNG tính. Ghi/xóa luôn `False`; sao chép,
+  clone, trích, ký, duyệt, trả về, bỏ nháp → 409; tạo/đổi sang loại `HDLD` ở Văn bản → 400.
+- `visible_condition()` **không còn trả `None`** (luôn có vế loại bản lưu trữ). Chỗ nào gọi nó phải xử lý như điều kiện thật;
+  đừng dùng `is None` làm tín hiệu «thấy tất cả».
+- Loại `HDLD` bị loại khỏi `tab_document_search` (`search_index_service.reindex`). Đường đọc văn bản mới KHÔNG đi qua
+  `visible_condition`/`can()` (như `link_service.allowed_targets`) thì phải tự trừ `archive_ids()`.
+- Mọi đường GHI HĐLĐ mới (lập, sửa, sinh tệp, tải bản ký, chuyển trạng thái, xóa) phải gọi
+  `labor_contract/document_archive_sync.archive_sync(db, contract_id, actor_id)` sau commit (best-effort, idempotent).
+  Bù HĐ cũ: `scripts/backfill_hdld_van_ban_luu_tru.py` (`--dry-run`, `--soft-delete-all` để rollback).
+- Triển khai: vai trò đang chạy **không tự có** `document.read` phạm vi «Của tôi» (D-018) — tick ở màn Phân quyền cho vai
+  trò giữ `labor_contract`, hoặc `SEED_FORCE_SYNC=true` một lần (đè mọi vai trò, cân nhắc).
+

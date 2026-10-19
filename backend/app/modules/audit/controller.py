@@ -15,6 +15,12 @@ from app.core.scoping import scope_condition
 
 from .model import AuditLog
 
+
+def _archive_filter(db: Session, user):
+    """duoc-CR-629 (review H2): xem `labor_contract_archive_access.audit_row_filter`."""
+    from app.modules.document.labor_contract_archive_access import audit_row_filter
+    return audit_row_filter(db, user)
+
 router = APIRouter(prefix="/api/audit-logs", tags=["audit"])
 
 #  Entity ghi trong nhật ký -> khóa trong bảng quyền, khi hai bên KHÔNG trùng tên.
@@ -150,7 +156,7 @@ def list_logs(
 ):
     loc_pham_vi = _guard(db, user, entity, entity_id)
 
-    q = db.query(AuditLog)
+    q = db.query(AuditLog).filter(_archive_filter(db, user))
     if loc_pham_vi is not None:
         q = q.filter(loc_pham_vi)
     if entity:

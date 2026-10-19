@@ -1,6 +1,6 @@
 # Phase 02 — Luật đọc bản lưu trữ ở phân hệ Văn bản
 
-**Ưu tiên:** P1 (rò lương/CCCD/STK nếu sai) · **Trạng thái:** pending · **Effort:** 3h · **Phụ thuộc:** 01
+**Ưu tiên:** P1 (rò lương/CCCD/STK nếu sai) · **Trạng thái:** done · **Effort:** 3h · **Phụ thuộc:** 01
 **Sở hữu tệp:** `backend/app/modules/document/*`, `test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr629.py`
 
 ## Context

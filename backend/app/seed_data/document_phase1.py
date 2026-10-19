@@ -23,6 +23,8 @@ def _doc_type(
     review_cycle_months: int = 0,
     retention_months: int = 120,
     is_personal: bool = False,
+    needs_approval: bool = True,
+    is_confidential_type: bool = False,
 ) -> dict:
     return {
         "code": code,
@@ -32,11 +34,11 @@ def _doc_type(
         "id_scheme": id_scheme,
         "number_when": 2,
         "default_secrecy": 2,
-        "is_confidential_type": False,
+        "is_confidential_type": is_confidential_type,
         #  Loại VĂN BẢN CÁ NHÂN — bỏ qua phạm vi vai trò, chỉ người có chân
         #  trong tờ đơn mới thấy (`document/access_service`).
         "is_personal": is_personal,
-        "needs_approval": True,
+        "needs_approval": needs_approval,
         "needs_signature": needs_signature,
         "needs_decision": needs_decision,
         "needs_request": False,
@@ -121,7 +123,22 @@ EXTRACT_DOC_TYPE = _doc_type(
     review_cycle_months=0,
 )
 
-ALL_DOC_TYPES = OFFICIAL_DOC_TYPES + [EXTRACT_DOC_TYPE]
+#  duoc-CR-629: bản LƯU TRỮ Hợp đồng lao động (có lương, CCCD) — chỉ sinh từ Nhân sự. Quyền đọc
+#  KHÔNG theo loại này mà theo liên kết `tab_labor_contract.document_id` (đổi mã/tên loại không mở
+#  khóa); `is_personal` chỉ là lưới an toàn thứ hai. Không bao giờ cấp số, không duyệt, không ký.
+LABOR_CONTRACT_ARCHIVE_DOC_TYPE = _doc_type(
+    "HDLD",
+    "Hợp đồng lao động",
+    "C",
+    "Bản lưu trữ hợp đồng lao động do phân hệ Nhân sự tự sinh; chỉ người có quyền xem hợp đồng lao động đọc được.",
+    needs_signature=False,
+    needs_approval=False,
+    is_personal=True,
+    #  Mức mật tối thiểu «Mật» cho mọi bản lưu trữ (có lương, CCCD) — lớp gác theo mức mật cũng chặn thêm.
+    is_confidential_type=True,
+)
+
+ALL_DOC_TYPES = OFFICIAL_DOC_TYPES + [EXTRACT_DOC_TYPE, LABOR_CONTRACT_ARCHIVE_DOC_TYPE]
 for _sort_order, _row in enumerate(ALL_DOC_TYPES, start=1):
     _row["sort_order"] = _sort_order
 

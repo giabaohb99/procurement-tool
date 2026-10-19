@@ -107,7 +107,7 @@ describe('LaborContractFormDialog', () => {
     listTemplateOptions.mockResolvedValue([])
     renderDialog({ row: makeLaborContract() })
     expect(await screen.findByText(/chưa có mẫu cho loại này/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Mẫu hợp đồng/ })).toHaveAttribute('href', '/hr/labor-contract-templates')
+    expect(screen.getByRole('link', { name: /Mẫu hợp đồng/ })).toHaveAttribute('href', '/document/settings?tab=templates&kind=labor-contract')
   })
 
   it('mẫu rỗng nhưng không có quyền xem màn Mẫu: chỉ câu báo, không có liên kết', async () => {

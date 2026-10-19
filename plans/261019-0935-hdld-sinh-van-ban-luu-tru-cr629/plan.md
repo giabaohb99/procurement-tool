@@ -1,9 +1,9 @@
 ---
 title: "duoc-CR-629 — Lập HĐLĐ sinh bản lưu trữ bên Văn bản (chỉ Nhân sự xem)"
 description: "Bấm «Lập hợp đồng» là sinh 1 văn bản loại HDLD; tệp .docx + bản ký chép sang; trạng thái đồng bộ; quyền đọc ủy thác cho labor_contract.read."
-status: pending
+status: in-progress
 priority: P2
-effort: 15.5h
+effort: 24.5h
 branch: erp-v2
 tags: [hr, labor-contract, document, permissions, search, backend, frontend-v2]
 created: 2026-10-19
@@ -38,22 +38,23 @@ archive_sync(lc)  ── best-effort, lỗi chỉ log; khóa dòng HĐ FOR UPDAT
 
 | # | Phase | Effort | Phụ thuộc | Status |
 |---|---|---|---|---|
-| 01 | [Nền: cột, migration, loại văn bản HDLD, seed](phase-01-nen-cot-migration-loai-van-ban.md) | 1.5h | — | pending |
-| 02 | [Luật đọc bản lưu trữ ở phân hệ Văn bản](phase-02-luat-doc-ban-luu-tru-van-ban.md) | 3h | 01 | pending |
-| 03 | [Cầu nối đồng bộ HĐLĐ → Văn bản + script bù](phase-03-cau-noi-dong-bo-hdld-van-ban.md) | 4h | 01 | pending |
-| 04 | [FE: nút «Văn bản lưu trữ»](phase-04-fe-nut-van-ban-luu-tru.md) | 1.5h | 03 (hợp đồng API) | pending |
-| 05 | [Tài liệu, triển khai, bù dữ liệu](phase-05-tai-lieu-trien-khai-bu-du-lieu.md) | 1.5h | 02, 03, 04, 06 | pending |
-| 06 | **CR-628b** [Bước A: gộp giao diện mẫu HĐLĐ vào «Thư viện văn bản mẫu»](phase-06-cr629b-gop-giao-dien-mau-hdld-vao-thu-vien.md) | 4h | CR-610 đã commit | pending |
-| 07 | **CR-628b** [Bước B: gộp dữ liệu mẫu — đề xuất HOÃN](phase-07-cr629b-gop-du-lieu-mau-de-xuat-hoan.md) | (10–12h) | 06 + đại ca duyệt | deferred |
+| 01 | [Nền: cột, migration, loại văn bản HDLD, seed](phase-01-nen-cot-migration-loai-van-ban.md) | 1.5h | — | done |
+| 02 | [Luật đọc bản lưu trữ ở phân hệ Văn bản](phase-02-luat-doc-ban-luu-tru-van-ban.md) | 3h | 01 | done |
+| 03 | [Cầu nối đồng bộ HĐLĐ → Văn bản + script bù](phase-03-cau-noi-dong-bo-hdld-van-ban.md) | 4h | 01 | done |
+| 04 | [FE: nút «Văn bản lưu trữ»](phase-04-fe-nut-van-ban-luu-tru.md) | 1.5h | 03 (hợp đồng API) | done |
+| 05 | [Tài liệu, triển khai, bù dữ liệu](phase-05-tai-lieu-trien-khai-bu-du-lieu.md) | 1.5h | 02, 03, 04, 06 | done |
+| 06 | **CR-629b** [Bước A: gộp giao diện mẫu HĐLĐ vào «Thư viện văn bản mẫu»](phase-06-cr629b-gop-giao-dien-mau-hdld-vao-thu-vien.md) | 4h | CR-610 đã commit | done |
+| 07 | **CR-629b** [Bước B: gộp bảng mẫu — STI, migration `lbrct03`, backend, test](phase-07-cr629b-gop-du-lieu-mau-de-xuat-hoan.md) | 6.5h | 01–06 đã commit | pending |
+| 08 | **CR-629b** [Bước B: hồi quy FE, tài liệu, diễn tập + deploy, dọn bảng cũ](phase-08-cr629b-trien-khai-tai-lieu-don-bang-cu.md) | 2.5h | 07 | pending |
 
 **02 ∥ 03** chạy song song được: tệp không chồng nhau (02 = `document/*`, 03 = `labor_contract/*`).
 Hợp đồng giữa hai bên chỉ là: cột `tab_labor_contract.document_id` + hằng `LABOR_CONTRACT_DOC_TYPE` (phase 01).
-**06** chỉ đụng frontend-v2 (route/menu/trang Thiết lập/catalog HĐLĐ), không chung tệp với 04 ⇒ chạy song song với 01–04.
+**07 → 08** tuần tự. **06** chỉ đụng frontend-v2 (route/menu/trang Thiết lập/catalog HĐLĐ), không chung tệp với 04 ⇒ chạy song song với 01–04.
 
-## CR-628b — gộp mẫu HĐLĐ vào Thư viện văn bản mẫu (thêm 19/10/2026)
+## CR-629b — gộp mẫu HĐLĐ vào Thư viện văn bản mẫu (thêm 19/10/2026)
 `tab_document_template` chỉ có mẫu HTML theo loại văn bản. Nó không có tệp, biến, pháp nhân hay phạm vi, và mọi vai trò đều đọc được.
 ⇒ **Bước A (06):** gộp phần GIAO DIỆN thôi. Màn HĐLĐ sang `/document/settings?tab=templates&kind=labor-contract`, vẫn gọi `/api/labor-contract-templates`, quyền vẫn là `labor_contract_template`, backend và dữ liệu giữ nguyên.
-**Bước B (07):** gộp bảng. Tách riêng, khuyến nghị KHÔNG làm vì có nguy cơ rò mẫu và gãy `tab_labor_contract.template_id` mà người dùng không được thêm gì.
+**Bước B (07–08):** đại ca chốt LÀM (19/10/2026). Một bảng `tab_document_template` + cột `template_kind` (1 mẫu VB · 2 mẫu HĐLĐ), SQLAlchemy single-table inheritance tự lọc theo loại ở mọi truy vấn ⇒ `doc_template` không bao giờ thấy dòng HĐLĐ. GIỮ id mẫu HĐLĐ (`tab_labor_contract.template_id` không đổi), dời id mẫu VB nếu trùng (không ai trỏ về). `/api/labor-contract-templates` giữ nguyên ⇒ FE không đổi. Bảng cũ đổi tên `_bak629`, xóa ở lần phát hành sau (`lbrct04`).
 
 ## Quyết định khóa
 
@@ -67,7 +68,7 @@ Hợp đồng giữa hai bên chỉ là: cột `tab_labor_contract.document_id` 
 
 ## Rollback
 
-CR-628b bước A: revert 1 commit FE, không có dữ liệu. Phần còn lại: mỗi phase 1 commit. Revert FE (04) → revert BE (03, 02) → `alembic downgrade` về head trước `lbrct02` (drop cột + index).
+CR-629b bước B: `alembic downgrade lbrct02` (đổ loại 2 về bảng cũ, giữ id, gồm cả sửa đổi sau khi lên) → revert commit 07; lưới cuối = dump 3 bảng trước deploy (phase 08). CR-629b bước A: revert 1 commit FE, không có dữ liệu. Phần còn lại: mỗi phase 1 commit. Revert FE (04) → revert BE (03, 02) → `alembic downgrade` về head trước `lbrct02` (drop cột + index).
 Văn bản đã sinh còn lại: loại `HDLD` `is_personal` ⇒ chỉ người tạo + vai trò `document` phạm vi *tất cả* thấy; muốn sạch hẳn thì chạy `--soft-delete-all` của script trước khi downgrade.
 
 ## Câu hỏi mở — xem cuối phase 05.

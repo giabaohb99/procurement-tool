@@ -1,6 +1,6 @@
 # Phase 03 — Cầu nối đồng bộ HĐLĐ → Văn bản + script bù
 
-**Ưu tiên:** P2 · **Trạng thái:** pending · **Effort:** 4h · **Phụ thuộc:** 01
+**Ưu tiên:** P2 · **Trạng thái:** done · **Effort:** 4h · **Phụ thuộc:** 01
 **Sở hữu tệp:** `backend/app/modules/labor_contract/*`, `backend/scripts/backfill_hdld_van_ban_luu_tru.py`, `test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr629.py`
 
 ## Context

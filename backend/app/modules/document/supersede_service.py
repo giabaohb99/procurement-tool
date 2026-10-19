@@ -28,6 +28,7 @@ from app.modules.doc_catalog.link_rule_model import (RELATION_AMEND,
                                                      RELATION_REVOKE,
                                                      RELATION_SUPPLEMENT)
 
+from .labor_contract_archive_access import archive_doc_set
 from .link_model import DocumentLink
 from .model import (ALIVE_STATUSES, STATUS_REPLACED, STATUS_REVOKED,
                     STATUS_LABELS, Document)
@@ -130,6 +131,9 @@ def amended_by(db: Session, document_id: int) -> list[dict]:
         new = db.get(Document, link.source_document_id)
         if new is None or new.status not in ALIVE_STATUSES:
             continue
+        if db.query(Document.id).filter(Document.id == new.id,
+                                        Document.id.in_(archive_doc_set())).first():
+            continue   # duoc-CR-629: bản lưu trữ HĐLĐ không là «văn bản sửa đổi» của ai
         result.append({
             "document_id": new.id,
             "title": new.title,

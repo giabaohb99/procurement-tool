@@ -20,10 +20,42 @@ from .security_level_schema import (SecurityLevelCreate, SecurityLevelOut,
                                     SecurityLevelUpdate)
 
 
+#  duoc-CR-629 (review N2): loại HDLD là loại HỆ THỐNG (bản lưu trữ hợp đồng lao động). KHÓA mọi cờ — mở
+#  `is_personal`/duyệt/cấp số… hoặc tắt/đổi mã là mở đường rò hoặc làm cầu đồng bộ chết im lặng.
+_HDLD_LOCKED_FIELDS = ("code", "is_active", "is_personal", "needs_approval", "needs_signature",
+                       "needs_decision", "needs_request", "id_scheme", "number_when",
+                       "is_confidential_type", "default_secrecy", "default_flow_id")
+
+
+def _is_hdld_code(code) -> bool:
+    from app.modules.document.type_metadata import LABOR_CONTRACT_DOC_TYPE
+    return str(code or "").strip().upper() == LABOR_CONTRACT_DOC_TYPE
+
+
+def _guard_doc_type_create(db, data):
+    if _is_hdld_code(getattr(data, "code", "")):
+        from fastapi import HTTPException
+        raise HTTPException(400, "Mã HDLD dành riêng cho bản lưu trữ hợp đồng lao động do hệ thống tạo")
+
+
+def _guard_doc_type_delete(db, obj):
+    if _is_hdld_code(obj.code):
+        from fastapi import HTTPException
+        raise HTTPException(400, "Loại Hợp đồng lao động là loại hệ thống, không xóa được")
+
+
 def _guard_doc_type(db, obj, values: dict):
     """Đổi mã sau khi đã cấp số là hỏng số hiệu đã ban hành; đổi kiểu định danh
     khi đã có văn bản thuộc loại thì hai nhóm văn bản cùng loại mang hai kiểu số
     khác nhau, không xếp chung sổ được."""
+    if _is_hdld_code(obj.code) or _is_hdld_code(values.get("code")):
+        from fastapi import HTTPException
+        if _is_hdld_code(obj.code):
+            changed = [f for f in _HDLD_LOCKED_FIELDS if f in values and values[f] != getattr(obj, f, None)]
+            if changed:
+                raise HTTPException(400, "Loại Hợp đồng lao động là loại hệ thống, không sửa được: " + ", ".join(changed))
+        elif _is_hdld_code(values.get("code")):
+            raise HTTPException(400, "Mã HDLD dành riêng cho bản lưu trữ hợp đồng lao động do hệ thống tạo")
     if "code" in values:
         ensure_doc_type_code_free(db, obj.code, values["code"])
     if "id_scheme" in values and values["id_scheme"] != obj.id_scheme:
@@ -42,7 +74,12 @@ doc_type_router = make_crud_router(
     ["code", "name", "group_code", "is_active", "id_scheme", "default_secrecy",
      "is_confidential_type", "is_personal", "needs_approval", "needs_signature",
      "needs_decision"],
+    before_create=_guard_doc_type_create,
     before_update=_guard_doc_type,
+    before_delete=_guard_doc_type_delete,
+    #  Nhập CSV đi vòng mọi chốt `before_*` (đặt `is_active`, tạo mã tùy ý) ⇒ không để mở với loại hệ thống HDLD.
+    #  Giao diện v2 không dùng đường này.
+    csv_import=False,
     csv_headers={"id": "ID", "code": "Mã loại", "name": "Tên loại văn bản",
                  "group_code": "Nhóm", "description": "Mô tả"})
 

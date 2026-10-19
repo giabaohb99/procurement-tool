@@ -5,6 +5,7 @@ THÊM dữ liệu còn thiếu, TUYỆT ĐỐI không ghi đè dữ liệu ngư�
 danh mục, NCC...). Mọi khối ghi đè phải đặt sau cờ FORCE_SYNC (biến .env SEED_FORCE_SYNC).
 """
 import json
+import logging
 import os
 
 from app.core.auth import hash_password
@@ -315,6 +316,10 @@ STD_ROLES = {
         #  Hợp đồng lao động (có lương) + mẫu hợp đồng: chỉ vai trò này (ngoài admin).
         "labor_contract": (["read", "create", "write", "delete", "print"], "all"),
         "labor_contract_template": (["read", "create", "write", "delete"], "all"),
+        #  duoc-CR-629: danh sách Văn bản + tải tệp đòi `document.read` ở lớp 1. Phạm vi `own` (=
+        #  người tạo) KHÔNG mở thêm văn bản thường nào; bản lưu trữ HĐLĐ mở bằng nhánh riêng theo
+        #  `labor_contract.read` (document/labor_contract_archive_access.py).
+        "document": (["read"], "own"),
         #  Tab «Tài khoản & thiết bị» trong hồ sơ (bao-CR-395): Nhân sự XEM phiên
         #  đang mở + lịch sử đăng nhập 90 ngày của mọi người. KHÔNG cấp `delete`
         #  (đá phiên là của admin); nút «Khóa tài khoản + đăng xuất mọi thiết bị»
@@ -1206,6 +1211,13 @@ def seed_document_phase1(db):
     changed = 0
 
     existing_types = {row.code.upper(): row for row in db.query(DocType).all()}
+    #  duoc-CR-629 (review H3): loại HDLD có sẵn mà KHÔNG phải do seed tạo → KHÔNG tự sửa (có thể do văn thư
+    #  tự lập cho HĐ giấy), chỉ kêu to. Văn bản loại này sẽ bị ẩn nếu không gắn với HĐLĐ nào.
+    if "HDLD" in existing_types:
+        from app.modules.document.labor_contract_archive_access import check_doc_type
+        for problem in check_doc_type(db):
+            logging.getLogger("app.seed").error(
+                "CR-629 ĐIỀU KIỆN DỪNG TRIỂN KHAI: %s — xem plans/261019-0935-hdld-sinh-van-ban-luu-tru-cr629/phase-05", problem)
     for values in ALL_DOC_TYPES:
         if values["code"].upper() in existing_types:
             continue

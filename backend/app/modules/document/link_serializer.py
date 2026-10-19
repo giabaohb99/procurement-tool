@@ -102,6 +102,15 @@ def build_tree(db: Session, root: Document, depth: int = MAX_TREE_DEPTH) -> dict
     return node
 
 
+def _archive_among(db: Session, ids: list[int]) -> set[int]:
+    """Trong `ids`, văn bản thuộc diện bản lưu trữ HĐLĐ (có HĐ trỏ tới hoặc loại HDLD)."""
+    if not ids:
+        return set()
+    from . import labor_contract_archive_access as archive_access
+    return {i for (i,) in db.query(Document.id)
+            .filter(Document.id.in_(ids), Document.id.in_(archive_access.archive_doc_set())).all()}
+
+
 def _children(db: Session, document_id: int, depth: int, seen: set[int]) -> list[dict]:
     if depth <= 0:
         return []
@@ -120,12 +129,15 @@ def _children(db: Session, document_id: int, depth: int, seen: set[int]) -> list
     private_copy_ids = {row[0] for row in db.query(Document.id)
                      .filter(Document.source_document_id == document_id).all()}
 
+    archive_set = _archive_among(db, [link.source_document_id for link in links])
     nodes: list[dict] = []
     for link in links:
         if link.source_document_id in seen or link.source_document_id in private_copy_ids:
             continue
         child = db.get(Document, link.source_document_id)
         if child is None or child.is_deleted:   # ai-CR-177
+            continue
+        if child.id in archive_set:   # duoc-CR-629: bản lưu trữ HĐLĐ không bao giờ hiện trong cây
             continue
         seen.add(child.id)
         node = summary_of(db, child) or {}

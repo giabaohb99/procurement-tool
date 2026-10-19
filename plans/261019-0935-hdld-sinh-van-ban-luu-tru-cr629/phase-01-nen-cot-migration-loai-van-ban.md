@@ -1,6 +1,6 @@
 # Phase 01 — Nền: cột, migration, loại văn bản HDLD, seed
 
-**Ưu tiên:** P2 · **Trạng thái:** pending · **Effort:** 1.5h · **Phụ thuộc:** —
+**Ưu tiên:** P2 · **Trạng thái:** done · **Effort:** 1.5h · **Phụ thuộc:** —
 
 ## Context
 - `backend/app/modules/labor_contract/model.py:20-58` (FK mềm, `SoftDeleteMixin`)

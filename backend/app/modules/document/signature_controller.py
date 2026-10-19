@@ -59,7 +59,7 @@ def sign_document(
     #  Ký là hành vi PHÊ DUYỆT chứ không phải sửa nội dung — gác bằng `approve`.
     user=Depends(require("document", "approve")),
 ):
-    doc = _load(db, document_id, user)
+    doc = _load(db, document_id, user, derived=True)
     signature = signature_service.sign(
         db, doc,
         version_id=data.version_id,
