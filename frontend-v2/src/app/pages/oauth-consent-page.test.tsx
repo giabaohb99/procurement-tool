@@ -17,13 +17,14 @@ import { OAuthConsentPage } from './oauth-consent-page'
 const apiGet = vi.fn()
 const apiPost = vi.fn()
 const goTo = vi.fn()
+const isFramed = vi.fn(() => false)
 
 vi.mock('@/core/api', () => ({
   apiGet: (...args: unknown[]) => apiGet(...args),
   apiPost: (...args: unknown[]) => apiPost(...args),
   extractErrorMessage: (e: unknown) => (e instanceof Error ? e.message : 'lỗi'),
 }))
-vi.mock('./oauth-consent-redirect', () => ({ goTo: (url: string) => goTo(url) }))
+vi.mock('./oauth-consent-redirect', () => ({ goTo: (url: string) => goTo(url), isFramed: () => isFramed() }))
 
 const INFO = {
   client_name: 'ChatGPT',
@@ -51,6 +52,7 @@ describe('OAuthConsentPage', () => {
     apiGet.mockReset()
     apiPost.mockReset()
     goTo.mockReset()
+    isFramed.mockReturnValue(false)
   })
 
   it('shows who asks and defaults to the scope the app requested (read only)', async () => {
@@ -100,6 +102,18 @@ describe('OAuthConsentPage', () => {
     renderPage()
     expect(await screen.findByRole('alert')).toHaveTextContent('đã hết hạn')
     expect(screen.queryByRole('button', { name: /Cho phép/ })).toBeNull()
+  })
+
+  //  ai-CR-222 (Agent 1 rà 19/10): kẻ xấu nhúng màn đồng ý vào iframe rồi đè nút giả lên «Cho phép» — nginx đã cấm nhúng,
+  //  đây là lớp thứ hai: bị nhúng thì không gọi API, không có nút nào để bấm.
+  it('refuses to work inside a frame: no request read, no buttons', async () => {
+    isFramed.mockReturnValue(true)
+    apiGet.mockResolvedValue(INFO)
+    renderPage()
+    expect(await screen.findByRole('alert')).toHaveTextContent('cửa sổ trình duyệt riêng')
+    expect(apiGet).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: /Cho phép/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Từ chối' })).toBeNull()
   })
 
   it('shows the server error and lets the user retry after a failed approve', async () => {

@@ -13540,6 +13540,20 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-222 | Vá các lỗ bảo mật Agent 1 tìm ra khi rà phần nối ChatGPT và khóa kết nối AI
+- status: dang-lam
+- date: 2026-10-19
+Agent 1 rà độc lập phần đăng nhập ChatGPT và phần xem lại khóa, kết luận an toàn sau khi vá hai lỗi bắt buộc. Lỗi thứ
+nhất: trang khác có thể nhúng màn Cho phép vào một khung ẩn rồi lừa người đang đăng nhập bấm, nay máy chủ cấm nhúng màn
+đó và chính màn đó cũng tự từ chối khi bị nhúng. Lỗi thứ hai: địa chỉ gốc trả cho ứng dụng AI có thể bị người gọi đổi
+bằng một header, nay chỉ lấy từ cấu hình máy chủ, thiếu cấu hình thì báo lỗi rõ thay vì trả địa chỉ nội bộ. Vá kèm ba chỗ
+nhỏ: mã cấp quyền bị hủy ngay lần dùng đầu kể cả khi sai, chuỗi yêu cầu hỏng không còn gây lỗi máy chủ, và người nghỉ
+việc thì bản xem lại khóa cùng mã làm mới bị xóa sạch. Bài kiểm đều đạt.
+
+Mã nguồn: docker/nginx.erp.prod.conf, agent_hub/oauth.py, agent_hub/oauth_controller.py, agent_hub/mcp.py,
+agent_hub/service.py, frontend-v2 app/pages/oauth-consent-page.tsx
+Bài kiểm: test_agent_hub_oauth_ra_soat_cr222.py, oauth-consent-page.test.tsx
+
 ## ai-CR-221 | Người dùng xem lại được khóa kết nối AI của mình và bật tắt khóa khi cần
 - status: dang-lam
 - date: 2026-10-19

@@ -1149,6 +1149,10 @@ def revoke_user_access(db: Session, user_id: int, *, now: datetime | None = None
     for model in (AgentUserKey, AgentChatLink, AgentMcpKey, AgentGoogleLink):
         for row in db.query(model).filter(model.user_id == int(user_id), model.revoked_at.is_(None)):
             row.revoked_at = now
+            if model is AgentMcpKey:
+                #  ai-CR-222 (Agent 1 rà 19/10): như mcp_keys.revoke_rows — xóa trắng bản xem lại khóa, bản niêm phong khóa
+                #  phát hộ và mã làm mới OAuth; chỉ đặt revoked_at thì bí mật vẫn nằm trong DB của người đã nghỉ.
+                row.raw_view, row.raw_sealed, row.refresh_hash = "", "", ""
             n += 1
     #  ai-CR-138 (13.4): nghỉ việc / thu hồi thì xóa sạch trí nhớ bot giữ về người đó (lõi, kho, tự rút, sổ ý định).
     from . import memory_view

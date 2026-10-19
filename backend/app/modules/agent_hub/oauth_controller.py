@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.response import success
 
@@ -32,12 +33,18 @@ public_router = APIRouter(tags=["mcp-oauth"])
 router = APIRouter(prefix="/api/agent-hub/oauth", tags=["mcp-oauth"])
 REGISTER_PER_MIN_PER_IP = 30
 _NO_STORE = {"Cache-Control": "no-store", "Pragma": "no-cache"}
+if not settings.AGENT_ERP_URL:
+    #  ai-CR-222: báo NGAY lúc nạp router — không khai thì mọi đường OAuth trả 503 (trừ máy local), xem oauth.issuer.
+    log.error("AGENT_ERP_URL chưa khai: OAuth cổng MCP (ChatGPT / claude.ai) sẽ trả 503 — khai gốc công khai của ERP.")
 
 
 def _base(request: Request) -> str:
-    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
-    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
-    return oauth.issuer(f"{proto}://{host}")
+    """Gốc công khai — chỉ `AGENT_ERP_URL` (ai-CR-222: bỏ X-Forwarded-Host). Chưa khai mà không phải máy local → 503."""
+    try:
+        return oauth.issuer(request.url.scheme, request.url.netloc)
+    except oauth.OAuthError as e:
+        log.error("OAuth cổng MCP: %s", e.description)
+        raise HTTPException(503, e.description) from e
 
 
 def _error(e: oauth.OAuthError) -> JSONResponse:

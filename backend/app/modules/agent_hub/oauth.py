@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timedelta
 from urllib.parse import urlencode, urlsplit
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -64,9 +64,23 @@ class OAuthError(Exception):
 
 
 # --- địa chỉ ---------------------------------------------------------------------------------------------------------
-def issuer(fallback_base: str = "") -> str:
-    """Gốc công khai của ERP (`AGENT_ERP_URL`); chưa khai thì theo địa chỉ yêu cầu đang đến (máy local / bài kiểm)."""
-    return (settings.AGENT_ERP_URL or fallback_base or "").rstrip("/")
+LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+MISSING_ISSUER = "Máy chủ chưa khai AGENT_ERP_URL (gốc công khai của ERP) nên chưa nối OAuth được — báo quản trị."
+
+
+def issuer(scheme: str = "", host: str = "") -> str:
+    """Gốc công khai của ERP — CHỈ lấy `AGENT_ERP_URL` (ai-CR-222, Agent 1 rà 19/10). Không bao giờ đọc `X-Forwarded-Host`:
+    người gọi tự đặt được header đó, và ở chế độ tách dịch vụ địa chỉ đến là gốc NỘI BỘ (agent:8001) — ChatGPT không nối
+    được. Chưa khai thì chỉ máy local (dev, host loopback) mới dùng tạm địa chỉ đang đến; còn lại báo lỗi rõ (503)."""
+    if settings.AGENT_ERP_URL:
+        return settings.AGENT_ERP_URL.rstrip("/")
+    try:
+        name = (urlsplit(f"//{host}").hostname or "").lower() if host else ""
+    except ValueError:
+        name = ""
+    if scheme and name in LOOPBACK_HOSTS:
+        return f"{scheme}://{host}".rstrip("/")
+    raise OAuthError("server_error", MISSING_ISSUER, 503)
 
 
 def resource_url(base: str) -> str:
@@ -205,7 +219,11 @@ def read_request(token: str, now: float | None = None) -> dict | None:
         data = json.loads(_unb64(payload))
     except (ValueError, json.JSONDecodeError):
         return None
-    if not isinstance(data, dict) or int(data.get("exp") or 0) < (now or time.time()):
+    try:                                 # ai-CR-222: `exp` lạ (chuỗi, số thực…) thì coi như yêu cầu hỏng, không ném 500
+        exp = int(data.get("exp") or 0) if isinstance(data, dict) else 0
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(data, dict) or exp < (now or time.time()):
         return None
     return data
 
@@ -315,8 +333,14 @@ def exchange_code(db: Session, client: AgentOAuthClient, code: str, redirect_uri
     row = db.scalar(select(AgentOAuthCode).where(AgentOAuthCode.code_hash == _hash(code or "")))
     if row is None or row.client_pk != client.id:
         raise OAuthError("invalid_grant", "Mã cấp quyền không hợp lệ.")
-    if row.used_at is not None:
+    #  ai-CR-222: ĐỐT mã ngay (UPDATE có điều kiện + commit) TRƯỚC mọi kiểm tra — hai yêu cầu song song cùng mã thì chỉ một
+    #  bên đổi được dòng; mã sai PKCE / sai redirect cũng bị đốt (RFC 6749 §4.1.2: mã chỉ dùng một lần, kể cả lần hỏng).
+    burned = db.execute(update(AgentOAuthCode).where(AgentOAuthCode.id == row.id, AgentOAuthCode.used_at.is_(None))
+                        .values(used_at=now)).rowcount
+    db.commit()
+    if not burned:
         raise OAuthError("invalid_grant", "Mã cấp quyền đã dùng rồi.")
+    db.refresh(row)
     if row.expires_at <= now:
         raise OAuthError("invalid_grant", "Mã cấp quyền đã hết hạn.")
     if (redirect_uri or row.redirect_uri) != row.redirect_uri:
@@ -325,7 +349,6 @@ def exchange_code(db: Session, client: AgentOAuthClient, code: str, redirect_uri
         raise OAuthError("invalid_grant", "code_verifier sai (PKCE).")
     if resource and row.resource and resource.rstrip("/") != row.resource.rstrip("/"):
         raise OAuthError("invalid_target", "resource khác lúc xin cấp quyền.")
-    row.used_at = now
     #  Cấp lại cho cùng người + ứng dụng → kết nối cũ chết (khỏi chất đống dòng, khỏi để mã cũ sống tiếp).
     old = list(db.scalars(select(AgentMcpKey).where(
         AgentMcpKey.user_id == row.user_id, AgentMcpKey.kind == mcp_keys.KIND_OAUTH,

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Label } from '@/shared/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 
-import { goTo } from './oauth-consent-redirect'
+import { goTo, isFramed } from './oauth-consent-redirect'
 
 /** Mức khóa — khớp `mcp_keys.SCOPE_READ` / `SCOPE_WRITE` ở backend. */
 const SCOPE_READ = 0
@@ -43,6 +43,8 @@ const consentKeys = { request: (req: string) => ['oauth', 'consent', req] as con
  */
 export function OAuthConsentPage() {
   const { req = '' } = useParams()
+  //  ai-CR-222: bị nhúng trong khung (kiểu lừa bấm) thì không đọc yêu cầu, không hiện nút — chỉ báo mở ở cửa sổ riêng.
+  const framed = isFramed()
   const [scope, setScope] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -52,7 +54,7 @@ export function OAuthConsentPage() {
   const query = useQuery({
     queryKey: consentKeys.request(req),
     queryFn: () => apiGet<ConsentRequest>(`/api/agent-hub/oauth/request/${req}`, { _silent: true } as never),
-    enabled: Boolean(req),
+    enabled: Boolean(req) && !framed,
     retry: false,
   })
   const info = query.data
@@ -83,7 +85,7 @@ export function OAuthConsentPage() {
             <KeyRound className="size-5 text-primary" />
             Cho phép ứng dụng AI dùng ERP thay bạn
           </CardTitle>
-          {info && (
+          {info && !framed && (
             <CardDescription>
               <span className="font-semibold text-foreground">{info.client_name}</span> xin kết nối với tài khoản ERP
               của <span className="font-semibold text-foreground">{info.user_label}</span>.
@@ -91,6 +93,9 @@ export function OAuthConsentPage() {
           )}
         </CardHeader>
         <CardContent className="space-y-4">
+          {framed && (
+            <ErrorBox message="Màn cấp quyền không mở được bên trong trang khác. Mở đường dẫn này ở một cửa sổ trình duyệt riêng." />
+          )}
           {!req && <ErrorBox message="Đường dẫn cấp quyền thiếu mã. Quay lại ứng dụng AI và kết nối lại." />}
           {query.isLoading && (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -98,7 +103,7 @@ export function OAuthConsentPage() {
             </p>
           )}
           {query.isError && <ErrorBox message={extractErrorMessage(query.error)} />}
-          {info && (
+          {info && !framed && (
             <>
               <p className="text-sm text-muted-foreground">
                 Ứng dụng sẽ gọi các công cụ ERP dưới đúng quyền của bạn: chỉ thấy dữ liệu bạn được xem, mọi lượt gọi

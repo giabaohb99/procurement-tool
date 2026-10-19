@@ -350,10 +350,11 @@ def _www_authenticate(request: Request, authorization: str | None) -> str:
     tài nguyên (RFC 9728); có gửi token mà sai / hết hạn thì thêm `error="invalid_token"` để ứng dụng làm mới."""
     from . import oauth
 
-    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
-    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
-    base = oauth.issuer(f"{proto}://{host}")
-    value = f'Bearer resource_metadata="{oauth.protected_resource_metadata_url(base)}"'
+    try:                    # ai-CR-222: gốc chỉ lấy AGENT_ERP_URL — chưa khai thì không chỉ đường OAuth (khỏi trỏ gốc nội bộ)
+        base = oauth.issuer(request.url.scheme, request.url.netloc)
+        value = f'Bearer resource_metadata="{oauth.protected_resource_metadata_url(base)}"'
+    except oauth.OAuthError:
+        value = "Bearer"
     if authorization and authorization.lower().startswith("bearer "):
         value += ', error="invalid_token"'
     return value

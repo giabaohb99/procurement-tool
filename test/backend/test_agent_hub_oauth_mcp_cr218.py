@@ -161,6 +161,12 @@ def test_pkce_sai_bi_chan_va_ma_chi_dung_mot_lan(client):
     bad = _token(client, grant_type="authorization_code", code=code, redirect_uri=REDIRECT, client_id=reg["client_id"],
                  code_verifier=secrets.token_urlsafe(48))
     assert bad.status_code == 400 and bad.json()["error"] == "invalid_grant" and "PKCE" in bad.json()["error_description"]
+    #  ai-CR-222: lần hỏng cũng ĐỐT mã (RFC 6749 §4.1.2) — mã bị lộ thì kẻ đoán PKCE không có lần thử thứ hai.
+    burned = _token(client, grant_type="authorization_code", code=code, redirect_uri=REDIRECT, client_id=reg["client_id"],
+                    code_verifier=verifier)
+    assert burned.status_code == 400 and "đã dùng" in burned.json()["error_description"]
+    verifier, challenge = _pkce()
+    code = _consent(client, _authorize(client, reg["client_id"], challenge))
     ok = _token(client, grant_type="authorization_code", code=code, redirect_uri=REDIRECT, client_id=reg["client_id"],
                 code_verifier=verifier)
     assert ok.status_code == 200

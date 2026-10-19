@@ -95,6 +95,25 @@ AI, giữ header `Authorization` (client_secret_basic). `AGENT_ERP_URL` PHẢI �
 trong tài liệu mô tả lấy từ đó. mcp-remote có khóa header hợp lệ vẫn đi thẳng (chỉ vào OAuth khi 401). Chưa mở CORS cho
 công cụ chạy trên trình duyệt (vd MCP Inspector) — ChatGPT / claude.ai gọi từ phía máy chủ của họ.
 
+**Vá sau bài rà của Agent 1 (ai-CR-222, 19/10):**
+- *Chống nhúng (clickjacking)*: nginx erp đặt `X-Frame-Options: SAMEORIGIN` + `frame-ancestors 'self'` cho cả site (màn xem
+  trước tệp dùng iframe cùng nguồn), riêng `location ^~ /oauth/consent/` đặt `DENY` + `frame-ancestors 'none'`; màn đồng ý
+  tự kiểm `window.top !== window.self` — bị nhúng thì không đọc yêu cầu, không hiện nút. Thêm `add_header` ở location nào
+  thì phải chép lại hai header chống nhúng vào đó (nginx bỏ kế thừa) — bài kiểm soi tệp cấu hình.
+- *Issuer chỉ lấy `AGENT_ERP_URL`*: không còn đọc `X-Forwarded-Host` (người gọi tự đặt được; ở chế độ tách địa chỉ đến là gốc
+  nội bộ `agent:8001`). Chưa khai → mọi đường OAuth trả **503** (trừ máy local loopback), 401 của `/api/mcp` chỉ còn `Bearer`,
+  nạp router là ghi log ERROR. `.env.example` / `.env.agent.example` đã ghi biến này.
+- *Mã cấp quyền đốt ngay*: `UPDATE … WHERE used_at IS NULL` + commit TRƯỚC mọi kiểm tra — hai yêu cầu song song chỉ một bên
+  qua; lần hỏng (sai PKCE, sai redirect) cũng đốt mã.
+- Chuỗi ký yêu cầu có `exp` lạ → coi như hỏng (không 500). Nghỉ việc (`revoke_user_access`) xóa trắng `raw_view`,
+  `raw_sealed`, `refresh_hash` như `mcp_keys.revoke_rows`.
+- Còn lại cho đợt trước prod hai (Agent 1 xếp NÊN): màn đồng ý dùng hostname + cảnh báo host lạ, màn quản trị ứng dụng
+  OAuth; dọn `tab_agent_oauth_code` / ứng dụng không dùng + hạ trần đăng ký; audit `key/reveal` ngoài nhật ký cổng.
+
+**Checklist lên môi trường mới / thêm pháp nhân:** khai `AGENT_ERP_URL` = gốc công khai (cả ERP lẫn dịch vụ AI); chạy
+migration `mcpoauth01` + `mcpkey03` (ERP) và `agent0013` + `agent0014` (agent_hub); pháp nhân tạo sau lần gieo bộ «Cẩm nang
+hệ thống» phải gán quyền đọc tay ở màn Bộ skill.
+
 ### 2.4 Xem lại khóa + bật / tắt (ai-CR-221 — đại ca chốt 19/10)
 
 - **Xem lại**: khóa dán tay giữ thêm bản MÃ HÓA HAI CHIỀU `raw_view` (Fernet suy từ `JWT_SECRET`, đúng cách `app_settings.encrypt`
