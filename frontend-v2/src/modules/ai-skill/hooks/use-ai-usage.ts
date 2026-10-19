@@ -77,3 +77,25 @@ export function useSaveMcpSettings() {
     },
   })
 }
+
+/** bao-CR-635 — ứng dụng AI tự đăng ký OAuth; `enabled` = có `agent_group.read`, thiếu thì không gọi để khỏi ăn 403. */
+export function useOAuthClients(enabled: boolean) {
+  return useQuery({ queryKey: queryKeys.aiSkill.oauthClients(), queryFn: () => aiUsageApi.oauthClients(), enabled })
+}
+
+export function useDeleteOAuthClient() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => aiUsageApi.deleteOAuthClient(id),
+    onSuccess: (result) => {
+      toast.success(
+        result.revoked_grants > 0
+          ? `Đã xóa ứng dụng, cắt ${result.revoked_grants} kết nối.`
+          : 'Đã xóa ứng dụng (không có kết nối nào đang sống).',
+      )
+      void queryClient.invalidateQueries({ queryKey: queryKeys.aiSkill.oauthClients() })
+      //  Kết nối OAuth cũng là một dòng khóa ở màn Khóa nhân sự (ai-CR-218) — làm tươi để trạng thái «Đã thu hồi» hiện ngay.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.aiSkill.keyAdminKeysAll() })
+    },
+  })
+}

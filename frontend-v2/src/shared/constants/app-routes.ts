@@ -177,6 +177,8 @@ export const appRoutes = {
     setDetail: (id: number | string) => `/ai-skill/sets/${id}`,
     skillEditor: (id: number | string) => `/ai-skill/skills/${id}`,
     keys: '/ai-skill/keys',
+    /** Ứng dụng AI tự đăng ký OAuth — ChatGPT, claude.ai (bao-CR-635). */
+    oauthClients: '/ai-skill/oauth-clients',
     logs: '/ai-skill/logs',
     settings: '/ai-skill/settings',
   },

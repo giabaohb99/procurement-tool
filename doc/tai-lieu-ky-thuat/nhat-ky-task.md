@@ -70,6 +70,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-635 | Kho skill AI: màn quản trị Ứng dụng AI đã kết nối (tự đăng ký OAuth)
+- status: xong
+- date: 2026-10-19
+Agent 1 giao em dựng màn quản trị cho các ứng dụng AI tự đăng ký qua OAuth (ChatGPT, claude.ai) sau khi Agent 4 mở hai
+đường API ở ai-CR-225. Màn nằm trong phân hệ Kho skill AI, mục menu Ứng dụng AI đã kết nối đứng cạnh Khóa nhân sự, chỉ
+làm giao diện ở frontend-v2, không đổi API.
+
+Bảng liệt kê từng ứng dụng: tên tự khai kèm sáu ký tự cuối của mã ứng dụng để đối chiếu nhật ký, nơi quay về đã rút về
+tên miền, số kết nối đang sống, lần dùng cuối, ngày đăng ký; hai cột IP đăng ký và cách xác thực ẩn mặc định. Tên là do
+ứng dụng tự khai nên bài viết trên màn dặn đừng tin tên, nhìn nơi quay về; máy chủ báo nơi quay về không thuộc ứng dụng
+AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com hoặc máy cục bộ) thì ô tô đỏ kèm nhãn Host lạ và
+dòng tóm tắt trên bảng đếm số host lạ. Nút Xóa chỉ hiện khi máy chủ cho phép ghi; hộp xác nhận nêu tên ứng dụng, nơi quay
+về và số kết nối đang sống sẽ bị cắt ngay, người dùng muốn nối lại phải bấm Cho phép từ đầu. Xóa xong làm tươi cả màn Khóa
+nhân sự vì kết nối OAuth cũng là một dòng khóa ở đó. Người thiếu quyền quản lý bot AI mở màn thấy câu giải thích, không
+gọi API để ăn lỗi 403. Trạng thái rỗng nói rõ ứng dụng xuất hiện ở đây khi có người bấm Cho phép trên màn đồng ý kết nối.
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn, không thêm); bài kiểm thư mục kho skill 70 bài
+trên 11 tệp xanh, trong đó 6 bài mới cho màn này (tô cảnh báo theo cờ máy chủ chứ không đoán theo tên, hộp xác nhận ghi
+đúng số kết nối rồi gọi xóa, bấm Hủy thì không gọi, người chỉ đọc không thấy nút Xóa, thiếu quyền không gọi API, trạng
+thái rỗng) và bài canh menu phân hệ cập nhật thêm mục mới.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/pages/oauth-clients-page.tsx` (mới) và bài kiểm đi kèm, `routes.tsx`,
+`routes.test.ts`, `hooks/use-ai-usage.ts`, `api/ai-skill-api.ts`, `types/ai-skill.ts`, `shared/constants/app-routes.ts`,
+`shared/constants/query-keys.ts`.
+Commit: chưa, chờ đại ca gật. Deploy: dev chưa.
+
+---
+
 ## bao-CR-631 | Bài Trung tâm trợ giúp cho cụm Kết nối AI riêng và Kho skill AI
 - status: xong
 - date: 2026-10-19

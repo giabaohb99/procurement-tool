@@ -8,6 +8,7 @@ import type {
   McpSetupDetail,
   McpSetupList,
   MyMcpKey,
+  OAuthClientList,
   VisibleSkill,
   KeyAdminMeta,
   KeyIssueInput,
@@ -84,6 +85,9 @@ export const aiUsageApi = {
   /** Cấu hình cổng MCP (G7): đọc cần `agent_group.read`, lưu cần `agent_group.write`. */
   settings: () => apiGet<McpSettings>(`${HUB}/mcp-settings`),
   saveSettings: (body: McpSettingsPatch) => apiPut<McpSettings>(`${HUB}/mcp-settings`, body),
+  /** bao-CR-635: ứng dụng AI tự đăng ký OAuth (ai-CR-225) — xem cần `agent_group.read`, xóa cần `.write`. */
+  oauthClients: () => apiGet<OAuthClientList>(`${HUB}/oauth-clients`),
+  deleteOAuthClient: (id: number) => apiDelete<{ revoked_grants: number }>(`${HUB}/oauth-clients/${id}`),
 }
 
 /**
