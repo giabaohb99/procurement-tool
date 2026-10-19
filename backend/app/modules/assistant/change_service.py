@@ -48,7 +48,12 @@ ENTITY_LABELS = {
     "work_task": "Công việc (Dự án)",
     "ticket": "Phiếu hỗ trợ",
     "account_setup": "Bộ tài khoản",
+    "ai_skill": "Skill AI",
+    "ai_skill_access": "Quyền đọc skill AI",
 }
+#  bao-CR-634: thay đổi Kho skill AI do AI riêng ghi qua MCP — kiểm / làm ngược nằm ở chính phân hệ đó
+#  (`ai_skill/mcp_admin.undo_check` + `undo_apply`), phiếu ở đây không có model chung để đi đường `_load_doc`.
+EXTERNAL_UNDO = {"ai_skill": "app.modules.ai_skill.mcp_admin", "ai_skill_access": "app.modules.ai_skill.mcp_admin"}
 #  Phiếu có model tra được qua `update_tool._model_of` (việc Dự án đi đường riêng).
 DOC_ENTITIES = ("purchase_request", "survey_request", "leave_request", "payment_request", "ticket")
 UNDOABLE_ACTIONS = (ChangeAction.CREATE, ChangeAction.UPDATE, ChangeAction.DELETE, ChangeAction.REUSE)
@@ -213,6 +218,10 @@ def url_of(entity: str, entity_id: int) -> str:
         if entity == "account_setup":
             from .tools.account_setup_tool import USER_PERMISSION_URL
             return USER_PERMISSION_URL.format(user_id=entity_id)
+        if entity == "ai_skill":
+            return f"/ai-skill/skills/{entity_id}"
+        if entity == "ai_skill_access":
+            return f"/ai-skill/sets/{entity_id}?tab=access"
         if entity in DOC_ENTITIES or entity == "work_task":
             from .tools.update_tool import _url_of
             return _url_of(entity, entity_id)
@@ -369,6 +378,8 @@ def _check_undo(db, user, row: AssistantChange):
         return False, "Phiếu đã gửi duyệt — muốn lấy lại thì rút hoặc trả về bằng tay trên ERP.", 400, False, None
     if action == ChangeAction.ACCOUNT:
         return False, "Lập bộ tài khoản không hoàn tác tự động — sửa tay ở màn Phân quyền.", 400, False, None
+    if action == ChangeAction.PUBLISH:
+        return False, ("Xuất bản tạo phiên bản mới, không hoàn tác — muốn quay lại thì sửa nháp rồi xuất bản lại."), 400,             False, None
     if action not in UNDOABLE_ACTIONS:
         return False, "Loại thay đổi này không hoàn tác được.", 400, False, None
     if row.created_at and datetime.utcnow() - row.created_at > UNDO_WINDOW:
@@ -376,6 +387,9 @@ def _check_undo(db, user, row: AssistantChange):
     if row.user_id != int(user.id) and not is_manager(db, user):
         return False, ("Thay đổi này do người khác xác nhận — chỉ chính người đó hoặc người quản lý bot AI "
                        "hoàn tác được."), 403, False, None
+    if row.entity in EXTERNAL_UNDO:
+        err = _external_undo(row.entity).undo_check(db, user, row, action)
+        return (False, err, 409, True, None) if err else (True, "", 200, False, None)
     need = _needed_action(action, row.entity)
     if not user_has_permission(db, user, row.entity, need):
         return False, f"Bạn không còn quyền {need} trên {label}.", 403, False, None
@@ -394,6 +408,12 @@ def _check_undo(db, user, row: AssistantChange):
         return False, ("Phiếu đã được sửa sau lúc bot ghi (không qua trợ lý) — không hoàn tác tự động, "
                        "mở phiếu sửa tay."), 409, True, doc
     return True, "", 200, False, doc
+
+
+def _external_undo(entity: str):
+    import importlib
+
+    return importlib.import_module(EXTERNAL_UNDO[entity])
 
 
 def can_undo(db, user, row: AssistantChange) -> tuple[bool, str]:
@@ -503,8 +523,11 @@ def undo(db, user, change_id: int, source: int = 0) -> dict:
             db.commit()
         raise HTTPException(status, reason)
     entity, action = row.entity, ChangeAction(int(row.action))
+    external = _external_undo(entity) if entity in EXTERNAL_UNDO else None
     try:
-        if action in (ChangeAction.UPDATE, ChangeAction.REUSE):
+        if external is not None:
+            new_sig = external.undo_apply(db, user, row, action)
+        elif action in (ChangeAction.UPDATE, ChangeAction.REUSE):
             _reverse_update(db, user, entity, doc, row.before or {})
         elif action == ChangeAction.CREATE:
             _reverse_create(db, user, entity, doc)
@@ -513,7 +536,9 @@ def undo(db, user, change_id: int, source: int = 0) -> dict:
     except HTTPException:
         db.rollback()
         raise
-    db.refresh(doc)
+    if external is None:
+        db.refresh(doc)
+        new_sig = state_sig(db, entity, doc)
     now = datetime.utcnow()
     row.undo_status = int(UndoStatus.UNDONE)
     row.undone_at = now
@@ -524,7 +549,7 @@ def undo(db, user, change_id: int, source: int = 0) -> dict:
     summary = f"Hoàn tác: {row.summary}"[:300]
     new = record_change(db, user, entity=entity, entity_id=row.entity_id, doc_code=row.doc_code, action=reverse,
                         summary=summary, before=row.after, after=None if action == ChangeAction.CREATE else row.before,
-                        after_sig=state_sig(db, entity, doc), source=source, undo_of=row.id)
+                        after_sig=new_sig, source=source, undo_of=row.id)
     audit_record(db, user.id, entity, int(row.entity_id or 0), "undo",
                  f"Hoàn tác thay đổi #{row.id} của Trợ lý AI: {row.summary}"[:1000], doc_code=row.doc_code or "")
     return {

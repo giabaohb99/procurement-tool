@@ -107,7 +107,12 @@ CORE_RULES = (
     "- Câu mơ hồ hai nghĩa (vd «ai đang giữ hồ sơ của chị X»: hồ sơ nhân sự hay phiếu chị trình đang chờ ai) thì HỎI LẠI "
     "một câu kèm các nghĩa, đừng gọi more_tools hay nói «chưa có công cụ».\n"
     "- Sổ nhớ: theo đúng khối sổ ghi nhớ riêng (kể cả xưng hô); nghe điều ỔN ĐỊNH về họ thì remember_fact và thêm một "
-    "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước."
+    "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước.\n"
+    "- Tạo lịch THEO TỆP người dùng gửi: gọi events_from_file, trình đúng danh sách nó trả rồi create_events_from_file — "
+    "không tự soạn giờ, tên điểm hay link. Link (URL) chỉ được đưa khi có NGUYÊN VĂN trong tin người dùng, tệp hoặc kết "
+    "quả công cụ; không bịa link rút gọn.\n"
+    "- Khoảng cách, giờ chạy, giá vé / xăng mà không có kết quả công cụ thì ghi rõ «ước lượng, em chưa tra bản đồ» và gợi "
+    "ý mở Google Maps để xem chính xác."
 )
 
 DRAFT_FACTS = (
@@ -197,6 +202,21 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
                         "mấy khi tệp dài (mặc định 1).",
             parameters={"type": "object", "properties": {"ten": {"type": "string"}, "phan": {"type": "integer"}},
                         "required": []}),
+    #  ai-CR-227: lịch THEO TỆP — máy tách bảng giờ, model không soạn lại giờ / điểm / link từ trí nhớ (run #368–369).
+    ToolDef(name="events_from_file",
+            description="Tách LỊCH TRÌNH có giờ trong tệp người dùng đã gửi (bảng Giờ / Điểm dừng / Làm gì / Ghi chú theo "
+                        "từng ngày) thành danh sách sự kiện đánh số, kèm thứ đã tính sẵn và link bản đồ CÓ TRONG TỆP. Gọi "
+                        "khi người dùng muốn tạo lịch / sự kiện THEO TỆP. Trình đúng danh sách này (không tự đổi giờ, tên, "
+                        "không thêm link) để người dùng duyệt; ưng thì tạo bằng create_events_from_file. ngay: lọc một "
+                        "ngày dd/mm (bỏ trống = cả tệp).",
+            parameters={"type": "object", "properties": {"ten": {"type": "string"}, "ngay": {"type": "string"}},
+                        "required": []}),
+    ToolDef(name="create_events_from_file",
+            description="TẠO trên lịch Google đúng các sự kiện số stt (lấy từ events_from_file) — giờ, tên, mô tả, link "
+                        "lấy nguyên từ tệp. CHỈ gọi sau khi người dùng đã duyệt danh sách và nhắn đồng ý.",
+            parameters={"type": "object", "properties": {"ten": {"type": "string"},
+                                                         "stt": {"type": "array", "items": {"type": "integer"}}},
+                        "required": ["stt"]}),
 )
 #  Chỉ đưa cho chat được giao việc sửa mã (chủ bot + người được cấp quyền).
 CODE_TASK_TOOL = ToolDef(
@@ -865,6 +885,91 @@ def read_chat_file(db: Session, chat_id: str, row: AgentMessage, name: str = "",
     return out
 
 
+#  ai-CR-227: lịch theo tệp.
+EVENTS_LIST_MAX = 60
+EVENTS_CREATE_MAX = 40
+
+
+def _file_plan(db: Session, chat_id: str, row: AgentMessage, name: str = "") -> tuple[dict, dict | None]:
+    """(tệp đã đọc, kế hoạch đã tách) hoặc ({"error"}, None)."""
+    from . import plan_extract
+
+    got = read_chat_file(db, chat_id, row, name, 1)
+    if "error" in got:
+        return got, None
+    whole = got["noi_dung"]
+    for n in range(2, int(got.get("so_phan") or 1) + 1):
+        whole += read_chat_file(db, chat_id, row, got["ten"], n).get("noi_dung", "")
+    today = row.created_at.date() if row.created_at else now_local().date()
+    return got, plan_extract.extract(whole, today)
+
+
+def events_from_file(db: Session, chat_id: str, row: AgentMessage, name: str = "", day: str = "") -> dict:
+    got, plan = _file_plan(db, chat_id, row, name)
+    if plan is None:
+        return got
+    events = plan["su_kien"]
+    if not events:
+        return {"error": f"Tệp «{got['ten']}» không có bảng giờ theo ngày (cột Giờ) để tách thành sự kiện — đọc tệp bằng "
+                         "read_chat_file rồi hỏi người dùng muốn tạo những mục nào."}
+    want = (day or "").strip()
+    picked = [e for e in events if not want or e["ngay"].startswith(want) or e["ngay"] == want]
+    phans = {e["phan"] for e in picked}
+    out = {"ten": got["ten"], "tong": len(events), "chon": len(picked),
+           "su_kien": [{"stt": e["stt"], "thu": e["thu"], "ngay": e["ngay"],
+                        "gio": f"{e['bat_dau'][11:16]}–{e['ket_thuc'][11:16]}", "tieu_de": e["tieu_de"],
+                        "ghi_chu": e["mo_ta"].split("Ghi chú: ", 1)[1].split("\n", 1)[0] if "Ghi chú: " in e["mo_ta"] else ""}
+                       for e in picked[:EVENTS_LIST_MAX]],
+           "doan_map": [{"ten": m["ten"], "url": m["url"]} for m in plan["doan_map"] if m["phan"] in phans],
+           "canh_bao": plan["canh_bao"],
+           "note": "Trình NGUYÊN danh sách (giờ, tên, thứ) cho người dùng duyệt; link bản đồ chỉ dùng đúng url trong doan_map "
+                   "(đã gắn sẵn vào mô tả sự kiện đầu mỗi phần). Ưng thì gọi create_events_from_file với các stt."}
+    if len(picked) > EVENTS_LIST_MAX:
+        out["con_lai"] = f"Còn {len(picked) - EVENTS_LIST_MAX} sự kiện — lọc theo ngày (ngay=dd/mm)."
+    return out
+
+
+def create_events_from_file(db: Session, chat_id: str, row: AgentMessage, user, name: str = "", stt=None) -> dict:
+    from . import reply_guard
+
+    got, plan = _file_plan(db, chat_id, row, name)
+    if plan is None:
+        return got
+    by_no = {e["stt"]: e for e in plan["su_kien"]}
+    wanted = []
+    for n in (stt if isinstance(stt, list) else []):
+        try:
+            wanted.append(int(n))
+        except (TypeError, ValueError):
+            continue
+    wanted = list(dict.fromkeys(wanted))[:EVENTS_CREATE_MAX]
+    if not wanted:
+        return {"error": "Cần danh sách stt (số thứ tự sự kiện từ events_from_file)."}
+    created: list[tuple[str, object, object]] = []
+    done, failed = [], []
+    for n in wanted:
+        ev = by_no.get(n)
+        if ev is None:
+            failed.append({"stt": n, "loi": "không có sự kiện số này trong tệp"})
+            continue
+        args = {"title": ev["tieu_de"], "start": ev["bat_dau"], "end": ev["ket_thuc"], "description": ev["mo_ta"],
+                "location": ev["dia_diem"]}
+        span = reply_guard.event_span(args)
+        problem = reply_guard.overlapping(span, created) if span else "giờ không đọc được"
+        if problem:
+            failed.append({"stt": n, "loi": f"chưa tạo: {problem}"})
+            continue
+        res = erp.run_tool(db, user, "create_calendar_event", args)
+        if isinstance(res, dict) and not res.get("error") and not res.get("denied"):
+            created.append((ev["tieu_de"], *span))
+            done.append({"stt": n, "thu": ev["thu"], "ngay": ev["ngay"], "gio": ev["bat_dau"][11:16],
+                         "tieu_de": ev["tieu_de"]})
+        else:
+            failed.append({"stt": n, "loi": str((res or {}).get("error") or (res or {}).get("reason") or "lỗi lạ")[:200]})
+    return {"da_tao": done, "chua_tao": failed, "tep": got["ten"],
+            "note": "Báo đúng các sự kiện đã tạo / chưa tạo (kèm lý do); không tự thêm sự kiện nào khác."}
+
+
 def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, args: dict) -> dict:
     """Ba công cụ nháp của lõi: dùng lại nguyên đường «tạo» / «thôi» của service để không lệch luật (quyền, gửi duyệt,
     hỏi nhận việc sau kế hoạch…)."""
@@ -879,6 +984,13 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         return {"nhap_da_luu": erp.my_drafts(db, user)[:20]}
     if name == "read_chat_file":
         return read_chat_file(db, chat_id, row, str(args.get("ten") or ""), args.get("phan"))
+    if name == "events_from_file":
+        return events_from_file(db, chat_id, row, str(args.get("ten") or ""), str(args.get("ngay") or ""))
+    if name == "create_events_from_file":
+        if not _confirmed_turn(db, chat_id, row):
+            return {"error": "CHƯA tạo. Trình danh sách sự kiện (events_from_file) để người dùng duyệt; họ nhắn đồng ý thì "
+                             "mới gọi lại công cụ này."}
+        return create_events_from_file(db, chat_id, row, user, str(args.get("ten") or ""), args.get("stt"))
     if name == "update_draft":
         pending, info = _pending_draft(db, chat_id, row.id, now)
         if pending is None:
@@ -1125,6 +1237,7 @@ def _confirmed_turn(db: Session, chat_id: str, row: AgentMessage) -> bool:
 #  đâu ra… như kế hoạch dị á hỏi xác nhận lại rồi có kế hoạch chi tiết chứ… cứng nhắc». Tạo / hủy lịch Google chỉ chạy khi
 #  tin hiện tại là lời xác nhận bản lịch bot vừa trình; chưa thì trả lời dặn model trình bản lịch chi tiết trước.
 CONFIRM_FIRST_TOOLS = frozenset({"create_calendar_event", "delete_calendar_event"})
+CALENDAR_WRITE_TOOLS = frozenset({"create_calendar_event", "update_calendar_event"})      # ai-CR-227: lọc link + chồng giờ
 CALENDAR_NOT_CONFIRMED = (
     "CHƯA tạo / hủy gì. Trình bày BẢN LỊCH DỰ KIẾN để người dùng xác nhận: tên, ngày + giờ bắt đầu – kết thúc, địa điểm, "
     "người mời, có nhắc trước không (gợi ý 30 phút). Ô người dùng CHƯA nói (thời lượng, địa điểm…) ghi rõ «em tạm tính …» "
@@ -1515,7 +1628,23 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
             ChatMessage(role="user", content=context + text)]
         log.info("core_v2: system=%d ký tự · công cụ=%d · lịch sử=%d lượt", len(system), len(tools), len(turns))
 
+        #  ai-CR-227: link chỉ được dùng khi có NGUYÊN VĂN trong tin người dùng / lịch sử người dùng / kết quả công cụ lượt
+        #  này; sự kiện tạo trong lượt không được chồng giờ nhau.
+        from . import reply_guard
+
+        allowed_urls = reply_guard.urls_in(text) | {u for t in turns if t.get("role") == "user"
+                                                    for u in reply_guard.urls_in(str(t.get("content") or ""))}
+        created_spans: list = []
+
         def execute(name: str, args: dict) -> dict:
+            out = _execute(name, args)
+            try:
+                allowed_urls.update(reply_guard.urls_in(json.dumps(out, ensure_ascii=False, default=str)))
+            except (TypeError, ValueError):
+                pass
+            return out
+
+        def _execute(name: str, args: dict) -> dict:
             try:
                 if name == MORE_TOOLS:
                     return _more_tools_result(args or {}, {t.name for t in tools})
@@ -1523,7 +1652,21 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                     return _run_local(db, chat_id, row, user, name, args or {})
                 if name in CONFIRM_FIRST_TOOLS and not _confirmed_turn(db, chat_id, row):
                     return {"error": CALENDAR_NOT_CONFIRMED}
-                out = erp.run_tool(db, user, name, _with_user_text(name, _clean_args(name, args or {}), text, turns))
+                args = dict(args or {})
+                span = None
+                if name in CALENDAR_WRITE_TOOLS:
+                    for field in ("title", "description", "location"):
+                        if isinstance(args.get(field), str):
+                            args[field] = reply_guard.strip_unknown_urls(args[field], allowed_urls)[0]
+                    span = reply_guard.event_span(args) if name == "create_calendar_event" else None
+                    if span is not None:
+                        problem = reply_guard.overlapping(span, created_spans)
+                        if problem:
+                            return {"error": f"CHƯA tạo «{args.get('title')}»: {problem}. Báo người dùng, hỏi lại giờ."}
+                out = erp.run_tool(db, user, name, _with_user_text(name, _clean_args(name, args), text, turns))
+                if (name == "create_calendar_event" and span is not None and isinstance(out, dict)
+                        and not out.get("error") and not out.get("denied")):
+                    created_spans.append((str(args.get("title") or ""), *span))
                 if isinstance(out, dict) and isinstance(out.get("draft"), dict):
                     out = {**out, "tom_tat_se_luu": _summary(name, out["draft"])}
                 return trim_result(out)
@@ -1604,6 +1747,10 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                     head = _with_calendar_offer(db, chat_id, "\n".join(reminder_reply(chat_id, r) for r in reminders_set[-3:]),
                                                 reminders_set[-1])
                     answer = f"{head}\n\n{answer}" if answer else head
+            if answer and stopped.get("name") != DATA_CHANGE_TOOL.name:
+                #  ai-CR-227: link bịa, thứ sai, emoji — sửa trước khi gửi (máy làm, không trông vào lời dặn).
+                answer = reply_guard.clean_reply(answer, allowed_urls=allowed_urls,
+                                                 today=row.created_at.date() if row.created_at else now_local().date())
             service.reply(db, chat_id, answer or "Em đã làm xong phần đó.", action=ACT_ANSWER,
                           markdown=stopped.get("name") != DATA_CHANGE_TOOL.name)     # thẻ ops đã là HTML
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]

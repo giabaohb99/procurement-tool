@@ -9,7 +9,6 @@ Bot KHÔNG chạm hàm nào ngoài allowlist này (tầng 2 của 7 tầng bảo
 import json
 import logging
 
-from app.core.audit import record
 from app.core.config import settings
 
 from ..provider import ToolDef
@@ -173,11 +172,11 @@ def _audit(db, user, name: str, args: dict, result: dict) -> None:
     #  đó cuốn theo mọi thứ đang chờ trong phiên — với bot Telegram là con trỏ đọc tin,
     #  nên cùng một câu hỏi được trả lời bốn lần. Nay hỏng thì chỉ mất đúng dòng audit,
     #  và phải có một dòng log để không hỏng trong im lặng lần nữa.
-    try:
-        with db.begin_nested():
-            record(db, user.id, "assistant", 0, f"tool:{name}"[:50], msg)
-    except Exception:  # noqa: BLE001
-        log.warning("assistant: không ghi được audit tool %s", name, exc_info=True)
+    #  ai-CR-226: đi qua `agent_hub.erp.audit` — chế độ nhúng / ERP ghi thẳng (vẫn SAVEPOINT như trên), chế độ tách đẩy
+    #  sang ERP qua cổng B (công cụ chạy NGAY trong dịch vụ AI như lịch Google, sổ nhớ… trước mất trắng nhật ký).
+    from app.modules.agent_hub import erp
+
+    erp.audit(db, int(getattr(user, "id", 0) or 0), "assistant", 0, f"tool:{name}"[:50], msg)
 
 
 __all__ = ["tool_defs", "run_tool"]

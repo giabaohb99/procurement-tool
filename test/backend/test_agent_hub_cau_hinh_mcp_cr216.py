@@ -17,7 +17,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.config import settings
-from app.modules.agent_hub import controller, mcp, mcp_keys, mcp_settings
+from app.modules.agent_hub import controller, mcp, mcp_admin, mcp_keys, mcp_settings
 from app.modules.user.model import User
 
 ENTITY = controller.MCP_LOG_VIEW_ALL_ENTITY
@@ -48,7 +48,7 @@ def test_moi_tool_dung_mot_nhom_va_nhom_khong_khai_tool_ma():
     old = settings.AI_RAG_ENABLED
     settings.AI_RAG_ENABLED = True
     try:
-        real = {d.name for d in tool_defs()} | mcp.SKILL_TOOLS
+        real = {d.name for d in tool_defs()} | mcp.SKILL_TOOLS | mcp_admin.TOOL_NAMES     # + bao-CR-634 quản trị bằng lời
     finally:
         settings.AI_RAG_ENABLED = old
     exposed = real - mcp.HIDDEN - set(mcp.MCP_RETIRED)
@@ -65,7 +65,8 @@ def test_moi_tool_dung_mot_nhom_va_nhom_khong_khai_tool_ma():
 
 def test_mac_dinh_theo_q4_va_nhom_tat_khong_liet_ke_khong_goi_duoc(db, monkeypatch):
     cur = mcp_settings.current(db)["groups"]
-    assert {k for k, v in cur.items() if v} == {"mine", "leave", "directory", "reports", "skills"}
+    #  `admin` (bao-CR-634) bật sẵn: tool quản trị đã gác kép bằng khóa được ghi + quyền ai_skill / ai_mcp_key_admin.
+    assert {k for k, v in cur.items() if v} == {"mine", "leave", "directory", "reports", "skills", "admin"}
     names = _names(db)
     assert {"my_leave_summary", "report_summary", "employee_lookup", "report_issue"} <= names
     assert not names & {"product_search", "payable_lookup", "erp_read", "customs_market"}

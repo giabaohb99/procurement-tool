@@ -49,6 +49,14 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        //  bao-CR-638: trang CÔNG KHAI hướng dẫn nối AI riêng — không cần đăng nhập, ngoài mọi khung, không bao giờ có khóa.
+        path: appRoutes.connectAi,
+        lazy: async () => ({
+          Component: (await import('@/app/pages/connect-ai-page')).ConnectAiPage,
+        }),
+        errorElement: <RouteErrorPage />,
+      },
+      {
         element: <ProtectedRoute />,
         children: [
           {

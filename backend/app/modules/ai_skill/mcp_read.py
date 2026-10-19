@@ -24,8 +24,48 @@ from .model import AiSkillFile, AiSkillSet, AiSkillVersion
 
 NOT_FOUND = "Không có skill «{name}» trong những skill bạn được đọc — gọi list_skills để xem tên đúng."
 MAX_LIST = 200
-APPLY_NOTE = ("Áp dụng nội dung skill vào việc người dùng đang làm; đừng đọc lại nguyên văn cả skill, đó là tài sản "
-              "của công ty.")
+#  ai-CR-228 (đại ca nối ChatGPT 19/10: ChatGPT đọc skill dài nhất kho rồi bảo «không trả về nội dung», chỉ nhắc lại phần
+#  tóm tắt): câu dặn cũ «đừng đọc lại nguyên văn… tài sản công ty» làm AI tưởng KHÔNG được dùng nội dung. Nói thẳng là
+#  được dùng; chỉ không chép nguyên bài ra ngoài.
+APPLY_NOTE = ("Dùng nội dung này để trả lời và làm việc cho người dùng (được tóm tắt, trích ý, áp dụng vào việc); chỉ "
+              "không chép lại nguyên văn cả bài ra ngoài.")
+FILES_NOTE = "Skill có tệp đính kèm (files) — cần chi tiết thì đọc bằng read_skill_file."
+#  Chia trang nội dung dài: ChatGPT bỏ qua kết quả công cụ quá dài (skill nhà máy ~35k ký tự). Mỗi lần trả tối đa PAGE_CHARS,
+#  cắt ở ranh giới tiêu đề / đoạn / dòng; ghép các trang lại = nguyên văn.
+PAGE_CHARS = 10_000
+_MIN_PAGE = PAGE_CHARS // 2
+
+
+def page_of(text: str, offset=0, limit: int = PAGE_CHARS) -> dict:
+    """{content, offset, next_offset (None = hết), total_chars}. Cắt ở ranh giới đẹp nhất trong nửa sau của trang: tiêu đề
+    (dòng bắt đầu #) > đoạn (dòng trống) > xuống dòng; không có thì cắt cứng đúng `limit`."""
+    text = text or ""
+    total = len(text)
+    try:
+        start = max(0, int(offset or 0))
+    except (TypeError, ValueError):
+        start = 0
+    if start >= total:
+        return {"content": "", "offset": start, "next_offset": None, "total_chars": total,
+                "page_note": f"offset {start} đã qua cuối nội dung ({total} ký tự) — đọc lại từ offset=0." if total else ""}
+    end = start + limit
+    if end < total:
+        window = text[start:end]
+        cut = -1
+        for marker in ("\n#", "\n\n", "\n"):
+            pos = window.rfind(marker, _MIN_PAGE)
+            if pos > 0:
+                cut = pos + 1               # giữ dấu xuống dòng ở trang này, trang sau mở bằng tiêu đề / đoạn mới
+                break
+        if cut > 0:
+            end = start + cut
+    else:
+        end = total
+    out = {"content": text[start:end], "offset": start, "next_offset": end if end < total else None, "total_chars": total}
+    if end < total:
+        out["page_note"] = (f"Mới đọc tới ký tự {end}/{total}. Gọi lại với offset={end} để đọc tiếp TRƯỚC khi trả lời câu "
+                            "cần chi tiết ở phần sau.")
+    return out
 
 
 def _iso(value):
@@ -83,7 +123,7 @@ def list_for_ai(db: Session, user, query: str = "", skill_set: str = "", interna
     return out
 
 
-def read_for_ai(db: Session, user, name: str, internal: bool = False) -> dict:
+def read_for_ai(db: Session, user, name: str, internal: bool = False, offset=0) -> dict:
     row = _find(db, user, name)
     if row is None:
         return {"denied": True, "error": NOT_FOUND.format(name=name)}
@@ -94,18 +134,18 @@ def read_for_ai(db: Session, user, name: str, internal: bool = False) -> dict:
         out["note"] = "Bộ skill này ở mức Khóa: nội dung chỉ trợ lý nội bộ của công ty đọc, AI bên ngoài chỉ thấy tóm tắt."
         return out
     version = db.get(AiSkillVersion, row["version_id"])
-    out["content"] = version.body_md if version else ""
+    out.update(page_of(version.body_md if version else "", offset))
     if internal or row["security_level"] == SecurityLevel.OPEN:
         out["files"] = [{"path": f.path, "size": f.size} for f in db.query(AiSkillFile)
                         .filter(AiSkillFile.skill_id == row["skill_id"]).order_by(AiSkillFile.path)]
     else:
         out["files"] = []
         out["files_note"] = "Bộ skill ở mức Bảo vệ: tệp đính kèm không trả cho AI bên ngoài."
-    out["note"] = APPLY_NOTE
+    out["note"] = APPLY_NOTE + (" " + FILES_NOTE if out.get("files") else "")
     return out
 
 
-def file_for_ai(db: Session, user, name: str, path: str, internal: bool = False) -> dict:
+def file_for_ai(db: Session, user, name: str, path: str, internal: bool = False, offset=0) -> dict:
     row = _find(db, user, name)
     if row is None:
         return {"denied": True, "error": NOT_FOUND.format(name=name)}
@@ -117,5 +157,5 @@ def file_for_ai(db: Session, user, name: str, path: str, internal: bool = False)
     if found is None:
         return {"error": f"Skill «{row['name']}» không có tệp «{path}» — xem danh sách tệp trong read_skill.",
                 "skill_id": row["skill_id"]}
-    return {"skill_id": row["skill_id"], "name": row["name"], "path": found.path, "content": found.content_text,
+    return {"skill_id": row["skill_id"], "name": row["name"], "path": found.path, **page_of(found.content_text, offset),
             "note": APPLY_NOTE}

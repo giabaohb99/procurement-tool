@@ -1,8 +1,17 @@
-import { CheckCircle2, CircleDashed, Download, Globe, MonitorSmartphone, PlayCircle, Plug, RefreshCw, SquareTerminal, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2, CircleDashed, Copy, Eye, EyeOff, PlayCircle, Plug, RefreshCw, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 
+import { ConnectGuide } from '@/modules/ai-skill/components/connect-guide'
 import { CallStatusBadge, KeyStateBadge, SecurityLevelBadge } from '@/modules/ai-skill/config/ai-skill-meta'
-import { KEY_STATE } from '@/modules/ai-skill/config/ai-skill-constants'
+import {
+  KEY_KIND,
+  KEY_STATE,
+  LIVE_KEY_STATES,
+  TOGGLEABLE_KEY_STATES,
+  maskKey,
+  upperFirst,
+} from '@/modules/ai-skill/config/ai-skill-constants'
 import {
   useClaimKey,
   useCreateMyKey,
@@ -11,56 +20,71 @@ import {
   useMyRecentCalls,
   usePendingKeys,
   useRemoveMyKey,
-  useSetup,
-  useSetupClients,
+  useRevealKey,
+  useSetKeyEnabled,
   useVisibleSkills,
 } from '@/modules/ai-skill/hooks/use-my-ai'
-import type { McpSetupDetail, MyMcpKey } from '@/modules/ai-skill/types/ai-skill'
+import type { MyMcpKey } from '@/modules/ai-skill/types/ai-skill'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { ChapterDemo } from '@/shared/ui/chapter-demo/chapter-demo'
 import { AI_SKILL_INTRO_CHAPTERS } from '@/shared/ui/chapter-demo/scripts/ai-skill-intro'
 import { confirm } from '@/shared/ui/confirm-dialog'
-import { CopyButton } from '@/shared/ui/copy-button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Switch } from '@/shared/ui/switch'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 
-/** Khóa thô vừa tạo / vừa nhận — chỉ sống trong bộ nhớ của màn, tải lại trang là mất (máy chủ không trả lại lần hai). */
-interface RevealedKey {
-  id: number
-  key: string
-  label: string
-}
-
-const CLIENT_ICONS: Record<string, typeof Plug> = {
-  claude_desktop: MonitorSmartphone,
-  claude_code: SquareTerminal,
-  cursor: SquareTerminal,
-  gemini_cli: SquareTerminal,
-  claude_ai: Globe,
-  chatgpt: Globe,
-}
-
-const LIVE_STATES: number[] = [KEY_STATE.pending, KEY_STATE.active]
+/**
+ * Khóa thô đang nằm trong bộ nhớ của màn (vừa tạo / vừa nhận / vừa bấm Hiện) — tải lại trang là mất, muốn xem lại thì bấm
+ * Hiện (mỗi lần máy chủ ghi một dòng nhật ký). KHÔNG đưa vào bộ đệm truy vấn.
+ */
+type RawKeys = Record<number, string>
 
 /**
- * Mục «Kết nối AI riêng» = màn «AI của tôi» (G8, doc 21 §6.2, K6 bao-CR-624 — hoàn thiện bản tách ở P0 bao-CR-620).
+ * Mục «Kết nối AI riêng» = màn «AI của tôi» (G8, doc 21 §6.2; K6 bao-CR-624; bước 2 làm lại kiểu CoreSkill ở bao-CR-638).
  *
  * Đường chính từ 17/10/2026: nhân sự dùng gói AI của CHÍNH HỌ (Claude, ChatGPT, Cursor…) tra ERP đúng quyền của họ.
- * Ba bước theo đúng thứ tự làm: chọn ứng dụng → có khóa (tự tạo hoặc nhận khóa quản trị phát hộ) → kiểm tra kết nối.
- * Người chưa nối mở ra là vào thẳng bước 1 (doc 21 §6.3). Dưới cùng: AI của bạn đang đọc được skill nào, 20 lượt gần
- * nhất. Viết cho nhân viên văn phòng — tiêu đề không dùng chữ MCP.
+ * Ba bước: chọn ứng dụng (đoạn cấu hình điền khóa của dòng đang chọn ở bước 2) → khóa của bạn (bật / tắt, Hiện / Ẩn,
+ * Sao chép, Gỡ) → kiểm tra kết nối. Dưới cùng: AI của bạn đang đọc được skill nào, 20 lượt gần nhất. Viết cho nhân viên
+ * văn phòng — tiêu đề không dùng chữ MCP.
  *
- * Khóa thô chỉ hiện một lần (lúc tạo / nhận); đoạn cấu hình ở bước 1 tự điền khóa đó vào chỗ giữ `<KHÓA_CỦA_BẠN>`.
+ * Xem lại khóa (ai-CR-221) chỉ gọi khi người dùng BẤM Hiện / Sao chép — mở màn không bao giờ gọi.
  */
 export function ProfileAiConnectSection() {
-  const [revealed, setRevealed] = useState<RevealedKey | null>(null)
+  const [rawKeys, setRawKeys] = useState<RawKeys>({})
+  const [selectedId, setSelectedId] = useState(0)
   const [demoOpen, setDemoOpen] = useState(false)
+  const mine = useMyKeys()
+  const reveal = useRevealKey()
+
+  const items = mine.data?.items ?? []
+  const usable = items.filter((k) => k.kind !== KEY_KIND.oauth && TOGGLEABLE_KEY_STATES.includes(k.state))
+  const selected = usable.find((k) => k.id === selectedId) ?? usable[0] ?? null
+
+  function remember(id: number, raw: string) {
+    setRawKeys((prev) => ({ ...prev, [id]: raw }))
+  }
+
+  /** Khóa thô của một dòng: có trong bộ nhớ thì dùng, không thì xin máy chủ (một lượt xem lại, có ghi nhật ký). */
+  async function obtainKey(key: MyMcpKey): Promise<string | null> {
+    if (rawKeys[key.id]) return rawKeys[key.id]
+    if (!key.revealable) return null
+    try {
+      const out = await reveal.mutateAsync(key.id)
+      if (!out.key) return null
+      remember(key.id, out.key)
+      return out.key
+    } catch {
+      return null //  409 kèm câu cho người dùng — toast tự động.
+    }
+  }
+
+  const canObtain = Boolean(selected && (rawKeys[selected.id] || selected.revealable))
 
   return (
     <div className="space-y-4">
@@ -75,9 +99,31 @@ export function ProfileAiConnectSection() {
           Xem cách hoạt động
         </Button>
       </div>
-      <SetupStep revealed={revealed} />
-      <KeysStep revealed={revealed} onReveal={setRevealed} />
-      <CheckStep preferredKeyId={revealed?.id ?? 0} />
+      <Card>
+        <CardHeader>
+          <StepHeading step={1} title="Chọn ứng dụng AI bạn đang dùng" />
+        </CardHeader>
+        <CardContent>
+          <ConnectGuide
+            source="private"
+            keySlot={{
+              label: selected ? selected.name || selected.hint : '',
+              value: selected ? (rawKeys[selected.id] ?? null) : null,
+              obtain: selected && canObtain ? () => obtainKey(selected) : undefined,
+            }}
+          />
+        </CardContent>
+      </Card>
+      <KeysStep
+        items={items}
+        loading={mine.isLoading}
+        rawKeys={rawKeys}
+        selectedId={selected?.id ?? 0}
+        onSelect={setSelectedId}
+        onRemember={remember}
+        obtainKey={obtainKey}
+      />
+      <CheckStep preferredKeyId={selected?.id ?? 0} />
       <VisibleSkillsCard />
       <RecentCallsCard />
 
@@ -104,148 +150,54 @@ function StepHeading({ step, title }: { step: number; title: string }) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Bước 1 — chọn ứng dụng AI, hiện đúng đoạn cấu hình
+// Bước 2 — khóa của bạn: khóa chờ nhận, mỗi khóa một dòng (bật / tắt, Hiện / Ẩn, Sao chép, Gỡ), tạo khóa mới
 // ---------------------------------------------------------------------------------------------------------------------
 
-function SetupStep({ revealed }: { revealed: RevealedKey | null }) {
-  const { data, isLoading } = useSetupClients()
-  const clients = data?.clients ?? []
-  const [chosen, setChosen] = useState('')
-  const client = chosen || clients.find((c) => c.supported)?.client || clients[0]?.client || ''
-  const setup = useSetup(client)
-
-  return (
-    <Card>
-      <CardHeader>
-        <StepHeading step={1} title="Chọn ứng dụng AI bạn đang dùng" />
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        {isLoading ? (
-          <Skeleton className="h-10 w-full" />
-        ) : (
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Ứng dụng AI">
-            {clients.map((c) => {
-              const Icon = CLIENT_ICONS[c.client] ?? Plug
-              const active = c.client === client
-              return (
-                <button
-                  key={c.client}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setChosen(c.client)}
-                  className={cn(
-                    'flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent',
-                    active && 'border-primary bg-accent font-medium',
-                    !c.supported && 'text-muted-foreground',
-                  )}
-                >
-                  <Icon className="size-4" />
-                  {c.label}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {setup.isLoading && client && <Skeleton className="h-32 w-full" />}
-        {setup.data && <SetupDetail detail={setup.data} revealed={revealed} />}
-      </CardContent>
-    </Card>
-  )
+interface KeysStepProps {
+  items: MyMcpKey[]
+  loading: boolean
+  rawKeys: RawKeys
+  selectedId: number
+  onSelect: (id: number) => void
+  onRemember: (id: number, raw: string) => void
+  obtainKey: (key: MyMcpKey) => Promise<string | null>
 }
 
-function SetupDetail({ detail, revealed }: { detail: McpSetupDetail; revealed: RevealedKey | null }) {
-  if (!detail.supported) {
-    return (
-      <p className="rounded-md border border-dashed p-3 text-muted-foreground">
-        {detail.note || `${detail.label} chưa nối được với ERP. Hãy dùng một ứng dụng khác trong danh sách.`}
-      </p>
-    )
-  }
-  const filled = revealed && detail.placeholder ? detail.snippet.replaceAll(detail.placeholder, revealed.key) : detail.snippet
-  const files = detail.files ?? {}
-  return (
-    <div className="space-y-3">
-      {(detail.requires ?? []).length > 0 && (
-        <p className="flex items-start gap-2 text-muted-foreground">
-          <Download className="mt-0.5 size-4 shrink-0" />
-          <span>Cần cài trước: {(detail.requires ?? []).join(', ')}</span>
-        </p>
-      )}
-      {detail.steps.length > 0 && (
-        <ol className="list-decimal space-y-1 pl-5">
-          {detail.steps.map((step, i) => (
-            <li key={i}>{step}</li>
-          ))}
-        </ol>
-      )}
-      {(files.windows || files.macos || files.all) && (
-        <div className="space-y-1 text-xs text-muted-foreground">
-          {files.all && <p>Tệp cấu hình: <code className="break-all">{files.all}</code></p>}
-          {files.windows && <p>Windows: <code className="break-all">{files.windows}</code></p>}
-          {files.macos && <p>macOS: <code className="break-all">{files.macos}</code></p>}
-        </div>
-      )}
-      <div className="space-y-1">
-        <p className="font-medium">{detail.format === 'shell' ? 'Câu lệnh chạy trong cửa sổ dòng lệnh' : 'Đoạn cấu hình dán vào tệp'}</p>
-        <div className="flex items-start gap-2">
-          <pre className="max-h-56 min-w-0 flex-1 overflow-auto rounded bg-muted p-2 text-xs">{filled}</pre>
-          <CopyButton value={filled} label="đoạn cấu hình" />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {revealed
-            ? `Đã điền sẵn khóa ${revealed.label} bạn vừa lấy ở bước 2.`
-            : `Thay ${detail.placeholder || 'chỗ giữ khóa'} bằng khóa của bạn ở bước 2 — hoặc lấy khóa trước, đoạn này tự điền.`}
-        </p>
-      </div>
-      {detail.note && <p className="text-xs text-muted-foreground">{detail.note}</p>}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Bước 2 — khóa của tôi: khóa chờ nhận (quản trị phát hộ), khóa đang có, tạo khóa mới
-// ---------------------------------------------------------------------------------------------------------------------
-
-function KeysStep({ revealed, onReveal }: { revealed: RevealedKey | null; onReveal: (key: RevealedKey) => void }) {
-  const mine = useMyKeys()
+function KeysStep({ items, loading, rawKeys, selectedId, onSelect, onRemember, obtainKey }: KeysStepProps) {
   const pending = usePendingKeys()
   const create = useCreateMyKey()
   const claim = useClaimKey()
-  const remove = useRemoveMyKey()
   const [name, setName] = useState('')
   const [scope, setScope] = useState(0)
+  const creating = useRef(false)
 
   const pendingItems = pending.data?.items ?? []
-  //  Khóa chờ nhận đã có ở khối riêng phía trên — danh sách «khóa của bạn» chỉ bày khóa đã nhận / tự tạo.
-  const myItems = (mine.data?.items ?? []).filter((k) => k.state !== KEY_STATE.pending)
+  //  Khóa chờ nhận đã có ở khối riêng phía trên — danh sách bên dưới chỉ bày khóa đã nhận / tự tạo / kết nối OAuth.
+  const myItems = items.filter((k) => k.state !== KEY_STATE.pending)
 
   async function handleCreate() {
+    if (creating.current) return
+    creating.current = true
     try {
       const created = await create.mutateAsync({ name: name.trim(), scope, days: 90 })
-      if (created.key) onReveal({ id: created.id, key: created.key, label: created.name || created.hint })
+      if (created.key) onRemember(created.id, created.key)
+      onSelect(created.id)
       setName('')
     } catch {
       //  Toast lỗi tự động (vd đã đủ số khóa tối đa).
+    } finally {
+      creating.current = false
     }
   }
 
   async function handleClaim(key: MyMcpKey) {
     try {
       const claimed = await claim.mutateAsync(key.id)
-      if (claimed.key) onReveal({ id: claimed.id, key: claimed.key, label: claimed.name || claimed.hint })
+      if (claimed.key) onRemember(claimed.id, claimed.key)
+      onSelect(claimed.id)
     } catch {
       //  404: đã nhận rồi / bị thu hồi / hết hạn — toast tự động.
     }
-  }
-
-  async function handleRemove(key: MyMcpKey) {
-    const ok = await confirm({
-      title: 'Gỡ khóa kết nối',
-      message: `Gỡ khóa "${key.name || key.hint}"? Ứng dụng AI đang dùng khóa này sẽ không tra được ERP nữa.`,
-      confirmLabel: 'Gỡ khóa',
-    })
-    if (ok) remove.mutate(key.id)
   }
 
   return (
@@ -254,17 +206,6 @@ function KeysStep({ revealed, onReveal }: { revealed: RevealedKey | null; onReve
         <StepHeading step={2} title="Khóa của bạn" />
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
-        {revealed && (
-          <div className="space-y-2 rounded-md border border-primary/40 p-3">
-            <p className="font-medium">Khóa {revealed.label} — chỉ hiện một lần, chép ngay:</p>
-            <div className="flex items-center gap-2">
-              <code className="break-all rounded bg-muted px-1.5 py-0.5 text-xs">{revealed.key}</code>
-              <CopyButton value={revealed.key} label="khóa kết nối" />
-            </div>
-            <p className="text-xs text-muted-foreground">Đoạn cấu hình ở bước 1 đã điền sẵn khóa này.</p>
-          </div>
-        )}
-
         {pendingItems.length > 0 && (
           <div className="space-y-2">
             <p className="font-medium">Khóa quản trị phát cho bạn, chờ nhận</p>
@@ -272,7 +213,10 @@ function KeysStep({ revealed, onReveal }: { revealed: RevealedKey | null; onReve
               {pendingItems.map((k) => (
                 <li key={k.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
                   <span className="min-w-0 flex-1">
-                    {k.name || 'Khóa kết nối'} <span className="text-xs text-muted-foreground">· {k.scope_label} · hết hạn {formatDateTime(k.expires_at)}</span>
+                    {k.name || 'Khóa kết nối'}{' '}
+                    <span className="text-xs text-muted-foreground">
+                      · {k.scope_label} · hết hạn {formatDateTime(k.expires_at)}
+                    </span>
                   </span>
                   <Button type="button" size="sm" onClick={() => void handleClaim(k)} disabled={claim.isPending}>
                     Nhận khóa
@@ -283,33 +227,19 @@ function KeysStep({ revealed, onReveal }: { revealed: RevealedKey | null; onReve
           </div>
         )}
 
-        {mine.isLoading ? (
+        {loading ? (
           <Skeleton className="h-10 w-full" />
         ) : myItems.length > 0 ? (
-          <ul className="divide-y rounded-md border">
+          <ul className="divide-y rounded-md border" aria-label="Khóa của bạn">
             {myItems.map((k) => (
-              <li key={k.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
-                <span className="min-w-0 flex-1 font-medium">
-                  {k.name || 'Khóa kết nối'} <span className="font-mono text-xs text-muted-foreground">{k.hint}</span>
-                </span>
-                <KeyStateBadge state={k.state} label={k.state_label} />
-                <span className="text-xs text-muted-foreground">
-                  {k.scope_label} · hết hạn {formatDateTime(k.expires_at)}
-                  {k.last_used_at ? ` · dùng lần cuối ${formatDateTime(k.last_used_at)}` : ' · chưa dùng'}
-                </span>
-                {LIVE_STATES.includes(k.state) && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Gỡ khóa ${k.name || k.hint}`}
-                    onClick={() => void handleRemove(k)}
-                    disabled={remove.isPending}
-                  >
-                    <Trash2 className="mr-1 size-4" /> Gỡ
-                  </Button>
-                )}
-              </li>
+              <KeyRow
+                key={k.id}
+                item={k}
+                raw={rawKeys[k.id] ?? null}
+                selected={k.id === selectedId}
+                onSelect={() => onSelect(k.id)}
+                obtainKey={() => obtainKey(k)}
+              />
             ))}
           </ul>
         ) : (
@@ -346,10 +276,140 @@ function KeysStep({ revealed, onReveal }: { revealed: RevealedKey | null; onReve
         </div>
         <p className="text-xs text-muted-foreground">
           Mức Chỉ đọc là đủ cho tra cứu. Được ghi cho AI soạn nháp và tạo phiếu (luôn hỏi bạn xác nhận trước); đề nghị
-          thanh toán vẫn chỉ tạo trên web. Khóa hạn 90 ngày.
+          thanh toán vẫn chỉ tạo trên web. Khóa hạn 90 ngày. Tắt khóa khi tạm không dùng, bật lại là chạy ngay; Gỡ là bỏ
+          hẳn.
         </p>
       </CardContent>
     </Card>
+  )
+}
+
+interface KeyRowProps {
+  item: MyMcpKey
+  raw: string | null
+  selected: boolean
+  onSelect: () => void
+  obtainKey: () => Promise<string | null>
+}
+
+/** Một khóa: chọn để điền ở bước 1 · bật / tắt · khóa đầy đủ (ẩn mặc định, Hiện / Ẩn, Sao chép) · mức, hạn, lần dùng · Gỡ. */
+function KeyRow({ item: k, raw, selected, onSelect, obtainKey }: KeyRowProps) {
+  const remove = useRemoveMyKey()
+  const setEnabled = useSetKeyEnabled()
+  const [visible, setVisible] = useState(false)
+  const [loadingKey, setLoadingKey] = useState(false)
+  const busy = useRef(false)
+  const oauth = k.kind === KEY_KIND.oauth
+  const toggleable = TOGGLEABLE_KEY_STATES.includes(k.state)
+  const enabled = k.enabled ?? k.state !== KEY_STATE.disabled
+  const label = k.name || k.hint
+  const canSeeKey = !oauth && (Boolean(raw) || Boolean(k.revealable))
+
+  /** Hiện / Sao chép cần khóa thô — xin máy chủ ĐÚNG lúc bấm; chặn bấm đúp kẻo ghi hai dòng nhật ký. */
+  async function withKey(then: (value: string) => void | Promise<void>) {
+    if (busy.current) return
+    busy.current = true
+    setLoadingKey(true)
+    try {
+      const value = raw ?? (await obtainKey())
+      if (value) await then(value)
+    } finally {
+      busy.current = false
+      setLoadingKey(false)
+    }
+  }
+
+  async function copyKey(value: string) {
+    try {
+      if (!navigator.clipboard) throw new Error('clipboard unavailable')
+      await navigator.clipboard.writeText(value)
+      toast.success('Đã chép khóa.')
+    } catch {
+      toast.error('Không chép được — bấm Hiện rồi bôi đen khóa để chép tay.')
+    }
+  }
+
+  async function handleRemove() {
+    const ok = await confirm({
+      title: oauth ? 'Gỡ kết nối' : 'Gỡ khóa kết nối',
+      message: `Gỡ "${label}"? Ứng dụng AI đang dùng ${oauth ? 'kết nối' : 'khóa'} này sẽ không tra được ERP nữa.`,
+      confirmLabel: 'Gỡ',
+    })
+    if (ok) remove.mutate(k.id)
+  }
+
+  return (
+    <li className={cn('space-y-2 px-3 py-2', selected && 'bg-accent/40')}>
+      <div className="flex flex-wrap items-center gap-3">
+        {!oauth && toggleable && (
+          <input
+            type="radio"
+            name="ai-connect-selected-key"
+            className="size-4 accent-primary"
+            checked={selected}
+            onChange={onSelect}
+            aria-label={`Dùng khóa ${label} cho bước 1`}
+          />
+        )}
+        <span className="min-w-0 flex-1 font-medium">{k.name || 'Khóa kết nối'}</span>
+        <KeyStateBadge state={k.state} label={k.state_label} />
+        {toggleable && (
+          <Switch
+            checked={enabled}
+            disabled={setEnabled.isPending}
+            onCheckedChange={(checked) => setEnabled.mutate({ id: k.id, enabled: checked })}
+            aria-label={`${enabled ? 'Tắt' : 'Bật'} khóa ${label}`}
+          />
+        )}
+        {LIVE_KEY_STATES.includes(k.state) && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={`Gỡ khóa ${label}`}
+            onClick={() => void handleRemove()}
+            disabled={remove.isPending}
+          >
+            <Trash2 className="mr-1 size-4" /> Gỡ
+          </Button>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-0 flex-1 rounded bg-muted px-2 py-1">
+          {oauth ? (
+            <span className="text-xs text-muted-foreground">{k.kind_label || 'Kết nối OAuth'} · ứng dụng tự giữ mã</span>
+          ) : visible && raw ? (
+            <code className="text-xs break-all">{raw}</code>
+          ) : (
+            <code className="text-xs text-muted-foreground">{maskKey(k.hint)}</code>
+          )}
+        </div>
+        {canSeeKey ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={loadingKey}
+              onClick={() => (visible ? setVisible(false) : void withKey(() => setVisible(true)))}
+            >
+              {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              {visible ? 'Ẩn' : 'Hiện'}
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={loadingKey} onClick={() => void withKey(copyKey)}>
+              <Copy className="size-4" />
+              Sao chép
+            </Button>
+          </>
+        ) : (
+          !oauth && <span className="text-xs text-muted-foreground">Không xem lại được — tạo lại để xem.</span>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {upperFirst(k.scope_label)} · hết hạn {formatDateTime(k.expires_at)}
+        {k.last_used_at ? ` · dùng lần cuối ${formatDateTime(k.last_used_at)}` : ' · chưa dùng'}
+      </p>
+    </li>
   )
 }
 

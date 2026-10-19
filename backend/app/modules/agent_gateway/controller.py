@@ -165,14 +165,60 @@ def skills_list(query: str = Query("", max_length=120), skill_set: str = Query("
 
 
 @router.get("/skills/read")
-def skills_read(name: str = Query(..., max_length=160), user=Depends(gateway_user), db: Session = Depends(get_db)):
-    return success(L.skill_read(db, user, name))
+def skills_read(name: str = Query(..., max_length=160), offset: int = Query(0, ge=0, le=10_000_000),
+                user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_read(db, user, name, offset))
+
+
+# --- Nhật ký thao tác (ai-CR-226) — dịch vụ AI tách DB không có tab_audit_log, ghi hộ ở ERP ------------------------------
+class AuditIn(BaseModel):
+    entity: str = Field(min_length=1, max_length=50)
+    entity_id: int = Field(default=0, ge=0)
+    action: str = Field(min_length=1, max_length=50)
+    message: str = Field(default="", max_length=2000)
+
+
+@router.post("/audit")
+def audit_write(body: AuditIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    """Người ghi = người trong chữ ký cổng B (không lấy từ thân) — dịch vụ AI không ghi được dưới tên người khác."""
+    return success({"ok": L.audit(db, int(user.id), body.entity, body.entity_id, body.action, body.message)})
 
 
 @router.get("/skills/file")
 def skills_file(name: str = Query(..., max_length=160), path: str = Query(..., max_length=200),
-                user=Depends(gateway_user), db: Session = Depends(get_db)):
-    return success(L.skill_file(db, user, name, path))
+                offset: int = Query(0, ge=0, le=10_000_000), user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_file(db, user, name, path, offset))
+
+
+# --- quản trị Kho skill bằng lời qua MCP (bao-CR-634, K9) — nháp / xác nhận, dưới quyền người cầm khóa được ghi ---------
+class SkillAdminDraftIn(BaseModel):
+    tool: str = Field(max_length=40)
+    args: dict = Field(default_factory=dict)
+
+
+@router.post("/skills/admin/draft")
+def skills_admin_draft(body: SkillAdminDraftIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_admin_draft(db, user, body.tool, body.args))
+
+
+class SkillAdminConfirmIn(BaseModel):
+    kind: str = Field(max_length=20)
+    draft: dict = Field(default_factory=dict)
+
+
+@router.post("/skills/admin/confirm")
+def skills_admin_confirm(body: SkillAdminConfirmIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_admin_confirm(db, user, body.kind, body.draft))
+
+
+class ResolvePeopleIn(BaseModel):
+    employees: list = Field(default_factory=list, max_length=50)
+    department: str | dict | None = None
+
+
+@router.post("/admin/resolve-people")
+def admin_resolve_people(body: ResolvePeopleIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.resolve_people(db, user, body.employees, body.department))
 
 
 # --- tạo phiếu từ nháp ------------------------------------------------------------------------------------------------
