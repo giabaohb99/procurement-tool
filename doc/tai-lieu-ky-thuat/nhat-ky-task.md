@@ -99,6 +99,44 @@ Commit: chưa, chờ đại ca gật. Deploy: đã seed dev 19/10 chiều.
 
 ---
 
+## bao-CR-634 | Kho skill AI đợt K9: quản trị kho skill và khóa AI bằng lời qua cổng MCP
+- status: xong
+- date: 2026-10-19
+Agent 1 giao em đợt P7 của kế hoạch Kho skill AI (doc 21 §7.2) sau khi đại ca chốt sáng 19/10 làm tiếp K9. Mục tiêu là
+người quản trị nói với AI riêng của mình (Claude, ChatGPT...) để soạn và xuất bản cẩm nang, gán quyền đọc, phát hoặc thu
+hồi khóa AI cho nhân viên, thay vì phải mở từng màn trên ERP.
+
+Cổng MCP có thêm năm công cụ, chỉ hiện với khóa được ghi và chỉ khi chủ khóa có đúng quyền: soạn skill (tạo mới hoặc sửa
+bản nháp), xuất bản skill (cần quyền duyệt), gán hoặc thu hồi quyền đọc của một bộ hay một skill cho người, phòng ban,
+pháp nhân, vai trò, chức vụ, cấp bậc, phát khóa hộ và thu hồi khóa hộ. Cả năm công cụ đều không ghi gì: chúng trả bản xem
+trước (so sánh trước và sau, danh sách người nhận, các dòng quyền sẽ thu hồi) cùng một mã nháp có hạn 30 phút, gắn với
+đúng người soạn và đúng loại việc. Chỉ khi AI gọi bước xác nhận với đúng bản nháp đó thì hệ thống mới ghi, và lúc ghi
+kiểm lại từ đầu quyền, phạm vi phòng ban, nhóm công cụ đang bật; nếu skill hay danh sách quyền đã bị ai sửa chen giữa hai
+bước, hoặc bản nháp đã dùng rồi, thì từ chối và nhờ soạn lại. Việc ghi đi qua đúng các hàm của màn web nên luật cấm thắng
+cho phép, phạm vi quản trị và nhật ký vẫn y như bấm tay. Bộ, skill và đối tượng gửi bằng mã hoặc tên; tên khớp nhiều thì
+trả danh sách để AI hỏi lại chứ không đoán.
+
+Mọi lần ghi vào sổ thay đổi của trợ lý với kênh mới là AI riêng (MCP). Tạo, sửa skill và gán, thu hồi quyền đọc hoàn tác
+được trong 24 giờ như phiếu do bot ghi; xuất bản chỉ ghi sổ vì phiên bản là chỉ thêm. Phát và thu hồi khóa chưa vào sổ vì
+bảng khóa nằm ở dịch vụ AI, vết của chúng nằm ở nhật ký lượt gọi MCP và cột người phát, ngày thu hồi của khóa. Phần phát
+và thu hồi khóa hộ của màn Khóa nhân sự được tách ra một chỗ dùng chung để hai đường cùng một luật. Nhóm công cụ mới tên
+Quản trị bật sẵn trên màn Cấu hình vì đã gác hai lớp.
+
+Kiểm trên máy local: 17 bài kiểm mới xanh (khóa chỉ đọc hoặc người thiếu quyền không thấy và không gọi được; nhóm tắt thì
+ẩn; xuất bản cần quyền duyệt; nháp không ghi gì; xác nhận khi thiếu nháp, nháp sửa tay, nháp của người khác, nháp khác
+loại, nháp đã dùng, đích bị sửa chen đều bị từ chối; biên tập phòng này không với sang bộ phòng khác và mất phạm vi giữa hai
+bước thì không ghi; hoàn tác sửa, gán, thu hồi; phát khóa một lần, ngoài phạm vi bị chặn, khóa chỉ đọc không xác nhận
+được). Chạy lại 16 tệp bài kiểm của cổng MCP, Kho skill, phát khóa hộ, sổ thay đổi, ranh giới dịch vụ AI và phạm vi:
+605 bài xanh. Hai bài kiểm cũ của màn Cấu hình được sửa theo nhóm mới.
+
+Mã nguồn: `backend/app/modules/ai_skill/mcp_admin.py` (mới), `agent_hub/mcp_admin.py` (mới), `agent_hub/key_admin_ops.py`
+(mới), `agent_hub/mcp.py`, `agent_hub/mcp_settings.py`, `agent_hub/erp.py`, `agent_hub/controller.py`,
+`agent_gateway/controller.py`, `assistant/change_model.py`, `assistant/change_service.py`; bài kiểm
+`test/backend/test_ai_skill_mcp_admin_k9.py` (mới), `test_agent_hub_cau_hinh_mcp_cr216.py`; doc/agent-hub/06 §3.5.
+Commit: commit K9 trên erp-v2 (đại ca gật 19/10). Deploy: Agent 1 dựng dev.
+
+---
+
 ## bao-CR-635 | Kho skill AI: màn quản trị Ứng dụng AI đã kết nối (tự đăng ký OAuth)
 - status: xong
 - date: 2026-10-19

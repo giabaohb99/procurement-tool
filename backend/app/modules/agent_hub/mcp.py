@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 
-from . import draft_create, mcp_keys, mcp_log
+from . import draft_create, mcp_admin, mcp_keys, mcp_log
 
 log = logging.getLogger("app.agent_hub.mcp")
 
@@ -74,10 +74,11 @@ DOWNLOAD_TTL_SEC = 15 * 60
 CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
     "description": ("Tạo thật phiếu từ bản nháp do tool draft_* trả về (leave = đơn nghỉ phép, survey = yêu cầu báo giá, "
-                    "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ). CHỈ gọi sau khi người dùng đã xem bản nháp và "
-                    "đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase)."),
+                    "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ; skill / skill_publish / skill_access / key_issue / "
+                    "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*). CHỈ gọi sau khi người "
+                    "dùng đã xem bản nháp và đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase)."),
     "inputSchema": {"type": "object", "properties": {
-        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket"]},
+        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
 }
@@ -140,6 +141,7 @@ def list_tools(db: Session, user, scope: int) -> list[dict]:
             continue
         out.append({"name": d.name, "description": d.description, "inputSchema": d.parameters})
     if scope == mcp_keys.SCOPE_WRITE:
+        out += mcp_admin.list_defs(db, user, scope)          # bao-CR-634: quản trị bằng lời, chỉ ai có quyền mới thấy
         out += [CONFIRM_DRAFT_DEF, REPORT_ISSUE_DEF]
     else:
         out.append(REPORT_ISSUE_DEF)      # báo lỗi thì ai cũng được (M-05)
@@ -160,6 +162,8 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
         return {"denied": True, "error": blocked}
     if name in SKILL_TOOLS:
         return _skill_tool(db, user, name, args or {})
+    if name in mcp_admin.TOOL_NAMES:
+        return mcp_admin.run(db, user, scope, name, args or {})
     if name == "confirm_draft":
         if scope != mcp_keys.SCOPE_WRITE:
             return {"denied": True,
@@ -237,6 +241,8 @@ def _skill_tool(db: Session, user, name: str, args: dict) -> dict:
 def _confirm_draft(db: Session, user, args: dict) -> dict:
     kind = str(args.get("kind") or "")
     draft = args.get("draft") if isinstance(args.get("draft"), dict) else None
+    if kind in mcp_admin.KIND_TOOL:                      # bao-CR-634: bản nháp quản trị — token + dấu trạng thái
+        return mcp_admin.confirm(db, user, mcp_keys.SCOPE_WRITE, kind, draft)
     if kind not in draft_create.LABELS or draft is None:
         return {"error": "Cần kind (leave/survey/purchase/ticket) và draft là đối tượng do tool draft_* trả về."}
     if kind == "payment":
@@ -329,7 +335,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
                 result = {"error": f"Lỗi khi chạy công cụ: {e}"}
             if name in ROW_BUDGET_TOOLS and isinstance(result, dict):
                 mcp_log.spend_rows(key.id, len(result.get("items") or []) + (1 if result.get("item") else 0))
-        if name in SKILL_TOOLS and isinstance(result, dict) and result.get("skill_id"):
+        skill_tool = name in SKILL_TOOLS or name in mcp_admin.TOOL_NAMES or name == "confirm_draft"
+        if skill_tool and isinstance(result, dict) and result.get("skill_id"):
             trace["skill_id"] = int(result.pop("skill_id") or 0)     # bao-CR-622: nhật ký biết skill nào được đọc
         if trace.pop("budget", False):
             trace.update(status=mcp_log.CallStatus.DENIED, reason=mcp_log.REASON_ROW_BUDGET)
