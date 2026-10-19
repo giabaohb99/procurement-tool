@@ -47,6 +47,12 @@ REASON_EXPIRED = "Khóa đã hết hạn"
 REASON_REVOKED = "Khóa đã bị thu hồi"
 REASON_UNCLAIMED = "Khóa phát hộ chưa được chủ khóa nhận"
 REASON_OAUTH_EXPIRED = "Mã truy cập OAuth đã hết hạn (ứng dụng cần làm mới)"
+REASON_DISABLED = "Khóa đang tắt"          # ai-CR-221
+#  ai-CR-221: thao tác của CHỦ KHÓA trên web, ghi cùng sổ với lượt gọi (dịch vụ AI tách DB không có bảng audit của ERP).
+METHOD_KEY_REVEAL = "key/reveal"
+METHOD_KEY_ENABLE = "key/enable"
+METHOD_KEY_DISABLE = "key/disable"
+KEY_ACTION_CLIENT = "ERP web"
 REASON_ROW_BUDGET = "Quá ngân sách dữ liệu (dòng / phút)"
 REASON_INACTIVE = "Tài khoản đã bị khóa"
 REASON_RATE_KEY = "Quá tần suất (khóa)"

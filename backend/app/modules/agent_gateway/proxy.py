@@ -65,6 +65,12 @@ async def google_callback(request: Request):
     return await forward(request, 0)
 
 
+#  ai-CR-221: hướng dẫn nối ứng dụng AI cho màn công khai /connect-ai — tĩnh, không khóa, không cần đăng nhập.
+@router.api_route("/api/agent-hub/mcp-setup/public", methods=["GET"])
+async def mcp_setup_public(request: Request):
+    return await forward(request, 0)
+
+
 @router.api_route("/api/agent-hub/{path:path}", methods=METHODS)
 async def agent_hub(path: str, request: Request, user=Depends(get_current_user)):
     if path.startswith("internal"):

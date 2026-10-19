@@ -1,6 +1,6 @@
 # AGENT HUB — CỔNG MCP: dùng AI của bạn với dữ liệu ERP
 
-**Bản 2.1 · 19/10/2026** (2.1: OAuth cho ChatGPT / claude.ai — ai-CR-218, §2.3) — gộp ai-CR-063 (bản 1.0, 25/09) và đợt ai-CR-207 … 219 (doc/erp/21 Kho skill AI qua MCP, đại ca
+**Bản 2.2 · 19/10/2026** (2.1: OAuth cho ChatGPT / claude.ai — ai-CR-218, §2.3. 2.2: xem lại khóa + bật / tắt — ai-CR-221, §2.4) — gộp ai-CR-063 (bản 1.0, 25/09) và đợt ai-CR-207 … 219 (doc/erp/21 Kho skill AI qua MCP, đại ca
 chốt 17/10: MCP là đường chính, người dùng tự trả tiền gói AI của họ). Một chỗ đọc đủ: người dùng làm gì, cổng mở gì, gác
 gì, và hợp đồng API cho giao diện (§7). Lịch sử từng thay đổi nằm ở `doc/tai-lieu-ky-thuat/change-log-ai.md`.
 
@@ -95,6 +95,23 @@ AI, giữ header `Authorization` (client_secret_basic). `AGENT_ERP_URL` PHẢI �
 trong tài liệu mô tả lấy từ đó. mcp-remote có khóa header hợp lệ vẫn đi thẳng (chỉ vào OAuth khi 401). Chưa mở CORS cho
 công cụ chạy trên trình duyệt (vd MCP Inspector) — ChatGPT / claude.ai gọi từ phía máy chủ của họ.
 
+### 2.4 Xem lại khóa + bật / tắt (ai-CR-221 — đại ca chốt 19/10)
+
+- **Xem lại**: khóa dán tay giữ thêm bản MÃ HÓA HAI CHIỀU `raw_view` (Fernet suy từ `JWT_SECRET`, đúng cách `app_settings.encrypt`
+  đang dùng cho khóa phát hộ và khóa model AI — không thêm biến môi trường). Cột băm vẫn là thứ gác. Chỉ CHỦ KHÓA, đăng nhập
+  web, xem được (`GET mcp-keys/{id}/reveal`); quản trị ở Khóa nhân sự KHÔNG xem được (chỉ đuôi 4 ký tự như cũ); qua MCP không có
+  đường nào. Mỗi lần xem ghi một dòng nhật ký cổng (`method = key/reveal`, ứng dụng «ERP web»). Câu trả có `Cache-Control: no-store`.
+- Không xem được (409, kèm câu): khóa tạo trước ai-CR-221 (không có `raw_view`) → *tạo lại để xem*; kết nối OAuth (ứng dụng tự
+  giữ mã); khóa phát hộ chưa nhận (bấm Nhận); khóa hết hạn. Khóa người khác / đã thu hồi → 404. Khóa phát hộ nhận xong thì xem
+  lại được; thu hồi là xóa trắng `raw_view`. **Đổi `JWT_SECRET` thì mọi bản xem lại hỏng** (khóa vẫn chạy, chỉ phải tạo lại).
+- **Bật / tắt** (`PATCH mcp-keys/{id}` `{enabled}`, cả kết nối OAuth): tắt = `disabled_at`, trạng thái mới **5 Đang tắt** — khác
+  thu hồi, bật lại là chạy ngay. Khóa tắt: `/api/mcp` 401, nhật ký ghi «Khóa đang tắt»; kết nối OAuth tắt thì cũng KHÔNG làm mới
+  được (`invalid_grant`, khỏi vòng 401 → làm mới → 401). Khóa tắt vẫn tính trần 5 khóa. Bấm tắt hai lần chỉ ghi một dòng
+  (`key/disable` / `key/enable`). Khóa chờ nhận / hết hạn → 409.
+- **Hướng dẫn nối công khai** `GET /api/agent-hub/mcp-setup/public[?client=]` (cho màn /connect-ai, bao-CR-633): cùng nội dung
+  `mcp-setup` nhưng không cần đăng nhập — chỉ địa chỉ cổng + hướng dẫn tĩnh, đoạn cấu hình mang chỗ giữ khóa.
+- Migration `mcpkey03` (ERP, sau `mcpoauth01`) + `agent0014` (DB agent_hub, sau `agent0013`): thêm `raw_view`, `disabled_at`.
+
 ## 3. Công cụ
 
 ### 3.1 Tool riêng của cổng
@@ -185,7 +202,7 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 
 **Bộ mã**
 - `CallStatus` (nhật ký lượt gọi): 1 Thành công · 2 Bị từ chối · 3 Lỗi.
-- `KeyState` (khóa): 1 Chờ nhận · 2 Đang dùng · 3 Hết hạn · 4 Đã thu hồi.
+- `KeyState` (khóa): 1 Chờ nhận · 2 Đang dùng · 3 Hết hạn · 4 Đã thu hồi · 5 Đang tắt (ai-CR-221).
 
 ### 7.1 Nhân sự — màn AI của tôi (G8)
 
@@ -196,6 +213,9 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 | `GET mcp-keys` | — | `{endpoint, items: [Key]}` |
 | `POST mcp-keys` | `{name, scope: 0\|1, days}` | `Key + {key}` (khóa thô, chỉ một lần) |
 | `DELETE mcp-keys/{id}` | — | `null` |
+| `GET mcp-keys/{id}/reveal` | — | `Key + {key}` — CHỈ chủ khóa (ai-CR-221); khóa người khác / thu hồi → 404; không xem được → 409 kèm câu; ghi nhật ký `key/reveal`; `Cache-Control: no-store` |
+| `PATCH mcp-keys/{id}` | `{enabled: bool}` | `Key` — bật / tắt tạm (cả kết nối OAuth); chờ nhận / hết hạn → 409; người khác → 404 |
+| `GET mcp-setup/public[?client=]` | `client` | như `mcp-setup`, KHÔNG cần đăng nhập (màn /connect-ai) |
 | `GET mcp-keys/pending` | — | `{items: [Key]}` — khóa quản trị phát hộ đang chờ nhận |
 | `POST mcp-keys/{id}/claim` | — | `Key + {key}` — khóa thô ĐÚNG một lần; lần hai / không phải của mình / thu hồi / hết hạn → 404 |
 | `GET mcp-keys/{id}/last-call` | — | `{key_id, connected: bool, last_call: Call?, last_ok_call: Call?}` — `connected` = đã có ít nhất một lượt thành công; khóa không phải của mình → 404 |
@@ -203,7 +223,8 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 | `GET mcp-calls/daily?days=14` | `days≤90` | `{days, items: [{day, total, ok, denied, error}]}` — đủ từng ngày |
 
 `Key` = `{id, name, hint: "…abcd", scope, scope_label, expires_at, last_used_at, created_at, state, state_label, issued_by,
-claimed_at, batch_id, user_id, kind: 1\|2, kind_label}` — `kind = 2` «Kết nối OAuth» (tên `Qua ChatGPT`…, ai-CR-218).
+claimed_at, batch_id, user_id, kind: 1\|2, kind_label, enabled, disabled_at, revealable}` — `kind = 2` «Kết nối OAuth» (tên
+`Qua ChatGPT`…, ai-CR-218); `revealable = false` thì màn hiện *tạo lại để xem* (ai-CR-221). Danh sách KHÔNG bao giờ có khóa thô.
 `Call` = `{created_at, client_name, method, tool, status, status_label, deny_reason}`.
 `CallRow` = `{id, created_at, key_id, user_id, user_label, employee_id, department_id, company_id, client_name, method, tool,
 skill_id, status, status_label, deny_reason, duration_ms, ip}`.

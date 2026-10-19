@@ -332,6 +332,71 @@ def remove_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session =
     return success(None, "Đã gỡ khóa MCP")
 
 
+class McpKeyPatch(BaseModel):
+    enabled: bool
+
+
+def _log_key_action(db: Session, request: Request, user, row, method: str) -> None:
+    """ai-CR-221: ghi thao tác xem / bật / tắt khóa vào nhật ký cổng MCP (dịch vụ AI tách DB không có bảng audit ERP)."""
+    from . import mcp_log
+
+    mcp_log.save(db, [mcp_log.new_row(key_id=int(row.id), person=mcp_log.who(db, user),
+                                      client_name=mcp_log.KEY_ACTION_CLIENT, method=method,
+                                      ip=mcp_log.client_ip(request))])
+
+
+@router.get("/mcp-keys/{key_id}/reveal")
+def reveal_my_mcp_key(key_id: int, request: Request, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-221: CHỦ KHÓA xem lại khóa thô (để chép đoạn cấu hình đã điền khóa). Khóa người khác / đã thu hồi → 404;
+    khóa cũ không có bản xem lại, OAuth, chờ nhận, hết hạn → 409 kèm câu cho người dùng. Mỗi lần xem ghi nhật ký."""
+    from . import mcp_log
+
+    try:
+        row, raw = mcp_keys.reveal(db, user.id, key_id)
+    except mcp_keys.KeyNotFound as e:
+        raise HTTPException(404, "Không tìm thấy khóa") from e
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
+    _log_key_action(db, request, user, row, mcp_log.METHOD_KEY_REVEAL)
+    out = success({**mcp_keys.serialize(row), "key": raw})
+    out.headers["Cache-Control"] = "no-store"
+    return out
+
+
+@router.patch("/mcp-keys/{key_id}")
+def toggle_my_mcp_key(key_id: int, body: McpKeyPatch, request: Request, user=Depends(get_current_user),
+                      db: Session = Depends(get_db)):
+    """ai-CR-221: bật / tắt tạm khóa của chính mình (cả kết nối OAuth). Tắt thì cổng MCP từ chối với lý do «Khóa đang
+    tắt»; bật lại là chạy ngay. Khác thu hồi (DELETE) — thu hồi là mất hẳn."""
+    from . import mcp_log
+
+    try:
+        before = mcp_keys._own_row(db, user.id, key_id).disabled_at is None
+        row = mcp_keys.set_enabled(db, user.id, key_id, body.enabled)
+    except mcp_keys.KeyNotFound as e:
+        raise HTTPException(404, "Không tìm thấy khóa") from e
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
+    if before != body.enabled:
+        _log_key_action(db, request, user, row,
+                        mcp_log.METHOD_KEY_ENABLE if body.enabled else mcp_log.METHOD_KEY_DISABLE)
+    return success(mcp_keys.serialize(row), "Đã bật khóa" if body.enabled else "Đã tắt khóa — bật lại bất cứ lúc nào")
+
+
+@router.get("/mcp-setup/public")
+def mcp_setup_public(client: str = Query("", max_length=30)):
+    """ai-CR-221 (cho màn công khai /connect-ai của bao-CR-633): cùng nội dung `/mcp-setup` nhưng KHÔNG cần đăng nhập —
+    chỉ địa chỉ cổng + hướng dẫn tĩnh, đoạn cấu hình mang chỗ giữ khóa `placeholder`, không bao giờ có khóa thật."""
+    from . import mcp_setup as ms
+
+    if not client:
+        return success({"endpoint": ms.endpoint(), "placeholder": ms.KEY_PLACEHOLDER, "clients": ms.catalog()})
+    out = ms.build(client)
+    if out is None:
+        raise HTTPException(404, f"Chưa có hướng dẫn cho ứng dụng '{client}'. Chọn: {', '.join(ms.CLIENTS)}.")
+    return success({**out, "endpoint": ms.endpoint(), "placeholder": ms.KEY_PLACEHOLDER})
+
+
 @router.get("/mcp-setup")
 def mcp_setup(client: str = Query("", max_length=30), user=Depends(get_current_user)):
     """ai-CR-213 (G8): đoạn cấu hình nối từng ứng dụng AI với ERP; bỏ trống `client` = danh sách ứng dụng."""
@@ -458,7 +523,7 @@ def key_admin_meta(user=Depends(get_current_user), db: Session = Depends(get_db)
 
 
 @router.get("/mcp-key-admin/keys")
-def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Query(None, ge=1, le=4),
+def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Query(None, ge=1, le=5),
                    user_id: int | None = Query(None, ge=1), batch_id: str = Query("", max_length=32),
                    page: int = Query(1, ge=1, le=10_000), size: int = Query(50, ge=1, le=200),
                    user=Depends(get_current_user), db: Session = Depends(get_db)):

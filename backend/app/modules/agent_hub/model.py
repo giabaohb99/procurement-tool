@@ -553,6 +553,10 @@ class AgentMcpKey(Base, AuditMixin):
     oauth_client_id: Mapped[int] = mapped_column(BigInteger, default=0)
     access_expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     refresh_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    #  ai-CR-221: `raw_view` = khóa thô MÃ HÓA Fernet để CHỦ KHÓA xem lại (rỗng với khóa cũ / OAuth / chưa nhận / đã thu hồi);
+    #  `disabled_at` = chủ khóa tắt tạm (khác `revoked_at`: bật lại được).
+    raw_view: Mapped[str | None] = mapped_column(Text, default="", nullable=True)
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
 
 
 class AgentOAuthClient(Base, AuditMixin):

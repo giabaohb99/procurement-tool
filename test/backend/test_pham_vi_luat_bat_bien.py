@@ -237,6 +237,12 @@ BB4_CONTROLLER_MIEN_TRU = {
                                "không phải phạm vi. ai-CR-123 thêm nhóm thứ ba: màn «Nhóm chat» — nhóm chat "
                                "không thuộc pháp nhân/phòng nào (`agent_group` PUBLIC); người thường lọc theo "
                                "thành viên (`groups.can_read`), quản lý bot AI có `agent_group.read`",
+    #  ai-CR-218: máy chủ cấp quyền OAuth của cổng MCP — đường công khai theo chuẩn (RFC 7591/6749/7009), gác bằng PKCE +
+    #  mã một lần + bí mật ứng dụng; màn đồng ý chỉ cấp quyền cho CHÍNH người đăng nhập (`user.id`), không đọc dữ liệu ai.
+    "agent_hub/oauth_controller.py": "máy chủ cấp quyền OAuth của cổng MCP: đường công khai theo chuẩn (đăng ký, "
+                                     "authorize, token, revoke) gác bằng PKCE S256 + mã cấp quyền một lần + bí mật "
+                                     "ứng dụng (oauth.authenticate_client); màn đồng ý chỉ tạo kết nối cho CHÍNH "
+                                     "người đăng nhập (`user.id`) — quyền sở hữu, không đọc dữ liệu nghiệp vụ nào",
     "customs/controller.py": "customs_price là entity PUBLIC (dữ liệu thị trường bên ngoài, "
                              "bao-CR-470) — cổng là require('customs_price', …) từng route",
     "customs/pesticide_controller.py": "duoc-CR-487/490: danh mục thuốc BVTV — đọc gác customs_price.read "

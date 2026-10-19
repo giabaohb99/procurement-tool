@@ -351,6 +351,8 @@ def refresh(db: Session, client: AgentOAuthClient, refresh_token: str, now: date
         raise OAuthError("invalid_grant", "Mã làm mới không hợp lệ hoặc kết nối đã bị thu hồi.")
     if row.expires_at is not None and row.expires_at <= now:
         raise OAuthError("invalid_grant", "Kết nối đã hết hạn — kết nối lại từ ứng dụng AI.")
+    if row.disabled_at is not None:      # ai-CR-221: chủ khóa tắt tạm thì không cấp mã truy cập mới
+        raise OAuthError("invalid_grant", "Kết nối đang tắt — bật lại ở Trang cá nhân, Khóa AI.")
     tokens = _issue_tokens(row, now)
     client.last_used_at = now
     db.commit()

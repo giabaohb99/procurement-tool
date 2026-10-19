@@ -13540,6 +13540,21 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-221 | Người dùng xem lại được khóa kết nối AI của mình và bật tắt khóa khi cần
+- status: dang-lam
+- date: 2026-10-19
+Đại ca chốt trưa 19/10: trước nay khóa kết nối AI chỉ hiện đúng một lần lúc tạo, lỡ đóng cửa sổ là phải tạo khóa khác.
+Nay hệ thống giữ thêm một bản khóa đã mã hóa, chỉ chính chủ khóa đăng nhập web mới mở ra xem lại được, để màn Khóa của
+tôi chép một lần ra đoạn cấu hình đã điền sẵn khóa. Quản trị không xem được khóa của người khác, và mỗi lần xem đều được
+ghi vào nhật ký cổng nối AI. Khóa tạo trước đợt này không có bản để xem, màn sẽ nhắc tạo khóa mới. Người dùng cũng tắt tạm
+được một khóa hay một kết nối ChatGPT, khác với thu hồi là bật lại được ngay; khóa đang tắt thì ứng dụng AI bị từ chối và
+nhật ký ghi rõ lý do. Thêm một đường công khai trả hướng dẫn nối ứng dụng AI cho màn giới thiệu không cần đăng nhập.
+Bài kiểm đều đạt. Chờ Agent 3 nối màn và Agent 1 dựng lên dev.
+
+Mã nguồn: agent_hub/mcp_keys.py, agent_hub/controller.py, agent_hub/oauth.py, agent_hub/mcp_log.py, agent_gateway/proxy.py
+Migration: mcpkey03 (DB ERP) + agent0014 (DB dịch vụ AI)
+Bài kiểm: test_agent_hub_xem_lai_bat_tat_khoa_cr221.py
+
 ## ai-CR-218 | ChatGPT và claude.ai nối được vào ERP bằng cách đăng nhập ERP và bấm Cho phép
 - status: dang-lam
 - date: 2026-10-19

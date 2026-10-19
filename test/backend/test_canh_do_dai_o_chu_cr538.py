@@ -165,6 +165,8 @@ NO_TARGET = {
     "agent_hub.MemoryLineIn", "agent_hub.MemoryLineEdit",
     #  ai-CR-218: màn đồng ý OAuth — chỉ mang chuỗi ký yêu cầu (đọc lại, không ghi cột) + mức khóa (số)
     "agent_hub.ConsentIn",
+    #  ai-CR-221: công tắc bật / tắt khóa MCP — chỉ một cờ bool, ghi cột `disabled_at` (giờ máy chủ, không lấy từ người gọi)
+    "agent_hub.McpKeyPatch",
     "survey_request.ReportInitIn",   # duoc-CR-614: chỉ mang mã mẫu báo cáo (số)
     #  chỉ mang id / thứ tự / lệnh di chuyển — không ghi cột chữ nào
     "doc_catalog.DocumentFolderSetIn", "doc_catalog.FolderLinkIn", "doc_catalog.FolderUnlinkIn",
