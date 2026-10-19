@@ -16,6 +16,8 @@ export const appRoutes = {
    */
   notifications: '/notifications',
   me: '/me',
+  /** Trang công khai hướng dẫn nối AI riêng (bao-CR-638) — không cần đăng nhập, không bao giờ chứa khóa. */
+  connectAi: '/connect-ai',
   /**
    * Màn đồng ý OAuth của cổng MCP (ai-CR-218): ChatGPT / claude.ai mở `/api/oauth/authorize`, máy chủ chuyển sang đây
    * kèm chuỗi ký. Chuỗi nằm ở ĐƯỜNG DẪN vì màn đăng nhập chỉ nhớ `pathname` khi quay lại.
@@ -177,6 +179,8 @@ export const appRoutes = {
     setDetail: (id: number | string) => `/ai-skill/sets/${id}`,
     skillEditor: (id: number | string) => `/ai-skill/skills/${id}`,
     keys: '/ai-skill/keys',
+    /** Ứng dụng AI tự đăng ký OAuth — ChatGPT, claude.ai (bao-CR-635). */
+    oauthClients: '/ai-skill/oauth-clients',
     logs: '/ai-skill/logs',
     settings: '/ai-skill/settings',
   },

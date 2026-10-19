@@ -107,7 +107,9 @@ công cụ chạy trên trình duyệt (vd MCP Inspector) — ChatGPT / claude.a
   qua; lần hỏng (sai PKCE, sai redirect) cũng đốt mã.
 - Chuỗi ký yêu cầu có `exp` lạ → coi như hỏng (không 500). Nghỉ việc (`revoke_user_access`) xóa trắng `raw_view`,
   `raw_sealed`, `refresh_hash` như `mcp_keys.revoke_rows`.
-- Còn lại (Agent 1 xếp NÊN): audit `key/reveal` ngoài nhật ký cổng. Hai mục kia xong ở ai-CR-225 (dưới).
+- Mục 7 (audit `key/reveal` lâu dài) xong ở ai-CR-226: xem lại / bật / tắt khóa ghi thêm `tab_audit_log` (entity `agent_mcp_key`, action `key_reveal` / `key_enable` / `key_disable`) qua `agent_hub.erp.audit`. Hai mục 3, 4 xong ở ai-CR-225 (dưới).
+
+**ai-CR-226 (19/10) — nhật ký thao tác ở chế độ tách:** DB `agent_hub` không có `tab_audit_log`; mọi dòng nhật ký do dịch vụ AI ghi (công cụ chạy tại chỗ: lịch Google, sổ nhớ, nhóm chat, biên bản, bản tin, nghiên cứu; thao tác khóa MCP) đi qua `agent_hub.erp.audit` — nhúng / ERP ghi thẳng (SAVEPOINT), tách thì `POST /api/agent-gw/audit` `{entity ≤ 50, entity_id ≥ 0, action ≤ 50, message ≤ 2000}`, người ghi lấy từ CHỮ KÝ cổng B. Cổng hỏng → mất dòng nhật ký + log WARNING, lượt công cụ vẫn chạy. **Phải có trước khi dựng dịch vụ AI tách trên prod** (checklist của Agent 1).
 
 **ai-CR-225 (19/10) — chống lừa ở màn đồng ý + dọn bảng:**
 - Nơi quay về tính theo HOSTNAME (`oauth.redirect_target`): bỏ userinfo + cổng, `https://chatgpt.com@evil.example/cb` hiện
@@ -141,6 +143,16 @@ hệ thống» phải gán quyền đọc tay ở màn Bộ skill.
 - **Hướng dẫn nối công khai** `GET /api/agent-hub/mcp-setup/public[?client=]` (cho màn /connect-ai, bao-CR-633): cùng nội dung
   `mcp-setup` nhưng không cần đăng nhập — chỉ địa chỉ cổng + hướng dẫn tĩnh, đoạn cấu hình mang chỗ giữ khóa.
 - Migration `mcpkey03` (ERP, sau `mcpoauth01`) + `agent0014` (DB agent_hub, sau `agent0013`): thêm `raw_view`, `disabled_at`.
+
+### 2.4b Đọc skill dài theo trang (ai-CR-228)
+
+ChatGPT (dev 19/10) đọc skill dài nhất kho (~35k ký tự) rồi báo «không trả về nội dung». `read_skill` / `read_skill_file`
+(cổng MCP lẫn công cụ nội bộ) nhận `offset` (mặc định 0) và trả `{content, offset, next_offset, total_chars, page_note?}` —
+mỗi trang ≤ 10.000 ký tự, cắt ở tiêu đề `#` > dòng trống > xuống dòng trong nửa sau trang (không có thì cắt cứng); ghép các
+trang = nguyên văn; `next_offset = null` là hết; offset quá cuối → nội dung rỗng + câu nhắc đọc lại từ 0. Câu dặn đổi thành
+«Dùng nội dung này để trả lời và làm việc cho người dùng (tóm tắt, trích ý, áp dụng); chỉ không chép nguyên văn cả bài ra
+ngoài» + nhắc đọc tệp đính kèm bằng `read_skill_file`. Nhật ký cổng có cột `result_chars` (số ký tự kết quả mỗi lượt
+`tools/call`; migration `mcplog02` ERP sau `lbrct03` + `agent0015`), `CallRow` thêm `result_chars`.
 
 ### 2.5 Trợ lý nội bộ đọc chung Kho skill (ai-CR-220, K7)
 
@@ -186,6 +198,30 @@ server dặn AI gọi `list_skills` trước việc nghiệp vụ, áp dụng n�
   `/articles`, `/faq` của `search_docs`); `total` là tổng thật mà thiếu `has_more` thì cổng gắn thêm. Từng tool đã thêm (không
   đổi trường cũ): `has_more`, nhãn trạng thái (`*_label`), `currency` (ĐMH theo nguyên tệ của đơn, hải quan USD, công nợ / YCTT
   VND), căn cứ VAT (`amount_basis` / `money_basis`). `structuredContent` có ở `report_summary`, `dataset_query`, `erp_read`.
+
+### 3.5 Quản trị bằng lời (bao-CR-634, K9 — doc 21 §7.2 đợt P7)
+
+Năm tool chỉ **khóa được ghi** thấy, và chỉ khi chủ khóa có đúng quyền; nhóm `admin` ở màn Cấu hình (bật sẵn) tắt thì ẩn hết.
+
+| Tool | Quyền | `kind` khi xác nhận | Ghi qua |
+|---|---|---|---|
+| `draft_skill(skill_set, name, title?, summary?, body_md?)` — tạo, hoặc sửa bản nháp nếu trùng tên trong bộ | `ai_skill.write` | `skill` | `ai_skill.service.create_skill` / `update_skill` |
+| `draft_skill_publish(name, skill_set?, change_note?)` — kèm so sánh với bản đang dùng | `ai_skill.approve` | `skill_publish` | `service.publish_skill` |
+| `draft_skill_access(action grant\|revoke, skill_set, name?, subjects[{kind, ref}], effect allow\|deny, include_children, valid_to, reason)` | `ai_skill.write` | `skill_access` | `access_service.grant` / `revoke` |
+| `draft_key_issue(employees[] \| department, days, name)` | `ai_mcp_key_admin.create` | `key_issue` | `key_admin_ops.plan_issue` + `issue_to_people` (chung với màn Khóa nhân sự) |
+| `draft_key_revoke(employees[] \| key_ids[] \| batch_id)` | `ai_mcp_key_admin.delete` | `key_revoke` | `key_admin_ops.check_revoke_scope` + `mcp_keys.revoke_rows` |
+
+- Tool `draft_*` KHÔNG ghi: trả `{kind, preview, draft: {token, summary}, note}`. `token` là Fernet (khóa suy từ `JWT_SECRET`, tiền
+  tố riêng từng phía), hết hạn **30 phút**, buộc đúng người + đúng `kind`, mang **dấu trạng thái** của đích lúc soạn.
+- `confirm_draft(kind, draft)` kiểm lại khóa được ghi + quyền + nhóm + phạm vi (`get_scoped` của bộ / phạm vi phát khóa), rồi so
+  dấu: đích bị sửa chen, hoặc bản nháp đã dùng rồi → từ chối, nhờ soạn lại. Token sửa tay / của người khác / khác `kind` → từ chối.
+- Bộ, skill, đối tượng gửi bằng **mã hoặc tên**: khớp mã trước, rồi tên đúng, rồi tên chứa chữ khi chỉ một kết quả; nhiều kết quả
+  thì trả danh sách để AI hỏi lại, không đoán. Skill viết `MÃ-BỘ/tên` khi trùng tên giữa hai bộ.
+- Phía ERP (Kho skill): `ai_skill/mcp_admin.py`, cổng B `POST /api/agent-gw/skills/admin/draft`, `/skills/admin/confirm`,
+  `/admin/resolve-people` (mã / tên nhân sự + tên phòng → id cho tool khóa). Phía dịch vụ AI: `agent_hub/mcp_admin.py`.
+- Sổ thay đổi + hoàn tác 24 giờ (doc 18): tạo / sửa skill (`ai_skill`) và gán / thu hồi quyền đọc (`ai_skill_access`, mã đích là
+  bộ chứa) hoàn tác được; xuất bản ghi sổ `PUBLISH` (7), không hoàn tác. Kênh ghi `MCP` (4). Phát / thu hồi khóa CHƯA vào sổ
+  (bảng khóa ở dịch vụ AI) — vết nằm ở nhật ký lượt gọi MCP + `issued_by` / `revoked_at` của khóa. Nhật ký MCP ghi `skill_id`.
 
 ## 4. Nhóm tool và cấu hình (G7, ai-CR-216)
 

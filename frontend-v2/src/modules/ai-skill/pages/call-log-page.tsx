@@ -9,8 +9,10 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
@@ -53,8 +55,11 @@ export function CallLogPage() {
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [dateFrom, setDateFrom] = useUrlParamState('from', '')
   const [dateTo, setDateTo] = useUrlParamState('to', '')
+  //  Mặc định chỉ lượt gọi CÔNG CỤ: lượt khởi tạo / liệt kê / thông báo của ứng dụng AI chiếm phần lớn trang mà không nói
+  //  gì về việc tra cứu (Agent 2 soi dev 19/10). Bỏ tick để xem đủ.
+  const [allMethods, setAllMethods] = useUrlParamState('all', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([tool, status, dateFrom, dateTo])
+  const [page, setPage] = usePageResetOnFilterChange([tool, status, dateFrom, dateTo, allMethods])
 
   const filters: McpCallFilters = {
     page,
@@ -63,6 +68,7 @@ export function CallLogPage() {
     status: status === ALL ? undefined : Number(status),
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
+    kind: allMethods ? undefined : 'tools',
   }
   const { data, isLoading, isError } = useMcpCalls(filters)
   const rows = data?.items
@@ -76,7 +82,8 @@ export function CallLogPage() {
         hideable: false,
         cell: (c) => <span className="whitespace-nowrap">{formatDateTime(c.created_at)}</span>,
       },
-      { key: 'user', header: 'Người', width: 180, cell: (c) => c.user_label || `#${c.user_id}` },
+      //  Lượt khóa sai không có người (user_id = 0) — máy chủ mới trả «(khóa sai)», bản cũ trả rỗng thì in gạch.
+      { key: 'user', header: 'Người', width: 180, cell: (c) => c.user_label || (c.user_id ? `#${c.user_id}` : '—') },
       { key: 'client', header: 'Ứng dụng AI', width: 160, cell: (c) => c.client_name || '—' },
       {
         key: 'tool',
@@ -134,7 +141,13 @@ export function CallLogPage() {
           getRowId={(c) => c.id}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage={filtering ? 'Không có lượt nào khớp bộ lọc.' : 'Chưa có lượt gọi nào.'}
+          emptyMessage={
+            filtering
+              ? 'Không có lượt nào khớp bộ lọc.'
+              : allMethods
+                ? 'Chưa có lượt gọi nào.'
+                : 'Chưa có lượt gọi công cụ nào — bỏ tick «Chỉ lượt gọi công cụ» để xem cả lượt khởi tạo kết nối.'
+          }
           storageKey="ai-skill.calls"
           pagination={{
             page,
@@ -179,6 +192,16 @@ export function CallLogPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="ai-calls-tools-only"
+                  checked={!allMethods}
+                  onCheckedChange={(checked) => setAllMethods(checked === true ? '' : '1')}
+                />
+                <Label htmlFor="ai-calls-tools-only" className="text-sm font-normal">
+                  Chỉ lượt gọi công cụ
+                </Label>
+              </div>
             </>
           }
         />

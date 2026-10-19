@@ -203,16 +203,49 @@ class _Local:
         return mcp_read.list_for_ai(db, user, query, skill_set)
 
     @staticmethod
-    def skill_read(db, user, name: str) -> dict:
+    def skill_read(db, user, name: str, offset: int = 0) -> dict:
         from app.modules.ai_skill import mcp_read
 
-        return mcp_read.read_for_ai(db, user, name)
+        return mcp_read.read_for_ai(db, user, name, offset=offset)
 
     @staticmethod
-    def skill_file(db, user, name: str, path: str) -> dict:
+    def skill_file(db, user, name: str, path: str, offset: int = 0) -> dict:
         from app.modules.ai_skill import mcp_read
 
-        return mcp_read.file_for_ai(db, user, name, path)
+        return mcp_read.file_for_ai(db, user, name, path, offset=offset)
+
+    # --- Nhật ký thao tác (ai-CR-226) ---
+    @staticmethod
+    def audit(db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
+        """Ghi `tab_audit_log` ngay trong DB ERP — SAVEPOINT, hỏng thì chỉ mất dòng nhật ký (bao-CR-463)."""
+        from app.core.audit import record
+
+        try:
+            with db.begin_nested():
+                record(db, int(user_id or 0), entity[:50], int(entity_id or 0), action[:50], message)
+            return True
+        except Exception:  # noqa: BLE001
+            log.warning("erp.audit: không ghi được %s/%s", entity, action, exc_info=True)
+            return False
+
+    # --- quản trị Kho skill bằng lời qua MCP (bao-CR-634, K9) — nháp → xác nhận, ghi ở ERP ---
+    @staticmethod
+    def skill_admin_draft(db, user, tool: str, args: dict) -> dict:
+        from app.modules.ai_skill import mcp_admin
+
+        return mcp_admin.draft(db, user, tool, args or {})
+
+    @staticmethod
+    def skill_admin_confirm(db, user, kind: str, draft: dict) -> dict:
+        from app.modules.ai_skill import mcp_admin
+
+        return mcp_admin.confirm(db, user, kind, draft)
+
+    @staticmethod
+    def resolve_people(db, user, employees: list, department=None) -> dict:
+        from app.modules.ai_skill import mcp_admin
+
+        return mcp_admin.resolve_people(db, user, employees or [], department)
 
     @staticmethod
     def caller_context(db, user) -> str | None:
@@ -626,11 +659,40 @@ class _Remote:
     def skill_list(self, db, user, query: str = "", skill_set: str = "") -> dict:
         return self._skill_call("/skills", user, {"query": query or "", "skill_set": skill_set or ""})
 
-    def skill_read(self, db, user, name: str) -> dict:
-        return self._skill_call("/skills/read", user, {"name": name or ""})
+    def skill_read(self, db, user, name: str, offset: int = 0) -> dict:
+        return self._skill_call("/skills/read", user, {"name": name or "", "offset": int(offset or 0)})
 
-    def skill_file(self, db, user, name: str, path: str) -> dict:
-        return self._skill_call("/skills/file", user, {"name": name or "", "path": path or ""})
+    def skill_file(self, db, user, name: str, path: str, offset: int = 0) -> dict:
+        return self._skill_call("/skills/file", user, {"name": name or "", "path": path or "", "offset": int(offset or 0)})
+
+    def audit(self, db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
+        """ai-CR-226: chế độ tách — DB agent_hub KHÔNG có `tab_audit_log`, nên đẩy dòng nhật ký sang ERP qua cổng B.
+        Hỏng (ERP đang khởi động lại…) thì chỉ mất dòng nhật ký, có log WARNING — không làm hỏng lượt gọi công cụ."""
+        try:
+            self._call("POST", "/audit", user_id=int(user_id or 0), timeout=AUDIT_TIMEOUT,
+                       body={"entity": entity[:50], "entity_id": int(entity_id or 0), "action": action[:50],
+                             "message": (message or "")[:AUDIT_MESSAGE_MAX]})
+            return True
+        except ErpError:
+            log.warning("erp.audit: cổng B không nhận nhật ký %s/%s", entity, action, exc_info=True)
+            return False
+
+    # --- quản trị Kho skill bằng lời (bao-CR-634) ---
+    def _skill_admin_call(self, path: str, user, body: dict) -> dict:
+        try:
+            return self._call("POST", path, user_id=_uid(user), body=body, timeout=TOOL_TIMEOUT) or {}
+        except ErpError as e:
+            return {"error": f"Không gọi được Kho skill ở ERP: {e}"}
+
+    def skill_admin_draft(self, db, user, tool: str, args: dict) -> dict:
+        return self._skill_admin_call("/skills/admin/draft", user, {"tool": tool, "args": args or {}})
+
+    def skill_admin_confirm(self, db, user, kind: str, draft: dict) -> dict:
+        return self._skill_admin_call("/skills/admin/confirm", user, {"kind": kind, "draft": draft or {}})
+
+    def resolve_people(self, db, user, employees: list, department=None) -> dict:
+        return self._skill_admin_call("/admin/resolve-people", user,
+                                      {"employees": list(employees or []), "department": department})
 
     # --- tạo phiếu ---
     def create_draft(self, db, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
@@ -888,12 +950,33 @@ def skill_list(db, user, query: str = "", skill_set: str = "") -> dict:
     return _impl().skill_list(db, user, query, skill_set)
 
 
-def skill_read(db, user, name: str) -> dict:
-    return _impl().skill_read(db, user, name)
+def skill_read(db, user, name: str, offset: int = 0) -> dict:
+    return _impl().skill_read(db, user, name, offset)
 
 
-def skill_file(db, user, name: str, path: str) -> dict:
-    return _impl().skill_file(db, user, name, path)
+def skill_file(db, user, name: str, path: str, offset: int = 0) -> dict:
+    return _impl().skill_file(db, user, name, path, offset)
+
+
+#  ai-CR-226 (Agent 1 đọc log dev 19/10): mọi dòng nhật ký thao tác do dịch vụ AI ghi phải qua đây — gọi thẳng
+#  `core.audit.record` ở chế độ tách là ghi vào DB agent_hub (không có bảng) → mất trắng dấu vết «ai nhờ bot làm gì».
+AUDIT_TIMEOUT = 5
+AUDIT_MESSAGE_MAX = 2000
+
+
+def audit(db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
+    return _impl().audit(db, user_id, entity, entity_id, action, message)
+
+def skill_admin_draft(db, user, tool: str, args: dict) -> dict:
+    return _impl().skill_admin_draft(db, user, tool, args)
+
+
+def skill_admin_confirm(db, user, kind: str, draft: dict) -> dict:
+    return _impl().skill_admin_confirm(db, user, kind, draft)
+
+
+def resolve_people(db, user, employees: list, department=None) -> dict:
+    return _impl().resolve_people(db, user, employees, department)
 
 
 def glossary_block(db, texts: list[str]) -> str | None:

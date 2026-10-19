@@ -343,6 +343,11 @@ def _log_key_action(db: Session, request: Request, user, row, method: str) -> No
     mcp_log.save(db, [mcp_log.new_row(key_id=int(row.id), person=mcp_log.who(db, user),
                                       client_name=mcp_log.KEY_ACTION_CLIENT, method=method,
                                       ip=mcp_log.client_ip(request))])
+    #  ai-CR-226 (mục 7 bài rà): nhật ký cổng bị dọn theo hạn lưu (G7) — ghi thêm một dòng nhật ký thao tác ERP giữ lâu dài.
+    from . import erp
+
+    erp.audit(db, int(user.id), "agent_mcp_key", int(row.id), method.replace("/", "_"),
+              f"{mcp_log.KEY_ACTION_CLIENT} · {row.name} · IP {mcp_log.client_ip(request)}")
 
 
 @router.get("/mcp-keys/{key_id}/reveal")
@@ -525,17 +530,8 @@ def claim_my_mcp_key(key_id: int, user=Depends(get_current_user), db: Session = 
 # Phát / thu hồi khóa HỘ (ai-CR-212, K4 doc/erp/21 §5.3) — quyền `ai_mcp_key_admin` (read · create · delete), phạm vi
 # tính ở ERP trên hồ sơ nhân sự của CHỦ KHÓA (`erp.key_admin_people`). Không gửi email / Telegram — chỉ chuông (§7.1).
 # ---------------------------------------------------------------------------
-KEY_ADMIN_ENTITY = "ai_mcp_key_admin"
-MY_AI_LINK = "/me?tab=ai-key"
-
-
-def _key_admin_people(db: Session, user, action: str, **kw) -> list[dict]:
-    from . import erp
-
-    people = erp.key_admin_people(db, user, action, **kw)
-    if people is None:
-        raise HTTPException(403, f"Không có quyền: {action} {KEY_ADMIN_ENTITY}")
-    return people
+from .key_admin_ops import KEY_ADMIN_ENTITY, MY_AI_LINK  # noqa: E402,F401 — bao-CR-634: luật phát / thu hồi nằm ở key_admin_ops
+from .key_admin_ops import list_people_in_scope as _key_admin_people  # noqa: E402
 
 
 @router.get("/mcp-key-admin/meta")
@@ -591,68 +587,12 @@ class KeyIssueIn(BaseModel):
 def key_admin_issue(body: KeyIssueIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Phát hộ khóa CHỈ ĐỌC cho một / nhiều người hoặc cả phòng (≤ 50 người một lượt). Người ngoài phạm vi → 403 cả lượt;
     người đã đủ khóa còn hiệu lực thì bỏ qua (có trong `skipped`)."""
-    import uuid
+    from . import key_admin_ops
 
-    from . import erp
-
-    if body.days not in mcp_keys.ISSUE_DAYS:
-        raise HTTPException(400, f"Hạn khóa chỉ chọn: {', '.join(map(str, mcp_keys.ISSUE_DAYS))} ngày.")
-    wanted = sorted({int(i) for i in body.user_ids if i})
-    wanted_emp = sorted({int(i) for i in body.employee_ids if i})
-    if not wanted and not wanted_emp and not body.department_id:
-        raise HTTPException(400, "Chọn người nhận hoặc một phòng ban.")
-    if len(wanted) + len(wanted_emp) > mcp_keys.BATCH_MAX:
-        raise HTTPException(400, f"Tối đa {mcp_keys.BATCH_MAX} người một lượt phát.")
-    people: list[dict] = []
-    skipped: list[dict] = []
-    if wanted or (body.department_id and not wanted_emp):
-        people = _key_admin_people(db, user, "create", user_ids=wanted or None, department_id=body.department_id,
-                                   limit=mcp_keys.BATCH_MAX + 1)
-        if wanted:
-            outside = set(wanted) - {p["user_id"] for p in people}
-            if outside:
-                raise HTTPException(403, f"{len(outside)} người nằm ngoài phạm vi bạn được phát khóa hộ (hoặc tài khoản đã "
-                                         "khóa / chưa gắn hồ sơ nhân sự). Chưa phát khóa nào.")
-        elif not people:
-            raise HTTPException(404, "Phòng này không có nhân sự nào trong phạm vi bạn được phát khóa hộ.")
-    if wanted_emp:
-        res = erp.key_admin_employees(db, user, "create", wanted_emp)
-        if res is None:
-            raise HTTPException(403, f"Không có quyền: create {KEY_ADMIN_ENTITY}")
-        if res["outside"]:
-            raise HTTPException(403, f"{len(res['outside'])} nhân sự nằm ngoài phạm vi bạn được phát khóa hộ (hoặc không có "
-                                     "thật). Chưa phát khóa nào.")
-        seen = {p["user_id"] for p in people}
-        people += [p for p in res["people"] if p["user_id"] not in seen]
-        skipped += [{"user_id": 0, "employee_id": n["employee_id"], "label": n["label"], "reason": n["reason"]}
-                    for n in res["no_account"]]
-    if len(people) > mcp_keys.BATCH_MAX:
-        raise HTTPException(400, f"Phòng có hơn {mcp_keys.BATCH_MAX} người — chọn từng nhóm người, tối đa "
-                                 f"{mcp_keys.BATCH_MAX} người một lượt.")
-    batch_id = uuid.uuid4().hex[:16]
-    issued = []
-    for p in people:
-        try:
-            row = mcp_keys.issue(db, p["user_id"], user.id, days=body.days, name=body.name, batch_id=batch_id)
-            issued.append({"user_id": p["user_id"], "employee_id": p.get("employee_id", 0), "label": p["label"],
-                           "key_id": row.id})
-        except ValueError as e:
-            skipped.append({"user_id": p["user_id"], "employee_id": p.get("employee_id", 0), "label": p["label"],
-                            "reason": str(e)})
-    db.commit()
-    if issued:
-        issuer = erp.describe(db, user)[0] or "Quản trị"
-        try:
-            erp.notify_users(db, [i["user_id"] for i in issued], title="Bạn có khóa kết nối AI chờ nhận",
-                             body=f"{issuer} đã phát cho bạn một khóa kết nối AI (chỉ đọc, hạn {body.days} ngày). Vào Trang "
-                                  "cá nhân → AI của tôi, bấm Nhận khóa để xem và chép — khóa chỉ hiện một lần.",
-                             link=MY_AI_LINK, by_user_id=user.id)
-        except Exception:  # noqa: BLE001 — chuông hỏng không được làm mất khóa đã phát
-            import logging
-
-            logging.getLogger("app.agent_hub").warning("phát khóa hộ: không gửi được chuông", exc_info=True)
-    return success({"batch_id": batch_id, "issued": issued, "skipped": skipped},
-                   f"Đã phát {len(issued)} khóa, mỗi người sẽ nhận thông báo để lấy khóa.")
+    people, skipped = key_admin_ops.plan_issue(db, user, user_ids=body.user_ids, employee_ids=body.employee_ids,
+                                               department_id=body.department_id, days=body.days)
+    out = key_admin_ops.issue_to_people(db, user, people, days=body.days, name=body.name, skipped=skipped)
+    return success(out, f"Đã phát {len(out['issued'])} khóa, mỗi người sẽ nhận thông báo để lấy khóa.")
 
 
 class KeyRevokeIn(BaseModel):
@@ -665,27 +605,15 @@ class KeyRevokeIn(BaseModel):
 def key_admin_revoke(body: KeyRevokeIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Thu hồi: các khóa chỉ định, mọi khóa của một người, hoặc cả một lượt phát. Khóa của người ngoài phạm vi → 403 cả
     lệnh (không thu hồi lẻ một phần). Dòng giữ lại với trạng thái «Đã thu hồi»."""
-    from sqlalchemy import or_ as _or, select as _select
+    from . import key_admin_ops
 
-    from .model import AgentMcpKey
-
-    conds = []
-    if body.key_ids:
-        conds.append(AgentMcpKey.id.in_({int(i) for i in body.key_ids}))
-    if body.user_id:
-        conds.append(AgentMcpKey.user_id == int(body.user_id))
-    if body.batch_id:
-        conds.append(AgentMcpKey.batch_id == body.batch_id)
-    if not conds:
+    if not (body.key_ids or body.user_id or body.batch_id):
         raise HTTPException(400, "Chọn khóa, một người hoặc một lượt phát để thu hồi.")
-    rows = [r for r in db.scalars(_select(AgentMcpKey).where(_or(*conds))) if r.revoked_at is None]
+    rows = key_admin_ops.find_live_keys(db, key_ids=body.key_ids, user_ids=[body.user_id] if body.user_id else None,
+                                        batch_id=body.batch_id)
     if not rows:
         return success({"revoked": 0}, "Không có khóa nào đang hiệu lực để thu hồi.")
-    owners = {int(r.user_id) for r in rows}
-    allowed = {p["user_id"] for p in _key_admin_people(db, user, "delete", user_ids=sorted(owners))}
-    if owners - allowed:
-        raise HTTPException(403, f"{len(owners - allowed)} chủ khóa nằm ngoài phạm vi bạn được thu hồi hộ. Chưa thu hồi khóa "
-                                 "nào.")
+    key_admin_ops.check_revoke_scope(db, user, rows)
     n = mcp_keys.revoke_rows(db, rows, by_user_id=user.id)
     return success({"revoked": n}, f"Đã thu hồi {n} khóa.")
 

@@ -9,7 +9,10 @@ import {
   JOB_LEVEL_SUBJECT_OPTIONS,
   PACKAGE_MAX_BYTES,
   checkPackageFile,
+  fillKeyInSnippet,
   formatBytes,
+  maskKey,
+  upperFirst,
   validateFilePath,
   validateSlug,
 } from './ai-skill-constants'
@@ -97,5 +100,38 @@ describe('subject kinds of the skill store', () => {
       JOB_LEVEL_OPTIONS.filter((o) => o.value > 0).map((o) => o.value),
     )
     expect(JOB_LEVEL_SUBJECT_OPTIONS.every((o) => o.subject_kind === 6 && o.label !== '')).toBe(true)
+  })
+})
+
+describe('upperFirst', () => {
+  it('capitalises only the first letter, Vietnamese included, and leaves empty text alone', () => {
+    expect(upperFirst('chỉ đọc')).toBe('Chỉ đọc')
+    expect(upperFirst('được ghi')).toBe('Được ghi')
+    expect(upperFirst('')).toBe('')
+  })
+})
+
+describe('fillKeyInSnippet', () => {
+  const P = '<KHÓA_CỦA_BẠN>'
+  it('replaces every placeholder, not only the first one', () => {
+    expect(fillKeyInSnippet(`a ${P} b ${P}`, P, 'dego_mcp_x')).toBe('a dego_mcp_x b dego_mcp_x')
+  })
+
+  it('leaves the snippet untouched without a key or without a declared placeholder', () => {
+    expect(fillKeyInSnippet(`a ${P}`, P, null)).toBe(`a ${P}`)
+    expect(fillKeyInSnippet(`a ${P}`, P, '')).toBe(`a ${P}`)
+    expect(fillKeyInSnippet('a b', '', 'dego_mcp_x')).toBe('a b')
+  })
+
+  it('does not treat the placeholder as a pattern (regex characters stay literal)', () => {
+    expect(fillKeyInSnippet('x.*x $& x', '.*', 'K')).toBe('xKx $& x')
+    expect(fillKeyInSnippet('k=$KEY', '$KEY', '$&')).toBe('k=$&')
+  })
+})
+
+describe('maskKey', () => {
+  it('shows twelve dots and only the last characters the server already gave', () => {
+    expect(maskKey('…abcd')).toBe('••••••••••••abcd')
+    expect(maskKey('')).toBe('••••••••••••')
   })
 })

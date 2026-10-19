@@ -27,6 +27,7 @@ class ChangeAction(IntEnum):
     SUBMIT = 4      # gửi duyệt
     REUSE = 5       # dùng lại phiếu nháp (thêm dòng / ghi đè / sửa đè đơn nghỉ trùng ngày)
     ACCOUNT = 6     # lập bộ tài khoản (vai trò + phạm vi)
+    PUBLISH = 7     # xuất bản skill của Kho skill AI (bao-CR-634) — phiên bản chỉ thêm, không hoàn tác
 
 
 class UndoStatus(IntEnum):
@@ -42,6 +43,7 @@ class ChangeSource(IntEnum):
     TELEGRAM = 1
     WEB = 2
     ZALO = 3
+    MCP = 4         # AI riêng của nhân sự qua cổng MCP (bao-CR-634)
 
 
 ACTION_LABELS = {
@@ -51,6 +53,7 @@ ACTION_LABELS = {
     ChangeAction.SUBMIT: "Gửi duyệt",
     ChangeAction.REUSE: "Dùng lại nháp",
     ChangeAction.ACCOUNT: "Lập bộ tài khoản",
+    ChangeAction.PUBLISH: "Xuất bản",
 }
 
 UNDO_STATUS_LABELS = {
@@ -64,6 +67,7 @@ SOURCE_LABELS = {
     ChangeSource.TELEGRAM: "Telegram",
     ChangeSource.WEB: "Web",
     ChangeSource.ZALO: "Zalo",
+    ChangeSource.MCP: "AI riêng (MCP)",
 }
 
 

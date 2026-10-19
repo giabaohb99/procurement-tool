@@ -28,7 +28,7 @@ def _read(ctx: ToolContext, args: dict) -> dict:
     name = str(args.get("name") or "").strip()[:NAME_MAX]
     if not name:
         return {"error": "Thiếu `name` của skill — lấy từ danh mục cẩm nang hoặc list_skills."}
-    return mcp_read.read_for_ai(ctx.db, ctx.user, name, internal=True)
+    return mcp_read.read_for_ai(ctx.db, ctx.user, name, internal=True, offset=args.get("offset"))
 
 
 def _file(ctx: ToolContext, args: dict) -> dict:
@@ -38,7 +38,7 @@ def _file(ctx: ToolContext, args: dict) -> dict:
     path = str(args.get("path") or "").strip()[:PATH_MAX]
     if not name or not path:
         return {"error": "Cần `name` của skill và `path` của tệp — lấy từ danh sách tệp trong read_skill."}
-    return mcp_read.file_for_ai(ctx.db, ctx.user, name, path, internal=True)
+    return mcp_read.file_for_ai(ctx.db, ctx.user, name, path, internal=True, offset=args.get("offset"))
 
 
 LIST_SKILLS_SPEC = ToolSpec(
@@ -53,16 +53,19 @@ LIST_SKILLS_SPEC = ToolSpec(
 READ_SKILL_SPEC = ToolSpec(
     name="read_skill",
     description=("Đọc một cẩm nang (skill) của công ty theo đúng `name` trong danh mục: quy trình, quy định, cách dùng ERP. "
-                 "Đọc TRƯỚC khi trả lời câu về quy trình / quy định hay trước khi soạn phiếu; làm theo hướng dẫn, đừng đọc "
-                 "lại nguyên văn cho người dùng."),
-    parameters={"type": "object", "properties": {"name": {"type": "string", "maxLength": NAME_MAX}}, "required": ["name"]},
+                 "Đọc TRƯỚC khi trả lời câu về quy trình / quy định hay trước khi soạn phiếu; dùng nội dung để trả lời "
+                 "(tóm tắt, trích ý, áp dụng), chỉ không chép nguyên bài. Dài thì trả theo trang: có next_offset thì gọi "
+                 "lại với offset đó."),
+    parameters={"type": "object", "properties": {"name": {"type": "string", "maxLength": NAME_MAX},
+                                                 "offset": {"type": "integer", "minimum": 0}}, "required": ["name"]},
     handler=_read,
 )
 READ_SKILL_FILE_SPEC = ToolSpec(
     name="read_skill_file",
     description="Đọc một tệp đính kèm dạng chữ của skill (đường dẫn lấy từ read_skill, vd references/quy-dinh.md).",
     parameters={"type": "object", "properties": {"name": {"type": "string", "maxLength": NAME_MAX},
-                                                 "path": {"type": "string", "maxLength": PATH_MAX}},
+                                                 "path": {"type": "string", "maxLength": PATH_MAX},
+                                                 "offset": {"type": "integer", "minimum": 0}},
                 "required": ["name", "path"]},
     handler=_file,
 )

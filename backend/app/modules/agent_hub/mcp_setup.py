@@ -90,14 +90,21 @@ def build(client: str) -> dict | None:
                         "nhân → Khóa AI (dòng Qua Claude)."}
     if client == "chatgpt":
         return {"client": client, "label": "ChatGPT", "supported": True, "auth": "oauth", "format": "url", "snippet": url,
-                "steps": ["Mở ChatGPT → Settings (Cài đặt) → Apps & Connectors → Advanced settings → bật Developer mode.",
-                          "Quay lại Apps & Connectors → Create (Tạo): đặt tên DEGO ERP, dán địa chỉ ở dưới vào ô MCP Server "
-                          "URL, Authentication chọn OAuth, tick tin tưởng ứng dụng → Create.",
-                          "Trang ERP mở ra — đăng nhập ERP nếu chưa, chọn mức Chỉ đọc hoặc Được ghi, bấm Cho phép.",
-                          "Trong ô chat chọn DEGO ERP ở nút + (Developer mode) rồi hỏi như bình thường."],
-                "note": "Không cần khóa: ChatGPT đăng nhập ERP thay bạn. Tên mục trong Cài đặt có thể đổi theo phiên bản "
-                        "ChatGPT. Kết nối dùng 90 ngày, hết thì kết nối lại. Gỡ ở Trang cá nhân → Khóa AI (dòng Qua "
-                        "ChatGPT)."}
+                #  bao-CR-639 (19/10, theo ảnh đại ca chụp): ChatGPT nối ở Settings → Connectors → hộp «New Connector (BETA)»:
+                #  Name · Description · MCP Server URL · Authentication = OAuth · tick «I trust this application» → Create.
+                #  Nút tạo chỉ hiện khi đã bật Developer mode. Gói Free có thể không có mục này.
+                "requires": ["Tài khoản ChatGPT trả phí (Plus / Pro / Business); gói Free có thể không có mục Connectors"],
+                "steps": ["Mở ChatGPT → Settings (Cài đặt) → Connectors (địa chỉ thẳng: chatgpt.com/#settings/Connectors). "
+                          "Chưa thấy nút tạo thì bật Developer mode trước (Settings → Security and login, hoặc Connectors → "
+                          "Advanced settings).",
+                          "Bấm Create: hộp New Connector mở ra. Name ghi DEGO ERP; Description bỏ trống cũng được; MCP Server "
+                          "URL dán địa chỉ ở dưới; Authentication chọn OAuth; tick I trust this application → Create.",
+                          "Trang ERP mở ra — kiểm tên miền quay về là chatgpt.com hoặc openai.com, đăng nhập ERP nếu chưa, "
+                          "chọn mức Chỉ đọc (hoặc Được ghi), bấm Cho phép.",
+                          "Trong ô chat bấm nút + (hoặc Apps), bật DEGO ERP rồi hỏi như bình thường."],
+                "note": "Không cần khóa: ChatGPT đăng nhập ERP thay bạn. Hộp New Connector đang ghi Beta, tên mục có thể đổi "
+                        "theo phiên bản ChatGPT — tìm chữ Connectors hoặc MCP. Kết nối dùng 90 ngày, hết thì kết nối lại. Gỡ "
+                        "ở Trang cá nhân → Kết nối AI riêng (dòng Qua ChatGPT)."}
     return None
 
 

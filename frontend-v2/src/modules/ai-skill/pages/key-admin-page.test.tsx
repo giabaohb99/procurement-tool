@@ -30,7 +30,7 @@ vi.mock('@/shared/ui/confirm-dialog', () => ({ confirm: vi.fn(() => Promise.reso
 
 const META: KeyAdminMeta = {
   days: [7, 30, 90], batch_max: 50, max_keys: 5,
-  states: [{ value: 1, label: 'Chờ nhận' }, { value: 2, label: 'Đang dùng' }, { value: 3, label: 'Hết hạn' }, { value: 4, label: 'Đã thu hồi' }],
+  states: [{ value: 1, label: 'Chờ nhận' }, { value: 2, label: 'Đang dùng' }, { value: 3, label: 'Hết hạn' }, { value: 4, label: 'Đã thu hồi' }, { value: 5, label: 'Đang tắt' }],
   can_read: true, can_create: true, can_delete: true,
 }
 
@@ -43,9 +43,17 @@ function key(id: number, state: number, owner: string): AdminMcpKey {
 }
 
 function mockServer(meta: KeyAdminMeta, keys: AdminMcpKey[]) {
-  apiGet.mockImplementation((url: string) => {
+  apiGet.mockImplementation((url: string, config?: { params?: { client?: string } }) => {
     if (url.endsWith('/mcp-key-admin/meta')) return Promise.resolve(meta)
     if (url.endsWith('/mcp-key-admin/keys')) return Promise.resolve({ total: keys.length, page: 1, size: 20, has_more: false, items: keys })
+    if (url.endsWith('/mcp-setup') && config?.params?.client) {
+      return Promise.resolve({ client: 'cursor', label: 'Cursor', supported: true, auth: 'key', format: 'json',
+        snippet: '{"key":"<KHÓA_CỦA_BẠN>"}', steps: ['Mở Cursor'], endpoint: 'https://erp.test/api/mcp', placeholder: '<KHÓA_CỦA_BẠN>' })
+    }
+    if (url.endsWith('/mcp-setup')) {
+      return Promise.resolve({ endpoint: 'https://erp.test/api/mcp', placeholder: '<KHÓA_CỦA_BẠN>',
+        clients: [{ client: 'cursor', label: 'Cursor', supported: true, auth: 'key' }] })
+    }
     return Promise.resolve({ items: [] })
   })
 }
@@ -81,6 +89,29 @@ describe('KeyAdminPage', () => {
     await waitFor(() =>
       expect(apiPost).toHaveBeenCalledWith('/api/agent-hub/mcp-key-admin/revoke', { key_ids: [1, 3] }),
     )
+  })
+
+  it('counts a switched-off key as live for revoking (tắt khác thu hồi)', async () => {
+    mockServer(META, [key(5, 5, 'Đào'), key(2, 4, 'Bình')])
+    apiPost.mockResolvedValue({ revoked: 1 })
+    renderPage()
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Chọn khóa Khóa 5 của Đào/ }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /Chọn khóa Khóa 2 của Bình/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Thu hồi \(1\)/ }))
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/api/agent-hub/mcp-key-admin/revoke', { key_ids: [5] }))
+  })
+
+  it('shows the connection guide with the key placeholder only, and copies the public guide link', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    mockServer(META, [key(1, 2, 'An')])
+    renderPage()
+    //  Cột phải (màn rộng) + nút mở hộp cùng nội dung (màn hẹp) — cả hai cùng có nhãn này.
+    expect(await screen.findByRole('button', { name: 'Hướng dẫn kết nối' })).toBeInTheDocument()
+    expect(await screen.findByText('{"key":"<KHÓA_CỦA_BẠN>"}')).toBeInTheDocument()
+    expect(apiGet.mock.calls.some(([u]) => String(u).includes('/reveal') || String(u).endsWith('/mcp-keys'))).toBe(false)
+    await userEvent.click(screen.getByRole('button', { name: 'Sao chép link hướng dẫn' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/connect-ai`))
   })
 
   it('offers no revoke button when only dead keys are ticked', async () => {

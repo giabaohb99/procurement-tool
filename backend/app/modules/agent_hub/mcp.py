@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 
-from . import draft_create, mcp_keys, mcp_log
+from . import draft_create, mcp_admin, mcp_keys, mcp_log
 
 log = logging.getLogger("app.agent_hub.mcp")
 
@@ -74,10 +74,11 @@ DOWNLOAD_TTL_SEC = 15 * 60
 CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
     "description": ("Tạo thật phiếu từ bản nháp do tool draft_* trả về (leave = đơn nghỉ phép, survey = yêu cầu báo giá, "
-                    "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ). CHỈ gọi sau khi người dùng đã xem bản nháp và "
-                    "đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase)."),
+                    "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ; skill / skill_publish / skill_access / key_issue / "
+                    "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*). CHỈ gọi sau khi người "
+                    "dùng đã xem bản nháp và đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase)."),
     "inputSchema": {"type": "object", "properties": {
-        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket"]},
+        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
 }
@@ -92,13 +93,19 @@ SKILL_TOOL_DEFS = [
          "skill_set": {"type": "string", "maxLength": 150, "description": "Lọc theo tên bộ skill."}}}},
     {"name": "read_skill",
      "description": ("Đọc nội dung một skill (bản đã xuất bản) theo đúng `name` từ list_skills, kèm danh sách tệp đính kèm. "
-                     "Làm theo hướng dẫn trong skill; không đọc lại nguyên văn cho người dùng."),
-     "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160}},
+                     "Dùng nội dung để trả lời và làm việc cho người dùng (được tóm tắt, trích ý, áp dụng); chỉ không chép "
+                     "nguyên văn cả bài ra ngoài. Nội dung dài trả theo trang ~10k ký tự: có next_offset thì gọi lại với "
+                     "offset đó để đọc tiếp. Skill có files thì đọc chi tiết bằng read_skill_file."),
+     "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160},
+                                                      "offset": {"type": "integer", "minimum": 0,
+                                                                 "description": "Vị trí ký tự bắt đầu (mặc định 0)."}},
                      "required": ["name"]}},
     {"name": "read_skill_file",
-     "description": "Đọc một tệp đính kèm dạng chữ của skill (đường dẫn lấy từ read_skill, vd references/cot-bao-cao.md).",
+     "description": ("Đọc một tệp đính kèm dạng chữ của skill (đường dẫn lấy từ read_skill, vd references/cot-bao-cao.md). "
+                     "Tệp dài trả theo trang: có next_offset thì gọi lại với offset đó."),
      "inputSchema": {"type": "object", "properties": {"name": {"type": "string", "maxLength": 160},
-                                                      "path": {"type": "string", "maxLength": 200}},
+                                                      "path": {"type": "string", "maxLength": 200},
+                                                      "offset": {"type": "integer", "minimum": 0}},
                      "required": ["name", "path"]}},
 ]
 SKILL_TOOLS = frozenset(d["name"] for d in SKILL_TOOL_DEFS)
@@ -140,6 +147,7 @@ def list_tools(db: Session, user, scope: int) -> list[dict]:
             continue
         out.append({"name": d.name, "description": d.description, "inputSchema": d.parameters})
     if scope == mcp_keys.SCOPE_WRITE:
+        out += mcp_admin.list_defs(db, user, scope)          # bao-CR-634: quản trị bằng lời, chỉ ai có quyền mới thấy
         out += [CONFIRM_DRAFT_DEF, REPORT_ISSUE_DEF]
     else:
         out.append(REPORT_ISSUE_DEF)      # báo lỗi thì ai cũng được (M-05)
@@ -160,6 +168,8 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
         return {"denied": True, "error": blocked}
     if name in SKILL_TOOLS:
         return _skill_tool(db, user, name, args or {})
+    if name in mcp_admin.TOOL_NAMES:
+        return mcp_admin.run(db, user, scope, name, args or {})
     if name == "confirm_draft":
         if scope != mcp_keys.SCOPE_WRITE:
             return {"denied": True,
@@ -226,17 +236,28 @@ def _skill_tool(db: Session, user, name: str, args: dict) -> dict:
     skill = str(args.get("name") or "").strip()[:160]
     if not skill:
         return {"error": "Thiếu `name` của skill — lấy từ list_skills."}
+    offset = _offset(args)
     if name == "read_skill":
-        return erp.skill_read(db, user, skill)
+        return erp.skill_read(db, user, skill, offset)
     path = str(args.get("path") or "").strip()[:200]
     if not path:
         return {"error": "Thiếu `path` của tệp — lấy từ danh sách tệp trong read_skill."}
-    return erp.skill_file(db, user, skill, path)
+    return erp.skill_file(db, user, skill, path, offset)
+
+
+def _offset(args: dict) -> int:
+    """ai-CR-228: vị trí đọc tiếp của skill / tệp dài — số không âm, sai kiểu thì đọc từ đầu."""
+    try:
+        return min(max(0, int(args.get("offset") or 0)), 10_000_000)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _confirm_draft(db: Session, user, args: dict) -> dict:
     kind = str(args.get("kind") or "")
     draft = args.get("draft") if isinstance(args.get("draft"), dict) else None
+    if kind in mcp_admin.KIND_TOOL:                      # bao-CR-634: bản nháp quản trị — token + dấu trạng thái
+        return mcp_admin.confirm(db, user, mcp_keys.SCOPE_WRITE, kind, draft)
     if kind not in draft_create.LABELS or draft is None:
         return {"error": "Cần kind (leave/survey/purchase/ticket) và draft là đối tượng do tool draft_* trả về."}
     if kind == "payment":
@@ -329,7 +350,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
                 result = {"error": f"Lỗi khi chạy công cụ: {e}"}
             if name in ROW_BUDGET_TOOLS and isinstance(result, dict):
                 mcp_log.spend_rows(key.id, len(result.get("items") or []) + (1 if result.get("item") else 0))
-        if name in SKILL_TOOLS and isinstance(result, dict) and result.get("skill_id"):
+        skill_tool = name in SKILL_TOOLS or name in mcp_admin.TOOL_NAMES or name == "confirm_draft"
+        if skill_tool and isinstance(result, dict) and result.get("skill_id"):
             trace["skill_id"] = int(result.pop("skill_id") or 0)     # bao-CR-622: nhật ký biết skill nào được đọc
         if trace.pop("budget", False):
             trace.update(status=mcp_log.CallStatus.DENIED, reason=mcp_log.REASON_ROW_BUDGET)
@@ -338,6 +360,7 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         elif isinstance(result, dict) and result.get("error"):
             trace.update(status=mcp_log.CallStatus.ERROR, reason=str(result["error"]))
         text = json.dumps(result, ensure_ascii=False, default=str)
+        trace["result_chars"] = len(text)        # ai-CR-228: kết quả quá dài thì ứng dụng AI có thể bỏ qua — nhật ký ghi lại
         out = {"content": [{"type": "text", "text": text}], "isError": bool(isinstance(result, dict) and result.get("error"))}
         if name in STRUCTURED_TOOLS and isinstance(result, dict) and not out["isError"]:
             out["structuredContent"] = json.loads(text)     # MCP 2025-06-18: bản có cấu trúc, đi kèm bản chữ
@@ -463,7 +486,8 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=client, method=t.get("method", ""),
                                        tool=t.get("tool", ""), status=t.get("status", mcp_log.CallStatus.OK),
                                        reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip,
-                                       skill_id=t.get("skill_id", 0)) for t in traces])
+                                       skill_id=t.get("skill_id", 0), result_chars=t.get("result_chars", 0))
+                       for t in traces])
     if not out:
         return Response(status_code=202)
     payload = out if isinstance(body, list) else out[0]

@@ -175,6 +175,14 @@ export interface AdminMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  kind?: number
+  kind_label?: string
+  /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
+  enabled?: boolean
+  disabled_at?: string | null
+  /** Xem lại được khóa đầy đủ không (false: khóa trước 221, OAuth, chờ nhận, hết hạn, thu hồi). */
+  revealable?: boolean
   owner_label: string
   department_id: number
   department: string
@@ -234,6 +242,8 @@ export interface McpCallFilters {
   key_id?: number
   tool?: string
   status?: number
+  /** `tools` = chỉ lượt gọi công cụ (`tools/call`), ẩn initialize / tools/list / notifications/* (ai-CR-219). */
+  kind?: 'tools'
   page: number
   size: number
 }
@@ -258,6 +268,14 @@ export interface MyMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  kind?: number
+  kind_label?: string
+  /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
+  enabled?: boolean
+  disabled_at?: string | null
+  /** Xem lại được khóa đầy đủ không (false: khóa trước 221, OAuth, chờ nhận, hết hạn, thu hồi). */
+  revealable?: boolean
   key?: string
 }
 
@@ -265,7 +283,11 @@ export interface McpSetupClient {
   client: string
   label: string
   supported: boolean
+  auth?: McpSetupAuth
 }
+
+/** `key` = dán khóa vào cấu hình · `oauth` = ứng dụng tự mở trang ERP xin phép, không cần khóa (ai-CR-218). */
+export type McpSetupAuth = 'key' | 'oauth'
 
 export interface McpSetupList {
   endpoint: string
@@ -277,8 +299,9 @@ export interface McpSetupDetail {
   client: string
   label: string
   supported: boolean
-  /** `json` = đoạn cấu hình dán vào tệp, `shell` = câu lệnh chạy trong cửa sổ dòng lệnh. */
-  format: 'json' | 'shell' | ''
+  /** `json` = đoạn cấu hình dán vào tệp, `shell` = câu lệnh chạy trong cửa sổ dòng lệnh, `url` = chỉ địa chỉ cổng. */
+  format: 'json' | 'shell' | 'url' | ''
+  auth?: McpSetupAuth
   snippet: string
   steps: string[]
   files?: { windows?: string; macos?: string; all?: string }
@@ -337,6 +360,9 @@ export interface AiOverview {
   calls_7d: number
   calls_prev_7d: number
   calls_change_pct: number | null
+  /** Chỉ lượt gọi CÔNG CỤ (`tools/call`) — ai-CR-219; máy chủ cũ chưa có thì thẻ lùi về `calls_7d`. */
+  tool_calls_7d?: number
+  tool_calls_prev_7d?: number
   denied_7d: number
   error_7d: number
   daily: DailyCalls[]
@@ -381,3 +407,27 @@ export type McpSettingsPatch = {
   groups?: Record<string, boolean>
   extra_instructions?: string
 } & { [limitKey: string]: number | string | Record<string, boolean> | undefined }
+
+/**
+ * Ứng dụng AI tự đăng ký OAuth (ai-CR-225, màn bao-CR-635): `GET /api/agent-hub/oauth-clients`. `client_name` là do ứng
+ * dụng TỰ KHAI — không tin; `redirect_hosts` là nơi quay về đã rút về hostname (máy cục bộ ghi «máy tính của bạn»),
+ * `trusted` = mọi host thuộc ứng dụng AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com) hoặc máy cục bộ.
+ */
+export interface OAuthClient {
+  id: number
+  client_id: string
+  client_name: string
+  redirect_hosts: string[]
+  trusted: boolean
+  auth_method: string
+  ip: string
+  created_at: string | null
+  last_used_at: string | null
+  /** Kết nối (mã truy cập) còn sống của ứng dụng — xóa ứng dụng là cắt hết. */
+  live_grants: number
+}
+
+export interface OAuthClientList {
+  items: OAuthClient[]
+  can_delete: boolean
+}

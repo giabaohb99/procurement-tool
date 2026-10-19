@@ -193,6 +193,15 @@ class Settings(BaseSettings):
     # Sau mỗi buổi chat RIÊNG đã tóm tắt, một lượt model rẻ rút điều bền về người đó; nhắc lại ≥ 3 lần trên ≥ 2 ngày mới
     # ghi vào lõi sổ nhớ (đuôi «tự rút»). Tắt thì sổ ý định vẫn ghi, chỉ thôi rút.
     AGENT_AUTO_MEMORY_ENABLED: bool = True
+    # ai-CR-229 (prod đợt hai 19/10: «tắt mọi vòng tốn tiền model»): cờ riêng cho ba vòng chạy nền gọi model. Mặc định BẬT
+    # để dev giữ nguyên; prod đặt false.
+    #   AGENT_BRIEFS_ENABLED          — bản tin / điểm báo theo giờ (agent-briefs-due) + nhắc trước họp (agent-meeting-reminders)
+    #   AGENT_SESSION_SUMMARY_ENABLED — tóm tắt cuối buổi chat vào ghi chú (agent-session-summary; kéo theo tự rút ghi nhớ)
+    #   AGENT_TRIAGE_ENABLED          — gom vé sửa mã / phiếu hỗ trợ giao bot / việc «Trợ lý thiếu chức năng»
+    #                                   (agent-triage-inbox, agent-pull-tickets, agent-learning-tick)
+    AGENT_BRIEFS_ENABLED: bool = True
+    AGENT_SESSION_SUMMARY_ENABLED: bool = True
+    AGENT_TRIAGE_ENABLED: bool = True
     # ai-CR-141: quay lại DB bot qua thẻ duyệt Telegram — đường dẫn TRÊN VPS (máy sửa mã ssh vào chạy).
     # Trống = "$HOME/agent-hub/backend/scripts/agent_restore.sh" và stack "$HOME/agent-hub".
     AGENT_RESTORE_SCRIPT: str = ""

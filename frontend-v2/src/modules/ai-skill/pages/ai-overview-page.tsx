@@ -14,7 +14,7 @@ import { StatCard } from '@/shared/ui/stat-card'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { KeyStateBadge } from '../config/ai-skill-meta'
-import { describeChange, shortDay } from '../utils/overview-format'
+import { computeChangePct, describeChange, shortDay } from '../utils/overview-format'
 import { useAiOverview, useSkillTitles } from '../hooks/use-my-ai'
 import type { AiOverview } from '../types/ai-skill'
 
@@ -58,6 +58,9 @@ export function AiOverviewPage() {
 function OverviewBody({ data, loading }: { data?: AiOverview; loading: boolean }) {
   const titles = useSkillTitles((data?.top_skills ?? []).map((s) => s.skill_id))
   const problems = (data?.denied_7d ?? 0) + (data?.error_7d ?? 0)
+  //  ai-CR-219: thẻ đếm lượt gọi CÔNG CỤ cho khớp bảng «Công cụ dùng nhiều» (calls_7d gồm cả khởi tạo / liệt kê).
+  const toolCalls =
+    data?.tool_calls_7d !== undefined ? { current: data.tool_calls_7d, previous: data.tool_calls_prev_7d ?? 0 } : null
 
   return (
     <div className="space-y-4">
@@ -80,9 +83,15 @@ function OverviewBody({ data, loading }: { data?: AiOverview; loading: boolean }
         />
         <StatCard
           icon={Activity}
-          label="Lượt gọi 7 ngày"
-          value={data?.calls_7d ?? 0}
-          hint={data ? describeChange(data.calls_change_pct, data.calls_prev_7d) : undefined}
+          label={toolCalls ? 'Lượt gọi công cụ 7 ngày' : 'Lượt gọi 7 ngày'}
+          value={toolCalls ? toolCalls.current : (data?.calls_7d ?? 0)}
+          hint={
+            !data
+              ? undefined
+              : toolCalls
+                ? describeChange(computeChangePct(toolCalls.current, toolCalls.previous), toolCalls.previous)
+                : describeChange(data.calls_change_pct, data.calls_prev_7d)
+          }
           loading={loading}
           to={appRoutes.aiSkill.logs}
         />
