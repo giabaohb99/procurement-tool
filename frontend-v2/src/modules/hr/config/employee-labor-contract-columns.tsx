@@ -82,8 +82,8 @@ export function buildEmployeeLaborContractColumns(
     {
       key: 'actions',
       header: 'Thao tác',
-      //  Đủ 7 nút của HĐ nháp đã sinh tệp (sửa · sinh · tải · tải bản ký · ký · hủy · xóa) trên một dòng.
-      width: 270,
+      //  MỘT nút «Thao tác ▾» mở menu icon + chữ (duoc-CR-633) — không còn dãy 7-8 icon trơn.
+      width: 130,
       hideable: false,
       stickyRight: true,
       cell: (r) => (

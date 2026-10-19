@@ -24,51 +24,63 @@ function renderActions(row = makeLaborContract(), busy = false) {
   return h
 }
 
+const trigger = () => screen.getByRole('button', { name: /Thao tác với hợp đồng/ })
+
+/** Mở menu «Thao tác ▾» rồi trả về CHỮ của các mục (theo đúng thứ tự hiện). */
+async function openMenu() {
+  await userEvent.click(trigger())
+  return (await screen.findAllByRole('menuitem')).map((m) => m.textContent)
+}
+
+//  duoc-CR-633: thao tác là MỘT nút «Thao tác ▾» mở menu icon + chữ, chia nhóm Xem / Soạn / Trạng thái, Xóa cuối.
 describe('LaborContractRowActions theo cờ backend', () => {
-  it('DRAFT: có Sửa / Sinh tệp / Ký / Hủy / Xóa; chưa có tệp sinh thì KHÔNG có nút tải .docx', () => {
+  it('DRAFT: menu có Sửa / Sinh tệp / Tải lên bản ký / Ký / Hủy / Xóa; chưa có tệp sinh thì KHÔNG có tải .docx', async () => {
     renderActions()
-    expect(screen.getByLabelText('Sửa hợp đồng')).toBeInTheDocument()
-    expect(screen.getByLabelText('Sinh tệp hợp đồng')).toBeInTheDocument()
-    expect(screen.getByLabelText('Đánh dấu đã ký')).toBeInTheDocument()
-    expect(screen.getByLabelText('Hủy hợp đồng')).toBeInTheDocument()
-    expect(screen.getByLabelText('Xóa hợp đồng')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Tải hợp đồng (.docx)')).not.toBeInTheDocument()
+    expect(await openMenu()).toEqual([
+      'Sửa hợp đồng', 'Sinh tệp hợp đồng', 'Tải lên bản đã ký', 'Đánh dấu đã ký', 'Hủy hợp đồng', 'Xóa hợp đồng',
+    ])
   })
 
-  it('SIGNED: không có Sửa / Sinh / Xóa; có Chấm dứt', () => {
+  it('menu chia nhóm có tiêu đề Soạn / Trạng thái; Xóa đứng cuối, tô đỏ', async () => {
+    renderActions()
+    await openMenu()
+    expect(screen.getByText('Soạn')).toBeInTheDocument()
+    expect(screen.getByText('Trạng thái')).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Xóa hợp đồng' })).toHaveAttribute('data-variant', 'destructive')
+  })
+
+  it('SIGNED: không có Sửa / Sinh / Xóa; có Xem bản ký, Thay bản ký, Chấm dứt', async () => {
     renderActions(
       makeLaborContract({
         status: 2, effective_status: 2, can_edit: false, can_generate: false, can_delete: false,
         transitions: [4], has_signed_file: true,
       }),
     )
-    expect(screen.queryByLabelText('Sửa hợp đồng')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Sinh tệp hợp đồng')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Xóa hợp đồng')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Chấm dứt / thanh lý')).toBeInTheDocument()
-    expect(screen.getByLabelText('Xem bản đã ký')).toBeInTheDocument()
-    expect(screen.getByLabelText('Thay bản đã ký')).toBeInTheDocument()
+    const items = await openMenu()
+    expect(items).toEqual(['Xem bản đã ký', 'Thay bản đã ký', 'Chấm dứt / thanh lý'])
   })
 
-  it('tải .docx chỉ hiện khi can_print (đã có tệp VÀ có quyền in), dù has_generated_file = true', () => {
+  it('tải .docx chỉ hiện khi can_print, dù has_generated_file = true', async () => {
     renderActions(makeLaborContract({ has_generated_file: true, can_print: false }))
-    expect(screen.queryByLabelText('Tải hợp đồng (.docx)')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Sinh lại tệp')).toBeInTheDocument()
+    const items = await openMenu()
+    expect(items).not.toContain('Tải hợp đồng (.docx)')
+    expect(items).toContain('Sinh lại tệp')
   })
 
-  it('can_print = true: bấm tải gọi đúng dòng', async () => {
+  it('can_print = true: chọn tải gọi đúng dòng', async () => {
     const row = makeLaborContract({ has_generated_file: true, can_print: true })
     const h = renderActions(row)
-    await userEvent.click(screen.getByLabelText('Tải hợp đồng (.docx)'))
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Tải hợp đồng (.docx)' }))
     expect(h.onDownloadDocument).toHaveBeenCalledWith(row)
   })
 
-  it('mã trạng thái đích lạ trong transitions bị bỏ qua, không vỡ giao diện', () => {
+  it('mã trạng thái đích lạ trong transitions bị bỏ qua, không vỡ giao diện', async () => {
     renderActions(makeLaborContract({ transitions: [999, 5] }))
-    expect(screen.getAllByRole('button').some((b) => b.getAttribute('aria-label') === 'Hủy hợp đồng')).toBe(true)
+    expect(await openMenu()).toContain('Hủy hợp đồng')
   })
 
-  it('không cờ nào bật + không bước chuyển -> không có nút nào', () => {
+  it('không cờ nào bật + không bước chuyển -> không dựng nút nào', () => {
     renderActions(
       makeLaborContract({
         can_edit: false, can_delete: false, can_generate: false, can_print: false,
@@ -78,23 +90,36 @@ describe('LaborContractRowActions theo cờ backend', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 
-  it('đang bận thì khóa mọi nút', () => {
+  it('đang bận thì khóa nút Thao tác', () => {
     renderActions(makeLaborContract(), true)
-    for (const b of screen.getAllByRole('button')) expect(b).toBeDisabled()
+    expect(trigger()).toBeDisabled()
   })
 
-  it('mọi nút là type="button" (tab nằm trong <form> hồ sơ)', () => {
+  it('nút Thao tác là type="button" (tab nằm trong <form> hồ sơ)', () => {
     renderActions(makeLaborContract({ has_signed_file: true, has_generated_file: true, can_print: true }))
-    for (const b of screen.getAllByRole('button')) expect(b).toHaveAttribute('type', 'button')
+    expect(trigger()).toHaveAttribute('type', 'button')
   })
 
-  it('bấm Ký / Hủy đưa đúng mô tả bước chuyển lên', async () => {
+  it('chọn Ký / Hủy đưa đúng mô tả bước chuyển lên', async () => {
     const row = makeLaborContract()
     const h = renderActions(row)
-    await userEvent.click(screen.getByLabelText('Đánh dấu đã ký'))
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Đánh dấu đã ký' }))
     expect(h.onTransition).toHaveBeenCalledWith(row, expect.objectContaining({ toStatus: 2 }))
-    await userEvent.click(screen.getByLabelText('Hủy hợp đồng'))
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Hủy hợp đồng' }))
     expect(h.onTransition).toHaveBeenLastCalledWith(row, expect.objectContaining({ toStatus: 5 }))
+  })
+
+  it('chọn Sửa / Xóa gọi đúng callback với đúng dòng', async () => {
+    const row = makeLaborContract()
+    const h = renderActions(row)
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Sửa hợp đồng' }))
+    expect(h.onEdit).toHaveBeenCalledWith(row)
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Xóa hợp đồng' }))
+    expect(h.onDelete).toHaveBeenCalledWith(row)
   })
 })
 
@@ -121,26 +146,35 @@ describe('chọn bản đã ký', () => {
     fireEvent.change(input(), { target: { files: [] } })
     expect(h.onUploadSigned).not.toHaveBeenCalled()
   })
+
+  it('mục «Tải lên bản đã ký» mở hộp chọn tệp', async () => {
+    renderActions()
+    const click = vi.spyOn(input(), 'click')
+    await openMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Tải lên bản đã ký' }))
+    expect(click).toHaveBeenCalled()
+  })
 })
 
-describe('Nút «Mở bản lưu trữ ở Văn bản» (duoc-CR-629)', () => {
+describe('Mục «Mở bản lưu trữ ở Văn bản» (duoc-CR-629)', () => {
   const label = 'Mở bản lưu trữ ở Văn bản'
 
-  it('can_open_document + document_id>0: có nút, mở tab mới tới đúng văn bản', async () => {
+  it('can_open_document + document_id>0: có mục, mở tab mới tới đúng văn bản', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     renderActions(makeLaborContract({ can_open_document: true, document_id: 12 }))
-    await userEvent.click(screen.getByLabelText(label))
+    expect((await openMenu())[0]).toBe(label)
+    await userEvent.click(screen.getByRole('menuitem', { name: label }))
     expect(open).toHaveBeenCalledWith(expect.stringContaining('/12'), '_blank', 'noopener')
     open.mockRestore()
   })
 
-  it('không có quyền mở: không có nút', () => {
+  it('không có quyền mở: không có mục', async () => {
     renderActions(makeLaborContract({ can_open_document: false, document_id: 12 }))
-    expect(screen.queryByLabelText(label)).not.toBeInTheDocument()
+    expect(await openMenu()).not.toContain(label)
   })
 
-  it('document_id = 0: không có nút dù có quyền', () => {
+  it('document_id = 0: không có mục dù có quyền', async () => {
     renderActions(makeLaborContract({ can_open_document: true, document_id: 0 }))
-    expect(screen.queryByLabelText(label)).not.toBeInTheDocument()
+    expect(await openMenu()).not.toContain(label)
   })
 })
