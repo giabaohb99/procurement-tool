@@ -94,7 +94,7 @@ thái rỗng) và bài canh menu phân hệ cập nhật thêm mục mới.
 Mã nguồn: `frontend-v2/src/modules/ai-skill/pages/oauth-clients-page.tsx` (mới) và bài kiểm đi kèm, `routes.tsx`,
 `routes.test.ts`, `hooks/use-ai-usage.ts`, `api/ai-skill-api.ts`, `types/ai-skill.ts`, `shared/constants/app-routes.ts`,
 `shared/constants/query-keys.ts`.
-Commit: chưa, chờ đại ca gật. Deploy: dev chưa.
+Commit: f82f868a trên erp-v2 (đại ca gật 19/10). Deploy: dev chờ Agent 1 dựng lại erp.
 
 ---
 
