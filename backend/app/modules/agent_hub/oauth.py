@@ -49,6 +49,14 @@ AUTH_METHODS = ("none", "client_secret_post", "client_secret_basic")
 GRANT_TYPES = ("authorization_code", "refresh_token")
 _BAD_SCHEMES = frozenset({"javascript", "data", "file", "vbscript", "about", "blob"})
 _LOOPBACK = frozenset({"localhost", "127.0.0.1", "[::1]", "::1"})
+#  ai-CR-225 (Agent 1 rà 19/10, mục 3 consent-phishing): địa chỉ quay về của các ứng dụng AI quen — khác thì màn đồng ý
+#  cảnh báo đỏ. So theo HOSTNAME (đuôi tên miền), không theo netloc: `https://chatgpt.com@evil.example/cb` có hostname
+#  evil.example (phần trước @ là userinfo) — netloc in ra «chatgpt.com@evil.example» lừa được người đọc lướt.
+KNOWN_REDIRECT_HOSTS = ("chatgpt.com", "openai.com", "claude.ai", "anthropic.com", "claude.com")
+#  Mục 4: bảng ứng dụng / mã cấp quyền không phình vô hạn.
+CODE_KEEP_DAYS = 1                  # mã cấp quyền hết hạn quá 1 ngày → xóa
+UNUSED_CLIENT_DAYS = 7              # ứng dụng đăng ký mà 7 ngày không kết nối được ai (không có kết nối sống) → xóa
+REGISTER_PER_DAY = 200              # trần đăng ký toàn hệ / 24 giờ (thêm cho trần mỗi IP ở controller)
 _VERIFIER_RX = re.compile(r"^[A-Za-z0-9\-._~]{43,128}$")
 
 
@@ -122,10 +130,16 @@ def protected_resource_metadata(base: str) -> dict:
 def _valid_redirect(uri) -> bool:
     if not isinstance(uri, str) or not uri or len(uri) > URI_MAX_LEN or "#" in uri:
         return False
-    parts = urlsplit(uri)
+    try:
+        parts = urlsplit(uri)
+        parts.port                  # cổng sai dạng → ValueError
+    except ValueError:
+        return False
     scheme = (parts.scheme or "").lower()
     if not scheme or scheme in _BAD_SCHEMES:
         return False
+    if "@" in (parts.netloc or ""):
+        return False                # ai-CR-225: userinfo trong địa chỉ quay về chỉ để giả tên miền
     if scheme == "https":
         return bool(parts.netloc)
     if scheme == "http":
@@ -143,6 +157,9 @@ def register(db: Session, payload: dict, ip: str = "") -> dict:
     if bad:
         raise OAuthError("invalid_redirect_uri", "redirect_uri không hợp lệ (https, http cục bộ, hoặc lược đồ riêng; "
                                                  "không có #): " + ", ".join(str(b)[:80] for b in bad[:3]))
+    since = datetime.now() - timedelta(days=1)
+    if db.query(AgentOAuthClient.id).filter(AgentOAuthClient.created_at >= since).count() >= REGISTER_PER_DAY:
+        raise OAuthError("temporarily_unavailable", "Hôm nay đã quá nhiều ứng dụng đăng ký — thử lại sau.", 429)
     method = str(payload.get("token_endpoint_auth_method") or "none")
     if method not in AUTH_METHODS:
         raise OAuthError("invalid_client_metadata", f"token_endpoint_auth_method chỉ nhận: {', '.join(AUTH_METHODS)}.")
@@ -274,9 +291,76 @@ def describe_request(db: Session, token: str) -> dict:
     client = client_by_id(db, req["c"])
     if client is None:
         raise OAuthError("invalid_client", "Ứng dụng không còn đăng ký.")
-    return {"client_name": client.client_name, "redirect_host": urlsplit(req["r"]).netloc or urlsplit(req["r"]).scheme,
+    host, trusted = redirect_target(req["r"])
+    return {"client_name": client.client_name, "redirect_host": host, "redirect_trusted": trusted,
             "requested_scope": int(req.get("w") or 0), "grant_days": GRANT_DAYS,
             "scopes": [{"value": k, "label": v} for k, v in mcp_keys.SCOPE_LABELS.items()]}
+
+
+def redirect_target(uri: str) -> tuple[str, bool]:
+    """(nhãn nơi quay về để hiện cho người dùng, có thuộc ứng dụng AI quen không). Nhãn là HOSTNAME — không userinfo, không
+    cổng; máy cục bộ ghi rõ; lược đồ riêng (ứng dụng cài máy, vd cursor://) ghi tên lược đồ."""
+    parts = urlsplit(uri or "")
+    host = (parts.hostname or "").lower()
+    scheme = (parts.scheme or "").lower()
+    if host in _LOOPBACK:
+        return f"máy tính của bạn ({host})", True
+    if scheme not in ("http", "https"):
+        return f"ứng dụng cài trên máy ({scheme}://)", False
+    trusted = any(host == h or host.endswith("." + h) for h in KNOWN_REDIRECT_HOSTS)
+    return host or "(không rõ)", trusted
+
+
+def purge(db: Session, now: datetime | None = None) -> dict:
+    """ai-CR-225 (mục 4): xóa mã cấp quyền hết hạn quá CODE_KEEP_DAYS ngày và ứng dụng đăng ký mà UNUSED_CLIENT_DAYS ngày
+    không có kết nối nào còn sống (chưa ai cho phép, hoặc mọi kết nối đã thu hồi / hết hạn)."""
+    now = now or datetime.now()
+    codes = db.query(AgentOAuthCode).filter(AgentOAuthCode.expires_at < now - timedelta(days=CODE_KEEP_DAYS)) \
+        .delete(synchronize_session=False)
+    cutoff = now - timedelta(days=UNUSED_CLIENT_DAYS)
+    live = {cid for (cid,) in db.query(AgentMcpKey.oauth_client_id).filter(
+        AgentMcpKey.kind == mcp_keys.KIND_OAUTH, AgentMcpKey.revoked_at.is_(None),
+        (AgentMcpKey.expires_at.is_(None)) | (AgentMcpKey.expires_at > now))}
+    stale = [c for c in db.query(AgentOAuthClient).filter(AgentOAuthClient.created_at < cutoff)
+             if c.id not in live and (c.last_used_at is None or c.last_used_at < cutoff)]
+    for c in stale:
+        db.query(AgentOAuthCode).filter(AgentOAuthCode.client_pk == c.id).delete(synchronize_session=False)
+        db.delete(c)
+    db.commit()
+    return {"oauth_codes_deleted": int(codes or 0), "oauth_clients_deleted": len(stale)}
+
+
+def list_clients(db: Session, now: datetime | None = None) -> list[dict]:
+    """Màn quản trị ứng dụng OAuth: mọi ứng dụng đã đăng ký + số kết nối còn sống."""
+    now = now or datetime.now()
+    counts: dict[int, int] = {}
+    for (cid,) in db.query(AgentMcpKey.oauth_client_id).filter(
+            AgentMcpKey.kind == mcp_keys.KIND_OAUTH, AgentMcpKey.revoked_at.is_(None),
+            (AgentMcpKey.expires_at.is_(None)) | (AgentMcpKey.expires_at > now)):
+        counts[int(cid)] = counts.get(int(cid), 0) + 1
+    iso = lambda d: d.isoformat(timespec="seconds") if d else None  # noqa: E731
+    out = []
+    for c in db.query(AgentOAuthClient).order_by(AgentOAuthClient.id.desc()).limit(500):
+        hosts = [redirect_target(u) for u in (c.redirect_uris or [])]
+        out.append({"id": c.id, "client_id": c.client_id, "client_name": c.client_name,
+                    "redirect_hosts": sorted({h for h, _t in hosts}), "trusted": bool(hosts) and all(t for _h, t in hosts),
+                    "auth_method": c.token_endpoint_auth_method, "ip": c.ip, "created_at": iso(c.created_at),
+                    "last_used_at": iso(c.last_used_at), "live_grants": counts.get(int(c.id), 0)})
+    return out
+
+
+def delete_client(db: Session, client_pk: int, by_user_id: int = 0) -> int | None:
+    """Xóa một ứng dụng: thu hồi mọi kết nối của nó (mã truy cập + làm mới chết ngay), xóa mã cấp quyền. None = không có."""
+    client = db.get(AgentOAuthClient, int(client_pk))
+    if client is None:
+        return None
+    grants = list(db.scalars(select(AgentMcpKey).where(AgentMcpKey.kind == mcp_keys.KIND_OAUTH,
+                                                       AgentMcpKey.oauth_client_id == client.id)))
+    n = mcp_keys.revoke_rows(db, grants, by_user_id)
+    db.query(AgentOAuthCode).filter(AgentOAuthCode.client_pk == client.id).delete(synchronize_session=False)
+    db.delete(client)
+    db.commit()
+    return n
 
 
 def approve(db: Session, user, token: str, scope: int, base: str, now: datetime | None = None) -> str:

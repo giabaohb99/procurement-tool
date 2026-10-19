@@ -18,6 +18,8 @@ const SCOPE_WRITE = 1
 interface ConsentRequest {
   client_name: string
   redirect_host: string
+  /** ai-CR-225: nơi quay về thuộc ứng dụng AI quen (chatgpt.com, claude.ai…) hoặc máy của chính người dùng. */
+  redirect_trusted: boolean
   requested_scope: number
   grant_days: number
   user_label: string
@@ -87,8 +89,11 @@ export function OAuthConsentPage() {
           </CardTitle>
           {info && !framed && (
             <CardDescription>
-              <span className="font-semibold text-foreground">{info.client_name}</span> xin kết nối với tài khoản ERP
-              của <span className="font-semibold text-foreground">{info.user_label}</span>.
+              {/* ai-CR-225: tên ứng dụng do chính nó TỰ KHAI — nơi quay về (máy chủ cấp quyền đã tách hostname) mới là
+                  bằng chứng, nên đứng ngay cạnh tên, cùng cỡ chữ. */}
+              <span className="font-semibold text-foreground">{info.client_name}</span>{' '}
+              (<span className="font-semibold text-foreground">{info.redirect_host}</span>) xin kết nối với tài khoản
+              ERP của <span className="font-semibold text-foreground">{info.user_label}</span>.
             </CardDescription>
           )}
         </CardHeader>
@@ -105,6 +110,11 @@ export function OAuthConsentPage() {
           {query.isError && <ErrorBox message={extractErrorMessage(query.error)} />}
           {info && !framed && (
             <>
+              {!info.redirect_trusted && (
+                <ErrorBox
+                  message={`Nơi quay về «${info.redirect_host}» không thuộc ứng dụng AI quen (ChatGPT, Claude). Chỉ bấm Cho phép nếu chính bạn vừa thêm kết nối này trong ứng dụng đó — không thì bấm Từ chối.`}
+                />
+              )}
               <p className="text-sm text-muted-foreground">
                 Ứng dụng sẽ gọi các công cụ ERP dưới đúng quyền của bạn: chỉ thấy dữ liệu bạn được xem, mọi lượt gọi
                 được ghi nhật ký.

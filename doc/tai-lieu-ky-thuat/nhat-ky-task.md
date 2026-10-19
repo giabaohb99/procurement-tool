@@ -13569,6 +13569,20 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-225 | Màn cho phép kết nối AI chống bị lừa và tự dọn ứng dụng đăng ký bỏ không
+- status: dang-lam
+- date: 2026-10-19
+Làm tiếp hai việc Agent 1 xếp sau bài rà phần nối ChatGPT. Thứ nhất, tên ứng dụng hiện trên màn Cho phép là do ứng dụng tự
+khai nên kẻ xấu có thể đặt tên ChatGPT; nay màn hiện ngay cạnh tên địa chỉ thật mà trình duyệt sẽ quay về, địa chỉ lạ thì có
+cảnh báo đỏ dặn chỉ bấm khi chính mình vừa thêm kết nối, và các địa chỉ giả dạng có ký tự @ bị từ chối ngay lúc đăng ký.
+Quản trị có thêm đường xem và xóa các ứng dụng đã đăng ký, xóa là các kết nối của ứng dụng đó mất hiệu lực ngay. Thứ hai,
+hệ thống tự dọn mã cấp quyền đã hết hạn và ứng dụng đăng ký mà bảy ngày không có ai kết nối, đồng thời siết số lần đăng ký
+để bảng không phình. Bài kiểm đều đạt.
+
+Mã nguồn: agent_hub/oauth.py, agent_hub/oauth_controller.py, agent_hub/controller.py, agent_hub/tasks.py,
+frontend-v2 app/pages/oauth-consent-page.tsx
+Bài kiểm: test_agent_hub_oauth_chong_lua_don_cr225.py, oauth-consent-page.test.tsx
+
 ## ai-CR-224 | Lạc Lạc nhớ cuộc trò chuyện trong sáu giờ và đọc lại được tệp đã gửi
 - status: dang-lam
 - date: 2026-10-19

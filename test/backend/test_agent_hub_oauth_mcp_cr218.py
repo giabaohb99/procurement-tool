@@ -198,6 +198,7 @@ def test_dang_ky_tu_choi_redirect_nguy_hiem(client):
     for uris in (["http://ke-gian.example/cb"], ["javascript:alert(1)"], ["https://a.vn/cb#frag"], [], ["x"] * 11):
         res = client.post("/api/oauth/register", json={"client_name": "X", "redirect_uris": uris})
         assert res.status_code == 400, uris
+    mcp_log._mem.clear()        # ai-CR-225: trần đăng ký 5 lượt / phút / IP — năm lượt hỏng ở trên đã ăn hết phút này
     ok = client.post("/api/oauth/register", json={"redirect_uris": ["http://127.0.0.1:33418/cb", "cursor://anysphere/cb"]})
     assert ok.status_code == 201 and ok.json()["token_endpoint_auth_method"] == "none" and "client_secret" not in ok.json()
 

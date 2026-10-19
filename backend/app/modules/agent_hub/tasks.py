@@ -876,11 +876,13 @@ def group_purge_task() -> dict:
 def mcp_log_purge_task() -> dict:
     """ai-CR-209: nhật ký cổng MCP quá AGENT_MCP_LOG_RETENTION_DAYS ngày → gom vào bảng đếm theo ngày rồi xóa. Không gác
     `_off()`: cổng MCP chạy cả khi bot Telegram tắt."""
-    from . import mcp_log
+    from . import mcp_log, oauth
 
     db = SessionLocal()
     try:
-        return {"status": "success", **mcp_log.purge(db)}
+        out = {"status": "success", **mcp_log.purge(db)}
+        out.update(oauth.purge(db))         # ai-CR-225: mã cấp quyền hết hạn + ứng dụng OAuth bỏ không
+        return out
     finally:
         db.close()
 

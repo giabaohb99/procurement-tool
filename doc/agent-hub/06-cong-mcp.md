@@ -107,8 +107,19 @@ công cụ chạy trên trình duyệt (vd MCP Inspector) — ChatGPT / claude.a
   qua; lần hỏng (sai PKCE, sai redirect) cũng đốt mã.
 - Chuỗi ký yêu cầu có `exp` lạ → coi như hỏng (không 500). Nghỉ việc (`revoke_user_access`) xóa trắng `raw_view`,
   `raw_sealed`, `refresh_hash` như `mcp_keys.revoke_rows`.
-- Còn lại cho đợt trước prod hai (Agent 1 xếp NÊN): màn đồng ý dùng hostname + cảnh báo host lạ, màn quản trị ứng dụng
-  OAuth; dọn `tab_agent_oauth_code` / ứng dụng không dùng + hạ trần đăng ký; audit `key/reveal` ngoài nhật ký cổng.
+- Còn lại (Agent 1 xếp NÊN): audit `key/reveal` ngoài nhật ký cổng. Hai mục kia xong ở ai-CR-225 (dưới).
+
+**ai-CR-225 (19/10) — chống lừa ở màn đồng ý + dọn bảng:**
+- Nơi quay về tính theo HOSTNAME (`oauth.redirect_target`): bỏ userinfo + cổng, `https://chatgpt.com@evil.example/cb` hiện
+  `evil.example`; máy cục bộ ghi *máy tính của bạn*, lược đồ riêng ghi *ứng dụng cài trên máy (x://)*. `redirect_trusted`
+  = đuôi tên miền thuộc `KNOWN_REDIRECT_HOSTS` (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com) hoặc máy cục
+  bộ. Màn đồng ý đưa host lên ngay cạnh tên ứng dụng (tên là TỰ KHAI), host lạ → hộp cảnh báo đỏ. Đăng ký redirect_uri có
+  userinfo (`@`) hoặc cổng sai dạng → `invalid_redirect_uri`.
+- Màn quản trị ứng dụng OAuth: `GET /api/agent-hub/oauth-clients` (`agent_group.read`) → `{items: [{id, client_id,
+  client_name, redirect_hosts, trusted, auth_method, ip, created_at, last_used_at, live_grants}], can_delete}`;
+  `DELETE /api/agent-hub/oauth-clients/{id}` (`agent_group.write`) thu hồi mọi kết nối của ứng dụng + xóa mã cấp quyền.
+- Dọn (`oauth.purge`, chạy chung tác vụ `agent.mcp_log_purge`): mã cấp quyền hết hạn quá 1 ngày; ứng dụng tạo quá 7 ngày mà
+  không có kết nối sống và 7 ngày không dùng. Trần đăng ký 30 → **5 / phút / IP** + **200 / 24 giờ toàn hệ** (429).
 
 **Checklist lên môi trường mới / thêm pháp nhân:** khai `AGENT_ERP_URL` = gốc công khai (cả ERP lẫn dịch vụ AI); chạy
 migration `mcpoauth01` + `mcpkey03` (ERP) và `agent0013` + `agent0014` (agent_hub); pháp nhân tạo sau lần gieo bộ «Cẩm nang
@@ -288,7 +299,7 @@ chặn) · `log_retention_days` 30–730. Mã nhóm ở §4.
 
 | Đường | Vào | `data` |
 |---|---|---|
-| `GET /api/agent-hub/oauth/request/{req}` | — | `{client_name, redirect_host, requested_scope, grant_days: 90, scopes: [{value, label}], user_label}`; chuỗi ký sai / hết hạn → 400 |
+| `GET /api/agent-hub/oauth/request/{req}` | — | `{client_name, redirect_host, redirect_trusted, requested_scope, grant_days: 90, scopes: [{value, label}], user_label}` (`redirect_host` = hostname, ai-CR-225); chuỗi ký sai / hết hạn → 400 |
 | `POST /api/agent-hub/oauth/approve` | `{req, scope: 0\|1}` | `{redirect_to}` — trình duyệt chuyển thẳng tới đó |
 | `POST /api/agent-hub/oauth/deny` | `{req}` | `{redirect_to}` (kèm `error=access_denied`) |
 

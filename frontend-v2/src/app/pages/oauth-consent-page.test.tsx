@@ -29,6 +29,7 @@ vi.mock('./oauth-consent-redirect', () => ({ goTo: (url: string) => goTo(url), i
 const INFO = {
   client_name: 'ChatGPT',
   redirect_host: 'chatgpt.com',
+  redirect_trusted: true,
   requested_scope: 0,
   grant_days: 90,
   user_label: 'Người YC (TESTREQ)',
@@ -62,7 +63,7 @@ describe('OAuthConsentPage', () => {
     expect(screen.getByText('Người YC (TESTREQ)')).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /Chỉ đọc/ })).toBeChecked()
     expect(screen.getByRole('radio', { name: /Được ghi/ })).not.toBeChecked()
-    expect(screen.getByText(/chatgpt\.com/)).toBeInTheDocument()
+    expect(screen.getAllByText(/chatgpt\.com/).length).toBeGreaterThan(0)   // tiêu đề + dòng «quay về»
     expect(apiGet).toHaveBeenCalledWith('/api/agent-hub/oauth/request/abc.sig', expect.anything())
   })
 
@@ -114,6 +115,23 @@ describe('OAuthConsentPage', () => {
     expect(apiGet).not.toHaveBeenCalled()
     expect(screen.queryByRole('button', { name: /Cho phép/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Từ chối' })).toBeNull()
+  })
+
+  //  ai-CR-225 (Agent 1 rà 19/10, consent-phishing): tên ứng dụng là TỰ KHAI — kẻ xấu đăng ký «ChatGPT» với địa chỉ quay
+  //  về của họ. Nơi quay về phải đứng cạnh tên, và lạ thì cảnh báo đỏ.
+  it('puts the return host next to the app name and warns loudly when it is not a known AI app', async () => {
+    apiGet.mockResolvedValue({ ...INFO, redirect_host: 'evil.example', redirect_trusted: false })
+    renderPage()
+    expect(await screen.findByRole('alert')).toHaveTextContent('evil.example')
+    expect(screen.getByRole('alert')).toHaveTextContent('Từ chối')
+    expect(screen.getByText('evil.example', { selector: 'span' })).toBeInTheDocument()
+  })
+
+  it('shows no warning for a known AI app', async () => {
+    apiGet.mockResolvedValue(INFO)
+    renderPage()
+    expect(await screen.findByText('chatgpt.com', { selector: 'span' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('shows the server error and lets the user retry after a failed approve', async () => {

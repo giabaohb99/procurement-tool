@@ -443,6 +443,35 @@ def ai_overview(user=Depends(get_current_user), db: Session = Depends(get_db)):
     return success(ov.build(db, labels=_user_labels))
 
 
+@router.get("/oauth-clients")
+def list_oauth_clients(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """ai-CR-225 (Agent 1 rà 19/10, mục 3): quản trị xem các ứng dụng AI đã tự đăng ký OAuth — tên tự khai, nơi quay về
+    (hostname), có thuộc ứng dụng quen không, số kết nối còn sống. Cùng cổng quyền màn cấu hình cổng MCP (G7)."""
+    from app.core.auth import user_has_permission
+
+    from . import oauth
+
+    if not user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "read"):
+        raise HTTPException(403, f"Không có quyền: read {MCP_LOG_VIEW_ALL_ENTITY}")
+    return success({"items": oauth.list_clients(db),
+                    "can_delete": user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "write")})
+
+
+@router.delete("/oauth-clients/{client_pk}")
+def delete_oauth_client(client_pk: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Xóa một ứng dụng OAuth: mọi kết nối của nó bị thu hồi ngay (mã truy cập + mã làm mới chết)."""
+    from app.core.auth import user_has_permission
+
+    from . import oauth
+
+    if not user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "write"):
+        raise HTTPException(403, f"Không có quyền: write {MCP_LOG_VIEW_ALL_ENTITY}")
+    revoked = oauth.delete_client(db, client_pk, int(user.id))
+    if revoked is None:
+        raise HTTPException(404, "Không tìm thấy ứng dụng")
+    return success({"revoked_grants": revoked}, f"Đã xóa ứng dụng, thu hồi {revoked} kết nối")
+
+
 @router.get("/mcp-settings")
 def get_mcp_settings(user=Depends(get_current_user), db: Session = Depends(get_db)):
     """ai-CR-216 (G7): cấu hình cổng MCP — xem cần `agent_group.read`, sửa cần `agent_group.write` (quản lý bot AI, cấp

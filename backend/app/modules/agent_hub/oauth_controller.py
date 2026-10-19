@@ -31,7 +31,7 @@ from . import mcp_log, oauth
 log = logging.getLogger("app.agent_hub.oauth")
 public_router = APIRouter(tags=["mcp-oauth"])
 router = APIRouter(prefix="/api/agent-hub/oauth", tags=["mcp-oauth"])
-REGISTER_PER_MIN_PER_IP = 30
+REGISTER_PER_MIN_PER_IP = 5          # ai-CR-225: 30 → 5 (ứng dụng thật đăng ký một lần mỗi lần nối)
 _NO_STORE = {"Cache-Control": "no-store", "Pragma": "no-cache"}
 if not settings.AGENT_ERP_URL:
     #  ai-CR-222: báo NGAY lúc nạp router — không khai thì mọi đường OAuth trả 503 (trừ máy local), xem oauth.issuer.
