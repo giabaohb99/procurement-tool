@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { describeChange, shortDay } from './overview-format'
+import { computeChangePct, describeChange, shortDay } from './overview-format'
 
 describe('describeChange', () => {
   it('says there was nothing to compare with when the previous week had no calls', () => {
@@ -29,5 +29,20 @@ describe('shortDay', () => {
   it('leaves anything else untouched', () => {
     expect(shortDay('')).toBe('')
     expect(shortDay('hom-nay')).toBe('hom-nay')
+  })
+})
+
+describe('computeChangePct', () => {
+  it('gives null instead of dividing by a zero, negative or broken previous week', () => {
+    expect(computeChangePct(5, 0)).toBeNull()
+    expect(computeChangePct(5, -3)).toBeNull()
+    expect(computeChangePct(Number.NaN, 4)).toBeNull()
+    expect(computeChangePct(4, Number.POSITIVE_INFINITY)).toBeNull()
+  })
+
+  it('rounds to one decimal and keeps the sign of a drop to zero', () => {
+    expect(computeChangePct(3, 2)).toBe(50)
+    expect(computeChangePct(1, 3)).toBe(-66.7)
+    expect(computeChangePct(0, 7)).toBe(-100)
   })
 })

@@ -189,6 +189,37 @@ def skills_file(name: str = Query(..., max_length=160), path: str = Query(..., m
     return success(L.skill_file(db, user, name, path))
 
 
+# --- quản trị Kho skill bằng lời qua MCP (bao-CR-634, K9) — nháp / xác nhận, dưới quyền người cầm khóa được ghi ---------
+class SkillAdminDraftIn(BaseModel):
+    tool: str = Field(max_length=40)
+    args: dict = Field(default_factory=dict)
+
+
+@router.post("/skills/admin/draft")
+def skills_admin_draft(body: SkillAdminDraftIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_admin_draft(db, user, body.tool, body.args))
+
+
+class SkillAdminConfirmIn(BaseModel):
+    kind: str = Field(max_length=20)
+    draft: dict = Field(default_factory=dict)
+
+
+@router.post("/skills/admin/confirm")
+def skills_admin_confirm(body: SkillAdminConfirmIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.skill_admin_confirm(db, user, body.kind, body.draft))
+
+
+class ResolvePeopleIn(BaseModel):
+    employees: list = Field(default_factory=list, max_length=50)
+    department: str | dict | None = None
+
+
+@router.post("/admin/resolve-people")
+def admin_resolve_people(body: ResolvePeopleIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    return success(L.resolve_people(db, user, body.employees, body.department))
+
+
 # --- tạo phiếu từ nháp ------------------------------------------------------------------------------------------------
 class DraftCreateIn(BaseModel):
     kind: str = Field(max_length=20)

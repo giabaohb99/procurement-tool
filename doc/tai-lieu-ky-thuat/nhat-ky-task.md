@@ -70,6 +70,100 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-637 | Kho skill AI: sửa bốn điểm giao diện Agent 2 soi trên dev
+- status: xong
+- date: 2026-10-19
+Agent 2 mở sáu màn Kho skill AI và mục AI của tôi trên dev ngày 19/10 và báo bốn điểm; Agent 4 mở thêm hai trường ở API
+(ai-CR-219) để sửa cho đúng gốc. Tab Skill ở màn chi tiết bộ trước luôn ghi số 0 vì đường chi tiết bộ không đếm skill, nay
+đếm theo đúng danh sách đang hiện. Cột Mức ở màn Khóa nhân sự viết hoa chữ đầu (Chỉ đọc, Được ghi) cho khớp ô chọn và tài
+liệu. Màn Nhật ký sử dụng thêm ô tick Chỉ lượt gọi công cụ, bật sẵn, để các lượt khởi tạo kết nối, liệt kê công cụ và
+thông báo của ứng dụng AI không chiếm hết trang; lượt dùng khóa sai không có người thì cột Người in gạch ngang thay cho #0.
+Thẻ lượt gọi ở màn Tổng quan nay đếm lượt gọi công cụ cho khớp bảng Công cụ dùng nhiều; máy chủ chưa có trường mới thì
+vẫn hiện số cũ.
+
+Cùng đợt, nối giao diện với kết nối OAuth Agent 4 làm (ai-CR-218). Ở bước 1 của màn AI của tôi, ứng dụng nối bằng OAuth
+(ChatGPT, claude.ai) chỉ hiện địa chỉ cổng kèm nút chép và câu giải thích không cần khóa, ứng dụng sẽ tự mở trang ERP xin
+phép; không còn đoạn cấu hình có chỗ giữ khóa. Kết nối OAuth trong danh sách khóa (AI của tôi, Khóa nhân sự) hiện nhãn Kết
+nối OAuth thay cho bốn ký tự cuối của khóa.
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn); bài kiểm phân hệ kho skill và mục Trang cá nhân 25
+tệp, 162 bài xanh. Bài mới: hàm tính phần trăm (kỳ trước bằng 0, số âm, số hỏng, làm tròn), hàm viết hoa chữ đầu (chữ có
+dấu, chuỗi rỗng), ứng dụng OAuth không lộ chỗ giữ khóa, nhãn kết nối OAuth.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/pages/skill-set-detail-page.tsx`, `key-admin-page.tsx`, `call-log-page.tsx`,
+`ai-overview-page.tsx`, `config/ai-skill-constants.ts` (+ bài kiểm), `utils/overview-format.ts` (+ bài kiểm),
+`types/ai-skill.ts`, `app/components/profile/profile-ai-connect-section.tsx` (+ bài kiểm).
+Commit: commit sửa giao diện trên erp-v2, ngay sau K9 (đại ca gật 19/10). Deploy: Agent 1 dựng dev.
+
+---
+
+## bao-CR-636 | Cập nhật bài Trung tâm trợ giúp Kết nối AI riêng theo OAuth, xem lại khóa, ứng dụng đã kết nối
+- status: xong
+- date: 2026-10-19
+Agent 1 giao em cập nhật cụm bài hướng dẫn vừa viết sáng nay (bao-CR-631) theo những thứ lên dev trong ngày: kết nối
+ChatGPT và claude.ai bằng đăng nhập ERP (OAuth, ai-CR-218, 222, 225), xem lại khóa và tạm tắt khóa (ai-CR-221), màn Ứng
+dụng AI đã kết nối (bao-CR-635) và bộ Cẩm nang hệ thống (ai-CR-220).
+
+Em thêm bài mới Nối ChatGPT và claude.ai bằng đăng nhập ERP: các bước thêm kết nối tùy chỉnh ở từng ứng dụng, dán địa
+chỉ cổng, đăng nhập ERP, chọn mức rồi bấm Cho phép; nói rõ màn Cho phép hiện tên miền nơi dữ liệu quay về, tên ứng dụng
+là tự khai nên tên miền mới là bằng chứng, tên miền lạ có cảnh báo đỏ và phải dừng; kết nối sống 90 ngày, hiện thành
+dòng Qua ChatGPT hay Qua Claude trong khối Khóa của bạn, gỡ hay tạm tắt ở đó; bảng lỗi hay gặp riêng cho cách nối này.
+Bài Claude Desktop nay mở đầu bằng bảng hai cách: thêm Connector rồi đăng nhập ERP (không cần Node.js) hoặc dán khóa qua
+cầu mcp-remote, giữ nguyên các bẫy thoát hẳn ứng dụng, sửa tệp qua Settings rồi Developer. Bài khóa bỏ câu khóa chỉ hiện
+một lần, thêm mục xem lại khóa (chỉ chủ khóa, mỗi lần xem có ghi nhật ký, bốn trường hợp không xem được) và mục tạm tắt
+bật lại (khác gỡ), nói rõ kết nối qua đăng nhập cũng nằm trong khối Khóa của bạn và không tính vào trần năm khóa. Bài Claude
+Code, Cursor, Gemini bỏ đoạn claude.ai và ChatGPT chưa nối được, trỏ sang bài mới. Bài dành cho quản trị thêm mục Ứng dụng
+AI đã kết nối (tên tự khai đừng tin, nhìn host, xóa là cắt mọi kết nối) và mục bộ Cẩm nang hệ thống bảy skill nền nay nằm
+trong kho, quản trị sửa trên web, xuất bản xong AI đọc bản mới ngay, pháp nhân tạo sau phải gán tay. Bài nhật ký thêm lý do
+Khóa đang tắt, mất kết nối OAuth và dòng key/reveal. Tài liệu chức năng 22 cập nhật cùng nội dung lên bản 1.1.
+
+Nhãn nút xem lại và tạm tắt ở màn Khóa của bạn em viết theo hợp đồng API vì màn đó là bao-CR-633 của Agent 3 chưa lên
+dev; lên xong phải đối chiếu lại nhãn. Seed chạy lại trên máy local ra 8 bài, không có khóa thật; đã chép vào container
+api dev, chạy seed và nạp lại chỉ mục Trợ lý AI.
+
+Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`.
+Commit: chưa, chờ đại ca gật. Deploy: đã seed dev 19/10 chiều.
+
+---
+
+## bao-CR-634 | Kho skill AI đợt K9: quản trị kho skill và khóa AI bằng lời qua cổng MCP
+- status: xong
+- date: 2026-10-19
+Agent 1 giao em đợt P7 của kế hoạch Kho skill AI (doc 21 §7.2) sau khi đại ca chốt sáng 19/10 làm tiếp K9. Mục tiêu là
+người quản trị nói với AI riêng của mình (Claude, ChatGPT...) để soạn và xuất bản cẩm nang, gán quyền đọc, phát hoặc thu
+hồi khóa AI cho nhân viên, thay vì phải mở từng màn trên ERP.
+
+Cổng MCP có thêm năm công cụ, chỉ hiện với khóa được ghi và chỉ khi chủ khóa có đúng quyền: soạn skill (tạo mới hoặc sửa
+bản nháp), xuất bản skill (cần quyền duyệt), gán hoặc thu hồi quyền đọc của một bộ hay một skill cho người, phòng ban,
+pháp nhân, vai trò, chức vụ, cấp bậc, phát khóa hộ và thu hồi khóa hộ. Cả năm công cụ đều không ghi gì: chúng trả bản xem
+trước (so sánh trước và sau, danh sách người nhận, các dòng quyền sẽ thu hồi) cùng một mã nháp có hạn 30 phút, gắn với
+đúng người soạn và đúng loại việc. Chỉ khi AI gọi bước xác nhận với đúng bản nháp đó thì hệ thống mới ghi, và lúc ghi
+kiểm lại từ đầu quyền, phạm vi phòng ban, nhóm công cụ đang bật; nếu skill hay danh sách quyền đã bị ai sửa chen giữa hai
+bước, hoặc bản nháp đã dùng rồi, thì từ chối và nhờ soạn lại. Việc ghi đi qua đúng các hàm của màn web nên luật cấm thắng
+cho phép, phạm vi quản trị và nhật ký vẫn y như bấm tay. Bộ, skill và đối tượng gửi bằng mã hoặc tên; tên khớp nhiều thì
+trả danh sách để AI hỏi lại chứ không đoán.
+
+Mọi lần ghi vào sổ thay đổi của trợ lý với kênh mới là AI riêng (MCP). Tạo, sửa skill và gán, thu hồi quyền đọc hoàn tác
+được trong 24 giờ như phiếu do bot ghi; xuất bản chỉ ghi sổ vì phiên bản là chỉ thêm. Phát và thu hồi khóa chưa vào sổ vì
+bảng khóa nằm ở dịch vụ AI, vết của chúng nằm ở nhật ký lượt gọi MCP và cột người phát, ngày thu hồi của khóa. Phần phát
+và thu hồi khóa hộ của màn Khóa nhân sự được tách ra một chỗ dùng chung để hai đường cùng một luật. Nhóm công cụ mới tên
+Quản trị bật sẵn trên màn Cấu hình vì đã gác hai lớp.
+
+Kiểm trên máy local: 17 bài kiểm mới xanh (khóa chỉ đọc hoặc người thiếu quyền không thấy và không gọi được; nhóm tắt thì
+ẩn; xuất bản cần quyền duyệt; nháp không ghi gì; xác nhận khi thiếu nháp, nháp sửa tay, nháp của người khác, nháp khác
+loại, nháp đã dùng, đích bị sửa chen đều bị từ chối; biên tập phòng này không với sang bộ phòng khác và mất phạm vi giữa hai
+bước thì không ghi; hoàn tác sửa, gán, thu hồi; phát khóa một lần, ngoài phạm vi bị chặn, khóa chỉ đọc không xác nhận
+được). Chạy lại 16 tệp bài kiểm của cổng MCP, Kho skill, phát khóa hộ, sổ thay đổi, ranh giới dịch vụ AI và phạm vi:
+605 bài xanh. Hai bài kiểm cũ của màn Cấu hình được sửa theo nhóm mới.
+
+Mã nguồn: `backend/app/modules/ai_skill/mcp_admin.py` (mới), `agent_hub/mcp_admin.py` (mới), `agent_hub/key_admin_ops.py`
+(mới), `agent_hub/mcp.py`, `agent_hub/mcp_settings.py`, `agent_hub/erp.py`, `agent_hub/controller.py`,
+`agent_gateway/controller.py`, `assistant/change_model.py`, `assistant/change_service.py`; bài kiểm
+`test/backend/test_ai_skill_mcp_admin_k9.py` (mới), `test_agent_hub_cau_hinh_mcp_cr216.py`; doc/agent-hub/06 §3.5.
+Commit: commit K9 trên erp-v2 (đại ca gật 19/10). Deploy: Agent 1 dựng dev.
+
+---
+
 ## bao-CR-635 | Kho skill AI: màn quản trị Ứng dụng AI đã kết nối (tự đăng ký OAuth)
 - status: xong
 - date: 2026-10-19

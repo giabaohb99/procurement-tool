@@ -2,7 +2,7 @@ import { CheckCircle2, CircleDashed, Download, Globe, MonitorSmartphone, PlayCir
 import { useState } from 'react'
 
 import { CallStatusBadge, KeyStateBadge, SecurityLevelBadge } from '@/modules/ai-skill/config/ai-skill-meta'
-import { KEY_STATE } from '@/modules/ai-skill/config/ai-skill-constants'
+import { KEY_KIND, KEY_STATE } from '@/modules/ai-skill/config/ai-skill-constants'
 import {
   useClaimKey,
   useCreateMyKey,
@@ -162,6 +162,7 @@ function SetupDetail({ detail, revealed }: { detail: McpSetupDetail; revealed: R
       </p>
     )
   }
+  if (detail.auth === 'oauth' || detail.format === 'url') return <OAuthSetup detail={detail} />
   const filled = revealed && detail.placeholder ? detail.snippet.replaceAll(detail.placeholder, revealed.key) : detail.snippet
   const files = detail.files ?? {}
   return (
@@ -196,6 +197,37 @@ function SetupDetail({ detail, revealed }: { detail: McpSetupDetail; revealed: R
           {revealed
             ? `Đã điền sẵn khóa ${revealed.label} bạn vừa lấy ở bước 2.`
             : `Thay ${detail.placeholder || 'chỗ giữ khóa'} bằng khóa của bạn ở bước 2 — hoặc lấy khóa trước, đoạn này tự điền.`}
+        </p>
+      </div>
+      {detail.note && <p className="text-xs text-muted-foreground">{detail.note}</p>}
+    </div>
+  )
+}
+
+/**
+ * Ứng dụng nối bằng OAuth (ChatGPT, claude.ai — ai-CR-218): chỉ cần địa chỉ cổng, ứng dụng tự mở trang ERP để người dùng
+ * đăng nhập và bấm Cho phép. Không đòi khóa ở bước 2, không có đoạn cấu hình để dán.
+ */
+function OAuthSetup({ detail }: { detail: McpSetupDetail }) {
+  const url = detail.snippet || detail.endpoint
+  return (
+    <div className="space-y-3">
+      {detail.steps.length > 0 && (
+        <ol className="list-decimal space-y-1 pl-5">
+          {detail.steps.map((step, i) => (
+            <li key={i}>{step}</li>
+          ))}
+        </ol>
+      )}
+      <div className="space-y-1">
+        <p className="font-medium">Địa chỉ kết nối</p>
+        <div className="flex items-center gap-2">
+          <code className="min-w-0 flex-1 rounded bg-muted p-2 text-xs break-all">{url}</code>
+          <CopyButton value={url} label="địa chỉ kết nối" />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Không cần khóa: {detail.label} sẽ mở trang ERP để bạn đăng nhập và bấm Cho phép. Kết nối hiện ở bước 2 với nhãn
+          Kết nối OAuth, gỡ ở đó khi không dùng nữa.
         </p>
       </div>
       {detail.note && <p className="text-xs text-muted-foreground">{detail.note}</p>}
@@ -290,7 +322,12 @@ function KeysStep({ revealed, onReveal }: { revealed: RevealedKey | null; onReve
             {myItems.map((k) => (
               <li key={k.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
                 <span className="min-w-0 flex-1 font-medium">
-                  {k.name || 'Khóa kết nối'} <span className="font-mono text-xs text-muted-foreground">{k.hint}</span>
+                  {k.name || 'Khóa kết nối'}{' '}
+                  {k.kind === KEY_KIND.oauth ? (
+                    <span className="text-xs font-normal text-muted-foreground">{k.kind_label || 'Kết nối OAuth'}</span>
+                  ) : (
+                    <span className="font-mono text-xs text-muted-foreground">{k.hint}</span>
+                  )}
                 </span>
                 <KeyStateBadge state={k.state} label={k.state_label} />
                 <span className="text-xs text-muted-foreground">

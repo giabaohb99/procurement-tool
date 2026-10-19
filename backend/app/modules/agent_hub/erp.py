@@ -228,6 +228,25 @@ class _Local:
             log.warning("erp.audit: không ghi được %s/%s", entity, action, exc_info=True)
             return False
 
+    # --- quản trị Kho skill bằng lời qua MCP (bao-CR-634, K9) — nháp → xác nhận, ghi ở ERP ---
+    @staticmethod
+    def skill_admin_draft(db, user, tool: str, args: dict) -> dict:
+        from app.modules.ai_skill import mcp_admin
+
+        return mcp_admin.draft(db, user, tool, args or {})
+
+    @staticmethod
+    def skill_admin_confirm(db, user, kind: str, draft: dict) -> dict:
+        from app.modules.ai_skill import mcp_admin
+
+        return mcp_admin.confirm(db, user, kind, draft)
+
+    @staticmethod
+    def resolve_people(db, user, employees: list, department=None) -> dict:
+        from app.modules.ai_skill import mcp_admin
+
+        return mcp_admin.resolve_people(db, user, employees or [], department)
+
     @staticmethod
     def caller_context(db, user) -> str | None:
         from app.modules.assistant.service import _caller_context
@@ -658,6 +677,23 @@ class _Remote:
             log.warning("erp.audit: cổng B không nhận nhật ký %s/%s", entity, action, exc_info=True)
             return False
 
+    # --- quản trị Kho skill bằng lời (bao-CR-634) ---
+    def _skill_admin_call(self, path: str, user, body: dict) -> dict:
+        try:
+            return self._call("POST", path, user_id=_uid(user), body=body, timeout=TOOL_TIMEOUT) or {}
+        except ErpError as e:
+            return {"error": f"Không gọi được Kho skill ở ERP: {e}"}
+
+    def skill_admin_draft(self, db, user, tool: str, args: dict) -> dict:
+        return self._skill_admin_call("/skills/admin/draft", user, {"tool": tool, "args": args or {}})
+
+    def skill_admin_confirm(self, db, user, kind: str, draft: dict) -> dict:
+        return self._skill_admin_call("/skills/admin/confirm", user, {"kind": kind, "draft": draft or {}})
+
+    def resolve_people(self, db, user, employees: list, department=None) -> dict:
+        return self._skill_admin_call("/admin/resolve-people", user,
+                                      {"employees": list(employees or []), "department": department})
+
     # --- tạo phiếu ---
     def create_draft(self, db, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
         from .draft_create import DraftError
@@ -930,6 +966,17 @@ AUDIT_MESSAGE_MAX = 2000
 
 def audit(db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
     return _impl().audit(db, user_id, entity, entity_id, action, message)
+
+def skill_admin_draft(db, user, tool: str, args: dict) -> dict:
+    return _impl().skill_admin_draft(db, user, tool, args)
+
+
+def skill_admin_confirm(db, user, kind: str, draft: dict) -> dict:
+    return _impl().skill_admin_confirm(db, user, kind, draft)
+
+
+def resolve_people(db, user, employees: list, department=None) -> dict:
+    return _impl().resolve_people(db, user, employees, department)
 
 
 def glossary_block(db, texts: list[str]) -> str | None:

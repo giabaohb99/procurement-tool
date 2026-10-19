@@ -14,8 +14,9 @@ import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
-import { KEY_STATE } from '../config/ai-skill-constants'
+import { KEY_KIND, KEY_STATE, upperFirst } from '../config/ai-skill-constants'
 import { KeyStateBadge } from '../config/ai-skill-meta'
 import { KeyIssueDialog } from '../components/key-issue-dialog'
 import { useKeyAdminKeys, useKeyAdminMeta, useRevokeKeys } from '../hooks/use-ai-usage'
@@ -77,11 +78,14 @@ export function KeyAdminPage() {
         width: 200,
         cell: (k) => (
           <span>
-            {k.name || '(không tên)'} <span className="font-mono text-xs text-muted-foreground">{k.hint}</span>
+            {k.name || '(không tên)'}{' '}
+            <span className={cn('text-xs text-muted-foreground', k.kind !== KEY_KIND.oauth && 'font-mono')}>
+              {k.kind === KEY_KIND.oauth ? k.kind_label || 'Kết nối OAuth' : k.hint}
+            </span>
           </span>
         ),
       },
-      { key: 'scope', header: 'Mức', width: 100, cell: (k) => k.scope_label },
+      { key: 'scope', header: 'Mức', width: 100, cell: (k) => upperFirst(k.scope_label) },
       { key: 'expires_at', header: 'Hết hạn', width: 150, cell: (k) => <span className="whitespace-nowrap">{formatDateTime(k.expires_at)}</span> },
       {
         key: 'last_used_at',

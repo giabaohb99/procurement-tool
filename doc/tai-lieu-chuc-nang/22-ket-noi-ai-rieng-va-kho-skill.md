@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Bản | 1.0 — 19/10/2026 (bao-CR-631) |
-| CR | **bao-CR-631** — bài Trung tâm trợ giúp + tài liệu này; mã của cụm ở ai-CR-063, 207–216 (cổng MCP), bao-CR-620–625 (Trang cá nhân, Kho skill K1–K6) |
+| Bản | 1.1 — 19/10/2026 (bao-CR-631; 1.1 bao-CR-636: OAuth ChatGPT / claude.ai, xem lại khóa + tạm tắt, màn Ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống) |
+| CR | **bao-CR-631** + **bao-CR-636** — bài Trung tâm trợ giúp + tài liệu này; mã của cụm ở ai-CR-063, 207–225 (cổng MCP, OAuth, xem lại khóa), bao-CR-620–625 (Trang cá nhân, Kho skill K1–K6), bao-CR-635 (Ứng dụng AI đã kết nối) |
 | Giao diện | **chỉ có trên `frontend-v2/`**: Trang cá nhân ▸ *Trợ lý AI của tôi* ▸ *Kết nối AI riêng* (`/me?tab=ai-connect`, mọi người) · phân hệ **Kho skill AI** (`/ai-skill/*`, quản trị) |
-| Bài Help Center | `backend/scripts/seed_help_ket_noi_ai_mcp.py` — thẻ *Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI* + 6 bài theo tác vụ. **Nội dung ở đây và ở seed phải khớp nhau** |
+| Bài Help Center | `backend/scripts/seed_help_ket_noi_ai_mcp.py` — thẻ *Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI* + 7 bài theo tác vụ (a–g). **Nội dung ở đây và ở seed phải khớp nhau** |
 | Hợp đồng kỹ thuật | `doc/agent-hub/06-cong-mcp.md` (cổng, khóa, nhóm tool, trần, API giao diện) · `doc/erp/21-kho-skill-ai-mcp.md` (thiết kế kho skill) · `doc/erp/21a-kich-ban-thu-mcp-dev.md` (kịch bản thử) |
 | Nguồn bước nối ứng dụng | `backend/app/modules/agent_hub/mcp_setup.py` — màn *AI của tôi* đọc đúng tệp đó; đổi bước thì sửa seed + tài liệu này |
 
@@ -22,7 +22,7 @@ Hai thứ người dùng gặp:
 
 | Thứ | Là gì | Ở đâu |
 |---|---|---|
-| **Khóa kết nối** | Chuỗi `dego_mcp_…` thay mật khẩu khi AI gọi vào ERP. Tự tạo, hiện đúng một lần, gỡ tức thì | Trang cá nhân ▸ *Kết nối AI riêng* |
+| **Khóa kết nối** | Chuỗi `dego_mcp_…` thay mật khẩu khi AI gọi vào ERP. Hai kiểu: **dán tay** (Claude Desktop qua tệp, Claude Code, Cursor, Gemini CLI) hoặc **kết nối qua đăng nhập ERP** (OAuth — ChatGPT, claude.ai, Claude Desktop Connectors). Gỡ / tạm tắt tức thì | Trang cá nhân ▸ *Kết nối AI riêng* |
 | **Kho skill AI** | Cẩm nang công ty viết cho AI đọc (quy trình, quy định, mẫu báo cáo). Soạn một lần, gán theo sơ đồ tổ chức | Phân hệ *Kho skill AI* (quản trị) · thẻ *Skill bạn được đọc* ở màn AI của tôi |
 
 Luật dùng chữ trên màn hình: lớp nhân sự **không** dùng «MCP», «JSON-RPC» — gọi là *Kết nối AI riêng*, *khóa kết nối*,
@@ -34,16 +34,23 @@ Màn **AI của tôi** (`profile-ai-connect-section.tsx`) đi theo ba bước đ
 
 **Bước 1 — Chọn ứng dụng AI**: ô *Ứng dụng AI* có 6 mục (`mcp_setup.CLIENTS`): Claude Desktop · Claude Code · Cursor ·
 Gemini CLI · claude.ai (trình duyệt) · ChatGPT. Chọn một mục → hiện bước cài, tệp cần sửa, điều kiện, đoạn cấu hình
-(`GET /api/agent-hub/mcp-setup?client=…`). Hai mục cuối `supported = false`, hiện câu *chưa nối được* + gợi ý. Đoạn mẫu
-mang chỗ giữ `<KHÓA_CỦA_BẠN>`; tạo khóa xong màn tự thay bằng khóa vừa hiện.
+(`GET /api/agent-hub/mcp-setup?client=…`, trường `auth: "key" | "oauth"`). Ứng dụng `auth = key`: đoạn mẫu mang chỗ giữ
+`<KHÓA_CỦA_BẠN>`, tạo khóa xong màn tự thay bằng khóa vừa hiện. Ứng dụng `auth = oauth` (claude.ai, ChatGPT; Claude
+Desktop qua Connectors): `format = url`, «đoạn cấu hình» chỉ là địa chỉ cổng — không cần khóa, xem §4b.
 
 **Bước 2 — Khóa của bạn**
 
 | Việc | Cách | Luật |
 |---|---|---|
-| Tạo khóa | *Tên khóa* (vd «Claude máy công ty») · *Mức* · **Tạo khóa** → khóa hiện **đúng một lần** | Hạn 90 ngày (tự tạo); tối đa **5 khóa còn hiệu lực** / tài khoản; mỗi lượt gọi ghi *dùng lần cuối*; nghỉ việc đóng cùng tài khoản |
+| Tạo khóa | *Tên khóa* (vd «Claude máy công ty») · *Mức* · **Tạo khóa** → khóa hiện kèm nút chép, đoạn cấu hình bước 1 tự điền | Hạn 90 ngày (tự tạo); tối đa **5 khóa dán tay còn hiệu lực** / tài khoản (kể cả đang tắt; kết nối OAuth không tính); mỗi lượt gọi ghi *dùng lần cuối*; nghỉ việc đóng cùng tài khoản |
+| Xem lại khóa (ai-CR-221) | `GET mcp-keys/{id}/reveal` — chỉ CHỦ KHÓA, đăng nhập web; quản trị ở Khóa nhân sự chỉ thấy 4 ký tự cuối; qua MCP không có đường | Bản mã hóa hai chiều `raw_view` (Fernet từ `JWT_SECRET`); mỗi lần xem ghi nhật ký `key/reveal` (ứng dụng «ERP web»), `Cache-Control: no-store`. Không xem được (409): khóa tạo trước ai-CR-221 → *tạo lại để xem*; kết nối OAuth; phát hộ chưa nhận; hết hạn. Đổi `JWT_SECRET` thì mọi bản xem lại hỏng |
+| Tạm tắt / bật lại (ai-CR-221) | `PATCH mcp-keys/{id} {enabled}` — cả kết nối OAuth | Trạng thái **5 Đang tắt**; `/api/mcp` 401, nhật ký «Khóa đang tắt»; OAuth tắt thì không làm mới được (`invalid_grant`); vẫn tính trần 5 khóa; chờ nhận / hết hạn → 409. Khác thu hồi: bật lại là chạy ngay |
 | Nhận khóa phát hộ | Chuông *«Bạn có khóa kết nối AI chờ nhận»* → khối *Khóa quản trị phát cho bạn, chờ nhận* → **Nhận khóa** (hiện một lần) | Chưa nhận thì cổng từ chối; khóa phát hộ luôn mức Chỉ đọc |
 | Gỡ khóa | Nút **Gỡ khóa** trên từng khóa | Hiệu lực tức thì; dùng khi đổi máy, nghi lộ |
+| Kết nối OAuth | Mỗi lần **Cho phép** = một dòng khóa `kind = 2` tên *Qua ChatGPT* / *Qua Claude* trong cùng khối | Cùng mức, nhật ký, nút gỡ, công tắc tạm tắt; gỡ = chặn cả mã làm mới; sống 90 ngày cố định |
+
+⚠️ Nhãn nút *Hiện khóa* / *Tạm tắt* trên màn Khóa của bạn là của bao-CR-633 (Agent 3) — seed viết theo hợp đồng API; màn
+lên dev xong đối chiếu lại nhãn.
 
 | Mức | AI làm được | Dùng khi |
 |---|---|---|
@@ -61,7 +68,11 @@ Ba mục cạnh nhau trong nhóm *Trợ lý AI của tôi*, không lẫn: *Kết
 
 ## 3. Nối Claude Desktop (bài b)
 
-Claude Desktop **không nhận `url` + `headers`** trong `claude_desktop_config.json` (chỉ chạy lệnh cục bộ) → đi qua cầu
+**Hai cách** (ai-CR-218): *Cách 1* Settings ▸ Connectors ▸ Add custom connector ▸ dán địa chỉ cổng ▸ Connect ▸ đăng nhập
+ERP, Cho phép (không cần Node.js, không cần khóa; gỡ ở dòng *Qua Claude* trong Khóa của bạn) — đúng §4b. *Cách 2* tệp cấu
+hình + khóa dán tay, dưới đây. Bản Claude Desktop không có mục Connectors, hoặc muốn dùng chung khóa với Claude Code → cách 2.
+
+Cách 2: Claude Desktop **không nhận `url` + `headers`** trong `claude_desktop_config.json` (chỉ chạy lệnh cục bộ) → đi qua cầu
 `npx -y mcp-remote`. Điều kiện: **Node.js 18+** (`node -v`), đã có khóa.
 
 1. Màn AI của tôi chọn *Claude Desktop*, tạo khóa, chép đoạn cấu hình (đã điền khóa).
@@ -96,8 +107,8 @@ Ba lỗi riêng của Claude Desktop:
 | Thấy `dego-erp` nhưng *Server disconnected*, không có công cụ | Thiếu Node.js · chưa thoát hẳn · dòng `Authorization` sai · khóa hết hạn / đã gỡ | `node -v`; xem lại dòng khóa; thoát hẳn; đọc `%LOCALAPPDATA%\Claude\logs\mcp-server-dego-erp.log` (che khóa khi gửi) |
 | Máy này nối được, máy khác không | Mỗi máy một tệp cấu hình, nên mỗi máy một khóa | Tạo thêm khóa (≤ 5), đặt tên theo máy |
 
-Liên quan vận hành: nginx của giao diện ERP phải trả **404** cho đường dò OAuth `/.well-known/*` để `mcp-remote` không
-tưởng cổng đòi OAuth (bao-CR-625).
+Liên quan vận hành: từ ai-CR-218 nginx erp **chuyển** `/.well-known/(oauth-|openid-configuration)` sang api (thay dòng 404
+của bao-CR-625) vì ERP nay là máy chủ cấp quyền; `mcp-remote` có khóa header hợp lệ vẫn đi thẳng, chỉ vào OAuth khi 401.
 
 ## 4. Nối Claude Code, Cursor, Gemini CLI (bài c)
 
@@ -110,8 +121,38 @@ Ba ứng dụng nhận thẳng địa chỉ + dòng khóa.
 - **Cursor**: Settings ▸ MCP ▸ Add new MCP server, hoặc `~/.cursor/mcp.json` (`.cursor/mcp.json` trong dự án nếu chỉ dùng
   ở đó): `{"mcpServers": {"dego-erp": {"url": "<url>", "headers": {"Authorization": "Bearer <KHÓA_CỦA_BẠN>"}}}}` → chấm xanh.
 - **Gemini CLI**: `~/.gemini/settings.json`, như Cursor nhưng ô **`httpUrl`** thay `url` → chạy `gemini`, gõ `/mcp`.
-- **claude.ai (trình duyệt), ChatGPT**: kết nối tùy chỉnh chỉ đăng nhập OAuth, không nhận khóa dạng header → *chưa nối
-  được*; dùng Claude Desktop (cùng tài khoản claude.ai), Cursor hoặc Gemini CLI. Xem lại khi hai nơi đó đổi cách xác thực.
+- **claude.ai (trình duyệt), ChatGPT**: không dán khóa — tự mở trang ERP để đăng nhập và Cho phép, xem §4b.
+
+## 4b. Nối ChatGPT và claude.ai bằng đăng nhập ERP (bài g — OAuth, ai-CR-218/222/225)
+
+ERP là máy chủ cấp quyền OAuth 2.1 tối thiểu theo MCP 2025-06-18 (doc 06 §2.3): ứng dụng gọi `/api/mcp` không token → 401
+kèm `resource_metadata` → đọc `/.well-known/oauth-protected-resource` + `oauth-authorization-server` → tự đăng ký
+`POST /api/oauth/register` → `GET /api/oauth/authorize` (PKCE S256 bắt buộc) → màn ERP v2 `/oauth/consent/<chuỗi ký, 10
+phút>` → `POST /api/oauth/token` (access `dego_mcp_` 1 giờ, refresh `dego_mcr_` xoay vòng) → `POST /api/oauth/revoke`.
+
+Bước người dùng (từ `mcp_setup.py`):
+- **claude.ai** (và Claude Desktop ▸ Settings ▸ Connectors): Settings ▸ Connectors ▸ Add custom connector → đặt tên, dán địa
+  chỉ cổng vào *Remote MCP server URL* → Add → Connect → trang ERP: đăng nhập, chọn Chỉ đọc / Được ghi, **Cho phép** → về
+  claude.ai bật DEGO ERP ở nút công cụ. Team / Enterprise: chủ tổ chức thêm ở Organization settings trước.
+- **ChatGPT**: Settings ▸ Apps & Connectors ▸ Advanced settings ▸ bật Developer mode → Create: tên, *MCP Server URL*,
+  Authentication = OAuth, tick tin tưởng → Create → trang ERP Cho phép → chọn DEGO ERP ở nút + trong ô chat. Tên mục đổi theo
+  phiên bản ChatGPT.
+
+Màn Cho phép (`oauth-consent-page.tsx`, API `GET /api/agent-hub/oauth/request/{req}`, `POST …/approve | deny`): tiêu đề
+*Cho phép ứng dụng AI dùng ERP thay bạn*; ghi tên ứng dụng (TỰ KHAI) + **`redirect_host`** (hostname nơi quay về; máy cục bộ
+= *máy tính của bạn*, lược đồ riêng = *ứng dụng cài trên máy (x://)*) + tài khoản; `redirect_trusted = false` (host ngoài
+chatgpt.com / openai.com / claude.ai / anthropic.com / claude.com / cục bộ) → hộp cảnh báo đỏ *Nơi quay về … không thuộc
+ứng dụng AI quen* — người dùng **phải dừng** nếu không phải chính mình vừa thêm kết nối; chọn Chỉ đọc (mặc định theo mức
+ứng dụng xin) / Được ghi; **Cho phép** / **Từ chối** (`error=access_denied`). Chống nhúng: `X-Frame-Options DENY` +
+`frame-ancestors 'none'` cho `/oauth/consent/`, màn tự kiểm `window.top !== window.self`.
+
+Sau Cho phép: một dòng khóa `kind = 2` *Qua <tên ứng dụng>* ở Khóa của bạn / Khóa nhân sự (cùng mức, nhật ký ghi
+`client_name`); gỡ ở đó = chặn cả mã làm mới; tạm tắt được; sống **90 ngày cố định**, hết thì Connect lại; cấp lại cùng
+(người, ứng dụng) thì kết nối cũ chết; không tính trần 5 khóa. Trần tự đăng ký 5 / phút / IP + 200 / 24 giờ (429).
+
+Lỗi hay gặp: Connect không mở trang ERP (chặn cửa sổ bật lên; địa chỉ phải kết thúc `/api/mcp`); đăng nhập xong không thấy
+màn Cho phép (lượt quá 10 phút → Connect lại); `access_denied` (đã Từ chối); mất kết nối sau một thời gian (hết 90 ngày /
+gỡ / tạm tắt / quản trị xóa ứng dụng → Connect lại).
 
 ## 5. AI làm được gì: công cụ và skill (bài d)
 
@@ -119,7 +160,7 @@ Ba ứng dụng nhận thẳng địa chỉ + dòng khóa.
 |---|---|---|
 | Là gì | Hàm AI gọi vào ERP (`assistant.tools`, chung với Trợ lý web / bot) | Bài cẩm nang trong Kho skill AI |
 | Ai làm ra | Có sẵn; quản trị bật / tắt theo **nhóm** (`mcp_settings.GROUPS`) | Quản trị / trưởng phòng soạn, gán ai được đọc |
-| Số lượng | Tùy mức khóa + nhóm bật (dev 19/10: khóa Chỉ đọc, 7 nhóm bật ≈ 34 công cụ) | Tùy phòng ban, chức vụ, cấp bậc |
+| Số lượng | Tùy mức khóa + nhóm bật (dev 19/10: khóa Chỉ đọc, 7 nhóm bật ≈ 34 công cụ) | Tùy phòng ban, chức vụ, cấp bậc; ai cũng có bộ **Cẩm nang hệ thống** 7 skill (§6) |
 
 Nhóm công cụ (doc 06 §4): mặc định **bật** `mine` việc của tôi · `leave` nghỉ phép · `directory` danh bạ, thuật ngữ, HDSD ·
 `reports` báo cáo gom sẵn (`report_summary`, 13 báo cáo, gác `require_report`) + bảng số (`dataset_query`) · `skills`;
@@ -139,7 +180,7 @@ phép thứ Sáu tuần sau* → xem nháp → *tạo và gửi duyệt*.
 ## 6. Quản trị Kho skill AI (bài e)
 
 Phân hệ *Kho skill AI* hiện với người có `ai_skill.read` hoặc `ai_mcp_key_admin.read`. Menu: Tổng quan · Bộ skill · Khóa
-nhân sự · Nhật ký sử dụng · Giới thiệu · Cấu hình.
+nhân sự · **Ứng dụng AI đã kết nối** (bao-CR-635) · Nhật ký sử dụng · Giới thiệu · Cấu hình.
 
 | Khái niệm | Bảng | Ghi chú |
 |---|---|---|
@@ -164,6 +205,20 @@ hồi), lọc phòng + trạng thái; **Phát khóa** cho người (theo danh s�
 180 / 365, luôn Chỉ đọc; có người ngoài phạm vi → từ chối cả lượt; đủ 5 khóa / chưa có tài khoản / tài khoản khóa → bỏ qua
 kèm lý do; người nhận có **chuông** (không email, không Telegram). **Thu hồi**: tick → hộp chỉ đếm khóa còn hiệu lực; thu hồi
 theo khóa / người / lượt; dòng thu hồi giữ lại.
+
+**Ứng dụng AI đã kết nối** (bao-CR-635; `GET /api/agent-hub/oauth-clients` gác `agent_group.read`, `DELETE …/{id}` gác
+`.write`, trả `can_delete`): bảng ứng dụng tự đăng ký OAuth — tên tự khai + 6 ký tự cuối `client_id`, `redirect_hosts`,
+`live_grants`, dùng lần cuối, đăng ký; IP + `auth_method` ẩn mặc định; `trusted = false` → ô đỏ + nhãn *Host lạ*, dòng tóm
+tắt đếm host lạ. **Xóa** có hộp xác nhận nêu số kết nối bị cắt — thu hồi mọi kết nối + xóa mã cấp quyền, dòng khóa tương
+ứng → Đã thu hồi; người dùng Cho phép lại từ đầu. Ứng dụng > 7 ngày không kết nối sống và không dùng → `oauth.purge` tự dọn.
+
+**Bộ Cẩm nang hệ thống** (ai-CR-220, K7): mã `SYS-HANDBOOK`, mức Mở, Đang dùng, 7 skill `quy-trinh-thu-mua` ·
+`van-thu-van-ban` · `du-an-cong-viec` · `nghi-phep` · `dat-phong-hop` · `nhan-su-ho-so` · `nha-may-he-thong-cong-viec`
+(+ 11 tệp gốc nhà máy làm `references/`), gieo bởi `ai_skill/handbook_seed.ensure_system_handbook` ở `seed.py` +
+`seed_prod.py` khi chưa có bộ mã đó (kể cả bản xóa mềm) — có rồi **không đụng**. Trợ lý web + bot core_v2 + MCP đọc cùng
+kho qua `visible_skills` (lời nhắc chỉ mang danh mục ≤ 1.500 ký tự; tool nội bộ `skill_tool.py` chạy `internal=True`, mức
+bảo mật chỉ chặn AI ngoài). Sửa skill + Xuất bản → lượt sau AI đọc bản mới. Pháp nhân tạo sau lần gieo phải gán quyền đọc
+tay ở tab Ai được đọc.
 
 **Cấu hình** (`agent_group.write`; `tab_setting.agent_mcp_settings`): bật / tắt nhóm; giới hạn `rate_per_key` 10–2000
 (mặc định 120) · `rate_per_ip` 0–20000 (600) · `bad_key_per_ip` 5–1000 (30) · `row_budget_per_min` 0–100000 (3000, 0 =
@@ -195,6 +250,9 @@ gom vào `tab_agent_mcp_call_daily`. Người thường xem 20 lượt của mì
 | *Khóa đã hết hạn* | quá hạn | tạo khóa mới |
 | *Khóa đã bị thu hồi* | người dùng gỡ hoặc quản trị thu hồi | hỏi quản trị; tạo khóa mới |
 | *Khóa phát hộ chưa được chủ khóa nhận* | chưa bấm Nhận khóa / dán khóa của người khác | Trang cá nhân → Nhận khóa |
+| *Khóa đang tắt* | đã tạm tắt khóa / kết nối (ai-CR-221) | bật lại ở Khóa của bạn |
+| `invalid_grant` / mất kết nối OAuth | hết 90 ngày, gỡ, tạm tắt, hoặc quản trị xóa ứng dụng | Connect lại (§4b) |
+| dòng `key/reveal` ứng dụng «ERP web» | chính chủ vừa xem lại khóa | không phải rò rỉ |
 | *Quá tần suất (khóa)* (429, JSON-RPC -32000, `Retry-After`) | > 120 lượt / phút / khóa | đợi một phút; mỗi máy một khóa |
 | *Quá tần suất (IP)* · *(khóa sai liên tục)* | > 600 lượt / phút / IP · > 30 khóa sai / phút / IP | đợi; báo quản trị nếu lặp |
 | `denied` kèm tên nhóm | nhóm tool bị tắt ở Cấu hình | xin bật nhóm |
@@ -215,5 +273,6 @@ chưa thấy dù đã liệt kê công cụ (cần một lượt gọi thật); 
 
 - Prod **chưa mở cổng MCP** (luật tạm dừng prod 19/09; doc 06 §5 liệt kê việc cần khi lên prod). Bài Help Center viết
   địa chỉ `erp.degoholding.vn` làm ví dụ, luôn dặn lấy địa chỉ thật ở màn AI của tôi.
-- claude.ai web và ChatGPT: theo dõi khi họ đổi cách xác thực; sửa `mcp_setup.py` + seed + tài liệu này cùng lúc.
+- Nhãn nút xem lại / tạm tắt trên màn Khóa của bạn chờ bao-CR-633 (Agent 3) lên dev; đối chiếu lại bài (a).
+- Tên mục trong Cài đặt của ChatGPT / claude.ai đổi theo phiên bản của họ; sửa `mcp_setup.py` + seed + tài liệu này cùng lúc.
 - Bot Telegram đọc chung kho skill (K7) và quản trị qua bot (K9): gác (doc 21 §7.1).
