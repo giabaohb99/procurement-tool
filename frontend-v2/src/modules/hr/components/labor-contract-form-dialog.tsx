@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 
@@ -8,7 +8,11 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
-import { useEmployeeLaborContractTemplates, useSaveLaborContract } from '../hooks/use-employee-labor-contracts'
+import {
+  useEmployeeLaborContractTemplates,
+  useSaveLaborContract,
+  useUploadSignedLaborContract,
+} from '../hooks/use-employee-labor-contracts'
 import { useLaborContractInputFields } from '../hooks/use-labor-contract-variables'
 import {
   buildContractFormDefaults,
@@ -20,6 +24,7 @@ import type { EmployeeDetail } from '../types/employee'
 import type { LaborContract } from '../types/labor-contract'
 import { LaborContractCustomFields } from './labor-contract-custom-fields'
 import { LaborContractFormDialogFields } from './labor-contract-form-dialog-fields'
+import { LaborContractSignedFileField } from './labor-contract-signed-file-field'
 
 interface LaborContractFormDialogProps {
   open: boolean
@@ -33,6 +38,11 @@ interface LaborContractFormDialogProps {
 export function LaborContractFormDialog({ open, onOpenChange, employee, row }: LaborContractFormDialogProps) {
   const { can } = usePermission()
   const saveMutation = useSaveLaborContract(employee.id)
+  const uploadMutation = useUploadSignedLaborContract(employee.id)
+  //  Bản ký / scan chọn ngay trong hộp; tải lên SAU khi lưu (cần id hợp đồng) — duoc-CR-632.
+  const [signedFile, setSignedFile] = useState<File | null>(null)
+  //  Lập mới luôn là Nháp nên nhận được; sửa thì theo cờ backend (`can_upload_signed`).
+  const canAttach = !row || row.can_upload_signed
   //  Chặn bấm đúp bằng ref (disabled theo state React chỉ đúng ở lần render sau).
   const submitting = useRef(false)
 
@@ -42,7 +52,10 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
   })
 
   useEffect(() => {
-    if (open) form.reset(buildContractFormDefaults(employee, row))
+    if (open) {
+      form.reset(buildContractFormDefaults(employee, row))
+      setSignedFile(null)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ reset lúc MỞ / đổi dòng.
   }, [open, row])
 
@@ -75,8 +88,20 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
     saveMutation.mutate(
       { id: row?.id, payload: toLaborContractPayload(values, row ? 'edit' : 'create', activeFields) },
       {
-        onSuccess: () => onOpenChange(false),
-        onSettled: () => {
+        onSuccess: async (result) => {
+          //  Hợp đồng đã lưu rồi mới tải tệp. Tải lỗi (httpClient tự báo) thì hợp đồng VẪN giữ — tải lại
+          //  được ở nút «Tải lên bản đã ký» trên dòng; không mở lại hộp để khỏi lưu trùng lần hai.
+          if (signedFile) {
+            try {
+              await uploadMutation.mutateAsync({ id: result.item.id, file: signedFile })
+            } catch {
+              /* lỗi đã được báo ở tầng httpClient */
+            }
+          }
+          submitting.current = false
+          onOpenChange(false)
+        },
+        onError: () => {
           submitting.current = false
         },
       },
@@ -109,12 +134,24 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
           onSubmit={onSubmit}
           companyName={companyName}
           templateHint={templateHint}
-          customFields={<LaborContractCustomFields form={form} fields={inputFields} />}
+          customFields={
+            <>
+              <LaborContractCustomFields form={form} fields={inputFields} />
+              {canAttach && (
+                <LaborContractSignedFileField
+                  file={signedFile}
+                  onChange={setSignedFile}
+                  hasExisting={row?.has_signed_file}
+                  disabled={saveMutation.isPending || uploadMutation.isPending}
+                />
+              )}
+            </>
+          }
           footer={
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              <Button type="submit" disabled={saveMutation.isPending || uploadMutation.isPending}>
+                {(saveMutation.isPending || uploadMutation.isPending) && <Loader2 className="size-4 animate-spin" />}
                 Lưu
               </Button>
             </DialogFooter>

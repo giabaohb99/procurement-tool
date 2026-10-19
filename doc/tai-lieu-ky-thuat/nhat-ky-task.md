@@ -14883,3 +14883,15 @@ thường được dời số, kèm lịch sử thao tác của nó. Bảng mẫ
 quay lại đầy đủ, đã diễn tập lên, xuống, lên trên MySQL local với số dòng và dấu kiểm khớp. Sau đợt rà soát lần hai đã vá thêm: bộ đếm số mẫu của bảng gộp được nâng theo bảng cũ nên số mẫu hợp đồng đã xóa không bị cấp lại; khi phải dời số mẫu văn bản thì mức dời vượt cả số lịch sử của mẫu đã xóa và lịch sử thay đổi cũng dời theo; lịch sử thay đổi của mẫu hợp đồng giữ tên bảng cũ để nhật ký vẫn ghi đủ các trường đã sửa; đường quay lại chạy được cả khi mọi mẫu hợp đồng đã bị xóa và chạy lại an toàn sau sự cố; đã thử chèn lỗi giữa chừng trên MySQL local. Chưa triển khai lên máy chủ nào.
 
 Mã nguồn: backend/app/core/change_tracker.py · backend/app/core/document_template_codes.py · backend/app/modules/document/template_model.py · template_service.py · backend/app/modules/labor_contract/template_model.py · generate_service.py · template_service.py · backend/app/modules/doc_catalog/references.py · backend/app/seed.py · backend/migrations/versions/lbrct03_gop_mau_hdld_vao_thu_vien_van_ban.py · test/backend/test_hdld_gop_bang_mau_migration_cr629b.py · test_hdld_gop_bang_mau_cach_ly_cr629b.py
+
+## duoc-CR-632 | Chọn tệp hợp đồng đã ký ngay trong hộp lập hợp đồng lao động
+- status: xong
+- date: 2026-10-19
+Đại ca hỏi vì sao hộp lập hợp đồng lao động không có chỗ tải tệp lên. Trước đây bản hợp đồng đã ký chỉ tải lên được bằng nút trên
+dòng hợp đồng sau khi lập xong, nên nhìn vào hộp lập tưởng là không có. Nay hộp lập và hộp sửa hợp đồng có thêm ô kéo thả hoặc bấm
+chọn tệp hợp đồng đã ký hay bản scan, nhận PDF, JPG, PNG tối đa năm mươi megabyte và không bắt buộc. Bấm Lưu xong hệ thống mới tải
+tệp lên, tệp vào hợp đồng và tự chép sang bản lưu trữ bên phân hệ Văn bản như khi tải ở nút trên dòng; nếu tải tệp lỗi thì hợp đồng
+vẫn được giữ và tải lại được ở nút trên dòng. Đã bấm thử trên máy và xóa hợp đồng thử.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/labor-contract-signed-file-field.tsx · labor-contract-form-dialog.tsx · labor-contract-form-dialog.test.tsx
+

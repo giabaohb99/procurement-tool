@@ -15,11 +15,13 @@ vi.mock('@/core/authorization/use-permission', () => ({
 const listTemplateOptions = vi.fn()
 const update = vi.fn()
 const create = vi.fn()
+const uploadSignedFile = vi.fn()
 vi.mock('../api/labor-contract-api', () => ({
   laborContractApi: {
     listTemplateOptions: (...a: unknown[]) => listTemplateOptions(...a),
     update: (...a: unknown[]) => update(...a),
     create: (...a: unknown[]) => create(...a),
+    uploadSignedFile: (...a: unknown[]) => uploadSignedFile(...a),
   },
 }))
 const inputFields = vi.fn()
@@ -37,6 +39,7 @@ beforeEach(() => {
   listTemplateOptions.mockResolvedValue([{ id: 1, name: 'Mẫu 1', contract_type: 2 }])
   inputFields.mockResolvedValue([])
   update.mockResolvedValue({ item: makeLaborContract(), warnings: [] })
+  uploadSignedFile.mockResolvedValue(makeLaborContract())
 })
 
 function renderDialog(opts: { row?: ReturnType<typeof makeLaborContract> | null; outerSubmit?: () => void } = {}) {
@@ -185,5 +188,54 @@ describe('LaborContractFormDialog', () => {
     await waitFor(() => expect(update).toHaveBeenCalled())
     expect(screen.queryByText('Thông tin bổ sung cho mẫu')).toBeNull()
     expect(update.mock.calls[0][1].custom_values).toEqual({})
+  })
+})
+
+//  duoc-CR-632: hộp Lập / Sửa có ô chọn bản ký / scan — trước đây chỉ tải được ở nút trên DÒNG sau khi lập.
+describe('LaborContractFormDialog — tệp hợp đồng (bản ký / scan)', () => {
+  const pdf = () => new File(['%PDF-1.4'], 'hop-dong-da-ky.pdf', { type: 'application/pdf' })
+  const fileInput = () => document.querySelector('input[type="file"]') as HTMLInputElement
+
+  it('lưu xong mới tải tệp lên, đúng id hợp đồng vừa lưu, rồi đóng hộp', async () => {
+    update.mockResolvedValue({ item: makeLaborContract({ id: 42 }), warnings: [] })
+    const { onOpenChange } = renderDialog({ row: makeLaborContract({ id: 42 }) })
+    await userEvent.upload(fileInput(), pdf())
+    expect(screen.getByText('hop-dong-da-ky.pdf')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(uploadSignedFile).toHaveBeenCalledTimes(1))
+    expect(update).toHaveBeenCalledTimes(1)
+    expect(uploadSignedFile.mock.calls[0][0]).toBe(42)
+    expect((uploadSignedFile.mock.calls[0][1] as File).name).toBe('hop-dong-da-ky.pdf')
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+  })
+
+  it('không chọn tệp thì không gọi tải lên', async () => {
+    renderDialog({ row: makeLaborContract() })
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1))
+    expect(uploadSignedFile).not.toHaveBeenCalled()
+  })
+
+  it('tải tệp lỗi: hợp đồng đã lưu vẫn giữ, hộp vẫn đóng, không lưu lần hai', async () => {
+    uploadSignedFile.mockRejectedValue(new Error('413'))
+    const { onOpenChange } = renderDialog({ row: makeLaborContract() })
+    await userEvent.upload(fileInput(), pdf())
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+    expect(update).toHaveBeenCalledTimes(1)
+  })
+
+  it('tệp sai định dạng bị từ chối ngay, không giữ lại để tải', async () => {
+    renderDialog({ row: makeLaborContract() })
+    await userEvent.upload(fileInput(), new File(['x'], 'hop-dong.docx'), { applyAccept: false })
+    expect(screen.getByRole('alert')).toHaveTextContent('Bản ký chỉ nhận PDF, JPG hoặc PNG')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1))
+    expect(uploadSignedFile).not.toHaveBeenCalled()
+  })
+
+  it('hợp đồng không còn nhận bản ký (can_upload_signed = false) thì không hiện ô tệp', () => {
+    renderDialog({ row: makeLaborContract({ can_upload_signed: false }) })
+    expect(screen.queryByText('Tệp hợp đồng (bản ký / scan)')).not.toBeInTheDocument()
   })
 })
