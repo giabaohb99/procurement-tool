@@ -122,7 +122,7 @@ dev; lên xong phải đối chiếu lại nhãn. Seed chạy lại trên máy l
 api dev, chạy seed và nạp lại chỉ mục Trợ lý AI.
 
 Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`.
-Commit: chưa, chờ đại ca gật. Deploy: đã seed dev 19/10 chiều.
+Commit: 4ae01899 trên erp-v2 (đại ca gật 19/10). Deploy: đã seed dev 19/10 chiều.
 
 ---
 
