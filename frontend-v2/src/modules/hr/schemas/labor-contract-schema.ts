@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 import type { EmployeeDetail } from '../types/employee'
 import type { LaborContract, LaborContractPayload } from '../types/labor-contract'
+import type { LaborContractInputField } from '../types/labor-contract-variable'
+import { toWireValue } from '../utils/labor-contract-variable-value'
 import { endDateRule } from '../utils/labor-contract-rules'
 
 /** Trần tiền của backend (`Money`): số nguyên 0..10^12. */
@@ -32,6 +34,8 @@ export const laborContractSchema = z
     allowance: money('Phụ cấp'),
     allowance_note: z.string().trim().max(500, 'Ghi chú phụ cấp tối đa 500 ký tự'),
     note: z.string().trim().max(500, 'Ghi chú tối đa 500 ký tự'),
+    //  duoc-CR-630: giá trị ô «Thông tin bổ sung» theo mã biến; mỗi ô luôn là chuỗi (chuẩn hóa ở backend).
+    custom_values: z.record(z.string(), z.string()),
   })
   .superRefine((v, ctx) => {
     if (v.end_date && v.start_date && v.end_date < v.start_date) {
@@ -80,6 +84,7 @@ export function buildContractFormDefaults(
       allowance: row.allowance,
       allowance_note: row.allowance_note,
       note: row.note,
+      custom_values: { ...(row.custom_values ?? {}) },
     }
   }
   return {
@@ -94,6 +99,7 @@ export function buildContractFormDefaults(
     allowance: 0,
     allowance_note: '',
     note: '',
+    custom_values: {},
   }
 }
 
@@ -105,9 +111,10 @@ export function buildContractFormDefaults(
 export function toLaborContractPayload(
   values: LaborContractFormValues,
   mode: 'create' | 'edit' = 'create',
+  activeFields?: readonly LaborContractInputField[],
 ): LaborContractPayload {
   const emptyText = mode === 'edit' ? '' : null
-  return {
+  const payload: LaborContractPayload = {
     contract_type: values.contract_type,
     contract_no: values.contract_no.trim(),
     start_date: values.start_date,
@@ -120,4 +127,12 @@ export function toLaborContractPayload(
     allowance_note: values.allowance_note.trim(),
     note: values.note.trim(),
   }
+  //  duoc-CR-630: chỉ gửi khóa của biến ĐANG DÙNG (biến ngừng dùng bị backend từ chối ghi mới; không gửi
+  //  = giữ nguyên giá trị cũ). Ô trống gửi `""` để backend xóa khóa — và lúc LẬP để nó KHÔNG tự sao mặc định.
+  if (activeFields) {
+    payload.custom_values = Object.fromEntries(
+      activeFields.map((f) => [f.code, toWireValue(f.value_type, values.custom_values[f.code] ?? '')]),
+    )
+  }
+  return payload
 }

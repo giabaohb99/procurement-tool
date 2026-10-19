@@ -45,6 +45,7 @@ def serialize_contracts(db: Session, rows: list[LaborContract], user, profile: d
             job_title=r.job_title or "", work_location=r.work_location or "",
             base_salary=int(r.base_salary or 0), insurance_salary=int(r.insurance_salary or 0),
             allowance=int(r.allowance or 0), allowance_note=r.allowance_note or "", note=r.note or "",
+            custom_values={k: str(v) for k, v in (r.custom_values or {}).items()},
             has_generated_file=bool(r.generated_file_id), generated_at=r.generated_at,
             has_signed_file=bool(r.signed_file_id),
             terminated_date=r.terminated_date, terminate_reason=r.terminate_reason or "",

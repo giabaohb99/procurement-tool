@@ -8,6 +8,7 @@ from app.modules.employee.field_limits import ProfileDate
 
 from . import rules
 from .template_schema import check_contract_type
+from .variable_rules import CODE_RE, MAX_CUSTOM_VARIABLES
 
 Str50 = Annotated[str, StringConstraints(strip_whitespace=True, max_length=50)]
 Str100 = Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)]
@@ -15,6 +16,21 @@ Str255 = Annotated[str, StringConstraints(strip_whitespace=True, max_length=255)
 Str500 = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
 #  Đồng NGUYÊN, không lẻ; trần 10^12 để không tràn BigInteger khi cộng lương + phụ cấp.
 Money = Annotated[int, Field(ge=0, le=10**12)]
+#  duoc-CR-630: giá trị biến tùy chỉnh `{mã: giá trị}`. Chuẩn hóa theo KIỂU của từng biến ở
+#  `contract_custom_values` (cần DB); ở đây chỉ chặn hình dạng + kích thước đầu vào.
+CustomValuesIn = Annotated[dict[str, str | int | None], Field(max_length=MAX_CUSTOM_VARIABLES)]
+_MAX_RAW_VALUE = 2000
+
+
+def check_custom_values(v):
+    if v is None:
+        return v
+    for key, val in v.items():
+        if not CODE_RE.match(key):
+            raise ValueError("Mã biến không hợp lệ")
+        if isinstance(val, str) and len(val) > _MAX_RAW_VALUE:
+            raise ValueError(f"Giá trị biến tối đa {_MAX_RAW_VALUE} ký tự")
+    return v
 
 
 class LaborContractCreate(BaseModel):
@@ -33,11 +49,14 @@ class LaborContractCreate(BaseModel):
     allowance: Money = 0
     allowance_note: Str500 = ""
     note: Str500 = ""
+    custom_values: CustomValuesIn | None = None
 
     @field_validator("contract_type")
     @classmethod
     def _check_type(cls, v: int) -> int:
         return check_contract_type(v)
+
+    _check_custom = field_validator("custom_values")(check_custom_values)
 
     @model_validator(mode="after")
     def _check_dates(self):
@@ -61,11 +80,14 @@ class LaborContractUpdate(BaseModel):
     allowance: Money | None = None
     allowance_note: Str500 | None = None
     note: Str500 | None = None
+    custom_values: CustomValuesIn | None = None
 
     @field_validator("contract_type")
     @classmethod
     def _check_type(cls, v):
         return None if v is None else check_contract_type(v)
+
+    _check_custom = field_validator("custom_values")(check_custom_values)
 
 
 class GenerateIn(BaseModel):
@@ -109,6 +131,8 @@ class LaborContractOut(BaseModel):
     allowance: int = 0
     allowance_note: str = ""
     note: str = ""
+    #  duoc-CR-630: giá trị biến tùy chỉnh `{mã: chuỗi chuẩn}` — nhạy cảm như lương (cùng khóa `labor_contract.read`).
+    custom_values: dict[str, str] = {}
     has_generated_file: bool = False
     generated_at: datetime | None = None
     has_signed_file: bool = False

@@ -72,3 +72,46 @@ LABOR_CONTRACT_STATUS_SET = register(CodeSet("labor_contract_status", "Trạng t
     Code(str(int(k)), label, sort_order=int(k))
     for k, label in LABOR_CONTRACT_STATUS_LABELS.items()
 ]))
+
+
+# ---- Danh sách biến mẫu HĐLĐ (duoc-CR-630) --------------------------------------------------
+class LaborContractVariableSource(IntEnum):
+    """Nguồn biến: HỆ THỐNG (giá trị lấy từ mã nguồn) hay TÙY CHỈNH (nhập tay theo từng hợp đồng)."""
+
+    SYSTEM = 1
+    CUSTOM = 2
+
+
+class LaborContractVariableType(IntEnum):
+    """Kiểu giá trị của biến TÙY CHỈNH. Biến hệ thống lưu `TEXT` (không có ý nghĩa)."""
+
+    TEXT = 1       # Chữ (một dòng)
+    MULTILINE = 2  # Chữ nhiều dòng
+    NUMBER = 3     # Số (không âm, tối đa 2 số lẻ)
+    DATE = 4       # Ngày
+    MONEY = 5      # Tiền (đồng nguyên) — tự có bạn đồng hành `<mã>_bang_chu`
+
+
+LABOR_CONTRACT_VARIABLE_SOURCE_LABELS: dict[LaborContractVariableSource, str] = {
+    LaborContractVariableSource.SYSTEM: "Hệ thống",
+    LaborContractVariableSource.CUSTOM: "Tùy chỉnh",
+}
+
+LABOR_CONTRACT_VARIABLE_TYPE_LABELS: dict[LaborContractVariableType, str] = {
+    LaborContractVariableType.TEXT: "Chữ",
+    LaborContractVariableType.MULTILINE: "Chữ nhiều dòng",
+    LaborContractVariableType.NUMBER: "Số",
+    LaborContractVariableType.DATE: "Ngày",
+    LaborContractVariableType.MONEY: "Tiền",
+}
+
+LABOR_CONTRACT_VARIABLE_SOURCE_SET = register(CodeSet(
+    "labor_contract_variable_source", "Nguồn biến mẫu hợp đồng lao động", [
+        Code(str(int(k)), label, sort_order=int(k))
+        for k, label in LABOR_CONTRACT_VARIABLE_SOURCE_LABELS.items()
+    ]))
+LABOR_CONTRACT_VARIABLE_TYPE_SET = register(CodeSet(
+    "labor_contract_variable_type", "Kiểu giá trị biến mẫu hợp đồng lao động", [
+        Code(str(int(k)), label, sort_order=int(k))
+        for k, label in LABOR_CONTRACT_VARIABLE_TYPE_LABELS.items()
+    ]))

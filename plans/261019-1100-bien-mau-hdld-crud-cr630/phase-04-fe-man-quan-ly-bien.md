@@ -1,6 +1,6 @@
 # Phase 04 — FE: màn quản lý «Danh sách biến»
 
-**Ưu tiên:** P2 · **Status:** pending · **Effort:** 4h · **Phụ thuộc:** 02 (hợp đồng API, làm được trước khi 02 merge nếu theo đúng bảng endpoint) · **Song song với:** 03
+**Ưu tiên:** P2 · **Status:** done · **Effort:** 4h · **Phụ thuộc:** 02 (hợp đồng API, làm được trước khi 02 merge nếu theo đúng bảng endpoint) · **Song song với:** 03
 
 ## Bối cảnh
 - Nút «Danh sách biến» ở `frontend-v2/src/modules/hr/components/labor-contract-template-catalog.tsx` (nằm trong `/document/settings?tab=templates&kind=labor-contract`) đang mở `labor-contract-placeholder-guide-dialog.tsx` (chỉ xem).

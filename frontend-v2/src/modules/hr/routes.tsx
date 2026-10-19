@@ -362,6 +362,14 @@ export const hrModule: ErpModule = {
       //  Đường cũ -> màn mới trong phân hệ Văn bản.
       element: <Navigate replace to={appRoutes.document.laborContractTemplates} />,
     },
+    //  duoc-CR-630 — Danh sách biến của mẫu. Cũng nằm dưới `/hr/labor-contract-templates` nên chung hàng rào
+    //  `labor_contract_template`; trang còn tự kiểm `can(..., 'read')`.
+    {
+      path: appRoutes.hr.laborContractVariables,
+      lazy: async () => ({
+        Component: (await import('./pages/labor-contract-variables-page')).LaborContractVariablesPage,
+      }),
+    },
     //  duoc-CR-606 — soạn nội dung mẫu trên web. Đường nằm DƯỚI mục menu «Mẫu hợp đồng» nên chung
     //  hàng rào `labor_contract_template` (gác điều hướng khớp theo ranh giới `/`).
     {

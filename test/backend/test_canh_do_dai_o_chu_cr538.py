@@ -150,6 +150,8 @@ TARGETS.update({
     **_same("ai_skill", "AiSkillFile", "SkillFileIn"),
     **_same("ai_skill", "AiSkillAccess", "AccessGrantIn", "AccessSubjectIn", "AccessRevokeIn"),
     **_same("labor_contract", "LaborContract", "TransitionIn"),
+    #  duoc-CR-630 — Danh sách biến mẫu HĐLĐ
+    **_same("labor_contract", "LaborContractVariable", "VariableCreate", "VariableUpdate"),
 })
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).

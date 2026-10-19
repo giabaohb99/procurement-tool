@@ -13,6 +13,8 @@ export interface LaborContractPlaceholder {
   label: string
   group: string
   example: string
+  /** duoc-CR-630: mô tả do HR khai ở «Danh sách biến» (có thể vắng ở backend cũ). */
+  description?: string
 }
 
 /** Mẫu hợp đồng của MỘT pháp nhân (mỗi mẫu đúng một loại HĐ). */
@@ -104,6 +106,8 @@ export interface LaborContract {
   allowance: number
   allowance_note: string
   note: string
+  /** duoc-CR-630: giá trị biến TÙY CHỈNH `{mã: chuỗi chuẩn}` (tiền «15000000», số «1.5», ngày ISO). */
+  custom_values: Record<string, string>
   has_generated_file: boolean
   generated_at: string | null
   has_signed_file: boolean
@@ -151,6 +155,11 @@ export interface LaborContractPayload {
   allowance: number
   allowance_note: string
   note: string
+  /**
+   * duoc-CR-630: chỉ gửi khi đã biết danh sách biến đang dùng. Ô trống gửi `""` (backend xóa khóa);
+   * khóa vắng = giữ nguyên (biến đã ngừng dùng không gửi).
+   */
+  custom_values?: Record<string, string>
 }
 
 /** PATCH: trường vắng/null bị bỏ qua, riêng `end_date: null` là GỠ ngày kết thúc. */

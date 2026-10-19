@@ -226,7 +226,9 @@ _EMPLOYEE_PATH_PREFIX = "/api/employees"
 #  Hợp đồng lao động: lương/phụ cấp là nhạy cảm (lý do tách khóa quyền `labor_contract`), nên
 #  thân request của `/api/labor-contracts/...` và `/api/employees/{id}/labor-contracts` cũng che.
 _LABOR_CONTRACT_PATH_PREFIX = "/api/labor-contracts"
-_LABOR_CONTRACT_KEYS = frozenset({"base_salary", "insurance_salary", "allowance", "allowance_note"})
+#  `custom_values` (duoc-CR-630): giá trị biến tùy chỉnh của mẫu — có thể là lương / thưởng, che như lương.
+_LABOR_CONTRACT_KEYS = frozenset({"base_salary", "insurance_salary", "allowance", "allowance_note",
+                                  "custom_values"})
 
 
 def sensitive_keys_for_path(path: str) -> frozenset:

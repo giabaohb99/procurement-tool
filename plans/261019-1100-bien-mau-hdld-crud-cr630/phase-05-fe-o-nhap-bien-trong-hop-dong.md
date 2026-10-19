@@ -1,6 +1,6 @@
 # Phase 05 — FE: ô nhập biến tùy chỉnh trong hộp «Lập / Sửa hợp đồng»
 
-**Ưu tiên:** P2 · **Status:** pending · **Effort:** 2h · **Phụ thuộc:** 03 (`custom_values` ở API HĐ), 04 (ô nhập theo kiểu, hook `/input-fields`, types)
+**Ưu tiên:** P2 · **Status:** done · **Effort:** 2h · **Phụ thuộc:** 03 (`custom_values` ở API HĐ), 04 (ô nhập theo kiểu, hook `/input-fields`, types)
 
 ## Bối cảnh
 - `hr/components/labor-contract-form-dialog.tsx` (108 dòng) + `labor-contract-form-dialog-fields.tsx` (164 dòng, sát trần 200) + `hr/schemas/labor-contract-schema.ts` (`buildContractFormDefaults`, `toLaborContractPayload`).

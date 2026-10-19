@@ -16,6 +16,8 @@ Priority P1. Status pending. Mọi thứ THUẦN (không DB, không HTTP) để 
 - Mẫu chỉ được dùng biến trong danh mục; biến lạ = 422 kèm danh sách (biến lạ render ra rỗng IM LẶNG nếu cho qua).
 
 ## Danh mục biến (nguồn DUY NHẤT: `placeholder_catalog.py`, FE đọc qua API)
+
+> **Đã thay bởi duoc-CR-630:** danh mục nay có thêm bảng `tab_labor_contract_variable` (biến tùy chỉnh nhập tay + nhãn biến hệ thống sửa được); `placeholder_catalog.py` chỉ còn là nguồn biến HỆ THỐNG. Xem `plans/261019-1100-bien-mau-hdld-crud-cr630/`.
 Tên ASCII snake_case. Ngày `dd/mm/yyyy`, rỗng nếu NULL. Tiền dấu chấm ngăn nghìn.
 
 | Nhóm | Biến | Nguồn |

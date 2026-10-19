@@ -1,6 +1,6 @@
 # Phase 03 — Tích hợp: kiểm mẫu theo danh mục động, giá trị biến theo HĐ, sinh tệp, che nhật ký
 
-**Ưu tiên:** P2 · **Status:** pending · **Effort:** 3.5h · **Phụ thuộc:** 01 · **Song song với:** 02, 04
+**Ưu tiên:** P2 · **Status:** done · **Effort:** 3.5h · **Phụ thuộc:** 01 · **Song song với:** 02, 04
 
 ## Kiến trúc
 

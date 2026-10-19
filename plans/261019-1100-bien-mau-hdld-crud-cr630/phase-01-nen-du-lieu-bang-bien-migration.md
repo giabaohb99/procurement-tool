@@ -1,6 +1,6 @@
 # Phase 01 — Nền: mã số, bảng biến, migration `lbvar01`, seed, luật thuần, registry
 
-**Ưu tiên:** P2 · **Status:** pending · **Effort:** 3h · **Phụ thuộc:** CR-629 (`lbrct02`) đã commit; `alembic heads` = đúng 1 head `lbrct02` (kiểm ngay trước khi viết migration).
+**Ưu tiên:** P2 · **Status:** done · **Effort:** 3h · **Phụ thuộc:** CR-629 (`lbrct02`) đã commit; `alembic heads` = đúng 1 head `lbrct02` (kiểm ngay trước khi viết migration).
 
 ## Bối cảnh
 - Nguồn hiện tại: `backend/app/modules/labor_contract/placeholder_catalog.py` (50 biến, `KNOWN_KEYS`, `sample_context`), tiêu thụ ở `docx_engine.py`, `context_builder.py` (assert `set(ctx) == KNOWN_KEYS`), `template_controller.py` (`/placeholders`), test `test_hdld_bo_may_docx.py`, `test_hdld_sua_loi_review.py`.

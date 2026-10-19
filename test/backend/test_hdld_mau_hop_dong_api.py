@@ -50,7 +50,7 @@ def test_danh_muc_bien_can_quyen_doc_mau_hoac_tao_hop_dong(db, world, storage, c
     for who, status in (("a1", 200), ("a2", 200), ("a3", 403)):
         assert client_as(world.actor(who)).get(f"{URL}/placeholders").status_code == status, who
     rows = client_as(world.actor("a1")).get(f"{URL}/placeholders").json()["data"]
-    assert {"key", "label", "group", "example"} == set(rows[0]) and any(r["key"] == "ho_ten" for r in rows)
+    assert {"key", "label", "group", "example"} <= set(rows[0])   # CR-630 thêm `description` and any(r["key"] == "ho_ten" for r in rows)
 
 
 # ── Phạm vi: pháp nhân khác ──────────────────────────────────────────────────────────

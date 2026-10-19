@@ -46,6 +46,7 @@ from app.seed_data.document_phase1 import (ALL_DOC_TYPES, DOC_TYPE_LINK_RULES,
                                            DOCUMENT_COMPANIES)
 from app.modules.notification.model import Notification, EmailLog  # noqa: F401
 from app.modules.report_access.seed_defaults import ensure_report_access_defaults
+from app.modules.labor_contract.variable_seed import ensure_system_variables
 
 
 # Seed chạy MỖI LẦN api khởi động (start.prod.sh: alembic upgrade -> python -m app.seed -> uvicorn).
@@ -1646,6 +1647,11 @@ def run():
 
         # 4 khung cấu hình trang chủ Help Center (Bắt đầu ngay/Phân hệ/Câu hỏi/Mẹo)
         seed_help_home_sections(db)
+
+        n_lc_vars = ensure_system_variables(db)   # duoc-CR-630: 48 biến HĐLĐ hệ thống, insert-only
+        db.commit()
+        if n_lc_vars:
+            print(f"Nạp {n_lc_vars} biến mẫu hợp đồng lao động.")
 
         # Phase 1 Văn thư: 32 loại + Trích lục, 13 mã pháp nhân, mã phòng ban và
         # dòng A06 cho pháp nhân gốc. Chỉ thêm/điền ô trống, không ghi đè.

@@ -4,6 +4,8 @@ Thứ tự kiểm khi nhận tệp (đầu vào KHÔNG tin cậy): `guard_upload
 `inspect_template` (guard_upload KHÔNG nhìn nội dung .docx: zip bom, macro, biến lạ, cú pháp Jinja
 ngoài `{{ biến }}`). Sai → `TemplateRejected` (controller đổi thành 422 kèm `unknown`).
 """
+from collections.abc import Iterable
+
 from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -13,7 +15,7 @@ from app.core.scoping import apply_scope
 from app.core.upload_guard import guard_upload
 from app.modules.company.model import Company
 
-from . import access
+from . import access, variable_registry
 from .docx_engine import inspect_template
 from .file_response import (delete_files_after_commit, discard_new_file, load_bytes,
                             store_bytes)
@@ -27,15 +29,26 @@ CATEGORY = "labor-contract-template"
 OUT_OF_SCOPE = "Pháp nhân ngoài phạm vi của bạn"
 
 
-def read_and_inspect(fileobj, filename: str) -> tuple[bytes, list[str]]:
-    """guard_upload RỒI inspect_template. Ném HTTPException (400/422) hoặc TemplateRejected."""
+def read_and_inspect(db: Session, fileobj, filename: str, keep: Iterable[str] = ()) -> tuple[bytes, list[str]]:
+    """guard_upload RỒI inspect_template theo DANH MỤC ĐỘNG (biến hệ thống + biến tùy chỉnh đang dùng).
+
+    `keep` = biến mẫu CŨ đã chứa: thay tệp / soạn web vẫn nhận biến đã ngừng dùng có sẵn trong chính mẫu
+    đó (nếu không HR không vá nổi lỗi chính tả mẫu chưa kịp gỡ biến). Tải mới: `keep=()`.
+    Ném HTTPException (400/422) hoặc TemplateRejected."""
     exts, max_mb = direct_policy(KIND)
     guard_upload(filename=filename, fileobj=fileobj, exts=exts, max_mb=max_mb)
     data = fileobj.read()
-    placeholders = inspect_template(data)
-    if len(placeholders) > MAX_PLACEHOLDERS:  # không xảy ra với danh mục hiện tại; lưới cho cột JSON
+    return data, inspect_with_catalog(db, data, keep)
+
+
+def inspect_with_catalog(db: Session, data: bytes, keep: Iterable[str] = ()) -> list[str]:
+    """`inspect_template` + trần số biến, theo danh mục động. Dùng chung cho tải / thay tệp / soạn web."""
+    allowed, inactive = variable_registry.allowed_template_keys(db, keep)
+    placeholders = inspect_template(data, allowed, variable_registry.sample_context_for(
+        variable_registry.custom_rows(db)), inactive)
+    if len(placeholders) > MAX_PLACEHOLDERS:
         raise HTTPException(422, "Mẫu dùng quá nhiều biến")
-    return data, placeholders
+    return placeholders
 
 
 def _active_company_or_400(db: Session, company_id: int) -> Company:
@@ -87,7 +100,7 @@ def create_template(db: Session, user, profile: dict, data: TemplateCreateIn, fi
         raise HTTPException(403, OUT_OF_SCOPE)
     _active_company_or_400(db, data.company_id)
     _ensure_unique_name(db, data.company_id, data.name)
-    file_bytes, placeholders = read_and_inspect(fileobj, filename)
+    file_bytes, placeholders = read_and_inspect(db, fileobj, filename)
 
     row = LaborContractTemplate(
         company_id=data.company_id, contract_type=data.contract_type, name=data.name, note=data.note,
@@ -110,7 +123,7 @@ def create_template(db: Session, user, profile: dict, data: TemplateCreateIn, fi
 
 def replace_file(db: Session, user, row: LaborContractTemplate, fileobj, filename: str) -> None:
     """Thay tệp: kiểm lại như lúc tải mới; commit tệp mới rồi MỚI xóa tệp cũ."""
-    file_bytes, placeholders = read_and_inspect(fileobj, filename)
+    file_bytes, placeholders = read_and_inspect(db, fileobj, filename, keep=row.placeholders or [])
     swap_file(db, user, row, file_bytes, placeholders, filename)
 
 

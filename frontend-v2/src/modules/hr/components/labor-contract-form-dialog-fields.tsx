@@ -20,6 +20,8 @@ interface LaborContractFormDialogFieldsProps {
   companyName: string
   /** Câu báo «chưa có mẫu» / gợi ý mẫu, nằm dưới ô Loại. */
   templateHint: ReactNode
+  /** duoc-CR-630 — khối «Thông tin bổ sung cho mẫu» (biến tùy chỉnh); `null` khi không có biến nào. */
+  customFields?: ReactNode
   footer: ReactNode
 }
 
@@ -34,6 +36,7 @@ export function LaborContractFormDialogFields({
   onSubmit,
   companyName,
   templateHint,
+  customFields,
   footer,
 }: LaborContractFormDialogFieldsProps) {
   const contractType = form.watch('contract_type')
@@ -157,6 +160,7 @@ export function LaborContractFormDialogFields({
             <FormMessage />
           </FormItem>
         )} />
+        {customFields}
         {footer}
       </form>
     </Form>

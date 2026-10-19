@@ -27,6 +27,7 @@ export function makeLaborContract(overrides: Partial<LaborContract> = {}): Labor
     allowance: 500_000,
     allowance_note: 'Ăn trưa',
     note: '',
+    custom_values: {},
     has_generated_file: false,
     generated_at: null,
     has_signed_file: false,

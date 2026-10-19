@@ -47,6 +47,7 @@ với đúng thư mục đó (CLAUDE.md giữ phần cốt lõi). Thêm luật c
 | `.claude/rules/frontend-v1-frozen.md` | `frontend/`, `help-center/` | CRUD khai báo, `can()`, Help Center, định dạng tiền, API client của bản cũ |
 | `.claude/rules/hr-leave.md` | `leave/`, `approval/`, `hr/` | Nghỉ phép: khóa quyền, giữ chỗ quỹ, đơn nhiều loại nghỉ, duyệt ngay trong màn |
 | `.claude/rules/hr-employee-profile.md` | `employee/`, `hr/`, seed | Hồ sơ nhân sự mở rộng, `employee_sensitive`, danh mục Chức vụ |
+| `.claude/rules/hr-labor-contract-variables.md` | `labor_contract/`, `hr/`, test `*hdld*` | Danh mục biến mẫu HĐLĐ động, `custom_values` gán dict mới, `json_extract`, mặc định sao lúc lập, quyền ghi phạm vi tất cả |
 | `.claude/rules/backend-input-limits.md` | `backend/app/`, `test/backend/` | Cột `String(n)` phải có `max_length` (500 → 422), trần JSON/ngày/số dòng |
 | `.claude/rules/document-folders-search.md` | `document/`, `doc_catalog/`, migrations | Thư mục văn bản, `doc_folder`, chỉ mục tìm toàn văn, bẫy từ dừng FULLTEXT |
 | `frontend-v2/.claude/rules/*.md` | `frontend-v2/` | Component, styling, icon, naming, TypeScript, testing của giao diện v2 |

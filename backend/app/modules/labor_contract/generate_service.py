@@ -1,6 +1,7 @@
 """Sinh tệp .docx của HĐ từ mẫu + tệp scan đã ký. Dữ liệu NLĐ lấy từ model THÔ (không qua che
 `employee_sensitive`): người có `labor_contract.print` cầm bản HĐ có CCCD / STK — đó là bản chất của HĐLĐ.
 """
+import logging
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -13,12 +14,15 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
 from .context_builder import build_context
+from .contract_custom_values import ensure_required_filled
+from .variable_registry import custom_context, custom_rows
 from .docx_engine import TemplateRejected, render
 from .file_response import (delete_files_after_commit, discard_new_file, load_bytes,
                             safe_filename, store_bytes)
 from .model import LaborContract
 from .template_model import LaborContractTemplate
 
+log = logging.getLogger("app.labor_contract")
 DOCX_KIND, SIGNED_KIND, CATEGORY = "labor_contract_docx", "labor_contract_signed", "labor-contract"
 
 
@@ -48,6 +52,28 @@ def _pick_template(db: Session, row: LaborContract, template_id: int) -> LaborCo
     return tpl
 
 
+def _with_custom_variables(db: Session, row: LaborContract, tpl: LaborContractTemplate,
+                           ctx: dict[str, str]) -> dict[str, str]:
+    """duoc-CR-630: ghép biến TÙY CHỈNH vào ngữ cảnh + hai lưới an toàn trước khi render.
+
+    1) Mẫu dùng biến đã bị XÓA khỏi danh mục (đua xóa / tải mẫu) → 422 rõ ràng (render StrictUndefined
+       sẽ nổ khó hiểu). 2) Biến BẮT BUỘC mà mẫu dùng còn trống → 422 nêu NHÃN (không nêu giá trị)."""
+    rows = custom_rows(db)
+    custom = custom_context(rows, row.custom_values)
+    clash = sorted(set(ctx) & set(custom))
+    if clash:   # dữ liệu lệch (dòng DB tùy chỉnh trùng mã hệ thống): giá trị hệ thống THẮNG, không làm hỏng việc sinh
+        log.error("Biến tùy chỉnh trùng biến hệ thống, bỏ qua giá trị tùy chỉnh: %s", ", ".join(clash))
+        custom = {k: v for k, v in custom.items() if k not in clash}
+    merged = {**ctx, **custom}
+    placeholders = tpl.placeholders or []
+    gone = sorted(set(placeholders) - set(merged))
+    if gone:
+        raise HTTPException(422, "Mẫu dùng biến đã bị xóa khỏi danh mục: " + ", ".join(gone)
+                                 + " — hãy sửa lại mẫu")
+    ensure_required_filled(db, row.custom_values, placeholders, "sinh tệp")
+    return merged
+
+
 def generate(db: Session, user, contract_id: int, template_id: int) -> tuple[LaborContract, str]:
     """Sinh (hoặc sinh lại) tệp. Khóa dòng HĐ để hai người bấm cùng lúc không đè nhau."""
     row = db.query(LaborContract).filter(LaborContract.id == contract_id).with_for_update().first()
@@ -63,6 +89,7 @@ def generate(db: Session, user, contract_id: int, template_id: int) -> tuple[Lab
     _, template_bytes = load_bytes(db, tpl.file_id)
     ctx = build_context(row, emp, db.get(Company, row.company_id),
                         db.get(Department, row.department_id) if row.department_id else None, vn_today())
+    ctx = _with_custom_variables(db, row, tpl, ctx)
     try:
         out = render(template_bytes, ctx)
     except TemplateRejected as exc:
