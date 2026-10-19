@@ -70,6 +70,35 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-636 | Cập nhật bài Trung tâm trợ giúp Kết nối AI riêng theo OAuth, xem lại khóa, ứng dụng đã kết nối
+- status: xong
+- date: 2026-10-19
+Agent 1 giao em cập nhật cụm bài hướng dẫn vừa viết sáng nay (bao-CR-631) theo những thứ lên dev trong ngày: kết nối
+ChatGPT và claude.ai bằng đăng nhập ERP (OAuth, ai-CR-218, 222, 225), xem lại khóa và tạm tắt khóa (ai-CR-221), màn Ứng
+dụng AI đã kết nối (bao-CR-635) và bộ Cẩm nang hệ thống (ai-CR-220).
+
+Em thêm bài mới Nối ChatGPT và claude.ai bằng đăng nhập ERP: các bước thêm kết nối tùy chỉnh ở từng ứng dụng, dán địa
+chỉ cổng, đăng nhập ERP, chọn mức rồi bấm Cho phép; nói rõ màn Cho phép hiện tên miền nơi dữ liệu quay về, tên ứng dụng
+là tự khai nên tên miền mới là bằng chứng, tên miền lạ có cảnh báo đỏ và phải dừng; kết nối sống 90 ngày, hiện thành
+dòng Qua ChatGPT hay Qua Claude trong khối Khóa của bạn, gỡ hay tạm tắt ở đó; bảng lỗi hay gặp riêng cho cách nối này.
+Bài Claude Desktop nay mở đầu bằng bảng hai cách: thêm Connector rồi đăng nhập ERP (không cần Node.js) hoặc dán khóa qua
+cầu mcp-remote, giữ nguyên các bẫy thoát hẳn ứng dụng, sửa tệp qua Settings rồi Developer. Bài khóa bỏ câu khóa chỉ hiện
+một lần, thêm mục xem lại khóa (chỉ chủ khóa, mỗi lần xem có ghi nhật ký, bốn trường hợp không xem được) và mục tạm tắt
+bật lại (khác gỡ), nói rõ kết nối qua đăng nhập cũng nằm trong khối Khóa của bạn và không tính vào trần năm khóa. Bài Claude
+Code, Cursor, Gemini bỏ đoạn claude.ai và ChatGPT chưa nối được, trỏ sang bài mới. Bài dành cho quản trị thêm mục Ứng dụng
+AI đã kết nối (tên tự khai đừng tin, nhìn host, xóa là cắt mọi kết nối) và mục bộ Cẩm nang hệ thống bảy skill nền nay nằm
+trong kho, quản trị sửa trên web, xuất bản xong AI đọc bản mới ngay, pháp nhân tạo sau phải gán tay. Bài nhật ký thêm lý do
+Khóa đang tắt, mất kết nối OAuth và dòng key/reveal. Tài liệu chức năng 22 cập nhật cùng nội dung lên bản 1.1.
+
+Nhãn nút xem lại và tạm tắt ở màn Khóa của bạn em viết theo hợp đồng API vì màn đó là bao-CR-633 của Agent 3 chưa lên
+dev; lên xong phải đối chiếu lại nhãn. Seed chạy lại trên máy local ra 8 bài, không có khóa thật; đã chép vào container
+api dev, chạy seed và nạp lại chỉ mục Trợ lý AI.
+
+Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`.
+Commit: chưa, chờ đại ca gật. Deploy: đã seed dev 19/10 chiều.
+
+---
+
 ## bao-CR-635 | Kho skill AI: màn quản trị Ứng dụng AI đã kết nối (tự đăng ký OAuth)
 - status: xong
 - date: 2026-10-19
