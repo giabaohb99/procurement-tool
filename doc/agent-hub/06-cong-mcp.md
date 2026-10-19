@@ -165,7 +165,7 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 | `GET mcp-keys/pending` | — | `{items: [Key]}` — khóa quản trị phát hộ đang chờ nhận |
 | `POST mcp-keys/{id}/claim` | — | `Key + {key}` — khóa thô ĐÚNG một lần; lần hai / không phải của mình / thu hồi / hết hạn → 404 |
 | `GET mcp-keys/{id}/last-call` | — | `{key_id, connected: bool, last_call: Call?, last_ok_call: Call?}` — `connected` = đã có ít nhất một lượt thành công; khóa không phải của mình → 404 |
-| `GET mcp-calls` | `date_from, date_to, key_id, tool, status, page, size≤200` | `{total, page, size, has_more, items: [CallRow], statuses: [{value, label}]}` — người thường chỉ của mình |
+| `GET mcp-calls` | `date_from, date_to, key_id, tool, status, page, size≤200, kind=""\|"tools"` | `{total, page, size, has_more, items: [CallRow], statuses: [{value, label}]}` — người thường chỉ của mình; `kind=tools` chỉ lượt `tools/call` (ẩn initialize / tools/list / thông báo); lượt khóa sai có `user_id = 0`, `user_label = "(khóa sai)"` (ai-CR-219) |
 | `GET mcp-calls/daily?days=14` | `days≤90` | `{days, items: [{day, total, ok, denied, error}]}` — đủ từng ngày |
 
 `Key` = `{id, name, hint: "…abcd", scope, scope_label, expires_at, last_used_at, created_at, state, state_label, issued_by,
@@ -178,7 +178,7 @@ skill_id, status, status_label, deny_reason, duration_ms, ip}`.
 
 | Đường | Quyền | Vào | `data` |
 |---|---|---|---|
-| `GET ai-overview` | `agent_group.read` | — | `{generated_at, skills: {skill_sets, skills}\|null, connected_users, connected_days: 30, calls_7d, calls_prev_7d, calls_change_pct\|null, denied_7d, error_7d, daily: [{day,total,ok,denied,error}×14], top_tools: [{key, calls}], top_users: [{key, calls, label}], top_skills: [{skill_id, calls}], keys_by_state: [{state, label, count}], expiring_keys: [{key_id, user_id, owner_label, name, expires_at, state}], expiring_days: 7}` — `skills = null` khi ERP không trả lời |
+| `GET ai-overview` | `agent_group.read` | — | `{generated_at, skills: {skill_sets, skills}\|null, connected_users, connected_days: 30, calls_7d, calls_prev_7d, calls_change_pct\|null, tool_calls_7d, tool_calls_prev_7d, denied_7d, error_7d, daily: [{day,total,ok,denied,error}×14], top_tools: [{key, calls}], top_users: [{key, calls, label}], top_skills: [{skill_id, calls}], keys_by_state: [{state, label, count}], expiring_keys: [{key_id, user_id, owner_label, name, expires_at, state}], expiring_days: 7}` — `skills = null` khi ERP không trả lời |
 | `GET mcp-calls` | xem người khác: `agent_group.read` | + `user_id` | như §7.1; không quyền mà hỏi người khác → 403 |
 | `GET mcp-calls/top?by=tool\|user&days=14&limit=10` | như trên | | `{by, days, items: [{key, calls, label?}]}` |
 | `GET mcp-key-admin/meta` | — | — | `{days: [7,30,90,180,365], batch_max: 50, max_keys: 5, states: [{value, label}], can_read, can_create, can_delete}` |

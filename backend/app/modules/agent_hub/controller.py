@@ -619,14 +619,19 @@ def _mcp_log_subject(db: Session, user, user_id: int | None) -> int | None:
 def list_mcp_calls(date_from: date | None = None, date_to: date | None = None, user_id: int | None = Query(None, ge=1),
                    key_id: int | None = Query(None, ge=0), tool: str = Query("", max_length=80),
                    status: int | None = Query(None, ge=1, le=3), page: int = Query(1, ge=1, le=10_000),
-                   size: int = Query(50, ge=1, le=200), user=Depends(get_current_user), db: Session = Depends(get_db)):
+                   size: int = Query(50, ge=1, le=200), kind: str = Query("", pattern="^(|tools)$"),
+                   user=Depends(get_current_user), db: Session = Depends(get_db)):
     from . import mcp_log
 
     subject = _mcp_log_subject(db, user, user_id)
+    #  ai-CR-219: `kind=tools` = chỉ lượt gọi công cụ (tools/call) — màn Nhật ký ẩn initialize / tools/list / thông báo.
     total, rows = mcp_log.list_calls(db, page=page, size=size, user_id=subject, key_id=key_id, tool=tool.strip(),
-                                     status=status, d_from=date_from, d_to=date_to)
-    names = _user_labels(db, [r.user_id for r in rows])
-    items = [{**mcp_log.serialize(r), "user_label": names.get(r.user_id, "")} for r in rows]
+                                     status=status, d_from=date_from, d_to=date_to,
+                                     method="tools/call" if kind == "tools" else "")
+    names = _user_labels(db, [r.user_id for r in rows if r.user_id])
+    #  Lượt khóa sai không có chủ (user_id = 0) — nhãn nói thẳng thay vì «#0».
+    items = [{**mcp_log.serialize(r), "user_label": names.get(r.user_id, "") if r.user_id else "(khóa sai)"}
+             for r in rows]
     return success({"total": total, "page": page, "size": size, "has_more": page * size < total, "items": items,
                     "statuses": [{"value": int(k), "label": v} for k, v in mcp_log.CALL_STATUS_LABELS.items()]})
 

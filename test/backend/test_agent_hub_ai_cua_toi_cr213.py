@@ -186,3 +186,30 @@ def test_dem_skill_dang_dung_phia_erp(db):
                 AiSkill(skill_set_id=draft.id, slug="d", status=int(SkillStatus.ACTIVE))])
     db.commit()
     assert skill_stats(db) == {"skill_sets": 1, "skills": 1}
+
+
+# ── ai-CR-219: lọc lượt gọi công cụ + nhãn khóa sai + đếm riêng tools/call ──────
+
+def test_nhat_ky_loc_luot_goi_cong_cu_va_nhan_khoa_sai(db, monkeypatch):
+    from app.modules.agent_hub import erp
+
+    now = datetime.now()
+    for method in ("initialize", "tools/list", "notifications/initialized", "tools/call", "tools/call"):
+        db.add(AgentMcpCall(key_id=9, user_id=55, method=method, tool="erp_read" if method == "tools/call" else "",
+                            status=S.OK, created_at=now - timedelta(hours=1)))
+    db.add(AgentMcpCall(key_id=0, user_id=0, method="initialize", status=S.DENIED, deny_reason="Khóa sai",
+                        created_at=now - timedelta(hours=1)))
+    db.commit()
+    monkeypatch.setattr(controller, "_mcp_log_subject", lambda db_, user, uid: uid)
+    monkeypatch.setattr(controller, "_user_labels", lambda db_, ids: {55: "Người 55"})
+    args = dict(date_from=None, date_to=None, user_id=None, key_id=None, tool="", status=None, page=1, size=50)
+    every = _json(controller.list_mcp_calls(**args, kind="", user=SimpleNamespace(id=1), db=db))
+    assert every["total"] == 6 and {i["user_label"] for i in every["items"]} == {"Người 55", "(khóa sai)"}
+    tools = _json(controller.list_mcp_calls(**args, kind="tools", user=SimpleNamespace(id=1), db=db))
+    assert tools["total"] == 2 and {i["method"] for i in tools["items"]} == {"tools/call"}
+
+    monkeypatch.setattr(erp, "skill_stats", lambda db_: {"skill_sets": 0, "skills": 0})
+    from app.modules.agent_hub import ai_overview
+
+    out = ai_overview.build(db, now=now)
+    assert (out["calls_7d"], out["tool_calls_7d"], out["tool_calls_prev_7d"]) == (6, 2, 0)

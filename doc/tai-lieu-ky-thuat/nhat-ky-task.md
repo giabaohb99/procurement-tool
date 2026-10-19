@@ -13540,6 +13540,16 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-219 | Nhật ký cổng nối AI lọc riêng lượt gọi công cụ, số liệu Tổng quan khỏi lệch
+- status: xong
+- date: 2026-10-19
+Agent 2 soi màn Kho skill AI trên dev thấy màn Nhật ký trộn lẫn các lượt ứng dụng AI mở kết nối, xin danh sách công cụ với
+các lượt gọi công cụ thật, lượt dùng khóa sai lại hiện là người số 0, và thẻ lượt gọi bảy ngày ra năm mươi trong khi công cụ
+dùng nhiều nhất chỉ một lượt. Nay đường đọc nhật ký lọc được riêng lượt gọi công cụ, lượt khóa sai ghi rõ là khóa sai, và số
+liệu Tổng quan có thêm lượt gọi công cụ bảy ngày để thẻ khớp với bảng công cụ. Agent 3 nối phần màn.
+
+Mã nguồn: agent_hub/mcp_log.py, agent_hub/controller.py, agent_hub/ai_overview.py
+
 ## ai-CR-217 | Vá lỗi màn Cấu hình hệ thống và các bài kiểm đỏ trước đợt lên prod ngày 19/10
 - status: xong
 - date: 2026-10-19

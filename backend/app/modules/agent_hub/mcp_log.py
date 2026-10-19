@@ -46,6 +46,7 @@ REASON_BAD_KEY = "Khóa sai"
 REASON_EXPIRED = "Khóa đã hết hạn"
 REASON_REVOKED = "Khóa đã bị thu hồi"
 REASON_UNCLAIMED = "Khóa phát hộ chưa được chủ khóa nhận"
+REASON_OAUTH_EXPIRED = "Mã truy cập OAuth đã hết hạn (ứng dụng cần làm mới)"
 REASON_ROW_BUDGET = "Quá ngân sách dữ liệu (dòng / phút)"
 REASON_INACTIVE = "Tài khoản đã bị khóa"
 REASON_RATE_KEY = "Quá tần suất (khóa)"
@@ -231,8 +232,10 @@ def purge(db: Session, now: datetime | None = None) -> dict:
 
 # --- đọc (màn G1 / G6) ---------------------------------------------------------------------------------------------
 def _filtered(stmt, *, user_id: int | None, key_id: int | None = None, tool: str = "", status: int | None = None,
-              d_from: date | None = None, d_to: date | None = None, model=AgentMcpCall):
+              d_from: date | None = None, d_to: date | None = None, model=AgentMcpCall, method: str = ""):
     col_day = model.created_at if model is AgentMcpCall else model.day
+    if method:                       # ai-CR-219: "tools/call" = chỉ lượt gọi công cụ, bỏ bắt tay / liệt kê / thông báo
+        stmt = stmt.where(model.method == method)
     if user_id is not None:
         stmt = stmt.where(model.user_id == user_id)
     if key_id is not None:

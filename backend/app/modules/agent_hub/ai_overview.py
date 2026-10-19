@@ -18,10 +18,12 @@ EXPIRING_DAYS = 7
 TOP_N = 5
 
 
-def _count(db: Session, since: datetime, until: datetime, status: int | None = None) -> int:
+def _count(db: Session, since: datetime, until: datetime, status: int | None = None, method: str = "") -> int:
     q = select(func.count(AgentMcpCall.id)).where(AgentMcpCall.created_at >= since, AgentMcpCall.created_at < until)
     if status is not None:
         q = q.where(AgentMcpCall.status == status)
+    if method:
+        q = q.where(AgentMcpCall.method == method)
     return int(db.scalar(q) or 0)
 
 
@@ -64,6 +66,9 @@ def build(db: Session, *, now: datetime | None = None, labels=None) -> dict:
         "skills": skills,                                  # {skill_sets, skills} hoặc None khi ERP lỗi
         "connected_users": connected, "connected_days": CONNECTED_DAYS,
         "calls_7d": calls_7, "calls_prev_7d": calls_prev,
+        #  ai-CR-219: chỉ lượt gọi công cụ (tools/call) — thẻ «Lượt gọi 7 ngày» khỏi lệch với «Công cụ dùng nhiều».
+        "tool_calls_7d": _count(db, week, now, method="tools/call"),
+        "tool_calls_prev_7d": _count(db, prev, week, method="tools/call"),
         "calls_change_pct": round((calls_7 - calls_prev) / calls_prev * 100, 1) if calls_prev else None,
         "denied_7d": denied_7, "error_7d": error_7,
         "daily": mcp_log.daily_totals(db, days=14, today=now.date()),
