@@ -178,6 +178,11 @@ export interface AdminMcpKey {
   /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
   kind?: number
   kind_label?: string
+  /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
+  enabled?: boolean
+  disabled_at?: string | null
+  /** Xem lại được khóa đầy đủ không (false: khóa trước 221, OAuth, chờ nhận, hết hạn, thu hồi). */
+  revealable?: boolean
   owner_label: string
   department_id: number
   department: string
@@ -266,6 +271,11 @@ export interface MyMcpKey {
   /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
   kind?: number
   kind_label?: string
+  /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
+  enabled?: boolean
+  disabled_at?: string | null
+  /** Xem lại được khóa đầy đủ không (false: khóa trước 221, OAuth, chờ nhận, hết hạn, thu hồi). */
+  revealable?: boolean
   key?: string
 }
 

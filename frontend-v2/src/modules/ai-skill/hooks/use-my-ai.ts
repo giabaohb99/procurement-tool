@@ -6,16 +6,59 @@ import { aiSkillApi, aiUsageApi, myAiApi } from '../api/ai-skill-api'
 
 /** «AI của tôi» (G8) + Tổng quan (G1) — K6, hợp đồng doc/agent-hub/06 §6. */
 
-export function useSetupClients() {
-  return useQuery({ queryKey: queryKeys.aiSkill.setupClients(), queryFn: () => myAiApi.setupClients(), staleTime: 5 * 60_000 })
+export function useSetupClients(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.aiSkill.setupClients(),
+    queryFn: () => myAiApi.setupClients(),
+    staleTime: 5 * 60_000,
+    enabled,
+  })
 }
 
-export function useSetup(client: string) {
+export function useSetup(client: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.aiSkill.setup(client),
     queryFn: () => myAiApi.setup(client),
-    enabled: client !== '',
+    enabled: enabled && client !== '',
     staleTime: 5 * 60_000,
+  })
+}
+
+/** Bản công khai cho trang /connect-ai (không cần đăng nhập). */
+export function usePublicSetupClients(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.aiSkill.publicSetupClients(),
+    queryFn: () => myAiApi.publicSetupClients(),
+    staleTime: 5 * 60_000,
+    enabled,
+  })
+}
+
+export function usePublicSetup(client: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.aiSkill.publicSetup(client),
+    queryFn: () => myAiApi.publicSetup(client),
+    enabled: enabled && client !== '',
+    staleTime: 5 * 60_000,
+  })
+}
+
+/**
+ * Xem lại khóa đầy đủ (ai-CR-221). CỐ Ý là mutation, không phải useQuery: câu trả `no-store`, mỗi lần gọi ghi nhật ký —
+ * không được để bộ đệm tự gọi lại khi mở màn / đổi tab. Khóa thô chỉ giữ trong bộ nhớ của màn.
+ */
+export function useRevealKey() {
+  return useMutation({ mutationFn: (id: number) => myAiApi.revealKey(id) })
+}
+
+export function useSetKeyEnabled() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: number; enabled: boolean }) => myAiApi.setKeyEnabled(id, enabled),
+    onSuccess: (key) => {
+      toast.success(key.enabled === false ? 'Đã tắt khóa — ứng dụng AI dùng khóa này tạm ngừng tra ERP.' : 'Đã bật lại khóa.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.mcpKeys() })
+    },
   })
 }
 
@@ -27,13 +70,13 @@ export function usePendingKeys() {
   return useQuery({ queryKey: queryKeys.aiSkill.pendingKeys(), queryFn: () => myAiApi.pendingKeys() })
 }
 
-/** Tạo / nhận khóa: KHÔNG toast khóa ra — khóa thô chỉ hiện trong khung trên màn, đúng một lần. */
+/** Tạo / nhận khóa: KHÔNG toast khóa ra — khóa thô chỉ nằm trong bộ nhớ của màn (xem lại sau bằng nút Hiện). */
 export function useCreateMyKey() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: { name: string; scope: number; days: number }) => myAiApi.createKey(body),
     onSuccess: () => {
-      toast.success('Đã tạo khóa. Chép ngay — khóa chỉ hiện một lần.')
+      toast.success('Đã tạo khóa.')
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.mcpKeys() })
     },
   })
@@ -44,7 +87,7 @@ export function useClaimKey() {
   return useMutation({
     mutationFn: (id: number) => myAiApi.claimKey(id),
     onSuccess: () => {
-      toast.success('Đã nhận khóa. Chép ngay — khóa chỉ hiện một lần.')
+      toast.success('Đã nhận khóa.')
       void queryClient.invalidateQueries({ queryKey: queryKeys.aiSkill.pendingKeys() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.mcpKeys() })
     },
