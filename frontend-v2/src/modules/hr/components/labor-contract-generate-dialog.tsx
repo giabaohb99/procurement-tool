@@ -66,7 +66,7 @@ function GenerateBody({ row, employeeId, onClose }: { row: LaborContract; employ
             {can('labor_contract_template', 'read') && (
               <>
                 {' '}
-                <Link to={appRoutes.document.laborContractTemplates} className="font-medium underline">
+                <Link to={appRoutes.hr.laborContractTemplates} className="font-medium underline">
                   Mở màn Mẫu hợp đồng
                 </Link>
               </>

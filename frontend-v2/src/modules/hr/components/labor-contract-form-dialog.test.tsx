@@ -115,7 +115,7 @@ describe('LaborContractFormDialog', () => {
     listTemplateOptions.mockResolvedValue([])
     renderDialog({ row: makeLaborContract() })
     expect(await screen.findByText(/chưa có mẫu cho loại này/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Mẫu hợp đồng/ })).toHaveAttribute('href', '/document/settings?tab=templates&kind=labor-contract')
+    expect(screen.getByRole('link', { name: /Mẫu hợp đồng/ })).toHaveAttribute('href', '/hr/labor-contract-templates') // duoc-CR-643: ở lại phân hệ Nhân sự
   })
 
   it('mẫu rỗng nhưng không có quyền xem màn Mẫu: chỉ câu báo, không có liên kết', async () => {

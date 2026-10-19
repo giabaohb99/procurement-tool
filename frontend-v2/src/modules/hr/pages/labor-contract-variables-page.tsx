@@ -117,7 +117,12 @@ export function LaborContractVariablesPage() {
       <PageHeader
         leading={
           <Button type="button" variant="ghost" size="icon" aria-label="Quay lại Mẫu hợp đồng"
-            onClick={() => navigate(appRoutes.document.laborContractTemplates)}>
+            onClick={() =>
+              //  Về đúng trang trước (Nhân sự HAY Thiết lập văn bản); mở thẳng URL thì về trang mẫu của Nhân sự.
+              (window.history.state as { idx?: number } | null)?.idx
+                ? navigate(-1)
+                : navigate(appRoutes.hr.laborContractTemplates)
+            }>
             <ArrowLeft className="size-4" />
           </Button>
         }

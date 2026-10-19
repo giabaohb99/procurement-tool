@@ -15189,3 +15189,14 @@ cột thao tác chỉ còn một nút ba chấm mở menu có biểu tượng k�
 cột thao tác của bảng hợp đồng. Không đổi đường API và không đổi quyền.
 
 Mã nguồn: frontend-v2/src/modules/hr/components/labor-contract-template-header-actions.tsx · labor-contract-template-row-actions.tsx · labor-contract-template-catalog.tsx · config/labor-contract-template-columns.tsx · frontend-v2/src/modules/document/pages/document-settings-page.tsx
+
+## duoc-CR-643 | Mẫu hợp đồng mở ngay trong phân hệ Nhân sự
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm bấm mục Mẫu hợp đồng ở phân hệ Nhân sự thì bị chuyển sang trang Thiết lập văn bản của phân hệ Văn bản, trong khi ý
+ban đầu là bấm vào thì danh sách mẫu hiện ngay tại chỗ. Nay mục đó mở một trang riêng trong phân hệ Nhân sự, menu trái và đường dẫn
+phía trên vẫn là Nhân sự, bảng mẫu và các nút giống hệt bên Văn bản vì dùng chung một bảng và một dữ liệu. Liên kết mở màn mẫu trong
+hộp lập hợp đồng và hộp sinh tệp cũng trỏ về trang này; nút quay lại của trình soạn mẫu và của danh sách biến trở về đúng trang
+người dùng vừa đứng. Tab mẫu hợp đồng bên phân hệ Văn bản vẫn giữ nguyên.
+
+Mã nguồn: frontend-v2/src/modules/hr/pages/labor-contract-template-list-page.tsx · frontend-v2/src/modules/hr/routes.tsx · labor-contract-template-editor-page.tsx · labor-contract-variables-page.tsx
