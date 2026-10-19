@@ -3,7 +3,14 @@ import { useSearchParams } from 'react-router-dom'
 import { ErrorState } from '@/shared/ui/error-state'
 import { FileDropzone } from '@/shared/ui/file-dropzone'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { useDocumentFiles, useUploadDocumentFile } from '../hooks/use-document-files'
+import { confirm } from '@/shared/ui/confirm-dialog'
+import {
+  useDeleteDocumentFile,
+  useDocumentFiles,
+  useUploadDocumentFile,
+} from '../hooks/use-document-files'
+import { DocumentFilesToolbar } from './document-files-toolbar'
+import type { DocumentVersionFile } from '../api/document-api'
 import { DocumentFileList } from './document-file-list'
 import { DocumentFileViewerLayout } from './document-file-viewer-layout'
 
@@ -14,6 +21,8 @@ interface DocumentFilesTabProps {
   documentCode?: string
   /** Có quyền sửa (`canWrite` của trang chi tiết) — quyết định có bày nút tải lên hay không. */
   canWrite: boolean
+  /** Phiên bản đang dùng đã khóa (đã duyệt…) — không tải thêm / gỡ tệp được. Mặc định chưa khóa. */
+  isLocked?: boolean
 }
 
 const FILE_PARAM = 'file'
@@ -35,10 +44,14 @@ export function DocumentFilesTab({
   currentVersionId,
   documentCode,
   canWrite,
+  isLocked = false,
 }: DocumentFilesTabProps) {
   const { data: files, isLoading, isError, refetch } = useDocumentFiles(documentId)
   const [searchParams, setSearchParams] = useSearchParams()
   const upload = useUploadDocumentFile(documentId, currentVersionId ?? undefined)
+  const remove = useDeleteDocumentFile(documentId)
+  //  Tải thêm / gỡ tệp: có quyền sửa, có phiên bản để gắn và phiên bản chưa khóa (cả lúc đã có tệp).
+  const canManageFiles = canWrite && !isLocked && Boolean(currentVersionId)
 
   function openFile(linkId: number | null, push = false) {
     setSearchParams(
@@ -92,17 +105,40 @@ export function DocumentFilesTab({
     )
   }
 
+  const toolbar = (selectedFile?: DocumentVersionFile) =>
+    canManageFiles ? (
+      <DocumentFilesToolbar
+        busy={upload.isPending || remove.isPending}
+        onUpload={(picked) => upload.mutate(picked)}
+        onDelete={
+          selectedFile && selectedFile.is_current_version
+            ? async () => {
+                const ok = await confirm({
+                  title: 'Gỡ tệp này khỏi văn bản?',
+                  message: `Tệp «${selectedFile.filename}» sẽ bị gỡ khỏi phiên bản đang dùng.`,
+                  confirmLabel: 'Gỡ tệp',
+                })
+                if (ok) remove.mutate(selectedFile.id)
+              }
+            : undefined
+        }
+      />
+    ) : null
+
   if (items.length === 1) {
     //  Chỉ MỘT tệp — chiếm cả bề rộng, không có danh sách để về nên không
     //  truyền `onBackToList`. Không đồng bộ URL: chỉ mình nó, mở lại tab «Văn bản»
     //  lúc nào cũng ra đúng khung xem này.
     return (
-      <DocumentFileViewerLayout
-        files={items}
-        selectedId={items[0]!.id}
-        onSelect={() => {}}
-        documentCode={documentCode}
-      />
+      <>
+        {toolbar(items[0])}
+        <DocumentFileViewerLayout
+          files={items}
+          selectedId={items[0]!.id}
+          onSelect={() => {}}
+          documentCode={documentCode}
+        />
+      </>
     )
   }
 
@@ -111,15 +147,23 @@ export function DocumentFilesTab({
 
   if (selected) {
     return (
-      <DocumentFileViewerLayout
-        files={items}
-        selectedId={selected.id}
-        onSelect={(id) => openFile(id)}
-        onBackToList={() => openFile(null)}
-        documentCode={documentCode}
-      />
+      <>
+        {toolbar(selected)}
+        <DocumentFileViewerLayout
+          files={items}
+          selectedId={selected.id}
+          onSelect={(id) => openFile(id)}
+          onBackToList={() => openFile(null)}
+          documentCode={documentCode}
+        />
+      </>
     )
   }
 
-  return <DocumentFileList files={items} onOpen={(file) => openFile(file.id, true)} />
+  return (
+    <>
+      {toolbar()}
+      <DocumentFileList files={items} onOpen={(file) => openFile(file.id, true)} />
+    </>
+  )
 }

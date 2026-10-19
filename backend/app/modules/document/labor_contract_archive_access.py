@@ -121,6 +121,36 @@ def can_read(db: Session, contract, user, profile: dict) -> bool:
     return db.query(lc.id).filter(lc.id == contract.id, scope).first() is not None
 
 
+def can_write(db: Session, contract, user, profile: dict) -> bool:
+    """duoc-CR-640: SỬA bản lưu trữ ⇔ đọc được HĐ VÀ có `labor_contract.write` phủ HĐ đó (cùng người sửa được HĐ ở
+    Nhân sự). HĐ đã xóa mềm thì chỉ đọc. Không nguồn quyền nào của Văn bản được tính."""
+    if getattr(contract, "is_deleted", False) or not can_read(db, contract, user, profile):
+        return False
+    from app.modules.labor_contract.access import has_perm
+    #  Khớp đúng những gì ROUTE cho phép: lớp 1 của sửa / tải tệp đòi `document.write` (xem seed `hr_profile`).
+    if not has_perm(profile, "labor_contract", "write") or not has_perm(profile, "document", "write"):
+        return False
+    lc = _labor_contract_model()
+    scope = scope_condition(lc, "labor_contract", user, profile, "write")
+    if scope is None:
+        return True
+    return db.query(lc.id).filter(lc.id == contract.id, scope).first() is not None
+
+
+#  Trường do ĐỒNG BỘ từ hợp đồng sở hữu (duoc-CR-640): sửa tay sẽ bị đồng bộ ghi đè và `keywords` còn là dấu nhận
+#  văn bản mồ côi nên cấm sửa. Các trường còn lại (ghi chú, nơi lưu bản giấy, thư mục, nội dung, tệp…) sửa được.
+SYNC_OWNED_FIELDS = ("title", "summary", "keywords", "effective_date", "expire_date", "doc_type_id", "book_id",
+                     "company_id", "department_id", "owner_employee_id")
+
+
+def ensure_no_sync_owned_change(doc: Document, changes: dict) -> None:
+    """409 nếu `changes` (PATCH) ĐỔI giá trị một trường do đồng bộ sở hữu; gửi lại đúng giá trị cũ thì bỏ qua."""
+    touched = [f for f in SYNC_OWNED_FIELDS if f in changes and changes[f] != getattr(doc, f, None)]
+    if touched:
+        raise HTTPException(409, "Các trường này do hợp đồng lao động ở phân hệ Nhân sự quyết định, "
+                                 "không sửa ở Văn bản: " + ", ".join(touched))
+
+
 def is_archive_document(db: Session, doc: Document) -> bool:
     """Loại `HDLD` HOẶC có HĐ trỏ tới — hai điều kiện (phòng đổi mã loại / chạy đua lúc tạo)."""
     if contract_of(db, doc) is not None:
@@ -133,8 +163,9 @@ def is_archive_document(db: Session, doc: Document) -> bool:
 def ensure_not_archive(db: Session, doc: Document) -> None:
     """Chặn thao tác dẫn xuất (sao chép, clone, trích, ký) từ bản lưu trữ HĐLĐ."""
     if contract_of(db, doc) is not None:
-        raise HTTPException(409, "Bản lưu trữ hợp đồng lao động chỉ để xem; "
-                                 "mọi thay đổi thực hiện từ phân hệ Nhân sự")
+        raise HTTPException(409, "Bản lưu trữ hợp đồng lao động không dùng được thao tác này "
+                                 "(chia sẻ, sao chép, quan hệ, gửi duyệt, ký, ban hành, xóa…); "
+                                 "trạng thái do hợp đồng ở phân hệ Nhân sự quyết định")
 
 
 def ensure_not_system_type(db: Session, doc_type_id: int | None) -> None:

@@ -1,3 +1,4 @@
+import { isSystemDocumentType } from '../hooks/use-document-types'
 import { FolderGridDocumentCard } from './folder-grid-document-card'
 import { FolderItemContextMenu } from './folder-item-context-menu'
 import { writeFolderDragPayload } from '../helpers/folder-drag-payload'
@@ -63,7 +64,8 @@ export function FolderGridView({
           menuButtonPlacement="corner"
           onOpen={() => onOpen(document)}
           onMoveTo={() => onMoveTo(document)}
-          onManagePermissions={() => onShare(document)}
+          //  Bản lưu trữ HĐLĐ không chia sẻ được (backend 409) — ẩn mục «Chia sẻ».
+          onManagePermissions={isSystemDocumentType(document.doc_type_code) ? undefined : () => onShare(document)}
           onViewDetails={() => onViewDetails(document)}
           onRemove={() => onRemove(document)}
         >

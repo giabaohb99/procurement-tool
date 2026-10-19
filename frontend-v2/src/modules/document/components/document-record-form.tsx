@@ -26,6 +26,8 @@ interface DocumentRecordFormProps {
    * chúng không phải nội dung mà người duyệt đang đọc.
    */
   readOnly?: boolean
+  /** Bản lưu trữ HĐLĐ (duoc-CR-640): các trường do hợp đồng đồng bộ sở hữu bị khóa, phần còn lại sửa được. */
+  syncOwned?: boolean
   /** Công tắc TẠM TẮT hạn xem tệp (phase 09) — xem `document-extra-info-fields.tsx`. */
   attachmentViewWindowEnabled?: boolean
   onSubmit: (values: DocumentRecordFormValues) => void
@@ -49,6 +51,7 @@ export function DocumentRecordForm({
   isLeaveForm = false,
   readOnly = false,
   attachmentViewWindowEnabled = true,
+  syncOwned = false,
   onSubmit,
   children,
 }: DocumentRecordFormProps) {
@@ -64,6 +67,7 @@ export function DocumentRecordForm({
               isNumbered={isNumbered}
               issuedNumber={issuedNumber}
               excludeId={documentId}
+              syncOwned={syncOwned}
             />
           </FormCard>
 
@@ -83,6 +87,7 @@ export function DocumentRecordForm({
           <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
             <DocumentExtraInfoFields
               form={form}
+              syncOwned={syncOwned}
               attachmentViewWindowEnabled={attachmentViewWindowEnabled}
             />
           </FormCard>

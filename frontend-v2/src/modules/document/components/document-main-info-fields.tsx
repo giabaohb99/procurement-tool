@@ -1,5 +1,6 @@
 import type { UseFormReturn } from 'react-hook-form'
 
+import { SyncOwnedLock } from './sync-owned-lock'
 import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
@@ -40,6 +41,8 @@ const NONE = 'none'
 
 interface DocumentMainInfoFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
+  /** Bản lưu trữ HĐLĐ: tên, loại, pháp nhân, phòng, sổ, người chịu trách nhiệm do hợp đồng đồng bộ — khóa (duoc-CR-640). */
+  syncOwned?: boolean
   /** Văn bản đã có số hiệu: khóa ô loại và pháp nhân — đổi là hỏng số đã ban hành. */
   isNumbered: boolean
   /**
@@ -94,6 +97,7 @@ export function DocumentMainInfoFields({
   templateId,
   onTemplateChange,
   folderPicker,
+  syncOwned = false,
 }: DocumentMainInfoFieldsProps) {
   const documentTypes = useActiveDocumentTypes()
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
@@ -176,6 +180,7 @@ export function DocumentMainInfoFields({
 
   return (
     <div className="grid items-start gap-x-5 gap-y-3 sm:grid-cols-2">
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="title"
@@ -192,7 +197,9 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="doc_type_id"
@@ -229,6 +236,7 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
       {onTemplateChange && (
         <FormItem>
@@ -264,6 +272,7 @@ export function DocumentMainInfoFields({
         </FormItem>
       )}
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="company_id"
@@ -295,7 +304,9 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="department_id"
@@ -319,7 +330,9 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="book_id"
@@ -350,6 +363,7 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
       {/*  «Lưu vào thư mục» (phase 06, duoc-CR-476) — ngay dưới «Vào sổ». KHÔNG
            bọc `FormField`/`FormControl`: đây không phải trường của
@@ -387,6 +401,7 @@ export function DocumentMainInfoFields({
         excludeId={excludeId}
       />
 
+      <SyncOwnedLock locked={syncOwned}>
       <FormField
         control={form.control}
         name="owner_employee_id"
@@ -412,6 +427,7 @@ export function DocumentMainInfoFields({
           </FormItem>
         )}
       />
+      </SyncOwnedLock>
 
       <FormField
         control={form.control}

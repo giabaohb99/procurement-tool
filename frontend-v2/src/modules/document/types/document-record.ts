@@ -358,4 +358,9 @@ export interface DocumentPermissions {
   read: boolean
   write: boolean
   delete: boolean
+  /**
+   * Bản LƯU TRỮ hợp đồng lao động (duoc-CR-640): sửa được thông tin / nội dung / tệp, nhưng chia sẻ, quan hệ,
+   * phạm vi áp dụng, duyệt / ký / ban hành / bãi bỏ / sao chép bị backend chặn (409) — giao diện ẩn các nút đó.
+   */
+  is_archive?: boolean
 }

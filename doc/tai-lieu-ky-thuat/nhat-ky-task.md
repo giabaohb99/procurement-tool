@@ -14907,3 +14907,19 @@ rồi xóa; văn bản lưu trữ đổi trạng thái đúng theo từng bướ
 
 Mã nguồn: frontend-v2/src/modules/hr/components/labor-contract-row-actions.tsx · labor-contract-row-actions.test.tsx · employee-tab-labor-contracts.test.tsx · frontend-v2/src/modules/hr/config/employee-labor-contract-columns.tsx
 
+## duoc-CR-640 | Bản lưu trữ hợp đồng lao động ở phân hệ Văn bản sửa được như văn bản thường
+- status: xong
+- date: 2026-10-19
+Chủ sản phẩm muốn bản lưu trữ hợp đồng lao động bên phân hệ Văn bản sửa được như một văn bản thường, kể cả tải thêm các tệp mềm như
+phụ lục hay bản scan bổ sung. Nay người có quyền sửa hợp đồng lao động trong đúng phạm vi của hợp đồng đó sửa được thông tin chung,
+nội dung, tải thêm hoặc gỡ tệp và đặt thư mục cho bản lưu trữ; người chỉ được xem hợp đồng vẫn chỉ đọc, còn văn thư, quản trị Văn
+bản và người lao động không được thêm quyền nào. Những thao tác đẩy văn bản tới người khác vẫn bị chặn: chia sẻ, sao chép, trích,
+quan hệ, phạm vi áp dụng, gửi duyệt, ký, ban hành, bãi bỏ, đổi loại và xóa, vì sẽ làm lộ lương và căn cước. Việc đồng bộ từ hợp
+đồng không còn xóa tệp do người dùng tải lên: hệ thống đánh dấu những bản sao nó tự chép sang và chỉ thay đổi đúng các bản sao
+đó; khi có phiên bản mới thì bản cũ giữ nguyên bộ tệp. Trang chi tiết văn bản ẩn các nút bị chặn khi mở một bản lưu trữ. Vai trò
+Nhân sự mẫu được thêm quyền ghi Văn bản phạm vi «Của tôi»; hệ đang chạy phải tick tay quyền này. Sau rà soát: tên, tóm tắt, từ khóa, ngày hiệu lực và hết hạn, loại, sổ, pháp nhân, phòng ban, người chịu trách nhiệm của
+bản lưu trữ do hợp đồng quyết định nên hiện mờ và không sửa được ở Văn bản; dấu nhận lại văn bản mồ côi không còn làm danh tính nên
+không ai xóa nhầm hay chiếm tệp của hợp đồng khác được; văn bản chỉ gồm tệp đã có tệp nay vẫn có nút tải thêm và gỡ tệp.
+
+Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · access_service.py · controller.py · backend/app/modules/labor_contract/document_archive_files.py · frontend-v2/src/modules/document/config/document-action-gates.ts · pages/document-detail-page.tsx · test/backend/test_hdld_ban_luu_tru_sua_duoc_cr640.py
+

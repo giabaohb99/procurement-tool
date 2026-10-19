@@ -66,6 +66,7 @@ import { DocumentAttachmentSidebar } from '../components/document-attachment-sid
 import { canPreviewInline } from '../helpers/inline-viewable'
 import { useDocumentFiles } from '../hooks/use-document-files'
 import { DocumentFilesTab } from '../components/document-files-tab'
+import { resolveDocumentActionGates } from '../config/document-action-gates'
 import { DocumentCopyAction } from '../components/document-copy-action'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
@@ -80,7 +81,12 @@ import { DocumentPageFrameDialog } from '../components/document-page-frame-dialo
 import { DocumentSubmittedLockNotice } from '../components/document-submitted-lock-notice'
 import { useCreateExcerpt } from '../hooks/use-document-links'
 import { ManualIssueNumberDialog } from '../components/manual-issue-number-dialog'
-import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
+import {
+  archiveFormToPayload,
+  documentToForm,
+  emptyDocumentForm,
+  formToPayload,
+} from '../helpers/document-form-defaults'
 import { effectiveLabel } from '../helpers/document-status'
 import { fillPageMarkers } from '../helpers/page-marker'
 import { useDocumentPermissions } from '../hooks/use-document-access'
@@ -103,6 +109,7 @@ import {
   useUpdateDocumentIssueNumber,
 } from '../hooks/use-documents'
 import {
+  archiveRecordSchema,
   documentRecordSchema,
   type DocumentRecordFormValues,
 } from '../schemas/document-record-schema'
@@ -245,13 +252,27 @@ export function DocumentDetailPage() {
   const { can } = usePermission()
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
   //  như backend làm.
-  const canApprove = !readonlyFromLink && can('document', 'approve')
-  const canCreate = !readonlyFromLink && can('document', 'create')
-  const canWrite = !readonlyFromLink && (permissions?.write ?? false)
-  const canDelete = !readonlyFromLink && (permissions?.delete ?? false)
+  //  Bản lưu trữ HĐLĐ (duoc-CR-640): các thao tác đẩy văn bản tới người khác bị backend chặn nên ẩn hẳn.
+  const { isArchive, canApprove, canCreate, canWrite, canDelete } = resolveDocumentActionGates(
+    permissions,
+    can,
+    readonlyFromLink,
+  )
 
+  const isArchiveRef = useRef(false)
+  //  Ghi ref sau commit (`react-hooks/refs` cấm ghi lúc render); resolver chỉ đọc lúc người dùng bấm Lưu.
+  useEffect(() => {
+    isArchiveRef.current = isArchive
+  }, [isArchive])
   const form = useForm<DocumentRecordFormValues>({
-    resolver: zodResolver(documentRecordSchema),
+    //  Bản lưu trữ HĐLĐ chỉ kiểm các ô sửa được (chủ / phòng / loại… do hợp đồng đồng bộ, có thể là 0). Chọn lúc
+    //  KIỂM (không lúc dựng form) vì quyền / cờ `is_archive` về sau lần render đầu.
+    resolver: (values, context, options) =>
+      (isArchiveRef.current ? zodResolver(archiveRecordSchema) : zodResolver(documentRecordSchema))(
+        values,
+        context,
+        options,
+      ) as never,
     defaultValues: emptyDocumentForm(),
   })
 
@@ -291,7 +312,12 @@ export function DocumentDetailPage() {
   const isLeaveForm = (record?.doc_type_code || '').toUpperCase() === 'GNP'
 
   function handleSubmitForm(values: DocumentRecordFormValues) {
-    save.mutate({ id: documentId, values: formToPayload(values, isLeaveForm) })
+    save.mutate({
+      id: documentId,
+      values: (isArchive
+        ? archiveFormToPayload(values)
+        : formToPayload(values, isLeaveForm)) as ReturnType<typeof formToPayload>,
+    })
   }
 
   const isNumbered = Boolean(record?.doc_code || record?.issue_number)
@@ -509,14 +535,18 @@ export function DocumentDetailPage() {
                 <GitBranch className="size-4" />
                 Phiên bản
               </TabsTrigger>
-              <TabsTrigger value="links" className={TAB_TRIGGER_UNDERLINE}>
-                <Link2 className="size-4" />
-                Quan hệ
-              </TabsTrigger>
-              <TabsTrigger value="approval" className={TAB_TRIGGER_UNDERLINE}>
-                <ShieldCheck className="size-4" />
-                Phê duyệt
-              </TabsTrigger>
+              {!isArchive && (
+                <>
+                  <TabsTrigger value="links" className={TAB_TRIGGER_UNDERLINE}>
+                    <Link2 className="size-4" />
+                    Quan hệ
+                  </TabsTrigger>
+                  <TabsTrigger value="approval" className={TAB_TRIGGER_UNDERLINE}>
+                    <ShieldCheck className="size-4" />
+                    Phê duyệt
+                  </TabsTrigger>
+                </>
+              )}
             </ScrollableTabsList>
 
             {/*  ⚠️ **NÚT CHÍNH của trạng thái hiện tại — luôn ở NGOÀI, kể cả khổ
@@ -539,7 +569,7 @@ export function DocumentDetailPage() {
                  phụ khác đã gom vào `⋯` (`collapseSecondaryActions`), còn mấy
                  nút này là bước kế tiếp của văn bản, giấu đi là mất việc. */}
             {/* Luồng duyệt MỘT BƯỚC tạm thời — P3 thay bằng bộ máy chung. */}
-            {isDraft && canWrite && needsApproval && (
+            {isDraft && canWrite && !isArchive && needsApproval && (
               <Button
                 type="button"
                 variant="outline"
@@ -553,7 +583,7 @@ export function DocumentDetailPage() {
             {/*  Loại «không cần duyệt» — người soạn / người chịu trách nhiệm (hoặc
                  người có quyền Duyệt) ban hành thẳng từ bản nháp. Backend giữ
                  cùng luật ở `/issue`; đây chỉ để khỏi bày nút cho người ngoài. */}
-            {isDraft && canWrite && !needsApproval && (isDrafter || canApprove) && (
+            {isDraft && canWrite && !isArchive && !needsApproval && (isDrafter || canApprove) && (
               <Button
                 type="button"
                 onClick={() => {
@@ -739,7 +769,7 @@ export function DocumentDetailPage() {
               </>
             )}
 
-            {record?.allow_manual_number && canWrite && (
+            {record?.allow_manual_number && canWrite && !isArchive && (
               <Button type="button" variant="outline" onClick={() => setNumberDialogOpen(true)}>
                 <Pencil className="size-4" />
                 Sửa số hiệu
@@ -750,7 +780,7 @@ export function DocumentDetailPage() {
 
             {/* Văn bản ĐÃ ban hành không xóa được (số đã vào sổ) — lối gỡ bỏ
                 duy nhất là bãi bỏ, giữ nguyên dòng và số. */}
-            {isIssued && (
+            {isIssued && !isArchive && (
               <PermissionGate entity="document" action="cancel">
                 <Button
                   type="button"
@@ -802,7 +832,7 @@ export function DocumentDetailPage() {
               //  Bản riêng của pháp nhân con thì biết ngay bản gốc là ai; ca
               //  khác (văn bản con theo quan hệ) phải tự tìm ở tab Quan hệ.
               sourceDocumentId={record.source_document_id}
-              canWrite={canWrite}
+              canWrite={canWrite && !isArchive}
               pending={workflow.confirmReviewed.isPending}
               onConfirm={() => setReviewOpen(true)}
             />
@@ -823,7 +853,8 @@ export function DocumentDetailPage() {
               documentId={documentId}
               currentVersionId={record?.current_version_id ?? null}
               documentCode={record?.display_code}
-              canWrite={canWrite}
+              canWrite={canWrite && !viLocaleKey}
+              isLocked={version ? version.is_locked : false}
             />
           )}
 
@@ -916,6 +947,7 @@ export function DocumentDetailPage() {
             //  lúc đang duyệt / chờ ban hành / bị từ chối.
             readOnly={!canWrite || viLocaleKey}
             attachmentViewWindowEnabled={record?.attachment_view_window_enabled ?? true}
+            syncOwned={isArchive}
             onSubmit={handleSubmitForm}
           >
             <DocumentAttachmentList
@@ -928,12 +960,14 @@ export function DocumentDetailPage() {
                  mở ra đọc". Hai câu hỏi khác nhau, để cạnh nhau cho dễ đối chiếu. */}
             {/*  Chữ ký gắn với PHIÊN BẢN đang mở — ký được sau khi bản đó đã
                  duyệt và khóa lại. */}
-            <DocumentSignatureCard
-              documentId={documentId}
-              versionId={versionId}
-              isLocked={isLocked}
-              canApprove={canApprove}
-            />
+            {!isArchive && (
+              <DocumentSignatureCard
+                documentId={documentId}
+                versionId={versionId}
+                isLocked={isLocked}
+                canApprove={canApprove}
+              />
+            )}
             {/*  THƯ MỤC (phase 06, duoc-CR-476) — đứng NGOÀI khóa `readOnly` của
                  form chính, đúng luật "đổi thư mục không khóa theo trạng thái
                  văn bản": văn bản đã ban hành vẫn sắp xếp lại thư mục được. */}
@@ -948,12 +982,16 @@ export function DocumentDetailPage() {
                  chỉ lặp lại cùng một danh sách bằng một cách nói khác. Muốn
                  xem bản riêng đã sinh ra chưa, ai đang lệch bản — mở tab
                  «Quan hệ», thẻ Cây tài liệu liệt kê đủ kèm tên pháp nhân. */}
-            <DocumentScopeCard
-              documentId={documentId}
-              canWrite={canWrite}
-              isClone={Boolean(record?.source_document_id)}
-            />
-            <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
+            {!isArchive && (
+              <>
+                <DocumentScopeCard
+                  documentId={documentId}
+                  canWrite={canWrite}
+                  isClone={Boolean(record?.source_document_id)}
+                />
+                <DocumentAccessCard documentId={documentId} canWrite={canWrite} />
+              </>
+            )}
           </DocumentRecordForm>
         </TabsContent>
 
@@ -962,7 +1000,8 @@ export function DocumentDetailPage() {
             <DocumentVersionTab
               document={record}
               activeVersionId={versionId}
-              canWrite={canWrite}
+              //  Bản lưu trữ HĐLĐ không có luồng duyệt nên không «Mở phiên bản mới» (duoc-CR-640).
+              canWrite={canWrite && !isArchive}
               onSelect={(picked) => {
                 setPickedVersionId(picked.id)
                 setTab('compose')

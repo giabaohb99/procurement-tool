@@ -142,10 +142,14 @@ def role_level_cap(profile: dict) -> int:
     người tạo thư mục riêng) giữ nguyên như cũ.
     """
     union = profile.get("perms_union") or {}
-    for entity in (ENTITY_FOLDER_ADMIN, ENTITY_DOCUMENT):
-        perms = union.get(entity) or {}
-        if perms.get("create") or perms.get("write"):
-            return int(FolderAccessLevel.MANAGE)
+    folder_admin = union.get(ENTITY_FOLDER_ADMIN) or {}
+    document = union.get(ENTITY_DOCUMENT) or {}
+    if folder_admin.get("create") or folder_admin.get("write") or document.get("create"):
+        return int(FolderAccessLevel.MANAGE)
+    #  duoc-CR-640: chỉ có `document.write` (vd Nhân sự sửa bản lưu trữ HĐLĐ) — gắn được văn bản đã có vào thư mục
+    #  (ĐÓNG GÓP) nhưng KHÔNG tạo văn bản / thư mục mới, nên không để «+ Mới», «Thêm thư mục con»… hiện rồi ăn 403.
+    if document.get("write"):
+        return int(FolderAccessLevel.CONTRIBUTE)
     return int(FolderAccessLevel.VIEW)
 
 

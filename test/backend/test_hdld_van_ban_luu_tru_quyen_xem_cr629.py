@@ -81,8 +81,9 @@ def test_hr_trong_pham_vi_doc_duoc_chi_doc(ctx):
     world, db, d = ctx["world"], ctx["db"], ctx["archive"]
     user, prof = _profile(world, "a1", db)
     assert access_service.can(db, d, user, prof, "read")
-    for action in ("write", "delete"):
-        assert not access_service.can(db, d, user, prof, action)
+    #  duoc-CR-640: sửa đòi cả `labor_contract.write` VÀ `document.write` — a1 ở đây chỉ có document.read ⇒ không sửa
+    assert not access_service.can(db, d, user, prof, "write")
+    assert not access_service.can(db, d, user, prof, "delete")  # xóa luôn qua hợp đồng
     assert d.id in _ids(ctx["c"]["a1"])
     assert ctx["c"]["a1"].get(f"/api/documents/{d.id}").status_code == 200
     # đối chứng: HR (document.read 'own') không thấy công văn thường của người khác
@@ -226,7 +227,7 @@ def test_thao_tac_dan_xuat_va_doi_loai_bi_chan(ctx):
                    json={"version_id": d.current_version_id, "signer_employee_id": world.emp["a1"],
                          "sign_kind": 1}).status_code == 409
     assert hr.post(f"/api/documents/{d.id}/reject", json={"reason": "x"}).status_code == 409
-    assert hr.patch(f"/api/documents/{d.id}", json={"title": "x"}).status_code == 403
+    assert hr.patch(f"/api/documents/{d.id}", json={"storage_location": "Tủ B"}).status_code == 200   # duoc-CR-640: sửa được trường không do đồng bộ sở hữu
     # tạo / đổi sang loại HDLD ở Văn bản
     body = {"doc_type_id": ctx["loai"].id, "company_id": world.co["A"], "department_id": world.dept["A.kt"],
             "owner_employee_id": world.emp["a1"], "title": "Giả HĐLĐ"}
@@ -269,11 +270,11 @@ def test_h1_nguoi_doc_duoc_van_bi_chan_409_va_ban_luu_tru_khong_la_nguon_quan_he
     world.grant("a1", "document", "company", actions=ALL)
     perm_cache_clear(world.user_id("a1"))
     hr = ctx["c"]["a1"]
-    # HR đọc được bản lưu trữ ⇒ thấy 409 (không phải 404); nguồn là bản lưu trữ thì ghi bị chặn từ `can(write)`
+    # HR đọc được bản lưu trữ ⇒ thấy 409 (không phải 404); nguồn là bản lưu trữ cũng 409 (quan hệ bị chặn dù người sửa được)
     n.created_by = world.user_id("a1")
     ctx["db"].commit()
     assert hr.post(f"/api/documents/{n.id}/links", json={"relation": 8, "target_document_id": d.id}).status_code == 409
-    assert hr.post(f"/api/documents/{d.id}/links", json={"relation": 8, "target_document_id": n.id}).status_code == 403
+    assert hr.post(f"/api/documents/{d.id}/links", json={"relation": 8, "target_document_id": n.id}).status_code == 409
 
 
 def _audit(client, **q):

@@ -122,7 +122,7 @@ def add_scope(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     row = DocumentScope(
         document_id=doc.id, **data.model_dump(),
         created_by=user.id, updated_by=user.id,
@@ -145,7 +145,7 @@ def delete_scope(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    doc = _load(db, document_id, user, "write")
+    doc = _load(db, document_id, user, "write", derived=True)
     row = db.get(DocumentScope, scope_id)
     if not row or row.document_id != doc.id:
         raise HTTPException(404, "Không tìm thấy dòng phạm vi")

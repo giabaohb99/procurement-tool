@@ -11,8 +11,7 @@ import { z } from 'zod'
  * chỉ hiện dòng xem trước (D08). Ô `legacy_code` là chuyện khác: đó là số của
  * bản GIẤY trước khi lên hệ thống (C12), người dùng gõ tay.
  */
-export const documentRecordSchema = z
-  .object({
+const documentRecordBaseSchema = z.object({
     doc_type_id: z.coerce.number().int().positive('Chọn loại văn bản'),
     company_id: z.coerce.number().int().positive('Chọn pháp nhân ban hành'),
     //  Bắt buộc: bước đầu luồng duyệt là «trưởng bộ phận của phòng chủ trì»,
@@ -71,7 +70,9 @@ export const documentRecordSchema = z
         contact_phone: z.string().trim().max(30, 'Tối đa 30 ký tự'),
       })
       .optional(),
-  })
+})
+
+export const documentRecordSchema = documentRecordBaseSchema
   // Khoảng hiệu lực ngược đầu là lỗi nhập liệu, không phải trường hợp hợp lệ.
   .refine(
     (values) =>
@@ -80,3 +81,20 @@ export const documentRecordSchema = z
   )
 
 export type DocumentRecordFormValues = z.infer<typeof documentRecordSchema>
+
+/**
+ * Form của BẢN LƯU TRỮ hợp đồng lao động (duoc-CR-640): chỉ kiểm các trường người dùng sửa được. Chủ văn bản, phòng,
+ * pháp nhân, loại, tiêu đề… do hợp đồng đồng bộ sở hữu (có thể là 0 / rỗng) nên KHÔNG bị bắt buộc ở đây và cũng
+ * không được gửi lên (`archiveFormToPayload`).
+ */
+export const archiveRecordSchema = documentRecordBaseSchema
+  .pick({
+    secrecy_level: true,
+    urgency: true,
+    attachment_view_until: true,
+    legacy_code: true,
+    storage_location: true,
+    drafter_employee_id: true,
+    signer_employee_id: true,
+  })
+  .passthrough()

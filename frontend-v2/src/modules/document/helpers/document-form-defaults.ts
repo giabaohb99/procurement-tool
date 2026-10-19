@@ -125,6 +125,19 @@ export function documentToForm(record: DocumentRecord): DocumentRecordFormValues
  * cũng vô hại (backend loại bỏ metadata của loại chưa khai hình dạng), nhưng gửi
  * một cục dữ liệu rỗng lên mỗi lần lưu công văn thì đọc log ra không hiểu gì.
  */
+/** Payload sửa BẢN LƯU TRỮ HĐLĐ: chỉ các trường không do đồng bộ sở hữu (backend trả 409 nếu đổi trường kia). */
+export function archiveFormToPayload(values: DocumentRecordFormValues) {
+  return {
+    secrecy_level: values.secrecy_level,
+    urgency: values.urgency,
+    attachment_view_until: values.attachment_view_until || null,
+    legacy_code: values.legacy_code,
+    storage_location: values.storage_location,
+    drafter_employee_id: values.drafter_employee_id,
+    signer_employee_id: values.signer_employee_id,
+  }
+}
+
 export function formToPayload(values: DocumentRecordFormValues, isLeaveForm = false) {
   const { leave, ...base } = values
   return {
