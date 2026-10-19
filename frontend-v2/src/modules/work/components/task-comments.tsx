@@ -73,7 +73,7 @@ export function TaskComments({ taskId, listId }: TaskCommentsProps) {
             comment={comment}
             deleting={remove.isPending && remove.variables === comment.id}
             onDelete={async () => {
-              //  Xóa CỨNG, kéo theo phản hồi và tệp kèm (duoc-CR-626) — hỏi trước.
+              //  Xóa CỨNG, kéo theo phản hồi và tệp kèm (duoc-CR-627) — hỏi trước.
               const ok = await confirm({
                 title: 'Xóa bình luận',
                 message: 'Xóa bình luận này? Phản hồi và tệp kèm theo cũng bị xóa, không khôi phục được.',

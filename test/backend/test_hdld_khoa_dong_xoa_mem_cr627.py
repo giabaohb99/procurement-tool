@@ -1,5 +1,5 @@
 """
-test_hdld_khoa_dong_xoa_mem_cr626.py — chốt khóa dòng của HĐLĐ phải tính cả XÓA MỀM (duoc-CR-626).
+test_hdld_khoa_dong_xoa_mem_cr627.py — chốt khóa dòng của HĐLĐ phải tính cả XÓA MỀM (duoc-CR-627).
 
 Lỗi tìm ra khi rà mất dữ liệu 19/10/2026: «Ký» chạy đua với «Xóa». Người A qua chốt phạm vi
 (dòng còn sống), người B xóa mềm và commit trước, A chờ khóa xong nạp lại dòng — giờ đã

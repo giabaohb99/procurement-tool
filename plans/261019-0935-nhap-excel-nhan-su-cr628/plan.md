@@ -1,5 +1,5 @@
 ---
-title: "duoc-CR-627 — Nhập Excel nhân sự (frontend-v2) qua import_tool"
+title: "duoc-CR-628 — Nhập Excel nhân sự (frontend-v2) qua import_tool"
 description: "Nút «Nhập Excel» ở màn Nhân sự v2, adapter EMPLOYEE đi qua employee service, đủ hồ sơ kể cả nhạy cảm, cấm xóa, tắt Import CSV cũ."
 status: pending
 priority: P1
@@ -9,7 +9,7 @@ tags: [hr, import, employee, security, frontend-v2]
 created: 2026-10-19
 ---
 
-# duoc-CR-627 — Nhập Excel nhân sự
+# duoc-CR-628 — Nhập Excel nhân sự
 
 ## Mục tiêu
 HR nhập/cập nhật hàng loạt hồ sơ nhân sự bằng `.xlsx` từ `/hr/employees` → chạy thử → ghi → hoàn tác
@@ -44,7 +44,7 @@ lý, nhãn chức vụ, phòng chính, khóa TK khi nghỉ việc, xóa cache qu
 - 03: `import_tool/employee_import_fields.py` (mới), `import_tool/employee_import.py` (mới)
 - 04: `import_tool/controller.py`, `employee/controller.py` (CSV), `department/controller.py`
 - 05: `frontend-v2/src/modules/hr/**`, `frontend/src/config/cruds.tsx`, `frontend/src/components/CrudList.tsx`
-- 06: `test/backend/*cr627*`, test cũ bị ảnh hưởng, `doc/**`, `.claude/rules/hr-employee-profile.md`
+- 06: `test/backend/*cr628*`, test cũ bị ảnh hưởng, `doc/**`, `.claude/rules/hr-employee-profile.md`
 - ⚠️ KHÔNG đụng `employee/position_service.py`, `test_danh_muc_chuc_vu.py`, `employee-detail-page.tsx` — đang có thay đổi chưa commit của việc khác.
 
 ## Ràng buộc môi trường

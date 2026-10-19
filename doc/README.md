@@ -19,7 +19,7 @@
 - `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` — TDD
 - `mo-hinh-du-lieu-san-pham.md` — **đọc trước khi đụng vào cấu trúc Sản phẩm**: vì sao `tab_product` là bảng variant, thuộc tính động, tầng họ sản phẩm, hợp đồng "chọn mã VTBB → tự động điền", và danh sách việc CẤM làm
 - `quy-trinh-tai-lieu.md` — quy trình tài liệu & kiểm soát thay đổi (tài liệu nào ra đời khi nào)
-- `tracking-nguoi-dung-ho-so-ca-nhan.md` — **đề xuất** tracking người dùng: hồ sơ cách làm việc của từng người (trang hay vào, cách làm task, nhịp làm việc), kiểu làm việc để nhận diện, cách cho AI đọc chỉ số (duoc-CR-625, chưa gõ mã)
+- `tracking-nguoi-dung-ho-so-ca-nhan.md` — **đề xuất** tracking người dùng: hồ sơ cách làm việc của từng người (trang hay vào, cách làm task, nhịp làm việc), kiểu làm việc để nhận diện, cách cho AI đọc chỉ số (duoc-CR-626, chưa gõ mã)
 
 ## yeu-cau/ — Yêu cầu nghiệp vụ
 - `Requirement_Mini_Tool_Thu_Mua.md` — tổng quan hệ thống

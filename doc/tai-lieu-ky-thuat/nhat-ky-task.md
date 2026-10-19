@@ -14628,7 +14628,7 @@ chưa đưa lên dev.
 
 Mã nguồn: backend/app/modules/labor_contract/expiry_service.py · labor_contract/controller.py · alert/controller.py · dashboard/controller.py · frontend-v2/src/app/components/profile/profile-tasks-tab.tsx · frontend-v2/src/modules/hr/components/expiring-labor-contracts-card.tsx · hooks/use-expiring-labor-contracts.ts · utils/labor-contract-expiry.ts · pages/hr-dashboard-page.tsx · test/backend/test_hdld_canh_bao_het_han_cr620.py
 
-## duoc-CR-625 | Tài liệu đề xuất tracking người dùng theo hồ sơ cách làm việc của từng người
+## duoc-CR-626 | Tài liệu đề xuất tracking người dùng theo hồ sơ cách làm việc của từng người
 - status: xong
 - date: 2026-10-19
 Đại ca muốn có các chỉ số theo dõi cách người dùng làm việc trên ERP để nhận diện được từng cá nhân: người đó làm task ra sao,
@@ -14641,7 +14641,7 @@ hỏi còn chờ chốt. Chưa gõ mã.
 
 Mã nguồn: doc/tai-lieu-ky-thuat/tracking-nguoi-dung-ho-so-ca-nhan.md
 
-## duoc-CR-626 | Rà soát phân hệ Nhân sự và Dự án theo hướng mất dữ liệu, vá bốn lỗi
+## duoc-CR-627 | Rà soát phân hệ Nhân sự và Dự án theo hướng mất dữ liệu, vá bốn lỗi
 - status: xong
 - date: 2026-10-19
 Đại ca giao kiểm tra lại mã phân hệ Nhân sự và Dự án, bảo đảm không lỗi và không làm mất dữ liệu, rồi bấm thử trên giao diện.
@@ -14655,5 +14655,5 @@ xác nhận. Mọi dữ liệu thử trên máy đã trả về như cũ, đối
 số ngày mang sang; bỏ một giá trị của trường tùy biến, xóa bình luận và gỡ tệp của công việc đều hỏi lại trước; bấm Esc đóng
 panel khi đang sửa mô tả thì mô tả vẫn được lưu. Đường nhập tệp nhân sự sẽ làm lại thành nhập Excel ở màn Nhân sự trong một việc riêng.
 
-Mã nguồn: backend/app/modules/employee/position_service.py · labor_contract/access.py · leave/balance_controller.py · leave/carryover_service.py · frontend-v2/src/modules/hr/pages/employee-detail-page.tsx · frontend-v2/src/modules/work/components (task-detail-sheet, field-edit-dialog, task-comments, task-attachments, task-description-field) · test/backend/test_danh_muc_chuc_vu.py · test/backend/test_hdld_khoa_dong_xoa_mem_cr626.py
+Mã nguồn: backend/app/modules/employee/position_service.py · labor_contract/access.py · leave/balance_controller.py · leave/carryover_service.py · frontend-v2/src/modules/hr/pages/employee-detail-page.tsx · frontend-v2/src/modules/work/components (task-detail-sheet, field-edit-dialog, task-comments, task-attachments, task-description-field) · test/backend/test_danh_muc_chuc_vu.py · test/backend/test_hdld_khoa_dong_xoa_mem_cr627.py
 

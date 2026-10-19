@@ -158,7 +158,7 @@ export function TaskDetailSheet({
                   className="size-8"
                   aria-label="Xóa công việc"
                   onClick={async () => {
-                    //  Hỏi trước: giao diện không có chỗ khôi phục việc đã xóa (duoc-CR-626).
+                    //  Hỏi trước: giao diện không có chỗ khôi phục việc đã xóa (duoc-CR-627).
                     const ok = await confirm({
                       title: 'Xóa công việc',
                       message: `Xóa công việc «${task.title}»? Việc con của nó cũng bị xóa theo.`,

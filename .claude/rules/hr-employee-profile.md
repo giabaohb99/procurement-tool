@@ -98,7 +98,7 @@ thì chỉ `hr_profile`. Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.7.
 - ⚠️ **Luật «khóa = 0 thì xóa nhãn» CHỈ đúng ở đường CẬP NHẬT** (người dùng vừa
   bỏ chọn). Áp cả lúc TẠO thì đường nhập CSV / seed — những nơi chỉ truyền chữ —
   làm hồ sơ **mất chức danh ngay khi ra đời**, im lặng.
-- ⚠️ **Ở đường CẬP NHẬT, «bỏ chọn» là id thật → 0, KHÔNG phải 0 → 0** (duoc-CR-626).
+- ⚠️ **Ở đường CẬP NHẬT, «bỏ chọn» là id thật → 0, KHÔNG phải 0 → 0** (duoc-CR-627).
   Màn hồ sơ gửi lại `position_id = 0` ở MỌI lần lưu; coi 0 → 0 là bỏ chọn thì hồ sơ
   cũ còn chức danh dạng chữ (CSV chưa map) mất chức danh mỗi khi ai lưu một ô bất kỳ.
 - ⚠️ **Chức vụ đã ngừng dùng: chặn gán MỚI, nhưng hồ sơ đang giữ vẫn lưu được.**

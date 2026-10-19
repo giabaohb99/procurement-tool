@@ -4,13 +4,13 @@
 **Sở hữu tệp:** `doc/**`, `.claude/rules/document-folders-search.md`, `.claude/rules/hr-employee-profile.md`
 
 ## Tài liệu cần sửa
-- `doc/tai-lieu-ky-thuat/change-log.md:44` — dòng `duoc-CR-628-...` (đã đặt chỗ): điền kết quả, trạng thái «Xong».
-- `doc/tai-lieu-ky-thuat/nhat-ky-task.md` — mục mới mã duy nhất (`duoc-CR-628`, lượt sau thêm hậu tố); câu tiếng Việt trọn vẹn, tên tệp/commit dồn xuống dòng `Mã nguồn:` / `Commit:` (luật 17/09/2026).
+- `doc/tai-lieu-ky-thuat/change-log.md:44` — dòng `duoc-CR-629-...` (đã đặt chỗ): điền kết quả, trạng thái «Xong».
+- `doc/tai-lieu-ky-thuat/nhat-ky-task.md` — mục mới mã duy nhất (`duoc-CR-629`, lượt sau thêm hậu tố); câu tiếng Việt trọn vẹn, tên tệp/commit dồn xuống dòng `Mã nguồn:` / `Commit:` (luật 17/09/2026).
 - `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` — §8 «Quyền truy cập theo từng văn bản»: thêm mục «Bản lưu trữ HĐLĐ» (ai xem, chỉ đọc, không chia sẻ/sao chép/clone/trích/ký, không có trong tìm toàn văn).
 - `doc/erp/hrm/01-ho-so-nhan-su.md` — dòng bảng :152 + một đoạn ngắn «HĐLĐ → bản lưu trữ Văn bản» (ánh xạ trạng thái, gương tệp, script bù). Nếu tài liệu HĐLĐ riêng chưa có thì để ở đây, KHÔNG tạo tệp mới.
 - `.claude/rules/document-folders-search.md` — 3 gạch: (1) bản lưu trữ HĐLĐ nhận diện bằng `tab_labor_contract.document_id`, quyền đọc chỉ theo `labor_contract.read`; (2) `visible_condition` không còn trả `None`; (3) loại `HDLD` bị loại khỏi `tab_document_search`.
 - `.claude/rules/hr-employee-profile.md` (hoặc rule HĐLĐ nếu có) — 1 gạch: mọi đường ghi HĐ mới phải gọi `archive_sync`.
-- **CR-628b:** thêm dòng `duoc-CR-628b-gop-mau-hdld-vao-thu-vien` ở `change-log.md` (đặt chỗ NGAY khi nhận việc) + mục sổ nhật ký mã riêng `duoc-CR-628b`; `14-van-thu-van-ban.md` mục thiết lập/thư viện mẫu: thêm «Mẫu hợp đồng lao động» (ai thấy, URL, quản lý bằng `labor_contract_template`); `doc/erp/hrm/01-ho-so-nhan-su.md`: đường mới của màn mẫu; `.claude/rules/frontend-v2-migration-status.md` nếu bảng màn có ghi `/hr/labor-contract-templates`.
+- **CR-628b:** thêm dòng `duoc-CR-629b-gop-mau-hdld-vao-thu-vien` ở `change-log.md` (đặt chỗ NGAY khi nhận việc) + mục sổ nhật ký mã riêng `duoc-CR-629b`; `14-van-thu-van-ban.md` mục thiết lập/thư viện mẫu: thêm «Mẫu hợp đồng lao động» (ai thấy, URL, quản lý bằng `labor_contract_template`); `doc/erp/hrm/01-ho-so-nhan-su.md`: đường mới của màn mẫu; `.claude/rules/frontend-v2-migration-status.md` nếu bảng màn có ghi `/hr/labor-contract-templates`.
 
 ## Triển khai (dev → prod)
 1. Kiểm prod trước: `SELECT id, code, name, is_active FROM tab_doc_type WHERE code='HDLD'` — có sẵn mà khác nghĩa ⇒ dừng, hỏi đại ca.

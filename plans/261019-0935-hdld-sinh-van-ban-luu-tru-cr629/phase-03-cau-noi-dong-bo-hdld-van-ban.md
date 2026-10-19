@@ -1,7 +1,7 @@
 # Phase 03 — Cầu nối đồng bộ HĐLĐ → Văn bản + script bù
 
 **Ưu tiên:** P2 · **Trạng thái:** pending · **Effort:** 4h · **Phụ thuộc:** 01
-**Sở hữu tệp:** `backend/app/modules/labor_contract/*`, `backend/scripts/backfill_hdld_van_ban_luu_tru.py`, `test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr628.py`
+**Sở hữu tệp:** `backend/app/modules/labor_contract/*`, `backend/scripts/backfill_hdld_van_ban_luu_tru.py`, `test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr629.py`
 
 ## Context
 - Khuôn: `leave/approval_bridge.py:308-373 create_leave_document` (tra loại theo mã, thiếu thì bỏ qua im lặng, ghi ngược `document_id`).
@@ -69,9 +69,9 @@ Không dùng `STATUS_REVOKED` (kéo theo luật bãi bỏ `revoke_access`).
 ## Tệp
 - Tạo: `labor_contract/document_archive_sync.py`, `labor_contract/document_archive_files.py`
 - Sửa: `labor_contract/controller.py` (6 chỗ gọi), `labor_contract/service.py` (`delete_all_of`), `labor_contract/schema.py`, `labor_contract/serializer.py`
-- Tạo: `backend/scripts/backfill_hdld_van_ban_luu_tru.py`, `test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr628.py`
+- Tạo: `backend/scripts/backfill_hdld_van_ban_luu_tru.py`, `test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr629.py`
 
-## Test (pytest) — `test_hdld_van_ban_luu_tru_dong_bo_cr628.py`
+## Test (pytest) — `test_hdld_van_ban_luu_tru_dong_bo_cr629.py`
 Dùng `hdld_factory` (`storage`, `client_as`, `grant_all`, `upload_template`, `make_contract`); tự tạo `DocType(code="HDLD", is_personal=True)` (test cũ không có loại ⇒ cầu nối im lặng, đếm storage cũ không đổi).
 1. Lập ⇒ `document_id>0`; văn bản loại HDLD, Nháp, `content_mode=2`, company/department = snapshot; `owner_employee_id` rỗng, `meta` rỗng; tiêu đề/tóm tắt KHÔNG chứa số lương/phụ cấp.
 2. Thiếu loại HDLD ⇒ lập 201, `document_id=0`; thêm loại rồi sinh tệp ⇒ tự tạo văn bản.
@@ -88,7 +88,7 @@ Dùng `hdld_factory` (`storage`, `client_as`, `grant_all`, `upload_template`, `m
 13. Script: `--dry-run` không ghi; chạy thật 2 lần ⇒ mỗi HĐ đúng 1 văn bản.
 14. Serializer: `can_open_document` true/false theo `document.read`.
 
-Chạy: `pytest test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr628.py test/backend/test_hdld_hop_dong_api.py test/backend/test_hdld_sinh_tai_tep.py test/backend/test_hdld_khoa_dong_xoa_mem_cr626.py -q`.
+Chạy: `pytest test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr629.py test/backend/test_hdld_hop_dong_api.py test/backend/test_hdld_sinh_tai_tep.py test/backend/test_hdld_khoa_dong_xoa_mem_cr627.py -q`.
 
 ## Tiêu chí xong
 - 14 test xanh + 3 tệp test HĐLĐ cũ xanh không sửa.

@@ -96,7 +96,7 @@ Mỗi phần tử `ctx.after`: `record(db, actor, "employee", eid, action, "Nh�
 - [ ] Viết test mới (pha 06 liệt kê) song song với code
 
 ## Thành công khi
-Test `test_nhap_excel_nhan_su_cr627.py` + `test_nhap_excel_nhan_su_quyen_cr627.py` xanh; log không chứa
+Test `test_nhap_excel_nhan_su_cr628.py` + `test_nhap_excel_nhan_su_quyen_cr628.py` xanh; log không chứa
 giá trị cột **S** (test quét `ImportLog.message`).
 
 ## Rủi ro

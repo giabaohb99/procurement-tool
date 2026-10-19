@@ -117,7 +117,7 @@ def test_save_without_position_field_leaves_it_untouched(db):
 
 
 def test_resaving_unmapped_profile_keeps_text_label(db):
-    """duoc-CR-626 — bắt được khi bấm thử trên giao diện 19/10/2026.
+    """duoc-CR-627 — bắt được khi bấm thử trên giao diện 19/10/2026.
 
     Màn hồ sơ gửi LẠI `position_id = 0` ở mọi lần lưu (không gửi chữ). Hồ sơ cũ
     nhập từ CSV giữ chức danh dạng chữ mà chưa map danh mục (`position_id = 0`)

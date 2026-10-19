@@ -107,7 +107,7 @@ function FieldForm({
   async function luu() {
     const tenSach = ten.trim()
     if (!tenSach) return
-    //  Bỏ một giá trị = backend xóa CỨNG nó khỏi mọi việc đang gắn (duoc-CR-626) —
+    //  Bỏ một giá trị = backend xóa CỨNG nó khỏi mọi việc đang gắn (duoc-CR-627) —
     //  hỏi trước, kể tên ra để người dùng thấy đúng thứ sắp mất.
     const conLai = new Set(options.map((o) => o.id))
     const biBo = field.options.filter((o) => !conLai.has(o.id)).map((o) => `«${o.name}»`)
@@ -148,7 +148,7 @@ function FieldForm({
       options={options}
       onOptionsChange={setOptions}
       onDelete={async () => {
-        //  Backend xóa CỨNG trường cùng mọi giá trị đã gán trên các việc (duoc-CR-626).
+        //  Backend xóa CỨNG trường cùng mọi giá trị đã gán trên các việc (duoc-CR-627).
         const ok = await confirm({
           title: 'Xóa trường khỏi dự án',
           message: `Xóa trường «${field.name}»? Giá trị của trường này trên mọi công việc sẽ mất, không khôi phục được.`,

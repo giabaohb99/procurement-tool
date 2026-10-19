@@ -1,6 +1,6 @@
 # TRACKING NGƯỜI DÙNG — HỒ SƠ CÁCH LÀM VIỆC CỦA TỪNG NGƯỜI
 
-**Bản:** 1.0 — 19/10/2026 · **CR:** duoc-CR-625 · **Trạng thái: ĐỀ XUẤT, chưa gõ mã.**
+**Bản:** 1.0 — 19/10/2026 · **CR:** duoc-CR-626 · **Trạng thái: ĐỀ XUẤT, chưa gõ mã.**
 **Liên quan:** [`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md) (thiết kế các bảng nhật ký mà tài liệu này đọc lại).
 
 ---

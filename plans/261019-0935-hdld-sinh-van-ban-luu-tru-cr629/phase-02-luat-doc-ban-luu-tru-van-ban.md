@@ -1,7 +1,7 @@
 # Phase 02 — Luật đọc bản lưu trữ ở phân hệ Văn bản
 
 **Ưu tiên:** P1 (rò lương/CCCD/STK nếu sai) · **Trạng thái:** pending · **Effort:** 3h · **Phụ thuộc:** 01
-**Sở hữu tệp:** `backend/app/modules/document/*`, `test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr628.py`
+**Sở hữu tệp:** `backend/app/modules/document/*`, `test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr629.py`
 
 ## Context
 - `document/access_service.py` — `visible_condition` (~:202-284), `can` (~:347-440); luật `is_personal` KHÔNG đủ (mở cho `owner_employee_id`/người tạo/phạm vi `all` của `document`).
@@ -58,7 +58,7 @@ Import `LaborContract` **cục bộ trong hàm** (tránh vòng import document �
 - Sửa: `document/link_service.py` (`allowed_targets`)
 - Sửa: `document/controller.py` (POST `""` + PATCH: `ensure_not_system_type`; POST `/copy`: `ensure_not_archive`)
 - Sửa: `document/clone_controller.py`, `document/link_controller.py`, `document/signature_controller.py` (`ensure_not_archive`)
-- Tạo: `test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr628.py`
+- Tạo: `test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr629.py`
 
 ## Các bước
 1. Viết module mới + test đơn vị luật trước (TDD).
@@ -68,7 +68,7 @@ Import `LaborContract` **cục bộ trong hàm** (tránh vòng import document �
 4. `allowed_targets`, 4 endpoint dẫn xuất, 2 endpoint tạo/sửa loại.
 5. Grep `visible_condition(` rà nơi coi `None` là tín hiệu.
 
-## Test (pytest, SQLite) — `test_hdld_van_ban_luu_tru_quyen_xem_cr628.py`
+## Test (pytest, SQLite) — `test_hdld_van_ban_luu_tru_quyen_xem_cr629.py`
 Dựng: 2 pháp nhân A/B; loại `HDLD`; HĐ của NV ở A có `document_id` → văn bản D.
 1. HR `labor_contract.read` phạm vi `company` A ⇒ thấy D ở danh sách + `can(read)`; `can(write/delete)` = False.
 2. HR phạm vi `company` B ⇒ không thấy, `ensure_can` 404.
@@ -84,7 +84,7 @@ Dựng: 2 pháp nhân A/B; loại `HDLD`; HĐ của NV ở A có `document_id` �
 12. HĐ xóa mềm ⇒ HR vẫn đọc được D (lưu trữ), văn thư vẫn không.
 13. Văn bản thường cùng pháp nhân không đổi hành vi (hồi quy: chạy `test_van_ban_ca_nhan_ai_thay_duoc.py` + bộ quyền văn bản hiện có).
 
-Chạy: `docker compose exec -T api python -m pytest test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr628.py test/backend/test_van_ban_ca_nhan_ai_thay_duoc.py -q` + các test `test_van_ban_*quyen*`/`*tim_kiem*` liên quan (chọn theo grep, không quét cả thư mục).
+Chạy: `docker compose exec -T api python -m pytest test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr629.py test/backend/test_van_ban_ca_nhan_ai_thay_duoc.py -q` + các test `test_van_ban_*quyen*`/`*tim_kiem*` liên quan (chọn theo grep, không quét cả thư mục).
 
 ## Tiêu chí xong
 - 13 nhóm test xanh; test văn bản hiện có liên quan xanh.

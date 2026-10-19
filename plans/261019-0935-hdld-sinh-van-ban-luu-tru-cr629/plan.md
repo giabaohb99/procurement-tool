@@ -1,5 +1,5 @@
 ---
-title: "duoc-CR-628 — Lập HĐLĐ sinh bản lưu trữ bên Văn bản (chỉ Nhân sự xem)"
+title: "duoc-CR-629 — Lập HĐLĐ sinh bản lưu trữ bên Văn bản (chỉ Nhân sự xem)"
 description: "Bấm «Lập hợp đồng» là sinh 1 văn bản loại HDLD; tệp .docx + bản ký chép sang; trạng thái đồng bộ; quyền đọc ủy thác cho labor_contract.read."
 status: pending
 priority: P2
@@ -9,9 +9,9 @@ tags: [hr, labor-contract, document, permissions, search, backend, frontend-v2]
 created: 2026-10-19
 ---
 
-# duoc-CR-628 — HĐLĐ → bản lưu trữ ở phân hệ Văn bản
+# duoc-CR-629 — HĐLĐ → bản lưu trữ ở phân hệ Văn bản
 
-Change-log đã đặt chỗ: `duoc-CR-628-hdld-sinh-van-ban-luu-tru` (`doc/tai-lieu-ky-thuat/change-log.md:44`).
+Change-log đã đặt chỗ: `duoc-CR-629-hdld-sinh-van-ban-luu-tru` (`doc/tai-lieu-ky-thuat/change-log.md:44`).
 Nền HĐLĐ: `frontend-v2/plans/261005-1537-hop-dong-lao-dong-mau-theo-phap-nhan/plan.md`.
 
 ## Luồng dữ liệu
@@ -43,8 +43,8 @@ archive_sync(lc)  ── best-effort, lỗi chỉ log; khóa dòng HĐ FOR UPDAT
 | 03 | [Cầu nối đồng bộ HĐLĐ → Văn bản + script bù](phase-03-cau-noi-dong-bo-hdld-van-ban.md) | 4h | 01 | pending |
 | 04 | [FE: nút «Văn bản lưu trữ»](phase-04-fe-nut-van-ban-luu-tru.md) | 1.5h | 03 (hợp đồng API) | pending |
 | 05 | [Tài liệu, triển khai, bù dữ liệu](phase-05-tai-lieu-trien-khai-bu-du-lieu.md) | 1.5h | 02, 03, 04, 06 | pending |
-| 06 | **CR-628b** [Bước A: gộp giao diện mẫu HĐLĐ vào «Thư viện văn bản mẫu»](phase-06-cr628b-gop-giao-dien-mau-hdld-vao-thu-vien.md) | 4h | CR-610 đã commit | pending |
-| 07 | **CR-628b** [Bước B: gộp dữ liệu mẫu — đề xuất HOÃN](phase-07-cr628b-gop-du-lieu-mau-de-xuat-hoan.md) | (10–12h) | 06 + đại ca duyệt | deferred |
+| 06 | **CR-628b** [Bước A: gộp giao diện mẫu HĐLĐ vào «Thư viện văn bản mẫu»](phase-06-cr629b-gop-giao-dien-mau-hdld-vao-thu-vien.md) | 4h | CR-610 đã commit | pending |
+| 07 | **CR-628b** [Bước B: gộp dữ liệu mẫu — đề xuất HOÃN](phase-07-cr629b-gop-du-lieu-mau-de-xuat-hoan.md) | (10–12h) | 06 + đại ca duyệt | deferred |
 
 **02 ∥ 03** chạy song song được: tệp không chồng nhau (02 = `document/*`, 03 = `labor_contract/*`).
 Hợp đồng giữa hai bên chỉ là: cột `tab_labor_contract.document_id` + hằng `LABOR_CONTRACT_DOC_TYPE` (phase 01).

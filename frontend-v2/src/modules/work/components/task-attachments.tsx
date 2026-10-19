@@ -51,7 +51,7 @@ export function TaskAttachments({ taskId, canEdit }: TaskAttachmentsProps) {
             canEdit={canEdit}
             removing={remove.isPending && remove.variables === file.id}
             onRemove={async () => {
-              //  Gỡ là mất tệp khỏi công việc (duoc-CR-626) — hỏi trước, nêu tên tệp.
+              //  Gỡ là mất tệp khỏi công việc (duoc-CR-627) — hỏi trước, nêu tên tệp.
               const ok = await confirm({
                 title: 'Gỡ tệp',
                 message: `Gỡ tệp «${file.filename}» khỏi công việc này?`,

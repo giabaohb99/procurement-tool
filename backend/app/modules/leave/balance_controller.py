@@ -239,7 +239,7 @@ def close_year(data: LeaveBalanceCloseYear, db: Session = Depends(get_db),
                                               get_perm_profile(db, user)).all()]
     #  Không lọc `is_active`: người vừa nghỉ việc cuối năm vẫn phải được kết sổ
     #  đúng, nếu không thì số dư của họ treo lại vĩnh viễn ở năm cũ.
-    #  `FOR UPDATE` (duoc-CR-626): bấm đúp / hai người kết sổ cùng lúc thì cả hai
+    #  `FOR UPDATE` (duoc-CR-627): bấm đúp / hai người kết sổ cùng lúc thì cả hai
     #  cùng đọc `remaining_days` cũ và cùng cộng sang năm mới → ngày mang sang GẤP
     #  ĐÔI. Khóa dòng thì lượt sau chờ lượt trước commit, đọc lại số dư (đã về 0)
     #  nên không mang thêm gì. SQLite (test) bỏ qua mệnh đề này.

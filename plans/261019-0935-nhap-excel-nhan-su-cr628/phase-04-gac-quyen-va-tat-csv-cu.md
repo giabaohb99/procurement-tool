@@ -41,7 +41,7 @@ Log/list batch giữ `import.read` (log không chứa giá trị nhạy cảm �
 ## Test (chỉ chạy)
 ```bash
 docker compose exec -T api python -m pytest -q test/backend/test_chot_xoa_to_chuc_cr190.py \
-  test/backend/test_nhap_excel_nhan_su_quyen_cr627.py
+  test/backend/test_nhap_excel_nhan_su_quyen_cr628.py
 ```
 
 ## Thành công khi
