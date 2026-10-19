@@ -14,7 +14,7 @@ from app.modules.attachment.model import StoredFile
 
 from . import service
 from .catalog_import import ImportValidationError
-from .model import ImportMode, ImportStatus
+from .model import ImportMode, ImportModule, ImportStatus
 from .tasks import precheck_headers, run_import, workbook_from_bytes
 
 router = APIRouter(prefix="/api/imports", tags=["import"])
@@ -35,6 +35,33 @@ def _guard(db, user, action: str):
 def _guard_view(db, user):
     if not user_has_permission(db, user, "import", "read"):
         raise HTTPException(403, "Không có quyền xem Import")
+
+
+#  duoc-CR-628: nhập Nhân sự = quyền `import` VÀ quyền trên `employee` (Đ-13c chưa làm nên `ACTIONS` chưa
+#  có `import` theo từng đối tượng). Mỗi bước -> danh sách (entity, action) cần HOẶC (đạt một trong các
+#  cặp) + câu 403. Chỗ cắm sẵn cho Đ-13c, không dựng khung.
+_MODULE_GUARDS = {
+    ImportModule.EMPLOYEE: {
+        "create": ([("employee", "create"), ("employee", "write")],
+                   "Nhập Nhân sự cần quyền tạo hoặc sửa Nhân sự"),
+        "revert": ([("employee", "write")], "Hoàn tác lô Nhân sự cần quyền sửa Nhân sự"),
+        "file": ([("employee_sensitive", "read")], "Tệp chứa thông tin nhạy cảm"),
+    },
+    #  M6: Phòng ban nhập Excel (CSV cũ đã ngừng và trỏ về đây) cần quyền sửa Phòng ban.
+    ImportModule.DEPARTMENT: {
+        "create": ([("department", "write")], "Nhập Phòng ban cần quyền sửa Phòng ban"),
+        "revert": ([("department", "write")], "Hoàn tác lô Phòng ban cần quyền sửa Phòng ban"),
+    },
+}
+
+
+def _guard_module(db, user, module: int, step: str):
+    rule = _MODULE_GUARDS.get(module, {}).get(step)
+    if rule is None:
+        return
+    pairs, message = rule
+    if not any(user_has_permission(db, user, ent, act) for ent, act in pairs):
+        raise HTTPException(403, message)
 
 
 def _batch_out(db, b) -> dict:
@@ -59,6 +86,7 @@ def upload_import(module: int = Form(...), mode: int = Form(0), file: UploadFile
                   db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Upload .xlsx/.csv -> lưu file -> tạo batch -> đẩy Celery task (trả batch_id ngay)."""
     _guard(db, user, "create")
+    _guard_module(db, user, module, "create")      # trước khi lưu tệp
     name = (file.filename or "").lower()
     if not name.endswith(".xlsx") and not name.endswith(".csv"):
         raise HTTPException(400, "Chỉ nhận file .xlsx hoặc .csv")
@@ -160,6 +188,7 @@ def revert_import(bid: int, db: Session = Depends(get_db), user=Depends(get_curr
     if not b:
         raise HTTPException(404, "Không tìm thấy lần import")
     _guard(db, user, "delete")
+    _guard_module(db, user, b.module, "revert")
     res = service.revert_batch(db, b, user.id)
     if not res.get("ok"):
         raise HTTPException(400, res.get("message", "Không thể hoàn tác"))
@@ -173,11 +202,15 @@ def commit_import(bid: int, db: Session = Depends(get_db), user=Depends(get_curr
     if not b:
         raise HTTPException(404, "Không tìm thấy lần import")
     _guard(db, user, "create")
+    _guard_module(db, user, b.module, "create")
     if b.mode != ImportMode.DRY_RUN:
         raise HTTPException(400, "Chỉ ghi thật được từ bản chạy thử")
     if b.status != ImportStatus.DONE:
         raise HTTPException(400, "Bản chạy thử chưa hoàn tất, không thể ghi thật")
-    new = service.commit_dry_run(db, b, user.id)
+    try:
+        new = service.commit_dry_run(db, b, user.id)
+    except service.DryRunAlreadyCommitted as e:
+        raise HTTPException(409, str(e))
     run_import.delay(new.id)
     return success(_batch_out(db, new), "Đang ghi thật dữ liệu — sẽ báo khi xong", 201)
 
@@ -188,6 +221,7 @@ def download_import_file(bid: int, db: Session = Depends(get_db), user=Depends(g
     b = service.get_batch(db, bid)
     if not b or not b.file_id:
         raise HTTPException(404, "Không có file")
+    _guard_module(db, user, b.module, "file")      # tệp gốc Nhân sự chứa CCCD/STK
     sf = db.get(StoredFile, b.file_id)
     if not sf:
         raise HTTPException(404, "Không tìm thấy file đã lưu")

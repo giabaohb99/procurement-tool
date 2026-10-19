@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Request
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -167,76 +167,8 @@ def import_departments_csv(
     db: Session = Depends(get_db),
     user=Depends(require("department", "write")),
 ):
-    import csv
-    from io import StringIO
-    from fastapi import HTTPException
-    from app.core.utils import generate_code
-    from .model import Department
-    
-    try:
-        content = file.file.read().decode("utf-8-sig").replace("\r\n", "\n")
-        if content.lower().startswith("sep="):
-            content = content.split("\n", 1)[-1]
-    except UnicodeDecodeError:
-        raise HTTPException(400, "Lỗi định dạng file. Vui lòng lưu file CSV với encoding UTF-8.")
-        
-    reader = csv.DictReader(StringIO(content))
-    if not reader.fieldnames:
-        raise HTTPException(400, "File CSV trống")
-        
-    # Nhập file sửa/xóa được bản ghi bằng mã → phải chịu đúng phạm vi như nút sửa.
-    scope_cond = _scope_filter(db, user, "write")
-    created, updated, deleted, skipped = 0, 0, 0, 0
-    for row in reader:
-        status_str = (row.get("Trạng thái") or row.get("Hành động") or "").strip().lower()
-        is_active = status_str not in ["xóa", "delete", "ngừng", "đã ẩn", "ẩn", "false"]
-        
-        code = (row.get("Mã PB") or row.get("ID") or "").strip()
-        name = (row.get("Tên phòng ban") or row.get("Tên") or "").strip()
-        
-        company_id_str = (row.get("Mã công ty") or "0").strip()
-        parent_str = (row.get("Mã PB cha") or "0").strip()
-        company_id = int(company_id_str) if company_id_str.isdigit() else 0
-        parent = int(parent_str) if parent_str.isdigit() else 0
-        
-        if not code and not name:
-            continue
-            
-        existing = db.query(Department).filter(Department.code == code).first() if code else None
-        if existing is not None and scope_cond is not None:
-            if db.query(Department.id).filter(Department.id == existing.id,
-                                              scope_cond).first() is None:
-                skipped += 1
-                continue
-        if existing:
-            if status_str in ["xóa", "delete"]:
-                #  ai-CR-190: dòng CSV «xóa» ăn đúng chốt của nút xóa — còn tham chiếu thì 400, cả tệp không ghi.
-                from app.core import reference_guard
-                reference_guard.ensure_deletable(db, service.ENTITY, existing)
-                db.delete(existing)
-                deleted += 1
-            else:
-                if name: existing.name = name
-                existing.company_id = company_id
-                existing.parent = parent
-                existing.is_active = is_active
-                existing.updated_by = user.id
-                if not is_active: deleted += 1
-                else: updated += 1
-        else:
-            if not is_active or not name: continue
-            if not code: code = generate_code(db, Department, "PBA")
-            new_obj = Department(
-                code=code, name=name, company_id=company_id, parent=parent,
-                is_active=is_active,
-                created_by=user.id, updated_by=user.id
-            )
-            db.add(new_obj)
-            db.flush()
-            created += 1
-            
-    db.commit()
-    msg = f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}."
-    if skipped:
-        msg += f" Bỏ qua {skipped} dòng ngoài phạm vi của bạn."
-    return success(None, msg)
+    """duoc-CR-628: Nhập CSV phòng ban đã NGỪNG (ghi thẳng cột, xóa hàng loạt, không chạy thử).
+    Thay bằng «Quản trị → Quản lý Import → Phòng ban» (Excel, có chạy thử + hoàn tác)."""
+    raise HTTPException(
+        410, "Nhập CSV phòng ban đã ngừng. Dùng «Quản trị → Quản lý Import → Phòng ban» "
+             "(Excel, có chạy thử và hoàn tác).")

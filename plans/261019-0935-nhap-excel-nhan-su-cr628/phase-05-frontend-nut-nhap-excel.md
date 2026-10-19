@@ -1,6 +1,6 @@
 # Pha 05 — Frontend: nút «Nhập Excel» (v2) + ẩn Import CSV (v1)
 
-**Ưu tiên:** P1 · **Trạng thái:** pending · **Công:** 0.5d · **Chặn bởi:** — (chạy song song 01–04)
+**Ưu tiên:** P1 · **Trạng thái:** completed · **Công:** 0.5d · **Chặn bởi:** — (chạy song song 01–04)
 
 ## frontend-v2
 `employee-list-page.tsx` đã 276 dòng → KHÔNG nhồi state hộp thoại vào trang; tách component.
@@ -30,9 +30,9 @@
   `!cfg.importDisabled`. «Export CSV» giữ nguyên.
 
 ## Todo
-- [ ] `employee-import-button.tsx` + test
-- [ ] Gắn vào `employee-list-page.tsx`
-- [ ] v1: `importDisabled` cho 2 màn
+- [x] `employee-import-button.tsx` + test
+- [x] Gắn vào `employee-list-page.tsx`
+- [x] v1: `importDisabled` cho 2 màn
 
 ## Cổng kiểm (chỉ chạy)
 ```bash

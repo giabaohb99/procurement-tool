@@ -153,8 +153,10 @@ def test_phong_ban_tham_chieu_cong_ty_theo_ma(db):
     assert _logs(db, b.id, LogLevel.REVIEW)   # có log rà soát cho mã không khớp
 
 
-def test_nhan_su_khong_tao_tai_khoan_dang_nhap(db):
-    """Giới hạn v1: import Nhân sự KHÔNG sinh tài khoản User."""
+def test_nhan_su_khong_tao_tai_khoan_dang_nhap(db, seed, cap_quyen):
+    """Giới hạn v1: import Nhân sự KHÔNG sinh tài khoản User. duoc-CR-628: lô Nhân sự nay chạy dưới
+    QUYỀN của người tạo lô (employee.create/write) nên cần cấp quyền cho người tạo (id 1)."""
+    cap_quyen(seed.u_req_id, "employee", scope="all", create=True, write=True, read=True)
     before = db.query(User).count()
     wb = _wb(ImportModule.EMPLOYEE, [{"code": "NV1", "full_name": "Nguyễn Văn A"}])
     b = _batch(db, ImportModule.EMPLOYEE, ImportMode.APPLY)

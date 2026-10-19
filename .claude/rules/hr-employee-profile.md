@@ -8,6 +8,8 @@ paths:
   - "test/backend/*nhan_su*"
   - "test/backend/*qua_trinh*"
   - "doc/erp/hrm/**"
+  - "backend/app/modules/import_tool/employee_import*.py"
+  - "test/backend/*cr628*"
 ---
 # Hồ sơ nhân sự mở rộng và danh mục Chức vụ
 
@@ -189,3 +191,47 @@ Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.11. Bốn bẫy, một quyết
 Test: `test/backend/*qua_trinh*` (7 tệp) + `test/backend/*ho_so_nhan_su_dot1.py`; `vitest` trên
 `modules/hr/components/employee-tab-work-history*.tsx` + `use-employee-work-history*.ts`.
 Paths cập nhật: thêm `test/backend/*qua_trinh*`.
+
+### NHẬP EXCEL NHÂN SỰ (duoc-CR-628, 19/10/2026)
+
+Nút «Nhập Excel» ở `/hr/employees` → `import_tool` (adapter `EMPLOYEE`, hook ở `import_tool/employee_import*.py`).
+Thiết kế: `plans/261019-0935-nhap-excel-nhan-su-cr628/`; khung hook: `doc/erp/16-quan-ly-import-export-v2.md` §9.3.
+
+1. **Mọi đường ghi hàng loạt hồ sơ phải qua `*_core` của `employee/service.py`** (`create_employee_core`,
+   `update_employee_core`, `delete_employee_core`) — cấm `setattr` trần như Import CSV cũ (đã 410). Lõi flush,
+   KHÔNG commit/`record()` (record luôn commit, BM-013); bên gọi tự bọc savepoint, commit, audit, xóa cache quyền.
+2. **Ô trống = giữ nguyên; chỉ `__/empty_value/__` mới xóa** (không xóa được Họ tên · Trạng thái · Đang dùng).
+   Giá trị lạ ở ô mã số/trạng thái/ngày là LỖI DÒNG, không đoán bừa.
+3. **Cột nhạy cảm cần `employee_sensitive.write`** — lấy từ `sensitive.SENSITIVE_FIELDS`, không gõ danh sách thứ
+   hai. Thiếu quyền → bỏ cột + 1 cảnh báo `sensitive_ignored`. Log KHÔNG được chứa giá trị cột nhạy cảm.
+4. **Tệp lô Nhân sự và `tab_import_change.snapshot` chứa CCCD/STK bản rõ** — tải tệp gác `employee_sensitive.read`.
+   ⚠️ **Rủi ro treo:** snapshot hoàn tác giữ vĩnh viễn, CHƯA có việc dọn sau N ngày (chủ dự án chốt hoãn).
+5. **Vai trò cũ cần tick tay** `import.read/create` + `employee.create/write` + `employee_sensitive.write` (D-018;
+   seed KHÔNG đổi theo CR này). `import.read` là toàn cục: người có nó thấy cả danh sách/log lô Thu mua, Kho.
+6. Không xóa nhân sự qua tệp (`allow_delete=False`); hoàn tác KHÔNG mở lại tài khoản đã khóa vì nghỉ việc.
+7. Test: pysqlite không phát `BEGIN` trước `SAVEPOINT` nên dry-run "commit nhầm" — test dùng `savepoint_that(db)`
+   (`test_nhap_excel_nhan_su_cr628.py`) để ép `BEGIN` như MySQL.
+8. **Hoàn tác (lượt review):** bản chụp là `{cột: [cũ, mới]}` CHỈ cột đã đổi; khôi phục khi giá trị hiện tại còn là
+   «mới», cột nào đã bị sửa về sau thì TỪ CHỐI CẢ LƯỢT (nêu mã + tên cột, không nêu giá trị). Mỗi dòng cần
+   `employee.write` + phạm vi (lô tạo thêm `employee.delete`), cột nhạy cảm cần đọc+ghi nhạy cảm; ai đủ quyền
+   trong phạm vi cũng hoàn tác được, không riêng người tạo. Xóa NV mới bị chặn nếu đã có liên hệ/người thân/quá trình
+   công tác/HĐLĐ/kiêm nhiệm hoặc hồ sơ sửa sau lô (so `updated_at` với `created_at` + 60 giây, cùng đồng hồ DB).
+9. **Một mã NV chỉ một lần trong tệp** (dòng sau = lỗi, kể cả mã vừa tự sinh). Lỗi DB không bao giờ đi vào log/
+   `error_summary` (SQLAlchemy kèm THAM SỐ = CCCD/STK): chỉ tên lớp lỗi, chi tiết ở log máy chủ.
+10. **Đánh đổi giao dịch dài (M2):** ghi thật sinh mã NSU bằng `generate_code` (FOR UPDATE hàng nhỏ nhất của tiền
+    tố) và GIỮ khóa tới commit cuối lô (≤ 2000 dòng) → người khác tạo nhân sự bằng tay bị chờ trong lúc lô chạy.
+    Chạy thử KHÔNG khóa (mã xem trước chỉ để tham khảo, có thể khác mã thật). Muốn nhẹ hơn: điền sẵn Mã NV trong tệp.
+11. Ghi thật từ bản chạy thử chỉ MỘT lần (409 nếu đã có lô APPLY cùng tệp còn sống).
+12. **Lượt 3:** bản chụp của hồ sơ SỬA có thêm `_depts` = `[tập phòng ban trước, sau]` (`[[id, is_primary], …]`); hoàn tác
+    từ chối nếu tập hiện tại ≠ «sau» và khôi phục ĐÚNG tập cũ bằng `set_departments` (phòng bị hạ xuống kiêm nhiệm khi
+    đổi phòng chính / bị gỡ khi đổi pháp nhân sẽ không còn sót → không mở rộng phạm vi dữ liệu). Hồ sơ MỚI có `_stamp` =
+    `updated_at` lúc nhập; sau đó mà `updated_at` khác dấu này (không có độ trễ) thì không xóa. Hoàn tác đổi phòng/pháp
+    nhân phải qua cùng chốt L1 (không tự đổi phòng mình) và L2 (phòng cũ phải trong tầm người hoàn tác). Hoàn tác khóa lại
+    tài khoản nếu khôi phục về «nghỉ việc» (`lock_users=True`) và ghi nhật ký từng tài khoản.
+13. **Giới hạn bộ nhớ đệm quyền:** `perm_cache_clear` chỉ xóa cache của TIẾN TRÌNH đang chạy (API hoặc worker). Các
+    tiến trình khác tự hết hạn sau ≤ 60 giây — người bị đổi phạm vi bởi lô nhập/hoàn tác có thể còn thấy phạm vi cũ tối
+    đa một phút. Cùng giới hạn với mọi đường sửa phạm vi khác; không thêm cơ chế phát tán cache ở CR này.
+14. **Ghi thật một lần (MySQL):** câu dò lô APPLY cùng tệp phải là đọc-có-khóa (`live_apply_query`, FOR SHARE) vì
+    REPEATABLE READ khiến SELECT thường thấy ảnh chụp cũ; SQLite không tái hiện được nên test chỉ kiểm câu biên dịch
+    sang MySQL. Deadlock 1213 / hết chờ khóa 1205 / `PendingRollbackError` làm hỏng CẢ LÔ (không nuốt thành lỗi dòng).
+

@@ -1,7 +1,7 @@
 """ai-CR-190 — đợt 3 xóa mềm, cụm TỔ CHỨC: Công ty · Phòng ban · Nhân sự · Tài khoản · Vai trò.
 
 Đang được tham chiếu thì CHẶN xóa (400, cùng câu của `core/reference_guard`), chỉ cho ngưng dùng (`is_active`);
-hết tham chiếu thì xóa như cũ. Xóa nhiều: một dòng vướng → không xóa dòng nào. Dòng CSV «xóa» đi qua cùng chốt.
+hết tham chiếu thì xóa như cũ. Xóa nhiều: một dòng vướng → không xóa dòng nào. duoc-CR-628: Nhập CSV Nhân sự + Phòng ban đã ngừng (410) nên không còn đường xóa hàng loạt qua tệp.
 """
 from io import BytesIO
 
@@ -106,7 +106,8 @@ def test_phong_ban_cha_con_phong_con_thi_400(db, seed):
     _assert_blocked(e.value, "Phòng ban", "PB_CHA", "1 phòng ban con")
 
 
-def test_csv_phong_ban_dong_xoa_qua_cung_chot(db, seed, cap_quyen):
+def test_csv_phong_ban_da_ngung_410_va_khong_xoa_gi(db, seed, cap_quyen):
+    """duoc-CR-628: đường CSV cũ ghi thẳng cột + xóa hàng loạt → ngừng hẳn; dữ liệu không đổi."""
     from app.modules.department.controller import router as dept_router
 
     user = db.get(User, seed.u_req_id)
@@ -117,13 +118,10 @@ def test_csv_phong_ban_dong_xoa_qua_cung_chot(db, seed, cap_quyen):
     import_csv = _csv_import_endpoint(dept_router)
 
     with pytest.raises(HTTPException) as e:
-        import_csv(file=_upload("Mã PB,Tên phòng ban,Trạng thái\nDEPT01,Phòng Test,xóa\n"), db=db, user=user)
-    _assert_blocked(e.value, "Phòng ban", "DEPT01", "nhân sự")
-    db.rollback()
+        import_csv(file=_upload("Mã PB,Tên phòng ban,Trạng thái\nPB_TRONG,Phòng trống,xóa\n"), db=db, user=user)
+    assert e.value.status_code == 410 and "Excel" in e.value.detail
+    assert db.get(Department, free.id) is not None
     assert db.get(Department, seed.dept_id) is not None
-
-    import_csv(file=_upload("Mã PB,Tên phòng ban,Trạng thái\nPB_TRONG,Phòng trống,xóa\n"), db=db, user=user)
-    assert db.get(Department, free.id) is None
 
 
 # ───────────────────────────── Nhân sự ─────────────────────────────
@@ -174,7 +172,7 @@ def test_nhan_su_chi_con_tai_khoan_thi_van_xoa_va_khoa_tai_khoan_nhu_cu(db, seed
     assert u.is_active is False and u.employee_id == 0
 
 
-def test_csv_nhan_su_dong_xoa_qua_cung_chot(db, seed, cap_quyen):
+def test_csv_nhan_su_da_ngung_410_va_khong_xoa_gi(db, seed, cap_quyen):
     from app.modules.employee.controller import router as emp_router
 
     user = db.get(User, seed.u_req_id)
@@ -185,14 +183,11 @@ def test_csv_nhan_su_dong_xoa_qua_cung_chot(db, seed, cap_quyen):
     import_csv = _csv_import_endpoint(emp_router)
 
     with pytest.raises(HTTPException) as e:
-        import_csv(file=_upload("Mã NV,Họ tên,Hành động\nDEMONV,NSTM Chính,xóa\n"), db=db, user=user)
-    _assert_blocked(e.value, "Nhân sự", "DEMONV", "phân công nhóm hàng")
-    db.rollback()
+        import_csv(file=_upload("Mã NV,Họ tên,Hành động\nNV_TRONG,Người trống,xóa\n"), db=db, user=user)
+    assert e.value.status_code == 410 and "Nhập Excel" in e.value.detail
+    assert db.get(Employee, free.id) is not None
     assert db.get(Employee, seed.emp_nstm_id) is not None
-    assert db.get(User, seed.u_nstm_id).is_active is True                 # chưa khóa oan
-
-    import_csv(file=_upload("Mã NV,Họ tên,Hành động\nNV_TRONG,Người trống,xóa\n"), db=db, user=user)
-    assert db.get(Employee, free.id) is None
+    assert db.get(User, seed.u_nstm_id).is_active is True
 
 
 # ───────────────────────────── Tài khoản ─────────────────────────────

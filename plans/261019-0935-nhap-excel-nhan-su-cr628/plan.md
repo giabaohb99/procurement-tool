@@ -1,7 +1,7 @@
 ---
 title: "duoc-CR-628 — Nhập Excel nhân sự (frontend-v2) qua import_tool"
 description: "Nút «Nhập Excel» ở màn Nhân sự v2, adapter EMPLOYEE đi qua employee service, đủ hồ sơ kể cả nhạy cảm, cấm xóa, tắt Import CSV cũ."
-status: pending
+status: completed
 priority: P1
 effort: 3.5d
 branch: erp-v2
@@ -31,12 +31,12 @@ lý, nhãn chức vụ, phòng chính, khóa TK khi nghỉ việc, xóa cache qu
 ## Các pha
 | # | Pha | Chặn bởi | Chạy song song với | Trạng thái |
 |---|-----|----------|--------------------|-----------|
-| 01 | [Tách lõi ghi employee service (không commit)](phase-01-tach-loi-ghi-employee-service.md) | — | 02, 05 | pending |
-| 02 | [Khung catalog_import: hook adapter](phase-02-hook-adapter-catalog-import.md) | — | 01, 05 | pending |
-| 03 | [Adapter Nhân sự mới (cột, parse, ghi, hoàn tác)](phase-03-adapter-nhan-su.md) | 01, 02 | 05 | pending |
-| 04 | [Gác quyền import_tool + tắt CSV cũ](phase-04-gac-quyen-va-tat-csv-cu.md) | 03 | 05 | pending |
-| 05 | [Frontend: nút Nhập Excel v2 + ẩn Import CSV v1](phase-05-frontend-nut-nhap-excel.md) | — | 01–04 | pending |
-| 06 | [Kiểm thử đích + tài liệu](phase-06-kiem-thu-va-tai-lieu.md) | 01–05 | — | pending |
+| 01 | [Tách lõi ghi employee service (không commit)](phase-01-tach-loi-ghi-employee-service.md) | — | 02, 05 | completed |
+| 02 | [Khung catalog_import: hook adapter](phase-02-hook-adapter-catalog-import.md) | — | 01, 05 | completed |
+| 03 | [Adapter Nhân sự mới (cột, parse, ghi, hoàn tác)](phase-03-adapter-nhan-su.md) | 01, 02 | 05 | completed |
+| 04 | [Gác quyền import_tool + tắt CSV cũ](phase-04-gac-quyen-va-tat-csv-cu.md) | 03 | 05 | completed |
+| 05 | [Frontend: nút Nhập Excel v2 + ẩn Import CSV v1](phase-05-frontend-nut-nhap-excel.md) | — | 01–04 | completed |
+| 06 | [Kiểm thử đích + tài liệu](phase-06-kiem-thu-va-tai-lieu.md) | 01–05 | — | completed (trừ thử tay UI + code-reviewer) |
 
 ## Sở hữu tệp (không pha song song nào chung tệp)
 - 01: `backend/app/modules/employee/service.py`, `employee/status_parse.py` (mới), `employee/controller.py` (chỉ dời `_status_code`)

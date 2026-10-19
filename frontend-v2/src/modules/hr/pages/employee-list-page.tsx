@@ -35,6 +35,7 @@ import {
 } from '@/shared/ui/select'
 import { EmployeeCard } from '../components/employee-card'
 import { EmployeeFormDialog } from '../components/employee-form-dialog'
+import { EmployeeImportButton } from '../components/employee-import-button'
 import { EMPLOYEE_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useDepartments } from '../hooks/use-departments'
 import { EMPLOYEE_COLUMNS } from '../config/employee-columns'
@@ -180,12 +181,15 @@ function EmployeeListContent() {
         }
         actions={
           //  Khổ hẹp: nút chiếm trọn hàng — hành động chính phải dễ chạm nhất.
-          <PermissionGate entity="employee" action="create">
-            <Button className="max-md:w-full" onClick={() => setFormOpen(true)}>
-              <Plus />
-              Thêm mới
-            </Button>
-          </PermissionGate>
+          <div className="flex gap-2 max-md:flex-col">
+            <EmployeeImportButton />
+            <PermissionGate entity="employee" action="create">
+              <Button className="max-md:w-full" onClick={() => setFormOpen(true)}>
+                <Plus />
+                Thêm mới
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 

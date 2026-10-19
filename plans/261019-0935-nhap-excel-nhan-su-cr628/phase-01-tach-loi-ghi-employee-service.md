@@ -1,6 +1,6 @@
 # Pha 01 — Tách lõi ghi của employee service (không commit)
 
-**Ưu tiên:** P1 · **Trạng thái:** pending · **Công:** 0.5d · **Chặn bởi:** —
+**Ưu tiên:** P1 · **Trạng thái:** completed · **Công:** 0.5d · **Chặn bởi:** —
 
 ## Vì sao
 `create_employee` / `update_employee` / `delete_employee` tự `db.commit()` và gọi `record()` — mà
@@ -48,10 +48,10 @@ def delete_employee_core(db, eid, user_id) -> int                               
 3. Chạy test hồi quy đích (dưới).
 
 ## Todo
-- [ ] `create_employee_core` / `update_employee_core` / `delete_employee_core`
-- [ ] Vỏ công khai giữ y hành vi (commit, audit, khóa TK, xóa cache sau commit)
-- [ ] `status_parse.py` + sửa import test b03
-- [ ] Test hồi quy xanh
+- [x] `create_employee_core` / `update_employee_core` / `delete_employee_core`
+- [x] Vỏ công khai giữ y hành vi (commit, audit, khóa TK, xóa cache sau commit)
+- [x] `status_parse.py` + sửa import test b03
+- [x] Test hồi quy xanh
 
 ## Test (chỉ chạy đúng các tệp này)
 ```bash

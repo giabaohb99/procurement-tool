@@ -1,6 +1,6 @@
 # Pha 03 — Adapter Nhân sự mới (cột · parse · ghi qua service · hoàn tác)
 
-**Ưu tiên:** P1 · **Trạng thái:** pending · **Công:** 1.25d · **Chặn bởi:** 01, 02
+**Ưu tiên:** P1 · **Trạng thái:** completed · **Công:** 1.25d · **Chặn bởi:** 01, 02
 
 ## Tệp
 - Tạo `backend/app/modules/import_tool/employee_import_fields.py` (~180 dòng): bộ cột + bộ parse ô.
@@ -89,11 +89,11 @@ Mỗi phần tử `ctx.after`: `record(db, actor, "employee", eid, action, "Nh�
   Ghi rõ trong câu trả về.
 
 ## Todo
-- [ ] `employee_import_fields.py`: `EMPLOYEE_FIELDS`, parse ngày/mã số/bool, `template_notes`
-- [ ] `employee_import.py`: prepare / apply_row / finalize / revert / revert_blockers
-- [ ] Nối `ADAPTERS[EMPLOYEE]`
-- [ ] Sửa `test_nhan_su_khong_tao_tai_khoan_dang_nhap`
-- [ ] Viết test mới (pha 06 liệt kê) song song với code
+- [x] `employee_import_fields.py`: `EMPLOYEE_FIELDS`, parse ngày/mã số/bool, `template_notes`
+- [x] `employee_import.py`: prepare / apply_row / finalize / revert / revert_blockers
+- [x] Nối `ADAPTERS[EMPLOYEE]`
+- [x] Sửa `test_nhan_su_khong_tao_tai_khoan_dang_nhap`
+- [x] Viết test mới (pha 06 liệt kê) song song với code
 
 ## Thành công khi
 Test `test_nhap_excel_nhan_su_cr628.py` + `test_nhap_excel_nhan_su_quyen_cr628.py` xanh; log không chứa

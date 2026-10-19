@@ -1,6 +1,6 @@
 # Pha 02 — Khung `catalog_import`: thêm hook adapter
 
-**Ưu tiên:** P1 · **Trạng thái:** pending · **Công:** 0.5d · **Chặn bởi:** —
+**Ưu tiên:** P1 · **Trạng thái:** completed · **Công:** 0.5d · **Chặn bởi:** —
 
 ## Vì sao
 Vòng lặp `catalog_import.run` (dòng 451-582) dựng `data` rồi `setattr` trần, ô trống ghi đè (`""` /
@@ -42,10 +42,10 @@ Khung lo: đếm `counts`, ghi `changes` (chỉ khi apply), log `created/updated
 - Sửa: `backend/app/modules/import_tool/service.py` (`revert_batch`)
 
 ## Todo
-- [ ] `allow_delete`, `prepare`, `apply_row`, `finalize`, `revert`, `revert_blockers`
-- [ ] `build_template`: `template_action_col`, sheet «Huong dan»
-- [ ] `max_rows`
-- [ ] Hồi quy 10 danh mục cũ không đổi
+- [x] `allow_delete`, `prepare`, `apply_row`, `finalize`, `revert`, `revert_blockers`
+- [x] `build_template`: `template_action_col`, sheet «Huong dan»
+- [x] `max_rows`
+- [x] Hồi quy 10 danh mục cũ không đổi
 
 ## Test (chỉ chạy)
 ```bash

@@ -1,4 +1,5 @@
 """Celery task chạy import ở worker: cập nhật trạng thái + đếm + log, xong bắn chuông."""
+import logging
 import traceback
 from datetime import datetime
 from io import BytesIO, StringIO
@@ -12,6 +13,8 @@ from app.modules.notification.model import Notification
 
 from . import catalog_import, doc_import
 from .model import ImportBatch, ImportMode, ImportModule, ImportStatus
+
+logger = logging.getLogger(__name__)
 
 _MODULE_LABEL = {
     ImportModule.SURVEY: "Khảo sát",
@@ -89,11 +92,17 @@ def run_import(batch_id: int) -> dict:
         b = db.get(ImportBatch, batch_id)
         if b:
             b.status = ImportStatus.FAILED
-            b.error_summary = f"{e}\n{traceback.format_exc()[-2000:]}"
+            if b.module == ImportModule.EMPLOYEE:
+                #  H4: thông báo/traceback của SQLAlchemy kèm câu lệnh + THAM SỐ (CCCD, STK…) — lô Nhân sự chỉ
+                #  lưu tên lớp lỗi vào DB (ai cũng đọc được ở trang chi tiết lô); chi tiết đầy đủ vào log máy chủ.
+                logger.exception("Import Nhân sự lô #%s lỗi", batch_id)
+                b.error_summary = f"Lỗi hệ thống khi nhập Nhân sự ({type(e).__name__}) — xem nhật ký máy chủ."
+            else:
+                b.error_summary = f"{e}\n{traceback.format_exc()[-2000:]}"
             b.finished_at = datetime.utcnow()
             db.commit()
             _notify(db, b, ok=False)
-        return {"status": "failed", "error": str(e)}
+        return {"status": "failed", "error": b.error_summary if b and b.module == ImportModule.EMPLOYEE else str(e)}
     finally:
         db.close()
 

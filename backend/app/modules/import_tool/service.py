@@ -1,5 +1,6 @@
 """Hạ tầng import: lưu file, tạo/đọc batch, ghi log, đếm kết quả."""
 import json
+import logging
 import uuid
 
 from sqlalchemy import inspect as sa_inspect
@@ -39,6 +40,8 @@ _LEVEL_COUNTER = {
     LogLevel.ERROR: "error_count",
 }
 
+logger = logging.getLogger(__name__)
+
 
 def save_upload(db: Session, upload_file, user_id: int) -> StoredFile:
     """Lưu file .xlsx lên storage (dùng chung StoredFile) — worker đọc lại qua file_key."""
@@ -61,12 +64,34 @@ def create_batch(db: Session, module: int, mode: int, sf: StoredFile, user_id: i
     return b
 
 
+def live_apply_query(db: Session, batch: ImportBatch):
+    """Lô APPLY cùng tệp, tạo SAU bản chạy thử, còn sống (đang chạy / đã xong); lô lỗi hoặc đã hoàn tác thì không tính.
+    Đọc-có-khóa chia sẻ (FOR SHARE) để thấy bản ghi mới nhất bất chấp ảnh chụp REPEATABLE READ."""
+    return (db.query(ImportBatch.id)
+            .filter(ImportBatch.file_id == batch.file_id, ImportBatch.module == batch.module,
+                    ImportBatch.mode == ImportMode.APPLY, ImportBatch.id > batch.id,
+                    ImportBatch.status.in_([ImportStatus.QUEUED, ImportStatus.RUNNING, ImportStatus.DONE]))
+            .with_for_update(read=True))
+
+
+class DryRunAlreadyCommitted(Exception):
+    """Bản chạy thử đã có lô ghi thật còn hiệu lực."""
+
+
 def commit_dry_run(db: Session, batch: ImportBatch, user_id: int) -> ImportBatch:
     """Ghi thật từ một bản CHẠY THỬ: tạo batch mới chế độ APPLY, DÙNG LẠI đúng file
     đã tải lên (không phải upload lại). Trả batch mới để chỗ gọi đẩy Celery."""
     sf = db.get(StoredFile, batch.file_id)
     if not sf:
         raise ValueError("Không tìm thấy file của bản chạy thử để ghi thật")
+    #  M7: ghi thật chỉ MỘT lần cho mỗi bản chạy thử. Khóa dòng bản chạy thử để hai cú bấm gần nhau xếp hàng
+    #  (MySQL). ⚠️ Câu dò lô APPLY sau đó PHẢI là đọc-có-khóa (`live_apply_query`): MySQL chạy REPEATABLE READ nên
+    #  SELECT thường vẫn thấy ẢNH CHỤP mở từ trước lúc chờ khóa → phiên xếp sau không thấy lô của phiên trước và
+    #  ghi thật lần hai. SQLite không tái hiện được (xem test biên dịch sang MySQL).
+    db.query(ImportBatch).filter(ImportBatch.id == batch.id).with_for_update().first()
+    dup = live_apply_query(db, batch).first()
+    if dup:
+        raise DryRunAlreadyCommitted(f"Bản chạy thử này đã được ghi thật ở lô #{dup[0]} — không ghi lần nữa.")
     return create_batch(db, batch.module, ImportMode.APPLY, sf, user_id)
 
 
@@ -171,7 +196,8 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
             batch.updated_by = user_id
             db.commit()
         return res
-    changes = db.query(ImportChange).filter(ImportChange.batch_id == batch.id).all()
+    changes = (db.query(ImportChange).filter(ImportChange.batch_id == batch.id)
+               .order_by(ImportChange.id.desc()).all())    # duoc-CR-628: hoàn tác theo thứ tự NGƯỢC lúc ghi
     if not changes:
         return {"ok": False, "message": "Không có bản ghi snapshot để hoàn tác"}
 
@@ -187,6 +213,15 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
             shown = "; ".join(problems[:10]) + (f"; … và {len(problems) - 10} phiếu nữa" if len(problems) > 10 else "")
             return {"ok": False, "problems": problems,
                     "message": "Không hoàn tác được vì có chứng từ đã được xử lý sau khi nhập — " + shown}
+    #  duoc-CR-628: adapter danh mục có thể khai `revert_blockers` (vd Nhân sự: bản mới đã gắn tài khoản /
+    #  còn tham chiếu) — từ chối cả lượt, cùng khuôn ai-CR-169.
+    if catalog_import.is_catalog_module(batch.module) and \
+            catalog_import.ADAPTERS[batch.module].get("revert_blockers"):
+        problems = catalog_import.ADAPTERS[batch.module]["revert_blockers"](db, changes, user_id, batch)
+        if problems:
+            shown = "; ".join(problems[:10]) + (f"; … và {len(problems) - 10} mục nữa" if len(problems) > 10 else "")
+            return {"ok": False, "problems": problems,
+                    "message": "Không hoàn tác được — " + shown}
     #  Khảo sát / ĐMH revert qua hàm chuyên dụng (dọn đủ 2 loại dòng KS / cascade GR-công
     #  nợ của ĐMH) — kể cả batch tạo bằng mẫu chuẩn mới (was_new=1 -> xoá đúng).
     if batch.module == ImportModule.PURCHASE_ORDER:
@@ -208,6 +243,14 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
     batch.status = ImportStatus.REVERTED
     batch.updated_by = user_id
     db.commit()
+    #  duoc-CR-628 (M5): việc SAU commit của adapter (nhật ký từng bản ghi, xóa cache quyền).
+    #  Lỗi ở đây KHÔNG được làm đường hoàn tác trả 500 — dữ liệu đã commit đúng (M-D).
+    if catalog_import.is_catalog_module(batch.module) and catalog_import.ADAPTERS[batch.module].get("after_revert"):
+        try:
+            catalog_import.ADAPTERS[batch.module]["after_revert"](db, batch, user_id)
+        except Exception:  # noqa: BLE001
+            logger.exception("Hậu kỳ hoàn tác lô #%s lỗi (dữ liệu đã hoàn tác)", batch.id)
+            db.rollback()
     return {"ok": True, "deleted": deleted, "restored": restored,
             "message": f"Đã hoàn tác: xoá {deleted} {what} mới, khôi phục {restored} {what} cũ"}
 

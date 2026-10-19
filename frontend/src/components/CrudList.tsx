@@ -412,8 +412,12 @@ export default function CrudList() {
           {cfg.importExport && can(cfg.entity, 'write') && (
             <>
               <button className="btn outline" onClick={handleExport}><i className="ti ti-download" />Export CSV</button>
-              <button className="btn outline" onClick={() => fileInputRef.current?.click()}><i className="ti ti-upload" />Import CSV</button>
-              <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
+              {!cfg.importDisabled && (
+                <>
+                  <button className="btn outline" onClick={() => fileInputRef.current?.click()}><i className="ti ti-upload" />Import CSV</button>
+                  <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
+                </>
+              )}
             </>
           )}
           {cloneEnabled && (
