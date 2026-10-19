@@ -108,11 +108,13 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     gpt = _setup("chatgpt")
     assert gpt["format"] == "url" and "OAuth" in " ".join(gpt["steps"])
     assert "«" not in gpt["note"] and "Connectors" in desk["note"]
-    #  bao-CR-639: ChatGPT đổi giao diện 10/2026 — Developer mode ở Security and login, tạo ở Plugins → Create MCP App;
-    #  cần Plus / Pro. Bước «Apps & Connectors» cũ không được quay lại; bước Cho phép phải nhắc kiểm tên miền quay về.
+    #  bao-CR-639 (ảnh đại ca chụp 19/10): ChatGPT nối ở Settings → Connectors → hộp New Connector (MCP Server URL,
+    #  Authentication OAuth, tick I trust this application); Developer mode phải bật trước. Bước «Apps & Connectors» và
+    #  «Plugins → Create MCP App» (đoán sai lúc đầu) không được quay lại; bước Cho phép phải nhắc kiểm tên miền quay về.
     steps = " ".join(gpt["steps"])
-    assert "Security and login" in steps and "Developer mode" in steps and "Create MCP App" in steps
-    assert "Apps & Connectors" not in steps and "chatgpt.com" in steps
+    assert "Connectors" in steps and "New Connector" in steps and "Developer mode" in steps
+    assert "MCP Server URL" in steps and "I trust this application" in steps and "OAuth" in steps
+    assert "Apps & Connectors" not in steps and "Create MCP App" not in steps and "chatgpt.com" in steps
     assert any("Plus" in r for r in gpt["requires"])
     with pytest.raises(HTTPException) as e:
         _setup("notepad")

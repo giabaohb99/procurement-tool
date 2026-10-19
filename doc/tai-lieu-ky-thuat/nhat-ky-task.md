@@ -85,6 +85,11 @@ không có Developer mode, và chú thích bản cũ gọi là Apps and Connecto
 AI của tôi thêm bốn khẳng định khóa bước mới (có Security and login, Create MCP App, không còn Apps and Connectors, có
 yêu cầu gói Plus). Đại ca thử thật theo đúng các bước này, ChatGPT liệt kê đủ 12 skill, Agent 1 chốt nhãn.
 
+Đính chính tối 19/10 theo ảnh đại ca chụp màn ChatGPT thật: không có Plugins hay Create MCP App; kết nối tạo ở Settings
+rồi Connectors (chatgpt.com/#settings/Connectors), hộp New Connector đang ghi Beta có ô Name, Description, MCP Server URL,
+Authentication chọn OAuth, ô tick I trust this application rồi Create; Developer mode vẫn phải bật trước. Em sửa lại cả
+ba nơi và bài kiểm theo đúng hộp đó, ghi chú bước Plugins lúc đầu là đoán sai. Đại ca chốt nối theo hướng này.
+
 Kiểm trên máy local: 7 bài kiểm màn AI của tôi xanh; seed chạy lại ra 8 bài.
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (khối chatgpt), `test/backend/test_agent_hub_ai_cua_toi_cr213.py`,
