@@ -343,6 +343,11 @@ def _log_key_action(db: Session, request: Request, user, row, method: str) -> No
     mcp_log.save(db, [mcp_log.new_row(key_id=int(row.id), person=mcp_log.who(db, user),
                                       client_name=mcp_log.KEY_ACTION_CLIENT, method=method,
                                       ip=mcp_log.client_ip(request))])
+    #  ai-CR-226 (mục 7 bài rà): nhật ký cổng bị dọn theo hạn lưu (G7) — ghi thêm một dòng nhật ký thao tác ERP giữ lâu dài.
+    from . import erp
+
+    erp.audit(db, int(user.id), "agent_mcp_key", int(row.id), method.replace("/", "_"),
+              f"{mcp_log.KEY_ACTION_CLIENT} · {row.name} · IP {mcp_log.client_ip(request)}")
 
 
 @router.get("/mcp-keys/{key_id}/reveal")

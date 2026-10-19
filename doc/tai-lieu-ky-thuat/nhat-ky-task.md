@@ -13569,6 +13569,19 @@ Mã nguồn: catalog/references.py, doc_catalog/references.py, approval/referenc
 vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
+## ai-CR-226 | Nhật ký thao tác của bot không còn bị mất khi dịch vụ AI chạy tách riêng
+- status: dang-lam
+- date: 2026-10-19
+Agent 1 đọc nhật ký máy dev thì thấy khi dịch vụ AI chạy tách khỏi ERP, mọi dòng ghi lại việc bot đã làm thay người dùng
+(như tạo lịch Google) đều không lưu được vì cơ sở dữ liệu của dịch vụ AI không có bảng nhật ký thao tác. Nay các dòng đó
+được gửi sang ERP qua cổng nội bộ, người ghi lấy theo chữ ký của lượt gọi nên không giả được tên người khác; khi chạy chung
+với ERP thì vẫn ghi thẳng như cũ. Cổng nội bộ lỡ hỏng thì chỉ mất dòng nhật ký chứ việc của người dùng vẫn chạy. Kèm theo,
+mỗi lần xem lại hay bật tắt khóa kết nối AI cũng được ghi vào nhật ký thao tác lưu lâu dài. Việc này phải xong trước khi
+dựng dịch vụ AI tách riêng trên prod. Bài kiểm đều đạt.
+
+Mã nguồn: agent_hub/erp.py, agent_hub/controller.py, agent_gateway/controller.py, assistant/tools/__init__.py
+Bài kiểm: test_agent_hub_nhat_ky_qua_cong_b_cr226.py
+
 ## ai-CR-225 | Màn cho phép kết nối AI chống bị lừa và tự dọn ứng dụng đăng ký bỏ không
 - status: dang-lam
 - date: 2026-10-19

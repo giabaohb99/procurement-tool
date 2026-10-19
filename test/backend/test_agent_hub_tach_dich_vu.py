@@ -106,9 +106,14 @@ def test_cong_cu_erp_chay_o_erp_cong_cu_ca_nhan_chay_tai_cho(db, seed, monkeypat
     calls = gateway
     n = len(calls)
     out = erp.run_tool(db, u, "remember_fact", {"text": "anh thích cà phê đen", "section": "so_thich"})
-    assert out.get("ok") and len(calls) == n                                 # cá nhân: không đi HTTP
+    #  Cá nhân: chạy tại chỗ, KHÔNG gọi /tools/run — chỉ còn dòng nhật ký đẩy sang ERP (ai-CR-226: DB agent_hub không có
+    #  tab_audit_log, trước đây dòng này mất trắng).
+    assert out.get("ok") and calls[n:] == [("POST", "/api/agent-gw/audit")]
+    n = len(calls)
     out = erp.run_tool(db, u, "my_approval_tasks", {"limit": 3})
-    assert isinstance(out, dict) and "error" not in out and calls[-1] == ("POST", "/api/agent-gw/tools/run")
+    #  Bài kiểm chạy «ERP» và «dịch vụ AI» trong CÙNG một tiến trình (AGENT_MODE=service cho cả hai) nên phía ERP cũng đẩy
+    #  dòng nhật ký qua cổng — máy thật phía ERP chạy AGENT_MODE=erp, ghi thẳng. Chỉ cần lượt đi /tools/run.
+    assert isinstance(out, dict) and "error" not in out and ("POST", "/api/agent-gw/tools/run") in calls[n:]
     assert "Không có công cụ" in erp.run_tool(db, u, "cong_cu_bia", {}).get("error", "")
     #  Chữ ký sai (khóa lệch hai đầu): cổng từ chối, công cụ trả lỗi đọc được chứ không nổ.
     real = agent_signature.sign_headers

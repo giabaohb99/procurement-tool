@@ -214,6 +214,20 @@ class _Local:
 
         return mcp_read.file_for_ai(db, user, name, path)
 
+    # --- Nhật ký thao tác (ai-CR-226) ---
+    @staticmethod
+    def audit(db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
+        """Ghi `tab_audit_log` ngay trong DB ERP — SAVEPOINT, hỏng thì chỉ mất dòng nhật ký (bao-CR-463)."""
+        from app.core.audit import record
+
+        try:
+            with db.begin_nested():
+                record(db, int(user_id or 0), entity[:50], int(entity_id or 0), action[:50], message)
+            return True
+        except Exception:  # noqa: BLE001
+            log.warning("erp.audit: không ghi được %s/%s", entity, action, exc_info=True)
+            return False
+
     @staticmethod
     def caller_context(db, user) -> str | None:
         from app.modules.assistant.service import _caller_context
@@ -632,6 +646,18 @@ class _Remote:
     def skill_file(self, db, user, name: str, path: str) -> dict:
         return self._skill_call("/skills/file", user, {"name": name or "", "path": path or ""})
 
+    def audit(self, db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
+        """ai-CR-226: chế độ tách — DB agent_hub KHÔNG có `tab_audit_log`, nên đẩy dòng nhật ký sang ERP qua cổng B.
+        Hỏng (ERP đang khởi động lại…) thì chỉ mất dòng nhật ký, có log WARNING — không làm hỏng lượt gọi công cụ."""
+        try:
+            self._call("POST", "/audit", user_id=int(user_id or 0), timeout=AUDIT_TIMEOUT,
+                       body={"entity": entity[:50], "entity_id": int(entity_id or 0), "action": action[:50],
+                             "message": (message or "")[:AUDIT_MESSAGE_MAX]})
+            return True
+        except ErpError:
+            log.warning("erp.audit: cổng B không nhận nhật ký %s/%s", entity, action, exc_info=True)
+            return False
+
     # --- tạo phiếu ---
     def create_draft(self, db, user, kind: str, draft: dict, source: int = 0) -> tuple[str, int]:
         from .draft_create import DraftError
@@ -894,6 +920,16 @@ def skill_read(db, user, name: str) -> dict:
 
 def skill_file(db, user, name: str, path: str) -> dict:
     return _impl().skill_file(db, user, name, path)
+
+
+#  ai-CR-226 (Agent 1 đọc log dev 19/10): mọi dòng nhật ký thao tác do dịch vụ AI ghi phải qua đây — gọi thẳng
+#  `core.audit.record` ở chế độ tách là ghi vào DB agent_hub (không có bảng) → mất trắng dấu vết «ai nhờ bot làm gì».
+AUDIT_TIMEOUT = 5
+AUDIT_MESSAGE_MAX = 2000
+
+
+def audit(db, user_id: int, entity: str, entity_id: int, action: str, message: str = "") -> bool:
+    return _impl().audit(db, user_id, entity, entity_id, action, message)
 
 
 def glossary_block(db, texts: list[str]) -> str | None:

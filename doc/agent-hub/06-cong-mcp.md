@@ -107,7 +107,9 @@ công cụ chạy trên trình duyệt (vd MCP Inspector) — ChatGPT / claude.a
   qua; lần hỏng (sai PKCE, sai redirect) cũng đốt mã.
 - Chuỗi ký yêu cầu có `exp` lạ → coi như hỏng (không 500). Nghỉ việc (`revoke_user_access`) xóa trắng `raw_view`,
   `raw_sealed`, `refresh_hash` như `mcp_keys.revoke_rows`.
-- Còn lại (Agent 1 xếp NÊN): audit `key/reveal` ngoài nhật ký cổng. Hai mục kia xong ở ai-CR-225 (dưới).
+- Mục 7 (audit `key/reveal` lâu dài) xong ở ai-CR-226: xem lại / bật / tắt khóa ghi thêm `tab_audit_log` (entity `agent_mcp_key`, action `key_reveal` / `key_enable` / `key_disable`) qua `agent_hub.erp.audit`. Hai mục 3, 4 xong ở ai-CR-225 (dưới).
+
+**ai-CR-226 (19/10) — nhật ký thao tác ở chế độ tách:** DB `agent_hub` không có `tab_audit_log`; mọi dòng nhật ký do dịch vụ AI ghi (công cụ chạy tại chỗ: lịch Google, sổ nhớ, nhóm chat, biên bản, bản tin, nghiên cứu; thao tác khóa MCP) đi qua `agent_hub.erp.audit` — nhúng / ERP ghi thẳng (SAVEPOINT), tách thì `POST /api/agent-gw/audit` `{entity ≤ 50, entity_id ≥ 0, action ≤ 50, message ≤ 2000}`, người ghi lấy từ CHỮ KÝ cổng B. Cổng hỏng → mất dòng nhật ký + log WARNING, lượt công cụ vẫn chạy. **Phải có trước khi dựng dịch vụ AI tách trên prod** (checklist của Agent 1).
 
 **ai-CR-225 (19/10) — chống lừa ở màn đồng ý + dọn bảng:**
 - Nơi quay về tính theo HOSTNAME (`oauth.redirect_target`): bỏ userinfo + cổng, `https://chatgpt.com@evil.example/cb` hiện

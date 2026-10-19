@@ -14,7 +14,9 @@ def test_audit_hong_thi_dong_dang_cho_van_con(db, monkeypatch):
     def no(*a, **kw):
         raise RuntimeError("Data too long for column 'action'")
 
-    monkeypatch.setattr(tools, "record", no)
+    import app.core.audit as core_audit
+
+    monkeypatch.setattr(core_audit, "record", no)        # ai-CR-226: ghi qua agent_hub.erp.audit → core.audit.record
     db.add(AgentMessage(task_id=0, direction=2, chat_id="1", body="x"))
     db.flush()
 

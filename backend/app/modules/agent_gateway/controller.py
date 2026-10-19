@@ -169,6 +169,20 @@ def skills_read(name: str = Query(..., max_length=160), user=Depends(gateway_use
     return success(L.skill_read(db, user, name))
 
 
+# --- Nhật ký thao tác (ai-CR-226) — dịch vụ AI tách DB không có tab_audit_log, ghi hộ ở ERP ------------------------------
+class AuditIn(BaseModel):
+    entity: str = Field(min_length=1, max_length=50)
+    entity_id: int = Field(default=0, ge=0)
+    action: str = Field(min_length=1, max_length=50)
+    message: str = Field(default="", max_length=2000)
+
+
+@router.post("/audit")
+def audit_write(body: AuditIn, user=Depends(gateway_user), db: Session = Depends(get_db)):
+    """Người ghi = người trong chữ ký cổng B (không lấy từ thân) — dịch vụ AI không ghi được dưới tên người khác."""
+    return success({"ok": L.audit(db, int(user.id), body.entity, body.entity_id, body.action, body.message)})
+
+
 @router.get("/skills/file")
 def skills_file(name: str = Query(..., max_length=160), path: str = Query(..., max_length=200),
                 user=Depends(gateway_user), db: Session = Depends(get_db)):
