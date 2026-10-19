@@ -4,6 +4,8 @@
 **Phụ thuộc:** 01–06 đã commit (bước A đang CHƯA commit trong cây làm việc — commit trước khi bắt đầu); `alembic heads` = đúng 1 head `lbrct02` (kiểm lại ngay trước khi viết migration — plan CR-628 nhập Excel nhân sự có thể chen migration).
 **Tên tệp giữ `...-de-xuat-hoan.md`** cho link cũ không gãy; nội dung nay là phase đang làm.
 
+> ⚠️ **Phối hợp duoc-CR-630** (`plans/261019-1100-bien-mau-hdld-crud-cr630/`, thêm 19/10/2026): CR-630 chen migration **`lbvar01`** (`down_revision="lbrct02"`: bảng `tab_labor_contract_variable` + cột `tab_labor_contract.custom_values`). Nếu CR-630 lên trước ⇒ `lbrct03` phải khai **`down_revision="lbvar01"`** và mọi chỗ «`downgrade lbrct02`» trong phase này/phase 08 đọc thành «`downgrade lbvar01`». Kiểm `alembic heads` = 1 trước khi viết. CR-630 cũng sửa `labor_contract/generate_service.py` (hàm `generate`, không đụng `_pick_template`) ⇒ rebase, xung đột chữ tối thiểu. CR-630 đọc mẫu qua `LaborContractTemplate.placeholders` (STI trong suốt — không cần sửa thêm).
+
 ## Quyết định khóa (đã cân nhắc phương án)
 
 | # | Vấn đề | Chọn | Bỏ | Lý do |
