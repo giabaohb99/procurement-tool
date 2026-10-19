@@ -288,6 +288,10 @@ _EXPORT = (
 _VIEW = (
     ActionCode("view_file", "Xem tệp", ACTION_GROUP_VIEW),
     ActionCode("download_file", "Tải tệp về", ACTION_GROUP_VIEW),
+    #  ai-CR-221 / 226: chủ khóa kết nối AI xem lại khóa, bật / tắt tạm (`agent_hub.erp.audit`, entity `agent_mcp_key`).
+    ActionCode("key_reveal", "Xem lại khóa kết nối AI", ACTION_GROUP_VIEW),
+    ActionCode("key_enable", "Bật khóa kết nối AI", ACTION_GROUP_EDIT),
+    ActionCode("key_disable", "Tắt khóa kết nối AI", ACTION_GROUP_EDIT),
     #  Không phải người làm: `file_access_log` ghi mã này với `user_id = 0` để
     #  đánh dấu "đã gửi cảnh báo rồi", dùng luôn nhật ký làm chỗ nhớ thay vì đẻ
     #  bảng mới. `entity_id` của dòng này là id NGƯỜI bị cảnh báo, không phải id

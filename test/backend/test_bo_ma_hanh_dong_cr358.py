@@ -64,8 +64,9 @@ RELAY_FUNCS = {
 #  trị của một biến, nên chỗ nào máy không đọc được thì người phải khai.
 #  ---------------------------------------------------------------------------
 DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
-    #  `f"tool:{name}"` — 34 công cụ của trợ lý AI, khai thành HỌ mã.
-    "modules/assistant/tools/__init__.py::_audit": ("tool:list_purchase_orders",),
+    #  ai-CR-226: mọi dòng nhật ký của dịch vụ AI đi qua `agent_hub.erp.audit` (chế độ tách đẩy qua cổng B) —
+    #  `f"tool:{name}"` của công cụ trợ lý (HỌ mã) + thao tác chủ khóa kết nối AI (ai-CR-221).
+    "modules/agent_hub/erp.py::audit": ("tool:list_purchase_orders", "key_reveal", "key_enable", "key_disable"),
     "modules/category_assignee/service.py::bulk_upsert": ("create", "update"),
     #  bao-CR-621: nhập gói skill — tạo mới hay thay gói cho skill trùng tên.
     "modules/ai_skill/service.py::import_package": ("create", "update"),
