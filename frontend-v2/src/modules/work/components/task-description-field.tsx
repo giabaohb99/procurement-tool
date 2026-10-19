@@ -58,6 +58,24 @@ export function TaskDescriptionField({
     return () => document.removeEventListener('pointerdown', raNgoai)
   }, [dangSua, description, onSave])
 
+  //  ĐÓNG PANEL KHI ĐANG SỬA (Esc, nút X) cũng phải lưu (duoc-CR-626). Chốt lưu ở
+  //  trên chỉ bắt cú bấm ra ngoài, mà Esc thì không có cú bấm nào — panel gỡ ô này
+  //  đi và bản nháp mất trong im lặng. Đọc giá trị mới nhất qua ref vì lúc gỡ thì
+  //  closure của lần vẽ đầu đã cũ.
+  const moiNhat = useRef({ dangSua, description, onSave })
+  useEffect(() => {
+    moiNhat.current = { dangSua, description, onSave }
+  })
+  useEffect(
+    () => () => {
+      const { dangSua: vanDangSua, description: goc, onSave: luu } = moiNhat.current
+      if (!vanDangSua) return
+      const moi = isRichEmpty(nhapRef.current) ? '' : nhapRef.current
+      if (moi !== goc) luu(moi)
+    },
+    [],
+  )
+
   function moSua() {
     nhapRef.current = description
     setDangSua(true)

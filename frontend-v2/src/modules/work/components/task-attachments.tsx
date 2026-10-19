@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { downloadFile } from '@/core/api/download-file'
 import { logger } from '@/core/telemetry/logger'
 import { Button } from '@/shared/ui/button'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatFileSize } from '@/shared/utils/format-file-size'
@@ -49,7 +50,15 @@ export function TaskAttachments({ taskId, canEdit }: TaskAttachmentsProps) {
             file={file}
             canEdit={canEdit}
             removing={remove.isPending && remove.variables === file.id}
-            onRemove={() => remove.mutate(file.id)}
+            onRemove={async () => {
+              //  Gỡ là mất tệp khỏi công việc (duoc-CR-626) — hỏi trước, nêu tên tệp.
+              const ok = await confirm({
+                title: 'Gỡ tệp',
+                message: `Gỡ tệp «${file.filename}» khỏi công việc này?`,
+                confirmLabel: 'Gỡ tệp',
+              })
+              if (ok) remove.mutate(file.id)
+            }}
           />
         ))}
       </ul>

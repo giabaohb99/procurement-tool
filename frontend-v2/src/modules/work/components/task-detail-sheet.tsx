@@ -12,6 +12,7 @@ import {
 import { useMemo } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { cn } from '@/shared/utils/cn'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
@@ -156,7 +157,14 @@ export function TaskDetailSheet({
                   size="icon"
                   className="size-8"
                   aria-label="Xóa công việc"
-                  onClick={() => {
+                  onClick={async () => {
+                    //  Hỏi trước: giao diện không có chỗ khôi phục việc đã xóa (duoc-CR-626).
+                    const ok = await confirm({
+                      title: 'Xóa công việc',
+                      message: `Xóa công việc «${task.title}»? Việc con của nó cũng bị xóa theo.`,
+                      confirmLabel: 'Xóa',
+                    })
+                    if (!ok) return
                     deleteTask.mutate(task.id)
                     onClose()
                   }}

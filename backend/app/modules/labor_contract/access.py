@@ -25,7 +25,10 @@ def get_or_404_scoped(db: Session, model, entity: str, oid: int, user, profile: 
     if lock:
         obj = (db.query(model).filter(model.id == oid).with_for_update()
                .populate_existing().first())
-        if obj is None:   # vừa bị người khác xóa trong lúc chờ khóa
+        #  Vừa bị người khác xóa trong lúc chờ khóa — kể cả XÓA MỀM (duoc-CR-626). Thiếu
+        #  nhánh `is_deleted` thì «Ký» chạy đua với «Xóa» ra HĐ đã ký nhưng ẩn khỏi mọi
+        #  màn, trong khi chốt xóa nhân sự vẫn đếm nó → hồ sơ không bao giờ xóa được.
+        if obj is None or getattr(obj, "is_deleted", False):
             raise HTTPException(404, message)
     return obj
 

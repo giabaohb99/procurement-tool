@@ -122,8 +122,13 @@ export function EmployeeDetailPage() {
   //  Cờ «đang gửi» đổi NGAY trong tick — xem `onSubmit`.
   const submittingRef = useRef(false)
 
+  //  ⚠️ `keepDirtyValues` — `employee` đổi không chỉ lúc mở trang: tải ảnh CCCD /
+  //  ảnh đại diện / chữ ký hay «Áp» một dòng quá trình công tác đều làm hồ sơ
+  //  tải lại. Reset trần thì mọi ô đang gõ dở ở mọi tab biến mất, im lặng
+  //  (duoc-CR-626, dựng lại được trên trình duyệt). Đừng đổi thành "chỉ reset khi
+  //  đổi id": form gửi lại mọi ô, lần Lưu sau sẽ đè phòng ban/chức vụ vừa «Áp».
   useEffect(() => {
-    if (employee) form.reset(employeeProfileFormValues(employee))
+    if (employee) form.reset(employeeProfileFormValues(employee), { keepDirtyValues: true })
   }, [employee, form])
 
   if (isLoading) {
@@ -174,6 +179,11 @@ export function EmployeeDetailPage() {
         id: employeeId,
         values: pickWritableProfile(values, canReadSensitive),
       })
+      //  Lưu xong thì coi giá trị vừa gửi là mốc sạch. `keepDirtyValues` ở effect
+      //  trên KHÔNG xóa `dirtyFields`, nên thiếu dòng này thì ô đã lưu vẫn bị coi
+      //  là «đang sửa» tới khi rời trang — rồi «Áp» quá trình công tác đổi phòng
+      //  ban xong, lần Lưu sau đè ngược giá trị cũ lên (duoc-CR-626, review).
+      form.reset(values)
     } finally {
       submittingRef.current = false
     }

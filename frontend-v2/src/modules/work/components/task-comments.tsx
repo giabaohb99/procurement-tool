@@ -2,6 +2,7 @@ import { AtSign, ImageIcon, Loader2, MessageSquare, Paperclip, Send, Trash2, X }
 import { useRef, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { MentionInput, type MentionInputHandle } from '@/shared/ui/mention-input'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -71,7 +72,15 @@ export function TaskComments({ taskId, listId }: TaskCommentsProps) {
             key={comment.id}
             comment={comment}
             deleting={remove.isPending && remove.variables === comment.id}
-            onDelete={() => remove.mutate(comment.id)}
+            onDelete={async () => {
+              //  Xóa CỨNG, kéo theo phản hồi và tệp kèm (duoc-CR-626) — hỏi trước.
+              const ok = await confirm({
+                title: 'Xóa bình luận',
+                message: 'Xóa bình luận này? Phản hồi và tệp kèm theo cũng bị xóa, không khôi phục được.',
+                confirmLabel: 'Xóa',
+              })
+              if (ok) remove.mutate(comment.id)
+            }}
           />
         ))}
       </ol>

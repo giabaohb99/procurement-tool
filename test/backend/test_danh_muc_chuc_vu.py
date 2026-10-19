@@ -116,6 +116,24 @@ def test_save_without_position_field_leaves_it_untouched(db):
     assert (emp.position_id, emp.position) == (pos.id, "Kế toán trưởng")
 
 
+def test_resaving_unmapped_profile_keeps_text_label(db):
+    """duoc-CR-626 — bắt được khi bấm thử trên giao diện 19/10/2026.
+
+    Màn hồ sơ gửi LẠI `position_id = 0` ở mọi lần lưu (không gửi chữ). Hồ sơ cũ
+    nhập từ CSV giữ chức danh dạng chữ mà chưa map danh mục (`position_id = 0`)
+    thì sửa «Nơi làm việc» xong bấm Lưu là mất luôn «Trưởng phòng» — phiếu in
+    trống chức danh người ký. 0 → 0 không phải "bỏ chọn".
+    """
+    emp = _emp(db, code="NS001", position="Trưởng phòng")
+    assert (emp.position, emp.position_id) == ("Trưởng phòng", 0)
+
+    emp_service.update_employee(
+        db, emp.id, EmployeeUpdate(work_location="Kho Bình Dương", position_id=0), 1)
+
+    db.refresh(emp)
+    assert (emp.position, emp.position_id, emp.work_location) == ("Trưởng phòng", 0, "Kho Bình Dương")
+
+
 def test_creating_profile_also_copies_label(db):
     pos = _position(db, name="Thủ kho")
     emp = _emp(db, code="NS001", position_id=pos.id)

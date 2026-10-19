@@ -81,6 +81,12 @@ def sync_label(db: Session, obj: Employee, fields: dict, old_position_id: int = 
     if "position_id" not in fields:
         return
     new_id = fields["position_id"] or 0
+    #  Chưa gán → vẫn chưa gán: KHÔNG phải "bỏ chọn". Màn hồ sơ gửi lại cả
+    #  `position_id = 0` ở mọi lần lưu, nên thiếu nhịp này thì hồ sơ cũ còn chức
+    #  danh dạng chữ (nhập CSV chưa map danh mục) mất chức danh mỗi khi ai đó lưu
+    #  một ô bất kỳ — phiếu in ra trống chức danh người ký (duoc-CR-626).
+    if not new_id and not (old_position_id or 0):
+        return
     if new_id and new_id == (old_position_id or 0):
         position = get_position(db, new_id)
     else:

@@ -2,6 +2,7 @@ import { Info } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -106,6 +107,19 @@ function FieldForm({
   async function luu() {
     const tenSach = ten.trim()
     if (!tenSach) return
+    //  Bỏ một giá trị = backend xóa CỨNG nó khỏi mọi việc đang gắn (duoc-CR-626) —
+    //  hỏi trước, kể tên ra để người dùng thấy đúng thứ sắp mất.
+    const conLai = new Set(options.map((o) => o.id))
+    const biBo = field.options.filter((o) => !conLai.has(o.id)).map((o) => `«${o.name}»`)
+    if (
+      biBo.length > 0 &&
+      !(await confirm({
+        title: 'Bỏ giá trị của trường',
+        message: `Bỏ ${biBo.join(', ')}? Những công việc đang gắn giá trị này sẽ mất nó, không khôi phục được.`,
+        confirmLabel: 'Bỏ và lưu',
+      }))
+    )
+      return false
     if (tenSach !== field.name || kieu !== field.field_type)
       await updateField.mutateAsync({
         fieldId: field.id,
@@ -133,7 +147,14 @@ function FieldForm({
       onTypeChange={khoaKieu ? undefined : setKieu}
       options={options}
       onOptionsChange={setOptions}
-      onDelete={() => {
+      onDelete={async () => {
+        //  Backend xóa CỨNG trường cùng mọi giá trị đã gán trên các việc (duoc-CR-626).
+        const ok = await confirm({
+          title: 'Xóa trường khỏi dự án',
+          message: `Xóa trường «${field.name}»? Giá trị của trường này trên mọi công việc sẽ mất, không khôi phục được.`,
+          confirmLabel: 'Xóa',
+        })
+        if (!ok) return
         deleteField.mutate(field.id)
         onClose()
       }}
@@ -154,7 +175,8 @@ interface FieldFormBodyProps {
   options: DraftOption[]
   onOptionsChange: (next: DraftOption[]) => void
   onDelete: () => void
-  onSave: () => Promise<void> | void
+  /** Trả `false` = người dùng hủy giữa chừng → GIỮ hộp thoại mở, không mất bản sửa. */
+  onSave: () => Promise<boolean | void> | boolean | void
   onClose: () => void
 }
 
@@ -178,8 +200,7 @@ function FieldFormBody({
   async function luu() {
     setDangLuu(true)
     try {
-      await onSave()
-      onClose()
+      if ((await onSave()) !== false) onClose()
     } finally {
       setDangLuu(false)
     }

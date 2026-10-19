@@ -184,7 +184,8 @@ def close_year(db: Session, year: int, rows: list[LeaveBalance],
             skipped_config += 1
             continue
 
-        target = balance_service.ensure_balance(db, employee, year + 1, target_type, actor)
+        target = balance_service.ensure_balance(db, employee, year + 1, target_type, actor,
+                                                for_update=True)
         target.carried_days = round(target.carried_days + credit, 2)
         target.updated_by = actor
         #  CỘNG DỒN, không gán đè: lượt kết sổ sau chỉ vét phần vừa quay lại.
