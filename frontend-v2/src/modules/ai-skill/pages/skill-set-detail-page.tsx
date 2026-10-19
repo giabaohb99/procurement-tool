@@ -21,7 +21,7 @@ import { SecurityLevelBadge, SkillStatusBadge } from '../config/ai-skill-meta'
 import { SkillAccessTab } from '../components/skill-access-tab'
 import { SkillListTab } from '../components/skill-list-tab'
 import { SkillSetFormDialog } from '../components/skill-set-form-dialog'
-import { useDeleteSkillSet, useSkillSet } from '../hooks/use-ai-skill'
+import { useDeleteSkillSet, useSkillSet, useSkills } from '../hooks/use-ai-skill'
 
 const TABS = ['skills', 'access', 'history'] as const
 type TabKey = (typeof TABS)[number]
@@ -43,6 +43,9 @@ export function SkillSetDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = readTab(searchParams.get('tab'))
   const { data: skillSet, isLoading, isError } = useSkillSet(validId ? setId : 0)
+  //  Đường chi tiết bộ trả `skill_count = 0` (chỉ danh sách bộ mới đếm) — đếm theo đúng danh sách tab đang vẽ; cùng khóa
+  //  truy vấn với tab Skill nên không gọi thêm.
+  const { data: skills } = useSkills(validId ? setId : 0)
   const remove = useDeleteSkillSet()
   const [editOpen, setEditOpen] = useState(false)
 
@@ -124,7 +127,7 @@ export function SkillSetDetailPage() {
             <ScrollableTabsList value={tab}>
               <TabsTrigger value="skills" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Sparkles className="size-4" />
-                Skill ({skillSet.skill_count})
+                Skill ({skills?.items.length ?? skillSet.skill_count})
               </TabsTrigger>
               <TabsTrigger value="access" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <ShieldCheck className="size-4" />

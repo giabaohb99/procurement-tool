@@ -70,6 +70,33 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-637 | Kho skill AI: sửa bốn điểm giao diện Agent 2 soi trên dev
+- status: xong
+- date: 2026-10-19
+Agent 2 mở sáu màn Kho skill AI và mục AI của tôi trên dev ngày 19/10 và báo bốn điểm; Agent 4 mở thêm hai trường ở API
+(ai-CR-219) để sửa cho đúng gốc. Tab Skill ở màn chi tiết bộ trước luôn ghi số 0 vì đường chi tiết bộ không đếm skill, nay
+đếm theo đúng danh sách đang hiện. Cột Mức ở màn Khóa nhân sự viết hoa chữ đầu (Chỉ đọc, Được ghi) cho khớp ô chọn và tài
+liệu. Màn Nhật ký sử dụng thêm ô tick Chỉ lượt gọi công cụ, bật sẵn, để các lượt khởi tạo kết nối, liệt kê công cụ và
+thông báo của ứng dụng AI không chiếm hết trang; lượt dùng khóa sai không có người thì cột Người in gạch ngang thay cho #0.
+Thẻ lượt gọi ở màn Tổng quan nay đếm lượt gọi công cụ cho khớp bảng Công cụ dùng nhiều; máy chủ chưa có trường mới thì
+vẫn hiện số cũ.
+
+Cùng đợt, nối giao diện với kết nối OAuth Agent 4 làm (ai-CR-218). Ở bước 1 của màn AI của tôi, ứng dụng nối bằng OAuth
+(ChatGPT, claude.ai) chỉ hiện địa chỉ cổng kèm nút chép và câu giải thích không cần khóa, ứng dụng sẽ tự mở trang ERP xin
+phép; không còn đoạn cấu hình có chỗ giữ khóa. Kết nối OAuth trong danh sách khóa (AI của tôi, Khóa nhân sự) hiện nhãn Kết
+nối OAuth thay cho bốn ký tự cuối của khóa.
+
+Kiểm trên máy local: typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn); bài kiểm phân hệ kho skill và mục Trang cá nhân 25
+tệp, 162 bài xanh. Bài mới: hàm tính phần trăm (kỳ trước bằng 0, số âm, số hỏng, làm tròn), hàm viết hoa chữ đầu (chữ có
+dấu, chuỗi rỗng), ứng dụng OAuth không lộ chỗ giữ khóa, nhãn kết nối OAuth.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/pages/skill-set-detail-page.tsx`, `key-admin-page.tsx`, `call-log-page.tsx`,
+`ai-overview-page.tsx`, `config/ai-skill-constants.ts` (+ bài kiểm), `utils/overview-format.ts` (+ bài kiểm),
+`types/ai-skill.ts`, `app/components/profile/profile-ai-connect-section.tsx` (+ bài kiểm).
+Commit: commit sửa giao diện trên erp-v2, ngay sau K9 (đại ca gật 19/10). Deploy: Agent 1 dựng dev.
+
+---
+
 ## bao-CR-636 | Cập nhật bài Trung tâm trợ giúp Kết nối AI riêng theo OAuth, xem lại khóa, ứng dụng đã kết nối
 - status: xong
 - date: 2026-10-19

@@ -53,6 +53,11 @@ function mockServer(state: ServerState = {}) {
       return Promise.resolve({ client: 'chatgpt', label: 'ChatGPT', supported: false, format: '', snippet: '', steps: [],
         note: 'ChatGPT chưa nối được kết nối riêng của công ty.', endpoint: 'https://erp.test/api/mcp', placeholder: PLACEHOLDER })
     }
+    if (url === '/api/agent-hub/mcp-setup' && config?.params?.client === 'claude_ai') {
+      return Promise.resolve({ client: 'claude_ai', label: 'claude.ai', supported: true, auth: 'oauth', format: 'url',
+        snippet: 'https://erp.test/api/mcp', steps: ['Mở Settings → Connectors', 'Dán địa chỉ dưới'],
+        endpoint: 'https://erp.test/api/mcp', placeholder: PLACEHOLDER })
+    }
     if (url === '/api/agent-hub/mcp-setup' && config?.params?.client) {
       return Promise.resolve({ client: 'claude_desktop', label: 'Claude Desktop', supported: true, format: 'json',
         snippet: `{"env":{"DEGO_MCP_KEY":"${PLACEHOLDER}"}}`, steps: ['Mở Settings', 'Dán đoạn dưới'],
@@ -63,6 +68,7 @@ function mockServer(state: ServerState = {}) {
       return Promise.resolve({ endpoint: 'https://erp.test/api/mcp', placeholder: PLACEHOLDER, clients: [
         { client: 'claude_desktop', label: 'Claude Desktop', supported: true },
         { client: 'chatgpt', label: 'ChatGPT', supported: false },
+        { client: 'claude_ai', label: 'claude.ai', supported: true, auth: 'oauth' },
       ] })
     }
     if (url === '/api/agent-hub/mcp-keys') return Promise.resolve({ endpoint: 'https://erp.test/api/mcp', items: state.myKeys ?? [] })
@@ -108,6 +114,24 @@ describe('ProfileAiConnectSection (AI của tôi)', () => {
     await userEvent.click(await screen.findByRole('button', { name: /ChatGPT/ }))
     expect(await screen.findByText(/ChatGPT chưa nối được/)).toBeInTheDocument()
     expect(screen.queryByText('Đoạn cấu hình dán vào tệp')).not.toBeInTheDocument()
+  })
+
+  it('shows only the gateway address for an OAuth app, never a config with a key placeholder', async () => {
+    mockServer()
+    renderSection()
+    await userEvent.click(await screen.findByRole('button', { name: /claude\.ai/ }))
+    expect(await screen.findByText('Địa chỉ kết nối')).toBeInTheDocument()
+    expect(screen.getByText('https://erp.test/api/mcp')).toBeInTheDocument()
+    expect(screen.getByText(/Không cần khóa/)).toBeInTheDocument()
+    expect(screen.queryByText(/KHÓA_CỦA_BẠN/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Đoạn cấu hình dán vào tệp')).not.toBeInTheDocument()
+  })
+
+  it('labels an OAuth connection instead of showing a key hint', async () => {
+    mockServer({ myKeys: [keyRow({ id: 8, name: 'Qua ChatGPT', hint: '', kind: 2, kind_label: 'Kết nối OAuth' })] })
+    renderSection()
+    expect(await screen.findByText('Qua ChatGPT')).toBeInTheDocument()
+    expect(screen.getByText('Kết nối OAuth')).toBeInTheDocument()
   })
 
   it('creates a read-only 90-day key, shows it once and fills it into the step 1 config', async () => {

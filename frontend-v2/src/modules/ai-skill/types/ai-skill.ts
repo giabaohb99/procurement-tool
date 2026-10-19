@@ -175,6 +175,9 @@ export interface AdminMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  kind?: number
+  kind_label?: string
   owner_label: string
   department_id: number
   department: string
@@ -234,6 +237,8 @@ export interface McpCallFilters {
   key_id?: number
   tool?: string
   status?: number
+  /** `tools` = chỉ lượt gọi công cụ (`tools/call`), ẩn initialize / tools/list / notifications/* (ai-CR-219). */
+  kind?: 'tools'
   page: number
   size: number
 }
@@ -258,6 +263,9 @@ export interface MyMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  kind?: number
+  kind_label?: string
   key?: string
 }
 
@@ -265,7 +273,11 @@ export interface McpSetupClient {
   client: string
   label: string
   supported: boolean
+  auth?: McpSetupAuth
 }
+
+/** `key` = dán khóa vào cấu hình · `oauth` = ứng dụng tự mở trang ERP xin phép, không cần khóa (ai-CR-218). */
+export type McpSetupAuth = 'key' | 'oauth'
 
 export interface McpSetupList {
   endpoint: string
@@ -277,8 +289,9 @@ export interface McpSetupDetail {
   client: string
   label: string
   supported: boolean
-  /** `json` = đoạn cấu hình dán vào tệp, `shell` = câu lệnh chạy trong cửa sổ dòng lệnh. */
-  format: 'json' | 'shell' | ''
+  /** `json` = đoạn cấu hình dán vào tệp, `shell` = câu lệnh chạy trong cửa sổ dòng lệnh, `url` = chỉ địa chỉ cổng. */
+  format: 'json' | 'shell' | 'url' | ''
+  auth?: McpSetupAuth
   snippet: string
   steps: string[]
   files?: { windows?: string; macos?: string; all?: string }
@@ -337,6 +350,9 @@ export interface AiOverview {
   calls_7d: number
   calls_prev_7d: number
   calls_change_pct: number | null
+  /** Chỉ lượt gọi CÔNG CỤ (`tools/call`) — ai-CR-219; máy chủ cũ chưa có thì thẻ lùi về `calls_7d`. */
+  tool_calls_7d?: number
+  tool_calls_prev_7d?: number
   denied_7d: number
   error_7d: number
   daily: DailyCalls[]

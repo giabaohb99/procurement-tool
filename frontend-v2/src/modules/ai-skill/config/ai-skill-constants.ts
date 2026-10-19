@@ -53,6 +53,9 @@ export const JOB_LEVEL_SUBJECT_OPTIONS = JOB_LEVEL_FILTER_OPTIONS.filter((o) => 
 /** Trạng thái khóa kết nối (agent_hub `KeyState`). */
 export const KEY_STATE = { pending: 1, active: 2, expired: 3, revoked: 4 } as const
 
+/** Loại khóa (ai-CR-218): dán tay vào ứng dụng, hay kết nối OAuth do ứng dụng (ChatGPT, claude.ai) tự xin. */
+export const KEY_KIND = { manual: 1, oauth: 2 } as const
+
 /** Trạng thái một lượt gọi (agent_hub `CallStatus`). */
 export const CALL_STATUS = { ok: 1, denied: 2, error: 3 } as const
 
@@ -118,4 +121,9 @@ export function checkPackageFile(file: Pick<File, 'name' | 'size'>): string {
   if (file.size === 0) return 'Tệp rỗng.'
   if (file.size > PACKAGE_MAX_BYTES) return `Gói quá ${formatBytes(PACKAGE_MAX_BYTES)} (tệp này ${formatBytes(file.size)}).`
   return ''
+}
+
+/** Viết hoa chữ đầu nhãn máy chủ trả thường (`scope_label` «chỉ đọc») khi nhãn đứng một mình trong ô bảng. */
+export function upperFirst(text: string): string {
+  return text ? text.charAt(0).toLocaleUpperCase('vi-VN') + text.slice(1) : text
 }
