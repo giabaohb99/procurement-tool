@@ -14627,3 +14627,33 @@ lao động là xong, chấm công và lương là không làm. Bài kiểm ch�
 chưa đưa lên dev.
 
 Mã nguồn: backend/app/modules/labor_contract/expiry_service.py · labor_contract/controller.py · alert/controller.py · dashboard/controller.py · frontend-v2/src/app/components/profile/profile-tasks-tab.tsx · frontend-v2/src/modules/hr/components/expiring-labor-contracts-card.tsx · hooks/use-expiring-labor-contracts.ts · utils/labor-contract-expiry.ts · pages/hr-dashboard-page.tsx · test/backend/test_hdld_canh_bao_het_han_cr620.py
+
+## duoc-CR-625 | Tài liệu đề xuất tracking người dùng theo hồ sơ cách làm việc của từng người
+- status: xong
+- date: 2026-10-19
+Đại ca muốn có các chỉ số theo dõi cách người dùng làm việc trên ERP để nhận diện được từng cá nhân: người đó làm task ra sao,
+hay vào trang nào, làm vào giờ nào, thạo tới đâu, và sau này để trợ lý AI đọc các chỉ số đó mà viết nhận xét. Tài liệu mới liệt
+kê những gì hệ thống đã ghi sẵn và những gì còn thiếu (giao diện chưa ghi lượt xem màn nên chưa biết chính xác người dùng vào trang
+nào, ở lại bao lâu), chia hồ sơ một người thành sáu phần là nhịp làm việc, trang truy cập, cách làm task, phản hồi và phối hợp,
+mức thành thạo, an toàn tài khoản, rồi ghép thành mười kiểu làm việc để nhận diện, kèm một hồ sơ mẫu. Tài liệu cũng đề xuất bảng
+ghi sự kiện giao diện, cách cho AI đọc số đã tính sẵn thay vì đọc nhật ký thô, ai được xem hồ sơ, lộ trình bốn pha và chín câu
+hỏi còn chờ chốt. Chưa gõ mã.
+
+Mã nguồn: doc/tai-lieu-ky-thuat/tracking-nguoi-dung-ho-so-ca-nhan.md
+
+## duoc-CR-626 | Rà soát phân hệ Nhân sự và Dự án theo hướng mất dữ liệu, vá bốn lỗi
+- status: xong
+- date: 2026-10-19
+Đại ca giao kiểm tra lại mã phân hệ Nhân sự và Dự án, bảo đảm không lỗi và không làm mất dữ liệu, rồi bấm thử trên giao diện.
+Bộ kiểm tự động của hai phân hệ chạy xanh hết, nhưng bấm thử trên máy thì lòi ra bốn chỗ mất dữ liệu và đã vá cả bốn. Thứ nhất,
+hồ sơ nhân sự cũ còn chức danh dạng chữ mà chưa nối vào danh mục chức vụ thì cứ ai bấm Lưu một ô bất kỳ là mất chức danh, phiếu in
+ra trống chức danh người ký; nay giữ nguyên chức danh, chỉ xóa khi người dùng thật sự bỏ chọn một chức vụ đang có. Thứ hai, đang gõ
+dở hồ sơ mà tải ảnh căn cước, ảnh đại diện, chữ ký hoặc áp một dòng quá trình công tác thì mọi ô chưa lưu biến mất không báo; nay
+các ô đang gõ được giữ lại. Thứ ba và thứ tư, nút xóa công việc và nút xóa trường tùy biến khỏi dự án xóa ngay không hỏi; nay có hộp
+xác nhận. Mọi dữ liệu thử trên máy đã trả về như cũ, đối chiếu trước và sau khớp hoàn toàn. Lượt hai đại ca chốt vá luôn thêm năm chỗ: ký hợp đồng lao
+động đúng lúc người khác xóa không còn sinh ra hợp đồng đã ký mà vô hình; kết sổ phép cuối năm bấm hai lần không còn cộng đôi
+số ngày mang sang; bỏ một giá trị của trường tùy biến, xóa bình luận và gỡ tệp của công việc đều hỏi lại trước; bấm Esc đóng
+panel khi đang sửa mô tả thì mô tả vẫn được lưu. Đường nhập tệp nhân sự sẽ làm lại thành nhập Excel ở màn Nhân sự trong một việc riêng.
+
+Mã nguồn: backend/app/modules/employee/position_service.py · labor_contract/access.py · leave/balance_controller.py · leave/carryover_service.py · frontend-v2/src/modules/hr/pages/employee-detail-page.tsx · frontend-v2/src/modules/work/components (task-detail-sheet, field-edit-dialog, task-comments, task-attachments, task-description-field) · test/backend/test_danh_muc_chuc_vu.py · test/backend/test_hdld_khoa_dong_xoa_mem_cr626.py
+
