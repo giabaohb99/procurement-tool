@@ -1,7 +1,7 @@
 """ho_so_lam_viec: 4 bang tracking + cot tab_notification.read_at + 4 chi muc -- duoc-CR-641
 
 Revision ID: usgprof01
-Revises: lbrct03
+Revises: mcplog02
 Create Date: 2026-10-19
 
 VIET TAY (autogenerate repo nay troi ~650 dong moi lan; khong import ma ung dung).
@@ -27,7 +27,7 @@ from alembic import op
 from sqlalchemy import inspect
 
 revision: str = "usgprof01"
-down_revision: Union[str, None] = "lbrct03"
+down_revision: Union[str, None] = "mcplog02"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
