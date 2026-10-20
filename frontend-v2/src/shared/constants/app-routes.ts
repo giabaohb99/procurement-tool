@@ -237,6 +237,8 @@ export const appRoutes = {
      * Phải KHỚP với `route` khai ở `backend/app/core/comment_registry.py`.
      */
     task: (id: number | string) => `/project/tasks/${id}`,
+    /** Danh mục LOẠI VIỆC (quản trị khai) — duoc-CR-656. */
+    taskTypes: '/project/task-types',
   },
   document: {
     root: '/document',
@@ -356,6 +358,8 @@ export const appRoutes = {
       `/report/usage-profiles?metric=${encodeURIComponent(metricKey)}&sort=-metric`,
     /** Bộ chỉ số đánh giá (duoc-CR-649) — mục menu riêng (không nằm dưới usageProfiles để khỏi sáng đôi mục menu). */
     usageMetrics: '/report/usage-metrics',
+    /** Mức dùng chức năng (duoc-CR-655) — chỉ quản trị, gom theo chức năng / phòng ban. */
+    featureUsage: '/report/feature-usage',
   },
   system: {
     root: '/system',

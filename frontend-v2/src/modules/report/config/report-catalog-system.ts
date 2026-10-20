@@ -1,4 +1,4 @@
-import { UserSearch } from 'lucide-react'
+import { MousePointerClick, UserSearch } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 
@@ -21,5 +21,20 @@ export const SYSTEM_REPORT_CATALOG: ReportCatalogEntry[] = [
     //  Không góp mặt ở dải KPI Tổng quan (số liệu cá nhân) — chỉ ở «Danh sách báo cáo».
     overviewKpis: [],
     load: async () => (await import('../pages/usage-profile-list-page')).UsageProfileListPage,
+  },
+  {
+    label: 'Mức dùng chức năng',
+    description:
+      'Chức năng nào nhiều người dùng, chức năng nào không ai dùng, biểu mẫu nào hay bỏ dở, màn nào hay lỗi — gom theo phòng ban, không theo từng người.',
+    path: appRoutes.report.featureUsage,
+    sourcePath: appRoutes.system.logs,
+    icon: MousePointerClick,
+    //  ReportKey.FEATURE_USAGE (backend) = 15. Khóa RIÊNG để sau này mở cho người phụ trách sản phẩm mà không mở hồ sơ cá nhân (14).
+    key: 15,
+    entity: 'setting',
+    group: 'Quản trị',
+    endpoint: '/api/feature-usage/summary',
+    overviewKpis: [],
+    load: async () => (await import('../pages/feature-usage-report-page')).FeatureUsageReportPage,
   },
 ]

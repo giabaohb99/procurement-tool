@@ -9,7 +9,7 @@
 - Đã có ở snapshot tuần: `pending_now`, `work_overdue_open` (chỉ theo tuần — đây là bản tức thì)
 
 ## Overview
-- P1 · **1 ngày** (BE) · pending · sau phase 05 (giờ ước lượng) và 06 (index gom ở migration D1a).
+- P1 · **1 ngày** (BE) · **implemented — duoc-CR-656 (20/10/2026)** · sau phase 05 (giờ ước lượng) và 06 (index gom ở migration D1a).
 - Một hàm dịch vụ `current_load(...)` trả tải từng người tại thời điểm gọi, **số truy vấn cố định (≤ 10)**, không cache quá 60 giây.
 
 ## Key insights
@@ -50,13 +50,21 @@ Không sửa model/tệp nghiệp vụ. Index cần đã nằm ở migration pha
 4. Đo thời gian 100 người.
 
 ## Todo
-- [ ] xác minh hằng
-- [ ] 10 truy vấn + gộp
-- [ ] EXPLAIN + đo
-- [ ] test
+- [x] xác minh hằng (kết quả bên dưới)
+- [x] 10 truy vấn + gộp (`capability/workload_sources.py` · `workload_service.py`)
+- [x] EXPLAIN + đo: 143 người local = 10 truy vấn, 69 ms; optimizer chọn index mới cho PO/YCMH-duyệt/văn bản; YCMH-dòng và dòng YCBG quét bảng nhỏ (chưa đủ lớn để chọn index)
+- [x] test (`test_tai_dang_om_cr656.py`, 10 bài) + API quản trị `GET /api/work-capability/load` (`setting.read`, 422 nếu không chọn phạm vi)
+- [x] đối chiếu «Việc của tôi»: `approvals_pending`/`delegated_in` khớp `approval.task_service.my_tasks` cho 60/60 người local; đối chiếu bảng Dự án/Thu mua bằng tay: chưa (local gần như không có dữ liệu)
+
+### Hằng trạng thái đã xác minh — chỗ lệch kế hoạch
+- **Văn bản «chờ ban hành» (status 11) tính theo `drafter_employee_id`** (người soạn — `document.service.can_issue`), không phải `clone_assignee_employee_id` như bảng kế hoạch. Chỉ mục: `ix_document_drafter_status`.
+- **`pr_handling` theo `tab_purchase_request_item.assignee` (mã NV)**, không theo `assignee_id` (luôn 0 — xem phase 06). Đếm số YCMH (distinct), dòng đã xong/hủy và phiếu draft/submitted/completed/done/cancelled/rejected bị loại.
+- Dòng YCBG đang giữ = `line_status != completed` và `pr_code == ''` và phiếu cha ∈ `submitted/approved/processing`.
+- Mọi bảng `SoftDeleteMixin` (YCMH, YCBG, ĐMH, văn bản, nghỉ phép) lọc `is_deleted`.
+- Chỉ mục thêm (cùng migration `d1cap01`): `ix_pr_head_status`, `ix_po_nspt_status`, `ix_srl_assignee_status`, `ix_document_drafter_status` (khai cả trong model để autogenerate không trôi). Bỏ `tab_purchase_request(assignee_id,status)` và `tab_payment_request(status)` vì không còn truy vấn nào dùng.
 
 ## Tests
-Backend `test/backend/test_tai_dang_om_d1.py`: dữ liệu mẫu đủ 10 nguồn → đúng từng số; task đã xóa mềm / CANCELLED không tính;
+Backend `test/backend/test_tai_dang_om_cr656.py`: dữ liệu mẫu đủ 10 nguồn → đúng từng số; task đã xóa mềm / CANCELLED không tính;
 ủy quyền hết hạn không tính `delegated_in`; nghỉ ngoài `horizon` không tính; lọc phòng ban; **đếm truy vấn ≤ 10** với 5 và 200 nhân sự; `now` tiêm được (không phụ thuộc giờ máy).
 
 ## Success criteria

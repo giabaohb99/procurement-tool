@@ -28,7 +28,7 @@ import {
 } from '../hooks/use-work-board'
 import { useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
-import { WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
+import { WORK_TASK_KIND, WORK_TASK_OUTCOME_CODE, WORK_TASK_STATUS } from '../types/work'
 import { LabelFieldInput } from './label-field-input'
 import { TaskAttachments } from './task-attachments'
 import { TaskComments, TaskCommentComposer } from './task-comments'
@@ -39,6 +39,8 @@ import { TaskDetailRow } from './task-detail-row'
 import { TaskStatusSelect } from './task-status-select'
 import { TaskSubtaskList } from './task-subtask-list'
 import { TaskDescriptionField } from './task-description-field'
+import { TaskEffortFields } from './task-effort-fields'
+import { TaskOutcomeBox } from './task-outcome-box'
 import { TaskTitleField } from './task-title-field'
 
 interface TaskDetailSheetProps {
@@ -229,6 +231,9 @@ export function TaskDetailSheet({
                   />
                 </TaskDetailRow>
 
+                {/*  duoc-CR-656: loại việc · giờ ước lượng · giờ thực tế (số liệu năng lực cho AI chia việc). */}
+                <TaskEffortFields task={task} done={isDone} canEdit={canEdit} onSave={save} />
+
                 {labelFields.map((f) => (
                   <TaskDetailRow key={f.id} icon={CircleDot} label={f.name}>
                     <LabelFieldInput
@@ -242,6 +247,14 @@ export function TaskDetailSheet({
                     />
                   </TaskDetailRow>
                 ))}
+
+                {/*  Hộp đánh giá khi việc đã xong: «Đạt» / «Phải làm lại» (mở lại việc). Việc đang được làm lại
+                     vẫn giữ nhãn «Phải làm lại» cho tới khi xong lần nữa — chỉ hiện nhãn, không có nút. */}
+                {(isDone || task.outcome === WORK_TASK_OUTCOME_CODE.REWORK) && (
+                  <div className="py-1.5">
+                    <TaskOutcomeBox task={task} listId={listId} canEdit={canEdit} done={isDone} />
+                  </div>
+                )}
 
                 <TaskDetailRow icon={AlignLeft} srLabel="Mô tả">
                   <TaskDescriptionField

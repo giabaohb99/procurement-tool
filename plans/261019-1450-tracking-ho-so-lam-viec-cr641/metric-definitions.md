@@ -84,6 +84,24 @@ leave_request, vehicle_booking, seal_request, labor_contract. Động từ từ 
 | Quyền 90 ngày không dùng | — | — | — | **HOÃN**: đọc (GET) không ánh xạ được route → entity; chỉ làm được nửa phần ghi, dễ kết luận sai "quyền thừa" |
 | Nghỉ việc vẫn hoạt động | `active_after_resign` | employee.resign_date < D (hoặc status nghỉ việc) ∧ Daily `active` | P1 | GIỮ |
 
+## 3.8 Dùng AI (duoc-CR-655) — pha 3: cần `tab_ai_usage_daily` (ai-CR-230)
+
+Chưa có số dùng AI (bảng trống / chưa tồn tại / mốc thu sau cửa sổ) → cả 8 khóa ở `unmeasured` = `NOT_COLLECTED`. Đã thu mà người này
+không dùng → 0 (đo được thật). Chỉ số đếm và mã, không nội dung câu hỏi. Kênh / ứng dụng / nhóm công cụ chính là MÃ nên nằm ở `lists`
+(`ai_channels`, `ai_clients`, `ai_tool_groups`), không thành khóa số (trung vị của mã vô nghĩa).
+
+| Chỉ số | Khóa | Nguồn → công thức | Pha | Trạng thái |
+|---|---|---|---|---|
+| Lượt dùng AI | `ai_uses` | Σ `turns` của người trong cửa sổ (web/Telegram/Zalo = câu hỏi, MCP = lượt gọi công cụ) | P3 | GIỮ |
+| Ngày có dùng AI | `ai_active_days` | số ngày có `turns`+`tool_calls` > 0 | P3 | GIỮ |
+| Dùng qua ứng dụng ngoài | `ai_mcp_share` | `turns` kênh MCP / `ai_uses` (0 lượt → chưa đo được) | P3 | GIỮ |
+| Nhóm việc nhờ AI | `ai_tool_groups_used` | số khóa khác nhau trong `tool_groups` | P3 | GIỮ |
+| AI bị từ chối quyền | `ai_denied` | Σ `denied` | P3 | GIỮ |
+| Nháp AI đã xác nhận | `ai_drafts_confirmed` | Σ `drafts_confirmed` | P3 | GIỮ |
+| Phiếu do AI soạn | `ai_docs_drafted` | `tab_audit_log` action `create`, entity ∈ `TRACKED_DOC_ENTITIES`, `ai_channel` > 0; DISTINCT (entity, entity_id) | P3 | GIỮ |
+| Phiếu AI soạn / phiếu lập | `ai_docs_share` | `ai_docs_drafted` / `docs_created`, trần 100% (0 phiếu lập → chưa đo được) | P3 | GIỮ |
+| Câu hỏi trợ lý AI (3.4) | `assistant_questions` | giữ khóa; lấy số lớn hơn giữa tin nhắn trợ lý (DB ERP) và `turns` kênh web | P1 | ĐỔI NGUỒN |
+
 ## Đánh dấu "chưa đo được" (`unmeasured`) — bắt buộc cho pha 4
 
 Mỗi khóa không có giá trị mang mã lý do `UnmeasuredReason`: `1` chưa bật thu sự kiện / trước ngày bật · `2` dưới ngưỡng dữ

@@ -15604,3 +15604,24 @@ sáu lên mười ba, thêm yêu cầu thanh toán, nhận hàng, văn bản, đ
 trên bản chạy thật sẽ được bật lại sau khi bản này lên, kèm thông báo cho nhân viên.
 
 Mã nguồn: frontend-v2/src/core/telemetry/track-ui-action.ts · backend/app/core/ui_action_codes.py · migration d0uiact01 · shared/data-table/data-table.tsx · test/backend/test_bam_chuc_nang_cr654.py
+
+## duoc-CR-655 | Báo cáo mức dùng chức năng và nhóm chỉ số dùng AI
+- status: xong
+- date: 2026-10-20
+Đây là hai việc sau của đợt D0. Phân hệ Báo cáo có thêm trang Mức dùng chức năng cho biết chức năng nào nhiều người dùng, chức năng
+nào chưa ai dùng, biểu mẫu nào hay bị bỏ dở và màn nào hay lỗi, chỉ gộp theo phòng ban chứ không theo từng người, mặc định chỉ quản trị
+xem. Hồ sơ cách làm việc có thêm nhóm chỉ số dùng AI cho biết mỗi người dùng AI qua kênh nào, nhiều hay ít, hay nhờ AI làm nhóm việc gì
+và bao nhiêu phiếu do AI soạn, đọc từ dữ liệu do đợt A0 của nhóm AI đẩy sang; chỉ đếm và ghi mã, không lưu nội dung câu hỏi.
+
+Mã nguồn: backend/app/modules/feature_usage/ · backend/app/modules/usage_profile/snapshot_metrics_ai.py · frontend-v2/src/modules/report/pages/feature-usage-report-page.tsx · migration d0feat01
+
+## duoc-CR-656 | Năng lực theo loại việc: loại việc, giờ làm, trọn vòng, làm lại, tải đang ôm
+- status: xong
+- date: 2026-10-20
+Đây là ba phần đầu của đợt D1, phần dữ liệu để AI chia việc đúng người. Việc dự án có thêm loại việc, giờ ước lượng, giờ thực tế và
+kết quả đạt hay phải làm lại. Mỗi đêm hệ thống tính thời gian trọn vòng và số lần làm lại theo từng loại phiếu và từng người, từ lúc
+tạo tới lúc xong, với định nghĩa xong của từng loại phiếu ghi ở một chỗ; phiếu thiếu lịch sử thì dùng mốc thời gian của chính phiếu
+và được đánh dấu là ước tính. Tải đang ôm của từng người được tính ngay lúc hỏi chứ không chờ theo tuần, hiện mới mở cho quản trị qua
+đường API; trang báo cáo năng lực và công cụ cho AI làm ở phần tiếp theo.
+
+Mã nguồn: backend/app/modules/capability/ · backend/app/modules/work/task_type_service.py · task_outcome_service.py · migration d1cap01 · doc/tai-lieu-ky-thuat/nang-luc-theo-loai-viec.md

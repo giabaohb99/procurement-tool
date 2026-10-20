@@ -6,6 +6,7 @@ import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 
+import { UsageAiSection } from '../components/usage-profile/usage-ai-section'
 import { UsageProfileHeaderCard } from '../components/usage-profile/usage-profile-header-card'
 import { UsageProfileNoticeBanner } from '../components/usage-profile/usage-profile-notice-banner'
 import { UsageProficiencySection } from '../components/usage-profile/usage-proficiency-section'
@@ -59,6 +60,7 @@ export function UsageProfileDetailPage() {
           <UsageResponseSection snapshot={latest} />
           <UsageProficiencySection snapshot={latest} />
           <UsageSecuritySection snapshot={latest} />
+          <UsageAiSection snapshot={latest} />
         </>
       ) : (
         <p className="text-sm text-muted-foreground">

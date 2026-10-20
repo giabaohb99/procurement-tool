@@ -5,7 +5,9 @@ Quy ước chung của phân hệ (employee_id, ngày dạng chuỗi, IntEnum) n
 """
 from datetime import datetime
 
-from sqlalchemy import (BigInteger, DateTime, ForeignKey, Index, SmallInteger,
+from decimal import Decimal
+
+from sqlalchemy import (BigInteger, DateTime, ForeignKey, Index, Numeric, SmallInteger,
                         String, Text, UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -58,6 +60,10 @@ class WorkTask(Base, AuditMixin):
         Index("ix_work_task_list_parent", "list_id", "parent_id", "deleted_at"),
         #  Job nhắc hạn Celery quét theo hạn + trạng thái (F-03).
         Index("ix_work_task_due_status", "due_date", "status"),
+        #  duoc-CR-656 (D1): năng lực theo loại việc đọc `(loại, trạng thái)`; vòng đời
+        #  đọc `completed_at` để lấy task vừa xong.
+        Index("ix_work_task_type_status", "task_type_id", "status"),
+        Index("ix_work_task_completed_at", "completed_at"),
     )
 
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
@@ -85,6 +91,15 @@ class WorkTask(Base, AuditMixin):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    #  duoc-CR-656 (D1b) — số liệu năng lực. Cột THẬT chứ không phải trường tùy biến:
+    #  trường tùy biến theo từng dự án nên không gom được toàn công ty.
+    #  `task_type_id = 0` = chưa chọn loại (không FK: loại có thể bị vô hiệu hóa).
+    task_type_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    #  Giờ NHẬP TAY (không có chấm giờ). Với task nhiều PIC, giờ thực tế là của CẢ task.
+    estimate_hours: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)
+    actual_hours: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)
+    #  `WorkTaskOutcome`: 0 = chưa đánh giá. Chỉ đặt được khi task đã xong.
+    outcome: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
 
 
 class WorkTaskAssignee(Base, AuditMixin):

@@ -87,6 +87,7 @@ from app.modules.work import model as _work  # noqa: F401
 from app.modules.work import task_model as _work_task  # noqa: F401
 from app.modules.work import label_model as _work_label  # noqa: F401
 from app.modules.work import link_model as _work_link  # noqa: F401
+from app.modules.work import task_type_model as _work_task_type  # noqa: F401  # duoc-CR-656
 # Phân hệ Nghỉ phép (CR-259) — ba tệp model, nạp ĐỦ CẢ BA hoặc `alembic
 # --autogenerate` bỏ sót bảng mà không báo gì (đúng bẫy đã dính ở Công việc).
 from app.modules.leave import catalog_model as _leave_catalog  # noqa: F401
@@ -110,4 +111,6 @@ from app.modules.labor_contract import variable_model as _labor_contract_variabl
 from app.modules.ai_skill import model as _ai_skill  # noqa: F401
 # Hồ sơ cách làm việc (duoc-CR-641) — `tab_ui_event`, `tab_usage_daily`, `tab_user_usage_snapshot`, `tab_user_usage_label`.
 from app.modules.usage_profile import model as _usage_profile  # noqa: F401
+from app.modules.feature_usage import model as _feature_usage  # noqa: F401  # duoc-CR-655
 from app.modules.ai_usage import model as _ai_usage  # noqa: F401  ai-CR-230
+from app.modules.capability import model as _capability  # noqa: F401  # duoc-CR-656

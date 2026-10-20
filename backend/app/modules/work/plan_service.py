@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,8 @@ from app.modules.agent_hub.plan_policy import (A_ACCEPT, A_DECLINE, A_DONE, A_LA
                                                ACCEPT_OPTIONS, ACCEPT_UNREACHABLE, ACCEPT_YES, FIELD_ACCEPT,
                                                FIELD_CRITERIA, FIELD_NOTE, FIELD_PROGRESS, FIELD_SCORE, PLAN_MARK,
                                                PRIORITY_TO_OPTION)
+
+from app.modules.work.task_type_model import WorkTaskType  # noqa: E402
 
 log = logging.getLogger("app.work.plan_service")
 
@@ -101,6 +104,25 @@ def _label_text(db: Session, field, task_id: int) -> str:
     return row.value_text or ""
 
 
+def _effort_kwargs(db: Session, item: dict) -> dict:
+    """duoc-CR-656: loại việc + giờ ước lượng do AI đề xuất. Số rác thì BỎ QUA, không làm hỏng cả kế hoạch."""
+    out: dict = {}
+    try:
+        type_id = int(item.get("task_type_id") or 0)
+        if type_id > 0 and db.query(WorkTaskType.id).filter(WorkTaskType.id == type_id,
+                                                           WorkTaskType.is_active.is_(True)).first():
+            out["task_type_id"] = type_id
+    except (TypeError, ValueError):
+        pass
+    try:
+        hours = Decimal(str(item.get("estimate_hours") or 0))
+        if 0 < hours <= 999:
+            out["estimate_hours"] = hours.quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        pass
+    return out
+
+
 def build(db: Session, user, draft: dict) -> tuple[str, int]:
     """Tạo bảng + cột + việc cha / con + trường + thành viên. Trả (mã, id bảng). Ném HTTPException / ValueError như
     các hàm web (`draft_create.create` đổi thành DraftError)."""
@@ -160,7 +182,8 @@ def build(db: Session, user, draft: dict) -> tuple[str, int]:
         data = TaskCreate(list_id=list_id, section_id=section_id, parent_id=parent_id,
                           title=str(item.get("title") or "")[:500], description=str(item.get("description") or ""),
                           start_date=str(item.get("start_date") or "")[:10], due_date=str(item.get("due_date") or "")[:10],
-                          assignee_ids=_invite(item.get("assignees") or []))
+                          assignee_ids=_invite(item.get("assignees") or []),
+                          **_effort_kwargs(db, item))
         tid = int(task_service.create_task(db, actor, data)["id"])
         _set_option(db, priority_field, tid, PRIORITY_TO_OPTION.get(str(item.get("priority") or ""), "P3"), actor.user_id)
         _set(db, fields.get(FIELD_CRITERIA), tid, "; ".join(str(c) for c in (item.get("criteria") or []))[:500], actor.user_id)

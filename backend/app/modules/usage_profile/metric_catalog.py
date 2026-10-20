@@ -3,7 +3,7 @@
 ⚠️ Khóa là ĐỊNH DANH CỐ ĐỊNH: đổi tên là gãy snapshot cũ + pha 4. Thêm khóa mới thì thêm dòng; không tái dùng tên.
 Bảng định nghĩa/nguồn/công thức từng chỉ số: `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`.
 
-Mỗi dòng: khóa → (đơn vị, mục §3, pha, hướng). Pha: 1 = gom từ bảng có sẵn · 2 = cần sự kiện giao diện / `read_at`.
+Mỗi dòng: khóa → (đơn vị, mục §3, pha, hướng). Pha: 1 = gom từ bảng có sẵn · 2 = cần sự kiện giao diện / `read_at` · 3 = cần số dùng AI (`tab_ai_usage_daily`).
 Hướng: +1 càng cao càng tốt · -1 càng thấp càng tốt · 0 trung tính (chỉ mô tả).
 Đơn vị: ratio (0..1) · count · min · h · ms · per100 · minute_of_day · flag.
 """
@@ -82,6 +82,16 @@ METRIC_CATALOG: dict[str, MetricMeta] = {
     "export_rows_spike": MetricMeta("flag", "3.6", 1, -1),
     "max_deletes_10min": MetricMeta("count", "3.6", 1, -1),
     "active_after_resign": MetricMeta("flag", "3.6", 1, -1),
+    #  3.8 Dùng AI (duoc-CR-655) — nguồn `tab_ai_usage_daily` (ai-CR-230) + `tab_audit_log.ai_channel`; chưa thu = NOT_COLLECTED.
+    #  Kênh/ứng dụng/nhóm công cụ chính là MÃ nên nằm ở `lists` của snapshot (ai_channels, ai_clients, ai_tool_groups).
+    "ai_uses": MetricMeta("count", "3.8", 3, 0),
+    "ai_active_days": MetricMeta("count", "3.8", 3, 0),
+    "ai_mcp_share": MetricMeta("ratio", "3.8", 3, 0),
+    "ai_tool_groups_used": MetricMeta("count", "3.8", 3, 0),
+    "ai_denied": MetricMeta("count", "3.8", 3, -1),
+    "ai_drafts_confirmed": MetricMeta("count", "3.8", 3, 0),
+    "ai_docs_drafted": MetricMeta("count", "3.8", 3, 0),
+    "ai_docs_share": MetricMeta("ratio", "3.8", 3, 0),
 }
 
 #  Chỉ số HOÃN / BỎ (ghi để API và tài liệu không hứa thứ chưa có) — xem metric-definitions.md.

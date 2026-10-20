@@ -66,6 +66,15 @@ export const USAGE_METRIC_LABELS: Record<string, { label: string; kind: UsageMet
   proxy_share: { label: 'Phiếu được lập hộ', kind: 'ratio' },
   export_entity_weeks_max: { label: 'Số tuần liền xuất cùng loại dữ liệu', kind: 'count' },
   active_after_resign: { label: 'Nghỉ việc vẫn hoạt động', kind: 'count' },
+  // 3.8 Dùng AI (duoc-CR-655)
+  ai_uses: { label: 'Lượt dùng AI', kind: 'count' },
+  ai_active_days: { label: 'Ngày có dùng AI', kind: 'count' },
+  ai_mcp_share: { label: 'Dùng AI qua ứng dụng ngoài', kind: 'ratio' },
+  ai_tool_groups_used: { label: 'Nhóm việc nhờ AI', kind: 'count' },
+  ai_denied: { label: 'AI bị từ chối quyền', kind: 'count' },
+  ai_drafts_confirmed: { label: 'Nháp AI đã xác nhận', kind: 'count' },
+  ai_docs_drafted: { label: 'Phiếu do AI soạn', kind: 'count' },
+  ai_docs_share: { label: 'Phiếu do AI soạn / phiếu lập', kind: 'ratio' },
 }
 
 export function metricLabel(key: string, override?: string): string {

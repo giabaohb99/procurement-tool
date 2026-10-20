@@ -7,6 +7,7 @@ Thêm bộ mã mới thì thêm một dòng ở đây, nếu không nó sẽ v�
 TypeScript sinh ra, mà lại KHÔNG báo lỗi gì.
 """
 
+from app.core import capability_codes  # noqa: F401
 from app.core import contract_types  # noqa: F401
 from app.core import document_template_codes  # noqa: F401
 from app.core import forum_codes  # noqa: F401
@@ -18,5 +19,6 @@ from app.core import work_schedule_codes  # noqa: F401
 from app.core import status_codes  # noqa: F401
 from app.core import usage_codes  # noqa: F401
 from app.core import ui_action_codes  # noqa: F401
+from app.core import ai_usage_codes  # noqa: F401
 
 __all__: list[str] = []

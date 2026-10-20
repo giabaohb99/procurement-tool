@@ -134,6 +134,7 @@ from app.modules.assistant.controller import router as assistant_router
 #  chức (nhóm · list · cấu hình), một cho chính công việc.
 from app.modules.work.controller import router as work_router
 from app.modules.work.task_controller import router as work_task_router
+from app.modules.work.task_type_controller import router as work_task_type_router
 #  Phân hệ Nghỉ phép (CR-259) — bốn router: đơn · quỹ · loại nghỉ · lịch lễ,
 #  cộng bậc thâm niên đi kèm loại nghỉ.
 from app.modules.leave.request_controller import router as leave_request_router
@@ -386,6 +387,7 @@ else:
     app.include_router(assistant_router)
 app.include_router(work_router)
 app.include_router(work_task_router)
+app.include_router(work_task_type_router)   # duoc-CR-656: danh mục loại việc
 #  ⚠️ Hộp việc duyệt đăng ký TRƯỚC đường đơn nghỉ phép: nó dùng chung tiền tố
 #  `/api/leave-requests`, mà bên kia có `/{rid}` nuốt mọi đường một đoạn.
 app.include_router(leave_inbox_router)
@@ -444,3 +446,9 @@ from app.modules.usage_profile.telemetry_controller import router as telemetry_r
 from app.modules.usage_profile.controller import router as usage_profile_router  # noqa: E402
 app.include_router(telemetry_router)
 app.include_router(usage_profile_router)
+#  duoc-CR-655: báo cáo «Mức dùng chức năng» (ReportKey 15)
+from app.modules.feature_usage.controller import router as feature_usage_router  # noqa: E402
+app.include_router(feature_usage_router)
+#  duoc-CR-656: năng lực theo loại việc — tải đang ôm (admin)
+from app.modules.capability.controller import router as capability_router  # noqa: E402
+app.include_router(capability_router)

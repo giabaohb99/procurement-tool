@@ -25,6 +25,12 @@ export const WORK_ROLE = { OWNER: 1, ADMIN: 2, MEMBER: 3, VIEWER: 4 } as const
 
 export const WORK_ASSIGNEE_KIND = { PIC: 1, FOLLOWER: 2 } as const
 
+/**
+ * Kết quả do NGƯỜI GIAO chấm sau khi việc xong (duoc-CR-656). Nhãn tiếng Việt lấy từ
+ * `WORK_TASK_OUTCOME` ở `shared/constants/statuses.ts` (sinh từ backend); `0` = chưa đánh giá.
+ */
+export const WORK_TASK_OUTCOME_CODE = { NONE: 0, PASSED: 1, REWORK: 2 } as const
+
 export const WORK_ROLE_LABELS: Record<number, string> = {
   [WORK_ROLE.OWNER]: 'Chủ sở hữu',
   [WORK_ROLE.ADMIN]: 'Quản trị',
@@ -221,6 +227,14 @@ export interface WorkTask {
   subtask_done: number
   subtask_total: number
   comment_count: number
+  /** duoc-CR-656: `0` = chưa chọn loại việc. */
+  task_type_id: number
+  task_type_name: string
+  /** Giờ về CHUỖI (`"4.50"`) như `value_number` — `Decimal` qua JSON thành số thực thì lệch lẻ. */
+  estimate_hours: string | null
+  actual_hours: string | null
+  /** `WORK_TASK_OUTCOME_CODE` — `0` chưa đánh giá. */
+  outcome: number
   /**
    * bao-CR-483: bảng ở chế độ nhẹ KHÔNG gửi `description` (rỗng) — cờ này cho
    * thẻ biết việc có mô tả thật hay không mà không phải tải cả đoạn văn.
@@ -275,4 +289,19 @@ export interface WorkBoard {
   remaining?: Record<number, WorkSectionRemaining>
   /** `true` = payload không có `description` của việc (chế độ nhẹ). */
   light?: boolean
+}
+
+/** Một loại việc trong danh mục quản trị khai (duoc-CR-656, `tab_work_task_type`). */
+export interface WorkTaskType {
+  id: number
+  /** `0` = dùng chung mọi pháp nhân. */
+  company_id: number
+  department_id: number
+  code: string
+  name: string
+  default_estimate_hours: string | null
+  is_active: boolean
+  sort_order: number
+  /** Số việc đang dùng loại này — loại đã có việc dùng thì «Xóa» chỉ là ngừng dùng. */
+  task_count: number
 }

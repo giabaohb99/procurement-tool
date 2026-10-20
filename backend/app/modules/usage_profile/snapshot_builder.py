@@ -21,6 +21,7 @@ from .metric_stats import rnd
 from .model import UserUsageLabel, UserUsageSnapshot
 from .snapshot_metrics_flow import (approval_metrics, batch_approval_share, chain_metrics,
                                     notification_metrics, work_task_metrics)
+from .snapshot_metrics_ai import ai_metrics
 from .snapshot_metrics_misc import export_entity_weeks, misc_metrics
 from .snapshot_metrics_rhythm import rhythm_metrics
 from .snapshot_metrics_screens import docs_forms_metrics, screens_metrics
@@ -47,7 +48,7 @@ def _group(rows, idx=None):
 
 
 def _user_partials(src: SnapshotSources, uid: int, emp: int, rows: list, old: list, ui_ok: bool,
-                   shared: dict[str, dict], export_weeks: dict[int, int]) -> Partial:
+                   shared: dict[str, dict], export_weeks: dict[int, int], ai_rows: list) -> Partial:
     p = Partial()
     p.merge(rhythm_metrics(rows)).merge(screens_metrics(rows, ui_ok)).merge(docs_forms_metrics(rows, old, ui_ok))
     p.merge(misc_metrics(src, uid, emp, rows, old))
@@ -55,6 +56,7 @@ def _user_partials(src: SnapshotSources, uid: int, emp: int, rows: list, old: li
         if uid in part:
             p.merge(part[uid])
     p.put("export_entity_weeks_max", export_weeks.get(uid, 0))
+    p.merge(ai_metrics(src, uid, ai_rows, p.values.get("docs_created")))   # duoc-CR-655: nhóm 3.8, sau docs_created
     return p
 
 
@@ -86,10 +88,11 @@ def build_snapshots(db: Session, week_start: date, now: datetime | None = None) 
         "work": work_task_metrics(src.work_tasks, emp_user, win.hi),
     }
     export_weeks = export_entity_weeks(src)
+    ai_by_user = _group(src.ai.usage, 0)
     partials: dict[int, Partial] = {}
     for uid in measured:
         partials[uid] = _user_partials(src, uid, users[uid][2] or 0, daily[uid], old.get(uid, []), ui_ok, shared,
-                                       export_weeks)
+                                       export_weeks, ai_by_user.get(uid, []))
         _fill_unmeasured(partials[uid], ui_ok)
 
     cohorts = assign_cohorts(measured, src.user_roles, src.roles)

@@ -8,7 +8,7 @@
 - Tham khảo đã có: `approval/report_turnaround.turnaround_hours`, `usage_profile/snapshot_metrics_flow.chain_metrics` (`returned_rate`, có lỗ ở xe/dấu/nghỉ/phòng)
 
 ## Overview
-- P1 · **2,5 ngày** (BE) · pending · sau phase 05.
+- P1 · **2,5 ngày** (BE) · **implemented — duoc-CR-656 (20/10/2026)** · sau phase 05.
 - Bảng **sự kiện vòng đời đã tính sẵn** `tab_work_cycle` (1 dòng / phiếu / vai / người) dựng gia tăng mỗi đêm + script dựng lại toàn bộ.
 
 ## Key insights
@@ -71,15 +71,30 @@ Không sửa model nghiệp vụ nào (chỉ thêm index qua migration; khai ind
 6. Viết tài liệu định nghĩa.
 
 ## Todo
-- [ ] spike change_log / update hàng loạt / assignee_id
-- [ ] mã + bảng + migration index
-- [ ] specs + compute thuần
-- [ ] sources + builder + task + watermark
-- [ ] backfill + đối chiếu tay
-- [ ] tài liệu định nghĩa
+- [x] spike change_log / update hàng loạt / assignee_id (kết quả bên dưới)
+- [x] mã + bảng + migration index (`capability_codes.py` · `capability/model.py` · `d1cap01`)
+- [x] specs + compute thuần (`cycle_specs.py` · `cycle_compute.py`)
+- [x] sources + builder + task + watermark (`cycle_sources.py` · `cycle_builder.py` · `tasks.py`, beat 05:00)
+- [x] backfill + đối chiếu (local 0,7 giây; đối chiếu YCMH/YCBG với audit, task với change_log — xem dưới; chưa đối chiếu 10 phiếu/loại trên dev vì local ít dữ liệu)
+- [x] tài liệu định nghĩa: `doc/tai-lieu-ky-thuat/nang-luc-theo-loai-viec.md`
+
+### Kết quả spike (20/10/2026, DB local)
+1. **change_log có bắt `status` khi đổi qua ORM** (kể cả task mở lại 2→1) — thử trực tiếp bằng service thật trong `open_context`: 3 dòng cho 3 lần đổi.
+   **Đổi bằng `query.update()` hàng loạt thì KHÔNG có dòng nào** (đã thử). Rà mã: không đường nào dùng `update()` hàng loạt để đổi `status` của 10 bảng; ngoại lệ thực tế là
+   việc nền Celery / script không mở `open_context` (đồng bộ app đặt xe cũ, nạp từ tệp) — cũng không ghi nhật ký.
+2. **`tab_change_log` chỉ có từ 16/09/2026** (local), `tab_audit_log` từ 01/07/2026. Với 4 chứng từ Thu mua dùng **audit** làm nguồn chính (có từ vựng «trả về»/«từ chối»),
+   change_log bổ sung (bắt cả bước tự chuyển); hai nguồn gộp, sự kiện cùng loại cách ≤ 120 giây tính một. Phiếu không có dấu vết nào → **dòng ước tính** (`is_estimated`, `done_at` lấy từ cột mốc của bảng hoặc `updated_at`).
+   Đây là **phương án dự phòng kế hoạch đã nêu** ("mốc dự phòng của chính bảng"), chọn vì không thể dựng lại lịch sử trước ngày bật nhật ký.
+3. **`tab_purchase_request.assignee_id` là id nhân sự nhưng luôn 0** (72/72 dòng local; bị xóa lúc duyệt/từ chối). Người phụ trách YCMH thật nằm ở `tab_purchase_request_item.assignee` (mã NV) →
+   dùng cột dòng (YCBG đã vậy). Kéo theo D1c: `pr_handling` đếm theo dòng hàng, không theo `assignee_id`.
+4. Sự kiện «hoàn thành tự động» của YCMH (`sync_from_purchase_orders`) không ghi audit: 3/10 phiếu `completed` local thiếu → dòng ước tính.
+5. Lệch kế hoạch khác: `tab_seal_request.approved_at/completed_at` và `tab_vehicle_booking.approved_at` là **chuỗi ISO** (không phải DateTime) → `cycle_sources.as_datetime`.
+
+**Lệch so với kế hoạch (có chủ ý):** thêm cột `is_estimated` vào `tab_work_cycle`; không thêm chỉ mục `tab_change_log(table_name, field, created_at)` (đã có `ix_change_log_row (table_name,row_id,id)` đủ cho truy vấn theo lô id) và không thêm chỉ mục `updated_at`
+(bảng nhỏ, quét một lần/đêm); chọn tập phiếu «chạm tới» bằng `updated_at >= since` + bảng con thay vì quét change_log.
 
 ## Tests
-Backend `test/backend/test_vong_doi_phieu_d1.py`:
+Backend `test_vong_doi_phieu_cr656_tinh_thuan.py` (34 bài, hàm thuần) + `test_vong_doi_phieu_cr656_dung_bang.py` (9 bài, DB + đếm truy vấn):
 - compute thuần mỗi loại: tạo → gửi → trả về → gửi lại → xong ⇒ `rework_count=1`, `cycle_hours` đúng; hủy ⇒ outcome CANCELLED, `done_at` NULL;
   YCMH `rejected`+audit `returned` ⇒ làm lại, `rejected`+audit `rejected` ⇒ REJECTED; task mở lại 2 lần rồi xong ⇒ `rework_count=2`, `done_at` = lần cuối; task nhiều PIC ⇒ 1 dòng/PIC.
 - builder: chạy 2 lần không nhân đôi; chỉ phiếu chạm tới được tính lại; watermark tiến; **đếm truy vấn** = hằng số × số loại khi 10 hay 500 phiếu.

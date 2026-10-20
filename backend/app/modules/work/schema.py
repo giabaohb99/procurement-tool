@@ -7,12 +7,17 @@ song song mỗi lần thêm trường.
 Quy ước: trường `None` nghĩa là **KHÔNG ĐỔI** (PATCH thật sự), khác hẳn `""`
 hay `0` là "xóa giá trị đi". Service dựa vào đúng quy ước này.
 """
-from typing import Any
+from decimal import Decimal
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.modules.work.model import WorkMemberRole
-from app.modules.employee.field_limits import Str10, Str20, Str100, Str200, Str500
+from app.modules.employee.field_limits import Str10, Str20, Str30, Str100, Str200, Str500
+
+Str120 = Annotated[str, StringConstraints(max_length=120)]  # khớp `WorkTaskType.name`
+#  duoc-CR-656: giờ làm việc nhập tay — 0…999 giờ, tối đa 2 số lẻ (khớp `Numeric(6, 2)`).
+Hours = Annotated[Decimal, Field(ge=0, le=999, max_digits=5, decimal_places=2)]
 
 
 class GroupCreate(BaseModel):
@@ -127,6 +132,9 @@ class TaskCreate(BaseModel):
     #  `2` = CỘT MỐC (B-14). Mặc định việc thường để lời gọi cũ không đổi nghĩa.
     kind: int = 1
     assignee_ids: list[int] = Field(default_factory=list)
+    #  duoc-CR-656 (D1b): loại việc + giờ ước lượng. `0`/`None` = chưa khai.
+    task_type_id: int = Field(0, ge=0)
+    estimate_hours: Hours | None = None
 
 
 class TaskUpdate(BaseModel):
@@ -141,6 +149,35 @@ class TaskUpdate(BaseModel):
     sort_order: int | None = None
     #  Đổi việc thường ↔ cột mốc (B-14). Xem `WorkTaskKind`.
     kind: int | None = None
+    #  duoc-CR-656 (D1b). `task_type_id = 0` bỏ chọn loại. Giờ thực tế chỉ nhận khi
+    #  task đã xong (service chặn); gửi `null` thì KHÔNG đổi, muốn xóa giờ gửi `0`.
+    task_type_id: int | None = Field(None, ge=0)
+    estimate_hours: Hours | None = None
+    actual_hours: Hours | None = None
+
+
+class TaskOutcomeIn(BaseModel):
+    """Đánh giá kết quả một task đã xong — `WorkTaskOutcome` (1 đạt · 2 phải làm lại)."""
+
+    outcome: int
+
+
+class TaskTypeCreate(BaseModel):
+    company_id: int = Field(0, ge=0)
+    department_id: int = Field(0, ge=0)
+    code: Str30
+    name: Str120
+    default_estimate_hours: Hours | None = None
+    sort_order: int = Field(0, ge=0, le=100000)
+
+
+class TaskTypeUpdate(BaseModel):
+    department_id: int | None = Field(None, ge=0)
+    code: Str30 | None = None
+    name: Str120 | None = None
+    default_estimate_hours: Hours | None = None
+    is_active: bool | None = None
+    sort_order: int | None = Field(None, ge=0, le=100000)
 
 
 class TaskMove(BaseModel):

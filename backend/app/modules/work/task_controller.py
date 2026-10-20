@@ -15,6 +15,7 @@ from app.core.response import success
 
 from . import link_service as links
 from . import schema
+from . import task_outcome_service as outcome_svc
 from . import task_service as tasks
 from .membership_service import require_employee, resolve_actor
 
@@ -68,6 +69,13 @@ def update_task(task_id: int, data: schema.TaskUpdate, db: Session = Depends(get
                 user=Depends(require("work_task", "write"))):
     """Sửa, kéo cột (`section_id` + `sort_order`), tick hoàn thành (`status`)."""
     return success(tasks.update_task(db, _actor(db, user), task_id, data), "Đã lưu")
+
+
+@router.post("/tasks/{task_id}/outcome")
+def set_task_outcome(task_id: int, data: schema.TaskOutcomeIn, db: Session = Depends(get_db),
+                     user=Depends(require("work_task", "write"))):
+    """Đánh giá kết quả task đã xong: 1 = Đạt · 2 = Phải làm lại (tự mở lại task). duoc-CR-656."""
+    return success(outcome_svc.set_outcome(db, _actor(db, user), task_id, data.outcome), "Đã lưu đánh giá")
 
 
 @router.post("/tasks/{task_id}/move")

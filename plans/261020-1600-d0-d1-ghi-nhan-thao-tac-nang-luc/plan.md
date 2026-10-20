@@ -27,11 +27,11 @@ Nền: duoc-CR-641 (`usage_profile/`, `core/telemetry/`), CR-649/650 (Bộ chỉ
 |---|---|---|---|---|
 | 01 | [D0a Sự kiện Bấm chức năng](phase-01-d0a-su-kien-bam-chuc-nang.md) | 1,5d | — | implemented (CR-654) |
 | 02 | [D0b Mở rộng theo dõi form (7 form)](phase-02-d0b-mo-rong-theo-doi-form.md) | 1d | 01 (cùng tệp mã) | implemented (CR-654) |
-| 03 | [D0c Báo cáo theo chức năng (ReportKey 15)](phase-03-d0c-bao-cao-theo-chuc-nang.md) | 1,5d | 01, 02, CR-651 đã gộp | pending |
-| 04 | [D0d Nhóm chỉ số 3.8 Dùng AI](phase-04-d0d-nhom-chi-so-dung-ai.md) | 1d + 0,5d sau A0 | A0 (Agent 4), CR-651 | pending |
-| 05 | [D1b Task Dự án: loại việc, giờ, kết quả](phase-05-d1b-task-loai-viec-gio-ket-qua.md) | 2d | — (song song D0) | pending |
-| 06 | [D1a Thời gian trọn vòng + làm lại](phase-06-d1a-thoi-gian-tron-vong-lam-lai.md) | 2,5d | 05 | pending |
-| 07 | [D1c Tải đang ôm tính tức thì](phase-07-d1c-tai-dang-om-tuc-thi.md) | 1d | 05, 06 (index) | pending |
+| 03 | [D0c Báo cáo theo chức năng (ReportKey 15)](phase-03-d0c-bao-cao-theo-chuc-nang.md) | 1,5d | 01, 02, CR-651 đã gộp | implemented (CR-655) |
+| 04 | [D0d Nhóm chỉ số 3.8 Dùng AI](phase-04-d0d-nhom-chi-so-dung-ai.md) | 1d + 0,5d sau A0 | A0 (Agent 4), CR-651 | implemented (CR-655) |
+| 05 | [D1b Task Dự án: loại việc, giờ, kết quả](phase-05-d1b-task-loai-viec-gio-ket-qua.md) | 2d | — (song song D0) | implemented (CR-656) |
+| 06 | [D1a Thời gian trọn vòng + làm lại](phase-06-d1a-thoi-gian-tron-vong-lam-lai.md) | 2,5d | 05 | implemented (CR-656) |
+| 07 | [D1c Tải đang ôm tính tức thì](phase-07-d1c-tai-dang-om-tuc-thi.md) | 1d | 05, 06 (index) | implemented (CR-656) |
 | 08 | [D1d Báo cáo năng lực (ReportKey 16) + hợp đồng cho AI](phase-08-d1d-bao-cao-nang-luc-hop-dong-ai.md) | 1,5d | 06, 07 | pending |
 
 Tổng: D0 ≈ 5–5,5d · D1 ≈ 7d. Hai luồng D0 (01→02→03→04) và D1 (05→06→07→08) chạy song song được.
