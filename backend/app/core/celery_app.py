@@ -345,6 +345,12 @@ if not settings.agent_is_erp:
         "schedule": crontab(hour=3, minute=40),
         "options": {"expires": 3000},
     }
+    #  ai-CR-230: số dùng AI theo người × ngày → ERP `tab_ai_usage_daily` (bộ chỉ số «Dùng AI» của hồ sơ cách làm việc).
+    celery_app.conf.beat_schedule["agent-ai-usage-push"] = {
+        "task": "agent.ai_usage_push",
+        "schedule": crontab(hour=4, minute=5),
+        "options": {"expires": 3000},
+    }
 
 if settings.agent_is_service:
     celery_app.conf.beat_schedule = {k: v for k, v in celery_app.conf.beat_schedule.items() if k.startswith("agent-")}

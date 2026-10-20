@@ -906,6 +906,24 @@ def mcp_log_purge_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.ai_usage_push")
+def ai_usage_push_task(days: int = 2) -> dict:
+    """ai-CR-230 (doc/erp/22 §5): gom số dùng AI theo người × ngày × kênh của `days` ngày gần nhất (tính đến hôm qua,
+    giờ VN) rồi đẩy sang `tab_ai_usage_daily` của ERP. Gom lại bao nhiêu lần cũng được — chạy tay `days=90` để bù.
+    Không gác `_off()`: Trợ lý web và cổng MCP chạy cả khi bot Telegram tắt."""
+    from . import ai_usage
+    from .erp import ErpError
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", **ai_usage.push_days(db, days)}
+    except ErpError as e:
+        log.warning("agent.ai_usage_push: không đẩy được sang ERP — %s", e)
+        return {"status": "error", "error": str(e)[:200]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.runner_watch")
 def runner_watch_task() -> dict:
     """ai-CR-072: mỗi phút xem máy sửa mã nào mất liên lạc / nối lại → báo đại ca một lần mỗi lần đổi."""

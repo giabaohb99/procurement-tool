@@ -117,6 +117,31 @@ def current_request_id_text() -> str:
     return request_id_text(current_request_id())
 
 
+#  ai-CR-230: kênh AI đang làm hộ trong lượt này (0 = không qua AI). Biến RIÊNG, không nằm trong `RequestContext`, vì bot
+#  Telegram / Celery không có ngữ cảnh lượt gọi mà vẫn phải đánh dấu được. Dịch vụ AI tách riêng gửi kèm header
+#  `X-Agent-Ai-Channel` qua cổng B, cổng B đặt lại biến này phía ERP.
+_ai_channel: ContextVar[int] = ContextVar("ai_channel", default=0)
+AI_CHANNEL_HEADER = "x-agent-ai-channel"
+
+
+def current_ai_channel() -> int:
+    return int(_ai_channel.get() or 0)
+
+
+def set_ai_channel(channel: int) -> Token:
+    return _ai_channel.set(int(channel or 0))
+
+
+@contextmanager
+def ai_channel_scope(channel: int):
+    """Mọi dòng `tab_audit_log` ghi trong khối này mang `ai_channel = channel`."""
+    token = _ai_channel.set(int(channel or 0))
+    try:
+        yield
+    finally:
+        _ai_channel.reset(token)
+
+
 def bump_audit_count(step: int = 1) -> None:
     """Đếm dòng audit của lượt này. Gọi từ `core/audit.record(...)`."""
     ctx = _current.get()

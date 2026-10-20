@@ -443,6 +443,13 @@ class _Local:
 
         return employee_accounts(db, admin, action, employee_ids)
 
+    # --- số dùng AI (ai-CR-230) ----------------------------------------------------------------------------------------
+    @staticmethod
+    def push_ai_usage(db, rows: list[dict]) -> dict:
+        from app.modules.ai_usage.service import upsert_rows
+
+        return upsert_rows(db, rows)
+
     # --- chuông ------------------------------------------------------------------------------------------------------
     @staticmethod
     def notifications_after(db, after_id: int, limit: int) -> list[dict]:
@@ -515,6 +522,10 @@ class _Local:
 # ===========================================================================
 # Chạy ở dịch vụ AI: gọi cổng B
 # ===========================================================================
+#  ai-CR-230: số dòng mỗi lượt đẩy số dùng AI qua cổng B (khớp trần `AiUsageIn.rows`).
+AI_USAGE_BATCH = 500
+
+
 class _Remote:
     def __init__(self) -> None:
         self._tool_defs: tuple[float, list] = (0.0, [])
@@ -534,6 +545,10 @@ class _Remote:
             raise ErpError(str(e)) from None
         if data:
             headers["content-type"] = "application/json"
+        from app.core.request_context import AI_CHANNEL_HEADER, current_ai_channel
+
+        if current_ai_channel():
+            headers[AI_CHANNEL_HEADER] = str(current_ai_channel())   # ai-CR-230: ERP đóng dấu kênh AI lên nhật ký thao tác
         resp = None
         for wait in (*CONNECT_RETRY_WAITS, None):
             try:
@@ -828,6 +843,15 @@ class _Remote:
             return None
         return {k: list(out.get(k) or []) for k in ("people", "no_account", "outside")}
 
+    # --- số dùng AI (ai-CR-230) ---
+    def push_ai_usage(self, db, rows: list[dict]) -> dict:
+        written = skipped = 0
+        for i in range(0, len(rows or []), AI_USAGE_BATCH):
+            out = self._call("POST", "/ai-usage", body={"rows": rows[i:i + AI_USAGE_BATCH]}) or {}
+            written += int(out.get("written") or 0)
+            skipped += int(out.get("skipped") or 0)
+        return {"written": written, "skipped": skipped}
+
     # --- chuông ---
     def notifications_after(self, db, after_id: int, limit: int) -> list[dict]:
         return list(self._call("GET", "/notifications", params={"after_id": int(after_id), "limit": int(limit)}) or [])
@@ -1079,6 +1103,13 @@ def notifications_after(db, after_id: int, limit: int) -> list[dict]:
 
 def notifications_max_id(db) -> int:
     return _impl().notifications_max_id(db)
+
+
+def push_ai_usage(db, rows: list[dict]) -> dict:
+    """ai-CR-230: ghi số dùng AI theo người × ngày × kênh sang `tab_ai_usage_daily` của ERP. Chỉ số đếm, không nội dung."""
+    if not rows:
+        return {"written": 0, "skipped": 0}
+    return _impl().push_ai_usage(db, rows)
 
 
 def key_admin_people(db, admin, action: str, *, user_ids: list[int] | None = None, department_id: int = 0,

@@ -110,3 +110,4 @@ from app.modules.labor_contract import variable_model as _labor_contract_variabl
 from app.modules.ai_skill import model as _ai_skill  # noqa: F401
 # Hồ sơ cách làm việc (duoc-CR-641) — `tab_ui_event`, `tab_usage_daily`, `tab_user_usage_snapshot`, `tab_user_usage_label`.
 from app.modules.usage_profile import model as _usage_profile  # noqa: F401
+from app.modules.ai_usage import model as _ai_usage  # noqa: F401  ai-CR-230

@@ -14,6 +14,8 @@ from app.core.auth import require
 from app.core import app_settings
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.logging_codes import AI_CHANNEL_WEB
+from app.core.request_context import ai_channel_scope
 from app.core.response import success
 
 from . import conversation as convo
@@ -49,7 +51,8 @@ def chat(body: AskIn, user=Depends(require("assistant", "read")),
     """
     _guard()
     try:
-        result = convo.chat(db, user, body)
+        with ai_channel_scope(AI_CHANNEL_WEB):           # ai-CR-230: việc Trợ lý web làm hộ mang kênh web
+            result = convo.chat(db, user, body)
     except QuotaExceeded as e:
         # 429 Too Many Requests: hết hạn mức hỏi trong ngày (guard chi phí).
         raise HTTPException(status_code=429, detail=str(e)) from e
@@ -79,7 +82,8 @@ def confirm_document_update(body: ConfirmUpdateIn,
     from .change_model import ChangeSource
     from .tools.update_tool import confirm_update
 
-    result = confirm_update(db, user, body.token, source=int(ChangeSource.WEB))   # ai-CR-182: ghi sổ kênh web
+    with ai_channel_scope(AI_CHANNEL_WEB):           # ai-CR-230: nhật ký thao tác đánh dấu «qua Trợ lý web»
+        result = confirm_update(db, user, body.token, source=int(ChangeSource.WEB))   # ai-CR-182: ghi sổ kênh web
     if result.get("deleted"):   # AI-0006: thẻ đề xuất XÓA dùng chung nút + endpoint này
         return success(result, message=f"Đã xóa {result['entity_label']} {result['code']}")
     fields = ", ".join(result["updated_fields"])
@@ -102,7 +106,8 @@ def confirm_account_setup_proposal(body: ConfirmUpdateIn,
     from .change_model import ChangeSource
     from .tools.account_setup_tool import confirm_account_setup
 
-    result = confirm_account_setup(db, user, body.token, source=int(ChangeSource.WEB))
+    with ai_channel_scope(AI_CHANNEL_WEB):           # ai-CR-230
+        result = confirm_account_setup(db, user, body.token, source=int(ChangeSource.WEB))
     what = ", ".join(result["updated"]) if result["updated"] else "không có gì đổi"
     return success(result, message=f"Bộ tài khoản {result['target_label']}: {what}")
 
