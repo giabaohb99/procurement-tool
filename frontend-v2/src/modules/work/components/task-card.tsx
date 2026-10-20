@@ -6,6 +6,7 @@ import {
   GitBranch,
   ListChecks,
   MessageSquare,
+  Shapes,
   type LucideIcon,
 } from 'lucide-react'
 import { memo, type ReactNode } from 'react'
@@ -300,6 +301,10 @@ function buildFieldRow(
           </span>
         ),
       }
+    }
+    case 'task_type': {
+      if (!task.task_type_name) return null
+      return { key, icon: Shapes, label: 'Loại việc', value: task.task_type_name }
     }
     case 'subtasks': {
       if (task.subtask_total === 0) return null

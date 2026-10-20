@@ -77,7 +77,12 @@ export const BUILTIN_CARD_FIELDS = [
   { key: 'due', label: 'Hạn chót' },
   { key: 'subtasks', label: 'Việc con' },
   { key: 'comments', label: 'Số bình luận' },
+  //  duoc-CR-656. Mặc định ẨN (`HIDDEN_BY_DEFAULT`): bật là đổi bố cục đã nhớ của mọi người, nên để họ tự bật.
+  { key: 'task_type', label: 'Loại việc' },
 ] as const
+
+/** Trường dựng sẵn thêm về sau mà KHÔNG tự hiện — nếu không, mọi bản lưu cũ bỗng có thêm một cột. */
+const HIDDEN_BY_DEFAULT: ReadonlySet<string> = new Set(['task_type'])
 
 export type BuiltinCardFieldKey = (typeof BUILTIN_CARD_FIELDS)[number]['key']
 export type CardFieldKey = BuiltinCardFieldKey | `label:${number}`
@@ -92,7 +97,7 @@ export type CardFields = CardFieldSetting[]
 
 export const DEFAULT_CARD_FIELDS: CardFields = BUILTIN_CARD_FIELDS.map((f) => ({
   key: f.key,
-  visible: true,
+  visible: !HIDDEN_BY_DEFAULT.has(f.key),
 }))
 
 /** `label:12` → `12`; trường dựng sẵn → `null`. */
@@ -142,7 +147,7 @@ export function mergeCardFields(saved: CardFields, labelIds: number[]): CardFiel
     const key = f.key as CardFieldKey
     if (seen.has(key)) continue
     seen.add(key)
-    result.splice(chen, 0, { key, visible: true })
+    result.splice(chen, 0, { key, visible: !HIDDEN_BY_DEFAULT.has(key) })
     chen += 1
   }
 
