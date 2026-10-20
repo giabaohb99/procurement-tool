@@ -237,6 +237,13 @@ BB4_CONTROLLER_MIEN_TRU = {
                                "không phải phạm vi. ai-CR-123 thêm nhóm thứ ba: màn «Nhóm chat» — nhóm chat "
                                "không thuộc pháp nhân/phòng nào (`agent_group` PUBLIC); người thường lọc theo "
                                "thành viên (`groups.can_read`), quản lý bot AI có `agent_group.read`",
+    #  duoc-CR-641 (khai ở bao-CR-650): thu sự kiện giao diện — đường duy nhất là POST lô sự kiện của CHÍNH người gọi
+    #  (`post_ui_events`: gác đăng nhập `get_current_user`, `service.store_batch(db, payload, user.id, session_id)`,
+    #  `user_id` / `session_id` lấy từ token + phiên, không bao giờ từ body); không đọc dữ liệu của ai nên không có gì
+    #  để lọc phạm vi. Đường đọc hồ sơ nằm ở `usage_profile/controller.py` (gác require + require_report, apply_scope).
+    "usage_profile/telemetry_controller.py": "duoc-CR-641: chỉ POST ghi sự kiện giao diện của chính người đăng nhập — "
+                                             "`post_ui_events` dùng get_current_user, store_batch(..., user.id, session_id) "
+                                             "từ token/phiên, không đọc bản ghi của ai; đường đọc ở controller.py đã gác kép",
     #  ai-CR-218: máy chủ cấp quyền OAuth của cổng MCP — đường công khai theo chuẩn (RFC 7591/6749/7009), gác bằng PKCE +
     #  mã một lần + bí mật ứng dụng; màn đồng ý chỉ cấp quyền cho CHÍNH người đăng nhập (`user.id`), không đọc dữ liệu ai.
     "agent_hub/oauth_controller.py": "máy chủ cấp quyền OAuth của cổng MCP: đường công khai theo chuẩn (đăng ký, "

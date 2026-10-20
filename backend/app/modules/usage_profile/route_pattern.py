@@ -11,22 +11,67 @@ from app.core.usage_codes import UiApp
 
 MAX_ROUTE_LEN = 120
 
-#  bao-CR-649: ba chức năng phòng Thu mua làm trên app cũ (frontend/) có route giống hệt v2, chỉ thiếu tiền tố
-#  `/procurement` — quy về route v2 để báo cáo không tách đôi một màn thành hai. Route khác của thumua giữ nguyên
-#  (báo cáo v2 hiện «Giao diện cũ: …»); `/print/...` hai app đã giống nhau. Nguồn app giữ ở cột `tab_ui_event.app`.
-_THUMUA_TO_V2_PREFIX = {"purchase-requests": "procurement", "survey-requests": "procurement",
-                        "purchase-orders": "procurement"}
+#  bao-CR-649: màn của app cũ thumua (frontend/) có bản tương ứng ở ERP v2 thì quy về route v2 để báo cáo theo chức
+#  năng không tách đôi một màn thành hai. BẢNG DUY NHẤT: đoạn đầu của route thumua → đoạn thay vào (đối chiếu
+#  `frontend/src/App.tsx` + `config/cruds.tsx` với `frontend-v2/src/shared/constants/app-routes.ts`, 20/10/2026).
+#  Thumua không có bản v2 (me, notifications, import-batches, customs-regulations, /print/...) thì GIỮ NGUYÊN — báo cáo
+#  v2 hiện «Giao diện cũ: …». Nguồn app vẫn giữ ở cột `tab_ui_event.app`. Thêm màn: thêm dòng ở đây + một dòng bài kiểm.
+_THUMUA_TO_V2 = {
+    # Thu mua
+    "purchase-requests": "procurement/purchase-requests",
+    "survey-requests": "procurement/survey-requests",
+    "purchase-orders": "procurement/purchase-orders",
+    "surveys": "procurement/surveys",
+    "surveys-supplier": "procurement/surveys",      # link cũ trong thông báo, cùng phiếu khảo sát
+    "surveys-product": "procurement/surveys",
+    "survey-progress": "procurement/survey-progress",
+    "purchase-progress": "procurement/purchase-progress",
+    "category-assignees": "procurement/category-assignees",
+    "customs-prices": "procurement/customs-prices",
+    "po-cost-types": "procurement/po-cost-types",
+    "pr-lines-report": "procurement/pr-lines-report",
+    "survey-report": "procurement/survey-report",
+    "documents": "procurement/purchase-orders/:id/documents",   # thumua: chứng từ của MỘT đơn (`/documents?po=`)
+    # Sản xuất / danh mục
+    "suppliers": "production/suppliers",
+    "products": "production/products",
+    "units": "production/units",
+    "item-groups": "production/item-groups",
+    "contracts": "production/contracts",
+    # Tài chính
+    "payables": "finance/payables",
+    "payment-requests": "finance/payment-requests",
+    # Nhân sự
+    "companies": "hr/companies",
+    "departments": "hr/departments",
+    "employees": "hr/employees",
+    # Kho
+    "inventory": "inventory/stock",
+    "warehouses": "inventory/warehouses",
+    # Hệ thống / báo cáo / hỗ trợ
+    "backups": "system/backups",
+    "settings": "system/settings",
+    "roles": "system/permissions",
+    "users": "system/permissions/users",            # thumua `/users/:id` = quyền từng người
+    "reports": "report",
+    "tickets": "support/tickets",                   # chi tiết `/support/tickets/:id`; danh sách là gốc `/support`
+}
+#  Route đầy đủ cần sửa lại sau khi thay đoạn đầu (danh sách phiếu hỗ trợ ở v2 đứng ở gốc `/support`).
+_EXACT_FIX = {"/support/tickets": "/support"}
 
 
 def canonical_route(route: str, app: int) -> str:
     """`/purchase-orders/:id` (thumua) → `/procurement/purchase-orders/:id`; app v2 hoặc route lạ → giữ nguyên."""
     if app != int(UiApp.THUMUA) or not route or route == "/":
         return route
-    head = route.split("/", 2)[1]
-    prefix = _THUMUA_TO_V2_PREFIX.get(head)
-    if not prefix:
+    parts = route.split("/", 2)
+    head = parts[1]
+    replacement = _THUMUA_TO_V2.get(head)
+    if not replacement:
         return route
-    return ("/" + prefix + route)[:MAX_ROUTE_LEN]
+    rest = "/" + parts[2] if len(parts) > 2 and parts[2] else ""
+    out = "/" + replacement + rest
+    return _EXACT_FIX.get(out, out)[:MAX_ROUTE_LEN]
 
 _SCHEME_HOST = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://[^/?#]*")
 _UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
