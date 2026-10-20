@@ -110,6 +110,25 @@ beforeEach(() => {
 })
 
 describe('UserPermissionDetailPage', () => {
+  it('hiện huy hiệu «Theo chức vụ» đúng ở vai trò hệ thống tự cấp (duoc-CR-653)', async () => {
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/users/31'
+        ? Promise.resolve({
+            ...account([2, 3]),
+            auto_grants: [{ role_id: 3, position_id: 7, position_name: 'Trưởng phòng KD' }],
+          })
+        : Promise.resolve(ROLES),
+    )
+    build()
+    await screen.findByRole('checkbox', { name: /Trưởng phòng/ })
+    const badges = screen.getAllByText('Theo chức vụ: Trưởng phòng KD')
+    expect(badges).toHaveLength(1)
+    //  Vai trò gán tay (Nhân sự) không mang huy hiệu.
+    expect(screen.getByRole('checkbox', { name: /Nhân sự/ }).closest('label')).not.toHaveTextContent(
+      'Theo chức vụ',
+    )
+  })
+
   it('giữ nguyên các ô vừa tick khi dữ liệu tài khoản được nạp lại giữa chừng', async () => {
     //  Lỗi khách báo 25/08/2026: «Chọn quyền, Lưu vai trò, out ra vào lại thì mất
     //  quyền đã chọn». React Query nạp lại `account` bất cứ lúc nào — hết hạn 30

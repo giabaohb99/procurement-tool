@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import BigInteger, Boolean, SmallInteger, String
+from sqlalchemy import BigInteger, Boolean, SmallInteger, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
@@ -61,9 +61,15 @@ class User(Base, AuditMixin):
 
 class UserRole(Base, AuditMixin):
     __tablename__ = "tab_user_role"
+    #  duoc-CR-653 (M2): một vai trò chỉ một dòng cho mỗi tài khoản — migration `jobposrole01` dọn trùng rồi mới tạo.
+    __table_args__ = (UniqueConstraint("user_id", "role_id", name="uq_user_role_user_role"),)
 
     user_id: Mapped[int] = mapped_column(BigInteger, index=True)
     role_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    #  duoc-CR-653: 0 = quản trị gán tay; >0 = id chức vụ khiến HỆ THỐNG tự cấp dòng này.
+    #  Chỉ dòng >0 mới bị gỡ khi nhân sự đổi/bỏ chức vụ — dòng gán tay không bao giờ bị đụng.
+    granted_by_position_id: Mapped[int] = mapped_column(
+        BigInteger, default=0, server_default="0", index=True)
 
 
 class UserScope(Base, AuditMixin):

@@ -1,4 +1,11 @@
 /** Tài khoản đăng nhập — khớp `UserOut` + các trường controller bồi thêm. */
+/** Một vai trò tự cấp theo chức vụ — `GET /api/users/{id}`. */
+export interface UserAutoGrant {
+  role_id: number
+  position_id: number
+  position_name: string
+}
+
 export interface UserAccount {
   id: number
   email: string
@@ -6,6 +13,8 @@ export interface UserAccount {
   employee_id: number
   is_active: boolean
   role_ids: number[]
+  /** duoc-CR-653: vai trò do HỆ THỐNG tự cấp theo chức vụ (chỉ có ở chi tiết một tài khoản). */
+  auto_grants?: UserAutoGrant[]
   /** Lấy từ hồ sơ nhân sự; không có thì controller trả về email. */
   full_name: string
   department_name: string

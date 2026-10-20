@@ -6,6 +6,7 @@ import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import { Badge } from '@/shared/ui/badge'
 import type { IdentityChip } from '@/shared/ui/record-identity-card'
 import { JobPositionHoldersPanel } from '../components/job-position-holders-panel'
+import { JobPositionRolesPanel } from '../components/job-position-roles-panel'
 import type { JobPosition } from '../types/job-position'
 
 /**
@@ -198,6 +199,12 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       key: 'holders',
       label: 'Người đang giữ',
       render: (r) => <JobPositionHoldersPanel positionId={r.id} />,
+    },
+    //  duoc-CR-653: gói vai trò tự cấp cho người giữ chức vụ. Tab tự xử lý thiếu quyền Vai trò.
+    {
+      key: 'default-roles',
+      label: 'Quyền mặc định',
+      render: (r) => <JobPositionRolesPanel positionId={r.id} />,
     },
   ],
   //  Bốn ô, không chia nhóm: `formSections` sinh ra cho form 8–10 ô, áp vào đây

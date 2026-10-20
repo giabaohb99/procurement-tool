@@ -10,7 +10,7 @@ from app.core.utils import generate_code
 
 from app.modules.department.model import Department
 
-from . import position_service
+from . import position_role_service, position_service
 from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
@@ -384,6 +384,10 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         setattr(obj, key, value)
     position_service.sync_label(db, obj, fields, old_position_id)
     obj.updated_by = user_id
+    if "position_id" in fields and (obj.position_id or 0) != old_position_id:
+        #  duoc-CR-653: đổi chức vụ → đổi phần vai trò HỆ THỐNG đã tự cấp (cùng giao dịch, chỉ flush).
+        #  Đường nhập Excel, áp quá trình công tác, lưu hồ sơ đều đi qua lõi này.
+        position_role_service.sync_employee_roles(db, obj, user_id)
 
     #  ĐỔI PHÁP NHÂN — gỡ khỏi phòng ban của pháp nhân cũ TRƯỚC khi đồng bộ phòng
     #  chính. Không có nhịp này thì việc đổi pháp nhân bị chính chốt L3 chặn lại
@@ -498,6 +502,9 @@ def detach_users(db: Session, eid: int, actor_id: int) -> int:
     users = lock_linked_users(db, eid, actor_id, RevokeReason.EMPLOYEE_RESIGNED)
     for u in users:
         u.employee_id = 0
+        #  duoc-CR-653 (L3): tài khoản hết gắn hồ sơ thì mất phần vai trò hệ thống tự cấp theo chức vụ
+        #  (mở khóa sau này không còn gì để đối chiếu lại).
+        position_role_service.revoke_system_grants(db, u.id, actor_id)
     return len(users)
 
 

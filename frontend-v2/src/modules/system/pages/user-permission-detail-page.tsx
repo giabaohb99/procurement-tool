@@ -14,6 +14,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { cn } from '@/shared/utils/cn'
+import { PositionGrantBadge } from '../components/position-grant-badge'
 import { UserScopeDialog } from '../components/user-scope-dialog'
 import { useRoles } from '@/modules/hr/hooks/use-roles'
 import {
@@ -103,6 +104,10 @@ export function UserPermissionDetailPage() {
   //
   //  Đọc thẳng như dưới đây thì không lượt render nào là lượt đặc biệt.
   const selectedRoleIds = draftRoleIds ?? account.role_ids
+  //  duoc-CR-653: vai trò do hệ thống tự cấp theo chức vụ → huy hiệu «Theo chức vụ: …».
+  const autoGrantByRole = new Map(
+    (account.auto_grants ?? []).map((g) => [g.role_id, g.position_name]),
+  )
 
   const toggleRole = (roleId: number) =>
     setDraftRoleIds((current) => {
@@ -222,6 +227,9 @@ export function UserPermissionDetailPage() {
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">
                     {role.code}
                   </span>
+                  {persisted && autoGrantByRole.has(role.id) && (
+                    <PositionGrantBadge positionName={autoGrantByRole.get(role.id) ?? ''} />
+                  )}
                 </label>
 
                 {persisted ? (

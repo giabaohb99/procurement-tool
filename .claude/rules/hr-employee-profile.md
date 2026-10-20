@@ -235,3 +235,40 @@ Thiết kế: `plans/261019-0935-nhap-excel-nhan-su-cr628/`; khung hook: `doc/er
     REPEATABLE READ khiến SELECT thường thấy ảnh chụp cũ; SQLite không tái hiện được nên test chỉ kiểm câu biên dịch
     sang MySQL. Deadlock 1213 / hết chờ khóa 1205 / `PendingRollbackError` làm hỏng CẢ LÔ (không nuốt thành lỗi dòng).
 
+
+### QUYỀN MẶC ĐỊNH THEO CHỨC VỤ (duoc-CR-653, 20/10/2026)
+
+Mỗi chức vụ khai một **gói vai trò** (`tab_job_position_role`); tài khoản của nhân sự giữ chức vụ đó được hệ
+thống tự cấp gói. Mã: `employee/position_role_service.py` (+ `position_role_controller.py`, màn tab «Quyền mặc
+định» ở `/hr/job-positions/:id`). Script đề xuất gói từ dữ liệu hiện có: `backend/scripts/de_xuat_quyen_theo_chuc_vu.py`.
+
+- ⚠️ **Gói chỉ là DANH SÁCH VAI TRÒ, không có bậc phạm vi.** Bậc own/dept/company/all nằm ở
+  `tab_permission.scope` (vai trò × đối tượng), KHÔNG ở `tab_user_role`. Muốn «Trưởng phòng bậc phòng ban» thì chọn
+  vai trò đã cấu hình bậc đó.
+- ⚠️ **Dấu `tab_user_role.granted_by_position_id`**: `0` = quản trị gán tay, `>0` = hệ thống tự cấp theo chức vụ đó.
+  Chỉ dòng `>0` bị gỡ khi đổi/bỏ chức vụ; dòng tay không bao giờ bị đụng. Vai trò vừa gán tay vừa có trong gói →
+  không thêm dòng, giữ dòng tay. `UNIQUE(user_id, role_id)`; đụng trùng khi ghi đồng thời = coi như đã có.
+- **Một hàm lõi duy nhất** `sync_employee_roles` («đối chiếu», chạy lại bao nhiêu lần cũng cùng kết quả), gọi SAU khi đổi
+  chức vụ ở: `update_employee_core` (lưu hồ sơ · nhập Excel nhánh danh mục · áp quá trình công tác), nhánh chữ tự do của
+  nhập Excel, hoàn tác lô nhập, mở khóa tài khoản; `grant_on_account_creation` khi cấp tài khoản. Chỉ `flush`, nhật ký
+  `record(..., commit=False)`, xóa cache quyền ngay + sau commit. Tài khoản khóa / hồ sơ nghỉ việc: bỏ qua.
+- ⚠️ **CẤM TỰ CẤP CHO CHÍNH MÌNH (C1).** Người thao tác không phải quản trị thì KHÔNG BAO GIỜ được tự cấp gói cho tài
+  khoản của chính họ (HR đổi chức vụ của mình = lấy gói). Thu hồi vẫn được. Chốt đặt ở `_sync_user`, phủ mọi đường.
+  Thêm đường đổi chức vụ mới = gọi `sync_employee_roles`, đừng tự viết lại.
+- ⚠️ **Lọc leo thang (H1).** Người thao tác không phải quản trị chỉ cấp được vai trò mà quyền ⊆ quyền của họ (cùng L2 của
+  gán vai trò tay). Phần còn lại BỊ BỎ QUA + nhật ký `auto_grant_skipped_position`; «Áp lại» trả `skipped_no_permission`.
+- ⚠️ **Vai trò cấm vào gói (M5)**: `admin` / `ADMINISTRATOR` và vai trò có ghi/tạo/xóa trên `role` hoặc `user`. Chặn ở PUT
+  (400) VÀ ở lúc cấp (`forbidden_role_ids`), vì dữ liệu cũ/script có thể đưa lọt.
+- Sửa gói cần `role.write` (không phải `job_position.write`) + chốt L2 cho vai trò MỚI THÊM; ai đang giữ chức vụ đó (không
+  phải quản trị) thì 403 khi thêm vào gói của chính chức vụ mình (H2). Sửa gói KHÔNG đổi quyền ai — chỉ nút «Áp lại»
+  (có xác nhận + số người; bỏ qua tài khoản của chính người bấm và không tính vào «holders»).
+- Xóa vai trò đang trong gói: bị chặn (`role/references.py`). Xóa chức vụ: dọn gói. Xóa cứng hồ sơ nhân sự: gỡ dòng hệ
+  thống cấp của tài khoản (`detach_users`).
+- ⚠️ **Hạn chế đã biết — gỡ riêng một người**: admin lưu lại danh sách vai trò có chứa vai trò hệ thống tự cấp thì nó VẪN
+  là «tự cấp». Muốn bỏ một vai trò của gói cho riêng một người: sửa gói hoặc đổi chức vụ của họ (bỏ tick ở Phân quyền tài
+  khoản sẽ bị «Áp lại»/đổi chức vụ cấp lại).
+- ⚠️ **Hạn chế đã biết — cache quyền 60 giây theo TIẾN TRÌNH (M3)**: `perm_cache_clear` chỉ xóa trong tiến trình gọi. Prod
+  chạy nhiều worker uvicorn + nhập Excel chạy trong Celery nên một vai trò vừa thu hồi có thể còn tác dụng tới 60 giây ở
+  worker khác. Có sẵn cho mọi thao tác phân quyền, CR-653 chỉ thêm thu hồi hàng loạt; chưa chuyển cache sang Redis.
+- Script đề xuất: mặc định dry-run, `--min-holders 3`, loại vai trò cấm, `--apply --yes` chỉ THÊM gói + ghi nhật ký, không
+  cấp cho ai (dùng «Áp lại» sau).

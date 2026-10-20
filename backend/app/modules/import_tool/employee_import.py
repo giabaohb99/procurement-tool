@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.scoping import get_perm_profile, get_scoped
 from app.modules.department.model import Department
-from app.modules.employee import department_service, position_service, service
+from app.modules.employee import department_service, position_role_service, position_service, service
 from app.modules.employee.department_model import EmployeeDepartment
 from app.modules.employee.model import Employee
 from app.modules.employee.position_model import JobPosition
@@ -296,7 +296,11 @@ def apply_row(db: Session, ctx: EmployeeImportCtx, r: int, code: str, raw: dict,
                 obj = service.create_employee_core(db, payload, ctx.user.id)
                 out = None
             if free_position is not None:
+                old_pos_id = obj.position_id or 0
                 obj.position_id, obj.position = 0, free_position
+                if existing and old_pos_id:
+                    #  duoc-CR-653: chức vụ chữ tự do = bỏ chọn danh mục → thu hồi vai trò tự cấp theo chức vụ cũ.
+                    position_role_service.sync_employee_roles(db, obj, ctx.user.id, "nhập Excel")
             db.flush()
             db.refresh(obj, ["updated_at"])     # M-B: dấu thời gian cùng đồng hồ DB, để hoàn tác biết «bị sửa sau»
             #  Kiểm phạm vi SAU ghi: đổi công ty/phòng ban mà đẩy hồ sơ ra khỏi tầm nhìn của chính người nhập

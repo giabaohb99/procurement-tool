@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import reference_guard
@@ -195,6 +196,10 @@ def provision_user(db: Session, data: UserProvision, actor_id: int) -> User:
            f"Cấp tài khoản cho {emp.full_name or email or user.id}")
     # Không chọn vai trò nào -> mặc định 'Nhân sự' để tài khoản mới dùng được ngay
     assign_roles(db, user.id, RoleAssign(role_ids=data.role_ids or default_role_ids(db)), actor_id)
+    #  duoc-CR-653: chức vụ của nhân sự có gói quyền mặc định thì cấp luôn (đủ điều kiện mới cấp).
+    from app.modules.employee.position_role_service import grant_on_account_creation
+    if grant_on_account_creation(db, emp, user.id, actor_id):
+        db.commit()
     return user
 
 
@@ -285,11 +290,42 @@ def reset_password(db: Session, user_id: int, new_password: str, actor_id: int) 
            f"Đặt lại mật khẩu cho {user_label(db, user_id)}")
 
 
+def auto_grants_of(db: Session, user_id: int) -> list[dict]:
+    """duoc-CR-653: các vai trò do HỆ THỐNG tự cấp theo chức vụ — để màn Phân quyền hiện huy hiệu
+    «Theo chức vụ: <tên>»."""
+    from app.modules.employee.position_model import JobPosition
+    rows = db.query(UserRole.role_id, UserRole.granted_by_position_id).filter(
+        UserRole.user_id == user_id, UserRole.granted_by_position_id > 0).all()
+    names = dict(db.query(JobPosition.id, JobPosition.name).filter(
+        JobPosition.id.in_({p for _, p in rows})).all()) if rows else {}
+    return [{"role_id": r, "position_id": p, "position_name": names.get(p, f"#{p}")}
+            for r, p in sorted(rows)]
+
+
 def assign_roles(db: Session, user_id: int, data: RoleAssign, actor_id: int) -> None:
     before = set(_role_ids(db, user_id))
-    db.query(UserRole).filter(UserRole.user_id == user_id).delete()
-    for rid in data.role_ids:
-        db.add(UserRole(user_id=user_id, role_id=rid, created_by=actor_id, updated_by=actor_id))
+    #  duoc-CR-653: ĐỐI CHIẾU thay vì xóa sạch rồi chèn lại — dòng vai trò còn trong danh sách giữ
+    #  nguyên (kể cả nhãn «tự cấp theo chức vụ»), chỉ dòng bị bỏ mới xóa.
+    wanted = set(data.role_ids)
+    seen: set[int] = set()
+    #  M1: trùng (user, role) thì GIỮ dòng GÁN TAY (marker 0) trước, rồi mới tới id thấp nhất — không để
+    #  dòng hệ thống đè mất dòng tay. Vai trò hệ thống đang có mà admin lưu lại danh sách: giữ nguyên nhãn
+    #  «tự cấp» (muốn bỏ riêng một người thì đổi gói hoặc chức vụ của họ).
+    for row in sorted(db.query(UserRole).filter(UserRole.user_id == user_id).all(),
+                      key=lambda r: (1 if r.granted_by_position_id else 0, r.id)):
+        if row.role_id not in wanted or row.role_id in seen:
+            db.delete(row)
+        else:
+            seen.add(row.role_id)
+    db.flush()
+    for rid in dict.fromkeys(data.role_ids):
+        if rid in seen:
+            continue
+        try:
+            with db.begin_nested():     # M2: ghi đồng thời gặp unique (user, role) → coi như đã có
+                db.add(UserRole(user_id=user_id, role_id=rid, created_by=actor_id, updated_by=actor_id))
+        except IntegrityError:
+            pass
     db.commit()
     perm_cache_clear(user_id)
 
@@ -380,6 +416,12 @@ def set_active(db: Session, user_id: int, active: bool, actor_id: int) -> None:
                                      "Hãy sửa email trước khi mở khoá tài khoản này.")
     user.is_active = active
     user.updated_by = actor_id
+    if active and user.employee_id:
+        #  duoc-CR-653: mở khóa → đối chiếu lại phần tự cấp (lúc khóa đã bị bỏ qua).
+        from app.modules.employee.position_role_service import sync_employee_roles
+        emp = db.get(Employee, user.employee_id)
+        if emp:
+            sync_employee_roles(db, emp, actor_id, "mở khóa tài khoản")
     db.commit()
     record(db, actor_id, "user", user_id, "activate" if active else "deactivate",
            ("Mở khóa tài khoản " if active else "Khóa tài khoản ") + user_label(db, user_id))

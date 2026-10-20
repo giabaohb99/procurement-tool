@@ -81,6 +81,7 @@ from app.modules.document.report_controller import router as document_report_rou
 from app.modules.approval.report_controller import router as approval_report_router
 from app.modules.work.report_controller import router as work_report_router
 from app.modules.employee.position_controller import router as job_position_router
+from app.modules.employee.position_role_controller import router as job_position_role_router
 from app.modules.dossier.type_controller import router as dossier_type_router
 from app.modules.dossier.controller import router as dossier_router
 from app.modules.dossier.applicability_controller import router as dossier_applicable_router
@@ -276,6 +277,7 @@ app.include_router(labor_contract_template_router)
 app.include_router(labor_contract_variable_router)
 app.include_router(employee_router)
 app.include_router(job_position_router)
+app.include_router(job_position_role_router)
 app.include_router(dossier_type_router)
 #  ⚠️ PHẢI nạp TRƯỚC `dossier_router`: bộ sinh CRUD đăng ký `/api/dossiers/{id}`
 #  với `id: int`, mà FastAPI khớp tuyến theo thứ tự nạp — nạp sau thì
