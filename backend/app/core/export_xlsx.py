@@ -45,10 +45,12 @@ _FORMATS = {
     # bao-CR (P03 báo cáo Haravan): giá trị LƯU SẴN theo thang 0-100 (vd 42.5 = "42.5%"),
     # định dạng CHỮ "%" gắn thẳng vào chuỗi định dạng nên KHÔNG nhân lại 100 như toán tử % thật.
     "percent": '0.0"%"',
+    # duoc-CR-657: số thập phân thuần (ngày, tỷ lệ) — None là «chưa có số», để RỖNG chứ không phải 0.
+    "decimal": "#,##0.00",
     "date": "dd/mm/yyyy",
     "datetime": "dd/mm/yyyy hh:mm",
 }
-_RIGHT = {"money", "price", "qty", "int", "percent"}
+_RIGHT = {"money", "price", "qty", "int", "percent", "decimal"}
 
 #  M5 — ký tự mở đầu khiến Excel/LibreOffice/Google Sheets hiểu một Ô CHUỖI là công thức.
 _FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@", "\t", "\r")
@@ -119,13 +121,13 @@ def _to_datetime(v: Any):
 
 def cell_value(col: Col, row: dict) -> Any:
     v = row.get(col.key)
-    if col.kind in ("money", "price", "qty", "int", "percent"):
+    if col.kind in ("money", "price", "qty", "int", "percent", "decimal"):
         if v is None:
             #  Review khung báo cáo P03 (28/09/2026): CHỈ kind="percent" coi `None` là "chưa
             #  có dữ liệu" (mẫu số 0 của một chỉ số dẫn xuất — xem `report_compute.compute_
             #  derived`) nên để RỖNG thay vì 0 (0% từng đọc nhầm thành "-100% so với kỳ
             #  trước"). Các kind số khác GIỮ NGUYÊN quy None/"" về 0 như mọi màn xuất khác.
-            return "" if col.kind == "percent" else 0
+            return "" if col.kind in ("percent", "decimal") else 0
         if v == "":
             return 0
         return float(v) if isinstance(v, Decimal) else v

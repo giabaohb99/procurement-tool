@@ -16,7 +16,8 @@ from app.modules.work.model import WorkAssigneeKind, WorkTaskStatus
 
 #  Trạng thái chứng từ Thu mua KHÔNG còn là «đang xử lý» (mã chuỗi, xem `core/status_codes.py` và các service).
 PR_NOT_HANDLING = ("draft", "submitted", "completed", "done", "cancelled", "rejected")
-PO_NOT_HANDLING = ("draft", "completed", "cancelled", "rejected")
+#  `received` (Đã nhận đủ) = đã xong, không còn «đang xử lý» (đại ca chốt 20/10/2026).
+PO_NOT_HANDLING = ("draft", "received", "completed", "cancelled", "rejected")
 SR_ACTIVE = ("submitted", "approved", "processing")
 PR_LINE_DONE = ("completed", "cancelled")
 
@@ -95,7 +96,7 @@ def pr_approval_pending(db: Session, emp_ids: list[int]) -> dict[int, int]:
 
 
 def po_handling(db: Session, emp_ids: list[int]) -> dict[int, int]:
-    """Q7 — ĐMH đang xử lý theo `nspt_id` (người phụ trách)."""
+    """Q7 — ĐMH đang xử lý theo `nspt_id` (người phụ trách); đã nhận đủ / hoàn thành thì không tính."""
     po = _t("tab_purchase_order")
     q = (select(po.c.nspt_id, func.count(po.c.id))
          .where(po.c.nspt_id.in_(emp_ids), po.c.is_deleted.is_(False), po.c.status.notin_(PO_NOT_HANDLING))

@@ -821,6 +821,9 @@ export const queryKeys = {
     /** Mức dùng chức năng (duoc-CR-655). */
     featureUsage: (params: Record<string, unknown>) => ['report', 'feature-usage', 'summary', params] as const,
     featureUsageBreakdown: (params: Record<string, unknown>) => ['report', 'feature-usage', 'breakdown', params] as const,
+    /** Năng lực theo loại việc (duoc-CR-657). */
+    workCapability: (params: Record<string, unknown>) => ['report', 'work-capability', 'summary', params] as const,
+    workCapabilityLoad: (params: Record<string, unknown>) => ['report', 'work-capability', 'load', params] as const,
   },
   coffee: {
     all: ['coffee'] as const,

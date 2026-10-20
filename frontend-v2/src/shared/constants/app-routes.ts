@@ -360,6 +360,8 @@ export const appRoutes = {
     usageMetrics: '/report/usage-metrics',
     /** Mức dùng chức năng (duoc-CR-655) — chỉ quản trị, gom theo chức năng / phòng ban. */
     featureUsage: '/report/feature-usage',
+    /** Năng lực theo loại việc (duoc-CR-657) — số theo từng người, chỉ quản trị mặc định (khóa 16). */
+    workCapability: '/report/work-capability',
   },
   system: {
     root: '/system',

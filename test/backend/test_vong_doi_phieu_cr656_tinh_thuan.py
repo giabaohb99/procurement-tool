@@ -45,6 +45,7 @@ def test_moi_loai_phieu_deu_co_dinh_nghia_va_khong_chong_nhau():
     (CycleKind.SURVEY_REQUEST, "processing", "survey_done", None),          # Q2: «xong» của YCBG là `done`
     (CycleKind.SURVEY_REQUEST, "survey_done", "done", Ev.DONE),
     (CycleKind.PURCHASE_ORDER, "submitted", "rejected", Ev.RETURN),
+    (CycleKind.PURCHASE_ORDER, "partial", "received", Ev.DONE),             # «Đã nhận đủ» = xong (20/10)
     (CycleKind.PAYMENT_REQUEST, "approved", "paid", Ev.DONE),
     (CycleKind.DOCUMENT, "2", "3", Ev.DONE),
     (CycleKind.DOCUMENT, "2", "9", Ev.RETURN),

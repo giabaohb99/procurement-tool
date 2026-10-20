@@ -32,7 +32,7 @@ Nền: duoc-CR-641 (`usage_profile/`, `core/telemetry/`), CR-649/650 (Bộ chỉ
 | 05 | [D1b Task Dự án: loại việc, giờ, kết quả](phase-05-d1b-task-loai-viec-gio-ket-qua.md) | 2d | — (song song D0) | implemented (CR-656) |
 | 06 | [D1a Thời gian trọn vòng + làm lại](phase-06-d1a-thoi-gian-tron-vong-lam-lai.md) | 2,5d | 05 | implemented (CR-656) |
 | 07 | [D1c Tải đang ôm tính tức thì](phase-07-d1c-tai-dang-om-tuc-thi.md) | 1d | 05, 06 (index) | implemented (CR-656) |
-| 08 | [D1d Báo cáo năng lực (ReportKey 16) + hợp đồng cho AI](phase-08-d1d-bao-cao-nang-luc-hop-dong-ai.md) | 1,5d | 06, 07 | pending |
+| 08 | [D1d Báo cáo năng lực (ReportKey 16) + hợp đồng cho AI](phase-08-d1d-bao-cao-nang-luc-hop-dong-ai.md) | 1,5d | 06, 07 | implemented (CR-657) |
 
 Tổng: D0 ≈ 5–5,5d · D1 ≈ 7d. Hai luồng D0 (01→02→03→04) và D1 (05→06→07→08) chạy song song được.
 

@@ -32,7 +32,7 @@ Mỗi truy vấn là một `GROUP BY employee` có lọc `IN (employee_ids)`:
 | Q4 | `work_open`, `work_overdue`, `work_estimate_hours_open` | `tab_work_task_assignee(kind=PIC)` ⨝ `tab_work_task` status=OPEN, `deleted_at IS NULL`; `due_date < hôm nay VN` |
 | Q5 | `pr_handling` | YCMH `assignee_id` ∈, status ∉ {draft, completed, done, cancelled, rejected} |
 | Q6 | `pr_approval_pending` (đại diện) | YCMH status=`submitted` theo `head_of_dept_id` |
-| Q7 | `po_handling` | ĐMH `nspt_id` ∈, status ∉ {draft, completed, cancelled, rejected} |
+| Q7 | `po_handling` | ĐMH `nspt_id` ∈, status ∉ {draft, received, completed, cancelled, rejected} (20/10: `received` = xong) |
 | Q8 | `survey_lines_handling` | dòng YCBG `assignee` (mã NV) chưa xong ⨝ `tab_employee.code` |
 | Q9 | `docs_pending_issue` | văn bản status=11 theo `clone_assignee_employee_id` |
 | Q10 | `on_leave_today`, `leave_days_ahead` | nghỉ phép đã duyệt giao `[hôm nay, hôm nay + horizon]` |

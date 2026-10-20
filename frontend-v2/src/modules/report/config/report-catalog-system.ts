@@ -1,4 +1,4 @@
-import { MousePointerClick, UserSearch } from 'lucide-react'
+import { Gauge, MousePointerClick, UserSearch } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 
@@ -36,5 +36,20 @@ export const SYSTEM_REPORT_CATALOG: ReportCatalogEntry[] = [
     endpoint: '/api/feature-usage/summary',
     overviewKpis: [],
     load: async () => (await import('../pages/feature-usage-report-page')).FeatureUsageReportPage,
+  },
+  {
+    label: 'Năng lực theo loại việc',
+    description:
+      'Mỗi loại phiếu / loại việc mất bao lâu, bao nhiêu phần trăm phải làm lại, ai đang ôm bao nhiêu việc — chỉ dùng tham khảo, không chấm điểm.',
+    path: appRoutes.report.workCapability,
+    sourcePath: appRoutes.system.logs,
+    icon: Gauge,
+    //  ReportKey.WORK_CAPABILITY (backend) = 16. Số theo TỪNG NGƯỜI nên khóa riêng, mặc định chỉ admin.
+    key: 16,
+    entity: 'setting',
+    group: 'Quản trị',
+    endpoint: '/api/work-capability/summary',
+    overviewKpis: [],
+    load: async () => (await import('../pages/work-capability-report-page')).WorkCapabilityReportPage,
   },
 ]

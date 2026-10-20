@@ -33,7 +33,7 @@
 |---|---|---|---|---|---|---|
 | YCMH | tab_purchase_request | `completed`/`done` | `cancelled`; audit `rejected` (từ chối) | audit action `returned` | `requester_id` | `assignee_id` (mốc: lần đầu change_log `assignee_id` = người đó) |
 | YCBG | tab_survey_request | `done` (Q2: hay `survey_done`) | `cancelled` | status → `rejected` (= Trả về) | `requester_id` | `assignee` từng dòng (mã NV → id) |
-| ĐMH | tab_purchase_order | `completed` | `cancelled` | status → `rejected` (= Trả về) | `created_by`→NV | `nspt_id` (mốc: change_log `nspt_id`) |
+| ĐMH | tab_purchase_order | `received` hoặc `completed` (đại ca chốt 20/10/2026: «Đã nhận đủ» = xong; mốc = lần đầu) | `cancelled` | status → `rejected` (= Trả về) | `created_by`→NV | `nspt_id` (mốc: change_log `nspt_id`) |
 | YCTT | tab_payment_request | `paid` | `cancelled` | — (không có trả về) | `created_by`→NV | — |
 | Văn bản | tab_document | 3 hoặc 4 (lần đầu) | 10, 7 | status → 9 | `drafter_employee_id` | — |
 | Đặt xe | tab_vehicle_booking | 5 | 6, 7 | status → 8 | `requester_id` | — |
