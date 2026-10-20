@@ -218,6 +218,8 @@ export const queryKeys = {
       ['hr', 'departments', 'by-companies', [...companyIds].sort((a, b) => a - b)] as const,
     companies: (params?: Record<string, unknown>) => ['hr', 'companies', params ?? {}] as const,
     /** Danh mục Chức vụ (duoc-CR-320) — nguồn ô chọn «Vị trí / Chức vụ». */
+    /** Gói quyền mặc định của MỘT chức vụ (duoc-CR-653). */
+    jobPositionRoles: (positionId: number) => ['hr', 'job-position-roles', positionId] as const,
     jobPositions: (params?: Record<string, unknown>) =>
       ['hr', 'job-positions', params ?? {}] as const,
     company: (id: number) => ['hr', 'companies', id] as const,

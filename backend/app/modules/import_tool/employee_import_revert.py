@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core import reference_guard
 from app.core.scoping import get_perm_profile, get_scoped
-from app.modules.employee import department_service, service
+from app.modules.employee import department_service, position_role_service, service
 from app.modules.employee.contact_model import EmployeeContact, EmployeeFamily
 from app.modules.employee.department_model import EmployeeDepartment
 from app.modules.employee.model import Employee
@@ -202,6 +202,8 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
             emp.position_id = pos_id or 0
         if pos_label is not None:
             emp.position = pos_label or ""
+        if pos_id is not None:
+            position_role_service.sync_employee_roles(db, emp, user_id, "hoàn tác lô nhập")
         pending.append((emp.id, "update", f"Hoàn tác lô nhập Excel #{ch.batch_id}",
                         out.scope_changed or bool(depts), [(u.id, u.email or str(u.id)) for u in out.locked_users], code))
         db.flush()          # để chốt tham chiếu của lần xóa kế tiếp thấy trạng thái đã khôi phục

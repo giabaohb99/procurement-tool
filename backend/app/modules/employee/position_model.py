@@ -16,7 +16,7 @@ hay phòng họp. Đừng đóng băng nó vào một `IntEnum` trong mã nguồ
 chức danh CỤ THỂ trên phiếu ("Trưởng phòng Mua hàng"). Hai cột, hai vòng đời —
 gộp lại thì hoặc mất chi tiết chức danh, hoặc thang bậc đẻ ra vô số mức.
 """
-from sqlalchemy import BigInteger, Boolean, Integer, String
+from sqlalchemy import BigInteger, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -47,3 +47,19 @@ class JobPosition(Base, AuditMixin):
     #  có "Trưởng phòng" ở mọi phòng và "Trợ lý Tổng giám đốc" không thuộc phòng
     #  nào. Chặn ở đây là đẻ ra một luật mà Nhân sự phải lách hằng tuần.
     department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+
+
+class JobPositionRole(Base, AuditMixin):
+    """GÓI QUYỀN MẶC ĐỊNH của chức vụ — danh sách VAI TRÒ có sẵn (duoc-CR-653).
+
+    ⚠️ Chỉ khai vai trò, KHÔNG khai bậc phạm vi: bậc dòng (own/dept/company/all) nằm ở
+    `tab_permission.scope` của từng (vai trò × đối tượng), không nằm ở `tab_user_role`.
+    Muốn «Trưởng phòng ở bậc phòng ban» thì chọn vai trò đã được cấu hình bậc phòng ban.
+    Không có khóa ngoại cứng (cùng quy ước các bảng danh mục khác); dịch vụ kiểm id tồn tại.
+    """
+
+    __tablename__ = "tab_job_position_role"
+    __table_args__ = (UniqueConstraint("job_position_id", "role_id", name="uq_job_position_role"),)
+
+    job_position_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    role_id: Mapped[int] = mapped_column(BigInteger, index=True)

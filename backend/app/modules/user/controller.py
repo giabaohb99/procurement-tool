@@ -150,6 +150,7 @@ def get_user(user_id: int, db: Session = Depends(get_db), user=Depends(require("
         raise HTTPException(404, "Không tìm thấy tài khoản")
     d = UserOut.model_validate(u).model_dump()
     d["role_ids"] = service._role_ids(db, u.id)
+    d["auto_grants"] = service.auto_grants_of(db, u.id)   # duoc-CR-653: vai trò tự cấp theo chức vụ
     emp = db.get(Employee, u.employee_id) if u.employee_id else None
     d["full_name"] = (emp.full_name if emp else "") or u.email or ""
     d["department_name"] = (emp.department_name if emp else "") or ""

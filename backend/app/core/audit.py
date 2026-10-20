@@ -7,7 +7,8 @@ from app.core.request_context import bump_audit_count, current_ai_channel, get_c
 
 
 def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, message: str = "",
-           doc_code: str = "", parent: tuple[str, int] | None = None, on_behalf_of: int = 0):
+           doc_code: str = "", parent: tuple[str, int] | None = None, on_behalf_of: int = 0,
+           *, commit: bool = True):
     """Ghi một dòng nhật ký thao tác.
 
     Sáu tham số đầu **giữ nguyên thứ tự và ý nghĩa** của bản cũ — 273 lời gọi
@@ -60,7 +61,12 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
         ai_channel=current_ai_channel(),       # ai-CR-230: AI làm hộ thì mang số kênh
     )
     db.add(log)
-    db.commit()
+    #  `commit=False` (duoc-CR-653): dong nhat ky di CUNG giao dich voi thay doi kich hoat no
+    #  (tu cap quyen theo chuc vu) — rollback thi dong nhat ky cung mat, khong ghi ma.
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     bump_audit_count()
     #  Trả về dòng vừa ghi để nơi gọi lấy `log.id` khi cần (vd nối một thao tác
     #  hoàn tác vào đúng dòng lịch sử). Đúng MỘT lời gọi trong 273 chỗ dùng tới

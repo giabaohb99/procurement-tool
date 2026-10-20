@@ -15578,3 +15578,16 @@ của người khác bằng cách đổi số trên đường dẫn, và bản l
 cho sửa hay chia sẻ.
 
 Mã nguồn: backend/app/modules/labor_contract/my_contract_controller.py · backend/app/modules/document/labor_contract_archive_access.py · frontend-v2/src/app/components/profile/profile-labor-contracts-tab.tsx · test/backend/test_hdld_cua_toi_cr652.py
+
+## duoc-CR-653 | Bộ quyền mặc định theo chức vụ, tự cấp khi tạo tài khoản và khi đổi chức vụ
+- status: xong
+- date: 2026-10-20
+Chủ sản phẩm muốn mỗi chức vụ có sẵn một bộ quyền để người mới giữ chức vụ đó dùng được ngay, khỏi phải vào gán quyền từng người.
+Nay trang chi tiết chức vụ có thêm mục quyền mặc định để khai danh sách vai trò; khi cấp tài khoản cho nhân sự hoặc khi đổi chức
+vụ của họ, hệ thống tự cấp các vai trò đó và chỉ gỡ đúng những vai trò nó đã tự cấp trước đây, còn vai trò quản trị gán tay giữ
+nguyên. Bản rà soát phát hiện người chỉ có quyền sửa hồ sơ có thể tự đổi chức vụ của chính mình để nhận quyền cao hơn, nên đã chặn
+hẳn: không ai tự cấp được cho chính mình trừ quản trị, người cấp chỉ cấp được những quyền mình đang có, và bộ quyền không được chứa
+vai trò quản trị hay vai trò quản lý phân quyền. Kèm một script đề xuất bộ quyền cho các chức vụ hiện có dựa trên quyền mà người
+đang giữ chức vụ đó đang có, để chủ sản phẩm duyệt trên dữ liệu thật trước khi áp.
+
+Mã nguồn: backend/app/modules/employee/position_role_service.py · position_role_controller.py · migration jobposrole01 · backend/scripts/de_xuat_quyen_theo_chuc_vu.py · frontend-v2/src/modules/hr/components/job-position-roles-panel.tsx · test/backend/test_quyen_theo_chuc_vu_cr653_*.py

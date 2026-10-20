@@ -311,6 +311,12 @@ _PERMISSION = (
     ActionCode("set_permissions", "Sửa ma trận phân quyền", ACTION_GROUP_PERMISSION),
     ActionCode("assign_roles", "Gán vai trò", ACTION_GROUP_PERMISSION),
     ActionCode("set_scope", "Đặt phạm vi dữ liệu", ACTION_GROUP_PERMISSION),
+    #  duoc-CR-653: quyen tu cap/thu hoi theo chuc vu + sua goi + ap lai goi.
+    ActionCode("auto_grant_position", "Tự cấp vai trò theo chức vụ", ACTION_GROUP_PERMISSION),
+    ActionCode("auto_revoke_position", "Tự thu hồi vai trò theo chức vụ", ACTION_GROUP_PERMISSION),
+    ActionCode("auto_grant_skipped_position", "Bỏ qua tự cấp vai trò theo chức vụ", ACTION_GROUP_PERMISSION),
+    ActionCode("set_position_roles", "Sửa quyền mặc định của chức vụ", ACTION_GROUP_PERMISSION),
+    ActionCode("apply_position_roles", "Áp lại quyền mặc định cho người giữ chức vụ", ACTION_GROUP_PERMISSION),
     ActionCode("reset_password", "Đặt lại mật khẩu", ACTION_GROUP_PERMISSION),
     ActionCode("activate", "Mở khóa tài khoản", ACTION_GROUP_PERMISSION),
     ActionCode("deactivate", "Khóa tài khoản", ACTION_GROUP_PERMISSION),
