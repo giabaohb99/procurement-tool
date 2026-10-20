@@ -116,3 +116,18 @@ def test_so_truy_van_hang_so_theo_so_nguoi_khi_sap_theo_chi_so(db, admin, client
     assert resp.json()["data"]["total"] == 14
     pick = lambda sql: [s for s in sql if "tab_usage_daily" in s or "tab_user_usage" in s]
     assert len(pick(few)) == len(pick(many)) == len(pick(base)) <= 5
+
+
+#  Thử tay 20/10: tệp Excel ghi «Chỉ số first_seen_p50_min» và giờ vào là «1025» (số phút) thay vì «17:05».
+def test_o_excel_dinh_dang_theo_don_vi_chua_do_de_trong():
+    from app.modules.usage_profile.list_export import format_metric_cell
+    assert format_metric_cell(1025, "minute_of_day") == "17:05"
+    assert format_metric_cell(0, "minute_of_day") == "00:00"
+    assert format_metric_cell(0.25, "ratio") == 25.0
+    assert format_metric_cell(17.5, "min") == "17.5 phút"
+    assert format_metric_cell(5400, "ms") == "5.4 giây"
+    assert format_metric_cell(3.14, "h") == "3.1 giờ"
+    assert format_metric_cell(1, "flag") == "Có" and format_metric_cell(0, "flag") == "Không"
+    assert format_metric_cell(0, "count") == "0"           # 0 là giá trị THẬT
+    for unit in ("ratio", "minute_of_day", "count", "flag"):
+        assert format_metric_cell(None, unit) is None        # chưa đo → ô trống, không thành 0

@@ -15,6 +15,7 @@ import { ReportExportButton } from '../components/report-export-button'
 import { ReportFiltersBar } from '../components/report-filters-bar'
 import { ReportPageHeader } from '../components/report-page-header'
 import { UsageMetricSortNotice } from '../components/usage-profile/usage-metric-sort-notice'
+import { metricLabel } from '../config/usage-metric-labels'
 import { buildUsageProfileColumns } from '../components/usage-profile/usage-profile-columns'
 import { ALL, UsageProfileFilters } from '../components/usage-profile/usage-profile-filters'
 import { UsageProfileNoticeBanner } from '../components/usage-profile/usage-profile-notice-banner'
@@ -80,7 +81,11 @@ export function UsageProfileListPage() {
           <ReportExportButton
             endpoint="/api/usage-profiles/summary/export"
             entity="setting"
-            params={Object.fromEntries(Object.entries(filterParams).map(([k, v]) => [k, Array.isArray(v) ? v : String(v)]))}
+            params={{
+              ...Object.fromEntries(Object.entries(filterParams).map(([k, v]) => [k, Array.isArray(v) ? v : String(v)])),
+              //  duoc-CR-650: tên tiếng Việt cho tiêu đề cột chỉ số trong tệp Excel (backend chỉ biết mã).
+              ...(metricKey ? { metric_label: metricLabel(metricKey) } : {}),
+            }}
             filename={exportName}
           />
         }

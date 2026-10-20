@@ -33,6 +33,9 @@ def _filters(request: Request, company_id, department_id, role_id, label, q, sor
                        validate_labels(label), (q or "").strip(), sort, validate_metric(metric, sort))
 
 
+MAX_METRIC_LABEL_LEN = 80
+
+
 @router.get("/summary", dependencies=GUARD)
 def usage_summary(request: Request, company_id: int | None = Query(None, ge=1),
                   department_id: int | None = Query(None, ge=1), role_id: int | None = Query(None, ge=1),
@@ -50,9 +53,12 @@ def usage_summary_export(request: Request, company_id: int | None = Query(None, 
                          label: list[int] | None = Query(None, max_length=MAX_LABELS), q: str | None = Query(None, max_length=MAX_Q_LEN),
                          sort: str = Query("full_name", max_length=40),
                          metric: str | None = Query(None, max_length=MAX_METRIC_LEN),
+                         metric_label: str | None = Query(None, max_length=MAX_METRIC_LABEL_LEN),
                          db: Session = Depends(get_db), user=Depends(require("setting", "export"))):
     f = _filters(request, company_id, department_id, role_id, label, q, sort, metric)
-    return list_export.export_summary(db, user, f)
+    #  Chỉ là chữ tiêu đề cột: bỏ ký tự điều khiển (chống chèn công thức / xuống dòng lạ vào ô Excel).
+    clean_label = "".join(ch for ch in (metric_label or "") if ch.isprintable()).strip().lstrip("=+-@") or None
+    return list_export.export_summary(db, user, f, clean_label)
 
 
 @router.get("/cohorts", dependencies=GUARD)

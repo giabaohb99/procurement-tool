@@ -23,7 +23,30 @@ COLUMNS = [
 ]
 
 
-def export_summary(db: Session, user, f: ListFilters):
+def format_metric_cell(v: float | None, unit: str):
+    """Giá trị chỉ số cho ô Excel theo ĐƠN VỊ (duoc-CR-650): giờ trong ngày ra HH:MM, thời lượng kèm đơn vị, cờ ra Có/Không.
+
+    Tỷ lệ trả số thang 0-100 cho cột `percent`; còn lại trả chữ để ô CHƯA ĐO được để trống (không thành 0).
+    """
+    if v is None:
+        return None
+    if unit == "ratio":
+        return round(v * 100, 2)
+    if unit == "minute_of_day":
+        m = int(round(v)) % 1440
+        return f"{m // 60:02d}:{m % 60:02d}"
+    if unit == "min":
+        return f"{v:g} phút"
+    if unit == "h":
+        return f"{round(v, 1):g} giờ"
+    if unit == "ms":
+        return f"{round(v / 1000, 1):g} giây"
+    if unit == "flag":
+        return "Có" if v else "Không"
+    return f"{v:g}"
+
+
+def export_summary(db: Session, user, f: ListFilters, metric_label: str | None = None):
     label_week, _since = list_service.latest_label_week_and_since(db, f.date_to)
     total = list_service.count_users(db, f, label_week)
     check_row_limit(total)
@@ -32,11 +55,12 @@ def export_summary(db: Session, user, f: ListFilters):
     if f.metric:
         #  duoc-CR-650: thêm cột chỉ số đang xem. Chưa đo được PHẢI để ô trống, không phải 0: chỉ kind="percent" của
         #  khung xuất giữ None thành ô trống (thang 0-100) nên tỷ lệ nhân 100; đơn vị khác ghi chữ để ô trống được.
-        ratio = METRIC_CATALOG[f.metric].unit == "ratio"
-        columns = [*COLUMNS, Col("metric_value", f"Chỉ số {f.metric}", kind="percent" if ratio else "text", width=22)]
+        unit = METRIC_CATALOG[f.metric].unit
+        #  Tên tiếng Việt của chỉ số nằm ở giao diện (R2) — giao diện gửi kèm `metric_label`; thiếu thì dùng mã.
+        header = metric_label or f"Chỉ số {f.metric}"
+        columns = [*COLUMNS, Col("metric_value", header, kind="percent" if unit == "ratio" else "text", width=24)]
         for it in items:
-            v = it["metric_value"]
-            it["metric_value"] = None if v is None else (round(v * 100, 2) if ratio else f"{v:g}")
+            it["metric_value"] = format_metric_cell(it["metric_value"], unit)
     rows = [{**it, "cohort_name": (it["cohort"] or {}).get("name", ""),
              "labels": ", ".join(str(l["code"]) for l in it["labels"])} for it in items]
     name = f"ho-so-cach-lam-viec-{f.date_from}-{f.date_to}"

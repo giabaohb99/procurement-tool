@@ -15462,7 +15462,7 @@ Mã nguồn: backend/app/modules/usage_profile/metric_catalog_service.py · cont
 Chủ sản phẩm muốn từ trang Bộ chỉ số đánh giá bấm vào một chỉ số là xem được ai cao nhất, ai thấp nhất theo chỉ số đó. Nay mỗi chỉ
 số đã có người đo có liên kết Xem xếp hạng, mở danh sách Hồ sơ cách làm việc sắp sẵn theo chỉ số đó từ cao xuống thấp; danh sách có
 thêm cột giá trị của chỉ số ngay sau tên, bấm tiêu đề cột để đảo chiều, người chưa đo được luôn nằm cuối và ghi chưa đo được thay
-vì số không. Việc sắp xếp chạy ngay trong cơ sở dữ liệu nên phân trang vẫn đúng, và tệp Excel xuất ra cũng có cột chỉ số đó. Kèm
+vì số không. Việc sắp xếp chạy ngay trong cơ sở dữ liệu nên phân trang vẫn đúng, và tệp Excel xuất ra cũng có cột chỉ số đó; lượt thử tay phát hiện cột này ghi mã thô và giờ dạng số phút nên đã sửa cho tiêu đề là tên tiếng Việt và giá trị đúng đơn vị như giờ phút, phần trăm. Kèm
 theo, mục trang Bộ chỉ số được đổi số từ 644 sang 649 vì số 644 đã có người dùng.
 
 Mã nguồn: backend/app/modules/usage_profile/list_service.py · list_export.py · controller.py · frontend-v2/src/modules/report/pages/usage-profile-list-page.tsx · components/usage-profile/usage-metric-sort-notice.tsx · test/backend/test_ho_so_lam_viec_sap_theo_chi_so_cr650.py
