@@ -107,7 +107,8 @@ def api(monkeypatch):
     """Gỡ `_load` (quyền phạm vi đọc/sửa) để kiểm RIÊNG luật «ai được bấm» của
     `/issue`; và tắt kênh ghi nhật ký cho gọn."""
     state = {"approve": False}
-    monkeypatch.setattr(controller, "_load", lambda db, doc_id, user, *_a: service.get_or_404(db, doc_id))
+    #  bao-CR-650: duoc-CR-640 gọi `_load(..., derived=True)` — bản giả nhận cả tham số tên, không thì TypeError.
+    monkeypatch.setattr(controller, "_load", lambda db, doc_id, user, *_a, **_k: service.get_or_404(db, doc_id))
     monkeypatch.setattr(controller, "_can_approve_doc", lambda db, doc, user: state["approve"])
     monkeypatch.setattr(controller, "record", lambda *a, **k: None)
     return state
