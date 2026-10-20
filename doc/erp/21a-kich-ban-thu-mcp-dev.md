@@ -34,8 +34,14 @@ chưa lên thì ở tab *Khóa AI*, khối *Nâng cao*) → đặt tên (vd *Cla
   claude mcp add --transport http dego-erp-dev https://deverp.degoholding.vn/api/mcp --header "Authorization: Bearer dego_mcp_DÁN_KHÓA_VÀO_ĐÂY"
   ```
 
-Gắn xong, trong Claude phải thấy máy chủ `dego-erp-dev` với khoảng 50 công cụ, ba cái đầu là `list_skills`,
-`read_skill`, `read_skill_file`.
+Gắn xong, trong Claude phải thấy máy chủ `dego-erp-dev` với **34 công cụ** (khóa *Chỉ đọc* + 7 nhóm đang bật ở màn Cấu hình
+cổng MCP: việc của tôi · nghỉ phép · danh bạ · báo cáo · kho skill · thu mua · công nợ; khóa *Được ghi* có thêm các tool
+`draft_*` / `confirm_draft`, bật thêm nhóm thì số tăng theo), trong đó ba tool kho skill là `list_skills`, `read_skill`,
+`read_skill_file`. **Công cụ ≠ skill**: công cụ là hàm Claude gọi vào ERP, skill là bài cẩm nang trong kho — đại ca thấy 5 skill.
+
+⚠️ Claude Desktop (mục *Local MCP servers*) KHÔNG nhận dạng `url + headers` mà ERP sinh ra (dạng đó cho Cursor / Claude Code);
+phải dùng dạng `command: npx -y mcp-remote <url> --header "Authorization:Bearer <khóa>"` như khối JSON ở trên. Biến môi trường
+đặt bằng `setx` chỉ có hiệu lực sau khi **tắt hẳn** Claude Desktop. Log máy chủ: `%LOCALAPPDATA%\Claude\logs\mcp-server-<tên>.log`.
 
 ⚠️ Khóa là chìa vào dữ liệu ERP của đại ca — không dán vào chat, không gửi ai. Thử xong muốn thôi thì thu hồi ở chính
 mục đã tạo.

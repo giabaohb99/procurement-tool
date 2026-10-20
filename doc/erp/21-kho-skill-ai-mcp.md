@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Bản | 1.2 — 17/10/2026 (1.1: §2.1 đối chiếu + chồng chéo, §6.5 sắp lại Trang cá nhân, 5 phase. 1.2: §5.5 ba tầng công cụ dữ liệu, §5.6 chuẩn dữ liệu cho AI ngoài, K11–K13 + phase P1b, mục Đã chốt ở §9. 1.3: §7.1 chuyển hướng 17/10 — MCP là đường chính, gác bot Telegram) |
+| Bản | 1.4 — 19/10/2026 (1.1: §2.1 đối chiếu + chồng chéo, §6.5 sắp lại Trang cá nhân, 5 phase. 1.2: §5.5 ba tầng công cụ dữ liệu, §5.6 chuẩn dữ liệu cho AI ngoài, K11–K13 + phase P1b, mục Đã chốt ở §9. 1.3: §7.1 chuyển hướng 17/10 — MCP là đường chính, gác bot Telegram. 1.4: §7.2 hiện trạng 19/10 + đối chiếu màn CoreSkill, ba đợt mới P6 OAuth · P7 K9 · P8 K7, Q4/Q7 chốt) |
 | Người yêu cầu | Đại ca (Gia Bảo) — *"mình làm lại trên của mình, hướng B; viết kế hoạch chi tiết, còn giao diện định hướng như thế nào"* |
 | Tham khảo | coreskill.app (trang giới thiệu công khai, đọc 15/10/2026) |
-| Trạng thái | **Bản kế hoạch, chưa có mã.** Chờ đại ca chốt §9 rồi mới cấp số CR |
+| Trạng thái | **P0 · P1 · P1b · P2 · P4 XONG trên DEV (bao-CR-620..625, ai-CR-207..217); lên PROD trưa 19/10/2026.** Còn P6 OAuth · P7 K9 · P8 K7 (§7.2) |
 | Nền đã có | Cổng MCP + khóa MCP cá nhân **ai-CR-063** (`agent_hub/mcp.py`, `mcp_keys.py`, `doc/agent-hub/06-cong-mcp.md`) — đang chạy DEV, prod chưa mở |
 
 ---
@@ -387,6 +387,36 @@ dùng được trên dev với skill quản trị nhập tay.
 
 Chia người (đề xuất): Agent 4 giữ phía dịch vụ AI (K2 phần tool, K3, K4, K7, K9); một Agent ERP làm K1 + K5; một Agent
 giao diện làm K6 + K8; Agent 1 gộp nhánh, dựng dev, kiểm và đo.
+
+### 7.2 Hiện trạng 19/10/2026 và ba đợt mới (bản 1.4)
+
+**Đối chiếu từng màn của CoreSkill (thanh bên bản demo) với mình:**
+
+| Màn CoreSkill | Mình | Trạng thái |
+|---|---|---|
+| Tổng quan | G1 `/ai-skill/overview` | Xong (bao-CR-624) |
+| Skill server | Bộ skill G2 + chi tiết G3 + soạn G4 (`/ai-skill/sets`) | Xong (bao-CR-621/623) |
+| Quyền của tôi | Thẻ *Skill bạn được đọc* trong G8 AI của tôi | Xong (bao-CR-624) |
+| Nhật ký sử dụng | G6 `/ai-skill/calls` | Xong (ai-CR-209 + bao-CR-623) |
+| Nhân sự · Phòng ban · Chức vụ · Cấp bậc | Dùng lại HRM của ERP; gán quyền đọc theo 6 chủ thể, phòng con kế thừa | Xong (K1) — không dựng màn mới |
+| Mời nhân sự / Lời mời | Không cần — tài khoản ERP có sẵn; thay bằng **phát khóa hộ** K4 | Xong (ai-CR-212/215) |
+| Key nhân sự | G5 `/ai-skill/keys` | Xong (bao-CR-623) |
+| MCP cho admin | **K9** quản trị bằng lời qua khóa được ghi | **Chưa — P7** |
+| Gói cước | Không làm (một tập đoàn) | — |
+| Cài đặt Biz | G7 `/ai-skill/settings` (nhóm công cụ, trần, câu dặn) | Xong (ai-CR-216 + bao-CR-624) |
+| Hướng dẫn sử dụng | `/ai-skill/intro` + demo 9 chương (ai-CR-214); bài HDSD Help Center | Demo xong; **bài HDSD đang làm (Agent 2)** |
+| Nối ChatGPT / claude.ai web | Cổng chỉ nhận khóa Bearer; hai nơi đó đòi OAuth | **Chưa — P6** |
+
+**Đại ca chốt 19/10:** làm OAuth cho ChatGPT, làm K9, làm K7. Q4 chốt: prod bật 7 nhóm (mặc định 5 + thu mua + công nợ).
+Q7 chốt: lên prod trưa 19/10 cùng đợt gộp erp-v2 → main (không chờ thí điểm 2–4 tuần).
+
+| Đợt | Gồm | Nội dung | Ai | Ước |
+|---|---|---|---|---|
+| **P6 — OAuth cho cổng MCP** | K14 | ERP làm *authorization server* tối thiểu cho MCP: `/.well-known/oauth-authorization-server` + `/.well-known/oauth-protected-resource` (JSON, hết trả 404 của bao-CR-625 — nginx chuyển hai đường này sang api), `POST /api/oauth/register` (đăng ký client động RFC 7591, ChatGPT / claude.ai / Claude Desktop đều dùng), `GET /api/oauth/authorize` (màn ERP: đăng nhập nếu chưa, hiện *Ứng dụng X xin đọc ERP thay bạn — mức Chỉ đọc / Được ghi*, bấm Cho phép → mã), `POST /api/oauth/token` (PKCE S256 bắt buộc, refresh token xoay vòng), thu hồi. Token truy cập = một **khóa MCP loại OAuth** trong `tab_agent_mcp_key` (cùng mức, hạn, nhật ký, màn Khóa của tôi / Khóa nhân sự hiện dòng *qua ChatGPT*), nên `mcp.py` không đổi cách gác. `mcp_setup` mở `supported = true` cho claude.ai + ChatGPT với bước: *Thêm kết nối tùy chỉnh → dán địa chỉ → đăng nhập ERP → Cho phép*. Bài kiểm: PKCE sai bị chặn, mã dùng một lần, token hết hạn → 401 có `WWW-Authenticate` trỏ resource metadata, thu hồi là chặn ngay | Agent 4 | 3–4 |
+| **P7 — K9 quản trị bằng lời** | K9 | Tool cho **khóa Được ghi** của người có `ai_skill.write` / `ai_mcp_key_admin.write`, theo đúng khuôn *nháp → `confirm_draft`* đang có: `draft_skill` (tạo / sửa skill nháp trong bộ), `draft_skill_publish`, `draft_skill_access` (gán / thu hồi), `draft_key_issue` / `draft_key_revoke`. Mọi lượt xác nhận đi qua service của `ai_skill` (phạm vi + cấm thắng giữ nguyên), ghi sổ thay đổi + hoàn tác 24 giờ (grp14) nơi áp được. Khóa Chỉ đọc không thấy các tool này. Bài kiểm: không có quyền → tool không liệt; xóa / thu hồi không xác nhận → không chạy | Agent 3 | 2 |
+| **P8 — K7 một kho tri thức** | K7 | core_v2 + Trợ lý web đọc cẩm nang qua `visible_skills` (cổng B `skill_list/read`) thay `assistant/packs` + `knowledge-source`; chuyển 5 gói + bộ nhà máy thành **skill mẫu** (bộ *Cẩm nang hệ thống*, mức Mở, cả công ty) bằng script nhập gói; xóa packs / knowledge-source khỏi mã (gỡ C1). Bot vẫn đóng băng tính năng khác | Agent 4 (sau P6) | 1,5–2 |
+
+Thứ tự: P6 và P7 song song (hai người, hai khu mã), P8 sau P6. Trong lúc prod đang gộp (11h30–12h15 ngày 19/10) không ai đẩy `erp-v2`.
 
 ## 8. Rủi ro và đường lui
 

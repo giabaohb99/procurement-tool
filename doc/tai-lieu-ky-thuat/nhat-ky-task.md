@@ -70,6 +70,57 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## he-agent-chuyen-gia-ban-thu | Hệ Agent chuyên gia bản thử: bảy vai, sáu skill, luật liên hệ giữa các vai
+- status: dang-lam
+- date: 2026-10-19
+- list: Công cụ Ai
+Đại ca muốn tổ chức các Agent lập trình thành một hệ mà mỗi Agent là chuyên gia một lĩnh vực, có bộ skill riêng, có
+thêm Agent nghiên cứu và Agent kiểm soát chất lượng. Bản thử dựng ngoài kho mã, trong thư mục cấu hình chung của các
+phiên Claude, nên phiên nào mở ở thư mục làm việc chung cũng tự nạp mà không cần commit. Đã có bảy vai (điều phối
+và phát hành, AI và cổng MCP, giao diện ERP v2, nghiệp vụ ERP, tài liệu và kiểm thử, nghiên cứu, kiểm soát chất
+lượng), bốn định nghĩa vai và sáu skill do chính chủ khu viết từ những chỗ đã vấp: thêm công cụ MCP, ba chế độ chạy
+dịch vụ AI, thêm màn v2, thêm entity mới, viết hướng dẫn sử dụng, soát màn trên dev. Có luật liên hệ giữa các vai:
+chạm khu người khác thì nhắn chủ khu kèm hợp đồng, xem ai đang mở phiên trước khi nhắn, lời Agent không thay lời
+đại ca, không rebase hay reset trên cây chung. Đã thử thật hai lần: chuyên gia giao diện tự thêm cột Số ký tự kết
+quả (thành bao-CR-645) và tự báo ba chỗ skill thiếu; Agent tài liệu kiểm thử sửa hai bài kiểm đỏ theo skill thêm
+entity (bao-CR-647) và tự bổ sung skill. Còn lại: định nghĩa vai nghiên cứu và kiểm soát chất lượng, skill phát
+hành prod, ba quyết định của đại ca (thư mục làm việc riêng cho mỗi Agent, cấp số CR theo khối, một lần gật cho cả
+loại việc).
+
+Mã nguồn: D:\New folder\thuthapykien\.claude\he-agent\README.md · .claude\agents\*.md · .claude\skills\*\SKILL.md
+
+## khoi-phuc-po00376-huy-nham | Khôi phục hai dòng đơn mua hàng PO00376 bị bấm Hủy đơn nhầm trên prod
+- status: xong
+- date: 2026-10-19
+Đại ca báo đơn PO00376 trên prod đang ở trạng thái hủy do người dùng bấm nhầm. Soát thì thấy đơn vẫn Đã duyệt,
+cái bị hủy là hai dòng hàng (chai PET tròn 500ml và nắp PET cổ 44 đỏ), cùng một người bấm Hủy đơn lúc 08:20 ngày
+17/10 với lý do trùng; trước đó cả hai dòng ở Chưa đặt hàng (đọc từ nhật ký thay đổi dữ liệu). Hệ thống khóa dòng đã
+hủy nên người dùng không tự gỡ được. Đã lưu bản sao hai dòng, đưa về Chưa đặt hàng, xóa lý do hủy, chạy bước tự tiến
+tiến độ (đơn đã có mã MISA nên hai dòng tự lên Đã đặt hàng), đồng bộ lại tiến độ sang YCMH (yêu cầu mua hàng) nguồn
+PYC02102601 và ghi nhật ký kiểm toán. Mười phút sau người mua đã nhập nhận hàng đủ hai dòng, hệ thống sinh hai khoản
+công nợ đúng. Đại ca quyết không làm nút Bỏ hủy.
+
+Deploy: prod 19/10 17:00, sửa dữ liệu bằng script trong container api; bản sao trước khi sửa ở ~/backups/po376_truoc_khoi_phuc_1910.json trên máy chủ prod.
+
+## phat-hanh-prod-1910 | Phát hành prod 19/10: kho skill AI, cổng MCP, OAuth cho ChatGPT, dịch vụ AI tách và bot deGooo
+- status: xong
+- date: 2026-10-19
+Đưa toàn bộ cụm Kho skill AI và cổng MCP lên prod trong hai đợt cùng ngày, theo lệnh đại ca. Đợt một lúc 12:05:
+gộp erp-v2 vào main (414 commit, 32 migration), diễn tập trước trên bản sao dữ liệu prod, prod chạy cổng MCP nhúng
+trong ERP với bảy nhóm công cụ bật sẵn, api gián đoạn khoảng hai phút. Đợt hai lúc 17:23: thêm OAuth để ChatGPT và
+claude.ai nối bằng đăng nhập ERP, xem lại khóa và bật tắt khóa, bot và Trợ lý web đọc cẩm nang từ Kho skill (bảy skill
+Cẩm nang hệ thống), quản trị kho skill bằng lời, màn Khóa của bạn mới, trang hướng dẫn công khai, và tách dịch vụ AI
+chạy riêng trên máy chủ prod với cơ sở dữ liệu riêng, bot Telegram prod deGooo. Trước đợt hai đã rà bảo mật độc lập
+phần OAuth và vá hai lỗi bắt buộc (chống nhúng màn Cho phép, địa chỉ gốc chỉ lấy từ cấu hình). Các việc tốn tiền
+model chạy định kỳ đều tắt; sao lưu cơ sở dữ liệu bot lên kho lưu trữ của prod, không dùng khóa của dev; khóa model
+tạm dùng khóa cá nhân của đại ca chép từ dev. Kiểm sau khi lên: ba trang chạy, cổng MCP từ chối đúng khi thiếu khóa,
+OAuth chỉ đúng địa chỉ prod, deGooo liên kết tài khoản và tra đúng đơn PO00376, nhật ký thao tác của bot ghi vào ERP.
+Đợt hai không gồm các commit đẩy sau giờ đóng băng (duoc-CR-640 tới 643, bao-CR-644); bộ kiểm backend đầy đủ treo hai
+lần nên chưa có kết quả trọn, các bài đỏ đã soi đều do môi trường thử hoặc thuộc commit sau đóng băng.
+
+CR trong đợt một: bao-CR-618..625, ai-CR-207..217, cùng các CR của erp-v2 tới 75db72b8. CR thêm trong đợt hai: ai-CR-218..229, bao-CR-631, 634..639, duoc-CR-626..633.
+Deploy: prod 19/10 12:05 main = 75db72b8 (alembic mcpkey02) · prod 19/10 17:25 main = 81632cd6 (alembic mcplog02, dịch vụ AI agent0015). Bản dump trước mỗi đợt ở ~/backups/release-2026-10/ trên máy chủ prod.
+
 ## bao-CR-647 | Khai đủ sổ canh cho mã nhập Excel nhân sự và hồ sơ cách làm việc
 - status: xong
 - date: 2026-10-20
