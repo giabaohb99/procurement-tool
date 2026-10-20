@@ -102,4 +102,36 @@ describe('UsageProfileListPage', () => {
     expect(await screen.findByText('Người thạo')).toBeInTheDocument()
     expect(screen.getByText('Thu mua (6)')).toBeInTheDocument()
   })
+
+  it('with ?metric sends metric+sort, shows the notice, the value column and "Chưa đo được" for null (duoc-CR-650)', async () => {
+    vi.mocked(apiGet).mockResolvedValue({
+      ...response,
+      items: [
+        { ...response.items[0], metric_value: 0.9 },
+        { ...response.items[0], user_id: 8, full_name: 'Lê Văn C', metric_value: null },
+      ],
+    })
+    renderPage('/report/usage-profiles?metric=active_ratio&sort=-metric')
+    await screen.findByText('Trần Thị B')
+    expect(vi.mocked(apiGet).mock.calls[0][1]?.params).toMatchObject({ metric: 'active_ratio', sort: '-metric' })
+    expect(screen.getByText(/Đang sắp theo:/)).toBeInTheDocument()
+    expect(screen.getAllByText('90%').length).toBeGreaterThan(0)
+    expect(screen.getByText('Chưa đo được')).toBeInTheDocument()
+  })
+
+  it('clearing the notice drops metric and sort from the request', async () => {
+    renderPage('/report/usage-profiles?metric=logins&sort=metric')
+    await screen.findByText('Trần Thị B')
+    await userEvent.click(screen.getByRole('button', { name: 'Bỏ sắp theo chỉ số' }))
+    await waitFor(() => expect(screen.queryByText(/Đang sắp theo:/)).not.toBeInTheDocument())
+    const last = vi.mocked(apiGet).mock.calls.at(-1)?.[1]?.params
+    expect(last).not.toHaveProperty('metric')
+    expect(last).not.toHaveProperty('sort')
+  })
+
+  it('without ?metric never sends sort', async () => {
+    renderPage()
+    await screen.findByText('Trần Thị B')
+    expect(vi.mocked(apiGet).mock.calls[0][1]?.params).not.toHaveProperty('sort')
+  })
 })

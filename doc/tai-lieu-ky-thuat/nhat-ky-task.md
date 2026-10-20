@@ -15445,7 +15445,7 @@ người dùng vừa đứng. Tab mẫu hợp đồng bên phân hệ Văn bản
 
 Mã nguồn: frontend-v2/src/modules/hr/pages/labor-contract-template-list-page.tsx · frontend-v2/src/modules/hr/routes.tsx · labor-contract-template-editor-page.tsx · labor-contract-variables-page.tsx
 
-## duoc-CR-644 | Trang Bộ chỉ số đánh giá trong phân hệ Báo cáo
+## duoc-CR-649 | Trang Bộ chỉ số đánh giá trong phân hệ Báo cáo
 - status: xong
 - date: 2026-10-20
 Chủ sản phẩm muốn các chỉ số dùng để đánh giá có một trang riêng trong phân hệ Báo cáo. Nay nhóm Quản trị của Báo cáo có thêm
@@ -15454,4 +15454,15 @@ hay thấp mới là tốt, và tình trạng đo hiện tại lấy từ bản 
 hoặc lý do chưa đo được. Cuối trang liệt kê các chỉ số đã hoãn hoặc bỏ cùng lý do. Trang dùng chung quyền với hồ sơ cách làm việc,
 mặc định chỉ quản trị xem và quản trị có thể gán thêm người.
 
-Mã nguồn: backend/app/modules/usage_profile/metric_catalog_service.py · controller.py · frontend-v2/src/modules/report/pages/usage-metric-catalog-page.tsx · config/usage-metric-definitions.ts · test/backend/test_ho_so_lam_viec_bo_chi_so_cr644.py
+Mã nguồn: backend/app/modules/usage_profile/metric_catalog_service.py · controller.py · frontend-v2/src/modules/report/pages/usage-metric-catalog-page.tsx · config/usage-metric-definitions.ts · test/backend/test_ho_so_lam_viec_bo_chi_so_cr649.py
+
+## duoc-CR-650 | Danh sách hồ sơ sắp theo một chỉ số bất kỳ
+- status: xong
+- date: 2026-10-20
+Chủ sản phẩm muốn từ trang Bộ chỉ số đánh giá bấm vào một chỉ số là xem được ai cao nhất, ai thấp nhất theo chỉ số đó. Nay mỗi chỉ
+số đã có người đo có liên kết Xem xếp hạng, mở danh sách Hồ sơ cách làm việc sắp sẵn theo chỉ số đó từ cao xuống thấp; danh sách có
+thêm cột giá trị của chỉ số ngay sau tên, bấm tiêu đề cột để đảo chiều, người chưa đo được luôn nằm cuối và ghi chưa đo được thay
+vì số không. Việc sắp xếp chạy ngay trong cơ sở dữ liệu nên phân trang vẫn đúng, và tệp Excel xuất ra cũng có cột chỉ số đó. Kèm
+theo, mục trang Bộ chỉ số được đổi số từ 644 sang 649 vì số 644 đã có người dùng.
+
+Mã nguồn: backend/app/modules/usage_profile/list_service.py · list_export.py · controller.py · frontend-v2/src/modules/report/pages/usage-profile-list-page.tsx · components/usage-profile/usage-metric-sort-notice.tsx · test/backend/test_ho_so_lam_viec_sap_theo_chi_so_cr650.py

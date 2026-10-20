@@ -16,8 +16,8 @@ import { USAGE_DEFERRED_METRICS, USAGE_METRIC_SECTIONS } from '../config/usage-m
 import { useUsageMetricCatalog } from '../hooks/use-usage-metric-catalog'
 
 /**
- * «Bộ chỉ số đánh giá» (duoc-CR-644): từ điển các chỉ số của Hồ sơ cách làm việc — ý nghĩa, cách tính, nguồn,
- * chiều tốt/xấu — kèm trạng thái đo THỰC của tuần snapshot mới nhất. Bấm dòng mở danh sách Hồ sơ cách làm việc.
+ * «Bộ chỉ số đánh giá» (duoc-CR-649): từ điển các chỉ số của Hồ sơ cách làm việc — ý nghĩa, cách tính, nguồn,
+ * chiều tốt/xấu — kèm trạng thái đo THỰC của tuần snapshot mới nhất. Bấm dòng mở danh sách Hồ sơ cách làm việc xếp theo chỉ số đó (duoc-CR-650).
  */
 export function UsageMetricCatalogPage() {
   const navigate = useNavigate()
@@ -37,7 +37,7 @@ export function UsageMetricCatalogPage() {
         <UsageProfileNoticeBanner />
         <p className="text-sm text-muted-foreground">
           {data?.week
-            ? `Trạng thái tính theo bản chụp tuần bắt đầu ngày ${formatDate(data.week)}. Bấm vào một chỉ số để mở danh sách Hồ sơ cách làm việc.`
+            ? `Trạng thái tính theo bản chụp tuần bắt đầu ngày ${formatDate(data.week)}. Bấm vào một chỉ số đã có người đo để xem danh sách Hồ sơ cách làm việc xếp theo chỉ số đó.`
             : 'Chưa có bản chụp tuần nào nên chưa có số liệu đo.'}
         </p>
       </div>
@@ -61,7 +61,8 @@ export function UsageMetricCatalogPage() {
                 errorMessage={isError ? extractErrorMessage(error) : undefined}
                 emptyMessage="Chưa có chỉ số nào trong nhóm này."
                 storageKey="report.usage-metric-catalog"
-                onRowClick={() => navigate(appRoutes.report.usageProfiles)}
+                onRowClick={(r) => r.measured_users > 0 && navigate(appRoutes.report.usageProfilesByMetric(r.key))}
+                rowClassName={(r) => (r.measured_users > 0 ? undefined : 'cursor-default')}
               />
             </Card>
           </TabsContent>

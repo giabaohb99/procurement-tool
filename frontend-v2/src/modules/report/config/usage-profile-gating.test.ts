@@ -47,7 +47,7 @@ describe('usage profile route gating', () => {
   })
 })
 
-/** duoc-CR-644: «Bộ chỉ số đánh giá» có mục menu riêng nên được gác đúng như Hồ sơ cách làm việc. */
+/** duoc-CR-649: «Bộ chỉ số đánh giá» có mục menu riêng nên được gác đúng như Hồ sơ cách làm việc. */
 describe('usage metric catalog route gating', () => {
   const path = appRoutes.report.usageMetrics
 

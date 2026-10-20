@@ -9,7 +9,7 @@ import { USAGE_METRIC_LABELS } from './usage-metric-labels'
 //  Bản chép tay khóa của backend (`metric_catalog.py`) — nếu có cả cây mã nguồn thì đọc thẳng để đối chiếu.
 const BACKEND_CATALOG = resolve(process.cwd(), '../backend/app/modules/usage_profile/metric_catalog.py')
 
-describe('usage metric definitions (duoc-CR-644)', () => {
+describe('usage metric definitions (duoc-CR-649)', () => {
   it('has a complete definition for every labelled metric', () => {
     for (const key of Object.keys(USAGE_METRIC_LABELS)) {
       const d = USAGE_METRIC_DEFINITIONS[key]

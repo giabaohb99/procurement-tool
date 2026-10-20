@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom'
+
+import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 
 import { USAGE_METRIC_DEFINITIONS } from '../../config/usage-metric-definitions'
@@ -23,5 +26,19 @@ export function buildUsageMetricCatalogColumns(hasWeek: boolean): DataTableColum
     { key: 'source', header: 'Nguồn dữ liệu', width: 220, wrap: true, cell: (r) => USAGE_METRIC_DEFINITIONS[r.key]?.source },
     { key: 'good', header: 'Tốt khi', width: 120, cell: (r) => goodWhenLabel(r.direction) },
     { key: 'status', header: 'Trạng thái', width: 220, wrap: true, cell: (r) => <UsageMetricStatusCell item={r} hasWeek={hasWeek} /> },
+    {
+      //  duoc-CR-650: chỉ số chưa ai đo được thì không có gì để xếp hạng.
+      key: 'ranking', header: 'Xếp hạng', width: 140, hideable: false,
+      cell: (r) =>
+        r.measured_users > 0 ? (
+          <Link className="text-primary underline-offset-2 hover:underline" to={appRoutes.report.usageProfilesByMetric(r.key)}>
+            Xem xếp hạng
+          </Link>
+        ) : (
+          <span className="text-muted-foreground" title="Chưa có người nào đo được chỉ số này nên chưa xếp hạng được">
+            Chưa có dữ liệu
+          </span>
+        ),
+    },
   ]
 }

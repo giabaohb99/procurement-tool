@@ -1,4 +1,4 @@
-/** Hợp đồng JSON của `GET /api/usage-profiles/metrics` (duoc-CR-644): chỉ khóa và mã, chữ nằm ở lớp hiển thị. */
+/** Hợp đồng JSON của `GET /api/usage-profiles/metrics` (duoc-CR-649): chỉ khóa và mã, chữ nằm ở lớp hiển thị. */
 export interface UsageMetricCatalogItem {
   key: string
   /** «3.1»…«3.6» — mục của backend. */

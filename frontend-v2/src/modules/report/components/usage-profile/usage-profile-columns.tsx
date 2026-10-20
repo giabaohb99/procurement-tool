@@ -2,12 +2,39 @@ import { Badge } from '@/shared/ui/badge'
 import type { DataTableColumn } from '@/shared/data-table'
 import { formatDate } from '@/shared/utils/format-date'
 
+import { metricLabel, USAGE_METRIC_LABELS } from '../../config/usage-metric-labels'
 import { styleLabel } from '../../config/usage-style-hints'
 import type { UsageProfileRow } from '../../types/usage-profile'
-import { formatCount, formatRatio } from '../../utils/usage-format'
+import { formatCount, formatRatio, formatUsageValue } from '../../utils/usage-format'
 
-/** Cột bảng danh sách hồ sơ (phải bọc `useMemo` ở nơi dùng). */
-export function buildUsageProfileColumns(): DataTableColumn<UsageProfileRow>[] {
+/** Cột chỉ số đang xếp hạng (duoc-CR-650): chưa đo được hiện chữ, KHÔNG bao giờ hiện 0. */
+function buildMetricColumn(metricKey: string): DataTableColumn<UsageProfileRow> {
+  const kind = USAGE_METRIC_LABELS[metricKey]?.kind ?? 'count'
+  return {
+    key: 'metric',
+    header: metricLabel(metricKey),
+    width: 180,
+    align: 'right',
+    sortable: true,
+    sortDescFirst: true,
+    hideable: false,
+    cell: (r) =>
+      r.metric_value == null ? (
+        <span className="text-muted-foreground">Chưa đo được</span>
+      ) : (
+        <span className="font-medium tabular-nums">{formatUsageValue(r.metric_value, kind)}</span>
+      ),
+  }
+}
+
+/** Cột bảng danh sách hồ sơ (phải bọc `useMemo` ở nơi dùng). `metricKey` có thì chèn cột chỉ số sau cột họ tên. */
+export function buildUsageProfileColumns(metricKey?: string | null): DataTableColumn<UsageProfileRow>[] {
+  const cols = buildBaseColumns()
+  if (metricKey) cols.splice(1, 0, buildMetricColumn(metricKey))
+  return cols
+}
+
+function buildBaseColumns(): DataTableColumn<UsageProfileRow>[] {
   return [
     {
       key: 'full_name',

@@ -176,6 +176,8 @@ export interface UsageProfileRow {
   http_422_per_100_writes: number | null
   labels: { code: number; score: number }[]
   last_active_day: string | null
+  /** duoc-CR-650: chỉ có khi gọi kèm `metric`; null = chưa đo được (KHÁC 0). */
+  metric_value?: number | null
 }
 
 export interface UsageProfileListResponse {

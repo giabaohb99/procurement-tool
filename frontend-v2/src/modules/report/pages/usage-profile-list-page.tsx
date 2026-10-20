@@ -14,6 +14,7 @@ import { formatDate, toDateInputValue } from '@/shared/utils/format-date'
 import { ReportExportButton } from '../components/report-export-button'
 import { ReportFiltersBar } from '../components/report-filters-bar'
 import { ReportPageHeader } from '../components/report-page-header'
+import { UsageMetricSortNotice } from '../components/usage-profile/usage-metric-sort-notice'
 import { buildUsageProfileColumns } from '../components/usage-profile/usage-profile-columns'
 import { ALL, UsageProfileFilters } from '../components/usage-profile/usage-profile-filters'
 import { UsageProfileNoticeBanner } from '../components/usage-profile/usage-profile-notice-banner'
@@ -26,7 +27,7 @@ const DEFAULT_PRESET = 'last_30_days'
 /** Danh sách «Hồ sơ cách làm việc» (duoc-CR-641): lọc kỳ/pháp nhân/phòng/vai trò/kiểu, bấm dòng mở hồ sơ. */
 export function UsageProfileListPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const filters = useReportFilters({ defaultGroupBy: 'none', defaultPreset: DEFAULT_PRESET })
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -34,6 +35,9 @@ export function UsageProfileListPage() {
   const departmentId = searchParams.get('department_id') ?? ALL
   const roleId = searchParams.get('role_id') ?? ALL
   const labelParam = searchParams.get('label') ?? ''
+  //  duoc-CR-650: `?metric=<khóa>&sort=-metric` từ trang Bộ chỉ số. Mặc định giảm dần (cao nhất trước).
+  const metricKey = searchParams.get('metric') || null
+  const sortDesc = searchParams.get('sort') !== 'metric'
 
   const filterParams = useMemo(() => {
     const p: Record<string, string | number | string[]> = { preset: filters.preset }
@@ -45,12 +49,24 @@ export function UsageProfileListPage() {
     if (roleId !== ALL) p.role_id = roleId
     if (labelParam) p.label = labelParam.split(',').filter(Boolean)
     if (debouncedValue) p.q = debouncedValue
+    if (metricKey) Object.assign(p, { metric: metricKey, sort: sortDesc ? '-metric' : 'metric' })
     return p
-  }, [filters.preset, filters.from, filters.to, filters.company, departmentId, roleId, labelParam, debouncedValue])
+  }, [filters.preset, filters.from, filters.to, filters.company, departmentId, roleId, labelParam, debouncedValue, metricKey, sortDesc])
+
+  const updateParams = (mutate: (next: URLSearchParams) => void) =>
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      mutate(next)
+      return next
+    }, { replace: true })
+  //  Tiêu đề cột chạy ba nhịp (giảm → tăng → thôi); ở đây chỉ đảo giảm/tăng nên nhịp «thôi» (khóa rỗng) quay về giảm.
+  const handleSortChange = (key: string, dir: 'asc' | 'desc') =>
+    updateParams((n) => n.set('sort', key && dir === 'asc' ? 'metric' : '-metric'))
+  const clearMetric = () => updateParams((n) => { n.delete('metric'); n.delete('sort') })
 
   const [page, setPage] = usePageResetOnFilterChange([JSON.stringify(filterParams)])
   const { data, isLoading, isError, error } = useUsageProfileList({ ...filterParams, page, page_size: pageSize })
-  const columns = useMemo(() => buildUsageProfileColumns(), [])
+  const columns = useMemo(() => buildUsageProfileColumns(metricKey), [metricKey])
 
   const today = toDateInputValue(new Date())
   const exportName = `ho-so-cach-lam-viec-${data?.period?.date_from ?? today}-${data?.period?.date_to ?? today}.xlsx`
@@ -71,6 +87,7 @@ export function UsageProfileListPage() {
       />
       <div className="mb-3 space-y-2">
         <UsageProfileNoticeBanner />
+        {metricKey && <UsageMetricSortNotice metricKey={metricKey} desc={sortDesc} onClear={clearMetric} />}
         <p className="text-sm text-muted-foreground">
           {data?.data_since
             ? `Số liệu có từ ngày ${formatDate(data.data_since)}; sự kiện giao diện từ khi bật thu thập.`
@@ -93,6 +110,9 @@ export function UsageProfileListPage() {
               : 'Chưa có số liệu hồ sơ nào trong kỳ này.'
           }
           storageKey="report.usage-profiles"
+          sortBy={metricKey ? 'metric' : undefined}
+          sortDir={sortDesc ? 'desc' : 'asc'}
+          onSortChange={metricKey ? handleSortChange : undefined}
           onRowClick={(r) => navigate(appRoutes.report.usageProfileDetail(r.user_id))}
           pagination={{
             page,

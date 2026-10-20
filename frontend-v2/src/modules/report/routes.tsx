@@ -47,7 +47,7 @@ export const reportModule: ErpModule = {
       // Mỗi mục báo cáo gác thêm bằng đúng khóa của chính nó (`ReportKey` backend).
       reportKeys: [r.key],
     })),
-    //  duoc-CR-644: «Bộ chỉ số đánh giá» — mục menu RIÊNG (route không có mục menu gác = mở cho mọi người). Không thêm
+    //  duoc-CR-649: «Bộ chỉ số đánh giá» — mục menu RIÊNG (route không có mục menu gác = mở cho mọi người). Không thêm
     //  vào REPORT_CATALOG vì trùng khóa 14 sẽ nhân đôi dòng ở tab «Báo cáo» của phân quyền; gác đúng như Hồ sơ cách làm việc.
     {
       label: 'Bộ chỉ số đánh giá',

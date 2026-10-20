@@ -1,5 +1,5 @@
 /**
- * Định nghĩa từng chỉ số của «Bộ chỉ số đánh giá» (duoc-CR-644) — tầng HIỂN THỊ, khóa theo `metric_catalog.py` backend.
+ * Định nghĩa từng chỉ số của «Bộ chỉ số đánh giá» (duoc-CR-649) — tầng HIỂN THỊ, khóa theo `metric_catalog.py` backend.
  * Nguồn gốc nội dung: `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`. Backend chỉ trả khóa và mã (luật R2).
  * Thêm khóa ở backend mà quên khai ở đây thì `usage-metric-definitions.test.ts` đỏ.
  */

@@ -5,13 +5,14 @@ Chỉ đọc `tab_usage_daily` + snapshot + nhãn — KHÔNG đọc request_log 
 """
 from datetime import date
 
-from sqlalchemy import and_, case, exists, func, literal, or_, select
+from sqlalchemy import Float, Numeric, and_, bindparam, case, cast, exists, func, literal, null, or_, select
 from sqlalchemy.orm import Session
 
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.role.model import Role
+from app.core.usage_codes import PeriodKind
 from app.modules.user.model import User, UserRole
 
 from .metric_stats import rnd
@@ -66,6 +67,29 @@ def latest_label_week_and_since(db: Session, date_to: date):
     return row[0], row[1]
 
 
+def metric_value_expr(db: Session, key: str, label_week: date | None):
+    """duoc-CR-650: `metrics[key].v` của snapshot tuần nhãn, dạng SỐ — subquery tương quan theo người (không thêm truy vấn).
+
+    JSON null / thiếu khóa / không phải số → NULL (không bao giờ thành 0). Khóa đã qua `validate_metric` nên ghép vào
+    đường dẫn an toàn; vẫn truyền bằng bindparam (luật json_extract). MySQL và SQLite khác hàm kiểm kiểu nên rẽ nhánh.
+    """
+    if label_week is None:
+        return null()
+    S = UserUsageSnapshot
+    path = f'$.metrics."{key}".v'
+    if db.get_bind().dialect.name == "mysql":
+        raw = func.json_extract(S.metrics, bindparam("mp_val", path))
+        is_num = func.json_type(func.json_extract(S.metrics, bindparam("mp_typ", path))).in_(
+            ("INTEGER", "UNSIGNED INTEGER", "DOUBLE", "DECIMAL"))
+        val = case((is_num, cast(raw, Numeric(24, 6))), else_=None)
+    else:
+        raw = func.json_extract(S.metrics, bindparam("mp_val", path))
+        is_num = func.json_type(S.metrics, bindparam("mp_typ", path)).in_(("integer", "real"))
+        val = case((is_num, cast(raw, Float)), else_=None)
+    return (select(val).where(S.user_id == UsageDaily.user_id, S.period_kind == int(PeriodKind.WEEK),
+                              S.period_start == label_week).scalar_subquery())
+
+
 def fetch_rows(db: Session, f: ListFilters, label_week: date | None, offset: int = 0, limit: int | None = None):
     net = case((UsageDaily.is_workday.is_(True), UsageDaily.work_capacity - UsageDaily.leave_days), else_=0.0)
     credit = case((and_(UsageDaily.is_workday.is_(True), UsageDaily.active.is_(True)),
@@ -86,15 +110,22 @@ def fetch_rows(db: Session, f: ListFilters, label_week: date | None, offset: int
     sortable = {**cols, "active_ratio": active_ratio, "http_422_per_100_writes": per100,
                 "full_name": func.coalesce(Employee.full_name, User.email), "emp_code": Employee.code}
     key, desc = parse_sort(f.sort)
+    extra, order = [], [sortable[key].desc() if desc else sortable[key].asc()] if key != "metric" else []
+    if f.metric:
+        mv = metric_value_expr(db, f.metric, label_week).label("metric_value")
+        extra.append(mv)
+        if key == "metric":
+            #  Người chưa đo (NULL) LUÔN xếp cuối, bất kể chiều sắp — sắp trong SQL để phân trang đúng.
+            order = [case((mv.is_(None), 1), else_=0), mv.desc() if desc else mv.asc()]
     stmt = _joined(select(
         UsageDaily.user_id, Employee.id.label("employee_id"), Employee.full_name, User.email,
         Employee.code.label("emp_code"),
         Department.name.label("department_name"), Company.name.label("company_name"),
-        *[c.label(k) for k, c in cols.items()]))
+        *[c.label(k) for k, c in cols.items()], *extra))
     stmt = (stmt.where(*_base_filters(f, label_week))
             .group_by(UsageDaily.user_id, Employee.id, Employee.full_name, User.email, Employee.code, Department.name,
                       Company.name)
-            .order_by(sortable[key].desc() if desc else sortable[key].asc(), UsageDaily.user_id))
+            .order_by(*order, UsageDaily.user_id))
     if limit is not None:
         stmt = stmt.offset(offset).limit(limit)
     return db.execute(stmt).all()
@@ -105,7 +136,7 @@ def count_users(db: Session, f: ListFilters, label_week: date | None) -> int:
     return int(db.execute(stmt).scalar() or 0)
 
 
-def decorate(db: Session, rows, label_week: date | None) -> list[dict]:
+def decorate(db: Session, rows, label_week: date | None, with_metric: bool = False) -> list[dict]:
     """Queries 4–5: nhóm so sánh + nhãn của các người trong trang; dựng JSON dòng."""
     uids = [r.user_id for r in rows]
     cohorts, labels = {}, {}
@@ -127,7 +158,7 @@ def decorate(db: Session, rows, label_week: date | None) -> list[dict]:
     for r in rows:
         #  MySQL trả SUM() dạng Decimal (SQLite trả float) — đổi hết sang số thường trước khi tính.
         net, credit, writes = float(r.workdays_net or 0), float(r.active_credit or 0), int(r.api_writes or 0)
-        out.append({
+        item = {
             "user_id": r.user_id, "full_name": r.full_name or r.email or "", "emp_code": r.emp_code or "",
             "department_name": r.department_name or "", "company_name": r.company_name or "",
             "cohort": cohorts.get(r.user_id),
@@ -138,7 +169,10 @@ def decorate(db: Session, rows, label_week: date | None) -> list[dict]:
             "http_422_per_100_writes": rnd(int(r.http_422 or 0) * 100.0 / writes, 2) if writes else None,
             "labels": labels.get(r.user_id, []),
             "last_active_day": r.last_active_day.isoformat() if r.last_active_day else None,
-        })
+        }
+        if with_metric:   #  duoc-CR-650: None = chưa đo được (giao diện hiện «Chưa đo được», không phải 0)
+            item["metric_value"] = rnd(float(r.metric_value), 4) if r.metric_value is not None else None
+        out.append(item)
     return out
 
 
@@ -146,7 +180,7 @@ def summary(db: Session, f: ListFilters, page: int, page_size: int) -> dict:
     label_week, since = latest_label_week_and_since(db, f.date_to)
     total = count_users(db, f, label_week)
     rows = fetch_rows(db, f, label_week, (page - 1) * page_size, page_size) if total else []
-    return {"items": decorate(db, rows, label_week), "total": total, "page": page, "page_size": page_size,
+    return {"items": decorate(db, rows, label_week, bool(f.metric)), "total": total, "page": page, "page_size": page_size,
             "period": {"date_from": f.date_from.isoformat(), "date_to": f.date_to.isoformat()},
             "label_week": label_week.isoformat() if label_week else None,
             "data_since": since.isoformat() if since else None}

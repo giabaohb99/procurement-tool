@@ -1,4 +1,4 @@
-"""`GET /metrics` — danh mục chỉ số kèm trạng thái đo THỰC TẾ của tuần snapshot mới nhất (duoc-CR-644).
+"""`GET /metrics` — danh mục chỉ số kèm trạng thái đo THỰC TẾ của tuần snapshot mới nhất (duoc-CR-649).
 
 Đúng 2 truy vấn bất kể số người: (1) tuần mới nhất · (2) cột `metrics` của mọi snapshot tuần đó. Gộp trong bộ nhớ
 (≤ vài trăm người × ~55 khóa). Chỉ trả KHÓA và MÃ — nhãn/mô tả tiếng Việt nằm ở giao diện (luật R2).

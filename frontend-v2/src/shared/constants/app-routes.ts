@@ -351,7 +351,10 @@ export const appRoutes = {
     /** Hồ sơ cách làm việc (duoc-CR-641) — chỉ quản trị. Trang chi tiết PHẢI nằm dưới đường này để mục menu gác được nó. */
     usageProfiles: '/report/usage-profiles',
     usageProfileDetail: (userId: number | string) => `/report/usage-profiles/${userId}`,
-    /** Bộ chỉ số đánh giá (duoc-CR-644) — mục menu riêng (không nằm dưới usageProfiles để khỏi sáng đôi mục menu). */
+    /** Danh sách hồ sơ xếp theo một chỉ số, cao nhất trước (duoc-CR-650). */
+    usageProfilesByMetric: (metricKey: string) =>
+      `/report/usage-profiles?metric=${encodeURIComponent(metricKey)}&sort=-metric`,
+    /** Bộ chỉ số đánh giá (duoc-CR-649) — mục menu riêng (không nằm dưới usageProfiles để khỏi sáng đôi mục menu). */
     usageMetrics: '/report/usage-metrics',
   },
   system: {

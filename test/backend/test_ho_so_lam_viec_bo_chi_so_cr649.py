@@ -1,4 +1,4 @@
-"""duoc-CR-644 — GET /api/usage-profiles/metrics (danh mục chỉ số + trạng thái đo của tuần mới nhất)."""
+"""duoc-CR-649 — GET /api/usage-profiles/metrics (danh mục chỉ số + trạng thái đo của tuần mới nhất)."""
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.report_keys import ReportKey

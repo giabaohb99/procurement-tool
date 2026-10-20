@@ -6,6 +6,7 @@ from app.core.export_xlsx import Col, check_row_limit, xlsx_response
 from app.modules.export_log.model import ExportLog
 
 from . import list_service
+from .metric_catalog import METRIC_CATALOG
 from .schema import ListFilters
 
 ENTITY = "usage_profile"
@@ -26,11 +27,20 @@ def export_summary(db: Session, user, f: ListFilters):
     label_week, _since = list_service.latest_label_week_and_since(db, f.date_to)
     total = list_service.count_users(db, f, label_week)
     check_row_limit(total)
-    items = list_service.decorate(db, list_service.fetch_rows(db, f, label_week), label_week) if total else []
+    items = list_service.decorate(db, list_service.fetch_rows(db, f, label_week), label_week, bool(f.metric)) if total else []
+    columns = COLUMNS
+    if f.metric:
+        #  duoc-CR-650: thêm cột chỉ số đang xem. Chưa đo được PHẢI để ô trống, không phải 0: chỉ kind="percent" của
+        #  khung xuất giữ None thành ô trống (thang 0-100) nên tỷ lệ nhân 100; đơn vị khác ghi chữ để ô trống được.
+        ratio = METRIC_CATALOG[f.metric].unit == "ratio"
+        columns = [*COLUMNS, Col("metric_value", f"Chỉ số {f.metric}", kind="percent" if ratio else "text", width=22)]
+        for it in items:
+            v = it["metric_value"]
+            it["metric_value"] = None if v is None else (round(v * 100, 2) if ratio else f"{v:g}")
     rows = [{**it, "cohort_name": (it["cohort"] or {}).get("name", ""),
              "labels": ", ".join(str(l["code"]) for l in it["labels"])} for it in items]
     name = f"ho-so-cach-lam-viec-{f.date_from}-{f.date_to}"
-    response = xlsx_response(name, COLUMNS, rows, "Ho so")
+    response = xlsx_response(name, columns, rows, "Ho so")
     db.add(ExportLog(entity=ENTITY, fmt="xlsx", row_count=len(rows), filename=f"{name}.xlsx",
                      file_size=len(response.body), file_id=0, filter_summary="", created_by=user.id,
                      updated_by=user.id))
