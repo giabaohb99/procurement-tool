@@ -45,6 +45,8 @@ def _s(*vals) -> frozenset:
     return frozenset(str(v) for v in vals)
 
 
+#  ĐMH: «Đã nhận đủ» (`received`) đã tính là XONG (đại ca chốt 20/10/2026) — `completed` chỉ là bước đóng sổ sau đó;
+#  mốc xong lấy lần ĐẦU (`done_pick=first`) nên là lúc nhận đủ.
 #  Thu mua: audit có «returned» cho YCMH; YCBG / ĐMH dùng status `rejected` = Trả về (không có «từ chối» thật).
 SPECS: tuple[CycleSpec, ...] = (
     CycleSpec(CycleKind.PURCHASE_REQUEST, "tab_purchase_request",
@@ -57,9 +59,9 @@ SPECS: tuple[CycleSpec, ...] = (
               audit_entity="survey_request",
               audit_map={"done": Ev.DONE, "cancelled": Ev.CANCEL, "rejected": Ev.RETURN}),
     CycleSpec(CycleKind.PURCHASE_ORDER, "tab_purchase_order",
-              done=_s("completed"), cancelled=_s("cancelled"), returned=_s("rejected"),
+              done=_s("received", "completed"), cancelled=_s("cancelled"), returned=_s("rejected"),
               audit_entity="purchase_order",
-              audit_map={"completed": Ev.DONE, "cancelled": Ev.CANCEL, "rejected": Ev.RETURN}),
+              audit_map={"received": Ev.DONE, "completed": Ev.DONE, "cancelled": Ev.CANCEL, "rejected": Ev.RETURN}),
     CycleSpec(CycleKind.PAYMENT_REQUEST, "tab_payment_request",
               done=_s("paid"), cancelled=_s("cancelled"),
               audit_entity="payment_request",

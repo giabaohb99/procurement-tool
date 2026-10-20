@@ -30,7 +30,7 @@ Thời gian trọn vòng = `done_at − started_at` theo **ngày lịch** (khôn
 |---|---|---|---|---|---|
 | YCMH | `completed`/`done` | `cancelled` · `rejected` do audit `rejected` | audit `returned` | `requester_id` | **người phụ trách từng DÒNG hàng** (mốc: ngày tiếp nhận) + `assignee_id` nếu có |
 | YCBG | `done` (không phải `survey_done`) | `cancelled` | status → `rejected` (= Trả về) | `requester_id` | người phụ trách từng dòng (mốc: ngày tiếp nhận dòng) |
-| ĐMH | `completed` | `cancelled` | status → `rejected` (= Trả về) | tài khoản `created_by` → nhân sự | `nspt_id` |
+| ĐMH | `received` (Đã nhận đủ) **hoặc** `completed`; mốc xong = lần ĐẦU (lúc nhận đủ) | `cancelled` | status → `rejected` (= Trả về) | tài khoản `created_by` → nhân sự | `nspt_id` |
 | YCTT | `paid` | `cancelled` | — (không có trả về) | `created_by` → nhân sự | — |
 | Văn bản | 3 hoặc 4, **lần đầu**; hết hiệu lực/lưu trữ rồi vẫn tính đã xong việc soạn | 7 (bãi bỏ) · 10 (từ chối) | 9 (trả về) | `drafter_employee_id` | — |
 | Đặt xe | 5 | 7 hủy · 6 từ chối | 8 | `requester_id` | — |
@@ -69,10 +69,33 @@ không truyền `company_id` / `department_ids` / `employee_ids` thì trả `[]`
 | `work_open`, `work_overdue`, `work_estimate_hours_open` | task Dự án đang mở (PIC), chưa xóa mềm; quá hạn = hạn < hôm nay (VN); Σ giờ ước lượng |
 | `pr_handling` | số YCMH đang xử lý theo người phụ trách từng dòng hàng (phiếu chưa xong, dòng chưa xong/hủy) |
 | `pr_approval_pending` | YCMH `submitted` theo `head_of_dept_id` — **đại diện** (duyệt Thu mua không gán người) |
-| `po_handling` | ĐMH theo `nspt_id`, trừ `draft/completed/cancelled/rejected` |
+| `po_handling` | ĐMH theo `nspt_id`, trừ `draft/received/completed/cancelled/rejected` — «Đã nhận đủ» (`received`) tính là XONG (đại ca chốt 20/10/2026) |
 | `survey_lines_handling` | dòng YCBG chưa hoàn thành, chưa tạo YCMH, phiếu cha đang chạy |
 | `docs_pending_issue` | văn bản trạng thái 11 theo **người soạn thảo** (`drafter_employee_id`) — kế hoạch ghi `clone_assignee_employee_id` là nhầm: `can_issue` so người soạn |
 | `on_leave_today`, `leave_days_ahead` | đơn nghỉ đã duyệt giao `[hôm nay, hôm nay + horizon]` (ngày lịch) |
 | `open_items_total` | tổng đếm thô các số «đang xử lý» + duyệt chờ. **Không trọng số** — AI tự cân và giải thích |
 
-Quyền xem: số **theo từng người** (thời gian trọn vòng, làm lại, tải) chỉ quản trị và dùng lập trình cho AI; số theo từng người chỉ hiện khi ≥ 5 mẫu (áp ở phase 08).
+Quyền xem: xem mục 4.
+
+## 4. Báo cáo «Năng lực theo loại việc» (ReportKey 16) và hợp đồng cho AI (phase 08, duoc-CR-657)
+
+**Quyền.** Số theo TỪNG NGƯỜI (thời gian trọn vòng, làm lại, tải) chỉ quản trị mặc định, qua khóa báo cáo 16 (gán được cho người khác ở tab «Báo cáo»
+của Phân quyền) cộng `setting.read` / `setting.export`. Gác cả `/api/work-capability/summary`, `/summary/export` và `/load`. Mỗi lần mở có dòng `tab_request_log`.
+
+**Luật diễn giải (đại ca chốt 20/10/2026).**
+- Số theo người (và theo loại) chỉ hiện khi **≥ 5 mẫu** cùng loại; dưới ngưỡng mọi số là `null`, `below_threshold = true` — giao diện ghi «chưa đủ mẫu».
+- Dòng `is_estimated` **không bao giờ** vào trung vị/p90/làm lại: chỉ đếm riêng ở `n_estimated` («+N ước tính»). Phiếu đặt xe nhập từ hệ cũ (toàn dòng ước tính) vì thế không làm bẩn số liệu.
+- Đơn vị: thời gian = ngày lịch (2 số lẻ); `rework_rate` = số lần làm lại / số phiếu xong (0…n, giao diện hiện %); `late_rate` = tỷ lệ trên các phiếu có hạn; `est_ratio_p50` = trung vị (giờ thực tế / giờ ước lượng).
+- «Chậm» có thể chỉ là việc khó hơn — trang có dải nhắc «chỉ dùng tham khảo, không chấm điểm».
+
+**API** (`capability/controller.py`): `GET /summary` (`preset|date_from|date_to`, `company_id`, `department_id[]`, `kind`, `task_type_id`, `role` mặc định 2 = Người xử lý) trả `types[]` + `people[]` + `n_estimated`;
+`GET /summary/export` (Excel); `GET /load` (tải tức thì, phải truyền phạm vi). `/summary` tốn **3–4 truy vấn cố định**, `/load` ≤ 10 (bất kể số người; xem test đếm truy vấn).
+
+**Hai hàm cho trợ lý (Agent 4 / A1 bọc thành công cụ MCP — ERP KHÔNG làm công cụ).** Tệp `capability/ai_contract.py`, nhận `db` + `user` (hàm tự hỏi khóa 16 qua `can_view_report`):
+- `suggest_assignees(db, user, *, kind, task_type_id=0, company_id=None, department_ids=None, employee_ids=None, limit=5, window_days=180, now=None, profile=None) -> list[dict]`
+  - phạm vi PHẢI do người gọi truyền (trưởng phòng: phòng mình + phòng con; hàm không tự mở rộng); không truyền → `[]`.
+  - xếp hạng (KHÔNG phải điểm): ① không nghỉ hôm nay ② đủ mẫu trước ③ ít `open_items_total` ④ trung vị ngắn ⑤ làm lại ít. Mỗi mục: `rank, employee_id, employee_code, full_name, reasons[]` (`ON_LEAVE_TODAY`, `BELOW_THRESHOLD`).
+  - **có khóa 16**: thêm `stats` (đủ trường ở trên) và `load` (các số thành phần của `current_load`). **Không có khóa**: chỉ thứ tự + lý do, không số (doc 22 §6: người khác chỉ thấy kết quả đề xuất).
+- `get_capability(db, user, employee_id, *, kinds=None, window_days=180, now=None, profile=None) -> {"employee_id", "window_days", "by_type": [...], "load": {...}|None}` — ném `CapabilityForbidden` (PermissionError) nếu không có khóa 16.
+- Hai hàm gọi `stats_service.task_type_stats` / `workload_service.current_load` — A1 **không** tự viết lại công thức; tự cân tải với tốc độ và giải thích bằng lời. Không có điểm tổng.
+- Lõi dùng chung: `stats_service.fetch_stats(db, StatsFilter(...))` (≤ 4 truy vấn). `StatsFilter.unrestricted=True` chỉ dành cho đường API quản trị đã qua `require_report`.

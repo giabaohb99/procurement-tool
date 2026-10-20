@@ -15625,3 +15625,15 @@ và được đánh dấu là ước tính. Tải đang ôm của từng ngườ
 đường API; trang báo cáo năng lực và công cụ cho AI làm ở phần tiếp theo.
 
 Mã nguồn: backend/app/modules/capability/ · backend/app/modules/work/task_type_service.py · task_outcome_service.py · migration d1cap01 · doc/tai-lieu-ky-thuat/nang-luc-theo-loai-viec.md
+
+## duoc-CR-657 | Báo cáo năng lực theo loại việc và hàm gợi ý người nhận việc cho AI
+- status: xong
+- date: 2026-10-20
+Đây là phần cuối của đợt D1. Phân hệ Báo cáo có thêm trang Năng lực theo loại việc, mặc định chỉ quản trị xem, cho biết mỗi loại
+phiếu và loại việc mất bao lâu từ lúc tạo tới lúc xong, phải làm lại bao nhiêu lần, xem được theo từng người và xem tải từng người
+đang ôm ngay lúc mở. Nhóm nào dưới năm phiếu thì không hiện số để tránh kết luận từ vài mẫu, phiếu thiếu lịch sử chỉ có mốc ước tính
+được đếm riêng, và trang ghi rõ số liệu chỉ để tham khảo, không dùng chấm điểm. Kèm hai hàm đọc để trợ lý AI gợi ý người nhận một loại
+việc và xem năng lực một người, nhóm AI sẽ gắn thành công cụ. Theo quyết định của chủ sản phẩm, đơn mua hàng đã nhận đủ hàng được tính
+là xong và không còn tính vào tải của người phụ trách.
+
+Mã nguồn: backend/app/modules/capability/stats_service.py · ai_contract.py · frontend-v2/src/modules/report/pages/work-capability-report-page.tsx · test/backend/test_nang_luc_bao_cao_cr657.py

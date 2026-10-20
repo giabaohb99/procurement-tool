@@ -7,7 +7,7 @@
 - Mẫu gác kép: `usage_profile/controller.py`; lớp gác báo cáo: `report_access/guard.py`
 
 ## Overview
-- P1 · **1,5 ngày** (BE 0,8 · FE 0,7) · pending · sau phase 06, 07; FE sau CR-651 (cùng `modules/report/**`).
+- P1 · **1,5 ngày** (BE 0,8 · FE 0,7) · **implemented (duoc-CR-657, 20/10/2026)** · sau phase 06, 07; FE sau CR-651 (cùng `modules/report/**`).
 - Hàm thống kê `task_type_stats(...)` + báo cáo quản trị khóa **16** + bàn giao hợp đồng cho A1. Công cụ MCP/Trợ lý là việc của Agent 4 (A1) — **không** làm ở đây.
 
 ## Key insights
@@ -54,12 +54,19 @@ Sửa FE: `report-catalog-system.ts` · `modules/report/routes.tsx` + nav (`repo
 6. Gate FE: typecheck, lint, vitest `src/modules/report`.
 
 ## Todo
-- [ ] ReportKey 16 + sinh TS
-- [ ] stats_service + test ngưỡng
-- [ ] controller + export
-- [ ] hợp đồng A1
-- [ ] trang FE
-- [ ] (tùy chọn) 3 khóa mục 3.7
+- [x] ReportKey 16 + sinh TS
+- [x] stats_service (`stats_math` + `stats_service`) + test ngưỡng
+- [x] controller (`/summary`, `/summary/export`, `/load` gác khóa 16) + export Excel (thêm kind `decimal` ở `core/export_xlsx.py`)
+- [x] hợp đồng A1: `capability/ai_contract.py` (`suggest_assignees`, `get_capability`) + mục 4 của `doc/tai-lieu-ky-thuat/nang-luc-theo-loai-viec.md`
+- [x] trang FE `/report/work-capability` (3 tab: theo loại việc, theo người, tải đang ôm) + dải nhắc
+- [ ] (tùy chọn) 3 khóa mục 3.7 — KHÔNG làm (Q14: YAGNI)
+- [x] Chốt 20/10: ĐMH `received` = XONG (`cycle_specs`, `po_handling`), dòng `is_estimated` tách riêng, backfill local đã chạy
+
+## Kết quả triển khai (CR-657)
+- Không có migration mới (head vẫn `d01merge01`); khóa 16 chỉ là mã + dòng `tab_report_access` cho admin (`ensure_report_access_defaults` chèn lúc seed).
+- Lệch so với bản thiết kế: hàm đặt ở `stats_service.fetch_stats/task_type_stats` nhận `StatsFilter` (không phải danh sách tham số rời); `/summary` trả `types[]` + `people[]` cùng lúc, không phân trang (trần 2000 dòng người);
+  ngưỡng ≥ 5 áp cả cho dòng theo loại (một người một mình chiếm loại thì số loại = số người đó); không có `n_cancelled` (phiếu hủy không có mốc ngày để lọc kỳ).
+- Mốc đo: 3 truy vấn cho `/summary` (4 khi có task có loại việc), `/load` ≤ 10 + tầng xác thực; bài kiểm đếm truy vấn với 5 và 201 người.
 
 ## Tests
 Backend `test/backend/test_bao_cao_nang_luc_d1.py`: trung vị/p90/max đúng trên mẫu biết trước; nhóm < 5 mẫu ⇒ `null` + `below_threshold`;

@@ -248,6 +248,7 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "13", "label": "Công việc & Dự án", "sort_order": 13, "is_terminal": false, "is_exception": false},
   {"value": "14", "label": "Hồ sơ cách làm việc", "sort_order": 14, "is_terminal": false, "is_exception": false},
   {"value": "15", "label": "Mức dùng chức năng", "sort_order": 15, "is_terminal": false, "is_exception": false},
+  {"value": "16", "label": "Năng lực theo loại việc", "sort_order": 16, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại hình pháp lý NCC */

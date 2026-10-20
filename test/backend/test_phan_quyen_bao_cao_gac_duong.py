@@ -50,6 +50,8 @@ GATED: dict[str, ReportKey] = {
     "/api/usage-profiles/summary/export": ReportKey.USAGE_PROFILE,
     "/api/feature-usage/summary": ReportKey.FEATURE_USAGE,
     "/api/feature-usage/summary/export": ReportKey.FEATURE_USAGE,
+    "/api/work-capability/summary": ReportKey.WORK_CAPABILITY,
+    "/api/work-capability/summary/export": ReportKey.WORK_CAPABILITY,
 }
 
 #  KHÔNG thuộc phân hệ Báo cáo — đã grep, không gán khóa nào (bảng phase-02).
@@ -94,6 +96,9 @@ ROUTE_SPECS = [
     #  duoc-CR-655: Mức dùng chức năng cũng gác `setting`.
     (ReportKey.FEATURE_USAGE, "setting",
      "/api/feature-usage/summary", "/api/feature-usage/summary/export"),
+    #  duoc-CR-657: Năng lực theo loại việc gác `setting` (khóa 16, số theo từng người).
+    (ReportKey.WORK_CAPABILITY, "setting",
+     "/api/work-capability/summary", "/api/work-capability/summary/export"),
 ]
 
 PRESET_QS = {"preset": "this_month", "compare": "none"}
