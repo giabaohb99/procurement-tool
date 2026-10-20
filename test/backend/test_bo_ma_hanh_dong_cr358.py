@@ -74,6 +74,11 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     "modules/assistant/controller.py::download_report_file_once": ("export",),
     #  duoc-CR-585: quá trình công tác ghi «Thêm» hay «Sửa» theo đường gọi.
     "modules/employee/work_history_controller.py::_audit": ("create", "update"),
+    #  duoc-CR-628 (khai ở bao-CR-647): nhập Excel nhân sự — mỗi dòng ghi `create` (hồ sơ mới) hay `update`
+    #  (hồ sơ có sẵn) theo `ctx.after`; hoàn tác lô thì `delete` (hồ sơ do lô tạo) hay `update` (trả giá trị cũ).
+    #  Mã `deactivate` (khóa tài khoản người nghỉ việc) ở cùng hai hàm là hằng, máy tự đọc.
+    "modules/import_tool/employee_import.py::finalize": ("create", "update"),
+    "modules/import_tool/employee_import_revert.py::after_revert": ("delete", "update"),
     #  Bốn kết cục của luồng duyệt Văn thư.
     "modules/document/approval_bridge.py::_write_log": (
         "approved", "rejected", "returned", "withdrawn"),

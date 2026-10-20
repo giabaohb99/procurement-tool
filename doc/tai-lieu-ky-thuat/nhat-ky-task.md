@@ -70,6 +70,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-647 | Khai đủ sổ canh cho mã nhập Excel nhân sự và hồ sơ cách làm việc
+- status: xong
+- date: 2026-10-20
+Đại ca giao em sửa hai bài kiểm đang đỏ trên nhánh erp-v2 sau khi anh Dược đẩy hai đợt mã: nhập Excel nhân sự
+(duoc-CR-628) và hồ sơ cách làm việc (duoc-CR-641). Đây cũng là lần thử thật cẩm nang them-entity-moi của hệ Agent
+chuyên gia. Không đổi hành vi chức năng, chỉ khai cho đủ sổ.
+
+Bài canh bộ mã hành động báo hai chỗ truyền mã động chưa khai: hàm chốt lô nhập Excel ghi nhật ký create hay update
+theo từng dòng, và hàm hoàn tác lô ghi delete hay update. Em khai hai chỗ đó vào sổ chỗ động của bài kiểm với đúng các mã
+hai hàm sinh ra; mã khóa tài khoản người nghỉ việc ở cùng hàm là hằng nên máy tự đọc, cả bốn mã đều đã có trong bộ mã.
+Bài canh độ dài ô chữ báo phân hệ hồ sơ cách làm việc có cột chữ và schema ghi nhưng chưa nằm trong danh sách quét. Em
+thêm phân hệ vào danh sách, khai hai schema không ghi cột chữ (lô sự kiện chỉ bọc danh sách, lỗi lồng trong sự kiện có
+trần ngay ở schema); schema sự kiện tự ghép bảng sự kiện. Mọi trường chuỗi của phân hệ đã có trần sẵn, không phải sửa
+mã của anh Dược.
+
+Cây chung đang có việc dở của Agent 3 nên em không kéo cây lên; làm trong bản sao tạm của nhánh, chạy bài kiểm bằng
+docker run mount thư mục tạm vào ảnh api local. Kiểm: hai bài canh trên, bài phạm vi đường vòng, ba bài nhập Excel
+nhân sự và chín bài hồ sơ cách làm việc đều xanh. Cách chạy này ghi thêm vào cẩm nang them-entity-moi.
+
+Mã nguồn: `test/backend/test_bo_ma_hanh_dong_cr358.py` (DYNAMIC_ACTION_SITES), `test/backend/test_canh_do_dai_o_chu_cr538.py`
+(MODULES, NO_TARGET).
+Commit: chờ đại ca gật. Deploy: không cần (chỉ bài kiểm).
+
+---
+
 ## bao-CR-645 | Nhật ký sử dụng Kho skill AI: cột Số ký tự kết quả, kèm trong tệp CSV
 - status: xong
 - date: 2026-10-19

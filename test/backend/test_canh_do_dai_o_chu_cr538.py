@@ -32,7 +32,8 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "report_access",
            "work_schedule",   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
            "labor_contract",
-           "ai_skill"]       # bao-CR-621 (17/10): Kho skill AI — 5 model, trần 50..500
+           "ai_skill",       # bao-CR-621 (17/10): Kho skill AI — 5 model, trần 50..500
+           "usage_profile"]  # duoc-CR-641 (khai ở bao-CR-647): hồ sơ cách làm việc — UiEvent.route_pattern, UsageDaily.first_route 120
 #  ↑ work_schedule: duoc-CR-589 (05/10) — Lịch làm việc, `name` 150 / `note` 500
 #  ↑ labor_contract: duoc-CR-606 (07/10) — Hợp đồng lao động; khai ở bao-CR-608 khi bài canh đỏ
 
@@ -169,6 +170,10 @@ NO_TARGET = {
     "agent_hub.ConsentIn",
     #  ai-CR-221: công tắc bật / tắt khóa MCP — chỉ một cờ bool, ghi cột `disabled_at` (giờ máy chủ, không lấy từ người gọi)
     "agent_hub.McpKeyPatch",
+    #  duoc-CR-641 (bao-CR-647): lô sự kiện giao diện — `UiEventBatch` chỉ bọc danh sách; `UiEventError` lồng trong
+    #  sự kiện, ghi vào cột không phải String(n), trần 60 / 200 đã đặt ngay ở schema. `UiEventIn` tự ghép UiEvent
+    #  (field `route` 120 khớp cột `route_pattern` 120 nhưng khác tên nên bài không so — trần đã có ở schema).
+    "usage_profile.UiEventBatch", "usage_profile.UiEventError",
     "survey_request.ReportInitIn",   # duoc-CR-614: chỉ mang mã mẫu báo cáo (số)
     #  chỉ mang id / thứ tự / lệnh di chuyển — không ghi cột chữ nào
     "doc_catalog.DocumentFolderSetIn", "doc_catalog.FolderLinkIn", "doc_catalog.FolderUnlinkIn",
