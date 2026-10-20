@@ -120,7 +120,7 @@ nhật ký thao tác và giới hạn ô chữ đạt. Hai migration chạy lên
 **Còn lại:** dựng dev để chạy migration; anh Dược làm nhóm chỉ số 3.8 đọc hai nguồn này (đợt D0).
 
 Mã nguồn: `app/modules/ai_usage/` (mới) · `agent_hub/ai_usage.py` (mới) · `agent_hub/erp.py` · `agent_gateway/controller.py` · `agent_hub/tasks.py` · `core/celery_app.py` · `core/request_context.py` · `core/logging_codes.py` · `core/audit.py` · `audit/model.py` · `agent_hub/service.py` · `agent_hub/core_v2.py` · `agent_hub/intent_ledger.py` · `agent_hub/mcp.py` · `assistant/controller.py`
-Migration: `aiusage01` (DB ERP, sau `usgprof02`) + `agent0016` (DB dịch vụ AI)
+Migration: `aiusage01` (DB ERP, sau `jobposrole01`) + `agent0016` (DB dịch vụ AI)
 Bài kiểm: `test_ai_usage_ho_so_cr230.py`
 
 ## bao-CR-650 | Vá hai nhóm bài kiểm đỏ sau mã ban hành văn bản và thu sự kiện giao diện

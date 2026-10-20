@@ -1,7 +1,7 @@
 """hoat dong AI vao ho so cach lam viec: tab_ai_usage_daily + tab_audit_log.ai_channel (ai-CR-230)
 
 Revision ID: aiusage01
-Revises: usgprof02
+Revises: jobposrole01
 Create Date: 2026-10-20
 
 VIET TAY (autogenerate repo nay troi nhieu; khong import ma ung dung). doc/erp/22 §5.
@@ -20,7 +20,7 @@ from alembic import op
 from sqlalchemy import inspect
 
 revision: str = "aiusage01"
-down_revision: Union[str, None] = "usgprof02"
+down_revision: Union[str, None] = "jobposrole01"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
