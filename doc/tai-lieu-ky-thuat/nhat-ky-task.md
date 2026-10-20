@@ -6940,6 +6940,17 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-031 | Danh sách tính năng còn phải làm cho Đậu Đậu và các trợ lý mới
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca muốn thêm trợ lý ngoài bot sửa mã: biến ghi âm cuộc họp thành biên bản theo mẫu, một thư ký hiểu lịch và
+nhắc việc, và một bot nghiên cứu, tìm tài liệu, kiểm chứng nội dung, mỗi bot một chức năng. Em gom thành một danh
+sách hai mươi chín tính năng chia bốn nhóm: phần còn lại của bot sửa mã, nền chung cho nhiều bot, thư ký, nghiên
+cứu. Danh sách có nguyên tắc chia bot theo quyền để bot đọc web không bao giờ giữ khóa nào, sáu đợt làm theo thứ tự
+và sáu câu chờ đại ca trả lời. Em cũng rà máy: công cụ biên bản họp mới có thiết kế từ cuối tháng tám, chưa có mã.
+
+Mã nguồn: `doc/agent-hub/04-danh-sach-tinh-nang.md` · `doc/agent-hub/README.md` · `change-log-ai.md`.
 
 ## bao-CR-426 | Vá ba lỗ im lặng của vòng quét đồng bộ app đặt xe cũ và thêm vòng quét toàn bộ mỗi đêm
 - status: xong
@@ -10137,16 +10148,6 @@ employee-tab-contact.tsx · utils/profile-field-tab.ts
 - date: 2026-09-24
 - pic: NSU209
 
-Đại ca muốn thêm trợ lý ngoài bot sửa mã: biến ghi âm cuộc họp thành biên bản theo mẫu, một thư ký hiểu lịch và
-nhắc việc, và một bot nghiên cứu, tìm tài liệu, kiểm chứng nội dung, mỗi bot một chức năng. Em gom thành một danh
-sách hai mươi chín tính năng chia bốn nhóm: phần còn lại của bot sửa mã, nền chung cho nhiều bot, thư ký, nghiên
-cứu. Danh sách có nguyên tắc chia bot theo quyền để bot đọc web không bao giờ giữ khóa nào, sáu đợt làm theo thứ tự
-và sáu câu chờ đại ca trả lời. Em cũng rà máy: công cụ biên bản họp mới có thiết kế từ cuối tháng tám, chưa có mã.
-
-Mã nguồn: `doc/agent-hub/04-danh-sach-tinh-nang.md` · `doc/agent-hub/README.md` · `change-log-ai.md`.
-
-## ai-CR-030 | Chốt stack bot để lệnh dựng trơn không dựng nhầm bộ ERP thứ hai
-
 Đại ca yêu cầu tạm bỏ nút chốt tạm tính của cả đơn, cho ba cột tiền ba màu khác nhau để thấy
 độ quan trọng của từng cột, bỏ dải bước ba giai đoạn ở đầu thẻ, và hỏi vì sao tỷ giá không sửa
 được trong khi tỷ giá đổi liên tục.
@@ -10176,6 +10177,20 @@ Mã nguồn: `frontend-v2/src/shared/data-table/types.ts` ·
 `frontend-v2/src/shared/data-table/lines-table.tsx` ·
 `frontend-v2/src/shared/data-table/lines-table.test.tsx` ·
 `frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
+
+## ai-CR-030 | Chốt stack bot để lệnh dựng trơn không dựng nhầm bộ ERP thứ hai
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Sáng 24/09 đại ca gặp lỗi cổng 3306 đã bị chiếm khi dựng container. Các container của bot đã mất, rồi một lần
+dựng trơn trong thư mục của bot, thiếu tên stack và tệp cấu hình riêng, đã dựng nguyên một bộ ERP thứ hai có cả
+MySQL riêng, giành cổng với bộ ERP thật đang chạy. Em gỡ bộ dựng nhầm (giữ dữ liệu), chặn chín service của bộ ERP
+gốc không bao giờ được dựng ở stack bot, và khai tên stack cùng tệp cấu hình ngay trong tệp môi trường của thư mục
+đó, nên từ nay lệnh dựng trơn ở đây tự thành đúng stack bot. Bot đã chạy lại đủ năm service, ERP thật không bị đụng.
+
+Mã nguồn: `docker-compose.agent.yml` (profile `stack-goc`) · `.env` của worktree (`COMPOSE_PROJECT_NAME`,
+`COMPOSE_FILE`, không commit).
 
 ## bao-CR-474 | Ô trưởng bộ phận của yêu cầu mua hàng: tạo mới cũng chọn được và luôn hiện một người
 - status: xong
@@ -13667,7 +13682,7 @@ Mã nguồn: backend/app/modules/agent_hub/runner_update.py (mới) · runners.p
 Deploy: dev 08/10 (Agent 1 gộp bd9a80a2, gỡ cổng nối cũ, dựng lại stack agent-hub; em dựng lại máy sửa mã trên máy đại ca, hai bên cùng bản 8a5a491601ba); prod giữ lại.
 
 ## ai-CR-125 | Bot hiểu lệnh bỏ việc viết tắt và không coi lời chào là câu trả lời
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Lúc bot đang hỏi lại về việc AI-0005, đại ca nhắn «lô» rồi «bỏ kế hoạch 0005 đi», nhưng bot gắn cả hai câu làm câu trả lời
 và lập lại kế hoạch, việc không bị bỏ. Nay bot nhận ra mã việc viết tắt như «việc 7», «kế hoạch 0005» hay «0005» đứng riêng
@@ -13676,9 +13691,10 @@ không còn bị gắn vào thẻ đang hỏi lại. Em cũng đã thử thật 
 sau máy tự kéo đúng bản của bot rồi khởi động lại. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_task_code_in, is_greeting, route_task_command) · test/backend/test_agent_hub.py
+Deploy: dev 08/10/2026
 
 ## ai-CR-126 | Màn Nhóm chat hiện tin nhắn kiểu khung chat của Trợ lý AI và đúng giờ Việt Nam
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Đại ca thấy phần tin nhắn trong màn Nhóm chat xấu và giờ bị lệch (tin lúc 16:37 hiện 23:37). Em dựng lại tab tin nhắn theo
 đúng kiểu khung hội thoại của Trợ lý AI: bong bóng bo tròn, tin cũ ở trên tin mới ở dưới, có vạch ngày, tin liên tiếp của
@@ -13688,9 +13704,10 @@ Nam trong khi giao diện lại đổi thêm lần nữa; nay máy chủ trả g
 xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/groups.py · frontend-v2/src/modules/assistant/components/group-chat-thread.tsx · utils/chat-group-format.ts · pages/chat-group-detail-page.tsx · test/backend/test_agent_hub_nhom_web.py
+Deploy: dev 08/10/2026
 
 ## ai-CR-127 | Bot tự làm lại lượt lập kế hoạch bị ngắt khi được cập nhật giữa chừng
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Đại ca trả lời câu hỏi của việc AI-0005 xong thì bot im luôn. Nguyên nhân là bot được dựng lại để cập nhật đúng lúc nó đang
 lập lại kế hoạch, nên lượt đó bị ngắt và không ai chạy lại. Nay mỗi phút bot tự kiểm: việc nào đại ca đã trả lời hơn ba phút
@@ -13699,9 +13716,10 @@ Em cũng bớt tin «Zalo đã kết nối»: chỉ báo khi vừa quét mã ho�
 máy chủ. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (resume_lost_replans) · tasks.py (heartbeat_task) · zalo-listener/index.mjs · test/backend/test_agent_hub.py
+Deploy: dev 08/10/2026
 
 ## ai-CR-128 | Dịch vụ AI đọc sổ thuật ngữ qua cổng ERP và không báo làm lại kế hoạch hai lần
-- status: dang-lam
+- status: xong
 - date: 2026-10-08
 Sau khi tách dịch vụ AI, vòng tự học của bot vẫn đọc sổ thuật ngữ và sổ chỗ Trợ lý thiếu chức năng thẳng từ bảng cấu hình của
 ERP, mà cơ sở dữ liệu riêng của dịch vụ AI không có bảng đó nên cứ năm phút lại báo lỗi. Nay ba sổ này đi qua cổng có chữ ký
@@ -13710,6 +13728,7 @@ lại một lần thì mười lăm phút sau mới thử lại nếu vẫn chư
 được dọn trên dev.
 
 Mã nguồn: backend/app/modules/assistant/glossary.py · agent_hub/erp.py · agent_gateway/controller.py · agent_hub/service.py · constants.py · test/backend/test_agent_hub_tach_dich_vu.py · test_agent_hub.py
+Deploy: dev 08/10/2026
 
 ## ai-CR-129 | Đăng xuất và đổi tài khoản Zalo công ty ngay trên ERP, dọn phiên quét nhầm
 - status: xong
@@ -13875,7 +13894,7 @@ vehicle_booking/references.py; bài kiểm test_chot_xoa_danh_muc_chung_cr191.py
 Deploy: dev 13/10, commit 97ae010 trên erp-v2 (VPS mới); ERP api rồi cụm bot; dev tắt bước đọc ý định, bật báo nhận.
 
 ## ai-CR-229 | Thêm công tắc tắt các việc chạy nền tốn tiền model của bot trước khi lên prod
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Đại ca chốt chiều nay đưa dịch vụ AI chạy riêng lên prod, chỉ bật chat, Trợ lý trên web, cổng nối AI và nhắc hạn việc,
 còn mọi việc chạy nền tốn tiền model phải tắt. Khi soát thì bản tin theo giờ, tóm tắt cuối buổi chat và vòng gom việc sửa
@@ -13884,9 +13903,10 @@ Nhắc hạn việc, chuông và lời nhắc theo giờ không bị ảnh hư�
 
 Mã nguồn: core/config.py, agent_hub/tasks.py
 Bài kiểm: test_agent_hub_co_tat_vong_ton_tien_cr229.py
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-228 | ChatGPT đọc được cẩm nang dài bằng cách đọc từng trang
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Đại ca nối ChatGPT vào ERP dev thành công, nhưng khi nhờ đọc chi tiết cẩm nang nhà máy (cẩm nang dài nhất, khoảng ba mươi
 lăm nghìn ký tự) thì ChatGPT báo không nhận được nội dung, trong khi Claude đọc cùng cẩm nang vẫn ra đủ. Nay cẩm nang và tệp
@@ -13898,9 +13918,10 @@ gọi công cụ để soi các ca tương tự. Bài kiểm đều đạt.
 Mã nguồn: ai_skill/mcp_read.py, agent_hub/mcp.py, agent_hub/mcp_log.py, agent_hub/erp.py, agent_gateway/controller.py
 Migration: mcplog02 (DB ERP) + agent0015 (DB dịch vụ AI)
 Bài kiểm: test_ai_skill_doc_theo_trang_cr228.py
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-227 | Lạc Lạc tạo lịch đúng theo tệp kế hoạch, không bịa link, không sai thứ
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Đại ca nhờ Lạc Lạc tạo lịch cho chuyến đi Phan Rang – Long Hải theo tệp kế hoạch thì bot tạo sai giờ và sai điểm dừng so
 với tệp, gắn các link bản đồ tự bịa không mở được, ghi sai thứ trong tuần và còn dùng biểu tượng. Nay máy tự đọc bảng giờ
@@ -13911,9 +13932,10 @@ hay thời gian chạy mà chưa tra bản đồ, bot phải ghi rõ đó là ư
 
 Mã nguồn: agent_hub/plan_extract.py, agent_hub/reply_guard.py, agent_hub/core_v2.py
 Bài kiểm: test_agent_hub_lich_theo_tep_cr227.py
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-226 | Nhật ký thao tác của bot không còn bị mất khi dịch vụ AI chạy tách riêng
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Agent 1 đọc nhật ký máy dev thì thấy khi dịch vụ AI chạy tách khỏi ERP, mọi dòng ghi lại việc bot đã làm thay người dùng
 (như tạo lịch Google) đều không lưu được vì cơ sở dữ liệu của dịch vụ AI không có bảng nhật ký thao tác. Nay các dòng đó
@@ -13924,9 +13946,11 @@ dựng dịch vụ AI tách riêng trên prod. Bài kiểm đều đạt.
 
 Mã nguồn: agent_hub/erp.py, agent_hub/controller.py, agent_gateway/controller.py, assistant/tools/__init__.py
 Bài kiểm: test_agent_hub_nhat_ky_qua_cong_b_cr226.py
+Commit: 4bcab8b0 (khai nhãn mã xem lại / bật / tắt khóa ở danh mục mã nhật ký) và c78ac618 (bài kiểm ghim giờ UTC), lên erp-v2 a066f29f ngày 19/10 sau đợt prod — theo đợt prod kế.
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-225 | Màn cho phép kết nối AI chống bị lừa và tự dọn ứng dụng đăng ký bỏ không
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Làm tiếp hai việc Agent 1 xếp sau bài rà phần nối ChatGPT. Thứ nhất, tên ứng dụng hiện trên màn Cho phép là do ứng dụng tự
 khai nên kẻ xấu có thể đặt tên ChatGPT; nay màn hiện ngay cạnh tên địa chỉ thật mà trình duyệt sẽ quay về, địa chỉ lạ thì có
@@ -13938,9 +13962,10 @@ hệ thống tự dọn mã cấp quyền đã hết hạn và ứng dụng đă
 Mã nguồn: agent_hub/oauth.py, agent_hub/oauth_controller.py, agent_hub/controller.py, agent_hub/tasks.py,
 frontend-v2 app/pages/oauth-consent-page.tsx
 Bài kiểm: test_agent_hub_oauth_chong_lua_don_cr225.py, oauth-consent-page.test.tsx
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-224 | Lạc Lạc nhớ cuộc trò chuyện trong sáu giờ và đọc lại được tệp đã gửi
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Đại ca bàn với Lạc Lạc việc tạo hai mươi sáu sự kiện theo tệp kế hoạch, một tiếng sau nhắn tạo đi thì bot quên sạch. Có ba
 nguyên nhân và đã vá cả ba theo lời đại ca. Một: bot chỉ nhớ trong một phiên, nghỉ quá sáu mươi phút là sang phiên mới; nay
@@ -13951,9 +13976,10 @@ Bài kiểm đều đạt.
 
 Mã nguồn: agent_hub/core_v2.py, agent_hub/service.py, assistant/tool_router.py
 Bài kiểm: test_agent_hub_nho_phien_doc_lai_tep_cr224.py
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-223 | Lạc Lạc không còn gửi nguyên đoạn suy nghĩ tiếng Anh khi được hỏi về tệp gửi kèm
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Trưa 19/10 đại ca gửi Lạc Lạc trên dev một tệp kế hoạch kèm câu hỏi, bot trả về nguyên một đoạn dài tiếng Anh là phần suy
 nghĩ của model chứ không phải câu trả lời. Nguyên nhân: câu hỏi về tệp gửi kèm đi đường cũ, không qua bộ chọn model của
@@ -13963,9 +13989,10 @@ nghĩ tiếng Anh thì bot không gửi đoạn đó mà xin lỗi kèm mã lư�
 
 Mã nguồn: agent_hub/service.py
 Bài kiểm: test_agent_hub_lo_doan_suy_nghi_cr223.py
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-220 | Trợ lý AI trên web và bot đọc cẩm nang từ Kho skill thay cho gói tri thức cũ
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Trước nay trợ lý trên web và bot mang theo bảy gói tri thức viết sẵn trong mã, khoảng bảy mươi bảy nghìn ký tự, gửi kèm
 gần như mọi câu hỏi, muốn sửa nội dung phải sửa mã. Nay bảy gói đó được đưa vào Kho skill AI thành bộ Cẩm nang hệ thống,
@@ -13977,9 +14004,10 @@ chặn như cũ. Lần gieo đầu tạo bộ, các lần chạy lại không gh
 Mã nguồn: ai_skill/handbook_seed.py, ai_skill/seed_handbook/, assistant/knowledge.py, assistant/tools/skill_tool.py,
 assistant/service.py, assistant/tool_router.py, agent_hub/core_v2.py, seed.py, seed_prod.py
 Bài kiểm: test_tro_ly_doc_kho_skill_cr220.py
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-222 | Vá các lỗ bảo mật Agent 1 tìm ra khi rà phần nối ChatGPT và khóa kết nối AI
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Agent 1 rà độc lập phần đăng nhập ChatGPT và phần xem lại khóa, kết luận an toàn sau khi vá hai lỗi bắt buộc. Lỗi thứ
 nhất: trang khác có thể nhúng màn Cho phép vào một khung ẩn rồi lừa người đang đăng nhập bấm, nay máy chủ cấm nhúng màn
@@ -13991,9 +14019,10 @@ việc thì bản xem lại khóa cùng mã làm mới bị xóa sạch. Bài ki
 Mã nguồn: docker/nginx.erp.prod.conf, agent_hub/oauth.py, agent_hub/oauth_controller.py, agent_hub/mcp.py,
 agent_hub/service.py, frontend-v2 app/pages/oauth-consent-page.tsx
 Bài kiểm: test_agent_hub_oauth_ra_soat_cr222.py, oauth-consent-page.test.tsx
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-221 | Người dùng xem lại được khóa kết nối AI của mình và bật tắt khóa khi cần
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Đại ca chốt trưa 19/10: trước nay khóa kết nối AI chỉ hiện đúng một lần lúc tạo, lỡ đóng cửa sổ là phải tạo khóa khác.
 Nay hệ thống giữ thêm một bản khóa đã mã hóa, chỉ chính chủ khóa đăng nhập web mới mở ra xem lại được, để màn Khóa của
@@ -14006,9 +14035,10 @@ Bài kiểm đều đạt. Chờ Agent 3 nối màn và Agent 1 dựng lên dev.
 Mã nguồn: agent_hub/mcp_keys.py, agent_hub/controller.py, agent_hub/oauth.py, agent_hub/mcp_log.py, agent_gateway/proxy.py
 Migration: mcpkey03 (DB ERP) + agent0014 (DB dịch vụ AI)
 Bài kiểm: test_agent_hub_xem_lai_bat_tat_khoa_cr221.py
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-218 | ChatGPT và claude.ai nối được vào ERP bằng cách đăng nhập ERP và bấm Cho phép
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 Đại ca chốt làm kết nối cho ChatGPT. Trước nay ChatGPT và claude.ai không nối được vì hai nơi này không dán khóa mà đòi đăng
 nhập theo chuẩn OAuth. Nay ERP đóng vai máy cấp quyền: người dùng thêm kết nối trong ChatGPT hoặc claude.ai, dán địa chỉ cổng
@@ -14022,6 +14052,7 @@ Mã nguồn: agent_hub/oauth.py, agent_hub/oauth_controller.py, agent_hub/mcp.py
 agent_hub/mcp_setup.py, agent_gateway/proxy.py, docker/nginx.erp.prod.conf, frontend-v2 app/pages/oauth-consent-page.tsx
 Migration: mcpoauth01 (DB ERP) + agent0013 (DB dịch vụ AI)
 Bài kiểm: test_agent_hub_oauth_mcp_cr218.py, oauth-consent-page.test.tsx
+Deploy: prod 19/10/2026 17:25 (đợt hai, main 81632cd6, dịch vụ AI tách)
 
 ## ai-CR-219 | Nhật ký cổng nối AI lọc riêng lượt gọi công cụ, số liệu Tổng quan khỏi lệch
 - status: xong
@@ -14210,7 +14241,7 @@ Mã nguồn: agent_hub/mcp.py, assistant/tools/__init__.py, assistant/tools/expo
 assistant/controller.py
 
 ## ai-CR-206 | Bỏ hẳn lõi hội thoại cũ, bot chỉ còn một lõi
-- status: dang-lam
+- status: xong
 - date: 2026-10-15
 Đại ca hỏi vì sao bot có hai lõi; đó là cách chuyển dần cho an toàn, không phải ý định giữ hai bản. Vì hiện chỉ đại ca
 dùng bot, đại ca chốt bỏ luôn lõi cũ cho mã gọn. Nay mọi tin nhắn của mọi người đều đi lõi mới, phần lõi cũ (bước đoán ý
@@ -14221,9 +14252,10 @@ các bài kiểm canh hành vi riêng của lõi cũ được bỏ, bài còn l�
 bị bỏ qua và dính vào nội dung nhắc; nay bot đặt nhắc với nội dung gọn và trả lời luôn câu hỏi.
 
 Mã nguồn: agent_hub/service.py, manager.py, core_v2.py, core/config.py
+Deploy: dev 15/10/2026
 
 ## ai-CR-205 | Nghiên cứu sâu của bot viết bằng Claude thay vì DeepSeek
-- status: dang-lam
+- status: xong
 - date: 2026-10-15
 Đại ca thấy báo cáo nghiên cứu sâu đang do DeepSeek viết vì khóa DeepSeek đứng đầu sổ khóa, mà đại ca muốn giữ nguyên thứ
 tự sổ. Nay mọi lượt model của nghiên cứu sâu và tổng hợp tài liệu ưu tiên khóa Claude với model Sonnet, hỏng thì mới lùi về
@@ -14231,9 +14263,10 @@ DeepSeek. Ước chi phí trước khi chạy tính theo giá Claude qua trạm,
 hiện đúng khi chi phí từ một đô la trở lên.
 
 Mã nguồn: agent_hub/deep_research.py (_claude_first, _rates, _call_overhead), core/config.py
+Deploy: dev 15/10/2026
 
 ## ai-CR-204 | Đợt nén nội dung và chuyển câu thường của bot sang model rẻ
-- status: dang-lam
+- status: xong
 - date: 2026-10-15
 Ví trạm model bị trừ hai mươi bảy đô la trong một ngày, phần lớn vì bộ hội thoại mẫu và vì mỗi câu chat gửi kèm quá nhiều
 nội dung. Đại ca chốt câu thường dùng Claude Haiku (rẻ hơn khoảng hai mươi lần), việc nặng như lập kế hoạch vẫn dùng
@@ -14244,6 +14277,7 @@ nay tính đúng giá trạm kể cả phần ghi bộ đệm, và sổ lượt 
 
 Mã nguồn: agent_hub/core_v2.py (history, turn_context, trim_result, lane_model), constants.py, core/config.py,
 scripts/eval_core_v2.py
+Deploy: dev 15/10/2026
 
 ## ai-CR-203 | Bộ hai mươi hội thoại mẫu tự chạy để kiểm bot trước mỗi lần đẩy
 - status: dang-lam
@@ -14263,6 +14297,7 @@ lỗi thật: nhờ nhắc lúc ba giờ chiều nay thì bot báo ba giờ chi�
 độ: yêu cầu sửa phần mềm không còn kéo theo các công cụ mua hàng, và mỗi lần tra mạng ghi lại thời gian từng khâu.
 
 Mã nguồn: agent_hub/core_eval.py, core_eval_samples.py, scripts/eval_core_v2.py; bài kiểm test_agent_hub_core_eval.py
+Còn dở: bộ mẫu đã có trên dev nhưng chưa thành bước kiểm thường xuyên — mỗi lần chạy tốn khoảng năm đô la ví trạm nên chỉ chạy khi đại ca duyệt từng lần.
 
 ## ai-CR-202 | Lõi hội thoại mới: soạn nháp chỉ còn một lần gọi model, mô tả công cụ ngắn lại cho chat
 - status: xong
@@ -14309,7 +14344,7 @@ test_agent_hub_core_v2.py
 Commit: ddbd020c
 
 ## ai-CR-198 | Lõi hội thoại mới của bot, bước 1: nói chuyện như người, chạy song song dưới cờ
-- status: dang-lam
+- status: xong
 - date: 2026-10-14
 - pic: NSU209
 Đại ca thấy bot cứng như máy: không hỏi lại khi thiếu, không gợi ý, không hiểu cách nói tự nhiên, mỗi tính năng một kiểu;
@@ -14323,6 +14358,7 @@ cũ giữ nguyên cho chat chưa bật. Sáu bài kiểm mới, bốn bộ bài 
 
 Mã nguồn: agent_hub/core_v2.py (mới); agent_hub/service.py hai chỗ rẽ; core/config.py; bài kiểm test_agent_hub_core_v2.py
 Deploy: dev 14/10, bật cho chat đại ca trước; bước 2 dời kế hoạch việc, hoàn tác, sửa mã lên lõi
+Deploy: dev 14/10/2026 (lõi mới; thay hẳn lõi cũ ở ai-CR-206)
 
 ## ai-CR-197 | Một trạm AI thêm được nhiều gói model (Claude, Kimi, Gemini) không thay nhau
 - status: xong
