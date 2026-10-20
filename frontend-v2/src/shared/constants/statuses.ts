@@ -17,6 +17,21 @@ export interface StatusOption {
   is_exception: boolean
 }
 
+/** Kênh dùng AI */
+export const AI_CHANNEL: readonly StatusOption[] = [
+  {"value": "1", "label": "Trợ lý web", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Telegram", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Ứng dụng AI (MCP)", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Zalo", "sort_order": 4, "is_terminal": false, "is_exception": false},
+]
+
+/** Ứng dụng AI */
+export const AI_CLIENT: readonly StatusOption[] = [
+  {"value": "1", "label": "Claude", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "ChatGPT", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Ứng dụng AI khác", "sort_order": 9, "is_terminal": false, "is_exception": false},
+]
+
 /** Tình trạng hạn hợp đồng */
 export const CONTRACT_EXPIRY: readonly StatusOption[] = [
   {"value": "valid", "label": "Còn hạn", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -50,6 +65,34 @@ export const CONTRACT_TYPE: readonly StatusOption[] = [
   {"value": "other", "label": "Khác", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Loại phiếu có vòng đời */
+export const CYCLE_KIND: readonly StatusOption[] = [
+  {"value": "1", "label": "Yêu cầu mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Yêu cầu báo giá", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Đơn mua hàng", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Yêu cầu thanh toán", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Văn bản", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Đặt xe", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "7", "label": "Duyệt dấu", "sort_order": 7, "is_terminal": false, "is_exception": false},
+  {"value": "8", "label": "Đặt phòng họp", "sort_order": 8, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Nghỉ phép", "sort_order": 9, "is_terminal": false, "is_exception": false},
+  {"value": "10", "label": "Công việc dự án", "sort_order": 10, "is_terminal": false, "is_exception": false},
+]
+
+/** Kết cục vòng đời phiếu */
+export const CYCLE_OUTCOME: readonly StatusOption[] = [
+  {"value": "1", "label": "Đang chạy", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Đã xong", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Đã hủy", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Bị từ chối", "sort_order": 4, "is_terminal": false, "is_exception": false},
+]
+
+/** Vai trong vòng đời phiếu */
+export const CYCLE_ROLE: readonly StatusOption[] = [
+  {"value": "1", "label": "Người lập/đề nghị", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Người xử lý", "sort_order": 2, "is_terminal": false, "is_exception": false},
+]
+
 /** Loại mẫu văn bản */
 export const DOCUMENT_TEMPLATE_KIND: readonly StatusOption[] = [
   {"value": "1", "label": "Văn bản mẫu", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -62,6 +105,15 @@ export const EMPLOYEE_STATUS: readonly StatusOption[] = [
   {"value": "collaborator", "label": "Cộng tác viên", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "maternity_leave", "label": "Nghỉ thai sản", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "resigned", "label": "Nghỉ việc", "sort_order": 0, "is_terminal": false, "is_exception": false},
+]
+
+/** Loại chức năng đo */
+export const FEATURE_KIND: readonly StatusOption[] = [
+  {"value": "1", "label": "Bấm chức năng", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Biểu mẫu", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Màn hình", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Tìm kiếm", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Lỗi giao diện", "sort_order": 5, "is_terminal": false, "is_exception": false},
 ]
 
 /** Prefix chủ đề diễn đàn */
@@ -195,6 +247,7 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "12", "label": "Báo cáo phê duyệt", "sort_order": 12, "is_terminal": false, "is_exception": false},
   {"value": "13", "label": "Công việc & Dự án", "sort_order": 13, "is_terminal": false, "is_exception": false},
   {"value": "14", "label": "Hồ sơ cách làm việc", "sort_order": 14, "is_terminal": false, "is_exception": false},
+  {"value": "15", "label": "Mức dùng chức năng", "sort_order": 15, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại hình pháp lý NCC */
@@ -319,6 +372,28 @@ export const WORK_SCHEDULE_LEVEL: readonly StatusOption[] = [
   {"value": "4", "label": "Nhân sự", "sort_order": 4, "is_terminal": false, "is_exception": false},
 ]
 
+/** Kết quả công việc */
+export const WORK_TASK_OUTCOME: readonly StatusOption[] = [
+  {"value": "1", "label": "Đạt", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Phải làm lại", "sort_order": 2, "is_terminal": false, "is_exception": false},
+]
+
+/** Ứng dụng AI — khóa → mã gửi lên backend. */
+export const AI_CLIENT_CODE = {
+  CLAUDE: 1,
+  CHATGPT: 2,
+  OTHER: 9,
+} as const
+
+/** Loại chức năng đo — khóa → mã gửi lên backend. */
+export const FEATURE_KIND_CODE = {
+  ACTION: 1,
+  FORM: 2,
+  SCREEN: 3,
+  SEARCH: 4,
+  CLIENT_ERROR: 5,
+} as const
+
 /** Chức năng được bấm — khóa → mã gửi lên backend. */
 export const UI_ACTION_CODE = {
   COLUMN_TOGGLE: 1,
@@ -378,14 +453,27 @@ export const UI_FORM_CODE = {
   WORK_TASK: 13,
 } as const
 
+/** Lý do chưa đo được — khóa → mã gửi lên backend. */
+export const USAGE_UNMEASURED_REASON_CODE = {
+  NOT_COLLECTED: 1,
+  BELOW_THRESHOLD: 2,
+  NOT_APPLICABLE: 3,
+} as const
+
 /** Tra theo tên bộ, cho chỗ dựng ô chọn động. */
 export const STATUS_SETS = {
+  ai_channel: AI_CHANNEL,
+  ai_client: AI_CLIENT,
   contract_expiry: CONTRACT_EXPIRY,
   contract_party_type: CONTRACT_PARTY_TYPE,
   contract_status: CONTRACT_STATUS,
   contract_type: CONTRACT_TYPE,
+  cycle_kind: CYCLE_KIND,
+  cycle_outcome: CYCLE_OUTCOME,
+  cycle_role: CYCLE_ROLE,
   document_template_kind: DOCUMENT_TEMPLATE_KIND,
   employee_status: EMPLOYEE_STATUS,
+  feature_kind: FEATURE_KIND,
   forum_prefix: FORUM_PREFIX,
   labor_contract_status: LABOR_CONTRACT_STATUS,
   labor_contract_type: LABOR_CONTRACT_TYPE,
@@ -411,6 +499,7 @@ export const STATUS_SETS = {
   work_day_kind: WORK_DAY_KIND,
   work_event_type: WORK_EVENT_TYPE,
   work_schedule_level: WORK_SCHEDULE_LEVEL,
+  work_task_outcome: WORK_TASK_OUTCOME,
 } as const
 
 /** Nhãn theo mã, cho chỗ chỉ cần hiển thị. */

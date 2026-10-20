@@ -7,7 +7,7 @@
 - agent_hub (DB riêng): `tab_agent_mcp_call(user_id, client_name, tool, status)`, `tab_agent_intent(user_id, channel WEB/TELEGRAM/ZALO)`
 
 ## Overview
-- P2 · **1 ngày** phần đọc được ngay + **0,5 ngày** nối khi A0 xong · pending · cần **CR-651 đã gộp** (cùng `usage_profile/metric_*` + `modules/report/**`).
+- P2 · **1 ngày** phần đọc được ngay + **0,5 ngày** nối khi A0 xong · **implemented (duoc-CR-655, 20/10/2026; A0 = ai-CR-230 đã gộp)** · cần **CR-651 đã gộp** (cùng `usage_profile/metric_*` + `modules/report/**`).
 - Thêm 8 khóa chỉ số mục **3.8** vào snapshot tuần + một khối trên màn Hồ sơ (khóa 14).
 
 ## Key insights
@@ -64,13 +64,20 @@ tạo `modules/report/components/usage-profile/usage-ai-section.tsx` · gắn v�
 5. Khối «Dùng AI» trên hồ sơ: kênh chính, lượt/tuần, nhóm việc, phiếu AI soạn, bị từ chối quyền.
 6. Khi A0 xong: đổi nguồn `assistant_questions`; chạy lại snapshot 4 tuần gần nhất (script backfill có sẵn của CR-641).
 
+## Kết quả triển khai (duoc-CR-655) — đã khớp hợp đồng THỰC của ai-CR-230
+Bảng A0 thực tế khác hợp đồng đề xuất: `tab_ai_usage_daily` khóa `(day, user_id, channel)` (không có cột client / tool_group số), có `turns, tool_calls, denied, errors, drafts_created, drafts_confirmed` + JSON `clients`, `tool_groups`; `tab_audit_log.ai_channel`.
+- 8 khóa 3.8 (số): `ai_uses, ai_active_days, ai_mcp_share, ai_tool_groups_used, ai_denied, ai_drafts_confirmed, ai_docs_drafted, ai_docs_share`. Kênh chính / ứng dụng / nhóm công cụ là MÃ → `lists` (`ai_channels, ai_clients, ai_tool_groups`), không thành khóa (trung vị của mã vô nghĩa).
+- «Phiếu AI soạn» đọc từ `tab_audit_log.ai_channel > 0` (chính xác theo kênh) thay cho `tab_assistant_change`.
+- Mã mới: `core/ai_usage_codes.py` (`AiClient` + đăng ký code set `ai_channel`, `ai_client`; KHÔNG đổi tệp ai-CR-230). `assistant_questions` giữ khóa, lấy số lớn hơn giữa tin nhắn trợ lý cũ và `turns` kênh web.
+- Nguồn: 3 SELECT cố định (+1 kiểm bảng tồn tại). Chưa thu → `NOT_COLLECTED` (không ghi 0). Khối FE «Dùng AI» trên hồ sơ (`usage-ai-section.tsx`).
+
 ## Todo
-- [ ] hợp đồng A0 gửi lead
-- [ ] 8 khóa + định nghĩa
-- [ ] nguồn pha 1 (`tab_assistant_change`)
-- [ ] nguồn pha 3 (`tab_ai_usage_daily`, gác has_table)
-- [ ] khối FE
-- [ ] đổi nguồn `assistant_questions` sau A0
+- [x] hợp đồng A0 gửi lead
+- [x] 8 khóa + định nghĩa
+- [x] nguồn pha 1 (`tab_assistant_change`)
+- [x] nguồn pha 3 (`tab_ai_usage_daily`, gác has_table)
+- [x] khối FE
+- [x] đổi nguồn `assistant_questions` sau A0
 
 ## Tests
 Backend `test/backend/test_chi_so_dung_ai_d0.py`: không có bảng A0 → 6 khóa ở `unmeasured=NOT_COLLECTED`, 2 khóa pha 1 có số;

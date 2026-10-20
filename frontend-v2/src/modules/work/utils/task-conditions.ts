@@ -38,6 +38,8 @@ export interface FilterableTask {
   created_at: string
   completed_at: string | null
   creator_employee_id: number
+  /** duoc-CR-656: `0` = chưa chọn loại việc. */
+  task_type_id: number
   pic_keys: string
   /**
    * Mỗi TRƯỜNG TÙY BIẾN một khóa `label_{fieldId}` (độ ưu tiên nay là một trong
@@ -61,6 +63,7 @@ export function toFilterableTask(task: WorkTask): FilterableTask {
     created_at: task.created_at,
     completed_at: task.completed_at,
     creator_employee_id: task.creator_employee_id,
+    task_type_id: task.task_type_id,
     pic_keys: multiKeys(
       task.assignees.filter((a) => a.kind === WORK_ASSIGNEE_KIND.PIC).map((a) => a.employee_id),
     ),

@@ -162,6 +162,8 @@ class Document(Base, AuditMixin, SoftDeleteMixin):
         #  Báo cáo Văn bản: kỳ theo ngày tạo, chỉ số «Đã ban hành» theo ngày ban hành.
         Index("ix_document_created_at", "created_at"),
         Index("ix_document_issued_at", "issued_at"),
+        #  duoc-CR-656 (D1c): tải «chờ ban hành» theo người soạn thảo — `(drafter_employee_id, status)`.
+        Index("ix_document_drafter_status", "drafter_employee_id", "status"),
     )
 
     # ── Định danh ────────────────────────────────────────────────────────────

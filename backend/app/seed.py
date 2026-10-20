@@ -1188,6 +1188,33 @@ def seed_cost_types(db) -> int:
     return added
 
 
+SAMPLE_WORK_TASK_TYPES = [
+    # mã, tên, giờ ước lượng mặc định
+    ("BAO_GIA_NCC", "Báo giá nhà cung cấp", 4),
+    ("KHAO_SAT_GIA", "Khảo sát giá thị trường", 6),
+    ("SOAN_HOP_DONG", "Soạn hợp đồng", 8),
+    ("DOI_SOAT_CONG_NO", "Đối soát công nợ", 3),
+]
+
+
+def seed_work_task_types(db) -> int:
+    """duoc-CR-656: vài loại việc mẫu cho Dự án (dùng chung, `company_id = 0`) — CHỈ local, chỉ thêm mã còn thiếu."""
+    from decimal import Decimal
+
+    from app.modules.work.task_type_model import WorkTaskType
+
+    have = {c for (c,) in db.query(WorkTaskType.code).filter(WorkTaskType.company_id == 0).all()}
+    added = 0
+    for i, (code, name, hours) in enumerate(SAMPLE_WORK_TASK_TYPES):
+        if code in have:
+            continue
+        db.add(WorkTaskType(company_id=0, code=code, name=name, default_estimate_hours=Decimal(hours), sort_order=i))
+        added += 1
+    if added:
+        db.commit()
+    return added
+
+
 # ---- Phân hệ VĂN THƯ · danh mục nền ----
 # Ba sổ mở sẵn cho pháp nhân đầu tiên: đến / đi / nội bộ.
 # Mỗi sổ một bộ đếm riêng, đếm lại từ 1 mỗi năm — đúng lệ hành chính.
@@ -1681,6 +1708,11 @@ def run():
         n_doc = seed_doc_catalog(db, company.id if company else 0)
         if n_doc:
             print(f"Nạp {n_doc} dòng danh mục Văn thư.")
+
+        # Loại việc mẫu của Dự án — CHỈ local (duoc-CR-656).
+        n_types = seed_work_task_types(db)
+        if n_types:
+            print(f"Nạp {n_types} loại việc mẫu.")
 
         # Văn bản mẫu — CHỈ local (`seed_prod.py` không gọi hàm này).
         n_sample = seed_sample_documents(db, company.id if company else 0)

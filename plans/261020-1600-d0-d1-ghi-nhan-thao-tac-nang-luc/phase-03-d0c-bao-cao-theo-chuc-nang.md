@@ -8,7 +8,7 @@
 - Memory: «API báo cáo phải nhanh nhất», «Gác điều hướng mặc định MỞ»
 
 ## Overview
-- P1 · **1,5 ngày** (BE 0,8 · FE 0,7) · pending · cần phase 01–02 và **CR-651 đã gộp** (đụng `modules/report/**`).
+- P1 · **1,5 ngày** (BE 0,8 · FE 0,7) · **implemented (duoc-CR-655, 20/10/2026)** · cần phase 01–02 và **CR-651 đã gộp** (đụng `modules/report/**`).
 - Bảng gom ngày theo chức năng + 3 đường API + 1 trang báo cáo, gác ReportKey **15** mới.
 
 ## Key insights
@@ -66,14 +66,22 @@ Sửa test cũ: `test/backend/test_ho_so_lam_viec_ma_so_cr641.py` (`max(ReportKe
 6. FE: catalog + route + nav + trang 4 tab dùng `DataTable`; «chưa ai mở» so menu.
 7. Gate FE: chạy typecheck, lint, vitest `src/modules/report`.
 
+## Kết quả triển khai (duoc-CR-655)
+Lệch so với bản kế hoạch (đều có lý do):
+- Bỏ loại `API_ERROR` (lỗi 403/422/5xx theo đường API): `FeatureKind` chỉ còn 5 loại (ACTION·FORM·SCREEN·SEARCH·CLIENT_ERROR); lỗi API theo đường đã có ở nhật ký hệ thống, không ánh xạ được về màn. Builder chỉ đọc `tab_ui_event` (+ phòng ban từ `tab_usage_daily`) = 2 truy vấn nguồn.
+- Task celery `feature_usage.aggregate_daily` 04:45 kiêm luôn dọn 3 năm (không tách beat riêng 04:25).
+- Chi tiết một chức năng mở bằng Sheet (theo phòng ban + theo màn), không có đường theo từng người.
+- Migration `d0feat01` (nối `d0merge01`). `/summary` = 3 truy vấn, `/breakdown` = 2 (test đếm truy vấn); đo trên DB dev 89 ngày: 10 ms.
+- Tab «Lỗi» gộp cả «Tìm kiếm»; «Không ai dùng» = mã chưa thấy (BE) + mục menu chưa ai mở (FE, `feature-usage-unused-screens.ts`); kỳ rỗng thì ẩn các khẳng định «chưa ai dùng».
+
 ## Todo
-- [ ] mã + ReportKey 15 + sinh TS
-- [ ] bảng + migration
-- [ ] builder + task + beat + dọn
-- [ ] API 3 đường + xuất Excel
-- [ ] backfill script
-- [ ] trang FE + catalog + nav
-- [ ] sửa test cứng số 14
+- [x] mã + ReportKey 15 + sinh TS
+- [x] bảng + migration
+- [x] builder + task + beat + dọn
+- [x] API 3 đường + xuất Excel
+- [x] backfill script
+- [x] trang FE + catalog + nav
+- [x] sửa test cứng số 14
 
 ## Tests
 Backend `test/backend/test_bao_cao_chuc_nang_d0.py`:

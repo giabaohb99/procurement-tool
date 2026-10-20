@@ -8,7 +8,8 @@
 - `backend/scripts/sync_task_journal.py` (chỉ đi qua API, không cần đổi)
 
 ## Overview
-- P1 · **2 ngày** (BE 1 · FE 1 — FE có thể do Agent 3 làm theo doc 22 §7) · pending · chạy song song với luồng D0.
+- P1 · **2 ngày** (BE 1 · FE 1) · **implemented — duoc-CR-656 (20/10/2026)** · chạy song song với luồng D0.
+- Thực hiện thật: migration `d1cap01` (gộp D1b+D1a+D1c, một migration như chốt); FE do cùng phiên làm (không thấy ai khác sửa `modules/work` trên origin).
 - Danh mục loại việc + 4 cột mới trên `tab_work_task`. Đây là phase D1 đầu tiên vì D1a đọc `task_type_id`.
 
 ## Key insights
@@ -54,18 +55,22 @@ Sửa FE (vùng Agent 3 — phối hợp): `modules/work/types/work.ts` · `comp
 5. Seed local vài loại việc mẫu (chỉ `seed.py`, không `seed_prod.py`).
 
 ## Todo
-- [ ] enum + model + migration
-- [ ] CRUD loại việc
-- [ ] cập nhật task + outcome (mở lại khi REWORK)
-- [ ] serializer + plan_service
-- [ ] FE sheet + list + filter + danh mục
-- [ ] seed local
+- [x] enum + model + migration (`core/capability_codes.py` · `task_type_model.py` · `d1cap01`)
+- [x] CRUD loại việc (`task_type_service/controller`; list trả `{total, items}` để dùng `CrudListPage`)
+- [x] cập nhật task + outcome (`task_outcome_service`; mở lại khi REWORK)
+- [x] serializer + plan_service (`_effort_kwargs`: rác thì bỏ qua)
+- [x] FE sheet (`task-effort-fields`, `task-outcome-box`) + danh mục (`task-type-crud`, route `/project/task-types`) + bộ lọc theo loại việc
+- [ ] **Hoãn:** cột «Loại việc» trong khung nhìn Danh sách — cần thêm khóa dựng sẵn vào `BUILTIN_CARD_FIELDS` và 3 nơi vẽ (thẻ, dòng danh sách, Gantt), đổi bố cục đã nhớ của mọi người dùng; để dành khi đại ca duyệt
+- [x] seed local (`seed.py::seed_work_task_types`, 4 loại; không có trong `seed_prod.py`)
+
+**Lệch so với kế hoạch (có chủ ý):** tên migration/tệp test; `GET /task-types` trả `{total, items}` có phân trang (thay vì mảng) cho khớp `CrudListPage`;
+hộp đánh giá hiện cả khi việc đang làm lại (chỉ nhãn); `0` giờ = xóa giờ; ba migration D1 gộp một (`d1cap01`).
 
 ## Tests
-Backend `test/backend/test_task_loai_viec_d1.py`: tạo/sửa loại việc (quyền `setting.write`, 403 khi không có); `(company_id, code)` trùng → 409/422;
+Backend `test/backend/test_loai_viec_task_cr656.py` (21 bài): tạo/sửa loại việc (quyền `setting.write`, 403 khi không có); `(company_id, code)` trùng → 409/422;
 cập nhật task giờ âm/ > 999 → 422; `actual_hours` khi OPEN → 422; outcome REWORK → task về OPEN, `completed_at` NULL, audit ghi; outcome PASSED khi chưa DONE → 422;
 người không phải người tạo/quản lý list đặt outcome → 403; danh mục `work_task_outcome` đăng ký đúng.
-Vitest `src/modules/work`: `task-effort-fields.test.tsx` (nhập/validate giờ), `task-outcome-box.test.tsx` (chỉ hiện khi DONE, REWORK gọi API + làm mới).
+Vitest `src/modules/work`: `task-effort-fields.test.tsx` (9 bài), `task-outcome-box.test.tsx` (6 bài), thêm 1 bài lọc loại việc ở `task-conditions.test.ts`.
 
 ## Success criteria
 - Tạo task chọn loại «Báo giá NCC», ước 4 giờ → xong nhập thực tế 6 giờ → đánh giá «Đạt»; dữ liệu đọc được ở D1a.

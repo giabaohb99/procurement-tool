@@ -19,6 +19,7 @@ from app.core.audit import record
 from app.modules.work.audit_entity import AUDIT_TASK
 from app.modules.work import serializer as ser
 from app.modules.work import task_enrich
+from app.modules.work import task_outcome_service as outcome_svc
 from app.modules.work import label_value_service as label_values
 from app.modules.work import link_service as links
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
@@ -47,6 +48,7 @@ def _shape(tasks: list[WorkTask], extra: dict, light: bool = False) -> list[dict
             subtask_done=sub.get("done", 0), subtask_total=sub.get("total", 0),
             comment_count=extra["comments"].get(t.id, 0),
             light=light,
+            task_type_name=extra["task_types"].get(int(t.task_type_id or 0), ""),
         ))
     return out
 
@@ -211,6 +213,7 @@ def create_task(db: Session, actor: Actor, data) -> dict:
                      db, list_id, section_id, parent.id if parent else None),
                  creator_employee_id=actor.employee_id,
                  created_by=actor.user_id, updated_by=actor.user_id)
+    outcome_svc.apply_effort_fields(db, t, data)      # duoc-CR-656: loại việc + giờ ước lượng
     db.add(t)
     db.commit()
     if data.assignee_ids:
@@ -358,6 +361,8 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
     if data.status is not None and int(data.status) != int(t.status):
         _apply_status(db, actor, t, int(data.status))
 
+    outcome_svc.apply_effort_fields(db, t, data)       # duoc-CR-656: sau trạng thái (giờ thực tế cần DONE)
+
     t.updated_by = actor.user_id
     db.commit()
     record(db, actor.user_id, AUDIT_TASK, t.id, "update", f"Sửa công việc: {t.title}")
@@ -371,6 +376,7 @@ def _apply_status(db: Session, actor: Actor, t: WorkTask, status: int) -> None:
     việc con chưa xong" rồi hỏi xác nhận; dữ liệu để nguyên cho khớp sự thật.
     """
     t.status = status
+    outcome_svc.on_status_changed(t, status)     # duoc-CR-656: giữ cột `outcome` khớp trạng thái
     if status == int(WorkTaskStatus.DONE):
         t.completed_at = datetime.utcnow()
         t.completed_by = actor.employee_id

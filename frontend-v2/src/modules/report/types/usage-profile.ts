@@ -55,6 +55,12 @@ export interface UsageSnapshotLists {
   /** [route, số lần bị 403] */
   top_403_routes?: [string, number][]
   docs?: Record<string, UsageDocCounts>
+  /** Nhóm 3.8: {mã kênh `AI_CHANNEL`: số lượt}. */
+  ai_channels?: Record<string, number>
+  /** Nhóm 3.8: {mã ứng dụng `AI_CLIENT`: số lượt} — chỉ kênh ứng dụng AI ngoài. */
+  ai_clients?: Record<string, number>
+  /** Nhóm 3.8: [mã nhóm công cụ, số lượt]. */
+  ai_tool_groups?: [string, number][]
 }
 
 export interface UsageCohort {

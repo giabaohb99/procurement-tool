@@ -32,6 +32,8 @@ AUDIT_LIST = "work_list"
 AUDIT_LIST_MEMBER = "work_list_member"
 AUDIT_GROUP = "work_group"
 AUDIT_GROUP_MEMBER = "work_group_member"
+#  duoc-CR-656: danh mục loại việc (quản trị khai). Không nằm trong dòng hoạt động của dự án nào.
+AUDIT_TASK_TYPE = "work_task_type"
 
 
 class WorkActivityKind(IntEnum):

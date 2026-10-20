@@ -163,7 +163,11 @@ class PurchaseOrder(Base, AuditMixin, SoftDeleteMixin):
 
     __tablename__ = "tab_purchase_order"
     # created_by nằm ở AuditMixin — index qua __table_args__ (apply_scope lọc theo cột này ở MỌI list)
-    __table_args__ = (Index("ix_po_created_by", "created_by"),)
+    __table_args__ = (
+        Index("ix_po_created_by", "created_by"),
+        #  duoc-CR-656 (D1c): tải ĐMH đang xử lý theo người phụ trách — `(nspt_id, status)`.
+        Index("ix_po_nspt_status", "nspt_id", "status"),
+    )
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")     # PO00045
     misa_code: Mapped[str] = mapped_column(String(50), default="")

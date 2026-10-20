@@ -36,7 +36,7 @@ def test_bo_ma_co_trong_so_dang_ky():
 def test_report_key_14_co_nhan_va_nhom():
     assert ReportKey.USAGE_PROFILE == 14
     assert REPORT_META[ReportKey.USAGE_PROFILE] == ("Hồ sơ cách làm việc", "Quản trị")
-    assert max(int(k) for k in ReportKey) == 14
+    assert max(int(k) for k in ReportKey) >= 14   # CR-655 thêm 15; D1 sẽ thêm 16
 
 
 def test_cong_tac_mac_dinh_bat_va_tat_duoc():

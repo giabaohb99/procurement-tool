@@ -735,6 +735,8 @@ export const queryKeys = {
     activityActors: (listId: number) =>
       ['work', 'lists', listId, 'activity-actors'] as const,
     task: (id: number) => ['work', 'tasks', id] as const,
+    /** Loại việc đang dùng cho ô chọn của panel chi tiết / bộ lọc (duoc-CR-656). */
+    taskTypes: () => ['work', 'task-types'] as const,
     /**
      * Bình luận (E-01) và đính kèm (E-03) của một việc.
      *
@@ -816,6 +818,9 @@ export const queryKeys = {
     usageProfile: (userId: number, weeks: number) => ['report', 'usage-profile', 'detail', userId, weeks] as const,
     /** Bộ chỉ số đánh giá (duoc-CR-649). */
     usageMetricCatalog: () => ['report', 'usage-profile', 'metric-catalog'] as const,
+    /** Mức dùng chức năng (duoc-CR-655). */
+    featureUsage: (params: Record<string, unknown>) => ['report', 'feature-usage', 'summary', params] as const,
+    featureUsageBreakdown: (params: Record<string, unknown>) => ['report', 'feature-usage', 'breakdown', params] as const,
   },
   coffee: {
     all: ['coffee'] as const,

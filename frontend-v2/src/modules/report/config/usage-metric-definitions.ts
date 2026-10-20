@@ -20,8 +20,10 @@ export const USAGE_METRIC_SECTIONS: { section: string; title: string }[] = [
   { section: '3.4', title: 'Phản hồi và phối hợp' },
   { section: '3.5', title: 'Mức thành thạo' },
   { section: '3.6', title: 'An toàn tài khoản' },
+  { section: '3.8', title: 'Dùng AI' },
 ]
 
+const AI_USAGE = 'Số liệu dùng AI theo ngày (dịch vụ AI đẩy sang mỗi đêm)'
 const REQ_LOG = 'Nhật ký truy cập hệ thống'
 const AUDIT = 'Nhật ký thao tác (audit)'
 const UI_EVENT = 'Sự kiện giao diện (chỉ có từ khi bật thu thập)'
@@ -74,7 +76,7 @@ export const USAGE_METRIC_DEFINITIONS: Record<string, UsageMetricDefinition> = {
   notif_read_p50_min: { meaning: 'Nhận thông báo thì bao lâu sau mới đọc.', formula: 'Giá trị giữa của (lúc đọc − lúc gửi).', source: 'Bảng thông báo (chỉ tính từ ngày có cột thời điểm đọc)' },
   mention_reply_p50_h: { meaning: 'Được nhắc tên trong bình luận thì bao lâu sau trả lời.', formula: 'Giá trị giữa của (bình luận đầu tiên của người được nhắc sau lúc nhắc − lúc nhắc), tính theo giờ.', source: 'Bình luận và lượt nhắc tên (ước lượng gần đúng)' },
   comments: { meaning: 'Mức tham gia trao đổi trên phiếu.', formula: `Đếm bình luận do người này viết ${WINDOW}. Không đọc nội dung bình luận.`, source: 'Bảng bình luận' },
-  assistant_questions: { meaning: 'Có dùng trợ lý AI để hỏi không.', formula: `Đếm câu hỏi gửi trợ lý AI ${WINDOW}. Không lưu chủ đề.`, source: 'Tin nhắn trợ lý AI' },
+  assistant_questions: { meaning: 'Có dùng trợ lý AI để hỏi không.', formula: `Đếm câu hỏi gửi trợ lý AI ${WINDOW}. Không lưu chủ đề.`, source: 'Tin nhắn trợ lý AI + số liệu dùng AI theo ngày (lấy số lớn hơn)' },
   assistant_changes: { meaning: 'Có nhờ trợ lý AI thay đổi dữ liệu không.', formula: `Đếm thay đổi do trợ lý AI thực hiện ${WINDOW}.`, source: 'Bảng thay đổi của trợ lý AI' },
   // 3.5 Mức thành thạo
   saved_prefs: { meaning: 'Biết tùy chỉnh hệ thống cho thuận tay (lưu bộ lọc, chỉnh cột).', formula: 'Đếm tùy chọn bộ lọc và cột đã lưu của người này.', source: 'Tùy chọn người dùng' },
@@ -92,6 +94,15 @@ export const USAGE_METRIC_DEFINITIONS: Record<string, UsageMetricDefinition> = {
   export_rows_spike: { meaning: 'Tuần này xuất dữ liệu nhiều bất thường so với thói quen.', formula: 'Có (1) khi số dòng xuất trong tuần vượt 3 lần mức p95 của chính người đó trong 12 tuần trước (và từ 1.000 dòng trở lên).', source: 'Nhật ký xuất dữ liệu' },
   max_deletes_10min: { meaning: 'Xóa hàng loạt trong thời gian ngắn.', formula: 'Số thao tác xóa nhiều nhất trong một khung trượt 10 phút.', source: AUDIT },
   active_after_resign: { meaning: 'Tài khoản của người đã nghỉ việc vẫn còn hoạt động.', formula: 'Có (1) khi ngày nghỉ việc đã qua mà tài khoản vẫn có thao tác.', source: 'Hồ sơ nhân sự + nhật ký truy cập' },
+  // 3.8 Dùng AI (duoc-CR-655) — chỉ có số đếm và mã, không lưu nội dung câu hỏi
+  ai_uses: { meaning: 'Mức dùng AI nói chung: trợ lý trên web, Telegram, Zalo hoặc ứng dụng AI ngoài.', formula: `Cộng số câu hỏi (web, Telegram, Zalo) và số lượt gọi công cụ (ứng dụng ngoài) ${WINDOW}.`, source: AI_USAGE },
+  ai_active_days: { meaning: 'Dùng AI đều đặn hay chỉ thỉnh thoảng.', formula: `Số ngày có ít nhất một lượt dùng AI ${WINDOW}.`, source: AI_USAGE },
+  ai_mcp_share: { meaning: 'Phần dùng AI qua ứng dụng ngoài (Claude, ChatGPT) so với trợ lý của công ty.', formula: 'Lượt dùng qua ứng dụng AI ngoài chia cho tổng lượt dùng AI. Không dùng AI thì chưa đo được.', source: AI_USAGE },
+  ai_tool_groups_used: { meaning: 'Nhờ AI nhiều loại việc hay chỉ một loại. Tên các nhóm việc hiện ở khối «Dùng AI» của hồ sơ.', formula: `Số nhóm công cụ khác nhau đã được AI gọi ${WINDOW}.`, source: AI_USAGE },
+  ai_denied: { meaning: 'AI bị chặn vì thiếu quyền, gợi ý cấp thêm quyền hoặc người dùng đang nhờ việc ngoài phạm vi.', formula: `Đếm lượt công cụ bị từ chối quyền ${WINDOW}.`, source: AI_USAGE },
+  ai_drafts_confirmed: { meaning: 'Bao nhiêu bản nháp do AI soạn đã được người xác nhận thành phiếu thật.', formula: `Đếm lượt xác nhận nháp thành công ${WINDOW}.`, source: AI_USAGE },
+  ai_docs_drafted: { meaning: 'Số phiếu được lập qua AI thay vì người tự gõ.', formula: `Đếm phiếu khác nhau có thao tác lập mới do AI làm hộ ${WINDOW} (một phiếu ghi nhiều lần chỉ tính một).`, source: 'Nhật ký thao tác (cột kênh AI)' },
+  ai_docs_share: { meaning: 'Trong số phiếu người này lập, bao nhiêu phần nhờ AI soạn.', formula: 'Phiếu do AI soạn chia cho tổng phiếu đã lập; tối đa 100%. Chưa lập phiếu nào thì chưa đo được.', source: 'Nhật ký thao tác (cột kênh AI) + số phiếu đã lập' },
 }
 
 /** Chỉ số hoãn / bỏ → lý do (khóa theo `DEFERRED_METRICS` backend). */

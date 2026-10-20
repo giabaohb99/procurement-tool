@@ -36,6 +36,11 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
     subtask_done: 0,
     subtask_total: 0,
     comment_count: 0,
+    task_type_id: 0,
+    task_type_name: '',
+    estimate_hours: null,
+    actual_hours: null,
+    outcome: 0,
     ...patch,
   }
 }
@@ -198,5 +203,13 @@ describe('applyTaskConditions', () => {
       state([{ name: 'title', type: 'text', operator: 'contains', value: '' }]),
     )
     expect(ra).toHaveLength(2)
+  })
+
+  it('lọc theo LOẠI VIỆC (duoc-CR-656): «là» khớp đúng loại, «không phải» giữ cả việc chưa chọn loại', () => {
+    const rows = [task({ id: 1, task_type_id: 3 }), task({ id: 2, task_type_id: 4 }), task({ id: 3, task_type_id: 0 })]
+    const is = applyTaskConditions(rows, state([{ name: 'task_type_id', type: 'combobox', operator: 'is', value: '3' }]))
+    expect(is.map((t) => t.id)).toEqual([1])
+    const isNot = applyTaskConditions(rows, state([{ name: 'task_type_id', type: 'combobox', operator: 'is_not', value: '3' }]))
+    expect(isNot.map((t) => t.id)).toEqual([2, 3])
   })
 })

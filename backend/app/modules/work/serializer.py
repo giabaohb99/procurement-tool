@@ -102,7 +102,7 @@ def task_link_out(link: WorkTaskLink) -> dict:
 
 def task_out(t: WorkTask, *, assignees: list[dict],
              labels: list[dict], subtask_done: int = 0, subtask_total: int = 0,
-             comment_count: int = 0, light: bool = False) -> dict:
+             comment_count: int = 0, light: bool = False, task_type_name: str = "") -> dict:
     """Một task cho cả kanban lẫn danh sách.
 
     `subtask_done/total` là tiến độ "n/m" trên thẻ (C-02) — chỉ đếm việc con,
@@ -131,4 +131,9 @@ def task_out(t: WorkTask, *, assignees: list[dict],
         "labels": labels,
         "subtask_done": subtask_done, "subtask_total": subtask_total,
         "comment_count": comment_count,
+        #  duoc-CR-656 (D1b). Giờ về CHUỖI như `value_number`: `Decimal` qua JSON thành float.
+        "task_type_id": int(t.task_type_id or 0), "task_type_name": task_type_name,
+        "estimate_hours": None if t.estimate_hours is None else str(t.estimate_hours),
+        "actual_hours": None if t.actual_hours is None else str(t.actual_hours),
+        "outcome": int(t.outcome or 0),
     }

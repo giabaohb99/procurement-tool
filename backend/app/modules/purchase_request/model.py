@@ -23,7 +23,11 @@ class PurchaseRequest(Base, AuditMixin):
 
     __tablename__ = "tab_purchase_request"
     # created_by nằm ở AuditMixin — index qua __table_args__ (apply_scope lọc theo cột này ở MỌI list)
-    __table_args__ = (Index("ix_pr_created_by", "created_by"),)
+    __table_args__ = (
+        Index("ix_pr_created_by", "created_by"),
+        #  duoc-CR-656 (D1c): tải duyệt đang chờ theo trưởng phòng đại diện — `(head_of_dept_id, status)`.
+        Index("ix_pr_head_status", "head_of_dept_id", "status"),
+    )
 
     code: Mapped[str] = mapped_column(String(50), unique=True, default="")
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)  # pháp nhân nhận hóa đơn — apply_scope lọc theo cột này

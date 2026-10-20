@@ -1,4 +1,4 @@
-import { FolderKanban, LayoutDashboard, ListChecks } from 'lucide-react'
+import { FolderKanban, LayoutDashboard, ListChecks, Shapes } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -46,6 +46,14 @@ export const workModule: ErpModule = {
       entity: 'work_task',
       end: true,
     },
+    {
+      //  duoc-CR-656: quản trị khai danh mục loại việc. Gác bằng `setting` nên người dùng thường không thấy mục này.
+      label: 'Loại việc',
+      path: appRoutes.project.taskTypes,
+      icon: Shapes,
+      entity: 'setting',
+      end: true,
+    },
   ],
 
   //  Cây danh sách bên trái là route CHA: đổi danh sách thì chỉ phần bên phải
@@ -75,6 +83,13 @@ export const workModule: ErpModule = {
           path: 'lists/:listId',
           lazy: async () => ({
             Component: (await import('./pages/work-list-page')).WorkListPage,
+          }),
+        },
+        {
+          //  Danh mục loại việc (quản trị). Đường tĩnh nên thắng `lists/:listId` như các đường khác.
+          path: 'task-types',
+          lazy: async () => ({
+            Component: (await import('./pages/task-type-catalog-page')).TaskTypeCatalogPage,
           }),
         },
         {

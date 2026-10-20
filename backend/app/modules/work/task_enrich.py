@@ -28,7 +28,7 @@ def collect(db: Session, tasks: list[WorkTask]) -> dict:
     """
     ids = [t.id for t in tasks]
     if not ids:
-        return {"assignees": {}, "labels": {}, "subtasks": {}, "comments": {}}
+        return {"assignees": {}, "labels": {}, "subtasks": {}, "comments": {}, "task_types": {}}
 
     rows = db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id.in_(ids)).all()
     names = _employee_names(db, [r.employee_id for r in rows])
@@ -66,7 +66,18 @@ def collect(db: Session, tasks: list[WorkTask]) -> dict:
         subtasks[parent_id] = {"total": int(total or 0), "done": int(done or 0)}
 
     return {"assignees": assignees, "labels": labels,
-            "subtasks": subtasks, "comments": comment_counts(db, ids)}
+            "subtasks": subtasks, "comments": comment_counts(db, ids),
+            "task_types": task_type_names(db, tasks)}
+
+
+def task_type_names(db: Session, tasks: list[WorkTask]) -> dict[int, str]:
+    """`{task_type_id: tên}` cho các loại việc có mặt trong mẻ — một query, bỏ qua mẻ không dùng loại nào (duoc-CR-656)."""
+    from app.modules.work.task_type_model import WorkTaskType
+
+    type_ids = {int(t.task_type_id) for t in tasks if t.task_type_id}
+    if not type_ids:
+        return {}
+    return {i: n for i, n in db.query(WorkTaskType.id, WorkTaskType.name).filter(WorkTaskType.id.in_(type_ids)).all()}
 
 
 def comment_counts(db: Session, task_ids: list[int]) -> dict[int, int]:

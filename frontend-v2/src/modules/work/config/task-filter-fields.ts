@@ -1,5 +1,6 @@
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
 import { workApi } from '../api/work-api'
+import { workTaskTypeApi } from '../api/task-type-api'
 import {
   fieldHasOptions,
   WORK_FIELD_TYPE,
@@ -76,6 +77,17 @@ export function buildTaskFilterFields(
           value: String(m.employee_id),
           label: m.employee_name || m.employee_code,
         }))
+      },
+    },
+    {
+      //  duoc-CR-656. Nạp cả loại đã ngừng: việc cũ vẫn mang loại ấy và người dùng muốn lọc ra chúng.
+      name: 'task_type_id',
+      label: 'Loại việc',
+      type: 'combobox',
+      operators: ['is', 'is_not', 'in', 'not_in'],
+      fetchOptions: async () => {
+        const { items } = await workTaskTypeApi.listAll()
+        return items.map((t) => ({ value: String(t.id), label: t.name }))
       },
     },
     { name: 'due_date', label: 'Hạn chót', type: 'date' },

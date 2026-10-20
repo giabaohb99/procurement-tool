@@ -65,6 +65,8 @@ celery_app.conf.update(
         "app.modules.usage_profile.tasks_daily",     # Hồ sơ cách làm việc (duoc-CR-641): gom ngày 04:30
         "app.modules.usage_profile.tasks_snapshot",  # ... snapshot tuần thứ Hai 05:15
         "app.modules.usage_profile.tasks_cleanup",   # ... dọn sự kiện thô 90 ngày + số gom 3 năm 04:20
+        "app.modules.feature_usage.tasks",           # ... gom theo chức năng 04:45 (duoc-CR-655)
+        "app.modules.capability.tasks",              # Năng lực theo loại việc (duoc-CR-656): dựng vòng đời phiếu 05:00
         "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
@@ -143,6 +145,14 @@ celery_app.conf.update(
         "usage-aggregate-daily": {
             "task": "usage.aggregate_daily",
             "schedule": crontab(hour=4, minute=30),  # 04:30 VN, mỗi ngày (gom HÔM QUA)
+        },
+        "feature-usage-daily": {
+            "task": "feature_usage.aggregate_daily",
+            "schedule": crontab(hour=4, minute=45),  # 04:45 VN, sau usage.aggregate_daily (duoc-CR-655)
+        },
+        "capability-build-cycles": {
+            "task": "capability.build_cycles",
+            "schedule": crontab(hour=5, minute=0),   # 05:00 VN, gia tăng (duoc-CR-656)
         },
         "usage-build-weekly-snapshots": {
             "task": "usage.build_weekly_snapshots",

@@ -32,6 +32,7 @@ from app.modules.work.task_model import WorkTask, WorkTaskAssignee
 from .daily_docs import APPROVAL_DECISION_ACTIONS, TRACKED_DOC_ENTITIES
 from .daily_window import vn_day_bounds
 from .model import UiEvent, UsageDaily, UserUsageSnapshot
+from .snapshot_sources_ai import AiSources, load_ai_sources
 
 WINDOW_WEEKS = 4
 HISTORY_WEEKS = 12      # export_rows_spike so với 12 tuần trước
@@ -81,6 +82,7 @@ class SnapshotSources:
     export_entities: list = field(default_factory=list)   # (user_id, entity, created_at)
     pageviews: list = field(default_factory=list)   # (user_id, session_id, tab_key, occurred_at, route)
     prev_snapshots: list = field(default_factory=list)    # (user_id, period_start, metrics)
+    ai: AiSources = field(default_factory=AiSources)   # duoc-CR-655: nhóm 3.8 «Dùng AI»
 
 
 def _counts(db: Session, col, *conds) -> dict:
@@ -184,4 +186,5 @@ def load_snapshot_sources(db: Session, week_start: date) -> SnapshotSources:
         select(UserUsageSnapshot.user_id, UserUsageSnapshot.period_start, UserUsageSnapshot.metrics)
         .where(UserUsageSnapshot.period_kind == int(PeriodKind.WEEK),
                UserUsageSnapshot.period_start.in_(prev_starts))).all()]
+    s.ai = load_ai_sources(db, w)
     return s

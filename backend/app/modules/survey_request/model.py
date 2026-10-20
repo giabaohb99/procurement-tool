@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Integer, Numeric, String, Text
+from sqlalchemy import BigInteger, Boolean, Index, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
@@ -55,6 +55,8 @@ class SurveyRequestLine(Base, AuditMixin):
     """Dòng của phiếu yêu cầu khảo sát — mỗi dòng 1 sản phẩm/nhóm hàng cần khảo sát."""
 
     __tablename__ = "tab_survey_request_line"
+    #  duoc-CR-656 (D1c): tải dòng khảo sát đang giữ theo người — `(assignee, line_status)`.
+    __table_args__ = (Index("ix_srl_assignee_status", "assignee", "line_status"),)
 
     survey_request_id: Mapped[int] = mapped_column(BigInteger, index=True)
     internal_line_code: Mapped[str] = mapped_column(String(50), default="")  # mã yêu cầu dòng (auto, KHÔNG hiện với người YC)
