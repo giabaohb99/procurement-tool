@@ -40,6 +40,8 @@ import {
   useSaveLeaveRequest,
 } from '../hooks/use-leave'
 import { EDITABLE_LEAVE_STATUSES, LEAVE_STATUS } from '../types/leave'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 const PRINTABLE_LEAVE_STATUSES: number[] = [
   LEAVE_STATUS.DRAFT,
@@ -305,7 +307,10 @@ export function LeaveRequestDetailPage() {
               <Button
                 variant="outline"
                 className={SECONDARY_ACTION_SLOT}
-                onClick={() => navigate(appRoutes.hr.leaveRequestPrint(requestId))}
+                onClick={() => {
+                  trackUiAction(UI_ACTION_CODE.PRINT)
+                  navigate(appRoutes.hr.leaveRequestPrint(requestId))
+                }}
               >
                 <Printer className="size-4" />
                 In đơn

@@ -2,6 +2,8 @@ import { Copy, Download, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -330,6 +332,7 @@ function VehicleBookingListContent() {
 
   //  Xuất Excel theo ĐÚNG bộ lọc đang hiển thị (khớp tập backend trả về).
   const handleExport = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const q = new URLSearchParams()
     if (debouncedValue) q.set('search', debouncedValue)
     if (companyId !== ALL) q.set('company_id', companyId)

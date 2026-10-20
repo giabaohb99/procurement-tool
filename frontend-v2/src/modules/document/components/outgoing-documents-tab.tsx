@@ -3,6 +3,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
@@ -180,6 +182,7 @@ function OutgoingDocumentsContent() {
   const [exporting, setExporting] = useState(false)
 
   async function exportExcel() {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     setExporting(true)
     try {
       //  KHÔNG gửi `cols`: người dùng ẩn cột trên màn hình để nhìn cho gọn,

@@ -1,6 +1,8 @@
 import { Download, Inbox, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api'
 import { Button } from '@/shared/ui/button'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
@@ -49,6 +51,7 @@ export function MyTripsPage() {
 
   //  Xuất Excel đúng bộ lọc đang xem (mine + đã điều phối + tìm kiếm + khoảng ngày).
   const handleExport = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const q = new URLSearchParams({ mine: '1', status: String(BOOKING_STATUS.dispatched) })
     if (search.trim()) q.set('search', search.trim())
     if (range.from) q.set('created_at_from', range.from)

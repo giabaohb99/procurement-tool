@@ -2,6 +2,8 @@ import { Download, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -119,6 +121,7 @@ export function PaymentRequestListPage() {
   })
 
   function exportExcel() {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     void singleFlight(async () => {
       setExporting(true)
       try {

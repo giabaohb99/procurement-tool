@@ -15,6 +15,8 @@ import { cn } from '@/shared/utils/cn'
 import { useDeleteSealRequest } from '../hooks/use-seal-requests'
 import type { SealRequest } from '../types/seal-request'
 import { SEAL_OUTLINE_BTN } from '../utils/action-button-class'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 interface SealRequestMoreMenuProps {
   request: SealRequest
@@ -73,14 +75,20 @@ export function SealRequestMoreMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem onSelect={() => navigate(appRoutes.approvalSeal.print(request.id))}>
+        <DropdownMenuItem onSelect={() => {
+            trackUiAction(UI_ACTION_CODE.PRINT)
+            navigate(appRoutes.approvalSeal.print(request.id))
+          }}>
           <Printer />
           In phiếu
         </DropdownMenuItem>
 
         {canCreate && (
           <DropdownMenuItem
-            onSelect={() => navigate(`${appRoutes.approvalSeal.new}?from=${request.id}`)}
+            onSelect={() => {
+              trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
+              navigate(`${appRoutes.approvalSeal.new}?from=${request.id}`)
+            }}
           >
             <Copy />
             Nhân bản

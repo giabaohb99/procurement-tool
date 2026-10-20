@@ -3,6 +3,8 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { usePermission } from '@/core/authorization/use-permission'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
@@ -126,6 +128,7 @@ function SurveyListContent() {
   const handleClone = useCallback(
     async (survey: Survey, e: React.MouseEvent) => {
       e.stopPropagation()
+      trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
       try {
         const res = await httpClient.post<{ data: { id: number } }>(`/api/surveys/${survey.id}/clone`)
         toast.success('Đã nhân bản phiếu khảo sát')

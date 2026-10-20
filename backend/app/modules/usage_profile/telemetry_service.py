@@ -14,7 +14,7 @@ from app.core.usage_codes import UiEventType
 
 from .model import UiEvent
 from .route_pattern import canonical_route, normalize_route
-from .telemetry_schema import MAX_AGE_MS, UiEventBatch
+from .telemetry_schema import MAX_AGE_MS, MAX_UI_ACTIONS_PER_BATCH, UiEventBatch
 
 META_NAME_MAX = 60
 META_MESSAGE_MAX = 200
@@ -46,7 +46,12 @@ def build_rows(batch: UiEventBatch, user_id: int, session_id: int | None,
                now: datetime | None = None) -> list[dict]:
     now = now or datetime.utcnow()
     rows: list[dict] = []
+    n_actions = 0
     for ev in batch.events:
+        if ev.type == int(UiEventType.UI_ACTION):
+            n_actions += 1
+            if n_actions > MAX_UI_ACTIONS_PER_BATCH:
+                continue   # trần/lô (duoc-CR-654): bỏ phần thừa, không từ chối cả lô
         is_search = ev.type == int(UiEventType.SEARCH)
         is_error = ev.type == int(UiEventType.CLIENT_ERROR)
         meta = None
@@ -63,6 +68,7 @@ def build_rows(batch: UiEventBatch, user_id: int, session_id: int | None,
             #  bao-CR-649: chuẩn hóa rồi quy route app cũ về route v2 (cùng màn → cùng tên chức năng trên báo cáo)
             "route_pattern": canonical_route(normalize_route(ev.route), batch.app),
             "form_key": ev.form,
+            "action_key": ev.action,
             "duration_ms": ev.duration_ms,
             "result_count": ev.result_count if is_search else None,
             "meta": meta,

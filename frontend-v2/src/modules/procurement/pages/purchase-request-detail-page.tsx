@@ -123,6 +123,8 @@ import {
   type PurchaseRequestDetail,
   type PurchaseRequestItem,
 } from '../types/purchase-request-detail'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 type ReasonAction = Extract<PurchaseRequestAction, 'return' | 'cancel'>
 type ConfirmAction = Extract<PurchaseRequestAction, 'dispatch' | 'complete'>
@@ -517,6 +519,7 @@ export function PurchaseRequestDetailPage() {
   }
 
   async function handleAction(action: PurchaseRequestAction) {
+    if (action === 'copy') trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
     if (action === 'return' || action === 'cancel') {
       setReasonFor(action)
       setReason('')
@@ -817,7 +820,7 @@ export function PurchaseRequestDetailPage() {
           nhà cung cấp», chỉ người có quyền xem NCC thấy) — hai người ngồi cạnh nhau bấm cùng một
           nút là ra cùng một tờ. */}
       <Button variant="outline" asChild>
-        <Link to={appRoutes.procurement.purchaseRequestPrint(data.id)} target="_blank" rel="noreferrer">
+        <Link to={appRoutes.procurement.purchaseRequestPrint(data.id)} onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)} target="_blank" rel="noreferrer">
           <Printer />
           In phiếu
         </Link>

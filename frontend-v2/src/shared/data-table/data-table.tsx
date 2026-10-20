@@ -1,4 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { RotateCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
@@ -315,6 +317,7 @@ export function DataTable<T>({
    * gần như tức thì, nếu không thì bấm xong chẳng thấy gì phản hồi.
    */
   const handleRefresh = useCallback(async () => {
+    trackUiAction(UI_ACTION_CODE.REFRESH) // duoc-CR-654
     setRefreshing(true)
     try {
       await (onRefresh ? onRefresh() : queryClient.invalidateQueries({ type: 'active' }))
@@ -338,6 +341,33 @@ export function DataTable<T>({
     togglePin,
     resetLayout,
   } = useTableLayout(tableColumns, storageKey)
+
+  //  duoc-CR-654 (D0a): đo ở handler NGƯỜI BẤM của menu «Cột» / tiêu đề, không đo trong hook layout (hook còn chạy khi tự khôi phục).
+  const trackedToggleColumn = useCallback(
+    (key: string) => {
+      trackUiAction(UI_ACTION_CODE.COLUMN_TOGGLE)
+      toggleColumn(key)
+    },
+    [toggleColumn],
+  )
+  const trackedTogglePin = useCallback(
+    (...args: Parameters<typeof togglePin>) => {
+      trackUiAction(UI_ACTION_CODE.COLUMN_PIN)
+      togglePin(...args)
+    },
+    [togglePin],
+  )
+  const trackedSetColumnColor = useCallback(
+    (...args: Parameters<typeof setColumnColor>) => {
+      trackUiAction(UI_ACTION_CODE.COLUMN_COLOR)
+      setColumnColor(...args)
+    },
+    [setColumnColor],
+  )
+  const trackedResetLayout = useCallback(() => {
+    trackUiAction(UI_ACTION_CODE.LAYOUT_RESET)
+    resetLayout()
+  }, [resetLayout])
 
   //  Màu hiệu lực = màu người dùng tự chọn, không có thì màu khai SẴN (`defaultColor`) —
   //  cùng luật `LinesTable`; dùng chung cho menu «Cột», tiêu đề và thân bảng.
@@ -527,12 +557,12 @@ export function DataTable<T>({
                 hiddenColumns={layout.hiddenColumns}
                 pinnedColumns={layout.pinnedColumns}
                 columnColors={columnColors}
-                onToggle={toggleColumn}
-                onTogglePin={togglePin}
+                onToggle={trackedToggleColumn}
+                onTogglePin={trackedTogglePin}
                 onAutoFitAll={autoFitAll}
-                onColorChange={setColumnColor}
+                onColorChange={trackedSetColumnColor}
                 onMove={moveColumn}
-                onReset={resetLayout}
+                onReset={trackedResetLayout}
               />
             )}
 
@@ -653,6 +683,7 @@ export function DataTable<T>({
                           //  Cột khai `sortDescFirst` (cột thời gian) đảo chu
                           //  kỳ: giảm → tăng → thôi — bấm vào "Ngày cập nhật"
                           //  là muốn thấy bản ghi mới nhất ngay nhịp đầu.
+                          trackUiAction(UI_ACTION_CODE.SORT_CHANGE) // duoc-CR-654
                           const firstDir = column.sortDescFirst ? 'desc' : 'asc'
                           const secondDir = column.sortDescFirst ? 'asc' : 'desc'
                           if (sortBy !== column.key) return onSortChange(column.key, firstDir)

@@ -102,6 +102,9 @@ import {
 } from '../types/payment-request'
 import { parseOffsetsParam, splitLineOffset } from '../utils/assistant-offsets'
 import { autoPrintText } from '../utils/print-texts'
+import { UI_ACTION_CODE, UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 /**
  * Chi tiết / tạo mới Yêu cầu thanh toán (YCTT).
@@ -294,6 +297,7 @@ function today(): string {
  */
 function PaymentRequestCreate() {
   const navigate = useNavigate()
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.PAYMENT_REQUEST, true) // duoc-CR-654
   const location = useLocation()
   const { can } = usePermission()
   const [searchParams] = useSearchParams()
@@ -437,6 +441,7 @@ function PaymentRequestCreate() {
     }
     try {
       const created = await createMutation.mutateAsync(payload)
+      markSubmitted()
       toast.success(
         created.length === 1
           ? 'Đã tạo yêu cầu thanh toán'
@@ -682,6 +687,11 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const remove = useDeletePaymentRequest()
   const runAction = usePaymentRequestAction(paymentRequestId)
   const refundPrepay = useRefundPrepay(paymentRequestId)
+  //  duoc-CR-654: chỉ đo khi phiếu Nháp sửa được (xem thì im). `req` chưa về thì false.
+  const { markSubmitted } = useFormTelemetry(
+    UI_FORM_CODE.PAYMENT_REQUEST,
+    req?.status === 'draft' && can('payment_request', 'write'),
+  )
 
   // CR-260 — treo cấp NCC còn lại: mở cột "Cấn trừ trả trước" khi sửa nháp và cho
   // người duyệt thấy treo có còn đủ trước khi gật. Duyệt xong thì thôi, khỏi gọi.
@@ -826,6 +836,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
         offset_amount: Number(line.offset_amount) || 0,
       })),
     })
+    markSubmitted()
   }
 
   /**
@@ -911,6 +922,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
               >
                 <Link
                   to={appRoutes.finance.paymentRequestPrint(req.id)}
+                  onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)}
                   target="_blank"
                   rel="noreferrer"
                 >

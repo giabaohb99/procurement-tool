@@ -2,6 +2,8 @@ import { Plus } from 'lucide-react'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
@@ -172,6 +174,7 @@ function CrudListContent<T extends CrudRecord>({
   }
 
   const handleQuickFilterChange = (key: string, value: string) => {
+    if (value && value !== 'all') trackUiAction(UI_ACTION_CODE.QUICK_FILTER)
     const nextParams = new URLSearchParams(searchParams)
     if (value && value !== 'all') {
       nextParams.set(key, value)
@@ -254,9 +257,11 @@ function CrudListContent<T extends CrudRecord>({
             <PermissionGate entity={config.entity} action="create">
               <Button
                 className="max-md:flex-1"
-                onClick={() =>
-                  config.createRoute ? navigate(config.createRoute) : setFormItem(null)
-                }
+                onClick={() => {
+                  trackUiAction(UI_ACTION_CODE.CREATE_NEW)
+                  if (config.createRoute) navigate(config.createRoute)
+                  else setFormItem(null)
+                }}
               >
                 <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
               </Button>

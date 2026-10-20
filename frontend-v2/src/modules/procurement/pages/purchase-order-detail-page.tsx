@@ -26,6 +26,8 @@ import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 // CR-268: mượn hook tiền treo của phân hệ Tài chính — báo đơn còn tiền trả trước.
 import { usePrepayHanging } from '@/modules/finance/hooks/use-payment-requests'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -207,6 +209,11 @@ export function PurchaseOrderDetailPage() {
   } | null>(null)
   /** Dòng đang mở hộp chi tiết (thông tin đầy đủ + các lần giao). */
   const [lineIndex, setLineIndex] = useState<number | null>(null)
+  //  duoc-CR-654 (D0b): «Nhận hàng» không có form riêng — đo dialog chi tiết dòng ĐMH (nơi nhập giao/nhận) khi người dùng có quyền ghi.
+  const { markSubmitted: markLineSubmitted } = useFormTelemetry(
+    UI_FORM_CODE.GOODS_RECEIPT,
+    lineIndex !== null && can('purchase_order', 'write'),
+  )
   const [paymentOpen, setPaymentOpen] = useState(false)
   /** Chặn bấm đúp «Gửi duyệt» ngay trong tick (bao-CR-590). */
   const submittingRef = useRef(false)
@@ -417,6 +424,7 @@ export function PurchaseOrderDetailPage() {
   }
 
   async function handleAction(action: PurchaseOrderAction) {
+    if (action === 'copy') trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
     if (
       action === 'return' ||
       action === 'reject' ||
@@ -489,7 +497,7 @@ export function PurchaseOrderDetailPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
-                <Link to={appRoutes.procurement.purchaseOrderPrint(data.id)} target="_blank" rel="noreferrer">
+                <Link to={appRoutes.procurement.purchaseOrderPrint(data.id)} onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)} target="_blank" rel="noreferrer">
                   <Printer />
                   In Đơn đặt hàng
                 </Link>
@@ -497,7 +505,7 @@ export function PurchaseOrderDetailPage() {
               {/* bao-CR-322: mẫu nội bộ / gửi kế toán. Cùng trang in với mục trên, vào bằng
                   đường dẫn riêng nên mở ra là đã đúng mẫu, không phải bấm công tắc. */}
               <DropdownMenuItem asChild>
-                <Link to={appRoutes.procurement.purchaseOrderGoodsPrint(data.id)} target="_blank" rel="noreferrer">
+                <Link to={appRoutes.procurement.purchaseOrderGoodsPrint(data.id)} onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)} target="_blank" rel="noreferrer">
                   <ReceiptText />
                   In Đơn mua hàng
                 </Link>
@@ -508,7 +516,7 @@ export function PurchaseOrderDetailPage() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to={appRoutes.procurement.purchaseOrderImportPrint(data.id)} target="_blank" rel="noreferrer">
+                    <Link to={appRoutes.procurement.purchaseOrderImportPrint(data.id)} onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)} target="_blank" rel="noreferrer">
                       <Ship />
                       In Đơn nhập khẩu
                     </Link>
@@ -516,6 +524,7 @@ export function PurchaseOrderDetailPage() {
                   <DropdownMenuItem asChild>
                     <Link
                       to={`${appRoutes.procurement.importLandedCostPrint}?codes=${encodeURIComponent(data.code || '')}`}
+                      onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -531,7 +540,7 @@ export function PurchaseOrderDetailPage() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)} target="_blank" rel="noreferrer">
+                    <Link to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)} onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)} target="_blank" rel="noreferrer">
                       <FileText />
                       In Phiếu yêu cầu
                     </Link>
@@ -989,7 +998,11 @@ export function PurchaseOrderDetailPage() {
         onOpenChange={(open) => {
           if (!open) setLineIndex(null)
         }}
-        onSave={() => void handleSave()}
+        onSave={() => {
+          //  Dialog đóng ngay khi bấm «Lưu đơn» nên không chờ API: chỉ tính «gửi» khi dữ liệu qua được bước kiểm ở màn.
+          if (!validatePurchaseOrder(data, false)) markLineSubmitted()
+          void handleSave()
+        }}
       />
 
       <PurchaseOrderReasonDialog

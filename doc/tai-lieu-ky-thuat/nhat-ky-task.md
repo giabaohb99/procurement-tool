@@ -15561,3 +15561,15 @@ vai trò quản trị hay vai trò quản lý phân quyền. Kèm một script �
 đang giữ chức vụ đó đang có, để chủ sản phẩm duyệt trên dữ liệu thật trước khi áp.
 
 Mã nguồn: backend/app/modules/employee/position_role_service.py · position_role_controller.py · migration jobposrole01 · backend/scripts/de_xuat_quyen_theo_chuc_vu.py · frontend-v2/src/modules/hr/components/job-position-roles-panel.tsx · test/backend/test_quyen_theo_chuc_vu_cr653_*.py
+
+## duoc-CR-654 | Ghi nhận bấm chức năng và theo dõi đủ mười ba biểu mẫu
+- status: xong
+- date: 2026-10-20
+Đây là hai việc đầu của đợt D0. Hệ thống nay ghi lại người dùng bấm chức năng nào trong màn như sắp xếp, đổi trang, ẩn cột, lọc,
+xuất Excel, in, nhân bản phiếu hay xóa dòng hàng loạt; mỗi nút có một mã số cố định và tuyệt đối không lưu chữ người dùng gõ, đã thử
+gõ một chuỗi vào ô tìm kiếm và kiểm tra không dòng dữ liệu nào chứa chuỗi đó. Việc gắn được đặt ở các bảng và bộ lọc dùng chung
+nên phủ được hầu hết màn danh sách, bấm trùng liên tiếp chỉ tính một lần để không làm đầy dữ liệu. Theo dõi biểu mẫu mở rộng từ
+sáu lên mười ba, thêm yêu cầu thanh toán, nhận hàng, văn bản, đặt xe, duyệt dấu, đặt phòng họp và việc dự án. Công tắc thu thập
+trên bản chạy thật sẽ được bật lại sau khi bản này lên, kèm thông báo cho nhân viên.
+
+Mã nguồn: frontend-v2/src/core/telemetry/track-ui-action.ts · backend/app/core/ui_action_codes.py · migration d0uiact01 · shared/data-table/data-table.tsx · test/backend/test_bam_chuc_nang_cr654.py

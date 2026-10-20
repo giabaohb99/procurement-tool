@@ -173,7 +173,7 @@ describe('telemetry queue', () => {
     const [event] = sentEvents(fetchImpl)[0] as Record<string, unknown>[]
     expect(event.age_ms).toBe(1_200)
     expect(Object.keys(event).sort()).toEqual(
-      ['age_ms', 'duration_ms', 'error', 'form', 'result_count', 'route', 'tab_key', 'type'].sort(),
+      ['action', 'age_ms', 'duration_ms', 'error', 'form', 'result_count', 'route', 'tab_key', 'type'].sort(),
     )
     queue.setEnabled(false)
   })

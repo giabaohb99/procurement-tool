@@ -2,6 +2,8 @@ import { Download, Filter, X } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -402,6 +404,7 @@ export function SurveyReportPage() {
   )
 
   const handleExportCsv = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     if (!data?.total) return
     setExporting(true)
     try {

@@ -2,6 +2,8 @@ import { Loader2, Paperclip, Send, Stamp, X } from 'lucide-react'
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { DocumentAttachmentsCard } from '@/modules/procurement/components/document-attachments-card'
@@ -113,6 +115,8 @@ export const SealRequestForm = forwardRef<SealFormHandle, SealRequestFormProps>(
     return Array.from(map.values())
   }, [companies, source?.companies])
 
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.SEAL_REQUEST, !isEdit || (can('seal_request', 'write') && EDITABLE_SEAL_STATUSES.has(request?.status ?? 0))) // duoc-CR-654
+
   const approvers = approversResult?.items ?? []
 
   const canManageFiles = !isEdit
@@ -153,6 +157,7 @@ export const SealRequestForm = forwardRef<SealFormHandle, SealRequestFormProps>(
     try {
       if (isEdit && request) {
         const data = await updateMutation.mutateAsync({ id: request.id, payload: body, submit })
+        markSubmitted()
         onSaved(data, submit)
         return
       }
@@ -162,6 +167,7 @@ export const SealRequestForm = forwardRef<SealFormHandle, SealRequestFormProps>(
         docType: attachDocType,
         submit,
       })
+      markSubmitted()
       onSaved(data, submit)
     } catch {
       //  Lỗi đã được http-client / mutation bắn toast; ở đây chỉ chặn điều hướng.

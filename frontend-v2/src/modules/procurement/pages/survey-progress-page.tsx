@@ -2,6 +2,8 @@ import { Download } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { appConfig } from '@/core/config/app-config'
 import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -167,6 +169,7 @@ function SurveyProgressContent() {
   const showSupplier = data?.show_supplier ?? canReadSupplier
 
   const handleExportExcel = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     await downloadFile('/api/survey-progress/export/xlsx', 'tien-do-bao-gia.xlsx', filterParams)
   }
 

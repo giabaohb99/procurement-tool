@@ -20,6 +20,8 @@ import {
   PR_LINES_TOOLBAR_STICKY_UNDER_CONTROLS,
   ReportPrLinesTab,
 } from '../components/report-pr-lines-tab'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 const ALL_COMPANY = 'all'
 const ALL_YEAR = 'all'
@@ -97,7 +99,10 @@ export function PrLinesReportPage() {
                  kiểm (`title` thì máy cảm ứng không rê chuột được). */}
             <Button
               variant="ghost"
-              onClick={() => window.print()}
+              onClick={() => {
+          trackUiAction(UI_ACTION_CODE.PRINT)
+          window.print()
+        }}
               title="In báo cáo"
               aria-label="In báo cáo"
               className="max-md:size-9 max-md:px-0"

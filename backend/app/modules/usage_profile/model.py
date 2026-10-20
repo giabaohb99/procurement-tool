@@ -33,6 +33,7 @@ class UiEvent(Base):
     event_type: Mapped[int] = mapped_column(SmallInteger)     # UiEventType
     route_pattern: Mapped[str] = mapped_column(String(120), default="")
     form_key: Mapped[int] = mapped_column(SmallInteger, default=0)   # UiForm, 0 = không phải form
+    action_key: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")  # UiAction (duoc-CR-654), 0 = không phải UI_ACTION
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     result_count: Mapped[int | None] = mapped_column(Integer, nullable=True)   # chỉ SEARCH
     meta: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)  # chỉ CLIENT_ERROR

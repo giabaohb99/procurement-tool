@@ -15,6 +15,8 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import type { AuthUser } from '@/core/auth/auth-types'
 import { useAuth } from '@/core/auth/use-auth'
 import { PermissionGate } from '@/core/authorization/permission-gate'
@@ -368,6 +370,7 @@ export function SurveyDetailPage() {
   }
 
   function duplicateLine(table: SurveyTable, index: number) {
+    trackUiAction(UI_ACTION_CODE.COPY_LINE)
     const lines = linesOf(table)
     // Bản sao là dòng MỚI: bỏ id để backend chèn thêm chứ không ghi đè dòng gốc.
     const { id: _ignored, ...cloned } = lines[index]

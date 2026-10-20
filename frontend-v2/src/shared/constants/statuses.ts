@@ -205,6 +205,30 @@ export const SUPPLIER_LEGAL_TYPE: readonly StatusOption[] = [
   {"value": "household", "label": "Hộ kinh doanh", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Chức năng được bấm */
+export const UI_ACTION: readonly StatusOption[] = [
+  {"value": "1", "label": "Ẩn/hiện cột", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Ghim cột", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Tô màu cột", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Khôi phục bố cục", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Sắp xếp", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Chuyển trang", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "7", "label": "Đổi số dòng/trang", "sort_order": 7, "is_terminal": false, "is_exception": false},
+  {"value": "8", "label": "Làm mới", "sort_order": 8, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Chọn cả trang", "sort_order": 9, "is_terminal": false, "is_exception": false},
+  {"value": "20", "label": "Áp bộ lọc", "sort_order": 20, "is_terminal": false, "is_exception": false},
+  {"value": "21", "label": "Xóa bộ lọc", "sort_order": 21, "is_terminal": false, "is_exception": false},
+  {"value": "22", "label": "Thêm điều kiện lọc", "sort_order": 22, "is_terminal": false, "is_exception": false},
+  {"value": "23", "label": "Lọc nhanh", "sort_order": 23, "is_terminal": false, "is_exception": false},
+  {"value": "100", "label": "Xuất Excel", "sort_order": 100, "is_terminal": false, "is_exception": false},
+  {"value": "101", "label": "In", "sort_order": 101, "is_terminal": false, "is_exception": false},
+  {"value": "102", "label": "Xuất báo cáo", "sort_order": 102, "is_terminal": false, "is_exception": false},
+  {"value": "200", "label": "Nhân bản phiếu", "sort_order": 200, "is_terminal": false, "is_exception": false},
+  {"value": "201", "label": "Sao chép dòng", "sort_order": 201, "is_terminal": false, "is_exception": false},
+  {"value": "202", "label": "Xóa nhiều dòng", "sort_order": 202, "is_terminal": false, "is_exception": false},
+  {"value": "203", "label": "Tạo mới từ danh sách", "sort_order": 203, "is_terminal": false, "is_exception": false},
+]
+
 /** Ứng dụng gửi sự kiện */
 export const UI_APP: readonly StatusOption[] = [
   {"value": "1", "label": "ERP v2", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -220,6 +244,7 @@ export const UI_EVENT_TYPE: readonly StatusOption[] = [
   {"value": "5", "label": "Bỏ dở biểu mẫu", "sort_order": 5, "is_terminal": false, "is_exception": false},
   {"value": "6", "label": "Tìm kiếm", "sort_order": 6, "is_terminal": false, "is_exception": false},
   {"value": "7", "label": "Lỗi giao diện", "sort_order": 7, "is_terminal": false, "is_exception": false},
+  {"value": "8", "label": "Bấm chức năng", "sort_order": 8, "is_terminal": false, "is_exception": false},
 ]
 
 /** Biểu mẫu có đo */
@@ -230,6 +255,13 @@ export const UI_FORM: readonly StatusOption[] = [
   {"value": "4", "label": "Đơn nghỉ phép", "sort_order": 4, "is_terminal": false, "is_exception": false},
   {"value": "5", "label": "Hợp đồng lao động", "sort_order": 5, "is_terminal": false, "is_exception": false},
   {"value": "6", "label": "Hồ sơ nhân sự", "sort_order": 6, "is_terminal": false, "is_exception": false},
+  {"value": "7", "label": "Yêu cầu thanh toán", "sort_order": 7, "is_terminal": false, "is_exception": false},
+  {"value": "8", "label": "Nhận hàng (dòng ĐMH)", "sort_order": 8, "is_terminal": false, "is_exception": false},
+  {"value": "9", "label": "Văn bản", "sort_order": 9, "is_terminal": false, "is_exception": false},
+  {"value": "10", "label": "Đặt xe", "sort_order": 10, "is_terminal": false, "is_exception": false},
+  {"value": "11", "label": "Duyệt dấu", "sort_order": 11, "is_terminal": false, "is_exception": false},
+  {"value": "12", "label": "Đặt phòng họp", "sort_order": 12, "is_terminal": false, "is_exception": false},
+  {"value": "13", "label": "Việc dự án (tạo nhanh)", "sort_order": 13, "is_terminal": false, "is_exception": false},
 ]
 
 /** Nhóm so sánh */
@@ -287,6 +319,30 @@ export const WORK_SCHEDULE_LEVEL: readonly StatusOption[] = [
   {"value": "4", "label": "Nhân sự", "sort_order": 4, "is_terminal": false, "is_exception": false},
 ]
 
+/** Chức năng được bấm — khóa → mã gửi lên backend. */
+export const UI_ACTION_CODE = {
+  COLUMN_TOGGLE: 1,
+  COLUMN_PIN: 2,
+  COLUMN_COLOR: 3,
+  LAYOUT_RESET: 4,
+  SORT_CHANGE: 5,
+  PAGE_CHANGE: 6,
+  PAGE_SIZE_CHANGE: 7,
+  REFRESH: 8,
+  SELECT_ALL_PAGE: 9,
+  FILTER_APPLY: 20,
+  FILTER_RESET: 21,
+  FILTER_ROW_ADD: 22,
+  QUICK_FILTER: 23,
+  EXPORT_EXCEL: 100,
+  PRINT: 101,
+  REPORT_EXPORT: 102,
+  COPY_DOCUMENT: 200,
+  COPY_LINE: 201,
+  BULK_DELETE_LINES: 202,
+  CREATE_NEW: 203,
+} as const
+
 /** Ứng dụng gửi sự kiện — khóa → mã gửi lên backend. */
 export const UI_APP_CODE = {
   ERP_V2: 1,
@@ -302,6 +358,7 @@ export const UI_EVENT_TYPE_CODE = {
   FORM_ABANDON: 5,
   SEARCH: 6,
   CLIENT_ERROR: 7,
+  UI_ACTION: 8,
 } as const
 
 /** Biểu mẫu có đo — khóa → mã gửi lên backend. */
@@ -312,6 +369,13 @@ export const UI_FORM_CODE = {
   LEAVE_REQUEST: 4,
   LABOR_CONTRACT: 5,
   EMPLOYEE_PROFILE: 6,
+  PAYMENT_REQUEST: 7,
+  GOODS_RECEIPT: 8,
+  DOCUMENT: 9,
+  VEHICLE_BOOKING: 10,
+  SEAL_REQUEST: 11,
+  ROOM_BOOKING: 12,
+  WORK_TASK: 13,
 } as const
 
 /** Tra theo tên bộ, cho chỗ dựng ô chọn động. */
@@ -337,6 +401,7 @@ export const STATUS_SETS = {
   pr_line_status: PR_LINE_STATUS,
   report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
+  ui_action: UI_ACTION,
   ui_app: UI_APP,
   ui_event_type: UI_EVENT_TYPE,
   ui_form: UI_FORM,

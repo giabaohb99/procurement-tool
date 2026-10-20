@@ -1,13 +1,15 @@
 import { env } from '@/core/config/env'
 import { tokenStorage } from '@/core/api/token-storage'
 
-import { UI_FORM_NONE, type UiEventCode, type UiFormCode } from './ui-event-codes'
+import { UI_FORM_NONE, type UiActionCode, type UiEventCode, type UiFormCode } from './ui-event-codes'
 
 /** Sự kiện một giao diện đẩy vào hàng đợi (hợp đồng `POST /api/telemetry/ui-events`). */
 export interface UiEventInput {
   type: UiEventCode
   route: string
   form?: UiFormCode
+  /** Chỉ UI_ACTION — mã nút cố định (duoc-CR-654). KHÔNG BAO GIỜ là chữ người dùng gõ. */
+  action?: UiActionCode
   duration_ms?: number
   /** Chỉ SEARCH — số kết quả. TỪ KHÓA không bao giờ đi qua đây. */
   result_count?: number | null
@@ -52,6 +54,7 @@ function toWire(event: QueuedEvent, now: number, tabKey: number) {
     type: event.type,
     route: event.route,
     form: event.form ?? UI_FORM_NONE,
+    action: event.action ?? 0,
     duration_ms: Math.max(0, Math.min(86_400_000, Math.round(event.duration_ms ?? 0))),
     result_count: event.result_count ?? null,
     age_ms: Math.max(0, Math.min(MAX_AGE_MS, now - event.at)),

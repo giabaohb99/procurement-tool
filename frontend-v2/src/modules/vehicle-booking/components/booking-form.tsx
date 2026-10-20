@@ -16,6 +16,8 @@ import {
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { useAuth } from '@/core/auth/use-auth'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -104,8 +106,11 @@ export function BookingForm({
   const isEdit = Boolean(booking)
   const source = booking ?? duplicateFrom
   //  Sau khi lưu/gửi duyệt: có onSaved thì dẫn theo phiếu vừa lưu; không thì onDone.
-  const afterSave = (saved: VehicleBooking, submitted: boolean) =>
-    onSaved ? onSaved(saved, submitted) : onDone()
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.VEHICLE_BOOKING, true) // duoc-CR-654
+  const afterSave = (saved: VehicleBooking, submitted: boolean) => {
+    markSubmitted()
+    return onSaved ? onSaved(saved, submitted) : onDone()
+  }
   //  Người tạo = tài khoản đang đăng nhập (khóa cứng, chỉ xem). Backend tự gán
   //  requester theo tài khoản nên không gửi mấy trường này lên.
   const { user } = useAuth()

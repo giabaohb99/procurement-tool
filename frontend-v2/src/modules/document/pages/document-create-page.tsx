@@ -15,6 +15,8 @@ import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { extractErrorMessage } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -93,6 +95,7 @@ export function DocumentCreatePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.DOCUMENT, true) // duoc-CR-654
   //  ⚠️ Trang này KHÔNG còn nhận bản nháp của Trợ lý AI (bao-CR-387, 12/09/2026). Tool
   //  `draft_leave_request` từng mở form văn bản GNP ở đây; nay nó soạn thẳng ĐƠN nghỉ
   //  phép ở `/hr/leave-requests/new`, vì giấy GNP do hệ tự sinh sau khi đơn được duyệt.
@@ -421,6 +424,7 @@ export function DocumentCreatePage() {
           //  `current_version_id` do chính lượt tạo đặt (`service.create` dựng
           //  phiên bản 1.0 rồi trỏ vào nó) nên đây là id có thật, không phải
           //  đoán. Lượt SỬA không trả cột đó nên lấy lại cái đã nhớ từ bước 1.
+          markSubmitted()
           await sendQueued(record.id, record.current_version_id ?? draftVersionId)
           resetCreatingGuard()
           //  Hai nút cùng mở trang chi tiết: tab «Văn bản» tự là trình xem tệp

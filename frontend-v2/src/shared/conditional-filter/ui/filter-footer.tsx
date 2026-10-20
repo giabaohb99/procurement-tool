@@ -1,4 +1,6 @@
 import { Button } from '@/shared/ui/button'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { PopoverClose } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 import { isValidFilterRow } from '../helpers/validators'
@@ -42,7 +44,10 @@ export function FilterFooter({ actions = true, inPopover = true }: FilterFooterP
       )}
     >
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={addRow} disabled={!canAddMore}>
+        <Button variant="ghost" size="sm" onClick={() => {
+            trackUiAction(UI_ACTION_CODE.FILTER_ROW_ADD) // duoc-CR-654
+            addRow()
+          }} disabled={!canAddMore}>
           {locale.addFilter}
         </Button>
 
@@ -70,13 +75,19 @@ export function FilterFooter({ actions = true, inPopover = true }: FilterFooterP
       {actions && (
         <div className="flex gap-2">
           {closeAfter(
-            <Button variant="outline" size="sm" onClick={reset}>
+            <Button variant="outline" size="sm" onClick={() => {
+              trackUiAction(UI_ACTION_CODE.FILTER_RESET)
+              reset()
+            }}>
               {locale.reset}
             </Button>,
           )}
 
           {closeAfter(
-            <Button size="sm" onClick={apply} disabled={hasDraftRows && !hasValidRow}>
+            <Button size="sm" onClick={() => {
+              trackUiAction(UI_ACTION_CODE.FILTER_APPLY)
+              apply()
+            }} disabled={hasDraftRows && !hasValidRow}>
               {locale.apply}
             </Button>,
           )}

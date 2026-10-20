@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/utils/cn'
@@ -80,6 +82,8 @@ export function TaskDraftRow({
   const rowRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.WORK_TASK, true) // duoc-CR-654
+
   const dirty = draft.title.trim() !== ''
 
   /*  Bấm ra ngoài thì đóng dòng nháp — nhưng CHỈ khi chưa gõ gì. Đang gõ dở mà
@@ -113,6 +117,8 @@ export function TaskDraftRow({
       onCancel()
       return
     }
+    //  Dòng nháp ở lại để gõ tiếp nên chỉ lần tạo ĐẦU tính là «gửi»; tạo thành công hay không do trang cha quyết (gọi API ở đó).
+    markSubmitted()
     onSave({ ...draft, title })
     //  Dòng nháp Ở LẠI để gõ tiếp việc kế — thêm việc hiếm khi đi một cái, đóng
     //  sau mỗi lần Enter thì cứ mỗi việc lại phải rê chuột xuống bấm «Việc mới».

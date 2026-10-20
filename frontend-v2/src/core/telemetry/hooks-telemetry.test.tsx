@@ -95,3 +95,36 @@ describe('useSearchTelemetry', () => {
     expect(spy).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('useFormTelemetry — 7 biểu mẫu thêm (duoc-CR-654)', () => {
+  const forms = [
+    ['PAYMENT_REQUEST', UI_FORM_CODE.PAYMENT_REQUEST],
+    ['GOODS_RECEIPT', UI_FORM_CODE.GOODS_RECEIPT],
+    ['DOCUMENT', UI_FORM_CODE.DOCUMENT],
+    ['VEHICLE_BOOKING', UI_FORM_CODE.VEHICLE_BOOKING],
+    ['SEAL_REQUEST', UI_FORM_CODE.SEAL_REQUEST],
+    ['ROOM_BOOKING', UI_FORM_CODE.ROOM_BOOKING],
+    ['WORK_TASK', UI_FORM_CODE.WORK_TASK],
+  ] as const
+
+  it.each(forms)('%s: mở rồi lưu = OPEN+SUBMIT mang đúng mã form', (_name, code) => {
+    const spy = vi.spyOn(telemetry, 'enqueue')
+    const { result, unmount } = renderHook(() => useFormTelemetry(code, true))
+    result.current.markSubmitted()
+    unmount()
+    expect(typesOf(spy)).toEqual([UI_EVENT.FORM_OPEN, UI_EVENT.FORM_SUBMIT])
+    expect(spy.mock.calls.every((c: unknown[]) => (c[0] as { form: number }).form === code)).toBe(true)
+  })
+
+  it.each(forms)('%s: đóng không lưu = OPEN+ABANDON; chưa active thì im', (_name, code) => {
+    const spy = vi.spyOn(telemetry, 'enqueue')
+    renderHook(() => useFormTelemetry(code, false)).unmount()
+    expect(spy).not.toHaveBeenCalled()
+    renderHook(() => useFormTelemetry(code, true)).unmount()
+    expect(typesOf(spy)).toEqual([UI_EVENT.FORM_OPEN, UI_EVENT.FORM_ABANDON])
+  })
+
+  it('13 mã form đủ và duy nhất', () => {
+    expect(new Set(Object.values(UI_FORM_CODE)).size).toBe(13)
+  })
+})

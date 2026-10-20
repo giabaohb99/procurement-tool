@@ -3,6 +3,8 @@ import { useCallback, useMemo, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -170,12 +172,14 @@ function PurchaseRequestListContent() {
   useSearchTelemetry(debouncedValue, data?.total, isFetching) // duoc-CR-641
 
   const handleExportExcel = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     await downloadFile('/api/purchase-requests/export/xlsx', 'yeu-cau-mua-hang.xlsx')
   }
 
   const handleClone = useCallback(
     async (pr: PurchaseRequest, e: React.MouseEvent) => {
       e.stopPropagation()
+      trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
       try {
         const res = await httpClient.post<{ data: { id: number } }>(`/api/purchase-requests/${pr.id}/clone`)
         toast.success('Đã nhân bản phiếu yêu cầu mua hàng')

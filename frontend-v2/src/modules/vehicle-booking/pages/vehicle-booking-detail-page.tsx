@@ -18,6 +18,8 @@ import { BookingStatusBadge } from '../components/status-pill'
 import { BookingWorkflowActions } from '../components/booking-workflow-actions'
 import { useVehicleBooking } from '../hooks/use-vehicle-bookings'
 import { BOOKING_STATUS } from '../types/vehicle-booking'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 /** Chỉ sửa được khi phiếu còn nháp hoặc bị trả về (khớp EDITABLE_STATUSES ở backend). */
 const EDITABLE = new Set<number>([BOOKING_STATUS.draft, BOOKING_STATUS.returned])
@@ -84,7 +86,10 @@ export function VehicleBookingDetailPage() {
                   (đều là việc phụ), để một cái có viền một cái không thì dải nút
                   đọc ra ba kiểu khác nhau. Thứ bậc đã nằm ở chỗ khác: chỉ nút
                   quyết định (Duyệt · Chấp nhận) được tô đặc. */}
-              <Button variant="outline" onClick={() => navigate(appRoutes.vehicleBooking.print(data.id))}>
+              <Button variant="outline" onClick={() => {
+                  trackUiAction(UI_ACTION_CODE.PRINT)
+                  navigate(appRoutes.vehicleBooking.print(data.id))
+                }}>
                 <Printer className="size-4" />
                 In phiếu
               </Button>

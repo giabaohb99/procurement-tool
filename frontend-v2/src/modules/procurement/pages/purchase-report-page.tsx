@@ -53,6 +53,8 @@ import {
   SUPPLIER_METRICS,
   YCKS_METRICS,
 } from '../types/purchase-report'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 /** Giá trị "không lọc công ty". Dùng chuỗi vì `SelectItem` không nhận value rỗng. */
 const ALL_COMPANY = 'all'
@@ -120,6 +122,7 @@ export function PurchaseReportPage() {
   // Workbook xuất ra có sẵn cột 12 tháng nên "Tất cả các năm" không có chỗ đổ số
   // -> quy về năm hiện tại.
   function exportExcel(sheet: string) {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     void purchaseReportApi.exportExcel(sheet, {
       year: year === ALL_YEAR ? String(thisYear) : year,
       company_id: company,
@@ -192,7 +195,10 @@ export function PurchaseReportPage() {
 
       <Button
         variant="ghost"
-        onClick={() => window.print()}
+        onClick={() => {
+          trackUiAction(UI_ACTION_CODE.PRINT)
+          window.print()
+        }}
         title="In báo cáo"
         aria-label="In báo cáo"
         className="max-md:size-9 max-md:px-0"

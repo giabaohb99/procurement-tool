@@ -2,6 +2,8 @@ import { Download, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { usePermission } from '@/core/authorization/use-permission'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
@@ -39,8 +41,9 @@ export function ReportExportButton({
 
   if (!can(entity, 'export')) return null
 
-  const handleExport = () =>
-    runOnce(async () => {
+  const handleExport = () => {
+    trackUiAction(UI_ACTION_CODE.REPORT_EXPORT)
+    return runOnce(async () => {
       setIsExporting(true)
       try {
         await reportAnalyticsApi.export(endpoint, params, filename)
@@ -50,6 +53,7 @@ export function ReportExportButton({
         setIsExporting(false)
       }
     })
+  }
 
   return (
     <Button variant="outline" onClick={handleExport} disabled={isExporting}>

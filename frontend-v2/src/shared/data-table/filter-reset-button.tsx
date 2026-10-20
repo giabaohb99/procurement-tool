@@ -2,6 +2,8 @@ import { FilterX } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { useOptionalFilterContext } from '@/shared/conditional-filter'
 import { Button } from '@/shared/ui/button'
 
@@ -76,6 +78,7 @@ export function FilterResetButton({ active, keepParams, onReset }: FilterResetBu
   const isActive = active ?? hasUrlFilter
 
   const handleReset = useCallback(() => {
+    trackUiAction(UI_ACTION_CODE.FILTER_RESET) // duoc-CR-654
     if (onReset) {
       onReset()
       return

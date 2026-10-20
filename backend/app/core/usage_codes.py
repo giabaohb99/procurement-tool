@@ -24,6 +24,7 @@ class UiEventType(IntEnum):
     FORM_ABANDON = 5
     SEARCH = 6
     CLIENT_ERROR = 7
+    UI_ACTION = 8   # duoc-CR-654: bấm chức năng (mã nút ở `ui_action_codes.UiAction`)
 
 
 class UiForm(IntEnum):
@@ -35,6 +36,14 @@ class UiForm(IntEnum):
     LEAVE_REQUEST = 4      # Đơn nghỉ phép
     LABOR_CONTRACT = 5     # HĐLĐ
     EMPLOYEE_PROFILE = 6   # Hồ sơ nhân sự
+    #  duoc-CR-654 (D0b): 7 biểu mẫu thêm — số tiếp, không chèn giữa
+    PAYMENT_REQUEST = 7    # Yêu cầu thanh toán
+    GOODS_RECEIPT = 8      # Nhận hàng = dialog dòng ĐMH (không có form nhận hàng riêng)
+    DOCUMENT = 9           # Văn bản
+    VEHICLE_BOOKING = 10   # Đặt xe
+    SEAL_REQUEST = 11      # Duyệt dấu
+    ROOM_BOOKING = 12      # Đặt phòng họp
+    WORK_TASK = 13         # Việc dự án (tạo nhanh)
 
 
 class UiApp(IntEnum):
@@ -80,11 +89,15 @@ UI_EVENT_TYPE_LABELS = {
     UiEventType.FORM_OPEN: "Mở biểu mẫu", UiEventType.FORM_SUBMIT: "Gửi biểu mẫu",
     UiEventType.FORM_ABANDON: "Bỏ dở biểu mẫu", UiEventType.SEARCH: "Tìm kiếm",
     UiEventType.CLIENT_ERROR: "Lỗi giao diện",
+    UiEventType.UI_ACTION: "Bấm chức năng",
 }
 UI_FORM_LABELS = {
     UiForm.PURCHASE_REQUEST: "Yêu cầu mua hàng", UiForm.QUOTE_REQUEST: "Yêu cầu báo giá",
     UiForm.PURCHASE_ORDER: "Đơn mua hàng", UiForm.LEAVE_REQUEST: "Đơn nghỉ phép",
     UiForm.LABOR_CONTRACT: "Hợp đồng lao động", UiForm.EMPLOYEE_PROFILE: "Hồ sơ nhân sự",
+    UiForm.PAYMENT_REQUEST: "Yêu cầu thanh toán", UiForm.GOODS_RECEIPT: "Nhận hàng (dòng ĐMH)",
+    UiForm.DOCUMENT: "Văn bản", UiForm.VEHICLE_BOOKING: "Đặt xe", UiForm.SEAL_REQUEST: "Duyệt dấu",
+    UiForm.ROOM_BOOKING: "Đặt phòng họp", UiForm.WORK_TASK: "Việc dự án (tạo nhanh)",
 }
 UI_APP_LABELS = {UiApp.ERP_V2: "ERP v2", UiApp.THUMUA: "Thu mua (app cũ)"}
 USAGE_STYLE_LABELS = {

@@ -10,8 +10,8 @@ from app.modules.usage_profile.route_pattern import MAX_ROUTE_LEN, normalize_rou
 
 
 def test_gia_tri_so_co_dinh_khong_doi():
-    assert [int(x) for x in UiEventType] == [1, 2, 3, 4, 5, 6, 7]
-    assert [int(x) for x in UiForm] == [1, 2, 3, 4, 5, 6]
+    assert [int(x) for x in UiEventType] == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert [int(x) for x in UiForm] == list(range(1, 14))
     assert [int(x) for x in UsageStyle] == list(range(1, 11))
     assert UsageStyle.BATCH_WORKER == 1 and UsageStyle.LOW_USAGE == 10
     assert [int(x) for x in CohortKind] == [1, 2, 3]

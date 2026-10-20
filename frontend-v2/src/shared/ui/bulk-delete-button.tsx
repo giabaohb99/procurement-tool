@@ -11,6 +11,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { Button, buttonVariants } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 
@@ -47,6 +49,7 @@ export function BulkDeleteButton({
   if (count <= 0) return null
 
   async function confirm() {
+    trackUiAction(UI_ACTION_CODE.BULK_DELETE_LINES)
     try {
       await onConfirm()
       setOpen(false)

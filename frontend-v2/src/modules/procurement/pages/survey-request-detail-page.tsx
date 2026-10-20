@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { useQueryClient } from '@tanstack/react-query'
@@ -698,11 +700,12 @@ export function SurveyRequestDetailPage() {
           <Button
             variant="outline"
             disabled={runAction.isPending}
-            onClick={() =>
+            onClick={() => {
+              trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
               void runAction.mutateAsync({ action: 'clone' }).then((cloned) => {
                 if (cloned?.id) navigate(appRoutes.procurement.surveyRequestDetail(cloned.id))
               })
-            }
+            }}
           >
             <Copy />
             Nhân bản

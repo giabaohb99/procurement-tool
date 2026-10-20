@@ -1,6 +1,8 @@
 import { Copy, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
@@ -46,6 +48,7 @@ export function DocumentCopyAction({
         // Dòng bảng tự mở trang chi tiết; nút sao chép phải giữ người dùng ở
         // đúng thao tác này cho tới khi API trả bản ghi mới.
         event.stopPropagation()
+        trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
         copyDocument.mutate(documentId, {
           onSuccess: (copied) => navigate(appRoutes.document.documentDetail(copied.id)),
         })

@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { Copy, Pencil, Trash2 } from 'lucide-react'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import { useLineSelection } from '@/shared/hooks/use-line-selection'
@@ -219,6 +221,7 @@ export function SurveyRequestLinesTable({
   }
 
   function duplicate(index: number) {
+    trackUiAction(UI_ACTION_CODE.COPY_LINE)
     const source = lines[index]
     if (!source) return
     const copy: SurveyRequestLine = {

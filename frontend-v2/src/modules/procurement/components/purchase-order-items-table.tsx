@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { ClipboardList, Copy, History, PauseCircle, Pencil, PlayCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import { useLineSelection } from '@/shared/hooks/use-line-selection'
 import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
@@ -601,6 +603,7 @@ export function PurchaseOrderItemsTable({
             locked={locked}
             onOpenDetail={onOpenDetail ? () => onOpenDetail(index) : undefined}
             onDuplicate={() => {
+              trackUiAction(UI_ACTION_CODE.COPY_LINE)
               onChange([
                 ...items.slice(0, index + 1),
                 {

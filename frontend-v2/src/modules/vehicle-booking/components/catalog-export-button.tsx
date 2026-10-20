@@ -1,6 +1,8 @@
 import { Download } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api'
 import { Button } from '@/shared/ui/button'
 
@@ -23,6 +25,7 @@ export function CatalogExportButton({ apiPath, searchParam, filename }: CatalogE
   const [searchParams] = useSearchParams()
 
   const handleExport = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const q = new URLSearchParams()
     for (const [key, value] of searchParams.entries()) {
       if (key === 'page' || key === 'page_size') continue

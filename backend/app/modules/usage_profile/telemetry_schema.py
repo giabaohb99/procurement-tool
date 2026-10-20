@@ -6,9 +6,12 @@ server bằng `now − age_ms`. Không có trường từ khóa tìm kiếm — 
 """
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.core.ui_action_codes import UiAction
 from app.core.usage_codes import UiApp, UiEventType, UiForm
 
 MAX_EVENTS_PER_BATCH = 100
+#  duoc-CR-654: mỗi lô giữ tối đa chừng này UI_ACTION, phần thừa bỏ im lặng (không 422 cả lô)
+MAX_UI_ACTIONS_PER_BATCH = 60
 MAX_BODY_BYTES = 64 * 1024
 #  24 giờ: lô giữ lại qua đêm (401) gửi lại sau cùng vẫn rơi đúng ngày phát sinh. `age_ms` là khoảng cách, không phải đồng hồ
 #  máy khách; người gửi chỉ ghi được sự kiện của chính mình nên kẹp 24 giờ là đủ chặn lệch ngày lớn.
@@ -32,6 +35,7 @@ class UiEventIn(BaseModel):
     type: int
     route: str = Field(..., min_length=1, max_length=120, pattern=_ROUTE_PATTERN)
     form: int = 0
+    action: int = 0   # duoc-CR-654: mã nút (UiAction), chỉ với type UI_ACTION
     duration_ms: int = Field(0, ge=0, le=MAX_DURATION_MS)
     result_count: int | None = Field(None, ge=0, le=MAX_RESULT_COUNT)
     age_ms: int = Field(0, ge=0)   # quá MAX_AGE_MS thì service kẹp, không từ chối cả lô
@@ -51,6 +55,16 @@ class UiEventIn(BaseModel):
         if v != 0 and v not in {int(f) for f in UiForm}:
             raise ValueError("Biểu mẫu không hợp lệ")
         return v
+
+    @model_validator(mode="after")
+    def _action_matches_type(self):
+        #  UI_ACTION ⇔ action ∈ UiAction; loại khác bắt buộc action == 0 (không chuỗi tự do, không mã lạ)
+        if self.type == int(UiEventType.UI_ACTION):
+            if self.action not in {int(a) for a in UiAction}:
+                raise ValueError("Mã chức năng không hợp lệ")
+        elif self.action != 0:
+            raise ValueError("`action` chỉ dùng cho sự kiện UI_ACTION")
+        return self
 
     @model_validator(mode="after")
     def _error_only_for_client_error(self):

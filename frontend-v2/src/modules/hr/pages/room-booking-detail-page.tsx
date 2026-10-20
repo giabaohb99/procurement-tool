@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Ban, Check, Save, Send, Trash2, X } from 'lucide-react'
 
+import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
+import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { usePermission } from '@/core/authorization/use-permission'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -137,6 +139,7 @@ export function RoomBookingDetailPage() {
   const canWrite = can('room_booking', isNew ? 'create' : 'write')
   const missingFields = missingBeforeSubmit(form)
   const statusLine = describeStatus(booking)
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.ROOM_BOOKING, editable && canWrite) // duoc-CR-654
 
   const submitSave = () =>
     void once(async () => {
@@ -144,6 +147,7 @@ export function RoomBookingDetailPage() {
         id: isNew ? undefined : bookingId,
         values: toRoomPayload(form),
       })
+      markSubmitted()
       if (isNew) navigate(appRoutes.hr.roomBookingDetail(saved.id), { replace: true })
     })
 

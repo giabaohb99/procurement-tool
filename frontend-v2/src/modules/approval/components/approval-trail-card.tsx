@@ -31,6 +31,8 @@ import {
   type ApprovalAction,
   type ApprovalTask,
 } from '../types/approval'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 /**
  * Mốc do CHỨNG TỪ tự thêm vào dòng thời gian, không phải mốc của bộ máy duyệt.
@@ -200,7 +202,10 @@ export function ApprovalTrailCard({
             size="sm"
             className="shrink-0 print:hidden"
             aria-label="In lịch sử phê duyệt"
-            onClick={() => window.print()}
+            onClick={() => {
+          trackUiAction(UI_ACTION_CODE.PRINT)
+          window.print()
+        }}
           >
             <Printer className="size-4" />
             In

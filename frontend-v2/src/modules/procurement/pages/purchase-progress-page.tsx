@@ -2,6 +2,8 @@ import { Download } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -208,6 +210,7 @@ function PurchaseProgressContent() {
    * KHÁC màn Đơn mua hàng, nơi hai bên lệch tên và phải đi qua một bảng dịch.
    */
   const handleExportExcel = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const cols = visibleColumnKeys.join(',')
     await downloadFile('/api/purchase-progress/export/xlsx', 'tien-do-mua-hang.xlsx', {
       ...filterParams,

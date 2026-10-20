@@ -26,6 +26,8 @@ import {
   type LandedCostFilter,
   type LandedCostView,
 } from '../types/import-landed-cost'
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 
 interface ReportImportLandedCostTabProps {
   companyId?: string
@@ -121,6 +123,7 @@ export function ReportImportLandedCostTab({ companyId }: ReportImportLandedCostT
             >
               <Link
                 to={`${appRoutes.procurement.importLandedCostPrint}?${printQuery}`}
+                onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)}
                 target="_blank"
                 rel="noreferrer"
               >

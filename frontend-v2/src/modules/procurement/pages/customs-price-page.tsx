@@ -27,6 +27,8 @@ import { useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
@@ -333,6 +335,7 @@ export function CustomsPricePage() {
   }
 
   function exportExcel() {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     void singleFlight(async () => {
       setExporting(true)
       try {

@@ -1,3 +1,5 @@
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { Checkbox } from '@/shared/ui/checkbox'
 import type { DataTableColumn } from './types'
 
@@ -44,7 +46,10 @@ export function createSelectionColumn<T>({
       <Checkbox
         checked={allOnPageSelected ? true : someOnPageSelected ? 'indeterminate' : false}
         aria-label={allOnPageSelected ? 'Bỏ chọn cả trang' : 'Chọn cả trang'}
-        onCheckedChange={onToggleAllOnPage}
+        onCheckedChange={() => {
+          trackUiAction(UI_ACTION_CODE.SELECT_ALL_PAGE) // duoc-CR-654
+          onToggleAllOnPage()
+        }}
       />
     ),
     cell: (row) => {

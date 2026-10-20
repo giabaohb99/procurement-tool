@@ -2,6 +2,8 @@ import { Download, FilePlus2, Scale, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -537,6 +539,7 @@ function PayableListContent() {
   const canExport = can('payable', 'export')
 
   const handleExportExcel = async () => {
+    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const cols = visibleColumnKeys
       .map((key) => EXPORT_COLUMN_KEYS[key])
       .filter(Boolean)

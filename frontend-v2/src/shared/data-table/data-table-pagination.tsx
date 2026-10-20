@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
+import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
+import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { Button } from '@/shared/ui/button'
 import {
   Select,
@@ -88,6 +90,7 @@ export function DataTablePagination({
             <Select
               value={String(pageSize)}
               onValueChange={(value) => {
+                trackUiAction(UI_ACTION_CODE.PAGE_SIZE_CHANGE) // duoc-CR-654
                 onPageSizeChange(Number(value))
                 // Đổi cỡ trang thì số trang đổi theo; đang ở trang 7 mà chuyển
                 // sang 100 dòng/trang là rơi vào vùng trống.
@@ -123,7 +126,10 @@ export function DataTablePagination({
             variant="outline"
             size="icon-sm"
             disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
+            onClick={() => {
+              trackUiAction(UI_ACTION_CODE.PAGE_CHANGE)
+              onPageChange(page - 1)
+            }}
             aria-label="Trang trước"
           >
             <ChevronLeft />
@@ -147,7 +153,10 @@ export function DataTablePagination({
                 className="tabular-nums"
                 aria-label={`Trang ${item}`}
                 aria-current={item === page ? 'page' : undefined}
-                onClick={() => onPageChange(item)}
+                onClick={() => {
+                  trackUiAction(UI_ACTION_CODE.PAGE_CHANGE)
+                  onPageChange(item)
+                }}
               >
                 {item}
               </Button>
@@ -158,7 +167,10 @@ export function DataTablePagination({
             variant="outline"
             size="icon-sm"
             disabled={page >= pageCount}
-            onClick={() => onPageChange(page + 1)}
+            onClick={() => {
+              trackUiAction(UI_ACTION_CODE.PAGE_CHANGE)
+              onPageChange(page + 1)
+            }}
             aria-label="Trang sau"
           >
             <ChevronRight />
