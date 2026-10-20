@@ -93,6 +93,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-650 | Vá hai nhóm bài kiểm đỏ sau mã ban hành văn bản và thu sự kiện giao diện
+- status: xong
+- date: 2026-10-20
+Agent 4 chạy bộ kiểm backend đầy đủ trên bản đang lên prod đợt ba thấy 9 bài đỏ thật ở hai bài kiểm của anh Dược, không
+phải lỗi chức năng; Agent 1 giao em vá theo cách đã làm ở bao-CR-647 (bản sao tạm của nhánh, không đụng cây chung).
+
+Nhóm một, năm bài kiểm ban hành văn bản không cần duyệt: từ duoc-CR-640 controller gọi hàm nạp văn bản với tham số tên
+derived, trong khi bài kiểm giả hàm đó bằng một lambda chỉ nhận tham số vị trí nên báo TypeError. Mã thật đúng, bài kiểm
+cũ; em cho lambda nhận thêm tham số tên. Nhóm hai, bài luật bất biến BB-4 báo controller thu sự kiện giao diện
+(duoc-CR-641) không gọi lọc phạm vi mà chưa có lý do. Em soi mã: controller chỉ có một đường POST ghi lô sự kiện của
+chính người đăng nhập, mã người và phiên lấy từ token và phiên, không đọc bản ghi của ai, nên không có gì để lọc phạm
+vi; đường đọc hồ sơ nằm ở controller chính đã gác kép quyền và quyền xem báo cáo. Em khai tệp này vào danh sách miễn
+trừ kèm lý do thật đó.
+
+Kiểm trong container tạm gắn mạng của stack local (có Redis), có trần thời gian mỗi bài: hai tệp trên và cụm bài phạm vi
+đều xanh. Hai bẫy khi chạy bộ kiểm đầy đủ Agent 1 nhắn (luôn đặt trần thời gian, stack bị tạm dừng thì bài gọi Redis treo,
+container cô lập thì nhóm phát hành văn bản mỗi bài chờ hết trần) em ghi vào cẩm nang them-entity-moi.
+
+Mã nguồn: `test/backend/test_ban_hanh_khong_can_duyet.py`, `test/backend/test_pham_vi_luat_bat_bien.py` (BB4_CONTROLLER_MIEN_TRU).
+Commit: chờ đại ca gật. Deploy: không cần (chỉ bài kiểm).
+
+---
+
 ## bao-CR-649 | Gắn bộ thu sự kiện giao diện vào app cũ thumua, tách nguồn app trong hồ sơ cách làm việc
 - status: dang-lam
 - date: 2026-10-20
