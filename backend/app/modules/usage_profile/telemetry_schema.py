@@ -6,7 +6,7 @@ server bằng `now − age_ms`. Không có trường từ khóa tìm kiếm — 
 """
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.core.usage_codes import UiEventType, UiForm
+from app.core.usage_codes import UiApp, UiEventType, UiForm
 
 MAX_EVENTS_PER_BATCH = 100
 MAX_BODY_BYTES = 64 * 1024
@@ -61,4 +61,14 @@ class UiEventIn(BaseModel):
 
 class UiEventBatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    #  bao-CR-649: ứng dụng gửi, ở CẤP LÔ (một trang chỉ thuộc một app). Không khai = ERP v2 nên v2 không phải sửa;
+    #  app cũ thumua gửi 2. Route của thumua được quy về route v2 ở service (`canonical_route`).
+    app: int = int(UiApp.ERP_V2)
     events: list[UiEventIn] = Field(..., min_length=1, max_length=MAX_EVENTS_PER_BATCH)
+
+    @field_validator("app")
+    @classmethod
+    def _app_known(cls, v: int) -> int:
+        if v not in {int(a) for a in UiApp}:
+            raise ValueError("Ứng dụng gửi sự kiện không hợp lệ")
+        return v

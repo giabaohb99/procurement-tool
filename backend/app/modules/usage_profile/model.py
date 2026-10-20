@@ -28,6 +28,7 @@ class UiEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime)   # created_at − clamp(age_ms)
     user_id: Mapped[int] = mapped_column(BigInteger)
     session_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    app: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")  # UiApp (bao-CR-649): 1 ERP v2, 2 thumua
     tab_key: Mapped[int] = mapped_column(Integer, default=0)  # số ngẫu nhiên mỗi lần nạp trang
     event_type: Mapped[int] = mapped_column(SmallInteger)     # UiEventType
     route_pattern: Mapped[str] = mapped_column(String(120), default="")

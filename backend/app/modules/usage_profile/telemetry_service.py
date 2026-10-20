@@ -13,7 +13,7 @@ from app.core import app_settings
 from app.core.usage_codes import UiEventType
 
 from .model import UiEvent
-from .route_pattern import normalize_route
+from .route_pattern import canonical_route, normalize_route
 from .telemetry_schema import MAX_AGE_MS, UiEventBatch
 
 META_NAME_MAX = 60
@@ -57,9 +57,11 @@ def build_rows(batch: UiEventBatch, user_id: int, session_id: int | None,
             "occurred_at": now - timedelta(milliseconds=min(max(ev.age_ms, 0), MAX_AGE_MS)),
             "user_id": int(user_id),
             "session_id": session_id,
+            "app": batch.app,
             "tab_key": ev.tab_key,
             "event_type": ev.type,
-            "route_pattern": normalize_route(ev.route),
+            #  bao-CR-649: chuẩn hóa rồi quy route app cũ về route v2 (cùng màn → cùng tên chức năng trên báo cáo)
+            "route_pattern": canonical_route(normalize_route(ev.route), batch.app),
             "form_key": ev.form,
             "duration_ms": ev.duration_ms,
             "result_count": ev.result_count if is_search else None,

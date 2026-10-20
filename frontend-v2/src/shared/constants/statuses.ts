@@ -205,6 +205,12 @@ export const SUPPLIER_LEGAL_TYPE: readonly StatusOption[] = [
   {"value": "household", "label": "Hộ kinh doanh", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Ứng dụng gửi sự kiện */
+export const UI_APP: readonly StatusOption[] = [
+  {"value": "1", "label": "ERP v2", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Thu mua (app cũ)", "sort_order": 2, "is_terminal": false, "is_exception": false},
+]
+
 /** Loại sự kiện giao diện */
 export const UI_EVENT_TYPE: readonly StatusOption[] = [
   {"value": "1", "label": "Xem màn hình", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -281,6 +287,12 @@ export const WORK_SCHEDULE_LEVEL: readonly StatusOption[] = [
   {"value": "4", "label": "Nhân sự", "sort_order": 4, "is_terminal": false, "is_exception": false},
 ]
 
+/** Ứng dụng gửi sự kiện — khóa → mã gửi lên backend. */
+export const UI_APP_CODE = {
+  ERP_V2: 1,
+  THUMUA: 2,
+} as const
+
 /** Loại sự kiện giao diện — khóa → mã gửi lên backend. */
 export const UI_EVENT_TYPE_CODE = {
   PAGE_VIEW: 1,
@@ -325,6 +337,7 @@ export const STATUS_SETS = {
   pr_line_status: PR_LINE_STATUS,
   report_key: REPORT_KEY,
   supplier_legal_type: SUPPLIER_LEGAL_TYPE,
+  ui_app: UI_APP,
   ui_event_type: UI_EVENT_TYPE,
   ui_form: UI_FORM,
   usage_cohort_kind: USAGE_COHORT_KIND,

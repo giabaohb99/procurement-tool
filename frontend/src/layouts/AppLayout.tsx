@@ -6,6 +6,7 @@ import { api } from "../api/client";
 import NotificationBell from "../components/NotificationBell";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import TicketCreateModal from "../components/TicketCreateModal";
+import RouteTelemetry from "../telemetry/RouteTelemetry";
 import { TICKET_ENABLED } from "../config/features";
 import { canInstall, onInstallChange, promptInstall } from "../pwa-install";
 import { initialsOf } from "../utils/name";
@@ -1016,6 +1017,8 @@ export default function AppLayout() {
           </div>
         </div>
         <div className="content">
+          {/* bao-CR-649: bộ thu sự kiện giao diện (xem màn / rời màn / lỗi JS) — không vẽ gì, gắn một lần */}
+          <RouteTelemetry />
           <Outlet />
         </div>
       </div>

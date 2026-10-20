@@ -92,6 +92,8 @@ services:
       # ⚠️ `:ro` không được bỏ: uvicorn ở đây chạy `--reload`, mount ghi được là
       # thêm một cây mã nữa cho nó dò, và không có lý do gì backend ghi vào FE.
       - ./frontend-v2/src:/app/fe-src:ro
+      # bao-CR-649: bài kiểm đối chiếu mã sự kiện của bộ thu bên app cũ (frontend/src/telemetry) với Python
+      - ./frontend/src:/app/thumua-src:ro
     ports:
       - "8000:8000"
 

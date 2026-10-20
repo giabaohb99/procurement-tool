@@ -37,6 +37,13 @@ class UiForm(IntEnum):
     EMPLOYEE_PROFILE = 6   # Hồ sơ nhân sự
 
 
+class UiApp(IntEnum):
+    """Ứng dụng gửi sự kiện (bao-CR-649). Cột `tab_ui_event.app`; lô không khai = ERP v2 (v2 không phải sửa)."""
+
+    ERP_V2 = 1
+    THUMUA = 2   # app cũ frontend/ (phòng Thu mua làm chủ yếu ở đây)
+
+
 class UsageStyle(IntEnum):
     """Kiểu làm việc (§4 của thiết kế) — nhãn gắn theo tuần, có bằng chứng."""
 
@@ -79,6 +86,7 @@ UI_FORM_LABELS = {
     UiForm.PURCHASE_ORDER: "Đơn mua hàng", UiForm.LEAVE_REQUEST: "Đơn nghỉ phép",
     UiForm.LABOR_CONTRACT: "Hợp đồng lao động", UiForm.EMPLOYEE_PROFILE: "Hồ sơ nhân sự",
 }
+UI_APP_LABELS = {UiApp.ERP_V2: "ERP v2", UiApp.THUMUA: "Thu mua (app cũ)"}
 USAGE_STYLE_LABELS = {
     UsageStyle.BATCH_WORKER: "Làm dồn", UsageStyle.APPROVAL_BOTTLENECK: "Nút thắt duyệt",
     UsageStyle.EXCEL_PARALLEL: "Dùng Excel song song", UsageStyle.NEWCOMER_STUCK: "Người mới đang vướng",
@@ -103,6 +111,7 @@ def _set(name: str, title: str, labels: dict, keyed: bool = False) -> CodeSet:
 
 UI_EVENT_TYPE_SET = _set("ui_event_type", "Loại sự kiện giao diện", UI_EVENT_TYPE_LABELS, keyed=True)
 UI_FORM_SET = _set("ui_form", "Biểu mẫu có đo", UI_FORM_LABELS, keyed=True)
+UI_APP_SET = _set("ui_app", "Ứng dụng gửi sự kiện", UI_APP_LABELS, keyed=True)
 USAGE_STYLE_SET = _set("usage_style", "Kiểu làm việc", USAGE_STYLE_LABELS)
 COHORT_KIND_SET = _set("usage_cohort_kind", "Nhóm so sánh", COHORT_KIND_LABELS)
 UNMEASURED_REASON_SET = _set("usage_unmeasured_reason", "Lý do chưa đo được", UNMEASURED_REASON_LABELS)

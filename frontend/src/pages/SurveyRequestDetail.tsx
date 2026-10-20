@@ -4,6 +4,8 @@ import { api } from '../api/client'
 import { fmtDate, fmtDateTime } from '../utils/datetime'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
+import { useFormTelemetry } from '../telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '../telemetry/ui-event-codes'
 import { prBadge } from '../config/cruds'
 import Select from 'react-select'
 import SearchSelect from '../components/SearchSelect'
@@ -103,6 +105,8 @@ export default function SurveyRequestDetail() {
   const { user, can } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  // bao-CR-649: đo mở / gửi / bỏ dở biểu mẫu TẠO MỚI (không đọc giá trị ô nhập)
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.QUOTE_REQUEST, isNew)
   // CR-026: mở từ nút "Tạo yêu cầu báo giá" trên YCMH bị trả lại/từ chối — dữ liệu đi kèm
   // điều hướng, chưa có bản ghi nào trong DB. Ghi chú giữ lại vết phiếu nguồn.
   const fromPr = isNew ? (location.state as any)?.fromPr : null
@@ -549,6 +553,7 @@ export default function SurveyRequestDetail() {
       if (isNew) {
         const r = await api.post(API, body)
         const created = r.data.data
+        markSubmitted()   // trước navigate (xem use-form-telemetry.ts)
         await flushPending(created.lines || [])          // đẩy hình chờ lên dòng vừa tạo
         if (submitAfterSave) await api.post(`${API}/${created.id}/submit`)
         navigate(`/survey-requests/${created.id}`)

@@ -5,6 +5,8 @@ import { fmtDateTime, fmtDate, fmtDateStr } from '../utils/datetime'
 import { toast } from '../components/toast'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
+import { useFormTelemetry } from '../telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '../telemetry/ui-event-codes'
 import { prBadge, poBadge } from '../config/cruds'
 import ProductPicker from '../components/ProductPicker'
 import PurchaseHistoryPickerModal, { HistoryPick } from '../components/PurchaseHistoryPickerModal'
@@ -95,6 +97,8 @@ export default function PurchaseRequestDetail() {
   const isNew = id === 'new'
   const { user, can } = useAuth()
   const navigate = useNavigate()
+  // bao-CR-649: đo mở / gửi / bỏ dở biểu mẫu TẠO MỚI (không đọc giá trị ô nhập); sửa phiếu cũ không đo
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.PURCHASE_REQUEST, isNew)
 
   const [pr, setPr] = useState<any>({
     code: '', requester: '', requester_position: '', department: '', head_of_dept: '', head_of_dept_id: 0,
@@ -684,6 +688,7 @@ export default function PurchaseRequestDetail() {
       if (isNew) {
         const r = await api.post(API, body)
         const nid = r.data.data.id
+        markSubmitted()   // trước navigate: đổi id làm isNew=false, cleanup sẽ phát FORM_ABANDON nếu chưa đánh dấu
         await uploadPendingLineImgs(guiItems, r.data.data?.items || [])
         if (submitAfterSave) await api.post(`${API}/${nid}/submit`)
         navigate(`/purchase-requests/${nid}`)

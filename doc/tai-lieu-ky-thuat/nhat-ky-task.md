@@ -93,6 +93,42 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-649 | Gắn bộ thu sự kiện giao diện vào app cũ thumua, tách nguồn app trong hồ sơ cách làm việc
+- status: dang-lam
+- date: 2026-10-20
+**Bối cảnh:** công tắc thu sự kiện giao diện đã **bật trên prod** chiều 20/10, nhưng bộ thu (duoc-CR-641) chỉ có ở ERP
+v2, trong khi phòng Thu mua làm chủ yếu trên app cũ thumua, tức là mất đúng dữ liệu cần nhất. Đại ca gật **ngoại lệ**
+mở thư mục `frontend/` (đóng băng từ 13/08) cho riêng việc này, giao qua Agent 1.
+
+**Đã làm**
+- Chép bộ thu sang `frontend/src/telemetry/`: hàng đợi gửi lô (lô tối đa 100 sự kiện, 60 KB, `fetch keepalive`, dừng
+  hẳn khi máy chủ trả 204), đồng hồ thời gian ở lại chỉ tính lúc tab đang hiện, xem màn / rời màn theo route, bắt lỗi
+  giao diện chưa xử lý. Khác v2 ba chỗ: thân lô có `app: 2`, token đọc `localStorage.token`, route mẫu dựng từ đường
+  dẫn không dựa vào tên tham số (app cũ dùng `BrowserRouter`, không có `useMatches`) nên `new` được giữ, màn tạo
+  mới không lẫn với màn chi tiết.
+- Đo mở / gửi / bỏ dở biểu mẫu **tạo mới** YCMH, YCBG, ĐMH (gọi đánh dấu đã gửi ngay sau POST, trước khi chuyển
+  trang). Cờ `usage_tracking` thêm vào kiểu người dùng của app cũ.
+- Backend: trường `app` ở **cấp lô** (không khai = 1 ERP v2, v2 không phải sửa; thumua gửi 2), bộ mã `UiApp` trong
+  `usage_codes.py` (sinh lại `statuses.ts`), cột `tab_ui_event.app` SMALLINT mặc định 1 (migration `usgprof02`), quy
+  route thumua về route v2 ở máy chủ (`canonical_route`: ba chức năng thêm tiền tố `/procurement`, route khác giữ),
+  đường đọc mới `GET /api/usage-profiles/by-app` tách số sự kiện theo app trong kỳ (gác kép như các đường khác).
+  Số gom ngày **giữ nguyên**, cộng cả hai app.
+- Bài kiểm backend 27 bài: schema trường `app`, quy route, cột ghi, tách theo app, đường mới không bị `/{user_id}`
+  nuốt, và tệp mã của thumua đối chiếu với Python (mount `/app/thumua-src` thêm ở docker-compose.yml).
+
+**Kết quả:** typecheck `frontend/` giữ đúng 4 lỗi cũ; 27 bài mới + các bài hồ sơ cách làm việc xanh trên bản sao sạch.
+
+**Còn lại:** anh Dược soát phần đụng khu hồ sơ cách làm việc (bảng `tab_ui_event`, migration, `usage_codes.py`,
+`route_pattern.py`); Agent 1 dựng devthumua thử; màn báo cáo v2 chưa có ô hiện số theo app (đường API đã có).
+
+Mã nguồn: `frontend/src/telemetry/*`, `frontend/src/layouts/AppLayout.tsx`, ba trang chi tiết YCMH / YCBG / ĐMH,
+`backend/app/modules/usage_profile/{telemetry_schema,telemetry_service,route_pattern,app_split_service,controller,model}.py`,
+`backend/app/core/usage_codes.py`, `backend/migrations/versions/usgprof02_ui_event_app_cr649.py`,
+`test/backend/test_thu_su_kien_thumua_cr649.py`, `docker-compose.yml`.
+Commit: chờ đại ca gật. Deploy: chờ Agent 1 dựng devthumua.
+
+---
+
 ## bao-CR-646 | Vá 9 lỗi TypeScript làm hỏng bản dựng giao diện ERP v2 (mã duoc-CR-640, 641)
 - status: xong
 - date: 2026-10-20
