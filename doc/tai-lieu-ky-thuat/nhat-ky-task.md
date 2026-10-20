@@ -91,7 +91,7 @@ nhân sự và chín bài hồ sơ cách làm việc đều xanh. Cách chạy n
 
 Mã nguồn: `test/backend/test_bo_ma_hanh_dong_cr358.py` (DYNAMIC_ACTION_SITES), `test/backend/test_canh_do_dai_o_chu_cr538.py`
 (MODULES, NO_TARGET).
-Commit: chờ đại ca gật. Deploy: không cần (chỉ bài kiểm).
+Commit: 8a13ac2b trên erp-v2 (đại ca gật 20/10). Deploy: không cần (chỉ bài kiểm).
 
 ---
 
