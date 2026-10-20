@@ -3,6 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
+import { useFormTelemetry } from '../telemetry/use-form-telemetry'
+import { UI_FORM_CODE } from '../telemetry/ui-event-codes'
 import { poBadge, PAYMENT_TERMS_OPTIONS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import { loadApproverCandidates } from '../components/approverCandidates'
@@ -203,6 +205,8 @@ export default function PurchaseOrderDetail() {
   const { can, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  // bao-CR-649: đo mở / gửi / bỏ dở biểu mẫu TẠO MỚI (không đọc giá trị ô nhập)
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.PURCHASE_ORDER, isNew)
 
   const [po, setPo] = useState<any>({
     code: '', misa_code: '', pr_code: '', survey_code: '', company_id: 0, supplier_code: '',
@@ -867,7 +871,11 @@ export default function PurchaseOrderDetail() {
       })),
     }
     try {
-      if (isNew) { const r = await api.post(API, body); navigate(`/purchase-orders/${r.data.data.id}`) }
+      if (isNew) {
+        const r = await api.post(API, body)
+        markSubmitted()   // trước navigate (xem use-form-telemetry.ts)
+        navigate(`/purchase-orders/${r.data.data.id}`)
+      }
       else {
         const r = await api.patch(`${API}/${id}`, body)
         await uploadPendingDeliveryFiles(sentItems, r.data.data)

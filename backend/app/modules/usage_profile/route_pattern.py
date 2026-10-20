@@ -7,7 +7,26 @@ mẫu) và nhận sự kiện giao diện (server chuẩn hóa lại dù FE đã
 """
 import re
 
+from app.core.usage_codes import UiApp
+
 MAX_ROUTE_LEN = 120
+
+#  bao-CR-649: ba chức năng phòng Thu mua làm trên app cũ (frontend/) có route giống hệt v2, chỉ thiếu tiền tố
+#  `/procurement` — quy về route v2 để báo cáo không tách đôi một màn thành hai. Route khác của thumua giữ nguyên
+#  (báo cáo v2 hiện «Giao diện cũ: …»); `/print/...` hai app đã giống nhau. Nguồn app giữ ở cột `tab_ui_event.app`.
+_THUMUA_TO_V2_PREFIX = {"purchase-requests": "procurement", "survey-requests": "procurement",
+                        "purchase-orders": "procurement"}
+
+
+def canonical_route(route: str, app: int) -> str:
+    """`/purchase-orders/:id` (thumua) → `/procurement/purchase-orders/:id`; app v2 hoặc route lạ → giữ nguyên."""
+    if app != int(UiApp.THUMUA) or not route or route == "/":
+        return route
+    head = route.split("/", 2)[1]
+    prefix = _THUMUA_TO_V2_PREFIX.get(head)
+    if not prefix:
+        return route
+    return ("/" + prefix + route)[:MAX_ROUTE_LEN]
 
 _SCHEME_HOST = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://[^/?#]*")
 _UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")

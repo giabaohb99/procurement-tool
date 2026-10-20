@@ -13,6 +13,8 @@ type User = {
   role_name?: string;
   position?: string;
   avatar?: string;
+  /** bao-CR-649: cờ từ `_me_payload` — chỉ `false` mới tắt bộ thu sự kiện giao diện (thiếu = bật). */
+  usage_tracking?: boolean;
   permissions: Perms;
 };
 type Ctx = {
