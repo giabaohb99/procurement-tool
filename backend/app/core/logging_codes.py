@@ -76,6 +76,25 @@ ACTION_GROUP_LABELS = {
 }
 
 # --------------------------------------------------------------------------
+# Kênh AI làm hộ — `tab_audit_log.ai_channel` + `tab_ai_usage_daily.channel` (ai-CR-230, doc/erp/22 §5)
+# --------------------------------------------------------------------------
+#  0 = người tự bấm (không qua AI). Thao tác do Trợ lý web / bot / ứng dụng AI ngoài qua cổng MCP làm hộ mang số kênh,
+#  để hồ sơ cách làm việc tách được «tự làm» với «nhờ AI làm». Số đã cấp không đổi / không tái dùng.
+AI_CHANNEL_NONE = 0
+AI_CHANNEL_WEB = 1        # Trợ lý AI trên web ERP
+AI_CHANNEL_TELEGRAM = 2   # bot Telegram (lõi core_v2)
+AI_CHANNEL_MCP = 3        # ứng dụng AI ngoài (Claude, ChatGPT…) qua cổng MCP
+AI_CHANNEL_ZALO = 4       # bot Zalo
+
+AI_CHANNEL_LABELS = {
+    AI_CHANNEL_NONE: "Tự làm",
+    AI_CHANNEL_WEB: "Trợ lý web",
+    AI_CHANNEL_TELEGRAM: "Telegram",
+    AI_CHANNEL_MCP: "Ứng dụng AI (MCP)",
+    AI_CHANNEL_ZALO: "Zalo",
+}
+
+# --------------------------------------------------------------------------
 # Loại thao tác trên một dòng dữ liệu — `tab_change_log.op` (P4)
 # --------------------------------------------------------------------------
 #  Ba mã này nói về BẢN GHI, không phải về ý định của người dùng — đừng lẫn với

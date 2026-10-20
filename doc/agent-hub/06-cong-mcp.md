@@ -274,6 +274,12 @@ vụ — khóa này phải có trong `erp.SETTING_RAW_KEYS`), đệm 60 giây. T
 | `POST /api/agent-gw/key-admin/notify` | Chuông «có khóa chờ nhận» |
 | `GET /api/agent-gw/ai-skill/stats` | Số bộ / skill đang dùng cho Tổng quan |
 | `GET`/`PUT /api/agent-gw/settings/raw` | Cấu hình G7 (`agent_mcp_settings` nằm trong `SETTING_RAW_KEYS`) |
+| `POST /api/agent-gw/ai-usage` | ai-CR-230: số dùng AI theo người × ngày × kênh → `tab_ai_usage_daily` (hợp đồng ở doc/erp/22 §5.1). Chỉ chữ ký máy, không người; tối đa 500 dòng mỗi lượt; trường lạ → 422 |
+
+**Header kênh AI (ai-CR-230).** Mọi lượt gọi cổng B phát ra trong lúc AI làm hộ mang `x-agent-ai-channel: <số kênh>`
+(1 Trợ lý web · 2 Telegram · 3 MCP · 4 Zalo). ERP chỉ đọc header SAU khi chữ ký đúng, số lạ bỏ qua; mọi dòng
+`tab_audit_log` ghi trong lượt đó mang `ai_channel` = số kênh. Ở chế độ nhúng không có header — cùng biến ngữ cảnh
+(`core/request_context.ai_channel_scope`) được đặt ngay ở đầu lượt chat / `tools/call` / nút xác nhận.
 
 ## 7. Hợp đồng API cho giao diện (proxy ERP `/api/agent-hub/*`)
 

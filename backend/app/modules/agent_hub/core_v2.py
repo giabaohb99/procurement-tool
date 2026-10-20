@@ -1604,6 +1604,23 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
     _answer(db, chat_id, row, text, user)
 
 
+def _ledger(db: Session, chat_id: str, row: AgentMessage, user, text: str, calls: list, *, result=None,
+            error: bool = False) -> None:
+    """ai-CR-230: một dòng sổ ý định cho lượt chat Telegram / Zalo (lõi core_v2) — nguồn số «dùng AI» theo người × ngày
+    (doc/erp/22 §5). Không lưu nguyên văn câu hỏi; hỏng thì nuốt lỗi (`intent_ledger.record` tự lo)."""
+    from . import intent_ledger
+
+    usage = None
+    if result is not None:
+        usage = {"model": result.model or "", "input_tokens": int(result.input_tokens or 0),
+                 "output_tokens": int(result.output_tokens or 0), "cache_read_tokens": int(result.cache_read_tokens or 0)}
+    intent_ledger.record(db, user_id=int(getattr(user, "id", 0) or 0), channel=intent_ledger.channel_of(chat_id),
+                         scope_key=chat_id, intent=intent_ledger.Intent.ASK,
+                         tool_calls=[c for c in calls if isinstance(c, dict)], question=text,
+                         answer=str(getattr(result, "text", "") or ""), error=error, message_id=int(row.id or 0),
+                         usage=usage)
+
+
 def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> None:
     """Phần gọi model của một lượt (vòng tác tử). Tách khỏi `handle` (ai-CR-206) để bài kiểm của các luồng quanh nó —
     lối tắt, chưa liên kết, chưa có khóa, tra nhanh — thay được riêng phần model."""
@@ -1768,9 +1785,11 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                         "cache_read": int(result.cache_read_tokens or 0), "cache_write": int(result.cache_write_tokens or 0),
                         "tools_chars": sum(len(t.description) + len(json.dumps(t.parameters, ensure_ascii=False)) for t in tools)}
         db.commit()
+        _ledger(db, chat_id, row, user, text, prior_calls + list(result.tool_calls or []), result=result)
     except Exception as e:  # noqa: BLE001
         db.rollback()
         log.exception("core_v2: lượt hỏng")
+        _ledger(db, chat_id, row, user, text, [], error=True)
         try:
             run = db.get(service.AgentRun, run.id) or run
             service.finish_run(db, run, error=f"{type(e).__name__}: {e}")

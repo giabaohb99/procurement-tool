@@ -26,6 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.request_context import ai_channel_scope
 from app.modules.assistant.provider.base import ChatResult
 
 from . import ai_keys, bells, change_undo, channels, chat_link, core_v2, erp, coder, draft_create, grants, manager, memory, playbook, policy, reminders, research, runners, telegram, user_keys, work_plan
@@ -388,11 +389,18 @@ def _zalo_command(db: Session, chat_id: str, text: str) -> None:
     reply(db, chat_id, zalo_account_report())
 
 
+def ai_channel_of_chat(chat_id: str) -> int:
+    """ai-CR-230: kênh AI của một chat — mọi dòng nhật ký thao tác bot làm hộ trong lượt mang số này."""
+    from app.core.logging_codes import AI_CHANNEL_TELEGRAM, AI_CHANNEL_ZALO
+
+    return AI_CHANNEL_ZALO if channels.is_zalo(chat_id) or channels.is_zalo_account(chat_id) else AI_CHANNEL_TELEGRAM
+
+
 def handle_message(db: Session, msg: dict) -> None:
     """Mọi tin vào đi qua đây. ai-CR-053: mở ngữ cảnh KHÓA GEMINI của chat (khóa cá nhân của tài khoản đã
     liên kết; chat đại ca chưa có khóa cá nhân thì khóa `.env`) cho toàn bộ lượt xử lý bên trong."""
     chat_id = str((msg.get("chat") or {}).get("id") or "")
-    with user_keys.for_chat(db, chat_id):
+    with user_keys.for_chat(db, chat_id), ai_channel_scope(ai_channel_of_chat(chat_id)):
         _handle_message(db, msg, chat_id)
 
 
@@ -3430,7 +3438,7 @@ def _resolve_rule(db: Session, chat_id: str, cb_id: str, action: str, task: Agen
 def handle_callback(db: Session, cb: dict) -> None:
     """Đại ca bấm một nút. `callback_data` dạng `<hành động>:<id task>`."""
     chat_id = str(((cb.get("message") or {}).get("chat") or {}).get("id") or "")
-    with user_keys.for_chat(db, chat_id):
+    with user_keys.for_chat(db, chat_id), ai_channel_scope(ai_channel_of_chat(chat_id)):
         _handle_callback(db, cb, chat_id)
 
 

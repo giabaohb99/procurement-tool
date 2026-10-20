@@ -13,7 +13,7 @@ import logging
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.core import agent_signature
@@ -36,7 +36,19 @@ async def _verified(request: Request) -> int:
     if not ok:
         log.warning("agent_gateway: từ chối %s %s — %s", request.method, request.url.path, reason)
         raise HTTPException(401, f"Chữ ký dịch vụ AI không hợp lệ: {reason}")
+    _take_ai_channel(request)
     return user_id
+
+
+def _take_ai_channel(request: Request) -> None:
+    """ai-CR-230: dịch vụ AI báo kênh đang làm hộ (web / Telegram / MCP / Zalo) — mọi dòng nhật ký thao tác ghi trong lượt
+    gọi này mang số kênh. Chỉ tin sau khi chữ ký đúng; số lạ bỏ qua."""
+    from app.core.logging_codes import AI_CHANNEL_LABELS
+    from app.core.request_context import AI_CHANNEL_HEADER, set_ai_channel
+
+    raw = (request.headers.get(AI_CHANNEL_HEADER) or "").strip()
+    if raw.isdigit() and int(raw) in AI_CHANNEL_LABELS:
+        set_ai_channel(int(raw))
 
 
 async def gateway_user(request: Request, db: Session = Depends(get_db)):
@@ -454,6 +466,34 @@ def ai_skill_stats(_: int = Depends(gateway_signed), db: Session = Depends(get_d
 def notifications(after_id: int = Query(0, ge=0), limit: int = Query(200, ge=1, le=500),
                   _: int = Depends(gateway_signed), db: Session = Depends(get_db)):
     return success(L.notifications_after(db, after_id, limit))
+
+
+class AiUsageRow(BaseModel):
+    """ai-CR-230: một dòng số dùng AI (người × ngày × kênh). Chỉ số đếm + mã — không có trường nội dung nào; trường lạ
+    (vd. lỡ gửi kèm câu hỏi) → 422 chứ không lặng lẽ bỏ."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    day: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    user_id: int = Field(gt=0)
+    channel: int = Field(ge=1, le=9)
+    turns: int = Field(default=0, ge=0, le=10_000_000)
+    tool_calls: int = Field(default=0, ge=0, le=10_000_000)
+    denied: int = Field(default=0, ge=0, le=10_000_000)
+    errors: int = Field(default=0, ge=0, le=10_000_000)
+    drafts_created: int = Field(default=0, ge=0, le=10_000_000)
+    drafts_confirmed: int = Field(default=0, ge=0, le=10_000_000)
+    clients: dict[str, int] = Field(default_factory=dict, max_length=50)
+    tool_groups: dict[str, int] = Field(default_factory=dict, max_length=50)
+
+
+class AiUsageIn(BaseModel):
+    rows: list[AiUsageRow] = Field(default_factory=list, max_length=500)
+
+
+@router.post("/ai-usage")
+def ai_usage_push(body: AiUsageIn, _: int = Depends(gateway_signed), db: Session = Depends(get_db)):
+    return success(L.push_ai_usage(db, [r.model_dump() for r in body.rows]))
 
 
 @router.get("/notifications/max-id")

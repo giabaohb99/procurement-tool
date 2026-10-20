@@ -93,6 +93,37 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## ai-CR-230 | Đưa hoạt động AI vào hồ sơ cách làm việc: số dùng AI theo người và ngày, nhật ký thao tác biết việc nào AI làm hộ
+- status: xong
+- date: 2026-10-20
+**Bối cảnh:** đại ca giao qua Agent 1 đợt A0 của tài liệu kế hoạch AI phân việc (doc/erp/22 bản 0.2). Từ khi tách dịch vụ AI
+ngày 19/10, Trợ lý web, bot Telegram và nhật ký cổng nối AI đều nằm ở cơ sở dữ liệu riêng của dịch vụ AI, nên hồ sơ cách làm
+việc (chỉ đọc cơ sở dữ liệu ERP) gần như không thấy ai dùng AI; việc AI làm hộ cũng không tách được với việc người tự bấm.
+
+**Đã làm**
+- Thêm bảng *số dùng AI theo ngày* bên ERP: mỗi người, mỗi ngày, mỗi kênh (Trợ lý web, Telegram, ứng dụng AI qua cổng nối, Zalo)
+  một dòng, gồm số câu hỏi, số lượt gọi công cụ, số lượt bị từ chối quyền, số lỗi, số bản nháp tạo và được xác nhận, ứng dụng
+  nào (Claude, ChatGPT…) và nhóm công cụ nào. Chỉ có **số đếm**, không chuyển nội dung câu hỏi.
+- Dịch vụ AI gom số mỗi đêm lúc 04:05 cho hai ngày gần nhất rồi đẩy sang ERP qua cổng nối nội bộ; gom lại bao nhiêu lần cũng ra
+  cùng kết quả, chạy tay được để bù tới 90 ngày cũ. Chạy được cả khi dịch vụ AI nhúng trong ERP.
+- Nhật ký thao tác có thêm cột *kênh AI*: 0 là người tự bấm, khác 0 là AI làm hộ qua kênh đó. Đóng dấu ở câu chat Trợ lý web,
+  hai nút xác nhận thẻ đề xuất, lượt bot Telegram / Zalo và lượt gọi công cụ của cổng nối AI; khi tách dịch vụ thì kênh đi theo
+  chữ ký của cổng nối nội bộ, số lạ bị bỏ qua.
+- Bot Telegram / Zalo nay cũng ghi sổ ý định mỗi lượt (trước chỉ Trợ lý web ghi); sổ ý định đếm thêm số lượt gọi công cụ và số
+  lượt bị từ chối.
+- Ghi hợp đồng bảng và cột vào doc/erp/22 mục 5.1 để anh Dược làm nhóm chỉ số *Dùng AI*; quyền xem theo mục 6 (chỉ quản trị).
+
+**Kết quả:** chín bài kiểm mới đạt cả hai chế độ (nhúng và tách qua cổng nối); 897 bài kiểm liên quan tới dịch vụ AI, cổng nối,
+nhật ký thao tác và giới hạn ô chữ đạt. Hai migration chạy lên / xuống / lên lại an toàn. Đổi tên cột nhóm công cụ thành
+`tool_groups` vì `groups` là từ khóa dành riêng của MySQL 8.
+
+**Còn lại:** dựng dev để chạy migration; anh Dược làm nhóm chỉ số 3.8 đọc hai nguồn này (đợt D0).
+
+Mã nguồn: `app/modules/ai_usage/` (mới) · `agent_hub/ai_usage.py` (mới) · `agent_hub/erp.py` · `agent_gateway/controller.py` · `agent_hub/tasks.py` · `core/celery_app.py` · `core/request_context.py` · `core/logging_codes.py` · `core/audit.py` · `audit/model.py` · `agent_hub/service.py` · `agent_hub/core_v2.py` · `agent_hub/intent_ledger.py` · `agent_hub/mcp.py` · `assistant/controller.py`
+Migration: `aiusage01` (DB ERP, sau `jobposrole01`) + `agent0016` (DB dịch vụ AI)
+Bài kiểm: `test_ai_usage_ho_so_cr230.py`
+Commit: a57c8354 + 29199f6a trên erp-v2 (đại ca gật 20/10). Deploy: chờ Agent 1 dựng dev.
+
 ## bao-CR-650 | Vá hai nhóm bài kiểm đỏ sau mã ban hành văn bản và thu sự kiện giao diện
 - status: xong
 - date: 2026-10-20

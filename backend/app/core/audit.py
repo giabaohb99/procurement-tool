@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.action_catalog import group_of_action
 from app.core.logging_codes import ACTOR_KIND_SYSTEM
-from app.core.request_context import bump_audit_count, get_context
+from app.core.request_context import bump_audit_count, current_ai_channel, get_context
 
 
 def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, message: str = "",
@@ -58,6 +58,7 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
         parent_entity=(parent_entity or "")[:50],
         parent_id=int(parent_id or 0),
         action_group=group_of_action(action),
+        ai_channel=current_ai_channel(),       # ai-CR-230: AI làm hộ thì mang số kênh
     )
     db.add(log)
     #  `commit=False` (duoc-CR-653): dong nhat ky di CUNG giao dich voi thay doi kich hoat no

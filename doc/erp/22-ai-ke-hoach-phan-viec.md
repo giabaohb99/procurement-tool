@@ -102,6 +102,44 @@ MCP và Telegram không được đếm; việc AI làm hộ ghi ở nhật ký 
 - **(anh Dược)** nhóm chỉ số **3.8 Dùng AI**: kênh hay dùng, mức dùng theo tuần, nhóm việc hay nhờ AI, tỷ lệ phiếu soạn
   bằng AI so với tự làm, số lần bị từ chối quyền (gợi ý cấp thêm quyền). Ước Agent 4 2–3 ngày, anh Dược 1–2 ngày.
 
+### 5.1 Hợp đồng đợt A0 cho nhóm chỉ số 3.8 (ai-CR-230, Agent 4 — 20/10/2026)
+
+Hai nguồn anh Dược đọc, đều ở **DB ERP**, đều chỉ có số đếm và mã — không có chữ người dùng gõ.
+
+**(a) Bảng `tab_ai_usage_daily`** — một dòng mỗi (ngày, người, kênh), khóa duy nhất `(day, user_id, channel)`.
+
+| Cột | Kiểu | Nghĩa |
+|---|---|---|
+| `day` | DATE | Ngày theo **giờ Việt Nam** |
+| `user_id` | BIGINT | Tài khoản ERP |
+| `employee_id` | BIGINT | ERP điền lúc nhận từ `tab_user.employee_id` (0 = tài khoản chưa gắn hồ sơ) |
+| `channel` | SMALLINT | `logging_codes.AI_CHANNEL_*`: 1 Trợ lý web · 2 Telegram · 3 Ứng dụng AI (MCP) · 4 Zalo |
+| `turns` | INT | Web / Telegram / Zalo: số câu hỏi. MCP: số lượt gọi công cụ (`tools/call`) — ứng dụng ngoài không báo «câu hỏi» |
+| `tool_calls` | INT | Số lượt gọi công cụ (kể cả gọi lặp một công cụ) |
+| `denied` | INT | Số lượt công cụ bị từ chối vì thiếu quyền / ngoài phạm vi — gợi ý cấp thêm quyền |
+| `errors` | INT | Web / bot: số câu trả lời hỏng. MCP: số lượt công cụ lỗi |
+| `drafts_created` | INT | Số lượt gọi công cụ soạn nháp `draft_*` |
+| `drafts_confirmed` | INT | Số lượt xác nhận nháp (`commit_draft` / `confirm_draft` / tạo lịch theo tệp). MCP chỉ đếm lượt thành công; web / bot đếm lượt gọi |
+| `clients` | JSON | `{tên ứng dụng: số lượt}` — chỉ kênh MCP, lấy từ `clientInfo.name` lúc kết nối (vd `Claude Desktop`, `ChatGPT`) |
+| `tool_groups` | JSON | `{mã nhóm công cụ: số lượt}` theo `mcp_settings.GROUPS`; công cụ ngoài nhóm (công cụ riêng của bot) gom vào `khac` |
+| `updated_at` | DATETIME | Lần ghi cuối |
+
+Dịch vụ AI gom từ sổ ý định (`tab_agent_intent`, web / Telegram / Zalo) và nhật ký cổng MCP (`tab_agent_mcp_call`), chạy
+**04:05 mỗi đêm** (beat `agent-ai-usage-push`, tác vụ `agent.ai_usage_push`) cho **hai ngày gần nhất tính đến hôm qua**;
+gom lại bao nhiêu lần cũng ra cùng kết quả (dòng cũ bị thay, không cộng dồn). Bù dữ liệu cũ: gọi tác vụ với `days=90`
+(nguồn chỉ giữ 180 ngày). Chế độ tách đẩy qua cổng B `POST /api/agent-gw/ai-usage`; chế độ nhúng ghi thẳng. Hôm nay
+chưa có dòng — số hôm nay có vào sáng mai. Nhóm chat Telegram không vào sổ ý định nên không được đếm (cố ý — quyền riêng tư).
+
+**(b) Cột `tab_audit_log.ai_channel`** (SMALLINT, mặc định 0) — **0 = người tự bấm**, 1–4 = AI làm hộ qua kênh đó (cùng bộ
+mã trên). Đóng dấu ở mọi lượt ghi xảy ra trong: một câu chat Trợ lý web (`/api/assistant/chat`), hai nút xác nhận thẻ đề
+xuất của Trợ lý (`/confirm-update`, `/confirm-account-setup`), một lượt bot Telegram / Zalo (tin nhắn và nút bấm), một lượt
+`tools/call` của cổng MCP (gồm `confirm_draft`). Chế độ tách: kênh đi theo header ký `x-agent-ai-channel` của cổng B
+(doc/agent-hub/06 §6). Dòng cũ trước A0 = 0 (không biết). Không có chỉ mục riêng — lọc theo `created_at` rồi gom.
+
+Gợi ý cho 3.8: *tỷ lệ phiếu soạn bằng AI* = số dòng tạo phiếu (`action` tạo) có `ai_channel > 0` chia tổng dòng tạo phiếu
+của người đó; *mức dùng theo tuần* = tổng `turns` theo tuần; *kênh hay dùng* = `channel` có `turns` lớn nhất. Quyền xem
+theo §6: chỉ quản trị (ReportKey 14).
+
 **Phần AI (kho học)** — bảng `tab_ai_plan_proposal`: người hỏi, kênh (Trợ lý / bot / MCP + ứng dụng), mục tiêu, gói số
 liệu đã đưa model, kế hoạch đề xuất, bản sau khi người sửa (diff), task đã tạo, và sau khi xong: thời gian thật so với
 ước lượng. Giữ lâu dài.

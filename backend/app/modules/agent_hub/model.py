@@ -484,6 +484,10 @@ class AgentIntent(Base, AuditMixin):
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     tools_offered: Mapped[int] = mapped_column(SmallInteger, default=0)
+    #  ai-CR-230 (doc/erp/22 §5): số lượt gọi công cụ trong câu (kể cả gọi lặp một công cụ) và số lượt công cụ trả
+    #  `denied` (thiếu quyền) — để gom số dùng AI theo người × ngày sang ERP.
+    tool_calls_n: Mapped[int] = mapped_column(SmallInteger, default=0)
+    denied_n: Mapped[int] = mapped_column(SmallInteger, default=0)
 
     __table_args__ = (Index("ix_agent_intent_user", "user_id", "created_at"),
                       Index("ix_agent_intent_created", "created_at"))

@@ -20,6 +20,8 @@ from fastapi import APIRouter, Depends, Header, Request, Response
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.logging_codes import AI_CHANNEL_MCP
+from app.core.request_context import ai_channel_scope
 from app.core.database import get_db
 
 from . import draft_create, mcp_admin, mcp_keys, mcp_log
@@ -344,7 +346,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
             trace["budget"] = True
         else:
             try:
-                result = call_tool(db, user, int(key.scope or 0), name, args)
+                with ai_channel_scope(AI_CHANNEL_MCP):     # ai-CR-230: việc ứng dụng AI ngoài làm hộ
+                    result = call_tool(db, user, int(key.scope or 0), name, args)
             except Exception as e:  # noqa: BLE001 — lỗi tool không được thành 500 của cổng
                 log.exception("agent_hub mcp: tool %s hỏng", name)
                 result = {"error": f"Lỗi khi chạy công cụ: {e}"}

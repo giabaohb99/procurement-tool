@@ -244,6 +244,16 @@ def is_group_chat(chat_id: str) -> bool:
     return s.startswith("-") or s.startswith(channels.ZALO_GROUP_PREFIX)
 
 
+def denied_count(tool_calls) -> int:
+    """ai-CR-230: số lượt công cụ trả `denied` (thiếu quyền / ngoài phạm vi) trong câu."""
+    n = 0
+    for c in tool_calls or []:
+        res = c.get("result") if isinstance(c, dict) else None
+        if isinstance(res, dict) and res.get("denied"):
+            n += 1
+    return min(n, 32000)
+
+
 def tool_names(tool_calls) -> list[str]:
     out: list[str] = []
     for c in tool_calls or []:
@@ -350,6 +360,7 @@ def record(db: Session, *, user_id: int, channel: Channel, scope_key: str, inten
             user_id=uid, channel=int(channel), scope=int(scope), scope_key=str(scope_key or "")[:80],
             intent=int(big), sub_intent=int(sub_of(big, tools, mode)), entities=entities_of(tool_calls, question),
             tools=tools, outcome=int(outcome_of(answer, error=error, tools=tools)), message_id=int(message_id or 0),
+            tool_calls_n=min(len(list(tool_calls or [])), 32000), denied_n=denied_count(tool_calls),
             created_by=uid, updated_by=uid, **usage_fields(usage))
         db.add(row)
         db.commit()
