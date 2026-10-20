@@ -70,6 +70,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-646 | Vá 9 lỗi TypeScript làm hỏng bản dựng giao diện ERP v2 (mã duoc-CR-640, 641)
+- status: xong
+- date: 2026-10-20
+Sáng 20/10 bản dựng giao diện ERP v2 trên nhánh erp-v2 (đầu a066f29f) hỏng vì 9 lỗi kiểu TypeScript trong mã hai đợt
+của anh Dược (duoc-CR-640 bản lưu trữ HĐLĐ, duoc-CR-641 bộ thu hành vi). Đại ca giao em vá, chỉ khớp tên và kiểu, không
+đổi hành vi. Bảng mã biểu mẫu sinh từ backend đã đổi tên mã hồ sơ nhân sự từ EMPLOYEE sang EMPLOYEE_PROFILE (cùng số 6),
+nên hộp thêm nhân sự và bài kiểm bộ thu đổi theo tên mới; tệp sinh không sửa tay. Bài kiểm bộ thu thêm kiểu cho tham số
+còn thiếu. Bài kiểm mô tả nhóm so sánh ở báo cáo hồ sơ sử dụng thêm trường key mà kiểu dữ liệu bắt buộc. Màn chi tiết
+văn bản dùng hai bộ kiểm (đầy đủ và bản lưu trữ chỉ kiểm vài ô); bộ kiểm bản lưu trữ khai kiểu là tập con nên không
+khớp kiểu form. Em gói hai bộ kiểm thành hai hàm cùng kiểu form đầy đủ, phần ép kiểu dồn vào một chỗ có ghi lý do (bộ
+kiểm bản lưu trữ để các ô khác đi qua nguyên vẹn), thay cho ép thành never lúc gọi; cách kiểm giữ nguyên.
+
+Kiểm trên một bản sao sạch của erp-v2 (không đụng thư mục chung): typecheck 0 lỗi; lint 0 lỗi (29 cảnh báo có sẵn);
+npm run build chạy xong; bài kiểm các thư mục nhân sự, báo cáo, văn bản và bộ thu hành vi 2166 bài xanh trên 229 tệp.
+
+Mã nguồn: `frontend-v2/src/modules/hr/components/employee-form-dialog.tsx`, `src/core/telemetry/hooks-telemetry.test.tsx`,
+`src/modules/report/utils/usage-profile-helpers.test.ts`, `src/modules/document/pages/document-detail-page.tsx`.
+Commit: commit sửa kiểu trên erp-v2 (đại ca gật 20/10). Deploy: Agent 1 dựng dev.
+
+---
+
 ## he-agent-chuyen-gia-ban-thu | Hệ Agent chuyên gia bản thử: bảy vai, sáu skill, luật liên hệ giữa các vai
 - status: dang-lam
 - date: 2026-10-19
