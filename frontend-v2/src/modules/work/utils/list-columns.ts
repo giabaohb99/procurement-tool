@@ -39,6 +39,7 @@ const BUILTIN_WIDTH: Record<string, { label: string; width: number }> = {
   status: { label: 'Trạng thái', width: 140 },
   start: { label: 'Ngày bắt đầu', width: 130 },
   due: { label: 'Hạn chót', width: 130 },
+  task_type: { label: 'Loại việc', width: 160 },
 }
 
 /**

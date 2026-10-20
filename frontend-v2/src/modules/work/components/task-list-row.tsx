@@ -447,6 +447,10 @@ export function TaskListCell({
     )
   }
 
+  if (column.key === 'task_type') {
+    return <span className="truncate px-1.5 text-sm">{task.task_type_name || '—'}</span>
+  }
+
   if (column.key === 'due') {
     return (
       <TaskDueCell
