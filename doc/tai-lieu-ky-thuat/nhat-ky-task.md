@@ -112,7 +112,7 @@ Kiểm trong container tạm gắn mạng của stack local (có Redis), có tr�
 container cô lập thì nhóm phát hành văn bản mỗi bài chờ hết trần) em ghi vào cẩm nang them-entity-moi.
 
 Mã nguồn: `test/backend/test_ban_hanh_khong_can_duyet.py`, `test/backend/test_pham_vi_luat_bat_bien.py` (BB4_CONTROLLER_MIEN_TRU).
-Commit: chờ đại ca gật. Deploy: không cần (chỉ bài kiểm).
+Commit: 28b47b84 trên erp-v2 (đại ca gật 20/10; commit đẩy lỡ lúc rebase kẹt, giải xung đột change-log ở commit kế). Deploy: không cần (chỉ bài kiểm).
 
 ---
 
