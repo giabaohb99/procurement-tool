@@ -13,6 +13,7 @@ vi.mock('@/core/api', () => ({ apiGet: vi.fn(), downloadFile: vi.fn(), extractEr
 const item = (key: string, measured: number) => ({
   key, section: '3.1', unit: 'count', phase: 1, direction: 1, measured_users: measured, total_users: 10,
   company_median: measured ? 5 : null, unmeasured_reason: measured ? null : 2,
+  histogram: measured ? [{ lo: 0, hi: 10, count: measured }] : [], trend: measured ? [{ week: '2026-10-12', median: 5, measured }] : [],
 })
 
 function Where() {
@@ -20,11 +21,11 @@ function Where() {
   return <span data-testid="where">{l.pathname + l.search}</span>
 }
 
-function renderPage() {
+function renderPage(url = '/report/usage-metrics?view=table') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/report/usage-metrics']}>
+      <MemoryRouter initialEntries={[url]}>
         <Routes>
           <Route path="/report/usage-metrics" element={<UsageMetricCatalogPage />} />
           <Route path="/report/usage-profiles" element={<Where />} />
@@ -39,7 +40,7 @@ beforeEach(() => {
   vi.mocked(apiGet).mockResolvedValue({ week: '2026-10-12', deferred: [], metrics: [item('logins', 8), item('active_workdays', 0)] })
 })
 
-describe('UsageMetricCatalogPage ranking links (duoc-CR-650)', () => {
+describe('UsageMetricCatalogPage ranking links in table view (duoc-CR-650)', () => {
   it('opens the list sorted by the clicked metric', async () => {
     renderPage()
     await userEvent.click(await screen.findByText('Lượt đăng nhập'))
@@ -51,5 +52,16 @@ describe('UsageMetricCatalogPage ranking links (duoc-CR-650)', () => {
     await userEvent.click(await screen.findByText('Ngày làm việc có vào'))
     expect(screen.queryByTestId('where')).not.toBeInTheDocument()
     expect(screen.getAllByText('Chưa có dữ liệu').length).toBeGreaterThan(0)
+  })
+})
+
+describe('UsageMetricCatalogPage chart view (duoc-CR-651)', () => {
+  it('shows chart cards by default and switches to the table via ?view=table', async () => {
+    renderPage('/report/usage-metrics')
+    expect(await screen.findByText('Lượt đăng nhập')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /Xem xếp hạng/ })).toHaveLength(1)
+    expect(screen.queryByRole('columnheader', { name: 'Ý nghĩa' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('switch', { name: 'Xem dạng bảng' }))
+    expect(await screen.findByText('Nguồn dữ liệu')).toBeInTheDocument()
   })
 })

@@ -15466,3 +15466,15 @@ vì số không. Việc sắp xếp chạy ngay trong cơ sở dữ liệu nên 
 theo, mục trang Bộ chỉ số được đổi số từ 644 sang 649 vì số 644 đã có người dùng.
 
 Mã nguồn: backend/app/modules/usage_profile/list_service.py · list_export.py · controller.py · frontend-v2/src/modules/report/pages/usage-profile-list-page.tsx · components/usage-profile/usage-metric-sort-notice.tsx · test/backend/test_ho_so_lam_viec_sap_theo_chi_so_cr650.py
+
+## duoc-CR-651 | Trang Bộ chỉ số đánh giá chuyển sang dạng biểu đồ
+- status: xong
+- date: 2026-10-20
+Chủ sản phẩm muốn các chỉ số đánh giá hiện dạng biểu đồ thay vì bảng chữ. Nay mỗi chỉ số là một thẻ gồm biểu đồ cột cho biết bao
+nhiêu người rơi vào từng mức giá trị, có vạch đánh dấu trung vị cả công ty, và một đường cho thấy trung vị công ty thay đổi qua tối
+đa tám tuần gần nhất; ý nghĩa và cách tính chuyển vào nút thông tin trên thẻ cho gọn. Chỉ số chưa ai đo được thì thẻ ghi lý do và
+không vẽ gì, còn bảng cũ vẫn mở được bằng công tắc xem dạng bảng. Khi thử tay phát hiện đường xu hướng của chỉ số tỷ lệ hiện trục tới
+bốn trăm phần trăm nên đã khóa trục trong khoảng không tới một trăm phần trăm, đồng thời rút gọn cách đọc dữ liệu để trang tải nhanh
+gấp bốn lần.
+
+Mã nguồn: backend/app/modules/usage_profile/metric_catalog_service.py · metric_chart_service.py · frontend-v2/src/modules/report/components/usage-profile/usage-metric-chart-card.tsx · usage-metric-histogram.tsx · usage-metric-trend.tsx · test/backend/test_ho_so_lam_viec_bo_chi_so_chart_cr651.py

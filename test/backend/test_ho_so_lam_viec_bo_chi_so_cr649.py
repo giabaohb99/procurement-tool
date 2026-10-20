@@ -77,7 +77,7 @@ def test_khong_co_chu_viet_mo_ta_trong_phan_hoi(db, admin, client_as):
     seeded(db, n=2, tag="M2")
     item = client_as(admin).get(URL).json()["data"]["metrics"][0]
     assert set(item) == {"key", "section", "unit", "phase", "direction", "measured_users", "total_users",
-                         "company_median", "unmeasured_reason"}
+                         "company_median", "unmeasured_reason", "histogram", "trend"}
 
 
 def test_so_truy_van_hang_so_theo_so_nguoi(db, admin, client_as):

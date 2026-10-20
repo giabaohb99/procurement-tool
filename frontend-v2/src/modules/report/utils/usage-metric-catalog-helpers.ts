@@ -14,3 +14,9 @@ export function unitKind(unit: string): UsageMetricKind {
 export function goodWhenLabel(direction: number): string {
   return direction > 0 ? 'Cao' : direction < 0 ? 'Thấp' : 'Không phán xét'
 }
+
+/** Chữ trạng thái khi chỉ số CHƯA có người đo (mã `UnmeasuredReason`: 1 chưa thu thập · 2 chưa đủ dữ liệu · 3 không áp dụng). */
+export function unmeasuredStatusText(hasWeek: boolean, reason: number | null): string | null {
+  if (!hasWeek) return 'Chưa thu thập'
+  return reason === 2 ? 'Chưa đủ dữ liệu' : reason === 3 ? 'Không áp dụng' : reason === 1 ? 'Chưa thu thập' : null
+}

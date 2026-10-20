@@ -1,26 +1,33 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { extractErrorMessage } from '@/core/api'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable } from '@/shared/data-table'
 import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
+import { Label } from '@/shared/ui/label'
+import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { formatDate } from '@/shared/utils/format-date'
 
 import { buildUsageMetricCatalogColumns } from '../components/usage-profile/usage-metric-catalog-columns'
+import { UsageMetricChartGrid } from '../components/usage-profile/usage-metric-chart-grid'
 import { UsageProfileNoticeBanner } from '../components/usage-profile/usage-profile-notice-banner'
 import { ReportPageHeader } from '../components/report-page-header'
 import { USAGE_DEFERRED_METRICS, USAGE_METRIC_SECTIONS } from '../config/usage-metric-definitions'
 import { useUsageMetricCatalog } from '../hooks/use-usage-metric-catalog'
 
 /**
- * «Bộ chỉ số đánh giá» (duoc-CR-649): từ điển các chỉ số của Hồ sơ cách làm việc — ý nghĩa, cách tính, nguồn,
+ * «Bộ chỉ số đánh giá» (duoc-CR-649, dạng biểu đồ duoc-CR-651): từ điển các chỉ số của Hồ sơ cách làm việc — ý nghĩa, cách tính, nguồn,
  * chiều tốt/xấu — kèm trạng thái đo THỰC của tuần snapshot mới nhất. Bấm dòng mở danh sách Hồ sơ cách làm việc xếp theo chỉ số đó (duoc-CR-650).
  */
 export function UsageMetricCatalogPage() {
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const asTable = params.get('view') === 'table'
+  const setAsTable = (on: boolean) =>
+    setParams((prev) => { const next = new URLSearchParams(prev); if (on) next.set('view', 'table'); else next.delete('view'); return next }, { replace: true })
   const { data, isLoading, isError, error } = useUsageMetricCatalog()
   const hasWeek = Boolean(data?.week)
   const columns = useMemo(() => buildUsageMetricCatalogColumns(hasWeek), [hasWeek])
@@ -41,6 +48,10 @@ export function UsageMetricCatalogPage() {
             : 'Chưa có bản chụp tuần nào nên chưa có số liệu đo.'}
         </p>
       </div>
+      <div className="mb-3 flex items-center gap-2">
+        <Switch id="usage-metric-table-view" checked={asTable} onCheckedChange={setAsTable} />
+        <Label htmlFor="usage-metric-table-view">Xem dạng bảng</Label>
+      </div>
       <Tabs defaultValue={USAGE_METRIC_SECTIONS[0].section}>
         <TabsList className="h-auto flex-wrap">
           {USAGE_METRIC_SECTIONS.map((s) => (
@@ -51,20 +62,30 @@ export function UsageMetricCatalogPage() {
         </TabsList>
         {USAGE_METRIC_SECTIONS.map((s) => (
           <TabsContent key={s.section} value={s.section}>
-            <Card className="p-4">
-              <DataTable
-                columns={columns}
-                rows={data?.metrics.filter((m) => m.section === s.section)}
-                getRowId={(r) => r.key}
+            {asTable ? (
+              <Card className="p-4">
+                <DataTable
+                  columns={columns}
+                  rows={data?.metrics.filter((m) => m.section === s.section)}
+                  getRowId={(r) => r.key}
+                  isLoading={isLoading}
+                  isError={isError}
+                  errorMessage={isError ? extractErrorMessage(error) : undefined}
+                  emptyMessage="Chưa có chỉ số nào trong nhóm này."
+                  storageKey="report.usage-metric-catalog"
+                  onRowClick={(r) => r.measured_users > 0 && navigate(appRoutes.report.usageProfilesByMetric(r.key))}
+                  rowClassName={(r) => (r.measured_users > 0 ? undefined : 'cursor-default')}
+                />
+              </Card>
+            ) : (
+              <UsageMetricChartGrid
+                items={data?.metrics.filter((m) => m.section === s.section)}
+                hasWeek={hasWeek}
                 isLoading={isLoading}
                 isError={isError}
                 errorMessage={isError ? extractErrorMessage(error) : undefined}
-                emptyMessage="Chưa có chỉ số nào trong nhóm này."
-                storageKey="report.usage-metric-catalog"
-                onRowClick={(r) => r.measured_users > 0 && navigate(appRoutes.report.usageProfilesByMetric(r.key))}
-                rowClassName={(r) => (r.measured_users > 0 ? undefined : 'cursor-default')}
               />
-            </Card>
+            )}
           </TabsContent>
         ))}
       </Tabs>
