@@ -65,7 +65,7 @@ export function EmployeeFormDialog({
   employee,
 }: EmployeeFormDialogProps) {
   const saveEmployee = useSaveEmployee()
-  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.EMPLOYEE, open && !employee) // duoc-CR-641
+  const { markSubmitted } = useFormTelemetry(UI_FORM_CODE.EMPLOYEE_PROFILE, open && !employee) // duoc-CR-641
   // Đủ để phủ hết phòng ban của một doanh nghiệp cỡ này; không cần tìm kiếm động.
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
   //  `enabled: open` — hộp thoại KHÔNG unmount giữa các lần mở, nên không tắt

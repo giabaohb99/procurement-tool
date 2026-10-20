@@ -75,13 +75,13 @@ describe('findSecurityFlags', () => {
 
 describe('describeCohort', () => {
   it('names the role cohort plainly', () => {
-    expect(describeCohort({ kind: 1, name: 'Kế toán', size: 12 })).toBe('Đang so với: vai trò Kế toán (12 người).')
+    expect(describeCohort({ kind: 1, key: 7, name: 'Kế toán', size: 12 })).toBe('Đang so với: vai trò Kế toán (12 người).')
   })
 
   it('explains the fallback when the cohort is a company or everyone', () => {
-    expect(describeCohort({ kind: 2, name: 'DEGO', size: 8 })).toContain('pháp nhân DEGO')
-    expect(describeCohort({ kind: 3, name: '', size: 40 })).toContain('toàn công ty')
-    expect(describeCohort({ kind: 3, name: '', size: 40 })).toContain('đủ 5 người')
+    expect(describeCohort({ kind: 2, key: 3, name: 'DEGO', size: 8 })).toContain('pháp nhân DEGO')
+    expect(describeCohort({ kind: 3, key: 0, name: '', size: 40 })).toContain('toàn công ty')
+    expect(describeCohort({ kind: 3, key: 0, name: '', size: 40 })).toContain('đủ 5 người')
   })
 
   it('copes with a missing cohort', () => {

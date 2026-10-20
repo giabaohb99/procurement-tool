@@ -9,7 +9,7 @@ import { useSearchTelemetry } from './use-search-telemetry'
 afterEach(() => vi.restoreAllMocks())
 
 const typesOf = (spy: ReturnType<typeof vi.spyOn>) =>
-  spy.mock.calls.map((c) => (c[0] as { type: number }).type)
+  spy.mock.calls.map((c: unknown[]) => (c[0] as { type: number }).type)
 
 describe('useFormTelemetry', () => {
   it('open then submit emits no ABANDON afterwards', () => {
@@ -32,7 +32,7 @@ describe('useFormTelemetry', () => {
 
   it('stays silent when inactive, even if markSubmitted is called', () => {
     const spy = vi.spyOn(telemetry, 'enqueue')
-    const { result, unmount } = renderHook(() => useFormTelemetry(UI_FORM_CODE.EMPLOYEE, false))
+    const { result, unmount } = renderHook(() => useFormTelemetry(UI_FORM_CODE.EMPLOYEE_PROFILE, false))
     result.current.markSubmitted()
     unmount()
     expect(spy).not.toHaveBeenCalled()
@@ -40,7 +40,7 @@ describe('useFormTelemetry', () => {
 
   it('a dialog reopened after a submit starts a fresh cycle', () => {
     const spy = vi.spyOn(telemetry, 'enqueue')
-    const { result, rerender, unmount } = renderHook(({ on }) => useFormTelemetry(UI_FORM_CODE.EMPLOYEE, on), {
+    const { result, rerender, unmount } = renderHook(({ on }) => useFormTelemetry(UI_FORM_CODE.EMPLOYEE_PROFILE, on), {
       initialProps: { on: true },
     })
     result.current.markSubmitted()

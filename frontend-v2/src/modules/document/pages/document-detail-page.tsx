@@ -20,7 +20,7 @@ import {
   Undo2,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -121,6 +121,19 @@ import {
 } from '../types/document-record'
 
 const FORM_ID = 'document-record-form'
+
+/**
+ * Hai bộ kiểm của form văn bản, mang CÙNG kiểu form đầy đủ (bao-CR-646 — vá typecheck của duoc-CR-640).
+ * Lược đồ bản lưu trữ HĐLĐ là `pick(...).passthrough()`: chỉ kiểm vài ô, ô còn lại đi qua nguyên vẹn, nên giá trị form
+ * đầy đủ là đầu vào hợp lệ và đầu ra vẫn đủ mọi ô — chỉ có KIỂU khai báo là tập con. Ép kiểu gói ở đây, một chỗ, thay vì
+ * ép thành `never` lúc gọi; hành vi kiểm giữ nguyên.
+ */
+const validateFullRecord: Resolver<DocumentRecordFormValues> = zodResolver(documentRecordSchema)
+const runArchiveSchema = zodResolver(archiveRecordSchema)
+const validateArchiveRecord: Resolver<DocumentRecordFormValues> = (values, context, options) =>
+  runArchiveSchema(values, context, options as unknown as Parameters<typeof runArchiveSchema>[2]) as unknown as ReturnType<
+    Resolver<DocumentRecordFormValues>
+  >
 
 /**
  * Trang CHI TIẾT một văn bản, ba tab:
@@ -268,11 +281,7 @@ export function DocumentDetailPage() {
     //  Bản lưu trữ HĐLĐ chỉ kiểm các ô sửa được (chủ / phòng / loại… do hợp đồng đồng bộ, có thể là 0). Chọn lúc
     //  KIỂM (không lúc dựng form) vì quyền / cờ `is_archive` về sau lần render đầu.
     resolver: (values, context, options) =>
-      (isArchiveRef.current ? zodResolver(archiveRecordSchema) : zodResolver(documentRecordSchema))(
-        values,
-        context,
-        options,
-      ) as never,
+      (isArchiveRef.current ? validateArchiveRecord : validateFullRecord)(values, context, options),
     defaultValues: emptyDocumentForm(),
   })
 
