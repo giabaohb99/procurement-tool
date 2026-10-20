@@ -119,6 +119,70 @@ STATUS_MAP = {
 }
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+# ── Markdown tối giản → HTML cho mô tả task (20/10/2026) ─────────────────────────────────────────────────────────────
+#  Chỉ những gì sổ dùng: đoạn (dòng ngắt cứng được nối lại), danh sách `- ` / `1. `, **đậm**, *nghiêng*, `mã`, và dòng
+#  nhãn cuối mục (`Mã nguồn:` / `Commit:` / `Deploy:` / `CR …:`) in đậm phần nhãn. Không dùng thư viện ngoài để script
+#  vẫn chạy bằng Python thuần trên máy nào cũng được. Thứ tự: thoát HTML TRƯỚC rồi mới thay dấu, nên chữ `<` trong sổ
+#  không thành thẻ.
+_LIST_UL = re.compile(r"^\s*[-*]\s+(.*)$")
+_LIST_OL = re.compile(r"^\s*\d+[.)]\s+(.*)$")
+_LABEL = re.compile(r"^(Mã nguồn|Commit|Deploy|Kiểm|Bài kiểm|CR [^:]{1,40}|Lưu ý|Còn lại):\s*(.*)$")
+_HEADING = re.compile(r"^\*\*([^*]{1,60})\*\*:?\s*$")
+
+
+def _inline(text: str) -> str:
+    out = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
+    out = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", out)
+    out = re.sub(r"(?<![\w*])\*([^*\s][^*]*?)\*(?![\w*])", r"<em>\1</em>", out)
+    return out
+
+
+def md_to_html(text: str) -> str:
+    if not text:
+        return ""
+    html: list[str] = []
+    para: list[str] = []
+    items: list[str] = []
+    kind = ""
+
+    def flush_para() -> None:
+        if para:
+            html.append(f"<p>{_inline(' '.join(p.strip() for p in para))}</p>")
+            para.clear()
+
+    def flush_list() -> None:
+        nonlocal kind
+        if items:
+            html.append(f"<{kind}>" + "".join(f"<li>{_inline(i)}</li>" for i in items) + f"</{kind}>")
+            items.clear()
+        kind = ""
+
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        if not line.strip():
+            flush_para(); flush_list(); continue
+        m_ul, m_ol = _LIST_UL.match(line), _LIST_OL.match(line)
+        if m_ul or m_ol:
+            flush_para()
+            want = "ul" if m_ul else "ol"
+            if kind and kind != want:
+                flush_list()
+            kind = want
+            items.append((m_ul or m_ol).group(1))
+            continue
+        if items and raw[:1] == " ":           # dòng thụt vào = nối tiếp mục danh sách trước
+            items[-1] += " " + line.strip(); continue
+        flush_list()
+        m_h, m_l = _HEADING.match(line.strip()), _LABEL.match(line.strip())
+        if m_h:
+            flush_para(); html.append(f"<p><strong>{_inline(m_h.group(1))}</strong></p>"); continue
+        if m_l:
+            flush_para(); html.append(f"<p><strong>{_inline(m_l.group(1))}:</strong> {_inline(m_l.group(2))}</p>"); continue
+        para.append(line)
+    flush_para(); flush_list()
+    return "".join(html)
+
 
 @dataclass
 class JournalEntry:
@@ -144,7 +208,9 @@ class JournalEntry:
 
     @property
     def description(self) -> str:
-        return "\n".join(self.desc_lines).strip()
+        #  Màn Dự án chỉ hiểu HTML (chữ thuần → mỗi dòng một đoạn, dấu ** hiện nguyên) — đổi Markdown của sổ sang HTML
+        #  để task có mục rõ ràng, in đậm / nghiêng (đại ca chốt 20/10/2026).
+        return md_to_html("\n".join(self.desc_lines).strip())
 
     @property
     def section_name(self) -> str:
@@ -648,13 +714,19 @@ def main() -> None:
     pic_by_prefix = parse_map(env.get("WORK_SYNC_PIC_BY_PREFIX", ""), DEFAULT_PIC_BY_PREFIX)
     tag_by_prefix = parse_map(env.get("WORK_SYNC_TAG_BY_PREFIX", ""), DEFAULT_TAG_BY_PREFIX)
     route = env.get("WORK_SYNC_ROUTE", "1").strip() != "0"
+    #  20/10/2026: mã nhân sự KHÁC NHAU giữa dev và prod (NSU231 dev = anh Dược, prod = «Dego Marketing»; anh Dược
+    #  trên prod là NSU265). Sổ ghi mã dev; `WORK_SYNC_PIC_ALIAS=NSU231=NSU265` đổi mã khai tường minh khi đồng bộ prod.
+    pic_alias = {k.upper(): v.upper() for k, v in parse_map(env.get("WORK_SYNC_PIC_ALIAS", ""), {}).items()}
     #  Người phụ trách: mục nào không khai `- pic:` thì theo tiền tố, rồi tới người
     #  mặc định; việc con đi theo mục cha của nó.
     for e in entries:
         prefix = key_prefix(e.key)
         if not e.pic_codes and prefix in pic_by_prefix:
             e.pic_codes = [pic_by_prefix[prefix].upper()]
-        e.pic_codes = e.pic_codes or default_pics
+        e.pic_codes = [pic_alias.get(c.upper(), c) for c in (e.pic_codes or default_pics)]
+        for c in e.children:
+            if c.pic_codes:
+                c.pic_codes = [pic_alias.get(x.upper(), x) for x in c.pic_codes]
         if prefix in tag_by_prefix and tag_by_prefix[prefix] not in e.tag_names:
             e.tag_names.append(tag_by_prefix[prefix])
         if route and not e.list_name:
