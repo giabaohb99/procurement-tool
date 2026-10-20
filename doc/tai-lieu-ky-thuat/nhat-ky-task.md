@@ -15514,3 +15514,14 @@ bốn trăm phần trăm nên đã khóa trục trong khoảng không tới mộ
 gấp bốn lần.
 
 Mã nguồn: backend/app/modules/usage_profile/metric_catalog_service.py · metric_chart_service.py · frontend-v2/src/modules/report/components/usage-profile/usage-metric-chart-card.tsx · usage-metric-histogram.tsx · usage-metric-trend.tsx · test/backend/test_ho_so_lam_viec_bo_chi_so_chart_cr651.py
+
+## duoc-CR-652 | Nhân viên tự xem hợp đồng lao động của mình ở trang cá nhân
+- status: xong
+- date: 2026-10-20
+Trước đây chỉ bộ phận nhân sự mới xem được hợp đồng lao động. Nay mỗi người có thêm mục Hợp đồng của tôi ở trang cá nhân, liệt kê
+các hợp đồng của chính mình đã ký, đã chấm dứt hoặc đã hết hạn, kèm nút tải bản mềm do hệ thống sinh và bản cứng đã ký nếu có. Hợp
+đồng còn nháp hoặc đã hủy không hiện vì chưa chốt lương. Hệ thống chỉ lấy người xem từ phiên đăng nhập nên không thể xem hợp đồng
+của người khác bằng cách đổi số trên đường dẫn, và bản lưu trữ của hợp đồng bên phân hệ Văn bản cũng cho chính chủ đọc nhưng không
+cho sửa hay chia sẻ.
+
+Mã nguồn: backend/app/modules/labor_contract/my_contract_controller.py · backend/app/modules/document/labor_contract_archive_access.py · frontend-v2/src/app/components/profile/profile-labor-contracts-tab.tsx · test/backend/test_hdld_cua_toi_cr652.py

@@ -7,6 +7,9 @@ trên giao diện không mở khóa.
   * ĐỌC D  ⇔  người dùng có `labor_contract.read` VÀ L nằm trong phạm vi `labor_contract` của họ.
     Không tính phạm vi `document` (kể cả `all`), chia đích danh, CẤM, sổ, duyệt, phạm vi áp dụng,
     clone, chủ/người tạo — tức người lao động, văn thư và admin-không-có-`labor_contract` đều KHÔNG đọc.
+  * duoc-CR-652: ngoài ra CHÍNH NGƯỜI LAO ĐỘNG (L.employee_id = user.employee_id > 0) ĐỌC được D khi L chưa xóa mềm
+    và đang ở `SELF_VIEW_STATUSES` (Đã ký / Đã chấm dứt / Hết hạn) — không cần `labor_contract.read`. Chỉ ĐỌC: sửa
+    (`can_write`) vẫn đòi quyền Nhân sự; nhật ký / `blocked_*` vẫn chỉ tính HR (`readable_archive_ids`).
   * GHI / XÓA D  ⇔  không bao giờ (bản lưu trữ chỉ đọc; mọi thay đổi đi từ Nhân sự).
   * Thao tác TẠO văn bản mới từ D (sao chép, clone, trích, ký) bị chặn 409.
 
@@ -14,7 +17,7 @@ trên giao diện không mở khóa.
 (vòng import).
 """
 from fastapi import HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, true
 from sqlalchemy.orm import Session
 
 from app.core.scoping import scope_condition
@@ -49,6 +52,40 @@ def readable_archive_ids(user, profile: dict):
     if scope is not None:
         q = q.where(scope)
     return q
+
+
+def _owner_condition(user):
+    """Điều kiện «HĐ của chính người này, đã ký/chấm dứt, chưa xóa mềm» (duoc-CR-652); `None` nếu chưa gắn nhân sự."""
+    employee_id = int(getattr(user, "employee_id", 0) or 0)
+    if employee_id <= 0:
+        return None
+    from app.core.labor_contract_codes import SELF_VIEW_STATUSES
+    lc = _labor_contract_model()
+    return (lc.employee_id == employee_id) & lc.status.in_(SELF_VIEW_STATUSES) & (lc.is_deleted == False)  # noqa: E712
+
+
+def viewable_archive_ids(user, profile: dict):
+    """Truy vấn con: id bản lưu trữ người này XEM được = HR đọc được HOẶC là chủ HĐ (duoc-CR-652).
+    `None` nếu không nguồn nào. CHỈ dùng cho danh sách / `can(read)`; nhật ký dùng `readable_archive_ids`."""
+    lc = _labor_contract_model()
+    conds = []
+    if _has_read(profile):
+        scope = scope_condition(lc, "labor_contract", user, profile, "read")
+        conds.append(scope if scope is not None else true())
+    owner = _owner_condition(user)
+    if owner is not None:
+        conds.append(owner)
+    if not conds:
+        return None
+    return select(lc.document_id).where(lc.document_id > 0, or_(*conds))
+
+
+def is_owner_readable(contract, user) -> bool:
+    """Chủ HĐ đọc được bản lưu trữ của HĐ này không (duoc-CR-652)."""
+    from app.core.labor_contract_codes import SELF_VIEW_STATUSES
+    employee_id = int(getattr(user, "employee_id", 0) or 0)
+    return (employee_id > 0 and int(contract.employee_id or 0) == employee_id
+            and int(contract.status) in SELF_VIEW_STATUSES and not getattr(contract, "is_deleted", False))
 
 
 def archive_type_ids():
@@ -98,7 +135,7 @@ def wrap_visible(direct, user, profile: dict, action: str):
         normal = normal & direct
     if action != "read":
         return normal
-    readable = readable_archive_ids(user, profile)
+    readable = viewable_archive_ids(user, profile)   # duoc-CR-652: gồm cả chủ HĐ
     if readable is None:
         return normal
     return or_(normal, Document.id.in_(readable))
@@ -111,6 +148,11 @@ def contract_of(db: Session, doc: Document):
 
 
 def can_read(db: Session, contract, user, profile: dict) -> bool:
+    """Đọc BẢN LƯU TRỮ của `contract`: HR đọc được HĐ (`_hr_can_read`) HOẶC chủ HĐ (duoc-CR-652)."""
+    return _hr_can_read(db, contract, user, profile) or is_owner_readable(contract, user)
+
+
+def _hr_can_read(db: Session, contract, user, profile: dict) -> bool:
     """Người này đọc được HĐ `contract` không — hỏi lại DB bằng đúng điều kiện phạm vi của danh sách."""
     if not _has_read(profile):
         return False
@@ -124,7 +166,7 @@ def can_read(db: Session, contract, user, profile: dict) -> bool:
 def can_write(db: Session, contract, user, profile: dict) -> bool:
     """duoc-CR-640: SỬA bản lưu trữ ⇔ đọc được HĐ VÀ có `labor_contract.write` phủ HĐ đó (cùng người sửa được HĐ ở
     Nhân sự). HĐ đã xóa mềm thì chỉ đọc. Không nguồn quyền nào của Văn bản được tính."""
-    if getattr(contract, "is_deleted", False) or not can_read(db, contract, user, profile):
+    if getattr(contract, "is_deleted", False) or not _hr_can_read(db, contract, user, profile):
         return False
     from app.modules.labor_contract.access import has_perm
     #  Khớp đúng những gì ROUTE cho phép: lớp 1 của sửa / tải tệp đòi `document.write` (xem seed `hr_profile`).

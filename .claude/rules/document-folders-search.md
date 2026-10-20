@@ -49,6 +49,9 @@ paths:
   thu hồi chia sẻ, quan hệ, phạm vi áp dụng, đổi loại, vào sổ; tạo/đổi sang loại `HDLD` → 400. Lớp 1 của sửa/tải tệp đòi
   `document.write` — vai trò `hr_profile` seed `document: read+write` phạm vi `own` (không mở thêm văn bản thường nào).
   `/permissions` trả thêm `is_archive` để giao diện ẩn các nút bị chặn.
+  **CHỦ HỢP ĐỒNG ĐỌC được (duoc-CR-652)** bản lưu trữ của chính mình khi HĐ ở trạng thái Đã ký / Đã chấm dứt và chưa xóa
+  (`SELF_VIEW_STATUSES`, `core/labor_contract_codes.py`) — chỉ đọc: `can_write`, xóa, chia sẻ, nhật ký `blocked_*` vẫn theo
+  luật chỉ-Nhân-sự. Đường `/api/me/labor-contracts*` lấy nhân sự TỪ TOKEN (`employee_id = 0` → rỗng), HĐ nháp/hủy/của người khác → 404.
   `keywords = 'hdld:{id HĐ}'` chỉ là dấu nhận lại văn bản MỒ CÔI: `document_archive_sync._unlinked_marked` chỉ xét văn bản loại HDLD
   chưa HĐ nào trỏ tới — danh tính văn bản↔HĐ luôn là `tab_labor_contract.document_id`, không bao giờ là `keywords`.
   `role_level_cap`: chỉ `document.write` (không `document.create`/`doc_folder.*`) ⇒ trần ĐÓNG GÓP (gắn văn bản vào thư mục,

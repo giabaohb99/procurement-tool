@@ -64,6 +64,7 @@ from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
 from app.modules.labor_contract.controller import router as labor_contract_router
+from app.modules.labor_contract.my_contract_controller import router as my_labor_contract_router
 from app.modules.labor_contract.template_controller import router as labor_contract_template_router
 from app.modules.labor_contract.variable_controller import router as labor_contract_variable_router
 #  Quá trình công tác (phase-02, plan 261003-0837) — router RIÊNG, cùng prefix
@@ -270,6 +271,7 @@ app.include_router(department_router)
 app.include_router(employee_work_history_router)
 #  HĐLĐ: chung tiền tố `/api/employees/{eid}/...` — PHẢI trước `employee_router` (nó có `/{eid}`).
 app.include_router(labor_contract_router)
+app.include_router(my_labor_contract_router)
 app.include_router(labor_contract_template_router)
 app.include_router(labor_contract_variable_router)
 app.include_router(employee_router)

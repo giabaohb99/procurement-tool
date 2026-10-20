@@ -4,6 +4,7 @@ import {
   CheckSquare,
   ClipboardList,
   FileCheck2,
+  FileSignature,
   History,
   KeyRound,
   LifeBuoy,
@@ -28,6 +29,7 @@ export type ProfileSectionKey =
   | 'info'
   | 'work-history'
   | 'decisions'
+  | 'labor-contracts'
   | 'tasks'
   | 'notifications'
   | 'tickets'
@@ -73,6 +75,7 @@ export const PROFILE_GROUPS: ProfileGroupDefinition[] = [
       { key: 'info', label: 'Thông tin cá nhân', icon: User },
       { key: 'work-history', label: 'Quá trình công tác', icon: History },
       { key: 'decisions', label: 'Quyết định bổ nhiệm', icon: FileCheck2 },
+      { key: 'labor-contracts', label: 'Hợp đồng của tôi', icon: FileSignature },
     ],
   },
   {
@@ -129,7 +132,7 @@ function isSectionKey(value: string): value is ProfileSectionKey {
 
 /** Mục có được bày ra với người đang xem không. */
 export function isProfileSectionVisible(key: ProfileSectionKey, access: ProfileSectionAccess): boolean {
-  if (key === 'work-history' || key === 'decisions') return access.hasEmployeeProfile
+  if (key === 'work-history' || key === 'decisions' || key === 'labor-contracts') return access.hasEmployeeProfile
   if (key === 'tickets') return access.canReadTickets
   return true
 }

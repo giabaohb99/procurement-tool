@@ -193,6 +193,8 @@ export const queryKeys = {
     employeeWorkHistory: (id: number) => ['hr', 'employees', id, 'work-history'] as const,
     /** Quá trình công tác của CHÍNH MÌNH (`/api/employees/me/work-history`) — Trang cá nhân đọc bằng khóa này. */
     myWorkHistory: () => ['hr', 'employees', 'me', 'work-history'] as const,
+    /** «Hợp đồng của tôi» (duoc-CR-652) — HĐLĐ đã ký của CHÍNH MÌNH, `/api/me/labor-contracts`. */
+    myLaborContracts: () => ['hr', 'me', 'labor-contracts'] as const,
     /** Tệp đính kèm của MỘT dòng quá trình công tác (entity `employee_work_history`). */
     workHistoryFiles: (historyId: number) =>
       ['hr', 'work-history', historyId, 'files'] as const,
@@ -810,7 +812,7 @@ export const queryKeys = {
     /** Hồ sơ cách làm việc (duoc-CR-641): danh sách và hồ sơ từng người. */
     usageProfileList: (params: Record<string, unknown>) => ['report', 'usage-profile', 'list', params] as const,
     usageProfile: (userId: number, weeks: number) => ['report', 'usage-profile', 'detail', userId, weeks] as const,
-    /** Bộ chỉ số đánh giá (duoc-CR-644). */
+    /** Bộ chỉ số đánh giá (duoc-CR-649). */
     usageMetricCatalog: () => ['report', 'usage-profile', 'metric-catalog'] as const,
   },
   coffee: {

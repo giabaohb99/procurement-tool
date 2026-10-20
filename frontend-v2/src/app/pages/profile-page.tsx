@@ -11,6 +11,7 @@ import { ProfileDevicesTab } from '@/app/components/profile/profile-devices-tab'
 import { ProfileEmergencyContacts } from '@/app/components/profile/profile-emergency-contacts'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
+import { ProfileLaborContractsTab } from '@/app/components/profile/profile-labor-contracts-tab'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
 import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
@@ -196,6 +197,8 @@ export function ProfilePage() {
         return <ProfileWorkHistoryTab />
       case 'decisions':
         return <ProfileWorkDecisionsTab />
+      case 'labor-contracts':
+        return <ProfileLaborContractsTab />
       case 'tasks':
         return <ProfileTasksTab onCountChange={setTaskCount} />
       case 'notifications':
