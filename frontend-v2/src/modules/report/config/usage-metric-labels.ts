@@ -58,6 +58,13 @@ export const USAGE_METRIC_LABELS: Record<string, { label: string; kind: UsageMet
   max_parallel_ips: { label: 'Nhiều nơi cùng lúc (số IP)', kind: 'count' },
   export_rows_spike: { label: 'Xuất vượt mức thường', kind: 'count' },
   max_deletes_10min: { label: 'Xóa hàng loạt (10 phút)', kind: 'count' },
+  proxied_days_ratio: { label: 'Ngày được bấm hộ', kind: 'ratio' },
+  heatmap_top3_share: { label: 'Dồn vào 3 khung giờ', kind: 'ratio' },
+  page_views: { label: 'Lượt xem màn hình', kind: 'count' },
+  docs_created: { label: 'Phiếu đã lập', kind: 'count' },
+  docs_submitted: { label: 'Phiếu đã gửi', kind: 'count' },
+  proxy_share: { label: 'Phiếu được lập hộ', kind: 'ratio' },
+  export_entity_weeks_max: { label: 'Số tuần liền xuất cùng loại dữ liệu', kind: 'count' },
   active_after_resign: { label: 'Nghỉ việc vẫn hoạt động', kind: 'count' },
 }
 

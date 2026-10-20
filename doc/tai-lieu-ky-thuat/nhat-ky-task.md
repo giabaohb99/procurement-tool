@@ -15444,3 +15444,14 @@ hộp lập hợp đồng và hộp sinh tệp cũng trỏ về trang này; nút
 người dùng vừa đứng. Tab mẫu hợp đồng bên phân hệ Văn bản vẫn giữ nguyên.
 
 Mã nguồn: frontend-v2/src/modules/hr/pages/labor-contract-template-list-page.tsx · frontend-v2/src/modules/hr/routes.tsx · labor-contract-template-editor-page.tsx · labor-contract-variables-page.tsx
+
+## duoc-CR-644 | Trang Bộ chỉ số đánh giá trong phân hệ Báo cáo
+- status: xong
+- date: 2026-10-20
+Chủ sản phẩm muốn các chỉ số dùng để đánh giá có một trang riêng trong phân hệ Báo cáo. Nay nhóm Quản trị của Báo cáo có thêm
+trang Bộ chỉ số đánh giá, chia sáu nhóm giống hồ sơ cách làm việc; mỗi chỉ số ghi rõ ý nghĩa, cách tính, dữ liệu lấy từ đâu, cao
+hay thấp mới là tốt, và tình trạng đo hiện tại lấy từ bản chụp tuần mới nhất: bao nhiêu người đã đo được và trung vị cả công ty,
+hoặc lý do chưa đo được. Cuối trang liệt kê các chỉ số đã hoãn hoặc bỏ cùng lý do. Trang dùng chung quyền với hồ sơ cách làm việc,
+mặc định chỉ quản trị xem và quản trị có thể gán thêm người.
+
+Mã nguồn: backend/app/modules/usage_profile/metric_catalog_service.py · controller.py · frontend-v2/src/modules/report/pages/usage-metric-catalog-page.tsx · config/usage-metric-definitions.ts · test/backend/test_ho_so_lam_viec_bo_chi_so_cr644.py

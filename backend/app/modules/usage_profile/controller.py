@@ -4,7 +4,7 @@ Gác KÉP như 13 báo cáo cũ: `require("setting", …)` (cửa quyền phân 
 (chủ sản phẩm: mặc định chỉ admin; admin gán thêm ở Phân quyền → Báo cáo). Admin xem TẤT CẢ người (không `apply_scope`:
 khóa `setting` không có bảng để lọc). KHÔNG có đường «hồ sơ của tôi», không mở cho quản lý. Mỗi lần mở hồ sơ để lại một dòng
 `tab_request_log` (GET không bị loại) — đủ trả lời «ai đã xem hồ sơ ai».
-`/summary`, `/summary/export`, `/cohorts` khai TRƯỚC `/{user_id}` để không bị đường tham số nuốt.
+`/summary`, `/summary/export`, `/cohorts`, `/metrics` khai TRƯỚC `/{user_id}` để không bị đường tham số nuốt.
 """
 from datetime import date
 
@@ -18,7 +18,7 @@ from app.core.report_period import parse_period
 from app.core.response import success
 from app.modules.report_access.guard import require_report
 
-from . import cohort_service, list_export, list_service, profile_service
+from . import cohort_service, list_export, metric_catalog_service, list_service, profile_service
 from .schema import MAX_LABELS, MAX_PAGE_SIZE, MAX_Q_LEN, MAX_WEEKS, ListFilters, parse_sort, validate_labels
 
 router = APIRouter(prefix="/api/usage-profiles", tags=["usage-profile"])
@@ -58,6 +58,12 @@ def usage_summary_export(request: Request, company_id: int | None = Query(None, 
 def usage_cohorts(week: date | None = Query(None), db: Session = Depends(get_db),
                   user=Depends(require("setting", "read"))):
     return success(cohort_service.list_cohorts(db, week))
+
+
+@router.get("/metrics", dependencies=GUARD)
+def usage_metrics(db: Session = Depends(get_db), user=Depends(require("setting", "read"))):
+    #  duoc-CR-644: danh mục chỉ số + số người đo được / trung vị công ty của tuần mới nhất (chỉ khóa và mã).
+    return success(metric_catalog_service.list_metrics(db))
 
 
 @router.get("/{user_id}", dependencies=GUARD)

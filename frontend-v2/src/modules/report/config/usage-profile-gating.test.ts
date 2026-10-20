@@ -46,3 +46,29 @@ describe('usage profile route gating', () => {
     expect(canAccessRoute(reportModule, appRoutes.report.purchaseReport, canAll, { reportKeys: [USAGE_KEY] })).toBe(false)
   })
 })
+
+/** duoc-CR-644: «Bộ chỉ số đánh giá» có mục menu riêng nên được gác đúng như Hồ sơ cách làm việc. */
+describe('usage metric catalog route gating', () => {
+  const path = appRoutes.report.usageMetrics
+
+  it('has its own nav item in group Quản trị gated by setting + key 14', () => {
+    const item = reportModule.nav.find((n) => n.path === path)
+    expect(item).toMatchObject({ label: 'Bộ chỉ số đánh giá', entity: 'setting', group: 'Quản trị', reportKeys: [USAGE_KEY] })
+    expect(reportModule.routes.map((r) => r.path)).toContain(path)
+  })
+
+  it('does not add a second catalog entry with key 14 (one row per key in report access settings)', () => {
+    expect(REPORT_CATALOG.filter((r) => r.key === USAGE_KEY)).toHaveLength(1)
+  })
+
+  it('does not collide with the per-user profile route', () => {
+    expect(path.startsWith(`${appRoutes.report.usageProfiles}/`)).toBe(false)
+  })
+
+  it('opens with key 14 + setting.read only', () => {
+    expect(canAccessRoute(reportModule, path, canAll, { reportKeys: [USAGE_KEY] })).toBe(true)
+    expect(canAccessRoute(reportModule, path, canAllButSetting, { reportKeys: [USAGE_KEY] })).toBe(false)
+    expect(canAccessRoute(reportModule, path, canAll, { reportKeys: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] })).toBe(false)
+    expect(canAccessRoute(reportModule, path, canAll, {})).toBe(false)
+  })
+})
