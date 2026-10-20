@@ -212,8 +212,9 @@ Không có phần này thì mục 3.2 chỉ dừng ở mức phân hệ. Đề x
 - **Giữ bao lâu:** `tab_ui_event` 90 ngày; `tab_usage_daily`, `tab_user_usage_snapshot`, `tab_user_usage_label` **3 năm** (việc dọn `usage.cleanup_ui_events` 04:20).
 - **Không ghi:** từ khóa tìm kiếm (chỉ màn + số kết quả), nội dung nhập vào biểu mẫu, id trong đường dẫn (route mẫu `/…/:id`), `query_string`/`request_body`/`response_body`.
 - **Hai ứng dụng gửi (bao-CR-649):** app cũ thumua (`frontend/`) có bộ thu riêng `frontend/src/telemetry/` cùng hợp đồng, thân lô kèm `"app": 2`
-  (ERP v2 không khai = 1). Cột `tab_ui_event.app` giữ nguồn; route thumua của YCMH / YCBG / ĐMH được máy chủ quy về route v2
-  (`/purchase-orders/:id` → `/procurement/purchase-orders/:id`, `canonical_route`) để báo cáo không tách đôi một màn. Số gom ngày cộng cả hai app;
+  (ERP v2 không khai = 1). Cột `tab_ui_event.app` giữ nguồn; route thumua có màn tương ứng ở v2 (32 màn, bảng `_THUMUA_TO_V2` trong
+  `route_pattern.py`) được máy chủ quy về route v2 (`/purchase-orders/:id` → `/procurement/purchase-orders/:id`, `/inventory` → `/inventory/stock`,
+  `/tickets` → `/support`…, `canonical_route`) để báo cáo không tách đôi một màn; route không có bản v2 (`/import-batches`, `/customs-regulations`…) giữ nguyên. Số gom ngày cộng cả hai app;
   `GET /api/usage-profiles/by-app` trả số sự kiện tách theo app trong kỳ (90 ngày dữ liệu thô). Thumua chỉ đo biểu mẫu TẠO MỚI ba phiếu đó,
   không đo tìm kiếm; trang in `/print/...` nằm ngoài bố cục chung nên không đo.
 - Người đó có chỗ phản hồi «nhận xét này sai vì…»: **chưa làm** (gắn với pha 4 / quy trình HR).

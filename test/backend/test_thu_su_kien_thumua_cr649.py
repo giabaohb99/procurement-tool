@@ -21,7 +21,7 @@ from app.core.usage_codes import UiApp, UiEventType, UiForm
 from app.main import app
 from app.modules.usage_profile import app_split_service
 from app.modules.usage_profile.model import UiEvent
-from app.modules.usage_profile.route_pattern import canonical_route, normalize_route
+from app.modules.usage_profile.route_pattern import _THUMUA_TO_V2, canonical_route, normalize_route
 from app.modules.usage_profile.telemetry_schema import UiEventBatch
 from app.modules.usage_profile.telemetry_service import build_rows, store_batch
 
@@ -74,14 +74,65 @@ def test_app_khong_duoc_nam_trong_tung_su_kien():
 
 # ── quy route thumua về v2 ──────────────────────────────────────────────────────
 
+#  MỖI DÒNG của bảng `_THUMUA_TO_V2` có một dòng ở đây (route danh sách của thumua → route v2); bài dưới canh bảng
+#  và danh sách này phủ nhau đủ — thêm màn mà quên một bên là đỏ.
+_LIST_ROUTES = {
+    "/purchase-requests": "/procurement/purchase-requests",
+    "/survey-requests": "/procurement/survey-requests",
+    "/purchase-orders": "/procurement/purchase-orders",
+    "/surveys": "/procurement/surveys",
+    "/surveys-supplier": "/procurement/surveys",
+    "/surveys-product": "/procurement/surveys",
+    "/survey-progress": "/procurement/survey-progress",
+    "/purchase-progress": "/procurement/purchase-progress",
+    "/category-assignees": "/procurement/category-assignees",
+    "/customs-prices": "/procurement/customs-prices",
+    "/po-cost-types": "/procurement/po-cost-types",
+    "/pr-lines-report": "/procurement/pr-lines-report",
+    "/survey-report": "/procurement/survey-report",
+    "/documents": "/procurement/purchase-orders/:id/documents",
+    "/suppliers": "/production/suppliers",
+    "/products": "/production/products",
+    "/units": "/production/units",
+    "/item-groups": "/production/item-groups",
+    "/contracts": "/production/contracts",
+    "/payables": "/finance/payables",
+    "/payment-requests": "/finance/payment-requests",
+    "/companies": "/hr/companies",
+    "/departments": "/hr/departments",
+    "/employees": "/hr/employees",
+    "/inventory": "/inventory/stock",
+    "/warehouses": "/inventory/warehouses",
+    "/backups": "/system/backups",
+    "/settings": "/system/settings",
+    "/roles": "/system/permissions",
+    "/users": "/system/permissions/users",
+    "/reports": "/report",
+    "/tickets": "/support",
+}
+
+
+@pytest.mark.parametrize("raw, expected", list(_LIST_ROUTES.items()))
+def test_canonical_route_tung_man_thumua(raw, expected):
+    assert canonical_route(raw, int(UiApp.THUMUA)) == expected
+
+
+def test_bang_quy_route_va_bai_kiem_phu_nhau_du():
+    assert {"/" + k for k in _THUMUA_TO_V2} == set(_LIST_ROUTES)
+
+
 @pytest.mark.parametrize("raw, expected", [
     ("/purchase-requests/:id", "/procurement/purchase-requests/:id"),
     ("/purchase-requests/new", "/procurement/purchase-requests/new"),
-    ("/purchase-requests", "/procurement/purchase-requests"),
     ("/survey-requests/:id/process", "/procurement/survey-requests/:id/process"),
-    ("/purchase-orders/:id", "/procurement/purchase-orders/:id"),
+    ("/surveys-supplier/:id", "/procurement/surveys/:id"),
+    ("/customs-prices/pesticides/:id", "/procurement/customs-prices/pesticides/:id"),
+    ("/users/:id", "/system/permissions/users/:id"),
+    ("/tickets/:id", "/support/tickets/:id"),            # danh sách là `/support`, chi tiết giữ đoạn `tickets`
     ("/print/purchase-order/:id", "/print/purchase-order/:id"),   # hai app đã giống nhau
-    ("/payment-requests/:id", "/payment-requests/:id"),           # thumua không có bản v2 tương ứng: giữ
+    ("/me", "/me"), ("/notifications", "/notifications"),         # cùng route ở hai app
+    ("/import-batches/:id", "/import-batches/:id"),               # thumua không có bản v2: giữ
+    ("/customs-regulations", "/customs-regulations"),
     ("/", "/"),
 ])
 def test_canonical_route_thumua(raw, expected):
