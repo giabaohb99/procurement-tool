@@ -29,6 +29,7 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
     created_at: '2026-08-01T00:00:00', updated_at: '2026-08-01T00:00:00',
     assignees: [], labels: [],
     subtask_done: 0, subtask_total: 0, comment_count: 0,
+    task_type_id: 0, task_type_name: '', estimate_hours: null, actual_hours: null, outcome: 0,
     ...patch,
   }
 }

@@ -47,6 +47,7 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
     subtask_done: 0,
     subtask_total: 0,
     comment_count: 0,
+    task_type_id: 0, task_type_name: '', estimate_hours: null, actual_hours: null, outcome: 0,
     ...patch,
   }
 }
