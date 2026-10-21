@@ -292,7 +292,7 @@ export interface WorkBoard {
 }
 
 /** Một loại việc trong danh mục quản trị khai (duoc-CR-656, `tab_work_task_type`). */
-export interface WorkTaskType {
+export type WorkTaskType = {
   id: number
   /** `0` = dùng chung mọi pháp nhân. */
   company_id: number
