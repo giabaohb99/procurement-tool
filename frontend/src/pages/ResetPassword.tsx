@@ -77,7 +77,7 @@ export default function ResetPassword() {
             {/* bao-CR-405 (BM-016): màn này không kiểm tại chỗ — lỗi chính sách về từ máy chủ
                 và đã hiện ở khung `lg-err`. Ghi luật ra đây để người dùng khỏi đoán. */}
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: -4 }}>
-              Tối thiểu 8 ký tự, phải có cả chữ và số; không được trùng mã nhân viên hoặc email.
+              Tối thiểu 8 ký tự; không được trùng mã nhân viên hoặc email.
             </div>
             <div className="lg-inp">
               <i className="ti ti-lock-check" />

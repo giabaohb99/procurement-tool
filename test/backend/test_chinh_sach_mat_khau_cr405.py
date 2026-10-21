@@ -53,11 +53,13 @@ def test_mat_khau_ngan_hon_muc_toi_thieu_bi_tu_choi():
     assert validate_password("a" * (MIN_LENGTH - 1) + "1")
 
 
-def test_mat_khau_thieu_chu_hoac_thieu_so_bi_tu_choi():
-    for raw in ("matkhaudai", "1234512345"):
-        with pytest.raises(HTTPException) as e:
-            validate_password(raw)
-        assert "chữ và số" in e.value.detail
+def test_mat_khau_chi_chu_hoac_chi_so_duoc_nhan_cr653():
+    #  bao-CR-653: bỏ luật «phải có cả chữ và số» — mật khẩu toàn số (vd số điện thoại) qua được.
+    for raw in ("matkhaudai", "0945691104"):
+        assert validate_password(raw) == raw
+    #  Các luật còn lại vẫn đứng: toàn số mà nằm trong danh sách phổ biến thì vẫn bị chặn.
+    with pytest.raises(HTTPException):
+        validate_password("12345678")
 
 
 def test_mat_khau_vuot_72_byte_bi_tu_choi_vi_bcrypt_cat_am_tham():

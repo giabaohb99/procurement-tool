@@ -93,8 +93,9 @@ def validate_password(raw: str, *, username: str = "", email: str = "") -> str:
             400, f"Mật khẩu quá dài — tối đa {MAX_BYTES} byte "
                  f"(khoảng {MAX_BYTES} ký tự không dấu, hoặc {MAX_BYTES // 3} ký tự tiếng Việt có dấu)")
 
-    if not any(c.isalpha() for c in raw) or not any(c.isdigit() for c in raw):
-        raise HTTPException(400, "Mật khẩu phải có cả chữ và số")
+    #  bao-CR-653 (đại ca chốt 21/10/2026): BỎ luật «phải có cả chữ và số» — quản trị cần đặt
+    #  mật khẩu tạm chỉ gồm số. Giữ nguyên độ dài tối thiểu, danh sách phổ biến và luật
+    #  cấm chứa mã nhân viên / email bên dưới.
 
     if _strip_accents(raw.lower()) in COMMON_PASSWORDS:
         raise HTTPException(400, "Mật khẩu này nằm trong danh sách mật khẩu phổ biến — hãy chọn mật khẩu khác")
