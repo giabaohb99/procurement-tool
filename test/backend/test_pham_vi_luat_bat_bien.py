@@ -273,6 +273,16 @@ BB4_CONTROLLER_MIEN_TRU = {
                                            "`work_history_access.employee_in_scope` → `get_scoped(Employee, "
                                            "'employee', …)` (404 khi ngoài phạm vi); `/me/work-history` "
                                            "chỉ đọc hồ sơ của chính người gọi qua `user.employee_id`",
+    "employee/position_role_controller.py": "duoc-CR-653 (thêm 21/10/2026, bao-CR-651): vai trò mặc định theo "
+                                            "chức vụ — cấu hình chung của hệ trên `job_position` (PUBLIC), "
+                                            "không có dữ liệu thuộc công ty / phòng / người nào để lọc; cổng là "
+                                            "require('role', 'read' | 'write') từng route",
+    "feature_usage/controller.py": "duoc-CR-655 (thêm 21/10/2026, bao-CR-651): báo cáo mức dùng chức năng — "
+                                   "số GOM theo chức năng, không phải chứng từ; gác KÉP require('setting', "
+                                   "read|export) + require_report(ReportKey.FEATURE_USAGE) (mặc định chỉ quản trị)",
+    "work/task_type_controller.py": "duoc-CR-656 (thêm 21/10/2026, bao-CR-651): danh mục Loại việc — chỉ tên "
+                                    "loại, đọc gác work_task.read (PUBLIC), thêm/sửa/xóa gác "
+                                    "require('setting', 'write'); không có dữ liệu thuộc người hay phòng để lọc",
     "leave/report_controller.py": "require('leave_request', …); `apply_scope(LeaveRequest, "
                                   "'leave_request')` trong `report_rows`",
     "leave/balance_report_controller.py": "require('leave_balance', …); `apply_scope(LeaveBalance, "
