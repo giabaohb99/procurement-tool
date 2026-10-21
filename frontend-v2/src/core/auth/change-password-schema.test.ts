@@ -29,14 +29,13 @@ describe('changePasswordSchema', () => {
     expect(result.error?.issues[0]?.path).toEqual(['newPassword'])
   })
 
-  it('rejects a new password with letters only — bao-CR-405 requires a digit too', () => {
+  it('accepts a digits-only new password — bao-CR-653 dropped the letters-and-digits rule', () => {
     const result = changePasswordSchema.safeParse({
       ...ok,
-      newPassword: 'matkhaumoi',
-      confirmPassword: 'matkhaumoi',
+      newPassword: '0945691104',
+      confirmPassword: '0945691104',
     })
-    expect(result.success).toBe(false)
-    expect(result.error?.issues.some((i) => i.path[0] === 'newPassword')).toBe(true)
+    expect(result.success).toBe(true)
   })
 
   it('rejects a mismatched confirmation', () => {

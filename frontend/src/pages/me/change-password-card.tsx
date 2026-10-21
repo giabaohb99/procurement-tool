@@ -17,7 +17,8 @@ export default function ChangePasswordCard() {
   // Cảnh báo ngay khi gõ, không đợi bấm nút mới báo lỗi.
   // bao-CR-405 (BM-016): chép đúng luật của `backend/app/core/password_policy.py` —
   // trước đây ô này chỉ đòi 6 ký tự nên giao diện hứa một đằng máy chủ nhận một nẻo.
-  const weak = newP.length < 8 || !/[a-zA-Z]/.test(newP) || !/\d/.test(newP)
+  // bao-CR-653: bỏ luật «phải có cả chữ và số», khớp backend.
+  const weak = newP.length < 8
   const tooShort = newP.length > 0 && weak
   const mismatch = conf.length > 0 && newP !== conf
   const ready = oldP.length > 0 && !weak && newP === conf
@@ -51,7 +52,7 @@ export default function ChangePasswordCard() {
           <label style={{ fontSize: 12, color: 'var(--muted)' }}>Mật khẩu mới</label>
           <input type={type} value={newP} autoComplete="new-password" onChange={(e) => setNewP(e.target.value)} />
           <div style={{ fontSize: 12, marginTop: 4, color: tooShort ? 'var(--red)' : 'var(--muted)' }}>
-            Tối thiểu 8 ký tự, phải có cả chữ và số. Không được trùng mã nhân viên hoặc email.
+            Tối thiểu 8 ký tự. Không được trùng mã nhân viên hoặc email.
           </div>
         </div>
         <div>

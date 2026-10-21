@@ -15,7 +15,7 @@ export const PASSWORD_MIN_LENGTH = 8
 /** bcrypt băm tối đa 72 byte và cắt âm thầm phần dư — backend chặn thẳng ở mốc này. */
 export const PASSWORD_MAX_BYTES = 72
 
-export const PASSWORD_HINT = `Tối thiểu ${PASSWORD_MIN_LENGTH} ký tự, phải có cả chữ và số.`
+export const PASSWORD_HINT = `Tối thiểu ${PASSWORD_MIN_LENGTH} ký tự.`
 
 const byteLength = (value: string) => new TextEncoder().encode(value).length
 
@@ -30,6 +30,4 @@ export const newPasswordField = () =>
     .refine((value) => byteLength(value) <= PASSWORD_MAX_BYTES, {
       message: `Mật khẩu quá dài — tối đa ${PASSWORD_MAX_BYTES} byte`,
     })
-    .refine((value) => /[a-zA-Z]/.test(value) && /\d/.test(value), {
-      message: 'Mật khẩu phải có cả chữ và số',
-    })
+    // bao-CR-653: bỏ luật «phải có cả chữ và số», khớp backend.

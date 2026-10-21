@@ -25,13 +25,12 @@ describe('resetPasswordSchema', () => {
     expect(result.error?.issues[0]?.path).toEqual(['password'])
   })
 
-  it('rejects a password with no digit', () => {
+  it('accepts a letters-only password — bao-CR-653 dropped the letters-and-digits rule', () => {
     const result = resetPasswordSchema.safeParse({
       password: 'matkhaumoi',
       confirmPassword: 'matkhaumoi',
     })
-    expect(result.success).toBe(false)
-    expect(result.error?.issues[0]?.path).toEqual(['password'])
+    expect(result.success).toBe(true)
   })
 
   it('rejects a mismatched confirmation, and flags the confirmation field itself', () => {
