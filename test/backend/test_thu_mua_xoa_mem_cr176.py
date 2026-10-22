@@ -488,15 +488,18 @@ def test_bao_cao_dmh_bo_qua_don_da_xoa(world, actor, phieu):
         po.status, po.department = "approved", "Phòng KT"
     db.commit()
     assert real_po_ids(db, set(phieu["po"].values())) == set(phieu["po"].values())
+    #  duoc-CR-663: báo cáo gom theo id phòng, nhãn = TÊN HIỆN HÀNH (không còn là bản chụp «Phòng KT»).
+    from app.modules.department.model import Department
+    ten = db.get(Department, db.get(PurchaseOrder, phieu["po"]["giu"]).department_id).name
     rows = report_service.compute_dept_range(db, "2026-10-01", "2026-10-31", None)
-    assert {r["key"]: r["orders"] for r in rows} == {"Phòng KT": 2}
+    assert {r["key"]: r["orders"] for r in rows} == {ten: 2}
 
     #  Đơn đã duyệt không xóa qua API được — giả lập bản ghi đã mang cờ (vd xóa lúc còn nháp rồi mới duyệt).
     db.get(PurchaseOrder, phieu["po"]["xoa"]).is_deleted = True
     db.commit()
     assert real_po_ids(db, set(phieu["po"].values())) == {phieu["po"]["giu"]}
     rows = report_service.compute_dept_range(db, "2026-10-01", "2026-10-31", None)
-    assert {r["key"]: r["orders"] for r in rows} == {"Phòng KT": 1}
+    assert {r["key"]: r["orders"] for r in rows} == {ten: 1}
 
 
 # ═══════════════════════════════ 7: đính kèm + chuỗi chứng từ ═════════════════════════════

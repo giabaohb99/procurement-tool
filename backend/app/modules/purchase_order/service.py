@@ -187,6 +187,38 @@ def _product_specs_map(db: Session, items) -> dict:
     return {c: (s or "") for c, s in rows if s}
 
 
+def product_invoice_names_map(db: Session, codes) -> dict[str, str]:
+    """Tên trên hóa đơn của sản phẩm master theo mã (1 query, không N+1). duoc-CR-663.
+    Chỉ trả mã có tên khác rỗng. Dùng chung cho lúc LƯU dòng ĐMH và lúc bù dữ liệu cũ."""
+    from app.modules.product.model import Product
+    codes = {(c or "").strip() for c in (codes or [])}
+    codes.discard("")
+    if not codes:
+        return {}
+    rows = db.query(Product.code, Product.invoice_name).filter(Product.code.in_(codes)).all()
+    return {c: n.strip() for c, n in rows if n and n.strip()}
+
+
+def fill_blank_invoice_name(db: Session, fields: dict, cache: dict | None = None) -> dict:
+    """Điền «Tên trên hóa đơn» từ sản phẩm master vào `fields` (dict cột dòng ĐMH) khi còn trống.
+    Dùng chung cho nhập Excel và sao chép ĐMH (duoc-CR-663); `cache` {mã: tên} để khỏi truy vấn lặp.
+    Không ghi đè tên đã có; master không có tên thì giữ nguyên (trống)."""
+    if (fields.get("invoice_name") or "").strip():
+        return fields
+    code = (fields.get("product_code") or "").strip()
+    if not code:
+        return fields
+    if cache is None or code not in cache:
+        found = product_invoice_names_map(db, [code]).get(code, "")
+        if cache is not None:
+            cache[code] = found
+    else:
+        found = cache[code]
+    if found:
+        fields["invoice_name"] = found
+    return fields
+
+
 def pr_expected_map(db: Session, pr_code: str) -> dict[str, str]:
     """{mã hàng -> thời gian dự kiến có hàng} của phiếu YCMH nguồn.
 
@@ -257,6 +289,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     # nhân đôi. Giao diện hỏi xác nhận trước khi lưu để chặn gõ nhầm.
     keep_item_ids = set()
     specs_by_code = _product_specs_map(db, items)
+    inv_names = product_invoice_names_map(db, [getattr(r, "product_code", "") for r in items])
     std_map = lead_time.std_days_map(db)          # số ngày QĐ theo phân loại (mốc dài nhất)
     # Dự kiến có hàng: chép XUỐNG từ dòng YCMH nguồn, CHỈ khi ô trên ĐMH còn trống.
     # Đặt ở backend (không chỉ ở nút "Tạo ĐMH" bên giao diện) để nhập khẩu và dòng thêm sau
@@ -272,6 +305,12 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
         # Chỉ điền lúc TẠO dòng: dòng đang sửa mà người dùng cố ý xóa trắng thì giữ trắng.
         if not (data.get("spec") or "").strip() and not data.get("id"):
             data["spec"] = specs_by_code.get((data.get("product_code") or "").strip(), "")
+        # duoc-CR-663: «Tên trên hóa đơn» GHI VÀO CỘT lúc lưu (lấy từ sản phẩm master theo mã hàng
+        # khi ô còn trống) — trước đây chỉ suy ở lúc trả (serializer) nên báo cáo / xuất file /
+        # truy vấn thẳng cột đều thấy trống. Người dùng đã gõ tên thì giữ nguyên; master không có
+        # tên thì để trống (không đoán từ tên hàng).
+        if not (data.get("invoice_name") or "").strip():
+            data["invoice_name"] = inv_names.get((data.get("product_code") or "").strip(), "")
         # bao-CR-319: dòng không khai loại tiền / tỷ giá thì lấy theo ĐƠN. Không để trống hay
         # để 0 nằm trong CSDL — nhân với 0 là mất trắng số tiền mà không báo lỗi.
         if not (data.get("currency") or "").strip():
@@ -1333,8 +1372,10 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
     db.add(po)
     db.flush()
     po.code = f"PO{po.id:05d}"
+    inv_cache: dict = {}
     for it in items_of(db, src.id):
         data = {k: getattr(it, k) for k in _ITEM_COPY_FIELDS}
+        fill_blank_invoice_name(db, data, inv_cache)   # duoc-CR-663
         data["amount"] = round((float(data.get("qty_order") or 0)) * (float(data.get("price") or 0)) * (1 + (float(data.get("vat") or 0)) / 100), 2)
         db.add(POItem(po_id=po.id, created_by=user_id, updated_by=user_id, **data))
     db.commit()

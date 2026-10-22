@@ -236,6 +236,8 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
             log(0, LogLevel.INFO, "po_update", f"Cập nhật đơn {po.code} (Misa {misa})", ref_key=misa, target_code=po.code)
         return po, was_new
 
+    inv_cache: dict = {}   # duoc-CR-663: {mã hàng: tên hóa đơn master}, khỏi hỏi DB lặp
+
     def upsert_item(po, d, r=0):
         it = db.query(POItem).filter(POItem.po_id == po.id, POItem.product_code == d["product_code"],
                                      POItem.invoice_no == d["invoice_no"]).first()
@@ -258,6 +260,7 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
                       unit=d["unit"], qty_request=d["qty_request"], qty_order=d["qty_order"], price=d["price"],
                       vat=d["vat"], warehouse_code=d["warehouse"], note=d["note"][:255],
                       progress_status=_prog)
+        po_service.fill_blank_invoice_name(db, fields, inv_cache)   # duoc-CR-663: ô trống -> tên master
         fields, _t = _fit(POItem, fields)
         if it is None:
             it = POItem(po_id=po.id, created_by=uid, updated_by=uid, **fields)

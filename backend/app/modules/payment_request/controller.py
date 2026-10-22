@@ -327,7 +327,8 @@ def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(r
 def _notify_pay(db, background_tasks, r, event, reason=""):
     trigger_notification(db=db, event=event, doc_type="payment_request", doc_code=r.code,
                          creator_id=r.created_by or 0, background_tasks=background_tasks,
-                         reason=reason, link=f"/payment-requests/{r.id}")
+                         reason=reason, link=f"/payment-requests/{r.id}",
+                         doc_id=r.id)   # duoc-CR-662: lọc người duyệt theo phạm vi của chính phiếu
 
 
 @router.post("/{rid}/submit")
