@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -125,7 +126,16 @@ const historyResult: LoginHistoryResult = {
   failed_count: 1,
 }
 
+const EMPTY_PENDING_WORK = {
+  employee_id: 3,
+  tasks: [],
+  total_tasks: 0,
+  flow_steps: [],
+  total_flow_steps: 0,
+}
+
 function routeApiGet(url: string) {
+  if (url === '/api/employees/3/pending-work') return Promise.resolve(EMPTY_PENDING_WORK)
   if (url === '/api/login-sessions/history') return Promise.resolve(historyResult)
   if (url === '/api/login-sessions') return Promise.resolve(sessionsResult)
   // `/api/users?employee_id=…` — tài khoản gắn với nhân sự, đang mở.
@@ -138,7 +148,9 @@ function renderCard(props: Partial<ComponentProps<typeof LoginSessionUserCard>> 
   })
   return render(
     <QueryClientProvider client={queryClient}>
-      <LoginSessionUserCard employeeId={3} userId={7} userName="Nguyễn Văn A" {...props} />
+      <MemoryRouter>
+        <LoginSessionUserCard employeeId={3} userId={7} userName="Nguyễn Văn A" {...props} />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -206,9 +218,40 @@ describe('LoginSessionUserCard', () => {
     )
   })
 
-  it('locks the account via PUT /api/users/{id}/active with is_active=false', async () => {
+  it('locks the account via PUT /api/users/{id}/active after the pending-work check (CR-665)', async () => {
     renderCard()
     await userEvent.click(await screen.findByRole('button', { name: /Khóa tài khoản/ }))
+    // Hộp kiểm việc treo: không còn việc → nút xác nhận giữ nhãn gốc.
+    expect(await screen.findByText(/không còn việc duyệt nào đang treo/i)).toBeInTheDocument()
+    expect(httpPut).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Khóa + đăng xuất' }))
+    await waitFor(() =>
+      expect(httpPut).toHaveBeenCalledWith('/api/users/7/active', { is_active: false }),
+    )
+  })
+
+  it('warns about pending approval tasks but still lets the lock through after confirm (CR-665)', async () => {
+    apiGet.mockImplementation((url: string) =>
+      url === '/api/employees/3/pending-work'
+        ? Promise.resolve({
+            ...EMPTY_PENDING_WORK,
+            tasks: [
+              {
+                task_id: 1, instance_id: 1, entity: 'purchase_request', entity_id: 9,
+                entity_code: 'PYC-9', entity_title: 'Mua giấy', node_name: 'Trưởng phòng',
+                status: 2, status_label: 'Đang chờ', due_at: null, is_overdue: false,
+                started_by_employee_id: 5, started_by_name: 'Người nộp',
+              },
+            ],
+            total_tasks: 1,
+          })
+        : routeApiGet(url),
+    )
+    renderCard()
+    await userEvent.click(await screen.findByRole('button', { name: /Khóa tài khoản/ }))
+    expect(await screen.findByText(/1 việc duyệt đang chờ người này/)).toBeInTheDocument()
+    expect(screen.getByText(/PYC-9/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Vẫn khóa \+ đăng xuất/ }))
     await waitFor(() =>
       expect(httpPut).toHaveBeenCalledWith('/api/users/7/active', { is_active: false }),
     )

@@ -200,6 +200,7 @@ export function EmployeeWorkHistoryFormDialog({
           open
           onOpenChange={(next) => !next && setPendingResign(null)}
           resignDate={pendingResign.resignDate}
+          employeeId={employeeId}
           pending={saveMutation.isPending}
           onConfirm={handleResignConfirm}
         />
