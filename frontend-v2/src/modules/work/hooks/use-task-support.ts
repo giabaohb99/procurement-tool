@@ -69,6 +69,16 @@ export function useCreateTaskComment(taskId: number, listId: number) {
   })
 }
 
+export function useEditTaskComment(taskId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ commentId, body }: { commentId: number; body: string }) =>
+      taskSupportApi.editComment(taskId, commentId, body),
+    //  Sửa không đổi số bình luận nên bảng kanban không cần làm mới.
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.work.taskComments(taskId) }),
+  })
+}
+
 export function useDeleteTaskComment(taskId: number, listId: number) {
   const qc = useQueryClient()
   return useMutation({

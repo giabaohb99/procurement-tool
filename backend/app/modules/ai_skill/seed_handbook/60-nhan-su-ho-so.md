@@ -75,3 +75,34 @@ Cột chức vụ trong tệp khớp theo **tên**, bỏ qua hoa thường và k
 Tên không khớp dòng nào trong danh mục thì hệ **giữ nguyên chữ đã gõ** và để
 trống liên kết — nó **cố ý không tự tạo** chức vụ mới, vì như vậy mỗi lỗi gõ
 trong một tệp sẽ đẻ ra một chức vụ rác. Nhập xong nên rà lại danh mục.
+
+## Sơ đồ tổ chức (từ 22/10/2026)
+
+Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức**. Không có bản vẽ nào lưu sẵn: màn **tự dựng từ dữ liệu**
+phòng ban, trưởng phòng và «Người quản lý trực tiếp» — đổi phòng hay đổi người quản lý xong, sơ đồ
+tự đúng. Cấu trúc: **pháp nhân › phòng ban (phòng con thụt vào) › người** (cấp dưới thụt dưới người quản lý cùng
+phòng). Bấm tên phòng để mở / thu gọn (hai tầng đầu mở sẵn); đầu mỗi phòng có **Trưởng phòng** và **số người**; bấm
+tên người để mở hồ sơ.
+
+- Cần quyền xem hồ sơ nhân sự (`employee`). Không có thì màn báo **«Không có quyền xem sơ đồ tổ chức»**.
+- ⚠️ **Chỉ hiện người trong phạm vi dữ liệu của người xem.** Hai người xem cùng sơ đồ có thể thấy hai cây khác
+  nhau. Quản lý hay trưởng phòng nằm ngoài phạm vi thì **không lộ tên**. Đừng khẳng định "phòng X có N người".
+- Người đã **nghỉ việc** hoặc ngưng hoạt động không có trên sơ đồ. Người chưa gán phòng/pháp nhân vào nhóm
+  «Chưa gán pháp nhân».
+- Sơ đồ sai thì sửa **ở nguồn**: ô *Phòng ban* và *Người quản lý trực tiếp* trên hồ sơ, hoặc *trưởng phòng* ở màn Phòng ban.
+
+## Khóa tài khoản / cho nghỉ việc khi người đó còn việc duyệt treo (từ 22/10/2026)
+
+Trước khi khóa tài khoản hay đưa hồ sơ sang **nghỉ việc**, hệ mở hộp **«kiểm việc đang giữ»**. Có bốn lối vào:
+lưu hồ sơ sang trạng thái nghỉ việc (hộp **«Lưu hồ sơ nghỉ việc?»**), nút **«Khóa tài khoản + đăng xuất mọi thiết bị»** ở tab *Tài khoản*
+của hồ sơ, biểu tượng ổ khóa ở danh sách tài khoản, và dòng **«Thôi việc»** ở tab *Quá trình công tác*.
+
+- Hộp liệt kê **việc duyệt đang chờ người đó** (phiếu nào, bước nào, hạn, quá hạn chưa) và **bước luồng duyệt chỉ
+  đích danh người đó** (phiếu mới sẽ lùi sang người dự phòng hoặc kẹt — nên đổi người ở luồng).
+- Chuyển việc: chọn người nhận ở ô **«Chuyển cho…»** rồi bấm **«Chuyển»** từng việc hoặc **«Chuyển hết (N)»**.
+  Chỉ người có quyền ghi **«Luồng duyệt»** (quản trị luồng duyệt) mới chuyển được; không có quyền thì hộp nói
+  *nhờ quản trị luồng chuyển giúp*.
+- **Không chặn cứng**: còn việc treo vẫn khóa được, nhưng nút đổi thành **«Vẫn khóa … (còn việc treo)»** để người bấm
+  biết phiếu sẽ kẹt. Chuyển hết rồi thì nút trở lại bình thường.
+- Phiếu mà người xem hộp không có quyền đọc thì chỉ hiện *«(bạn không có quyền xem phiếu này)»*, không lộ mã hay tên phiếu.
+- Trợ lý không chuyển việc hộ; chỉ hướng dẫn các bước trên.

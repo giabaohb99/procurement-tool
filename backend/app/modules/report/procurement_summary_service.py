@@ -106,7 +106,7 @@ def compute_procurement_summary(db: Session, user, period: Period, company_id, g
     ranges = [(period.date_from, period.date_to)]
     if period.compare != "none" and period.compare_from and period.compare_to:
         ranges.append((period.compare_from, period.compare_to))
-    combined_all = grouped_po_rows(db, cid, ranges) + rows.payable_rows(db, cid, ranges, dept_name)
+    combined_all = grouped_po_rows(db, cid, ranges, dept_name) + rows.payable_rows(db, cid, ranges, dept_name)
     if allow is not None:
         combined_all = [r for r in combined_all if r.department in allow]
 

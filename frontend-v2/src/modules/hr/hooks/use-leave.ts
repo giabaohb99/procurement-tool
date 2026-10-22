@@ -216,6 +216,16 @@ export function useCloseLeaveYear() {
   })
 }
 
+//  Khóa khai ở `queryKeys.hr` (không để khóa tại chỗ): `useCloseLeaveYear` dọn nó từ
+//  BÊN NGOÀI qua `queryKeys.hr.all` — kết sổ lại thì bảng đối chiếu phải nạp lại.
+export function useCloseYearReview(year: number, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.hr.leaveCloseYearReview(year),
+    queryFn: () => leaveApi.closeYearReview(year),
+    enabled: enabled && year > 0,
+  })
+}
+
 // ── Danh mục nền ───────────────────────────────────────────────────────────────
 
 /** Loại nghỉ đang dùng — nạp cả danh sách, dùng cho ô chọn trên form. */

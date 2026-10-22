@@ -11,8 +11,13 @@ nhãn nút và nhãn ô trên màn hình, thêm ba bài mới — *tình huống
 *câu báo lỗi*, và tách phần Nhân sự làm ba bài (quỹ · danh mục · phân quyền).
 Lý do tách: bài gộp cũ dài mà vẫn hụt, người đọc phải tự suy phần còn thiếu.
 
+Bản 3 (22/10/2026, duoc-CR-670): thêm «loại nghỉ bắt buộc đính kèm» (CR-661) vào bài Nộp đơn / Câu báo lỗi /
+Loại nghỉ, và mục «Kết sổ cuối năm và bảng Đối chiếu» (CR-664) vào bài Quỹ phép của phòng Nhân sự.
+
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_nghi_phep.py
+    # rồi nạp bài mới vào kho tìm kiếm của trợ lý AI (seed ghi thẳng ORM nên hook không bắn):
+    docker compose exec -T api python scripts/reindex_help_rag.py
 
 Idempotent: có thẻ gốc cũ thì xóa nguyên cây con (con trước, cha sau — FK tự
 tham chiếu không cascade) rồi dựng lại.
@@ -185,6 +190,15 @@ Nháp  ─────────────────────►  Chờ
 </tbody>
 </table>
 <p>Cứ lưu nháp thoải mái rồi hoàn thiện sau: hệ chỉ kiểm "nhập đủ" ở bước gửi duyệt.</p>
+
+<h2>Loại nghỉ bắt buộc đính kèm giấy tờ</h2>
+<p>Một số loại nghỉ (thường là <strong>Nghỉ ốm</strong>, <strong>Nghỉ vợ sinh con</strong>) được phòng Nhân sự bật cờ <strong>«Bắt buộc đính kèm»</strong>: đơn phải có <strong>ít nhất một tệp</strong> (giấy khám bệnh, giấy chứng sinh…) thì mới <strong>gửi duyệt</strong> được. <strong>Lưu nháp thì không bị chặn.</strong></p>
+<ol>
+<li>Điền đơn, bấm <strong>«Lưu nháp»</strong>. Mục <strong>«Tệp đính kèm»</strong> chỉ dùng được sau khi đơn đã được lưu, vì tệp phải gắn vào một tờ đơn đã có số.</li>
+<li>Ở mục <strong>«Tệp đính kèm»</strong>, tải giấy tờ lên. Khi đã chọn loại nghỉ bắt buộc, mục này hiện <strong>dấu bắt buộc</strong> và dòng chữ đỏ <em>«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ: cần có ít nhất một tệp trước khi gửi duyệt.»</em></li>
+<li>Bấm <strong>«Gửi duyệt»</strong>.</li>
+</ol>
+<p>Bấm «Gửi duyệt» khi chưa có tệp thì màn hình báo ngay <em>«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ — tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt.»</em> và đơn vẫn nằm ở trạng thái Nháp, phép chưa bị giữ chỗ. Đơn khai nhiều loại nghỉ thì chỉ cần <strong>một</strong> loại bắt buộc là cả đơn phải có tệp.</p>
 
 <h2>Nghỉ nửa ngày</h2>
 <p>Đặt <strong>Từ ngày = Đến ngày</strong>, rồi chọn <strong>Buổi bắt đầu</strong> và <strong>Buổi kết thúc</strong> là <em>Buổi sáng</em> (hoặc cả hai là <em>Buổi chiều</em>). Tổng số ngày ra <strong>0,5</strong> và quỹ trừ đúng nửa ngày.</p>
@@ -479,6 +493,7 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><em>«Thiếu «Lý do nghỉ» — nhập đủ trước khi gửi duyệt.»</em></td><td>Ô bắt buộc còn trống.</td><td>Điền rồi <strong>Lưu nháp</strong>, sau đó gửi duyệt lại.</td></tr>
 <tr><td><em>«Phép năm» phải nộp trước ít nhất 3 ngày.»</em></td><td>Không đủ số ngày báo trước. Đếm từ <strong>hôm nay</strong>, không phải từ ngày bạn lập đơn.</td><td>Dời ngày nghỉ ra xa hơn, hoặc chọn loại nghỉ không đòi báo trước (Nghỉ ốm).</td></tr>
 <tr><td><em>«Nghỉ cưới hỏi» chỉ cho nghỉ tối đa 3 ngày mỗi lần, đơn này xin 5.»</em></td><td>Vượt trần của loại nghỉ.</td><td>Cắt bớt, hoặc xin phần dôi bằng loại nghỉ khác.</td></tr>
+<tr><td><em>«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ (giấy khám bệnh, giấy chứng nhận…) — tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt lại.»</em></td><td>Loại nghỉ này đòi giấy tờ mà đơn chưa có tệp nào.</td><td>Mở đơn (vẫn là Nháp), tải tệp ở mục <strong>«Tệp đính kèm»</strong>, rồi bấm <strong>«Gửi duyệt»</strong> lại. Chưa có giấy thì để Nháp, đừng lập đơn mới.</td></tr>
 <tr><td><em>«Loại nghỉ «Thai sản» không áp dụng cho hồ sơ này»</em></td><td>Loại nghỉ giới hạn theo giới tính, mà hồ sơ khai không khớp.</td><td>Hồ sơ khai sai thì báo phòng Nhân sự sửa; đúng thì chọn loại khác.</td></tr>
 </tbody>
 </table>
@@ -510,6 +525,7 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><em>«Chưa xác định được người nghỉ — tài khoản này chưa gắn hồ sơ nhân sự.»</em></td><td>Tài khoản đăng nhập chưa nối với một hồ sơ nhân sự nào, nên hệ không biết trừ phép của ai.</td><td>Báo phòng Nhân sự gắn hồ sơ. Không tự sửa được.</td></tr>
 <tr><td>Không thấy menu <strong>Nghỉ phép</strong>, hoặc thiếu tab</td><td>Phân quyền — bốn khóa quyền của Nghỉ phép là khóa mới, vai trò cũ không tự có.</td><td>Xin quản trị tick thêm, xem {ref(NS_QUYEN, "bài Phân quyền")}.</td></tr>
 <tr><td>Hệ báo <em>«Không tìm thấy»</em> khi mở một tờ đơn</td><td>Đơn nằm ngoài <strong>phạm vi dữ liệu</strong> của bạn.</td><td>Xin mở rộng phạm vi, hoặc nhờ người trong phạm vi xử lý.</td></tr>
+<tr><td>Bấm <strong>In</strong> ra trang <em>«Không có quyền mở bản in»</em></td><td>Tài khoản chưa có quyền xem đơn nghỉ phép (trang in kiểm quyền trước khi mở, từ 22/10/2026).</td><td>Nhờ quản trị cấp quyền xem Đơn nghỉ phép, rồi đăng xuất đăng nhập lại.</td></tr>
 <tr><td>Cảnh báo <em>hồ sơ thiếu ngày vào làm</em></td><td>Không có ngày vào làm thì thâm niên tính bằng 0, quỹ <strong>thiếu ngày</strong>.</td><td>Báo phòng Nhân sự nhập bổ sung rồi cấp lại quỹ.</td></tr>
 </tbody>
 </table>
@@ -560,6 +576,24 @@ Nháp  ─────────────────────►  Chờ
 <p>Trang chi tiết có khối <strong>Lịch sử thao tác</strong> — nhìn con số hiện tại không biết ai đưa nó tới đó, nên <strong>đọc lịch sử trước khi sửa tiếp</strong>. Chưa từng chỉnh tay thì khối đó không hiện dòng rỗng nào.</p>
 <p>Trang chi tiết cũng liệt kê <strong>các đơn nghỉ</strong> đã ăn vào dòng quỹ này, để đối chiếu khi người dùng kêu sai số.</p>
 
+<h2>Kết sổ cuối năm và bảng Đối chiếu</h2>
+<p>Phép năm cũ còn dư đi đâu là do từng <em>Loại nghỉ</em> khai: <strong>«Hết năm là mất»</strong> (mặc định), <strong>«Mang sang năm sau»</strong> hoặc <strong>«Quy đổi sang loại nghỉ khác»</strong>. ⚠️ <strong>Không có gì tự chạy đêm 31/12</strong> — phải có người bấm nút <strong>«Kết sổ năm …»</strong> ở góc trên màn <em>Quỹ phép năm</em> (năm đang xem trừ một; cần quyền ghi Quỹ phép). Hộp xác nhận <em>«Kết sổ quỹ phép năm …?»</em> nhắc rằng loại để mặc định «Hết năm là mất» thì không đụng tới; bấm lại lần hai không nhân đôi số ngày.</p>
+<p>Kết sổ xong, hộp <strong>«Đối chiếu kết sổ phép năm …»</strong> <strong>tự mở</strong> để bạn soát ngay kết quả. Mỗi dòng là một người × một loại nghỉ nguồn:</p>
+<table>
+<thead><tr><th>Cột</th><th>Nghĩa là</th></tr></thead>
+<tbody>
+<tr><td><strong>Nhân sự</strong></td><td>Tên và mã người có quỹ.</td></tr>
+<tr><td><strong>Loại nghỉ</strong></td><td>Loại nghỉ có số dư năm cũ (ví dụ Phép năm).</td></tr>
+<tr><td><strong>Số cũ (trước)</strong></td><td>Số ngày còn của năm cũ <strong>trước</strong> khi kết sổ.</td></tr>
+<tr><td><strong>Số mới (sau)</strong></td><td>Số ngày còn của năm cũ <strong>sau</strong> khi kết sổ — phần đã chuyển đi không còn nằm ở đây.</td></tr>
+<tr><td><strong>Chênh</strong></td><td><strong>Số mới trừ số cũ</strong>, nên thường là <strong>số âm</strong> — đúng bằng phần ngày đã chuyển đi khỏi năm cũ.</td></tr>
+<tr><td><strong>Sang loại</strong></td><td>Loại nghỉ nhận phần chuyển ở năm sau (với «Mang sang năm sau» thì chính là loại đó). Ghi <em>«Chưa khai»</em> nghĩa là loại quy đổi này chưa khai loại nhận — nhờ phòng Nhân sự khai ở Thiết lập ▸ Loại nghỉ.</td></tr>
+<tr><td><strong>Cộng vào năm sau</strong></td><td>Số ngày được cộng sang năm sau = phần đã chuyển đi × tỷ lệ quy đổi của loại nghỉ (mang sang nguyên loại thì tỷ lệ là 1; quy đổi 2 ngày lấy 1 ngày bù thì chỉ bằng một nửa).</td></tr>
+</tbody>
+</table>
+<p>Cuối hộp có dòng tổng (<em>«Tổng N dòng: số cũ … → số mới … (chênh …), cộng vào năm sau … ngày»</em>). Muốn đối chiếu lại sau này hay gửi người khác soát: bấm nút <strong>«Đối chiếu kết sổ …»</strong> cạnh nút Kết sổ rồi bấm <strong>«Xuất Excel»</strong> trong hộp (nút này chỉ hiện với người có quyền xuất Quỹ phép năm).</p>
+<p>⚠️ <strong>Hạn chế cần biết:</strong> hệ <strong>không chụp ảnh</strong> lúc bấm Kết sổ. «Số cũ» được <strong>tính lại mỗi lần mở bảng</strong> từ sổ quỹ hiện tại. Vì vậy nếu có đơn của năm cũ được duyệt hoặc bị hủy <em>sau</em> khi kết sổ thì các số trong bảng đổi theo; cột «Sang loại» và «Cộng vào năm sau» cũng tính theo cấu hình loại nghỉ <em>hiện hành</em> (sửa cấu hình sau khi kết sổ thì đó chỉ là số ước theo cấu hình mới). Bảng chỉ liệt kê loại nghỉ đang khai «Mang sang» hoặc «Quy đổi». Cần lưu số đúng ngày kết sổ thì xuất Excel ngay lúc đó.</p>
+
 <h2>Người dùng kêu «số phép của tôi sai»</h2>
 <ol>
 <li>Mở dòng quỹ của họ, đọc <strong>đủ sáu số cấu thành</strong> — thường lệch ở <em>thâm niên</em> (thiếu ngày vào làm) hoặc <em>chuyển năm trước</em>.</li>
@@ -585,7 +619,7 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><strong>Trần mỗi lần</strong></td><td>Cưới hỏi, tang chế thường 3. Đặt <strong>0</strong> = không giới hạn.</td></tr>
 <tr><td><strong>Trừ cuối tuần / ngày lễ</strong></td><td>Bật thì T7·CN·lễ không tính vào số ngày. ⚠️ <strong>Thai sản phải TẮT</strong> — nghỉ sáu tháng thì không ai bù cuối tuần.</td></tr>
 <tr><td><strong>Chỉ áp cho giới tính</strong></td><td>Thai sản → nữ. Hồ sơ <strong>chưa khai giới tính vẫn nộp được</strong> — chặn là khóa cả công ty tới khi nhập bù.</td></tr>
-<tr><td><strong>Bắt đính kèm</strong></td><td>Cờ đã có sẵn cho Nghỉ ốm; phần đính kèm trên đơn còn đang làm.</td></tr>
+<tr><td><strong>Bắt buộc đính kèm</strong></td><td>Bật thì đơn thuộc loại này phải có ít nhất một tệp mới <strong>gửi duyệt</strong> được (lưu nháp thì không chặn). Mục «Tệp đính kèm» trên đơn hiện dấu bắt buộc và dòng nhắc đỏ. Nên bật cho Nghỉ ốm (giấy khám), Nghỉ vợ sinh con (giấy chứng sinh).</td></tr>
 <tr><td><strong>Cho chuyển sang năm sau</strong></td><td>Mặc định <strong>tắt</strong>. Bật thì cột <em>Chuyển năm trước</em> mới có số.</td></tr>
 </tbody>
 </table>

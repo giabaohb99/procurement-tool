@@ -589,6 +589,11 @@ def build_my_tasks(db: Session, user, prof) -> list[dict]:
                           "subtitle": c.alert_title(), "date": c.end_date.isoformat(),
                           "link": c.alert_link()})
 
+    #  F-02 (duoc-CR-666): việc Dự án được giao cho tôi. Chỉ THÊM vào tập cha, chuông
+    #  cảnh báo không có loại này — xem `work/my_tasks_service.py`.
+    from app.modules.work.my_tasks_service import build_job_tasks
+    tasks.extend(build_job_tasks(db, user, prof))
+
     dismissed = load_dismissed_keys(db, user)
     for t in tasks:
         t["dismissed"] = t["key"] in dismissed

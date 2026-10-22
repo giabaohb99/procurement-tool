@@ -11,6 +11,7 @@ import { NotFoundPage } from '@/shared/ui/not-found-page'
 import { RouteErrorPage } from '@/shared/ui/route-error-page'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { customModuleRoutes, moduleRoutes } from './module-registry'
+import { guardedPrintLazy } from './print-route-guard'
 import { ProtectedRoute } from './protected-route'
 
 /**
@@ -67,113 +68,104 @@ export const router = createBrowserRouter([
             }),
             errorElement: <RouteErrorPage />,
           },
+          //  NF-20: MỌI route in đi qua `guardedPrintLazy` — quyền khai ở `print-route-access.ts`.
           {
             path: appRoutes.procurement.purchaseRequestPrint(':id'),
-            lazy: async () => ({
-              Component: (await import('@/modules/procurement/pages/purchase-request-print-page'))
-                .PurchaseRequestPrintPage,
+            lazy: guardedPrintLazy(appRoutes.procurement.purchaseRequestPrint(':id'), async () => {
+              const { PurchaseRequestPrintPage } = await import('@/modules/procurement/pages/purchase-request-print-page')
+              return PurchaseRequestPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
-            //  bao-CR-310 đợt 4 — bản in theo NCC của YCMH (mỗi NCC một trang); trang
-            //  tự gác quyền supplier:read (N-17).
+            //  bao-CR-310 đợt 4 — bản in theo NCC của YCMH; trang còn tự gác thêm supplier:read (N-17).
             path: appRoutes.procurement.purchaseRequestSupplierPrint(':id'),
-            lazy: async () => ({
-              Component: (
-                await import('@/modules/procurement/pages/purchase-request-supplier-print-page')
-              ).PurchaseRequestSupplierPrintPage,
+            lazy: guardedPrintLazy(appRoutes.procurement.purchaseRequestSupplierPrint(':id'), async () => {
+              const { PurchaseRequestSupplierPrintPage } = await import('@/modules/procurement/pages/purchase-request-supplier-print-page')
+              return PurchaseRequestSupplierPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
-            //  bao-CR-314 — cùng trang in, nhưng `:id` là id ĐƠN MUA HÀNG và bản in chỉ
-            //  gồm dòng hàng của đơn đó. Cổng quyền là quyền in ĐƠN (gác ở backend).
+            //  bao-CR-314 — `:id` là id ĐƠN MUA HÀNG; cổng quyền là quyền in ĐƠN (purchase_order:print).
             path: appRoutes.procurement.purchaseRequestPrintFromPo(':id'),
-            lazy: async () => {
-              const { PurchaseRequestPrintPage } = await import(
-                '@/modules/procurement/pages/purchase-request-print-page'
-              )
-              return { Component: () => <PurchaseRequestPrintPage fromPo /> }
-            },
+            lazy: guardedPrintLazy(appRoutes.procurement.purchaseRequestPrintFromPo(':id'), async () => {
+              const { PurchaseRequestPrintPage } = await import('@/modules/procurement/pages/purchase-request-print-page')
+              return () => <PurchaseRequestPrintPage fromPo />
+            }),
             errorElement: <RouteErrorPage />,
           },
           {
             path: appRoutes.procurement.purchaseOrderPrint(':id'),
-            lazy: async () => ({
-              Component: (await import('@/modules/procurement/pages/purchase-order-print-page'))
-                .PurchaseOrderPrintPage,
+            lazy: guardedPrintLazy(appRoutes.procurement.purchaseOrderPrint(':id'), async () => {
+              const { PurchaseOrderPrintPage } = await import('@/modules/procurement/pages/purchase-order-print-page')
+              return PurchaseOrderPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
-            //  bao-CR-322 — cùng trang in với route trên, chỉ khác mẫu mở sẵn. Giữ đúng
-            //  đường dẫn của bản v1 để link ai đã lưu vẫn mở ra mẫu Đơn mua hàng.
+            //  bao-CR-322 — cùng trang in, mở sẵn mẫu Đơn mua hàng; giữ đường dẫn bản v1.
             path: appRoutes.procurement.purchaseOrderGoodsPrint(':id'),
-            lazy: async () => {
-              const { PurchaseOrderPrintPage } = await import(
-                '@/modules/procurement/pages/purchase-order-print-page'
-              )
-              return { Component: () => <PurchaseOrderPrintPage defaultMode="goods" /> }
-            },
+            lazy: guardedPrintLazy(appRoutes.procurement.purchaseOrderGoodsPrint(':id'), async () => {
+              const { PurchaseOrderPrintPage } = await import('@/modules/procurement/pages/purchase-order-print-page')
+              return () => <PurchaseOrderPrintPage defaultMode="goods" />
+            }),
             errorElement: <RouteErrorPage />,
           },
           {
             path: appRoutes.procurement.purchaseOrderImportPrint(':id'),
-            lazy: async () => ({
-              Component: (
-                await import('@/modules/procurement/pages/purchase-order-import-print-page')
-              ).PurchaseOrderImportPrintPage,
+            lazy: guardedPrintLazy(appRoutes.procurement.purchaseOrderImportPrint(':id'), async () => {
+              const { PurchaseOrderImportPrintPage } = await import('@/modules/procurement/pages/purchase-order-import-print-page')
+              return PurchaseOrderImportPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
-            //  bao-CR-357 — bản in báo cáo giá vốn: phạm vi đi bằng query string,
-            //  nên đường dẫn KHÔNG có tham số `:id` như mấy bản in chứng từ.
+            //  bao-CR-357 — bản in báo cáo giá vốn: phạm vi đi bằng query string, không có `:id`.
             path: appRoutes.procurement.importLandedCostPrint,
-            lazy: async () => ({
-              Component: (await import('@/modules/procurement/pages/import-landed-cost-print-page'))
-                .ImportLandedCostPrintPage,
+            lazy: guardedPrintLazy(appRoutes.procurement.importLandedCostPrint, async () => {
+              const { ImportLandedCostPrintPage } = await import('@/modules/procurement/pages/import-landed-cost-print-page')
+              return ImportLandedCostPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
             path: appRoutes.finance.paymentRequestPrint(':id'),
-            lazy: async () => ({
-              Component: (await import('@/modules/finance/pages/payment-request-print-page'))
-                .PaymentRequestPrintPage,
+            lazy: guardedPrintLazy(appRoutes.finance.paymentRequestPrint(':id'), async () => {
+              const { PaymentRequestPrintPage } = await import('@/modules/finance/pages/payment-request-print-page')
+              return PaymentRequestPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
             path: appRoutes.document.documentPrint(':id'),
-            lazy: async () => ({
-              Component: (await import('@/modules/document/pages/document-print-page'))
-                .DocumentPrintPage,
+            lazy: guardedPrintLazy(appRoutes.document.documentPrint(':id'), async () => {
+              const { DocumentPrintPage } = await import('@/modules/document/pages/document-print-page')
+              return DocumentPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
             path: appRoutes.vehicleBooking.print(':id'),
-            lazy: async () => ({
-              Component: (await import('@/modules/vehicle-booking/pages/vehicle-booking-print-page'))
-                .VehicleBookingPrintPage,
+            lazy: guardedPrintLazy(appRoutes.vehicleBooking.print(':id'), async () => {
+              const { VehicleBookingPrintPage } = await import('@/modules/vehicle-booking/pages/vehicle-booking-print-page')
+              return VehicleBookingPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
             path: appRoutes.approvalSeal.print(':id'),
-            lazy: async () => ({
-              Component: (await import('@/modules/approval-seal/pages/seal-request-print-page'))
-                .SealRequestPrintPage,
+            lazy: guardedPrintLazy(appRoutes.approvalSeal.print(':id'), async () => {
+              const { SealRequestPrintPage } = await import('@/modules/approval-seal/pages/seal-request-print-page')
+              return SealRequestPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },
           {
             path: appRoutes.hr.leaveRequestPrint(':id'),
-            lazy: async () => ({
-              Component: (await import('@/modules/hr/pages/leave-request-print-page'))
-                .LeaveRequestPrintPage,
+            lazy: guardedPrintLazy(appRoutes.hr.leaveRequestPrint(':id'), async () => {
+              const { LeaveRequestPrintPage } = await import('@/modules/hr/pages/leave-request-print-page')
+              return LeaveRequestPrintPage
             }),
             errorElement: <RouteErrorPage />,
           },

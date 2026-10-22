@@ -67,6 +67,15 @@ nghỉ khác»** (đổi theo tỷ lệ, ví dụ 2 ngày phép đổi 1 ngày n
   một hạn riêng, có thể để không hết hạn). Quá hạn là mất phần chưa dùng.
 - **Phép mang sang được tiêu TRƯỚC phép của năm mới** — cố ý, vì nó sắp hết hạn.
 - Đừng tự tính giúp họ mang được mấy ngày: con số đó nằm trên màn *Quỹ phép năm*.
+- **Bảng «Đối chiếu kết sổ năm …»** (từ 22/10/2026): kết sổ xong, hộp **«Đối chiếu kết sổ phép
+  năm …»** **tự mở** ra, liệt kê từng người, từng loại nghỉ với các cột **Số cũ (trước)** ·
+  **Số mới (sau)** · **Chênh** (= số mới trừ số cũ, thường âm: đúng phần đã chuyển đi) · **Sang loại** (ghi *«Chưa khai»* nếu loại quy đổi chưa khai loại nhận) ·
+  **Cộng vào năm sau** (= phần chuyển đi × tỷ lệ quy đổi). Đóng rồi muốn xem lại thì
+  bấm nút **«Đối chiếu kết sổ …»** cạnh nút Kết sổ ở màn *Quỹ phép năm*; hộp có nút **«Xuất Excel»**
+  (chỉ người có quyền xuất Quỹ phép năm mới thấy). Đây là bảng **chỉ xem**, không sửa số ở đó.
+  ⚠️ **Số cũ được tính lại lúc mở bảng** (số còn lại + số đã chuyển đi), không phải ảnh chụp
+  lúc bấm nút — nên đơn của năm cũ được duyệt hoặc hủy **sau** kết sổ sẽ làm số đổi theo. Khi người
+  dùng hỏi "sao số đối chiếu khác hôm kết sổ" thì giải thích đúng điểm này; đừng đoán con số.
 
 ## Một đơn khai được NHIỀU loại nghỉ
 
@@ -105,6 +114,14 @@ Ngoại lệ: loại nghỉ dài liên tục như **Thai sản** cố ý **khôn
 
 - **Nghỉ ốm không phải báo trước** (đúng vậy — không ai biết trước mai mình ốm),
   nhưng **có thể** phải đính kèm giấy khám bệnh.
+- **Loại nghỉ bắt buộc đính kèm giấy tờ** (phòng Nhân sự bật cờ **«Bắt buộc đính kèm»** ở *Thiết lập ▸
+  Loại nghỉ*; Nghỉ ốm, Nghỉ vợ sinh con thường bật): đơn phải có **ít nhất một tệp** trước khi
+  **Gửi duyệt**. **Lưu nháp thì không bị chặn.** Thứ tự đúng: **Lưu nháp** → tải tệp lên ở mục
+  **«Tệp đính kèm»** (mục này chỉ có sau khi đơn đã được lưu) → bấm **Gửi duyệt**. Chưa có tệp mà gửi
+  thì hệ chặn bằng câu: *«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ (giấy khám bệnh, giấy chứng
+  nhận…) — tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt lại.»* Mục «Tệp đính kèm» hiện dấu bắt buộc
+  và dòng báo đỏ ngay khi chọn loại nghỉ đó. Đơn nhiều loại nghỉ: chỉ cần **một** loại bật cờ là cả
+  đơn phải có tệp. Trợ lý **không** đính kèm hộ được — bảo người dùng tự tải tệp lên.
 - **Cưới hỏi và tang chế tối đa 3 ngày mỗi lần.**
 - **Thai sản chỉ hiện với hồ sơ nữ.** Hồ sơ **chưa khai giới tính** thì **không bị
   chặn** — cứ nộp được.

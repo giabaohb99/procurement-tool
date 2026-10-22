@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { EmployeePendingWorkConfirmDialog } from '@/modules/hr/components/employee-pending-work-confirm-dialog'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import {
   useDeleteUserAccount,
@@ -62,6 +63,8 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
   const { data: departments } = useDepartments({ page_size: 500 })
   const setActive = useSetUserActive()
   const deleteAccount = useDeleteUserAccount()
+  // duoc-CR-665 (V0-4): khóa tài khoản CÒN hồ sơ nhân sự phải qua hộp kiểm việc duyệt đang treo.
+  const [lockTarget, setLockTarget] = useState<UserAccount | null>(null)
 
   // Đổi bất kỳ bộ lọc nào cũng về trang 1, tránh đứng ở trang trống.
   const [page, setPage] = usePageResetOnFilterChange([debouncedKeyword, department, roleId, flag])
@@ -200,6 +203,16 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
 
             {/* Khóa/mở khóa và xóa đều đổi trạng thái đăng nhập của người khác
                 ngay lập tức -> hỏi lại trước khi chạy. */}
+            {account.is_active && account.employee_id > 0 ? (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Khóa tài khoản"
+                onClick={() => setLockTarget(account)}
+              >
+                <Lock />
+              </Button>
+            ) : (
             <ConfirmIconButton
               icon={account.is_active ? Lock : LockOpen}
               title={account.is_active ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
@@ -220,6 +233,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
                 setActive.mutate({ userId: account.id, isActive: !account.is_active })
               }
             />
+            )}
 
             {/* Chỉ tài khoản KHÔNG CÒN HỒ SƠ mới xóa được — còn hồ sơ nhân sự
                 thì khóa, đừng xóa. */}
@@ -321,6 +335,28 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
         </>
       }
     />
+    {lockTarget && (
+      <EmployeePendingWorkConfirmDialog
+        open
+        onOpenChange={(next) => !next && setLockTarget(null)}
+        employeeId={lockTarget.employee_id}
+        title={`Khóa tài khoản "${lockTarget.full_name}"?`}
+        description={
+          <p>
+            Người dùng sẽ không đăng nhập được cho tới khi mở khóa lại. Việc duyệt đang chờ họ phải
+            chuyển đi trước, không thì phiếu kẹt.
+          </p>
+        }
+        confirmLabel="Khóa tài khoản"
+        pending={setActive.isPending}
+        onConfirm={() =>
+          setActive.mutate(
+            { userId: lockTarget.id, isActive: false },
+            { onSuccess: () => setLockTarget(null) },
+          )
+        }
+      />
+    )}
     </Card>
   )
 }

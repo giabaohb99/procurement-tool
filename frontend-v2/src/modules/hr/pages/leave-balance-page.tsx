@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArchiveRestore, CalendarPlus, TriangleAlert } from 'lucide-react'
+import { ArchiveRestore, CalendarPlus, ClipboardList, TriangleAlert } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { LeaveCloseYearReviewDialog } from '../components/leave-close-year-review-dialog'
 import { buildLeaveBalanceColumns } from '../components/leave-balance-columns'
 import { LeaveBalanceRowCard } from '../components/leave-balance-row-card'
 import { LIST_TOOLBAR_STICKY_TOP } from '../utils/list-sticky'
@@ -123,6 +124,10 @@ export function LeaveBalancePage() {
   //  bằng `write` như cột điều chỉnh tay, không phải `create` như nút Cấp quỹ.
   const canCloseYear = can('leave_balance', 'write')
 
+  //  Năm đang mở bảng ĐỐI CHIẾU kết sổ (duoc-CR-664); `null` = đóng. Tự mở ngay sau
+  //  khi kết sổ xong, và mở lại được bằng nút «Đối chiếu» để xem lần sau / xuất Excel.
+  const [reviewYear, setReviewYear] = useState<number | null>(null)
+
   //  Kết sổ năm TRƯỚC năm đang xem: số dư của năm vừa xong mới là thứ cần đẩy
   //  đi. Hỏi lại trước khi chạy — nó chạm tới quỹ của mọi người trong phạm vi,
   //  và câu hỏi là chỗ duy nhất nói ra rằng nó chỉ chuyển những loại nghỉ CÓ
@@ -139,7 +144,7 @@ export function LeaveBalancePage() {
       confirmLabel: 'Kết sổ',
       tone: 'default',
     })
-    if (ok) closeYear.mutate({ year: target })
+    if (ok) closeYear.mutate({ year: target }, { onSuccess: () => setReviewYear(target) })
   }
 
   //  KHÔNG có `page` trong params: trang cắt ở client theo NGƯỜI (xem
@@ -273,6 +278,15 @@ export function LeaveBalancePage() {
                 <span className="max-lg:hidden">Kết sổ năm {Number(year) - 1}</span>
               </Button>
             )}
+            <Button
+              variant="outline"
+              className="max-md:flex-1 max-md:px-2 max-md:text-xs"
+              onClick={() => setReviewYear(Number(year) - 1)}
+            >
+              <ClipboardList className="size-4" />
+              <span className="lg:hidden">Đối chiếu {Number(year) - 1}</span>
+              <span className="max-lg:hidden">Đối chiếu kết sổ {Number(year) - 1}</span>
+            </Button>
             {canAllocate && (
               <Button
                 className="max-md:flex-1 max-md:px-2 max-md:text-xs"
@@ -400,6 +414,7 @@ export function LeaveBalancePage() {
           />
         </Card>
       </div>
+      <LeaveCloseYearReviewDialog year={reviewYear} onClose={() => setReviewYear(null)} />
     </PageContainer>
   )
 }

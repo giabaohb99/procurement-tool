@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut, httpClient } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type { SelfContactPayload } from '../schemas/self-contact-schema'
+import type { EmployeePendingWork } from '../types/employee-pending-work'
 import type {
   Employee,
   EmployeeContact,
@@ -46,6 +47,9 @@ export const employeeApi = {
   list: (params: ListParams) => apiGet<PaginatedResult<Employee>>(BASE_URL, { params }),
 
   getById: (id: number) => apiGet<EmployeeDetail>(`${BASE_URL}/${id}`),
+
+  /** duoc-CR-665: việc duyệt người này đang giữ — xem trước khi khóa tài khoản / cho nghỉ việc. */
+  pendingWork: (id: number) => apiGet<EmployeePendingWork>(`${BASE_URL}/${id}/pending-work`),
 
   /**
    * Hồ sơ nhân sự của CHÍNH người đang đăng nhập — cho màn *Trang cá nhân*.

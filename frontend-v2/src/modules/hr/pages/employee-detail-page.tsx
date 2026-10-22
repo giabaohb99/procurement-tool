@@ -15,7 +15,7 @@ import {
   UserCheck,
   UserCog,
 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -42,6 +42,7 @@ import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { EmployeeAccountCard } from '../components/employee-account-card'
+import { EmployeePendingWorkConfirmDialog } from '../components/employee-pending-work-confirm-dialog'
 import { EmployeeDepartmentCard } from '../components/employee-department-card'
 import { EmployeeSignatureCard } from '../components/employee-signature-card'
 import { EmployeeTabContact } from '../components/employee-tab-contact'
@@ -121,6 +122,9 @@ export function EmployeeDetailPage() {
 
   //  Cờ «đang gửi» đổi NGAY trong tick — xem `onSubmit`.
   const submittingRef = useRef(false)
+  //  duoc-CR-665 (V0-4): lần lưu đưa hồ sơ sang NGHỈ VIỆC / ngừng hoạt động sẽ khóa tài khoản,
+  //  nên dừng lại ở hộp «kiểm việc duyệt đang treo» trước. Giữ giá trị form để lưu tiếp khi xác nhận.
+  const [pendingLeave, setPendingLeave] = useState<EmployeeProfileFormValues | null>(null)
 
   //  ⚠️ `keepDirtyValues` — `employee` đổi không chỉ lúc mở trang: tải ảnh CCCD /
   //  ảnh đại diện / chữ ký hay «Áp» một dòng quá trình công tác đều làm hồ sơ
@@ -155,6 +159,17 @@ export function EmployeeDetailPage() {
   }
 
   async function onSubmit(values: EmployeeProfileFormValues) {
+    const leaving =
+      (values.status === 'resigned' && employee?.status !== 'resigned') ||
+      (!values.is_active && employee?.is_active === true)
+    if (leaving) {
+      setPendingLeave(values)
+      return
+    }
+    await saveProfile(values)
+  }
+
+  async function saveProfile(values: EmployeeProfileFormValues) {
     //  ⚠️ Chặn GỬI HAI LẦN bằng ref, không dựa vào `disabled={isPending}`.
     //
     //  `isPending` là state React nên chỉ đúng ở lần render SAU. Bấm đúp — hay
@@ -427,6 +442,30 @@ export function EmployeeDetailPage() {
           </Card>
         </form>
       </Form>
+      {pendingLeave && (
+        <EmployeePendingWorkConfirmDialog
+          open
+          onOpenChange={(next) => !next && setPendingLeave(null)}
+          employeeId={employeeId}
+          title="Lưu hồ sơ nghỉ việc?"
+          description={
+            <>
+              <p>
+                Lưu xong, mọi tài khoản đăng nhập của người này sẽ bị <strong>KHÓA</strong> và{' '}
+                <strong>ĐĂNG XUẤT</strong> khỏi mọi thiết bị.
+              </p>
+              <p>Kiểm các việc người này đang giữ dưới đây — chuyển đi trước khi khóa.</p>
+            </>
+          }
+          confirmLabel="Lưu và chuyển nghỉ việc"
+          pending={saveEmployee.isPending}
+          onConfirm={() => {
+            const values = pendingLeave
+            setPendingLeave(null)
+            void saveProfile(values)
+          }}
+        />
+      )}
     </PageContainer>
   )
 }

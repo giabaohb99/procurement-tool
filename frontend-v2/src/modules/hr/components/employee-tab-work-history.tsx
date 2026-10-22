@@ -130,6 +130,7 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
           open
           onOpenChange={(next) => !next && rowApply.closeResignApply()}
           resignDate={rowApply.resignApply.resignDate}
+          employeeId={employee.id}
           pending={rowApply.isApplying(rowApply.resignApply.row)}
           cancelLabel="Hủy"
           confirmLabel="Chuyển sang nghỉ việc"

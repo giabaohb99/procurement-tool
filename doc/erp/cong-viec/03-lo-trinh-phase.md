@@ -73,7 +73,7 @@ Tùy chỉnh · trạng thái khung nhìn nhớ ở `localStorage`. `npm run che
 **CÒN THIẾU của chính W2 — phải làm nốt trước khi gọi là nghiệm thu MVP:**
 1. **«Lọc» điều kiện** bằng `conditional-filter` (§3.3) — P0, chưa có.
 2. **Kéo ngang đổi thứ tự CỘT** (§4) — thẻ kéo được rồi, cột thì chưa.
-3. Ghim list hay dùng trên sidebar (A-05).
+3. ~~Ghim list hay dùng trên sidebar (A-05).~~ **Đã làm (duoc-CR-667)** — khu «Đã ghim» đầu cây, lưu theo người dùng.
 4. «Gom nhóm» ngoài cột tự đặt là D-08 (P1) nên KHÔNG chặn mốc này; tab
    **Dashboard** cũng vậy — §2 cấm render tab chưa làm. **Gantt** (CR-219) và
    **tab Hoạt động** (D-09, CR-249) thì đã có, làm sớm khỏi W4/W5.
@@ -90,10 +90,28 @@ F-04 (đổi trạng thái/bình luận báo người theo dõi).
 **Điều kiện đủ:** giao việc là chuông kêu; task quá hạn/được giao hiện trong tab Việc
 cần làm và "Đánh dấu làm xong" ẩn được; test tập cha mở rộng xanh.
 
+**Đã làm (duoc-CR-666 + 667, 22/10/2026):** F-01, F-02, F-04, E-05 và luôn B-09 (kéo sớm
+từ W4). Chốt thiết kế:
+- Chuông ghi thẳng `tab_notification` (`work/notify_service.py`), KHÔNG qua
+  `trigger_notification` (hàm đó dành cho chứng từ). Không báo chính người thao tác;
+  lỗi chuông không làm hỏng thao tác chính. Mọi chuông (giao việc, đổi trạng thái,
+  bình luận, nhắc tên) chỉ tới người còn XEM được việc — còn là thành viên dự án VÀ có
+  `work_task.read` (`notify_service.audience_user_ids`): gỡ khỏi dự án không xóa dòng
+  PIC/theo dõi, thiếu lớp lọc này người đã rời vẫn nhận tên việc + trích bình luận.
+- F-02 chỉ THÊM `job:{id}` vào tab; chuông cảnh báo `/api/alerts` không có loại này
+  nên tab vẫn là tập cha. Lấy việc: là PIC (không tính người theo dõi), việc đang mở,
+  dự án chưa lưu trữ, VẪN là thành viên. Test: `test_cong_viec_chuong_cr666.py`.
+- Bình luận mới báo thêm PIC + người theo dõi qua `comment/service.recipient_ids`
+  (nhánh `work_task`). Sửa bình luận: `task_comment_service.py` — chỉ người viết, cần
+  quyền ghi; người mới được `@` khi sửa mới nhận chuông. Test: `..._cr667.py`.
+- Thùng rác: việc con xóa cùng cha mang CÙNG mốc `deleted_at`, khôi phục cha chỉ gỡ các
+  con mang đúng mốc đó; con không khôi phục trước cha; việc về cột đầu nếu cột cũ đã mất.
+  Khôi phục gác y như xóa: RBAC `work_task.delete` + vai trò dự án.
+
 ## W4 — Các mục P1 còn lại
 
 **Phạm vi:** F-03 nhắc hạn Celery (job quét `due_date` — nhớ deploy phải build lại
-celery-worker/beat) · G-03 màn "Việc của tôi" · B-09 thùng rác · B-10 chuyển list ·
+celery-worker/beat) · G-03 màn "Việc của tôi" · ~~B-09 thùng rác~~ (đã làm sớm 22/10/2026, duoc-CR-667) · B-10 chuyển list ·
 A-06 mời theo phòng ban (cột `department_id`) · C-03 việc con có PIC/hạn riêng ·
 E-02 nhắc tên @ · E-03 đính kèm R2 qua kiểm quyền · D-06 dashboard thống kê list ·
 D-08 gom nhóm kanban theo PIC/ưu tiên/hạn · ~~D-09 tab Activities cấp list~~

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.modules.payable.model import Payable
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from app.modules.purchase_order.service import normalize_rate
+from .department_label import department_label, load_department_names
 from .model import ReportSnapshot
 
 
@@ -84,11 +85,14 @@ def compute(db: Session, year: str, company_id, full_detail: bool = False) -> di
 
     # ================= 1) BỘ PHẬN (đặt hàng / gấp) — theo order_date =================
     dept = {}
+    dept_names = load_department_names(db)   # duoc-CR-663: gom theo id, nhãn = tên hiện hành
     for p in pos:
         m = _mk(p.order_date)
-        if m not in mset or not p.department:   # bỏ dòng phòng ban rỗng ("(Không rõ)")
+        label = department_label(dept_names, p.department_id, p.department)
+        if m not in mset or not label:   # bỏ dòng phòng ban rỗng ("(Không rõ)")
             continue
-        r = dept.setdefault(p.department, {"key": p.department, "m": {}, "orders": 0, "urgent": 0})
+        r = dept.setdefault(label, {"key": label, "department_id": int(p.department_id or 0),
+                                    "m": {}, "orders": 0, "urgent": 0})
         c = r["m"].setdefault(m, {"orders": 0, "urgent": 0})
         c["orders"] += 1
         r["orders"] += 1
@@ -328,10 +332,13 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
         poq = poq.filter(PurchaseOrder.company_id == int(company_id))
 
     agg = {}
+    dept_names = load_department_names(db)   # duoc-CR-663: gom theo id, nhãn = tên hiện hành
     for p in poq.all():
-        if not p.department:   # bỏ phòng ban rỗng
+        label = department_label(dept_names, p.department_id, p.department)
+        if not label:   # bỏ phòng ban rỗng
             continue
-        r = agg.setdefault(p.department, {"key": p.department, "orders": 0, "urgent": 0})
+        r = agg.setdefault(label, {"key": label, "department_id": int(p.department_id or 0),
+                                   "orders": 0, "urgent": 0})
         r["orders"] += 1
         if p.is_urgent:
             r["urgent"] += 1
@@ -419,12 +426,14 @@ def compute_request_matrix(db, kind, year, company_id, user) -> dict:
     month_out = [{"key": m, "label": f"{m[5:7]}/{m[:4]}"} for m in months]
 
     agg = {}
+    dept_names = load_department_names(db)   # duoc-CR-663: gom theo id, nhãn = tên hiện hành
     for r in recs:
         mo = (r.request_date or "")[:7]
-        if mo not in mset or not r.department:   # bỏ phòng ban rỗng
+        dept = department_label(dept_names, getattr(r, "department_id", 0), r.department)
+        if mo not in mset or not dept:   # bỏ phòng ban rỗng
             continue
-        dept = r.department
-        row = agg.setdefault(dept, {"key": dept, "m": {}, **_blank_cell(statuses)})
+        row = agg.setdefault(dept, {"key": dept, "department_id": int(getattr(r, "department_id", 0) or 0),
+                                    "m": {}, **_blank_cell(statuses)})
         cell = row["m"].setdefault(mo, _blank_cell(statuses))
         st = r.status if r.status in statuses else None
         cell["total"] += 1
@@ -445,10 +454,13 @@ def compute_request_range(db, kind, date_from, date_to, company_id, user) -> lis
     statuses = _REQ_STATUS[kind]
     recs = _req_scoped_rows(db, kind, user, company_id=company_id, date_from=date_from, date_to=date_to)
     agg = {}
+    dept_names = load_department_names(db)   # duoc-CR-663: gom theo id, nhãn = tên hiện hành
     for r in recs:
-        if not r.department:   # bỏ phòng ban rỗng
+        dept = department_label(dept_names, getattr(r, "department_id", 0), r.department)
+        if not dept:   # bỏ phòng ban rỗng
             continue
-        row = agg.setdefault(r.department, {"key": r.department, **_blank_cell(statuses)})
+        row = agg.setdefault(dept, {"key": dept, "department_id": int(getattr(r, "department_id", 0) or 0),
+                                    **_blank_cell(statuses)})
         st = r.status if r.status in statuses else None
         row["total"] += 1
         if st:
@@ -528,7 +540,9 @@ def compute_pr_lines_summary(db, user, *, year=None, company_id=None, status=Non
                                assignee=assignee, search=search)
     rows = q.with_entities(PurchaseRequest.request_date, PurchaseRequest.department,
                            PurchaseRequestItem.item_group, PurchaseRequestItem.assignee,
-                           PurchaseRequestItem.line_status, PurchaseRequestItem.amount).all()
+                           PurchaseRequestItem.line_status, PurchaseRequestItem.amount,
+                           PurchaseRequest.department_id).all()
+    dept_names = load_department_names(db)   # duoc-CR-663: gom theo id, nhãn = tên hiện hành
 
     def bucket():
         return {"lines": 0, "idle_lines": 0, "amount": 0.0, "idle_amount": 0.0}
@@ -542,7 +556,7 @@ def compute_pr_lines_summary(db, user, *, year=None, company_id=None, status=Non
 
     total = bucket()
     by_status, by_month, by_dept, by_group, by_assignee = {}, {}, {}, {}, {}
-    for request_date, department, item_group, who, ls, amount in rows:
+    for request_date, department, item_group, who, ls, amount, department_id in rows:
         ls = ls or LINE_STATUS_NO_PO
         amount = float(amount or 0)
         st = by_status.setdefault(ls, {"code": ls, "lines": 0, "amount": 0.0})
@@ -555,7 +569,8 @@ def compute_pr_lines_summary(db, user, *, year=None, company_id=None, status=Non
         month = (request_date or "")[:7]
         if len(month) == 7:
             add(by_month.setdefault(month, {"month": month, **bucket()}), idle, amount)
-        add(by_dept.setdefault(department or "(Không rõ)", {"key": department or "(Không rõ)", **bucket()}), idle, amount)
+        dept_label = department_label(dept_names, department_id, department) or "(Không rõ)"
+        add(by_dept.setdefault(dept_label, {"key": dept_label, **bucket()}), idle, amount)
         add(by_group.setdefault(item_group or "(Không rõ)", {"key": item_group or "(Không rõ)", **bucket()}), idle, amount)
         add(by_assignee.setdefault(who or "", {"code": who or "", **bucket()}), idle, amount)
 

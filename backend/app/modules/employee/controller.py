@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
-from . import (contact_service, department_service, position_service,
+from . import (contact_service, department_service, pending_work_service, position_service,
                self_contact_service, sensitive, service)
 from .schema import (EmployeeContactOut, EmployeeContactsIn, EmployeeCreate,
                      EmployeeDetailOut, EmployeeFamiliesIn, EmployeeFamilyOut,
@@ -143,6 +143,27 @@ def get_employee(eid: int, db: Session = Depends(get_db), user=Depends(require("
     data = EmployeeDetailOut.model_validate(obj).model_dump()
     profile = get_perm_profile(db, user)
     return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id)))
+
+
+@router.get("/{eid}/pending-work")
+def get_employee_pending_work(
+    eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read")),
+):
+    """duoc-CR-665 (V0-4): việc duyệt người này đang giữ — xem TRƯỚC khi khóa tài khoản / cho nghỉ việc.
+
+    Hồ sơ nạp qua `get_scoped` (404 ngoài phạm vi): danh sách mang tên phiếu của người khác nên
+    không thể mở cho ai gõ id. Chỉ đọc; chuyển việc đi đường `/api/approvals/.../reassign`.
+    """
+    from app.core.scoping import has_global_scope
+    from app.modules.approval import entity_hooks
+
+    profile = get_perm_profile(db, user)
+    _employee_in_scope(db, eid, user, profile, "read")
+    #  Mã/tên phiếu chỉ hiện khi người xem đọc được chứng từ đó (cùng chốt `_load` của phân hệ
+    #  Duyệt). Quản trị duyệt toàn hệ thì khỏi hỏi từng phiếu.
+    can_see = (None if has_global_scope(profile, "approval_flow", "read")
+               else (lambda inst: entity_hooks.can_read(db, inst, user)))
+    return success(pending_work_service.pending_work_of(db, eid, can_see))
 
 
 @router.post("/{eid}/avatar")

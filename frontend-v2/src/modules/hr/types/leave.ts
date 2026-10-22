@@ -352,3 +352,39 @@ export interface LeaveInboxRow extends LeaveRequest {
   /** `null` khi đơn chưa vào bộ máy duyệt. */
   flow?: ApprovalFlowStrip | null
 }
+
+/** Một dòng bảng đối chiếu kết sổ cuối năm (duoc-CR-664) — khớp `carryover_review_service`. */
+export interface LeaveCloseYearReviewRow {
+  employee_id: number
+  employee_code: string
+  employee_name: string
+  source_type_id: number
+  source_type_name: string
+  dest_type_id: number
+  dest_type_name: string
+  /** Tỷ lệ quy đổi: `1` = mang sang nguyên loại. */
+  ratio: number
+  /** Số dư năm cũ TRƯỚC kết sổ = còn lại + đã chuyển đi. */
+  before_days: number
+  /** Số dư năm cũ SAU kết sổ. */
+  after_days: number
+  /** `after - before`, âm = phần đã chuyển đi. */
+  diff_days: number
+  /** Ngày cộng vào năm sau (đã nhân tỷ lệ, theo cấu hình hiện hành). */
+  credited_days: number
+  /** Phần mang sang đang có thật ở dòng quỹ năm sau của loại nhận. */
+  dest_carried_days: number
+}
+
+export interface LeaveCloseYearReview {
+  year: number
+  next_year: number
+  items: LeaveCloseYearReviewRow[]
+  totals: {
+    row_count: number
+    before_days: number
+    after_days: number
+    diff_days: number
+    credited_days: number
+  }
+}

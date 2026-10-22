@@ -48,6 +48,10 @@ export interface TaskComment {
   created_at: string
   /** Backend tự quyết: tác giả, hoặc người có quyền xóa của quản trị. */
   can_delete: boolean
+  /** Chỉ người viết (E-05) — khác `can_delete`, quản trị KHÔNG sửa được lời người khác. */
+  can_edit: boolean
+  /** Đã sửa sau lúc gửi — hiện nhãn «đã sửa» cạnh giờ. */
+  edited: boolean
   mentions: TaskCommentMention[]
   files: TaskCommentFile[]
 }

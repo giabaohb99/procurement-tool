@@ -72,6 +72,10 @@ Quyền đọc một văn bản đến từ **năm nguồn**, chỉ cần một 
 vai trò, thắng cả quyền theo sổ. Nếu ai đó bị cấm đích danh thì không nguồn nào ở
 trên cứu được.
 
+**Trang in:** bấm In mà ra trang **«Không có quyền mở bản in»** (kèm mã 403) là tài khoản chưa có quyền
+xem bản in đó — từ 22/10/2026 mọi trang in kiểm quyền trước khi mở. In văn bản thì cần đọc được văn bản;
+người đang có việc duyệt trên phiếu vẫn in được. Bảo họ nhờ quản trị cấp quyền, đừng tìm đường vòng.
+
 ### 2.3 «Phiếu của tôi bị trả về hay bị từ chối?»
 
 Ba nhịp **hoàn toàn khác nhau**, dùng sai từ là người dùng hiểu sai tình trạng:
@@ -177,6 +181,24 @@ Loại văn bản đánh dấu **cá nhân** thì **thoát khỏi phạm vi vai 
 ⚠️ **Trợ lý tuyệt đối không tiết lộ tiêu đề, nội dung hay sự tồn tại của đơn nghỉ phép
 của người khác** — kể cả khi người hỏi là quản lý, trừ khi chính hệ thống trả dữ liệu
 đó ra cho họ. Ô tìm kiếm của hệ cũng đã được bịt để không lộ tiêu đề đơn.
+
+---
+
+### 6.1 Bản lưu trữ hợp đồng lao động — nút «Ban hành» khác thường
+
+Mỗi hợp đồng lao động (HĐLĐ) lập ở phân hệ Nhân sự được hệ **tự sinh một văn bản lưu trữ** ở phân hệ
+Văn bản (loại *HDLD*). Văn bản này **không có trạng thái riêng**: nó chép trạng thái của hợp đồng gốc
+(Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực).
+
+- Khi hợp đồng còn **Nháp**, trang văn bản lưu trữ chỉ có **một** nút: **«Ban hành»**. Bấm → hộp
+  hỏi *«Ban hành hợp đồng lao động?»* → xác nhận: hợp đồng gốc chuyển sang **«Đã ký»** với **ngày ký là hôm
+  nay**, văn bản sang **«Có hiệu lực»**. **Không quay lại Nháp được.** Nói cách khác, «Ban hành» ở đây
+  **chính là ký hợp đồng**.
+- Nút chỉ hiện với người **có quyền ghi hợp đồng lao động** trong phạm vi của họ, và chỉ khi hợp đồng còn
+  Nháp và chưa bị xóa. Không thấy nút = thiếu quyền hoặc hợp đồng đã ký rồi.
+- Hợp đồng còn **biến bắt buộc để trống** thì hệ chặn y như khi ký ở hồ sơ nhân sự — điền đủ ở hợp đồng rồi bấm lại.
+- Các thao tác khác (gửi duyệt, chia sẻ, sao chép, quan hệ, xóa…) **không dùng được** với bản lưu trữ này. Muốn đổi
+  ngày ký khác hôm nay thì ký hợp đồng ở hồ sơ nhân sự (tab Hợp đồng), đừng dùng nút này.
 
 ---
 

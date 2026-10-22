@@ -35,6 +35,7 @@ from app.modules.payable.service import ST_PAID
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 
 from . import service as report_service
+from .department_label import department_label
 from .controller import REAL_PO_STATUSES
 
 
@@ -93,7 +94,8 @@ def real_po_ids(db: Session, po_ids: set[int]) -> set[int]:
 
 #  Cột PurchaseOrder/POItem THẬT SỰ cần cho `_resolve_po_context` — `load_only` khỏi kéo cả
 #  ~35 cột (giá trần nhập khẩu, ghi chú, tỷ giá gốc…) mỗi lần build_report gọi fetch().
-_PO_CONTEXT_COLS = (PurchaseOrder.id, PurchaseOrder.nspt, PurchaseOrder.department)
+_PO_CONTEXT_COLS = (PurchaseOrder.id, PurchaseOrder.nspt, PurchaseOrder.department,
+                    PurchaseOrder.department_id)
 _POITEM_COLS = (POItem.id, POItem.po_id, POItem.item_group, POItem.qty_order, POItem.price,
                 POItem.vat, POItem.exchange_rate)
 
@@ -167,7 +169,8 @@ def payable_rows(db: Session, company_id: int | None, ranges: list[tuple[date, d
         own_dept = int(p.department_id or 0)
         if central and own_dept == central:
             own_dept = 0
-        dept = dept_name.get(own_dept, "") or (po.department if po else "") or ""
+        dept = dept_name.get(own_dept, "") or (
+            department_label(dept_name, po.department_id, po.department) if po else "")   # duoc-CR-663
         nspt = (po.nspt or "") if po else ""
         supplier = p.supplier_name or p.supplier_code or ""
         total = float(p.total or 0)

@@ -1,4 +1,14 @@
-import { AtSign, ImageIcon, Loader2, MessageSquare, Paperclip, Send, Trash2, X } from 'lucide-react'
+import {
+  AtSign,
+  ImageIcon,
+  Loader2,
+  MessageSquare,
+  Paperclip,
+  Pencil,
+  Send,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
@@ -6,15 +16,19 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { MentionInput, type MentionInputHandle } from '@/shared/ui/mention-input'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Textarea } from '@/shared/ui/textarea'
+import { cn } from '@/shared/utils/cn'
 import { formatDateTime, formatRelativeTime } from '@/shared/utils/format-date'
 import { formatFileSize } from '@/shared/utils/format-file-size'
 import { taskSupportApi } from '../api/task-support-api'
 import {
   useCreateTaskComment,
   useDeleteTaskComment,
+  useEditTaskComment,
   useTaskComments,
 } from '../hooks/use-task-support'
 import type { TaskComment } from '../types/task-support'
+import { bodyToEditableText, editableTextToBody } from '../utils/comment-edit-text'
 import { mergePendingFiles } from '../utils/merge-pending-files'
 import { parseCommentBody } from '../utils/parse-comment-body'
 import { initials } from '../utils/people'
@@ -40,6 +54,7 @@ const MAX_FILES = 5
 export function TaskComments({ taskId, listId }: TaskCommentsProps) {
   const { data, isLoading, loadOlder } = useTaskComments(taskId)
   const remove = useDeleteTaskComment(taskId, listId)
+  const edit = useEditTaskComment(taskId)
 
   const items = data?.items ?? []
   const olderCount = data?.older_count ?? 0
@@ -72,6 +87,10 @@ export function TaskComments({ taskId, listId }: TaskCommentsProps) {
             key={comment.id}
             comment={comment}
             deleting={remove.isPending && remove.variables === comment.id}
+            saving={edit.isPending && edit.variables?.commentId === comment.id}
+            onSave={(body, done) =>
+              edit.mutate({ commentId: comment.id, body }, { onSuccess: done })
+            }
             onDelete={async () => {
               //  Xóa CỨNG, kéo theo phản hồi và tệp kèm (duoc-CR-627) — hỏi trước.
               const ok = await confirm({
@@ -91,12 +110,35 @@ export function TaskComments({ taskId, listId }: TaskCommentsProps) {
 function CommentRow({
   comment,
   deleting,
+  saving,
   onDelete,
+  onSave,
 }: {
   comment: TaskComment
   deleting: boolean
+  saving: boolean
   onDelete: () => void
+  /** `done` gọi khi lưu thành công để thoát chế độ sửa; lỗi thì ở lại cho người dùng sửa tiếp. */
+  onSave: (body: string, done: () => void) => void
 }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  function startEdit() {
+    setDraft(bodyToEditableText(comment.body, comment.mentions))
+    setEditing(true)
+  }
+
+  function save() {
+    //  Ctrl+Enter không bị `disabled` của nút chặn — đang lưu thì bỏ qua, khỏi gửi hai lượt.
+    if (saving) return
+    const body = editableTextToBody(draft, comment.mentions)
+    //  Bình luận chỉ có tệp mới được phép rỗng chữ — backend cũng kiểm đúng luật này.
+    if (!body && comment.files.length === 0) return
+    if (body === comment.body) return setEditing(false)
+    onSave(body, () => setEditing(false))
+  }
+
   return (
     <li className="group/cmt flex gap-2">
       <span
@@ -112,6 +154,20 @@ function CommentRow({
           <span className="text-muted-foreground" title={formatDateTime(comment.created_at)}>
             {formatRelativeTime(comment.created_at)}
           </span>
+          {comment.edited && <span className="text-muted-foreground">(đã sửa)</span>}
+          {comment.can_edit && !editing && (
+            <IconTooltip label="Sửa bình luận">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Sửa bình luận"
+                onClick={startEdit}
+                className="ml-auto opacity-0 transition-opacity group-hover/cmt:opacity-100 focus-visible:opacity-100"
+              >
+                <Pencil className="size-3.5" />
+              </Button>
+            </IconTooltip>
+          )}
           {comment.can_delete && (
             //  Hiện khi rê chuột hoặc khi bàn phím đang ở trong dòng — chỉ dựa
             //  vào `hover` thì người đi bằng phím không bao giờ tới được nút.
@@ -122,7 +178,10 @@ function CommentRow({
                 aria-label="Xóa bình luận"
                 disabled={deleting}
                 onClick={onDelete}
-                className="ml-auto opacity-0 transition-opacity group-hover/cmt:opacity-100 focus-visible:opacity-100"
+                className={cn(
+                  'opacity-0 transition-opacity group-hover/cmt:opacity-100 focus-visible:opacity-100',
+                  !(comment.can_edit && !editing) && 'ml-auto',
+                )}
               >
                 <Trash2 className="size-3.5 text-destructive" />
               </Button>
@@ -132,17 +191,43 @@ function CommentRow({
 
         {/*  `whitespace-pre-wrap` giữ lại xuống dòng người ta gõ; `break-words`
              cho chuỗi dài không dấu cách (đường link dán vào) không phá khung. */}
-        <p className="text-sm leading-snug break-words whitespace-pre-wrap">
-          {parseCommentBody(comment.body, comment.mentions).map((seg, i) =>
-            seg.kind === 'text' ? (
-              <span key={i}>{seg.text}</span>
-            ) : (
-              <span key={i} className="rounded bg-primary/10 px-1 py-0.5 font-medium text-primary">
-                @{seg.name}
-              </span>
-            ),
-          )}
-        </p>
+        {editing ? (
+          <div className="space-y-1.5">
+            <Textarea
+              autoFocus
+              value={draft}
+              maxLength={5000}
+              onChange={(su) => setDraft(su.target.value)}
+              onKeyDown={(su) => {
+                if (su.key === 'Escape') setEditing(false)
+                if (su.key === 'Enter' && (su.ctrlKey || su.metaKey)) save()
+              }}
+              aria-label="Nội dung bình luận"
+              className="min-h-16 text-sm"
+            />
+            <div className="flex justify-end gap-1.5">
+              <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing(false)}>
+                Hủy
+              </Button>
+              <Button size="sm" disabled={saving} onClick={save}>
+                {saving && <Loader2 className="size-3.5 animate-spin" />}
+                Lưu
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm leading-snug break-words whitespace-pre-wrap">
+            {parseCommentBody(comment.body, comment.mentions).map((seg, i) =>
+              seg.kind === 'text' ? (
+                <span key={i}>{seg.text}</span>
+              ) : (
+                <span key={i} className="rounded bg-primary/10 px-1 py-0.5 font-medium text-primary">
+                  @{seg.name}
+                </span>
+              ),
+            )}
+          </p>
+        )}
 
         {comment.files.length > 0 && (
           <ul className="mt-1 space-y-1">
