@@ -5,6 +5,7 @@ import type {
   Holiday,
   LeaveBalance,
   LeaveBalanceHint,
+  LeaveCloseYearReview,
   LeaveInboxRow,
   LeaveRequest,
   LeaveType,
@@ -132,6 +133,10 @@ export const leaveApi = {
       skipped_config: number
     }>(`${BALANCES}/close-year`, payload),
 
+  /** Bảng đối chiếu trước/sau kết sổ của `year` (duoc-CR-664). Xuất Excel: `closeYearReviewExportUrl`. */
+  closeYearReview: (year: number) =>
+    apiGet<LeaveCloseYearReview>(`${BALANCES}/close-year/review`, { params: { year } }),
+
   // ── Danh mục nền ────────────────────────────────────────────────────────────
   listTypes: (params: ListParams = {}) =>
     apiGet<PaginatedResult<LeaveType>>(TYPES, { params }),
@@ -181,3 +186,6 @@ export const leaveApi = {
   returnInstance: (instanceId: number, reason: string) =>
     apiPost<unknown>(`${APPROVALS}/${instanceId}/return`, { reason, subject: {} }),
 }
+
+/** Đường tải Excel bảng đối chiếu kết sổ — đi qua `downloadFile` (cần token). */
+export const closeYearReviewExportUrl = '/api/leave-balances/close-year/review/export'

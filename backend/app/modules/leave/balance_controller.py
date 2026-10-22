@@ -15,11 +15,12 @@ from app.core.audit import record as audit_record
 from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
+from app.core.export_xlsx import xlsx_response
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 from app.modules.employee.model import Employee
 
-from . import balance_service, carryover_service
+from . import balance_service, carryover_review_service, carryover_service
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
 from .schema import (LeaveBalanceAdjust, LeaveBalanceAllocate,
@@ -262,6 +263,30 @@ def close_year(data: LeaveBalanceCloseYear, db: Session = Depends(get_db),
         #  loại đích khai sai là thứ DUY NHẤT người bấm phải đi sửa.
         message += f" · bỏ qua {result['skipped_config']} dòng do cấu hình quy đổi chưa đúng"
     return success(result, message)
+
+
+@router.get("/close-year/review")
+def close_year_review(year: int = Query(0, ge=0, le=2100), db: Session = Depends(get_db),
+                      user=Depends(require(ENTITY, "read"))):
+    """Bảng đối chiếu trước/sau kết sổ năm `year` (mặc định năm ngoái), mỗi dòng một (người x loại).
+
+    Gác `leave_balance.read` + `apply_scope`: chỉ là cách XEM sổ quỹ đã có, không
+    thêm quyền mới. Dựng từ sổ quỹ thật, xem `carryover_review_service`.
+    """
+    data = carryover_review_service.build_review(
+        db, user, get_perm_profile(db, user), year or (date.today().year - 1))
+    return success(data)
+
+
+@router.get("/close-year/review/export")
+def close_year_review_export(year: int = Query(0, ge=0, le=2100), db: Session = Depends(get_db),
+                             user=Depends(require(ENTITY, "export"))):
+    """Xuất Excel bảng đối chiếu kết sổ — cùng dữ liệu `close_year_review`."""
+    data = carryover_review_service.build_review(
+        db, user, get_perm_profile(db, user), year or (date.today().year - 1), "export")
+    return xlsx_response(f"doi-chieu-ket-so-phep-{data['year']}",
+                         carryover_review_service.EXPORT_COLUMNS, data["items"],
+                         "Doi chieu ket so")
 
 
 @router.get("/tools/summary")

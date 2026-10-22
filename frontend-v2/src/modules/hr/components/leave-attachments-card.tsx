@@ -8,6 +8,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { FileDropzone } from '@/shared/ui/file-dropzone'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatFileSize } from '@/shared/utils/format-file-size'
 import { leaveAttachmentDownloadUrl, type LeaveAttachment } from '../api/leave-attachment-api'
@@ -40,6 +41,11 @@ interface LeaveAttachmentsCardProps {
    * chỉ là để không bày ra một vùng thả bấm vào là ăn lỗi.
    */
   editable: boolean
+  /**
+   * Tên các loại nghỉ trong đơn đang bật «Bắt buộc đính kèm» (duoc-CR-661). Có
+   * phần tử = đơn phải có ít nhất một tệp trước khi GỬI DUYỆT (lưu nháp thì không).
+   */
+  requiredByTypes?: string[]
 }
 
 /**
@@ -53,7 +59,11 @@ interface LeaveAttachmentsCardProps {
  * đi `AttachmentPreviewDialog` (lấy blob qua `/view` có token), tải về đi
  * `downloadFile` — gắn thẳng `<img src>` / `<a href>` vào API là 401.
  */
-export function LeaveAttachmentsCard({ requestId, editable }: LeaveAttachmentsCardProps) {
+export function LeaveAttachmentsCard({
+  requestId,
+  editable,
+  requiredByTypes = [],
+}: LeaveAttachmentsCardProps) {
   const { data: files, isLoading } = useLeaveAttachments(requestId)
   const uploadMutation = useUploadLeaveAttachments(requestId)
   const deleteMutation = useDeleteLeaveAttachment(requestId)
@@ -85,10 +95,17 @@ export function LeaveAttachmentsCard({ requestId, editable }: LeaveAttachmentsCa
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <Paperclip className="size-4 text-muted-foreground" />
           Tệp đính kèm
+          {requiredByTypes.length > 0 && <RequiredMark />}
         </h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Giấy khám bệnh, giấy ra viện… Ảnh được in kèm ở mặt sau đơn, mỗi ảnh một trang A4.
         </p>
+        {requiredByTypes.length > 0 && (
+          <p className="mt-1 text-xs font-medium text-destructive">
+            Loại nghỉ {requiredByTypes.map((n) => `«${n}»`).join(', ')} bắt buộc đính kèm giấy tờ:
+            cần có ít nhất một tệp trước khi gửi duyệt.
+          </p>
+        )}
       </div>
 
       {isNew ? (

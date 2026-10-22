@@ -256,6 +256,23 @@ nghỉ theo một con số sai.
 - Phần đã **quy đổi** thì sống theo luật hết hạn của **loại nhận**, không theo
   loại nguồn.
 
+**Bảng đối chiếu kết sổ (duoc-CR-664, 22/10/2026).** Kết sổ xong, hộp **«Đối chiếu kết sổ
+‹năm›»** tự mở (mở lại bằng nút cùng tên ở màn Quỹ phép) — mỗi dòng một (nhân sự × loại
+nghỉ): **số cũ** (trước kết sổ) · **số mới** (sau) · **chênh** · loại nhận · ngày cộng vào
+năm sau; nút *Xuất Excel*. API: `GET /api/leave-balances/close-year/review?year=` và
+`.../review/export`, gác `leave_balance.read` / `export` + `apply_scope` (thuộc màn Quỹ
+phép, KHÔNG phải báo cáo của phân hệ Báo cáo nên không cần `ReportKey`).
+
+- **Không thêm bảng snapshot / migration.** `close_year` đã để dấu trong chính dòng quỹ:
+  `carried_out_days` = tổng ngày đã chuyển đi, và `remaining_days` đã trừ nó. Nên
+  `số cũ = còn lại + đã chuyển`, `số mới = còn lại`, `chênh = -đã chuyển`. Mã:
+  `carryover_review_service.py`; số truy vấn cố định ≤ 4 (có test đếm).
+- ⚠️ **Số cũ dựng lại tại thời điểm xem**, không phải ảnh chụp: đơn năm cũ duyệt/hủy sau
+  kết sổ làm số đổi theo. Loại nhận và tỷ lệ theo cấu hình loại nghỉ **hiện hành** (sửa
+  cấu hình sau kết sổ thì cột «cộng vào năm sau» là số ước). Chỉ liệt kê dòng ĐÃ chuyển
+  (`carried_out_days > 0`); dòng bị bỏ vì cấu hình hỏng vẫn chỉ báo ở câu thông báo.
+- Cần ảnh chụp bất biến theo từng lần bấm (kiểm toán) thì mới phải thêm bảng lưu vết; chưa ai đòi.
+
 ### Điều chỉnh tay
 
 Cột duy nhất nhận **số âm**. **Ghi ĐÈ, không cộng dồn** — người dùng nhìn con số
@@ -385,6 +402,25 @@ riêng sau tờ đơn** (in hai mặt thì ảnh đầu nằm đúng mặt sau),
 Tệp không phải ảnh không in, chỉ ghi tên ở dòng «Tài liệu đính kèm» trên mặt đơn. Nút
 In khóa tới khi mọi ảnh đã nạp xong; ảnh nào nạp hỏng thì trang in báo tên ảnh đó.
 
+**Bắt buộc đính kèm theo loại nghỉ (duoc-CR-661, 22/10/2026).** Loại nghỉ bật cờ
+«Bắt buộc đính kèm» (`tab_leave_type.require_attachment`) thì đơn phải có ít nhất một
+tệp lúc **gửi duyệt** — `request_service.check_required_attachment`, gọi trong
+`prepare_submit` (sau chốt «lý do», trước chốt trùng ngày/đủ phép). Thiếu thì 400 kèm
+câu nêu tên loại, ví dụ *«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ…»*.
+
+- **Lưu nháp KHÔNG bị chặn** — tệp chỉ treo được vào đơn đã có id, nên luồng thật là:
+  lưu nháp → tải tệp ở thẻ «Tệp đính kèm» → bấm *Gửi duyệt*. Đơn đang tạo (chưa có id)
+  không có nút Gửi duyệt nên không kẹt.
+- **Đơn nhiều loại (§7.1):** chỉ cần MỘT loại bật cờ là đơn phải có tệp. Tệp treo ở tờ
+  đơn chứ không ở từng dòng, nên không phân biệt tệp nào của loại nào — chặn theo
+  «có hay chưa», câu chặn chỉ nêu các loại đòi tệp.
+- **Giao diện báo trước:** thẻ «Tệp đính kèm» có dấu sao đỏ + dòng đỏ nêu tên loại khi
+  form đang chọn loại bật cờ; nút *Gửi duyệt* chặn sớm (toast) khi danh sách tệp đã tải
+  xong và rỗng. Chốt thật vẫn là backend; luật giao diện ở
+  `hr/utils/leave-required-attachment.ts`.
+- Đơn **Trả về** rồi gửi lại cũng bị kiểm lại; gỡ hết tệp ở đơn Trả về thì gửi lại bị chặn.
+- Chỉ đếm tệp `entity = leave_request` của đúng đơn; không kiểm loại/đuôi tệp.
+
 ## 8. Duyệt
 
 Chạy trên **bộ máy duyệt dùng chung** (`app/modules/approval/`), entity
@@ -490,9 +526,9 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | Thiếu | Ghi chú |
 |---|---|
 | ~~Nghỉ **nửa ngày / theo giờ**~~ | **ĐÃ CÓ 07/09/2026** — nửa ngày qua hai ô buổi (§6), theo giờ qua buổi thứ tư *«Theo giờ»* (§7). Cột `unit` vẫn chỉ dùng giá trị *Ngày*: số giờ được **quy đổi ra ngày**, không lưu thành đơn vị riêng |
-| ~~**Đính kèm** trên đơn~~ | **ĐÃ CÓ 28/09/2026** (bao-CR-505, §7.2). ⚠️ **Còn treo:** cờ `require_attachment` của loại nghỉ hiện trên form nhưng **không có chỗ nào kiểm lúc gửi duyệt** (`request_service` không đọc nó) — bật «Bắt buộc đính kèm» cho Nghỉ ốm thì đơn không kèm giấy vẫn gửi được |
+| ~~**Đính kèm** trên đơn~~ | **ĐÃ CÓ 28/09/2026** (bao-CR-505, §7.2). Cờ `require_attachment` được ép lúc GỬI DUYỆT từ 22/10/2026 (duoc-CR-661, §7.2) |
 | ~~Danh sách **bàn giao** trên giao diện~~ | **ĐÃ CÓ** — ô nhập `leave-handover-editor.tsx` trên form đơn (đối chiếu 01/10/2026) |
-| ~~**Chuyển phép sang năm sau**~~ | **ĐÃ CÓ 07/09/2026** — ba nước *mất / mang sang / quy đổi* + nút **Kết sổ cuối năm**, xem §5. Cờ `carry_over` cũ thành di tích (§11.2). Còn thiếu: **báo cáo đối chiếu** trước/sau kết sổ — hiện chỉ có câu thông báo đếm dòng |
+| ~~**Chuyển phép sang năm sau**~~ | **ĐÃ CÓ 07/09/2026** — ba nước *mất / mang sang / quy đổi* + nút **Kết sổ cuối năm**, xem §5. Cờ `carry_over` cũ thành di tích (§11.2). **Bảng đối chiếu** trước/sau kết sổ: **ĐÃ CÓ 22/10/2026** (duoc-CR-664, §5) |
 | ~~**Báo cáo / thống kê** nghỉ phép~~ | **ĐÃ CÓ 01/10/2026** (duoc-CR-548) — phân hệ Báo cáo: «Tình hình nghỉ phép» và «Quỹ phép năm» |
 | Nạp `hire_date` cho hồ sơ cũ | **Ô nhập đã có từ 07/09/2026** ở *Nhân sự ▸ chi tiết hồ sơ* (kèm ô *Giới tính*) — trước đó hai cột này có trong bảng nhưng không schema nào khai, nên không màn nào nhập được và thâm niên của cả công ty tính bằng 0. Việc còn lại là **nhập bù dữ liệu**, không phải dựng màn |
 
