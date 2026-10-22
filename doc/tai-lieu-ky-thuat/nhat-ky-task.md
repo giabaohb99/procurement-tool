@@ -16203,3 +16203,18 @@ Mã nguồn: kế hoạch NT1-2
 **Còn lại:** chờ đại ca gật commit; đại ca dặn chưa lên prod.
 
 Mã nguồn: core/app_settings.py · main.py · docker/nginx.*.prod.conf · so-ghi-nhan-loi-bao-mat.md
+
+## duoc-CR-670 | Cập nhật hướng dẫn sử dụng và dữ liệu cho trợ lý AI theo các tính năng mới ngày 22/10
+- status: xong
+- date: 2026-10-22
+**Bối cảnh:** sau đợt tính năng duoc-CR-659 tới 669, anh Được dặn cập nhật luôn hướng dẫn sử dụng và dữ liệu mà trợ lý AI dùng để trả lời, để người dùng đọc và trợ lý trả lời cùng một nội dung.
+
+**Đã làm**
+- Bổ sung bài trợ giúp Nghỉ phép (đơn bắt buộc đính kèm, bảng đối chiếu kết sổ) và Văn bản (nút Ban hành của hợp đồng lao động, trang in bị chặn khi thiếu quyền).
+- Dựng hai cây trợ giúp mới: Dự án và Công việc (chuông báo, sửa bình luận, thùng rác, ghim dự án) và Nhân sự (sơ đồ tổ chức, khóa tài khoản khi còn việc duyệt treo).
+- Cập nhật năm tệp cẩm nang của trợ lý và viết script đưa nội dung mới lên thành phiên bản skill mới, không đè phần quản trị đã sửa tay.
+- Nạp lại kho tìm kiếm của trợ lý trên bản local và sửa tài liệu chức năng Nhân sự cho khớp.
+
+**Kết quả:** trên bản local, năm skill cẩm nang lên phiên bản 2, kho tìm kiếm có đủ một trăm bài hướng dẫn và mười một câu hỏi thường gặp. Khi deploy prod cần chạy bốn script bài trợ giúp, rồi script xuất bản cẩm nang, rồi script nạp kho tìm kiếm. Cây bài Thu mua dựng tay nên phần bổ sung phải dán tay trên giao diện.
+
+Mã nguồn: backend/scripts/seed_help_nghi_phep.py · seed_help_van_ban.py · seed_help_cong_viec.py · seed_help_nhan_su.py · help_seed_common.py · publish_handbook_update.py · backend/app/modules/ai_skill/seed_handbook/*.md · doc/erp/hrm/

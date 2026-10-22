@@ -41,6 +41,14 @@ hỏi thuộc bộ phận Thu mua. Cần các bước thao tác chi tiết thì 
 - Đơn giá được phép tối đa 4 số lẻ; tiền hiển thị làm tròn về đồng.
 - VAT lưu ở dạng tỷ lệ (0.08 nghĩa là 8%), không lưu số 8.
 - Mỗi hợp đồng đứng tên một pháp nhân (công ty); phạm vi xem mặc định theo công ty.
+- **Báo duyệt Đơn mua hàng / Yêu cầu thanh toán** (từ 22/10/2026): khi một ĐMH hay YCTT được **gửi duyệt**, chuông
+  báo tới những người **có quyền duyệt loại phiếu đó và xem được chính phiếu đó**. Phòng tự mua thì chỉ quản lý của phòng
+  ấy được báo (thu mua chung không bị báo oan). Không còn ai phù hợp thì chuông rơi về quản trị có quyền duyệt. Hỏi *"sao
+  tôi không nhận chuông duyệt phiếu"* thì nguyên nhân thường là: không có quyền Duyệt với loại phiếu, hoặc phiếu nằm ngoài
+  phạm vi dữ liệu của họ.
+- **«Tên trên hóa đơn»** của dòng ĐMH: để **trống** thì hệ **tự điền từ danh mục Sản phẩm** (theo mã hàng) lúc lưu, lúc sao
+  chép ĐMH và lúc nhập Excel. Đã gõ tên thì giữ nguyên; sản phẩm chưa khai tên trên hóa đơn thì ô vẫn trống (hệ không đoán từ tên hàng).
+- **Báo cáo mua hàng gom theo phòng hiện hành**: phòng đổi tên thì báo cáo hiện tên mới, không tách thành hai dòng.
 
 ## Ranh giới của trợ lý
 

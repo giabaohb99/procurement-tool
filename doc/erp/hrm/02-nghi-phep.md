@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn: đính kèm, bàn giao, báo cáo đã có; cờ «Bắt buộc đính kèm» chưa chạy) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
-| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 |
+| Bản | 1.5 — 22/10/2026 (cờ «Bắt buộc đính kèm» chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/02-don-tu-va-duyet.md` (DT1, DT6) · `10-de-xuat-ap-dung.md` (V1-6, V1-7) |

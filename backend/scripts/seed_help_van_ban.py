@@ -2,7 +2,7 @@
 """Seed nội dung Trung tâm trợ giúp cho phân hệ VĂN BẢN (bản 2, 23/09/2026).
 
 Dựng cây: 1 thẻ phân hệ «Hướng dẫn sử dụng Văn bản» (hiện ngoài trang chủ "Các Phân hệ")
--> 7 bài con theo 7 phần của tài liệu HDSD: làm quen · soạn và gửi duyệt · duyệt · ban hành
+-> 9 bài con theo các phần của tài liệu HDSD: làm quen · soạn và gửi duyệt · duyệt · ban hành
 và sau ban hành · sổ, số hiệu và thiết lập · phân quyền · câu hỏi thường gặp. Bài có ảnh chụp
 màn hình đánh dấu số và sơ đồ luồng.
 
@@ -11,6 +11,9 @@ màn hình đánh dấu số và sơ đồ luồng.
 chốt thư mục `doc/huong-dan-su-dung/van-ban/` chỉ giữ 3 bản PDF cuối — nguồn `.md`, ảnh và
 script đóng gói đã xóa (còn trong lịch sử git). Từ nay GÓI là nguồn: sửa thẳng
 `help_van_ban/bai-viet.json` (và ảnh cùng thư mục), commit, rồi chạy lại seed này.
+
+Bản 3 (22/10/2026, duoc-CR-670): thêm bài «Văn bản — Bản lưu trữ hợp đồng lao động và nút Ban hành» (CR-659) và
+câu hỏi «Không có quyền mở bản in» (CR-668) vào bài Câu hỏi thường gặp — sửa trong `help_van_ban/bai-viet.json`.
 
 THAY bộ HDSD văn thư cũ: cây «Hướng dẫn sử dụng công cụ văn thư» (seed_help_van_thu.py, chia
 theo vai trò) bị xóa nếu còn — không để người dùng thấy hai bộ hướng dẫn cho cùng phân hệ.
