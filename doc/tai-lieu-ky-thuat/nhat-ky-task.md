@@ -15905,3 +15905,265 @@ Mã nguồn: kế hoạch mục HR2-3 · `doc/erp/hrm/02-nghi-phep.md` §10
 **Điều kiện xong:** sơ đồ tự cập nhật khi đổi phòng / quản lý.
 
 Mã nguồn: kế hoạch mục HR2-5
+
+## kh-AI1-2 | A1: công cụ AI xem năng lực đội và thống kê loại việc
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** Hàm `suggest_assignees`, `get_capability` đã có ở `capability/ai_contract.py` (anh Dược làm, duoc-CR-657) nhưng chưa công cụ AI nào gọi.
+
+**Việc cần làm**
+- Gắn công cụ `team_capacity` và `task_type_stats` cho Trợ lý web, bot và cổng MCP, đủ các chỗ phải khai (skill them-cong-cu-mcp).
+- Ép quyền theo người hỏi; hồ sơ hành vi chỉ quản trị xem (doc 22 §6).
+
+**Điều kiện xong:** hỏi AI *ai đang rảnh làm loại việc X* ra số đúng theo quyền người hỏi; có bài kiểm.
+
+Mã nguồn: kế hoạch AI1-2 · `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7
+
+## kh-AI1-3-may-chu | A2 phần máy chủ: AI lập kế hoạch đề xuất, lưu đề xuất và phần người sửa
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** AI chỉ đề xuất, người quyết. Kế hoạch AI soạn phải nằm chờ duyệt, không tạo việc thẳng.
+
+**Việc cần làm**
+- `plan_context`; `draft_work_plan` thêm giờ dự kiến, loại việc, lý do chọn người.
+- Bảng `tab_ai_plan_proposal` lưu bản đề xuất và phần người sửa; đường API duyệt thì mới tạo việc thật.
+- Chốt định dạng dữ liệu sớm để Agent 3 dựng màn.
+
+**Điều kiện xong:** đề xuất lưu được, duyệt thì sinh việc trong Dự án đúng người; bản AI và bản người sửa đều còn để học.
+
+Mã nguồn: kế hoạch AI1-3 · doc 22 §7
+
+## kh-AI2-3 | Công cụ AI cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** AI mới đọc được phiếu nhận hàng qua `erp_read`; các phân hệ khác chưa có công cụ. Gộp luôn hai công cụ diễn đàn `forum_search`, `forum_post_read` (DD2-2).
+
+**Việc cần làm**
+- Mỗi phân hệ một nhóm công cụ đọc, ép quyền theo người hỏi.
+- Khai đủ cho Trợ lý web, bot, cổng MCP.
+
+**Điều kiện xong:** hỏi AI về phiếu đặt xe, phiếu dấu, bài diễn đàn trả đúng theo quyền; có bài kiểm canh cửa.
+
+Mã nguồn: kế hoạch AI2-3, DD2-2
+
+## kh-AI2-4 | Mở MCP prompts và đếm lỗi dịch vụ AI
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 4
+**Bối cảnh:** Ứng dụng ngoài (Claude, ChatGPT) chưa tự xem cẩm nang trước khi trả lời; dịch vụ AI chưa đếm lỗi 5xx và độ dài hàng đợi (O-01).
+
+**Việc cần làm**
+- Thêm `prompts` vào `agent_hub/mcp.py`.
+- Đếm lỗi 5xx, hàng đợi; hiện ở màn quản trị AI.
+
+**Điều kiện xong:** Claude Desktop thấy danh sách prompts; màn quản trị có số lỗi.
+
+Mã nguồn: kế hoạch AI2-4, AI2-5
+
+## kh-AI1-3-giao-dien | Màn duyệt kế hoạch AI (giao diện v2)
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Phần giao diện của A2: trưởng phòng xem bản kế hoạch AI đề xuất, sửa người / giờ / dòng, bấm Duyệt thì mới tạo việc. Làm sau khi Agent 4 chốt định dạng dữ liệu.
+
+**Việc cần làm**
+- Danh sách đề xuất chờ duyệt; màn chi tiết từng dòng kèm lý do chọn người.
+- Sửa, bỏ, thêm dòng; Duyệt / Từ chối.
+
+**Điều kiện xong:** duyệt xong thấy việc mới trong Dự án; vitest phân hệ xanh, typecheck sạch.
+
+Mã nguồn: kế hoạch AI1-3
+
+## kh-NT2-2 | Chip lọc nhanh trên 4 màn Thu mua
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Bốn màn Thu mua chưa có chip *Đơn của tôi*, *Gấp*, *Tháng này*.
+
+**Việc cần làm**
+- Thêm chip theo khuôn ô lọc đang có.
+- Giữ trạng thái lọc khi quay lại màn.
+
+**Điều kiện xong:** bấm chip lọc đúng; vitest xanh.
+
+Mã nguồn: kế hoạch NT2-2 · `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md`
+
+## kh-TM2-1 | Báo cáo thực hiện YCBG: tệp thật, nhớ gấp/mở, nhắc hạn
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Khối Báo cáo thực hiện trên YCBG còn thiếu các việc ghi ở doc 18 mục 6.
+
+**Việc cần làm**
+- Nối kho đính kèm thật.
+- Nhớ trạng thái gấp/mở.
+- Nhắc hạn từng hồ sơ; quản lý mẫu trên giao diện.
+
+**Điều kiện xong:** các việc chạy trên dev; có bài kiểm.
+
+Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6
+
+## kh-NT2-8 | Biểu đồ dashboard Tồn kho và màn lỗi tác vụ nền
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Dashboard Tồn kho chưa có biểu đồ (NF-22); chưa có màn xem lỗi tác vụ nền (NF-17).
+
+**Việc cần làm**
+- Biểu đồ theo khuôn đang dùng.
+- Màn liệt kê tác vụ nền lỗi cho quản trị.
+
+**Điều kiện xong:** hai màn chạy trên dev; vitest xanh.
+
+Mã nguồn: kế hoạch NT2-8
+
+## kh-CP-P1-2 | Điểm cà phê: nhập và xuất danh sách thành viên bằng Excel
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Module `coffee_point` chưa có nhập / xuất thành viên — cần trước khi thí điểm quán.
+
+**Việc cần làm**
+- Nhập xlsx gán cấp hàng loạt (theo khung nhập có chạy thử).
+- Xuất lại được.
+
+**Điều kiện xong:** nhập được danh sách gán cấp, xuất lại khớp; có bài kiểm.
+
+Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/06-lo-trinh-phase.md`
+
+## kh-AI1-1-hdsd | Soát trên dev và viết hướng dẫn cho các màn mới của anh Dược
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** Trước đợt prod năm: báo cáo mức dùng chức năng, chỉ số Dùng AI, Loại việc, báo cáo năng lực theo loại việc (duoc-CR-655..657).
+
+**Việc cần làm**
+- Soát trên deverp bằng trình duyệt (skill soat-man-dev), báo lỗi đúng chủ khu.
+- Viết / cập nhật bài hướng dẫn trên Trung tâm trợ giúp (skill viet-hdsd).
+
+**Điều kiện xong:** có biên bản soát; bài hướng dẫn nạp trên dev.
+
+Mã nguồn: kế hoạch AI1-1
+
+## kh-DX2-1 | Kiểm thử tự động Playwright cho duyệt dấu và đặt xe
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** Repo chưa có `playwright.config`; luồng 2 cổng duyệt dấu và 6 bước đặt xe chưa có kiểm thử đầu cuối.
+
+**Việc cần làm**
+- Dựng cấu hình Playwright chạy trên dev.
+- Viết kịch bản 2 cổng duyệt dấu + 6 bước đặt xe.
+
+**Điều kiện xong:** chạy một lệnh ra kết quả xanh/đỏ trên dev.
+
+Mã nguồn: kế hoạch DX2-1
+
+## kh-tai-lieu-agc | Cập nhật tài liệu chức năng sau đợt AGC và luồng duyệt riêng
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 2
+**Bối cảnh:** 21–22/10: bộ tài khoản AGC (phòng tự mua, thu hẹp theo công ty), luồng duyệt nghỉ phép + văn bản riêng AGC, bỏ luật mật khẩu chữ và số, cụm bảo mật bao-CR-655.
+
+**Việc cần làm**
+- Ghi vào tài liệu chức năng và bài hướng dẫn liên quan (lập bộ tài khoản theo công ty, khai luồng duyệt riêng một công ty).
+- Soạn kịch bản dùng thử cho Công việc (CV1-3) và Diễn đàn (DD1-2).
+
+**Điều kiện xong:** tài liệu khớp hiện trạng prod; hai kịch bản dùng thử sẵn sàng.
+
+Mã nguồn: kế hoạch mục 5, 6, 8, 9
+
+## kh-dot-prod-5 | Đợt prod năm: D1 của anh Dược cùng các bản vá
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 1
+**Bối cảnh:** Gồm duoc-CR-655..657, bao-CR-651, 652. Cụm bảo mật bao-CR-655 để sau theo lệnh đại ca 22/10.
+
+**Việc cần làm**
+- Chờ anh Dược xác nhận thử D1 (kh-AI1-1) và Agent 2 soát xong.
+- Chạy đủ cổng kiểm, sao lưu, xin giờ cắt đại ca.
+
+**Điều kiện xong:** prod chạy bản mới, kiểm sau phát hành đạt.
+
+Mã nguồn: kế hoạch AI1-1
+
+## kh-van-hanh-a1 | Vận hành: khóa model prod, thử khôi phục sao lưu, nạp lại hướng dẫn tra cứu thị trường
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 1
+**Bối cảnh:** Các việc AI1-4, NT1-6, NK1-1.
+
+**Việc cần làm**
+- Gắn khóa model riêng cho prod khi đại ca có khóa; hỏi trạm về token thừa; thử claude.ai và Claude Desktop với prod.
+- Thử khôi phục một bản sao lưu R2 vào CSDL tạm.
+- Chạy lại seed bài hướng dẫn mục IX, làm mới chỉ mục AI.
+
+**Điều kiện xong:** ba việc có biên bản kết quả.
+
+Mã nguồn: kế hoạch AI1-4, NT1-6, NK1-1
+
+## kh-du-lieu-a1 | Dữ liệu: lịch sử app đặt xe cũ, phân công người mua AGC, gắn công ty cho nhân sự
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 1
+**Bối cảnh:** Các việc DX1-1, TM1-2, NT1-3.
+
+**Việc cần làm**
+- Nạp lịch sử app đặt xe cũ: chạy thử dev, soi 20 phiếu, rồi prod.
+- Phân công người mua theo phân loại cho phòng Kinh doanh AGC.
+- Gắn công ty cho hồ sơ nhân sự khi phòng Nhân sự đưa danh sách.
+
+**Điều kiện xong:** dữ liệu nạp đúng, có đối chiếu.
+
+Mã nguồn: kế hoạch DX1-1, TM1-2, NT1-3
+
+## kh-NT1-2 | CI tối thiểu: tự chạy migration và bài kiểm mỗi lần đẩy mã
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 1
+**Bối cảnh:** Repo chưa có `.github/workflows`; lỗi kiểu dữ liệu duoc-CR-656 chỉ lộ lúc dựng bản chạy.
+
+**Việc cần làm**
+- Dựng CSDL trống chạy đủ migration.
+- Chạy bài kiểm backend có trần thời gian + `npm run build` của ERP v2.
+
+**Điều kiện xong:** đẩy mã lên erp-v2 là có kết quả xanh/đỏ.
+
+Mã nguồn: kế hoạch NT1-2
+
+## bao-CR-655 | Vá ba lỗ bảo mật BM-019, BM-021, BM-023 và cập nhật sổ bảo mật
+- status: dang-lam
+- date: 2026-10-22
+- tag: Agent 1
+**Bối cảnh:** cụm AN1-1…AN1-4 trong kế hoạch, đại ca giao 22/10.
+
+**Đã làm**
+- Giải mã khóa bí mật hỏng nay báo lỗi thành tiếng (chỉ tên khóa), mọi nơi gọi gắn tên khóa.
+- Đường tải tệp công khai `/api/uploads` chỉ bật trên máy local.
+- Thêm header bảo mật cho erp, thumua, help.
+- Sổ bảo mật Bản 2.4.
+
+**Kết quả:** 4 bài kiểm mới + 216 bài vùng liên quan xanh; nginx kiểm bằng container thật.
+
+**Còn lại:** chờ đại ca gật commit; đại ca dặn chưa lên prod.
+
+Mã nguồn: core/app_settings.py · main.py · docker/nginx.*.prod.conf · so-ghi-nhan-loi-bao-mat.md
