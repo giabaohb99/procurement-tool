@@ -16069,6 +16069,22 @@ Mã nguồn: kế hoạch NT2-2 · `doc/erp/nen-tang/14-filter-sort-man-danh-sac
 
 Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6
 
+## kh-TM2-1-may-chu | Báo cáo thực hiện YCBG: phần máy chủ cho tệp thật, nhắc hạn và quản lý mẫu
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** khối Báo cáo thực hiện (doc 18 mục 6) còn bốn việc. Việc nhớ gấp / mở là giao diện thuần, Agent 3 đang làm ở mục kh-TM2-1. Ba việc dưới đây cần máy chủ và nằm trong khu báo cáo anh Dược đang giữ (mẫu thứ hai do duoc-CR-614 thêm), nên đại ca giao anh Dược ngày 22/10/2026. Khối báo cáo nay dùng chung cho cả YCBG lẫn ĐMH.
+
+**Việc cần làm**
+- **Tệp đính kèm thật cho từng hồ sơ báo cáo:** thêm loại thực thể vào `FILE_POLICY` (ví dụ hồ sơ báo cáo có cha là YCBG, và bản tương ứng cho ĐMH), kiểm phạm vi theo phiếu cha qua `core/attachment_scope.py`; bài canh `test_pham_vi_dinh_kem_b08.py` phải xanh.
+- **Nhắc hạn chủ động:** tác vụ nền định kỳ đọc ngày dự kiến của từng hồ sơ, gửi chuông (và email nếu bật) cho người phụ trách khi sắp tới hạn hoặc quá hạn; không nhắc trùng trong cùng một ngày.
+- **Quản lý mẫu trên giao diện:** đưa mẫu đang viết cứng (`REPORT_TEMPLATES` trong `report_constants.py`) xuống bảng mới, kèm API thêm / sửa / xóa mẫu và lưu một báo cáo đang có thành mẫu; các báo cáo đã tạo theo mẫu cũ phải giữ nguyên.
+
+**Điều kiện xong:** ba việc chạy trên dev, có bài kiểm; gửi hợp đồng API cho Agent 1 để Agent 3 làm phần giao diện; hỏi đại ca trước khi commit (có bảng mới và đụng phân quyền tệp).
+
+Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6 · backend/app/core/file_registry.py · backend/app/core/attachment_scope.py · backend/app/modules/survey_request/report_constants.py · report_controller.py · report_model.py
+
 ## kh-NT2-8 | Biểu đồ dashboard Tồn kho và màn lỗi tác vụ nền
 - list: Kế hoạch hệ agent
 - status: dang-lam
