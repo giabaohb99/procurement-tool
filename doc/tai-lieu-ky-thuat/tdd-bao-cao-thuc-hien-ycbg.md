@@ -7,7 +7,7 @@
 | Phạm vi mã | backend `app/modules/survey_request/report_*` · frontend `frontend-v2/src/modules/procurement/**/survey-report/**` |
 | Migration | `7816572fed52` (down_revision `bee157de2ec8`) |
 | Tài liệu chức năng | [`19-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-chuc-nang/19-bao-cao-thuc-hien-ycbg.md) |
-| Brief | [`doc/erp/18-bao-cao-thuc-hien-ycbg.md`](../erp/18-bao-cao-thuc-hien-ycbg.md) |
+| Brief | [`doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md`](../erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md) |
 
 ---
 

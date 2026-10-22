@@ -7,9 +7,9 @@ viết lại §4.3 cho hết mơ hồ chuyện "cột mới là làm cho `erp-v2
 cũng không để lại hệ nửa vời.*
 
 > **Tệp này không đẻ ra yêu cầu mới.** Nó gom ba thứ đã có sẵn trong bộ tài liệu — hạng mục **H1
-> (bỏ tiếng Việt khỏi cơ sở dữ liệu)** ở [`06`](./06-lo-trinh-nen-tang-va-hrm.md) §4, các nợ
-> **N-13 … N-16** và **§6.5** ở [`13`](./13-ke-hoach-man-con-lai-v2.md), và ràng buộc **R2** ở
-> [`06`](./06-lo-trinh-nen-tang-va-hrm.md) §1 — rồi **đo lại bằng dữ liệu thật ngày 22/08/2026**
+> (bỏ tiếng Việt khỏi cơ sở dữ liệu)** ở [`06`](../00-ke-hoach-theo-module.md) §4, các nợ
+> **N-13 … N-16** và **§6.5** ở [`13`](../00-ke-hoach-theo-module.md), và ràng buộc **R2** ở
+> [`06`](../00-ke-hoach-theo-module.md) §1 — rồi **đo lại bằng dữ liệu thật ngày 22/08/2026**
 > và xếp thành thứ tự cầm đi làm được. Chỗ nào số liệu ở đây khác `06` thì lấy tệp này, vì `06`
 > đo từ 12/08/2026.
 
@@ -67,10 +67,10 @@ hệ sau (văn thư, HRM) có xây lên được hay không.
 
 | Chỗ | Đã làm đúng thế nào |
 |---|---|
-| `status` cấp phiếu của 8 chứng từ | Lưu **mã tiếng Anh**; nhãn tiếng Việt nằm ở `PR_STATUS_LABELS` / `SR_STATUS_LABELS` / `PO_STATUS_LABELS` / `SURVEY_STATUS_LABELS` trong [`purchase-document.ts`](../../frontend-v2/src/modules/procurement/types/purchase-document.ts) |
-| Tô màu trạng thái | Một bảng `STATUS_TONE` duy nhất ở [`document-status-badge.tsx`](../../frontend-v2/src/modules/procurement/components/document-status-badge.tsx), dùng chung cho cả 4 loại chứng từ |
-| `contract_type` | **CR-118** đã chuẩn hóa: [`core/contract_types.py`](../../backend/app/core/contract_types.py) — bộ `{value, label}` cố định + validator ở `schema.py` + endpoint `/meta/types` |
-| `attachment.doc_type` | [`core/document_types.py`](../../backend/app/core/document_types.py) — cùng khuôn |
+| `status` cấp phiếu của 8 chứng từ | Lưu **mã tiếng Anh**; nhãn tiếng Việt nằm ở `PR_STATUS_LABELS` / `SR_STATUS_LABELS` / `PO_STATUS_LABELS` / `SURVEY_STATUS_LABELS` trong [`purchase-document.ts`](../../../frontend-v2/src/modules/procurement/types/purchase-document.ts) |
+| Tô màu trạng thái | Một bảng `STATUS_TONE` duy nhất ở [`document-status-badge.tsx`](../../../frontend-v2/src/modules/procurement/components/document-status-badge.tsx), dùng chung cho cả 4 loại chứng từ |
+| `contract_type` | **CR-118** đã chuẩn hóa: [`core/contract_types.py`](../../../backend/app/core/contract_types.py) — bộ `{value, label}` cố định + validator ở `schema.py` + endpoint `/meta/types` |
+| `attachment.doc_type` | [`core/document_types.py`](../../../backend/app/core/document_types.py) — cùng khuôn |
 | `import_tool`, `document/` *(văn thư)*, `approval/`, `doc_catalog/` | Dùng **`SmallInteger` + hằng số nguyên**, nhãn tiếng Việt để trong chú thích và bảng `*_LABELS` |
 
 Nói cách khác: **trong repo đã có hai khuôn đúng, không phải phát minh gì thêm.** Việc còn lại là
@@ -146,7 +146,7 @@ không phải số dòng logic phải sửa)*.
 | | | **130** | **125** | **96** | **≈ 351** |
 
 **Bẫy lớn nhất nằm ở cụm đắt nhất.** `progress_status` không phải một danh sách giá trị, nó là
-**máy trạng thái có THỨ TỰ**: [`purchase_order/service.py:726`](../../backend/app/modules/purchase_order/service.py:726)
+**máy trạng thái có THỨ TỰ**: [`purchase_order/service.py:726`](../../../backend/app/modules/purchase_order/service.py:726)
 khai `PROGRESS_ORDER` là một *list*, rồi bước tiến được tính bằng `PROGRESS_ORDER.index(...)`.
 Nghĩa là **vị trí trong list chính là logic**, không chỉ là nhãn. Bộ mã mới bắt buộc phải mang theo
 thứ tự đó (xem QĐ-9 dưới đây), và `PROGRESS_EXCEPTIONS` (*Tạm ngưng*, *Hủy đơn*) phải giữ nguyên
@@ -210,11 +210,11 @@ thêm một cột trạng thái nữa cho `tab_po_item`)* thì theo khuôn **c�
 đây là ngoại lệ về tính nhất quán trong một bảng, không phải cái cớ để mở lại danh sách. Còn
 **bảng mới** thì luôn khuôn A.
 
-Luật này đã ghi vào `CLAUDE.md` và vào R2 ở [`06`](./06-lo-trinh-nen-tang-va-hrm.md) §1.
+Luật này đã ghi vào `CLAUDE.md` và vào R2 ở [`06`](../00-ke-hoach-theo-module.md) §1.
 
 #### 2.4.1 Việc kèm theo: sửa R2 — **ĐÃ LÀM trong B-01**
 
-Sửa R2 ở [`06`](./06-lo-trinh-nen-tang-va-hrm.md) §1: đổi *"cột trạng
+Sửa R2 ở [`06`](../00-ke-hoach-theo-module.md) §1: đổi *"cột trạng
 thái lưu `SMALLINT` theo `IntEnum`"* thành *"cột trạng thái lưu **giá trị thuộc một bộ mã cố định
 khai trong mã nguồn**, có validator chặn giá trị ngoài bộ — Thu mua dùng **mã chuỗi tiếng Anh**,
 module từ văn thư trở đi dùng **số**"*.
@@ -907,7 +907,7 @@ nợ sẵn. Bước 5 *(bỏ cột cũ)* **không** chạy ở prod trong lần 
 
 ## 6. Không nằm trong kế hoạch này
 
-- **Đ-11** và các màn còn thiếu — ở [`13`](./13-ke-hoach-man-con-lai-v2.md), làm song song được.
+- **Đ-11** và các màn còn thiếu — ở [`13`](../00-ke-hoach-theo-module.md), làm song song được.
 - **20 cột lưu chuỗi tiếng Anh viết thường** (`draft`, `pending`, `available`) — `06` §4 đã xếp sau,
   giữ nguyên.
 - **H16** phòng ban khóa theo id — cùng kiểu migration sáu bước, nhưng là hạng mục riêng ở `06` §5.
@@ -922,8 +922,8 @@ nợ sẵn. Bước 5 *(bỏ cột cũ)* **không** chạy ở prod trong lần 
 
 | Tệp | Dùng để |
 |---|---|
-| [`06` §1 R2 · §4 H1](./06-lo-trinh-nen-tang-va-hrm.md) | Quy định gốc và sáu bước migration. **R2 phải sửa theo QĐ-9 — việc của B-01**, xem §2.4.1 |
-| [`13` §1.8 · §6.5 · §6.7](./13-ke-hoach-man-con-lai-v2.md) | Màn còn khuyết, nợ lớp CRUD, nợ N-13…N-16 |
-| [`08`](./08-danh-sach-task-cung-co.md) | 30 task CC — B-07 và B-08 trùng với nhóm task phạm vi ở đó |
-| [`quy-trinh-nhanh-va-deploy.md`](../tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md) | Luật nhánh, cách build và deploy, danh sách container cấm đụng |
-| [`core/contract_types.py`](../../backend/app/core/contract_types.py) | Khuôn mẫu để chép — đọc chú thích đầu tệp trước khi làm B-01 |
+| [`06` §1 R2 · §4 H1](../00-ke-hoach-theo-module.md) | Quy định gốc và sáu bước migration. **R2 phải sửa theo QĐ-9 — việc của B-01**, xem §2.4.1 |
+| [`13` §1.8 · §6.5 · §6.7](../00-ke-hoach-theo-module.md) | Màn còn khuyết, nợ lớp CRUD, nợ N-13…N-16 |
+| [`08`](../00-ke-hoach-theo-module.md) | 30 task CC — B-07 và B-08 trùng với nhóm task phạm vi ở đó |
+| [`quy-trinh-nhanh-va-deploy.md`](../../tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md) | Luật nhánh, cách build và deploy, danh sách container cấm đụng |
+| [`core/contract_types.py`](../../../backend/app/core/contract_types.py) | Khuôn mẫu để chép — đọc chú thích đầu tệp trước khi làm B-01 |

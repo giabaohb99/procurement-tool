@@ -8,7 +8,7 @@
 | Số chức năng đã lập tài liệu | 59, chia 8 mục |
 | Dùng để làm gì | **Bảng đối chiếu mang đi phỏng vấn**, và cơ sở để xếp thứ tự làm HRM |
 | Ai đọc | Người đi khảo sát nghiệp vụ, đội phần mềm, người chủ trì |
-| Liên quan | [`erp/01` Ngắn hạn](../01-ngan-han-2026.md) · [`erp/03` Câu hỏi khảo sát HRM](../03-cau-hoi-khao-sat-hrm.md) · [`erp/04` Danh mục chờ quyết](../04-danh-muc-cho.md) |
+| Liên quan | [`erp/01` Ngắn hạn](../00-ke-hoach-theo-module.md) · [`erp/03` Câu hỏi khảo sát HRM](../hrm/03-cau-hoi-khao-sat-hrm.md) · [`erp/04` Danh mục chờ quyết](../00-ke-hoach-theo-module.md) |
 
 ---
 

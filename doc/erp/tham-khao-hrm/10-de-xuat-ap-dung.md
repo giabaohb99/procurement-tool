@@ -98,7 +98,7 @@ Cái này **không thuộc HRM**. Nó thuộc phần nền, và phải làm trư
 
 Họ không viết cứng công thức lương. Họ làm **một bộ máy công thức**: người dùng khai cột, viết công thức bằng một ngôn ngữ nhỏ có `IIF`, `isnull`, `round`, các toán tử số học và so sánh, tham chiếu tới cột khác bằng từ khóa. Nghĩa là làm lương không phải làm một màn hình — là làm một ngôn ngữ kịch bản thu nhỏ, cộng màn hình khai công thức, cộng trình kiểm tra công thức sai, cộng xử lý tham chiếu vòng.
 
-Đây là câu nên đưa nguyên văn vào buổi trình bày khi trả lời mục C2 trong [danh mục chờ quyết](../04-danh-muc-cho.md).
+Đây là câu nên đưa nguyên văn vào buổi trình bày khi trả lời mục C2 trong [danh mục chờ quyết](../00-ke-hoach-theo-module.md).
 
 ---
 
@@ -249,11 +249,11 @@ Phần này trả lời trực tiếp câu "cần chỉnh sửa gì". Chia hai l
 
 | Tài liệu | Ảnh hưởng |
 |---|---|
-| [`04` Danh mục chờ quyết](../04-danh-muc-cho.md), mục **C2** | Khuyến nghị "không làm lương trong bản 1" giờ có bằng chứng: lương là một bộ máy công thức, không phải một màn hình. Nên đưa nguyên văn vào phần trình bày C2 |
-| [`01` Ngắn hạn](../01-ngan-han-2026.md) | **Bộ máy duyệt dùng chung phải được đưa lên thành hạng mục của phần nền, đứng trước bước 4 (HRM).** Hiện chưa có trong danh sách. Đây là thay đổi lớn nhất mà khảo sát này gây ra cho kế hoạch |
-| [`03` Câu hỏi khảo sát HRM](../03-cau-hoi-khao-sat-hrm.md) | Phải thêm phần hỏi về **phân quyền xem theo trường** trên hồ sơ nhân viên — ai được xem lương, căn cước, tài khoản ngân hàng, hồ sơ sức khỏe. Đây là hạng mục dễ sót và đắt khi thêm sau |
-| [`03` Câu hỏi khảo sát HRM](../03-cau-hoi-khao-sat-hrm.md) | Thêm câu về **chấm công khi đi công tác** — chỗ mọi hệ thống chấm công theo vị trí đều vướng |
-| [`02` Dài hạn](../02-dai-han.md) | Không đổi. Thứ tự phân hệ HRM → MFM → Kế toán → CRM vẫn đứng |
+| [`04` Danh mục chờ quyết](../00-ke-hoach-theo-module.md), mục **C2** | Khuyến nghị "không làm lương trong bản 1" giờ có bằng chứng: lương là một bộ máy công thức, không phải một màn hình. Nên đưa nguyên văn vào phần trình bày C2 |
+| [`01` Ngắn hạn](../00-ke-hoach-theo-module.md) | **Bộ máy duyệt dùng chung phải được đưa lên thành hạng mục của phần nền, đứng trước bước 4 (HRM).** Hiện chưa có trong danh sách. Đây là thay đổi lớn nhất mà khảo sát này gây ra cho kế hoạch |
+| [`03` Câu hỏi khảo sát HRM](../hrm/03-cau-hoi-khao-sat-hrm.md) | Phải thêm phần hỏi về **phân quyền xem theo trường** trên hồ sơ nhân viên — ai được xem lương, căn cước, tài khoản ngân hàng, hồ sơ sức khỏe. Đây là hạng mục dễ sót và đắt khi thêm sau |
+| [`03` Câu hỏi khảo sát HRM](../hrm/03-cau-hoi-khao-sat-hrm.md) | Thêm câu về **chấm công khi đi công tác** — chỗ mọi hệ thống chấm công theo vị trí đều vướng |
+| [`02` Dài hạn](../00-ke-hoach-theo-module.md) | Không đổi. Thứ tự phân hệ HRM → MFM → Kế toán → CRM vẫn đứng |
 
 ---
 

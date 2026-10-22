@@ -1,7 +1,7 @@
 # 20 — Hướng dẫn lập hai bộ tài khoản: phòng tự mua hàng và thu mua trừ phòng đó
 
 > Áp dụng cho giao diện mới (ERP v2: `deverp` trên dev, cổng 8083 dưới máy).
-> Thiết kế gốc: `doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` mục 5.1 (bao-CR-414).
+> Thiết kế gốc: `doc/erp/nen-tang/12-ke-hoach-erp-v2-da-phap-nhan.md` mục 5.1 (bao-CR-414).
 > Ca đầu tiên là nhà máy **Dego Organic**, nhưng cách làm dưới đây dùng cho **mọi phòng tự mua**.
 
 ## 1. Hiểu trước khi bấm

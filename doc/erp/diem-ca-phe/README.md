@@ -11,8 +11,8 @@ nhân sự**. ERP là **sổ cái duy nhất** — POS365 không giữ số dư.
 
 | Tài liệu | Vai trò |
 |---|---|
-| [`../09-phuc-loi-diem-va-pos.md`](../09-phuc-loi-diem-va-pos.md) | Bản **định hướng** (12/08): vì sao tách chính sách khỏi đầu nối, 3 phương án ai giữ số dư, 10 câu nghiệp vụ, 4 chỗ mất tiền thật. Các LUẬT ở đây vẫn hiệu lực |
-| [`../17-ke-hoach-trien-khai-pos365-diem-ca-phe.md`](../17-ke-hoach-trien-khai-pos365-diem-ca-phe.md) | Bản **quyết định phương án** (07/09): đổi từ "đẩy điểm" sang "phương thức thanh toán"; chốt reset tháng; phần API đã kiểm chứng + Phụ lục A chờ POC. Chỗ nào lệch `09` thì lấy `17` |
+| [`09-phuc-loi-diem-va-pos.md`](09-phuc-loi-diem-va-pos.md) | Bản **định hướng** (12/08): vì sao tách chính sách khỏi đầu nối, 3 phương án ai giữ số dư, 10 câu nghiệp vụ, 4 chỗ mất tiền thật. Các LUẬT ở đây vẫn hiệu lực |
+| [`17-ke-hoach-trien-khai-pos365-diem-ca-phe.md`](17-ke-hoach-trien-khai-pos365-diem-ca-phe.md) | Bản **quyết định phương án** (07/09): đổi từ "đẩy điểm" sang "phương thức thanh toán"; chốt reset tháng; phần API đã kiểm chứng + Phụ lục A chờ POC. Chỗ nào lệch `09` thì lấy `17` |
 | **Thư mục này** | Bản **thiết kế thực thi** (08/09): tính năng có mã, bảng dữ liệu, thuật toán, phân quyền, giao diện, phase. Chỗ nào lệch `17` thì lấy thư mục này |
 
 ## Sáu tệp

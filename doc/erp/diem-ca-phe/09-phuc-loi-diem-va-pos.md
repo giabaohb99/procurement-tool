@@ -6,7 +6,7 @@
 | Đối tượng đọc | Ban lãnh đạo · Người chủ trì · Đội phần mềm · Phòng Nhân sự · Kế toán |
 | Trả lời câu hỏi | Mỗi tháng cấp cho nhân sự một số điểm theo chức danh, tiêu ở quán cafe của công ty, làm bằng cách nào; và nối với POS365 đang dùng tới đâu |
 | Chưa có trong bản này | Số người-ngày, ngày giao cam kết, mức điểm cụ thể của từng chức danh (nghiệp vụ quyết, không phải đội phần mềm) |
-| Liên quan | [`01` Ngắn hạn](./01-ngan-han-2026.md) bước 4 và bước 5 · [`02` Dài hạn](./02-dai-han.md) · [`04` Danh mục chờ quyết](./04-danh-muc-cho.md) C4 · [`07` Kiến trúc vỏ ERP](./07-kien-truc-vo-erp.md) mục 5 |
+| Liên quan | [`01` Ngắn hạn](../00-ke-hoach-theo-module.md) bước 4 và bước 5 · [`02` Dài hạn](../00-ke-hoach-theo-module.md) · [`04` Danh mục chờ quyết](../00-ke-hoach-theo-module.md) C4 · [`07` Kiến trúc vỏ ERP](../nen-tang/07-kien-truc-vo-erp.md) mục 5 |
 
 **Ba câu tóm tắt.** Việc này gồm **hai phần tách rời nhau**: một là **chính sách điểm** nằm trong HRM (ai được bao nhiêu điểm mỗi tháng, ai duyệt, tiêu tới đâu, nghỉ việc thì sao) — phần này tự chủ hoàn toàn; hai là **đầu nối POS365** để nhân viên quẹt điểm ngay tại quầy — phần này phụ thuộc vào việc POS365 có cho ghi điểm qua API hay không, mà **hôm nay chưa ai kiểm chứng**. Vì vậy việc đầu tiên không phải viết code, mà là **hai ngày gọi thử API POS365** để biết mình đang đứng ở ngã rẽ nào.
 
@@ -47,7 +47,7 @@ Kèm theo P2 là ba quy tắc cứng, viết ra đây để về sau không ai p
 
 1. **Một chiều ghi cho mỗi loại nghiệp vụ.** ERP ghi **cộng** (cấp phát, điều chỉnh, thu hồi). POS365 ghi **trừ** (tiêu tại quầy). Không có ngoại lệ nào ngoài mục 3 (điều chỉnh sau đối chiếu), và ngoại lệ đó phải có người bấm nút, có nhật ký.
 2. **ERP không bao giờ ghi đè số dư tuyệt đối** trong lúc chạy tự động. Chỉ ghi **chênh lệch**. Ghi đè là cách xóa mất phần vừa tiêu ở quầy mà chưa kéo về.
-3. **Đối chiếu mỗi ngày, không tự sửa.** Lệch thì lên màn hình cho người xử lý — đúng nguyên tắc WH17 ở [`01` mục 8.3](./01-ngan-han-2026.md): có màn hình đối chiếu lệch trước, mới cho ghi hai chiều.
+3. **Đối chiếu mỗi ngày, không tự sửa.** Lệch thì lên màn hình cho người xử lý — đúng nguyên tắc WH17 ở [`01` mục 8.3](../00-ke-hoach-theo-module.md): có màn hình đối chiếu lệch trước, mới cho ghi hai chiều.
 
 ---
 
@@ -103,7 +103,7 @@ Kèm một câu về an toàn, phát hiện khi đọc ảnh chụp: **phản h�
 
 ## 4. Dữ liệu: bảng mới và chỗ đứng trong ERP
 
-Theo [`07` mục 5](./07-kien-truc-vo-erp.md), **mọi entity phải thuộc đúng một phân hệ, thiếu thì ứng dụng không khởi động được.** Việc này thêm bảy entity và một phân hệ.
+Theo [`07` mục 5](../nen-tang/07-kien-truc-vo-erp.md), **mọi entity phải thuộc đúng một phân hệ, thiếu thì ứng dụng không khởi động được.** Việc này thêm bảy entity và một phân hệ.
 
 | Entity | Phân hệ | Nội dung |
 |---|---|---|
@@ -115,7 +115,7 @@ Theo [`07` mục 5](./07-kien-truc-vo-erp.md), **mọi entity phải thuộc đ�
 | `pos_product` | `ban_le` | Bản sao menu quán kéo về, chỉ đọc |
 | `pos_sync_run` | `ban_le` | Mỗi lần chạy đồng bộ: chạy lúc nào, đẩy/kéo bao nhiêu dòng, lỗi gì, ai bấm |
 
-**Phân hệ mới `ban_le` — "Bán lẻ và quán".** Ô thứ chín trên lưới biểu tượng, chỉ hiện với người có quyền. Bảng chia entity ở [`07` mục 5](./07-kien-truc-vo-erp.md) phải thêm một dòng, và tổng số entity đi từ 28 lên 35.
+**Phân hệ mới `ban_le` — "Bán lẻ và quán".** Ô thứ chín trên lưới biểu tượng, chỉ hiện với người có quyền. Bảng chia entity ở [`07` mục 5](../nen-tang/07-kien-truc-vo-erp.md) phải thêm một dòng, và tổng số entity đi từ 28 lên 35.
 
 Năm ràng buộc bắt buộc, tất cả đều là quy tắc đã có sẵn của bộ tài liệu chứ không phải quy tắc mới:
 
@@ -169,15 +169,15 @@ Và một ràng buộc riêng của việc này: **`point_ledger` chỉ ghi thê
 
 **PS4 và PS6 là cặp không tách được.** Có đẩy mà không có đối chiếu thì lệch sẽ tích lại và một ngày nào đó không ai lần ngược được nữa.
 
-**Quan hệ với module webhook ở [`01` bước 5](./01-ngan-han-2026.md):** phần này **không phải** webhook đi ra — nó là **gọi API bên ngoài theo lịch**, tức là phần WH16 vốn đang xếp "để sang năm". Nhưng nó dùng lại đúng bốn thứ của bước 5: hàng đợi (HT4), thử lại có giãn cách (WH6), nhật ký gửi (WH8), cảnh báo hàng chờ chết (WH9). Làm PS9 và PS10 mà không mượn được bốn thứ đó là viết lại lần thứ hai.
+**Quan hệ với module webhook ở [`01` bước 5](../00-ke-hoach-theo-module.md):** phần này **không phải** webhook đi ra — nó là **gọi API bên ngoài theo lịch**, tức là phần WH16 vốn đang xếp "để sang năm". Nhưng nó dùng lại đúng bốn thứ của bước 5: hàng đợi (HT4), thử lại có giãn cách (WH6), nhật ký gửi (WH8), cảnh báo hàng chờ chết (WH9). Làm PS9 và PS10 mà không mượn được bốn thứ đó là viết lại lần thứ hai.
 
-**Việc này trả lời câu C4 trong [`04`](./04-danh-muc-cho.md)** — "tích hợp ra ngoài đầu tiên là với hệ thống nào". Nếu được duyệt thì C4 chốt: **POS365, một chiều đẩy điểm và một chiều kéo giao dịch, ERP là nguồn đúng của cấp phát, POS365 là nguồn đúng của tiêu dùng.** Đây là ca dùng thật nằm trong nhà, không phải chờ đối tác bên ngoài — đúng loại ca dùng mà `04` C4 gọi là ứng viên tốt.
+**Việc này trả lời câu C4 trong [`04`](../00-ke-hoach-theo-module.md)** — "tích hợp ra ngoài đầu tiên là với hệ thống nào". Nếu được duyệt thì C4 chốt: **POS365, một chiều đẩy điểm và một chiều kéo giao dịch, ERP là nguồn đúng của cấp phát, POS365 là nguồn đúng của tiêu dùng.** Đây là ca dùng thật nằm trong nhà, không phải chờ đối tác bên ngoài — đúng loại ca dùng mà `04` C4 gọi là ứng viên tốt.
 
 ---
 
 ## 7. Mười câu nghiệp vụ phải chốt trước
 
-Không có câu trả lời cho những câu này thì viết code là viết mò. Đề nghị đưa thành **C16** trong [`04` Danh mục chờ quyết](./04-danh-muc-cho.md), người quyết là Ban lãnh đạo cùng phòng Nhân sự, chốt **trước khi bắt đầu PL1**.
+Không có câu trả lời cho những câu này thì viết code là viết mò. Đề nghị đưa thành **C16** trong [`04` Danh mục chờ quyết](../00-ke-hoach-theo-module.md), người quyết là Ban lãnh đạo cùng phòng Nhân sự, chốt **trước khi bắt đầu PL1**.
 
 | # | Câu hỏi | Mặc định nếu quá hạn | Hệ quả kỹ thuật |
 |---|---|---|---|
@@ -230,7 +230,7 @@ Nói thẳng: nếu quán chỉ phục vụ vài chục người, thì **cấp p
 | **PQ4, PQ5** phạm vi dữ liệu | PL7, PS12 | "Nhân viên chỉ thấy sổ điểm của mình" là một phép áp phạm vi. Nền chưa vá thì câu đó không có hiệu lực thật |
 | **HT4** hàng đợi | PS9, PS10 | Không hàng đợi thì không thử lại được |
 
-**Chỗ đứng trong lịch của [`01` mục 10](./01-ngan-han-2026.md):**
+**Chỗ đứng trong lịch của [`01` mục 10](../00-ke-hoach-theo-module.md):**
 
 | Khi nào | Làm gì |
 |---|---|
@@ -242,7 +242,7 @@ Nói thẳng: nếu quán chỉ phục vụ vài chục người, thì **cấp p
 | **Nửa sau T12** | PS4, PS5, PS6, PS7, PS11, PS12. PL8 |
 | **Sang năm** | PL9, PL10, PS8, PS9, PS10, và mục 12 |
 
-**Nói trước một điều về lịch này, để không hứa nhầm:** nửa sau T12 trong [`01`](./01-ngan-han-2026.md) **đã đầy** — WH12, WH13, WH15, LC4, HR13, HT6, HT7, HT12, DB6. Thêm phần B vào đó là **thêm việc chứ không phải xếp việc**, và [`04` C15](./04-danh-muc-cho.md) — nhân lực làm lộ trình — vẫn chưa có câu trả lời. Cách trung thực để đọc bảng trên: đây là **thứ tự**, và nếu không có thêm người thì phần B rơi sang năm 2027, còn phần A chạy tay theo mục 9 trong lúc chờ. Đổi thứ tự ưu tiên là quyền của người chủ trì, nhưng phải là một quyết định nói ra, không phải một chỗ trượt lịch âm thầm.
+**Nói trước một điều về lịch này, để không hứa nhầm:** nửa sau T12 trong [`01`](../00-ke-hoach-theo-module.md) **đã đầy** — WH12, WH13, WH15, LC4, HR13, HT6, HT7, HT12, DB6. Thêm phần B vào đó là **thêm việc chứ không phải xếp việc**, và [`04` C15](../00-ke-hoach-theo-module.md) — nhân lực làm lộ trình — vẫn chưa có câu trả lời. Cách trung thực để đọc bảng trên: đây là **thứ tự**, và nếu không có thêm người thì phần B rơi sang năm 2027, còn phần A chạy tay theo mục 9 trong lúc chờ. Đổi thứ tự ưu tiên là quyền của người chủ trì, nhưng phải là một quyết định nói ra, không phải một chỗ trượt lịch âm thầm.
 
 ---
 
@@ -276,7 +276,7 @@ Việc này có trong đề bài, nên trả lời rõ: **không tự viết POS
 |---|---|
 | Chạy khi mất mạng | Quán không được ngừng bán vì mạng chập. Đây là phần khó nhất của mọi POS, và nó quyết định kiến trúc từ đầu chứ không thêm sau được |
 | In bill, két tiền, máy quét | Phần cứng thật, mỗi loại một cách nói chuyện |
-| **Hóa đơn điện tử và thuế** | Theo quy định nhà nước, đổi theo văn bản pháp luật. Đúng loại rủi ro mà [`02` mục 5](./02-dai-han.md) đã kết luận là **nối chứ không tự viết** |
+| **Hóa đơn điện tử và thuế** | Theo quy định nhà nước, đổi theo văn bản pháp luật. Đúng loại rủi ro mà [`02` mục 5](../00-ke-hoach-theo-module.md) đã kết luận là **nối chứ không tự viết** |
 | Ca kíp, chốt ca, kiểm quỹ | Nghiệp vụ tiền mặt, sai là mất tiền và mất lòng tin giữa người với người |
 | Trừ kho theo định lượng pha chế | Cần định mức nguyên vật liệu — chính là BOM của vòng 2, chưa có |
 
@@ -287,7 +287,7 @@ Và một lý do về giá trị: POS365 đang chạy, quán đang bán được
 1. POS365 **không cho** làm điều mình cần (giai đoạn 0 trả lời là không), và phương án P3 chạy một thời gian thì quầy kêu không chịu nổi.
 2. Số điểm bán đủ nhiều để chi phí thuê ngoài vượt chi phí tự làm.
 3. Vòng 2 (MFM) đã chạy thật, tức đã có định mức và sổ kho đủ chặt để POS trừ kho có nghĩa.
-4. Có nhu cầu bán ra ngoài thật sự, tức chuyển sang phạm vi CRM ở vòng 4 — mà [`02` mục 9](./02-dai-han.md) đang ghi rõ là **ngoài lộ trình**.
+4. Có nhu cầu bán ra ngoài thật sự, tức chuyển sang phạm vi CRM ở vòng 4 — mà [`02` mục 9](../00-ke-hoach-theo-module.md) đang ghi rõ là **ngoài lộ trình**.
 
 Trong lúc đó, cái nên làm là **phân hệ `ban_le` chỉ có phần đọc**: menu, doanh thu, giao dịch điểm kéo về từ POS365, và báo cáo. Không bán hàng trong đó. Như vậy ô "Bán lẻ" vẫn có mặt trên lưới biểu tượng, có nội dung thật, mà không gánh nghĩa vụ của một phần mềm bán hàng.
 
@@ -314,10 +314,10 @@ Ghi ra để nếu kế hoạch được duyệt thì biết phải sửa nhữn
 
 | Tài liệu | Sửa gì |
 |---|---|
-| [`07` mục 5](./07-kien-truc-vo-erp.md) | Thêm phân hệ **`ban_le`** và bảy entity mới vào bảng chia entity. Tổng entity **28 → 35**, tổng phân hệ **8 → 9** |
-| [`01`](./01-ngan-han-2026.md) | Thêm nhóm **PL** vào bước 4 (HRM) và nhóm **PS** thành một nhánh của bước 5. Cập nhật lịch mục 10 theo mục 10 của tài liệu này |
-| [`02`](./02-dai-han.md) | Mục 3: thêm phân hệ Bán lẻ ở mức đọc. Mục 9 "cái gì không nằm trong lộ trình": ghi rõ POS tự viết vẫn nằm ngoài, kèm điều kiện mở cổng ở mục 12 |
-| [`04`](./04-danh-muc-cho.md) | Thêm **C16** — mười câu nghiệp vụ ở mục 7. Và ghi nhận **C4 có ứng viên mới**: POS365 |
-| [`03`](./03-cau-hoi-khao-sat-hrm.md) | Thêm một câu vào phần phúc lợi: hiện đang cấp phúc lợi quán cafe theo cách nào, ai giữ danh sách, tháng vừa rồi cấp cho bao nhiêu người |
+| [`07` mục 5](../nen-tang/07-kien-truc-vo-erp.md) | Thêm phân hệ **`ban_le`** và bảy entity mới vào bảng chia entity. Tổng entity **28 → 35**, tổng phân hệ **8 → 9** |
+| [`01`](../00-ke-hoach-theo-module.md) | Thêm nhóm **PL** vào bước 4 (HRM) và nhóm **PS** thành một nhánh của bước 5. Cập nhật lịch mục 10 theo mục 10 của tài liệu này |
+| [`02`](../00-ke-hoach-theo-module.md) | Mục 3: thêm phân hệ Bán lẻ ở mức đọc. Mục 9 "cái gì không nằm trong lộ trình": ghi rõ POS tự viết vẫn nằm ngoài, kèm điều kiện mở cổng ở mục 12 |
+| [`04`](../00-ke-hoach-theo-module.md) | Thêm **C16** — mười câu nghiệp vụ ở mục 7. Và ghi nhận **C4 có ứng viên mới**: POS365 |
+| [`03`](../hrm/03-cau-hoi-khao-sat-hrm.md) | Thêm một câu vào phần phúc lợi: hiện đang cấp phúc lợi quán cafe theo cách nào, ai giữ danh sách, tháng vừa rồi cấp cho bao nhiêu người |
 
 **Chưa sửa tài liệu nào trong bảng trên.** Sửa sau khi kế hoạch này được duyệt, để không phải sửa hai lần.

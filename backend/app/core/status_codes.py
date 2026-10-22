@@ -1,7 +1,7 @@
 """Bộ mã trạng thái của Thu mua — khai một chỗ duy nhất (R3).
 
 Đây là nơi ở của **khuôn B** theo QĐ-9: 12 cột từng lưu chữ tiếng Việt nay lưu MÃ chuỗi tiếng
-Anh. Danh sách 12 cột và lý do chọn khuôn nằm ở `doc/erp/15-do-be-tong-nen-v2.md` §2.2 và §2.4.
+Anh. Danh sách 12 cột và lý do chọn khuôn nằm ở `doc/erp/nen-tang/15-do-be-tong-nen-v2.md` §2.2 và §2.4.
 
 **Đây KHÔNG phải khuôn mặc định.** QĐ-11: chức năng làm mới dùng `SMALLINT` + `IntEnum`. Bộ mã
 chuỗi ở tệp này là **ngoại lệ đóng**, chỉ cho 12 cột đã liệt kê, vì `status` cấp phiếu của tám

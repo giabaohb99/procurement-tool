@@ -58,7 +58,7 @@ Tài khoản HR có `import.read/create` + `employee.*` + `employee_sensitive.re
 `employee_sensitive.write`.
 
 ## Tài liệu phải cập nhật
-- `doc/erp/16-quan-ly-import-export-v2.md`: §3.1 dòng `employee` (đủ hồ sơ, ref theo mã, cấm xóa); §9.1
+- `doc/erp/nen-tang/16-quan-ly-import-export-v2.md`: §3.1 dòng `employee` (đủ hồ sơ, ref theo mã, cấm xóa); §9.1
   thêm mục «duoc-CR-628» (hook adapter, gác kép `import` × `employee`, tải tệp lô cần
   `employee_sensitive.read`); §1 ghi CSV Nhân sự + Phòng ban đã 410; §10 bẫy: ô trống = giữ, snapshot rõ.
 - `.claude/rules/hr-employee-profile.md`: mục mới «NHẬP EXCEL NHÂN SỰ (duoc-CR-628)» — 5 gạch:

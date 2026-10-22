@@ -41,11 +41,9 @@
 
 | Tệp | Đọc khi nào |
 |---|---|
-| [`../10-lo-trinh-phat-trien-hrm.md`](../10-lo-trinh-phat-trien-hrm.md) | Bản trình lãnh đạo: kế hoạch từng phân hệ, mốc thời gian, nhân lực |
-| [`../06-lo-trinh-nen-tang-va-hrm.md`](../06-lo-trinh-nen-tang-va-hrm.md) | Bảy ràng buộc bắt buộc của bộ ERP và HRM chia năm bậc |
-| [`../03-cau-hoi-khao-sat-hrm.md`](../03-cau-hoi-khao-sat-hrm.md) | Bộ câu hỏi phỏng vấn phòng Nhân sự |
+| [`../00-ke-hoach-theo-module.md`](../00-ke-hoach-theo-module.md) mục HRM | Kế hoạch còn lại của phân hệ Nhân sự, chia phase, cùng bộ với các phân hệ khác (thay `01`, `06`, `10`, `19` cũ đã xóa 22/10/2026) |
+| [`03-cau-hoi-khao-sat-hrm.md`](03-cau-hoi-khao-sat-hrm.md) | Bộ câu hỏi phỏng vấn phòng Nhân sự |
 | [`../tham-khao-hrm/`](../tham-khao-hrm/README.md) | Khảo sát phần mềm HrOnline: 59 chức năng, mỗi chức năng có danh sách trường. **Là bảng đối chiếu, không phải yêu cầu** |
-| [`../19-viec-con-lai-tong-hop.md`](../19-viec-con-lai-tong-hop.md) §3 | Bảng kiểm kê việc còn lại. ⚠️ **Phần HRM của bảng này đã cũ** (rà 14/09/2026): nó còn ghi Hợp đồng lao động «chưa có trong mã» và Đợt 3 hồ sơ «chưa bắt đầu», cả hai nay đã có. Lấy §5 của tệp này làm chuẩn |
 
 ## 4. Luật đã chốt, đừng phá
 

@@ -1,7 +1,7 @@
 # Phase 04 — D0d: Nhóm chỉ số 3.8 «Dùng AI»
 
 ## Context links
-- `doc/erp/22-ai-ke-hoach-phan-viec.md` §5 «Phần AI» + §7 đợt A0 (Agent 4: `tab_ai_usage_daily` qua cổng B + cờ `via_ai`)
+- `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §5 «Phần AI» + §7 đợt A0 (Agent 4: `tab_ai_usage_daily` qua cổng B + cờ `via_ai`)
 - Nguồn hiện có: `backend/app/modules/assistant/change_model.py` (`tab_assistant_change`: user_id, entity, entity_id, action `ChangeAction`, source `ChangeSource` 0/1 TELEGRAM/2 WEB/3 ZALO/4 MCP)
 - `usage_profile/snapshot_sources.py:154-157`, `snapshot_metrics_misc.py:19-20` (`assistant_questions`, `assistant_changes`), `metric_catalog.py` mục 3.4
 - agent_hub (DB riêng): `tab_agent_mcp_call(user_id, client_name, tool, status)`, `tab_agent_intent(user_id, channel WEB/TELEGRAM/ZALO)`

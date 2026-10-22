@@ -1,6 +1,6 @@
 """B-02 — `tab_contract.party_type` + `status` chuyển từ chữ tiếng Việt sang MÃ tiếng Anh.
 
-Đợt thứ hai của kế hoạch đổ bê tông nền v2 (`doc/erp/15-do-be-tong-nen-v2.md` §3). Trước
+Đợt thứ hai của kế hoạch đổ bê tông nền v2 (`doc/erp/nen-tang/15-do-be-tong-nen-v2.md` §3). Trước
 đợt này, hai cột lưu thẳng "Nhà cung cấp" / "Hiệu lực" nên mọi chỗ so sánh đều là so chuỗi
 tiếng Việt rải khắp backend lẫn hai bản giao diện: sửa một chữ trong nhãn là hỏng lặng lẽ
 đúng chỗ không ai nhìn (`Contract.status != "Thanh lý"` ở cảnh báo và bảng điều khiển).

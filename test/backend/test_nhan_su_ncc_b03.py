@@ -1,6 +1,6 @@
 """B-03 — `tab_employee.status` + `tab_supplier.legal_type` chuyển sang MÃ tiếng Anh.
 
-Đợt thứ ba của kế hoạch đổ bê tông nền v2 (`doc/erp/15-do-be-tong-nen-v2.md` §3). Hai cột này
+Đợt thứ ba của kế hoạch đổ bê tông nền v2 (`doc/erp/nen-tang/15-do-be-tong-nen-v2.md` §3). Hai cột này
 "rẻ" hơn B-02: không cột nào nằm trong máy trạng thái, không cột nào bị so sánh chuỗi trần ở
 tầng nghiệp vụ. Cái đắt nằm ở hai chỗ khác, và đó là chỗ bộ test này nhắm vào:
 

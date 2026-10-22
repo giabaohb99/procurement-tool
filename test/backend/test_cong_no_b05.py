@@ -1,6 +1,6 @@
 """B-05 — `tab_payable.status` chuyển sang MÃ tiếng Anh.
 
-Đợt thứ năm của kế hoạch đổ bê tông nền v2 (`doc/erp/15-do-be-tong-nen-v2.md` §3). Khác bốn
+Đợt thứ năm của kế hoạch đổ bê tông nền v2 (`doc/erp/nen-tang/15-do-be-tong-nen-v2.md` §3). Khác bốn
 đợt trước ở một điểm: **cột này dính tiền**. Kế hoạch nói thẳng điều kiện đủ của đợt không
 phải "màn hình chạy được" mà là *tổng công nợ theo từng nhà cung cấp trước và sau phải khớp
 từng đồng* — đây chính là cột từng gây sự cố công nợ âm (fix `82ce6ad`).

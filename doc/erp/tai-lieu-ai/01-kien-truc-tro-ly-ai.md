@@ -2,7 +2,7 @@
 
 Phiên bản: **15/09/2026** (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE, đang chạy dev + prod**.
 Mã nguồn: `backend/app/modules/assistant/` · giao diện `frontend-v2/src/modules/assistant/`.
-Bối cảnh lộ trình: `doc/erp/02-dai-han.md` §3.7 (AI-1 ở đây đã chạy; **AI-2** — RAG toàn hệ có lọc
+Bối cảnh lộ trình: `doc/erp/00-ke-hoach-theo-module.md` §3.7 (AI-1 ở đây đã chạy; **AI-2** — RAG toàn hệ có lọc
 quyền per-record — vẫn là kế hoạch).
 
 > ⚠️ Bản trước của tệp này ghi *"thiết kế nền, chưa code"* và mô tả bốn tool gợi ý. Nay đã có

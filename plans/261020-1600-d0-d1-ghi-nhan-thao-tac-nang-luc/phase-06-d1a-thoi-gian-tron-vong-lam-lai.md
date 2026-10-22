@@ -2,7 +2,7 @@
 
 ## Context links
 - Lời đại ca: «chị A làm một YCMH từ lúc tạo tới lúc xong trung bình mấy ngày, chậm nhất mấy ngày» · «số lần phải làm lại theo từng loại việc»
-- `doc/erp/22-ai-ke-hoach-phan-viec.md` §4 (`task_type_stats`: trung vị/p90, tỷ lệ làm lại, số mẫu, theo người chỉ khi ≥ 5 mẫu), §5 nhóm 3.7
+- `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §4 (`task_type_stats`: trung vị/p90, tỷ lệ làm lại, số mẫu, theo người chỉ khi ≥ 5 mẫu), §5 nhóm 3.7
 - Nguồn: `tab_change_log` (`change_log/model.py`: table_name, row_id, field, before_value, after_value, created_at; index `ix_change_log_row`; giữ **16 tháng**),
   `tab_audit_log` (YCMH `returned`), `tab_approval_instance/task/action`, `tab_work_task(+_assignee)`
 - Tham khảo đã có: `approval/report_turnaround.turnaround_hours`, `usage_profile/snapshot_metrics_flow.chain_metrics` (`returned_rate`, có lỗ ở xe/dấu/nghỉ/phòng)

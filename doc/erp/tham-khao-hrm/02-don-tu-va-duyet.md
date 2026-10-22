@@ -358,6 +358,6 @@ Thao tác trên mỗi dòng: Sửa · Xóa · **Copy** · Xem.
 | DT5 Tăng ca phòng ban | **Lấy sau** | Phần mở rộng của DT4 | Bắt buộc giữ bước nhân viên xác nhận |
 | DT3 Công tác | **Lấy sau** | Ít người dùng hơn ba loại kia | Cân nhắc bỏ tọa độ và quãng đường nếu chưa làm công tác phí |
 
-**Thứ tự đề nghị trong mục này:** DT7 trước, rồi DT6 và DT1 cùng nhau. Ba cái còn lại chờ kết quả quyết định về phạm vi chấm công (mục C2 trong [danh mục chờ quyết](../04-danh-muc-cho.md)).
+**Thứ tự đề nghị trong mục này:** DT7 trước, rồi DT6 và DT1 cùng nhau. Ba cái còn lại chờ kết quả quyết định về phạm vi chấm công (mục C2 trong [danh mục chờ quyết](../00-ke-hoach-theo-module.md)).
 
 Lý do xếp DT7 lên đầu: nó không phụ thuộc gì cả, và mọi thứ khác phụ thuộc nó. Làm DT1 trước DT7 thì phải viết luồng duyệt cứng cho nghỉ phép, rồi vứt đi lúc làm DT7.

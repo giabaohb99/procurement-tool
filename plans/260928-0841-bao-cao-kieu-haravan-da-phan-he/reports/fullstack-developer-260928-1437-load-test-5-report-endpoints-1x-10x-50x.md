@@ -194,7 +194,7 @@ overview this_year total (21.3s) and its `procurement_summary` (15.4s) / `survey
    `report_rows_in_range` + Python `build_report`/`aggregate()` with
    `SELECT line_approve, <dimension>, COUNT(*) FROM ... GROUP BY line_approve, <dimension>`
    equivalents for the two line tables, unioned. `line_approve` is stored as Vietnamese TEXT
-   (documented legacy exception, §2.2 of `doc/erp/15-do-be-tong-nen-v2.md`) but that's still
+   (documented legacy exception, §2.2 of `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`) but that's still
    perfectly GROUP-BY-able — no schema change needed. **Estimated gain**: removes the ~5.5s of
    `query.all()` ORM-materialization + the superlinear Python aggregate entirely; this_year/custom
    should drop from 18–30s+ to low hundreds of ms (same order as `procurement_summary`'s SQL-bound

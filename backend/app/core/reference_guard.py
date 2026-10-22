@@ -1,5 +1,5 @@
 """CHỐT XÓA DANH MỤC — đợt 3 xóa mềm (ai-CR-189, đại ca chốt 13/10/2026): danh mục đang được chứng từ / cấu hình tham
-chiếu thì KHÔNG xóa, chỉ cho *ngưng dùng*; chưa ai dùng thì vẫn xóa được (xem `doc/erp/20-ra-soat-xoa-cung.md` §4).
+chiếu thì KHÔNG xóa, chỉ cho *ngưng dùng*; chưa ai dùng thì vẫn xóa được (xem `doc/erp/nen-tang/20-ra-soat-xoa-cung.md` §4).
 
 Một sổ đăng ký chung thay vì mỗi phân hệ tự viết một `count_references` (NCC / sản phẩm đã có ở ai-CR-169 — giữ, có thể
 dời về đây dần): mỗi danh mục khai danh sách chỗ tham chiếu `(Model, cột, nhãn)`; `ensure_deletable` đếm hết, còn dòng nào

@@ -1,6 +1,6 @@
 """B-06 — cụm Đơn mua hàng + Yêu cầu mua hàng chuyển sang MÃ tiếng Anh.
 
-Đợt thứ sáu của kế hoạch đổ bê tông nền v2 (`doc/erp/15-do-be-tong-nen-v2.md` §3), và là đợt
+Đợt thứ sáu của kế hoạch đổ bê tông nền v2 (`doc/erp/nen-tang/15-do-be-tong-nen-v2.md` §3), và là đợt
 nặng nhất: **sáu cột trong một đợt**, chia hai nhịp migration.
 
   nhịp 1 · `a3f7d2e51c94` — bốn cột "phẳng", không cột nào có thứ tự tiến trình:

@@ -4,7 +4,7 @@
 |---|---|
 | **Phiên bản** | **v1.1** · 22/09/2026 (v1.0 sáng cùng ngày = bản thiết kế) |
 | **Loại tài liệu** | Thiết kế (PRD + TDD gộp) — chốt trước khi code |
-| **Nguồn yêu cầu** | Đại ca nêu 21/09/2026 khi bàn giá đơn nhập khẩu (*"tách ra riêng thành 1 chức năng giá trị khác... 1 dòng có thể có 3 cột giá"*). Bản đánh giá + bảy điểm chờ quyết ở `doc/erp/19-viec-con-lai-tong-hop.md` §5 |
+| **Nguồn yêu cầu** | Đại ca nêu 21/09/2026 khi bàn giá đơn nhập khẩu (*"tách ra riêng thành 1 chức năng giá trị khác... 1 dòng có thể có 3 cột giá"*). Bản đánh giá + bảy điểm chờ quyết ở `doc/erp/00-ke-hoach-theo-module.md` §5 |
 | **Xây trên** | Thẻ *Chi phí lô hàng nhập khẩu* của ĐMH (bao-CR-319 P3..P5, bao-CR-347) — `tab_po_import_cost`, công nợ `source_type = import_cost`, phân bổ 5 cách, báo cáo giá vốn `report/import_landed_cost.py`. Đặc tả hiện hành: `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K |
 | **CR** | `bao-CR-453-chi-phi-thu-mua` (đặt chỗ 21/09/2026, dòng đầu `change-log-bao.md`) |
 | **Trạng thái** | **ĐÃ CODE ĐỦ NĂM ĐỢT GĐ1..GĐ5 ngày 22/09/2026** theo lệnh khách *"làm xong 1 lần rồi commit luôn... làm đủ giai đoạn rồi đẩy lên 1 lượt"* — một commit, lên **dev**. Prod tạm dừng deploy (19/09), chưa lên. Đặc tả hiện hành sau khi code: `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K (K.0 → K.7); tài liệu này giữ làm bản thiết kế + lý do |

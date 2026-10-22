@@ -2,7 +2,7 @@
 paths:
   - "frontend/**"
   - "frontend-v2/**"
-  - "doc/erp/13-ke-hoach-man-con-lai-v2.md"
+  - "doc/erp/00-ke-hoach-theo-module.md"
 ---
 # Tiến độ dời màn từ `frontend/` sang `frontend-v2/` (Đ-01…Đ-15)
 
@@ -10,7 +10,7 @@ paths:
 
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
-còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
+còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/00-ke-hoach-theo-module.md`**
 (bản 2.0, xem **CR-097**): bản cũ có **48 màn** — _(rà lại từng dòng 03/09/2026)_ bảng §1 nay
 **50 dòng** *(48 màn cũ + `/system/exports` + 44b)*: **50 xong** · **0 khuyết** · **0 thiếu** ·
 **0 chờ quyết**. Chia **15 đợt Đ-01 … Đ-15**: đã xong **Đ-01…Đ-14**; còn mỗi **Đ-15**
@@ -33,7 +33,7 @@ tab _Mẫu thuế_ giống hệt bản v1 (CR-127). Nghĩa là **không còn mà
 "chặn nghiệp vụ chỉ còn Yêu cầu thanh toán" ở các bản CLAUDE.md trước nay đã sai, bỏ đi.
 _Quản lý Import_ (MC-6) từng bị hoãn nhưng khách **mở lại 25/08/2026**: hai màn `/system/imports`
 (+ `/:id`) và cụm `/system/exports` **đã chạy** (CR-186, Đ-13a/13b); phần còn dở của Đ-13 là **mở
-rộng tính năng**, không phải màn thiếu — xem `doc/erp/16-quan-ly-import-export-v2.md` §9. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
+rộng tính năng**, không phải màn thiếu — xem `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
 **đã SỐNG LẠI 29/08/2026** (CR-227 + CR-222) — xem đính chính ở `doc/erp/12-...` mục 2.7:
 Xử lý khảo sát là trang riêng `/procurement/survey-requests/:id/process`, Tiến độ báo giá ở
 `/procurement/survey-progress`, menu Thu mua v2 xếp đúng thứ tự bản v1.
