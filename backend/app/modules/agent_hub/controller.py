@@ -920,6 +920,17 @@ def run_db_restore_test(user=Depends(require("backup", "create"))):
     return success(None, "Đã bắt đầu khôi phục thử — làm mới danh sách sau ít phút", 202)
 
 
+@router.post("/backups/accept-size")
+def accept_db_backup_size(db: Session = Depends(get_db), user=Depends(require("backup", "delete"))):
+    """*Chấp nhận cỡ mới* cho DB bot — cùng nghĩa `/api/backups/accept-size` của ERP."""
+    from . import db_backup
+
+    n = db_backup.accept_new_size(db, actor_id=int(user.id))
+    if not n:
+        raise HTTPException(400, "Không có bản sao lưu DB bot nào đang bị đánh dấu đáng ngờ")
+    return success({"accepted": n}, f"Đã chấp nhận cỡ mới cho {n} bản sao lưu DB bot")
+
+
 @router.get("/backups/{bid}/download")
 def download_db_backup(bid: int, db: Session = Depends(get_db), user=Depends(require("backup", "read"))):
     from app.core.storage import presigned_url
