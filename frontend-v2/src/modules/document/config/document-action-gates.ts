@@ -6,6 +6,8 @@ type CanFn = (entity: PermissionEntity, action: PermissionAction) => boolean
 export interface DocumentActionGates {
   /** Bản lưu trữ hợp đồng lao động (duoc-CR-640). */
   isArchive: boolean
+  /** Id HĐ gốc khi được «Ban hành» bản lưu trữ (= ký HĐ), 0 nếu không (duoc-CR-659). */
+  issueArchiveContractId: number
   canApprove: boolean
   canCreate: boolean
   canWrite: boolean
@@ -29,6 +31,8 @@ export function resolveDocumentActionGates(
   const isArchive = permissions?.is_archive ?? false
   return {
     isArchive,
+    issueArchiveContractId:
+      !readonlyFromLink && isArchive && permissions?.can_issue_archive ? (permissions.archive_contract_id ?? 0) : 0,
     canApprove: !readonlyFromLink && !isArchive && can('document', 'approve'),
     canCreate: !readonlyFromLink && !isArchive && can('document', 'create'),
     canWrite: !readonlyFromLink && (permissions?.write ?? false),

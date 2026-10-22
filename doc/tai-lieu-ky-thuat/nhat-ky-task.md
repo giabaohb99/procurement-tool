@@ -15664,3 +15664,258 @@ Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/00-tong-quan-nghiep-
 **Kết quả:** không đổi mã chạy. Mọi liên kết tương đối trong trang cửa vào đã kiểm là trỏ tới tệp có thật. Đã đẩy lên nhánh erp-v2.
 
 Mã nguồn: doc/erp/hrm/README.md · doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md · doc/erp/hrm/02-nghi-phep.md · doc/erp/hrm/03-lich-lam-viec.md · .claude/rules/hr-leave.md · doc/erp/README.md
+
+## kh-AI1-1 | Thử lại bộ D1 trên deverp để đưa lên prod đợt năm
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** ba commit duoc-CR-655, 656, 657 (báo cáo mức dùng chức năng, chỉ số *Dùng AI*, loại việc trên Danh sách / kanban / Gantt, báo cáo năng lực theo loại việc) đang chạy trên dev, chưa lên prod. Agent 1 đã vá build giao diện (bao-CR-652) và khai miễn trừ bài kiểm phạm vi (bao-CR-651).
+
+**Việc cần làm**
+- Vào deverp thử lại ba màn mới và cột Loại việc, đối chiếu số liệu với dữ liệu dev.
+- Báo đại ca / Agent 1 là **đạt** hoặc ghi lỗi cụ thể để vá trước đợt prod.
+
+**Điều kiện xong:** có xác nhận đạt; Agent 1 chốt giờ cắt đợt prod năm với đại ca.
+
+Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
+
+## kh-HR1-1 | Chặn xuất CSV nhân sự chỉ cần quyền xem, che cột nhạy cảm khi xuất
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** lỗ bảo mật đang có trên prod — `GET /api/employees/export/csv` vẫn gác quyền `read`, ai xem được danh sách nhân sự là tải được cả tệp. Thêm cột nhạy cảm vào bộ xuất là hở ngay. Xếp **ưu tiên cao nhất** trong Phase 1.
+
+**Việc cần làm**
+- Đổi cổng xuất sang quyền `export`.
+- Dựng cơ chế che cột nhạy cảm khi xuất CSV / Excel theo `employee_sensitive.read` (C7).
+- Viết bài kiểm cho cả hai.
+
+**Điều kiện xong:** người chỉ có `read` không xuất được; người thiếu quyền nhạy cảm nhận ô rỗng ở cột nhạy cảm; có bài kiểm; hỏi đại ca trước khi commit.
+
+Mã nguồn: kế hoạch mục HR1-1 · `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` V0-2
+
+## kh-HR1-2 | Cờ bắt buộc đính kèm của loại nghỉ phải chặn lúc gửi đơn
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** loại nghỉ có cờ `require_attachment` (ví dụ nghỉ ốm) nhưng `request_service` không đọc cờ này — đơn thiếu giấy vẫn gửi được.
+
+**Việc cần làm**
+- Kiểm cờ lúc gửi duyệt, báo câu rõ ràng khi thiếu đính kèm.
+- Viết bài kiểm.
+
+**Điều kiện xong:** đơn nghỉ ốm không kèm giấy bị từ chối khi gửi; có bài kiểm.
+
+Mã nguồn: kế hoạch mục HR1-2 · `doc/erp/hrm/02-nghi-phep.md` §10
+
+## kh-HR1-3 | Đề xuất người duyệt nghỉ phép cho các công ty ngoài AGC
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** bộ máy duyệt nghỉ phép đã bật trên prod (21/10). Chỉ công ty AGC có luồng riêng nên chỉ AGC có chuông báo người duyệt; công ty khác vẫn đi đường cũ (duyệt thẳng, không báo).
+
+**Việc cần làm**
+- Lập bảng: mỗi công ty đang có người dùng thật thì ai duyệt nghỉ phép (trưởng phòng / người cụ thể / có chặng nhân sự không).
+- Gửi đại ca chốt, rồi khai luồng trên màn Luồng duyệt.
+
+**Điều kiện xong:** mỗi công ty có người dùng có luồng; đơn gửi đi có chuông tới đúng người duyệt.
+
+Mã nguồn: kế hoạch mục HR1-3
+
+## kh-HR1-4 | Màn kiểm việc duyệt đang treo trước khi khóa tài khoản người nghỉ
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** khóa tài khoản người nghỉ việc mà họ còn giữ việc duyệt thì phiếu kẹt (V0-4, còn thiếu của đợt 3 Hồ sơ nhân sự).
+
+**Việc cần làm**
+- Trước khi khóa, hiện danh sách việc người đó đang giữ; cho chuyển từng việc sang người khác.
+
+**Điều kiện xong:** khóa tài khoản không để lại phiếu kẹt; có bài kiểm.
+
+Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0
+
+## kh-HR1-5 | Tài liệu hợp đồng lao động và nhập bù ngày vào làm
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Việc cần làm**
+- Viết `doc/erp/hrm/04-hop-dong-lao-dong.md` (rút phần HĐLĐ ở `01` về, ghi thêm quyền mặc định theo chức vụ và nhập Excel).
+- Nhập bù `hire_date` cho hồ sơ cũ đang thiếu (việc dữ liệu, chạy trên prod cần đại ca gật).
+
+**Điều kiện xong:** có tệp `04`; README Nhân sự hết dòng *chưa có tài liệu*; không còn hồ sơ đang làm thiếu ngày vào làm.
+
+Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5
+
+## kh-NT1-1 | Quyền xuất và nhập riêng cho mọi màn danh mục (đi cùng HR1-1)
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** xuất CSV danh mục sản phẩm, nhà cung cấp, phòng ban (3 đường viết tay) vẫn gác quyền `read` và chưa qua `apply_scope`; chưa có action `import` riêng (Đ-13c).
+
+**Việc cần làm**
+- Đổi các cổng xuất sang quyền `export`, thêm `apply_scope` cho 3 đường xuất viết tay.
+- Thêm action `import` vào bộ quyền, gác các cổng nhập.
+- Bài kiểm cho từng cổng.
+
+**Điều kiện xong:** người chỉ có `read` không xuất được; xuất chỉ ra dòng trong phạm vi; có bài kiểm; hỏi đại ca trước khi commit.
+
+Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9
+
+## kh-TM1-1 | Tìm vì sao đơn mua hàng và yêu cầu thanh toán không báo người duyệt
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** phát hiện 21/10 khi lập bộ AGC: ĐMH và YCTT gửi duyệt không thấy chuông. Mã đã có `po_submitted` / `pay_submitted` gửi người có quyền duyệt toàn hệ — phải tìm chỗ rơi (phòng tự mua, hộp Việc của tôi, người nhận rỗng...).
+
+**Việc cần làm**
+- Dựng lại trên dev: lập ĐMH và YCTT, xem ai nhận thông báo.
+- Tìm nguyên nhân, vá, viết bài kiểm.
+- Không đổi luồng duyệt thu mua (đại ca dặn giữ nguyên), chỉ sửa phần báo.
+
+**Điều kiện xong:** người duyệt nhận chuông khi ĐMH / YCTT gửi duyệt, kể cả phòng tự mua; có bài kiểm.
+
+Mã nguồn: kế hoạch mục TM1-1
+
+## kh-VT1-1 | Lớp mức mật văn bản: chia sẻ có hạn, thu hồi, tra cứu qua kiểm quyền
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** `document/controller.py` ghi rõ lớp `secrecy_level` CHƯA có. Phải xong trước khi nạp văn bản thật (P5 văn thư).
+
+**Việc cần làm**
+- Mức mật cho văn bản và cho người; chỉ người đủ mức mới xem.
+- Chia sẻ đích danh có hạn, thu hồi.
+- Tra cứu, tải tệp đều qua kiểm mức mật; 8 bài kiểm theo lộ trình P5.
+
+**Điều kiện xong:** người thiếu mức không thấy văn bản mật ở danh sách, chi tiết, tìm kiếm, tải tệp; đủ 8 bài kiểm.
+
+Mã nguồn: kế hoạch mục VT1-1 · `doc/erp/van-thu/02-lo-trinh-phat-trien.md` P5
+
+## kh-CV1-1 | Chuông báo cho phân hệ Công việc
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** giao việc, đổi trạng thái, bình luận chưa báo ai; việc Dự án chưa vào tab Việc cần làm (W3).
+
+**Việc cần làm**
+- Giao việc → chuông người được giao (F-01).
+- Việc Dự án vào tab Việc cần làm, giữ bất biến tập cha CR-215 (F-02).
+- Đổi trạng thái / bình luận báo người theo dõi (F-04).
+
+**Điều kiện xong:** được giao việc là có chuông; việc hiện trong Việc cần làm; có bài kiểm.
+
+Mã nguồn: kế hoạch mục CV1-1 · `doc/erp/cong-viec/03-lo-trinh-phase.md` W3
+
+## kh-CV1-2 | Nợ nhỏ Công việc: sửa bình luận, màn thùng rác, ghim danh sách
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** bình luận mới có xóa; thùng rác mới có `deleted_at` chưa có màn khôi phục; chưa ghim list hay dùng.
+
+**Việc cần làm**
+- Sửa bình luận của mình (E-05).
+- Màn thùng rác có nút khôi phục (B-09).
+- Ghim list trên thanh bên (A-05).
+
+**Điều kiện xong:** ba việc chạy trên dev, có bài kiểm.
+
+Mã nguồn: kế hoạch mục CV1-2
+
+## kh-NT1-4 | Hai nợ nhỏ thu mua phía máy chủ
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** *Tên trên hóa đơn* của ĐMH chỉ suy lúc trả, không lưu; báo cáo mua hàng gom theo TÊN phòng (N-008) nên đổi tên phòng là lệch số.
+
+**Việc cần làm**
+- Ghi *Tên trên hóa đơn* lúc lưu ĐMH.
+- Báo cáo mua hàng gom theo id phòng.
+
+**Điều kiện xong:** đổi tên phòng không làm lệch báo cáo; có bài kiểm.
+
+Mã nguồn: kế hoạch mục NT1-4
+
+## kh-NT1-5 | Gác quyền phía giao diện cho các trang in
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** route `/print/...` chưa gác quyền ở giao diện (NF-20); mới trang in theo NCC tự gác `supplier:read`.
+
+**Việc cần làm**
+- Gác quyền cho mọi route in theo đúng quyền của chứng từ.
+- Bài kiểm vitest cho route in.
+
+**Điều kiện xong:** người không có quyền mở link in thấy trang chặn, không thấy dữ liệu.
+
+Mã nguồn: kế hoạch mục NT1-5
+
+## kh-HR2-2 | In phiếu thông tin nhân viên và cho nhân viên tự khai hồ sơ
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** chưa in được phiếu theo mẫu BM00../QT01/NS (C5); nhân viên mới tự sửa được nhóm Liên hệ (C6).
+
+**Việc cần làm**
+- In phiếu đúng mẫu đang dùng.
+- Mở tự khai các nhóm hồ sơ đã chốt, HR thấy dấu vết thay đổi.
+
+**Điều kiện xong:** in được phiếu đúng mẫu; nhân viên tự sửa được các nhóm đã chốt.
+
+Mã nguồn: kế hoạch mục HR2-2 · `doc/erp/hrm/01-ho-so-nhan-su.md` §7.9, §7.10
+
+## kh-HR2-3 | Báo cáo đối chiếu phép trước và sau kết sổ
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** kết sổ phép cuối năm chưa có bảng đối chiếu số cũ / số mới từng người.
+
+**Việc cần làm**
+- Báo cáo từng người: số cũ, số mới, chênh; xuất Excel.
+
+**Điều kiện xong:** kết sổ xong có bảng đối chiếu.
+
+Mã nguồn: kế hoạch mục HR2-3 · `doc/erp/hrm/02-nghi-phep.md` §10
+
+## kh-HR2-5 | Sơ đồ tổ chức vẽ từ dữ liệu
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** V2-6, rẻ: dữ liệu phòng ban + quản lý trực tiếp đã có.
+
+**Việc cần làm**
+- Màn sơ đồ tổ chức tự vẽ từ phòng ban, trưởng phòng, quản lý trực tiếp; theo phạm vi người xem.
+
+**Điều kiện xong:** sơ đồ tự cập nhật khi đổi phòng / quản lý.
+
+Mã nguồn: kế hoạch mục HR2-5
+
+## duoc-CR-659 | Bản hợp đồng lao động bên Văn bản có nút «Ban hành» để ký luôn, không đứng mãi ở Nháp
+- status: xong
+- date: 2026-10-22
+**Bối cảnh:** từ tab Hợp đồng trên hồ sơ nhân sự bấm vào một hợp đồng thì hệ thống mở bản lưu trữ bên phân hệ Văn bản. Hợp đồng còn nháp thì văn bản cũng nằm ở «Nháp» mà không có nút nào để đi tiếp. Đại ca muốn với loại hợp đồng lao động chỉ có đúng một nút «Ban hành», và chốt bấm nút đó nghĩa là ký hợp đồng.
+
+**Đã làm**
+- Thêm nút «Ban hành» ở trang văn bản của bản lưu trữ hợp đồng lao động. Nút chỉ hiện khi hợp đồng gốc còn nháp, chưa bị xóa, và người xem có quyền sửa hợp đồng đó trong phạm vi của mình.
+- Bấm nút thì hỏi xác nhận, rồi ký hợp đồng gốc với ngày ký là hôm nay, đúng đường ký đang dùng ở hồ sơ nhân sự. Văn bản tự chuyển sang «Có hiệu lực» và nút biến mất. Hợp đồng còn biến bắt buộc chưa điền thì vẫn bị chặn như khi ký bên Nhân sự.
+- Đường API trả quyền của văn bản trả thêm mã hợp đồng gốc và cờ được ban hành để giao diện biết khi nào bày nút.
+
+**Kết quả:** năm bài kiểm phía máy chủ và hai bài kiểm phía giao diện mới đều qua; bài kiểm cũ của bản lưu trữ và bài BB4 vẫn xanh; typecheck và lint cả cây sạch. Đã mở màn thật trên bản local, thấy nút và hộp xác nhận, bấm Hủy thì hợp đồng vẫn nháp.
+
+Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · backend/app/modules/document/controller.py · frontend-v2/src/modules/document/components/archive-contract-issue-button.tsx · frontend-v2/src/modules/document/config/document-action-gates.ts · frontend-v2/src/modules/document/pages/document-detail-page.tsx · test/backend/test_hdld_ban_hanh_tu_van_ban_cr659.py
