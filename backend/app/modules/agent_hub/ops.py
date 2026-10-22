@@ -628,14 +628,71 @@ def _fetch_code(url: str) -> int:
         return 0
 
 
+#  ai-CR-231 — sự cố #4 22/10: DNS vùng .vn (DNSSEC VNNIC) hỏng, máy giám sát không phân giải được tên miền nên báo prod
+#  «không kết nối được» trong khi prod vẫn sống. Lỗi kết nối thì hỏi địa chỉ qua DNS công cộng bằng HTTPS (`cd` = bỏ kiểm
+#  DNSSEC) rồi gọi thẳng địa chỉ đó; 200 = lỗi DNS, server sống → sự cố mức nhẹ, không chẩn đoán, không tự chữa.
+DNS_SIGNATURE = "dns"
+DOH_RESOLVERS = ("https://1.1.1.1/dns-query", "https://8.8.8.8/resolve")
+
+
+def _resolve_bypass_dns(host: str) -> list[str]:
+    import requests
+
+    for base in DOH_RESOLVERS:
+        try:
+            r = requests.get(base, params={"name": host, "type": "A", "cd": "true"},
+                             headers={"accept": "application/dns-json"}, timeout=5)
+            ips = [a["data"] for a in (r.json().get("Answer") or []) if a.get("type") == 1 and a.get("data")]
+        except (requests.RequestException, ValueError, AttributeError):
+            continue
+        if ips:
+            return ips
+    return []
+
+
+def _probe_bypass_dns(url: str) -> int:
+    """Gọi lại health không qua DNS của máy, vẫn xưng tên miền khi bắt tay TLS (SNI + Host, kiểu `curl --resolve`) nên
+    chứng chỉ vẫn được kiểm. Trả mã HTTP của địa chỉ đầu tiên trả lời, 0 nếu không tới được."""
+    import ipaddress
+    from urllib.parse import urlsplit
+
+    import certifi
+    import urllib3
+
+    parts = urlsplit(url)
+    host = parts.hostname or ""
+    try:
+        ipaddress.ip_address(host)
+        return 0                     # địa chỉ IP sẵn: không có DNS để vòng qua
+    except ValueError:
+        pass
+    path = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+    headers = {"Host": parts.netloc.rsplit("@", 1)[-1]}
+    for ip in _resolve_bypass_dns(host)[:2]:
+        if parts.scheme == "https":
+            pool = urllib3.HTTPSConnectionPool(ip, port=parts.port or 443, server_hostname=host, assert_hostname=host,
+                                               cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), timeout=10,
+                                               retries=False)
+        else:
+            pool = urllib3.HTTPConnectionPool(ip, port=parts.port or 80, timeout=10, retries=False)
+        try:
+            return int(pool.request("GET", path, headers=headers).status)
+        except urllib3.exceptions.HTTPError:
+            continue
+    return 0
+
+
 def open_incident(db: Session, env: AgentEnv) -> AgentIncident | None:
     return db.scalar(select(AgentIncident).where(AgentIncident.env_id == env.id, AgentIncident.status != INC_RESOLVED)
                      .order_by(AgentIncident.id.desc()).limit(1))
 
 
-def check_health(db: Session, *, fetch=None, now: datetime | None = None) -> dict:
+def check_health(db: Session, *, fetch=None, probe=None, now: datetime | None = None) -> dict:
     from . import service
 
+    #  Bài kiểm đưa `fetch` giả mà không đưa `probe` thì không được gọi mạng thật để đi thẳng địa chỉ.
+    if probe is None and fetch is None:
+        probe = _probe_bypass_dns
     fetch = fetch or _fetch_code
     now = now or now_utc()
     streak = max(1, int(settings.AGENT_HEALTH_FAIL_STREAK or 3))
@@ -645,6 +702,7 @@ def check_health(db: Session, *, fetch=None, now: datetime | None = None) -> dic
         if not env.health_url:
             continue
         code = int(fetch(env.health_url) or 0)
+        dns_only = code == 0 and probe is not None and int(probe(env.health_url) or 0) == 200
         env.last_health_code = code
         env.last_health_at = now
         cur = open_incident(db, env)
@@ -659,11 +717,31 @@ def check_health(db: Session, *, fetch=None, now: datetime | None = None) -> dic
                 resolved += 1
                 mins = int((now - (cur.started_at or now)).total_seconds() // 60)
                 service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+                              f"Lỗi DNS #{cur.id} trên <b>{esc(env.name)}</b> đã hết: tên miền phân giải lại được "
+                              f"(kéo dài ~{mins} phút)." if cur.signature == DNS_SIGNATURE else
                               f"Sự cố #{cur.id} trên <b>{esc(env.name)}</b> đã hết: health 200 trở lại "
                               f"(gián đoạn ~{mins} phút).", action=ACT_OPS)
             continue
         env.fail_streak = int(env.fail_streak or 0) + 1
+        if cur is not None and cur.signature == DNS_SIGNATURE and not dns_only:
+            #  Đang ghi lỗi DNS mà đi thẳng địa chỉ cũng không tới nữa: server sập thật → đóng sự cố nhẹ, mở sự cố thường.
+            cur.status = INC_RESOLVED
+            cur.resolved_at = now
+            cur = None
         if env.fail_streak < streak or cur is not None:
+            continue
+        if dns_only:
+            inc = AgentIncident(env_id=env.id, status=INC_WAITING, signature=DNS_SIGNATURE,
+                                symptom=f"tên miền không phân giải được, đi thẳng địa chỉ vẫn health 200 ({streak} phút liền)",
+                                started_at=now - timedelta(minutes=streak - 1), diagnosis="",
+                                cause="lỗi DNS, server sống", action="", created_by=0, updated_by=0)
+            db.add(inc)
+            db.flush()
+            opened += 1
+            service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+                          f"Lưu ý #{inc.id} (mức nhẹ): <b>{esc(env.name)}</b> gọi theo tên miền không được nhưng đi thẳng "
+                          "địa chỉ Cloudflare vẫn trả 200 — lỗi DNS, server vẫn sống. Em không chẩn đoán, không tự chữa; "
+                          "hết lỗi em báo.", action=ACT_OPS)
             continue
         symptom = f"health {code}" if code else "health không kết nối được"
         inc = AgentIncident(env_id=env.id, status=INC_DIAGNOSING, symptom=f"{symptom} ({streak} phút liền)",

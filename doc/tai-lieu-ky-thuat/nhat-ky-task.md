@@ -102,9 +102,23 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 thật nằm ở DNS vùng .vn (DNSSEC của VNNIC). Báo sai kiểu này làm người trực tưởng sập và có thể kéo theo thao tác tự chữa
 vô ích.
 
-**Đang làm:** khi gọi health lỗi kết nối, bot thử lại một lần bằng cách đi thẳng tới địa chỉ Cloudflare của tên miền (lấy
-địa chỉ qua DNS khác, bỏ kiểm DNSSEC, vẫn giữ tên miền khi bắt tay mã hóa). Trả 200 thì ghi sự cố mức nhẹ *lỗi DNS, server
-sống*, không chẩn đoán, không tự chữa.
+**Đã làm**
+- Khi gọi health bị lỗi kết nối (không có mã trả về), bot thử lại một lần bằng cách hỏi địa chỉ của tên miền qua DNS công
+  cộng của Cloudflare, hỏng thì qua Google, bằng HTTPS và **bỏ kiểm DNSSEC**, rồi gọi thẳng địa chỉ đó mà vẫn xưng tên miền
+  khi bắt tay mã hóa (giống `curl --resolve`), nên chứng chỉ vẫn được kiểm như thường.
+- Đi thẳng trả 200 thì bot ghi sự cố **mức nhẹ** *lỗi DNS, server sống*: nhắn một tin *Lưu ý* thay cho tin *Sự cố*, không
+  giao chẩn đoán, không tự chữa (khởi động lại không chữa được DNS). Hết lỗi thì báo *Lỗi DNS đã hết*.
+- Đang ghi lỗi DNS mà đi thẳng địa chỉ cũng không tới nữa thì bot đóng sự cố nhẹ và mở ngay sự cố sập như cũ, để không bỏ
+  lọt lúc server sập thật. Health trả mã lỗi (ví dụ 502) thì DNS vẫn chạy, bot không đi thẳng, xử lý như trước.
+
+**Kết quả:** 4 bài kiểm mới đạt; cả tệp bài kiểm của bot 367 bài đạt, ba tệp bài kiểm khác có đụng phần vận hành 105 bài
+đạt. Thử thật trên máy em với tên miền dev: hỏi địa chỉ qua DNS công cộng ra hai địa chỉ Cloudflare, đi thẳng trả 200 có
+kiểm chứng chỉ. Mã nằm ở nhánh `agent4/ai-cr-231-dns` trên máy em, chưa lên erp-v2.
+
+**Còn lại:** Agent 2 rà mã; đại ca gật thì đẩy lên erp-v2 rồi Agent 1 dựng dev.
+
+Mã nguồn: `agent_hub/ops.py` (hàm `_resolve_bypass_dns`, `_probe_bypass_dns`, `check_health`)
+Bài kiểm: `test_agent_hub.py` (bốn bài `test_loi_dns_*`, `test_khong_ket_noi_*`, `test_di_thang_*`)
 
 ## ai-CR-230 | Đưa hoạt động AI vào hồ sơ cách làm việc: số dùng AI theo người và ngày, nhật ký thao tác biết việc nào AI làm hộ
 - status: xong

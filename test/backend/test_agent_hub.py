@@ -5987,6 +5987,123 @@ def test_theo_doi_suc_khoe_mo_va_dong_su_co(db, bot, monkeypatch):
     assert inc.status == INC_RESOLVED and dev.fail_streak == 0 and "đã hết" in sent[-1]
 
 
+# ai-CR-231 — sự cố #4 22/10: DNS vùng .vn (DNSSEC VNNIC) hỏng, bot báo prod «không kết nối được» trong khi prod vẫn sống.
+def test_loi_dns_server_song_ghi_su_co_nhe_khong_chan_doan(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import INC_RESOLVED, INC_WAITING
+    from app.modules.agent_hub.model import AgentIncident
+
+    _, sent, _ = bot
+    _, prod = _envs(db)
+    tasks = _ops_on(monkeypatch)
+    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", 3)
+    codes = {"https://dev.test/api/health": 200, "https://prod.test/api/health": 0}
+    probed: list[str] = []
+
+    def probe(url):
+        probed.append(url)
+        return 200
+
+    for _ in range(3):
+        ops.check_health(db, fetch=lambda url: codes[url], probe=probe)
+    inc = db.query(AgentIncident).one()
+    assert probed == ["https://prod.test/api/health"] * 3          # chỉ đi thẳng khi lỗi kết nối, không đụng env xanh
+    assert inc.signature == ops.DNS_SIGNATURE and inc.status == INC_WAITING and "DNS" in inc.cause
+    assert tasks == []                                              # không chẩn đoán, không tự chữa
+    assert "lỗi DNS" in sent[-1] and "server vẫn sống" in sent[-1] and "Sự cố #" not in sent[-1]
+    ops.check_health(db, fetch=lambda url: codes[url], probe=probe)
+    assert db.query(AgentIncident).count() == 1                      # đang mở: không báo lại mỗi phút
+    codes["https://prod.test/api/health"] = 200
+    ops.check_health(db, fetch=lambda url: codes[url], probe=probe)
+    assert inc.status == INC_RESOLVED and prod.fail_streak == 0 and "Lỗi DNS" in sent[-1] and "đã hết" in sent[-1]
+
+
+def test_loi_dns_roi_di_thang_cung_hong_thi_bao_sap_that(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import INC_DIAGNOSING, INC_RESOLVED
+    from app.modules.agent_hub.model import AgentIncident
+
+    _, sent, _ = bot
+    _envs(db)
+    tasks = _ops_on(monkeypatch)
+    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", 3)
+    codes = {"https://dev.test/api/health": 200, "https://prod.test/api/health": 0}
+    alive = {"v": 200}
+    for _ in range(3):
+        ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: alive["v"])
+    dns = db.query(AgentIncident).one()
+    alive["v"] = 0                                                  # đi thẳng địa chỉ cũng không tới: sập thật
+    ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: alive["v"])
+    assert dns.status == INC_RESOLVED
+    real = db.query(AgentIncident).filter(AgentIncident.id != dns.id).one()
+    assert real.status == INC_DIAGNOSING and real.signature == "" and "không kết nối được" in real.symptom
+    assert tasks == [("agent.diagnose_incident", [real.id])] and "Sự cố" in sent[-1]
+
+
+def test_khong_ket_noi_di_thang_cung_hong_van_bao_sap(db, bot, monkeypatch):
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import INC_DIAGNOSING
+    from app.modules.agent_hub.model import AgentIncident
+
+    _envs(db)
+    tasks = _ops_on(monkeypatch)
+    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", 3)
+    codes = {"https://dev.test/api/health": 502, "https://prod.test/api/health": 200}
+    probed: list[str] = []
+    for _ in range(3):
+        ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: probed.append(url) or 200)
+    inc = db.query(AgentIncident).one()
+    assert probed == []                                             # có trả mã (502) = DNS chạy, không đi thẳng
+    assert inc.status == INC_DIAGNOSING and tasks == [("agent.diagnose_incident", [inc.id])]
+
+
+def test_di_thang_dia_chi_giu_ten_mien_khi_bat_tay(monkeypatch):
+    """Lấy địa chỉ qua DNS công cộng bằng HTTPS (bỏ kiểm DNSSEC), rồi gọi thẳng địa chỉ mà vẫn xưng tên miền (SNI +
+    Host) — giống `curl --resolve`. Không gọi mạng thật."""
+    import requests
+    import urllib3
+
+    from app.modules.agent_hub import ops
+
+    doh: list[tuple] = []
+
+    class _Doh:
+        def __init__(self, ips):
+            self._ips = ips
+
+        def json(self):
+            return {"Status": 0, "Answer": [{"type": 5, "data": "x.cdn."}] + [{"type": 1, "data": i} for i in self._ips]}
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        doh.append((url, dict(params or {})))
+        if "1.1.1.1" in url:
+            raise requests.ConnectionError("chặn")                  # máy chủ DoH đầu hỏng → thử máy sau
+        return _Doh(["104.21.39.171"])
+
+    pools: list[dict] = []
+
+    class _Pool:
+        def __init__(self, host, **kw):
+            pools.append({"host": host, **kw})
+
+        def request(self, method, path, headers=None):
+            pools[-1].update(method=method, path=path, headers=headers)
+            return type("R", (), {"status": 200})()
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr(urllib3, "HTTPSConnectionPool", _Pool)
+    assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health?x=1") == 200
+    assert [d[1]["cd"] for d in doh] == ["true", "true"] and doh[-1][1]["name"] == "thumua.degoholding.vn"
+    p = pools[0]
+    assert p["host"] == "104.21.39.171" and p["server_hostname"] == "thumua.degoholding.vn"
+    assert p["assert_hostname"] == "thumua.degoholding.vn" and p["cert_reqs"] == "CERT_REQUIRED"
+    assert p["path"] == "/api/health?x=1" and p["headers"]["Host"] == "thumua.degoholding.vn"
+    #  Địa chỉ IP sẵn thì không có DNS để vòng qua; DoH không ra địa chỉ nào thì coi như không tới được.
+    assert ops._probe_bypass_dns("https://10.0.0.5/api/health") == 0
+    monkeypatch.setattr(requests, "get", lambda *a, **kw: _Doh([]))
+    assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health") == 0
+
+
 def _incident(db, env, symptom="health 502 (3 phút liền)"):
     from app.modules.agent_hub.constants import INC_DIAGNOSING
     from app.modules.agent_hub.model import AgentIncident
