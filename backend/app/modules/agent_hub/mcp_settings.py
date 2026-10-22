@@ -52,7 +52,8 @@ GROUPS: tuple[ToolGroup, ...] = (
     ToolGroup("finance", "Công nợ và thanh toán", False, frozenset({
         "payable_lookup", "payment_request_read", "draft_payment_request"})),
     ToolGroup("document", "Văn thư", False, frozenset({"document_read", "document_search", "approval_flow_lookup"})),
-    ToolGroup("work", "Công việc và dự án (soạn việc, kế hoạch)", False, frozenset({"draft_work_task", "draft_work_plan"})),
+    ToolGroup("work", "Công việc và dự án (soạn việc, kế hoạch, năng lực đội)", False, frozenset({
+        "draft_work_task", "draft_work_plan", "team_capacity", "task_type_stats"})),
     ToolGroup("customs", "Tra cứu thị trường (tờ khai hải quan)", False, frozenset({
         "customs_price_stats", "customs_buy_timing", "customs_market", "customs_legal_check"})),
     ToolGroup("google", "Lịch và Drive Google cá nhân", False, frozenset({

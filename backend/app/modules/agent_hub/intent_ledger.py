@@ -191,6 +191,7 @@ TOOL_SUB: dict[str, Sub] = {
     "report_summary": Sub.LOOKUP_ANALYTICS, "dataset_query": Sub.LOOKUP_ANALYTICS,
     "erp_read": Sub.LOOKUP_PURCHASE,
     "my_work_tasks": Sub.LOOKUP_WORK,
+    "team_capacity": Sub.LOOKUP_WORK, "task_type_stats": Sub.LOOKUP_WORK,   # kh-AI1-2
     "manage_briefs": Sub.WRITE_BRIEF,
     "draft_purchase_request": Sub.MAKE_PURCHASE_REQUEST, "draft_survey_request": Sub.MAKE_SURVEY_REQUEST,
     "draft_payment_request": Sub.MAKE_PAYMENT_REQUEST, "draft_leave_request": Sub.MAKE_LEAVE,

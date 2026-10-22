@@ -15969,7 +15969,26 @@ Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · ba
 
 **Điều kiện xong:** hỏi AI *ai đang rảnh làm loại việc X* ra số đúng theo quyền người hỏi; có bài kiểm.
 
-Mã nguồn: kế hoạch AI1-2 · `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7
+**Đã làm**
+- Thêm công cụ *team_capacity*: xếp người nên giao một loại việc theo thứ tự nghỉ phép hôm nay, đủ mẫu, số việc đang ôm,
+  tốc độ và tỷ lệ làm lại. Số liệu lấy đúng từ hàm anh Dược đã viết, AI không tự tính.
+- Thêm công cụ *task_type_stats*: trung vị và p90 số ngày từ nhận tới xong, tỷ lệ trễ, tỷ lệ làm lại, số mẫu, theo loại
+  việc hoặc theo từng người.
+- Quyền theo phương án A (A1 chốt theo doc 22 mục 6): người có khóa báo cáo 16 *Năng lực theo loại việc* thấy đủ số ở
+  mọi phòng; trưởng phòng không có khóa chỉ thấy **thứ tự** người trong phòng mình và phòng con, không kèm số; người
+  khác bị từ chối, câu trả lời nói rõ cần khóa 16 và quản trị giao ở *Phân quyền tài khoản → tab Báo cáo*. Phòng ngoài
+  phạm vi và phòng không tồn tại trả cùng một câu.
+- Khai đủ cho Trợ lý web, bot và cổng nối AI: sổ công cụ, danh sách chỉ đọc của cổng, nhóm cấu hình *Công việc*, nhóm
+  lọc riêng *năng lực* (câu như *ai đang rảnh*, *giao cho ai*, *mất bao lâu*), nhãn ý định tra cứu việc.
+
+**Kết quả:** 6 bài kiểm mới đạt (gồm ca trưởng hai phòng, ca phòng con, ca tham số lạ); cùng các bài canh cửa của Trợ
+lý, cổng nối AI và lõi bot tổng 747 bài đạt. Mã ở nhánh `agent4/kh-ai1-2-nang-luc` trên máy em, chưa lên erp-v2.
+
+**Còn lại:** Agent 2 rà mã; đại ca gật thì đẩy lên erp-v2. Hướng B để đại ca chọn sau: mở trung vị theo loại việc
+(không theo người) cho trưởng phòng để ước giờ khi lập kế hoạch.
+
+Mã nguồn: `assistant/tools/capability_tool.py`, `assistant/tool_router.py`, `agent_hub/mcp.py`, `agent_hub/mcp_settings.py`, `agent_hub/intent_ledger.py` · kế hoạch AI1-2, doc 22 §7
+Bài kiểm: `test_assistant_nang_luc_doi_kh_ai1_2.py`
 
 ## kh-AI1-3-may-chu | A2 phần máy chủ: AI lập kế hoạch đề xuất, lưu đề xuất và phần người sửa
 - list: Kế hoạch hệ agent

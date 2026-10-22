@@ -103,6 +103,10 @@ TOOL_DANH_MUC = {
     "list_skills": "danh mục cẩm nang (skill) người hỏi được đọc",
     "read_skill": "nội dung một cẩm nang người hỏi được đọc",
     "read_skill_file": "tệp đính kèm của một cẩm nang người hỏi được đọc",
+    #  kh-AI1-2 — số năng lực TỔNG HỢP từ tab_work_cycle + tải đang ôm; gác bằng khóa báo cáo 16, không khóa thì chỉ
+    #  trưởng phòng được THỨ TỰ gợi ý trong phòng mình + phòng con (ca thật ở test_assistant_nang_luc_doi_kh_ai1_2.py).
+    "team_capacity": "gợi ý người giao việc — khóa báo cáo 16 hoặc trưởng phòng (phòng mình + phòng con)",
+    "task_type_stats": "thống kê tốc độ theo loại việc — chỉ khóa báo cáo 16",
 }
 
 #  CỐ Ý không lọc phạm vi — mỗi dòng phải nói được lý do, nếu không thì nó là lỗ hổng
@@ -168,7 +172,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  (ai-CR-178, phase 23.1) + `draft_work_plan` (bao-CR-616, phase 24.1 — doc/agent-hub/18).
     #  74 = 73 + `report_summary` (ai-CR-208, K11 doc/erp/21); 75 = + `dataset_query` (ai-CR-210, K12); 76 = + `erp_read` (ai-CR-211, K13).
     #  79 = 76 + `list_skills` / `read_skill` / `read_skill_file` (ai-CR-220, K7 — đọc Kho skill thay gói tri thức).
-    assert len(thuc_te) == 79, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  81 = 79 + `team_capacity` / `task_type_stats` (kh-AI1-2, doc/erp/tai-lieu-ai/22 §4).
+    assert len(thuc_te) == 81, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

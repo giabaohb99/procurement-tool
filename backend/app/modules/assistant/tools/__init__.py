@@ -46,6 +46,7 @@ from .report_summary_tool import REPORT_SUMMARY_SPEC
 from .dataset_tool import DATASET_QUERY_SPEC
 from .erp_read_tool import ERP_READ_SPEC
 from .skill_tool import SKILL_SPECS
+from .capability_tool import CAPABILITY_SPECS
 
 log = logging.getLogger("app.assistant.tools")
 
@@ -89,7 +90,8 @@ def _active_specs() -> list:
                            REPORT_SUMMARY_SPEC,   # ai-CR-208: một cửa 13 báo cáo gom sẵn (K11 doc/erp/21 §T1)
                            DATASET_QUERY_SPEC,    # ai-CR-210: sổ bộ dữ liệu — mua hàng, công nợ, YCTT (K12 doc/erp/21 §T2)
                            ERP_READ_SPEC,         # ai-CR-211: đọc danh sách / chi tiết theo danh sách trắng (K13 §T3)
-                           *SKILL_SPECS]          # ai-CR-220: đọc Kho skill (cẩm nang công ty) thay gói tri thức (K7)
+                           *SKILL_SPECS,          # ai-CR-220: đọc Kho skill (cẩm nang công ty) thay gói tri thức (K7)
+                           *CAPABILITY_SPECS]     # kh-AI1-2: năng lực đội + thống kê loại việc (doc/erp/tai-lieu-ai/22 §4)
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs
