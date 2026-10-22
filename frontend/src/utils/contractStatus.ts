@@ -1,5 +1,5 @@
 // Đối tượng / Trạng thái / Tình trạng hạn của Hợp đồng — tầng hiển thị của
-// `backend/app/core/status_codes.py` (B-02, xem `doc/erp/15-do-be-tong-nen-v2.md`).
+// `backend/app/core/status_codes.py` (B-02, xem `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`).
 //
 // Từ B-02, `tab_contract.party_type` và `.status` lưu MÃ tiếng Anh; `expiry` do backend
 // tính cũng trả về mã. Chữ tiếng Việt chỉ còn ở đây và ở `*_label` mà API gửi kèm.

@@ -13,7 +13,7 @@ Domain language is **Vietnamese** — entity names, code comments, and UI labels
 
 Legacy exceptions, do not copy them into new code:
 
-- **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/15-do-be-tong-nen-v2.md`](doc/erp/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
+- **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/nen-tang/15-do-be-tong-nen-v2.md`](doc/erp/nen-tang/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
 - **Thu mua migrates to fixed English string codes, not numbers** (QĐ-9), because its document `status` columns already use codes like `draft | submitted | approved`. Mixing two shapes inside one document is worse than the inconsistency between modules. This applies **only** to columns already in that plan — it is not a licence for new ones.
 
 Fixed code sets of either shape are declared in `backend/app/core/status_catalog.py` and registered via `app/core/code_sets.py`; `backend/scripts/gen_status_ts.py` generates the frontend copy, so never hand-write a status list in TypeScript.

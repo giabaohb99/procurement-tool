@@ -1,4 +1,4 @@
-"""ai-CR-169 — đợt 1 chống mất dữ liệu do xóa cứng (doc/erp/20-ra-soat-xoa-cung.md §2).
+"""ai-CR-169 — đợt 1 chống mất dữ liệu do xóa cứng (doc/erp/nen-tang/20-ra-soat-xoa-cung.md §2).
 
 Bảy mục, mỗi mục một cụm bài kiểm:
 1. Hợp đồng: chỉ xóa được khi chưa ký và chưa hiệu lực; xóa nhiều kiểm cả lô.

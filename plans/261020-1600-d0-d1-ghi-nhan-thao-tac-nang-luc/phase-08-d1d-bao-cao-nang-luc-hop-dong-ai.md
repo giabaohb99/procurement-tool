@@ -2,7 +2,7 @@
 
 ## Context links
 - Đích của đại ca: «phần dữ liệu để AI chia việc đúng người»
-- `doc/erp/22-ai-ke-hoach-phan-viec.md` §2.1 (máy tính số, AI viết chữ), §4 (`task_type_stats`, `team_capacity`), §6 (năng lực + tải: quản trị xem; người khác chỉ thấy kết quả đề xuất), §7 A1 (Agent 4, song song D1)
+- `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §2.1 (máy tính số, AI viết chữ), §4 (`task_type_stats`, `team_capacity`), §6 (năng lực + tải: quản trị xem; người khác chỉ thấy kết quả đề xuất), §7 A1 (Agent 4, song song D1)
 - Cổng B: `backend/app/modules/agent_gateway/controller.py` (`/api/agent-gw/*`, vùng Agent 4)
 - Mẫu gác kép: `usage_profile/controller.py`; lớp gác báo cáo: `report_access/guard.py`
 

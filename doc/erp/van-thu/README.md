@@ -53,7 +53,7 @@ Lý do và cái giá của cả hai lần đảo nằm ở [`00` mục 2](./00-d
 | Nơi khác | Quan hệ |
 |---|---|
 | [`erp/README.md`](../README.md) | Bộ tài liệu nền ERP. Phân hệ văn thư được đẩy lên **trước HRM** |
-| [`erp/06`](../06-lo-trinh-nen-tang-va-hrm.md), [`erp/08`](../08-danh-sach-task-cung-co.md) | Nhóm N trong `01` chính là các hạng mục củng cố nền đã liệt kê ở hai tệp đó, nay được làm sớm hơn |
+| [`erp/06`](../00-ke-hoach-theo-module.md), [`erp/08`](../00-ke-hoach-theo-module.md) | Nhóm N trong `01` chính là các hạng mục củng cố nền đã liệt kê ở hai tệp đó, nay được làm sớm hơn |
 | `D:\New folder\quanlytailieu\docs\` | Bộ thiết kế văn thư độc lập trước đây: danh mục 32 loại văn bản, 13 pháp nhân, logic đánh số, mô hình 42 bảng. **Nội dung nghiệp vụ vẫn dùng; phần kiến trúc thì bộ này thay thế** |
 
 ---

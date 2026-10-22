@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Bản | 1.0 — 17/10/2026 |
-| Áp cho | DEV `deverp.degoholding.vn` — K1 (bao-CR-621), K2 (bao-CR-622), K3 (ai-CR-209), K11 (ai-CR-208), K12 (ai-CR-210) của [`21`](./21-kho-skill-ai-mcp.md) |
+| Áp cho | DEV `deverp.degoholding.vn` — K1 (bao-CR-621), K2 (bao-CR-622), K3 (ai-CR-209), K11 (ai-CR-208), K12 (ai-CR-210) của [`21`](21-kho-skill-ai-mcp.md) |
 | Người thử | Đại ca, bằng Claude của chính mình |
 
 ## 1. Gắn Claude vào ERP dev

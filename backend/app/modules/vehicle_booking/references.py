@@ -4,7 +4,7 @@ Chuyến xe ghi `assigned_vehicle_id` / `assigned_driver_id` khi điều phối 
 tới — kể cả đã hoàn tất / hủy / xóa mềm, vì báo cáo đặt xe còn đọc biển số, tên tài xế — thì không xóa.
 
 ⚠️ Hai bảng này CHƯA có cờ `is_active`, chỉ có `status` (available / on_trip / maintenance) — «ngưng
-dùng» đúng nghĩa phải thêm cột ở đợt sau (ghi ở `doc/erp/20-ra-soat-xoa-cung.md` §4). Chặn xóa vẫn áp.
+dùng» đúng nghĩa phải thêm cột ở đợt sau (ghi ở `doc/erp/nen-tang/20-ra-soat-xoa-cung.md` §4). Chặn xóa vẫn áp.
 """
 from app.core.reference_guard import Reference, register
 

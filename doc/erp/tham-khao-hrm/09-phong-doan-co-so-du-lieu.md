@@ -215,4 +215,4 @@ Nếu chọn tự động thì hạ tầng chạy nền đã có sẵn (Celery �
 | `Khá` | Suy ra từ cấu trúc màn hình, hợp lý nhưng chưa xác nhận | Đưa vào để thảo luận, đánh dấu là giả định |
 | `Đoán` | Chỉ có cơ sở gián tiếp | **Không đưa vào bản thiết kế.** Dùng làm câu hỏi mang đi phỏng vấn |
 
-Toàn bộ tài liệu này là **tài liệu tham khảo**, không phải bản mô tả yêu cầu. Cấu trúc dữ liệu của mình phải sinh ra từ khảo sát nghiệp vụ của công ty mình, theo quyết định Đ2 ở [danh mục chờ quyết](../04-danh-muc-cho.md). Bảng phỏng đoán này chỉ dùng để **biết trước phải hỏi gì** và **biết trước chỗ nào sẽ khó**.
+Toàn bộ tài liệu này là **tài liệu tham khảo**, không phải bản mô tả yêu cầu. Cấu trúc dữ liệu của mình phải sinh ra từ khảo sát nghiệp vụ của công ty mình, theo quyết định Đ2 ở [danh mục chờ quyết](../00-ke-hoach-theo-module.md). Bảng phỏng đoán này chỉ dùng để **biết trước phải hỏi gì** và **biết trước chỗ nào sẽ khó**.

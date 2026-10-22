@@ -6,11 +6,11 @@
 | Đối tượng đọc | Đội phần mềm · Gia Bảo · Được · người làm giao diện |
 | Trả lời câu hỏi | Biến Thu mua thành một phân hệ của ERP bằng cách nào, mà Thu mua không gián đoạn một phút nào, và hai người làm song song được |
 | Chưa có trong bản này | Số người-ngày, ngày giao cam kết, thiết kế màn hình lưới |
-| Liên quan | [`01` Ngắn hạn](./01-ngan-han-2026.md) bước 2 · [`06` Lộ trình nền tảng](./06-lo-trinh-nen-tang-va-hrm.md) · [`04` Danh mục chờ quyết](./04-danh-muc-cho.md) |
+| Liên quan | [`01` Ngắn hạn](../00-ke-hoach-theo-module.md) bước 2 · [`06` Lộ trình nền tảng](../00-ke-hoach-theo-module.md) · [`04` Danh mục chờ quyết](../00-ke-hoach-theo-module.md) |
 
 **Ba câu tóm tắt.** Vỏ ERP là **một lớp thêm vào phía trên**, không phải viết lại phía dưới: 35 module backend và 35 trang giao diện giữ nguyên, không sửa một dòng. Backend thêm ba tệp mới và một endpoint; giao diện thêm ba tệp mới và một trường vào mảng menu đã có sẵn. Toàn bộ nằm sau một cờ tính năng tắt ở bản chạy thật, nên Thu mua không biết có việc gì đang xảy ra cho tới ngày bật cờ.
 
-Tài liệu này là bản chi tiết của **bước 2 trong [`01`](./01-ngan-han-2026.md)**. Chỗ nào lệch với `01` thì lấy `07`, vì `07` viết sau khi đọc lại mã nguồn — danh sách chỗ lệch ở mục 12.
+Tài liệu này là bản chi tiết của **bước 2 trong [`01`](../00-ke-hoach-theo-module.md)**. Chỗ nào lệch với `01` thì lấy `07`, vì `07` viết sau khi đọc lại mã nguồn — danh sách chỗ lệch ở mục 12.
 
 ---
 
@@ -174,7 +174,7 @@ Bốn chỗ phải giải thích, vì đọc lướt sẽ thấy lạ:
 | Chỗ | Vì sao xếp vậy |
 |---|---|
 | `supplier`, `contract` thuộc Thu mua | Thu mua là nơi tạo và quản. Kế toán và Sản xuất về sau **đọc** qua menu của họ, không cần đổi chủ sở hữu |
-| Danh mục dùng chung tách khỏi Thu mua | Đúng việc **DB8** trong [`01`](./01-ngan-han-2026.md). Đơn vị tính và phân loại là của cả tập đoàn, không phải của Thu mua |
+| Danh mục dùng chung tách khỏi Thu mua | Đúng việc **DB8** trong [`01`](../00-ke-hoach-theo-module.md). Đơn vị tính và phân loại là của cả tập đoàn, không phải của Thu mua |
 | `warehouse` nằm ở Danh mục, `inventory` nằm ở Kho | Kho là danh mục, tồn kho là số dư biến động. Khi MFM tới, phân hệ Kho là chỗ nó đổ vào |
 | `report` thuộc Thu mua | Hiện chỉ có báo cáo mua hàng. Khi có báo cáo liên phân hệ thì tách entity mới, không đổi entity này |
 
@@ -253,7 +253,7 @@ Tiền lệ đã có trong nhà: **Quản lý dự án dùng chung backend và c
 
 Chốt xong dạng dữ liệu, người làm giao diện **mô phỏng bằng `config/modules.mock.json`** (FE15) và làm trọn lưới phân hệ mà không chờ backend. Khi endpoint thật lên, đổi một dòng gọi API. Đó là lý do hai người không chặn nhau.
 
-Ngược lại: cho làm giao diện trước khi chốt hai tệp này thì người đó viết dựa trên định dạng lỗi cũ và chuỗi trạng thái tiếng Việt — **cả hai đều nằm trong danh sách sắp sửa** (LC1 và DB14 ở [`01`](./01-ngan-han-2026.md)). Viết xong rồi sửa lại toàn bộ.
+Ngược lại: cho làm giao diện trước khi chốt hai tệp này thì người đó viết dựa trên định dạng lỗi cũ và chuỗi trạng thái tiếng Việt — **cả hai đều nằm trong danh sách sắp sửa** (LC1 và DB14 ở [`01`](../00-ke-hoach-theo-module.md)). Viết xong rồi sửa lại toàn bộ.
 
 ### 8.2 Chia việc
 
@@ -264,7 +264,7 @@ Ngược lại: cho làm giao diện trước khi chốt hai tệp này thì ng�
 | FE1 `core/modules.py` + PQ1 endpoint | FE4 thêm trường `module` vào `NAV_GROUPS` |
 | **PQ4, PQ5 vá lỗ hổng phạm vi dữ liệu** | Dọn 9 tệp chép cứng chuỗi trạng thái, sau khi có `enums.ts` |
 
-Việc cuối cột trái là việc gấp nhất trong bảng, và **nó không liên quan gì tới ERP** — đó là lỗ hổng đang có trên bản chạy thật ngay lúc này. Xem [`06`](./06-lo-trinh-nen-tang-va-hrm.md) R5.
+Việc cuối cột trái là việc gấp nhất trong bảng, và **nó không liên quan gì tới ERP** — đó là lỗ hổng đang có trên bản chạy thật ngay lúc này. Xem [`06`](../00-ke-hoach-theo-module.md) R5.
 
 ### 8.3 Thứ tự
 
@@ -275,7 +275,7 @@ Việc cuối cột trái là việc gấp nhất trong bảng, và **nó không
 | Nửa sau T9 | PQ2 ẩn ô theo quyền | FE4, FE14, FE10a–FE10e |
 | Nửa đầu T10 | PQ3 màn phân quyền gom theo phân hệ | FE11 tài liệu, FE12 báo trước người dùng |
 
-Khớp với lịch ở [`01` mục 10](./01-ngan-han-2026.md), không thêm nhịp mới.
+Khớp với lịch ở [`01` mục 10](../00-ke-hoach-theo-module.md), không thêm nhịp mới.
 
 ---
 
@@ -321,7 +321,7 @@ Toàn bước coi là đạt khi đủ sáu điều, kiểm được chứ khôn
 
 ## 12. `07` sửa gì so với `01`
 
-**Đã gộp hết vào [`01` bản 1.3](./01-ngan-han-2026.md) ngày 12/08/2026.** Bảng dưới giữ lại để ai đọc `01` bản 1.2 thì tra được.
+**Đã gộp hết vào [`01` bản 1.3](../00-ke-hoach-theo-module.md) ngày 12/08/2026.** Bảng dưới giữ lại để ai đọc `01` bản 1.2 thì tra được.
 
 | Chỗ | `01` bản 1.2 | `07`, nay là `01` bản 1.3 |
 |---|---|---|
@@ -331,7 +331,7 @@ Toàn bước coi là đạt khi đủ sáu điều, kiểm được chứ khôn
 | Số entity | 29 | Đếm được **28**. Rà lại khi làm FE1 |
 | Ba mã mới | — | **FE13** cờ tính năng · **FE14** một phân hệ vào thẳng · **FE15** tệp mô phỏng hợp đồng dữ liệu |
 
-Kéo theo ở `01` bản 1.3: PQ3 thành ma trận 28 × 8, PQ5 còn 19 entity thiếu khai báo phạm vi thay vì 20, rủi ro R2 viết lại vì phần lớn rủi ro đã rút ngay từ thiết kế. **[`06`](./06-lo-trinh-nen-tang-va-hrm.md) vẫn còn ghi 29 entity — chưa sửa.**
+Kéo theo ở `01` bản 1.3: PQ3 thành ma trận 28 × 8, PQ5 còn 19 entity thiếu khai báo phạm vi thay vì 20, rủi ro R2 viết lại vì phần lớn rủi ro đã rút ngay từ thiết kế. **[`06`](../00-ke-hoach-theo-module.md) vẫn còn ghi 29 entity — chưa sửa.**
 
 ---
 

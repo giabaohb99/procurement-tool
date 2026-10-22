@@ -1,7 +1,7 @@
 # PHÂN HỆ ĐIỂM CÀ PHÊ (POS365) — DANH SÁCH TÍNH NĂNG
 
 > **Mã tài liệu:** ERP-CF-01 · **Bản:** 1.0 — 08/09/2026 · **Loại:** KẾ HOẠCH (chế độ A — công cụ chưa có, liệt kê tính năng cần có)
-> **Nguồn quyết định:** [`../17-ke-hoach-trien-khai-pos365-diem-ca-phe.md`](../17-ke-hoach-trien-khai-pos365-diem-ca-phe.md) (bản thực thi 07/09/2026) và [`../09-phuc-loi-diem-va-pos.md`](../09-phuc-loi-diem-va-pos.md) (bản định hướng 12/08/2026). Chỗ nào hai bản lệch nhau thì lấy `17`.
+> **Nguồn quyết định:** [`17-ke-hoach-trien-khai-pos365-diem-ca-phe.md`](17-ke-hoach-trien-khai-pos365-diem-ca-phe.md) (bản thực thi 07/09/2026) và [`09-phuc-loi-diem-va-pos.md`](09-phuc-loi-diem-va-pos.md) (bản định hướng 12/08/2026). Chỗ nào hai bản lệch nhau thì lấy `17`.
 > **Phương án đã chốt:** ERP là **sổ cái duy nhất**; quầy tiêu điểm bằng **phương thức thanh toán "Trừ điểm"** trên POS365; điểm **reset đầu mỗi tháng theo cấp nhân sự**, không cộng dồn.
 
 ## Cách đọc bảng

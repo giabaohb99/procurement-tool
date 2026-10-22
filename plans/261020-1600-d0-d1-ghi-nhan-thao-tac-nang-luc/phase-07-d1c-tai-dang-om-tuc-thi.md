@@ -2,7 +2,7 @@
 
 ## Context links
 - Lời đại ca: «Tải đang ôm tính ngay lúc hỏi, không chỉ theo tuần»
-- `doc/erp/22-ai-ke-hoach-phan-viec.md` §4 `team_capacity` (số việc đang mở, quá hạn, nghỉ phép trong khoảng, giờ theo lịch)
+- `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §4 `team_capacity` (số việc đang mở, quá hạn, nghỉ phép trong khoảng, giờ theo lịch)
 - Nguồn: `approval/task_service.my_tasks` / `count_my_tasks` (có cả việc được ủy quyền), `tab_approval_task` (index `(assignee_employee_id, status)`),
   `tab_delegation` (`ix_delegation_to/_from`), `tab_work_task(+_assignee)`, `tab_purchase_request.assignee_id/head_of_dept_id`, `tab_purchase_order.nspt_id`,
   dòng YCBG `assignee` (mã NV chuỗi), `tab_document.clone_assignee_employee_id` (status 11), `tab_leave_request`

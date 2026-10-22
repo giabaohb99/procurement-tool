@@ -396,11 +396,11 @@ Nếu có thực tập sinh: giao được A01, A07 và toàn bộ phần nhập
 
 | Tài liệu | Ảnh hưởng |
 |---|---|
-| [`01` Ngắn hạn 2026](../01-ngan-han-2026.md) | Bước 1 khảo sát nghiệp vụ HRM và bước 6 HRM **lùi lại phía sau văn thư**. Bước 5 bộ máy duyệt dùng chung **được làm sớm hơn** — chính là phase 3 ở đây |
-| [`06` Lộ trình nền tảng và HRM](../06-lo-trinh-nen-tang-va-hrm.md) | Các hạng mục PQ11, PQ13, PQ14, DB15, H17, H18 **được làm trong phase 0**, sớm hơn thứ tự cũ |
-| [`08` Danh sách task củng cố](../08-danh-sach-task-cung-co.md) | Các task CC tương ứng với nhóm N chuyển lên đầu; phần còn lại giữ nguyên thứ tự |
-| [`10` Báo cáo WorkHub](../10-lo-trinh-phat-trien-hrm.md) | Mốc thời gian trong báo cáo không còn đúng. Phân hệ Văn bản **được làm trước phân hệ Con người**, ngược với thứ tự đã trình. Cần cập nhật mục 7.3 khi báo cáo lần tới |
-| [`09` Phúc lợi điểm và POS](../09-phuc-loi-diem-va-pos.md) | Không đổi. Phần gọi thử API POS365 vẫn làm song song được vì không đụng mã nguồn |
+| [`01` Ngắn hạn 2026](../00-ke-hoach-theo-module.md) | Bước 1 khảo sát nghiệp vụ HRM và bước 6 HRM **lùi lại phía sau văn thư**. Bước 5 bộ máy duyệt dùng chung **được làm sớm hơn** — chính là phase 3 ở đây |
+| [`06` Lộ trình nền tảng và HRM](../00-ke-hoach-theo-module.md) | Các hạng mục PQ11, PQ13, PQ14, DB15, H17, H18 **được làm trong phase 0**, sớm hơn thứ tự cũ |
+| [`08` Danh sách task củng cố](../00-ke-hoach-theo-module.md) | Các task CC tương ứng với nhóm N chuyển lên đầu; phần còn lại giữ nguyên thứ tự |
+| [`10` Báo cáo WorkHub](../00-ke-hoach-theo-module.md) | Mốc thời gian trong báo cáo không còn đúng. Phân hệ Văn bản **được làm trước phân hệ Con người**, ngược với thứ tự đã trình. Cần cập nhật mục 7.3 khi báo cáo lần tới |
+| [`09` Phúc lợi điểm và POS](../diem-ca-phe/09-phuc-loi-diem-va-pos.md) | Không đổi. Phần gọi thử API POS365 vẫn làm song song được vì không đụng mã nguồn |
 
 Bốn tài liệu trên **chưa sửa** — chờ chốt lộ trình này rồi sửa một lần, tránh sửa đi sửa lại.
 

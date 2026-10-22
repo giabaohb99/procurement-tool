@@ -1,7 +1,7 @@
 # Phase 01 — D0a: Sự kiện «Bấm chức năng» (`UI_ACTION`)
 
 ## Context links
-- `doc/erp/22-ai-ke-hoach-phan-viec.md` §5 (UI_ACTION, mã cố định, không chữ gõ)
+- `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §5 (UI_ACTION, mã cố định, không chữ gõ)
 - Nền: `backend/app/modules/usage_profile/telemetry_{schema,service,controller}.py`, `model.py` (`UiEvent`)
 - FE: `frontend-v2/src/core/telemetry/telemetry-queue.ts`, `ui-event-codes.ts`
 - Review cũ: `plans/reports/code-reviewer-261019-cr641-review.md` (scrub, 30 lô/phút, 64 KB)

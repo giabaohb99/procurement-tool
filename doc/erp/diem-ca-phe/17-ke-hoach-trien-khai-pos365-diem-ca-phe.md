@@ -5,8 +5,8 @@
 | Bản | **1.0 — 07/09/2026** |
 | Đối tượng đọc | Người chủ trì · Đội phần mềm · Phòng Nhân sự · Quầy cà phê |
 | Trả lời câu hỏi | Đưa POS365 lên quản lý quầy cà phê, nhân viên order và **thanh toán bằng phương thức trừ điểm** trên tài khoản cá nhân, điểm **reset theo cấp nhân sự vào mốc định kỳ hằng tháng** — làm bằng cách nào, theo thứ tự nào |
-| Quan hệ với bản 09 | [`09-phuc-loi-diem-va-pos.md`](./09-phuc-loi-diem-va-pos.md) là bản **định hướng** (12/08). Bản này là bản **thực thi**: đã đọc được tài liệu API chính thức, và đề bài mới chốt thêm 2 quyết định nghiệp vụ làm thay đổi phương án được chọn (xem mục 1) |
-| Bộ tài liệu kỹ thuật | **[`diem-ca-phe/`](./diem-ca-phe/README.md)** (08/09/2026) — bản thiết kế thực thi chi tiết: tính năng có mã, bảng dữ liệu, thuật toán đồng bộ, phân quyền, giao diện, phase CP0→CP5. **Chỗ nào lệch bản này thì lấy bộ đó** |
+| Quan hệ với bản 09 | [`09-phuc-loi-diem-va-pos.md`](09-phuc-loi-diem-va-pos.md) là bản **định hướng** (12/08). Bản này là bản **thực thi**: đã đọc được tài liệu API chính thức, và đề bài mới chốt thêm 2 quyết định nghiệp vụ làm thay đổi phương án được chọn (xem mục 1) |
+| Bộ tài liệu kỹ thuật | **[`diem-ca-phe/`](.././diem-ca-phe/README.md)** (08/09/2026) — bản thiết kế thực thi chi tiết: tính năng có mã, bảng dữ liệu, thuật toán đồng bộ, phân quyền, giao diện, phase CP0→CP5. **Chỗ nào lệch bản này thì lấy bộ đó** |
 
 **Ba câu tóm tắt.** POS365 vẫn là màn hình duy nhất của quầy: thu ngân chọn khách hàng (là nhân viên đã ghép) và bấm phương thức thanh toán **"Trừ điểm"** — một *tài khoản thanh toán* dựng sẵn trong POS365, không cần POS365 biết gì về điểm. ERP là **sổ cái duy nhất**: kéo đơn hàng về theo lịch, đơn nào thanh toán bằng tài khoản "Trừ điểm" thì ghi một dòng **tiêu** vào sổ điểm của đúng nhân viên; đầu mỗi tháng một tác vụ hẹn giờ **reset và cấp lại điểm theo cấp nhân sự**. Vì chỉ còn MỘT nơi giữ số (ERP), bài toán "hai hệ cùng giữ một con số tiền" của bản 09 biến mất — đổi lại phải xử lý một điểm yếu duy nhất: POS365 không tự chặn người đã hết điểm (mục 5).
 

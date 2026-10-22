@@ -2,7 +2,7 @@
 
 ## Context links
 - Lời đại ca: «chức năng nào nhiều người dùng, chức năng nào không ai dùng, chỗ nào hay bỏ dở hay lỗi … biết nhân sự vướng ở đâu mà sửa»
-- `doc/erp/22-ai-ke-hoach-phan-viec.md` §5 (báo cáo theo chức năng đặt cạnh báo cáo theo người), §6 (chỉ quản trị)
+- `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §5 (báo cáo theo chức năng đặt cạnh báo cáo theo người), §6 (chỉ quản trị)
 - Lớp gác thứ ba: `backend/app/modules/report_access/guard.py`, `seed_defaults.ensure_report_access_defaults` (tự cấp admin cho khóa mới)
 - Mẫu controller gác kép: `backend/app/modules/usage_profile/controller.py`
 - Memory: «API báo cáo phải nhanh nhất», «Gác điều hướng mặc định MỞ»

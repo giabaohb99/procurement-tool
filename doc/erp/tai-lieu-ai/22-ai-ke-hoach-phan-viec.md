@@ -5,7 +5,7 @@
 | Bản | 0.2 — 20/10/2026 (0.1 bản phác; 0.2: quyền chỉ quản trị, ghi nhận chức năng, đưa hoạt động AI vào hồ sơ — đợt A0 / D0) |
 | Người yêu cầu | Đại ca — *"có 1 hệ AI chuyên dành cho phòng đó, rồi cho AI kế hoạch của công ty, các AI nói chuyện với nhau… phân tích, đưa ra quyết định đúng hơn dựa vào việc hằng ngày nhân sự làm hoặc data công ty, ra kế hoạch, ra tới danh sách công việc, phân cho ai luôn"*; *"mọi người dùng trợ lý hoặc qua MCP cũng tiếp cận được nguồn data này, cũng ghi nhận lại trên data này"* |
 | Chia việc | **Chỉ số** (hồ sơ cách làm việc): anh Dược (duoc-CR-626/641/644). **Phần AI**: Agent 1 + Agent 4 (vai AI và MCP) |
-| Nền đã có | Cổng MCP + Trợ lý web + bot ([`21`](./21-kho-skill-ai-mcp.md)), Kho skill theo phòng ban, bot lập kế hoạch việc vào Dự án (bao-CR-616, [`agent-hub/18`](../agent-hub/18-dieu-phoi-viec-theo-ke-hoach.md)), hồ sơ cách làm việc 58 chỉ số trên prod từ 20/10 |
+| Nền đã có | Cổng MCP + Trợ lý web + bot ([`21`](21-kho-skill-ai-mcp.md)), Kho skill theo phòng ban, bot lập kế hoạch việc vào Dự án (bao-CR-616, [`agent-hub/18`](../../agent-hub/18-dieu-phoi-viec-theo-ke-hoach.md)), hồ sơ cách làm việc 58 chỉ số trên prod từ 20/10 |
 
 ---
 

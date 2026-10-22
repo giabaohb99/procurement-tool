@@ -8,7 +8,7 @@
 > lần import**. Tài liệu này đối chiếu mã nguồn đang chạy, chốt kiến trúc, liệt kê màn hình kèm
 > input/output, và chia đợt nghiệm thu.
 >
-> Đây là bản thực thi chi tiết của **MC-6 / Đợt Đ-13** trong [`13-ke-hoach-man-con-lai-v2.md`](./13-ke-hoach-man-con-lai-v2.md)
+> Đây là bản thực thi chi tiết của **MC-6 / Đợt Đ-13** trong [`../00-ke-hoach-theo-module.md`](../00-ke-hoach-theo-module.md)
 > — đợt đó trước ghi "Hoãn", nay mở lại và tách nhỏ thành Đ-13a…Đ-13e ở §9.
 
 ---
@@ -358,7 +358,7 @@ giá trị trước import, batch chuyển `Đã hoàn tác`; với `purchase_or
 
 ## 9. Chia đợt — Đ-13a … Đ-13e
 
-Bám luật nhận việc §3.1 của [`13-...md`](./13-ke-hoach-man-con-lai-v2.md): ghi tên vào cột *Ai làm*,
+Bám luật nhận việc §3.1 của [`13-...md`](../00-ke-hoach-theo-module.md): ghi tên vào cột *Ai làm*,
 đổi *Đang làm*, push riêng dòng đó trước khi gõ mã. Số CR cấp ở `change-log.md`.
 
 | Đợt | Việc | Ngày công | Phụ thuộc | Điều kiện đủ (tóm tắt) |

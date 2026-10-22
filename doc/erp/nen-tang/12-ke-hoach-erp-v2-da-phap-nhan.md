@@ -10,7 +10,7 @@
 
 Mục 1 → 5 giữ lại **chỉ để tra cứu**: đã chốt gì, đã bỏ gì, vì sao — mỗi mục rút còn một bảng.
 Đừng lấy việc từ đó; việc lấy ở **mục 5.1** và ở
-[`19` mục 7](./19-viec-con-lai-tong-hop.md).
+[`19` mục 7](../00-ke-hoach-theo-module.md).
 
 **Ba lần đổi hướng, theo thứ tự:**
 
@@ -20,14 +20,14 @@ Mục 1 → 5 giữ lại **chỉ để tra cứu**: đã chốt gì, đã bỏ 
 | 18/08/2026 (cuối ngày) | Rút gọn lần một: **hoãn P5** (danh mục theo đơn vị) | 5 |
 | **16/09/2026** | Rút gọn lần hai: **bỏ hẳn vế pháp nhân**, chia việc và chia tầm nhìn bằng **phòng ban + phạm vi** | **5.1 — phần đang làm** |
 
-Tệp [`11`](./11-da-phap-nhan-va-erp-v2.md) trả lời "vì sao"; tệp này trả lời "làm gì, theo thứ
+Tệp [`11`](../00-ke-hoach-theo-module.md) trả lời "vì sao"; tệp này trả lời "làm gì, theo thứ
 tự nào, xong thì đo bằng gì".
 
 ---
 
 ## 1. Tám câu Q1–Q8 (chốt 18/08/2026) — còn hiệu lực tới đâu
 
-Chi tiết và lý do ở [`11` mục 4.1–4.2](./11-da-phap-nhan-va-erp-v2.md).
+Chi tiết và lý do ở [`11` mục 4.1–4.2](../00-ke-hoach-theo-module.md).
 
 | | Chốt cũ | Hôm nay |
 |---|---|---|
@@ -57,7 +57,7 @@ phần lớn gắn vào P5 và P6 — cả hai đã bỏ. Rút lại còn phần
 | **Kho** | Tồn kho · danh mục Kho | Chốt **để mở, không lọc** (5.1.4) |
 | **Danh mục** | Sản phẩm · NCC · Hợp đồng · Kho · Phân loại · Đơn vị tính | Bảng phân công thêm cột phòng (5.1.1) · phạm vi hợp đồng (5.1.8 C — đợt sau) |
 | **Quyền** | Công ty · Phòng ban · Nhân sự · Phân quyền vai trò và theo người | Hai vai trò mới + bậc phạm vi "Thu mua trong phòng mình" (5.1.2) · ô tick "Phòng tự mua hàng" |
-| **Màn còn lại** | — | Kế hoạch riêng ở [`13`](./13-ke-hoach-man-con-lai-v2.md), mã **MC-1 … MC-7** (Cấu hình hệ thống · Import · Sao lưu CSDL · Phiếu hỗ trợ · Thông báo · Trang cá nhân · Đặt lại mật khẩu) |
+| **Màn còn lại** | — | Kế hoạch riêng ở [`13`](../00-ke-hoach-theo-module.md), mã **MC-1 … MC-7** (Cấu hình hệ thống · Import · Sao lưu CSDL · Phiếu hỗ trợ · Thông báo · Trang cá nhân · Đặt lại mật khẩu) |
 
 **Bỏ khỏi bảng cũ:** mọi dòng gắn **P5** (bản đè sản phẩm và NCC theo pháp nhân, đơn vị sở hữu
 danh mục, khối "Đơn vị được dùng") · mọi dòng gắn **P6** (chứng từ hợp nhất) · các bậc phạm vi
@@ -583,7 +583,7 @@ câu lục cả hệ**, lệch phạm vi ở đây là lệch to nhất.
 
 ## 6. Rủi ro
 
-Bảng rủi ro của tầng đa pháp nhân ở [`11` mục 6](./11-da-phap-nhan-va-erp-v2.md) nay chỉ còn
+Bảng rủi ro của tầng đa pháp nhân ở [`11` mục 6](../00-ke-hoach-theo-module.md) nay chỉ còn
 giá trị lịch sử. Bốn rủi ro thật của kế hoạch đang chạy:
 
 | Rủi ro | Dấu hiệu sớm | Đường lui |
@@ -602,7 +602,7 @@ giá trị lịch sử. Bốn rủi ro thật của kế hoạch đang chạy:
   nhân. Bỏ, xem mục 5. Quay lại khi nào HRM khai đủ công ty cho nhân sự.
 - **Giấu KÍN công thức nguyên liệu.** Với danh mục sản phẩm/NCC công khai và tồn kho mở, thiết
   kế này chỉ đạt **"khó thấy hơn"**, không phải "không thể thấy" — xem đoạn cuối 5.1.6.
-- **Tắt `frontend/`.** Chỉ bàn khi các màn ở [`13`](./13-ke-hoach-man-con-lai-v2.md) xong.
+- **Tắt `frontend/`.** Chỉ bàn khi các màn ở [`13`](../00-ke-hoach-theo-module.md) xong.
 - **Triển khai v2 lên prod.** Hạ tầng đã sẵn (service `erp` có trong
   `docker-compose.production.yml` từ 11/09/2026), nhưng ngày bật cho người dùng prod chưa chốt.
 - **HRM, Văn thư, các phân hệ còn lại** — xem `02`, `06`, `10` và `van-thu/`.
@@ -612,12 +612,12 @@ giá trị lịch sử. Bốn rủi ro thật của kế hoạch đang chạy:
 
 ## 8. Liên quan
 
-- [`19` Việc còn lại tổng hợp](./19-viec-con-lai-tong-hop.md) mục 7 — **chỗ lấy việc**, bảng
+- [`19` Việc còn lại tổng hợp](../00-ke-hoach-theo-module.md) mục 7 — **chỗ lấy việc**, bảng
   giai đoạn rút gọn của mục 5.1.
-- [`11` Đa pháp nhân và chuyển chức năng sang ERP v2](./11-da-phap-nhan-va-erp-v2.md) — đánh
+- [`11` Đa pháp nhân và chuyển chức năng sang ERP v2](../00-ke-hoach-theo-module.md) — đánh
   giá và số đo hiện trạng của hướng cũ; **không cập nhật nữa**.
-- [`13` Kế hoạch các màn còn lại ở v2](./13-ke-hoach-man-con-lai-v2.md) — MC-1 … MC-7.
-- [`08` Danh sách task củng cố](./08-danh-sach-task-cung-co.md) — **DB15** trùng với P1-2 (đã
+- [`13` Kế hoạch các màn còn lại ở v2](../00-ke-hoach-theo-module.md) — MC-1 … MC-7.
+- [`08` Danh sách task củng cố](../00-ke-hoach-theo-module.md) — **DB15** trùng với P1-2 (đã
   xong); **PQ11/PQ13/PQ14** thuộc cùng nhóm phạm vi.
-- [`07` Kiến trúc vỏ ERP](./07-kien-truc-vo-erp.md) — bảng chia entity vào phân hệ.
+- [`07` Kiến trúc vỏ ERP](07-kien-truc-vo-erp.md) — bảng chia entity vào phân hệ.
 - `doc/tai-lieu-ky-thuat/change-log-bao.md` — dòng **bao-CR-414-phong-tu-mua-hang**.

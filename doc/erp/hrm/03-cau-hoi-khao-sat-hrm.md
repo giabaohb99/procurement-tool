@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | Bản | 1.0 — 10/08/2026 |
-| Dùng để làm gì | Mang đi phỏng vấn phòng Nhân sự và các bộ phận liên quan, ở bước 0 của [`01` Ngắn hạn](./01-ngan-han-2026.md) |
+| Dùng để làm gì | Mang đi phỏng vấn phòng Nhân sự và các bộ phận liên quan, ở bước 0 của [`01` Ngắn hạn](../00-ke-hoach-theo-module.md) |
 | Kết quả cần ra | Bản mô tả nghiệp vụ Nhân sự có xác nhận, và **bảng chốt phạm vi HRM bản 1** |
-| Liên quan | [`04` Danh mục chờ quyết](./04-danh-muc-cho.md) |
+| Liên quan | [`04` Danh mục chờ quyết](../00-ke-hoach-theo-module.md) |
 
 ---
 
@@ -96,7 +96,7 @@ Mỗi buổi ghi thành biên bản, gửi lại bộ phận xác nhận trong v
 
 ## Phần C — Câu hỏi theo từng đầu mục
 
-Với mỗi đầu mục, ngoài các câu dưới đây, luôn hỏi đủ khuôn bảy mục ở [`01` mục 3.3](./01-ngan-han-2026.md): ai làm · bắt đầu từ đâu · các bước · ai duyệt · biểu mẫu đang dùng · kết quả ra gì · đau ở đâu.
+Với mỗi đầu mục, ngoài các câu dưới đây, luôn hỏi đủ khuôn bảy mục ở [`01` mục 3.3](../00-ke-hoach-theo-module.md): ai làm · bắt đầu từ đâu · các bước · ai duyệt · biểu mẫu đang dùng · kết quả ra gì · đau ở đâu.
 
 ### C1. Tuyển dụng
 
@@ -228,7 +228,7 @@ Xem phần B2. Ngoài ra:
 | D9 | Có yêu cầu ghi lại ai đã xem hồ sơ của ai không? |
 | D10 | Người của công ty A có được xem nhân sự công ty B trong cùng tập đoàn không? |
 
-**Lưu ý cho người đi khảo sát:** phần lọc dữ liệu theo phạm vi trong hệ thống hiện tại **chưa đủ chặt** — có 20 trên 29 loại dữ liệu chưa khai báo phạm vi, và chỗ nào thiếu thì hệ thống không lọc mà cũng không báo lỗi. Việc PQ4 và PQ5 ở [`01`](./01-ngan-han-2026.md) phải xong trước khi HRM có dữ liệu thật. Câu trả lời của phần D chính là đầu vào cho hai việc đó.
+**Lưu ý cho người đi khảo sát:** phần lọc dữ liệu theo phạm vi trong hệ thống hiện tại **chưa đủ chặt** — có 20 trên 29 loại dữ liệu chưa khai báo phạm vi, và chỗ nào thiếu thì hệ thống không lọc mà cũng không báo lỗi. Việc PQ4 và PQ5 ở [`01`](../00-ke-hoach-theo-module.md) phải xong trước khi HRM có dữ liệu thật. Câu trả lời của phần D chính là đầu vào cho hai việc đó.
 
 ---
 

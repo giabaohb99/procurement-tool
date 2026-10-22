@@ -407,7 +407,7 @@ def summarize_report_rows(rows) -> dict:
     """Gom dòng Báo cáo khảo sát cho màn BIỂU ĐỒ (phân hệ Báo cáo).
 
     `line_approve` ở hai bảng dòng khảo sát vẫn lưu CHỮ tiếng Việt (ngoại lệ đã biết, xem
-    §2.2 của `doc/erp/15-do-be-tong-nen-v2.md`) nên khóa trả về cũng là chữ — cùng bốn nhãn
+    §2.2 của `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`) nên khóa trả về cũng là chữ — cùng bốn nhãn
     của `summary` bên `/lines`. Tháng theo cột `date` của dòng (ngày liên hệ, lùi về ngày nhận).
     """
     by_approve = {k: 0 for k in APPROVE_STATES}

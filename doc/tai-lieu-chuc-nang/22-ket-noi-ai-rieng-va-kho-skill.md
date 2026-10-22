@@ -6,7 +6,7 @@
 | CR | **bao-CR-631** + **bao-CR-636** — bài Trung tâm trợ giúp + tài liệu này; mã của cụm ở ai-CR-063, 207–225 (cổng MCP, OAuth, xem lại khóa), bao-CR-620–625 (Trang cá nhân, Kho skill K1–K6), bao-CR-635 (Ứng dụng AI đã kết nối) |
 | Giao diện | **chỉ có trên `frontend-v2/`**: Trang cá nhân ▸ *Trợ lý AI của tôi* ▸ *Kết nối AI riêng* (`/me?tab=ai-connect`, mọi người) · phân hệ **Kho skill AI** (`/ai-skill/*`, quản trị) |
 | Bài Help Center | `backend/scripts/seed_help_ket_noi_ai_mcp.py` — thẻ *Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI* + 7 bài theo tác vụ (a–g). **Nội dung ở đây và ở seed phải khớp nhau** |
-| Hợp đồng kỹ thuật | `doc/agent-hub/06-cong-mcp.md` (cổng, khóa, nhóm tool, trần, API giao diện) · `doc/erp/21-kho-skill-ai-mcp.md` (thiết kế kho skill) · `doc/erp/21a-kich-ban-thu-mcp-dev.md` (kịch bản thử) |
+| Hợp đồng kỹ thuật | `doc/agent-hub/06-cong-mcp.md` (cổng, khóa, nhóm tool, trần, API giao diện) · `doc/erp/tai-lieu-ai/21-kho-skill-ai-mcp.md` (thiết kế kho skill) · `doc/erp/tai-lieu-ai/21a-kich-ban-thu-mcp-dev.md` (kịch bản thử) |
 | Nguồn bước nối ứng dụng | `backend/app/modules/agent_hub/mcp_setup.py` — màn *AI của tôi* đọc đúng tệp đó; đổi bước thì sửa seed + tài liệu này |
 
 ---

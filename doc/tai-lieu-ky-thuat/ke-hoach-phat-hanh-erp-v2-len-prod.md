@@ -4,7 +4,7 @@ Bản lập 11/09/2026. Mọi con số dưới đây **đo trực tiếp trên p
 không chép lại từ tài liệu cũ. Đo lại trước giờ chạy vì dữ liệu đổi mỗi ngày.
 
 Tài liệu này là **kịch bản chạy**, không phải bản thiết kế. Nền v2 mô tả ở
-`doc/erp/15-do-be-tong-nen-v2.md`; luật nhánh ở `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.
+`doc/erp/nen-tang/15-do-be-tong-nen-v2.md`; luật nhánh ở `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.
 
 > ✅ **ĐÃ CHẠY XONG tối 11/09/2026.** Số thật khác số dự trù bên dưới vì prod còn nhận thêm
 > vài đợt vá (bao-CR-367…) trong lúc soạn kịch bản. **Số chốt để trích dẫn:**

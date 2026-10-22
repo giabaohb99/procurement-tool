@@ -1,6 +1,6 @@
 // Bộ mã của Nhân sự, Nhà cung cấp, Công nợ và cụm Đơn mua hàng + Yêu cầu mua hàng — tầng
 // hiển thị của `backend/app/core/status_codes.py` (B-03, B-05 và B-06, xem
-// `doc/erp/15-do-be-tong-nen-v2.md`).
+// `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`).
 //
 // Từ B-03, `tab_employee.status` và `tab_supplier.legal_type` lưu MÃ tiếng Anh; từ B-05 thì
 // `tab_payable.status` cũng vậy; từ B-06 là sáu cột của cụm ĐMH + YCMH. Chữ tiếng Việt chỉ

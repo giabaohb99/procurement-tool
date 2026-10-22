@@ -195,7 +195,7 @@ Paths cập nhật: thêm `test/backend/*qua_trinh*`.
 ### NHẬP EXCEL NHÂN SỰ (duoc-CR-628, 19/10/2026)
 
 Nút «Nhập Excel» ở `/hr/employees` → `import_tool` (adapter `EMPLOYEE`, hook ở `import_tool/employee_import*.py`).
-Thiết kế: `plans/261019-0935-nhap-excel-nhan-su-cr628/`; khung hook: `doc/erp/16-quan-ly-import-export-v2.md` §9.3.
+Thiết kế: `plans/261019-0935-nhap-excel-nhan-su-cr628/`; khung hook: `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9.3.
 
 1. **Mọi đường ghi hàng loạt hồ sơ phải qua `*_core` của `employee/service.py`** (`create_employee_core`,
    `update_employee_core`, `delete_employee_core`) — cấm `setattr` trần như Import CSV cũ (đã 410). Lõi flush,

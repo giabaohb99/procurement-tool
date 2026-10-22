@@ -691,7 +691,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # NGƯỜI DÙNG CHƯA GẮN PHÁP NHÂN. Cùng luật với nhánh `dept` ở trên (chưa gắn
             # phòng → không thấy gì): thiếu dữ liệu thì chặn, chứ mở toang là nguy hiểm hơn.
             # ⚠️ Trước khi đưa lên môi trường thật phải gắn `company_id` cho nhân sự — xem
-            # phần B-07 trong `doc/erp/15-do-be-tong-nen-v2.md`, đã đếm sẵn số người dính.
+            # phần B-07 trong `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`, đã đếm sẵn số người dính.
             return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
         return getattr(model, f["company"]) == company_id
 

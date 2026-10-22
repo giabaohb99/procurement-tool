@@ -146,7 +146,7 @@ Tổng: **59 chức năng**, trong đó **48 thuộc bản đầu**.
 
 ### NHÓM B · CHECKLIST TRÊN ĐƠN NHẬP KHẨU
 
-> 06/10/2026 — bao-CR-602 đưa khối **Báo cáo thực hiện** (bao-CR-388) lên chi tiết ĐMH **mọi loại đơn**, tái dùng mẫu chung 19 hồ sơ, nút dòng hàng bám dòng đơn; các mục đánh `bao-CR-602` bên dưới đã có theo cách đó (không phải tab «Hồ sơ nhập khẩu» riêng như B01 mô tả). Xem `doc/erp/18-bao-cao-thuc-hien-ycbg.md`.
+> 06/10/2026 — bao-CR-602 đưa khối **Báo cáo thực hiện** (bao-CR-388) lên chi tiết ĐMH **mọi loại đơn**, tái dùng mẫu chung 19 hồ sơ, nút dòng hàng bám dòng đơn; các mục đánh `bao-CR-602` bên dưới đã có theo cách đó (không phải tab «Hồ sơ nhập khẩu» riêng như B01 mô tả). Xem `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md`.
 
 | Mã | Tính năng | Mô tả | Bản | Có sẵn |
 |---|---|---|---|---|

@@ -2,7 +2,7 @@
 
 ## Context links
 - Lời đại ca: «Task Dự án có thêm loại việc, giờ ước lượng, giờ thực tế, kết quả đạt hay làm lại»
-- `doc/erp/22-ai-ke-hoach-phan-viec.md` §5 «Phần Dự án», §8 câu 3 (ai khai danh mục loại việc)
+- `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §5 «Phần Dự án», §8 câu 3 (ai khai danh mục loại việc)
 - BE: `backend/app/modules/work/task_model.py` (`tab_work_task`), `model.py` (`WorkTaskStatus` OPEN 1/DONE 2/CANCELLED 3), `task_service.py` (`_apply_status` l.~367: mở lại XÓA `completed_at`), `schema.py` (`TaskCreate`/`TaskUpdate`)
 - FE: `frontend-v2/src/modules/work/types/work.ts`, `components/task-detail-sheet.tsx`, `task-draft-row.tsx`, `utils/list-columns.ts`, `config/task-filter-fields.ts`
 - `backend/scripts/sync_task_journal.py` (chỉ đi qua API, không cần đổi)

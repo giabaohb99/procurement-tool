@@ -17,7 +17,7 @@ CP0 (POC, 2 ngày) ──► CP1 (nền DB+quyền) ──► CP2 (client+task+s
 ## CP0 — POC & thủ tục (≈ 2 ngày công) — ✅ XONG 08/09/2026 (làm SAU code, trên cửa hàng thật `degocode`)
 
 **Kết quả:** toàn bộ K1 + P1…P7 đã trả lời — bảng đáp án + bằng chứng ở Phụ lục A của
-[`../17`](../17-ke-hoach-trien-khai-pos365-diem-ca-phe.md). Điểm chốt: danh sách đơn
+[`../17`](17-ke-hoach-trien-khai-pos365-diem-ca-phe.md). Điểm chốt: danh sách đơn
 MANG `AccountId` + `MoreAttributes` (P1 đóng, không N+1); UI không cho thêm tài khoản
 nhưng **API `AccountCreateOrUpdate` thì được** → đã tạo `TRU DIEM CAFE` **Id 46714**
 (điền `.env`); đơn void `Status=3`; server không lọc thời gian (kéo cắt ở client);
@@ -33,7 +33,7 @@ trình nghiệp vụ 4 câu treo — bộ cấp `CoffeeLevel` (A-02), bảng m�
 
 **Điều kiện cần:** có tài khoản admin của cửa hàng POS365 để tạo tài khoản API + tài khoản
 thanh toán.
-**Điều kiện đủ:** Phụ lục A của [`../17`](../17-ke-hoach-trien-khai-pos365-diem-ca-phe.md)
+**Điều kiện đủ:** Phụ lục A của [`../17`](17-ke-hoach-trien-khai-pos365-diem-ca-phe.md)
 điền đủ 7 dòng, mỗi dòng kèm curl + response; `AccountId` ghi vào tài liệu vận hành.
 **Đường lui:** P1 xấu (không đọc được phương thức thanh toán bằng bất kỳ cách nào) → toàn
 bộ phương án đổ, quay về ngã rẽ 3 của `09` §3.3 — dừng ở đây, chưa mất dòng code nào.

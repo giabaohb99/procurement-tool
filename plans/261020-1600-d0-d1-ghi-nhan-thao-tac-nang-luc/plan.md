@@ -11,7 +11,7 @@ created: 2026-10-20
 
 # D0 + D1 — ghi nhận thao tác & năng lực theo loại việc
 
-Nguồn yêu cầu: lời đại ca 20/10 (D0 4–6 ngày, D1 1–1,5 tuần) + `doc/erp/22-ai-ke-hoach-phan-viec.md` §5, §7.
+Nguồn yêu cầu: lời đại ca 20/10 (D0 4–6 ngày, D1 1–1,5 tuần) + `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §5, §7.
 Nền: duoc-CR-641 (`usage_profile/`, `core/telemetry/`), CR-649/650 (Bộ chỉ số). CR số: lead cấp, chưa gán.
 
 ## Nguyên tắc chung
