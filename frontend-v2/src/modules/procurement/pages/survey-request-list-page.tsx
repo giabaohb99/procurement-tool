@@ -1,10 +1,11 @@
 import { Copy, Download, Plus } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { usePermission } from '@/core/authorization/use-permission'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
@@ -22,9 +23,11 @@ import {
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { resolveThisMonth } from '@/shared/ui/date-range-presets'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
+import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
@@ -45,6 +48,7 @@ import {
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
+import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
 import { SurveyRequestCard } from '../components/survey-request-card'
 import { SURVEY_REQUEST_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { useSurveyRequests } from '../hooks/use-purchase-documents'
@@ -54,6 +58,14 @@ import {
   statusOptions,
   type SurveyRequest,
 } from '../types/purchase-document'
+import {
+  addInCondition,
+  buildClearParams,
+  isSameRange,
+  NO_EMPLOYEE_REASON,
+  resolveMyEmployeeCode,
+  toggleRange,
+} from '../utils/list-quick-chips'
 
 const ALL = 'all'
 
@@ -68,12 +80,38 @@ const FILTER_CONFIG = {
     'assignee',
     'request_date_from',
     'request_date_to',
+    'pending',
     'sort_by',
     'sort_dir',
   ],
 }
 
+/** Tham số của các ô lọc nhanh — nút *Xóa lọc* xóa đúng bộ này. */
+const QUICK_FILTER_KEYS = [
+  'company_id',
+  'department_id',
+  'status',
+  'item_group',
+  'assignee',
+  'request_date_from',
+  'request_date_to',
+  'pending',
+]
+
+/** Khóa nhớ bộ lọc của màn — trùng `storageKey` của bảng cho dễ dò. */
+const SCREEN_KEY = 'procurement.survey-requests'
+
+/**
+ * Chip *Chờ xử lý* = phiếu thu mua còn phải làm: đã duyệt (chờ tiếp nhận) và đang
+ * xử lý. `survey_done` trở đi là việc đã về phía người yêu cầu.
+ */
+const PENDING_STATUSES = ['approved', 'processing']
+
 export function SurveyRequestListPage() {
+  //  Đổi hướng TRƯỚC khi dựng `FilterProvider` — provider chỉ đọc URL một lần.
+  const restoreSearch = useRememberedListSearch(SCREEN_KEY)
+  if (restoreSearch) return <Navigate replace to={{ search: restoreSearch }} />
+
   return (
     <FilterProvider config={FILTER_CONFIG}>
       <SurveyRequestListContent />
@@ -103,7 +141,12 @@ function SurveyRequestListContent() {
   const [assignee, setAssignee] = useUrlParamState('assignee', ALL)
   const [reqDateFrom, setReqDateFrom] = useUrlParamState('request_date_from', '')
   const [reqDateTo, setReqDateTo] = useUrlParamState('request_date_to', '')
+  //  Cờ của chip *Chờ xử lý*: ô Trạng thái chỉ chọn MỘT giá trị nên chip không ghi
+  //  vào ô đó được, phải có tham số riêng.
+  const [pending, setPending] = useUrlParamState('pending', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const setUrlParams = useSetUrlParams()
+  const myCode = resolveMyEmployeeCode(useAuthStore((state) => state.user))
 
   const sortBy = searchParams.get('sort_by') || ''
   const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
@@ -138,6 +181,7 @@ function SurveyRequestListContent() {
     assignee,
     reqDateFrom,
     reqDateTo,
+    pending,
     sortBy,
     sortDir,
   ])
@@ -151,6 +195,9 @@ function SurveyRequestListContent() {
   if (assignee !== ALL) params.assignee = assignee
   if (reqDateFrom) params.request_date_from = reqDateFrom
   if (reqDateTo) params.request_date_to = reqDateTo
+  //  Không ghép được khi bộ lọc nâng cao đang nối OR — chip mờ đi, xem `addInCondition`.
+  const pendingBlocked = params.conjunction === 'or'
+  if (pending) addInCondition(params, 'status', PENDING_STATUSES)
   if (sortBy) {
     params.sort_by = sortBy
     params.sort_dir = sortDir
@@ -191,18 +238,46 @@ function SurveyRequestListContent() {
       itemGroup !== ALL,
       assignee !== ALL,
       Boolean(reqDateFrom || reqDateTo),
+      //  Chip đang mờ vì bộ lọc nâng cao nối OR thì không lọc gì — không đếm.
+      Boolean(pending) && !pendingBlocked,
     ].filter(Boolean).length + filter.activeCount
 
+  //  `filter.reset()` TRƯỚC, lượt ghi URL của màn SAU và xóa luôn điều kiện nâng cao:
+  //  hai lượt cùng dựng từ URL lúc dựng nên lượt sau thắng — để reset sau là nó chép
+  //  lại các ô lọc nhanh vừa xóa (`preserveParams`). Xem `buildClearParams`.
   const clearAllFilters = () => {
-    setCompanyId(ALL)
-    setDepartmentId(ALL)
-    setStatus(ALL)
-    setItemGroup(ALL)
-    setAssignee(ALL)
-    setReqDateFrom('')
-    setReqDateTo('')
     filter.reset()
+    setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams, true))
   }
+
+  //  kh-NT2-2 — chip lọc nhanh. *Của tôi* / *Tháng này* ghi vào đúng tham số của ô
+  //  NSTM / ô Ngày tạo nên hai bên luôn nói cùng một giá trị.
+  const thisMonth = resolveThisMonth()
+  const quickChips: QuickChip[] = [
+    {
+      //  "Của tôi" của thu mua = dòng mình là NSTM phụ trách (`assignee` lưu MÃ).
+      label: 'Của tôi',
+      active: Boolean(myCode) && assignee === myCode,
+      onToggle: () => setAssignee(assignee === myCode || !myCode ? ALL : myCode),
+      disabledReason: myCode ? undefined : NO_EMPLOYEE_REASON,
+    },
+    {
+      label: 'Tháng này',
+      active: isSameRange(reqDateFrom, reqDateTo, thisMonth),
+      onToggle: () => {
+        const [from, to] = toggleRange(reqDateFrom, reqDateTo, thisMonth)
+        setUrlParams({ request_date_from: from || null, request_date_to: to || null })
+      },
+    },
+    {
+      label: 'Chờ xử lý',
+      active: Boolean(pending) && !pendingBlocked,
+      onToggle: () => setPending(pending ? '' : '1'),
+      disabledReason: pendingBlocked
+        ? 'Bộ lọc nâng cao đang nối điều kiện bằng HOẶC nên chip này không ghép vào được'
+        : undefined,
+    },
+  ]
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const next = new URLSearchParams(searchParams)
@@ -431,7 +506,13 @@ function SurveyRequestListContent() {
           onRowClick={(sr) => navigate(appRoutes.procurement.surveyRequestDetail(sr.id))}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage="Không tìm thấy yêu cầu báo giá nào."
+          //  Rỗng vì đang lọc phải nói ra: bộ lọc nay còn được khôi phục từ bản nhớ khi
+          //  mở lại màn (kh-NT2-2), người dùng không tự đặt nên dễ tưởng mất dữ liệu.
+          emptyMessage={
+            activeCount > 0 || debouncedValue
+              ? 'Không có yêu cầu báo giá nào khớp bộ lọc đang chọn — bỏ bớt điều kiện lọc để xem thêm.'
+              : 'Không tìm thấy yêu cầu báo giá nào.'
+          }
           //  Khổ hẹp: THẺ thay bảng — xem `SurveyRequestCard`.
           //
           //  ⚠️ Nút *Nhân bản* của cột thao tác KHÔNG theo sang thẻ: bảng khai
@@ -478,6 +559,9 @@ function SurveyRequestListContent() {
                    phải ô tìm kiếm. Màn Đơn mua hàng đã vỡ đúng kiểu đó khi thêm
                    ô lọc thứ sáu (bao-CR-319). */}
               <div className="hidden md:contents">
+                {/*  Chip chỉ ra thanh công cụ từ `md`: khổ hẹp ô tìm chỉ còn ~134px, thêm
+                     ba nút là cụt chữ — chúng nằm đầu tờ trượt. */}
+                <ListQuickChips chips={quickChips} />
                 {companySelect}
                 {departmentSelect}
                 {statusSelect}
@@ -497,6 +581,11 @@ function SurveyRequestListContent() {
                 onClearAll={clearAllFilters}
                 onApply={filter.apply}
               >
+                <QuickFilterField label="Lọc nhanh">
+                  <div className="flex flex-wrap gap-2">
+                    <ListQuickChips chips={quickChips} />
+                  </div>
+                </QuickFilterField>
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Bộ phận yêu cầu">{departmentSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>

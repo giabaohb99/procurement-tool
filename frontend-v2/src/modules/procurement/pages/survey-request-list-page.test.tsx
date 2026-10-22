@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAuthStore } from '@/core/auth/auth-store'
 import type { ListParams } from '@/shared/types/api'
 import { SurveyRequestListPage } from './survey-request-list-page'
 import type { SurveyRequest } from '../types/purchase-document'
@@ -83,6 +84,8 @@ function lastCall() {
 beforeEach(() => {
   listCalls.length = 0
   localStorage.clear()
+  sessionStorage.clear()
+  useAuthStore.setState({ user: null })
 })
 
 describe('SurveyRequestListPage', () => {
@@ -170,5 +173,77 @@ describe('SurveyRequestListPage — khổ điện thoại', () => {
     build()
 
     expect(screen.getByPlaceholderText('Tìm phiếu, SP…')).toBeInTheDocument()
+  })
+})
+
+/** kh-NT2-2 — chip lọc nhanh (doc `erp/nen-tang/14` §2.3). */
+describe('SurveyRequestListPage — chip lọc nhanh', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 22, 9, 0))
+    useAuthStore.setState({
+      user: { id: 7, email: 'bao@dego.vn', full_name: 'Huỳnh Gia Bảo', employee_id: 9, emp_code: 'NSU209', permissions: {} },
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function chip(name: string) {
+    return screen.getAllByRole('button', { name })[0]
+  }
+
+  it('Của tôi filters the lines I am the NSTM of, by employee CODE', () => {
+    build()
+    fireEvent.click(chip('Của tôi'))
+
+    expect(lastCall().assignee).toBe('NSU209')
+  })
+
+  it('Chờ xử lý asks for requests thu mua still has to work on', () => {
+    build()
+    fireEvent.click(chip('Chờ xử lý'))
+
+    expect(lastCall().status__in).toBe('approved,processing')
+  })
+
+  it('Chờ xử lý and a status picked in the box both apply — the box is not overwritten', () => {
+    build('/procurement/survey-requests?status=processing')
+    fireEvent.click(chip('Chờ xử lý'))
+
+    expect(lastCall()).toMatchObject({ status: 'processing', status__in: 'approved,processing' })
+  })
+
+  it('Tháng này sets the ngày tạo range to the current month', () => {
+    build()
+    fireEvent.click(chip('Tháng này'))
+
+    expect(lastCall()).toMatchObject({ request_date_from: '2026-10-01', request_date_to: '2026-10-31' })
+  })
+})
+
+describe('SurveyRequestListPage — nút Xóa lọc', () => {
+  it('clears the quick filters AND the advanced conditions in one go', async () => {
+    //  Lỗi cũ: `filter.reset()` gọi sau cùng dựng lại URL từ bản lúc dựng, chép trả các
+    //  ô lọc nhanh vừa xóa (`preserveParams`) — bấm Xóa lọc mà bảng vẫn lọc nguyên.
+    build(
+      '/procurement/survey-requests?company_id=1&status=approved&assignee=NSU209&pending=1&code__contains=YCBG',
+    )
+    //  Hai nút cùng tên «Bộ lọc»: popover nâng cao (khổ rộng) và tờ trượt (khổ hẹp) — nút
+    //  *Xóa lọc* nằm ở tờ trượt.
+    const sheetTrigger = screen
+      .getAllByRole('button', { name: 'Bộ lọc' })
+      .find((button) => button.getAttribute('data-slot') === 'sheet-trigger')
+    if (!sheetTrigger) throw new Error('Không thấy nút mở tờ lọc')
+    fireEvent.click(sheetTrigger)
+    fireEvent.click(await screen.findByRole('button', { name: 'Xóa lọc' }))
+
+    const call = lastCall()
+    expect(call.company_id).toBeUndefined()
+    expect(call.status).toBeUndefined()
+    expect(call.assignee).toBeUndefined()
+    expect(call.status__in).toBeUndefined()
+    expect(call.code__contains).toBeUndefined()
   })
 })

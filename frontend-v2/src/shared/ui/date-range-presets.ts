@@ -26,6 +26,24 @@ function shiftDays(from: Date, days: number): Date {
 }
 
 /**
+ * Ngày đầu + ngày cuối của tháng chứa `today`, dạng `yyyy-mm-dd`.
+ *
+ * `new Date(y, m + 1, 0)` = ngày 0 của tháng sau = ngày cuối tháng này. Trình
+ * duyệt tự lo tháng 28/29/30/31 ngày, không phải tra bảng.
+ */
+export function resolveThisMonth(today = new Date()): [string, string] {
+  return [
+    at(today.getFullYear(), today.getMonth(), 1),
+    at(today.getFullYear(), today.getMonth() + 1, 0),
+  ]
+}
+
+/** `days` ngày tính từ `today` (gồm cả hôm nay), dạng `yyyy-mm-dd`. */
+export function resolveNextDays(days: number, today = new Date()): [string, string] {
+  return [toDateInputValue(today), toDateInputValue(shiftDays(today, days - 1))]
+}
+
+/**
  * Mấy khoảng bấm một cái là xong của ô chọn khoảng ngày.
  *
  * Cố ý KHÔNG có "Tất cả": xóa khoảng ngày đã có nút ✕ trên chính ô chọn, thêm
@@ -52,12 +70,7 @@ export const DATE_RANGE_PRESETS: DateRangePreset[] = [
   },
   {
     label: 'Tháng này',
-    //  `new Date(y, m + 1, 0)` = ngày 0 của tháng sau = ngày cuối tháng này.
-    //  Trình duyệt tự lo tháng 28/29/30/31 ngày, không phải tra bảng.
-    resolve: (today = new Date()) => [
-      at(today.getFullYear(), today.getMonth(), 1),
-      at(today.getFullYear(), today.getMonth() + 1, 0),
-    ],
+    resolve: resolveThisMonth,
   },
   {
     label: 'Quý này',

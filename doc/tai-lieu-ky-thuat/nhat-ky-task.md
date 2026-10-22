@@ -16107,19 +16107,29 @@ Mã nguồn: kế hoạch AI1-3
 
 ## kh-NT2-2 | Chip lọc nhanh trên 4 màn Thu mua
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong local, chưa commit
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 3
-**Bối cảnh:** Bốn màn Thu mua chưa có chip *Đơn của tôi*, *Gấp*, *Tháng này*.
+**Bối cảnh:** Bốn màn danh sách Thu mua chưa có chip lọc một chạm theo doc 14 mục 2, và bộ lọc mất khi mở màn lại từ menu.
 
-**Việc cần làm**
-- Thêm chip theo khuôn ô lọc đang có.
-- Giữ trạng thái lọc khi quay lại màn.
+**Đã làm**
+- Thêm cụm chip theo từng màn: *Yêu cầu mua hàng* có Của tôi, Gấp, Tháng này, Sắp tới hạn (ngày cần hàng trong 7 ngày tới); *Đơn mua hàng* có Của tôi, Gấp, Thiếu chứng từ, Tháng này; *Yêu cầu báo giá* có Của tôi, Tháng này, Chờ xử lý; *Phiếu khảo sát* có Của tôi, Khảo sát NCC, Khảo sát SP, Chờ xử lý.
+- Chip ghi vào đúng tham số của ô lọc bên cạnh nên ô và chip luôn khớp nhau: Của tôi dùng mã nhân sự ở YCMH và YCBG, ID nhân sự ở ĐMH, tên người tạo ở Phiếu khảo sát. Tài khoản chưa gắn nhân sự thì chip Của tôi mờ và có lời giải thích.
+- Chip Thiếu chứng từ và Chờ xử lý lọc nhiều trạng thái một lúc; khi bộ lọc nâng cao đang nối bằng HOẶC thì hai chip này mờ đi thay vì làm bảng ra nhiều hơn.
+- Nhớ bộ lọc theo từng màn và từng tài khoản trong phiên trình duyệt: mở lại màn từ menu thì bảng giữ bộ lọc cũ; link có sẵn tham số thì link thắng; xóa lọc thì lần sau mở ra màn sạch.
+- Sửa lỗi cũ của nút *Xóa lọc* ở cả bốn màn: trước đây chỉ xóa được ô cuối cùng (và ở YCBG, Phiếu khảo sát còn bị chép lại cả các ô vừa xóa); nay xóa một lượt.
+- Khổ hẹp: chip Gấp giữ trên thanh công cụ, các chip khác nằm đầu tờ lọc.
+- Theo biên bản rà của Agent 2: bảng rỗng vì đang lọc thì câu hiển thị nói rõ là do bộ lọc; chip đang mờ không đếm vào số ô đang lọc; đăng xuất thì dọn bản nhớ bộ lọc của tab.
 
-**Điều kiện xong:** bấm chip lọc đúng; vitest xanh.
+**Kết quả:** tsc cả cây 0 lỗi, lint 0 lỗi (tệp mới 0 cảnh báo), vitest phân hệ procurement cùng shared/hooks, shared/ui và core/auth xanh 135 tệp, 1363 bài (sau khi vá theo biên bản rà); dựng bản vite build được. Agent 2 rà: được gộp. Chưa soát trên trình duyệt.
 
-Mã nguồn: kế hoạch NT2-2 · `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md`
+**Còn lại**
+- Agent 2 rà mã nhánh agent3/kh-NT2-2; đại ca gật mới đẩy lên erp-v2.
+- Bộ chip đã đúng doc 14 mục 2; không còn nợ phía máy chủ cho việc này.
+
+Mã nguồn: `modules/procurement/utils/list-quick-chips.ts` · `components/list-quick-chips.tsx` · `shared/hooks/use-remembered-list-search.ts` · bốn trang `*-list-page.tsx` · `shared/ui/date-range-presets.ts` · doc `erp/nen-tang/14-filter-sort-man-danh-sach-v2.md`
+Commit: nhánh agent3/kh-NT2-2, chưa đẩy
 
 ## kh-TM2-1 | Báo cáo thực hiện YCBG: tệp thật, nhớ gấp/mở, nhắc hạn
 - list: Kế hoạch hệ agent

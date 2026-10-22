@@ -75,7 +75,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
 | NT2-1 | Đ-13d/13e còn lại: adapter nhập hợp đồng, tồn/công nợ đầu kỳ; thêm hợp đồng, thương hiệu vào registry xuất; nút Nhập/Xuất trên `CrudListPage` theo `can('import'/'export')` (chưa có) | Màn danh mục hiện nút đúng quyền, dẫn về batch | `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9.1, §9.2 |
-| NT2-2 | Chip nhanh *Đơn của tôi*, *Gấp*, *Tháng này* trên 4 màn Thu mua (chưa có) | Bấm một chip ra đúng danh sách | `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md` |
+| NT2-2 | **XONG mã, chờ rà — kh-NT2-2, 22/10** (nhánh agent3/kh-NT2-2, chưa lên erp-v2). Chip nhanh trên 4 màn Thu mua theo doc 14, A2 rà đạt | Bấm một chip ra đúng danh sách | `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md` |
 | NT2-3 | Nhóm UI dùng chung: NF-01 thùng rác (màn khôi phục trên nền xóa mềm); NF-02 bộ lọc đã lưu (mới có ở Tra cứu thị trường, nhân rộng qua `user_preference`); NF-09 thao tác hàng loạt (xóa hàng loạt `core/bulk_delete.py` đã có ở 5 module, còn duyệt/gán/xuất hàng loạt — cần kiểm lại phạm vi); NF-03 tìm toàn cục | Mỗi NF có màn chạy trên dev, dùng chung cho mọi danh sách | doc cũ 13 §NF |
 | NT2-4 | NF-07 khóa chứng từ Thu mua sau duyệt; NF-06 cấp số cấu hình được + DB9 gom đánh số (mã đang sinh rải ở `core/utils.py`, `survey_request`, `ticket`...) | Một bộ sinh số chung, cấu hình được tiền tố; phiếu đã duyệt không sửa được trừ khi mở lại có dấu vết | doc cũ 13 §NF, doc cũ 06 DB9 |
 | NT2-5 | Celery phần còn lại: đẩy chuông/web push qua worker, cảnh báo nghiệp vụ theo lịch, NF-18 thư tổng hợp định kỳ, xuất nền (đã có: sao lưu, dọn dẹp, gửi thư, nhập nền) | Các việc trên chạy bằng beat, có nhật ký lỗi | doc cũ 11 |

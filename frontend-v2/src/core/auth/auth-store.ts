@@ -74,6 +74,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Xóa cache React Query: tránh người kế tiếp đăng nhập trên cùng máy
     // nhìn thấy dữ liệu của tài khoản trước trong khoảnh khắc đầu.
     queryClient.clear()
+    //  Bộ lọc nhớ theo tab của các màn danh sách (`useRememberedListSearch`, kh-NT2-2).
+    //  Khóa đã có mã tài khoản nên người sau không đọc được; dọn luôn cho sạch.
+    try {
+      for (const key of Object.keys(sessionStorage)) {
+        if (key.startsWith('list-search:')) sessionStorage.removeItem(key)
+      }
+    } catch {
+      //  Trình duyệt chặn bộ nhớ: không có gì để dọn.
+    }
     set({ user: null })
   },
 

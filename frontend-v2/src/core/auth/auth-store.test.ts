@@ -90,3 +90,19 @@ describe('auth store — two login doors (bao-CR-406)', () => {
     expect(localStorage.getItem(appConfig.storageKeys.user)).toBeNull()
   })
 })
+
+describe('auth store — logout', () => {
+  it('forgets the remembered list filters of this tab, and only those', () => {
+    //  kh-NT2-2: bộ lọc nhớ theo tab (`list-search:<user>:<màn>`). Khóa có mã tài khoản
+    //  nên người sau không đọc được, nhưng đăng xuất vẫn phải dọn — và chỉ dọn đúng chúng.
+    sessionStorage.setItem('list-search:7:procurement.purchase-orders', '?status=approved')
+    sessionStorage.setItem('list-search:7:procurement.surveys', '?pending=1')
+    sessionStorage.setItem('other-feature', 'keep')
+
+    useAuthStore.getState().logout()
+
+    expect(sessionStorage.getItem('list-search:7:procurement.purchase-orders')).toBeNull()
+    expect(sessionStorage.getItem('list-search:7:procurement.surveys')).toBeNull()
+    expect(sessionStorage.getItem('other-feature')).toBe('keep')
+  })
+})
