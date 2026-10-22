@@ -214,7 +214,7 @@ def claim(db: Session, user_id: int, key_id: int) -> str | None:
     row = db.get(AgentMcpKey, int(key_id))
     if row is None or int(row.user_id) != int(user_id) or state_of(row) != KeyState.PENDING or not row.raw_sealed:
         return None
-    raw = app_settings._decrypt(row.raw_sealed)
+    raw = app_settings._decrypt(row.raw_sealed, "mcp_key.sealed")
     if not raw:
         return None
     row.claimed_at = datetime.now()
@@ -268,7 +268,7 @@ def reveal(db: Session, user_id: int, key_id: int) -> tuple[AgentMcpKey, str]:
         raise ValueError("Khóa phát hộ chưa nhận — bấm Nhận để lấy khóa.")
     if st == KeyState.EXPIRED:
         raise ValueError("Khóa đã hết hạn — tạo khóa mới.")
-    raw = app_settings._decrypt(row.raw_view) if row.raw_view else ""
+    raw = app_settings._decrypt(row.raw_view, "mcp_key.view") if row.raw_view else ""
     if not raw:
         raise ValueError("Khóa này tạo trước khi có chức năng xem lại (hoặc bí mật máy chủ đã đổi) — tạo khóa mới để xem.")
     return row, raw

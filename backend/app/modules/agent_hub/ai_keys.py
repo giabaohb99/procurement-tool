@@ -160,7 +160,7 @@ def verify(provider: str, raw: str) -> None:
 # Sổ khóa
 # ---------------------------------------------------------------------------
 def _ref(row: AiKey) -> KeyRef:
-    return KeyRef(provider=row.provider, key=app_settings._decrypt(row.key_enc), model=row.model or "",
+    return KeyRef(provider=row.provider, key=app_settings._decrypt(row.key_enc, "ai_key"), model=row.model or "",
                   owner_type=int(row.owner_type), owner_id=int(row.owner_id), row_id=int(row.id),
                   hint=row.key_hint, priority=int(row.priority or 1), daily_cap=int(row.daily_cap or 0),
                   base_url=row.base_url or "")

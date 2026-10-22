@@ -47,7 +47,7 @@ def smtp_route(mailbox: Mailbox) -> dict:
         "host": mailbox.smtp_host,
         "port": mailbox.smtp_port or 587,
         "user": mailbox.smtp_user or mailbox.email,
-        "password": _decrypt(mailbox.smtp_password_enc or ""),
+        "password": _decrypt(mailbox.smtp_password_enc or "", "mailbox.smtp_password"),
         "use_tls": bool(mailbox.use_tls),
         "from_email": mailbox.email,
         "from_name": mailbox.display_name or mailbox.name,

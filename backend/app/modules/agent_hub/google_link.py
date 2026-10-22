@@ -156,10 +156,10 @@ def exchange_code(db: Session, user_id: int, code: str) -> AgentGoogleLink:
 def access_token(db: Session, link: AgentGoogleLink) -> str:
     """Token còn hạn, hoặc làm mới bằng refresh token rồi lưu lại."""
     if link.access_expires_at and link.access_expires_at > datetime.now() + timedelta(seconds=30):
-        cached = app_settings._decrypt(link.access_token_enc or "")
+        cached = app_settings._decrypt(link.access_token_enc or "", "google.access_token")
         if cached:
             return cached
-    refresh = app_settings._decrypt(link.refresh_token_enc or "")
+    refresh = app_settings._decrypt(link.refresh_token_enc or "", "google.refresh_token")
     if not refresh:
         raise GoogleError("Kết nối Google hỏng (không giải mã được token). Nối lại ở Trang cá nhân → Khóa AI.")
     try:
@@ -179,7 +179,7 @@ def access_token(db: Session, link: AgentGoogleLink) -> str:
 
 
 def revoke(db: Session, link: AgentGoogleLink) -> None:
-    token = app_settings._decrypt(link.refresh_token_enc or "")
+    token = app_settings._decrypt(link.refresh_token_enc or "", "google.refresh_token")
     if token:
         try:
             requests.post(REVOKE_URL, params={"token": token}, timeout=TIMEOUT)

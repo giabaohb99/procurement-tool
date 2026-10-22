@@ -6,6 +6,7 @@ Có cache in-process ngắn để tránh query mỗi lần.
 """
 import base64
 import hashlib
+import logging
 import time
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -140,11 +141,31 @@ def encrypt(s: str) -> str:
     return _fernet().encrypt(s.encode()).decode()
 
 
-def _decrypt(s: str) -> str:
+#  BM-023 (bao-CR-655): giải mã hỏng KHÔNG được im lặng. Trước đây mọi lỗi đều trả "" rồi nơi gọi
+#  lặng lẽ rơi về .env (thường cũng rỗng) — khóa R2 hỏng là bản sao lưu đêm chết mà không ai biết.
+#  Vẫn trả "" để không gãy nơi gọi, nhưng ghi lỗi `app.secrets` (CHỈ tên khóa, không bao giờ giá
+#  trị), mỗi khóa một lần mỗi tiến trình để khỏi ngập log vì `get()` gọi liên tục.
+_log = logging.getLogger("app.secrets")
+_decrypt_failed: set[str] = set()
+
+
+def _decrypt(s: str, label: str = "") -> str:
+    if not s:
+        return ""
     try:
         return _fernet().decrypt(s.encode()).decode()
-    except (InvalidToken, Exception):
+    except Exception as exc:  # noqa: BLE001 — InvalidToken lẫn lỗi mã hóa khác đều phải báo
+        name = label or "khong-ro-khoa"
+        if name not in _decrypt_failed:
+            _decrypt_failed.add(name)
+            _log.error("giai ma bi mat that bai: khoa=%s loi=%s — kiem JWT_SECRET hoac luu lai khoa nay",
+                       name, type(exc).__name__)
         return ""
+
+
+def decrypt_failures() -> list[str]:
+    """Tên các khóa bí mật đã giải mã hỏng trong tiến trình này — cho màn sức khỏe hệ thống / kiểm tra."""
+    return sorted(_decrypt_failed)
 
 
 def _load():
@@ -190,7 +211,7 @@ def get(key: str):
     raw = _cache.get(key)
     if key in SECRETS:
         if raw not in (None, ""):
-            dec = _decrypt(raw)
+            dec = _decrypt(raw, key)
             if dec:
                 return dec
         return getattr(_env, SECRETS[key], "")

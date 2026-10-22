@@ -164,10 +164,10 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| AN1-1 | BM-023 giải mã bí mật hỏng im lặng: `_decrypt` trong `core/app_settings.py` vẫn nuốt mọi lỗi trả chuỗi rỗng — nguy cơ sao lưu R2 chết không ai biết. ƯU TIÊN | Ba trạng thái (chưa có, đọc tốt, đọc hỏng) cho ba kết quả khác nhau; hỏng thì ghi lỗi và báo quản trị; bài `test_giai_ma_hong_thi_bao_thanh_tieng` xanh | `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` BM-023 |
-| AN1-2 | BM-019 phần còn lại: thêm HSTS, `nosniff`, `Referrer-Policy` cho `nginx.erp.prod.conf`; `nginx.prod.conf` (thumua) chưa có header bảo mật nào | Đo header trên prod đủ bốn loại cho cả hai tên miền | `so-ghi-nhan-loi-bao-mat.md` BM-019 |
-| AN1-3 | BM-021: `/api/uploads` vẫn gắn `StaticFiles` không kiểm quyền (`backend/app/main.py:192`) — gỡ mount hoặc đặt sau kiểm quyền | Bài `test_uploads_khong_lo_tep_cho_nguoi_la` xanh | `so-ghi-nhan-loi-bao-mat.md` BM-021 |
-| AN1-4 | Cập nhật sổ: BM-025..031 còn ghi *chưa commit* trong khi đã lên `main` 7086a4d0; BM-013 ghi *chấp nhận* (lỗ đã đóng ở `tab_change_log`) | Sổ khớp trạng thái thật | `so-ghi-nhan-loi-bao-mat.md` |
+| AN1-1 | **XONG — bao-CR-655 (22/10/2026), chờ deploy.** BM-023 giải mã bí mật hỏng im lặng: `_decrypt` trong `core/app_settings.py` vẫn nuốt mọi lỗi trả chuỗi rỗng — nguy cơ sao lưu R2 chết không ai biết. ƯU TIÊN | Ba trạng thái (chưa có, đọc tốt, đọc hỏng) cho ba kết quả khác nhau; hỏng thì ghi lỗi và báo quản trị; bài `test_giai_ma_hong_thi_bao_thanh_tieng` xanh | `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` BM-023 |
+| AN1-2 | **XONG — bao-CR-655 (22/10/2026), chờ deploy.** BM-019 phần còn lại: thêm HSTS, `nosniff`, `Referrer-Policy` cho `nginx.erp.prod.conf`; `nginx.prod.conf` (thumua) chưa có header bảo mật nào | Đo header trên prod đủ bốn loại cho cả hai tên miền | `so-ghi-nhan-loi-bao-mat.md` BM-019 |
+| AN1-3 | **XONG — bao-CR-655 (22/10/2026), chờ deploy.** BM-021: `/api/uploads` vẫn gắn `StaticFiles` không kiểm quyền (`backend/app/main.py:192`) — gỡ mount hoặc đặt sau kiểm quyền | Bài `test_uploads_khong_lo_tep_cho_nguoi_la` xanh | `so-ghi-nhan-loi-bao-mat.md` BM-021 |
+| AN1-4 | **XONG — bao-CR-655 (22/10/2026), chờ deploy.** Cập nhật sổ: BM-025..031 còn ghi *chưa commit* trong khi đã lên `main` 7086a4d0; BM-013 ghi *chấp nhận* (lỗ đã đóng ở `tab_change_log`) | Sổ khớp trạng thái thật | `so-ghi-nhan-loi-bao-mat.md` |
 
 **Phase 2**
 

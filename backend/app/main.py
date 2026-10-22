@@ -189,7 +189,13 @@ app.add_middleware(
 )
 
 os.makedirs("uploads", exist_ok=True)
-app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
+#  BM-021 (bao-CR-655): `uploads/` là chỗ lùi khi CHƯA nối R2, và `StaticFiles` phục vụ nó KHÔNG hỏi
+#  đăng nhập — ai đoán được đường là tải được. Dev/prod đều chạy R2 (thư mục rỗng, kiểm 22/10/2026),
+#  nên chỉ gắn khi DEV_MODE (máy local không có R2). Trên dev/prod mà R2 hỏng thì tệp lùi về đây sẽ
+#  trả 404 thay vì lộ công khai — đúng chiều an toàn; đính kèm riêng tư vẫn đi
+#  `/api/attachments/{id}/download` có kiểm quyền.
+if settings.DEV_MODE:
+    app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.exception_handler(HTTPException)
