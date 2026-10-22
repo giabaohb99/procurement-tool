@@ -1,6 +1,8 @@
 import { Lock, LogOut, ShieldCheck, UserX } from 'lucide-react'
+import { useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { EmployeePendingWorkConfirmDialog } from '@/modules/hr/components/employee-pending-work-confirm-dialog'
 import { useEmployeeAccount, useSetUserActive } from '@/modules/hr/hooks/use-user-accounts'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -61,6 +63,8 @@ export function LoginSessionUserCard({
   const revoke = useRevokeLoginSession()
   const logoutAll = useLogoutAllSessions()
   const setActive = useSetUserActive()
+  // duoc-CR-665 (V0-4): khóa phải qua hộp kiểm việc duyệt đang treo của người này.
+  const [lockOpen, setLockOpen] = useState(false)
   // Chỉ để biết tài khoản đã khóa chưa; thiếu `user.read` thì coi như đang mở.
   const { data: account } = useEmployeeAccount(employeeId, canRead && canReadUser && userId > 0)
   const isActive = account?.is_active !== false
@@ -87,15 +91,6 @@ export function LoginSessionUserCard({
     if (ok) logoutAll.mutate(userId)
   }
 
-  async function handleLock() {
-    const ok = await confirm({
-      title: 'Khóa tài khoản',
-      message: `Khóa tài khoản của ${userName} và đăng xuất mọi thiết bị? Người này không đăng nhập được cho tới khi được mở khóa.`,
-      confirmLabel: 'Khóa + đăng xuất',
-    })
-    if (ok) setActive.mutate({ userId, isActive: false })
-  }
-
   return (
     <Card className={className}>
       <CardHeader>
@@ -119,7 +114,7 @@ export function LoginSessionUserCard({
                 type="button"
                 variant="destructive"
                 size="sm"
-                onClick={() => void handleLock()}
+                onClick={() => setLockOpen(true)}
                 disabled={setActive.isPending}
                 title="Khóa tài khoản — backend tự thu hồi mọi phiên"
               >
@@ -182,6 +177,24 @@ export function LoginSessionUserCard({
           days={LOGIN_HISTORY_DAYS}
         />
       </CardContent>
+
+      <EmployeePendingWorkConfirmDialog
+        open={lockOpen}
+        onOpenChange={setLockOpen}
+        employeeId={employeeId}
+        title="Khóa tài khoản"
+        description={
+          <p>
+            Khóa tài khoản của {userName} và đăng xuất mọi thiết bị? Người này không đăng nhập được
+            cho tới khi được mở khóa. Việc duyệt đang chờ họ phải chuyển đi trước, không thì phiếu kẹt.
+          </p>
+        }
+        confirmLabel="Khóa + đăng xuất"
+        pending={setActive.isPending}
+        onConfirm={() =>
+          setActive.mutate({ userId, isActive: false }, { onSuccess: () => setLockOpen(false) })
+        }
+      />
     </Card>
   )
 }

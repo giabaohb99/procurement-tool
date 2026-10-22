@@ -51,6 +51,13 @@ vi.mock('./employee-work-history-files-dialog', () => ({
   },
 }))
 
+//  duoc-CR-665: hộp xác nhận nghỉ việc nhúng khung «việc đang giữ» — có bài kiểm riêng
+//  (`employee-pending-work-panel.test.tsx`), ở đây chỉ cần hộp mở/đóng đúng.
+vi.mock('./employee-pending-work-panel', () => ({ EmployeePendingWorkPanel: () => null }))
+vi.mock('../hooks/use-employee-pending-work', () => ({
+  useEmployeePendingWork: () => ({ data: undefined }),
+}))
+
 const employee: EmployeeDetail = {
   id: 1,
   code: 'NSU001',

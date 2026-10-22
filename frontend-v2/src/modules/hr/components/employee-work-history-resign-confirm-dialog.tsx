@@ -10,6 +10,8 @@ import {
 } from '@/shared/ui/alert-dialog'
 import { Button } from '@/shared/ui/button'
 import { formatDate } from '@/shared/utils/format-date'
+import { useEmployeePendingWork } from '../hooks/use-employee-pending-work'
+import { EmployeePendingWorkPanel } from './employee-pending-work-panel'
 
 interface EmployeeWorkHistoryResignConfirmDialogProps {
   open: boolean
@@ -17,6 +19,11 @@ interface EmployeeWorkHistoryResignConfirmDialogProps {
   /** `from_date` của dòng Thôi việc — ngày sẽ ghi vào `resign_date` của hồ sơ. */
   resignDate: string
   pending?: boolean
+  /**
+   * Hồ sơ sắp chuyển nghỉ việc (duoc-CR-665, V0-4). Có thì hộp liệt kê việc duyệt người này
+   * đang giữ + cho chuyển trước khi khóa; còn việc treo vẫn cho qua (xác nhận), nút đổi nhãn.
+   */
+  employeeId?: number
   /** Nhãn nút phụ — mặc định «Chỉ lưu dòng» (hộp LƯU dòng mới, phase 04). */
   cancelLabel?: string
   /** Nhãn nút đỏ — mặc định «Lưu và chuyển sang nghỉ việc». */
@@ -53,6 +60,7 @@ export function EmployeeWorkHistoryResignConfirmDialog({
   onOpenChange,
   resignDate,
   pending = false,
+  employeeId,
   cancelLabel = 'Chỉ lưu dòng',
   confirmLabel = 'Lưu và chuyển sang nghỉ việc',
   onCancel,
@@ -60,7 +68,7 @@ export function EmployeeWorkHistoryResignConfirmDialog({
 }: EmployeeWorkHistoryResignConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <ShieldAlert className="size-5 text-destructive" />
@@ -80,6 +88,8 @@ export function EmployeeWorkHistoryResignConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
+        {employeeId ? <EmployeePendingWorkPanel employeeId={employeeId} /> : null}
+
         <AlertDialogFooter>
           <Button
             type="button"
@@ -96,10 +106,20 @@ export function EmployeeWorkHistoryResignConfirmDialog({
             onClick={() => onConfirm(true)}
           >
             {pending && <Loader2 className="size-4 animate-spin" />}
-            {confirmLabel}
+            {employeeId ? <ConfirmLabelWithPendingWork employeeId={employeeId} label={confirmLabel} /> : confirmLabel}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   )
+}
+
+/**
+ * Nhãn nút đỏ: còn việc duyệt treo thì thêm «Vẫn … (còn việc treo)». Tách thành component để
+ * hook chỉ chạy khi có `employeeId` (hộp dùng không kèm hồ sơ không cần QueryClient).
+ */
+function ConfirmLabelWithPendingWork({ employeeId, label }: { employeeId: number; label: string }) {
+  const { data } = useEmployeePendingWork(employeeId)
+  const hasPendingWork = (data?.total_tasks ?? 0) + (data?.total_flow_steps ?? 0) > 0
+  return <>{hasPendingWork ? `Vẫn ${label.toLowerCase()} (còn việc treo)` : label}</>
 }
