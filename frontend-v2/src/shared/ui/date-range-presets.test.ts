@@ -1,6 +1,36 @@
 import { describe, expect, it } from 'vitest'
 
-import { DATE_RANGE_PRESETS } from './date-range-presets'
+import { DATE_RANGE_PRESETS, resolveNextDays, resolveThisMonth } from './date-range-presets'
+
+describe('resolveThisMonth', () => {
+  it('covers the whole month, including a 31st', () => {
+    expect(resolveThisMonth(new Date(2026, 9, 22))).toEqual(['2026-10-01', '2026-10-31'])
+  })
+
+  it('ends February on the 28th in a common year and the 29th in a leap year', () => {
+    expect(resolveThisMonth(new Date(2026, 1, 3))).toEqual(['2026-02-01', '2026-02-28'])
+    expect(resolveThisMonth(new Date(2028, 1, 3))).toEqual(['2028-02-01', '2028-02-29'])
+  })
+
+  it('does not slip into the previous month on the 1st just after midnight', () => {
+    //  Lỗi kinh điển khi đổi sang UTC: 00:30 ngày 01/11 giờ Việt Nam là 17:30 ngày 31/10 UTC.
+    expect(resolveThisMonth(new Date(2026, 10, 1, 0, 30))).toEqual(['2026-11-01', '2026-11-30'])
+  })
+})
+
+describe('resolveNextDays', () => {
+  it('counts today as the first of the seven days', () => {
+    expect(resolveNextDays(7, new Date(2026, 9, 22))).toEqual(['2026-10-22', '2026-10-28'])
+  })
+
+  it('rolls over the end of the year', () => {
+    expect(resolveNextDays(7, new Date(2026, 11, 29))).toEqual(['2026-12-29', '2027-01-04'])
+  })
+
+  it('one day is just today', () => {
+    expect(resolveNextDays(1, new Date(2026, 9, 22))).toEqual(['2026-10-22', '2026-10-22'])
+  })
+})
 
 /** Lấy preset theo nhãn — tên nhãn đổi thì test đỏ ngay, đúng ý. */
 function preset(label: string) {

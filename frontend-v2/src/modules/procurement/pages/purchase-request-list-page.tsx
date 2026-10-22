@@ -1,10 +1,11 @@
 import { Copy, Download, Plus } from 'lucide-react'
 import { useCallback, useMemo, useState, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -23,7 +24,8 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
+import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
@@ -32,6 +34,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { resolveNextDays, resolveThisMonth } from '@/shared/ui/date-range-presets'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
@@ -46,6 +49,7 @@ import {
 } from '@/shared/ui/select'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
+import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
 import { PurchaseRequestCard } from '../components/purchase-request-card'
 import { StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_REQUEST_FILTER_FIELDS } from '../config/procurement-filter-fields'
@@ -56,6 +60,13 @@ import {
   statusOptions,
   type PurchaseRequest,
 } from '../types/purchase-document'
+import {
+  buildClearParams,
+  isSameRange,
+  NO_EMPLOYEE_REASON,
+  resolveMyEmployeeCode,
+  toggleRange,
+} from '../utils/list-quick-chips'
 
 const ALL = 'all'
 
@@ -78,7 +89,28 @@ const FILTER_CONFIG = {
   ],
 }
 
+/** Tham số của các ô lọc nhanh — nút *Xóa lọc* xóa đúng bộ này. */
+const QUICK_FILTER_KEYS = [
+  'company_id',
+  'department_id',
+  'status',
+  'is_urgent',
+  'item_group',
+  'assignee',
+  'need_date_from',
+  'need_date_to',
+  'request_date_from',
+  'request_date_to',
+]
+
+/** Khóa nhớ bộ lọc của màn — trùng `storageKey` của bảng cho dễ dò. */
+const SCREEN_KEY = 'procurement.purchase-requests'
+
 export function PurchaseRequestListPage() {
+  //  Đổi hướng TRƯỚC khi dựng `FilterProvider` — provider chỉ đọc URL một lần.
+  const restoreSearch = useRememberedListSearch(SCREEN_KEY)
+  if (restoreSearch) return <Navigate replace to={{ search: restoreSearch }} />
+
   return (
     <FilterProvider config={FILTER_CONFIG}>
       <PurchaseRequestListContent />
@@ -112,6 +144,8 @@ function PurchaseRequestListContent() {
   const [reqDateFrom, setReqDateFrom] = useUrlParamState('request_date_from', '')
   const [reqDateTo, setReqDateTo] = useUrlParamState('request_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const setUrlParams = useSetUrlParams()
+  const myCode = resolveMyEmployeeCode(useAuthStore((state) => state.user))
 
   const sortBy = searchParams.get('sort_by') || ''
   const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
@@ -203,18 +237,46 @@ function PurchaseRequestListContent() {
     Boolean(reqDateFrom || reqDateTo),
   ].filter(Boolean).length
 
-  const clearAllFilters = () => {
-    setCompanyId(ALL)
-    setDepartmentId(ALL)
-    setStatus(ALL)
-    setIsUrgent(ALL)
-    setItemGroup(ALL)
-    setAssignee(ALL)
-    setNeedDateFrom('')
-    setNeedDateTo('')
-    setReqDateFrom('')
-    setReqDateTo('')
+  //  MỘT lượt ghi URL — xem `buildClearParams` (lỗi cũ: chỉ xóa được ô cuối).
+  const clearAllFilters = () => setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams))
+
+  //  kh-NT2-2 — chip lọc nhanh. Mỗi chip ghi vào ĐÚNG tham số của ô lọc bên cạnh
+  //  (ô NSTM, ô Ngày tạo, ô Ngày cần hàng) nên hai bên luôn nói cùng một giá trị.
+  //  Hai đầu khoảng ngày ghi trong MỘT lượt (`useSetUrlParams`): gọi hai setter liền
+  //  nhau thì lần sau đè mất lần trước.
+  const thisMonth = resolveThisMonth()
+  const dueSoon = resolveNextDays(7)
+  const urgentChip: QuickChip = {
+    label: 'Gấp',
+    active: isUrgent === 'true',
+    onToggle: () => setIsUrgent(isUrgent === 'true' ? ALL : 'true'),
   }
+  const quickChips: QuickChip[] = [
+    {
+      //  "Của tôi" của thu mua = dòng mình là NSTM phụ trách. Người yêu cầu đã chỉ
+      //  thấy phiếu của mình nhờ phạm vi dữ liệu, không cần chip.
+      label: 'Của tôi',
+      active: Boolean(myCode) && assignee === myCode,
+      onToggle: () => setAssignee(assignee === myCode || !myCode ? ALL : myCode),
+      disabledReason: myCode ? undefined : NO_EMPLOYEE_REASON,
+    },
+    {
+      label: 'Tháng này',
+      active: isSameRange(reqDateFrom, reqDateTo, thisMonth),
+      onToggle: () => {
+        const [from, to] = toggleRange(reqDateFrom, reqDateTo, thisMonth)
+        setUrlParams({ request_date_from: from || null, request_date_to: to || null })
+      },
+    },
+    {
+      label: 'Sắp tới hạn',
+      active: isSameRange(needDateFrom, needDateTo, dueSoon),
+      onToggle: () => {
+        const [from, to] = toggleRange(needDateFrom, needDateTo, dueSoon)
+        setUrlParams({ need_date_from: from || null, need_date_to: to || null })
+      },
+    },
+  ]
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const next = new URLSearchParams(searchParams)
@@ -496,7 +558,13 @@ function PurchaseRequestListContent() {
           getRowId={(pr) => pr.id}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage="Không tìm thấy yêu cầu mua hàng nào."
+          //  Rỗng vì đang lọc phải nói ra: bộ lọc nay còn được khôi phục từ bản nhớ khi
+          //  mở lại màn (kh-NT2-2), người dùng không tự đặt nên dễ tưởng mất dữ liệu.
+          emptyMessage={
+            activeCount > 0 || filter.activeCount > 0 || debouncedValue
+              ? 'Không có yêu cầu mua hàng nào khớp bộ lọc đang chọn — bỏ bớt điều kiện lọc để xem thêm.'
+              : 'Không tìm thấy yêu cầu mua hàng nào.'
+          }
           //  Khổ hẹp: THẺ thay bảng — xem `PurchaseRequestCard`.
           mobileCard={(pr) => <PurchaseRequestCard row={pr} />}
           toolbarClassName={STICKY_TOOLBAR_TOP}
@@ -537,14 +605,7 @@ function PurchaseRequestListContent() {
               {/*  Chip *Gấp* ở LẠI thanh công cụ, không vào tờ trượt: đây là bộ
                    lọc một chạm dùng nhiều nhất của màn này, nhét vào sau hai lớp
                    (mở tờ trượt → bấm → đóng) là đổi một chạm thành ba. */}
-              <Button
-                variant={isUrgent === 'true' ? 'default' : 'outline'}
-                size="sm"
-                className="h-9 shrink-0 text-xs"
-                onClick={() => setIsUrgent(isUrgent === 'true' ? ALL : 'true')}
-              >
-                Gấp
-              </Button>
+              <ListQuickChips chips={[urgentChip]} />
 
               {/*  `md:contents` chứ KHÔNG phải `md:flex`: bọc cụm lọc trong một thẻ
                    flex riêng thì với thanh công cụ nó là MỘT ô, không đủ chỗ là
@@ -552,6 +613,9 @@ function PurchaseRequestListContent() {
                    phải ô tìm kiếm. Màn Đơn mua hàng đã vỡ đúng kiểu đó khi thêm
                    ô lọc thứ sáu (bao-CR-319). */}
               <div className="hidden md:contents">
+                {/*  Ba chip còn lại chỉ ra thanh công cụ từ `md`: khổ hẹp đã hết chỗ (xem
+                     chú thích `iconOnly` bên dưới), nên chúng nằm đầu tờ trượt. */}
+                <ListQuickChips chips={quickChips} />
                 {companySelect}
                 {departmentSelect}
                 {statusSelect}
@@ -581,6 +645,11 @@ function PurchaseRequestListContent() {
                 onClearAll={clearAllFilters}
                 onApply={filter.apply}
               >
+                <QuickFilterField label="Lọc nhanh">
+                  <div className="flex flex-wrap gap-2">
+                    <ListQuickChips chips={quickChips} />
+                  </div>
+                </QuickFilterField>
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Bộ phận yêu cầu">{departmentSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>

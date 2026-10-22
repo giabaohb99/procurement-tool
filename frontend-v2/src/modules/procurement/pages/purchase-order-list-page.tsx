@@ -1,10 +1,11 @@
 import { Copy, Download, Plus } from 'lucide-react'
 import { useCallback, useMemo, useState, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -23,7 +24,8 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
+import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
@@ -33,6 +35,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { resolveThisMonth } from '@/shared/ui/date-range-presets'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
@@ -48,6 +51,7 @@ import {
 import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
+import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
 import { PurchaseOrderCard } from '../components/purchase-order-card'
 import { DocumentStatusBadge, StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_ORDER_FILTER_FIELDS } from '../config/procurement-filter-fields'
@@ -59,6 +63,14 @@ import {
   type PurchaseOrder,
 } from '../types/purchase-document'
 import { ORDER_TYPE_IMPORT, ORDER_TYPE_OPTIONS } from '../types/purchase-order-detail'
+import {
+  addInCondition,
+  buildClearParams,
+  isSameRange,
+  NO_EMPLOYEE_REASON,
+  resolveMyEmployeeId,
+  toggleRange,
+} from '../utils/list-quick-chips'
 
 const ALL = 'all'
 
@@ -97,12 +109,39 @@ const FILTER_CONFIG = {
     'order_type',
     'order_date_from',
     'order_date_to',
+    'missing_docs',
     'sort_by',
     'sort_dir',
   ],
 }
 
+/** Tham số của các ô lọc nhanh — nút *Xóa lọc* xóa đúng bộ này. */
+const QUICK_FILTER_KEYS = [
+  'company_id',
+  'supplier_code',
+  'nspt_id',
+  'document_status',
+  'status',
+  'is_urgent',
+  'order_type',
+  'item_group',
+  'invoice_no',
+  'order_date_from',
+  'order_date_to',
+  'missing_docs',
+]
+
+/** Khóa nhớ bộ lọc của màn — trùng `storageKey` của bảng cho dễ dò. */
+const SCREEN_KEY = 'procurement.purchase-orders'
+
+/** Chip *Thiếu chứng từ* = chưa có chứng từ HOẶC mới có một phần (doc 14 §2.2). */
+const MISSING_DOCUMENT_STATUSES = ['none', 'partial']
+
 export function PurchaseOrderListPage() {
+  //  Đổi hướng TRƯỚC khi dựng `FilterProvider` — provider chỉ đọc URL một lần.
+  const restoreSearch = useRememberedListSearch(SCREEN_KEY)
+  if (restoreSearch) return <Navigate replace to={{ search: restoreSearch }} />
+
   return (
     <FilterProvider config={FILTER_CONFIG}>
       <PurchaseOrderListContent />
@@ -139,6 +178,11 @@ function PurchaseOrderListContent() {
   } = useUrlSearchParam('invoice_no')
   const [orderDateFrom, setOrderDateFrom] = useUrlParamState('order_date_from', '')
   const [orderDateTo, setOrderDateTo] = useUrlParamState('order_date_to', '')
+  //  Cờ của chip *Thiếu chứng từ*: ô *Hồ sơ chứng từ* chỉ chọn MỘT giá trị nên chip
+  //  này không ghi vào ô đó được, phải có tham số riêng.
+  const [missingDocs, setMissingDocs] = useUrlParamState('missing_docs', '')
+  const setUrlParams = useSetUrlParams()
+  const myEmployeeId = resolveMyEmployeeId(useAuthStore((state) => state.user))
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
   const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
@@ -176,6 +220,7 @@ function PurchaseOrderListContent() {
     debouncedInvoiceNo,
     orderDateFrom,
     orderDateTo,
+    missingDocs,
     sortBy,
     sortDir,
   ])
@@ -199,6 +244,9 @@ function PurchaseOrderListContent() {
   if (debouncedInvoiceNo) filterParams.invoice_no = debouncedInvoiceNo
   if (orderDateFrom) filterParams.order_date_from = orderDateFrom
   if (orderDateTo) filterParams.order_date_to = orderDateTo
+  //  Không ghép được khi bộ lọc nâng cao đang nối OR — chip mờ đi, xem `addInCondition`.
+  const missingDocsBlocked = filterParams.conjunction === 'or'
+  if (missingDocs) addInCondition(filterParams, 'document_status', MISSING_DOCUMENT_STATUSES)
   if (sortBy) {
     filterParams.sort_by = sortBy
     filterParams.sort_dir = sortDir
@@ -248,21 +296,46 @@ function PurchaseOrderListContent() {
     itemGroup !== ALL,
     Boolean(invoiceNo),
     Boolean(orderDateFrom || orderDateTo),
+    //  Chip đang mờ vì bộ lọc nâng cao nối OR thì không lọc gì — không đếm.
+    Boolean(missingDocs) && !missingDocsBlocked,
   ].filter(Boolean).length
 
-  const clearAllFilters = () => {
-    setCompanyId(ALL)
-    setSupplierCode(ALL)
-    setNsptId(ALL)
-    setDocStatus(ALL)
-    setStatus(ALL)
-    setIsUrgent(ALL)
-    setOrderType(ALL)
-    setItemGroup(ALL)
-    setInvoiceNo('')
-    setOrderDateFrom('')
-    setOrderDateTo('')
+  //  MỘT lượt ghi URL — xem `buildClearParams` (lỗi cũ: chỉ xóa được ô cuối).
+  const clearAllFilters = () => setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams))
+
+  //  kh-NT2-2 — chip lọc nhanh. *Của tôi* / *Tháng này* ghi vào đúng tham số của ô
+  //  NSPT / ô Ngày đặt nên hai bên luôn nói cùng một giá trị.
+  const thisMonth = resolveThisMonth()
+  const urgentChip: QuickChip = {
+    label: 'Gấp',
+    active: isUrgent === 'true',
+    onToggle: () => setIsUrgent(isUrgent === 'true' ? ALL : 'true'),
   }
+  const quickChips: QuickChip[] = [
+    {
+      //  `nspt_id` là ID nhân sự (số), không phải mã NSU.
+      label: 'Của tôi',
+      active: Boolean(myEmployeeId) && nsptId === myEmployeeId,
+      onToggle: () => setNsptId(nsptId === myEmployeeId || !myEmployeeId ? ALL : myEmployeeId),
+      disabledReason: myEmployeeId ? undefined : NO_EMPLOYEE_REASON,
+    },
+    {
+      label: 'Thiếu chứng từ',
+      active: Boolean(missingDocs) && !missingDocsBlocked,
+      onToggle: () => setMissingDocs(missingDocs ? '' : '1'),
+      disabledReason: missingDocsBlocked
+        ? 'Bộ lọc nâng cao đang nối điều kiện bằng HOẶC nên chip này không ghép vào được'
+        : undefined,
+    },
+    {
+      label: 'Tháng này',
+      active: isSameRange(orderDateFrom, orderDateTo, thisMonth),
+      onToggle: () => {
+        const [from, to] = toggleRange(orderDateFrom, orderDateTo, thisMonth)
+        setUrlParams({ order_date_from: from || null, order_date_to: to || null })
+      },
+    },
+  ]
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const next = new URLSearchParams(searchParams)
@@ -602,7 +675,13 @@ function PurchaseOrderListContent() {
           getRowId={(po) => po.id}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage="Không tìm thấy đơn mua hàng nào."
+          //  Rỗng vì đang lọc phải nói ra: bộ lọc nay còn được khôi phục từ bản nhớ khi
+          //  mở lại màn (kh-NT2-2), người dùng không tự đặt nên dễ tưởng mất dữ liệu.
+          emptyMessage={
+            activeCount > 0 || filter.activeCount > 0 || debouncedValue
+              ? 'Không có đơn mua hàng nào khớp bộ lọc đang chọn — bỏ bớt điều kiện lọc để xem thêm.'
+              : 'Không tìm thấy đơn mua hàng nào.'
+          }
           //  Khổ hẹp: THẺ thay bảng — xem `PurchaseOrderCard`.
           mobileCard={(po) => <PurchaseOrderCard row={po} />}
           toolbarClassName={STICKY_TOOLBAR_TOP}
@@ -648,14 +727,7 @@ function PurchaseOrderListContent() {
               {/*  Chip *Gấp* ở LẠI thanh công cụ, không vào tờ trượt: đây là bộ
                    lọc một chạm dùng nhiều nhất của màn này, nhét vào sau hai lớp
                    (mở tờ trượt → bấm → đóng) là đổi một chạm thành ba. */}
-              <Button
-                variant={isUrgent === 'true' ? 'default' : 'outline'}
-                size="sm"
-                className="h-9 shrink-0 text-xs"
-                onClick={() => setIsUrgent(isUrgent === 'true' ? ALL : 'true')}
-              >
-                Gấp
-              </Button>
+              <ListQuickChips chips={[urgentChip]} />
 
               {/*  Desktop Filter Controls — `md:contents` chứ KHÔNG phải `md:flex`.
                    Bọc trong một thẻ flex riêng thì cả cụm lọc là MỘT ô của thanh
@@ -665,6 +737,9 @@ function PurchaseOrderListContent() {
                    vượt ngưỡng đó. `display: contents` cho các ô lọc thành ô trực
                    tiếp của thanh công cụ nên chúng xếp kín từng dòng. */}
               <div className="hidden md:contents">
+                {/*  Ba chip còn lại chỉ ra thanh công cụ từ `md`: khổ hẹp đã hết chỗ (xem
+                     chú thích `iconOnly` bên dưới), nên chúng nằm đầu tờ trượt. */}
+                <ListQuickChips chips={quickChips} />
                 {companySelect}
                 {supplierSelect}
                 {nsptSelect}
@@ -695,6 +770,11 @@ function PurchaseOrderListContent() {
                 onClearAll={clearAllFilters}
                 onApply={filter.apply}
               >
+                <QuickFilterField label="Lọc nhanh">
+                  <div className="flex flex-wrap gap-2">
+                    <ListQuickChips chips={quickChips} />
+                  </div>
+                </QuickFilterField>
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Nhà cung cấp">{supplierSelect}</QuickFilterField>
                 <QuickFilterField label="NSPT">{nsptSelect}</QuickFilterField>

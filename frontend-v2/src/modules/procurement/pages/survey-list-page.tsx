@@ -1,10 +1,11 @@
 import { Copy, Plus } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { usePermission } from '@/core/authorization/use-permission'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
@@ -19,7 +20,8 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
+import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
@@ -41,6 +43,7 @@ import { SearchSelect } from '@/shared/ui/search-select'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
+import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
 import { SurveyCard } from '../components/survey-card'
 import { SURVEY_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
@@ -51,6 +54,12 @@ import {
   statusOptions,
   type Survey,
 } from '../types/purchase-document'
+import {
+  addInCondition,
+  buildClearParams,
+  NO_EMPLOYEE_REASON,
+  resolveMyEmployeeName,
+} from '../utils/list-quick-chips'
 
 const ALL = 'all'
 
@@ -60,10 +69,23 @@ const FILTER_CONFIG = {
   //  `product_code` từng nằm đây nhưng màn không có ô nào ghi nó — bản v1 có ô
   //  «Mã SP (NCC)» riêng, còn ở đây ô tìm kiếm đã gánh luôn phần đó (backend đọc
   //  `code` / `q` / `search` / `product_code` vào CÙNG một câu tìm đa trường).
-  preserveParams: ['status', 'survey_type', 'item_group', 'sort_by', 'sort_dir'],
+  preserveParams: ['status', 'survey_type', 'item_group', 'nspt', 'pending', 'sort_by', 'sort_dir'],
 }
 
+/** Tham số của các ô lọc nhanh — nút *Xóa lọc* xóa đúng bộ này. */
+const QUICK_FILTER_KEYS = ['status', 'survey_type', 'item_group', 'nspt', 'pending']
+
+/** Khóa nhớ bộ lọc của màn — trùng `storageKey` của bảng cho dễ dò. */
+const SCREEN_KEY = 'procurement.surveys'
+
+/** Chip *Chờ xử lý* = phiếu chưa xong: còn nháp hoặc đang chờ duyệt. */
+const PENDING_STATUSES = ['draft', 'submitted']
+
 export function SurveyListPage() {
+  //  Đổi hướng TRƯỚC khi dựng `FilterProvider` — provider chỉ đọc URL một lần.
+  const restoreSearch = useRememberedListSearch(SCREEN_KEY)
+  if (restoreSearch) return <Navigate replace to={{ search: restoreSearch }} />
+
   return (
     <FilterProvider config={FILTER_CONFIG}>
       <SurveyListContent />
@@ -83,6 +105,13 @@ function SurveyListContent() {
   //  Nhóm hàng lọc theo TÊN, không phải id — `Survey.item_group` lưu tên nhóm
   //  (bảng chưa có cột `item_group_id`), giống hệt ô cùng tên ở bản v1.
   const [itemGroup, setItemGroup] = useUrlParamState('item_group', ALL)
+  //  kh-NT2-2 — `Survey.nspt` lưu TÊN người tạo phiếu (chưa có cột id), nên chip
+  //  *Của tôi* lọc theo tên; máy chủ so khớp CHỨA.
+  const [nspt, setNspt] = useUrlParamState('nspt', '')
+  //  Cờ của chip *Chờ xử lý*: ô Trạng thái chỉ chọn MỘT giá trị.
+  const [pending, setPending] = useUrlParamState('pending', '')
+  const myName = resolveMyEmployeeName(useAuthStore((state) => state.user))
+  const setUrlParams = useSetUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const { data: itemGroups } = usePurchaseRequestItemGroups()
 
@@ -106,6 +135,8 @@ function SurveyListContent() {
     status,
     surveyType,
     itemGroup,
+    nspt,
+    pending,
     sortBy,
     sortDir,
   ])
@@ -115,6 +146,10 @@ function SurveyListContent() {
   if (status !== ALL) params.status = status
   if (surveyType !== ALL) params.survey_type = surveyType
   if (itemGroup !== ALL) params.item_group = itemGroup
+  if (nspt) params.nspt = nspt
+  //  Không ghép được khi bộ lọc nâng cao đang nối OR — chip mờ đi, xem `addInCondition`.
+  const pendingBlocked = params.conjunction === 'or'
+  if (pending) addInCondition(params, 'status', PENDING_STATUSES)
   if (sortBy) {
     params.sort_by = sortBy
     params.sort_dir = sortDir
@@ -145,15 +180,51 @@ function SurveyListContent() {
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
   //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
   const activeCount =
-    [status !== ALL, surveyType !== ALL, itemGroup !== ALL].filter(Boolean).length +
-    filter.activeCount
+    [
+      status !== ALL,
+      surveyType !== ALL,
+      itemGroup !== ALL,
+      Boolean(nspt),
+      //  Chip đang mờ vì bộ lọc nâng cao nối OR thì không lọc gì — không đếm.
+      Boolean(pending) && !pendingBlocked,
+    ].filter(Boolean).length + filter.activeCount
 
+  //  `filter.reset()` TRƯỚC, lượt ghi URL của màn SAU — xem chú thích cùng chỗ ở
+  //  `survey-request-list-page.tsx` và `buildClearParams`.
   const clearAllFilters = () => {
-    setStatus(ALL)
-    setSurveyType(ALL)
-    setItemGroup(ALL)
     filter.reset()
+    setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams, true))
   }
+
+  //  Bộ chip đúng doc 14 §2.4: Của tôi · Khảo sát NCC · Khảo sát SP · Chờ xử lý. Hai
+  //  chip loại ghi vào ĐÚNG ô *Loại khảo sát*. Phiếu mới nay đều là `combined` (một
+  //  phiếu ôm cả hai bảng), nên hai chip này chủ yếu để lục phiếu CŨ theo loại.
+  const quickChips: QuickChip[] = [
+    {
+      label: 'Của tôi',
+      active: Boolean(myName) && nspt === myName,
+      onToggle: () => setNspt(nspt === myName || !myName ? '' : myName),
+      disabledReason: myName ? undefined : NO_EMPLOYEE_REASON,
+    },
+    {
+      label: 'Khảo sát NCC',
+      active: surveyType === 'supplier',
+      onToggle: () => setSurveyType(surveyType === 'supplier' ? ALL : 'supplier'),
+    },
+    {
+      label: 'Khảo sát SP',
+      active: surveyType === 'product',
+      onToggle: () => setSurveyType(surveyType === 'product' ? ALL : 'product'),
+    },
+    {
+      label: 'Chờ xử lý',
+      active: Boolean(pending) && !pendingBlocked,
+      onToggle: () => setPending(pending ? '' : '1'),
+      disabledReason: pendingBlocked
+        ? 'Bộ lọc nâng cao đang nối điều kiện bằng HOẶC nên chip này không ghép vào được'
+        : undefined,
+    },
+  ]
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const next = new URLSearchParams(searchParams)
@@ -366,7 +437,13 @@ function SurveyListContent() {
           onRowClick={(survey) => navigate(appRoutes.procurement.surveyDetail(survey.id))}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage="Không tìm thấy phiếu khảo sát nào."
+          //  Rỗng vì đang lọc phải nói ra: bộ lọc nay còn được khôi phục từ bản nhớ khi
+          //  mở lại màn (kh-NT2-2), người dùng không tự đặt nên dễ tưởng mất dữ liệu.
+          emptyMessage={
+            activeCount > 0 || debouncedValue
+              ? 'Không có phiếu khảo sát nào khớp bộ lọc đang chọn — bỏ bớt điều kiện lọc để xem thêm.'
+              : 'Không tìm thấy phiếu khảo sát nào.'
+          }
           //  Khổ hẹp: THẺ thay bảng — xem `SurveyCard`.
           //
           //  ⚠️ Nút *Nhân bản* của cột thao tác KHÔNG theo sang thẻ: bảng khai
@@ -413,6 +490,9 @@ function SurveyListContent() {
                    phải ô tìm kiếm. Màn Đơn mua hàng đã vỡ đúng kiểu đó khi thêm
                    ô lọc thứ sáu (bao-CR-319). */}
               <div className="hidden md:contents">
+                {/*  Chip chỉ ra thanh công cụ từ `md`: khổ hẹp ô tìm chỉ còn 134px — chúng
+                     nằm đầu tờ trượt. */}
+                <ListQuickChips chips={quickChips} />
                 {typeSelect}
                 {itemGroupSelect}
                 {statusSelect}
@@ -428,6 +508,11 @@ function SurveyListContent() {
                 onClearAll={clearAllFilters}
                 onApply={filter.apply}
               >
+                <QuickFilterField label="Lọc nhanh">
+                  <div className="flex flex-wrap gap-2">
+                    <ListQuickChips chips={quickChips} />
+                  </div>
+                </QuickFilterField>
                 <QuickFilterField label="Loại khảo sát">{typeSelect}</QuickFilterField>
                 <QuickFilterField label="Nhóm hàng">{itemGroupSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
