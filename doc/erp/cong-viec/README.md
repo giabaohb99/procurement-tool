@@ -14,6 +14,7 @@ lập với Project-M.** Hướng đã chốt: **clone Lark Tasks**, các câu Q
 | [`03` Lộ trình phase](./03-lo-trinh-phase.md) | W0–W5 điều kiện cần/đủ, không mốc thời gian; W2 là mốc nghiệm thu MVP; W4 thêm A-10, W5 thêm cụm Gantt B-14/B-15 + lịch làm việc | 1.1 |
 | [`04` Phân quyền](./04-phan-quyen.md) | Hai tầng: entity `work_task` (SCOPE_FIELDS = PUBLIC + lọc thành viên bắt buộc ở service), ma trận OWNER/ADMIN/MEMBER/VIEWER, kế thừa từ nhóm, cửa quản trị có audit, 7 bài test khóa | 1.0 |
 | [`05` Đặc tả giao diện](./05-giao-dien.md) | Clone giao diện Lark: bố cục, tab khung nhìn (List/Kanban P0 · **Gantt xong sớm, CR-219** · Dashboard/Activities P1), thanh công cụ (Việc mới, Tất cả, Lọc, Sắp xếp, Gom nhóm, Tùy chỉnh), giải phẫu thẻ kanban, panel chi tiết, dashboard 4 khối, tham khảo DHTMLX Gantt cho D-05 | 1.0 |
+| [`06` Kịch bản dùng thử](./06-kich-ban-dung-thu.md) | Kịch bản một đội đi trọn vòng trên dev (17 bước) + 5 ngày dùng thật + mẫu biên bản — để đóng mốc MVP (CV1-3) | 0.1 |
 
 Trạng thái (28/08/2026): **W0 xong** (CR-217) · **W1 xong** và **W2 phần lớn xong**
 (CR-218) — chi tiết từng phase ở [`03`](./03-lo-trinh-phase.md).

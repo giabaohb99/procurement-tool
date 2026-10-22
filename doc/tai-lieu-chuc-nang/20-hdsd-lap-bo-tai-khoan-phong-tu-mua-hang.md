@@ -85,8 +85,11 @@ nút Lưu ở đầu trang). Bậc `dept_proc` tính cả phòng kiêm nhiệm.
 2. Thẻ *Tài khoản đăng nhập* báo "Nhân sự này chưa có tài khoản đăng nhập". Bấm
    **Tạo tài khoản đăng nhập**.
 3. Hộp *Tạo tài khoản & đặt mật khẩu*: nhập **Mật khẩu mới** và **Nhập lại mật khẩu**, bấm
-   **Xác nhận**. Luật mật khẩu: tối thiểu 8 ký tự, có cả chữ và số, không trùng mã nhân
-   viên hay email.
+   **Xác nhận**. Luật mật khẩu: tối thiểu 8 ký tự, không nằm trong danh sách mật khẩu phổ
+   biến, không chứa mã nhân viên hay email. Từ 21/10/2026 (bao-CR-653) **không còn bắt có
+   cả chữ và số**: quản trị đặt được mật khẩu tạm chỉ gồm số, ví dụ số điện thoại.
+   Cách gọn hơn là **để người đó đăng nhập bằng Google** đúng gmail ghi ở hồ sơ, khỏi phải
+   đặt mật khẩu hộ.
 4. Tài khoản mới **tự nhận vai trò Nhân sự**. Với `NM_YC` thế là xong bước 3; các tài khoản
    khác đi tiếp.
 
@@ -254,3 +257,77 @@ Không sửa mã, không sửa cấu hình. Lặp lại:
 
 Bước 2 là chỗ dễ quên nhất và quên thì **lủng im lặng**: Thu mua chung vẫn thấy phiếu phòng
 mới mà không ai báo lỗi. Ghi phòng mới vào danh sách kiểm định kỳ của quản trị.
+
+## 9. Bộ tài khoản cho một công ty con (thu hẹp theo công ty) — ca AGC 21/10/2026
+
+Khác hai bộ ở trên: người của công ty con chỉ được thấy **dữ liệu của công ty mình** (nhân sự,
+phiếu, văn bản), trong khi người có quyền xem tổng của tập đoàn vẫn thấy cả công ty con.
+Đại ca chốt ngày 21/10/2026 làm bằng **cấu hình trên hệ chung**, không tách hệ, không sửa mã.
+Ca đầu tiên là **Công ty TNHH Phân bón nhập khẩu Agricare (AGC)**.
+
+### 9.1 Bốn việc phải có
+
+| # | Việc | Ở đâu |
+|---|---|---|
+| 1 | Một phòng ban riêng của công ty con, khai **trưởng phòng** | **Nhân sự › Phòng ban**. Trưởng phòng là người duyệt phiếu của phòng; hồ sơ của trưởng phòng **để nguyên** nếu họ đang giữ việc ở công ty khác (đại ca chốt 21/10, chỉ đặt làm trưởng phòng) |
+| 2 | Hồ sơ nhân sự của người công ty con ghi **Pháp nhân** = công ty con, **Phòng ban** = phòng ở việc 1 | Bước 1 của mục 3 |
+| 3 | Vai trò như thường (*Nhân sự*, *Nhân viên thu mua phòng*, *Nhân sự — Hồ sơ nhân viên*...) | Bước 3 của mục 3 |
+| 4 | **Thu hẹp MỌI vai trò** của người đó bằng ô *Chỉ trong công ty* = công ty con | Bước 4 của mục 3, lặp cho **từng** vai trò |
+
+Phòng ở việc 1 tự thành **phòng tự mua** ngay khi có người giữ vai trò thu mua bậc trong phòng
+(mục 4); khi đó phải thêm phòng này vào ô *Loại trừ phòng ban* của các tài khoản Thu mua chung
+(mục 8 bước 2). Ca AGC đã thêm cho cả 18 tài khoản *Nhân viên thu mua* đang hoạt động.
+
+### 9.2 Vì sao phải thu hẹp TẤT CẢ vai trò, không riêng một vai trò
+
+Phạm vi của một người là **hợp** các vai trò người đó giữ: một vai trò còn bậc *Tất cả* là đủ
+mở toàn tập đoàn cho đối tượng đó. Hai bẫy đã gặp khi lập bộ AGC:
+
+- Vai trò *Nhân sự* (ai cũng có) đọc **danh bạ toàn tập đoàn**. Chưa thu hẹp thì nhân viên công
+  ty con thấy 268 nhân sự; thu hẹp xong còn 5 nhân sự, 1 công ty. Đại ca thử bằng tài khoản thật
+  rồi mới chốt thu hẹp cả nhân viên, không chỉ HR.
+- Quyền đọc **trường nhạy cảm** (CCCD, ngân hàng, mã số thuế) xét theo **khóa quyền**, không xét
+  phạm vi. Người HR công ty con mà chỉ thu hẹp vai trò *Hồ sơ nhân viên*, còn vai trò *Nhân sự*
+  để bậc *Tất cả*, thì đọc được CCCD và số tài khoản của **cả tập đoàn**. Thu hẹp mọi vai trò
+  mới chặn được.
+
+Ngược lại, **không cần che** danh bạ công ty con với người ngoài: HR tập đoàn xem đủ thì vẫn đủ,
+HR theo công ty thì theo công ty (đại ca chốt 22/10).
+
+### 9.3 HR của công ty con không được sửa danh mục dùng chung
+
+Ngày lễ, Loại nghỉ, Chức vụ, Lịch làm việc là **danh mục chung của cả tập đoàn** (không thuộc
+riêng công ty nào), nên ô *Chỉ trong công ty* không thu hẹp được chúng. Vai trò gốc *Nhân sự —
+Hồ sơ nhân viên* và *Nhân sự — Quản lý nghỉ phép* có quyền sửa bốn danh mục đó. Cách làm cho HR
+công ty con: chép hai vai trò đó thành bản **"Nhân sự công ty — ... (không sửa danh mục chung)"**
+với bốn danh mục chỉ còn quyền xem, gán bản chép cho HR công ty con, vai trò gốc giữ cho HR tập
+đoàn. Trên prod hai bản chép đã có (tạo 21/10/2026); dev chưa có.
+
+### 9.4 Đăng nhập
+
+Tài khoản công ty con tạo **không mật khẩu** rồi để người đó **đăng nhập bằng Google** đúng gmail
+ghi ở hồ sơ. Cần mật khẩu thì quản trị tự đặt mật khẩu tạm (được chỉ gồm số từ bao-CR-653) và báo
+riêng cho người đó; trợ lý AI **không** đặt mật khẩu thật hộ ai.
+
+### 9.5 Luồng duyệt riêng cho công ty con
+
+Phiếu nghỉ phép và văn bản của công ty con có thể chạy **luồng duyệt riêng** mà không đụng luồng
+của công ty khác: màn **Phê duyệt › Luồng duyệt**, *Tạo luồng duyệt mới*, chọn *Loại chứng từ*,
+ô **Pháp nhân áp dụng** = công ty con. Luồng khai đúng pháp nhân của phiếu được xét **trước**
+mọi luồng dùng chung. Công ty chưa có luồng nào thì vẫn đi đường duyệt cũ. Chi tiết và ca AGC:
+`doc/erp/hrm/02-nghi-phep.md` mục 8.2 và `14-van-thu-van-ban.md` mục 13.1.
+
+Bài trên Trung tâm HDSD: mục *X. Bộ tài khoản cho một công ty con* của bài *Lập bộ tài khoản
+phòng tự mua hàng* (seed `seed_help_lap_bo_tai_khoan_phong_tu_mua.py`). Nội dung ở đây và ở seed
+phải khớp nhau.
+
+### 9.6 Kiểm sau khi làm
+
+Đăng nhập bằng tài khoản của từng người (cửa sổ ẩn danh). Nhân viên công ty con: danh bạ chỉ còn
+người công ty mình. HR công ty con: danh sách nhân sự chỉ công ty mình; mở hồ sơ người công ty
+khác bằng đường dẫn phải ra *Không tìm thấy*; màn Ngày lễ / Loại nghỉ không có nút *Thêm mới*.
+Người có quyền xem tổng: vẫn thấy người công ty con.
+
+Còn mở sau ca AGC: phân công người mua theo phân loại cho phòng Kinh doanh AGC (việc *kh-du-lieu-a1*);
+*Admin thu mua phòng* vẫn sửa được danh mục sản phẩm, nhà cung cấp, phân công **dùng chung tập
+đoàn** (thiết kế bao-CR-414, chưa thu hẹp được theo công ty).

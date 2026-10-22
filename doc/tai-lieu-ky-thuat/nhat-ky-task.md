@@ -16147,6 +16147,18 @@ Mã nguồn: kế hoạch DX2-1
 
 **Đặt chỗ:** Agent 2 (*A2 Rà mã & Tài liệu*) nhận việc ngày 22/10/2026, làm thứ hai sau *kh-AI1-1-hdsd*.
 
+**Đã làm (22/10/2026)**
+- Tài liệu lập bộ tài khoản có thêm mục 9 *Bộ tài khoản cho một công ty con*: bốn việc phải có, vì sao phải thu hẹp **mọi** vai trò (bẫy danh bạ 268 người và bẫy đọc CCCD cả tập đoàn), HR công ty con dùng bản vai trò *không sửa danh mục chung*, đăng nhập bằng Google, luồng duyệt riêng theo *Pháp nhân áp dụng*, cách kiểm sau khi làm.
+- Sửa luật mật khẩu ở tài liệu và bài hướng dẫn: bỏ câu *có cả chữ và số* theo bao-CR-653.
+- Tài liệu Nghỉ phép thêm mục 8.2 *Luồng riêng cho một công ty*: hiện trạng prod sau ca AGC (công tắc bật, một luồng `NP-AGC` một chặng, công ty khác vẫn duyệt thẳng) và hệ quả. Đã soát lại bằng mã: trưởng phòng AGC có hồ sơ ở công ty khác nên đơn của chính họ không đi luồng AGC.
+- Tài liệu Văn thư thêm mục 13.1 *Luồng riêng một pháp nhân*: luồng `VB-AGC`, và hệ quả với bản clone (đã bật công tắc thì pháp nhân nhận clone phải có luồng riêng mới gửi duyệt được).
+- Soạn hai kịch bản dùng thử: Công việc 17 bước + 5 ngày dùng thật (CV1-3), Diễn đàn 12 bước trên điện thoại (DD1-2), đều có mẫu biên bản.
+- Bài hướng dẫn *Lập bộ tài khoản phòng tự mua hàng* thêm mục X *Bộ tài khoản cho một công ty con*; đã chạy seed hai lần ở máy em, dựng lại đúng một bài.
+
+**Còn:** nạp bài hướng dẫn lên devhelp (lệnh chạy seed trên VPS dev đang chờ đại ca cho phép); đi lại hai kịch bản trên dev để chốt nhãn nút khi đại ca đăng nhập khung trình duyệt; commit tệp seed chờ gật vì là tệp chạy được.
+
+Mã nguồn: `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` · `doc/erp/cong-viec/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
+
 **Việc cần làm**
 - Ghi vào tài liệu chức năng và bài hướng dẫn liên quan (lập bộ tài khoản theo công ty, khai luồng duyệt riêng một công ty).
 - Soạn kịch bản dùng thử cho Công việc (CV1-3) và Diễn đàn (DD1-2).
