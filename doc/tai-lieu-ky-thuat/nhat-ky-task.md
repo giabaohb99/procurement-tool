@@ -15637,3 +15637,15 @@ việc và xem năng lực một người, nhóm AI sẽ gắn thành công cụ
 là xong và không còn tính vào tải của người phụ trách.
 
 Mã nguồn: backend/app/modules/capability/stats_service.py · ai_contract.py · frontend-v2/src/modules/report/pages/work-capability-report-page.tsx · test/backend/test_nang_luc_bao_cao_cr657.py
+
+## san-xuat-tong-quan-nghiep-vu | Bộ tài liệu nghiên cứu nghiệp vụ cho phân hệ Quản lý sản xuất
+- status: xong
+- date: 2026-10-21
+Đại ca đang nghiên cứu để chuẩn bị làm phần sản xuất, gửi một bản tổng quan về sản xuất, tồn kho và dòng tiền rồi nhờ đánh giá và viết lại
+thành bản chuẩn. Nay có thư mục tài liệu riêng cho phân hệ Sản xuất với một tệp tổng quan nghiệp vụ: đổi căn cứ sang Thông tư 99 năm 2025
+vì Thông tư 200 đã hết hiệu lực từ đầu năm, sửa tám chỗ sai của bản gốc như sơ đồ bỏ qua tài khoản 621 và dùng lẫn lệnh sản xuất với công
+đoạn, bổ sung cách đánh giá hàng dở dang, phân bổ chi phí chung theo công suất bình thường, giá chuẩn và giá thực tế, gia công ngoài và
+đồng sản phẩm. Tài liệu đối chiếu thêm với mã nguồn đang chạy để chỉ ra phần dùng lại được và phần còn thiếu, kèm mười lăm câu hỏi phải
+chốt trước khi viết yêu cầu. Chưa có dòng mã nào.
+
+Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/00-tong-quan-nghiep-vu.md · doc/erp/README.md
