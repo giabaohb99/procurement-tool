@@ -20,7 +20,7 @@
 
 | Tệp | Chức năng | Màn chính | Mã nguồn backend |
 |---|---|---|---|
-| [`01-ho-so-nhan-su.md`](01-ho-so-nhan-su.md) | **Hồ sơ nhân sự**: ~38 trường của `tab_employee`, hai bảng con (người báo tin, thành viên hộ gia đình), nhóm trường nhạy cảm (`employee_sensitive`), danh mục **Chức vụ** (§7.7), tự sửa liên hệ ở Trang cá nhân (§7.9), **Quá trình công tác** (§7.11). Cuối tệp có thêm hai mục của **Hợp đồng lao động**: bản lưu trữ ở phân hệ Văn bản (duoc-CR-629) và danh sách biến của mẫu hợp đồng (duoc-CR-630) | `/hr/employees` · `/hr/job-positions` | `modules/employee/` · `modules/labor_contract/` |
+| [`01-ho-so-nhan-su.md`](01-ho-so-nhan-su.md) | **Hồ sơ nhân sự**: ~38 trường của `tab_employee`, hai bảng con (người báo tin, thành viên hộ gia đình), nhóm trường nhạy cảm (`employee_sensitive`), danh mục **Chức vụ** (§7.7), tự sửa liên hệ ở Trang cá nhân (§7.9), **Quá trình công tác** (§7.11), **Sơ đồ tổ chức** (§7.12), **việc treo trước khi khóa tài khoản** (§7.13). Cuối tệp có thêm hai mục của **Hợp đồng lao động**: bản lưu trữ ở phân hệ Văn bản (duoc-CR-629) và danh sách biến của mẫu hợp đồng (duoc-CR-630) | `/hr/employees` · `/hr/job-positions` | `modules/employee/` · `modules/labor_contract/` |
 | [`02-nghi-phep.md`](02-nghi-phep.md) | **Nghỉ phép**: đơn nghỉ (nhiều loại nghỉ trong một đơn, nửa ngày, theo giờ), quỹ phép năm và kết sổ cuối năm, loại nghỉ, lịch ngày lễ, duyệt, bốn khóa phân quyền | `/hr/leave-requests` · `/hr/leave-balances` · `/hr/leave-calendar` · `/hr/leave-types` · `/hr/holidays` | `modules/leave/` |
 | [`03-lich-lam-viec.md`](03-lich-lam-viec.md) | **Lịch làm việc**: mẫu lịch tuần, gán theo bốn cấp (hệ thống, pháp nhân, phòng ban, nhân sự), xem ai làm ai nghỉ, và **nối vào cách tính số ngày nghỉ phép** | `/hr/work-roster` · `/hr/work-schedules` · `/hr/work-schedule-assignments` | `modules/work_schedule/` |
 
@@ -72,12 +72,18 @@ Chi tiết từng luật ở các tệp luật cho trợ lý AI (tự nạp khi 
 | **In «Phiếu thông tin nhân viên»** theo mẫu BM00../QT01/NS (việc C5) | `01` §7.10 | Chưa làm |
 | **Che cột nhạy cảm khi xuất CSV / Excel** (việc C7) | `01` §7 Đợt 4 | Hiện an toàn chỉ vì bộ cột xuất chưa có trường nhạy cảm; chưa có cơ chế che. Thêm cột xuất mới là hở ngay |
 | **Nhân viên tự khai hồ sơ** (việc C6) | `01` §7.9 | Mới mở nhóm Liên hệ; các nhóm còn lại chưa |
-| **Cờ «Bắt buộc đính kèm» của loại nghỉ không có tác dụng** | `02` §10 | `request_service` không đọc `require_attachment` lúc gửi duyệt, nên đơn Nghỉ ốm không kèm giấy vẫn gửi được |
-| **Báo cáo đối chiếu trước / sau kết sổ phép cuối năm** | `02` §10 | Hiện chỉ có câu thông báo đếm dòng |
 | **Luồng duyệt chỉ đọc loại nghỉ CHÍNH** của đơn nhiều loại nghỉ | `02` §7.1 | Hạn chế đã biết, chưa có phương án |
 | **Nhập bù `hire_date`** cho hồ sơ cũ | `02` §10 | Việc dữ liệu, không phải việc mã; thiếu thì thâm niên tính bằng 0 |
 | **Phiếu Quyết định đầy đủ (V1-8)**: một phiếu nhiều người, tờ trình, duyệt | `01` §4 | Mới có bản gọn ghi tay theo từng người (duoc-CR-585) |
-| **Sơ đồ tổ chức vẽ từ dữ liệu** (V2-6) | `01` bước kế tiếp | Chưa làm |
+
+**Vừa xong (22/10/2026), đã gỡ khỏi bảng trên:**
+
+| Việc | Mã | Kết quả |
+|---|---|---|
+| Cờ «Bắt buộc đính kèm» của loại nghỉ | duoc-CR-661 (HR1-2) | Có tác dụng: đơn thiếu tệp bị chặn **lúc Gửi duyệt** (lưu nháp không chặn). Chi tiết `02` |
+| Báo cáo đối chiếu trước / sau kết sổ phép cuối năm | duoc-CR-664 (HR2-3) | Hộp «Đối chiếu kết sổ phép năm …» tự mở sau kết sổ, nút mở lại, Xuất Excel. Số cũ tính lại lúc xem, không chụp ảnh. Chi tiết `02` |
+| Sơ đồ tổ chức vẽ từ dữ liệu (V2-6) | duoc-CR-669 (HR2-5) | Menu Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức, lọc theo phạm vi người xem. Chi tiết `01` §7.12 |
+| **Việc treo khi khóa tài khoản / cho nghỉ việc** (V0-4) | duoc-CR-665 (HR1-4) | Hộp «việc đang giữ»: chuyển từng việc / chuyển hết, còn treo vẫn khóa được sau xác nhận. Chi tiết `01` §7.13 |
 
 Bảng trên chỉ là việc dở trong các chức năng **đã có**. Các **khối lớn chưa làm** (tuyển dụng, đánh giá, nhận việc / nghỉ việc, tài sản cấp phát, bảo hiểm…) và thứ tự đề xuất nằm ở [`../tham-khao-hrm/10-de-xuat-ap-dung.md` §0 và §0.1](../tham-khao-hrm/10-de-xuat-ap-dung.md).
 
