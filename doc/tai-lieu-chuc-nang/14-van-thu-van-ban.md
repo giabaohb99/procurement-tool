@@ -392,6 +392,24 @@ Người cũ đang mở trang chi tiết văn bản đó sẽ bị **báo lỗi 
 
 Màn **«Việc của tôi»** ở phân hệ Phê duyệt **đã xóa** (21/08/2026). Phân hệ đó nay chỉ còn phần cấu hình (Luồng duyệt · Bật bộ máy duyệt). Nút hộp việc trên thanh trên và nút *Việc cần làm* ở Trang cá nhân đều dẫn về **«Chờ tôi duyệt»**. Hiện chỉ Văn bản chạy bộ máy duyệt; ngày bật cho Thu mua thì dựng hộp việc trong chính phân hệ đó — **không** dựng lại một danh sách gom chung có nút duyệt trên từng dòng.
 
+### 13.1 Luồng riêng một pháp nhân (ca AGC, 22/10/2026)
+
+Luồng duyệt có ô **Pháp nhân áp dụng** (màn **Phê duyệt › Luồng duyệt**). Văn bản đứng tên pháp
+nhân nào thì luồng **khai đúng pháp nhân đó được xét trước** mọi luồng dùng chung; không có luồng
+riêng nào khớp mới rơi về luồng dùng chung; không có cả hai thì đi **luồng một bước** ở trên.
+
+Hiện trạng prod từ 22/10/2026: dòng *Văn bản* ở «Bật bộ máy duyệt» đã **BẬT**; có một luồng
+`VB-AGC`, pháp nhân = AGC, **một chặng** khai đích danh người đứng đầu phòng Kinh doanh AGC. Mọi
+pháp nhân khác chưa có luồng nên văn bản của họ **vẫn đi luồng một bước** như trước (đã xem trước
+trên dữ liệu prod).
+
+⚠️ **Hệ quả với bản clone.** Khi dòng *Văn bản* đã bật, **bản clone ở pháp nhân con** (mục 11)
+bắt buộc có luồng riêng của đúng pháp nhân nhận: chưa có thì nút gửi duyệt báo *"Pháp nhân «...»
+chưa có luồng duyệt Văn bản riêng. Hãy tạo luồng và chọn đúng «Pháp nhân áp dụng» trước khi gửi
+duyệt"* và văn bản giữ nguyên Nháp. Bản clone không được rơi về luồng dùng chung vì luồng đó đang
+phục vụ bản gốc. Ngày một pháp nhân khác bắt đầu nhận clone thì phải khai luồng cho pháp nhân đó
+trước. Mã nguồn: `document/approval_bridge.ensure_dedicated_flow`, `approval/flow_service.pick_flow`.
+
 ---
 
 ## 14. Ban hành

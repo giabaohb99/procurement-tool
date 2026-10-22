@@ -93,6 +93,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## ai-CR-231 | Bot giám sát phân biệt lỗi DNS với server sập
+- status: dang-lam
+- date: 2026-10-22
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** sự cố #4 ngày 22/10 lúc 10:16–10:20, bot giám sát báo prod *không kết nối được* trong khi prod vẫn sống; lỗi
+thật nằm ở DNS vùng .vn (DNSSEC của VNNIC). Báo sai kiểu này làm người trực tưởng sập và có thể kéo theo thao tác tự chữa
+vô ích.
+
+**Đang làm:** khi gọi health lỗi kết nối, bot thử lại một lần bằng cách đi thẳng tới địa chỉ Cloudflare của tên miền (lấy
+địa chỉ qua DNS khác, bỏ kiểm DNSSEC, vẫn giữ tên miền khi bắt tay mã hóa). Trả 200 thì ghi sự cố mức nhẹ *lỗi DNS, server
+sống*, không chẩn đoán, không tự chữa.
+
 ## ai-CR-230 | Đưa hoạt động AI vào hồ sơ cách làm việc: số dùng AI theo người và ngày, nhật ký thao tác biết việc nào AI làm hộ
 - status: xong
 - date: 2026-10-20
@@ -16096,6 +16109,8 @@ Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/06-lo-trinh-phase.md`
 - tag: Agent 2
 **Bối cảnh:** Trước đợt prod năm: báo cáo mức dùng chức năng, chỉ số Dùng AI, Loại việc, báo cáo năng lực theo loại việc (duoc-CR-655..657).
 
+**Đặt chỗ:** Agent 2 (*A2 Rà mã & Tài liệu*) nhận việc ngày 22/10/2026, làm trước hai việc *kh-tai-lieu-agc* và *kh-DX2-1*. Phạm vi soát thêm cả đợt duoc-CR-659..670 anh Dược đẩy chiều 22/10.
+
 **Việc cần làm**
 - Soát trên deverp bằng trình duyệt (skill soat-man-dev), báo lỗi đúng chủ khu.
 - Viết / cập nhật bài hướng dẫn trên Trung tâm trợ giúp (skill viet-hdsd).
@@ -16112,6 +16127,8 @@ Mã nguồn: kế hoạch AI1-1
 - tag: Agent 2
 **Bối cảnh:** Repo chưa có `playwright.config`; luồng 2 cổng duyệt dấu và 6 bước đặt xe chưa có kiểm thử đầu cuối.
 
+**Đặt chỗ:** Agent 2 (*A2 Rà mã & Tài liệu*) nhận việc ngày 22/10/2026, làm thứ ba sau *kh-AI1-1-hdsd* và *kh-tai-lieu-agc*. Đây là mã chạy nên phải hỏi đại ca trước khi commit.
+
 **Việc cần làm**
 - Dựng cấu hình Playwright chạy trên dev.
 - Viết kịch bản 2 cổng duyệt dấu + 6 bước đặt xe.
@@ -16127,6 +16144,20 @@ Mã nguồn: kế hoạch DX2-1
 - pic: NSU209
 - tag: Agent 2
 **Bối cảnh:** 21–22/10: bộ tài khoản AGC (phòng tự mua, thu hẹp theo công ty), luồng duyệt nghỉ phép + văn bản riêng AGC, bỏ luật mật khẩu chữ và số, cụm bảo mật bao-CR-655.
+
+**Đặt chỗ:** Agent 2 (*A2 Rà mã & Tài liệu*) nhận việc ngày 22/10/2026, làm thứ hai sau *kh-AI1-1-hdsd*.
+
+**Đã làm (22/10/2026)**
+- Tài liệu lập bộ tài khoản có thêm mục 9 *Bộ tài khoản cho một công ty con*: bốn việc phải có, vì sao phải thu hẹp **mọi** vai trò (bẫy danh bạ 268 người và bẫy đọc CCCD cả tập đoàn), HR công ty con dùng bản vai trò *không sửa danh mục chung*, đăng nhập bằng Google, luồng duyệt riêng theo *Pháp nhân áp dụng*, cách kiểm sau khi làm.
+- Sửa luật mật khẩu ở tài liệu và bài hướng dẫn: bỏ câu *có cả chữ và số* theo bao-CR-653.
+- Tài liệu Nghỉ phép thêm mục 8.2 *Luồng riêng cho một công ty*: hiện trạng prod sau ca AGC (công tắc bật, một luồng `NP-AGC` một chặng, công ty khác vẫn duyệt thẳng) và hệ quả. Đã soát lại bằng mã: trưởng phòng AGC có hồ sơ ở công ty khác nên đơn của chính họ không đi luồng AGC.
+- Tài liệu Văn thư thêm mục 13.1 *Luồng riêng một pháp nhân*: luồng `VB-AGC`, và hệ quả với bản clone (đã bật công tắc thì pháp nhân nhận clone phải có luồng riêng mới gửi duyệt được).
+- Soạn hai kịch bản dùng thử: Công việc 17 bước + 5 ngày dùng thật (CV1-3), Diễn đàn 12 bước trên điện thoại (DD1-2), đều có mẫu biên bản.
+- Bài hướng dẫn *Lập bộ tài khoản phòng tự mua hàng* thêm mục X *Bộ tài khoản cho một công ty con*; đã chạy seed hai lần ở máy em, dựng lại đúng một bài.
+
+**Còn:** nạp bài hướng dẫn lên devhelp (lệnh chạy seed trên VPS dev đang chờ đại ca cho phép); đi lại hai kịch bản trên dev để chốt nhãn nút khi đại ca đăng nhập khung trình duyệt; commit tệp seed chờ gật vì là tệp chạy được.
+
+Mã nguồn: `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` · `doc/erp/cong-viec/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
 
 **Việc cần làm**
 - Ghi vào tài liệu chức năng và bài hướng dẫn liên quan (lập bộ tài khoản theo công ty, khai luồng duyệt riêng một công ty).

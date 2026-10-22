@@ -447,6 +447,37 @@ trên: kia là *tình cờ chưa có luồng*, đây là *cố ý tắt để qu
 nạp sẵn một dòng bật cho `leave_request`, nên hệ đã chạy seed đó thì không phải
 làm gì. Tắt cờ **không** đụng tới quỹ phép — giữ chỗ `pending_days` vẫn trừ y hệt.
 
+### 8.2. Luồng riêng cho một công ty (ca AGC, 21/10/2026)
+
+Luồng duyệt có ô **Pháp nhân áp dụng** (màn **Phê duyệt › Luồng duyệt**). Đơn nghỉ phép mang
+pháp nhân của **người nghỉ** (`tab_leave_request.company_id`, chép từ hồ sơ lúc lập), và
+`flow_service.pick_flow` xét **luồng khai đúng pháp nhân đó trước** mọi luồng dùng chung, bất kể
+độ ưu tiên. Không có luồng riêng nào khớp mới rơi về luồng dùng chung; không có cả hai thì đơn
+đi đường duyệt thẳng như đoạn trên.
+
+Hiện trạng prod sau ca AGC:
+
+| | Trước 21/10 | Sau 21/10 |
+|---|---|---|
+| Công tắc *Nghỉ phép* ở «Bật bộ máy duyệt» | TẮT, 0 luồng, 0 đơn | **BẬT** (toàn hệ) |
+| Luồng | không có | `NP-AGC`, pháp nhân = AGC, **một chặng** *Trưởng bộ phận người nộp*, dự phòng đích danh trưởng phòng Kinh doanh AGC |
+| Công ty khác | duyệt thẳng | **vẫn duyệt thẳng** (chưa có luồng riêng, chưa có luồng dùng chung) |
+
+Hệ quả cần biết:
+
+- Chỉ đơn của người AGC có **chuông báo người duyệt**; đơn công ty khác vẫn đi đường cũ, không
+  ai được báo. Việc đề xuất người duyệt cho các công ty còn lại là *kh-HR1-3*.
+- Muốn quay về như cũ: tắt luồng `NP-AGC` ở màn Luồng duyệt, hoặc gạt dòng *Nghỉ phép* ở «Bật
+  bộ máy duyệt» (gạt là tắt cho **mọi** công ty).
+- Một chặng *Trưởng bộ phận người nộp* đọc **trưởng phòng ghi trên phòng ban** của người nộp,
+  không đọc phòng của người duyệt. Trưởng phòng AGC có hồ sơ ở công ty khác vẫn duyệt được, và
+  người AGC **không thấy** hồ sơ của trưởng phòng đó trong danh bạ (đại ca chọn giữ như vậy).
+- Luồng chọn theo pháp nhân trong **hồ sơ người nghỉ**. Trưởng phòng AGC có hồ sơ ở công ty khác
+  nên đơn của chính họ **không** đi `NP-AGC` mà đi theo công ty trong hồ sơ của họ. Ngày nào có
+  người hồ sơ AGC làm trưởng phòng thì phải đổi người dự phòng: chặng *Trưởng bộ phận người nộp*
+  bỏ người nộp ra (luật I08), rơi về dự phòng, mà dự phòng đang là chính trưởng phòng, tức họ
+  tự duyệt đơn của mình (`instance_service._handle_no_approver`).
+
 **Hủy đơn đang trong luồng** thì hệ **rút phiên duyệt** trước rồi mới hủy. Không
 rút thì phiếu vẫn chạy, người duyệt ký xong là hook trừ quỹ cho một tờ đơn đã hủy.
 Chỉ **người nộp** rút được (luật của bộ máy); người khác dùng *Trả lại* / *Từ chối*
