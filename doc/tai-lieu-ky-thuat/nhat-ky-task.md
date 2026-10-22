@@ -94,7 +94,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## ai-CR-231 | Bot giám sát phân biệt lỗi DNS với server sập
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - list: Kế hoạch hệ agent
 - tag: Agent 4
@@ -102,9 +102,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 thật nằm ở DNS vùng .vn (DNSSEC của VNNIC). Báo sai kiểu này làm người trực tưởng sập và có thể kéo theo thao tác tự chữa
 vô ích.
 
-**Đang làm:** khi gọi health lỗi kết nối, bot thử lại một lần bằng cách đi thẳng tới địa chỉ Cloudflare của tên miền (lấy
-địa chỉ qua DNS khác, bỏ kiểm DNSSEC, vẫn giữ tên miền khi bắt tay mã hóa). Trả 200 thì ghi sự cố mức nhẹ *lỗi DNS, server
-sống*, không chẩn đoán, không tự chữa.
+**Đã làm**
+- Khi gọi health không nhận được mã nào, bot hỏi địa chỉ của tên miền qua DNS công cộng của Cloudflare, hỏng thì qua
+  Google, bằng HTTPS và **bỏ kiểm DNSSEC**, chỉ nhận địa chỉ công cộng, rồi gọi thẳng địa chỉ đó mà vẫn xưng tên miền
+  khi bắt tay mã hóa (giống `curl --resolve`), nên chứng chỉ vẫn được kiểm như thường. Cả bước này có trần 10 giây.
+- Bot chia ba kiểu hỏng. Đi thẳng trả 200 là **lỗi DNS, server sống**. Không hỏi được cả DNS công cộng là **chưa kiểm
+  chứng được** (có thể chính mạng máy giám sát hỏng). Có địa chỉ mà đi thẳng vẫn hỏng là **sập thật**.
+- Hai kiểu đầu ghi sự cố **mức nhẹ**: nhắn tin *Lưu ý* thay cho tin *Sự cố*, không giao chẩn đoán, không tự chữa. Hết
+  lỗi thì báo đã hết.
+- Đổi kiểu hỏng thì bot đếm lại số phút liền từ đầu. Đang ghi lỗi DNS mà đi thẳng hỏng thì phải đủ số vòng liền như
+  ngưỡng báo sập (ít nhất hai vòng) mới đóng sự cố nhẹ và mở sự cố sập, để một vòng chậm không thành báo động giả.
+- Bước đi thẳng hỏng ngoài dự kiến không làm chết vòng kiểm của môi trường khác. Sổ môi trường hiện chữ *lỗi DNS* thay
+  cho mã số.
+- Vá theo năm ý rà của Agent 2 ngày 22/10 (một lỗi chặn về leo thang quá sớm, bốn ý nên sửa).
+- Vòng rà thứ hai: health dạng http thường hay địa chỉ IP (máy local) không đi thẳng nữa, hỏng là sập thật; *chưa kiểm
+  chứng được* giữ kiểu hỏng của vòng trước nên server sập mà DNS công cộng chập chờn vẫn báo sự cố; sự cố nhẹ kéo dài quá
+  30 phút thì nhắc đúng một tin; mỗi vòng kiểm có trần 55 giây để không chồng vòng sau.
+
+**Kết quả:** 10 bài kiểm của việc này đạt; cả tệp bài kiểm của bot cùng ba tệp khác có đụng phần vận hành 478 bài đạt.
+Thử thật trên máy em: tên miền dev đi thẳng trả 200 có kiểm chứng chỉ; tên miền không tồn tại trả *chưa kiểm chứng
+được*. Không gọi prod. Đã lên erp-v2 ngày 22/10 (đại ca gật), chưa dựng dev.
+
+**Còn lại:** Agent 1 dựng dev; đại ca có đợt rà mã riêng sau.
+
+Mã nguồn: `agent_hub/ops.py` (hàm `_resolve_bypass_dns`, `_probe_bypass_dns`, `_open_light_incident`, `check_health`)
+Bài kiểm: `test_agent_hub.py` (các bài `test_loi_dns_*`, `test_khong_ket_noi_*`, `test_khong_kiem_chung_*`, `test_di_thang_*`)
 
 ## ai-CR-230 | Đưa hoạt động AI vào hồ sơ cách làm việc: số dùng AI theo người và ngày, nhật ký thao tác biết việc nào AI làm hộ
 - status: xong
@@ -15804,7 +15826,7 @@ Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-exp
 
 **Điều kiện xong:** người duyệt nhận chuông khi ĐMH / YCTT gửi duyệt, kể cả phòng tự mua; có bài kiểm.
 
-**Kết quả:** Đã làm xong (duoc-CR-662). Nguyên nhân: hàm chọn người nhận chuông bỏ hẳn người có vai trò quản trị kể cả khi họ kiêm quản lý duyệt, và trả danh sách rỗng khi chỉ quản trị có quyền duyệt. Nay chuông tới người có quyền duyệt và thấy được phiếu, kể cả phòng tự mua, không ai thì rơi về quản trị; luồng duyệt thu mua giữ nguyên, duyệt dấu và đặt xe giữ cách chọn cũ. Mười một bài kiểm chạy đường thật; đã qua rà mã. Chưa đối chiếu được trên dữ liệu thật của bộ AGC.
+**Kết quả:** Đã làm xong (duoc-CR-662). Nguyên nhân: hàm chọn người nhận chuông bỏ hẳn người có vai trò quản trị kể cả khi họ kiêm quản lý duyệt, và trả danh sách rỗng khi chỉ quản trị có quyền duyệt. Nay chuông tới người có quyền duyệt và thấy được phiếu, kể cả phòng tự mua, không ai thì rơi về quản trị; luồng duyệt thu mua giữ nguyên, duyệt dấu và đặt xe giữ cách chọn cũ. Mười một bài kiểm chạy đường thật; đã qua rà mã. Chưa đối chiếu được trên dữ liệu thật của bộ AGC. Hướng dẫn sử dụng cho phần này nạp bằng một lệnh `docker compose exec -T api python scripts/seed_help_thu_mua_cap_nhat.py`: thêm ba bài vào cây trợ giúp Thu mua mà không đè bài dựng tay, rồi nạp luôn vào kho tìm kiếm của trợ lý.
 
 Mã nguồn: kế hoạch mục TM1-1 · duoc-CR-662 · backend/app/modules/notification/service.py · test/backend/test_thong_bao_duyet_dmh_yctt_cr662.py
 
@@ -15957,7 +15979,7 @@ Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · ba
 
 ## kh-AI1-2 | A1: công cụ AI xem năng lực đội và thống kê loại việc
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 4
@@ -15969,11 +15991,34 @@ Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · ba
 
 **Điều kiện xong:** hỏi AI *ai đang rảnh làm loại việc X* ra số đúng theo quyền người hỏi; có bài kiểm.
 
-Mã nguồn: kế hoạch AI1-2 · `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7
+**Đã làm**
+- Thêm công cụ *team_capacity*: xếp người nên giao một loại việc theo thứ tự nghỉ phép hôm nay, đủ mẫu, số việc đang ôm,
+  tốc độ và tỷ lệ làm lại. Số liệu lấy đúng từ hàm anh Dược đã viết, AI không tự tính.
+- Thêm công cụ *task_type_stats*: trung vị và p90 số ngày từ nhận tới xong, tỷ lệ trễ, tỷ lệ làm lại, số mẫu, theo loại
+  việc hoặc theo từng người.
+- Quyền theo phương án A (A1 chốt theo doc 22 mục 6): người có khóa báo cáo 16 *Năng lực theo loại việc* thấy đủ số ở
+  mọi phòng; trưởng phòng không có khóa chỉ thấy **thứ tự** người trong phòng mình và phòng con, không kèm số; người
+  khác bị từ chối, câu trả lời nói rõ cần khóa 16 và quản trị giao ở *Phân quyền tài khoản → tab Báo cáo*. Phòng ngoài
+  phạm vi và phòng không tồn tại trả cùng một câu.
+- Khai đủ cho Trợ lý web, bot và cổng nối AI: sổ công cụ, danh sách chỉ đọc của cổng, nhóm cấu hình *Công việc*, nhóm
+  lọc riêng *năng lực* (câu như *ai đang rảnh*, *giao cho ai*, *mất bao lâu*), nhãn ý định tra cứu việc.
+- Vá theo rà của Agent 2 ngày 22/10: xem đủ số phải có **cả hai** quyền như màn gốc (quyền xem Cấu hình hệ thống và khóa
+  báo cáo 16), thiếu một là như không có khóa; trưởng phòng tính theo cặp phòng và pháp nhân, nhận cả trưởng phòng ở pháp
+  nhân khác của phòng dùng chung, không thấy nhân sự cùng phòng ở pháp nhân khác; báo *còn nữa* đúng khi phạm vi đông hơn
+  số người trả về.
+
+**Kết quả:** 9 bài kiểm mới đạt (gồm ca trưởng hai phòng, phòng con, phòng dùng chung hai pháp nhân, có khóa 16 mà thiếu quyền xem cấu hình, tham số lạ); cùng các bài canh cửa của Trợ
+lý, cổng nối AI và lõi bot tổng 747 bài đạt. Đã lên erp-v2 ngày 22/10 (đại ca gật), chưa dựng dev.
+
+**Còn lại:** Agent 1 dựng dev; đại ca có đợt rà mã riêng sau. Hướng B để đại ca chọn sau: mở trung vị theo loại việc
+(không theo người) cho trưởng phòng để ước giờ khi lập kế hoạch.
+
+Mã nguồn: `assistant/tools/capability_tool.py`, `assistant/tool_router.py`, `agent_hub/mcp.py`, `agent_hub/mcp_settings.py`, `agent_hub/intent_ledger.py` · kế hoạch AI1-2, doc 22 §7
+Bài kiểm: `test_assistant_nang_luc_doi_kh_ai1_2.py`
 
 ## kh-AI1-3-may-chu | A2 phần máy chủ: AI lập kế hoạch đề xuất, lưu đề xuất và phần người sửa
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 4
@@ -15986,7 +16031,31 @@ Mã nguồn: kế hoạch AI1-2 · `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec
 
 **Điều kiện xong:** đề xuất lưu được, duyệt thì sinh việc trong Dự án đúng người; bản AI và bản người sửa đều còn để học.
 
-Mã nguồn: kế hoạch AI1-3 · doc 22 §7
+**Đã làm**
+- Chốt khuôn dữ liệu ở doc 22 mục 5.2 và gửi Agent 3 ngày 22/10. A1 chốt: người duyệt là chính người hỏi AI; có công tắc
+  *Kế hoạch AI soạn phải chờ duyệt* mặc định tắt tới khi màn của Agent 3 lên dev.
+- Thêm bảng *đề xuất kế hoạch AI* giữ bản AI soạn (không bao giờ sửa), bản người sửa và phần khác nhau giữa hai bản (thêm,
+  bỏ, đổi người, đổi giờ, đổi hạn) tính lúc duyệt, để vòng học sau so lại.
+- Năm đường API: danh sách đề xuất của tôi, xem một đề xuất, lưu bản sửa, duyệt (lúc này mới dựng bảng Dự án bằng đúng
+  hàm bot đang dùng), từ chối. Đề xuất của người khác trả cùng câu *không thấy* như đề xuất không có. Lỗi khuôn trả từng
+  lỗi kèm vị trí giai đoạn / việc / ô để màn duyệt tô đúng chỗ.
+- Công tắc tắt: nhắn *tạo* trên Telegram hay xác nhận qua ứng dụng AI vẫn tạo bảng ngay như trước, đồng thời ghi đề xuất
+  trạng thái riêng *Tạo thẳng* để dữ liệu học không lẫn với lần người thật duyệt. Công tắc bật: chỉ lưu đề xuất chờ duyệt,
+  trả đường dẫn màn duyệt, chưa tạo việc. Chỉ đổi đúng nhánh kế hoạch của lớp nháp dùng chung, không đổi câu chữ hay nút
+  của bot; các loại phiếu khác giữ nguyên.
+- Công cụ soạn kế hoạch nay có thêm giờ ước lượng, loại việc (khớp danh mục Loại việc) và lý do chọn người. Thêm công cụ
+  *plan_context* gom một lần thứ tự người nên giao, tốc độ theo loại việc (nếu được xem), danh mục loại việc và các kế
+  hoạch tương tự chính mình đã lập kèm phần người duyệt đã sửa.
+
+**Kết quả:** 10 bài kiểm mới đạt; cùng các bài canh cửa của Trợ lý, cổng nối AI, lõi bot, phạm vi, bộ mã trạng thái và
+bài kế hoạch bao-CR-616 tổng 424 bài đạt. Bài canh độ dài ô chữ còn đỏ ở năm khuôn của phân hệ Dự án và Nhân sự có từ
+trước, không do việc này. Đã lên erp-v2 ngày 22/10 (đại ca gật), chưa dựng dev.
+
+**Còn lại:** Agent 1 dựng dev; Agent 3 dựng màn duyệt; đại ca có đợt rà mã riêng sau. Bài canh độ dài ô chữ còn đỏ ở năm khuôn của Dự án và Nhân sự (có từ trước), Agent 1 chuyển chủ khu. Hướng B để đại ca chọn sau: trưởng phòng duyệt
+thay cho chính người hỏi. Bật công tắc trên dev chỉ sau khi màn duyệt lên, và cần cho phép sửa câu chữ của bot cho đẹp.
+
+Mã nguồn: `modules/ai_plan/` (model, service, schema, controller), `core/ai_plan_codes.py`, migration `aiplan01`, `agent_hub/draft_create.py` (nhánh kế hoạch), `assistant/tools/work_tool.py`, `assistant/tools/capability_tool.py` (plan_context) · doc 22 §5.2
+Bài kiểm: `test_ai_plan_de_xuat_kh_ai1_3.py`
 
 ## kh-AI2-3 | Công cụ AI cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận
 - list: Kế hoạch hệ agent
@@ -16038,36 +16107,67 @@ Mã nguồn: kế hoạch AI1-3
 
 ## kh-NT2-2 | Chip lọc nhanh trên 4 màn Thu mua
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong local, chưa commit
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 3
-**Bối cảnh:** Bốn màn Thu mua chưa có chip *Đơn của tôi*, *Gấp*, *Tháng này*.
+**Bối cảnh:** Bốn màn danh sách Thu mua chưa có chip lọc một chạm theo doc 14 mục 2, và bộ lọc mất khi mở màn lại từ menu.
 
-**Việc cần làm**
-- Thêm chip theo khuôn ô lọc đang có.
-- Giữ trạng thái lọc khi quay lại màn.
+**Đã làm**
+- Thêm cụm chip theo từng màn: *Yêu cầu mua hàng* có Của tôi, Gấp, Tháng này, Sắp tới hạn (ngày cần hàng trong 7 ngày tới); *Đơn mua hàng* có Của tôi, Gấp, Thiếu chứng từ, Tháng này; *Yêu cầu báo giá* có Của tôi, Tháng này, Chờ xử lý; *Phiếu khảo sát* có Của tôi, Khảo sát NCC, Khảo sát SP, Chờ xử lý.
+- Chip ghi vào đúng tham số của ô lọc bên cạnh nên ô và chip luôn khớp nhau: Của tôi dùng mã nhân sự ở YCMH và YCBG, ID nhân sự ở ĐMH, tên người tạo ở Phiếu khảo sát. Tài khoản chưa gắn nhân sự thì chip Của tôi mờ và có lời giải thích.
+- Chip Thiếu chứng từ và Chờ xử lý lọc nhiều trạng thái một lúc; khi bộ lọc nâng cao đang nối bằng HOẶC thì hai chip này mờ đi thay vì làm bảng ra nhiều hơn.
+- Nhớ bộ lọc theo từng màn và từng tài khoản trong phiên trình duyệt: mở lại màn từ menu thì bảng giữ bộ lọc cũ; link có sẵn tham số thì link thắng; xóa lọc thì lần sau mở ra màn sạch.
+- Sửa lỗi cũ của nút *Xóa lọc* ở cả bốn màn: trước đây chỉ xóa được ô cuối cùng (và ở YCBG, Phiếu khảo sát còn bị chép lại cả các ô vừa xóa); nay xóa một lượt.
+- Khổ hẹp: chip Gấp giữ trên thanh công cụ, các chip khác nằm đầu tờ lọc.
+- Theo biên bản rà của Agent 2: bảng rỗng vì đang lọc thì câu hiển thị nói rõ là do bộ lọc; chip đang mờ không đếm vào số ô đang lọc; đăng xuất thì dọn bản nhớ bộ lọc của tab.
 
-**Điều kiện xong:** bấm chip lọc đúng; vitest xanh.
+**Kết quả:** tsc cả cây 0 lỗi, lint 0 lỗi (tệp mới 0 cảnh báo), vitest phân hệ procurement cùng shared/hooks, shared/ui và core/auth xanh 135 tệp, 1363 bài (sau khi vá theo biên bản rà); dựng bản vite build được. Agent 2 rà: được gộp. Chưa soát trên trình duyệt.
 
-Mã nguồn: kế hoạch NT2-2 · `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md`
+**Còn lại**
+- Agent 2 rà mã nhánh agent3/kh-NT2-2; đại ca gật mới đẩy lên erp-v2.
+- Bộ chip đã đúng doc 14 mục 2; không còn nợ phía máy chủ cho việc này.
+
+Mã nguồn: `modules/procurement/utils/list-quick-chips.ts` · `components/list-quick-chips.tsx` · `shared/hooks/use-remembered-list-search.ts` · bốn trang `*-list-page.tsx` · `shared/ui/date-range-presets.ts` · doc `erp/nen-tang/14-filter-sort-man-danh-sach-v2.md`
+Commit: nhánh agent3/kh-NT2-2, chưa đẩy
 
 ## kh-TM2-1 | Báo cáo thực hiện YCBG: tệp thật, nhớ gấp/mở, nhắc hạn
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong local, chưa commit
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 3
-**Bối cảnh:** Khối Báo cáo thực hiện trên YCBG còn thiếu các việc ghi ở doc 18 mục 6.
+**Bối cảnh:** Khối Báo cáo thực hiện trên YCBG còn bốn việc ở doc 18 mục 6; ba việc cần máy chủ, một việc thuần giao diện.
+
+**Đã làm**
+- Nhớ các giai đoạn đang gấp của khối Báo cáo thực hiện (cả YCBG lẫn ĐMH) và của khối Hồ sơ theo checklist, theo từng người dùng và từng phiếu: mở lại phiếu vẫn thấy đúng các giai đoạn đã gấp; phiếu khác không bị ảnh hưởng; máy dùng chung thì người sau không thừa hưởng bố cục của người trước.
+- Lưu chung một khóa trong bộ nhớ trình duyệt, giữ tối đa 100 phiếu gần nhất để không phình mãi; dữ liệu hỏng thì mở ra như mới, không vỡ màn.
+- Khối Hồ sơ theo checklist: đổi dạng xem không còn xóa các giai đoạn đã gấp.
+
+**Kết quả:** tsc cả cây 0 lỗi, lint 0 lỗi (tệp mới 0 cảnh báo), vitest phân hệ procurement xanh 89 tệp, 956 bài (có bài kiểm mới cho hook nhớ, cho khối báo cáo và cho ca đổi sang phiếu khác trên cùng màn mà Agent 2 bắt khi rà); dựng bản vite build được. Chưa soát trên trình duyệt.
+
+**Còn lại**
+- Agent 2 rà mã nhánh agent3/kh-TM2-1; đại ca gật mới đẩy lên erp-v2.
+- Ba việc cần máy chủ (tệp đính kèm thật, nhắc hạn, quản lý mẫu) đã chuyển sang phiếu kh-TM2-1-may-chu của anh Dược; có hợp đồng API thì Agent 3 làm phần giao diện.
+
+Mã nguồn: `modules/procurement/hooks/use-remembered-collapse.ts` · `components/survey-report/survey-report-card.tsx` · `components/survey-report/dossier-checklist-card.tsx`
+Commit: nhánh agent3/kh-TM2-1, chưa đẩy
+
+## kh-TM2-1-may-chu | Báo cáo thực hiện YCBG: phần máy chủ cho tệp thật, nhắc hạn và quản lý mẫu
+- status: dang-lam
+- date: 2026-10-22
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** khối Báo cáo thực hiện (doc 18 mục 6) còn bốn việc. Việc nhớ gấp / mở là giao diện thuần, Agent 3 đang làm ở mục kh-TM2-1. Ba việc dưới đây cần máy chủ và nằm trong khu báo cáo anh Dược đang giữ (mẫu thứ hai do duoc-CR-614 thêm), nên đại ca giao anh Dược ngày 22/10/2026. Khối báo cáo nay dùng chung cho cả YCBG lẫn ĐMH.
 
 **Việc cần làm**
-- Nối kho đính kèm thật.
-- Nhớ trạng thái gấp/mở.
-- Nhắc hạn từng hồ sơ; quản lý mẫu trên giao diện.
+- **Tệp đính kèm thật cho từng hồ sơ báo cáo:** thêm loại thực thể vào `FILE_POLICY` (ví dụ hồ sơ báo cáo có cha là YCBG, và bản tương ứng cho ĐMH), kiểm phạm vi theo phiếu cha qua `core/attachment_scope.py`; bài canh `test_pham_vi_dinh_kem_b08.py` phải xanh.
+- **Nhắc hạn chủ động:** tác vụ nền định kỳ đọc ngày dự kiến của từng hồ sơ, gửi chuông (và email nếu bật) cho người phụ trách khi sắp tới hạn hoặc quá hạn; không nhắc trùng trong cùng một ngày.
+- **Quản lý mẫu trên giao diện:** đưa mẫu đang viết cứng (`REPORT_TEMPLATES` trong `report_constants.py`) xuống bảng mới, kèm API thêm / sửa / xóa mẫu và lưu một báo cáo đang có thành mẫu; các báo cáo đã tạo theo mẫu cũ phải giữ nguyên.
 
-**Điều kiện xong:** các việc chạy trên dev; có bài kiểm.
+**Điều kiện xong:** ba việc chạy trên dev, có bài kiểm; gửi hợp đồng API cho Agent 1 để Agent 3 làm phần giao diện; hỏi đại ca trước khi commit (có bảng mới và đụng phân quyền tệp).
 
-Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6
+Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6 · backend/app/core/file_registry.py · backend/app/core/attachment_scope.py · backend/app/modules/survey_request/report_constants.py · report_controller.py · report_model.py
 
 ## kh-NT2-8 | Biểu đồ dashboard Tồn kho và màn lỗi tác vụ nền
 - list: Kế hoạch hệ agent
@@ -16265,3 +16365,36 @@ Mã nguồn: core/app_settings.py · main.py · docker/nginx.*.prod.conf · so-g
 **Kết quả:** trên bản local, năm skill cẩm nang lên phiên bản 2, kho tìm kiếm có đủ một trăm bài hướng dẫn và mười một câu hỏi thường gặp. Khi deploy prod cần chạy bốn script bài trợ giúp, rồi script xuất bản cẩm nang, rồi script nạp kho tìm kiếm. Cây bài Thu mua dựng tay nên phần bổ sung phải dán tay trên giao diện.
 
 Mã nguồn: backend/scripts/seed_help_nghi_phep.py · seed_help_van_ban.py · seed_help_cong_viec.py · seed_help_nhan_su.py · help_seed_common.py · publish_handbook_update.py · backend/app/modules/ai_skill/seed_handbook/*.md · doc/erp/hrm/
+
+## bao-CR-656 | Sao lưu tự động khôi phục được: client MySQL 8.4 thật, chốt dọn bản cũ, công cụ khôi phục không nuốt lỗi
+- status: xong
+- date: 2026-10-22
+- tag: Bảo mật
+**Bối cảnh:** sáng 22/10 thử khôi phục thì phát hiện mọi bản sao lưu tự động trên R2 không nạp được vào MySQL 8.4: image api cài nhầm client MariaDB, bản dump ghi giá trị cho cột sinh nên MySQL báo ERROR 3105 ở bảng thứ 42. Thêm nữa, việc dọn bản cũ chạy ngay sau mỗi lượt mà không kiểm bản mới, và công cụ khôi phục chạy chế độ bỏ qua lỗi nên vẫn in thành công.
+
+**Đã làm**
+- Image api dùng client MySQL 8.4 chính hãng, có kiểm dấu vân tay khóa ký và kiểm phiên bản lúc dựng; client là MariaDB thì lượt sao lưu báo thất bại, không đẩy bản hỏng lên R2.
+- Dọn bản cũ chỉ đếm bản tốt; bản bé bất thường so với trung vị năm bản tốt gần nhất thì bị đánh dấu, không dọn, và báo chuông cho người có quyền xem sao lưu; thêm thao tác chấp nhận cỡ mới khi CSDL thu nhỏ thật. Áp cho cả sao lưu ERP lẫn CSDL bot.
+- Công cụ khôi phục bỏ chế độ bỏ qua lỗi, kiểm tệp dump đủ đuôi trước khi nạp và đủ bảng sau khi nạp.
+
+**Kết quả:** lên prod 22/10/2026 16:25 (riêng, theo lệnh đại ca). Lượt sao lưu đầu bằng image mới thành công, 18,5 MB; tải bản đó từ R2 nạp vào MySQL 8.4 tạm không bỏ qua lỗi: mã thoát 0, 218/218 bảng, số dòng phiếu duyệt và nhân sự khớp prod. Đã xóa máy thử. Cụm dịch vụ AI trên prod CHƯA dựng lại nên sao lưu CSDL bot vẫn dùng client cũ; chờ đại ca quyết.
+
+Commit: 5ae7d0fa (main), gộp erp-v2 ef7cd073 · Deploy: prod api, celery-worker, celery-beat
+Mã nguồn: docker/Dockerfile.api · backend/app/modules/backup/service.py · backend/app/modules/backup/controller.py · backend/app/modules/agent_hub/db_backup.py · backend/app/modules/agent_hub/controller.py · backend/scripts/restore_backup.py · test/backend/test_backup_dump_mysql_cr.py
+
+## duoc-CR-671 | Ép tải các tính năng ngày 22/10 và vá hai lỗi treo, lỗi dữ liệu trợ lý lòi ra khi ép
+- status: xong
+- date: 2026-10-22
+- pic: NSU265
+**Bối cảnh:** anh Được nhờ ép tải toàn bộ mã vừa đẩy lên trong ngày (duoc-CR-661 tới 670) để tìm lỗi khi dữ liệu nhiều, gọi dồn dập hoặc dữ liệu xấu.
+
+**Đã làm**
+- Viết thêm bốn tệp bài kiểm phía máy chủ và một tệp phía giao diện: nghỉ phép đính kèm và kết sổ với năm trăm nhân viên, chuông duyệt với hai trăm tài khoản quyền trộn lẫn, báo cáo một nghìn dòng qua đổi tên phòng, việc treo, chuông và thùng rác Công việc, sơ đồ tổ chức ba nghìn người có vòng lặp.
+- Đo tải thật từng đường mới ở mức một, mười, năm mươi và một trăm năm mươi người gọi cùng lúc; chạy lại mỗi script bài trợ giúp hai lần.
+- Tìm ra lớp ghi nhật ký lượt gọi chạm cơ sở dữ liệu ngay trên vòng xử lý chính, nên khi hết kết nối thì máy chủ treo hẳn tới lúc khởi động lại; đã chuyển phần ghi sang luồng phụ và thêm bài kiểm canh.
+- Tìm ra khi khoảng một trăm năm mươi lượt gọi dồn vào một tiến trình thì gần hết lượt hết giờ chờ, vì số luồng xử lý nhiều hơn số kết nối cơ sở dữ liệu; thêm cổng giới hạn mỗi tiến trình chỉ cho hai mươi lượt chạy cùng lúc, lượt dư xếp hàng, chờ quá ba mươi giây thì báo hệ thống đang bận.
+- Tìm ra mỗi lần chạy lại script bài trợ giúp thì kho tìm kiếm của trợ lý giữ lại nội dung bài cũ đã xóa; thêm lựa chọn dọn phần mồ côi vào script nạp kho và dọn sạch trên bản local.
+
+**Kết quả:** một trăm mười bốn bài kiểm mới đều đạt, không lỗi nào trong mã của ngày 22/10. Sau khi sửa, sáu mươi người gọi cùng lúc vào báo cáo mua hàng từ năm mươi hai trên một trăm hai mươi lượt đạt lên đủ một trăm hai mươi, lâu nhất 2,8 giây. Một trăm năm mươi người gọi cùng lúc từ hai mươi ba trên ba trăm lượt đạt lên đủ ba trăm, lâu nhất 4,7 giây. Khi deploy, chạy script nạp kho tìm kiếm kèm lựa chọn dọn mồ côi sau các script bài trợ giúp.
+
+Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurrency_gate.py · backend/app/core/config.py · backend/app/main.py · backend/app/modules/assistant/rag/indexer.py · backend/scripts/reindex_help_rag.py · test/backend/test_nhat_ky_khong_chan_vong_su_kien.py · test/backend/test_cong_gioi_han_luot_goi_dong_thoi.py · test/backend/test_stress_*_cr66*.py · frontend-v2/src/modules/hr/utils/org-chart-tree-stress.test.ts

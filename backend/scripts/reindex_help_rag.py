@@ -19,6 +19,8 @@ Chạy trong container api:
     docker compose exec -T api python scripts/reindex_help_rag.py --dry-run
     # dựng lại toàn bộ: chỉ khi đổi model nhúng hoặc nghi kho lệch nội dung
     docker compose exec -T api python scripts/reindex_help_rag.py --all
+    # SAU KHI chạy seed_help_* dựng lại cây: dọn đoạn của bài đã xóa (không thì trợ lý trích bản cũ)
+    docker compose exec -T api python scripts/reindex_help_rag.py --purge-orphans
 
 Chạy lại vô hại: point id tất định theo (nguồn, id, số thứ tự đoạn) nên nạp đè đúng chỗ.
 
@@ -46,6 +48,8 @@ def parse_args():
                    help="Dựng lại TOÀN BỘ thay vì chỉ nạp bù phần thiếu")
     p.add_argument("--dry-run", action="store_true",
                    help="Chỉ liệt kê sẽ nạp gì, không gọi nhúng, không ghi kho")
+    p.add_argument("--purge-orphans", action="store_true",
+                   help="Xóa khỏi kho đoạn của bài/FAQ không còn dưới DB (seed dựng lại cây sinh ra)")
     p.add_argument("--sleep", type=float, default=2.0,
                    help="Giây nghỉ giữa hai nguồn, tránh chạm trần request/phút (mặc định 2)")
     p.add_argument("--retry", type=int, default=4,
@@ -81,6 +85,16 @@ def main():
         print(f"Kho vector hiện có: {stats['help_indexed']}/{stats['help_total']} bài HDSD, "
               f"{stats['faq_indexed']}/{stats['faq_total']} câu FAQ, "
               f"thừa {stats['orphans']} nguồn đã xóa dưới DB.")
+
+        if args.purge_orphans and stats["orphans"]:
+            orphans = indexer.orphan_source_refs(db)
+            for source, source_id in orphans:
+                if not args.dry_run:
+                    indexer.remove_source(source, source_id)
+            verb = "(thử) sẽ xóa" if args.dry_run else "Đã xóa"
+            print(f"{verb} đoạn của {len(orphans)} nguồn mồ côi.")
+        elif stats["orphans"]:
+            print("Gợi ý: thêm --purge-orphans để dọn nguồn mồ côi (trợ lý vẫn trích được chúng).")
 
         refs = indexer.all_source_refs(db) if args.all else indexer.missing_source_refs(db)
         mode_label = "TOÀN BỘ" if args.all else "phần còn thiếu"

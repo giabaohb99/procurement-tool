@@ -9,6 +9,7 @@ import os
 
 from app.core.config import settings
 from app.core.limiter import limiter
+from app.core.concurrency_gate import ConcurrencyGateMiddleware, resolve_limit
 from app.core.report_cache import ReportSummaryCacheMiddleware
 from app.core.request_middleware import RequestContextMiddleware
 from app.core.response import error
@@ -181,6 +182,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(ReportSummaryCacheMiddleware)
 app.add_middleware(RequestContextMiddleware)
 
+#  duoc-CR-671: cổng số lượt gọi đồng thời đăng ký SAU nhật ký, TRƯỚC CORS → bọc ngoài
+#  `RequestContextMiddleware` (phần ghi nhật ký cũng nằm trong suất đã cấp) nhưng nằm trong CORS,
+#  nên câu 503 «đang bận» vẫn mang header CORS — trình duyệt đọc được, không ra lỗi CORS khó hiểu.
+#  Xem `core/concurrency_gate.py` vì sao không được bỏ.
+app.add_middleware(
+    ConcurrencyGateMiddleware,
+    limit=resolve_limit(settings.MAX_CONCURRENT_REQUESTS, settings.DB_POOL_SIZE, settings.DB_MAX_OVERFLOW),
+    queue_timeout=settings.REQUEST_QUEUE_TIMEOUT,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
