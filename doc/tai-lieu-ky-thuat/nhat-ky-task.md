@@ -115,8 +115,11 @@ vô ích.
 - Bước đi thẳng hỏng ngoài dự kiến không làm chết vòng kiểm của môi trường khác. Sổ môi trường hiện chữ *lỗi DNS* thay
   cho mã số.
 - Vá theo năm ý rà của Agent 2 ngày 22/10 (một lỗi chặn về leo thang quá sớm, bốn ý nên sửa).
+- Vòng rà thứ hai: health dạng http thường hay địa chỉ IP (máy local) không đi thẳng nữa, hỏng là sập thật; *chưa kiểm
+  chứng được* giữ kiểu hỏng của vòng trước nên server sập mà DNS công cộng chập chờn vẫn báo sự cố; sự cố nhẹ kéo dài quá
+  30 phút thì nhắc đúng một tin; mỗi vòng kiểm có trần 55 giây để không chồng vòng sau.
 
-**Kết quả:** 6 bài kiểm của việc này đạt; cả tệp bài kiểm của bot cùng ba tệp khác có đụng phần vận hành 474 bài đạt.
+**Kết quả:** 10 bài kiểm của việc này đạt; cả tệp bài kiểm của bot cùng ba tệp khác có đụng phần vận hành 478 bài đạt.
 Thử thật trên máy em: tên miền dev đi thẳng trả 200 có kiểm chứng chỉ; tên miền không tồn tại trả *chưa kiểm chứng
 được*. Không gọi prod. Mã nằm ở nhánh `agent4/ai-cr-231-dns` trên máy em, chưa lên erp-v2.
 

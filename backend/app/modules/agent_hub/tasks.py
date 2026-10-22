@@ -740,7 +740,7 @@ def resource_report_task(chat_id: str = "") -> dict:
         db.close()
 
 
-@celery_app.task(name="agent.health_check")
+@celery_app.task(name="agent.health_check", soft_time_limit=55, time_limit=58)   # ai-CR-231: beat mỗi phút, không chồng vòng
 def health_check_task() -> dict:
     """O-01: mỗi phút gõ health từng môi trường trong sổ; hỏng liên tiếp thì mở sự cố + giao chẩn đoán."""
     if (off := _off()) is not None:

@@ -6091,6 +6091,81 @@ def test_khong_kiem_chung_duoc_thi_chua_ket_luan_sap(db, bot, monkeypatch, probe
     assert "chưa kết luận" in sent[-1] and db.query(AgentEnv).filter_by(name="dev").one().last_health_code == 200
 
 
+def test_health_http_hoac_ip_sap_la_sap_that_khong_di_thang(db, bot, monkeypatch):
+    """A2 rà 22/10 (lỗi chặn vòng 2): health http thường / địa chỉ IP (vd http://127.0.0.1:8020/api/health ở doc
+    agent-hub/08) không có DNS để vòng qua — sập là sập thật, phải chẩn đoán, không được thành «không kiểm chứng được»."""
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import ENV_DEV, INC_DIAGNOSING
+    from app.modules.agent_hub.model import AgentEnv, AgentIncident
+
+    tasks = _ops_on(monkeypatch)
+    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", 3)
+    for i, url in enumerate(("http://127.0.0.1:8020/api/health", "https://10.0.0.5/api/health", "http://dev.test/api/health")):
+        db.add(AgentEnv(name=f"local{i}", kind=ENV_DEV, dir="~/x", compose_args="", branch="erp-v2", health_url=url,
+                        db_name="x", auto_heal=False, created_by=0, updated_by=0))
+    db.commit()
+    probed: list[str] = []
+    for _ in range(3):
+        ops.check_health(db, fetch=lambda url: 0, probe=lambda url: probed.append(url))   # probe trả None nếu bị gọi
+    incs = db.query(AgentIncident).all()
+    assert probed == [] and len(incs) == 3
+    assert all(i.status == INC_DIAGNOSING and i.signature == "" for i in incs) and len(tasks) == 3
+
+
+def test_sap_that_ma_doh_chap_chon_van_leo_thang(db, bot, monkeypatch):
+    """A2 rà 22/10: sập xen kẽ «không kiểm chứng được» trước đây làm bộ đếm không bao giờ quá 1. «Không rõ» giữ kiểu của
+    vòng trước, không đặt lại bộ đếm."""
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import INC_DIAGNOSING
+    from app.modules.agent_hub.model import AgentIncident
+
+    tasks, codes = _dns_world(db, monkeypatch)
+    seq = iter([0, None, 0, None, 0, None])
+    for _ in range(3):
+        ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: next(seq))
+    inc = db.query(AgentIncident).one()
+    assert inc.status == INC_DIAGNOSING and inc.signature == "" and tasks == [("agent.diagnose_incident", [inc.id])]
+
+
+def test_su_co_nhe_keo_dai_nhac_mot_lan(db, bot, monkeypatch):
+    from datetime import timedelta
+
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.model import AgentIncident
+    from app.modules.agent_hub.timeutil import now_utc
+
+    _, sent, _ = bot
+    tasks, codes = _dns_world(db, monkeypatch)
+    t0 = now_utc()
+    for m in range(3):
+        ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: 200, now=t0 + timedelta(minutes=m))
+    n = len(sent)
+    ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: None, now=t0 + timedelta(minutes=10))
+    assert len(sent) == n                                            # DNS ↔ không rõ qua lại: không báo thêm
+    for m in (35, 36, 50):
+        ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: 200, now=t0 + timedelta(minutes=m))
+    nhac = [x for x in sent[n:] if "kéo dài" in x]
+    assert len(nhac) == 1 and "không tự chữa" in nhac[0] and tasks == []
+    assert db.query(AgentIncident).one().action == ops.LIGHT_REMINDED
+
+
+def test_doh_mot_ban_ghi_la_khong_mat_ca_cau_tra_loi(monkeypatch):
+    import time
+
+    import requests
+
+    from app.modules.agent_hub import ops
+
+    class _R:
+        status_code = 200
+
+        def json(self):
+            return {"Answer": ["rác", {"type": 1, "data": "không-phải-ip"}, {"type": 1, "data": "104.21.39.171"}]}
+
+    monkeypatch.setattr(requests, "get", lambda *a, **kw: _R())
+    assert ops._resolve_bypass_dns("thumua.degoholding.vn", time.monotonic() + 5) == ["104.21.39.171"]
+
+
 def test_di_thang_dia_chi_giu_ten_mien_khi_bat_tay(monkeypatch):
     """Lấy địa chỉ qua DNS công cộng bằng HTTPS (bỏ kiểm DNSSEC), rồi gọi thẳng địa chỉ mà vẫn xưng tên miền (SNI +
     Host) — giống `curl --resolve`. Không gọi mạng thật."""

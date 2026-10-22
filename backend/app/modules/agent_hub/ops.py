@@ -673,12 +673,19 @@ def _resolve_bypass_dns(host: str, deadline: float) -> list[str]:
                              headers={"accept": "application/dns-json"}, timeout=(min(2.0, left), min(3.0, left)))
             if r.status_code != 200:
                 continue
-            #  Chỉ địa chỉ công cộng: câu trả lời lạ trỏ về mạng nội bộ thì không đi thẳng vào đó.
-            ips = [str(a["data"]) for a in (r.json().get("Answer") or [])
-                   if a.get("type") == 1 and ipaddress.ip_address(str(a.get("data"))).is_global]
+            answers = r.json().get("Answer") or []
         except Exception:  # noqa: BLE001 — câu trả lời lạ của DNS công cộng không được làm hỏng cả vòng health
             log.warning("agent_hub.ops: hỏi địa chỉ %s qua %s hỏng", host, base, exc_info=True)
             continue
+        ips = []
+        for a in answers if isinstance(answers, list) else []:
+            #  Lọc TỪNG bản ghi: một bản ghi lạ không làm mất cả câu trả lời. Chỉ địa chỉ công cộng — câu trả lời trỏ
+            #  về mạng nội bộ thì không đi thẳng vào đó.
+            try:
+                if isinstance(a, dict) and a.get("type") == 1 and ipaddress.ip_address(str(a.get("data"))).is_global:
+                    ips.append(str(a["data"]))
+            except ValueError:
+                continue
         if ips:
             return ips
     return []
@@ -719,6 +726,27 @@ def _probe_bypass_dns(url: str) -> int | None:
         return 0
     finally:
         pool.close()
+
+
+def _probe_applies(url: str) -> bool:
+    """Chỉ đi thẳng khi health là https THEO TÊN MIỀN. http thường hay địa chỉ IP sẵn (vd `http://127.0.0.1:8020/api/health`
+    ở doc/agent-hub/08) không có DNS để vòng qua — hỏng là hỏng thật, đi đường sự cố thường (A2 rà 22/10)."""
+    import ipaddress
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(url or "")
+    if parts.scheme != "https" or not parts.hostname:
+        return False
+    try:
+        ipaddress.ip_address(parts.hostname)
+        return False
+    except ValueError:
+        return True
+
+
+#  Sự cố nhẹ (DNS / không kiểm chứng được) kéo dài quá mốc này thì nhắn MỘT tin nhắc (không tự chữa); dấu đã nhắc = `action`.
+LIGHT_REMIND_AFTER = timedelta(minutes=30)
+LIGHT_REMINDED = "nhac_keo_dai"
 
 
 def _probe_safely(probe, url: str) -> int | None:
@@ -782,13 +810,17 @@ def check_health(db: Session, *, fetch=None, probe=None, now: datetime | None = 
         if not env.health_url:
             continue
         code = int(fetch(env.health_url) or 0)
-        if code == 0 and probe is not None:
+        if code == 0 and probe is not None and _probe_applies(env.health_url):
             alive = _probe_safely(probe, env.health_url)
             if alive == 200:
                 code = DNS_ONLY_CODE
             elif alive is None:
                 code = BLIND_CODE
-        prev = int(env.last_health_code or 0)
+        prev = int(env.last_health_code or 0) if env.last_health_at else 200     # chưa đo lần nào = coi như xanh
+        if code == BLIND_CODE and _failure_kind(prev) in ("down", "dns"):
+            #  «Không kiểm chứng được» = không rõ: giữ kiểu hỏng của vòng trước, không đặt lại bộ đếm — server sập thật mà
+            #  DNS công cộng chập chờn vẫn phải leo thang; DNS ↔ không rõ qua lại thì không báo gì thêm (A2 rà 22/10).
+            code = prev
         env.last_health_code = code
         env.last_health_at = now
         cur = open_incident(db, env)
@@ -811,6 +843,13 @@ def check_health(db: Session, *, fetch=None, probe=None, now: datetime | None = 
             #  Đang mở sự cố nhẹ mà đi thẳng địa chỉ cũng hỏng đủ số vòng liền (ít nhất hai — một vòng chậm không tính):
             #  sập thật → đóng sự cố nhẹ, mở sự cố thường bên dưới.
             if not (cur.signature in LIGHT_SIGNATURES and kind == "down" and env.fail_streak >= max(2, streak)):
+                if (cur.signature in LIGHT_SIGNATURES and cur.action != LIGHT_REMINDED
+                        and now - (cur.started_at or now) >= LIGHT_REMIND_AFTER):
+                    cur.action = LIGHT_REMINDED
+                    mins = int((now - (cur.started_at or now)).total_seconds() // 60)
+                    service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+                                  f"Lưu ý #{cur.id} trên <b>{esc(env.name)}</b> đã kéo dài ~{mins} phút ({esc(cur.cause)}). "
+                                  "Em vẫn không tự chữa — đại ca xem giúp.", action=ACT_OPS)
                 continue
             cur.status = INC_RESOLVED
             cur.resolved_at = now
