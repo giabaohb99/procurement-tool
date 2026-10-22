@@ -62,7 +62,8 @@ def on_status_changed(t: WorkTask, new_status: int) -> None:
         t.outcome = 0                      # mở lại một việc đã «Đạt» thì kết quả cũ hết nghĩa
 
 
-def set_outcome(db: Session, actor: Actor, task_id: int, outcome: int) -> dict:
+def set_outcome(db: Session, actor: Actor, task_id: int, outcome: int,
+                background_tasks=None) -> dict:
     from app.modules.work import task_enrich, task_service  # nhập muộn: tránh vòng import
 
     if outcome not in (int(WorkTaskOutcome.PASSED), int(WorkTaskOutcome.REWORK)):
@@ -86,4 +87,8 @@ def set_outcome(db: Session, actor: Actor, task_id: int, outcome: int) -> dict:
     t.updated_by = actor.user_id
     db.commit()
     record(db, actor.user_id, AUDIT_TASK, t.id, "update", f"{note}: {t.title}")
+    if outcome == int(WorkTaskOutcome.REWORK):
+        #  Mở lại vì phải làm lại = đổi trạng thái 2 -> 1: người làm phải biết (F-04).
+        from app.modules.work import notify_service
+        notify_service.notify_status_changed(db, actor, t, int(WorkTaskStatus.OPEN), background_tasks)
     return task_service._shape([t], task_enrich.collect(db, [t]))[0]

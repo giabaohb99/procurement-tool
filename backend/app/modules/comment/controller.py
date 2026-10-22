@@ -45,6 +45,11 @@ def _out(c: Comment, authors: dict, user_id: int, likes: dict, replies: dict | N
         "author_avatar": a.get("avatar", ""),
         "created_at": c.created_at,
         "can_delete": c.created_by == user_id,   # chỉ người viết tự xóa bình luận của mình
+        #  E-05: chỉ người viết sửa được (đường sửa hiện chỉ mở cho `work_task`).
+        "can_edit": c.entity == "work_task" and c.created_by == user_id,
+        #  Hàng bình luận chỉ bị UPDATE khi sửa nội dung (thích/nhắc tên nằm bảng khác)
+        #  nên `updated_at` vượt `created_at` = đã sửa.
+        "edited": bool(c.updated_at and c.created_at and c.updated_at > c.created_at),
         "like_count": lk.get("count", 0),
         "liked": lk.get("liked", False),
         # Chip "@Tên" dựng từ ID, không phải từ chữ trong nội dung — xem model.
@@ -121,6 +126,12 @@ def _notify_new(db: Session, doc, label: str, route: str, c: Comment, user, back
     mentioned = [u for u in service.mention_map(db, [c.id]).get(c.id, []) if u != user.id]
     if c.reply_to_user_id and c.reply_to_user_id != user.id and c.reply_to_user_id not in mentioned:
         mentioned.insert(0, c.reply_to_user_id)
+    if c.entity == "work_task" and mentioned:
+        #  `@` được bất kỳ ai đang hoạt động, nhưng chuông (kèm tên việc + trích lời) chỉ
+        #  tới người còn xem được việc — thành viên dự án có `work_task.read`.
+        from app.modules.work.notify_service import audience_user_ids
+        allowed = audience_user_ids(db, doc, mentioned)
+        mentioned = [u for u in mentioned if u in allowed]
     if mentioned:
         _push(db, mentioned, f"{code} — Bạn được nhắc tên",
               f"{who} đã nhắc bạn trong {label} {code}: {excerpt}", link, user.id, background_tasks)

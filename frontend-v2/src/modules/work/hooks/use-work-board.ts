@@ -101,6 +101,7 @@ function invalidateTask(
 ) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.work.board(listId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.work.lists(false) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.work.trash(listId) })
   if (taskId) void queryClient.invalidateQueries({ queryKey: queryKeys.work.task(taskId) })
 }
 

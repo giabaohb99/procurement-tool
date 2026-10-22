@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 
 import type {
   TaskAttachment,
@@ -61,6 +61,14 @@ export const taskSupportApi = {
     }),
 
   deleteComment: (commentId: number) => apiDelete<null>(`${COMMENT_URL}/${commentId}`),
+
+  /**
+   * Sửa bình luận CỦA MÌNH (E-05). Đường này nằm dưới `/api/work/` chứ không phải
+   * `/api/comments`: sửa là luật riêng của phân hệ Dự án (cần quyền ghi trong dự
+   * án), các phân hệ khác chưa có.
+   */
+  editComment: (taskId: number, commentId: number, body: string) =>
+    apiPatch<TaskComment>(`/api/work/tasks/${taskId}/comments/${commentId}`, { body }),
 
   /**
    * Tải tệp của một bình luận lên TRƯỚC, lấy `file_id`, rồi mới gửi bình luận.
