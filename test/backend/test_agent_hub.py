@@ -5988,16 +5988,22 @@ def test_theo_doi_suc_khoe_mo_va_dong_su_co(db, bot, monkeypatch):
 
 
 # ai-CR-231 — sự cố #4 22/10: DNS vùng .vn (DNSSEC VNNIC) hỏng, bot báo prod «không kết nối được» trong khi prod vẫn sống.
+def _dns_world(db, monkeypatch, *, streak=3):
+    _envs(db)
+    tasks = _ops_on(monkeypatch)
+    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", streak)
+    codes = {"https://dev.test/api/health": 200, "https://prod.test/api/health": 0}
+    return tasks, codes
+
+
 def test_loi_dns_server_song_ghi_su_co_nhe_khong_chan_doan(db, bot, monkeypatch):
     from app.modules.agent_hub import ops
     from app.modules.agent_hub.constants import INC_RESOLVED, INC_WAITING
-    from app.modules.agent_hub.model import AgentIncident
+    from app.modules.agent_hub.model import AgentEnv, AgentIncident
 
     _, sent, _ = bot
-    _, prod = _envs(db)
-    tasks = _ops_on(monkeypatch)
-    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", 3)
-    codes = {"https://dev.test/api/health": 200, "https://prod.test/api/health": 0}
+    tasks, codes = _dns_world(db, monkeypatch)
+    prod = db.query(AgentEnv).filter_by(name="prod").one()
     probed: list[str] = []
 
     def probe(url):
@@ -6009,8 +6015,11 @@ def test_loi_dns_server_song_ghi_su_co_nhe_khong_chan_doan(db, bot, monkeypatch)
     inc = db.query(AgentIncident).one()
     assert probed == ["https://prod.test/api/health"] * 3          # chỉ đi thẳng khi lỗi kết nối, không đụng env xanh
     assert inc.signature == ops.DNS_SIGNATURE and inc.status == INC_WAITING and "DNS" in inc.cause
+    assert "(3 phút liền)" in inc.symptom and prod.last_health_code == ops.DNS_ONLY_CODE
     assert tasks == []                                              # không chẩn đoán, không tự chữa
     assert "lỗi DNS" in sent[-1] and "server vẫn sống" in sent[-1] and "Sự cố #" not in sent[-1]
+    assert "Cloudflare" not in sent[-1]
+    assert "lỗi DNS" in ops.env_listing(db)
     ops.check_health(db, fetch=lambda url: codes[url], probe=probe)
     assert db.query(AgentIncident).count() == 1                      # đang mở: không báo lại mỗi phút
     codes["https://prod.test/api/health"] = 200
@@ -6018,25 +6027,33 @@ def test_loi_dns_server_song_ghi_su_co_nhe_khong_chan_doan(db, bot, monkeypatch)
     assert inc.status == INC_RESOLVED and prod.fail_streak == 0 and "Lỗi DNS" in sent[-1] and "đã hết" in sent[-1]
 
 
-def test_loi_dns_roi_di_thang_cung_hong_thi_bao_sap_that(db, bot, monkeypatch):
+def test_loi_dns_mot_vong_di_thang_cham_khong_leo_thang(db, bot, monkeypatch):
+    """A2 rà 22/10: một vòng đi thẳng hỏng (DoH chậm, địa chỉ chậm) KHÔNG được đóng sự cố DNS rồi mở sự cố sập ngay —
+    dev bật tự chữa sẽ chẩn đoán và chữa trên báo động giả. Phải đủ số vòng sập liền, đếm lại từ lúc đổi kiểu hỏng."""
     from app.modules.agent_hub import ops
-    from app.modules.agent_hub.constants import INC_DIAGNOSING, INC_RESOLVED
+    from app.modules.agent_hub.constants import INC_DIAGNOSING, INC_RESOLVED, INC_WAITING
     from app.modules.agent_hub.model import AgentIncident
 
     _, sent, _ = bot
-    _envs(db)
-    tasks = _ops_on(monkeypatch)
-    monkeypatch.setattr(settings, "AGENT_HEALTH_FAIL_STREAK", 3)
-    codes = {"https://dev.test/api/health": 200, "https://prod.test/api/health": 0}
+    tasks, codes = _dns_world(db, monkeypatch)
     alive = {"v": 200}
+    check = lambda: ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: alive["v"])   # noqa: E731
     for _ in range(3):
-        ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: alive["v"])
+        check()
     dns = db.query(AgentIncident).one()
-    alive["v"] = 0                                                  # đi thẳng địa chỉ cũng không tới: sập thật
-    ops.check_health(db, fetch=lambda url: codes[url], probe=lambda url: alive["v"])
+    alive["v"] = 0                                                  # một vòng đi thẳng hỏng
+    check()
+    alive["v"] = 200                                                # vòng sau lại sống
+    check()
+    assert dns.status == INC_WAITING and db.query(AgentIncident).count() == 1 and tasks == []
+    alive["v"] = 0                                                  # sập thật: cần đủ 3 vòng liền
+    check()
+    check()
+    assert dns.status == INC_WAITING and tasks == []
+    check()
     assert dns.status == INC_RESOLVED
     real = db.query(AgentIncident).filter(AgentIncident.id != dns.id).one()
-    assert real.status == INC_DIAGNOSING and real.signature == "" and "không kết nối được" in real.symptom
+    assert real.status == INC_DIAGNOSING and real.signature == "" and real.symptom == "health không kết nối được (3 phút liền)"
     assert tasks == [("agent.diagnose_incident", [real.id])] and "Sự cố" in sent[-1]
 
 
@@ -6057,6 +6074,23 @@ def test_khong_ket_noi_di_thang_cung_hong_van_bao_sap(db, bot, monkeypatch):
     assert inc.status == INC_DIAGNOSING and tasks == [("agent.diagnose_incident", [inc.id])]
 
 
+@pytest.mark.parametrize("probe", [lambda url: None, lambda url: 1 / 0], ids=["doh-khong-tra-loi", "probe-nem-loi"])
+def test_khong_kiem_chung_duoc_thi_chua_ket_luan_sap(db, bot, monkeypatch, probe):
+    """DNS công cộng cũng không hỏi được (mạng máy giám sát hỏng?) hay bước đi thẳng ném lỗi: không kết luận sập, không
+    chẩn đoán, không làm chết vòng health của môi trường khác."""
+    from app.modules.agent_hub import ops
+    from app.modules.agent_hub.constants import INC_WAITING
+    from app.modules.agent_hub.model import AgentEnv, AgentIncident
+
+    _, sent, _ = bot
+    tasks, codes = _dns_world(db, monkeypatch)
+    for _ in range(3):
+        ops.check_health(db, fetch=lambda url: codes[url], probe=probe)
+    inc = db.query(AgentIncident).one()
+    assert inc.signature == ops.BLIND_SIGNATURE and inc.status == INC_WAITING and tasks == []
+    assert "chưa kết luận" in sent[-1] and db.query(AgentEnv).filter_by(name="dev").one().last_health_code == 200
+
+
 def test_di_thang_dia_chi_giu_ten_mien_khi_bat_tay(monkeypatch):
     """Lấy địa chỉ qua DNS công cộng bằng HTTPS (bỏ kiểm DNSSEC), rồi gọi thẳng địa chỉ mà vẫn xưng tên miền (SNI +
     Host) — giống `curl --resolve`. Không gọi mạng thật."""
@@ -6068,40 +6102,54 @@ def test_di_thang_dia_chi_giu_ten_mien_khi_bat_tay(monkeypatch):
     doh: list[tuple] = []
 
     class _Doh:
-        def __init__(self, ips):
-            self._ips = ips
+        def __init__(self, ips, status=200):
+            self._ips, self.status_code = ips, status
 
         def json(self):
             return {"Status": 0, "Answer": [{"type": 5, "data": "x.cdn."}] + [{"type": 1, "data": i} for i in self._ips]}
 
     def fake_get(url, params=None, headers=None, timeout=None):
-        doh.append((url, dict(params or {})))
+        doh.append((url, dict(params or {}), timeout))
         if "1.1.1.1" in url:
             raise requests.ConnectionError("chặn")                  # máy chủ DoH đầu hỏng → thử máy sau
-        return _Doh(["104.21.39.171"])
+        return _Doh(["10.0.0.9", "104.21.39.171"])                  # địa chỉ nội bộ bị bỏ
 
     pools: list[dict] = []
 
     class _Pool:
         def __init__(self, host, **kw):
-            pools.append({"host": host, **kw})
+            pools.append({"host": host, "closed": False, **kw})
 
         def request(self, method, path, headers=None):
             pools[-1].update(method=method, path=path, headers=headers)
+            if pools[-1].get("fail"):
+                raise pools[-1]["fail"]
             return type("R", (), {"status": 200})()
+
+        def close(self):
+            pools[-1]["closed"] = True
 
     monkeypatch.setattr(requests, "get", fake_get)
     monkeypatch.setattr(urllib3, "HTTPSConnectionPool", _Pool)
     assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health?x=1") == 200
     assert [d[1]["cd"] for d in doh] == ["true", "true"] and doh[-1][1]["name"] == "thumua.degoholding.vn"
+    assert all(t[0] <= 2.0 and t[1] <= 3.0 for _u, _p, t in doh)                       # trần thời gian DoH
     p = pools[0]
     assert p["host"] == "104.21.39.171" and p["server_hostname"] == "thumua.degoholding.vn"
     assert p["assert_hostname"] == "thumua.degoholding.vn" and p["cert_reqs"] == "CERT_REQUIRED"
-    assert p["path"] == "/api/health?x=1" and p["headers"]["Host"] == "thumua.degoholding.vn"
-    #  Địa chỉ IP sẵn thì không có DNS để vòng qua; DoH không ra địa chỉ nào thì coi như không tới được.
-    assert ops._probe_bypass_dns("https://10.0.0.5/api/health") == 0
+    assert p["path"] == "/api/health?x=1" and p["headers"]["Host"] == "thumua.degoholding.vn" and p["closed"]
+    assert p["timeout"].connect_timeout <= 3.0 and p["timeout"].read_timeout <= 5.0
+    #  Chứng chỉ sai khi đi thẳng = không tới được (0), không phải «không kiểm được».
+    monkeypatch.setattr(_Pool, "request", lambda self, m, path, headers=None: (_ for _ in ()).throw(
+        urllib3.exceptions.SSLError("cert")))
+    assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health") == 0 and pools[-1]["closed"]
+    #  Không kiểm được → None: địa chỉ IP sẵn, http thường, DoH không ra địa chỉ, DoH trả mã lỗi.
+    assert ops._probe_bypass_dns("https://10.0.0.5/api/health") is None
+    assert ops._probe_bypass_dns("http://thumua.degoholding.vn/api/health") is None
     monkeypatch.setattr(requests, "get", lambda *a, **kw: _Doh([]))
-    assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health") == 0
+    assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health") is None
+    monkeypatch.setattr(requests, "get", lambda *a, **kw: _Doh(["104.21.39.171"], status=503))
+    assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health") is None
 
 
 def _incident(db, env, symptom="health 502 (3 phút liền)"):
