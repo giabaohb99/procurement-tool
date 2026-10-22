@@ -184,6 +184,8 @@ export const queryKeys = {
      * Nằm DƯỚI `myEmployee` nên nạp lại hồ sơ của tôi là quét luôn bảng này.
      */
     myEmployeeContacts: () => ['hr', 'employees', 'me', 'contacts'] as const,
+    /** Sơ đồ tổ chức (duoc-CR-669) — không nằm dưới `employees` vì cũng đổi theo phòng ban; quét bằng `hr.all`. */
+    orgChart: () => ['hr', 'org-chart'] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     /**
      * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab «Quá trình
@@ -285,6 +287,9 @@ export const queryKeys = {
     leaveBalance: (id: number) => ['hr', 'leave-balances', 'detail', id] as const,
     leaveBalanceSummary: (employeeId: number, year: number) =>
       ['hr', 'leave-balances', 'summary', employeeId, year] as const,
+    /** Bảng đối chiếu trước/sau kết sổ năm `year` (duoc-CR-664) — kết sổ lại dọn qua `hr.all`. */
+    leaveCloseYearReview: (year: number) =>
+      ['hr', 'leave-balances', 'close-year-review', year] as const,
     leaveTypes: (params?: Record<string, unknown>) =>
       ['hr', 'leave-types', params ?? {}] as const,
     /** Bậc thâm niên của MỘT loại nghỉ. `0` = mọi loại. */
@@ -725,6 +730,8 @@ export const queryKeys = {
     groupMembers: (groupId: number) => ['work', 'groups', groupId, 'members'] as const,
     sections: (listId: number) => ['work', 'lists', listId, 'sections'] as const,
     labelFields: (listId: number) => ['work', 'lists', listId, 'label-fields'] as const,
+    /** Thùng rác của dự án (duoc-CR-667, B-09) — xóa / khôi phục việc thì làm mới. */
+    trash: (listId: number) => ['work', 'lists', listId, 'trash'] as const,
     /**
      * Dòng hoạt động của dự án (D-09). Bộ lọc nằm TRONG khóa nên đổi loại sự
      * kiện / đổi người là một truy vấn khác, không phải nạp lại rồi lọc lại ở

@@ -65,4 +65,15 @@ describe('LeaveAttachmentsCard', () => {
     render(<LeaveAttachmentsCard requestId={12} editable={false} />)
     expect(screen.getByText('Đơn này không kèm tệp nào.')).toBeInTheDocument()
   })
+
+  it('marks the card required and names the leave types that demand a file', () => {
+    render(<LeaveAttachmentsCard requestId={12} editable requiredByTypes={['Nghỉ ốm']} />)
+    expect(screen.getByText(/«Nghỉ ốm» bắt buộc đính kèm giấy tờ/)).toBeInTheDocument()
+    expect(screen.getByTitle('Bắt buộc trước khi gửi duyệt')).toBeInTheDocument()
+  })
+
+  it('shows no required notice when no leave type demands a file', () => {
+    render(<LeaveAttachmentsCard requestId={12} editable />)
+    expect(screen.queryByText(/bắt buộc đính kèm giấy tờ/)).not.toBeInTheDocument()
+  })
 })

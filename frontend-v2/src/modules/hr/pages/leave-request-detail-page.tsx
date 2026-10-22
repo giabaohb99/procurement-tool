@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
@@ -33,10 +34,13 @@ import {
   PRIMARY_ACTION_SLOT,
   SECONDARY_ACTION_SLOT,
 } from '../utils/leave-detail-action-slots'
+import { listTypesRequiringAttachment } from '../utils/leave-required-attachment'
+import { useLeaveAttachments } from '../hooks/use-leave-attachments'
 import {
   useDeleteLeaveRequest,
   useLeaveRequest,
   useLeaveRequestAction,
+  useLeaveTypes,
   useSaveLeaveRequest,
 } from '../hooks/use-leave'
 import { EDITABLE_LEAVE_STATUSES, LEAVE_STATUS } from '../types/leave'
@@ -128,6 +132,13 @@ export function LeaveRequestDetailPage() {
   const canApprove = can('leave_request', 'approve')
   const canCancel = can('leave_request', 'cancel')
 
+  //  Loại nghỉ bật «Bắt buộc đính kèm» (duoc-CR-661): báo trước ở thẻ tệp và chặn
+  //  nút Gửi duyệt cho khỏi lưu rồi mới ăn 400. Danh mục + tệp dùng chung khóa cache
+  //  với form và thẻ tệp nên không thêm request.
+  const { data: typeData } = useLeaveTypes()
+  const { data: attachedFiles } = useLeaveAttachments(requestId)
+  const requiredByTypes = listTypesRequiringAttachment(form.lines, typeData?.items ?? [])
+
   const submitSave = () => {
     save.mutate(
       { id: isNew ? undefined : requestId, values: toLeavePayload(form) },
@@ -147,6 +158,14 @@ export function LeaveRequestDetailPage() {
   //  một câu chặn nói ngược lại thứ đang hiện trên màn hình, không cách nào
   //  đoán ra là phải bấm «Lưu nháp» trước.
   const saveThenSubmit = () => {
+    //  Chặn sớm khi ĐÃ biết đơn chưa có tệp (danh sách tệp tải xong và rỗng); chưa tải
+    //  xong thì để backend phán — nó là chốt thật (`check_required_attachment`).
+    if (requiredByTypes.length > 0 && attachedFiles && attachedFiles.length === 0) {
+      toast.error(
+        `Loại nghỉ ${requiredByTypes.map((n) => `«${n}»`).join(', ')} bắt buộc đính kèm giấy tờ — tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt.`,
+      )
+      return
+    }
     save.mutate(
       { id: requestId, values: toLeavePayload(form) },
       { onSuccess: () => act.mutate({ id: requestId, action: 'submit' }) },
@@ -360,7 +379,11 @@ export function LeaveRequestDetailPage() {
              Thêm/gỡ được đúng lúc form còn sửa được; sau khi gửi duyệt thì chỉ
              xem và tải về. Đơn mới chưa có id thì thẻ nhắc «Lưu nháp». */}
         {(request || (isNew && canWrite)) && (
-          <LeaveAttachmentsCard requestId={requestId} editable={editable && canWrite} />
+          <LeaveAttachmentsCard
+            requestId={requestId}
+            editable={editable && canWrite}
+            requiredByTypes={editable ? requiredByTypes : []}
+          />
         )}
 
         {/*  Luồng duyệt đặt DƯỚI nội dung đơn: người mở màn này đọc tờ đơn trước,

@@ -643,6 +643,35 @@ def check_ready_to_submit(obj: LeaveRequest) -> None:
         raise HTTPException(400, "«Tổng số ngày» phải lớn hơn 0")
 
 
+def check_required_attachment(db: Session, obj: LeaveRequest) -> None:
+    """Loại nghỉ bật «Bắt buộc đính kèm» thì đơn phải có ít nhất một tệp (HR1-2, CR-661).
+
+    Đơn nhiều loại: chỉ cần MỘT loại bật cờ là đơn phải có tệp. Tệp treo ở tờ đơn
+    (`tab_file_link`, entity `leave_request`) chứ không ở từng dòng nên không phân
+    biệt được tệp nào của loại nào — chặn theo "có hay chưa", nêu tên các loại đòi.
+    Chỉ chạy lúc GỬI DUYỆT: lưu nháp để đính kèm sau, vì tệp chỉ treo được vào
+    đơn đã có id.
+    """
+    type_ids = {ln.leave_type_id for ln in lines_of(db, obj.id)} or {obj.leave_type_id}
+    required = (db.query(LeaveType.name)
+                .filter(LeaveType.id.in_(type_ids), LeaveType.require_attachment.is_(True))
+                .order_by(LeaveType.id).all())
+    if not required:
+        return
+    from app.modules.attachment.model import FileLink  # tránh vòng import lúc nạp module
+
+    has_file = (db.query(FileLink.id)
+                .filter(FileLink.entity == "leave_request", FileLink.entity_id == obj.id)
+                .first())
+    if has_file:
+        return
+    names = ", ".join(f"«{n}»" for (n,) in required)
+    raise HTTPException(
+        400,
+        f"Loại nghỉ {names} bắt buộc đính kèm giấy tờ (giấy khám bệnh, giấy chứng nhận…) — "
+        "tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt lại.")
+
+
 def prepare_submit(db: Session, obj: LeaveRequest, user) -> Employee:
     """Mọi chốt chặn của bước GỬI DUYỆT, theo thứ tự rẻ trước đắt sau.
 
@@ -653,6 +682,7 @@ def prepare_submit(db: Session, obj: LeaveRequest, user) -> Employee:
     if obj.status not in EDITABLE_STATUSES:
         raise HTTPException(400, "Đơn này đã gửi duyệt rồi")
     check_ready_to_submit(obj)
+    check_required_attachment(db, obj)
 
     employee = get_employee(db, obj.employee_id)
     check_overlap(db, obj.employee_id, obj.from_date, obj.to_date, exclude_id=obj.id)
