@@ -44,6 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui/table'
+import { useRememberedCollapse } from '../../hooks/use-remembered-collapse'
 import { useSurveyReportActions, useSurveyRequestReport } from '../../hooks/use-survey-request-report'
 import {
   REPORT_DOC_DOING,
@@ -181,8 +182,13 @@ export function SurveyReportCard({
   const [query, setQuery] = useState('')
   /** Các dòng hàng đang SỔ (hiện hồ sơ con). Nút trên header gạt cả loạt. */
   const [openRows, setOpenRows] = useState<Set<number>>(new Set())
-  /** Giai đoạn đang THU GỌN ở dạng xem tổng — mặc định mọi giai đoạn đều mở. */
-  const [collapsedPhases, setCollapsedPhases] = useState<Set<number>>(new Set())
+  /**
+   * Giai đoạn đang THU GỌN ở dạng xem tổng — mặc định mọi giai đoạn đều mở. Nhớ theo
+   * người dùng và theo phiếu (kh-TM2-1): mở lại phiếu vẫn thấy đúng mấy giai đoạn đã gấp.
+   */
+  const [collapsedPhases, setCollapsedPhases] = useRememberedCollapse<number>(
+    `survey-report:${entity}:${ownerId}`,
+  )
   //  `phaseId` bỏ trống = mở từ nút chung, hộp tự điền giai đoạn đầu tiên. Bấm
   //  «+ hồ sơ» ngay trong một giai đoạn thì điền sẵn ĐÚNG giai đoạn đó.
   const [docDialog, setDocDialog] = useState<{

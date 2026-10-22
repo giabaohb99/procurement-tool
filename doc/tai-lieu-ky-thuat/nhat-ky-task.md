@@ -16054,20 +16054,25 @@ Mã nguồn: kế hoạch NT2-2 · `doc/erp/nen-tang/14-filter-sort-man-danh-sac
 
 ## kh-TM2-1 | Báo cáo thực hiện YCBG: tệp thật, nhớ gấp/mở, nhắc hạn
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong local, chưa commit
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 3
-**Bối cảnh:** Khối Báo cáo thực hiện trên YCBG còn thiếu các việc ghi ở doc 18 mục 6.
+**Bối cảnh:** Khối Báo cáo thực hiện trên YCBG còn bốn việc ở doc 18 mục 6; ba việc cần máy chủ, một việc thuần giao diện.
 
-**Việc cần làm**
-- Nối kho đính kèm thật.
-- Nhớ trạng thái gấp/mở.
-- Nhắc hạn từng hồ sơ; quản lý mẫu trên giao diện.
+**Đã làm**
+- Nhớ các giai đoạn đang gấp của khối Báo cáo thực hiện (cả YCBG lẫn ĐMH) và của khối Hồ sơ theo checklist, theo từng người dùng và từng phiếu: mở lại phiếu vẫn thấy đúng các giai đoạn đã gấp; phiếu khác không bị ảnh hưởng; máy dùng chung thì người sau không thừa hưởng bố cục của người trước.
+- Lưu chung một khóa trong bộ nhớ trình duyệt, giữ tối đa 100 phiếu gần nhất để không phình mãi; dữ liệu hỏng thì mở ra như mới, không vỡ màn.
+- Khối Hồ sơ theo checklist: đổi dạng xem không còn xóa các giai đoạn đã gấp.
 
-**Điều kiện xong:** các việc chạy trên dev; có bài kiểm.
+**Kết quả:** tsc cả cây 0 lỗi, lint 0 lỗi (tệp mới 0 cảnh báo), vitest phân hệ procurement xanh 89 tệp, 956 bài (có bài kiểm mới cho hook nhớ, cho khối báo cáo và cho ca đổi sang phiếu khác trên cùng màn mà Agent 2 bắt khi rà); dựng bản vite build được. Chưa soát trên trình duyệt.
 
-Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6
+**Còn lại**
+- Agent 2 rà mã nhánh agent3/kh-TM2-1; đại ca gật mới đẩy lên erp-v2.
+- Ba việc cần máy chủ (tệp đính kèm thật, nhắc hạn, quản lý mẫu) đã chuyển sang phiếu kh-TM2-1-may-chu của anh Dược; có hợp đồng API thì Agent 3 làm phần giao diện.
+
+Mã nguồn: `modules/procurement/hooks/use-remembered-collapse.ts` · `components/survey-report/survey-report-card.tsx` · `components/survey-report/dossier-checklist-card.tsx`
+Commit: nhánh agent3/kh-TM2-1, chưa đẩy
 
 ## kh-NT2-8 | Biểu đồ dashboard Tồn kho và màn lỗi tác vụ nền
 - list: Kế hoạch hệ agent

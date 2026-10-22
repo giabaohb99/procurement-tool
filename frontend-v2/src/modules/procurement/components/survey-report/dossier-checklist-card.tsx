@@ -49,6 +49,7 @@ import {
   nearestExpiryDoc,
   type ExpiryTone,
 } from '../../utils/dossier-checklist-helpers'
+import { useRememberedCollapse } from '../../hooks/use-remembered-collapse'
 
 type ChecklistViewMode = 'phase' | 'item'
 
@@ -104,8 +105,11 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
   })
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<number>(CHECKLIST_STATUS_ALL)
-  /** Giai đoạn đang GẬP ở dạng Xem tổng — mặc định mọi giai đoạn đều mở. */
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  /**
+   * Giai đoạn đang GẬP ở dạng Xem tổng — mặc định mọi giai đoạn đều mở. Nhớ theo
+   * người dùng và theo phiếu (kh-TM2-1).
+   */
+  const [collapsed, setCollapsed] = useRememberedCollapse<string>(`dossier:${surveyRequestId}`)
   /** Dòng bảng đang SỔ ở dạng Theo dòng hàng — mặc định mọi dòng đều gập. */
   const [openRows, setOpenRows] = useState<Set<string>>(new Set())
   /** Tờ hồ sơ đang mở hộp thoại sửa nhanh; `null` = đóng. */
@@ -136,9 +140,10 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
 
   const changeViewMode = (mode: ChecklistViewMode) => {
     setViewMode(mode)
-    //  Đổi trục xem thì trả về mặc định của trục MỚI: khóa nhóm của hai trục
-    //  khác hẳn nhau, giữ tập cũ là gập/sổ nhầm một nhóm không liên quan.
-    setCollapsed(new Set())
+    //  Đổi trục xem thì trả dòng đang SỔ về mặc định: khóa nhóm của hai trục khác hẳn
+    //  nhau, giữ tập cũ là sổ nhầm một nhóm không liên quan. Tập GẬP thì giữ: nó chỉ
+    //  dùng ở dạng Xem tổng và chỉ chứa khóa giai đoạn (`phase-<id>`), không lẫn được
+    //  — xóa nó ở đây là xóa luôn thứ vừa nhớ cho người dùng (kh-TM2-1).
     setOpenRows(new Set())
     try {
       localStorage.setItem(VIEW_STORAGE_KEY, mode)
