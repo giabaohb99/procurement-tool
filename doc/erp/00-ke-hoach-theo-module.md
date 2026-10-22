@@ -116,7 +116,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| TM2-1 | Báo cáo thực hiện YCBG: đính kèm tệp thật, nhớ trạng thái gấp/mở, nhắc hạn, quản lý mẫu trên giao diện | Bốn ý chạy trên dev, có HDSD | `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` |
+| TM2-1 | Báo cáo thực hiện YCBG: **nhớ gấp/mở XONG mã, chờ rà — kh-TM2-1, 22/10** (nhánh agent3/kh-TM2-1); đính kèm tệp thật, nhắc hạn, quản lý mẫu chuyển sang kh-TM2-1-may-chu (anh Dược) | Bốn ý chạy trên dev, có HDSD | `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` |
 
 **Phase 3 — khi cần**
 

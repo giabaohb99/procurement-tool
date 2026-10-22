@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAuthStore } from '@/core/auth/auth-store'
 import type { SurveyReportDoc, SurveyRequestReport } from '../../types/survey-request-report'
 import { SurveyReportCard } from './survey-report-card'
 
@@ -311,5 +312,68 @@ describe('SurveyReportCard — first doc on an empty report (duoc-CR-611)', () =
     fireEvent.click(await screen.findByRole('button', { name: /Thêm hồ sơ/ }))
     const dialog = await screen.findByRole('dialog')
     expect(await within(dialog).findByText(/chưa có dòng hàng nào/)).toBeInTheDocument()
+  })
+})
+
+describe('SurveyReportCard — nhớ giai đoạn đã gấp (kh-TM2-1)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    localStorage.setItem('erp.survey-report.view', 'phase')
+    useAuthStore.setState({ user: { id: 3, email: 'tm@dego.vn', full_name: 'TM', permissions: {} } })
+    apiGet.mockReset().mockResolvedValue(REPORT)
+  })
+
+  async function openCard() {
+    fireEvent.click(await screen.findByRole('button', { name: /Báo cáo thực hiện/ }))
+    await screen.findByText('Hợp đồng nắp')
+  }
+
+  it('keeps a collapsed phase collapsed when the report is opened again', async () => {
+    const first = renderCard()
+    await openCard()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Thu gọn giai đoạn' })[0])
+    expect(screen.getAllByRole('button', { name: 'Hiện hồ sơ của giai đoạn' })).toHaveLength(1)
+    first.unmount()
+
+    renderCard()
+    await openCard()
+    expect(screen.getAllByRole('button', { name: 'Hiện hồ sơ của giai đoạn' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: 'Thu gọn giai đoạn' })).toHaveLength(1)
+  })
+
+  it('switches the collapsed phases when the same card moves to another report', async () => {
+    //  Chi tiết YCBG là route `/:id`: đổi phiếu thì component được GIỮ, chỉ `ownerId` đổi.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const view = render(
+      <QueryClientProvider client={client}>
+        <SurveyReportCard ownerId={7} canEdit />
+      </QueryClientProvider>,
+    )
+    await openCard()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Thu gọn giai đoạn' })[0])
+
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <SurveyReportCard ownerId={8} canEdit />
+      </QueryClientProvider>,
+    )
+    await screen.findByText('Hợp đồng nắp')
+    expect(screen.queryByRole('button', { name: 'Hiện hồ sơ của giai đoạn' })).toBeNull()
+  })
+
+  it('does not carry the collapsed phases over to another report', async () => {
+    const first = renderCard()
+    await openCard()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Thu gọn giai đoạn' })[0])
+    first.unmount()
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <SurveyReportCard ownerId={8} canEdit />
+      </QueryClientProvider>,
+    )
+    await openCard()
+    expect(screen.queryByRole('button', { name: 'Hiện hồ sơ của giai đoạn' })).toBeNull()
   })
 })
