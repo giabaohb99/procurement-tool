@@ -57,7 +57,7 @@ Bộ máy nhận ticket → AI quản lý (Gemini) tóm tắt & đề xuất →
 - Sổ CR riêng: [`tai-lieu-ky-thuat/change-log-ai.md`](tai-lieu-ky-thuat/change-log-ai.md)
 
 ## Khác
-- `testcase/` — kịch bản test tay; `ke-hoach-import/`, `ke-hoach-celery/`, `dat-xe-duyet-dau/` — kế hoạch từng mảng
+- `testcase/` — kịch bản test tay; `dat-xe-duyet-dau/` — kế hoạch từng mảng
   - `dat-xe-duyet-dau/` — **Phân hệ Đặt xe nội bộ** (kế hoạch + tiến độ theo phase). Xem `README.md` + `TIEN-DO.md`.
 - `datamau/`, `sheet/` — dữ liệu mẫu / bảng gốc
 - `../TASKS.md` — tiến độ triển khai
