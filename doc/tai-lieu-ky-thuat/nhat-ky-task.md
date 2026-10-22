@@ -94,7 +94,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## ai-CR-231 | Bot giám sát phân biệt lỗi DNS với server sập
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - list: Kế hoạch hệ agent
 - tag: Agent 4
@@ -121,9 +121,9 @@ vô ích.
 
 **Kết quả:** 10 bài kiểm của việc này đạt; cả tệp bài kiểm của bot cùng ba tệp khác có đụng phần vận hành 478 bài đạt.
 Thử thật trên máy em: tên miền dev đi thẳng trả 200 có kiểm chứng chỉ; tên miền không tồn tại trả *chưa kiểm chứng
-được*. Không gọi prod. Mã nằm ở nhánh `agent4/ai-cr-231-dns` trên máy em, chưa lên erp-v2.
+được*. Không gọi prod. Đã lên erp-v2 ngày 22/10 (đại ca gật), chưa dựng dev.
 
-**Còn lại:** Agent 2 rà lại; đại ca gật thì đẩy lên erp-v2 rồi Agent 1 dựng dev.
+**Còn lại:** Agent 1 dựng dev; đại ca có đợt rà mã riêng sau.
 
 Mã nguồn: `agent_hub/ops.py` (hàm `_resolve_bypass_dns`, `_probe_bypass_dns`, `_open_light_incident`, `check_health`)
 Bài kiểm: `test_agent_hub.py` (các bài `test_loi_dns_*`, `test_khong_ket_noi_*`, `test_khong_kiem_chung_*`, `test_di_thang_*`)
@@ -15979,7 +15979,7 @@ Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · ba
 
 ## kh-AI1-2 | A1: công cụ AI xem năng lực đội và thống kê loại việc
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 4
@@ -16008,9 +16008,9 @@ Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · ba
   số người trả về.
 
 **Kết quả:** 9 bài kiểm mới đạt (gồm ca trưởng hai phòng, phòng con, phòng dùng chung hai pháp nhân, có khóa 16 mà thiếu quyền xem cấu hình, tham số lạ); cùng các bài canh cửa của Trợ
-lý, cổng nối AI và lõi bot tổng 747 bài đạt. Mã ở nhánh `agent4/kh-ai1-2-nang-luc` trên máy em, chưa lên erp-v2.
+lý, cổng nối AI và lõi bot tổng 747 bài đạt. Đã lên erp-v2 ngày 22/10 (đại ca gật), chưa dựng dev.
 
-**Còn lại:** Agent 2 rà mã; đại ca gật thì đẩy lên erp-v2. Hướng B để đại ca chọn sau: mở trung vị theo loại việc
+**Còn lại:** Agent 1 dựng dev; đại ca có đợt rà mã riêng sau. Hướng B để đại ca chọn sau: mở trung vị theo loại việc
 (không theo người) cho trưởng phòng để ước giờ khi lập kế hoạch.
 
 Mã nguồn: `assistant/tools/capability_tool.py`, `assistant/tool_router.py`, `agent_hub/mcp.py`, `agent_hub/mcp_settings.py`, `agent_hub/intent_ledger.py` · kế hoạch AI1-2, doc 22 §7
@@ -16018,7 +16018,7 @@ Bài kiểm: `test_assistant_nang_luc_doi_kh_ai1_2.py`
 
 ## kh-AI1-3-may-chu | A2 phần máy chủ: AI lập kế hoạch đề xuất, lưu đề xuất và phần người sửa
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 4
@@ -16049,9 +16049,9 @@ Bài kiểm: `test_assistant_nang_luc_doi_kh_ai1_2.py`
 
 **Kết quả:** 10 bài kiểm mới đạt; cùng các bài canh cửa của Trợ lý, cổng nối AI, lõi bot, phạm vi, bộ mã trạng thái và
 bài kế hoạch bao-CR-616 tổng 424 bài đạt. Bài canh độ dài ô chữ còn đỏ ở năm khuôn của phân hệ Dự án và Nhân sự có từ
-trước, không do việc này. Mã ở nhánh `agent4/kh-ai1-3-de-xuat` trên máy em, chưa lên erp-v2.
+trước, không do việc này. Đã lên erp-v2 ngày 22/10 (đại ca gật), chưa dựng dev.
 
-**Còn lại:** Agent 3 dựng màn duyệt; rà mã; đại ca gật thì đẩy lên erp-v2. Hướng B để đại ca chọn sau: trưởng phòng duyệt
+**Còn lại:** Agent 1 dựng dev; Agent 3 dựng màn duyệt; đại ca có đợt rà mã riêng sau. Bài canh độ dài ô chữ còn đỏ ở năm khuôn của Dự án và Nhân sự (có từ trước), Agent 1 chuyển chủ khu. Hướng B để đại ca chọn sau: trưởng phòng duyệt
 thay cho chính người hỏi. Bật công tắc trên dev chỉ sau khi màn duyệt lên, và cần cho phép sửa câu chữ của bot cho đẹp.
 
 Mã nguồn: `modules/ai_plan/` (model, service, schema, controller), `core/ai_plan_codes.py`, migration `aiplan01`, `agent_hub/draft_create.py` (nhánh kế hoạch), `assistant/tools/work_tool.py`, `assistant/tools/capability_tool.py` (plan_context) · doc 22 §5.2
