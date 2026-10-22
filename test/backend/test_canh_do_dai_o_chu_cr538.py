@@ -33,7 +33,9 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "work_schedule",   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
            "labor_contract",
            "ai_skill",       # bao-CR-621 (17/10): Kho skill AI — 5 model, trần 50..500
-           "usage_profile"]  # duoc-CR-641 (khai ở bao-CR-647): hồ sơ cách làm việc — UiEvent.route_pattern, UsageDaily.first_route 120
+           "usage_profile",  # duoc-CR-641 (khai ở bao-CR-647) — xem dòng dưới
+           "ai_plan"]        # kh-AI1-3: đề xuất kế hoạch AI — `reject_reason` 500, kế hoạch JSON chặn ở service.normalize
+#  ↑ usage_profile: duoc-CR-641 (khai ở bao-CR-647): hồ sơ cách làm việc — UiEvent.route_pattern, UsageDaily.first_route 120
 #  ↑ work_schedule: duoc-CR-589 (05/10) — Lịch làm việc, `name` 150 / `note` 500
 #  ↑ labor_contract: duoc-CR-606 (07/10) — Hợp đồng lao động; khai ở bao-CR-608 khi bài canh đỏ
 
@@ -153,6 +155,7 @@ TARGETS.update({
     **_same("labor_contract", "LaborContract", "TransitionIn"),
     #  duoc-CR-630 — Danh sách biến mẫu HĐLĐ
     **_same("labor_contract", "LaborContractVariable", "VariableCreate", "VariableUpdate"),
+    "ai_plan.PlanRejectIn": ["AiPlanProposal"],
 })
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).
@@ -170,6 +173,9 @@ NO_TARGET = {
     "agent_hub.ConsentIn",
     #  ai-CR-221: công tắc bật / tắt khóa MCP — chỉ một cờ bool, ghi cột `disabled_at` (giờ máy chủ, không lấy từ người gọi)
     "agent_hub.McpKeyPatch",
+    #  kh-AI1-3: kế hoạch là JSON — mọi ô chữ trong đó có trần ở `ai_plan.service.normalize` (tên 200/500, mô tả 2000,
+    #  lý do 300…), schema chỉ chặn kích thước tổng; `title` cột 200 lấy từ bản đã chuẩn hóa
+    "ai_plan.PlanEditIn", "ai_plan.PlanApproveIn",
     #  duoc-CR-641 (bao-CR-647): lô sự kiện giao diện — `UiEventBatch` chỉ bọc danh sách; `UiEventError` lồng trong
     #  sự kiện, ghi vào cột không phải String(n), trần 60 / 200 đã đặt ngay ở schema. `UiEventIn` tự ghép UiEvent
     #  (field `route` 120 khớp cột `route_pattern` 120 nhưng khác tên nên bài không so — trần đã có ở schema).

@@ -114,3 +114,4 @@ from app.modules.usage_profile import model as _usage_profile  # noqa: F401
 from app.modules.feature_usage import model as _feature_usage  # noqa: F401  # duoc-CR-655
 from app.modules.ai_usage import model as _ai_usage  # noqa: F401  ai-CR-230
 from app.modules.capability import model as _capability  # noqa: F401  # duoc-CR-656
+from app.modules.ai_plan import model as _ai_plan  # noqa: F401  kh-AI1-3

@@ -57,6 +57,8 @@ REGISTRY = {
     "ai_compact_keep_turns": ("int", "AI_COMPACT_KEEP_TURNS"),
     #  ai-CR-137: tự rút ghi nhớ sau buổi chat riêng — tắt bằng sổ cấu hình (tab_setting), không phải deploy.
     "agent_auto_memory_enabled": ("bool", "AGENT_AUTO_MEMORY_ENABLED"),
+    #  kh-AI1-3: kế hoạch AI chờ duyệt rồi mới tạo việc — bật khi màn duyệt đã lên.
+    "ai_plan_review_enabled": ("bool", "AI_PLAN_REVIEW_ENABLED"),
     #  ai-CR-146: model riêng cho bước lập kế hoạch (vd deepseek-v4-pro), đổi không cần deploy.
     "agent_plan_model": ("str", "AGENT_PLAN_MODEL"),
     #  bao-CR-616 (phase 24.1): bộ luật lập kế hoạch việc của bot điều phối — JSON, sếp sửa trên màn Cấu hình;

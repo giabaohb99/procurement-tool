@@ -238,6 +238,8 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
     if kind not in DETAIL_PATHS:
         raise DraftError(f"Loại {LABELS.get(kind, kind)} không tạo được từ chat.")
     _check_permission(db, user, kind)
+    if kind == "work_plan":
+        _hold_plan_for_review(db, user, draft)          # kh-AI1-3: công tắc duyệt bật → dừng ở đây, chưa tạo việc
     try:
         if kind == "leave":
             code, oid = _create_leave(db, user, draft)
@@ -248,9 +250,9 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
         elif kind == "work_task":
             code, oid = _create_work_task(db, user, draft)
         elif kind == "work_plan":
-            from app.modules.work import plan_service
+            from app.modules.ai_plan import service as ai_plan
 
-            code, oid = plan_service.build(db, user, draft)
+            code, oid = ai_plan.create_direct(db, user, draft)     # như bao-CR-616 + ghi đề xuất «Tạo thẳng» (kh-AI1-3)
         else:
             code, oid = _create_purchase(db, user, draft)
     except HTTPException as e:
@@ -261,6 +263,24 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
         raise DraftError(f"Bản nháp chưa đủ dữ liệu: {str(e)[:300]}") from None
     log_change(db, user, kind, oid, code, ChangeAction.CREATE, f"Tạo {LABELS[kind]} {code}", None, source)
     return code, oid
+
+
+def _hold_plan_for_review(db: Session, user, draft: dict) -> None:
+    """kh-AI1-3 (doc/erp/tai-lieu-ai/22 §5.2): công tắc `ai_plan_review_enabled` BẬT thì kế hoạch AI soạn chỉ được lưu
+    thành đề xuất Chờ duyệt — người hỏi mở màn duyệt, sửa, bấm Duyệt mới tạo việc. Báo bằng DraftError để bot / cổng MCP
+    giữ nguyên luồng hiện có (bot đóng băng tính năng — không đổi câu chữ hay nút của bot). Tắt thì không làm gì."""
+    from app.modules.ai_plan import service as ai_plan
+
+    if not ai_plan.review_enabled():
+        return
+    try:
+        row = ai_plan.submit_for_review(db, user, draft)
+    except ai_plan.PlanInvalid as e:
+        db.rollback()
+        raise DraftError(f"Bản nháp kế hoạch chưa hợp lệ: {'; '.join(e.messages[:5])}") from None
+    raise DraftError(f"Kế hoạch CHƯA tạo việc: đã lưu thành đề xuất #{row.id} chờ duyệt. Mở "
+                     f"{ai_plan.REVIEW_PATH.format(id=row.id)} trên ERP để xem, sửa người / giờ rồi bấm Duyệt — duyệt xong "
+                     "mới tạo việc trong Dự án.")
 
 
 def _create_leave(db: Session, user, draft: dict) -> tuple[str, int]:

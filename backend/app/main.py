@@ -460,3 +460,5 @@ app.include_router(feature_usage_router)
 #  duoc-CR-656: năng lực theo loại việc — tải đang ôm (admin)
 from app.modules.capability.controller import router as capability_router  # noqa: E402
 app.include_router(capability_router)
+from app.modules.ai_plan.controller import router as ai_plan_router  # noqa: E402  kh-AI1-3
+app.include_router(ai_plan_router)

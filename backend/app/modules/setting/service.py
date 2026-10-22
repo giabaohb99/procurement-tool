@@ -97,6 +97,11 @@ FIELDS = [
      "label": "Trần số câu hỏi mỗi người mỗi ngày",
      "hint": "Chặn một tài khoản đốt token vô hạn — mỗi lượt hỏi nhồi cả gói tri thức lẫn lịch "
              "sử hội thoại nên đắt hơn vẻ ngoài của nó. Đặt 0 = không giới hạn."},
+    {"key": "ai_plan_review_enabled", "group": "ai", "type": "bool",
+     "label": "Kế hoạch AI soạn phải chờ duyệt rồi mới tạo việc",
+     "hint": "BẬT: xác nhận kế hoạch trên Telegram / ứng dụng AI chỉ lưu thành đề xuất chờ duyệt; người hỏi mở màn "
+             "«Duyệt kế hoạch AI» để sửa rồi bấm Duyệt mới tạo việc trong Dự án. TẮT: tạo bảng Dự án ngay như "
+             "trước (vẫn ghi lại đề xuất để học). Chỉ bật khi màn duyệt đã có."},
     {"key": "email_workflow_enabled", "group": "email", "type": "bool",
      "label": "Gửi email cho luồng duyệt",
      "hint": "Ngoài chuông trong hệ thống thì gửi thêm thư cho từng người duyệt. Vốn chỉ bật ở "

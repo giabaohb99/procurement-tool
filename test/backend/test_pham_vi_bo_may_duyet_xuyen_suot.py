@@ -1323,6 +1323,7 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "my_work_tasks": "ctx.can(work_task, read) + visible_list_ids + người phụ trách = chính người hỏi (ai-CR-140)",
     "team_capacity": "khóa báo cáo 16 (can_view_report) → mọi phòng; không khóa → chỉ phòng có manager_id = người hỏi + phòng con, chỉ thứ tự không số (kh-AI1-2)",
     "task_type_stats": "chỉ khóa báo cáo 16 (can_view_report) — không khóa thì denied (kh-AI1-2)",
+    "plan_context": "ctx.can(work_task, create) + gọi lại đúng hai handler trên + đề xuất lọc owner_user_id = người hỏi (kh-AI1-3)",
     "manage_briefs": "brief_subs theo ctx.user.id — chỉ lịch bản tin của chính người hỏi (ai-CR-140)",
     "propose_glossary_term": "chỉ ghi đề xuất thuật ngữ chờ duyệt; sửa thẳng chỉ khi chính là chủ từ điển (ai-CR-078)",
     "report_missing_feature": "chỉ ghi phản hồi «thiếu chức năng» kèm user_id người báo (ai-CR-078)",

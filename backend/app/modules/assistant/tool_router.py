@@ -54,9 +54,9 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
      r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)|con gi|qua han"),
     #  kh-AI1-2: năng lực đội / tốc độ theo loại việc — nhóm RIÊNG, không nhét vào «work» (lõi bot coi nhóm thiếu công cụ là
     #  chưa nạp, sẽ đòi nạp lại; và câu nào có chữ «việc» cũng kéo theo hai công cụ này).
-    ("capacity", frozenset({"team_capacity", "task_type_stats"}),
+    ("capacity", frozenset({"team_capacity", "task_type_stats", "plan_context"}),
      r"ai (dang |con )?ranh|giao cho ai|nen giao|nang luc|tai viec|dang om|trung vi|mat bao lau|ty le lam lai|lam nhanh"
-     r"|phan viec|chia viec"),
+     r"|phan viec|chia viec|ke hoach|len plan"),
     ("ticket", frozenset({"my_tickets", "ticket_create"}),
      r"ho tro|ticket|bao loi|su co|\bit\b|may in|phieu ho tro"),
     ("edit", frozenset({"propose_document_update", "propose_document_delete", "procurement_doc_read"}),

@@ -144,6 +144,72 @@ theo §6: chỉ quản trị (ReportKey 14).
 liệu đã đưa model, kế hoạch đề xuất, bản sau khi người sửa (diff), task đã tạo, và sau khi xong: thời gian thật so với
 ước lượng. Giữ lâu dài.
 
+### 5.2 Hợp đồng đợt A2: đề xuất kế hoạch chờ duyệt (kh-AI1-3, Agent 4 — 22/10/2026, A1 chốt cùng ngày)
+
+**Luồng.** AI soạn kế hoạch bằng `draft_work_plan` → người hỏi xác nhận (Telegram nhắn «tạo», MCP `confirm_draft`) →
+máy chủ **lưu một đề xuất trạng thái Chờ duyệt**, chưa tạo việc → người duyệt mở màn *Duyệt kế hoạch AI* (Agent 3), sửa
+người / giờ / dòng, bấm **Duyệt** thì máy chủ mới dựng bảng Dự án bằng đúng `work/plan_service.build` hiện có. Bản AI soạn
+giữ nguyên để học; bản người sửa lưu riêng. Có công tắc `ai_plan_review_enabled` (mặc định TẮT tới khi màn của Agent 3
+lên dev): tắt thì «tạo» vẫn dựng bảng ngay như bao-CR-616 nhưng ghi một đề xuất trạng thái riêng *Tạo thẳng* — không
+lẫn với lần người thật duyệt. Người duyệt là **chính người hỏi AI** (A1 chốt; hướng trưởng phòng duyệt chờ đại ca).
+
+**Bảng `tab_ai_plan_proposal`** (DB ERP, AuditMixin):
+
+| Cột | Kiểu | Nghĩa |
+|---|---|---|
+| `status` | SMALLINT | `AiPlanStatus`: 1 Chờ duyệt · 2 Đã duyệt · 3 Từ chối · 4 Đã hủy · 5 Tạo thẳng (chưa qua duyệt) |
+| `owner_user_id` / `owner_employee_id` | BIGINT | Người hỏi AI (chủ đề xuất) |
+| `department_id` | BIGINT | Phòng của chủ lúc lập (0 = chưa gắn) — để lọc, không dùng gác quyền đợt này |
+| `channel` | SMALLINT | Kênh `AI_CHANNEL_*` (1 web · 2 Telegram · 3 MCP · 4 Zalo) lúc người hỏi xác nhận |
+| `title` / `goal` | VARCHAR(200) / TEXT | Tên kế hoạch / mục tiêu người hỏi nói |
+| `deadline` | DATE NULL | Hạn chót cả kế hoạch |
+| `plan_ai` | JSON | Bản AI soạn — **không bao giờ sửa** sau khi lưu |
+| `plan_final` | JSON NULL | Bản người sửa (NULL = chưa sửa); lúc duyệt là bản dùng để tạo việc |
+| `diff` | JSON NULL | Tóm tắt khác nhau AI ↔ người, tính lúc duyệt: số việc thêm / bỏ / đổi người / đổi giờ / đổi hạn |
+| `list_id` | BIGINT | Bảng Dự án tạo ra khi duyệt (0 = chưa) |
+| `decided_at` / `decided_by` | DATETIME / BIGINT | Lúc và người duyệt / từ chối |
+| `reject_reason` | VARCHAR(500) | Lý do từ chối |
+
+**Khuôn kế hoạch** (dùng cho cả `plan_ai` và `plan_final`, trùng khuôn `draft` của `draft_work_plan` hiện nay, thêm ba ô
+mới và `key`):
+
+```json
+{
+  "title": "Tiếp khách Trung Quốc", "description": "", "deadline": "2026-10-30",
+  "phases": [{"name": "Chuẩn bị", "tasks": [{
+    "key": "p1t1",
+    "title": "Đặt phòng họp", "description": "",
+    "assignees": [{"employee_id": 12, "code": "NSU012", "name": "Nguyễn A"}],
+    "start_date": "2026-10-23", "due_date": "2026-10-24", "priority": "Ưu tiên",
+    "criteria": ["Có xác nhận đặt phòng"],
+    "estimate_hours": 2.5,
+    "task_type": {"id": 3, "name": "Hậu cần"},
+    "assignee_reason": "Ít việc đang ôm nhất phòng, đã làm 9 việc Hậu cần, trung vị 1 ngày",
+    "subtasks": [{"key": "p1t1s1", "title": "...", "assignees": [], "...": "cùng khuôn, không có subtasks"}]
+  }]}],
+  "assumptions": ["..."], "counts": {"phases": 1, "tasks": 1, "subtasks": 1}
+}
+```
+
+- `key` do máy chủ đặt lúc lưu bản AI (`p<giai đoạn>t<việc>` / `...s<việc con>`), giữ nguyên qua các lần sửa; dòng
+  người thêm mới thì để trống, máy chủ đặt `n1`, `n2`… Dùng để so bản AI với bản người.
+- `estimate_hours`: số giờ làm thật, `0 < h ≤ 999`, NULL = AI chưa ước. `task_type`: NULL hoặc một loại việc đang dùng
+  trong danh mục Loại việc. `assignee_reason`: ≤ 300 ký tự, AI viết, người sửa được.
+- Trần như `draft_work_plan`: 12 giai đoạn · 30 việc mỗi giai đoạn · 7 việc con · 3 tiêu chí.
+
+**Đường API** (gác `work_task`; đợt này chỉ **chủ đề xuất** thấy và thao tác được, quản trị chưa có màn chung):
+
+| Đường | Quyền | Việc |
+|---|---|---|
+| `GET /api/ai-plans?status=&page=&page_size=` | `work_task.read` | Danh sách của tôi: `id, status, status_label, title, deadline, channel_label, counts, created_at, list_id` |
+| `GET /api/ai-plans/{id}` | `work_task.read` | Đủ các cột trên + `plan` (= `plan_final` nếu có, không thì `plan_ai`) + `list_url` |
+| `PUT /api/ai-plans/{id}` | `work_task.create` | Thân `{"plan": <khuôn>}` — chỉ khi Chờ duyệt; máy chủ chuẩn hóa lại như `draft_work_plan` (người theo `employee_id` phải còn làm, ngày đúng dạng, trần), lỗi → 422 mã `PLAN_INVALID`, `details.problems[] = {phase, task, subtask, key, field, message}` (vị trí đếm từ 0, null = cấp kế hoạch) |
+| `POST /api/ai-plans/{id}/approve` | `work_task.create` | Thân `{"plan"?: <khuôn>}` — có thì lưu làm bản người trước; dựng bảng Dự án, trả `{list_id, list_url}`; gọi lại khi đã duyệt → 409 |
+| `POST /api/ai-plans/{id}/reject` | `work_task.read` | Thân `{"reason": "..."}` (≤ 500) |
+
+Đề xuất của người khác và đề xuất không tồn tại trả **cùng 404**. Bộ mã `ai_plan_status` khai ở `status_catalog` để
+`gen_status_ts.py` sinh bản TypeScript cho Agent 3.
+
 ## 6. Quyền và quyền riêng tư
 
 **Đại ca chốt 20/10/2026:** *"chỉ có quyền quản trị là cao nhất là được thao tác"* — dữ liệu hồ sơ cách làm việc chỉ

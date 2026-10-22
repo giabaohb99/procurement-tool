@@ -300,4 +300,55 @@ TASK_TYPE_STATS_SPEC = ToolSpec(
     handler=_task_type_stats,
 )
 
-CAPABILITY_SPECS = [TEAM_CAPACITY_SPEC, TASK_TYPE_STATS_SPEC]
+def _similar_plans(ctx: ToolContext, goal: str) -> list[dict]:
+    """Đề xuất kế hoạch CỦA CHÍNH người hỏi có tên chung ≥ 2 chữ với mục tiêu — để AI xem lần trước người sửa gì."""
+    from app.modules.ai_plan.model import AiPlanProposal
+    from app.modules.ai_plan.service import serialize
+    from app.modules.assistant.glossary import fold
+
+    words = {w for w in fold(goal).split() if len(w) >= 2}
+    if len(words) < 2:
+        return []
+    rows = (ctx.db.query(AiPlanProposal).filter(AiPlanProposal.owner_user_id == int(ctx.user.id))
+            .order_by(AiPlanProposal.id.desc()).limit(200).all())
+    hits = [r for r in rows if len(words & set(fold(r.title).split())) >= 2][:5]
+    return [{**{k: v for k, v in serialize(r).items() if k in ("id", "title", "status_label", "counts", "review_url")},
+             "diff": r.diff} for r in hits]
+
+
+def _plan_context(ctx: ToolContext, args: dict) -> dict:
+    from app.modules.work.task_type_model import WorkTaskType
+
+    if not ctx.can("work_task", "create"):
+        return _deny("bối cảnh lập kế hoạch việc")
+    goal = str(args.get("goal") or "").strip()[:500]
+    team = _team_capacity(ctx, {"department": args.get("department"), "kind": "work_task", "limit": MAX_PEOPLE})
+    speed = (_task_type_stats(ctx, {"kind": "work_task", "department": args.get("department")})
+             if _has_full_view(ctx) else None)
+    types = (ctx.db.query(WorkTaskType.id, WorkTaskType.code, WorkTaskType.name, WorkTaskType.default_estimate_hours)
+             .filter(WorkTaskType.is_active.is_(True)).order_by(WorkTaskType.sort_order, WorkTaskType.id).limit(50).all())
+    return {"goal": goal, "team": team,
+            "speed_by_task_type": speed if speed is not None else {"note": KEY_HINT},
+            "task_types": [{"id": int(t.id), "code": t.code, "name": t.name,
+                            "default_estimate_hours": float(t.default_estimate_hours) if t.default_estimate_hours else None}
+                           for t in types],
+            "similar_plans": _similar_plans(ctx, goal),
+            "note": ("Dùng gói này để soạn draft_work_plan: chọn người theo thứ tự team (giải thích ở assignee_reason), ước "
+                     "estimate_hours theo trung vị loại việc hoặc giờ mặc định của loại, task_type lấy đúng tên trong "
+                     "task_types; xem similar_plans.diff để biết lần trước người duyệt hay sửa gì. Đây là ĐỀ XUẤT, người "
+                     "hỏi duyệt mới tạo việc.")}
+
+
+PLAN_CONTEXT_SPEC = ToolSpec(
+    name="plan_context",
+    description=("Gom MỘT LẦN bối cảnh để lập kế hoạch việc trước khi gọi draft_work_plan: thứ tự người nên giao trong "
+                 "phòng (team_capacity), tốc độ theo loại việc (nếu được xem), danh mục loại việc kèm giờ mặc định, và "
+                 "các kế hoạch tương tự mình đã lập kèm phần người duyệt đã sửa. Dùng khi 'lập kế hoạch', 'chia việc "
+                 "cho phòng', 'lên plan' cho một mục tiêu."),
+    parameters={"type": "object", "properties": {
+        "goal": {"type": "string", "description": "Mục tiêu kế hoạch (một câu)."},
+        "department": {"type": "string", "description": "Tên hoặc mã phòng; bỏ trống = phòng mình phụ trách."}}},
+    handler=_plan_context,
+)
+
+CAPABILITY_SPECS = [TEAM_CAPACITY_SPEC, TASK_TYPE_STATS_SPEC, PLAN_CONTEXT_SPEC]

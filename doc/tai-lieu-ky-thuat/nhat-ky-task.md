@@ -16009,7 +16009,31 @@ Bài kiểm: `test_assistant_nang_luc_doi_kh_ai1_2.py`
 
 **Điều kiện xong:** đề xuất lưu được, duyệt thì sinh việc trong Dự án đúng người; bản AI và bản người sửa đều còn để học.
 
-Mã nguồn: kế hoạch AI1-3 · doc 22 §7
+**Đã làm**
+- Chốt khuôn dữ liệu ở doc 22 mục 5.2 và gửi Agent 3 ngày 22/10. A1 chốt: người duyệt là chính người hỏi AI; có công tắc
+  *Kế hoạch AI soạn phải chờ duyệt* mặc định tắt tới khi màn của Agent 3 lên dev.
+- Thêm bảng *đề xuất kế hoạch AI* giữ bản AI soạn (không bao giờ sửa), bản người sửa và phần khác nhau giữa hai bản (thêm,
+  bỏ, đổi người, đổi giờ, đổi hạn) tính lúc duyệt, để vòng học sau so lại.
+- Năm đường API: danh sách đề xuất của tôi, xem một đề xuất, lưu bản sửa, duyệt (lúc này mới dựng bảng Dự án bằng đúng
+  hàm bot đang dùng), từ chối. Đề xuất của người khác trả cùng câu *không thấy* như đề xuất không có. Lỗi khuôn trả từng
+  lỗi kèm vị trí giai đoạn / việc / ô để màn duyệt tô đúng chỗ.
+- Công tắc tắt: nhắn *tạo* trên Telegram hay xác nhận qua ứng dụng AI vẫn tạo bảng ngay như trước, đồng thời ghi đề xuất
+  trạng thái riêng *Tạo thẳng* để dữ liệu học không lẫn với lần người thật duyệt. Công tắc bật: chỉ lưu đề xuất chờ duyệt,
+  trả đường dẫn màn duyệt, chưa tạo việc. Chỉ đổi đúng nhánh kế hoạch của lớp nháp dùng chung, không đổi câu chữ hay nút
+  của bot; các loại phiếu khác giữ nguyên.
+- Công cụ soạn kế hoạch nay có thêm giờ ước lượng, loại việc (khớp danh mục Loại việc) và lý do chọn người. Thêm công cụ
+  *plan_context* gom một lần thứ tự người nên giao, tốc độ theo loại việc (nếu được xem), danh mục loại việc và các kế
+  hoạch tương tự chính mình đã lập kèm phần người duyệt đã sửa.
+
+**Kết quả:** 10 bài kiểm mới đạt; cùng các bài canh cửa của Trợ lý, cổng nối AI, lõi bot, phạm vi, bộ mã trạng thái và
+bài kế hoạch bao-CR-616 tổng 424 bài đạt. Bài canh độ dài ô chữ còn đỏ ở năm khuôn của phân hệ Dự án và Nhân sự có từ
+trước, không do việc này. Mã ở nhánh `agent4/kh-ai1-3-de-xuat` trên máy em, chưa lên erp-v2.
+
+**Còn lại:** Agent 3 dựng màn duyệt; rà mã; đại ca gật thì đẩy lên erp-v2. Hướng B để đại ca chọn sau: trưởng phòng duyệt
+thay cho chính người hỏi. Bật công tắc trên dev chỉ sau khi màn duyệt lên, và cần cho phép sửa câu chữ của bot cho đẹp.
+
+Mã nguồn: `modules/ai_plan/` (model, service, schema, controller), `core/ai_plan_codes.py`, migration `aiplan01`, `agent_hub/draft_create.py` (nhánh kế hoạch), `assistant/tools/work_tool.py`, `assistant/tools/capability_tool.py` (plan_context) · doc 22 §5.2
+Bài kiểm: `test_ai_plan_de_xuat_kh_ai1_3.py`
 
 ## kh-AI2-3 | Công cụ AI cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận
 - list: Kế hoạch hệ agent

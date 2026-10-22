@@ -193,6 +193,9 @@ class Settings(BaseSettings):
     # Sau mỗi buổi chat RIÊNG đã tóm tắt, một lượt model rẻ rút điều bền về người đó; nhắc lại ≥ 3 lần trên ≥ 2 ngày mới
     # ghi vào lõi sổ nhớ (đuôi «tự rút»). Tắt thì sổ ý định vẫn ghi, chỉ thôi rút.
     AGENT_AUTO_MEMORY_ENABLED: bool = True
+    # kh-AI1-3: kế hoạch AI soạn phải nằm chờ duyệt trên màn «Duyệt kế hoạch AI» rồi mới tạo việc. TẮT tới khi màn đó lên
+    # (Agent 3); tắt thì «tạo» dựng bảng Dự án ngay như bao-CR-616 và ghi đề xuất trạng thái «Tạo thẳng».
+    AI_PLAN_REVIEW_ENABLED: bool = False
     # ai-CR-229 (prod đợt hai 19/10: «tắt mọi vòng tốn tiền model»): cờ riêng cho ba vòng chạy nền gọi model. Mặc định BẬT
     # để dev giữ nguyên; prod đặt false.
     #   AGENT_BRIEFS_ENABLED          — bản tin / điểm báo theo giờ (agent-briefs-due) + nhắc trước họp (agent-meeting-reminders)

@@ -303,6 +303,8 @@ _ASSUMPTION_TEXT = {
     "sunday": "có hạn rơi vào Chủ nhật — anh/chị xem có dời không",
     "long": "kéo dài hơn mức ngày công của luật mà chưa chia được thêm — anh/chị xem có tách không",
     "trimmed": "có quá nhiều việc con, em giữ đúng số tối đa của luật",
+    "task_type": "loại việc không khớp danh mục Loại việc, em để trống",
+    "hours": "giờ ước lượng không hợp lệ (phải lớn hơn 0, tối đa 999), em để trống",
 }
 
 
@@ -362,7 +364,11 @@ def _plan_task(ctx: ToolContext, raw: dict, policy: dict, assumptions: dict, pro
     out = {"title": title, "assignees": people, "start_date": start, "due_date": due,
            "priority": _plan_priority(str(raw.get("priority") or ""), str(policy.get("default_priority"))),
            "criteria": criteria, "description": str(raw.get("description") or "")[:2000],
-           "_own_criteria": bool(raw.get("criteria"))}
+           "_own_criteria": bool(raw.get("criteria")),
+           #  kh-AI1-3 (doc/erp/tai-lieu-ai/22 §5.2): giờ ước lượng, loại việc, lý do chọn người — để người duyệt xem.
+           "estimate_hours": _plan_hours(raw.get("estimate_hours"), title, assumptions),
+           "task_type": _plan_task_type(ctx, raw.get("task_type"), title, assumptions),
+           "assignee_reason": " ".join(str(raw.get("assignee_reason") or "").split())[:300]}
     if allow_sub:
         subs_raw = raw.get("subtasks") or []
         if not isinstance(subs_raw, list):
@@ -381,6 +387,37 @@ def _plan_task(ctx: ToolContext, raw: dict, policy: dict, assumptions: dict, pro
                     subs.append(sub)
         out["subtasks"] = subs
     return out
+
+
+def _plan_hours(raw, title: str, assumptions: dict) -> float | None:
+    if raw in (None, ""):
+        return None
+    try:
+        hours = round(float(raw), 2)
+        if 0 < hours <= 999:
+            return hours
+    except (TypeError, ValueError):
+        pass
+    _note(assumptions, "hours", title)
+    return None
+
+
+def _plan_task_type(ctx: ToolContext, raw, title: str, assumptions: dict) -> dict | None:
+    """Tên / mã loại việc → `{id, name}` trong danh mục Loại việc đang dùng; không khớp đúng một → để trống + ghi giả định."""
+    from app.modules.assistant.glossary import fold
+    from app.modules.work.task_type_model import WorkTaskType
+
+    text = " ".join(str(raw or "").split())[:120]
+    if not text:
+        return None
+    rows = ctx.db.query(WorkTaskType.id, WorkTaskType.code, WorkTaskType.name).filter(WorkTaskType.is_active.is_(True)).all()
+    key = fold(text)
+    hit = ([r for r in rows if (r.code or "").lower() == text.lower()] or [r for r in rows if fold(r.name or "") == key]
+           or [r for r in rows if key and key in fold(r.name or "")])
+    if len(hit) != 1:
+        _note(assumptions, "task_type", title)
+        return None
+    return {"id": int(hit[0].id), "name": hit[0].name}
 
 
 def _draft_work_plan(ctx: ToolContext, args: dict) -> dict:
@@ -468,7 +505,11 @@ _SUB_SCHEMA = {"type": "object", "properties": {
     "due_date": {"type": "string", "description": "YYYY-MM-DD"},
     "priority": {"type": "string", "description": "Gấp · Ưu tiên · Thường"},
     "criteria": {"type": "array", "items": {"type": "string"}, "description": "1–3 tiêu chí đo được."},
-    "description": {"type": "string"}},
+    "description": {"type": "string"},
+    #  kh-AI1-3: ước giờ theo team_capacity / task_type_stats (trung vị), loại việc trong danh mục, lý do chọn người.
+    "estimate_hours": {"type": "number", "description": "Giờ làm thật ước lượng (0 < giờ ≤ 999)."},
+    "task_type": {"type": "string", "description": "Tên hoặc mã loại việc trong danh mục Loại việc của Dự án."},
+    "assignee_reason": {"type": "string", "description": "Một câu vì sao chọn người này (tải, tốc độ, kinh nghiệm)."}},
     "required": ["title"]}
 _TASK_SCHEMA = {"type": "object", "properties": {**_SUB_SCHEMA["properties"],
                                                  "subtasks": {"type": "array", "items": _SUB_SCHEMA,
