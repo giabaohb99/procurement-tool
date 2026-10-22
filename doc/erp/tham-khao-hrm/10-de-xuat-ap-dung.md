@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Tham khảo hệ thống HRM HrOnline |
-| Bản | 1.1 — 01/10/2026 (thêm §0 tình trạng thực hiện từng mục, đối chiếu mã nguồn) · 1.0 — 11/08/2026 |
+| Bản | 1.2 — 22/10/2026 (tách từng mục V2/V3 ở §0, thêm §0.1 thứ tự phần còn lại; duoc-CR-658) · 1.1 — 01/10/2026 (thêm §0 tình trạng thực hiện từng mục, đối chiếu mã nguồn) · 1.0 — 11/08/2026 |
 | Dùng để làm gì | Chuyển kết quả khảo sát thành **thứ tự làm việc** và **danh sách sửa đổi trên mã nguồn hiện có** |
 | Ai đọc | Đội phần mềm, người chủ trì, ban lãnh đạo |
 | Quan hệ với các mục khác | Đây là **mục quyết định thứ tự chung**. Cột "Nên lấy" trong từng mục tính năng chỉ xét riêng trong mục đó; chỗ nào khác nhau thì lấy theo tài liệu này |
@@ -12,7 +12,28 @@
 
 ## 0. Tình trạng thực hiện (đối chiếu mã nguồn 01/10/2026)
 
-Bảng này theo dõi từng mục của §3. Chỉ ghi «Xong» khi tìm được chỗ trong mã nhánh `erp-v2`.
+**Tóm tắt nhanh (22/10/2026)** — so với danh sách chức năng của một phần mềm HRM thương mại:
+
+| Nhóm | Mức độ | Đã có gì | Còn thiếu |
+|---|---|---|---|
+| Hồ sơ nhân viên | **Đã có** | ~38 trường, người báo tin, thành viên gia đình; trường nhạy cảm (CCCD, ngân hàng, BHXH) chỉ người có quyền mới thấy; nhập Excel có hoàn tác; nhân viên tự sửa phần liên hệ | Nhân viên tự khai các nhóm còn lại; in phiếu thông tin nhân viên |
+| Cơ cấu tổ chức | **Đã có** | Pháp nhân, phòng ban cha con, chức vụ, cấp bậc, kiêm nhiệm, quản lý trực tiếp (chặn vòng) | Sơ đồ tổ chức vẽ từ dữ liệu |
+| Hợp đồng lao động | **Đã có** | Mẫu Word theo từng pháp nhân, biến mẫu khai được, sinh tệp, tải bản ký, cảnh báo sắp hết hạn, «Hợp đồng của tôi» | Phụ lục hợp đồng |
+| Quyết định nhân sự | **Bản gọn** | Quá trình công tác: tuyển dụng, điều chuyển, bổ nhiệm, kiêm nhiệm, miễn nhiệm, thôi việc; có tệp quyết định, «Áp» vào hồ sơ; thôi việc tự khóa tài khoản | Phiếu nhiều người có tờ trình + duyệt; khen thưởng / kỷ luật; đi làm lại |
+| Nghỉ phép | **Đã có, đầy đủ** | Đơn nhiều loại nghỉ, nửa ngày, theo giờ; quỹ phép năm theo thâm niên; kết sổ cuối năm; ngày lễ; lịch nghỉ; duyệt qua bộ máy duyệt chung | Cờ «Bắt buộc đính kèm» chưa có tác dụng; báo cáo đối chiếu kết sổ |
+| Lịch làm việc | **Đã có** | Mẫu lịch tuần, gán theo 4 cấp; dùng để tính đúng số ngày nghỉ (không phải chấm công) | — |
+| Phân quyền | **Đã có, mạnh hơn mặt bằng** | Vai trò + phạm vi dữ liệu theo từng người; quyền mặc định theo chức vụ (đổi chức vụ là quyền tự đổi theo) | Màn liệt kê việc treo trước khi khóa tài khoản (V0-4) |
+| Báo cáo | **Đã có** | Biến động nhân sự, tình hình nghỉ phép, quỹ phép năm, trang Tổng quan Nhân sự | Dashboard động (V3-5) |
+| Khối dùng chung | **Đã có** | Bộ máy duyệt, Văn bản, Đặt phòng họp, Đặt xe, Dự án / công việc, thông báo (chuông, email, push) | — |
+| Chấm công · Lương | **Không làm** | Đại ca chốt 16/10/2026 | Kéo theo: tăng ca, bổ sung công, phụ cấp, thuế TNCN, điều chỉnh lương |
+| Nhận việc / nghỉ việc · Tài sản cấp phát | **Chưa bắt đầu** | — | Toàn bộ (V2-1, V2-2, V2-3) |
+| Tuyển dụng | **Chưa bắt đầu** | — | Toàn bộ (V3-3) |
+| Đánh giá KPI / OKR | **Chưa bắt đầu** | — | Toàn bộ (V3-2) |
+| Bảo hiểm xã hội · Đào tạo | **Chưa bắt đầu** | Hồ sơ có ô số sổ BHXH | Cần hỏi phòng Nhân sự có nhu cầu thật không |
+
+Gọn một câu: phần **nền** và phần **hồ sơ · hợp đồng · nghỉ phép** đã ngang mặt bằng; phần trống là **tuyển dụng, đánh giá, nhận việc / nghỉ việc, tài sản, bảo hiểm, đào tạo**. Thứ tự đề xuất ở §0.1.
+
+Bảng dưới theo dõi từng mục của §3. Chỉ ghi «Xong» khi tìm được chỗ trong mã nhánh `erp-v2`.
 Chi tiết phần hồ sơ nhân sự xem [`../hrm/01-ho-so-nhan-su.md` §7.10](../hrm/01-ho-so-nhan-su.md).
 
 | Mã | Việc | Tình trạng | Ghi chú |
@@ -29,14 +50,33 @@ Chi tiết phần hồ sơ nhân sự xem [`../hrm/01-ho-so-nhan-su.md` §7.10](
 | V1-6 | Cấu hình loại đơn từ (loại nghỉ + bậc thâm niên) | **Xong** | **Lỗ:** cờ «Bắt buộc đính kèm» hiện trên form nhưng không được kiểm lúc gửi duyệt |
 | V1-7 | Đơn nghỉ phép + quỹ phép năm | **Xong** | CR-259, -260 và các bản vá sau; báo cáo nghỉ phép duoc-CR-548 |
 | V1-8 | Quyết định điều chuyển và bổ nhiệm | **Bản gọn đã làm (duoc-CR-585)** — lịch sử công tác ghi tay theo người, tệp QĐ, hỏi rồi áp hồ sơ. **Còn:** phiếu nhiều người, tờ trình, duyệt, «Thay thế cho». | duoc-CR-585 |
-| V2-1 … V2-3, V2-5 | Onboarding/Offboarding, thôi việc, tài sản, quyết định khác | **Chưa bắt đầu** | |
-| V2-4 | Chấm công | **Không làm** | Đại ca chốt 16/10/2026. Lịch làm việc (duoc-CR-589) chỉ để tính ngày nghỉ phép |
+| V2-1 | Onboarding / Offboarding — danh sách việc khi một người vào và ra | **Chưa bắt đầu** | Hiện chỉ có dòng «Thôi việc» ở quá trình công tác + tự khóa tài khoản |
+| V2-2 | Quyết định thôi việc đầy đủ, có thẻ bàn giao | **Chưa bắt đầu** | Chờ V0-4 (màn kiểm việc treo) và V2-3 |
+| V2-3 | Tài sản cấp cho nhân viên: danh sách, cấp, thu hồi, biên bản bàn giao | **Chưa bắt đầu** | `modules/inventory` là kho hàng mua về, không theo dõi tài sản đang trong tay ai |
+| V2-4 | Chấm công | **Không làm** | Đại ca chốt 16/10/2026. Lịch làm việc (duoc-CR-589) chỉ để tính ngày nghỉ phép. Kéo theo: không làm đơn tăng ca, bổ sung công |
+| V2-5 | Các quyết định nhân sự còn lại: khen thưởng / kỷ luật (QĐ5), đi làm lại (QĐ4), phụ lục hợp đồng (QĐ6) | **Chưa bắt đầu** | Mã 7 của `WorkEventType` đã chừa cho «Đi làm lại». Điều chỉnh lương (QĐ3) bỏ theo V3-1 |
 | V2-6 | Sơ đồ tổ chức vẽ từ dữ liệu | **Chưa bắt đầu** | Dữ liệu nền (V1-1, V1-3) đã đủ — làm rẻ |
-| V3-1 | Lương / phiếu lương điện tử | **Không làm** | Đại ca chốt 16/10/2026 |
-| V3-2 … V3-5 | Đánh giá, tuyển dụng, bảo hiểm, dashboard động | **Chưa bắt đầu** | |
+| V3-1 | Lương / phiếu lương điện tử | **Không làm** | Đại ca chốt 16/10/2026. Kéo theo: không phụ cấp, khoản cộng trừ, thuế TNCN |
+| V3-2 | Đánh giá (KPI / OKR): tiêu chí, kỳ, phiếu tự chấm + quản lý chấm, kết quả | **Chưa bắt đầu** | Không còn ràng với lương vì V3-1 đã bỏ. Chặn bởi: công ty chốt cách đánh giá. Báo cáo năng lực theo loại việc (duoc-CR-657) lấy số từ Dự án, không thay được |
+| V3-3 | Tuyển dụng: định biên, nhu cầu tuyển, ứng viên, phỏng vấn, offer → nhân viên | **Chưa bắt đầu** | Dựa được vào `approval/` (duyệt nhu cầu tuyển) và quá trình công tác (sự kiện HIRE) |
+| V3-4 | Bảo hiểm xã hội: tăng / giảm lao động, mức đóng, mẫu D02 | **Chưa bắt đầu** | Hồ sơ mới có ô số sổ BHXH. **Hỏi trước:** công ty tự khai hay thuê dịch vụ |
+| V3-5 | Dashboard động, nhúng công cụ báo cáo ngoài | **Chưa bắt đầu** | |
+| — | Đào tạo (khóa học, lớp, kết quả) · Lộ trình sự nghiệp · Đơn công tác | **Chưa có trong lộ trình** | HrOnline có (E-Learning, NS5, DT3). **Hỏi trước:** có nhu cầu thật không |
 
 Ngoài lộ trình đã làm thêm: Đặt phòng họp (duoc-CR-279), tab Tài khoản trên hồ sơ, nhân viên tự sửa
-liên hệ (bao-CR-508), trang Tổng quan Nhân sự, ba báo cáo Nhân sự trong phân hệ Báo cáo (duoc-CR-548).
+liên hệ (bao-CR-508), trang Tổng quan Nhân sự, ba báo cáo Nhân sự trong phân hệ Báo cáo (duoc-CR-548),
+Lịch làm việc theo bốn cấp (duoc-CR-589), Quá trình công tác (duoc-CR-585), Nhập Excel nhân sự (duoc-CR-628),
+biến mẫu HĐLĐ + «Hợp đồng của tôi» (duoc-CR-630, -652), Quyền mặc định theo chức vụ (duoc-CR-653).
+
+### 0.1. Thứ tự đề xuất cho phần còn lại (22/10/2026)
+
+| Bước | Việc | Vì sao trước |
+|---|---|---|
+| 1 | V0-4 + V2-1 + V2-3 (+ V2-2): màn việc treo, danh sách việc vào / ra, tài sản cấp phát, thôi việc có bàn giao | Đi chung, nhỏ, nối thẳng vào hồ sơ + quá trình công tác đã có. Vá rủi ro thật: người nghỉ chưa trả máy, chưa bàn giao việc |
+| 2 | V3-3 Tuyển dụng | Khối lớn nhất nhưng không bị chặn; phần nền (duyệt, sự kiện HIRE) đã có |
+| 3 | V3-2 Đánh giá | Cần công ty chốt cách đánh giá trước, không chép từ phần mềm ngoài (Đ2) |
+| 4 | V2-6 Sơ đồ tổ chức · V2-5 quyết định còn lại | Rẻ, làm xen khi rảnh |
+| — | V3-4 Bảo hiểm · Đào tạo | Chỉ làm nếu phỏng vấn phòng Nhân sự trả lời là cần |
 
 ---
 

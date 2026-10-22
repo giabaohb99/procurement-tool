@@ -11,10 +11,10 @@ Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
 |------|-----------|
 | [01-phieu-khao-sat.md](01-phieu-khao-sat.md) | Phiếu khảo sát (NCC + Sản phẩm) |
 | [16-du-an-cong-viec.md](16-du-an-cong-viec.md) | Dự án — quản lý công việc (ERP v2) |
-| [17-nghi-phep.md](17-nghi-phep.md) | Nghỉ phép — đơn nghỉ · quỹ phép năm · lịch nghỉ (ERP v2, trong phân hệ Nhân sự) |
+| [../erp/hrm/02-nghi-phep.md](../erp/hrm/02-nghi-phep.md) | Nghỉ phép — đơn nghỉ · quỹ phép năm · lịch nghỉ (ERP v2, trong phân hệ Nhân sự) — **đã dời sang `doc/erp/hrm/`** (22/10/2026) |
 | [18-dat-phong-hop.md](18-dat-phong-hop.md) | Đặt phòng họp — lịch phòng · phiếu đặt chạy qua bộ máy duyệt · danh mục phòng (ERP v2, trong phân hệ Nhân sự) |
 | [19-bao-cao-thuc-hien-ycbg.md](19-bao-cao-thuc-hien-ycbg.md) | Báo cáo thực hiện — khối theo dõi tiến trình thương vụ trên chi tiết Yêu cầu báo giá (ERP v2). Xem thêm TDD kỹ thuật [`tdd-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
-| [21-lich-lam-viec.md](21-lich-lam-viec.md) | Lịch làm việc — mẫu lịch tuần · gán theo 4 cấp · tính ngày công · xem lịch (ERP v2, trong phân hệ Nhân sự) |
+| [../erp/hrm/03-lich-lam-viec.md](../erp/hrm/03-lich-lam-viec.md) | Lịch làm việc — mẫu lịch tuần · gán theo 4 cấp · tính ngày công · xem lịch (ERP v2, trong phân hệ Nhân sự) — **đã dời sang `doc/erp/hrm/`** (22/10/2026) |
 | [22-ket-noi-ai-rieng-va-kho-skill.md](22-ket-noi-ai-rieng-va-kho-skill.md) | Kết nối AI riêng + Kho skill AI — khóa kết nối · nối Claude / Cursor / Gemini · công cụ và skill · quản trị kho skill · nhật ký và lỗi (ERP v2, Trang cá nhân + phân hệ Kho skill AI) |
 
 Danh sách đầy đủ ở [00-muc-luc.md](00-muc-luc.md); bảng trên chỉ liệt kê vài mục

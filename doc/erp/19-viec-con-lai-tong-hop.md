@@ -60,7 +60,7 @@ commit `b5787ccc` nằm trên `origin/main`). Dòng change-log-bao còn ghi "pro
 
 Bước kế tiếp ghi trong doc: V1-8 quyết định điều chuyển/bổ nhiệm, V2-6 sơ đồ tổ chức vẽ từ dữ liệu.
 
-### 3.2. Nghỉ phép — mục còn mở (`doc/tai-lieu-chuc-nang/17-nghi-phep.md` §7.1, §10)
+### 3.2. Nghỉ phép — mục còn mở (`doc/erp/hrm/02-nghi-phep.md` §7.1, §10)
 
 - Đính kèm trên đơn: cột `require_attachment` có, chưa nối kho tệp.
 - Ô bàn giao trên form v2: bảng + API có, giao diện chưa.

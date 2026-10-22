@@ -4,7 +4,7 @@ paths:
   - "backend/app/modules/approval/**"
   - "frontend-v2/src/modules/hr/**"
   - "test/backend/*nghi_phep*"
-  - "doc/tai-lieu-chuc-nang/17-nghi-phep.md"
+  - "doc/erp/hrm/02-nghi-phep.md"
 ---
 # Phân hệ NGHỈ PHÉP (CR-259, 03/09/2026)
 
@@ -12,7 +12,7 @@ paths:
 
 
 Nằm **trong phân hệ Nhân sự** (`frontend-v2/src/modules/hr/`, menu *Nghỉ phép*),
-backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/erp/hrm/02-nghi-phep.md`.
 
 - ⚠️ **Bốn khóa quyền mới** — `leave_request` · `leave_balance` · `leave_type` · `holiday`
   (ENTITIES 46 → **50**). Tách bốn vì `leave_balance` ghi được nghĩa là **tặng thêm
@@ -35,9 +35,9 @@ backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/tai-lieu-chuc-n
   thẳng `balance_service` với `obj.total_days` (trừ tổng vào loại chính là cộng ngày
   không lương vào quỹ phép năm). Chốt xóa loại nghỉ phải hỏi **cả hai bảng**. Điều
   kiện rẽ nhánh luồng duyệt chỉ thấy loại CHÍNH — hạn chế đã biết, xem §7.1 của
-  `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+  `doc/erp/hrm/02-nghi-phep.md`.
 - ⚠️ **Số phép còn lại KHÔNG lưu thành cột** — `balance_service.remaining()` là nơi duy
-  nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()` — **SỬ DỤNG LỊCH LÀM VIỆC của người nghỉ** (`work_schedule/resolver.load_day_plans`), không còn `WEEKEND_DAYS`. Gọi `count_leave_days()` hoặc `count_hourly_days()` **PHẢI truyền `employee=`**, nếu quên thì sẽ tính theo lịch mặc định cho người có lịch riêng, dẫn tới sai âm thầm. Xem chi tiết ở `doc/tai-lieu-chuc-nang/21-lich-lam-viec.md` §7, §12.
+  nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()` — **SỬ DỤNG LỊCH LÀM VIỆC của người nghỉ** (`work_schedule/resolver.load_day_plans`), không còn `WEEKEND_DAYS`. Gọi `count_leave_days()` hoặc `count_hourly_days()` **PHẢI truyền `employee=`**, nếu quên thì sẽ tính theo lịch mặc định cho người có lịch riêng, dẫn tới sai âm thầm. Xem chi tiết ở `doc/erp/hrm/03-lich-lam-viec.md` §7, §12.
 - ⚠️ **Hủy đơn KHÔNG được gọi `block_legacy_path`** (chốt đó chỉ dành cho duyệt/từ chối
   thẳng). Đường hủy đi qua `approval_bridge.cancel_request()` — nó **rút phiên duyệt**
   trước. Không rút thì người duyệt ký xong là hook trừ quỹ cho một tờ đơn đã hủy.
@@ -70,7 +70,7 @@ _Tôi đã duyệt_. Người duyệt không phải sang màn Phê duyệt nữa
   `task.is_overdue` backend vẫn gửi, màn hình thôi không vẽ — bày lại thì đọc cờ
   đó, đừng tự so ngày ở TS) và dòng **«Bấm thay ‹tên›»**, thứ báo cho người được
   ủy quyền biết họ đang ký THAY người khác; nay chỉ còn ở màn chi tiết. Chi tiết
-  ở §8.1 của `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+  ở §8.1 của `doc/erp/hrm/02-nghi-phep.md`.
 - ⚠️ **`defaultHidden` KHÔNG áp cho người đã từng đụng menu «Cột»** của bảng đó:
   `useTableLayout` đọc `readLayout(storageKey) ?? defaultLayout`, có bản lưu
   trong `localStorage` là bản đó thắng. Muốn thấy đúng mặc định mới thì xóa khóa
