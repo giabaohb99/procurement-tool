@@ -888,12 +888,16 @@ def my_permissions(
     """
     doc = _load(db, document_id, user)
     profile = get_perm_profile(db, user)
+    contract_id, can_issue = archive_access.issue_state(db, doc, user, profile)
     return success({
         action: access_service.can(db, doc, user, profile, action)
         for action in ("read", "write", "delete")
     } | {
-        #  duoc-CR-640: bản lưu trữ HĐLĐ — giao diện ẩn các nút chia sẻ / quan hệ / duyệt / ký / ban hành / sao chép.
-        "is_archive": archive_access.contract_of(db, doc) is not None,
+        #  duoc-CR-640: bản lưu trữ HĐLĐ — giao diện ẩn các nút chia sẻ / quan hệ / duyệt / ký / sao chép.
+        "is_archive": contract_id > 0,
+        #  duoc-CR-659: nút «Ban hành» duy nhất của bản lưu trữ = ký HĐ gốc (Nháp → Đã ký).
+        "archive_contract_id": contract_id,
+        "can_issue_archive": can_issue,
     })
 
 
