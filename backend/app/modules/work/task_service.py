@@ -21,6 +21,7 @@ from app.modules.work import serializer as ser
 from app.modules.work import task_enrich
 from app.modules.work import task_outcome_service as outcome_svc
 from app.modules.work import label_value_service as label_values
+from app.modules.work import notify_service as notify
 from app.modules.work import link_service as links
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
                                           WorkTaskLabel)
@@ -171,7 +172,7 @@ def get_task(db: Session, actor: Actor, task_id: int) -> dict:
     return data
 
 
-def create_task(db: Session, actor: Actor, data) -> dict:
+def create_task(db: Session, actor: Actor, data, background_tasks=None) -> dict:
     """Tạo task hoặc VIỆC CON (truyền `parent_id`).
 
     Việc con không nhận `list_id`/`section_id` từ người gọi: nó luôn nằm cùng
@@ -217,7 +218,7 @@ def create_task(db: Session, actor: Actor, data) -> dict:
     db.add(t)
     db.commit()
     if data.assignee_ids:
-        set_assignees(db, actor, t.id, data.assignee_ids, [])
+        set_assignees(db, actor, t.id, data.assignee_ids, [], background_tasks)
     record(db, actor.user_id, AUDIT_TASK, t.id, "create", f"Tạo công việc: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
@@ -322,7 +323,7 @@ def move_task(db: Session, actor: Actor, task_id: int, section_id: int | None,
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
-def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
+def update_task(db: Session, actor: Actor, task_id: int, data, background_tasks=None) -> dict:
     """Sửa task. Kéo sang cột khác = gửi `section_id` + `sort_order` (B-07).
 
     Đánh dấu hoàn thành cũng đi qua đây (`status`): đặt/xóa `completed_at` là
@@ -358,7 +359,8 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
                 t.due_date = t.start_date
             t.start_date = ""
 
-    if data.status is not None and int(data.status) != int(t.status):
+    status_changed = data.status is not None and int(data.status) != int(t.status)
+    if status_changed:
         _apply_status(db, actor, t, int(data.status))
 
     outcome_svc.apply_effort_fields(db, t, data)       # duoc-CR-656: sau trạng thái (giờ thực tế cần DONE)
@@ -366,6 +368,8 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
     t.updated_by = actor.user_id
     db.commit()
     record(db, actor.user_id, AUDIT_TASK, t.id, "update", f"Sửa công việc: {t.title}")
+    if status_changed:
+        notify.notify_status_changed(db, actor, t, int(t.status), background_tasks)   # F-04
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -408,7 +412,7 @@ def delete_task(db: Session, actor: Actor, task_id: int) -> None:
 
 
 def set_assignees(db: Session, actor: Actor, task_id: int,
-                  pic_ids: list[int], follower_ids: list[int]) -> dict:
+                  pic_ids: list[int], follower_ids: list[int], background_tasks=None) -> dict:
     """Đặt lại toàn bộ người phụ trách + người theo dõi của task (B-02).
 
     NHIỀU PIC được, đúng như Lark (Q5). Một người chỉ một vai: có mặt ở cả hai
@@ -419,6 +423,8 @@ def set_assignees(db: Session, actor: Actor, task_id: int,
     pics = [i for i in dict.fromkeys(pic_ids) if i]
     followers = [i for i in dict.fromkeys(follower_ids) if i and i not in pics]
 
+    #  PIC cũ — để chỉ báo cho người MỚI được giao (F-01), lưu lại bộ cũ không báo lại.
+    old_pics = set(notify.watcher_employee_ids(db, task_id, [WorkAssigneeKind.PIC]))
     db.query(WorkTaskAssignee).filter(WorkTaskAssignee.task_id == task_id).delete(
         synchronize_session=False)
     for emp_id in pics:
@@ -431,6 +437,7 @@ def set_assignees(db: Session, actor: Actor, task_id: int,
                                 created_by=actor.user_id, updated_by=actor.user_id))
     db.commit()
     record(db, actor.user_id, AUDIT_TASK, task_id, "update", "Đổi người phụ trách")
+    notify.notify_assigned(db, actor, t, [e for e in pics if e not in old_pics], background_tasks)
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 

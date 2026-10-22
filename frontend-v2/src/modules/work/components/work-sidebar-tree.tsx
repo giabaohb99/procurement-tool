@@ -7,6 +7,8 @@ import {
   MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
+  Pin,
+  PinOff,
   Settings2,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -22,8 +24,10 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
+import { usePinnedLists } from '../hooks/use-pinned-lists'
 import { useWorkSidebar } from '../hooks/use-work-lists'
 import type { WorkGroupNode, WorkList } from '../types/work'
+import { collectSidebarLists } from '../utils/pinned-lists'
 import { dotClass } from '../utils/work-colors'
 
 interface WorkSidebarTreeProps {
@@ -65,6 +69,7 @@ export function WorkSidebarTree({
   onNavigate,
 }: WorkSidebarTreeProps) {
   const { data, isLoading } = useWorkSidebar()
+  const pins = usePinnedLists()
 
   if (isLoading) {
     return (
@@ -79,6 +84,9 @@ export function WorkSidebarTree({
   const groups = data?.groups ?? []
   const loose = data?.lists ?? []
   const trong = groups.length === 0 && loose.length === 0
+  //  Khu ghim: lấy THEO THỨ TỰ ghim, bỏ id không còn trong cây (dự án đã lưu trữ / bị gỡ quyền).
+  const byId = new Map(collectSidebarLists(groups, loose).map((l) => [l.id, l]))
+  const pinnedLists = pins.pinned.flatMap((id) => byId.get(id) ?? [])
 
   return (
     //  Bản HÉ RA bỏ `border-r`: nó nằm trong một thẻ nổi đã có viền riêng, để
@@ -116,11 +124,27 @@ export function WorkSidebarTree({
             Chưa có dự án nào. Bấm dấu cộng ở trên để tạo.
           </p>
         )}
+        {pinnedLists.length > 0 && (
+          <div className="mb-2 border-b pb-2" aria-label="Dự án đã ghim">
+            <p className="px-2 pb-1 text-xs font-medium text-muted-foreground uppercase">Đã ghim</p>
+            {pinnedLists.map((l) => (
+              <ListLink
+                key={l.id}
+                item={l}
+                depth={0}
+                pinned
+                onTogglePin={() => pins.toggle(l.id)}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        )}
         {groups.map((g) => (
           <GroupNode
             key={g.id}
             node={g}
             depth={0}
+            pins={pins}
             onCreateList={onCreateList}
             onCreateGroup={onCreateGroup}
             onManageGroup={onManageGroup}
@@ -129,7 +153,14 @@ export function WorkSidebarTree({
         ))}
         {/* List không thuộc nhóm nào đứng cuối cây — vẫn hợp lệ (A-08). */}
         {loose.map((l) => (
-          <ListLink key={l.id} item={l} depth={0} onNavigate={onNavigate} />
+          <ListLink
+            key={l.id}
+            item={l}
+            depth={0}
+            pinned={pins.isPinned(l.id)}
+            onTogglePin={() => pins.toggle(l.id)}
+            onNavigate={onNavigate}
+          />
         ))}
       </div>
     </nav>
@@ -139,6 +170,7 @@ export function WorkSidebarTree({
 interface GroupNodeProps {
   node: WorkGroupNode
   depth: number
+  pins: ReturnType<typeof usePinnedLists>
   onCreateList: (groupId: number | null) => void
   onCreateGroup: (parentId: number | null) => void
   onManageGroup: (group: WorkGroupNode) => void
@@ -148,6 +180,7 @@ interface GroupNodeProps {
 function GroupNode({
   node,
   depth,
+  pins,
   onCreateList,
   onCreateGroup,
   onManageGroup,
@@ -227,6 +260,7 @@ function GroupNode({
               key={c.id}
               node={c}
               depth={depth + 1}
+              pins={pins}
               onCreateList={onCreateList}
               onCreateGroup={onCreateGroup}
               onManageGroup={onManageGroup}
@@ -234,7 +268,14 @@ function GroupNode({
             />
           ))}
           {node.lists.map((l) => (
-            <ListLink key={l.id} item={l} depth={depth + 1} onNavigate={onNavigate} />
+            <ListLink
+              key={l.id}
+              item={l}
+              depth={depth + 1}
+              pinned={pins.isPinned(l.id)}
+              onTogglePin={() => pins.toggle(l.id)}
+              onNavigate={onNavigate}
+            />
           ))}
         </>
       )}
@@ -245,26 +286,49 @@ function GroupNode({
 function ListLink({
   item,
   depth,
+  pinned,
+  onTogglePin,
   onNavigate,
 }: {
   item: WorkList
   depth: number
+  pinned: boolean
+  onTogglePin: () => void
   onNavigate?: () => void
 }) {
   return (
-    <NavLink
-      to={appRoutes.project.detail(item.id)}
-      onClick={onNavigate}
-      style={{ paddingLeft: depth * 12 + 26 }}
-      className={({ isActive }) =>
-        cn(
-          'flex items-center gap-2 rounded-md py-1.5 pr-2 text-sm hover:bg-accent',
-          isActive && 'bg-accent font-medium text-accent-foreground',
-        )
-      }
-    >
-      <span className={cn('size-2 shrink-0 rounded-full', dotClass(item.color))} />
-      <span className="truncate">{item.name}</span>
-    </NavLink>
+    //  Nút ghim đứng NGOÀI thẻ liên kết: lồng nút trong <a> là hai điều khiển
+    //  tương tác chồng nhau, trình đọc màn hình đọc sai và bấm ghim lại nhảy trang.
+    <div className="group/list relative">
+      <NavLink
+        to={appRoutes.project.detail(item.id)}
+        onClick={onNavigate}
+        style={{ paddingLeft: depth * 12 + 26 }}
+        className={({ isActive }) =>
+          cn(
+            'flex items-center gap-2 rounded-md py-1.5 pr-8 text-sm hover:bg-accent',
+            isActive && 'bg-accent font-medium text-accent-foreground',
+          )
+        }
+      >
+        <span className={cn('size-2 shrink-0 rounded-full', dotClass(item.color))} />
+        <span className="truncate">{item.name}</span>
+      </NavLink>
+      <Button
+        variant="ghost"
+        size="icon"
+        title={pinned ? 'Bỏ ghim' : 'Ghim lên đầu danh sách'}
+        aria-label={pinned ? `Bỏ ghim ${item.name}` : `Ghim ${item.name}`}
+        aria-pressed={pinned}
+        onClick={onTogglePin}
+        //  Đã ghim thì luôn hiện (để thấy trạng thái); chưa ghim chỉ hiện khi rê / tiêu điểm.
+        className={cn(
+          'absolute top-1/2 right-1 size-6 -translate-y-1/2 focus-visible:opacity-100',
+          pinned ? 'opacity-100' : 'opacity-0 group-hover/list:opacity-100',
+        )}
+      >
+        {pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+      </Button>
+    </div>
   )
 }

@@ -494,6 +494,13 @@ def recipient_ids(db: Session, doc, entity: str, entity_id: int, author_id: int,
     ids = {getattr(doc, "created_by", 0) or 0}
     ids.update(uid for (uid,) in db.query(Comment.created_by)
                .filter(Comment.entity == entity, Comment.entity_id == entity_id).distinct())
+    if entity == "work_task":
+        #  F-04: PIC + người theo dõi việc cũng nhận chuông bình luận (không chỉ người
+        #  tạo và người đã bình luận) — họ chính là những người phải biết việc có động tĩnh.
+        #  Rồi BỎ ai không còn xem được việc (đã rời dự án / mất `work_task.read`):
+        #  chuông mang tên việc + trích bình luận, `doc` ở đây chính là WorkTask.
+        from app.modules.work.notify_service import comment_recipient_user_ids
+        ids = comment_recipient_user_ids(db, doc, ids)
     ids.discard(0)
     ids.discard(author_id)
     for uid in (exclude or set()):

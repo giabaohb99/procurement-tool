@@ -96,7 +96,7 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | A-02 | Mời thành viên vào list: chọn từ danh bạ nhân sự, gán vai trò trong list | P0 | Mời theo từng người; mời cả phòng ban là P1 (A-06) |
 | A-03 | Rời list / gỡ thành viên / đổi vai trò thành viên | P0 | |
 | A-04 | Chuyển quyền sở hữu list cho người khác | P0 | Bắt buộc có — người tạo nghỉ việc thì list không mồ côi |
-| A-05 | Thanh bên trái: cây nhóm → task list mình là thành viên, ghim list hay dùng | P0 | Như sidebar Lark |
+| A-05 | Thanh bên trái: cây nhóm → task list mình là thành viên, ghim list hay dùng | P0 | Như sidebar Lark. **Ghim: xong (duoc-CR-667)** — lưu theo người dùng ở `tab_user_preference`, khóa `work_pinned_lists` |
 | A-06 | Mời theo phòng ban (cả phòng vào một lượt, người mới vào phòng tự có) | P1 | Cần chốt Q7 |
 | A-07 | Nhân bản list / tạo list từ mẫu | P2 | |
 | A-08 | **Nhóm (group) chứa task list, tối đa 2 cấp nhóm**; tạo/sửa/lưu trữ nhóm; kéo list vào/ra nhóm | P0 | Bản 1.1. List đứng lẻ ngoài nhóm vẫn hợp lệ |
@@ -116,7 +116,7 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | B-07 | Kéo thả giữa các cột, sắp thứ tự tay trong cột | P0 | Cột lưu `sort_order` |
 | B-08 | **Nhãn tùy biến theo list** (kiểu chọn-một-nhãn): tự đặt tên trường như "Phiên bản", tự đặt bộ giá trị + màu, gắn lên task | P0 | Bản 1.1 nâng từ P2 lên theo yêu cầu "custom được mấy cái nhãn, loại nhãn". Chỉ làm KIỂU CHỌN NHÃN ở bản đầu; kiểu chữ/số/ngày/người để B-13 |
 | B-13 | Trường tùy chỉnh kiểu khác: chữ tự do, số, ngày, chọn người | P2 | Nặng hơn nhiều (nhập liệu, sort, lọc theo từng kiểu) — chỉ làm khi nhãn chọn không gánh nổi |
-| B-09 | Thùng rác của list: xem việc đã xóa, khôi phục | P1 | |
+| B-09 | Thùng rác của list: xem việc đã xóa, khôi phục | P1 | **Xong (duoc-CR-667)**: `GET /lists/{id}/trash`, `POST /tasks/{id}/restore`; cùng luật với xóa (MEMBER chỉ khôi phục việc mình tạo) |
 | B-10 | Chuyển task sang list khác | P1 | |
 | B-11 | Việc lặp lại (hằng tuần, hằng tháng) | P2 | |
 | B-12 | Gắn task vào chứng từ ERP (YCMH, ĐMH, phiếu hỗ trợ, văn bản…) | P2 | Xem Q6 — điểm ăn tiền so với Lark nhưng chưa cần ngay |
@@ -155,16 +155,16 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | E-02 | Nhắc tên @ trong bình luận — người được nhắc nhận thông báo | P1 | **XONG** cùng CR-253 — đi kèm hạ tầng chung, không phải làm thêm |
 | E-03 | Đính kèm tệp / ảnh vào task và bình luận (lưu R2) | P1 | **XONG** 03/09/2026 (CR-253) — `tab_file_link` chung; đo được 401 khi tải thiếu token (PQ13) |
 | E-04 | Nhật ký hoạt động của task: ai tạo, ai đổi cột, ai đổi PIC, lúc nào | P0 | **XONG**, nhưng KHÔNG còn ở panel chi tiết: bỏ khỏi panel 03/09/2026 (CR-254) vì trùng với tab **Hoạt động** cấp dự án (D-09). Dữ liệu vẫn ghi đủ qua `core/audit.py` |
-| E-05 | Sửa / xóa bình luận của mình | P1 | **XÓA đã có** (CR-253, backend chung lo); SỬA thì chưa |
+| E-05 | Sửa / xóa bình luận của mình | P1 | **XÓA đã có** (CR-253, backend chung lo); **SỬA xong (duoc-CR-667)**: `PATCH /api/work/tasks/{id}/comments/{cid}`, chỉ người viết, hiện «(đã sửa)» |
 
 ### Nhóm F — Thông báo và tích hợp nền ERP
 
 | Mã | Tính năng | Ưu tiên | Ghi chú |
 |---|---|---|---|
-| F-01 | Được giao việc → chuông thông báo | P0 | Notification sẵn có |
-| F-02 | Task mình phụ trách xuất hiện trong tab **Việc cần làm** (CR-215) | P0 | Thêm loại `job:{id}` vào `build_my_tasks`; giữ bất biến "tab là tập cha của chuông" |
+| F-01 | Được giao việc → chuông thông báo | P0 | **Xong (duoc-CR-666)** — `work/notify_service.py`, chỉ báo PIC MỚI, không báo người giao |
+| F-02 | Task mình phụ trách xuất hiện trong tab **Việc cần làm** (CR-215) | P0 | Thêm loại `job:{id}` vào `build_my_tasks`; giữ bất biến "tab là tập cha của chuông". **Xong (duoc-CR-666)** — `work/my_tasks_service.py`: chỉ PIC, việc mở, còn là thành viên |
 | F-03 | Nhắc hạn: đến hạn / quá hạn → chuông (job chạy nền Celery đã có) | P1 | Điều kiện lọc phải trùng khớp giữa chuông và tab — bài học CR-215 |
-| F-04 | Thông báo khi task mình theo dõi đổi trạng thái / có bình luận | P1 | |
+| F-04 | Thông báo khi task mình theo dõi đổi trạng thái / có bình luận | P1 | **Xong (duoc-CR-666)** — báo PIC + người theo dõi; bình luận qua `comment/service.recipient_ids` |
 | F-05 | Web push (điện thoại) cho giao việc + nhắc hạn | P2 | Hạ tầng web-push đã chạy prod |
 | F-06 | Tool cho Trợ lý AI: "việc của tôi hôm nay", "tạo việc nhắc tôi…" | P2 | Nối vào bộ tool trợ lý sẵn có (T25–T29) |
 

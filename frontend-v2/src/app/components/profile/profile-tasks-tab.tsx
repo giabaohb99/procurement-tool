@@ -11,6 +11,7 @@ import {
   EyeOff,
   FileSignature,
   FileText,
+  FolderKanban,
   ListFilter,
   RotateCcw,
   ScrollText,
@@ -123,6 +124,13 @@ const TASK_META: Record<
     short: 'HĐ lao động',
     colorClass: 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
     icon: ContactRound,
+  },
+  //  duoc-CR-666 (F-02) — việc Dự án được giao cho tôi. Key `job:{id}`, link mở thẳng panel việc.
+  job: {
+    label: 'Việc được giao',
+    short: 'Dự án',
+    colorClass: 'bg-lime-500/10 text-lime-600 dark:bg-lime-500/20 dark:text-lime-400',
+    icon: FolderKanban,
   },
 }
 

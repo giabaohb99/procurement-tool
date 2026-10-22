@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WorkSidebarTree } from './work-sidebar-tree'
 import type { WorkGroupNode, WorkList, WorkSidebar } from '../types/work'
@@ -71,6 +71,21 @@ vi.mock('../hooks/use-work-lists', () => ({
   useWorkSidebar: () => ({ data: sidebar, isLoading: false }),
 }))
 
+//  Ghim lưu ở máy chủ (tùy chọn người dùng) — bài này chỉ soi cách cây vẽ và gọi, nên thay bằng bản giả có state.
+const pinState = vi.hoisted(() => ({ pinned: [] as number[], toggle: vi.fn() }))
+vi.mock('../hooks/use-pinned-lists', () => ({
+  usePinnedLists: () => ({
+    pinned: pinState.pinned,
+    isPinned: (id: number) => pinState.pinned.includes(id),
+    toggle: pinState.toggle,
+  }),
+}))
+
+beforeEach(() => {
+  pinState.pinned = []
+  pinState.toggle.mockClear()
+})
+
 function renderTree(onNavigate?: () => void) {
   return render(
     <MemoryRouter>
@@ -119,5 +134,33 @@ describe('WorkSidebarTree', () => {
     await expect(
       userEvent.click(screen.getByRole('link', { name: 'Tuyển dụng & Đào tạo Q3' })),
     ).resolves.not.toThrow()
+  })
+
+  it('shows a pinned project in the "Đã ghim" block and in its tree position', () => {
+    pinState.pinned = [24]
+    renderTree()
+
+    const block = screen.getByLabelText('Dự án đã ghim')
+    expect(within(block).getByRole('link', { name: 'Kiểm kê kho cuối quý' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Kiểm kê kho cuối quý' })).toHaveLength(2)
+  })
+
+  it('has no pinned block when nothing is pinned, and ignores ids that left the tree', () => {
+    renderTree()
+    expect(screen.queryByLabelText('Dự án đã ghim')).not.toBeInTheDocument()
+
+    pinState.pinned = [999]
+    renderTree()
+    expect(screen.queryByLabelText('Dự án đã ghim')).not.toBeInTheDocument()
+  })
+
+  it('toggles a pin without navigating', async () => {
+    const onNavigate = vi.fn()
+    renderTree(onNavigate)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ghim Tuyển dụng & Đào tạo Q3' }))
+
+    expect(pinState.toggle).toHaveBeenCalledWith(26)
+    expect(onNavigate).not.toHaveBeenCalled()
   })
 })

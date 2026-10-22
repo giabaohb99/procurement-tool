@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 import type { WorkBoard, WorkSectionPage, WorkTask, WorkTaskLink } from '../types/work'
+import type { WorkTrashItem } from '../types/work-trash'
 
 /** Công việc và việc con. Xem `work-api.ts` về lý do prefix `/api/work`. */
 export const workTaskApi = {
@@ -59,6 +60,12 @@ export const workTaskApi = {
 
   /** Xóa MỀM — vào thùng rác của list (B-09). */
   remove: (taskId: number) => apiDelete(`/api/work/tasks/${taskId}`),
+
+  /** Thùng rác của dự án: việc đã xóa mềm + cờ `can_restore` theo quyền người xem (B-09). */
+  trash: (listId: number) => apiGet<WorkTrashItem[]>(`/api/work/lists/${listId}/trash`),
+
+  /** Khôi phục một việc (kèm các việc con đi theo nó lúc xóa). */
+  restore: (taskId: number) => apiPost<WorkTask>(`/api/work/tasks/${taskId}/restore`, {}),
 
   createSubtask: (taskId: number, values: { title: string }) =>
     apiPost<WorkTask>(`/api/work/tasks/${taskId}/subtasks`, values),

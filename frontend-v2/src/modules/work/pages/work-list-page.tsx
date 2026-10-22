@@ -1,4 +1,12 @@
-import { GanttChartSquare, History, KanbanSquare, Settings2, Table2, Users } from 'lucide-react'
+import {
+  GanttChartSquare,
+  History,
+  KanbanSquare,
+  Settings2,
+  Table2,
+  Trash2,
+  Users,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 
@@ -27,6 +35,7 @@ import { SectionEditDialog, type SectionDialogMode } from '../components/section
 import { TaskDetailSheet } from '../components/task-detail-sheet'
 import type { NewTaskDraft } from '../components/task-draft-row'
 import { TaskListView } from '../components/task-list-view'
+import { WorkTrashDialog } from '../components/work-trash-dialog'
 import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { WorkToolbar } from '../components/work-toolbar'
 import {
@@ -219,6 +228,7 @@ function WorkListContent({ listId }: { listId: number }) {
   }
   const [manageOpen, setManageOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [trashOpen, setTrashOpen] = useState(false)
   const [sectionDialog, setSectionDialog] = useState<SectionDialogMode | null>(null)
   const [editingSection, setEditingSection] = useState<WorkSection | null>(null)
 
@@ -361,6 +371,13 @@ function WorkListContent({ listId }: { listId: number }) {
               <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                 <Settings2 className="size-4" />
                 Trường của dự án
+              </DropdownMenuItem>
+            )}
+            {/*  Thùng rác cùng cổng với xóa: khách xem (VIEWER) không thấy mục này. */}
+            {myRole !== null && myRole <= WORK_ROLE.MEMBER && (
+              <DropdownMenuItem onClick={() => setTrashOpen(true)}>
+                <Trash2 className="size-4" />
+                Thùng rác
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -617,6 +634,8 @@ function WorkListContent({ listId }: { listId: number }) {
         groups={manageGroups}
         onClose={() => setManageOpen(false)}
       />
+
+      <WorkTrashDialog open={trashOpen} listId={listId} onClose={() => setTrashOpen(false)} />
 
       <ListConfigDialog
         open={settingsOpen}

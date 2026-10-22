@@ -239,3 +239,9 @@ class LabelIn(BaseModel):
 
     field_id: int
     value: Any = None
+
+
+class CommentEdit(BaseModel):
+    """Sửa nội dung bình luận của chính mình (E-05). Trần 5000 khớp `comment.service.MAX_BODY`."""
+
+    body: Annotated[str, StringConstraints(max_length=5000)]
