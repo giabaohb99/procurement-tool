@@ -15906,6 +15906,20 @@ Mã nguồn: kế hoạch mục HR2-3 · `doc/erp/hrm/02-nghi-phep.md` §10
 
 Mã nguồn: kế hoạch mục HR2-5
 
+## duoc-CR-659 | Bản hợp đồng lao động bên Văn bản có nút «Ban hành» để ký luôn, không đứng mãi ở Nháp
+- status: xong
+- date: 2026-10-22
+**Bối cảnh:** từ tab Hợp đồng trên hồ sơ nhân sự bấm vào một hợp đồng thì hệ thống mở bản lưu trữ bên phân hệ Văn bản. Hợp đồng còn nháp thì văn bản cũng nằm ở «Nháp» mà không có nút nào để đi tiếp. Đại ca muốn với loại hợp đồng lao động chỉ có đúng một nút «Ban hành», và chốt bấm nút đó nghĩa là ký hợp đồng.
+
+**Đã làm**
+- Thêm nút «Ban hành» ở trang văn bản của bản lưu trữ hợp đồng lao động. Nút chỉ hiện khi hợp đồng gốc còn nháp, chưa bị xóa, và người xem có quyền sửa hợp đồng đó trong phạm vi của mình.
+- Bấm nút thì hỏi xác nhận, rồi ký hợp đồng gốc với ngày ký là hôm nay, đúng đường ký đang dùng ở hồ sơ nhân sự. Văn bản tự chuyển sang «Có hiệu lực» và nút biến mất. Hợp đồng còn biến bắt buộc chưa điền thì vẫn bị chặn như khi ký bên Nhân sự.
+- Đường API trả quyền của văn bản trả thêm mã hợp đồng gốc và cờ được ban hành để giao diện biết khi nào bày nút.
+
+**Kết quả:** năm bài kiểm phía máy chủ và hai bài kiểm phía giao diện mới đều qua; bài kiểm cũ của bản lưu trữ và bài BB4 vẫn xanh; typecheck và lint cả cây sạch. Đã mở màn thật trên bản local, thấy nút và hộp xác nhận, bấm Hủy thì hợp đồng vẫn nháp.
+
+Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · backend/app/modules/document/controller.py · frontend-v2/src/modules/document/components/archive-contract-issue-button.tsx · frontend-v2/src/modules/document/config/document-action-gates.ts · frontend-v2/src/modules/document/pages/document-detail-page.tsx · test/backend/test_hdld_ban_hanh_tu_van_ban_cr659.py
+
 ## kh-AI1-2 | A1: công cụ AI xem năng lực đội và thống kê loại việc
 - status: dang-lam
 - date: 2026-10-22

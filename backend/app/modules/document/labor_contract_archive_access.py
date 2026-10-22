@@ -210,6 +210,24 @@ def ensure_not_archive(db: Session, doc: Document) -> None:
                                  "trạng thái do hợp đồng ở phân hệ Nhân sự quyết định")
 
 
+def issue_state(db: Session, doc: Document, user, profile: dict) -> tuple[int, bool]:
+    """`(id HĐ, được «Ban hành» không)` cho nút Ban hành ở trang văn bản (duoc-CR-659).
+
+    «Ban hành» bản lưu trữ = KÝ hợp đồng gốc qua đường `/api/labor-contracts/{id}/transition` — văn bản không có
+    trạng thái riêng, đồng bộ sau khi ký sẽ đưa nó sang «Có hiệu lực». Bật khi HĐ chưa xóa, đang Nháp và người xem
+    ghi được HĐ trong phạm vi `labor_contract`. Chỉ là cờ hiện nút; chốt thật ở endpoint transition."""
+    from app.core.labor_contract_codes import LaborContractStatus
+    from app.modules.labor_contract.access import ids_allowed
+
+    contract = contract_of(db, doc)
+    if contract is None:
+        return 0, False
+    lc = _labor_contract_model()
+    can = (not contract.is_deleted and int(contract.status) == int(LaborContractStatus.DRAFT)
+           and bool(ids_allowed(db, lc, "labor_contract", [contract.id], user, profile, "write")))
+    return contract.id, can
+
+
 def ensure_not_system_type(db: Session, doc_type_id: int | None) -> None:
     """Người dùng không được tạo / đổi văn bản sang loại `HDLD` — loại này chỉ do Nhân sự sinh."""
     if not doc_type_id:

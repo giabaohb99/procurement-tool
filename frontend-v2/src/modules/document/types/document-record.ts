@@ -363,4 +363,8 @@ export interface DocumentPermissions {
    * phạm vi áp dụng, duyệt / ký / ban hành / bãi bỏ / sao chép bị backend chặn (409) — giao diện ẩn các nút đó.
    */
   is_archive?: boolean
+  /** Id hợp đồng gốc của bản lưu trữ (0 = văn bản thường) — duoc-CR-659. */
+  archive_contract_id?: number
+  /** Hiện nút «Ban hành» (= ký HĐ gốc): HĐ đang Nháp, chưa xóa, người xem ghi được HĐ — duoc-CR-659. */
+  can_issue_archive?: boolean
 }

@@ -48,7 +48,9 @@ paths:
   (+kế hoạch/trạng thái), trích, ký, gửi duyệt / duyệt / trả về / ban hành / cấp số / bãi bỏ / xác nhận rà soát, chia sẻ và
   thu hồi chia sẻ, quan hệ, phạm vi áp dụng, đổi loại, vào sổ; tạo/đổi sang loại `HDLD` → 400. Lớp 1 của sửa/tải tệp đòi
   `document.write` — vai trò `hr_profile` seed `document: read+write` phạm vi `own` (không mở thêm văn bản thường nào).
-  `/permissions` trả thêm `is_archive` để giao diện ẩn các nút bị chặn.
+  `/permissions` trả thêm `is_archive` để giao diện ẩn các nút bị chặn, và (duoc-CR-659) `archive_contract_id` + `can_issue_archive`:
+  nút «Ban hành» DUY NHẤT của bản lưu trữ = KÝ HĐ gốc qua `/api/labor-contracts/{id}/transition` (Nháp → Đã ký), KHÔNG mở
+  `/issue` của Văn bản — trạng thái văn bản vẫn chỉ do đồng bộ ghi (`issue_state` ở `labor_contract_archive_access.py`).
   **CHỦ HỢP ĐỒNG ĐỌC được (duoc-CR-652)** bản lưu trữ của chính mình khi HĐ ở trạng thái Đã ký / Đã chấm dứt và chưa xóa
   (`SELF_VIEW_STATUSES`, `core/labor_contract_codes.py`) — chỉ đọc: `can_write`, xóa, chia sẻ, nhật ký `blocked_*` vẫn theo
   luật chỉ-Nhân-sự. Đường `/api/me/labor-contracts*` lấy nhân sự TỪ TOKEN (`employee_id = 0` → rỗng), HĐ nháp/hủy/của người khác → 404.

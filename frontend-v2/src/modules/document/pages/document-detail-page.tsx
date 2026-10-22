@@ -73,6 +73,7 @@ import { DocumentVersionBanner } from '../components/document-version-banner'
 import { DocumentVersionTab } from '../components/document-version-tab'
 import { DocumentLinkTab } from '../components/document-link-tab'
 import { DocumentExcerptDialog } from '../components/document-excerpt-dialog'
+import { ArchiveContractIssueButton } from '../components/archive-contract-issue-button'
 import { DocumentImportButton } from '../components/document-import-button'
 import { DocumentIssueDialog } from '../components/document-issue-dialog'
 import { DocumentNeedsReviewBanner } from '../components/document-needs-review-banner'
@@ -266,7 +267,7 @@ export function DocumentDetailPage() {
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
   //  như backend làm.
   //  Bản lưu trữ HĐLĐ (duoc-CR-640): các thao tác đẩy văn bản tới người khác bị backend chặn nên ẩn hẳn.
-  const { isArchive, canApprove, canCreate, canWrite, canDelete } = resolveDocumentActionGates(
+  const { isArchive, issueArchiveContractId, canApprove, canCreate, canWrite, canDelete } = resolveDocumentActionGates(
     permissions,
     can,
     readonlyFromLink,
@@ -605,6 +606,8 @@ export function DocumentDetailPage() {
                 Ban hành
               </Button>
             )}
+            {/*  Bản lưu trữ HĐLĐ (duoc-CR-659): nút DUY NHẤT là «Ban hành» = ký HĐ gốc. */}
+            {issueArchiveContractId > 0 && <ArchiveContractIssueButton contractId={issueArchiveContractId} />}
             {isSubmitted && !isMultiStepApproval && (
               <PermissionGate entity="document" action="approve">
                 <Button
