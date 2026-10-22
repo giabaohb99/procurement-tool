@@ -99,3 +99,73 @@ def rebuild_tree(tree: dict) -> None:
         raise
     finally:
         db.close()
+
+
+# ── Bài lẻ dưới thẻ DỰNG TAY (Thu mua, Bắt đầu, Quản trị Hệ thống…) ──────────────────────────────
+#  Các cây này không có script sở hữu nên KHÔNG được xóa/dựng lại như `rebuild_tree`: chỉ thêm hoặc
+#  ghi đè đúng bài cùng tiêu đề dưới thẻ cha tìm theo TIÊU ĐỀ (id local/dev/prod khác nhau), rồi nạp
+#  luôn kho vector cho đúng các bài đó. Bài người dùng tự viết không bao giờ bị đụng; chạy lại vô hại.
+
+def _root(db, title: str):
+    return db.query(HelpArticle).filter(HelpArticle.parent_id.is_(None), HelpArticle.title == title).first()
+
+
+def upsert_articles(articles, dry_run: bool) -> list[int]:
+    """`articles` = [(tiêu đề thẻ cha, tiêu đề bài, tóm tắt, HTML)] → id các bài đã ghi."""
+    db = SessionLocal()
+    touched = []
+    try:
+        for parent_title, title, summary, content in articles:
+            parent = _root(db, parent_title)
+            if parent is None:
+                print(f"  BỎ QUA «{title}»: không có thẻ cha «{parent_title}» trên hệ này")
+                continue
+            row = (db.query(HelpArticle)
+                   .filter(HelpArticle.parent_id == parent.id, HelpArticle.title == title).first())
+            print(f"  {'cập nhật' if row else 'thêm'}: «{title}» (dưới «{parent_title}»)")
+            if dry_run:
+                continue
+            if row is None:
+                orders = [a.sort_order or 0 for a in db.query(HelpArticle).filter(HelpArticle.parent_id == parent.id)]
+                row = HelpArticle(parent_id=parent.id, title=title, sort_order=max(orders or [0]) + 1)
+                db.add(row)
+            row.summary, row.content = summary, content
+            db.flush()
+            touched.append(row.id)
+        if not dry_run:
+            db.commit()
+        return touched
+    finally:
+        db.close()
+
+
+def reindex_articles(ids: list[int]) -> None:
+    """Nạp kho vector cho đúng các bài vừa ghi; RAG tắt thì bỏ qua (seed ghi ORM nên hook không chạy)."""
+    from app.core.config import settings
+    if not ids:
+        return
+    if not settings.AI_RAG_ENABLED:
+        print("  RAG đang tắt (AI_RAG_ENABLED=false) — bỏ qua bước nạp kho vector")
+        return
+    from app.modules.assistant.rag import indexer
+    db = SessionLocal()
+    try:
+        for aid in ids:
+            try:
+                print(f"  nạp kho vector bài #{aid}: {indexer.reindex_source(db, indexer.SRC_HELP, aid)} đoạn")
+            except Exception as exc:  # why: lỗi nạp (429, Qdrant tắt) không làm hỏng bài đã ghi; chạy lại là bù
+                print(f"  LỖI nạp bài #{aid}: {type(exc).__name__}: {exc} — chạy lại script để nạp bù")
+    finally:
+        db.close()
+
+
+def run_article_upsert(articles, description: str) -> None:
+    """`main()` chung của các script bài lẻ: `--dry-run` chỉ in, không ghi."""
+    import argparse
+    p = argparse.ArgumentParser(description=description)
+    p.add_argument("--dry-run", action="store_true", help="chỉ in sẽ làm gì, không ghi")
+    args = p.parse_args()
+    ids = upsert_articles(articles, args.dry_run)
+    if not args.dry_run:
+        reindex_articles(ids)
+    print("Thử xong, chưa ghi gì." if args.dry_run else "Xong.")
