@@ -16281,3 +16281,19 @@ Mã nguồn: core/app_settings.py · main.py · docker/nginx.*.prod.conf · so-g
 **Kết quả:** trên bản local, năm skill cẩm nang lên phiên bản 2, kho tìm kiếm có đủ một trăm bài hướng dẫn và mười một câu hỏi thường gặp. Khi deploy prod cần chạy bốn script bài trợ giúp, rồi script xuất bản cẩm nang, rồi script nạp kho tìm kiếm. Cây bài Thu mua dựng tay nên phần bổ sung phải dán tay trên giao diện.
 
 Mã nguồn: backend/scripts/seed_help_nghi_phep.py · seed_help_van_ban.py · seed_help_cong_viec.py · seed_help_nhan_su.py · help_seed_common.py · publish_handbook_update.py · backend/app/modules/ai_skill/seed_handbook/*.md · doc/erp/hrm/
+
+## bao-CR-656 | Sao lưu tự động khôi phục được: client MySQL 8.4 thật, chốt dọn bản cũ, công cụ khôi phục không nuốt lỗi
+- status: xong
+- date: 2026-10-22
+- tag: Bảo mật
+**Bối cảnh:** sáng 22/10 thử khôi phục thì phát hiện mọi bản sao lưu tự động trên R2 không nạp được vào MySQL 8.4: image api cài nhầm client MariaDB, bản dump ghi giá trị cho cột sinh nên MySQL báo ERROR 3105 ở bảng thứ 42. Thêm nữa, việc dọn bản cũ chạy ngay sau mỗi lượt mà không kiểm bản mới, và công cụ khôi phục chạy chế độ bỏ qua lỗi nên vẫn in thành công.
+
+**Đã làm**
+- Image api dùng client MySQL 8.4 chính hãng, có kiểm dấu vân tay khóa ký và kiểm phiên bản lúc dựng; client là MariaDB thì lượt sao lưu báo thất bại, không đẩy bản hỏng lên R2.
+- Dọn bản cũ chỉ đếm bản tốt; bản bé bất thường so với trung vị năm bản tốt gần nhất thì bị đánh dấu, không dọn, và báo chuông cho người có quyền xem sao lưu; thêm thao tác chấp nhận cỡ mới khi CSDL thu nhỏ thật. Áp cho cả sao lưu ERP lẫn CSDL bot.
+- Công cụ khôi phục bỏ chế độ bỏ qua lỗi, kiểm tệp dump đủ đuôi trước khi nạp và đủ bảng sau khi nạp.
+
+**Kết quả:** lên prod 22/10/2026 16:25 (riêng, theo lệnh đại ca). Lượt sao lưu đầu bằng image mới thành công, 18,5 MB; tải bản đó từ R2 nạp vào MySQL 8.4 tạm không bỏ qua lỗi: mã thoát 0, 218/218 bảng, số dòng phiếu duyệt và nhân sự khớp prod. Đã xóa máy thử. Cụm dịch vụ AI trên prod CHƯA dựng lại nên sao lưu CSDL bot vẫn dùng client cũ; chờ đại ca quyết.
+
+Commit: 5ae7d0fa (main), gộp erp-v2 ef7cd073 · Deploy: prod api, celery-worker, celery-beat
+Mã nguồn: docker/Dockerfile.api · backend/app/modules/backup/service.py · backend/app/modules/backup/controller.py · backend/app/modules/agent_hub/db_backup.py · backend/app/modules/agent_hub/controller.py · backend/scripts/restore_backup.py · test/backend/test_backup_dump_mysql_cr.py
