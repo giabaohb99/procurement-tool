@@ -244,6 +244,21 @@ bước B.1 phải soi danh sách migration trước.
 `seed_prod.py` **không ghi đè** phân quyền đã sửa trên UI. Muốn ép áp lại `STD_ROLES` thì đặt
 `SEED_FORCE_SYNC=true` trong `.env`, restart `api` một lần, rồi trả về `false`.
 
+### B.6. Nạp bài trợ giúp và kho tìm kiếm của Trợ lý AI (khi đợt deploy có `seed_help_*`)
+
+Script `seed_help_*` ghi thẳng vào DB nên **không** tự vào kho tìm kiếm của trợ lý, và các script
+dựng lại cả cây (xóa bài cũ, id mới) để lại phần tìm kiếm của bài cũ — trợ lý vẫn trích được
+nội dung bản cũ kèm liên kết chết (duoc-CR-671). Thứ tự:
+
+```bash
+docker compose -f docker-compose.production.yml exec -T api python scripts/seed_help_<cụm>.py        # từng script của đợt
+docker compose -f docker-compose.production.yml exec -T api python scripts/reindex_help_rag.py --purge-orphans --dry-run
+docker compose -f docker-compose.production.yml exec -T api python scripts/reindex_help_rag.py --purge-orphans
+```
+
+Script `*_cap_nhat.py` (Thu mua, hệ thống) chỉ thêm / ghi đè bài dưới thẻ dựng tay và tự nạp kho
+luôn; vẫn chạy bước dọn ở trên một lần cuối đợt cho chắc.
+
 ---
 
 ## C. DEPLOY DEV (nhánh `erp-v2`)
@@ -341,6 +356,19 @@ docker logs --tail 20 procurement-tool-celery-beat-1
 
 Celery ở prod **đang chạy thật** (sao lưu R2 hai lần mỗi ngày). Deploy backend mà quên build
 `celery-worker` / `celery-beat` là hai con đó tiếp tục chạy code cũ.
+
+---
+
+### D.5. Người dùng báo «Hệ thống đang bận»
+
+Đó là câu 503 `server_busy` của cổng giới hạn lượt gọi (`core/concurrency_gate.py`, duoc-CR-671):
+mỗi tiến trình chỉ cho `MAX_CONCURRENT_REQUESTS` lượt `/api` chạy cùng lúc (mặc định
+`DB_POOL_SIZE + DB_MAX_OVERFLOW - 5` = 20), lượt dư xếp hàng tối đa `REQUEST_QUEUE_TIMEOUT` giây
+(mặc định 30). Gặp lẻ tẻ giờ cao điểm là đúng thiết kế — trước đây cùng tình huống đó làm api
+**treo hẳn**. Gặp liên tục nhiều phút thì tìm lượt gọi nặng đang chạy lâu (`tab_request_log` cột
+`duration_ms`); muốn tăng sức chứa thì tăng bể kết nối (cổng tự tăng theo) **kèm** nâng
+`max_connections` của MySQL — đừng chỉ nâng `MAX_CONCURRENT_REQUESTS`, code tự kẹp nó dưới số
+kết nối bể.
 
 ---
 

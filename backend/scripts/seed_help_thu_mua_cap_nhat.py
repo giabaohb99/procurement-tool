@@ -15,15 +15,7 @@ Chạy trong container api:
 
 ⚠️ Nội dung phải khớp cẩm nang trợ lý `app/modules/ai_skill/seed_handbook/10-quy-trinh-thu-mua.md`.
 """
-import argparse
-import sys
-
-sys.path.insert(0, "/app")
-
-import app.core.all_models  # noqa: F401,E402 — nạp đủ mapper trước khi query
-from app.core.config import settings  # noqa: E402
-from app.core.database import SessionLocal  # noqa: E402
-from app.modules.help_center.model import HelpArticle  # noqa: E402
+from help_seed_common import run_article_upsert
 
 STAFF_ROOT = "Dành cho Nhân viên Mua hàng"
 GENERAL_ROOT = "Hướng dẫn sử dụng công cụ thu mua"
@@ -75,61 +67,5 @@ ARTICLES = [
 ]
 
 
-def _parent(db, title: str) -> HelpArticle | None:
-    return db.query(HelpArticle).filter(HelpArticle.parent_id.is_(None), HelpArticle.title == title).first()
-
-
-def upsert(db, dry_run: bool) -> list[int]:
-    touched = []
-    for parent_title, title, summary, content in ARTICLES:
-        parent = _parent(db, parent_title)
-        if parent is None:
-            print(f"  BỎ QUA «{title}»: không có thẻ cha «{parent_title}» trên hệ này")
-            continue
-        row = db.query(HelpArticle).filter(HelpArticle.parent_id == parent.id, HelpArticle.title == title).first()
-        action = "cập nhật" if row else "thêm"
-        print(f"  {action}: «{title}» (dưới «{parent_title}»)")
-        if dry_run:
-            continue
-        if row is None:
-            last = max([a.sort_order or 0 for a in db.query(HelpArticle).filter(HelpArticle.parent_id == parent.id)] or [0])
-            row = HelpArticle(parent_id=parent.id, title=title, sort_order=last + 1)
-            db.add(row)
-        row.summary, row.content = summary, content
-        db.flush()
-        touched.append(row.id)
-    if not dry_run:
-        db.commit()
-    return touched
-
-
-def reindex(db, ids: list[int]) -> None:
-    if not ids:
-        return
-    if not settings.AI_RAG_ENABLED:
-        print("  RAG đang tắt (AI_RAG_ENABLED=false) — bỏ qua bước nạp kho vector")
-        return
-    from app.modules.assistant.rag import indexer
-    for aid in ids:
-        try:
-            print(f"  nạp kho vector bài #{aid}: {indexer.reindex_source(db, indexer.SRC_HELP, aid)} đoạn")
-        except Exception as exc:  # why: lỗi nạp (429, Qdrant tắt) không làm hỏng bài đã ghi; chạy lại là bù
-            print(f"  LỖI nạp bài #{aid}: {type(exc).__name__}: {exc} — chạy lại script để nạp bù")
-
-
-def main() -> None:
-    p = argparse.ArgumentParser(description="Nạp bài HDSD Thu mua đợt duoc-CR-662/663 + kho vector")
-    p.add_argument("--dry-run", action="store_true", help="chỉ in sẽ làm gì, không ghi")
-    args = p.parse_args()
-    db = SessionLocal()
-    try:
-        ids = upsert(db, args.dry_run)
-        if not args.dry_run:
-            reindex(db, ids)
-        print("Xong." if not args.dry_run else "Thử xong, chưa ghi gì.")
-    finally:
-        db.close()
-
-
 if __name__ == "__main__":
-    main()
+    run_article_upsert(ARTICLES, "Nạp bài HDSD Thu mua đợt duoc-CR-662/663 + kho vector")

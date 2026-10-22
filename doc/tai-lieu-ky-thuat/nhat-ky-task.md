@@ -16398,3 +16398,19 @@ Mã nguồn: docker/Dockerfile.api · backend/app/modules/backup/service.py · b
 **Kết quả:** một trăm mười bốn bài kiểm mới đều đạt, không lỗi nào trong mã của ngày 22/10. Sau khi sửa, sáu mươi người gọi cùng lúc vào báo cáo mua hàng từ năm mươi hai trên một trăm hai mươi lượt đạt lên đủ một trăm hai mươi, lâu nhất 2,8 giây. Một trăm năm mươi người gọi cùng lúc từ hai mươi ba trên ba trăm lượt đạt lên đủ ba trăm, lâu nhất 4,7 giây. Khi deploy, chạy script nạp kho tìm kiếm kèm lựa chọn dọn mồ côi sau các script bài trợ giúp.
 
 Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurrency_gate.py · backend/app/core/config.py · backend/app/main.py · backend/app/modules/assistant/rag/indexer.py · backend/scripts/reindex_help_rag.py · test/backend/test_nhat_ky_khong_chan_vong_su_kien.py · test/backend/test_cong_gioi_han_luot_goi_dong_thoi.py · test/backend/test_stress_*_cr66*.py · frontend-v2/src/modules/hr/utils/org-chart-tree-stress.test.ts
+
+## duoc-CR-671-hdsd | Hướng dẫn sử dụng và dữ liệu trợ lý cho cổng «Hệ thống đang bận» và lệnh dọn kho tìm kiếm
+- status: xong
+- date: 2026-10-22
+- pic: NSU265
+**Bối cảnh:** sau lượt ép tải duoc-CR-671, người dùng có thể gặp câu «Hệ thống đang bận» vào giờ cao điểm và quản trị có thêm lệnh dọn kho tìm kiếm của trợ lý, nên anh Được dặn cập nhật hướng dẫn sử dụng và dữ liệu cho trợ lý.
+
+**Đã làm**
+- Viết bài cho người dùng dưới thẻ Bắt đầu: vì sao gặp câu báo bận, dữ liệu không bị lưu dở, đợi vài giây rồi bấm lại, và khi nào cần báo quản trị.
+- Viết bài cho quản trị dưới thẻ Quản trị Hệ thống: cổng giới hạn lượt gọi cùng lúc, hai biến cấu hình, và lệnh dọn phần tìm kiếm của bài đã xóa sau khi nạp bài hướng dẫn.
+- Gom phần thêm hoặc ghi đè bài dưới thẻ dựng tay thành hàm dùng chung để script Thu mua và script hệ thống cùng dùng.
+- Bổ sung quy trình deploy hai mục: thứ tự nạp bài rồi dọn kho tìm kiếm, và cách đọc câu báo bận; khai bốn biến cấu hình mẫu.
+
+**Kết quả:** trên bản local hai bài đã vào Trung tâm trợ giúp và kho tìm kiếm của trợ lý; hỏi thử «bấm lưu báo hệ thống đang bận có mất dữ liệu không» thì trợ lý tìm đúng bài mới đứng đầu. Khi deploy prod chạy script nạp bài hệ thống một lệnh rồi chạy lệnh dọn kho tìm kiếm theo mục B.6.
+
+Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/help_seed_common.py · backend/scripts/seed_help_thu_mua_cap_nhat.py · doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md · .env.example
