@@ -10,6 +10,7 @@ from app.core.report_period import Period, range_filter, to_local_date
 from app.core.status_codes import PR_LINE_STATUS
 
 from . import service as report_service
+from .department_label import department_label, load_department_names
 
 
 def _build_spec(db, emp_names: dict) -> ReportSpec:
@@ -38,9 +39,14 @@ def _build_spec(db, emp_names: dict) -> ReportSpec:
         name = emp_names.get(code)
         return f"{code} — {name}" if name else code
 
+    dept_names = load_department_names(db)   # duoc-CR-663: gom theo id, nhãn = tên hiện hành
+
+    def dept_key(r):
+        label = department_label(dept_names, r.department_id, r.department)
+        return [(label, label)] if label else []
+
     dimensions = {
-        "department": DimensionSpec("department", "Bộ phận",
-                                    key_of=lambda r: [(r.department, r.department)] if r.department else []),
+        "department": DimensionSpec("department", "Bộ phận", key_of=dept_key),
         "item_group": DimensionSpec("item_group", "Nhóm hàng",
                                     key_of=lambda r: [(r.item_group, r.item_group)] if r.item_group else []),
         "assignee": DimensionSpec("assignee", "NSTM",
@@ -69,6 +75,7 @@ def compute_pr_lines_summary_period(db, user, period: Period, *, company_id=None
     def fetch(d_from, d_to):
         q = base.filter(range_filter(PurchaseRequest.request_date, "str", d_from, d_to))
         return q.with_entities(PurchaseRequest.request_date, PurchaseRequest.department,
+                               PurchaseRequest.department_id,
                                PurchaseRequestItem.item_group, PurchaseRequestItem.assignee,
                                PurchaseRequestItem.line_status, PurchaseRequestItem.amount).all()
 

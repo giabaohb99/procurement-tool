@@ -1,3 +1,4 @@
+import logging
 import smtplib
 import re
 from email.mime.text import MIMEText
@@ -155,34 +156,114 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         db.close()
 
 
-def get_approvers_for_entity(db: Session, entity: str) -> list[User]:
-    """Gets all active users who have approval permission for the given entity,
-    EXCLUDING system admin roles (admin, ADMINISTRATOR)."""
-    # 1. Lấy role_ids có quyền approve
-    role_ids = [p.role_id for p in db.query(Permission).filter(Permission.entity == entity, Permission.can_approve == True).all()]
-    
-    # 2. Loại trừ các vai trò Quản trị viên hệ thống (admin / ADMINISTRATOR)
-    admin_roles = db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR", "admin_system"])).all()
-    admin_role_ids = {r.id for r in admin_roles}
-    role_ids = [rid for rid in role_ids if rid not in admin_role_ids]
+def _approver_user_ids(db: Session, role_ids: list[int]) -> set[int]:
+    """Id tài khoản đang giữ một trong các vai trò `role_ids`."""
+    if not role_ids:
+        return set()
+    return {ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(role_ids)).all()}
 
+
+def _model_po():
+    from app.modules.purchase_order.model import PurchaseOrder
+    return PurchaseOrder
+
+
+def _model_pay():
+    from app.modules.payment_request.model import PaymentRequest
+    return PaymentRequest
+
+
+# entity → hàm nạp model (import lười, tránh vòng import với module chứng từ)
+_SCOPED_MODELS = {"purchase_order": _model_po, "payment_request": _model_pay}
+
+
+def _filter_by_doc_scope(db: Session, users: list[User], entity: str, doc_id: int) -> list[User]:
+    """Giữ lại người mà phạm vi `approve` của họ THẤY được chứng từ này (cùng cổng với nút Duyệt).
+
+    Báo người không duyệt được thì chuông kêu rồi bấm vào ra 404 (vd tài khoản thu mua trừ phòng
+    tự mua). Lỗi tính phạm vi của một người thì loại người đó (đóng), không làm hỏng cả đợt báo.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import get_scoped
+
+    loader = _SCOPED_MODELS.get(entity)
+    if loader is None or not doc_id:
+        return users
+    model = loader()
+    out = []
+    for u in users:
+        try:
+            if get_scoped(db, model, entity, doc_id, u, get_perm_profile(db, u), "approve") is not None:
+                out.append(u)
+        except Exception:
+            #  Đóng (bỏ người này) nhưng PHẢI để lại dấu vết — im lặng là đúng kiểu lỗi «không ai nhận».
+            logging.getLogger("app.scoping").warning(
+                "Khong tinh duoc pham vi duyet cho user=%s entity=%s doc=%s", u.id, entity, doc_id,
+                exc_info=True)
+            continue
+    return out
+
+
+def _legacy_approvers_for_entity(db: Session, entity: str) -> list[User]:
+    """HÀNH VI CŨ (trước duoc-CR-662) cho seal_request / vehicle_booking: người giữ vai trò có
+    `approve`, LOẠI hẳn ai có vai trò quản trị; không có vai trò thường nào thì lấy `pur_manager`."""
+    role_ids = [p.role_id for p in db.query(Permission).filter(
+        Permission.entity == entity, Permission.can_approve == True).all()]   # noqa: E712
+    admin_role_ids = {r.id for r in db.query(Role).filter(
+        Role.code.in_(["admin", "ADMINISTRATOR", "admin_system"])).all()}
+    role_ids = [rid for rid in role_ids if rid not in admin_role_ids]
     if not role_ids:
         qltm_role = db.query(Role).filter(Role.code == "pur_manager").first()
         if qltm_role:
             role_ids = [qltm_role.id]
-            
-    if not role_ids:
+    uids = _approver_user_ids(db, role_ids)
+    if not uids:
         return []
-        
-    user_ids = [ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(role_ids)).all()]
-    if not user_ids:
-        return []
-
-    users = db.query(User).filter(User.id.in_(user_ids), User.is_active == True).all()
+    users = db.query(User).filter(User.id.in_(uids), User.is_active == True).all()   # noqa: E712
     if admin_role_ids:
-        admin_uids = {ur.user_id for ur in db.query(UserRole).filter(UserRole.role_id.in_(admin_role_ids)).all()}
+        admin_uids = _approver_user_ids(db, list(admin_role_ids))
         users = [u for u in users if u.id not in admin_uids]
     return users
+
+
+def get_approvers_for_entity(db: Session, entity: str, doc_id: int = 0, *,
+                             new_rules: bool = False) -> list[User]:
+    """Người có quyền duyệt `entity` — nguồn người nhận chuông «gửi duyệt» của ĐMH / YCTT.
+
+    `new_rules=False` (mặc định) = hành vi CŨ, giữ nguyên cho Duyệt dấu / Đặt xe (ô chọn người duyệt
+    của Duyệt dấu dùng hàm này nên không được đổi). Chỉ ĐMH / YCTT truyền `new_rules=True`.
+
+    Quy tắc mới (duoc-CR-662):
+      1. Người giữ vai trò (không phải quản trị) có `approve` trên entity. Một người vừa là
+         quản trị vừa là quản lý thu mua VẪN được báo — trước đây bị loại oan chỉ vì có thêm
+         vai trò admin.
+      2. Có `doc_id` thì chỉ giữ người mà phạm vi `approve` thấy được chứng từ (phòng tự mua:
+         chỉ quản lý phòng đó; thu mua trừ phòng tự mua không bị báo oan).
+      3. Không còn ai thì rơi về quản trị có quyền duyệt — chuông không rỗng khi còn quản trị.
+    """
+    if not new_rules:
+        return _legacy_approvers_for_entity(db, entity)
+    role_ids = [p.role_id for p in db.query(Permission).filter(
+        Permission.entity == entity, Permission.can_approve == True).all()]   # noqa: E712
+    admin_role_ids = {r.id for r in db.query(Role).filter(
+        Role.code.in_(["admin", "ADMINISTRATOR", "admin_system"])).all()}
+    normal_role_ids = [rid for rid in role_ids if rid not in admin_role_ids]
+    if not normal_role_ids:
+        qltm_role = db.query(Role).filter(Role.code == "pur_manager").first()
+        if qltm_role:
+            normal_role_ids = [qltm_role.id]
+
+    def _load(uids: set[int]) -> list[User]:
+        if not uids:
+            return []
+        users = db.query(User).filter(User.id.in_(uids), User.is_active == True).all()   # noqa: E712
+        return _filter_by_doc_scope(db, users, entity, doc_id) if doc_id else users
+
+    users = _load(_approver_user_ids(db, normal_role_ids))
+    if users:
+        return users
+    # Đường lùi: quản trị CÓ quyền duyệt entity này.
+    return _load(_approver_user_ids(db, [rid for rid in role_ids if rid in admin_role_ids]))
 
 
 def _resolve_dept(db: Session, department_id: int = 0, department_name: str = ""):
@@ -372,6 +453,7 @@ def trigger_notification(
     department_id: int = 0,              # CR-086: phòng ban của phiếu, neo bằng id
     recipient_ids: list | None = None,   # chỉ định thẳng người nhận (vd phân bổ NSTM)
     extra_employee_ids: list | None = None,  # bao-CR-474: CỘNG THÊM người nhận theo id NHÂN SỰ
+    doc_id: int = 0,                     # duoc-CR-662: id chứng từ — lọc người duyệt theo phạm vi
 ):
     """
     Creates an in-app notification and sends an email notification asynchronously.
@@ -488,10 +570,10 @@ def trigger_notification(
         recipients = get_dept_approver_recipients(db, department, department_id)
     elif event == "pay_submitted":
         # Yêu cầu thanh toán do người có quyền duyệt payment_request duyệt (QL/Admin TM)
-        recipients = get_approvers_for_entity(db, "payment_request")
+        recipients = get_approvers_for_entity(db, "payment_request", doc_id, new_rules=True)
     elif event == "po_submitted":
         # Đơn mua hàng (ĐMH) gửi duyệt → báo người có quyền duyệt PO (QL/Admin TM)
-        recipients = get_approvers_for_entity(db, "purchase_order")
+        recipients = get_approvers_for_entity(db, "purchase_order", doc_id, new_rules=True)
     elif event == "pr_approved":
         # DUYỆT XONG PYC → báo người YC + Admin TM (theo yêu cầu: người tạo + Admin TM)
         recipients = ([creator] if creator else []) + get_users_by_role_codes(db, ["pur_admin"])

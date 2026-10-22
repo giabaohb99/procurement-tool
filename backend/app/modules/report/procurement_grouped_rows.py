@@ -34,6 +34,7 @@ from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from app.modules.purchase_order.service import normalize_rate
 
 from .controller import REAL_PO_STATUSES
+from .department_label import department_label, load_department_names
 from .procurement_summary_rows import Row, _ranges_cond
 
 
@@ -52,7 +53,8 @@ def _delivery_agg(db: Session):
             .subquery())
 
 
-def grouped_po_rows(db: Session, company_id: int | None, ranges: list[tuple[date, date]]) -> list[Row]:
+def grouped_po_rows(db: Session, company_id: int | None, ranges: list[tuple[date, date]],
+                    dept_names: dict[int, str] | None = None) -> list[Row]:
     """Bản GOM Ở SQL của `procurement_summary_rows.po_rows` — MỘT lượt JOIN (POItem × PO ×
     gộp giao hàng) thay 3 truy vấn ORM rời + 2 dict Python nối tay. Xem docstring đầu tệp về
     lý do GIỮ độ hạt dòng cho `order_value`/`po_count`."""
@@ -60,7 +62,7 @@ def grouped_po_rows(db: Session, company_id: int | None, ranges: list[tuple[date
         return []
     dlv = _delivery_agg(db)
     q = (db.query(PurchaseOrder.order_date, PurchaseOrder.company_id, PurchaseOrder.department,
-                 POItem.item_group, PurchaseOrder.supplier_name, PurchaseOrder.supplier_code,
+                 PurchaseOrder.department_id, POItem.item_group, PurchaseOrder.supplier_name, PurchaseOrder.supplier_code,
                  PurchaseOrder.nspt, PurchaseOrder.id, POItem.qty_order, POItem.price, POItem.vat,
                  POItem.exchange_rate, dlv.c.done, dlv.c.ontime)
          .select_from(POItem)
@@ -73,13 +75,17 @@ def grouped_po_rows(db: Session, company_id: int | None, ranges: list[tuple[date
     q = q.order_by(POItem.id)
 
     out: list[Row] = []
-    for (order_date, comp_id, dept, item_group, sup_name, sup_code, nspt, po_id, qty, price, vat,
+    #  duoc-CR-663: gom theo id phòng, nhãn = tên hiện hành. Nơi gọi đã nạp sẵn thì truyền vào
+    #  (giữ số truy vấn cố định của báo cáo), không thì tự nạp.
+    if dept_names is None:
+        dept_names = load_department_names(db)
+    for (order_date, comp_id, dept, dept_id, item_group, sup_name, sup_code, nspt, po_id, qty, price, vat,
          rate, done, ontime) in q.all():
         #  Y HỆT `report_service.order_amount_of`: SL đặt × đơn giá × (1+VAT%) × tỷ giá quy đổi,
         #  cộng bằng float Python (xem docstring đầu tệp vì sao KHÔNG cộng ở SQL).
         order_value = (float(qty or 0) * float(price or 0) * (1 + float(vat or 0) / 100)
                       * normalize_rate(rate))
-        out.append(Row(kind="po", date_str=order_date, company_id=comp_id, department=dept or "",
+        out.append(Row(kind="po", date_str=order_date, company_id=comp_id, department=department_label(dept_names, dept_id, dept),
                        item_group=item_group or "", supplier=sup_name or sup_code or "",
                        nspt=nspt or "", order_value=order_value, po_id=po_id,
                        deliveries_done=done or 0, on_time_deliveries=ontime or 0))

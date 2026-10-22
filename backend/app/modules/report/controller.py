@@ -21,6 +21,7 @@ from app.modules.payable.model import Payable
 from app.modules.payable.service import ST_PAID
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from . import service as report_service
+from .department_label import department_label, load_department_names
 
 router = APIRouter(prefix="/api/reports", tags=["report"])
 
@@ -420,10 +421,15 @@ def procurement(request: Request, db: Session = Depends(get_db),
         rem_by_po[p.po_code] = rem_by_po.get(p.po_code, 0) + (float(p.total or 0) - float(p.paid_amount or 0))
 
     # ---- Breakdown theo dimension header (NCC / NSPT / Bộ phận) ----
+    dept_names = load_department_names(db)   # duoc-CR-663: Bộ phận gom theo id, nhãn = tên hiện hành
+
     def by_header(attr):
         agg = {}
         for po in pos:
-            key = getattr(po, attr) or "(Không rõ)"
+            if attr == "department":
+                key = department_label(dept_names, po.department_id, po.department) or "(Không rõ)"
+            else:
+                key = getattr(po, attr) or "(Không rõ)"
             e = agg.setdefault(key, {"key": key, "po_count": 0, "order_value": 0.0, "received_value": 0.0, "debt": 0.0})
             e["po_count"] += 1
             e["order_value"] += po_order_val.get(po.id, 0)

@@ -734,6 +734,7 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     trigger_notification(db=db, event="po_submitted", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
                          is_urgent=bool(po.is_urgent), link=f"/purchase-orders/{po.id}",
+                         doc_id=po.id,   # duoc-CR-662: lọc người duyệt theo phạm vi của chính đơn
                          # bao-CR-499: người được CHỌN ở ô «Trưởng phòng phê duyệt» cũng nhận báo duyệt.
                          extra_employee_ids=[po.approver_employee_id] if po.approver_employee_id else None)
     return success(_out(db, po), "Đã gửi duyệt")
