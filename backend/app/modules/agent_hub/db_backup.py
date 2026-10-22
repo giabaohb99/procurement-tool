@@ -7,7 +7,8 @@ vì dựng lại được từ DB + HDSD. Chế độ nhúng (`embedded`) thì b
 
 Bốn việc:
   · `run`          — mysqldump (dùng lại `backup.service`) → gzip → R2 `<env>/backup/<DB>-YYYYmmdd-HHMMSS.sql.gz` → ghi
-                     `tab_agent_db_backup` → giữ `keep_count()` bản mới nhất. Hỏng thì báo ngay.
+                     `tab_agent_db_backup` → dọn bằng `backup.service.prune_backups` (giữ `keep_count()` bản TỐT
+                     mới nhất, bản mới bé bất thường thì không dọn, dòng failed dọn theo tuổi). Hỏng thì báo ngay.
   · `watch`        — mỗi giờ: quá STALE_HOURS không có bản thành công thì báo (một lần mỗi 24 giờ; mới dựng thì chờ đủ
                      STALE_HOURS mới tính).
   · `restore_test` — mỗi tuần: nạp bản mới nhất vào DB tạm `<DB>_restore_test`, kiểm `alembic_version` + số bảng + đếm dòng
@@ -132,18 +133,30 @@ def _cursor(db: Session, name: str) -> AgentCursor:
 # ---------------------------------------------------------------------------
 # Sao lưu
 # ---------------------------------------------------------------------------
-def _prune(db: Session) -> int:
-    from app.core.storage import delete_key
+def _backup_items(db: Session) -> list:
+    from app.modules.backup.service import to_prune_item
 
-    olds = db.scalars(select(AgentDbBackup).where(AgentDbBackup.kind == Kind.BACKUP)
-                      .order_by(AgentDbBackup.id.desc()).offset(keep_count())).all()
-    for o in olds:
-        if o.file_key:
-            delete_key(o.file_key)
-        db.delete(o)
-    if olds:
-        db.commit()
-    return len(olds)
+    rows = db.scalars(select(AgentDbBackup).where(AgentDbBackup.kind == Kind.BACKUP)
+                      .order_by(AgentDbBackup.id.desc())).all()
+    return [to_prune_item(r, r.status == Status.SUCCESS) for r in rows]
+
+
+def _prune(db: Session, new_rec: AgentDbBackup) -> int:
+    """Cùng luật dọn với sao lưu ERP (`backup.service.prune_backups`): `keep_count()` chỉ đếm bản tốt,
+    dòng failed dọn theo tuổi, bản mới bé bất thường thì không dọn bản thành công nào và báo `alert()`."""
+    from app.core import storage
+    from app.modules.backup.service import prune_backups
+
+    return prune_backups(db, new_rec, _backup_items(db), keep=keep_count(), now=now_utc(),
+                         remove_file=storage.delete_key,
+                         notify=lambda t: alert(db, f"Sao lưu DB bot ({db_name()}): {t}"))
+
+
+def accept_new_size(db: Session, actor_id: int) -> int:
+    """Quản trị xác nhận DB bot thu nhỏ hợp lệ — gỡ dấu chuỗi bản đáng ngờ (xem ERP `accept_suspect_streak`)."""
+    from app.modules.backup.service import accept_suspect_streak
+
+    return accept_suspect_streak(db, _backup_items(db), actor_id=actor_id, now=now_utc())
 
 
 def run(db: Session, *, source: Source = Source.AUTO, actor_id: int = 0) -> AgentDbBackup:
@@ -167,8 +180,6 @@ def run(db: Session, *, source: Source = Source.AUTO, actor_id: int = 0) -> Agen
         upload_fileobj(io.BytesIO(gz), key, "application/gzip")
         rec.file_key, rec.size_bytes, rec.status, rec.finished_at = key, len(gz), Status.SUCCESS, now_utc()
         db.commit()
-        _prune(db)
-        return rec
     except Exception as e:
         db.rollback()
         r = db.get(AgentDbBackup, rec.id)
@@ -177,6 +188,13 @@ def run(db: Session, *, source: Source = Source.AUTO, actor_id: int = 0) -> Agen
             db.commit()
         alert(db, f"Sao lưu DB bot ({db_name()}) LỖI: {str(e)[:300]}")
         raise
+    #  Dọn NGOÀI khối trên: bản đã lên R2 mà bước dọn lỗi vẫn là bản thành công, không ghi failed.
+    try:
+        _prune(db, rec)
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: dọn bản sao lưu cũ lỗi, bản #%s vẫn thành công", rec.id)
+    return rec
 
 
 def last_success(db: Session) -> AgentDbBackup | None:
@@ -215,11 +233,11 @@ def _mysql(sql: str = "", *, database: str = "", stdin: bytes | None = None) -> 
     """Gọi client mysql/mariadb bằng thông số DB của dịch vụ. Mật khẩu qua biến môi trường, không lên dòng lệnh."""
     from shutil import which
 
-    from app.modules.backup.service import _la_client_mariadb
+    from app.modules.backup.service import is_mariadb_client
 
     exe = "mysql" if which("mysql") else "mariadb"
     cmd = [exe, "--default-character-set=utf8mb4", "-N", "-B"]
-    if _la_client_mariadb(exe):
+    if is_mariadb_client(exe):
         cmd.append("--ssl-verify-server-cert=0")
     cmd += ["-h", settings.DB_HOST, "-P", str(settings.DB_PORT), "-u", settings.DB_USER]
     if database:

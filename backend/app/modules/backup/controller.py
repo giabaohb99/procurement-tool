@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.audit import resolve_actor
+from app.core.audit import record, resolve_actor
 from app.core.auth import require
 from app.core.base_controller import pagination
 from app.core.database import get_db
@@ -39,6 +39,19 @@ def run_now(db: Session = Depends(get_db), user=Depends(require("backup", "creat
     """Sao lưu ngay (bấm tay) — đẩy task vào worker, trả về ngay."""
     run_backup_task.delay(source="manual", actor_id=user.id)
     return success(None, "Đã bắt đầu sao lưu — làm mới danh sách sau vài giây", 202)
+
+
+@router.post("/accept-size")
+def accept_size(db: Session = Depends(get_db), user=Depends(require("backup", "delete"))):
+    """*Chấp nhận cỡ mới*: CSDL thu nhỏ hợp lệ, gỡ dấu đáng ngờ để việc dọn bản cũ chạy lại.
+
+    Gác `backup.delete` vì hệ quả là lượt sau được phép xóa các bản to cũ.
+    """
+    n = service.accept_new_size(db, actor_id=user.id)
+    if not n:
+        raise HTTPException(400, "Không có bản sao lưu nào đang bị đánh dấu đáng ngờ")
+    record(db, user.id, "backup", 0, "accept_size", f"Chấp nhận cỡ mới cho {n} bản sao lưu gần nhất")
+    return success({"accepted": n}, f"Đã chấp nhận cỡ mới cho {n} bản — lượt sao lưu sau sẽ dọn bản cũ như thường")
 
 
 @router.get("/{bid}/download")

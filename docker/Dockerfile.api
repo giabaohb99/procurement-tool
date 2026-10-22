@@ -1,5 +1,7 @@
 # Backend API — FastAPI (dev: hot reload qua volume mount)
-FROM python:3.12-slim
+# Ghim Debian trixie: kho apt MySQL của Oracle (bước dưới) chỉ có bản cho từng đời Debian
+# cụ thể — để `python:3.12-slim` trôi sang đời mới là bước cài client MySQL gãy.
+FROM python:3.12-slim-trixie
 
 WORKDIR /app
 
@@ -10,10 +12,37 @@ WORKDIR /app
 # prod cùng một hành vi (dev vốn đã khai y hệt trong docker-compose.dev.yml).
 ENV PYTHONPATH=/app
 
-# Client MySQL/MariaDB (mysqldump), bộ đọc Word .doc đời cũ, ffmpeg (ai-CR-104: tách tiếng từ ghi âm / video họp).
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends default-mysql-client antiword ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+# Client MySQL 8.4 THẬT của Oracle (mysql + mysqldump), KHÔNG dùng `default-mysql-client`:
+# trên Debian gói đó là MariaDB, mà bản dump của `mariadb-dump` không nạp được vào MySQL 8.4
+# (lỗi 3105 ở cột sinh `tab_approval_instance.running_slot`) — phiếu kh-sao-luu-dung 22/10/2026.
+# Kho apt repo.mysql.com nhánh `mysql-8.4-lts` (chỉ có amd64).
+# LƯU Ý: Khóa ký lấy từ keyserver theo DẤU VÂN TAY ĐẦY ĐỦ, KHÔNG lấy tệp
+# https://repo.mysql.com/RPM-GPG-KEY-mysql-2023: tệp đó là bản cũ đã hết hạn 22/10/2025
+# (apt báo «not signed»), còn Oracle gia hạn khóa trên keyserver (hiện tới 23/10/2027).
+# Tải xong thì KIỂM LẠI dấu vân tay bằng gpg (cài tạm, gỡ ngay sau đó): đúng một khóa chính
+# và đúng dấu vân tay dưới đây, sai là dừng dựng. Kiểm cuối: mysql + mysqldump phải là `Ver 8.4.`
+# (kiểm DƯƠNG — thiếu hẳn chương trình cũng dừng, không chỉ né chữ MariaDB).
+ARG MYSQL_KEY_FPR=BCA43417C3B485DD128EC6D4B7B3B788A8D3785C
+ADD https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x${MYSQL_KEY_FPR} /etc/apt/keyrings/mysql.asc
+RUN set -e; \
+    chmod 644 /etc/apt/keyrings/mysql.asc; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends gnupg; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    gpg --batch --show-keys --with-colons /etc/apt/keyrings/mysql.asc > /tmp/mysql-key.txt; \
+    [ "$(grep -c '^pub:' /tmp/mysql-key.txt)" = "1" ] \
+        || { echo "Khóa MySQL tải về không phải đúng một khóa chính"; exit 1; }; \
+    [ "$(grep -m1 '^fpr:' /tmp/mysql-key.txt | cut -d: -f10)" = "$MYSQL_KEY_FPR" ] \
+        || { echo "Khóa MySQL tải về sai dấu vân tay"; exit 1; }; \
+    rm -rf "$GNUPGHOME" /tmp/mysql-key.txt; \
+    apt-get purge -y --auto-remove gnupg; \
+    echo "deb [signed-by=/etc/apt/keyrings/mysql.asc] https://repo.mysql.com/apt/debian trixie mysql-8.4-lts" \
+        > /etc/apt/sources.list.d/mysql.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends mysql-community-client antiword ffmpeg; \
+    mysqldump --version | grep -q ' Ver 8\.4\.' || { echo "mysqldump không phải MySQL 8.4"; exit 1; }; \
+    mysql --version | grep -q ' Ver 8\.4\.' || { echo "mysql không phải MySQL 8.4"; exit 1; }; \
+    rm -rf /var/lib/apt/lists/*
 
 # Cài dependency trước -> tận dụng cache, chỉ build lại khi requirements đổi
 COPY backend/requirements.txt /app/requirements.txt
