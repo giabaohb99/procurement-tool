@@ -17,7 +17,7 @@ Chạy trong container api:
 Idempotent: có thẻ gốc cũ thì xóa nguyên cây con (con trước, cha sau — FK tự
 tham chiếu không cascade) rồi dựng lại.
 
-⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/17-nghi-phep.md` và gói
+⚠️ Nội dung ở đây phải KHỚP với `doc/erp/hrm/02-nghi-phep.md` và gói
 cẩm nang trợ lý (Kho skill, hạt giống `app/modules/ai_skill/seed_handbook/40-nghi-phep.md`). Ba nơi lệch nhau
 thì người dùng đọc một đằng, trợ lý trả lời một nẻo.
 

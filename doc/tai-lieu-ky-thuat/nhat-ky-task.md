@@ -15649,3 +15649,18 @@ vì Thông tư 200 đã hết hiệu lực từ đầu năm, sửa tám chỗ sa
 chốt trước khi viết yêu cầu. Chưa có dòng mã nào.
 
 Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/00-tong-quan-nghiep-vu.md · doc/erp/README.md
+
+## duoc-CR-658 | Gom tài liệu chức năng Nhân sự về một thư mục để người mới đọc vào là phụ được
+- status: xong
+- date: 2026-10-22
+**Bối cảnh:** đại ca muốn tài liệu chức năng Nhân sự nằm chung một chỗ trong bộ tài liệu ERP, để người nhận việc tiếp theo đọc vào là biết đã có gì và phụ được ngay. Trước đó tài liệu Nghỉ phép và Lịch làm việc nằm lẫn trong bộ tài liệu chức năng Thu mua, còn Hồ sơ nhân sự lại nằm ở bộ ERP.
+
+**Đã làm**
+- Dời hai tài liệu Nghỉ phép và Lịch làm việc sang thư mục Nhân sự của bộ ERP, nội dung giữ nguyên, chỉ đổi số thứ tự thành 02 và 03. Chỗ cũ để lại một trang trỏ sang chỗ mới để các liên kết trong sổ thay đổi và kế hoạch cũ không bị gãy.
+- Viết **trang cửa vào** của thư mục Nhân sự: bản đồ tài liệu, các chức năng đã có mã mà chưa có tài liệu riêng (hợp đồng lao động, quyền mặc định theo chức vụ, nhập Excel nhân sự, báo cáo nhân sự), các luật đã chốt không được phá, **10 việc đang mở cần người phụ** và các bước kiểm trước khi giao.
+- Sửa mọi chỗ còn trỏ về đường dẫn cũ: tệp luật cho trợ lý AI, hai dòng chú thích trong mã, mục lục bộ ERP, mục lục tài liệu chức năng, bảng việc còn lại; sửa luôn một liên kết hỏng sẵn tới tài liệu tham khảo HrOnline.
+- Cập nhật lộ trình Nhân sự theo hiện trạng mã: thêm bảng tóm tắt từng nhóm chức năng đã có gì và còn thiếu gì so với phần mềm nhân sự ngoài thị trường, tách từng mục còn lại (nhận việc và nghỉ việc, tài sản cấp phát, tuyển dụng, đánh giá, bảo hiểm, đào tạo) kèm hiện trạng, và ghi thứ tự đề xuất làm tiếp.
+
+**Kết quả:** không đổi mã chạy. Mọi liên kết tương đối trong trang cửa vào đã kiểm là trỏ tới tệp có thật. Đã đẩy lên nhánh erp-v2.
+
+Mã nguồn: doc/erp/hrm/README.md · doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md · doc/erp/hrm/02-nghi-phep.md · doc/erp/hrm/03-lich-lam-viec.md · .claude/rules/hr-leave.md · doc/erp/README.md

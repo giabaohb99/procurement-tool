@@ -400,7 +400,7 @@ def primary_type_id(pairs: list[tuple[LeaveType, float]]) -> int:
 
     Đây là con số đi vào cột dẫn xuất `LeaveRequest.leave_type_id`, tức cũng là
     thứ bộ lọc danh sách và điều kiện rẽ nhánh của luồng duyệt đọc được. Xem
-    phần *Hạn chế đã biết* ở `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+    phần *Hạn chế đã biết* ở `doc/erp/hrm/02-nghi-phep.md`.
     """
     return max(pairs, key=lambda pair: pair[1])[0].id if pairs else 0
 
