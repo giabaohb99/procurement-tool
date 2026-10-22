@@ -15694,10 +15694,12 @@ Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
 
 **Điều kiện xong:** người chỉ có `read` không xuất được; người thiếu quyền nhạy cảm nhận ô rỗng ở cột nhạy cảm; có bài kiểm; hỏi đại ca trước khi commit.
 
-Mã nguồn: kế hoạch mục HR1-1 · `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` V0-2
+**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đang chờ đại ca duyệt trước khi commit. Xuất tệp nhân sự đòi quyền xuất, cột nhạy cảm bị che khi người xuất thiếu quyền xem nhạy cảm, tệp đã xuất chỉ người xuất hoặc người có quyền xuất toàn hệ tải lại được. Lên prod cần cấp lại quyền xuất cho vai trò đang chỉ có quyền xem.
+
+Mã nguồn: kế hoạch mục HR1-1 · `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` V0-2 · duoc-CR-660 · backend/app/modules/employee/export_mask.py · backend/app/modules/export_log/service.py · test/backend/test_quyen_xuat_nhap_cr660.py
 
 ## kh-HR1-2 | Cờ bắt buộc đính kèm của loại nghỉ phải chặn lúc gửi đơn
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15709,7 +15711,9 @@ Mã nguồn: kế hoạch mục HR1-1 · `doc/erp/hrm/README.md` §5 · `doc/erp
 
 **Điều kiện xong:** đơn nghỉ ốm không kèm giấy bị từ chối khi gửi; có bài kiểm.
 
-Mã nguồn: kế hoạch mục HR1-2 · `doc/erp/hrm/02-nghi-phep.md` §10
+**Kết quả:** Đã làm xong (duoc-CR-661). Gửi duyệt đơn nghỉ có loại nghỉ bật cờ bắt buộc đính kèm mà chưa có tệp thì bị từ chối kèm câu nêu tên loại nghỉ; lưu nháp không bị chặn. Màn đơn nghỉ có dấu sao đỏ ở mục tệp đính kèm và báo ngay khi bấm gửi mà chưa có tệp. Sáu bài kiểm mới, toàn bộ bài kiểm nghỉ phép xanh; đã qua rà mã.
+
+Mã nguồn: kế hoạch mục HR1-2 · `doc/erp/hrm/02-nghi-phep.md` §10 · duoc-CR-661 · backend/app/modules/leave/request_service.py · test/backend/test_nghi_phep_dinh_kem_bat_buoc_cr661.py
 
 ## kh-HR1-3 | Đề xuất người duyệt nghỉ phép cho các công ty ngoài AGC
 - status: dang-lam
@@ -15727,7 +15731,7 @@ Mã nguồn: kế hoạch mục HR1-2 · `doc/erp/hrm/02-nghi-phep.md` §10
 Mã nguồn: kế hoạch mục HR1-3
 
 ## kh-HR1-4 | Màn kiểm việc duyệt đang treo trước khi khóa tài khoản người nghỉ
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15738,7 +15742,9 @@ Mã nguồn: kế hoạch mục HR1-3
 
 **Điều kiện xong:** khóa tài khoản không để lại phiếu kẹt; có bài kiểm.
 
-Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0
+**Kết quả:** Đã làm xong (duoc-CR-665). Bốn lối khóa tài khoản (lưu hồ sơ nghỉ việc, nút khóa ở tab tài khoản, nút khóa ở danh sách tài khoản, dòng thôi việc của quá trình công tác) đều hiện danh sách việc duyệt người đó đang giữ và cho chuyển từng việc hoặc chuyển hết; còn việc treo vẫn khóa được sau khi xác nhận. Tiêu đề phiếu người xem không có quyền đọc được che. Chưa liệt kê ủy quyền, việc thu mua đang giữ và ghế trưởng bộ phận.
+
+Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0 · duoc-CR-665 · backend/app/modules/employee/pending_work_service.py · test/backend/test_viec_treo_truoc_khoa_cr665.py
 
 ## kh-HR1-5 | Tài liệu hợp đồng lao động và nhập bù ngày vào làm
 - status: dang-lam
@@ -15767,10 +15773,12 @@ Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5
 
 **Điều kiện xong:** người chỉ có `read` không xuất được; xuất chỉ ra dòng trong phạm vi; có bài kiểm; hỏi đại ca trước khi commit.
 
-Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9
+**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đang chờ đại ca duyệt trước khi commit. Xuất tệp sản phẩm, nhà cung cấp, phòng ban và mọi danh mục dùng khung chung đòi quyền xuất và chỉ ra dòng trong phạm vi; thêm quyền nhập riêng có cột Nhập ở ma trận phân quyền, cổng nhập tệp danh mục đòi quyền này. Lên prod cần cấp lại quyền nhập cho vai trò cũ vì mặc định là không có.
+
+Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9 · duoc-CR-660 · backend/app/core/permissions.py · backend/app/core/crud.py · migration cr660imp01
 
 ## kh-TM1-1 | Tìm vì sao đơn mua hàng và yêu cầu thanh toán không báo người duyệt
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15783,7 +15791,9 @@ Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-exp
 
 **Điều kiện xong:** người duyệt nhận chuông khi ĐMH / YCTT gửi duyệt, kể cả phòng tự mua; có bài kiểm.
 
-Mã nguồn: kế hoạch mục TM1-1
+**Kết quả:** Đã làm xong (duoc-CR-662). Nguyên nhân: hàm chọn người nhận chuông bỏ hẳn người có vai trò quản trị kể cả khi họ kiêm quản lý duyệt, và trả danh sách rỗng khi chỉ quản trị có quyền duyệt. Nay chuông tới người có quyền duyệt và thấy được phiếu, kể cả phòng tự mua, không ai thì rơi về quản trị; luồng duyệt thu mua giữ nguyên, duyệt dấu và đặt xe giữ cách chọn cũ. Mười một bài kiểm chạy đường thật; đã qua rà mã. Chưa đối chiếu được trên dữ liệu thật của bộ AGC.
+
+Mã nguồn: kế hoạch mục TM1-1 · duoc-CR-662 · backend/app/modules/notification/service.py · test/backend/test_thong_bao_duyet_dmh_yctt_cr662.py
 
 ## kh-VT1-1 | Lớp mức mật văn bản: chia sẻ có hạn, thu hồi, tra cứu qua kiểm quyền
 - status: dang-lam
@@ -15802,7 +15812,7 @@ Mã nguồn: kế hoạch mục TM1-1
 Mã nguồn: kế hoạch mục VT1-1 · `doc/erp/van-thu/02-lo-trinh-phat-trien.md` P5
 
 ## kh-CV1-1 | Chuông báo cho phân hệ Công việc
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15815,10 +15825,12 @@ Mã nguồn: kế hoạch mục VT1-1 · `doc/erp/van-thu/02-lo-trinh-phat-trien
 
 **Điều kiện xong:** được giao việc là có chuông; việc hiện trong Việc cần làm; có bài kiểm.
 
-Mã nguồn: kế hoạch mục CV1-1 · `doc/erp/cong-viec/03-lo-trinh-phase.md` W3
+**Kết quả:** Đã làm xong (duoc-CR-666). Được giao việc có chuông; đổi trạng thái và bình luận mới báo người phụ trách và người theo dõi, không báo chính người thao tác và chỉ báo người còn là thành viên dự án có quyền xem việc. Việc dự án mình phụ trách hiện trong tab Việc cần làm, bất biến tập cha CR-215 giữ nguyên. Mười hai bài kiểm mới chạy đường thật; đã qua rà mã.
+
+Mã nguồn: kế hoạch mục CV1-1 · `doc/erp/cong-viec/03-lo-trinh-phase.md` W3 · duoc-CR-666 · backend/app/modules/work/notify_service.py · test/backend/test_cong_viec_chuong_cr666.py
 
 ## kh-CV1-2 | Nợ nhỏ Công việc: sửa bình luận, màn thùng rác, ghim danh sách
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15831,10 +15843,12 @@ Mã nguồn: kế hoạch mục CV1-1 · `doc/erp/cong-viec/03-lo-trinh-phase.md
 
 **Điều kiện xong:** ba việc chạy trên dev, có bài kiểm.
 
-Mã nguồn: kế hoạch mục CV1-2
+**Kết quả:** Đã làm xong (duoc-CR-667). Người viết sửa được bình luận của mình, bình luận đã sửa có nhãn đã sửa; màn thùng rác có nút khôi phục theo cùng luật với xóa; ghim được tối đa hai mươi dự án lên đầu thanh bên, lưu theo từng người. Mười bốn bài kiểm mới; đã qua rà mã.
+
+Mã nguồn: kế hoạch mục CV1-2 · duoc-CR-667 · backend/app/modules/work · frontend-v2/src/modules/work · test/backend/test_cong_viec_sua_binh_luan_thung_rac_cr667.py
 
 ## kh-NT1-4 | Hai nợ nhỏ thu mua phía máy chủ
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15846,10 +15860,12 @@ Mã nguồn: kế hoạch mục CV1-2
 
 **Điều kiện xong:** đổi tên phòng không làm lệch báo cáo; có bài kiểm.
 
-Mã nguồn: kế hoạch mục NT1-4
+**Kết quả:** Đã làm xong (duoc-CR-663). Tên trên hóa đơn được ghi vào dòng đơn mua hàng lúc lưu, lúc sao chép và lúc nhập Excel, kèm migration bù dữ liệu cũ. Báo cáo mua hàng gom theo id phòng và hiện tên phòng hiện hành, đổi tên phòng không làm lệch số. Hạn chế còn lại: hai phòng trùng tên vẫn gộp một dòng, bộ lọc phạm vi báo cáo chi tiết yêu cầu mua hàng vẫn theo tên phòng.
+
+Mã nguồn: kế hoạch mục NT1-4 · duoc-CR-663 · migration cr663hdname01 · backend/app/modules/report/department_label.py · test/backend/test_ten_hoa_don_va_bao_cao_theo_id_phong_cr663.py
 
 ## kh-NT1-5 | Gác quyền phía giao diện cho các trang in
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15861,7 +15877,9 @@ Mã nguồn: kế hoạch mục NT1-4
 
 **Điều kiện xong:** người không có quyền mở link in thấy trang chặn, không thấy dữ liệu.
 
-Mã nguồn: kế hoạch mục NT1-5
+**Kết quả:** Đã làm xong (duoc-CR-668). Các trang in đòi đúng quyền của chứng từ, người thiếu quyền mở thẳng đường dẫn thấy trang chặn; trang in chưa khai quyền mặc định bị chặn và có bài kiểm toàn cục. Ba trang in văn bản, phiếu duyệt dấu và phiếu đặt xe cố ý không gác ở giao diện vì người duyệt trong luồng cần mở được, máy chủ vẫn kiểm quyền.
+
+Mã nguồn: kế hoạch mục NT1-5 · duoc-CR-668 · frontend-v2/src/app/router/print-route-access.ts · print-route-guard.test.tsx
 
 ## kh-HR2-2 | In phiếu thông tin nhân viên và cho nhân viên tự khai hồ sơ
 - status: dang-lam
@@ -15879,7 +15897,7 @@ Mã nguồn: kế hoạch mục NT1-5
 Mã nguồn: kế hoạch mục HR2-2 · `doc/erp/hrm/01-ho-so-nhan-su.md` §7.9, §7.10
 
 ## kh-HR2-3 | Báo cáo đối chiếu phép trước và sau kết sổ
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15890,10 +15908,12 @@ Mã nguồn: kế hoạch mục HR2-2 · `doc/erp/hrm/01-ho-so-nhan-su.md` §7.9
 
 **Điều kiện xong:** kết sổ xong có bảng đối chiếu.
 
-Mã nguồn: kế hoạch mục HR2-3 · `doc/erp/hrm/02-nghi-phep.md` §10
+**Kết quả:** Đã làm xong (duoc-CR-664). Kết sổ phép xong tự mở bảng đối chiếu từng người gồm số cũ, số mới, chênh lệch và số cộng vào năm sau, có nút xuất Excel và mở lại được bằng nút cạnh nút kết sổ. Số cũ dựng lại từ dấu kết sổ đã lưu nên không cần bảng mới; số truy vấn cố định; xuất Excel lọc theo phạm vi của quyền xuất. Tám bài kiểm mới; đã qua rà mã.
+
+Mã nguồn: kế hoạch mục HR2-3 · `doc/erp/hrm/02-nghi-phep.md` §10 · duoc-CR-664 · backend/app/modules/leave/carryover_review_service.py · test/backend/test_nghi_phep_doi_chieu_ket_so_cr664.py
 
 ## kh-HR2-5 | Sơ đồ tổ chức vẽ từ dữ liệu
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15904,7 +15924,9 @@ Mã nguồn: kế hoạch mục HR2-3 · `doc/erp/hrm/02-nghi-phep.md` §10
 
 **Điều kiện xong:** sơ đồ tự cập nhật khi đổi phòng / quản lý.
 
-Mã nguồn: kế hoạch mục HR2-5
+**Kết quả:** Đã làm xong (duoc-CR-669). Màn Sơ đồ tổ chức ở phân hệ Nhân sự tự vẽ từ pháp nhân, phòng ban, trưởng phòng và quản lý trực tiếp, đổi phòng hay đổi quản lý là sơ đồ đổi theo. Người xem chỉ thấy người trong phạm vi của mình, quản lý ngoài phạm vi bị ẩn, không có cột nhạy cảm, dữ liệu vòng không làm treo, số truy vấn cố định. Mười bài kiểm mới; đã qua rà mã.
+
+Mã nguồn: kế hoạch mục HR2-5 · duoc-CR-669 · backend/app/modules/employee/org_chart_controller.py · frontend-v2/src/modules/hr/pages/org-chart-page.tsx · test/backend/test_so_do_to_chuc_cr669.py
 
 ## duoc-CR-659 | Bản hợp đồng lao động bên Văn bản có nút «Ban hành» để ký luôn, không đứng mãi ở Nháp
 - status: xong
