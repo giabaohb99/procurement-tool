@@ -93,6 +93,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## ai-CR-231 | Bot giám sát phân biệt lỗi DNS với server sập
+- status: dang-lam
+- date: 2026-10-22
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** sự cố #4 ngày 22/10 lúc 10:16–10:20, bot giám sát báo prod *không kết nối được* trong khi prod vẫn sống; lỗi
+thật nằm ở DNS vùng .vn (DNSSEC của VNNIC). Báo sai kiểu này làm người trực tưởng sập và có thể kéo theo thao tác tự chữa
+vô ích.
+
+**Đang làm:** khi gọi health lỗi kết nối, bot thử lại một lần bằng cách đi thẳng tới địa chỉ Cloudflare của tên miền (lấy
+địa chỉ qua DNS khác, bỏ kiểm DNSSEC, vẫn giữ tên miền khi bắt tay mã hóa). Trả 200 thì ghi sự cố mức nhẹ *lỗi DNS, server
+sống*, không chẩn đoán, không tự chữa.
+
 ## ai-CR-230 | Đưa hoạt động AI vào hồ sơ cách làm việc: số dùng AI theo người và ngày, nhật ký thao tác biết việc nào AI làm hộ
 - status: xong
 - date: 2026-10-20
