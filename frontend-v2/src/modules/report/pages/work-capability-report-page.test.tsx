@@ -87,4 +87,19 @@ describe('WorkCapabilityReportPage (duoc-CR-657)', () => {
     const call = vi.mocked(apiGet).mock.calls.find(([url]) => String(url).endsWith('/load'))
     expect(call?.[1]).toMatchObject({ params: { department_id: '7' } })
   })
+
+  //  Lỗi 22/10/2026: không loại nào đủ mẫu thì cả khung biểu đồ biến mất, không một chữ giải thích.
+  it('keeps the chart card and explains when no type reaches the sample threshold', async () => {
+    vi.mocked(apiGet).mockResolvedValue({ ...summary, types: [{ ...typeBase, ...few }] })
+    renderPage()
+    expect(await screen.findByText('Thời gian trọn vòng — trung vị (ngày)')).toBeInTheDocument()
+    expect(screen.getByText(/Chưa loại việc nào đủ 5 phiếu xong trong kỳ/)).toBeInTheDocument()
+  })
+
+  it('keeps the chart card and suggests a longer period when nothing finished', async () => {
+    vi.mocked(apiGet).mockResolvedValue({ ...summary, types: [], people: [] })
+    renderPage()
+    expect(await screen.findByText('Thời gian trọn vòng — trung vị (ngày)')).toBeInTheDocument()
+    expect(screen.getByText(/chọn kỳ dài hơn để xem biểu đồ/)).toBeInTheDocument()
+  })
 })
