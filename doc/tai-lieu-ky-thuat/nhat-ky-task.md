@@ -15826,7 +15826,7 @@ Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-exp
 
 **Điều kiện xong:** người duyệt nhận chuông khi ĐMH / YCTT gửi duyệt, kể cả phòng tự mua; có bài kiểm.
 
-**Kết quả:** Đã làm xong (duoc-CR-662). Nguyên nhân: hàm chọn người nhận chuông bỏ hẳn người có vai trò quản trị kể cả khi họ kiêm quản lý duyệt, và trả danh sách rỗng khi chỉ quản trị có quyền duyệt. Nay chuông tới người có quyền duyệt và thấy được phiếu, kể cả phòng tự mua, không ai thì rơi về quản trị; luồng duyệt thu mua giữ nguyên, duyệt dấu và đặt xe giữ cách chọn cũ. Mười một bài kiểm chạy đường thật; đã qua rà mã. Chưa đối chiếu được trên dữ liệu thật của bộ AGC.
+**Kết quả:** Đã làm xong (duoc-CR-662). Nguyên nhân: hàm chọn người nhận chuông bỏ hẳn người có vai trò quản trị kể cả khi họ kiêm quản lý duyệt, và trả danh sách rỗng khi chỉ quản trị có quyền duyệt. Nay chuông tới người có quyền duyệt và thấy được phiếu, kể cả phòng tự mua, không ai thì rơi về quản trị; luồng duyệt thu mua giữ nguyên, duyệt dấu và đặt xe giữ cách chọn cũ. Mười một bài kiểm chạy đường thật; đã qua rà mã. Chưa đối chiếu được trên dữ liệu thật của bộ AGC. Hướng dẫn sử dụng cho phần này nạp bằng một lệnh `docker compose exec -T api python scripts/seed_help_thu_mua_cap_nhat.py`: thêm ba bài vào cây trợ giúp Thu mua mà không đè bài dựng tay, rồi nạp luôn vào kho tìm kiếm của trợ lý.
 
 Mã nguồn: kế hoạch mục TM1-1 · duoc-CR-662 · backend/app/modules/notification/service.py · test/backend/test_thong_bao_duyet_dmh_yctt_cr662.py
 
@@ -16381,3 +16381,20 @@ Mã nguồn: backend/scripts/seed_help_nghi_phep.py · seed_help_van_ban.py · s
 
 Commit: 5ae7d0fa (main), gộp erp-v2 ef7cd073 · Deploy: prod api, celery-worker, celery-beat
 Mã nguồn: docker/Dockerfile.api · backend/app/modules/backup/service.py · backend/app/modules/backup/controller.py · backend/app/modules/agent_hub/db_backup.py · backend/app/modules/agent_hub/controller.py · backend/scripts/restore_backup.py · test/backend/test_backup_dump_mysql_cr.py
+
+## duoc-CR-671 | Ép tải các tính năng ngày 22/10 và vá hai lỗi treo, lỗi dữ liệu trợ lý lòi ra khi ép
+- status: xong
+- date: 2026-10-22
+- pic: NSU265
+**Bối cảnh:** anh Được nhờ ép tải toàn bộ mã vừa đẩy lên trong ngày (duoc-CR-661 tới 670) để tìm lỗi khi dữ liệu nhiều, gọi dồn dập hoặc dữ liệu xấu.
+
+**Đã làm**
+- Viết thêm bốn tệp bài kiểm phía máy chủ và một tệp phía giao diện: nghỉ phép đính kèm và kết sổ với năm trăm nhân viên, chuông duyệt với hai trăm tài khoản quyền trộn lẫn, báo cáo một nghìn dòng qua đổi tên phòng, việc treo, chuông và thùng rác Công việc, sơ đồ tổ chức ba nghìn người có vòng lặp.
+- Đo tải thật từng đường mới ở mức một, mười, năm mươi và một trăm năm mươi người gọi cùng lúc; chạy lại mỗi script bài trợ giúp hai lần.
+- Tìm ra lớp ghi nhật ký lượt gọi chạm cơ sở dữ liệu ngay trên vòng xử lý chính, nên khi hết kết nối thì máy chủ treo hẳn tới lúc khởi động lại; đã chuyển phần ghi sang luồng phụ và thêm bài kiểm canh.
+- Tìm ra khi khoảng một trăm năm mươi lượt gọi dồn vào một tiến trình thì gần hết lượt hết giờ chờ, vì số luồng xử lý nhiều hơn số kết nối cơ sở dữ liệu; thêm cổng giới hạn mỗi tiến trình chỉ cho hai mươi lượt chạy cùng lúc, lượt dư xếp hàng, chờ quá ba mươi giây thì báo hệ thống đang bận.
+- Tìm ra mỗi lần chạy lại script bài trợ giúp thì kho tìm kiếm của trợ lý giữ lại nội dung bài cũ đã xóa; thêm lựa chọn dọn phần mồ côi vào script nạp kho và dọn sạch trên bản local.
+
+**Kết quả:** một trăm mười bốn bài kiểm mới đều đạt, không lỗi nào trong mã của ngày 22/10. Sau khi sửa, sáu mươi người gọi cùng lúc vào báo cáo mua hàng từ năm mươi hai trên một trăm hai mươi lượt đạt lên đủ một trăm hai mươi, lâu nhất 2,8 giây. Một trăm năm mươi người gọi cùng lúc từ hai mươi ba trên ba trăm lượt đạt lên đủ ba trăm, lâu nhất 4,7 giây. Khi deploy, chạy script nạp kho tìm kiếm kèm lựa chọn dọn mồ côi sau các script bài trợ giúp.
+
+Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurrency_gate.py · backend/app/core/config.py · backend/app/main.py · backend/app/modules/assistant/rag/indexer.py · backend/scripts/reindex_help_rag.py · test/backend/test_nhat_ky_khong_chan_vong_su_kien.py · test/backend/test_cong_gioi_han_luot_goi_dong_thoi.py · test/backend/test_stress_*_cr66*.py · frontend-v2/src/modules/hr/utils/org-chart-tree-stress.test.ts

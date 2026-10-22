@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     # không nâng `max_connections` của MySQL song song.
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 15   # 5 engine x (10+15) = 125 < 151 max_connections, xem core/database.py
+    # duoc-CR-671 — cổng số lượt gọi /api chạy CÙNG LÚC trong MỘT tiến trình (core/concurrency_gate.py).
+    # 0 = tự tính DB_POOL_SIZE + DB_MAX_OVERFLOW - 5. Phải NHỎ HƠN số kết nối bể, không thì bể đầy là
+    # khóa chết (lượt gọi giữ kết nối chờ luồng, luồng chờ kết nối). Chờ quá REQUEST_QUEUE_TIMEOUT giây → 503.
+    MAX_CONCURRENT_REQUESTS: int = 0
+    REQUEST_QUEUE_TIMEOUT: float = 30.0
 
     JWT_SECRET: str = "change_me_please"
     JWT_ALG: str = "HS256"

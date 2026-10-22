@@ -15,6 +15,10 @@ Ba luật cứng của tệp này:
    body và có đệm response hay không.
 3. **Không đệm thứ không phải JSON.** Tệp đính kèm, Excel, PDF chảy thẳng qua;
    đệm chúng vào RAM để ghi nhật ký là đổi một dòng nhật ký lấy vài chục MB.
+4. **Không chạm DB ngay trên vòng sự kiện.** `_write` / `_touch` mở `SessionLocal()` đồng bộ,
+   nên phải đi qua `run_in_threadpool`. Gọi thẳng thì khi bể kết nối đầy, vòng sự kiện đứng
+   chờ kết nối — mà kết nối đang bị giữ chỉ được trả khi chính vòng đó chạy tiếp để dọn `get_db`
+   → khóa chết, tiến trình treo tới khi restart (ép tải 22/10/2026: 60 lượt gọi đồng thời).
 
 Tài liệu gốc: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §2, §4.1, §6.
 """
@@ -24,6 +28,7 @@ import time
 import traceback
 
 from jose import ExpiredSignatureError, JWTError, jwt
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
@@ -197,9 +202,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             #  Lượt gọi nổ giữa chừng vẫn có thể đã commit vài nhịp đầu — phần
             #  đó là thay đổi thật, phải để lại dấu; phần chưa commit thì
             #  `flush_changes` tự bỏ (luật 4 của `core/change_tracker`).
-            flush_changes(ctx)
+            await run_in_threadpool(flush_changes, ctx)
             if wants_log:
-                self._write(ctx, method=method, path=path, request=request,
+                await run_in_threadpool(self._write, ctx, method=method, path=path, request=request,
                             request_body=request_body, status_code=500, response_body=None,
                             error_code="internal_error",
                             #  ⚠️ KHÔNG ghi thẳng `format_exc()`: SQLAlchemy dán
@@ -207,13 +212,13 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                             #  khẩu. Xem §4 của `logging_policy`.
                             error_detail=mask_error_detail(traceback.format_exc()),
                             duration_ms=int((time.perf_counter() - started) * 1000))
-            self._touch(ctx)
+            await run_in_threadpool(self._touch, ctx)
             reset_context(token)
             raise exc
 
         #  ⚠️ NGOÀI `if wants_log`: một lượt gọi không ghi `tab_request_log` vẫn
         #  có thể đổi dữ liệu, và bộ đệm bỏ lại trong ngữ cảnh thì không ai dọn.
-        flush_changes(ctx)
+        await run_in_threadpool(flush_changes, ctx)
 
         try:
             if wants_log and not should_skip_by_result(path, response.status_code):
@@ -229,7 +234,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                         response_body, error_code = _summarize_response(raw,
                                                                        response.status_code,
                                                                        path)
-                self._write(ctx, method=method, path=path, request=request,
+                await run_in_threadpool(self._write, ctx, method=method, path=path, request=request,
                             request_body=request_body, status_code=response.status_code,
                             response_body=response_body, error_code=error_code,
                             error_detail=None,
@@ -239,7 +244,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             #  cuối thấy thiết bị này» phải đúng kể cả với những đường không ghi
             #  nhật ký (`/api/notifications/unread-count` chẳng hạn). Ghi nhật ký
             #  và ghi phiên là hai câu hỏi khác nhau.
-            self._touch(ctx)
+            await run_in_threadpool(self._touch, ctx)
             reset_context(token)
         return response
 

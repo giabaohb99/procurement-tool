@@ -113,6 +113,16 @@ def missing_source_refs(db: Session) -> list[tuple[str, int]]:
     return [ref for ref in all_source_refs(db) if ref not in indexed]
 
 
+def orphan_source_refs(db: Session) -> list[tuple[str, int]]:
+    """(nguồn, id) còn đoạn trong kho mà bản ghi dưới DB đã bị xóa — rác, `search_docs` vẫn trích.
+
+    Sinh ra chủ yếu từ script `seed_help_*` dựng lại cây (xóa bài cũ bằng SQL, id mới) nên hook
+    `remove_source` của service không chạy. Chỉ LIỆT KÊ; dọn là `reindex_help_rag.py --purge-orphans`.
+    """
+    in_db = set(all_source_refs(db))
+    return sorted(ref for ref in get_store().source_refs() if ref not in in_db)
+
+
 def index_status(db: Session) -> dict:
     """Đối chiếu DB với kho vector, trả số liệu cho màn Cấu hình hệ thống.
 
