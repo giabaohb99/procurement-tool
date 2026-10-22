@@ -112,10 +112,20 @@ export function WorkCapabilityReportPage() {
       </div>
 
       {isLoading && <Skeleton className="h-64 w-full" />}
-      {bars.length > 0 && (
+      {/* Khung biểu đồ LUÔN dựng khi đã có số: trước đây thiếu cột là ẩn cả khung, người xem tưởng biểu
+          đồ bị mất. Loại dưới `min_samples` phiếu không có trung vị nên không lên cột — nói rõ điều đó. */}
+      {data && (
         <Card className="mb-3 p-4">
           <p className="mb-1 text-sm font-medium">Thời gian trọn vòng — trung vị (ngày)</p>
-          <HorizontalBarChart data={bars} unit="ngày" formatValue={(v) => formatDays(v)} />
+          {bars.length > 0 ? (
+            <HorizontalBarChart data={bars} unit="ngày" formatValue={(v) => formatDays(v)} />
+          ) : (
+            <p className="py-6 text-sm text-muted-foreground">
+              {data.types.length === 0
+                ? 'Chưa có phiếu nào xong trong kỳ này — chọn kỳ dài hơn để xem biểu đồ.'
+                : `Chưa loại việc nào đủ ${data.min_samples} phiếu xong trong kỳ để tính trung vị — chọn kỳ dài hơn hoặc bỏ bớt bộ lọc.`}
+            </p>
+          )}
         </Card>
       )}
 

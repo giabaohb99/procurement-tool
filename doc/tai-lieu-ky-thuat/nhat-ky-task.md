@@ -16414,3 +16414,17 @@ Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurre
 **Kết quả:** trên bản local hai bài đã vào Trung tâm trợ giúp và kho tìm kiếm của trợ lý; hỏi thử «bấm lưu báo hệ thống đang bận có mất dữ liệu không» thì trợ lý tìm đúng bài mới đứng đầu. Khi deploy prod chạy script nạp bài hệ thống một lệnh rồi chạy lệnh dọn kho tìm kiếm theo mục B.6.
 
 Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/help_seed_common.py · backend/scripts/seed_help_thu_mua_cap_nhat.py · doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md · .env.example
+
+## duoc-CR-672 | Giữ khung biểu đồ ở báo cáo Năng lực theo loại việc khi chưa đủ dữ liệu
+- status: xong
+- date: 2026-10-22
+- pic: NSU265
+**Bối cảnh:** anh Được thấy trang Năng lực theo loại việc không còn biểu đồ và hỏi có bị mất không.
+
+**Đã làm**
+- Kiểm trên bản local thì mã biểu đồ vẫn còn nguyên; biểu đồ chỉ vẽ loại việc có từ năm phiếu xong trở lên, mà ba mươi ngày qua chưa có phiếu nào xong và cả năm cũng chưa loại nào đủ năm phiếu, nên khung biểu đồ bị ẩn hẳn.
+- Sửa cho khung biểu đồ luôn hiện và ghi rõ lý do khi chưa có cột, giống cách trang Mức dùng chức năng đang làm, kèm hai bài kiểm.
+
+**Kết quả:** khi chưa đủ dữ liệu, người xem thấy câu giải thích và gợi ý chọn kỳ dài hơn thay vì một khoảng trống; khi đủ dữ liệu biểu đồ hiện như cũ.
+
+Mã nguồn: frontend-v2/src/modules/report/pages/work-capability-report-page.tsx · work-capability-report-page.test.tsx
