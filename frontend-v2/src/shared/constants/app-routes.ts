@@ -468,6 +468,8 @@ export const appRoutes = {
     departmentDetail: (id: number | string) => `/hr/departments/${id}`,
     companies: '/hr/companies',
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
+    /** Sơ đồ tổ chức tự vẽ từ dữ liệu (duoc-CR-669) — pháp nhân › phòng ban › người. */
+    orgChart: '/hr/org-chart',
     /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
