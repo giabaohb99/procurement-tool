@@ -118,7 +118,9 @@ def _tool_report_keys() -> dict:
     from app.core.report_keys import ReportKey
 
     return {"purchase_report": ReportKey.PURCHASE_REPORT, "analytics_query": ReportKey.PURCHASE_REPORT,
-            "top_suppliers_by_purchase": ReportKey.PURCHASE_REPORT}
+            "top_suppliers_by_purchase": ReportKey.PURCHASE_REPORT,
+            #  kh-AI1-2: cùng số với màn Năng lực theo loại việc (handler gác thêm setting.read như màn gốc).
+            "task_type_stats": ReportKey.WORK_CAPABILITY}
 
 
 def _report_denied(db, user, name: str) -> dict | None:

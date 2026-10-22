@@ -28,8 +28,10 @@ LOAD_FIELDS = ("open_items_total", "work_open", "work_overdue", "work_estimate_h
                "on_leave_today", "leave_days_ahead")
 STAT_FIELDS = ("n_done", "n_estimated", "below_threshold", "p50_days", "p90_days", "mean_days", "rework_rate",
                "first_pass_rate", "late_rate", "est_ratio_p50")
-KEY_HINT = ("Số năng lực theo từng người cần khóa báo cáo 16 «Năng lực theo loại việc» — quản trị giao ở Phân quyền tài "
+KEY_HINT = ("Số năng lực theo từng người cần ĐỦ HAI quyền như màn Năng lực theo loại việc: quyền xem Cấu hình hệ thống "
+            "(setting.read, theo vai trò) và khóa báo cáo 16 «Năng lực theo loại việc» — quản trị giao ở Phân quyền tài "
             "khoản → tab Báo cáo.")
+MAX_SCOPE = 500
 
 
 def _deny(what: str) -> dict:
@@ -37,10 +39,49 @@ def _deny(what: str) -> dict:
                                       "được thứ tự gợi ý người trong phòng mình (team_capacity), không kèm số."}
 
 
-def _has_key16(ctx: ToolContext) -> bool:
+def _has_full_view(ctx: ToolContext) -> bool:
+    """Đúng cửa gác KÉP của màn gốc (`capability/controller.py`): `setting.read` VÀ khóa báo cáo 16. Chỉ có một trong hai
+    thì mở màn bị 403 — công cụ cũng không được cho xem số (A2 rà 22/10)."""
     from app.modules.report_access.service import can_view_report
 
-    return can_view_report(ctx.db, ctx.user, ReportKey.WORK_CAPABILITY, ctx.profile)
+    return ctx.can("setting", "read") and can_view_report(ctx.db, ctx.user, ReportKey.WORK_CAPABILITY, ctx.profile)
+
+
+def _managed_pairs(ctx: ToolContext, depts: list, emp_id: int) -> set[tuple[int, int]]:
+    """(phòng, pháp nhân) người hỏi làm trưởng: `Department.manager_id` ở pháp nhân gốc + `DepartmentCompany.
+    manager_employee_id` ở pháp nhân khác (phòng dùng chung nhiều pháp nhân), kèm phòng con CÙNG pháp nhân. Trưởng ở pháp
+    nhân này không thấy nhân sự cùng phòng ở pháp nhân khác."""
+    from app.modules.department.model import DepartmentCompany
+
+    if not emp_id:
+        return set()
+    active = {int(d.id) for d in depts}
+    roots = {(int(d.id), int(d.company_id or 0)) for d in depts if int(d.manager_id or 0) == emp_id}
+    roots |= {(int(r.department_id), int(r.company_id)) for r in ctx.db.query(
+        DepartmentCompany.department_id, DepartmentCompany.company_id).filter(
+        DepartmentCompany.manager_employee_id == emp_id) if int(r.department_id) in active}
+    return {(child, co) for dept, co in roots for child in _add_children(depts, {dept})}
+
+
+def _scope_employees(ctx: ToolContext, dept_ids: set[int] | None, pairs: set[tuple[int, int]] | None,
+                     company_id: int | None) -> list[int]:
+    """Nhân sự đang làm trong phạm vi: theo cặp (phòng, pháp nhân) với trưởng phòng; theo phòng hoặc pháp nhân với người
+    xem đủ số. Trần MAX_SCOPE người."""
+    from app.modules.employee.model import Employee
+
+    q = ctx.db.query(Employee.id, Employee.department_id, Employee.company_id).filter(Employee.status != "resigned")
+    if pairs is not None:
+        q = q.filter(Employee.department_id.in_(sorted({d for d, _c in pairs})))
+    elif dept_ids:
+        q = q.filter(Employee.department_id.in_(sorted(dept_ids)))
+    elif company_id:
+        q = q.filter(Employee.company_id == company_id)
+    else:
+        return []
+    rows = q.order_by(Employee.id).all()
+    if pairs is not None:
+        rows = [r for r in rows if (int(r.department_id or 0), int(r.company_id or 0)) in pairs]
+    return [int(r.id) for r in rows][:MAX_SCOPE]
 
 
 def _load_departments(ctx: ToolContext) -> list:
@@ -123,13 +164,13 @@ def _pick(row: dict | None, fields: tuple) -> dict:
 def _team_capacity(ctx: ToolContext, args: dict) -> dict:
     from app.modules.capability import ai_contract
 
-    detail = _has_key16(ctx)
+    detail = _has_full_view(ctx)
     emp_id = int(getattr(ctx.user, "employee_id", 0) or 0)
     depts = _load_departments(ctx)
-    managed = {int(d.id) for d in depts if emp_id and int(d.manager_id or 0) == emp_id}
-    if not detail and not managed:
+    pairs = None if detail else _managed_pairs(ctx, depts, emp_id)
+    if pairs is not None and not pairs:
         return _deny("năng lực đội")
-    allowed = None if detail else _add_children(depts, managed)
+    allowed = None if pairs is None else {d for d, _c in pairs}
     kind, err = _parse_kind(args.get("kind"))
     if err:
         return err
@@ -142,6 +183,8 @@ def _team_capacity(ctx: ToolContext, args: dict) -> dict:
         dept_ids, err = _match_department(depts, allowed, raw_dept)
         if err:
             return err
+        if pairs is not None:
+            pairs = {(d, c) for d, c in pairs if d in set(dept_ids)}
     elif allowed is not None:
         dept_ids = sorted(allowed)
     else:
@@ -153,10 +196,10 @@ def _team_capacity(ctx: ToolContext, args: dict) -> dict:
         if not company_id:
             return {"error": "Tài khoản chưa gắn pháp nhân — nêu tên phòng muốn xem."}
     limit = _clamp_int(args.get("limit"), 10, 1, MAX_PEOPLE)
+    scope = _scope_employees(ctx, set(dept_ids) if dept_ids else None, pairs, company_id)
     ranked = ai_contract.suggest_assignees(
-        ctx.db, ctx.user, kind=kind, task_type_id=tt["id"] if tt else 0, company_id=company_id,
-        department_ids=dept_ids or None, limit=limit, window_days=_clamp_int(args.get("window_days"), 180, 30, 365),
-        profile=ctx.profile)
+        ctx.db, ctx.user, kind=kind, task_type_id=tt["id"] if tt else 0, employee_ids=scope, limit=limit,
+        window_days=_clamp_int(args.get("window_days"), 180, 30, 365), profile=ctx.profile) if scope else []
     people = []
     for r in ranked:
         item = {"rank": r["rank"], "employee_code": r["employee_code"], "full_name": r["full_name"],
@@ -174,7 +217,7 @@ def _team_capacity(ctx: ToolContext, args: dict) -> dict:
         note += " Thời gian tính bằng ngày lịch; tỷ lệ là số 0…1. Số `None` = chưa đủ 5 mẫu, nói «chưa đủ mẫu», đừng đoán."
     return {"kind": CycleKind(kind).name.lower(), "kind_label": CYCLE_KIND_LABELS[CycleKind(kind)], "task_type": tt,
             "departments": [names[i] for i in dept_ids if i in names][:20] or None, "company_id": company_id,
-            "detail": detail, "total": len(people), "has_more": len(people) == limit, "people": people, "note": note}
+            "detail": detail, "total": len(scope), "has_more": len(scope) > len(people), "people": people, "note": note}
 
 
 def _task_type_stats(ctx: ToolContext, args: dict) -> dict:
@@ -183,7 +226,7 @@ def _task_type_stats(ctx: ToolContext, args: dict) -> dict:
     from app.modules.capability.stats_service import StatsFilter
     from app.modules.employee.model import Employee
 
-    if not _has_key16(ctx):
+    if not _has_full_view(ctx):
         return _deny("thống kê năng lực theo loại việc")
     kinds: tuple[int, ...] = ()
     if args.get("kind"):

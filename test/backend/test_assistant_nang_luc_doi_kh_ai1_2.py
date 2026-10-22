@@ -75,7 +75,11 @@ def test_nhan_vien_thuong_bi_tu_choi_noi_ro_khoa_16(db, world):
     for name, args in (("team_capacity", {}), ("task_type_stats", {"kind": "purchase_request"})):
         out = T.run_tool(db, world.plain_u, name, args)
         assert out.get("denied") is True, name
-        assert "16" in out["reason"] and "Năng lực theo loại việc" in out["reason"] and "quản trị" in out["reason"].lower()
+        #  task_type_stats bị chặn từ cửa báo cáo chung (`_tool_report_keys`) nên câu nằm ở `error`.
+        msg = out.get("reason") or out.get("error")
+        assert "Năng lực theo loại việc" in msg and "quản trị" in msg.lower()
+        if name == "team_capacity":
+            assert "16" in msg and "setting.read" in msg
 
 
 def test_truong_phong_chi_thay_thu_tu_phong_minh_va_phong_con_khong_so(db, world):
@@ -120,6 +124,40 @@ def test_khoa_16_thay_du_so_moi_phong(db, world, khoa16):
     assert types["rows"][0]["n_done"] == 5 and types["rows"][0]["p50_days"] == 3.0 and "employee_code" not in types["rows"][0]
     one = T.run_tool(db, world.adm_u, "task_type_stats", {"person": "B", "by_person": True})
     assert {r["employee_code"] for r in one["rows"]} == {"B"}
+
+
+def test_khoa_16_ma_thieu_setting_read_khong_thay_so(db, world, cap_quyen, gan_bao_cao):
+    """A2 rà 22/10: màn gốc gác KÉP setting.read + khóa 16 — công cụ cũng phải đủ hai, thiếu một thì như không có khóa."""
+    for user in (world.adm_u, world.h_u):
+        role = cap_quyen(user.id, "work_task", scope="all", read=True)       # không có setting.read
+        gan_bao_cao(SUBJECT_ROLE, role.id, 16)
+    db.commit()
+    denied = T.run_tool(db, world.adm_u, "team_capacity", {})
+    assert denied.get("denied") is True and "setting.read" in denied["reason"] and "16" in denied["reason"]
+    assert T.run_tool(db, world.adm_u, "task_type_stats", {}).get("denied") is True
+    head = T.run_tool(db, world.h_u, "team_capacity", {"kind": "purchase_request"})
+    assert head["detail"] is False and all("stats" not in p for p in head["people"])
+
+
+def test_phong_dung_chung_nhieu_phap_nhan_theo_cap_phong_phap_nhan(db, world):
+    """Phòng D1 có mặt ở pháp nhân C2 với trưởng riêng (DepartmentCompany.manager_employee_id). Trưởng D1 ở C1 không
+    thấy nhân sự D1 của C2 và ngược lại; trưởng ở C2 nhận đúng vai trưởng."""
+    from app.modules.department.model import DepartmentCompany
+
+    co2 = make_company(db, "C2")
+    m_u, m = make_person(db, "M", co2, world.d1)
+    _y_u, _y = make_person(db, "Y", co2, world.d1)
+    db.add(DepartmentCompany(department_id=world.d1.id, company_id=co2.id, manager_employee_id=m.id))
+    db.commit()
+    assert set(_codes(T.run_tool(db, world.h_u, "team_capacity", {"limit": 20}))) == {"H", "A", "X", "P"}
+    assert set(_codes(T.run_tool(db, m_u, "team_capacity", {"limit": 20}))) == {"M", "Y"}
+
+
+def test_co_them_nguoi_thi_has_more(db, world):
+    out = T.run_tool(db, world.h_u, "team_capacity", {"limit": 1})
+    assert len(out["people"]) == 1 and out["total"] == 4 and out["has_more"] is True
+    out = T.run_tool(db, world.h_u, "team_capacity", {"limit": 4})
+    assert len(out["people"]) == 4 and out["has_more"] is False
 
 
 def test_tham_so_la_khong_vo(db, world, khoa16):

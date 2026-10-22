@@ -15980,8 +15980,12 @@ Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · ba
   phạm vi và phòng không tồn tại trả cùng một câu.
 - Khai đủ cho Trợ lý web, bot và cổng nối AI: sổ công cụ, danh sách chỉ đọc của cổng, nhóm cấu hình *Công việc*, nhóm
   lọc riêng *năng lực* (câu như *ai đang rảnh*, *giao cho ai*, *mất bao lâu*), nhãn ý định tra cứu việc.
+- Vá theo rà của Agent 2 ngày 22/10: xem đủ số phải có **cả hai** quyền như màn gốc (quyền xem Cấu hình hệ thống và khóa
+  báo cáo 16), thiếu một là như không có khóa; trưởng phòng tính theo cặp phòng và pháp nhân, nhận cả trưởng phòng ở pháp
+  nhân khác của phòng dùng chung, không thấy nhân sự cùng phòng ở pháp nhân khác; báo *còn nữa* đúng khi phạm vi đông hơn
+  số người trả về.
 
-**Kết quả:** 6 bài kiểm mới đạt (gồm ca trưởng hai phòng, ca phòng con, ca tham số lạ); cùng các bài canh cửa của Trợ
+**Kết quả:** 9 bài kiểm mới đạt (gồm ca trưởng hai phòng, phòng con, phòng dùng chung hai pháp nhân, có khóa 16 mà thiếu quyền xem cấu hình, tham số lạ); cùng các bài canh cửa của Trợ
 lý, cổng nối AI và lõi bot tổng 747 bài đạt. Mã ở nhánh `agent4/kh-ai1-2-nang-luc` trên máy em, chưa lên erp-v2.
 
 **Còn lại:** Agent 2 rà mã; đại ca gật thì đẩy lên erp-v2. Hướng B để đại ca chọn sau: mở trung vị theo loại việc
