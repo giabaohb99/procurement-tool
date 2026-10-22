@@ -164,6 +164,11 @@ def test_khuon_sai_tra_422_kem_tung_loi_va_khong_tao_gi(db, world):  # noqa: F81
         (0, 0, None, "assignees"), (0, 0, None, "due_date"), (0, 0, None, "estimate_hours"), (0, 0, None, "task_type")}
     db.refresh(row)
     assert row.status == AiPlanStatus.PENDING and db.query(WorkList).count() == 0
+    #  Dòng việc không tên báo lỗi đúng vị trí, không bỏ lặng (A3 góp ý 22/10).
+    blank = {**plan, "phases": [{"name": "A", "tasks": [{"title": "Có tên"}, {"title": "  ", "due_date": "2026-10-30"}]}]}
+    resp = C.edit_ai_plan(row.id, PlanEditIn(plan=blank), db=db, user=world["boss"])
+    p = _body(resp)["error"]["details"]["problems"]
+    assert resp.status_code == 422 and [(x["phase"], x["task"], x["field"]) for x in p] == [(0, 1, "title")]
     #  Người đã nghỉ việc không được giao.
     db.query(Employee).filter(Employee.id == world["an"].id).update({"status": "resigned"})
     db.commit()

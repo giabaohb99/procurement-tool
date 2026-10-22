@@ -120,9 +120,11 @@ def _collect_ids(phases_raw: list) -> tuple[set[int], set[int]]:
 
 def _normalize_task(raw: dict, people: dict, types: dict, problems: list[dict], where: dict, allow_sub: bool) -> dict | None:
     title = _text(raw.get("title"), 500)
-    if not title:
-        return None
     where = {**where, "key": str(raw.get("key") or "").strip().lower()[:20]}
+    if not title:
+        #  Báo lỗi, không bỏ lặng: sửa qua cổng MCP / bot không có giao diện chặn trước (A3 góp ý 22/10).
+        problems.append(_problem("dòng việc chưa có tên", "title", where))
+        return None
     assignees = []
     for a in (raw.get("assignees") or [])[:MAX_ASSIGNEES]:
         try:
