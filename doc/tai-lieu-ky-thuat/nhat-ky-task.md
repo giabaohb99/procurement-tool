@@ -15921,6 +15921,7 @@ Mã nguồn: kế hoạch mục HR2-5
 Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · backend/app/modules/document/controller.py · frontend-v2/src/modules/document/components/archive-contract-issue-button.tsx · frontend-v2/src/modules/document/config/document-action-gates.ts · frontend-v2/src/modules/document/pages/document-detail-page.tsx · test/backend/test_hdld_ban_hanh_tu_van_ban_cr659.py
 
 ## kh-AI1-2 | A1: công cụ AI xem năng lực đội và thống kê loại việc
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -15936,6 +15937,7 @@ Mã nguồn: backend/app/modules/document/labor_contract_archive_access.py · ba
 Mã nguồn: kế hoạch AI1-2 · `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7
 
 ## kh-AI1-3-may-chu | A2 phần máy chủ: AI lập kế hoạch đề xuất, lưu đề xuất và phần người sửa
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -15952,6 +15954,7 @@ Mã nguồn: kế hoạch AI1-2 · `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec
 Mã nguồn: kế hoạch AI1-3 · doc 22 §7
 
 ## kh-AI2-3 | Công cụ AI cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -15967,6 +15970,7 @@ Mã nguồn: kế hoạch AI1-3 · doc 22 §7
 Mã nguồn: kế hoạch AI2-3, DD2-2
 
 ## kh-AI2-4 | Mở MCP prompts và đếm lỗi dịch vụ AI
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -15982,6 +15986,7 @@ Mã nguồn: kế hoạch AI2-3, DD2-2
 Mã nguồn: kế hoạch AI2-4, AI2-5
 
 ## kh-AI1-3-giao-dien | Màn duyệt kế hoạch AI (giao diện v2)
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -15997,6 +16002,7 @@ Mã nguồn: kế hoạch AI2-4, AI2-5
 Mã nguồn: kế hoạch AI1-3
 
 ## kh-NT2-2 | Chip lọc nhanh trên 4 màn Thu mua
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16012,6 +16018,7 @@ Mã nguồn: kế hoạch AI1-3
 Mã nguồn: kế hoạch NT2-2 · `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md`
 
 ## kh-TM2-1 | Báo cáo thực hiện YCBG: tệp thật, nhớ gấp/mở, nhắc hạn
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16028,6 +16035,7 @@ Mã nguồn: kế hoạch NT2-2 · `doc/erp/nen-tang/14-filter-sort-man-danh-sac
 Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6
 
 ## kh-NT2-8 | Biểu đồ dashboard Tồn kho và màn lỗi tác vụ nền
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16043,6 +16051,7 @@ Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md
 Mã nguồn: kế hoạch NT2-8
 
 ## kh-CP-P1-2 | Điểm cà phê: nhập và xuất danh sách thành viên bằng Excel
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16058,6 +16067,7 @@ Mã nguồn: kế hoạch NT2-8
 Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/06-lo-trinh-phase.md`
 
 ## kh-AI1-1-hdsd | Soát trên dev và viết hướng dẫn cho các màn mới của anh Dược
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16073,6 +16083,7 @@ Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/06-lo-trinh-phase.md`
 Mã nguồn: kế hoạch AI1-1
 
 ## kh-DX2-1 | Kiểm thử tự động Playwright cho duyệt dấu và đặt xe
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16088,6 +16099,7 @@ Mã nguồn: kế hoạch AI1-1
 Mã nguồn: kế hoạch DX2-1
 
 ## kh-tai-lieu-agc | Cập nhật tài liệu chức năng sau đợt AGC và luồng duyệt riêng
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16103,6 +16115,7 @@ Mã nguồn: kế hoạch DX2-1
 Mã nguồn: kế hoạch mục 5, 6, 8, 9
 
 ## kh-dot-prod-5 | Đợt prod năm: D1 của anh Dược cùng các bản vá
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16118,6 +16131,7 @@ Mã nguồn: kế hoạch mục 5, 6, 8, 9
 Mã nguồn: kế hoạch AI1-1
 
 ## kh-van-hanh-a1 | Vận hành: khóa model prod, thử khôi phục sao lưu, nạp lại hướng dẫn tra cứu thị trường
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16134,6 +16148,7 @@ Mã nguồn: kế hoạch AI1-1
 Mã nguồn: kế hoạch AI1-4, NT1-6, NK1-1
 
 ## kh-du-lieu-a1 | Dữ liệu: lịch sử app đặt xe cũ, phân công người mua AGC, gắn công ty cho nhân sự
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
@@ -16150,6 +16165,7 @@ Mã nguồn: kế hoạch AI1-4, NT1-6, NK1-1
 Mã nguồn: kế hoạch DX1-1, TM1-2, NT1-3
 
 ## kh-NT1-2 | CI tối thiểu: tự chạy migration và bài kiểm mỗi lần đẩy mã
+- list: Kế hoạch hệ agent
 - status: dang-lam
 - date: 2026-10-22
 - pic: NSU209
