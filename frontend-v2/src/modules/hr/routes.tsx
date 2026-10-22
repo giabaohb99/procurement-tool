@@ -9,6 +9,7 @@ import {
   CalendarRange,
   IdCard,
   LayoutDashboard,
+  Network,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -45,6 +46,15 @@ export const hrModule: ErpModule = {
       label: 'Nhân sự',
       path: appRoutes.hr.employees,
       icon: IdCard,
+      entity: 'employee',
+      group: 'Danh mục',
+    },
+    {
+      //  duoc-CR-669: Sơ đồ tổ chức. ⚠️ `entity` ở đây LÀ hàng rào của route (gác
+      //  điều hướng mặc định MỞ); backend `/api/org-chart` gác `employee.read` + phạm vi.
+      label: 'Sơ đồ tổ chức',
+      path: appRoutes.hr.orgChart,
+      icon: Network,
       entity: 'employee',
       group: 'Danh mục',
     },
@@ -206,6 +216,12 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.employeeDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/employee-detail-page')).EmployeeDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.orgChart,
+      lazy: async () => ({
+        Component: (await import('./pages/org-chart-page')).OrgChartPage,
       }),
     },
     {
