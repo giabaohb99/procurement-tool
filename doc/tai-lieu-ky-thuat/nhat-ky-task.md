@@ -16109,6 +16109,8 @@ Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/06-lo-trinh-phase.md`
 - tag: Agent 2
 **Bối cảnh:** Trước đợt prod năm: báo cáo mức dùng chức năng, chỉ số Dùng AI, Loại việc, báo cáo năng lực theo loại việc (duoc-CR-655..657).
 
+**Đặt chỗ:** Agent 2 (*A2 Rà mã & Tài liệu*) nhận việc ngày 22/10/2026, làm trước hai việc *kh-tai-lieu-agc* và *kh-DX2-1*. Phạm vi soát thêm cả đợt duoc-CR-659..670 anh Dược đẩy chiều 22/10.
+
 **Việc cần làm**
 - Soát trên deverp bằng trình duyệt (skill soat-man-dev), báo lỗi đúng chủ khu.
 - Viết / cập nhật bài hướng dẫn trên Trung tâm trợ giúp (skill viet-hdsd).
@@ -16125,6 +16127,8 @@ Mã nguồn: kế hoạch AI1-1
 - tag: Agent 2
 **Bối cảnh:** Repo chưa có `playwright.config`; luồng 2 cổng duyệt dấu và 6 bước đặt xe chưa có kiểm thử đầu cuối.
 
+**Đặt chỗ:** Agent 2 (*A2 Rà mã & Tài liệu*) nhận việc ngày 22/10/2026, làm thứ ba sau *kh-AI1-1-hdsd* và *kh-tai-lieu-agc*. Đây là mã chạy nên phải hỏi đại ca trước khi commit.
+
 **Việc cần làm**
 - Dựng cấu hình Playwright chạy trên dev.
 - Viết kịch bản 2 cổng duyệt dấu + 6 bước đặt xe.
@@ -16140,6 +16144,8 @@ Mã nguồn: kế hoạch DX2-1
 - pic: NSU209
 - tag: Agent 2
 **Bối cảnh:** 21–22/10: bộ tài khoản AGC (phòng tự mua, thu hẹp theo công ty), luồng duyệt nghỉ phép + văn bản riêng AGC, bỏ luật mật khẩu chữ và số, cụm bảo mật bao-CR-655.
+
+**Đặt chỗ:** Agent 2 (*A2 Rà mã & Tài liệu*) nhận việc ngày 22/10/2026, làm thứ hai sau *kh-AI1-1-hdsd*.
 
 **Việc cần làm**
 - Ghi vào tài liệu chức năng và bài hướng dẫn liên quan (lập bộ tài khoản theo công ty, khai luồng duyệt riêng một công ty).
