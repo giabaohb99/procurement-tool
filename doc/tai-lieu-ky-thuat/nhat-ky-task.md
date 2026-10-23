@@ -15733,6 +15733,34 @@ Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
 
 Mã nguồn: kế hoạch mục HR1-1 · `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` V0-2 · duoc-CR-660 · backend/app/modules/employee/export_mask.py · backend/app/modules/export_log/service.py · test/backend/test_quyen_xuat_nhap_cr660.py
 
+### kh-HR1-1-1 | Xuất danh sách nhân sự phải có quyền Xuất, không chỉ quyền Xem
+- status: xong
+Trước đây ai xem được danh sách nhân sự là bấm tải được cả tệp CSV của toàn bộ hồ sơ trong phạm vi của mình. Đường xuất nay đòi quyền **Xuất** của nhân sự, và phạm vi dữ liệu trong tệp tính theo đúng quyền Xuất đó chứ không theo quyền Xem. Người chỉ có quyền Xem bấm xuất sẽ bị từ chối.
+Mã nguồn: `backend/app/modules/employee/controller.py` (đường `/api/employees/export/csv`).
+Commit: a18dd75f
+
+### kh-HR1-1-2 | Che các cột nhạy cảm khi xuất tệp nhân sự
+- status: xong
+Thêm một chốt che dùng chung cho mọi đường xuất nhân sự (CSV cũ, Excel, xuất tập trung): cột nào thuộc nhóm nhạy cảm (ngày sinh, CCCD, mã số thuế, số tài khoản ngân hàng…) mà người xuất không có quyền xem nhạy cảm thì ô để **trống**. Dòng hồ sơ của chính người xuất vẫn đủ. Hôm nay bộ cột xuất chưa có cột nhạy cảm nào, nhưng sau này ai thêm cột thì tự được che, không cần nhớ lọc tay.
+Mã nguồn: `backend/app/modules/employee/export_mask.py` (mới), danh sách cột nhạy cảm vẫn lấy từ `employee/sensitive.py`.
+Commit: a18dd75f
+
+### kh-HR1-1-3 | Tệp đã xuất chỉ người xuất hoặc người có quyền xuất toàn hệ tải lại được
+- status: xong
+Lượt rà mã phát hiện tệp xuất được lưu lại ở màn *Nhật ký xuất*, ai vào được màn đó là tải lại được tệp của người khác — kể cả tệp nhân sự do người có quyền nhạy cảm xuất (không bị che). Nay chỉ chính người xuất, hoặc người có quyền Xuất phạm vi «tất cả» trên đúng bảng đó, tải lại được; riêng tệp nhân sự còn đòi thêm quyền xem nhạy cảm phạm vi «tất cả».
+Mã nguồn: `backend/app/modules/export_log/service.py` (`can_download`), `export_log/controller.py`.
+Commit: a18dd75f
+
+### kh-HR1-1-4 | Bài kiểm cho cổng xuất và chốt che cột
+- status: xong
+Viết bộ bài kiểm mới cho quyền xuất, quyền nhập và việc che cột nhạy cảm; sửa ba tệp bài kiểm cũ đang giả định xuất chỉ cần quyền Xem. Trước khi commit chạy 283 bài kiểm liên quan, sau rebase chạy lại 70 bài, tất cả xanh.
+Mã nguồn: `test/backend/test_quyen_xuat_nhap_cr660.py` · `test_chong_mat_du_lieu_xoa_cung_cr169.py` · `test_chot_xoa_danh_muc_chung_cr191.py` · `test_van_thu_nhan_su_xoa_mem_cr177.py`.
+
+### kh-HR1-1-5 | Lên prod: tick lại quyền Xuất cho các vai trò đang cần xuất tệp nhân sự
+- status: dang-lam
+Mã đã lên nhánh erp-v2 nhưng chưa lên prod. Ngày deploy, các vai trò trên prod hiện chỉ có quyền Xem nhân sự sẽ mất nút xuất; quản trị phải vào màn *Phân quyền* tick ô **Xuất** cho đúng những vai trò cần tải tệp (thường là vai trò Nhân sự). Seed không tự làm việc này vì không được ghi đè phân quyền đã chỉnh trên giao diện.
+Deploy: chưa lên prod.
+
 ## kh-HR1-2 | Cờ bắt buộc đính kèm của loại nghỉ phải chặn lúc gửi đơn
 - status: xong
 - date: 2026-10-22
@@ -15796,6 +15824,40 @@ Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-du
 
 Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5 · duoc-CR-673 · doc/erp/hrm/04-hop-dong-lao-dong.md
 
+### kh-HR1-5-1 | Viết tài liệu hợp đồng lao động
+- status: xong
+Chức năng hợp đồng lao động làm qua khoảng mười đợt sửa nhưng chưa có tài liệu riêng, người mới phải lục sổ thay đổi và năm thư mục kế hoạch. Em viết phần A của tệp mới: các màn, loại hợp đồng và trạng thái, lập và sinh tệp từ mẫu Word của từng pháp nhân, danh sách biến của mẫu, bản lưu trữ ở phân hệ Văn bản và nút *Ban hành*, cảnh báo sắp hết hạn (báo trước 30 ngày, đỏ khi còn 15 ngày), mục *Hợp đồng của tôi*, bảng quyền. Số liệu đối chiếu thẳng với mã nguồn.
+Mã nguồn: `doc/erp/hrm/04-hop-dong-lao-dong.md` phần A.
+Commit: 5d0bcb60
+
+### kh-HR1-5-2 | Viết tài liệu quyền mặc định theo chức vụ
+- status: xong
+Phần B của tệp mới giải thích cho người dùng và người sửa mã: mỗi chức vụ một gói vai trò, khi nào hệ thống tự cấp, các luật chống tự nâng quyền (không tự cấp cho chính mình, không cấp vai trò vượt quyền mình, vai trò quản trị không được vào gói), hạn chế đã biết và ba bước đưa lên hệ đang chạy.
+Mã nguồn: `doc/erp/hrm/04-hop-dong-lao-dong.md` phần B.
+Commit: 5d0bcb60
+
+### kh-HR1-5-3 | Viết tài liệu nhập Excel nhân sự
+- status: xong
+Phần C mô tả quy trình chạy thử, ghi thật, hoàn tác; luật của tệp (ô trống là giữ nguyên, tối đa 2000 dòng, không xóa nhân sự qua tệp); quyền và cách xử lý cột nhạy cảm; hạn chế còn treo (bản chụp hoàn tác giữ vĩnh viễn). Ghi rõ đây là đường nhanh nhất để nhập bù ngày vào làm.
+Mã nguồn: `doc/erp/hrm/04-hop-dong-lao-dong.md` phần C.
+Commit: 5d0bcb60
+
+### kh-HR1-5-4 | Sắp lại tài liệu Nhân sự cho khớp
+- status: xong
+Chuyển hai mục hợp đồng ở cuối tài liệu hồ sơ nhân sự sang tệp mới, để lại một dòng trỏ. Trang mở đầu của bộ tài liệu Nhân sự thêm dòng cho tệp mới và không còn bảng «chức năng chưa có tài liệu». Sửa một dòng cũ ở tài liệu nghỉ phép còn ghi cờ «Bắt buộc đính kèm» chưa có tác dụng, trong khi việc kh-HR1-2 đã làm nó chạy.
+Mã nguồn: `doc/erp/hrm/README.md` · `01-ho-so-nhan-su.md` · `02-nghi-phep.md`.
+Commit: 5d0bcb60
+
+### kh-HR1-5-5 | Cập nhật kế hoạch theo phân hệ, mục Nhân sự
+- status: xong
+Kế hoạch viết ngày 22/10 vẫn ghi nhiều việc là chưa làm. Em chuyển các việc đã xong (bắt buộc đính kèm, kiểm việc treo trước khi khóa tài khoản, đối chiếu kết sổ phép, sơ đồ tổ chức) lên dòng «Đã có», ghi rõ tình trạng việc chặn xuất tệp nhân sự, và thu gọn việc này về phần dữ liệu còn lại.
+Mã nguồn: `doc/erp/00-ke-hoach-theo-module.md` mục 5.
+Commit: 5d0bcb60
+
+### kh-HR1-5-6 | Nhập bù ngày vào làm cho hồ sơ cũ
+- status: dang-lam
+Hồ sơ tạo trước 07/09/2026 phần lớn trống ngày vào làm vì lúc đó màn hình chưa có ô nhập. Thiếu ngày này thì thâm niên phép tính bằng 0 (người làm lâu năm không được cộng phép theo bậc), và báo cáo biến động nhân sự lấy ngày tạo hồ sơ thay cho ngày vào làm. Đang chờ phòng Nhân sự gửi dữ liệu; cách nhập là cột «Ngày vào làm» ở màn *Nhập Excel* của danh sách nhân sự. Nên xong trước khi cấp quỹ phép năm 2027.
+
 ## kh-NT1-1 | Quyền xuất và nhập riêng cho mọi màn danh mục (đi cùng HR1-1)
 - status: xong
 - date: 2026-10-22
@@ -15813,6 +15875,41 @@ Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5 · duo
 **Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (anh Được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp sản phẩm, nhà cung cấp, phòng ban và mọi danh mục dùng khung chung đòi quyền xuất và chỉ ra dòng trong phạm vi; thêm quyền nhập riêng có cột Nhập ở ma trận phân quyền, cổng nhập tệp danh mục đòi quyền này. Lên prod cần cấp lại quyền nhập cho vai trò cũ vì mặc định là không có.
 
 Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9 · duoc-CR-660 · backend/app/core/permissions.py · backend/app/core/crud.py · migration cr660imp01
+
+### kh-NT1-1-1 | Thêm quyền Nhập riêng vào bộ quyền
+- status: xong
+Nhập một tệp CSV có thể tạo, sửa và xóa cả bảng danh mục, nên không thể ngang với quyền sửa từng bản ghi. Bộ quyền nay có thêm hành động **Nhập** (đứng cuối, sau Xuất), có cột riêng trong bảng phân quyền vai trò, lưu ở cột mới `can_import` của bảng quyền. Migration chỉ thêm cột, mặc định tắt cho mọi vai trò cũ; riêng vai trò quản trị được bật lại lúc khởi động.
+Mã nguồn: `backend/app/core/permissions.py` · `core/action_catalog.py` · `modules/role/model.py`, `schema.py`, `controller.py` · `frontend-v2/src/core/authorization/permission-types.ts`.
+Commit: a18dd75f
+
+### kh-NT1-1-2 | Xuất danh mục dùng khung chung phải có quyền Xuất và chỉ ra dòng trong phạm vi
+- status: xong
+Mọi màn danh mục dựng bằng khung chung trước đây xuất CSV chỉ cần quyền Xem. Nay đường xuất đòi quyền **Xuất** và lọc theo phạm vi của quyền đó; đường nhập CSV đòi quyền **Nhập** thay cho quyền Sửa.
+Mã nguồn: `backend/app/core/crud.py` (`make_crud_router`).
+Commit: a18dd75f
+
+### kh-NT1-1-3 | Ba đường xuất viết tay: sản phẩm, nhà cung cấp, phòng ban
+- status: xong
+Ba danh mục này không dùng khung chung nên phải sửa riêng: xuất đòi quyền Xuất kèm lọc phạm vi, nhập đòi quyền Nhập.
+Mã nguồn: `backend/app/modules/product/controller.py` · `supplier/controller.py` · `department/controller.py`.
+Commit: a18dd75f
+
+### kh-NT1-1-4 | Nút Xuất và Nhập trên giao diện theo đúng quyền mới
+- status: xong
+Giao diện cũ hiện cả hai nút Export CSV và Import CSV cho ai có quyền Sửa. Nay nút Xuất chỉ hiện khi có quyền Xuất, nút Nhập chỉ hiện khi có quyền Nhập, khớp với chỗ máy chủ gác. Seed của bốn danh mục xe, tài xế, loại dấu, loại hồ sơ được thêm quyền Nhập cho vai trò đang quản lý chúng.
+Mã nguồn: `frontend/src/components/CrudList.tsx` · `backend/app/seed.py`.
+Commit: a18dd75f
+
+### kh-NT1-1-5 | Nối lại migration để không thành hai nhánh
+- status: xong
+Lúc chuẩn bị commit phát hiện một agent khác vừa đưa lên migration `aiplan01` mọc từ cùng gốc với migration của việc này, nên kho migration có **hai đầu** — commit nguyên thế thì máy chủ không tự nâng cấp được lúc khởi động. Em nối migration của việc này vào sau `aiplan01`, chạy lại trên máy em, còn đúng một đầu. Sau đó rebase lên nhánh chung (không xung đột) và đẩy lên.
+Mã nguồn: `backend/migrations/versions/cr660imp01_quyen_nhap_file_can_import.py`.
+Commit: a18dd75f · đẩy lên erp-v2 ngày 23/10/2026.
+
+### kh-NT1-1-6 | Lên prod: tick quyền Xuất và Nhập cho vai trò quản lý danh mục
+- status: dang-lam
+Ngày deploy, quản trị vào màn *Phân quyền* tick **Xuất** cho vai trò cần tải tệp danh mục và **Nhập** cho vai trò cần nhập CSV; vai trò cũ không tự có hai ô này. Kiểm lại sau deploy: một tài khoản chỉ có quyền Xem không còn thấy nút Xuất.
+Deploy: chưa lên prod.
 
 ## kh-TM1-1 | Tìm vì sao đơn mua hàng và yêu cầu thanh toán không báo người duyệt
 - status: xong
