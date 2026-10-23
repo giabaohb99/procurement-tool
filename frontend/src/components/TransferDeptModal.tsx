@@ -68,7 +68,7 @@ export default function TransferDeptModal({
         {isTransfer && (
           <div style={{ marginBottom: 12 }}>
             <label style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>Phòng nhận xử lý <span style={{ color: 'var(--red)' }}>*</span></label>
-            <SearchSelect value={deptId} onChange={setDeptId} options={targetOptions} placeholder="Chọn phòng ban" autoSelectSingle={false} />
+            <SearchSelect value={deptId} onChange={setDeptId} options={targetOptions} placeholder="Chọn phòng ban" />
             {touched && !deptOk && <div style={{ color: 'var(--red)', fontSize: 12, marginTop: 4 }}>Phải chọn phòng nhận</div>}
           </div>
         )}

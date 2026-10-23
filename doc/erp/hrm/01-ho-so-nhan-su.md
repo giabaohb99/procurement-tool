@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Phân hệ Nhân sự (HRM) — ERP v2 |
-| Bản | 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
+| Bản | 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
 | Dùng để làm gì | Chốt danh sách trường của hồ sơ nhân viên (mở rộng `tab_employee`), hai bảng con, chức năng màn hình, và phần tài khoản đăng nhập đi kèm |
 | Ai đọc | Đội phần mềm, người chủ trì |
 | Nguồn đối chiếu | [tham-khao-hrm/01-nhan-su.md](../tham-khao-hrm/01-nhan-su.md) (NS1, ~90 trường/7 nhóm), [tham-khao-hrm/10-de-xuat-ap-dung.md](../tham-khao-hrm/10-de-xuat-ap-dung.md) (V1-2, V1-3, V1-4), và **Phiếu thông tin nhân viên BM00../QT01/NS** (mẫu công ty đang dùng khi nhận việc, ban hành 01/06/2025) |
@@ -736,39 +736,6 @@ Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức** (`/hr/org-chart`). 
 - **Cho qua có xác nhận, không chặn cứng** (tài liệu không đòi chặn; có người nghỉ đột xuất cần khóa ngay): còn việc treo thì nút đổi thành «Vẫn khóa … (còn việc treo)». Bước luồng chỉ nêu và dẫn tới luồng, không sửa tại hộp.
 - Bài kiểm `test_viec_treo_truoc_khoa_cr665.py`.
 
-## HĐLĐ → bản lưu trữ ở phân hệ Văn bản (duoc-CR-629)
+## Hợp đồng lao động
 
-Mỗi hợp đồng lao động (`tab_labor_contract`) có cột `document_id` trỏ tới một văn bản loại `HDLD` ở phân hệ Văn bản (0 = chưa có).
-Cầu nối `labor_contract/document_archive_sync.archive_sync` chạy sau khi lập / sửa / sinh tệp / tải bản ký / chuyển trạng thái / xóa;
-lỗi chỉ ghi nhật ký, hợp đồng vẫn đi bình thường, sự kiện sau tự lành.
-
-- **Trạng thái:** Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực (ngày hết = ngày chấm dứt) · Đã hủy / HĐ xóa mềm → Lưu trữ · hồ sơ nhân sự xóa cứng → văn bản xóa mềm.
-- **Tệp:** văn bản giữ BẢN SAO (chép byte sang `tab_file` riêng, so `sha256`) của .docx đã sinh và bản đã ký; sinh lại / thay bản ký thì bản sao cũ bị gỡ. Văn bản là **gương** của hợp đồng, không lưu lịch sử mọi bản ký.
-- **«Ban hành» (duoc-CR-659):** khi hợp đồng còn Nháp, trang văn bản lưu trữ chỉ có MỘT nút «Ban hành» = **ký hợp đồng gốc** (qua `/api/labor-contracts/{id}/transition`, Nháp → Đã ký, ngày ký = hôm nay); đồng bộ sau đó đưa văn bản sang «Có hiệu lực». Nút hiện khi `/permissions` trả `can_issue_archive` (HĐ chưa xóa, đang Nháp, người xem ghi được HĐ). Văn bản vẫn không có trạng thái riêng.
-- **Tiêu đề / tóm tắt** chỉ có số hợp đồng + tên người + loại + ngày + trạng thái — KHÔNG lương, phụ cấp, CCCD, tài khoản.
-- **Quyền đọc** chỉ theo `labor_contract.read` trong phạm vi (xem `.claude/rules/document-folders-search.md`). Vai trò `hr_profile` được seed thêm `document.read` phạm vi «Của tôi» để mở danh sách / tải tệp (hệ đang chạy phải tick tay hoặc `SEED_FORCE_SYNC` một lần).
-- **Bù dữ liệu cũ:** `docker compose exec -T api python scripts/backfill_hdld_van_ban_luu_tru.py --dry-run` rồi chạy thật (idempotent); rollback: `--soft-delete-all`.
-- **Mẫu hợp đồng** (duoc-CR-629b bước A): màn quản lý mẫu chuyển sang `/document/settings?tab=templates&kind=labor-contract`; vẫn khóa `labor_contract_template`, API cũ.
-- **Bảng mẫu** (duoc-CR-629b bước B, migration `lbrct03`): mẫu hợp đồng nằm trong `tab_document_template` với `template_kind=2` (lớp `LaborContractTemplate`, single-table inheritance); `id` mẫu GIỮ NGUYÊN nên `tab_labor_contract.template_id` không đổi. Quyền không đổi (`labor_contract_template`, phạm vi pháp nhân). Bảng cũ còn tên `tab_labor_contract_template_bak629` tới lần phát hành sau (`lbrct04` xóa).
-
-### Danh sách biến của mẫu hợp đồng (duoc-CR-630)
-
-Nút «Danh sách biến» ở màn Mẫu hợp đồng mở trang `/hr/labor-contract-templates/variables` (API `/api/labor-contract-variables`,
-bảng `tab_labor_contract_variable`, migration `lbvar01`). Biến **toàn hệ thống**, dùng chung mọi pháp nhân.
-
-- **Hai loại biến.** *Hệ thống* (48 biến mã cứng ở `placeholder_catalog.py`): giá trị lấy từ hồ sơ, chỉ sửa được tên hiển thị, mô tả và
-  «Ẩn khỏi danh sách hướng dẫn» (biến ẩn vẫn dùng được trong mẫu); mã bất biến, không xóa. *Tùy chỉnh*: HR tự thêm, **nhập tay theo từng
-  hợp đồng** ở ô «Thông tin bổ sung cho mẫu» trong hộp Lập / Sửa hợp đồng.
-- **Kiểu giá trị** của biến tùy chỉnh: Chữ · Chữ nhiều dòng (xuống dòng thành ngắt dòng Word) · Số (không âm, tối đa 2 số lẻ, in `1.234,5`) ·
-  Ngày (in `dd/mm/yyyy`) · Tiền (đồng nguyên 0..10^12, in `15.000.000`; tự có thêm biến `{{ <mã>_bang_chu }}` đọc số thành chữ).
-- **Mã biến** `^[a-z][a-z0-9_]{1,39}$`, không `__`, không đuôi `_` hoặc `_bang_chu`, không trùng từ khóa bộ máy mẫu hay biến hệ thống. Tối đa 100 biến
-  tùy chỉnh; mỗi hợp đồng tối đa 100 khóa / 20 000 ký tự giá trị.
-- **Mặc định được SAO vào hợp đồng lúc lập** (hộp Lập điền sẵn). Đổi mặc định sau đó KHÔNG đổi hợp đồng đã lập.
-- **Bắt buộc** chặn *Sinh tệp* (chỉ biến mà mẫu thật sự dùng) và việc chuyển sang *Đã ký* (422 nêu NHÃN còn thiếu); lưu nháp không bao giờ bị chặn. Khi ký, hợp đồng còn mẫu thì xét biến của mẫu đó; không còn mẫu (chưa sinh, sửa sau khi sinh, ký bằng bản scan) thì xét biến của các mẫu đang dùng của CHÍNH pháp nhân hợp đồng (ưu tiên cùng loại hợp đồng, không có thì mọi loại; không mẫu nào thì không ép). Số 0 là giá trị thật cho kiểu Số / Tiền; chỉ ô để trống mới là «chưa nhập».
-- **Ngừng dùng** ≠ xóa. Ngừng dùng: biến mất ở ô nhập và khung «Chèn biến», mẫu mới không nhận được; mẫu cũ đã chứa nó vẫn sửa / sinh được, giá trị đã lưu
-  vẫn in và hiện CHỈ ĐỌC ở hộp Sửa hợp đồng. **Xóa** chỉ được khi không mẫu nào chứa và không hợp đồng nào (kể cả xóa mềm) giữ giá trị → 409 nêu số mẫu / hợp đồng
-  (chỉ liệt kê tên mẫu người xem thấy theo phạm vi + số mẫu còn lại). Biến đang dùng cũng bị khóa mã và kiểu.
-- **Quyền.** Xem = `labor_contract_template.read` (ô nhập trong hộp hợp đồng còn mở cho `labor_contract.create/write`). Thêm / sửa (cả nhãn biến hệ thống) = `write`, xóa = `delete`,
-  **và phải có phạm vi «tất cả pháp nhân»** (`variable_access.is_unrestricted`); HR một pháp nhân chỉ xem và dùng.
-- **Dữ liệu nhạy cảm.** `custom_values` che khỏi nhật ký request và nhật ký thay đổi như lương; tiêu đề / tóm tắt bản lưu trữ ở Văn bản không chứa giá trị biến.
-
+Hai mục về Hợp đồng lao động từng nằm ở cuối tệp này (bản lưu trữ ở phân hệ Văn bản — duoc-CR-629; danh sách biến của mẫu hợp đồng — duoc-CR-630) đã chuyển sang [`04-hop-dong-lao-dong.md`](04-hop-dong-lao-dong.md) §A.6, §A.7 ngày 23/10/2026 (duoc-CR-673).

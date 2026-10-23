@@ -409,10 +409,13 @@ export default function CrudList() {
               Xuất Excel{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
             </button>
           )}
-          {cfg.importExport && can(cfg.entity, 'write') && (
+          {/* duoc-CR-660: backend gác xuất CSV bằng `export`, nhập CSV bằng `import` (trước là `read` / `write`). */}
+          {cfg.importExport && (
             <>
-              <button className="btn outline" onClick={handleExport}><i className="ti ti-download" />Export CSV</button>
-              {!cfg.importDisabled && (
+              {can(cfg.entity, 'export') && (
+                <button className="btn outline" onClick={handleExport}><i className="ti ti-download" />Export CSV</button>
+              )}
+              {!cfg.importDisabled && can(cfg.entity, 'import') && (
                 <>
                   <button className="btn outline" onClick={() => fileInputRef.current?.click()}><i className="ti ti-upload" />Import CSV</button>
                   <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />

@@ -1,5 +1,6 @@
 import { Download, Inbox, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { usePermission } from '@/core/authorization/use-permission'
 
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
@@ -35,6 +36,8 @@ function defaultRange(): { from: string; to: string } {
  * kiếm; bấm vào thẻ mở trang chi tiết; thao tác Nhận / Bắt đầu / Hoàn tất trên thẻ.
  */
 export function MyTripsPage() {
+  //  duoc-CR-675: xuất Excel đòi `vehicle_booking.export` (tài xế được seed phạm vi «được giao»).
+  const canExport = usePermission().can('vehicle_booking', 'export')
   const [range, setRange] = useState(defaultRange)
   const [search, setSearch] = useState('')
 
@@ -86,10 +89,12 @@ export function MyTripsPage() {
               placeholder="Khoảng thời gian…"
               onChange={(from, to) => setRange({ from, to })}
             />
-            <Button variant="outline" size="sm" onClick={() => void handleExport()}>
-              <Download className="mr-1.5 size-4" />
-              Xuất Excel
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={() => void handleExport()}>
+                <Download className="mr-1.5 size-4" />
+                Xuất Excel
+              </Button>
+            )}
           </div>
         }
       />

@@ -136,13 +136,13 @@ def export_departments_csv(
     ids: str | None = Query(None),
     q: str | None = Query(None),
     db: Session = Depends(get_db),
-    user=Depends(require("department", "read")),
+    user=Depends(require("department", "export")),   # duoc-CR-660: trước đây `read`
 ):
     from app.core.csv_utils import export_csv_response
     from .model import Department
     
     query = db.query(Department)
-    cond = _scope_filter(db, user)   # xuất file phải cùng phạm vi với danh sách
+    cond = _scope_filter(db, user, "export")   # xuất file phải cùng phạm vi với danh sách
     if cond is not None:
         query = query.filter(cond)
     if q:
@@ -165,7 +165,7 @@ def export_departments_csv(
 def import_departments_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user=Depends(require("department", "write")),
+    user=Depends(require("department", "import")),
 ):
     """duoc-CR-628: Nhập CSV phòng ban đã NGỪNG (ghi thẳng cột, xóa hàng loạt, không chạy thử).
     Thay bằng «Quản trị → Quản lý Import → Phòng ban» (Excel, có chạy thử + hoàn tác)."""

@@ -51,7 +51,9 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import Counter
 from dataclasses import dataclass, field
+from decimal import Decimal
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -118,6 +120,8 @@ STATUS_MAP = {
     "cancelled": ("Xong", 3),
 }
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+#  duoc-CR-674: giờ nhập tay của task — cùng trần với khuôn `Hours` của máy chủ (0..999, tối đa 2 số lẻ).
+HOURS_RE = re.compile(r"^\d{1,3}([.,]\d{1,2})?$")
 
 # ── Markdown tối giản → HTML cho mô tả task (20/10/2026) ─────────────────────────────────────────────────────────────
 #  Chỉ những gì sổ dùng: đoạn (dòng ngắt cứng được nối lại), danh sách `- ` / `1. `, **đậm**, *nghiêng*, `mã`, và dòng
@@ -201,6 +205,12 @@ class JournalEntry:
     pic_codes: list[str] = field(default_factory=list)
     #  Nhãn «Tag» cần có trên task (`- tag:` + tag theo tiền tố, bao-CR-604).
     tag_names: list[str] = field(default_factory=list)
+    #  duoc-CR-674 — số liệu cho báo cáo Năng lực theo loại việc (duoc-CR-656/657). Rỗng = sổ KHÔNG khai,
+    #  script không đụng tới giá trị đang có trên ERP. Giờ lưu dạng chuỗi chuẩn "1.50".
+    task_type: str = ""        # `- loai:` — mã (hoặc tên) loại việc ở danh mục Loại việc
+    due_date: str = ""         # `- han:`
+    estimate_hours: str = ""   # `- gio-uoc:`
+    actual_hours: str = ""     # `- gio-thuc:` — chỉ hợp lệ khi `status: xong` (máy chủ cũng chặn)
 
     @property
     def display_title(self) -> str:
@@ -231,7 +241,8 @@ def _split_heading(head: str) -> tuple[str, str]:
 
 def parse_journal(path: Path) -> list[JournalEntry]:
     """Bóc các mục `## key | tiêu đề` (và việc con `### key | tiêu đề` ngay
-    dưới) — dòng `- status:`/`- date:`/`- list:`/`- pic:` là khai báo, mọi dòng
+    dưới) — dòng `- status:`/`- date:`/`- list:`/`- pic:`/`- tag:` và (duoc-CR-674)
+    `- loai:`/`- han:`/`- gio-uoc:`/`- gio-thuc:` là khai báo, mọi dòng
     khác trong thân là mô tả giữ nguyên văn."""
     entries: list[JournalEntry] = []
     parent: JournalEntry | None = None   # mục `##` gần nhất
@@ -290,14 +301,50 @@ def parse_journal(path: Path) -> list[JournalEntry]:
         if m:
             current.tag_names = [c.strip() for c in re.split(r"[,;]", m.group(2)) if c.strip()]
             continue
+        m = re.match(r"^-\s*(loai|loai-viec)\s*:\s*(.+)", raw, re.IGNORECASE)
+        if m:
+            current.task_type = m.group(2).strip()
+            continue
+        m = re.match(r"^-\s*(han|due)\s*:\s*(\S+)", raw, re.IGNORECASE)
+        if m:
+            if not DATE_RE.match(m.group(2)):
+                raise SystemExit(f"[{current.key}] han phải là YYYY-MM-DD")
+            current.due_date = m.group(2)
+            continue
+        m = re.match(r"^-\s*(gio-uoc|gio-thuc)\s*:\s*(\S+)", raw, re.IGNORECASE)
+        if m:
+            which = m.group(1).lower()
+            hours = _parse_hours(current.key, which, m.group(2))
+            if which == "gio-uoc":
+                current.estimate_hours = hours
+            else:
+                current.actual_hours = hours
+            continue
         if raw.strip():
             current.desc_lines.append(raw.rstrip())
     #  Key phải duy nhất TOÀN SỔ (kể cả việc con) — nó là mỏ neo idempotent.
-    all_keys = [e.key for e in entries] + [c.key for e in entries for c in e.children]
-    dup = sorted({k for k in all_keys if all_keys.count(k) > 1})
+    #  duoc-CR-675: đếm một lượt bằng Counter — `list.count` trong vòng lặp là bậc hai (sổ 18 000 mục mất ~3 giây).
+    seen = Counter([e.key for e in entries] + [c.key for e in entries for c in e.children])
+    dup = sorted(k for k, n in seen.items() if n > 1)
     if dup:
         raise SystemExit(f"Key trùng trong sổ: {', '.join(dup)} — mỗi key một mục")
+    for e in [x for p in entries for x in (p, *p.children)]:
+        #  Kiểm SAU khi đọc hết mục vì dòng `- status:` có thể đứng dưới dòng giờ.
+        if e.actual_hours and Decimal(e.actual_hours) > 0 and e.task_status != 2:
+            raise SystemExit(f"[{e.key}] gio-thuc chỉ khai khi status: xong (máy chủ từ chối giờ thực tế "
+                             "của việc chưa hoàn thành)")
+        if e.due_date and e.start_date and e.due_date < e.start_date:
+            raise SystemExit(f"[{e.key}] han ({e.due_date}) đứng trước date ({e.start_date})")
     return entries
+
+
+def _parse_hours(key: str, label: str, raw: str) -> str:
+    """`1,5` / `1.5` / `2` → `"1.50"` — cùng dạng chuỗi máy chủ trả về (`Numeric(6, 2)`)."""
+    value = raw.strip()
+    #  duoc-CR-675: regex một mình nhận cả 999.01…999.99 trong khi máy chủ chặn ở 999 → 422 giữa lượt đồng bộ.
+    if not HOURS_RE.match(value) or Decimal(value.replace(",", ".")) > 999:
+        raise SystemExit(f"[{key}] {label} phải là số giờ 0–999, tối đa 2 số lẻ (ví dụ 1.5)")
+    return f"{Decimal(value.replace(',', '.')):.2f}"
 
 
 class WorkApi:
@@ -390,6 +437,63 @@ class PeopleDirectory:
             f"Không tra ra nhân sự mã '{code}'. Kiểm lại mã trong sổ (hoặc "
             "WORK_SYNC_PIC), và kiểm tài khoản chạy script có quyền đọc hồ sơ "
             "nhân sự không.")
+
+
+class TaskTypeDirectory:
+    """Tra mã (hoặc tên) loại việc ra id — duoc-CR-674.
+
+    Cùng lý do với `PeopleDirectory`: id loại việc ở local, dev và prod khác nhau, nên sổ ghi MÃ. Chỉ tra loại
+    ĐANG DÙNG (loại đã ngừng thì máy chủ từ chối gán). Đường đọc chỉ đòi `work_task.read`.
+    """
+
+    def __init__(self, api: WorkApi):
+        self.api = api
+        self._rows: list[dict] | None = None
+
+    def _all(self) -> list[dict]:
+        if self._rows is None:
+            data = self.api.call("GET", "/api/work/task-types?is_active=true&page_size=500") or {}
+            self._rows = list(data.get("items") or [])
+        return self._rows
+
+    def id_of(self, ref: str) -> int:
+        needle = (ref or "").strip().casefold()
+        if not needle:
+            return 0
+        rows = self._all()
+        #  Khớp MÃ trước rồi mới tới TÊN. Mã chỉ duy nhất trong một pháp nhân (`uq_work_task_type_code`), nên
+        #  trùng nhiều pháp nhân thì ưu tiên loại dùng chung (company_id = 0); vẫn còn trùng thì báo, không đoán.
+        for col in ("code", "name"):
+            hits = [r for r in rows if str(r.get(col) or "").strip().casefold() == needle]
+            if len(hits) > 1:
+                hits = [r for r in hits if int(r.get("company_id") or 0) == 0] or hits
+            if len(hits) == 1:
+                return int(hits[0]["id"])
+            if hits:
+                raise SystemExit(f"Loại việc '{ref}' có ở nhiều pháp nhân — đặt mã riêng trong danh mục Loại việc")
+        have = ", ".join(sorted(str(r.get("code") or "") for r in rows)) or "(danh mục trống)"
+        raise SystemExit(f"Không có loại việc đang dùng mã hoặc tên '{ref}'. Đang có: {have}")
+
+
+def effort_patch(entry: JournalEntry, task: dict, types: TaskTypeDirectory) -> dict:
+    """Các trường loại việc / hạn / giờ mà sổ CÓ KHAI và đang khác trên ERP (duoc-CR-674).
+
+    Gửi CÙNG lượt PATCH với `status`: máy chủ áp trạng thái trước rồi mới áp giờ, nên một lượt vừa «xong» vừa
+    nhập giờ thực tế vẫn hợp lệ. Trường sổ không khai thì không đụng — người dùng tự nhập trên ERP vẫn giữ.
+    """
+    out: dict = {}
+    if entry.task_type:
+        type_id = types.id_of(entry.task_type)
+        if int(task.get("task_type_id") or 0) != type_id:
+            out["task_type_id"] = type_id
+    if entry.due_date and (task.get("due_date") or "") != entry.due_date:
+        out["due_date"] = entry.due_date
+    for col in ("estimate_hours", "actual_hours"):
+        want = getattr(entry, col)
+        have = task.get(col)
+        if want and (have in (None, "") or Decimal(str(have)) != Decimal(want)):
+            out[col] = want
+    return out
 
 
 def sync_pic(api: WorkApi, task: dict, entry: JournalEntry,
@@ -534,7 +638,7 @@ def _key_of(title: str) -> str:
 
 
 def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry,
-                  people: PeopleDirectory, dry: bool) -> None:
+                  people: PeopleDirectory, dry: bool, types: TaskTypeDirectory) -> None:
     """Upsert việc con của một mục `##`. Việc con không có cột kanban (C-05),
     nên chỉ so tiêu đề / mô tả / trạng thái / ngày bắt đầu."""
     if not parent.children:
@@ -548,6 +652,7 @@ def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry,
         old = by_key.get(c.key)
         if old is None:
             if dry:
+                effort_patch(c, {}, types)   # tra mã loại việc ngay ở dry-run để lộ lỗi sớm
                 print(f"[dry-run]   sẽ tạo việc con [{c.key}] của [{parent.key}]")
                 continue
             created = api.call("POST", f"/api/work/tasks/{parent_id}/subtasks", {
@@ -555,9 +660,9 @@ def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry,
                 "description": c.description,
                 "start_date": c.start_date,
             })
-            if c.task_status != 1:
-                api.call("PATCH", f"/api/work/tasks/{created['id']}",
-                         {"status": c.task_status})
+            first = ({"status": c.task_status} if c.task_status != 1 else {}) | effort_patch(c, created, types)
+            if first:
+                api.call("PATCH", f"/api/work/tasks/{created['id']}", first)
             print(f"  + con [{c.key}] của [{parent.key}]")
             sync_pic(api, created, c, people, dry, indent="  ")
             continue
@@ -570,6 +675,7 @@ def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry,
             patch["status"] = c.task_status
         if c.start_date and (old.get("start_date") or "") != c.start_date:
             patch["start_date"] = c.start_date
+        patch |= effort_patch(c, old, types)
         if not patch:
             print(f"  = con [{c.key}] không đổi")
         elif dry:
@@ -594,7 +700,8 @@ def index_all_tasks(api: WorkApi) -> dict[str, tuple[int, str, dict]]:
 def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
          people: PeopleDirectory, dry: bool,
          elsewhere: dict[str, tuple[int, str, dict]] | None = None,
-         move: bool = False) -> None:
+         move: bool = False, types: TaskTypeDirectory | None = None) -> None:
+    types = types or TaskTypeDirectory(api)
     sections = ensure_sections(api, list_id, {e.section_name for e in entries}, dry)
     board = api.call("GET", f"/api/work/lists/{list_id}/board") if list_id else {"tasks": []}
     #  Khớp theo tiền tố "key — " để đổi TIÊU ĐỀ trong sổ không đẻ task mới.
@@ -621,6 +728,8 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
         if old is None:
             if dry:
                 print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
+                for x in (e, *e.children):
+                    effort_patch(x, {}, types)   # tra mã loại việc ngay ở dry-run để lộ lỗi sớm
                 for c in e.children:
                     print(f"[dry-run]   sẽ tạo việc con [{c.key}] của [{e.key}]")
                 continue
@@ -631,13 +740,13 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
                 "description": e.description,
                 "start_date": e.start_date,
             })
-            if e.task_status != 1:
-                api.call("PATCH", f"/api/work/tasks/{created['id']}",
-                         {"status": e.task_status})
+            first = ({"status": e.task_status} if e.task_status != 1 else {}) | effort_patch(e, created, types)
+            if first:
+                api.call("PATCH", f"/api/work/tasks/{created['id']}", first)
             print(f"+ tạo [{e.key}] ({e.section_name})")
             sync_pic(api, created, e, people, dry)
             sync_tags(api, created, e, tag_field, tag_opts, dry)
-            sync_children(api, int(created["id"]), e, people, dry)
+            sync_children(api, int(created["id"]), e, people, dry, types)
             continue
 
         patch: dict = {}
@@ -651,6 +760,7 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
             patch["status"] = e.task_status
         if e.start_date and (old.get("start_date") or "") != e.start_date:
             patch["start_date"] = e.start_date
+        patch |= effort_patch(e, old, types)
         if not patch:
             print(f"= [{e.key}] không đổi")
         elif dry:
@@ -660,7 +770,7 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
             print(f"~ cập nhật [{e.key}]: {', '.join(patch)}")
         sync_pic(api, old, e, people, dry)
         sync_tags(api, old, e, tag_field, tag_opts, dry)
-        sync_children(api, int(old["id"]), e, people, dry)
+        sync_children(api, int(old["id"]), e, people, dry, types)
 
 
 def load_env_file(path: Path) -> dict[str, str]:
@@ -744,6 +854,7 @@ def main() -> None:
     api = WorkApi(base_url)
     api.login(username, password)
     people = PeopleDirectory(api)
+    types = TaskTypeDirectory(api)
     try:
         if default_pics:
             print("Người phụ trách mặc định: " + ", ".join(default_pics))
@@ -759,7 +870,7 @@ def main() -> None:
                     else:
                         print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
                 continue
-            sync(api, list_id, group_entries, people, args.dry_run, elsewhere, args.move)
+            sync(api, list_id, group_entries, people, args.dry_run, elsewhere, args.move, types)
     finally:
         #  Kể cả dry-run hay lỗi giữa chừng: phiên mở ra thì phải đóng lại.
         api.logout()

@@ -64,6 +64,7 @@ class PermissionItem(BaseModel):
     can_cancel: bool = False
     can_print: bool = False
     can_export: bool = False
+    can_import: bool = False
     scope: Str10 = "own"
 
 

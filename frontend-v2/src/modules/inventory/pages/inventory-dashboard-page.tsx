@@ -5,6 +5,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { ChartCard } from '@/shared/ui/chart'
+import { HorizontalBarChart } from '@/shared/ui/horizontal-bar-chart'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { StatCard } from '@/shared/ui/stat-card'
@@ -20,6 +21,7 @@ import { formatMoney } from '@/shared/utils/format-money'
 import { useProcurementDashboard } from '@/modules/procurement/hooks/use-procurement-dashboard'
 import type { LowStockItem } from '@/modules/procurement/api/procurement-dashboard-api'
 import { useInventoryItems } from '../hooks/use-inventory'
+import { buildWarehouseValueBars } from '../utils/warehouse-value-bars'
 
 /**
  * Tổng quan Kho: KPI giá trị tồn kho, hết hàng, bảng cảnh báo tồn kho thấp và lối tắt quản lý kho.
@@ -48,6 +50,9 @@ export function InventoryDashboardPage() {
 
   const kpi = overview?.kpi
   const lowStock = overview?.low_stock ?? []
+  //  kh-NT2-8 (NF-22): giữ tám kho lớn nhất, còn lại gom «Khác» — thẻ cao tám dòng là
+  //  vẫn đọc được trên điện thoại, mà công ty hiện chưa tới chục kho.
+  const warehouseBars = buildWarehouseValueBars(overview?.kpi_inv_by_warehouse, WAREHOUSE_BAR_TOP)
 
   if (!canInventory) {
     return (
@@ -101,6 +106,17 @@ export function InventoryDashboardPage() {
           loading={isStockLoading}
         />
       </div>
+
+      <ChartCard
+        className="mb-4"
+        title="Giá trị tồn theo kho"
+        description="Tổng giá trị hàng tồn của từng kho, kho lớn nhất ở trên"
+        loading={isOverviewLoading}
+        isEmpty={warehouseBars.length === 0}
+        emptyLabel="Chưa có giá trị tồn ở kho nào trong phạm vi bạn xem được."
+      >
+        <HorizontalBarChart data={warehouseBars} unit="đ" formatValue={compactMoney} />
+      </ChartCard>
 
       {/* Main Grid: Cảnh báo Tồn kho thấp + Lối tắt Quản lý */}
       <div className="grid gap-4 lg:grid-cols-3">
@@ -226,4 +242,18 @@ export function InventoryDashboardPage() {
       </div>
     </PageContainer>
   )
+}
+
+/** Số kho vẽ riêng trên biểu đồ giá trị tồn; phần còn lại gom thành «Khác». */
+const WAREHOUSE_BAR_TOP = 8
+
+/** 286.000.000 -> "286 tr"; 1.675.469.039 -> "1,7 tỷ" — cùng cách rút gọn của dashboard Thu mua. */
+function compactMoney(value: number): string {
+  if (Math.abs(value) >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} tỷ`
+  }
+  if (Math.abs(value) >= 1_000_000) {
+    return `${Math.round(value / 1_000_000).toLocaleString('vi-VN')} tr`
+  }
+  return formatMoney(value)
 }

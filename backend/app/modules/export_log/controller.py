@@ -88,6 +88,8 @@ def download_export_file(bid: int, db: Session = Depends(get_db), user=Depends(g
     x = service.get_export(db, bid)
     if not x or not x.file_id:
         raise HTTPException(404, "Không có file")
+    if not service.can_download(db, user, x):
+        raise HTTPException(403, "Chỉ người đã xuất, hoặc người có quyền xuất toàn hệ trên bảng này, được tải lại tệp")
     sf = db.get(StoredFile, x.file_id)
     if not sf:
         raise HTTPException(404, "Không tìm thấy file đã lưu")

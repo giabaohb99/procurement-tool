@@ -285,23 +285,23 @@ export default function CustomsPrices() {
             placeholder="vd ATRAZINE, mancozeb, glyphosate…" />
         </FilterItem>
         <FilterItem label="Mã HS" width={150}>
-          <SearchSelect value={draft.hs_code} placeholder="Tất cả" autoSelectSingle={false}
+          <SearchSelect value={draft.hs_code} placeholder="Tất cả"
             options={optionList('hs_codes')} onChange={set('hs_code')} />
         </FilterItem>
         <FilterItem label="Xuất xứ" width={150}>
-          <SearchSelect value={draft.origin} placeholder="Tất cả" autoSelectSingle={false}
+          <SearchSelect value={draft.origin} placeholder="Tất cả"
             options={optionList('origins')} onChange={set('origin')} />
         </FilterItem>
         <FilterItem label="Đơn vị tính" width={120}>
-          <SearchSelect value={draft.unit} placeholder="Tất cả" autoSelectSingle={false}
+          <SearchSelect value={draft.unit} placeholder="Tất cả"
             options={optionList('units')} onChange={set('unit')} />
         </FilterItem>
         <FilterItem label="Phân loại" width={150}>
-          <SearchSelect value={draft.product_kind} placeholder="Tất cả" autoSelectSingle={false}
+          <SearchSelect value={draft.product_kind} placeholder="Tất cả"
             options={PRODUCT_KIND_OPTIONS} onChange={set('product_kind')} />
         </FilterItem>
         <FilterItem label="Hàm lượng / dạng" width={150}>
-          <SearchSelect value={draft.formulation} placeholder="Tất cả" autoSelectSingle={false}
+          <SearchSelect value={draft.formulation} placeholder="Tất cả"
             options={optionList('formulations')} onChange={set('formulation')} />
         </FilterItem>
         {/* bao-CR-502 — lọc theo NGÀY đăng ký (trước là tháng), khớp bản v2: bộ lọc đã lưu dùng chung một
@@ -330,11 +330,11 @@ export default function CustomsPrices() {
                 placeholder="Gõ tên để thêm…" onPick={addPartnerFilter} />
             </FilterItem>
             <FilterItem label="Nguyên tệ" width={110}>
-              <SearchSelect value={draft.currency} placeholder="Tất cả" autoSelectSingle={false}
+              <SearchSelect value={draft.currency} placeholder="Tất cả"
                 options={optionList('currencies')} onChange={set('currency')} />
             </FilterItem>
             <FilterItem label="Điều kiện giao hàng" width={130}>
-              <SearchSelect value={draft.incoterm} placeholder="Tất cả" autoSelectSingle={false}
+              <SearchSelect value={draft.incoterm} placeholder="Tất cả"
                 options={optionList('incoterms')} onChange={set('incoterm')} />
             </FilterItem>
             {/* bao-CR-503 — sheet 4 mục 13: tệp nguồn chọn NHIỀU (backend nhận «1,2»). */}

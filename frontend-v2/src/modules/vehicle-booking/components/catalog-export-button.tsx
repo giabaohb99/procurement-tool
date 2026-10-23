@@ -4,9 +4,13 @@ import { useSearchParams } from 'react-router-dom'
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { downloadFile } from '@/core/api'
+import type { PermissionEntity } from '@/core/authorization/permission-types'
+import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
 
 interface CatalogExportButtonProps {
+  /** Khóa quyền của danh mục — nút chỉ hiện khi có quyền Xuất (duoc-CR-675, máy chủ gác `export`). */
+  entity: PermissionEntity
   /** Đường dẫn API danh mục (vd '/api/vehicles') — endpoint xuất là `<apiPath>/export/xlsx`. */
   apiPath: string
   /** Tên trường tìm kiếm nhanh của danh mục (vd 'license_plate') — để dịch `q` trên URL. */
@@ -21,8 +25,9 @@ interface CatalogExportButtonProps {
  * trên URL trừ phân trang, và dịch ô tìm kiếm (`q`) sang đúng tên trường lọc
  * mà backend hiểu (`searchParam`), khớp cách `CrudListPage` gọi API danh sách.
  */
-export function CatalogExportButton({ apiPath, searchParam, filename }: CatalogExportButtonProps) {
+export function CatalogExportButton({ entity, apiPath, searchParam, filename }: CatalogExportButtonProps) {
   const [searchParams] = useSearchParams()
+  const canExport = usePermission().can(entity, 'export')
 
   const handleExport = async () => {
     trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
@@ -39,6 +44,8 @@ export function CatalogExportButton({ apiPath, searchParam, filename }: CatalogE
     const suffix = q.toString()
     await downloadFile(`${apiPath}/export/xlsx${suffix ? `?${suffix}` : ''}`, filename)
   }
+
+  if (!canExport) return null
 
   return (
     <Button variant="outline" size="sm" onClick={() => void handleExport()}>

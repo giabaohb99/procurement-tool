@@ -239,6 +239,12 @@ export const appRoutes = {
     task: (id: number | string) => `/project/tasks/${id}`,
     /** Danh mục LOẠI VIỆC (quản trị khai) — duoc-CR-656. */
     taskTypes: '/project/task-types',
+    /**
+     * Đề xuất kế hoạch AI chờ duyệt (kh-AI1-3). Chi tiết phải KHỚP `REVIEW_PATH` ở
+     * `backend/app/modules/ai_plan/service.py` — link trong tin của bot dẫn vào đây.
+     */
+    aiPlans: '/project/ai-plans',
+    aiPlan: (id: number | string) => `/project/ai-plans/${id}`,
   },
   document: {
     root: '/document',

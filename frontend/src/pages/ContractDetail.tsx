@@ -78,11 +78,11 @@ export default function ContractDetail() {
         <h3 className="sec-title">Thông tin hợp đồng</h3>
         <div className="form-grid">
           <div className="form-row"><label>Đối tượng *</label>
-            <SearchSelect value={c.party_type} options={PARTY_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('party_type', v)} />
+            <SearchSelect autoSelectSingle value={c.party_type} options={PARTY_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('party_type', v)} />
           </div>
           {isNCC ? (
             <div className="form-row"><label>Nhà cung cấp *</label>
-              <SearchSelect value={c.party_code || ''} disabled={!canEdit} placeholder="Chọn/tìm NCC…"
+              <SearchSelect autoSelectSingle value={c.party_code || ''} disabled={!canEdit} placeholder="Chọn/tìm NCC…"
                 options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                 onChange={(v) => onPickParty(v)} />
             </div>
@@ -96,7 +96,7 @@ export default function ContractDetail() {
           </div>
           <div className="form-row"><label>Loại hợp đồng</label>
             {/* Lưu MÃ (`purchase`…), hiện nhãn tiếng Việt — CR-118. Gửi giá trị ngoài bộ này backend trả 422. */}
-            <SearchSelect value={c.contract_type || ''} options={CONTRACT_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('contract_type', v)} />
+            <SearchSelect autoSelectSingle value={c.contract_type || ''} options={CONTRACT_TYPES} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('contract_type', v)} />
           </div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Trích yếu hợp đồng</label><input value={c.title || ''} disabled={!canEdit} onChange={(e) => setH('title', e.target.value)} /></div>
           {/* Hiệu lực hợp đồng = 1 khoảng ngày → dùng chung bộ chọn khoảng (không có nút nhanh vì là kỳ hạn tương lai) */}
@@ -108,7 +108,7 @@ export default function ContractDetail() {
               onChange={(v) => setC((s: any) => ({ ...s, start_date: v.from, end_date: v.to }))} />
           </div>
           <div className="form-row"><label>Trạng thái</label>
-            <SearchSelect value={c.status} options={C_STATUS} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('status', v)} />
+            <SearchSelect autoSelectSingle value={c.status} options={C_STATUS} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('status', v)} />
           </div>
           <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!c.signed} disabled={!canEdit} onChange={(e) => setH('signed', e.target.checked)} style={{ width: 18, height: 18 }} /> Đã ký</label></div>
           <div className="form-row" style={{ gridColumn: '1 / -1' }}><label>Ghi chú</label><textarea value={c.note || ''} disabled={!canEdit} onChange={(e) => setH('note', e.target.value)} /></div>

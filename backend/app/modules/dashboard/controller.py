@@ -136,6 +136,22 @@ def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_curr
     return success(data)
 
 
+def _group_inventory_by_warehouse(db: Session, invs: list) -> list[dict]:
+    """kh-NT2-8 (NF-22): giá trị tồn theo kho, gom từ đúng danh sách `invs` ĐÃ qua `apply_scope` — không quét lại bảng.
+    Tên kho: một truy vấn danh mục theo danh sách mã; kho chưa có trong danh mục thì tên là chính mã kho."""
+    from app.modules.catalog.model import Warehouse
+
+    groups: dict[str, list] = {}
+    for i in invs:
+        groups.setdefault(i.warehouse_code or "", []).append(i)
+    codes = [c for c in groups if c]
+    names = dict(db.query(Warehouse.code, Warehouse.name).filter(Warehouse.code.in_(codes)).all()) if codes else {}
+    rows = [{"warehouse_code": code, "warehouse_name": names.get(code) or code,
+             "value": round(sum(float(i.value or 0) for i in items), 2), "lines": len(items)}
+            for code, items in groups.items()]
+    return sorted(rows, key=lambda r: (-r["value"], r["warehouse_code"]))
+
+
 @router.get("/overview")
 def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tổng hợp trang chủ — LỌC THEO QUYỀN + PHẠM VI. Khối nào user không có quyền Xem
@@ -175,6 +191,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     kpi = {}
     cost_12m, categories, top_suppliers, dept_spend = [], [], [], []
     po_status, ap_aging, recent_pos, recent_prs, low_stock = [], [], [], [], []
+    inv_by_warehouse: list[dict] = []
     top_debt_suppliers = []
     pending_prs_list, pending_srs_list, pending_surveys_list, late_deliveries_list = [], [], [], []
     target_year = str(today.year)
@@ -329,6 +346,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         low_stock = [{"product_code": i.product_code, "product_name": i.product_name, "qty": float(i.qty or 0),
                       "unit": i.unit, "warehouse_code": i.warehouse_code}
                      for i in sorted(invs, key=lambda x: float(x.qty or 0))[:8]]
+        inv_by_warehouse = _group_inventory_by_warehouse(db, invs)
 
     # ===== Cảnh báo (lọc theo quyền từng loại) =====
     # Truyền user để build() lọc cả QUYỀN lẫn PHẠM VI (apply_scope) — trước đây gọi
@@ -353,6 +371,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         "recent_pos": recent_pos,
         "recent_prs": recent_prs,
         "low_stock": low_stock,
+        "kpi_inv_by_warehouse": inv_by_warehouse,
         "alerts": al_items[:6],
         "alert_total": len(al_items),
         "can": can_map,

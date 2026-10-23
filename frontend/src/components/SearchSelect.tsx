@@ -10,7 +10,10 @@ const rsComponents = (table: boolean) =>
   table ? { Input: NoAutofillInput, IndicatorSeparator: () => null } : { Input: NoAutofillInput }
 
 /** Select có tìm kiếm (gõ để lọc). Danh sách ngắn/dài đều dùng được.
- *  - Chỉ 1 lựa chọn duy nhất → tự gán (ô BỘ LỌC tắt bằng `autoSelectSingle={false}`).
+ *  - Mặc định KHÔNG tự gán (bao-CR-658). Biểu mẫu muốn "chỉ 1 lựa chọn → tự gán" thì khai
+ *    `autoSelectSingle`, và CHỈ khi danh mục là danh sách cố định hoặc danh mục PUBLIC
+ *    (NCC, sản phẩm, kho, ĐVT, phân loại...). Ô BỘ LỌC và ô chọn từ danh mục lọc theo quyền
+ *    (công ty, phòng ban, nhân sự...) KHÔNG được bật: xem scripts/check-no-autoselect-filter.mjs.
  *  - Trống → để rỗng (không hiện "—").
  *  - variant="table": gọn cho ô trong bảng (không nút X, viền trong suốt khi rảnh, gõ là sổ).
  *  - colorMap: {giá trị → mã màu} → hiển thị như badge có màu (dùng cho cột trạng thái).
@@ -19,7 +22,7 @@ const rsComponents = (table: boolean) =>
  */
 export default function SearchSelect({
   value, options, onChange, disabled, placeholder = '', width, variant = 'form', colorMap, wrap,
-  autoSelectSingle = true,
+  autoSelectSingle = false,
 }: {
   value?: string | number
   options: (string | Opt)[]
@@ -31,10 +34,11 @@ export default function SearchSelect({
   colorMap?: Record<string, string>
   /** Nhãn dài (tên NCC…) hiện đủ chữ thay vì bị cắt. Mặc định tắt để không đổi các ô cũ. */
   wrap?: boolean
-  /** bao-CR-388: ô BỘ LỌC phải đặt `false`. Luật "1 lựa chọn → tự gán" sinh ra cho FORM
-   *  (vd chỉ có một ĐVT), nhưng ở ô lọc thì rỗng nghĩa là "Tất cả": người bị scope thu hẹp
-   *  (danh sách NSTM chỉ còn chính họ) bị tự gán vào bộ lọc, bấm X xóa xong effect gán lại
-   *  ngay — không bỏ lọc được và danh sách rỗng vĩnh viễn. */
+  /** Mặc định `false` từ bao-CR-658. Luật "1 lựa chọn → tự gán" chỉ dành cho FORM có danh mục
+   *  cố định/PUBLIC (vd chỉ có một ĐVT). Ở ô lọc thì rỗng nghĩa là "Tất cả": người bị scope thu
+   *  hẹp (danh sách NSTM chỉ còn chính họ) bị tự gán vào bộ lọc, bấm X xóa xong effect gán lại
+   *  ngay — không bỏ lọc được và danh sách rỗng vĩnh viễn (bao-CR-388, bao-CR-657). Ở form có
+   *  danh mục lọc theo quyền (công ty, phòng ban, nhân sự) thì tự điền SAI mà không báo. */
   autoSelectSingle?: boolean
 }) {
   const opts: Opt[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o))
@@ -42,7 +46,7 @@ export default function SearchSelect({
   const valStr = value !== undefined && value !== null ? String(value) : ''
   const color = colorMap && valStr ? colorMap[valStr] : undefined
 
-  // Chỉ có đúng 1 lựa chọn và chưa chọn gì → tự gán luôn (trừ khi ô là bộ lọc, xem prop)
+  // Chỉ khi ô khai autoSelectSingle: đúng 1 lựa chọn và chưa chọn gì → tự gán luôn
   useEffect(() => {
     if (autoSelectSingle && !disabled && !valStr && opts.length === 1) onChange(opts[0].value)
   }, [opts.length, valStr, disabled, autoSelectSingle])

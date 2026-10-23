@@ -82,6 +82,9 @@ _EDIT = (
     #  Bảng quyền gọi việc sửa là `write`, dấu vết cũ gọi là `update` — hai chữ
     #  cho một việc, và cả hai đều đang được ghi ở đâu đó.
     ActionCode("write", "Cập nhật", ACTION_GROUP_EDIT),
+    #  duoc-CR-660: `import` là hành động trong bảng quyền (nhập file hàng loạt) — một dòng
+    #  CSV có thể tạo/sửa/xóa, nên xếp nhóm SỬA chứ không xếp nhóm XUẤT.
+    ActionCode("import", "Nhập dữ liệu", ACTION_GROUP_EDIT),
     #  ai-CR-182: hoàn tác một thay đổi bot đã ghi (`assistant/change_service.undo`) và
     #  khôi phục phiếu đã xóa mềm (`restore_soft_deleted`).
     ActionCode("undo", "Hoàn tác", ACTION_GROUP_EDIT),

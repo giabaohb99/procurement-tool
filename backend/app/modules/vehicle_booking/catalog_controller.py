@@ -56,7 +56,7 @@ driver_router = make_crud_router(
 #  không đụng `/{id}` (khác độ sâu đường dẫn) nên gắn thẳng vào router CRUD được.
 @vehicle_router.get("/export/xlsx")
 def export_vehicles_xlsx(request: Request, db: Session = Depends(get_db),
-                         user=Depends(require("vehicle", "read"))):
+                         user=Depends(require("vehicle", "export"))):   # duoc-CR-675: trước đây `read`
     q = apply_filters(db.query(Vehicle), Vehicle, request, ["license_plate", "type", "status", "is_external"])
     q = apply_sort_from_request(q, Vehicle, request, default=Vehicle.id.desc())
     objs = q.all()
@@ -76,7 +76,7 @@ def export_vehicles_xlsx(request: Request, db: Session = Depends(get_db),
 
 @driver_router.get("/export/xlsx")
 def export_drivers_xlsx(request: Request, db: Session = Depends(get_db),
-                        user=Depends(require("driver", "read"))):
+                        user=Depends(require("driver", "export"))):   # duoc-CR-675: trước đây `read`
     q = apply_filters(db.query(Driver), Driver, request, ["name", "phone", "status", "is_external"])
     q = apply_sort_from_request(q, Driver, request, default=Driver.id.desc())
     objs = q.all()

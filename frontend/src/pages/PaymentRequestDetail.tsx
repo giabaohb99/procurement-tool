@@ -46,7 +46,7 @@ function HeadOfDeptField({ value, editable, onChange }: {
     ? [...heads, { employee_id: headId, name: value.head_of_dept }] : heads
   return (
     <div className="form-row"><label>Trưởng bộ phận</label>
-      <SearchSelect value={headId ? String(headId) : ''} autoSelectSingle={false}
+      <SearchSelect value={headId ? String(headId) : ''}
         placeholder="Mặc định: trưởng phòng của người lập"
         options={rows.map((r) => ({ value: String(r.employee_id), label: r.position ? `${r.name} — ${r.position}` : r.name }))}
         onChange={(v) => onChange({ head_of_dept_id: Number(v) || 0,
@@ -243,7 +243,7 @@ function PaymentRequestCreate() {
           {blankMode && (
             <>
               <div className="form-row"><label>Nhà cung cấp <span style={{ color: 'var(--red)' }}>*</span></label>
-                <SearchSelect value={supplierCode} placeholder="Chọn/tìm NCC…"
+                <SearchSelect autoSelectSingle value={supplierCode} placeholder="Chọn/tìm NCC…"
                   options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                   onChange={setSupplierCode} />
               </div>

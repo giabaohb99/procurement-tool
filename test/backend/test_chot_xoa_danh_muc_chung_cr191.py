@@ -22,7 +22,7 @@ ACTOR = "a1"
 def _grant(world, *entities):
     actor = world.actor(ACTOR)
     for entity in entities:
-        actor.grant(entity, "all", actions=("read", "write", "delete"))
+        actor.grant(entity, "all", actions=("read", "write", "delete", "import"))   # CR-660: cổng nhập CSV đòi `import`
     return actor
 
 

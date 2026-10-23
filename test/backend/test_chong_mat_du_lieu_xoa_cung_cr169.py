@@ -270,7 +270,7 @@ def test_nhap_csv_xoa_phai_qua_before_delete(db, seed, cap_quyen):
     from app.modules.employee.position_model import JobPosition
 
     user = _user(db, seed)
-    cap_quyen(user.id, "job_position", scope="all", read=True, write=True, delete=True)
+    cap_quyen(user.id, "job_position", scope="all", read=True, write=True, delete=True, **{"import": True})   # CR-660: cổng nhập đòi `import`
     used = JobPosition(code="cv_dung", name="Chức vụ đang giữ", created_by=1, updated_by=1)
     free = JobPosition(code="cv_trong", name="Chức vụ trống", created_by=1, updated_by=1)
     db.add_all([used, free])

@@ -1,6 +1,7 @@
 import {
   Bot,
   Database,
+  Scale,
   Download,
   FlaskConical,
   Info,
@@ -8,7 +9,7 @@ import {
   RotateCw,
   Trash2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -16,6 +17,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -24,13 +26,14 @@ import { formatDateTime } from '@/shared/utils/format-date'
 import { formatFileSize } from '@/shared/utils/format-file-size'
 
 import {
+  useAcceptBackupSize,
   useBackups,
   useDeleteBackup,
   useDownloadBackup,
   useRestoreTest,
   useRunBackup,
 } from '../hooks/use-backups'
-import type { BackupTarget, DbBackupItem } from '../types/backup'
+import { SUSPECT_NOTE_PREFIX, type BackupTarget, type DbBackupItem } from '../types/backup'
 
 export function BackupListPage() {
   const { can } = usePermission()
@@ -57,6 +60,32 @@ export function BackupListPage() {
   const restoreTestMutation = useRestoreTest()
   const downloadMutation = useDownloadBackup(target)
   const deleteMutation = useDeleteBackup()
+  const acceptSizeMutation = useAcceptBackupSize(target)
+  //  Chặn bấm đúp: `isPending` chỉ đổi ở lượt vẽ sau (bẫy biểu mẫu duoc-CR-317).
+  const acceptBusy = useRef(false)
+
+  const isSuspect = (row: DbBackupItem) => (row.message ?? '').startsWith(SUSPECT_NOTE_PREFIX)
+  //  Chuỗi bản đáng ngờ luôn là những bản MỚI NHẤT, nên nằm ở trang đầu — sang trang sau
+  //  thì nút ẩn, đúng vì việc cần làm nằm ở trang đầu.
+  const hasSuspect = (data?.items ?? []).some(isSuspect)
+
+  const handleAcceptSize = async () => {
+    if (acceptBusy.current) return
+    acceptBusy.current = true
+    try {
+      const ok = await confirm({
+        title: 'Chấp nhận cỡ mới của CSDL?',
+        message:
+          'Dùng khi CSDL nhỏ đi là HỢP LỆ (vừa dọn dữ liệu, xóa bảng tạm…). Hệ thống gỡ dấu đáng ngờ, và lượt sao lưu sau sẽ được dọn các bản to cũ theo số bản giữ lại — các bản đó bị xóa hẳn. Nếu CSDL nhỏ đi mà không rõ lý do, đừng bấm: hãy kiểm tra dữ liệu trước.',
+        confirmLabel: 'Chấp nhận cỡ mới',
+      })
+      if (ok) await acceptSizeMutation.mutateAsync()
+    } catch {
+      //  `http-client` đã toast câu lỗi của máy chủ.
+    } finally {
+      acceptBusy.current = false
+    }
+  }
 
   const columns: DataTableColumn<DbBackupItem>[] = [
     {
@@ -141,7 +170,15 @@ export function BackupListPage() {
       width: 250,
       wrap: true,
       cell: (r) => (
-        <span className={r.status === 'failed' ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+        <span
+          className={
+            r.status === 'failed'
+              ? 'text-destructive font-medium'
+              : isSuspect(r)
+                ? 'font-medium text-amber-700 dark:text-amber-400'
+                : 'text-muted-foreground'
+          }
+        >
           {r.message || '—'}
         </span>
       ),
@@ -216,6 +253,19 @@ export function BackupListPage() {
             >
               <RotateCw className="size-4" />
             </Button>
+
+            {canDelete && hasSuspect && !agentOff && (
+              <Button
+                variant="outline"
+                onClick={handleAcceptSize}
+                disabled={acceptSizeMutation.isPending}
+                className="gap-2"
+                title="CSDL nhỏ đi hợp lệ — gỡ dấu đáng ngờ để hệ thống dọn bản cũ lại như thường"
+              >
+                <Scale className="size-4" />
+                Chấp nhận cỡ mới
+              </Button>
+            )}
 
             {canCreate && isAgent && (
               <Button
