@@ -16594,3 +16594,29 @@ Mã nguồn: test/backend/test_so_task_loai_viec_gio_cr674.py
 - status: xong
 Phần hướng dẫn ở đầu sổ nay liệt kê bốn dòng mới, nói rõ việc con khai được như mục cha, và nhắc đừng đoán giờ: không đo thì đừng khai giờ thực tế.
 Mã nguồn: doc/tai-lieu-ky-thuat/nhat-ky-task.md
+
+## bao-CR-658 | Ô chọn giao diện thumua mặc định không tự gán; ô lấy từ danh mục lọc theo quyền không tự điền
+- status: xong
+- date: 2026-10-23
+- tag: Thu mua
+**Bối cảnh:** lỗi ô lọc tự dính giá trị lặp lại nhiều lần (bao-CR-388 tháng 9, bao-CR-657 sáng 23/10) vì ô chọn dùng chung của giao diện thumua mặc định tự chọn khi danh sách chỉ còn một lựa chọn, mà danh mục công ty, phòng ban, nhân sự lại bị lọc theo quyền. Rà soát đầy đủ ở `doc/tai-lieu-ky-thuat/ra-soat-o-loc-tu-gan.md`.
+
+**Đã làm:** đổi mặc định sang không tự gán. Biểu mẫu chỉ còn tự điền ở ô lấy từ danh sách cố định hoặc danh mục mở (nhà cung cấp, sản phẩm, kho, đơn vị tính, phân loại); ô công ty, bộ phận, nhân sự, người duyệt, NSTM, NSPT không tự điền nữa, nên ô Bộ phận của YCBG hết bị điền sẵn phòng Kinh doanh AGC. Thêm bài quét `npm run check:filters`: ô lọc nào bật tự gán là báo đỏ.
+
+**Kết quả:** kiểm kiểu giữ đúng 4 lỗi cũ, build chạy được, bài quét bắt đúng ô viết sai. Lên prod 23/10/2026 khoảng 9:20 cùng bao-CR-659.
+
+Commit: 92c3f706 (main), gộp erp-v2 db5f5433 · Deploy: prod web
+Mã nguồn: frontend/src/components/SearchSelect.tsx · frontend/scripts/check-no-autoselect-filter.mjs · các trang chi tiết YCMH, YCBG, ĐMH, YCTT, hợp đồng, nhà cung cấp, phiếu khảo sát, tồn kho
+
+## bao-CR-659 | Danh mục phòng ban luôn có phòng dùng chung khi xem
+- status: xong
+- date: 2026-10-23
+- tag: Thu mua
+**Bối cảnh:** 26/27 phòng trên prod khai công ty = 0 (phòng dùng chung cả tập đoàn). Tài khoản bị thu hẹp phạm vi theo công ty thì danh mục phòng ban gần như rỗng; tài khoản NSU012 chỉ còn thấy phòng Kinh doanh AGC.
+
+**Đã làm:** khi xem danh mục phòng ban, ai có quyền xem luôn thấy thêm phòng dùng chung; sửa và xóa phòng vẫn lọc theo công ty chính như cũ, để quản trị công ty con không sửa được phòng chung. Dữ liệu phiếu không đổi cách lọc.
+
+**Kết quả:** bài kiểm mới (2 bài đỏ trước khi sửa) và 159 bài kiểm phạm vi liên quan đều đạt. Lên prod 23/10/2026 khoảng 9:20: NSU012 thấy đủ 27 phòng, không phải đổi quyền tài khoản. Lần dựng này đưa luôn nhóm báo cáo duoc-CR-655/656/657 lên prod (migration d01merge01, 221 bảng); sao lưu sau khi dựng thành công.
+
+Commit: 92c3f706 (main), gộp erp-v2 db5f5433 · Deploy: prod api, celery-worker, celery-beat, web, erp
+Mã nguồn: backend/app/core/scoping.py · test/backend/test_danh_muc_phong_dung_chung_cr659.py
