@@ -158,12 +158,12 @@ export default function Inventory() {
       <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}
                    extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
-          <SearchSelect autoSelectSingle={false} value={f.company_id || ''} placeholder="Tất cả"
+          <SearchSelect value={f.company_id || ''} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setF((s) => ({ ...s, company_id: v }))} />
         </FilterItem>
         <FilterItem label="Kho">
-          <SearchSelect autoSelectSingle={false} value={f.warehouse_code || ''} placeholder="Tất cả"
+          <SearchSelect value={f.warehouse_code || ''} placeholder="Tất cả"
             options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
             onChange={(v) => setF((s) => ({ ...s, warehouse_code: v }))} />
         </FilterItem>
@@ -172,12 +172,12 @@ export default function Inventory() {
         </FilterItem>
 
         <FilterItem label="Phân loại" secondary active={!!f.item_group}>
-          <SearchSelect autoSelectSingle={false} value={f.item_group || ''} placeholder="Tất cả"
+          <SearchSelect value={f.item_group || ''} placeholder="Tất cả"
             options={groups.map((g) => ({ value: g.name, label: g.name }))}
             onChange={(v) => setF((s) => ({ ...s, item_group: v }))} />
         </FilterItem>
         <FilterItem label="Trạng thái tồn" secondary active={!!f.qty_status}>
-          <SearchSelect autoSelectSingle={false} value={f.qty_status || ''} placeholder="Tất cả"
+          <SearchSelect value={f.qty_status || ''} placeholder="Tất cả"
             options={[
               { value: 'in_stock', label: 'Có tồn (> 0)' },
               { value: 'out_of_stock', label: 'Hết hàng (= 0)' },
@@ -250,19 +250,19 @@ export default function Inventory() {
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Kho</label>
-                <SearchSelect value={adj.warehouse_code || ''} placeholder="Chọn/tìm kho…"
+                <SearchSelect autoSelectSingle value={adj.warehouse_code || ''} placeholder="Chọn/tìm kho…"
                   options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
                   onChange={(v) => setAdj((s: any) => ({ ...s, warehouse_code: v }))} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Sản phẩm</label>
-                <SearchSelect value={adj.product_code || ''} placeholder="Chọn/tìm sản phẩm…"
+                <SearchSelect autoSelectSingle value={adj.product_code || ''} placeholder="Chọn/tìm sản phẩm…"
                   options={products.map((p) => ({ value: p.code, label: `${p.code} — ${p.name}` }))}
                   onChange={(v) => onAdjProduct(v)} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Đơn vị tính (ĐVT)</label>
-                <SearchSelect value={adj.unit || ''} placeholder="Chọn/tìm ĐVT…"
+                <SearchSelect autoSelectSingle value={adj.unit || ''} placeholder="Chọn/tìm ĐVT…"
                   options={units.map((u) => ({ value: u.name, label: u.name }))}
                   onChange={(v) => setAdj((s: any) => ({ ...s, unit: v }))} />
               </div>

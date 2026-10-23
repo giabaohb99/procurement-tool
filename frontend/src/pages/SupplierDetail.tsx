@@ -148,7 +148,7 @@ export default function SupplierDetail() {
               </div>
               <div className="form-row">
                 <label>Vai trò cung cấp *</label>
-                <SearchSelect value={sup.supplier_type} options={SUP_TYPE} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('supplier_type', v)} />
+                <SearchSelect autoSelectSingle value={sup.supplier_type} options={SUP_TYPE} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('supplier_type', v)} />
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Tên pháp lý *</label>
@@ -156,7 +156,7 @@ export default function SupplierDetail() {
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Loại nhà cung cấp</label>
-                <SearchSelect value={sup.legal_type || ''} options={LEGAL_TYPE} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('legal_type', v)} />
+                <SearchSelect autoSelectSingle value={sup.legal_type || ''} options={LEGAL_TYPE} disabled={!canEdit} placeholder="Chọn…" onChange={(v) => setH('legal_type', v)} />
               </div>
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function SupplierDetail() {
               </div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Hình thức thanh toán</label>
-                <SearchSelect value={sup.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!canEdit} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} />
+                <SearchSelect autoSelectSingle value={sup.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!canEdit} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} />
               </div>
               {/* bao-CR-321 — điều khoản in trên Đơn đặt hàng (mục 2 + mục 5 "Thoả thuận khác").
                   Để trống = dùng mặc định cũ của bản in; chọn NCC trên ĐMH sẽ chép các ô này xuống đơn. */}

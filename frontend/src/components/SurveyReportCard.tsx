@@ -1048,7 +1048,6 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
             value={form.assignee_id ? String(form.assignee_id) : ''}
             options={assigneeOptions}
             placeholder="Chọn/tìm nhân sự…"
-            autoSelectSingle={false}
             onChange={(v) => set('assignee_id', Number(v) || 0)}
           />
         </div>

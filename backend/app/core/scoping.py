@@ -834,6 +834,12 @@ def scope_condition(model, entity: str, user, profile: dict, action: str = "read
         conds.append(and_(*parts))
     if not conds:
         return false()            # không grant nào cấp quyền này → không thấy gì
+    if entity == "department" and action == "read":
+        #  bao-CR-659: phòng DÙNG CHUNG (công ty chính = 0, 26/27 phòng trên prod) phục vụ cả
+        #  tập đoàn. Thu hẹp theo công ty mà làm rơi chúng thì ô chọn phòng gần như rỗng — sự
+        #  cố 23/10 ô Bộ phận thumua tự dính phòng AGC. Chỉ nới khi XEM; sửa / xóa phòng chung
+        #  vẫn theo công ty chính như cũ.
+        return or_(*conds, model.company_id == 0)
     return or_(*conds)
 
 

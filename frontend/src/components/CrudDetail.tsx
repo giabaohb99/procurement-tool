@@ -8,6 +8,13 @@ import SearchSelect from './SearchSelect'
 import NotFound from './NotFound'
 import AuditTimeline from './AuditTimeline'
 
+// bao-CR-658: chỉ tự điền khi còn 1 lựa chọn nếu danh mục là danh sách cố định hoặc danh mục
+// PUBLIC (không lọc theo quyền). Công ty / phòng ban / nhân sự bị lọc theo phạm vi người xem,
+// tự điền thì điền SAI mà không báo.
+const PUBLIC_SOURCES = ['/api/item-groups', '/api/suppliers', '/api/products', '/api/warehouses', '/api/units']
+const canAutoSelect = (f: { options?: unknown[]; source?: { url: string } }) =>
+  !!f.options || (!!f.source && PUBLIC_SOURCES.includes(f.source.url))
+
 export default function CrudDetail() {
   const { entity, id } = useParams()
   const cfg = cruds[entity || '']
@@ -192,6 +199,7 @@ export default function CrudDetail() {
                     <textarea value={form[f.key] ?? ''} disabled={ro} onChange={(e) => set(f.key, e.target.value)} />
                   ) : (f.type === 'select' || (f.source && f.type !== 'select-multiple')) ? (
                     <SearchSelect value={form[f.key] ?? ''} disabled={ro} placeholder="Chọn…"
+                      autoSelectSingle={canAutoSelect(f)}
                       colorMap={f.colorMap}
                       options={(f.options || dynOpts[f.key] || [])}
                       onChange={(v) => {
