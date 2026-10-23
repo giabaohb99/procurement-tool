@@ -35,7 +35,7 @@ export default function FilterRow({ row, index }: { row: Row; index: number }) {
       </div>
 
       <div className="cf-operator">
-        <SearchSelect
+        <SearchSelect autoSelectSingle
           value={row.operator || ''} options={operatorOptions}
           placeholder={row.field ? 'Phép so sánh…' : '—'} disabled={!row.field}
           onChange={(op) => updateOperator(row.id, op as OperatorType)}

@@ -178,13 +178,13 @@ function AddRow({ colSpanRest, phaseOptions, itemOptions, defaultAssigneeId, onC
       <td>
         {/* Cùng ô chọn xuống dòng với các hàng phía trên — ô gốc cắt cụt tên dài. */}
         <SearchSelect
-          variant="table" wrap autoSelectSingle={false}
+          variant="table" wrap
           value={phaseValue} options={phaseOptions} onChange={(v) => { if (v) setPhaseId(v) }}
         />
       </td>
       <td>
         <SearchSelect
-          variant="table" wrap autoSelectSingle={false}
+          variant="table" wrap
           value={itemValue} options={itemOptions} onChange={(v) => { if (v !== '') setItemId(v) }}
         />
       </td>

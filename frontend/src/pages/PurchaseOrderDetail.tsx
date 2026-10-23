@@ -1227,7 +1227,7 @@ export default function PurchaseOrderDetail() {
                   onChange={(v) => setH('company_id', Number(v) || 0)} />
               </div>
               <div className="form-row"><label>Nhà cung cấp bán hàng <span style={{ color: 'var(--red)' }}>*</span></label>
-                <SearchSelect value={po.supplier_code || ''} disabled={!headerEditable} placeholder="Chọn/tìm NCC…"
+                <SearchSelect autoSelectSingle value={po.supplier_code || ''} disabled={!headerEditable} placeholder="Chọn/tìm NCC…"
                   options={goodsSuppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                   onChange={(v) => onPickSupplier(v)} />
               </div>
@@ -1309,7 +1309,7 @@ export default function PurchaseOrderDetail() {
                   <input value={po.approver_employee_name || 'Chưa chọn'} disabled title="Người thực bấm Duyệt đơn này; chưa duyệt thì là người được chọn" />
                 )}
               </div>
-              <div className="form-row"><label>Hình thức thanh toán NCC</label><SearchSelect value={po.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!headerEditable} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} /></div>
+              <div className="form-row"><label>Hình thức thanh toán NCC</label><SearchSelect autoSelectSingle value={po.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!headerEditable} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} /></div>
               {/* bao-CR-321 — điều khoản in (mục 2 + mục 5 bản in). Tự chép từ NCC khi chọn, sửa riêng
                   từng đơn lúc còn nháp; khóa sau duyệt như hình thức thanh toán. Trống = mặc định cũ. */}
               <div className="form-row"><label>Số ngày kiểm tra hàng (bản in)</label>
@@ -1768,7 +1768,7 @@ export default function PurchaseOrderDetail() {
                           ) : <span style={{ color: 'var(--muted)' }}>—</span>}
                         </td>
                         <td>
-                          <SearchSelect variant="table" wrap value={c.supplier_code || ''} disabled={!costRowEditable(c)} placeholder="Chọn/tìm NCC…"
+                          <SearchSelect autoSelectSingle variant="table" wrap value={c.supplier_code || ''} disabled={!costRowEditable(c)} placeholder="Chọn/tìm NCC…"
                             options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                             onChange={(v) => {
                               const s = suppliers.find((x) => x.code === v)
@@ -2188,7 +2188,7 @@ export default function PurchaseOrderDetail() {
                     </div>
                     <div className="form-row">
                       <label>Phân loại<Req /></label>
-                      <SearchSelect value={canonGroup(it.item_group)} options={groupOptions(it.item_group)} disabled={de}
+                      <SearchSelect autoSelectSingle value={canonGroup(it.item_group)} options={groupOptions(it.item_group)} disabled={de}
                         placeholder="Chọn/tìm phân loại…" onChange={(v) => setItem(ii, { item_group: v })} />
                     </div>
                     <div className="form-row" style={{ gridColumn: '1 / -1' }} title={lineReceived(it) ? PRODUCT_LOCK_HINT : undefined}><label>Tên hàng<Req /></label><TextAreaAuto style={POPUP_TEXT} value={it.product_name || ''} disabled={de || lineReceived(it)} onChange={(v) => setItem(ii, { product_name: v })} /></div>
@@ -2229,7 +2229,7 @@ export default function PurchaseOrderDetail() {
                     <div className="form-row"><label>Ngày dự kiến có hàng<Req /></label><DateInput value={it.expected_date || ''} disabled={deSau} onChange={(v) => setItem(ii, { expected_date: v })} /></div>
                     <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={!!it.supplier_ready} disabled={de} onChange={(e) => setItem(ii, { supplier_ready: e.target.checked })} style={{ width: 16, height: 16 }} /> NCC có sẵn hàng</label></div>
                     <div className="form-row"><label>ĐVT<Req /></label>
-                      <SearchSelect value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
+                      <SearchSelect autoSelectSingle value={it.unit ?? ''} options={units} disabled={de} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(ii, { unit: v })} />
                     </div>
                     {/* bao-CR-319: khối lượng là căn cứ chia chi phí lô hàng theo cân nặng ở
                         phase sau — nhập ngay từ bây giờ thì lúc bật phân bổ khỏi phải gõ lại. */}
@@ -2240,7 +2240,7 @@ export default function PurchaseOrderDetail() {
                       <div className="form-row"><label>Quy cách / kích thước</label><input value={it.dimension || ''} disabled={deSau} placeholder="VD: 40x30x25 cm" onChange={(e) => setItem(ii, { dimension: e.target.value })} /></div>
                     )}
                     <div className="form-row"><label>Kho nhận mặc định<Req /></label>
-                      <SearchSelect value={it.warehouse_code ?? ''} disabled={deSau} placeholder="Chọn/tìm kho…"
+                      <SearchSelect autoSelectSingle value={it.warehouse_code ?? ''} disabled={deSau} placeholder="Chọn/tìm kho…"
                         options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
                         onChange={(v) => setItem(ii, { warehouse_code: v })} />
                     </div>
@@ -2486,7 +2486,7 @@ export default function PurchaseOrderDetail() {
                   </div>
                   <div className="form-row">
                     <label>Nhà cung cấp</label>
-                    <SearchSelect value={c.supplier_code || ''} disabled={de} placeholder="Chọn/tìm NCC…"
+                    <SearchSelect autoSelectSingle value={c.supplier_code || ''} disabled={de} placeholder="Chọn/tìm NCC…"
                       options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                       onChange={(v) => {
                         const s = suppliers.find((x) => x.code === v)

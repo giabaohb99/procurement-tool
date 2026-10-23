@@ -36,10 +36,10 @@ export default function CustomsPesticideLookup({ currentPestGroup }: { currentPe
         <div style={TITLE}><i className="ti ti-search" style={{ color: 'var(--muted)' }} />Tìm thuốc khác</div>
         <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Tìm thuốc BVTV"
           placeholder="Tên thuốc, hoạt chất, công ty…" />
-        <SearchSelect value={pestGroup} placeholder="Tất cả phân nhóm" autoSelectSingle={false}
+        <SearchSelect value={pestGroup} placeholder="Tất cả phân nhóm"
           options={(options?.pest_groups || []).map((g: any) => ({ value: g.value, label: g.value }))}
           onChange={setPestGroup} />
-        <SearchSelect value={sector} placeholder="Tất cả lĩnh vực" autoSelectSingle={false}
+        <SearchSelect value={sector} placeholder="Tất cả lĩnh vực"
           options={(options?.sectors || []).map((g: any) => ({ value: g.value, label: toSentenceCaseIfShouting(g.value) }))}
           onChange={setSector} />
         <div style={{ display: 'flex', gap: 8 }}>
