@@ -27,6 +27,13 @@ export const backupApi = {
   download: (id: number, target: BackupTarget = 'erp') =>
     apiGet<DownloadBackupResponse>(`${BASE_URL[target]}/${id}/download`),
 
+  /**
+   * *Chấp nhận cỡ mới* (bao-CR-656): CSDL thu nhỏ hợp lệ — gỡ dấu đáng ngờ để lượt sau
+   * dọn bản cũ như thường. Không có bản nào bị đánh dấu thì máy chủ trả 400.
+   */
+  acceptSize: (target: BackupTarget = 'erp') =>
+    apiPost<{ accepted: number }>(`${BASE_URL[target]}/accept-size`),
+
   /** Chỉ DB ERP có đường xóa bản sao lưu. */
   deleteBackup: (id: number) =>
     apiDelete<null>(`${BASE_URL.erp}/${id}`),

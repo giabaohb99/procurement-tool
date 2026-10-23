@@ -1,5 +1,12 @@
 export type BackupStatus = 'running' | 'success' | 'failed'
 
+/**
+ * Đầu `message` của bản sao lưu bị đánh dấu ĐÁNG NGỜ (CSDL nhỏ đi bất thường) — lúc đó
+ * hệ ngừng dọn bản cũ. Phải KHỚP `SUSPECT_NOTE_PREFIX` ở `backend/app/modules/backup/service.py`
+ * (CSDL bot dùng chung hằng này). Máy chủ so `startswith`, nên ở đây cũng vậy.
+ */
+export const SUSPECT_NOTE_PREFIX = 'Bỏ qua dọn bản cũ:'
+
 export type BackupSource = 'auto' | 'manual' | string
 
 /** ai-CR-139: màn Sao lưu xem được hai DB — DB ERP và DB của bot (`agent_hub`, chỉ có khi bot chạy tách DB). */

@@ -43,6 +43,24 @@ export function useRestoreTest() {
   })
 }
 
+/**
+ * *Chấp nhận cỡ mới* — lỗi (400 khi không còn bản nào bị đánh dấu, vd người khác vừa bấm)
+ * do `http-client` toast đúng câu của máy chủ, ở đây không báo thêm.
+ */
+export function useAcceptBackupSize(target: BackupTarget = 'erp') {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => backupApi.acceptSize(target),
+    onSuccess: (res) => {
+      toast.success(
+        `Đã chấp nhận cỡ mới cho ${res?.accepted ?? 0} bản — lượt sao lưu sau sẽ dọn bản cũ như thường`,
+      )
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.all })
+    },
+  })
+}
+
 export function useDownloadBackup(target: BackupTarget = 'erp') {
   return useMutation({
     mutationFn: (id: number) => backupApi.download(id, target),

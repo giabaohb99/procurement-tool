@@ -15728,6 +15728,29 @@ Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/00-tong-quan-nghiep-
 
 Mã nguồn: doc/erp/hrm/README.md · doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md · doc/erp/hrm/02-nghi-phep.md · doc/erp/hrm/03-lich-lam-viec.md · .claude/rules/hr-leave.md · doc/erp/README.md
 
+## kh-SL-nut-chap-nhan | Nút Chấp nhận cỡ mới trên màn Sao lưu
+- list: Kế hoạch hệ agent
+- status: xong
+- date: 2026-10-23
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Khi CSDL thu nhỏ hợp lệ, lượt sao lưu đánh dấu bản mới là đáng ngờ và ngừng dọn bản cũ. Máy chủ đã có đường *Chấp nhận cỡ mới* cho CSDL ERP và CSDL bot (bao-CR-656) nhưng màn Sao lưu v2 chưa có nút gọi.
+
+**Đã làm**
+- Thêm nút *Chấp nhận cỡ mới* trên màn Sao lưu, dùng chung cho cả CSDL ERP và CSDL bot (CSDL bot đi qua đường của agent-hub).
+- Nút chỉ hiện khi trong danh sách có bản bị đánh dấu đáng ngờ (lời nhắn mở đầu *Bỏ qua dọn bản cũ:*, so đúng phần đầu như máy chủ) và người dùng có quyền xóa bản sao lưu; ẩn khi bot chạy chung CSDL ERP.
+- Bấm thì hỏi xác nhận, nói rõ lượt sau sẽ dọn và xóa hẳn các bản to cũ, và dặn đừng bấm nếu CSDL nhỏ đi không rõ lý do. Bấm đúp chỉ gửi một lần. Máy chủ báo lỗi thì hiện đúng câu của máy chủ (qua lớp gọi API chung).
+- Lời nhắn của bản đáng ngờ trong bảng đổi sang màu cảnh báo cho dễ thấy.
+
+**Kết quả:** tsc cả cây 0 lỗi, lint phân hệ Quản trị 0 lỗi, vitest phân hệ Quản trị xanh 31 tệp, 317 bài (8 bài mới cho nút). Chưa dựng bản, chưa soát trên trình duyệt.
+
+**Còn lại**
+- Soát trên dev sau khi dựng lại dev; chưa dựng bản và chưa soát trên trình duyệt.
+- Nút chỉ nhìn các bản ở trang đang xem; chuỗi bản đáng ngờ luôn là bản mới nhất nên nằm ở trang đầu.
+
+Mã nguồn: `frontend-v2/src/modules/system/pages/backup-list-page.tsx` · `api/backup-api.ts` · `hooks/use-backups.ts` · `types/backup.ts` · máy chủ `backup/controller.py` (`/accept-size`), `agent_hub/controller.py` (`/backups/accept-size`)
+Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã kh-SL-nut-chap-nhan)
+
 ## kh-AI1-1 | Thử lại bộ D1 trên deverp để đưa lên prod đợt năm
 - status: dang-lam
 - date: 2026-10-22
