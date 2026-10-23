@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Phân hệ Nhân sự (HRM) — ERP v2 |
-| Bản | 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
+| Bản | 1.8 — 23/10/2026 (**In Phiếu thông tin nhân viên C5 + nhân viên tự đề nghị sửa hồ sơ C6 — xong**, duoc-CR-676; §7.14 mới, §7.10 cập nhật) · 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
 | Dùng để làm gì | Chốt danh sách trường của hồ sơ nhân viên (mở rộng `tab_employee`), hai bảng con, chức năng màn hình, và phần tài khoản đăng nhập đi kèm |
 | Ai đọc | Đội phần mềm, người chủ trì |
 | Nguồn đối chiếu | [tham-khao-hrm/01-nhan-su.md](../tham-khao-hrm/01-nhan-su.md) (NS1, ~90 trường/7 nhóm), [tham-khao-hrm/10-de-xuat-ap-dung.md](../tham-khao-hrm/10-de-xuat-ap-dung.md) (V1-2, V1-3, V1-4), và **Phiếu thông tin nhân viên BM00../QT01/NS** (mẫu công ty đang dùng khi nhận việc, ban hành 01/06/2025) |
@@ -647,10 +647,10 @@ Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-
 | **Cao** | **Q3** — Chặn HR tự sửa quá trình của mình | **Xong 03/10/2026 (duoc-CR-585).** Backend: `work_history_access.block_self_write`, chặn khi `created_by = user_id` và thiếu `is_system_admin`. Frontend: cờ `can_edit` từ backend, bấm Sửa/Xóa đẩy người dùng lên danh sách nếu không được phép |
 | ~~Cao~~ | ~~**U3 / V0-4** — màn kiểm việc duyệt đang treo trước khi khóa~~ | **Xong 22/10/2026** (duoc-CR-665, §7.13): hộp liệt kê việc người nghỉ đang giữ, chuyển từng việc / chuyển hết |
 | ~~Cao~~ | Nhật ký hệ thống lưu nguyên văn trường nhạy cảm | **Xong 02/10/2026 (duoc-CR-554)** cho dòng ghi MỚI. `tab_request_log`: mọi đường `/api/employees…` che 15 trường của `SENSITIVE_FIELDS` (cả thân gửi lên lẫn thân lỗi), hai cửa bảng con `/contacts`, `/families` che trọn `items`. `tab_change_log`: `tab_employee` che đúng 15 cột đó (vẫn ghi TÊN ô đổi, `is_masked = 1`); hai bảng con chỉ giữ `relation`, `gender`, `sort_order`, `employee_id`. Che theo đường dẫn / bảng chứ không theo tên ô, vì `tax_code`, `bank_account_no` của **nhà cung cấp** phải giữ giá trị. ⚠️ **Dòng cũ đã ghi trước 02/10 vẫn còn nguyên văn** — chưa dọn |
-| TB | **C5** — in «Phiếu thông tin nhân viên» BM00../QT01/NS | Chưa làm |
+| ~~TB~~ | ~~**C5** — in «Phiếu thông tin nhân viên» BM00../QT01/NS~~ | **Xong 23/10/2026** (duoc-CR-676, §7.14). Khuôn dựng theo danh sách trường vì chưa có tệp mẫu gốc |
 | TB | **U2** — chốt theo đặc tả hay giữ cách hiện tại | Chờ quyết định |
-| TB | CSV nhân sự gác bằng `read` | Bản XLSX đã gác bằng `export`; CSV chưa (V0-2 còn sót) |
-| TB | **C6** — tự khai đầy đủ + nhân sự duyệt | Mới mở nhóm Liên hệ, áp ngay không duyệt (§7.9) |
+| ~~TB~~ | ~~CSV nhân sự gác bằng `read`~~ | **Xong 23/10/2026** (duoc-CR-660): cả CSV lẫn XLSX gác `export`, lọc theo phạm vi Xuất, che cột nhạy cảm |
+| ~~TB~~ | ~~**C6** — tự khai đầy đủ + nhân sự duyệt~~ | **Xong 23/10/2026** (duoc-CR-676, §7.14): bốn nhóm Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình đi qua đề nghị, phòng Nhân sự duyệt rồi mới áp; Liên hệ vẫn áp ngay (§7.9) |
 | Thấp | Ô nhập `extra_fields` | Backend có, frontend-v2 chưa có ô |
 | Thấp | U5 ở tầng dữ liệu | Cột chưa có ràng buộc duy nhất — hai lượt cấp cùng lúc có thể ra hai tài khoản |
 | Chờ chính sách | Người có `employee.write` phạm vi «tất cả» đặt được mật khẩu của người quyền cao hơn | Ghi chú tự nêu trong `_block_set_password_out_of_scope` |
@@ -735,6 +735,38 @@ Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức** (`/hr/org-chart`). 
 - Chuyển việc đi **đường `reassign` / `handover` sẵn có** của bộ máy duyệt (từng việc, hoặc «Chuyển hết (N)»); cần quyền ghi `approval_flow`, không có thì hộp chỉ nêu và nhờ quản trị luồng.
 - **Cho qua có xác nhận, không chặn cứng** (tài liệu không đòi chặn; có người nghỉ đột xuất cần khóa ngay): còn việc treo thì nút đổi thành «Vẫn khóa … (còn việc treo)». Bước luồng chỉ nêu và dẫn tới luồng, không sửa tại hộp.
 - Bài kiểm `test_viec_treo_truoc_khoa_cr665.py`.
+
+### 7.14. In Phiếu thông tin nhân viên và nhân viên tự đề nghị sửa hồ sơ (C5 + C6, duoc-CR-676, 23/10/2026)
+
+**In phiếu (C5).** Nút «In phiếu thông tin» có ở màn chi tiết nhân sự và ở Trang cá nhân. Phiếu khổ A4 có tên công ty, mã biểu mẫu BM00../QT01/NS, ngày ban hành 01/06/2025, bảy mục (Thông tin cá nhân · Công việc · Liên hệ · Ngân hàng · Giấy tờ và BHXH/BHYT · Người báo tin · Hộ gia đình) và hàng ký «Người khai» / «Phòng Nhân sự».
+
+- Hai đường in: `/print/employee-info/:id` gác `employee.read` như mọi trang in khác (luật `/print/` của `print-route-access.ts`), `/print/my-employee-info` cho chính chủ (chỉ đòi đăng nhập, đọc `/me`, `/me/contacts`, `/me/families`).
+- Ô nhạy cảm bị API che thì in thành ô trống, không in chữ «null»; hai bảng người báo tin và hộ gia đình chừa ít nhất 3 dòng để điền tay.
+- Chưa có tệp mẫu gốc: thứ tự mục và ô nằm trong một mảng cấu hình `hr/config/employee-info-print-sections.ts` — có tệp mẫu thì sửa đúng tệp đó.
+
+**Tự đề nghị sửa hồ sơ (C6).** Ở Trang cá nhân, thẻ «Đề nghị sửa hồ sơ» mở hộp thoại bốn tab, điền sẵn giá trị hiện tại, chỉ gửi những ô đã đổi. Phòng Nhân sự duyệt rồi hệ mới ghi vào hồ sơ. Nhóm Liên hệ (§7.9) không đổi: vẫn áp ngay.
+
+| Nhóm | Ô được đề nghị |
+|---|---|
+| Cá nhân | giới tính, ngày sinh, nơi sinh, dân tộc, tôn giáo, hôn nhân, số con, email cá nhân, trình độ, chuyên ngành |
+| Ngân hàng | số tài khoản, chủ tài khoản, ngân hàng, chi nhánh |
+| Giấy tờ | CCCD (số, ngày cấp, nơi cấp, ngày hết hạn), MST, số BHXH, nơi KCB, mã KCB |
+| Hộ gia đình | thay cả danh sách `tab_employee_family` |
+
+- Bảng `tab_employee_change_request` (migration `cr676chgreq01`): `status` SMALLINT theo `EmployeeChangeRequestStatus` (1 chờ duyệt · 2 đã duyệt · 3 từ chối · 4 đã rút), `changes` JSON (nhóm, ô, giá trị lúc gửi, giá trị đề nghị), `families` JSON, ghi chú, lý do từ chối, người và lúc quyết.
+- Mỗi người chỉ có **một** đề nghị đang chờ (gửi thêm → 409); không đổi gì → 400 «Không có thay đổi nào để gửi»; khóa lạ hoặc ô ngoài danh sách → 422. Chốt «một đề nghị chờ» nằm ở tầng ứng dụng, chưa có chỉ mục duy nhất.
+- Màn «Duyệt sửa hồ sơ» (`/hr/profile-change-requests`, gác `employee.write`, huy hiệu đếm số chờ trên menu): danh sách chỉ gồm người nằm trong phạm vi GHI của người xem; màn chi tiết so ba cột Lúc gửi · Hiện tại · Đề nghị, ô đã bị sửa sau lúc gửi được tô màu.
+- **Ai duyệt được:** có `employee.write` trong phạm vi; không tự duyệt đề nghị của chính mình, trừ quản trị hệ thống (cùng lý lẽ Q3 của §7.10); đề nghị đụng ô nhạy cảm (ngân hàng, giấy tờ, hộ gia đình, ngày sinh) thì người duyệt phải có `employee_sensitive.read`. Từ chối theo cùng luật và bắt buộc ghi lý do (tối đa 500 ký tự). Duyệt hay từ chối đều báo chuông cho người gửi.
+- Duyệt chạy trong **một giao dịch** qua đúng đường ghi hồ sơ sẵn có (`update_employee`, hàm đặt lại hộ gia đình), nên nhật ký thay đổi ghi trước / sau như mọi lần sửa; lỗi giữa chừng thì cả hồ sơ lẫn trạng thái đề nghị cùng lùi.
+- **Che thông tin nhạy cảm:** người xem không phải chính chủ và thiếu `employee_sensitive.read` nhận giá trị rỗng kèm cờ `masked` (hộ gia đình trả `null`); `tab_change_log` che nội dung JSON, ghi chú và lý do của bảng mới; nhật ký yêu cầu che các ô nhạy cảm lồng trong thân gửi lên.
+- Màn chi tiết nhân sự hiện dải báo khi người đó đang có đề nghị chờ duyệt.
+
+| Đường API | Quyền |
+|---|---|
+| `GET /api/employees/me/families`, `GET /api/employees/me/change-requests`, `POST /api/employees/me/change-requests`, `POST /api/employees/me/change-requests/{rid}/withdraw` | Đăng nhập, hồ sơ lấy từ phiên |
+| `GET /api/employees/change-requests`, `GET …/pending-count`, `GET …/{rid}`, `POST …/{rid}/approve`, `POST …/{rid}/reject` | `employee.write` + phạm vi ghi |
+
+Không có khóa quyền mới. Bài kiểm `test_yeu_cau_sua_ho_so_cr676.py` (37 bài) và 4 tệp vitest ở `frontend-v2/src/modules/hr`.
 
 ## Hợp đồng lao động
 

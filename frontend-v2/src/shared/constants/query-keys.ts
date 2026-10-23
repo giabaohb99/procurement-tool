@@ -184,6 +184,19 @@ export const queryKeys = {
      * Nằm DƯỚI `myEmployee` nên nạp lại hồ sơ của tôi là quét luôn bảng này.
      */
     myEmployeeContacts: () => ['hr', 'employees', 'me', 'contacts'] as const,
+    /** Hộ gia đình của CHÍNH MÌNH (`/api/employees/me/families`, duoc-CR-676) — dưới `myEmployee`. */
+    myEmployeeFamilies: () => ['hr', 'employees', 'me', 'families'] as const,
+    /** Đề nghị sửa hồ sơ CỦA TÔI (`/api/employees/me/change-requests`, duoc-CR-676) — dưới `myEmployee`. */
+    myChangeRequests: () => ['hr', 'employees', 'me', 'change-requests'] as const,
+    /**
+     * Đề nghị sửa hồ sơ phía phòng Nhân sự (duoc-CR-676). Gốc `changeRequestsRoot` quét CẢ danh
+     * sách, số đếm chờ duyệt lẫn chi tiết một lượt — duyệt/từ chối xong phải nạp lại cả ba.
+     */
+    changeRequestsRoot: () => ['hr', 'change-requests'] as const,
+    changeRequests: (params?: Record<string, unknown>) =>
+      ['hr', 'change-requests', 'list', params ?? {}] as const,
+    changeRequestPendingCount: () => ['hr', 'change-requests', 'pending-count'] as const,
+    changeRequest: (id: number) => ['hr', 'change-requests', 'detail', id] as const,
     /** Sơ đồ tổ chức (duoc-CR-669) — không nằm dưới `employees` vì cũng đổi theo phòng ban; quét bằng `hr.all`. */
     orgChart: () => ['hr', 'org-chart'] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,

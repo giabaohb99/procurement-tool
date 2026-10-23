@@ -64,6 +64,7 @@ from app.modules.purchase_request.controller import router as pr_router
 from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
+from app.modules.employee.change_request_controller import router as employee_change_request_router  # duoc-CR-676
 from app.modules.labor_contract.controller import router as labor_contract_router
 from app.modules.labor_contract.my_contract_controller import router as my_labor_contract_router
 from app.modules.labor_contract.template_controller import router as labor_contract_template_router
@@ -294,6 +295,8 @@ app.include_router(labor_contract_router)
 app.include_router(my_labor_contract_router)
 app.include_router(labor_contract_template_router)
 app.include_router(labor_contract_variable_router)
+#  duoc-CR-676: `/me/...` và `/change-requests...` chung tiền tố với `/{eid}` — PHẢI trước `employee_router`.
+app.include_router(employee_change_request_router)
 app.include_router(employee_router)
 app.include_router(job_position_router)
 app.include_router(job_position_role_router)

@@ -1,0 +1,68 @@
+{
+  "double_submit_20": {
+    "codes": {
+      "200": 1,
+      "409": 19
+    },
+    "pending_in_db": 1,
+    "ok": true
+  },
+  "withdraw_vs_approve": {
+    "rounds": 50,
+    "approved": 15,
+    "withdrawn": 35,
+    "inconsistent": [],
+    "ok": true
+  },
+  "approve_vs_reject": {
+    "rounds": 30,
+    "bad": [],
+    "ok": true
+  },
+  "submit_50_at_once": {
+    "calls": 50,
+    "ok": 50,
+    "errors": [],
+    "p50_ms": 633.5,
+    "p95_ms": 798.4,
+    "max_ms": 801.3
+  },
+  "hr_load": {
+    "1x": {
+      "calls": 3,
+      "ok": 3,
+      "errors": [],
+      "p50_ms": 20.3,
+      "p95_ms": 25.0,
+      "max_ms": 25.0,
+      "wall_s": 0.0
+    },
+    "10x": {
+      "calls": 30,
+      "ok": 30,
+      "errors": [],
+      "p50_ms": 213.6,
+      "p95_ms": 283.5,
+      "max_ms": 288.7,
+      "wall_s": 0.3
+    },
+    "50x": {
+      "calls": 150,
+      "ok": 150,
+      "errors": [],
+      "p50_ms": 1537.7,
+      "p95_ms": 1956.1,
+      "max_ms": 1987.0,
+      "wall_s": 2.1
+    },
+    "150x": {
+      "calls": 450,
+      "ok": 450,
+      "errors": [],
+      "p50_ms": 1337.9,
+      "p95_ms": 2795.4,
+      "max_ms": 3140.9,
+      "wall_s": 4.0
+    }
+  }
+}

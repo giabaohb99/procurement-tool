@@ -253,6 +253,10 @@ def sensitive_keys_for_path(path: str) -> frozenset:
         keys |= _LABOR_CONTRACT_KEYS
     if _EMPLOYEE_PEOPLE_PATH.match(path):
         keys |= {"items"}
+    #  duoc-CR-676: yêu cầu sửa hồ sơ lồng `personal/bank/documents` (các khóa nhạy cảm đã che ở mọi tầng
+    #  nhờ `SENSITIVE_FIELDS`) và `families` = danh sách người thân (họ tên · SĐT · CCCD) — che trọn khóa.
+    if "/change-requests" in path:
+        keys |= {"families"}
     return keys
 
 

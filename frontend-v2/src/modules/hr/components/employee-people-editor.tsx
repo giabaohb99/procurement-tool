@@ -51,6 +51,12 @@ interface EmployeePeopleEditorProps<T extends { id: number }> {
   canWrite: boolean
   isSaving: boolean
   onSave: (rows: T[]) => void
+  /**
+   * Báo nháp ra ngoài sau MỖI thay đổi — cho nơi gom bảng này vào một lần gửi chung (hộp «Đề nghị
+   * sửa thông tin», duoc-CR-676). Có prop này thì nút «Lưu danh sách» của bảng không dựng nữa:
+   * hai nút lưu cho một hộp thoại là người dùng bấm nhầm nút.
+   */
+  onDraftChange?: (rows: T[]) => void
   className?: string
 }
 
@@ -64,6 +70,7 @@ export function EmployeePeopleEditor<T extends { id: number }>({
   canWrite,
   isSaving,
   onSave,
+  onDraftChange,
   className,
 }: EmployeePeopleEditorProps<T>) {
   const [draft, setDraft] = useState<T[]>(rows ?? [])
@@ -87,11 +94,19 @@ export function EmployeePeopleEditor<T extends { id: number }>({
     setDraft(rows ?? [])
   }
 
-  function updateCell(index: number, key: keyof T & string, value: unknown) {
-    setDraft((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, [key]: value } : row)),
-    )
+  //  Mọi lần sửa nháp đi qua đây để báo ra ngoài (nếu có `onDraftChange`). Gọi từ sự kiện bấm/gõ
+  //  nên đọc `draft` của lần render hiện tại là đúng; báo ra ngoài BÊN TRONG hàm cập nhật của
+  //  `setDraft` thì React Strict Mode gọi hai lần.
+  function commitDraft(next: T[]) {
+    setDraft(next)
+    onDraftChange?.(next)
   }
+
+  function updateCell(index: number, key: keyof T & string, value: unknown) {
+    commitDraft(draft.map((row, i) => (i === index ? { ...row, [key]: value } : row)))
+  }
+
+  const showSaveButton = canWrite && !onDraftChange
 
   if (isLoading) {
     return (
@@ -110,7 +125,7 @@ export function EmployeePeopleEditor<T extends { id: number }>({
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
 
-        {canWrite && (
+        {showSaveButton && (
           <Button type="button" size="sm" onClick={() => onSave(draft)} disabled={isSaving}>
             {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
             Lưu danh sách
@@ -172,7 +187,7 @@ export function EmployeePeopleEditor<T extends { id: number }>({
                   variant="ghost"
                   size="icon"
                   aria-label={`Xóa dòng ${index + 1}`}
-                  onClick={() => setDraft((prev) => prev.filter((_, i) => i !== index))}
+                  onClick={() => commitDraft(draft.filter((_, i) => i !== index))}
                 >
                   <Trash2 className="text-destructive" />
                 </Button>
@@ -196,7 +211,7 @@ export function EmployeePeopleEditor<T extends { id: number }>({
             variant="outline"
             size="sm"
             disabled={draft.length >= MAX_PEOPLE_ROWS}
-            onClick={() => setDraft((prev) => [...prev, emptyRow()])}
+            onClick={() => commitDraft([...draft, emptyRow()])}
           >
             <Plus />
             Thêm dòng

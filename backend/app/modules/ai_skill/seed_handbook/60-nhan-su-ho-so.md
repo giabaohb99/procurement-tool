@@ -106,3 +106,59 @@ của hồ sơ, biểu tượng ổ khóa ở danh sách tài khoản, và dòng
   biết phiếu sẽ kẹt. Chuyển hết rồi thì nút trở lại bình thường.
 - Phiếu mà người xem hộp không có quyền đọc thì chỉ hiện *«(bạn không có quyền xem phiếu này)»*, không lộ mã hay tên phiếu.
 - Trợ lý không chuyển việc hộ; chỉ hướng dẫn các bước trên.
+
+## In Phiếu thông tin nhân viên BM00../QT01/NS (từ 23/10/2026)
+
+Nút **«In phiếu thông tin»** có ở hai chỗ:
+
+- Phòng Nhân sự: màn chi tiết hồ sơ (**Nhân sự ▸ Nhân sự** ▸ mở một người), góc phải cạnh nút **Lưu**. Cần quyền
+  xem hồ sơ nhân sự (`employee`) và hồ sơ nằm trong phạm vi. Trang in: `/print/employee-info/<id>`.
+- Nhân viên tự in phiếu của mình: **Trang cá nhân ▸ Thông tin cá nhân**, nút ngay trên khối hồ sơ. Chỉ cần đăng
+  nhập và tài khoản đã gắn hồ sơ. Trang in: `/print/my-employee-info`.
+
+Phiếu A4 bảy mục: I. Thông tin cá nhân · II. Công việc · III. Liên hệ · IV. Ngân hàng · V. Giấy tờ và BHXH/BHYT ·
+VI. Người báo tin khi cần thiết · VII. Thành viên hộ gia đình; cuối phiếu có ô ký **Người khai** và **Phòng Nhân sự**.
+**Không có ô lương nào.** Bấm **«In phiếu / Lưu PDF»** để mở hộp in của trình duyệt. Ô hồ sơ chưa nhập in thành ô trống
+để điền tay; hai bảng người luôn có tối thiểu ba dòng.
+
+- ⚠️ Người in phiếu của **người khác** mà thiếu quyền xem thông tin nhạy cảm (`employee_sensitive`) thì ngày sinh,
+  mã số thuế, địa chỉ, ngân hàng, CCCD, số sổ BHXH và hai bảng người báo tin / hộ gia đình **in trống** dù hồ sơ có dữ
+  liệu (trang xem trước có dòng nhắc). Đừng nói "hồ sơ chưa khai"; nói là do thiếu quyền, nhờ người có quyền in hoặc
+  để nhân viên tự in từ Trang cá nhân (phiếu của chính mình thì đủ mọi ô).
+
+## Nhân viên tự đề nghị sửa hồ sơ, phòng Nhân sự duyệt (từ 23/10/2026)
+
+Hai cách sửa hồ sơ của chính mình — trợ lý phải nói đúng cách cho đúng ô:
+
+| Ô | Cách sửa |
+|---|---|
+| Số điện thoại, địa chỉ thường trú, địa chỉ hiện nay, người báo tin | Tự sửa ở thẻ **«Liên hệ»** / bảng người báo tin trên Trang cá nhân, **lưu ngay**, không qua duyệt |
+| Cá nhân (giới tính, ngày sinh, nơi sinh, dân tộc, tôn giáo, hôn nhân, số con, email cá nhân, học vấn, chuyên ngành) · Ngân hàng · Giấy tờ (CCCD, mã số thuế, số sổ BHXH, nơi KCB BHYT) · Hộ gia đình | **Gửi đề nghị**, phòng Nhân sự duyệt rồi mới vào hồ sơ |
+| Họ tên, mã NV, phòng ban, chức vụ, quản lý trực tiếp, ngày vào làm… | Không tự đề nghị được — liên hệ phòng Nhân sự |
+
+**Phía nhân viên** — **Trang cá nhân ▸ Thông tin cá nhân** ▸ thẻ **«Đề nghị sửa hồ sơ»** (dưới phần Liên hệ):
+
+1. Bấm **«Đề nghị sửa thông tin»** → hộp bốn tab **Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình**, điền sẵn hồ sơ hiện tại.
+2. Sửa ô cần đổi (đổi tab không mất chữ). Tab Hộ gia đình: danh sách gửi đi **thay cả danh sách cũ** khi được duyệt;
+   dòng không có họ tên bị bỏ; tối đa 30 dòng. Ô «Số con» chỉ hiện khi hôn nhân là «Có gia đình».
+3. Ghi chú cho phòng Nhân sự (tối đa 500 ký tự) nếu cần, bấm **«Gửi đề nghị»**. Chỉ ô đổi thật mới được gửi; không đổi
+   gì thì báo **«Không có thay đổi nào để gửi»**.
+
+- **Mỗi lúc chỉ một đề nghị chờ duyệt**: nút gửi mờ đi. Muốn sửa thêm thì **«Rút đề nghị»** rồi gửi lại đề nghị mới đủ ô.
+- Thẻ hiện đề nghị gần nhất: trạng thái **Chờ duyệt / Đã duyệt / Từ chối / Đã rút lại**, từng ô cũ → mới, lý do từ chối.
+- Duyệt xong hồ sơ cập nhật ngay; duyệt hay từ chối đều có thông báo chuông («Yêu cầu sửa hồ sơ đã được duyệt» /
+  «Yêu cầu sửa hồ sơ bị từ chối»), từ chối kèm lý do người duyệt viết.
+
+**Phía phòng Nhân sự** — menu **Nhân sự ▸ Danh mục ▸ «Duyệt sửa hồ sơ»** (`/hr/profile-change-requests`, con số cạnh
+menu = số đang chờ trong phạm vi). Cần quyền **ghi** hồ sơ nhân sự (`employee.write`), chỉ thấy đề nghị của người trong
+phạm vi được sửa. Danh sách mặc định lọc «Chờ duyệt», tìm theo mã / tên. Hồ sơ đang có đề nghị chờ thì màn chi tiết nhân
+sự hiện dải nhắc kèm liên kết **«Xem đề nghị»**.
+
+- Màn chi tiết: mỗi nhóm một bảng **Trường · Lúc gửi · Hiện tại · Đề nghị**. Dòng tô màu nhãn **«Đã đổi sau khi gửi»** =
+  hồ sơ bị sửa sau lúc nhân viên gửi; duyệt sẽ **ghi đè** giá trị hiện tại. Hộ gia đình: hai bảng «Lúc gửi» / «Đề nghị».
+- **«Duyệt»** → ghi cột Đề nghị vào hồ sơ ngay. **«Từ chối»** → bắt buộc nhập lý do (≤ 500 ký tự), hồ sơ giữ nguyên,
+  nhân viên đọc được lý do.
+- ⚠️ **Không tự duyệt đề nghị của chính mình** (trừ quản trị hệ thống) — hai nút ẩn, màn nói cần người khác duyệt.
+- ⚠️ Đề nghị đụng **ngân hàng, giấy tờ, hộ gia đình hoặc ngày sinh** thì người duyệt phải có thêm quyền xem thông tin
+  nhạy cảm (`employee_sensitive`); thiếu thì giá trị hiện «Đã ẩn (cần quyền xem thông tin nhạy cảm)» và không duyệt được.
+- Trợ lý **không** gửi, rút, duyệt hay từ chối đề nghị hộ, và không đọc giá trị trong đề nghị ra; chỉ chỉ đường tới màn.

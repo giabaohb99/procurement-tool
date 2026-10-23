@@ -470,6 +470,19 @@ export const appRoutes = {
     root: '/hr',
     employees: '/hr/employees',
     employeeDetail: (id: number | string) => `/hr/employees/${id}`,
+    /**
+     * Bản in «Phiếu thông tin nhân viên» BM00../QT01/NS (duoc-CR-676) — đứng NGOÀI khung phân hệ
+     * như mọi trang in (`/print/...`), cổng quyền ở `print-route-access.ts`.
+     */
+    employeeInfoPrint: (id: number | string) => `/print/employee-info/${id}`,
+    /** Bản in phiếu của CHÍNH MÌNH, mở từ Trang cá nhân — dữ liệu qua các cửa `/me`. */
+    myEmployeeInfoPrint: '/print/my-employee-info',
+    /**
+     * Duyệt ĐỀ NGHỊ SỬA HỒ SƠ do nhân viên tự khai (duoc-CR-676). Mục menu «Duyệt sửa hồ sơ» gác
+     * `employee.write` và là hàng rào cho cả `/:id` (gác điều hướng khớp theo ranh giới `/`).
+     */
+    profileChangeRequests: '/hr/profile-change-requests',
+    profileChangeRequestDetail: (id: number | string) => `/hr/profile-change-requests/${id}`,
     departments: '/hr/departments',
     departmentDetail: (id: number | string) => `/hr/departments/${id}`,
     companies: '/hr/companies',

@@ -13,6 +13,7 @@ KHÔNG qua kho vector — nên xuất bản xong là lượt hỏi sau đã th�
 Chạy trong container api:
     docker compose exec -T api python scripts/publish_handbook_update.py --dry-run   # xem sẽ làm gì
     docker compose exec -T api python scripts/publish_handbook_update.py            # làm thật
+    docker compose exec -T api python scripts/publish_handbook_update.py --note "… (duoc-CR-676)"  # ghi số CR
 
 Quy tắc cho từng skill (idempotent — chạy lại lần hai là "đã mới nhất", không sinh phiên bản):
   - nội dung xuất bản hiện hành == tệp                         → bỏ qua (đã mới nhất);
@@ -37,7 +38,7 @@ from app.modules.ai_skill.constants import SkillStatus  # noqa: E402
 from app.modules.ai_skill.handbook_seed import SET_CODE, seed_files  # noqa: E402
 from app.modules.ai_skill.model import AiSkill, AiSkillSet, AiSkillVersion  # noqa: E402
 
-CHANGE_NOTE = "Cập nhật cẩm nang theo tính năng ngày 22/10/2026 (duoc-CR-670)"
+CHANGE_NOTE = "Cập nhật cẩm nang theo tính năng ngày 22/10/2026 (duoc-CR-670)"  # mặc định của `--note`
 SEED_USER_ID = 0  # cùng giá trị lúc gieo: không có người dùng đứng tên
 AUDIT_SKILL = "ai_skill"
 AUDIT_SET = "ai_skill_set"
@@ -57,12 +58,13 @@ def why_hand_edited(skill: AiSkill, versions: list[AiSkillVersion], current_body
     return ""
 
 
-def publish_new_version(db, skill: AiSkill, versions: list[AiSkillVersion], body: str, title: str) -> int:
+def publish_new_version(db, skill: AiSkill, versions: list[AiSkillVersion], body: str, title: str,
+                        note: str = CHANGE_NOTE) -> int:
     """Chép `body` thành phiên bản mới — giống `service.publish_skill`, trừ người đứng tên."""
     now = datetime.now()
     version_no = max((v.version_no for v in versions), default=0) + 1
     version = AiSkillVersion(skill_id=skill.id, version_no=version_no, title=title, summary=skill.summary,
-                             body_md=body, change_note=CHANGE_NOTE, published_at=now, published_by=SEED_USER_ID)
+                             body_md=body, change_note=note, published_at=now, published_by=SEED_USER_ID)
     db.add(version)
     db.flush()
     skill.draft_body_md = body
@@ -77,6 +79,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Xuất bản phiên bản mới cho skill cẩm nang khi tệp hạt giống đổi")
     parser.add_argument("--dry-run", action="store_true", help="Chỉ báo sẽ làm gì, không ghi DB")
     parser.add_argument("--force", action="store_true", help="Đè cả skill quản trị đã sửa tay")
+    parser.add_argument("--note", default=CHANGE_NOTE,
+                        help="Ghi chú thay đổi của phiên bản mới (nên ghi số CR của đợt cập nhật)")
     args = parser.parse_args()
 
     db = SessionLocal()
@@ -108,11 +112,11 @@ def main() -> int:
                       f" ({len(current_body)} → {len(body)} ký tự){' (--force, đè bản sửa tay)' if reason else ''}.")
                 published += 1
                 continue
-            version_no = publish_new_version(db, skill, versions, body, title)
+            version_no = publish_new_version(db, skill, versions, body, title, args.note)
             db.commit()
             try:
                 record(db, SEED_USER_ID, AUDIT_SKILL, skill.id, "approve",
-                       f"Xuất bản skill {slug} phiên bản {version_no}: {CHANGE_NOTE}",
+                       f"Xuất bản skill {slug} phiên bản {version_no}: {args.note}",
                        doc_code=slug, parent=(AUDIT_SET, skill_set.id))
             except Exception:  # nhật ký hỏng không được làm mất phiên bản đã xuất bản
                 db.rollback()

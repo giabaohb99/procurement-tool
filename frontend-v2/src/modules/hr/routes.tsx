@@ -4,6 +4,7 @@ import {
   Building2,
   CalendarDays,
   DoorOpen,
+  FilePen,
   FileSignature,
   CalendarOff,
   CalendarRange,
@@ -18,6 +19,7 @@ import { Navigate } from 'react-router-dom'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { ProfileChangeRequestNavBadge } from './components/profile-change-request-nav-badge'
 import { LegacyUserPermissionRedirect } from './pages/legacy-permission-redirect'
 import { workScheduleNavItem, workScheduleRoutes } from './config/work-schedule-module-entries'
 
@@ -47,6 +49,18 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.employees,
       icon: IdCard,
       entity: 'employee',
+      group: 'Danh mục',
+    },
+    {
+      //  duoc-CR-676: duyệt ĐỀ NGHỊ SỬA HỒ SƠ do nhân viên tự khai ở Trang cá nhân. ⚠️ `entity` +
+      //  `action: 'write'` ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ) cho cả
+      //  `/hr/profile-change-requests/:id`; trang còn tự kiểm lại `employee.write`.
+      label: 'Duyệt sửa hồ sơ',
+      path: appRoutes.hr.profileChangeRequests,
+      icon: FilePen,
+      entity: 'employee',
+      action: 'write',
+      badge: ProfileChangeRequestNavBadge,
       group: 'Danh mục',
     },
     {
@@ -216,6 +230,18 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.employeeDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/employee-detail-page')).EmployeeDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.profileChangeRequests,
+      lazy: async () => ({
+        Component: (await import('./pages/profile-change-request-list-page')).ProfileChangeRequestListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.profileChangeRequestDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/profile-change-request-detail-page')).ProfileChangeRequestDetailPage,
       }),
     },
     {

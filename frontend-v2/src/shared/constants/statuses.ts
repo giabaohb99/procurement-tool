@@ -108,6 +108,14 @@ export const DOCUMENT_TEMPLATE_KIND: readonly StatusOption[] = [
   {"value": "2", "label": "Mẫu hợp đồng lao động", "sort_order": 2, "is_terminal": false, "is_exception": false},
 ]
 
+/** Trạng thái yêu cầu sửa hồ sơ */
+export const EMPLOYEE_CHANGE_REQUEST_STATUS: readonly StatusOption[] = [
+  {"value": "1", "label": "Chờ duyệt", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Đã duyệt", "sort_order": 2, "is_terminal": true, "is_exception": false},
+  {"value": "3", "label": "Từ chối", "sort_order": 3, "is_terminal": true, "is_exception": false},
+  {"value": "4", "label": "Đã rút lại", "sort_order": 4, "is_terminal": true, "is_exception": false},
+]
+
 /** Trạng thái nhân sự */
 export const EMPLOYEE_STATUS: readonly StatusOption[] = [
   {"value": "official", "label": "Chính thức", "sort_order": 0, "is_terminal": false, "is_exception": false},
@@ -483,6 +491,7 @@ export const STATUS_SETS = {
   cycle_outcome: CYCLE_OUTCOME,
   cycle_role: CYCLE_ROLE,
   document_template_kind: DOCUMENT_TEMPLATE_KIND,
+  employee_change_request_status: EMPLOYEE_CHANGE_REQUEST_STATUS,
   employee_status: EMPLOYEE_STATUS,
   feature_kind: FEATURE_KIND,
   forum_prefix: FORUM_PREFIX,

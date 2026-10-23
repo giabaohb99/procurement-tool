@@ -162,6 +162,24 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            //  duoc-CR-676 — Phiếu thông tin nhân viên BM00../QT01/NS (phòng Nhân sự in từ hồ sơ).
+            path: appRoutes.hr.employeeInfoPrint(':id'),
+            lazy: guardedPrintLazy(appRoutes.hr.employeeInfoPrint(':id'), async () => {
+              const { EmployeeInfoPrintPage } = await import('@/modules/hr/pages/employee-info-print-page')
+              return EmployeeInfoPrintPage
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
+            //  duoc-CR-676 — phiếu của chính mình, mở từ Trang cá nhân.
+            path: appRoutes.hr.myEmployeeInfoPrint,
+            lazy: guardedPrintLazy(appRoutes.hr.myEmployeeInfoPrint, async () => {
+              const { MyEmployeeInfoPrintPage } = await import('@/modules/hr/pages/employee-info-print-page')
+              return MyEmployeeInfoPrintPage
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
             path: appRoutes.hr.leaveRequestPrint(':id'),
             lazy: guardedPrintLazy(appRoutes.hr.leaveRequestPrint(':id'), async () => {
               const { LeaveRequestPrintPage } = await import('@/modules/hr/pages/leave-request-print-page')

@@ -57,6 +57,13 @@ export const PRINT_ROUTE_ACCESS: Readonly<Record<string, PrintRouteAccess>> = {
   [appRoutes.approvalSeal.print(':id')]: {
     flow: 'Backend cho người đang giữ việc duyệt trên phiếu đọc dù không có seal_request.read (bao-CR-584).',
   },
+  [appRoutes.hr.employeeInfoPrint(':id')]: {
+    entity: 'employee',
+    action: 'read', // GET /api/employees/{id} (+ hai bảng con khi có employee_sensitive.read)
+  },
+  [appRoutes.hr.myEmployeeInfoPrint]: {
+    flow: 'Phiếu của CHÍNH MÌNH: GET /api/employees/me, /me/contacts, /me/families chỉ đòi đăng nhập, hồ sơ lấy từ phiên — 9/19 vai trò không có employee.read nhưng vẫn phải in được phiếu của mình.',
+  },
   [appRoutes.hr.leaveRequestPrint(':id')]: {
     entity: 'leave_request',
     action: 'read', // GET /api/leave/requests/{id}

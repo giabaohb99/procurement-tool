@@ -301,6 +301,12 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
                      "phạm vi *own* đặt được mật khẩu tài khoản quản trị. Ca A2/A3 canh "
                      "không tái phát."),
     ],
+    "employee/change_request_controller.py": [
+        (OK_DA_KIEM, "L45 `_own_request` — `Req` lấy theo id nhưng bị chặn nếu `employee_id` khác hồ sơ "
+                     "gắn với phiên (`get_own_employee`); người khác nhận 404. duoc-CR-676."),
+        (OK_DA_KIEM, "L53 `_scoped_request` — đọc `Req` rồi đi `get_scoped(Employee, \"write\")` trên "
+                     "hồ sơ của yêu cầu; ngoài phạm vi ghi thì 404, mọi cửa duyệt đều qua đây. duoc-CR-676."),
+    ],
     "export_log/controller.py": [
         (OK_DA_KIEM, "L90 `StoredFile` — L87 `_guard_view` (can_view_any hoặc "
                      "`setting.read`). ⚠️ đó là cổng QUYỀN toàn hệ, tệp đã xuất có thể "
@@ -494,7 +500,9 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #  93 → 96 (19/10/2026, ai-CR-217 rà trước prod): `assistant/controller.py` +1 (tải tệp một lần qua MCP, ai-CR-207),
     #  `agent_hub/controller.py` +1 (lượt gọi gần nhất của khóa MCP của chính mình, ai-CR-213), `ai_skill/controller.py`
     #  +1 (thu hồi quyền đọc skill, bao-CR-621) — cả ba gác ngay sau get (sở hữu / `_check_target`).
-    assert sum(that.values()) == 96, f"tổng phải là 96, đang là {sum(that.values())}"
+    #  96 → 98 (duoc-CR-676): `employee/change_request_controller.py` +2 — `_own_request` (khớp hồ sơ gắn với phiên)
+    #  và `_scoped_request` (đi tiếp `get_scoped(Employee, "write")`).
+    assert sum(that.values()) == 98, f"tổng phải là 98, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
@@ -844,9 +852,11 @@ def test_b2b_sau_route_export_xlsx_deu_dung_pham_vi_read():
     import app.modules
 
     root = Path(app.modules.__file__).parent
+    #  duoc-CR-660 đã chốt cho NHÂN SỰ: hai đường xuất lọc bằng phạm vi «export» — rút khỏi danh sách,
+    #  canh riêng ở dưới để không ai lỡ tay trả về `read`. Năm tệp còn lại vẫn chờ quyết định.
     tep = ["purchase_request/controller.py", "purchase_order/controller.py",
            "survey_request/controller.py", "payable/controller.py",
-           "document/controller.py", "employee/controller.py"]
+           "document/controller.py"]
     for ten in tep:
         text = (root / ten).read_text(encoding="utf-8")
         assert '"export")' in text, f"{ten}: không còn route gác bằng khóa export?"
@@ -855,6 +865,9 @@ def test_b2b_sau_route_export_xlsx_deu_dung_pham_vi_read():
             for phan in text.split(moc + "(")[1:]:
                 assert '"export"' not in phan[:220], (
                     f"{ten}: đã có chỗ truyền action=export — cập nhật ca này")
+    nhan_su = (root / "employee/controller.py").read_text(encoding="utf-8")
+    assert nhan_su.count('get_perm_profile(db, user), "export")') >= 2, \
+        "employee/controller.py: xuất CSV / XLSX nhân sự phải lọc theo phạm vi Xuất (duoc-CR-660)"
 
 
 def test_b3_can_tru_tien_treo_cong_no_di_theo_pham_vi_write(world):
@@ -1271,8 +1284,9 @@ def test_d2_khuon_make_crud_router_van_loc_du_nam_cua(world):
                               csv_headers={"code": "Mã", "title": "Tên"})
     fn = {r.name: r.endpoint for r in router.routes}
 
+    #  duoc-CR-660: xuất CSV của khuôn đòi `export` và lọc theo phạm vi Xuất.
     a1 = world.grant("a1", "contract", scope="company",
-                     actions=("read", "write", "delete"))
+                     actions=("read", "write", "delete", "export"))
 
     req = _query({})
     pg = {"offset": 0, "limit": 50}

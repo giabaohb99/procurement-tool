@@ -79,5 +79,6 @@ def delete_all_of(db: Session, employee_id: int) -> None:
     không thể kiểm được nếu chỉ trông vào CASCADE. Xóa tường minh ở đây để hai
     môi trường hành xử giống nhau.
     """
-    for model in (EmployeeContact, EmployeeFamily):
+    from .change_request_model import EmployeeChangeRequest   # duoc-CR-676: FK mềm, không CASCADE
+    for model in (EmployeeContact, EmployeeFamily, EmployeeChangeRequest):
         db.query(model).filter(model.employee_id == employee_id).delete(synchronize_session=False)

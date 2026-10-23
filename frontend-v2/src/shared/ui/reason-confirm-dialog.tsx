@@ -35,6 +35,8 @@ interface ReasonConfirmDialogProps {
    * dấu chấm cho xong, và ô lý do mất luôn ý nghĩa.
    */
   optional?: boolean
+  /** Trần ký tự của ô lý do — khai khớp backend (vd `RejectIn.reason` ≤ 500). Mặc định 1000. */
+  maxLength?: number
   pending?: boolean
   onConfirm: (reason: string) => void
 }
@@ -60,6 +62,7 @@ export function ReasonConfirmDialog({
   confirmText,
   destructive = false,
   optional = false,
+  maxLength,
   pending = false,
   onConfirm,
 }: ReasonConfirmDialogProps) {
@@ -77,6 +80,7 @@ export function ReasonConfirmDialog({
           confirmText={confirmText}
           destructive={destructive}
           optional={optional}
+          maxLength={maxLength}
           pending={pending}
           onCancel={() => onOpenChange(false)}
           onConfirm={onConfirm}
@@ -88,7 +92,7 @@ export function ReasonConfirmDialog({
 
 type ReasonFieldProps = Pick<
   ReasonConfirmDialogProps,
-  'placeholder' | 'confirmText' | 'destructive' | 'optional' | 'pending' | 'onConfirm'
+  'placeholder' | 'confirmText' | 'destructive' | 'optional' | 'maxLength' | 'pending' | 'onConfirm'
 > & { label: string; onCancel: () => void }
 
 /**
@@ -103,6 +107,7 @@ function ReasonField({
   confirmText,
   destructive = false,
   optional = false,
+  maxLength = 1000,
   pending = false,
   onCancel,
   onConfirm,
@@ -119,7 +124,7 @@ function ReasonField({
           id={fieldId}
           autoFocus
           rows={3}
-          maxLength={1000}
+          maxLength={maxLength}
           value={reason}
           placeholder={placeholder}
           onChange={(event) => setReason(event.target.value)}

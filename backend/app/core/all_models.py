@@ -14,6 +14,7 @@ from app.modules.employee import department_model as _employee_department  # noq
 from app.modules.employee import contact_model as _employee_contact  # noqa: F401
 from app.modules.employee import position_model as _job_position  # noqa: F401
 from app.modules.employee import work_history_model as _employee_work_history  # noqa: F401
+from app.modules.employee import change_request_model as _employee_change_request  # noqa: F401  duoc-CR-676
 from app.modules.dossier import type_model as _dossier_type  # noqa: F401
 from app.modules.dossier import model as _dossier  # noqa: F401
 from app.modules.dossier import progress_model as _dossier_progress  # noqa: F401

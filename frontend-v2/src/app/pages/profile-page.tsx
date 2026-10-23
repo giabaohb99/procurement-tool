@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
+import { Printer } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
 import { ProfileAiConnectSection } from '@/app/components/profile/profile-ai-connect-section'
@@ -36,10 +37,13 @@ import { AuditTimeline } from '@/shared/audit'
 import { authService } from '@/core/auth/auth-service'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
+import { SelfChangeRequestCard } from '@/modules/hr/components/self-change-request-card'
 import { useMyEmployee } from '@/modules/hr/hooks/use-employees'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useNotifications } from '@/shared/notifications/use-notifications'
 import { ThemePresetPicker } from '@/shared/theme/theme-preset-picker'
+import { Button } from '@/shared/ui/button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -167,10 +171,23 @@ export function ProfilePage() {
                    bốn ô nhập. */}
               {myEmployee && (
                 <>
+                  {/*  duoc-CR-676 — in Phiếu thông tin nhân viên của chính mình (BM00../QT01/NS). */}
+                  <div className="flex justify-end">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={appRoutes.hr.myEmployeeInfoPrint}>
+                        <Printer className="size-4" />
+                        In phiếu thông tin
+                      </Link>
+                    </Button>
+                  </div>
                   <ProfileHrDetails employee={myEmployee}>
                     <ProfileContactCard employee={myEmployee} />
                   </ProfileHrDetails>
                   <ProfileEmergencyContacts employeeId={myEmployee.id} />
+                  {/*  duoc-CR-676 (C6) — phần còn lại của hồ sơ: ĐỀ NGHỊ sửa, phòng Nhân sự duyệt
+                       rồi mới áp. Đứng ngay dưới nhóm Liên hệ (thứ tự sửa ngay) cho người dùng thấy
+                       rõ hai cách sửa khác nhau. */}
+                  <SelfChangeRequestCard employee={myEmployee} />
                 </>
               )}
 

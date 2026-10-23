@@ -84,6 +84,9 @@ def _same(module: str, model: str, *names: str) -> dict[str, list[str]]:
 
 TARGETS.update({
     **_same("employee", "EmployeeWorkHistory", "WorkHistoryIn", "WorkHistoryUpdate"),
+    #  duoc-CR-676: ba nhóm ô yêu cầu sửa hồ sơ mượn cột của hồ sơ nhân sự; thân gửi + lý do từ chối ghi vào bảng yêu cầu.
+    **_same("employee", "Employee", "PersonalChange", "BankChange", "DocumentsChange"),
+    **_same("employee", "EmployeeChangeRequest", "ChangeRequestIn", "RejectIn"),
     **_same("doc_catalog", "DocFolderAccess", "FolderAccessBulkGrantIn", "FolderAccessBulkSubjectIn",
             "FolderAccessGrantIn", "FolderAccessLevelPatchIn", "FolderAccessRevokeIn"),
     **_same("doc_catalog", "DocFolder", "FolderCreate", "FolderUpdate"),
@@ -156,6 +159,7 @@ TARGETS.update({
     #  duoc-CR-630 — Danh sách biến mẫu HĐLĐ
     **_same("labor_contract", "LaborContractVariable", "VariableCreate", "VariableUpdate"),
     "ai_plan.PlanRejectIn": ["AiPlanProposal"],
+    **_same("work", "WorkTaskType", "TaskTypeCreate", "TaskTypeUpdate"),   # duoc-CR-666
 })
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).
@@ -191,6 +195,10 @@ NO_TARGET = {
     "employee.EmployeeFamiliesIn", "employee.SelfContactsIn", "user.ActiveUpdate", "user.RoleAssign",
     #  mật khẩu: không lưu nguyên văn (băm) — độ dài kiểm riêng ở luật mật khẩu
     "employee.SetPasswordIn", "user.PasswordReset",
+    #  duoc-CR-666/667: điểm kết quả (số); sửa bình luận ghi bảng của phân hệ `comment` (trần 5000 ở schema)
+    "work.TaskOutcomeIn", "work.CommentEdit",
+    "employee.PositionRolesUpdate",   # duoc-CR-653: chỉ mang danh sách id vai trò
+    "employee._GroupBase",   # duoc-CR-676: lớp gốc trừu tượng của ba nhóm ô, tự nó không ghi cột nào
     #  ghi vào bảng không có cột chữ, hoặc vào cột JSON của bảng cha
     "doc_catalog.DocTypeLinkRuleBase", "doc_catalog.DocTypeLinkRuleCreate", "doc_catalog.DocTypeLinkRuleUpdate",
     "leave.LeaveLineItem", "dossier.DossierFieldDef",

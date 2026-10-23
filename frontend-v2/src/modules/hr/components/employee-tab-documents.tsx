@@ -3,23 +3,18 @@ import { FormSection } from '@/shared/ui/form-section'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { EmployeeDateField, EmployeeTextField, SensitiveFieldsNotice } from './employee-form-fields'
 import { EmployeeIdCardUploader } from './employee-id-card-uploader'
-import { EmployeePeopleEditor, type PeopleColumn } from './employee-people-editor'
+import { EmployeePeopleEditor } from './employee-people-editor'
+import {
+  FAMILY_COLUMNS,
+  createEmptyFamilyRow,
+  toFamilyPayload,
+} from '../config/employee-family-columns'
 import {
   useEmployeeFamilies,
   useSaveEmployeeFamilies,
   useUploadIdImage,
 } from '../hooks/use-employee-profile'
 import type { EmployeeDetail, EmployeeFamily } from '../types/employee'
-
-const FAMILY_COLUMNS: PeopleColumn<EmployeeFamily>[] = [
-  { key: 'full_name', label: 'Họ tên', kind: 'text', span: 3 },
-  //  Cùng bộ mã với bảng người báo tin, nhưng gốc quy chiếu là CHỦ HỘ —
-  //  hồ sơ BHXH hỏi vậy, và nhân viên không phải lúc nào cũng là chủ hộ.
-  { key: 'relation', label: 'Quan hệ với chủ hộ', kind: 'relation', span: 2, placeholder: '— Chọn quan hệ —' },
-  { key: 'gender', label: 'Giới tính', kind: 'gender', span: 2 },
-  { key: 'date_of_birth', label: 'Ngày sinh', kind: 'date', span: 2 },
-  { key: 'id_number', label: 'Số CCCD', kind: 'text', span: 2 },
-]
 
 interface EmployeeTabDocumentsProps {
   employee: EmployeeDetail
@@ -105,30 +100,10 @@ export function EmployeeTabDocuments({
           columns={FAMILY_COLUMNS}
           rows={families.data}
           isLoading={families.isLoading}
-          emptyRow={() => ({
-            id: 0,
-            full_name: '',
-            relation: 0,   // 0 = chưa khai, xem RELATION_OPTIONS
-            gender: 0,
-            date_of_birth: null,
-            phone: '',
-            id_number: '',
-            sort_order: 0,
-          })}
+          emptyRow={createEmptyFamilyRow}
           canWrite={canWrite}
           isSaving={saveFamilies.isPending}
-          onSave={(rows) =>
-            saveFamilies.mutate(
-              rows.map(({ full_name, relation, gender, date_of_birth, phone, id_number }) => ({
-                full_name,
-                relation,
-                gender,
-                date_of_birth,
-                phone,
-                id_number,
-              })),
-            )
-          }
+          onSave={(rows) => saveFamilies.mutate(toFamilyPayload(rows))}
         />
       )}
     </div>

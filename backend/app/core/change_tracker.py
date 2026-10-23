@@ -85,6 +85,11 @@ TABLE_FIELD_ALLOWLIST = {
     }),
     "tab_employee_contact": _PEOPLE_ROW_SAFE_COLUMNS,
     "tab_employee_family": _PEOPLE_ROW_SAFE_COLUMNS,
+    #  duoc-CR-676: `changes`/`families` (JSON) chứa số TK, CCCD, người thân; `note`/`reject_reason` là chữ tự do.
+    #  Giữ dấu vết ở mức dòng (ai gửi, trạng thái nào, ai duyệt) và che mọi nội dung.
+    "tab_employee_change_request": frozenset({
+        "id", "employee_id", "pending_employee_id", "status", "decided_at", "decided_by", "created_by", "updated_by",
+    }),
 }
 
 

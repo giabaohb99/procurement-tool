@@ -16787,3 +16787,63 @@ Mã nguồn: backend/app/modules/vehicle_booking/controller.py · catalog_contro
 - status: xong
 Đo trên máy phát triển (local) với một tiến trình máy chủ: 10 người cùng bấm thì 95% lượt xong trong 4,6 giây, 150 người thì 25,7 giây và không lượt nào lỗi. Đường nặng nhất là xuất 6 803 sản phẩm, 0,7 giây khi chạy một mình. Prod chạy hai tiến trình nên ước nhanh gấp đôi.
 Mã nguồn: plans/261023-0935-stress-test-cr660-cr674/scripts/measure-export-concurrency.py · results/concurrent.json
+
+## duoc-CR-676 | In phiếu thông tin nhân viên và cho nhân viên tự đề nghị sửa hồ sơ
+- status: xong
+- date: 2026-10-23
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** việc HR2-2 trong kế hoạch phân hệ Nhân sự: in Phiếu thông tin nhân viên theo mẫu BM00../QT01/NS thay cho điền giấy, và cho nhân viên tự khai các nhóm hồ sơ còn lại ở Trang cá nhân, phòng Nhân sự duyệt rồi mới cập nhật.
+
+**Đã làm**
+- Trang in phiếu khổ A4 bảy mục, mở từ hồ sơ nhân sự hoặc Trang cá nhân; ô nhạy cảm in trống khi người in thiếu quyền.
+- Nhân viên gửi đề nghị sửa bốn nhóm Cá nhân, Ngân hàng, Giấy tờ và Hộ gia đình; phòng Nhân sự xem bảng so sánh rồi duyệt hoặc từ chối có lý do; người gửi nhận chuông.
+- Rà mã tìm ra bốn lỗi tranh chấp và mất dữ liệu, đã sửa cả bốn; ép tải trên MySQL thật không còn trạng thái lệch.
+- Viết ba bài hướng dẫn sử dụng mới và nâng cẩm nang trợ lý phần Hồ sơ nhân sự lên bản 3.
+
+**Kết quả:** đã commit trên nhánh erp-v2. Bài kiểm máy chủ, giao diện, kiểm kiểu và kiểm mã đều xanh.
+
+**Còn lại:** khuôn phiếu in đang dựng theo danh sách trường, cần tệp mẫu BM00 gốc để chỉnh cho khớp. Khi lên dev phải chạy lại seed hướng dẫn sử dụng, nạp lại kho tìm kiếm của trợ lý và xuất bản cẩm nang.
+
+Mã nguồn: backend/app/modules/employee/change_request_*.py · frontend-v2/src/modules/hr (trang in, thẻ đề nghị, màn duyệt) · doc/erp/hrm/01-ho-so-nhan-su.md §7.14
+Deploy: migration cr676chgreq01 · scripts/seed_help_nhan_su.py · scripts/reindex_help_rag.py --purge-orphans · scripts/publish_handbook_update.py
+
+### duoc-CR-676-1 | Trang in Phiếu thông tin nhân viên
+- status: xong
+Phiếu khổ A4 có tên công ty, mã biểu mẫu, bảy mục và hàng ký của người khai và phòng Nhân sự. Ô bị che vì thiếu quyền xem thông tin nhạy cảm thì in trống; hai bảng người báo tin và hộ gia đình chừa dòng để điền tay. Thứ tự mục gom vào một tệp cấu hình để chỉnh khi có mẫu gốc.
+Mã nguồn: frontend-v2/src/modules/hr/pages/employee-info-print-page.tsx · config/employee-info-print-sections.ts
+
+### duoc-CR-676-2 | Lưu và gửi đề nghị sửa hồ sơ ở máy chủ
+- status: xong
+Thêm bảng lưu đề nghị sửa hồ sơ với bốn trạng thái chờ duyệt, đã duyệt, từ chối và đã rút. Mỗi người chỉ có một đề nghị đang chờ, chặn cả ở tầng cơ sở dữ liệu; chỉ những ô thật sự đổi mới được lưu; ô ngoài danh sách cho phép bị từ chối ngay.
+Mã nguồn: backend/app/modules/employee/change_request_model.py · change_request_schema.py · change_request_service.py · migration cr676chgreq01
+
+### duoc-CR-676-3 | Phòng Nhân sự duyệt hoặc từ chối đề nghị
+- status: xong
+Danh sách chỉ gồm người nằm trong phạm vi được sửa của người xem. Không ai tự duyệt đề nghị của chính mình, trừ quản trị hệ thống; đề nghị có ô nhạy cảm thì người duyệt phải có quyền xem thông tin nhạy cảm. Duyệt ghi vào hồ sơ trong một giao dịch qua đường sửa hồ sơ sẵn có; nếu hộ gia đình đã bị sửa sau lúc gửi thì chặn duyệt để khỏi đè mất.
+Mã nguồn: backend/app/modules/employee/change_request_controller.py · change_request_view.py
+
+### duoc-CR-676-4 | Che thông tin nhạy cảm trong đề nghị
+- status: xong
+Người xem thiếu quyền nhận ô rỗng kèm cờ đã che; nhật ký thay đổi chỉ ghi dấu vết, không ghi giá trị; nhật ký yêu cầu che các ô nhạy cảm nằm sâu trong thân gửi lên; chuông thông báo chỉ nêu tên nhóm.
+Mã nguồn: backend/app/core/change_tracker.py · backend/app/core/logging_policy.py
+
+### duoc-CR-676-5 | Thẻ đề nghị ở Trang cá nhân và màn duyệt cho phòng Nhân sự
+- status: xong
+Trang cá nhân có thẻ đề nghị với hộp thoại bốn tab, chỉ gửi ô đã đổi và cho rút đề nghị đang chờ. Màn duyệt so ba cột lúc gửi, hiện tại và đề nghị, tô màu ô đã đổi sau lúc gửi; menu có huy hiệu đếm số đề nghị chờ; hồ sơ nhân sự hiện dải báo khi người đó đang có đề nghị.
+Mã nguồn: frontend-v2/src/modules/hr/components (self-change-request-*, change-request-*) · pages/profile-change-request-*.tsx
+
+### duoc-CR-676-6 | Rà mã và ép tải
+- status: xong
+Rà mã tìm ra bốn lỗi: rút đề nghị đè lên đề nghị vừa duyệt, một người có hai đề nghị chờ, duyệt đè mất hộ gia đình phòng Nhân sự vừa sửa, và tải hộ gia đình lỗi thì bảng trống rồi xóa nhầm khi duyệt. Đã sửa cả bốn. Ép tải trên MySQL thật: 20 lượt gửi trùng chỉ ra một đề nghị, rút và duyệt tranh nhau 50 vòng không vòng nào lệch, 150 người duyệt cùng lúc không lượt nào lỗi.
+Mã nguồn: test/backend/test_yeu_cau_sua_ho_so_cr676.py · test/backend/test_ep_tai_yeu_cau_sua_ho_so_cr676.py · plans/reports/tester-261023-1125-ep-tai-cr676.md
+
+### duoc-CR-676-7 | Hướng dẫn sử dụng và cẩm nang trợ lý
+- status: xong
+Thêm ba bài vào cây hướng dẫn Hồ sơ và tổ chức: in phiếu thông tin, tự đề nghị sửa hồ sơ, duyệt đề nghị. Cẩm nang trợ lý phần Hồ sơ nhân sự lên bản 3, kèm luật không gửi hay duyệt đề nghị thay người dùng.
+Mã nguồn: backend/scripts/seed_help_nhan_su.py · backend/app/modules/ai_skill/seed_handbook/60-nhan-su-ho-so.md · backend/scripts/publish_handbook_update.py
+
+### duoc-CR-676-8 | Sửa ba bài kiểm canh lỗi thời
+- status: xong
+Ba bài kiểm canh đỏ từ các đợt trước mà chưa ai chạy lại: hai bài vẫn tin rằng xuất nhân sự lọc theo quyền Xem trong khi đợt cổng xuất đã chuyển sang quyền Xuất, một bài thiếu khai bảng đích cho các khuôn dữ liệu mới của loại việc, kết quả việc và vai trò theo chức vụ.
+Mã nguồn: test/backend/test_pham_vi_duong_vong.py · test/backend/test_canh_do_dai_o_chu_cr538.py

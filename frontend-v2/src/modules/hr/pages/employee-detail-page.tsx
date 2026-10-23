@@ -11,6 +11,7 @@ import {
   IdCard,
   Loader2,
   Phone,
+  Printer,
   Save,
   UserCheck,
   UserCog,
@@ -42,6 +43,7 @@ import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { EmployeeAccountCard } from '../components/employee-account-card'
+import { EmployeePendingChangeRequestBanner } from '../components/employee-pending-change-request-banner'
 import { EmployeePendingWorkConfirmDialog } from '../components/employee-pending-work-confirm-dialog'
 import { EmployeeDepartmentCard } from '../components/employee-department-card'
 import { EmployeeSignatureCard } from '../components/employee-signature-card'
@@ -257,6 +259,14 @@ export function EmployeeDetailPage() {
             </Button>
 
             <div className="flex items-center gap-2">
+              {/*  duoc-CR-676 — Phiếu thông tin nhân viên BM00../QT01/NS. Là LIÊN KẾT (không phải
+                   nút) nên không bao giờ submit form hồ sơ. */}
+              <Button variant="outline" asChild>
+                <Link to={appRoutes.hr.employeeInfoPrint(employee.id)}>
+                  <Printer />
+                  In phiếu thông tin
+                </Link>
+              </Button>
               <PermissionGate entity="employee" action="write">
                 <Button type="submit" disabled={saveEmployee.isPending}>
                   {saveEmployee.isPending ? <Loader2 className="animate-spin" /> : <Save />}
@@ -274,6 +284,8 @@ export function EmployeeDetailPage() {
               </PermissionGate>
             </div>
           </div>
+
+          <EmployeePendingChangeRequestBanner employee={employee} enabled={canWrite} />
 
           <RecordIdentityCard
             media={
