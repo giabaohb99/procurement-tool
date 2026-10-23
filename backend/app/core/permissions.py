@@ -181,7 +181,11 @@ ENTITIES = [
     "ai_mcp_key_admin",
 ]
 
-ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
+#  `import` (duoc-CR-660, Đ-13c): NHẬP file hàng loạt vào danh mục — tách khỏi `create`/`write`
+#  vì một dòng CSV có thể tạo, sửa và xóa cả bảng, nên không thể ngang quyền sửa từng bản ghi.
+#  ⚠️ Luôn đặt CUỐI danh sách: `frontend-v2/src/core/authorization/permission-types.ts` canh thứ tự
+#  này (test_dong_bo_giao_dien_v2.py). Không liên quan tới ENTITY `import` của phân hệ Quản lý import.
+ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export", "import"]
 
 # Nhãn tiếng Việt để hiển thị ở màn cấu hình phân quyền
 ENTITY_LABELS = {
@@ -271,7 +275,7 @@ ENTITY_LABELS = {
 
 ACTION_LABELS = {
     "read": "Xem", "create": "Tạo", "write": "Sửa", "delete": "Xóa",
-    "approve": "Duyệt", "cancel": "Hủy", "print": "In", "export": "Xuất",
+    "approve": "Duyệt", "cancel": "Hủy", "print": "In", "export": "Xuất", "import": "Nhập",
 }
 
 # Phạm vi theo cấp bậc (tương đối với công ty/phòng ban của chính user)

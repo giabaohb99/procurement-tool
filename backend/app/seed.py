@@ -194,7 +194,7 @@ _CONTRACT_CRUD = {"contract": (["read", "create", "write", "delete"], "company")
 
 # Quản lý thu mua = toàn quyền như quản trị NGHIỆP VỤ: mọi entity TRỪ quản trị hệ thống
 # (user/role/setting) — full 8 hành động, phạm vi 'all'.
-_ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
+_ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export", "import"]
 # help_article nằm ở đây để nghiệp vụ thu mua KHÔNG tự động sửa được tài liệu HDSD —
 # quyền này chỉ cấp cho admin hệ thống và vai trò 'help_admin'.
 # `mailbox` cũng ở đây (26/08/2026): bảng hộp thư giữ MẬT KHẨU ỨNG DỤNG của các
@@ -547,8 +547,8 @@ STD_ROLES = {
     "booking_manager": {"name": "Quản lý điều phối (Đặt xe)", "perms": {
         "vehicle_booking": (["read", "approve", "cancel", "write", "export"], "all"),
         # Quản lý còn quản được danh mục Xe/Tài xế (+ xuất dữ liệu).
-        "vehicle": (["read", "create", "write", "delete", "export"], "all"),
-        "driver": (["read", "create", "write", "delete", "export"], "all"),
+        "vehicle": (["read", "create", "write", "delete", "export", "import"], "all"),
+        "driver": (["read", "create", "write", "delete", "export", "import"], "all"),
     }},
     # Tài xế: xem + cập nhật CHUYẾN CỦA MÌNH (nhận / bắt đầu / hoàn thành / xin
     # điều phối lại — đều tính là `write`). Phạm vi 'assigned' = phiếu mình tạo +
@@ -581,7 +581,7 @@ STD_ROLES = {
     # Quản trị con dấu: quản danh mục Loại con dấu + xem mọi phiếu.
     "seal_admin": {"name": "Quản trị con dấu (Duyệt dấu)", "perms": {
         "seal_request": (["read", "export"], "all"),
-        "seal_type": (["read", "create", "write", "delete", "export"], "all"),
+        "seal_type": (["read", "create", "write", "delete", "export", "import"], "all"),
     }},
     # Giám đốc duyệt dấu: CHỈ NHẬN THÔNG BÁO + xem phiếu ĐÃ DUYỆT của công ty mình
     # (phạm vi company đã lọc thêm trạng thái đã-duyệt ở core/scoping.py). Không phê duyệt.
@@ -605,7 +605,7 @@ STD_ROLES = {
     #  giữ kho hồ sơ công ty phải thấy hết. Vai trò cho hành chính TỪNG PHÒNG
     #  thì tự tạo trên màn Phân quyền với phạm vi `dept`, đừng nới dòng này.
     "dossier_admin": {"name": "Hồ sơ — Quản trị danh mục", "perms": {
-        "dossier_type": (["read", "create", "write", "delete", "export"], "all"),
+        "dossier_type": (["read", "create", "write", "delete", "export", "import"], "all"),
         "dossier": (["read", "create", "write", "delete", "export"], "all"),
     }},
 }
@@ -887,6 +887,7 @@ def seed_standard_roles(db):
                 can_write="write" in actions, can_delete="delete" in actions,
                 can_approve="approve" in actions, can_cancel="cancel" in actions,
                 can_print="print" in actions, can_export="export" in actions,
+                can_import="import" in actions,
             ))
         db.commit()
 
@@ -925,6 +926,7 @@ def resync_role_perms(db, code: str, perms: dict):
             can_write="write" in actions, can_delete="delete" in actions,
             can_approve="approve" in actions, can_cancel="cancel" in actions,
             can_print="print" in actions, can_export="export" in actions,
+            can_import="import" in actions,
         ))
     db.commit()
 

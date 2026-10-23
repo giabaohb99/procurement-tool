@@ -355,7 +355,7 @@ def test_hdld_da_xoa_khong_giu_chan_mau(db, hdld):
 @pytest.fixture
 def ho_so(db, world, client_as):  # noqa: F811
     actor = world.actor("a1")
-    actor.grant("dossier", "all", actions=("read", "create", "write", "delete"))
+    actor.grant("dossier", "all", actions=("read", "create", "write", "delete", "export"))   # CR-660: xuất CSV đòi `export`
     actor.grant("dossier_type", "all", actions=("read", "create", "write", "delete"))
     a1 = client_as(actor)
     loai = DossierType(code="GP", name="Giấy phép", is_active=True, created_by=1, updated_by=1)

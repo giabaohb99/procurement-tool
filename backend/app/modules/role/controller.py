@@ -93,7 +93,8 @@ def get_permissions(rid: int, db: Session = Depends(get_db), user=Depends(requir
     return success([{
         "entity": p.entity, "can_read": p.can_read, "can_create": p.can_create,
         "can_write": p.can_write, "can_delete": p.can_delete, "can_approve": p.can_approve,
-        "can_cancel": p.can_cancel, "can_print": p.can_print, "can_export": p.can_export, "scope": p.scope,
+        "can_cancel": p.can_cancel, "can_print": p.can_print, "can_export": p.can_export,
+        "can_import": p.can_import, "scope": p.scope,
     } for p in perms])
 
 

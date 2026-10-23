@@ -35,4 +35,5 @@ class Permission(Base, AuditMixin):
     can_cancel: Mapped[bool] = mapped_column(Boolean, default=False)
     can_print: Mapped[bool] = mapped_column(Boolean, default=False)
     can_export: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_import: Mapped[bool] = mapped_column(Boolean, default=False)   # duoc-CR-660: nhập file hàng loạt
     scope: Mapped[str] = mapped_column(String(10), default="own")  # own | dept | company | all

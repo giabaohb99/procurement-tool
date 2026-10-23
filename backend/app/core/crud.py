@@ -166,13 +166,13 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             ids: str | None = None,
             request: Request = None,
             db: Session = Depends(get_db),
-            user=Depends(require(entity, "read")),
+            user=Depends(require(entity, "export")),   # duoc-CR-660: trước đây `read`
         ):
             from app.core.csv_utils import export_csv_response
             q = apply_filters(db.query(Model), Model, request, filterable)
             # Xuất file phải cùng phạm vi với xem trên màn hình, kẻo bấm Xuất là
             # lấy được nguyên bảng thứ mà danh sách vừa giấu đi.
-            q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
+            q = apply_scope(q, Model, entity, user, get_perm_profile(db, user), "export")
             if ids:
                 id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
                 if id_list:
@@ -197,7 +197,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         def import_csv(
             file: UploadFile = File(...),
             db: Session = Depends(get_db),
-            user=Depends(require(entity, "write")),
+            user=Depends(require(entity, "import")),   # duoc-CR-660: trước đây `write`
         ):
             import csv
             from io import StringIO
@@ -210,7 +210,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             # Nhập file là đường vòng để SỬA/XÓA bản ghi bằng mã, nên nó phải chịu đúng
             # phạm vi như nút sửa trên màn hình. Dòng nào trỏ vào bản ghi ngoài phạm vi
             # thì BỎ QUA và đếm riêng — không lặng lẽ ghi đè, cũng không dừng cả file.
-            scope_cond = scope_condition(Model, entity, user, get_perm_profile(db, user), "write")
+            scope_cond = scope_condition(Model, entity, user, get_perm_profile(db, user), "import")
             created, updated, deleted, skipped = 0, 0, 0, 0
             for row in reader:
                 action = row.get("Hành động", "").strip().lower()

@@ -17,6 +17,8 @@ export const ACTIONS = [
   'cancel',
   'print',
   'export',
+  /** Nhập file hàng loạt vào danh mục (duoc-CR-660) — KHÁC entity `import` của phân hệ Quản lý import. */
+  'import',
   /** Cờ tổng hợp do backend thêm cho nhân sự thu mua, không phải ô trong ma trận vai trò. */
   'process',
 ] as const

@@ -93,11 +93,13 @@ def export_suppliers_csv(
     ids: str | None = None,
     request: Request = None,
     db: Session = Depends(get_db),
-    user=Depends(require("supplier", "read")),
+    user=Depends(require("supplier", "export")),
 ):
     from app.core.csv_utils import export_csv_response
 
     query = apply_filters(db.query(Supplier), Supplier, request, service.FILTERABLE)
+    # duoc-CR-660: xuất file phải cùng phạm vi với danh sách (hôm nay khai PUBLIC; sau này đổi phạm vi là tự theo)
+    query = apply_scope(query, Supplier, "supplier", user, get_perm_profile(db, user), "export")
     if ids:
         id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
         if id_list:
@@ -124,7 +126,7 @@ def export_suppliers_csv(
 def import_suppliers_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user=Depends(require("supplier", "write")),
+    user=Depends(require("supplier", "import")),
 ):
     import csv
     from io import StringIO

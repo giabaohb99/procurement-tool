@@ -570,16 +570,17 @@ def export_employees_csv(
     ids: str | None = Query(None),
     request: Request = None,
     db: Session = Depends(get_db),
-    user=Depends(require("employee", "read")),
+    user=Depends(require("employee", "export")),   # duoc-CR-660: trước đây `read` — ai xem được là kéo hết
 ):
     from app.core.csv_utils import export_csv_response
+    from .export_mask import masked_row_objects
     from .model import Employee
 
     query = apply_filters(db.query(Employee), Employee, request, service.FILTERABLE)
     query = service.apply_keyword_search(query, request.query_params.get("search"))
     # Đ-13b: xuất CSV cũng phải bó theo phạm vi dữ liệu như màn danh sách — trước đây
     # thiếu dòng này nên người phạm vi hẹp bấm Xuất là kéo được TOÀN BỘ nhân sự.
-    query = apply_scope(query, Employee, "employee", user, get_perm_profile(db, user))
+    query = apply_scope(query, Employee, "employee", user, get_perm_profile(db, user), "export")
     if ids:
         id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
         if id_list:
@@ -598,6 +599,8 @@ def export_employees_csv(
         # thành tệp phải tra cứu. Đường nhập vẫn hiểu cả nhãn lẫn mã (xem `_ma_trang_thai`).
         "status_label": "Trạng thái NS",
     }
+    #  duoc-CR-660: cột nhạy cảm (nếu bộ cột có) rỗng với người thiếu `employee_sensitive.read`.
+    items = masked_row_objects(items, list(headers_map), get_perm_profile(db, user))
     return export_csv_response(items, headers_map, "employees")
 
 
@@ -610,13 +613,13 @@ def export_employees_xlsx(
 ):
     """Xuất Nhân sự ra .xlsx theo đúng bộ lọc đang áp + phạm vi dữ liệu (Đ-13b).
 
-    Endpoint MỚI nên gác thẳng bằng action `export` (QĐ-I4). Bản CSV cũ tạm giữ gác
-    `read` để không gãy màn cũ; sẽ chuẩn hoá về `export` ở Pha C."""
+    Gác `export` (QĐ-I4); bản CSV cũ cũng đã chuẩn hoá về `export` (duoc-CR-660)."""
     from app.core.export_xlsx import Col, check_row_limit, parse_ids, xlsx_response
+    from .export_mask import mask_export_rows
     from .model import Employee
 
     query = apply_filters(db.query(Employee), Employee, request, service.FILTERABLE)
-    query = apply_scope(query, Employee, "employee", user, get_perm_profile(db, user))
+    query = apply_scope(query, Employee, "employee", user, get_perm_profile(db, user), "export")
     id_list = parse_ids(ids)
     if id_list:
         query = query.filter(Employee.id.in_(id_list))
@@ -634,13 +637,14 @@ def export_employees_xlsx(
         Col("status_label", "Trạng thái NS", width=16),
     ]
     rows = [{c.key: getattr(it, c.key, "") for c in cols} for it in items]
+    mask_export_rows(rows, [it.id for it in items], get_perm_profile(db, user))   # duoc-CR-660
     return xlsx_response("nhan-su", cols, rows, "Nhan su")
 
 @router.post("/import/csv")
 def import_employees_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user=Depends(require("employee", "write")),
+    user=Depends(require("employee", "import")),
 ):
     """duoc-CR-628: Nhập CSV nhân sự đã NGỪNG. Đường cũ ghi thẳng cột, bỏ qua chốt của màn hồ sơ
     (vòng quản lý, nhãn chức vụ, khóa tài khoản khi nghỉ việc, phạm vi dữ liệu) và cho phép xóa hàng

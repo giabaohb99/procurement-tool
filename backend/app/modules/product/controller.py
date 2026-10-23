@@ -108,12 +108,14 @@ def export_products_csv(
     ids: str | None = Query(None),
     request: Request = None,
     db: Session = Depends(get_db),
-    user=Depends(require("product", "read")),
+    user=Depends(require("product", "export")),
 ):
     from app.core.csv_utils import export_csv_response
     from .model import Product
     
     query = apply_filters(db.query(Product), Product, request, service.FILTERABLE)
+    # duoc-CR-660: xuất file phải cùng phạm vi với danh sách (hôm nay khai PUBLIC; sau này đổi phạm vi là tự theo)
+    query = apply_scope(query, Product, "product", user, get_perm_profile(db, user), "export")
     if ids:
         id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
         if id_list:
@@ -138,7 +140,7 @@ def export_products_csv(
 def import_products_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user=Depends(require("product", "write")),
+    user=Depends(require("product", "import")),
 ):
     import csv
     from io import StringIO

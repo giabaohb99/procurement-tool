@@ -50,6 +50,21 @@ def can_view_any(db: Session, user) -> bool:
     return any(user_has_permission(db, user, e, "export") for e in EXPORT_ADAPTERS)
 
 
+def can_download(db: Session, user, x) -> bool:
+    """Tải lại TỆP đã xuất (duoc-CR-660, review H1): tệp là ảnh chụp theo quyền của NGƯỜI XUẤT nên chỉ người đó, hoặc người
+    có `export` phạm vi «tất cả» trên đúng bảng đó, được tải. Tệp nhân sự còn đòi đọc nhạy cảm phạm vi «tất cả» — tệp do người
+    có quyền nhạy cảm xuất thì không che, người tải lại không có quyền đó sẽ đọc được CCCD / tài khoản ngân hàng."""
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import has_global_scope
+
+    if x.created_by and x.created_by == user.id:
+        return True
+    profile = get_perm_profile(db, user)
+    if not has_global_scope(profile, x.entity, "export"):
+        return False
+    return x.entity != "employee" or has_global_scope(profile, "employee_sensitive", "read")
+
+
 def _csv_cell(col, value) -> str:
     if col.kind == "bool":
         return "Có" if value else "Không"   # rõ True/False -> import lại đọc đúng
@@ -112,7 +127,8 @@ def run_export(db: Session, user, entity: str, fmt: str) -> tuple[bytes, str, st
     model = adapter["model"]
 
     q = db.query(model)
-    q = apply_scope(q, model, adapter["scope"], user, get_perm_profile(db, user))
+    # duoc-CR-660: phạm vi tính theo grant có quyền XUẤT (cổng gác `export`), không theo `read`.
+    q = apply_scope(q, model, adapter["scope"], user, get_perm_profile(db, user), "export")
     q = q.order_by(model.id.desc())
     items = q.all()
     if len(items) > EXPORT_MAX_ROWS:
@@ -135,6 +151,10 @@ def run_export(db: Session, user, entity: str, fmt: str) -> tuple[bytes, str, st
         }
         for it in items
     ]
+    if entity == "employee":
+        # duoc-CR-660: bộ cột nhân sự thêm cột nhạy cảm thì người thiếu `employee_sensitive.read` nhận ô rỗng.
+        from app.modules.employee.export_mask import mask_export_rows
+        mask_export_rows(rows, [it.id for it in items], get_perm_profile(db, user))
     stamp = (datetime.utcnow() + VN_OFFSET).strftime("%d%m%Y")
 
     if fmt == "xlsx":
