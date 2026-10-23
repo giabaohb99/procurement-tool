@@ -111,6 +111,30 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-660 | Sổ tay vận hành đồng bộ app đặt xe cũ và ERP
+- status: xong
+- date: 2026-10-23
+Người chủ yêu cầu một tài liệu vận hành cho cụm đồng bộ app đặt xe cũ và ERP: thao tác Firebase, đẩy mã app cũ lên đâu,
+kiểm Worker trên Cloudflare, thông tin dev và prod của app cũ. Các tài liệu đã có trong thư mục đồng bộ chỉ nói thiết
+kế, chưa có chỗ cho người trực tra khi có sự cố.
+
+Viết tệp van-hanh.md trong thư mục dong-bo-dat-xe-duyet-dau, số liệu đo thật lúc viết (chỉ đọc): bản đồ dev và prod là hai
+bộ Firebase riêng kèm Worker, Pages, ERP và trạng thái từng công tắc; hai chiều đồng bộ chạy thế nào và tắt khẩn ở đâu;
+bảng cấu hình phía ERP (khóa trong bảng cấu hình và biến môi trường, giá trị hiện tại trên dev và prod, không in bí
+mật) kèm lệnh đọc nhanh và lệnh chạy tay từng vòng; cách tra một phiếu sang chưa trên màn Sổ đồng bộ và ý nghĩa trạng
+thái; thao tác Firebase (console, nhánh dữ liệu, luật, khóa đọc, service account, chỗ chép cấu hình web); đẩy mã Worker
+(nhánh feat rồi dev rồi main, đẩy nhánh là tự deploy, biến thường trong wrangler.jsonc, tên các secret, lệnh kiểm deploy
+và log trên Cloudflare) và web app cũ trên Pages; thứ tự đẩy một thay đổi đụng đồng bộ; việc còn treo. Thêm dòng vào
+README của thư mục.
+
+Phát hiện trong lúc đo: 48 dòng lỗi chiều nhận trên prod đều cùng câu MultipleResultsFound, tức một mã app cũ khớp hơn một
+bản ghi bên ERP; là lỗi mã tra cứu, ghi vào mục việc còn treo, chưa sửa.
+
+Mã nguồn: `doc/dong-bo-dat-xe-duyet-dau/van-hanh.md` (mới), `doc/dong-bo-dat-xe-duyet-dau/README.md`.
+Commit: trên erp-v2 theo luật đẩy mã 23/10. Deploy: không cần (tài liệu).
+
+---
+
 ## ai-CR-231 | Bot giám sát phân biệt lỗi DNS với server sập
 - status: xong
 - date: 2026-10-22
