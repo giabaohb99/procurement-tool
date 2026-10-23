@@ -348,3 +348,33 @@ def test_co_canh_bao_khong_lan_sang_phieu_khac(db):
 
     assert WARN_AUTO_CREATED in (dau.warnings or "")
     assert WARN_AUTO_CREATED not in (sau.warnings or "")
+
+
+def test_ma_app_cu_trung_hai_hang_thi_lay_hang_cu_nhat_khong_no(db):
+    """bao-CR-661: hai lượt gọi cùng một giây (prod 20/10/2026, DX000422 + DX000423) đẻ hai phiếu cùng
+    `legacy_id`. Tra kiểu `scalar_one_or_none` ném MultipleResultsFound và mọi lượt quét sau đó hỏng ở
+    đúng phiếu này. Giờ phải lấy hàng CŨ NHẤT (app cũ ghi `erpId` theo câu trả lời đầu), cập nhật hàng
+    đó, không đẻ thêm hàng thứ ba, không đụng hàng thừa."""
+    from app.modules.legacy_datxe.service import find_by_legacy_id, find_local_id
+
+    apply_legacy_record(db, node=booking_node(), legacy_id="req_dup", catalog=make_catalog(db))
+    dau = db.query(VehicleBooking).one()
+    thua = VehicleBooking(legacy_id="req_dup", code="DXTHUA", purpose=dau.purpose, status=dau.status,
+                          company_id=dau.company_id, requester_id=dau.requester_id,
+                          created_by=dau.created_by)
+    db.add(thua)
+    db.commit()
+    assert thua.id > dau.id
+
+    assert find_local_id(db, "vehicle_booking", "req_dup") == dau.id
+    assert find_by_legacy_id(db, VehicleBooking, "req_dup").id == dau.id
+
+    log = apply_legacy_record(db, node=booking_node(purpose="Đi họp đối tác"), legacy_id="req_dup",
+                              catalog=make_catalog(db))
+    assert log.status == int(SyncStatus.SUCCESS) and log.local_id == dau.id
+    assert db.query(VehicleBooking).filter(VehicleBooking.legacy_id == "req_dup").count() == 2
+    db.refresh(dau)
+    assert dau.purpose == "Đi họp đối tác"
+    db.refresh(thua)
+    assert thua.code == "DXTHUA"
+    assert find_local_id(db, "vehicle_booking", "") == 0 and find_local_id(db, "khong_co", "req_dup") == 0

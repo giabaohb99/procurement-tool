@@ -173,9 +173,24 @@ def find_local_id(db, entity: str, legacy_id: str) -> int:
     model = MODEL.get(entity)
     if model is None or not legacy_id:
         return 0
-    row = db.execute(
-        select(model.id).where(model.legacy_id == legacy_id)).scalar_one_or_none()
-    return int(row or 0)
+    row = find_by_legacy_id(db, model, legacy_id)
+    return int(row.id) if row is not None else 0
+
+
+def find_by_legacy_id(db, model, legacy_id: str):
+    """Hàng ERP mang mã app cũ này; trùng thì lấy hàng CŨ NHẤT (id nhỏ nhất) và ghi cảnh báo.
+
+    bao-CR-661: hai lượt gọi của app cũ tới cùng một giây (20/10/2026, DX000422 + DX000423) đẻ ra
+    hai hàng cùng `legacy_id`; tra bằng `scalar_one_or_none` thì ném `MultipleResultsFound` và MỌI
+    lượt quét sau đó hỏng ở đúng phiếu này (29 dòng lỗi trên prod). Chọn hàng cũ nhất vì app cũ
+    ghi ngược `erpId` theo câu trả lời ĐẦU TIÊN; hàng thừa phải gộp tay, cảnh báo để người trực thấy.
+    """
+    rows = list(db.execute(
+        select(model).where(model.legacy_id == legacy_id).order_by(model.id).limit(2)).scalars())
+    if len(rows) > 1:
+        LOGGER.warning("Mã app cũ %r khớp hơn một hàng %s (id %s, %s, ...) — dùng hàng cũ nhất, cần gộp tay",
+                       legacy_id, model.__tablename__, rows[0].id, rows[1].id)
+    return rows[0] if rows else None
 
 
 def apply_legacy_record(
@@ -281,8 +296,7 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
     #  đầu, và cả trăm dòng cùng đỏ lên vì một ca duy nhất.
     warn_mark = len(catalog.warnings)
 
-    existing = db.execute(
-        select(model).where(model.legacy_id == legacy_id)).scalar_one_or_none()
+    existing = find_by_legacy_id(db, model, legacy_id)
 
     if entity == ENTITY_SEAL:
         if not seal_type_id:

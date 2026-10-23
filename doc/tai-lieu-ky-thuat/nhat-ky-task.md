@@ -111,6 +111,27 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-661 | Gộp phiếu đặt xe trùng mã app cũ trên prod và cho hàm tra chịu được trùng
+- status: xong
+- date: 2026-10-23
+Khi đo prod cho sổ tay vận hành đồng bộ thấy 48 dòng lỗi chiều nhận cùng một câu MultipleResultsFound. Soi kỹ: 19 dòng là
+phiếu đóng dấu lỗi đúng một đêm 02/10 rồi tự vá ở lượt sau; 29 dòng còn lại cùng một mã app cũ, do hai lượt gọi của app cũ
+tới cùng một giây ngày 20/10 đẻ ra hai phiếu giống hệt DX000422 và DX000423, nên mọi lượt quét sau đó hỏng ở đúng phiếu này
+và chuông sáng báo mỗi ngày.
+
+Xử dữ liệu prod (người chủ đã gật): app cũ ghi ngược mã ERP là 422 nên giữ 422; phiếu 423 không có việc duyệt, không tệp
+đính kèm, chỉ một dòng nhật ký; đã sao lưu nguyên dòng phiếu và phiên duyệt rỗng của nó ra tệp JSON rồi xóa hai dòng đó, trỏ
+dòng sổ đồng bộ của 423 về 422. Lượt nhận lại tức thì bị chặn quyền nên để vòng quét đêm tự nhận, chuông sẽ tự im khi có lượt
+thành công. Sửa mã: hai chỗ tra phiếu theo mã app cũ nay đi qua một hàm chung lấy hàng cũ nhất và ghi cảnh báo khi trùng
+thay vì ném lỗi; thêm bài kiểm dựng hai phiếu cùng mã, kiểm tra trả hàng cũ nhất, cập nhật đúng hàng đó và không đụng hàng
+thừa. Còn nợ: chặn từ gốc việc hai lượt gọi song song đẻ phiếu trùng. Sổ tay vận hành cập nhật mục việc treo.
+
+Mã nguồn: `backend/app/modules/legacy_datxe/service.py` (`find_by_legacy_id`), `test/backend/test_dong_bo_datxe_nhan_phieu.py`,
+`doc/dong-bo-dat-xe-duyet-dau/van-hanh.md`.
+Commit: trên erp-v2 23/10; lên prod theo đợt phát hành kế. Deploy: dữ liệu prod đã xử 23/10.
+
+---
+
 ## bao-CR-660 | Sổ tay vận hành đồng bộ app đặt xe cũ và ERP
 - status: xong
 - date: 2026-10-23
