@@ -201,7 +201,7 @@ Commit: 28b47b84 trên erp-v2 (đã gật 20/10; commit đẩy lỡ lúc rebase 
 ---
 
 ## bao-CR-649 | Gắn bộ thu sự kiện giao diện vào app cũ thumua, tách nguồn app trong hồ sơ cách làm việc
-- status: dang-lam
+- status: xong
 - date: 2026-10-20
 **Bối cảnh:** công tắc thu sự kiện giao diện đã **bật trên prod** chiều 20/10, nhưng bộ thu (duoc-CR-641) chỉ có ở ERP
 v2, trong khi phòng Thu mua làm chủ yếu trên app cũ thumua, tức là mất đúng dữ liệu cần nhất. Đã gật **ngoại lệ**
@@ -233,6 +233,7 @@ Mã nguồn: `frontend/src/telemetry/*`, `frontend/src/layouts/AppLayout.tsx`, b
 `backend/app/core/usage_codes.py`, `backend/migrations/versions/usgprof02_ui_event_app_cr649.py`,
 `test/backend/test_thu_su_kien_thumua_cr649.py`, `docker-compose.yml`.
 Commit: chờ duyệt. Deploy: chờ Agent 1 dựng devthumua.
+**Kết quả:** đã lên prod: commit a6525606 (bộ thu sự kiện trên app cũ thumua, cột `app` tách nguồn) và fb783388 (bảng quy route thumua sang v2 phủ đủ 32 màn) nằm trong main 5ae7d0fa đã chạy prod ngày 22/10/2026. Việc nối tiếp chưa làm: màn báo cáo v2 chưa có ô hiện số theo từng app (đường API đã có).
 
 ---
 
@@ -282,7 +283,7 @@ Mã nguồn: `backend/scripts/sync_task_journal.py` (`md_to_html`, `WORK_SYNC_PI
 Deploy: dev 20/10 (đồng bộ sổ) · prod chờ tài khoản
 
 ## he-agent-chuyen-gia-ban-thu | Hệ Agent chuyên gia bản thử: bảy vai, sáu skill, luật liên hệ giữa các vai
-- status: dang-lam
+- status: xong
 - date: 2026-10-19
 - list: Công cụ Ai
 **Bối cảnh:** cần tổ chức các Agent lập trình thành một hệ mà mỗi Agent là **chuyên gia một lĩnh vực**, có bộ
@@ -305,6 +306,7 @@ chỗ skill thiếu. Agent tài liệu kiểm thử sửa hai bài kiểm đỏ 
 làm việc riêng cho mỗi Agent, cấp số CR theo khối, một lần gật cho cả loại việc).
 
 Mã nguồn: `.claude/he-agent/README.md` · `.claude/agents/*.md` · `.claude/skills/*/SKILL.md` (trong thư mục làm việc chung thuthapykien, ngoài kho mã)
+**Kết quả:** bản thử đã chạy thật và được thay bằng hệ agent chính thức ở `doc/he-agent/` (bản 0.2, commit 0829dedc ngày 22/10/2026); bộ skill và định nghĩa agent đã đưa vào kho mã ở commit e09e7650. Các mục *còn lại* của bản thử không làm tiếp theo khuôn cũ: hệ mới giữ ít agent thường trực, cần thêm sức thì gọi agent phụ tạm thời.
 
 ## khoi-phuc-po00376-huy-nham | Khôi phục hai dòng đơn mua hàng PO00376 bị bấm Hủy đơn nhầm trên prod
 - status: xong
@@ -3623,8 +3625,9 @@ Nâng script để mục con trong sổ thành việc con trên ERP, hiện thà
 đầu dòng trong panel chi tiết của việc cha.
 
 ### sync-task-tool-prod | Nối lên prod
-- status: dang-lam
+- status: xong
 Quản trị tự điền cấu hình prod, không đụng tới tài khoản prod.
+**Kết quả:** sổ đã đồng bộ lên Dự án trên prod nhiều lần; lần gần nhất sau commit d0eae02d ngày 23/10/2026 cập nhật 510 task, không tạo trùng, không lỗi.
 
 ### sync-task-tool-commit | Commit sổ và script
 - status: xong
@@ -3720,6 +3723,7 @@ Commit 00b740b5 và lên dev xong ngày 14/09. Nhặt sang `main` thành ea405aa
 prod tối 14/09 trong đợt 5abd5dc3 — đợt đó đóng ba lỗ BM-002, BM-012 và BM-014 trên
 prod. Còn treo đúng một việc: quản trị tick khóa quyền phiên đăng nhập cho các vai trò
 ngoài quản trị, ở cả dev và prod.
+**Còn:** chưa có bằng chứng đã tick khóa quyền phiên đăng nhập cho các vai trò ngoài quản trị trên dev và prod; việc này làm tay ở màn Phân quyền, không dùng đường nạp lại quyền hàng loạt.
 
 ## bao-CR-397 | Bản in phiếu yêu cầu mua hàng: ô trưởng phòng mua hàng in đúng người
 - status: xong
@@ -3897,11 +3901,12 @@ Mã nguồn: `test/backend/test_nhat_ky_lop_orm_cr402.py`.
 (213 chỗ ở 54 tệp thành 273 chỗ ở 62 tệp) tại 6 tệp mã nguồn lẫn trong sổ.
 
 ### bao-CR-402-commit | Commit và đưa lên prod, dev để hôm sau
-- status: dang-lam
+- status: xong
 Commit trên `erp-v2` là 4b51b545, nhặt sang `main` thành 68733348, lên prod tối 14/09
 trong đợt 5abd5dc3 và migration đã chạy trên prod. Còn lại đúng một việc: đưa lên dev,
 đã chốt để hôm sau. Đợt này có migration nên lên dev phải dựng lại API và cả hai
 dịch vụ việc nền.
+**Kết quả:** commit 4b51b545 nằm trong erp-v2 từ 14/09/2026 nên đã theo các lượt dựng dev sau đó; prod đã chạy từ tối 14/09 (main 68733348, đợt 5abd5dc3).
 
 ## lark-import | Đồng bộ task từ Lark sang phân hệ Dự án (dev)
 - status: xong
@@ -4067,6 +4072,7 @@ chủ web; (4) bật trần số lần thử; (5) che đường đọc tệp cô
 dev lên prod; (7) cho dev một khóa riêng — xong 14/09, xem việc con
 ra-soat-bao-mat-1409-doi-khoa-dev.
 Tham chiếu: Việc 5 của sổ ghi nhận lỗi bảo mật.
+**Còn:** theo sổ ghi nhận lỗi bảo mật: BM-018 và BM-022 đã đo, prod sạch; BM-019, BM-021, BM-023 đã vá ở bao-CR-655 (commit bfa4149f trên erp-v2), chờ lên prod; BM-020 (trần tần suất cho đường nghiệp vụ) vẫn mở, chưa cấp số CR.
 
 ### ra-soat-bao-mat-1409-tai-tep | Rà khâu tải tệp lên, ra thêm 7 lỗ BM-025 đến BM-031
 - status: xong
@@ -4175,6 +4181,7 @@ cơ sở dữ liệu ngay trong tầng nhận yêu cầu còn thiếu hai tệp,
 trước. Đang chờ chỉ đạo xem có xử ngay không.
 Mã nguồn: `test/backend/test_pham_vi_duong_vong.py`; hai tệp thiếu là
 `login_session/controller.py` và `survey_request/report_controller.py`.
+**Còn:** nợ (1) vẫn mở — mật khẩu yếu đang có chưa được quét, muốn sạch phải ép đổi mật khẩu và chưa cấp số CR. Nợ (2) đã hết: bảng kiểm `test_pham_vi_duong_vong.py` nay đã khai đủ `login_session/controller.py` và `survey_request/report_controller.py`.
 
 ## bao-CR-310 | Xử lý báo giá (phương án) trên Yêu cầu mua hàng
 - status: xong
@@ -5782,6 +5789,7 @@ diễn tập trước.
 Mã nguồn: bảng `tab_warehouse` với `code` và `name`, cột đề xuất thêm là `short_name`; năm bảng
 mang mã kho là `tab_po_item` 240 dòng, `tab_po_delivery` 178, `tab_goods_receipt` 177,
 `tab_inventory` 156, `tab_inventory_move` 177.
+**Còn:** đã chốt ngày 16/09/2026 ghi sổ để làm sau; chưa làm bước nào (chưa thêm cột tên viết tắt, chưa đổi mã kho).
 
 ## bao-CR-413 | Deploy prod 16/09/2026: tách RIÊNG ba ticket ra khỏi cụm chưa xong
 - status: xong
@@ -7481,8 +7489,9 @@ chạy thử thật: phiếu tạo bên app dev sang tới ERP trong vài giây,
 Firebase, chữ ký và chữ có dấu đều nguyên vẹn.
 
 ### dong-bo-datxe-app-cu-p2-co | Cờ chặn bắn ngược khi phiếu do ERP ghi xuống
-- status: dang-lam
+- status: xong
 Để lại làm cùng chặng ba, lúc này chưa có chiều ngược nào để mà chặn.
+**Kết quả:** đã làm cùng chặng ba ở bao-CR-596 (erp-v2 4f84c041; app cũ e5c7cd7 + fb8100a): khi ERP ghi xuống, app cũ không gửi ngược sang ERP và không đóng dấu thời điểm sửa; chạy thử đầu-cuối trên dev ngày 05/10/2026 không có vòng lặp. Chiều ERP sang app cũ trên prod vẫn khóa bằng công tắc, theo dõi ở bao-CR-596.
 
 ## bao-CR-429 | Đưa cấu hình trợ lý AI từ tệp môi trường xuống bảng cấu hình trên màn hình
 - status: xong
@@ -14512,7 +14521,7 @@ scripts/eval_core_v2.py
 Deploy: dev 15/10/2026
 
 ## ai-CR-203 | Bộ hai mươi hội thoại mẫu tự chạy để kiểm bot trước mỗi lần đẩy
-- status: dang-lam
+- status: xong
 - date: 2026-10-15
 Theo mục 10 tài liệu 20, dựng bộ hội thoại mẫu chạy tự động: mỗi mẫu là một cuộc chat thử riêng, bot trả lời bằng model
 thật và dữ liệu thật nhưng không ghi gì thật và không gửi tin Telegram nào; chạy xong thì xóa tin thử. Mỗi lượt được chấm
@@ -14530,6 +14539,7 @@ lỗi thật: nhờ nhắc lúc ba giờ chiều nay thì bot báo ba giờ chi�
 
 Mã nguồn: agent_hub/core_eval.py, core_eval_samples.py, scripts/eval_core_v2.py; bài kiểm test_agent_hub_core_eval.py
 Còn dở: bộ mẫu đã có trên dev nhưng chưa thành bước kiểm thường xuyên — mỗi lần chạy tốn khoảng năm đô la ví trạm nên chỉ chạy khi đã duyệt từng lần.
+**Kết quả:** bộ hai mươi hội thoại mẫu đã dựng và đã lên prod (commit 72e684f0, 07e6634a, 03b757d2 nằm trong main 5ae7d0fa); ba lượt chạy đạt 14, 15 rồi 16 trên 20, các lỗi lộ ra đã sửa. Không đưa thành bước kiểm thường xuyên là luật đã chốt chứ không phải việc dở: mỗi lượt tốn khoảng năm đô la ví trạm nên chỉ chạy khi được duyệt từng lần; bot cũng đã đóng băng tính năng từ 17/10/2026.
 
 ## ai-CR-202 | Lõi hội thoại mới: soạn nháp chỉ còn một lần gọi model, mô tả công cụ ngắn lại cho chat
 - status: xong
