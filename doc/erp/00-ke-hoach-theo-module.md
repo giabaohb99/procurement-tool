@@ -20,7 +20,7 @@ Luật đã chốt, đừng mở lại: **không làm chấm công, không làm 
 | 2 | Thu mua | Thông báo chờ duyệt ĐMH và YCTT không tới người duyệt | — |
 | 3 | Nhập khẩu, hải quan | Nạp lại bài HDSD Tra cứu thị trường | Mở lại phân hệ Hồ sơ nhập khẩu khi nào |
 | 4 | Bảo mật | BM-023, BM-021, BM-019, cập nhật sổ | 2FA cho HR và quản trị |
-| 5 | Nhân sự (HRM) | Che cột nhạy cảm khi xuất, bắt buộc đính kèm, luồng duyệt nghỉ phép cho công ty khác | — |
+| 5 | Nhân sự (HRM) | Tick lại quyền Xuất khi deploy CR-660, luồng duyệt nghỉ phép cho công ty khác, nhập bù ngày vào làm | — |
 | 6 | Văn thư và văn bản | Lớp mức mật văn bản | Chủ nghiệp vụ Pháp chế / Văn thư (C3) và 17 câu A1–C5 |
 | 7 | Duyệt dấu, đặt xe, đồng bộ app cũ | Nạp lịch sử app đặt xe cũ | Ba quyết định A/B/C, ngày tắt app cũ |
 | 8 | Công việc / dự án | Nối chuông, đóng mốc MVP | Đội nào dùng thử |
@@ -36,7 +36,7 @@ Luật đã chốt, đừng mở lại: **không làm chấm công, không làm 
 Gom từ Phase 1 của các module, xếp theo rủi ro trước, giá trị sau:
 
 1. **Lỗ bảo mật đang có thật trên prod:** `AN1-1` (giải mã bí mật hỏng im lặng — sao lưu có thể chết không ai biết), `AN1-3` (`/api/uploads` không kiểm quyền), `HR1-1` + `NT1-1` (xuất CSV nhân sự và danh mục chỉ đòi quyền đọc), `AN1-2` (header bảo mật nginx).
-2. **Người dùng thật đang vướng:** `TM1-1` (ĐMH, YCTT không báo người duyệt), `HR1-2` (cờ bắt buộc đính kèm không chặn), `HR1-3` (công ty khác chưa có chuông duyệt nghỉ phép).
+2. **Người dùng thật đang vướng:** `TM1-1` (ĐMH, YCTT không báo người duyệt), `HR1-3` (công ty khác chưa có chuông duyệt nghỉ phép).
 3. **Đợt prod tiếp theo:** `AI1-1` (D1 của anh Dược đang nằm trên dev), kèm các bản vá ở mục 1–2.
 4. **AI chia việc:** `AI1-2`, `AI1-3` sau khi chốt phòng thử.
 5. **Nền vận hành:** `NT1-2` (CI tối thiểu), `NT1-6` (thử phục hồi sao lưu), `NT1-3` (gắn công ty cho nhân sự).
@@ -190,17 +190,15 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 ## 5. Nhân sự (HRM)
 
-**Đã có:** Hồ sơ ~38 trường, nhóm nhạy cảm `employee_sensitive`, chức vụ, quá trình công tác, nhập Excel có hoàn tác, quyền mặc định theo chức vụ (duoc-CR-653), hồ sơ cách làm việc (duoc-CR-641..657). Hợp đồng lao động theo mẫu Word từng pháp nhân, nhân viên tự xem *Hợp đồng của tôi* (duoc-CR-606..652). Nghỉ phép đủ bộ (đính kèm, bàn giao, báo cáo, lịch làm việc 4 cấp); bộ máy duyệt nghỉ phép đã bật trên prod, AGC có luồng riêng từ 21/10. Không làm chấm công, không làm lương (chốt 16/10/2026).
+**Đã có:** Hồ sơ ~38 trường, nhóm nhạy cảm `employee_sensitive`, chức vụ, quá trình công tác, nhập Excel có hoàn tác, quyền mặc định theo chức vụ (duoc-CR-653), hồ sơ cách làm việc (duoc-CR-641..657). Hợp đồng lao động theo mẫu Word từng pháp nhân, nhân viên tự xem *Hợp đồng của tôi* (duoc-CR-606..652). Nghỉ phép đủ bộ (đính kèm, bàn giao, báo cáo, lịch làm việc 4 cấp); bộ máy duyệt nghỉ phép đã bật trên prod, AGC có luồng riêng từ 21/10. Cờ *Bắt buộc đính kèm* của loại nghỉ chặn lúc gửi duyệt (duoc-CR-661, HR1-2). Kiểm việc duyệt đang treo trước khi khóa tài khoản người nghỉ (duoc-CR-665, HR1-4). Bảng đối chiếu trước / sau kết sổ phép (duoc-CR-664, HR2-3). Sơ đồ tổ chức vẽ từ dữ liệu (duoc-CR-669, V2-6 của HR2-5). Tài liệu HĐLĐ, quyền theo chức vụ, nhập Excel ở `doc/erp/hrm/04-hop-dong-lao-dong.md` (duoc-CR-673, phần tài liệu của HR1-5). *(Cập nhật 23/10/2026.)* Không làm chấm công, không làm lương (chốt 16/10/2026).
 
 **Phase 1 — làm tiếp**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| HR1-1 | Bảo mật xuất file nhân sự: đổi `GET /api/employees/export/csv` từ quyền `read` sang `export` (kiểm mã: vẫn gác `read`); dựng cơ chế che cột nhạy cảm khi xuất CSV/Excel (C7) theo `employee_sensitive.read` | Người chỉ có `read` không xuất được; thêm một cột nhạy cảm vào bộ xuất thì người thiếu quyền nhận ô rỗng; có bài kiểm | `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0 (V0-2) |
-| HR1-2 | Cờ *Bắt buộc đính kèm* của loại nghỉ chặn lúc gửi duyệt (kiểm mã: `require_attachment` chỉ có ở model/schema/seed, `request_service` không đọc) | Đơn Nghỉ ốm không kèm giấy bị từ chối khi gửi, có câu báo rõ; có bài kiểm | `doc/erp/hrm/02-nghi-phep.md` §10 |
+| HR1-1 | Bảo mật xuất file nhân sự: đổi `GET /api/employees/export/csv` từ quyền `read` sang `export` (**xong, đã commit 23/10/2026** — duoc-CR-660; còn tick lại quyền Xuất cho vai trò trên prod khi deploy); dựng cơ chế che cột nhạy cảm khi xuất CSV/Excel (C7) theo `employee_sensitive.read` | Người chỉ có `read` không xuất được; thêm một cột nhạy cảm vào bộ xuất thì người thiếu quyền nhận ô rỗng; có bài kiểm | `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0 (V0-2) |
 | HR1-3 | Khai luồng duyệt nghỉ phép cho các pháp nhân đang dùng ngoài AGC (hiện chỉ AGC có chuông người duyệt, công ty khác đi đường cũ) | Mỗi pháp nhân có người dùng thật có luồng trên `/approval/flows`; đơn gửi đi có chuông tới đúng người duyệt | Dữ kiện prod 21/10 |
-| HR1-4 | Màn kiểm việc duyệt đang treo trước khi khóa tài khoản người nghỉ (V0-4) | Trước khi khóa thấy danh sách việc người đó đang giữ và chuyển được từng việc | `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0, §0.1 bước 1 |
-| HR1-5 | Nợ nhỏ: viết `doc/erp/hrm/04-hop-dong-lao-dong.md` (rút hai mục HĐLĐ cuối `01` về đó, ghi luôn quyền mặc định theo chức vụ và nhập Excel); nhập bù `hire_date` cho hồ sơ cũ (việc dữ liệu) | Có tệp `04`, README §2 hết dòng *chưa có tài liệu*; không còn hồ sơ đang làm thiếu `hire_date` | `doc/erp/hrm/README.md` §2, §5 |
+| HR1-5 | Nhập bù `hire_date` cho hồ sơ cũ (việc dữ liệu — phần tài liệu `04` đã xong ở duoc-CR-673). Thiếu ngày này thì thâm niên phép tính bằng 0, báo cáo biến động lấy ngày tạo hồ sơ. Đường nhập: ô trên hồ sơ hoặc cột «Ngày vào làm» của Nhập Excel | Không còn hồ sơ đang làm thiếu `hire_date`; nên xong trước khi cấp quỹ phép năm 2027 | `doc/erp/hrm/README.md` §5 · `doc/erp/hrm/04-hop-dong-lao-dong.md` §C.3 |
 
 **Phase 2**
 
@@ -208,9 +206,8 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 |---|---|---|---|
 | HR2-1 | Nhận việc / nghỉ việc có danh sách việc vào–ra, quyết định thôi việc có thẻ bàn giao, tài sản cấp phát (cấp, thu hồi, biên bản) — V2-1, V2-2, V2-3 | Người nghỉ có phiếu bàn giao và danh sách tài sản phải trả; tài sản tra được đang ở tay ai | `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0.1 bước 1 |
 | HR2-2 | Hồ sơ cho nhân viên: in *Phiếu thông tin nhân viên* theo mẫu BM00../QT01/NS (C5); nhân viên tự khai các nhóm hồ sơ còn lại (C6, mới mở nhóm Liên hệ) | In được phiếu đúng mẫu; nhân viên tự sửa được các nhóm đã chốt, HR thấy dấu vết | `doc/erp/hrm/01-ho-so-nhan-su.md` §7.9, §7.10 |
-| HR2-3 | Báo cáo đối chiếu trước / sau kết sổ phép cuối năm | Kết sổ xong có bảng từng người: số cũ, số mới, chênh | `doc/erp/hrm/02-nghi-phep.md` §10 |
 | HR2-4 | Tuyển dụng (V3-3): định biên, nhu cầu tuyển có duyệt, ứng viên, phỏng vấn, offer thành nhân viên | Ứng viên đạt chuyển thành hồ sơ qua sự kiện HIRE | `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0.1 bước 2 |
-| HR2-5 | Quyết định đầy đủ: phiếu nhiều người, tờ trình, duyệt (V1-8); khen thưởng / kỷ luật, đi làm lại, phụ lục HĐLĐ (V2-5); sơ đồ tổ chức vẽ từ dữ liệu (V2-6, rẻ) | Một phiếu áp được cho nhiều người sau duyệt; sơ đồ tự vẽ từ phòng ban + quản lý trực tiếp | `doc/erp/hrm/01-ho-so-nhan-su.md` §4 · `10-de-xuat-ap-dung.md` §0.1 bước 4 |
+| HR2-5 | Quyết định đầy đủ: phiếu nhiều người, tờ trình, duyệt (V1-8); khen thưởng / kỷ luật, đi làm lại, phụ lục HĐLĐ (V2-5) | Một phiếu áp được cho nhiều người sau duyệt | `doc/erp/hrm/01-ho-so-nhan-su.md` §4 · `10-de-xuat-ap-dung.md` §0.1 bước 4 |
 
 **Phase 3 — khi cần**
 

@@ -15716,7 +15716,7 @@ Mã nguồn: doc/erp/hrm/README.md · doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.m
 Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
 
 ## kh-HR1-1 | Chặn xuất CSV nhân sự chỉ cần quyền xem, che cột nhạy cảm khi xuất
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15729,7 +15729,7 @@ Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
 
 **Điều kiện xong:** người chỉ có `read` không xuất được; người thiếu quyền nhạy cảm nhận ô rỗng ở cột nhạy cảm; có bài kiểm; hỏi đại ca trước khi commit.
 
-**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đang chờ đại ca duyệt trước khi commit. Xuất tệp nhân sự đòi quyền xuất, cột nhạy cảm bị che khi người xuất thiếu quyền xem nhạy cảm, tệp đã xuất chỉ người xuất hoặc người có quyền xuất toàn hệ tải lại được. Lên prod cần cấp lại quyền xuất cho vai trò đang chỉ có quyền xem.
+**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (anh Được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp nhân sự đòi quyền xuất, cột nhạy cảm bị che khi người xuất thiếu quyền xem nhạy cảm, tệp đã xuất chỉ người xuất hoặc người có quyền xuất toàn hệ tải lại được. Lên prod cần cấp lại quyền xuất cho vai trò đang chỉ có quyền xem.
 
 Mã nguồn: kế hoạch mục HR1-1 · `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` V0-2 · duoc-CR-660 · backend/app/modules/employee/export_mask.py · backend/app/modules/export_log/service.py · test/backend/test_quyen_xuat_nhap_cr660.py
 
@@ -15792,10 +15792,12 @@ Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-du
 
 **Điều kiện xong:** có tệp `04`; README Nhân sự hết dòng *chưa có tài liệu*; không còn hồ sơ đang làm thiếu ngày vào làm.
 
-Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5
+**Kết quả (23/10/2026):** Phần tài liệu đã xong (duoc-CR-673). Tệp mới `04-hop-dong-lao-dong.md` gom ba chức năng trước đây chưa có tài liệu riêng: hợp đồng lao động, quyền mặc định theo chức vụ và nhập Excel nhân sự; hai mục hợp đồng ở cuối tệp hồ sơ nhân sự đã chuyển sang đó. README Nhân sự hết bảng chức năng chưa có tài liệu, kế hoạch theo phân hệ mục Nhân sự được cập nhật cho khớp các việc đã làm ngày 22/10. Còn lại việc nhập bù ngày vào làm cho hồ sơ cũ, chờ phòng Nhân sự gửi dữ liệu; cách nhanh nhất là cột «Ngày vào làm» của màn Nhập Excel.
+
+Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5 · duoc-CR-673 · doc/erp/hrm/04-hop-dong-lao-dong.md
 
 ## kh-NT1-1 | Quyền xuất và nhập riêng cho mọi màn danh mục (đi cùng HR1-1)
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -15808,7 +15810,7 @@ Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5
 
 **Điều kiện xong:** người chỉ có `read` không xuất được; xuất chỉ ra dòng trong phạm vi; có bài kiểm; hỏi đại ca trước khi commit.
 
-**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đang chờ đại ca duyệt trước khi commit. Xuất tệp sản phẩm, nhà cung cấp, phòng ban và mọi danh mục dùng khung chung đòi quyền xuất và chỉ ra dòng trong phạm vi; thêm quyền nhập riêng có cột Nhập ở ma trận phân quyền, cổng nhập tệp danh mục đòi quyền này. Lên prod cần cấp lại quyền nhập cho vai trò cũ vì mặc định là không có.
+**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (anh Được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp sản phẩm, nhà cung cấp, phòng ban và mọi danh mục dùng khung chung đòi quyền xuất và chỉ ra dòng trong phạm vi; thêm quyền nhập riêng có cột Nhập ở ma trận phân quyền, cổng nhập tệp danh mục đòi quyền này. Lên prod cần cấp lại quyền nhập cho vai trò cũ vì mặc định là không có.
 
 Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9 · duoc-CR-660 · backend/app/core/permissions.py · backend/app/core/crud.py · migration cr660imp01
 

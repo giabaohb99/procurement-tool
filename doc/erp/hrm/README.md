@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
+| Bản | 1.1 — 23/10/2026 (thêm `04-hop-dong-lao-dong.md`, hết bảng «chưa có tài liệu riêng» — duoc-CR-673) · 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
 | Dùng để làm gì | Cửa vào duy nhất cho người mới nhận việc ở phân hệ Nhân sự: đã có gì, nằm ở đâu, luật nào không được phá, việc nào đang cần người làm tiếp |
 | Ai đọc | Người (hoặc trợ lý AI) sắp sửa mã hay viết tài liệu cho phân hệ Nhân sự |
 | Giao diện | Chỉ có trên `frontend-v2/` (cổng 8083), menu *Nhân sự*. `frontend/` cũ đã đóng băng, không thêm màn nhân sự ở đó |
@@ -20,22 +20,18 @@
 
 | Tệp | Chức năng | Màn chính | Mã nguồn backend |
 |---|---|---|---|
-| [`01-ho-so-nhan-su.md`](01-ho-so-nhan-su.md) | **Hồ sơ nhân sự**: ~38 trường của `tab_employee`, hai bảng con (người báo tin, thành viên hộ gia đình), nhóm trường nhạy cảm (`employee_sensitive`), danh mục **Chức vụ** (§7.7), tự sửa liên hệ ở Trang cá nhân (§7.9), **Quá trình công tác** (§7.11), **Sơ đồ tổ chức** (§7.12), **việc treo trước khi khóa tài khoản** (§7.13). Cuối tệp có thêm hai mục của **Hợp đồng lao động**: bản lưu trữ ở phân hệ Văn bản (duoc-CR-629) và danh sách biến của mẫu hợp đồng (duoc-CR-630) | `/hr/employees` · `/hr/job-positions` | `modules/employee/` · `modules/labor_contract/` |
+| [`01-ho-so-nhan-su.md`](01-ho-so-nhan-su.md) | **Hồ sơ nhân sự**: ~38 trường của `tab_employee`, hai bảng con (người báo tin, thành viên hộ gia đình), nhóm trường nhạy cảm (`employee_sensitive`), danh mục **Chức vụ** (§7.7), tự sửa liên hệ ở Trang cá nhân (§7.9), **Quá trình công tác** (§7.11), **Sơ đồ tổ chức** (§7.12), **việc treo trước khi khóa tài khoản** (§7.13) | `/hr/employees` · `/hr/job-positions` | `modules/employee/` |
 | [`02-nghi-phep.md`](02-nghi-phep.md) | **Nghỉ phép**: đơn nghỉ (nhiều loại nghỉ trong một đơn, nửa ngày, theo giờ), quỹ phép năm và kết sổ cuối năm, loại nghỉ, lịch ngày lễ, duyệt, bốn khóa phân quyền | `/hr/leave-requests` · `/hr/leave-balances` · `/hr/leave-calendar` · `/hr/leave-types` · `/hr/holidays` | `modules/leave/` |
 | [`03-lich-lam-viec.md`](03-lich-lam-viec.md) | **Lịch làm việc**: mẫu lịch tuần, gán theo bốn cấp (hệ thống, pháp nhân, phòng ban, nhân sự), xem ai làm ai nghỉ, và **nối vào cách tính số ngày nghỉ phép** | `/hr/work-roster` · `/hr/work-schedules` · `/hr/work-schedule-assignments` | `modules/work_schedule/` |
+| [`04-hop-dong-lao-dong.md`](04-hop-dong-lao-dong.md) | **Hợp đồng lao động** (mẫu Word theo pháp nhân, biến mẫu, sinh tệp, ký, bản lưu trữ ở Văn bản, cảnh báo sắp hết hạn, «Hợp đồng của tôi») · **Quyền mặc định theo chức vụ** · **Nhập Excel nhân sự** | `/hr/employees/:id?tab=labor-contracts` · `/hr/labor-contract-templates` · `/hr/job-positions/:id` (tab «Quyền mặc định») · nút «Nhập Excel» ở `/hr/employees` | `modules/labor_contract/` · `modules/employee/position_role_*.py` · `modules/import_tool/employee_import*.py` |
 
 **Hai tệp `02` và `03` dời từ `doc/tai-lieu-chuc-nang/` sang đây ngày 22/10/2026** (trước là `17-nghi-phep.md` và `21-lich-lam-viec.md`). Tệp cũ chỉ còn một dòng trỏ sang đây để các liên kết trong sổ thay đổi và kế hoạch cũ khỏi gãy. Viết tài liệu Nhân sự mới thì đặt vào thư mục này, đánh số tiếp `04`, `05`…
 
-### Chức năng đã có mã nhưng CHƯA có tài liệu riêng
+### Báo cáo nhân sự
 
-Đây là chỗ cần người viết tiếp. Mỗi dòng ghi chỗ đang giữ thông tin tạm, để người viết khỏi phải đọc lại mã từ đầu.
+Biến động nhân sự, tình hình nghỉ phép, quỹ phép năm thuộc **phân hệ Báo cáo**, tài liệu ở `doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md`; mã ở `modules/employee/report_*.py` và `modules/leave/*report*`. Mỗi báo cáo gác kép: quyền của phân hệ gốc và quyền xem từng báo cáo (`require_report`).
 
-| Chức năng | Thông tin đang nằm ở | Ghi chú |
-|---|---|---|
-| **Hợp đồng lao động** (lập theo mẫu Word của từng pháp nhân, sinh tệp, tải bản ký, cảnh báo sắp hết hạn, «Hợp đồng của tôi» ở Trang cá nhân) | Cuối `01-ho-so-nhan-su.md` · `.claude/rules/hr-labor-contract-variables.md` · dòng duoc-CR-606, 620, 629, 629b, 630, 632, 633, 640, 643, 652 trong `doc/tai-lieu-ky-thuat/change-log.md` · kế hoạch `frontend-v2/plans/261005-1537-hop-dong-lao-dong-mau-theo-phap-nhan/`, `plans/261019-*-cr629`, `plans/261019-1100-bien-mau-hdld-crud-cr630`, `plans/261020-1545-hdld-cua-toi-cr652` | Nên tách thành `04-hop-dong-lao-dong.md`, rồi rút hai mục HĐLĐ ở cuối `01` về đó |
-| **Quyền mặc định theo chức vụ** (mỗi chức vụ một gói vai trò, tự cấp khi tạo tài khoản hoặc đổi chức vụ) | `.claude/rules/hr-employee-profile.md` mục cuối · dòng duoc-CR-653 trong `change-log.md` · `plans/261020-1545-quyen-mac-dinh-theo-chuc-vu-cr653/` | Có thể là một mục trong `01` §7.7 (Chức vụ) |
-| **Nhập Excel nhân sự** (chạy thử → ghi thật → hoàn tác, qua `import_tool`) | `.claude/rules/hr-employee-profile.md` mục «Nhập Excel nhân sự» · dòng duoc-CR-628 trong `change-log.md` · `plans/261019-0935-nhap-excel-nhan-su-cr628/` | |
-| **Báo cáo nhân sự** (biến động nhân sự, tình hình nghỉ phép, quỹ phép năm) | `doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md` · `modules/employee/report_*.py` · `modules/leave/*report*` | Thuộc phân hệ Báo cáo, có gác kép theo từng báo cáo (`require_report`) |
+Bảng «Chức năng đã có mã nhưng chưa có tài liệu riêng» của bản 1.0 đã hết dòng: Hợp đồng lao động, Quyền mặc định theo chức vụ và Nhập Excel nhân sự nay ở `04` (23/10/2026, duoc-CR-673).
 
 ## 3. Tài liệu lộ trình và tham khảo (ở thư mục cha `doc/erp/`)
 
@@ -68,18 +64,18 @@ Chi tiết từng luật ở các tệp luật cho trợ lý AI (tự nạp khi 
 
 | Việc | Chỗ ghi gốc | Tình trạng |
 |---|---|---|
-| **Viết tài liệu Hợp đồng lao động** thành `04-hop-dong-lao-dong.md` | §2 tệp này | Chưa có ai nhận. Mã nguồn đã xong ~10 CR |
 | **In «Phiếu thông tin nhân viên»** theo mẫu BM00../QT01/NS (việc C5) | `01` §7.10 | Chưa làm |
-| **Che cột nhạy cảm khi xuất CSV / Excel** (việc C7) | `01` §7 Đợt 4 | Hiện an toàn chỉ vì bộ cột xuất chưa có trường nhạy cảm; chưa có cơ chế che. Thêm cột xuất mới là hở ngay |
+| **Che cột nhạy cảm khi xuất CSV / Excel** (việc C7) | `01` §7 Đợt 4 | Mã đã xong và đã rà (duoc-CR-660, HR1-1): xuất đòi quyền `export`, cột nhạy cảm để rỗng khi thiếu `employee_sensitive.read`. Đã commit 23/10/2026; lên prod phải tick lại quyền Xuất cho vai trò đang chỉ có Xem |
 | **Nhân viên tự khai hồ sơ** (việc C6) | `01` §7.9 | Mới mở nhóm Liên hệ; các nhóm còn lại chưa |
 | **Luồng duyệt chỉ đọc loại nghỉ CHÍNH** của đơn nhiều loại nghỉ | `02` §7.1 | Hạn chế đã biết, chưa có phương án |
-| **Nhập bù `hire_date`** cho hồ sơ cũ | `02` §10 | Việc dữ liệu, không phải việc mã; thiếu thì thâm niên tính bằng 0 |
+| **Nhập bù `hire_date`** cho hồ sơ cũ | `02` §10 | Việc dữ liệu, không phải việc mã; thiếu thì thâm niên phép tính bằng 0 và báo cáo biến động lấy ngày tạo hồ sơ thay ngày vào làm. Cách nhanh nhất: cột «Ngày vào làm» của Nhập Excel (`04` §C.3). Nên xong trước khi cấp quỹ phép năm 2027 |
 | **Phiếu Quyết định đầy đủ (V1-8)**: một phiếu nhiều người, tờ trình, duyệt | `01` §4 | Mới có bản gọn ghi tay theo từng người (duoc-CR-585) |
 
-**Vừa xong (22/10/2026), đã gỡ khỏi bảng trên:**
+**Vừa xong (22–23/10/2026), đã gỡ khỏi bảng trên:**
 
 | Việc | Mã | Kết quả |
 |---|---|---|
+| Tài liệu Hợp đồng lao động, quyền theo chức vụ, nhập Excel | duoc-CR-673 (HR1-5, phần tài liệu) | Tệp `04-hop-dong-lao-dong.md`; hai mục HĐLĐ cuối `01` chuyển về đó |
 | Cờ «Bắt buộc đính kèm» của loại nghỉ | duoc-CR-661 (HR1-2) | Có tác dụng: đơn thiếu tệp bị chặn **lúc Gửi duyệt** (lưu nháp không chặn). Chi tiết `02` |
 | Báo cáo đối chiếu trước / sau kết sổ phép cuối năm | duoc-CR-664 (HR2-3) | Hộp «Đối chiếu kết sổ phép năm …» tự mở sau kết sổ, nút mở lại, Xuất Excel. Số cũ tính lại lúc xem, không chụp ảnh. Chi tiết `02` |
 | Sơ đồ tổ chức vẽ từ dữ liệu (V2-6) | duoc-CR-669 (HR2-5) | Menu Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức, lọc theo phạm vi người xem. Chi tiết `01` §7.12 |

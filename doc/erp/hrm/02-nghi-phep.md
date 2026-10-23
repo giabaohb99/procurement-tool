@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.5 — 22/10/2026 (cờ «Bắt buộc đính kèm» chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| Bản | 1.6 — 23/10/2026 (sửa dòng cờ «Bắt buộc đính kèm» ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ «Bắt buộc đính kèm» chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
 | CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` |
@@ -588,7 +588,7 @@ quan hệ giữa hai ô là khai sai luật nghỉ cho **cả công ty**.
 | Áp dụng cho giới tính | `gender` | chọn | Mọi giới (`0`) | Hồ sơ **chưa khai** giới tính vẫn nộp được — chặn là khóa cả công ty tới khi Nhân sự nhập bù |
 | Tối đa mỗi lần nghỉ (ngày) | `max_days_per_request` | số | 0 | `0` = không giới hạn. Trần của **một đơn**, không dính quỹ năm |
 | Trừ Chủ nhật và ngày lễ | `exclude_holiday` | công tắc | Bật | ⚠️ **Thứ Bảy VẪN tính công** — DEGO làm cả T7 (lịch mặc định T2–T7, CN OFF). Xem [21-lich-lam-viec.md §12.2](03-lich-lam-viec.md) để hiểu khi nào tắt cửa này. |
-| Bắt buộc đính kèm | `require_attachment` | công tắc | Tắt | ⚠️ Đính kèm đã có (§7.2) nhưng cờ này **chưa được kiểm lúc gửi duyệt** — bật lên chưa có tác dụng (xem §10) |
+| Bắt buộc đính kèm | `require_attachment` | công tắc | Tắt | Bật lên thì đơn thiếu tệp bị chặn **lúc Gửi duyệt**, lưu nháp không chặn (duoc-CR-661, §7.2) |
 | *Cụm «Số dư cuối năm»* — xem §5 | | | | |
 | Cách xử lý số dư | `year_end_mode` | chọn | Hết năm là mất (`0`) | Ba nước loại trừ nhau nên là ô chọn, không phải hai công tắc |
 | Hạn dùng phép mang sang | `carry_over_expire_month` | chọn 13 mục | Đến hết tháng 3 năm sau | **Chỉ hiện khi** «Mang sang năm sau». `0` = không hết hạn. Ô CHỌN chứ không phải ô gõ số: hạn này **lặp mỗi năm** nên không chốt cứng được thành một cặp ngày, mà tháng 2 còn nhảy 28/29 |
