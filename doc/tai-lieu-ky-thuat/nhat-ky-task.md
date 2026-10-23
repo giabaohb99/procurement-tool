@@ -15728,6 +15728,26 @@ Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/00-tong-quan-nghiep-
 
 Mã nguồn: doc/erp/hrm/README.md · doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md · doc/erp/hrm/02-nghi-phep.md · doc/erp/hrm/03-lich-lam-viec.md · .claude/rules/hr-leave.md · doc/erp/README.md
 
+## kh-AI2-4-giao-dien | Khối Sức khỏe dịch vụ AI trên màn Tổng quan AI
+- list: Kế hoạch hệ agent
+- status: xong
+- date: 2026-10-23
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Phần máy chủ của kh-AI2-4 (Agent 4, a61eb79e) đã trả thêm số liệu sức khỏe dịch vụ AI ở đường Tổng quan AI; màn Tổng quan của Kho skill AI chưa hiện.
+
+**Đã làm**
+- Thêm khối *Sức khỏe dịch vụ AI* dưới hàng thẻ số: lỗi máy chủ (5xx) trong 24 giờ, số việc nền đang chờ, số việc sửa mã đang chờ.
+- Ô nào máy chủ không đọc được (giá trị rỗng) thì hiện *Không đọc được*, không hiện 0. Môi trường không đếm lỗi 5xx (dịch vụ AI chạy nhúng trong ERP) thì ô lỗi hiện gạch ngang kèm câu giải thích của máy chủ. Máy chủ cũ chưa có số liệu này thì khối ẩn.
+
+**Kết quả:** tsc cả cây 0 lỗi, lint phân hệ Kho skill AI 0 lỗi, vitest phân hệ xanh 13 tệp, 90 bài (5 bài mới). Chưa soát trên trình duyệt.
+
+**Còn lại**
+- Soát trên dev sau khi dựng lại dev.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/pages/ai-overview-page.tsx` · kiểu `AiServiceHealth` ở `ai-skill/types/ai-skill.ts`
+Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã kh-AI2-4-giao-dien)
+
 ## kh-NT2-2b | Sửa nút Xóa lọc chỉ xóa được một ô ở 17 màn
 - list: Kế hoạch hệ agent
 - status: xong

@@ -377,6 +377,19 @@ export interface AiOverview {
   keys_by_state: { state: number; label: string; count: number }[]
   expiring_keys: { key_id: number; user_id: number; owner_label: string; name: string; expires_at: string | null; state: number }[]
   expiring_days: number
+  /** kh-AI2-4: sức khỏe dịch vụ AI. Máy chủ cũ chưa có khóa này thì khối ẩn. */
+  service_health?: AiServiceHealth
+}
+
+/**
+ * `null` = không đọc được Redis (không phải 0). `counting_5xx = false` khi dịch vụ AI chạy nhúng trong ERP — máy chủ
+ * không đếm 5xx, khi đó `errors_5xx_24h` vô nghĩa và màn hiện câu `note`.
+ */
+export interface AiServiceHealth {
+  errors_5xx_24h: number | null
+  queues: { celery: number | null; agent_code: number | null }
+  counting_5xx: boolean
+  note: string
 }
 
 /** Cấu hình cổng MCP (G7, doc/agent-hub/06 §7.3 — ai-CR-216). */

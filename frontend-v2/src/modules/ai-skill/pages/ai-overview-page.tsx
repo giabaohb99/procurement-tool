@@ -16,7 +16,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { KeyStateBadge } from '../config/ai-skill-meta'
 import { computeChangePct, describeChange, shortDay } from '../utils/overview-format'
 import { useAiOverview, useSkillTitles } from '../hooks/use-my-ai'
-import type { AiOverview } from '../types/ai-skill'
+import type { AiOverview, AiServiceHealth } from '../types/ai-skill'
 
 /**
  * G1 — Tổng quan Kho skill AI (doc 21 §6.2, K6 bao-CR-624): năm thẻ số, cột lượt gọi 14 ngày, ba bảng nhỏ (skill được
@@ -107,6 +107,8 @@ function OverviewBody({ data, loading }: { data?: AiOverview; loading: boolean }
         />
       </div>
 
+      {data?.service_health && <ServiceHealthCard health={data.service_health} />}
+
       <Card>
         <CardHeader>
           <SectionHeading>Lượt gọi 14 ngày</SectionHeading>
@@ -181,6 +183,53 @@ function OverviewBody({ data, loading }: { data?: AiOverview; loading: boolean }
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+/** Ô số của khối sức khỏe: `null` = không đọc được (in chữ, KHÔNG in 0 — 0 nghĩa là không có gì). */
+function HealthValue({ label, value, hint }: { label: string; value: number | null | undefined; hint?: string }) {
+  const unreadable = value === null || value === undefined
+  return (
+    <div className="min-w-0 space-y-1">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={cn('text-lg font-semibold tabular-nums', unreadable && 'text-sm font-normal text-muted-foreground')}>
+        {unreadable ? 'Không đọc được' : value.toLocaleString('vi-VN')}
+      </p>
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  )
+}
+
+/**
+ * kh-AI2-4 — lỗi 5xx 24 giờ và hai hàng đợi việc nền của dịch vụ AI. `counting_5xx = false` (dịch vụ AI chạy nhúng
+ * trong ERP) thì máy chủ KHÔNG đếm 5xx: ô đó in gạch ngang chứ không in số, và câu `note` hiện để nói vì sao.
+ */
+function ServiceHealthCard({ health }: { health: AiServiceHealth }) {
+  const queues = health.queues ?? { celery: null, agent_code: null }
+  return (
+    <section aria-label="Sức khỏe dịch vụ AI">
+      <Card>
+        <CardHeader>
+          <SectionHeading>Sức khỏe dịch vụ AI</SectionHeading>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {health.counting_5xx ? (
+              <HealthValue label="Lỗi máy chủ (5xx) 24 giờ" value={health.errors_5xx_24h} />
+            ) : (
+              <div className="min-w-0 space-y-1">
+                <p className="text-xs text-muted-foreground">Lỗi máy chủ (5xx) 24 giờ</p>
+                <p className="text-lg font-semibold text-muted-foreground">—</p>
+                <p className="text-xs text-muted-foreground">Chưa đếm ở môi trường này</p>
+              </div>
+            )}
+            <HealthValue label="Việc nền đang chờ" value={queues.celery} />
+            <HealthValue label="Việc sửa mã đang chờ" value={queues.agent_code} />
+          </div>
+          {!health.counting_5xx && health.note && <p className="text-xs text-muted-foreground">{health.note}</p>}
+        </CardContent>
+      </Card>
+    </section>
   )
 }
 
