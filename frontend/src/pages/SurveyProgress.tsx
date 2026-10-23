@@ -286,7 +286,7 @@ export default function SurveyProgress() {
             onChange={(v) => setFilter('company_id', joinMulti(v))} />
         </FilterItem>
         <FilterItem label="Bộ phận">
-          <SearchSelect value={f.department_id} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.department_id} placeholder="Tất cả"
             options={departments.map((d) => ({ value: String(d.id), label: d.name }))}
             onChange={(v) => setFilter('department_id', v)} />
         </FilterItem>

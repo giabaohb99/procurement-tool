@@ -21,11 +21,11 @@ export default function PrLinesReportPage() {
         <h2 className="page-title" style={{ margin: 0 }}>Chi tiết YC mua hàng</h2>
         <div className="filters" style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div className="filter-item" style={{ flex: '0 0 190px' }}><label>Công ty</label>
-            <SearchSelect value={companyId} placeholder="Tất cả"
+            <SearchSelect autoSelectSingle={false} value={companyId} placeholder="Tất cả"
               options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
               onChange={(v) => setCompanyId(v)} /></div>
           <div className="filter-item" style={{ flex: '0 0 150px', minWidth: 150 }}><label>Năm</label>
-            <SearchSelect value={year} placeholder="Tất cả"
+            <SearchSelect autoSelectSingle={false} value={year} placeholder="Tất cả"
               options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
               onChange={(v) => setYear(v)} /></div>
           <button className="btn ghost" onClick={() => window.print()}><i className="ti ti-printer" />In</button>

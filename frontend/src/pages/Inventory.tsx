@@ -158,12 +158,12 @@ export default function Inventory() {
       <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}
                    extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
-          <SearchSelect value={f.company_id || ''} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.company_id || ''} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setF((s) => ({ ...s, company_id: v }))} />
         </FilterItem>
         <FilterItem label="Kho">
-          <SearchSelect value={f.warehouse_code || ''} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.warehouse_code || ''} placeholder="Tất cả"
             options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
             onChange={(v) => setF((s) => ({ ...s, warehouse_code: v }))} />
         </FilterItem>
@@ -172,12 +172,12 @@ export default function Inventory() {
         </FilterItem>
 
         <FilterItem label="Phân loại" secondary active={!!f.item_group}>
-          <SearchSelect value={f.item_group || ''} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.item_group || ''} placeholder="Tất cả"
             options={groups.map((g) => ({ value: g.name, label: g.name }))}
             onChange={(v) => setF((s) => ({ ...s, item_group: v }))} />
         </FilterItem>
         <FilterItem label="Trạng thái tồn" secondary active={!!f.qty_status}>
-          <SearchSelect value={f.qty_status || ''} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.qty_status || ''} placeholder="Tất cả"
             options={[
               { value: 'in_stock', label: 'Có tồn (> 0)' },
               { value: 'out_of_stock', label: 'Hết hàng (= 0)' },
