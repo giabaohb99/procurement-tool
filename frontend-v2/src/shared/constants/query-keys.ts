@@ -745,6 +745,13 @@ export const queryKeys = {
     /** Loại việc đang dùng cho ô chọn của panel chi tiết / bộ lọc (duoc-CR-656). */
     taskTypes: () => ['work', 'task-types'] as const,
     /**
+     * Đề xuất kế hoạch AI (kh-AI1-3). Danh sách và chi tiết chung gốc `['work', 'ai-plans']`
+     * để lưu / duyệt / từ chối làm mới cả hai một lượt.
+     */
+    aiPlans: (params?: { status?: number; page: number; page_size: number }) =>
+      params ? (['work', 'ai-plans', 'list', params] as const) : (['work', 'ai-plans'] as const),
+    aiPlan: (id: number) => ['work', 'ai-plans', 'detail', id] as const,
+    /**
      * Bình luận (E-01) và đính kèm (E-03) của một việc.
      *
      * Đặt DƯỚI nhánh `['work','tasks',id]` để mọi chỗ đang invalidate theo id

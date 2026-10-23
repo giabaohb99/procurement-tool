@@ -16241,19 +16241,26 @@ Mã nguồn: kế hoạch AI2-4, AI2-5
 
 ## kh-AI1-3-giao-dien | Màn duyệt kế hoạch AI (giao diện v2)
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 3
-**Bối cảnh:** Phần giao diện của A2: trưởng phòng xem bản kế hoạch AI đề xuất, sửa người / giờ / dòng, bấm Duyệt thì mới tạo việc. Làm sau khi Agent 4 chốt định dạng dữ liệu.
+**Bối cảnh:** Phần giao diện của A2: người hỏi AI xem bản kế hoạch AI đề xuất, sửa người, giờ, dòng việc rồi bấm Duyệt thì máy chủ mới tạo việc trong Dự án. Máy chủ của Agent 4 đã lên erp-v2 (445d2296).
 
-**Việc cần làm**
-- Danh sách đề xuất chờ duyệt; màn chi tiết từng dòng kèm lý do chọn người.
-- Sửa, bỏ, thêm dòng; Duyệt / Từ chối.
+**Đã làm**
+- Thêm mục *Duyệt kế hoạch AI* vào phân hệ Dự án: danh sách đề xuất của tôi, mặc định lọc *Chờ duyệt*, có cột quy mô, kênh hỏi, hạn chót.
+- Màn chi tiết đúng đường dẫn mà tin của bot đang gửi: sửa tên kế hoạch, hạn chót, tên giai đoạn; từng việc và việc con sửa được tên, người làm, ngày bắt đầu, hạn, ưu tiên, giờ ước lượng, loại việc, mô tả; thêm và bỏ giai đoạn, việc, việc con; hiện lý do AI chọn người, tiêu chí, giả định và mục tiêu người hỏi nói.
+- Chặn ngay trên màn việc không tên (trước đây máy chủ bỏ lặng lẽ, nay Agent 4 đổi thành báo lỗi) và những lỗi rẻ (hạn trước ngày bắt đầu, giờ ngoài khoảng, vượt trần dòng); giai đoạn hết việc chỉ nhắc *sẽ bị bỏ*, không chặn, vì máy chủ cố ý coi đó là xóa giai đoạn; lỗi máy chủ trả về được ghim đúng dòng.
+- Duyệt có hộp xác nhận, bấm đúp chỉ gửi một lần, xong mở thẳng dự án vừa tạo; Từ chối có ô lý do; kế hoạch đã xử lý chỉ xem, có nút mở dự án đã tạo. Người chỉ có quyền xem việc thì xem được, không sửa không duyệt.
 
-**Điều kiện xong:** duyệt xong thấy việc mới trong Dự án; vitest phân hệ xanh, typecheck sạch.
+**Kết quả:** tsc cả cây 0 lỗi, lint 0 lỗi (tệp mới 0 cảnh báo), vitest phân hệ Dự án cùng router, hằng số, thông báo xanh 46 tệp, 622 bài; dựng bản vite build được. Chưa soát trên trình duyệt: máy chủ local chưa có phân hệ đề xuất, cần soát trên deverp sau khi gộp.
 
-Mã nguồn: kế hoạch AI1-3
+**Còn lại**
+- Soát trên dev sau khi dựng lại dev.
+- Sau khi lên dev: bật công tắc `ai_plan_review_enabled` trên dev (mặc định đang tắt) để lời xác nhận của người hỏi tạo đề xuất chờ duyệt, rồi soát trên trình duyệt.
+
+Mã nguồn: `modules/work/pages/ai-plan-list-page.tsx` · `ai-plan-detail-page.tsx` · `components/ai-plan-row-editor.tsx` · `utils/ai-plan-edit.ts` · `api/ai-plan-api.ts` · `hooks/use-ai-plans.ts`
+Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã kh-AI1-3-giao-dien)
 
 ## kh-NT2-2 | Chip lọc nhanh trên 4 màn Thu mua
 - list: Kế hoạch hệ agent

@@ -1,4 +1,4 @@
-import { FolderKanban, LayoutDashboard, ListChecks, Shapes } from 'lucide-react'
+import { FolderKanban, LayoutDashboard, ListChecks, Shapes, Sparkles } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -47,6 +47,16 @@ export const workModule: ErpModule = {
       end: true,
     },
     {
+      //  kh-AI1-3: kế hoạch AI soạn, chờ chính người hỏi duyệt. `end` + `matchPaths` để mục
+      //  sáng cả ở trang chi tiết một đề xuất.
+      label: 'Duyệt kế hoạch AI',
+      path: appRoutes.project.aiPlans,
+      icon: Sparkles,
+      entity: 'work_task',
+      end: true,
+      matchPaths: [appRoutes.project.aiPlans],
+    },
+    {
       //  duoc-CR-656: quản trị khai danh mục loại việc. Gác bằng `setting` nên người dùng thường không thấy mục này.
       label: 'Loại việc',
       path: appRoutes.project.taskTypes,
@@ -90,6 +100,20 @@ export const workModule: ErpModule = {
           path: 'task-types',
           lazy: async () => ({
             Component: (await import('./pages/task-type-catalog-page')).TaskTypeCatalogPage,
+          }),
+        },
+        {
+          //  Đề xuất kế hoạch AI (kh-AI1-3). Đường tĩnh, không đụng `lists/:listId`.
+          path: 'ai-plans',
+          lazy: async () => ({
+            Component: (await import('./pages/ai-plan-list-page')).AiPlanListPage,
+          }),
+        },
+        {
+          //  Phải KHỚP `REVIEW_PATH` của máy chủ — link trong tin của bot dẫn vào đây.
+          path: 'ai-plans/:planId',
+          lazy: async () => ({
+            Component: (await import('./pages/ai-plan-detail-page')).AiPlanDetailPage,
           }),
         },
         {
