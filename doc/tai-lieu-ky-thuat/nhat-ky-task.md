@@ -16428,3 +16428,16 @@ Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/h
 **Kết quả:** khi chưa đủ dữ liệu, người xem thấy câu giải thích và gợi ý chọn kỳ dài hơn thay vì một khoảng trống; khi đủ dữ liệu biểu đồ hiện như cũ.
 
 Mã nguồn: frontend-v2/src/modules/report/pages/work-capability-report-page.tsx · work-capability-report-page.test.tsx
+
+## bao-CR-657 | Ô lọc thumua tự dính phòng Kinh doanh AGC, bảng Tiến độ mua hàng rỗng
+- status: xong
+- date: 2026-10-23
+- tag: Thu mua
+**Bối cảnh:** sáng 23/10 đại ca thấy tài khoản nhân viên thu mua NSU012 mở Tiến độ mua hàng thì ô Bộ phận tự chọn sẵn *Kinh doanh AGC*, bảng rỗng. Nguyên nhân: nhân viên thu mua có phạm vi thu hẹp theo danh sách công ty, mà phần lớn phòng ban khai công ty bằng 0 nên danh sách phòng ban họ thấy gần như rỗng; từ 21/10 có phòng Kinh doanh AGC thuộc công ty 14 nên đây thành lựa chọn duy nhất, và ô chọn có luật *chỉ một lựa chọn thì tự gán* (cùng bẫy bao-CR-388) nên tự dính vào.
+
+**Đã làm:** tắt luật tự gán ở toàn bộ 19 ô lọc có chữ *Tất cả* còn sót trên giao diện thumua: Tiến độ mua hàng, Tiến độ khảo sát, Tồn kho, Công nợ, Báo cáo, Báo cáo dòng YCMH, bộ lọc công nợ nhà cung cấp, dòng mua hàng theo kho.
+
+**Kết quả:** lên prod 23/10/2026 khoảng 8:50, chỉ dựng lại giao diện thumua; thumua và erp trả 200. Gốc rễ còn hai việc đề xuất làm tiếp: đổi mặc định của ô chọn sang không tự gán, và cho danh mục phòng ban không bị thu hẹp theo công ty.
+
+Commit: bccf8eb0 (main), gộp erp-v2 · Deploy: prod web
+Mã nguồn: frontend/src/pages/PurchaseProgress.tsx · SurveyProgress.tsx · Inventory.tsx · Payables.tsx · Reports.tsx · PrLinesReportPage.tsx · frontend/src/components/supplier-payables-filters.tsx · warehouse-purchase-lines.tsx
