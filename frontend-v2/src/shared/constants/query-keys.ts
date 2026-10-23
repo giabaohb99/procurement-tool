@@ -453,6 +453,7 @@ export const queryKeys = {
     myHistory: (entity: string, days: number) =>
       ['approval', 'my-history', entity, days] as const,
     options: () => ['approval', 'options'] as const,
+    permissionApprovers: (entity: string) => ['approval', 'permission-approvers', entity] as const,
     flows: (entity: string) => ['approval', 'flows', entity] as const,
     flow: (id: number) => ['approval', 'flows', 'detail', id] as const,
     trail: (instanceId: number) => ['approval', 'trail', instanceId] as const,

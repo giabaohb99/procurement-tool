@@ -60,6 +60,10 @@ APPROVER_DEPT_HEAD_OF = 7
 #  trưởng nhóm…). Hồ sơ chưa gán / người quản lý không bấm được → lùi về trưởng bộ
 #  phận người nộp, để đơn không kẹt (xem `approver_resolver._direct_manager`).
 APPROVER_DIRECT_MANAGER = 8
+#  NGƯỜI CÓ QUYỀN DUYỆT theo màn Phân quyền (duoc-CR-680): ai giữ vai trò có ô «Duyệt» trên khóa
+#  quyền của chính loại chứng từ này, trong phạm vi dữ liệu của họ. `approver_ref` = khóa quyền,
+#  do máy chủ tự ghi bằng `flow.entity` lúc lưu bước. Xem `permission_approvers.py`.
+APPROVER_PERMISSION = 9
 
 APPROVER_KIND_LABELS = {
     APPROVER_EMPLOYEE: "Người cụ thể",
@@ -70,6 +74,7 @@ APPROVER_KIND_LABELS = {
     APPROVER_FIELD: "Lấy từ một ô trên phiếu",
     APPROVER_DEPT_HEAD_OF: "Trưởng bộ phận của phòng ban chỉ định",
     APPROVER_DIRECT_MANAGER: "Quản lý trực tiếp người nộp",
+    APPROVER_PERMISSION: "Người có quyền duyệt (theo phân quyền)",
 }
 
 # ── Nhiều người trong một bước (I05) ────────────────────────────────────────

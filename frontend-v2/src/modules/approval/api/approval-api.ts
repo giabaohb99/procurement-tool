@@ -10,6 +10,7 @@ import type {
   Delegation,
   MyDecision,
   MyTask,
+  PermissionApprover,
 } from '../types/approval'
 
 const FLOW_URL = '/api/approval-flows'
@@ -23,6 +24,9 @@ interface Paged<T> {
 
 export const approvalFlowApi = {
   options: () => apiGet<ApprovalOptions>(`${FLOW_URL}/options`),
+  /** Ai đang giữ quyền Duyệt trên khóa `entity` (cách chọn «Người có quyền duyệt»). */
+  permissionApprovers: (entity: string) =>
+    apiGet<PermissionApprover[]>(`${FLOW_URL}/permission-approvers`, { params: { entity } }),
   list: (entity?: string) =>
     apiGet<Paged<ApprovalFlow>>(FLOW_URL, { params: entity ? { entity } : undefined }),
   getById: (id: number) => apiGet<ApprovalFlow>(`${FLOW_URL}/${id}`),

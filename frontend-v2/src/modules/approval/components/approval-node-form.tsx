@@ -19,10 +19,16 @@ import {
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { approverFieldsOf } from '../config/condition-fields'
-import { danhSachId, ghepId } from '../helpers/approver-ref'
+import {
+  danhSachId,
+  ghepId,
+  refAfterKindChange,
+  visibleApproverKinds,
+} from '../helpers/approver-ref'
 import { useApprovalOptions } from '../hooks/use-approvals'
 import { APPROVER_KIND, MULTI_MODE, type ApprovalNode } from '../types/approval'
 import { ApprovalNodeAdvanced } from './approval-node-advanced'
+import { PermissionApproversHint } from './permission-approvers-hint'
 
 interface ApprovalNodeFormProps {
   /** Bỏ trống = thêm bước mới. */
@@ -128,15 +134,22 @@ export function ApprovalNodeForm({
           onValueChange={(value) => {
             //  Đổi cách chọn thì ô người duyệt phải xóa: mã nhân sự của cách cũ
             //  đọc thành mã vai trò của cách mới là bước giao cho nhầm người.
-            setField('approver_kind', Number(value) as never)
-            setField('approver_ref', '')
+            const kind = Number(value)
+            setField('approver_kind', kind as never)
+            setField('approver_ref', refAfterKindChange(kind, APPROVER_KIND.permission, entity))
           }}
         >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(options?.approver_kinds ?? []).map((item) => (
+            {visibleApproverKinds(
+              options?.approver_kinds ?? [],
+              APPROVER_KIND.permission,
+              entity,
+              options?.permission_approver_entities,
+              node?.approver_kind,
+            ).map((item) => (
               <SelectItem key={item.value} value={String(item.value)}>
                 {item.label}
               </SelectItem>
@@ -190,6 +203,8 @@ export function ApprovalNodeForm({
             </p>
           </>
         )}
+
+        {form.approver_kind === APPROVER_KIND.permission && <PermissionApproversHint entity={entity} />}
 
         {pickField && (
           <>

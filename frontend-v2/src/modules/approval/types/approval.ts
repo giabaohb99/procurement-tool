@@ -68,7 +68,21 @@ export const APPROVER_KIND = {
    * bị khóa tài khoản, thì backend lùi về trưởng bộ phận người nộp (K3, 01/10/2026).
    */
   directManager: 8,
+  /**
+   * NGƯỜI CÓ QUYỀN DUYỆT theo màn Phân quyền (duoc-CR-680) — ai giữ vai trò có ô «Duyệt» trên
+   * khóa quyền của chính loại chứng từ, trong phạm vi dữ liệu của họ. `approver_ref` do backend
+   * tự ghi bằng loại chứng từ của luồng; vai trò `admin` không tính.
+   */
+  permission: 9,
 } as const
+
+/** Một người đang giữ quyền Duyệt — `GET /api/approval-flows/permission-approvers`. */
+export interface PermissionApprover {
+  employee_id: number
+  code: string
+  name: string
+  roles: { role: string; scope: string; scope_label: string }[]
+}
 /**
  * ⚠️ `escalate` (đẩy lên cấp trên) **ĐÃ BỎ** (CR-114) — backend không chạy nhánh
  * đó nữa và cũng không trả nó về trong danh sách chọn, nên ô «Khi không tìm được
@@ -89,6 +103,8 @@ export interface ApprovalOptions {
   multi_modes: ApprovalOption[]
   skip_modes: ApprovalOption[]
   on_no_approver: ApprovalOption[]
+  /** Loại chứng từ dùng được cách «Người có quyền duyệt» (duoc-CR-680). Backend cũ chưa gửi → coi như rỗng. */
+  permission_approver_entities?: string[]
 }
 
 export interface ApprovalNode {

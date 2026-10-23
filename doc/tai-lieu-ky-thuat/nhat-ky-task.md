@@ -16892,3 +16892,44 @@ Mã nguồn: backend/scripts/seed_help_nhan_su.py · backend/app/modules/ai_skil
 - status: xong
 Ba bài kiểm canh đỏ từ các đợt trước mà chưa ai chạy lại: hai bài vẫn tin rằng xuất nhân sự lọc theo quyền Xem trong khi đợt cổng xuất đã chuyển sang quyền Xuất, một bài thiếu khai bảng đích cho các khuôn dữ liệu mới của loại việc, kết quả việc và vai trò theo chức vụ.
 Mã nguồn: test/backend/test_pham_vi_duong_vong.py · test/backend/test_canh_do_dai_o_chu_cr538.py
+
+## duoc-CR-680 | Bước duyệt giao cho người có quyền duyệt theo màn Phân quyền
+- status: xong
+- date: 2026-10-23
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** anh Được muốn ô «Ai duyệt bước này» ở phân hệ Phê duyệt có thêm một lựa chọn lấy người duyệt thẳng từ màn Phân quyền, ví dụ ai có quyền duyệt phiếu đặt xe thì người đó duyệt.
+
+**Đã làm**
+- Thêm cách chọn người duyệt thứ chín «Người có quyền duyệt (theo phân quyền)»: bước giao cho ai giữ vai trò được tick Duyệt trên chính loại chứng từ của luồng, trong phạm vi dữ liệu của họ.
+- Màn khai bước bày danh sách người đang giữ quyền kèm vai trò và phạm vi, cảnh báo khi chưa ai giữ quyền.
+- Thử trên dữ liệu thật thì thấy bảy người Quản lý thu mua có quyền duyệt đặt xe phạm vi «Của mình» do seed cấp mọi khóa, nên chỉ tính phạm vi Phòng ban, Công ty và Tất cả.
+- Rà mã tìm ra hai lỗi giao nhầm người và hai lỗi cao, đã sửa hết; ép tải trên MySQL thật với hai trăm người giữ quyền vẫn đúng người.
+- Viết bài hướng dẫn sử dụng mới và nâng cẩm nang trợ lý phần Nghỉ phép.
+
+**Kết quả:** bài kiểm máy chủ, giao diện, kiểm kiểu và kiểm mã đều xanh; đã bấm thử trên local.
+
+**Còn lại:** lựa chọn này mới mở cho Đặt xe, Nghỉ phép và Đặt phòng họp. Văn bản và Duyệt dấu cần quyết cách hiểu phạm vi trước khi mở. Khi lên dev phải chạy seed bài hướng dẫn, nạp lại kho tìm kiếm của trợ lý và xuất bản cẩm nang.
+
+Mã nguồn: backend/app/modules/approval/permission_approvers.py · flow_controller.py · frontend-v2/src/modules/approval/components/permission-approvers-hint.tsx
+Deploy: scripts/seed_help_phe_duyet_theo_quyen.py · scripts/reindex_help_rag.py --purge-orphans · scripts/publish_handbook_update.py
+
+### duoc-CR-680-1 | Tính người có quyền duyệt ở máy chủ
+- status: xong
+Người được giao phải giữ vai trò có ô Duyệt trên loại chứng từ với phạm vi Phòng ban, Công ty hoặc Tất cả, không tính vai trò Quản trị hệ thống, tài khoản đang mở và có hồ sơ còn làm việc. Phạm vi soi trên đúng tờ phiếu bằng các vai trò đủ điều kiện, gom một truy vấn cho mọi người. Phiếu không có mã thì không giao ai.
+Mã nguồn: backend/app/modules/approval/permission_approvers.py · approver_resolver.py · flow_model.py
+
+### duoc-CR-680-2 | Khai bước ở màn Luồng duyệt
+- status: xong
+Lựa chọn mới chỉ hiện ở luồng Đặt xe, Nghỉ phép và Đặt phòng họp; máy chủ tự ghi khóa quyền bằng loại chứng từ của luồng và chặn khi lưu ở luồng khác. Đổi loại chứng từ của luồng thì khóa quyền của bước đi theo. Dưới ô chọn hiện danh sách người đang giữ quyền.
+Mã nguồn: backend/app/modules/approval/flow_controller.py · frontend-v2/src/modules/approval/components/approval-node-form.tsx · permission-approvers-hint.tsx · helpers/approver-ref.ts
+
+### duoc-CR-680-3 | Sửa các lỗi rà mã tìm ra
+- status: xong
+Vai trò Quản trị hoặc phạm vi «Của mình» không còn lọt lại qua bước soi phạm vi; đổi loại chứng từ của luồng không còn làm soi nhầm bảng; Văn bản và Duyệt dấu tạm chưa mở vì quyền đọc và phạm vi ở đó hiểu khác; đường lấy danh sách chỉ nhận ba loại chứng từ được mở.
+Mã nguồn: test/backend/test_duyet_theo_quyen_cr680.py · plans/reports/code-reviewer-261023-1322-cr680-duyet-theo-quyen.md
+
+### duoc-CR-680-4 | Ép tải và tài liệu
+- status: xong
+Đo trên MySQL thật với mười, sáu mươi và hai trăm người giữ quyền: đúng người ở cả ba mức, sáu truy vấn cố định khi bộ đệm quyền đã nóng. Viết bài hướng dẫn sử dụng, bổ sung tài liệu dữ liệu bộ máy duyệt, nâng cẩm nang trợ lý phần Nghỉ phép. Tiện tay sửa một lỗi kiểm mã còn sót của CR-676.
+Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr680.py · backend/scripts/seed_help_phe_duyet_theo_quyen.py · doc/erp/tai-lieu-ky-thuat/05d-du-lieu-van-thu-duyet.md

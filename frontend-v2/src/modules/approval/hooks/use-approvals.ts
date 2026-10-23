@@ -46,6 +46,15 @@ export function useApprovalOptions() {
   })
 }
 
+/** Người đang giữ quyền Duyệt trên khóa `entity` — chỉ hỏi khi bước chọn «Người có quyền duyệt». */
+export function usePermissionApprovers(entity: string, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.approval.permissionApprovers(entity),
+    queryFn: () => approvalFlowApi.permissionApprovers(entity),
+    enabled: enabled && Boolean(entity),
+  })
+}
+
 export function useApprovalFlows(entity?: string) {
   return useQuery({
     queryKey: queryKeys.approval.flows(entity ?? ''),

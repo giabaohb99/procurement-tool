@@ -17,9 +17,9 @@ from app.core.response import success
 from app.core.scoping import (apply_scope, get_perm_profile, get_scoped,
                               has_global_scope)
 
-from . import entity_hooks, flow_service, flow_sync_service, serializer
+from . import entity_hooks, flow_service, flow_sync_service, permission_approvers, serializer
 from . import references  # noqa: F401  — ai-CR-191: đăng ký chỗ tham chiếu của luồng duyệt
-from .flow_model import (APPROVER_KIND_LABELS, MULTI_MODE_LABELS,
+from .flow_model import (APPROVER_KIND_LABELS, APPROVER_PERMISSION, MULTI_MODE_LABELS,
                          NODE_KIND_LABELS, NO_APPROVER_CHOICES,
                          NO_APPROVER_LABELS, ROLE_LABELS,
                          SKIP_MODE_LABELS, ApprovalFlow, ApprovalNode,
@@ -116,7 +116,52 @@ def options(user=Depends(require("approval_flow", "read"))):
         #  nên không bày ra ô chọn nữa, dù nhãn của nó vẫn còn để đọc dữ liệu cũ.
         "on_no_approver": [{"value": code, "label": NO_APPROVER_LABELS[code]}
                            for code in NO_APPROVER_CHOICES],
+        #  Loại chứng từ dùng được cách «Người có quyền duyệt» — giao diện ẩn lựa chọn đó ở luồng khác.
+        "permission_approver_entities": list(permission_approvers.SUPPORTED_ENTITIES),
     })
+
+
+@router.get("/permission-approvers")
+def permission_approvers_of(entity: str, db: Session = Depends(get_db),
+                            user=Depends(require("approval_flow", "read"))):
+    """Ai đang giữ quyền Duyệt trên khóa `entity` — cho cách chọn «Người có quyền duyệt» (duoc-CR-680)."""
+    #  Chỉ loại chứng từ dùng được cách 9 — không cho đường này thành chỗ dò ai giữ quyền Duyệt
+    #  trên `employee`, `labor_contract`… (review M3).
+    if entity not in permission_approvers.SUPPORTED_ENTITIES:
+        raise HTTPException(404, "Loại chứng từ này chưa dùng được cách «Người có quyền duyệt»")
+    return success(permission_approvers.holder_profiles(db, entity))
+
+
+def _node_values(flow: ApprovalFlow, data: "NodeIn") -> dict:
+    """Giá trị bước sẽ ghi. Cách chọn «Người có quyền duyệt» thì máy chủ TỰ ghi `approver_ref`
+    = loại chứng từ của luồng — khóa quyền và bảng chứng từ phải là một (xem `permission_approvers`)."""
+    values = data.model_dump()
+    if values["approver_kind"] == APPROVER_PERMISSION:
+        _block_unsupported_permission_kind(flow.entity)
+        values["approver_ref"] = flow.entity
+    return values
+
+
+def _block_unsupported_permission_kind(entity: str) -> None:
+    """Cách 9 chỉ mở cho `permission_approvers.SUPPORTED_ENTITIES` — xem điều 4 ở docstring tệp đó."""
+    if entity not in permission_approvers.SUPPORTED_ENTITIES:
+        raise HTTPException(422, f"Loại chứng từ «{entity}» chưa dùng được cách «Người có quyền duyệt» "
+                                 "— chọn cách khác cho bước này")
+
+
+def _resync_permission_steps(db: Session, flow: ApprovalFlow, new_entity: str) -> None:
+    """Đổi loại chứng từ của luồng thì khóa quyền của các bước cách 9 đi theo (review C2).
+
+    Để nguyên khóa cũ thì `get_scoped` soi id phiếu MỚI trong bảng CŨ — id trùng là giao nhầm người.
+    Loại mới không dùng được cách 9 thì chặn cả lần sửa.
+    """
+    steps = (db.query(ApprovalNode)
+             .filter(ApprovalNode.flow_id == flow.id, ApprovalNode.approver_kind == APPROVER_PERMISSION).all())
+    if not steps:
+        return
+    _block_unsupported_permission_kind(new_entity)
+    for step in steps:
+        step.approver_ref = new_entity
 
 
 @router.get("/switches")
@@ -212,6 +257,8 @@ def update_flow(flow_id: int, data: FlowIn, db: Session = Depends(get_db),
     #  luồng vốn thuộc phạm vi của mình.
     if data.company_id != flow.company_id:
         _block_scope_on_declare(db, user, data.company_id, "write")
+    if data.entity != flow.entity:
+        _resync_permission_steps(db, flow, data.entity)
     for label, value in data.model_dump().items():
         setattr(flow, label, value)
     _new_version(db, flow, user.id)
@@ -241,7 +288,7 @@ def add_node(flow_id: int, data: NodeIn, as_branch: bool = False,
     """Thêm một bước. `as_branch=true` = nhánh song song của chặng đó, mặc định
     là chèn hẳn một chặng mới tại vị trí `seq`."""
     flow = _load(db, flow_id, user, "write")
-    node = flow_service.add_step(db, flow.id, data.model_dump(), user.id,
+    node = flow_service.add_step(db, flow.id, _node_values(flow, data), user.id,
                                   is_branch=as_branch)
     _new_version(db, flow, user.id)
     db.refresh(node)
@@ -255,7 +302,7 @@ def update_node(flow_id: int, node_id: int, data: NodeIn, db: Session = Depends(
     node = db.get(ApprovalNode, node_id)
     if node is None or node.flow_id != flow.id:
         raise HTTPException(404, "Không tìm thấy bước này")
-    for label, value in data.model_dump().items():
+    for label, value in _node_values(flow, data).items():
         setattr(node, label, value)
     db.flush()
 

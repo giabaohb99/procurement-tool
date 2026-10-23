@@ -47,18 +47,20 @@ export function ChangeRequestFamiliesDiff({ families }: { families: ChangeReques
     ],
     [],
   )
-  const sides = useMemo(() => {
-    const changed = isFamiliesChangedSinceSubmit(families)
-    const list = [
+  //  Không bọc useMemo: ba bảng vài dòng, còn React Compiler từ chối giữ memo tay đọc thuộc tính
+  //  con của `families` (lint `preserve-manual-memoization`).
+  const changed = isFamiliesChangedSinceSubmit(families)
+  const sides = {
+    changed,
+    list: [
       { key: 'before', title: 'Lúc gửi', rows: indexRows(families.before), changed: false },
       //  Bản backend cũ chưa gửi `current` thì bỏ hẳn bảng giữa, khỏi bày một bảng rỗng đọc như «hồ sơ không có ai».
       ...(families.current !== undefined
         ? [{ key: 'current', title: 'Hiện tại', rows: indexRows(families.current), changed }]
         : []),
       { key: 'after', title: 'Đề nghị', rows: indexRows(families.after), changed: false },
-    ]
-    return { list, changed }
-  }, [families])
+    ],
+  }
 
   if (families.masked) {
     return (

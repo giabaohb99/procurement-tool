@@ -204,6 +204,13 @@ Tách bốn vì **`leave_balance` ghi được nghĩa là tặng thêm ngày ph�
 **không tự có** chúng — quản trị phải tick thêm ở *Nhân sự ▸ Phân quyền tài khoản*.
 Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là do chỗ này.
 
+Luồng duyệt đơn có thể khai bước **«Người có quyền duyệt (theo phân quyền)»** (duoc-CR-680): người
+nhận việc là ai giữ vai trò được tick **Duyệt** trên `leave_request` với phạm vi Phòng ban, Công ty
+hoặc Tất cả, không tính vai trò Quản trị hệ thống, và phạm vi đó phủ được tờ đơn (phạm vi «Phòng ban» chỉ
+nhận đơn của phòng mình). Người dùng hỏi «sao đơn của tôi không tới ai duyệt» mà luồng khai cách này:
+gợi ý quản trị kiểm ở *Nhân sự ▸ Phân quyền tài khoản* xem có vai trò nào tick Duyệt nghỉ phép với
+phạm vi phủ phòng / công ty của người nộp — đừng đoán tên người duyệt.
+
 ## Bảng từ dùng đúng
 
 | Nói thế này | Đừng nói |

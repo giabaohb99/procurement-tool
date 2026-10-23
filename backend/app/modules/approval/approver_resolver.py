@@ -1,4 +1,5 @@
-"""TÁM CÁCH CHỌN NGƯỜI DUYỆT (I03; cách thứ tám — quản lý trực tiếp — thêm 01/10/2026).
+"""CHÍN CÁCH CHỌN NGƯỜI DUYỆT (I03; cách thứ tám — quản lý trực tiếp — thêm 01/10/2026; cách thứ
+chín — người có quyền duyệt theo màn Phân quyền — thêm 23/10/2026, duoc-CR-680).
 
 Trả về **danh sách employee_id**, đã bỏ trùng và giữ nguyên thứ tự khai — thứ tự
 có nghĩa với bước `lần lượt`.
@@ -17,7 +18,7 @@ from app.modules.employee.model import Employee
 from .flow_model import (APPROVER_COMPANY_REP, APPROVER_DEPT_HEAD,
                          APPROVER_DEPT_HEAD_OF, APPROVER_DIRECT_MANAGER,
                          APPROVER_EMPLOYEE, APPROVER_FIELD, APPROVER_LEVEL_UP,
-                         APPROVER_ROLE)
+                         APPROVER_PERMISSION, APPROVER_ROLE)
 
 #  Lên quá số cấp này thì dừng — cây phòng ban khai vòng (A là cha của B, B là
 #  cha của A) sẽ treo vòng lặp, mà dữ liệu khai tay thì chuyện đó xảy ra thật.
@@ -44,6 +45,10 @@ def resolve(db: Session, node, subject: dict, submitter_employee_id: int | None)
         ids = _heads_of_specified_departments(db, node.approver_ref)
     elif kind == APPROVER_DIRECT_MANAGER:
         ids = _direct_manager(db, submitter_employee_id, subject)
+    elif kind == APPROVER_PERMISSION:
+        from . import permission_approvers
+
+        ids = permission_approvers.resolve(db, node.approver_ref, subject)
     else:
         ids = []
 

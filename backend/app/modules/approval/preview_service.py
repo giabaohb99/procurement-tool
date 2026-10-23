@@ -23,7 +23,8 @@ from sqlalchemy.orm import Session
 from app.modules.employee.model import Employee
 
 from . import approver_resolver, flow_service, instance_service, serializer
-from .flow_model import (APPROVER_DIRECT_MANAGER, APPROVER_FIELD, APPROVER_LEVEL_UP, APPROVER_ROLE,
+from .flow_model import (APPROVER_DIRECT_MANAGER, APPROVER_FIELD, APPROVER_LEVEL_UP, APPROVER_PERMISSION,
+                         APPROVER_ROLE,
                          NODE_CC, NO_APPROVER_FALLBACK, SKIP_ADJACENT,
                          SKIP_ANY_BEFORE, MULTI_MODE_LABELS, NODE_KIND_LABELS)
 
@@ -206,6 +207,10 @@ def _rule_label(db: Session, node) -> str:
         rule += f" ({ref} cấp)"
     elif node.approver_kind == APPROVER_FIELD and ref:
         rule += f" (ô '{ref}' trên phiếu)"
+    elif node.approver_kind == APPROVER_PERMISSION and ref:
+        from .task_notification import ENTITY_LABELS
+
+        rule += f": quyền Duyệt «{ENTITY_LABELS.get(ref, ref)}»"
     return rule
 
 
