@@ -4,7 +4,6 @@ import type { AuthUser } from '@/core/auth/auth-types'
 import type { ListParams } from '@/shared/types/api'
 import {
   addInCondition,
-  buildClearParams,
   isSameRange,
   resolveMyEmployeeCode,
   resolveMyEmployeeId,
@@ -62,30 +61,6 @@ describe('resolveMyEmployee*', () => {
     expect(resolveMyEmployeeCode(null)).toBeNull()
     expect(resolveMyEmployeeId(null)).toBeNull()
     expect(resolveMyEmployeeName(null)).toBeNull()
-  })
-})
-
-describe('buildClearParams', () => {
-  it('clears every quick key in one record — one URL write, not ten', () => {
-    expect(buildClearParams(['status', 'assignee'], new URLSearchParams('status=a'))).toEqual({
-      status: null,
-      assignee: null,
-    })
-  })
-
-  it('leaves advanced conditions, the keyword and the sort alone unless asked', () => {
-    const current = new URLSearchParams('q=abc&sort_by=id&code__contains=A&conjunction=or')
-    expect(buildClearParams(['status'], current)).toEqual({ status: null })
-  })
-
-  it('also clears advanced conditions and the conjunction when asked, but never the keyword or sort', () => {
-    const current = new URLSearchParams('q=abc&sort_by=id&code__contains=A&purpose__contains=B&conjunction=or')
-    expect(buildClearParams(['status'], current, true)).toEqual({
-      status: null,
-      code__contains: null,
-      purpose__contains: null,
-      conjunction: null,
-    })
   })
 })
 

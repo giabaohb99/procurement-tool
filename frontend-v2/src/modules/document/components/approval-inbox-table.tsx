@@ -12,7 +12,7 @@ import { LIST_TOOLBAR_STICKY_TOP } from '@/modules/hr/utils/list-sticky'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable } from '@/shared/data-table'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Card } from '@/shared/ui/card'
@@ -96,6 +96,7 @@ function ApprovalInboxContent() {
   //  dòng đã duyệt là dễ sót. Muốn xem hết thì bấm «Tất cả» (ghi `?scope=all`).
   const [scope, setScope] = useUrlParamState('scope', INBOX_SCOPE.pending)
   const [rangeDays, setRangeDays] = useUrlParamState('days', DEFAULT_DATE)
+  const clearUrlParams = useClearUrlParams()
 
   const { items: pendingTasks, isLoading: loadingPending } = useMyDocumentTasks()
   const { items: clicked, isLoading: loadingClick } = useMyDocumentDecisions(Number(rangeDays))
@@ -264,8 +265,10 @@ function ApprovalInboxContent() {
                 iconOnly
                 activeCount={(showRange && rangeDays !== DEFAULT_DATE ? 1 : 0) + filter.activeCount}
                 onClearAll={() => {
-                  setRangeDays(DEFAULT_DATE)
+                  //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                  //  `reset` TRƯỚC: lượt ghi sau thắng, và `reset` chép lại các ô trong `preserveParams`.
                   filter.reset()
+                  clearUrlParams(['days'], { advanced: true })
                 }}
                 onApply={filter.apply}
               >

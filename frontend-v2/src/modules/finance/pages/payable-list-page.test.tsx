@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -495,4 +495,31 @@ describe('PayableListPage — ba ô lọc bù từ Bộ lọc điều kiện (ai
     expect(lastCall().source_type).toBe('shipping')
   })
 
+})
+
+describe('PayableListPage — nút Xóa lọc (kh-NT2-2b)', () => {
+  function lastCall() {
+    return listCalls[listCalls.length - 1]
+  }
+
+  it('clears every quick filter in one go and puts the year back to this year', async () => {
+    //  Lỗi cũ: mười hai setter + `filter.reset()` gọi liền nhau; `reset` đi CUỐI nên
+    //  chép trả mọi ô lọc nhanh nằm trong `preserveParams` — bấm Xóa lọc mà bảng
+    //  vẫn lọc nguyên.
+    build('/finance/payables?company_id=1&status=open&aging=30&year=2025&amount_from=100&supplier_code=NCC01')
+    const sheetTrigger = screen
+      .getAllByRole('button', { name: 'Bộ lọc' })
+      .find((button) => button.getAttribute('data-slot') === 'sheet-trigger')
+    if (!sheetTrigger) throw new Error('Không thấy nút mở tờ lọc')
+    fireEvent.click(sheetTrigger)
+    fireEvent.click(await screen.findByRole('button', { name: 'Xóa lọc' }))
+
+    const call = lastCall()
+    expect(call.company_id).toBeUndefined()
+    expect(call.status).toBeUndefined()
+    expect(call.aging).toBeUndefined()
+    expect(call.amount_from).toBeUndefined()
+    expect(call.supplier_code).toBeUndefined()
+    expect(call.year).toBe(String(new Date().getFullYear()))
+  })
 })

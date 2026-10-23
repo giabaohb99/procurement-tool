@@ -13,7 +13,7 @@ import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/cond
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
@@ -96,11 +96,12 @@ function VehicleBookingListContent() {
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
-  const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
+  const [departmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [requestType, setRequestType] = useUrlParamState('request_type', ALL)
   const [createdFrom, setCreatedFrom] = useUrlParamState('created_at_from', '')
   const [createdTo, setCreatedTo] = useUrlParamState('created_at_to', '')
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const sortBy = searchParams.get('sort_by') || ''
@@ -146,12 +147,8 @@ function VehicleBookingListContent() {
   ].filter(Boolean).length
 
   const clearAllFilters = () => {
-    setCompanyId(ALL)
-    setDepartmentId(ALL)
-    setStatus(ALL)
-    setRequestType(ALL)
-    setCreatedFrom('')
-    setCreatedTo('')
+    //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+    clearUrlParams(['company_id', 'department_id', 'status', 'request_type', 'created_at_from', 'created_at_to'])
   }
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {

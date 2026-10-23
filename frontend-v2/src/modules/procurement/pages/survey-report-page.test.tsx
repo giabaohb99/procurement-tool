@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useSearchParams } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -600,5 +600,32 @@ describe('SurveyReportPage — xuất CSV', () => {
 
     expect(await screen.findByRole('button', { name: /Xuất CSV/ })).toBeDisabled()
     expect(listSurveyReportLines).not.toHaveBeenCalled()
+  })
+})
+
+/** Mở tờ lọc khổ hẹp rồi bấm *Xóa lọc* — nút này chỉ có ở tờ lọc. */
+async function clickClearAll() {
+  const sheetTrigger = screen
+    .getAllByRole('button', { name: 'Bộ lọc' })
+    .find((button) => button.getAttribute('data-slot') === 'sheet-trigger')
+  if (!sheetTrigger) throw new Error('Không thấy nút mở tờ lọc')
+  fireEvent.click(sheetTrigger)
+  fireEvent.click(await screen.findByRole('button', { name: 'Xóa lọc' }))
+}
+
+describe('SurveyReportPage — nút Xóa lọc (kh-NT2-2b)', () => {
+  it('clears the kind, the date range AND the extra filters, not just the last write', async () => {
+    //  Lỗi cũ: `setKind` + `setDateRange` + `applyExtra` gọi liền nhau, mỗi lệnh dựng
+    //  URL từ bản lúc dựng nên chỉ `applyExtra` ăn — loại và khoảng ngày còn nguyên.
+    build('/procurement/survey-report?kind=supplier&date_from=2026-10-01&date_to=2026-10-31&item_group=Bao%20b%C3%AC&sort_by=id')
+    await clickClearAll()
+
+    const query = new URLSearchParams(lastQuery())
+    expect(query.get('kind')).toBeNull()
+    expect(query.get('date_from')).toBeNull()
+    expect(query.get('date_to')).toBeNull()
+    expect(query.get('item_group')).toBeNull()
+    //  Sắp xếp không phải bộ lọc — giữ.
+    expect(query.get('sort_by')).toBe('id')
   })
 })

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
@@ -58,6 +58,7 @@ export function UnifiedRoomBookingTable() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [roomId, setRoomId] = useUrlParamState('room_id', ALL)
+  const clearUrlParams = useClearUrlParams()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -365,9 +366,8 @@ export function UnifiedRoomBookingTable() {
               (status !== ALL && currentScope !== ROOM_SCOPE.TO_APPROVE ? 1 : 0)
             }
             onClearAll={() => {
-              setScopeParam(ROOM_SCOPE.ALL)
-              setRoomId(ALL)
-              setStatus(ALL)
+              //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+              clearUrlParams(['scope', 'room_id', 'status'])
             }}
           >
             <QuickFilterField label="Phạm vi">{scopeSelect}</QuickFilterField>

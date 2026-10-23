@@ -25,7 +25,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
-import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
@@ -61,7 +61,6 @@ import {
   type PurchaseRequest,
 } from '../types/purchase-document'
 import {
-  buildClearParams,
   isSameRange,
   NO_EMPLOYEE_REASON,
   resolveMyEmployeeCode,
@@ -145,6 +144,7 @@ function PurchaseRequestListContent() {
   const [reqDateTo, setReqDateTo] = useUrlParamState('request_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const setUrlParams = useSetUrlParams()
+  const clearUrlParams = useClearUrlParams()
   const myCode = resolveMyEmployeeCode(useAuthStore((state) => state.user))
 
   const sortBy = searchParams.get('sort_by') || ''
@@ -237,8 +237,8 @@ function PurchaseRequestListContent() {
     Boolean(reqDateFrom || reqDateTo),
   ].filter(Boolean).length
 
-  //  MỘT lượt ghi URL — xem `buildClearParams` (lỗi cũ: chỉ xóa được ô cuối).
-  const clearAllFilters = () => setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams))
+  //  MỘT lượt ghi URL — xem `useClearUrlParams` (lỗi cũ: chỉ xóa được ô cuối).
+  const clearAllFilters = () => clearUrlParams(QUICK_FILTER_KEYS)
 
   //  kh-NT2-2 — chip lọc nhanh. Mỗi chip ghi vào ĐÚNG tham số của ô lọc bên cạnh
   //  (ô NSTM, ô Ngày tạo, ô Ngày cần hàng) nên hai bên luôn nói cùng một giá trị.

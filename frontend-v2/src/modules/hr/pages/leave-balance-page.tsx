@@ -8,7 +8,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
@@ -95,6 +95,7 @@ export function LeaveBalancePage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [year, setYear] = useUrlParamState('year', String(currentYear))
   const [leaveTypeId, setLeaveTypeId] = useUrlParamState('leave_type_id', ALL)
+  const clearUrlParams = useClearUrlParams()
   //  Trang TỰ VỀ 1 khi đổi bộ lọc: kết quả mới thường ít hơn, giữ số trang cũ
   //  là rơi vào trang trống. Theo dõi giá trị tìm kiếm ĐÃ HOÃN, không theo ô
   //  nhập thô — kẻo mỗi ký tự gõ vào là một lần đặt lại trang.
@@ -393,8 +394,8 @@ export function LeaveBalancePage() {
                     (leaveTypeId !== ALL ? 1 : 0) + (year !== String(currentYear) ? 1 : 0)
                   }
                   onClearAll={() => {
-                    setLeaveTypeId(ALL)
-                    setYear(String(currentYear))
+                    //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                    clearUrlParams(['leave_type_id', 'year'])
                   }}
                 >
                   <QuickFilterField label="Loại nghỉ">{typeSelect}</QuickFilterField>

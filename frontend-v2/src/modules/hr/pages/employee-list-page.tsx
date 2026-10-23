@@ -15,7 +15,7 @@ import { DataTable } from '@/shared/data-table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import { useUrlSort } from '@/shared/hooks/use-url-sort'
@@ -84,6 +84,7 @@ function EmployeeListContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
   const { sortBy, sortDir, handleSortChange } = useUrlSort()
@@ -254,9 +255,10 @@ function EmployeeListContent() {
                   (departmentId !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0) + filterActiveCount
                 }
                 onClearAll={() => {
-                  setDepartmentId(ALL)
-                  setStatus(ALL)
+                  //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                  //  `reset` TRƯỚC: lượt ghi sau thắng, và `reset` chép lại các ô trong `preserveParams`.
                   filterReset()
+                  clearUrlParams(['department_id', 'status'], { advanced: true })
                 }}
                 onApply={filterApply}
               >

@@ -19,7 +19,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { createSelectionColumn, DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRowSelection } from '@/shared/hooks/use-row-selection'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
 import { cn } from '@/shared/utils/cn'
@@ -96,6 +96,7 @@ function OutgoingDocumentsContent() {
   const [folderIdParam, setFolderIdParam] = useUrlParamState('folder_id', String(FOLDER_FILTER_ALL))
   const folderId = Number(folderIdParam)
   const [folderSubParam, setFolderSubParam] = useUrlParamState('folder_sub', 'true')
+  const clearUrlParams = useClearUrlParams()
   const includeSubfolders = folderSubParam !== 'false'
   //  Bung MỘT dòng tại một thời điểm: các bản riêng phải hỏi máy chủ, mà hook
   //  không gọi được trong vòng lặp. Mở dòng khác thì dòng đang mở tự đóng —
@@ -448,12 +449,11 @@ function OutgoingDocumentsContent() {
                 filter.activeCount
               }
               onClearAll={() => {
-                setTypeId(ALL)
-                setStatus(ALL)
-                setFolderIdParam(String(FOLDER_FILTER_ALL))
-                setFolderSubParam('true')
-                setPage(1)
+                //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                //  `reset` TRƯỚC: lượt ghi sau thắng, và `reset` chép lại các ô trong `preserveParams`.
                 filter.reset()
+                setPage(1)
+                clearUrlParams(['type', 'status', 'folder_id', 'folder_sub'], { advanced: true })
               }}
               onApply={filter.apply}
             >

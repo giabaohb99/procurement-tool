@@ -12,7 +12,7 @@ import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -296,6 +296,7 @@ export function SurveyReportPage() {
   //  chỉ thấy mũi tên đổi chiều, dữ liệu đứng yên. Backend nhận sẵn
   //  `sort_by` / `sort_dir` với danh sách cột cho phép đúng bằng cột ở đây.
   const [sortBy, sortDir, setSort] = useUrlRangeParam('sort_by', 'sort_dir')
+  const clearUrlParams = useClearUrlParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [exporting, setExporting] = useState(false)
@@ -590,9 +591,8 @@ export function SurveyReportPage() {
                   (kind !== ALL ? 1 : 0) + (dateFrom || dateTo ? 1 : 0) + extraCount
                 }
                 onClearAll={() => {
-                  setKind(ALL)
-                  setDateRange('', '')
-                  applyExtra(EMPTY_EXTRA)
+                  //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                  clearUrlParams(['kind', 'date_from', 'date_to', ...EXTRA_PARAMS])
                 }}
                 onApply={() => applyExtra(extraDraft)}
               >

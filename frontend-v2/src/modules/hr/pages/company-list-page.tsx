@@ -15,7 +15,7 @@ import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
@@ -64,6 +64,7 @@ function CompanyListContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [active, setActive] = useUrlParamState('is_active', ALL)
   const [level, setLevel] = useUrlParamState('level', ALL)
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
   const { sortBy, sortDir, handleSortChange } = useUrlSort()
@@ -234,9 +235,10 @@ function CompanyListContent() {
                   (level !== ALL ? 1 : 0) + (active !== ALL ? 1 : 0) + (filterActiveCount ?? 0)
                 }
                 onClearAll={() => {
-                  setLevel(ALL)
-                  setActive(ALL)
+                  //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                  //  `reset` TRƯỚC: lượt ghi sau thắng, và `reset` chép lại các ô trong `preserveParams`.
                   filterReset()
+                  clearUrlParams(['level', 'is_active'], { advanced: true })
                 }}
                 onApply={filterApply}
               >

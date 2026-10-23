@@ -9,7 +9,7 @@ import {
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
 import { cn } from '@/shared/utils/cn'
@@ -80,6 +80,7 @@ function IncomingDocumentsContent() {
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [review, setReview] = useUrlParamState('review', ALL)
+  const clearUrlParams = useClearUrlParams()
 
   const rows = useMemo(() => {
     const needle = debouncedValue.trim().toLowerCase()
@@ -242,8 +243,10 @@ function IncomingDocumentsContent() {
               iconOnly
               activeCount={(review !== ALL ? 1 : 0) + activeCount}
               onClearAll={() => {
-                setReview(ALL)
+                //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                //  `reset` TRƯỚC: lượt ghi sau thắng, và `reset` chép lại các ô trong `preserveParams`.
                 reset()
+                clearUrlParams(['review'], { advanced: true })
               }}
               onApply={apply}
             >

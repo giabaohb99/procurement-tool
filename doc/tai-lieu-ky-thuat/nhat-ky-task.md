@@ -15728,6 +15728,28 @@ Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/00-tong-quan-nghiep-
 
 Mã nguồn: doc/erp/hrm/README.md · doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md · doc/erp/hrm/02-nghi-phep.md · doc/erp/hrm/03-lich-lam-viec.md · .claude/rules/hr-leave.md · doc/erp/README.md
 
+## kh-NT2-2b | Sửa nút Xóa lọc chỉ xóa được một ô ở 17 màn
+- list: Kế hoạch hệ agent
+- status: xong
+- date: 2026-10-22
+- pic: NSU209
+- tag: Agent 3
+**Bối cảnh:** Lúc làm kh-NT2-2, Agent 3 phát hiện nút *Xóa lọc* gọi lần lượt từng ô lọc; mỗi lần ghi địa chỉ trang lại dựng từ địa chỉ cũ nên chỉ lần cuối có tác dụng. Bấm *Xóa lọc* xong bảng vẫn lọc theo mấy ô đầu. Agent 1 giao soát hết 28 chỗ có nút này.
+
+**Đã làm**
+- Soát 28 chỗ: 4 màn Thu mua đã sửa ở kh-NT2-2; 7 chỗ không dính (chỉ một lần ghi hoặc dùng trạng thái cục bộ); 17 chỗ dính lỗi.
+- Thêm hàm dùng chung xóa nhiều ô lọc trong một lần ghi, có tùy chọn xóa luôn điều kiện của *Bộ lọc điều kiện*; màn nào có nút đặt lại bộ lọc nâng cao thì gọi nó trước rồi mới xóa các ô.
+- Sửa 17 chỗ: Đóng dấu (danh sách đề nghị), Văn bản (hộp duyệt, văn bản đến, văn bản đi), Công nợ, Yêu cầu thanh toán, Nghỉ phép (đơn của tôi, bảng đơn chung, số dư phép), Đặt phòng, Công ty, Phòng ban, Nhân sự, Tiến độ mua hàng, Tiến độ báo giá, Báo cáo khảo sát, Đặt xe.
+- Chuyển 4 màn Thu mua (đã sửa ở kh-NT2-2) sang cùng hàm chung, bỏ bản riêng của phân hệ Thu mua cho khỏi hai bản; nhánh đưa lên nền erp-v2 mới bằng bản vá, không commit tạm.
+
+**Kết quả:** tsc cả cây 0 lỗi, lint 0 lỗi (không thêm cảnh báo), vitest các phân hệ đã sửa (Đóng dấu, Văn bản, Tài chính, Nhân sự, Thu mua, Đặt xe) cùng shared/hooks xanh 329 tệp, 3238 bài trên nền erp-v2 mới; dựng bản vite build được. Có bài kiểm cho hàm chung, màn Công nợ và màn Báo cáo khảo sát. Chưa soát trên trình duyệt.
+
+**Còn lại**
+- Soát trên dev sau khi dựng lại dev.
+
+Mã nguồn: `shared/hooks/use-url-param-state.ts` (`useClearUrlParams`) · 17 tệp màn
+Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã kh-NT2-2b)
+
 ## kh-SL-nut-chap-nhan | Nút Chấp nhận cỡ mới trên màn Sao lưu
 - list: Kế hoạch hệ agent
 - status: xong

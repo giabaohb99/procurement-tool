@@ -11,7 +11,7 @@ import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/cond
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
@@ -82,6 +82,7 @@ function SealRequestListContent() {
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [createdFrom, setCreatedFrom] = useUrlParamState('created_at_from', '')
   const [createdTo, setCreatedTo] = useUrlParamState('created_at_to', '')
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const sortBy = searchParams.get('sort_by') || ''
@@ -125,11 +126,8 @@ function SealRequestListContent() {
   ].filter(Boolean).length
 
   const clearAllFilters = () => {
-    setCompanyId(ALL)
-    setDepartmentId(ALL)
-    setStatus(ALL)
-    setCreatedFrom('')
-    setCreatedTo('')
+    //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+    clearUrlParams(['company_id', 'department_id', 'status', 'created_at_from', 'created_at_to'])
   }
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {

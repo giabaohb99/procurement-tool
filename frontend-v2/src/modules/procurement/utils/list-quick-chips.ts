@@ -56,31 +56,6 @@ export function resolveMyEmployeeName(user: AuthUser | null): string | null {
   return name || null
 }
 
-/**
- * Bộ tham số cho MỘT lượt `useSetUrlParams` của nút *Xóa lọc*: xóa các ô lọc nhanh
- * `keys`, và nếu `withAdvanced` thì xóa luôn điều kiện nâng cao (`<cột>__<op>`,
- * `conjunction`) đang có trong `searchParams`.
- *
- * ⚠️ Vì sao phải gom một lượt: `setSearchParams(fn)` của react-router đưa cho `fn`
- * URL LÚC DỰNG, không phải URL vừa ghi. Gọi mười setter liền nhau thì chỉ lần cuối
- * ăn — nút *Xóa lọc* cũ của bốn màn này chỉ xóa đúng một ô cuối danh sách, và bản
- * nhớ bộ lọc (kh-NT2-2) giữ nguyên mấy ô còn lại cho lần mở sau.
- */
-export function buildClearParams(
-  keys: string[],
-  searchParams: URLSearchParams,
-  withAdvanced = false,
-): Record<string, null> {
-  const cleared: Record<string, null> = {}
-  for (const key of keys) cleared[key] = null
-  if (withAdvanced) {
-    for (const key of searchParams.keys()) {
-      if (key.includes('__') || key === 'conjunction') cleared[key] = null
-    }
-  }
-  return cleared
-}
-
 /** Giá trị không khớp mã nào — gửi khi hai điều kiện IN cùng cột không giao nhau. */
 const MATCH_NOTHING = '__none__'
 

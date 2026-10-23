@@ -20,7 +20,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -172,6 +172,7 @@ function PayableListContent() {
   //  ép sang số thì 0 và "bỏ trống" lẫn vào nhau.
   const [amountFrom, setAmountFrom] = useUrlParamState('amount_from', '')
   const [amountTo, setAmountTo] = useUrlParamState('amount_to', '')
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
   const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
@@ -945,22 +946,31 @@ function PayableListContent() {
               <QuickFilterSheet
                 activeCount={quickFilterCount}
                 onClearAll={() => {
-                  setCompanyId(ALL)
-                  setSupplierCode(ALL)
-                  setStatus(ALL)
-                  setInvoiceNo('')
-                  setSourceType(ALL)
-                  setAging(ALL)
-                  setDateField(DEFAULT_DATE_FIELD)
-                  setDateRange('', '')
                   //  Năm trả về NĂM HIỆN TẠI chứ không về `all`: đó là mặc định
                   //  của cả màn lẫn backend. Xóa lọc mà ra "tất cả các năm" là
                   //  đổi phạm vi rộng hơn lúc mới mở màn — người dùng bấm "xóa
-                  //  lọc" xong thấy thêm dữ liệu thì đọc ra như lỗi.
-                  setYear(String(THIS_YEAR))
-                  setAmountFrom('')
-                  setAmountTo('')
+                  //  lọc" xong thấy thêm dữ liệu thì đọc ra như lỗi. Xóa `year` khỏi URL
+                  //  chính là về mặc định đó (`useUrlParamState('year', THIS_YEAR)`).
+                  //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                  //  `reset` TRƯỚC: lượt ghi sau thắng, và `reset` chép lại các ô trong `preserveParams`.
                   filter.reset()
+                  clearUrlParams(
+                    [
+                      'company_id',
+                      'supplier_code',
+                      'status',
+                      'invoice_no',
+                      'source_type',
+                      'aging',
+                      'date_field',
+                      'date_from',
+                      'date_to',
+                      'year',
+                      'amount_from',
+                      'amount_to',
+                    ],
+                    { advanced: true },
+                  )
                 }}
                 onApply={filter.apply}
               >

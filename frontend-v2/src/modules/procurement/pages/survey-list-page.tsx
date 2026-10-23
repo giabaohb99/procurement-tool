@@ -21,7 +21,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
-import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
@@ -56,7 +56,6 @@ import {
 } from '../types/purchase-document'
 import {
   addInCondition,
-  buildClearParams,
   NO_EMPLOYEE_REASON,
   resolveMyEmployeeName,
 } from '../utils/list-quick-chips'
@@ -111,7 +110,7 @@ function SurveyListContent() {
   //  Cờ của chip *Chờ xử lý*: ô Trạng thái chỉ chọn MỘT giá trị.
   const [pending, setPending] = useUrlParamState('pending', '')
   const myName = resolveMyEmployeeName(useAuthStore((state) => state.user))
-  const setUrlParams = useSetUrlParams()
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const { data: itemGroups } = usePurchaseRequestItemGroups()
 
@@ -190,10 +189,10 @@ function SurveyListContent() {
     ].filter(Boolean).length + filter.activeCount
 
   //  `filter.reset()` TRƯỚC, lượt ghi URL của màn SAU — xem chú thích cùng chỗ ở
-  //  `survey-request-list-page.tsx` và `buildClearParams`.
+  //  `survey-request-list-page.tsx` và `useClearUrlParams`.
   const clearAllFilters = () => {
     filter.reset()
-    setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams, true))
+    clearUrlParams(QUICK_FILTER_KEYS, { advanced: true })
   }
 
   //  Bộ chip đúng doc 14 §2.4: Của tôi · Khảo sát NCC · Khảo sát SP · Chờ xử lý. Hai

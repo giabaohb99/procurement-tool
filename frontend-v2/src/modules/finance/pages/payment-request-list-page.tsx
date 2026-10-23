@@ -13,7 +13,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
@@ -81,6 +81,7 @@ export function PaymentRequestListPage() {
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [source, setSource] = useUrlParamState('source_type', ALL)
   const [method, setMethod] = useUrlParamState('payment_method', ALL)
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const { sortBy, sortDir, handleSortChange } = useUrlSort()
   //  Mốc bóng đổ cho thanh công cụ ghim — xem `STICKY_TOOLBAR_BASE`.
@@ -428,12 +429,8 @@ export function PaymentRequestListPage() {
                   (method !== ALL ? 1 : 0)
                 }
                 onClearAll={() => {
-                  setPoCodeKeyword('')
-                  setMisaKeyword('')
-                  setCompanyId(ALL)
-                  setStatus(ALL)
-                  setSource(ALL)
-                  setMethod(ALL)
+                  //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                  clearUrlParams(['po_code', 'misa_code', 'company_id', 'status', 'source_type', 'payment_method'])
                 }}
               >
                 <QuickFilterField label="Mã PO">{poCodeInput}</QuickFilterField>

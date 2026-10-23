@@ -72,3 +72,41 @@ export function useSetUrlParams() {
     [setSearchParams],
   )
 }
+
+/**
+ * Hàm cho nút *Xóa lọc*: xóa các tham số `keys` khỏi URL trong MỘT lượt ghi
+ * (kh-NT2-2b). `advanced: true` xóa luôn điều kiện của *Bộ lọc điều kiện*
+ * (`<cột>__<op>`, `conjunction`) đang có trên URL.
+ *
+ * ⚠️ **Vì sao có hàm này.** Nút *Xóa lọc* cũ ở 21 màn gọi lần lượt từng setter
+ * (`setStatus(ALL)`, `setCompanyId(ALL)`…). Mỗi setter dựng URL mới từ URL LÚC
+ * DỰNG — xem `useSetUrlParams` — nên chỉ lần cuối ăn: bấm *Xóa lọc* mà bảng vẫn
+ * lọc theo mấy ô đầu.
+ *
+ * ⚠️ **Có `filter.reset()` thì gọi nó TRƯỚC hàm này.** `reset` cũng ghi URL từ bản
+ * lúc dựng và chép lại các ô có trong `preserveParams`; lượt ghi nào đến SAU thì
+ * thắng, nên lượt của hàm này phải đi sau, kèm `advanced: true` để bỏ luôn điều
+ * kiện cũ mà nó còn thấy trên URL lúc dựng.
+ *
+ * Giá trị bị xóa = ô về MẶC ĐỊNH của nó (`useUrlParamState` không ghi giá trị mặc
+ * định lên URL), nên ô có mặc định khác `all` (năm hiện tại, `folder_sub=true`…)
+ * vẫn về đúng mặc định.
+ */
+export function useClearUrlParams() {
+  const [searchParams] = useSearchParams()
+  const setUrlParams = useSetUrlParams()
+
+  return useCallback(
+    (keys: string[], { advanced = false }: { advanced?: boolean } = {}) => {
+      const next: Record<string, null> = {}
+      for (const key of keys) next[key] = null
+      if (advanced) {
+        for (const key of searchParams.keys()) {
+          if (key.includes('__') || key === 'conjunction') next[key] = null
+        }
+      }
+      setUrlParams(next)
+    },
+    [searchParams, setUrlParams],
+  )
+}

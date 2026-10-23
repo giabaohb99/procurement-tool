@@ -27,7 +27,7 @@ import { resolveThisMonth } from '@/shared/ui/date-range-presets'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
-import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
@@ -60,7 +60,6 @@ import {
 } from '../types/purchase-document'
 import {
   addInCondition,
-  buildClearParams,
   isSameRange,
   NO_EMPLOYEE_REASON,
   resolveMyEmployeeCode,
@@ -146,6 +145,7 @@ function SurveyRequestListContent() {
   const [pending, setPending] = useUrlParamState('pending', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const setUrlParams = useSetUrlParams()
+  const clearUrlParams = useClearUrlParams()
   const myCode = resolveMyEmployeeCode(useAuthStore((state) => state.user))
 
   const sortBy = searchParams.get('sort_by') || ''
@@ -244,10 +244,10 @@ function SurveyRequestListContent() {
 
   //  `filter.reset()` TRƯỚC, lượt ghi URL của màn SAU và xóa luôn điều kiện nâng cao:
   //  hai lượt cùng dựng từ URL lúc dựng nên lượt sau thắng — để reset sau là nó chép
-  //  lại các ô lọc nhanh vừa xóa (`preserveParams`). Xem `buildClearParams`.
+  //  lại các ô lọc nhanh vừa xóa (`preserveParams`). Xem `useClearUrlParams`.
   const clearAllFilters = () => {
     filter.reset()
-    setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams, true))
+    clearUrlParams(QUICK_FILTER_KEYS, { advanced: true })
   }
 
   //  kh-NT2-2 — chip lọc nhanh. *Của tôi* / *Tháng này* ghi vào đúng tham số của ô

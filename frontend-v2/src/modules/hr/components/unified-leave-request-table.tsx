@@ -12,7 +12,7 @@ import {
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
@@ -89,6 +89,7 @@ function UnifiedLeaveRequestContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [leaveTypeId, setLeaveTypeId] = useUrlParamState('leave_type_id', ALL)
+  const clearUrlParams = useClearUrlParams()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -382,10 +383,10 @@ function UnifiedLeaveRequestContent() {
               filter.activeCount
             }
             onClearAll={() => {
-              setScopeParam(LEAVE_SCOPE.ALL)
-              setLeaveTypeId(ALL)
-              setStatus(ALL)
+              //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+              //  `reset` TRƯỚC: lượt ghi sau thắng, và `reset` chép lại các ô trong `preserveParams`.
               filter.reset()
+              clearUrlParams(['scope', 'leave_type_id', 'status'], { advanced: true })
             }}
             onApply={filter.apply}
           >

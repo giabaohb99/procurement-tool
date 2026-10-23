@@ -25,7 +25,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
-import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useSearchTelemetry } from '@/core/telemetry/use-search-telemetry'
 import type { ListParams } from '@/shared/types/api'
@@ -65,7 +65,6 @@ import {
 import { ORDER_TYPE_IMPORT, ORDER_TYPE_OPTIONS } from '../types/purchase-order-detail'
 import {
   addInCondition,
-  buildClearParams,
   isSameRange,
   NO_EMPLOYEE_REASON,
   resolveMyEmployeeId,
@@ -182,6 +181,7 @@ function PurchaseOrderListContent() {
   //  này không ghi vào ô đó được, phải có tham số riêng.
   const [missingDocs, setMissingDocs] = useUrlParamState('missing_docs', '')
   const setUrlParams = useSetUrlParams()
+  const clearUrlParams = useClearUrlParams()
   const myEmployeeId = resolveMyEmployeeId(useAuthStore((state) => state.user))
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
@@ -300,8 +300,8 @@ function PurchaseOrderListContent() {
     Boolean(missingDocs) && !missingDocsBlocked,
   ].filter(Boolean).length
 
-  //  MỘT lượt ghi URL — xem `buildClearParams` (lỗi cũ: chỉ xóa được ô cuối).
-  const clearAllFilters = () => setUrlParams(buildClearParams(QUICK_FILTER_KEYS, searchParams))
+  //  MỘT lượt ghi URL — xem `useClearUrlParams` (lỗi cũ: chỉ xóa được ô cuối).
+  const clearAllFilters = () => clearUrlParams(QUICK_FILTER_KEYS)
 
   //  kh-NT2-2 — chip lọc nhanh. *Của tôi* / *Tháng này* ghi vào đúng tham số của ô
   //  NSPT / ô Ngày đặt nên hai bên luôn nói cùng một giá trị.

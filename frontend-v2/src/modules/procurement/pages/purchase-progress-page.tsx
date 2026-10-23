@@ -21,7 +21,7 @@ import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlMultiParam } from '@/shared/hooks/use-url-multi-param'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useClearUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
@@ -143,6 +143,7 @@ function PurchaseProgressContent() {
   const [recvState, setRecvState] = useUrlParamState('recv_state', ALL)
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
+  const clearUrlParams = useClearUrlParams()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để tệp khớp màn hình. */
   const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
@@ -599,12 +600,8 @@ function PurchaseProgressContent() {
               <QuickFilterSheet
                 activeCount={activeFilterCount}
                 onClearAll={() => {
-                  setCompanyIds([])
-                  setDepartmentId(ALL)
-                  setStatuses([])
-                  setRecvState(ALL)
-                  setDateField(DEFAULT_DATE_FIELD)
-                  setDateRange('', '')
+                  //  Một lượt ghi URL — gọi từng setter thì chỉ lần cuối ăn (kh-NT2-2b, `useClearUrlParams`).
+                  clearUrlParams(['company_id', 'department_id', 'status', 'recv_state', 'date_field', 'date_from', 'date_to'])
                 }}
                 onApply={filter.apply}
               >
