@@ -248,17 +248,17 @@ export default function Payables() {
       <FilterPanel onClear={() => setF(EMPTY_FILTERS(thisYear))} canClear={dirty}
                    extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
-          <SearchSelect value={f.company_id} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.company_id} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             onChange={(v) => setFilter('company_id', v)} />
         </FilterItem>
         <FilterItem label="Nhà cung cấp" width={200}>
-          <SearchSelect value={f.supplier_code} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.supplier_code} placeholder="Tất cả"
             options={suppliers.map((c) => ({ value: c.code, label: c.name }))}
             onChange={(v) => setFilter('supplier_code', v)} />
         </FilterItem>
         <FilterItem label="Trạng thái">
-          <SearchSelect value={f.status} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.status} placeholder="Tất cả"
             options={ST_OPTIONS}
             onChange={(v) => setFilter('status', v)} />
         </FilterItem>
@@ -270,17 +270,17 @@ export default function Payables() {
           <input value={f.invoice_no} placeholder="Số HĐ…" onChange={(e) => setFilter('invoice_no', e.target.value)} />
         </FilterItem>
         <FilterItem label="Loại nợ" width={150} secondary active={!!f.source_type}>
-          <SearchSelect value={f.source_type} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.source_type} placeholder="Tất cả"
             options={SOURCE_TYPE_OPTIONS}
             onChange={(v) => setFilter('source_type', v)} />
         </FilterItem>
         <FilterItem label="Tuổi nợ" width={150} secondary active={!!f.aging}>
-          <SearchSelect value={f.aging} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={f.aging} placeholder="Tất cả"
             options={['Chưa đến hạn', '1-30', '31-60', '61-90', '>90']}
             onChange={(v) => setFilter('aging', v)} />
         </FilterItem>
         <FilterItem label="Năm" width={120} secondary active={String(f.year) !== String(thisYear)}>
-          <SearchSelect value={String(f.year)} placeholder="Tất cả"
+          <SearchSelect autoSelectSingle={false} value={String(f.year)} placeholder="Tất cả"
             options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
             onChange={(v) => setFilter('year', v)} />
         </FilterItem>

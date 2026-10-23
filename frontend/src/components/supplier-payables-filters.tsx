@@ -38,7 +38,7 @@ export default function SupplierPayablesFilters({
         <SearchSelect value={value.view} placeholder="Tất cả khoản nợ" options={VIEW_OPTIONS} onChange={(v) => set('view', v)} />
       </FilterItem>
       <FilterItem label="Tuổi nợ">
-        <SearchSelect value={value.aging} placeholder="Tất cả"
+        <SearchSelect autoSelectSingle={false} value={value.aging} placeholder="Tất cả"
           options={AGING_ORDER.map((a) => ({ value: a, label: agingLabel(a) }))}
           onChange={(v) => set('aging', v)} />
       </FilterItem>

@@ -258,11 +258,11 @@ export default function Reports() {
         <div className="filters" style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           {/* Dùng .filter-item để nhãn/kích thước ô lọc giống các trang danh sách */}
           <div className="filter-item" style={{ flex: '0 0 190px' }}><label>Công ty</label>
-            <SearchSelect value={f.company_id} placeholder="Tất cả"
+            <SearchSelect autoSelectSingle={false} value={f.company_id} placeholder="Tất cả"
               options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
               onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, company_id: v })) }} /></div>
           <div className="filter-item" style={{ flex: '0 0 150px', minWidth: 150 }}><label>Năm</label>
-            <SearchSelect value={String(f.year)} placeholder="Tất cả"
+            <SearchSelect autoSelectSingle={false} value={String(f.year)} placeholder="Tất cả"
               options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
               onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, year: v })) }} /></div>
           <button className="btn" disabled={busy} onClick={() => load(false)}>Lọc</button>

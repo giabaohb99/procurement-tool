@@ -72,7 +72,7 @@ export default function WarehousePurchaseLines({ warehouseCode }: { warehouseCod
             onChange={(e) => { setQ(e.target.value); setPage(1) }} />
         </FilterItem>
         <FilterItem label="Tiến độ dòng" width={200}>
-          <SearchSelect value={progress} placeholder="Tất cả" options={PO_PROGRESS_STATUSES}
+          <SearchSelect autoSelectSingle={false} value={progress} placeholder="Tất cả" options={PO_PROGRESS_STATUSES}
             onChange={(v) => { setProgress(v); setPage(1) }} />
         </FilterItem>
       </FilterPanel>
