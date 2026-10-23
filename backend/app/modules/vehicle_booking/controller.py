@@ -71,7 +71,7 @@ def _changed_labels(before: dict, obj) -> list[str]:
     return [lbl for k, lbl in _EDIT_LABELS.items() if before.get(k) != str(getattr(obj, k, ""))]
 
 
-def _booking_query(request: Request, db: Session, user):
+def _booking_query(request: Request, db: Session, user, action: str = "read"):
     """Query danh sách phiếu theo ĐÚNG bộ lọc đang đặt (lọc + tìm + phạm vi + mine).
 
     Dùng CHUNG cho danh sách và Xuất Excel — xuất ra phải khớp cái đang xem."""
@@ -79,7 +79,7 @@ def _booking_query(request: Request, db: Session, user):
     query = apply_filters(query, VehicleBooking, request, service.FILTERABLE)
     query = apply_datetime_range(query, VehicleBooking, request)  # bộ lọc "Ngày tạo"
     query = service.apply_keyword_search(query, request.query_params.get("search"))
-    query = apply_scope(query, VehicleBooking, "vehicle_booking", user, get_perm_profile(db, user))
+    query = apply_scope(query, VehicleBooking, "vehicle_booking", user, get_perm_profile(db, user), action)
     #  Màn "Chuyến của tôi" (tài xế): chỉ chuyến ĐƯỢC PHÂN cho chính người xem.
     if request.query_params.get("mine"):
         query = service.filter_my_trips(query, db, user)
@@ -108,14 +108,15 @@ def list_bookings(
 def export_bookings_xlsx(
     request: Request,
     db: Session = Depends(get_db),
-    user=Depends(require("vehicle_booking", "read")),
+    user=Depends(require("vehicle_booking", "export")),   # duoc-CR-675: trước đây `read`
 ):
     """Xuất Excel danh sách phiếu theo ĐÚNG bộ lọc đang hiển thị (danh sách + Chuyến của tôi).
 
     Khai TRƯỚC `/{bid}` để 'export' không bị bắt làm id phiếu."""
     from app.core.export_xlsx import Col, check_row_limit, xlsx_response
 
-    objs = _booking_query(request, db, user).all()
+    #  duoc-CR-675: phạm vi theo grant có quyền XUẤT, không phình theo quyền Xem (cùng luật duoc-CR-660).
+    objs = _booking_query(request, db, user, "export").all()
     check_row_limit(len(objs))
     rows = service.serialize_bookings(db, objs)
     columns = [

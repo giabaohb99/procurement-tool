@@ -51,6 +51,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import Counter
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -322,8 +323,9 @@ def parse_journal(path: Path) -> list[JournalEntry]:
         if raw.strip():
             current.desc_lines.append(raw.rstrip())
     #  Key phải duy nhất TOÀN SỔ (kể cả việc con) — nó là mỏ neo idempotent.
-    all_keys = [e.key for e in entries] + [c.key for e in entries for c in e.children]
-    dup = sorted({k for k in all_keys if all_keys.count(k) > 1})
+    #  duoc-CR-675: đếm một lượt bằng Counter — `list.count` trong vòng lặp là bậc hai (sổ 18 000 mục mất ~3 giây).
+    seen = Counter([e.key for e in entries] + [c.key for e in entries for c in e.children])
+    dup = sorted(k for k, n in seen.items() if n > 1)
     if dup:
         raise SystemExit(f"Key trùng trong sổ: {', '.join(dup)} — mỗi key một mục")
     for e in [x for p in entries for x in (p, *p.children)]:
@@ -339,7 +341,8 @@ def parse_journal(path: Path) -> list[JournalEntry]:
 def _parse_hours(key: str, label: str, raw: str) -> str:
     """`1,5` / `1.5` / `2` → `"1.50"` — cùng dạng chuỗi máy chủ trả về (`Numeric(6, 2)`)."""
     value = raw.strip()
-    if not HOURS_RE.match(value):
+    #  duoc-CR-675: regex một mình nhận cả 999.01…999.99 trong khi máy chủ chặn ở 999 → 422 giữa lượt đồng bộ.
+    if not HOURS_RE.match(value) or Decimal(value.replace(",", ".")) > 999:
         raise SystemExit(f"[{key}] {label} phải là số giờ 0–999, tối đa 2 số lẻ (ví dụ 1.5)")
     return f"{Decimal(value.replace(',', '.')):.2f}"
 

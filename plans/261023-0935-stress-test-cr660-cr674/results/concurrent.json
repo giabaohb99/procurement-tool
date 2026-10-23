@@ -1,0 +1,194 @@
+{
+  "1x": {
+    "total_calls": 6,
+    "ok": 6,
+    "errors": 0,
+    "error_statuses": [],
+    "p50_ms": 147.2,
+    "p95_ms": 682.7,
+    "max_ms": 682.7,
+    "per_path": {
+      "/api/employees/export/csv": {
+        "ok": 1,
+        "p50_ms": 89.2,
+        "p95_ms": 89.2,
+        "max_ms": 89.2
+      },
+      "/api/employees/export/xlsx": {
+        "ok": 1,
+        "p50_ms": 147.2,
+        "p95_ms": 147.2,
+        "max_ms": 147.2
+      },
+      "/api/products/export/csv": {
+        "ok": 1,
+        "p50_ms": 682.7,
+        "p95_ms": 682.7,
+        "max_ms": 682.7
+      },
+      "/api/departments/export/csv": {
+        "ok": 1,
+        "p50_ms": 36.0,
+        "p95_ms": 36.0,
+        "max_ms": 36.0
+      },
+      "/api/vehicle-bookings/export/xlsx": {
+        "ok": 1,
+        "p50_ms": 166.1,
+        "p95_ms": 166.1,
+        "max_ms": 166.1
+      },
+      "/api/vehicles/export/xlsx": {
+        "ok": 1,
+        "p50_ms": 72.8,
+        "p95_ms": 72.8,
+        "max_ms": 72.8
+      }
+    },
+    "wall_seconds": 0.7
+  },
+  "10x": {
+    "total_calls": 60,
+    "ok": 60,
+    "errors": 0,
+    "error_statuses": [],
+    "p50_ms": 1476.2,
+    "p95_ms": 4571.4,
+    "max_ms": 4846.8,
+    "per_path": {
+      "/api/employees/export/csv": {
+        "ok": 10,
+        "p50_ms": 1257.3,
+        "p95_ms": 1894.0,
+        "max_ms": 1894.0
+      },
+      "/api/employees/export/xlsx": {
+        "ok": 10,
+        "p50_ms": 1407.4,
+        "p95_ms": 2172.6,
+        "max_ms": 2172.6
+      },
+      "/api/products/export/csv": {
+        "ok": 10,
+        "p50_ms": 4381.4,
+        "p95_ms": 4846.8,
+        "max_ms": 4846.8
+      },
+      "/api/departments/export/csv": {
+        "ok": 10,
+        "p50_ms": 852.7,
+        "p95_ms": 1864.9,
+        "max_ms": 1864.9
+      },
+      "/api/vehicle-bookings/export/xlsx": {
+        "ok": 10,
+        "p50_ms": 1809.6,
+        "p95_ms": 2355.5,
+        "max_ms": 2355.5
+      },
+      "/api/vehicles/export/xlsx": {
+        "ok": 10,
+        "p50_ms": 1254.9,
+        "p95_ms": 1925.4,
+        "max_ms": 1925.4
+      }
+    },
+    "wall_seconds": 4.9
+  },
+  "50x": {
+    "total_calls": 300,
+    "ok": 300,
+    "errors": 0,
+    "error_statuses": [],
+    "p50_ms": 9520.9,
+    "p95_ms": 19549.2,
+    "max_ms": 21805.0,
+    "per_path": {
+      "/api/employees/export/csv": {
+        "ok": 50,
+        "p50_ms": 8875.9,
+        "p95_ms": 18314.0,
+        "max_ms": 18934.9
+      },
+      "/api/employees/export/xlsx": {
+        "ok": 50,
+        "p50_ms": 8290.0,
+        "p95_ms": 18725.5,
+        "max_ms": 19596.4
+      },
+      "/api/products/export/csv": {
+        "ok": 50,
+        "p50_ms": 13413.1,
+        "p95_ms": 21456.9,
+        "max_ms": 21805.0
+      },
+      "/api/departments/export/csv": {
+        "ok": 50,
+        "p50_ms": 7567.1,
+        "p95_ms": 18460.2,
+        "max_ms": 19128.1
+      },
+      "/api/vehicle-bookings/export/xlsx": {
+        "ok": 50,
+        "p50_ms": 10280.7,
+        "p95_ms": 19113.5,
+        "max_ms": 20309.5
+      },
+      "/api/vehicles/export/xlsx": {
+        "ok": 50,
+        "p50_ms": 8247.6,
+        "p95_ms": 18541.2,
+        "max_ms": 19429.8
+      }
+    },
+    "wall_seconds": 22.0
+  },
+  "150x": {
+    "total_calls": 900,
+    "ok": 900,
+    "errors": 0,
+    "error_statuses": [],
+    "p50_ms": 20742.0,
+    "p95_ms": 25729.3,
+    "max_ms": 26877.1,
+    "per_path": {
+      "/api/employees/export/csv": {
+        "ok": 150,
+        "p50_ms": 20576.4,
+        "p95_ms": 21274.2,
+        "max_ms": 21566.2
+      },
+      "/api/employees/export/xlsx": {
+        "ok": 150,
+        "p50_ms": 20943.3,
+        "p95_ms": 21601.8,
+        "max_ms": 21790.5
+      },
+      "/api/products/export/csv": {
+        "ok": 150,
+        "p50_ms": 25388.0,
+        "p95_ms": 26235.7,
+        "max_ms": 26877.1
+      },
+      "/api/departments/export/csv": {
+        "ok": 150,
+        "p50_ms": 20375.5,
+        "p95_ms": 21078.9,
+        "max_ms": 21546.9
+      },
+      "/api/vehicle-bookings/export/xlsx": {
+        "ok": 150,
+        "p50_ms": 21433.4,
+        "p95_ms": 22111.6,
+        "max_ms": 22445.1
+      },
+      "/api/vehicles/export/xlsx": {
+        "ok": 150,
+        "p50_ms": 20547.7,
+        "p95_ms": 21177.1,
+        "max_ms": 21518.4
+      }
+    },
+    "wall_seconds": 65.3
+  }
+}

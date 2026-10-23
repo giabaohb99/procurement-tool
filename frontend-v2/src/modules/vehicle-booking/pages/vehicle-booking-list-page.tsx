@@ -90,6 +90,8 @@ function VehicleBookingListContent() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const canCreate = can('vehicle_booking', 'create')
+  //  duoc-CR-675: máy chủ gác xuất Excel bằng `export` — thiếu quyền thì ẩn nút, đừng để bấm ra 403.
+  const canExport = can('vehicle_booking', 'export')
   const canReadCompany = can('company', 'read')
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
@@ -351,10 +353,12 @@ function VehicleBookingListContent() {
         description="Tạo và theo dõi yêu cầu đặt xe công tác / giao hàng của bạn."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => void handleExport()}>
-              <Download className="mr-1.5 size-4" />
-              Xuất Excel
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={() => void handleExport()}>
+                <Download className="mr-1.5 size-4" />
+                Xuất Excel
+              </Button>
+            )}
             {canCreate && (
               <Button onClick={() => navigate(appRoutes.vehicleBooking.new)}>
                 <Plus className="size-4" />

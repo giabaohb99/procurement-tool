@@ -50,7 +50,7 @@ export const VEHICLE_CRUD_CONFIG: CrudConfig<Vehicle> = {
   getItemName: (v) => `${v.license_plate}${v.model ? ` — ${v.model}` : ''}`,
   deleteWarning: 'Xe này có thể đang được phân cho phiếu đặt xe.',
   renderToolbarExtra: () => (
-    <CatalogExportButton apiPath="/api/vehicles" searchParam="license_plate" filename="quan-ly-xe.xlsx" />
+    <CatalogExportButton entity="vehicle" apiPath="/api/vehicles" searchParam="license_plate" filename="quan-ly-xe.xlsx" />
   ),
   //  ⚠️ KHÔNG khai `chips`. Khóa đó chỉ có một chỗ đọc là `CrudDetailPage`, mà
   //  danh mục Xe **không dùng trang chi tiết generic** — nó có trang biểu mẫu

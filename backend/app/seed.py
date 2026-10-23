@@ -540,9 +540,10 @@ STD_ROLES = {
     # trả về=write · hủy=cancel), phạm vi 'all' vì điều phối chung mọi công ty.
     # Tách tên hai vai trò để luồng duyệt (/approval/flows) cắm node theo vai trò.
     "booking_dispatcher": {"name": "Điều phối viên (Đặt xe)", "perms": {
-        "vehicle_booking": (["read", "approve", "cancel", "write"], "all"),
-        "vehicle": (["read"], "all"),
-        "driver": (["read"], "all"),
+        #  duoc-CR-675: xuất Excel phiếu / xe / tài xế nay đòi `export` — cấp kèm để ai đang xuất được vẫn xuất được.
+        "vehicle_booking": (["read", "approve", "cancel", "write", "export"], "all"),
+        "vehicle": (["read", "export"], "all"),
+        "driver": (["read", "export"], "all"),
     }},
     "booking_manager": {"name": "Quản lý điều phối (Đặt xe)", "perms": {
         "vehicle_booking": (["read", "approve", "cancel", "write", "export"], "all"),
@@ -555,14 +556,14 @@ STD_ROLES = {
     # phiếu ĐƯỢC PHÂN cho mình (nối qua Driver.user_id, xem scoping.py) — nhờ vậy
     # nút của tài xế mới tới đúng người được phân, không phải chỉ phiếu tự tạo.
     "booking_driver": {"name": "Tài xế (Đặt xe)", "perms": {
-        "vehicle_booking": (["read", "write"], "assigned"),
-        "vehicle": (["read"], "all"),
-        "driver": (["read"], "all"),
+        "vehicle_booking": (["read", "write", "export"], "assigned"),   # duoc-CR-675: «Chuyến của tôi» xuất Excel
+        "vehicle": (["read", "export"], "all"),
+        "driver": (["read", "export"], "all"),
     }},
     #  Người ĐẶT XE thường: chỉ tạo & xem/sửa PHIẾU CỦA MÌNH (`own`) — không điều
     #  phối, không lái. Cấp cho ai cần đặt xe mà không thuộc tổ điều phối/tài xế.
     "booking_requester": {"name": "Người đặt xe", "perms": {
-        "vehicle_booking": (["read", "create", "write"], "own"),
+        "vehicle_booking": (["read", "create", "write", "export"], "own"),   # duoc-CR-675
     }},
     # --- Duyệt dấu (Yêu cầu đóng dấu) ---
     # Văn thư: tiếp nhận phiếu ĐÃ DUYỆT của CÔNG TY MÌNH rồi đóng dấu ngoài thực tế

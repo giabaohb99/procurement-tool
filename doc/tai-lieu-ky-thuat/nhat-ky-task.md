@@ -15747,7 +15747,7 @@ Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
 
 **Điều kiện xong:** người chỉ có `read` không xuất được; người thiếu quyền nhạy cảm nhận ô rỗng ở cột nhạy cảm; có bài kiểm; xin duyệt trước khi commit.
 
-**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (anh Được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp nhân sự đòi quyền xuất, cột nhạy cảm bị che khi người xuất thiếu quyền xem nhạy cảm, tệp đã xuất chỉ người xuất hoặc người có quyền xuất toàn hệ tải lại được. Lên prod cần cấp lại quyền xuất cho vai trò đang chỉ có quyền xem.
+**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (đã được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp nhân sự đòi quyền xuất, cột nhạy cảm bị che khi người xuất thiếu quyền xem nhạy cảm, tệp đã xuất chỉ người xuất hoặc người có quyền xuất toàn hệ tải lại được. Lên prod cần cấp lại quyền xuất cho vai trò đang chỉ có quyền xem.
 
 Mã nguồn: kế hoạch mục HR1-1 · `doc/erp/hrm/README.md` §5 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` V0-2 · duoc-CR-660 · backend/app/modules/employee/export_mask.py · backend/app/modules/export_log/service.py · test/backend/test_quyen_xuat_nhap_cr660.py
 
@@ -15890,7 +15890,7 @@ Hồ sơ tạo trước 07/09/2026 phần lớn trống ngày vào làm vì lúc
 
 **Điều kiện xong:** người chỉ có `read` không xuất được; xuất chỉ ra dòng trong phạm vi; có bài kiểm; xin duyệt trước khi commit.
 
-**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (anh Được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp sản phẩm, nhà cung cấp, phòng ban và mọi danh mục dùng khung chung đòi quyền xuất và chỉ ra dòng trong phạm vi; thêm quyền nhập riêng có cột Nhập ở ma trận phân quyền, cổng nhập tệp danh mục đòi quyền này. Lên prod cần cấp lại quyền nhập cho vai trò cũ vì mặc định là không có.
+**Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (đã được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp sản phẩm, nhà cung cấp, phòng ban và mọi danh mục dùng khung chung đòi quyền xuất và chỉ ra dòng trong phạm vi; thêm quyền nhập riêng có cột Nhập ở ma trận phân quyền, cổng nhập tệp danh mục đòi quyền này. Lên prod cần cấp lại quyền nhập cho vai trò cũ vì mặc định là không có.
 
 Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9 · duoc-CR-660 · backend/app/core/permissions.py · backend/app/core/crud.py · migration cr660imp01
 
@@ -15926,7 +15926,7 @@ Commit: a18dd75f · đẩy lên erp-v2 ngày 23/10/2026.
 
 ### kh-NT1-1-6 | Lên prod: tick quyền Xuất và Nhập cho vai trò quản lý danh mục
 - status: dang-lam
-Ngày deploy, quản trị vào màn *Phân quyền* tick **Xuất** cho vai trò cần tải tệp danh mục và **Nhập** cho vai trò cần nhập CSV; vai trò cũ không tự có hai ô này. Kiểm lại sau deploy: một tài khoản chỉ có quyền Xem không còn thấy nút Xuất.
+Ngày deploy, quản trị vào màn *Phân quyền* tick **Xuất** cho vai trò cần tải tệp danh mục và **Nhập** cho vai trò cần nhập CSV; vai trò cũ không tự có hai ô này. Kiểm lại sau deploy: một tài khoản chỉ có quyền Xem không còn thấy nút Xuất. Từ duoc-CR-675 còn thêm ba vai trò đặt xe: *Điều phối viên (Đặt xe)* tick Xuất cho đặt xe, xe, tài xế; *Tài xế (Đặt xe)* tick Xuất cho đặt xe (phạm vi được giao), xe, tài xế; *Người đặt xe* tick Xuất cho đặt xe (phạm vi của mình).
 Deploy: chưa lên prod.
 
 ## kh-TM1-1 | Tìm vì sao đơn mua hàng và yêu cầu thanh toán không báo người duyệt
@@ -16564,7 +16564,7 @@ Mã nguồn: frontend/src/pages/PurchaseProgress.tsx · SurveyProgress.tsx · In
 - date: 2026-10-23
 - pic: NSU265
 - tag: Được
-**Bối cảnh:** anh Được đọc cấu trúc phân hệ Dự án để viết sổ cho chuẩn thì thấy sổ chỉ đẩy lên được tiêu đề, mô tả, trạng thái, ngày bắt đầu, người phụ trách và tag. Loại việc, hạn và giờ phải vào ERP chọn tay, nên mọi task đi từ sổ đều nằm ở nhóm «chưa chọn loại» của báo cáo *Năng lực theo loại việc* — đúng phần dữ liệu để AI chia việc.
+**Bối cảnh:** khi rà cấu trúc phân hệ Dự án để viết sổ cho chuẩn thì phát hiện sổ chỉ đẩy lên được tiêu đề, mô tả, trạng thái, ngày bắt đầu, người phụ trách và tag. Loại việc, hạn và giờ phải vào ERP chọn tay, nên mọi task đi từ sổ đều nằm ở nhóm «chưa chọn loại» của báo cáo *Năng lực theo loại việc* — đúng phần dữ liệu để AI chia việc.
 
 **Đã làm**
 - Sổ nhận thêm bốn dòng khai báo cho cả mục cha lẫn việc con: *loai* (mã hoặc tên loại việc), *han* (hạn), *gio-uoc* (giờ ước lượng), *gio-thuc* (giờ thực tế).
@@ -16623,3 +16623,46 @@ Mã nguồn: frontend/src/components/SearchSelect.tsx · frontend/scripts/check-
 
 Commit: 92c3f706 (main), gộp erp-v2 db5f5433 · Deploy: prod api, celery-worker, celery-beat, web, erp
 Mã nguồn: backend/app/core/scoping.py · test/backend/test_danh_muc_phong_dung_chung_cr659.py
+
+## duoc-CR-675 | Ép tải phần mã sáng 23/10: cổng xuất nhập và sổ nhật ký task
+- status: xong
+- date: 2026-10-23
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** được giao ép tải phần mã làm buổi sáng 23/10: cổng xuất nhập và che cột nhạy cảm (duoc-CR-660), sổ nhật ký task khai loại việc và giờ (duoc-CR-674).
+
+**Đã làm**
+- Viết 13 bài kiểm ép tải ở máy chủ và 2 bài ở giao diện, đánh vào chỗ bài cũ chưa đụng: quét **mọi** đường xuất và nhập của hệ thống, xuất vài nghìn hồ sơ, dò ngẫu nhiên ô giờ, đồng bộ 300 mục qua một API giả có nhớ trạng thái.
+- Đo tải sáu đường xuất với 1, 10, 50 và 150 người bấm cùng lúc.
+- Tìm ra **bốn lỗi** và sửa cả bốn: một lỗi do chính mã sáng nay, ba lỗi có từ trước.
+
+**Kết quả:** đo tải không lượt nào lỗi (900/900 lượt ở 150 người); chậm dần theo số người là do xếp hàng sau cổng giới hạn lượt gọi, không phải treo. Hồi quy hơn 970 bài kiểm máy chủ, 105 bài giao diện đặt xe, kiểm kiểu và kiểm mã đều xanh. Đã commit trên nhánh erp-v2.
+
+**Còn lại:** ngày deploy phải tick quyền Xuất cho ba vai trò đặt xe (xem việc kh-NT1-1-6).
+
+Mã nguồn: test/backend/test_ep_tai_quyen_xuat_nhap_cr675.py · test/backend/test_ep_tai_so_task_cr675.py · plans/reports/tester-261023-0950-tong-hop-ep-tai-cr660-cr674.md
+
+### duoc-CR-675-1 | Sổ nhận giờ lớn hơn mức máy chủ cho phép
+- status: xong
+Bài dò ngẫu nhiên 3000 chuỗi cho thấy sổ nhận giờ từ 999,01 tới 999,99 trong khi máy chủ chỉ nhận tới 999, nên lượt đồng bộ sẽ dừng giữa chừng với lỗi 422. Lỗi nằm trong mã CR-674 sáng nay; nay sổ chặn ngay lúc đọc.
+Mã nguồn: backend/scripts/sync_task_journal.py (`_parse_hours`)
+
+### duoc-CR-675-2 | Đọc sổ lớn chậm vì kiểm trùng mã theo bậc hai
+- status: xong
+Sổ 18 000 mục mất gần ba giây chỉ để kiểm mã trùng, vì cách đếm cũ so từng mã với cả danh sách. Đổi sang đếm một lượt, còn 0,3 giây.
+Mã nguồn: backend/scripts/sync_task_journal.py (`parse_journal`)
+
+### duoc-CR-675-3 | Xuất tệp nhân sự hỏi cơ sở dữ liệu một lần cho mỗi dòng
+- status: xong
+Cột «Phòng ban» và «Công ty» được đọc riêng cho từng hồ sơ, nên xuất 2000 người là hơn 2000 lượt hỏi cơ sở dữ liệu cho một lần bấm. Nay nạp trước một lượt, số lượt hỏi không đổi dù bao nhiêu dòng.
+Mã nguồn: backend/app/modules/employee/controller.py (xuất CSV và Excel)
+
+### duoc-CR-675-4 | Ba đường xuất Excel của đặt xe chỉ cần quyền Xem
+- status: xong
+Bài quét 33 đường xuất và 18 đường nhập bằng một người có mọi quyền trừ Xuất và Nhập tìm ra xuất Excel xe, tài xế và phiếu đặt xe vẫn chỉ đòi quyền Xem, và xuất phiếu đặt xe lọc theo phạm vi của quyền Xem. Theo phương án đã chốt: cả ba đòi quyền Xuất, phạm vi theo quyền Xuất; nút *Xuất Excel* trên giao diện ẩn khi thiếu quyền thay vì bấm ra lỗi 403; seed cấp quyền Xuất cho điều phối viên, tài xế và người đặt xe để ai đang xuất được vẫn xuất được.
+Mã nguồn: backend/app/modules/vehicle_booking/controller.py · catalog_controller.py · backend/app/seed.py · frontend-v2/src/modules/vehicle-booking (nút xuất danh mục, danh sách đặt xe, Chuyến của tôi)
+
+### duoc-CR-675-5 | Đo tải sáu đường xuất
+- status: xong
+Đo trên máy phát triển (local) với một tiến trình máy chủ: 10 người cùng bấm thì 95% lượt xong trong 4,6 giây, 150 người thì 25,7 giây và không lượt nào lỗi. Đường nặng nhất là xuất 6 803 sản phẩm, 0,7 giây khi chạy một mình. Prod chạy hai tiến trình nên ước nhanh gấp đôi.
+Mã nguồn: plans/261023-0935-stress-test-cr660-cr674/scripts/measure-export-concurrency.py · results/concurrent.json

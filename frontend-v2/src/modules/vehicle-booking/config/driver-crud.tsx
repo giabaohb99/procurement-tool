@@ -47,7 +47,7 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
   getItemName: (d) => d.name,
   deleteWarning: 'Tài xế này có thể đang được phân cho phiếu đặt xe.',
   renderToolbarExtra: () => (
-    <CatalogExportButton apiPath="/api/drivers" searchParam="name" filename="quan-ly-tai-xe.xlsx" />
+    <CatalogExportButton entity="driver" apiPath="/api/drivers" searchParam="name" filename="quan-ly-tai-xe.xlsx" />
   ),
   //  ⚠️ KHÔNG khai `chips` — xem lý do ở `vehicle-crud.tsx`: khóa đó chỉ
   //  `CrudDetailPage` đọc, mà danh mục Tài xế dùng trang biểu mẫu riêng.
