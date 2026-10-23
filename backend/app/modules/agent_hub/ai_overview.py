@@ -61,8 +61,11 @@ def build(db: Session, *, now: datetime | None = None, labels=None) -> dict:
     except Exception:  # noqa: BLE001 — ERP chưa trả lời thì màn vẫn hiện phần còn lại
         log.warning("ai_overview: không lấy được số skill từ ERP", exc_info=True)
         skills = None
+    from . import service_health
+
     return {
         "generated_at": now.isoformat(timespec="seconds"),
+        "service_health": service_health.snapshot(),         # kh-AI2-4: lỗi 5xx 24 giờ + hàng đợi việc nền
         "skills": skills,                                  # {skill_sets, skills} hoặc None khi ERP lỗi
         "connected_users": connected, "connected_days": CONNECTED_DAYS,
         "calls_7d": calls_7, "calls_prev_7d": calls_prev,

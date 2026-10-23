@@ -20,6 +20,10 @@ app = FastAPI(title="DEGO Agent Hub — dịch vụ AI", version="0.1.0")
 install_error_handlers(app)
 install_cors(app)
 
+from app.modules.agent_hub import service_health  # noqa: E402
+
+app.middleware("http")(service_health.count_server_errors)     # kh-AI2-4: đếm lỗi 5xx cho màn Tổng quan AI
+
 #  Người dùng web tới đây qua ERP chuyển tiếp (chữ ký), không có JWT.
 from app.core import agent_identity  # noqa: E402
 from app.core.auth import get_current_user  # noqa: E402

@@ -16075,7 +16075,7 @@ Mã nguồn: kế hoạch AI2-3, DD2-2
 
 ## kh-AI2-4 | Mở MCP prompts và đếm lỗi dịch vụ AI
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 4
@@ -16086,6 +16086,21 @@ Mã nguồn: kế hoạch AI2-3, DD2-2
 - Đếm lỗi 5xx, hàng đợi; hiện ở màn quản trị AI.
 
 **Điều kiện xong:** Claude Desktop thấy danh sách prompts; màn quản trị có số lỗi.
+
+**Đã làm**
+- Cổng nối AI mở *lời nhắc sẵn* (MCP prompts): mỗi cẩm nang người dùng được đọc thành một lời nhắc, cộng một lời nhắc
+  chung *bắt đầu việc theo cẩm nang*. Chọn lời nhắc thì ứng dụng AI được dặn gọi công cụ đọc cẩm nang rồi làm theo; nội
+  dung cẩm nang vẫn đi qua công cụ có gác quyền và nhật ký. Cẩm nang không được giao và cẩm nang không có trả cùng một
+  lỗi; nhóm Kho skill bị tắt ở cấu hình cổng thì không liệt kê.
+- Dịch vụ AI chạy tách đếm lỗi 5xx theo giờ (giữ 26 giờ, trong Redis) và đọc độ dài hai hàng đợi việc nền. Màn Tổng
+  quan Kho skill AI / cổng MCP nhận thêm khối *sức khỏe dịch vụ*: số lỗi 5xx trong 24 giờ và số việc đang chờ. Redis
+  hỏng thì số để trống, không làm hỏng lượt gọi.
+- Kèm bản vá cho kế hoạch AI (kh-AI1-3) theo góp ý phía giao diện: dòng việc không tên báo lỗi chỉ đúng ô thay vì bị bỏ
+  lặng.
+
+**Kết quả:** 8 bài kiểm mới chạy một lần, đạt. Các bộ canh cửa lớn không chạy lại theo yêu cầu bớt chạy kiểm.
+
+**Còn lại:** phía giao diện hiện khối sức khỏe dịch vụ trên màn Tổng quan (khóa `service_health` của `/api/agent-hub/ai-overview`); dựng dev.
 
 Mã nguồn: kế hoạch AI2-4, AI2-5
 

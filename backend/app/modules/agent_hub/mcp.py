@@ -307,6 +307,44 @@ def _ok(rid, result) -> dict:
     return {"jsonrpc": "2.0", "id": rid, "result": result}
 
 
+#  kh-AI2-4: MCP `prompts` — mỗi cẩm nang (skill) người dùng được đọc thành một lời nhắc sẵn, để ứng dụng AI ngoài (Claude
+#  Desktop, ChatGPT) chọn từ danh sách là AI đọc cẩm nang trước khi làm. Chỉ dặn GỌI read_skill, không nhét nội dung skill
+#  vào lời nhắc — nội dung vẫn đi qua tool có gác quyền và nhật ký.
+START_PROMPT = "bat-dau-viec"
+PROMPT_REQUEST_MAX = 1500
+PROMPT_ARGS = [{"name": "yeu_cau", "description": "Việc cần làm (tùy chọn).", "required": False}]
+
+
+def list_prompts(db: Session, user) -> list[dict]:
+    from . import erp, mcp_settings
+
+    if not mcp_settings.tool_listed(db, "read_skill"):       # nhóm Kho skill tắt ở cấu hình MCP (G7) thì không mở
+        return []
+    out = [{"name": START_PROMPT, "title": "Bắt đầu việc theo cẩm nang công ty",
+            "description": "Xem công ty có cẩm nang nào cho việc này rồi làm theo.", "arguments": PROMPT_ARGS}]
+    for s in erp.skill_list(db, user, "", "").get("items") or []:
+        out.append({"name": s["name"], "title": s["title"],
+                    "description": f"Làm theo cẩm nang «{s['title']}»: {s['summary']}"[:500], "arguments": PROMPT_ARGS})
+    return out
+
+
+def get_prompt(db: Session, user, name: str, args: dict) -> dict | None:
+    """Lời nhắc theo tên; None nếu không có hoặc người dùng không được đọc skill đó (cùng một câu trả lời)."""
+    prompt = {p["name"]: p for p in list_prompts(db, user)}.get(name)
+    if prompt is None:
+        return None
+    request = " ".join(str((args or {}).get("yeu_cau") or "").split())[:PROMPT_REQUEST_MAX]
+    if name == START_PROMPT:
+        text = ("Trước khi làm, gọi list_skills để xem công ty có cẩm nang nào liên quan, rồi read_skill đúng cái cần và "
+                "làm theo hướng dẫn đó.")
+    else:
+        text = (f"Đọc cẩm nang «{prompt['title']}» bằng công cụ read_skill với name = \"{name}\" (có next_offset thì đọc "
+                "tiếp các trang), rồi làm theo hướng dẫn đó khi trả lời.")
+    if request:
+        text += f"\n\nViệc cần làm: {request}"
+    return {"description": prompt["description"], "messages": [{"role": "user", "content": {"type": "text", "text": text}}]}
+
+
 def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict | None:
     """Một thông điệp JSON-RPC → một trả lời (None với notification).
 
@@ -325,10 +363,21 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
 
         extra = mcp_settings.current(db)["extra_instructions"]          # ai-CR-216: câu dặn thêm của quản trị (G7)
         instructions = f"{INSTRUCTIONS}\n\n{extra}" if extra else INSTRUCTIONS
-        return _ok(rid, {"protocolVersion": PROTOCOL_VERSION, "capabilities": {"tools": {"listChanged": False}},
+        return _ok(rid, {"protocolVersion": PROTOCOL_VERSION,
+                         "capabilities": {"tools": {"listChanged": False}, "prompts": {"listChanged": False}},
                          "serverInfo": SERVER_INFO, "instructions": instructions})
     if method == "ping":
         return _ok(rid, {})
+    if method == "prompts/list":
+        return _ok(rid, {"prompts": list_prompts(db, user)})
+    if method == "prompts/get":
+        name = str(params.get("name") or "")[:160]
+        trace["tool"] = f"prompt:{name}"[:80]
+        got = get_prompt(db, user, name, params.get("arguments") if isinstance(params.get("arguments"), dict) else {})
+        if got is None:
+            trace.update(status=mcp_log.CallStatus.ERROR, reason="Không có lời nhắc")
+            return _err(rid, -32602, f"Không có lời nhắc «{name}» trong danh sách bạn được dùng.")
+        return _ok(rid, got)
     if method == "tools/list":
         return _ok(rid, {"tools": list_tools(db, user, int(key.scope or 0))})
     if method == "tools/call":
