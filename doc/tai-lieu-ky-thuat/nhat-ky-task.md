@@ -19,12 +19,23 @@ khớp theo `key` ở đầu tiêu đề).
                               nhiều người thì cách nhau bằng dấu phẩy.
                               Bỏ trống = lấy người mặc định trong cấu hình
                               WORK_SYNC_PIC; việc con đi theo cha)
+- tag: <A, B>                (tùy chọn — trường «Tag», chỉ cộng thêm)
+- loai: <mã loại việc>       (tùy chọn, duoc-CR-674 — mã hoặc tên ở danh
+                              mục Loại việc ĐANG DÙNG; sai mã là script
+                              dừng, nên chạy --dry-run trước)
+- han: YYYY-MM-DD            (tùy chọn — hạn hoàn thành)
+- gio-uoc: <giờ>             (tùy chọn — giờ ước lượng, 0–999, tối đa 2
+                              số lẻ, ví dụ 1.5 hoặc 1,5)
+- gio-thuc: <giờ>            (tùy chọn — giờ thực tế; CHỈ khai khi
+                              status: xong)
 Các dòng còn lại là mô tả tự do: commit, deploy, ghi chú...
 
 ### <key-con> | <tiêu đề việc con>   (tùy chọn, nằm ngay dưới mục ## cha)
 - status: xong
 Mô tả việc con. Việc con chỉ MỘT cấp, không có cột kanban — nó hiện
-trong panel chi tiết của task cha dạng checklist n/m.
+trong panel chi tiết của task cha dạng checklist n/m. Việc con khai
+được status / date / loai / han / gio-uoc / gio-thuc như mục cha;
+người phụ trách và dự án đi theo cha.
 ```
 
 - `key` là khóa chống trùng (thường là CR ID, ví dụ `bao-CR-389`) — ĐỪNG đổi
@@ -33,6 +44,10 @@ trong panel chi tiết của task cha dạng checklist n/m.
   cột **Đang làm**; `huy` → đánh dấu đã hủy.
 - Sửa mô tả trong sổ rồi chạy lại script là task trên ERP được cập nhật theo —
   phần mô tả của task do sổ này SỞ HỮU, đừng sửa tay trên ERP.
+- **Loại việc, hạn và giờ** (duoc-CR-674) là số liệu của báo cáo *Năng lực
+  theo loại việc*: task không có loại thì báo cáo xếp vào «chưa chọn loại».
+  Sổ chỉ sở hữu trường nó KHAI — không khai thì giá trị người dùng nhập trên
+  ERP được giữ nguyên. Đừng đoán giờ: không đo thì đừng khai `gio-thuc`.
 - Người phụ trách cũng do sổ sở hữu: mục nào có khai người thì script gán lại
   đúng danh sách đó mỗi lần chạy. Mục không khai ai thì script KHÔNG đụng tới.
   Sổ ghi MÃ nhân sự chứ không ghi số id, vì id ở local, dev và prod khác nhau.
@@ -16540,3 +16555,42 @@ Mã nguồn: frontend-v2/src/modules/report/pages/work-capability-report-page.ts
 
 Commit: bccf8eb0 (main), gộp erp-v2 · Deploy: prod web
 Mã nguồn: frontend/src/pages/PurchaseProgress.tsx · SurveyProgress.tsx · Inventory.tsx · Payables.tsx · Reports.tsx · PrLinesReportPage.tsx · frontend/src/components/supplier-payables-filters.tsx · warehouse-purchase-lines.tsx
+
+## duoc-CR-674 | Sổ nhật ký task khai được loại việc, hạn và giờ cho phân hệ Dự án
+- status: xong
+- date: 2026-10-23
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** anh Được đọc cấu trúc phân hệ Dự án để viết sổ cho chuẩn thì thấy sổ chỉ đẩy lên được tiêu đề, mô tả, trạng thái, ngày bắt đầu, người phụ trách và tag. Loại việc, hạn và giờ phải vào ERP chọn tay, nên mọi task đi từ sổ đều nằm ở nhóm «chưa chọn loại» của báo cáo *Năng lực theo loại việc* — đúng phần dữ liệu để AI chia việc.
+
+**Đã làm**
+- Sổ nhận thêm bốn dòng khai báo cho cả mục cha lẫn việc con: *loai* (mã hoặc tên loại việc), *han* (hạn), *gio-uoc* (giờ ước lượng), *gio-thuc* (giờ thực tế).
+- Script tra mã loại việc ra số id ngay trên máy đích, giống cách đang tra mã nhân sự, vì id ở local, dev và prod khác nhau. Mã trùng ở nhiều pháp nhân thì lấy loại dùng chung, vẫn mơ hồ thì dừng và báo, không đoán.
+- Sổ chỉ gửi trường nó có khai; trường không khai thì giữ nguyên giá trị người dùng đã nhập trên ERP. Giờ thực tế gửi cùng lượt với trạng thái «xong» vì máy chủ chỉ nhận giờ thực tế của việc đã xong.
+- Sổ tự chặn lỗi trước khi gọi máy chủ: ngày sai khuôn, giờ ngoài 0–999 hoặc quá 2 số lẻ, khai giờ thực tế cho việc chưa xong, hạn đứng trước ngày bắt đầu.
+
+**Kết quả:** 14 bài kiểm mới xanh (có một bài đưa đúng dữ liệu script gửi qua khuôn và tầng xử lý của máy chủ), 89 bài kiểm cũ của script và loại việc vẫn xanh. Chạy thật trên máy em bằng một sổ thử: lần một tạo task cha và việc con đủ loại việc, hạn, giờ; lần hai báo «không đổi», không gửi thừa; đã xóa dự án thử. Chạy xem trước trên cả sổ 596 mục không lỗi.
+
+**Còn lại:** các mục cũ trong sổ chưa khai loại việc. Cần biết mã loại việc đang dùng trên prod rồi mới điền được, vì khai sai mã là script dừng.
+
+Mã nguồn: backend/scripts/sync_task_journal.py (`TaskTypeDirectory`, `effort_patch`, đọc sổ trong `parse_journal`) · test/backend/test_so_task_loai_viec_gio_cr674.py
+
+### duoc-CR-674-1 | Đọc bốn dòng khai báo mới trong sổ và chặn giá trị sai
+- status: xong
+Script đọc *loai*, *han*, *gio-uoc*, *gio-thuc* ở cả mục cha lẫn việc con, đổi giờ về một dạng chuẩn (1,5 thành 1.50) và từ chối ngay khi đọc sổ những giá trị máy chủ chắc chắn không nhận. Các dòng cũ trong sổ không dòng nào trùng mẫu mới nên nghĩa của mục cũ không đổi.
+Mã nguồn: backend/scripts/sync_task_journal.py (`parse_journal`, `_parse_hours`)
+
+### duoc-CR-674-2 | Tra mã loại việc và chỉ gửi những trường đang khác
+- status: xong
+Script tải danh mục loại việc đang dùng một lần cho cả lượt chạy, tra theo mã rồi theo tên, rồi chỉ gửi những trường sổ khai mà đang khác trên ERP; giờ so bằng số nên 2.5 và 2.50 coi là bằng nhau. Với task mới, trạng thái và giờ đi chung một lượt cập nhật.
+Mã nguồn: backend/scripts/sync_task_journal.py (`TaskTypeDirectory`, `effort_patch`, `sync`, `sync_children`)
+
+### duoc-CR-674-3 | Bài kiểm và chạy thử thật trên máy em
+- status: xong
+Viết 14 bài kiểm cho việc đọc sổ, tra loại việc, dựng lượt cập nhật và cho chính máy chủ nhận dữ liệu đó. Chạy thử script thật với một sổ tạm trên máy em hai lần để thấy lần hai không gửi gì thêm, rồi xóa dự án thử.
+Mã nguồn: test/backend/test_so_task_loai_viec_gio_cr674.py
+
+### duoc-CR-674-4 | Ghi luật khai báo mới vào đầu sổ
+- status: xong
+Phần hướng dẫn ở đầu sổ nay liệt kê bốn dòng mới, nói rõ việc con khai được như mục cha, và nhắc đừng đoán giờ: không đo thì đừng khai giờ thực tế.
+Mã nguồn: doc/tai-lieu-ky-thuat/nhat-ky-task.md
