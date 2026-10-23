@@ -41,6 +41,17 @@ export interface LowStockItem {
   warehouse_code: string
 }
 
+/** Một kho trong `kpi_inv_by_warehouse`. `warehouse_code = ""` = dòng tồn chưa gán kho. */
+export interface InventoryByWarehouse {
+  warehouse_code: string
+  /** Kho chưa có trong danh mục thì máy chủ trả bằng mã kho. */
+  warehouse_name: string
+  /** Tổng giá trị tồn của kho, VND. */
+  value: number
+  /** Số dòng tồn (mã hàng) của kho. */
+  lines: number
+}
+
 /**
  * `GET /api/dashboard/overview` — backend gom sẵn mọi số liệu của trang tổng
  * quan trong MỘT lần gọi (KPI, chi phí 12 tháng, cảnh báo, chứng từ gần đây) và
@@ -80,6 +91,12 @@ export interface DashboardOverview {
   alert_total: number
   recent_prs: RecentPurchaseRequest[]
   low_stock: LowStockItem[]
+  /**
+   * Giá trị tồn theo kho (kh-NT2-8) — xếp giảm dần theo `value`, tổng bằng
+   * `kpi.inv_value`. Thiếu quyền tồn kho thì mảng rỗng; máy chủ cũ chưa có khóa này
+   * nên khai TÙY CHỌN.
+   */
+  kpi_inv_by_warehouse?: InventoryByWarehouse[]
   can: Record<string, boolean>
 }
 

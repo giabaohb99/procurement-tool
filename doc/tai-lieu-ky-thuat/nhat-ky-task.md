@@ -16310,7 +16310,18 @@ Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md
 
 **Điều kiện xong:** hai màn chạy trên dev; vitest xanh.
 
-Mã nguồn: kế hoạch NT2-8
+**Đã làm (giao diện NF-22, 23/10/2026)**
+- Dashboard Tồn kho có thêm thẻ biểu đồ thanh ngang *Giá trị tồn theo kho*, cùng khuôn với dashboard Thu mua: tám kho lớn nhất vẽ riêng, phần còn lại gom thành *Khác* (chỉ dư một kho thì vẽ luôn kho đó), dòng tồn chưa có mã kho hiện *Chưa gán kho*, hai kho trùng tên thì kèm mã kho.
+- Tổng các cột luôn bằng tổng giá trị tồn; kho có giá trị bằng 0 hoặc âm không vẽ. Không có dữ liệu, thiếu quyền tồn kho, hoặc máy chủ cũ chưa trả số liệu này thì thẻ hiện câu rỗng, không báo lỗi.
+
+**Kết quả:** tsc cả cây 0 lỗi, lint 0 lỗi, vitest phân hệ Kho xanh 3 tệp, 21 bài (14 bài mới). Dùng dữ liệu giả trong bài kiểm; chưa chạy với máy chủ thật, chưa soát trên trình duyệt.
+
+**Còn lại**
+- Phần máy chủ (khóa `kpi_inv_by_warehouse` ở `/api/dashboard/overview`) do Agent 4 làm ở nhánh agent4/kh-nt2-8-may-chu; khi cả hai nhánh lên erp-v2 thì ghép và soát trên dev.
+- Màn lỗi tác vụ nền (NF-17) vẫn gác: máy chủ chưa ghi lại lỗi tác vụ nền, cần bảng và khóa quyền mới, chờ xếp lịch.
+
+Mã nguồn: kế hoạch NT2-8 · `frontend-v2/src/modules/inventory/pages/inventory-dashboard-page.tsx` · `inventory/utils/warehouse-value-bars.ts` · kiểu `InventoryByWarehouse` ở `procurement/api/procurement-dashboard-api.ts`
+Commit: nhánh agent3/kh-NT2-8-giao-dien, chưa đẩy
 
 ## kh-CP-P1-2 | Điểm cà phê: nhập và xuất danh sách thành viên bằng Excel
 - list: Kế hoạch hệ agent
