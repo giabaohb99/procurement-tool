@@ -57,6 +57,10 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("capacity", frozenset({"team_capacity", "task_type_stats", "plan_context"}),
      r"ai (dang |con )?ranh|giao cho ai|nen giao|nang luc|tai viec|dang om|trung vi|mat bao lau|ty le lam lai|lam nhanh"
      r"|phan viec|chia viec|ke hoach|len plan"),
+    #  kh-AI2-3: phiếu văn phòng — đặt xe, duyệt dấu, tồn kho, diễn đàn.
+    ("office", frozenset({"office_read"}),
+     r"dat xe|xe di|chuyen xe|tai xe|xe (cong ty|dua don)|duyet dau|dong dau|con dau|ton kho|kho hang|het hang"
+     r"|con hang|dien dan|bai viet|bai dang"),
     ("ticket", frozenset({"my_tickets", "ticket_create"}),
      r"ho tro|ticket|bao loi|su co|\bit\b|may in|phieu ho tro"),
     ("edit", frozenset({"propose_document_update", "propose_document_delete", "procurement_doc_read"}),

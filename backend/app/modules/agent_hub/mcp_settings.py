@@ -54,6 +54,8 @@ GROUPS: tuple[ToolGroup, ...] = (
     ToolGroup("document", "Văn thư", False, frozenset({"document_read", "document_search", "approval_flow_lookup"})),
     ToolGroup("work", "Công việc và dự án (soạn việc, kế hoạch, năng lực đội)", False, frozenset({
         "draft_work_task", "draft_work_plan", "team_capacity", "task_type_stats", "plan_context"})),
+    #  kh-AI2-3: đọc phiếu văn phòng — tắt mặc định như các nhóm nghiệp vụ khác, quản trị bật ở G7.
+    ToolGroup("office", "Đặt xe, duyệt dấu, tồn kho, diễn đàn (chỉ đọc)", False, frozenset({"office_read"})),
     ToolGroup("customs", "Tra cứu thị trường (tờ khai hải quan)", False, frozenset({
         "customs_price_stats", "customs_buy_timing", "customs_market", "customs_legal_check"})),
     ToolGroup("google", "Lịch và Drive Google cá nhân", False, frozenset({

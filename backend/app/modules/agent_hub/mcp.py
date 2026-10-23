@@ -51,7 +51,8 @@ READ_TOOLS = frozenset({
     "product_search", "read_group_file", "read_group_messages", "recent_purchase_orders",
     "recent_purchases", "report_summary", "search_chat_history", "search_docs", "search_notes", "supplier_contracts",
     "supplier_scorecard", "supplier_search", "suppliers_for_product",
-    "plan_context", "task_type_stats", "team_capacity",   # kh-AI1-2/3: chỉ đọc; quyền gác trong tool (khóa báo cáo 16 / trưởng phòng)
+    "plan_context", "task_type_stats", "team_capacity",   # kh-AI1-2/3
+    "office_read",   # kh-AI2-3: chỉ đọc; quyền gác trong tool (khóa báo cáo 16 / trưởng phòng)
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
 #  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,
@@ -68,9 +69,9 @@ MCP_RETIRED = {
 HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account_setup", "propose_glossary_term",
           "report_missing_feature"}
 #  ai-CR-213: tool đọc nhiều dòng — tính vào ngân sách dữ liệu mỗi phút mỗi khóa (`AGENT_MCP_ROW_BUDGET_PER_MIN`).
-ROW_BUDGET_TOOLS = frozenset({"erp_read"})
+ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read"})
 #  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
-STRUCTURED_TOOLS = frozenset({"report_summary", "dataset_query", "erp_read"})
+STRUCTURED_TOOLS = frozenset({"report_summary", "dataset_query", "erp_read", "office_read"})
 #  Thời hạn đường tải tệp xuất qua MCP (dùng MỘT lần, ký HMAC, không cần đăng nhập web).
 DOWNLOAD_TTL_SEC = 15 * 60
 

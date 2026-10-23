@@ -1239,6 +1239,7 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     #  ai-CR-211: danh sách gọi hàm route list của màn web (require + apply_scope bên trong); chi tiết YCMH / YCBG / ĐMH
     #  qua procurement_doc_tool._READERS (_fetch_scoped), hợp đồng qua route (_in_scope), nhận hàng apply_scope(GoodsReceipt).
     "erp_read": "ctx.can(entity) + route list của màn web / _fetch_scoped / apply_scope(GoodsReceipt, 'goods_receipt')",
+    "office_read": "ctx.can(entity) + route list / chi tiết của màn web (đặt xe, duyệt dấu, tồn kho, diễn đàn) (kh-AI2-3)",
     #  ai-CR-220 (K7): Kho skill — quyền đọc theo chủ thể ở `ai_skill.access_service.visible_skills` (cấm thắng, phòng con).
     "list_skills": "ai_skill.mcp_read.list_for_ai → access_service.visible_skills của người hỏi",
     "read_skill": "ai_skill.mcp_read.read_for_ai → chỉ skill trong visible_skills, ngoài tập trả câu giống skill không tồn tại",

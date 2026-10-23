@@ -16209,7 +16209,7 @@ Bài kiểm: `test_ai_plan_de_xuat_kh_ai1_3.py`
 
 ## kh-AI2-3 | Công cụ AI cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 4
@@ -16220,6 +16220,19 @@ Bài kiểm: `test_ai_plan_de_xuat_kh_ai1_3.py`
 - Khai đủ cho Trợ lý web, bot, cổng MCP.
 
 **Điều kiện xong:** hỏi AI về phiếu đặt xe, phiếu dấu, bài diễn đàn trả đúng theo quyền; có bài kiểm canh cửa.
+
+**Đã làm**
+- Thêm một công cụ chỉ đọc *office_read* cho Trợ lý web, bot và cổng nối AI, đọc danh sách hoặc chi tiết bốn loại:
+  phiếu đặt xe, phiếu duyệt dấu, tồn kho theo kho và mã hàng, bài viết diễn đàn (tìm theo chữ). Công cụ gọi đúng hàm
+  danh sách và chi tiết của màn web nên người hỏi chỉ thấy đúng phần mình được xem; người đang được giao duyệt một
+  phiếu đặt xe / duyệt dấu vẫn đọc được phiếu đó như trên web. Không trả số điện thoại, bằng lái.
+- Hai công cụ diễn đàn dự tính ở DD2-2 gộp vào chính công cụ này (tìm bài và đọc một bài) để bớt chỗ phải khai.
+- Ở cấu hình cổng nối AI có nhóm mới *Đặt xe, duyệt dấu, tồn kho, diễn đàn*, tắt mặc định như các nhóm nghiệp vụ
+  khác; quản trị bật khi muốn mở cho ứng dụng AI ngoài. Trợ lý web và bot dùng được ngay.
+
+**Kết quả:** 3 bài kiểm mới và hai bảng canh cửa vừa sửa chạy một lần, đạt (54 bài). Các bộ canh cửa khác chưa chạy.
+
+**Còn lại:** dựng dev; quyết có bật nhóm mới cho cổng nối AI trên dev hay không.
 
 Mã nguồn: kế hoạch AI2-3, DD2-2
 
