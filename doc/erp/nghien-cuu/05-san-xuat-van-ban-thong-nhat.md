@@ -130,7 +130,7 @@ Mỗi câu một dòng trả lời tổng hợp. *Chưa thống nhất* thì xem
 - **B35. Ai chịu trách nhiệm cuối?** Trưởng phòng Sản xuất.
 - **B36. Có phải duyệt không?** Có. Trưởng phòng ký phiếu duyệt giá 3 mức trước khi gửi đơn NCC.
 - **B37. Ai làm?** Chuyên viên Giá vốn lập phiếu duyệt giá. Đầu mối làm việc với NCC về điều chuyển nguyên liệu chưa thống nhất, xem câu 2 phần C.
-- **B38. Làm ra gì?** Phiếu duyệt giá, giá vốn đã duyệt ghi vào Drive, số chi phí gửi Kinh doanh. Phiếu phối trộn hoặc điều chuyển nguyên liệu: đã chốt có hai đường, xem câu 7 phần C.
+- **B38. Làm ra gì?** Phiếu duyệt giá, giá vốn đã duyệt ghi vào Drive, số chi phí gửi Kinh doanh. Phiếu phối trộn hoặc điều chuyển nguyên liệu: có hai hình thức chuyển kho (Trưởng phòng SX chốt 24/10): chuyển kho khi **mua** nguyên liệu, bán thành phẩm theo phần E bước 3.1 của Quy trình quản lý nguyên liệu / bán thành phẩm; chuyển kho khi **nhận đơn** sản xuất thành phẩm theo phần D bước 2 của cùng quy trình đó.
 - **B39. Nhận gì?** Đơn và bảng định mức từ Điều phối thành phẩm.
 - **B40. Lập phiếu duyệt giá thế nào?** Tám bước: kiểm đơn, kiểm định mức, kiểm chính sách NCC, cập nhật báo giá mới nhất, tính chi phí, soát giá thành, lập phiếu trình duyệt, gửi kết quả cho Kinh doanh.
 - **B41. Bắt đầu khi nào?** Khi có đơn cần duyệt giá kèm định mức thành phẩm.
