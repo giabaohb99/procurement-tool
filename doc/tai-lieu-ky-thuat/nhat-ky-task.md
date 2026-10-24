@@ -17005,3 +17005,19 @@ Tham chiếu: doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx · doc/
 **Kết quả:** tài liệu 03 và phiếu Word trên nhánh erp-v2. Bản Excel không đổi.
 
 Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx
+
+## nc-05b-van-ban-thong-nhat-san-xuat | Viết lại văn bản thống nhất Sản xuất để đọc được mà không cần tài liệu gốc
+- status: xong
+- date: 2026-10-24
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Ban điều hành cần một văn bản về hiện trạng Sản xuất tự đọc hiểu được, không phải mở bộ tài liệu khảo sát chi tiết.
+
+**Đã làm**
+- Thêm bảng thuật ngữ khoảng 60 từ xếp theo bảng chữ cái: chữ viết tắt (NL, BTP, VTBB, NCC GC, KCS, QLSX, QLDL), giấy tờ pháp lý (giấy đăng ký thuốc, quyết định lưu hành, hợp quy), các loại phiếu, các loại bao bì và từ của hệ khảo sát (vòng, câu, as-is, giả thuyết, chờ phân xử).
+- Viết lại 108 câu hỏi thành câu hỏi thường, mỗi câu một câu trả lời gọn bằng lời thường, xếp theo mục và bước. Câu chưa thống nhất trỏ sang phần C.
+- Giữ 16 câu chưa thống nhất hoặc mới chốt, bảng từ ngữ *giám đốc* và thứ tự nên hỏi, có rút gọn.
+
+**Kết quả:** văn bản số 05 trên nhánh erp-v2, đủ 108 câu (B1 đến B108).
+
+Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
