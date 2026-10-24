@@ -250,19 +250,19 @@ export default function Inventory() {
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Kho</label>
-                <SearchSelect value={adj.warehouse_code || ''} placeholder="Chọn/tìm kho…"
+                <SearchSelect autoSelectSingle value={adj.warehouse_code || ''} placeholder="Chọn/tìm kho…"
                   options={warehouses.map((w) => ({ value: w.code, label: `${w.code} — ${w.name}` }))}
                   onChange={(v) => setAdj((s: any) => ({ ...s, warehouse_code: v }))} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Sản phẩm</label>
-                <SearchSelect value={adj.product_code || ''} placeholder="Chọn/tìm sản phẩm…"
+                <SearchSelect autoSelectSingle value={adj.product_code || ''} placeholder="Chọn/tìm sản phẩm…"
                   options={products.map((p) => ({ value: p.code, label: `${p.code} — ${p.name}` }))}
                   onChange={(v) => onAdjProduct(v)} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>Đơn vị tính (ĐVT)</label>
-                <SearchSelect value={adj.unit || ''} placeholder="Chọn/tìm ĐVT…"
+                <SearchSelect autoSelectSingle value={adj.unit || ''} placeholder="Chọn/tìm ĐVT…"
                   options={units.map((u) => ({ value: u.name, label: u.name }))}
                   onChange={(v) => setAdj((s: any) => ({ ...s, unit: v }))} />
               </div>

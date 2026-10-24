@@ -860,7 +860,6 @@ export default function SurveyRequestDetail() {
                         onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                         options={handlerDeptOptions}
                         placeholder="Để trống = phòng thu mua mặc định"
-                        autoSelectSingle={false}
                       />
                     ) : (
                       <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là phòng thu mua (Sản xuất -Thu mua); phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
@@ -873,7 +872,6 @@ export default function SurveyRequestDetail() {
                     options={handlerDeptOptions}
                     disabled={!editable}
                     placeholder="Để trống = phòng thu mua mặc định"
-                    autoSelectSingle={false}
                   />
                 )}
               </div>
@@ -883,7 +881,7 @@ export default function SurveyRequestDetail() {
                 {editable && deptManagers.length > 0 ? (
                   <SearchSelect value={sv.head_of_dept_id ? String(sv.head_of_dept_id) : ''}
                     options={deptManagers.map((c: any) => ({ value: String(c.employee_id), label: `${c.code} - ${c.name}${c.position ? ` - ${c.position}` : ''}` }))}
-                    placeholder={sv.head_of_dept || 'Tự động theo phòng ban'} autoSelectSingle={false}
+                    placeholder={sv.head_of_dept || 'Tự động theo phòng ban'}
                     onChange={(v) => {
                       const c = deptManagers.find((x: any) => String(x.employee_id) === v)
                       if (!c) return
@@ -1008,7 +1006,7 @@ export default function SurveyRequestDetail() {
                       {/* Phân loại */}
                       <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.item_group}>
                         {editable
-                          ? <SearchSelect value={l.item_group || ''} options={itemGroupNames} variant="table" placeholder="—" onChange={(v) => setLine(i, 'item_group', v)} />
+                          ? <SearchSelect autoSelectSingle value={l.item_group || ''} options={itemGroupNames} variant="table" placeholder="—" onChange={(v) => setLine(i, 'item_group', v)} />
                           : <span>{l.item_group || '—'}</span>}
                       </td>
 
@@ -1029,7 +1027,7 @@ export default function SurveyRequestDetail() {
                       {/* ĐVT */}
                       <td>
                         {editable
-                          ? <SearchSelect value={l.uom || ''} options={units} variant="table" placeholder="—" onChange={(v) => setLine(i, 'uom', v)} />
+                          ? <SearchSelect autoSelectSingle value={l.uom || ''} options={units} variant="table" placeholder="—" onChange={(v) => setLine(i, 'uom', v)} />
                           : (l.uom || '—')}
                       </td>
 
@@ -1286,7 +1284,7 @@ export default function SurveyRequestDetail() {
             <div className="form-grid">
               <div className="form-row">
                 <label>Phân loại <span className="req">*</span></label>
-                <SearchSelect
+                <SearchSelect autoSelectSingle
                   value={edit.item_group || ''}
                   options={itemGroupNames}
                   disabled={!editable}
@@ -1340,7 +1338,7 @@ export default function SurveyRequestDetail() {
 
               <div className="form-row">
                 <label>ĐVT</label>
-                <SearchSelect
+                <SearchSelect autoSelectSingle
                   value={edit.uom || ''}
                   options={units}
                   disabled={!editable}

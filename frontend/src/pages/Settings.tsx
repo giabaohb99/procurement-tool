@@ -117,7 +117,7 @@ export default function Settings() {
                 ) : f.type === 'department' && deptOptions ? (
                   //  bao-CR-529: chọn từ danh mục Phòng ban thay cho gõ mã; giá trị gửi lên vẫn là MÃ phòng.
                   <SearchSelect value={f.value ?? ''} options={deptOptions} disabled={!canWrite}
-                    autoSelectSingle={false} placeholder="Để trống = phòng mặc định"
+                    placeholder="Để trống = phòng mặc định"
                     onChange={(v) => setVal(f.key, v)} />
                 ) : f.type === 'bool' ? (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: canWrite ? 'pointer' : 'default', height: 40 }}>

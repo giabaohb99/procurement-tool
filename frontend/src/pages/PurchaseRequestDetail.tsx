@@ -1098,7 +1098,7 @@ export default function PurchaseRequestDetail() {
                       <SearchSelect value={String(pr.handler_dept_id || 0)}
                         onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                         options={handlerDeptOptions}
-                        placeholder="Để trống = phòng thu mua mặc định" autoSelectSingle={false} />
+                        placeholder="Để trống = phòng thu mua mặc định" />
                     ) : (
                       <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mặc định là phòng thu mua (Sản xuất -Thu mua); phòng có bộ máy mua riêng (nhà máy) thì hệ thống tự chọn phòng của người yêu cầu.</div>
                     )}
@@ -1107,7 +1107,7 @@ export default function PurchaseRequestDetail() {
                   <SearchSelect value={String(pr.handler_dept_id || 0)}
                     onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
                     options={handlerDeptOptions}
-                    disabled={!editable} placeholder="Để trống = phòng thu mua mặc định" autoSelectSingle={false} />
+                    disabled={!editable} placeholder="Để trống = phòng thu mua mặc định" />
                 )}
               </div>
               <div className="form-row">
@@ -1540,7 +1540,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Phân loại</label>
-                <SearchSelect value={canonGroup(edit.item_group)} options={groupOptions(edit.item_group)} disabled={!editable}
+                <SearchSelect autoSelectSingle value={canonGroup(edit.item_group)} options={groupOptions(edit.item_group)} disabled={!editable}
                   placeholder="Chọn/tìm phân loại…" onChange={(v) => setGroup(editIdx, v)} />
               </div>
               <div className="form-row">
@@ -1561,7 +1561,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>ĐVT</label>
-                <SearchSelect value={edit.unit || ''} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(editIdx, 'unit', v)} />
+                <SearchSelect autoSelectSingle value={edit.unit || ''} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setItem(editIdx, 'unit', v)} />
               </div>
               <div className="form-row">
                 <label>Thành tiền (gồm VAT)</label>
@@ -1569,7 +1569,7 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Kho nhận <span className="req">*</span></label>
-                <SearchSelect value={edit.warehouse || ''} options={warehouseOptions} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
+                <SearchSelect autoSelectSingle value={edit.warehouse || ''} options={warehouseOptions} disabled={!editable} placeholder="Chọn/tìm kho…" onChange={(v) => setItem(editIdx, 'warehouse', v)} />
               </div>
               <div className="form-row">
                 <label>Ngày cần hàng <span className="req">*</span></label>

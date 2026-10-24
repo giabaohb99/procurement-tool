@@ -713,7 +713,7 @@ export default function SurveyDetail() {
       // Bỏ check "NCC sẵn có" → ô thành text tự do (NCC chưa có trong danh mục)
       if (it.supplier_available === false)
         return <input value={it[k] ?? ''} disabled={!ce} placeholder="Nhập NCC…" onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
-      return <SearchSelect value={it[k] ?? ''} disabled={!ce} placeholder="Chọn/tìm NCC…"
+      return <SearchSelect autoSelectSingle value={it[k] ?? ''} disabled={!ce} placeholder="Chọn/tìm NCC…"
         options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
         onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} />
     }
@@ -723,10 +723,10 @@ export default function SurveyDetail() {
       return <input value={nm} disabled={!ce} placeholder="Nhập tên pháp lý NCC…"
         onChange={(e) => setLine(tbl, i, { supplier_name: e.target.value })} />
     }
-    if (t === 'unit') return <SearchSelect value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
+    if (t === 'unit') return <SearchSelect autoSelectSingle value={it[k] ?? ''} options={units} disabled={!ce} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     // CR-111: ô chọn theo danh sách cố định (Ngày công nợ) — bảng ngoài đã có kiểu này,
     // popup thì chưa nên trước đây phải khai kiểu textarea rồi mỗi người gõ một chữ.
-    if (t === 'select') return <SearchSelect value={it[k] ?? ''} options={f.options || []} disabled={!ce} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
+    if (t === 'select') return <SearchSelect autoSelectSingle value={it[k] ?? ''} options={f.options || []} disabled={!ce} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     // VAT: nhập tay theo % (0 ≤ VAT < 100), không còn khoá vào danh sách mức cố định
     if (t === 'vat') return <NumberInput value={it[k]} disabled={!ce} max={VAT_MAX} maxDecimals={VAT_DECIMALS} placeholder="Nhập % VAT…" onChange={(v: number) => setLine(tbl, i, { [k]: v })} />
     // CR-109: hai nút bấm thay vì ô chữ — bấm lại nút đang chọn thì bỏ chọn (chưa có KQ).
@@ -745,7 +745,7 @@ export default function SurveyDetail() {
         })}
       </div>
     )
-    if (t === 'approve') return <SearchSelect value={it[k] || 'Chờ duyệt'} options={APPROVE_OPTS} colorMap={APPROVE_COLOR} disabled={!canEditApprove} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
+    if (t === 'approve') return <SearchSelect autoSelectSingle value={it[k] || 'Chờ duyệt'} options={APPROVE_OPTS} colorMap={APPROVE_COLOR} disabled={!canEditApprove} placeholder="Chọn…" onChange={(v) => setLine(tbl, i, { [k]: v })} />
     return <input value={it[k] ?? ''} disabled={!ce} onChange={(e) => setLine(tbl, i, { [k]: e.target.value })} />
   }
 
@@ -760,7 +760,7 @@ export default function SurveyDetail() {
       style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.35 }}>{v}</div>
     if (col.key === 'line_approve') {
       if (canEditApprove)
-        return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
+        return <div style={{ width: '100%' }}><SearchSelect autoSelectSingle variant="table" colorMap={APPROVE_COLOR} value={it[col.key] || 'Chờ duyệt'} options={APPROVE_OPTS} placeholder="Duyệt…" onChange={(v) => changeLineApprove(tbl, i, v)} /></div>
       const st = it.line_approve || 'Chờ duyệt'; const c = APPROVE_COLOR[st] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{st}</span>
     }
@@ -769,7 +769,7 @@ export default function SurveyDetail() {
     if (col.type === 'lab') {
       const v = String(it[col.key] || '')
       if (editable)
-        return <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={LAB_COLOR} value={v} options={LAB_OPTS} placeholder="Chọn…" onChange={(nv) => setLine(tbl, i, { [col.key]: nv })} /></div>
+        return <div style={{ width: '100%' }}><SearchSelect autoSelectSingle variant="table" colorMap={LAB_COLOR} value={v} options={LAB_OPTS} placeholder="Chọn…" onChange={(nv) => setLine(tbl, i, { [col.key]: nv })} /></div>
       if (!v) return ro('')
       const c = LAB_COLOR[v] || '#64748b'
       return <span className="badge" style={{ background: `${c}1a`, color: c, border: `1px solid ${c}55` }}>{v}</span>
@@ -799,19 +799,19 @@ export default function SurveyDetail() {
     if (col.type === 'vat') return <NumberInput className="cell-input" style={{ width: '100%' }} value={it[col.key]} max={VAT_MAX} maxDecimals={VAT_DECIMALS} placeholder="% VAT" onChange={(v: number) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'date') return <DateInput className="cell-input" style={{ width: '100%' }} value={it[col.key] ?? ''} onChange={(v) => setLine(tbl, i, { [col.key]: v })} />
     if (col.type === 'select') return (
-      <div style={{ width: '100%' }}><SearchSelect variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
+      <div style={{ width: '100%' }}><SearchSelect autoSelectSingle variant="table" colorMap={col.key === 'line_approve' ? APPROVE_COLOR : undefined}
         value={String(it[col.key] ?? '')} options={col.options!.filter((o) => o !== '')} placeholder="Chọn…"
         onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
     )
     if (col.type === 'unit') return (
-      <div style={{ width: '100%' }}><SearchSelect variant="table" value={it[col.key] ?? ''} options={units} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
+      <div style={{ width: '100%' }}><SearchSelect autoSelectSingle variant="table" value={it[col.key] ?? ''} options={units} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} /></div>
     )
     if (col.type === 'supplier') {
       // Bỏ check "NCC sẵn có" → ô NCC thành text tự do (NCC chưa có trong danh mục)
       if (!supplierAvail)
         return <TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={it[col.key] ?? ''} placeholder="Nhập NCC…" onChange={(v) => setLine(tbl, i, { [col.key]: v })} />
       return (
-        <div style={{ width: '100%' }}><SearchSelect variant="table" wrap value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
+        <div style={{ width: '100%' }}><SearchSelect autoSelectSingle variant="table" wrap value={it[col.key] ?? ''} placeholder="Chọn/tìm NCC…"
           options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
           onChange={(v) => { const sup = suppliers.find((s) => s.code === v); setLine(tbl, i, sup ? { supplier_code: sup.code, supplier_name: sup.name, tax_code: sup.tax_code, reg_address: sup.address } : { supplier_code: v }) }} /></div>
       )
@@ -996,7 +996,7 @@ export default function SurveyDetail() {
               <div className="form-row"><label>Ngày dự kiến trả KQ</label><DateInput value={sv.result_due_date || ''} disabled={!editable} onChange={(v) => setH('result_due_date', v)} /></div>
               <div className="form-row">
                 <label>Phân loại</label>
-                <SearchSelect value={sv.item_group} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…" onChange={(v) => setH('item_group', v)} />
+                <SearchSelect autoSelectSingle value={sv.item_group} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…" onChange={(v) => setH('item_group', v)} />
               </div>
               <div className="form-row"><label>NSPT phụ trách (người tạo)</label><input value={sv.nspt || ''} disabled placeholder="Tự động theo người tạo" /></div>
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
@@ -1017,7 +1017,7 @@ export default function SurveyDetail() {
                   <div className="form-row"><label>Tên VTBB / VL</label><input value={sv.item_name || ''} disabled placeholder="Tự động theo mã" /></div>
                   <div className="form-row"><label>Số lượng dự kiến mua</label><NumberInput decimals value={sv.request_qty} disabled={!editable} onChange={(v) => setH('request_qty', v)} /></div>
                   <div className="form-row"><label>ĐVT</label>
-                    <SearchSelect value={sv.uom} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setH('uom', v)} />
+                    <SearchSelect autoSelectSingle value={sv.uom} options={units} disabled={!editable} placeholder="Chọn/tìm ĐVT…" onChange={(v) => setH('uom', v)} />
                   </div>
                   <div className="form-row"><label>Giá đề xuất (VNĐ)</label><NumberInput value={sv.proposed_rate} disabled={!editable} maxDecimals={PRICE_DECIMALS} onChange={(v) => setH('proposed_rate', v)} /></div>
                 </>

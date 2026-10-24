@@ -99,7 +99,7 @@ export default function SurveyReportSheetRow({
           //  Ô chọn gốc của trình duyệt không xuống dòng được → tên giai đoạn dài bị cắt («…nhậ»).
           //  Dùng cùng ô chọn với cột «Dòng hàng» bên cạnh để nhãn hiện đủ chữ.
           <SearchSelect
-            variant="table" wrap autoSelectSingle={false}
+            variant="table" wrap
             value={String(doc.phase_id)} options={phaseOptions}
             onChange={(v) => { const n = Number(v); if (n && n !== doc.phase_id) save({ phase_id: n }) }}
           />
@@ -108,7 +108,7 @@ export default function SurveyReportSheetRow({
       <td>
         {readOnly ? <span>{itemLabel}</span> : (
           <SearchSelect
-            variant="table" wrap autoSelectSingle={false}
+            variant="table" wrap
             value={String(doc.item_id)} options={itemOptions}
             onChange={(v) => { if (v === '') return; const n = Number(v) || 0; if (n !== doc.item_id) save({ item_id: n }) }}
           />
@@ -145,7 +145,7 @@ export default function SurveyReportSheetRow({
       <td>
         {readOnly ? <span>{doc.assignee_name || '—'}</span> : (
           <SearchSelect
-            variant="table" wrap autoSelectSingle={false} placeholder="Chọn người"
+            variant="table" wrap placeholder="Chọn người"
             value={doc.assignee_id ? String(doc.assignee_id) : '0'} options={assigneeOptions}
             onChange={(v) => { if (v === '') return; const n = Number(v) || 0; if (n !== (doc.assignee_id || 0)) save({ assignee_id: n }) }}
           />

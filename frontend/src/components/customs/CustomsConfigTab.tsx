@@ -211,7 +211,7 @@ function CatalogCard({ catalog }: { catalog: Catalog }) {
         {catalog.quickFilters.map((qf) => (
           <div key={qf.key} style={{ width: 200 }}>
             <SearchSelect value={quick[qf.key] || ''} placeholder={`Tất cả ${qf.label.toLowerCase()}`}
-              autoSelectSingle={false} options={qf.options}
+              options={qf.options}
               onChange={(v) => { setQuick((s) => ({ ...s, [qf.key]: v })); setPage(1) }} />
           </div>
         ))}
@@ -352,7 +352,7 @@ function CatalogForm({ catalog, item, onClose, onSaved }: {
                 {f.type === 'textarea' ? (
                   <textarea value={form[f.key]} disabled={!canSave} onChange={(e) => set(f.key, e.target.value)} />
                 ) : f.type === 'select' ? (
-                  <SearchSelect value={form[f.key]} disabled={!canSave} placeholder="Chọn…" autoSelectSingle={false}
+                  <SearchSelect value={form[f.key]} disabled={!canSave} placeholder="Chọn…"
                     colorMap={f.colorMap} options={f.options || []} onChange={(v) => set(f.key, v)} />
                 ) : (
                   <input type={f.type === 'number' ? 'number' : 'text'} value={form[f.key]} disabled={!canSave}

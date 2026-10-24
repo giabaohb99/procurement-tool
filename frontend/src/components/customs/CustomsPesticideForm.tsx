@@ -123,7 +123,7 @@ export default function CustomsPesticideForm({ pesticideId, onClose, onSaved }: 
             </div>
             <div className="form-row">
               <label>Tình trạng</label>
-              <SearchSelect value={form.status} autoSelectSingle={false} options={PESTICIDE_STATUS_OPTIONS}
+              <SearchSelect value={form.status} options={PESTICIDE_STATUS_OPTIONS}
                 onChange={(v) => set('status', v)} />
             </div>
             <div className="form-row">

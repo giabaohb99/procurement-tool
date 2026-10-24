@@ -94,7 +94,7 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
           <input value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Tên, số CAS hoặc công thức (vd H2SO4)…" style={{ width: 280 }} />
           <div style={{ width: 260 }}>
-            <SearchSelect value={listCode} placeholder="Tất cả văn bản" autoSelectSingle={false}
+            <SearchSelect value={listCode} placeholder="Tất cả văn bản"
               options={(options?.lists || []).map((l: any) => ({ value: String(l.value), label: `${l.label} (${l.count})` }))}
               onChange={pickListCode} />
           </div>
