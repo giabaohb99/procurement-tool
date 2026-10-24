@@ -16971,3 +16971,20 @@ Tham chiếu: doc/erp/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md ·
 **Còn lại:** chờ Phòng Sản xuất điền cột trả lời. Khảo sát vẫn đang mở, còn 9 vòng chưa nộp.
 
 Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat.xlsx
+
+## nc-03b-phieu-mau-thuan-san-xuat | Chép đúng nguyên văn màn Mâu thuẫn của khảo sát Sản xuất và làm phiếu Word gửi Phòng Sản xuất
+- status: xong
+- date: 2026-10-24
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Ban điều hành cần phiếu Word gửi Phòng Sản xuất trả lời các mâu thuẫn khảo sát, với nội dung đúng từng chữ như màn *Mâu thuẫn & quyết định* trên ứng dụng khảo sát Make It Clear.
+
+**Đã làm**
+- Viết lại phần A của tài liệu 03: mười ba mục M01 đến M13 lấy đúng tiêu đề, đường dẫn quy trình, nhãn *giả thuyết* hoặc *as-is · thực tế*, nguồn, trích dẫn, *Nhận định của AI* và ngày phát hiện như trên web. Phần nhận xét riêng đổi tên thành *Ghi chú của A5* và đặt sau cùng.
+- Mười hai mục L01 đến L12 dùng lại đúng nguyên văn câu trả lời gốc trên khảo sát thay cho bản tóm tắt.
+- Làm phiếu Word theo bộ nhận diện DEGO: trang đầu ghi mục đích, cách trả lời, ô hạn trả lời để trống. Mỗi mục một trang có bảng hai nguồn, hộp nhận định, câu cần chốt, người chốt đề nghị và ô có khung để Phòng Sản xuất ghi câu trả lời. Mười hai mục L để ở phụ lục.
+- Cập nhật bản Excel cho khớp.
+
+**Kết quả:** đã kiểm phiếu Word đủ 13 mục chính và 12 mục phụ lục, 26 trang. Đã so ba mục chọn ngẫu nhiên (M02, M09, M11) với web, khớp cả sáu trường. Dữ liệu 13 mục cũng khớp từng ký tự với dữ liệu web qua so mã băm.
+
+Tham chiếu: doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx · doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat.xlsx

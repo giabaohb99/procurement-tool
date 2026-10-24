@@ -25,386 +25,604 @@
 
 ## Phần A. Mâu thuẫn cần Phòng Sản xuất chốt
 
-| Mã | Bước / mục | Câu hỏi | Mức | Người chốt đề nghị |
-|---|---|---|---|---|
-| M01 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | thấp | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M02 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | thấp | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M03 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | cao | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M04 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | thấp | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M05 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | cao | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M06 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | thấp | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M07 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | cao | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M08 | Quản lý đơn hàng SX gia công · Chuẩn bị nguồn lực và hoàn thiện điều kiện đặt hàng | Làm ra gì, giao cho ai, qua kênh nào / Ai làm | thấp | Trưởng nhóm Điều phối |
-| M09 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | cao | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M10 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | cao | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M11 | Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng | Ai chịu trách nhiệm cuối | cao | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
-| M12 | Tổng quan phòng · Duyệt và ngưỡng | Việc nào phải xin duyệt, ai duyệt, ngưỡng nào | thấp | Giám đốc, Trưởng phòng Sản xuất, Phòng Tài chính Kế toán |
-| M13 | Tổng quan phòng · Duyệt và ngưỡng | Việc nào phải xin duyệt, ai duyệt, ngưỡng nào | thấp | Trưởng phòng Sản xuất |
-| L01 | Quản lý đơn hàng SX gia công · Tiếp nhận / Kiểm tra điều kiện | Bao lâu một lần (số đơn) | cao | Trưởng nhóm Điều phối, Chuyên viên Điều phối sản xuất |
-| L02 | Tổng quan phòng · Duyệt và ngưỡng | Việc nào phải xin duyệt, ai duyệt, ngưỡng nào | cao | Giám đốc, Phòng Tài chính Kế toán |
-| L03 | Quản lý đơn hàng SX gia công · Chuẩn bị nguồn lực | Phiếu điều chuyển nguyên liệu gửi cho ai | vừa | Chuyên viên Điều phối nguyên liệu/bán thành phẩm |
-| L04 | Quản lý đơn hàng SX gia công · Tiếp nhận và kiểm tra yêu cầu đặt hàng | Ai chịu trách nhiệm cuối | vừa | Trưởng phòng Sản xuất |
-| L05 | Quản lý đơn hàng SX gia công · Nhận hàng và xử lý sai lệch / Xử lý sự cố | Ai quyết phương án khi hàng lỗi | cao | Trưởng phòng Sản xuất |
-| L06 | Quản lý đơn hàng SX gia công · Mức quy trình | Các bước theo thứ tự | thấp | Trưởng phòng Sản xuất |
-| L07 | Làm việc với NCC GC mới · Soạn hợp đồng / Hoàn thiện | Ai ký hợp đồng NCC GC mới | vừa | Giám đốc |
-| L08 | Quản lý đơn hàng SX gia công · Mức quy trình | Toàn trình mất bao lâu | thấp | Trưởng nhóm Điều phối |
-| L09 | Công cụ, tài liệu | Số trạng thái theo dõi đơn | thấp | Trưởng nhóm Điều phối |
-| L10 | Quản lý đơn hàng SX gia công · Nhận hàng | Ai kiểm chất lượng thành phẩm khi nhận | vừa | Trưởng nhóm Điều phối, Kho, Lab |
-| L11 | Bộ máy | Ai đang giữ vị trí Chuyên viên Pháp lý - Xử lý sự cố | vừa | Trưởng phòng Sản xuất |
-| L12 | Bộ máy | Tuyến báo cáo của Chuyên viên Điều phối NL/BTP | vừa | Trưởng phòng Sản xuất |
+Mục M01 đến M13 chép đúng nguyên văn màn *Mâu thuẫn & quyết định* trên MIC: tiêu đề, đường dẫn, nhãn, nguồn, trích dẫn và nhận định của AI. Phần *Câu cần chốt*, *Người chốt đề nghị* và *Ghi chú của A5* do A5 thêm. Mục L01 đến L12 do A5 tìm thêm, MIC chưa đánh dấu.
+
+| Mã | Tiêu đề | Trạng thái | Người chốt đề nghị |
+|---|---|---|---|
+| M01 | Thẩm quyền quyết định cuối cùng khi đơn hàng vướng mắc điều kiện triển khai: Trưởng phòng Sản xuất vs Phòng Kinh doanh | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M02 | Thẩm quyền quyết định cuối cùng khi đơn hàng vướng mắc điều kiện triển khai: Trưởng phòng Sản xuất vs Phòng Kinh doanh | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M03 | Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M04 | Người có thẩm quyền quyết định cuối cùng khi tồn kho VTBB không đủ: Trưởng phòng Sản xuất vs Phòng Kinh doanh | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M05 | Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M06 | Thẩm quyền quyết định khi đơn hàng chưa đáp ứng điều kiện triển khai: Trưởng phòng Sản xuất vs Phối hợp giữa Phòng Kinh doanh và Quản lý | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M07 | Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M08 | Đầu mối nhận Phiếu yêu cầu điều chuyển nguyên liệu để làm việc với NCC GC: Điều phối thành phẩm vs Quản lý dữ liệu | Chờ phân xử | Trưởng nhóm Điều phối |
+| M09 | Người có thẩm quyền quyết định khi điều kiện đơn hàng không đạt: Phòng Kinh doanh vs Quản lý sản xuất | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M10 | Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M11 | Người có thẩm quyền quyết định khi điều kiện đơn hàng không đạt: Phòng Kinh doanh vs Quản lý sản xuất | Chờ phân xử | Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh) |
+| M12 | Thẩm quyền phê duyệt chi phí phát sinh ngoài ngân sách: Trưởng phòng cho rằng không cần duyệt vs Giám đốc quy định phải trình Giám đốc công ty thành viên phê duyệt | Chờ phân xử | Giám đốc, Trưởng phòng Sản xuất, Phòng Tài chính Kế toán |
+| M13 | Việc nào phải xin duyệt, ai duyệt, ngưỡng nào: hai nguồn nói khác nhau | Đã hỏi lại hai bên | Trưởng phòng Sản xuất |
+| L01 | Bao lâu một lần (số đơn) | A5 tìm thêm, chưa có trên MIC | Trưởng nhóm Điều phối, Chuyên viên Điều phối sản xuất |
+| L02 | Việc nào phải xin duyệt, ai duyệt, ngưỡng nào | A5 tìm thêm, chưa có trên MIC | Giám đốc, Phòng Tài chính Kế toán |
+| L03 | Phiếu điều chuyển nguyên liệu gửi cho ai | A5 tìm thêm, chưa có trên MIC | Chuyên viên Điều phối nguyên liệu/bán thành phẩm |
+| L04 | Ai chịu trách nhiệm cuối | A5 tìm thêm, chưa có trên MIC | Trưởng phòng Sản xuất |
+| L05 | Ai quyết phương án khi hàng lỗi | A5 tìm thêm, chưa có trên MIC | Trưởng phòng Sản xuất |
+| L06 | Các bước theo thứ tự | A5 tìm thêm, chưa có trên MIC | Trưởng phòng Sản xuất |
+| L07 | Ai ký hợp đồng NCC GC mới | A5 tìm thêm, chưa có trên MIC | Giám đốc |
+| L08 | Toàn trình mất bao lâu | A5 tìm thêm, chưa có trên MIC | Trưởng nhóm Điều phối |
+| L09 | Số trạng thái theo dõi đơn | A5 tìm thêm, chưa có trên MIC | Trưởng nhóm Điều phối |
+| L10 | Ai kiểm chất lượng thành phẩm khi nhận | A5 tìm thêm, chưa có trên MIC | Trưởng nhóm Điều phối, Kho, Lab |
+| L11 | Ai đang giữ vị trí Chuyên viên Pháp lý - Xử lý sự cố | A5 tìm thêm, chưa có trên MIC | Trưởng phòng Sản xuất |
+| L12 | Tuyến báo cáo của Chuyên viên Điều phối NL/BTP | A5 tìm thêm, chưa có trên MIC | Trưởng phòng Sản xuất |
 
 **Cụm lớn nhất:** M01 đến M07 và M09 đến M11 (10 mục) cùng hỏi một câu: khi đơn hàng không đủ điều kiện triển khai thì ai quyết cuối. Chốt một lần là đóng được cả 10 mục.
 
-### M01. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+### Các mâu thuẫn trên MIC
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **thấp**
+#### M01. Thẩm quyền quyết định cuối cùng khi đơn hàng vướng mắc điều kiện triển khai: Trưởng phòng Sản xuất vs Phòng Kinh doanh
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Suy diễn (AI) · Chuyên viên Điều phối vật tư bao bì · V4 · C1 | Trưởng phòng sản xuất (khi các phương án kiểm tra tồn kho luân chuyển nội bộ, thương lượng Kinh doanh dời ngày và trao đổi Thu mua mua hàng không giải quyết được) |
-| B | Trưởng nhóm Quản lý dữ liệu · V6 · C1 | Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng khi kiểm tra điều kiện có vướng mắc; Điều phối thành phẩm phối hợp kiểm tra và thông báo |
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-- **Giả thuyết:** Nguồn A là giả thuyết MIC suy ra từ câu trả lời, chưa được người trả lời xác nhận (độ tin thấp). Nguồn B là as-is, độ tin cao. Nhận định MIC: thiếu VTBB thì lần lượt luân chuyển nội bộ, xin KD dời ngày, nhờ Thu mua mua thêm; không xong mới trình Trưởng phòng. Nguồn B nói KD quyết.
+Trạng thái: **Chờ phân xử**
+
+| giả thuyết | as-is · thực tế |
+|---|---|
+| Suy diễn (AI) · Chuyên viên Điều phối vật tư bao bì · V4 · C1 | Trưởng nhóm Quản lý dữ liệu · V6 · C1 |
+| “Trưởng phòng sản xuất (khi các phương án kiểm tra tồn kho luân chuyển nội bộ, thương lượng Kinh doanh dời ngày và trao đổi Thu mua mua hàng không giải quyết được)” | “Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng khi kiểm tra điều kiện có vướng mắc; Điều phối thành phẩm phối hợp kiểm tra và thông báo” |
+| Chuyên viên Điều phối vật tư bao bì, vòng 4 | Trưởng nhóm Quản lý dữ liệu, vòng 6 |
+
+**Nhận định của AI**
+
+> Chuyên viên Điều phối VTBB làm rõ khi các phương án nội bộ, dời ngày và mua thêm không giải quyết được sẽ trình Trưởng phòng sản xuất quyết định cuối cùng, trong khi Trưởng nhóm Quản lý dữ liệu khẳng định Phòng Kinh doanh xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng.
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Nguồn A là giả thuyết MIC suy ra từ câu trả lời, chưa được người trả lời xác nhận (độ tin thấp). Nguồn B là as-is, độ tin cao. Theo nguồn A, thiếu VTBB thì lần lượt luân chuyển nội bộ, xin KD dời ngày, nhờ Thu mua mua thêm; không xong mới trình Trưởng phòng.
 
-### M02. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M02. Thẩm quyền quyết định cuối cùng khi đơn hàng vướng mắc điều kiện triển khai: Trưởng phòng Sản xuất vs Phòng Kinh doanh
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **thấp**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chị Ngân · V3 · C4 | Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau) |
-| B | Trưởng nhóm Quản lý dữ liệu · V6 · C1 | Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng khi kiểm tra điều kiện có vướng mắc; Điều phối thành phẩm phối hợp kiểm tra và thông báo |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** Cả hai là as-is. Trưởng phòng nói Trưởng phòng quyết cuối, kể cả duyệt trước bổ sung sau. Trưởng nhóm QLDL nói KD quyết.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chị Ngân · V3 · C4 | Trưởng nhóm Quản lý dữ liệu · V6 · C1 |
+| “Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau)” | “Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng khi kiểm tra điều kiện có vướng mắc; Điều phối thành phẩm phối hợp kiểm tra và thông báo” |
+| Trưởng phòng, vòng 3 | Trưởng nhóm Quản lý dữ liệu, vòng 6 |
+
+**Nhận định của AI**
+
+> Chị Ngân khẳng định Trưởng phòng chịu trách nhiệm cuối duyệt triển khai hoặc hoãn đơn hàng (kể cả duyệt trước bổ sung sau), trong khi Trưởng nhóm Quản lý dữ liệu khẳng định Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng.
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Cả hai là as-is. Trưởng phòng nói Trưởng phòng quyết cuối, kể cả duyệt trước bổ sung sau. Trưởng nhóm QLDL nói KD quyết.
 
-### M03. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M03. Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **cao**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Trưởng nhóm Điều phối · V2 · C4 | Quản lý sản xuất là người quyết định cuối cùng (cho duyệt trước bổ sung sau hoặc tạm ngưng đơn) dựa trên dữ liệu kiểm tra từ các nhóm nội bộ; Trưởng nhóm Điều phối cập nhật tiến độ lại cho Kinh doanh |
-| B | Trưởng nhóm Quản lý dữ liệu · V6 · C1 | Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng khi kiểm tra điều kiện có vướng mắc; Điều phối thành phẩm phối hợp kiểm tra và thông báo |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** Cả hai là as-is, độ tin cao. Hai trưởng nhóm nói hai người quyết khác nhau.
-- **Ghi chú:** Theo danh sách vị trí trên MIC, Trưởng nhóm Điều phối đang do Trưởng phòng kiêm nhiệm.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Trưởng nhóm Điều phối · V2 · C4 | Trưởng nhóm Quản lý dữ liệu · V6 · C1 |
+| “Quản lý sản xuất là người quyết định cuối cùng (cho duyệt trước bổ sung sau hoặc tạm ngưng đơn) dựa trên dữ liệu kiểm tra từ các nhóm nội bộ; Trưởng nhóm Điều phối cập nhật tiến độ lại cho Kinh doanh” | “Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng khi kiểm tra điều kiện có vướng mắc; Điều phối thành phẩm phối hợp kiểm tra và thông báo” |
+| Trưởng nhóm Điều phối, vòng 2 | Trưởng nhóm Quản lý dữ liệu, vòng 6 |
+
+**Nhận định của AI**
+
+> "Quản lý sản xuất là người quyết định cuối cùng (cho duyệt trước bổ sung sau hoặc tạm ngưng đơn) dựa trên dữ liệu kiểm tra từ các nhóm nội bộ; Trưởng nhóm Điều phối cập nhật tiến độ lại cho Kinh doanh" (Trưởng nhóm Điều phối · V2 · C4) khác "Phòng Kinh doanh là đơn vị xem xét và quyết định việc tiếp tục triển khai hoặc tạm dừng đơn hàng khi kiểm tra điều kiện có vướng mắc; Điều phối thành phẩm phối hợp kiểm tra và thông báo" (Trưởng nhóm Quản lý dữ liệu · V6 · C1).
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Cả hai là as-is, độ tin cao. Hai trưởng nhóm nói hai người quyết khác nhau. Theo danh sách vị trí trên MIC, Trưởng nhóm Điều phối đang do Trưởng phòng kiêm nhiệm.
 
-### M04. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M04. Người có thẩm quyền quyết định cuối cùng khi tồn kho VTBB không đủ: Trưởng phòng Sản xuất vs Phòng Kinh doanh
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **thấp**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chị Ngân · V3 · C4 | Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau) |
-| B | Chuyên viên Điều phối vật tư bao bì · V3 · C3 | Trưởng phòng sản xuất hoặc Phòng Kinh doanh quyết định cuối cùng về việc duyệt tiếp hay dừng đơn khi tồn kho VTBB không đủ hoặc không kịp tiến độ đơn hàng |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** Chuyên viên VTBB nói Trưởng phòng hoặc KD, chưa phân định khi hai bên bất đồng.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chị Ngân · V3 · C4 | Chuyên viên Điều phối vật tư bao bì · V3 · C3 |
+| “Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau)” | “Trưởng phòng sản xuất hoặc Phòng Kinh doanh quyết định cuối cùng về việc duyệt tiếp hay dừng đơn khi tồn kho VTBB không đủ hoặc không kịp tiến độ đơn hàng” |
+| Trưởng phòng, vòng 3 | Chuyên viên Điều phối vật tư bao bì, vòng 3 |
+
+**Nhận định của AI**
+
+> Chuyên viên Điều phối VTBB cho biết khi thiếu VTBB thì thẩm quyền thuộc Trưởng phòng sản xuất / Kinh doanh, chưa phân định rạch ròi vai trò quyết định cuối cùng giữa hai bên trong trường hợp có bất đồng ý kiến.
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Chuyên viên VTBB nói Trưởng phòng hoặc KD, chưa phân định khi hai bên bất đồng.
 
-### M05. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M05. Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **cao**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ |
-| B | Chuyên viên Điều phối vật tư bao bì · V3 · C3 | Trưởng phòng sản xuất hoặc Phòng Kinh doanh quyết định cuối cùng về việc duyệt tiếp hay dừng đơn khi tồn kho VTBB không đủ hoặc không kịp tiến độ đơn hàng |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** Chuyên viên NL/BTP nói KD quyết khi thiếu NL/BTP. Chuyên viên VTBB nói Trưởng phòng hoặc KD khi thiếu VTBB.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Chuyên viên Điều phối vật tư bao bì · V3 · C3 |
+| “Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ” | “Trưởng phòng sản xuất hoặc Phòng Kinh doanh quyết định cuối cùng về việc duyệt tiếp hay dừng đơn khi tồn kho VTBB không đủ hoặc không kịp tiến độ đơn hàng” |
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 2 | Chuyên viên Điều phối vật tư bao bì, vòng 3 |
+
+**Nhận định của AI**
+
+> "Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ" (Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2) khác "Trưởng phòng sản xuất hoặc Phòng Kinh doanh quyết định cuối cùng về việc duyệt tiếp hay dừng đơn khi tồn kho VTBB không đủ hoặc không kịp tiến độ đơn hàng" (Chuyên viên Điều phối vật tư bao bì · V3 · C3).
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Chuyên viên NL/BTP nói KD quyết khi thiếu NL/BTP. Chuyên viên VTBB nói Trưởng phòng hoặc KD khi thiếu VTBB.
 
-### M06. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M06. Thẩm quyền quyết định khi đơn hàng chưa đáp ứng điều kiện triển khai: Trưởng phòng Sản xuất vs Phối hợp giữa Phòng Kinh doanh và Quản lý
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **thấp**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chị Ngân · V3 · C4 | Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau) |
-| B | Trưởng nhóm Quản lý dữ liệu · V3 · C1 | Nhân sự phụ trách thông báo trực tiếp cho Phòng Kinh doanh và Quản lý để xem xét, quyết định tiếp tục triển khai hoặc tạm dừng đơn hàng khi điều kiện triển khai chưa đáp ứng |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** Trưởng phòng nói mình quyết. Trưởng nhóm QLDL (vòng 3) nói báo cả KD và Quản lý cùng xem xét.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chị Ngân · V3 · C4 | Trưởng nhóm Quản lý dữ liệu · V3 · C1 |
+| “Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau)” | “Nhân sự phụ trách thông báo trực tiếp cho Phòng Kinh doanh và Quản lý để xem xét, quyết định tiếp tục triển khai hoặc tạm dừng đơn hàng khi điều kiện triển khai chưa đáp ứng” |
+| Trưởng phòng, vòng 3 | Trưởng nhóm Quản lý dữ liệu, vòng 3 |
+
+**Nhận định của AI**
+
+> Trưởng phòng Ngân khẳng định Trưởng phòng là người chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai hoặc bổ sung sau, trong khi Trưởng nhóm Quản lý dữ liệu cho rằng nhân sự thông báo cho cả Phòng Kinh doanh và Quản lý cùng xem xét, quyết định.
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Trưởng phòng nói mình quyết. Trưởng nhóm QLDL (vòng 3) nói báo cả KD và Quản lý cùng xem xét.
 
-### M07. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M07. Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **cao**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ |
-| B | Trưởng nhóm Quản lý dữ liệu · V3 · C1 | Nhân sự phụ trách thông báo trực tiếp cho Phòng Kinh doanh và Quản lý để xem xét, quyết định tiếp tục triển khai hoặc tạm dừng đơn hàng khi điều kiện triển khai chưa đáp ứng |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** KD quyết, so với KD và Quản lý cùng quyết.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Trưởng nhóm Quản lý dữ liệu · V3 · C1 |
+| “Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ” | “Nhân sự phụ trách thông báo trực tiếp cho Phòng Kinh doanh và Quản lý để xem xét, quyết định tiếp tục triển khai hoặc tạm dừng đơn hàng khi điều kiện triển khai chưa đáp ứng” |
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 2 | Trưởng nhóm Quản lý dữ liệu, vòng 3 |
+
+**Nhận định của AI**
+
+> "Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ" (Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2) khác "Nhân sự phụ trách thông báo trực tiếp cho Phòng Kinh doanh và Quản lý để xem xét, quyết định tiếp tục triển khai hoặc tạm dừng đơn hàng khi điều kiện triển khai chưa đáp ứng" (Trưởng nhóm Quản lý dữ liệu · V3 · C1).
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** KD quyết, so với KD và Quản lý cùng quyết.
 
-### M08. Làm ra gì, giao cho ai, qua kênh nào / Ai làm — Quản lý đơn hàng SX gia công · Chuẩn bị nguồn lực và hoàn thiện điều kiện đặt hàng
+#### M08. Đầu mối nhận Phiếu yêu cầu điều chuyển nguyên liệu để làm việc với NCC GC: Điều phối thành phẩm vs Quản lý dữ liệu
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **thấp**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 4 · Chuẩn bị nguồn lực và hoàn thiện điều kiện đặt hàng › Làm ra gì, giao cho ai, qua kênh nào`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C5 | Phiếu yêu cầu điều chuyển nguyên liệu được lập và gửi cho Điều phối thành phẩm để gửi tiếp cho NCC GC phối hợp xuất và điều chuyển |
-| B | Trưởng nhóm Điều phối · V4 · C1 | Chuyên viên Quản lý hồ sơ sản xuất và Dữ liệu NCC GC làm đầu mối giao dịch với NCC GC về việc điều chuyển nguyên liệu |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** Nhận định MIC: Chuyên viên NL/BTP nói phiếu đi qua Điều phối thành phẩm; Trưởng nhóm Điều phối nói Điều phối thành phẩm chỉ nhận thông tin đủ hàng, giao dịch với NCC GC do nhóm Quản lý dữ liệu làm. Thêm nguồn thứ ba: Chuyên viên Điều phối sản xuất V3 C2 nói mình nhận phiếu điều chuyển để làm việc với NCC GC.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C5 | Trưởng nhóm Điều phối · V4 · C1 |
+| “Phiếu yêu cầu điều chuyển nguyên liệu được lập và gửi cho Điều phối thành phẩm để gửi tiếp cho NCC GC phối hợp xuất và điều chuyển” | “Chuyên viên Quản lý hồ sơ sản xuất và Dữ liệu NCC GC làm đầu mối giao dịch với NCC GC về việc điều chuyển nguyên liệu” |
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 2 | Trưởng nhóm Điều phối, vòng 4 |
+
+**Nhận định của AI**
+
+> Chuyên viên NL/BTP nêu Phiếu điều chuyển gửi cho Điều phối thành phẩm để gửi tiếp NCC GC, trong khi Trưởng nhóm Điều phối khẳng định Điều phối thành phẩm chỉ nhận thông tin đủ hàng và việc giao dịch với NCC GC phải do Quản lý dữ liệu thực hiện.
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Phiếu yêu cầu điều chuyển nguyên liệu gửi cho ai, và ai là đầu mối làm việc với NCC GC về điều chuyển: Điều phối thành phẩm hay Chuyên viên Quản lý hồ sơ SX và Dữ liệu NCC GC?
 - **Người chốt đề nghị:** Trưởng nhóm Điều phối
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Thêm nguồn thứ ba: Chuyên viên Điều phối sản xuất V3 C2 nói mình nhận phiếu điều chuyển để làm việc với NCC GC.
 
-### M09. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M09. Người có thẩm quyền quyết định khi điều kiện đơn hàng không đạt: Phòng Kinh doanh vs Quản lý sản xuất
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **cao**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ |
-| B | Chuyên viên Pháp lý - Xử lý sự cố · V3 · C1 | Quản lý sản xuất là người quyết định cuối cùng việc duyệt cho đơn hàng triển khai hay không khi hồ sơ pháp lý chưa đạt hoặc chưa đủ |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** KD quyết khi thiếu NL/BTP, so với Quản lý sản xuất quyết khi hồ sơ pháp lý chưa đạt. Hai câu có thể nói về hai loại vướng mắc khác nhau.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Chuyên viên Pháp lý - Xử lý sự cố · V3 · C1 |
+| “Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ” | “Quản lý sản xuất là người quyết định cuối cùng việc duyệt cho đơn hàng triển khai hay không khi hồ sơ pháp lý chưa đạt hoặc chưa đủ” |
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 2 | Chuyên viên Pháp lý - Xử lý sự cố, vòng 3 |
+
+**Nhận định của AI**
+
+> Chuyên viên Điều phối NL/BTP (r_6) nêu Phòng Kinh doanh quyết định duyệt hoặc hoãn đơn, trong khi Chuyên viên Pháp lý - Xử lý sự cố (r_8) xác nhận Quản lý sản xuất là người quyết định cho đi đơn hàng hay dừng lại.
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** KD quyết khi thiếu NL/BTP, so với Quản lý sản xuất quyết khi hồ sơ pháp lý chưa đạt. Hai câu có thể nói về hai loại vướng mắc khác nhau.
 
-### M10. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M10. Ai chịu trách nhiệm cuối: hai nguồn nói khác nhau
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **cao**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ |
-| B | Chị Ngân · V3 · C4 | Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau) |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** KD quyết, so với Trưởng phòng quyết.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Chị Ngân · V3 · C4 |
+| “Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ” | “Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau)” |
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 2 | Trưởng phòng, vòng 3 |
+
+**Nhận định của AI**
+
+> "Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ" (Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2) khác "Trưởng phòng (Quản lý sản xuất) chịu trách nhiệm cuối quyết định duyệt cho đơn hàng triển khai (kể cả trường hợp duyệt trước bổ sung sau)" (Chị Ngân · V3 · C4).
+>
+> Phát hiện ngày 23/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** KD quyết, so với Trưởng phòng quyết.
 
-### M11. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Kiểm tra điều kiện triển khai đơn hàng
+#### M11. Người có thẩm quyền quyết định khi điều kiện đơn hàng không đạt: Phòng Kinh doanh vs Quản lý sản xuất
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **cao**
+`Quản lý đơn hàng sản xuất gia công tại nhà cung cấp › Bước 3 · Kiểm tra điều kiện triển khai đơn hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ |
-| B | Trưởng nhóm Điều phối · V2 · C4 | Quản lý sản xuất là người quyết định cuối cùng (cho duyệt trước bổ sung sau hoặc tạm ngưng đơn) dựa trên dữ liệu kiểm tra từ các nhóm nội bộ; Trưởng nhóm Điều phối cập nhật tiến độ lại cho Kinh doanh |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** KD quyết, so với Quản lý sản xuất quyết (Trưởng nhóm Điều phối chỉ báo lại tiến độ cho KD).
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C2 | Trưởng nhóm Điều phối · V2 · C4 |
+| “Phòng Kinh doanh xem xét và quyết định phương án duyệt hoặc hoãn đơn hàng khi NL/BTP không đủ hoặc không kịp tiến độ” | “Quản lý sản xuất là người quyết định cuối cùng (cho duyệt trước bổ sung sau hoặc tạm ngưng đơn) dựa trên dữ liệu kiểm tra từ các nhóm nội bộ; Trưởng nhóm Điều phối cập nhật tiến độ lại cho Kinh doanh” |
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 2 | Trưởng nhóm Điều phối, vòng 2 |
+
+**Nhận định của AI**
+
+> Chuyên viên Điều phối NL/BTP (sv_114) cho rằng Phòng Kinh doanh quyết định duyệt hoặc hoãn đơn khi thiếu nguyên liệu; trong khi Trưởng nhóm Điều phối (a_47) nêu Quản lý sản xuất là người quyết định cuối cùng (cho duyệt trước bổ sung sau hoặc tạm ngưng đơn).
+>
+> Phát hiện ngày 22/10/2026
+
 - **Câu cần chốt:** Khi đơn hàng không đủ điều kiện triển khai, ai quyết cuối cho đi tiếp hay dừng? Đề xuất chia theo loại vướng mắc: pháp lý và cung ứng nội bộ do Trưởng phòng quyết; dời ngày giao hoặc hủy đơn với khách do Phòng Kinh doanh quyết; hai bên không thống nhất thì Giám đốc. Xác nhận hoặc sửa.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất, Giám đốc (hỏi ý Phòng Kinh doanh)
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** KD quyết, so với Quản lý sản xuất quyết (Trưởng nhóm Điều phối chỉ báo lại tiến độ cho KD).
 
-### M12. Việc nào phải xin duyệt, ai duyệt, ngưỡng nào — Tổng quan phòng · Duyệt và ngưỡng
+#### M12. Thẩm quyền phê duyệt chi phí phát sinh ngoài ngân sách: Trưởng phòng cho rằng không cần duyệt vs Giám đốc quy định phải trình Giám đốc công ty thành viên phê duyệt
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **thấp**
+`Việc nào phải xin duyệt, ai duyệt, ngưỡng nào`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chị Ngân · V2 · C2 | Không áp dụng phê duyệt chi phí hoặc vượt ngân sách dự toán đơn hàng do công ty hiện không có quỹ chi phí và ngân sách dự toán |
-| B | Giám đốc · V1 · C1 | Chi phí phát sinh ngoài ngân sách sản xuất phải trình Giám đốc phụ trách và ghi kèm tên công ty tương ứng để phê duyệt (áp dụng cho 12 công ty thuộc Group) |
+Trạng thái: **Chờ phân xử**
 
-- **Giả thuyết:** Trưởng phòng nói không có ngân sách dự toán nên không duyệt chi phí phát sinh. Giám đốc nói chi phí ngoài ngân sách phải trình Giám đốc phụ trách công ty tương ứng. Có thể hai câu nói về hai việc: không có ngân sách theo đơn hàng, nhưng chi phí phát sinh vẫn phải xin duyệt. Xem thêm L02.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chị Ngân · V2 · C2 | Giám đốc · V1 · C1 |
+| “Không áp dụng phê duyệt chi phí hoặc vượt ngân sách dự toán đơn hàng do công ty hiện không có quỹ chi phí và ngân sách dự toán” | “Chi phí phát sinh ngoài ngân sách sản xuất phải trình Giám đốc phụ trách và ghi kèm tên công ty tương ứng để phê duyệt (áp dụng cho 12 công ty thuộc Group)” |
+| Trưởng phòng, vòng 2 | Giám đốc, vòng 1 |
+
+**Nhận định của AI**
+
+> Chị Ngân (Trưởng phòng) cho biết công ty không có ngân sách dự toán nên không cần phê duyệt chi phí phát sinh; trong khi Giám đốc khẳng định các chi phí ngoài ngân sách đều phải trình Giám đốc phụ trách công ty tương ứng phê duyệt.
+>
+> Phát hiện ngày 22/10/2026
+
 - **Câu cần chốt:** Chi phí phát sinh của một đơn gia công hiện có phải xin duyệt không, ai duyệt, ngưỡng bao nhiêu?
 - **Người chốt đề nghị:** Giám đốc, Trưởng phòng Sản xuất, Phòng Tài chính Kế toán
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Trưởng phòng nói không có ngân sách dự toán nên không duyệt chi phí phát sinh. Giám đốc nói chi phí ngoài ngân sách phải trình Giám đốc phụ trách công ty tương ứng. Có thể hai câu nói về hai việc: không có ngân sách theo đơn hàng, nhưng chi phí phát sinh vẫn phải xin duyệt. Xem thêm L02.
 
-### M13. Việc nào phải xin duyệt, ai duyệt, ngưỡng nào — Tổng quan phòng · Duyệt và ngưỡng
+#### M13. Việc nào phải xin duyệt, ai duyệt, ngưỡng nào: hai nguồn nói khác nhau
 
-*Đánh dấu trên MIC (chờ phân xử)* · Mức ảnh hưởng: **thấp**
+`Việc nào phải xin duyệt, ai duyệt, ngưỡng nào`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | QUY TRÌNH SẢN XUẤT 09.07.2026 (2).xlsx · sheet 1. QT LÀM VIỆC VỚI NCC MỚI | Duyệt hợp đồng NCC GC mới lần lượt qua Pháp lý -> P. TCKT -> Giám đốc ký duyệt |
-| B | Chị Ngân · V2 · C2 | Không áp dụng phê duyệt chi phí hoặc vượt ngân sách dự toán đơn hàng do công ty hiện không có quỹ chi phí và ngân sách dự toán |
+Trạng thái: **Đã hỏi lại hai bên**
 
-- **Giả thuyết:** Trạng thái trên MIC: đã hỏi lại. Hai câu nói về hai việc khác nhau (duyệt hợp đồng NCC mới và duyệt chi phí), nên nhiều khả năng không mâu thuẫn thật. Điểm thật cần chốt nằm ở L07.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| QUY TRÌNH SẢN XUẤT 09.07.2026 (2).xlsx · sheet 1. QT LÀM VIỆC VỚI NCC MỚI | Chị Ngân · V2 · C2 |
+| “Duyệt hợp đồng NCC GC mới lần lượt qua Pháp lý -> P. TCKT -> Giám đốc ký duyệt” | “Không áp dụng phê duyệt chi phí hoặc vượt ngân sách dự toán đơn hàng do công ty hiện không có quỹ chi phí và ngân sách dự toán” |
+|  | Trưởng phòng, vòng 2 |
+
+**Nhận định của AI**
+
+> "Duyệt hợp đồng NCC GC mới lần lượt qua Pháp lý -> P. TCKT -> Giám đốc ký duyệt" (QUY TRÌNH SẢN XUẤT 09.07.2026 (2).xlsx · sheet 1. QT LÀM VIỆC VỚI NCC MỚI) khác "Không áp dụng phê duyệt chi phí hoặc vượt ngân sách dự toán đơn hàng do công ty hiện không có quỹ chi phí và ngân sách dự toán" (Chị Ngân · V2 · C2).
+>
+> Phát hiện ngày 21/10/2026
+
 - **Câu cần chốt:** Xác nhận đây là hai việc khác nhau: duyệt hợp đồng NCC mới đi theo tệp quy trình; duyệt chi phí theo câu trả lời ở M12.
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Trạng thái trên MIC: đã hỏi lại. Hai câu nói về hai việc khác nhau (duyệt hợp đồng NCC mới và duyệt chi phí), nên nhiều khả năng không mâu thuẫn thật. Điểm thật cần chốt nằm ở L07.
 
-### L01. Bao lâu một lần (số đơn) — Quản lý đơn hàng SX gia công · Tiếp nhận / Kiểm tra điều kiện
+### Các chỗ lệch A5 tìm thêm
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **cao**
+#### L01. Bao lâu một lần (số đơn)
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối sản xuất · V2 · C1 | Tiếp nhận khoảng 10 đến 15 đơn hàng một ngày từ Phòng Kinh doanh (bao gồm cả các đơn hàng dự trù trước). Chuyên viên VTBB V3 C1 cũng nói 10 đến 15 đơn mỗi ngày. |
-| B | Trưởng nhóm Điều phối · V4 · C2 | Trung bình khoảng 15 đơn/tuần cho 3 loại: đơn thành phẩm, đơn bán thành phẩm, đơn xử lý lại. Chuyên viên Giá vốn V2 C1 cũng nói khoảng 15 đơn mỗi tuần. |
+`Quản lý đơn hàng SX gia công · Tiếp nhận / Kiểm tra điều kiện › Bao lâu một lần (số đơn)`
 
-- **Giả thuyết:** Lệch khoảng 5 lần. Giả thuyết: hai nhóm đếm hai thứ khác nhau, một bên đếm mọi yêu cầu KD gửi vào (gồm đơn dự trù), một bên đếm đơn thật sự đi duyệt giá và gửi NCC.
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
+
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối sản xuất · V2 · C1 | Trưởng nhóm Điều phối · V4 · C2 |
+| “Tiếp nhận khoảng 10 đến 15 đơn hàng một ngày từ Phòng Kinh doanh (bao gồm cả các đơn hàng dự trù trước)” | “Trung bình khoảng 15 đơn/tuần cho 3 loại: đơn đặt hàng thành phẩm (chiếm tỷ trọng lớn), đơn đặt hàng bán thành phẩm, và đơn xử lý lại do phát sinh sự cố” |
+| Chuyên viên Điều phối sản xuất, vòng 2 | Trưởng nhóm Điều phối, vòng 4 |
+
+**Nhận định của A5**
+
+> Lệch khoảng 5 lần. Giả thuyết: hai nhóm đếm hai thứ khác nhau, một bên đếm mọi yêu cầu KD gửi vào (gồm đơn dự trù), một bên đếm đơn thật sự đi duyệt giá và gửi NCC.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Mỗi ngày nhận bao nhiêu yêu cầu từ KD, và mỗi tuần có bao nhiêu đơn thật sự gửi NCC GC?
 - **Người chốt đề nghị:** Trưởng nhóm Điều phối, Chuyên viên Điều phối sản xuất
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Chuyên viên VTBB V3 C1 cũng nói 10 đến 15 đơn mỗi ngày. Chuyên viên Giá vốn V2 C1 cũng nói khoảng 15 đơn mỗi tuần.
 
-### L02. Việc nào phải xin duyệt, ai duyệt, ngưỡng nào — Tổng quan phòng · Duyệt và ngưỡng
+#### L02. Việc nào phải xin duyệt, ai duyệt, ngưỡng nào
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **cao**
+`Tổng quan phòng · Duyệt và ngưỡng › Việc nào phải xin duyệt, ai duyệt, ngưỡng nào`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chị Ngân · V2 · C2 | Không áp dụng phê duyệt chi phí hoặc vượt ngân sách dự toán (Giám đốc V1 C1 lại nói phải trình Giám đốc phụ trách). |
-| B | Bản sao của QUY TRINH THANH TOAN V1- 7.11.2025.xlsx · sheet Form DE XUAT MUA HANG | Trưởng bộ phận duyệt tối đa 3 triệu/lần (hạn mức 10 triệu/tháng); Quản lý thương hiệu duyệt tối đa 5 triệu/lần; vượt mức do Giám đốc điều hành duyệt. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Ba nguồn, ba kiểu. MIC chỉ so cặp Trưởng phòng và Giám đốc (M12), chưa so với tệp có hạn mức. Còn một chỗ lệch nhỏ: Giám đốc phụ trách và Giám đốc điều hành có phải một người không.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chị Ngân · V2 · C2 | Bản sao của QUY TRINH THANH TOAN V1- 7.11.2025.xlsx · sheet Form DE XUAT MUA HANG |
+| “Không áp dụng phê duyệt chi phí hoặc vượt ngân sách dự toán đơn hàng do công ty hiện không có quỹ chi phí và ngân sách dự toán” | “Duyệt chi phí mua sắm: Trưởng bộ phận duyệt tối đa 3 triệu/lần (hạn mức 10 triệu/tháng); Quản lý thương hiệu duyệt tối đa 5 triệu/lần; vượt mức do Giám đốc điều hành duyệt” |
+| Trưởng phòng, vòng 2 |  |
+
+**Nhận định của A5**
+
+> Ba nguồn, ba kiểu. MIC chỉ so cặp Trưởng phòng và Giám đốc (M12), chưa so với tệp có hạn mức. Còn một chỗ lệch nhỏ: Giám đốc phụ trách và Giám đốc điều hành có phải một người không.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Hạn mức 3 triệu và 5 triệu trong tệp quy trình thanh toán có đang áp cho chi phí của phòng Sản xuất không? Giám đốc phụ trách và Giám đốc điều hành có phải một người?
 - **Người chốt đề nghị:** Giám đốc, Phòng Tài chính Kế toán
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Giám đốc V1 C1 lại nói chi phí ngoài ngân sách phải trình Giám đốc phụ trách (xem M12).
 
-### L03. Phiếu điều chuyển nguyên liệu gửi cho ai — Quản lý đơn hàng SX gia công · Chuẩn bị nguồn lực
+#### L03. Phiếu điều chuyển nguyên liệu gửi cho ai
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **vừa**
+`Quản lý đơn hàng SX gia công · Chuẩn bị nguồn lực › Phiếu điều chuyển nguyên liệu gửi cho ai`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V1 · C2 | Phiếu yêu cầu phối trộn hoặc điều chuyển nguyên liệu gửi Phòng Kinh doanh, Bộ phận Kho và Nhà gia công. |
-| B | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C5 | Bộ phận Sản xuất không gửi trực tiếp Phiếu điều chuyển nguyên liệu cho Kho, mà gửi Điều phối thành phẩm để yêu cầu NCC GC phối hợp xuất điều chuyển. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Cùng một người nói hai ý ở hai vòng. Giả thuyết: phiếu phối trộn gửi Kho, phiếu điều chuyển thì không.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V1 · C2 | Chuyên viên Điều phối nguyên liệu/bán thành phẩm · V2 · C5 |
+| “Phiếu yêu cầu phối trộn hoặc điều chuyển nguyên liệu do Chuyên viên NL/BTP lập khi phát sinh nhu cầu phối trộn BTP hoặc điều chuyển NL, gửi Kinh doanh, Kho và Nhà gia công” | “Bộ phận Sản xuất không gửi trực tiếp Phiếu điều chuyển nguyên liệu cho Kho, mà Điều phối NL/BTP lập gửi cho Điều phối thành phẩm để Điều phối thành phẩm yêu cầu NCC GC phối hợp xuất điều chuyển” |
+| Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 1 | Chuyên viên Điều phối nguyên liệu/bán thành phẩm, vòng 2 |
+
+**Nhận định của A5**
+
+> Cùng một người nói hai ý ở hai vòng. Giả thuyết: phiếu phối trộn gửi Kho, phiếu điều chuyển thì không.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Phiếu phối trộn và phiếu điều chuyển nguyên liệu có gửi thẳng cho Kho không? Nếu khác nhau thì mỗi loại gửi ai?
 - **Người chốt đề nghị:** Chuyên viên Điều phối nguyên liệu/bán thành phẩm
 - **Trả lời của Sản xuất:** ............................................................
 
-### L04. Ai chịu trách nhiệm cuối — Quản lý đơn hàng SX gia công · Tiếp nhận và kiểm tra yêu cầu đặt hàng
+#### L04. Ai chịu trách nhiệm cuối
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **vừa**
+`Quản lý đơn hàng SX gia công · Tiếp nhận và kiểm tra yêu cầu đặt hàng › Ai chịu trách nhiệm cuối`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Trưởng nhóm Điều phối · V2 · C3 | Điều phối thành phẩm chịu trách nhiệm đảm bảo tính đầy đủ của thông tin, Phòng Kinh doanh chịu trách nhiệm đảm bảo tính chính xác của đơn đặt hàng. |
-| B | Chị Ngân · V3 · C3 | Chuyên viên Điều phối sản xuất chịu trách nhiệm cuối nếu đơn hàng bị sót thông tin hoặc sai quy cách. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Nếu Điều phối thành phẩm và Chuyên viên Điều phối sản xuất là một vị trí thì chỉ lệch ở phần trách nhiệm của KD. Hai tên gọi đang dùng lẫn.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Trưởng nhóm Điều phối · V2 · C3 | Chị Ngân · V3 · C3 |
+| “Điều phối thành phẩm chịu trách nhiệm đảm bảo tính đầy đủ của thông tin, Phòng Kinh doanh chịu trách nhiệm đảm bảo tính chính xác của đơn đặt hàng” | “Chuyên viên Điều phối sản xuất chịu trách nhiệm cuối nếu đơn hàng bị sót thông tin hoặc sai quy cách” |
+| Trưởng nhóm Điều phối, vòng 2 | Trưởng phòng, vòng 3 |
+
+**Nhận định của A5**
+
+> Nếu Điều phối thành phẩm và Chuyên viên Điều phối sản xuất là một vị trí thì chỉ lệch ở phần trách nhiệm của KD. Hai tên gọi đang dùng lẫn.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Điều phối thành phẩm và Chuyên viên Điều phối sản xuất có phải một vị trí? Đơn sai quy cách do KD ghi sai thì ai chịu?
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất
 - **Trả lời của Sản xuất:** ............................................................
 
-### L05. Ai quyết phương án khi hàng lỗi — Quản lý đơn hàng SX gia công · Nhận hàng và xử lý sai lệch / Xử lý sự cố
+#### L05. Ai quyết phương án khi hàng lỗi
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **cao**
+`Quản lý đơn hàng SX gia công · Nhận hàng và xử lý sai lệch / Xử lý sự cố › Ai quyết phương án khi hàng lỗi`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Trưởng nhóm Điều phối · V4 · C4 | Trưởng nhóm Điều phối quyết định phương án xử lý cuối cùng sau khi tổng hợp ý kiến từ NCC GC, các bộ phận liên quan và Kinh doanh. |
-| B | Chuyên viên Pháp lý - Xử lý sự cố · V5 · C3 | Trưởng nhóm Quản lý dữ liệu phê duyệt phương án trong thẩm quyền; ngoài quy trình, vượt thẩm quyền hoặc có rủi ro thì Trưởng phòng quyết định. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Hai trưởng nhóm khác nhau cùng được nói là người quyết. Giả thuyết: Trưởng nhóm Điều phối quyết khi lỗi phát hiện lúc nhận hàng tại NCC, Trưởng nhóm QLDL quyết khi đã thành sự cố.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Trưởng nhóm Điều phối · V4 · C4 | Chuyên viên Pháp lý - Xử lý sự cố · V5 · C3 |
+| “Trưởng nhóm Điều phối quyết định phương án xử lý cuối cùng sau khi tổng hợp ý kiến từ NCC GC, các bộ phận liên quan và Kinh doanh” | “Trưởng nhóm Quản lý dữ liệu phê duyệt phương án trong thẩm quyền; nếu phát sinh ngoài quy trình, vượt thẩm quyền hoặc có rủi ro thì Trưởng phòng (Quản lý sản xuất) quyết định” |
+| Trưởng nhóm Điều phối, vòng 4 | Chuyên viên Pháp lý - Xử lý sự cố, vòng 5 |
+
+**Nhận định của A5**
+
+> Hai trưởng nhóm khác nhau cùng được nói là người quyết. Giả thuyết: Trưởng nhóm Điều phối quyết khi lỗi phát hiện lúc nhận hàng tại NCC, Trưởng nhóm QLDL quyết khi đã thành sự cố.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Hàng nhận về bị lỗi: ai quyết phương án cuối? Có tách theo lúc phát hiện (tại NCC hay đã về kho) không?
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất
 - **Trả lời của Sản xuất:** ............................................................
 
-### L06. Các bước theo thứ tự — Quản lý đơn hàng SX gia công · Mức quy trình
+#### L06. Các bước theo thứ tự
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **thấp**
+`Quản lý đơn hàng SX gia công · Mức quy trình › Các bước theo thứ tự`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Chị Ngân · V1 · C4 | Quy trình quan trọng nhất gồm 6 bước từ tiếp nhận đơn đến hoàn thiện chứng từ thanh lý. |
-| B | QUY TRÌNH SẢN XUẤT 09.07.2026 (1).xlsx · sheet 4. QT QL ĐƠN HÀNG SX GC | Gồm 7 bước: tiếp nhận và xử lý dữ liệu, kiểm tra thông tin, gửi đơn NCC, nhập kho và nhận hóa đơn, theo dõi nhận hàng, kiểm tra mẫu gửi Lab, lập chứng từ. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Số bước và tên bước khác nhau giữa câu trả lời và tệp quy trình. MIC đang dựng theo 6 bước.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Chị Ngân · V1 · C4 | QUY TRÌNH SẢN XUẤT 09.07.2026 (1).xlsx · sheet 4. QT QL ĐƠN HÀNG SX GC |
+| “Quy trình quan trọng nhất là Quản lý đơn hàng sản xuất gia công tại nhà cung cấp (NCC GC) gồm 6 bước từ tiếp nhận đơn đến hoàn thiện chứng từ thanh lý.” | “Gồm 7 bước: 1. Tiếp nhận và xử lý dữ liệu -> 2. Kiểm tra thông tin -> 3. Gửi đơn đặt hàng NCC GC & cập nhật tiến độ -> 4. Nhập kho & nhận hóa đơn từ NCC GC -> 5. Theo dõi nhận hàng từ NCC GC -> 6. Kiểm tra mẫu gửi Lab -> 7. Lập chứng từ cấu thành, đối chiếu, thanh toán.” |
+| Trưởng phòng, vòng 1 |  |
+
+**Nhận định của A5**
+
+> Số bước và tên bước khác nhau giữa câu trả lời và tệp quy trình. MIC đang dựng theo 6 bước.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Bản quy trình chuẩn hiện hành là bản nào: 6 bước hay 7 bước?
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất
 - **Trả lời của Sản xuất:** ............................................................
 
-### L07. Ai ký hợp đồng NCC GC mới — Làm việc với NCC GC mới · Soạn hợp đồng / Hoàn thiện
+#### L07. Ai ký hợp đồng NCC GC mới
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **vừa**
+`Làm việc với NCC GC mới · Soạn hợp đồng / Hoàn thiện › Ai ký hợp đồng NCC GC mới`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | QUY TRÌNH SẢN XUẤT 09.07.2026 (2).xlsx · sheet 1. QT LÀM VIỆC VỚI NCC MỚI | Duyệt hợp đồng NCC GC mới lần lượt qua Pháp lý -> P. TCKT -> Giám đốc ký duyệt. |
-| B | Giám đốc · V2 · C2 | Hợp đồng và bảng giá với NCC mới bắt buộc trình Đại diện pháp luật của Công ty ký duyệt. Giám đốc V1 C2: Giám đốc phụ trách công ty tương ứng duyệt bằng văn bản. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Tập đoàn có 12 công ty. Giám đốc ký, Giám đốc phụ trách và Đại diện pháp luật có thể là những người khác nhau ở từng công ty.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| QUY TRÌNH SẢN XUẤT 09.07.2026 (2).xlsx · sheet 1. QT LÀM VIỆC VỚI NCC MỚI | Giám đốc · V2 · C2 |
+| “Duyệt hợp đồng NCC GC mới lần lượt qua Pháp lý -> P. TCKT -> Giám đốc ký duyệt” | “Hợp đồng và bảng giá với NCC mới bắt buộc phải trình Đại diện pháp luật của Công ty ký duyệt” |
+|  | Giám đốc, vòng 2 |
+
+**Nhận định của A5**
+
+> Tập đoàn có 12 công ty. Giám đốc ký, Giám đốc phụ trách và Đại diện pháp luật có thể là những người khác nhau ở từng công ty.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Với từng công ty, ai duyệt kết quả chọn NCC mới và ai ký hợp đồng?
 - **Người chốt đề nghị:** Giám đốc
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Giám đốc V1 C2 nói thêm: kết quả chọn NCC mới do Giám đốc phụ trách công ty tương ứng duyệt bằng văn bản.
 
-### L08. Toàn trình mất bao lâu — Quản lý đơn hàng SX gia công · Mức quy trình
+#### L08. Toàn trình mất bao lâu
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **thấp**
+`Quản lý đơn hàng SX gia công · Mức quy trình › Toàn trình mất bao lâu`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet Data số ngày cập nhật cho KD | Thời gian sản xuất một đơn tại NCC Hà Long: 15, 10 hoặc 7 ngày tùy ai cấp BTP và VTBB. |
-| B | QUY TRÌNH SẢN XUẤT 09.07.2026 (1).xlsx · sheet 17. TT NCC GC | NCC Hà Long: thời gian 5-14 ngày. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Hai bảng cùng nói về một NCC nhưng khác số.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet Data số ngày cập nhật cho KD | QUY TRÌNH SẢN XUẤT 09.07.2026 (1).xlsx · sheet 17. TT NCC GC |
+| “Thời gian sản xuất 1 đơn hàng tại NCC Hà Long: Cấu thành BTP và VTBB nội bộ là 15 ngày; BTP khách hàng và VTBB nội bộ là 10 ngày; BTP khách hàng và VTBB NCC là 7 ngày” | “Nhà cung cấp gia công Hà Long (gia công thuốc BVTV, có app theo dõi tiến độ, đơn tối thiểu 10 thùng, thời gian 5-14 ngày)” |
+
+**Nhận định của A5**
+
+> Hai bảng cùng nói về một NCC nhưng khác số.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** KD đang hứa ngày giao theo bảng nào? Bảng nào là bảng đúng?
 - **Người chốt đề nghị:** Trưởng nhóm Điều phối
 - **Trả lời của Sản xuất:** ............................................................
 
-### L09. Số trạng thái theo dõi đơn — Công cụ, tài liệu
+#### L09. Số trạng thái theo dõi đơn
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **thấp**
+`Công cụ, tài liệu › Số trạng thái theo dõi đơn`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet họp07.10 | Tiến độ đơn hàng theo dõi qua 6 trạng thái điều phối. |
-| B | Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet NHẬP-XUẤT TP | Quy trình điều phối theo dõi 7 trạng thái nhập xuất. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Hai sheet trong cùng một tệp. Có thể là hai bộ trạng thái khác nhau (điều phối và nhập xuất).
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet họp07.10 | Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet NHẬP-XUẤT TP |
+| “File Excel ĐIỀU PHỒI THÀNH PHẨM dùng quản lý và cập nhật tiến độ đơn hàng sản xuất qua 6 trạng thái điều phối” | “Quy trình điều phối theo dõi 7 trạng thái nhập xuất; hàng sản xuất dư nếu được chấp nhận thì nhập kho TP, nếu Kinh doanh chưa nhận hàng thì chuyển sang quy trình Xử lý sự cố” |
+
+**Nhận định của A5**
+
+> Hai sheet trong cùng một tệp. Có thể là hai bộ trạng thái khác nhau (điều phối và nhập xuất).
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Đây là một bộ trạng thái hay hai bộ? Liệt kê tên từng trạng thái.
 - **Người chốt đề nghị:** Trưởng nhóm Điều phối
 - **Trả lời của Sản xuất:** ............................................................
 
-### L10. Ai kiểm chất lượng thành phẩm khi nhận — Quản lý đơn hàng SX gia công · Nhận hàng
+#### L10. Ai kiểm chất lượng thành phẩm khi nhận
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **vừa**
+`Quản lý đơn hàng SX gia công · Nhận hàng › Ai kiểm chất lượng thành phẩm khi nhận`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Trưởng nhóm Điều phối · V2 · C7 | Lab nội bộ kiểm mẫu thành phẩm khi nhận hàng từ NCC GC: ngoại dạng, màu sắc, trọng lượng; kiểm hàm lượng chỉ khi có yêu cầu hoặc sự cố. |
-| B | Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet Kết quả KCS Kho Dr.Xanh | Biểu mẫu Kết quả KCS Kho dùng theo dõi quy cách ngoại quan, phụ kiện và chứng từ khi nhận thành phẩm. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Có thể cả Lab và Kho cùng kiểm, mỗi bên một phần. Cần biết kết quả của bên nào thì hàng mới được nhập kho dùng được.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Trưởng nhóm Điều phối · V2 · C7 | Bản sao của ĐIỀU PHỒI THÀNH PHẨM (NHÁP).xlsx · sheet Kết quả KCS Kho Dr.Xanh |
+| “Kiểm tra mẫu thành phẩm tại Lab nội bộ khi nhận hàng từ NCC GC chỉ kiểm tra ngoại dạng, màu sắc, trọng lượng; chỉ kiểm tra hàm lượng hoạt chất hoặc chỉ tiêu chuyên môn sâu khi có yêu cầu hoặc phát sinh sự cố” | “Biểu mẫu Kết quả KCS Kho Dr.Xanh dùng theo dõi quy cách ngoại quan, phụ kiện và chứng từ khi nhận thành phẩm từ NCC gia công.” |
+| Trưởng nhóm Điều phối, vòng 2 |  |
+
+**Nhận định của A5**
+
+> Có thể cả Lab và Kho cùng kiểm, mỗi bên một phần. Cần biết kết quả của bên nào thì hàng mới được nhập kho dùng được.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Khi nhận thành phẩm, Kho kiểm gì, Lab kiểm gì? Kết quả của bên nào quyết định hàng được nhập kho?
 - **Người chốt đề nghị:** Trưởng nhóm Điều phối, Kho, Lab
 - **Trả lời của Sản xuất:** ............................................................
 
-### L11. Ai đang giữ vị trí Chuyên viên Pháp lý - Xử lý sự cố — Bộ máy
+#### L11. Ai đang giữ vị trí Chuyên viên Pháp lý - Xử lý sự cố
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **vừa**
+`Bộ máy › Ai đang giữ vị trí Chuyên viên Pháp lý - Xử lý sự cố`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Ảnh sơ đồ tổ chức · tr. 1 | Chuyên viên Pháp lý - Xử lý sự cố: Trần Ngọc Huỳnh (lead), Nguyễn Ngọc Bảo Thi. |
-| B | Danh sách vị trí trên MIC | Chuyên viên Pháp lý - Xử lý sự cố: Trần Ngọc Huỳnh kiêm nhiệm và một nhân viên tên Thơ. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Mới phát hiện khi đọc lại ngày 24/10. Tên nhân viên thứ hai khác nhau. Nếu Trưởng nhóm QLDL đang kiêm vị trí này thì hai vai trả lời khác nhau ở câu ai quyết cuối (M09 so với M02).
+| as-is · thực tế | dữ liệu MIC |
+|---|---|
+| Ảnh sơ đồ tổ chức · tr. 1 | Danh sách vị trí trên MIC |
+| “Chuyên viên Pháp lý - Xử lý sự cố báo cáo Trưởng nhóm Quản lý dữ liệu (Trần Ngọc Huỳnh lead, Nguyễn Ngọc Bảo Thi)” | Chuyên viên Pháp lý - Xử lý sự cố: Trần Ngọc Huỳnh kiêm nhiệm và một nhân viên tên Thơ. |
+
+**Nhận định của A5**
+
+> Mới phát hiện khi đọc lại ngày 24/10. Tên nhân viên thứ hai khác nhau. Nếu Trưởng nhóm QLDL đang kiêm vị trí này thì hai vai trả lời khác nhau ở câu ai quyết cuối (M09 so với M02).
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Ai đang giữ vị trí Chuyên viên Pháp lý - Xử lý sự cố? Người trả lời khảo sát ở vai này là ai?
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất
 - **Trả lời của Sản xuất:** ............................................................
 
-### L12. Tuyến báo cáo của Chuyên viên Điều phối NL/BTP — Bộ máy
+#### L12. Tuyến báo cáo của Chuyên viên Điều phối NL/BTP
 
-*A5 tìm thêm (MIC chưa đánh dấu)* · Mức ảnh hưởng: **vừa**
+`Bộ máy › Tuyến báo cáo của Chuyên viên Điều phối NL/BTP`
 
-| | Nguồn | Nói gì |
-|---|---|---|
-| A | Ảnh sơ đồ tổ chức · tr. 1 | Chuyên viên Điều phối NL/BTP báo cáo Trưởng nhóm Điều phối. Cùng một nhân sự có tên ở cả nhóm Điều phối sản xuất và nhóm Điều phối NL/BTP. |
-| B | Lỗ hổng trên MIC (mức cao) | Chuyên viên Điều phối NL/BTP phản hồi chưa xác định rõ Trưởng nhóm Điều phối có phải quản lý trực tiếp hay không. |
+Trạng thái: **A5 tìm thêm, chưa có trên MIC**
 
-- **Giả thuyết:** Có thể do kiêm nhiệm hai vị trí, và Trưởng nhóm Điều phối đang do Trưởng phòng kiêm nhiệm.
+| as-is · thực tế | as-is · thực tế |
+|---|---|
+| Ảnh sơ đồ tổ chức · tr. 1 | Lỗ hổng trên MIC (mức cao) |
+| “Chuyên viên Điều phối NL/BTP báo cáo Trưởng nhóm Điều phối (Đào Thị Thúy Oanh)” | Chuyên viên Điều phối NL/BTP phản hồi chưa xác định rõ Trưởng nhóm Điều phối có phải quản lý trực tiếp hay không. |
+
+**Nhận định của A5**
+
+> Có thể do kiêm nhiệm hai vị trí, và Trưởng nhóm Điều phối đang do Trưởng phòng kiêm nhiệm.
+>
+> Phát hiện ngày 24/10/2026
+
 - **Câu cần chốt:** Chuyên viên Điều phối NL/BTP báo cáo trực tiếp cho ai? Nhân sự có tên ở hai nhóm có kiêm nhiệm không?
 - **Người chốt đề nghị:** Trưởng phòng Sản xuất
 - **Trả lời của Sản xuất:** ............................................................
+- **Ghi chú của A5:** Theo ảnh sơ đồ tổ chức, cùng một nhân sự có tên ở cả nhóm Điều phối sản xuất và nhóm Điều phối NL/BTP.
 
 ---
 
