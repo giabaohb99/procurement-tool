@@ -16952,3 +16952,22 @@ Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr
 **Còn lại:** khảo sát vẫn đang mở, còn 8 vòng chưa nộp. Bảng phân vai ở mục 3.1 chờ Trưởng phòng và Giám đốc chốt.
 
 Tham chiếu: doc/erp/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md · doc/erp/nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md
+
+## nc-03-phong-van-san-xuat | Tách bộ câu hỏi và mâu thuẫn khảo sát Sản xuất để gửi Phòng Sản xuất chốt
+- status: xong
+- date: 2026-10-24
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Ban điều hành cần một bộ tài liệu riêng gửi Phòng Sản xuất đọc lại các câu trả lời khảo sát hiện trạng và chốt những chỗ các câu trả lời nói khác nhau.
+
+**Đã làm**
+- Liệt kê đủ 108 câu hỏi và 222 câu trả lời trên ứng dụng khảo sát Make It Clear, đánh số theo mục, bước, câu. Mỗi câu trả lời ghi rõ vị trí người trả lời, vòng, câu và loại *as-is* hay *giả thuyết*.
+- Lập 25 mục mâu thuẫn cần chốt: 13 mục ứng dụng khảo sát đang chờ phân xử và 12 chỗ lệch tìm thêm khi đọc chéo (gồm 2 chỗ mới về người giữ vị trí). Mỗi mục có câu cần chốt và người chốt đề nghị.
+- Làm bản Excel có ba sheet: *Mâu thuẫn* có cột để Phòng Sản xuất điền trả lời, *Câu hỏi* cùng dữ liệu bản Markdown, và *Hướng dẫn*.
+- Ba điểm nhạy cảm về chứng từ và thuế với nhà gia công chỉ ghi một dòng, không ghi chi tiết.
+
+**Kết quả:** hai tệp tài liệu nghiên cứu số 03 trên nhánh erp-v2, số liệu chụp lúc 24/10/2026 08:59.
+
+**Còn lại:** chờ Phòng Sản xuất điền cột trả lời. Khảo sát vẫn đang mở, còn 9 vòng chưa nộp.
+
+Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat.xlsx
