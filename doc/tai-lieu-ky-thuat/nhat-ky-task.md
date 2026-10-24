@@ -16988,3 +16988,20 @@ Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md �
 **Kết quả:** đã kiểm phiếu Word đủ 13 mục chính và 12 mục phụ lục, 26 trang. Đã so ba mục chọn ngẫu nhiên (M02, M09, M11) với web, khớp cả sáu trường. Dữ liệu 13 mục cũng khớp từng ký tự với dữ liệu web qua so mã băm.
 
 Tham chiếu: doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx · doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat.xlsx
+
+## nc-03c-tra-loi-truong-phong-sx | Ghi ba câu trả lời của Trưởng phòng Sản xuất vào phiếu mâu thuẫn khảo sát
+- status: xong
+- date: 2026-10-24
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Sáng 24/10 lúc 09:30, Trưởng phòng Sản xuất trả lời qua chat ba nội dung trong phiếu mâu thuẫn. Được giao ghi vào tài liệu 03 và phiếu Word.
+
+**Đã làm**
+- Ai quyết cuối khi đơn chưa đủ điều kiện: Trưởng phòng Sản xuất là người quyết cuối cùng và cao nhất, các bên khác chỉ cung cấp thông tin. Ghi vào 10 mục của cụm này, kèm ghi chú là câu này trái với ý kiến Phòng Kinh doanh quyết của hai vị trí khác, nên còn cần Phòng Kinh doanh hoặc Giám đốc xác nhận.
+- Chi phí và ngân sách: chưa có ngân sách, chỉ có chi phí thực chi; Giám đốc không phê duyệt chi phí, chỉ tới cấp Trưởng phòng. Ghi vào hai mục về duyệt chi phí, kèm ghi chú là câu này khác câu trả lời của Giám đốc và khác hạn mức trong tệp quy trình thanh toán.
+- Duyệt hợp đồng và duyệt chi phí là hai việc khác nhau. Ghi vào mục tương ứng.
+- Mười ba mục này được đánh dấu *Đã trả lời, chờ xác nhận văn bản*. Phiếu Word in sẵn câu trả lời, nguồn và dòng xác nhận, vẫn giữ ô trống để ký.
+
+**Kết quả:** tài liệu 03 và phiếu Word trên nhánh erp-v2. Bản Excel không đổi.
+
+Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx
