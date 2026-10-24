@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bản đồ quy trình Sản xuất DEGO (gia công tại NCC)</title>
+<style>
+  :root { --navy:#1a4d6b; --teal:#2a9d8f; --ok:#2e7d32; --warn:#e0a106; --bad:#c62828; --bg:#f6f8fa; --line:#d0d7de; }
+  * { box-sizing: border-box; }
+  body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: var(--bg); color: #222; font-size: 14px; }
+  header { background: var(--navy); color: #fff; padding: 14px 24px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; opacity: .9; }
+  main { padding: 18px 24px 40px; max-width: 1500px; margin: 0 auto; }
+  h2 { color: var(--navy); font-size: 17px; margin: 26px 0 10px; border-left: 4px solid var(--teal); padding-left: 8px; }
+  .legend span { display: inline-block; padding: 2px 8px; border-radius: 4px; margin-right: 8px; font-size: 12px; color: #fff; }
+  .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .step { background: #fff; border: 1px solid var(--line); border-top: 5px solid var(--ok); border-radius: 6px; padding: 10px; cursor: pointer; position: relative; min-height: 190px; }
+  .step.warn { border-top-color: var(--warn); } .step.bad { border-top-color: var(--bad); }
+  .step:hover { box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+  .step .n { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: .5px; }
+  .step h3 { margin: 2px 0 8px; font-size: 14px; color: var(--navy); }
+  .step .row { font-size: 12.5px; margin: 3px 0; }
+  .step .row b { color: #444; }
+  .step .q { margin-top: 8px; font-size: 12px; padding: 5px 7px; border-radius: 4px; background: #fff7df; border: 1px solid #f1d58a; }
+  .step.bad .q { background: #fdecec; border-color: #f1b1b1; }
+  .step.ok .q { background: #e9f5ea; border-color: #b7dcb9; }
+  .arrow { text-align: center; color: #999; font-size: 20px; grid-column: 1 / -1; display: none; }
+  .side { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  .card h3 { margin: 0 0 8px; font-size: 14px; color: var(--navy); }
+  pre.tree { font-family: Consolas, monospace; font-size: 12.5px; margin: 0; white-space: pre-wrap; line-height: 1.5; }
+  table { border-collapse: collapse; width: 100%; background: #fff; font-size: 13px; }
+  th, td { border: 1px solid var(--line); padding: 6px 8px; vertical-align: top; text-align: left; }
+  th { background: #eaf1f6; color: var(--navy); }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 3px; color: #fff; }
+  .tag.ok { background: var(--ok); } .tag.bad { background: var(--bad); } .tag.warn { background: var(--warn); }
+  #detail { position: fixed; right: 0; top: 0; height: 100%; width: 460px; max-width: 95vw; background: #fff; border-left: 1px solid var(--line); box-shadow: -4px 0 16px rgba(0,0,0,.15); padding: 16px 18px; overflow: auto; transform: translateX(100%); transition: transform .2s; z-index: 10; }
+  #detail.open { transform: none; }
+  #detail h3 { margin: 0 0 6px; color: var(--navy); }
+  #detail .close { float: right; cursor: pointer; font-size: 18px; color: #666; }
+  #detail .qa { border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; margin: 8px 0; }
+  #detail .qa b.t { display: block; margin-bottom: 4px; }
+  .muted { color: #666; font-size: 12px; }
+  @media (max-width: 1100px) { .flow { grid-template-columns: repeat(3, 1fr); } .side { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bản đồ quy trình Sản xuất DEGO</h1>
+  <p>Sản xuất = gia công tại nhà cung cấp (NCC GC). Bấm vào một ô để xem ai làm, câu hỏi đang mở và câu đã chốt. Cập nhật 24/10/2026 từ khảo sát 19/10 (108 câu hỏi, 222 câu trả lời, 16 chỗ chưa thống nhất).</p>
+</header>
+<main>
+
+<h2>1. Một đơn gia công đi qua 6 bước</h2>
+<p class="legend"><span style="background:var(--ok)">Xanh: đã rõ</span><span style="background:var(--warn)">Vàng: có chỗ chưa thống nhất</span><span style="background:var(--bad)">Đỏ: chưa thống nhất ở việc quan trọng</span></p>
+<div class="flow" id="flow"></div>
+
+<h2>2. Hai quy trình phụ</h2>
+<div class="side">
+  <div class="card">
+    <h3>Tìm NCC gia công mới (7 bước)</h3>
+    <div class="row">Khi NCC cũ không còn phù hợp hoặc có sản phẩm mới. <b>Trưởng phòng</b> chủ trì.</div>
+    <div class="row">Tiếp nhận yêu cầu → tìm NCC → so sánh → thỏa thuận, kiểm pháp lý → lấy mẫu, Lab kiểm → soạn hợp đồng, bảng giá → hoàn thiện cách làm việc.</div>
+    <div class="row"><span class="tag ok">Đã chốt 24/10</span> Duyệt kết quả chọn NCC và duyệt hợp đồng: <b>CEO</b>. Ký hợp đồng: <b>Đại diện pháp luật</b> của công ty.</div>
+    <div class="row"><span class="tag bad">Lỗ hổng</span> 4 bước đầu chưa có ai làm, chưa có ai chịu trách nhiệm cuối.</div>
+  </div>
+  <div class="card">
+    <h3>Xử lý sự cố (5 bước)</h3>
+    <div class="row">Bộ phận phát hiện lỗi báo bộ phận xử lý sự cố. Tìm nguyên nhân → tìm phương án → làm thủ tục → theo dõi → lưu hồ sơ.</div>
+    <div class="row">4 cách kết thúc: chấp nhận không xử lý · bắt NCC làm lại · hủy và cấn trừ công nợ · tạm chờ ý kiến.</div>
+    <div class="row"><span class="tag bad">Chưa chốt</span> Ai quyết phương án: Trưởng nhóm Điều phối nói mình quyết; Pháp lý nói Trưởng nhóm Quản lý dữ liệu quyết, vượt thì Trưởng phòng.</div>
+    <div class="row"><span class="tag warn">Thiếu</span> Chưa có thời hạn cho từng công đoạn. Ba bước cuối chưa ai trả lời. Hàng lỗi xử lý khác nhau tùy NCC.</div>
+  </div>
+</div>
+
+<h2>3. Bộ máy: ai là ai</h2>
+<div class="side">
+  <div class="card">
+<pre class="tree">CEO / Giám đốc công ty (12 công ty, mỗi công ty một Giám đốc)
+└─ Trưởng phòng Sản xuất: chị Ngân (bàn giao chị Mi trước 31/12/2026)
+   ├─ Nhóm Điều phối (Trưởng phòng đang kiêm trưởng nhóm)
+   │    ├─ Điều phối thành phẩm: Thảo, Ngọc, Oanh
+   │    ├─ Điều phối vật tư bao bì: Ly (trưởng), Tiên, An
+   │    └─ Điều phối nguyên liệu / bán thành phẩm: Oanh
+   └─ Nhóm Quản lý dữ liệu: anh Huỳnh
+        ├─ Giá vốn: chị Hương
+        ├─ Pháp lý, xử lý sự cố: Huỳnh kiêm (+ Bảo Thi hoặc Thơ, chưa rõ)
+        └─ Hồ sơ sản xuất, dữ liệu NCC: Thơ, Liên, Khang</pre>
+  </div>
+  <div class="card">
+    <h3>Bên ngoài phòng</h3>
+    <div class="row"><b>Phòng Kinh doanh:</b> gửi đơn đặt thành phẩm, dự trù nguyên liệu ngày 15 hằng tháng.</div>
+    <div class="row"><b>Kho:</b> nhận hàng, đếm số, kiểm quy cách và chứng từ.</div>
+    <div class="row"><b>Lab:</b> kiểm ngoại dạng, màu, trọng lượng; hàm lượng chỉ khi có sự cố.</div>
+    <div class="row"><b>Kế toán sản xuất:</b> nhận 11 loại chứng từ để quyết toán.</div>
+    <div class="row"><b>NCC gia công:</b> nhận nguyên liệu, bao bì; đóng gói; giao thành phẩm.</div>
+    <h3 style="margin-top:12px">Từ ngữ đã thống nhất (chị Ngân, 24/10)</h3>
+    <div class="row">Từ <b>giám đốc</b> trong quy trình: bước 4.2, 6.2.4 (NCC mới) và A.1, B.1, B.1.5 (giá vốn) là <b>CEO</b>; bước 6.2.5 ký hợp đồng là <b>Đại diện pháp luật</b>.</div>
+    <div class="row muted">Anh Phú đề nghị thống nhất luôn các từ: kinh doanh, bộ phận phối hợp, quản lý.</div>
+  </div>
+</div>
+
+<h2>4. Tình hình 16 câu cần chốt</h2>
+<table id="qtable">
+  <tr><th style="width:36px">#</th><th>Câu hỏi</th><th style="width:70px">Bước</th><th style="width:110px">Tình trạng</th><th>Trả lời hoặc mâu thuẫn</th><th style="width:150px">Ai chốt</th></tr>
+</table>
+<p class="muted">Chi tiết từng câu, nguyên văn từng người: tệp <i>03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md</i>. Bản đọc nhanh: tệp 04. Văn bản theo câu hỏi: tệp 05.</p>
+</main>
+
+<div id="detail"><span class="close" onclick="closeDetail()">✕</span><div id="detail-body"></div></div>
+
+<script>
+const Q = [
+  {n:1, step:2, st:'ok', q:'Đơn thiếu điều kiện (nguyên liệu, bao bì, giấy tờ), ai quyết cho đi tiếp hay dừng?', a:'Trưởng phòng Sản xuất quyết cuối (chị Ngân, 24/10). Còn cần Phòng Kinh doanh và CEO xác nhận, vì trước đó anh Huỳnh và chuyên viên nguyên liệu nói Kinh doanh quyết.', who:'CEO, Phòng Kinh doanh xác nhận'},
+  {n:2, step:3, st:'bad', q:'Ai là đầu mối làm việc với NCC về điều chuyển nguyên liệu?', a:'Chuyên viên nguyên liệu nói gửi phiếu cho Điều phối thành phẩm. Trưởng nhóm Điều phối nói đầu mối là chuyên viên Hồ sơ sản xuất và Dữ liệu NCC.', who:'Trưởng nhóm Điều phối'},
+  {n:3, step:3, st:'ok', q:'Chi phí phát sinh của đơn, ai duyệt?', a:'Chưa có ngân sách, chỉ có chi phí thực chi. Giám đốc không duyệt chi phí, chỉ tới Trưởng phòng (chị Ngân, 24/10). Cần CEO xác nhận vì Giám đốc vòng 1 nói phải trình Giám đốc.', who:'CEO xác nhận'},
+  {n:4, step:0, st:'ok', q:'Duyệt hợp đồng NCC mới và duyệt chi phí có phải một việc?', a:'Hai việc khác nhau (chị Ngân, 24/10). Hợp đồng theo quy trình riêng; chi phí theo câu 3.', who:'Đã chốt'},
+  {n:5, step:1, st:'bad', q:'Mỗi ngày nhận bao nhiêu đơn, mỗi tuần gửi NCC bao nhiêu?', a:'Hai người nói 10 đến 15 đơn mỗi ngày. Hai người khác nói khoảng 15 đơn mỗi tuần. Lệch 5 lần, có thể do đếm hai thứ khác nhau (yêu cầu vào, đơn gửi NCC).', who:'Trưởng nhóm Điều phối, kèm số thật 1 tháng'},
+  {n:6, step:3, st:'bad', q:'Hạn mức duyệt 3 triệu và 5 triệu trong quy trình thanh toán có áp cho Sản xuất?', a:'Chị Ngân nói không có duyệt chi phí. Tệp quy trình thanh toán ghi Trưởng bộ phận 3 triệu, Quản lý thương hiệu 5 triệu, vượt thì Giám đốc điều hành.', who:'CEO và Kế toán'},
+  {n:7, step:3, st:'ok', q:'Phiếu điều chuyển và phối trộn nguyên liệu gửi cho ai?', a:'Có hai loại chuyển kho (chị Ngân, 24/10): khi mua nguyên liệu theo phần E bước 3.1; khi nhận đơn thành phẩm theo phần D bước 2 của quy trình nguyên liệu.', who:'Đã chốt'},
+  {n:8, step:1, st:'warn', q:'Đơn Kinh doanh gửi vào bị sót hoặc sai quy cách, ai chịu?', a:'Trưởng nhóm Điều phối: Điều phối thành phẩm chịu về đủ thông tin, Kinh doanh chịu về đúng thông tin. Chị Ngân: chuyên viên Điều phối sản xuất chịu cuối.', who:'Trưởng phòng Sản xuất'},
+  {n:9, step:5, st:'bad', q:'Hàng nhận về bị lỗi, ai quyết cách xử lý?', a:'Trưởng nhóm Điều phối nói mình quyết. Chuyên viên Pháp lý nói Trưởng nhóm Quản lý dữ liệu duyệt, vượt thẩm quyền thì Trưởng phòng.', who:'Trưởng phòng Sản xuất'},
+  {n:10, step:0, st:'warn', q:'Quy trình chuẩn là bản 6 bước hay 7 bước?', a:'Chị Ngân nói 6 bước. Tệp quy trình 09/07/2026 ghi 7 bước.', who:'Trưởng phòng Sản xuất'},
+  {n:11, step:0, st:'ok', q:'Với từng công ty, ai duyệt chọn NCC mới và ai ký hợp đồng?', a:'Duyệt chọn NCC và duyệt hợp đồng: CEO. Ký hợp đồng: Đại diện pháp luật của công ty (bảng từ ngữ chị Ngân, 24/10).', who:'Đã chốt'},
+  {n:12, step:4, st:'warn', q:'Kinh doanh hứa ngày giao cho khách theo bảng nào?', a:'Một bảng ghi NCC Hà Long 15, 10 hoặc 7 ngày tùy ai cấp bán thành phẩm và bao bì. Tệp quy trình ghi 5 đến 14 ngày.', who:'Trưởng nhóm Điều phối'},
+  {n:13, step:4, st:'warn', q:'Theo dõi đơn bằng một bộ trạng thái hay hai bộ?', a:'Cùng một tệp có 6 trạng thái điều phối và 7 trạng thái nhập xuất. Quyết định cách ERP vẽ màn theo dõi.', who:'Trưởng nhóm Điều phối'},
+  {n:14, step:5, st:'warn', q:'Khi nhận thành phẩm, Kho kiểm gì, Lab kiểm gì, bên nào quyết hàng được nhập?', a:'Trưởng nhóm Điều phối nói Lab kiểm ngoại dạng, màu, trọng lượng. Biểu mẫu KCS lại là của Kho. Chưa ai nói kết quả bên nào quyết.', who:'Trưởng nhóm Điều phối, Kho, Lab'},
+  {n:15, step:0, st:'warn', q:'Ai đang giữ vị trí Chuyên viên Pháp lý, xử lý sự cố?', a:'Sơ đồ ghi anh Huỳnh và chị Bảo Thi. Hệ khảo sát ghi anh Huỳnh và một người tên Thơ.', who:'Trưởng phòng Sản xuất'},
+  {n:16, step:0, st:'warn', q:'Chuyên viên Điều phối nguyên liệu báo cáo cho ai?', a:'Sơ đồ ghi Trưởng nhóm Điều phối. Chính người đó trả lời là chưa rõ. Cùng một người có tên ở hai nhóm.', who:'Trưởng phòng Sản xuất'},
+];
+const STEPS = [
+  {n:1, t:'Nhận yêu cầu', who:'Điều phối thành phẩm', what:'Kinh doanh gửi đơn qua Drive và Zalo. Chép đơn và định mức vào bảng theo dõi.', out:'Đơn trong bảng theo dõi'},
+  {n:2, t:'Kiểm điều kiện', who:'4 chuyên viên: nguyên liệu, bao bì, pháp lý, giá vốn', what:'Nguyên liệu đủ chưa, bao bì đủ chưa (30 phút đến 1 ngày), pháp lý đủ 5 giấy chưa, giá vốn bao nhiêu. 7 bộ phận cùng duyệt.', out:'Kết quả duyệt trên sheet'},
+  {n:3, t:'Chuẩn bị', who:'Giá vốn, Trưởng phòng ký', what:'Phiếu duyệt giá 3 mức (15 đến 30 phút một phiếu, hay chờ NCC báo giá). Phiếu điều chuyển hoặc phối trộn nguyên liệu.', out:'Phiếu giá đã ký, phiếu điều chuyển'},
+  {n:4, t:'Gửi NCC, theo dõi', who:'Điều phối thành phẩm, Điều phối nguyên liệu', what:'Gửi đơn gia công kèm công thức, màu, quy cách. Cập nhật tiến độ chậm nhất 3 ngày. Báo kho 16 giờ mỗi ngày.', out:'Đơn gia công, báo cáo tiến độ'},
+  {n:5, t:'Nhận hàng', who:'Kho, Lab, Điều phối thành phẩm', what:'Kho đếm số, kiểm quy cách và chứng từ. Lab kiểm ngoại dạng, màu, trọng lượng. Có lỗi thì sang xử lý sự cố.', out:'Số nhận trên Drive, chứng từ qua Zalo'},
+  {n:6, t:'Chứng từ, đối chiếu', who:'Hồ sơ sản xuất; Trưởng nhóm Quản lý dữ liệu chịu cuối', what:'Gom 11 loại chứng từ bản cứng, đối chiếu công nợ với NCC. Dữ liệu MISA hay sai hoặc chậm.', out:'Bộ chứng từ bàn giao Kế toán'},
+];
+const flow = document.getElementById('flow');
+STEPS.forEach(s => {
+  const qs = Q.filter(q => q.step === s.n);
+  const open = qs.filter(q => q.st !== 'ok');
+  const cls = open.some(q => q.st === 'bad') ? 'bad' : open.length ? 'warn' : 'ok';
+  const d = document.createElement('div');
+  d.className = 'step ' + cls;
+  d.innerHTML = `<div class="n">Bước ${s.n}</div><h3>${s.t}</h3>
+    <div class="row"><b>Ai:</b> ${s.who}</div>
+    <div class="row"><b>Làm gì:</b> ${s.what}</div>
+    <div class="row"><b>Ra:</b> ${s.out}</div>
+    ${qs.length ? `<div class="q"><b>${open.length ? open.length + ' chỗ chưa thống nhất' : 'Đã chốt'}:</b> ${qs.map(q => 'câu ' + q.n).join(', ')}</div>` : '<div class="q" style="background:#eef;border-color:#ccd">Không có câu hỏi mở</div>'}`;
+  d.onclick = () => showStep(s, qs);
+  flow.appendChild(d);
+});
+const tbl = document.getElementById('qtable');
+const label = {ok:'Đã thống nhất', warn:'Chưa thống nhất', bad:'Chưa thống nhất, quan trọng'};
+Q.forEach(q => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${q.n}</td><td>${q.q}</td><td>${q.step ? 'Bước ' + q.step : 'Chung'}</td><td><span class="tag ${q.st}">${label[q.st]}</span></td><td>${q.a}</td><td>${q.who}</td>`;
+  tbl.appendChild(tr);
+});
+function showStep(s, qs) {
+  const b = document.getElementById('detail-body');
+  b.innerHTML = `<h3>Bước ${s.n}. ${s.t}</h3>
+    <div class="row"><b>Ai làm:</b> ${s.who}</div><div class="row"><b>Làm gì:</b> ${s.what}</div><div class="row"><b>Ra cái gì:</b> ${s.out}</div>
+    <h3 style="margin-top:14px">Câu hỏi ở bước này</h3>` +
+    (qs.length ? qs.map(q => `<div class="qa"><b class="t">Câu ${q.n}. ${q.q}</b><span class="tag ${q.st}">${label[q.st]}</span><div style="margin-top:6px">${q.a}</div><div class="muted">Ai chốt: ${q.who}</div></div>`).join('') : '<p class="muted">Không có.</p>');
+  document.getElementById('detail').classList.add('open');
+}
+function closeDetail() { document.getElementById('detail').classList.remove('open'); }
+</script>
+</body>
+</html>
