@@ -16933,3 +16933,22 @@ Mã nguồn: test/backend/test_duyet_theo_quyen_cr680.py · plans/reports/code-r
 - status: xong
 Đo trên MySQL thật với mười, sáu mươi và hai trăm người giữ quyền: đúng người ở cả ba mức, sáu truy vấn cố định khi bộ đệm quyền đã nóng. Viết bài hướng dẫn sử dụng, bổ sung tài liệu dữ liệu bộ máy duyệt, nâng cẩm nang trợ lý phần Nghỉ phép. Tiện tay sửa một lỗi kiểm mã còn sót của CR-676.
 Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr680.py · backend/scripts/seed_help_phe_duyet_theo_quyen.py · doc/erp/tai-lieu-ky-thuat/05d-du-lieu-van-thu-duyet.md
+
+## nc-02-khao-sat-san-xuat | Phân tích khảo sát hiện trạng Quản lý sản xuất ngày 19/10
+- status: xong
+- date: 2026-10-24
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Phòng Sản xuất đã trả lời khảo sát hiện trạng trên ứng dụng khảo sát Make It Clear. Được giao đọc toàn bộ câu trả lời, rút ra các chỗ mâu thuẫn trước, rồi tổng hợp hiện trạng thành tài liệu.
+
+**Đã làm**
+- Đọc 146 câu trả lời của 11 người, 13 tài liệu tải lên và 14 mâu thuẫn hệ thống khảo sát đã đánh dấu. Chỉ đọc, không ghi gì lên ứng dụng khảo sát.
+- Gom 10 mâu thuẫn về cùng một câu: khi đơn hàng không đủ điều kiện triển khai thì **Trưởng phòng Sản xuất hay Phòng Kinh doanh quyết cuối**. Đề xuất bảng phân vai theo từng loại vướng mắc để Ban điều hành chốt.
+- Tìm thêm 10 chỗ lệch hệ thống chưa bắt được. Nặng nhất là số đơn (*10 đến 15 đơn mỗi ngày* so với *15 đơn mỗi tuần*), ba nguồn khác nhau về hạn mức duyệt chi phí, và hai trưởng nhóm cùng được nói là người quyết phương án xử lý hàng lỗi.
+- Ghi nhận sản xuất của công ty là **gia công tại nhà cung cấp**, rồi nối sang các tài liệu kho và sản xuất đã có.
+
+**Kết quả:** tài liệu nghiên cứu số 02 trên nhánh erp-v2, có 11 câu cần hỏi lại. Ba điểm nhạy cảm về chứng từ và thuế cố ý không chép vào tài liệu.
+
+**Còn lại:** khảo sát vẫn đang mở, còn 8 vòng chưa nộp. Bảng phân vai ở mục 3.1 chờ Trưởng phòng và Giám đốc chốt.
+
+Tham chiếu: doc/erp/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md · doc/erp/nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md
