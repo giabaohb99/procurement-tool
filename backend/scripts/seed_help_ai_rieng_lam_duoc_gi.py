@@ -48,9 +48,9 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <tr><td><strong>Xuất tệp Excel / Word mẫu công ty</strong></td><td>Xuất bảng số ra Excel, báo cáo trình bày ra Word mẫu DEGO; đường tải dùng một lần, hết hạn sau 15 phút.</td><td>Bật</td></tr>
 <tr><td><strong>Quản trị Kho skill và khóa AI bằng lời</strong></td><td>Soạn / xuất bản skill, gán quyền đọc, cấp / thu hồi khóa — chỉ người có quyền quản trị tương ứng, khóa được ghi.</td><td>Bật</td></tr>
 <tr><td>Văn thư</td><td>Tìm và đọc văn bản, xem cấu hình luồng duyệt.</td><td>Tắt — nhờ quản trị bật</td></tr>
-<tr><td>Công việc và dự án</td><td>Soạn việc, soạn cả kế hoạch nhiều giai đoạn, gợi ý ai nên giao, thống kê tốc độ theo loại việc.</td><td>Tắt — nhờ quản trị bật</td></tr>
+<tr><td><strong>Công việc và dự án</strong></td><td>Soạn việc, soạn cả kế hoạch nhiều giai đoạn, gợi ý ai nên giao, thống kê tốc độ theo loại việc.</td><td>Bật</td></tr>
 <tr><td>Sửa và xóa phiếu của chính mình</td><td>Đề xuất sửa / xóa phiếu mình lập (có xác nhận, xem dưới).</td><td>Tắt — nhờ quản trị bật</td></tr>
-<tr><td>Tạo phiếu hỗ trợ</td><td>Lập phiếu hỗ trợ cho bộ phận nhận phiếu. (Báo lỗi phần mềm qua công cụ <em>báo lỗi</em> thì luôn có.)</td><td>Tắt — nhờ quản trị bật</td></tr>
+<tr><td><strong>Tạo phiếu hỗ trợ</strong></td><td>Lập phiếu hỗ trợ cho bộ phận nhận phiếu. (Báo lỗi phần mềm qua công cụ <em>báo lỗi</em> thì luôn có.)</td><td>Bật</td></tr>
 <tr><td>Lịch và Drive Google · Sổ nhớ, ghi chú, nhóm chat, biên bản họp · Nghiên cứu sâu nhiều nguồn</td><td>Các việc cá nhân dùng chủ yếu qua bot Telegram; nghiên cứu sâu tốn phí công ty.</td><td>Tắt — nhờ quản trị bật</td></tr>
 </tbody>
 </table>
@@ -125,7 +125,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <li><strong>Duyệt, trả lại, từ chối phiếu thay bạn</strong>: AI chỉ cho biết phiếu nào chờ bạn duyệt; bấm duyệt trên web.</li>
 <li><strong>Tạo đề nghị thanh toán</strong>: AI chỉ trả link mở form điền sẵn trên web.</li>
 <li><strong>Xóa đề nghị thanh toán, phiếu hỗ trợ</strong>, xóa phiếu của người khác hoặc phiếu đã gửi duyệt.</li>
-<li><strong>Sửa / xóa phiếu, văn thư, soạn việc dự án</strong> khi nhóm tương ứng đang tắt — nhờ quản trị bật.</li>
+<li><strong>Sửa / xóa phiếu, văn thư</strong> khi nhóm tương ứng đang tắt — nhờ quản trị bật.</li>
 <li><strong>Đọc tệp đính kèm của phiếu</strong> (hóa đơn, ảnh, PDF) và <strong>xem màn hình</strong> của bạn.</li>
 </ul>
 <p>Số AI trả về là số ERP tính, cùng phạm vi với màn web; <strong>câu chữ là của AI</strong> — đối chiếu lại màn web trước khi gửi
