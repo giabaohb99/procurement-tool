@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -70,7 +70,7 @@ describe('ConnectAiPage', () => {
     const { container } = renderPage()
     expect(await screen.findByText('Địa chỉ kết nối')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /ChatGPT/ })).toHaveAttribute('aria-pressed', 'true')
-    const advanced = screen.getByRole('button', { name: /Nâng cao/ })
+    const advanced = screen.getByRole('button', { name: /Cách 2 \(nâng cao\)/ })
     expect(advanced).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByRole('button', { name: /Cursor/ })).not.toBeInTheDocument()
     expect(container.textContent).not.toMatch(/dego_mcp_|KHÓA_CỦA_BẠN/)
@@ -79,7 +79,7 @@ describe('ConnectAiPage', () => {
   it('opens the key way on demand, with the placeholder kept and only the public endpoint called', async () => {
     mockPublic()
     const { container } = renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Cách 2 \(nâng cao\)/ }))
     expect(await screen.findByText(/Bearer <KHÓA_CỦA_BẠN>/)).toBeInTheDocument()
     expect(apiGet.mock.calls.every(([url]) => url === '/api/agent-hub/mcp-setup/public')).toBe(true)
     expect(container.textContent).not.toMatch(/dego_mcp_/)
@@ -89,7 +89,7 @@ describe('ConnectAiPage', () => {
     mockPublic()
     renderPage('/connect-ai?client=cursor')
     expect(await screen.findByRole('button', { name: /Cursor/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: /Nâng cao/ })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: /Cách 2 \(nâng cao\)/ })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('copies the config with the placeholder, never asking for a key', async () => {
@@ -106,7 +106,7 @@ describe('ConnectAiPage', () => {
     mockPublic()
     renderPage('/connect-ai?client=<script>')
     expect(await screen.findByRole('button', { name: /ChatGPT/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: /Nâng cao/ })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: /Cách 2 \(nâng cao\)/ })).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('keeps one plain list against an older server that does not say which apps use OAuth', async () => {
@@ -120,7 +120,7 @@ describe('ConnectAiPage', () => {
     })
     renderPage()
     expect(await screen.findByRole('button', { name: /Cursor/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.queryByRole('button', { name: /Nâng cao/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Cách 2 \(nâng cao\)/ })).not.toBeInTheDocument()
   })
 
   it('keeps the intro short and links to the full help article', async () => {
@@ -128,5 +128,19 @@ describe('ConnectAiPage', () => {
     renderPage()
     const link = await screen.findByRole('link', { name: /AI riêng của bạn làm được gì trong ERP/ })
     expect(link.getAttribute('href')).toMatch(/\/ai-rieng-cua-ban-lam-duoc-gi-trong-erp-cong-cu-va-skill$/)
+  })
+
+  it('names both ways exactly like their help articles and links each to its own article', async () => {
+    //  Tên trên màn phải khớp tên bài ở Trung tâm trợ giúp (seed_help_ket_noi_ai_cach_1.py), lệch là người dùng tìm không ra.
+    mockPublic()
+    renderPage()
+    const oauth = await screen.findByRole('region', { name: 'Cách 1 (khuyên dùng): nối bằng đăng nhập ERP' })
+    const key = screen.getByRole('region', { name: 'Cách 2 (nâng cao): sửa tệp cấu hình bằng khóa riêng' })
+    expect(within(oauth).getByRole('link', { name: /Xem bài hướng dẫn/ }).getAttribute('href')).toMatch(
+      /\/cach-1-khuyen-dung-noi-bang-dang-nhap-erp$/,
+    )
+    expect(within(key).getByRole('link', { name: /Xem bài hướng dẫn/ }).getAttribute('href')).toMatch(
+      /\/cach-2-nang-cao-sua-tep-cau-hinh-bang-khoa-rieng$/,
+    )
   })
 })

@@ -110,7 +110,7 @@ describe('ProfileAiConnectSection (AI của tôi)', () => {
     expect(await screen.findByText('Bước 1 · Chọn ứng dụng AI bạn đang dùng')).toBeInTheDocument()
     //  kh-AI-ket-noi-giao-dien: chưa chọn khóa thì Cách 1 (đăng nhập ERP) đứng trước, Cách 2 thu gọn.
     expect(await screen.findByRole('button', { name: /claude\.ai/ })).toHaveAttribute('aria-pressed', 'true')
-    const advanced = screen.getByRole('button', { name: /Nâng cao/ })
+    const advanced = screen.getByRole('button', { name: /Cách 2 \(nâng cao\)/ })
     expect(advanced).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByRole('button', { name: /Claude Desktop/ })).not.toBeInTheDocument()
     await userEvent.click(advanced)
@@ -123,7 +123,7 @@ describe('ProfileAiConnectSection (AI của tôi)', () => {
   it('shows the reason instead of an empty config for an app that cannot connect', async () => {
     mockServer()
     renderSection()
-    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Cách 2 \(nâng cao\)/ }))
     await userEvent.click(await screen.findByRole('button', { name: /ChatGPT/ }))
     expect(await screen.findByText(/ChatGPT chưa nối được/)).toBeInTheDocument()
     expect(screen.queryByText('Đoạn cấu hình dán vào tệp')).not.toBeInTheDocument()
