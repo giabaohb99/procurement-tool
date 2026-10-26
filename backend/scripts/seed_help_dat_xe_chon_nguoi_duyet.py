@@ -28,8 +28,9 @@ có khối <strong>«Người phê duyệt và công ty»</strong> gồm hai ô,
 <li>Mỗi dòng có <strong>ảnh đại diện</strong> (chưa có ảnh thì hiện chữ cái đầu), tên dạng <strong>«Mã - Họ tên»</strong>
 (ví dụ <em>NSU209 - Huỳnh Gia Bảo</em>) và dòng nhỏ bên dưới ghi <strong>vai trò cấp quyền duyệt kèm phạm vi</strong>
 (ví dụ <em>Điều phối viên (Đặt xe) (Tất cả)</em>).</li>
-<li>Danh sách gồm <strong>mọi người</strong> được tick quyền <strong>Duyệt</strong> ở dòng <em>Đặt xe</em> trên màn Nhân sự ▸ Phân quyền tài khoản,
-ở bất kỳ phạm vi nào, kể cả Quản trị hệ thống. Chính bạn không có trong danh sách — không tự duyệt phiếu của mình.</li>
+<li>Danh sách <strong>trùng đúng</strong> danh sách «Người có quyền duyệt» ở màn Phê duyệt ▸ Luồng duyệt: người có vai trò được tick
+<strong>Duyệt</strong> ở dòng <em>Đặt xe</em> (Nhân sự ▸ Phân quyền tài khoản) với phạm vi Phòng ban, Công ty hoặc Tất cả — không gồm tài khoản
+Quản trị hệ thống. Chính bạn không có trong danh sách — không tự duyệt phiếu của mình.</li>
 <li>Người được chọn <strong>xem và duyệt được phiếu</strong> dù phiếu thuộc công ty khác công ty của họ.</li>
 </ul>
 

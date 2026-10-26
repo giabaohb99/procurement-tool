@@ -23,7 +23,7 @@ Một người được giao bước khi đủ bốn điều:
    Bối cảnh không có `id` thì trả RỖNG, không đoán (M1/M2).
 
 Ngoại lệ duoc-CR-681: bối cảnh có `picked_approver_employee_id` (phiếu đặt xe chọn sẵn người duyệt) và
-người đó giữ ô Duyệt ở BẤT KỲ phạm vi nào (kể cả Quản trị — `pickable_role_ids`) → chỉ giao người đó, bỏ điều 3.
+người đó thỏa điều 1-2 → chỉ giao người đó, bỏ điều 3.
 """
 from __future__ import annotations
 
@@ -57,9 +57,8 @@ def model_of(entity: str):
     return getattr(importlib.import_module(path[0]), path[1])
 
 
-def _approve_grant_conds(Permission, entity: str, *, any_scope: bool = False) -> list:
-    conds = [Permission.entity == entity, Permission.can_approve.is_(True)]
-    return conds if any_scope else [*conds, Permission.scope.in_(ROW_SCOPES)]
+def _approve_grant_conds(Permission, entity: str) -> list:
+    return [Permission.entity == entity, Permission.can_approve.is_(True), Permission.scope.in_(ROW_SCOPES)]
 
 
 def _qualifying_role_ids(db: Session, entity: str) -> set[int]:
@@ -68,19 +67,6 @@ def _qualifying_role_ids(db: Session, entity: str) -> set[int]:
     admin_id = system_admin_role_id(db) or 0
     return {row[0] for row in db.query(Permission.role_id)
             .filter(*_approve_grant_conds(Permission, entity), Permission.role_id != admin_id).distinct()}
-
-
-def pickable_role_ids(db: Session, entity: str) -> set[int]:
-    """Vai trò có ô Duyệt trên `entity` — MỌI phạm vi, kể cả `admin` (duoc-CR-681, anh Được 24/10/2026).
-
-    Dùng cho NGƯỜI DUYỆT CHỌN ĐÍCH DANH trên phiếu: người dùng tự chọn nên không cần lọc như lúc bộ máy tự
-    giao (điều 1 ở đầu tệp) — phạm vi không quan trọng vì người được chọn được mở quyền xem + duyệt riêng
-    phiếu đó. Lọc như điều 1 thì ô chọn trống trơn trên hệ chỉ có «Quản lý thu mua · Của mình» + Quản trị.
-    """
-    from app.modules.role.model import Permission
-
-    return {row[0] for row in db.query(Permission.role_id)
-            .filter(*_approve_grant_conds(Permission, entity, any_scope=True)).distinct()}
 
 
 def holders(db: Session, entity: str, role_ids: set[int] | None = None) -> list:
@@ -126,8 +112,7 @@ def resolve(db: Session, raw: str, subject: dict) -> list[int]:
     #  quyền. Không soi phạm vi: công ty và người duyệt trên phiếu là hai ô độc lập (anh Được chốt).
     #  Người đã chọn mất quyền thì bỏ lựa chọn, tính như phiếu chưa chọn — phiếu không kẹt.
     picked = int(subject.get("picked_approver_employee_id") or 0)
-    if picked and any(user.employee_id == picked
-                      for user in holders(db, entity, pickable_role_ids(db, entity))):
+    if picked and any(user.employee_id == picked for user in users):
         return [picked]
     #  MỘT truy vấn soi phạm vi cho mọi người giữ quyền: mỗi người một cột `CASE WHEN <phạm vi của họ>`
     #  trên đúng dòng phiếu — cùng điều kiện `get_scoped` dựng, khác ở chỗ không chạy N lượt
@@ -148,10 +133,10 @@ def resolve(db: Session, raw: str, subject: dict) -> list[int]:
     return [user.employee_id for user, hit in zip(users, row) if hit]
 
 
-def holder_profiles(db: Session, entity: str, *, pickable: bool = False) -> list[dict]:
-    """Danh sách cho màn khai luồng: ai đang giữ grant đủ điều kiện trên `entity`, qua vai trò nào.
-
-    `pickable=True`: danh sách CHỌN ĐÍCH DANH trên phiếu — mọi phạm vi, kể cả Quản trị (`pickable_role_ids`).
+def holder_profiles(db: Session, entity: str) -> list[dict]:
+    """Danh sách người giữ grant đủ điều kiện trên `entity`, qua vai trò nào — dùng CHUNG cho màn khai luồng
+    (bước «Người có quyền duyệt») và ô «Người phê duyệt» trên phiếu đặt xe (anh Được 26/10/2026: hai nơi phải
+    ra cùng một danh sách).
 
     Chưa lọc theo phiếu (lúc khai luồng chưa có phiếu) — phạm vi trả kèm để người khai đọc được
     «Điều phối viên · Tất cả» khác «Trưởng phòng · Phòng ban». Số truy vấn cố định.
@@ -162,7 +147,7 @@ def holder_profiles(db: Session, entity: str, *, pickable: bool = False) -> list
 
     if entity not in _MODELS:
         return []
-    role_ids = pickable_role_ids(db, entity) if pickable else _qualifying_role_ids(db, entity)
+    role_ids = _qualifying_role_ids(db, entity)
     users = holders(db, entity, role_ids)
     if not users:
         return []
@@ -174,7 +159,7 @@ def holder_profiles(db: Session, entity: str, *, pickable: bool = False) -> list
               .join(Permission, Permission.role_id == UserRole.role_id)
               .filter(UserRole.user_id.in_([user.id for user in users]),
                       UserRole.role_id.in_(role_ids),
-                      *_approve_grant_conds(Permission, entity, any_scope=pickable))
+                      *_approve_grant_conds(Permission, entity))
               .order_by(Role.sort_order.asc(), Role.name.asc()).all())
     roles_of: dict[int, list[dict]] = {}
     for user_id, role_name, scope in grants:

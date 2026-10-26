@@ -83,12 +83,15 @@ def _payload(**over):
 
 # ─────────────────────────── Danh sách người duyệt ───────────────────────────
 
-def test_danh_sach_gom_moi_nguoi_co_o_duyet_moi_pham_vi_ke_ca_quan_tri(db, org):
-    """Anh Được 24/10: local chỉ có «Quản lý thu mua · Của mình» + Quản trị giữ ô Duyệt đặt xe → bản đầu (lọc như
-    lúc bộ máy tự giao) ra ô chọn TRỐNG. Chọn đích danh thì mọi người có ô Duyệt đều chọn được."""
+def test_o_chon_tren_phieu_trung_dung_danh_sach_man_khai_luong(db, org):
+    """Anh Được 26/10 (dev): bước «Người có quyền duyệt» hiện 3 người mà ô chọn trên phiếu hiện nhiều hơn (bản 24/10
+    nới ra mọi phạm vi + Quản trị). Hai nơi phải ra CÙNG một danh sách: không Quản trị, không phạm vi «Của mình»."""
+    from app.modules.approval import permission_approvers
+
     rows = approver_picker.approver_options(db)
-    assert {r["user_id"] for r in rows} == {org.picked.id, org.other.id, org.own_only.id, org.admin.id}
-    assert org.creator.id not in {r["user_id"] for r in rows}         # không có ô Duyệt
+    assert {r["user_id"] for r in rows} == {org.picked.id, org.other.id}
+    assert [r["employee_id"] for r in rows] == [
+        r["employee_id"] for r in permission_approvers.holder_profiles(db, "vehicle_booking")]
     picked = next(r for r in rows if r["user_id"] == org.picked.id)
     assert picked["employee_id"] == org.picked.employee_id
     assert picked["roles"][0]["scope_label"] == "Công ty"
@@ -100,7 +103,7 @@ def test_danh_sach_cong_ty_bo_cong_ty_ngung_dung_va_tra_mac_dinh(db, org):
     data = approver_picker.pick_options(db, 3)
     assert {c["id"] for c in data["companies"]} == {3, 5}
     assert data["default_company_id"] == 3
-    assert {a["user_id"] for a in data["approvers"]} == {org.picked.id, org.other.id, org.own_only.id, org.admin.id}
+    assert {a["user_id"] for a in data["approvers"]} == {org.picked.id, org.other.id}
 
 
 def test_cong_ty_ngung_dung_thi_422_nhung_phieu_cu_giu_cong_ty_do_van_sua_duoc(db, org):
@@ -144,21 +147,10 @@ def test_nguoi_khong_co_o_duyet_thi_422(db, org):
 
 
 @pytest.mark.parametrize("who", ["own_only", "admin"])
-def test_chon_nguoi_pham_vi_cua_minh_hoac_quan_tri_van_duyet_duoc(db, org, who):
-    """Người chọn đích danh mang ô Duyệt ở phạm vi «Của mình» / vai trò Quản trị: bộ máy bật thì nhận đúng việc,
-    bộ máy tắt thì mở + duyệt được phiếu (dù phạm vi không phủ phiếu)."""
-    from app.modules.vehicle_booking import approval_bridge
-    from app.modules.vehicle_booking.controller import _scoped_or_404
-
-    person = getattr(org, who)
-    legacy = create_booking(db, _payload(first_approver_id=person.id), org.creator, submit=True)
-    assert approval_bridge.booking_for_approver(db, legacy.id, person) is legacy
-    assert _scoped_or_404(db, legacy.id, person, "approve") is legacy
-
-    _engine_with_permission_step(db)
-    booking = create_booking(db, _payload(first_approver_id=person.id), org.creator, submit=True)
-    assert _pending_assignees(db, booking) == [person.employee_id]
-
+def test_quan_tri_hoac_pham_vi_cua_minh_khong_chon_duoc(db, org, who):
+    with pytest.raises(HTTPException) as err:
+        create_booking(db, _payload(first_approver_id=getattr(org, who).id), org.creator, submit=False)
+    assert err.value.status_code == 422
 
 def test_id_tai_khoan_khong_ton_tai_hoac_am_thi_422(db, org):
     for bad in (987654, -5):

@@ -2,10 +2,11 @@
 
 Hai ô ĐỘC LẬP (anh Được chốt 23/10/2026): chọn công ty không lọc danh sách người duyệt và ngược lại.
 
-**Danh sách người duyệt** = MỌI người có ô Duyệt phiếu đặt xe ở màn Phân quyền — mọi phạm vi, kể cả
-Quản trị (anh Được 24/10/2026: bản đầu lọc như lúc bộ máy tự giao nên ô chọn trống trên hệ chỉ có «Quản lý
-thu mua · Của mình» + Quản trị). Tài khoản mở + hồ sơ còn làm. Phạm vi không quan trọng vì người được chọn
-được mở quyền xem + duyệt riêng phiếu đó (`approval_bridge.is_picked_legacy_approver`, cách 9 bỏ soi phạm vi). `first_approver_id` lưu id TÀI KHOẢN (cột có từ bản cũ).
+**Danh sách người duyệt** = ĐÚNG danh sách bước «Người có quyền duyệt (theo phân quyền)» của màn khai luồng
+(`permission_approvers.holder_profiles`): vai trò tick Duyệt trên `vehicle_booking`, phạm vi Phòng ban / Công ty /
+Tất cả, không tính vai trò Quản trị, tài khoản mở + hồ sơ còn làm. Anh Được chốt 26/10/2026 — trên dev màn khai
+luồng hiện 3 người thì ô chọn cũng phải đúng 3 người (bản 24/10 từng nới ra «mọi phạm vi, kể cả Quản trị»: bỏ).
+Người được chọn được mở quyền xem + duyệt riêng phiếu đó (`approval_bridge.is_picked_legacy_approver`). `first_approver_id` lưu id TÀI KHOẢN (cột có từ bản cũ).
 
 Người được chọn đi đâu: bộ máy duyệt TẮT → thư «Gửi duyệt» chỉ tới người đó (`notify._approvers`);
 bộ máy BẬT → bước cách 9 chỉ giao cho người đó (`permission_approvers.resolve` đọc
@@ -23,19 +24,14 @@ ENTITY = "vehicle_booking"
 
 def approver_options(db: Session) -> list[dict]:
     """Người chọn được làm người duyệt — kèm `user_id` (giá trị lưu vào `first_approver_id`)."""
-    users = _pickable_users(db)   # holder_profiles gọi lại lần nữa — số truy vấn vẫn cố định
+    users = permission_approvers.holders(db, ENTITY)   # holder_profiles gọi lại — số truy vấn vẫn cố định
     user_of: dict[int, object] = {}
     for user in users:   # một hồ sơ nhiều tài khoản → lấy tài khoản mở có id nhỏ nhất (đã sắp)
         user_of.setdefault(user.employee_id, user)
     #  Ảnh đại diện (bản thu nhỏ) cho ô chọn có avatar — nạp sẵn một truy vấn, không N+1.
     return [{**row, "user_id": user_of[row["employee_id"]].id, "avatar": user_of[row["employee_id"]].avatar}
-            for row in permission_approvers.holder_profiles(db, ENTITY, pickable=True)
+            for row in permission_approvers.holder_profiles(db, ENTITY)
             if row["employee_id"] in user_of]
-
-
-def _pickable_users(db: Session) -> list:
-    """Ai chọn được: MỌI người có ô Duyệt đặt xe (mọi phạm vi, kể cả Quản trị) — anh Được 24/10/2026."""
-    return permission_approvers.holders(db, ENTITY, permission_approvers.pickable_role_ids(db, ENTITY))
 
 
 def company_options(db: Session) -> list[dict]:
@@ -62,7 +58,7 @@ def pick_options(db: Session, default_company_id: int) -> dict:
 
 
 def _allowed_user_ids(db: Session) -> set[int]:
-    return {user.id for user in _pickable_users(db)}
+    return {user.id for user in permission_approvers.holders(db, ENTITY)}
 
 
 def check_company(db: Session, company_id: int | None) -> None:

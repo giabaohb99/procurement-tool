@@ -17123,6 +17123,12 @@ Mã nguồn: frontend-v2/src/shared/ui/search-select.tsx · option-avatar.tsx ·
 Thẻ người yêu cầu ở đầu trang chi tiết phiếu đặt xe nay có hàng «Người phê duyệt» với ảnh đại diện và «Mã - Tên», cạnh «Công ty» với logo; phiếu cũ chưa chọn thì không hiện ô đó. Máy chủ trả thêm mã, ảnh của người duyệt đã chọn và logo công ty khi xem một phiếu.
 Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-requester-card.tsx · backend/app/modules/vehicle_booking/service.py
 
+### duoc-CR-681-11 | Ô chọn người phê duyệt trùng đúng danh sách ở màn khai luồng
+- status: xong
+- date: 2026-10-26
+Anh Được thử trên dev thấy bước «Người có quyền duyệt» ở màn khai luồng hiện ba người mà ô chọn trên phiếu hiện nhiều hơn, vì bản trước đã nới ô chọn ra mọi phạm vi kể cả Quản trị. Nay ô chọn, chốt kiểm khi lưu và bước duyệt dùng chung đúng một danh sách: vai trò tick Duyệt đặt xe với phạm vi Phòng ban, Công ty hoặc Tất cả, không tính Quản trị.
+Mã nguồn: backend/app/modules/approval/permission_approvers.py · backend/app/modules/vehicle_booking/approver_picker.py
+
 ## duoc-CR-682 | Bước 0 đồng bộ app đặt xe cũ: app cũ không đè thao tác làm trên ERP
 - status: xong
 - date: 2026-10-26

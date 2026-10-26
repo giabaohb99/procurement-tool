@@ -180,10 +180,10 @@ vào luồng thì khóa.
   `GET /api/vehicle-bookings/pick-options` (gác `vehicle_booking.create` — nhân viên không cần `company.read`).
 - **Công ty**: mọi pháp nhân đang hoạt động; mặc định pháp nhân trên hồ sơ người tạo. Chốt `approver_picker.check_company`
   (tồn tại + đang dùng; phiếu cũ giữ công ty đã ngừng vẫn sửa được nếu không đổi ô này).
-- **Người duyệt**: `first_approver_id` = id TÀI KHOẢN. Danh sách = MỌI người có ô Duyệt đặt xe, mọi phạm vi, kể cả
-  Quản trị (`permission_approvers.pickable_role_ids`; tài khoản mở + hồ sơ còn làm). Anh Được 24/10/2026: bản đầu lọc
-  như lúc bộ máy tự giao (Phòng ban/Công ty/Tất cả, không admin) nên ô chọn trống trên hệ chỉ có «Quản lý thu mua · Của
-  mình» + Quản trị. Bước «Người có quyền duyệt» nhận người được chọn theo cùng tập này; chưa chọn thì vẫn luật cũ.
+- **Người duyệt**: `first_approver_id` = id TÀI KHOẢN. Danh sách = ĐÚNG danh sách bước «Người có quyền duyệt» ở màn
+  khai luồng (`permission_approvers.holder_profiles`: phạm vi Phòng ban/Công ty/Tất cả, không tính vai trò `admin`, tài
+  khoản mở + hồ sơ còn làm). Anh Được chốt 26/10/2026 (dev: màn khai luồng 3 người thì ô chọn cũng đúng 3). Bản 24/10
+  từng nới ra «mọi phạm vi, kể cả Quản trị» cho local khỏi trống — đã bỏ.
   Chốt `check_approver`: phải trong danh sách, không phải chính người tạo — kiểm khi tạo, khi đổi ô và khi gửi.
 - **Thư «Gửi duyệt» (`dx_submitted`)**: bộ máy TẮT → chuông + thư chỉ tới người được chọn (`notify._approvers`).
   Bộ máy BẬT → bước «Người có quyền duyệt» chỉ giao người được chọn (bối cảnh `picked_approver_employee_id`, bỏ soi
