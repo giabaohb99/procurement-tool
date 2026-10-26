@@ -102,7 +102,110 @@ def load_cells(raw: bytes, filename: str = "") -> list[list[Cell]]:
         return _cells_from_xls(raw)
     if raw[:2] == _ZIP_MAGIC:
         return _cells_from_xlsx(raw)
-    raise CustomsFileError(f"Tệp «{filename}» không phải Excel (.xls hoặc .xlsx).")
+    #  bao-CR-662: hệ thống hải quan có lúc kết xuất tệp HTML hoặc XML (SpreadsheetML) nhưng đặt
+    #  đuôi .xls — Excel mở được, còn chữ ký đầu tệp thì không phải Excel. Nhận cả hai dạng đó;
+    #  mọi ô đọc thành TEXT, vì luật từng ô đã biết đọc ngày và số từ chữ.
+    head = raw.lstrip(b"\xef\xbb\xbf \t\r\n")[:512].lower()
+    if head.startswith(b"<"):
+        if b"urn:schemas-microsoft-com:office:spreadsheet" in head or b"<workbook" in head:
+            return _cells_from_spreadsheetml(raw)
+        if b"<html" in head or b"<table" in head or b"<!doctype" in head:
+            return _cells_from_html(raw)
+    raise CustomsFileError(
+        f"Tệp «{filename}» không phải Excel (.xls hoặc .xlsx). Mở bằng Excel rồi lưu lại dạng .xlsx và nạp lại.")
+
+
+def _decode_text(raw: bytes) -> str:
+    for enc in ("utf-8-sig", "utf-16", "cp1258", "latin-1"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", errors="replace")
+
+
+def _text_cell(value: str) -> "Cell":
+    v = re.sub(r"\s+", " ", value or "").strip()
+    return Cell(TEXT, v) if v else Cell(EMPTY)
+
+
+def _cells_from_html(raw: bytes) -> list[list[Cell]]:
+    """Tệp HTML có <table>: lấy bảng ĐẦU TIÊN có nhiều cột nhất, mỗi <tr> một dòng, mỗi <td>/<th> một ô."""
+    from html.parser import HTMLParser
+
+    class _TableParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.tables: list[list[list[str]]] = []
+            self._row: list[str] | None = None
+            self._cell: list[str] | None = None
+            self._depth = 0
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "table":
+                self._depth += 1
+                if self._depth == 1:
+                    self.tables.append([])
+            elif tag == "tr" and self._depth == 1:
+                self._row = []
+            elif tag in ("td", "th") and self._row is not None:
+                self._cell = []
+            elif tag == "br" and self._cell is not None:
+                self._cell.append(" ")
+
+        def handle_endtag(self, tag):
+            if tag in ("td", "th") and self._row is not None and self._cell is not None:
+                self._row.append("".join(self._cell))
+                self._cell = None
+            elif tag == "tr" and self._row is not None:
+                if self.tables:
+                    self.tables[-1].append(self._row)
+                self._row = None
+            elif tag == "table":
+                self._depth = max(0, self._depth - 1)
+
+        def handle_data(self, data):
+            if self._cell is not None:
+                self._cell.append(data)
+
+    parser = _TableParser()
+    try:
+        parser.feed(_decode_text(raw))
+        parser.close()
+    except Exception as e:  # noqa: BLE001
+        raise CustomsFileError(f"Không đọc được tệp HTML giả .xls: {e}") from e
+    tables = [t for t in parser.tables if t]
+    if not tables:
+        raise CustomsFileError("Tệp HTML giả .xls không có bảng dữ liệu nào.")
+    table = max(tables, key=lambda t: max(len(r) for r in t))
+    width = max(len(r) for r in table)
+    return [[_text_cell(v) for v in r] + [Cell(EMPTY)] * (width - len(r)) for r in table]
+
+
+def _cells_from_spreadsheetml(raw: bytes) -> list[list[Cell]]:
+    """XML Spreadsheet 2003 (SpreadsheetML): Worksheet đầu tiên, Row / Cell / Data; tôn trọng ss:Index."""
+    import xml.etree.ElementTree as ET
+    ns = "{urn:schemas-microsoft-com:office:spreadsheet}"
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError as e:
+        raise CustomsFileError(f"Không đọc được tệp XML giả .xls: {e}") from e
+    ws = root.find(f".//{ns}Worksheet")
+    if ws is None:
+        raise CustomsFileError("Tệp XML giả .xls không có Worksheet nào.")
+    grid: list[list[Cell]] = []
+    for row in ws.iter(f"{ns}Row"):
+        cells: list[Cell] = []
+        for c in row.findall(f"{ns}Cell"):
+            idx = c.get(f"{ns}Index")
+            if idx and idx.isdigit():
+                while len(cells) < int(idx) - 1:
+                    cells.append(Cell(EMPTY))
+            data = c.find(f"{ns}Data")
+            cells.append(_text_cell("".join(data.itertext())) if data is not None else Cell(EMPTY))
+        grid.append(cells)
+    width = max((len(r) for r in grid), default=0)
+    return [r + [Cell(EMPTY)] * (width - len(r)) for r in grid]
 
 
 def _cells_from_xls(raw: bytes) -> list[list[Cell]]:
