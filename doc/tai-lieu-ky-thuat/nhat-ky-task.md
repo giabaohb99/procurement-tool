@@ -111,6 +111,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI-an-gioi-thieu | Tạm ẩn mục Giới thiệu của phân hệ Kho skill AI để làm lại
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 3
+**Bối cảnh:** đã chốt tạm ẩn trang Giới thiệu của Kho skill AI để làm lại sau.
+
+**Đã làm**
+- Bỏ mục *Giới thiệu* khỏi menu phân hệ Kho skill AI; đường dẫn cũ /ai-skill/intro chuyển về Tổng quan thay vì mở trang cũ.
+- Giữ nguyên mã trang giới thiệu; chú thích trong tệp khai báo phân hệ ghi cách bật lại.
+
+**Kết quả:** kiểu dữ liệu 0 lỗi, lint 0 lỗi, 189 bài kiểm của phân hệ Kho skill AI và bảng đăng ký phân hệ đều xanh.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/routes.tsx`, `frontend-v2/src/modules/ai-skill/routes.test.ts`
+
 ## kh-AI2-7-giao-dien | Trợ lý web: thẻ xác nhận duyệt hoặc từ chối phiếu do AI đề xuất
 - status: xong
 - date: 2026-10-26

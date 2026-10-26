@@ -1,4 +1,5 @@
-import { BookOpen, KeyRound, LayoutDashboard, PlayCircle, Plug, ScrollText, Settings2 } from 'lucide-react'
+import { BookOpen, KeyRound, LayoutDashboard, Plug, ScrollText, Settings2 } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -67,12 +68,9 @@ export const aiSkillModule: ErpModule = {
       icon: ScrollText,
       entities: ['ai_skill', 'ai_mcp_key_admin'],
     },
-    {
-      label: 'Giới thiệu',
-      path: appRoutes.aiSkill.intro,
-      icon: PlayCircle,
-      entities: ['ai_skill', 'ai_mcp_key_admin'],
-    },
+    //  Mục «Giới thiệu» (`/ai-skill/intro`) TẠM ẨN ngày 26/10/2026 để làm lại; trang `pages/ai-skill-intro-page.tsx` giữ
+    //  nguyên. Bật lại: thêm lại mục `{ label: 'Giới thiệu', path: appRoutes.aiSkill.intro, icon: PlayCircle, entities:
+    //  ['ai_skill', 'ai_mcp_key_admin'] }` ở đây và trả route bên dưới về `lazy` nạp `AiSkillIntroPage`.
     {
       //  Cấu hình cổng MCP (G7) đòi `agent_group.read` / `.write` như Tổng quan — gác mục theo hai khóa của phân hệ, trang
       //  tự giải thích khi thiếu quyền quản lý bot AI, tự chuyển chỉ xem khi thiếu quyền ghi.
@@ -126,12 +124,8 @@ export const aiSkillModule: ErpModule = {
         Component: (await import('./pages/call-log-page')).CallLogPage,
       }),
     },
-    {
-      path: appRoutes.aiSkill.intro,
-      lazy: async () => ({
-        Component: (await import('./pages/ai-skill-intro-page')).AiSkillIntroPage,
-      }),
-    },
+    //  Giới thiệu tạm ẩn (xem chú thích ở `nav`): link cũ / dấu trang chuyển về Tổng quan thay vì trang trắng.
+    { path: appRoutes.aiSkill.intro, element: <Navigate to={appRoutes.aiSkill.overview} replace /> },
     {
       path: appRoutes.aiSkill.settings,
       lazy: async () => ({
