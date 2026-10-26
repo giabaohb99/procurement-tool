@@ -17157,3 +17157,16 @@ Mã nguồn: migration cr682erpact01 · backend/scripts/legacy_sync/import_appro
 - status: xong
 Mười sáu bài kiểm bằng phiếu giả, có đúng ca lượt quét đêm kéo phiếu đã điều phối về đã duyệt và phiếu dấu đã đóng dấu. Rà mã xác nhận không có đường nào ghi sang app cũ. Sổ tay vận hành đồng bộ thêm mục Bước 0.
 Mã nguồn: test/backend/test_dong_bo_datxe_buoc_0_cr682.py · doc/dong-bo-dat-xe-duyet-dau/van-hanh.md
+
+## bao-CR-662 | Nạp được tệp GTT02 hải quan xuất dạng HTML hoặc XML nhưng đặt đuôi .xls
+- status: xong
+- date: 2026-10-26
+- tag: Thu mua
+**Bối cảnh:** sáng 26/10 người dùng nạp 7 tệp .xls trên prod bị từ chối với câu *không phải Excel*. Bộ đọc chỉ nhận tệp có chữ ký Excel cũ hoặc xlsx; 18 tệp mẫu khác đều đọc được, nên tệp lỗi là loại hệ thống hải quan xuất ra dạng HTML hoặc XML mà vẫn đặt đuôi .xls, Excel mở được còn chương trình không nhận.
+
+**Đã làm:** bộ đọc nhận thêm hai dạng đó, chỉ khi tệp không có chữ ký Excel nên đường cũ không đổi; mọi ô đọc thành chữ và luật từng ô đã biết đọc ngày, số từ chữ. Tệp lạ thì câu báo lỗi hướng dẫn mở bằng Excel rồi lưu lại dạng .xlsx.
+
+**Kết quả:** 5 bài kiểm mới, 74 bài kiểm hải quan liên quan đạt. Lên prod 26/10/2026 khoảng 11:00, dựng lại api và celery. Chưa có tệp lỗi thật để đối chiếu; nếu người dùng vẫn bị từ chối thì gửi tệp đó về để soi tiếp.
+
+Commit: 0da4032f (main), gộp erp-v2 · Deploy: prod api, celery-worker, celery-beat
+Mã nguồn: backend/app/modules/customs/reader.py · test/backend/test_hai_quan_xls_gia_html_cr662.py
