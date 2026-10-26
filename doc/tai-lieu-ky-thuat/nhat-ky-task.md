@@ -17231,6 +17231,12 @@ Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-requeste
 Anh Được thử trên dev thấy bước «Người có quyền duyệt» ở màn khai luồng hiện ba người mà ô chọn trên phiếu hiện nhiều hơn, vì bản trước đã nới ô chọn ra mọi phạm vi kể cả Quản trị. Nay ô chọn, chốt kiểm khi lưu và bước duyệt dùng chung đúng một danh sách: vai trò tick Duyệt đặt xe với phạm vi Phòng ban, Công ty hoặc Tất cả, không tính Quản trị.
 Mã nguồn: backend/app/modules/approval/permission_approvers.py · backend/app/modules/vehicle_booking/approver_picker.py
 
+### duoc-CR-681-12 | Cập nhật hướng dẫn sử dụng và cẩm nang trợ lý trên dev cho đợt duyệt theo quyền và đặt xe
+- status: xong
+- date: 2026-10-26
+Bài hướng dẫn đặt xe chọn người duyệt nay ghi đúng danh sách người duyệt trùng màn khai luồng, ghi trang chi tiết phiếu đã hiện người phê duyệt và công ty, và thêm một dòng cho phiếu chuyển từ app cũ: đã thao tác trên ERP thì app cũ không chép đè nữa, trừ khi app cũ hủy hoặc từ chối. Trên dev đã nạp bài đặt xe, nạp thêm bài phê duyệt theo quyền còn thiếu và nạp lại kho vector cho cả hai; cẩm nang trợ lý trên dev còn đứng ở phiên bản đầu từ đợt ngày hai mươi hai nên đã xuất bản phiên bản hai cho năm cẩm nang.
+Mã nguồn: backend/scripts/seed_help_dat_xe_chon_nguoi_duyet.py · backend/scripts/seed_help_phe_duyet_theo_quyen.py · backend/scripts/publish_handbook_update.py
+
 ## duoc-CR-682 | Bước 0 đồng bộ app đặt xe cũ: app cũ không đè thao tác làm trên ERP
 - status: xong
 - date: 2026-10-26
