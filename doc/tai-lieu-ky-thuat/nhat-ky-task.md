@@ -17176,3 +17176,25 @@ Mã nguồn: test/backend/test_dong_bo_datxe_buoc_0_cr682.py · doc/dong-bo-dat-
 
 Commit: 0da4032f (main), gộp erp-v2 · Deploy: prod api, celery-worker, celery-beat
 Mã nguồn: backend/app/modules/customs/reader.py · test/backend/test_hai_quan_xls_gia_html_cr662.py
+
+## kh-dot-prod-5-xong | Đợt prod năm đã lên đủ: main bằng erp-v2, cụm AI, cẩm nang, quyền xuất
+- status: xong
+- date: 2026-10-26
+- tag: Agent 1
+**Bối cảnh:** sau khi nhóm báo cáo và phần duoc-CR-658..672 lên prod buổi sáng, phần còn lại trên erp-v2 (CR-660, 676, 681, 682, các công cụ MCP mới, màn duyệt kế hoạch AI, biểu đồ Tồn kho, nút Chấp nhận cỡ mới, sửa Xóa lọc, khối Sức khỏe dịch vụ AI, cụm bảo mật bao-CR-655) được chốt đẩy lên prod luôn trong chiều 26/10.
+
+**Đã làm:** main đồng bộ bằng erp-v2 (51c9a2b6, gộp thẳng vì main là tổ tiên). Trên prod: lưu dump, kéo mã, dựng lại api, hai dịch vụ celery, giao diện thumua, giao diện ERP v2 và cả cụm dịch vụ AI; 5 migration chạy xong (CSDL 221 lên 223 bảng, đầu cr682erpact01; CSDL bot ở agent0016). Nạp 3 bài hướng dẫn mới và nạp lại kho tìm kiếm (107/107 bài). Xuất bản 5 cẩm nang trợ lý bản 2, không đè bản sửa tay. Cấp quyền xuất cho 42 dòng quyền của các vai trò đang có quyền xem ở nhân sự, sản phẩm, nhà cung cấp, phòng ban (CR-660), trừ vai trò nhân viên thường và quản trị điểm cà phê ở danh mục nhân sự.
+
+**Kết quả:** 4 trang trả 200, cổng MCP chưa khóa trả 401, không có lỗi trong log. Các nhóm công cụ MCP mới (văn phòng, sửa và xóa phiếu) để tắt mặc định trên prod, quản trị bật ở màn cấu hình khi cần.
+
+Commit: 51c9a2b6 (main = erp-v2) · Deploy: prod toàn bộ dịch vụ ERP và cụm AI, 26/10/2026 11:30 đến 12:10
+
+## kh-vps-dev-ida | Tài khoản ida trên máy chủ dev cho đồng nghiệp, Docker rootless
+- status: xong
+- date: 2026-10-26
+- tag: Agent 1
+**Bối cảnh:** cần cấp chỗ cho đồng nghiệp bên ngoài đẩy và chạy thử mã trên máy chủ dev mà không đụng được ERP dev và bot.
+
+**Đã làm:** tạo người dùng Linux ida, thư mục riêng, đăng nhập bằng chìa khóa, không sudo, không thuộc nhóm docker; cài Docker rootless chạy dưới quyền ida, đã thử container chạy được và chỉ thấy container của chính mình. Chìa khóa riêng giao cho người dùng; bản trên máy chủ đã xóa. Viết hướng dẫn dùng cơ bản.
+
+Mã nguồn: doc/tai-lieu-ky-thuat/vps-dev-tai-khoan-ida.md
