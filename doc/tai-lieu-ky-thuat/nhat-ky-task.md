@@ -17329,3 +17329,20 @@ Commit: 51c9a2b6 (main = erp-v2) · Deploy: prod toàn bộ dịch vụ ERP và 
 **Đã làm:** tạo người dùng Linux ida, thư mục riêng, đăng nhập bằng chìa khóa, không sudo, không thuộc nhóm docker; cài Docker rootless chạy dưới quyền ida, đã thử container chạy được và chỉ thấy container của chính mình. Chìa khóa riêng giao cho người dùng; bản trên máy chủ đã xóa. Viết hướng dẫn dùng cơ bản.
 
 Mã nguồn: doc/tai-lieu-ky-thuat/vps-dev-tai-khoan-ida.md
+
+## nc-07-khao-sat-sx-tra-loi-chung | Tổng hợp khảo sát Sản xuất trả lời chung ngày 26/10
+- status: xong
+- date: 2026-10-26
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Phòng Sản xuất trả lời chung một bộ 113 câu trên ứng dụng khảo sát Make It Clear, kèm ba tệp. Được giao tổng hợp gọn, dễ hiểu, theo kiểu văn bản thống nhất.
+
+**Đã làm**
+- Tổng hợp từ các ý ứng dụng khảo sát đã rút ra và 30 mẩu trích từ ba tệp đính kèm: bộ máy, đường đi một đơn gia công, năm nguyên tắc làm việc với Kinh doanh, ai quyết gì, dự trù và sự cố, công cụ, con số, chỗ đau.
+- Đối chiếu với 16 câu chưa thống nhất hôm trước: chốt thêm câu số đơn (khoảng 42 đơn mỗi tháng), người giữ vị trí Pháp lý, tuyến báo cáo chuyên viên nguyên liệu, và hàng chỉ hoàn thành khi cả Kho và Lab đạt. Câu chi phí phát sinh có cách nói khác câu ngày 24/10, cần xác nhận lại.
+
+**Kết quả:** văn bản số 07 trên nhánh erp-v2.
+
+**Còn lại:** trang quản trị không hiện nguyên văn 113 câu trả lời, nên ý nào ứng dụng khảo sát chưa rút ra thì chưa có trong văn bản.
+
+Tham chiếu: doc/erp/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md
