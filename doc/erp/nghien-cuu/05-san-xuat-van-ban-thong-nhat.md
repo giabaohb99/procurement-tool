@@ -1,12 +1,12 @@
-# Sản xuất: văn bản thống nhất (24/10/2026)
+# Sản xuất: văn bản thống nhất (24/10/2026, cập nhật 26/10/2026)
 
 Tài liệu này tự đọc được, không cần mở tệp 03. Gồm ba phần:
 
 - **A. Thuật ngữ**: nghĩa của các chữ viết tắt và từ chuyên môn trong khảo sát.
 - **B. 108 câu hỏi và câu trả lời gọn**, xếp theo mục và bước như khảo sát.
-- **C. 16 câu chưa thống nhất hoặc mới chốt**, bảng từ ngữ *giám đốc* và thứ tự nên hỏi.
+- **C. 17 câu chưa thống nhất hoặc mới chốt**, bảng từ ngữ *giám đốc* và thứ tự nên hỏi.
 
-Bản đồ quy trình để nhìn tổng thể: mở tệp `06-ban-do-quy-trinh-san-xuat.html` bằng trình duyệt. Câu trả lời ngày 24/10 là của chị Ngân (Trưởng phòng Sản xuất) qua chat lúc 09:30 và 09:52.
+Bản đồ quy trình để nhìn tổng thể: mở tệp `06-ban-do-quy-trinh-san-xuat.html` bằng trình duyệt. Câu trả lời ngày 24/10 là của chị Ngân (Trưởng phòng Sản xuất) qua chat lúc 09:30 và 09:52. Ngày 26/10 cập nhật theo khảo sát cả phòng trả lời chung (tệp `07-san-xuat-khao-sat-tra-loi-chung-2610.md`).
 
 ---
 
@@ -82,11 +82,11 @@ Mỗi câu một dòng trả lời tổng hợp. *Chưa thống nhất* thì xem
 ### Tổng quan phòng
 
 - **B1. Phòng Sản xuất tồn tại để làm gì?** Bảo đảm hàng làm ra đúng chất lượng, đủ số lượng theo đơn, kiểm soát chi phí và hao hụt, điều phối tiến độ giao hàng.
-- **B2. Phòng có những ai, ai báo cáo cho ai?** Trưởng phòng quản lý hai nhóm. Nhóm Điều phối (Trưởng nhóm đang do Trưởng phòng kiêm) gồm điều phối sản xuất, bao bì, nguyên liệu. Nhóm Quản lý dữ liệu gồm pháp lý và sự cố, giá vốn, hồ sơ và dữ liệu NCC. Tên người giữ vị trí pháp lý và tuyến báo cáo của chuyên viên nguyên liệu chưa thống nhất, xem câu 15 và 16 phần C.
+- **B2. Phòng có những ai, ai báo cáo cho ai?** Trưởng phòng quản lý hai nhóm. Nhóm Điều phối (Trưởng nhóm đang do Trưởng phòng kiêm) gồm điều phối sản xuất, bao bì, nguyên liệu. Nhóm Quản lý dữ liệu gồm pháp lý và sự cố, giá vốn, hồ sơ và dữ liệu NCC. Pháp lý là chị Bảo Thi, chuyên viên nguyên liệu là chị Oanh báo cáo Trưởng nhóm Điều phối (đã chốt, câu 15 và 16 phần C). Giá vốn nay do Trưởng phòng quản lý trực tiếp, khác sơ đồ cũ, xem câu 17 phần C.
 - **B3. Quy trình quan trọng nhất là gì?** Quản lý đơn hàng gia công tại NCC, từ nhận đơn đến hoàn thiện chứng từ thanh lý. Số bước chưa thống nhất, xem câu 10 phần C.
 - **B4. Phòng nhận việc từ đâu, giao kết quả cho ai?** Nhận đơn thành phẩm và dự trù mua hàng từ Kinh doanh qua Drive và Zalo. Gửi đơn, mẫu thiết kế, vật tư cho NCC; nhận lại thành phẩm, hóa đơn, biên bản đối chiếu. Nhận kết quả mua hàng từ Thu mua để nhận bao bì.
 - **B5. Phòng đang dùng công cụ gì?** Google Drive và Google Sheets cho mọi việc, Zalo với hơn 50 nhóm chat, MISA cho hóa đơn và đối chiếu kế toán.
-- **B6. Việc nào phải xin duyệt, ai duyệt?** Đơn gửi NCC phải qua 7 bộ phận kiểm rồi Trưởng phòng duyệt. Phiếu duyệt giá do Trưởng phòng ký. Tặng quà NCC do Trưởng phòng quyết. Đơn đặt hàng gia công bắt buộc có chữ ký. Chi phí: đã chốt chỉ tới Trưởng phòng (câu 3 phần C), hạn mức 3 triệu và 5 triệu chưa thống nhất (câu 6). Hợp đồng NCC mới xem câu 4 và 11.
+- **B6. Việc nào phải xin duyệt, ai duyệt?** Đơn gửi NCC phải qua 7 bộ phận kiểm rồi Trưởng phòng duyệt. Phiếu duyệt giá do Trưởng phòng ký. Tặng quà NCC do Trưởng phòng quyết. Đơn đặt hàng gia công bắt buộc có chữ ký. Chi phí: đang có hai câu trả lời khác nhau (câu 3 phần C), hạn mức 3 triệu và 5 triệu chưa thống nhất (câu 6). Hợp đồng NCC mới xem câu 4 và 11.
 - **B7. Theo dõi kết quả bằng gì, báo cáo cho ai?** Báo tiến độ đơn cho Kinh doanh và Kế toán khi phát sinh, hằng tuần, hằng tháng. Báo tồn kho cho Kho mỗi ngày. Cảnh báo tồn bao bì âm, dưới mức an toàn hoặc dưới lượng đặt tối thiểu.
 - **B8. Chỗ nào hay tắc, hay sai, phụ thuộc một người?** Việc nào cũng chậm và sai; việc một người làm thì không ai thay được. Kinh doanh không có kế hoạch tháng, quý. Drive phụ thuộc tệp Data 1. Biên bản với NCC chưa tách đúng công ty nhận hóa đơn. Hợp đồng NCC khó ký đủ điều khoản Kế toán cần. Có lệch thể tích đóng gói tại một NCC. Có 3 điểm nhạy cảm về chứng từ và thuế, trao đổi riêng.
 - **B9. Việc định kỳ theo ngày, tuần, tháng là gì?** Kinh doanh lập dự trù mua hàng ngày 15 hằng tháng. Các việc khác chưa có câu trả lời.
@@ -108,7 +108,7 @@ Mỗi câu một dòng trả lời tổng hợp. *Chưa thống nhất* thì xem
 - **B19. Làm ra gì, giao cho ai?** Chép đơn và bảng định mức vào Drive *Điều phối thành phẩm* để các nhóm kiểm và lập phiếu duyệt giá.
 - **B20. Dùng công cụ gì?** Drive điều phối, sheet duyệt đơn hàng.
 - **B21. Đơn sót thông tin hoặc sai quy cách thì ai chịu?** Chưa thống nhất, xem câu 8 phần C.
-- **B22. Mỗi ngày nhận bao nhiêu đơn?** Chưa thống nhất, xem câu 5 phần C.
+- **B22. Mỗi ngày nhận bao nhiêu đơn?** Khoảng 42 đơn thành phẩm mỗi tháng, 1 đến 2 đơn mới mỗi ngày (đã chốt, câu 5 phần C).
 
 ### Bước 2. Kiểm tra điều kiện triển khai đơn
 
@@ -119,10 +119,10 @@ Mỗi câu một dòng trả lời tổng hợp. *Chưa thống nhất* thì xem
 - **B27. Làm ra gì?** Kết quả kiểm từng mảng ghi vào sheet điều phối. Thiếu bao bì thì lập phiếu đề nghị mua gửi Thu mua.
 - **B28. Dùng công cụ gì?** Google Drive và Google Sheets tra tồn và ghi kết quả.
 - **B29. Bắt đầu khi nào?** Khi đơn xuất hiện trên Drive điều phối, hoặc cấp quản lý giao trực tiếp.
-- **B30. Đơn thiếu điều kiện thì ai quyết cho đi tiếp hay dừng?** Đã chốt 24/10: Trưởng phòng Sản xuất. Còn cần Phòng Kinh doanh và CEO xác nhận, xem câu 1 phần C.
+- **B30. Đơn thiếu điều kiện thì ai quyết cho đi tiếp hay dừng?** Đã chốt: Trưởng phòng Sản xuất. Kinh doanh chốt phần kinh doanh, Trưởng phòng ký phần sản xuất, bất đồng trình Giám đốc. Còn cần Phòng Kinh doanh và CEO xác nhận, xem câu 1 phần C.
 - **B31. Chỗ nào hay tắc ở bước này?** Kiểm pháp lý chậm vì điều khoản thỏa thuận với NCC chưa vào được hợp đồng trong khi Kế toán đòi đủ chứng từ.
 - **B32. Ai được hỏi ý?** Trưởng nhóm Quản lý dữ liệu kiểm lần cuối và tư vấn về pháp lý (hệ khảo sát suy ra, chưa xác nhận).
-- **B33. Bao nhiêu đơn mỗi lần?** Chưa thống nhất, xem câu 5 phần C.
+- **B33. Bao nhiêu đơn mỗi lần?** Khoảng 42 đơn mỗi tháng, 1 đến 2 đơn mới mỗi ngày (câu 5 phần C).
 - **B34. Mất bao lâu?** Kiểm tồn bao bì 30 phút đến 1 giờ. Duyệt bao bì nửa ngày đến 1 ngày vì chờ mockup.
 
 ### Bước 3. Chuẩn bị nguồn lực và duyệt giá
@@ -135,7 +135,7 @@ Mỗi câu một dòng trả lời tổng hợp. *Chưa thống nhất* thì xem
 - **B40. Lập phiếu duyệt giá thế nào?** Tám bước: kiểm đơn, kiểm định mức, kiểm chính sách NCC, cập nhật báo giá mới nhất, tính chi phí, soát giá thành, lập phiếu trình duyệt, gửi kết quả cho Kinh doanh.
 - **B41. Bắt đầu khi nào?** Khi có đơn cần duyệt giá kèm định mức thành phẩm.
 - **B42. Dùng công cụ gì?** Google Drive theo dõi phối trộn và điều chuyển.
-- **B43. Bao nhiêu đơn?** Khoảng 15 đơn mỗi tuần theo Chuyên viên Giá vốn. Lệch với số 10 đến 15 đơn mỗi ngày, xem câu 5 phần C.
+- **B43. Bao nhiêu đơn?** Khoảng 42 đơn mỗi tháng (câu 5 phần C).
 - **B44. Chỗ nào hay tắc?** Hay phải chờ NCC xác nhận giá, hoặc tính lại khi giá và đơn đổi.
 - **B45. Mất bao lâu?** 15 đến 30 phút một phiếu khi đủ thông tin.
 
@@ -154,7 +154,7 @@ Mỗi câu một dòng trả lời tổng hợp. *Chưa thống nhất* thì xem
 
 - **B54. Chỗ nào hay tắc?** Chưa có hạn tối đa để làm việc với NCC khi Kho phát hiện lỗi. Chưa có hạn cho từng công đoạn xử lý sự cố và khiếu nại NCC.
 - **B55. Làm ra gì?** Báo cáo gửi Kho, danh sách nhận hàng, phiếu nhập kho thành phẩm, phiếu xuất bán.
-- **B56. Kiểm hàng nhận về thế nào?** Có hàng ở NCC thì báo Kho xếp chuyến, chốt lịch, số lượng, xe và tài xế với NCC. Lab kiểm mẫu ngoại dạng, màu, trọng lượng. Ai kiểm gì giữa Kho và Lab chưa thống nhất, xem câu 14 phần C.
+- **B56. Kiểm hàng nhận về thế nào?** Có hàng ở NCC thì báo Kho xếp chuyến, chốt lịch, số lượng, xe và tài xế với NCC. Lab kiểm mẫu ngoại dạng, màu, trọng lượng. Hàng phải đạt cả KCS của Kho và test của Lab mới tính là hoàn thành (đã chốt, câu 14 phần C).
 - **B57. Ai làm?** Chuyên viên Điều phối sản xuất nhận tin từ Kho và chốt chuyến với NCC.
 - **B58. Hàng lỗi thì ai quyết cách xử lý?** Chưa thống nhất, xem câu 9 phần C.
 - **B59. Nhận gì?** Số lượng thực nhận trên Drive, chứng từ giao nhận qua Zalo từ Kho, báo lỗi nếu có.
@@ -227,78 +227,89 @@ Bốn bước đầu (nhận yêu cầu, tìm NCC, so sánh, liên hệ) **chưa
 
 ---
 
-## C. 16 câu chưa thống nhất hoặc mới chốt
+## C. 17 câu chưa thống nhất hoặc mới chốt
 
-Tính đến 24/10: **5 câu đã thống nhất, 11 câu chưa.**
+Tính đến 26/10: **8 câu đã thống nhất, 9 câu chưa.** Nguồn chốt: chị Ngân qua chat 24/10 (09:30, 09:52) và khảo sát cả phòng trả lời chung 26/10 (xem tệp 07).
 
 ### C1. Đã thống nhất
 
 **1. Đơn thiếu điều kiện, ai quyết đi tiếp hay dừng?** (Bước 2)
-Trưởng phòng Sản xuất quyết cuối và cao nhất, các bên khác chỉ cung cấp thông tin. Còn vướng: anh Huỳnh (Trưởng nhóm Quản lý dữ liệu) và chuyên viên nguyên liệu từng nói Kinh doanh quyết, nên cần Kinh doanh và CEO xác nhận một lần.
-
-**3. Chi phí phát sinh của đơn có phải xin duyệt không?** (Bước 3)
-Chưa có ngân sách, chỉ có chi phí thực chi. Giám đốc không duyệt chi phí, chỉ tới cấp Trưởng phòng. Còn vướng: Giám đốc ở vòng 1 nói phải trình Giám đốc phụ trách công ty, cần CEO xác nhận.
+Trưởng phòng Sản xuất quyết cuối và cao nhất, các bên khác chỉ cung cấp thông tin (chị Ngân 24/10, khảo sát 26/10). Khảo sát 26/10 thêm nguyên tắc: **Kinh doanh chốt phần kinh doanh, Trưởng phòng ký phần sản xuất, hai bên không thống nhất thì trình Giám đốc.** Còn vướng: anh Huỳnh và chuyên viên nguyên liệu từng nói Kinh doanh quyết, nên cần Kinh doanh và CEO xác nhận một lần.
 
 **4. Duyệt hợp đồng NCC mới và duyệt chi phí có phải một việc?** (NCC mới)
-Hai việc khác nhau. Hợp đồng đi theo quy trình riêng (Pháp lý, Kế toán, rồi Giám đốc ký). Chi phí theo câu 3.
+Hai việc khác nhau. Hợp đồng đi theo quy trình riêng (Pháp lý, Kế toán, rồi Giám đốc ký). Chi phí xem câu 3.
+
+**5. Mỗi ngày bao nhiêu đơn?** (Bước 1)
+Khoảng **42 đơn thành phẩm mỗi tháng**, 1 đến 2 đơn mới mỗi ngày, mỗi đơn xử lý 10 đến 20 ngày (khảo sát 26/10). Hai con số cũ (10 đến 15 đơn mỗi ngày và 15 đơn mỗi tuần) bỏ.
 
 **7. Phiếu điều chuyển và phiếu phối trộn gửi cho ai?** (Bước 3)
 Có hai loại chuyển kho: chuyển khi **mua** nguyên liệu, bán thành phẩm (phần E bước 3.1 quy trình nguyên liệu) và chuyển khi **nhận đơn** thành phẩm (phần D bước 2). Điều này giải thích vì sao cùng một chuyên viên từng nói hai cách.
 
 **11. Ai duyệt chọn NCC mới, ai ký hợp đồng?** (NCC mới)
-Duyệt kết quả chọn NCC (bước 4.2) và duyệt hợp đồng, bảng giá (bước 6.2.4): **CEO**. Ký hợp đồng (bước 6.2.5): **Đại diện pháp luật** của công ty.
+Duyệt kết quả chọn NCC (bước 4.2) và duyệt hợp đồng, bảng giá (bước 6.2.4): **CEO**. Ký hợp đồng (bước 6.2.5): **Đại diện pháp luật** của công ty. Khảo sát 26/10 nói thêm: Kinh doanh lập danh mục NCC, Trưởng phòng trình, Giám đốc duyệt.
+
+**14. Nhận thành phẩm: Kho hay Lab quyết?** (Bước 5)
+Cần **cả hai**. Đơn chỉ hoàn thành khi NCC đã xuất hóa đơn, hàng đã nhập kho Dr Xanh và đạt KCS của Kho, và Lab test đạt (khảo sát 26/10).
+
+**15. Ai giữ vị trí Chuyên viên Pháp lý, xử lý sự cố?** (Bộ máy)
+Chị **Bảo Thi**, anh Huỳnh quản lý (khảo sát 26/10).
+
+**16. Chuyên viên nguyên liệu báo cáo cho ai?** (Bộ máy)
+Chị **Oanh**, kiêm điều phối thành phẩm, báo cáo Trưởng nhóm Điều phối. Vị trí Trưởng nhóm Điều phối đang khuyết, chị Ngân kiêm (khảo sát 26/10).
 
 ### C2. Chưa thống nhất
 
 **2. Ai là đầu mối làm việc với NCC về điều chuyển nguyên liệu?** (Bước 3)
-Chuyên viên nguyên liệu: gửi Điều phối thành phẩm để họ báo NCC. Trưởng nhóm Điều phối: đầu mối là Chuyên viên Hồ sơ và Dữ liệu NCC. Cần Trưởng nhóm Điều phối chốt, có thể mỗi loại chuyển kho ở câu 7 một đầu mối.
+Chuyên viên nguyên liệu: gửi Điều phối thành phẩm để họ báo NCC. Trưởng nhóm Điều phối: đầu mối là Chuyên viên Hồ sơ và Dữ liệu NCC. Khảo sát 26/10 nghiêng về Quản lý dữ liệu: Trưởng nhóm Điều phối duyệt phiếu, Quản lý dữ liệu lấy thông tin gửi NCC. Cần Trưởng nhóm Điều phối xác nhận.
 
-**5. Mỗi ngày bao nhiêu đơn, mỗi tuần gửi NCC bao nhiêu?** (Bước 1)
-Điều phối và bao bì: 10 đến 15 đơn mỗi ngày. Trưởng nhóm Điều phối và Giá vốn: khoảng 15 đơn mỗi tuần. Lệch 5 lần, có thể một bên đếm yêu cầu Kinh doanh gửi vào, bên kia đếm đơn thật gửi NCC. Cần số thật của 1 tháng gần nhất.
+**3. Chi phí phát sinh của đơn có phải xin duyệt không, ai duyệt?** (Bước 3)
+Hai câu trả lời đang khác nhau:
+- **24/10 (chị Ngân qua chat):** chưa có ngân sách, chỉ có chi phí thực chi. Giám đốc không duyệt chi phí, chỉ tới cấp Trưởng phòng.
+- **26/10 (cả phòng trả lời chung):** bộ phận nào gây ra chi phí thì bộ phận đó ký chịu. Kế toán từ chối chi thì trình Giám đốc thương hiệu hoặc công ty. Chi phí tính cho thương hiệu nào thì Kinh doanh thương hiệu đó xác nhận.
+
+Trước đó Giám đốc (vòng 1) cũng nói phải trình Giám đốc phụ trách công ty. Cần chị Ngân xác nhận lại câu nào đúng.
 
 **6. Hạn mức 3 triệu và 5 triệu có áp cho Sản xuất không?** (Bước 3)
-Chị Ngân: không có duyệt chi phí (câu 3). Tệp quy trình thanh toán: Trưởng bộ phận tối đa 3 triệu một lần, Quản lý thương hiệu 5 triệu, vượt thì Giám đốc điều hành. Cần CEO và Kế toán chốt, kèm câu *Giám đốc phụ trách* và *Giám đốc điều hành* có phải một người.
+Tệp quy trình thanh toán ghi Trưởng bộ phận tối đa 3 triệu một lần, Quản lý thương hiệu 5 triệu, vượt thì Giám đốc điều hành. Chưa ai trong phòng nói có áp hay không. Cần CEO và Kế toán chốt, kèm câu *Giám đốc phụ trách* và *Giám đốc điều hành* có phải một người.
 
 **8. Đơn Kinh doanh gửi bị sót hoặc sai quy cách, ai chịu?** (Bước 1)
 Trưởng nhóm Điều phối: Điều phối thành phẩm chịu phần đủ thông tin, Kinh doanh chịu phần đúng thông tin. Chị Ngân: chuyên viên Điều phối sản xuất chịu cuối. Cần Trưởng phòng chốt, kèm câu hai tên gọi này có phải một vị trí.
 
 **9. Hàng nhận về bị lỗi, ai quyết cách xử lý?** (Bước 5)
-Trưởng nhóm Điều phối: mình quyết sau khi gom ý kiến. Chuyên viên Pháp lý: Trưởng nhóm Quản lý dữ liệu duyệt, vượt thì Trưởng phòng. Cần Trưởng phòng chốt, nên tách lỗi phát hiện tại NCC và lỗi khi đã về kho.
+Trưởng nhóm Điều phối: mình quyết sau khi gom ý kiến. Chuyên viên Pháp lý: Trưởng nhóm Quản lý dữ liệu duyệt, vượt thì Trưởng phòng. Khảo sát 26/10: người xử lý sự cố lập phương án, Kinh doanh chốt phần kinh doanh, chi phí hàng xử lý lại do chị Ngân duyệt. Còn thiếu: ai duyệt phương án phía Sản xuất. Cần Trưởng phòng chốt.
 
 **10. Quy trình chuẩn là 6 bước hay 7 bước?** (Chung)
-Chị Ngân nói 6 bước, tệp quy trình 09/07/2026 ghi 7 bước. Cần Trưởng phòng chỉ ra bản đang dùng.
+Chị Ngân nói 6 bước, tệp quy trình 09/07/2026 ghi 7 bước. Khảo sát 26/10 dùng 7 bước, và tệp quy trình đã được sửa ngày 26/10. Cần Trưởng phòng xác nhận bản mới là bản dùng.
 
 **12. Kinh doanh hứa ngày giao theo bảng nào?** (Bước 4)
-Một bảng ghi NCC Hà Long 15, 10 hoặc 7 ngày, tệp khác ghi 5 đến 14 ngày. Cần Trưởng nhóm Điều phối chọn một bảng.
+Một bảng ghi NCC Hà Long 15, 10 hoặc 7 ngày, tệp khác ghi 5 đến 14 ngày. Khảo sát 26/10 chỉ nói mỗi đơn 10 đến 20 ngày. Cần Trưởng nhóm Điều phối chọn một bảng.
 
 **13. Theo dõi đơn bằng một hay hai bộ trạng thái?** (Bước 4)
 Cùng một tệp có 6 trạng thái điều phối và 7 trạng thái nhập xuất. Cần Trưởng nhóm Điều phối liệt kê tên từng trạng thái. Việc này quyết định cách ERP vẽ màn theo dõi.
 
-**14. Nhận thành phẩm: Kho kiểm gì, Lab kiểm gì, bên nào quyết nhập?** (Bước 5)
-Trưởng nhóm Điều phối: Lab kiểm ngoại dạng, màu, trọng lượng. Biểu mẫu KCS lại là của Kho. Chưa ai nói kết quả bên nào quyết. Cần Điều phối, Kho và Lab cùng chốt.
+**17. Chuyên viên Giá vốn báo cáo cho ai?** (Bộ máy, mới)
+Sơ đồ tổ chức cũ: báo cáo Trưởng nhóm Quản lý dữ liệu. Khảo sát 26/10: chị Hương do chị Ngân quản lý trực tiếp. Cần Trưởng phòng xác nhận, và cho biết đây là tạm thời hay lâu dài.
 
-**15. Ai giữ vị trí Chuyên viên Pháp lý, xử lý sự cố?** (Bộ máy)
-Sơ đồ tổ chức: anh Huỳnh và chị Bảo Thi. Danh sách trên hệ khảo sát: anh Huỳnh và một người tên Thơ. Cần Trưởng phòng chốt.
+### C3. Từ ngữ cần thống nhất
 
-**16. Chuyên viên nguyên liệu báo cáo cho ai?** (Bộ máy)
-Sơ đồ: Trưởng nhóm Điều phối. Chính chuyên viên đó nói chưa rõ, và cùng một người có tên ở hai nhóm. Cần Trưởng phòng chốt.
+Nhiều người dùng cùng một từ nhưng hiểu khác nhau: *giám đốc, kinh doanh, bộ phận phối hợp, quản lý*.
 
-### C3. Từ ngữ cần thống nhất (anh Phú nêu, chị Ngân trả lời 09:52)
-
-Nhiều người dùng cùng một từ nhưng hiểu khác nhau: *giám đốc, kinh doanh, bộ phận phối hợp, quản lý*. Riêng **giám đốc**, chị Ngân tách thành ba nghĩa:
+**Giám đốc** có ba nghĩa (chị Ngân 24/10 09:52, khảo sát 26/10 nói giống):
 
 | Từ cũ | Hiểu là | Dùng ở bước |
 |---|---|---|
-| Giám đốc | **CEO** | NCC mới: 4.2, 6.2.4. Khảo sát và tính giá vốn: A.1, B.1, B.1.5 |
-| Giám đốc | **Đại diện pháp luật** của công ty | NCC mới: 6.2.5 (ký hợp đồng) |
-| Giám đốc | Kinh doanh | Chưa thấy bước nào |
+| Giám đốc | **CEO** điều hành các công ty nội bộ | NCC mới: 4.2, 6.2.4. Khảo sát và tính giá vốn: A.1, B.1, B.1.5 |
+| Giám đốc | **Đại diện pháp luật** của công ty, ký chứng từ | NCC mới: 6.2.5 (ký hợp đồng) |
+| Giám đốc | **Quản lý thương hiệu** (Dr Xanh, IDA, ABA, Bamboo…) | Chi phí bị Kế toán từ chối (câu 3) |
 
-Đề nghị làm một bảng từ ngữ chung cho cả phòng (mỗi từ một nghĩa, một vị trí) trước khi chốt phần C2. Nhiều mâu thuẫn có thể chỉ do hiểu từ khác nhau.
+**Kinh doanh** (khảo sát 26/10): các thương hiệu nội bộ IDA, ABA, Bamboo, Dr Xanh…, tự bố trí người và báo thông tin chính thức cho Sản xuất.
+
+Đề nghị làm một bảng từ ngữ chung cho cả phòng (mỗi từ một nghĩa, một vị trí) trước khi chốt phần C2.
 
 ### C4. Khi đi nói chuyện, nên hỏi theo thứ tự
 
-1. Chốt bảng từ ngữ (C3), 10 phút.
-2. Xác nhận các câu đã thống nhất với CEO và Phòng Kinh doanh (câu 1, 3).
-3. Hỏi Trưởng phòng Sản xuất các câu 8, 9, 10, 15, 16.
-4. Hỏi Trưởng nhóm Điều phối các câu 2, 5, 12, 13, 14.
+1. Hỏi chị Ngân câu 3 (chi phí: câu 24/10 hay câu 26/10), 5 phút.
+2. Xác nhận câu 1 với CEO và Phòng Kinh doanh.
+3. Hỏi Trưởng phòng Sản xuất các câu 8, 9, 10, 17.
+4. Hỏi Trưởng nhóm Điều phối các câu 2, 12, 13.
 5. Hỏi CEO và Kế toán câu 6.

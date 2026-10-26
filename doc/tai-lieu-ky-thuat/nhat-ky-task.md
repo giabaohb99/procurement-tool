@@ -17346,3 +17346,20 @@ Mã nguồn: doc/tai-lieu-ky-thuat/vps-dev-tai-khoan-ida.md
 **Còn lại:** trang quản trị không hiện nguyên văn 113 câu trả lời, nên ý nào ứng dụng khảo sát chưa rút ra thì chưa có trong văn bản.
 
 Tham chiếu: doc/erp/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md
+
+## nc-05c-cap-nhat-theo-khao-sat-2610 | Cập nhật văn bản thống nhất Sản xuất theo khảo sát trả lời chung ngày 26/10
+- status: xong
+- date: 2026-10-26
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Khảo sát cả phòng Sản xuất trả lời chung ngày 26/10 đã trả lời thêm một số câu đang treo trong văn bản thống nhất.
+
+**Đã làm**
+- Chuyển bốn câu sang đã thống nhất: số đơn (khoảng 42 đơn thành phẩm mỗi tháng), hàng chỉ hoàn thành khi cả Kho và Lab đạt, người giữ vị trí Pháp lý, tuyến báo cáo của chuyên viên nguyên liệu.
+- Câu ai quyết đơn thiếu điều kiện ghi thêm nguyên tắc Kinh doanh chốt phần kinh doanh, Trưởng phòng ký phần sản xuất, bất đồng trình Giám đốc.
+- Câu chi phí phát sinh chuyển sang chưa thống nhất vì câu trả lời ngày 24/10 và 26/10 khác nhau, cần Trưởng phòng xác nhận lại.
+- Thêm câu 17 về tuyến báo cáo của chuyên viên Giá vốn. Sửa các câu tương ứng ở phần 108 câu.
+
+**Kết quả:** văn bản số 05 trên nhánh erp-v2, nay có 8 câu đã thống nhất và 9 câu chưa.
+
+Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
