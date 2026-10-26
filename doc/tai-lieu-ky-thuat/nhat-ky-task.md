@@ -128,8 +128,10 @@ dụng trong một hàng nên người dùng hay chọn nhầm cách dùng khóa
   báo kiểu nối thì giữ một danh sách như trước.
 - Trang công khai: giới thiệu còn ba ý ngắn việc AI làm được và liên kết sang bài hướng dẫn *AI riêng của bạn làm được
   gì trong ERP*; thêm một dòng chỉ chỗ lấy khóa cho Cách 2. Không đổi API, không đổi backend.
+- Tên hai cách trên màn đặt đúng tên hai bài hướng dẫn trên Trung tâm trợ giúp (*Cách 1 (khuyên dùng): nối bằng đăng
+  nhập ERP*, *Cách 2 (nâng cao): sửa tệp cấu hình bằng khóa riêng*), mỗi cách có link sang đúng bài của mình.
 
-**Kết quả:** kiểu dữ liệu 0 lỗi, lint 0 lỗi, 206 bài kiểm của ba thư mục vừa sửa đều xanh, build qua.
+**Kết quả:** kiểu dữ liệu 0 lỗi, lint 0 lỗi, 207 bài kiểm của ba thư mục vừa sửa đều xanh, build qua.
 
 Mã nguồn: `frontend-v2/src/modules/ai-skill/components/connect-guide.tsx`, `frontend-v2/src/app/pages/connect-ai-page.tsx`
 Kiểm: `connect-ai-page.test.tsx`, `profile-ai-connect-section.test.tsx`

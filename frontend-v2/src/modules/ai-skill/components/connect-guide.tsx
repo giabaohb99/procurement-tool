@@ -1,7 +1,8 @@
-import { ChevronDown, Copy, Download, Globe, MonitorSmartphone, Plug, SquareTerminal } from 'lucide-react'
+import { ChevronDown, Copy, Download, ExternalLink, Globe, MonitorSmartphone, Plug, SquareTerminal } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
+import { appConfig } from '@/core/config/app-config'
 import { Button } from '@/shared/ui/button'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -9,6 +10,13 @@ import { cn } from '@/shared/utils/cn'
 import { fillKeyInSnippet } from '../config/ai-skill-constants'
 import { usePublicSetup, usePublicSetupClients, useSetup, useSetupClients } from '../hooks/use-my-ai'
 import type { McpSetupClient, McpSetupDetail } from '../types/ai-skill'
+
+/** Hai bài HDSD trên Trung tâm trợ giúp (seed `seed_help_ket_noi_ai_cach_1.py`); tên trên màn phải khớp tên bài. */
+const OAUTH_ARTICLE = { title: 'Cách 1 (khuyên dùng): nối bằng đăng nhập ERP', path: '/cach-1-khuyen-dung-noi-bang-dang-nhap-erp' }
+const KEY_ARTICLE = {
+  title: 'Cách 2 (nâng cao): sửa tệp cấu hình bằng khóa riêng',
+  path: '/cach-2-nang-cao-sua-tep-cau-hinh-bang-khoa-rieng',
+}
 
 const CLIENT_ICONS: Record<string, typeof Plug> = {
   claude_desktop: MonitorSmartphone,
@@ -43,8 +51,8 @@ interface ConnectGuideProps {
  * dòng đang chọn), cột phải màn Khóa nhân sự và trang công khai /connect-ai (hai chỗ sau KHÔNG BAO GIỜ có khóa: đoạn cấu
  * hình giữ nguyên chỗ giữ `<KHÓA_CỦA_BẠN>`). Ứng dụng nối bằng OAuth (ChatGPT, claude.ai) chỉ cần địa chỉ cổng.
  *
- * kh-AI-ket-noi-giao-dien (26/10/2026): chia hai cách. **Cách 1** — đăng nhập ERP (OAuth), hiện ngay khi mở màn. **Cách 2
- * (Nâng cao)** — sửa tệp cấu hình bằng khóa riêng, thu gọn sẵn và chỉ gọi chi tiết khi mở; tự mở khi link chỉ thẳng một
+ * kh-AI-ket-noi-giao-dien (26/10/2026): chia hai cách. **Cách 1 (khuyên dùng)** — đăng nhập ERP (OAuth), hiện ngay khi mở màn. **Cách 2
+ * (nâng cao)** — sửa tệp cấu hình bằng khóa riêng, thu gọn sẵn và chỉ gọi chi tiết khi mở; tự mở khi link chỉ thẳng một
  * ứng dụng dùng khóa (`?client=`) hoặc khi màn AI của tôi đã chọn khóa. Máy chủ cũ chưa trả `auth` thì giữ một danh sách.
  */
 export function ConnectGuide({ source, keySlot = null, initialClient = '', footer, className }: ConnectGuideProps) {
@@ -69,14 +77,16 @@ export function ConnectGuide({ source, keySlot = null, initialClient = '', foote
   else
     body = (
       <>
-        <section className="space-y-3" aria-label="Cách 1: đăng nhập bằng tài khoản ERP">
+        <section className="space-y-3" aria-label={OAUTH_ARTICLE.title}>
           <div>
-            <p className="font-medium">Cách 1 · Đăng nhập bằng tài khoản ERP (khuyên dùng)</p>
-            <p className="text-xs text-muted-foreground">Cho claude.ai, ChatGPT — không cần khóa.</p>
+            <p className="font-medium">{OAUTH_ARTICLE.title}</p>
+            <p className="text-xs text-muted-foreground">
+              Cho claude.ai, ChatGPT — không cần khóa. <ArticleLink path={OAUTH_ARTICLE.path} />
+            </p>
           </div>
           <ClientChooser clients={oauthClients} source={source} initialClient={initialClient} keySlot={keySlot} />
         </section>
-        <section className="space-y-3 border-t pt-3" aria-label="Cách 2: sửa tệp cấu hình bằng khóa riêng">
+        <section className="space-y-3 border-t pt-3" aria-label={KEY_ARTICLE.title}>
           <div>
             <Button
               type="button"
@@ -85,10 +95,12 @@ export function ConnectGuide({ source, keySlot = null, initialClient = '', foote
               aria-expanded={showAdvanced}
               onClick={() => setAdvancedOpen(!showAdvanced)}
             >
-              Cách 2 · Sửa tệp cấu hình bằng khóa riêng (Nâng cao)
+              {KEY_ARTICLE.title}
               <ChevronDown className={cn('size-4 shrink-0 transition-transform', showAdvanced && 'rotate-180')} />
             </Button>
-            <p className="text-xs text-muted-foreground">Cho Claude Desktop, Claude Code, Cursor… — cần khóa riêng.</p>
+            <p className="text-xs text-muted-foreground">
+              Cho Claude Desktop, Claude Code, Cursor… — cần khóa riêng. <ArticleLink path={KEY_ARTICLE.path} />
+            </p>
           </div>
           {showAdvanced && (
             <ClientChooser clients={keyClients} source={source} initialClient={initialClient} keySlot={keySlot} />
@@ -102,6 +114,21 @@ export function ConnectGuide({ source, keySlot = null, initialClient = '', foote
       {body}
       {footer}
     </div>
+  )
+}
+
+/** Link sang bài HDSD của một cách nối (mở tab mới). */
+function ArticleLink({ path }: { path: string }) {
+  return (
+    <a
+      href={`${appConfig.helpCenterUrl}${path}`}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-0.5 text-primary underline-offset-4 hover:underline"
+    >
+      Xem bài hướng dẫn
+      <ExternalLink className="size-3" />
+    </a>
   )
 }
 
