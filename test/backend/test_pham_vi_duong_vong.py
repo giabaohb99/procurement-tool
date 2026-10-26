@@ -415,6 +415,10 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L120 `Vehicle` — PUBLIC; phiếu đã qua `get_scoped(..., \"write\")` "
                        "ở L115"),
         (OK_KHONG_CAN, "L121 `Driver` — cùng lý do L120, danh mục tài xế PUBLIC"),
+        (OK_DA_KIEM, "L320 `VehicleBooking` trong `_scoped_or_404` — CHỈ chạy khi `get_scoped(..., \"approve\")` "
+                     "trả None và action là duyệt; phiếu chỉ được trả về khi "
+                     "`approval_bridge.is_picked_legacy_approver` đúng (Chờ duyệt, đúng người được CHỌN trên phiếu, "
+                     "không phiên nhiều bước đang chạy) — duoc-CR-681"),
     ],
 }
 
@@ -502,7 +506,9 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #  +1 (thu hồi quyền đọc skill, bao-CR-621) — cả ba gác ngay sau get (sở hữu / `_check_target`).
     #  96 → 98 (duoc-CR-676): `employee/change_request_controller.py` +2 — `_own_request` (khớp hồ sơ gắn với phiên)
     #  và `_scoped_request` (đi tiếp `get_scoped(Employee, "write")`).
-    assert sum(that.values()) == 98, f"tổng phải là 98, đang là {sum(that.values())}"
+    #  98 → 99 (duoc-CR-681): `vehicle_booking/controller.py` +1 — `_scoped_or_404` cho người duyệt CHỌN trên phiếu
+    #    (cửa duyệt, chỉ khi `is_picked_legacy_approver` đúng).
+    assert sum(that.values()) == 99, f"tổng phải là 99, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

@@ -72,6 +72,9 @@ class SealRequest(Base, AuditMixin, LegacyIdMixin):
     requester_role: Mapped[str] = mapped_column(String(255), default="")
 
     # Submitter choice — Trưởng bộ phận sẽ duyệt (cổng 1).
+    #  duoc-CR-682 (Bước 0 đồng bộ app cũ): «ERP đã thao tác nghiệp vụ trên phiếu gốc app cũ lúc…» (UTC, ISO). Có dấu
+    #  thì chiều nhận không chép đè ô tiến trình nữa — xem `legacy_datxe/erp_ownership.py`. Rỗng = soi gương app cũ.
+    erp_action_at: Mapped[str] = mapped_column(String(20), default="", server_default="")
     first_approver_id: Mapped[int] = mapped_column(BigInteger, default=0)
     #  NGƯỜI phê duyệt THẬT (tài khoản bấm Duyệt, có thể khác first_approver_id) + mốc duyệt.
     approved_by: Mapped[int] = mapped_column(BigInteger, default=0)

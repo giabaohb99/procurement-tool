@@ -586,7 +586,12 @@ def main() -> int:
 
     db = SessionLocal()
     try:
-        stats = run(db, data, args.apply)
+        #  duoc-CR-682 (review M1): script sửa phiếu gốc app cũ là việc của ĐỒNG BỘ, không phải người dùng ERP
+        #  thao tác — không bọc thì bộ nghe đóng dấu `erp_action_at` và phiếu thôi soi gương app cũ.
+        from app.modules.sync_log.service import suppress_outbound
+
+        with suppress_outbound():
+            stats = run(db, data, args.apply)
         if args.apply:
             db.commit()
         else:

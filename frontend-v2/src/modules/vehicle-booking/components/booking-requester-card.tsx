@@ -2,6 +2,7 @@ import { IdCard, Mail, Phone } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { OptionAvatar } from '@/shared/ui/option-avatar'
 import { Card } from '@/shared/ui/card'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { nameInitials } from '@/shared/utils/name-initials'
@@ -50,6 +51,27 @@ export function BookingRequesterCard({ booking }: { booking: VehicleBooking }) {
         )}
       </div>
 
+      {/*  duoc-CR-681: người phê duyệt + công ty CHỌN trên phiếu — hai thứ người duyệt / điều phối hay hỏi đầu tiên
+          («phiếu này ai duyệt, của công ty nào»). Phiếu cũ chưa chọn thì không dựng ô đó. */}
+      {(booking.first_approver_name || booking.company_name) && (
+        <div className="grid gap-3 border-t pt-3 sm:grid-cols-2">
+          {booking.first_approver_name && (
+            <PickedItem
+              label="Người phê duyệt"
+              avatar={booking.first_approver_avatar ?? ''}
+              text={
+                booking.first_approver_code
+                  ? `${booking.first_approver_code} - ${booking.first_approver_name}`
+                  : booking.first_approver_name
+              }
+            />
+          )}
+          {booking.company_name && (
+            <PickedItem label="Công ty" avatar={booking.company_logo ?? ''} text={booking.company_name} />
+          )}
+        </div>
+      )}
+
       {/*  Dấu `·` đi KÈM mẩu phía sau trong cùng một `<span>` chứ không đứng một
           mình: hàng này gãy dòng ở khổ hẹp, và dấu chấm mồ côi đầu dòng dưới
           đọc ra như một mục danh sách. */}
@@ -61,12 +83,6 @@ export function BookingRequesterCard({ booking }: { booking: VehicleBooking }) {
         </span>
         {booking.created_at && (
           <span className="tabular-nums">Tạo lúc {formatStamp(booking.created_at)}</span>
-        )}
-        {/*  duoc-CR-681: công ty chọn trên phiếu — quyết định luồng duyệt và ai thấy phiếu. */}
-        {booking.company_name && (
-          <span>
-            · Công ty <span className="font-medium text-foreground">{booking.company_name}</span>
-          </span>
         )}
       </div>
     </Card>
@@ -83,5 +99,17 @@ function ContactLine({ icon, value, label }: { icon: ReactNode; value: string; l
       <span className="truncate">{value}</span>
       <CopyButton value={value} label={label} className="size-6" />
     </span>
+  )
+}
+
+function PickedItem({ label, avatar, text }: { label: string; avatar: string; text: string }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
+        <OptionAvatar src={avatar} label={text} className="size-6" />
+        <span className="truncate">{text}</span>
+      </span>
+    </div>
   )
 }

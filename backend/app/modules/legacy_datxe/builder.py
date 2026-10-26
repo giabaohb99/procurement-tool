@@ -616,6 +616,8 @@ LEGACY_READONLY_FIELDS = frozenset({
     "updated_at", "updated_by",
     #  duoc-CR-681: pháp nhân người tạo là ẢNH CHỤP lúc tạo — lượt đồng bộ sau không kéo theo công ty mới của họ.
     "requester_company_id",
+    #  duoc-CR-682: dấu «ERP đã thao tác» do chính ERP đóng, app cũ không có ô này.
+    "erp_action_at",
 })
 
 
@@ -647,10 +649,18 @@ def copy_legacy_fields(target, source, stats: collections.Counter) -> list[str]:
     Trả về tên những ô đã thực sự đổi, để người gọi ghi xuống sổ. Rỗng nghĩa là
     phiếu không có gì khác — đừng đụng vào DB nữa.
     """
+    from .erp_ownership import allowed_fields
+
     changed: list[str] = []
+    #  duoc-CR-682 — Bước 0: ERP đã đụng vào phiếu thì ERP làm chủ cả phiếu (trừ hủy / từ chối từ app cũ).
+    allowed = allowed_fields(target, getattr(source, "status", None))
     for col in sa_inspect(type(target)).columns:
         field = col.key
         if field in LEGACY_READONLY_FIELDS:
+            continue
+        if allowed is not None and field not in allowed:
+            if getattr(source, field, None) != getattr(target, field, None) and not _is_blank(getattr(source, field, None)):
+                stats["giu ban ERP vi ERP da thao tac"] += 1
             continue
         new = getattr(source, field, None)
         old = getattr(target, field, None)

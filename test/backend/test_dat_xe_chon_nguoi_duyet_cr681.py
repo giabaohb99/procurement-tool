@@ -583,3 +583,17 @@ def test_review2_dong_bo_app_cu_khong_ghi_de_cong_ty_nguoi_tao():
     from app.modules.legacy_datxe.builder import LEGACY_READONLY_FIELDS
 
     assert "requester_company_id" in LEGACY_READONLY_FIELDS
+
+
+def test_chi_tiet_phieu_tra_nguoi_phe_duyet_va_cong_ty_de_hien_tren_trang(db, org):
+    """Anh Được 26/10: chi tiết phiếu hiện người phê duyệt («Mã - Tên» + ảnh) và công ty (logo)."""
+    from app.modules.vehicle_booking.service import serialize_booking
+
+    booking = create_booking(db, _payload(company_id=5, first_approver_id=org.picked.id), org.creator, submit=False)
+    out = serialize_booking(db, booking)
+    assert (out["first_approver_code"], out["first_approver_name"]) == ("DP05", "Nhân sự DP05")
+    assert out["company_name"] == "Công ty 5"
+    assert "first_approver_avatar" in out and "company_logo" in out
+
+    empty = serialize_booking(db, create_booking(db, _payload(), org.creator, submit=False))
+    assert empty["first_approver_code"] == "" and empty["first_approver_name"] == ""

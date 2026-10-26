@@ -237,6 +237,10 @@ class VehicleBookingResponse(VehicleBookingBase):
     approver_name: str = ""
     company_name: str = ""   # duoc-CR-681: công ty chọn trên phiếu (chi tiết phiếu hiện tên)
     first_approver_name: str = ""   # duoc-CR-681: người duyệt CHỌN trên phiếu (khác approver_name = người đã ký)
+    #  duoc-CR-682b: trang chi tiết hiện người phê duyệt (ảnh + «Mã - Tên») và công ty (logo) — rỗng ở danh sách.
+    first_approver_code: str = ""
+    first_approver_avatar: str = ""
+    company_logo: str = ""
     approved_at: str = ""
     assigned_vehicle_id: int | None = None
     assigned_driver_id: int | None = None

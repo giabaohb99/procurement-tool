@@ -58,6 +58,7 @@ from app.modules.vehicle_booking.model import (
 )
 
 from . import firebase
+from .erp_ownership import is_erp_owned
 from .builder import (
     LEGACY_SEAL_TYPE_NAME,
     SYSTEM_ACTOR_ID,
@@ -339,13 +340,29 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
     #  KHÔNG `rollback` ở nhánh này: bộ tra danh mục có thể vừa đóng dấu
     #  `legacy_id` lên một hàng có sẵn, và dấu đó đúng bất kể phiếu này có được
     #  ghi hay không. `finish_*` tự `commit` nên phần đó đi theo.
+    #  duoc-CR-682 (review H2): KHÓA dòng và đọc lại dấu «ERP đã đụng» + trạng thái ngay trước khi phân xử — không
+    #  khóa thì một cú bấm Điều phối trên ERP rơi vào khoảng lượt nhận đang chạy sẽ bị lượt nhận đè mất (nó còn cầm
+    #  bản đọc lúc chưa có dấu).
+    db.refresh(existing, attribute_names=["erp_action_at", "status"], with_for_update=True)
+    owned = is_erp_owned(existing)
+
     if existing.status in CLOSED_STATUSES[entity]:
         sync_legacy_audit_logs(db, entity=entity, entity_id=existing.id, code=existing.code,
                                node=node, people=people)
         sync_legacy_attachments(db, entity=entity, entity_id=existing.id, node=node,
                                 people=people)
-        sync_legacy_approval_history(db, entity=entity, entity_id=existing.id, code=existing.code,
-                                     purpose=getattr(existing, "purpose", "") or "", node=node, people=people)
+        if not owned:   # duoc-CR-682 (review M3): phiếu ERP làm chủ thì không dựng lại phiên soi gương
+            sync_legacy_approval_history(db, entity=entity, entity_id=existing.id, code=existing.code,
+                                         purpose=getattr(existing, "purpose", "") or "", node=node, people=people)
+        #  duoc-CR-682 — Bước 0: phiếu ERP ĐÃ THAO TÁC (`erp_action_at`) mà đã chốt thì trạng thái KHÔNG đổi nữa.
+        #  Trước đây nhánh này «chỉ nhận đổi trạng thái», kể cả LÙI: phiếu hoàn tất / đóng dấu trên ERP bị lượt quét
+        #  02:15 kéo về «Đã duyệt» theo ảnh chụp cũ của app cũ (chiều ERP -> app cũ đang tắt nên bên kia không biết).
+        #  Phiếu chốt BÊN APP CŨ (ERP chỉ soi gương) thì vẫn nhận đổi trạng thái như cũ — đó là thao tác thật bên kia.
+        if fresh.status and fresh.status != existing.status and owned:
+            return finish_skipped(db, entry,
+                                  f"Phiếu đã chốt bên ERP (trạng thái {existing.status}) — bỏ qua trạng thái "
+                                  f"{fresh.status} của app cũ, không cho lùi",
+                                  local_id=existing.id, warnings=flags() + [WARN_CLOSED_LOCKED])
         if fresh.status and fresh.status != existing.status:
             old = existing.status
             existing.status = fresh.status
@@ -362,13 +379,15 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
 
     # --- đang mở: ghi đè hết, trừ ghi rỗng đè lên đang có ------------------
     changed = copy_legacy_fields(existing, fresh, stats)
-    touched = sync_seal_companies(db, existing, company_ids) if entity == ENTITY_SEAL else False
+    touched = (sync_seal_companies(db, existing, company_ids)
+               if entity == ENTITY_SEAL and not owned else False)   # duoc-CR-682: ERP làm chủ thì giữ công ty
     sync_legacy_audit_logs(db, entity=entity, entity_id=existing.id, code=existing.code,
                            node=node, people=people)
     sync_legacy_attachments(db, entity=entity, entity_id=existing.id, node=node,
                             people=people)
-    sync_legacy_approval_history(db, entity=entity, entity_id=existing.id, code=existing.code,
-                                 purpose=getattr(existing, "purpose", "") or "", node=node, people=people)
+    if not owned:   # duoc-CR-682 (review M3): phiếu ERP làm chủ thì không dựng lại phiên soi gương
+        sync_legacy_approval_history(db, entity=entity, entity_id=existing.id, code=existing.code,
+                                     purpose=getattr(existing, "purpose", "") or "", node=node, people=people)
     if not changed and not touched:
         #  Cố ý KHÔNG chốt `content_hash` vào dòng *bỏ qua*: chỉ dòng THÀNH CÔNG
         #  mới chặn được lượt sau (`is_unchanged`). Phiếu đổi ở ô mà ERP không

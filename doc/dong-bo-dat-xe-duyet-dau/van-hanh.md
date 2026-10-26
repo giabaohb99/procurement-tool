@@ -144,5 +144,36 @@ Dashboard: `https://dash.cloudflare.com/d74f2df39b62699e41bb0a88d0856fe9/workers
 ## 7. Việc còn treo (23/10/2026)
 
 - P3 (ERP → app cũ) đã dựng, khóa ở cả hai đầu; app cũ nhánh `main` chưa có mã P3 (mới ở `dev`); màn app cũ hiện km / chi phí từ ERP ở nhánh `feat/hien-km-chi-phi-tu-erp` (bao-CR-600) chưa đẩy.
-- Bước 0 (chặn app cũ đè thao tác ERP trên phiếu có `legacy_id`) chưa làm — phải làm trước khi cho điều phối viên / tài xế thao tác thật trên ERP với phiếu đồng bộ.
+- Bước 0 (chặn app cũ đè thao tác ERP trên phiếu có `legacy_id`) — **ĐÃ LÀM ở mã nguồn 26/10/2026 (duoc-CR-682, nhánh `erp-v2`), chờ deploy** — xem §8. Chỉ sửa phía ERP; KHÔNG ghi gì sang app cũ (anh Được chốt: app cũ là prod, chiều ERP → app cũ vẫn tắt).
 - 48 dòng lỗi chiều nhận trên prod — ĐÃ XỬ 23/10 (bao-CR-661): 19 dòng phiếu đóng dấu chỉ lỗi một đêm 02/10 rồi tự vá; 29 dòng còn lại cùng một mã app cũ `1NXIMnXkj_ULzAfvOYGtp` có hai phiếu DX000422 + DX000423 tạo cùng một giây 20/10 (hai lượt gọi song song). Đã xóa DX000423 (bản sao, không có việc duyệt, không tệp; app cũ trỏ 422; sao lưu JSON ở máy trực `D:	mpackup-dx000423-20261023.json`), và mã tra theo `legacy_id` nay chọn hàng cũ nhất kèm cảnh báo thay vì ném lỗi. Vòng quét 02:15 đêm 23/10 nhận lại phiếu, chuông 08:00 tự im. Còn nợ: chặn hai lượt gọi song song đẻ trùng (chưa có khóa duy nhất trên `legacy_id` vì cột mặc định rỗng).
+
+## 8. Bước 0 — app cũ không đè thao tác làm trên ERP (duoc-CR-682, 26/10/2026)
+
+Vì chiều ERP → app cũ tắt, app cũ giữ ảnh chụp cũ; trước Bước 0 mỗi lượt nhận (cộng lượt quét ép 02:15) chép đè lại:
+phiếu điều phối trên ERP lùi «Đã duyệt» mà còn giữ xe, phiếu hoàn tất / đóng dấu trên ERP lùi trạng thái, nội dung
+người dùng sửa trên ERP bị trả về bản cũ.
+
+**Luật mới (chỉ phía ERP, KHÔNG ghi gì sang app cũ; mã ở `backend/app/modules/legacy_datxe/erp_ownership.py`):**
+
+| Phiếu gốc app cũ | Chiều nhận làm gì |
+|---|---|
+| ERP **chưa** đụng vào (`erp_action_at` rỗng) | Soi gương như cũ — điều phối, tài xế, duyệt, sửa nội dung bên app cũ vẫn chảy về ERP. |
+| ERP **đã** đụng vào (`erp_action_at` có giá trị) | ERP làm chủ **cả phiếu**: không chép ô nào (trạng thái, xe, tài xế, duyệt, km, chi phí, nội dung, công ty phiếu dấu), không dựng lại phiên duyệt soi gương. Ngoại lệ duy nhất: app cũ **hủy / từ chối** phiếu chưa chốt → nhận trạng thái đó (giữ nguyên xe / tài xế ERP đã gán). |
+| ERP đã đụng vào **và** phiếu đã chốt (hoàn tất / từ chối / hủy) | Trạng thái không đổi nữa — dòng sổ ghi «bỏ qua … không cho lùi». |
+
+* `erp_action_at` tự đóng khi BẤT KỲ cột nghiệp vụ nào đổi ngoài lượt đồng bộ trên phiếu có `legacy_id` (nút trên web,
+  lưu nháp, hook bộ máy duyệt, việc nền) — không ai bấm tay. Đã đóng thì không gỡ.
+* Lượt nhận KHÓA dòng (`SELECT … FOR UPDATE`) và đọc lại dấu ngay trước khi phân xử — một cú bấm trên ERP rơi vào
+  giữa lượt nhận không bị đè.
+* Script `scripts/legacy_sync/import_approval_history.py` chạy trong cờ đồng bộ nên không đóng dấu nhầm.
+* **Lấp dấu lúc deploy:** migration `cr682erpact01` đóng dấu cho phiếu có `legacy_id` mà nhật ký thao tác có dòng của
+  NGƯỜI DÙNG (`actor_kind = 1`, trừ xem / in / xuất). Dòng nhập từ app cũ (`actor_kind = 3`) không tính.
+
+**Đánh đổi đã biết:** ERP đụng vào rồi thì tiến độ làm TIẾP bên app cũ (ví dụ điều phối bên đó sau khi ERP đã sửa phiếu)
+không sang ERP nữa. Không có cách hòa hai bên mà không ghi sang app cũ. Cần thống nhất: phiếu gốc app cũ đã đụng trên
+ERP thì làm tiếp trên ERP.
+
+**Tra một phiếu:** `SELECT code, status, erp_action_at FROM tab_vehicle_booking WHERE legacy_id = '…'`; sổ đồng bộ
+`/system/sync-logs` — cảnh báo đếm `giu ban ERP vi ERP da thao tac` cho biết lượt nhận đã giữ bản ERP.
+
+**Deploy:** migration `cr682erpact01` (thêm cột + lấp dấu). Không bật / tắt công tắc nào, không đụng app cũ.

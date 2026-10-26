@@ -208,6 +208,10 @@ export interface VehicleBooking {
   company_name?: string
   /** Người duyệt CHỌN trên phiếu — khác `approver_name` (người đã ký thật). Rỗng ở danh sách. */
   first_approver_name?: string
+  /** Mã nhân viên + ảnh đại diện của người duyệt đã chọn, logo công ty — chỉ trang chi tiết có. */
+  first_approver_code?: string
+  first_approver_avatar?: string
+  company_logo?: string
   /** Thời điểm duyệt (ISO), rỗng nếu chưa duyệt. */
   approved_at: string
   // Điều phối / chạy chuyến

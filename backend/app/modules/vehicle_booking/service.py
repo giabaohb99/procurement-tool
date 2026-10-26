@@ -685,11 +685,21 @@ def serialize_booking(db: Session, obj: VehicleBooking, viewer=None) -> dict:
     out.approver_name = _emp_name_of_user(db, obj.approved_by or obj.first_approver_id)
     out.dispatched_by_name = _emp_name_of_user(db, obj.dispatched_by or 0)
     out.first_approver_name = _emp_name_of_user(db, obj.first_approver_id or 0)
+    if obj.first_approver_id:
+        from app.modules.user.model import User
+
+        picked = db.get(User, obj.first_approver_id)
+        if picked is not None:
+            out.first_approver_avatar = picked.avatar or ""
+            employee = db.get(Employee, picked.employee_id) if picked.employee_id else None
+            out.first_approver_code = employee.code if employee else ""
     if obj.company_id:
         from app.modules.company.model import Company
+        from app.modules.company.service import get_company_logo_map
 
         company = db.get(Company, obj.company_id)
         out.company_name = company.name if company else ""
+        out.company_logo = get_company_logo_map(db, [obj.company_id]).get(obj.company_id, "")
     #  Phiên duyệt nhiều bước gần nhất. Còn mở → frontend ẩn nút duyệt một bước;
     #  đã đóng → frontend vẫn cần ID để vẽ thẻ Lịch sử phê duyệt. Một câu truy vấn
     #  trả cả hai: bộ máy chỉ mở phiên mới khi không còn phiên nào mở, nên phiên

@@ -17116,3 +17116,44 @@ Mã nguồn: backend/app/modules/approval/permission_approvers.py · backend/app
 - date: 2026-10-24
 Ô chọn dùng chung có tìm kiếm nay hiện được ảnh đầu dòng và dòng chữ phụ; ô «Người phê duyệt» hiện ảnh đại diện, «Mã - Tên» và vai trò cấp quyền duyệt kèm phạm vi, ô «Công ty» hiện logo và mã số thuế, tìm được theo cả mã nhân viên lẫn mã số thuế. Theo mẫu anh Được gửi, ô người phê duyệt đứng trước ô công ty.
 Mã nguồn: frontend-v2/src/shared/ui/search-select.tsx · option-avatar.tsx · frontend-v2/src/modules/vehicle-booking/components/booking-approval-routing-fields.tsx · utils/booking-pick-options.ts
+
+### duoc-CR-681-10 | Trang chi tiết phiếu hiện người phê duyệt và công ty
+- status: xong
+- date: 2026-10-26
+Thẻ người yêu cầu ở đầu trang chi tiết phiếu đặt xe nay có hàng «Người phê duyệt» với ảnh đại diện và «Mã - Tên», cạnh «Công ty» với logo; phiếu cũ chưa chọn thì không hiện ô đó. Máy chủ trả thêm mã, ảnh của người duyệt đã chọn và logo công ty khi xem một phiếu.
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-requester-card.tsx · backend/app/modules/vehicle_booking/service.py
+
+## duoc-CR-682 | Bước 0 đồng bộ app đặt xe cũ: app cũ không đè thao tác làm trên ERP
+- status: xong
+- date: 2026-10-26
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** chiều app cũ sang ERP đang chạy thật còn chiều ngược lại đang tắt, nên mỗi lượt nhận và lượt quét lúc hai giờ mười lăm sáng chép đè phiếu: phiếu điều phối trên ERP lùi về đã duyệt mà còn giữ xe, phiếu hoàn tất hay đóng dấu trên ERP lùi trạng thái. Anh Được giao làm Bước 0 trước khi tính bật hai chiều và chốt không được thay đổi dữ liệu bên app cũ vì bên đó là prod.
+
+**Đã làm**
+- Thêm dấu «ERP đã đụng vào phiếu» tự đóng khi người dùng ERP thay đổi phiếu gốc app cũ; phiếu có dấu thì chiều nhận không chép đè nữa, chỉ nhận hủy hoặc từ chối từ app cũ, phiếu đã chốt thì trạng thái không lùi.
+- Lượt nhận khóa dòng phiếu trước khi phân xử để không đè cú bấm trên ERP xảy ra cùng lúc; script sửa lịch sử duyệt không còn đóng dấu nhầm.
+- Migration lấp dấu cho phiếu người dùng ERP đã thao tác trước ngày deploy, dựa vào nhật ký thao tác.
+- Rà mã tìm ra ba lỗi cao và bốn lỗi trung bình, đã sửa hết; tiện vá bài kiểm canh phạm vi bị đỏ do CR-681.
+
+**Kết quả:** mười sáu bài kiểm mới và toàn bộ bài kiểm đồng bộ cũ đều xanh, chỉ dùng phiếu giả, không gọi sang app cũ; câu lấp dấu đã chạy thử trên MySQL local.
+
+**Còn lại:** chưa bật hai chiều; cần thống nhất phiếu gốc app cũ đã sửa trên ERP thì làm tiếp trên ERP vì tiến độ bên app cũ không sang nữa.
+
+Mã nguồn: backend/app/modules/legacy_datxe/erp_ownership.py · service.py · builder.py · migration cr682erpact01 · doc/dong-bo-dat-xe-duyet-dau/van-hanh.md §8
+Deploy: alembic upgrade head (cr682erpact01)
+
+### duoc-CR-682-1 | Dấu «ERP đã đụng vào phiếu» và luật không chép đè
+- status: xong
+Bộ nghe tự đóng dấu khi một cột nghiệp vụ của phiếu gốc app cũ đổi ngoài lượt đồng bộ; chiều nhận đọc dấu để không chép đè, chỉ nhận hủy hoặc từ chối, phiếu đã chốt không lùi trạng thái, không dựng lại phiên duyệt soi gương.
+Mã nguồn: backend/app/modules/legacy_datxe/erp_ownership.py · builder.py · service.py · backend/app/core/database.py
+
+### duoc-CR-682-2 | Khóa dòng khi nhận và lấp dấu cho phiếu cũ
+- status: xong
+Lượt nhận khóa dòng phiếu và đọc lại dấu ngay trước khi phân xử. Migration thêm cột và đóng dấu cho phiếu người dùng ERP đã thao tác trước đó theo nhật ký thao tác; đã thử trên MySQL local với phiếu giả.
+Mã nguồn: migration cr682erpact01 · backend/scripts/legacy_sync/import_approval_history.py
+
+### duoc-CR-682-3 | Bài kiểm, rà mã và tài liệu vận hành
+- status: xong
+Mười sáu bài kiểm bằng phiếu giả, có đúng ca lượt quét đêm kéo phiếu đã điều phối về đã duyệt và phiếu dấu đã đóng dấu. Rà mã xác nhận không có đường nào ghi sang app cũ. Sổ tay vận hành đồng bộ thêm mục Bước 0.
+Mã nguồn: test/backend/test_dong_bo_datxe_buoc_0_cr682.py · doc/dong-bo-dat-xe-duyet-dau/van-hanh.md

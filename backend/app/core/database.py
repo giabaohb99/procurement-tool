@@ -72,3 +72,9 @@ install_change_tracker()
 from app.modules.legacy_datxe.outbound_listener import install_outbound_listener  # noqa: E402
 
 install_outbound_listener()
+
+#  duoc-CR-682 (Bước 0): đóng dấu `erp_action_at` khi ERP thao tác nghiệp vụ trên phiếu gốc app cũ — chiều nhận đọc
+#  dấu này để không chép đè. Gắn ở đây cùng lý do với hai bộ nghe trên (việc nền Celery, hook bộ máy duyệt).
+from app.modules.legacy_datxe.erp_ownership import install_erp_ownership_listener  # noqa: E402
+
+install_erp_ownership_listener()

@@ -33,7 +33,7 @@ TRACKED = {VehicleBooking: "vehicle_booking", SealRequest: "seal_request"}
 
 #: Đổi mấy cột này thôi thì không có gì để gửi: dấu sửa cuối tự nhảy, còn `legacy_id` là
 #: chính cú ghi ngược khóa sau khi app cũ tạo phiếu.
-IGNORED_ATTRS = frozenset({"updated_at", "updated_by", "legacy_id"})
+IGNORED_ATTRS = frozenset({"updated_at", "updated_by", "legacy_id", "erp_action_at"})
 
 _OBJS_KEY = "datxe_outbound_objs"
 _IDS_KEY = "datxe_outbound_ids"
